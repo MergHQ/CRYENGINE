@@ -1,0 +1,26 @@
+<Factions>
+	<Faction name="Players">
+		<Reaction faction="Grunts" reaction="hostile" />
+		<Reaction faction="Civilians" reaction="friendly" />
+		<Reaction faction="Assassins" reaction="hostile" />
+	</Faction>
+
+	<Faction name="Civilians" default="neutral" />
+	<Faction name="WildLife" default="neutral" />
+	
+	<Faction name="Grunts">
+		<Reaction faction="Players" reaction="hostile" />
+		<Reaction faction="Civilians" reaction="neutral" />
+		<Reaction faction="Assassins" reaction="hostile" />
+	</Faction>
+	
+	<Faction name="Assassins">
+		<Reaction faction="Players" reaction="hostile" />
+		<Reaction faction="Civilians" reaction="hostile" />
+		<Reaction faction="Grunts" reaction="hostile" />
+	</Faction>
+	
+	<Faction name="HostileOnlyWithPlayers" default="neutral">
+		<Reaction faction="Players" reaction="hostile" />
+	</Faction>
+</Factions>

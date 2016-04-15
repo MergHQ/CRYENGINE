@@ -1,0 +1,1259 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2004.
+// -------------------------------------------------------------------------
+//  File name:   Runtime.ext
+//  Version:     v1.00
+//  Created:     16/2/2004 by Andrey Honich.
+//  Compilers:
+//  Description:
+// -------------------------------------------------------------------------
+//  History:
+//
+////////////////////////////////////////////////////////////////////////////
+
+Version (1.00)
+
+Property
+{
+  Name = %_RT_FOG
+  Mask = 0x1
+  Precache = GeneralPS
+  Precache = GeneralVS
+  Precache = GeneralGS
+  Precache = GeneralDS
+  Precache = GeneralHS
+  Precache = TerrainPS
+  Precache = TerrainVS
+  Precache = VoxTerrainPS
+  Precache = VoxTerrainVS
+  Precache = VegetationVS
+  Precache = VegetationHS
+  Precache = VegetationDS
+  Precache = VegetationPS
+  Precache = ClothPS
+  Precache = ClothVS
+  Precache = SkinPS
+  Precache = SkinVS
+  Precache = HairPS
+  Precache = HairVS  
+  Precache = EyePS
+  Precache = EyeVS  
+  Precache = GlassPS
+  Precache = GlassVS
+  Precache = ParticleVS
+  Precache = ParticleHS
+  Precache = ParticleDS
+  Precache = ParticlePS
+  Precache = SpritePS
+  Precache = SpriteVS
+  Precache = MethaGenVS  
+  Precache = MethaGenPS    
+  Precache = CloakVS
+  Precache = CloakPS
+  Precache = CustomRenderHS
+  Precache = CustomRenderDS
+  Precache = WaterSurfaceVS
+  Precache = WaterSurfacePS
+  Precache = WaterSurfaceHS
+  Precache = WaterSurfaceDS
+  Precache = WaterFogVolume_VS
+  Precache = WaterFogVolume_PS
+  Precache = MeshBakerPS
+	Precache = ParticleImposterVS
+	Precache = ParticleImposterPS
+	Precache = VolumetricCloudsPS
+}
+
+Property
+{
+  Name = %_RT_AMBIENT
+  Mask = 0x2
+  Precache = GeneralPS
+  Precache = ClothPS
+  Precache = SkinPS
+  Precache = HairPS  
+  Precache = EyePS
+  Precache = GlassPS
+  Precache = TerrainPS 
+  Precache = VoxTerrainPS
+  Precache = VegetationPS
+  Precache = IcePS
+  Precache = SpritePS
+  Precache = ParticlePS
+  Precache = MethaGenPS  
+  Precache = MeshBakerPS
+}
+
+Property
+{
+  Name = %_RT_OCEAN_PARTICLE
+  Mask = 0x4
+  Precache = PostProcessGamePS
+  Precache = DeferredLightPassPS
+  Precache = DeferredPassPS
+
+  Precache = WaterSurfaceVS
+  Precache = WaterSurfacePS
+  Precache = WaterSurfaceHS
+  Precache = WaterSurfaceDS
+  Precache = WaterFogVolume_PS
+}
+
+Property
+{
+  Name = %_RT_DECAL_TEXGEN_2D
+  Mask = 0x8
+  Precache = GeneralVS
+  Precache = GeneralDS
+  Precache = GeneralHS
+  Precache = ShadowGenVS  
+  Precache = CausticsVS
+  Precache = GeneralPS
+  Precache = CustomRenderHS
+  Precache = CustomRenderDS
+  Precache = GlowVS
+  Precache = GlowPS
+  Precache = ZVS
+  Precache = ZPS
+  Precache = MeshBakerPS
+  Precache = TiledShadingCS
+}
+
+Property
+{
+  Name = %_RT_DISSOLVE
+  Mask = 0x10
+  Precache = ZPS
+  Precache = ZVS
+  Precache = ShadowGenVS
+  Precache = ShadowGenPS
+}
+
+Property
+{
+  Name = %_RT_VOLUMETRIC_FOG
+  Mask = 0x20
+  Precache = GeneralPS
+  Precache = GeneralVS
+  Precache = GeneralGS
+  Precache = GeneralDS
+  Precache = GeneralHS
+  Precache = TerrainPS
+  Precache = TerrainVS
+  Precache = VegetationVS
+  Precache = VegetationHS
+  Precache = VegetationDS
+  Precache = VegetationPS
+  Precache = SkinPS
+  Precache = SkinVS
+  Precache = HairPS
+  Precache = HairVS
+  Precache = EyePS
+  Precache = EyeVS
+  Precache = GlassPS
+  Precache = GlassVS
+  Precache = ParticleVS
+  Precache = ParticleHS
+  Precache = ParticleDS
+  Precache = ParticlePS
+  Precache = WaterSurfacePS
+  Precache = WaterFogVolume_VS
+  Precache = WaterFogVolume_PS
+  Precache = MeshBakerPS
+  Precache = CloudVS
+  Precache = CloudPS
+  Precache = FogPostProcessPS
+  Precache = SpritePS
+  Precache = SpriteVS
+  Precache = ParticleImposterVS
+  Precache = ParticleImposterPS
+  Precache = VolumetricCloudsPS
+}
+
+Property
+{
+  Name = %_RT_NEAREST
+  Mask = 0x40
+  Precache = ShadowGenVS
+  Precache = ShadowMaskGenVS
+  Precache = ShadowMaskGenPS
+  Precache = MethaGenPS
+  Precache = ZVS
+  Precache = CloakVS
+  Precache = MotionBlurVS
+  Precache = SkinVS
+  Precache = GeneralVS
+  Precache = VegetationVS    
+  Precache = ShadowVS
+  Precache = DetailVS
+  Precache = GlowVS
+  Precache = FurVS
+  Precache = CausticsVS
+  Precache = CustomRenderVS
+  Precache = EffectLayerVS
+  Precache = MethaGenVS
+  Precache = DebugPassVS
+}
+
+Property
+{
+  Name = %_RT_GLOBAL_ILLUMINATION
+  Mask = 0x80
+  Precache = ParticleVS
+  Precache = ParticleHS
+  Precache = ParticleDS
+  Precache = ParticlePS
+}
+
+Property
+{
+  Name = %_RT_ALPHATEST
+  Mask = 0x100
+  Precache = ShadowGenVS
+  Precache = ShadowGenPS
+  Precache = ZPS
+  Precache = ZVS
+  Precache = MotionBlurPS
+  Precache = CustomRenderPS
+  Precache = VegetationVS
+  Precache = VegetationHS
+  Precache = VegetationDS
+  Precache = VegetationPS
+	Precache = GeneralPS
+  Precache = GlassPS
+  Precache = GlassVS
+  Precache = GlowVS
+  Precache = GlowPS  
+  Precache = MotionBlurVS
+  Precache = FurVS      
+  Precache = MeshBakerPS
+}
+
+Property
+{
+  Name = %_RT_SOFT_PARTICLE
+  Mask = 0x200
+  Precache = ParticleVS
+  Precache = ParticleHS
+  Precache = ParticleDS
+  Precache = ParticlePS  
+}
+
+Property
+{
+  Name = %_RT_HDR_MODE
+  Mask = 0x400
+  Precache = GeneralPS
+  Precache = TerrainPS
+  Precache = VegetationPS
+  Precache = SkinPS
+  Precache = HairPS
+  Precache = EyePS
+  Precache = GlassPS
+  Precache = ParticlePS
+  Precache = SpritePS
+  Precache = CloakPS
+  Precache = WaterSurfacePS
+  Precache = ParticleImposterPS
+}
+
+Property
+{
+  Name = %_RT_PARTICLE_SHADOW
+  Mask = 0x800
+  Precache = ParticlePS
+  Precache = ParticleVS
+  Precache = ParticleHS
+  Precache = ParticleDS
+}
+
+Property
+{
+  Name = %_RT_SAMPLE1
+  Mask = 0x1000
+  Precache = ShadowPS
+  Precache = ShadowVS
+  Precache = DetailPS
+  Precache = DetailVS
+  Precache = SpritePS
+  Precache = CustomRenderHS
+  Precache = CustomRenderDS
+  Precache = CustomRenderVS
+  Precache = CustomRenderPS
+  Precache = SkinPS
+  Precache = HDRPostProcessPS
+  Precache = PostMotionBlurVS
+  Precache = PostMotionBlurPS
+  Precache = PostSunShaftsPS
+  Precache = PostProcessGamePS
+  Precache = PostDofPS
+  Precache = PostEffectsVS
+  Precache = PostEffectsPS
+  Precache = PostAA_PS
+  Precache = DeferredDecalPassPS
+  Precache = DeferredLightPassPS
+  Precache = DeferredPassPS
+  Precache = BlurMaxPassPS
+  Precache = PostHUD3D_VS
+  Precache = PostHUD3D_PS
+  Precache = EffectLayerPS
+  Precache = ParticlePS 
+  Precache = ParticleVS
+  Precache = DeferredRainPS
+	Precache = ShadowMaskGenPS
+
+  Precache = WaterFogVolume_VS
+  Precache = WaterFogVolume_PS
+  Precache = WaterSurfaceVS
+  Precache = WaterSurfacePS
+  Precache = WaterSurfaceHS
+  Precache = WaterSurfaceDS
+
+	Precache = BeamPS
+  Precache = ParticleHS
+  Precache = ParticleDS
+  Precache = WaterSurfacePS
+	
+	Precache = TiledShadingCS
+	Precache = VolumeLightInjectionCS
+	Precache = ResolvePS
+	Precache = VolumetricCloudsPS
+	Precache = ReprojectCloudsPS
+}
+
+Property
+{
+  Name = %_RT_SAMPLE2
+  Mask = 0x2000
+  Precache = ShadowPS
+  Precache = ShadowVS
+  Precache = DetailPS
+  Precache = DetailVS
+  
+  Precache = HDRPostProcessPS
+  Precache = PostMotionBlurVS
+  Precache = PostMotionBlurPS
+  Precache = PostAA_PS
+  Precache = PostSunShaftsPS
+  Precache = PostProcessGamePS
+  Precache = DeferredDecalPassPS
+  Precache = DeferredLightPassPS
+  Precache = DeferredPassPS
+  Precache = EffectLayerPS
+  Precache = CustomRenderPS
+  Precache = DeferredRainPS
+
+  Precache = ShadowMaskGenVS
+  Precache = ShadowMaskGenPS 
+  Precache = ParticlePS 
+  Precache = ParticleVS 
+  Precache = ParticleHS
+  Precache = ParticleDS
+
+	Precache = BeamPS
+	Precache = LensOpticsPS
+
+	Precache = SSAO_PS
+
+  Precache = WaterFogVolume_PS
+	
+	Precache = TiledShadingCS
+	Precache = FogPostProcessPS
+	Precache = VolumeLightInjectionCS
+}
+
+Property
+{
+  Name = %_RT_SAMPLE3
+  Mask = 0x4000
+  Precache = ShadowPS
+  Precache = ShadowVS
+  Precache = DetailPS
+  Precache = DetailVS
+  Precache = SSAO_BlurPS
+  Precache = ParticlePS 
+  Precache = ParticleVS 
+  Precache = ParticleHS
+  Precache = ParticleDS
+  Precache = PostAA_PS
+  Precache = HDRPostProcessPS
+  Precache = BeamPS
+  Precache = DeferredLightPassPS
+  Precache = DeferredPassPS
+  Precache = DeferredRainPS
+  Precache = ShadowMaskGenVS
+  Precache = ShadowMaskGenPS
+
+	Precache = SSAO_PS
+	Precache = LensOpticsPS
+  Precache = WaterFogVolume_PS
+	
+	Precache = TiledShadingCS
+	Precache = CloudShadowGenCS
+	Precache = VolumetricCloudsPS
+}
+
+Property
+{
+  Name = %_RT_POINT_LIGHT
+  Mask = 0x8000
+  Precache = ShadowVS
+  Precache = ShadowPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = WaterFogVolume_PS
+  Precache = ConeTraceDiffusePS
+}
+	
+Property
+{
+  Name = %_RT_ALPHABLEND
+  Mask = 0x10000
+  Precache = GeneralHS
+  Precache = GeneralDS
+  Precache = ShadowPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = ShadowVS
+  Precache = ParticlePS
+  Precache = ParticleVS
+	Precache = HairVS
+  Precache = EyeVS
+//  Precache = TerrainPS  
+  Precache = VegetationVS
+  Precache = GeneralVS 
+  Precache = ClothVS
+  Precache = GlassVS
+//  Precache = VegetationPS  
+  Precache = CustomRenderHS
+  Precache = CustomRenderDS
+  Precache = ZVS
+  Precache = ZPS
+  Precache = MotionBlurPS
+}
+
+Property
+{
+  Name = %_RT_ANIM_BLEND
+  Mask = 0x20000
+  Precache = ParticlePS
+  Precache = ParticleVS
+  Precache = ParticleHS
+  Precache = ParticleDS
+  Precache = ParticleGS
+}
+
+Property
+{
+  Name = %_RT_QUALITY
+  Mask = 0x40000
+  AutoPrecache
+  Precache = ShadowGenVS
+  Precache = ShadowGenPS
+  Precache = ZVS
+  Precache = ZPS
+  Precache = ShadowPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = ShadowVS
+  Precache = GeneralPS
+  Precache = GeneralVS
+  Precache = ClothPS
+  Precache = ClothVS
+  Precache = SkinPS
+	Precache = SkinVS 
+	Precache = HairPS
+	Precache = HairVS 
+  Precache = EyePS
+  Precache = EyeVS
+  Precache = GlassPS
+  Precache = GlassVS
+  Precache = TerrainPS  
+  Precache = TerrainVS  
+  Precache = VoxTerrainPS
+  Precache = VoxTerrainVS
+  Precache = VegetationPS  
+  Precache = VegetationHS
+  Precache = VegetationDS
+  Precache = VegetationVS  
+  Precache = MotionBlurVS  
+  Precache = MotionBlurPS  
+  Precache = FurVS
+  Precache = FurPS
+  Precache = SpritePS
+  Precache = DetailVS  
+  Precache = CausticsVS
+  Precache = ParticlePS
+  Precache = MethaGenVS
+  Precache = MethaGenPS
+  Precache = WaterSurfaceVS
+  Precache = WaterSurfacePS
+  
+  Precache = PostMotionBlurVS
+  Precache = PostMotionBlurPS
+  Precache = PostSunShaftsPS
+  Precache = SpriteDilatePS
+  Precache = ShadowMaskGenPS
+  
+  Precache = HDRPostProcessVS
+  Precache = HDRPostProcessPS
+  Precache = FogPostProcessPS
+  Precache = PostProcessGameVS
+  Precache = PostProcessGamePS
+
+  Precache = DistanceCloudsPS
+
+	Precache = SSGI_PS
+
+	Precache = DeferredLightPassPS
+}
+
+Property
+{
+  Name = %_RT_QUALITY1
+  Mask = 0x80000
+  AutoPrecache
+  Precache = ShadowGenVS
+  Precache = ShadowGenPS  
+  Precache = ZVS
+  Precache = ZPS
+  Precache = ShadowPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = ShadowVS
+  Precache = GeneralPS
+  Precache = GeneralVS
+  Precache = ClothPS
+  Precache = ClothVS
+  Precache = SkinPS
+	Precache = SkinVS
+	Precache = HairPS
+	Precache = HairVS
+  Precache = EyePS
+  Precache = EyeVS
+  Precache = GlassPS
+  Precache = GlassVS
+  Precache = TerrainPS  
+  Precache = TerrainVS  
+  Precache = VoxTerrainPS
+  Precache = VoxTerrainVS
+  Precache = VegetationPS  
+  Precache = VegetationHS
+  Precache = VegetationDS
+  Precache = VegetationVS  
+  Precache = MotionBlurVS  
+  Precache = MotionBlurPS  
+  Precache = FurVS
+  Precache = FurPS
+  Precache = SpritePS
+  Precache = DetailVS  
+  Precache = CausticsVS
+  Precache = ParticlePS
+  Precache = MethaGenVS
+  Precache = MethaGenPS  
+  Precache = WaterSurfaceVS
+  Precache = WaterSurfacePS 
+  
+  Precache = PostMotionBlurVS
+  Precache = PostMotionBlurPS
+  Precache = PostSunShaftsPS
+  Precache = SpriteDilatePS
+  Precache = ShadowMaskGenPS
+  
+  Precache = HDRPostProcessVS
+  Precache = HDRPostProcessPS
+  Precache = FogPostProcessPS
+  Precache = PostProcessGameVS
+  Precache = PostProcessGamePS
+
+  Precache = DistanceCloudsPS
+
+	Precache = SSGI_PS
+
+	Precache = DeferredLightPassPS
+}
+
+Property
+{
+  Name = %_RT_PER_INSTANCE_CB_TEMP
+  Mask = 0x100000
+  AutoPrecache
+  Precache = GeneralVS
+  Precache = ClothVS
+  Precache = SkinVS
+  Precache = HairVS
+  Precache = EyeVS
+  Precache = GlassVS
+  Precache = VegetationVS
+  Precache = VegetationPS
+  Precache = ShadowVS
+  Precache = ShadowGenVS
+  Precache = ShadowGenPS
+  Precache = ZVS
+  Precache = ZPS
+  Precache = ZGS
+  Precache = DetailVS
+  Precache = GlowVS
+  Precache = MotionBlurVS
+  Precache = CausticsVS
+  Precache = CustomRenderVS
+  Precache = DebugPassVS
+  Precache = GeneralHS
+  Precache = GeneralDS
+}
+
+Property
+{
+  Name = %_RT_INSTANCING_ATTR
+  Mask = 0x200000
+  Precache = GeneralVS
+  Precache = ClothVS  
+	Precache = SkinVS 	
+	Precache = HairVS 
+  Precache = EyeVS
+  Precache = GlassVS
+  Precache = VegetationVS    
+  Precache = ShadowVS
+  Precache = ShadowGenVS  
+  Precache = ZVS
+  Precache = DetailVS  
+  Precache = GlowVS
+  Precache = MotionBlurVS
+  Precache = FurVS
+  Precache = SoftAlphaTestPassVS
+  Precache = CausticsVS
+  Precache = CustomRenderVS
+  Precache = MethaGenVS
+	Precache = DebugPassVS
+}
+
+Property
+{
+  Name = %_RT_ENVIRONMENT_CUBEMAP
+  Mask = 0x400000
+  Precache = ParticlePS
+
+  Precache = GeneralVS
+  Precache = ClothVS  
+	Precache = SkinVS 	
+	Precache = HairVS 
+  Precache = EyeVS
+  Precache = GlassVS
+  Precache = VegetationVS    
+  Precache = ShadowVS
+  Precache = ShadowGenVS  
+  Precache = ZVS
+  Precache = DetailVS  
+  Precache = GlowVS
+  Precache = MotionBlurVS
+  Precache = FurVS
+  Precache = SoftAlphaTestPassVS
+  Precache = CausticsVS
+  Precache = CustomRenderVS
+  Precache = MethaGenVS
+  Precache = DebugPassVS
+}
+
+Property
+{
+  Name = %_RT_TILED_SHADING
+  Mask = 0x800000
+	Precache = EyePS
+	Precache = HairPS
+	Precache = GlassPS
+}
+
+Property
+{
+  Name = %_RT_NO_TESSELLATION
+  Mask = 0x2000000
+  Precache = GeneralVS
+  Precache = GeneralPS
+  Precache = ShadowGenVS  
+  Precache = ShadowGenPS  
+  Precache = ZVS
+  Precache = ZPS
+  Precache = MotionBlurVS
+  Precache = MotionBlurPS
+  Precache = EffectLayerVS
+  Precache = GlowVS
+  Precache = DetailVS
+  Precache = CustomRenderVS
+  Precache = SkinVS
+  Precache = SkinPS
+  Precache = VegetationVS
+  Precache = VegetationHS
+  Precache = VegetationDS
+  Precache = VegetationPS
+  Precache = WaterSurfaceVS
+  Precache = WaterSurfacePS
+  
+  Precache = ParticleVS
+  Precache = ParticleHS
+  Precache = ParticleDS
+  Precache = ParticlePS
+  Precache = DebugPassVS
+}
+
+Property
+{
+  Name = %_RT_AMBIENT_OCCLUSION
+  Mask = 0x8000000
+  // hack - disable caching
+  Precache = DetailVS
+  Precache = TerrainPS // vlad: reguired for terrain base normal mapping
+  Precache = TerrainVS  
+  Precache = VoxTerrainPS
+  Precache = VoxTerrainVS
+  Precache = SpritePS
+}
+
+Property
+{
+  Name = %_RT_MSAA_QUALITY1
+  Mask = 0x1000000
+  AutoPrecache
+  
+  Precache = ZPS
+  Precache = ZVS
+  Precache = GeneralVS
+  Precache = GeneralPS
+  Precache = VegetationVS
+  Precache = VegetationPS
+  Precache = TerrainVS
+  Precache = TerrainPS
+  Precache = ClothVS
+  Precache = ClothPS
+  Precache = SkinVS
+  Precache = SkinPS
+  Precache = HairVS
+  Precache = HairPS
+  Precache = EyeVS
+  Precache = EyePS
+	Precache = ParticlePS
+	Precache = DeferredRainPS
+	Precache = ParticleImposterPS
+
+  Precache = FogPostProcessPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = WaterFogVolume_PS
+  Precache = HDRPostProcessPS
+  Precache = DeferredPassVS
+  Precache = DeferredPassPS
+  Precache = ShadowMaskGenVS
+  Precache = ShadowMaskGenPS
+  Precache = DeferredLightPassVS
+  Precache = DeferredLightPassPS
+  Precache = ResolveVS
+  Precache = ResolvePS
+  Precache = PostProcessGameVS
+  Precache = PostProcessGamePS
+}
+
+Property
+{
+  Name = %_RT_MSAA_SAMPLEFREQ_PASS
+  Mask = 0x100000000
+  AutoPrecache
+  
+  Precache = ZPS
+  Precache = ZVS
+  Precache = GeneralVS
+  Precache = GeneralPS
+  Precache = VegetationVS
+  Precache = VegetationPS
+  Precache = TerrainVS
+  Precache = TerrainPS
+  Precache = ClothVS
+  Precache = ClothPS
+  Precache = SkinVS
+  Precache = SkinPS
+  Precache = HairVS
+  Precache = HairPS
+  Precache = EyeVS
+  Precache = EyePS
+
+  Precache = FogPostProcessPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = WaterFogVolume_PS
+  Precache = HDRPostProcessPS
+  Precache = DeferredPassPS
+  Precache = ShadowMaskGenVS
+  Precache = ShadowMaskGenPS
+  Precache = DeferredLightPassVS
+  Precache = DeferredLightPassPS
+  Precache = DeferredPassVS
+  Precache = DeferredPassPS
+  Precache = ResolveVS
+  Precache = ResolvePS
+	Precache = DeferredRainPS
+	Precache = ParticleImposterPS
+}
+
+Property
+{
+  Name = %_RT_LIGHT_TEX_PROJ
+  Mask = 0x10000000
+  Precache = DeferredLightPassPS
+	
+  Precache = ParticleVS
+  Precache = ParticleDS
+  Precache = ConeTraceDiffusePS
+}
+
+Property
+{
+  Name = %_RT_VERTEX_VELOCITY
+  Mask = 0x40000000
+  Precache = ZVS
+	Precache = MotionBlurVS	
+}
+
+Property
+{
+  Name = %_RT_SKELETON_SSD
+  Mask = 0x80000000
+  Precache = GeneralVS
+  Precache = ClothVS
+	Precache = SkinVS 
+	Precache = HairVS	
+  Precache = EyeVS
+  Precache = GlassVS
+  Precache = VegetationVS    
+  Precache = ShadowVS
+  Precache = ShadowGenVS
+  Precache = ZVS
+  Precache = DetailVS
+  Precache = GlowVS
+  Precache = MotionBlurVS
+  Precache = FurVS
+  Precache = SoftAlphaTestPassVS
+  Precache = CausticsVS
+  Precache = CustomRenderVS
+  Precache = EffectLayerVS
+  Precache = CloakVS
+  Precache = MethaGenVS
+	Precache = DebugPassVS
+	Precache = CloakVS
+}
+
+Property
+{
+  Name = %_RT_SKELETON_SSD_LINEAR
+  Mask = 0x2000000000000
+  Precache = GeneralVS
+  Precache = ClothVS
+	Precache = SkinVS 
+	Precache = HairVS	
+  Precache = EyeVS
+  Precache = GlassVS
+  Precache = VegetationVS    
+  Precache = ShadowVS
+  Precache = ShadowGenVS
+  Precache = ZVS
+  Precache = DetailVS
+  Precache = GlowVS
+  Precache = MotionBlurVS
+  Precache = FurVS
+  Precache = SoftAlphaTestPassVS
+  Precache = CausticsVS
+  Precache = CustomRenderVS
+  Precache = EffectLayerVS
+  Precache = CloakVS
+  Precache = MethaGenVS
+	Precache = DebugPassVS
+	Precache = CloakVS
+}
+
+Property
+{
+  Name = %_RT_BLEND_WITH_TERRAIN_COLOR
+  Mask = 0x400000000
+	Precache = ZVS
+	Precache = ZPS
+  Precache = VegetationVS
+  Precache = VegetationHS
+  Precache = VegetationDS
+  Precache = VegetationPS
+  Precache = SpritePS
+  Precache = ConeTraceDiffusePS
+}
+
+Property
+{
+  Name = %_RT_MOTION_BLUR
+  Mask = 0x800000000
+  Precache = ZVS
+  Precache = ZGS
+  Precache = ZPS
+  Precache = GeneralHS
+  Precache = GeneralDS
+  Precache = ConeTraceDiffusePS
+}
+
+Property
+{
+  Name = %_RT_OBJ_IDENTITY
+  Mask = 0x4000000000
+  Precache = TerrainVS
+  Precache = TerrainPS
+  Precache = VoxTerrainPS
+  Precache = VoxTerrainVS
+  Precache = ZVS
+  Precache = ShadowGenVS
+  Precache = CausticsVS
+  Precache = CustomRenderVS
+}
+
+Property
+{
+  Name = %_RT_LIGHTVOLUME0
+  Mask = 0x8000000000
+  Precache = ParticleVS
+  Precache = ParticleHS
+  Precache = ParticleDS
+  Precache = ParticlePS
+  Precache = DeferredLightPassPS
+  Precache = DeferredPassPS
+  Precache = VolumeLightInjectionCS
+  Precache = RenderDownscaledShadowMapPS
+}
+
+Property
+{
+  Name = %_RT_LIGHTVOLUME1
+  Mask = 0x2000000000
+  Precache = VolumeLightInjectionCS
+  Precache = RenderDownscaledShadowMapPS
+}
+
+Property
+{
+  Name = %_RT_NOZPASS
+  Mask = 0x10000000000
+  Precache = VegetationVS
+  Precache = VegetationHS
+  Precache = VegetationDS
+  Precache = VegetationPS
+  Precache = SpritePS
+}
+
+Property
+{
+  Name = %_RT_SHADOW_MIXED_MAP_G16R16
+  Mask = 0x20000000000
+  Precache = ShadowPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = ShadowVS
+  Precache = WaterFogVolume_PS
+
+  Precache = ShadowMaskGenVS
+  Precache = ShadowMaskGenPS
+}
+
+Property
+{
+  Name = %_RT_MSAA_QUALITY  
+  Mask = 0x40000000000
+  AutoPrecache
+  
+  Precache = ZPS
+  Precache = ZVS
+  Precache = GeneralVS
+  Precache = GeneralPS
+  Precache = VegetationVS
+  Precache = VegetationPS
+  Precache = TerrainVS
+  Precache = TerrainPS
+  Precache = ClothVS
+  Precache = ClothPS
+  Precache = SkinVS
+  Precache = SkinPS
+  Precache = HairVS
+  Precache = HairPS
+  Precache = EyeVS
+  Precache = EyePS
+	Precache = ParticlePS
+	Precache = DeferredRainPS
+	Precache = ParticleImposterPS
+
+  Precache = FogPostProcessPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = WaterFogVolume_PS
+  Precache = HDRPostProcessPS
+  Precache = DeferredPassVS
+  Precache = DeferredPassPS
+  Precache = ShadowMaskGenVS
+  Precache = ShadowMaskGenPS
+  Precache = DeferredLightPassVS
+  Precache = DeferredLightPassPS
+  Precache = ResolveVS
+  Precache = ResolvePS
+  Precache = PostProcessGameVS
+  Precache = PostProcessGamePS
+}
+
+Property
+{
+  Name = %_RT_SHADOW_JITTERING
+  Mask = 0x80000000000
+  Precache = ShadowVS
+  Precache = ShadowPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = TerrainPS
+  Precache = WaterFogVolume_PS
+  
+  Precache = ShadowMaskGenVS
+  Precache = ShadowMaskGenPS
+	
+	Precache = HairPS
+	Precache = EyePS
+}
+
+Property
+{
+  Name = %_RT_HDR_ENCODE
+  Mask = 0x100000000000
+  //Precache = GeneralPS
+  Precache = TerrainPS
+  Precache = VegetationPS
+  Precache = IcePS
+	Precache = EffectLayerPS
+  
+  Precache = FogPostProcessPS
+}
+
+Property
+{
+  Name = %_RT_SAMPLE0
+  Mask = 0x200000000000
+  Precache = ShadowGenVS
+  Precache = ShadowGenPS
+  Precache = ShadowPS
+  Precache = CustomRenderVS
+  Precache = CustomRenderPS
+  Precache = SkinPS
+  Precache = GlassPS
+
+  Precache = FogPostProcessPS
+  Precache = HDRPostProcessPS
+  Precache = ParticleVS
+  Precache = ParticleHS
+  Precache = ParticleDS
+  Precache = ParticlePS
+  Precache = PostHUD3D_VS
+  Precache = PostHUD3D_PS
+  Precache = PostMotionBlurVS
+  Precache = PostMotionBlurPS
+  Precache = PostAA_PS
+  Precache = PostSunShaftsPS
+  Precache = PostProcessGameVS
+  Precache = PostProcessGamePS
+  Precache = PostDofPS
+  Precache = PostEffectsVS
+  Precache = PostEffectsPS
+  Precache = ThermalVisionPS
+  Precache = DeferredDecalPassPS
+  Precache = DeferredLightPassPS
+  Precache = DeferredPassPS
+  Precache = PostSSGI_PS
+  Precache = BlurMaxPassPS
+  Precache = SceneRainVS
+  Precache = SceneRainPS
+  Precache = DeferredRainPS
+  Precache = EffectLayerPS
+  Precache = ResolveVS
+  Precache = ResolvePS
+  
+  Precache = WaterSurfaceVS
+  Precache = WaterSurfacePS
+  Precache = WaterSurfaceHS
+  Precache = WaterSurfaceDS
+  Precache = WaterFogVolume_PS
+
+	Precache = BeamPS
+	Precache = LensOpticsVS
+
+	Precache = TiledShadingCS
+	Precache = VolumeLightInjectionCS
+	Precache = VolumetricCloudsPS
+	Precache = ReprojectCloudsPS
+}
+
+// Reserved for post processes/deferred - do not use for light/common shaders
+Property
+{
+  Name = %_RT_SAMPLE5
+  Mask = 0x400000000000
+  
+  Precache = ZVS
+  Precache = GeneralVS
+  Precache = GeneralHS
+  Precache = GeneralDS
+  
+  Precache = HDRPostProcessPS
+  Precache = PostSunShaftsPS
+  Precache = PostProcessGamePS
+  Precache = DeferredPassPS
+	Precache = DeferredPassVS
+	Precache = DeferredLightPassPS
+	Precache = PostMotionBlurPS
+  Precache = DeferredDecalPassPS
+  Precache = ResolvePS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = CustomRenderHS
+  Precache = CustomRenderDS
+  Precache = CustomRenderPS
+  Precache = WaterSurfaceVS
+  Precache = WaterSurfacePS
+  Precache = WaterSurfaceHS
+  Precache = WaterSurfaceDS
+  Precache = WaterFogVolume_PS
+
+	Precache = BeamPS
+	Precache = LensOpticsVS
+	
+	Precache = TiledShadingCS
+
+	Precache = VolumeLightInjectionCS
+	Precache = ReprojectVolumetricFogCS
+	Precache = VolumetricCloudsPS
+}
+
+Property
+{
+  Name = %_RT_HW_PCF_COMPARE
+  Mask = 0x800000000000
+  Precache = ShadowVS
+  Precache = ShadowPS
+  Precache = FogPassVolShadowsInterleavePassPS
+  Precache = ShadowGenVS
+  Precache = ShadowGenPS
+  
+  Precache = DeferredLightPassPS
+  Precache = ShadowMaskGenVS
+  Precache = ShadowMaskGenPS
+
+  Precache = WaterFogVolume_PS
+  Precache = DemosaicDiffusePS
+  Precache = ConeTraceDiffusePS
+}
+
+Property
+{
+  Name = %_RT_REVERSE_DEPTH
+	Mask = 0x8000000000000
+	Precache = DistanceCloudsVS
+	Precache = PostProcessGamePS
+	Precache = TerrainVS
+	Precache = ZVS
+	Precache = ZPS
+	Precache = UnderwaterGodRays
+	Precache = WaterSurfaceVS
+	Precache = WaterFogVolume_VS
+	Precache = GeneralVS
+	Precache = LensOpticsVS
+}
+
+Property
+{
+  Name = %_RT_DEBUG0
+  Mask = 0x10000000000000
+  
+  Runtime
+}
+
+Property
+{
+  Name = %_RT_DEBUG1
+  Mask = 0x20000000000000
+  Runtime
+}
+
+Property
+{
+  Name = %_RT_DEBUG2
+  Mask = 0x40000000000000
+  Runtime
+}
+
+Property
+{
+  Name = %_RT_DEBUG3
+  Mask = 0x80000000000000  
+  Runtime
+}
+
+Property
+{
+  Name = %_RT_CUBEMAP0
+  Mask = 0x100000000000000
+  Precache = ShadowVS
+  Precache = ShadowPS
+  Precache = ShadowGenPS
+  Precache = ShadowGenVS
+  
+  Precache = PostSunShaftsPS
+  Precache = PostProcessGamePS
+  
+  Precache = DeferredDecalPassVS
+  Precache = DeferredDecalPassPS
+  Precache = DeferredLightPassVS
+  Precache = DeferredLightPassPS
+  Precache = DeferredPassVS
+  Precache = DeferredPassPS
+  
+  Precache = WaterFogVolume_PS
+  Precache = TiledShadingCS
+}
+
+Property
+{
+  Name = %_RT_SAMPLE4
+  Mask = 0x1000000000000000
+  Precache = FrozenVS
+  Precache = FrozenPS
+  Precache = ShadowGenVS
+  Precache = ShadowGenPS
+	Precache = PostAA_PS
+  
+  Precache = HDRPostProcessPS
+  Precache = PostProcessGamePS
+  Precache = DeferredLightPassPS
+  Precache = DeferredPassPS
+  Precache = PostSunShaftsPS
+  Precache = PostMotionBlurPS
+
+	Precache = WaterSurfaceVS
+  Precache = WaterSurfacePS
+  Precache = WaterSurfaceHS
+  Precache = WaterSurfaceDS
+  Precache = WaterFogVolume_PS
+	Precache = DeferredDecalPassPS
+
+  Precache = BeamPS
+  Precache = LensOpticsPS
+	
+	Precache = TiledShadingCS
+
+  Precache = DemosaicDiffusePS
+  Precache = ConeTraceDiffusePS
+  Precache = DiffuseUpScalePS
+
+	Precache = VolumeLightInjectionCS
+	Precache = FogPassVolShadowsInterleavePassPS
+	Precache = CloudShadowGenCS
+	Precache = VolumetricCloudsPS
+}
+
+Property
+{
+  Name = %_RT_SPRITE
+  Mask = 0x2000000000000000
+  Precache = VegetationVS
+  Precache = VegetationPS
+  Precache = ParticleVS
+  Precache = ParticleHS
+  Precache = ParticleDS
+  Precache = ConeTraceDiffusePS
+  Precache = DemosaicPS
+}

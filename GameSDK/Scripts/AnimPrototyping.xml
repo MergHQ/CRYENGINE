@@ -1,0 +1,268 @@
+<ANIMPROTO>
+	<AIMPOSES> <!-- Anims with names containing these case sensitive names have tweaned aimposes auto generated.  -->
+		<SUBSTR2 STR_1="AimPoses_" STR_2="" />
+		<SUBSTR2 STR_1="AimPoses_" STR_2="_hmg_" AimDirScale="1.0" />
+		<SUBSTR2 STR_1="AimPoses_" STR_2="_pistol_" AimDirScale="0.0" />
+		<SUBSTR2 STR_1="AimPoses_" STR_2="_rifle_" AimDirScale="0.2" />
+		<SUBSTR2 STR_1="stand_" STR_2="AimPoses_" AimDirScale="0.0" 
+			BSpine0="1.0" 
+			BSpine1="1.0" 
+			BSpine2="1.0" 
+			BSpine3="1.0" 
+			BNeck="1.0" 
+			BRClavicle="1.0" 
+			BRUpperArm="1.0" 
+			BRForeArm="1.0" 
+			BRHand="1.0" 
+			BWeaponBone="1.0" 
+			BHead="1.0" 
+			BLClavicle="0.0" 
+			BLUpperArm="0.0" 
+			BLForeArm="0.0" 
+			BLHand="0.0" 
+		/>
+	</AIMPOSES>
+    
+	
+	
+	<FOOTPLANT_TABLE> <!-- These anim assets are added to the MultipleFootPlant lookup tables. -->
+	    
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.505" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.542" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.464" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.523" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_nw_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+
+		
+		
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.505" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.542" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+    
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.464" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.523" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_hmg_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        
+		
+		
+		<FOOTPLANT ASSET="stand_tac_runStart_rifle_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rifle_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.505" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rifle_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.542" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rifle_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rifle_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rifle_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        
+		<FOOTPLANT ASSET="stand_tac_runStart_rifle_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.464" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rifle_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rifle_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.523" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rifle_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rifle_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rifle_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        
+		
+		
+		<FOOTPLANT ASSET="stand_tac_runStart_pistol_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_pistol_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.505" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_pistol_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.542" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_pistol_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_pistol_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_pistol_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        
+		<FOOTPLANT ASSET="stand_tac_runStart_pistol_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.464" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_pistol_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_pistol_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.523" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_pistol_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_pistol_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_pistol_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        
+		
+		
+		<FOOTPLANT ASSET="stand_tac_runStart_rocket_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rocket_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.505" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rocket_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.542" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rocket_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rocket_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rocket_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        
+		<FOOTPLANT ASSET="stand_tac_runStart_rocket_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.464" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rocket_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rocket_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.523" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rocket_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rocket_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_runStart_rocket_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        
+		
+		
+		
+		<FOOTPLANT ASSET="relaxed_tac_runStart_nw_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.427" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="relaxed_tac_runStart_nw_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.453" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="relaxed_tac_runStart_nw_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="relaxed_tac_runStart_nw_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.703" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="relaxed_tac_runStart_nw_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.716" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="relaxed_tac_runStart_nw_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.715" D="1.000" E="1.000" />
+        
+		
+		<FOOTPLANT ASSET="relaxed_tac_walkStart_nw_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.427" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="relaxed_tac_walkStart_nw_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.453" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="relaxed_tac_walkStart_nw_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="relaxed_tac_walkStart_nw_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.703" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="relaxed_tac_walkStart_nw_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.716" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="relaxed_tac_walkStart_nw_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.715" D="1.000" E="1.000" />
+        
+		
+		
+		<FOOTPLANT ASSET="stand_tac_walkStart_nw_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_nw_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.413" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_nw_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.500" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_nw_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.763" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_nw_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.756" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_nw_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.675" D="1.000" E="1.000" />
+        
+		<FOOTPLANT ASSET="stand_tac_walkStart_hmg_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_hmg_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.413" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_hmg_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.500" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_hmg_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.763" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_hmg_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.756" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_hmg_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.675" D="1.000" E="1.000" />
+        
+		<FOOTPLANT ASSET="stand_tac_walkStart_rifle_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_rifle_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.413" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_rifle_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.500" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_rifle_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.763" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_rifle_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.756" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_rifle_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.675" D="1.000" E="1.000" />
+        
+		<FOOTPLANT ASSET="stand_tac_walkStart_pistol_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_pistol_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.413" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_pistol_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.500" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_pistol_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.763" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_pistol_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.756" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_pistol_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.675" D="1.000" E="1.000" />
+        
+		<FOOTPLANT ASSET="stand_tac_walkStart_rocket_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_rocket_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.413" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_rocket_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.500" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_rocket_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.763" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_rocket_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.756" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stand_tac_walkStart_rocket_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.675" D="1.000" E="1.000" />
+        
+		
+		
+		<FOOTPLANT ASSET="stealth_tac_runStart_nw_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_nw_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_nw_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.505" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_nw_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_nw_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.542" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_nw_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_nw_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.464" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_nw_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_nw_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_nw_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_nw_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.523" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_nw_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.505" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.542" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.464" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.523" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_hmg_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.505" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.542" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.464" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.523" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rifle_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.505" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.542" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.464" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.523" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_pistol_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_fwd_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_fwd_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_lft_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.505" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_rgt_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_rev_slow_lf_3p_01" SEG_NO="2" A="0.000" B="0.542" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_rev_slow_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.464" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.460" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.290" C="0.790" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.523" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_runStart_rocket_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.270" C="0.770" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_nw_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_nw_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.763" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_nw_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.413" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_nw_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.756" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_nw_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.500" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_nw_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.675" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rifle_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rifle_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.763" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rifle_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.413" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rifle_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.756" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rifle_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.500" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rifle_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.675" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_pistol_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_pistol_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.763" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_pistol_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.413" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_pistol_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.756" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_pistol_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.500" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_pistol_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.675" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_hmg_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_hmg_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.763" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_hmg_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.413" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_hmg_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.756" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_hmg_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.500" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_hmg_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.675" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rocket_fwd_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.457" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rocket_fwd_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.763" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rocket_lft_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.413" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rocket_rgt_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.756" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rocket_rev_fast_lf_3p_01" SEG_NO="2" A="0.000" B="0.500" C="1.000" D="1.000" E="1.000" />
+        <FOOTPLANT ASSET="stealth_tac_walkStart_rocket_rev_fast_rf_3p_01" SEG_NO="3" A="0.000" B="0.250" C="0.675" D="1.000" E="1.000" />
+    </FOOTPLANT_TABLE>
+
+
+	<ALIAS_TABLE> <!-- Anywhere code needs to use specific asset names for prototyping, it will now use aliases. Purpose of the asset MUST be documented. -->
+		<ALIAS SYMBOL="lieAnimName" ASSET="prone_toCombat_nw_01" />  <!-- CryAnimation:Skeleton.cpp: fall and play? Recovering from the ground? --> 
+		<ALIAS SYMBOL="fallingHead" ASSET="falling_head_nw_up_01" />  <!-- CryAnimation:Skeleton.cpp: fall and play? Landing on your head? --> 
+	</ALIAS_TABLE>
+
+	<PROJECT_OPTION_TABLE> <!-- Enable/Disable project/milestone specific code. -->
+		<!-- <OPTION name="G02_MS666_DISABLE_AIMING" value="0" /> -->
+		<!-- <OPTION name="G02_MS667_DISABLE_IK" value="0" /> -->
+	</PROJECT_OPTION_TABLE>
+
+	</ANIMPROTO>

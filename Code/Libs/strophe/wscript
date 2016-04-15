@@ -1,0 +1,16 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target          = 'strophe', 
+		vs_filter       = 'Libs',
+		file_list       = 'strophe.waf_files',
+		exclude_from_static_code_analyzer = True,
+		use_module      = [ 'expat' ],
+		includes        = [ Path('Code/SDKs/libstrophe')],
+		module_provides = dict(
+			includes = [ Path('Code/SDKs/libstrophe')],
+		),
+		win_cflags      = [ '/W0' ], # do not warn on 3rdParty code
+	)

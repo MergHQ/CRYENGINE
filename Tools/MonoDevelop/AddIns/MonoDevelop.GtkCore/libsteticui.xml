@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>libsteticui</name>
+    </assembly>
+    <members>
+        <member name="P:Stetic.EncodingUtility.UTF8NoBom">
+            This is so we can write XML files on .NET in a compatible way with Mono,
+            since .NET's XmlWriter writes the BOM but Mono's does not.
+        </member>
+    </members>
+</doc>

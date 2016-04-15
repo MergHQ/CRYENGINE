@@ -1,0 +1,277 @@
+<Communications>
+
+  <Config name="Basic">
+
+    <Communication name="comm_idle_interested" finishMethod="voice" blocking="none">
+      <Variation voiceName="idle_interested" />
+    </Communication>
+
+	<!-- Combat unknown sound contact -->
+	<Communication name="comm_alert_hear_something" finishMethod="animation" blocking="all">
+	  <Variation animationName="RA_hearunknown" voiceName="idle_interested" />
+      <Variation animationName="RA_hearunknown1" voiceName="idle_interested" />
+      <Variation animationName="RA_hearunknown2" voiceName="idle_interested" />
+      <Variation animationName="RA_hearunknown3" voiceName="idle_interested" />
+    </Communication>
+
+    <Communication name="comm_alert_hear_unknown_target_first" finishMethod="animation" blocking="all" forceAnimation="1">
+      <Variation animationName="RA_hearunknown" voiceName="alert_hear_unknown_target_first" />
+      <Variation animationName="RA_hearunknown1" voiceName="alert_hear_unknown_target_first" />
+      <Variation animationName="RA_hearunknown2" voiceName="alert_hear_unknown_target_first" />
+      <Variation animationName="RA_hearunknown3" voiceName="alert_hear_unknown_target_first" />
+    </Communication>
+
+    <Communication name="comm_alert_hear_unknown_target_first_response" finishMethod="animation" blocking="all">
+      <Variation animationName="RA_fanout_ub" voiceName="alert_hear_unknown_target_first_response" />
+    </Communication>
+
+    <Communication name="comm_alert_hear_unknown_threat_first" finishMethod="voice" blocking="none">
+      <Variation voiceName="alert_hear_unknown_target_first" />
+    </Communication>
+
+    <Communication name="comm_alert_hear_unknown_target_again" finishMethod="animation" blocking="all">
+		  <Variation animationName="RA_signalstop" voiceName="alert_hear_unknown_target_again" />
+		</Communication>
+
+		<Communication name="comm_alert_hear_unknown_target_relaxed_again" finishMethod="voice" blocking="none">
+		  <Variation voiceName="alert_hear_unknown_target_again" />
+		</Communication>
+
+    <Communication name="comm_alert_hear_suspected_target" finishMethod="animation" blocking="all" forceAnimation="1">
+      <Variation animationName="RA_suspected" voiceName="idle_interested" />
+      <Variation animationName="RA_suspected1" voiceName="idle_interested" />
+    </Communication>
+
+    <!-- Combat unknown visual contact -->
+		<Communication name="comm_alert_see_unknown_target_first" finishMethod="animation" blocking="all">
+		  <Variation animationName="RA_stop_ub" voiceName="alert_see_unknown_target_first" />
+		</Communication>
+
+    <Communication name="comm_alert_see_unknown_target_first_response" finishMethod="animation" blocking="all">
+      <Variation animationName="RA_follow_ub" voiceName="alert_see_unknown_target_first_response" />
+    </Communication>
+
+    <Communication name="comm_alert_see_unknown_target_nearby_first" finishMethod="voice" blocking="none">
+		  <Variation voiceName="alert_see_unknown_target_first" />
+		</Communication>
+
+		<Communication name="comm_alert_see_unknown_target_again" finishMethod="voice" blocking="all">
+		  <Variation animationName="RA_stop_ub" voiceName="alert_see_unknown_target_again" />
+		</Communication>
+
+    <Communication name="comm_idle_unknown_target_nothing" finishMethod="voice" blocking="none">
+      <Variation voiceName="idle_unknown_target_nothing" />
+    </Communication>
+
+		<Communication name="comm_idle_unknown_target_nothing_response" finishMethod="voice" blocking="none">
+			<Variation animationName="RA_cometome_ub" voiceName="idle_unknown_target_nothing_response" />
+		</Communication>
+
+    <Communication name="comm_idle_target_gone" finishMethod="voice" blocking="none">
+      <Variation voiceName="idle_target_gone" />
+    </Communication>
+
+    <Communication name="comm_idle_target_gone_response" finishMethod="voice" blocking="none">
+      <Variation animationName="RA_cometome_ub" voiceName="idle_target_gone_response" />
+    </Communication>
+
+		<Communication name="comm_surprised" finishMethod="voice" blocking="all">
+			<Variation animationName="RA_surprised" voiceName="surprised" />
+		</Communication>
+
+    <Communication name="comm_incoming_frag_grenade" finishMethod="voice" blocking="fire">
+      <Variation voiceName="incoming_frag_grenade" />
+    </Communication>
+
+    <Communication name="comm_avoid_object" finishMethod="voice" blocking="fire">
+      <Variation voiceName="avoid_object" />
+    </Communication>
+
+    <Communication name="comm_throwing_grenade" finishMethod="voice" blocking="none">
+      <Variation voiceName="throwing_frag_grenade" />
+    </Communication>
+
+    <Communication name="comm_alert_see_something" finishMethod="voice" blocking="all">
+		  <Variation animationName="RA_stop_ub" voiceName="alert_see_something" />
+		</Communication>
+
+    <Communication name="comm_player_armor" finishMethod="voice" blocking="none">
+      <Variation voiceName="player_armor" />
+    </Communication>
+
+		<!-- Player cloaks/uncloaks -->
+
+		<Communication name="comm_player_cloaks" finishMethod="voice" blocking="none">
+      <Variation voiceName="player_cloaks" />
+    </Communication>
+
+    <Communication name="comm_player_uncloaks_nearby" finishMethod="animation" blocking="all" forceAnimation="1">
+      <Variation animationName="RA_surprised" voiceName="player_uncloaks" />
+    </Communication>
+
+    <Communication name="comm_player_uncloaks" finishMethod="voice" blocking="none">
+      <Variation voiceName="player_uncloaks" />
+    </Communication>
+
+		<!-- Combat alerts (various) -->
+		<Communication name="comm_alert_target_lost_response" finishMethod="voice" blocking="all">
+		  <Variation animationName="RA_searcharound_ub" voiceName="alert_target_lost_response" />
+      <Variation animationName="RA_advanceright_ub" voiceName="alert_target_lost_response" />
+      <Variation animationName="RA_advanceleft_ub" voiceName="alert_target_lost_response" />
+		</Communication>
+
+    <Communication name="comm_aim_observe" finishMethod="animation" blocking="all">
+      <Variation animationName="RA_aim" />
+    </Communication>
+
+    <Communication name="comm_alert_radio_death_search" finishMethod="voice" blocking="none">
+		  <!-- TODO: Add direction basis for search -->
+		  <Variation animationName="RA_advanceright_ub" voiceName="alert_radio_death_search" />
+		  <Variation animationName="RA_advanceleft_ub" voiceName="alert_radio_death_search" />
+		</Communication>
+
+		<Communication name="comm_alert_radio_death_confirm" finishMethod="voice" blocking="none">
+		  <!-- TODO: Add direction basis for search -->
+		  <Variation animationName="RA_cometome_ub" voiceName="alert_radio_death_confirm" />
+		</Communication>
+
+		<Communication name="comm_alert_radio_death_sweep" finishMethod="animation" blocking="all">
+		  <!-- TODO: Add direction basis for search -->
+		  <Variation animationName="RA_radio" voiceName="alert_radio_death_sweep" />
+		</Communication>
+
+    <Communication name="comm_radio_call_reinforcements" finishMethod="animation" blocking="all">
+      <Variation animationName="RA_radio" voiceName="radio_call_reinforcements" />
+    </Communication>
+
+    <Communication name="comm_alert_radio_death_first" finishMethod="animation" blocking="all">
+      <Variation animationName="RA_radio" voiceName="alert_radio_death_first" />
+    </Communication>
+
+    <Communication name="comm_alert_radio_death_again" finishMethod="animation" blocking="all">
+      <Variation animationName="RA_radio" voiceName="alert_radio_death_first" />
+    </Communication>
+
+    <Communication name="comm_alert_radio_death_search_response" finishMethod="voice" blocking="all">
+      <Variation voiceName="alert_radio_death_search_response" />
+    </Communication>
+
+    <Communication name="comm_alert_point_search" finishMethod="animation" blocking="all" forceAnimation="1">
+      <Variation animationName="RA_heargunfire" />
+      <Variation animationName="RA_heargunfire1" />
+      <Variation animationName="RA_hearunknown3"/>
+    </Communication>
+
+    <Communication name="comm_alert_hear_gunfire" finishMethod="voice" blocking="none">
+      <Variation voiceName="alert_hear_gunfire" />
+    </Communication>
+
+    <Communication name="comm_alert_hear_gunfire_response" finishMethod="voice" blocking="all">
+      <Variation animationName="RA_searcharound_ub" voiceName="alert_hear_gunfire_response" />
+    </Communication>
+
+    <Communication name="comm_alert_sweep" finishMethod="animation" blocking="all" forceAnimation="1">
+      <Variation animationName="RA_heargunfire" />
+      <Variation animationName="RA_heargunfire1" />
+      <Variation animationName="RA_hearunknown2"/>
+      <Variation animationName="RA_hearunknown3"/>
+    </Communication>
+
+    <Communication name="comm_alert_point_checked" finishMethod="voice" blocking="none">
+      <Variation voiceName="alert_point_checked" />
+    </Communication>
+	
+	<Communication name="comm_see_threat_position_but_none_there" finishMethod="animation" blocking="all" forceAnimation="1">
+		<Variation animationName="RA_audioclear" voiceName="alert_point_checked" />
+	</Communication>
+	
+	<Communication name="comm_at_threat_position_without_seeing_anything" finishMethod="animation" blocking="all" forceAnimation="1">
+		<Variation voiceName="alert_point_checked" />
+	</Communication>
+
+    <Communication name="comm_alert_player_seek" finishMethod="animation" blocking="all">
+      <Variation animationName="RA_advanceright_ub" voiceName="alert_player_seek" />
+      <Variation animationName="RA_advanceleft_ub" voiceName="alert_player_seek" />
+    </Communication>
+
+    <Communication name="comm_alert_alien_seek" finishMethod="animation" blocking="all">
+      <Variation animationName="RA_advanceright_ub" voiceName="alert_alien_seek" />
+      <Variation animationName="RA_advanceleft_ub" voiceName="alert_alien_seek" />
+    </Communication>
+
+		<!-- Combat (various) -->
+		<Communication name="comm_combat_move" finishMethod="voice" blocking="none">
+			<Variation animationName="RA_follow_ub" voiceName="combat_move" />
+		</Communication>
+
+		<Communication name="comm_combat_approach_target" finishMethod="voice" blocking="none">
+      <Variation animationName="RA_advanceright_ub" voiceName="combat_approach_target" />
+      <Variation animationName="RA_advanceleft_ub" voiceName="combat_approach_target" />
+		</Communication>
+
+    <Communication name="comm_move_to_defend_position" finishMethod="voice" blocking="none">
+		  <Variation voiceName="" />
+		</Communication>
+
+		<Communication name="comm_combat_defensive_circle" finishMethod="voice" blocking="none">
+		  <Variation animationName="RA_getdown_ub" voiceName="combat_retreat" />
+		</Communication>
+
+		<Communication name="comm_combat_defensive_retreat" finishMethod="voice" blocking="none">
+		  <Variation animationName="RA_cometome_ub" voiceName="combat_retreat" />
+		</Communication>
+
+    <Communication name="comm_combat_flank_target" finishMethod="voice" blocking="none">
+		  <Variation animationName="RA_advanceright_ub" voiceName="combat_flank_target" />
+		  <Variation animationName="RA_advanceleft_ub" voiceName="combat_flank_target" />
+		  <Variation animationName="RA_cometome_ub" voiceName="combat_flank_target" />
+		  <Variation animationName="RA_follow_ub" voiceName="combat_flank_target" />
+      <Variation animationName="RA_fanout_ub" voiceName="combat_flank_target" />
+    </Communication>
+
+		<!-- First contact -->
+		<Communication name="comm_combat_contact_marine_first" finishMethod="voice" blocking="none">
+		  <Variation animationName="RA_freeze_ub" voiceName="combat_contact_marine_first" />
+		</Communication>
+
+		<Communication name="comm_combat_contact_player_close" finishMethod="voice" blocking="none">
+		  <Variation voiceName="combat_contact_player_first" />
+		</Communication>
+
+		<Communication name="comm_combat_contact_player_first" finishMethod="voice" blocking="none">
+		  <Variation animationName="RA_freeze_ub" voiceName="combat_contact_player_first" />
+		</Communication>
+
+		<Communication name="comm_combat_contact_grunt_first" finishMethod="voice" blocking="none">
+		  <Variation animationName="RA_freeze_ub" voiceName="combat_contact_grunt_first" />
+		</Communication>
+
+		<!-- Misc -->
+		<Communication name="comm_check_body" finishMethod="voice" blocking="none">
+		  <Variation animationName="RA_stop_ub" voiceName="check_body" />
+		</Communication>
+
+    <Communication name="comm_falling_death" finishMethod="voice" blocking="none">
+      <Variation voiceName="falling_death" />
+    </Communication>
+
+    <Communication name="comm_combat_teammate_death" finishMethod="voice" blocking="none">
+      <Variation voiceName="combat_teammate_death" />
+    </Communication>
+
+    <!-- Testing... -->
+		<Communication name="Smoke" finishMethod="timeout" blocking="all">
+			<Variation timeout="10" animationName="smoke" animationType="action" lookAtTarget="true" />
+		</Communication>
+
+		<Communication name="AssaultCharge" finishMethod="voice" blocking="none">
+			<Variation voiceName="combat_approach_target"/>
+		</Communication>
+
+    <Communication name="Dummy" finishMethod="timeout" blocking="none">
+      <Variation timeout="2" />
+    </Communication>
+
+	</Config>
+  
+</Communications>

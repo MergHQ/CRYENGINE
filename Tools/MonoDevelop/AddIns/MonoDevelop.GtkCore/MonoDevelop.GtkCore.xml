@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.GtkCore</name>
+    </assembly>
+    <members>
+        <member name="T:MonoDevelop.GtkCore.GuiBuilder.CodeBinder">
+             This class provides several methods for managing the relation
+             between an object (e.g. a window) and the source code that will implement the
+             code for that object.
+            
+             Once created, a CodeBinder object will keep track of the class bound to the
+             object. If the class is renamed, it will properly update the object name.
+        </member>
+        <member name="M:MonoDevelop.GtkCore.GuiBuilder.CodeBinder.UpdateBindings(System.String)">
+            Synchronizes the bindings between the object and the source code
+        </member>
+        <member name="M:MonoDevelop.GtkCore.GuiBuilder.CodeBinder.BindSignal(Stetic.Signal)">
+            Adds a signal handler to the class
+        </member>
+        <member name="M:MonoDevelop.GtkCore.GuiBuilder.CodeBinder.BindToField(Stetic.Component)">
+            Adds a field to the class
+        </member>
+    </members>
+</doc>

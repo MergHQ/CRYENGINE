@@ -1,0 +1,96 @@
+<StatsConfig version='4'>
+	<group name="player">
+		<stat keyName="kills" 		keyId = '1' />
+		<stat keyName="deaths" 		keyId = '2' />
+		<stat keyName="rank" 			keyId = '3' />
+		<stat keyName="name" 			keyId = '4' />
+	</group>
+
+	<group name="server">
+		<stat keyName="hostname" 	keyId = '5' />
+		<stat keyName="mapname"		keyId = '6' />
+		<stat keyName="gametype" 	keyId = '7' />
+		<stat keyName="gamever"		keyId = '12'/>
+	</group>
+
+	<group name="player_stats">
+		<stat keyName="shots" 	keyId = '8'	/>
+		<stat keyName="hits" 		keyId = '9'	/>
+		<stat keyName="damage"	keyId = '10'/>
+		<stat keyName="melee"		keyId = '11'/>
+		<stat keyName="played"	keyId = '13'/>
+	</group>
+
+	<category name = "mode" mod = "5">
+		<stat code = "0" display = ""/>
+		<stat code = "1" display = "@ui_rules_InstantAction"	keyName="PlayedInstantAction" keyId = '14'/>
+		<stat code = "2" display = "@ui_rules_PowerStruggle"	keyName="PlayedPowerStruggle" keyId = '15'/>
+		<stat code = "3" display = "@ui_rules_TeamAction"			keyName="PlayedTeamAction" keyId = '16'/>
+	</category>
+
+	<category name = "map" mod = "16">
+		<stat code = "0" display = "" />
+		<stat code = "1" display = "Armada" 		keyName="PlayedMapArmada"	keyId='17'/>
+		<stat code = "2" display = "Outpost" 		keyName="PlayedMapOutpost" keyId='18'/>
+		<stat code = "3" display = "Quarry" 		keyName="PlayedMapQuarry" keyId='19'/>
+		<stat code = "4" display = "Steel Mill" keyName="PlayedSteelmill"	keyId='20'/>
+		<stat code = "5" display = "Beach" 			keyName="PlayedMapBeach" keyId='21'/>
+		<stat code = "6" display = "Mesa" 			keyName="PlayedMapMesa" keyId='22'/>
+		<stat code = "7" display = "Plantation" keyName="PlayedMapPlantation" keyId='23'/>
+		<stat code = "8" display = "Refinery" 	keyName="PlayedMapRefinery"	keyId='24'/>
+		<stat code = "9" display = "Shore" 			keyName="PlayedMapShore" keyId='25'/>
+	</category>
+
+	<category name = "suit_mode" mod = "5">
+		<stat code = "0" display = "" />
+		<stat code = "1" display = "@ui_qm_ARMOR" 		keyName = "UsedSuit3" keyId='26' />
+		<stat code = "2" display = "@ui_qm_STRENGTH" 	keyName = "UsedSuit1" keyId='27' />
+		<stat code = "3" display = "@ui_qm_SPEED" 		keyName = "UsedSuit0" keyId='28' />
+		<stat code = "4" display = "@ui_qm_CLOAK" 		keyName = "UsedSuit2" keyId='29' />
+	</category>
+
+	<category name = "weapon" mod = "32">
+		<stat code = "0" 	display = "" />
+		<stat code = "1" 	display = "@mp_ePistol" 			keyName = "WeaponKillsSOCOM" 				keyId='30' />
+		<stat code = "2" 	display = "@mp_eClaymore" 		keyName = "WeaponKillsClaymore" 		keyId='31' />
+		<stat code = "3" 	display = "@mp_eMine" 				keyName = "WeaponKillsAVMine" 			keyId='32' />
+		<stat code = "4" 	display = "@mp_eExplosive"		keyName = "WeaponKillsC4" 					keyId='33' />
+		<stat code = "5" 	display = "@mp_eShotgun" 			keyName = "WeaponKillsShotgun" 			keyId='34' />
+		<stat code = "6" 	display = "@mp_eSMG" 					keyName = "WeaponKillsSMG" 					keyId='35' />
+		<stat code = "7" 	display = "@mp_eFY71" 				keyName = "WeaponKillsFY71" 				keyId='36' />
+		<stat code = "8" 	display = "@mp_eSCAR" 				keyName = "WeaponKillsSCAR" 				keyId='37' />
+		<stat code = "9" 	display = "@mp_eML" 					keyName = "WeaponKillsLAW" 					keyId='38' />
+		<stat code = "10" display = "@mp_eSniper" 			keyName = "WeaponKillsDSG1" 				keyId='39' />
+		<stat code = "11" display = "@mp_eGauss" 				keyName = "WeaponKillsGausRifle" 		keyId='40' />
+		<stat code = "12" display = "@mp_eAlienWeapon" 	keyName = "WeaponKillsAlienMount" 	keyId='41' />
+		<stat code = "13" display = "@mp_eAlienMOAR" 		keyName = "WeaponKillsMOARAttach" 	keyId='42' />
+		<stat code = "14" display = "@mp_eMinigun" 			keyName = "WeaponKillsHurricane" 		keyId='43' />
+		<stat code = "15" display = "@mp_eTACLauncher" 	keyName = "WeaponKillsTACGun" 			keyId='44' />
+		<stat code = "16" display = "@mp_eFragGrenade" 	keyName = "WeaponKillsFragGrenade" 	keyId='45' />
+	</category>
+
+	<category name = "vehicle" mod = "32">
+		<stat code = "0" 	display = "" />
+		<stat code = "1" 	display = "@mp_eMOACVehicle"			keyName="UsedVehicleUS_ltv_MOAC" 						keyId='46' />
+		<stat code = "2" 	display = "@mp_eMOARVehicle" 			keyName="UsedVehicleUS_ltv_MOAR" 						keyId='47' />
+		<stat code = "3" 	display = "@mp_eSingTank" 				keyName="UsedVehicleUS_tank_Singularity" 		keyId='48' />
+		<stat code = "4" 	display = "@mp_eTACTank" 					keyName="UsedVehicleUS_tank_TACCannon" 			keyId='49' />
+		<stat code = "5" 	display = "@mp_eLightVehicle" 		keyName="UsedVehicleUS_ltv_Unarmed" 					keyId='50' />
+		<stat code = "6" 	display = "@mp_eHeavyVehicle" 		keyName="UsedVehicleUS_ltv_MP" 							keyId='51' />
+		<stat code = "7" 	display = "@mp_eGaussVehicle" 		keyName="UsedVehicleUS_ltv_Gauss" 						keyId='52' />
+		<stat code = "8" 	display = "@mp_eTruck" 						keyName="UsedVehicleAsian_truck_Hardtop_MP" 	keyId='53' />
+		<stat code = "9" 	display = "@mp_eSupplyTruck" 			keyName="UsedVehicleAsian_truck_spawntruck" 	keyId='54' />
+		<stat code = "10" display = "@mp_eSmallBoat" 				keyName="UsedVehicleUS_smallboat_MP" 				keyId='55' />
+		<stat code = "11" display = "@mp_ePatrolBoat" 			keyName="UsedVehicleAsian_patrolboat_MP" 		keyId='56' />
+		<stat code = "12" display = "@mp_eGaussPatrolBoat" 	keyName="UsedVehicleAsian_patrolboat_Gauss" 	keyId='57' />
+		<stat code = "13" display = "@mp_eHovercraft" 			keyName="UsedVehicleUS_hovercraft_MP" 				keyId='58' />
+		<stat code = "14" display = "@mp_eAAVehicle" 				keyName="UsedVehicleAsian_aaa_MP" 						keyId='59' />
+		<stat code = "15" display = "@mp_eICV" 							keyName="UsedVehicleUS_apc_" 								keyId='60' />
+		<stat code = "16" display = "@mp_eAPC" 							keyName="UsedVehicleAsian_apc_" 							keyId='61' />
+		<stat code = "17" display = "@mp_eLightTank" 				keyName="UsedVehicleAsian_tank_" 						keyId='62' />
+		<stat code = "18" display = "@mp_eBattleTank" 			keyName="UsedVehicleUS_tank_GaussRifle" 			keyId='63' />
+		<stat code = "19" display = "@mp_eGaussTank" 				keyName="UsedVehicleUS_tank_FullGauss" 			keyId='64' />
+		<stat code = "20" display = "@mp_eHelicopter" 			keyName="UsedVehicleAsian_helicopter_MP" 		keyId='65' />
+		<stat code = "21" display = "@mp_eVTOL" 						keyName="UsedVehicleUS_vtol_MP" 							keyId='66' />
+	</category>
+</StatsConfig>

@@ -1,0 +1,61 @@
+Needed LUA-callbacks
+====================
+
+
+Weapons:
+
+OnInit()
+OnUpdate( DeltaTime )
+OnShutdown()
+OnFire( Params )
+OnHit( Hit )
+OnEvent( EventId, Params )
+OnEnhanceHUD()
+OnWrite( stm )
+OnRead( stm )
+OnSave( stm )
+OnLoad( stm )
+
+
+Entities:
+
+OnInit()
+OnUpdate( DeltaTime )
+OnShutdown()
+OnDamage( Hit )
+OnEvent( EventId, Params )
+OnContact( Entity )
+OnWrite( stm )
+OnRead( stm )
+OnSave( stm )
+OnLoad( stm )
+
+
+Players:
+
+OnInit()
+OnUpdate( DeltaTime )
+OnShutdown()
+OnDamage( Hit )
+OnEvent( EventId, Params )
+OnContact( Entity )
+OnWrite( stm )
+OnRead( stm )
+OnSave( stm )
+OnLoad( stm )
+UpdateAnimation( Params )
+
+
+GameRules:
+
+OnInit()
+OnUpdate( DeltaTime )
+OnShutdown()
+OnDamage( Hit )
+OnPlayerConnect( Player )
+OnPlayerDisconnect( Player )
+OnPlayerRespawn( Player )
+OnWrite( stm )
+OnRead( stm )
+OnSave( stm )
+OnLoad( stm )

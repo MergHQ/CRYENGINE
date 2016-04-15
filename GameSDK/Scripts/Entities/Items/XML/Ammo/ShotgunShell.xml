@@ -1,0 +1,62 @@
+<!-- this is not really a shell, but actually one of the individual projectile inside it! -->
+<!-- however each shot drains 1 shell only, and it makes it move intuitive too !-->
+<ammo name="ShotgunShell" class="Bullet">
+	<geometry>
+	</geometry>
+	<flags>
+		<param name="clientonly" value="1" />
+		<param name="reusable" value="1" />
+	</flags>
+	<whiz>
+		<param name="sound" value="Play_p_pro_flyby_bullet_close" />
+		<param name="distance" value="5.0" />
+	</whiz>
+	<physics type="particle">
+		<param name="mass" value="0.75" GAME="SP"/>
+		<param name="mass" value="1.0" GAME="MP"/>
+		<param name="speed" value="250" GAME="SP"/>
+		<param name="speed" value="1100" GAME="MP"/>
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0" />
+		<param name="gravity" value="0, 0, -1" />
+		<param name="water_gravity" value="0, 0, -1" />
+		<param name="material" value="mat_metal" />
+		<param name="pierceability" value="1" GAME="SP"/>
+		<param name="pierceability" value="3" GAME="MP"/>
+		<param name="single_contact" value="1" />
+		<pierceabilityLevels GAME="SP">
+			<param name="level3" value="0" />
+			<param name="level2" value="45" />
+			<param name="level1" value="60" />
+			<param name="maxPenetrationThickness" value="0.5" />
+		</pierceabilityLevels>
+		<pierceabilityLevels GAME="MP">
+			<param name="level3" value="0" />
+			<param name="level2" value="51" />
+			<param name="level1" value="100" />
+			<param name="maxPenetrationThickness" value="0.4" />
+		</pierceabilityLevels>
+	</physics>
+	<params>
+		<param name="ammo_category" value="regular" />
+		<param name="display_name" value="@mp_eShotgunShell" />
+		<param name="ammo_category" value="Regular" />
+		<param name="lifetime" value="0.2" GAME="SP" />
+		<param name="lifetime" value="0.65" GAME="MP" />
+		<param name="showtime" value="0.15" />
+		<param name="bulletType" value="1" /> <!-- BulletType 1 - Shotgun pellets -->
+		<param name="hitRecoil" value="Level5" GAME="SP"/>
+		<param name="hitRecoil" value="Level4_mp" GAME="MP"/>
+		<param name="hitRecoilArmorMode" value="Level4" GAME="SP"/>
+		<param name="hitRecoilArmorMode" value="Level2_mp" GAME="MP"/>
+	</params>
+	<trailUnderWater>
+		<param name="effect" value="" />
+		<param name="scale" value="3.0" />
+	</trailUnderWater>
+	<BulletTimeParams GAME="MP" >
+		<param name="geometry" value="" />
+		<param name="effect" value="" />
+		<param name="disableRifling" value="1" />
+	</BulletTimeParams>
+</ammo>

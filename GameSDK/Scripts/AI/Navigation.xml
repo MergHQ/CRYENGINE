@@ -1,0 +1,14 @@
+<Navigation version="6" >
+	<AgentTypes>
+	
+		<AgentType name="MediumSizedCharacters" voxelSize="0.125, 0.125, 0.125" radius="4" height="16" climbableHeight="3" maxWaterDepth="8" >
+			<SmartObjectUserClasses>
+				<class name="Human" />
+			</SmartObjectUserClasses>
+		</AgentType>
+
+		<AgentType name="VehicleMedium" voxelSize="0.20, 0.20, 0.20" radius="14" height="10" climbableHeight="4" maxWaterDepth="5" >
+		</AgentType>
+
+	</AgentTypes>
+</Navigation>

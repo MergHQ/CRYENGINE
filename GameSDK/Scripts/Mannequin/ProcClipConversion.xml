@@ -1,0 +1,559 @@
+<Conversion>
+
+	<AimPose anim="Animation">
+		<Param value="BlendTime" />
+		<Param value="AnimationLayer" />
+	</AimPose>
+
+	<LookPose anim="Animation">
+		<Param value="BlendTime" />
+		<Param value="ScopeLayer" />
+	</LookPose>
+
+	<Aiming />
+
+	<BlockAiming />
+
+	<Looking crcString="HeadJointName">
+		<Param value="MinYaw" />
+		<Param value="MaxYaw" />
+		<Param value="MinPitch" />
+		<Param value="MaxPitch" />
+		<Param value="MinUpdateRange" />
+	</Looking>
+
+	<RandomLooking crcString="HeadJointName">
+		<Param value="SmoothTime" />
+		<Param value="YawMin" />
+		<Param value="YawMax" />
+		<Param value="PitchMin" />
+		<Param value="PitchMax" />
+		<Param value="TimeMin" />
+		<Param value="TimeMax" />
+	</RandomLooking>
+
+	<RandomAiming>
+		<Param value="SmoothTime" />
+		<Param value="YawMin" />
+		<Param value="YawMax" />
+		<Param value="PitchMin" />
+		<Param value="PitchMax" />
+		<Param value="TimeMin" />
+		<Param value="TimeMax" />
+	</RandomAiming>
+
+	<PositionAdjust>
+		<Param value="Offset.x" />
+		<Param value="Offset.y" />
+		<Param value="Offset.z" />
+		<Param value="Yaw" />
+		<Param value="IgnoreRotation" />
+		<Param value="IgnorePosition" />
+	</PositionAdjust>
+
+	<PositionAdjustAnimPos string="ParamName">
+		<Param value="IgnoreRotation" />
+		<Param value="IgnorePosition" />
+		<Param value="CollisionCheck" />
+		<Param value="CollisionParams.MaxAdjustmentSpeed" />
+		<Param value="CollisionParams.HeightOffset" />
+		<Param value="CollisionParams.HeightMult" />
+		<Param value="CollisionParams.WidthMult" />
+		<Param value="UpdateLocation" />
+	</PositionAdjustAnimPos>
+
+	<PositionAdjustAlignEnd>
+		<Param value="IgnoreRotation" />
+		<Param value="IgnorePosition" />
+	</PositionAdjustAlignEnd >
+
+	<PositionAdjustAnimPosContinuously />
+
+	<PositionAdjustTargetLocator crcString="TargetScopeName" string="TargetJointName" />
+
+	<SwapHand />
+
+	<StowWeapon string="WeaponAttachmentName" crcString="StowAttachmentName" />
+
+	<AttachPnT string="AttachmentPt" />
+
+	<PlaySound string="StartTrigger" crcString="AttachmentJoint">
+		<Param value="Radius" />
+		<Param value="SynchedStop" />
+		<Param value="ForceStopOnExit" />
+		<Param value="IsVoice" />
+		<Param value="PlayFacial" />
+		<Param value="SoundFlags" />
+	</PlaySound>
+
+	<Audio string="StartTrigger" crcString="AttachmentJoint">
+		<Param value="Radius" />
+		<Param value="SynchedStop" />
+		<Param value="ForceStopOnExit" />
+		<Param value="IsVoice" />
+		<Param value="PlayFacial" />
+		<Param value="SoundFlags" />
+	</Audio>
+  
+	<SoundMood string="SoundMood">
+		<Param value="Amount" />
+		<Param value="Persistent" />
+	</SoundMood>
+
+	<ParticleEffect string="EffectName" crcString="AttachmentName">
+		<Param value="PosOffset.x" />
+		<Param value="PosOffset.y" />
+		<Param value="PosOffset.z" />
+		<Param value="RotOffset.x" />
+		<Param value="RotOffset.y" />
+		<Param value="RotOffset.z" />
+		<Param value="CloneAttachment" />
+	</ParticleEffect>
+
+	<Ragdoll>
+		<Param value="Sleep" />
+		<Param value="Stiffness" />
+	</Ragdoll>
+
+	<ForceFeedback string="ForceFeedbackID">
+		<Param value="Scale" />
+		<Param value="Delay" />
+	</ForceFeedback>
+
+	<WeaponPose>
+		<Param value="PoseType" />
+		<Param value="ZoomTransitionAngle" />
+		<Param value="Position.x" />
+		<Param value="Position.y" />
+		<Param value="Position.z" />
+		<Param value="Rotation.x" />
+		<Param value="Rotation.y" />
+		<Param value="Rotation.z" />
+	</WeaponPose>
+
+	<WeaponSway crcString="Hand">
+		<Param value="EaseFactorInc" />
+		<Param value="EaseFactorDec" />
+		<Param value="VelocityInterpolationMultiplier" />
+		<Param value="VelocityLowPassFilter" />
+		<Param value="AccelerationSmoothing" />
+		<Param value="AccelerationFrontAugmentation" />
+		<Param value="VerticalVelocityScale" />
+		<Param value="HorizontalVelocityScale" />
+		<Param value="StanceChangeAttackFreq" />
+		<Param value="StanceChangeRecoverFreq" />
+		<Param value="StanceChangeAttackScale" />
+		<Param value="StanceChangeRecoverScale" />
+		<Param value="LookOffset.x" />
+		<Param value="LookOffset" />
+		<Param value="HorizLookRot.x" />
+		<Param value="HorizLookRot.y" />
+		<Param value="HorizLookRot.z" />
+		<Param value="VertLookRot.x" />
+		<Param value="VertLookRot.y" />
+		<Param value="VertLookRot.z" />
+		<Param value="StrafeOffset.x" />
+		<Param value="StrafeOffset.y" />
+		<Param value="StrafeOffset.z" />
+		<Param value="SideStrafeRot.x" />
+		<Param value="SideStrafeRot.y" />
+		<Param value="SideStrafeRot.z" />
+		<Param value="FrontStrafeRot.x" />
+		<Param value="FrontStrafeRot.y" />
+		<Param value="FrontStrafeRot.z" />
+	</WeaponSway>
+
+	<WeaponBump>
+		<Param value="Time" />
+		<Param value="Shift" />
+		<Param value="Rotation" />
+	</WeaponBump>
+
+	<CameraSway>
+		<Param value="EaseFactorInc" />
+		<Param value="EaseFactorDec" />
+		<Param value="VelocityInterpolationMultiplier" />
+		<Param value="VelocityLowPassFilter" />
+		<Param value="AccelerationSmoothing" />
+		<Param value="AccelerationFrontAugmentation" />
+		<Param value="VerticalVelocityScale" />
+		<Param value="HorizontalVelocityScale" />
+		<Param value="StanceChangeAttackFreq" />
+		<Param value="StanceChangeRecoverFreq" />
+		<Param value="StanceChangeAttackScale" />
+		<Param value="StanceChangeRecoverScale" />
+		<Param value="LookOffset.x" />
+		<Param value="LookOffset" />
+		<Param value="HorizLookRot.x" />
+		<Param value="HorizLookRot.y" />
+		<Param value="HorizLookRot.z" />
+		<Param value="VertLookRot.x" />
+		<Param value="VertLookRot.y" />
+		<Param value="VertLookRot.z" />
+		<Param value="StrafeOffset.x" />
+		<Param value="StrafeOffset.y" />
+		<Param value="StrafeOffset.z" />
+		<Param value="SideStrafeRot.x" />
+		<Param value="SideStrafeRot.y" />
+		<Param value="SideStrafeRot.z" />
+		<Param value="FrontStrafeRot.x" />
+		<Param value="FrontStrafeRot.y" />
+		<Param value="FrontStrafeRot.z" />
+	</CameraSway>
+
+	<WeaponRecoil crcString="Hand">
+		<Param value="DampStrength" />
+		<Param value="FireRecoilTime" />
+		<Param value="FireRecoilStrengthFirst" />
+		<Param value="FireRecoilStrength" />
+		<Param value="PositionOffset.x" />
+		<Param value="PositionOffset.y" />
+		<Param value="PositionOffset.z" />
+		<Param value="PositionRandomness.x" />
+		<Param value="PositionRandomness.y" />
+		<Param value="PositionRandomness.z" />
+		<Param value="AngleOffset.x" />
+		<Param value="AngleOffset.y" />
+		<Param value="AngleOffset.z" />
+		<Param value="AngleRandomness.x" />
+		<Param value="AngleRandomness.y" />
+		<Param value="AngleRandomness.z" />
+		<Param value="EDITORDEBUG_FIRERATE" />
+		<Param value="EDITORDEBUG_CLIPSIZE" />
+	</WeaponRecoil>
+
+	<WeaponIdle crcString="Hand">
+		<Param value="DriftPosFrequency.x" />
+		<Param value="DriftPosFrequency.y" />
+		<Param value="DriftPosFrequency.z" />
+		<Param value="DriftPosAmplitude.x" />
+		<Param value="DriftPosAmplitude.y" />
+		<Param value="DriftPosAmplitude.z" />
+		<Param value="DriftRotFrequency.x" />
+		<Param value="DriftRotFrequency.y" />
+		<Param value="DriftRotFrequency.z" />
+		<Param value="DriftRotAmplitude.x" />
+		<Param value="DriftRotAmplitude.y" />
+		<Param value="DriftRotAmplitude.z" />
+		<Param value="NoisePosFrequency.x" />
+		<Param value="NoisePosFrequency.y" />
+		<Param value="NoisePosFrequency.z" />
+		<Param value="NoisePosAmplitude.x" />
+		<Param value="NoisePosAmplitude.y" />
+		<Param value="NoisePosAmplitude.z" />
+		<Param value="NoiseRotFrequency.x" />
+		<Param value="NoiseRotFrequency.y" />
+		<Param value="NoiseRotFrequency.z" />
+		<Param value="NoiseRotAmplitude.x" />
+		<Param value="NoiseRotAmplitude.y" />
+		<Param value="NoiseRotAmplitude.z" />
+		<Param value="NoiseFactor" />
+	</WeaponIdle>
+
+	<CameraIdle>
+		<Param value="DriftPosFrequency.x" />
+		<Param value="DriftPosFrequency.y" />
+		<Param value="DriftPosFrequency.z" />
+		<Param value="DriftPosAmplitude.x" />
+		<Param value="DriftPosAmplitude.y" />
+		<Param value="DriftPosAmplitude.z" />
+		<Param value="DriftRotFrequency.x" />
+		<Param value="DriftRotFrequency.y" />
+		<Param value="DriftRotFrequency.z" />
+		<Param value="DriftRotAmplitude.x" />
+		<Param value="DriftRotAmplitude.y" />
+		<Param value="DriftRotAmplitude.z" />
+		<Param value="NoisePosFrequency.x" />
+		<Param value="NoisePosFrequency.y" />
+		<Param value="NoisePosFrequency.z" />
+		<Param value="NoisePosAmplitude.x" />
+		<Param value="NoisePosAmplitude.y" />
+		<Param value="NoisePosAmplitude.z" />
+		<Param value="NoiseRotFrequency.x" />
+		<Param value="NoiseRotFrequency.y" />
+		<Param value="NoiseRotFrequency.z" />
+		<Param value="NoiseRotAmplitude.x" />
+		<Param value="NoiseRotAmplitude.y" />
+		<Param value="NoiseRotAmplitude.z" />
+		<Param value="NoiseFactor" />
+	</CameraIdle>
+
+	<WeaponRun crcString="Hand">
+		<Param value="Drift_UpAxis" />
+		<Param value="DriftPos_UpFunc" />
+		<Param value="DriftPosFrequencyRight" />
+		<Param value="DriftPosFrequencyForward" />
+		<Param value="DriftPosFrequencyUp" />
+		<Param value="DriftPosFrequencyDown" />
+		<Param value="DriftPosAmplitudeRight" />
+		<Param value="DriftPosAmplitudeForward" />
+		<Param value="DriftPosAmplitudeUp" />
+		<Param value="DriftRotFrequencyPitchUp" />
+		<Param value="DriftRotFrequencyPitchDown" />
+		<Param value="DriftRotFrequencyRoll" />
+		<Param value="DriftRotFrequencyYaw" />
+		<Param value="DriftRotAmplitudePitchUp" />
+		<Param value="DriftRotAmplitudePitchDown" />
+		<Param value="DriftRotAmplitudeRoll" />
+		<Param value="DriftRotAmplitudeYaw" />
+		<Param value="DriftFrequency_MinFactor" />
+		<Param value="DriftAmplitude_MinFactor" />
+		<Param value="NoisePosFrequency.x" />
+		<Param value="NoisePosFrequency.y" />
+		<Param value="NoisePosFrequency.z" />
+		<Param value="NoisePosAmplitude.x" />
+		<Param value="NoisePosAmplitude.y" />
+		<Param value="NoisePosAmplitude.z" />
+		<Param value="NoiseRotFrequency.x" />
+		<Param value="NoiseRotFrequency.y" />
+		<Param value="NoiseRotFrequency.z" />
+		<Param value="NoiseRotAmplitude.x" />
+		<Param value="NoiseRotAmplitude.y" />
+		<Param value="NoiseRotAmplitude.z" />
+		<Param value="NoiseFactor" />
+		<Param value="NoiseFrequency_MinFactor" />
+		<Param value="NoiseAmplitude_MinFactor" />
+	</WeaponRun>
+
+	<CameraRun>
+		<Param value="Drift_UpAxis" />
+		<Param value="DriftPos_UpFunc" />
+		<Param value="DriftPosFrequencyRight" />
+		<Param value="DriftPosFrequencyForward" />
+		<Param value="DriftPosFrequencyUp" />
+		<Param value="DriftPosFrequencyDown" />
+		<Param value="DriftPosAmplitudeRight" />
+		<Param value="DriftPosAmplitudeForward" />
+		<Param value="DriftPosAmplitudeUp" />
+		<Param value="DriftRotFrequencyPitchUp" />
+		<Param value="DriftRotFrequencyPitchDown" />
+		<Param value="DriftRotFrequencyRoll" />
+		<Param value="DriftRotFrequencyYaw" />
+		<Param value="DriftRotAmplitudePitchUp" />
+		<Param value="DriftRotAmplitudePitchDown" />
+		<Param value="DriftRotAmplitudeRoll" />
+		<Param value="DriftRotAmplitudeYaw" />
+		<Param value="DriftFrequency_MinFactor" />
+		<Param value="DriftAmplitude_MinFactor" />
+		<Param value="NoisePosFrequency.x" />
+		<Param value="NoisePosFrequency.y" />
+		<Param value="NoisePosFrequency.z" />
+		<Param value="NoisePosAmplitude.x" />
+		<Param value="NoisePosAmplitude.y" />
+		<Param value="NoisePosAmplitude.z" />
+		<Param value="NoiseRotFrequency.x" />
+		<Param value="NoiseRotFrequency.y" />
+		<Param value="NoiseRotFrequency.z" />
+		<Param value="NoiseRotAmplitude.x" />
+		<Param value="NoiseRotAmplitude.y" />
+		<Param value="NoiseRotAmplitude.z" />
+		<Param value="NoiseFactor" />
+		<Param value="NoiseFrequency_MinFactor" />
+		<Param value="NoiseAmplitude_MinFactor" />
+	</CameraRun>
+
+	<LayerWeight string="LayerWeightParam">
+		<Param value="ScopeLayer" />
+		<Param value="Invert" />
+	</LayerWeight>
+
+	<IKLayerWeight string="JointName">
+		<Param value="ScopeLayer" />
+		<Param value="Invert" />
+	</IKLayerWeight>
+
+	<LayerManualUpdate string="ParamName">
+		<Param value="ScopeLayer" />
+		<Param value="Invert" />
+	</LayerManualUpdate>
+
+	<AttachProp string="ObjectFilename" crcString="AttachmentName" />
+
+	<AttachEntity string="EntityIdParamName" crcString="AttachmentName" />
+
+	<SwapAttachment string="AttachmentNameOld" crcString="AttachmentNameNew">
+		<Param value="ResetOnExit" />
+		<Param value="ClearOnExit" />
+	</SwapAttachment>
+
+	<HideAttachment crcString="AttachmentName" />
+
+	<WeightedList crcString="ParamName">
+		<Param value="ScopeLayer" />
+		<Param value="Invert" />
+	</WeightedList>
+
+	<ManualUpdateList crcString="ParamName">
+		<Param value="ScopeLayer" />
+		<Param value="Invert" />
+	</ManualUpdateList>
+
+	<ActionEvent crcString="EventName" />
+
+	<ModifyTransition>
+		<Param value="TargetDof" />
+	</ModifyTransition>
+
+	<ForbidHitDeathReaction />
+
+	<CollisionReaction crcString="ReactionTag">
+		<Param value="CollideWithGround" />
+	</CollisionReaction>
+
+	<SnapOrientation crcString="OrientationParamName">
+		<Param value="OrientationAngle" />
+	</SnapOrientation>
+
+	<AddMovement>
+		<Param value="Movement.x" />
+		<Param value="Movement.y" />
+		<Param value="Movement.z" />
+	</AddMovement>
+
+	<FacialSequence string="Filename" crcString="WeightParamName">
+		<Param value="ContinueAfterExit" />
+		<Param value="Looping" />
+		<Param value="Weight" />
+	</FacialSequence>
+
+	<JointAdjust anim="0" string="JointName">
+		<Param value="ScopeLayer" />
+		<Param value="Additive" />
+		<Param value="Relative" />
+		<Param value="Position.x" />
+		<Param value="Position.y" />
+		<Param value="Position.z" />
+	</JointAdjust>
+
+	<BlockWeaponFiring />
+
+	<Torso1PIK>
+		<Param value="Weight1" />
+		<Param value="Weight2" />
+		<Param value="Weight3" />
+		<Param value="Weight4" />
+		<Param value="Weight5" />
+		<Param value="PinPosition" />
+	</Torso1PIK>
+
+	<JointCopy />
+
+	<ProceduralAnimationPivot crcString="Hand">
+		<Param value="Pivot.x" />
+		<Param value="Pivot.y" />
+		<Param value="Pivot.z" />
+	</ProceduralAnimationPivot>
+
+	<EyeAnimation string="LeftEyeJointName" crcString="RightEyeJointName">
+		<Param value="drift_minX" />
+		<Param value="drift_maxX" />
+		<Param value="drift_minY" />
+		<Param value="drift_maxY" />
+		<Param value="drift_minZ" />
+		<Param value="drift_maxZ" />
+		<Param value="drift_returnToTargetLikelihood" />
+		<Param value="drift_largeShiftLikelihood" />
+		<Param value="drift_largeShiftMultiplier" />
+		<Param value="min_timeBetweenDrifts" />
+		<Param value="max_timeBetweenDrifts" />
+		<Param value="eye_lerpSpeed" />
+		<Param value="reduced_range_mult" />
+		<Param value="eye_min_focus_dist" />
+		<Param value="eye_max_focus_dist" />
+		<Param value="blink_smallShiftLikelihood" />
+		<Param value="blink_largeShiftLikelihood" />
+		<Param value="blink_largeShiftMinDiff" />
+		<Param value="blink_absoluteMinInterval" />
+		<Param value="blink_randomMinInterval" />
+		<Param value="blink_randomMaxInterval" />
+		<Param value="blink_minBlendInRate" />
+		<Param value="blink_maxBlendInRate" />
+		<Param value="blink_minBlendOutRate" />
+		<Param value="blink_maxBlendOutRate" />
+		<Param value="eye_min_pitch" />
+		<Param value="eye_max_pitch" />
+		<Param value="eye_min_yaw" />
+		<Param value="eye_max_yaw" />
+		<Param value="avgheadvel_timerange" />
+		<Param value="avgheadvel_minpitch" />
+		<Param value="avgheadvel_maxpitch" />
+		<Param value="avgheadvel_minyaw" />
+		<Param value="avgheadvel_maxyaw" />
+		<Param value="eye_tracking_minstatetime" />
+	</EyeAnimation>
+
+	<SetParam crcString="ParamName">
+		<Param value="Target" />
+		<Param value="ExitTarget" />
+	</SetParam>
+
+	<SlowMotion>
+		<Param value="target_timescale" />
+		<Param value="down_rate" />
+		<Param value="up_rate" />
+		<Param value="fraction_affects_player_turn_speed" />
+		<Param value="fraction_affects_owner_animations" />
+		<Param value="affects_sound_pitch" />
+	</SlowMotion>
+
+	<PlayAudioSignal string="OnEnterSignalID" crcString="OnExitSignalID">
+		<Param value="PlayOnEntity" />
+	</PlayAudioSignal>
+
+	<MannequinTag crcString="TagName" />
+
+	<Footstep crcString="AttachmentJoint">
+		<Param value="SoundRadius" />
+		<Param value="SoundIntensity" />
+	</Footstep>
+	
+	<Gib string="Name"/>
+	
+	<DoAction string="ActionID">
+		<Param value="NumFrames" />
+	</DoAction>
+	
+	<SetAnimWindow string="WindowName" />
+	
+	<ClearAnimWindow string="WindowName" />
+	
+	<ActorEvent string="EventName">
+		<Param value="EventId" />
+	</ActorEvent>
+	
+	<MaterialSwap string="MaterialReplacement" />
+	
+	<DropAttachment string="SlotName"/>
+	
+	<PreviewInteractive>
+		<Param value="AnchorOther" />
+	</PreviewInteractive>
+	
+	<LayerAnimation string="AnimLayerID" />
+	
+	<DynamicLight string="LightDesc">
+		<Param value="Offset.x" />
+		<Param value="Offset.y" />
+		<Param value="Offset.z" />
+		<Param value="ViewDistRatio" />
+	</DynamicLight>
+	
+	<TurretAimPose anim="Animation">
+		<Param value="BlendTime" />
+		<Param value="Layer" />
+		<Param value="HorizontalAimSmoothTime" />
+		<Param value="VerticalAimSmoothTime" />
+		<Param value="MaxYawDegreesSecond" />
+		<Param value="MaxPitchDegreesSecond" />
+	</TurretAimPose>
+	
+	<CompromiseCover/>
+	
+	<SetStance string="Stance" />
+	
+	<AimSmoothing>
+		<Param value="SmoothTimeSeconds" />
+		<Param value="MaxYawDegreesPerSecond" />
+		<Param value="MaxPitchDegreesPerSecond" />
+	</AimSmoothing>
+</Conversion>

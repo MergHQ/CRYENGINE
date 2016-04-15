@@ -1,0 +1,4 @@
+<Entity 
+Name="Chickens"
+ Script="Scripts/Entities/Boids/Chickens.lua"
+/>

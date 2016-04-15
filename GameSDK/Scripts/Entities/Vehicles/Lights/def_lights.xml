@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<Definition root="DefaultVehicleLights">
+	<Array name="Lights" elementName="Light">
+
+		<Property name="type"				type="string" />
+		<Property name="texture"			type="string"	optional="1" />
+		<Property name="material"			type="string"	optional="1" />
+		<Property name="flare"				type="string"	optional="1" />
+
+		<Property name="radius"				type="float"	optional="1" />
+		<Property name="diffuseMult"		type="float"	optional="1" />
+		<Property name="diffuseMult_fp"		type="float"	optional="1" />
+		<Property name="specularMult"		type="float"	optional="1" />
+		<Property name="frustumAngle"		type="float"	optional="1" />
+		<Property name="HDRDynamic"			type="float"	optional="1" />
+		<Property name="directFactor"		type="float"	optional="1" />
+		<Property name="flareFOV"			type="float"	optional="1" />
+		<Property name="animSpeed"			type="float"	optional="1" />
+
+		<Property name="diffuse"			type="Vec3"		optional="1" />
+		<Property name="specular"			type="Vec3"		optional="1" />
+
+		<Property name="style"				type="int"		optional="1" />
+		<Property name="animPhase"			type="int"		optional="1" />
+		<Property name="viewDistanceRatio"	type="int"		optional="1" />
+		<Property name="castShadows"		type="int"		optional="1" />
+
+		<Property name="fakeLight"			type="bool"		optional="1" />
+
+	</Array>
+</Definition>

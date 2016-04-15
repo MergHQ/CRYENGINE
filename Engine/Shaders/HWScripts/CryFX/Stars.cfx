@@ -1,0 +1,147 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "ModificatorVT.cfi"
+#include "shadeLib.cfi"
+
+
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "ShaderDrawType = General;"
+           "ShaderType = Sky;"
+>;
+
+
+float4 StarSize;
+float  StarIntensity;
+float4 SkyDome_NightMoonDirSize;
+float3 SkyDome_NightMoonTexGenRight;
+float3 SkyDome_NightMoonTexGenUp;
+
+sampler2D sceneMap0 : register(s0);
+
+struct a2v
+{
+  float4 Position  : POSITION;
+	float2 TexCoord	 : TEXCOORD; // unused but needs to be declared under DX10 to be able to share signatures
+  float4 ColAndMag : COLOR;
+	uint vertexIdx   : SV_VertexID;
+};
+
+struct v2f
+{
+  float4 Position  : POSITION;
+  float2 QuadPos   : TEXCOORD;
+  float4 Color     : COLOR;
+};
+
+float GetFlickerAmount(in float3 pos)
+{
+	const float2 StarShimmerTab[8] = 
+	{
+		float2(0.897907815,-0.347608525),	float2(0.550299290, 0.273586675), float2(0.823885965, 0.098853070), float2(0.922739035,-0.122108860),
+		float2(0.800630175,-0.088956800), float2(0.711673375, 0.158864420), float2(0.870537795, 0.085484560), float2(0.956022355,-0.058114540)
+	};
+
+	float2 hash = frac(pos.xy * 256);  
+  float index = frac(hash.x + (hash.y + 1) * StarSize.w);
+  index *= 8;
+  
+  float f = frac(index);
+  int i = int(index);
+  return StarShimmerTab[i].x + f * StarShimmerTab[i].y;
+}
+
+float GetMoonScale(float3 vPos)  // Remove stars that are in front of the moon
+{
+  float2 moonTC = float2( dot( SkyDome_NightMoonTexGenRight, vPos ), dot( SkyDome_NightMoonTexGenUp, vPos ) ) * SkyDome_NightMoonDirSize.w + 0.5;
+	moonTC = abs(saturate(moonTC) * 2.0f - 1.0f);
+
+///	float moonScale = max(moonTC.x, moonTC.y); // square
+
+	moonTC *= moonTC;  // round
+	float moonScale = moonTC.x+moonTC.y;
+
+	moonScale = step(1.0f ,moonScale);
+
+	return moonScale;
+}
+
+v2f StarsVS(a2v IN)
+{
+  v2f OUT = (v2f)0;
+
+  float4 pos = IN.Position;
+  OUT.Position = _pos_Common(pos);
+  OUT.Position.z = OUT.Position.w; 
+    
+  // On DX9 OUT.QuadPos will be filled by GPU after point sprite expansion
+
+	float4 ColAndMag = GetInputColor(IN.ColAndMag);
+
+	float appMag = 6.5 + ColAndMag.w * (-1.44 - 6.5);
+	float brightness = GetFlickerAmount(pos.xyz) * pow(5.0, (-appMag - 1.44) / 2.5);
+		
+	OUT.Color = float4(brightness * ColAndMag.xyz, brightness);
+
+  const float2 expansion[6] =
+  {
+      float2( 1,  1),
+      float2(-1,  1),
+      float2( 1, -1),
+      float2( 1, -1),
+      float2(-1,  1),
+      float2(-1, -1)
+  };
+  
+  const float2 texcoord[6] = 
+  { 
+      float2(1, 0), 
+      float2(0, 0),
+      float2(1, 1),
+      float2(1, 1),
+      float2(0, 0),
+      float2(0, 1)	
+  };
+
+	uint v = uint(IN.vertexIdx) % uint(6);
+	OUT.Position.xy += expansion[v] * StarSize.xy * GetMoonScale(pos.xyz) * OUT.Position.w;
+  OUT.QuadPos = texcoord[v];
+     
+  return OUT; 
+} 
+
+pixout StarsPS(v2f IN)
+{
+	float2 pos = IN.QuadPos.xy;
+  pixout OUT;
+
+	float2 distCenter = 3.5 * pos.xy - 3.5 * float2(0.5, 0.5);
+	float scale = exp(-dot(distCenter, distCenter));
+
+	float3 colCool = IN.Color.xyz;
+	float3 colHot = IN.Color.www;
+	float3 colFinal = StarIntensity * (colCool * scale + 5 * colHot * pow(scale, 10));
+		
+	HDROutput(OUT, float4(colFinal, scale), 1);
+  return OUT;
+}
+
+technique Stars
+{
+  pass p0
+  {
+    VertexShader = StarsVS();
+    PixelShader = StarsPS();
+    
+    ZEnable = true;
+    ZWriteEnable = false;
+    CullMode = None;
+    
+    SrcBlend = ONE;
+    DestBlend = ONE;
+    AlphaBlendEnable = true;        
+  }
+}

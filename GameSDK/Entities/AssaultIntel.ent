@@ -1,0 +1,4 @@
+<Entity
+ Name="AssaultIntel"
+ Script="Scripts/Entities/Multiplayer/AssaultIntel.lua"
+/>

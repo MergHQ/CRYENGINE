@@ -1,0 +1,123 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+
+struct SLightVolumeInfo
+{
+	float3 wPosition;
+	float radius;
+	float3 cColor;
+	float bulbRadius;
+	float3 wProjectorDirection;
+	float projectorCosAngle;
+};
+
+
+
+struct SLightVolumeRange
+{
+	uint begin;
+	uint end;
+};
+
+
+
+StructuredBuffer<SLightVolumeInfo> lightVolumeInfos   : register(t5);
+StructuredBuffer<SLightVolumeRange> lightVolumeRanges  : register(t6);
+
+
+
+struct SParticleLightInfo
+{
+	half3 cDirectional;
+	half3 vDirectional;
+	half sunShadow;
+	half ambientMult;
+};
+
+
+
+SParticleLightInfo FromLightData(half4 lightData0, half4 lightData1)
+{
+	SParticleLightInfo lightInfo;
+	lightInfo.cDirectional.rgb = lightData0.rgb;
+	lightInfo.vDirectional.rgb = lightData1.rgb;
+	lightInfo.sunShadow = lightData0.a;
+	lightInfo.ambientMult = lightData1.a;
+	return lightInfo;
+}
+
+void ToLightData(SParticleLightInfo lightInfo, out half4 lightData0, out half4 lightData1)
+{
+	lightData0 = half4(lightInfo.cDirectional, lightInfo.sunShadow);
+	lightData1 = half4(lightInfo.vDirectional, lightInfo.ambientMult);
+}
+
+
+
+// Add light properties into accumulators
+void SumLight(inout half4 cDirectional, inout half4 vDirectional, half3 vLight, half3 cDiffuse ) 
+{ 
+	// Set a total luminance component in color.a, for averaging
+	const half3 cRGBSum = half3(1,1,1);
+	half4 cDiffRGBL = half4(cDiffuse, dot(cDiffuse, cRGBSum));
+	
+	// Sum directional scalar RGBL values
+	cDirectional += cDiffRGBL;
+
+	// Average direction, scaling by overall luminance.
+	vDirectional.xyz += vLight * cDiffRGBL.a;
+}
+
+
+void ProjectLightVolume(in float3 vWorldPos, in half sunShadow, in half backLighting, inout SParticleLightInfo lightInfo)
+{
+	lightInfo = (SParticleLightInfo)0;
+	half4 cDirectional = half4(0,0,0,0.00001);
+	half4 vDirectional = half4(0,0,0,0.00001);
+
+#if %_RT_LIGHTVOLUME0
+	const uint lightVolumeId = asuint(PullVerticesInfo.y);
+	SLightVolumeRange range = lightVolumeRanges[lightVolumeId];
+	[loop] for (uint i = range.begin; i < range.end; ++i)
+	{
+		SLightVolumeInfo lightVol = lightVolumeInfos[i];
+		
+		float3 LightVecWS = lightVol.wPosition - vWorldPos;
+		
+		float fFallOff = GetPhysicalLightAttenuation(length(LightVecWS), 1.0f / lightVol.radius, lightVol.bulbRadius);
+		float3 LightVec = normalize(LightVecWS);
+		
+		[branch] if (lightVol.projectorCosAngle > 0)
+		{
+			const float3 wProjDir = lightVol.wProjectorDirection;
+			const float cosAnge = lightVol.projectorCosAngle;
+			half fProjFallof = saturate(( saturate(dot(-LightVec, wProjDir)) - cosAnge) / saturate(1.0f - cosAnge));
+			fFallOff *= fProjFallof;
+		}
+
+		half3 cDiffuse = lightVol.cColor * fFallOff;
+		SumLight(cDirectional, vDirectional, LightVec, cDiffuse);
+	}
+#endif
+
+  // Add sun.
+  half3 cDiffuse = CV_SunColor.rgb * sunShadow;
+	SumLight(cDirectional, vDirectional, CV_SunLightDir, cDiffuse);
+	
+	half fTotalDir = length(vDirectional);
+	half fDirectional = fTotalDir * rcp(cDirectional.a);
+
+	lightInfo.cDirectional = cDirectional * fDirectional;
+	lightInfo.vDirectional = vDirectional.xyz * (1 - backLighting) * rcp(fTotalDir);
+	lightInfo.ambientMult = (1 - fDirectional) * 0.25;
+	lightInfo.sunShadow = sunShadow;
+}
+
+
+
+half3 GetEnvLighting(SParticleLightInfo lightInfo, half3 vNormal, half diffuseTerm, half emissiveTerm, half backLighting)
+{
+	half3 cLight = lightInfo.cDirectional * (lightInfo.ambientMult + max(0, dot(lightInfo.vDirectional, vNormal) + backLighting));
+	return cLight * diffuseTerm + emissiveTerm;
+}

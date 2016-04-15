@@ -1,0 +1,105 @@
+<Mode name='Gladiator'>
+  <Spawning class='MPRSSpawning'
+            teamGame='1'
+            teamSpawnsType='Standard'
+            usingLua='0'
+            midRoundJoining='1'
+						team1AlwaysUsesInitialSpawns='1'/>
+
+  <Teams class='GladiatorTeams' canTeam1ModifyWeapons='1' canTeam2ModifyWeapons='0'/>
+
+  <Scoring class='StandardScoring'>
+    <Player>
+      <Event type='Predator_KillAsSoldier'					points='100' />
+      <Event type='Predator_KillAsPredator'					points='100' />
+      <Event type='Predator_SurviveTimePeriod'			points='10'  />
+      <Event type='Predator_SurviveToEnd'						points='150' />
+      <Event type='Predator_FinalKillAsPredator'		points='150' />
+      <Event type='Predator_LastMarineStanding'			points='200' />
+      <Event type='Predator_TwoMarinesRemaining'		points='150' />
+      <Event type='Predator_ThreeMarinesRemaining'	points='100' />
+    </Player>
+  </Scoring>
+
+  <ScoreRewards enabled='1' />
+
+  <AssistScoring class='AssistScoring' maxTimeBetweenAttackAndKillForAssist='7000' maxAssistScore='99' assistScoreMultiplier='0.5' teamSpecificScoring='0' />
+
+  <PlayerStats class='StandardPlayerStats' recordTimeSurvived='1' />
+  <StatsRecording class='StandardStatsRecording' />
+
+  <State class='StandardState' />
+
+  <VictoryConditions class='ObjectiveVictoryConditionsIndiv' checkTime='1' playHalfwaySound='0' playerSwitchTeams='1' playTimeAnnouncements='0' />
+
+  <PlayerSetup class='StandardSetup' />
+
+  <DamageHandling class='MPDamageHandling'>
+    <Table path='Scripts/GameRules/MPDamageTable.xml' />
+  </DamageHandling>
+
+  <ActorAction class='MPActorAction' />
+
+  <Spectator class='MPSpectator' eatsActorActions='1' enableFree='1' enableFollow='1' enableKiller='1' enableCCTV='1' timeFromDeathTillAutoSpectate='5000' />
+
+  <Objectives class='Objective_Predator'>
+		<Params
+      numPredators        								= '2'
+      SoldierSurvivalScorePeriod        	= '8'
+      MinimalReviveTime                 	= '0'
+      SoldierSuicideRespawnTimeMult      	= '3'
+      LateJoiningGracePeriod              = '30.0'
+			timeDisruptorActive									= '5.0'
+			useTimeToActivateDisruptor					= '1.0'
+			timeTillDisruptorAvailable					= '45.0'
+		>
+			<SurvivalPoints>
+				<Soldiers		count='1'		points='80' />
+				<Soldiers		count='2'		points='60' />
+				<Soldiers		count='3'		points='40' />
+				<Soldiers		count='5'		points='20' />
+				<Soldiers		count='8'		points='15' />
+				<Soldiers		count='10'	points='10' />
+			</SurvivalPoints>
+			<AmmoOverrides>
+				<Weapon class='Typhoon'>
+					<Ammo class='typhoonbullet' clips='0' />
+				</Weapon>
+				<Weapon class='DSG1'>
+					<Ammo class='SniperBullet' clips='0' />
+				</Weapon>
+				<Weapon class='Jackal'>
+					<Ammo class='shotgunshell' clips='0' />
+				</Weapon>
+				<Weapon class='Nova'>
+					<Ammo class='PistolBullet' clips='0' />
+				</Weapon>
+				<Weapon class='AY69'>
+					<Ammo class='PistolBullet' clips='0' />
+				</Weapon>				
+				<Weapon class='Revolver'>
+					<Ammo class='HPistolBullet' clips='0' />
+				</Weapon>
+        <Weapon class='EMPOverTimeGrenades'>
+          <Ammo class='empovertimegrenade' clips='1' /> <!-- Explosives/grenades have no clip size - in this case clips will be the number they actually receive -->
+        </Weapon>
+			</AmmoOverrides>
+		</Params>
+  </Objectives>
+
+  <Rounds class='StandardRounds' resetScores='1' suddenDeathTimeSecs='15' primaryTeamOverride='2' showKillcamAtEndOfRound='1' playMusicAtEndOfRound='0' showRoundStartingMessageEverySpawn='1' > <!-- hunters are 'primary' team - convention dictates attackers are considered primary -->
+
+    <EndStrings>
+      <Strings reason="TimeLimitReached" drawMessage="ui_msg_pred_time_out"/>
+      <Strings reason="ObjectivesCompleted" drawMessage="ui_msg_pred_all_marines_dead"/>
+    </EndStrings>
+
+    <PrimaryTeam>
+			<StartStrings startNewRoundHeader="ui_msg_pr_start_you_are_a" startNewRoundTeam='ui_msg_pr_start_predator' startNewRoundSmallBanner='ui_msg_hunter_start_attack' />
+    </PrimaryTeam>
+    <SecondaryTeam>
+    	<StartStrings startNewRoundHeader="ui_msg_pr_start_you_are_a" startNewRoundTeam='ui_msg_pr_start_soldier' startNewRoundSmallBanner='ui_msg_hunter_start_defend' />
+    </SecondaryTeam>
+  </Rounds>
+
+</Mode>

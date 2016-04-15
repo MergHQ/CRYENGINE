@@ -1,0 +1,457 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+
+// This is a direct port from CommonCausticsPass into a deferred pass - this will need some optimization
+// todo: needs work for correct MSAA
+
+#include "Common.cfi"
+#include "ShadeLib.cfi"
+#include "PostEffectsLib.cfi"
+
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "NoPreview;"
+           "ShaderDrawType = Custom;"
+           "ShaderType = PostProcess;"
+>; 
+
+half4 CausticParams	  : PB_CausticsParams < vsregister = VS_REG_PB_8; >;
+half4 CausticSmoothSunDir : PB_CausticsSmoothSunDirection; 
+half4 g_fWaterLevel : PB_WaterLevel;
+float4  CausticsAnimGenParams = { PB_time 1.0, PB_time 0.5, PB_time 0.25, PB_time 0.125};
+
+float4x4 mLightView < psregister = c20; >;
+float4   vAnimParams < psregister = c24; >;
+float4   vCausticParams < psregister = c25; >; 
+
+Texture2D<float4> sceneDepthTexture : TS_ZTarget;
+
+sampler2D wavesSampler = sampler_state
+{
+  Texture = EngineAssets/Textures/oceanwaves_ddn.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+  AddressU = Wrap;
+  AddressV = Wrap;	
+};
+
+sampler2D causticsSampler = sampler_state
+{
+  Texture = EngineAssets/Textures/caustics_sampler.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = NONE;
+  AddressU = Clamp;
+  AddressV = Clamp;	
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float3 GetWorldPos( float fDepth, float3 vCamVec )
+{
+  float3 cameraToWorldPos = fDepth * vCamVec;
+  return ( cameraToWorldPos + PS_WorldViewPos.xyz ); // Return world space position
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+vtxOutWPOS DeferredCasticsVS(vtxInWPOS IN)
+{
+  vtxOutWPOS OUT = (vtxOutWPOS)0;
+
+  float4 vPos = IN.Position;
+
+  vPos.y = 1 -vPos.y;
+  OUT.HPosition = float4(vPos.xy*2-1, vPos.z, 1.0);
+  OUT.baseTC =  HPosToScreenTC(OUT.HPosition);
+  OUT.CamVec.xyz = IN.CamVec;
+
+  float4 vScreenPos = OUT.HPosition;;
+  vScreenPos.zw = 1;
+  
+  OUT.CamVec.xyz =  IN.CamVec.xyz;
+
+  return OUT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pixout DeferredCasticsPS( vtxOutWPOS IN )
+{
+  pixout OUT = (pixout) 0;
+
+  float fDepth = GetLinearDepth( sceneDepthTexture, IN.baseTC.xy );
+  float3 vPosition = GetWorldPos( fDepth, IN.CamVec );
+  half3 vNormal = DecodeGBufferNormal( GetSceneTex(sceneNormalsTex, IN.baseTC.xy) );
+
+  // Get uvs   
+  float3 vProj = mul((float3x3)mLightView, vPosition.xyz);
+
+  half2 fHeightAtten = half2(g_fWaterLevel.z, vCausticParams.w) - vPosition.zz;
+
+	vProj *= CausticParams.w;
+
+  //CausticAnimGenParams.w = 0;
+  // Output caustics procedural texture generation 
+  float4 animCoeffs = float4((2.0h*0.01h*0.012h), (2.0h * 0.01h * 0.01h), (0.01h * 0.5h), (0.01h * 2.0h)); 
+
+  float4 waveTC =  vProj.xyxy * animCoeffs.xxyy + vAnimParams.xxyy;
+
+  float4 temp = vProj.xyxy * animCoeffs.zzww;
+
+  float4 causticTC0 = temp.xyyx + vAnimParams.zzww;
+  
+  float4 causticTC1 = temp.zwwz + vAnimParams.zzww;
+  
+  // break movement, with random patterns
+  half2 wave;
+  wave  = GetXYNormalMap(wavesSampler, waveTC.xy).xy;                                                
+  wave += GetXYNormalMap(wavesSampler, waveTC.wz).xy;                                                 // 1 alu
+  wave *= 0.02;                                                                    // 1 alu
+  
+  half3 causticMapR = 1.0;
+  causticMapR.xy   = GetXYNormalMap(wavesSampler, causticTC0.xy + wave);     // 1 tex + 2 alu
+  causticMapR.xy  += GetXYNormalMap(wavesSampler, causticTC0.wz + wave);     // 1 tex + 3 alu
+  
+  half2 causticHighFreq = 0;
+  causticHighFreq  = GetXYNormalMap(wavesSampler, causticTC1.xy + wave);   // 1 tex  + 1 alu
+  causticHighFreq += GetXYNormalMap(wavesSampler, causticTC1.wz + wave);   // 1 tex  + 2 alu 
+
+  causticMapR.xy = causticHighFreq + causticMapR.xy * 0.5 + vNormal.xy * 0.25;     // just perturb xy, saves about 5 alu
+
+  // Get main vectors/coeficients	       
+  half3 normalVec = normalize( causticMapR );;       // 3 alu
+
+  half3 vSunTS = ( g_PS_SunLightDir.xyz );        // 3 alu
+
+	// top height attenuation
+
+  half fAtten = (1-exp(-fHeightAtten.y * 2.0f)); // softer attenuation for caustics
+  half belowWater = step(0.0f,fHeightAtten.x); 
+
+  fAtten = fAtten * max((0.25h-vNormal.z), belowWater); // Only apply to non-upward faces when above the water
+
+  half3 vDistToCam =  (PS_WorldViewPos.xyz - vPosition.xyz);
+  half fDistToCamSq = dot(vDistToCam, vDistToCam);                                 // 2 alu
+  fAtten =  saturate(fAtten) * saturate( vCausticParams.x /( 0.075 * fDistToCamSq ) );     // todo:  pass attenuation factor per constant - maybe affected by fog params  
+
+	// bottom attenuation
+//	half fAttenBottomCaustics =1 - saturate( (g_fWaterLevel.z - vPosition.z)/CausticParams.z  );
+//	fAttenBottomCaustics *= fAttenBottomCaustics;
+	//fAttenCaustics *= fAttenBottomCaustics;
+ 
+	//half fDistToCam = length( PS_WorldViewPos.xyz - vPosition.xyz );                                 // 2 alu
+	//fAtten = saturate(fAtten) * saturate( 4 * (1- ( fDistToCam / CausticParams.x )) ); 
+										
+  // about 10 alu
+  half2 vRefrR = refract( vSunTS.xyz, normalVec.xyz, 0.9 ).xy;                              // Displace refraction vectors to simulate color dispersion   
+  half2 vRefrG = vRefrR - normalVec.xy * 0.05;
+  half2 vRefrB = vRefrR - normalVec.xy * 0.1;   
+
+  half3 cCaustic = half3( tex2D(causticsSampler, vRefrR.xy*0.5+0.5).x,
+                            tex2D(causticsSampler, vRefrG.xy*0.5+0.5).x,
+                            tex2D(causticsSampler, vRefrB.xy*0.5+0.5).x );
+
+  half3 cCausticOrig = cCaustic;  
+    
+  // Power-up caustic to make it sharper, and apply sun color                               // 3 alu
+//  cCaustic = pow( cCaustic, 16 );// * fHighlightAtten;	(emulated as 32*(x-0.85)^2)
+
+	cCaustic = saturate( 5.65h * cCaustic - 4.66h);
+	cCaustic = cCaustic * cCaustic;
+
+	cCaustic = saturate( dot(  normalVec.xyz, CausticSmoothSunDir.xyz ) ) * cCaustic * g_PS_SunColor * 0.5;     // 4 alu
+	
+	OUT.Color.xyz = cCaustic.xyz; 
+
+	OUT.Color.w =  saturate( dot(1 - cCausticOrig, 0.25 ));
+
+	OUT.Color.xyz *= vCausticParams.y * PS_HDR_RANGE_ADAPT_MAX;
+	OUT.Color *= fAtten;
+
+  return OUT;
+}
+
+//////////////////////////////// technique ////////////////
+
+technique General
+{
+  pass p0
+  {
+    VertexShader = DeferredCasticsVS() CausticsVS;            
+    PixelShader = DeferredCasticsPS() CausticsPS;
+    CullMode = None;        
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Water volume caustics //////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////
+// Samplers
+sampler2D waterCausticsSampler = sampler_state
+{
+  Texture = $WaterVolumeCaustics;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+  AddressU = Clamp;
+  AddressV = Clamp; 
+};
+
+// For height sampling
+sampler2D waterCausticsSamplerPoint = sampler_state
+{
+  Texture = $WaterVolumeCaustics;
+  MinFilter = POINT;
+  MagFilter = POINT;
+  MipFilter = POINT;
+  AddressU = Clamp;
+  AddressV = Clamp; 
+};
+
+////////////////////////////////////
+// Structs
+struct vtxOutCaustic
+{
+	float4 HPosition : POSITION; 
+	float4 vOldPos	: TEXCOORD0;
+	float3 vNewPos	: TEXCOORD1;
+};
+
+////////////////////////////////////
+// Vertex shaders
+
+vtxOutCaustic WaterCausticsGenVS(vtxIn IN)
+{
+	vtxOutCaustic OUT = (vtxOutCaustic)0; 
+		
+	// Calculate homogeneous position.
+	float4 vPos = IN.Position;
+	vPos.xy = vPos.xy * 2.h - 1.h;
+	
+	// Screen coordinates
+	half4 screenProj = HPosToScreenTC(vPos);
+
+	// Sample the caustic map.
+	half4 cWaterCausticInfo = tex2Dlod( _tex0, half4(screenProj.xy, 0, 0) );
+
+	// Read the height map and generate normals from it.
+	float p0 = cWaterCausticInfo.z;
+	float p1 = tex2Dlod( _tex0, half4(screenProj.xy + float2(1,0) / 64, 0, 0)).z;
+	float p2 = tex2Dlod( _tex0, half4(screenProj.xy + float2(0,1) / 64, 0, 0)).z;
+
+	// Apply gamma correction (gives us better precision in the darker areas).
+	p0 *= p0; p1 *= p1; p2 *= p2;
+	
+	half fWaterHeight = p0 * 2.h - 1.h;
+
+	// Output height mask into w
+	half2 screenTC = screenProj.xy*2-1;
+	OUT.vOldPos.w = saturate( (1.0 - dot( screenTC.xy, screenTC.xy )) * 4.0 );
+
+	// Fade to regular height using mask to avoid edge artifacts.
+	p1 = lerp(p0, p1, OUT.vOldPos.w);
+	p2 = lerp(p0, p2, OUT.vOldPos.w);
+
+	float3 vWaterNormals = float3(float2(p1 - p0, p2 - p0), 1.0f);
+	vWaterNormals = normalize( vWaterNormals.xyz );                                                              // 3 inst
+
+	// Light direction.
+	half3 vLightDir = half3(0,0,1);//g_VS_SunLightDir.xyz * 0.01h;
+	
+	// Compute refracted directions.
+	half3 vRefract = refract(-vLightDir, half3(0,0,1), 0.75h);
+	half3 vRefrRay = refract(-vLightDir, vWaterNormals, 0.75h);
+
+	// Compute initial refraction position.
+	// In future can use real intersection test with world positions for better projection.
+	half3 vOldPos = vPos;
+	vOldPos.xyz += vRefract.xyz * ((-0.25f) / vRefract.z);
+	OUT.vOldPos.xyz = vOldPos + vRefract * ((-vOldPos.z - 1.0) / vRefract.z);
+
+	// Compute final refraction position.
+	half3 vNewPos = vPos;
+	vNewPos.xyz += vRefrRay.xyz * ((fWaterHeight - 0.25) / vRefrRay.z);
+	OUT.vNewPos.xyz = vNewPos + vRefract * ((-vNewPos.z - 1.0) / vRefract.z);
+	
+	// Displace the grid mesh.
+	OUT.HPosition = half4( (OUT.vNewPos.xy + vRefract.xy / vRefract.z), 0, 1);
+
+	// Stabilize the results by snapping to the nearest pixel.
+	//const float2 fSnapRange = g_VS_ScreenSize.zw * 2.0;
+	//OUT.HPosition.xy += frac(vPos.xy / fSnapRange) * fSnapRange;
+	
+	// Drop the displacement using the mask to avoid issues with projection.
+	OUT.HPosition.xy = lerp(vPos, OUT.HPosition.xy, OUT.vOldPos.w);
+
+	return OUT;
+}
+
+///////////////////////////////
+// Pixel shaders
+
+// Caustic gen
+pixout WaterCausticsGenPS(vtxOutCaustic IN)
+{
+	pixout OUT = (pixout)0;
+
+	// Triangle gets brighter the smaller it gets, and vice-versa.
+	half fOldArea = length(ddx(IN.vOldPos.xyz)) * length(ddy(IN.vOldPos.xyz));
+	half fNewArea = length(ddx(IN.vNewPos.xyz)) * length(ddy(IN.vNewPos.xyz));
+
+	OUT.Color = saturate(fOldArea / fNewArea * 0.2h) * IN.vOldPos.w;
+  
+	return OUT;
+}
+
+// Dilation
+pixout WaterCausticsInfoDilatePS(vtxOut IN)
+{
+	pixout OUT = (pixout)0;
+
+    const int nOffsets = 8;
+
+	float2 vOffsets[ nOffsets ] =
+	{  
+		float2(-1.0f, 0.0f), float2(1.0f, 0.0f),float2(-1.0f,-1.0f),float2( 1.0f, 1.0f),
+		float2( 0.0f,-1.0f), float2(0.0f, 1.0f),float2( 1.0f,-1.0f),float2(-1.0f, 1.0f),
+	};
+
+	float2 vScrSizeRecip = 1.0f / 64.0f;//PS_ScreenSize.zw * 32.0;
+	
+	float4 cCenter = tex2Dlod(_tex0, float4(IN.baseTC.xy, 0, 0));
+
+	[unroll]
+	for(int n = 0; n < nOffsets; n++ )
+	{
+		half4 cTap = tex2Dlod(_tex0, float4(IN.baseTC.xy + vOffsets[n].xy * vScrSizeRecip, 0, 0));
+		half4 cTapValid = cCenter.x > 0.001 ? cCenter : cTap;
+		cCenter.xyz = cTap.x > 0.001 ? cTapValid : cCenter; // don't dilate alpha, used for masking
+	}
+
+	OUT.Color = cCenter;
+
+	return OUT;
+}
+
+// Final apply pass
+pixout DeferredWaterVolumeCausticsPS( vtxOutWPOS IN )
+{
+	pixout OUT = (pixout) 0;
+	
+#if %_RT_DEBUG0
+	OUT.Color = 0.1;
+	return OUT;
+#endif
+
+	float fDepth = GetLinearDepth( sceneDepthTexture, IN.baseTC.xy );
+	float3 vPosition = GetWorldPos( fDepth, IN.CamVec );
+	half3 vNormal = DecodeGBufferNormal( GetSceneTex( sceneNormalsTex, IN.baseTC.xy ) );
+
+	//half4 cDiffuseAccRT = DecodeLightBuffer( GetSceneTex( sceneDiffuseAccTex, IN.baseTC.xy) ); 
+	
+	float4 vInfoTC = mul(mLightView, half4(vPosition.xyz, 1));
+	vInfoTC.xy /= vInfoTC.w;
+	vInfoTC.y = -vInfoTC.y;
+	vInfoTC.xy = vInfoTC.xy * 0.5h + 0.5h;
+	
+	// Sample info map (dilate to avoid aliased edges)
+	float4 cWaterCausticInfo = tex2D(waterCausticsSamplerPoint, vInfoTC.xy);
+	cWaterCausticInfo.w *= 10.h;
+	//half fWaterHeight = 1.h / dot(cWaterCausticInfo.xy, float2(0.0001953125f, 0.0498046875f));
+	half fWaterHeight = 1.h / (cWaterCausticInfo.y / 256.h + cWaterCausticInfo.x);
+
+	// Clip off sections without caustics/water
+	// todo: maybe try stencil instead?
+	//clip(cWaterCausticInfo.b - 0.0001f);
+
+	// Early out, faster than clip.
+	if(cWaterCausticInfo.b < 0.001f)
+	{
+		OUT.Color = 0;
+		return OUT;
+	}
+
+	half2 fHeightAtten = half2(fWaterHeight, fWaterHeight + cWaterCausticInfo.w) - vPosition.z;
+	fHeightAtten.y *= abs(fHeightAtten.y);
+	
+	half fAtten = saturate(1.h-exp(-fHeightAtten.y * 2.h)); // softer attenuation for caustics
+
+	half belowWater = smoothstep(-0.1f,0.0f,fHeightAtten.x); 
+	fAtten = fAtten * max((0.25h-vNormal.z), belowWater); // Only apply to non-upward faces when above the water
+
+	// Bottom attenuation
+	half fAttenBottomCaustics = 1.h - saturate(fHeightAtten.x);
+	fAtten *= fAttenBottomCaustics*fAttenBottomCaustics;
+		
+	// Attenuate with distance.
+	half3 vDistToCam =  (PS_WorldViewPos.xyz - vPosition.xyz);
+	half fDistToCamSq = dot(vDistToCam, vDistToCam); // 2 alu
+	fAtten *= saturate( 100.0f/fDistToCamSq );
+	
+	// Attenuate near camera to avoid first person issues.
+	fAtten *= saturate((fDepth*PS_NearFarClipDist.y - 0.33) );
+
+	half3 vSunOffset = (g_PS_SunLightDir.xyz * fHeightAtten.x * lerp(-1.0,1.0,belowWater));        // 3 alu
+
+	// Sample caustic map
+	float3 vCausticPos = vPosition.xyz + vNormal.xyz * 0.25h;
+	vCausticPos.xy = vCausticPos.xy + vSunOffset.xy;
+
+	float4 vCausticTC = mul(mLightView, half4(vCausticPos.xyz, 1));
+	vCausticTC.xy /= vCausticTC.w;
+	vCausticTC.y = -vCausticTC.y;
+	vCausticTC.xy = vCausticTC.xy * 0.5 + 0.5;
+
+	half3 cCaustic = half3( tex2Dlod(waterCausticsSampler, half4(vCausticTC.xy, 0, 0)).z,
+							tex2Dlod(waterCausticsSampler, half4(vCausticTC.xy - 0.0002, 0, 0)).z,
+							tex2Dlod(waterCausticsSampler, half4(vCausticTC.xy - 0.0004, 0, 0)).z );
+	
+	cCaustic *= cCaustic;
+
+	OUT.Color.xyz = cCaustic.xyz * g_PS_SunColor.xyz;
+	OUT.Color *= fAtten;
+
+  return OUT;
+}
+
+//////////////////////////////// technique ////////////////
+
+technique WaterCausticsGen
+{
+  pass p0
+  {
+    VertexShader = WaterCausticsGenVS() WaterSurfaceVS;
+    PixelShader = WaterCausticsGenPS() WaterSurfacePS;    
+    CullMode = None;
+  }
+}
+
+technique WaterCausticsInfoDilate
+{
+  pass p0
+  {
+    VertexShader = BaseVS();
+    PixelShader = WaterCausticsInfoDilatePS();    
+    CullMode = None;
+  }
+}
+
+technique WaterVolumeCaustics
+{
+  pass p0
+  {
+    VertexShader = DeferredCasticsVS() CausticsVS;            
+    PixelShader = DeferredWaterVolumeCausticsPS() CausticsPS;
+    CullMode = None;        
+  }
+}
+
+/////////////////////// eof ///

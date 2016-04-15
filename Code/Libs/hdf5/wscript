@@ -1,0 +1,64 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryEngineStaticModule( 
+		target    = 'hdf5', 
+		vs_filter = 'Libs',
+		file_list = 'hdf5.waf_files',
+		exclude_from_static_code_analyzer = True,
+
+		cflags    = [ '/W0' ], # Disable warnings for 3rdParty code
+		
+		includes  = [
+			Path('Code/SDKs/hdf5/src'),
+			Path('Code/SDKs/hdf5/hl/src'),
+		],
+
+		defines   = [
+			# Act as if we support C99
+			# This requires inttypes.h to exist
+			# Not all versions of VS actually have this, so we provide a dummy one in Code/Libs/hdf5
+			# The alternative would be to not declare C99 support, but then we get macro redefinition errors
+			'__STDC_VERSION__=199901L',
+		],
+
+		use_module = [
+			'zlib',
+			'szip',
+		],
+
+		module_provides = dict(
+			includes = [
+				Path('Code/Libs/hdf5'), # For the configuration files
+				Path('Code/SDKs/hdf5/src'),
+				Path('Code/SDKs/hdf5/hl/src'),
+			],
+		),
+	)
+
+	# Tool used by h5build.bat to generate H5Tinit.c
+	bld.CryConsoleApplication(
+		target    = 'H5Detect',
+		vs_filter = 'Tools/HDF5',
+		file_list = 'h5detect.waf_files',
+		exclude_from_static_code_analyzer = True,
+		cflags    = [ '/MT', '/W0' ],
+
+		include = [
+			Path('Code/SDKs/hdf5/src'),
+		]
+	)
+
+	# Tool used by h5build.bat to generate H5lib_settings.c
+	bld.CryConsoleApplication(
+		target    = 'H5LibSettings',
+		vs_filter = 'Tools/HDF5',
+		file_list = 'h5libsettings.waf_files',
+		exclude_from_static_code_analyzer = True,
+		cflags    = [ '/MT', '/W0' ],
+
+		include = [
+			Path('Code/SDKs/hdf5/src'),
+		]
+	)

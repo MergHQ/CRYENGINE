@@ -1,0 +1,72 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2004.
+// -------------------------------------------------------------------------
+//  File name:   Eye.ext
+//  Version:     v1.00
+//  Created:     06/09/2005 by Tiago Sousa
+//  Compilers:   
+//  Description: Eye shader extension used by the editor
+//               for automatic shader generation (based on "Eye" shader template)
+// -------------------------------------------------------------------------
+//  History:
+//
+////////////////////////////////////////////////////////////////////////////
+
+Version (1.00)
+
+UsesCommonGlobalFlags
+
+Property
+{
+  Name = %NORMAL_MAP
+  Mask = 0x1
+  Property    (Normal map)
+  Description (Use normal-map texture)
+  DependencySet = $TEX_Normals
+  DependencyReset = $TEX_Normals
+  Hidden
+}
+
+Property
+{
+  Name = %ENVIRONMENT_MAP
+  Mask = 0x2
+  Property    (Environment map)
+  Description (Use environment map as separate texture)
+  DependencyReset = $TEX_EnvCM     
+}
+
+Property
+{
+  Name = %EYE_AO_OVERLAY
+  Mask = 0x4
+  Property    (Ambient occlusion overlay)
+  Description (Use for ambient occlusion overlay rendering)
+}
+
+Property
+{
+  Name = %EYE_SPECULAR_OVERLAY
+  Mask = 0x8
+  Property    (Specular overlay)
+  Description (Use for specular overlay rendering)
+}
+
+Property
+{
+  Name = %VERTCOLORS
+  Mask = 0x400000
+  DependencySet = $UserEnabled
+  Hidden
+}
+
+Property
+{
+  Name = %TEMP_EYES
+  Mask = 0x80000000
+  DependencySet = $UserEnabled
+  Hidden
+}

@@ -1,0 +1,104 @@
+<KillCam>
+	<FilteredEntities>
+		<!-- Ammo and Projectiles -->
+		<class name="RifleBullet"/>
+		<class name="PistolBullet"/>
+		<class name="ShotgunShell"/>
+
+		<!-- Game Mode Objects -->
+		<class name="AmmoCrateMP" />
+		<class name="EnvironmentalWeapon"/>
+		<class name="InteractiveObjectEx" />
+		<class name="InteractiveEntity"/>
+
+		<!-- Misc. Objects -->
+		<class name="Breakage"/>
+		<class name="Corpse"/>
+		<class name="DestroyableLight"/>
+		<class name="DestroyedVehicle"/>
+		<class name="Player"/>
+		<class name="DummyPlayer"/>
+		<class name="RigidBodyEx"/>
+
+		<!-- Vehicles -->
+		<class name="HMMWV"/>
+
+		<!-- Weapons -->
+		<class name="Rifle"/>
+		<class name="Pistol"/>
+		<class name="Shotgun"/>
+	</FilteredEntities>
+
+	<MountedWeapons>
+	</MountedWeapons>
+
+	<NoGeometryValid>
+		<class name="Corpse"/>
+		<class name="NoWeapon"/>
+		<class name="ParticleEffect"/>
+		<class name="PickAndThrowWeapon"/>
+	</NoGeometryValid>
+
+	<!-- CorpseADIKJoints: These are the names of the Animation Driven IK joints in 
+				a corpse, and will be set to not be animation driven, when spawned. -->
+	<CorpseADIKJoints>
+		<Joint name="Bip01 RHand2RiflePos_IKBlend"/>
+		<Joint name="Bip01 RHand2Aim_IKBlend"/>
+		<Joint name="Bip01 LHand2Aim_IKBlend"/>
+		<Joint name="Bip01 LHand2Weapon_IKBlend"/>
+		<Joint name="Bip01 LHand2Pocket_IKBlend"/>
+		<Joint name="Bip01 RHand2Pocket_IKBlend"/>
+		<Joint name="Bip01 LHand2RiflePos_IKBlend"/>
+		<Joint name="Bip01 LHand2PistolPos_IKBlend"/>
+		<Joint name="Bip01 RHand2PistolPos_IKBlend"/>
+		<Joint name="Bip01 RHand2Weapon_IKBlend"/>
+	</CorpseADIKJoints>
+
+	<ParticleEffects>
+
+		<!-- Excluded: These particle effects will not be recorded. -->
+		<Excluded>
+		</Excluded>
+
+		<!-- Replace: Replaces one particle effect with another. -->
+		<Replace>
+		</Replace>
+
+		<!-- Persistant: Effects that need to be created if they were halfway through during playback start. -->
+		<Persistant>
+		</Persistant>
+	</ParticleEffects>
+	
+	<Sounds>
+		<Excluded>		
+		</Excluded>
+	</Sounds>
+
+	<Highlights>
+		<HitTypes>
+			<HitType type="Melee" mul="0.2"/>
+		</HitTypes>
+		<MultiKills>
+			<MultiKill kills="0" mul="0.5"/>
+			<MultiKill kills="2" mul="2"/>
+			<MultiKill kills="3" mul="3"/>
+			<MultiKill kills="4" mul="4"/>
+			<MultiKill kills="5" mul="4"/>
+			<MultiKill kills="6" mul="4"/>
+			<MultiKill kills="7" mul="4"/>
+			<MultiKill kills="8" mul="4"/>
+			<MultiKill kills="9" mul="4"/>
+			<MultiKill kills="10" mul="4"/>
+			<MultiKill kills="11" mul="4"/>
+			<MultiKill kills="12" mul="4"/>
+		</MultiKills>
+		<Weapons>
+			<Weapon name="Rifle" mul="3"/>
+			<Weapon name="Shotgun" mul="5"/>
+			<Weapon name="Pistol" mul="1"/>
+		</Weapons>
+		<Special>
+		</Special>
+	</Highlights>
+
+</KillCam>

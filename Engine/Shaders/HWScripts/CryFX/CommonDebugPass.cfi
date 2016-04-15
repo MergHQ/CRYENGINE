@@ -1,0 +1,64 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+struct vert2fragDebug
+{
+  OUT_P
+  float4 Color : TEXCOORDN;	
+};
+
+struct app2vertDebug
+{
+  app2vertCommon vertCommon;
+
+  #if %_RT_INSTANCING_ATTR || %_RT_INSTANCING_CONST
+    float4 InstAmbientOp  : TEXCOORDN;
+  #endif
+};
+
+vert2fragDebug Common_DebugPassVS(app2vertDebug IN)
+{
+  vert2fragDebug OUT = (vert2fragDebug)0;
+  
+  streamPos vertPassPos = (streamPos)0;
+  vtxStreamUnifyCommon(IN.vertCommon, vertPassPos);
+
+  OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+
+  #if (%_RT_INSTANCING_ATTR || %_RT_INSTANCING_CONST)
+    #fetchinst (OUT.Color = IN.InstAmbientOp, vertPassPos.nInstance);
+  #else
+    OUT.Color = AmbientOp;
+  #endif
+
+  return OUT;            
+}
+
+pixout Common_DebugPassPS(vert2fragDebug IN)
+{
+  pixout OUT = (pixout)0;  
+
+  OUT.Color.xyz = IN.Color.xyz;
+  OUT.Color.w = 0.25;
+    
+  return OUT;
+}
+
+technique DebugPass
+{
+  pass p0
+  {
+    VertexShader = Common_DebugPassVS() DebugPassVS;
+    PixelShader = Common_DebugPassPS() DebugPassPS;
+
+    ZEnable = true;
+    ZWriteEnable = false;
+    CullMode = Back;
+    IgnoreMaterialState = true;
+
+    AlphaBlendEnable = true;
+    SrcBlend = SRC_ALPHA;
+    DestBlend = ONE_MINUS_SRC_ALPHA;
+    ZFunc = LEqual;
+  }
+}

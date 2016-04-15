@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- BEGIN_INCLUDE(manifest) -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+        package="%%%ANDROID_PACKAGE%%%"
+        android:versionCode="1"
+        android:debuggable="true"
+        android:versionName="1.1">
+
+    <!-- This is the platform API where NativeActivity was introduced. -->
+    <uses-sdk android:minSdkVersion="17" />
+
+    <!-- OpenGL ES 3.0 -->
+    <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+	<!-- Required texture compression support -->
+	<!--<supports-gl-texture android:name="GL_IMG_texture_compression_pvrtc" />
+	 <supports-gl-texture android:name="GL_EXT_texture_compression_s3tc" />-->
+
+    <!-- Required to access Google Play Licensing -->
+    <uses-permission android:name="com.android.vending.CHECK_LICENSE" />
+
+    <!-- Required to keep CPU alive while downloading files
+        (NOT to keep screen awake) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Required to poll the state of the network connection
+        and respond to changes -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Required to check whether Wi-Fi is enabled -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+
+    <!-- Allow writing to external storage -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <!-- Allow TCP/IP.  Needed for PerfHUD ES and download files from
+	 Google Play -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+	<!--
+                 android:icon="@drawable/ic_launcher"
+                 android:allowBackup="true"
+                 android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+	-->
+	<application android:label="@string/app_name"
+		     android:icon="@drawable/ic_launcher">
+
+        <!-- Our activity loads the generated bootstrapping class in order -->
+        <!--     to prelaod any third party shared libraries -->
+        <activity android:name=".CryEngineActivity"
+			android:label="@string/app_name"
+			android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+			android:screenOrientation="%%%ANDROID_SCREEN_ORIENTATION%%%"
+			android:configChanges="orientation|keyboardHidden">
+            <!-- Tell NativeActivity the name of or .so -->
+            <meta-data android:name="android.app.lib_name"
+                    android:value="AndroidLauncher" />
+        </activity>
+
+	<activity
+	    android:label="@string/app_name"
+	    android:name=".CryDownloaderActivity"
+    	    android:noHistory="true" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+	</activity>
+
+        <!--
+         In order for the alarm manager to contact the downloader script, the receiver
+         must be uniquely registered with the package manager here.
+        -->
+	<receiver android:name=".CryAlarmReceiver" />
+
+        <!--
+         In order to start the service, it must be uniquely registered with
+         the package manager here.
+        -->
+	<service android:name=".CryDownloaderService" />
+	</application>
+
+</manifest>
+<!-- END_INCLUDE(manifest) -->

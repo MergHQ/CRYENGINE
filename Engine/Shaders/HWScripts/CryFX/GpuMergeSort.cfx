@@ -1,0 +1,90 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2016 Crytek GmbH. All rights reserved.
+
+#include "GpuMergeSort.cfi"
+
+RWStructuredBuffer<SMergeSortItem> MergeSortInput : register(u0);
+RWStructuredBuffer<SMergeSortItem> MergeSortOutput : register(u1);
+
+
+bool IsSmallerEqual(SMergeSortItem a, SMergeSortItem b)
+{
+	if (a.key < b.key)
+		return true;
+	if (a.key > b.key)
+		return false;
+	if (a.key == b.key)
+		return (a.payload <= b.payload);
+	return false;
+}
+
+/*
+bool IsSmallerEqual(uint a, uint b)
+{
+	return (a <= b);
+}
+*/
+
+cbuffer MergeSortParams : register(b8) { int c_inputBlockSize; };
+
+[numthreads(1024, 1, 1)] 
+void MergeSortCS(uint3 DTid : SV_DispatchThreadID)
+{
+	int outputBlockSize = c_inputBlockSize << 1;
+	int block = DTid.x / outputBlockSize;
+
+	// setup input and output pointers for this block
+	int leftBase = outputBlockSize * block;
+	int rightBase = outputBlockSize * block + c_inputBlockSize;
+	int outputBase = outputBlockSize * block;
+
+	int o = DTid.x % outputBlockSize; // output slot
+
+	int upperBound = min(o, c_inputBlockSize);
+	int lowerBound = max(0, o - c_inputBlockSize);
+	
+	// this is the best guess for a (nearly) sorted array
+	int l = upperBound;
+
+	bool exit = false;
+	while (!exit)
+	{
+		int r = o - l;
+		
+		SMergeSortItem leftLarger;
+		SMergeSortItem rightLarger;
+		SMergeSortItem leftSmaller;
+		SMergeSortItem rightSmaller;
+		leftLarger.key = rightLarger.key = 0xFFFFFFFF;
+		leftSmaller.key = rightSmaller.key = 0x00000000;
+		
+		if (l < c_inputBlockSize)
+			leftLarger = MergeSortInput[leftBase + l];
+		if (r < c_inputBlockSize)
+			rightLarger = MergeSortInput[rightBase + r];
+		if (l > 0)
+			leftSmaller = MergeSortInput[leftBase + l - 1];
+		if (r > 0)
+			rightSmaller = MergeSortInput[rightBase + r - 1];
+		if (IsSmallerEqual(leftSmaller,rightLarger) && IsSmallerEqual(rightSmaller,leftLarger))
+		{
+			if (IsSmallerEqual(leftLarger,rightLarger))
+				MergeSortOutput[outputBase + o] = MergeSortInput[leftBase + l];
+			else
+				MergeSortOutput[outputBase + o] = MergeSortInput[rightBase + r];
+			exit = true;
+		}
+
+		if (!IsSmallerEqual(leftSmaller,rightLarger))
+			upperBound = l - 1;
+		if (!IsSmallerEqual(rightSmaller,leftLarger))
+			lowerBound = l + 1;
+		// this is the best guess for an unsorted array
+		l = (lowerBound + upperBound) >> 1;
+	}
+}
+
+technique MergeSort
+{
+	pass p0 { ComputeShader = MergeSortCS(); }
+}

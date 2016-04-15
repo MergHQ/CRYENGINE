@@ -1,0 +1,36 @@
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+#pragma once
+
+#include <CrySystem/VR/IHMDDevice.h>
+
+namespace CryVR
+{
+namespace OpenVR {
+enum ERenderAPI
+{
+	eRenderAPI_DirectX = 0,
+	eRenderAPI_OpenGL  = 1,
+};
+
+enum ERenderColorSpace
+{
+	eRenderColorSpace_Auto   = 0,
+	eRenderColorSpace_Gamma  = 1,
+	eRenderColorSpace_Linear = 2,
+};
+
+struct IOpenVRDevice : public IHmdDevice
+{
+public:
+	virtual void OnSetupEyeTargets(ERenderAPI api, ERenderColorSpace colorSpace, void* leftEyeHandle, void* rightEyeHandle) = 0;
+	virtual void OnSetupOverlay(int id, ERenderAPI api, ERenderColorSpace colorSpace, void* overlayTextureHandle) = 0;
+	virtual void OnDeleteOverlay(int id) = 0;
+	virtual void SubmitOverlay(int id) = 0;
+	virtual void SubmitFrame() = 0;
+	virtual void GetRenderTargetSize(uint& w, uint& h) = 0;
+protected:
+	virtual ~IOpenVRDevice() {}
+};
+}      // namespace OpenVR
+}      // namespace CryVR

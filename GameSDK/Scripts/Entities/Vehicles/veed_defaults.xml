@@ -1,0 +1,148 @@
+<Vehicle name="Default" >
+  <Physics damping="0" > 
+    <Buoyancy water_density="100" water_resistance="50" />    
+    <Simulation max_logged_collisions="2" max_time_step="0.02" min_energy="0.0016" /> 
+  </Physics>  
+  <Components>
+    <Component name="NewComponent" damageMax="0" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="0">
+      <DamageBehaviors />
+    </Component>
+  </Components>
+  <Parts>
+    <Part class="Static" mass="0" name="chassis" isHidden="0" disablePhysics="0" disableCollision="0" position="0,0,0" component="">
+      <stateLevels>
+        <stateLevel filename="Objects/Default.cgf" geometry="" state="" />        
+      </stateLevels>         
+    </Part>    
+  </Parts>
+ <Helpers>
+  <Helper name="new_helper" position="0, 0, 0" direction="0,1,0" part="" />
+ </Helpers>
+ <Seats>
+    <Seat AimPart="" enterHelper="passenger_enter_pos" exitHelper="passenger_exit_pos" isDriver="0" name="passenger" sitHelper="passenger_sit_pos" seatGroupIndex="1" part="" actionMap="">
+      <Views>        
+        <View class="SteerThirdPerson">
+          <SteerThirdPerson />
+        </View>        
+        <View class="FirstPerson" canRotate="1">
+          <FirstPerson />
+        </View>        
+        <View class="ThirdPerson" canRotate="1">
+          <ThirdPerson distance="8" heightOffset="1.5" speed="5" />
+        </View>
+      </Views>                  
+      <ActionParts />
+      <SeatActions />
+    </Seat>
+  </Seats>
+  <MovementParams>     
+    <StdBoat acceleration="6" accelerationVelMax="0.8" accelerationMultiplier="1.4" cornerForce="2.5" cornerHelper="steerPos" cornerTilt="0" propellerHelper="propeller_left_pos" pushHelper="pushPos" pushTilt="0" turnAccel="0.9" turnAccelMultiplier="1.25" turnDamping="0" turnRateMax="0.9" velMax="15" velMaxReverse="10" waveIdleStrength="0,0,0" />
+    			
+    <StdWheeled kvSteerMax="5" pedalLimitMax="0.4" steerRelaxation="110" steerSpeed="100" steerSpeedMin="120" steerSpeedScale="0.5" steerSpeedScaleMin="1" v0SteerMax="25" vMaxSteerMax="15" >    
+      <Wheeled axleFriction="500" brakeTorque="3300" clutchSpeed="1.2" damping="0.1" dynFriction="1.33" engineIdleRPM="500" engineMaxRPM="3000" engineMinRPM="100" enginePower="200" engineShiftDownRPM="1000" engineShiftUpRPM="2000" engineStartRPM="700" gearDirSwitchRPM="1000" maxSteer="0.45" maxTimeStep="0.02" minEnergy="0.0121" slipThreshold="0.1" stabilizer="1" pullTilt="0">
+        <gearRatios>
+          <gearRatio value="-6" />
+          <gearRatio value="0" />
+          <gearRatio value="6" />
+          <gearRatio value="3.5" />
+          <gearRatio value="2" />
+          <gearRatio value="1" />
+        </gearRatios>
+     </Wheeled>
+    </StdWheeled>
+    
+    <Tank steerSpeed="5">
+      <Wheeled axleFriction="7000" brakeTorque="15000" clutchSpeed="5" damping="0.1" dynFriction="1.2" engineIdleRPM="300" engineMaxRPM="2500" engineMinRPM="200" enginePower="2350" engineShiftDownRPM="800" engineShiftUpRPM="2000" engineStartRPM="1300" gearDirSwitchRPM="2500" maxSteer="0.785398" maxTimeStep="0.02" minEnergy="0.01" slipThreshold="0.05" stabilizer="2.5" steerTrackNeutralTurn="0.785398" >
+        <gearRatios>
+          <gearRatio value="-15" />
+          <gearRatio value="0" />
+          <gearRatio value="20" />
+          <gearRatio value="12" />
+          <gearRatio value="7" />
+        </gearRatios>
+      </Wheeled>
+    </Tank>
+
+   <ArcadeWheeled rpmGearShiftSpeed="0">
+    <Handling>
+	  <Power acceleration="0" decceleration="0" topSpeed="0" reverseSpeed="0" />
+	  <WheelSpin grip1="0.8" grip2="1.0" gripRecoverSpeed="1" accelMultiplier1="1.0" accelMultiplier2="0.5" />
+	  <Handbrake decceleration="0" deccelerationPowerLock="0" lockBack="0" lockFront="0" frontFrictionScale="0" backFrictionScale="0" angCorrectionScale="0" latCorrectionScale="0" />
+	  <SpeedReduction reductionAmount="0" reductionRate="0" />
+	  <Friction back="0" front="0" offset="0" />
+	  <Correction lateralSpring="0" angSpring="0" />
+	  <Compression frictionBoost="0" frictionBoostHandBrake="0" />
+    </Handling>
+	<FakeGears minChangeUpTime="0.6" minChangeDownTime="0.3" rpmRelaxSpeed="2" rpmInterpSpeed="4" >
+      <Ratios>
+        <Ratio value="0.50"/>
+        <Ratio value="0.80"/>
+        <Ratio value="0.95"/>
+      </Ratios>
+	</FakeGears>
+	<WheeledLegacy damping="0.1" engineIdleRPM="500" engineMaxRPM="3000" engineMinRPM="100" maxTimeStep="0.02" minEnergy="0.0121" stabilizer="1"/>
+   </ArcadeWheeled>
+        
+  </MovementParams>
+  
+  <Particles>
+    <Exhaust insideWater="false" outsideWater="true" >
+      <Helpers />              
+      <EngineStart effect="" />
+      <EngineStop effect="" />
+      <EngineRunning effect="" boostEffect="" baseSizeScale="1" minSpeed="0" maxSpeed="20" minPower="0" maxPower="1" minPowerCountScale="1" maxPowerCountScale="1" minPowerSpeedScale="1" minPowerSizeScale="1" maxPowerSizeScale="1" maxPowerSpeedScale="1" minSpeedCountScale="1" minSpeedSizeScale="1" minSpeedSpeedScale="1" maxSpeedCountScale="1" maxSpeedSizeScale="1" maxSpeedSpeedScale="1"/>
+    </Exhaust>
+    <DamageEffects />
+    <EnvironmentLayers>
+      <EnvironmentLayer minSpeed="1" maxSpeed="25" minSpeedCountScale="1" minSpeedSizeScale="1" minSpeedSpeedScale="1" maxSpeedCountScale="1" maxSpeedSizeScale="1" maxSpeedSpeedScale="1">
+        <Alignment alignGroundHeight="0" maxHeightCountScale="1" maxHeightSizeScale="1" alignToWater="0" />        
+        <Emitters />
+        <WheelGroups />
+      </EnvironmentLayer>
+    </EnvironmentLayers>
+  </Particles>
+  
+  <WheelMaster />
+  <Modifications />
+    
+  <VeedDefaults>
+    <!-- Parts -->
+    <SubPartWheel axle="0" damping="-0.5" density="5000" driving="1" lenMax="0.35" maxFriction="0.9" minFriction="0.9" stiffness="0" suspLength="0.25" />
+    <Tread filename="objects/vehicles/abrams/tread_left.chr" materialName="" uvRateMax="23" uvSliceCount="12" />          
+    <MassBox size="2,3,1" />
+    <SubPart />
+    <Animated filename="" filenameDestroyed="" />
+    <Attachment />
+    <!-- DamageBehaviors -->
+    <Effect effect="" />
+    <Impulse direction="0,0,1" forceMax="25" forceMin="15" momentum="0,0,0" />
+    <DetachPart part="" baseForce="0,0,0" />
+    <MovementNotification isSteering="0" isFatal="1" />    
+    <Group name="" />    
+    <Destroy />
+    <BlowTire />
+    <Indicator>
+    	<Light material="" sound="" soundRatioMin="" helper="" />
+    </Indicator>
+    <!-- SeatActions -->
+    <Sound sound="" helper="" />
+    <RotateTurret pitchPart="" yawPart="" />
+    <SteeringWheel part="" wheelRotationMax="0" />
+    <Weapons>
+      <Weapons>
+        <Weapon class="" part="">
+          <Helpers>
+            <Helper value="shootingPos" />
+          </Helpers>
+        </Weapon>
+      </Weapons>
+    </Weapons>   
+    <Lights>
+      <lightParts />
+    </Lights>
+    <PassengerIK>   
+      <Limbs />      
+    </PassengerIK>
+  </VeedDefaults>
+  
+</Vehicle>

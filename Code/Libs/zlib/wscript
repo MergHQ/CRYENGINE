@@ -1,0 +1,23 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'zlib', 
+		vs_filter = 'Libs',
+		file_list = 'zlib.waf_files',
+		exclude_from_static_code_analyzer = True,
+
+		includes         = [ Path('Code/SDKs/zlib-1.2.8') ],
+		module_provides  = dict(
+			includes = [ Path('Code/SDKs/zlib-1.2.8') ],	
+		),
+
+		win_defines     = ['_CRT_SECURE_NO_WARNINGS', '_CRT_NONSTDC_NO_DEPRECATE'],
+		
+		darwin_defines 	= ['HAVE_UNISTD_H'],
+		linux_defines 	= ['HAVE_UNISTD_H'],
+		orbis_defines 	= ['HAVE_UNISTD_H'],
+		
+		durango_defines = ['_CRT_SECURE_NO_WARNINGS', '_CRT_NONSTDC_NO_DEPRECATE'],
+	)	

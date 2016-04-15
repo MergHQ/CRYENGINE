@@ -1,0 +1,10 @@
+{
+	"NoUberFile":
+	{
+		"DXGL/Specification":
+		[
+			"DXGL/Specification/glad_glx.c",
+			"DXGL/Specification/glad_glx.h"
+		]
+	}
+}

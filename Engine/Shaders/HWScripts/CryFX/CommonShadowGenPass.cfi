@@ -1,0 +1,226 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+float4 MaterialLayersParamsSG : PI_MaterialLayersParams;//x=frozen, y=wet, z = cloak, w = unuse
+
+///////////////// vertex shader //////////////////
+v2f_sh Common_SG_VS(app2vertSGGeneral IN_common)
+{
+  v2f_sh OUT = (v2f_sh)0; 
+
+  	app2vertSGGeneral IN = IN_common;
+#if %TEMP_TERRAIN
+	IN.vertCommon.Position.z = IN_common.vertCommon.baseTC.x;
+#endif
+
+#if %_RT_NEAREST
+	// Nearest objects are in camera space, we don't want to render the nearest shadows in camera space
+	// so convert to world space
+
+	#if %_RT_PER_INSTANCE_CB_TEMP
+		PerInstanceWorldMatrix[0][3] += g_VS_WorldViewPos.x; 
+		PerInstanceWorldMatrix[1][3] += g_VS_WorldViewPos.y; 
+		PerInstanceWorldMatrix[2][3] += g_VS_WorldViewPos.z;
+	#else
+		ObjWorldMatrix[0][3] += g_VS_WorldViewPos.x; 
+		ObjWorldMatrix[1][3] += g_VS_WorldViewPos.y; 
+		ObjWorldMatrix[2][3] += g_VS_WorldViewPos.z;
+	#endif
+
+#endif
+
+  streamPos vertPassPos = (streamPos)0;
+  streamPos_FromSG(IN, vertPassPos);
+  
+#if %TEMP_TERRAIN && %_RT_OBJ_IDENTITY
+  float4 HPosition = Pos_VS_Terrain(0, g_VS_ViewProjMatr, vertPassPos, true);
+#else  
+  float4 HPosition = Pos_VS_General(g_VS_ViewProjMatr, vertPassPos, false);
+#endif
+
+#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+	// For shadow gen this is world position (not relative to camera)
+	OUT.vView.xyz = vertPassPos.WorldPos.xyz;
+	OUT.vNormal.xyz = mul((float3x3)vertPassPos.InstMatrix, vertPassPos.Normal);
+#endif
+
+	// RSMs
+#if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4
+	#if %_RT_DECAL_TEXGEN_2D
+		// tex gen for 2d projected decals
+		OUT.baseTC.x = dot( DecalTangent, vertPassPos.Position );
+		OUT.baseTC.y = dot( DecalBinormal, vertPassPos.Position );  
+	#elif %TEMP_TERRAIN
+		// tex coordinates on the sector textures
+		OUT.baseTC.xy = float2(Get_SPI_BlendWithTerrainColInfo().zz*vertPassPos.WorldPos.yx+Get_SPI_BlendWithTerrainColInfo().xy);
+		OUT.Normal = vertPassPos.Normal;
+	#else 
+		float3 objSpaceNormal = TangNormalUnnormalized(vertPassPos.Tangent, vertPassPos.Binormal);
+		OUT.Normal = mul((float3x3)vertPassPos.InstMatrix, objSpaceNormal);
+
+		// Apply texture modifiers
+		float4 baseTC = vertPassPos.baseTC;
+		_TCModify(baseTC, baseTC, vertPassPos.Position, OUT.Normal, TS_DIFFUSE);
+		OUT.baseTC = baseTC.xy;
+	#endif
+	OUT.Depth2 = HPosition.zw;
+#endif
+
+#if !%_RT_CUBEMAP0 
+  #if !%_RT_NEAREST
+		HPosition.z /= CP_ShadowGen_FrustumInfo.y;	//use linear z-buffer
+
+	#if %TEMP_TERRAIN
+		HPosition.z *= 1.005f;
+		HPosition.z += .001;
+		HPosition.z = max(HPosition.z, 0.001);
+	#endif
+
+  #endif
+
+  #if %_RT_SAMPLE0
+    OUT.Depth = HPosition.z + CP_ShadowGen_DepthTestBias.x;
+  #endif
+
+  #if !%_RT_HW_PCF_COMPARE 
+    //perspective interpolation is not needed here
+    OUT.Depth = HPosition.z - CP_ShadowGen_FrustumInfo.z; //increase precision around camera
+  #endif
+  #if !%_RT_NEAREST
+		HPosition.z *= HPosition.w;   //HPosition.z is linearized already
+  #endif
+#else
+    OUT.Depth = (HPosition.z/CP_ShadowGen_FrustumInfo.y);
+    OUT.Depth += CP_ShadowGen_DepthTestBias.x;
+//_RT_DIRECTLIGHT
+#endif
+
+float4 OutBaseTC;
+#if !%TEMP_TERRAIN
+ #if %_RT_ALPHATEST || %_RT_ALPHABLEND || %_RT_DISSOLVE
+  _TCModify(vertPassPos.baseTC, OutBaseTC, vertPassPos.Position, vertPassPos.ObjToTangentSpace[2], TS_DIFFUSE);
+	OUT.baseTC.xy = OutBaseTC;
+ #endif
+#endif
+
+#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+  _TCModify(vertPassPos.baseTC, OutBaseTC, vertPassPos.Position, vertPassPos.ObjToTangentSpace[2], TS_DIFFUSE);
+	OUT.baseTC.xy = OutBaseTC;
+#endif
+
+#if %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+  OUT.HPosition = HPosition;
+#endif  
+
+  return OUT;
+}
+
+// Hull shader and domain shader
+#include "CommonShadowGenPassTess.cfi"
+//////////////////////////////////////
+
+#if !%TEMP_TERRAIN
+half4 AmbientOpPB        : PB_AmbientOpacity;
+#endif
+
+struct pixout_shadow
+{
+#if %_RT_SAMPLE4
+  float4 Color   : COLOR0;
+  half4  Normal	 : COLOR1;
+  float4 Depth2  : COLOR2;
+#endif
+
+#if !OPENGL
+#if %_RT_SAMPLE0
+  float Depth    : SV_DepthGreaterEqual;
+#elif %_RT_HW_PCF_COMPARE && %_RT_CUBEMAP0
+  float Depth    : SV_Depth;
+#endif
+#else
+  // Otherwise HLSLcc compiler crashes for OpenGL (currently shadows won't work)
+  float Depth    : COLOR3;
+#endif
+};
+
+///////////////// pixel shader //////////////////
+pixout_shadow Common_SG_PS(v2f_sh IN)
+{
+	pixout_shadow OUT = (pixout_shadow)0;
+
+#if !%_RT_HW_PCF_COMPARE
+	OUT.Color.rgba = IN.Depth; //FIX: depth output should be here for precision
+#else
+	#if %_RT_SAMPLE0
+		float fSlopeScale = CP_ShadowGen_FrustumInfo.z;
+		float fSlopeClamp = 0.001;
+		OUT.Depth = IN.Depth + min( fSlopeScale * max( abs(ddx(IN.Depth)), abs(ddy(IN.Depth)) ), fSlopeClamp);
+	#elif %_RT_CUBEMAP0
+		//output linear depth
+		OUT.Depth = IN.Depth;
+	#endif
+#endif
+
+
+#if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4
+	OUT.Depth2 = IN.Depth2.x / IN.Depth2.y;
+	OUT.Normal.xyz = normalize(half3(IN.Normal.xyz))*.5h+.5h;
+	OUT.Normal.w = 1;
+#endif
+
+#if %_RT_ALPHATEST || %_RT_ALPHABLEND || %_RT_SAMPLE4
+	#if !%TEMP_TERRAIN
+		half4 baseColor = GetDiffuseTex(diffuseTex, IN.baseTC.xy);
+	#else
+		half4 baseColor = GetTerrainTex(terrainBaseTex, IN.baseTC.xy);	
+	#endif
+
+	clip(baseColor.a - Get_SPI_AlphaTest(0).w);
+
+	#if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4
+		// output RSM color component
+		#if !%TEMP_TERRAIN
+			half3 vFinalIndirectColor = MatDifColor.rgb; 
+			OUT.Color.rgb = baseColor.rgb * vFinalIndirectColor;
+		#else
+			OUT.Color.rgb = baseColor.rgb;
+		#endif
+
+		#if	%TEMP_VEGETATION
+		OUT.Color.a = min(baseColor.a, CP_ShadowGen_VegetationAlphaClamp.x);
+	#endif
+
+	#endif
+#endif
+
+#if %_RT_DISSOLVE
+    half fNoise = GetDissolveTex(dissolveNoiseTex, IN.baseTC.xy*6.h).x;
+    clip(  fNoise - Get_SPI_AlphaTest(0).x );
+#endif
+
+	return OUT;
+}
+
+//======================================================================
+
+technique ShadowGen
+{
+	pass p0
+	{
+		VertexShader = Common_SG_VS() ShadowGenVS;
+#if ENABLE_TESSELLATION
+		HullShader   = Common_ShadowGenHS() ShadowGenVS;
+		DomainShader = Common_ShadowGenDS() ShadowGenVS;
+#endif
+
+		ZEnable = true;
+		ZWriteEnable = true;
+		CullMode = Back;
+
+		PixelShader = Common_SG_PS() ShadowGenPS;
+
+    #if %GRASS || %LEAVES || %HAIR_PASS || %TEMP_SKIN
+      CullMode = None;
+    #endif
+  }
+}

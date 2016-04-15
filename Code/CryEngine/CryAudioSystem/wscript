@@ -1,0 +1,18 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryEngineModule(
+		target		= 'CryAudioSystem',
+		vs_filter	= 'CryEngine/Audio',
+
+		file_list   = 'cryaudiosystem.waf_files',
+		pch			= 'stdafx.cpp',
+
+		includes = ['Common'],
+
+		durango_lib = [ 'acphal' ],
+	)
+	
+	bld.recurse('implementations', name='build')
+	bld.recurse('Common', name='build')

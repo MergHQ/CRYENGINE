@@ -1,0 +1,1753 @@
+<Announcements>
+
+<!-- Supported Gamemodes
+	AllOrNothing - AON
+	Assault - AS
+	BombTheBase - BTB
+	CaptureTheFlag - CTF
+	CrashSite - CS
+	Extraction - EXT
+	InstantAction - IA
+	Spears - PS
+	TeamInstantAction - TIA
+	Gladiator - GL
+	Any undefined gamemode - default
+	
+	
+	Any undefined language - languagedefault
+	-->
+	
+	<!-- NOTE: norepeat will stop other announcements with norepeat set from playing! -->
+
+	<!-- TeamPerks -->
+
+	<Announcement name="TeamRadarAvailable">
+		<SoundOption sound="mp_overlord[team]/suit_radar_uplink_available_01" />
+		<SoundOption sound="mp_overlord[team]/suit_radar_uplink_available_02" />
+		<SoundOption sound="mp_overlord[team]/suit_radar_uplink_available_03" />
+		<SoundOption sound="mp_overlord[team]/suit_radar_uplink_available_04" />
+		<SoundOption sound="mp_overlord[team]/suit_radar_uplink_available_05" />
+	</Announcement>
+
+	<Announcement name="TeamRadar" condition="self|teammate">
+		<!-- <DisplayMessage display="@ui_announce_gotBetterRadar_selfTeam" /> -->
+		<SoundOption sound="mp_overlord[team]/suit_radar_uplink_established_01" />
+		<SoundOption sound="mp_overlord[team]/suit_radar_uplink_established_02" />
+		<SoundOption sound="mp_overlord[team]/suit_radar_uplink_established_03" />
+		<SoundOption sound="mp_overlord[team]/suit_radar_uplink_established_04" />
+		<SoundOption sound="mp_overlord[team]/suit_radar_uplink_established_05" />
+	</Announcement>
+
+	<Announcement name="TeamRadar" condition="enemy">
+		<!-- <DisplayMessage display="@ui_announce_gotBetterRadar_enemy" /> -->
+		<SoundOption sound="mp_overlord[team]/suit_enemy_radar_uplink_detected_01" />
+		<SoundOption sound="mp_overlord[team]/suit_enemy_radar_uplink_detected_02" />
+		<SoundOption sound="mp_overlord[team]/suit_enemy_radar_uplink_detected_03" />
+		<SoundOption sound="mp_overlord[team]/suit_enemy_radar_uplink_detected_04" />
+		<SoundOption sound="mp_overlord[team]/suit_enemy_radar_uplink_detected_05" />
+	</Announcement>
+
+	<Announcement name="SuitBoostAvailable" condition="self">
+		<SoundOption sound="mp_overlord[team]/maximum_suit_01" />
+		<SoundOption sound="mp_overlord[team]/maximum_suit_02" />
+		<SoundOption sound="mp_overlord[team]/maximum_suit_03" />
+		<SoundOption sound="mp_overlord[team]/maximum_suit_04" />
+		<SoundOption sound="mp_overlord[team]/maximum_suit_05" />
+	</Announcement>
+
+	<Announcement name="SuitBoost" condition="self">
+		<SoundOption sound="mp_overlord[team]/maximum_suit_activated_01" />
+		<SoundOption sound="mp_overlord[team]/maximum_suit_activated_02" />
+		<SoundOption sound="mp_overlord[team]/maximum_suit_activated_03" />
+		<SoundOption sound="mp_overlord[team]/maximum_suit_activated_04" />
+		<SoundOption sound="mp_overlord[team]/maximum_suit_activated_05" />
+	</Announcement>
+
+	<Announcement name="SuitBoost" condition="enemy">
+		<!-- We haven't got anything for this stich a line together -->
+	</Announcement>
+
+	<Announcement name="RemindGammaAvailable">
+		<!-- CODE REQUIRED FOR THIS -->
+		<SoundOption sound="mp_overlord[team]/remind_gamma_01" />
+		<SoundOption sound="mp_overlord[team]/remind_gamma_02" />
+		<SoundOption sound="mp_overlord[team]/remind_gamma_03" />
+		<SoundOption sound="mp_overlord[team]/remind_gamma_04" />
+		<SoundOption sound="mp_overlord[team]/remind_gamma_05" />
+	</Announcement>
+
+	<Announcement name="RemindMaxSuitAvailable">
+		<!-- CODE REQUIRED FOR THIS -->
+		<SoundOption sound="mp_overlord[team]/remind_maxsuit_01" />
+		<SoundOption sound="mp_overlord[team]/remind_maxsuit_02" />
+		<SoundOption sound="mp_overlord[team]/remind_maxsuit_03" />
+		<SoundOption sound="mp_overlord[team]/remind_maxsuit_04" />
+		<SoundOption sound="mp_overlord[team]/remind_maxsuit_05" />
+	</Announcement>
+
+	<Announcement name="RemindGunshipAvailable">
+		<!-- CODE REQUIRED FOR THIS -->
+		<SoundOption sound="mp_overlord[team]/remind_gunship_01" />
+		<SoundOption sound="mp_overlord[team]/remind_gunship_02" />
+		<SoundOption sound="mp_overlord[team]/remind_gunship_03" />
+		<SoundOption sound="mp_overlord[team]/remind_gunship_04" />
+		<SoundOption sound="mp_overlord[team]/remind_gunship_05" />
+	</Announcement>
+
+	<Announcement name="RemindSwarmerAvailable">
+		<!-- CODE REQUIRED FOR THIS -->
+		<SoundOption sound="mp_overlord[team]/remind_swarmer_01" />
+		<SoundOption sound="mp_overlord[team]/remind_swarmer_02" />
+		<SoundOption sound="mp_overlord[team]/remind_swarmer_03" />
+		<SoundOption sound="mp_overlord[team]/remind_swarmer_04" />
+		<SoundOption sound="mp_overlord[team]/remind_swarmer_05" />
+	</Announcement>
+
+	<Announcement name="RemindEMPAvailable">
+		<!-- CODE REQUIRED FOR THIS -->
+		<SoundOption sound="mp_overlord[team]/remind_emp_01" />
+		<SoundOption sound="mp_overlord[team]/remind_emp_02" />
+		<SoundOption sound="mp_overlord[team]/remind_emp_03" />
+		<SoundOption sound="mp_overlord[team]/remind_emp_04" />
+		<SoundOption sound="mp_overlord[team]/remind_emp_05" />
+	</Announcement>
+
+	<Announcement name="RemindRadarAvailable">
+		<!-- CODE REQUIRED FOR THIS -->
+		<SoundOption sound="mp_overlord[team]/remind_radar_01" />
+		<SoundOption sound="mp_overlord[team]/remind_radar_02" />
+		<SoundOption sound="mp_overlord[team]/remind_radar_03" />
+		<SoundOption sound="mp_overlord[team]/remind_radar_04" />
+		<SoundOption sound="mp_overlord[team]/remind_radar_05" />
+	</Announcement>
+
+	<Announcement name="GammaBurst_0kills">
+		<SoundOption sound="mp_overlord[team]/gammaresult0_01" />
+		<SoundOption sound="mp_overlord[team]/gammaresult0_02" />
+		<SoundOption sound="mp_overlord[team]/gammaresult0_03" />
+		<SoundOption sound="mp_overlord[team]/gammaresult0_04" />
+		<SoundOption sound="mp_overlord[team]/gammaresult0_05" />
+		<SoundOption sound="mp_overlord[team]/gammaresult0_06" />
+	</Announcement>
+
+	<Announcement name="GammaBurst_1kill">
+		<SoundOption sound="mp_overlord[team]/gammaresult1_01" />
+		<SoundOption sound="mp_overlord[team]/gammaresult1_02" />
+		<SoundOption sound="mp_overlord[team]/gammaresult1_03" />
+		<SoundOption sound="mp_overlord[team]/gammaresult1_04" />
+		<SoundOption sound="mp_overlord[team]/gammaresult1_05" />
+		<SoundOption sound="mp_overlord[team]/gammaresult1_06" />
+	</Announcement>
+
+	<Announcement name="GammaBurst_2kills">
+		<SoundOption sound="mp_overlord[team]/gammaresult2_01" />
+		<SoundOption sound="mp_overlord[team]/gammaresult2_02" />
+		<SoundOption sound="mp_overlord[team]/gammaresult2_03" />
+		<SoundOption sound="mp_overlord[team]/gammaresult2_04" />
+		<SoundOption sound="mp_overlord[team]/gammaresult2_05" />
+		<SoundOption sound="mp_overlord[team]/gammaresult2_06" />
+	</Announcement>
+
+	<Announcement name="GammaBurst_3kills">
+		<SoundOption sound="mp_overlord[team]/gammaresult3_01" />
+		<SoundOption sound="mp_overlord[team]/gammaresult3_02" />
+		<SoundOption sound="mp_overlord[team]/gammaresult3_03" />
+		<SoundOption sound="mp_overlord[team]/gammaresult3_04" />
+		<SoundOption sound="mp_overlord[team]/gammaresult3_05" />
+		<SoundOption sound="mp_overlord[team]/gammaresult3_06" />
+	</Announcement>
+
+	<Announcement name="GammaBurst_manykills">
+		<SoundOption sound="mp_overlord[team]/gammaresultmany_01" />
+		<SoundOption sound="mp_overlord[team]/gammaresultmany_02" />
+		<SoundOption sound="mp_overlord[team]/gammaresultmany_03" />
+		<SoundOption sound="mp_overlord[team]/gammaresultmany_04" />
+		<SoundOption sound="mp_overlord[team]/gammaresultmany_05" />
+		<SoundOption sound="mp_overlord[team]/gammaresultmany_06" />
+	</Announcement>
+
+	<Announcement name="AlienGunship_0kills">
+		<SoundOption sound="mp_overlord[team]/gunshipresult0_01" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult0_02" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult0_03" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult0_04" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult0_05" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult0_06" />
+	</Announcement>
+
+	<Announcement name="AlienGunship_1kill">
+		<SoundOption sound="mp_overlord[team]/gunshipresult1_01" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult1_02" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult1_03" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult1_04" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult1_05" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult1_06" />
+	</Announcement>
+
+	<Announcement name="AlienGunship_2kills">
+		<SoundOption sound="mp_overlord[team]/gunshipresult2_01" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult2_02" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult2_03" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult2_04" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult2_05" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult2_06" />
+	</Announcement>
+
+	<Announcement name="AlienGunship_3kills">
+		<SoundOption sound="mp_overlord[team]/gunshipresult3_01" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult3_02" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult3_03" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult3_04" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult3_05" />
+		<SoundOption sound="mp_overlord[team]/gunshipresult3_06" />
+	</Announcement>
+
+	<Announcement name="AlienGunship_manykills">
+		<SoundOption sound="mp_overlord[team]/gunshipresultmany_01" />
+		<SoundOption sound="mp_overlord[team]/gunshipresultmany_02" />
+		<SoundOption sound="mp_overlord[team]/gunshipresultmany_03" />
+		<SoundOption sound="mp_overlord[team]/gunshipresultmany_04" />
+		<SoundOption sound="mp_overlord[team]/gunshipresultmany_05" />
+		<SoundOption sound="mp_overlord[team]/gunshipresultmany_06" />
+	</Announcement>
+
+	<Announcement name="GammaBurstAvailable">
+		<SoundOption sound="mp_overlord[team]/gamma_burst_ready_04" />
+		<SoundOption sound="mp_overlord[team]/gamma_burst_ready_05" />
+		<SoundOption sound="mp_overlord[team]/gamma_burst_ready_06" />
+	</Announcement>
+
+	<Announcement name="GammaBurstReady">
+		<SoundOption sound="mp_overlord[team]/gamma_burst_ready_01" />
+		<SoundOption sound="mp_overlord[team]/gamma_burst_ready_02" />
+		<SoundOption sound="mp_overlord[team]/gamma_burst_ready_03" />
+	</Announcement>
+
+	<Announcement name="GammaBurstReceived">
+		<SoundOption sound="mp_overlord[team]/gamma_order_received_01" />
+		<SoundOption sound="mp_overlord[team]/gamma_order_received_02" />
+		<SoundOption sound="mp_overlord[team]/gamma_order_received_03" />
+		<SoundOption sound="mp_overlord[team]/gamma_order_received_04" />
+		<SoundOption sound="mp_overlord[team]/gamma_order_received_05" />
+		<SoundOption sound="mp_overlord[team]/gamma_order_received_06" />
+		<SoundOption sound="mp_overlord[team]/gamma_order_received_07" />
+	</Announcement>
+
+	<Announcement name="AlienGunshipAvailable">
+		<SoundOption sound="mp_overlord[team]/perk_gunship_available_01" />
+		<SoundOption sound="mp_overlord[team]/perk_gunship_available_02" />
+		<SoundOption sound="mp_overlord[team]/perk_gunship_available_03" />
+		<SoundOption sound="mp_overlord[team]/perk_gunship_available_04" />
+		<SoundOption sound="mp_overlord[team]/perk_gunship_available_05" />
+	</Announcement>
+
+	<Announcement name="AlienGunship" condition="self|teammate">
+		<SoundOption sound="mp_overlord[team]/perk_gunship_friendly_incoming_01" />
+		<SoundOption sound="mp_overlord[team]/perk_gunship_friendly_incoming_02" />
+		<SoundOption sound="mp_overlord[team]/perk_gunship_friendly_incoming_03" />
+		<SoundOption sound="mp_overlord[team]/perk_gunship_friendly_incoming_04" />
+		<SoundOption sound="mp_overlord[team]/perk_gunship_friendly_incoming_05" />
+	</Announcement>
+
+		<Announcement name="AlienGunship" condition="enemy">
+		<SoundOption sound="mp_overlord[team]/enemy_alien_gunship_diverted_01" />
+		<SoundOption sound="mp_overlord[team]/enemy_alien_gunship_diverted_02" />
+	</Announcement>
+
+  <Announcement name="SwarmerAvailable">
+		<SoundOption sound="mp_overlord[team]/perk_swarmer_ready_01" />
+		<SoundOption sound="mp_overlord[team]/perk_swarmer_ready_02" />
+		<SoundOption sound="mp_overlord[team]/perk_swarmer_ready_03" />
+		<SoundOption sound="mp_overlord[team]/perk_swarmer_ready_04" />
+		<SoundOption sound="mp_overlord[team]/perk_swarmer_ready_05" />
+  </Announcement>
+
+	<Announcement name="SwarmerIncoming" condition="teammate">
+		<SoundOption sound="mp_overlord[team]/perk_swarmer_friendly_incoming_01" />
+		<SoundOption sound="mp_overlord[team]/perk_swarmer_friendly_incoming_02" />
+		<SoundOption sound="mp_overlord[team]/perk_swarmer_friendly_incoming_03" />
+		<SoundOption sound="mp_overlord[team]/perk_swarmer_friendly_incoming_04" />
+		<SoundOption sound="mp_overlord[team]/perk_swarmer_friendly_incoming_05" />
+	</Announcement>
+
+  <Announcement name="SwarmerIncoming" condition="enemy">
+   	 <SoundOption sound="mp_overlord[team]/perk_swarmer_enemy_incoming_01" />
+   	 <SoundOption sound="mp_overlord[team]/perk_swarmer_enemy_incoming_02" />
+   	 <SoundOption sound="mp_overlord[team]/perk_swarmer_enemy_incoming_03" />
+   	 <SoundOption sound="mp_overlord[team]/perk_swarmer_enemy_incoming_04" />
+   	 <SoundOption sound="mp_overlord[team]/perk_swarmer_enemy_incoming_05" />
+  </Announcement>
+
+  <Announcement name="EMPBlastAvailable">
+   	 <SoundOption sound="mp_overlord[team]/emp_ready_01" />
+   	 <SoundOption sound="mp_overlord[team]/emp_ready_02" />
+   	 <SoundOption sound="mp_overlord[team]/emp_ready_03" />
+   	 <SoundOption sound="mp_overlord[team]/emp_ready_04" />
+   	 <SoundOption sound="mp_overlord[team]/emp_ready_05" />
+  </Announcement>
+
+  <Announcement name="EMPBlastActivated" condition="self|teammate">
+   	 <SoundOption sound="mp_overlord[team]/emp_team_01" />
+   	 <SoundOption sound="mp_overlord[team]/emp_team_02" />
+   	 <SoundOption sound="mp_overlord[team]/emp_team_03" />
+   	 <SoundOption sound="mp_overlord[team]/emp_team_04" />
+   	 <SoundOption sound="mp_overlord[team]/emp_team_05" />
+  </Announcement>
+
+  <Announcement name="EMPBlastActivated" condition="enemy">
+   	 <SoundOption sound="mp_overlord[team]/emp_enemy_01" />
+   	 <SoundOption sound="mp_overlord[team]/emp_enemy_02" />
+   	 <SoundOption sound="mp_overlord[team]/emp_enemy_03" />
+   	 <SoundOption sound="mp_overlord[team]/emp_enemy_04" />
+   	 <SoundOption sound="mp_overlord[team]/emp_enemy_05" />
+  </Announcement>
+
+  <Announcement name="PingerActivated" condition="enemy" norepeat="3">
+   	 <SoundOption sound="mp_overlord[team]/enemy_pinger_01" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_pinger_02" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_pinger_03" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_pinger_04" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_pinger_05" />
+  </Announcement>
+
+
+  <Announcement name="PingerActivated" condition="teammate" norepeat="3">
+   	 <SoundOption sound="mp_overlord[team]/friendly_pinger_01" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_pinger_02" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_pinger_03" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_pinger_04" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_pinger_05" />
+  </Announcement>
+
+  <Announcement name="PingerInbound" norepeat="3">
+   	 <SoundOption sound="mp_overlord[team]/pinger_inbound_01" />
+   	 <SoundOption sound="mp_overlord[team]/pinger_inbound_02" />
+   	 <SoundOption sound="mp_overlord[team]/pinger_inbound_03" />
+   	 <SoundOption sound="mp_overlord[team]/pinger_inbound_04" />
+   	 <SoundOption sound="mp_overlord[team]/pinger_inbound_05" />
+  </Announcement>
+
+
+  <Announcement name="GetBoltSniper" condition="teammate">
+   	 <SoundOption sound="mp_overlord[team]/friendly_bolt_sniper_01" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_bolt_sniper_02" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_bolt_sniper_03" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_bolt_sniper_04" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_bolt_sniper_05" />
+  </Announcement>
+
+
+  <Announcement name="GetBoltSniper" condition="enemy">
+   	 <SoundOption sound="mp_overlord[team]/enemy_bolt_sniper_01" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_bolt_sniper_02" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_bolt_sniper_03" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_bolt_sniper_04" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_bolt_sniper_05" />
+  </Announcement>
+
+
+  <Announcement name="GetXpac" condition="teammate">
+   	 <SoundOption sound="mp_overlord[team]/friendly_xpac_01" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_xpac_02" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_xpac_03" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_xpac_04" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_xpac_05" />
+  </Announcement>
+
+
+  <Announcement name="GetXpac" condition="enemy">
+   	 <SoundOption sound="mp_overlord[team]/enemy_xpac_01" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_xpac_02" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_xpac_03" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_xpac_04" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_xpac_05" />
+  </Announcement>
+
+
+  <Announcement name="GetReaper" condition="teammate">
+   	 <SoundOption sound="mp_overlord[team]/friendly_reaper_01" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_reaper_02" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_reaper_03" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_reaper_04" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_reaper_05" />
+  </Announcement>
+
+
+  <Announcement name="GetReaper" condition="enemy">
+   	 <SoundOption sound="mp_overlord[team]/enemy_reaper_01" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_reaper_02" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_reaper_03" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_reaper_04" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_reaper_05" />
+  </Announcement>
+
+
+  <Announcement name="GetIncinerator" condition="teammate">
+   	 <SoundOption sound="mp_overlord[team]/friendly_incinerator_01" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_incinerator_02" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_incinerator_03" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_incinerator_04" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_incinerator_05" />
+  </Announcement>
+
+
+  <Announcement name="GetIncinerator" condition="enemy">
+   	 <SoundOption sound="mp_overlord[team]/enemy_incinerator_01" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_incinerator_02" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_incinerator_03" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_incinerator_04" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_incinerator_05" />
+  </Announcement>
+
+
+  <Announcement name="GetPinch" condition="teammate">
+   	 <SoundOption sound="mp_overlord[team]/friendly_pinch_01" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_pinch_02" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_pinch_03" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_pinch_04" />
+   	 <SoundOption sound="mp_overlord[team]/friendly_pinch_05" />
+  </Announcement>
+
+
+  <Announcement name="GetPinch" condition="enemy">
+   	 <SoundOption sound="mp_overlord[team]/enemy_pinch_01" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_pinch_02" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_pinch_03" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_pinch_04" />
+   	 <SoundOption sound="mp_overlord[team]/enemy_pinch_05" />
+  </Announcement>
+
+
+
+	<!-- Start of Game -->
+
+	<Announcement name="StartGame">
+		<Gamemode IA="1">
+			<SoundOption sound="mp_commander[team]/ia_start_01" />
+			<SoundOption sound="mp_commander[team]/ia_start_02" />
+			<SoundOption sound="mp_commander[team]/ia_start_03" />
+			<SoundOption sound="mp_commander[team]/ia_start_04" />
+			<SoundOption sound="mp_commander[team]/ia_start_05" />
+		</Gamemode>
+		<Gamemode TIA="1">
+			<SoundOption sound="mp_commander[team]/tia_start_01" />
+			<SoundOption sound="mp_commander[team]/tia_start_02" />
+			<SoundOption sound="mp_commander[team]/tia_start_03" />
+			<SoundOption sound="mp_commander[team]/tia_start_04" />
+			<SoundOption sound="mp_commander[team]/tia_start_05" />
+		</Gamemode>
+		<Gamemode CS="1">
+			<SoundOption sound="mp_commander[team]/cs_start_01" />
+			<SoundOption sound="mp_commander[team]/cs_start_02" />
+			<SoundOption sound="mp_commander[team]/cs_start_03" />
+			<SoundOption sound="mp_commander[team]/cs_start_04" />
+			<SoundOption sound="mp_commander[team]/cs_start_05" />
+		</Gamemode>
+		<Gamemode CTF="1" turkish="0">
+			<SoundOption sound="mp_commander[team]/ctr_start_01" />
+			<SoundOption sound="mp_commander[team]/ctr_start_02" />
+			<SoundOption sound="mp_commander[team]/ctr_start_03" />
+			<SoundOption sound="mp_commander[team]/ctr_start_04" />
+			<SoundOption sound="mp_commander[team]/ctr_start_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="StartGamePrimaryTeam">
+		<Gamemode EXT="1">
+			<SoundOption sound="mp_commander[team]/ext_start_offensive_01" />
+			<SoundOption sound="mp_commander[team]/ext_start_offensive_02" />
+			<SoundOption sound="mp_commander[team]/ext_start_offensive_03" />
+			<SoundOption sound="mp_commander[team]/ext_start_offensive_04" />
+			<SoundOption sound="mp_commander[team]/ext_start_offensive_05" />
+		</Gamemode>
+		<Gamemode AS="1">
+			<SoundOption sound="mp_commander[team]/ass_start_01" />
+			<SoundOption sound="mp_commander[team]/ass_start_02" />
+			<SoundOption sound="mp_commander[team]/ass_start_03" />
+			<SoundOption sound="mp_commander[team]/ass_start_04" />
+			<SoundOption sound="mp_commander[team]/ass_start_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="StartGameDefendingTeam">
+		<Gamemode EXT="1">
+			<SoundOption sound="mp_commander[team]/ext_start_defensive_01" />
+			<SoundOption sound="mp_commander[team]/ext_start_defensive_02" />
+			<SoundOption sound="mp_commander[team]/ext_start_defensive_03" />
+			<SoundOption sound="mp_commander[team]/ext_start_defensive_04" />
+			<SoundOption sound="mp_commander[team]/ext_start_defensive_05" />
+		</Gamemode>
+		<Gamemode AS="1">
+			<SoundOption sound="mp_commander[team]/ass_start_defensive_01" />
+			<SoundOption sound="mp_commander[team]/ass_start_defensive_02" />
+			<SoundOption sound="mp_commander[team]/ass_start_defensive_03" />
+			<SoundOption sound="mp_commander[team]/ass_start_defensive_04" />
+			<SoundOption sound="mp_commander[team]/ass_start_defensive_05" />
+		</Gamemode>
+	</Announcement>
+
+
+	<!-- Mid-Game -->
+
+	<Announcement name="LeavingMap">
+		<SoundOption sound="mp_overlord[team]/return_to_battlefield_01" />
+		<SoundOption sound="mp_overlord[team]/return_to_battlefield_02" />
+		<SoundOption sound="mp_overlord[team]/return_to_battlefield_03" />
+		<SoundOption sound="mp_overlord[team]/return_to_battlefield_04" />
+		<SoundOption sound="mp_overlord[team]/return_to_battlefield_05" />
+	</Announcement>
+
+	<Announcement name="TimeUp">
+		<SoundOption sound="mp_commander[team]/timelimit_01" />
+		<SoundOption sound="mp_commander[team]/timelimit_02" />
+		<SoundOption sound="mp_commander[team]/timelimit_03" />
+		<SoundOption sound="mp_commander[team]/timelimit_04" />
+		<SoundOption sound="mp_commander[team]/timelimit_05" />
+		<!-- find the lines and put them here -->
+	</Announcement>
+
+	<Announcement name="TakenTheLead">
+		<Gamemode IA="1" EXT="0" AS="0" default="1">
+			<SoundOption sound="mp_commander[team]/takelead_01" />
+			<SoundOption sound="mp_commander[team]/takelead_02" />
+			<SoundOption sound="mp_commander[team]/takelead_03" />
+			<SoundOption sound="mp_commander[team]/takelead_04" />
+			<SoundOption sound="mp_commander[team]/takelead_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="LostTheLead">
+		<Gamemode IA="1" EXT="0" AS="0" default="1">
+			<SoundOption sound="mp_commander[team]/loselead_01" />
+			<SoundOption sound="mp_commander[team]/loselead_02" />
+			<SoundOption sound="mp_commander[team]/loselead_03" />
+			<SoundOption sound="mp_commander[team]/loselead_04" />
+			<SoundOption sound="mp_commander[team]/loselead_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="NearScoreLimitWinning">
+		<Gamemode IA="1" TIA="1" CS="1">
+			<SoundOption sound="mp_commander[team]/limitleading_01" />
+			<SoundOption sound="mp_commander[team]/limitleading_02" />
+			<SoundOption sound="mp_commander[team]/limitleading_03" />
+			<SoundOption sound="mp_commander[team]/limitleading_04" />
+			<SoundOption sound="mp_commander[team]/limitleading_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="NearScoreLimitDrawing">
+			<SoundOption sound="mp_commander[team]/limiteven_01" />
+			<SoundOption sound="mp_commander[team]/limiteven_02" />
+			<SoundOption sound="mp_commander[team]/limiteven_03" />
+			<SoundOption sound="mp_commander[team]/limiteven_04" />
+			<SoundOption sound="mp_commander[team]/limiteven_05" />
+	</Announcement>
+
+	<Announcement name="NearScoreLimitLosing">
+		<Gamemode IA="1" TIA="1" CS="1">
+			<SoundOption sound="mp_commander[team]/limitlosing_01" />
+			<SoundOption sound="mp_commander[team]/limitlosing_02" />
+			<SoundOption sound="mp_commander[team]/limitlosing_03" />
+			<SoundOption sound="mp_commander[team]/limitlosing_04" />
+			<SoundOption sound="mp_commander[team]/limitlosing_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="1MinuteLeftWinning">
+		<DisplayMessage display="@ui_announce_oneMinuteLeft" />
+		<Gamemode CTF="1" IA="1" default="1">
+			<SoundOption sound="mp_commander[team]/winning60secs_01" />
+			<SoundOption sound="mp_commander[team]/winning60secs_02" />
+			<SoundOption sound="mp_commander[team]/winning60secs_03" />
+			<SoundOption sound="mp_commander[team]/winning60secs_04" />
+			<SoundOption sound="mp_commander[team]/winning60secs_05" />
+		</Gamemode>
+		<Gamemode IA="1">
+
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="1MinuteLeftDrawing">
+		<DisplayMessage display="@ui_announce_oneMinuteLeft" />
+			<SoundOption sound="mp_commander[team]/limiteven_01" />
+			<SoundOption sound="mp_commander[team]/limiteven_02" />
+			<SoundOption sound="mp_commander[team]/limiteven_03" />
+			<SoundOption sound="mp_commander[team]/limiteven_04" />
+			<SoundOption sound="mp_commander[team]/limiteven_05" />
+	</Announcement>
+
+	<Announcement name="1MinuteLeftLosing">
+		<DisplayMessage display="@ui_announce_oneMinuteLeft" />
+		<Gamemode CTF="1" IA="1" TIA="1" default="1">
+			<SoundOption sound="mp_commander[team]/losing60secs_01" />
+			<SoundOption sound="mp_commander[team]/losing60secs_02" />
+			<SoundOption sound="mp_commander[team]/losing60secs_03" />
+			<SoundOption sound="mp_commander[team]/losing60secs_04" />
+			<SoundOption sound="mp_commander[team]/losing60secs_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="30SecondsLeftWinning">
+		<Gamemode CTF="1">
+			<SoundOption sound="mp_commander[team]/winning30secs_01" />
+			<SoundOption sound="mp_commander[team]/winning30secs_02" />
+			<SoundOption sound="mp_commander[team]/winning30secs_03" />
+			<SoundOption sound="mp_commander[team]/winning30secs_04" />
+			<SoundOption sound="mp_commander[team]/winning30secs_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="30SecondsLeftDrawing">
+	</Announcement>
+
+	<Announcement name="30SecondsLeftLosing">
+		<Gamemode CTF="1">
+			<SoundOption sound="mp_commander[team]/losing30secs_01" />
+			<SoundOption sound="mp_commander[team]/losing30secs_02" />
+			<SoundOption sound="mp_commander[team]/losing30secs_03" />
+			<SoundOption sound="mp_commander[team]/losing30secs_04" />
+			<SoundOption sound="mp_commander[team]/losing30secs_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="15SecondsLeft">
+		<Gamemode CTF="0" default="1">
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="5SecondsLeft">
+		<SoundOption sound="mp_commander[team]/5secs_01" />
+		<SoundOption sound="mp_commander[team]/5secs_02" />
+		<SoundOption sound="mp_commander[team]/5secs_03" />
+		<SoundOption sound="mp_commander[team]/5secs_04" />
+		<SoundOption sound="mp_commander[team]/5secs_05" />
+	</Announcement>
+
+	<Announcement name="3SecondsLeft">
+		<SoundOption sound="mp_commander[team]/3secs_01" />
+		<SoundOption sound="mp_commander[team]/3secs_02" />
+		<SoundOption sound="mp_commander[team]/3secs_03" />
+		<SoundOption sound="mp_commander[team]/3secs_04" />
+		<SoundOption sound="mp_commander[team]/3secs_05" />
+	</Announcement>
+
+	<Announcement name="AllEnemiesDefeated">
+		<Gamemode AS="1">
+			<!-- MISSING LINES GET THEM IN PICKUP -->
+		</Gamemode>
+	</Announcement>
+	
+	<!-- End of Round -->
+
+	<Announcement name="RoundWin">
+		<Gamemode CTF="0" EXT="0" default="1">
+			<SoundOption sound="suit_male/suit_voice_round_won" />
+		</Gamemode>
+		<Gamemode CTF="1" EXT="1">
+			<SoundOption sound="suit_male/suit_voice_round_over" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="RoundDraw">
+		<Gamemode CTF="0" EXT="0" default="1">
+			<SoundOption sound="suit_male/suit_voice_round_drawn" />
+		</Gamemode>
+		<Gamemode CTF="1" EXT="1" >
+			<SoundOption sound="suit_male/suit_voice_round_over" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="RoundLose">
+		<Gamemode  CTF="0" EXT="0" default="1">
+			<SoundOption sound="suit_male/suit_voice_round_lost" />
+		</Gamemode>
+		<Gamemode CTF="1" EXT="1">
+			<SoundOption sound="suit_male/suit_voice_round_over" />
+		</Gamemode>
+	</Announcement>
+
+
+
+	<!-- End of Game -->
+
+	<Announcement name="WinBig">
+		<Gamemode IA="1" EXT="1" default="1">
+			<SoundOption sound="mp_commander[team]/winfar_01" />
+			<SoundOption sound="mp_commander[team]/winfar_02" />
+			<SoundOption sound="mp_commander[team]/winfar_03" />
+			<SoundOption sound="mp_commander[team]/winfar_04" />
+			<SoundOption sound="mp_commander[team]/winfar_05" />
+			<SoundOption sound="mp_commander[team]/winfar_06" />
+			<SoundOption sound="mp_commander[team]/winfar_07" />
+			<SoundOption sound="mp_commander[team]/winfar_08" />
+			<SoundOption sound="mp_commander[team]/winfar_09" />
+			<SoundOption sound="mp_commander[team]/winfar_10" />
+			<SoundOption sound="mp_commander[team]/winfar_11" />
+			<SoundOption sound="mp_commander[team]/winfar_12" />
+			<SoundOption sound="mp_commander[team]/winfar_13" />
+			<SoundOption sound="mp_commander[team]/winfar_14" />
+			<SoundOption sound="mp_commander[team]/winfar_15" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="WinStandard">
+		<Gamemode IA="1" EXT="1" default="1">
+			<SoundOption sound="mp_commander[team]/winmed_01" />
+			<SoundOption sound="mp_commander[team]/winmed_02" />
+			<SoundOption sound="mp_commander[team]/winmed_03" />
+			<SoundOption sound="mp_commander[team]/winmed_04" />
+			<SoundOption sound="mp_commander[team]/winmed_05" />
+			<SoundOption sound="mp_commander[team]/winmed_06" />
+			<SoundOption sound="mp_commander[team]/winmed_07" />
+			<SoundOption sound="mp_commander[team]/winmed_08" />
+			<SoundOption sound="mp_commander[team]/winmed_09" />
+			<SoundOption sound="mp_commander[team]/winmed_10" />
+			<SoundOption sound="mp_commander[team]/winmed_11" />
+			<SoundOption sound="mp_commander[team]/winmed_12" />
+			<SoundOption sound="mp_commander[team]/winmed_13" />
+			<SoundOption sound="mp_commander[team]/winmed_14" />
+			<SoundOption sound="mp_commander[team]/winmed_15" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="WinClose">
+		<Gamemode IA="1" EXT="1" default="1">
+			<SoundOption sound="mp_commander[team]/winclose_01" />
+			<SoundOption sound="mp_commander[team]/winclose_02" />
+			<SoundOption sound="mp_commander[team]/winclose_03" />
+			<SoundOption sound="mp_commander[team]/winclose_04" />
+			<SoundOption sound="mp_commander[team]/winclose_05" />
+			<SoundOption sound="mp_commander[team]/winclose_06" />
+			<SoundOption sound="mp_commander[team]/winclose_07" />
+			<SoundOption sound="mp_commander[team]/winclose_08" />
+			<SoundOption sound="mp_commander[team]/winclose_09" />
+			<SoundOption sound="mp_commander[team]/winclose_10" />
+			<SoundOption sound="mp_commander[team]/winclose_11" />
+			<SoundOption sound="mp_commander[team]/winclose_12" />
+			<SoundOption sound="mp_commander[team]/winclose_13" />
+			<SoundOption sound="mp_commander[team]/winclose_14" />
+			<SoundOption sound="mp_commander[team]/winclose_15" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Draw">
+		<Gamemode IA="1" default="1">
+			<SoundOption sound="mp_commander[team]/draw_01" />
+			<SoundOption sound="mp_commander[team]/draw_02" />
+			<SoundOption sound="mp_commander[team]/draw_03" />
+			<SoundOption sound="mp_commander[team]/draw_04" />
+			<SoundOption sound="mp_commander[team]/draw_05" />
+			<SoundOption sound="mp_commander[team]/draw_06" />
+			<SoundOption sound="mp_commander[team]/draw_07" />
+			<SoundOption sound="mp_commander[team]/draw_08" />
+			<SoundOption sound="mp_commander[team]/draw_09" />
+			<SoundOption sound="mp_commander[team]/draw_10" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="LoseBig">
+		<Gamemode IA="1" EXT="1" default="1">
+			<SoundOption sound="mp_commander[team]/losefar_01" />
+			<SoundOption sound="mp_commander[team]/losefar_02" />
+			<SoundOption sound="mp_commander[team]/losefar_03" />
+			<SoundOption sound="mp_commander[team]/losefar_04" />
+			<SoundOption sound="mp_commander[team]/losefar_05" />
+			<SoundOption sound="mp_commander[team]/losefar_06" />
+			<SoundOption sound="mp_commander[team]/losefar_07" />
+			<SoundOption sound="mp_commander[team]/losefar_08" />
+			<SoundOption sound="mp_commander[team]/losefar_09" />
+			<SoundOption sound="mp_commander[team]/losefar_10" />
+			<SoundOption sound="mp_commander[team]/losefar_11" />
+			<SoundOption sound="mp_commander[team]/losefar_12" />
+			<SoundOption sound="mp_commander[team]/losefar_13" />
+			<SoundOption sound="mp_commander[team]/losefar_14" />
+			<SoundOption sound="mp_commander[team]/losefar_15" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="LoseStandard">
+		<Gamemode IA="1" EXT="1" default="1">
+			<SoundOption sound="mp_commander[team]/losemed_01" />
+			<SoundOption sound="mp_commander[team]/losemed_02" />
+			<SoundOption sound="mp_commander[team]/losemed_03" />
+			<SoundOption sound="mp_commander[team]/losemed_04" />
+			<SoundOption sound="mp_commander[team]/losemed_05" />
+			<SoundOption sound="mp_commander[team]/losemed_06" />
+			<SoundOption sound="mp_commander[team]/losemed_07" />
+			<SoundOption sound="mp_commander[team]/losemed_08" />
+			<SoundOption sound="mp_commander[team]/losemed_09" />
+			<SoundOption sound="mp_commander[team]/losemed_10" />
+			<SoundOption sound="mp_commander[team]/losemed_11" />
+			<SoundOption sound="mp_commander[team]/losemed_12" />
+			<SoundOption sound="mp_commander[team]/losemed_13" />
+			<SoundOption sound="mp_commander[team]/losemed_14" />
+			<SoundOption sound="mp_commander[team]/losemed_15" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="LoseClose">
+		<Gamemode IA="1" EXT="1" default="1">
+			<SoundOption sound="mp_commander[team]/loseclose_01" />
+			<SoundOption sound="mp_commander[team]/loseclose_02" />
+			<SoundOption sound="mp_commander[team]/loseclose_03" />
+			<SoundOption sound="mp_commander[team]/loseclose_04" />
+			<SoundOption sound="mp_commander[team]/loseclose_05" />
+			<SoundOption sound="mp_commander[team]/loseclose_06" />
+			<SoundOption sound="mp_commander[team]/loseclose_07" />
+			<SoundOption sound="mp_commander[team]/loseclose_08" />
+			<SoundOption sound="mp_commander[team]/loseclose_09" />
+			<SoundOption sound="mp_commander[team]/loseclose_10" />
+			<SoundOption sound="mp_commander[team]/loseclose_11" />
+			<SoundOption sound="mp_commander[team]/loseclose_12" />
+			<SoundOption sound="mp_commander[team]/loseclose_13" />
+			<SoundOption sound="mp_commander[team]/loseclose_14" />
+			<SoundOption sound="mp_commander[team]/loseclose_15" />
+		</Gamemode>
+	</Announcement>
+
+
+	<!-- Crashsite -->
+
+	<Announcement name="Destruct">
+		<Gamemode CS="1">
+		<SoundOption sound="mp_overlord[team]/cs_destruct_01" />
+		<SoundOption sound="mp_overlord[team]/cs_destruct_02" />
+		<SoundOption sound="mp_overlord[team]/cs_destruct_03" />
+		<SoundOption sound="mp_overlord[team]/cs_destruct_04" />
+		<SoundOption sound="mp_overlord[team]/cs_destruct_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Incoming">
+		<Gamemode CS="1">
+		<SoundOption sound="mp_overlord[team]/cs_incoming_01" />
+		<SoundOption sound="mp_overlord[team]/cs_incoming_02" />
+		<SoundOption sound="mp_overlord[team]/cs_incoming_03" />
+		<SoundOption sound="mp_overlord[team]/cs_incoming_04" />
+		<SoundOption sound="mp_overlord[team]/cs_incoming_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Landed">
+		<Gamemode CS="1">
+		<SoundOption sound="mp_overlord[team]/cs_crash_01" />
+		<SoundOption sound="mp_overlord[team]/cs_crash_02" />
+		<SoundOption sound="mp_overlord[team]/cs_crash_03" />
+		<SoundOption sound="mp_overlord[team]/cs_crash_04" />
+		<SoundOption sound="mp_overlord[team]/cs_crash_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Captured" condition="self" norepeat="12">
+		<Gamemode CS="1">
+		<SoundOption sound="mp_overlord[team]/cs_playercapture_01" />
+		<SoundOption sound="mp_overlord[team]/cs_playercapture_02" />
+		<SoundOption sound="mp_overlord[team]/cs_playercapture_03" />
+		<SoundOption sound="mp_overlord[team]/cs_playercapture_04" />
+		<SoundOption sound="mp_overlord[team]/cs_playercapture_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Captured" condition="teammate" norepeat="12">
+		<Gamemode CS="1">
+		<SoundOption sound="mp_overlord[team]/cs_teamcapture_01" />
+		<SoundOption sound="mp_overlord[team]/cs_teamcapture_02" />
+		<SoundOption sound="mp_overlord[team]/cs_teamcapture_03" />
+		<SoundOption sound="mp_overlord[team]/cs_teamcapture_04" />
+		<SoundOption sound="mp_overlord[team]/cs_teamcapture_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Captured" condition="enemy" norepeat="12">
+		<Gamemode CS="1">
+		<SoundOption sound="mp_overlord[team]/cs_enemycapture_01" />
+		<SoundOption sound="mp_overlord[team]/cs_enemycapture_02" />
+		<SoundOption sound="mp_overlord[team]/cs_enemycapture_03" />
+		<SoundOption sound="mp_overlord[team]/cs_enemycapture_04" />
+		<SoundOption sound="mp_overlord[team]/cs_enemycapture_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- Capture The Flag -->
+
+	<Announcement name="FlagScore" condition="self" norepeat="12">
+		<Gamemode CTF="1">
+		<SoundOption sound="mp_overlord[team]/ctf_youscore_01" />
+		<SoundOption sound="mp_overlord[team]/ctf_youscore_02" />
+		<SoundOption sound="mp_overlord[team]/ctf_youscore_03" />
+		<SoundOption sound="mp_overlord[team]/ctf_youscore_04" />
+		<SoundOption sound="mp_overlord[team]/ctf_youscore_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="FlagScore" condition="teammate" >
+		<Gamemode CTF="1">
+		<SoundOption sound="mp_overlord[team]/ctf_teamscore_01" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamscore_02" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamscore_03" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamscore_04" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamscore_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="FlagScore" condition="enemy" >
+		<Gamemode CTF="1">
+		<SoundOption sound="mp_overlord[team]/ctf_enemyscore_01" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemyscore_02" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemyscore_03" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemyscore_04" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemyscore_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="FlagTaken" condition="self" >
+		<Gamemode CTF="1">
+		<SoundOption sound="mp_overlord[team]/ctf_yougetflag_01" />
+		<SoundOption sound="mp_overlord[team]/ctf_yougetflag_02" />
+		<SoundOption sound="mp_overlord[team]/ctf_yougetflag_03" />
+		<SoundOption sound="mp_overlord[team]/ctf_yougetflag_04" />
+		<SoundOption sound="mp_overlord[team]/ctf_yougetflag_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="FlagTaken" condition="teammate" >
+		<Gamemode CTF="1">
+		<SoundOption sound="mp_overlord[team]/ctf_teamgetflag_01" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamgetflag_02" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamgetflag_03" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamgetflag_04" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamgetflag_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="FlagTaken" condition="enemy" >
+		<Gamemode CTF="1">
+		<SoundOption sound="mp_overlord[team]/ctf_enemygetflag_01" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemygetflag_02" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemygetflag_03" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemygetflag_04" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemygetflag_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="FlagReturned" condition="teammate" >
+		<Gamemode CTF="1">
+		<SoundOption sound="mp_overlord[team]/ctf_teamflagreturned_01" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamflagreturned_02" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamflagreturned_03" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamflagreturned_04" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamflagreturned_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="FlagReturned" condition="enemy" >
+		<Gamemode CTF="1">
+		<SoundOption sound="mp_overlord[team]/ctf_enemyflagreturned_01" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemyflagreturned_02" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemyflagreturned_03" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemyflagreturned_04" />
+		<SoundOption sound="mp_overlord[team]/ctf_enemyflagreturned_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="UnableToScore" >
+		<Gamemode CTF="1">
+		<SoundOption sound="mp_overlord[team]/ctf_teamnoscore_01" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamnoscore_02" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamnoscore_03" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamnoscore_04" />
+		<SoundOption sound="mp_overlord[team]/ctf_teamnoscore_05" />
+		</Gamemode>
+	</Announcement>
+
+
+	<!-- Assault -->
+	<!-- Assault sounds are played from attackers team id (therefore teammate condition is attackers, enemy is defenders)-->
+	<Announcement name="Hacking25" condition="teammate">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_data25_01" />
+			<SoundOption sound="mp_overlord[team]/ass_data25_02" />
+			<SoundOption sound="mp_overlord[team]/ass_data25_03" />
+			<SoundOption sound="mp_overlord[team]/ass_data25_04" />
+			<SoundOption sound="mp_overlord[team]/ass_data25_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="DefendersAllDead">
+		<Gamemode AS="1">
+		<!-- We haven't got anything for this. Find something -->
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Hacking25" condition="self">
+		<Gamemode AS="1">
+			<SoundOption sound="suit_male/suit_voice_25percent_data_uploaded" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Hacking25" condition="enemy">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_data_lost25_01" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost25_02" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost25_03" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost25_04" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost25_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Hacking50" condition="self">
+		<Gamemode AS="1">
+			<SoundOption sound="suit_male/suit_voice_50percent_data_uploaded" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Hacking50" condition="teammate">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_data50_01" />
+			<SoundOption sound="mp_overlord[team]/ass_data50_02" />
+			<SoundOption sound="mp_overlord[team]/ass_data50_03" />
+			<SoundOption sound="mp_overlord[team]/ass_data50_04" />
+			<SoundOption sound="mp_overlord[team]/ass_data50_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Hacking50" condition="enemy">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_data_lost50_01" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost50_02" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost50_03" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost50_04" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost50_05" />
+		</Gamemode>
+
+	</Announcement>
+
+	<Announcement name="Hacking75" condition="teammate">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_data75_01" />
+			<SoundOption sound="mp_overlord[team]/ass_data75_02" />
+			<SoundOption sound="mp_overlord[team]/ass_data75_03" />
+			<SoundOption sound="mp_overlord[team]/ass_data75_04" />
+			<SoundOption sound="mp_overlord[team]/ass_data75_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Hacking75" condition="self">
+		<Gamemode AS="1">
+			<SoundOption sound="suit_male/suit_voice_75percent_data_uploaded" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Hacking75" condition="enemy">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_data_lost75_01" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost75_02" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost75_03" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost75_04" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost75_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Hacking90" condition="teammate">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_data90_01" />
+			<SoundOption sound="mp_overlord[team]/ass_data90_02" />
+			<SoundOption sound="mp_overlord[team]/ass_data90_03" />
+			<SoundOption sound="mp_overlord[team]/ass_data90_04" />
+			<SoundOption sound="mp_overlord[team]/ass_data90_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Hacking90" condition="self">
+		<Gamemode AS="1">
+			<SoundOption sound="suit_male/suit_voice_90percent_data_uploaded" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="Hacking90" condition="enemy">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_data_lost90_01" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost90_02" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost90_03" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost90_04" />
+			<SoundOption sound="mp_overlord[team]/ass_data_lost90_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalA" condition="teammate" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_hack1_01" />
+			<SoundOption sound="mp_overlord[team]/ass_hack1_02" />
+			<SoundOption sound="mp_overlord[team]/ass_hack1_03" />
+			<SoundOption sound="mp_overlord[team]/ass_hack1_04" />
+			<SoundOption sound="mp_overlord[team]/ass_hack1_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalA" condition="self" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="suit_male/suit_voice_uploading_from_terminal_a" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalA" condition="enemy" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_a_01" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_a_02" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_a_03" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_a_04" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_a_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalB" condition="teammate" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_hack2_01" />
+			<SoundOption sound="mp_overlord[team]/ass_hack2_02" />
+			<SoundOption sound="mp_overlord[team]/ass_hack2_03" />
+			<SoundOption sound="mp_overlord[team]/ass_hack2_04" />
+			<SoundOption sound="mp_overlord[team]/ass_hack2_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalB" condition="self" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="suit_male/suit_voice_uploading_from_terminal_b" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalB" condition="enemy" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_b_01" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_b_02" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_b_03" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_b_04" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_b_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalC" condition="teammate" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_hack3_01" />
+			<SoundOption sound="mp_overlord[team]/ass_hack3_02" />
+			<SoundOption sound="mp_overlord[team]/ass_hack3_03" />
+			<SoundOption sound="mp_overlord[team]/ass_hack3_04" />
+			<SoundOption sound="mp_overlord[team]/ass_hack3_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalC" condition="self" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="suit_male/suit_voice_uploading_from_terminal_c" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalC" condition="enemy" norepeat="12">
+		<Gamemode AS="1" >
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_c_01" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_c_02" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_c_03" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_c_04" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_c_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalD" condition="teammate" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_hack4_01" />
+			<SoundOption sound="mp_overlord[team]/ass_hack4_02" />
+			<SoundOption sound="mp_overlord[team]/ass_hack4_03" />
+			<SoundOption sound="mp_overlord[team]/ass_hack4_04" />
+			<SoundOption sound="mp_overlord[team]/ass_hack4_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalD" condition="self" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="suit_male/suit_voice_uploading_from_terminal_d" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalD" condition="enemy" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_d_01" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_d_02" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_d_03" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_d_04" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_d_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalE" condition="teammate" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_hack5_01" />
+			<SoundOption sound="mp_overlord[team]/ass_hack5_02" />
+			<SoundOption sound="mp_overlord[team]/ass_hack5_03" />
+			<SoundOption sound="mp_overlord[team]/ass_hack5_04" />
+			<SoundOption sound="mp_overlord[team]/ass_hack5_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="TerminalE" condition="self" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="suit_male/suit_voice_uploading_from_terminal_e" />
+		</Gamemode>
+	</Announcement>
+
+
+	<Announcement name="TerminalE" condition="enemy" norepeat="12">
+		<Gamemode AS="1">
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_e_01" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_e_02" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_e_03" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_e_04" />
+			<SoundOption sound="mp_overlord[team]/ass_enemy_hack_e_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- Extraction -->
+
+	<Announcement name="ExtractedCell" condition="teammate">
+		<Gamemode EXT="1">
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_secured_01" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_secured_02" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_secured_03" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_secured_04" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_secured_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="ExtractedCell" condition="self">
+		<Gamemode EXT="1">
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_secured_01" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_secured_02" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_secured_03" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_secured_04" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_secured_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="ExtractedCell" condition="enemy">
+		<Gamemode EXT="1">
+			<SoundOption sound="mp_overlord[team]/ext_enemy_cell_secured_01" />
+			<SoundOption sound="mp_overlord[team]/ext_enemy_cell_secured_02" />
+			<SoundOption sound="mp_overlord[team]/ext_enemy_cell_secured_03" />
+			<SoundOption sound="mp_overlord[team]/ext_enemy_cell_secured_04" />
+			<SoundOption sound="mp_overlord[team]/ext_enemy_cell_secured_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="PickUpCell" condition="self" norepeat="12">
+		<Gamemode EXT="1">
+			<SoundOption sound="mp_overlord[team]/ext_get_to_chopper_01" />
+			<SoundOption sound="mp_overlord[team]/ext_get_to_chopper_02" />
+			<SoundOption sound="mp_overlord[team]/ext_get_to_chopper_03" />
+			<SoundOption sound="mp_overlord[team]/ext_get_to_chopper_04" />
+			<SoundOption sound="mp_overlord[team]/ext_get_to_chopper_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="PickUpCell" condition="teammate" norepeat="12">
+		<Gamemode EXT="1">
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_taken_01" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_taken_02" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_taken_03" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_taken_04" />
+			<SoundOption sound="mp_overlord[team]/ext_friendly_cell_taken_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="PickUpCell" condition="enemy" norepeat="12">
+		<Gamemode EXT="1">
+			<SoundOption sound="mp_overlord[team]/ext_enemy_cell_taken_01" />
+			<SoundOption sound="mp_overlord[team]/ext_enemy_cell_taken_02" />
+			<SoundOption sound="mp_commander[team]/ext_enemy_cell_taken_03" />
+			<SoundOption sound="mp_overlord[team]/ext_enemy_cell_taken_04" />
+			<SoundOption sound="mp_overlord[team]/ext_enemy_cell_taken_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- Spears Gamemode  -->
+
+	<Announcement name="SpearCapturedA" condition="teammate" norepeat="12">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_overlord[team]/spear_captured_a_01" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_a_02" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_a_03" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_a_04" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_a_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearCapturedA" condition="enemy" norepeat="12">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_overlord[team]/spear_lost_a_01" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_a_02" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_a_03" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_a_04" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_a_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearCapturedB" condition="teammate" norepeat="12">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_overlord[team]/spear_captured_b_01" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_b_02" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_b_03" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_b_04" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_b_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearCapturedB" condition="enemy" norepeat="12">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_overlord[team]/spear_lost_b_01" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_b_02" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_b_03" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_b_04" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_b_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearCapturedC" condition="teammate" norepeat="12">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_overlord[team]/spear_captured_c_01" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_c_02" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_c_03" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_c_04" />
+			<SoundOption sound="mp_overlord[team]/spear_captured_c_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearCapturedC" condition="enemy" norepeat="12">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_overlord[team]/spear_lost_c_01" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_c_02" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_c_03" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_c_04" />
+			<SoundOption sound="mp_overlord[team]/spear_lost_c_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearContendedA" norepeat="12">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_overlord[team]/spear_contended_a_01" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_a_02" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_a_03" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_a_04" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_a_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearContendedB" norepeat="12">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_overlord[team]/spear_contended_b_01" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_b_02" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_b_03" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_b_04" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_b_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearContendedC" norepeat="12">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_overlord[team]/spear_contended_c_01" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_c_02" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_c_03" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_c_04" />
+			<SoundOption sound="mp_overlord[team]/spear_contended_c_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearInitial">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_commander[team]/spears_start_01" />
+			<SoundOption sound="mp_commander[team]/spears_start_02" />
+			<SoundOption sound="mp_commander[team]/spears_start_03" />
+			<SoundOption sound="mp_commander[team]/spears_start_04" />
+			<SoundOption sound="mp_commander[team]/spears_start_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="AllSpears" condition="self|teammate" norepeat="12">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_overlord[team]/spear_all_controlled_01" />
+			<SoundOption sound="mp_overlord[team]/spear_all_controlled_02" />
+			<SoundOption sound="mp_overlord[team]/spear_all_controlled_03" />
+			<SoundOption sound="mp_overlord[team]/spear_all_controlled_04" />
+			<SoundOption sound="mp_overlord[team]/spear_all_controlled_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="AllSpears" condition="enemy" norepeat="12">
+		<Gamemode PS="1">
+			<SoundOption sound="mp_overlord[team]/spear_hostiles_have_all_01" />
+			<SoundOption sound="mp_overlord[team]/spear_hostiles_have_all_02" />
+			<SoundOption sound="mp_overlord[team]/spear_hostiles_have_all_03" />
+			<SoundOption sound="mp_overlord[team]/spear_hostiles_have_all_04" />
+			<SoundOption sound="mp_overlord[team]/spear_hostiles_have_all_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearEnergy50" condition="enemy" norepeat="3">
+		<Gamemode PS="1">
+		<SoundOption sound="mp_overlord[team]/spear_enemy_50_01" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_50_02" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_50_03" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_50_04" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_50_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearEnergy75" condition="enemy" norepeat="3">
+		<Gamemode PS="1">
+		<SoundOption sound="mp_overlord[team]/spear_enemy_75_01" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_75_02" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_75_03" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_75_04" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_75_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearEnergy90" condition="enemy" norepeat="3">
+		<Gamemode PS="1">
+		<SoundOption sound="mp_overlord[team]/spear_enemy_90_01" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_90_02" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_90_03" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_90_04" />
+		<SoundOption sound="mp_overlord[team]/spear_enemy_90_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearEnergy50" condition="self|teammate" norepeat="3">
+		<Gamemode PS="1">
+		<SoundOption sound="mp_overlord[team]/spear_friendly_50_01" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_50_02" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_50_03" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_50_04" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_50_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearEnergy75" condition="self|teammate" norepeat="3">
+		<Gamemode PS="1">
+		<SoundOption sound="mp_overlord[team]/spear_friendly_75_01" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_75_02" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_75_03" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_75_04" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_75_05" />
+		</Gamemode>
+	</Announcement>
+
+	<Announcement name="SpearEnergy90" condition="self|teammate" norepeat="3">
+		<Gamemode PS="1">
+		<SoundOption sound="mp_overlord[team]/spear_friendly_90_01" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_90_02" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_90_03" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_90_04" />
+		<SoundOption sound="mp_overlord[team]/spear_friendly_90_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- HUNTER - MARINE FACTION  -->
+
+	<!-- To play on first round that the player's a marine   -->
+	<Announcement name="Marine_First_RoundStart">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_first_roundstart_01" />
+			<SoundOption sound="mp_overlord1/marine_first_roundstart_02" />
+			<SoundOption sound="mp_overlord1/marine_first_roundstart_03" />
+			<SoundOption sound="mp_overlord1/marine_first_roundstart_04" />
+			<SoundOption sound="mp_overlord1/marine_first_roundstart_05" />
+			<SoundOption sound="mp_overlord1/marine_first_roundstart_06" />
+			<SoundOption sound="mp_overlord1/marine_first_roundstart_07" />
+			<SoundOption sound="mp_overlord1/marine_first_roundstart_08" />
+			<SoundOption sound="mp_overlord1/marine_first_roundstart_09" />
+			<SoundOption sound="mp_overlord1/marine_first_roundstart_10" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- to play on subsequent rounds as a marine  -->
+	<Announcement name="Marine_RoundStart">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_soundstart_01" />
+			<SoundOption sound="mp_overlord1/marine_soundstart_02" />
+			<SoundOption sound="mp_overlord1/marine_soundstart_03" />
+			<SoundOption sound="mp_overlord1/marine_soundstart_04" />
+			<SoundOption sound="mp_overlord1/marine_soundstart_05" />
+			<SoundOption sound="mp_overlord1/marine_soundstart_06" />
+			<SoundOption sound="mp_overlord1/marine_soundstart_07" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- on marine side when 5 marines remaining  -->
+	<Announcement name="Marine_FiveLeft">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_fiveleft_01" />
+			<SoundOption sound="mp_overlord1/marine_fiveleft_02" />
+			<SoundOption sound="mp_overlord1/marine_fiveleft_03" />
+			<SoundOption sound="mp_overlord1/marine_fiveleft_04" />
+			<SoundOption sound="mp_overlord1/marine_fiveleft_05" />
+			<SoundOption sound="mp_overlord1/marine_fiveleft_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- on marine side when 4 marines remaining  -->
+	<Announcement name="Marine_FourLeft">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_fourleft_01" />
+			<SoundOption sound="mp_overlord1/marine_fourleft_02" />
+			<SoundOption sound="mp_overlord1/marine_fourleft_03" />
+			<SoundOption sound="mp_overlord1/marine_fourleft_04" />
+			<SoundOption sound="mp_overlord1/marine_fourleft_05" />
+			<SoundOption sound="mp_overlord1/marine_fourleft_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- on marine side when 3 marines remaining  -->
+	<Announcement name="Marine_ThreeLeft">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_threeleft_01" />
+			<SoundOption sound="mp_overlord1/marine_threeleft_02" />
+			<SoundOption sound="mp_overlord1/marine_threeleft_03" />
+			<SoundOption sound="mp_overlord1/marine_threeleft_04" />
+			<SoundOption sound="mp_overlord1/marine_threeleft_05" />
+			<SoundOption sound="mp_overlord1/marine_threeleft_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- on marine side when 2 marines remaining  -->
+	<Announcement name="Marine_TwoLeft">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_twoleft_01" />
+			<SoundOption sound="mp_overlord1/marine_twoleft_02" />
+			<SoundOption sound="mp_overlord1/marine_twoleft_03" />
+			<SoundOption sound="mp_overlord1/marine_twoleft_04" />
+			<SoundOption sound="mp_overlord1/marine_twoleft_05" />
+			<SoundOption sound="mp_overlord1/marine_twoleft_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- on marine side when 1 marines remaining  -->
+	<Announcement name="Marine_OneLeft">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_oneleft_01" />
+			<SoundOption sound="mp_overlord1/marine_oneleft_02" />
+			<SoundOption sound="mp_overlord1/marine_oneleft_03" />
+			<SoundOption sound="mp_overlord1/marine_oneleft_04" />
+			<SoundOption sound="mp_overlord1/marine_oneleft_05" />
+			<SoundOption sound="mp_overlord1/marine_oneleft_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- on marine side 90 seconds left  -->
+	<Announcement name="Marine_90Seconds">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_90seconds_01" />
+			<SoundOption sound="mp_overlord1/marine_90seconds_02" />
+			<SoundOption sound="mp_overlord1/marine_90seconds_03" />
+			<SoundOption sound="mp_overlord1/marine_90seconds_04" />
+			<SoundOption sound="mp_overlord1/marine_90seconds_05" />
+			<SoundOption sound="mp_overlord1/marine_90seconds_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- on marine side 60 seconds left  -->
+	<Announcement name="Marine_60Seconds">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_60seconds_01" />
+			<SoundOption sound="mp_overlord1/marine_60seconds_02" />
+			<SoundOption sound="mp_overlord1/marine_60seconds_03" />
+			<SoundOption sound="mp_overlord1/marine_60seconds_04" />
+			<SoundOption sound="mp_overlord1/marine_60seconds_05" />
+			<SoundOption sound="mp_overlord1/marine_60seconds_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- on marine side 30 seconds left  -->
+	<Announcement name="Marine_30Seconds">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_30seconds_01" />
+			<SoundOption sound="mp_overlord1/marine_30seconds_02" />
+			<SoundOption sound="mp_overlord1/marine_30seconds_03" />
+			<SoundOption sound="mp_overlord1/marine_30seconds_04" />
+			<SoundOption sound="mp_overlord1/marine_30seconds_05" />
+			<SoundOption sound="mp_overlord1/marine_30seconds_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- on marine side winning the round -->
+	<Announcement name="Marine_RoundWin">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_roundwin_01" />
+			<SoundOption sound="mp_overlord1/marine_roundwin_02" />
+			<SoundOption sound="mp_overlord1/marine_roundwin_03" />
+			<SoundOption sound="mp_overlord1/marine_roundwin_04" />
+			<SoundOption sound="mp_overlord1/marine_roundwin_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- on marine side losing the round  -->
+	<Announcement name="Marine_RoundLose">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_overlord1/marine_roundlose_01" />
+			<SoundOption sound="mp_overlord1/marine_roundlose_02" />
+			<SoundOption sound="mp_overlord1/marine_roundlose_03" />
+			<SoundOption sound="mp_overlord1/marine_roundlose_04" />
+			<SoundOption sound="mp_overlord1/marine_roundlose_05" />
+			<SoundOption sound="mp_overlord1/marine_roundlose_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- HUNTER - HUNTER FACTION  -->
+
+	<!-- starting a round as hunter  -->
+	<Announcement name="Hunter_Start">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_start_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_start_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_start_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_start_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_start_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- after spawning as a hunter after swapping sides  -->
+	<Announcement name="Hunter_Converted">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_converted_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_converted_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_converted_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_converted_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_converted_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- as a hunter when 5 marines left  -->
+	<Announcement name="Hunter_FiveLeft">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_fiveleft_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_fiveleft_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_fiveleft_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_fiveleft_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_fiveleft_05" />
+			<SoundOption sound="mp_pred_overlord1/hunter_fiveleft_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- as a hunter when 4 marines left  -->
+	<Announcement name="Hunter_FourLeft">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_fourleft_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_fourleft_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_fourleft_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_fourleft_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_fourleft_05" />
+			<SoundOption sound="mp_pred_overlord1/hunter_fourleft_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- as a hunter when 3 marines left  -->
+	<Announcement name="Hunter_ThreeLeft">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_threeleft_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_threeleft_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_threeleft_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_threeleft_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_threeleft_05" />
+			<SoundOption sound="mp_pred_overlord1/hunter_threeleft_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- as a hunter when 2 marines left  -->
+	<Announcement name="Hunter_TwoLeft">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_twoleft_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_twoleft_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_twoleft_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_twoleft_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_twoleft_05" />
+			<SoundOption sound="mp_pred_overlord1/hunter_twoleft_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- as a hunter when 1 marines left  -->
+	<Announcement name="Hunter_OneLeft">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_oneleft_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_oneleft_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_oneleft_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_oneleft_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_oneleft_05" />
+			<SoundOption sound="mp_pred_overlord1/hunter_oneleft_06" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- as a hunter with 90 seconds left  -->
+	<Announcement name="Hunter_90Seconds">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_90seconds_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_90seconds_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_90seconds_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_90seconds_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_90seconds_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- as a hunter with 60 seconds left  -->
+	<Announcement name="Hunter_60Seconds">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_60seconds_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_60seconds_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_60seconds_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_60seconds_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_60seconds_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- as a hunter with 30 seconds left  -->
+	<Announcement name="Hunter_30Seconds">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_30seconds_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_30seconds_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_30seconds_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_30seconds_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_30seconds_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- as a hunter with 10 seconds left  -->
+	<Announcement name="Hunter_10Seconds">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_10seconds_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_10seconds_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_10seconds_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_10seconds_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_10seconds_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- as a hunter winning the round  -->
+	<Announcement name="Hunter_WinRound">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_winround_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_winround_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_winround_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_winround_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_winround_05" />
+		</Gamemode>
+	</Announcement>
+
+	<!-- as a hunter losing the round  -->
+	<Announcement name="Hunter_LoseRound">
+		<Gamemode GL="1">
+			<SoundOption sound="mp_pred_overlord1/hunter_loseround_01" />
+			<SoundOption sound="mp_pred_overlord1/hunter_loseround_02" />
+			<SoundOption sound="mp_pred_overlord1/hunter_loseround_03" />
+			<SoundOption sound="mp_pred_overlord1/hunter_loseround_04" />
+			<SoundOption sound="mp_pred_overlord1/hunter_loseround_05" />
+		</Gamemode>
+	</Announcement>
+
+</Announcements>

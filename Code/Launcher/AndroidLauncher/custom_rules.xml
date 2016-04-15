@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="CryEngine">
+	<target name="-pre-build">
+		<exec executable="%%%ANDROID_NDK_DIR%%%/%%%ANDROID_NDK_BUILD_CMD%%%" failonerror="true">
+			<!-- Need to disable multi-jobs to avoid "[exec] FileTracker : error FTK1011" -->
+			<arg value="-j%%%ANDROID_NDK_J%%%"/>
+			<arg value="NDK_DEBUG=%%%ANDROID_NDK_DEBUG%%%"/>
+			<arg value="V=%%%ANDROID_NDK_V%%%"/>
+			<!-- Change destination of ndk-build output for TADP -->
+			<arg value="NDK_LIBS_OUT=%%%ANDROID_NDK_LIBS_OUT%%%"/>
+		</exec>
+		<!-- Need ndk-build output in libs/ for ant.  Either need to set NDK_LIBS_OUT or copy them here -->
+		<!-- <copy todir="../../../Code/Solutions/Android/Tegra-Android/Debug/libs">
+			<fileset dir="libs" />
+		</copy> -->
+	</target>
+	<target name="clean" depends="android_rules.clean">
+		<exec executable="%%%ANDROID_NDK_DIR%%%/%%%ANDROID_NDK_BUILD_CMD%%%" failonerror="true">
+			<arg value="clean"/>
+		</exec>
+	</target>
+</project>

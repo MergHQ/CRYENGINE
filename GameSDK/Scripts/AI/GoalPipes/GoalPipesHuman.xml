@@ -1,0 +1,611 @@
+<GoalPipes>
+
+	<GoalPipe name="HumanInvestigateThreatMaster">
+		<!-- TODO: Move to any nearby cover -->
+		<!-- <TacticalPos name="HumanNearbyCover" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Stance id="Stand"/>
+			<Move moveToCover="true" speed="Run" stance="Stand"/>
+		<Else/>
+			<Script code="entity:Error('Failed to find cover with shooting posture to target')"/>
+		</If>
+		<Timeout interval="1"/>
+		
+		<Script code="entity:LeaveCover()"/> -->
+		
+		<TacticalPos name="HumanCoverWithShootingPostureToTarget" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+		
+			<!-- Move to cover where you have shooting posture to the target -->
+			<Stance id="Stand"/>
+			<Move to="Cover" speed="Walk" stance="Stand"/>
+			
+			<!-- Peek out of cover -->
+			<Peek timeout="2.5" timeoutRandomness="0.0"/>
+
+			<!-- Step out of cover -->
+			<Script code="entity:LeaveCover()"/>
+			<Stance id="Stand"/>
+			<Animation name="AI_stepOutOfCover" mode="signal"/>
+			
+			<!-- Realize that the threat is not there -->
+			<Communicate name="comm_see_threat_position_but_none_there" channel="Search" expirity="0.5"/>
+
+		<Else/>
+		
+			<Script code="entity:Error('Failed to find cover with shooting posture to target')"/>
+			
+			<!-- Move to the attention target position -->
+			<Stance id="Stand"/>
+			<Stick distance="1" locateName="atttarget" />
+			
+		</If>
+		
+		<Timeout interval="1"/>
+
+		
+		<!-- I'm at the threat position but I don't hear anything -->
+		<!-- <Communicate name="comm_at_threat_position_without_seeing_anything" channel="Search" expirity="0.5"/> -->
+		
+		<!-- Search the area -->
+		<Script code="AI.SetGroupVariable(AI.GetGroupOf(entity.id), 'AreaSearch', true)" />
+		
+	</GoalPipe>
+	
+	<GoalPipe name="HumanInvestigateThreatSlave">
+		<FireCmd mode="Aim"/>
+		<Timeout interval="5"/>
+	</GoalPipe>
+
+	<Goalpipe name="HumanStopFirePeekChance">
+		<FireCmd mode="Off" />
+		<Timeout intervalMin="0.5" intervalMax="1.0"/>
+		<If IF_RANDOM="0.45" >
+			<Peek timeout="2.15" timeoutRandomness="1.0"/>
+			<Timeout intervalMin="0.5" intervalMax="0.75"/>
+		</If>
+	</Goalpipe>
+
+	<Goalpipe name="HumanCombatMoveDirectly">
+		<Stance id="Stand" />
+		<FireCmd mode="BurstWhileMoving" />
+		<Speed id="Run" />
+		<Stick distance="1" locateName="refpoint" />
+		<Script code="entity:CallBehaviorFunction('MoveDone')"/>
+	</Goalpipe>
+
+	<Goalpipe name="HumanCombatMoveWithCover">
+		<Stance id="Stand" />
+		<FireCmd mode="BurstWhileMoving" />
+		<Speed id="Run" />
+		<TacticalPos name="CombatMove" register="Cover" />
+		<If IF_LASTOP_SUCCEED="">
+			<Script code="entity:CallBehaviorFunction('StopCoverCheckTimer')"/>
+			<Hide register="Cover" />
+			<Timeout interval="1.0" />
+		<Else/>
+			<Script code="entity:CallBehaviorFunction('StartCoverCheckTimer')"/>
+			<Stick distance="1" locateName="refpoint" />
+			<Script code="entity:CallBehaviorFunction('MoveDone')"/>
+		</If>
+	</Goalpipe>
+
+	<GoalPipe name="HumanBriefShootFromCover">
+		<FireCmd mode="Burst"/>
+		<AdjustAim timeout="5"/>
+		<SubGoalPipe name="HumanStopFirePeekChance" />
+		<Script code="entity:LeaveCover()"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanFireInCover">
+		<FireCmd mode="Burst"/>
+		<AdjustAim timeout="4"/>
+		<SubGoalPipe name="HumanStopFirePeekChance" />
+	</GoalPipe>
+
+	<GoalPipe name="HumanDefendAreaStandAndCheckForCloseCover">
+		<!-- <Timeout intervalMin="0.2" intervalMax="0.7"/> -->
+		<FireCmd mode="BurstWhileMoving"/>
+		<Stance id="Stand"/>
+		<TacticalPos name="DefendAreaCover" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Run"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Timeout intervalMin="5" intervalMax="10"/>
+		</If>
+	</GoalPipe>
+
+	<GoalPipe name="HumanMoveToDefendAreaUsingCover">
+		<Timeout intervalMin="0.2" intervalMax="0.7"/>
+		<FireCmd mode="BurstWhileMoving"/>
+		<TacticalPos name="DefendAreaCover" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Group>
+				<Locate name="refpoint"/>
+				<Stick distance="5" useLastOp="true" requestPartialPath="true"/>
+			</Group>
+		</If>
+		<Script code="entity:CallBehaviorFunction('AnalyzeSituation')"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanMoveToDefendArea">
+		<Timeout intervalMin="0.2" intervalMax="0.7"/>
+		<FireCmd mode="BurstWhileMoving"/>
+		<Speed id="Run"/>
+		<Stance id="Stand"/>
+		<Group>
+			<Locate name="refpoint"/>
+			<Stick distance="5" useLastOp="true" requestPartialPath="true"/>
+		</Group>
+		<Script code="entity:CallBehaviorFunction('AnalyzeSituation')"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanStandAndShoot">
+		<Stance id="Stand" />
+		<FireCmd mode="Burst" />
+		<Timeout interval="999.0" />
+	</GoalPipe>
+
+	<GoalPipe name="HumanHoldPositionStandAndCheckForCloseCover">
+		<!-- <Timeout intervalMin="0.2" intervalMax="0.7"/> -->
+		<FireCmd mode="BurstWhileMoving"/>
+		<Stance id="Stand"/>
+		<TacticalPos name="HoldPositionCover" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Run"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Timeout intervalMin="5" intervalMax="10"/>
+		</If>
+	</GoalPipe>
+
+	<GoalPipe name="HumanMoveToHoldPositionUsingCover">
+		<Timeout intervalMin="0.2" intervalMax="0.7"/>
+		<FireCmd mode="BurstWhileMoving"/>
+		<TacticalPos name="HoldPositionCover" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Group>
+				<Stick distance="1" locateName="refpoint" />
+			</Group>
+		</If>
+		<Script code="entity:CallBehaviorFunction('AnalyzeSituation')"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanMoveToHoldPosition">
+		<Timeout intervalMin="0.2" intervalMax="0.7"/>
+		<FireCmd mode="BurstWhileMoving"/>
+		<Speed id="Run"/>
+		<Stance id="Stand"/>
+		<Group>
+			<Stick distance="1" locateName="refpoint" />
+		</Group>
+		<Script code="entity:CallBehaviorFunction('AnalyzeSituation')"/>
+	</GoalPipe>
+
+	<Goalpipe name="PeekShootExample">
+		<FireCmd mode="Off" />
+		<Timeout intervalMin="0.5" intervalMax="1.0"/>
+		<If IF_RANDOM="0.45" >
+			<Peek timeout="2.15" timeoutRandomness="1.0"/>
+			<If IF_SEES_TARGET="">
+				<FireCmd mode="Burst" />
+				<AdjustAim timeout="4" />
+			</If>
+		<Else/>
+			<AdjustAim timeout="4" />
+		</If>
+		<Timeout intervalMin="0.5" intervalMax="0.75"/>
+	</Goalpipe>
+	
+	<!--///////////////////////////////////////////////////////////-->
+	<!--// Combat /////////////////////////////////////////////////-->
+
+
+	<Goalpipe name="HumanLookAround">
+		<Timeout intervalMin="0.5" intervalMax="2.5"/>
+		<Animation name="RA_heargunfire" mode="Signal"/>
+		<Timeout intervalMin="1" intervalMax="3"/>
+		<Script code="entity:CallBehaviorFunction('OnLookAroundDone')"/>
+	</Goalpipe>
+
+	<Goalpipe name="HumanStopFirePeekHighChance">
+		<FireCmd mode="Off" />
+		<Timeout intervalMin="0.5" intervalMax="1.0"/>
+		<If IF_RANDOM="0.9" >
+			<Peek timeout="2.15" timeoutRandomness="1.0"/>
+			<Timeout intervalMin="0.5" intervalMax="0.75"/>
+		</If>
+	</Goalpipe>
+
+	<Goalpipe name="SniperMoveToCover">
+		<!-- <FireCmd mode="Off" /> -->
+		<TacticalPos name="SniperCombatCover" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Signal name="CoverNotFound"/>
+		</If>
+		<Timeout interval="1"/>
+	</Goalpipe>
+
+	<Goalpipe name="SniperStayInCover">
+		<!-- <FireCmd mode="Off" /> -->
+		<Timeout intervalMin="2.5" intervalMax="5.0"/>
+		<SubGoalPipe name="HumanStopFirePeekChance" />
+	</Goalpipe>
+
+	<Goalpipe name="MoveToSniperSpot">
+		<TacticalPos name="SniperSpotQuery" register="RefPoint"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Locate name="refpoint"/>
+			<Stick useLastOp="true" requestPartialPath="false"/>
+			<If IF_LASTOP_SUCCEED="">
+				<Locate name="atttarget"/>
+				<LookAt useLastOp="true" useBodyDir="true"/>
+				<Signal name="MoveToSniperSpotDone"/>
+			<Else/>
+				<Signal name="MoveToSniperSpotFailed"/>
+			</If>
+		<Else/>
+			<Signal name="SniperSpotNotFound"/>
+		</If>
+		<Timeout interval="1"/>
+	</Goalpipe>
+
+	<Goalpipe name="EngageInPosition">
+		<FireCmd mode="Burst"/>
+		<Timeout intervalMin="0.5" intervalMax="3"/>
+		<Stance id="Stand"/>
+		<Timeout intervalMin="5" intervalMax="10"/>
+		<Signal name="EngagementStepDone"/>
+	</Goalpipe>
+
+	<Goalpipe name="EngageMovingForward">
+		<FireCmd mode="BurstWhileMoving"/>
+		<Timeout intervalMin="0.5" intervalMax="3"/>
+		<Stance id="Stand"/>
+		<Speed id="Walk"/>
+		<Locate name="atttarget"/>
+		<Stick blocking="false" distance="20" useLastOp="true"/>
+		<Timeout intervalMin="3" intervalMax="6"/>
+		<Signal name="EngagementStepDone"/>
+	</Goalpipe>
+
+	<Goalpipe name="EngageCrouchedInPosition">
+		<FireCmd mode="Burst"/>
+		<Timeout intervalMin="0.5" intervalMax="3"/>
+		<Stance id="Crouch" />
+		<Timeout intervalMin="5" intervalMax="10"/>
+		<Signal name="EngagementStepDone"/>
+	</Goalpipe>
+
+	<Goalpipe name="PlayIdleBreak">
+		<Timeout intervalMin="2.5" intervalMax="4"/>
+		<Animation name="AI_idleBreak" mode="Signal"/>
+		<Timeout intervalMin="0.5" intervalMax="1"/>
+		<Signal name="PlayIdleBreakBored"/>
+	</Goalpipe>
+
+	<Goalpipe name="PlayIdleBreakBored">
+		<Animation name="AI_idleBreakBored" mode="Signal"/>
+		<Timeout intervalMin="0.5" intervalMax="1"/>
+	</Goalpipe>
+
+	<Goalpipe name="HumanGruntMoveToCombatCover">
+		<FireCmd mode="BurstWhileMoving"/>
+		<TacticalPos name="HumanCombatHidespotQuery" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Stance id="Stand"/>
+			<Move to="Cover" speed="Run" stance="Stand"/>
+		<Else/>
+			<Signal name="CombatCoverNotFound"/>
+		</If>
+		<Timeout interval="1"/>
+	</Goalpipe>
+
+	<GoalPipe name="HumanGruntCombatFireFromCover">
+		<Timeout interval="1.5"/>
+		<Loop>
+			<FireCmd mode="Burst"/>
+			<AdjustAim timeout="7"/>
+			<Timeout interval="1.0"/>
+			<Signal name="CombatFireFromCoverDone"/>
+		</Loop>
+	</GoalPipe>
+
+	<GoalPipe name="HumanGruntCombatHideInCover">
+		<FireCmd mode="Burst"/>
+		<AdjustAim timeout="3"/>
+		<SubGoalPipe name="HumanStopFirePeekChance" />
+		<Signal name="AnalyzeSituation"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanGruntCombatHideInCoverBlindFire">
+		<FireCmd mode="PanicSpread"/>
+		<AdjustAim timeout="3"/>
+		<SubGoalPipe name="HumanStopFirePeekHighChance" />
+		<Signal name="AnalyzeSituation"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanGruntCombatUnderPressureFireFromCover">
+		<FireCmd mode="PanicSpread"/>
+		<Timeout intervalMin="0.5" intervalMax="1.0"/>
+		<AdjustAim timeout="6"/>
+		<SubGoalPipe name="HumanStopFirePeekChance" />
+		<Signal name="AnalyzeSituation"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanGoToCoverUnderPressure">
+		<FireCmd mode="BurstWhileMoving"/>
+		<TacticalPos name="HumanUnderPressureHidespotQuery" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Signal name="UnderPressureCoverNotFound"/>
+		</If>
+		<Timeout interval="1"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanGruntLowAmmoGoToCover">
+		<FireCmd mode="BurstWhileMoving"/>
+		<TacticalPos name="LowAmmoHidespotQuery" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Signal name="LowAmmoCoverNotFound"/>
+		</If>
+		<Timeout interval="1"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanApproachDefendPos">
+		<FireCmd mode="BurstWhileMoving"/>
+		<TacticalPos name="HumanCoverAroundDefendPos" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Locate name="refpoint"/>
+			<Stick distance="5" useLastOp="true" requestPartialPath="true"/>
+			<Script code="entity:CallBehaviorFunction('Relocate')"/>
+		</If>
+	</GoalPipe>
+
+	<GoalPipe name="HumanGoToCoverAtDefendPos">
+		<FireCmd mode="BurstWhileMoving"/>
+		<TacticalPos name="HumanCoverTowardsDefendPos" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Signal name="DefendPosCoverNotFound"/>
+		</If>
+	</GoalPipe>
+
+	<GoalPipe name="HumanCombatNoCoverFallback">
+		<Speed id="Walk" />
+		<Stance id="Stand" />
+		<Strafe distance="99" strafeWhileMoving="true" />
+		<Locate name="atttarget" />
+		<FireCmd mode="Burst" />
+		<Timeout intervalMin="1.5" intervalMax="3.0"/>
+		<Signal name="NoCoverFallbackDone"/>
+	</GoalPipe>
+
+	<GoalPipe name="SideStepLeft">
+		<Animation name="AI_SideStepLeft" mode="Signal"/>
+		<Signal name="SideStepDone"/>
+	</GoalPipe>
+
+	<GoalPipe name="SideStepRight">
+		<Animation name="AI_SideStepRight" mode="Signal"/>
+		<Signal name="SideStepDone"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanHoldGroundRelocate">
+		<FireCmd mode="BurstWhileMoving" />
+		<TacticalPos name="HumanHoldGround" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Stance id="Stand"/>
+			<Speed id="Run"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Stance id="Stand"/>
+			<Speed id="Run"/>
+			<Group>
+				<Locate name="refpoint"/>
+				<Stick useLastOp="true" requestPartialPath="true"/>
+			</Group>
+			<Script code="AI.SetBehaviorVariable(entity.id, 'AtHoldGroundPos', true)" />
+		</If>
+		<Timeout interval="1.0" />
+	</GoalPipe>
+
+	<GoalPipe name="HumanHoldGroundApproachDirectly">
+		<FireCmd mode="BurstWhileMoving" />
+		<Stance id="Stand"/>
+		<Speed id="Run"/>
+		<Group>
+			<Locate name="refpoint"/>
+			<Stick useLastOp="true" requestPartialPath="true"/>
+		</Group>
+		<Script code="AI.SetBehaviorVariable(entity.id, 'AtHoldGroundPos', true)" />
+		<Timeout interval="1.0" />
+	</GoalPipe>
+
+	<GoalPipe name="HumanHoldGroundInPosition">
+		<Script code="if (entity.AI.HoldGround.stance ~= nil) then AI.SetStance(entity.id, entity.AI.HoldGround.stance) else AI.SetStance(entity.id, STANCE_ALERTED) end" />
+		<FireCmd mode="Burst" />
+		<Timeout interval="2.5" />
+		<Signal name="EngagementStepDone"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanHoldGroundInPositionCheckCover">
+		<Script code="if (entity.AI.HoldGround.stance ~= nil) then AI.SetStance(entity.id, entity.AI.HoldGround.stance) else AI.SetStance(entity.id, STANCE_STAND) end" />
+		<FireCmd mode="Burst" />
+		<TacticalPos name="HumanHoldGround" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Hide register="Cover"/>
+		</If>
+		<AdjustAim timeout="5" />
+		<Signal name="EngagementStepDone"/>
+		<Timeout intervalMin="0.25" intervalMax="0.5"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanHoldGroundInCover">
+		<FireCmd mode="Burst" />
+		<AdjustAim timeout="7"/>
+		<SubGoalPipe name="HumanStopFirePeekChance" />
+		<Signal name="EngagementStepDone"/>
+		<Timeout intervalMin="0.25" intervalMax="1.0"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanHoldGroundInCoverBlindFire">
+		<FireCmd mode="PanicSpread" />
+		<AdjustAim timeout="7"/>
+		<SubGoalPipe name="HumanStopFirePeekHighChance" />
+		<Signal name="EngagementStepDone"/>
+		<Timeout intervalMin="0.25" intervalMax="1.0"/>
+	</GoalPipe>
+
+	<!--///////////////////////////////////////////////////////////-->
+	<!--// Search  ////////////////////////////////////////////////-->
+
+	<GoalPipe name="HumanGoToSearchSpot">
+		<Timeout intervalMin="0.0" intervalMax="4.0"/>
+		<Stance id="Alerted" />
+		<FireCmd mode="Off" />
+		<Locate name="refpoint" />
+		<Stick useLastOp="true" requestPartialPath="true" />
+		<Signal name="OnSearchSpotReached"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanSearchSpot">
+		<Timeout intervalMin="1.5" intervalMax="3.0"/>
+ 		<Script code="entity:CallBehaviorFunction('GoToNextSearchSpot')"/>
+	</GoalPipe>
+
+  <GoalPipe name="HumanSearchSpotComm">
+    <If IF_RANDOM="0.5" >
+      <Timeout intervalMin="0.0" intervalMax="0.5"/>
+      <Communicate name="comm_alert_point_search" channel="Search" expirity="0.5"/>
+      <Timeout intervalMin="1.0" intervalMax="2.0"/>
+      <Communicate name="comm_alert_point_checked" channel="Search" expirity="0.5"/>
+    </If>
+    <Timeout intervalMin="1.5" intervalMax="3.0"/>
+    <Script code="entity:CallBehaviorFunction('GoToNextSearchSpot')"/>
+  </GoalPipe>
+
+	<!--///////////////////////////////////////////////////////////-->
+	<!--// Misc ///////////////////////////////////////////////////-->
+
+	<GoalPipe name="IdleAlertedLookAround">
+		<Stance id="Alerted" />
+		<Timeout intervalMin="5" intervalMax="8.0"/>
+		<Stance id="Relaxed" />
+		<Signal name="IdleAlertedLookAroundDone"/>
+		<Timeout interval="10" />
+	</GoalPipe>
+
+	<GoalPipe name="HumanThrowGrenade">
+		<FireCmd mode="Secondary" />
+		<Script code="AI.ThrowGrenade(entity.id, AI_RGT_FRAG_GRENADE, AI_REG_ATTENTIONTARGET)" />
+		<Timeout interval="7" />
+		<Script code="entity:CallBehaviorFunction('OnGrenadeThrowFailed')"/>
+		<Timeout interval="999" />
+	</GoalPipe>
+
+	<GoalPipe name="HumanThrowSmokeGrenade">
+		<Stance id="Stand" />
+		<Group>
+			<FireCmd mode="Secondary" />
+			<Locate name="refpoint" />
+			<Script code="AI.ThrowGrenade(entity.id, AI_RGT_SMOKE_GRENADE, AI_REG_REFPOINT)" />
+		</Group>
+		<Timeout interval="7" />
+	</GoalPipe>
+
+	<GoalPipe name="HumanWaitPostGrenade">
+		<Timeout interval="3.0" />
+		<Script code="entity:CallBehaviorFunction('OnDoneWaiting')"/>
+		<Timeout interval="999" />
+	</GoalPipe>
+
+	<GoalPipe name="HumanCoverShift">
+		<TacticalPos name="HumanCoverShift" register="Cover" />
+		<If IF_LASTOP_SUCCEED="">
+			<FireCmd mode="BurstWhileMoving" />
+			<Strafe distance="99" strafeWhileMoving="true" />
+			<Move to="Cover" speed="Walk" />
+		<Else/>
+			<Script code="entity:CallBehaviorFunction('OnNoCoverFound')"/>
+		</If>
+		<Timeout interval="999" />
+	</GoalPipe>
+
+	<GoalPipe name="HumanCoverDrift">
+		<FireCmd mode="BurstWhileMoving" />
+		<Locate name="atttarget" />
+		<Strafe distance="99" strafeWhileMoving="true" />
+		<Speed id="Walk" />
+		<Stance id="Stand" />
+		<Stick distance="11.0" duration="3.0" useLastOp="true" requestPartialPath="true" />
+		<Script code="entity:CallBehaviorFunction('AnalyzeSituation')"/>
+		<TimeOut intervalMin="2.0" intervalMax="8.0" />
+	</GoalPipe>
+
+	<GoalPipe name="HumanEstablishLineOfSight">
+		<FireCmd mode="BurstWhileMoving" />
+		<Locate name="refpoint" />
+		<TacticalPos name="HumanEstablishLineOfSightQuery" register="RefPoint" />
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Walk" />
+			<Stance id="Stand" />
+			<Strafe distance="99" strafeWhileMoving="true" />
+			<Locate name="refpoint" />
+      		<Script code="entity:CallBehaviorFunction('OnEstablishLineOfSightComplete')"/>
+      		<Stick useLastOp="true" requestPartialPath="true" />
+		<Else/>
+			<Script code="entity:CallBehaviorFunction('OnEstablishLineOfSightFailed')"/>
+		</If>
+		<Timeout intervalMin="1.0" intervalMax="2.0" />
+		<Script code="entity:CallBehaviorFunction('AnalyzeSituation')"/>
+	</GoalPipe>
+
+	<GoalPipe name="HumanFollowAndShootTarget">
+		<Script code="entity:CallBehaviorFunction('EnsureWeaponIsWielded')"/>
+		<FireCmd mode="Continuous" />
+		<Stance id="Stand" />
+		<Move to="Target" speed="Run" stance="Stand"/>
+	</GoalPipe>
+
+	<GoalPipe name="ReloadInPlace">
+		<Timeout interval="15" />
+		<Script code="entity:CallBehaviorFunction('OnReloadInPlaceTimeout')"/>
+	</GoalPipe>
+
+</GoalPipes>

@@ -1,0 +1,724 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+//define %TEMP_TERRAIN 0x40000000
+
+#define VS_NO_SKINNING_DATA
+
+#include "Common.cfi"
+#include "TerrainValidations.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "SupportsDeferredShading;"
+					 "SupportsFullDeferredShading;"
+					 "ForceDrawLast;" // might vary per project - for C2, C3 environment types, terrain most times occluded
+           "ShaderDrawType = Terrain;"
+           "ShaderType = Terrain;"
+>;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////// Custom shading pass structure /////////////////////////////////////
+
+struct fragPassCustom
+{
+  half3 vTangent;        // perturbed tangent vector
+  half3 vBinormal;       // perturbed binormal vector
+  half3 cEnvironment;    // environment map
+  half fDiffuseAlpha;    // layer alpha
+  half4 Color1;
+};
+
+struct fragLightPassCustom
+{
+};
+
+ENVIRONMENTCUBEMAP
+DISSOLVE_NOISE_MAP
+TERRAIN_BASE_MAP
+TERRAIN_NORM_MAP
+
+#include "ShadeLib.cfi"
+
+
+//=============================================================
+
+/// Un-Tweakables //////////////////////
+
+float4 BaseTCMatrix    : PB_TerrainBaseMatrix;
+
+float4 BlendTerrainColInfo : PB_BlendTerrainColInfo;
+
+half4 AmbientOpPB        : PB_AmbientOpacity;
+
+// Terrain layer constants:
+float4x4 LayerTexGen      : PB_TerrainLayerGen;
+
+//=========================================================================
+
+// Tweakables /////////////////
+
+half DetailTextureStrength
+<
+  register = REG_PM_PARAM_0.x;
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 2.0;
+  float UIStep = 0.05;
+> = 1;
+
+
+#if %OFFSET_BUMP_MAPPING
+half ObmDisplacement
+<
+  register = REG_PM_PARAM_0.y;
+  string UIWidget = "slider";
+  string UIName = "OBM Displacement";
+  float UIMin = 0.0;
+  float UIMax = 0.025;
+  float UIStep = 0.001;
+> = 0.004;
+#endif
+
+#if %PARALLAX_OCCLUSION_MAPPING
+half PomDisplacement
+<
+  register = REG_PM_PARAM_0.z;
+  string UIWidget = "slider";
+  string UIName = "POM Displacement";
+  float UIMin = 0.0;
+  float UIMax = 0.05;
+  float UIStep = 0.001;
+> = 0.025;
+#endif
+
+#if %OFFSET_BUMP_MAPPING || %PARALLAX_OCCLUSION_MAPPING
+half HeightBias
+<
+  register = REG_PM_PARAM_0.w;
+  string UIWidget = "slider";
+  string UIName = "Height bias";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.05;
+> = 1.0;
+
+half SelfShadowStrength
+<
+  register = REG_PM_PARAM_1.x;
+  string UIWidget = "slider";
+  string UIName = "Self shadow strength";
+  float UIMin = 0.0;
+  float UIMax = 5.0;
+  float UIStep = 0.1;
+> = 3.0;
+#endif
+
+#if %DETAIL_MAPPING
+	half DetailBumpScale
+	<
+	  register = REG_PM_PARAM_1.y;
+	  string UIHelp = "Set detail bump scale";                     
+	  string UIName = "Detail bump scale";    	  
+	  string UIWidget = "slider";
+	  float UIMin = 0.0;
+	  float UIMax = 10.0;
+	  float UIStep = 0.1;
+	> = 0.5;
+	
+	half DetailDiffuseScale
+	<
+	  register = REG_PM_PARAM_1.z;
+	  string UIHelp = "Set diffuse detail blend scale";                     
+	  string UIName = "Detail diffuse scale";    	  
+	  string UIWidget = "slider";
+	  float UIMin = 0.0;
+	  float UIMax = 1.0;
+	  float UIStep = 0.1;
+	> = 0.5;
+
+	half DetailGlossScale
+	<
+	  register = REG_PM_PARAM_1.w;
+	  string UIHelp = "Set gloss detail blend scale";                     
+	  string UIName = "Detail gloss scale";    	  
+	  string UIWidget = "slider";
+	  float UIMin = 0.0;
+	  float UIMax = 1.0;
+	  float UIStep = 0.1;
+	> = 0.5;
+#endif
+
+half BlendFactor
+<
+  register = REG_PM_PARAM_2.x;
+  string UIHelp = "Change visbility of blended layer";
+  string UIName = "Blend Factor";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 16.0;
+  float UIStep = 0.2;
+> = 0.0;
+
+half BlendFalloff
+<
+  register = REG_PM_PARAM_2.y;
+  string UIHelp = "Change falloff of blending";
+  string UIName = "Blend Falloff";
+  string UIWidget = "slider";
+  float UIMin = 0.1;
+  float UIMax = 128.0;
+  float UIStep = 1.0;
+> = 1.0;
+
+///////////////////////////////
+// Samplers
+sampler2D baseMapSampler = sampler_state
+{
+  Texture = $FromRE0;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = NONE;
+  AddressU = Clamp;
+  AddressV = Clamp;
+	sRGBLookup = true; 
+};
+
+sampler2D lmMapSampler = sampler_state
+{
+  Texture = $FromRE1;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = NONE;
+  AddressU = Clamp;
+  AddressV = Clamp;
+};
+
+sampler2D baseMap_FromContainerSampler = sampler_state
+{
+  Texture = $FromRE0_FromContainer;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = NONE;
+  AddressU = Clamp;
+  AddressV = Clamp;
+	sRGBLookup = true; 
+};
+
+sampler2D lmMap_FromContainerSampler = sampler_state
+{
+  Texture = $FromRE1_FromContainer;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = NONE;
+  AddressU = Clamp;
+  AddressV = Clamp;
+};
+
+//==========================================================================
+
+struct vert2fragTerrain
+{
+  OUT_P
+  float4 baseTC     : TEXCOORDN; // z is used as fLinearDistanceToCameraInMeters during impostor gen
+	float4 screenProj : TEXCOORDN_centroid;
+  
+  half4 vNormal    : TEXCOORDN; // w contain baked shadows fading
+
+  OUT_C0
+
+#if !%_RT_OBJ_IDENTITY
+  OUT_C1
+#endif
+
+#if %_RT_FOG && %_RT_VOLUMETRIC_FOG
+	float4 fogColor		: TEXCOORDN;
+#endif
+
+	MSAA_SAMPLE_INDEX_PS
+};
+
+struct vert2fragLayer
+{
+  OUT_P
+  float4 basesectorTC : TEXCOORDN;		// xy=surface texture, zw=occlusionmap texture (so save interpolators)
+  float4 baseTC			  : TEXCOORDN;		// terrain normal/diffuse/spec texture
+
+  float3 tangVec    : TEXCOORDN;
+  float3 binormVec  : TEXCOORDN; 
+
+
+  float3 normalVec  : TEXCOORDN; 
+  float4 Pos        : TEXCOORDN;
+
+  float4 screenProj : TEXCOORDN_centroid;
+
+#if %_RT_FOG && %_RT_VOLUMETRIC_FOG
+	float4 fogColor		: TEXCOORDN;
+#endif
+
+  OUT_C0
+  OUT_C1
+
+	MSAA_SAMPLE_INDEX_PS
+};
+
+#include "vertexLib.cfi"
+
+///////////////// terrain vertex shader //////////////////
+vert2fragTerrain TerrainVS(app2vertGeneral IN_common)
+{
+  vert2fragTerrain OUT = (vert2fragTerrain)1; 
+
+  app2vertGeneral IN = IN_common;
+  IN.vertCommon.Position.z = IN_common.vertCommon.baseTC.x;
+
+  streamPos vertPassPos = (streamPos)0;
+  streamPos_FromGeneral(IN, vertPassPos);
+
+  // Apply modificators if needed
+  OUT.HPosition = Pos_VS_Terrain(0.001f, g_VS_ViewProjZeroMatr, vertPassPos);
+  
+#if !%_RT_OBJ_IDENTITY
+  vertPassPos.WorldPos.xyz += g_VS_WorldViewPos.xyz;
+#endif
+
+  // tex coordinates on the sector textures
+	OUT.baseTC.xy = float2(Get_SPI_BlendWithTerrainColInfo().zz*vertPassPos.WorldPos.yx+Get_SPI_BlendWithTerrainColInfo().xy);
+  OUT.baseTC.w = vertPassPos.WorldPos.z;
+  OUT.Color = vertPassPos.Color;
+  
+#if !%_RT_OBJ_IDENTITY
+	OUT.Color1 = float4(OUT.Color.xz, vertPassPos.Normal.ww);
+	OUT.Color1.a = (OUT.Color.g>=0.5) ? 1 : 0;
+#endif
+
+	// Output the screen-space texture coordinates
+  OUT.screenProj = HPosToScreenTC(OUT.HPosition);
+  
+  OUT.vNormal.xyz = vertPassPos.Normal.xyz;
+  
+#if %_RT_FOG
+#if !%_RT_VOLUMETRIC_FOG
+  float4 fogColor = GetVolumetricFogColor(vertPassPos.WorldPos.xyz);
+  OUT.vNormal.w = fogColor.w;
+#else
+	OUT.fogColor = GetVolumetricFogAnalyticalColorByWorldPos(vertPassPos.WorldPos.xyz);
+#endif
+#endif
+
+  return OUT;
+}
+
+//===================================================================================
+
+///////////////// terrain vertex shader //////////////////
+vert2fragLayer TerrainLayerVS(app2vertGeneral IN_common)
+{
+  vert2fragLayer OUT = (vert2fragLayer)0; 
+  
+  app2vertGeneral IN = IN_common;
+  IN.vertCommon.Position.z = IN_common.vertCommon.baseTC.x;
+
+  streamPos vertPassPos = (streamPos)0;
+  streamPos_FromGeneral(IN, vertPassPos);
+  
+  // Apply modificators if needed
+  OUT.HPosition = Pos_VS_Terrain(0.001f, g_VS_ViewProjZeroMatr, vertPassPos); 
+
+#if !%_RT_OBJ_IDENTITY
+  vertPassPos.WorldPos.xyz += g_VS_WorldViewPos.xyz;
+#endif
+
+	// tex coordinates on the sector textures
+	OUT.basesectorTC.xy = float2(Get_SPI_BlendWithTerrainColInfo().zz*vertPassPos.WorldPos.yx+Get_SPI_BlendWithTerrainColInfo().xy);
+	
+  float4 tcLayer;
+
+	float3 vDiffPos = vertPassPos.WorldPos.xyz;
+	vDiffPos.xy -= LayerTexGen[3].xy;
+  tcLayer.xy = mul((float2x3)LayerTexGen, vDiffPos);
+  tcLayer.z = 0;
+  tcLayer.w = vertPassPos.Position.w;
+  _TCModify(tcLayer, OUT.baseTC, vertPassPos.Position, vertPassPos.Normal, TS_DIFFUSE);
+  
+  // get tangent space info from texgen parameters
+  float3 Tangent = normalize(LayerTexGen[0].xyz);
+  float3 Binormal = normalize(LayerTexGen[1].xyz);
+  
+  // project tangent and binormal to plane perpendicular to the normal
+  Tangent-=dot(Tangent,vertPassPos.Normal)*vertPassPos.Normal;
+  Binormal-=dot(Binormal,vertPassPos.Normal)*vertPassPos.Normal;
+  Tangent=normalize(Tangent);
+  Binormal=normalize(Binormal);
+
+  OUT.tangVec.xyz = Tangent;    
+  OUT.binormVec.xyz = Binormal;
+
+  OUT.Pos.xyz = vertPassPos.WorldPos.xyz - g_VS_WorldViewPos.xyz;
+  OUT.normalVec.xyz = vertPassPos.Normal.xyz;
+
+	float fUseVertColor = 0;
+	
+	float4 Color = vertPassPos.Color;
+
+	if (Color.g > 127.f/255.f)
+	{
+		fUseVertColor = 1;
+		Color.g -= 128.f/255.f;
+	}
+
+  float fWeight = saturate(1 - abs(Color.g*255 - LayerTexGen[2].w));	// saturate needed for dx10 HDR
+
+  if( GetShaderQuality() > QUALITY_LOW )
+  {
+    float3 NormalAbs = abs(vertPassPos.Normal.xyz); 
+    if(NormalAbs.x>=NormalAbs.y && NormalAbs.x>=NormalAbs.z)
+		  fWeight *= LayerTexGen[2].x;
+    else
+    if(NormalAbs.y>=NormalAbs.x && NormalAbs.y>=NormalAbs.z)
+		  fWeight *= LayerTexGen[2].y;
+	  else
+		  fWeight *= LayerTexGen[2].z;
+  }
+  else
+  {
+    if(dot(abs(vertPassPos.Normal.xyz),LayerTexGen[2].xyz) < 0.55f)
+      fWeight = 0;
+  }
+  
+ 	// Output the screen-space texture coordinates
+  OUT.screenProj = HPosToScreenTC(OUT.HPosition);
+
+
+  OUT.Color1 = float4(Color.rb, vertPassPos.Normal.ww);
+  OUT.Color.a = Color.a; // pass ambient occlusion
+
+	OUT.Color1.a = fUseVertColor;
+
+  float fDist = length(OUT.Pos.xyz);
+
+  OUT.basesectorTC.w = fDist;
+ 
+  fDist = pow(min(fDist/max(0.001, LayerTexGen[0].w), 1), 4);
+  OUT.Color.g = fWeight * (1-fDist);
+	
+#if %_RT_FOG
+#if !%_RT_VOLUMETRIC_FOG
+  float4 fogColor = GetVolumetricFogColor(vertPassPos.WorldPos.xyz);
+  OUT.Pos.w = fogColor.w;
+#else
+	OUT.fogColor = GetVolumetricFogAnalyticalColor(OUT.Pos.xyz);
+#endif
+#endif
+
+  return OUT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void frag_unify_parameters( inout fragPass pPass )
+{
+
+  pPass.bRenormalizeNormal = true;
+  pPass.bHemisphereLighting = true;
+  pPass.bDeferredSpecularShading = true;
+
+#if %OFFSET_BUMP_MAPPING || %PARALLAX_OCCLUSION_MAPPING
+  GetMicroDetailParams(pPass.nMicroDetailQuality, pPass.fBumpHeightScale, pPass.fHeightBias, pPass.fSelfShadowStrength);
+#endif
+  
+  pPass.fFresnel_Bias = 1;
+  pPass.fFresnel_Scale = 0;
+    
+#if %DETAIL_MAPPING
+	pPass.bDetailBumpMapping = true;
+	pPass.vDetailBumpTilling = half2(CM_DetailTilingAndAlphaRef.xy);
+	pPass.fDetailBumpScale = DetailBumpScale;
+	pPass.vDetailBlendAmount = half2(DetailDiffuseScale, DetailGlossScale);
+#endif
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+void frag_unify(inout fragPass pPass, in vert2fragLayer IN)
+{
+  frag_unify_parameters( pPass );
+  
+  pPass.IN.baseTC = IN.baseTC;
+  pPass.IN.bumpTC = pPass.IN.baseTC;
+  pPass.IN.basesectorTC = IN.basesectorTC;
+
+  pPass.IN.vTangent.xyz = IN.tangVec;
+  pPass.IN.vBinormal.xyz = IN.binormVec;
+
+  pPass.IN.vNormal.xyz = IN.normalVec;
+  pPass.IN.vView = IN.Pos;
+  pPass.IN.screenProj = IN.screenProj;
+  pPass.IN.Color = IN.Color;
+  pPass.IN.Color1 = IN.Color1;
+
+#if %_RT_MSAA_SAMPLEFREQ_PASS
+	pPass.IN.uSample = IN.uSample;
+#endif
+
+#if %_RT_FOG && %_RT_VOLUMETRIC_FOG
+	pPass.IN.AvgFogVolumeContrib = IN.fogColor.xyzw;
+#else
+  pPass.IN.AvgFogVolumeContrib = half4(0,0,0,1);
+#endif
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void frag_custom_begin(inout fragPass pPass)
+{
+  // load the diffuse texture
+  half4 baseColor = GetTerrainTex(terrainBaseTex, pPass.IN.basesectorTC.xy);
+  
+	float4 baseTC = pPass.IN.baseTC;
+
+	pPass.cSpecularMap = MatSpecColor;
+#if %SPECULAR_MAP
+  pPass.cSpecularMap *= GetSpecularTex(specularTex, baseTC.xy);
+#endif
+
+  pPass.fGloss *= GetSmoothnessTex(smoothnessTex, pPass.IN.baseTC.xy).r;
+
+#if %_RT_AMBIENT_OCCLUSION //&& %_RT_OBJ_IDENTITY
+
+  // For terrain shader _RT_AMBIENT_OCCLUSION says that second terrain texture exists and normal map can be read
+  // Terrain shaders don't read occlusion info from it directly
+
+
+  half3 vBaseNorm = float3(GetTexture2D(lmMap_FromContainerSampler, pPass.IN.basesectorTC.xy).zx,0);
+  vBaseNorm = (vBaseNorm - 0.5h) * 2.h;
+  vBaseNorm.z = sqrt( saturate( 1.h - (vBaseNorm.x * vBaseNorm.x + vBaseNorm.y * vBaseNorm.y) ) );
+
+  pPass.vNormal = lerp(pPass.vNormal, vBaseNorm, saturate(pPass.IN.basesectorTC.w/2000));
+
+#endif
+
+	// Put back in gamma space to keep look of old blending modes (Note this assumes SRGB always enabled)
+	baseColor.xyz = sqrt(baseColor.xyz);
+
+#if !%_RT_OBJ_IDENTITY
+	// color can come from vertex in case of voxels
+	baseColor.rgb = lerp(baseColor.rgb, pPass.IN.Color1.rgb, pPass.IN.Color1.a); 
+#endif
+
+  // material color is offseted from base
+  pPass.cDiffuseMap.xyz = saturate( baseColor.xyz + ((pPass.cDiffuseMap-0.5h) * DetailTextureStrength) );
+
+	// Put back in linear space (Note this assumes SRGB always enabled)
+  pPass.cDiffuseMap.xyz *= pPass.cDiffuseMap.xyz;
+  
+  // Output alpha
+  half fAlpha = pPass.cDiffuseMap.a;	
+
+	pPass.fAlpha = ( saturate(pPass.IN.Color.g) ) * AmbientOpPB.a; // sqrt is needed to avoid seams between layers	
+	
+	// Compute non-linear alpha blend factor in case height map present (limited to POM/OM cases)
+	if( pPass.nMicroDetailQuality )
+		pPass.fAlpha = GetTerrainLayerBlendingValue(heightTex, pPass.IN.bumpTC.xy, 0, pPass.fAlpha, BlendFactor, BlendFalloff);
+
+	pPass.pCustom.fDiffuseAlpha = fAlpha * pPass.fAlpha;	
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Lighting
+void frag_custom_per_light(inout fragPass pPass, inout fragLightPass pLight)
+{
+  pLight.fNdotL = saturate(pLight.fNdotL);
+  
+  half3 cDiffuse = 0;
+
+  cDiffuse = pLight.cDiffuse.xyz;   
+  
+  half3 spec = SpecularBRDF( pPass.vNormal, pPass.vView, pLight.vLight, pPass.fGloss, pPass.cSpecularMap.rgb );
+
+  // Final specular term
+  half3 cSpecular = pLight.cSpecular.xyz * spec;
+  
+  half3 cK = pLight.fOcclShadow * pLight.fFallOff * pLight.cFilter * pLight.fNdotL;  // 3 alu 
+      
+  // Accumulate results
+  pPass.cDiffuseAcc += cDiffuse * cK;
+
+  if( GetShaderQuality() > QUALITY_LOW )
+    pPass.cSpecularAcc += cSpecular * cK;  
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void frag_custom_ambient(inout fragPass pPass, inout half3 cAmbient)
+{
+  cAmbient.xyz = AmbientOpPB.xyz * (pPass.vNormal.z*0.5h+0.5h) * pPass.IN.Color.a;// todo: why ? terrain layers alpha blending mode, this means 2x alpha applied
+  
+  pPass.cAmbientAcc += cAmbient.xyz;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void frag_custom_end(inout fragPass pPass, inout half3 cFinal)
+{
+#if !%_RT_AMBIENT
+  cFinal *= pPass.fAlpha; // todo: why ? terrain layers alpha blending mode, this means 2x alpha applied
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "fragLib.cfi"
+
+///////////////// terrain pixel shader //////////////////
+
+pixout TerrainPS(vert2fragTerrain IN)
+{
+  pixout OUT	= (pixout)0;
+
+  half4 baseColor = GetTerrainTex(terrainBaseTex, IN.baseTC.xy);
+
+  #if !%_RT_OBJ_IDENTITY
+	  // color can come from vertex in case of voxels
+	  baseColor.rgb = lerp(baseColor.rgb, /*IN.Color1.rgb*/0, IN.Color1.a); 
+  #endif
+
+   // Debug output
+ #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
+   DebugOutput(OUT.Color, IN.baseTC);
+   return OUT;
+ #endif
+
+  half sunOccl = 0;
+
+	// Used when sun is in use
+  half3 terrainNormal;
+
+#if %_RT_AMBIENT_OCCLUSION //&& %_RT_OBJ_IDENTITY
+  // For terrain shader _RT_AMBIENT_OCCLUSION says that second terrain texture exists and normal map can be read
+  // Terrain shaders don't read occlusion info from it directly
+  half3 vNorm = float3(GetTexture2D(lmMapSampler, IN.baseTC.xy).zx,0);
+  vNorm = (vNorm - 0.5h) * 2.h;
+  vNorm.z = sqrt(saturate(1 - (vNorm.x * vNorm.x + vNorm.y * vNorm.y) ));
+  terrainNormal = vNorm;
+#else
+  terrainNormal = IN.vNormal.xyz;
+#endif
+
+#if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1
+	uint uSample = 0;
+	#if %_RT_MSAA_SAMPLEFREQ_PASS
+		uSample = IN.uSample;
+	#endif
+	half3 vLighting = GetSceneDiffuseAccMS((IN.screenProj.xy / IN.screenProj.w), GetMSAASampleNum(), uSample);
+#else
+	half3 vLighting = DecodeLightBuffer(GetSceneTexProj(sceneDiffuseAccTex, IN.screenProj.xyzw));
+#endif
+
+  half NdotL = saturate(dot(half3(g_PS_SunLightDir.xyz), terrainNormal));
+	half3 vColor = baseColor.xyz * (
+      g_PS_SunColor.xyz * (1.0h-sunOccl) * NdotL * (baseColor.a*0.6666h+0.3333h) + // sun diffuse TODO: remove it - merge into lbuffer
+			vLighting); // deferred lighting
+
+  half fOutA = AmbientOpPB.a * baseColor.a;
+
+#if %_RT_FOG
+#if !%_RT_VOLUMETRIC_FOG
+  ComputeGlobalFogPS(vColor.xyz, IN.vNormal.w);
+#else
+	VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenProj(IN.screenProj);
+	float4 vf = GetVolumetricFogValue(vtc);
+	ApplyVolumetricFog(vf, IN.fogColor, vtc, vColor.xyz);
+#endif
+#endif
+
+  half4 cOutColor = half4(vColor.xyz, 1);
+
+	cOutColor *= PS_HDR_RANGE_ADAPT_MAX;
+  
+
+  // finally add them all together
+  HDROutput(OUT, cOutColor, 1); 
+
+  return OUT;
+}
+
+
+pixout TerrainLayerPS(vert2fragLayer IN)
+{
+  pixout OUT = (pixout)0;
+  
+  // Initialize fragPass structure
+  fragPass pPass = (fragPass) 0;
+  frag_unify(pPass, IN);
+   
+  half4 cFinal = frag_shared_output(pPass);
+  
+  HDROutput(OUT, cFinal, 1);
+
+  return OUT;
+}
+
+//////////////////////////////// technique ////////////////
+
+technique General
+<
+  string Script =
+        "NoLights;"
+        "TechniqueZ=ZPass;"
+        "TechniqueShadowGen=ShadowGen;"
+>
+{
+  pass p0
+  {
+    VertexShader = TerrainVS() TerrainVS;
+    
+    ZEnable = true;
+    ZWriteEnable = false;
+    CullMode = Back;
+        
+    PixelShader = TerrainPS() TerrainPS;
+  }
+}
+
+technique Layer
+<
+  string Script = "Public;"
+                  "TechniqueZ=ZPass;"
+                  "PositionInvariant;";
+>
+{
+  pass p0
+  {
+    
+    ZEnable = true;
+    CullMode = Back;
+
+    SrcBlend = SrcAlpha;
+    DestBlend = InvSrcAlpha;
+  
+    AlphaBlendEnable = true;
+    ZWriteEnable = false;
+    
+    VertexShader = TerrainLayerVS() TerrainVS;
+    PixelShader = TerrainLayerPS() TerrainPS;
+  }
+}
+
+#include "CommonZPass.cfi"
+#include "ShadowCommon.cfi"
+#include "CommonShadowGenPass.cfi"
+
+/////////////////////// eof ///

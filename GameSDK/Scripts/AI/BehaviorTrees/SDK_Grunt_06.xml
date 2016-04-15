@@ -1,0 +1,968 @@
+<BehaviorTree>
+
+	<!--
+	=============================================================================================================================================
+	SDK_Grunt_06.xml
+
+	Behavior tree that builds on top of the SDK_Grunt_05.xml.
+
+	Additions / changes:
+
+		- when idling, AIs react to loud noises (e. g. gunfire from the player) and will inspect these disturbances
+		- when seeing the player, the AIs will play back a short flich animation before starting their combat behavior
+		- the movement distance in the combat behavior has been limited to allow for more reactive decisions in case the combat situation changes frequently
+		- after having lost the player and inspected his last known position, AIs will search the area for 90 seconds
+		- general use of the bubble system as a placeholder for future quips (set cvar "ai_BubbleSystemAllowPrototypeDialogBubbles" to "1" to see what the AIs would say)
+		- demonstration of handling assignments made by the "AIAssignments:CombatMove" node in the FlowGraph while in combat (notice the we needed to declare the Variable "CombatMove", which gets set via lua script)
+
+	=============================================================================================================================================
+	-->
+
+	<Variables>
+		<Variable name="HasTarget"/>
+		<Variable name="ExecuteSequence"/>
+		<Variable name="ExecuteInterruptibleSequence"/>
+		<Variable name="CombatMove"/>
+	</Variables>
+
+	<SignalVariables>
+		<Signal name="OnNewAttentionTarget" variable="HasTarget" value="true"/>
+		<Signal name="OnNoTarget" variable="HasTarget" value="false"/>
+	</SignalVariables>
+
+	<Timestamps>
+		<Timestamp name="TargetSpotted" setOnEvent="OnEnemySeen" exclusiveTo="TargetLost"/>
+		<Timestamp name="TargetLost" setOnEvent="OnLostSightOfTarget" exlusiveTo="TargetSpotted"/>
+		<Timestamp name="GroupTargetSpotted" setOnEvent="OnGroupTargetVisual" exclusiveTo="GroupTargetLost"/>
+		<Timestamp name="GroupTargetLost" setOnEvent="OnGroupTargetMemory" exclusiveTo="GroupTargetSpotted"/>
+		<Timestamp name="EnteredCombat" setOnEvent="EnteredCombat"/>
+	</Timestamps>
+
+	<Root>
+
+		<Parallel successMode="any">
+
+			<!-- debug tree -->
+			<!--
+			<Loop>
+
+				<Parallel successMode="any">
+
+					<Sequence>
+						<WaitForEvent name="OnBulletRain"/>
+						<Bubble message="OnBulletRain" duration="2"/>
+					</Sequence>
+
+					<Sequence>
+						<WaitForEvent name="OnNewAttentionTarget"/>
+						<Bubble message="OnNewAttentionTarget" duration="2"/>
+					</Sequence>
+
+					<Sequence>
+						<WaitForEvent name="OnEnemyHeard"/>
+						<Bubble message="OnEnemyHeard" duration="2"/>
+					</Sequence>
+
+					<Sequence>
+						<WaitForEvent name="OnThreateningSoundHeard"/>
+						<Bubble message="OnThreateningSoundHeard" duration="2"/>
+					</Sequence>
+
+					<Sequence>
+						<WaitForEvent name="OnInterestingSoundHeard"/>
+						<Bubble message="OnInterestingSoundHeard" duration="2"/>
+					</Sequence>
+
+					<Sequence>
+						<WaitForEvent name="OnSuspectedSoundHeard"/>
+						<Bubble message="OnSuspectedSoundHeard" duration="2"/>
+					</Sequence>
+
+				</Parallel>
+
+			</Loop>
+			-->
+
+			<Priority>
+
+				<!--
+				=================================================
+						- Scripted non-interruptible behavior (via Flow Graph)
+						- this node has highest priority in the BT, so no other behavior can interrupt it
+						- make sure to call the "ExecuteSequence" lua behavior here (and not ExecuteInterruptibleSequence)
+				=================================================
+				-->
+
+				<Case condition="ExecuteSequence">
+
+					<Sequence>
+
+						<LuaBehavior name="ExecuteSequence"/>
+
+					</Sequence>
+
+				</Case>
+
+				<!--
+				=================================================
+						Autonomous behavior
+				=================================================
+				-->
+
+				<Case>
+
+					<StateMachine>
+
+						<!--
+						=================================================
+								Idle
+						=================================================
+						-->
+
+						<State name="Idle">
+
+							<Transitions>
+								<Transition to="FlinchAndGoToCombat" onEvent="OnEnemySeen"/>
+								<Transition to="Combat" onEvent="GroupMemberEnteredCombat"/>
+								<Transition to="Combat" onEvent="OnBulletRain"/>
+							</Transitions>
+
+							<BehaviorTree>
+
+								<StateMachine>
+
+									<!--
+									=================================================
+											Idle::Guard
+									=================================================
+									-->
+
+									<State name="Guard">
+
+										<Transitions>
+											<Transition to="Disturbance" onEvent="OnEnemyHeard"/>
+											<Transition to="Disturbance" onEvent="OnThreateningSoundHeard"/>
+											<Transition to="Disturbance" onEvent="OnInterestingSoundHeard"/>
+											<Transition to="Disturbance" onEvent="OnSuspectedSoundHeard"/>
+										</Transitions>
+
+										<BehaviorTree>
+
+											<Sequence>
+
+												<SetAlertness value="0"/>
+
+												<Stance name="Relaxed"/>
+
+												<PullDownThreatLevel/>
+
+												<SuppressFailure>
+												
+													<LuaGate code="return entity.PropertiesInstance.AI.bGoBackToStartOnIdle">
+
+														<Move to="InitialPosition" speed="Walk" stance="Relaxed" _startLog="moving back to initial position"/>
+
+													</LuaGate>
+
+												</SuppressFailure>
+
+												<ExecuteLua code="entity.actor:HolsterItem(true)"/>
+
+												<Priority>
+
+													<!--
+													=================================================
+															- Interruptible scripted behavior
+															- this node can be easily interrupted by higher-prioritized behaviors
+															- make sure to call the "ExecuteInterruptibleSequence" lua behavior here (and not ExecuteSequence)
+													=================================================
+													-->
+
+													<Case condition="ExecuteInterruptibleSequence">
+
+														<LuaBehavior name="ExecuteInterruptibleSequence"/>
+
+													</Case>
+
+													<Case>
+
+														<Sequence>
+
+															<!-- ensure that we also move back to our initial position after an interruptible sequence was played back -->
+															<SuppressFailure>
+
+																<LuaGate code="return entity.PropertiesInstance.AI.bGoBackToStartOnIdle">
+
+																	<Move to="InitialPosition" speed="Walk" stance="Relaxed" _startLog="moving back to initial position"/>
+
+																</LuaGate>
+
+															</SuppressFailure>
+
+															<Animate name="ZZ_AI_idleBreak" loop="1"/>
+
+														</Sequence>
+
+													</Case>
+
+												</Priority>
+
+											</Sequence>
+
+										</BehaviorTree>
+
+									</State>
+
+									<!--
+									=================================================
+											Idle::Disturbance
+									=================================================
+									-->
+
+									<State name="Disturbance">
+
+										<Transitions>
+											<Transition to="Guard" onEvent="GoTo_Guard"/>
+										</Transitions>
+
+										<BehaviorTree>
+
+											<Sequence>
+
+												<Bubble message="Hu? What was that!?" duration="2"/>
+
+												<Wait duration="1.0"/>
+
+												<SetAlertness value="1"/>
+
+												<ExecuteLua code="entity:SelectPrimaryWeapon()"/>
+
+												<SuppressFailure>
+
+													<Sequence>
+
+														<QueryTPS name="SDKGrunt_TargetPositionOnNavMesh" register="RefPoint"/>
+
+														<Parallel successMode="any">
+
+															<Move to="RefPoint" speed="Walk" stance="Stand" fireMode="Off" avoidDangers="1"/>
+
+															<LoopUntilSuccess>
+
+																<LuaGate code="return AI.GetGroupScopeUserCount(entity.id, 'InspectorOfDisturbance') &gt; 0">
+
+																	<StopMovement/>
+
+																</LuaGate>
+
+															</LoopUntilSuccess>
+
+														</Parallel>
+
+														<Selector>
+
+															<GroupScope name="InspectorOfDisturbance" allowedConcurrentUsers="1">
+
+																<Sequence>
+
+																	<Bubble message="Who's there!?" duration="2"/>
+
+																	<Animate name="AI_SearchLookAround" loop="0"/>
+
+																	<Animate name="AI_SearchLookAround" loop="0"/>
+
+																	<Bubble message="...umm... nothing..." duration="2.0"/>
+
+																</Sequence>
+
+															</GroupScope>
+
+															<Parallel>
+
+																<Sequence>
+
+																	<Wait duration="4"/>
+
+																	<Bubble message="And? Can you see something?!?" duration="2.0"/>
+
+																</Sequence>
+
+																<Animate name="AI_NoticeFarThreat" loop="0"/>
+
+															</Parallel>
+
+														</Selector>
+
+													</Sequence>
+
+												</SuppressFailure>
+
+												<SendTransitionSignal name="GoTo_Guard"/>
+
+											</Sequence>
+
+										</BehaviorTree>
+
+									</State>
+
+								</StateMachine>
+
+							</BehaviorTree>
+
+						</State>
+
+						<!--
+						=================================================
+								FlinchAndGoToCombat
+						=================================================
+						-->
+
+						<State name="FlinchAndGoToCombat">
+
+							<Transitions>
+								<Transition to="Combat" onEvent="GoTo_Combat"/>
+							</Transitions>
+
+							<BehaviorTree>
+
+								<Sequence>
+
+									<SuppressFailure>
+
+										<Sequence>
+
+											<AssertLua code="return entity:GetTargetDistance() &lt; 10"/>
+
+											<StopMovement/>
+
+											<Parallel successMode="any">
+
+												<Look at="Target"/>
+
+												<Animate name="AI_NoticeVisualThreatAndTurn" loop="0" setBodyDirectionTowardsAttentionTarget="1"/>
+
+											</Parallel>
+
+										</Sequence>
+
+									</SuppressFailure>
+
+									<SendTransitionSignal name="GoTo_Combat"/>
+
+								</Sequence>
+
+							</BehaviorTree>
+
+						</State>
+
+						<!--
+						=================================================
+								Combat
+						=================================================
+						-->
+
+						<State name="Combat">
+
+							<Transitions>
+								<Transition to="ApproachAndInspectLastKnownPlayerPosition" onEvent="GoTo_ApproachAndInspectLastKnownPlayerPosition"/>
+								<Transition to="Search" onEvent="SearchBegins"/>
+							</Transitions>
+
+							<BehaviorTree>
+
+								<Sequence>
+
+									<StopMovement/>
+
+									<Log message="Now I should fight you!"/>
+
+									<SetAlertness value="2"/>
+
+									<Stance name="Alerted"/>
+
+									<ExecuteLua code="entity:SelectPrimaryWeapon()"/>
+
+									<Communicate name="TargetSpottedWhileSearching" channel="Reaction" expirity="1.0" waitUntilFinished="0" />
+
+									<Signal name="EnteredCombat"/>
+
+									<Signal name="GroupMemberEnteredCombat" filter="Group"/>
+
+									<Priority>
+
+										<Case condition="CombatMove">
+
+											<!--
+											=================================================
+													partly scripted assignment:
+													- move to the point provided via FlowGraph while shooting along the way
+													- either use cover or just run to that point
+											=================================================
+											-->
+
+											<Sequence>
+
+												<ExecuteLua code="AI.SetRefPointPosition(entity.id, entity.AI.combatMove.position)" />
+
+												<Selector>
+
+													<LuaGate code="return entity.AI.combatMove.useCover">
+
+														<Selector>
+
+															<!--
+															- try to use covers (the TPS query will intentionally start failing once being close enough to the destination point)
+															- once the TPS starts failing, simply run straight to the point (we're probably quite close to it by now)
+															-->
+															<Loop>
+
+																<Sequence>
+
+																	<QueryTPS name="SDKGrunt_CombatMove_CoverFromTarget" register="Cover"/>
+
+																	<Move to="Cover" fireMode="BurstWhileMoving" stance="Stand" speed="Run" />
+
+																	<Wait duration="2.0"/>
+
+																</Sequence>
+
+															</Loop>
+
+															<Move to="RefPoint" stance="Stand" fireMode="BurstWhileMoving" speed="Run" stopWithinDistance="1"/>
+
+														</Selector>
+
+													</LuaGate>
+
+													<Move to="RefPoint" stance="Stand" fireMode="BurstWhileMoving" speed="Run" stopWithinDistance="1"/>
+
+												</Selector>
+
+												<ExecuteLua code="entity:ClearAssignment()" />
+
+												<Halt/>
+
+											</Sequence>
+
+										</Case>
+
+										<Case>
+
+											<!--
+											=================================================
+													main combat loop
+											=================================================
+											-->
+											<Loop _startLog="main combat loop">
+
+												<Sequence>
+
+													<Selector>
+
+														<!--
+														=================================================
+																cover combat
+														=================================================
+														-->
+
+														<Sequence>
+
+															<Selector>
+
+																<AssertLua code="return (AI.IsInCover(entity.id) and not AI.IsCoverCompromised(entity.id)) "/>
+
+																<Sequence>
+
+																	<Log message="trying to find cover"/>
+
+																	<Parallel successMode="any">
+
+																		<Parallel successMode="all">
+
+																			<QueryTPS name="SDKGrunt_CoverToShootFrom_LimitedTravelDistance" register="Cover"/>
+
+																			<Wait duration="1.0"/>
+
+																		</Parallel>
+
+																		<Shoot at="Target" fireMode="PanicSpread" stance="Alerted" duration="999"/>
+
+																	</Parallel>
+
+																	<Log message="moving to found cover"/>
+
+																	<!-- move to cover; while doing so, start shooting after a small random time of 1-2seconds -->
+																	<Parallel successMode="any">
+
+																		<Move to="Cover" speed="Run" stance="Stand" fireMode="Off" avoidDangers="1"/>
+
+																		<Sequence>
+
+																			<!-- wait between 1 and 2 seconds before shooting -->
+																			<SuppressFailure>
+
+																				<IfTime since="EnteredCombat" isLessThan="2.0">
+
+																					<Sequence>
+
+																						<WaitUntilTime since="EnteredCombat" isMoreThan="1.0"/>
+
+																						<Wait duration="0.0" variation="1.0"/>
+
+																					</Sequence>
+
+																				</IfTime>
+
+																			</SuppressFailure>
+
+																			<Shoot at="Target" fireMode="Burst" stance="Alerted" duration="999"/>
+
+																		</Sequence>
+
+																	</Parallel>
+
+																</Sequence>
+
+															</Selector>
+
+															<Log message="+++ shooting from cover BEGIN +++"/>
+
+															<ShootFromCover duration="2.0" fireMode="Burst" aimObstructedTimeout="1.0"/>
+
+															<Log message="--- shooting from cover END ---"/>
+
+															<AdjustCoverStance duration="3.0" />
+
+														</Sequence>
+
+														<!--
+														=================================================
+																open combat
+														=================================================
+														-->
+
+														<Sequence>
+
+															<Log message="open combat"/>
+
+															<SuppressFailure>
+
+																<Sequence>
+
+																	<Parallel successMode="any">
+
+																		<Parallel successMode="all">
+
+																			<QueryTPS name="SDKGrunt_OpenCombat_LimitedTravelDistance" register="RefPoint"/>
+
+																			<Wait duration="1.0"/>
+
+																		</Parallel>
+
+																		<Shoot at="Target" fireMode="PanicSpread" stance="Alerted" duration="999"/>
+
+																	</Parallel>
+
+																	<!-- move to the queried combat position; while doing so, start shooting after a small random time of 1-2seconds -->
+																	<Parallel successMode="any">
+
+																		<Move to="RefPoint" speed="Run" stance="Stand" fireMode="Off"/>
+
+																		<Sequence>
+
+																			<!-- wait between 1 and 2 seconds before shooting -->
+																			<SuppressFailure>
+
+																				<IfTime since="EnteredCombat" isLessThan="2.0">
+
+																					<Sequence>
+
+																						<WaitUntilTime since="EnteredCombat" isMoreThan="1.0"/>
+
+																						<Wait duration="0.0" variation="1.0"/>
+
+																					</Sequence>
+
+																				</IfTime>
+
+																			</SuppressFailure>
+
+																			<Shoot at="Target" fireMode="Burst" stance="Alerted" duration="999"/>
+
+																		</Sequence>
+
+																	</Parallel>
+
+																</Sequence>
+
+															</SuppressFailure>
+
+															<Shoot at="Target" fireMode="Burst" stance="Stand" duration="2.0" _startLog="starting to shoot"/>
+
+														</Sequence>
+
+													</Selector>
+
+													<!-- transition to "ApproachAndInspectLastKnownPlayerPosition" after the target hasn't been seen for some seconds -->
+													<SuppressFailure>
+
+														<Selector>
+
+															<LuaGate code="return AI.GetGroupOf(entity.id) == 0;">
+
+																<IfTime since="TargetLost" isMoreThan="5">
+
+																	<SendTransitionSignal name="GoTo_ApproachAndInspectLastKnownPlayerPosition"/>
+
+																</IfTime>
+
+															</LuaGate>
+
+															<LuaGate code="return AI.GetGroupOf(entity.id) ~= 0;">
+
+																<IfTime since="GroupTargetLost" isMoreThan="5">
+
+																	<SendTransitionSignal name="GoTo_ApproachAndInspectLastKnownPlayerPosition"/>
+
+																</IfTime>
+
+															</LuaGate>
+
+														</Selector>
+
+													</SuppressFailure>
+
+												</Sequence>
+
+											</Loop>
+
+										</Case>
+
+									</Priority>
+
+								</Sequence>
+
+							</BehaviorTree>
+
+						</State>
+
+						<!--
+						=================================================
+								ApproachAndInspectLastKnownPlayerPosition
+						=================================================
+						-->
+
+						<State name="ApproachAndInspectLastKnownPlayerPosition">
+
+							<Transitions>
+								<Transition to="Search" onEvent="SearchBegins"/>
+								<Transition to="FlinchAndGoToCombat" onEvent="OnEnemySeen"/>
+								<Transition to="Combat" onEvent="OnGroupTargetVisual"/>
+								<Transition to="Combat" onEvent="GroupMemberEnteredCombat"/>
+								<Transition to="Combat" onEvent="OnBulletRain"/>
+							</Transitions>
+
+							<BehaviorTree>
+
+								<Sequence>
+
+									<Parallel successMode="any">
+
+										<!-- Keep approaching the LKP ... -->
+										<Selector>
+
+											<GroupScope name="LKPApproachers" allowedConcurrentUsers="999">
+
+												<Selector>
+
+													<!-- run if far away -->
+													<LuaGate code="return entity:GetTargetDistance() &gt; 30">
+
+														<Selector>
+
+															<!-- try exact positioning on where we saw the player -->
+															<Move to="Target" speed="Run" stance="Alerted" fireMode="Aim" avoidDangers="0" stopWithinDistance="1"/>
+
+															<!-- try rough positioning on where we saw the player -->
+															<Sequence>
+
+																<QueryTPS name="SDKGrunt_TargetPositionOnNavMesh" register="RefPoint"/>
+
+																<Move to="RefPoint" speed="Run" stance="Alerted" fireMode="Aim" avoidDangers="0"/>
+
+															</Sequence>
+
+														</Selector>
+
+													</LuaGate>
+
+													<!-- walk if close enough -->
+													<LuaGate code="return not (entity:GetTargetDistance() &gt; 30)">
+
+														<Selector>
+
+															<!-- try exact positioning on where we saw the player -->
+															<Move to="Target" speed="Walk" stance="Alerted" fireMode="Aim" avoidDangers="0" stopWithinDistance="1"/>
+
+															<!-- try rough positioning on where we saw the player -->
+															<Sequence>
+
+																<QueryTPS name="SDKGrunt_TargetPositionOnNavMesh" register="RefPoint"/>
+
+																<Move to="RefPoint" speed="Walk" stance="Alerted" fireMode="Aim" avoidDangers="0"/>
+
+															</Sequence>
+
+														</Selector>
+
+													</LuaGate>
+
+												</Selector>
+
+											</GroupScope>
+
+											<!-- we couldn't approach and are probably still far away from the LKP, so just wait until all others have approached -->
+											<LoopUntilSuccess>
+
+												<Parallel successMode="any">
+
+													<Loop>
+
+														<AssertLua code="return AI.GetGroupScopeUserCount(entity.id, 'LKPApproachers') == 0"/>
+
+													</Loop>
+
+													<Wait duration="10"/>
+
+												</Parallel>
+
+											</LoopUntilSuccess>
+
+										</Selector>
+
+										<!-- ...until someone arrives before us. -->
+										<Parallel successMode="any">
+
+											<LoopUntilSuccess>
+
+												<Sequence>
+
+													<AssertLua code="return AI.GetGroupScopeUserCount(entity.id, 'InspectorOfLKP') &gt; 0"/>
+
+													<Wait duration="0" variation="1"/>
+
+													<StopMovement/>
+
+												</Sequence>
+
+											</LoopUntilSuccess>
+
+										</Parallel>
+
+									</Parallel>
+
+									<Selector>
+
+										<!-- Did we arrive at the LKP first? -->
+										<GroupScope name="InspectorOfLKP" allowedConcurrentUsers="1">
+
+											<!-- yes -->
+
+											<Sequence>
+
+												<Animate name="AI_SearchLookAround" loop="0"/>
+
+												<Bubble message="Show yourself!" duration="2"/>
+
+												<Animate name="AI_SearchLookAround" loop="0"/>
+
+												<Signal name="InspectionTimeHalfFinished" filter="GroupExcludingSender"/>
+
+												<Animate name="AI_SearchLookAround" loop="0"/>
+
+												<Bubble message="He's gone!" duration="2"/>
+
+												<Wait duration="2"/>
+
+												<Bubble message="Spread out and find him!" duration="2"/>
+
+												<Wait duration="2"/>
+
+												<SendTransitionSignal name="SearchBegins" filter="Group"/>
+
+											</Sequence>
+
+										</GroupScope>
+
+										<!-- Someone else arrived first. -->
+										<Parallel>
+
+											<Sequence>
+
+												<WaitForEvent name="InspectionTimeHalfFinished"/>
+
+												<Bubble message="And? Can you see him?!" duration="2.0"/>
+
+											</Sequence>
+
+											<Sequence>
+
+												<Selector>
+
+													<LuaGate code="return entity:GetTargetDistance() &gt; 15">
+
+														<Loop count="4">
+
+															<Animate name="AI_NoticeFarThreat" loop="0"/>
+
+														</Loop>
+
+													</LuaGate>
+
+													<Loop count="4">
+
+														<Animate name="AI_SearchLookAround" loop="0"/>
+
+													</Loop>
+
+												</Selector>
+
+												<!-- If we're here, then we didn't receive the "SearchBegins" signal from the LKP-Inspector within a reasonable time
+													 (e. g. because he got killed in the meantime), so, have us send the signal. -->
+												<SendTransitionSignal name="SearchBegins" filter="Group"/>
+
+											</Sequence>
+
+										</Parallel>
+
+									</Selector>
+
+								</Sequence>
+
+							</BehaviorTree>
+
+						</State>
+
+						<!--
+						=================================================
+								Search
+						=================================================
+						-->
+
+						<State name="Search">
+
+							<Transitions>
+								<Transition to="Idle" onEvent="GoTo_Idle"/>
+								<Transition to="FoundEnemy" onEvent="OnEnemySeen"/>
+								<Transition to="Combat" onEvent="OnGroupTargetVisual"/>
+								<Transition to="Combat" onEvent="GroupMemberEnteredCombat"/>
+								<Transition to="Combat" onEvent="OnBulletRain"/>
+
+								<Transition to="Combat" onEvent="OnEnemyHeard"/>
+								<Transition to="Combat" onEvent="OnThreateningSoundHeard"/>
+								<Transition to="Combat" onEvent="OnInterestingSoundHeard"/>
+							</Transitions>
+
+							<BehaviorTree>
+
+								<Sequence>
+
+									<SetAlertness value="1"/>
+
+									<PullDownThreatLevel/>
+
+									<Parallel successMode="any">
+
+										<Sequence>
+
+											<Wait duration="90"/>
+
+											<SendTransitionSignal name="GiveUpSearch" filter="Group"/>
+
+										</Sequence>
+
+										<WaitForEvent name="GiveUpSearch"/>
+
+										<Loop>
+
+											<SuppressFailure>
+
+												<Sequence>
+
+													<QueryTPS name="SDKGrunt_RandomSearchSpotAroundPuppet" register="RefPoint"/>
+
+													<Move to="RefPoint" speed="Walk" stance="Alerted" fireMode="Off" avoidDangers="0"/>
+
+													<Parallel>
+
+														<Animate name="AI_SearchLookAround" loop="0"/>
+
+														<Sequence>
+
+															<Wait duration="2"/>
+
+															<Bubble message="You cannot hide forever!" duration="2"/>
+
+														</Sequence>
+
+													</Parallel>
+
+												</Sequence>
+
+											</SuppressFailure>
+
+										</Loop>
+
+									</Parallel>
+
+									<SendTransitionSignal name="GoTo_Idle"/>
+
+								</Sequence>
+
+							</BehaviorTree>
+
+						</State>
+
+						<!--
+						=================================================
+								FoundEnemy
+						=================================================
+						-->
+
+						<State name="FoundEnemy">
+
+							<Transitions>
+								<Transition to="Combat" onEvent="GoTo_Combat"/>
+							</Transitions>
+
+							<BehaviorTree>
+
+								<Sequence>
+
+									<Bubble message="I found him!!!" duration="2"/>
+
+									<StopMovement/>
+
+									<Animate name="AI_NoticeVisualThreatAndTurn" loop="0" setBodyDirectionTowardsAttentionTarget="1"/>
+
+									<Shoot at="Target" stance="Alerted" duration="1.0" fireMode="Forced"/>
+
+									<SendTransitionSignal name="GoTo_Combat"/>
+
+								</Sequence>
+
+							</BehaviorTree>
+
+						</State>
+
+					</StateMachine>
+
+				</Case>
+
+			</Priority>
+
+		</Parallel>
+
+	</Root>
+
+</BehaviorTree>

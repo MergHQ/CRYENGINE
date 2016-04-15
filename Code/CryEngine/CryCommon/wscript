@@ -1,0 +1,17 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryFileContainer( 
+		target     = 'CryCommon', 
+		vs_filter  = 'Common',
+		file_list  = ['crycommon.waf_files'],
+
+		win_file_list      = ['crycommon_win32.waf_files', 'crycommon_windows.waf_files'],
+		durango_file_list  = ['crycommon_win32.waf_files', 'crycommon_durango.waf_files'],
+
+		linux_file_list    = ['crycommon_posix.waf_files', 'crycommon_linux.waf_files'],
+		orbis_file_list    = ['crycommon_posix.waf_files', 'crycommon_sce.waf_files', 'crycommon_orbis.waf_files'],
+		android_file_list  = ['crycommon_posix.waf_files', 'crycommon_android.waf_files'],
+		darwin_file_list   = ['crycommon_posix.waf_files', 'crycommon_darwin.waf_files'],
+	)	

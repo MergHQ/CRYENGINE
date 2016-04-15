@@ -1,0 +1,169 @@
+<BehaviorTree>
+
+	<!--
+	=============================================================================================================================================
+	SDK_Grunt_03.xml
+
+	Behavior tree that builds on top of the Idle and Combat behaviors from SDK_Grunt_02.xml.
+	In addition to that, once losing track of the player, the AI will run to the last known position of the player and play a search animation
+	for 10 seconds. Afterwards, it will return to to Idle behavior.
+	=============================================================================================================================================
+	-->
+
+	<Variables>
+		<Variable name="HasTarget"/>
+
+		<!-- these variables are not used in this BT, but need to be present to prevent a warning caused by BasicAI:OnReset() -->
+		<Variable name="ExecuteSequence" />
+		<Variable name="ExecuteInterruptibleSequence" />
+	</Variables>
+
+	<SignalVariables>
+		<Signal name="OnNewAttentionTarget" variable="HasTarget" value="true"/>
+		<Signal name="OnNoTarget" variable="HasTarget" value="false"/>
+		<Signal name="OnLostSightOfTarget" variable="HasTarget" value="false" />
+	</SignalVariables>
+
+	<Timestamps>
+	</Timestamps>
+
+	<Root>
+
+		<StateMachine>
+
+			<!--
+			=================================================
+					Idle
+			=================================================
+			-->
+
+			<State name="Idle">
+
+				<Transitions>
+					<Transition to="Combat" onEvent="OnNewAttentionTarget"/>
+				</Transitions>
+
+				<BehaviorTree>
+
+					<Sequence>
+
+						<SetAlertness value="0"/>
+
+						<ExecuteLua code="entity.actor:HolsterItem(true)"/>
+
+						<Stance name="Relaxed"/>
+
+						<Animate name="ZZ_AI_idleBreak"/>
+
+						<Halt/>
+
+					</Sequence>
+
+				</BehaviorTree>
+
+			</State>
+
+			<!--
+			=================================================
+					Combat
+			=================================================
+			-->
+
+			<State name="Combat">
+
+				<Transitions>
+					<Transition to="RunToAndInspectLastKnownPlayerPosition" onEvent="GoTo_RunToAndInspectLastKnownPlayerPosition"/>
+				</Transitions>
+
+				<BehaviorTree>
+
+					<Sequence>
+
+						<Log message="Now I should fight you!"/>
+
+						<SetAlertness value="2"/>
+
+						<Stance name="Alerted"/>
+
+						<ExecuteLua code="entity:SelectPrimaryWeapon()"/>
+
+						<Communicate name="TargetSpottedWhileSearching" channel="Reaction" expirity="1.0" waitUntilFinished="0" />
+
+						<!-- main combat loop -->
+						<Loop _startLog="main combat loop">
+
+							<Sequence>
+
+								<SuppressFailure>
+
+									<Move to="Target" speed="Run" stance="Stand" avoidDangers="0" stopWithinDistance="10"/>
+
+								</SuppressFailure>
+
+								<Shoot at="Target" fireMode="Burst" stance="Stand" duration="2.0" _startLog="starting to shoot"/>
+
+								<!-- keep fighting or transition to "RunToAndInspectLastKnownPlayerPosition" -->
+								<Selector>
+
+									<AssertCondition condition="HasTarget"/>
+
+									<SendTransitionSignal name="GoTo_RunToAndInspectLastKnownPlayerPosition"/>
+
+								</Selector>
+
+							</Sequence>
+
+						</Loop>
+
+					</Sequence>
+
+				</BehaviorTree>
+
+			</State>
+
+			<!--
+			=================================================
+					RunToAndInspectLastKnownPlayerPosition
+			=================================================
+			-->
+
+			<State name="RunToAndInspectLastKnownPlayerPosition">
+
+				<Transitions>
+					<Transition to="Idle" onEvent="GoTo_Idle"/>
+					<Transition to="Combat" onEvent="OnNewAttentionTarget"/>
+				</Transitions>
+
+				<BehaviorTree>
+
+					<Sequence>
+
+						<SuppressFailure>
+	
+							<Move to="Target" speed="Run" stance="Stand" avoidDangers="0" stopWithinDistance="0"/>
+
+						</SuppressFailure>
+
+						<Parallel successMode="any">
+
+							<Animate name="AI_SearchLookAround" loop="1"/>
+
+							<SuppressFailure>
+								<Timeout duration="10"/>
+							</SuppressFailure>
+
+						</Parallel>
+
+						<SendTransitionSignal name="GoTo_Idle"/>
+
+					</Sequence>
+
+				</BehaviorTree>
+
+			</State>
+
+		</StateMachine>
+
+	</Root>
+
+</BehaviorTree>

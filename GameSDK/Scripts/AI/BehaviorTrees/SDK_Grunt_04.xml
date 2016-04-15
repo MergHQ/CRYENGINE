@@ -1,0 +1,277 @@
+<BehaviorTree>
+
+	<!--
+	=============================================================================================================================================
+	SDK_Grunt_04.xml
+
+	Behavior tree that builds on top of the SDK_Grunt_03.xml.
+	Additions / changes:
+		- will also make use of covers in its Combat behavior
+		- picks its open-combat position via a TPS query instead of blindly moving towards the target
+		- once having lost track of the player, it will slowly approach the player's last known position, play a search animation and then return to its initial position and idle
+		- furthermore, this is the first BT that supports sharing a target among multiple AIs if they are in the same group (in the 01-03 SDK BTs, each AI only knew what it had perceived 
+		  by itself, not what other AIs had perceived so far)
+		- to have multiple AIs share the target information, each of them must have the same "groupid" assigned in the Sandbox and that groupid must not be 0 (0 would mean: the AI is 
+		  in *no* group at all)
+		- careful: when providing a groupid in the Sandbox, make sure you provide an integer number, not a floating point number (Sandbox/Lua accepts floats, but converts them to ints internally, so
+		  e. g. 0.1 ends up as 0)
+	=============================================================================================================================================
+	-->
+
+	<Variables>
+		<Variable name="HasTarget"/>
+
+		<!-- these variables are not used in this BT, but need to be present to prevent a warning caused by BasicAI:OnReset() -->
+		<Variable name="ExecuteSequence" />
+		<Variable name="ExecuteInterruptibleSequence" />
+	</Variables>
+
+	<SignalVariables>
+		<Signal name="OnNewAttentionTarget" variable="HasTarget" value="true"/>
+		<Signal name="OnNoTarget" variable="HasTarget" value="false"/>
+	</SignalVariables>
+
+	<Timestamps>
+		<Timestamp name="TargetSpotted" setOnEvent="OnEnemySeen" exclusiveTo="TargetLost"/>
+		<Timestamp name="TargetLost" setOnEvent="OnLostSightOfTarget" exlusiveTo="TargetSpotted"/>
+		<Timestamp name="GroupTargetSpotted" setOnEvent="OnGroupTargetVisual" exclusiveTo="GroupTargetLost"/>
+		<Timestamp name="GroupTargetLost" setOnEvent="OnGroupTargetMemory" exclusiveTo="GroupTargetSpotted"/>
+	</Timestamps>
+
+	<Root>
+
+		<StateMachine>
+
+			<!--
+			=================================================
+					Idle
+			=================================================
+			-->
+
+			<State name="Idle">
+
+				<Transitions>
+					<Transition to="Combat" onEvent="OnEnemySeen"/>
+					<Transition to="Combat" onEvent="GroupMemberEnteredCombat"/>
+				</Transitions>
+
+				<BehaviorTree>
+
+					<Sequence>
+
+						<SetAlertness value="0"/>
+
+						<Stance name="Relaxed"/>
+
+						<SuppressFailure>
+
+							<LuaGate code="return entity.PropertiesInstance.AI.bGoBackToStartOnIdle">
+
+								<Move to="InitialPosition" speed="Walk" stance="Relaxed" _startLog="moving back to initial position"/>
+
+							</LuaGate>
+
+						</SuppressFailure>
+
+						<ExecuteLua code="entity.actor:HolsterItem(true)"/>
+
+						<Animate name="ZZ_AI_idleBreak"/>
+
+						<Halt/>
+
+					</Sequence>
+
+				</BehaviorTree>
+
+			</State>
+
+			<!--
+			=================================================
+					Combat
+			=================================================
+			-->
+
+			<State name="Combat">
+
+				<Transitions>
+					<Transition to="ApproachAndInspectLastKnownPlayerPosition" onEvent="GoTo_ApproachAndInspectLastKnownPlayerPosition"/>
+				</Transitions>
+
+				<BehaviorTree>
+
+					<Sequence>
+
+						<Log message="Now I should fight you!"/>
+
+						<SetAlertness value="2"/>
+
+						<Stance name="Alerted"/>
+
+						<ExecuteLua code="entity:SelectPrimaryWeapon()"/>
+
+						<Communicate name="TargetSpottedWhileSearching" channel="Reaction" expirity="1.0" waitUntilFinished="0" />
+
+						<Signal name="GroupMemberEnteredCombat" filter="Group"/>
+
+						<!--
+						=================================================
+								main combat loop
+						=================================================
+						-->
+						<Loop _startLog="main combat loop">
+
+							<Sequence>
+
+								<Selector>
+
+									<!--
+									=================================================
+											cover combat
+									=================================================
+									-->
+
+									<Sequence>
+
+										<Selector>
+
+											<AssertLua code="return (AI.IsInCover(entity.id) and not AI.IsCoverCompromised(entity.id)) "/>
+
+											<Sequence>
+
+												<Log message="trying to find cover"/>
+
+												<QueryTPS name="SDKGrunt_CoverToShootFrom" register="Cover"/>
+
+												<Log message="moving to found cover"/>
+
+												<Move to="Cover" speed="Run" stance="Stand" fireMode="BurstWhileMoving" avoidDangers="1"/>
+
+											</Sequence>
+
+										</Selector>
+
+										<Log message="+++ shooting from cover BEGIN +++"/>
+
+										<ShootFromCover duration="2.0" fireMode="Burst" aimObstructedTimeout="1.0"/>
+
+										<Log message="--- shooting from cover END ---"/>
+
+										<AdjustCoverStance duration="3.0" />
+
+									</Sequence>
+
+									<!--
+									=================================================
+											open combat
+									=================================================
+									-->
+
+									<Sequence>
+
+										<Log message="open combat"/>
+
+										<SuppressFailure>
+
+											<Sequence>
+
+												<QueryTPS name="SDKGrunt_OpenCombat" register="RefPoint"/>
+
+												<Move to="RefPoint" speed="Run" stance="Stand" fireMode="BurstWhileMoving"/>
+
+											</Sequence>
+
+										</SuppressFailure>
+
+										<Shoot at="Target" fireMode="Burst" stance="Stand" duration="2.0" _startLog="starting to shoot"/>
+
+									</Sequence>
+
+								</Selector>
+
+								<!-- transition to "ApproachAndInspectLastKnownPlayerPosition" after the target hasn't been seen for some seconds -->
+								<SuppressFailure>
+
+									<Selector>
+
+										<LuaGate code="return AI.GetGroupOf(entity.id) == 0;">
+
+											<IfTime since="TargetLost" isMoreThan="5">
+
+												<SendTransitionSignal name="GoTo_ApproachAndInspectLastKnownPlayerPosition"/>
+
+											</IfTime>
+
+										</LuaGate>
+
+										<LuaGate code="return AI.GetGroupOf(entity.id) ~= 0;">
+
+											<IfTime since="GroupTargetLost" isMoreThan="5">
+
+												<SendTransitionSignal name="GoTo_ApproachAndInspectLastKnownPlayerPosition"/>
+
+											</IfTime>
+
+										</LuaGate>
+
+									</Selector>
+
+								</SuppressFailure>
+
+							</Sequence>
+
+						</Loop>
+
+					</Sequence>
+
+				</BehaviorTree>
+
+			</State>
+
+			<!--
+			=================================================
+					ApproachAndInspectLastKnownPlayerPosition
+			=================================================
+			-->
+
+			<State name="ApproachAndInspectLastKnownPlayerPosition">
+
+				<Transitions>
+					<Transition to="Idle" onEvent="GoTo_Idle"/>
+					<Transition to="Combat" onEvent="OnEnemySeen"/>
+					<Transition to="Combat" onEvent="OnGroupTargetVisual"/>
+					<Transition to="Combat" onEvent="GroupMemberEnteredCombat"/>
+				</Transitions>
+
+				<BehaviorTree>
+
+					<Sequence>
+
+						<SuppressFailure>
+	
+							<Move to="Target" speed="Walk" stance="Alerted" fireMode="Off" avoidDangers="0" stopWithinDistance="1"/>
+
+						</SuppressFailure>
+
+						<Parallel successMode="any">
+
+							<Animate name="AI_SearchLookAround" loop="1"/>
+
+							<SuppressFailure>
+								<Timeout duration="10"/>
+							</SuppressFailure>
+
+						</Parallel>
+
+						<SendTransitionSignal name="GoTo_Idle"/>
+
+					</Sequence>
+
+				</BehaviorTree>
+
+			</State>
+
+		</StateMachine>
+
+	</Root>
+
+</BehaviorTree>

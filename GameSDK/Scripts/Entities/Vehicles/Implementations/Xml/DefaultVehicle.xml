@@ -1,0 +1,60 @@
+<Vehicle name="DefaultVehicle" >
+  <Physics pushable="1" collDamageThreshold="0">
+    <Buoyancy waterDensity="0" waterResistance="0" />
+  </Physics>
+  <Components />
+  <Parts>
+    <Part class="Static" disableCollision="0" mass="100" name="body">
+    	<Static filename="Objects/default/primitive_box.cgf" geometry="" />
+    </Part>
+  </Parts>
+  <Seats>
+    <Seat isDriver="1" name="driver" usesSeatForEntering="1" actionMap="vehicle_driver">
+      <Views>
+        <View class="FirstPerson" canRotate="0">
+          <FirstPerson/>
+        </View>
+        <View class="ThirdPerson" canRotate="0">
+          <ThirdPerson distance="5" heightOffset="1" speed="5" />
+        </View>
+      </Views>
+      <Weapons>
+        <Primary />
+      </Weapons>
+      <ActionParts />
+    </Seat>
+  </Seats>
+  <MovementParams>
+    <ArcadeWheeled steerSpeed="5" steerSpeedMin="100" steerSpeedScale="0.75" steerSpeedScaleMin="1" kvSteerMax="20" v0SteerMax="55" steerRelaxation="100" vMaxSteerMax="40" pedalLimitMax="0" rpmGearShiftSpeed="2">
+      <Handling>
+        <Power acceleration="8" decceleration="0.2" topSpeed="40" reverseSpeed="20" />
+        <WheelSpin grip1="1" grip2="2" gripRecoverSpeed="20" accelMultiplier1="2.0" accelMultiplier2="0.5"/>
+        <HandBrake decceleration="20" deccelerationPowerLock="6" lockBack="1" lockFront="0" frontFrictionScale="3.0" backFrictionScale="0.1" angCorrectionScale="6"/>
+        <SpeedReduction reductionAmount="0.2" reductionRate="0.2"/>
+        <Friction back="3" front="2.2" offset="-2.0"/>
+        <Correction lateralSpring="1" angSpring="0.1"/>
+        <Compression frictionBoost="1.5" frictionBoostHandBrake="1.5"/>
+        <Inertia radius="6"/>
+      </Handling>
+      <FakeGears minChangeUpTime="0.7" minChangeDownTime="0.5">
+        <Ratios>
+          <Ratio value="0.5"/>
+          <Ratio value="0.8"/>
+          <Ratio value="0.95"/>
+        </Ratios>
+      </FakeGears>
+      <WheeledLegacy damping="0.11" engineIdleRPM="1000" engineMaxRPM="5000" engineMinRPM="1000" stabilizer="0" maxTimeStep="0.05" minEnergy="0.1" suspDampingMin="0" suspDampingMax="0" suspDampingMaxSpeed="3"/>
+      <Boost endurance="999" regeneration="0.1" strength="1"/>
+      <SoundParams eventGroup="" engineSoundPosition="" runSoundDelay="1" roadBumpMinSusp="10" roadBumpMinSpeed="6" roadBumpIntensity="0.3" maxSlipSpeed="11"/>
+     </ArcadeWheeled>
+  </MovementParams>
+  <Particles>
+    <Exhaust insideWater="0" outsideWater="1" >
+      <Helpers />
+      <EngineStart effect="" />
+      <EngineStop effect="" />
+      <EngineRunning baseSizeScale="1" effect="" boostEffect="" maxPower="1" maxPowerCountScale="1" maxPowerSizeScale="1" maxSpeed="20" minPower="0" minPowerCountScale="1" minPowerSizeScale="1" minSpeed="0" minSpeedCountScale="1" minSpeedSizeScale="1" maxSpeedCountScale="1" maxSpeedSizeScale="1"/>
+    </Exhaust>
+    <DamageEffects />
+  </Particles>
+</Vehicle>

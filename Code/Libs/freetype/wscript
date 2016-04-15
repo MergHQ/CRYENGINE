@@ -1,0 +1,16 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'freetype', 
+		vs_filter = 'Libs',
+		file_list = 'freetype.waf_files',
+		exclude_from_static_code_analyzer = True,
+		
+		includes        = [ Path('Code/SDKs/freetype/include') ],
+		module_provides = dict(
+			includes = [ Path('Code/SDKs/freetype/include') ],
+		),
+		defines         = [ 'FT_CONFIG_OPTIONS_H="cry_ftoption.h"', 'FT_CONFIG_MODULES_H="cry_ftmodule.h"', 'FT2_BUILD_LIBRARY' ]
+	)

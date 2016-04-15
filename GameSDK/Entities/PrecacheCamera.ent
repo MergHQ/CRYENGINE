@@ -1,0 +1,4 @@
+<Entity
+ Name="PrecacheCamera"
+ Script="Scripts/Entities/Others/PrecacheCamera.lua"
+/>

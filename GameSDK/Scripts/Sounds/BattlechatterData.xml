@@ -1,0 +1,59 @@
+<BattlechatterData>
+  <!-- default - No repeatChatter, No cloakedChatter, No ArmourChatter, Range 30m and Chance 1, No EnemyChatter-->
+	<BC_Reloading			range="40.0"	chance="0.8"	repeatChatter="Copy"	cloakedChatter="Reloading_Cloaked"		armourChatter="Reloading" />
+	<BC_LowHealth			range="100.0"	armourChatter="LowHealth"  friendlyHunterCanSpeak="1" enemyHunterCanSpeak="1" />
+	<BC_EnemyKilled			range="200.0"	repeatChatter="Copy" 	cloakedChatter="EnemyKilled_Cloaked"	armourChatter="PlayerDown" enemyHunterCanSpeak="1" friendlyHunterCanSpeak="1"/>
+	<BC_PlayerKilledCongrats	range="50.0"	chance="0.5" armourChatter="PlayerKilledCongrats" friendlyHunterCanSpeak="1"/>
+	<BC_GrenadeThrow		range="200.0"	armourChatter="GrenadeThrow"/>
+	<BC_Ripoff			range="100.0"	armourChatter="Ripoff" />
+	<BC_MovingUp			range="50.0"	chance="0.25"	repeatChatter="Copy"	cloakedChatter="MovingUp_Cloaked"		armourChatter="MovingUp" friendlyHunterCanSpeak="1"/>
+	<BC_LowAmmo			range="100.0" repeatChatter="Ditto"	armourChatter="LowAmmo" />
+	<BC_SecondaryWeapon		range="50.0"	repeatChatter="Copy"		armourChatter="SecondaryWeapon" netMinTimeBetweenSends="20.0" />
+	<BC_Sniper			range="200.0"	repeatChatter="Copy"		armourChatter="Sniper"   enemyCanSpeak="1" friendlyHunterCanSpeak="1" enemyHunterCanSpeak="1" />
+	<BC_MissileCountermeasures	range="200.0"	repeatChatter="Copy"		armourChatter="MissileCountermeasures"   enemyCanSpeak="1"/>
+	<BC_Ditto			range="50.0" armourChatter="ditto" />
+	<BC_Copy			range="50.0" 	chance="0.2" friendlyHunterCanSpeak="1" />
+	<BC_Mandown			range="200.0"		chance="0.5"	repeatChatter="Copy"		armourChatter="Mandown" friendlyHunterCanSpeak="1" enemyHunterCanSpeak="1" />
+	<BC_WatchMyBack			range="50.0"	chance="0.5"		repeatChatter="Copy"  />
+	<BC_Blinded			range="150.0" enemyCanSpeak="1" armourChatter="Blinded"/>
+	<BC_CloakedEnemy		range="100.0" armourChatter="CloakedEnemy" />
+	<BC_SeeGrenade			range="200.0"												armourChatter="SeeGrenade"		enemyCanSpeak="1" friendlyHunterCanSpeak="1"/>
+	<BC_Quiet			range="30.0" 	chance="0.2" armourChatter="Quiet" friendlyHunterCanSpeak="1" enemyHunterCanSpeak="1"/>
+	<BC_EnterCrashsite		range="150.0" 	chance="0.85"										armourChatter="EnterCrashsite"/>
+	<BC_NearbyEnemyDetected		range="30.0"	chance="0.5"	repeatChatter="Copy" enemyCanSpeak="1" armourChatter="NearbyEnemyDetected" friendlyHunterCanSpeak="1" enemyHunterCanSpeak="1" />
+	<BC_ObjectivePickup		range="60.0"			cloakedChatter="ObjectivePickup_Cloaked" armourChatter="ObjectivePickup" />
+	<BC_TakingFire			range="80.0"			friendlyHunterCanSpeak="1" enemyHunterCanSpeak="1"	armourChatter="TakingFire_Armour"	enemyCanSpeak="1"/>
+	<BC_PinnedDown			range="200.0" chance="0.6" enemyCanSpeak="1" armourChatter="PinnedDown"/>
+	<BC_AssistCongrats		range="50.0"	armourChatter="AssistCongrats" friendlyHunterCanSpeak="1" />
+	<BC_TimeRemainingGood		range="60.0"	chance="0.15"	armourChatter="TimeRemainingGood" />
+	<BC_TimeRemainingBad		range="60.0"	chance="0.05"	armourChatter="TimeRemainingBad"/>
+	<BC_AssaultDownload		range="50.0"	chance="0.05"	armourChatter="AssaultDownload"/>
+	<BC_VisualAssaultAttacker		armourChatter="VisualAssaultAttacker" enemyCanSpeak="1"/>
+	<BC_VisualObjectiveCarried			armourChatter="VisualObjectiveCarried" enemyCanSpeak="1"/>
+	<BC_Battlecry			range="200.0"	chance="0.5"										armourChatter="Battlecry" />
+	<BC_Spawn			range="50.0"	chance="0.1" friendlyHunterCanSpeak="1" />
+	<BC_Cloaking			range="50.0"	chance="0.5" cloakedChatter="Cloaking" />
+	<BC_FriendlyFire		range="120.0"	friendlyHunterCanSpeak="1" />
+	<BC_AreaClear			range="50.0" friendlyHunterCanSpeak="1" enemyHunterCanSpeak="1" />
+	<BC_PlayerDown			range="150.0"		chance="0.4" enemyCanSpeak="1"	armourChatter="EnemyKilled" enemyHunterCanSpeak="1" />
+	<BC_Death			range="150.0" enemyCanSpeak="1" friendlyHunterCanSpeak="1" enemyHunterCanSpeak="1" cloakedChatter="Death" armourChatter="Death"/>
+	<BC_MovingUp_Cloaked		range="30.0"/>
+	<BC_ObjectivePickup_Cloaked	range="30.0"/>
+	<BC_Reloading_Cloaked		range="30.0"/>
+	<BC_EnemyKilled_Cloaked		range="20.0"/>
+	<BC_ArmorMode			range="50.0"	chance="0.6" repeatChatter="Copy"	armourChatter="ArmorMode"/>
+	<BC_TakingFire_Armour		range="200.0" enemyCanSpeak="1"/>
+	<BC_SeeVTOL			range="200.0" chance="1" enemyCanSpeak="1"  repeatChatter="Copy" armourChatter="SeeVTOL"/>
+	<BC_DataTransferring		range="50.0" enemyCanSpeak="1" armourChatter="DataTransferring"/>
+	<BC_SeeGamma			range="200.0" chance="1" enemyCanSpeak="1" armourChatter="SeeGamma"/>
+	<BC_Drained			range="50.0" chance="0.3" enemyCanSpeak="1" cloakedChatter="Drained" armourChatter="Drained"/>
+	<BC_TaggedHostiles		range="80.0"  enemyCanSpeak="1"  repeatChatter="Copy" armourChatter="TaggedHostiles"/>
+	<BC_Download			range="40.0" chance="0.8" enemyCanSpeak="1" armourChatter="Download"/>
+	<BC_Electrocuted		range="100.0" enemyCanSpeak="1" armourChatter="Electrocuted" netMinTimeBetweenSends="5.0" />
+	<BC_SkillShotKill		range="50.0" chance="0.5" enemyCanSpeak="0" armourChatter="SkillShotKill"/>
+	<BC_PlayerObjectivePickup	range="50.0" enemyCanSpeak="0" armourChatter="PlayerObjectivePickup"/>
+	<BC_Enemy_HMG				range="50" />
+	<BC_EMPBlastActivatedFriendly range="100000.0" enemyCanSpeak="0" armourChatter="EMPBlastActivatedFriendly" />
+	<BC_EMPBlastActivatedHostile range="100000.0" enemyCanSpeak="1" armourChatter="EMPBlastActivatedHostile" />  
+
+</BattlechatterData>

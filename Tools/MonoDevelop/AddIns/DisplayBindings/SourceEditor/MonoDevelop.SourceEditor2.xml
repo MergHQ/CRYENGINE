@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.SourceEditor2</name>
+    </assembly>
+    <members>
+        <member name="T:MonoDevelop.SourceEditor.FileRegistry">
+            <summary>
+            The File registry handles events that are affecting all open source views to allow the 
+            operations to 'do action on all'/'ignore action on all'. (think of 50 files that needs to be reloaded)
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.SourceEditor.AbstractUsagesExtension`1">
+            <summary>
+            Provides a base class for implementing highlighting of usages inside the text editor.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.SourceEditor.AbstractUsagesExtension`1.TryResolve(`0@)">
+            <summary>
+            Tries to resolve inside the current location inside tho document.
+            </summary>
+            <returns><c>true</c>, if resolve was successful, <c>false</c> otherwise.</returns>
+            <param name="resolveResult">The resolve result.</param>
+        </member>
+        <member name="M:MonoDevelop.SourceEditor.AbstractUsagesExtension`1.GetReferences(`0,System.Threading.CancellationToken)">
+            <summary>
+            Gets all references from a given resolve result. Note that this method is called on a background thread.
+            </summary>
+            <returns>The references.</returns>
+            <param name="resolveResult">The resolve result given in 'TryResolve'.</param>
+            <param name="token">A cancellation token to cancel the operation.</param>
+        </member>
+    </members>
+</doc>

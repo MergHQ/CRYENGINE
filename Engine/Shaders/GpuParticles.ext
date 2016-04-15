@@ -1,0 +1,175 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2015.
+// -------------------------------------------------------------------------
+//  File name:   GpuParticles.ext
+//  Version:     v2.00
+//  Created:     18/12/2015 by Benjamin Block
+//  Compilers:   
+//  Description: Gpu Particles Flags
+// -------------------------------------------------------------------------
+//
+////////////////////////////////////////////////////////////////////////////
+
+Property
+{
+  Name = %PFX_UPDATE_MOTION
+  Mask = 0x04
+  Property    (Motion Update)
+  Description (Motion Update)
+}
+
+Property
+{
+  Name = %PFX_UPDATE_COLOR
+  Mask = 0x08
+  Property    (Color Update)
+  Description (Color Update)
+}
+
+Property
+{
+  Name = %PFX_UPDATE_SIZE
+  Mask = 0x10
+  Property    (Size Update)
+  Description (Size Update)
+}
+
+Property
+{
+  Name = %PFX_UPDATE_OPACITY
+  Mask = 0x20
+  Property    (Opacity Update)
+  Description (Opacity Update)
+}
+
+Property
+{
+  Name = %PFX_UPDATE_MOTION_LINEARINTEGRAL
+  Mask = 0x40
+  Property    (Linear Motion Integration)
+  Description (Linear Motion Integration)
+}
+
+Property
+{
+  Name = %PFX_UPDATE_MOTION_DRAGFAST
+  Mask = 0x80
+  Property    (Fast Drag Integration)
+  Description (Fast Drag Integration)
+}
+
+Property
+{
+  Name = %PFX_UPDATE_MOTION_BROWNIAN
+  Mask = 0x100
+  Property    (Motion Brownian Noise)
+  Description (Motion Brownian Noise)
+}
+
+Property
+{
+  Name = %PFX_UPDATE_MOTION_SIMPLEX
+  Mask = 0x200
+  Property    (Motion Simplex Noise)
+  Description (Motion Simplex Noise)
+}
+
+Property
+{
+  Name = %PFX_UPDATE_MOTION_CURL
+  Mask = 0x400
+  Property    (Motion Curl Noise)
+  Description (Motion Curl Noise)
+}
+
+Property
+{
+  Name = %PFX_UPDATE_MOTION_GRAVITY
+  Mask = 0x800
+  Property    (Motion Gravity)
+  Description (Motion Gravity)
+}
+
+
+Property
+{
+  Name = %PFX_UPDATE_MOTION_VORTEX
+  Mask = 0x1000
+  Property    (Motion Vortex)
+  Description (Motion Vortex)
+}
+
+Property
+{
+  Name = %PFX_COLLISION_SCREENSPACE
+  Mask = 0x2000
+  Property    (ScreenSpace Collisions)
+  Description (ScreenSpace Collisions)
+}
+
+Property
+{
+  Name = %PFX_UPDATE_PIXELSIZE
+  Mask = 0x4000
+  Property    (Pixel Size)
+  Description (Pixel Size)
+}
+
+Property
+{
+  Name = %PFX_INIT_LOCATION_OFFSET
+  Mask = 0x04
+  Property    (Location Offset)
+  Description (Location Offset)
+}
+
+Property
+{
+  Name = %PFX_INIT_LOCATION_BOX
+  Mask = 0x08
+  Property    (Location Box)
+  Description (Location Box)
+}
+
+Property
+{
+  Name = %PFX_INIT_LOCATION_SPHERE
+  Mask = 0x10
+  Property    (Location Sphere)
+  Description (Location Sphere)
+}
+
+Property
+{
+  Name = %PFX_INIT_LOCATION_CIRCLE
+  Mask = 0x20
+  Property    (Location Circle)
+  Description (Location Circle)
+}
+
+Property
+{
+  Name = %PFX_INIT_VELOCITY_CONE
+  Mask = 0x40
+  Property    (Velocity Cone)
+  Description (Velocity Cone)
+}
+
+Property
+{
+  Name = %PFX_INIT_VELOCITY_DIRECTIONAL
+  Mask = 0x80
+  Property    (Velocity Directional)
+  Description (Velocity Directional)
+}
+
+Property
+{
+  Name = %PFX_INIT_VELOCITY_OMNIDIRECTIONAL
+  Mask = 0x100
+  Property    (Velocity Omnidirectional)
+  Description (Velocity Omnidirectional)
+}

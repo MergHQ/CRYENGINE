@@ -1,0 +1,762 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+float4 vfViewPos				: PB_CameraPos;
+float4 vfParams					: PB_VolumetricFogParams;
+float4 vfRampParams			: PB_VolumetricFogRampParams;
+float4 vfSunDir					: PB_VolumetricFogSunDir;
+
+float3 vfColGradBase		: PB_FogColGradColBase;
+float3 vfColGradDelta		: PB_FogColGradColDelta;
+float4 vfColGradParams	: PB_FogColGradParams;
+float4 vfColGradRadial	: PB_FogColGradRadial;
+
+////////////////////////////////////////////////////////////////////////////
+// impl
+
+float ComputeVolumetricFogInternal(in float3 cameraToWorldPos)
+{
+	const float heightScale =												vfParams.x;
+	const float volFogHeightDensityAtBaseHeight =		vfParams.y;
+	const float heightDiffFromBase =								vfParams.z;
+	const float expHeightDiffFromBase =							vfParams.w;
+	const float densityClamp =											vfSunDir.w;
+
+	float fogInt = 1.0;
+
+	const float t = heightScale * cameraToWorldPos.z;
+	if (abs(t) > 0.01)
+	{
+		// Subtraction of extreme range difference such as (exp(t) - 1) causes a fog glich, it should be kept appropriate range.
+		// NOTE: fogInt *= ((exp(t) - 1.0) / t) * exp(heightDiffFromBase) causes a fog glich.
+		fogInt *= (exp(t + heightDiffFromBase) - expHeightDiffFromBase) / t;
+	}
+	else
+	{
+		fogInt *= expHeightDiffFromBase;
+	}
+
+	// NOTE: volFogHeightDensityAtBaseHeight = log2(e) * fogDensity * exp(heightScale * vfViewPos.z + heightOffset) / exp(heightDiffFromBase);
+	const float l = length(cameraToWorldPos);
+	const float u = l * volFogHeightDensityAtBaseHeight;
+	fogInt *= u;
+
+	float f = saturate(exp2(-fogInt));
+
+	half r = saturate(l * vfRampParams.x + vfRampParams.y);
+	r = r * (2 - r);
+	r = r * vfRampParams.z + vfRampParams.w;
+
+	f = (1 - f) * r;
+	return max(1 - f, densityClamp);
+}
+
+// RET.xyz = fog color (HDR)
+// RET.w = fog factor to lerp scene/object color with (i.e. lerp(RET.xyz, sceneColor.xyz, RET.w))
+float4 GetVolumetricFogColorInternal(in float3 worldPos, in float3 cameraToWorldPos, in float radialFogShadowInfluence, in float ambientFogShadowInfluence)
+{
+	#define heightGradScale								vfColGradParams.x
+	#define heightGradOffset							vfColGradParams.y
+	#define radialSizeCtrl								vfColGradParams.z
+	#define radialLobeCtrl								vfColGradParams.w
+
+	#define radialColor										vfColGradRadial.xyz
+	#define invZFar												vfColGradRadial.w
+
+	const float fog = ComputeVolumetricFogInternal(cameraToWorldPos);
+
+	half h = saturate(worldPos.z * heightGradScale + heightGradOffset);
+	h = h * (2 - h);
+
+	half3 fogColor = (vfColGradBase + h * vfColGradDelta) * ambientFogShadowInfluence;
+
+	const half l = saturate(length(cameraToWorldPos) * invZFar);
+	const half radialLobe = pow(l, radialLobeCtrl);
+	const half radialSize = exp2(dot(normalize(cameraToWorldPos), vfSunDir.xyz) * -radialSizeCtrl + radialSizeCtrl); // exp2(-radialSizeCtrl * (1-cos(x))
+
+	fogColor += radialLobe * radialSize * radialColor * radialFogShadowInfluence;
+
+	return float4(fogColor, fog);
+}
+
+float4 GetVolumetricFogColorInternal(in float3 worldPos)
+{
+#ifdef %_VS
+  vfViewPos.xyz = g_VS_WorldViewPos;
+#endif
+  float3 camToWorld = worldPos - vfViewPos.xyz;
+  return GetVolumetricFogColorInternal(worldPos, camToWorld, 1, 1);
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// delegates
+
+float4 GetVolumetricFogColor(in float3 worldPos, in float3 cameraToWorldPos, in float radialFogShadowInfluence, in float ambientFogShadowInfluence)
+{
+	return GetVolumetricFogColorInternal(worldPos, cameraToWorldPos, radialFogShadowInfluence, ambientFogShadowInfluence);
+}
+
+
+float4 GetVolumetricFogColor(in float3 worldPos, in float3 cameraToWorldPos)
+{
+	return GetVolumetricFogColorInternal(worldPos, cameraToWorldPos, 1, 1);
+}
+
+float4 GetVolumetricFogColor(in float3 worldPos)
+{
+	return GetVolumetricFogColorInternal(worldPos);
+}
+
+float GetVolumetricFogDensity(in float3 worldPos)
+{
+#ifdef %_VS
+  vfViewPos.xyz = g_VS_WorldViewPos;
+#endif
+  float3 camToWorld = worldPos - vfViewPos.xyz;
+  return ComputeVolumetricFogInternal(camToWorld);
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////
+// Noise functions for volumetric fog
+////////////////////////////////////////////////////////////////////////////
+sampler2D vfNoiseSampler = sampler_state
+{
+  Texture = EngineAssets/Textures/rotrandomcm.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+  AddressU = Wrap;
+  AddressV = Wrap;
+}
+
+half vfGetVolumeAttenuation(half3 L, half fInvRadius, half fInvFalloffMax)
+{
+  half3 vDist = L * fInvRadius;
+  half fFallOff = saturate(1 + dot(vDist, -vDist));
+
+	fFallOff = saturate( fFallOff * fInvFalloffMax );
+	fFallOff = fFallOff * fFallOff * (3.0 - 2.0 * fFallOff);
+
+  return fFallOff;
+}
+
+float vfGetSmoothNoise(in float4 v)
+{
+	float4 i = floor(v.xyzw);
+	float4 f = frac(v.xyzw);
+
+	// using ease curve for w component, it causes frame stutter.
+	f.xyz = f.xyz * f.xyz * (-2.0f * f.xyz + 3.0f);
+	//f.xyz = f.xyz * f.xyz * f.xyz * (f.xyz * (f.xyz * 6.0f - 15.0f) + 10.0f);
+
+	float2 uv = ((i.xy + float2(7.0f, 17.0f) * i.z) + float2(89.0f, 113.0f) * i.w) + f.xy;
+	float lowz = tex2Dlod(vfNoiseSampler, float4((uv.xy + 0.5f) / 64.0f, 0, 0)).x;
+	uv.xy += float2(7.0f, 17.0f);//uv = ((i.xy + float2(7.0f, 17.0f) * (i.z + 1)) + float2(89.0f, 113.0f) * i.w) + f.xy;
+	float highz = tex2Dlod(vfNoiseSampler, float4((uv.xy + 0.5f) / 64.0f, 0, 0)).x;
+	float r0 = lerp(lowz, highz, f.z);
+
+	uv.xy += float2(89.0f, 113.0f);//uv = ((i.xy + float2(7.0f, 17.0f) * (i.z + 1)) + float2(89.0f, 113.0f) * (i.w + 1)) + f.xy;
+	highz = tex2Dlod(vfNoiseSampler, float4((uv.xy + 0.5f) / 64.0f, 0, 0)).x;
+	uv.xy -= float2(7.0f, 17.0f);//uv = ((i.xy + float2(7.0f, 17.0f) * i.z) + float2(89.0f, 113.0f) * (i.w + 1)) + f.xy;
+	lowz = tex2Dlod(vfNoiseSampler, float4((uv.xy + 0.5f) / 64.0f, 0, 0)).x;
+	float r1 = lerp(lowz, highz, f.z);
+
+	uv.xy += float2(89.0f, 113.0f);//uv = ((i.xy + float2(7.0f, 17.0f) * i.z) + float2(89.0f, 113.0f) * (i.w + 2)) + f.xy;
+	lowz = tex2Dlod(vfNoiseSampler, float4((uv.xy + 0.5f) / 64.0f, 0, 0)).x;
+	uv.xy += float2(7.0f, 17.0f);//uv = ((i.xy + float2(7.0f, 17.0f) * (i.z + 1)) + float2(89.0f, 113.0f) * (i.w + 2)) + f.xy;
+	highz = tex2Dlod(vfNoiseSampler, float4((uv.xy + 0.5f) / 64.0f, 0, 0)).x;
+	float r2 = lerp(lowz, highz, f.z);
+
+	// smooth the noise
+	r0 = (r0 + r1) * 0.5f;
+	r1 = (r1 + r2) * 0.5f;
+
+	float r = lerp(r0, r1, f.w);
+
+	return 2.0f * r - 1.0f;
+}
+
+float vfGetDensityNoise(in float3 worldPos
+											, in float noiseScale
+											, in float noiseOffset
+											, in float noiseElapsedTime
+											, in float3 noiseSpatialFreq)
+{
+	float noise = 0.0f;
+
+	// do nothing when minimum noise value is expected over one, it doesn't affect final fog density.
+	if((-1.5f * noiseScale + noiseOffset) < 1.0f)// noiseScale contains normalization factor.
+	{
+		const float windOffsetSpan = 1000.0f;// it should match the constant value in CFogVolumeRenderNode::Render
+		worldPos %= windOffsetSpan;
+
+		worldPos *= noiseSpatialFreq.xyz;
+
+		float v;
+		float4 p = float4(worldPos.xyz, noiseElapsedTime);
+		v = vfGetSmoothNoise(p);
+		p.xyzw *= 3.07f;
+		v += 0.5f * vfGetSmoothNoise(p);
+		//p.xyzw *= 3.03f;
+		//v += 0.25f * vfGetSmoothNoise(p);
+		//p.xyzw *= 3.05f;
+		//v += 0.125f * vfGetSmoothNoise(p);
+
+		noise = noiseScale * v;// noiseScale should be multiplied by normalization factor like noiseScale * normalizeFactor.
+	}
+
+	noise = saturate(noise + noiseOffset);
+
+	return noise;
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////
+// Volumetric fog using volume texture
+
+//#define SAMPLE_DISTRIBUTION_LINEAR
+
+#define ENABLE_GLOBAL_ENV_PROBE_FOR_ANALYTICAL_FOG
+//#define ENABLE_OVERLAP_ANALYTICAL_FOG
+
+#define VOLUMETRIC_FOG_SAMPLE_COEFFICIENT					(2.0f)
+
+struct VolumetricFogLight
+{
+	float3 cDiffuse;
+	float fFallOff;
+	float radialLobe;
+	float dotLE;
+	float k;
+	float k2;
+};
+
+struct VolumetricFogSunLight
+{
+	float fFallOff;
+	float dotLE;
+	float blendFactor;
+	float blendMode;
+	float3 cDiffuse1;
+	float3 cDiffuse2;
+	float2 anisotropy1;
+	float2 anisotropy2;
+};
+
+struct VolumetricFogTexcoord
+{
+	float3	texcoord;
+	float		range;
+	float		linearDepth;
+};
+
+Texture3D<float4> VolumetricFogTexture : TS_VolumetricFog;
+
+TextureCube<float4> vfGlobalEnvProbeTexture0 : TS_VolumetricFogGlobalEnvProbe0;
+TextureCube<float4> vfGlobalEnvProbeTexture1 : TS_VolumetricFogGlobalEnvProbe1;
+
+// x:near distance, y:reciprocal of far minus near distance, z:depth resolution of volume tex, w:reciprocal of depth resolution
+float4 vfSamplingParams : PB_VolumetricFogSamplingParams;
+
+// x:near distance, y:far minus near distance, z:reciprocal of depth resolution minus one, w: frame count for jittering
+float4 vfDistributionParams : PB_VolumetricFogDistributionParams;
+
+// x: scattering factor, y: extinction factor, z: anisotoropy, w: one minus squared anisotoropy
+float4 vfScatteringParams : PB_VolumetricFogScatteringParams;
+
+// x: blend factor of two radial lobes, y: blend mode of two radial lobes, z,w: not used
+float4 vfScatteringBlendParams : PB_VolumetricFogScatteringBlendParams;
+
+// xyz: sun color multiplied by a fog albedo, w: secondary anisotoropy
+float4 vfScatteringColor : PB_VolumetricFogScatteringColor;
+
+// xyz: sun color multiplied by a fog albedo, w: one minus squared secondary anisotoropy
+float4 vfScatteringSecondaryColor : PB_VolumetricFogScatteringSecondaryColor;
+
+// x: height scale, y: log2(e) * fogDensity * exp(heightScale * vfViewPos.z + heightOffset)
+// z: global fog visibility, w: max density clamp
+float4 vfHeightDensityParams : PB_VolumetricFogHeightDensityParams;
+
+// x: ramp start distance, y: ramp end distance, z: 1 / (RampEnd - RampStart), w: RampStart / (RampEnd - RampStart)
+float4 vfHeightDensityRampParams : PB_VolumetricFogHeightDensityRampParams;
+
+// x: far distance at top left corner of screen, y: far distance at top, z: far distance at left, w: far distance at center of screen
+float4 vfDistanceParams : PB_VolumetricFogDistanceParams;
+
+// xyz: primary global env probe color multiplied by a fog albedo, w: attenuation of primary global env probe
+float4 vfGlobalEnvProbeParams0 : PB_VolumetricFogGlobalEnvProbe0;
+
+// xyz: secondary global env probe color multiplied by a fog albedo, w: attenuation of secondary global env probe
+float4 vfGlobalEnvProbeParams1 : PB_VolumetricFogGlobalEnvProbe1;
+
+float4 vfTimeParams = { PB_time 1.0, PB_time 0.5, PB_time 0.25, PB_time 0.125};
+
+
+uint vfGetClipVolumeStencilID(int nStencilVal)
+{
+	const int BIT_STENCIL_STATIC 					= 0x0000007F;
+	const int BIT_STENCIL_INSIDE_VOLUME 	= 0x00000040;// originally defined in ResolveStencilPS in DeferredShading.cfx.
+	return max(nStencilVal - BIT_STENCIL_INSIDE_VOLUME, 1);
+}
+
+float GetJitterInternal(in uint2 pixelCoord, in float2 temporalJitter)
+{
+	float2 n = pixelCoord.xy + temporalJitter.xy;
+	float3 magic = {0.06711056f, 0.00583715f, 52.9829189f};
+	float jitter = frac(magic.z * frac(dot(n.xy, magic.xy)));
+	return jitter;
+}
+
+float GetJitteredTexcoordDepth(in float2 screenPos, in float texcoordDepth)
+{
+	const float invMaxIndex = vfSamplingParams.w;
+	float jitter = GetJitterInternal(screenPos.xy, vfTimeParams.xw);
+	jitter *= invMaxIndex;
+	return (-1.0f * jitter) + texcoordDepth;
+}
+
+float GetVolumetricFogInscatteringSchlickPhaseFunction(float dotLE, float k, float oneMinusK2)
+{
+	// Schlick phase function
+	const float k2 = oneMinusK2;// k2 = 1.0 - k * k
+	float h = -((k * dotLE) - 1.0f);
+	return (k2 / (4.0f * PI * h * h));
+}
+
+float GetVolumetricFogInscatteringHenyeyGreensteinPhaseFunction(float dotLE, float g, float oneMinusG2)
+{
+	// Henyey-Greenstein phase function
+	const float g2 = oneMinusG2;// g2 = 1.0 - g * g
+	float h = (1.0f + (g * g) - (2 * g * dotLE));
+	return (g2 / (4.0f * PI * pow(h, 1.5f)));
+}
+
+float GetVolumetricFogInscatteringSideRadialPhaseFunction(float dotLE)
+{
+	float factor = (1.0f - abs(dotLE));
+	return (factor * (1.0f / (PI * PI)));
+	//return (factor * factor * (3.0f / (8.0 * PI)));
+}
+
+float3 GetVolumetricFogInscattering(in VolumetricFogLight light, bool isotoropic)
+{
+	float phaseFunc;
+	if(isotoropic)
+	{
+		// isotropic scattering
+		phaseFunc = 1.0f / (4.0f * PI);
+	}
+	else
+	{
+		const float dotLE = light.dotLE;
+
+		float mainRadialLobe = GetVolumetricFogInscatteringSchlickPhaseFunction(dotLE, light.k, light.k2);
+
+		float sideRadialLobe = GetVolumetricFogInscatteringSideRadialPhaseFunction(dotLE);
+
+		// blend main radial lobe with side radial lobe.
+		phaseFunc = lerp(mainRadialLobe, sideRadialLobe, light.radialLobe);
+	}
+
+	// calculate inscattering
+	const float attenuation = phaseFunc * light.fFallOff;
+	return attenuation * light.cDiffuse;
+}
+
+float3 GetVolumetricFogInscatteringSun(in VolumetricFogSunLight light)
+{
+	const float primaryPhaseFunc = GetVolumetricFogInscatteringSchlickPhaseFunction(light.dotLE, light.anisotropy1.x, light.anisotropy1.y);
+	const float secondaryPhaseFunct = GetVolumetricFogInscatteringSchlickPhaseFunction(light.dotLE, light.anisotropy2.x, light.anisotropy2.y);
+	const float primaryRadiation = primaryPhaseFunc * light.fFallOff;
+	const float secondaryRadiation = secondaryPhaseFunct * light.fFallOff;
+	const float3 ins0 = primaryRadiation * light.cDiffuse1;
+	const float3 ins1 = secondaryRadiation * light.cDiffuse2;
+
+	// blendMode parameter enables any blending between additive and alpha blending.
+	return (ins0 * (1.0f - (light.blendFactor * light.blendMode))) + (ins1 * light.blendFactor);
+}
+
+float4 GetVolumetricFogAnalyticalColor(in float3 cameraToWorldPos, in float lengthToTarget, in bool fullSpan = false)
+{
+	float3 inscatter = float3(0.0f, 0.0f, 0.0f);
+
+#if ENABLE_GLOBAL_ENV_PROBE_FOR_ANALYTICAL_FOG
+	const float globalProbeAttenuation0 = vfGlobalEnvProbeParams0.w;
+	const float globalProbeAttenuation1 = vfGlobalEnvProbeParams1.w;
+	float4 diffuseProbe0 = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 diffuseProbe1 = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	if(globalProbeAttenuation0 > 0.0f)
+	{
+		diffuseProbe0 = vfGlobalEnvProbeTexture0.SampleLevel( TrilinearClampSamplerState, cameraToWorldPos, 0 );
+		const float3 globalProbeColor0 = vfGlobalEnvProbeParams0.xyz;
+		diffuseProbe0.rgb = globalProbeAttenuation0 * DecodeHDRCubemap( diffuseProbe0 ) * globalProbeColor0.rgb;
+	}
+	if(globalProbeAttenuation1 > 0.0f)
+	{
+		diffuseProbe1 = vfGlobalEnvProbeTexture1.SampleLevel( TrilinearClampSamplerState, cameraToWorldPos, 0 );
+		const float3 globalProbeColor1 = vfGlobalEnvProbeParams1.xyz;
+		diffuseProbe1.rgb = (1.0f - globalProbeAttenuation0) * globalProbeAttenuation1 * DecodeHDRCubemap( diffuseProbe1 ) * globalProbeColor1.rgb;
+	}
+#endif
+
+	// exponential fog density parameters
+	const float d = lengthToTarget;// distance from camera to target matches ray-marching volumetric fog.
+	const float L = vfHeightDensityParams.x;//heightScale
+	const float M = cameraToWorldPos.z / d;
+
+	// NOTE: volFogDensityAtViewer = log2(e) * fogDensity * exp(heightScale * vfViewPos.z + heightOffset);
+	const float volFogDensityAtViewer = vfHeightDensityParams.y;
+
+	const float scatterCoefficient = vfScatteringParams.x;
+	const float extinctionCoefficient = vfScatteringParams.y;
+	const float rampStart = vfHeightDensityRampParams.x;
+	const float rampEnd = vfHeightDensityRampParams.y;
+	float transitionDistance = fullSpan ? 0.1f : vfDistanceParams.w;
+
+	VolumetricFogSunLight vfLight;
+	vfLight.dotLE = dot(vfSunDir.xyz, normalize(cameraToWorldPos));
+	vfLight.fFallOff = 1.0f;
+	vfLight.blendFactor = vfScatteringBlendParams.x;
+	vfLight.blendMode = vfScatteringBlendParams.y;
+	vfLight.cDiffuse1 = vfScatteringColor.xyz;// SunColor * FogAlbedoColor
+	vfLight.cDiffuse2 = vfScatteringSecondaryColor.xyz;// SunColor * FogAlbedoColor
+	vfLight.anisotropy1.x = vfScatteringParams.z;
+	vfLight.anisotropy1.y = vfScatteringParams.w;// 1.0 - k * k
+	vfLight.anisotropy2.x = vfScatteringColor.w;
+	vfLight.anisotropy2.y = vfScatteringSecondaryColor.w;// 1.0 - k * k
+	inscatter += GetVolumetricFogInscatteringSun(vfLight);
+
+	float invExtinction = rcp(extinctionCoefficient);
+	inscatter *= scatterCoefficient * invExtinction;
+
+	float LM = L * M;
+	LM = abs(LM) < 0.000001f ? 0.000001f : LM;
+	float invLM = rcp(LM);
+	float cLM = -extinctionCoefficient * volFogDensityAtViewer * invLM;
+
+	float d2 = min(transitionDistance, d);
+	float minD = min(d, transitionDistance < rampStart ? rampStart : transitionDistance);
+	float maxD = min(d, rampEnd);
+	float sd = max(rampEnd, d2);
+
+	float logeLM = 1.442695f * LM;// log2(e) * LM
+	float expLMd = exp2(logeLM * d);
+
+	float4 fogColor;
+
+	// fog transmittance from rampEnd to the end of depth
+	// note: transmittance = exp(-extinction * (DensityIntegral(depth) - DensityIntegral(rampEnd)))
+	// = exp(-extinction * ((GlobalDensity / (heightScale * cameraToWorldPos.z / distance) * (exp(heightScale * (cameraToWorldPosEnd.z + vfViewPos.z)) - exp(heightScale * (cameraToWorldPosStart.z + vfViewPos.z))))));
+	float T0 = saturate(exp2(cLM * (expLMd - exp2(logeLM * sd))));
+	fogColor.a = T0;
+
+#if ENABLE_GLOBAL_ENV_PROBE_FOR_ANALYTICAL_FOG
+	VolumetricFogLight fragLight;
+	fragLight.fFallOff = 1.0f;
+	fragLight.radialLobe = 0.0f;
+	fragLight.dotLE = 1.0f;
+	fragLight.k = 0.0f;
+	fragLight.k2 = 1.0f;
+	fragLight.cDiffuse = diffuseProbe0.rgb + diffuseProbe1.rgb;
+	inscatter += GetVolumetricFogInscattering(fragLight, true);
+#endif
+
+#if ENABLE_OVERLAP_ANALYTICAL_FOG
+	// shorten transition distance to overlap volumetric fog and global fog for smooth transition.
+	float transitionDistanceShort = 0.9f * transitionDistance;
+	d2 = min(transitionDistanceShort, d);
+	float sd2 = min(d, max(rampEnd, d2));
+
+	float trns = 1.0f;
+	fogColor.xyz = 0.0f;
+
+	// short ramp distance causes unstable calculation result.
+	// it can be ignored because it doesn't affect final result much.
+	if(rampEnd - rampStart > 1.0f)
+	{
+		float CC = rcp(LM * LM * (rampStart - rampEnd));
+		float cCC = -extinctionCoefficient * volFogDensityAtViewer * CC;
+
+		float expLMmaxD = exp2(logeLM * maxD);
+		float A0 = expLMmaxD * (LM * (rampStart - maxD) + 1.0f);
+
+		// integral of fog transmittance with depth based ramp from rampStart to rampEnd
+		float A1 = exp2(logeLM * minD) * (LM * (rampStart - minD) + 1.0f);
+		float T1 = exp2(cCC * (A0 - A1));
+		T1 = transitionDistance > rampEnd ? 1 : T1;
+		fogColor.a *= T1;
+
+		float minD2 = min(d, transitionDistanceShort < rampStart ? rampStart : transitionDistanceShort);
+		float expLMminD2 = exp2(logeLM * minD2);
+		float A2 = expLMminD2 * (LM * (rampStart - minD2) + 1.0f);
+
+		// integral of fog transmittance with depth based ramp from shorter transition distance to RampEnd distance.
+		// It's needed for proper decay of volumetric fog.
+		trns = saturate(exp2(cCC * (A0 - A2)));
+		trns = transitionDistanceShort > rampEnd ? 1 : trns;
+
+		// integral of inscattering with depth based ramp from rampStart to rampEnd
+		float V = exp2(logeLM * rampStart);
+		float IE = -exp2(cCC * (A0 - V));
+		float IS = -exp2(cCC * (A2 - V));
+		fogColor.xyz += inscatter * max(0, IE - IS);
+	}
+
+	// integral of inscattering from rampEnd to the end of depth
+	float IE = -saturate(exp2(cLM * (expLMd - exp2(logeLM * sd2))));
+	float IS = -1;//-exp2(extinctionCoefficient * volFogDensityAtViewer / LM * (-exp(LM * sd2) + exp(LM * sd2)));
+	fogColor.xyz += trns * inscatter * (IE - IS);
+#else
+	float trns = 1.0f;
+	fogColor.xyz = 0.0f;
+
+	// short ramp distance causes unstable calculation result.
+	// it can be ignored because it doesn't affect final result much.
+	// ramping isn't needed when start distance of analytical fog is behind ramp end.
+	if(rampEnd - rampStart > 1.0f && transitionDistance < rampEnd)
+	{
+		LM = abs(LM) < 0.0001f ? 0.0001f : LM;
+		logeLM = 1.442695f * LM;// log2(e) * LM
+
+		float CC = rcp(LM * LM * (rampStart - rampEnd));
+		float cCC = -extinctionCoefficient * volFogDensityAtViewer * CC;
+		float A0 = exp2(logeLM * maxD) * (LM * (rampStart - maxD) + 1.0f);
+		float A1 = exp2(logeLM * minD) * (LM * (rampStart - minD) + 1.0f);
+
+		// integral of fog transmittance with depth based ramp from rampStart to rampEnd
+		// It's needed for proper decay of volumetric fog.
+		trns = saturate(exp2(cCC * (A0 - A1)));
+		fogColor.a *= trns;
+
+		// integral of inscattering with depth based ramp from rampStart to rampEnd
+		float V = exp2(logeLM * rampStart);
+		float IE = -exp2(cCC * (A0 - V));
+		float IS = -exp2(cCC * (A1 - V));
+		fogColor.xyz += inscatter * saturate(IE - IS);
+	}
+
+	// integral of inscattering from rampEnd to the end of depth
+	float IE = -T0;//-saturate(exp2(cLM * (expLMd - exp2(logeLM * sd))))
+	float IS = -1;//-exp2(extinctionCoefficient * volFogDensityAtViewer / LM * (-exp(LM * sd2) + exp(LM * sd2)));
+	fogColor.xyz += trns * inscatter * (IE - IS);
+#endif
+
+	return fogColor;
+}
+
+float4 GetVolumetricFogAnalyticalColor(in float3 cameraToWorldPos, in bool fullSpan = false)
+{
+	return GetVolumetricFogAnalyticalColor(cameraToWorldPos, length(cameraToWorldPos), fullSpan);
+}
+
+float4 GetVolumetricFogAnalyticalColorByWorldPos(in float3 worldPos, in bool fullSpan = false)
+{
+#ifdef %_VS
+	vfViewPos.xyz = g_VS_WorldViewPos;
+#endif
+	float3 camToWorld = worldPos - vfViewPos.xyz;
+	return GetVolumetricFogAnalyticalColor(camToWorld, length(camToWorld), fullSpan);
+}
+
+float4 BlendVolumetricFogWithGlobalFog(in float4 volumetricFog, in float4 globalFog, in VolumetricFogTexcoord vtc, in float jitter = 0)
+{
+#if ENABLE_OVERLAP_ANALYTICAL_FOG
+	float transitionDistance = vtc.range;
+
+	transitionDistance -= transitionDistance * (0.1f - 0.2f * jitter);
+
+	float r = saturate((vtc.linearDepth - transitionDistance * 0.7f) / (transitionDistance * 0.3f));
+	//float r = smoothstep(transitionDistance * 0.7f, transitionDistance * 1.3f, linearDepth);
+
+	float visibility = vfHeightDensityParams.z;
+
+	volumetricFog.xyz = lerp(volumetricFog.xyz, visibility * volumetricFog.w * globalFog.xyz + volumetricFog.xyz, r);
+#else
+	float visibility = vfHeightDensityParams.z;
+	volumetricFog.xyz = visibility * volumetricFog.w * globalFog.xyz + volumetricFog.xyz;
+#endif
+	volumetricFog.a = volumetricFog.w * globalFog.a;
+
+	return volumetricFog;
+}
+
+float4 ClampFinalFogDensity(in float4 volumetricFog)
+{
+	// Final Density Clamp decays final fog outcome.
+	const float clampTransmittance = vfHeightDensityParams.w;
+	volumetricFog.xyz = volumetricFog.xyz * (1.0f - clampTransmittance);
+	volumetricFog.a = max(volumetricFog.a, clampTransmittance);
+
+	return volumetricFog;
+}
+
+float GetVolumetricFogLinearDepth(in float depthIndex)
+{
+#if SAMPLE_DISTRIBUTION_LINEAR
+	float near = vfDistributionParams.x;
+	float farMinusNear = vfDistributionParams.y;
+	float invMaxIndexMinusOne = vfDistributionParams.z;
+	return near + farMinusNear * saturate(depthIndex * invMaxIndexMinusOne);
+#else
+	float near = vfDistributionParams.x;
+	float farMinusNear = vfDistributionParams.y;
+	float invMaxIndexMinusOne = vfDistributionParams.z;
+	const float c = VOLUMETRIC_FOG_SAMPLE_COEFFICIENT;
+	return farMinusNear * pow(saturate(depthIndex * invMaxIndexMinusOne), c) + near;
+#endif
+}
+
+float GetVolumetricFogDepthTexcoord(in float linearDepth)
+{
+#if SAMPLE_DISTRIBUTION_LINEAR
+	float near = vfSamplingParams.x;
+	float invFarMinusNear = vfSamplingParams.y;
+	float d = (linearDepth - near) * invFarMinusNear;
+#else
+	float near = vfSamplingParams.x;
+	float invFarMinusNear = vfSamplingParams.y;
+	const float c = VOLUMETRIC_FOG_SAMPLE_COEFFICIENT;
+	float d = pow(((linearDepth - near) * invFarMinusNear), (1.0f / c));
+#endif
+	float maxIndex = vfSamplingParams.z;
+	float invMaxIndex = vfSamplingParams.w;
+	//float index = (maxIndex - 1.0f) * d;
+	//d = (0.5f + index) * invMaxIndex;
+	d = (0.5f - d) * invMaxIndex + d;// optimized version
+	return d;
+}
+
+void RectifyVolumetricFogTexcoordAndRangeApprox(inout VolumetricFogTexcoord vtc)
+{
+	float2 atc = abs(vtc.texcoord.xy * 2.0f - 1.0f);
+	vtc.range = lerp(lerp(vtc.range, vfDistanceParams.z, atc.x), lerp(vfDistanceParams.y, vfDistanceParams.x, atc.x), atc.y);
+	vtc.texcoord.z = min(vtc.range, vtc.texcoord.z);
+}
+
+void RectifyVolumetricFogTexcoordAndRange(inout VolumetricFogTexcoord vtc, in float lengthToTarget)
+{
+	float correctionFactor = (vtc.linearDepth / lengthToTarget);
+	vtc.range *= correctionFactor;
+	vtc.texcoord.z = min(vtc.range, vtc.texcoord.z);
+}
+
+VolumetricFogTexcoord GetVolumetricFogTexcoordParamByScreenProj(in float4 screenProj,
+                                                                in bool rectifiedRangeApprox = true,
+                                                                in float lengthToTarget = 10000000.0f)
+{
+	VolumetricFogTexcoord vtc;
+	vtc.texcoord.xy = screenProj.xy / screenProj.w;
+	vtc.linearDepth = screenProj.w;
+	vtc.texcoord.z = vtc.linearDepth;
+	vtc.range = vfDistanceParams.w;
+
+	if(rectifiedRangeApprox)
+	{
+		RectifyVolumetricFogTexcoordAndRangeApprox(vtc);
+	}
+	else
+	{
+		RectifyVolumetricFogTexcoordAndRange(vtc, lengthToTarget);
+	}
+
+	vtc.texcoord.z = GetVolumetricFogDepthTexcoord(vtc.texcoord.z);
+
+	return vtc;
+}
+
+VolumetricFogTexcoord GetVolumetricFogTexcoordParamByScreenPos(in float4 screenPos,
+                                                               in bool rectifiedRangeApprox = true,
+                                                               in float lengthToTarget = 10000000.0f)
+{
+	VolumetricFogTexcoord vtc;
+	vtc.texcoord.xy = screenPos.xy * PS_ScreenSize.zw * 2.0f;
+	vtc.linearDepth = screenPos.w;
+	vtc.texcoord.z = vtc.linearDepth;
+	vtc.range = vfDistanceParams.w;
+
+	if(rectifiedRangeApprox)
+	{
+		RectifyVolumetricFogTexcoordAndRangeApprox(vtc);
+	}
+	else
+	{
+		RectifyVolumetricFogTexcoordAndRange(vtc, lengthToTarget);
+	}
+
+	vtc.texcoord.z = GetVolumetricFogDepthTexcoord(vtc.texcoord.z);
+
+	return vtc;
+}
+
+VolumetricFogTexcoord GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(in float2 screenTC, in float linearDepth,
+                                                                            in bool rectifiedRangeApprox = true,
+                                                                            in float lengthToTarget = 10000000.0f)
+{
+	VolumetricFogTexcoord vtc;
+	vtc.texcoord.xy = screenTC;
+	vtc.linearDepth = linearDepth;
+	vtc.texcoord.z = vtc.linearDepth;
+	vtc.range = vfDistanceParams.w;
+
+	if(rectifiedRangeApprox)
+	{
+		RectifyVolumetricFogTexcoordAndRangeApprox(vtc);
+	}
+	else
+	{
+		RectifyVolumetricFogTexcoordAndRange(vtc, lengthToTarget);
+	}
+
+	vtc.texcoord.z = GetVolumetricFogDepthTexcoord(vtc.texcoord.z);
+
+	return vtc;
+}
+
+float4 GetVolumetricFogValue(in VolumetricFogTexcoord vtc)
+{
+	float3 tc = vtc.texcoord.xyz;
+	float4 v = VolumetricFogTexture.SampleLevel(TrilinearClampSamplerState, tc.xyz, 0.0f);
+	return v;
+}
+
+float4 GetVolumetricFogValueJittered(in VolumetricFogTexcoord vtc)
+{
+	float3 tc = vtc.texcoord.xyz;
+	tc.z = GetJitteredTexcoordDepth(tc.xy * PS_ScreenSize.xy, tc.z);
+	float4 v = VolumetricFogTexture.SampleLevel(TrilinearClampSamplerState, tc.xyz, 0.0f);
+	return v;
+}
+
+void ApplyVolumetricFog(in float4 volumetricFog, in float4 globalFog, in VolumetricFogTexcoord vtc, inout float3 color)
+{
+	volumetricFog = BlendVolumetricFogWithGlobalFog(volumetricFog, globalFog, vtc);
+
+	volumetricFog = ClampFinalFogDensity(volumetricFog);
+
+	color.xyz = (color.xyz * volumetricFog.w) + volumetricFog.xyz;
+}
+
+void ApplyVolumetricFogTransmittance(in float4 volumetricFog, in float4 globalFog, in VolumetricFogTexcoord vtc, inout float3 color)
+{
+	volumetricFog = BlendVolumetricFogWithGlobalFog(volumetricFog, globalFog, vtc);
+
+	volumetricFog = ClampFinalFogDensity(volumetricFog);
+
+	color.xyz = color.xyz * volumetricFog.w;
+}
+
+void ApplyVolumetricFogAnalytical(in float4 volumetricFogAnalytical, inout float3 color)
+{
+	float visibility = vfHeightDensityParams.z;
+	volumetricFogAnalytical.xyz *= visibility;
+
+	volumetricFogAnalytical = ClampFinalFogDensity(volumetricFogAnalytical);
+
+	color.xyz = (color.xyz * volumetricFogAnalytical.w) + volumetricFogAnalytical.xyz;
+}

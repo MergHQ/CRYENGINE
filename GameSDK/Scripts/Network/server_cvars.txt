@@ -1,0 +1,20 @@
+#User controllable server configuration parameters
+sv_levelrotation
+sv_requireinputdevice
+sv_gamerules
+sv_port
+sv_password
+sv_servername
+sv_maxplayers
+sv_maxspectators
+sv_timeofdayenable
+sv_timeofdaylength
+sv_timeofdaystart
+sv_lanonly
+
+ban_timeout
+g_tk_punish
+g_tk_punish_limit
+
+g_friendlyfireratio
+net_enable_voice_chat

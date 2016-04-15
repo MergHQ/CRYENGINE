@@ -1,0 +1,138 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+
+// When set motion blur amount is computed based on displacement of previous and current positions
+// When not set mesh is still displaced (based on current position) but motion blur amount ignores displacement
+// TODO: Should be disabled until properly optimized
+//#define HIQ_MOTIONBLUR 1
+
+///////////////// vertex input/output //////////////////
+struct vert2fragMotionBlur
+{
+#if %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+	OUT_P
+#endif
+
+	float4 vVelocity     : TEXCOORDN;
+	float4 vVelocityPrev : TEXCOORDN;
+	float4 baseTC        : TEXCOORDN;
+
+#if !%_PS && !%_DS && ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+	float4 vView     : TEXCOORDN;
+	half4 vNormal    : TEXCOORDN;
+	#if HIQ_MOTIONBLUR
+		float4 vViewPrev  : TEXCOORDN;
+		half4 vNormalPrev : TEXCOORDN;
+		float4x4 matWVP   : MATRIX_WVP;
+	#endif
+#endif
+};
+
+///////////////// vertex shaders //////////////////
+
+vert2fragMotionBlur Common_MotionBlurPassVS(app2vertMotionBlur IN)
+{
+  vert2fragMotionBlur OUT = (vert2fragMotionBlur)0;
+  
+  streamPos vertPassPos = (streamPos)0;
+  streamPos_FromMotionBlur(IN, vertPassPos);
+	streamPos vertPassPosPrev = (streamPos) vertPassPos;
+
+	float4 HPosition = 0;
+	{
+		float4 baseTC = vertPassPos.baseTC;
+		_TCModify(baseTC, OUT.baseTC, vertPassPos.Position, vertPassPos.ObjToTangentSpace[2], TS_DIFFUSE);
+
+		OUT.baseTC.w = 0;//frac( length( worldPos.xyz + g_VS_WorldViewPos.xyz) ) + 0.01;
+		OUT.baseTC.z = 0;
+#if %_RT_NEAREST
+		// mask out weapons - consider using as gbuffer id also
+		OUT.baseTC.z = 1;
+#endif
+
+		HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+		OUT.vVelocity = HPosToScreenTC( HPosition );
+		vertPassPosPrev.PositionCurr = vertPassPos.Position;
+	}
+	
+	float4 HPositionPrev = Pos_Prev_VS_General(g_VS_ViewProjZeroMatr, vertPassPosPrev);
+	OUT.vVelocityPrev = HPosToScreenTC( HPositionPrev );
+
+#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+	OUT.vView.xyz = vertPassPos.WorldPos.xyz;
+	OUT.vNormal.xyz = normalize(mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.Normal.xyz));
+	#if HIQ_MOTIONBLUR
+		OUT.vViewPrev.xyz = vertPassPosPrev.PositionPrev.xyz;
+		OUT.vNormalPrev.xyz = vertPassPosPrev.Normal.xyz;
+		OUT.matWVP = vertPassPosPrev.InstMatrix;
+	#endif
+#else
+	OUT.HPosition = HPosition;
+#endif
+
+  float fAlpha = AmbientOp.w;
+#if %_RT_INSTANCING_ATTR
+  {
+    float4 InstanceAmbientOp;
+    #fetchinst (InstanceAmbientOp = IN.InstAmbientOp, vertPassPos.nInstance);
+    fAlpha = InstanceAmbientOp.w;
+  }
+#endif
+
+	OUT.vVelocity.z = fAlpha;
+
+  return OUT;            
+}
+
+///////////////// pixel shaders //////////////////
+
+[earlydepthstencil]
+pixout Common_MotionBlurPassPS(vert2fragMotionBlur IN)
+{
+	pixout OUT = (pixout) 1;  
+
+	const half fDifAlpha = GetAlphaTex(diffuseTex, IN.baseTC.xy);
+#if %_RT_ALPHATEST
+	clip(fDifAlpha - 0.5);
+#endif
+
+	half fAlpha = IN.vVelocity.z;
+#if %_RT_ALPHABLEND	
+	fAlpha *= fDifAlpha;		// In case alpha blended scale values
+#endif
+
+	OUT.Color = OutputVelocityRT(IN.vVelocity.xy/IN.vVelocity.w, IN.vVelocityPrev.xy/IN.vVelocityPrev.w, fAlpha);
+ 
+	return OUT;
+}
+
+#include "CommonMotionBlurPassTess.cfi"
+
+//////////////////////////////// technique ////////////////
+
+technique MotionBlurPass
+{
+  pass p0
+  {
+    VertexShader = Common_MotionBlurPassVS() MotionBlurVS;
+#if ENABLE_TESSELLATION
+		HullShader   = Common_MotionBlurPassHS() GeneralHS;
+		DomainShader = Common_MotionBlurPassDS() GeneralDS;
+#endif
+    PixelShader = Common_MotionBlurPassPS() MotionBlurPS;
+
+    ZEnable = true;
+    ZWriteEnable = false;
+    CullMode = Back;
+
+#if %HAIR_PASS || %LEAVES
+    CullMode = None;
+#endif
+
+    ZFunc = LEqual;
+
+		IgnoreMaterialState = true;
+  }
+}
+

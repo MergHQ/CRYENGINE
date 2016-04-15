@@ -1,0 +1,333 @@
+<GameCodeCoverage>
+	<ListDefinitions>
+
+		<List name="WhitePerks"      contents="Perk_Tracker_* Perk_VisorProtector_* Perk_ProximityAlarm_* Perk_ConcentratedFire_* Perk_FragResistant_* Perk_ThreatTrails_*" />
+		<List name="YellowPerks"     contents="Perk_SilentFeet_* Perk_Phantom_* Perk_MaximumSuit_* Perk_Deflection_* Perk_Stamp_*" />
+		<List name="WhiteGameModes"  contents="SubservientGunTurret_* CaptureObjective_* KillObjective_* VictoryConditionsTeam_*" />
+		<List name="YellowGameModes" contents="SurvivorOneVictoryConditions_*" />
+		<List name="WhiteWeapons"    contents="Throw_* Single_* Shotgun_* KVolt_*" />
+		<List name="White"           contents="WhitePerks WhiteGameModes WhiteWeapons" />
+		<List name="YellowAndWhite"  contents="White YellowGameModes YellowPerks" />
+
+	</ListDefinitions>
+
+	<Checkpoints>
+		<FrontEnd_ReadFromFile       comment="Can be called with OR without a level" gameModes=""                                                        />
+		<FrontEnd_ScreenForward      comment="Can be called with OR without a level" gameModes=""                                                        />
+		<FrontEnd_OnLoadingStart     comment="Called AFTER game rules loaded"                                                                            />
+		<FrontEnd_OnLoadingComplete  comment="Called AFTER game rules loaded"                                                                            />
+		<FrontEnd_ReturnToMain       comment="Called AFTER game rules unloaded"      gameModes=""           requiredState="noLevelLoaded"                />
+		<FrontEnd_MPHubToldMainMenuHasOpened                                         gameModes=""           requiredState="noLevelLoaded"                />
+		<FrontEnd_MenuButtonCallbackClear                                            gameModes=""                                                        />
+		<FrontEnd_ScreenForward                                                      gameModes=""                                                        />
+
+		<PlayerProfile_SignIn                                                        gameModes=""           requiredState="noLevelLoaded"                />
+		<PlayerProfile_Verify                                                        gameModes=""           requiredState="noLevelLoaded"                />
+		
+		<Net_ConnectFailed                                                                                                                               />
+		<Net_ChannelDestroyed                                                                                                                            />
+		<Net_GetServerIp                                                                                                                                 />
+		<Net_GetServerName                                                                                                                               />
+		
+		<GameLobby_CreateSession                                                     gameModes=""           requiredState="noLevelLoaded"                />
+		<GameLobby_StartGame                                                         gameModes=""           requiredState="noLevelLoaded"                />
+		<GameLobby_JoinServer                                                        gameModes=""           requiredState="noLevelLoaded"                />
+		<GameLobby_StartSearchingForServers                                          gameModes=""           requiredState="noLevelLoaded"                />
+		<GameLobby_ShowJoinableGame                                                  gameModes=""           requiredState="noLevelLoaded"                />
+		<GameLobby_UpdateComplete                                                    gameModes=""           requiredState="noLevelLoaded"                />
+		
+		<GameRules_Init                                                              gameModes=""           requiredState="noLevelLoaded"                />
+		<GameRules_Restart                                                                                  requiredState="server"                       />
+		<GameRules_PostInit                                                                                                                              />
+		<GameRules_OnEndGame                                                                                                                             />
+		<GameRules_GameOverLose                                                                                                                          />
+		<GameRules_GameOverDraw                                                                                                                          />
+		<GameRules_GameOverWin                                                                                                                           />
+		<GameRules_Release                                                                                                                               />
+		<GameRules_Destroyed                                                                                                                             />
+		<GameRules_ClientConnect_Reset                                                                                                                   />
+		<GameRules_ClientConnect_NotReset                                                                                                                />
+		<GameRules_ClientEnteredGame_Reset                                                                                                               />
+		<GameRules_ClientEnteredGame_NotReset                                                                                                            />
+		<GameRules_SvGameStartCountdownBegin                                                                requiredState="server"                       />
+		<GameRules_SvGameStartCountdownAbort                                                                requiredState="server"                       />
+		<GameRules_SvModifyScore                                                                            requiredState="server"                       />
+		<GameRules_ClModifyScore                                                                            requiredState="hasLocalPlayer"               />
+		<GameRules_ClRenameEntity                                                                           requiredState="hasLocalPlayer"               />
+		<GameRulesStandardState_EnterInGame                                                                 requiredState="server|multiplayer"           />
+		
+		<EquipmentLoadout_ServerOverrideLoadout                                                             requiredState="server"                       />
+		<EquipmentLoadout_DoRandomGenerated                                                                 requiredState="server"                       />
+		<EquipmentLoadout_DoRandomPackage                                                                   requiredState="server"                       />
+		<EquipmentLoadout_DoRandomPackageSpread                                                             requiredState="server"                       />
+
+		<HUD_DisplayScoreIncrease                                                                           requiredState="hasLocalPlayer"               />
+		<HUD_DisplayScoreDecrease                                                                           requiredState="hasLocalPlayer"               />
+		<HUD_CrosshairMovesOverEnemy                                                                        requiredState="hasLocalPlayer"               />
+		<HUD_CrosshairMovesOverFriend                                                                       requiredState="hasLocalPlayer"               />
+		<HUD_CrosshairMovesOverNone                                                                         requiredState="hasLocalPlayer"               />
+		
+		<Camera_DoShake                                                                                     requiredState="hasLocalPlayer"               />
+		<HitRecoil_CameraShake                                                                              requiredState="hasLocalPlayer"               />
+
+		<WeaponSystem_OnLoadingStart     comment="Called AFTER game rules loaded"                                                                        />
+		<WeaponSystem_OnLoadingComplete  comment="Called AFTER game rules loaded"                                                                        />
+
+		<Item_DroppedWhileCurrentItem                                                                                                                    />
+		<Item_DroppedWhileNotCurrentItem                                                                                                                 />
+		<Item_DroppedAndHasNoOwner                                                                                                                       />
+		<Item_PickUpAndSelect_PlaySound                                                                                                                  />
+		<Item_PickUpAndStore_PlaySound                                                                                                                   />
+		<Item_PickUpAndSelect_NoSound                                                                                                                    />
+		<Item_PickUpAndStore_NoSound                                                                                                                     />
+		<Item_Remove                                                                                                                                     />
+		
+		<PlayerMovement_LocalPlayerLanded                                                                   requiredState="hasLocalPlayer"               />
+		<PlayerMovement_NonLocalPlayerLanded                                                                requiredState="multiplayer"                  />
+		<PlayerMovement_LocalPlayerNormalJump                                                               requiredState="hasLocalPlayer"               />
+		<PlayerMovement_NonLocalPlayerNormalJump                                                            requiredState="multiplayer"                  />
+		<PlayerMovement_LocalPlayerStopCrouch                                                               requiredState="hasLocalPlayer"               />
+		<PlayerMovement_LocalPlayerStartCrouch                                                              requiredState="hasLocalPlayer"               />
+		<PlayerMovement_NonLocalPlayerStopCrouch                                                            requiredState="multiplayer"                  />
+		<PlayerMovement_NonLocalPlayerStartCrouch                                                           requiredState="multiplayer"                  />
+		<PlayerMovement_PressJumpWhileCrouchedToStandUp                                                     requiredState="hasLocalPlayer"               />
+		<PlayerMovement_PressJumpWhileNotAllowedToJump                                                      requiredState="hasLocalPlayer"               />
+		<PlayerMovement_PressJumpInputIgnored                                                               requiredState="hasLocalPlayer"               />
+		<PlayerMovement_SprintRequestIgnored                                                                requiredState="hasLocalPlayer"               />
+		<PlayerMovement_SprintRequestOn                                                                     requiredState="hasLocalPlayer"               />
+		<PlayerMovement_SprintRequestOff                                                                    requiredState="hasLocalPlayer"               />
+		<PlayerMovement_ToggleCrouchActionOn                                                                requiredState="hasLocalPlayer"               />
+		<PlayerMovement_ToggleCrouchActionOff                                                               requiredState="hasLocalPlayer"               />
+		<PlayerMovement_IgnoreCrouchAction                                                                  requiredState="hasLocalPlayer"               />
+
+		<PlayerState_Init                                                                                   requiredState="hasLocalPlayer"               />
+		<PlayerState_PostInit                                                                               requiredState="hasLocalPlayer"               />
+		<PlayerState_SetInputCallbacks                                                                      requiredState="hasLocalPlayer"               />
+		<PlayerState_LocalPlayerSpawn                                                                       requiredState="hasLocalPlayer"               />
+		<PlayerState_NonLocalPlayerSpawn                                                                    requiredState="multiplayer"                  />
+		<PlayerState_LocalPlayerDied                                                                        requiredState="hasLocalPlayer"               />
+		<PlayerState_NonLocalPlayerDied                                                                     requiredState="multiplayer"                  />
+		<PlayerState_FullSerializeRead                                                                      requiredState="multiplayer"                  />
+		<PlayerState_FullSerializeWrite                                                                     requiredState="multiplayer"                  />
+		<PlayerState_SvPerformRevive                                                                        requiredState="server"                       />
+		<PlayerState_SvDoNotReviveTooSoonAfterDeath                                                         requiredState="server"                       />
+		<PlayerState_CreateInputClassDuringUpdate                                                                                                        />
+		<PlayerState_NonLocalPlayerBeingDestroyed                                                           requiredState="multiplayer"                  />
+		<PlayerState_LocalPlayerBeingDestroyed                                                              requiredState="hasLocalPlayer"               />
+		<PlayerState_CannotSpawnBecauseIsAlive                                                              requiredState="hasLocalPlayer"               />
+		<PlayerState_LocalPlayerHealthReduced                                                               requiredState="hasLocalPlayer"               />
+		<PlayerState_OtherPlayerHealthReduced                                                               requiredState="multiplayer"                  />
+		<PlayerState_NetSerializeReadNewPosition_DoSnap                                                     requiredState="multiplayer"                  />
+		<PlayerState_LocalPlayerNowTargettingSomebody                                                       requiredState="hasLocalPlayer"               />
+		<PlayerState_LocalPlayerNowTargettingNobody                                                         requiredState="hasLocalPlayer"               />
+		<PlayerState_RemotePlayerNowTargettingSomebody                                                      requiredState="multiplayer"                  />
+		<PlayerState_RemotePlayerNowTargettingNobody                                                        requiredState="multiplayer"                  />
+		<PlayerState_FlyMode_Off                                                                                                                         />
+		<PlayerState_FlyMode_FlyCollisionsOn                                                                                                             />
+		<PlayerState_FlyMode_FlyCollisionsOff                                                                                                            />
+		<PlayerState_LocalPlayerCloneOnDeath                                                                requiredState="hasLocalPlayer"               />
+		<PlayerState_NonLocalPlayerCloneOnDeath                                                                                                          />
+		
+		<PlayerWeapon_SniperScopeOn                                                                         requiredState="hasLocalPlayer"               />
+		<PlayerWeapon_SniperScopeOff                                                                        requiredState="hasLocalPlayer"               />
+		<PlayerWeapon_IronSightOn                                                                           requiredState="hasLocalPlayer"               />
+		<PlayerWeapon_IronSightOff                                                                          requiredState="hasLocalPlayer"               />
+		<PlayerWeapon_IronSightStartZoomIn                                                                  requiredState="hasLocalPlayer"               />
+		<PlayerWeapon_IronSightStartZoomOut                                                                 requiredState="hasLocalPlayer"               />
+
+		<PlayerProgression_GameOver                                                                         requiredState="hasLocalPlayer"               />
+		<PlayerProgression_MatchBonusLose                                                                   requiredState="hasLocalPlayer"               />
+		<PlayerProgression_MatchBonusDraw                                                                   requiredState="hasLocalPlayer"               />
+		<PlayerProgression_MatchBonusWin                                                                    requiredState="hasLocalPlayer"               />
+
+		<Melee_LocalActorMelee                                                                                                                           />
+		<Melee_NonLocalActorMelee                                                                                                                        />
+		<Melee_PressedButMeleeNotAllowed                                                                                                                 />
+		<Melee_SwingAndAMiss                                                                                                                             />
+		<Melee_HitSomethingWithRayCast                                                                                                                   />
+		<Melee_SuccessfullyHitAutoTarget                                                                                                                 />
+		<Melee_PerformLocal                                                                                                                              />
+		<Melee_PerformRemote                                                                                                                             />
+
+		<FlashBang_Explode_BlindLocalPlayer                                                                 requiredState="hasLocalPlayer"               />
+		<FlashBang_Explode_NearbyButBlockedByGeometry                                                       requiredState="hasLocalPlayer"               />
+		
+		<ActorStance_LocalActorStopStand                                                                    requiredState="hasLocalPlayer"               />
+		<ActorStance_OtherActorStopStand                                                                                                                 />
+		<ActorStance_LocalActorStopCrouch                                                                   requiredState="hasLocalPlayer"               />
+		<ActorStance_OtherActorStopCrouch                                                                                                                />
+		<ActorStance_LocalActorStopSwim                                                                     requiredState="hasLocalPlayer"               />
+		<ActorStance_OtherActorStopSwim                                                                                                                  />
+		<ActorStance_LocalActorStartStand                                                                   requiredState="hasLocalPlayer"               />
+		<ActorStance_OtherActorStartStand                                                                                                                />
+		<ActorStance_LocalActorStartCrouch                                                                  requiredState="hasLocalPlayer"               />
+		<ActorStance_OtherActorStartCrouch                                                                                                               />
+		<ActorStance_LocalActorStartSwim                                                                    requiredState="hasLocalPlayer"               />
+		<ActorStance_OtherActorStartSwim                                                                                                                 />
+		
+		<Actor_PhysicalizeNPC                                                                                                                            />
+		<Actor_PhysicalizePlayerWhileNoClient                                                                                                            />
+		<Actor_PhysicalizeLocalPlayer                                                                       requiredState="hasLocalPlayer"               />
+		<Actor_PhysicalizeOtherPlayer                                                                                                                    />
+		
+		<SubservientGunTurret_StopControllingBecauseDiedOrLeftGame                   gameModes="PSL"        requiredState="multiplayer"                  />
+		<SubservientGunTurret_StopControllingBecauseGotTooFarAway                    gameModes="PSL"        requiredState="multiplayer"                  />
+		<SubservientGunTurret_Use                                                    gameModes="PSL"        requiredState="multiplayer|server"           />
+		<SubservientGunTurret_SerializeCurrentController                             gameModes="PSL"        requiredState="multiplayer"                  />
+
+		<HoldObjective_CleanUpActiveCaptureEntity                                    gameModes="CS|PSL"     requiredState="multiplayer"                  />
+		<HoldObjective_LocalPlayerEnterArea                                          gameModes="CS|PSL"     requiredState="multiplayer|hasLocalPlayer"   />
+		<HoldObjective_LocalPlayerLeaveArea                                          gameModes="CS|PSL"     requiredState="multiplayer|hasLocalPlayer"   />
+		<HoldObjective_PlayerWithinRangeKilled                                       gameModes="CS|PSL"     requiredState="multiplayer"                  />
+		<HoldObjective_BothTeamsNowInProximity                                       gameModes="CS|PSL"     requiredState="multiplayer"                  />
+		<HoldObjective_NeitherTeamNowInProximity                                     gameModes="CS|PSL"     requiredState="multiplayer"                  />
+		<HoldObjective_TeamMarinesNowInProximity                                     gameModes="CS|PSL"     requiredState="multiplayer"                  />
+		<HoldObjective_TeamCellNowInProximity                                        gameModes="CS|PSL"     requiredState="multiplayer"                  />
+		<HoldObjective_AddEntity                                                     gameModes="CS|PSL"     requiredState="multiplayer"                  />
+
+		<CaptureObjective_SetNewIcon                                                 gameModes="PSL"        requiredState="multiplayer|hasLocalPlayer"   />
+		<CaptureObjective_RemoveIcon                                                 gameModes="PSL"        requiredState="multiplayer|hasLocalPlayer"   />
+		<CaptureObjective_SiteStartCapturingByFriendlyTeam                           gameModes="PSL"        requiredState="multiplayer"                  />
+		<CaptureObjective_SiteStartCapturingByEnemyTeam                              gameModes="PSL"        requiredState="multiplayer"                  />
+		<CaptureObjective_SiteCapturedByFriendlyTeam                                 gameModes="PSL"        requiredState="multiplayer"                  />
+		<CaptureObjective_SiteCapturedByEnemyTeam                                    gameModes="PSL"        requiredState="multiplayer"                  />
+
+		<KingOfTheHillObjective_SetNewIcon                                           gameModes="CS"         requiredState="multiplayer|hasLocalPlayer"   />
+		<KingOfTheHillObjective_RemoveIcon                                           gameModes="CS"         requiredState="multiplayer|hasLocalPlayer"   />
+		<KingOfTheHillObjective_SiteCapturedByFriendlyTeam                           gameModes="CS"         requiredState="multiplayer"                  />
+		<KingOfTheHillObjective_SiteCapturedByEnemyTeam                              gameModes="CS"         requiredState="multiplayer"                  />
+		<KingOfTheHillObjective_SiteLostByFriendlyTeam                               gameModes="CS"         requiredState="multiplayer"                  />
+		<KingOfTheHillObjective_SiteLostByEnemyTeam                                  gameModes="CS"         requiredState="multiplayer"                  />
+		<KingOfTheHillObjective_TeamMarinesScored                                    gameModes="CS"         requiredState="multiplayer|server"           />
+		<KingOfTheHillObjective_TeamCellScored                                       gameModes="CS"         requiredState="multiplayer|server"           />
+
+		<CombiCaptureObj_SetNewIcon																									 gameModes="AS"					requiredState="multiplayer"                  />
+		<CombiCaptureObj_SvSiteBeingCaptured																				 gameModes="AS"					requiredState="multiplayer|server"           />
+		<CombiCaptureObj_SiteAreaEntered																						 gameModes="AS"					requiredState="multiplayer"                  />
+		<CombiCaptureObj_SiteAreaLeft																								 gameModes="AS"					requiredState="multiplayer"                  />
+		<CombiCaptureObj_SvSiteInsideStateChanged																		 gameModes="AS"					requiredState="multiplayer|server"           />
+		<CombiCaptureObj_SvDefendersWonRound_KilledAll															 gameModes="AS"					requiredState="multiplayer|server"           />
+		<CombiCaptureObj_SvAttackersWonRound																				 gameModes="AS"					requiredState="multiplayer|server"           />
+		<CombiCaptureObj_CaptureProgressUpdated																			 gameModes="AS"					requiredState="multiplayer"                  />
+		<CombiCaptureObj_ClSiteCaptureStarted																				 gameModes="AS"					requiredState="multiplayer"                  />
+		<CombiCaptureObj_SiteStartCapturingByFriendlyTeam														 gameModes="AS"					requiredState="multiplayer"                  />
+		<CombiCaptureObj_SiteStartCapturingByEnemyTeam															 gameModes="AS"					requiredState="multiplayer"                  />
+
+		<Perk_FragResistant_ScaledDamage                                                                    requiredState="server"                       />
+		<Perk_FragResistant_AudioAndVisuals                                                                                                              />
+		<Perk_Deflection_ScaledDamage                                                                       requiredState="server"                       />
+		<Perk_Deflection_AudioAndVisuals                                                                                                                 />
+		<Perk_Tracker_PlacedTrackerParticle                                                                 requiredState="hasLocalPlayer"               />
+		<Perk_VisorProtector_ScaleFlashbangEffect                                                                                                        />
+		<Perk_ProximityAlarm_DetectedNearbyPlayer                                                           requiredState="hasLocalPlayer"               />
+		<Perk_ConcentratedFire_ScaledFireSpeed                                                                                                           />
+		<Perk_ThreatTrails_RenderBulletTrail                                                                requiredState="hasLocalPlayer"               />
+		<Perk_ThreatTrails_RenderGrenadeTrail                                                               requiredState="hasLocalPlayer"               />
+		<Perk_SilentFeet_AdjustFootstep                                                                                                                  />
+		<Perk_SilentFeet_AdjustJump                                                                         requiredState="hasLocalPlayer"               />
+		<Perk_Phantom_Enter                                                                                                                              />
+		<Perk_Phantom_Exit                                                                                                                               />
+		<Perk_MaximumSuit_Enter                                                                                                                          />
+		<Perk_MaximumSuit_Exit                                                                                                                           />
+		<Perk_EagleVision_Highlight                                                                         requiredState="hasLocalPlayer"               />
+		<Perk_Stamp_Triggered                                                                                                                            />
+		<Perk_Stamp_HitGround                                                                                                                            />
+		<Perk_Stamp_DoDamage                                                                                                                             />
+
+		<VictoryConditionsPlayer_SvStartSuddenDeath                                                         requiredState="server|multiplayer"           />
+		<VictoryConditionsPlayer_SvSuddenDeathTimeExpired                                                   requiredState="server|multiplayer"           />
+		<VictoryConditionsPlayer_SvEndSuddenDeath                                                           requiredState="server|multiplayer"           />
+
+		<SurvivorOneVictoryConditions_SvDrawScoreEvent                               gameModes="AON"        requiredState="server|multiplayer"           />
+		<SurvivorOneVictoryConditions_SvTimeLimitReached                             gameModes="AON"        requiredState="server|multiplayer"           />
+		<SurvivorOneVictoryConditions_SvSurvivorOneScoreEvent                        gameModes="AON"        requiredState="server|multiplayer"           />
+		<SurvivorOneVictoryConditions_SvSurvivorOneEndGame                           gameModes="AON"        requiredState="server|multiplayer"           />
+
+		<MPSpawningWithLives_SvPerformReviveAllowed                                  gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+		<MPSpawningWithLives_SvPerformReviveDenied_NoLives                           gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+		<MPSpawningWithLives_SvPerformReviveDenied_OthersDiedAlready                 gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+		<MPSpawningWithLives_SvListenedEntityRevived                                 gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+		<MPSpawningWithLives_SvListenedEntityRevived_SurvivorChangeNotified          gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+		<MPSpawningWithLives_SvReviveAllPlayers_SurvivorChangeNotified               gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+		<MPSpawningWithLives_SvPlayerJoined_SurvivorChangeNotified                   gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+		<MPSpawningWithLives_SvPlayerLeft_SurvivorChangeNotified                     gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+		<MPSpawningWithLives_ListenedEntityKilled                                  	 gameModes="EXT|AON"    requiredState="multiplayer"           			 />
+		<MPSpawningWithLives_SvListenedEntityKilled_SurvivorChangeNotified           gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+		<MPSpawningWithLives_SvListenedEntityKilled_KillsSumIncreased                gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+		<MPSpawningWithLives_SvUpdateEnteredSuddenDeath_SurvivorChangeNotified       gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+		<MPSpawningWithLives_SvPerformReviveDenied_SuddenDeath                       gameModes="EXT|AON"    requiredState="server|multiplayer"           />
+
+		<KillObjective_EntityKilled                                                  gameModes="PSL"        requiredState="multiplayer"                  />
+		<KillObjective_SetNewIcon                                                    gameModes="PSL"        requiredState="multiplayer|hasLocalPlayer"   />
+
+		<CarryHelper_LocalPlayerEnterArea                                            gameModes="CTF"        requiredState="multiplayer|hasLocalPlayer"   />
+		<CarryHelper_LocallyPickupableEntityIsNowSet                                 gameModes="CTF"        requiredState="multiplayer|hasLocalPlayer"   />
+		<CarryHelper_NonLocalPlayerEnterArea                                         gameModes="CTF"        requiredState="multiplayer"                  />
+		
+		<VictoryConditionsTeam_SvTimeLimitExpired                                                           requiredState="server|multiplayer"           />
+		<VictoryConditionsTeam_SvScoreLimitReached                                                          requiredState="server|multiplayer"           />
+
+		<Shotgun_TryShoot                                                                                                                                />
+		<Shotgun_TryShootWhileOutOfAmmo                                                                                                                  />
+		<Shotgun_TryShootWhileCannotBeFired                                                                                                              />
+		<Shotgun_TryShootWhileReloading                                                                                                                  />
+		<Shotgun_Fired                                                                                                                                   />
+		<Shotgun_NetShoot                                                                                   requiredState="multiplayer"                  />
+		<Shotgun_ReloadShell                                                                                                                             />
+
+		<KVolt_HitActor                                                                                     requiredState="server"                       />
+		<KVolt_StickToEntity                                                                                                                             />
+		<KVolt_StickToWorld                                                                                                                              />
+		<KVolt_LoadStuckParticle                                                                                                                         />
+		<KVolt_SpawnDestroyParticle                                                                                                                      />
+		<KVolt_DamageEnemy                                                                                  requiredState="server"                       />
+		<KVolt_ChainReaction                                                                                requiredState="server"                       />
+
+		<Throw_AutomaticThrow                                                                                                                            />
+		<Throw_Prime                                                                                        requiredState="hasLocalPlayer"               />
+		<Throw_Start                                                                                                                                     />
+		<Throw_NetStart                                                                                     requiredState="multiplayer"                  />
+		<Throw_Stop                                                                                                                                      />
+		<Throw_NetStop                                                                                      requiredState="multiplayer"                  />
+		<Throw_SwitchBack                                                                                   requiredState="hasLocalPlayer"               />
+		<Throw_Shoot                                                                                                                                     />
+		<Throw_NetShoot                                                                                     requiredState="multiplayer"                  />
+
+		<Single_StartReload                                                                                                                              />
+		<Single_EndReload                                                                                                                                />
+		<Single_Shoot                                                                                                                                    />
+		<Single_NetShoot                                                                                    requiredState="multiplayer"                  />
+		<Single_ApplySpreadRandom                                                                                                                        />
+		<Single_ApplySpreadQuadrant                                                                                                                      />
+		<Single_EmitTracer                                                                                                                               />
+		<Single_StartFire                                                                                                                                />
+		<Single_StopFire                                                                                                                                 />
+		
+		<Projectile_GrenadeLaunched                                                                                                                      />
+		<Projectile_GrenadeDestroyed                                                                                                                     />
+		<Projectile_FlashbangExplode                                                                                                                     />
+		<Projectile_Explode                                                                                                                              />
+		<Projectile_BulletLaunched                                                                                                                       />
+		<Projectile_BulletDestroyed                                                                                                                      />
+		
+		<C4_ReceiveDetonateInput                                                                                                                         />
+		<C4_ReceiveNetDetonateInput                                                                         requiredState="server"                       />
+		<C4_ClientSendDetonateRequest                                                                       requiredState="nonServer"                    />
+
+		<DetonateFireMode_StartFireOK                                                                                                                    />
+		<DetonateFireMode_CannotFire                                                                                                                     />
+		<DetonateFireMode_CannotFire_TimerNotReachedZero                                                                                                 />
+		<DetonateFireMode_TimerHasReachedZero                                                                                                            />
+		<DetonateFireMode_ProjectileHasBeenDetonated                                                        requiredState="server"                       />
+		<DetonateFireMode_ProjectileFailedToDetonate                                                        requiredState="server"                       />
+
+		<Audio_ScriptStopEntitySignal                                                                                                                    />
+		<Audio_ScriptPlayEntitySignal                                                                                                                    />
+		
+		<HostMigration_OnInitiate                                                                           requiredState="multiplayer"                  />
+		<HostMigration_OnDemoteToClient                                                                     requiredState="multiplayer"                  />
+		<HostMigration_OnPromoteToServer                                                                    requiredState="multiplayer"                  />
+		<HostMigration_OnReconnectClient                                                                    requiredState="multiplayer"                  />
+		<HostMigration_OnFinalise                                                                           requiredState="multiplayer"                  />
+	</Checkpoints>
+</GameCodeCoverage>

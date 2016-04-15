@@ -1,0 +1,121 @@
+<item name="FragGrenades" class="HandGrenades" category="grenade" priority="3" weaponParams="1">
+	<params>
+		<param name="display_name" value="@mp_eFragGrenades" />
+		<param name="giveable" value="1" />
+		<param name="selectable" value="1" />
+		<param name="itemClass" value="nw" />
+		<param name="droppable" value="0" />
+		<param name="select_delayed_grab_3P" value="1" />
+		<param name="attach_to_back" value="0" />
+		<param name="bone_attachment_01" value="stow_gren3" />
+		<param name="bone_attachment_02" value="stow_gren1" />
+		<param name="melee_attack_firemode" value="melee" />
+		<param name="suffix" value="shoulder" />
+		<param name="fast_select" value="1" />
+		<param name="select_override" value="0.1" GAME="MP" />
+		<param name="stat_accuracy" value="1" GAME="SP"/>
+		<param name="stat_accuracy" value="5" GAME="MP"/>
+		<param name="stat_rate_of_fire" value="1" GAME="SP"/>
+		<param name="stat_rate_of_fire" value="5" GAME="MP"/>
+		<param name="stat_mobility" value="6" GAME="SP"/>
+		<param name="stat_mobility" value="8" GAME="MP"/>
+		<param name="stat_damage" value="9" GAME="SP"/>
+		<param name="stat_damage" value="8" GAME="MP"/>
+		<param name="stat_range" value="2" GAME="SP"/>
+		<param name="stat_range" value="6" GAME="MP"/>
+		<param name="stat_recoil" value="6" GAME="SP"/>
+		<param name="stat_recoil" value="5" GAME="MP"/>
+		<param name="tag" value="SDKGrenade" />
+		<param name="adb" value="grenadeWeaponAnims.adb" />
+		<animPrecache name="Grenades" >
+			<precache DBAFile="Animations/weapons/frag_grenade/frag_grenade.dba" thirdperson="0"/>
+			<precache DBAFile="Animations/human/male/weapons/frag_gren/frag_gren_1p.dba" thirdperson="0"/>
+			<precache DBAFile="Animations/human/male/weapons/frag_gren/frag_gren_3p.dba" thirdperson="1"/>
+			<precache DBAFile="Animations/human/male/weapons/frag_gren/frag_gren_mp_1p.dba" thirdperson="0" GAME="MP"/>
+			<precache DBAFile="Animations/human/male/weapons/frag_gren/frag_gren_mp_3p.dba" thirdperson="1" GAME="MP"/>
+		</animPrecache>
+		<aimAnims/>
+	</params>
+
+	<ammos>
+		<ammo name="explosivegrenade" extra="2" capacity="5" GAME="SP" />
+		<ammo name="explosivegrenade" extra="1" capacity="1" GAME="MP" />
+	</ammos>
+
+	<geometry>
+		<firstperson name="objects/weapons/frag_grenade/frag_grenade.chr" angles="0,0,0"/>
+		<thirdperson name="objects/weapons/frag_grenade/frag_grenade_tp.cgf" />
+	</geometry>
+
+	<firemodes>
+		<firemode type="Throw" name="Frag">
+			<fire>
+				<param name="ammo_type" value="explosivegrenade" />
+				<param name="hit_type" value="frag" />
+				<param name="clip_size" value="1" />
+				<param name="rate" value="60" />
+				<param name="damage" value="1500" GAME="SP"/>
+				<param name="damage" value="220" GAME="MP"/>
+				<param name="helper" value="grenade" />
+				<param name="helper_fp" value="grenade" />
+				<param name="helper_tp" value="grenade" />
+				<param name="knocks_target" value="1"/>
+				<param name="min_damage_for_knockDown" value="0"/>
+				<param name="knockdown_chance_leg" value="90"/>
+				<param name="min_damage_for_knockDown_leg" value="50"/>
+				<param name="crosshair" value="5" GAME="SP"/>
+				<param name="crosshair" value="1" GAME="MP"/>
+			</fire>
+			<spread>
+				<param name="min" value="0.5" />
+				<param name="max" value="1.0" />
+				<param name="attack" value="0.8" GAME="SP"/>
+				<param name="attack" value="0.0" GAME="MP"/>
+				<param name="decay" value="0.9" />
+				<param name="speed_m" value="0.3" GAME="SP"/>
+				<param name="speed_m" value="0.0" GAME="MP"/>
+				<param name="rotation_m" value="0" GAME="SP"/>
+				<param name="rotation_m" value="0" GAME="MP"/>
+				<param name="spread_jump_m" value="1.0" GAME="SP"/>
+				<param name="spread_jump_m" value="0.0" GAME="MP"/>
+				<param name="spread_crouch_m" value="0.0" />
+				<param name="speed_holdBreathActive_m" value="0.75" GAME="SP"/>
+				<param name="speed_holdBreathActive_m" value="0.0" GAME="MP"/>
+				<param name="spread_slide_m" value="1.0" GAME="MP"/>
+			</spread>
+			<throw>
+				<param name="throw_delay" value="0.2" GAME="SP"/>
+				<param name="throw_delay" value="0.1" GAME="MP"/>
+				<param name="prime_delay" value="0.6" GAME="SP" />
+				<param name="prime_delay" value="0.1" GAME="MP" />
+				<param name="display_trajectory" value="1" GAME="SP" />
+				<param name="display_trajectory" value="0" GAME="MP" />
+				<param name="crosshairblink" value="1" />
+			</throw>
+		</firemode>
+		<firemode name="melee" type="Melee">
+			<melee>
+				<param name="helper" value="collision" />
+				<param name="offset" value="0.35" />
+				<param name="damage" value="300" GAME="SP"/>
+				<param name="damage" value="80" GAME="MP"/>
+				<param name="slide_damage" value="300" GAME="SP"/>
+				<param name="slide_damage" value="80" GAME="MP"/>
+				<param name="damage_AI" value="30" />
+				<param name="impulse" value="100" />
+				<param name="impulse_vehicle" value="400" />
+				<param name="range" value="1.8" />
+				<param name="delay" value="0.1" GAME="SP"/>
+				<param name="delay" value="0.01" GAME="MP"/>
+				<param name="duration" value="1.0" GAME="SP" />
+				<param name="duration" value="0.7" GAME="MP" />
+				<param name="use_melee_weapon_delay" value="0.0" />
+			</melee>
+		</firemode>
+	</firemodes>
+
+	<zoommodes>
+		<zoommode name="grenadehelper" type="ThrowIndicator" />
+	</zoommodes>
+
+</item>

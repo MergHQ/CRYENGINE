@@ -1,0 +1,91 @@
+%include "CryEngine.swig"
+
+%import "CryCommon.i"
+
+%{
+#include <CryEntitySystem/IEntity.h>
+#include <CryAISystem/AISystemListener.h>
+#include <CryAISystem/IAISystem.h>
+#include <CryAISystem/IAgent.h>
+#include <CryAISystem/IAIAction.h>
+#include <CryAISystem/IAIActorProxy.h>
+#include <CryAISystem/IAIDebugRenderer.h>
+#include <CryAISystem/IAIGroupProxy.h>
+#include <CryAISystem/IAIObject.h>
+#include <CryAISystem/IAIObjectManager.h>
+#include <CryAISystem/IPathfinder.h>
+#include <CryAISystem/IAIActor.h>
+#include <CryAISystem/IAIRateOfDeathHandler.h>
+#include <CryAISystem/IAIRecorder.h>
+#include <CryAISystem/IBlackBoard.h>
+#include <CryAISystem/IInterestSystem.h>
+#include <CryAISystem/IClusterDetector.h>
+#include <CryAISystem/ICoverSystem.h>
+#include <CryAISystem/ICommunicationManager.h>
+#include <CryAISystem/IVisionMap.h>
+#include <CryAISystem/IFactionMap.h>
+#include <CryAISystem/ISelectionTreeManager.h>
+#include <CryAISystem/IGoalPipe.h>
+#include <CryAISystem/ITacticalPointSystem.h>
+#include <CryAISystem/INavigation.h>
+#include <CryAISystem/INavigationSystem.h>
+#include <CryAISystem/IMovementSystem.h>
+#include <CryAISystem/IOffMeshNavigationManager.h>
+#include <CryAISystem/MovementRequest.h>
+#include <CryAISystem/MovementRequestID.h>
+#include <CryAISystem/IMNM.h>
+%}
+%feature("director") IAISystemListener;
+%include "../../../../CryEngine/CryCommon/CryAISystem/AISystemListener.h"
+%feature("director") IAIEventListener;
+%feature("director") IAIGlobalPerceptionListener;
+%ignore EAICollisionEntities;
+%ignore IAISystem::SerializeObjectIDs;
+%ignore IAISystem::Serialize;
+%ignore IAISystem::NavCapMask::Serialize;
+%include "../../../../CryEngine/CryCommon/CryAISystem/IAISystem.h"
+%feature("director") IAICommunicationHandler::IEventListener;
+%include "../../../../CryEngine/CryCommon/CryAISystem/IAgent.h"
+%feature("director") IAIActionListener;
+%include "../../../../CryEngine/CryCommon/CryAISystem/IAIAction.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IAIActorProxy.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IAIDebugRenderer.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IAIGroupProxy.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IAIObject.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IAIObjectManager.h"
+%ignore IAIPathFinder::RegisterPathFinderListener;
+%ignore IAIPathFinder::UnregisterPathFinderListener;
+%include "../../../../CryEngine/CryCommon/CryAISystem/IPathfinder.h"
+%typemap(ctype) IAISystem::ENavigationType* "IAISystem::ENavigationType *"
+%typemap(imtype) IAISystem::ENavigationType* "ref IAISystem.ENavigationType"
+%typemap(cstype) IAISystem::ENavigationType* "ref IAISystem.ENavigationType"
+%typemap(csin) IAISystem::ENavigationType* "$csinput" 
+%feature("director") IActorBehaviorListener;
+%include "../../../../CryEngine/CryCommon/CryAISystem/IAIActor.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IAIRateOfDeathHandler.h"
+%feature("director") IAIRecorderListener;
+%include "../../../../CryEngine/CryCommon/CryAISystem/IAIRecorder.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IBlackBoard.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IInterestSystem.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IClusterDetector.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/ICoverSystem.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/ICommunicationManager.h"
+%typemap(csbase) EChangeHint "uint"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IVisionMap.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IFactionMap.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/ISelectionTreeManager.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IGoalPipe.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/ITacticalPointSystem.h"
+%template(TPSQueryID) STicket<1>;
+%template(TPSQueryTicket) STicket<2>;
+%include "../../../../CryEngine/CryCommon/CryAISystem/INavigation.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/INavigationSystem.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/MovementRequest.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/MovementRequestID.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/MovementBlock.h"
+%ignore MovementStyle::ConstructDictionariesIfNotAlreadyDone;
+%include "../../../../CryEngine/CryCommon/CryAISystem/MovementStyle.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IMovementSystem.h"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IOffMeshNavigationManager.h"
+%typemap(csbase) MNM::Constants::Edges "uint"
+%include "../../../../CryEngine/CryCommon/CryAISystem/IMNM.h"

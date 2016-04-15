@@ -1,0 +1,41 @@
+<BehaviorTree>
+
+	<!--
+	=============================================================================================================================================
+	SDK_Grunt_01.xml
+
+	"Hello World" behavior tree that showcases an Idle behavior.
+	=============================================================================================================================================
+	-->
+
+	<Variables>
+		<!-- these variables are not used in this BT, but need to be present to prevent a warning caused by BasicAI:OnReset() -->
+		<Variable name="ExecuteSequence" />
+		<Variable name="ExecuteInterruptibleSequence" />
+	</Variables>
+
+	<SignalVariables>
+	</SignalVariables>
+
+	<Timestamps>
+	</Timestamps>
+
+	<Root>
+
+		<Sequence>
+
+			<SetAlertness value="0"/>
+
+			<ExecuteLua code="entity.actor:HolsterItem(true)"/>
+
+			<Stance name="Relaxed"/>
+
+			<Animate name="ZZ_AI_idleBreak"/>
+
+			<Halt/>
+
+		</Sequence>
+
+	</Root>
+
+</BehaviorTree>

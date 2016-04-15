@@ -1,0 +1,719 @@
+<FeatureTester>
+	<Settings>
+		<ListEntitiesWhenFail className="c4explosive" />
+		<AlwaysFailWhenHit checkpointName="GameRules_OnEndGame" />
+	</Settings>
+	
+	<Tests setName="utils">
+		<FeatureTest name="UtilPlayerSpawn">
+			<DoConsoleCommand command="g_DisableScoring 1" />
+			<DoConsoleCommand command="pl_spawnCorpseOnDeath 0" />
+			<DoConsoleCommand command="g_droppedItemVanishTimer 1.f" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_SvDoNotReviveTooSoonAfterDeath" />
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive who="localPlayer" />
+			<WaitSingleFrame />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilSpawnLocalAndDummyPlayers" speed="5">
+			<DoConsoleCommand command="g_DisableScoring 1" />
+			<DoConsoleCommand command="pl_spawnCorpseOnDeath 0" />
+			<DoConsoleCommand command="g_droppedItemVanishTimer 1.f" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_SvDoNotReviveTooSoonAfterDeath" />
+			<TrySpawnPlayer who="localPlayer" />
+			<DoConsoleCommand command="pl_health.normal_threshold_time_to_regenerateMP 0.25" />
+			<WaitUntilPlayerIsAlive who="localPlayer|firstRemotePlayer" />
+			<DoConsoleCommand command="pl_health.normal_threshold_time_to_regenerateMP 6" />
+			<WaitSingleFrame />
+		</FeatureTest>
+
+		<FeatureTest name="UtilPlayerJump">
+			<SetResponseToHittingCCCPoint checkpointName="PlayerMovement_PressJumpWhileCrouchedToStandUp" response="restartSubroutine"/>
+			<SetResponseToHittingCCCPoint checkpointName="PlayerMovement_PressJumpWhileNotAllowedToJump" response="restartSubroutine"/>
+			<SetResponseToHittingCCCPoint checkpointName="PlayerMovement_PressJumpInputIgnored" response="restartSubroutine"/>
+			<SetResponseToHittingCCCPoint checkpointName="PlayerMovement_LocalPlayerLanded" response="restartSubroutine"/>
+			<SetResponseToHittingCCCPoint checkpointName="PlayerMovement_LocalPlayerNormalJump" response="completeSubroutine"/>
+			<OverrideButtonInput_Press inputName="jump" />
+			<OverrideButtonInput_Release inputName="jump" />
+			<Wait duration="1" />
+			<Fail />
+		</FeatureTest>
+				
+		<FeatureTest name="UtilPlayerCrouch">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerMovement_SprintActionDisablesCrouchAction" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerMovement_IgnoreCrouchInput" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="ActorStance_LocalActorStopCrouch" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerMovement_LocalPlayerLanded"/>
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerMovement_ToggleCrouchActionOff"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="ActorStance_LocalActorStartCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="ActorStance_LocalActorStopStand" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerStartCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_ToggleCrouchActionOn" />
+			<OverrideButtonInput_Press inputName="crouch" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilShootUntilReloadStarts" speed="3">
+			<SetResponseToHittingCCCPoint response="completeSubroutine" checkpointName="Single_StartReload" />
+			<SetResponseToHittingCCCPoint response="completeSubroutine" checkpointName="Single_FillAmmo" />
+			<SetResponseToHittingCCCPoint response="completeSubroutine" checkpointName="Shotgun_ReloadShell" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Projectile_BulletLaunched"/>
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Shotgun_Fired"/>
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Shotgun_TryShootWhileCannotBeFired"/>
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<Wait duration="5" />
+			<Fail />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="soloTests">
+		<FeatureTest name="LocalPlayerExists" description="Local player should exist" require="localPlayerExists" enabled="true" maxTime="30" owners="timf">
+			<DoConsoleCommand command="g_autoReviveTime 7.f" />
+			<DoConsoleCommand command="g_timeLimit 0" />
+			<DoConsoleCommand command="g_scoreLimit 0" />
+		</FeatureTest>
+
+		<FeatureTest name="Jump" description="Jabbing jump button makes player jump once (immediately) and land once" enabled="true" owners="benito" prerequisite="LocalPlayerExists">
+			<WatchCCCPoint checkpointName="PlayerMovement_LocalPlayerNormalJump" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<RunFeatureTest testName="UtilPlayerJump" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerLanded"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="2" />
+			<CheckNumCCCPointHits checkpointName="PlayerMovement_LocalPlayerNormalJump" expectedNumHits="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="JumpHeldDuringLand" description="Holding jump button when landing doesn't make player jump again" enabled="true" owners="benito" prerequisite="LocalPlayerExists">
+			<WatchCCCPoint checkpointName="PlayerMovement_LocalPlayerLanded" />
+			<WatchCCCPoint checkpointName="PlayerMovement_LocalPlayerNormalJump" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerLanded"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="2" />
+			<Wait duration="0.25" />
+			<CheckNumCCCPointHits checkpointName="PlayerMovement_LocalPlayerLanded" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="PlayerMovement_LocalPlayerNormalJump" expectedNumHits="0" />
+		</FeatureTest>
+
+		<FeatureTest name="CameraShakeOnLand" description="Camera shakes when local player lands on the ground" enabled="true" owners="benito" prerequisite="LocalPlayerExists">
+			<WatchCCCPoint checkpointName="Camera_DoShake" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerLanded"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Camera_DoShake"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="2" />
+			<Wait duration="0.25" />
+			<CheckNumCCCPointHits checkpointName="Camera_DoShake" expectedNumHits="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="WeaponZoom" description="Holding iron-sight button enables iron-sight mode" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Marshall;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag" speed="10" owners="alexh" prerequisite="LocalPlayerExists" >
+			<WatchCCCPoint checkpointName="PlayerWeapon_IronSightOn" />
+			<WatchCCCPoint checkpointName="PlayerWeapon_IronSightOff" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerWeapon_IronSightStartZoomIn"/>
+			<OverrideButtonInput_Press inputName="attack2_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerWeapon_IronSightOn"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="2.5" />
+			<CheckNumCCCPointHits checkpointName="PlayerWeapon_IronSightOn" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="PlayerWeapon_IronSightOff" expectedNumHits="0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerWeapon_IronSightStartZoomOut"/>
+			<OverrideButtonInput_Release inputName="attack2_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerWeapon_IronSightOff"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="2.5" />
+			<CheckNumCCCPointHits checkpointName="PlayerWeapon_IronSightOn" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="PlayerWeapon_IronSightOff" expectedNumHits="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="WeaponAutomaticShoot" description="Pressing shoot fires current weapon" enabled="true" iterateOverParams="K-Volt;SCAR;Feline;SCARAB;AY69;Mk60" speed="3" owners="alexh" prerequisite="LocalPlayerExists" >
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_Shoot" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_ApplySpreadRandom" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.1" />
+			<WaitSingleFrame />
+		</FeatureTest>
+		
+		<FeatureTest name="WeaponManualReload" description="Reload button reloads current weapon" enabled="true" iterateOverParams="K-Volt;SCAR;Feline;SCARAB;AY69;Mk60" speed="5" owners="alexh" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_StartReload" />
+			<OverrideButtonInput_Press inputName="reload" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_EndReload"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="25" />
+		</FeatureTest>
+
+		<FeatureTest name="WeaponReloadWhenClipEmpty" description="Completely emptying a clip makes a weapon reload automatically" enabled="true" iterateOverParams="K-Volt;SCAR;Feline;SCARAB;AY69;Mk60" speed="5" owners="alexh" prerequisite="LocalPlayerExists" maxTime="120" >
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_StartReload"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="90" />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_EndReload"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="25" />
+		</FeatureTest>
+
+		<FeatureTest name="WeaponMelee" description="Pressing melee button performs a melee (and 2nd immediate press doesn't trigger another)" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Marshall;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag;C4;FragGrenades;FlashBangGrenades" speed="1" owners="alexh" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<WatchCCCPoint checkpointName="Melee_LocalActorMelee" />
+			<OverrideButtonInput_Press inputName="special" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Melee_LocalActorMelee" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="special" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.1" />
+			<WaitSingleFrame />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Melee_PressedButMeleeNotAllowed" />
+			<OverrideButtonInput_Press inputName="special" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="special" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.2" />
+			<CheckNumCCCPointHits checkpointName="Melee_LocalActorMelee" expectedNumHits="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="WeaponEmitTracer" description="Pressing shoot emits tracers from the current weapon" enabled="true" iterateOverParams="K-Volt;SCAR;Feline;SCARAB;AY69;Mk60" speed="5" owners="alexh" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_EmitTracer"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<WaitSingleFrame />
+		</FeatureTest>
+
+		<FeatureTest name="ConsoleKillCommand" description="The console 'kill' command kills the player" enabled="true" owners="timf" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<WatchCCCPoint checkpointName="PlayerState_LocalPlayerDied" />
+			<DoConsoleCommand command="kill" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_LocalPlayerDied" expectedNumHits="1" />
+		</FeatureTest>
+
+		<FeatureTest name="DeathAnimation" description="Killing the player results in death animation and then ragdoll" enabled="true" owners="tombe" prerequisite="ConsoleKillCommand">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerDied"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HitDeath_ExecuteDeathReaction"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="CActor_RagDollize"/>
+			<DoConsoleCommand command="kill" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="10" />
+		</FeatureTest>
+		
+		<FeatureTest name="ShotgunShoot" description="Pressing shoot fires a shotgun" enabled="true" iterateOverParams="Marshall;Jackal" owners="alexh" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Shotgun_ReloadShell"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Shotgun_Fired"/>
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="3" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="Shotgun_Fired"/>
+			<SetItem className="%1" />
+		</FeatureTest>
+
+		<FeatureTest name="SingleShoot" description="Pressing shoot fires a gun with single-shot firemode active" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Nova" owners="alexh" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_StartFire"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_Shoot"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_ApplySpreadRandom"/>
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_StopFire"/>
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0" />
+		</FeatureTest>
+		
+		<FeatureTest name="ShotgunAndSingleReloadWhenEmpty" description="Emptying any shotgun or non-automatic weapon makes it reload" enabled="true" iterateOverParams="Marshall;Jackal;Revolver;Hammer;Gauss;DSG1;Nova" owners="alexh" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<RunFeatureTest testName="UtilShootUntilReloadStarts" />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<SetItem className="%1" />
+		</FeatureTest>
+
+		<FeatureTest name="PerkStamp" description="Pressing melee in mid-air with Stamp nanosuit module enabled makes the player stamp" enabled="true" owners="timf;benp" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<DoConsoleCommand command="Perk -Stamp" />
+			<DoConsoleCommand command="Perk +Stamp" />
+			<SetResponseToHittingCCCPoint checkpointName="Perk_Stamp_ShowPrompt" response="expectedNext"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="2" />
+			<OverrideButtonInput_Release inputName="jump" />
+			<SetResponseToHittingCCCPoint checkpointName="Perk_Stamp_Triggered" response="expectedNext"/>
+			<SetResponseToHittingCCCPoint checkpointName="Perk_Stamp_HitGround" response="expectedNext"/>
+			<SetResponseToHittingCCCPoint checkpointName="Perk_Stamp_DoDamage" response="expectedNext"/>
+			<SetResponseToHittingCCCPoint checkpointName="Perk_Stamp_HidePrompt" response="expectedNext"/>
+			<OverrideButtonInput_Press inputName="crouch" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="crouch" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+		
+		<FeatureTest name="Crouch" description="Press crouch to switch between crouched and standing" enabled="true" owners="benito" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<RunFeatureTest testName="UtilPlayerCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="ActorStance_LocalActorStopCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="ActorStance_LocalActorStartStand" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerStopCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_ToggleCrouchActionOff" />
+			<OverrideButtonInput_Press inputName="crouch" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+		</FeatureTest>
+		
+		<FeatureTest name="JumpWhenCrouched" description="Press jump while crouched to stand up" enabled="true" owners="benito" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<RunFeatureTest testName="UtilPlayerCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="ActorStance_LocalActorStopCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="ActorStance_LocalActorStartStand" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerStopCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_PressJumpWhileCrouchedToStandUp" />
+			<OverrideButtonInput_Press inputName="jump" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="sprintTests">
+		<FeatureTest name="SprintWhenCrouched" description="Sprint while crouched to stand up" enabled="true" owners="benito" prerequisite="LocalPlayerExists">
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<RunFeatureTest testName="UtilPlayerCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="ActorStance_LocalActorStopCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="ActorStance_LocalActorStartStand" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerStopCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintOn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintActionDisablesCrouchAction" />
+			<OverrideAnalogInput inputName="xi_movey" value="1" />
+			<OverrideButtonInput_Press inputName="sprint" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="3.0" />
+		</FeatureTest>
+
+		<FeatureTest name="SprintButtonWhileStanding" description="Check the sprint button doesn't do anything when not moving" enabled="true" owners="benito" prerequisite="LocalPlayerExists">
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerMovement_SprintOn" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerMovement_SprintOff" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintRequestIgnored" />
+			<OverrideButtonInput_Press inputName="sprint" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="3.0" />
+		</FeatureTest>
+
+		<FeatureTest name="SprintButtonWhileRunning" description="Check the sprint button triggers sprint when moving" enabled="true" owners="benito" prerequisite="LocalPlayerExists">
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<OverrideAnalogInput inputName="xi_movey" value="1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintOn" />
+			<OverrideButtonInput_Press inputName="sprint" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="3.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintOff" />
+			<OverrideAnalogInput inputName="xi_movey" value="0" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="3.0" />
+		</FeatureTest>
+		
+		<FeatureTest name="SprintCancelledByShoot" description="Check shooting a weapon stops the player sprinting" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Marshall;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60" owners="benito;alexh" prerequisite="LocalPlayerExists">
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<OverrideAnalogInput inputName="xi_movey" value="1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintOn" />
+			<OverrideButtonInput_Press inputName="sprint" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="3.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintOff" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="Projectile_BulletLaunched" customMessage="There should be a delay between sprinting being disabled and the weapon being fired" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="Shotgun_Fired" customMessage="There should be a delay between sprinting being disabled and the weapon being fired" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerMovement_SprintOn" />
+			<SetResponseToHittingCCCPoint response="completeTest" checkpointName="Projectile_BulletLaunched" />
+			<SetResponseToHittingCCCPoint response="completeTest" checkpointName="Shotgun_Fired" />
+			<Wait duration="3.0" />
+			<Fail />
+		</FeatureTest>
+		
+		<FeatureTest name="SprintToCrouch" description="Check crouching cancels sprinting" enabled="true" owners="benito" prerequisite="LocalPlayerExists">
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<OverrideAnalogInput inputName="xi_movey" value="1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintOn" />
+			<OverrideButtonInput_Press inputName="sprint" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="3.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintOff" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerStartCrouch" />
+			<OverrideButtonInput_Press inputName="crouch" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="3.0" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="grenadeTests">
+		<FeatureTest name="GrenadeThrow" description="Hold attack button to prime a grenade, release button to throw it" require="localPlayerExists" enabled="true" owners="alexh" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="FragGrenades" />
+			<WatchCCCPoint checkpointName="Throw_Prime" />
+			<WatchCCCPoint checkpointName="Throw_Start" />
+			<WatchCCCPoint checkpointName="Throw_Stop" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<CheckNumCCCPointHits checkpointName="Throw_Prime" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="Throw_Start" expectedNumHits="1" />
+			<Wait duration="0.7" />
+			<CheckNumCCCPointHits checkpointName="Throw_Stop" expectedNumHits="0" />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<CheckNumCCCPointHits checkpointName="Throw_Stop" expectedNumHits="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="GrenadeExplode" description="A thrown grenade explodes and is destroyed" enabled="true" owners="alexh" prerequisite="GrenadeThrow">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_Explode"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeDestroyed"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+
+		<FeatureTest name="GrenadeExplodeInHand" description="Hold attack button to prime a grenade for too long and it kills the player" enabled="true" owners="alexh" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="FragGrenades" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Throw_AutomaticThrow"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerDied"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_Explode"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="10" />
+		</FeatureTest>
+
+		<FeatureTest name="FlashBangDroppedAtFeet" description="A flashbang exploding at the player's feet blinds him" enabled="true" owners="alexh" prerequisite="LocalPlayerExists">
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="FlashBangGrenades" />
+			<OverrideAnalogInput inputName="xi_rotatepitch" value="-2" />
+			<Wait duration="1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Throw_Shoot"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeLaunched"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="3" />			
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_FlashbangExplode"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeDestroyed"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="FlashBang_Explode_BlindLocalPlayer"/>
+			<SetResponseToHittingCCCPoint response="restartTest" checkpointName="FlashBang_Explode_NearbyButBlockedByGeometry"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+
+		<FeatureTest name="GrenadeDroppedAtFeet" description="A grenade exploding at the player's feet kills him" enabled="true" owners="alexh" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="FragGrenades" />
+			<OverrideAnalogInput inputName="xi_rotatepitch" value="-2" />
+			<Wait duration="1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Throw_Shoot"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerDied"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="10" />
+		</FeatureTest>
+		
+		<FeatureTest name="PerkEnhancedVisorReduceFlash" description="Enhanced visor perk reduces duration of flashbang effect" enabled="true" owners="alexh;timf;benp" prerequisite="FlashBangDroppedAtFeet">
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<DoConsoleCommand command="Perk +EnhancedVisor" />
+			<DoConsoleCommand command="PerkTier EnhancedVisor 2" />
+			<SetItem className="FlashBangGrenades" />
+			<OverrideAnalogInput inputName="xi_rotatepitch" value="-2" />
+			<Wait duration="1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_VisorProtector_ScaleFlashbangEffect"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeDestroyed"/>
+			<SetResponseToHittingCCCPoint response="restartTest" checkpointName="FlashBang_Explode_NearbyButBlockedByGeometry"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="10" />
+		</FeatureTest>
+		
+		<FeatureTest name="C4Throw" description="Local player can throw and detonate C4" require="localPlayerExists" enabled="true" owners="alexh" prerequisite="LocalPlayerExists">
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="C4" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeLaunched"/>
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="Projectile_Explode" customMessage="C4 exploded before player pressed the 'detonate' button" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<OverrideAnalogInput inputName="xi_movey" value="-1" />
+			<Wait duration="1.5" />
+			<OverrideAnalogInput inputName="xi_movey" value="0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="C4_ReceiveDetonateInput"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="DetonateFireMode_StartFireOK"/>
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="DetonateFireMode_CannotFire"/>
+			<OverrideButtonInput_Press inputName="attack2_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="DetonateFireMode_TimerHasReachedZero"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="DetonateFireMode_ProjectileHasBeenDetonated"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeDestroyed"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_Explode"/>
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="DetonateFireMode_ProjectileFailedToDetonate"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.5" />
+		</FeatureTest>
+
+		<FeatureTest name="C4DropAtFeet" description="Local player can drop C4 at own feet and blow himself up" enabled="true" owners="alexh" prerequisite="C4Throw">
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="C4" />
+			<OverrideAnalogInput inputName="xi_rotatepitch" value="-2" />
+			<Wait duration="1.0" />
+			<OverrideAnalogInput inputName="xi_rotatepitch" value="0" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeLaunched"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<Wait duration="1.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="C4_ReceiveDetonateInput"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="DetonateFireMode_StartFireOK"/>
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="DetonateFireMode_CannotFire"/>
+			<OverrideButtonInput_Press inputName="attack2_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="DetonateFireMode_TimerHasReachedZero"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="DetonateFireMode_ProjectileHasBeenDetonated"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeDestroyed"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_Explode"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HitRecoil_CameraShake"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerDied"/>
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="DetonateFireMode_ProjectileFailedToDetonate"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.5" />
+		</FeatureTest>
+		
+		<FeatureTest name="LaunchRocketAtFeet" description="Local player gets killed if launching a grenade/rocket at his own feet" enabled="false" owners="alexh" prerequisite="LocalPlayerExists">
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="LTag" />
+			<OverrideAnalogInput inputName="xi_rotatepitch" value="-2" />
+			<Wait duration="1" />
+			<OverrideAnalogInput inputName="xi_rotatepitch" value="0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_StartFire"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeLaunched"/>
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerDied"/>			
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="localScoreTests">
+		<FeatureTest name="LocalSuicideNegativeScore" description="Local player committing suicide gives negative score" require="localPlayerExists" enabled="false" maxTime="1" owners="benjo;frankh" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<DoConsoleCommand command="g_DisableScoring 0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_SvModifyScore" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_ClModifyScore" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HUD_DisplayScoreDecrease" />
+			<DoConsoleCommand command="kill" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="LocalIncreaseScore" description="Local player's score can increase" require="localPlayerExists" enabled="true" maxTime="1" owners="benjo;frankh" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<DoConsoleCommand command="g_DisableScoring 0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_SvModifyScore" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_ClModifyScore" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HUD_DisplayScoreIncrease" />
+			<DoConsoleCommand command="g_giveScore . 10 3" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="pickupTests">
+		<FeatureTest name="DropPickupOnDeath" description="Check dying results in a pick-up being dropped" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Marshall;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag" owners="benito;alexh" prerequisite="ConsoleKillCommand">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Item_DroppedWhileCurrentItem" />
+			<DoConsoleCommand command="kill" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="PickupTimeout" description="Check pick-ups vanish after specified amount of time" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Marshall;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag" owners="colin" speed="2" prerequisite="DropPickupOnDeath">
+			<Wait duration="1" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<DoConsoleCommand command="g_droppedItemVanishTimer 2.f" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Item_DroppedWhileCurrentItem" />
+      <SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_SetRemoveObjectAfterTime" />
+      <DoConsoleCommand command="kill" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+			<Wait duration="1.5" />
+      <!--SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Item_Destroy" /-->
+      <SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_RemoveObjectAfterTime" />
+      <WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="visorTests">
+		<FeatureTest name="ActivateVisorTactical" description="Check tactical visor mode can be turned on and off" enabled="false" owners="timf" prerequisite="LocalPlayerExists" >
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_VisorEnabled" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_StartDeselect" />
+			<OverrideButtonInput_Release inputName="nanosuit_visor" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_VisorDidNotToggle" />
+			<OverrideButtonInput_Release inputName="nanosuit_visor" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_Deselect" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_Select" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<Wait duration="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_VisorDisabled" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_StartDeselect" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_Deselect" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_Select" />
+			<OverrideButtonInput_Release inputName="nanosuit_visor" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<Wait duration="0.5" />
+		</FeatureTest>
+
+		<FeatureTest name="ActivateSpecialVisionMode" speed="2" description="Check special vision mode can be turned on and off" enabled="false" owners="timf" iterateOverParams="nanosuit_thermalvision;nanosuit_nightvision;nanosuit_cryvision" prerequisite="LocalPlayerExists" >
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_VisorEnabled" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_Select" />
+			<OverrideButtonInput_Release inputName="nanosuit_visor" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_SpecialVisionModeOn" />
+			<OverrideButtonInput_Press inputName="%1" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<Wait duration="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_SpecialVisionModeOff" />
+			<OverrideButtonInput_Press inputName="%1" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_VisorDisabled" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_Select" />
+			<OverrideButtonInput_Release inputName="nanosuit_visor" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<Wait duration="0.5" />
+		</FeatureTest>
+
+		<FeatureTest name="SpecialVisionModeStaysOn" speed="3" description="Check special vision modes stay on when tactical visor gets turned back off" enabled="false" owners="timf" iterateOverParams="nanosuit_thermalvision;nanosuit_nightvision;nanosuit_cryvision" prerequisite="LocalPlayerExists" >
+			<DoConsoleCommand command="kill" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_VisorEnabled" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_Select" />
+			<OverrideButtonInput_Release inputName="nanosuit_visor" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_SpecialVisionModeOn" />
+			<OverrideButtonInput_Press inputName="%1" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_VisorDisabled" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_Select" />
+			<OverrideButtonInput_Release inputName="nanosuit_visor" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<Wait duration="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_VisorEnabled" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_Select" />
+			<OverrideButtonInput_Release inputName="nanosuit_visor" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_SpecialVisionModeOff" />
+			<OverrideButtonInput_Press inputName="%1" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="NanoSuit_VisorDisabled" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Weapon_Select" />
+			<OverrideButtonInput_Release inputName="nanosuit_visor" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1.0" />
+			<Wait duration="0.5" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="attackDummyPlayer">
+		<FeatureTest name="CreateDummyPlayer" description="Create a local bot for the player to attack" enabled="true" maxTime="30" owners="timf">
+			<DoConsoleCommand command="g_dummyPlayersMove 0" />
+			<DoConsoleCommand command="g_dummyPlayersJump 0" />
+			<DoConsoleCommand command="g_dummyPlayersFire 0" />
+			<DoConsoleCommand command="t_fixedstep 0" /> <!-- Make sure subsequent tests use actual game time... forcing super-fast frame rate means sniper rifle bullets can time-out before the physics thread works out what they should hit -->
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<DoConsoleCommand command="spawnDummyPlayers 1" />
+			<WaitUntilPlayerIsAlive who="firstRemotePlayer" />
+			<Wait duration="2" />
+		</FeatureTest>
+
+		<FeatureTest name="ShootToInjure" description="Pressing shoot injures dummy player" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Marshall;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike" owners="alexh" prerequisite="CreateDummyPlayer" >
+			<RunFeatureTest testName="UtilSpawnLocalAndDummyPlayers" />
+			<MovePlayerToOtherEntity localPlayer="true" className="DummyPlayer" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<Wait duration="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+		</FeatureTest>
+
+		<FeatureTest name="MeleeToInjure" description="Pressing melee injures dummy player" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Marshall;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag;C4;FragGrenades;FlashBangGrenades" speed="2" owners="alexh" prerequisite="CreateDummyPlayer" >
+			<RunFeatureTest testName="UtilSpawnLocalAndDummyPlayers" />
+			<MovePlayerToOtherEntity localPlayer="true" className="DummyPlayer" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<Wait duration="0.25" />
+			<OverrideAnalogInput inputName="xi_movey" value="0.3" />
+			<Wait duration="0.2" />
+			<OverrideAnalogInput inputName="xi_movey" value="0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<OverrideButtonInput_Press inputName="special" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="special" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="StampDoesDamage" description="Local player injures dummy player with stamp perk" enabled="true" owners="timf;benp" prerequisite="CreateDummyPlayer">
+			<RunFeatureTest testName="UtilSpawnLocalAndDummyPlayers" />
+			<MovePlayerToOtherEntity localPlayer="true" className="DummyPlayer" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<DoConsoleCommand command="Perk -Stamp" />
+			<DoConsoleCommand command="Perk +Stamp" />
+			<SetResponseToHittingCCCPoint checkpointName="Perk_Stamp_ShowPrompt" response="expectedNext"/>
+			<OverrideAnalogInput inputName="xi_movey" value="0.2" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="2" />
+			<OverrideButtonInput_Release inputName="jump" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_Stamp_Triggered"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_Stamp_HitGround"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_Stamp_DoDamage"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<OverrideButtonInput_Press inputName="crouch" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="crouch" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+
+		<FeatureTest name="MeleeStrongToInjure" description="Holding melee eventually injures dummy player" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Marshall;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag;C4;FragGrenades;FlashBangGrenades" speed="2" owners="alexh" prerequisite="CreateDummyPlayer" >
+			<RunFeatureTest testName="UtilSpawnLocalAndDummyPlayers" />
+			<MovePlayerToOtherEntity localPlayer="true" className="DummyPlayer" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<Wait duration="0.25" />
+			<OverrideAnalogInput inputName="xi_movey" value="0.3" />
+			<Wait duration="0.2" />
+			<OverrideAnalogInput inputName="xi_movey" value="0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<OverrideButtonInput_Press inputName="special" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="10" />
+		</FeatureTest>
+		
+		<FeatureTest name="RemoveDummyPlayer" description="Get rid of the dummy player" enabled="true" prerequisite="CreateDummyPlayer">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerBeingDestroyed" />
+			<DoConsoleCommand command="removeDummyPlayers" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="restartTests">
+		<FeatureTest name="RestartLevel" description="Restarting the level should reset game rules and reinit local player" enabled="false" owners="benjo" prerequisite="LocalPlayerExists">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Restart" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerBeingDestroyed"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_ClientConnect_Reset"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRulesStandardState_EnterInGame"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_Init"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_CreateInputClassDuringUpdate"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_SetInputCallbacks"/>
+			<DoConsoleCommand command="sv_restart" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+		</FeatureTest>
+		
+		<!--FeatureTest name="EndLevel" description="Return to front end" require="localPlayerExists" enabled="true" owners="benjo" prerequisite="RestartLevel"-->
+		<FeatureTest name="EndLevel" description="Return to front end" require="localPlayerExists" enabled="true" owners="benjo" prerequisite="LocalPlayerExists">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Release"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerBeingDestroyed"/>
+			<DoConsoleCommand command="disconnect" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="3" />
+			<Wait duration="2" />
+		</FeatureTest>
+	</Tests>
+</FeatureTester>

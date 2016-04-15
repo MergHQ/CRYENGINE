@@ -1,0 +1,607 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#if ENABLE_TESSELLATION
+
+#define MAX_TESS_FACTOR 32.0
+
+Buffer<float2> txtCoords : register(t15); // 12 texture coordinates per triangle
+// this probably needs to be converted to per-instance constant: AI AndreyK
+Buffer<int> patchIDOffset : register(t15);
+
+
+//--------------------------------------------------------------------------------------
+// Material parameters
+//--------------------------------------------------------------------------------------
+
+#if %DISPLACEMENT_MAPPING
+	float TessellationDispBias
+	<
+		register = REG_PM_PARAM_INCL_2.x;
+		string UIName = "Displacement bias";  
+
+		string UIWidget = "slider";
+		float UIMin = 0;
+		float UIMax = 1.0;
+		float UIStep = 0.01;
+		string Filter = "Illum, HumanSkin, Vegetation";
+	> = 0.5;
+
+	float TessellationHeightScale
+	<
+		register = REG_PM_PARAM_INCL_2.y;
+		string UIName = "Displacement height scale";  
+
+		string UIWidget = "slider";
+		float UIMin = 0;
+		float UIMax = 50.0;
+		float UIStep = 0.01;
+		string Filter = "Illum, HumanSkin, Vegetation";
+	> = 1.0;
+
+	#if %BLENDLAYER
+		float BlendLayerDisplacement
+		<
+			register = REG_PM_PARAM_INCL_2.z;
+			string UIName = "Blend Layer Displacement";  
+
+			string UIWidget = "slider";
+			float UIMin = 0;
+			float UIMax = 1.0;
+			float UIStep = 0.01;
+			string Filter = "Illum, Vegetation";
+		> = 0.0;
+	#endif
+#endif //%DISPLACEMENT_MAPPING
+
+float TessellationFactor
+<
+  register = REG_PM_PARAM_INCL_2.w;
+  string UIName = "Tessellation factor";  
+  
+  string UIWidget = "slider";
+  float UIMin = 0.1;
+  float UIMax = 10.0;
+  float UIStep = 0.05;
+  string Filter = "Illum, HumanSkin, Vegetation";
+> = 1;
+
+float TessellationFactorMin
+<
+	register = REG_PM_PARAM_INCL_3.x;
+	string UIName = "Tessellation factor min";
+
+	string UIWidget = "slider";
+	float UIMin = 1;
+	float UIMax = MAX_TESS_FACTOR;
+	float UIStep = 0.5;
+	string Filter = "Illum, HumanSkin, Vegetation";
+> = 1;
+
+float TessellationFactorMax
+<
+	register = REG_PM_PARAM_INCL_3.y;
+	string UIName = "Tessellation factor max";
+
+	string UIWidget = "slider";
+	float UIMin = 1;
+	float UIMax = MAX_TESS_FACTOR;
+	float UIStep = 0.5;
+	string Filter = "Illum, HumanSkin, Vegetation";
+> = MAX_TESS_FACTOR;
+
+
+//all two-sided materials should have their flags here
+#if %GRASS || %LEAVES
+	static const float TessellationFaceCull = 0;
+#else
+	float TessellationFaceCull
+	<
+		register = REG_PM_PARAM_INCL_3.z;
+		string UIName = "Tessellation face cull";  
+
+		string UIWidget = "slider";
+		float UIMin = 0;
+		float UIMax = 1.0;
+		float UIStep = 0.05;
+		string Filter = "Illum, HumanSkin, Vegetation";
+	> = 0.75;
+#endif
+
+//--------------------------------------------------------------------------------------
+// Common data structures
+//--------------------------------------------------------------------------------------
+
+struct HS_CONSTANT_DATA_OUTPUT
+{
+	float	Edges[3]		 : SV_TessFactor;
+	float	Inside			 : SV_InsideTessFactor;
+#if !%_TT_TEXCOORD_MATRIX && %DISPLACEMENT_MAPPING
+	int iPatchID : MY_PATCH_ID;
+#endif
+#if %_RT_DEBUG1
+	float Factor : HS_FACTOR; // used for virtual dicing (GPU-based dicing)
+#endif
+};
+
+struct CommonEvaluationInputDS
+{
+	float4 vPos[3];
+	float3 vNormal[3];
+	float4 vTangent[3];
+	float4 vBinormal[3];
+	float4 vBaseTC[3];
+	float4 vColor[3];
+	float3 vBaryCoords;
+	float3 vViewPos;  // Viewer position used for tessellation factor and displacement scale
+	int iCoordsOffset;
+	bool bRelativePos;
+	bool bEvalTangentBinormal;
+	bool bLoadDispUV;
+	bool bEvalColor;
+};
+
+struct CommonEvaluationOutputDS
+{
+	float4 vPos;
+	float4 vTangent;
+	float4 vBinormal;
+	float4 vBaseTC;
+	float4 vColor;
+};
+
+struct hsControlPointShared
+{
+	float4 vView     : TEXCOORDN;
+	float4 vNormal   : TEXCOORDN;
+	float4 vBaseTC   : TEXCOORDN;
+};
+
+struct HS_CONTROL_POINT_OUTPUT_ZPASS
+{
+	hsControlPointShared controlPoint;
+
+#if (!%GRASS && !%TEMP_TERRAIN) || %_RT_ALPHABLEND 
+	float4 vTangent   : TEXCOORDN;
+	float4 vBinormal  : TEXCOORDN;
+#endif
+	float4 vNormalWS  : TEXCOORDN;
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %OFFSET_BUMP_MAPPING	 || %_RT_ALPHABLEND
+	float3 viewTS   : TEXCOORDN;
+#endif
+
+#if %VERTCOLORS || %BLENDLAYER
+	float4 Color    : COLOR0;
+#endif
+
+#if %_RT_MOTION_BLUR && !%_RT_ALPHABLEND
+	float3 HPosPrev : TEXCOORDN;
+#endif
+};
+
+struct HS_CONTROL_POINT_OUTPUT_ILLUM
+{
+	hsControlPointShared controlPoint;
+
+#if %_RT_FOG || %ANISO_SPECULAR || %IRIS_PARALAX_MAPPING || %OFFSET_BUMP_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+	float4 vTangent  : TEXCOORDN;
+	float4 vBinormal : TEXCOORDN;
+#endif
+
+#if %_RT_FOG && !%_RT_DECAL_TEXGEN_2D
+	float4 AvgFogVolumeContrib : TEXCOORDN;
+#endif
+
+#if %_RT_FOG || %_RT_DECAL_TEXGEN_2D || %DECAL
+	float4 Ambient   : TEXCOORDN;
+#endif
+
+#if %VERTCOLORS || %DIRTLAYER || %BLENDLAYER
+	float4 Color      : COLOR0;
+#endif
+};
+
+
+//--------------------------------------------------------------------------------------
+// Common HS functions
+//--------------------------------------------------------------------------------------
+int GetPatchIDOffset()
+{
+#if %_RT_PER_INSTANCE_CB_TEMP
+	return asint(PerInstanceAlphaTest.z);
+#else
+	return patchIDOffset.Load(0);
+#endif
+}
+
+HS_CONSTANT_DATA_OUTPUT CommonConstantsHS(float3 vWP0, float3 vWP1, float3 vWP2, float3 vViewPosition, float3 vCullPosition, uint PatchID, bool bCullFront = false)
+{
+#if (D3DX_SDK_VERSION == 43)
+	// Workaround for the optimization rule problem of DXSDKJune10's HLSL Compiler (9.29.952.3111)
+	// See: http://support.microsoft.com/kb/2448404	
+#pragma ruledisable 0x0802405f  ;
+#endif
+
+	HS_CONSTANT_DATA_OUTPUT output = (HS_CONSTANT_DATA_OUTPUT)0;
+
+#if !%_TT_TEXCOORD_MATRIX && %DISPLACEMENT_MAPPING
+	output.iPatchID = PatchID + GetPatchIDOffset();
+#endif
+
+	bool bFaceCull = false;
+	if (TessellationFaceCull > 0.f)
+	{
+		const float3 vMiddle = (vWP0 + vWP1 + vWP2) / 3.0f;
+		const float3 vDir = normalize(vCullPosition - vMiddle);
+		const float3 vFaceNormal = normalize(cross(vWP2 - vWP0, vWP1 - vWP0));
+		const float3 vCullNormal = (bCullFront ? -vFaceNormal : vFaceNormal);
+		const float fDot = dot(vCullNormal, vDir);
+		bFaceCull = (fDot > (1.f - TessellationFaceCull));
+	}
+
+	const bool bFrustumCulled = ViewFrustumCull(vWP0, vWP1, vWP2, g_VS_FrustumPlaneEquation, g_VS_TessInfo.y);
+
+	if (bFrustumCulled || bFaceCull)
+	{
+		// Set all tessellation factors to 0 if frustum cull test succeeds
+		output.Edges[0] = 0.0;
+		output.Edges[1] = 0.0;
+		output.Edges[2] = 0.0;
+		output.Inside   = 0.0;
+	}
+	else
+	{
+		float4 vEdgeTessellationFactors;
+
+		vEdgeTessellationFactors.x = distance(vWP2, vWP1);
+		vEdgeTessellationFactors.x /= distance((vWP2 + vWP1) / 2, vViewPosition);
+		vEdgeTessellationFactors.y = distance(vWP2, vWP0);
+		vEdgeTessellationFactors.y /= distance((vWP2 + vWP0) / 2, vViewPosition);
+		vEdgeTessellationFactors.z = distance(vWP0, vWP1);
+		vEdgeTessellationFactors.z /= distance((vWP0 + vWP1) / 2, vViewPosition);
+		vEdgeTessellationFactors.w = (vEdgeTessellationFactors.x + vEdgeTessellationFactors.y + vEdgeTessellationFactors.z) / 3;
+
+		vEdgeTessellationFactors *= g_VS_TessInfo.x * TessellationFactor;
+		vEdgeTessellationFactors = clamp(vEdgeTessellationFactors, TessellationFactorMin, TessellationFactorMax);
+
+		// Assign tessellation levels
+		output.Edges[0] = vEdgeTessellationFactors.x;
+		output.Edges[1] = vEdgeTessellationFactors.y;
+		output.Edges[2] = vEdgeTessellationFactors.z;
+		output.Inside   = vEdgeTessellationFactors.w;
+
+#if %_RT_DEBUG1
+		// Instead of max EDGE LOD let's compute the triangle expansion
+		float numTriangles = 0;
+		int lod_u = floor(vEdgeTessellationFactors.w);
+		int lod_l = floor(vEdgeTessellationFactors.x);
+		int lod_r = floor(vEdgeTessellationFactors.y);
+		int lod_b = floor(vEdgeTessellationFactors.z);
+
+		numTriangles  = floor((3.0f/2.0f)*(lod_u-2)*(lod_u-2)); 
+		numTriangles += lod_l + lod_r + lod_b + 3 * lod_u - 6;
+
+		output.Factor = numTriangles;
+#endif    
+	}
+
+	return output;
+}
+
+
+//--------------------------------------------------------------------------------------
+// Common DS functions
+//--------------------------------------------------------------------------------------
+
+float3 OrthoProject(float3 P, float3 planeP, float3 planeN)
+{
+	return P - (dot(P - planeP, planeN)*planeN);
+} 
+
+float3 PhongTessellation(float3 P0, float3 P1, float3 P2, float3 N0, float3 N1, float3 N2, float3 BaryCoords)
+{
+	float fShapeAlpha = 3.5f/4.0f;
+	float3 P = BaryCoords.x*P0 + BaryCoords.y*P1 + BaryCoords.z*P2;
+	
+	float3 C0 = OrthoProject(P, P0, N0);
+	float3 C1 = OrthoProject(P, P1, N1);
+	float3 C2 = OrthoProject(P, P2, N2);
+	
+	float3 Q = BaryCoords.x*C0 + BaryCoords.y*C1 + BaryCoords.z*C2;
+	float3 r = lerp (P, Q, fShapeAlpha);
+	
+	return r;
+}
+
+float w_ij(in float3 vPi, in float3 vPj, in float3 vNi)
+{
+	return dot(vPj - vPi, vNi);
+}
+
+float3 b_ij(in float3 vPi, in float3 vPj, in float3 vNi)
+{
+	return (vPi * 2 + vPj - vNi * w_ij(vPi, vPj, vNi)) / 3.0;
+}
+
+float3 PNTessellation(in float3 vP0, in float3 vP1, in float3 vP2,
+											in float3 vN0, in float3 vN1, in float3 vN2,
+											in float3 vBaryCoords)
+{
+	const float3 vUVW1 = vBaryCoords;
+	const float3 vUVW2 = vUVW1 * vUVW1;
+	const float3 vUVW3 = vUVW2 * 3.f;
+	const float3 vUVW12 = vUVW1 * vUVW2;
+
+	const float3 b210 = b_ij(vP0, vP1, vN0);
+	const float3 b120 = b_ij(vP1, vP0, vN1);
+	const float3 b021 = b_ij(vP1, vP2, vN1);
+	const float3 b012 = b_ij(vP2, vP1, vN2);
+	const float3 b102 = b_ij(vP2, vP0, vN2);
+	const float3 b201 = b_ij(vP0, vP2, vN0);
+
+	// b_111 = E + (E - V) / 2 = E * 1.5 - V * 0.5
+	// E = (b210 + b120 + b021 + b012 + b102 + b201) / 6
+	// V = (P_0 + P_1 + P_2) / 3
+	const float3 b111 = ((b210 + b120 + b021 + b012 + b102 + b201) / 4.f) - ((vP0 + vP1 + vP2) / 6.f);
+
+	const float3 vPos = vP0 * vUVW12.x +
+							        vP1 * vUVW12.y +
+											vP2 * vUVW12.z +
+											b210 * vUVW3.x * vUVW1.y +
+											b120 * vUVW1.x * vUVW3.y +
+											b201 * vUVW3.x * vUVW1.z +
+											b021 * vUVW3.y * vUVW1.z +
+											b102 * vUVW1.x * vUVW3.z +
+											b012 * vUVW1.y * vUVW3.z +
+											b111 * 6.0f * vUVW1.x * vUVW1.y * vUVW1.z;
+
+	return vPos;
+}
+
+float EvalVec(in float f0, in float f1, in float f2, in float3 vBaryCoords)
+{
+	return dot(float3(f0, f1, f2), vBaryCoords);
+}
+
+float2 EvalVec(in float2 vV0, in float2 vV1, in float2 vV2, in float3 vBaryCoords)
+{
+	return vBaryCoords.x * vV0 + vBaryCoords.y * vV1 + vBaryCoords.z * vV2;
+}
+
+float3 EvalVec(in float3 vV0, in float3 vV1, in float3 vV2, in float3 vBaryCoords)
+{
+	return vBaryCoords.x * vV0 + vBaryCoords.y * vV1 + vBaryCoords.z * vV2;
+}
+
+float4 EvalVec(in float4 vV0, in float4 vV1, in float4 vV2, in float3 vBaryCoords)
+{
+	return vBaryCoords.x * vV0 + vBaryCoords.y * vV1 + vBaryCoords.z * vV2;
+}
+
+float EvalVec(in float fVal[3], in float3 vBaryCoords)
+{
+	return EvalVec(fVal[0], fVal[1], fVal[2], vBaryCoords);
+}
+
+float2 EvalVec(in float2 vV[3], in float3 vBaryCoords)
+{
+	return EvalVec(vV[0], vV[1], vV[2], vBaryCoords);
+}
+
+float3 EvalVec(in float3 vV[3], in float3 vBaryCoords)
+{
+	return EvalVec(vV[0], vV[1], vV[2], vBaryCoords);
+}
+
+float4 EvalVec(in float4 vV[3], in float3 vBaryCoords)
+{
+	return EvalVec(vV[0], vV[1], vV[2], vBaryCoords);
+}
+
+void EvalTangentBinormal(in float4 vT0, in float4 vT1, in float4 vT2,
+                         in float4 vB0, in float4 vB1, in float4 vB2,
+                         in float3 vBaryCoords, out float4 vTangent, out float4 vBinormal)
+{
+	vTangent.xyz = EvalVec(vT0.xyz, vT1.xyz, vT2.xyz, vBaryCoords);
+	vTangent.w = vT1.w;
+	vBinormal = EvalVec(vB0, vB1, vB2, vBaryCoords);
+}
+
+void EvalTangentBinormal(in float4 vT[3],	in float4 vB[3],
+	in float3 vBaryCoords, out float4 vTangent, out float4 vBinormal)
+{
+	EvalTangentBinormal(vT[0], vT[1], vT[2], vB[0], vB[1], vB[2], vBaryCoords, vTangent, vBinormal);
+}
+
+float4 EvalPosition(in float4 vP0, in float4 vP1, in float4 vP2,
+	in float3 vN0, in float3 vN1, in float3 vN2,
+	in float3 vBaryCoords)
+{
+	// Interpolate world space position with barycentric coordinates
+	float4 vPos = EvalVec(vP0, vP1, vP2, vBaryCoords);
+
+#if %PHONG_TESSELLATION
+	vPos.xyz = PhongTessellation(vP0.xyz, vP1.xyz, vP2.xyz,
+		vN0.xyz, vN1.xyz, vN2.xyz, vBaryCoords);
+#elif %PN_TESSELLATION
+	vPos.xyz = PNTessellation(vP0.xyz, vP1.xyz, vP2.xyz,
+		vN0.xyz, vN1.xyz, vN2.xyz, vBaryCoords);
+#endif
+
+	return vPos;
+}
+
+float4 EvalPosition(in float4 vP[3], in float3 vN[3],
+	in float3 vBaryCoords)
+{
+	return EvalPosition(vP[0], vP[1], vP[2], vN[0], vN[1], vN[2], vBaryCoords);
+}
+
+#if %DISPLACEMENT_MAPPING
+	void ApplyUVSeamsFix(in float3 vBaryCoords, in int iCoordsOffset, inout float2 vDisplacementUV)
+	{
+		int iCoord0 = -1, iCoord1;
+		float fWeight0 = 0, fWeight1 = 0;
+		[flatten] if (vBaryCoords.x == 0)
+		{
+			fWeight0 = vBaryCoords.y;
+			iCoord0 = 5;
+			fWeight1 = vBaryCoords.z;
+			iCoord1 = 6;
+		}
+		[flatten] if (vBaryCoords.y == 0)
+		{
+			fWeight0 = vBaryCoords.z;
+			iCoord0 = 7;
+			fWeight1 = vBaryCoords.x;
+			iCoord1 = 8;
+		}
+		[flatten] if (vBaryCoords.z == 0)
+		{
+			fWeight0 = vBaryCoords.x;
+			iCoord0 = 3;
+			fWeight1 = vBaryCoords.y;
+			iCoord1 = 4;
+		}
+		[flatten] if (vBaryCoords.x == 1)
+		{
+			fWeight0 = 1;
+			fWeight1 = 0;
+			iCoord0 = 9;
+		}
+		[flatten] if (vBaryCoords.y == 1)
+		{
+			fWeight0 = 1;
+			fWeight1 = 0;
+			iCoord0 = 10;
+		}
+		[flatten] if (vBaryCoords.z == 1)
+		{
+			fWeight0 = 1;
+			fWeight1 = 0;
+			iCoord0 = 11;
+		}
+		[branch] if (iCoord0 != -1)
+		{
+			vDisplacementUV = fWeight0 * txtCoords.Load(iCoordsOffset + iCoord0) + fWeight1 * txtCoords.Load(iCoordsOffset + iCoord1);
+		}
+	}
+
+	float3 EvalDisplacement(in float3 vNormal, in float fDistance,
+		in float2 vDisplacementUV, in float3 vBaryCoords, in int iCoordsOffset,
+		in float fBlendLayerRatio = 0.f)
+	{
+		// Fade out tessellation linearly after 80% of maximum distance
+		const float fFadeoutFactor = saturate((g_VS_TessInfo.z - fDistance) / (g_VS_TessInfo.z - g_VS_TessInfo.z * 0.8));
+		const float fPerVertexHeightScale = g_VS_TessInfo.y * fFadeoutFactor;
+
+	#if !%_TT_TEXCOORD_MATRIX
+		ApplyUVSeamsFix(vBaryCoords, iCoordsOffset, vDisplacementUV);
+	#endif
+
+		// Calculate MIP level to fetch normal from
+		// Real camera (instead of light pos) is used to compute MIP for shadow gen
+		const float fHeightMapMIPLevel = clamp((fDistance - 100.f) / 100.f, 0.f, 6.f);
+
+		// Sample height map
+		float fHeight = GetHeightTexLod(heightTex, float4(vDisplacementUV, 0.f, fHeightMapMIPLevel));
+
+	#if %BLENDLAYER
+		if (BlendLayerDisplacement > 0)
+		{
+			const float fHeight2 = GetHeight2TexLod(Height2Tex, float4(vDisplacementUV * BlendLayer2Tiling, 0.f, fHeightMapMIPLevel)).r;
+			const float fBlendFac = GetLayerBlendingValue(BlendTex, vDisplacementUV * BlendMaskTiling, fHeightMapMIPLevel, fBlendLayerRatio, BlendFactor, BlendFalloff);
+
+			fHeight = lerp(fHeight, fHeight2, fBlendFac * BlendLayerDisplacement);
+		}
+	#endif	
+
+		// Displace vertex along normal
+		return vNormal * (fPerVertexHeightScale * TessellationHeightScale * (fHeight - TessellationDispBias));
+	}
+#endif //%DISPLACEMENT_MAPPING
+
+void Evaluate(in CommonEvaluationInputDS input, out CommonEvaluationOutputDS output)
+{
+	 output = (CommonEvaluationOutputDS)0;
+
+	// Eval normal, tangent and binormal
+	// We use vertex normals for displacement instead of getting normal from tangent space
+	// as tangent space is not smooth in many cases and causes gaps
+	const float3 vNormal = EvalVec(input.vNormal, input.vBaryCoords);
+	if (input.bEvalTangentBinormal)
+		EvalTangentBinormal(input.vTangent, input.vBinormal, input.vBaryCoords, output.vTangent, output.vBinormal);
+
+	// Eval position
+	output.vPos = EvalPosition(input.vPos, input.vNormal, input.vBaryCoords);
+
+	// Eval UV coords
+	output.vBaseTC = EvalVec(input.vBaseTC, input.vBaryCoords);
+	float2 vDisplacementUV = output.vBaseTC.xy;
+	if (input.bLoadDispUV)
+		vDisplacementUV = EvalVec(txtCoords.Load(input.iCoordsOffset), txtCoords.Load(input.iCoordsOffset + 1), txtCoords.Load(input.iCoordsOffset + 2), input.vBaryCoords).xy;
+
+	// Eval color
+	if (input.bEvalColor)
+		output.vColor = EvalVec(input.vColor, input.vBaryCoords);
+
+	// Apply displacement
+#if %DISPLACEMENT_MAPPING
+	const float fDistance = input.bRelativePos ? length(output.vPos.xyz) : distance(output.vPos.xyz, input.vViewPos);
+	output.vPos.xyz += EvalDisplacement(vNormal, fDistance, vDisplacementUV, input.vBaryCoords, input.iCoordsOffset, output.vColor.a);
+#endif
+}
+
+void FillEvalInputPosNormal(in float4 vP0, in float4 vP1, in float4 vP2, in float4 vN0, in float4 vN1, in float4 vN2, inout CommonEvaluationInputDS evalInput)
+{
+	evalInput.vPos[0] = vP0;
+	evalInput.vPos[1] = vP1;
+	evalInput.vPos[2] = vP2;
+	evalInput.vNormal[0] = vN0;
+	evalInput.vNormal[1] = vN1;
+	evalInput.vNormal[2] = vN2;
+}
+
+void FillEvalInputPosNormal(in hsControlPointShared CP0, in hsControlPointShared CP1, in hsControlPointShared CP2, inout CommonEvaluationInputDS evalInput)
+{
+	FillEvalInputPosNormal(CP0.vView, CP1.vView, CP2.vView, CP0.vNormal, CP1.vNormal, CP2.vNormal, evalInput);
+}
+
+void FillEvalInputUV(in float4 vTC0, in float4 vTC1, in float4 vTC2, inout CommonEvaluationInputDS evalInput)
+{
+	evalInput.vBaseTC[0] = vTC0;
+	evalInput.vBaseTC[1] = vTC1;
+	evalInput.vBaseTC[2] = vTC2;
+}
+
+void FillEvalInputControlPoint(in hsControlPointShared CP0, in hsControlPointShared CP1, in hsControlPointShared CP2, in HS_CONSTANT_DATA_OUTPUT hsConstData, inout CommonEvaluationInputDS evalInput)
+{
+	FillEvalInputPosNormal(CP0, CP1, CP2, evalInput);
+	FillEvalInputUV(CP0.vBaseTC, CP1.vBaseTC, CP2.vBaseTC, evalInput);
+#if !%_TT_TEXCOORD_MATRIX && %DISPLACEMENT_MAPPING
+	evalInput.iCoordsOffset = hsConstData.iPatchID * 12;
+	evalInput.bLoadDispUV = true;
+#endif
+}
+
+void FillEvalInputTangentBinormal(in float4 vT0, in float4 vT1, in float4 vT2, in float4 vB0, in float4 vB1, in float4 vB2, inout CommonEvaluationInputDS evalInput)
+{
+	evalInput.vTangent[0] = vT0;
+	evalInput.vTangent[1] = vT1;
+	evalInput.vTangent[2] = vT2;
+	evalInput.vBinormal[0] = vB0;
+	evalInput.vBinormal[1] = vB1;
+	evalInput.vBinormal[2] = vB2;
+	evalInput.bEvalTangentBinormal = true;
+}
+
+void FillEvalInputColor(in float4 vC0, in float4 vC1, in float4 vC2, inout CommonEvaluationInputDS evalInput)
+{
+	evalInput.vColor[0] = vC0;
+	evalInput.vColor[1] = vC1;
+	evalInput.vColor[2] = vC2;
+	evalInput.bEvalColor = true;
+}
+
+#endif  // ENABLE_TESSELLATION

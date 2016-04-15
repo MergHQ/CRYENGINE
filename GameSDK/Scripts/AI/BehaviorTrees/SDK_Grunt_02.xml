@@ -1,0 +1,130 @@
+<BehaviorTree>
+
+	<!--
+	=============================================================================================================================================
+	SDK_Grunt_02.xml
+
+	Simple behavior tree that implements 2 behaviors: Idle and Combat.
+
+	In case of the Idle behavior, the AI character stays put where he is and plays an idle animation.
+	Once seeing the player, the AI starts its Combat behavior: it approaches the player up to 10 meters, then stops and shoots at him for 2 seconds.
+	It repeats this approach->shoot sequence over and over again until no longer seeing the player, which is when it transitions back to its Idle behavior.
+	=============================================================================================================================================
+	-->
+
+	<Variables>
+		<Variable name="HasTarget"/>
+
+		<!-- these variables are not used in this BT, but need to be present to prevent a warning caused by BasicAI:OnReset() -->
+		<Variable name="ExecuteSequence" />
+		<Variable name="ExecuteInterruptibleSequence" />
+	</Variables>
+
+	<SignalVariables>
+		<Signal name="OnNewAttentionTarget" variable="HasTarget" value="true"/>
+		<Signal name="OnNoTarget" variable="HasTarget" value="false"/>
+		<Signal name="OnLostSightOfTarget" variable="HasTarget" value="false" />
+	</SignalVariables>
+
+	<Timestamps>
+	</Timestamps>
+
+	<Root>
+
+		<StateMachine>
+
+			<!--
+			=================================================
+					Idle
+			=================================================
+			-->
+
+			<State name="Idle">
+
+				<Transitions>
+					<Transition to="Combat" onEvent="OnNewAttentionTarget"/>
+				</Transitions>
+
+				<BehaviorTree>
+
+					<Sequence>
+
+						<SetAlertness value="0"/>
+
+						<ExecuteLua code="entity.actor:HolsterItem(true)"/>
+
+						<Stance name="Relaxed"/>
+
+						<Animate name="ZZ_AI_idleBreak"/>
+
+						<Halt/>
+
+					</Sequence>
+
+				</BehaviorTree>
+
+			</State>
+
+			<!--
+			=================================================
+					Combat
+			=================================================
+			-->
+
+			<State name="Combat">
+
+				<Transitions>
+					<Transition to="Idle" onEvent="GoTo_Idle"/>
+				</Transitions>
+
+				<BehaviorTree>
+
+					<Sequence>
+
+						<Log message="Now I should fight you!"/>
+
+						<SetAlertness value="2"/>
+
+						<Stance name="Alerted"/>
+
+						<ExecuteLua code="entity:SelectPrimaryWeapon()"/>
+
+						<Communicate name="TargetSpottedWhileSearching" channel="Reaction" expirity="1.0" waitUntilFinished="0" />
+
+						<!-- main combat loop -->
+						<Loop _startLog="main combat loop">
+
+							<Sequence>
+
+								<SuppressFailure>
+
+									<Move to="Target" speed="Run" stance="Stand" avoidDangers="0" stopWithinDistance="10"/>
+
+								</SuppressFailure>
+
+								<Shoot at="Target" fireMode="Burst" stance="Stand" duration="2.0" _startLog="starting to shoot"/>
+
+								<!-- keep fighting or transition back to "Idle" -->
+								<Selector>
+
+									<AssertCondition condition="HasTarget"/>
+
+									<SendTransitionSignal name="GoTo_Idle"/>
+
+								</Selector>
+
+							</Sequence>
+
+						</Loop>
+
+					</Sequence>
+
+				</BehaviorTree>
+
+			</State>
+
+		</StateMachine>
+
+	</Root>
+
+</BehaviorTree>

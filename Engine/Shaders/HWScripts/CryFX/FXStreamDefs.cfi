@@ -1,0 +1,126 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+//=== Base stream definitions ==================================================
+
+#define IN_P    float4 Position  : POSITION;
+#define IN_C0   float4 Color     : COLOR;
+#define IN_TBASE float2 baseTC   : TEXCOORD0; 
+
+// ==== Additional streams ==================================
+
+#define IN_TANG_STREAM                              \
+#if !%_RT_SKELETON_SSD && !%_RT_SKELETON_SSD_LINEAR \
+          float4 Tangent  : TANGENT;                \
+          float4 Binormal : BINORMAL;               \
+#else                                               \
+          float4 Tangent  : TANGENT;                \
+#endif
+
+
+#define IN_SKIN_STREAM float4 BlendWeights : BLENDWEIGHT; int4 BlendIndices : BLENDINDICES;
+
+#define IN_VERTEX_VELOCITY_STREAM				\
+		float3 VertexVelocity : POSITION3;\
+
+  
+//=== Vertex shader output ===================================================
+
+// Note: Removing isolate from HPosition saves ~20% VS ALU, and very significant waterfalling cost
+// 	 Opto limited to skinned shaders for now. Non-skinned requires some more testing to ensure no z-fighting is introduced
+
+#define ISOLATE
+
+#define OUT_P float4 HPosition : POSITION;		
+
+#define OUT_HPOS										\
+	#if !%_PS										\
+		float4 HPosition : SV_Position;							\
+	#endif	
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+	#define IN_WPOS sample float4 WPos : SV_Position;
+#else
+	#define IN_WPOS float4 WPos : SV_Position;
+#endif
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+
+#define OUT_HPOS_IN_WPOS									\
+	#if %_PS										            \
+		sample float4 WPos : SV_Position;			\
+	#else											              \
+		float4 HPosition : SV_Position;			  \
+	#endif
+
+#else
+
+#define OUT_HPOS_IN_WPOS									\
+	#if %_PS										            \
+		float4 WPos : SV_Position;			      \
+	#else											              \
+		float4 HPosition : SV_Position;			  \
+	#endif
+	
+#endif
+
+// if %_PS could be used in global scope, could simplify this a bit
+
+#define FRONT_FACE_PS										\
+	#if %_PS										\
+		bool bIsFrontFace : SV_IsFrontFace;						\
+	#endif
+
+#define MSAA_SAMPLE_INDEX_PS									\
+	#if %_PS										\
+		#if %_RT_MSAA_SAMPLEFREQ_PASS							\
+			uint uSample : SV_SampleIndex;						\
+		#endif										\
+	#endif
+	
+#define MSAA_COVERAGE_PS									\
+	#if %_PS										\
+		#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST			\
+			uint uCoverageMask : SV_Coverage;					\
+		#endif
+
+#define OUT_C0   half4 Color     : COLOR0;
+#define OUT_C1   half4 Color1    : COLOR1;
+
+//=== Pixel shader output structure ==========================================
+
+struct pixout
+{
+  half4 Color  : COLOR0;
+};
+
+struct pixout_fp
+{
+  float4 Color  : COLOR0;
+};
+
+struct pixout_gbuffer
+{
+  half4 GBufferA : COLOR0;
+	half4 GBufferB : COLOR1;
+	half4 GBufferC : COLOR2;
+	
+#if %_RT_MOTION_BLUR
+	half4 VelocityRT  : COLOR3;
+#endif
+
+#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST
+	uint uCoverageMask	: SV_Coverage;
+#endif
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+	#if !%_RT_DISSOLVE && !%TEMP_VEGETATION && !%TEMP_TERRAIN
+		#if !%_RT_REVERSE_DEPTH
+			float fDepth : SV_DepthGreaterEqual;
+		#else
+			float fDepth : SV_DepthLessEqual;
+		#endif
+	#endif
+#endif
+};
+

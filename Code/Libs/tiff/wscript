@@ -1,0 +1,21 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'tiff', 
+		vs_filter = 'Libs',
+		file_list = 'tiff.waf_files',
+		exclude_from_static_code_analyzer = True,
+
+		use_module = ['zlib'],
+
+		includes   = [ Path('Code/SDKs/tiff-4.0.4/libtiff'), ],
+
+		module_provides = dict(
+			includes = [	
+				Path('Code/SDKs/tiff-4.0.4/libtiff'),	
+				Path('Code/Libs/tiff'),			
+			],
+		),
+	)	

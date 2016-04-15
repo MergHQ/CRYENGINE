@@ -1,0 +1,25 @@
+<item name="Flashlight" class="FlashLight" priority="111">
+  <params>
+    <param name="display_name" value="@mp_eFlashlight" />
+  </params>
+  <geometry>
+    <firstperson name="Objects/weapons/attachments/flash_light/flash_light.cgf" />
+    <thirdperson name="Objects/weapons/attachments/flash_light/flash_light.cgf" />
+  </geometry>
+  <flashlight>
+    <param name="lightCookie" value="Textures/lights/flashlight_projector.tif" />
+    <param name="color" value="250,179,133" />
+    <param name="diffuseMult" value="20" />
+    <param name="specularMult" value="1" />
+    <param name="HDRDynamic" value="1" />
+    <param name="distance" value="30.0" />
+    <param name="fov" value="45.0" />
+    <param name="style" value="17" />
+    <param name="animSpeed" value="1.0" />
+
+    <param name="fogVolumeColor" value="250,179,133" />
+    <param name="fogVolumeRadius" value="1.0" />
+    <param name="fogVolumeSize" value="5.0" />
+    <param name="fogVolumeDensity" value="0" />
+  </flashlight>
+</item>

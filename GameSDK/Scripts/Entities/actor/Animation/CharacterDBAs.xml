@@ -1,0 +1,24 @@
+<CharacterDBAs>
+  <DBAGroup name="HumanPlayer" >
+    <DBA name="animations\human\male\hits_1p.dba" />
+    <DBA name="animations\human\male\weapons\generic_1p.dba" />
+    <DBA name="animations\human\male\locomotion\vault.dba" />
+    <DBA name="animations\human\male\locomotion\slide.dba" />
+    <DBA name="animations\human\male\locomotion\jump.dba" />
+    <DBA name="animations\human\male\smartobjects\interact.dba" />
+  </DBAGroup>
+  <DBAGroup name="HumanShared" >
+    <DBA name="animations\human\male\locomotion.dba" />
+    <DBA name="animations\human\male\locomotion\rifle.dba" />
+    <DBA name="animations\human\male\weapons\generic.dba" />
+  </DBAGroup>
+  <DBAGroup name="HumanAI" >
+    <DBA name="animations\human\male\smartobjects\coophuman.dba" />
+    <DBA name="animations\human\male\behavior\shots\hit\standUp.dba" />
+    <DBA name="animations\human\male\locomotion\juke.dba" />
+    <DBA name="animations\human\male\locomotion\cover.dba" />
+    <DBA name="animations\human\male\smartobjects\cover.dba" />
+    <DBA name="animations\human\male\smartobjects\obstacles.dba" />
+    <DBA name="animations\human\male\hits_3p.dba" />
+  </DBAGroup>
+</CharacterDBAs>

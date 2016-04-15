@@ -1,0 +1,165 @@
+<GameEffects>
+
+	<IntroCam GAME="MP">
+		<letterBox scale="0.10" red="0.0" green="0.0" blue="0.0" alpha="1.0"/>
+		<PostEffects>
+			<FilterKillCamera_Active activeValue="1.0" nonActiveValue="0.0" forceValue="true"/>
+			<FilterKillCamera_Mode activeValue="1" nonActiveValue="0" forceValue="true"/>
+			<FilterKillCamera_GrainStrength activeValue="0.10" nonActiveValue="0.0" forceValue="true"/>
+			<vecs>
+				<!-- Chromashift: xyz = offset, w = strength -->
+				<!-- Vignette: xy = screen scale, z = radius, w = blind noise vignette scale-->
+				<!-- Blindness: x = blind duration, y = blind fade out duration, z = blindness grey scale, w = blind noise min scale -->
+				<FilterKillCamera_ChromaShift activeVec3="0.0,0.0,0.0" activeW ="0.0" nonActiveVec3="0.0,0.0,0.0" nonActiveW ="0.0" forceValue="true"/>
+				<FilterKillCamera_Vignette activeVec3="1.0,1.0,1.0" activeW ="0.0" nonActiveVec3="1.0,1.0,1.0" nonActiveW ="0.0" forceValue="true"/>
+				<FilterKillCamera_ColorScale activeVec3="1.0,1.0,1.0" activeW ="0.0" nonActiveVec3="1.0,1.0,1.0" nonActiveW ="0.0" forceValue="true"/>
+				<FilterKillCamera_Blindness activeVec3="2.5,0.5,0.0" activeW ="0.6" nonActiveVec3="0.5,0.5,0.0" nonActiveW ="0.7" forceValue="true"/>
+			</vecs>
+		</PostEffects>
+		<CVars>
+			<cl_fov activeValue="60.0"/>
+		</CVars>
+	</IntroCam>
+
+	<KillCam GAME="MP" chromaFadeTime="5.0" fadeOutTime="0.4">
+		<letterBox scale="0.11" red="0.0" green="0.0" blue="0.0" alpha="1.0"/>
+		<PostEffects>
+			<FilterKillCamera_Active activeValue="1.0" nonActiveValue="0.0" forceValue="true"/>
+			<FilterKillCamera_Mode activeValue="2" nonActiveValue="0" forceValue="true"/>
+			<FilterKillCamera_GrainStrength activeValue="0.25" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorC activeValue="0.015" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorM activeValue="0.025" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorY activeValue="0.125" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorK activeValue="0.0" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_Contrast activeValue="0.8" nonActiveValue="1.0" forceValue="true"/>
+			<Global_User_Saturation activeValue="0.7" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_Brightness activeValue="1.25" nonActiveValue="1.0" forceValue="true"/>
+			<WaterDroplets_Amount activeValue="0.0" nonActiveValue="0.0" forceValue="true"/>
+			<vecs>
+				<FilterKillCamera_ChromaShift activeVec3="0.02,0.015,0.01" activeW ="1.4" nonActiveVec3="0.25,0.125,0.025" nonActiveW ="1.0" forceValue="true"/>
+				<FilterKillCamera_Vignette activeVec3="2.5,2.5,1.5" activeW ="4.0" nonActiveVec3="0.0,0.0,0.0" nonActiveW ="0.0" forceValue="true"/>
+				<FilterKillCamera_ColorScale activeVec3="0.6,0.5,0.6" activeW ="1.0" nonActiveVec3="0.5,0.3,0.3" nonActiveW ="1.0" forceValue="true"/>
+				<FilterKillCamera_Blindness activeVec3="0.5,0.5,0.0" activeW ="0.6" nonActiveVec3="0.5,0.5,0.0" nonActiveW ="0.7" forceValue="true"/>
+				<!-- Blindness: x = blind duration, y = blind fade out duration, z = blindness grey scale, w = blind noise min scale -->
+			</vecs>
+		</PostEffects>
+		<CVars>
+			<cl_fov activeValue="60.0"/>
+		</CVars>
+	</KillCam>
+	<KillerCam GAME="MP">
+		<letterBox scale="0.11" red="0.0" green="0.0" blue="0.0" alpha="1.0"/>
+		<PostEffects>
+			<FilterKillCamera_Active activeValue="1.0" nonActiveValue="0.0" forceValue="true"/>
+			<FilterKillCamera_Mode activeValue="3" nonActiveValue="0" forceValue="true"/>
+			<FilterKillCamera_GrainStrength activeValue="0.25" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorC activeValue="0.015" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorM activeValue="0.025" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorY activeValue="0.125" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorK activeValue="0.0" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_Contrast activeValue="0.8" nonActiveValue="1.0" forceValue="true"/>
+			<Global_User_Saturation activeValue="0.7" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_Brightness activeValue="1.25" nonActiveValue="1.0" forceValue="true"/>
+			<WaterDroplets_Amount activeValue="0.0" nonActiveValue="0.0" forceValue="true"/>
+			<vecs>
+				<FilterKillCamera_Vignette activeVec3="2.5,2.5,1.5" activeW ="4.0" nonActiveVec3="0.0,0.0,0.0" nonActiveW ="0.0" forceValue="true"/>
+				<!--DISABLE THESE-->
+				<FilterKillCamera_ChromaShift activeVec3="0.02,0.015,0.01" activeW ="1.4" nonActiveVec3="0.25,0.125,0.025" nonActiveW ="1.0" forceValue="true"/>
+				<FilterKillCamera_ColorScale activeVec3="0.6,0.5,0.6" activeW ="1.0" nonActiveVec3="0.5,0.3,0.3" nonActiveW ="1.0" forceValue="true"/>
+				<FilterKillCamera_Blindness activeVec3="0.0,0.0,0.0" activeW ="0.0" nonActiveVec3="0.0,0.0,0.0" nonActiveW ="0.0" forceValue="true"/>
+			</vecs>
+		</PostEffects>
+	</KillerCam>
+
+	<!-- LEVEL SPECIFIC BEGIN -->
+	<KillCam GAME="MP" chromaFadeTime="5.0" fadeOutTime="0.4" level="Multiplayer/Airfield">
+		<letterBox scale="0.11" red="0.0" green="0.0" blue="0.0" alpha="1.0"/>
+		<PostEffects>
+			<FilterKillCamera_Active activeValue="1.0" nonActiveValue="0.0" forceValue="true"/>
+			<FilterKillCamera_Mode activeValue="2" nonActiveValue="0" forceValue="true"/>
+			<FilterKillCamera_GrainStrength activeValue="0.25" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorC activeValue="0.015" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorM activeValue="0.025" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorY activeValue="0.125" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorK activeValue="0.0" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_Contrast activeValue="0.9" nonActiveValue="1.0" forceValue="true"/>
+			<Global_User_Saturation activeValue="0.4" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_Brightness activeValue="1.25" nonActiveValue="1.0" forceValue="true"/>
+			<WaterDroplets_Amount activeValue="0.0" nonActiveValue="0.0" forceValue="true"/>
+			<vecs>
+				<FilterKillCamera_ChromaShift activeVec3="0.02,0.015,0.01" activeW ="1.4" nonActiveVec3="0.25,0.125,0.025" nonActiveW ="1.0" forceValue="true"/>
+				<FilterKillCamera_Vignette activeVec3="2.5,2.5,1.5" activeW ="4.0" nonActiveVec3="0.0,0.0,0.0" nonActiveW ="0.0" forceValue="true"/>
+				<FilterKillCamera_ColorScale activeVec3="0.6,0.5,0.6" activeW ="1.0" nonActiveVec3="0.5,0.3,0.3" nonActiveW ="1.0" forceValue="true"/>
+				<FilterKillCamera_Blindness activeVec3="0.5,0.5,0.0" activeW ="0.6" nonActiveVec3="0.5,0.5,0.0" nonActiveW ="0.7" forceValue="true"/>
+				<!-- Blindness: x = blind duration, y = blind fade out duration, z = blindness grey scale, w = blind noise min scale -->
+			</vecs>
+		</PostEffects>
+		<CVars>
+			<cl_fov activeValue="60.0"/>
+		</CVars>
+	</KillCam>
+	<KillerCam GAME="MP" level="Multiplayer/Airfield">
+		<letterBox scale="0.11" red="0.0" green="0.0" blue="0.0" alpha="1.0"/>
+		<PostEffects>
+			<FilterKillCamera_Active activeValue="1.0" nonActiveValue="0.0" forceValue="true"/>
+			<FilterKillCamera_Mode activeValue="3" nonActiveValue="0" forceValue="true"/>
+			<FilterKillCamera_GrainStrength activeValue="0.25" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorC activeValue="0.015" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorM activeValue="0.025" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorY activeValue="0.125" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_ColorK activeValue="0.0" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_Contrast activeValue="0.9" nonActiveValue="1.0" forceValue="true"/>
+			<Global_User_Saturation activeValue="0.4" nonActiveValue="0.0" forceValue="true"/>
+			<Global_User_Brightness activeValue="1.25" nonActiveValue="1.0" forceValue="true"/>
+			<WaterDroplets_Amount activeValue="0.0" nonActiveValue="0.0" forceValue="true"/>
+			<vecs>
+				<FilterKillCamera_Vignette activeVec3="2.5,2.5,1.5" activeW ="4.0" nonActiveVec3="0.0,0.0,0.0" nonActiveW ="0.0" forceValue="true"/>
+				<!--DISABLE THESE-->
+				<FilterKillCamera_ChromaShift activeVec3="0.02,0.015,0.01" activeW ="1.4" nonActiveVec3="0.25,0.125,0.025" nonActiveW ="1.0" forceValue="true"/>
+				<FilterKillCamera_ColorScale activeVec3="0.6,0.5,0.6" activeW ="1.0" nonActiveVec3="0.5,0.3,0.3" nonActiveW ="1.0" forceValue="true"/>
+				<FilterKillCamera_Blindness activeVec3="0.0,0.0,0.0" activeW ="0.0" nonActiveVec3="0.0,0.0,0.0" nonActiveW ="0.0" forceValue="true"/>
+			</vecs>
+		</PostEffects>
+	</KillerCam>
+	<!-- LEVEL SPECIFIC END -->
+
+	<SceneBlur>
+		<InterestVideos blurAmount="0.9" enterDelayDuration="0.2" enterInterpolateDuration="1.0" exitInterpolateDuration="0.3" />
+	</SceneBlur>
+  
+	<PlayerHealthEffect GAME="SP">
+		<params highHealth="0.65"
+				lowHealth="0.4"
+				nearDeath="0.15"
+				lowHealthBloodIntensity="0.7"
+				radialBlurOscillationTime="0.48"
+				minIllumination="0.9"
+				maxIllumination="1.1"
+				maxContrast="1.1"
+				minSaturation="-0.1"
+				mercyTimeBlood="0.8"
+				mercyTimeRadialBlur="0.4"
+		/>
+	</PlayerHealthEffect>
+ 
+	<PlayerHealthEffect GAME="MP">
+		<params highHealth="0.80"
+				lowHealth="0.65"
+				nearDeath="0.49"
+				lowHealthBloodIntensity="0.6"
+				radialBlurOscillationTime="0.9"
+				minIllumination="0.5"
+				maxIllumination="2.0"
+				maxContrast="1.8"
+				minSaturation="-1.0"
+				mercyTimeBlood="0.85"
+				mercyTimeRadialBlur="0.25"
+		/>
+	</PlayerHealthEffect>
+
+	<Explosion>
+		<params CloakHighlightStrengthModifier="-1.0" GAME="SP"/>
+		<params CloakHighlightStrengthModifier="0.0" GAME="MP"/>
+	</Explosion>
+
+</GameEffects>

@@ -1,0 +1,13 @@
+{
+	"EditorFmod_uber_0.cpp":
+	{
+		"Root":
+		[
+			"AudioSystemEditor_fmod.cpp",
+			"AudioSystemEditor_fmod.h",
+			"main.cpp",
+			"StdAfx.h",
+			"StdAfx.cpp"
+		]
+	}
+}

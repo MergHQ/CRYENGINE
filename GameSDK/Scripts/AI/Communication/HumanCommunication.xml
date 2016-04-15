@@ -1,0 +1,40 @@
+<Communications>
+
+	<Config name="Human">
+
+		<!--
+		Example on how to set up correctly a communication using conditions for the variation
+
+		<Communication name="SuppressingFireToProtectOthersFirstContact" finishMethod="voice" blocking="none">
+			<Variation voiceName="combat_contact_player_alone"/>
+			<Variation voiceName="combat_contact_player_alone_and_target_above" condition="TargetIsAbove" />
+			<Variation voiceName="combat_contact_player_alone_and_target_below" condition="TargetIsBelow" />
+			<Variation voiceName="combat_contact_player_alone_and_target_below_and_Canyon" condition="TargetIsBelow and LevelIsCanyon" />
+		</Communication>
+
+		-->
+
+		<!-- DEATH & PAIN -->
+
+		<Communication name="comm_death" finishMethod="voice" blocking="none">
+			<Variation voiceName="ai_npc_death" />
+		</Communication>
+
+		<Communication name="comm_pain" finishMethod="voice" blocking="none">
+			<Variation voiceName="ai_npc_pain" />
+		</Communication>
+
+		<Communication name="PlayerSeen" finishMethod="voice" blocking="none">
+			<Variation voiceName="ai_npc_see_player" />
+		</Communication>
+
+		<Communication name="CommunicateBeAlerted" finishMethod="voice" blocking="none">
+			<Variation voiceName="ai_npc_see_alerted" />
+		</Communication>
+		
+		<Communication name="TargetSpottedWhileSearching" finishMethod="voice" blocking="none">
+			<Variation voiceName="ai_npc_spot_player_while_searching" />
+		</Communication>
+	</Config>
+
+</Communications>

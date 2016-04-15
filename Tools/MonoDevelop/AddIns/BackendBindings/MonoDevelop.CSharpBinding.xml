@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.CSharpBinding</name>
+    </assembly>
+    <members>
+        <member name="T:MonoDevelop.CSharp.Project.CSharpCompilerParameters">
+            <summary>
+            This class handles project specific compiler parameters
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CSharp.Completion.CSharpCompletionTextEditorExtension.#ctor(MonoDevelop.Ide.Gui.Document,System.Boolean)">
+            <summary>
+            Used in testing environment.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CSharp.Refactoring.CodeActions.NRefactoryCodeAction.SiblingActions">
+            <summary>
+            All the sibling actions of this action, ie those actions which represent the same kind
+            of fix. This list includes the current action. 
+            </summary>
+            <value>The sibling actions.</value>
+        </member>
+        <member name="T:MonoDevelop.CSharp.Refactoring.CodeActions.ConvertToEnumAction">
+            <summary>
+            Generates an enumeration from const fields
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CSharp.Refactoring.CodeActions.ConvertToEnumAction.VariableHasSpecifiedIntegerType(ICSharpCode.NRefactory.CSharp.Refactoring.RefactoringContext,ICSharpCode.NRefactory.CSharp.VariableInitializer,ICSharpCode.NRefactory.CSharp.AstType)">
+            <summary>
+            Determines whether the initialized variable has the specified primitive integer type
+            </summary>
+            <returns><c>true</c> if the initialized variable has the specified type; otherwise, <c>false</c>.</returns>
+            <param name="context">The context to use.</param>
+            <param name="variable">The variable initializer to check.</param>
+            <param name="type">The type to compare with.</param>
+        </member>
+        <member name="M:MonoDevelop.CSharp.Refactoring.CodeActions.ConvertToEnumAction.TypeToIntegerPrimitive(ICSharpCode.NRefactory.CSharp.Refactoring.RefactoringContext,ICSharpCode.NRefactory.CSharp.AstType)">
+            <summary>
+            Gets a PrimitiveType instance from an AstType.
+            Only returns integer types (and never the char type)
+            </summary>
+            <returns>The integer primitive.</returns>
+            <param name="context">The context to use.</param>
+            <param name="type">The AstType to get the primitive from.</param>
+        </member>
+        <member name="M:MonoDevelop.CSharp.Refactoring.CodeActions.ConvertToEnumAction.GetEquivalentNodeFor(ICSharpCode.NRefactory.CSharp.AstNode,ICSharpCode.NRefactory.CSharp.AstNode,ICSharpCode.NRefactory.CSharp.AstNode)">
+            <summary>
+            Finds the corresponding node in another ("new") AST.
+            Assumes entities have not been renamed and no statements have been removed.
+            </summary>
+            <returns>The equivalent node in the new AST.</returns>
+            <param name="root">The root of the first ("old") AST.</param>
+            <param name="newRoot">The root of the new AST.</param>
+            <param name="nodeToFind">Node (from the old AST) to find in the new one.</param>
+        </member>
+        <member name="M:MonoDevelop.CSharp.Refactoring.CodeActions.ConvertToEnumAction.GetCombinedModifier(ICSharpCode.NRefactory.CSharp.Modifiers)">
+            <summary>
+            Gets the least permissive access modifier that still allows access to
+            fields or methods with the specified modifiers.
+            This will ignore all modifiers unrelated to access - such as const and readonly
+            </summary>
+            <returns>A modifier that is at least as permissive as all provided modifiers.</returns>
+            <param name="modifiers">The modifiers to use.</param>
+        </member>
+        <member name="M:MonoDevelop.CSharp.Refactoring.CodeActions.ConvertToEnumAction.GetCommonPrefixes(System.String,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Gets all prefixes that more than one name have.
+            </summary>
+            <returns>The common prefixes.</returns>
+            <param name="currentName">The name to use.</param>
+            <param name="names">The names to check.</param>
+        </member>
+        <member name="M:MonoDevelop.CSharp.Refactoring.CodeIssues.BaseNRefactoryIssueProvider.GetIssues(System.Object,System.Threading.CancellationToken)">
+            <summary>
+            Gets all the code issues inside a document.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CSharp.Refactoring.CodeIssues.BaseNRefactoryIssueProvider.IdString">
+            <summary>
+            Gets the identifier string used as property ID tag.
+            </summary>
+        </member>
+    </members>
+</doc>

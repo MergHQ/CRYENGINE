@@ -1,0 +1,1946 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "PostEffectsLib.cfi"
+#include "ShadeLib.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "NoPreview;"
+           "LocalConstants;"
+           "ShaderDrawType = Custom;"
+           "ShaderType = PostProcess;"
+>; 
+
+
+/// Common constants ////////////////////////////
+
+float4x4 mColorMatrix;
+
+float g_fWaterLevel
+<
+  Position;
+> = {PB_WaterLevel};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Texture To Texture technique ///////////////////////////////////////////////////////////////////
+
+/// Constants ////////////////////////////
+
+float4 texToTexParams0;
+float4 texToTexParams1;
+float4 texToTexParams2;
+float4 texToTexParams3;
+
+////////////////// samplers /////////////////////
+
+///////////////// vertex shader //////////////////
+
+struct vtxOutTexToTex
+{
+  float4 HPosition  : POSITION;
+  float2  baseTC		: TEXCOORDN;       
+
+  MSAA_SAMPLE_INDEX_PS
+};
+
+vtxOutTexToTex TexToTexVS(vtxIn IN)
+{
+  vtxOutTexToTex OUT; 
+	OUT.HPosition = Get2dHPos(IN.Position);
+  OUT.baseTC.xy = IN.baseTC.xy;
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+[earlydepthstencil]
+pixout TexToTexPS(vtxOutTexToTex IN)
+{
+  pixout OUT = (pixout) 0;
+
+#if %_RT_SAMPLE0
+	int nSampleCountMS = GetMSAASampleNum();
+	//if( nSampleCountMS )
+	//{
+ //   // Avg resolve
+	//	half4 cSampleAcc = 0;
+	//	for(int s= 0; s < nSampleCountMS; s++)
+	//	{
+	//		half4 vSample = GetTargetIndexMS(0, IN.baseTC.xy, nSampleCountMS, s);
+	//		cSampleAcc += vSample;
+	//	}
+	//	OUT.Color.rgb =  cSampleAcc / (float) nSampleCountMS;
+	//}
+ // else
+  {
+    // Custom per-sample/per-pixel frequency resolve
+    uint uSample = 0;
+    #if %_RT_MSAA_SAMPLEFREQ_PASS
+      uSample = IN.uSample;
+    #endif
+    OUT.Color = GetTargetIndexMS(0, IN.baseTC.xy, nSampleCountMS, uSample);
+  }
+
+#else
+	{
+		half4 c0 = tex2D(_tex0, IN.baseTC.xy); 
+
+		#if %_RT_SAMPLE2
+				c0 = DecodeRGBK(c0, SCENE_HDR_MULTIPLIER, true);
+		#endif
+
+		#if %_RT_SAMPLE5
+				c0 = EncodeRGBK(half4(c0.rgb, 1.0h), SCENE_HDR_MULTIPLIER, true);
+		#endif
+
+		OUT.Color= c0;
+	}
+#endif
+  
+  return OUT;
+}
+
+pixout TexToTexSampledPS(vtxOutTexToTex IN)
+{
+  pixout OUT = (pixout) 0;
+
+  float2 tc = IN.baseTC.xy;
+
+  half4 _c0 = 0;
+  half4 _c1 = 0;
+  half4 _c2 = 0;
+  half4 _c3 = 0;
+  half4 _c4 = 0;
+
+#if %_RT_SAMPLE0
+  int nSampleCountMS = GetMSAASampleNum();
+  if( nSampleCountMS )
+  {
+    // note: input texcoords have to match src texture resolution (hence the x2, assuming only half resolution downscale - will not work for diferent res..)
+    // - ideally we should have exposed Sampler0/1/etc info
+    _c1 = GetTargetIndexMS(0, (tc + texToTexParams0.xy)*2, nSampleCountMS, 0);
+    _c2 = GetTargetIndexMS(0, (tc + texToTexParams0.zw)*2, nSampleCountMS, 0);
+    _c3 = GetTargetIndexMS(0, (tc + texToTexParams1.xy)*2, nSampleCountMS, 0);
+    _c4 = GetTargetIndexMS(0, (tc + texToTexParams1.zw)*2, nSampleCountMS, 0);
+    OUT.Color = (_c1 + _c2 + _c3 + _c4) * 0.25h;
+    return OUT;
+  }
+#endif
+
+	_c0 = tex2D(_tex0, tc); // Use slightly better quality for DX11
+  _c1 = tex2D(_tex0, tc + texToTexParams0.xy);
+  _c2 = tex2D(_tex0, tc + texToTexParams0.zw);
+  _c3 = tex2D(_tex0, tc + texToTexParams1.xy);
+  _c4 = tex2D(_tex0, tc + texToTexParams1.zw);
+
+  bool bRgbkUsePPP = true;
+#if %_RT_SAMPLE1
+	bRgbkUsePPP = false;
+#endif
+
+#if %_RT_SAMPLE2
+	_c1 = DecodeRGBK(_c1, SCENE_HDR_MULTIPLIER, bRgbkUsePPP);
+	_c2 = DecodeRGBK(_c2, SCENE_HDR_MULTIPLIER, bRgbkUsePPP);
+	_c3 = DecodeRGBK(_c3, SCENE_HDR_MULTIPLIER, bRgbkUsePPP);
+	_c4 = DecodeRGBK(_c4, SCENE_HDR_MULTIPLIER, bRgbkUsePPP); 
+#endif	
+
+	OUT.Color = (_c0 + _c1 + _c2 + _c3 + _c4) * 0.2h;
+
+		#if %_RT_SAMPLE5
+			OUT.Color = EncodeRGBK(half4(OUT.Color.xyz, 1.0h), SCENE_HDR_MULTIPLIER, bRgbkUsePPP);
+		#endif
+
+		#if %_RT_SAMPLE4 // min/max depth
+			half4 depths  = half4(_c1.x,_c2.x,_c3.x,_c4.x);
+			#if %_RT_REVERSE_DEPTH
+				depths.xy      = min(depths.xy,depths.zw);
+				OUT.Color.xyzw = min(depths.x, depths.y);
+			#else
+				depths.xy      = max(depths.xy,depths.zw);
+				OUT.Color.xyzw = max(depths.x, depths.y);
+			#endif
+		#endif
+
+		#if %_RT_SAMPLE1 && !%_RT_SAMPLE4 && !%_RT_SAMPLE2 && !%_RT_SAMPLE5
+			OUT.Color.a = 0;
+		#endif
+	return OUT;
+}
+
+float4 g_vUITextureColor;
+
+pixout TexToTexOneAlphaPS(vtxOutTexToTex IN)
+{
+	pixout OUT = (pixout) 0;
+
+	OUT.Color = tex2D(_tex0, IN.baseTC.xy) * g_vUITextureColor;
+	OUT.Color.rgb *= OUT.Color.a;
+
+	return OUT;
+}
+
+
+float GetWeight(float2 vSamplePos)
+{
+#if %_RT_SAMPLE0 // tent
+	const float2 vWeight = 1.f.xx - abs(vSamplePos);
+	return vWeight.x * vWeight.y;
+#elif %_RT_SAMPLE1 // gauss
+	return exp2(-4.f * dot(vSamplePos, vSamplePos));
+#elif %_RT_SAMPLE2 // lanczos
+	const float2 vPiProd = PI * (vSamplePos + 1e-4f);
+	const float2 vWeight = (sin(vPiProd) * sin(vPiProd * 0.5f) * 2.f) / (vPiProd * vPiProd);
+	return vWeight.x * vWeight.y;
+#else // box
+	return 1.f;
+#endif
+}
+
+pixout TexToTexSampledFilterPS(vtxOutTexToTex IN)
+{
+	pixout OUT;
+
+	// 1st sample UV
+	float2 vBaseTC = IN.baseTC.xy + texToTexParams1.zw;
+	float2 vTC = vBaseTC;
+	// Sample kernel position
+	float2 vKernelPos = texToTexParams2.zw;
+
+	float4 cAccumSample = 0;
+	float fAccumWeight = 0;
+	//[unroll]
+	for ( ;
+		vKernelPos.y < texToTexParams0.y;
+		vKernelPos.y += texToTexParams2.y )
+	{
+		vTC.x = vBaseTC.x;
+
+		//[unroll]
+		for (vKernelPos.x = texToTexParams2.z;
+			vKernelPos.x < texToTexParams0.x;
+			vKernelPos.x += texToTexParams2.x )
+		{
+			const float fWeight = GetWeight(vKernelPos);
+			cAccumSample += fWeight * tex2Dlod(_tex0, float4(vTC * texToTexParams0.zw, 0, 0));
+			fAccumWeight += fWeight;
+			vTC.x += texToTexParams1.x;
+		}
+
+		vTC.y += texToTexParams1.y;
+	}
+
+	OUT.Color = cAccumSample / fAccumWeight;
+
+	return OUT;
+}
+
+pixout DownsampleStablePS(vtxOutTexToTex IN)
+{
+  // High quality downsampling filter to reduce bloom flickering
+	// Filter combines five 4x4 blocks (sampled bilinearly)
+	// Reduces fireflies by applying tonemapping before averaging samples for each block
+	
+	pixout OUT = (pixout)0;
+
+#if %_RT_SAMPLE0	
+	const bool bKillFireflies = true;
+#else
+	const bool bKillFireflies = false;
+#endif
+	
+	const float2 TexSize = 1 / (PS_ScreenSize.xy * 2);
+	
+	half3 blockTL = 0, blockTR = 0, blockBR = 0, blockBL = 0;
+	half3 tex;
+	
+	tex = tex2D(_tex0, IN.baseTC.xy + float2(-2, -2) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockTL += tex;
+	
+	tex = tex2D(_tex0, IN.baseTC.xy + float2( 0, -2) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockTL += tex; blockTR += tex;
+	
+	tex = tex2D(_tex0, IN.baseTC.xy + float2( 2, -2) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockTR += tex;
+	
+	tex = tex2D(_tex0, IN.baseTC.xy + float2(-2,  0) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockTL += tex; blockBL += tex;
+	
+	tex = tex2D(_tex0, IN.baseTC.xy + float2( 0,  0) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockTL += tex; blockTR += tex; blockBR += tex; blockBL += tex;
+	
+	tex = tex2D(_tex0, IN.baseTC.xy + float2( 2,  0) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockTR += tex; blockBR += tex;
+	
+	tex = tex2D(_tex0, IN.baseTC.xy + float2(-2,  2) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockBL += tex;
+	
+	tex = tex2D(_tex0, IN.baseTC.xy + float2( 0,  2) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockBL += tex; blockBR += tex;
+	
+	tex = tex2D(_tex0, IN.baseTC.xy + float2( 2,  2) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockBR += tex;
+	
+	half3 blockCC = 0;
+	tex = tex2D(_tex0, IN.baseTC.xy + float2(-1, -1) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockCC += tex;
+	tex = tex2D(_tex0, IN.baseTC.xy + float2( 1, -1) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockCC += tex;
+	tex = tex2D(_tex0, IN.baseTC.xy + float2( 1,  1) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockCC += tex;
+	tex = tex2D(_tex0, IN.baseTC.xy + float2(-1,  1) * TexSize).rgb;
+	if (bKillFireflies) tex /= 1 + GetLuminance(tex);
+	blockCC += tex;
+	
+	blockTL /= 4; blockTR /= 4; blockBR /= 4; blockBL /= 4; blockCC /= 4;
+	
+	if (bKillFireflies) 
+	{
+		// Convert back to uncompressed/linear range
+		blockTL /= (1 - GetLuminance(blockTL));
+		blockTR /= (1 - GetLuminance(blockTR));
+		blockBR /= (1 - GetLuminance(blockBR));
+		blockBL /= (1 - GetLuminance(blockBL));
+		blockCC /= (1 - GetLuminance(blockCC));
+	}
+	
+	OUT.Color.rgb = 0.5 * blockCC + 0.125 * (blockTL + blockTR + blockBR + blockBL);
+  
+  return OUT;
+}
+
+
+Texture2D<float4> HalfResColor : register(t1);
+Texture2D<float4> FullResDepth : register(t2);
+Texture2D<float4> HalfResDepth : register(t3);
+
+SamplerState SampStatePoint
+{
+	Filter = MIN_MAG_MIP_POINT;
+	AddressU = Clamp;
+	AddressV = Clamp;
+};
+
+SamplerState SampStateLinear
+{
+	Filter = MIN_MAG_LINEAR_MIP_POINT;
+	AddressU = Clamp;
+	AddressV = Clamp;
+};
+
+pixout NearestDepthUpsamplePS(vtxOutTexToTex IN)
+{
+	pixout OUT;
+
+	const float  fFullResDepth = FullResDepth.Sample(SampStatePoint, IN.baseTC.xy).r;
+	const float4 fHalfResDepth = HalfResDepth.Gather(SampStatePoint, IN.baseTC.xy);
+
+	bool bDiscontinuity = false;
+	uint  nBestSampleIndex = 0;
+	float fBestSampleError = 1.0f;
+
+	uint2 offsets[] = { uint2(0,0), uint2(1,0), uint2(1,1), uint2(0,1) };
+	float fDepths[] = { fHalfResDepth.w, fHalfResDepth.z, fHalfResDepth.y, fHalfResDepth.x };
+
+	for(uint i=0; i<4; ++i)
+	{
+		float fError  = abs(fDepths[i] - fFullResDepth);
+		
+		if(fError < fBestSampleError)
+		{
+			fBestSampleError = fError;
+			nBestSampleIndex = i;
+		}
+
+		if(fError > 0.1f * fFullResDepth) // Relative error!
+			bDiscontinuity = true;
+	}
+
+	[branch]
+	if(!bDiscontinuity)
+	{
+		OUT.Color = HalfResColor.Sample(SampStateLinear, IN.baseTC.xy);
+	}
+	else
+	{
+		uint3 tcTL = uint3(floor(IN.baseTC.xy * texToTexParams0.zw - 0.5f), 0);
+		OUT.Color = HalfResColor.Load(float3(tcTL + offsets[nBestSampleIndex], 0));
+	}
+
+	return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique TextureToTexture
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS() ResolveVS;
+    PixelShader = TexToTexPS() ResolvePS;
+  }
+}
+
+technique TextureToTextureResampled
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS() PostProcessGameVS;            
+    PixelShader = TexToTexSampledPS() PostProcessGamePS; // PostProcessGamePS for RT_SAMPLE2
+  }
+}
+
+technique TextureToTextureOneAlpha
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS() PostProcessGameVS;            
+    PixelShader = TexToTexOneAlphaPS() PostProcessGamePS;
+  }
+}
+
+technique TextureToTextureResampleFilter
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS() PostProcessGameVS;            
+    PixelShader = TexToTexSampledFilterPS() PostProcessGamePS;
+  }
+}
+
+technique DownsampleStable
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS() PostEffectsVS;
+    PixelShader = DownsampleStablePS() PostEffectsPS;
+  }
+}
+
+technique NearestDepthUpsample
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS() PostEffectsVS;
+    PixelShader = NearestDepthUpsamplePS() PostEffectsPS;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Clear screen technique /////////////////////////////////////////////////////////////////////////
+
+/// Specific data ////////////////////////
+
+/// Constants ////////////////////////////
+
+float4 clrScrParams;
+
+/// Samplers ////////////////////////////
+// none
+
+///////////////// vertex shader //////////////////
+
+struct vtxOutClrScr
+{
+  float4 HPosition  : POSITION;
+};
+
+vtxOutClrScr ClearScreenVS(vtxIn IN)
+{
+  vtxOutClrScr OUT = (vtxOutClrScr)0; 
+	OUT.HPosition = Get2dHPos(IN.Position);
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+pixout ClearScreenPS(vtxOutClrScr IN)
+{
+  pixout OUT;  
+  OUT.Color = clrScrParams;        
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+technique ClearScreen
+{
+  pass p0
+  {
+    VertexShader = ClearScreenVS();
+    PixelShader = ClearScreenPS();    
+    CullMode = None;        
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Linearize Depth technique //////////////////////////////////////////////////////////////////////
+
+Texture2D<float4>	LinearizeDepth_DepthTex		: register(t16);
+Texture2DMS<float4> LinearizeDepth_DepthTexMS 	: register(t16);
+
+float4 NearProjection;
+
+pixout LinearizeDepthPS(vtxOutTexToTex IN)
+{
+	pixout OUT = (pixout) 0;
+
+	int3 vPixCoord = int3(IN.baseTC.xy / PS_HPosScale.xy * PS_ScreenSize.xy, 0);
+
+#if %_RT_MSAA_SAMPLEFREQ_PASS
+	float fDevDepth = LinearizeDepth_DepthTexMS.Load(vPixCoord, IN.uSample);
+#else
+	float fDevDepth = LinearizeDepth_DepthTex.Load(vPixCoord);
+#endif
+
+	const float fNearestMax = g_PS_ProjRatio.y / (NearProjection.z - g_PS_ProjRatio.x);
+	float fDepthLinear = g_PS_ProjRatio.y / (fDevDepth - g_PS_ProjRatio.x);
+
+	if (fDepthLinear < fNearestMax)
+		 fDepthLinear = NearProjection.y / (fDevDepth - NearProjection.x);
+
+	OUT.Color.x = (fDevDepth == 1.0) ? 1.0 : fDepthLinear;  // Preseve exact value of 1.0 that is used for the sky
+
+	return OUT;
+}
+
+technique LinearizeDepth
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS();
+    PixelShader = LinearizeDepthPS();
+    CullMode = None;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Downsample Depth technique /////////////////////////////////////////////////////////////////////
+
+Texture2D<float4> DownsampleDepth_DepthTex : register(t0);
+float4 DownsampleDepth_Params;
+
+pixout DownsampleDepthPS(vtxOut IN)
+{
+	pixout OUT = (pixout) 0;
+	
+	IN.baseTC.xy *= DownsampleDepth_Params.xy;
+	
+	float4 vMaxDepths = DownsampleDepth_DepthTex.GatherRed(SampStatePoint, float3(IN.baseTC.xy, 0));
+	float4 vMinDepths = DownsampleDepth_DepthTex.GatherGreen(SampStatePoint, float3(IN.baseTC.xy, 0));
+	
+	// Linearize depth
+#if %_RT_SAMPLE0
+	vMinDepths = CV_ProjRatio.y / (vMinDepths - CV_ProjRatio.x);
+	vMaxDepths = CV_ProjRatio.y / (vMaxDepths - CV_ProjRatio.x);
+#endif
+
+#if %_RT_SAMPLE1
+	vMinDepths = vMaxDepths;
+#endif
+
+	OUT.Color.x = max(max(vMaxDepths.x, vMaxDepths.y), max(vMaxDepths.z, vMaxDepths.w));
+	OUT.Color.y = min(min(vMinDepths.x, vMinDepths.y), min(vMinDepths.z, vMinDepths.w));
+
+	return OUT;
+}
+
+technique DownsampleDepth
+{
+  pass p0
+  {
+    VertexShader = FullscreenTriVS();
+    PixelShader = DownsampleDepthPS() ResolvePS;
+    CullMode = None;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Transparency Depth Fixup technique /////////////////////////////////////////////////////////////
+
+pixout TranspDepthFixupMergePS(vtxOutTexToTex IN)
+{
+  // Merge depth values using min/max blending
+	pixout OUT = (pixout) 0;
+  OUT.Color.x = tex2D(_tex0, IN.baseTC.xy).w;
+	
+	if (OUT.Color.x >= 0)
+		discard;
+	else
+		OUT.Color.x = abs(OUT.Color.x);
+	
+  return OUT;
+}
+
+technique TranspDepthFixupMerge
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS();
+    PixelShader = TranspDepthFixupMergePS();
+    CullMode = None;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// GaussBlurBilinear technique ////////////////////////////////////////////////////////////////////
+
+float4 PI_psOffsets[16] < vsregister = c4; > ;
+float4 psWeights[16];
+float4 clampTC; // minU, maxU, minV, maxV
+
+struct vtxOutGauss
+{
+  float4 HPosition : POSITION;
+  float4 tc0 : TEXCOORDN;    
+  float4 tc1 : TEXCOORDN;    
+  float4 tc2 : TEXCOORDN;    
+  float4 tc3 : TEXCOORDN;    
+	float4 tc4 : TEXCOORDN; 
+};
+
+struct vtxOutGaussMasked
+{
+  float4 HPosition : POSITION;
+  float4 tc0 : TEXCOORDN;    
+  float4 tc1 : TEXCOORDN;    
+  float2 tc2 : TEXCOORDN;    
+  float2 tc3 : TEXCOORDN;    
+  float2 tc4 : TEXCOORDN;    
+  float2 tc5 : TEXCOORDN;      
+  float2 tc6 : TEXCOORDN;    
+  float2 tc7 : TEXCOORDN;    
+};
+
+vtxOutGauss GaussBlurBilinearVS(vtxIn IN)
+{
+  vtxOutGauss OUT = (vtxOutGauss) 0;
+
+	OUT.HPosition = Get2dHPos(IN.Position);
+  
+  OUT.tc0.xy = IN.baseTC.xy + PI_psOffsets[0].xy;
+  OUT.tc0.zw = IN.baseTC.xy + PI_psOffsets[1].xy;
+  OUT.tc1.xy = IN.baseTC.xy + PI_psOffsets[2].xy;
+  OUT.tc1.zw = IN.baseTC.xy + PI_psOffsets[3].xy;
+  OUT.tc2.xy = IN.baseTC.xy + PI_psOffsets[4].xy;
+  OUT.tc2.zw = IN.baseTC.xy + PI_psOffsets[5].xy;
+  OUT.tc3.xy = IN.baseTC.xy + PI_psOffsets[6].xy;
+  OUT.tc3.zw = IN.baseTC.xy + PI_psOffsets[7].xy;
+	OUT.tc4.xy = IN.baseTC.xy;  // Original coordinates
+
+  return OUT;
+}
+
+vtxOutGaussMasked MaskedGaussBlurBilinearVS(vtxIn IN)
+{
+  vtxOutGaussMasked OUT = (vtxOutGaussMasked) 0;
+	OUT.HPosition = Get2dHPos(IN.Position);
+
+  OUT.tc0.xy = IN.baseTC.xy + PI_psOffsets[0].xy;
+  OUT.tc1.xy = IN.baseTC.xy + PI_psOffsets[1].xy;
+  OUT.tc2.xy = IN.baseTC.xy + PI_psOffsets[2].xy;
+  OUT.tc3.xy = IN.baseTC.xy + PI_psOffsets[3].xy;
+  OUT.tc4.xy = IN.baseTC.xy + PI_psOffsets[4].xy;
+  OUT.tc5.xy = IN.baseTC.xy + PI_psOffsets[5].xy;
+  OUT.tc6.xy = IN.baseTC.xy + PI_psOffsets[6].xy;
+  OUT.tc7.xy = IN.baseTC.xy + PI_psOffsets[7].xy;
+
+  // special case for masked blur  - output with correct aspect ratio into wz
+  OUT.tc0.wz = IN.baseTC.xy;
+  OUT.tc1.wz = (IN.baseTC.xy -0.5 ) * float2(0.75*(ScrSize.x/ScrSize.y), 1.0) + 0.5;
+
+  return OUT;
+}
+
+pixout GaussBlurBilinearPS(vtxOutGauss IN)
+{
+  pixout OUT;
+
+  half4 sum = 0;
+  
+  // Perform downscaling clamp post-interpolation
+  IN.tc0.xyzw = clamp(IN.tc0.xyzw, clampTC.xzxz, clampTC.ywyw);
+  IN.tc1.xyzw = clamp(IN.tc1.xyzw, clampTC.xzxz, clampTC.ywyw);
+  IN.tc2.xyzw = clamp(IN.tc2.xyzw, clampTC.xzxz, clampTC.ywyw);
+  IN.tc3.xyzw = clamp(IN.tc3.xyzw, clampTC.xzxz, clampTC.ywyw);
+
+	half4 col = tex2D(_tex0, IN.tc0.xy);
+	sum += col * (half) psWeights[0].x;  
+
+	col = tex2D(_tex0, IN.tc0.zw);
+	sum += col * (half) psWeights[1].x;  
+	
+  col = tex2D(_tex0, IN.tc1.xy);
+	sum += col * (half) psWeights[2].x;  
+
+	col = tex2D(_tex0, IN.tc1.zw);
+	sum += col * (half) psWeights[3].x;
+
+	col = tex2D(_tex0, IN.tc2.xy);
+	sum += col * (half) psWeights[4].x;  
+	
+	col = tex2D(_tex0, IN.tc2.zw);
+	sum += col * (half) psWeights[5].x;  
+	
+	col = tex2D(_tex0, IN.tc3.xy);
+	sum += col * (half) psWeights[6].x;  
+	
+	col = tex2D(_tex0, IN.tc3.zw);
+	sum += col * (half) psWeights[7].x;
+
+  OUT.Color = sum;
+
+  return OUT;
+}
+
+pixout MaskedGaussBlurBilinearPS(vtxOutGaussMasked IN)
+{
+  pixout OUT;
+
+  half4 sum = 0;
+  half4 orig = tex2D(_tex0, IN.tc0.wz) ;
+  half mask = tex2D(_tex1, IN.tc1.wz).x ;
+  
+	half4 col = tex2D(_tex0, IN.tc0.xy) ;  	
+  col = lerp(orig, col, mask);
+	sum += col * (half) psWeights[0].x;  
+
+	col = tex2D(_tex0, IN.tc1.xy) ;  
+  col = lerp(orig, col, mask);
+	sum += col * (half) psWeights[1].x;  
+	
+  col = tex2D(_tex0, IN.tc2.xy) ;  
+  col = lerp(orig, col, mask);
+	sum += col * (half) psWeights[2].x;  
+
+	col = tex2D(_tex0, IN.tc3.xy) ;  
+  col = lerp(orig, col, mask);
+	sum += col * (half) psWeights[3].x;  
+
+	col = tex2D(_tex0, IN.tc4.xy) ;  
+  col = lerp(orig, col, mask);
+	sum += col * (half) psWeights[4].x;  
+	
+	col = tex2D(_tex0, IN.tc5.xy) ;  
+  col = lerp(orig, col, mask);
+	sum += col * (half) psWeights[5].x;  
+	
+	col = tex2D(_tex0, IN.tc6.xy) ;  
+  col = lerp(orig, col, mask);
+	sum += col * (half) psWeights[6].x;  
+	
+	col = tex2D(_tex0, IN.tc7.xy) ;  
+  col = lerp(orig, col, mask);
+	sum += col * (half) psWeights[7].x;  
+
+  OUT.Color = sum;
+  return OUT;
+}
+
+// Optimized gauss blur version, making use of bilinear filtering
+technique GaussBlurBilinear
+{
+  pass p0
+  {
+    VertexShader = GaussBlurBilinearVS();
+    PixelShader = GaussBlurBilinearPS();    
+  }
+}
+
+technique MaskedGaussBlurBilinear
+{
+  pass p0
+  {
+    VertexShader = MaskedGaussBlurBilinearVS();
+    PixelShader = MaskedGaussBlurBilinearPS();    
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// GaussAlphaBlur technique ///////////////////////////////////////////////////////////////////////
+
+// FIX:: optimize
+struct vtxOutAlphaBlur
+{
+  float4 HPosition : POSITION;
+  float4 tc0 : TEXCOORDN;    
+  float2 tc1 : TEXCOORDN;    
+  float2 tc2 : TEXCOORDN;    
+  float2 tc3 : TEXCOORDN;    
+  float2 tc4 : TEXCOORDN;    
+  float2 tc5 : TEXCOORDN;      
+  float2 tc6 : TEXCOORDN;    
+  float2 tc7 : TEXCOORDN;    
+};
+
+vtxOutAlphaBlur GaussAlphaBlurVS(vtxIn IN)
+{
+  vtxOutAlphaBlur OUT = (vtxOutAlphaBlur) 0;
+	OUT.HPosition = Get2dHPos(IN.Position);
+
+	OUT.tc0.zw = IN.baseTC.xy;
+  OUT.tc0.xy = IN.baseTC.xy + PI_psOffsets[0].xy;
+  OUT.tc1.xy = IN.baseTC.xy + PI_psOffsets[1].xy;
+  OUT.tc2.xy = IN.baseTC.xy + PI_psOffsets[2].xy;
+  OUT.tc3.xy = IN.baseTC.xy + PI_psOffsets[3].xy;
+  OUT.tc4.xy = IN.baseTC.xy + PI_psOffsets[4].xy;
+  OUT.tc5.xy = IN.baseTC.xy + PI_psOffsets[5].xy;
+  OUT.tc6.xy = IN.baseTC.xy + PI_psOffsets[6].xy;
+  OUT.tc7.xy = IN.baseTC.xy + PI_psOffsets[7].xy;
+
+  return OUT;
+}
+
+pixout GaussAlphaBlurPS(vtxOutAlphaBlur IN)
+{
+  pixout OUT;
+
+  half sum = 0;
+  
+	half col = tex2D(_tex0, IN.tc0.xy).a ;  	
+	sum += col * (half) psWeights[0].x;  
+
+	col = tex2D(_tex0, IN.tc1.xy).a ;  
+	sum += col * (half) psWeights[1].x;  
+	
+  col = tex2D(_tex0, IN.tc2.xy).a ;  
+	sum += col * (half) psWeights[2].x;  
+
+	col = tex2D(_tex0, IN.tc3.xy).a ;  
+	sum += col * (half) psWeights[3].x;  
+
+	col = tex2D(_tex0, IN.tc4.xy).a ;  
+	sum += col * (half) psWeights[4].x;  
+	
+	col = tex2D(_tex0, IN.tc5.xy).a ;  
+	sum += col * (half) psWeights[5].x;  
+	
+	col = tex2D(_tex0, IN.tc6.xy).a ;  
+	sum += col * (half) psWeights[6].x;  
+	
+	col = tex2D(_tex0, IN.tc7.xy).a ;  
+	sum += col * (half) psWeights[7].x;  
+
+  OUT.Color.xyz = tex2D(_tex0, IN.tc0.zw).xyz; 
+	OUT.Color.a = sum;
+  return OUT;
+}
+
+technique GaussAlphaBlur
+{
+  pass p0
+  {
+    VertexShader = GaussAlphaBlurVS();
+    PixelShader = GaussAlphaBlurPS();    
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Blur with 4 taps technique /////////////////////////////////////////////////////////////////////
+
+pixout Blur4TapsPS(vtxOut IN)
+{
+  pixout OUT = (pixout)0; 
+
+  float4 cAcc = 0;//tex2D(_tex0, IN.baseTC.xy);
+  cAcc += tex2D(_tex0, IN.baseTC.xy + texToTexParams0.xy);
+  cAcc += tex2D(_tex0, IN.baseTC.xy + texToTexParams0.zw);
+  cAcc += tex2D(_tex0, IN.baseTC.xy + texToTexParams1.xy);
+  cAcc += tex2D(_tex0, IN.baseTC.xy + texToTexParams1.zw);
+  OUT.Color = cAcc * 0.25h;//blurParams0.w;
+  
+  return OUT;
+}
+
+technique Blur4Taps
+{
+  pass p0
+  {
+    VertexShader = BaseVS();
+    PixelShader = Blur4TapsPS();    
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Directional Blur technique //////////////////////////////////////////////////////////////////////
+
+/// Specific data ////////////////////////
+
+pixout BlurDirectionalPS(vtxOut IN)
+{
+  pixout OUT;
+
+
+	float2 tcJitter = 1;//(tex2D(_tex1, IN.baseTC.xy * (PS_ScreenSize.xy/64.0) )*2-1)*0.03 + 0.985;
+
+	float4 cAcc = half4(tex2D(_tex0, IN.baseTC.xy + tcJitter * texToTexParams0.xy).rgb,1);// * 0.1h;
+  cAcc += half4(tex2D(_tex0, IN.baseTC.xy + tcJitter * texToTexParams0.zw).rgb,1);// * 0.2h;
+
+  cAcc += half4(tex2D(_tex0, IN.baseTC.xy + tcJitter * texToTexParams1.xy).rgb,1);// * 0.3h;
+  cAcc += half4(tex2D(_tex0, IN.baseTC.xy + tcJitter * texToTexParams1.zw).rgb,1);// * 0.5h;
+
+	cAcc += half4(tex2D(_tex0, IN.baseTC.xy).rgb,1);// * 0.5h;
+
+  cAcc += half4(tex2D(_tex0, IN.baseTC.xy + tcJitter * texToTexParams2.xy).rgb,1);// * 0.5h;
+  cAcc += half4(tex2D(_tex0, IN.baseTC.xy + tcJitter * texToTexParams2.zw).rgb,1);// * 0.3h;
+
+  cAcc += half4(tex2D(_tex0, IN.baseTC.xy + tcJitter * texToTexParams3.xy).rgb,1);// * 0.2h;
+  cAcc += half4(tex2D(_tex0, IN.baseTC.xy + tcJitter * texToTexParams3.zw).rgb,1);// * 0.1h;
+
+	// normalize
+	cAcc /= cAcc.w; //0.125h;//0.4545h;
+
+  OUT.Color = cAcc;
+  
+  return OUT;
+}
+
+technique BlurDirectional
+{
+  pass p0
+  {
+    VertexShader = BaseVS();
+    PixelShader = BlurDirectionalPS();    
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Vertical Blur technique (used for ocean "anisotropic" reflections aproximation) ////////////////
+
+float4 blurParams0;
+sampler2D blurMap0 : register(s0);
+
+struct vtxOutAnisotropicVertical
+{
+  float4 HPosition  : POSITION;
+  float2 baseTC0 : TEXCOORDN;    
+  float2 baseTC1 : TEXCOORDN;    
+  float2 baseTC2 : TEXCOORDN;    
+  float2 baseTC3 : TEXCOORDN;    
+  float2 baseTC4 : TEXCOORDN;    
+  float2 baseTC5 : TEXCOORDN;    
+  float2 baseTC6 : TEXCOORDN;    
+  float2 baseTC7 : TEXCOORDN;    
+};
+
+vtxOutAnisotropicVertical AnisotropicVerticalVS(vtxIn IN)
+{
+  vtxOutAnisotropicVertical OUT = (vtxOutAnisotropicVertical)0; 
+	OUT.HPosition = Get2dHPos(IN.Position);
+
+  // todo: remove all interpolators, pass constants instead to pixel shader (faster)
+  
+#if !%_RT_SAMPLE0
+  OUT.baseTC0.xy = IN.baseTC.xy + float2(0,blurParams0.x)*0.125*0.75f;
+  OUT.baseTC1.xy = IN.baseTC.xy + float2(0,blurParams0.y)*0.125*0.75f;
+  OUT.baseTC2.xy = IN.baseTC.xy + float2(0,blurParams0.z)*0.125*0.75f;
+  OUT.baseTC3.xy = IN.baseTC.xy + float2(0,blurParams0.w)*0.125*0.75f;
+
+  OUT.baseTC4.xy = IN.baseTC.xy - float2(0,blurParams0.x)*0.75f;
+  OUT.baseTC5.xy = IN.baseTC.xy - float2(0,blurParams0.y)*0.75f;
+  OUT.baseTC6.xy = IN.baseTC.xy - float2(0,blurParams0.z)*0.75f;
+  OUT.baseTC7.xy = IN.baseTC.xy - float2(0,blurParams0.w)*0.75f;
+#else
+  OUT.baseTC0.xy = IN.baseTC.xy + float2(0,blurParams0.x)*0;
+  OUT.baseTC1.xy = IN.baseTC.xy + float2(0,blurParams0.x)*1.0;
+  OUT.baseTC2.xy = IN.baseTC.xy + float2(0,blurParams0.x)*2.0;
+  OUT.baseTC3.xy = IN.baseTC.xy + float2(0,blurParams0.x)*3.0;
+  OUT.baseTC4.xy = IN.baseTC.xy + float2(0,blurParams0.x)*4.0;
+  OUT.baseTC5.xy = IN.baseTC.xy + float2(0,blurParams0.x)*5.0;
+  OUT.baseTC6.xy = IN.baseTC.xy + float2(0,blurParams0.x)*6.0;
+  OUT.baseTC7.xy = IN.baseTC.xy + float2(0,blurParams0.x)*7.0;
+#endif
+
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+pixout AnisotropicVerticalBlurPS(vtxOutAnisotropicVertical IN)
+{
+  pixout OUT;
+
+  float4 canis = tex2D(blurMap0, IN.baseTC0.xy);
+  canis += tex2D(blurMap0, IN.baseTC1.xy);
+  canis += tex2D(blurMap0, IN.baseTC2.xy);
+  canis += tex2D(blurMap0, IN.baseTC3.xy);
+  canis += tex2D(blurMap0, IN.baseTC4.xy);
+  canis += tex2D(blurMap0, IN.baseTC5.xy);
+  canis += tex2D(blurMap0, IN.baseTC6.xy);
+  canis += tex2D(blurMap0, IN.baseTC7.xy);
+
+  OUT.Color = canis / 8.0;
+   
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+technique AnisotropicVertical
+{
+  pass p0
+  {
+    VertexShader = AnisotropicVerticalVS() PostEffectsVS;
+    PixelShader = AnisotropicVerticalBlurPS() PostEffectsPS;
+    
+    CullMode = Back;        
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Dilate technique for sprites ///////////////////////////////////////////////////////////////////
+
+// todo: moving to outside post process, into specific shader (eg: FarTreeSprites.cfx )
+
+/// Specific data ////////////////////////
+
+float4 vPixelOffset;			// PS 1/width,1/height,?,?
+float4 vDilateParams;			// PS brightness_multiplier,?,?,?
+
+///////////////// vertex shader //////////////////
+
+struct vtxInDilate
+{
+  IN_P
+  IN_TBASE
+  IN_C0
+};
+
+struct vtxOutDilate
+{
+  float4 HPosition  : POSITION;
+  float3 baseTC     : TEXCOORD0;    
+};
+
+vtxOutDilate DilateVS(vtxInDilate IN)
+{
+  vtxOutDilate OUT = (vtxOutDilate)0; 
+
+  float4 vPos = IN.Position;
+  OUT.HPosition = mul(vpMatrix, vPos);    
+  OUT.baseTC.xy = IN.baseTC.xy;
+  OUT.baseTC.z = OUT.HPosition.x;
+
+	OUT.baseTC.xy+=0.00001f;		// lookup more in the middle of the texel - fixes white spots on DX10
+
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+pixout DilatePS(vtxOutDilate IN)
+{
+  pixout OUT;
+
+	const half2 Kernel_Neighbors[8+12] = 
+	{
+		half2(-1.0f,0.0f),
+		half2(1.0f,0.0f),
+		half2(0.0f,-1.0f),
+		half2(0.0f,1.0f),
+
+		half2(-1.0f,-1.0f),
+		half2(-1.0f,1.0f),
+		half2(1.0f,-1.0f),
+		half2(1.0f,1.0f),
+
+		half2(-2.0f,0.0f),
+		half2(2.0f,0.0f),
+		half2(0.0f,-2.0f),
+		half2(0.0f,2.0f),
+
+		half2(-2.0f,1.0f),
+		half2(2.0f,1.0f),
+		half2(1.0f,-2.0f),
+		half2(1.0f,2.0f),
+
+		half2(-2.0f,-1.0f),
+		half2(2.0f,-1.0f),
+		half2(-1.0f,-2.0f),
+		half2(-1.0f,2.0f)
+	};
+
+	half4 cColor = tex2D(_tex0, IN.baseTC.xy);		// sun contribution
+
+	int iSampleCount=8;
+
+  if( GetShaderQuality() > QUALITY_LOW )
+  	iSampleCount=8+12;
+
+	// our alpha is 0 so we're not part of the tree
+	if(cColor.a < 1.0/256.0)
+	{
+		half4 sum = 0.0h.xxxx;
+		half count=0.001h;		//  0.001 to avoid division by zero
+
+  [unroll]
+		// average all the samples nearby that ARE part of the tree, and steal that colour for filtering
+		for(int i=0;i<iSampleCount;i++)	
+		{
+			float2 vLocalOffset = IN.baseTC.xy+Kernel_Neighbors[i].xy*vPixelOffset.xy;
+			half4 cVal = tex2D(_tex0, vLocalOffset);		// sun contribution
+			
+			if(cVal.a > cColor.a)
+			{
+				sum += cVal;
+				count += 1.0h;
+			}
+		}
+		
+		cColor.rgb = sum.rgb/count;
+	}
+
+	OUT.Color = cColor;
+
+	//OUT.Color *= 0.1h;//vDilateParams.x; //Temporary: adjust HDR values to LDR range (10x multiply on read in fartreesprites.cfx). Need to revisit range adaption code.
+
+	const half SpriteAlphaRef=0; // 1.0h/255.0h;
+
+	half ref = cColor.a > SpriteAlphaRef ? 1.0h : 0.0h;
+	
+	OUT.Color.a = ref*cColor.a;
+
+  return OUT;
+}
+
+pixout Dilate2PS(vtxOutDilate IN)
+{
+  pixout OUT;
+
+  float4 cBase0 = tex2D(_tex0, IN.baseTC.xy);		                  // sun contribution
+	
+  OUT.Color = cBase0;
+  
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique Dilate
+{
+  pass p0
+  {
+    VertexShader = DilateVS() SpriteDilateVS;            
+    PixelShader = DilatePS() SpriteDilatePS;
+    CullMode = None;
+  }
+}
+
+technique Dilate2
+{
+  pass p0
+  {
+    VertexShader = DilateVS() SpriteDilateVS;            
+    PixelShader = Dilate2PS() SpriteDilatePS;
+    CullMode = None;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Image blurring techniques //////////////////////////////////////////////////////////////////////
+
+pixout BlurInterpolationPS(vtxOut IN)
+{
+  pixout OUT;
+  
+  half4 screenColor = tex2D( _tex0, IN.baseTC.xy );
+  half4 blurredColor = tex2D( _tex1, IN.baseTC.xy );
+    
+  OUT.Color =lerp(blurredColor, screenColor, psParams[0].w);
+    
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique BlurInterpolation
+{
+  pass p0
+  {
+    VertexShader = BaseVS();
+    PixelShader = BlurInterpolationPS();    
+    CullMode = None;        
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Image sharpening via extrapolation + chromatic abberration
+
+pixout CA_SharpeningPS(vtxOut IN)
+{
+  pixout OUT;
+  
+  half4 screenColor = tex2D( _tex0, IN.baseTC.xy );
+	screenColor.r = tex2D( _tex0, (IN.baseTC.xy-0.5)*(1 + 2*psParams[0].x*PS_ScreenSize.zw) + 0.5).r;
+	screenColor.b = tex2D( _tex0, (IN.baseTC.xy-0.5)*(1 - 2*psParams[0].x*PS_ScreenSize.zw) + 0.5).b;
+	screenColor *= screenColor;
+
+  half4 blurredColor = tex2D( _tex1, IN.baseTC.xy );
+	blurredColor *= blurredColor;
+  OUT.Color = lerp(blurredColor, screenColor, psParams[0].w);
+	OUT.Color = sqrt(OUT.Color);
+    
+  return OUT;
+}
+
+technique CA_Sharpening
+{
+  pass p0
+  {
+    VertexShader = BaseVS();
+    PixelShader = CA_SharpeningPS();    
+    CullMode = None;        
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// UnderwaterGodRays technique /////////////////////////////////////////////////////////////////////////
+
+float4x4 vpGodMatrix  : PI_Composite < vsregister = c0; >; // View*Projection
+float4x4 vpGodMatrixI : PB_UnProjMatrix; // invert( View * projection )
+
+float4 CausticsAmbient  : PI_Ambient < vsregister = c4; >;
+float4 CausticParams	  : PB_CausticsParams;  // xy: caustics distance, zw: 1 / caustics distance
+
+float4 PI_GodRaysParamsVS < vsregister = c5; >;
+float4 PI_GodRaysParamsPS < vsregister = c6; >;
+float4 CausticSmoothSunDir	: PB_CausticsSmoothSunDirection; 
+
+sampler2D wavesSampler = sampler_state
+{
+  Texture = EngineAssets/Textures/oceanwaves_ddn.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+  AddressU = Wrap;
+  AddressV = Wrap;	
+};
+
+sampler2D causticsSampler = sampler_state
+{
+  Texture = EngineAssets/Textures/caustics_sampler.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = NONE;
+  AddressU = Clamp;
+  AddressV = Clamp;	
+};
+
+sampler2D underwaterBumpSampler = sampler_state
+{
+  Texture = EngineAssets/Textures/screen_noisy_bump.dds;
+  MinFilter = LINEAR;  
+  MagFilter = LINEAR;
+  MipFilter = LINEAR; 
+  AddressU = Wrap;
+  AddressV = Wrap;
+};
+
+sampler2D CausticsScreenMapSampler : register (s0)
+{
+  Texture = $BackBuffer;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = POINT; 
+  AddressU = Clamp;
+  AddressV = Clamp;	
+};
+
+struct vtxOutGodRays
+{
+  float4 HPosition  : POSITION; 
+  float4 baseTC    : TEXCOORDN; // zw unused
+  
+  float4 waveTC      : TEXCOORDN;
+  float4 causticTC0  : TEXCOORDN;
+  float4 causticTC1  : TEXCOORDN;
+  
+  float4 vPosition : TEXCOORDN;  // w unused   
+};
+
+/// Samplers ////////////////////////////
+
+vtxOutGodRays UnderwaterGodRaysVS(vtxIn IN)
+{
+  vtxOutGodRays OUT = (vtxOutGodRays)0; 
+
+  // Position in screen space.
+  float4 vPos = IN.Position;
+  vPos.xy = (vPos.xy *2 - 1);
+  
+  vPos.xy *= 1.2; // hack: make sure to cover entire screen
+  
+  // Increase each slice distance
+  vPos.z = 0.1+ 0.88 * saturate(PI_GodRaysParamsVS.z * PI_GodRaysParamsVS.w);
+  //vPos.z = 0.4+ 0. * saturate(vsParams[0].z * vsParams[0].w);
+  vPos.w = 1;
+
+#if %_RT_REVERSE_DEPTH
+	vPos.z = vPos.w - vPos.z;
+#endif
+
+  // Project back to world space
+  vPos = mul(vpGodMatrixI, vPos );
+  vPos /= vPos.w;
+ 
+  OUT.HPosition = mul(vpGodMatrix, vPos);  
+  
+  OUT.baseTC.xy = IN.baseTC.xy;
+  OUT.baseTC.y =  1 - OUT.baseTC.y;
+
+  OUT.vPosition.xyz = vPos;
+  OUT.vPosition.w = 1;
+    
+  // Generate projection matrix based on sun direction  
+  float3 dirZ = CausticSmoothSunDir.xyz;
+  float3 up = float3(0,0,1);
+  float3 dirX = normalize(cross(up, dirZ));
+  float3 dirY = normalize(cross(dirZ, dirX));
+
+  float3x3 mLightView;
+  mLightView[0] = dirX.xyz;
+  mLightView[1] = dirY.xyz;
+  mLightView[2] = dirZ.xyz;
+   
+  // Output caustics procedural texture generation 
+  float2 uv = mul(mLightView, OUT.vPosition.xyz).xy*0.5;
+  
+  // half tilling used to avoid annoying aliasing when swimming fast
+  OUT.waveTC.xy =  uv * 2 * 0.01 * 0.012 + g_VS_AnimGenParams.w * 0.06;
+  OUT.waveTC.wz =  uv * 2 * 0.01 * 0.01 + g_VS_AnimGenParams.w * 0.05;
+
+  OUT.causticTC0.xy =  uv * 0.01 * 0.5 *2+ g_VS_AnimGenParams.w * 0.1;
+  OUT.causticTC0.wz =  uv.yx * 0.01 * 0.5 *2- g_VS_AnimGenParams.w * 0.11;  
+
+  OUT.causticTC1.xy =  uv * 0.01 * 2.0 *2+ g_VS_AnimGenParams.w * 0.1;
+  OUT.causticTC1.wz =  uv.yx * 0.01 * 2.0 *2- g_VS_AnimGenParams.w * 0.11;  
+
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+pixout UnderwaterGodRaysPS(vtxOutGodRays IN)
+{
+  pixout OUT;
+    
+  // temporary workaround for D3D11 hlsl compiler bug
+  OUT.Color = tex2D(CausticsScreenMapSampler, IN.baseTC.xy);
+      
+  // break movement, with random patterns
+  float2 wave = 0;
+  wave  = GetXYNormalMap(wavesSampler, IN.waveTC.xy);                                                  // 1 tex
+  wave += GetXYNormalMap(wavesSampler, IN.waveTC.wz);                                                 // 1 tex, 1 alu
+  wave *= 0.02;                                                                                     // 1 alu  
+
+  half2 causticMapR = 0;
+  causticMapR.xy   = GetXYNormalMap(wavesSampler, IN.causticTC0.xy + wave);     // 1 tex + 2 alu
+  causticMapR.xy  += GetXYNormalMap(wavesSampler, IN.causticTC0.wz + wave);     // 1 tex + 3 alu
+   
+  half2 causticHighFreq = 0;
+  causticHighFreq  = GetXYNormalMap(wavesSampler, IN.causticTC1.xy + wave);   // 1 tex  + 1 alu
+  causticHighFreq += GetXYNormalMap(wavesSampler, IN.causticTC1.wz + wave);   // 1 tex  + 2 alu
+
+  causticMapR.xy = causticMapR.xy * 0.5h + causticHighFreq;  
+
+  // Caustics sampler contains function: abs( 1-(abs( a) + abs(b))*0.5 ), which generates nice sharp pattern  
+  half3 cCaustic;
+  cCaustic.x = tex2D(causticsSampler, causticMapR.xy*0.55+0.55).x;
+  cCaustic.y = tex2D(causticsSampler, causticMapR.xy*0.525+0.525).x;
+  cCaustic.z = tex2D(causticsSampler, causticMapR.xy*0.5+0.5).x;
+  
+  float slice_pos = PI_GodRaysParamsPS.z * PI_GodRaysParamsPS.w;    
+  
+  // sharpen up a bit
+  cCaustic *= cCaustic;
+  
+  // add very sharp highlight
+  const half cMaxHightVis = 10.0;
+  half fHighlightAtten =  1;//cMaxHightVis / (CausticParams.x - IN.vPosition.z);                         // 2 alu    
+  fHighlightAtten = saturate( fHighlightAtten ) * min( abs( fHighlightAtten ), 2);  
+  
+  half fAtten =1;// saturate( (CausticParams.x - IN.vPosition.z)*4 );                                          // 2 alu  
+  
+  cCaustic += pow( cCaustic, 8 );
+  
+  half4 cScreen =  tex2D(CausticsScreenMapSampler, IN.baseTC.xy);
+  cScreen.xyz = cCaustic * PI_GodRaysParamsPS.w  * PI_GodRaysParamsPS.y * 0.25; //saturate( CausticParams.y  )*
+  
+  
+  half fDistToCam = length( WorldViewPos.xyz - IN.vPosition.xyz );                                      // 2 alu
+  
+  // 4 alu
+    
+  fAtten *= ( slice_pos );
+  
+  cScreen.xyz *= fAtten *fHighlightAtten;
+  
+  OUT.Color = cScreen;
+
+  return OUT;
+}
+
+pixout UnderwaterGodRaysFinalPS(vtxOut IN)
+{
+  pixout OUT;
+
+  half4 c0 = tex2D(CausticsScreenMapSampler, IN.baseTC.xy);
+  float anim = frac(AnimGenParams*0.01);  
+  float3 vec = normalize(float3(IN.baseTC.xy *2-1, 1));
+  half4 cBumpy = tex2D(underwaterBumpSampler, IN.baseTC.xy*0.025 + anim )*2-1;
+  cBumpy += tex2D(underwaterBumpSampler, IN.baseTC.yx*0.033 - anim )*2-1;
+  cBumpy.xyz = normalize( cBumpy ).xyz;
+      
+  //half4 cScreen = tex2D(CausticsScreenMapSampler, IN.baseTC.xy + cBumpy.xy*0.0125);  
+  half4 cScreen = tex2D(CausticsScreenMapSampler, IN.baseTC.xy + cBumpy.xy*0.0125 * PI_GodRaysParamsPS.x);
+  half4 cCaustics = tex2D(screenMapScaledSampler_d4, IN.baseTC.xy + cBumpy.xy*0.01);
+          
+  OUT.Color = cScreen + cCaustics;
+
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique UnderwaterGodRays
+{
+  pass p0
+  {
+    VertexShader = UnderwaterGodRaysVS();
+    PixelShader = UnderwaterGodRaysPS();    
+    CullMode = None;        
+  }
+}
+
+technique UnderwaterGodRaysFinal
+{
+  pass p0
+  {
+    VertexShader = BaseVS();
+    PixelShader = UnderwaterGodRaysFinalPS();    
+    CullMode = None;        
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Volumetric scattering technique ////////////////////////////////////////////////////////////////
+
+/// Constants ////////////////////////////
+
+float4 PI_volScatterParamsVS;
+float4 PI_volScatterParamsPS;
+float4 VolumetricScattering;  // x: tilling, y: speed
+float4 VolumetricScatteringColor; 
+
+sampler3D volumeMapSampler = sampler_state
+{  
+  Texture = EngineAssets/Textures/Noise3D.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR; 
+  AddressU = Wrap;
+  AddressV = Wrap;
+  AddressW = Wrap;
+};
+
+
+struct vtxOutVolumetricScattering
+{
+  float4 HPosition  : POSITION; 
+  float4 baseTC    : TEXCOORDN; // zw unused
+  
+  float4 vPosition0 : TEXCOORDN;  // w unused   
+  float4 vPosition1 : TEXCOORDN;  // w unused   
+};
+
+/// Samplers ////////////////////////////
+
+vtxOutVolumetricScattering VolumetricScatteringVS(vtxIn IN)
+{
+  vtxOutVolumetricScattering OUT = (vtxOutVolumetricScattering)0; 
+
+  // Position in screen space.
+  float4 vPos = IN.Position;
+
+  vPos.xy = vPos.xy * 2 - 1;
+
+  // Increase each slice distance
+  vPos.z = 0.5 + 0.5*saturate(PI_volScatterParamsVS.z * PI_volScatterParamsVS.w);;
+  vPos.w = 1;
+  
+  // Project back to world space
+  vPos = mul(vpGodMatrixI, vPos );
+  vPos /= vPos.w;
+ 
+  OUT.HPosition = mul(vpGodMatrix, vPos);  
+
+  OUT.baseTC.xy = IN.baseTC.xy;
+  OUT.baseTC.y =  1 - OUT.baseTC.y;
+  
+  vPos *= VolumetricScattering.x;
+  g_VS_AnimGenParams.w *= VolumetricScattering.y;
+  
+  OUT.vPosition0.xyz = vPos*0.1 + g_VS_AnimGenParams.w *0.2;
+  OUT.vPosition1.xyz = vPos*0.11 - g_VS_AnimGenParams.w *0.3;
+    
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+pixout VolumetricScatteringPS(vtxOutVolumetricScattering IN)
+{
+  pixout OUT;
+  
+  half4 cScreen;
+  float fVolume = 1 - abs(tex3D(volumeMapSampler, IN.vPosition0 ).w*2-1);
+  fVolume += 1 - abs(tex3D(volumeMapSampler, IN.vPosition1).w*2-1);
+  fVolume *=0.5;
+    
+  fVolume *= fVolume;
+  fVolume *= fVolume;
+  fVolume *= fVolume;
+  //fVolume *= fVolume;
+  
+  OUT.Color = fVolume * PI_volScatterParamsPS.w  * PI_volScatterParamsPS.y * CausticParams.y * VolumetricScatteringColor;
+
+  return OUT;
+}
+
+pixout VolumetricScatteringFinalPS(vtxOut IN)
+{
+  pixout OUT;
+  
+  half4 cScreen = tex2D(screenMapSampler, IN.baseTC.xy);  
+  half4 cVolume = tex2D(screenMapScaledSampler_d4, IN.baseTC.xy);
+
+  OUT.Color = cScreen + cVolume;
+
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique VolumetricScattering
+{
+  pass p0
+  {
+    VertexShader = VolumetricScatteringVS();
+    PixelShader = VolumetricScatteringPS();    
+    CullMode = None;        
+  }
+}
+
+technique VolumetricScatteringFinal
+{
+  pass p0
+  {
+    VertexShader = BaseVS();
+    PixelShader = VolumetricScatteringFinalPS();    
+    CullMode = None;        
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Water ripples simulation technique /////////////////////////////////////////////////////////////
+
+float4 WaterRipplesParams;
+
+pixout WaterRippleHitPS(vtxOut IN)
+{
+  pixout OUT = (pixout)0;
+  
+	half2 vPos = float2( IN.baseTC.xy * 2.0h - 1.0h  );  
+	half fHit = sqrt( saturate( 1.0h - dot( vPos, vPos ) ) );
+	OUT.Color = fHit * WaterRipplesParams.w;
+
+  return OUT;
+}
+
+pixout WaterRipplesPS(vtxOut IN)
+{
+	pixout OUT = (pixout)0;
+  
+#if %_RT_SAMPLE0
+	float2 tcRipples = IN.baseTC.xy + WaterRipplesParams.xy;
+	OUT.Color = tex2D(_tex0, tcRipples);
+#else
+
+	// Important note: z: frame T-1, w: frame T-2
+
+	half4 h0  = GetTexture2D(_tex0, IN.baseTC.xy);
+
+	half fTexSimSize = 256.0h;	
+	half4 h00 = GetTexture2D(_tex0, IN.baseTC.xy + float2(-1.0/fTexSimSize, 0));
+	half4 h10 = GetTexture2D(_tex0, IN.baseTC.xy + float2( 1.0/fTexSimSize, 0));
+	half4 h01 = GetTexture2D(_tex0, IN.baseTC.xy + float2( 0,-1.0/fTexSimSize));
+	half4 h11 = GetTexture2D(_tex0, IN.baseTC.xy + float2( 0, 1.0/fTexSimSize));	
+
+	// Compute the acceleration of the point based upon its neighbors
+	half fAcce = (h00.z + h10.z + h01.z + h11.z)*0.25 - h0.z;
+  
+	half dt = saturate( WaterRipplesParams.z / 0.0333f );
+
+	// verlet integration: x(i+1) = xi + (xi - x(i-1)) + a * dt*dt <=> 2 * xi - x(i-1) + a*dt*dt
+	half3 vVerletWeights = half3(1.995h, 0.995h, 1.0h); //half3(1.95h, 1.0h, 1.0h);
+	half cCurrHeight =( vVerletWeights.x * h0.z - vVerletWeights.y * h0.w + vVerletWeights.z * fAcce); //*dt*dt
+	// dtsqr = waterRipplesParams.z * waterRipplesParams.z 
+	 
+	// vanila wave propagation
+	//half cCurrHeight = (h00.z + h10.z + h01.z + h11.z)*0.5 - h0.w;
+	//cCurrHeight -= cCurrHeight/32.0; ; // damping
+
+	// todo: make it time independent - figure out good/stable solution.
+
+	half fSimLimits = 1-saturate( dot(IN.baseTC.xy-0.5, IN.baseTC.xy-0.5) );
+	
+	// note: we swap zw channels for simulation double buffering (can skip aditional textures)
+	OUT.Color.z = cCurrHeight;//*  fSimLimits;
+
+	// store previous frame
+	OUT.Color.w = h0.z;
+
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Finally compute wave normal
+	//	- cheat: add yet another half texel offset for bilinear filtered fetch for smoother final normal
+	half fHalfTexelOffset =0.5f /fTexSimSize;
+
+	half4 hOrig = h0;
+
+	h0 =  GetTexture2D(_tex0, IN.baseTC.xy + fHalfTexelOffset );
+	h10 = GetTexture2D(_tex0, IN.baseTC.xy + float2( 1.0h/fTexSimSize, 0) + fHalfTexelOffset);
+	h11 = GetTexture2D(_tex0, IN.baseTC.xy + float2( 0, 1.0h/fTexSimSize) + fHalfTexelOffset);
+
+	half3 vWeights = half3(h0.w, h10.w, h11.w);
+	half3 vNormal = half3( -(vWeights.x - vWeights.y), -(vWeights.x - vWeights.z), 0.05); 
+	vNormal = normalize(vNormal.xyz);                                               
+ 
+	OUT.Color.xy = vNormal.xy*0.5+0.5;
+	
+	half4 clampEdge = half4(0.5h, 0.5h, 0.0h, 0.0h);
+	
+	// Add 2 pixel border with no normals + flat heights (emulating clamp to border at earliest spot)
+	OUT.Color.xyzw = (IN.baseTC.x< fHalfTexelOffset*4.0)? clampEdge.xyzw:OUT.Color.xyzw;
+	OUT.Color.xyzw = (IN.baseTC.y< fHalfTexelOffset*4.0)? clampEdge.xyzw:OUT.Color.xyzw;
+	OUT.Color.xyzw = (IN.baseTC.x> 1.0h - fHalfTexelOffset*4.0)? clampEdge.xyzw:OUT.Color.xyzw;
+	OUT.Color.xyzw = (IN.baseTC.y> 1.0h - fHalfTexelOffset*4.0)? clampEdge.xyzw:OUT.Color.xyzw;
+	
+#endif
+
+	return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique WaterRipplesHit
+{
+  pass p0
+  {
+    VertexShader = CustomViewPortBaseVS();
+    PixelShader = WaterRippleHitPS();    
+    CullMode = None;    
+  }
+}
+
+technique WaterRipplesGen
+{
+  pass p0
+  {
+    VertexShader = BaseVS() PostEffectsVS;
+    PixelShader = WaterRipplesPS() PostEffectsPS;    
+    CullMode = None;    
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// PostStereo technique /////////////////////////////////////////////////////////////////////////
+
+/// Specific data ////////////////////////
+
+/// Constants ////////////////////////////
+
+float4 StereoParams;
+float4 HPosScale;
+float4 NearZRange;
+
+////////////////// samplers /////////////////////
+
+///////////////// vertex shader //////////////////
+
+vtxOut PostStereoVS(vtxIn IN)
+{
+	vtxOut OUT = (vtxOut)0; 
+  OUT.HPosition = Get2dHPos(IN.Position);
+	OUT.baseTC.xy = IN.baseTC.xy;
+
+	return OUT;
+}
+
+vtxOut StereoNearMaskVS(vtxIn IN)
+{
+	vtxOut OUT = (vtxOut)0; 
+  OUT.HPosition = Get2dHPos(IN.Position);
+	OUT.baseTC.xy = IN.baseTC.xy;
+
+	return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+struct _pixoutMRT
+{
+	half4 leftEye  : COLOR0;
+	half4 rightEye  : COLOR1;
+};
+
+float GetStereoDepth( sampler2D depthSampler, float2 ScreenTC )
+{	
+	float depth = GetDepthMap( depthSampler, ScreenTC.xy );
+	float linDepth = GetLinearDepth( depth );
+	
+	bool isNear = tex2D( _tex2, ScreenTC.xy ).x > 0;
+	
+	return !isNear ? linDepth : linDepth * StereoParams.w + StereoParams.z;
+}
+
+_pixoutMRT PostStereoPS(vtxOut IN)
+{
+	// Screen Space Reprojection Stereo Approach
+	
+	_pixoutMRT OUT = (_pixoutMRT) 0;
+	
+	float minDepthL = 1;
+	float minDepthR = 1;
+	
+	const float samples[4] = { 0.5, 0.66, 1, 1.1 };
+	float2 uv = float2( 0, 0 );
+
+	float2 TC = IN.baseTC.xy*HPosScale.xy;
+	
+	// Take several samples to avoid ghosting and reduce artifacts
+	for( int i = 0; i < 4; ++i )
+	{	
+		uv.x = samples[i] * StereoParams.x * HPosScale.x;
+	
+		minDepthL = min( minDepthL, GetStereoDepth( _tex1, TC + uv ) );
+		minDepthR = min( minDepthR, GetStereoDepth( _tex1, TC - uv ) );
+	}
+	
+	float parallaxL = StereoParams.x * (1.0 - StereoParams.y / minDepthL);
+	float parallaxR = StereoParams.x * (1.0 - StereoParams.y / minDepthR);
+	
+	OUT.leftEye.xyz = tex2D( _tex0, IN.baseTC.xy + float2( parallaxL, 0 ) );
+	OUT.rightEye.xyz = tex2D( _tex0, IN.baseTC.xy - float2( parallaxR, 0 ) );
+	
+	// Weapon mask
+	OUT.leftEye.a = tex2D( _tex2, IN.baseTC.xy + float2( parallaxL, 0 ) ).x > 0 ? 0.0 : 1.0;
+	OUT.rightEye.a = tex2D( _tex2, IN.baseTC.xy - float2( parallaxR, 0 ) ).x > 0 ? 0.0 : 1.0;
+
+	return OUT;
+}
+
+pixout StereoNearMaskPS(vtxOut IN)
+{
+  return (pixout)0;
+}
+    
+////////////////// technique /////////////////////
+
+technique PostStereo
+{
+  pass p0
+  {
+    VertexShader = PostStereoVS();            
+    PixelShader = PostStereoPS();
+    CullMode = None;
+  }
+}
+
+technique StereoNearMask
+{
+  pass p0
+  {
+    VertexShader = StereoNearMaskVS();            
+    PixelShader = StereoNearMaskPS();
+    CullMode = None;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// ImageGhosting technique /////////////////////////////////////////////////////////////////////////
+
+/// Specific data ////////////////////////
+
+/// Constants ////////////////////////////
+
+float4 ImageGhostingParamsPS;
+
+////////////////// samplers /////////////////////
+
+///////////////// vertex shader //////////////////
+
+///////////////// pixel shader //////////////////
+pixout ImageGhostingPS(vtxOut IN)
+{
+  pixout OUT;
+
+  OUT.Color.xyz = tex2D( _tex0, IN.baseTC);
+	OUT.Color.w = saturate( 1 - (ImageGhostingParamsPS.z + ImageGhostingParamsPS.w) * (1.0 / 8.0) * 33.0h); // todo: expose frame accumulation control
+
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique ImageGhosting
+{
+  pass p0
+  {
+    VertexShader = BaseVS();            
+    PixelShader = ImageGhostingPS();
+    CullMode = None;        
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Post 3D Renderer techniques ////////////////////////////////////////////////////////////////////
+
+///////////////// vertex shaders //////////////////
+
+vtxOut Post3DRendererGammaCorrection_VS(vtxIn IN)
+{
+	#define startPos			vsParams[0].xy
+	#define invScale			vsParams[0].zw
+
+  vtxOut OUT = (vtxOut)0; 
+
+	OUT.HPosition = Get2dHPos(IN.Position);
+	OUT.baseTC.xy = IN.baseTC.xy;
+
+	// 0.0->1.0 coords
+  OUT.baseTC.zw = (IN.baseTC.xy - startPos) * invScale;
+
+  return OUT;
+}
+
+///////////////// pixel shaders //////////////////
+
+pixout Post3DRendererAlphaCorrection_PS(vtxOut IN)
+{
+  pixout OUT;
+
+  // Override alpha using stencil, otherwise the alpha from the diffuse map will get copied into 
+  // render target, which then will get used when drawing the 3D objects to screen
+  OUT.Color.xyzw = half4(0.0,0.0,0.0,1.0);
+ 
+  return OUT;
+}
+
+pixout Post3DRendererGammaCorrection_PS(vtxOut IN)
+{
+  pixout OUT;
+  
+  #define postRenderTex				_tex0
+	#define alpha								psParams[0].x
+	#define edgeFadeScale				psParams[0].y
+
+  half4 screenCol = tex2D(postRenderTex,IN.baseTC.xy);
+  
+  OUT.Color.xyz = pow(screenCol.xyz,1.0/2.2); // Gamma correction
+  OUT.Color.w = screenCol.w * alpha;
+ 
+	// Fade out at edges
+	half2 edgeAlpha = saturate((1.0-abs((IN.baseTC.zw*2.0)-1.0))*edgeFadeScale);
+	half minEdgeAlpha = min(edgeAlpha.x,edgeAlpha.y);
+	OUT.Color.w *= minEdgeAlpha * minEdgeAlpha;
+
+  return OUT;
+}
+
+pixout Post3DRendererSilhouttes_PS(vtxOut IN)
+{
+	#define silhouetteStrength	psParams[0].x
+	#define fillStrength				psParams[0].y
+	#define glowStrength				psParams[0].z
+	#define smoothScale					float2(2.5f, 1.5f)
+	#define smoothThresh				float2(1.0f, 1.5f)
+	#define alphaAveDot					10.333
+
+  pixout OUT = (pixout) 1;
+    
+  half3 silhouettes = tex2D(_tex0, IN.baseTC).rgb;
+  half3 silhouettesBlurred = tex2D(_tex1, IN.baseTC).rgb;
+
+	// Perform some threshold smoothing
+	if (GetShaderQuality() >= QUALITY_MEDIUM)
+	{
+		float2 pxSize = smoothScale * ScrSize.zw;
+
+		silhouettes += tex2D(_tex0, IN.baseTC + pxSize*float2(0,-1)).rgb;
+		silhouettes += tex2D(_tex0, IN.baseTC + pxSize*float2(0, 1)).rgb;
+		silhouettes += tex2D(_tex0, IN.baseTC + pxSize*float2(-1,0)).rgb;
+		silhouettes += tex2D(_tex0, IN.baseTC + pxSize*float2( 1,0)).rgb;
+		silhouettes = (silhouettes > smoothThresh.x) ? 1.0f : (silhouettes > 0.1f) * fillStrength;
+
+		if (GetShaderQuality() >= QUALITY_HIGH)
+		{
+			float3 altSilhouettes = 0;
+			altSilhouettes += tex2D(_tex0, IN.baseTC - pxSize*float2(0,-1)).rgb;
+			altSilhouettes += tex2D(_tex0, IN.baseTC - pxSize*float2(0, 1)).rgb;
+			altSilhouettes += tex2D(_tex0, IN.baseTC - pxSize*float2(-1,0)).rgb;
+			altSilhouettes += tex2D(_tex0, IN.baseTC - pxSize*float2( 1,0)).rgb;
+			altSilhouettes = (altSilhouettes > smoothThresh.y) ? 1.0f : (altSilhouettes > 0.1f) * fillStrength;
+			
+			silhouettes = (silhouettes + altSilhouettes) * 0.5f;
+		}
+	}
+
+	OUT.Color.xyz = silhouettes + silhouettesBlurred * glowStrength;
+	OUT.Color.w = dot(OUT.Color.xyz,alphaAveDot);
+	OUT.Color *= silhouetteStrength;
+
+  return OUT;
+}
+
+//////////////////////////////// techniques ////////////////
+
+technique Post3DRendererAlphaCorrection
+{
+  pass p0
+  {
+    VertexShader = BaseVS();
+    PixelShader = Post3DRendererAlphaCorrection_PS();
+  }     
+}
+
+technique Post3DRendererGammaCorrection
+{
+  pass p0
+  {
+    VertexShader = Post3DRendererGammaCorrection_VS();
+    PixelShader = Post3DRendererGammaCorrection_PS();
+  }     
+}
+
+technique Post3DRendererSilhouttes
+{
+  pass p0
+  {
+    VertexShader = BaseVS();            
+    PixelShader = Post3DRendererSilhouttes_PS() PostProcessGamePS;      
+  }
+}
+
+/////////////////////// eof ///

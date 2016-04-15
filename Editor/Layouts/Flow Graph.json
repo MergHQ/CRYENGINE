@@ -1,0 +1,125 @@
+{
+    "MainWindowGeometry": "AdnQywACAAAAAAAAAAAAAAAAB38AAAQPAAABJQAAAKcAAAW4AAAD1wAAAAACAAAAB4A=",
+    "MainWindowState": "AAAA/wAAAAD9AAAAAAAAB4AAAAOwAAAABAAAAAIAAAAIAAAAAvwAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAoAAAAeAFMAdABhAG4AZABhAHIAZABUAG8AbwBsAEIAYQByAAAAAAD/////AAAAAAAAAAAAAAAiAEUAZABpAHQAIABNAG8AZABlAHMAVABvAG8AbABCAGEAcgEAAAAA/////wAAAAAAAAAAAAAAJABDAG8AbwByAGQAaQBuAGEAdABlAHMAVABvAG8AbABCAGEAcgEAAACL/////wAAAAAAAAAAAAAAJABDAG8AbgBzAHQAcgBhAGkAbgB0AHMAVABvAG8AbABCAGEAcgAAAAEW/////wAAAAAAAAAAAAAAIABTAGUAbABlAGMAdABpAG8AbgBUAG8AbwBsAEIAYQByAQAAARb/////AAAAAAAAAAAAAAAcAFAAaAB5AHMAaQBjAHMAVABvAG8AbABCAGEAcgAAAAOM/////wAAAAAAAAAAAAAAFgBHAGEAbQBlAFQAbwBvAGwAQgBhAHIBAAACT/////8AAAAAAAAAAAAAABgAQQB1AGQAaQBvAFQAbwBvAGwAQgBhAHIAAAAEov////8AAAAAAAAAAAAAABwATABhAHkAbwB1AHQAcwBUAG8AbwBsAEIAYQByAQAAAtr/////AAAAAAAAAAAAAAAgAFYAaQBlAHcATQBvAGQAZQBzAFQAbwBvAGwAQgBhAHIAAAAD8AAAAT0AAAAAAAAAAAAAAAIAAAABAAAAJABOAGUAdwAgAFQAbwBvAGwAQgBhAHIAVABvAG8AbABCAGEAcgAAAAAA/////wAAAAAAAAAAAAAAAwAAAAA=",
+    "ToolsLayout": {
+        "floatingWindows": [
+        ],
+        "mainWrapper": {
+            "geometry": "AdnQywACAAAAAAAAAAAAAAAAB38AAAOvAAAAAAAAAAAAAAd/AAADrwAAAAAAAAAAB4A=",
+            "splitter": {
+                "items": [
+                    {
+                        "items": [
+                            {
+                                "currentIndex": 0,
+                                "objectNames": [
+                                    "Perspective"
+                                ],
+                                "type": "area"
+                            },
+                            {
+                                "items": [
+                                    {
+                                        "currentIndex": 0,
+                                        "objectNames": [
+                                            "Create Object",
+                                            "Level Explorer",
+                                            "Console"
+                                        ],
+                                        "type": "area"
+                                    },
+                                    {
+                                        "currentIndex": 0,
+                                        "objectNames": [
+                                            "Properties"
+                                        ],
+                                        "type": "area"
+                                    }
+                                ],
+                                "state": "AAAA/wAAAAEAAAACAAABKQAAASkA/////wEAAAABAA==",
+                                "type": "splitter"
+                            }
+                        ],
+                        "state": "AAAA/wAAAAEAAAACAAABvwAAAhIA/////wEAAAACAA==",
+                        "type": "splitter"
+                    },
+                    {
+                        "currentIndex": 0,
+                        "objectNames": [
+                            "Flow Graph"
+                        ],
+                        "type": "area"
+                    }
+                ],
+                "state": "AAAA/wAAAAEAAAACAAACjAAABPAA/////wEAAAABAA==",
+                "type": "splitter"
+            }
+        },
+        "toolWindowManagerStateFormat": 2
+    },
+    "Windows": {
+        "Console": {
+            "class": "Console",
+            "state": {
+            }
+        },
+        "Create Object": {
+            "class": "Create Object",
+            "state": {
+            }
+        },
+        "Flow Graph": {
+            "class": "Flow Graph"
+        },
+        "Level Explorer": {
+            "class": "Level Explorer",
+            "state": {
+                "filters": {
+                    "expanded": false
+                },
+                "model": 2,
+                "showActiveLayerLabel": true,
+                "syncSelection": true,
+                "treeView": {
+                    "columnVisiblity": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        false,
+                        true,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false
+                    ]
+                }
+            }
+        },
+        "Perspective": {
+            "class": "ViewportClass_Perspective",
+            "state": {
+                "cameraSpeed": 1,
+                "fitToWindow": true,
+                "xViewportRes": 652,
+                "yViewportRes": 382
+            }
+        },
+        "Properties": {
+            "class": "Properties",
+            "state": {
+            }
+        }
+    }
+}

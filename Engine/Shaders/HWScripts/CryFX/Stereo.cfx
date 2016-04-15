@@ -1,0 +1,221 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script = "ShaderDrawType = Custom;";
+>;
+
+float4x4 CompMatrix : PI_Composite < vsregister = c0; >;
+float2 ScreenSize : PB_ScreenSize;
+
+sampler2D StereoL : register(s0);
+sampler2D StereoR : register(s1);
+
+sampler2D Eye : register(s0);
+
+struct a2v
+{
+	float4 Position : POSITION; 
+	IN_TBASE
+	IN_C0
+};
+
+struct v2f
+{
+	float4 Position  : POSITION;
+	float4 baseTC    : TEXCOORDN;
+};
+
+struct psout
+{
+	float4 Primary   : COLOR0; // Primary panel
+};
+
+///////////////// vertex shader //////////////////
+
+v2f StereoVS(a2v IN)
+{
+	v2f OUT = (v2f)0; 
+
+	OUT.Position = Get2dHPos(IN.Position);
+	OUT.baseTC.xy = IN.baseTC.xy;
+	
+	OUT.baseTC.zw = 2*g_VS_ScreenSize.zw;
+	
+	return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+psout SideBySidePS(v2f IN)
+{
+	psout OUT = (psout ) 0;
+	
+	half2 left_texcoord = saturate(IN.baseTC * float2(2.0, 1.0));
+	half2 right_texcoord = saturate((IN.baseTC - float2(0.5, 0.0)) * float2(2.0, 1.0));
+	
+	half4 cL = tex2D( StereoL, left_texcoord );
+	half4 cR = tex2D( StereoR, right_texcoord );	
+ 
+	OUT.Primary = IN.baseTC.x < 0.5 ? cL : cR;
+	
+	return OUT;
+}
+
+
+float4 texVerticalTriFilter3(sampler2D tex, float2 texcoord)
+{
+	float4 sample0 = tex2D(tex, texcoord + float2(0.0,  0.0 / SourceSize.y));
+	float4 sample1 = tex2D(tex, texcoord + float2(0.0, -1.0 / SourceSize.y));	
+	float4 sample2 = tex2D(tex, texcoord + float2(0.0,  1.0 / SourceSize.y));
+	
+	return 0.7 * sample0 + 0.15 * sample1 + 0.15 * sample2;
+}
+
+psout LineByLinePS(v2f IN)
+{
+	psout OUT = (psout ) 0;
+
+	half4 cL = tex2D( StereoL, IN.baseTC );
+	half4 cR = tex2D( StereoR, IN.baseTC );
+	//half4 cL = texVerticalTriFilter3( StereoL, IN.baseTC );
+	//half4 cR = texVerticalTriFilter3( StereoR, IN.baseTC );
+ 
+	int pixLine = IN.baseTC.y * ScreenSize.y;
+ 
+	OUT.Primary = pixLine % 2 == 0 ? cR : cL;
+	
+	return OUT;
+}
+
+psout CheckerboardPS(v2f IN)
+{
+	psout OUT = (psout ) 0;
+
+	half4 cL = tex2D( StereoL, IN.baseTC );
+	half4 cR = tex2D( StereoR, IN.baseTC );
+ 
+	int pixLine = IN.baseTC.y * ScreenSize.y;
+	int pixColumn = IN.baseTC.x * ScreenSize.x;
+ 
+	OUT.Primary = (pixLine + pixColumn) % 2 == 0 ? cL : cR;
+	
+	return OUT;
+}
+
+psout AnaglyphPS(v2f IN)
+{	
+	psout OUT = (psout ) 0;
+  
+	half4 cL = tex2D( StereoL, IN.baseTC );
+	half4 cR = tex2D( StereoR, IN.baseTC );
+	
+	OUT.Primary.r = cL.r;
+	OUT.Primary.gb = cR.gb;
+	//OUT.Primary.rg = cL.rg;
+	//OUT.Primary.b = cR.b;
+	
+	OUT.Primary.a = 0.0;
+	
+	return OUT;
+}
+
+psout NV3DVisionPS(v2f IN)
+{	
+	psout OUT = (psout ) 0;
+  
+	half4 col = tex2D( StereoL, IN.baseTC );
+	
+	OUT.Primary = col;
+	
+	return OUT;
+}
+
+psout EmulationPS(v2f IN)
+{	
+	psout OUT = (psout ) 0;
+  
+	OUT.Primary = tex2D( StereoL, IN.baseTC );
+	
+	return OUT;
+}
+
+//////////////////////////////// technique ////////////////
+
+technique SideBySide
+{
+  pass p0
+  {
+    VertexShader = StereoVS();
+    PixelShader = SideBySidePS();
+    
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}
+
+technique LineByLine
+{
+  pass p0
+  {
+    VertexShader = StereoVS();
+    PixelShader = LineByLinePS();
+    
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}
+
+technique Checkerboard
+{
+  pass p0
+  {
+    VertexShader = StereoVS();
+    PixelShader = CheckerboardPS();
+    
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}
+
+technique Anaglyph
+{
+  pass p0
+  {
+    VertexShader = StereoVS();
+    PixelShader = AnaglyphPS();
+    
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}
+
+technique NV3DVision
+{
+  pass p0
+  {
+    VertexShader = StereoVS();
+    PixelShader = NV3DVisionPS();
+    
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}
+
+technique Emulation
+{
+  pass p0
+  {
+		VertexShader = StereoVS();
+		PixelShader = EmulationPS();
+			
+		ZWriteEnable = false;
+		CullMode = None;
+	}
+}
+
+/////////////////////// eof ///

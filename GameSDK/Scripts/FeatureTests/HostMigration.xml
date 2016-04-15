@@ -1,0 +1,74 @@
+<FeatureTester>
+	<Settings>
+		<AlwaysFailWhenHit checkpointName="GameRules_OnEndGame" />
+	</Settings>
+
+	<Tests setName="initCVars">
+		<FeatureTest name="init" description="Setup some cvars" enabled="true" owners="andyc;colin;markf">
+			<DoConsoleCommand command="g_hostMigrationServerDelay 2"/> 
+			<DoConsoleCommand command="g_enableInitialLoadoutScreen 0"/> 
+			<DoConsoleCommand command="g_minPlayerLimit 1"/> 
+			<DoConsoleCommand command="g_playerEnableDedicatedInput 1"/>
+			<DoConsoleCommand command="g_playerUsesDedicatedInput 1"/>
+			<DoConsoleCommand command="g_loadoutServerControlled 1" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="runOnServer">
+		<FeatureTest name="DedicatedClientArrive" description="Needed before other tests are run" enabled="true" maxTime="620" owners="andyc;colin;markf">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_ClientEnteredGame_NotReset" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_ClientEnteredGame_NotReset" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="600" />
+		</FeatureTest>
+		
+		<FeatureTest name="DedicatedClientSpawns" description="Dedicated client player spawns itself in" require="remotePlayerExists" enabled="true" maxTime="620" owners="andyc;colin;markf">
+			<DoConsoleCommand command="sv_randomLoadoutMethod RandGenerated onSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerSpawn" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="600" />
+		</FeatureTest>
+
+		<FeatureTest name="Wait" description="Wait a bit to give the clients time to sort themselves out" enabled="true" maxTime="70" owners="andyc;colin;markf">
+			<Wait duration="60" />
+		</FeatureTest>
+
+		<FeatureTest name="ServerQuit" description="Make the server quit" enabled="true" owners="andyc;colin;markf">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Release" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerBeingDestroyed" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerBeingDestroyed" />
+			<DoConsoleCommand command="disconnect" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="1" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="connect">
+		<FeatureTest name="TryConnect" description="Keep trying to connect until it works" require="noLevelLoaded" enabled="true" maxTime="120" owners="andyc;colin;markf">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Net_ConnectFailed" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Net_ChannelDestroyed" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Init" />
+			<DoConsoleCommand command="connect" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="45" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="runOnClientOne">
+		<FeatureTest name="ClientBecomesServer" description="Client should become the server when the old server quits" enabled="true" maxTime="300" owners="andyc;colin;markf">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HostMigration_OnInitiate" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HostMigration_OnPromoteToServer" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HostMigration_OnReconnectClient" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HostMigration_OnFinalise" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="280" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="runOnClientTwo">
+		<FeatureTest name="ClientMigrates" description="Client reconnect to the new server when the old server quits" enabled="true" maxTime="300" owners="andyc;colin;markf">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HostMigration_OnInitiate" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HostMigration_OnDemoteToClient" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HostMigration_OnReconnectClient" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HostMigration_OnFinalise" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="280" />
+		</FeatureTest>
+	</Tests>
+</FeatureTester>
+

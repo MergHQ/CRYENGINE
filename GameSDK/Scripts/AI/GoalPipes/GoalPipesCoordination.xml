@@ -1,0 +1,191 @@
+<GoalPipes>
+
+  <GoalPipe name="CoverFire">
+    <FireCmd mode="Burst"/>
+    <AdjustAim timeout="6.5"/>
+    <Signal blocking="false" name="AnalizeSituation"/>
+  </GoalPipe>
+  
+  <GoalPipe name="MoveToBaseOfFirePosition">
+    <FireCmd mode="BurstWhileMoving"/>
+    <TacticalPos name="HumanBaseOfFireQuery" register="Cover"/>
+    <If IF_LASTOP_SUCCEED="">
+      <Stance blocking="false" id="Stand"/>
+      <FireCmd mode="BurstWhileMoving"/>
+      <SubGoalPipe name="RunToCover"/>
+    <Else/>
+      <Signal blocking="false" name="OnTPSQueryFail"/>
+    </If>
+  </GoalPipe>
+
+	<GoalPipe name="AssaultCharge">
+		<Stance id="Stand"/>
+		<Speed id="Run"/>
+		<Strafe distance="99"/>
+		<FireCmd mode="Continuous"/>
+		<Locate name="atttarget"/>
+		<Stick useLastOp="true" requestPartialPath="true"/>
+		<Timeout interval="1"/>
+	</GoalPipe>
+	
+  <GoalPipe name="CoordinationThrowFragGrenade">
+    <FireCmd blocking="false" mode="Off"/>
+    <Stance blocking="false" id="Stand" delayed="true"/>
+    <FireCmd blocking="false" mode="Secondary"/>
+    <Script blocking="false" code="AI.ThrowGrenade(entity.id, AI_RGT_FRAG_GRENADE, AI_REG_ATTENTIONTARGET);"/>
+		<Timeout interval="3"/>
+    <FireCmd blocking="false" mode="Off"/>
+    <Signal name="ThrowGrenadeDone"/>
+  </GoalPipe>
+
+  <GoalPipe name="CoordinationThrowFlashGrenade">
+    <FireCmd blocking="false" mode="Off"/>
+    <Stance blocking="false" id="Stand" delayed="true"/>
+    <FireCmd blocking="false" mode="Secondary"/>
+    <Script blocking="false" code="AI.ThrowGrenade(entity.id, AI_RGT_FLASHBANG_GRENADE, AI_REG_ATTENTIONTARGET);"/>
+		<Timeout interval="3"/>
+    <FireCmd blocking="false" mode="Off"/>
+    <Signal name="ThrowGrenadeDone"/>
+  </GoalPipe>
+
+  <GoalPipe name="CoordinationThrowSmokeGrenade">
+    <FireCmd blocking="false" mode="Off"/>
+    <Stance blocking="false" id="Stand" delayed="true"/>
+    <FireCmd blocking="false" mode="Secondary"/>
+    <Script blocking="false" code="AI.ThrowGrenade(entity.id, AI_RGT_SMOKE_GRENADE, AI_REG_ATTENTIONTARGET);"/>
+		<Timeout interval="3"/>
+    <FireCmd blocking="false" mode="Off"/>
+    <Signal name="ThrowGrenadeDone"/>
+  </GoalPipe>
+
+  <GoalPipe name="CoordinationFlankLeft">
+    <FireCmd mode="Off"/>
+		<Speed id="Sprint"/>
+		<Strafe distance="5"/>
+    <Stance id="Stand"/>
+		<TacticalPos name="FlankLeftQuery" register="Cover"/>
+		<Hide register="Cover"/>
+  </GoalPipe>
+
+  <GoalPipe name="CoordinationFlankRight">
+    <FireCmd mode="Off"/>
+		<Speed id="Sprint"/>
+		<Strafe distance="5"/>
+    <Stance id="Stand"/>
+		<TacticalPos name="FlankRightQuery" register="Cover"/>
+		<Hide register="Cover"/>
+  </GoalPipe>
+
+  <GoalPipe name="CoordinationReload">
+    <Stance blocking="false" id="LowCover"/>
+    <Script blocking="false" code="entity:Reload();"/>
+		<Timeout intervalMin="2.5" intervalMax="3.5"/>
+  </GoalPipe>
+
+  <GoalPipe name="CoordinationTakeCoverAndReload">
+    <TacticalPos name="ClosestHideSpotQuery" register="Cover"/>
+    <If IF_LASTOP_SUCCEED="">
+      <FireCmd mode="BurstWhileMoving"/>
+      <SubGoalPipe name="RunToCover"/>
+    <Else/>
+      <Stance blocking="false" id="Stand"/>
+    </If>
+    <SubGoalPipe name="CoordinationReload"/>
+  </GoalPipe>
+
+  <!-- Friendly death investigation -->
+
+  <GoalPipe name="SupportFriendlyDeathInvestigation">
+		<Locate blocking="false" name="refpoint"/>
+		<LookAt useLastOp="true" continuous="true" useBodyDir="true"/>
+  </GoalPipe>
+
+  <GoalPipe name="GotToCover">
+    <TacticalPos name="HideSpotFromRefPointQuery" register="Cover"/>
+    <!-- TODO: Add a fallback behavior /Mario -->
+
+		<Timeout interval="1"/>
+    <SubGoalPipe name="RunToCover"/>
+		<Timeout interval="3"/>
+    <Script blocking="false" code="entity.Behavior:OnDone(entity);"/>
+  </GoalPipe>
+
+  <GoalPipe name="ApproachSuspectedSource">
+		<Timeout interval="1"/>
+		<Speed blocking="false" id="Walk"/>
+    <Stance id="Stand"/>
+		<Strafe blocking="false"/>
+		<Locate blocking="false" name="refpoint"/>
+		<Stick distance="3" useLastOp="true" requestPartialPath="true"/>
+    <Script blocking="false" code="entity.Behavior:OnDone(entity);"/>
+  </GoalPipe>
+
+  <GoalPipe name="SearchTreatSource">
+		<LookAround lookAroundRange="360" scanRange="5" interval="60" breakOnLiveTarget="true"/>
+  </GoalPipe>
+
+  <GoalPipe name="ApproachDeadBody">
+    <SubGoalPipe name="WalkToReferencePoint"/>
+    <Script blocking="false" code="entity.Behavior:OnDone(entity);"/>
+  </GoalPipe>
+  	
+	<!--///////////////////////////////////////////////////////////-->
+	<!--// Defensive Line Coordination ////////////////////////////-->
+  
+	<GoalPipe name="CoordinationDefensiveLineLeft">
+		<FireCmd mode="BurstWhileMoving"/>
+		<TacticalPos name="DefensiveLineLeft" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Stance blocking="false" id="Stand"/>
+			<FireCmd mode="BurstWhileMoving"/>
+			<SubGoalPipe name="RunToCover"/>
+		<Else/>
+			<Signal blocking="false" name="OnTPSQueryFail"/>
+		</If>
+	</GoalPipe>
+
+	<GoalPipe name="CoordinationDefensiveLineCenter">
+		<FireCmd mode="BurstWhileMoving"/>
+		<TacticalPos name="DefensiveLineCenter" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Stance blocking="false" id="Stand"/>
+			<FireCmd mode="BurstWhileMoving"/>
+			<SubGoalPipe name="RunToCover"/>
+		<Else/>
+			<Signal blocking="false" name="OnTPSQueryFail"/>
+		</If>
+	</GoalPipe>
+	
+	<GoalPipe name="CoordinationDefensiveLineRight">
+		<FireCmd mode="BurstWhileMoving"/>
+		<TacticalPos name="DefensiveLineRight" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Stance blocking="false" id="Stand"/>
+			<FireCmd mode="BurstWhileMoving"/>
+			<SubGoalPipe name="RunToCover"/>
+		<Else/>
+			<Signal blocking="false" name="OnTPSQueryFail"/>
+		</If>
+	</GoalPipe>
+	
+	<GoalPipe name="InvestigateDeadBody">
+		<Strafe strafeWhileMoving="false" />
+		<Locate name="refpoint" />
+		<Stick distance="1.5" useLastOp="true" requestPartialPath="true" />
+
+		<Stance id="Crouch" />
+		<Script code="entity:CallBehaviorFunction('PlayCheckBodyReadability')"/>
+		<Locate name="refpoint" />
+		<LookAt continuous="true" useBodyDir="false" angleThreshold="10" />
+		<Timeout interval="2.0" />
+		<Script code="entity:CallBehaviorFunction('PlayDeathConfirmReadability')"/>
+		<Timeout interval="2.0" />
+		<Stance id="Relaxed" />
+		<Timeout interval="2.0" />
+		<Script code="entity:CallBehaviorFunction('OnDoneInvestigating')"/>
+	</GoalPipe>
+
+	<!--///////////////////////////////////////////////////////////-->
+	
+	
+</GoalPipes>

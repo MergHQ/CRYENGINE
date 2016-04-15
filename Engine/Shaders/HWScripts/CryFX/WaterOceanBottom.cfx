@@ -1,0 +1,187 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+
+// WaterOceanBottom: used as closing cap for missing terrain until horizon
+
+#include "Common.cfi"
+#include "ShadeLib.cfi"
+
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "NoPreview;"           
+					 "ForceDrawLast;"
+           "ShaderDrawType = General;"                      
+           "ShaderType = General;"
+>;
+
+/// Un-Tweakables //////////////////////
+float4x4 mWorldT : PI_TransObjMatrix < vsregister = c4; >;
+float4x4 mCamera : PB_CameraMatrix_I;
+
+float4 g_fWaterLevel : PB_WaterLevel;
+
+float4x4 mReflProj : PI_TexMatrix
+<
+  string 'Sampler' (envMapSamplerRefl)
+>;
+
+struct a2vWater
+{
+  float4 Position : POSITION;
+
+  float2 baseTC    : TEXCOORD;
+  float4 Color     : COLOR;
+};
+
+struct v2fWaterBottom
+{
+  float4 Position  : POSITION; 
+};
+
+struct v2fWaterBottomZpass
+{
+  float4 Position  : POSITION; 
+};
+
+// Get vertex from screen space into world spasace
+void GetGridVertexPos( inout float4 vPos )
+{ 
+  const float fGridQuadSize = 1.0 / (200.0);
+  vPos.xy = ((vPos.xy  + fGridQuadSize)* 2 - 1);
+  //vPos.xy = vPos.xy* 2 - 1;
+  
+  // BFH: make sure edges go out of screen - todo: find better solution for this
+  //vPos.xy *= (1.0 +  fGridQuadSize*10);
+  vPos.xy *= 2.0;
+  
+  // BFH: make sure edges go out of screen - todo: find better solution for this
+  //vPos.y *= 1.1;
+   
+  vPos.z = 0.0;
+  vPos.w = 1.0;
+	
+	#if %_RT_REVERSE_DEPTH
+		vPos.z = vPos.w - vPos.z;
+#endif
+
+  float4 vPosWS = mul( CV_InvViewProj, vPos );
+  vPosWS /= vPosWS.w;
+  
+  float3 view = g_VS_WorldViewPos.xyz - float3(vPosWS.xy, 0);  
+ float fDirSign = sign(view.z); // make sure to invert sign when bellow water
+
+  // get z plane intersections
+  float2 z_isecs = float2( max(fDirSign*g_VS_WorldViewPos.z - fDirSign*vPosWS.z, 0.05 / g_VS_NearFarClipDist.y),
+                           fDirSign*g_VS_WorldViewPos.z );
+  //z_isecs *= fDirSign;
+  //z_isecs = max(z_isecs, 0.00001);
+ 
+  // clamp t just in case
+  float  t = min( z_isecs.y / z_isecs.x, g_VS_NearFarClipDist.y * 5.0 );
+          
+  // project vertex along ray direction
+  float2 vRayDir = (vPosWS.xy - g_VS_WorldViewPos.xy);        
+  vPos.xy = g_VS_WorldViewPos.xy + vRayDir.xy * t;
+  
+  vPos.z = 0;
+}
+
+///////////////// Ocean bottom  //////////////////
+
+v2fWaterBottom OceanBottomVS(a2vWater IN)
+{
+  v2fWaterBottom OUT = (v2fWaterBottom)1; 
+
+  // Position in screen space.
+  float4 vPos =IN.Position;
+  GetGridVertexPos( vPos );
+	vPos.z =0;
+	vPos.w =1;
+	
+#if %_RT_REVERSE_DEPTH
+	vPos.z = vPos.w - vPos.z;
+#endif
+  
+  OUT.Position = mul(CV_ViewProjMatr, vPos);                                                           // 4 alu
+  OUT.Position.w -= 0.01;
+
+  return OUT;
+}
+
+pixout OceanBottomPS( v2fWaterBottom IN )
+{
+  pixout OUT = (pixout) 0;
+  OUT.Color.xyz = float3(0,0,0);
+  OUT.Color.w = 1;
+  return OUT;
+}
+
+
+v2fWaterBottomZpass OceanBottomZpassVS(a2vWater IN)
+{
+  v2fWaterBottomZpass OUT = (v2fWaterBottomZpass)1; 
+
+  // Position in screen space.
+  float4 vPos =IN.Position;
+  GetGridVertexPos( vPos );
+	vPos.z =0;
+	vPos.w =1;
+	
+#if %_RT_REVERSE_DEPTH
+	vPos.z = vPos.w - vPos.z;
+#endif
+
+  OUT.Position = mul(CV_ViewProjMatr, vPos);                                                           // 4 alu
+
+  OUT.Position.w -= 0.01;  
+
+  return OUT;
+}
+
+pixout_gbuffer OceanBottomZpassPS( v2fWaterBottomZpass IN )
+{
+	pixout_gbuffer OUT = (pixout_gbuffer)0;
+	
+	MaterialAttribsCommon attribs = MaterialAttribsDefault();
+	EncodeGBuffer( attribs, OUT.GBufferA, OUT.GBufferB, OUT.GBufferC );
+
+  return OUT;
+}
+
+//////////////////////////////// technique ////////////////
+
+technique General
+<
+  string Script = 
+  "TechniqueZ=ZPass;"
+>
+{  
+  pass p0
+  {    
+    ZEnable = true;
+    ZFunc = Equal;
+    ZWriteEnable = false;
+    CullMode = None; 
+    IgnoreMaterialState = true;
+    ColorWriteEnable = 0;
+
+    VertexShader = OceanBottomVS() GeneralVS;
+    PixelShader = OceanBottomPS() GeneralPS;
+  }
+}
+
+technique ZPass
+{
+  pass p0
+  {
+    ZEnable = true;
+    ZWriteEnable = true;
+    CullMode = None; 
+    IgnoreMaterialState = true;
+
+    VertexShader = OceanBottomZpassVS() ZVS;
+    PixelShader = OceanBottomZpassPS() ZPS;
+  }
+}

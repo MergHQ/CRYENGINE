@@ -1,0 +1,147 @@
+{
+    "MainWindowGeometry": "AdnQywACAAAAAAAAAAAAAAAAB38AAAQPAAABJQAAAKcAAAW4AAAD1wAAAAACAAAAB4A=",
+    "MainWindowState": "AAAA/wAAAAD9AAAAAAAAB4AAAAOwAAAABAAAAAIAAAAIAAAAAvwAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAoAAAAeAFMAdABhAG4AZABhAHIAZABUAG8AbwBsAEIAYQByAAAAAAD/////AAAAAAAAAAAAAAAiAEUAZABpAHQAIABNAG8AZABlAHMAVABvAG8AbABCAGEAcgEAAAAA/////wAAAAAAAAAAAAAAJABDAG8AbwByAGQAaQBuAGEAdABlAHMAVABvAG8AbABCAGEAcgEAAACL/////wAAAAAAAAAAAAAAJABDAG8AbgBzAHQAcgBhAGkAbgB0AHMAVABvAG8AbABCAGEAcgAAAAEW/////wAAAAAAAAAAAAAAIABTAGUAbABlAGMAdABpAG8AbgBUAG8AbwBsAEIAYQByAQAAARb/////AAAAAAAAAAAAAAAcAFAAaAB5AHMAaQBjAHMAVABvAG8AbABCAGEAcgAAAAOM/////wAAAAAAAAAAAAAAFgBHAGEAbQBlAFQAbwBvAGwAQgBhAHIBAAACT/////8AAAAAAAAAAAAAABgAQQB1AGQAaQBvAFQAbwBvAGwAQgBhAHIAAAAC2v////8AAAAAAAAAAAAAABwATABhAHkAbwB1AHQAcwBUAG8AbwBsAEIAYQByAQAAAtr/////AAAAAAAAAAAAAAAgAFYAaQBlAHcATQBvAGQAZQBzAFQAbwBvAGwAQgBhAHIAAAAD8AAAAT0AAAAAAAAAAAAAAAIAAAABAAAAJABOAGUAdwAgAFQAbwBvAGwAQgBhAHIAVABvAG8AbABCAGEAcgAAAAAA/////wAAAAAAAAAAAAAAAwAAAAA=",
+    "ToolsLayout": {
+        "floatingWindows": [
+        ],
+        "mainWrapper": {
+            "geometry": "AdnQywACAAAAAAAAAAAAAAAAB38AAAOvAAAAAAAAAAAAAAd/AAADrwAAAAAAAAAAB4A=",
+            "splitter": {
+                "items": [
+                    {
+                        "items": [
+                            {
+                                "items": [
+                                    {
+                                        "items": [
+                                            {
+                                                "currentIndex": 0,
+                                                "objectNames": [
+                                                    "Level Explorer",
+                                                    "Create Object"
+                                                ],
+                                                "type": "area"
+                                            },
+                                            {
+                                                "currentIndex": 0,
+                                                "objectNames": [
+                                                    "Perspective",
+                                                    "Character Tool"
+                                                ],
+                                                "type": "area"
+                                            },
+                                            {
+                                                "currentIndex": 0,
+                                                "objectNames": [
+                                                    "Properties",
+                                                    "Designer Tool"
+                                                ],
+                                                "type": "area"
+                                            }
+                                        ],
+                                        "state": "AAAA/wAAAAEAAAADAAABXAAABHEAAAGrAP////8BAAAAAQA=",
+                                        "type": "splitter"
+                                    },
+                                    {
+                                        "currentIndex": 0,
+                                        "objectNames": [
+                                            "Track View",
+                                            "Flow Graph"
+                                        ],
+                                        "type": "area"
+                                    }
+                                ],
+                                "state": "AAAA/wAAAAEAAAACAAACNQAAAZwA/////wEAAAACAA==",
+                                "type": "splitter"
+                            }
+                        ],
+                        "state": "AAAA/wAAAAEAAAABAAAHgAD/////AQAAAAEA",
+                        "type": "splitter"
+                    }
+                ],
+                "state": "AAAA/wAAAAEAAAABAAAHgAD/////AQAAAAEA",
+                "type": "splitter"
+            }
+        },
+        "toolWindowManagerStateFormat": 2
+    },
+    "Windows": {
+        "Character Tool": {
+            "class": "Character Tool",
+            "state": {
+            }
+        },
+        "Create Object": {
+            "class": "Create Object",
+            "state": {
+            }
+        },
+        "Designer Tool": {
+            "class": "Modeling",
+            "state": {
+            }
+        },
+        "Flow Graph": {
+            "class": "Flow Graph"
+        },
+        "Level Explorer": {
+            "class": "Level Explorer",
+            "state": {
+                "filters": {
+                    "expanded": false
+                },
+                "model": 2,
+                "showActiveLayerLabel": true,
+                "syncSelection": true,
+                "treeView": {
+                    "columnVisiblity": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        false,
+                        true,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false
+                    ]
+                }
+            }
+        },
+        "Perspective": {
+            "class": "ViewportClass_Perspective",
+            "state": {
+                "cameraSpeed": 1,
+                "fitToWindow": true,
+                "xViewportRes": 1137,
+                "yViewportRes": 497
+            }
+        },
+        "Properties": {
+            "class": "Properties",
+            "state": {
+            }
+        },
+        "Track View": {
+            "class": "Track View",
+            "state": {
+                "curveVisible": false,
+                "dopesheetVisible": true,
+                "linkEnabled": false,
+                "unit": 3
+            }
+        }
+    }
+}

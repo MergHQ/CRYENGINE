@@ -1,0 +1,3 @@
+<levelrotation name="IA">
+	<level name="Multiplayer/airfield" gameRules="InstantAction"/>
+</levelrotation>

@@ -1,0 +1,12 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script = 
+           "Public;"
+           "ShaderDrawType = NoDraw;";
+>;
+
+/////////////////////// eof ///

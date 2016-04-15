@@ -1,0 +1,154 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "ModificatorVT.cfi"
+#include "shadeLib.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "Public;"
+           "ShaderDrawType = Sky;"
+           "ShaderType = Sky;"
+>;
+
+/// Un-Tweakables //////////////////////
+float4 TFactor     : PB_TFactor;
+
+sampler2D whiteSampler = sampler_state
+{
+  Texture = $White;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+};
+
+///////////////////////////// 
+ 
+struct a2v 
+{
+  float4 Position : POSITION; //in object space
+  float2 baseTC   : TEXCOORD0;
+	IN_C0
+};
+
+struct v2f
+{
+  float4 Position  : POSITION;  //in projection space
+  float2 baseTC    : TEXCOORD0;
+  float3 viewDir	 : TEXCOORD1;
+};
+ 
+struct v2fZ
+{
+  float4 Position  : POSITION;  //in projection space
+}; 
+
+///////////////// vertex shader //////////////////
+v2f SkyVS(a2v IN)
+{
+  v2f OUT = (v2f)0; 
+
+  // Position in screen space.
+  float4 vPos = IN.Position;
+  OUT.Position = _pos_Common(vPos);
+  OUT.Position.z = OUT.Position.w;
+  
+  OUT.baseTC.xy = IN.baseTC.xy;  
+  
+  //OUT.viewDir = IN.Position.xyz - g_VS_WorldViewPos.xyz;
+  OUT.viewDir = IN.Position.xyz;
+
+  return OUT; 
+} 
+
+v2fZ SkyZVS(a2v IN)
+{
+  v2fZ OUT = (v2fZ)0; 
+
+  // Position in screen space.
+  float4 vPos = IN.Position;
+  OUT.Position = _pos_Common(vPos);
+  OUT.Position.z = OUT.Position.w;
+
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+pixout SkyPS(v2f IN)
+{
+  pixout OUT;
+
+  half4 baseColor = GetTexture2D(whiteSampler, IN.baseTC.xy);
+  half4 Color = baseColor * TFactor;
+
+   // Debug output
+ #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
+   DebugOutput(OUT.Color, float4(IN.baseTC.xy, 0, 0));
+   return OUT;
+ #endif
+  
+  half3 skyDir = normalize( IN.viewDir.xyz );  
+	
+//	half sunInfluence = dot( normalize( IN.viewDir.xyz ), g_PS_SunLightDir.xyz ) * 0.25 + 0.75;
+//	sunInfluence *= saturate( g_PS_SunLightDir.z * 4.0 ) * 0.666 + 0.333;		
+//	Color *= sunInfluence;
+
+  // Re-scale range
+  Color.xyz *= PS_HDR_RANGE_ADAPT_MAX;
+
+	HDROutput(OUT, Color, 1);
+	
+  return OUT;
+}
+
+pixout_gbuffer SkyZPS(v2fZ IN) 
+{
+	pixout_gbuffer OUT;
+	
+	MaterialAttribsCommon attribs = MaterialAttribsDefault();
+	attribs.Albedo = 0;  // Output black albedo for emissive surface
+	EncodeGBuffer( attribs, OUT.GBufferA, OUT.GBufferB, OUT.GBufferC );
+
+  return OUT;
+}
+
+//////////////////////////////// technique ////////////////
+
+technique General
+<
+  string Script =
+         "TechniqueZ=ZPass;"
+>
+{
+  pass p0
+  {
+    VertexShader = SkyVS();
+    
+    ZEnable = true;
+    ZWriteEnable = false;
+    CullMode = None;
+    
+    PixelShader = SkyPS();
+  }
+}
+
+technique ZPass
+{
+  pass p0
+  {
+    VertexShader = SkyZVS();
+    
+    ZEnable = true;
+    ZWriteEnable = false;
+    CullMode = None;
+    
+    PixelShader = SkyZPS();
+  }
+}
+
+
+/////////////////////// eof ///

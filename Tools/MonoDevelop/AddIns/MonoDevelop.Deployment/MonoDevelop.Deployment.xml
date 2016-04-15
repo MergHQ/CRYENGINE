@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.Deployment</name>
+    </assembly>
+    <members>
+        <member name="P:MonoDevelop.Deployment.DeployContext.ProjectBuildOnly">
+            <summary>
+            Set when the deployment is only for a project's build, becuase it only uses the ProgramFiles type.
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,260 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+// todo: 
+//  - optimization pass
+//  - diferent modes support
+
+/// Un-Tweakables ////////////////////// 
+
+float4  EffectLayerTime = { PB_time 1.0, PB_time 0.5, PB_time 0.25, PB_time 0.125};
+half4 EffectLayerParams0 = { PB_FromRE[0], PB_FromRE[1], PB_FromRE[2], PB_FromRE[3] };
+float4 EffectLayerParams1 : PI_EffectLayerParams;
+
+Texture2D effectMaskTex  : register(t9) <sRGBLookup = true> = TM_Custom;
+Texture2D effectColorTex : register(t10)                    = TM_CustomSecondary; 
+
+sampler2D effectAnimFunctionSampler = sampler_state
+{
+  Texture = EngineAssets/Shading/layer_effect_anim_function.tif;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = NONE;
+  AddressU = Wrap;
+  AddressV = Wrap;	
+};
+
+///////////////// vertex input/output //////////////////
+struct vert2fragEffectLayer
+{
+  OUT_P
+  float4 baseTC    : TEXCOORDN;
+  float4 baseAnimTC    : TEXCOORDN;
+  float4 vTangent  : TEXCOORDN;
+  float4 vBinormal : TEXCOORDN;
+  float4 vView     : TEXCOORDN;
+  float4 screenProj : TEXCOORDN;
+};
+
+///////////////// vertex shaders //////////////////
+vert2fragEffectLayer Common_EffectLayerPassVS(app2vertEffectLayer IN)
+{
+  vert2fragEffectLayer OUT = (vert2fragEffectLayer)0;
+  
+  streamPos vertPassPos = (streamPos)0;
+  streamPos_FromEffectLayer(IN, vertPassPos);
+
+  EffectLayerTime *= EffectLayerParams0.z;
+
+  OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+
+  // Output world to tangent matrix and world space position  
+  
+  // Note: Normalization required for normal diffuse map in world space in case scale used - Do not remove
+  float3 worldTangentS = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[0]) );
+  float3 worldTangentT = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[1]) );
+  float3 worldTangentN = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[2]) );
+  
+  OUT.vTangent = float4(worldTangentS, vertPassPos.Tangent.w); 
+  OUT.vBinormal.xyz = worldTangentT;
+  OUT.vView.xyz = vertPassPos.WorldPos.xyz;
+  
+  // Store armour saturation strength in OUT.vView.w
+  #define armourDistScalar 0.5
+  #define minArmourSaturation 1.0
+  #define maxArmourSaturation 5.0
+	#define armourDistIgnore 0.5
+  OUT.vView.w = lerp(minArmourSaturation,maxArmourSaturation,saturate((length(vertPassPos.WorldPos.xyz)*armourDistScalar)-armourDistIgnore));
+  
+  vertPassPos.WorldPos.xyz += g_VS_WorldViewPos.xyz;
+
+  _TCModify(vertPassPos.baseTC, OUT.baseTC, vertPassPos.Position, vertPassPos.ObjToTangentSpace[2], TS_DIFFUSE);
+  
+  // apply modificator tilling
+  OUT.baseTC.zw = OUT.baseTC.xy * EffectLayerParams0.xy; 
+
+  // Output animated coordinates at diferent frequencies
+  OUT.baseAnimTC.xyzw = OUT.baseTC.xyxy;
+  OUT.baseAnimTC.xyzw *= float4( 2, 2, 0.25 , 0.25);
+  OUT.baseAnimTC.xyzw += EffectLayerTime.wwww * float4(1,1,0.5, 0.5);
+
+  OUT.screenProj = HPosToScreenTC(OUT.HPosition);
+  OUT.screenProj.z = vertPassPos.WorldPos.z * 0.33;
+
+  return OUT;            
+}
+
+///////////////// pixel shaders //////////////////
+pixout Common_EffectLayerPassPS(vert2fragEffectLayer IN)
+{
+	// this will need to cleaned up/optimized heavily when everyone agreed on look and all suits modes
+	pixout OUT = (pixout) 0;
+	
+
+  EffectLayerTime *= EffectLayerParams0.z * 0.25;
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
+  // Common textures/vectors/coeficients
+
+  half4 cDiffuseMap = GetDiffuseTex(diffuseTex, IN.baseTC.xy); 
+	cDiffuseMap.w = saturate(cDiffuseMap.w*4);
+  half3 cBumpMap = GetNormalMap(normalsTex, IN.baseTC.xy);
+
+  half3 vNormalVtx = (cross(IN.vTangent.xyz, IN.vBinormal.xyz)) * IN.vTangent.w;   
+  float3x3 mTangentToWS = float3x3(IN.vTangent.xyz, IN.vBinormal.xyz, vNormalVtx.xyz);  
+
+  half3 vNormal = normalize( mul(cBumpMap.xyz, mTangentToWS) );
+  half3 vView = normalize( -IN.vView.xyz );                   
+
+  half fInvNdotE = 1 - saturate( dot(  vNormal, vView.xyz ) );
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
+  // Compute effect mode animated pattern
+
+  // Pick pattern mask
+	half3 cPatternMasks = GetTexture2D(effectMaskTex, ssMaterialTrilinear, IN.baseTC.zw ).xyz;
+  half fPatternMask = dot( cPatternMasks.xyz, EffectLayerParams1.xyz);
+
+  half fPatternAnimMask = GetTexture2D(effectMaskTex, ssMaterialTrilinear, IN.baseAnimTC.xy ).w;
+  fPatternAnimMask += GetTexture2D(effectMaskTex, ssMaterialTrilinear, IN.baseAnimTC.zw).w;
+
+  half fFinalMask = fPatternMask * (cDiffuseMap.w) * saturate( cBumpMap.z ); 
+
+  // Compute animated pattern (simple inverse clouds with with diferent power factors per-channel)
+  half2 vAnimPattern = EffectLayerTime.x * half2(0.8, 1.2) + fPatternMask*0.1 + cBumpMap.z * fPatternAnimMask + half2(0.8, 0.2);
+  vAnimPattern = tex2D(effectAnimFunctionSampler, vAnimPattern).x * 2;                              
+  
+  // Function texture returns for red channel:
+  //half2 vAnimPattern = frac( vAnimPattern );
+  //vAnimPattern = 1 - abs(vAnimPattern *2 - 1);
+  //vAnimPattern *= vAnimPattern;
+  //vAnimPattern.x *= vNanoPattern.x;
+  //vAnimPattern = dot(vAnimPattern.xy, 1);
+
+  // Pick channel color for mode
+  half fChannelSelect = 2.0; // Only have 1 color channel now
+  half3 cModeColor = GetTexture2D(effectColorTex, ssMaterialBilinearClamp, float2( fInvNdotE , saturate( fChannelSelect * 0.25 - 0.125) ) );
+
+  // Compose mode color
+  half3 cFinal =  0.5h * cModeColor * vAnimPattern.x *  fFinalMask * fInvNdotE * saturate( fChannelSelect ); 
+
+  half fFresnel = 0;
+  
+  half3 cDiffuseAccRT = DecodeLightBuffer( GetSceneTexProj( sceneDiffuseAccTex, IN.screenProj.xyzw) ); 
+
+  // Apply light accumulation
+  cFinal.xyz *= cDiffuseAccRT;
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
+  // "Armor mode"
+#if %_RT_SAMPLE1
+  #define pulseSpeed 8.0
+  #define thicknessRatio 16.0
+  #define saturationStrength IN.vView.w
+  #define pulseMultiplier 40.0
+	#define hitEffectMultiplier 100.0
+  half rimStrength = 1.0 - abs(dot(vView.xyz,vNormalVtx));
+  
+  // Pulse 1
+  half pulseTime1 = frac(EffectLayerTime.x*pulseSpeed);
+  half pulseOffset = (abs(pulseTime1-rimStrength));
+  half pulseStrength = saturate(max((1.0/thicknessRatio) - pulseOffset,0.0) * saturationStrength);
+  half pulseAlpha = (1.0-pulseTime1);
+  pulseAlpha *= pulseAlpha;
+  half pulse = (1.0-(pulseOffset * thicknessRatio)) * pulseAlpha * pulseStrength;
+  
+  // Pulse 2
+  half pulseTime2 = frac(pulseTime1+0.5);
+  pulseOffset = (abs(pulseTime2-rimStrength));
+  pulseStrength = saturate(max((1.0/thicknessRatio) - pulseOffset,0.0) * saturationStrength);
+  pulseAlpha = (1.0-pulseTime2);
+  pulseAlpha *= pulseAlpha;
+  pulse += (1.0-(pulseOffset * thicknessRatio)) * pulseAlpha * pulseStrength;
+   
+  // Lighting
+  half fNdotE = saturate( dot( vNormal, vView.xyz ) );
+  fFresnel = 0.75  + (1 - 0.75) * (1-fNdotE)* (1-fNdotE); 
+
+  // Apply pulses
+	half3 modeColorMask = cModeColor * cDiffuseMap.w;
+  pulse = (pulse * pulse) * pulseMultiplier;
+	cFinal.xyz = lerp(cFinal.xyz,(cDiffuseMap.xyz * cDiffuseAccRT * fInvNdotE * cPatternMasks.y) + (pulse * modeColorMask),EffectLayerParams1.y);
+
+	// Hit effect
+	cFinal.xyz += modeColorMask * rimStrength * EffectLayerParams1.z * hitEffectMultiplier;
+
+#endif // _RT_SAMPLE1
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
+  // "Maximum Suit"
+#if %_RT_SAMPLE0
+
+  #define maxSuitPulseSpeed		14.0
+  #define maxSuitMinPow			1.0
+  #define maxSuitPow			4.0
+  #define maxSuitMultiplier		100.0
+  
+  half normViewDot = dot( vNormal, vView.xyz );
+  half maxSuitRimStrength = 1.0 - abs(normViewDot);
+  half maxSuitPulseTime = saturate(cos(EffectLayerTime.x*maxSuitPulseSpeed));
+  
+  maxSuitRimStrength = pow(maxSuitRimStrength,maxSuitMinPow+(maxSuitPow*(1.0-maxSuitPulseTime)));
+  maxSuitRimStrength *= maxSuitPulseTime * cDiffuseMap.w * maxSuitMultiplier;
+  
+  // Lighting
+  normViewDot = saturate( normViewDot );
+  fFresnel = 0.75  + (1 - 0.75) * (1-normViewDot)* (1-normViewDot); 
+  
+  cFinal.xyz = lerp(cFinal.xyz,(cDiffuseMap.xyz * cModeColor * maxSuitRimStrength),EffectLayerParams1.x);
+ 
+#endif // _RT_SAMPLE0
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
+  // Compute transition plasma/sparks
+
+#if %_RT_SAMPLE2
+
+  fPatternAnimMask  = GetTexture2D(effectMaskTex, ssMaterialTrilinear, IN.baseTC.xy*2 + EffectLayerTime.z ).w;
+  fPatternAnimMask += GetTexture2D(effectMaskTex, ssMaterialTrilinear, IN.baseTC.xy*0.25 + fPatternAnimMask*0.1 - EffectLayerTime.y).w;
+
+  half2 vSparks = EffectLayerTime.x * half2(1, 0.6) + saturate(cBumpMap.z)*0.2 + fPatternAnimMask + half2(0.2, 0.6);
+  vSparks = tex2D(effectAnimFunctionSampler, vSparks).yx * 2;
+
+  // Function texture returns for blue channel:
+  //vSparks = frac( vSparks );
+  //vSparks = 1 - abs( vSparks * 2-1 );
+  //vSparks = pow(vSparks, 64 * half2(0.25, 1));
+  //vSparks = dot( vSparks, 1);
+
+  vSparks *= EffectLayerParams0.w; // apply flickering ( abs(frac( Time *20 + Time)*2-1)  )
+
+  // Compute final plasma/sparks color
+  half3 cSparksColor = GetTexture2D(effectColorTex, ssMaterialBilinearClamp, float2( fInvNdotE , 1 ) ) * fInvNdotE;
+  // output overbrighted sparks (hdr bloom will kick in)
+  cFinal += 20 * cDiffuseMap.w * vSparks.x * cSparksColor * saturate( cBumpMap.z ) * EffectLayerParams1.w ; 
+
+#endif // _RT_SAMPLE2
+
+  OUT.Color = half4(cFinal *PS_HDR_RANGE_ADAPT_MAX, 1);
+	OUT.Color.w = saturate(1-4*cPatternMasks.x) * cDiffuseMap.w * saturate( 4 * fFresnel * EffectLayerParams1.y );
+
+  return OUT;
+}
+
+//////////////////////////////// technique ////////////////
+
+technique EffectLayerPass
+{
+  pass p0
+  {
+    VertexShader = Common_EffectLayerPassVS() EffectLayerVS;
+    PixelShader = Common_EffectLayerPassPS() EffectLayerPS;
+
+    ZEnable = true;
+    ZWriteEnable = false;
+    CullMode = Back;
+    ZFunc = LEqual; 
+
+    ///IgnoreMaterialState = true;
+  }
+}

@@ -1,0 +1,200 @@
+<PrecacheLists>
+
+	<Always>
+		<FlashTexs>
+			<FlashTex name = 'textures/sprites/hud/dirt1_bullet.tif' />
+			<FlashTex name = 'textures/sprites/hud/dirt2_bullet.tif' />
+			<FlashTex name = 'textures/sprites/hud/dirt3_bullet.tif' />
+			<FlashTex name = 'textures/sprites/hud/blood1_bullet.tif' />
+			<FlashTex name = 'textures/sprites/hud/blood2_bullet.tif' />
+			<FlashTex name = 'textures/sprites/hud/blood3_bullet.tif' />
+			<FlashTex name = 'textures/weapons/assault_blurmask.tif' />
+			<FlashTex name = 'textures/weapons/attach_zoom_blurmask.tif' />
+			<FlashTex name = 'textures/weapons/binocular_blurmask.tif' />
+			<FlashTex name = 'textures/weapons/damage_blurmask.tif' />
+			<FlashTex name = 'textures/weapons/ironzoom_blurmask.tif' />
+			<FlashTex name = 'textures/weapons/sniper_blurmask.tif' />
+		</FlashTexs>
+		<GFXs>
+			<!--Flash paths need to start with '/libs/'-->
+			<GFX name = '/libs/ui/Menus_Background.gfx' />
+			<GFX name = '/libs/ui/Menus_Confirmation.gfx' />
+			<GFX name = '/libs/ui/Menus_Dialogs.gfx' />
+			<GFX name = '/libs/ui/Menus_Startmenu.gfx' />
+		</GFXs>
+		<ADBTagDefs>
+			<ADBTagDef name = 'Animations/Mannequin/ADB/blendRagdollTags.xml'/>
+		</ADBTagDefs>
+	</Always>
+
+	<GameMode name='Multiplayer'>
+		<CDFs>
+			<CDF name = 'Objects/characters/human/sdk_player/sdk_player.cdf' />
+		</CDFs>
+		<DBAs>
+			<DBA name ='animations/human/male/locomotion.dba' />
+			<DBA name ='animations/human/male/locomotion/vault.dba' />
+			<DBA name ='animations/human/male/locomotion/rifle.dba' />
+			<DBA name ='animations/human/male/locomotion/pistol.dba' />
+			<DBA name ='animations/human/male/locomotion/slide.dba' />
+			<DBA name ='animations/human/male/locomotion/jump.dba' />
+			<DBA name ='animations/human/male/smartObjects/coophuman.dba' />
+			<DBA name ='animations/human/male/weapons/generic_1p.dba' />
+			<DBA name ='animations/human/male/weapons/generic.dba' />
+			<DBA name ='animations/human/male/weapons/pickable/pickable_1p.dba' />
+			<DBA name ='animations/human/male/weapons/pickable/pickable_3p.dba' />
+		</DBAs>
+		<CGFs>
+			<CGF name = 'objects/weapons/attachments/assault/assault_scope_tp.cgf' />
+			<CGF name = 'objects/weapons/attachments/flash_light/flash_light.cgf' />
+			<CGF name = 'objects/weapons/attachments/pistol_magazine/pistol_magazine_tp.cgf' />
+			<CGF name = 'objects/weapons/attachments/rifle_magazine/rifle_magazine.cgf' />
+			<CGF name = 'objects/weapons/attachments/silencer/silencer_rifle_tp.cgf' />
+			<CGF name = 'objects/weapons/attachments/sniper/sniper_scope_a_tp.cgf' />
+			<CGF name = 'objects/weapons/rifle/rifle_fp_ironsight.cgf' />
+		</CGFs>
+		<Particles>
+			<Particle name = 'Explosions.grenade_air.explosion' />
+		</Particles>
+		<VehicleXMLs>
+			<VehicleXML name='Scripts/Entities/Vehicles/Implementations/Xml/HMMWV.xml'/>
+			<VehicleXML name='Scripts/Entities/Vehicles/Implementations/Xml/MH60_Blackhawk.xml'/>
+			<VehicleXML name='Scripts/Entities/Vehicles/Implementations/Xml/SpeedBoat.xml'/>
+			<VehicleXML name='Scripts/Entities/Vehicles/Implementations/Xml/Abrams.xml'/>
+		</VehicleXMLs>
+		<FlashTexs>
+			<FlashTex name = 'libs/ui/textures/menus_startmenu_noise.tif' />
+			<FlashTex name = 'textures/sprites/glow/glow_linear_uncompressed.dds' />
+		</FlashTexs>
+		<Ammos>
+			<Ammo name="PistolBullet" />
+			<Ammo name="PistolBulletIncendiary" />
+			<Ammo name="RifleBullet" />
+			<Ammo name="ShotgunShell" />
+			<Ammo name="ShotgunShellSolid" />
+			<Ammo name="Rocket" />
+			<Ammo name="ExplosiveGrenade" />
+			<Ammo name="SmokeGrenade" />
+			<Ammo name="Tank125" />
+			<Ammo name="MGbullet" />
+		</Ammos>
+		<BodyDamages>
+			<BodyDamage body="Libs/BodyDamage/BodyDamage_MP.xml" parts="Libs/BodyDamage/BodyParts_HumanMaleShared.xml" />
+			<BodyDestruction name="Libs/BodyDamage/BodyDestructibility_Default.xml" />
+		</BodyDamages>
+		<GFXs>
+			<!--Flash paths need to start with '/libs/'-->
+			<GFX name = '/libs/ui/Menus_Background.gfx' />
+			<GFX name = '/libs/ui/Menus_Confirmation.gfx' />
+			<GFX name = '/libs/ui/Menus_Dialogs.gfx' />
+			<GFX name = '/libs/ui/Menus_Startmenu.gfx' />
+		</GFXs>
+		<ADBs>
+			<ADB name = 'Animations/Mannequin/ADB/humanSlaveAnims3P.adb'/>
+		</ADBs>
+	</GameMode>
+
+	<GameMode name='SinglePlayer'>
+		<CDFs>
+			<CDF name = 'objects/weapons/rifle/rifle_fp.cdf' />
+			<CDF name = 'objects/weapons/pistol/pistol_fp.cdf' />
+			<CDF name = 'objects/weapons/shotgun/shotgun.cdf' />
+		</CDFs>
+		<CGFs>
+			<CGF name = 'objects/weapons/rifle/rifle_tp.cgf' />
+			<CGF name = 'objects/weapons/rifle/rifle_fp_ironsight.cgf' />
+			<CGF name = 'objects/weapons/pistol/pistol_tp.cgf' />
+			<CGF name = 'objects/weapons/shotgun/shotgun_tp.cgf' />
+			<CGF name = 'objects/weapons/attachments/pistol_magazine/pistol_magazine_fp.cgf' />
+			<CGF name = 'objects/weapons/attachments/rifle_magazine/rifle_magazine.cgf' />
+			<CGF name = 'objects/weapons/attachments/silencer/silencer_rifle_fp.cgf' />
+			<CGF name = 'objects/weapons/attachments/silencer/silencer_rifle_tp.cgf' />
+		</CGFs>
+		<FlashTexs>
+			<FlashTex name = 'libs/ui/textures/menus_startmenu_noise.tif' />
+		</FlashTexs>
+		<GFXs>
+			<!--Flash paths need to start with '/libs/'-->
+			<GFX name = '/libs/ui/Menus_Background.gfx' />
+			<GFX name = '/libs/ui/Menus_Confirmation.gfx' />
+			<GFX name = '/libs/ui/Menus_Dialogs.gfx' />
+			<GFX name = '/libs/ui/Menus_Startmenu.gfx' />
+		</GFXs>
+	</GameMode>
+
+	<Level name='Woodland'>
+		<!--<CGFs>
+			<CGF name = 'Objects/weapons/equipment/binoculars/binoculars_tp.cgf' />
+		</CGFs>
+		<GFXs>-->
+			<!--Flash paths need to start with '/libs/'-->
+			<!--<GFX name='/libs/ui/overlays/jailbreak.gfx' />
+			<GFX name='/levels/jailbreak/minimap/jailbreak.gfx' />
+			<GFX name='/libs/ui/overlays/fields.gfx' />
+		</GFXs>
+		<FlashTexs>
+			<FlashTex name = 'libs/ui/cinematics/jailbreak_environment_scanning_screen.tif' />
+			<FlashTex name = 'libs/ui/allinone_hud_3d_noise_textue_1.tif' />
+			<FlashTex name = 'libs/ui/allinone_hud_3d_noise_textue_2.tif' />
+			<FlashTex name = 'libs/ui/allinone_hud_3d_noise_textue_3.tif' />
+			<FlashTex name = 'libs/ui/allinone_hud_3d_noise_textue_4.tif' />
+			<FlashTex name = 'libs/ui/allinone_hud_3d_noise_textue_5.tif' />
+			<FlashTex name = 'libs/ui/allinone_hud_3d_noise_textue_6.tif' />
+		</FlashTexs>-->
+	</Level>
+
+	<!--<GameMode name='CaptureTheFlag'>
+		<Sounds>
+			<Sound name='sounds/mp_mode_ctr:'/>
+		</Sounds>
+		<AudioHints>
+			<AudioHint name='CaptureTheFlag'/>
+		</AudioHints>
+		<CGFs>
+			<CGF name = 'objects/multiplayer/props/cw2_ctf_flag/cw2_ctf_flag_red.cgf' />
+			<CGF name = 'objects/multiplayer/props/cw2_ctf_flag/cw2_ctf_flag_red_lod1.cgf' />
+			<CGF name = 'objects/multiplayer/props/cw2_ctf_flag/cw2_ctf_flag_blue.cgf' />
+			<CGF name = 'objects/multiplayer/props/cw2_ctf_flag/cw2_ctf_flag_blue_lod1.cgf' />
+		</CGFs>
+	</GameMode>
+
+	<GameMode name='Assault'>
+		<CDFs>
+			<CDF name = 'objects/characters/human/rebels/rebelMP_01.cdf' />
+			<CDF name = 'objects/characters/human/rebels/rebelMP_02.cdf' />
+			<CDF name = 'objects/characters/human/rebels/rebelMP_03.cdf' />
+		</CDFs>
+		<Sounds>
+			<Sound name='sounds/mp_mode_assault:'/>
+		</Sounds>
+		<AudioHints>
+			<AudioHint name='Assault'/>
+		</AudioHints>
+		<FlashTexs>
+			<FlashTex name = 'Objects/multiplayer/props/cw2_screen_prototype/textures/green_bgpl.dds' />
+			<FlashTex name = 'Objects/multiplayer/props/cw2_screen_prototype/textures/green_bg.dds' />
+			<FlashTex name = 'Objects/multiplayer/props/cw2_screen_prototype/textures/nanologo.dds' />
+			<FlashTex name = 'Objects/multiplayer/props/cw2_screen_prototype/textures/marineslogo.dds' />
+			<FlashTex name = 'Objects/multiplayer/props/cw2_screen_prototype/textures/data_stream.dds' />
+			<FlashTex name = 'Objects/multiplayer/props/cw2_screen_prototype/textures/disk_rev.dds' />
+		</FlashTexs>
+	</GameMode>
+
+	<GameMode name='AllOrNothing'>
+	</GameMode>
+
+	<MultiplayerOption name='Classic'>
+		<CDFs>
+			<CDF name = 'Objects/Characters/Human/us/cell/trooper/cell_trooperMP_01.cdf' />
+			<CDF name = 'Objects/Characters/Human/us/cell/flanker/cell_flankermp_01.cdf' />
+			<CDF name = 'Objects/Characters/Human/us/cell/heavy/cell_heavymp_01.cdf' />
+			<CDF name = 'Objects/Characters/Human/us/cell/sniper/cell_snipermp_01.cdf' />	  
+			<CDF name = 'objects/characters/human/rebels/rebelMP_01.cdf' />
+			<CDF name = 'objects/characters/human/rebels/rebelMP_02.cdf' />
+			<CDF name = 'objects/characters/human/rebels/rebelMP_03.cdf' />
+			<CDF name = 'objects/characters/human/rebels/rebelMP_04.cdf' />
+			<CDF name = 'objects/characters/human/rebels/rebelMP_05.cdf' />
+		</CDFs>
+	</MultiplayerOption>-->
+
+</PrecacheLists>

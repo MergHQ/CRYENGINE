@@ -1,0 +1,70 @@
+<GoalPipes>
+	<GoalPipe name="HeliRelocate">
+		<fly id="Run" blocking="true" register="RefPoint" lookahead="25.0"/>
+		<Script code="entity.Behavior:OnGoToSucceeded(entity);" />
+	</GoalPipe>
+
+	<GoalPipe name="HeliFollowPath">
+		<fly id="Run" blocking="true" register="Path" lookahead="25.0"/>
+	</GoalPipe>
+
+	<GoalPipe name="HeliChaseTarget">
+		<chasetarget id="Run" blocking="true" register="AttTarget" lookahead="25.0"/>
+	</GoalPipe>
+	
+	<GoalPipe name="HeliFireRockets">
+		<hover id="Run" blocking="false" register="RefPoint" continousUpdate="true"/>
+		<fireWeapons primary="1" secondary="0" minFireTime="2.5" maxFireTime="3.5" register="RefPoint" blocking="true"/>
+	</GoalPipe>
+
+	<GoalPipe name="HeliRockets">
+		<fireWeapons primary="1" secondary="0" minFireTime="2.5" maxFireTime="3.5" blocking="false"/>
+	</GoalPipe>
+
+
+	<GoalPipe name="HeliMayham">
+		<Loop>
+			<hover id="Run" blocking="false"/>
+		</Loop>
+	</GoalPipe>
+
+
+	<GoalPipe name="HeliShootTest">
+		<fireWeapons primary="1" secondary="17185" minFireTime="16.5" maxFireTime="17.5" register="RefPoint" blocking="true"/>
+	</GoalPipe>
+
+
+
+	<GoalPipe name="HeliFireRockets222">
+		<hover id="Run" blocking="false" register="AttTarget" continousUpdate="true"/>
+		<fireWeapons primary="1" secondary="0" minFireTime="2.5" maxFireTime="3.5" register="AttTarget" blocking="true"/>
+	</GoalPipe>
+
+
+	<GoalPipe name="HeliIdle">
+		<hover id="Run" />
+	</GoalPipe>
+
+	<GoalPipe name="HeliFlyBy">
+		<acquirePosition register="AttTarget" output="RefPoint"/>
+		<fireWeapons primary="1" secondary="17185" minFireTime="5.5" maxFireTime="7.5" register="AttTarget" blocking="false"/>
+		<fly id="Run" blocking="true" register="RefPoint" continousUpdate="true" lookahead="25.0"/>
+		<Signal name="OnDestinationReached"/>
+	</GoalPipe>
+
+	<GoalPipe name="HeliShoot222">
+		<Loop>
+			<hover id="Run" blocking="false" register="RefPoint" continousUpdate="false"/>
+			<fireWeapons primary="0" secondary="17185" minFireTime="5.5" maxFireTime="7.5" register="RefPoint" blocking="true"/>
+		</Loop>
+	</GoalPipe>
+
+	<GoalPipe name="HeliHovering">
+		<hover id="Run" blocking="false" register="AttTarget" continousUpdate="true"/>
+	</GoalPipe>
+
+	<GoalPipe name="HeliShootAt">
+		<hover id="Run" blocking="false" register="RefPoint" continousUpdate="false"/>
+	</GoalPipe>
+</GoalPipes>
+

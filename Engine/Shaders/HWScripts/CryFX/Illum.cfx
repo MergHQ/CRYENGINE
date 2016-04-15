@@ -1,0 +1,714 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "IllumValidations.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =        
+           "Public;"
+#if %DECAL
+           "Decal;"
+#endif     
+#if %VERTCOLORS
+           "VertexColors"
+#endif
+#if ENABLE_TESSELLATION
+					 "HWTessellation;"
+#endif
+           "SupportsDeferredShading;"
+					 "SupportsFullDeferredShading;"
+           "SupportsAttrInstancing;"
+           "ShaderDrawType = Light;"
+           "ShaderType = General;"
+>;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////// Custom shading pass structure /////////////////////////////////////
+struct fragPassCustom
+{
+  // Custom per pass data     
+  half3 vTangent;        // perturbed tangent vector
+  half3 vBinormal;       // perturbed binormal vector
+  half2 vSurfaceRoughness;
+};
+
+struct fragLightPassCustom
+{
+}; 
+
+#if %BLENDLAYER
+Texture2D Diffuse2Tex : register(t9)
+<
+  UIName = "Second Diffuse Map";
+  UIDescription = "Diffuse Map for the second blend layer";  
+  sRGBLookup = true;
+> = TM_Custom;
+
+Texture2D Bump2Tex : register(t10)
+<
+  UIName = "Second Bump Map";
+  UIDescription = "Bump Map for the second blend layer";
+> = TM_CustomSecondary;
+
+Texture2D Height2Tex : register(t8)
+<
+  UIName = "Second Height Map";
+  UIDescription = "Height Map for the second blend layer";
+> = TM_SubSurface;
+
+Texture2D BlendTex : register(t11)
+<
+  UIName = "Blending Map";
+  UIDescription = "Blending Map between the two layers";
+> = TM_Opacity;
+
+Texture2D smoothness2Tex : register(t7) = TM_DecalOverlay;
+#endif
+
+#if %DECAL
+Texture2D DecalOpacityTex : register(t11)
+<
+  UIName = "Decal Opacity Map";
+  UIDescription = "Opacity map for decal";
+> = TM_Opacity;
+#endif
+
+Texture2D emittanceTex : register(t13)
+<
+  UIName = "Emittance";
+  UIDescription = "Emittance color/intensity map";
+> = TM_Emittance;
+
+ENVIRONMENTCUBEMAP
+DISSOLVE_NOISE_MAP
+
+#include "ShadeLib.cfi"
+
+// Tweakables /////////////////
+
+half EmittanceMapGamma
+<
+  register = REG_PM_PARAM_0.x;
+  string UIWidget = "slider";
+  string UIName = "Emittance Map Gamma";
+	string UIDescription = "Expand range of emittance texture";
+  float UIMin = 1.0;
+  float UIMax = 2.0;
+  float UIStep = 0.1;
+> = 1.0;
+
+#if %OFFSET_BUMP_MAPPING
+half ObmDisplacement
+<
+  register = REG_PM_PARAM_0.y;
+  string UIWidget = "slider";
+  string UIName = "OBM Displacement";
+  float UIMin = 0.0;
+  float UIMax = 0.025;
+  float UIStep = 0.001;
+> = 0.004;
+#endif
+
+#if %PARALLAX_OCCLUSION_MAPPING
+half PomDisplacement
+<
+  register = REG_PM_PARAM_0.z;
+  string UIWidget = "slider";
+  string UIName = "POM Displacement";
+  float UIMin = 0.0;
+  float UIMax = 0.05;
+  float UIStep = 0.001;
+> = 0.025;
+#endif
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+half SilPomDisplacement
+<
+  register = REG_PM_PARAM_0.w;
+  string UIWidget = "slider";
+  string UIName = "Silhouette POM Displacement";
+  float UIMin = 0.001;
+  float UIMax = 10.0;
+  float UIStep = 0.001;
+> = 0.025;
+
+float SilPomNumSteps
+<
+  register = REG_PM_PARAM_1.x;
+  string UIWidget = "slider";
+  string UIName = "Silhouette POM Number of steps";
+  float UIMin = 4.0;
+  float UIMax = 512.0;
+  float UIStep = 1.0;
+> = 256.0;
+
+float SilPomStepSizeViewDep
+<
+  register = REG_PM_PARAM_1.y;
+  string UIWidget = "slider";
+  string UIName = "Silhouette POM Step size view independence";
+  float UIMin = 1.0;
+  float UIMax = 10.0;
+  float UIStep = 0.1;
+> = 1.0;
+#endif
+
+#if %OFFSET_BUMP_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+half HeightBias
+<
+  register = REG_PM_PARAM_1.z;
+  string UIWidget = "slider";
+  string UIName = "Height bias";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.05;
+> = 1.0;
+
+half SelfShadowStrength
+<
+  register = REG_PM_PARAM_1.w;
+  string UIWidget = "slider";
+  string UIName = "Self shadow strength";
+  float UIMin = 0.0;
+  float UIMax = 5.0;
+  float UIStep = 0.1;
+> = 3.0;
+#endif
+
+
+#if %DETAIL_MAPPING
+	half DetailBumpScale
+	<
+	  register = REG_PM_PARAM_2.x;
+	  string UIHelp = "Set detail bump scale";                     
+	  string UIName = "Detail bump scale";    	  
+	  string UIWidget = "slider";
+	  float UIMin = 0.0;
+	  float UIMax = 10.0;
+	  float UIStep = 0.1;
+	> = 0.5;
+	
+	half DetailDiffuseScale
+	<
+	  register = REG_PM_PARAM_2.y;
+	  string UIHelp = "Set diffuse detail blend scale";                     
+	  string UIName = "Detail diffuse scale";    	  
+	  string UIWidget = "slider";
+	  float UIMin = 0.0;
+	  float UIMax = 1.0;
+	  float UIStep = 0.1;
+	> = 0.5;
+
+	half DetailGlossScale
+	<
+	  register = REG_PM_PARAM_2.z;
+	  string UIHelp = "Set gloss detail blend scale";                     
+	  string UIName = "Detail gloss scale";    	  
+	  string UIWidget = "slider";
+	  float UIMin = 0.0;
+	  float UIMax = 1.0;
+	  float UIStep = 0.1;
+	> = 0.5;
+#endif
+
+#if %DIRTLAYER
+half4 DirtTint
+<
+  register = REG_PM_PARAM_3;
+  string UIHelp = "Color tint of dirt layer";                   
+  string UIName = "Dirt Tint";    
+  string UIWidget = "color";
+> = {1.0, 1.0, 1.0, 1.0};
+
+
+// TODO: We should add support for overloading the alpha of a color dialog
+half DirtStrength
+<
+  register = REG_PM_PARAM_4.x;
+  string UIHelp = "Fade out dirt";
+  string UIName = "Dirt Strength";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.1;
+> = 1.0;
+
+half DirtGlossFactor
+<
+  register = REG_PM_PARAM_4.y;
+  string UIHelp = "Fade out gloss map";
+  string UIName = "Dirt Gloss";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.1;
+> = 1.0;
+
+
+half DirtMapAlphaInfluence
+<
+  register = REG_PM_PARAM_4.z;
+  string UIHelp = "Interpolate dirt map opacity between alpha value and fully opaque";
+  string UIName = "Dirt Map Alpha";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.1;
+> = 1.0;
+
+
+half DirtTiling
+<
+  register = REG_PM_PARAM_4.w;
+  string UIHelp = "Set tilling of dirt layer";
+  string UIName = "Dirt Tilling";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 16.0;
+  float UIStep = 0.05;
+> = 1.0;
+#endif
+
+#if %BLENDLAYER
+half BlendFactor
+<
+  register = REG_PM_PARAM_5.x;
+  string UIHelp = "Change visbility of blended layer";
+  string UIName = "Blend Factor";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 16.0;
+  float UIStep = 0.2;
+> = 8.0;
+
+half BlendLayer2Tiling
+<
+  register = REG_PM_PARAM_5.y;
+  string UIHelp = "Change tiling of 2nd blend layer";
+  string UIName = "Blend Layer 2 Tiling";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 20.0;
+  float UIStep = 0.005;
+> = 1.0;
+
+half BlendFalloff
+<
+  register = REG_PM_PARAM_5.z;
+  string UIHelp = "Change falloff of blending";
+  string UIName = "Blend Falloff";
+  string UIWidget = "slider";
+  float UIMin = 0.1;
+  float UIMax = 128.0;
+  float UIStep = 1.0;
+> = 32.0;
+
+half BlendLayer2Specular
+<
+  register = REG_PM_PARAM_5.w;
+  string UIHelp = "Change specular intensity of 2nd blend layer";
+  string UIName = "Blend Layer 2 Spec";
+  string UIWidget = "slider";
+  float UIMin = 0.02;
+  float UIMax = 0.05;
+  float UIStep = 0.001;
+> = 0.04;
+
+half BlendMaskTiling
+<
+  register = REG_PM_PARAM_6.x;
+  string UIHelp = "Change tiling of blend mask";
+  string UIName = "Blend Mask Tiling";
+  string UIWidget = "slider";
+  float UIMin = 0.05;
+  float UIMax = 20.0;
+  float UIStep = 0.05;
+> = 1.0;
+#endif
+
+
+#if !%DIRTLAYER && !%DECAL  // Reusing register
+half SSSIndex
+<
+  register = REG_PM_PARAM_6.y;
+  string UIHelp = "Change subsurface scattering profile and amount (0.0-0.99: marble, 1.0-1.99: skin)";
+  string UIName = "SSS Index";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 3.99;
+  float UIStep = 0.005;
+> = 0;
+#endif
+
+#if %DECAL && !%DIRTLAYER  // Reusing DIRTLAYER registers
+half DecalFalloff
+<
+  register = REG_PM_PARAM_6.z;
+  string UIHelp = "Pow applied to decal alpha";
+  string UIName = "Decal Alpha Falloff";
+  string UIWidget = "slider";
+  float UIMin = 0.0001;
+  float UIMax = 128.0;
+  float UIStep = 1;
+> = 1;
+
+half DecalAlphaMult
+<
+  register = REG_PM_PARAM_6.w;
+  string UIHelp = "Multiplier applied to decal alpha";
+  string UIName = "Decal Alpha Multiplier";
+  string UIWidget = "slider";
+  float UIMin = 0;
+  float UIMax = 10;
+  float UIStep = 0.01;
+> = 1;
+
+half DecalDiffuseOpacity
+<
+  register = REG_PM_PARAM_7.x;
+  string UIHelp = "Opacity multiplier for fading out decal diffuse color";
+  string UIName = "Decal Diffuse Opacity";
+  string UIWidget = "slider";
+  float UIMin = 0;
+  float UIMax = 1;
+  float UIStep = 0.01;
+> = 1;
+#endif
+
+float4 GlowParams : PB_GlowParams;
+
+
+//=========================================================================
+
+#include "VertexLib.cfi"
+
+///////////////////////////////
+// Samplers
+
+Texture2D dirtTex : register(t9)
+<
+  UIName = "Dirt Map";
+  UIDescription = "Dirt Map";
+> = TM_Custom;
+
+//=======================================================================
+//  Lighting
+//=======================================================================
+
+///////////////// light vertex shader //////////////////
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+vert2GeomGeneral IlluminationVS(app2vertGeneral IN)
+#else
+vert2FragGeneral IlluminationVS(app2vertGeneral IN)
+#endif
+{
+  vert2FragGeneral OUT = (vert2FragGeneral)0; 
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+  vert2GeomGeneral OUT_ext = (vert2GeomGeneral)0; 
+#endif
+
+  streamPos vertPassPos = (streamPos)0;
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+  vs_shared_output(IN, OUT, OUT_ext, vertPassPos, true);
+#else
+  vs_shared_output(IN, OUT, vertPassPos, true);
+#endif
+	
+#if %DECAL && !%_TT_TEXCOORD_PROJ
+	OUT.baseTC.zw = IN.vertCommon.baseTC.xy;
+#endif
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+  OUT_ext.IN = OUT;
+  return OUT_ext;
+#else
+  return OUT;
+#endif
+}
+
+///////////////// geometry shaders //////////////////
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+[maxvertexcount(9)]
+void IlluminationGS(triangle vert2GeomGeneral In[3], inout TriangleStream<geom2FragGeneral> OutStream)
+{
+	EmitPrismG(In[0], In[1], In[2], OutStream);
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void frag_unify_parameters( inout fragPass pPass )
+{
+  
+  pPass.bRenormalizeNormal = true;
+  pPass.bForceRenormalizeNormal = true;
+  pPass.bHemisphereLighting = true;
+  pPass.bDisableInShadowShading = true;
+  pPass.bDeferredSpecularShading = true;
+  
+  pPass.fFresnel_Bias = 1;
+  pPass.fFresnel_Scale = 0;
+
+#if %OFFSET_BUMP_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+  GetMicroDetailParams(pPass.nMicroDetailQuality, pPass.fBumpHeightScale, pPass.fHeightBias, pPass.fSelfShadowStrength);
+#endif
+
+#if %VERTCOLORS
+  pPass.bVertexColors = true;
+#endif
+
+#if %DETAIL_MAPPING
+	pPass.bDetailBumpMapping = true;
+	pPass.vDetailBumpTilling = half2(CM_DetailTilingAndAlphaRef.xy);
+	pPass.fDetailBumpScale = DetailBumpScale;
+	pPass.vDetailBlendAmount = half2(DetailDiffuseScale, DetailGlossScale);
+	
+	#if %ALPHAMASK_DETAILMAP
+		pPass.bDetailBumpMappingMasking = true;
+	#endif
+	
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void frag_custom_begin( inout fragPass pPass )
+{
+  float4 baseTC = pPass.IN.baseTC;
+  float4 bumpTC = pPass.IN.bumpTC;
+
+  // load the diffuse texture
+#if %DECAL && %_RT_DECAL_TEXGEN_2D
+  #if %_TT_TEXCOORD_PROJ
+   pPass.cDiffuseMap = GetDiffuseDecalTex(diffuseTex, baseTC.xy / baseTC.w);
+  #else
+   pPass.cDiffuseMap = GetDiffuseDecalTex(diffuseTex, baseTC.xy);
+  #endif 
+#endif
+
+  // load the gloss
+  pPass.cSpecularMap = MatSpecColor;
+#if %SPECULAR_MAP
+  #if !%SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+    pPass.cSpecularMap *= GetSpecularTex(specularTex, baseTC.xy);
+  #else
+    pPass.cSpecularMap *= GetSpecularTexLod(specularTex, float4(baseTC.xy, 0, 0)); // TODO: find way to compute lod without gradients as they cause pixel artifacts at fin / shell transition
+  #endif
+#endif
+
+	pPass.fGloss *= GetSmoothnessTex(smoothnessTex, baseTC.xy);
+
+  // Output alpha
+  half fAlpha = pPass.cDiffuseMap.a * MatDifColor.w;
+  if (pPass.bVertexColors)
+    fAlpha *= pPass.IN.Color.w;
+
+#if %DECAL
+	#if !%_TT_TEXCOORD_PROJ
+		fAlpha *= GetOpacityTex(DecalOpacityTex, baseTC.zw).r;
+	#else
+		fAlpha *= GetOpacityTex(DecalOpacityTex, baseTC.xy).r;
+	#endif
+	#if !%DIRTLAYER
+		fAlpha = saturate(pow(fAlpha * DecalAlphaMult, DecalFalloff));
+	#endif
+#endif
+
+#if %_RT_DECAL_TEXGEN_2D
+  fAlpha *= 100.0 / 99.0; //saturate(1 - dot(pPass.IN.DistAtten, pPass.IN.DistAtten));
+#endif
+
+  pPass.fAlpha = fAlpha; //* pPass.IN.Ambient.w;
+
+#if %DIRTLAYER
+  half4 dirtMap = GetCustomTex(dirtTex, baseTC.xy * half2(DirtTiling, DirtTiling));
+  half dirtBlendFac = DirtStrength * lerp(1.0h, dirtMap.a, DirtMapAlphaInfluence) * (1.0h - pPass.IN.Color.a);
+  pPass.cDiffuseMap = lerp(pPass.cDiffuseMap, dirtMap * DirtTint, dirtBlendFac);
+  pPass.cSpecularMap = lerp( pPass.cSpecularMap, pPass.cSpecularMap * DirtGlossFactor, dirtBlendFac);
+#endif
+
+#if %BLENDLAYER
+	#if !%SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+		half4 diffuseMap2 = GetDiffuse2Tex(Diffuse2Tex, baseTC.xy * BlendLayer2Tiling);
+	#else
+		half4 diffuseMap2 = GetDiffuse2TexLod(Diffuse2Tex, float4(baseTC.xy * BlendLayer2Tiling, 0, 0)); // TODO: find way to compute lod without gradients as they cause pixel artifacts at fin / shell transition
+	#endif
+	pPass.cDiffuseMap = lerp( pPass.cDiffuseMap, diffuseMap2, pPass.blendFac );
+	
+	#if !%SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+		half glossLayer2 = GetSmoothness2Tex(smoothness2Tex, baseTC.xy * BlendLayer2Tiling);
+	#else
+		half glossLayer2 = GetSmoothness2TexLod(smoothness2Tex, float4(baseTC.xy * BlendLayer2Tiling, 0, 0)); // TODO: find way to compute lod without gradients as they cause pixel artifacts at fin / shell transition
+	#endif
+	pPass.fGloss = lerp( pPass.fGloss, glossLayer2, pPass.blendFac );
+	
+	pPass.cSpecularMap.rgb = lerp( pPass.cSpecularMap.rgb, BlendLayer2Specular, pPass.blendFac );
+#endif
+
+	pPass.cDiffuseMap.xyz *= MatDifColor.xyz;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void frag_custom_per_light( inout fragPass pPass, inout fragLightPass pLight )
+{
+	pLight.fNdotL = saturate(pLight.fNdotL);
+  
+	half3 cDiffuse = pLight.cDiffuse.xyz * DiffuseBRDF(pPass.vNormal.xyz, pPass.vView, pLight.vLight, pPass.fGloss, pLight.fNdotL);
+	half3 cSpecular = pLight.cSpecular.xyz * SpecularBRDF(pPass.vNormal, pPass.vView, pLight.vLight, pPass.fGloss, pPass.cSpecularMap.rgb) * pLight.fNdotL;
+    
+	half3 cK = pLight.fOcclShadow * pLight.fFallOff * pLight.cFilter;
+  
+	pPass.cDiffuseAcc.xyz += cDiffuse.xyz * cK.xyz;
+	pPass.cSpecularAcc.xyz += cSpecular.xyz * cK.xyz;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// remove cAmbient, store in cAmbientAcc
+void frag_custom_ambient( inout fragPass pPass, inout half3 cAmbient)
+{    
+  pPass.cAmbientAcc.xyz += cAmbient.xyz;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void frag_custom_end( inout fragPass pPass, inout half3 cFinal )
+{
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "fragLib.cfi"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+half3 GetEmittance(fragPass pPass)
+{
+	half4 emittanceMap = GetEmittanceTex(emittanceTex, pPass.IN.baseTC.xy);
+	
+	// Increase the range of non-HDR textures:
+	//   AdjustLuminance(emittanceMap.rgb, pow(GetLuminance(emittanceMap.rgb), Gamma));
+	emittanceMap.rgb *= pow(max(GetLuminance(emittanceMap.rgb), 1e-6), EmittanceMapGamma - 1);
+	
+	// DEPRECATED: Just for backwards compatibility (up to 3.8.3)
+	emittanceMap.rgb *= emittanceMap.a;
+	
+	return GlowParams.xyz * emittanceMap.rgb;
+}
+
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+pixout IlluminationPS(geom2FragGeneral IN_ext)
+#else
+pixout IlluminationPS(vert2FragGeneral IN)
+#endif
+{
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+  vert2FragGeneral IN = IN_ext.IN;
+#endif
+
+  pixout OUT = (pixout)0;
+  fragPass pPass = (fragPass) 0;
+	
+	frag_unify(pPass, IN);
+	
+	half3 emittance = half3(0, 0, 0);
+	const bool bEmissive = GetLuminance(GlowParams.xyz) > 0;
+	if (bEmissive)
+	{
+		emittance = GetEmittance(pPass);
+	}
+	
+#if %_RT_HDR_MODE  // Deferred shading used
+	if (bEmissive && pPass.IN.Ambient.w == 1)
+	{
+		// Additive glow pass
+		OUT.Color.rgb = emittance;
+		return OUT;
+	}
+#endif
+      
+  half4 cFinal = frag_shared_output(pPass);
+	
+	cFinal.rgb += emittance;
+	
+	HDROutput(OUT, cFinal, 1);
+
+  return OUT;
+}
+
+#include "IllumTess.cfi"
+
+//////////////////////////////// technique ////////////////
+
+technique General
+<
+  string Script =
+        "TechniqueZ=ZPass;"
+#if !%DECAL && !%SILHOUETTE_PARALLAX_OCCLUSION_MAPPING && !ENABLE_TESSELLATION
+				"TechniqueZPrepass=ZPrepass;"
+#endif
+        "TechniqueMotionBlur=MotionBlurPass;"
+        "TechniqueCustomRender=CustomRenderPass;"
+        "TechniqueEffectLayer=EffectLayerPass;"
+        "TechniqueShadowGen=ShadowGen;"
+        "TechniqueDebug=DebugPass;"
+>
+{
+	pass p0
+	{    
+		VertexShader = IlluminationVS() GeneralVS;
+#if ENABLE_TESSELLATION
+		HullShader   = IllumHS() GeneralHS;
+		DomainShader = IllumDS() GeneralDS;
+#endif
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+		GeometryShader = IlluminationGS() GeneralGS;
+#endif
+		PixelShader = IlluminationPS() GeneralPS;
+
+#if %DECAL
+		ZEnable = true;    
+		ZWriteEnable = false;    
+		ZFunc = LEqual;
+
+		CullMode = Back;        
+#else
+		ZEnable = true;    
+		ZWriteEnable = true;    
+		CullMode = Back;
+#endif        
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if !%DECAL && !%SILHOUETTE_PARALLAX_OCCLUSION_MAPPING && !ENABLE_TESSELLATION
+	#include "CommonZPrePass.cfi"
+#endif
+
+#include "CommonZPass.cfi"
+#include "CommonMotionBlurPass.cfi"
+#include "CommonViewsPass.cfi"
+#include "CommonEffectLayerPass.cfi"
+#include "ShadowCommon.cfi"
+#include "CommonShadowGenPass.cfi"
+#include "CommonDebugPass.cfi"
+#if PCDX11
+	#include "MeshBaker.cfi"
+#endif
+
+/////////////////////// eof ///

@@ -1,0 +1,41 @@
+<BehaviorTree>
+
+	<Variables>
+	</Variables>
+
+	<SignalVariables>
+	</SignalVariables>
+
+	<Timestamps>
+	</Timestamps>
+
+	<Root>
+		<StateMachine>
+
+			<State name="Relaxed">
+				<Transitions>
+					<Transition to="FollowTarget" onEvent="OnNewAttentionTarget"/>
+				</Transitions>
+				<BehaviorTree>
+					<Wait duration="9999"/>
+				</BehaviorTree>
+			</State>
+
+			<State name="FollowTarget">
+				<BehaviorTree>
+					<Loop>
+						<SuppressFailure>
+							<Sequence>
+								<!-- <Move to="Target" stance="Stand" speed="Sprint"/> -->
+								<Move to="Target" stance="Stand" speed="Sprint" stopWithinDistance="6"/>
+								<!-- <Wait duration="1.0"/> -->
+							</Sequence>
+						</SuppressFailure>
+					</Loop>
+				</BehaviorTree>
+			</State>
+
+		</StateMachine>
+	</Root>
+
+</BehaviorTree>

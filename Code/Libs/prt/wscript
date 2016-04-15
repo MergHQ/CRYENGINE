@@ -1,0 +1,27 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryEngineStaticModule(
+		target     = 'prt', 
+		vs_filter  = 'Libs',
+		file_list  = 'prt.waf_files',
+		exclude_from_static_code_analyzer = True,
+		use_module = [ 'tiff' ],
+
+		includes   = [
+			Path('Code/Tools'),
+			Path('Code/Tools/PRT'),
+			Path('Code/Tools/SphericalHarmonics')
+		],
+
+		defines    = [
+			'PRT_COMPILE',
+			'OFFLINE_COMPUTATION',
+		],
+		
+		module_provides = dict(
+			includes  = [ Path('Code/Tools/PRT') ],
+		),
+
+	)

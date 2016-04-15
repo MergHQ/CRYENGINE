@@ -1,0 +1,12 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+	
+
+def build(bld):
+	bld.CryEngineModule(
+		target     = 'Cry3DEngine',
+		vs_filter  = 'CryEngine',		
+		file_list  = 'cry3dengine.waf_files',
+		use_module = ['CryParticleSystem', 'lz4'],
+		pch        = 'StdAfx.cpp',		
+	)	
+	bld.recurse('ParticleSystem', name='build')

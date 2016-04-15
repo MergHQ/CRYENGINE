@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>libstetic</name>
+    </assembly>
+    <members>
+        <member name="T:Stetic.Wrapper.NotifyWorkaround">
+            <summary>
+            This class contains a notification work around for a gtk 3 bug where notifications could yield a
+            System.NullReferenceException: Object reference not set to an instance of an object at GLib.Object.NotifyCallback (IntPtr handle, IntPtr pspec, IntPtr gch)
+            </summary>
+        </member>
+    </members>
+</doc>

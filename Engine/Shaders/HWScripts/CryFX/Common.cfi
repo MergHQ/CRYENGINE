@@ -1,0 +1,798 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//  Description: Common include file for ALL shaders 
+//	 - only add when really necessary, this will propagate to ALL shaders
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define INST_STREAM_CUSTOM   \
+
+#define PI 3.1415
+#define PI_X2 6.2831
+#define PI_X4 12.5663
+
+//=== Project specific definitions ==============================================
+
+//=== Render targets custom ID's ================================================
+
+#define _RT2D_WATER_ID 0
+#define _RT2D_DEPTH_ID 1
+#define _RT2D_SCREEN_ID 2
+#define _RT2D_REFRACT_ID 3
+#define _RT2D_TRANSLUCENCE_ID 4
+
+// === HDR fake definitions =====================================================
+
+#define HDR_OVERBRIGHT 8
+#define HDR_FAKE_MAXOVERBRIGHT 16
+#define HDR_EXP_OFFSET 128
+#define HDR_EXP_BASE   1.06
+
+// === Lights definitions ========================================================
+
+#define LT_DIRECTIONAL 0
+#define LT_OMNI        1
+#define LT_PROJECTED   2
+#define LT_TILED       4
+
+//=== Common definitions =========================================================
+
+#include "FXStreamDefs.cfi"
+#include "FXConstantDefs.cfi"
+#include "FXSamplerDefs.cfi"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ComputeGlobalFogPS(inout half3 cOut, float fDist)
+{
+#if %_RT_FOG
+  cOut.xyz = lerp(g_PS_FogColor.xyz, cOut.xyz, fDist);
+#endif  
+}
+
+// Common functions
+half4 EXPAND( half4 a )
+{
+  return a * 2 - 1;
+}
+half3 EXPAND( half3 a )
+{
+  return a * 2 - 1;
+}
+half EXPAND( half a )
+{
+  return a * 2 - 1;
+}
+half2 EXPAND( half2 a )
+{
+  return a * 2 - 1;
+}
+
+float3 TangNormalUnnormalized(float4 Tangent, float4 Binormal)
+{
+  return cross(Tangent.xyz, Binormal.xyz) * Tangent.w;
+}
+
+float3 TangNormal(float4 Tangent, float4 Binormal)
+{
+  return normalize(TangNormalUnnormalized(Tangent, Binormal));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+half4 GetTexture2DGrad(Texture2D tex, SamplerState samplerState, float2 uv, float2 ddxUV, float2 ddyUV) { return tex.SampleGrad(samplerState, uv.xy, ddxUV, ddyUV ); }
+half4 GetTexture2DLod(sampler2D texSampler, float4 uv)                                                  { return tex2Dlod(texSampler, uv); }
+half4 GetTexture2DLod(Texture2D tex, SamplerState samplerState, float4 uv)                              { return tex.SampleLevel(samplerState, uv.xy, uv.w); }
+half4 GetTexture2DProj(sampler2D texSampler, float4 uv)                                                 { return tex2Dproj(texSampler, uv); }
+half4 GetTexture2DProj(Texture2D tex, SamplerState samplerState, float4 uv)                             { return tex.Sample(samplerState, uv.xy * rcp(uv.w)); }
+half4 GetTexture2DBias(sampler2D texSampler, float4 uv)                                                 { return tex2Dbias(texSampler, uv.xyzw); }
+half4 GetTexture2DBias(Texture2D tex, SamplerState samplerState, float4 uv)                             { return tex.SampleBias(samplerState, uv.xy, uv.w); }
+half4 GetTexture2D(sampler2D MapSampler, float2 uv)                                                     { return tex2D(MapSampler, uv); }
+half4 GetTexture2D(Texture2D tex, SamplerState samplerState, float2 uv)                                 { return tex.Sample(samplerState, uv); }
+half4 GetTextureCube(TextureCube tex, SamplerState samplerState, float3 uv)                             { return tex.Sample(samplerState, uv); }
+half4 GetTextureCubeLod(TextureCube tex, SamplerState samplerState, float4 uv)                          { return tex.SampleLevel(samplerState, uv.xyz, uv.w); }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+half2 GetXYNormalMap(sampler2D bumpMap, float2 bumpTC)                                           { return GetTexture2D(bumpMap, bumpTC).yx; }
+half2 GetXYNormalMap(Texture2D bumpTex, float2 bumpTC)                                           { return GetTexture2D(bumpTex, ssMaterialAnisoHigh, bumpTC).yx; }
+half2 GetXYNormalMap(Texture2D bumpTex, SamplerState samplerState, float2 bumpTC)                { return GetTexture2D(bumpTex, samplerState, bumpTC).yx; }
+half2 GetXYNormalMapLod(sampler2D bumpMap, float4 bumpTC)                                        { return GetTexture2DLod(bumpMap, bumpTC).yx; }
+half2 GetXYNormalMapGrad(Texture2D bumpTex, float2 bumpTC, float2 ddx_bumpTC, float2 ddy_bumpTC) { return GetTexture2DGrad(bumpTex, ssMaterialAnisoHigh, bumpTC, ddx_bumpTC, ddy_bumpTC).yx; }
+
+half3 GetNormalMap(sampler2D bumpMap, float2 bumpTC)
+{
+  half3 bumpNormal;
+
+  bumpNormal.xy = GetXYNormalMap(bumpMap, bumpTC.xy);
+  bumpNormal.z = sqrt(saturate(1.h + dot(bumpNormal.xy, -bumpNormal.xy)));
+
+  return bumpNormal;
+}
+
+half3 GetNormalMap(Texture2D bumpTex, float2 bumpTC)
+{
+  half3 bumpNormal;
+
+  bumpNormal.xy = GetXYNormalMap(bumpTex, bumpTC.xy);
+  bumpNormal.z = sqrt(saturate(1.h + dot(bumpNormal.xy, -bumpNormal.xy)));
+
+  return bumpNormal;
+}
+
+half3 GetNormalMapLod(sampler2D bumpMap, float4 bumpTC)
+{
+  half3 bumpNormal;
+
+  bumpNormal.xy = GetXYNormalMapLod(bumpMap, bumpTC);
+  bumpNormal.z = sqrt(saturate(1.h + dot(bumpNormal.xy, -bumpNormal.xy)));
+
+  return bumpNormal;
+}
+
+half3 GetNormalMapGrad(Texture2D bumpTex, float2 bumpTC, float2 ddx_bumpTC, float2 ddy_bumpTC)
+{
+  half3 bumpNormal;
+
+  bumpNormal.xy = GetXYNormalMapGrad(bumpTex, bumpTC, ddx_bumpTC, ddy_bumpTC);
+  bumpNormal.z = sqrt(saturate(1.h + dot(bumpNormal.xy, -bumpNormal.xy)));
+
+  return bumpNormal;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+half  GetAlphaTex(Texture2D tex, float2 texTC)                                                      { return GetTexture2D(tex, ssMaterialAnisoHigh, texTC.xy).a; }// alpha test value in alpha channel
+half4 GetDiffuseTex(Texture2D tex, float2 texTC)                                                    { return GetTexture2D(tex, ssMaterialAnisoHigh, texTC.xy); }
+half4 GetDiffuseTex(sampler2D MapSampler, float2 texTC)                                             { return GetTexture2D(MapSampler, texTC.xy); }
+half4 GetDiffuseTexGrad(Texture2D tex, float2 texTC, float2 ddxUV, float2 ddyUV)                    { return GetTexture2DGrad(tex, ssMaterialAnisoHigh, texTC.xy, ddxUV, ddyUV ); }
+half4 GetDiffuseTexLod(Texture2D tex, float4 texTC)                                                 { return GetTexture2DLod(tex, ssMaterialAnisoHigh, texTC.xyzw); }
+half4 GetDiffuseTexProj(Texture2D tex, float4 texTC)                                                { return GetTexture2DProj(tex, ssMaterialAnisoHigh, texTC.xyzw); }
+half4 GetDiffuseTexBias(Texture2D tex, float4 texTC)                                                { return GetTexture2DBias(tex, ssMaterialAnisoHigh, texTC.xyzw); }
+half4 GetCustomTex(Texture2D tex, float2 texTC)                                                     { return GetTexture2D(tex, ssMaterialAnisoHigh, texTC.xy); }
+half4 GetCustomTexLod(Texture2D tex, float4 texTC)                                                  { return GetTexture2DLod(tex, ssMaterialAnisoHigh, texTC.xyzw); }
+half4 GetDiffuse2Tex(Texture2D tex, float2 texTC)                                                   { return GetCustomTex(tex, texTC.xy); }
+half4 GetDiffuse2TexLod(Texture2D tex, float4 texTC)                                                { return GetCustomTexLod(tex, texTC.xyzw); }
+half4 GetDiffuseDecalTex(Texture2D tex, float2 texTC)                                               { return GetTexture2D(tex, ssMaterialAnisoHighBorder, texTC.xy); }
+half  GetHeightTex(Texture2D tex, float2 texTC)                                                     { return GetTexture2D(tex, ssMaterialTrilinear, texTC.xy); }
+half  GetHeightTexLod(Texture2D tex, float4 texTC)                                                  { return GetTexture2DLod(tex, ssMaterialTrilinear, texTC.xyzw); }
+half4 GetHeight2Tex(Texture2D tex, float2 texTC)                                                    { return GetTexture2D(tex, ssMaterialTrilinear, texTC.xy); }
+half4 GetHeight2TexLod(Texture2D tex, float4 texTC)                                                 { return GetTexture2DLod(tex, ssMaterialTrilinear, texTC.xyzw); }
+half4 GetSpecularTex(Texture2D tex, float2 texTC)                                                   { return GetTexture2D(tex, ssMaterialAnisoHigh, texTC.xy); }
+half4 GetSpecularTexLod(Texture2D tex, float4 texTC)                                                { return GetTexture2DLod(tex, ssMaterialAnisoHigh, texTC.xyzw); }
+half  GetSmoothnessTex(Texture2D tex, float2 texTC)                                                 { return GetTexture2D(tex, ssMaterialTrilinear, texTC.xy).r; }
+half  GetSmoothness2Tex(Texture2D tex, float2 texTC)                                                { return GetTexture2D(tex, ssMaterialTrilinear, texTC.xy).r; }
+half  GetSmoothness2TexLod(Texture2D tex, float4 texTC)                                             { return GetTexture2DLod(tex, ssMaterialTrilinear, texTC.xyzw).r; }
+half4 GetDetailTex(Texture2D tex, float2 texTC)                                                     { return GetTexture2D(tex, ssMaterialTrilinear, texTC.xy).garb * 2 - 1; }
+half4 GetDetailTexLod(Texture2D tex, float4 texTC)                                                  { return GetTexture2DLod(tex, ssMaterialTrilinear, texTC.xyzw).garb * 2 - 1; }
+half  GetOpacityTex(Texture2D tex, float2 texTC)                                                    { return GetTexture2D(tex,  ssMaterialTrilinear, texTC.xy); }
+half  GetOpacityTexLod(Texture2D tex, float4 texTC)                                                 { return GetTexture2DLod(tex,  ssMaterialTrilinear, texTC.xyzw); }
+half4 GetBlendTex(Texture2D tex, float2 texTC)                                                      { return GetOpacityTex(tex, texTC.xy); }
+half4 GetBlendTexLod(Texture2D tex, float4 texTC)                                                   { return GetOpacityTexLod(tex, texTC.xyzw); }
+half4 GetDecalTex(Texture2D tex, float2 texTC)                                                      { return GetTexture2D(tex, ssMaterialTrilinearBorder, texTC.xy); }
+half4 GetCustomSecTex(Texture2D tex, float2 texTC)                                                  { return GetTexture2D(tex, ssMaterialAnisoHigh, texTC.xy); }
+half4 GetEmittanceTex(Texture2D tex, float2 texTC)                                                  { return GetTexture2D(tex, ssMaterialAnisoHigh, texTC.xy); }
+half4 GetEnvCubeTex(TextureCube tex, float3 texTC)                                                  { return GetTextureCube(tex, ssMaterialTrilinearClamp, texTC.xyz); }
+half4 GetEnvCubeTexLod(TextureCube tex, float4 texTC)                                               { return GetTextureCubeLod(tex, ssMaterialTrilinearClamp, texTC.xyzw); }
+half4 GetSceneTex(Texture2D tex, float2 texTC)                                                      { return GetTexture2D(tex, ssPointClamp, texTC.xy); }       // TODO: convert to load
+half4 GetSceneTexProj(Texture2D tex, float4 texTC)                                                  { return GetTexture2DProj(tex, ssPointClamp, texTC.xyzw); } // TODO: convert to load
+half4 GetDissolveTex(Texture2D tex, float2 texTC)                                                   { return GetTexture2D(tex, ssPointWrap, texTC.xy); }
+half4 GetDissolveTexLod(Texture2D tex, float4 texTC)                                                { return GetTexture2DLod(tex, ssPointWrap, texTC.xyzw); }
+half4 GetTerrainTex(Texture2D tex, float2 terrainTC)                                                { return GetTexture2D(tex, ssMaterialBilinearClamp, terrainTC) * g_PS_TerrainInfo.x; }
+half3 GetTerrainNormal(Texture2D tex, float2 terrainTC) 
+{ 
+	half3 terrainNor = GetTexture2D(tex, ssMaterialBilinearClamp, terrainTC).xzy; 
+	terrainNor.xy = (terrainNor.xy - 0.5h) * 2.h; 
+	terrainNor.z = sqrt(saturate(1.h - (terrainNor.x * terrainNor.x + terrainNor.y * terrainNor.y))); 
+	return terrainNor; 
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Gradient maps
+
+float GetGradientMap(sampler2D gradientSampler, float2 vTC, float fGradientAnimation, float fGradientTransitionRange)
+{
+	float fGradient = 1.f - GetTexture2DLod(gradientSampler, float4(vTC,0,0)).x;
+	float fRange = max(fGradientTransitionRange, 0.0001f);
+	
+	float fAnimation = fGradientAnimation * (1.f + 2.f * fRange) - fRange;
+	return saturate((fAnimation - fGradient) / fRange);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Depth
+
+#define USE_DEVICE_DEPTH
+
+float GetDepthMap(sampler2D depthSampler, float2 ScreenTC)
+{
+	return GetTexture2D(depthSampler, ScreenTC.xy).x;
+}
+
+float GetDepthMap(Texture2D depthTexture, float2 ScreenTC)
+{
+	int3 vPixCoord = int3(ScreenTC * PS_ScreenSize.xy, 0);
+	return depthTexture.Load(vPixCoord).x;
+}
+
+float GetLinearDepth(float fDevDepth, bool bDrawNearAdjust = true, bool bScaled = false)
+{
+	return fDevDepth * (bScaled ? PS_NearFarClipDist.y : 1.0f);
+}
+
+float GetDeviceDepth(float fLinearDepth)
+{
+	return fLinearDepth;
+}
+
+float GetDeviceDepthH(sampler2D depthSampler, float2 ScreenTC)
+{
+	float Z = GetTexture2D(depthSampler, ScreenTC).x;
+	//on PC we just have linear depth and need to project it again
+	Z       =       g_PS_ProjRatio.y / Z + g_PS_ProjRatio.x;
+	return Z;
+}
+
+float GetLinearDepth(sampler2D depthSampler, float2 ScreenTC, bool bDrawNearAdjust = true)
+{
+	float fDepth = GetTexture2D(depthSampler, ScreenTC.xy).x;
+	return GetLinearDepth(fDepth, bDrawNearAdjust);
+}
+
+float GetLinearDepth(Texture2D depthTexture, float2 ScreenTC, bool bDrawNearAdjust = true)
+{
+	int3 vPixCoord = int3(ScreenTC * PS_ScreenSize.xy, 0);
+	float fDepth = depthTexture.Load(vPixCoord).x;
+	return GetLinearDepth(fDepth, bDrawNearAdjust);
+}
+
+float GetLinearDepth_ProjTC(sampler2D depthSampler, float4 ProjTC, bool bDrawNearAdjust = true)
+{
+	float fDepth = GetTexture2DProj(depthSampler, ProjTC).x;
+	return GetLinearDepth(fDepth, bDrawNearAdjust);
+}
+
+float GetLinearDepthPrecise(sampler2D depthSampler, float2 ScreenTC, bool bDrawNearAdjust = true)
+{
+	return GetLinearDepth(depthSampler, ScreenTC, bDrawNearAdjust);
+}
+
+float GetLinearDepthScaled(sampler2D smpDepth, float2 ScreenTC)
+{
+	return GetLinearDepth(smpDepth, ScreenTC) * PS_NearFarClipDist.y;
+}
+
+float GetLinearDepthScaled(Texture2D texDepth, float2 ScreenTC)
+{
+	return GetLinearDepth(texDepth, ScreenTC) * PS_NearFarClipDist.y;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Motion vector
+
+float2 EncodeMotionVector(float2 vMotion, bool bFastEncode = false, bool bInvert = false)
+{
+	if( bInvert )
+		vMotion.y	*=	-1.f;
+
+	if( !bFastEncode )
+		vMotion	=	sqrt(abs(vMotion))* (vMotion.xy>0.0f ? float2(1, 1) : float2(-1, -1));
+
+	vMotion	=	vMotion* 0.5h + 127.f/255.f;
+
+	return vMotion.xyxy;
+} 
+
+float2 DecodeMotionVector(float2 vMotionEncoded, bool bFastEncoded = false)
+{
+	if( bFastEncoded )
+	{
+		//return vMotionEncoded*2-1;
+		return (vMotionEncoded - 127.0f/255.0f) * 2.0f;
+	}
+
+	vMotionEncoded.xy = (vMotionEncoded.xy - 127.f/255.f) * 2.0f;
+	return (vMotionEncoded.xy * vMotionEncoded.xy) * (vMotionEncoded.xy>0.0f ? float2(1, 1) : float2(-1, -1));
+} 
+
+float4 OutputVelocityRT(float2 vCurrPos, float2 vPrevPos, float fAlpha = 1.0f)
+{
+	float2 vVelocity = (vPrevPos - vCurrPos) * fAlpha;
+	return float4(EncodeMotionVector(vVelocity), 0, 0);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+half3 LinearToSRGB(half3 col)
+{
+	col = saturate(col);
+	return (col < 0.0031308) ? 12.92h * col : 1.055h * pow(col, 1.0h / 2.4h) - half3(0.055h, 0.055h, 0.055h);
+}
+
+// Encode a float value into 3 bytes (input value should be in the range of [0, 1])
+float3 PackFloatToVec3(const float value)
+{
+	static const float3 bitSh = float3(256.0 * 256.0, 256.0, 1.0);
+	static const float3 bitMsk = float3(0.0, 1.0/256.0, 1.0/256.0);
+	float3 res = frac(value * bitSh);
+	res -= res.xxy * bitMsk;
+	return res;
+}
+
+float UnpackFloatFromVec3(const float3 value)
+{
+	static const float3 bitSh = float3(1.0/(256.0*256.0), 1.0/256.0, 1.0);
+	return dot(value, bitSh);
+}
+
+half GetDownscaledDepth(in float4 rawDepth)
+{
+	return rawDepth.x;
+}
+
+half GetUnnormalizedLinearDownscaledDepth(in float4 rawDepth)
+{
+	return rawDepth.x;
+}
+
+half GetUnnormalizedLinearDownscaledDepth(in sampler2D depthSmp, in float2 screenCoord)
+{
+	float4 data = tex2D(depthSmp, screenCoord);
+	return GetUnnormalizedLinearDownscaledDepth(data);
+}
+
+half GetDownscaledDepth(in sampler2D depthSmp, in float2 screenCoord)
+{
+	float4 data = tex2D(depthSmp, screenCoord);
+	return GetDownscaledDepth(data);
+}
+
+// get 2d homogeneous position
+float4 Get2dHPos(float4 pos)
+{
+	float4 hPos;
+	hPos.zw = pos.zw;
+	hPos.xy = (pos.xy * float2(2.0,-2.0)) - float2(1.0,-1.0);
+	return hPos;
+}
+
+float2 GetScaledScreenTC(float2 TC)
+{
+#ifdef %_PS
+	return TC*PS_HPosScale.xy;
+#else
+	return TC*g_VS_HPosScale.xy;
+#endif
+}
+
+float4 HPosToScreenTC(float4 HPos, bool scaled = true)
+{
+  float4 ScrTC = HPos;
+  ScrTC.xy = (HPos.xy * float2(1,-1) + HPos.ww) * 0.5;
+	
+  if(scaled)
+  {
+    ScrTC.xy = GetScaledScreenTC(ScrTC.xy);
+  }
+
+  return ScrTC;
+}
+
+float2 ClampScreenTC(float2 TC, float2 maxTC)
+{
+	return clamp(TC, 0, maxTC.xy);
+}
+
+float2 ClampScreenTC(float2 TC)
+{
+	return clamp(TC, 0, PS_HPosScale.xy);
+}
+
+NORMALS_FITTING_MAP
+
+void CompressUnsignedNormalToNormalsBuffer(inout half4 vNormal)
+{
+	#if !%DETAIL_MAPPING && !%TEMP_VEGETATION && !%_RT_ALPHABLEND && !%_RT_ALPHATEST && !%TEMP_TERRAIN && !OPENGL
+		// expand from unsigned
+		vNormal.rgb = vNormal.rgb * 2.h - 1.h;
+
+		// renormalize (needed if any blending or interpolation happened before)
+		vNormal.rgb = normalize(vNormal.rgb);
+		// get unsigned normal for cubemap lookup (note the full float presision is required)
+		half3 vNormalUns = abs(vNormal.rgb);
+		// get the main axis for cubemap lookup
+		half maxNAbs = max(vNormalUns.z, max(vNormalUns.x, vNormalUns.y));
+		// get texture coordinates in a collapsed cubemap
+		float2 vTexCoord = vNormalUns.z<maxNAbs?(vNormalUns.y<maxNAbs?vNormalUns.yz:vNormalUns.xz):vNormalUns.xy;
+		vTexCoord = vTexCoord.x < vTexCoord.y ? vTexCoord.yx : vTexCoord.xy;
+		vTexCoord.y /= vTexCoord.x;
+		// fit normal into the edge of unit cube
+		vNormal.rgb /= maxNAbs;
+
+		// look-up fitting length and scale the normal to get the best fit
+		#if %_RT_QUALITY || %_RT_QUALITY1
+			float fFittingScale = normalsFittingTex.Load(int3(vTexCoord * 512, 0)).a;
+		#else
+			float fFittingScale = GetTexture2D(normalsFittingTex, ssPointClamp, vTexCoord).a;
+		#endif
+
+		// scale the normal to get the best fit
+		vNormal.rgb *= fFittingScale;
+
+		// squeeze back to unsigned
+		vNormal.rgb = vNormal.rgb * .5h + .5h;
+	#endif
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Deferred Shading Common
+
+#define LIGHTINGMODEL_STANDARD       0
+#define LIGHTINGMODEL_TRANSMITTANCE  1
+#define LIGHTINGMODEL_POM_SS         2
+
+#define MAX_FRACTIONAL_8_BIT        (255.0f / 256.0f)
+#define MIDPOINT_8_BIT              (127.0f / 255.0f)
+#define TWO_BITS_EXTRACTION_FACTOR  (3.0f + MAX_FRACTIONAL_8_BIT)
+
+struct MaterialAttribsCommon
+{
+	half3  NormalWorld;
+	half3  Albedo;
+	half3  Reflectance;
+	half3  Transmittance;
+	half   Smoothness;
+	half   ScatteringIndex;
+	half   SelfShadowingSun;
+	int    LightingModel;
+};
+
+MaterialAttribsCommon MaterialAttribsDefault()
+{
+	MaterialAttribsCommon attribs = (MaterialAttribsCommon) 0;
+	return attribs;
+}
+
+half3 EncodeColorYCC( half3 col )
+{
+	half3 encodedCol;
+
+	// Y'Cb'Cr'
+	col = sqrt( col );
+	encodedCol.x = dot( half3(0.299, 0.587, 0.114), col.rgb );
+	encodedCol.y = dot( half3(-0.1687, -0.3312, 0.5), col.rgb );
+	encodedCol.z = dot( half3(0.5, -0.4186, -0.0813), col.rgb );
+	
+	return half3(encodedCol.x, encodedCol.y * MIDPOINT_8_BIT + MIDPOINT_8_BIT, encodedCol.z * MIDPOINT_8_BIT + MIDPOINT_8_BIT);
+}
+
+half3 DecodeColorYCC( half3 encodedCol, const bool useChrominance = true )
+{
+	encodedCol = half3(encodedCol.x, encodedCol.y / MIDPOINT_8_BIT - 1, encodedCol.z / MIDPOINT_8_BIT - 1);
+	if (!useChrominance) encodedCol.yz = 0;
+	
+	// Y'Cb'Cr'
+	half3 col;
+	col.r = encodedCol.x + 1.402 * encodedCol.z;
+	col.g = dot( half3( 1, -0.3441, -0.7141 ), encodedCol.xyz );
+	col.b = encodedCol.x + 1.772 * encodedCol.y;
+
+	return col * col;
+}
+
+half DecodeSunSelfShadowing( half4 bufferA, half4 bufferB, half4 bufferC )
+{
+	half lightingModel = floor(bufferA.w * TWO_BITS_EXTRACTION_FACTOR);
+	return lightingModel == LIGHTINGMODEL_POM_SS ? saturate(bufferC.z / MIDPOINT_8_BIT - 1) : 0;
+}
+
+void EncodeGBuffer( MaterialAttribsCommon attribs, out half4 bufferA, out half4 bufferB, out half4 bufferC )
+{
+	bufferA.xyz = attribs.NormalWorld * 0.5 + 0.5;
+	bufferA.w = 0;
+	CompressUnsignedNormalToNormalsBuffer( bufferA );
+	
+	bufferB.xyz = sqrt( attribs.Albedo );
+	bufferB.w = 0;
+	
+	bufferC.x = attribs.Smoothness;
+	bufferC.yzw = EncodeColorYCC( attribs.Reflectance );
+	
+	if (attribs.LightingModel == LIGHTINGMODEL_TRANSMITTANCE)
+	{
+		// Encoding for SSS: integer part is profile, frac is amount
+		half scatteringAmount = frac( attribs.ScatteringIndex );
+		bufferB.w = scatteringAmount > 0.01 ? attribs.ScatteringIndex / TWO_BITS_EXTRACTION_FACTOR : 0;
+		
+		attribs.Transmittance = EncodeColorYCC( attribs.Transmittance );
+		bufferA.w = attribs.Transmittance.x;
+		bufferC.zw = attribs.Transmittance.yz;
+	}
+	else if (attribs.LightingModel == LIGHTINGMODEL_POM_SS)
+	{
+		// Remap range so that chrominance of gray (0.5) and zero POM SS map to the same value
+		bufferC.z = attribs.SelfShadowingSun * MIDPOINT_8_BIT + MIDPOINT_8_BIT;
+	}
+	
+	bufferA.w = ((float)attribs.LightingModel + (bufferA.w * MAX_FRACTIONAL_8_BIT)) / TWO_BITS_EXTRACTION_FACTOR;
+}
+
+void SetGBufferBlending( inout half4 bufferA, inout half4 bufferB, inout half4 bufferC,
+                         half alphaNormals, half alphaDiffuse, half alphaSpecular )
+{
+	bufferA.w = alphaNormals;
+	bufferB.w = alphaDiffuse;
+	bufferC.w = alphaSpecular;
+}
+
+MaterialAttribsCommon DecodeGBuffer( half4 bufferA, half4 bufferB, half4 bufferC )
+{
+	MaterialAttribsCommon attribs;
+	
+	attribs.LightingModel = (int)floor(bufferA.w * TWO_BITS_EXTRACTION_FACTOR);
+	
+	attribs.NormalWorld = normalize( bufferA.xyz * 2 - 1 );
+	attribs.Albedo = bufferB.xyz * bufferB.xyz;
+	attribs.Reflectance = DecodeColorYCC( bufferC.yzw, attribs.LightingModel == LIGHTINGMODEL_STANDARD );
+	attribs.Smoothness = bufferC.x;
+	attribs.ScatteringIndex = bufferB.w * TWO_BITS_EXTRACTION_FACTOR;
+	
+	attribs.Transmittance = half3( 0, 0, 0 );
+	if (attribs.LightingModel == LIGHTINGMODEL_TRANSMITTANCE)
+	{
+		attribs.Transmittance = DecodeColorYCC( half3( frac(bufferA.w * TWO_BITS_EXTRACTION_FACTOR), bufferC.z, bufferC.w ) );
+	}
+	
+	attribs.SelfShadowingSun = 0;
+	if (attribs.LightingModel == LIGHTINGMODEL_POM_SS)
+	{
+		attribs.SelfShadowingSun = saturate(bufferC.z / MIDPOINT_8_BIT - 1);
+	}
+	
+	return attribs;
+}
+
+half3 DecodeGBufferNormal( half4 bufferA )
+{
+	return normalize( bufferA.xyz * 2 - 1 );
+}
+
+half4 DecodeGBufferAlbedoAndScattering( half4 bufferB )
+{
+	return half4( bufferB.xyz * bufferB.xyz, bufferB.w * TWO_BITS_EXTRACTION_FACTOR );
+}
+
+half DecodeGBufferTransmittanceLum( half4 bufferA )
+{
+	half lightingModel = floor( bufferA.w * TWO_BITS_EXTRACTION_FACTOR );
+	return (lightingModel == LIGHTINGMODEL_TRANSMITTANCE) ? frac( bufferA.w * TWO_BITS_EXTRACTION_FACTOR ) : 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float  NumInstructions		: PI_NumInstructions;
+
+sampler2D DebugMipColorsDiffuseSampler = sampler_state
+{
+ Texture = $MipColors_Diffuse;
+};
+sampler2D DebugMipColorsBumpSampler = sampler_state
+{
+ Texture = $MipColors_Bump;
+};
+
+float4 DVColor(float2 d)
+{ 
+  float Reso = 512;
+  float TargetDeriv = 1.0f/Reso;
+  float HalfTD = (TargetDeriv*0.5);
+  float TwoTD = (TargetDeriv*2.0);
+
+
+  float4 dd = float4(0,0,0,1);
+  if (d.x > TwoTD) { dd.x = 1.0;}
+  if (d.y > TwoTD) { dd.y = 1.0;}
+  if (d.x < HalfTD) { dd.z = 1.0;}
+  return(dd);
+}
+
+
+void DebugOutput(out half4 Color, in float4 baseTC)
+{
+  Color = 0;
+ #if %_RT_DEBUG0 && !%_RT_DEBUG1 && !%_RT_DEBUG2 && !%_RT_DEBUG3 // 1000
+  float2 dd = 64.0 * (abs(ddx(baseTC.xy)) + abs(ddy(baseTC.xy)));
+  Color = float4(dd, 0, 1);
+ #elif !%_RT_DEBUG0 && %_RT_DEBUG1 && !%_RT_DEBUG2 && !%_RT_DEBUG3 // 0100
+  float4 dd = baseTC;
+  Color = dd;
+ #elif %_RT_DEBUG0 && %_RT_DEBUG1 && !%_RT_DEBUG2 && !%_RT_DEBUG3 // 1100
+  Color = DVColor(abs(ddx(baseTC.xy)));
+ #elif !%_RT_DEBUG0 && !%_RT_DEBUG1 && %_RT_DEBUG2 && !%_RT_DEBUG3 // 0010
+  Color = DVColor(abs(ddy(baseTC.xy)));
+ #elif %_RT_DEBUG0 && !%_RT_DEBUG1 && %_RT_DEBUG2 && %_RT_DEBUG3 // 1011
+  Color = DVColor(abs(ddy(baseTC.xy)));
+ #elif !%_RT_DEBUG0 && %_RT_DEBUG1 && %_RT_DEBUG2 && !%_RT_DEBUG3 // 0110
+  float Reso = 512;
+  float TargetDeriv = 1.0/Reso;
+  float Diagonal = sqrt(2.0*TargetDeriv*TargetDeriv);
+  float HalfDiag = (Diagonal*0.5);
+  float TwoDiag = (Diagonal*2.0);
+  float2 dx = ddx(baseTC.xy);
+  float2 dy = ddy(baseTC.xy);
+  float d = sqrt(dot(dx,dx) + dot(dy,dy));
+  float4 dd = float4(0,0,0,1);
+  if (d > TwoDiag) { dd.x = 1.0;}
+  if (d > TwoDiag) { dd.y = 1.0;}
+  if (d < HalfDiag) { dd.z = 1.0;}
+  Color = dd;
+ #elif %_RT_DEBUG0 && %_RT_DEBUG1 && %_RT_DEBUG2 && !%_RT_DEBUG3 // 1110
+  float4 mipColor = tex2D(DebugMipColorsDiffuseSampler, baseTC.xy);
+  Color = mipColor;
+ #elif !%_RT_DEBUG0 && !%_RT_DEBUG1 && !%_RT_DEBUG2 && %_RT_DEBUG3 // 0001
+  float4 mipColor = tex2D(DebugMipColorsBumpSampler, baseTC.xy);
+  Color = mipColor;
+ #elif %_RT_DEBUG0 && %_RT_DEBUG1 && %_RT_DEBUG2 && %_RT_DEBUG3 // 1111
+  Color.xyz = NumInstructions;	// Measure overdraw
+ #elif !%_RT_DEBUG0 && !%_RT_DEBUG1 && %_RT_DEBUG2 && %_RT_DEBUG3 // 0011
+  float x = frac(baseTC.x);
+  float y = frac(baseTC.y);
+  if((x < 0.5 && y < 0.5) || (x > 0.5 && y > 0.5))
+	Color = float4(3, 3, 0, 1);
+  else
+	Color = float4(0, 0, 3, 1);
+ #endif
+ // free:
+  // 1010
+  // 1001
+  // 0101
+  // 0111
+  // 1101
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+half4 GetTerrainTex(sampler2D s, float2 terrainTC)
+{
+  half4 cTerrain = tex2D(s, terrainTC) * g_PS_TerrainInfo.x;
+
+	return saturate(	cTerrain	);
+}
+
+half3 GetTerrainNormal(sampler2D s, float2 terrainTC)
+{
+
+	half3 terrainNor = float3(tex2D(s, terrainTC).xz,0);
+	terrainNor.xy = (terrainNor.xy - 0.5h) * 2.h;
+	terrainNor.z = sqrt( saturate( 1.h - (terrainNor.x * terrainNor.x + terrainNor.y * terrainNor.y) ) );
+	return terrainNor;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float4 GetInputColor(in float4 Color)
+{
+  return Color.zyxw;
+}
+
+#define QUALITY_LOW      0
+#define QUALITY_MEDIUM   1
+#define QUALITY_HIGH   	 2
+#define QUALITY_VERYHIGH 3
+
+int GetShaderQuality()
+{
+  int nQuality;
+#if !%_RT_QUALITY && !%_RT_QUALITY1
+   nQuality = QUALITY_LOW;
+#elif %_RT_QUALITY && !%_RT_QUALITY1
+   nQuality = QUALITY_MEDIUM;
+#elif !%_RT_QUALITY && %_RT_QUALITY1
+   nQuality = QUALITY_HIGH;
+#else
+   // #warning Unknown shader quality mode
+   nQuality = QUALITY_VERYHIGH;
+#endif  
+  return nQuality;
+}
+
+int GetMSAASampleNum()
+{
+  int nSamplesNum = 0;
+#if %_RT_MSAA_QUALITY && %_RT_MSAA_QUALITY1
+   nSamplesNum = 8;
+#elif %_RT_MSAA_QUALITY && !%_RT_MSAA_QUALITY1
+   nSamplesNum = 4;
+#elif !%_RT_MSAA_QUALITY && %_RT_MSAA_QUALITY1
+   nSamplesNum = 2;
+#endif  
+  return nSamplesNum;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float ComputeTextureLOD(in float2 uv, in float2 texDim)
+{
+	uv *= texDim;
+	
+	float2 ddx_ = ddx(uv);
+	float2 ddy_ = ddy(uv);
+	//float2 mag = ddx_ * ddx_ + ddy_ * ddy_;
+	float2 mag = abs(ddx_) + abs(ddy_);
+	
+	//float lod = max(0.5 * log2(max(mag.x, mag.y)), 0);
+	float lod = log2(max(mag.x, mag.y));
+	return lod;
+}
+
+float ComputeTextureLOD(in float2 uv, in float2 texDim, out float2 ddx_uv, out float2 ddy_uv)
+{
+	//float2 uvScaled = uv * texDim;
+	//float2 ddx_, ddy_;
+		
+	//float4(ddx_, ddx_uv) = ddx(float4(uvScaled, uv));
+	//float4(ddy_, ddy_uv) = ddy(float4(uvScaled, uv));	
+	
+	////float2 mag = ddx_ * ddx_ + ddy_ * ddy_;
+	//float2 mag = abs(ddx_uv) + abs(ddy_uv);
+
+	ddx_uv = ddx(uv);
+	ddy_uv = ddy(uv);
+	//float2 mag = (ddx_uv * ddx_uv + ddy_uv * ddy_uv) * texDim * texDim;
+	float2 mag = (abs(ddx_uv) + abs(ddy_uv)) * texDim;
+	
+	//float lod = max(0.5 * log2(max(mag.x, mag.y)), 0);
+	float lod = log2(max(mag.x, mag.y));
+	return lod;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float4 rgb10a2_to_rgb10a2f( float4 InColor )
+{
+	// Shift left 3 bits. This allows us to have the exponent and mantissa on opposite
+	// sides of the decimal point for extraction.
+	float4 OutColor = InColor * 8.0f;
+
+	// Extract the exponent and mantissa that are now on opposite sides of the decimal point
+	float3 e = floor( OutColor.rgb );
+	float3 m = frac( OutColor.rgb );
+	
+	// Perform the 7e3 conversion.  Note that this varies on the value of e for each channel:
+	// if e != 0.0f then the correct conversion is (1+m)/8*pow(2,e).
+	// else it is (1+m)/8*pow(2,e).  
+	OutColor.rgb  = (e == 0.0f) ? 2*m/8 : (1+m)/8 * exp2(e);
+
+	return OutColor;
+}
+
+// Fetches an rgb10a2f texture aliased as a rgb10a2 texture - check xbox documentation (7e3) for more details
+//  - helpfull for specific cases to decrease BW (at cost of ALU) and also to minimize resolve cost
+//  - beware that this doens't support correct bilinear filtering fetches
+float4 tex2D_rgb10a2f( sampler2D s, float2 vTexCoord )
+{
+	return  rgb10a2_to_rgb10a2f( tex2D(s, vTexCoord ) );
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+half GetLuminance( half3 color )
+{
+	return dot( color, half3( 0.2126h, 0.7152h, 0.0722h ) );
+}
+
+// Checks normalized sun light direction from level and applies it to the UV for the Cloud Shadows.
+float2 ComputeCloudShadowMapUV(in float3 worldPos)
+{
+#if %_PS
+	const float3 sunDir = g_PS_SunLightDir.xyz;
+#elif %_VS
+	const float3 sunDir = g_VS_SunLightDir.xyz;
+#elif %_CS
+	const float3 sunDir = g_VS_SunLightDir.xyz;
+#else
+	const float3 sunDir = normalize(float3(0.1, 0.1, 1.0));
+#endif
+	const float t = -worldPos.z / sunDir.z;
+	return worldPos.xy + t * sunDir.xy;
+}

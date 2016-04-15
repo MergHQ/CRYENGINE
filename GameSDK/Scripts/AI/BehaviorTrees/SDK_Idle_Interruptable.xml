@@ -1,0 +1,61 @@
+<BehaviorTree>
+
+	<Variables>
+		<Variable name="ExecuteSequence"/>
+		<Variable name="ExecuteInterruptibleSequence"/>
+	</Variables>
+
+	<SignalVariables>
+	</SignalVariables>
+
+	<Timestamps>
+	</Timestamps>
+
+	<Root>
+
+			<Priority>
+
+				<Case condition="ExecuteSequence">
+					<Sequence>
+						<LuaBehavior name="ExecuteSequence"/>
+					</Sequence>
+				</Case>
+
+				<Case>
+					<StateMachine>
+					
+						<State name="Idle">
+
+							<BehaviorTree>
+
+								<Sequence>
+
+									<Stance name="Relaxed"/>
+
+									<Priority>
+
+										<Case condition="ExecuteInterruptibleSequence">
+											<LuaBehavior name="ExecuteInterruptibleSequence"/>
+										</Case>
+
+										<Case>
+											<Halt />
+										</Case>
+
+									</Priority>
+
+								</Sequence>
+								
+							</BehaviorTree>
+
+						</State>
+
+					</StateMachine>
+
+				</Case>
+
+			</Priority>
+
+	</Root>
+
+</BehaviorTree>

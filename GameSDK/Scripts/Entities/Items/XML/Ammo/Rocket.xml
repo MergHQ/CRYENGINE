@@ -1,0 +1,84 @@
+<ammo name="Rocket" class="HomingMissile">
+	<geometry>
+		<firstperson name="Objects/weapons/ammo/rockets/sidewinder/sidewinder.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="4.35" />
+		<param name="speed" value="40" />
+		<param name="radius" value="0.25" />
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, 0" />
+		<param name="water_gravity" value="0, 0, -9.8" />
+		<param name="thrust" value="50" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="8" />
+		<param name="material" value="mat_grenade" />
+		<param name="spin_random" value="0, 0, 0" />
+		<param name="single_contact" value="0" GAME="SP" />
+		<param name="single_contact" value="1" GAME="MP" />
+		<param name="pierceability" value="9" />
+	</physics>
+	<explosion>
+		<param name="pressure" value="2500" />
+		<param name="min_radius" value="4" />
+		<param name="max_radius" value="8" />
+		<param name="min_phys_radius" value="2.2" />
+		<param name="max_phys_radius" value="3" />
+		<param name="hole_size" value="2" />
+		<param name="terrain_hole_size" value="6" />
+		<param name="effect_scale" value="1" />
+		<!--<param name="failed_effect" value="Crysis2_weapon_jaw.dud_explosion" />-->
+		<param name="radialblurdist" value="30" />
+		<param name="type" value="explosion" />
+		<param name="friendly_fire" value="team" GAME="SP"/>
+	</explosion>
+	<params>
+		<param name="lifetime" value="3" GAME="SP"/>
+		<param name="lifetime" value="4" GAME="MP"/>
+		<param name="showtime" value="0.0" />
+		<param name="hitRecoil" value="Level5" GAME="SP" />
+		<param name="hitRecoil" value="Level5_mp" GAME="MP" />
+		<param name="hitRecoilArmorMode" value="Level3" GAME="SP" />
+		<param name="hitRecoilArmorMode" value="Level3_mp" GAME="MP" />
+		<param name="quietRemoval" value="0" />
+		<param name="safeexplosion" value="2.0" GAME="SP" />
+		<param name="safeexplosion" value="0.0" GAME="MP" />
+		<param name="mpProjectileDestructDelay" value="2" GAME="MP"/>
+	</params>
+	<HomingParams>
+		<param name="turn_speed" value="150" GAME="SP" />
+		<param name="turn_speed" value="350" GAME="MP" />
+		<param name="max_target_distance" value="1000" GAME="SP"/>
+		<param name="max_target_distance" value="2000" GAME="MP"/>
+		<param name="aitype" value="rpg" />
+		<param name="cruise" value="0" />
+		<param name="controlled" value="1" />
+		<param name="tracks_chaff" value="1" />
+		<param name="lazyness" value="0.8" GAME="SP" />
+		<param name="lazyness" value="1.0" GAME="MP" />
+		<param name="cruiseActivationTime" value="0.0" />
+		<param name="max_speed" value="80" GAME="SP" />
+		<param name="max_speed" value="140" GAME="MP" />
+	</HomingParams>
+	<trail>
+		<param name="effect" value="weapon_fx.rocketlauncher.tracer.tracer" />
+		<param name="scale" value="0.6" />
+		<param name="sound" value="Sounds/physics:bullet_whiz:missile_whiz_loop" />
+	</trail>
+	<collision>
+		<param name="damageScale" value="1.0" />
+		<param name="damageLimit" value="80.0" />
+	</collision>
+	<HazardParams>
+		<param name="maxHazardDistance" value="30.0" />
+		<param name="hazardRadius" value="3.0" />
+		<param name="startPosNudgeOffset" value="0.0" />
+		<param name="maxHazardApproxPosDeviation" value="15.0" />
+		<param name="maxHazardApproxAngleDeviationDeg" value="20.0" />
+	</HazardParams>
+</ammo>

@@ -1,0 +1,38 @@
+<item name="NoWeapon" class="NoWeapon" category="utility" priority="0" weaponParams="1">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="1" />
+		<param name="droppable" value="0" />
+		<param name="usable_under_water" value="1" GAME="MP" />
+		<aimAnims>
+			<param name="base" value="stand_tac_idlePose_visor_1p_01" />
+			<param name="up" value="stand_tac_look_up_hand_shoulder_add_1p_01" />
+			<param name="down" value="stand_tac_look_dwn_hand_shoulder_add_1p_01" />
+			<param name="left" value="stand_tac_look_lft_hand_shoulder_add_1p_01" />
+			<param name="right" value="stand_tac_look_rgt_hand_shoulder_add_1p_01" />
+			<param name="front" value="stand_tac_runLook_fwd_hand_shoulder_add_1p_01" />
+			<param name="back" value="stand_tac_runLook_bwd_hand_shoulder_add_1p_01" />
+			<param name="strafeLeft" value="stand_tac_runLook_lft_hand_shoulder_add_1p_01" />
+			<param name="strafeRight" value="stand_tac_runLook_rgt_hand_shoulder_add_1p_01" />
+			<param name="bump" value="stand_tac_land_hand_add_1p_01" />
+			<param name="run" value="stand_tac_run_hand_shoulder_add_1p_01" />
+			<param name="idle" value="stand_tac_idle_hand_shoulder_add_1p_01" />
+			<param name="sprint" value="stand_tac_sprint_hand_fwd_add_1p_01" />
+		</aimAnims>
+	</params>
+
+	<MovementModifiers speedScale="1.0" rotationScale="1.0" />
+
+	<firemodes>
+		<firemode name="melee" type="Melee">
+			<melee>
+				<param name="helper" value="collision" />
+				<param name="offset" value="0.35" />
+				<param name="damage" value="51"/>
+				<param name="range" value="1.8" />
+				<param name="delay" value="0.1" />
+				<param name="duration" value="0.7" />
+			</melee>
+		</firemode>
+	</firemodes>
+</item>

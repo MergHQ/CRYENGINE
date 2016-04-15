@@ -1,0 +1,35 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2012.
+// -------------------------------------------------------------------------
+//  File name:   ParticleImposter.ext
+//  Version:     v1.00
+//  Created:     23/08/2012 by Tiago Sousa
+//  Compilers:   
+// -------------------------------------------------------------------------
+//  History:
+//
+////////////////////////////////////////////////////////////////////////////
+
+Version (1.00)
+
+Property
+{
+  Name = %NORMAL_MAP
+  Mask = 0x1
+  Property    (Normal map)
+  Description (Use normal-map texture)
+  DependencySet = $TEX_Normals
+  DependencyReset = $TEX_Normals
+  Hidden
+}
+
+Property
+{
+  Name = %SOFT_PARTICLE
+  Mask = 0x2
+  Property    (Soft Particle)
+  Description (Soften particle intersections with world)
+}

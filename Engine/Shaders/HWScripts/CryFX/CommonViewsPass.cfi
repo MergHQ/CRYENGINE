@@ -1,0 +1,247 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+
+/// Un-Tweakables ////////////////////// 
+
+float4 VisionParams : PI_VisionParams;
+float4 VisionMtlParams : PB_VisionMtlParams;
+
+///////////////// vertex input/output //////////////////
+struct vert2fragCustomRender
+{
+#if %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+	OUT_P
+#endif
+
+  float4 baseTC     : TEXCOORDN;
+  float4 screenProj : TEXCOORDN_centroid;   //z used for instanced alpha test value
+  float4 cVision : TEXCOORDN;
+  float4 vView     : TEXCOORDN;       
+
+#if %_RT_SAMPLE1
+  float4 vTangent  : TEXCOORDN;
+  float4 vBinormal : TEXCOORDN;
+#endif
+
+#if !%_PS && !%_DS && ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+	half4 vNormal    : TEXCOORDN;
+#endif
+};
+
+
+///////////////// vertex shaders //////////////////
+vert2fragCustomRender Common_CustomRenderPassVS(app2vertCustomViews IN)
+{
+  vert2fragCustomRender OUT = (vert2fragCustomRender)0;
+  
+  streamPos vertPassPos = (streamPos)0;
+  streamPos_FromCustomViews(IN, vertPassPos);
+
+#if %_RT_INSTANCING_ATTR
+  OUT.cVision = vertPassPos.InstVisionParams;
+#else
+  OUT.cVision = VisionParams;
+#endif
+
+  float4 HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+
+	// Add depth bias for thermal vision case, since this is processed after AA resolve so subsamples will be mismatching (results in zfighthing, or schimering) - offset compensates for this
+#if %_RT_SAMPLE1
+	HPosition.z -= 0.001; 
+#endif
+
+#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+	OUT.vNormal.xyz = normalize(mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.Normal.xyz));
+#else
+	OUT.HPosition = HPosition;
+#endif
+
+  OUT.vView.xyz = vertPassPos.WorldPos.xyz;
+
+  // reminder for Andrey, texture modifiers should work on all cases
+  _TCModify(vertPassPos.baseTC, OUT.baseTC, vertPassPos.Position, vertPassPos.ObjToTangentSpace[2], TS_DIFFUSE);
+
+  OUT.baseTC.z = HPosition.w;
+
+  float3 worldPos = float3(vertPassPos.InstMatrix[0].w, vertPassPos.InstMatrix[1].w, vertPassPos.InstMatrix[2].w);
+  OUT.baseTC.w = frac( length( worldPos.xyz + g_VS_WorldViewPos.xyz) ) + 0.01;
+
+  // Output the screen-space texture coordinates - for shadows and general projections
+  OUT.screenProj = HPosToScreenTC(HPosition);
+
+
+#if %_RT_SAMPLE1
+
+  // Note: Normalization required for normal diffuse map in world space in case scale used - Do not remove
+  float3 worldTangentS = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[0]) );
+  float3 worldTangentT = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[1]) );
+  float3 worldTangentN = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[2]) );
+  
+  OUT.vTangent = float4(worldTangentS, vertPassPos.Tangent.w); 
+  OUT.vBinormal.xyz = worldTangentT;
+
+#endif
+
+  return OUT;            
+}
+
+sampler2D depthMapSampler = sampler_state
+{
+  Texture = $ZTarget;
+  MinFilter = POINT;
+  MagFilter = POINT;
+  MipFilter = POINT; 
+  AddressU = Clamp;
+  AddressV = Clamp;	
+};
+
+sampler2D PNoiseSampler = sampler_state
+{
+  Texture = EngineAssets/Textures/perlinNoise2D.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+  AddressU = Wrap;
+  AddressV = Wrap;	
+};
+
+///////////////// pixel shaders //////////////////
+
+// Silhouete vision (Crysis1)
+half4 SilhoueteVision( vert2fragCustomRender IN ) 
+{
+	half fMask = 1.0f;
+	
+
+#if !%TEMP_EYES
+	float fDepth = DecodeSceneDepth(depthMapSampler, IN.screenProj);
+	fMask =  clamp((fDepth - 1.5f) * 0.333f, 0, 1);
+#endif
+
+	return half4(fMask.xxx * IN.cVision, IN.baseTC.w);
+}
+
+// Silhouete vision (Optimised for console)
+half4 SilhoueteVisionOptimised( vert2fragCustomRender IN ) 
+{	
+	half fMask = 1.0f;
+
+
+#if !%TEMP_EYES && !%_RT_SAMPLE5
+	float fDepth = DecodeSceneDepth(depthMapSampler, IN.screenProj);
+	fMask = clamp((fDepth - 1.5f) * 0.333f, 0, 1);
+#endif
+
+	half3 finalColor = fMask.xxx * IN.cVision;
+	return half4(finalColor.rgb, dot(finalColor, 0.333f) > 0.0f);
+}
+
+// Silhouete geometry highlights (used for hinting weapons, pickups, etc - Crysis 2)
+half4 SilhoueteGeometryHighlights( vert2fragCustomRender IN ) 
+{
+  half3 vNormal = DecodeGBufferNormal( GetSceneTexProj( sceneNormalsTex, IN.screenProj.xyzw ) );
+  half3 vView = normalize( -IN.vView.xyz );
+
+  half fEdotN = saturate( dot( vView.xyz, vNormal ) );
+  fEdotN  = (1.0 - fEdotN) ;
+
+  // Smooth interlace
+  half fInterlace = abs( frac( (IN.screenProj.y / IN.screenProj.w )  * PS_ScreenSize.y * 0.35 ) *2-1 )*0.5+0.5;
+
+  // Test using inverse cloud noise for interesting electrical look
+  half fNoise = tex2D(PNoiseSampler, IN.baseTC.xy).x; 
+  half fAnimNoise = abs( frac( fNoise + IN.cVision.w ) - 0.5 ); 
+
+  return half4( fInterlace * IN.cVision.xyz * fEdotN *  fAnimNoise, 1 );
+}
+
+// Thermal vision
+half4 ThermalVision( vert2fragCustomRender IN ) 
+{
+#if %_RT_SAMPLE1
+	half3 cBump = GetNormalMap(normalsTex, IN.baseTC.xy);                                      // 2 alu 
+
+  half4 vTangentWS = IN.vTangent;
+  half3 vBinormalWS = IN.vBinormal;
+  half3 vNormalWS = (cross(vTangentWS.xyz, vBinormalWS.xyz)) * vTangentWS.w;  
+	half3x3 mTangentToWS = float3x3(vTangentWS.xyz, vBinormalWS.xyz, vNormalWS.xyz);  
+
+	half3 vNormal = mul(cBump.xyz, mTangentToWS);                                      // 3 alu
+	vNormal = normalize( vNormal );
+
+	float fDepth = DecodeSceneDepth(depthMapSampler, IN.screenProj) ;
+  half fOcclusion =  saturate( 1 - abs(IN.baseTC.z - fDepth )*0.333 ) ;
+
+  half3 vView = normalize( -IN.vView.xyz );
+
+#if ORBIS
+	// shader compiler workaround
+  half fEdotN =  (VisionMtlParams.x +VisionMtlParams.x *IN.cVision.w) * clamp(abs(dot(vView.xyz, vNormal)), 0.0f, 0.999999f);
+#else
+	half fEdotN =  (VisionMtlParams.x +VisionMtlParams.x *IN.cVision.w) * saturate(abs(dot( vView.xyz, vNormal ))) ;
+#endif
+
+	return fEdotN;
+
+#else
+
+	return 1.0h;
+
+#endif
+}
+
+pixout Common_CustomRenderPassPS(vert2fragCustomRender IN)
+{
+  pixout OUT = (pixout)0;  
+
+	// Switch between diferent rendering modes
+
+#if %_RT_SAMPLE0
+
+	OUT.Color = SilhoueteGeometryHighlights( IN );
+
+#elif %_RT_SAMPLE1
+
+	OUT.Color.xyz = ThermalVision( IN );
+	OUT.Color.w = 1;
+
+#elif %_RT_SAMPLE2
+
+	OUT.Color = SilhoueteVisionOptimised( IN );
+
+#else
+
+  OUT.Color = SilhoueteVision( IN );
+#endif
+
+#if %_RT_ALPHATEST
+	clip(GetAlphaTex(diffuseTex, IN.baseTC) - 0.5);
+#endif
+
+  return OUT;
+}
+
+#include "CommonViewsPassTess.cfi"
+
+//////////////////////////////// technique ////////////////
+
+
+technique CustomRenderPass
+{
+  pass p0
+  {
+    VertexShader = Common_CustomRenderPassVS() CustomRenderVS;
+#if ENABLE_TESSELLATION
+    HullShader   = Common_CustomRenderPassHS() CustomRenderHS;
+    DomainShader = Common_CustomRenderPassDS() CustomRenderDS;
+#endif
+    PixelShader = Common_CustomRenderPassPS() CustomRenderPS;
+
+    ZEnable = true;
+    ZWriteEnable = false;
+    CullMode = Back;
+    ZFunc = LEqual; 
+    //IgnoreMaterialState = true;
+  }
+}

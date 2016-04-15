@@ -1,0 +1,52 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "ShadeLib.cfi"
+#include "vertexLib.cfi"
+
+float Script : STANDARDSGLOBAL
+<
+  string Script =        
+				"Public;"
+				"ShaderType = General;"
+				"ShaderDrawType = General;"
+				"AfterHDRPostProcess;"
+				"ForceDrawLast;"
+>;
+
+half4 AmbientOpPB        : PB_AmbientOpacity;
+
+vert2FragGeneral
+DebugLightVS( app2vertGeneral IN )
+{
+  vert2FragGeneral OUT = (vert2FragGeneral) 0;
+
+	streamPos vertPassPos = (streamPos)0;
+  vs_shared_output(IN, OUT, vertPassPos, false);
+  
+  return OUT;
+}
+
+float4
+DebugLightPS( in vert2FragGeneral IN ) : COLOR
+{ 
+  float4 cColor = GetDiffuseTex( diffuseTex, IN.baseTC );
+
+	// Note: put on current final gamma 2.2 curve (we only do linear correct rendering during hdr rendering passes) - when tone mapper changes, update this
+	cColor.rgb = pow(cColor.rgb, 1.0 / 2.2 );
+
+  cColor.w *= AmbientOpPB.w;
+
+	return cColor;
+}
+
+technique General
+{
+  pass p0
+  {     
+    VertexShader = DebugLightVS();
+    PixelShader = DebugLightPS();
+  }
+}
+

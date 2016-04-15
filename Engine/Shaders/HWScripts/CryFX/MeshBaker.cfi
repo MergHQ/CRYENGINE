@@ -1,0 +1,173 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+// Intended to be included from Illum.cfx
+
+float3 TRI_POS[3];
+float2 TRI_UV[3];
+float4 TRI_TANGENT[3];
+float4 TRI_BINORM[3];
+float4 TRI_COLOR[3];
+float4 ZOFFSET;
+
+struct pixout_mb
+{
+  float4 Color : COLOR0;
+  float Depth  : DEPTH;
+};
+
+struct a2v
+{
+  float3 inPos	   : POSITION;  // position in object space
+  float2 Position  : TEXCOORD0; // in the UV map space
+  float3 inDir	   : TEXCOORD1; // ray direction in object space
+  
+  float4 tangent   : TANGENT;
+  float4 biNorm	   : BINORMAL;
+};
+
+struct v2f
+{
+  float4 screenPos : POSITION;
+  float3 pos	   : TEXCOORDN; // starting position of ray
+  float3 dir	   : TEXCOORDN; // direction of ray
+
+  float4 uvMapPos  : TEXCOORDN; // in the UV map space
+  float3 triN	   : TEXCOORDN; // normal of target triangle
+  float3 edgeNormal: TEXCOORDN; // normal of opposite edge of triangle
+  float2 edgeLength: TEXCOORDN; // misc constants (ie reciprical edge lengths)
+  
+  float4 tangent   : TEXCOORDN;
+  float4 biNorm	   : TEXCOORDN;
+  float4 normal    : TEXCOORDN;
+};
+
+v2f MeshBaker_VS(a2v IN)
+{
+  v2f OUT;
+  OUT.uvMapPos=float4(IN.Position*2.0f-float2(1.0f, 1.0f),0.0f,1.0f);
+  OUT.uvMapPos.y=-OUT.uvMapPos.y;
+  OUT.screenPos=OUT.uvMapPos;
+  OUT.pos=IN.inPos;
+  OUT.dir=-normalize(IN.inDir);
+  OUT.triN=-normalize(cross(TRI_POS[2]-TRI_POS[0], TRI_POS[1]-TRI_POS[0]));
+  OUT.edgeNormal=normalize(cross(OUT.triN, TRI_POS[2]-TRI_POS[1]));
+  OUT.edgeLength.x=1.0f/dot(TRI_POS[2]-TRI_POS[0], OUT.edgeNormal);
+  OUT.edgeLength.y=1.0f/dot(TRI_POS[2]-TRI_POS[1],TRI_POS[2]-TRI_POS[1]);
+  OUT.tangent.xyz=normalize(IN.tangent.xyz);
+  OUT.tangent.w=(IN.tangent.w>0.0f)?1.0f:-1.0f;
+  OUT.biNorm.xyz=normalize(IN.biNorm.xyz);
+  OUT.biNorm.w=IN.biNorm.w;
+  OUT.normal.xyz=cross(OUT.tangent.xyz, OUT.biNorm.xyz)*OUT.tangent.w;
+  OUT.normal.w=0;
+  return OUT;
+}
+
+pixout_mb MeshBakerComplex_PS(v2f IN)
+{
+  pixout_mb OUT;
+
+  // Project onto triangle plane
+  IN.dir=normalize(IN.dir);
+  IN.pos-=IN.dir*ZOFFSET.y;
+  float3 triToPos=IN.pos-TRI_POS[0];
+  float lineVTri=dot(IN.dir, IN.triN);
+  float dt=(lineVTri<0.0f)?-dot(triToPos, IN.triN)/lineVTri:-1.0f;
+  float3 posOnTri=IN.pos+dt*IN.dir;
+
+  // Confirm hit
+  float4 inside;
+  inside.x=dot(cross(TRI_POS[1]-TRI_POS[0], posOnTri-TRI_POS[0]), IN.triN);
+  inside.y=dot(cross(TRI_POS[2]-TRI_POS[1], posOnTri-TRI_POS[1]), IN.triN);
+  inside.z=dot(cross(TRI_POS[0]-TRI_POS[2], posOnTri-TRI_POS[2]), IN.triN);
+  inside.w=dt*(ZOFFSET.x-dt);
+  clip(inside);
+
+  // Find lerp co-efficients
+  float3 fromCorner=posOnTri-TRI_POS[0];
+  float alongFace=saturate(dot(fromCorner, IN.edgeNormal)*IN.edgeLength.x);
+  float3 onEdge=TRI_POS[0]+fromCorner/alongFace;
+  float alongEdge=saturate(dot(TRI_POS[2]-TRI_POS[1], onEdge-TRI_POS[1])*IN.edgeLength.y);
+  
+  // Run through shader
+  float2 realCoord=lerp(TRI_UV[0], lerp(TRI_UV[1], TRI_UV[2], alongEdge), alongFace);
+  float4 biNorm=lerp(TRI_BINORM[0], lerp(TRI_BINORM[1], TRI_BINORM[2], alongEdge), alongFace);
+  float4 tangent=lerp(TRI_TANGENT[0], lerp(TRI_TANGENT[1], TRI_TANGENT[2], alongEdge), alongFace);
+  biNorm.xyz=normalize(biNorm.xyz);
+  tangent.xyz=normalize(tangent.xyz);
+  
+  vert2FragGeneral v2fFull=(vert2FragGeneral)0;
+  v2fFull.baseTC=half4(realCoord, 0.0f, 1.0f);
+  v2fFull.screenProj=IN.uvMapPos;
+#if %_RT_FOG || %ANISO_SPECULAR || %IRIS_PARALAX_MAPPING || %OFFSET_BUMP_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+  v2fFull.vTangent=half4(tangent);
+  v2fFull.vBinormal=half4(biNorm);
+#endif
+#if %VERTCOLORS || %DIRTLAYER || %BLENDLAYER
+  v2fFull.Color = lerp(TRI_COLOR[0], lerp(TRI_COLOR[1], TRI_COLOR[2], alongEdge), alongFace);
+#endif
+  v2fFull.vView=float4(IN.dir,1);
+#if %_RT_FOG && !%_RT_DECAL_TEXGEN_2D
+  v2fFull.AvgFogVolumeContrib=float4(0,0,0,1);
+#endif
+#if %_RT_FOG || %_RT_DECAL_TEXGEN_2D || %DECAL
+  v2fFull.Ambient=float4(1.0,1.0,1.0,1.0);
+#endif
+  
+  fragPass pPass=(fragPass)0;
+  frag_unify(pPass, v2fFull);
+  pPass.bHemisphereLighting = false;
+	pPass.bSkipDirectLighting = true;
+  half4 cFinal=frag_shared_output(pPass);
+	OUT.Color.xyz=pPass.cDiffuseMap.rgb;
+	OUT.Color.w=cFinal.w;
+
+	OUT.Color.rgb = LinearToSRGB(OUT.Color.rgb);
+
+  if (ZOFFSET.z>1.0f)
+  {
+    OUT.Color.xyz = pPass.cSpecularMap.xyz;
+		OUT.Color.rgb = LinearToSRGB(OUT.Color.rgb);
+  }
+  else if (ZOFFSET.z>0.0f)
+  {
+    float3 normalMap;
+    
+    normalMap.x = dot(pPass.vNormal.xyz, IN.tangent.xyz);
+    normalMap.y = dot(pPass.vNormal.xyz, IN.biNorm.xyz);
+    normalMap.z = dot(pPass.vNormal.xyz, IN.normal.xyz);
+    normalMap.xyz = 0.5f * normalize(normalMap.xyz) + 0.5f;
+
+    OUT.Color.xyz = normalMap;
+    OUT.Color.w = pPass.fGloss;
+  }
+
+#if %_RT_ALPHATEST
+  clip(pPass.cDiffuseMap.a - AlphaTest.w);
+#endif
+  
+  OUT.Depth = dt * (1.0f / ZOFFSET.x);
+	
+  if (ZOFFSET.w > 0)  // %_RT_REVERSE_DEPTH
+    OUT.Depth = 1 - OUT.Depth;
+ 
+  return OUT;
+}
+
+technique MeshBaker
+{
+  pass p0
+  {
+    VertexShader = MeshBaker_VS() MeshBakerVS;
+    PixelShader = MeshBakerComplex_PS() MeshBakerPS;
+    
+    ZEnable = true;    
+#if %DECAL
+    ZWriteEnable = false;    
+    ZFunc = LEqual;
+#else
+    ZWriteEnable = true;    
+#endif    
+    CullMode = None;
+  }
+}

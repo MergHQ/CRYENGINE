@@ -1,0 +1,1438 @@
+<?xml version="1.0"?>
+<!-- Vehicle XML definition file -->
+<!-- Edits to this file will be automatically exported to the documentation in the release process -->
+
+<Definition root="Vehicle">
+
+	<!-- settings for vehicle editor parser -->
+
+	<Settings strict="0"/>
+	<AllowAlways>
+		<Property name="id" type="string" optional="1" />
+	</AllowAlways>
+
+
+	<?begin vehicle xml reference ?>
+
+	<!-- Used as attributes for the <Vehicle> tag. -->
+	<Property name="name"          type="string" optional="0"/>
+	<Property name="show"          type="bool"   optional="1" default="1" desc="If false, the car can not be viewed or manually placed in the editor"/>
+	<Property name="actionMap"     type="string" optional="1" default="" desc="Action map for this vehicle. Action maps can also be defined per seat"/>
+	<Property name="viewDistRatio" type="int"    optional="1" default="50" desc=""/>
+	<Property name="isDestroyable" type="bool"   optional="1" default="1" desc="Determines if a vehicle gets destroyed after being damaged"/>
+	<Property name="isOld"         type="bool"   optional="1" default="0" deprecated="1" desc="Here for compatibility, will be removed in the next major release"/>
+
+	<Table name="Physics">
+		<Property name="mass"                            type="float"  optional="1" min="0"     max="100000"    desc="mass in kg"/>
+		<Property name="damping"                         type="float"  optional="1" min="0"     max="10"         desc="physics damping"/>
+		<Property name="dampingFreefall"                 type="float"  optional="1" min="0"     max="10" desc="physics damping for freefall"/>
+		<Property name="gravityFreefall"                 type="Vec3"   optional="1" desc="gravity used for freefall"/>
+		<Property name="pushable"                        type="bool"   optional="1" desc="Whether the vehicle is pushable by players"/>
+		<Property name="retainGravity"                   type="bool"   optional="1" desc="If true, the gravity set at physicalization will be retained, overwriting e.g. gravity areas"/>
+
+		<Table name="Buoyancy" optional="1">
+			<Property name="waterDensity"                type="float"  optional="1" min="0" max="10000" desc="Specific water density"/>
+			<Property name="waterResistance"             type="float"  optional="1" min="0" max="10000" desc="Precise water resistance"/>
+			<Property name="waterDamping"                type="float"  optional="1" min="0" max="10000" desc="Simplified water damping"/>
+		</Table>
+
+		<Table name="Simulation" optional="1">
+			<Property name="maxTimeStep"                 type="float"  optional="1"/>
+			<Property name="minEnergy"                   type="float"  optional="1"/>
+			<Property name="maxLoggedCollisions"         type="int"    optional="1"/>
+		</Table>
+	</Table>
+
+	<?xml_comment Tag <Components> with child tags <Component> which of which have the properties described below. ?>
+	<Array name="Components" elementName="Component" optional="1">
+		<Property name="name"                            type="string" optional="0" default="" desc="Name of the component, it will serve as an identifier, it must exist and be unique"/>
+		<Property name="position"                        type="Vec3"   optional="1" desc="Position and size should be supplied together to define the box shaped area of the component"/>
+		<Property name="size"                            type="Vec3"   optional="1" />
+		<Property name="minBound"                        type="Vec3"   optional="1" deprecated="1" desc="'minBound' and 'maxBound' have been replaced by 'position' and 'size'."/>
+		<Property name="maxBound"                        type="Vec3"   optional="1" deprecated="1" desc="'minBound' and 'maxBound' have been replaced by 'position' and 'size'."/>
+		<Property name="useBoundsFromParts"              type="bool"   optional="1" default="0"/>
+		<Property name="useDamageLevels"                 type="bool"   optional="1" default="1" desc="When hit, only triggers the DamageBehaviors of this component when there is a change in the damage level. A component has 4 damage levels plus a '100% destroyed' level. Set to false to disable." />
+		<Property name="damageMax"                       type="float"  optional="1" default="0.0" min="0" max="10000"/>
+		<Property name="hullAffection"                   type="float"  optional="1" default="1.0" desc="Amount of damage that affects the main hull when this component is hit" />
+		<Property name="major"                           type="bool"   optional="1" default="1" desc="If disabled, it does not consider this component for the overall health of the vehicle and for some damage calculations/display"/>
+		<Property name="isOnlyDamageableByPlayer"        type="bool"   optional="1" default="0"/>
+		<Use id="idDamageMultipliers" optional="1" desc="DamageMultipliers array that can override the global one specified in Damages or define additional damage multipliers for this component only"/>
+		<Use id="idDamageBehaviors" optional="1"/>
+	</Array>
+
+	<?xml_comment Tag <Parts> with child tags <Part> which of which have the properties described below. ?>
+	<Array name="Parts" elementName="Part" id="idParts">
+
+		<!-- A Part must define a 'class' property. According to the specified class, there are different properties and subtables that can be used to configure the part. -->
+
+		<Property name="class" type="string" optional="1" desc="The type of the part. Part types follow an hierarchical structure, extending each other meaning that e.g. a 'SubPartWheel' has its own attributes and also the ones of a 'SubPart' and a 'Base'. A class may not actually use an attribute from the base. Class can be one of the following:">
+			<Enum expand="1">
+				<Value>Base</Value> <!--all other parts are also Base-->
+				<Value>Static</Value>
+				<Value>Animated</Value>
+				<Value>AnimatedChar</Value> <!--is an Animated-->
+				<Value>AnimatedJoint</Value>
+				<Value>Entity</Value>
+				<Value>EntityDelayedDetach</Value> <!--is an Entity-->
+				<Value>EntityAttachment</Value>
+				<Value>SubPart</Value>
+				<Value>SubPartWheel</Value> <!--is a SubPart-->
+				<Value>SuspensionPart</Value> <!--is a SubPart-->
+				<Value>MassBox</Value>
+				<Value>ParticleEffect</Value>
+				<Value>Light</Value>
+				<Value>PulsingLight</Value> <!--is a Light-->
+				<Value>Tread</Value>
+				<Value>WaterRipplesGenerator</Value>
+			</Enum>
+		</Property>
+
+		<?class Base ?>
+		<Property name="name"                            type="string" optional="0" default="" desc="Name of the part, must exist and be unique, it will be used as an identifier"/>
+		<Property name="helper"                          type="string" optional="1" default="" list="Helper" desc="Helper where the part will be positioned. Only used by Static, Attachment, SubParts and WaterRipplesGenerator. For SubParts 'position' takes precedence over 'helper'"/>
+		<Property name="position"                        type="Vec3"   optional="1" default="0,0,0" desc="Position for this part in entity space. Only used by MassBox and SubParts. For SubParts 'position' takes precedence over 'helper'"/>
+		<Property name="useOption"                       type="int"    optional="1" default="-1" min="0" max="5" desc="Only used by AnimatedJoint. Index of optional part to be used, if available"/>
+		<Property name="isHidden"                        type="bool"   optional="1" default="0" desc="Hides the part from rendering"/>
+		<Property name="disableCollision"                type="bool"   optional="1" default="0" desc="Disables all collisions, useful e.g. for MassBox"/>
+		<Property name="disablePhysics"                  type="bool"   optional="1" default="0" desc="Prevents the part from being physicalized as rigid"/>
+		<Property name="mass"                            type="float"  optional="1" default="0.0" desc="Mass of this part, contributes for the overall mass of the vehicle, however the most common setup is to have only one part (hull, mass box) with mass assigned"/>
+		<Property name="density"                         type="float"  optional="1" default="-1.0" min="0.0" desc=""/>
+		<Property name="filename"                        type="string" optional="1" default="Geometry or character filename to load"/>
+		<Property name="component"                       type="string" optional="1" default="" list="Component" desc="Component this part belongs to. A part can belong to multiple components, in that case use a 'Components' subtable"/>
+		<Array name="Components" elementName="Component" optional="1">
+			<Property name="value"                       type="string"  optional="0" default="" desc="Component name"/>
+		</Array>
+
+		<?class Static ?>
+		<Table name="Static" id="idStatic" optional="0">
+			<Property name="filename"                    type="string" optional="0" desc=""/>
+			<Property name="filenameDestroyed"           type="string" optional="1" default="" desc=""/>
+			<Property name="geometry"                    type="string" optional="1" default="" desc=""/>
+		</Table>
+
+		<?class Animated ?>
+		<Table name="Animated" id="idAnimated" optional="1">
+			<Property name="filename"                    type="string" optional="0" desc=""/>
+			<Property name="filenameDestroyed"           type="string" optional="1" default="" desc=""/>
+			<Property name="destroyedSuffix"             type="string" optional="1" default="" desc=""/>
+			<Property name="ignoreDestroyedState"        type="bool"   optional="1" default="0" desc=""/>
+		</Table>
+
+		<?class AnimatedChar ?>
+		<?empty - no specific attributes ?>
+
+		<?class AnimatedJoint ?>
+		<Table name="AnimatedJoint" id="idAnimatedJoint" optional="1">
+			<Property name="detachBaseForce"             type="Vec3"   optional="1" default="0.0, 0.0, 0.0" desc=""/>
+			<Property name="detachProbability"           type="float"  optional="1" default="0.0" desc=""/>
+			<Table name="Dials" optional="1">
+				<Property name="rotationMax"             type="float"  optional="1" default="0.0" desc="Rotation max"/>
+				<Property name="ofs"                     type="float"  optional="1" default="0.0" desc="Rotation offset for dials"/>
+			</Table>
+		</Table>
+
+		<?class Entity ?>
+		<Table name="Entity" id="idEntity" optional="1">
+			<Property name="index"                       type="int"    optional="1" desc=""/>
+			<Property name="id"                          type="int"    optional="1" desc="Same as 'index', used if 'index' is not found"/>
+			<Property name="name"                        type="string" optional="1" desc=""/>
+			<Property name="archetype"                   type="string" optional="1" desc=""/>
+			<Property name="helper"                      type="string" optional="1" desc=""/>
+			<Property name="collideWithParent"           type="bool"   optional="1" default="1" desc=""/>
+			<Property name="detachInsteadOfDestroy"      type="bool"   optional="1" default="0" desc=""/>
+		</Table>
+
+		<?class EntityDelayedDetach ?>
+		<?empty - no specific attributes ?>
+
+		<?class EntityAttachment ?>
+		<?empty - no specific attributes ?>
+
+		<?class SubPart ?>
+		<Table name="SubPart" id="idSubPart" optional="1">
+			<Property name="filename"                    type="string" optional="1" desc=""/>
+			<Property name="geometryname"                type="string" optional="1" desc=""/>
+		</Table>
+
+		<?class SubPartWheel ?>
+		<Table name="SubPartWheel" id="idSubPartWheel" optional="1">
+			<Property name="suspLenght"                  type="float"  optional="1" default="0.0" desc="Suspension lenght"/>
+			<Property name="slipFrictionMod"             type="float"  optional="1" default="0.0" desc=""/>
+			<Property name="slipSlope"                   type="float"  optional="1" default="1.0" desc=""/>
+			<Property name="rimRadius"                   type="float"  optional="1" default="0.0" desc=""/>
+			<Property name="torqueScale"                 type="float"  optional="1" default="1.0" desc=""/>
+			<Property name="axle"                        type="int"    optional="1" desc="Unused"/>
+			<Property name="density"                     type="float"  optional="1" desc=""/>
+			<Property name="damping"                     type="float"  optional="1" desc="suspension damping, if 0 calculate as -kdamping*(approximate zero oscillations damping)"/>
+			<Property name="lenInit"                     type="float"  optional="1" desc="current suspension length (assumed to be length in rest state)"/>
+			<Property name="lenMax"                      type="float"  optional="1" desc="relaxed suspension length"/>
+			<Property name="maxFriction"                 type="float"  optional="1" desc="additional friction limits for tire friction"/>
+			<Property name="minFriction"                 type="float"  optional="1" desc="additional friction limits for tire friction"/>
+			<Property name="latFriction"                 type="float"  optional="1" desc="coefficient for lateral friction"/>
+			<Property name="stiffness"                   type="float"  optional="1" desc="suspension stiffness, if 0 calculate from lenMax, lenInit and vehicle mass and geometry"/>
+			<Property name="surfaceId"                   type="float"  optional="1" desc="surface identifier (used if corresponding CGeometry does not contain materials)"/>
+			<Property name="stiffnessWeight"             type="float"  optional="1" default="1.0" desc="When autocalculating stiffness use this weight for this wheel. Note that weights for wheels in front of the centre of mass do not influence the weights of wheels behind the centre of mass"/>
+			<Property name="canBrake"                    type="int"    optional="1" default="1" desc="whether the wheel is locked during handbrakes"/>
+			<Property name="canSteer"                    type="int"    optional="1" default="1" desc="whether the wheel can be steered by the driving wheel"/>
+			<Property name="driving"                     type="int"    optional="1" default="0" desc="whether wheel is driving"/>
+			<Property name="rayCast"                     type="int"    optional="1" default="0" desc="whether the wheel use simple raycasting instead of geometry sweep check"/>
+		</Table>
+
+		<?class Suspension Part ?>
+		<Table name="SubPart" id="idSuspensionPart" optional="1">
+			<Property name="geometryname"                type="string" optional="0" desc="The name of the parent AnimatedPart. SuspensionPart needs to have an AnimatedPart as a parent"/>
+			<Table name="IK" optional="0">
+				<Property name="target"                  type="string" optional="0" desc=""/>
+				<Property name="targetHelper"            type="string" optional="1" desc=""/>
+				<Property name="offset"                  type="Vec3"   optional="1" desc=""/>
+				<Property name="mode"                    type="string" optional="1" default="stretch" desc="">
+					<Enum>
+						<Value>rotate</Value>
+						<Value>stretch</Value>
+						<Value>snap</Value>
+					</Enum>
+				</Property>
+				<Property name="ignoreTargetRotation"    type="bool"   optional="1" default="0" desc="Set to 1 to not use the target's rotation (i.e. for wheels)"/>
+			</Table>
+		</Table>
+
+		<?class MassBox ?>
+		<Table name="MassBox" id="idMassBox" optional="1">
+			<Property name="size"                        type="Vec3"   optional="1" default="1.0, 2.0, 0.75" desc=""/>
+			<Property name="drivingOffset"               type="float"  optional="1" default="0.0" desc="Offset used in the Z axis while driving"/>
+		</Table>
+
+		<?class ParticleEffect ?>
+		<Table name="ParticleEffect" id="idParticleEffect" optional="1">
+			<Property name="id"                          type="int"    optional="1" default="" desc=""/>
+			<Property name="particleEffect"              type="string" optional="1" default="" desc=""/>
+			<Property name="helper"                      type="string" optional="1" default="" desc=""/>
+		</Table>
+
+		<?class Light ?>
+		<Table name="Light" id="idLight" optional="1">
+			<Property name="type"                        type="string" optional="1" default="" desc="See the definition files in Scripts/Entities/Vehicles/Lights for more info">
+				<Enum>
+					<Value>"Brake"</Value>
+					<Value>"Brake_Flare"</Value>
+					<Value>"Reverse"</Value>
+					<Value>"Park"</Value>
+					<Value>"Headlight"</Value>
+					<Value>"HeadlightFill"</Value>
+					<Value>"HeadlightFillSmall"</Value>
+					<Value>"HeadLightBeam"</Value>
+					<Value>"Headlight_Flare"</Value>
+					<Value>"WarningLight"</Value>
+					<Value>"BoatNavGreen"</Value>
+					<Value>"BoatNavGreen_Surround"</Value>
+					<Value>"HeliGreen"</Value>
+					<Value>"HeliWhite"</Value>
+					<Value>"HeliWhiteFlash"</Value>
+					<Value>"HeliRed"</Value>
+					<Value>"HeliRedFlash"</Value>
+				</Enum>
+			</Property>
+		</Table>
+
+		<?class PulsingLight ?>
+		<Table name="PulsingLight" id="idPulsingLight" optional="1">
+			<Property name="minColorMult"                type="float"  optional="1" default="" desc=""/>
+			<Property name="toggleOnMinDamageRatio"      type="float"  optional="1" default="" desc=""/>
+			<Property name="colorMultSpeed"              type="float"  optional="1" default="" desc=""/>
+			<Property name="toggleStageTwoMinDamageRatio" type="float" optional="1" default="" desc=""/>
+			<Property name="colorMultSpeedStageTwo"      type="float"  optional="1" default="" desc=""/>
+		</Table>
+
+		<?class Tread ?>
+		<Property name="component"                       type="string" optional="1" list="Component" default="" desc=""/>
+		<Table name="Tread" id="idTread" optional="1">
+			<Property name="filename"                    type="string" optional="0" default="" desc=""/>
+			<Property name="uvSpeedMultiplier"           type="float"  optional="1" default="0.0" desc=""/>
+			<Property name="materialName"                type="string"  optional="1" default="" desc=""/>
+		</Table>
+
+		<?class WaterRipplesGenerator ?>
+		<Table name="WaterRipplesGen" id="idWaterRipplesGen" optional="1">
+			<Property name="scale"                       type="float"  optional="1" default="1.0" desc=""/>
+			<Property name="strength"                    type="float"  optional="1" default="1.0" desc=""/>
+			<Property name="minMovementSpeed"            type="float"  optional="1" default="1.0" desc=""/>
+			<Property name="moveForwardOnly"             type="bool"   optional="1" default="0" desc=""/>
+		</Table>
+
+	</Array>
+
+	<?xml_comment Tag <Helpers> with child tags <Helper> which of which have the properties described below. ?>
+	<Array name="Helpers" elementName="Helper" optional="1">
+		<Property name="name"      type="string" optional="0" desc="Helper name that will serve as identifier, it must be unique. If empty or repeated, the helper will be ignored."/>
+		<Property name="position"  type="Vec3"   optional="1" default="0,0,0" desc="Helper position relative to the vehicle pivot"/>
+		<Property name="direction" type="Vec3"   optional="1" default="0,0,0" desc="Helper direction"/>
+		<Property name="part"      type="string" optional="0" list="Part" desc="Vehicle part to attach this helper to. If empty or if the part with the specified name can not be found, the helper will be ignored."/>
+	</Array>
+
+
+	<?xml_comment Tag <Actions> with child tags <Action> which of which have the properties described below. ?>
+	<Array name="Actions" elementName="Action" optional="1"> 
+
+		<!-- An Action must have a 'class' with one of the following values. All classes support common attributes as part of the Action tag,
+			and *must* have a child tag with the name of the class, except for 'Flip' and 'AutoAimTarget'. -->
+
+		<Property name="class"                           type="string" optional="0" desc="If not supplied, this action will be ignored">
+			<Enum expand="1">
+				<Value>AutoAimTarget</Value> <!-- Makes the vehicle a target for auto assist -->
+				<Value>AutomaticDoor</Value>
+				<Value>Enter</Value>
+				<Value>EntityAttachment</Value>
+				<Value>Flip</Value> <!-- Action to recover a vehicle by flipping it over -->
+				<Value>LandingGears</Value>
+			</Enum>
+		</Property>
+
+		<!-- Common to all <Action> tags: -->
+
+		<Array name="Activations" elementName="Activation" optional="1">
+			<Property name="type"                        type="string" optional="1" default="" desc="Activation type:">
+				<Enum>
+					<Value>OnGroundCollision</Value>
+					<Value>OnUsed</Value>
+				</Enum>
+			</Property>
+			<Property name="param1"                      type="string" optional="1" default="" desc="">
+				<Enum>
+					<Value>part</Value>
+					<Value>component</Value>
+				</Enum>
+			</Property>
+			<Property name="param2"                      type="string" optional="1" default="" desc="The name of the component or part"/>
+			<Property name="distance"                    type="float"  optional="1" default="1.5" desc=""/>
+		</Array>
+
+		<!-- Class specific: -->
+
+		<?class AutoAimTarget ?>
+		<Property name="PrimaryBoneName"                 type="string" optional="1" default="" desc=""/>
+		<Property name="SecondaryBoneName"               type="string" optional="1" default="" desc=""/>
+		<Property name="PhysicsBoneName"                 type="string" optional="1" default="" desc=""/>
+		<Property name="FallbackOffset"                  type="float"  optional="1" default="1.2" desc=""/>
+		<Property name="InnerRadius"                     type="float"  optional="1" default="0.4" desc=""/>
+		<Property name="OuterRadius"                     type="float"  optional="1" default="0.8" desc=""/>
+		<Property name="SnapRadius"                      type="float"  optional="1" default="2.0" desc=""/>
+		<Property name="SnapRadiusTagged"                type="float"  optional="1" default="2.0" desc=""/>
+
+		<?class AutomaticDoor ?>
+		<Table name="AutomaticDoor" optional="1" desc="">
+			<Property name="animation"                   type="string" optional="0" default="" desc=""/>
+			<Property name="timeMax"                     type="float"  optional="1" default="" desc=""/>
+			<Property name="disabled"                    type="bool"   optional="1" default="0" desc=""/>
+		</Table>
+
+		<?class Enter ?>
+		<Table name="Enter" optional="1" desc="Action to enter a vehicle seat">
+			<Array name="Seats" elementName="Seat" optional="1" desc="">
+				<Property name="value"                   type="string" optional="0" default="" desc="Seat name"/>
+			</Array>
+		</Table>
+
+		<?class EntityAttachment ?>
+		<Table name="EntityAttachment" optional="1" desc="">
+			<Property name="helper"                      type="string" optional="1" default="" desc=""/>
+			<Property name="class"                       type="string" optional="1" default="" desc="Class of the entity to spawn"/>
+		</Table>
+
+		<?class Flip ?>
+		<?empty - no specific attributes ?>
+
+		<?class LandingGears ?>
+		<Table name="LandingGears" optional="1" desc="">
+			<Property name="altitudeToRetractGears"      type="float"  optional="1" default="0.0" desc=""/>
+			<Property name="landingDamages"              type="float"  optional="1" default="0.0" desc=""/>
+			<Property name="velocityMax"                 type="float"  optional="1" default="0.0" desc=""/>
+			<Property name="blockPartRotation"           type="string" optional="1" default="" list="Part" desc=""/>
+			<Property name="isOnlyAutoForPlayer"         type="bool"   optional="1" default="0" desc=""/>
+		</Table>
+	</Array>
+
+	<?xml_comment Tag <Seats> with child tags <Seat> which of which have the properties described below. ?>
+	<Array name="Seats" elementName="Seat" id="idSeats">
+		<Property name="name"                            type="string" optional="0" desc="Seat name, it must exist and be unique."/>
+		<Property name="actionMap"                       type="string" optional="1" desc=""/>
+		<Property name="locked"                          type="string" optional="1" default="Unlocked" desc="Locks the seat to a specific condition, eg. disallow AI to use this seat">
+			<Enum>
+				<Value>Unlocked</Value>
+				<Value>AI</Value>
+				<Value>Players</Value>
+				<Value>All</Value>
+			</Enum>
+		</Property>
+		<Property name="seatGroupIndex"                  type="int"    optional="1" default="1" desc=""/>
+		<Property name="isDriver"                        type="bool"   optional="1" default="0" desc="If true, this seat is the driver seat"/>
+		<Property name="isRemoteControlled"              type="bool"   optional="1" default="0" desc=""/>
+		<Property name="isPassengerShielded"             type="bool"   optional="1" default="0" desc="If set, the passenger always takes 0 damage"/>
+		<Property name="isPassengerExposed"              type="bool"   optional="1" default="0" desc="If set, the passenger is killed when vehicle flips over (AI or player) or with direct explosion hits (AI only)"/>
+		<Property name="isPassengerHidden"               type="bool"   optional="1" default="0" desc=""/>
+		<Property name="TransformViewOnExit"             type="bool"   optional="1" default="1" desc=""/>
+		<Property name="enterInFirstPerson"              type="bool"   optional="1" default="1" desc=""/>
+		<Property name="exitInFirstPerson"               type="bool"   optional="1" default="1" desc=""/>
+		<Property name="movePassengerOnExit"             type="bool"   optional="1" default="1" desc=""/>
+		<Property name="ragdollOnDeath"                  type="bool"   optional="1" default="0" desc=""/>
+		<Property name="disableStopAllAnimationsOnEnter" type="bool"   optional="1" default="0" desc=""/>
+		<Property name="exitOffsetPlayer"                type="Vec3"   optional="1" default="0,0,0" desc="Optional offset for player exiting, added to regular exit pos" />
+		<Property name="usesSeatForEntering"             type="string" optional="1" desc=""/>
+		<Property name="remotelyUseActionsFromSeat"      type="string" optional="1" desc="Allow the passenger to remotely use seat actions from another seat when no one uses that other seat." />
+		<Property name="explosionShakeMult"              type="float"  optional="1" default="1.0" min="0" desc="Multiplier for explosion camera shakes"/>
+		<Property name="AimPart"                         type="string" optional="1" list="Part" desc="If set, the view follows this part." />
+		<Property name="AutoAim"                         type="bool"   optional="1" default="0" desc=""/>
+		<Property name="updatePassengerTM"               type="bool"   optional="1" default="1" desc="Allow seat to update passenger's transform matrix."/>
+		<Property name="sitHelper"                       type="string" optional="1" list="Helper" desc="Sit position" />
+		<Property name="enterHelper"                     type="string" optional="1" list="Helper" desc="Helper for entering position"/>
+		<Property name="exitHelper"                      type="string" optional="1" list="Helper" desc="Optional helper for seperate exit position"/>
+		<Property name="aiVisionHelper"                  type="string" optional="1" list="Helper" desc="Position where AI begin their vision raytracing" />
+
+		<Property name="part"                 deprecated="1" type="string" optional="1" list="Part" desc="Optional part this seat is attached to"/>
+		<Property name="useBoundsForEntering" deprecated="1"/>
+		<Property name="agVehicleName"        deprecated="1"/>
+		<Property name="agSeatNumber"         deprecated="1"/>
+		<Array name="aimPartHands"            deprecated="1"/>
+
+		<?xml_comment Tag <Views> with child tags <View> which of which have the properties described below. ?>
+		<Array name="Views" elementName="View"  optional="1" extendable="1">
+
+			<!-- A View must have a 'class' with one of the following values. All view classes suport common attributes as part of the View tag
+			and *must* have a child tag with the name of the class. -->
+
+			<Property name="class" type="string" optional="0">
+				<Enum expand="1">
+					<Value>FirstPerson</Value>
+					<Value>ThirdPerson</Value>
+					<Value>ActionThirdPerson</Value>
+					<Value>SteerThirdPerson</Value>
+				</Enum>
+			</Property>
+
+			<!-- Common properties to all <View> tags: -->
+			<Property name="rotationBoundsActionMult" type="float" optional="1" default="0.0"  desc="When this feature is used, actions are created using this multiplier when the view rotation is pushing its boundaries"/>
+			<Property name="canRotate"                type="bool"  optional="1" default="false" desc="If true, the view can be rotated" />
+			<Property name="rotationInit"             type="Vec3"  optional="1" default="0,0,0" desc="around the x, y and z axis in degrees"/>
+			<Property name="rotationMax"              type="Vec3"  optional="1" default="0,0,0 or 85,0,85 if it is third person" desc="Max rotation around the x, y and z axes in degrees. eg. last (z) value represents max rotation to the left"/>
+			<Property name="rotationMin"              type="Vec3"  optional="1" default="0,0,0 or -max" desc="Max rotation in inverse direction around the x, y and z axes in degrees eg. last (z) value represents max rotation to the right. It is suggested to not specify this field, so that it will mirror automatically the Max setting. The rotationMax must be set for Min to work"/>
+			<Property name="delayTimeMax"             type="float" optional="1" default="0.3" desc=""/>
+			<Property name="relaxTimeMax"             type="float" optional="1" default="0.4" desc=""/>
+			<Property name="rotationVelMax"           type="float" optional="1" default="1.0" desc=""/>
+			<Property name="rotationVelMin"           type="float" optional="1" default="1.0" desc=""/>
+			<Property name="hidePlayer"               type="bool"  optional="1" default="false" desc=""/>
+			<Property name="isAvailableRemotely"      type="bool"  optional="1" default="false" desc=""/>
+			<Property name="relaxEnabled"             type="bool"  optional="1" default="false" desc=""/>
+
+			<Array name="HideParts" elementName="HidePart" type="string" extendable="1" optional="1">
+				<Property name="value"                type="string" optional="0" list="Part" desc="Name of the part to hide"/>
+			</Array>
+
+			<!-- Properties for each specific View class child tag:-->
+
+			<?class FirstPerson ?>
+			<Table name="FirstPerson" optional="1" desc="">
+				<Property name="offset"            type="Vec3"   optional="1" default="0,0,0" desc=""/>
+				<Property name="hidePlayer"        type="bool"   optional="1" default="false or set on View" desc="Disable vehicle rendering of the player, always enabled when hideVehicle is enabled."/>
+				<Property name="hideVehicle"       type="bool"   optional="1" default="false" desc="Disable vehicle rendering on the client, hides player as well."/>
+				<Property name="relativeToHorizon" type="float"  optional="1" default="0.0" desc=""/>
+				<Property name="followSpeed"       type="float"  optional="1" default="4.0" desc=""/>
+				<Property name="fov"               type="float"  optional="1" default="55.0" desc="Camera Field Of View, in degrees"/>
+				<Property name="helper"            type="string" optional="1" list="Helper" desc="A helper to attach the camera to. If named 'auto', creates and uses a helper 0.625 above the seat helper" />
+				<Property name="characterBone"     type="string" optional="1" desc="" />
+				<Property name="frameObject"       type="string" optional="1" default="" desc="Load a geometry or character object"/>
+				<Property name="frameObjectOffset" type="string" optional="1" default="0,0.18,0.01" desc=""/>
+			</Table>
+
+			<?class ThirdPerson ?>
+			<Table name="ThirdPerson" optional="1" desc="">
+				<Property name="distance"          type="float"  optional="1" default="0.0" desc=""/>
+				<Property name="speed"             type="float"  optional="1" default="5.0" desc=""/>
+				<Property name="heightOffset"      type="float"  optional="1" default="1.5" desc=""/>
+			</Table>
+
+			<?class ActionThirdPerson ?>
+			<Table name="ActionThirdPerson" optional="1" desc="">
+				<Property name="heightAboveWater"     type="float"  optional="1" default="0.0" desc=""/>
+				<Property name="heightOffset"         type="float"  optional="1" default="1.5" desc=""/>
+				<Property name="cameraAimOffset"      type="Vec3"   optional="1" default="0,0,0" desc=""/>
+				<Property name="cameraPosOffset"      type="Vec3"   optional="1" default="0,0,0" desc=""/>
+				<Property name="lagSpeed"             type="float"  optional="1" default="1.0" desc=""/>
+				<Property name="velocityMult"         type="Vec3"   optional="1" default="0,0,0" desc=""/>
+				<Property name="verticalFilter"       type="float"  optional="1" default="0.2" min="0.0" max="1.0" desc=""/>
+				<Property name="verticalFilterOffset" type="float"  optional="1" default="0.0" desc=""/>
+			</Table>
+
+			<?class SteerThirdPerson ?>
+			<Table name="SteerThirdPerson" optional="1" desc="">
+				<Table name="Pos"       optional="1" desc="Settings for the view position">
+					<Property name="aim"               type="Vec3"   optional="1" default="0,0,0" desc="Camera aim position relative to the vehicle"/>
+					<Property name="offset"            type="Vec3"   optional="1" default="0,0,0" desc="Camera position relative to the aim location"/>
+					<Property name="pivotOffset"       type="float"  optional="1" default="0.0" desc="Offset the aim pivot points in the z direction"/>
+				</Table>
+				<Table name="Rotation"  optional="1"  desc="Settings for the view rotation">
+					<Property name="canRotate"         type="bool"   optional="1" default="1" desc="If set the false, the view can not be rotated. This view does not respond to the common canRotate View attribute"/>
+					<Property name="rotationMax"       type="Vec3"   optional="1" default="10,0,90" desc="Rotation limit around x, y and z, in degrees, for zero and low speeds. The value is applied in both directions, eg. if the z component is 90, the rotation will be limited to 90 degrees to the right and another 90 to the left. This view never rotates around y and it does not use the common attribute for rotationMax and rotationMin"/>
+					<Property name="rotationMax2"      type="Vec3"   optional="1" default="one third of rotationMax" desc="Rotation limit around x, y and z axes in degrees for max speed. In-between speeds will have a blended maximum rotation"/>
+					<Property name="stickSensitivity"  type="Vec3"   optional="1" default="0.5,0.5,0.5" desc="Joystick sensitivity for rotating the view at zero and low speeds. The y component has no effect"/>
+					<Property name="stickSensitivity2" type="Vec3"   optional="1" default="0.5,0.5,0.5" desc="Joystick sensitivity for rotating the view at high speed. Intermediate speeds will have a blended value of sensitivity"/>
+					<Property name="inheritedElev"     type="float"  optional="1" default="0.2" min="0.0" max="1" desc="How much to inherit from the target's elevation angle"/>
+				</Table>
+				<Table name="Motion"    optional="1" desc="Settings for the view's angular spring as response to rotation">
+					<Property name="returnSpeed"       type="float"  optional="1" default="0.0" desc="Angular spring back to default at zero and low speeds."/>
+					<Property name="returnSpeed2"      type="float"  optional="1" default="0.0" desc="Angular spring back to default at high speed. Intermediate speeds will have a blended value"/>
+					<Property name="angFollow"         type="float"  optional="1" default="0.0" desc="Angular speed for the correction"/>
+				</Table>
+				<Table name="Radius"    optional="1" desc="Settings for the inertia spring, as response to acceleration">
+					<Property name="min"               type="float"  optional="1" default="0.9" desc="Minimum distance for inertia spring (maximum compression). The value is a fraction to the default radius"/>
+					<Property name="max"               type="float"  optional="1" default="1.1" desc="Maximum distance for inertia spring (maximum extension). The value is a fraction to the default radius"/>
+					<Property name="relaxRate"         type="float"  optional="1" default="10.0" desc="Rate at which to relax back into the default radius"/>
+					<Property name="dampRate"          type="float"  optional="1" default="1.0" desc="Damp rate for the inertia spring"/>
+					<Property name="velInfluence"      type="float"  optional="1" default="0.1" desc="Influence that the velocity has in the inertia spring. Should be between 0 and 1"/>
+				</Table>
+				<Table name="Backwards" optional="1" desc="Settings for when driving backwards">
+					<Property name="clamp"             type="bool"   optional="1" default="1" desc="Set to false to disable rotation limits when going backwards"/>
+					<Property name="returnSpring"      type="bool"   optional="1" default="1" desc="Set to false to disable the rotation return spring when going backwards"/>
+				</Table>
+			</Table>
+
+		</Array>
+
+		<Table name="Transitions" optional="1"><?todo ?>
+		</Table>
+
+		<Array name="SeatActions" elementName="SeatAction" optional="1" extendable="1">
+
+			<!-- A SeatAction must have a 'class' with one of the following values. All classes suport common attributes as part of the SeatAction tag
+			and have related child properties and tables -->
+
+			<Property name="class"                       type="string" optional="0" desc="If not supplied, this action will be ignored">
+				<Enum expand="1">
+					<Value>Animation</Value>
+					<Value>DeployRope</Value>
+					<Value>Lights</Value>
+					<Value>Movement</Value>
+					<Value>OrientateBoneToView</Value>
+					<Value>OrientatePartToView</Value>
+					<Value>PassengerIK</Value>
+					<Value>PassiveAnimation</Value>
+					<Value>RotateBone</Value>
+					<Value>RotateTurret</Value>
+					<Value>ShakeParts</Value>
+					<Value>Sound</Value>
+					<Value>SteeringWheel</Value>
+					<Value>WeaponsBone</Value>
+					<Value>Weapons</Value>
+				</Enum>
+			</Property>
+
+			<!-- Common properties to all <SeatAction> tags: -->
+
+			<Property name="name"                        type="string" optional="1" desc="The name of the action, necessary for DisableSeatAction damage behavior"/>
+			<Property name="isAvailableRemotely"         type="bool"   optional="1" desc="Used to enable remote usability of the SeatAction" />
+
+			<!-- Class specific properties: -->
+
+			<?class Animation ?>
+			<Table name="Animation" id="idActionAnimation" optional="1" desc="">
+				<Property name="vehicleAnimation"        type="string" optional="1" default="" desc=""/>
+				<Property name="control"                 type="string" optional="1" default="" desc="">
+					<Enum>
+						<Value>roll</Value>
+					</Enum>
+				</Property>
+				<Property name="manualUpdate"            type="bool"   optional="1" default="1" desc=""/>
+				<Property name="speed"                   type="float"   optional="1" default="1.0" desc=""/>
+			</Table>
+
+			<?class PassiveAnimation ?>
+			<Property name="FragmentID"                  type="string" optional="0" default="" desc=""/>
+
+			<?class DeployRope ?>
+			<Table name="DeployRope" optional="1" desc="">
+				<Property name="animation"               type="string" optional="1" default="" desc=""/>
+				<Property name="helper"                  type="string" optional="1" default="" desc=""/>
+			</Table>
+
+			<?class Lights ?>
+			<Table name="Lights" id="idActionLights" optional="1" desc="">
+				<Property name="activation"              type="string" optional="1" default="" desc="">
+					<Enum>
+						<Value>toggle</Value>
+						<Value>brake</Value>
+						<Value>reverse</Value>
+					</Enum>
+				</Property>
+				<Property name="sound"                   type="int"    optional="1" default="1" desc="For toggle action, used for on and off"/>
+				<Property name="onSound"                 type="int"    optional="1" default="1" desc="For brake or reverse"/>
+				<Property name="offSound"                type="int"    optional="1" default="1" desc="For brake or reverse"/>
+				<Array name="LightParts" elementName="LightPart" optional="1" desc="">
+					<Property name="value"               type="string" optional="0" default="" desc="Name of the light part"/>
+				</Array>
+			</Table>
+
+			<?class OrientateBoneToView ?>
+			<Property name="MoveBone"                    type="string" optional="1" default="" desc=""/>
+			<Property name="LookBone"                    type="string" optional="1" default="" desc=""/>
+			<Property name="Sluggishness"                type="float"  optional="1" default="0.0" desc=""/>
+			<Table name="MoveBoneBaseOrientation" optional="1" desc="">
+				<Property name="x"                       type="float"  optional="1" default="" desc="x,y,z rotation"/>
+				<Property name="y"                       type="float"  optional="1" default="" desc="x,y,z rotation"/>
+				<Property name="z"                       type="float"  optional="1" default="" desc="x,y,z rotation"/>
+			</Table>
+
+			<?class OrientatePartToView ?>
+			<Array name="Parts" elementName="Part" id="idActionOrientatePartToView" optional="1">
+				<Property name="name"                    type="string" optional="1" default="" desc=""/>
+				<Property name="orientationAxis"         type="Vec3" optional="1" default="1.0,1.0,1.0" desc=""/>
+			</Array>
+
+			<?class RotateBone ?>
+			<Property name="AutoAimStrengthMultiplier"   type="float"  optional="1" default="" desc=""/>
+			<Property name="NetworkSluggishness"         type="float"  optional="1" default="" desc=""/>
+			<Property name="SpeedMultiplier"             type="float"  optional="1" default="" desc=""/>
+			<Property name="soundFP"                     type="string" optional="1" default="" desc=""/>
+			<Property name="soundTP"                     type="string" optional="1" default="" desc=""/>
+			<Property name="soundParam"                  type="string" optional="1" default="" desc=""/>
+			<Property name="idealRotationSpeedForSound"  type="float"  optional="1" default="180.0" desc=""/>
+			<Property name="soundRotSpeedSmoothTime"     type="float"  optional="1" default="" desc=""/>
+			<Property name="settlePitch"                 type="float"  optional="1" default="" desc=""/>
+			<Property name="settleDelay"                 type="float"  optional="1" default="" desc=""/>
+			<Property name="settleTime"                  type="float"  optional="1" default="" desc=""/>
+			<Property name="MoveBone"                    type="string" optional="1" default="" desc=""/>
+			<Table name="MoveBoneBaseOrientation" optional="1" desc="">
+				<Property name="x"                       type="float"  optional="1" default="" desc="x,y,z rotation"/>
+				<Property name="y"                       type="float"  optional="1" default="" desc="x,y,z rotation"/>
+				<Property name="z"                       type="float"  optional="1" default="" desc="x,y,z rotation"/>
+			</Table>
+			<Table name="PitchLimit" optional="1" desc="">
+				<Property name="min"                     type="float"  optional="1" default="" desc=""/>
+				<Property name="max"                     type="float"  optional="1" default="" desc=""/>
+			</Table>
+
+			<?class RotateTurret ?>
+			<Table name="RotateTurret" id="idActionRotateTurret" optional="1">
+				<Table name="Pitch" optional="1">
+					<Property name="part" type="string" desc="Vehicle part to rotate (pitch)" />
+					<Property name="speed" type="float" min="0" desc="Rotation speed" optional="1" />
+					<Property name="accel" type="float" desc="Rotation acceleration" optional="1" />
+					<Property name="worldSpace" type="bool" desc="Use world space rotations" optional="1" />
+					<Array name="Limits" type="float" elementName="Limit" desc="Min/Max limits for rotation" optional="1" />
+					<Table name="Sound" optional="1">
+						<Property name="event" type="string" desc="sound event name" />
+						<Property name="eventDamage" type="string" desc="event name for damage sound" optional="1"/>
+						<Property name="helper" type="string" desc="sound helper" optional="1" />
+						<Property name="param" type="string" desc="sound param name" optional="1" />
+					</Table>
+				</Table>
+				<Table name="Yaw" optional="1">
+					<Property name="part" type="string" desc="Vehicle part to rotate (yaw)" />
+					<Property name="speed" type="float" min="0" desc="Rotation speed" optional="1" />
+					<Property name="accel" type="float" desc="Rotation acceleration" optional="1" />
+					<Property name="worldSpace" type="bool" desc="Use world space rotations" optional="1" />
+					<Array name="Limits" type="float" elementName="Limit" desc="Min/Max limits for rotation" optional="1" />
+					<Table name="Sound" optional="1">
+						<Property name="event" type="string" desc="sound event name" />
+						<Property name="eventDamage" type="string" desc="event name for damage sound" optional="1"/>
+						<Property name="helper" type="string" desc="sound helper" optional="1" />
+						<Property name="param" type="string" desc="sound param name" optional="1" />
+					</Table>
+				</Table>
+				<Table name="RotationTest" optional="1">
+					<Property name="helper1"             type="string" optional="1" default="" desc=""/>
+					<Property name="helper2"             type="string" optional="1" default="" desc=""/>
+					<Property name="radius"              type="float"  optional="1" default="" desc=""/>
+				</Table>
+			</Table>
+
+			<?class ShakeParts ?>
+			<Array name="Parts"  elementName="Part" optional="1">
+				<Property name="name"                    type="string" optional="1" default="" desc=""/>
+				<Property name="amp"                     type="" optional="1" default="0.0" desc=""/>
+				<Property name="ampRot"                  type="" optional="1" default="0.0" desc=""/>
+				<Property name="freq"                    type="" optional="1" default="0.0" desc=""/>
+				<Property name="suspensionAmp"           type="" optional="1" default="0.0" desc=""/>
+				<Property name="suspensionResponse"      type="" optional="1" default="0.0" desc=""/>
+				<Property name="suspensionSharpness"     type="" optional="1" default="0.0" desc=""/>
+			</Array>
+
+			<?class PassengerIK ?>
+			<Table name="PassengerIK" id="idActionPassengerIK" optional="1" desc="">
+				<Property name="waitShortlyBeforeStarting" type="float" optional="1" default="0" desc=""/>
+				<Array name="Limbs" elementName="Limb" optional="0" desc="">
+					<Property name="limb"                type="string" optional="1" default="" desc="limb name"/>
+					<Property name="helper"              type="string" optional="1" default="" desc=""/>
+				</Array>
+			</Table>
+
+			<?class Sound ?>
+			<Table name="Audio" id="idActionSound" optional="1" desc="">
+				<Property name="startTrigger"            type="string" optional="1" default="" desc=""/>
+				<Property name="stopTrigger"             type="string" optional="1" default="" desc=""/>
+				<Property name="helper"                  type="string" optional="1" default="" desc=""/>
+			</Table>
+
+			<?class SteeringWheel ?>
+			<Table name="SteeringWheel" id="idActionSteeringWheel" optional="1" desc="">
+				<!-- This table must have subtable 'Car' *or* 'Actions'. -->
+				<Table name="Actions" id="idActionSteeringWheelActions" optional="1" desc="">
+					<Property name="steeringRelaxMult"   type="float"  optional="1" default="1.0" desc=""/>
+					<Property name="steeringForce"       type="float"  optional="1" default="1.0" desc=""/>
+				</Table>
+				<Table name="Car" id="idActionSteeringWheelCar" optional="1" desc="">
+					<Property name="jitterFreqLow"       type="float" optional="1" default="0.0" desc=""/>
+					<Property name="jitterFreqHi"        type="float" optional="1" default="0.0" desc=""/>
+					<Property name="jitterAmpLow"        type="float" optional="1" default="0.0" desc=""/>
+					<Property name="jitterAmpHi"         type="float" optional="1" default="0.0" desc=""/>
+					<Property name="jitterSuspAmp"       type="float" optional="1" default="0.0" desc=""/>
+					<Property name="jitterSuspResponse"  type="float" optional="1" default="0.0" desc=""/>
+				</Table>
+			</Table>
+
+			<?class Weapons ?>
+			<Table name="Weapons" id="idActionWeapon" optional="1" desc="">
+				<Property name="respawnTime"             type="float"  optional="1" default="" desc=""/>
+				<Property name="isSecondary"             type="bool"   optional="1" default="" desc=""/>
+				<Property name="mounted"                 type="bool"   optional="1" default="" desc=""/>
+				<Property name="shotDelay"               type="float"  optional="1" default="" desc=""/>
+				<Property name="disablesShootToCrosshair" type="bool"  optional="1" default="" desc=""/>
+				<Property name="attackInput"             type="string" optional="1" default="" desc="">
+					<Enum>
+						<Value>primary</Value>
+						<Value>secondary</Value>
+					</Enum>
+				</Property>
+				<Array name="Weapons" elementName="Weapon" optional="0" desc="">
+					<Property name="class"               type="string" optional="0" default="" desc=""/>
+					<Property name="part"                type="string" optional="1" list="Part" default="" desc=""/>
+					<Property name="inheritVelocity"     type="bool" optional="1" default="" desc=""/>
+					<Property name="animSubContext"      type="string" optional="1" default="" desc=""/>
+					<Array name="Helpers" elementName="Helper" optional="1" desc="">
+						<Property name="value"           type="string" optional="1" default="" desc="Helper name"/>
+					</Array>
+					<Array name="Actions" elementName="Action" optional="1" desc="">
+						<Property name="name"            type="string" optional="1" default="" desc=""/>
+						<Array name="Animations" elementName="Animation" optional="1" desc="">
+							<Property name="name"        type="string" optional="1" default="" desc=""/>
+						</Array>
+					</Array>
+				</Array>
+			</Table>
+		</Array>
+
+		<Table name="Mannequin" optional="1">
+			<!-- This table needs a controller defined in the external Mannequin tag, outside Seats. -->
+			<Property name="Idle"       type="string" optional="1" desc=""/>
+			<Property name="ExitOffset" type="string" optional="1" desc=""/>
+		</Table>
+
+		<Table name="Animations" optional="1"> <?todo ?>
+		</Table>
+
+		<Table name="Sounds" optional="1"> <?todo ?>
+		</Table>
+	</Array>
+
+	<?xml_comment Tag <SeatGroups> with child tags <SeatGroup> which of which have the properties described below. ?>
+	<Array name="SeatGroups" elementName="SeatGroup" id="idSeatGroups" optional="1">
+		<Property name="keepEngineWarm"                  type="bool"   optional="1" default="0" desc="Allows player to switch seat from driver while keeping the car working"/>
+		<Array name="Seats" elementName="Seat" extendable="1">
+			<Property name="value"                       type="string" optional="0" desc="Name of the seat"/>
+		</Array>
+	</Array>
+
+	<Table name="MovementParams" elementName="name of the type of movement, e.g. ArcadeWheeled" validate="0" optional="1">
+
+		<!-- This table defines the movement type of the Vehicle, it requires a child tag named after a valid movement type, e.g. <MovementParams><StdWheeled> ... -->
+		<!-- Valid movement types are: -->
+		<?enum 
+			StdWheeled
+			ArcadeWheeled
+			StdTank
+			Tank
+			StdBoat
+			Helicopter
+			MPVTOL
+			DummyMovement
+		?>
+
+		<Table name="StdWheeled" id="idStdWheeled" optional="1">
+
+			<!-- Following are the common properties to all movement types except 'DummyMovement'. They must be inside the movement type tag. -->
+			<Property name="keepEngineOn"                type="bool"   optional="1" default="0" desc="If set to true, the engine will not turn of when the driver leaves" id="idkeepEngineOn"/>
+			<Property name="engineIgnitionTime"          type="float"  optional="1" default="1.6" desc="" id="idengineIgnitionTime"/>
+
+			<Table name="Animations" id="idMovementAnimations" optional="1">
+				<Property name="engine"                  type="string"/>
+			</Table>
+
+			<Table name="SoundParams" id="idSoundParams" optional="1">
+				<!-- Common to all: -->
+				<Property name="engineSoundPosition"     type="string" optional="1" list="Helper" desc="Helper name for the position used to emit the engine sound"/>
+				<Property name="rpmPitchSpeed"           type="float"  optional="1" min="0" max="5" desc="Speed for rpm interpolation, usually used with pedal"/>
+				<Property name="runSoundDelay"           type="float"  optional="1" min="0" max="10" desc="Delay for start of run/ambient sound" />
+
+				<!-- Specific to StdWheeled: -->
+				<Property name="roadBumpMinSusp"         type="float" min="0" max="100" desc="Threshold in suspension compression for bump sounds" optional="1" />
+				<Property name="roadBumpMinSpeed"        type="float" min="0" max="100" desc="Vehicle min speed for bump sounds" optional="1" />
+				<Property name="roadBumpIntensity"       type="float" min="0" max="10" desc="sound param" optional="1" />
+				<Property name="airbrake"                type="float" min="0" max="10" desc="braking time threshold for airbrake sound" optional="1" />
+			</Table>
+
+			<Table name="Boost" id="idBoost" optional="1">
+				<Property name="endurance"               type="float"  optional="1" />
+				<Property name="regeneration"            type="float"  optional="1" />
+				<Property name="strength"                type="float"  optional="1" />
+			</Table>
+
+			<Table name="AirDamp" id="idAirDamp" optional="1">
+				<Property name="dampAngle"               type="Vec3"   min="0" max="10" desc="Angle correction when in midair" optional="1"/>
+				<Property name="dampAngVel"              type="Vec3"   min="0" max="10" desc="Angular velocity damping when in midair" optional="1"/>
+			</Table>
+
+			<Table name="Eject" id="idEject" optional="1">
+				<Property name="maxTippingAngle"         type="float"  min="0" max="180" desc="Vehicle angle at which players are ejected (0 = don't eject)" />
+				<Property name="timer"                   type="float"  min="0" desc="Time vehicle has to be at that angle before ejecting players" />
+			</Table>
+
+
+			<!-- Following are the properties specific to StdWheeled: -->
+			<Property name="steerSpeed"                  type="float"  min="0" max="1000" desc="Turn speed for wheels at vMax" />
+			<Property name="steerSpeedMin"               type="float"  min="0" max="1000" desc="Initial turn speed for wheels" />
+			<Property name="steerSpeedScale"             type="float"  desc="[deprecated]" />
+			<Property name="steerSpeedScaleMin"          type="float"  desc="[deprecated]" />
+			<Property name="kvSteerMax"                  type="float"  desc="Steering angle gets reduced by this amount" />
+			<Property name="v0SteerMax"                  type="float"  desc="Max steering angle for wheels"/>
+			<Property name="steerRelaxation"             type="float"  desc="Relaxation speed" min="0" max="1000"/>
+			<Property name="vMaxSteerMax"                type="float"  desc="Speed where steering angle is reduced by full kvSteerMax" />
+			<Property name="pedalLimitMax"               type="float"  desc="Additional pedal limitation at maximum steer" />
+
+			<Property name="rpmInterpSpeed"              type="float"  optional="1" desc="speed for RPM interpolation" />
+			<Property name="rpmRelaxSpeed"               type="float"  optional="1" desc="speed for RPM relaxing to idle" />
+			<Property name="rpmGearShiftSpeed"           type="float"  optional="1" desc="speed for RPM relaxing during gearshifts" />
+
+			<Property name="isBreakingOnIdle"            type="bool" optional="1" />
+
+			<Table name="Wheeled" optional="0">
+				<Property name="axleFriction"            type="int"    min="0" max="10000" desc="Torque caused by internal friction in axle and gearbox, during driving" />
+				<Property name="axleFrictionMax"         type="int"    optional="1" min="0" max="10000" desc="Torque caused by internal friction in axle and gearbox, during idle" />
+				<Property name="brakeTorque"             type="int"    min="0" max="40000" desc="Torque used when pedal is applied in reverse direction"/>
+				<Property name="brakeImpulse"            type="float"  optional="1" min="0" max="10000" desc="Impulse applied when pedal is applied in reverse direction" />
+				<Property name="clutchSpeed"             type="float"  min="0" max="10" desc="Speed for clutch releasing"/>
+				<Property name="damping"                 type="float"  min="0" max="0.5" desc="Overall damping in physics, 0 or very small usually" />
+				<Property name="engineIdleRPM"           type="int"    min="0" max="10000" desc="RPM when engine is idle" />
+				<Property name="engineMaxRPM"            type="int"    min="0" max="10000" desc="Maximum engine RPM" />
+				<Property name="engineMinRPM"            type="int"    min="0" max="10000" desc="Minimum engine RPM before engine stalls" />
+				<Property name="enginePower"             type="int"    min="0" max="10000" desc="Power in kW" />
+				<Property name="engineShiftDownRPM"      type="int"    min="0" max="10000" desc="Highest RPM where engine can shift down" />
+				<Property name="engineShiftUpRPM"        type="int"    min="0" max="10000" desc="Smallest RPM where engine can shift up" />
+				<Property name="engineStartRPM"          type="int"    min="0" max="10000" desc="RPM after engine started" />
+				<Property name="integrationType"         type="float"  optional="0"  default="0.0" max="0.5"   desc="Overall damping in physics, 0 or very small usually"/>
+				<Property name="stabilizer"              type="float"  min="0" max="10" desc="Multiplier for suspension force when opposite susps have different lengths" />
+				<Property name="minBrakingFriction"      type="float"  optional="1"  min="0" max="10" desc="Minimum friction during handbrakes" />
+				<Property name="maxSteer"                type="float"  min="0" max="1.57" desc="Maximum steering angle in radians" />
+				<Property name="maxTimeStep"             type="float"  min="0" max="0.1" desc="Max timestep that the entity is allowed to make" />
+				<Property name="minEnergy"               type="float"  min="0" max="10" desc="Minimum energy before the entity can be put asleep" />
+				<Property name="slipThreshold"           type="float"  min="0" max="1" desc="Ratio at which wheels are considered slipping" />
+				<Property name="gearDirSwitchRPM"        type="int"    min="0" max="10000" desc="Maximum wheel rpm at which gear direction can be changed" />
+				<Property name="dynFriction"             type="float"  min="0" max="10" desc="Multiplier for dynamic friction" />
+				<Property name="latFriction"             type="float"  optional="1" min="0" max="5" desc="Lateral friction multiplier" />
+				<Property name="steerTrackNeutralTurn"   type="float"  optional="1" min="0" max="1.57" desc="Neutral turn steering angle for tanks, should be same as maxSteer currently" />
+				<Property name="suspDampingMin"          type="float"  optional="1" min="-2" max="10000" desc="Suspension damping at zero speed" />
+				<Property name="suspDampingMax"          type="float"  optional="1" min="-2" max="10000" desc="Suspension damping at max speed" />
+				<Property name="suspDampingMaxSpeed"     type="float"  optional="1" min="0" max="150" desc="Max speed for susp damping increasing" />
+				<Property name="stabiMin"                type="float"  optional="1" min="0" max="10" desc="Stabi at 0 speed" />
+				<Property name="stabiMax"                type="float"  optional="1" min="0" max="10" desc="Stabi at max speed" />
+				<Property name="maxSpeed"                type="float"  optional="1" min="0" max="100" desc="Approximated maximum speed" />
+				<Property name="maxGear"                 type="int"    optional="1" min="0" max="100" desc="Max forward gear to use" />
+				<Property name="maxBrakingFriction"      type="float"  optional="1" min="0" max="10" desc="Maximum friction during handbrakes" />
+				<Property name="pullTilt"                type="float"  optional="1" min="-90" max="90" desc="Angle that driving force is tilted downwards" />
+				<Array name="gearRatios" type="float" extendable="1" elementName="gearRatio" min="-100" max="100" desc="Gear ratios. 1 backward, 2 neutral, 3 to n forward" />
+			</Table>
+		</Table>
+
+		<Table name="ArcadeWheeled" id="idArcadeWheeled" optional="1">
+
+			<Property name="isBreakingOnIdle" type="bool" optional="1" />
+			<Property name="steerSpeed"         type="float" desc="Speed at which the wheels reach full turning lock at vMaxSteerMax" optional="1" />
+			<Property name="steerSpeedMin"      type="float" desc="Speed at which the wheels reach full turning lock at zero speed" optional="1" />
+			<Property name="steerSpeedScale"    type="float" desc="Scale for steering sensitivity at vMaxSteerMax" optional="1" />
+			<Property name="steerSpeedScaleMin" type="float" desc="Scale for steering sensitivity at zero speed" optional="1" />
+			<Property name="kvSteerMax"         type="float" desc="Amount of steering, in degrees, subtracted from v0SteerMax when vehicle speed reaches vMaxSteerMax" optional="1" />
+			<Property name="v0SteerMax"         type="float" desc="Maximum steering angle, in degrees, at zero speed" optional="1" />
+			<Property name="steerRelaxation"    type="float" desc="The speed at which the wheels return to center after finishing turning" optional="1" />
+			<Property name="vMaxSteerMax"       type="float" desc="Vehicle speed at which entire kvSteerMax is subtracted from v0SteerMax" optional="1" />
+			<Property name="pedalLimitMax"      type="float" desc="At vMaxSteerMax pedal is clamped to 1-pedalLimitMax" optional="1" />
+			<Property name="rpmGearShiftSpeed"  type="float" desc="Speed for RPM relaxing during gearshifts" />
+			<?xml_comment todo: incomplete ?>
+
+			<Table name="Wheeled" optional="1"> <!-- This table can equally be called WheeledLegacy. -->
+				<Property name="suspDampingMin"                   type="float" optional="1" default="0.0" min="-2" max="10000" desc="Suspension damping at zero speed"/>
+				<Property name="suspDampingMax"                   type="float" optional="1" default="0.0" min="-2" max="10000" desc="Suspension damping at max speed"/>
+				<Property name="suspDampingMaxSpeed"              type="float" optional="1" default="0.0" min="0"  max="150"   desc="Max speed for susp damping increasing"/>
+				<Property name="stabiMin"                         type="float" optional="1" default="0.0" desc="For suspension: Stabi at 0 speed"/>
+				<Property name="stabiMax"                         type="float" optional="1" default="0.0" desc="For suspension: Stabi at max speed"/>
+				<Property name="damagedWheelSpeedInfluenceFactor" type="float" optional="1" default="0.5" desc="Factor to influence the calculation of average wheel condition. Wheel condition is a linear porportion of wheels that were not blown weighted by this factor. Sensible values range from 0 to 1. A value of 0 will result in a 'perfect' condition regardless of the number of blow wheels."/>
+
+				<Property name="damping"                          type="float" optional="0" default="0.0" max="0.5"   desc="Overall damping in physics, 0 or very small usually"/>
+				<Property name="engineIdleRPM"                    type="int"   optional="0" default="0.0" max="10000" desc="RPM when engine is idle"/>
+				<Property name="engineMaxRPM"                     type="int"   optional="0" default="0.0" max="10000" desc="Maximum engine RPM"/>
+				<Property name="engineMinRPM"                     type="int"   optional="0" default="0.0" max="10000" desc="Minimum engine RPM before engine stalls"/>
+				<Property name="stabilizer"                       type="float" optional="0" default="0.0" max="10"    desc="Multiplier for suspension force when opposite susps have different lengths"/>
+				<Property name="integrationType"                  type="float" optional="0" default="0.0" max="0.5"   desc="Overall damping in physics, 0 or very small usually"/>
+				<Property name="maxTimeStep"                      type="float" optional="0" default="0.0" max="0.1"   desc="Max timestep that the entity is allowed to make"/>
+				<Property name="minEnergy"                        type="float" optional="0" default="0.0" max="10"    desc="Minimum energy before the entity can be put asleep"/>
+
+			</Table>
+
+			<Table name="ViewAdjustment" optional="1">
+				<?todo ?>
+			</Table>
+
+			<Table name="ViewAdjustmentPowerLock" optional="1">
+				<?todo ?>
+			</Table>
+
+			<Table name="FakeGears" optional="1">
+				<Property name="minChangeUpTime"         type="float" min="0.3"  max="100"  desc="The min. time that must be spent in a gear before allowed to change up" />
+				<Property name="minChangeDownTime"       type="float" min="0.3"  max="100"  desc="The min. time that must be spent in a gear before allowed to change down" />
+				<Property name="rpmInterpSpeed"          type="float" optional="1" desc="speed for RPM interpolation" />
+				<Property name="rpmRelaxSpeed"           type="float" optional="1" desc="speed for RPM relaxing to idle (no throttle)" />
+
+				<Property name="gearOscillationFrequency" type="float" optional="1" default="" desc=""/>
+				<Property name="gearOscillationAmp"      type="float"  optional="1" default="" desc=""/>
+				<Property name="gearOscillationAmp2"     type="float"  optional="1" default="" desc=""/>
+				<Property name="gearChangeSpeed"         type="float"  optional="1" default="" desc=""/>
+				<Property name="gearChangeSpeed2"        type="float"  optional="1" default="" desc=""/>
+
+				<Property name="rpmLoadChangeSpeedUp"    type="float" optional="1" desc="RPM strain/load. How quickly to change the strain upwards" />
+				<Property name="rpmLoadChangeSpeedDown"  type="float" optional="1" desc="RPM strain/load. How quickly to change the strain downwards" />
+				<Property name="rpmLoadFactor"           type="float" optional="1" desc="RPM strain/load. How much rpm changes affect engine load" />
+				<Property name="rpmLoadFromBraking"      type="float" optional="1" desc="RPM strain/load. How much the brake (alone) affects the engine load" />
+				<Property name="rpmLoadFromThrottle"     type="float" optional="1" desc="RPM strain/load. How much the throttle (alone) affects the engine load" />
+
+				<Array name="Ratios" type="float" extendable="1" elementName="Ratio" min="0.1" max="1" desc="Gear ratios, specified as a fraction of the top speed (No need to specify reverse and neutral)">
+					<Property name="value"               type="float"  optional="1" default="" desc=""/>
+					<Property name="minChangeDownTime"   type="float"  optional="1" default="" desc=""/>
+					<Property name="minChangeUpTime"     type="float"  optional="1" default="" desc=""/>
+				</Array>
+			</Table>
+
+			<Table name="Handling" id="idHandling">
+				<Table name="Power">
+					<Property name="acceleration"        type="float"  desc="Rate of acceleration" />
+					<Property name="decceleration"       type="float"  desc="Rate of natural deceleration with no throttle/brake applied" />
+					<Property name="topSpeed"            type="float"  desc="Top speed in meters per second" />
+					<Property name="reverseSpeed"        type="float"  desc="Reversing speed in meters per second" />
+					<Property name="boostTopSpeed"       type="float"  desc="" />
+					<Property name="boostAcceleration"   type="float"  desc="" />
+				</Table>
+				<Table name="SpeedReduction">
+					<Property name="reductionAmount" type="float" desc="Reduce top speed fractionally by this amount when steering is at steer max" />
+					<Property name="reductionRate"   type="float" desc="Rate at which to reduce the speed by" />
+				</Table>
+				<Table name="Compression">
+					<Property name="frictionBoost"          type="float" desc="Increase friction when suspension becomes compressed" />
+					<Property name="frictionBoostHandBrake" type="float" desc="Same as frictionBoost but for when hand brake is pressed" />
+				</Table>
+				<Table name="Friction">
+					<Property name="back"   type="float" desc="Lateral friction of the back wheels" />
+					<Property name="front"  type="float" desc="Lateral friction of the front wheels (note the forward friction is internally calculated)" />
+					<Property name="offset" type="float" desc="Vertical positional offset, where handling forces are applied for forwards and lateral friction relative to the mass box" />
+				</Table>
+				<Table name="PowerSlide" optional="1">
+					<Property name="lateralSpeedFraction"   type="float"  desc="" />
+					<Property name="lateralSpeedFractionHB" type="float"  desc="" />
+					<Property name="spring"                 type="float"  desc="" />
+				</Table>
+				<Table name="WheelSpin" optional="1" >
+					<Property name="grip1"               type="float" desc="Grip fraction when at zero slip speed (set this to less than 1.0)" optional="1" />
+					<Property name="grip2"               type="float" desc="Grip fraction when at high slip speed (usually 1.0, you should have grip2 > grip1)" optional="1" />
+					<Property name="gripRecoverSpeed"    type="float" desc="Exponential slip speed needed to go from grip1 to grip2" optional="1" />
+					<Property name="accelMultiplier1"    type="float" desc="Acceleration multiplier at zero speed (make > 1.0 for wheel spin)" optional="1" />
+					<Property name="accelMultiplier2"    type="float" desc="Acceleration multiplier at top speed (should make this is less than 1.0)" optional="1" />
+				</Table>
+				<Table name="HandBrake">
+					<Property name="decceleration"          type="float" desc="How much deceleration should the full hand brake provide" />
+					<Property name="deccelerationPowerLock" type="float" desc="How much deceleration should the hand brake provide when the accelerator is also still pressed" />
+					<Property name="lockBack"               type="bool"  desc="Should the back wheels lock" />
+					<Property name="lockFront"              type="bool"  desc="Should the front wheels lock" />
+					<Property name="frontFrictionScale"     type="float" desc="How much to scale the lateral friction by, of the front wheels, when the hand brake is pressed" />
+					<Property name="backFrictionScale"      type="float" desc="How much to scale the lateral friction by, of the back wheels, when the hand brake is pressed" />
+					<Property name="angCorrectionScale"     type="float" desc="How much to scale the angSpring value by when the hand brake is pressed" />
+					<Property name="latCorrectionScale"     type="float" desc="How much to scale the lateralSpring value by when the hand brake is pressed" optional="1" />
+				</Table>
+				<Table name="Correction">
+					<Property name="lateralSpring" type="float" desc="Lateral damping value" />
+					<Property name="angSpring"     type="float" desc="Angular correction value" />
+				</Table>
+				<Table name="Stabilisation">
+					<Property name="angDamping"          type="float"  desc=""/>
+					<Property name="rollDamping"         type="float"  desc=""/>
+					<Property name="rollfixAir"          type="float"  desc=""/>
+					<Property name="upDamping"           type="float"  desc=""/>
+					<Property name="maxTiltAngleAir"     type="float"  desc=""/>
+				</Table>
+				<Table name="Inertia" optional="1">
+					<Property name="radius" type="float" desc="Effect radius of the chassis. Larger values would simulate physics similar to a truck, for example." />
+				</Table>
+			</Table>
+
+			<Table name="TankHandling">
+				<Property name="additionalSteeringStationary" type="float"  optional="1" default="" desc=""/>
+				<Property name="additionalSteeringAtMaxSpeed" type="float"  optional="1" default="" desc=""/>
+				<Property name="additionalTilt"               type="float"  optional="1" default="" desc=""/>
+			</Table>
+
+			<Use id="idkeepEngineOn" optional="1" />
+			<Use id="idengineIgnitionTime" optional="1" />
+			<Use id="idMovementAnimations" optional="1" />
+			<Table name="SoundParams" optional="1" use="idSoundParams">
+				<!-- The common table is extended with the following params: -->
+				<Property name="roadBumpMinSusp"         type="float" min="0" max="100" desc="Threshold in suspension compression for bump sounds" optional="1" />
+				<Property name="roadBumpMinSpeed"        type="float" min="0" max="100" desc="Vehicle min speed for bump sounds" optional="1" />
+				<Property name="roadBumpIntensity"       type="float" min="0" max="10" desc="sound param" optional="1" />
+				<Property name="airbrake"                type="float" min="0" max="10" desc="braking time threshold for airbrake sound" optional="1" />
+				<Table name="Skidding" id="idSoundParamsSkidding" optional="1">
+					<Property name="skidLerpSpeed"       type="float"  optional="1" min="0" max="10" desc="How quickly to change the skid sound value"/>
+					<Property name="skidCentrifugalFactor" type="float" optional="1" min="0" max="10" desc="Effect from centrifugal force"/>
+					<Property name="skidBrakeFactor"     type="float"  optional="1" min="0" max="10" desc="Change due to braking alone"/>
+					<Property name="skidPowerLockFactor" type="float"  optional="1" min="0" max="10" desc="Change due to handbrake whilst accelerating (power-lock)"/>
+					<Property name="skidForwardFactor"   type="float"  optional="1" min="0" max="10" desc="How much wheel forward slipping affects the skidding"/>
+					<Property name="skidLateralfactor"   type="float"  optional="1" min="0" max="10" desc="How much wheel side slipping affects the skidding"/>
+				</Table>
+			</Table>
+			<Use id="idBoost" optional="1" />
+			<Use id="idAirDamp" optional="1" />
+		</Table>
+
+		<Table name="StdTank" id="idStdTank" optional="1" desc="Extension of the StdWheeled movement type">
+			<?todo ?>
+		</Table>
+
+		<Table name="Tank" id="idTank" optional="1">
+			<?todo ?>
+		</Table>
+
+		<Table name="StdBoat" id="idStdBoat" optional="1">
+			<Property name="velMax"                      type="float"  optional="0" default="15.0" desc=""/>
+			<Property name="velMaxReverse"               type="float"  optional="0" default="5.0" desc=""/>
+			<Property name="acceleration"                type="float"  optional="0" default="5.0" desc=""/>
+			<Property name="accelerationVelMax"          type="float"  optional="0" default="" desc=""/>
+			<Property name="accelerationMultiplier"      type="float"  optional="0" default="2.0" desc=""/>
+			<Property name="pushTilt"                    type="float"  optional="0" default="0.0" desc=""/>
+			<Property name="turnRateMax"                 type="float"  optional="0" default="1.0" desc=""/>
+			<Property name="turnAccel"                   type="float"  optional="0" default="1.0" desc=""/>
+			<Property name="cornerForce"                 type="float"  optional="0" default="1.0" desc=""/>
+			<Property name="cornerTilt"                  type="float"  optional="0" default="0.0" desc=""/>
+			<Property name="turnDamping"                 type="float"  optional="0" default="0.0" desc=""/>
+			<Property name="turnAccelMultiplier"         type="float"  optional="0" default="2.0" desc=""/>
+			<Property name="rollAccel"                   type="float"  optional="1" default="0.0" desc=""/>
+			<Property name="pedalLimitReverse"           type="float"  optional="1" default="1.0" desc=""/>
+			<Property name="turnVelocityMult"            type="float"  optional="1" default="1.0" desc=""/>
+			<Property name="velLift"                     type="float"  optional="1" default="0.0" desc=""/>
+			<Property name="lateralDamping"              type="float"  optional="1" default="0.0" desc=""/>
+			<Property name="waveIdleStrength"            type="Vec3"   optional="1" default="0.0, 0.0, 0.0" desc=""/>
+			<Property name="waveSpeedMult"               type="float"  optional="1" default="0.0" desc=""/>
+			<Property name="cornerHelper"                type="string" optional="1" default="" desc=""/>
+			<Property name="pushHelper"                  type="string" optional="1" default="" desc=""/>
+			<Property name="waveEffect"                  type="string" optional="1" default="" desc=""/>
+
+			<Use id="idkeepEngineOn" optional="1" />
+			<Use id="idengineIgnitionTime" optional="1" />
+			<Use id="idMovementAnimations" optional="1" />
+			<Use id="idSoundParams" optional="1" />
+			<Use id="idBoost" optional="1" />
+			<Use id="idAirDamp" optional="1" />
+		</Table>
+
+		<Table name="Helicopter" id="idHelicopterMovementParams" optional="1">
+			<?todo ?>
+		</Table>
+
+		<Table name="DummyMovement" id="idDummyMovement" optional="1">
+			<?empty - no specific attributes. Note: 'DummyMovement' also does not read the common movement properties ?>
+		</Table>
+	</Table>
+
+	<Table name="Damages" optional="1">
+		<Property name="submergedRatioMax"               type="float"  optional="1"/>
+		<Property name="submergedDamageMult"             type="float"  optional="1"/>
+		<Property name="collDamageThreshold"             type="float"  optional="1" default="50.0" desc="Is subtracted from collision damage before it is applied"/>
+		<Property name="groundCollisionMinMult"          type="float"  optional="1" min="0" max="10" desc="Increases damage when falling onto ground. Use together with minSpeed and maxSpeed"/>
+		<Property name="groundCollisionMaxMult"          type="float"  optional="1" min="0" max="10"/>
+		<Property name="groundCollisionMinSpeed"         type="float"  optional="1" min="0" max="50"/>
+		<Property name="groundCollisionMaxSpeed"         type="float"  optional="1" min="0" max="200"/>
+		<Property name="vehicleCollisionDestructionSpeed" type="float" optional="1" desc="If colliding with another vehicle with closing speed above this, self will be destroyed"/>
+		<Property name="aiKillPlayerSpeed"               type="float"  optional="1" desc="AI driven vehicles kill players if colliding above this speed"/>
+		<Property name="playerKillAISpeed"               type="float"  optional="1" desc="Player driven vehicles kill AI if colliding above this speed"/>
+		<Property name="aiKillAISpeed"                   type="float"  optional="1" desc="AI driven vehicles kill AI of other factions if colliding above this speed"/>
+
+		<Array name="DamageMultipliers" elementName="DamageMultiplier" extendable="1" id="idDamageMultipliers" optional="1">
+			<Property name="damageType"                  type="string" optional="1" desc="Supply damage or ammoType and the multplier and splash value"/>
+			<Property name="ammoType"                    type="string" optional="1" desc="Supply damage or ammoType and the multplier and splash value"/>
+			<Property name="multiplier"                  type="float"  optional="1" min="0.0"/>
+			<Property name="splash"                      type="float"  optional="1"/>
+		</Array>
+
+		<Array name="DamagesGroups" elementName="DamagesGroup" optional="1">
+			<Property name="name"                        type="string" optional="0" desc="Used as identifier, must be unique"/>
+			<Property name="useTemplate"                 type="string" optional="1" desc="Template name from one defined in DefaultVehicleDamages.xml or in another file in the same folder. Templates define DamagesSubGroups and can use templates themselves, forming the final array of SubGroups with DamageBehaviors."/>
+
+			<Array name="DamagesSubGroups" elementName="DamagesSubGroup" optional="1">
+				<Property name="delay"                   type="float"  optional="1" default="0.0"/>
+				<Property name="randomness"              type="float"  optional="1" default="0.0"/>
+
+				<Array name="DamageBehaviors" elementName="DamageBehavior" extendable="1" id="idDamageBehaviors">
+
+					<!-- A DamageBehavior must define a 'class' property. According to the specified class, there are different properties and subtables that can be used to configure it. -->
+
+					<Property name="class"               type="string" optional="0">
+						<Enum expand="1">
+							<Value>AISignal</Value>
+							<Value>Destroy</Value>
+							<Value>DetachPart</Value>
+							<Value>DisableSeatAction</Value>
+							<Value>Effect</Value>
+							<Value>Group</Value>
+							<Value>HitPassenger</Value>
+							<Value>Impulse</Value>
+							<Value>Indicator</Value>
+							<Value>MovementNotification</Value>
+							<Value>Sink</Value>
+							<Value>SpawnDebris</Value>
+							<Value>AudioFeedback</Value>
+							<Value>Burn</Value>
+							<Value>CameraShake</Value>
+							<Value>Explosion</Value>
+							<Value>BlowTire</Value>
+						</Enum>
+					</Property>
+
+					<!-- Common to all <DamageBehavior> tags: -->
+
+					<Property name="damageRatioMin"           type="float" optional="1" default="1.0" desc="The damage behavior will only be triggered when the damage ratio is between damageRatioMin and damageRatioMax, e.g. to only trigger the behavior when the vehicle is more than half destroyed, set this value to 0.5"/>
+					<Property name="damageRatioMax"           type="float" optional="1" default="0.0" desc="This damage behavior will apply when the damage ratio is between damageRatioMin and damageRatioMax. When the vehicle has more damage than damageRatioMax, the behavior is cut short." />
+					<Property name="ignoreVehicleDestruction" type="bool"  optional="1" default="0" desc="Do not react to vehicle destruction"/>
+
+					<!-- Class specific properties: -->
+
+					<?class AISignal ?>
+					<Table name="AISignal" id="idAISignal" optional="0" desc="Sends a signal to the AI system and a free signal to the vehicles entity AI on hit.">
+						<Property name="signalId"        type="int"    optional="0"/>
+						<Property name="signalText"      type="string" optional="1" default="" desc=""/>
+						<Property name="freeSignalText"  type="string" optional="1" default="" desc=""/>
+						<Property name="freeSignalRadius" type="float" optional="1" default="15.0" desc=""/>
+						<Property name="freeSignalRepeat" type="bool"  optional="1" default="0" desc=""/>
+					</Table>
+
+					<?class Destroy ?>
+					<!-- Notifies all vehicle systems and components of a vehicle destruction event. This behavior triggers other damage behaviors that react to vehicle destruction and hooks with
+					the lua 'OnVehicleDestroyed' function. Destroy also adds a 'DetachPart' damage behavior to all vehicle parts of type 'AnimatedJoint'. -->
+					<Property name="effect"              type="string" optional="1" default="" desc="Name of the particle effect used for the 'DetachPart' behavior generated for AnimatedJoint parts"/>
+
+					<?class DetachPart ?>
+					<Table name="DetachPart" id="idDetachPart" optional="0" desc="Detaches this part and its children from the vehicle with an impulse. The behavior is applicable to any part type as long as it has static geometry and is subject to some randomness for variability.">
+						<Property name="part"            type="string" optional="0" default="" desc="Name of the part to detach"/>
+						<Property name="notifyMovement"  type="bool"   optional="1" default="0" desc="Notifies the vehicles active movement type of the detached part"/>
+						<Property name="effect"          type="string" optional="1" default="" desc="Name of the effect to find in the ParticleManager"/>
+						<Property name="pickable"        type="bool"   optional="1" default="0" desc="If the part will be pickable after it has been detached"/>
+					</Table>
+
+					<?class DisableSeatAction ?>
+					<Table name="DisableSeatAction" id="idDisableSeatAction" optional="0" desc="Disables all actions or a specific action on a seat.">
+						<Property name="seat"            type="string" optional="1" desc="The name of the seat holding the action to be disabled"/>
+						<Property name="actionName"      type="string" optional="1" desc="The name of the action to be disabled, or 'all'"/>
+					</Table>
+
+					<?class Effect ?>
+					<!-- Spawn a particle effect -->
+					<Table name="Effect" id="idEffect" optional="0">
+						<Property name="effect"                type="string" optional="1" default="" desc="Name of the particle effect"/>
+						<Property name="disableAfterExplosion" type="string" optional="1" default="0" desc="Set to true if the effect should stop after the vehicle explodes when destroyed"/>
+						<Property name="updateFromHelper"      type="string" optional="1" default="0" desc="Set to true if the effect needs an update tick"/>
+					</Table>
+
+					<?class Group ?>
+					<Table name="Group" id="idGroup" optional="0" desc="Broadcast damage event to a Damage Group. This is useful to trigger already setup damage groups from different components and other groups">
+						<Property name="name"            type="string" optional="0" default="" desc="Name of the damage group to broadcast the damage event to"/>
+					</Table>
+
+					<?class HitPassenger ?>
+					<Table name="HitPassenger" id="idHitPassenger" optional="0" desc="Applies damage to all actors seating in the vehicle for every hit the vehicle receives">
+						<Property name="damage"          type="int"    optional="0" default="0" desc="Damage value to apply to all actors seating in the vehicle"/>
+						<Property name="isDamagePercent" type="bool"   optional="1" default="0" desc="If damage is in absolute values or a percentage of the actor's health"/>
+					</Table>
+
+					<?class Impulse ?>
+					<Table name="Impulse" id="idImpulse" optional="0" desc="Applies a physics impulse to the vehicle">
+						<Property name="forceMin"        type="float"  optional="0" default="0.0" desc="The impulse's force will be randomly generated from an interval between forceMin and forceMax"/>
+						<Property name="forceMax"        type="float"  optional="0" default="0.0" desc="The impulse's force will be randomly generated from an interval between forceMin and forceMax"/>
+						<Property name="direction"       type="Vec3"   optional="0" default="0.0, 0.0, 0.0" desc="Direction of the impulse applied to the vehicle"/>
+						<Property name="momentum"        type="Vec3"   optional="0" default="0.0, 0.0, 0.0" desc="Angular impulse"/>
+						<Property name="worldSpace"      type="bool"   optional="0" default="0" desc="If the impulse's direction and momentum is already in world space of if it is relative to the vehicle"/>
+						<Property name="helper"          type="string" optional="0" default="" desc="Name of the helper to position the impulse"/>
+					</Table>
+
+					<?class Indicator ?>
+					<Table name="Indicator" id="idIndicator" optional="0" desc="Light or sound indicator according to damage ratio.">
+						<Table name="Light">
+							<Property name="material"      type="string" optional="1" default="" desc=""/>
+							<Property name="sound"         type="string" optional="1" default="" desc=""/>
+							<Property name="soundRatioMin" type="float"  optional="1" default="" desc=""/>
+							<Property name="helper"        type="string" optional="1" default="" desc=""/>
+						</Table>
+					</Table>
+
+					<?class MovementNotification ?>
+					<Table name="MovementNotification" id="idMovementNotification" optional="1" desc="Sends a notification to the active movement type on Hit and Repair">
+						<Property name="isSteering"         type="bool"  optional="1" default="0" desc="Information to pass to the active movement type. If steering is involved"/>
+						<Property name="isFatal"            type="bool"  optional="1" default="1" desc="Information to pass to the active movement type. If the damage is fatal"/>
+						<Property name="param"              type="int"   optional="1" default="0" desc="Information to pass to the active movement type. "/>
+						<Property name="isDamageAlwaysFull" type="bool"  optional="1" default="0" desc="If true, the behavior acts as if the damage value was 100%"/>
+					</Table>
+
+					<?class Sink ?>
+					<!-- Sinks the vehicle if on water (typically a boat). This behavior is applied when the vehicle is destroyed. -->
+					<?empty - no specific attributes ?>
+
+					<?class SpawnDebris ?>
+					<Table name="SpawnDebris" id="idSpawnDebris" optional="0" desc="This a behavior applied to the entire vehicle on destruction. When triggered, this behavior spawns geometry with a randomized impulse and an optional particle effect. The debris is automatically generated from all the vehicle animated parts that have a configured destroyed geometry. The geometry will be spawned from the joint the part is attached to.">
+						<Property name="pickable"        type="bool"   optional="1" default="0" desc="If the part will be pickable after it has been detached"/>
+						<Property name="effect"          type="string" optional="1" default=""  desc="Name of the effect to find in the ParticleManager"/>
+					</Table>
+
+					<?class AudioFeedback ?>
+					<Table name="Sound" id="idAudioFeedback" optional="1" desc="">
+						<Property name="firstPersonSignal" type="string" optional="0" desc="Name of the signal to be played when the player is in first person"/>
+						<Property name="thirdPersonSignal" type="string" optional="0" desc="Name of the signal to be played when the player is in third person"/>
+					</Table>
+
+					<?class Burn ?>
+					<Table name="Burn" id="idBurn" optional="0" desc="Generates a controlled explosion during 60sec that will apply damage to nearby actors.">
+						<Property name="helper"          type="string" optional="1" default="" desc=""/>
+						<Property name="damage"          type="float"  optional="1" default="0.0" desc=""/>
+						<Property name="selfDamage"      type="float"  optional="1" default="0.0" desc=""/>
+						<Property name="radius"          type="float"  optional="1" default="0.0" desc=""/>
+						<Property name="interval"        type="float"  optional="1" default="0.0" desc=""/>
+					</Table>
+
+					<?class CameraShake ?>
+					<!-- Shakes the passenger's camera on hit. -->
+					<?empty - no specific attributes ?>
+
+					<?class Explosion ?>
+					<Table name="Explosion" id="idExplosion" optional="0" desc="Generate an explosion on vehicle destruction">
+						<Property name="helper"          type="string" optional="1" default="" desc=""/>
+						<Property name="damage"          type="float"  optional="1" default="0.0" desc=""/>
+						<Property name="radius"          type="float"  optional="1" default="0.0" desc=""/>
+						<Property name="minRadius"       type="float"  optional="1" default="half of 'radius'" desc=""/>
+						<Property name="physRadius"      type="float"  optional="1" default="the smallest value between 'radius' or 5.0" desc=""/>
+						<Property name="minPhysRadius"   type="float"  optional="1" default="half of 'phyRadius'" desc=""/>
+						<Property name="pressure"        type="float"  optional="1" default="0.0" desc=""/>
+						<Property name="soundRadius"     type="float"  optional="1" default="0.0" desc=""/>
+					</Table>
+
+					<?class BlowTire ?>
+					<!-- Makes a wheel disappear with particle effects and a physics impulse. Use on a component which belongs to a SubPartWheel part for full effect. -->
+					<?empty - no specific attributes ?>
+
+				</Array>
+			</Array>
+		</Array>
+
+	</Table>
+
+	<Table name="Particles" optional="1">
+		<Property name="mfxRow"                          type="string" optional="1" default="vfx_VEHICLECLASSNAME" desc="The rowname to use for environment layer effects in MaterialEffects.xml" />
+		<Table name="Exhaust" optional="1">
+			<Property name="insideWater"                 type="bool"  optional="1" default="0" desc="If true, exhaust is spawned when helper position is inside water" />
+			<Property name="outsideWater"                type="bool"  optional="1" default="1" desc="If true, exhaust is spawned when helper position is outside water" />
+
+			<Array name="Helpers" elementName="Helper" list="Helper" type="string" desc="1 or more helpers where exhaust is spawned" extendable="1">
+				<Property name="value"                   type="string" optional="0" desc="Name of the helper"/>
+			</Array>
+
+			<Table name="EngineStart" optional="1">
+				<Property name="effect" type="string" desc="Name of particle effect (e.g. vehicle_fx.exhaust.smoke_start)" />
+			</Table>
+			<Table name="EngineStop" optional="1">
+				<Property name="effect" type="string" desc="Name of particle effect (e.g. vehicle_fx.exhaust.smoke_stop)" />
+			</Table>
+			<Table name="EngineRunning" optional="1">
+				<Property name="effect"                  type="string" optional="1" desc="Name of particle effect (e.g. vehicle_fx.exhaust.smoke_running)" />
+				<Property name="boostEffect"             type="string" optional="1" desc="Additional effect for boost mode" />
+				<Property name="baseSizeScale"           type="float"  optional="1" min="0" max="5" desc="Base scale applied to the effect"/>
+				<Property name="minSpeed"                type="float"  optional="1" min="0" max="100" desc="Minimum vehicle speed necessary for exhaust spawn"/>
+				<Property name="minSpeedSizeScale"       type="float"  optional="1" min="0" max="5" desc="Size scale multiplier at minimum speed"/>
+				<Property name="minSpeedCountScale"      type="float"  optional="1" min="0" max="5" desc="Count scale multiplier at minimum speed"/>
+				<Property name="minSpeedSpeedScale"      type="float"  optional="1" min="0" max="5" desc="Emitter speed scale multiplier at minimum speed"/>
+				<Property name="maxSpeed"                type="float"  optional="1" min="0" max="100" desc="Maximum vehicle speed allowed for exhaust spawn"/>
+				<Property name="maxSpeedSizeScale"       type="float"  optional="1" min="0" max="5" desc="Size scale multiplier at max speed"/>
+				<Property name="maxSpeedCountScale"      type="float"  optional="1" min="0" max="5" desc="Count scale multiplier at max speed"/>
+				<Property name="maxSpeedSpeedScale"      type="float"  optional="1" min="0" max="5" desc="Emitter speed scale multiplier at max speed"/>
+				<Property name="minPower"                type="float"  optional="1" min="0" max="1" desc="Min power (ie. pedal/load) necessary for spawn"/>
+				<Property name="minPowerSizeScale"       type="float"  optional="1" min="0" max="5" desc="Size scale multiplier at min power"/>
+				<Property name="minPowerCountScale"      type="float"  optional="1" min="0" max="5" desc="Count scale multiplier at min power"/>
+				<Property name="minPowerSpeedScale"      type="float"  optional="1" min="0" max="5" desc="Emitter speed scale multiplier at min power"/>
+				<Property name="maxPower"                type="float"  optional="1" min="0" max="1" desc="Max power (ie. load/pedal) allowed for spawn"/>
+				<Property name="maxPowerSizeScale"       type="float"  optional="1" min="0" max="5" desc="Size scale multiplier at max power"/>
+				<Property name="maxPowerCountScale"      type="float"  optional="1" min="0" max="5" desc="Count scale multiplier at min power"/>
+				<Property name="maxPowerSpeedScale"      type="float"  optional="1" min="0" max="5" desc="Emitter speed scale multiplier at max power"/>
+				<Property name="disableWithNegativePower" type="bool"  optional="1" desc="Since the power params are applied on an absolute power value, this option can be used to turn off the exhaust when used with negative power value"/>
+			</Table>
+		</Table>
+
+		<Array name="DamageEffects" elementName="DamageEffect" extendable="1" optional="1">
+			<Property name="name"                        type="string" optional="0" />
+			<Property name="effect"                      type="string" optional="0" />
+			<Property name="helper"                      type="string" optional="1" list="Helper"/>
+			<Property name="gravityDirection"            type="Vec3"   optional="1"/>
+			<Property name="pulsePeriod"                 type="float"  optional="1"/>
+			<Property name="scaleMax"                    type="float"  deprecated="1"/>
+		</Array>
+
+		<Array name="EnvironmentLayers" elementName="EnvironmentLayer" optional="1" extendable="1">
+			<Property name="name"                        type="string" optional="1" desc="Optional layer name">
+				<Enum restrictive="0">
+					<Value>slip</Value>
+					<Value>spray</Value>
+					<Value>rims</Value>
+				</Enum>
+			</Property>
+			<Property name="active"                      type="bool"   optional="1" default="1" desc="Initial active state" />
+			<Property name="minSpeed"                    type="float"  optional="1" min="0" max="100" default="0.0" desc="Minimum driving speed" />
+			<Property name="minSpeedSizeScale"           type="float"  optional="1" min="0" max="5" default="10.0" desc="Size scale at min speed" />
+			<Property name="minSpeedCountScale"          type="float"  optional="1" min="0" max="5" default="1.0" desc="Count scale at min speed" />
+			<Property name="minSpeedSpeedScale"          type="float"  optional="1" min="0" max="5" default="1.0" desc="Emitter speed scale at min speed" />
+			<Property name="maxSpeed"                    type="float"  optional="1" min="0" max="100" default="1.0" desc="Speed at which particle scale reaches maxSpeed scale parameters" />
+			<Property name="maxSpeedSizeScale"           type="float"  optional="1" min="0" max="5" default="1.0" desc="Size scale at max speed" />
+			<Property name="maxSpeedCountScale"          type="float"  optional="1" min="0" max="5" default="1.0" desc="Count scale at max speed" />
+			<Property name="maxSpeedSpeedScale"          type="float"  optional="1" min="0" max="5" default="1.0" desc="Emitter speed scale at max speed" />
+			<Property name="minPowerSizeScale"           type="float"  optional="1" min="0" max="5" default="1.0" desc="Size scale multiplier at min power"/>
+			<Property name="minPowerCountScale"          type="float"  optional="1" min="0" max="5" default="1.0" desc="Count scale multiplier at min power"/>
+			<Property name="minPowerSpeedScale"          type="float"  optional="1" min="0" max="5" default="1.0" desc="Emitter speed scale multiplier at min power"/>
+			<Property name="maxPowerSizeScale"           type="float"  optional="1" min="0" max="5" default="1.0" desc="Size scale multiplier at max power"/>
+			<Property name="maxPowerCountScale"          type="float"  optional="1" min="0" max="5" default="1.0" desc="Count scale multiplier at max power"/>
+			<Property name="maxPowerSpeedScale"          type="float"  optional="1" min="0" max="5" default="1.0" desc="Emitter speed scale multiplier at max power"/>
+
+			<Table name="Alignment">
+				<Property name="alignGroundHeight"       type="float"  optional="1" min="0" max="100" desc="If this is greater 0, the effect will align to the terrain (and water) and spawn up to the specified height" />
+				<Property name="maxHeightSizeScale"      type="float"  min="0" max="5" />
+				<Property name="maxHeightCountScale"     type="float"  min="0" max="5" />
+				<Property name="alignToWater"            type="bool"   desc="If true, effect will always be spawned at water level" />
+			</Table>
+
+			<Array name="Emitters" elementName="Helper" extendable="1" desc="Each helper specifies one emitter position. Note that WheelGroups overwrite this, and ground-aligned effects always use the entity center.">
+				<Property name="value"                   type="string" optional="0" list="Helper"/>
+			</Array>
+
+			<Table name="Wheels" optional="1">
+				<Property name="all"                     type="bool"   optional="1" default="0" desc="Generate groups for all wheels (In this case, do not specify WheelGroups)"/>
+				<Property name="allActive"               type="bool"   optional="1" default="1" desc="Initial active state for all WheelGroups in case 'all' parameter is used"/>
+				<Array name="WheelGroups" elementName="WheelGroup" optional="1" extendable="1" desc="A group can contain one or more wheel indices. Each group receives one emitter">
+					<Property name="active"              type="bool"   optional="1" default="1" desc="Initial active state for the group" />
+					<Array name="Wheels" elementName="Wheel" extendable="1">
+						<Property name="value"           type="int"    optional="1" default="0" desc=""/>
+					</Array>
+				</Array>
+			</Table>
+
+			<Table name="Splashes" deprecated="1"/>
+		</Array>
+	</Table>
+
+	<?xml_comment Tag <Animations> with child tags <Animation> which of which have the properties described below. ?>
+	<Array name="Animations" elementName="Animation" optional="1">
+		<Property name="name"                            type="string" optional="0" desc=""/>
+		<Property name="part"                            type="string" optional="0" list="Part" desc="Name of the part, it must be of type Animated or AnimatedChar"/>
+
+		<Array name="States" elementName="State" optional="1">
+			<Property name="name"                        type="string" optional="0"/>
+			<Property name="animation"                   type="string" optional="0"/>
+			<Property name="sound"                       type="string" optional="1"/>
+			<Property name="soundHelper"                 type="string" optional="1"/>
+
+			<Property name="isLooped"                    type="bool"   optional="1"/>
+			<Property name="isLoopedEx"                  type="bool"   optional="1" default="false"/>
+			<Property name="speedDefault"                type="float"  optional="1"/>
+			<Property name="speedMin"                    type="float"  optional="1"/>
+			<Property name="speedMax"                    type="float"  optional="1"/>
+
+			<Array name="Materials" elementName="Material" optional="1" extendable="1">
+				<Property name="name"                    type="string" optional="1"/>
+				<Property name="setting"                 type="string" optional="1"/>
+				<Property name="min"                     type="float"  optional="1" default="0.001"/>
+				<Property name="max"                     type="float"  optional="1" default="0.999"/>
+				<Property name="invertValue"             type="bool"   optional="1"/>
+			</Array>
+		</Array>
+	</Array>
+
+	<Table name="Mannequin" optional="1">
+		<Property name="tag"           type="string" optional="1"/>
+		<Property name="controllerDef" type="string" optional="0"/>
+		<Property name="vehicleADB"    type="string" optional="1"/>
+		<Property name="passengerADB"  type="string" optional="1"/>
+	</Table>
+
+	<?xml_comment Tag <Paints> with child tags <Paint> which of which have the properties described below. ?>
+	<Array name="Paints" elementName="Paint" optional="1">
+		<Property name="name"                            type="string" optional="0" desc="Name for the paint, this will be used as an identifier. It must be supplied and unique"/>
+		<Property name="material"                        type="string" optional="1" desc="Material to apply to the vehicle"/>
+		<Property name="materialDestroyed"               type="string" optional="1" desc="Material to use for the destroyed vehicle"/>
+	</Array>
+
+	<?xml_comment Tag <Modifications> with child tags <Modification> which of which have the properties described below. ?>
+	<Array name="Modifications" elementName="Modification" optional="1">
+		<Property name="name"                            type="string" optional="0" desc="Name for the modification, this will be used as an identifier. It must be supplied and unique"/>
+		<Property name="parent"                          type="string" optional="1" desc="Name of another modification to be applied as well. This allows the creation of hierarchies of base and specialized modifications"/>
+		<Array name="Elems" elementName="Elem">
+			<Property name="idRef"                       type="string" optional="0" desc="Id of the part to modify"/>
+			<Property name="name"                        type="string" optional="0" desc="Name of the attribute to modify"/>
+			<Property name="value"                       type="string" optional="0" desc="Value to set the attribute to. The use of this parameter is required, but it can still have an empty value to, for eg. unload a .cgf"/>
+		</Array>
+	</Array>
+
+	<Table name="Inventory" optional="1">
+		<Array name="AmmoTypes" elementName="Ammo">
+			<Property name="type"                        type="string" optional="0" desc=""/>
+			<Property name="capacity"                    type="int"    optional="0" default="0" desc=""/>
+		</Array>
+	</Table>
+
+	<Table name="WheelMaster" deprecated="1"/>
+	<Table name="Materials" deprecated="1"/>
+	<Table name="DamageExtensions" deprecated="1"/>
+	<Array name="SpecialLocations" elementName="SpecialLocation" deprecated="1"/>
+
+	<?end vehicle xml reference ?>
+
+
+	<!-- This element contains references to properties that are needed by veed_defaults.xml in that place -->
+	<Table name="VeedDefaults" optional="1">
+		<!-- Parts -->
+		<Use id="idAnimated" optional="1" />
+		<Use id="idSubPart" optional="1" />
+		<Use id="idSubPartWheel" optional="1" />
+		<Use id="idTread" optional="1" />
+		<Use id="idMassBox" optional="1" />
+		<Use id="idEntity" optional="1" />
+		<Use id="idParticleEffect" optional="1" />
+		<Use id="idLight" optional="1" />
+		<!-- DamageBehaviors -->
+		<Use id="idEffect" optional="1" />
+		<Use id="idImpulse" optional="1" />
+		<Use id="idMovementNotification" optional="1" />
+		<Use id="idDetachPart" optional="1" />
+		<Use id="idGroup" optional="1" />
+		<Use id="idIndicator" optional="1" />
+		<!-- SeatActions -->
+		<Use id="idActionSound" optional="1" />
+		<Use id="idActionRotateTurret" optional="1" />
+		<Use id="idActionSteeringWheel" optional="1" />
+		<Use id="idActionWeapon" optional="1" />
+		<Use id="idActionLights" optional="1" />
+		<Use id="idActionPassengerIK" optional="1" />
+		<Use id="idActionOrientatePartToView" optional="1" />
+	</Table>
+
+</Definition>

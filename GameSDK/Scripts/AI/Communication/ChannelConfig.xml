@@ -1,0 +1,39 @@
+<Communications>
+	<ChannelConfig>
+		<Channel name="Global" minSilence="0.0" flushSilence="0.0" type="global">
+			<Channel name="Group" minSilence="1.5" flushSilence="0.5" type="group">
+				<Channel name="EnemyWeaponComment" minSilence="20.0" priority="3" type="group"/>
+				<Channel name="DeadGroupMemberComment" minSilence="20.0" priority="3" type="group"/>
+				<Channel name="BattleChatter" minSilence="5.0" priority="2" type="group"/>
+				<Channel name="Taunt" minSilence="20.0" priority="1" type="group"/>
+				<Channel name="AloneTalk" minSilence="20.0" priority="3" type="group"/>
+				<Channel name="NoticePlayerGrabbing" minSilence="15.0" priority="3" flushSilence="0.0" type="group"/>
+				<Channel name="Search" minSilence="1.5" type="group">
+					<Channel name="SearchCommand" priority="5" minSilence="7.0" flushSilence="0.5" type="group"/>
+					<Channel name="SearchReport" minSilence="7.0" type="group"/>
+				</Channel>
+				<Channel name="Reaction" priority="2" minSilence="2" flushSilence="0.5" type="group">
+					<Channel name="SuspiciousSoundReaction" priority="2" minSilence="30.0" flushSilence="0.5" type="group"/>
+					<Channel name="MovingToSuspiciousSound" priority="2" minSilence="15.0" flushSilence="0.5" type="group"/>
+					<Channel name="NoticedThrownObjectInCombat" priority="2" minSilence="30.0" flushSilence="0.5" type="group"/>
+				</Channel>
+				<Channel name="ImmeadiateThreat" priority="4" minSilence="0.5" flushSilence="0.5" type="group"/>
+				<Channel name="Radio" minSilence="8" type="group"/>
+				<Channel name="Confirmed" priority="1" minSilence="2" flushSilence="0.5" type="group"/>
+			</Channel>
+			<Channel name="Personal" priority="1" minSilence="2" actorMinSilence="3" type="personal">
+				<Channel name="BulletRain" priority="1" minSilence="4.5" actorMinSilence="1" type="personal"/>
+			</Channel>
+		</Channel>
+		<Channel name="NoPause" minSilence="0.0" flushSilence="0.0" type="group" />
+		<Channel name="TacticQuestion" priority="9" minSilence="1.0" flushSilence="0" type="group"/>
+		<Channel name="Tactic" minSilence="1.0" flushSilence="0" type="group"/>
+		<Channel name="PersonalImmediate" minSilence="2" actorMinSilence="3" type="personal"/>
+		<Channel name="Injury" priority="12" minSilence="0.2" actorMinSilence="1.35" ignoreActorSilence="1" type="personal"/>
+		<Channel name="InjuryPain" priority="10" minSilence="2" actorMinSilence="1.35" ignoreActorSilence="1" type="personal"/>
+		<Channel name="Choking" priority="11" minSilence="2" actorMinSilence="1.35" ignoreActorSilence="1" type="personal"/>
+		<Channel name="Falling" priority="13" minSilence="2" actorMinSilence="1.35" ignoreActorSilence="1" type="personal"/>
+		<Channel name="PersonalNoSilence" priority="9" minSilence="0" actorMinSilence="0" type="personal"/>
+		<Channel name="QuickReaction" priority="9" minSilence="1.5" type="personal"/>
+	</ChannelConfig>
+</Communications>

@@ -1,0 +1,278 @@
+{
+	"Incredibuild Options" :
+	[
+		{
+			"short_form"     : "-i",
+			"long_form"      : "--use-incredibuild",
+			"attribute"      : "use_incredibuild",
+			"default_value"  : "True",
+			"description"    : "Use Incredibuild"
+		},
+		{
+			"long_form"      : "--use-incredibuild-win",
+			"attribute"      : "use_incredibuild_win",
+			"default_value"  : "True",
+			"description"    : "Use Incredibuild for PC Builds"
+		},
+		{
+			"long_form"      : "--use-incredibuild-durango",
+			"attribute"      : "use_incredibuild_durango",
+			"default_value"  : "True",
+			"description"    : "Use Incredibuild for Durango Builds"
+		},
+		{
+			"long_form"      : "--use-incredibuild-orbis",
+			"attribute"      : "use_incredibuild_orbis",
+			"default_value"  : "True",
+			"description"    : "Use Incredibuild for Orbis Builds"
+		},
+		{
+			"long_form"      : "--incredibuild-max-cores",
+			"attribute"      : "incredibuild_max_cores",
+			"default_value"  : "128",
+			"description"    : "Control number of processes spawned by Incredibuild"
+		},
+		{
+			"long_form"      : "--run-ib-as-service",
+			"attribute"      : "run_ib_as_service",
+			"default_value"  : "False",
+			"description"    : "(Experimental) Emulates IB multicore licence"
+		}
+	],
+
+	"Build Options" :
+	[
+		{
+			"long_form"      : "--force-version",
+			"attribute"      : "version",
+			"default_value"  : "1.0.0.0",
+			"description"    : "Version to embed in final build outputs"
+		},
+		{
+			"long_form"      : "--generate-debug-info",
+			"attribute"      : "generate_debug_info",
+			"default_value"  : "True",
+			"description"    : "Generate a Build containing Debug Info"
+		},
+		{
+			"long_form"      : "--generate-map-file",
+			"attribute"      : "generate_map_file",
+			"default_value"  : "False",
+			"description"    : "Generate a Map file during linking if the platform supports it"
+		},
+		{
+			"long_form"      : "--use-precompiled-header",
+			"attribute"      : "use_precompiled_header",
+			"default_value"  : "True",
+			"description"    : "Use Precompiled Header for compilation"
+		},
+		{
+			"long_form"      : "--use-uber-files",
+			"attribute"      : "use_uber_files",
+			"default_value"  : "True",
+			"description"    : "Use UberFiles for compilation"
+		},
+		{
+			"long_form"      : "--use-incremental-linking",
+			"attribute"      : "use_incremental_linking",
+			"default_value"  : "True",
+			"description"    : " Use incremental linking for development builds (debug/profile/performance) [MSVC option]"
+		},
+		{
+			"long_form"      : "--use-static-code-analyzer",
+			"attribute"      : "use_static_code_analyzer",
+			"default_value"  : "False",
+			"description"    : "Use static code analyzer if supported by compiler (potentially slows down compilation)"
+		},
+		{
+			"long_form"      : "--force-deoptimized-builds",
+			"attribute"      : "force_deoptimized_builds",
+			"default_value"  : "False",
+			"description"    : "Disables all compiler optimization, ignoring other project settings"
+		},
+		{
+			"long_form"			: "--with-csc-binary",
+			"attribute"			: "cscbinary",
+			"default_value"		: "BinMono/bin/mcs",
+			"description"		: "C# Compiler"
+		}
+	],
+
+	"Output Folder" :
+	[
+		{
+			"long_form"      : "--output-extension-debug",
+			"attribute"      : "output_extension_debug",
+			"default_value"  : "",
+			"description"    : "Addition output extension to the platforms debug binary output folder (optional)"
+		},
+		{
+			"long_form"      : "--output-extension-profile",
+			"attribute"      : "output_extension_profile",
+			"default_value"  : "",
+			"description"    : "Addition output extension to the platforms profile binary output folder (optional)"
+		},
+		{
+			"long_form"      : "--output-extension-performance",
+			"attribute"      : "output_extension_performance",
+			"default_value"  : "_performance",
+			"description"    : "Addition output extension to the platforms performance binary output folder (optional)"
+		},
+		{
+			"long_form"      : "--output-extension-release",
+			"attribute"      : "output_extension_release",
+			"default_value"  : "_release",
+			"description"    : "Addition output extension to the platforms release binary output folder (optional)"
+		},		
+		{
+			"long_form"      : "--output-folder-win32",
+			"attribute"      : "out_folder_win32",
+			"default_value"  : "bin/win_x86",
+			"description"    : "Absolute or relative Win32 build output path"
+		},
+		{
+			"long_form"      : "--output-folder-win64",
+			"attribute"      : "out_folder_win64",
+			"default_value"  : "bin/win_x64",
+			"description"    : "Absolute or relative Win64 build output path"
+		},
+		{
+			"long_form"      : "--output-folder-durango",
+			"attribute"      : "out_folder_durango",
+			"default_value"  : "bin/durango",
+			"description"    : "Absolute or relative Durango build output path"
+		},
+		{
+			"long_form"      : "--output-folder-orbis",
+			"attribute"      : "out_folder_orbis",
+			"default_value"  : "bin/orbis",
+			"description"    : "Absolute or relative Orbis build output path"
+		},
+		{
+			"long_form"      : "--output-folder-linux32-gcc",
+			"attribute"      : "out_folder_linux32_gcc",
+			"default_value"  : "bin/linux_x86_gcc",
+			"description"    : "Absolute or relative Linux32 gcc build output path"
+		},
+		{
+			"long_form"      : "--output-folder-linux64-gcc",
+			"attribute"      : "out_folder_linux64_gcc",
+			"default_value"  : "bin/linux_x64_gcc",
+			"description"    : "Absolute or relative Linux64 gcc build output path"
+		},
+		{
+			"long_form"      : "--output-folder-linux32-clang",
+			"attribute"      : "out_folder_linux32_clang",
+			"default_value"  : "bin/linux_x86_clang",
+			"description"    : "Absolute or relative Linux32 clang build output path"
+		},
+		{
+			"long_form"      : "--output-folder-linux64-clang",
+			"attribute"      : "out_folder_linux64_clang",
+			"default_value"  : "bin/linux_x64_clang",
+			"description"    : "Absolute or relative Linux64 clang build output path"
+		},
+		{
+			"long_form"      : "--output-folder-darwin32",
+			"attribute"      : "out_folder_darwin32",
+			"default_value"  : "bin/darwin_x86",
+			"description"    : "Absolute or relative Darwin32 build output path"
+		},
+		{
+			"long_form"      : "--output-folder-darwin64",
+			"attribute"      : "out_folder_darwin64",
+			"default_value"  : "bin/darwin_x64",
+			"description"    : "Absolute or relative Darwin64 build output path"
+		},
+		{
+			"long_form"      : "--output-folder-android",
+			"attribute"      : "out_folder_android",
+			"default_value"  : "bin/android_arm_gcc",
+			"description"    : "Absolute or relative Android build output path"
+		}
+	],
+	"Misc Options" :
+	[
+		{
+			"long_form"      : "--support-recode",
+			"attribute"      : "support_recode",
+			"default_value"  : "True",
+			"description"    : "Enable support for Recode"
+		}
+	],
+	"Visual Studio Project Generator" :
+	[
+		{
+			"long_form"      : "--generate-vs-projects-automatically",
+			"attribute"      : "generate_vs_projects_automatically",
+			"default_value"  : "True",
+			"description"    : "Automatically generate Visual Studio Projects/Solutions"
+		},
+		{
+			"long_form"      : "--visual-studio-solution-name",
+			"attribute"      : "visual_studio_solution_name",
+			"default_value"  : "CRYENGINE",
+			"description"    : "Name of the generated solution"
+		},
+		{
+			"long_form"      : "--visual-studio-solution-folder",
+			"attribute"      : "visual_studio_solution_folder",
+			"default_value"  : "Solutions",
+			"description"    : "Name of the folder in which the generated solution should be stored"
+		},
+		{
+			"long_form"      : "--specs-to-include-in-project-generation",
+			"attribute"      : "specs_to_include_in_project_generation",
+			"default_value"  : "gamezero,gamezero_and_tools",
+			"description"    : "List of specs to include in solution generation"
+		}
+	],
+	"Compiler Detection" :
+	[
+		{
+			"long_form"      : "--auto-detect-compiler",
+			"attribute"      : "auto_detect_compiler",
+			"default_value"  : "False",
+			"description"    : "Automatically detect and use installed compiler instead of bootstrapped version"
+		},
+		{
+			"long_form"      : "--auto-detect-verbose",
+			"attribute"      : "auto_detect_verbose",
+			"default_value"  : "False",
+			"description"    : "Output verbose information when performing compiler auto-detection"
+		},
+		{
+			"long_form"      : "--force-msvc",
+			"attribute"      : "force_msvc",
+			"default_value"  : "auto",
+			"description"    : "The version ID of the compiler to use or 'auto' to pick automatically\n(--auto-detect-verbose will show valid values on this system) or 'auto' to pick automatically)"
+		},
+		{
+			"long_form"      : "--force-winsdk",
+			"attribute"      : "force_winsdk",
+			"default_value"  : "auto",
+			"description"    : "The version ID of the Windows SDK to use or 'auto' to pick automatically\n(--auto-detect-verbose will show valid values on this system) or 'auto' to pick automatically)"
+		},
+		{
+			"long_form"      : "--minimum-msvc-compiler",
+			"attribute"      : "minimum_msvc_compiler",
+			"default_value"  : "11",
+			"description"    : "Minimum version of the MSVC compiler to search for during auto-detection"
+		}
+	],
+	"Bootstrap Support" :
+	[
+		{
+			"long_form"      : "--run-bootstrap-automatically",
+			"attribute"      : "auto_run_bootstrap",
+			"default_value"  : "True",
+			"description"    : "Should Bootstrap be executed by WAF (based on a timestamp file)"
+		},
+		{
+			"long_form"      : "--bootstrap_dat",
+			"attribute"      : "bootstrap_dat_file",
+			"default_value"  : "bootstrap.dat",
+			"description"    : "Name of the bootstrap.dat file to use for bootstrapping"
+		}
+	]
+}

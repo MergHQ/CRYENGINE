@@ -1,0 +1,18 @@
+<BehaviorTree>
+
+	<Variables>
+	</Variables>
+
+	<SignalVariables>
+	</SignalVariables>
+
+	<Timestamps>
+	</Timestamps>
+
+	<Root>
+		<LuaWrapper onEnter="entity:SelectPrimaryWeapon();" onExit="">
+			<Halt/>
+		</LuaWrapper>
+	</Root>
+
+</BehaviorTree>

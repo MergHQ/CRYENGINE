@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.VersionControl.Git</name>
+    </assembly>
+    <members>
+        <member name="M:MonoDevelop.VersionControl.Git.GitUtil.CompareCommits(LibGit2Sharp.Repository,LibGit2Sharp.Commit,LibGit2Sharp.Commit)">
+            <summary>
+            Compares two commits and returns a list of files that have changed
+            </summary>
+        </member>
+    </members>
+</doc>

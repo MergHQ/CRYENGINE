@@ -1,0 +1,320 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.WebReferences</name>
+    </assembly>
+    <members>
+        <member name="T:MonoDevelop.WebReferences.WebReferenceFolder">
+            <summary>Defines the properties and methods for the WebReferenceFolder class.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.WebReferenceFolder.#ctor(MonoDevelop.Projects.DotNetProject,System.Boolean)">
+            <summary>Initializes a new instance of the WebReferenceFolder class by specifying the parent project.</summary>
+            <param name="project">A Project containing the parent project for the WebReferenceFolder.</param>
+            <param name="isWCF">Whether the folder contains WCF services.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.WebReferenceFolder.#ctor(MonoDevelop.Projects.DotNetProject)">
+            <summary>Initializes a new instance of the WebReferenceFolder class by specifying the parent project.</summary>
+            <param name="project">A Project containing the parent project for the WebReferenceFolder.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.WebReferenceFolder.Equals(System.Object)">
+            <summary>Checks if the specified other object is equal to the current object.</summary>
+            <param name="obj">An object containing the object that needs to be compared to the current object.</param>
+            <returns>True of the other object is equal to the current object, otherwise false.</returns>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.WebReferenceFolder.GetHashCode">
+            <summary>Get ths Has Code for the current WebReferenceFolder.</summary>
+            <returns>An int containing the HasCode for the current WebReferenceFolder.</returns>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.WebReferenceFolder.Project">
+            <summary>Gets the parent Project for the Web Reference Folder.</summary>
+            <value>A Project containing the parent project for the current Web Reference Folder.</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.WebReferenceFolder.IsWCF">
+            <summary>Gets whether the project contains WCF services.</summary>
+            <value>A boolean which determines whether we have WCF services or WS services.</value>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.#ctor(MonoDevelop.Projects.DotNetProject)">
+            <summary>Initializes a new instance of the AddWebReferenceDialog widget.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Browser_GoButtonClicked(System.Object,System.EventArgs)">
+            <summary>Execute the event when any of the buttons on the action panel has been clicked</summary>
+            <param name="sender">An object that contains the sender data.</param>
+            <param name="e">An EventArgs object that contains the event data.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Browser_URLKeyReleased(System.Object,Gtk.KeyReleaseEventArgs)">
+            <summary>Execute the event when the Enter key has been pressed on the Url Entry</summary>
+            <param name="sender">An object that contains the sender data.</param>
+            <param name="e">An EventArgs object that contains the event data.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Browser_LocationChanged(System.Object,System.EventArgs)">
+            <summary>Execute the event when the Location of the Browser has changed</summary>
+            <param name="sender">An object that contains the sender data.</param>
+            <param name="e">An EventArgs object that contains the event data.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Browser_StartLoading(System.Object,System.EventArgs)">
+            <summary>Execute when the browser starts loading a document</summary>
+            <param name="sender">An object that contains the sender data.</param>
+            <param name="e">An EventArgs object that contains the event data.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Browser_StopLoading(System.Object,System.EventArgs)">
+            <summary>Execute the browser stop loading a document</summary>
+            <param name="sender">An object that contains the sender data.</param>
+            <param name="e">An EventArgs object that contains the event data.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Browser_BackButtonClicked(System.Object,System.EventArgs)">
+            <summary>Execute when the Back button has been clicked</summary>
+            <param name="sender">An object that contains the sender data.</param>
+            <param name="e">An EventArgs object that contains the event data.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Browser_NextButtonClicked(System.Object,System.EventArgs)">
+            <summary>Execute when the Next button has been clicked</summary>
+            <param name="sender">An object that contains the sender data.</param>
+            <param name="e">An EventArgs object that contains the event data.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Browser_RefreshButtonClicked(System.Object,System.EventArgs)">
+            <summary>Execute when the Refresh button has been clicked</summary>
+            <param name="sender">An object that contains the sender data.</param>
+            <param name="e">An EventArgs object that contains the event data.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Browser_StopButtonClicked(System.Object,System.EventArgs)">
+            <summary>Execute when the Stop button has been clicked</summary>
+            <param name="sender">An object that contains the sender data.</param>
+            <param name="e">An EventArgs object that contains the event data.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Browser_HomeButtonClicked(System.Object,System.EventArgs)">
+            <summary>Execute when the Home button has been clicked</summary>
+            <param name="sender">An object that contains the sender data.</param>
+            <param name="e">An EventArgs object that contains the event data.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.QueryService(System.Object)">
+            <summary>Queries the web service to validate that the current url contains services</summary>
+            <param name="param">An object that contains the parameter being passed from the ThreadPool.</param>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.IsWebService">
+            <summary>Gets or Sets whether the current location of the browser is a valid web service or not.</summary>
+            <value>True if the current location of the browser is a Web Service, otherwise false.</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.ServiceUrl">
+            <summary>Gets or Sets the current url for web service</summary>
+            <value>A string containing the url of the web service</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.NamespacePrefix">
+            <summary>Gets or Sets the namespace prefix for the web service</summary>
+            <value>A string containing namespace prefix value for the web service</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.DefaultNamespace">
+            <summary>Gets the default namespace for the web service based of the service url and namespace prefix</summary>
+            <value>A string containing default namespace for the web service</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.DefaultReferenceName">
+            <summary>Gets the default reference name for the web service based of the service url</summary>
+            <value>A string containing default reference name for the web service</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.ReferenceName">
+            <summary>Gets the name for the web reference.</summary>
+            <value>A string containing the name for the web reference.</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Namespace">
+            <summary>Gets the namespace for the web reference.</summary>
+            <value>A string containing the namespace for the web refrence.</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.SelectedService">
+            <summary>Gets the selected service discovery result.</summary>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.BasePath">
+            <summary>Gets or Sets the the base path of the where the web reference.</summary>
+            <value>A string containing the base path where all the web references are stored in.</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.ReferencePath">
+            <summary>Gets the the base path for the current reference.</summary>
+            <value>A string containing the base path for the current reference.</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.Dialogs.WebReferenceDialog.Modified">
+            Whether or not the dialog has been modified
+        </member>
+        <member name="T:MonoDevelop.WebReferences.DiscoveryNetworkCredential">
+            <summary>Adds an authentication type to the standard NetworkCredential class.</summary>
+        </member>
+        <member name="T:MonoDevelop.WebReferences.Library">
+            <summary>A Library class containig generic static methods for Web Services.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Library.ReadServiceDescription(System.String)">
+            <summary>Read the service description for a specified uri.</summary>
+            <param name="uri">A string containing the unique reference identifier for the service.</param>
+            <returns>A ServiceDescription for the specified uri.</returns>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Library.ReadServiceDescriptionImporter(System.Web.Services.Discovery.DiscoveryClientProtocol)">
+            <summary>Read the specified protocol into an ServiceDescriptionImporter.</summary>
+            <param name="protocol">A DiscoveryClientProtocol containing the service protocol detail.</param>
+            <returns>A ServiceDescriptionImporter for the specified protocol.</returns>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Library.GenerateDiscoXml(System.Text.StringBuilder,System.Web.Services.Discovery.DiscoveryDocument)">
+            <summary>Generate a text description for the a DiscoverDocument.</summary>
+            <param name="doc">A DiscoveryDocument containing the details for the disco services.</param>
+            <returns>An XmlDocument containing the generated xml for the specified discovery document.</returns>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Library.GenerateWsdlXml(System.Text.StringBuilder,System.Web.Services.Discovery.DiscoveryClientProtocol)">
+            <summary>Generate a text description for the specified DiscoveryClientProtocol.</summary>
+            <param name="protocol">A DiscoveryClientProtocol containing the information for the service.</param>
+            <returns>An XmlDocument containing the generated xml for the specified discovery protocol.</returns>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Library.GetWebReferencePath(MonoDevelop.Projects.Project)">
+            <summary>Gets the path where all web references will be stored for the specified project.</summary>
+            <param name="project">A Project containing the root project information.</param>
+            <returns>A string containing the base path for web references.</returns>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Library.ProjectContainsWebReference(MonoDevelop.Projects.Project)">
+            <summary>Checks whether or not the current project does contain any web references.</summary>
+            <returns>True if the project does contain any web references, otherwise false.</returns>
+        </member>
+        <member name="T:MonoDevelop.WebReferences.WebReferenceCommands">
+            <summary>Defines an enumeration of all the available commands for maintaining Web References.</summary>
+        </member>
+        <member name="T:MonoDevelop.WebReferences.NodeBuilders.WebReferenceFolderNodeBuilder">
+            <summary>Defines the properties and methods for the WebReferenceFolderNodeBuilder class.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.NodeBuilders.WebReferenceFolderNodeBuilder.GetNodeName(MonoDevelop.Ide.Gui.Components.ITreeNavigator,System.Object)">
+            <summary>Gets the node name for the current node.</summary>
+            <param name="thisNode">An ITreeNavigator containing the current node settings.</param>
+            <param name="dataObject">An object containing the data for the current object.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.NodeBuilders.WebReferenceFolderNodeBuilder.BuildNode(MonoDevelop.Ide.Gui.Components.ITreeBuilder,System.Object,MonoDevelop.Ide.Gui.Components.NodeInfo)">
+            <summary>Build the node in the project tree.</summary>
+            <param name="treeBuilder">An ITreeBuilder containing the project tree builder.</param>
+            <param name="dataObject">An object containing the current builder child.</param>
+            <param name="label">A string containing the label of the node.</param>
+            <param name="icon">A Pixbif containing the icon for the node.</param>
+            <param name="closedIcon">A Pixbif containing the closed icon for the node.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.NodeBuilders.WebReferenceFolderNodeBuilder.HasChildNodes(MonoDevelop.Ide.Gui.Components.ITreeBuilder,System.Object)">
+            <summary>Checks if the node builder has contains any child nodes.</summary>
+            <param name="builder">An ITreeBuilder containing all the node builder information.</param>
+            <param name="dataObject">An object containing the current activated node.</param> 
+        </member>
+        <member name="M:MonoDevelop.WebReferences.NodeBuilders.WebReferenceFolderNodeBuilder.BuildChildNodes(MonoDevelop.Ide.Gui.Components.ITreeBuilder,System.Object)">
+            <summary>Add entries for all the web references in the project to the tree builder.</summary>
+            <param name="treeBuilder">An ITreeBuilder containing all the data for the current DotNet project.</param>
+            <param name="dataObject">An object containing the data for the current node in the tree.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.NodeBuilders.WebReferenceFolderNodeBuilder.CompareObjects(MonoDevelop.Ide.Gui.Components.ITreeNavigator,MonoDevelop.Ide.Gui.Components.ITreeNavigator)">
+            <summary>Compare two object with one another and returns a number based on their sort order.</summary>
+            <returns>An integer containing the sort order for the objects.</returns>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.NodeBuilders.WebReferenceFolderNodeBuilder.NodeDataType">
+            <summary>Gets the data type for the WebReferenceFolderNodeBuilder.</summary>
+            <value>A Type containing the data type for WebReferenceFolderNodeBuilder.</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.NodeBuilders.WebReferenceFolderNodeBuilder.CommandHandlerType">
+            <summary>Gets the type of the CommandHandler with the WebReferenceFolderNodeBuilder.</summary>
+            <value>A Type containing the reference for the CommandHandlerType for the WebReferenceFolderNodeBuilder.</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.NodeBuilders.WebReferenceFolderNodeBuilder.ContextMenuAddinPath">
+            <summary>Gets the Addin path for the context menu for the WebReferenceFolderNodeBuilder.</summary>
+            <value>A string containing the AddIn path for the context menu for the WebReferenceFolderNodeBuilder.</value>
+        </member>
+        <member name="T:MonoDevelop.WebReferences.NodeBuilders.ProjectNodeBuilder">
+            <summary>Defines the properties and methods for the ProjectFolderNodeBuilderExtension class.</summary>
+        </member>
+        <member name="T:MonoDevelop.WebReferences.Commands.WebReferenceCommandHandler">
+            <summary>Defines the properties and methods for the WebReferenceCommandHandler class.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Commands.WebReferenceCommandHandler.NewWebReference">
+            <summary>Execute the command for adding a new web reference to a project.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Commands.WebReferenceCommandHandler.Update">
+            <summary>Execute the command for updating a web reference in a project.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Commands.WebReferenceCommandHandler.UpdateAll">
+            <summary>Execute the command for updating all web reference in a project.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Commands.WebReferenceCommandHandler.Delete">
+            <summary>Execute the command for removing a web reference from a project.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Commands.WebReferenceCommandHandler.DeleteAll">
+            <summary>Execute the command for removing all web references from a project.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.Commands.WebReferenceCommandHandler.Configure">
+            <summary>Execute the command for configuring a web reference in a project.</summary>
+        </member>
+        <member name="T:MonoDevelop.WebReferences.NodeBuilders.ProjectFolderNodeBuilderExtension">
+            <summary>Defines the properties and methods for the ProjectFolderNodeBuilderExtension class.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.NodeBuilders.ProjectFolderNodeBuilderExtension.CanBuildNode(System.Type)">
+            <summary>Checks if the node can be build for the current data type.</summary>
+            <param name="dataType">A Type containing the data type of the current node.</param>
+            <returns>True if the node can be build, otherwise false.</returns>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.NodeBuilders.ProjectFolderNodeBuilderExtension.GetNodeAttributes(MonoDevelop.Ide.Gui.Components.ITreeNavigator,System.Object,MonoDevelop.Ide.Gui.Components.NodeAttributes@)">
+            <summary>Get the attributes for the current node.</summary>
+            <param name="parentNode">ITreeNavigator containing the tree navigator.</param>
+            <param name="dataObject">An object containing the value of the current node.</param>
+            <param name="attributes">A NodeAttributes reference containing all the attribute for the current node.</param>
+        </member>
+        <member name="T:MonoDevelop.WebReferences.WebReferenceItem">
+            <summary>Defines the properties and methods for the WebReferenceItem class.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.WebReferenceItem.#ctor(MonoDevelop.WebReferences.WebServiceEngine,MonoDevelop.Projects.DotNetProject,System.String,MonoDevelop.Core.FilePath,MonoDevelop.Projects.ProjectFile)">
+            <summary>Initializes a new instance of the WebReferenceItem class.</summary>
+            <param name="name">A string containing the name for the web reference.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.WebReferenceItem.Update">
+            <summary>Update the web reference item by using the map file.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.WebReferenceItem.Delete">
+            <summary>Delete the web reference from the project.</summary>
+        </member>
+        <member name="T:MonoDevelop.WebReferences.NodeBuilders.WebReferenceNodeBuilder">
+            <summary>Defines the properties and methods for the WebReferenceFolderNodeBuilder class.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.NodeBuilders.WebReferenceNodeBuilder.GetNodeName(MonoDevelop.Ide.Gui.Components.ITreeNavigator,System.Object)">
+            <summary>Gets the node name for the current node.</summary>
+            <param name="thisNode">An ITreeNavigator containing the current node settings.</param>
+            <param name="dataObject">An object containing the data for the current object.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.NodeBuilders.WebReferenceNodeBuilder.BuildNode(MonoDevelop.Ide.Gui.Components.ITreeBuilder,System.Object,MonoDevelop.Ide.Gui.Components.NodeInfo)">
+            <summary>Build the node in the project tree.</summary>
+            <param name="treeBuilder">An ITreeBuilder containing the project tree builder.</param>
+            <param name="dataObject">An object containing the current builder child.</param>
+            <param name="label">A string containing the label of the node.</param>
+            <param name="icon">A Pixbif containing the icon for the node.</param>
+            <param name="closedIcon">A Pixbif containing the closed icon for the node.</param>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.NodeBuilders.WebReferenceNodeBuilder.HasChildNodes(MonoDevelop.Ide.Gui.Components.ITreeBuilder,System.Object)">
+            <summary>Checks if the node builder has contains any child nodes.</summary>
+            <param name="builder">An ITreeBuilder containing all the node builder information.</param>
+            <param name="dataObject">An object containing the current activated node.</param> 
+        </member>
+        <member name="M:MonoDevelop.WebReferences.NodeBuilders.WebReferenceNodeBuilder.BuildChildNodes(MonoDevelop.Ide.Gui.Components.ITreeBuilder,System.Object)">
+            <summary>Add entries for all the web references in the project to the tree builder.</summary>
+            <param name="treeBuilder">An ITreeBuilder containing all the data for the current DotNet project.</param>
+            <param name="dataObject">An object containing the data for the current node in the tree.</param>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.NodeBuilders.WebReferenceNodeBuilder.NodeDataType">
+            <summary>Gets the data type for the WebReferenceFolderNodeBuilder.</summary>
+            <value>A Type containing the data type for WebReferenceFolderNodeBuilder.</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.NodeBuilders.WebReferenceNodeBuilder.CommandHandlerType">
+            <summary>Gets the type of the CommandHandler with the WebReferenceFolderNodeBuilder.</summary>
+            <value>A Type containing the reference for the CommandHandlerType for the WebReferenceFolderNodeBuilder.</value>
+        </member>
+        <member name="P:MonoDevelop.WebReferences.NodeBuilders.WebReferenceNodeBuilder.ContextMenuAddinPath">
+            <summary>Gets the Addin path for the context menu for the WebReferenceFolderNodeBuilder.</summary>
+            <value>A string containing the AddIn path for the context menu for the WebReferenceFolderNodeBuilder.</value>
+        </member>
+        <member name="T:MonoDevelop.WebReferences.DiscoveryProtocol">
+            <summary>Provides support for programmatically invoking XML Web services discovery.</summary>
+        </member>
+        <member name="M:MonoDevelop.WebReferences.DiscoveryProtocol.ReadAllUseBasePath(System.String)">
+            <summary>
+            Reads in a file containing a map of saved discovery documents populating the Documents and References properties, 
+            with discovery documents, XML Schema Definition (XSD) schemas, and service descriptions referenced in the file.
+            </summary>
+            <param name="topLevelFilename">Name of file to read in, containing the map of saved discovery documents.</param>
+            <returns>
+            A DiscoveryClientResultCollection containing the results found in the file with the map of saved discovery documents. 
+            The file format is a DiscoveryClientProtocol.DiscoveryClientResultsFile class serialized into XML; however, one would 
+            typically create the file using only the WriteAll method or Disco.exe.
+            </returns>
+        </member>
+    </members>
+</doc>

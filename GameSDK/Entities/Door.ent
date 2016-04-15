@@ -1,0 +1,4 @@
+<Entity
+ Name="Door" 
+ Script="Scripts/Entities/Doors/Door.lua"
+/>

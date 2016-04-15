@@ -1,0 +1,13 @@
+<Variants>
+	<Variant name="Standard" localName="@ui_variant_Standard" localDescription="@ui_tooltip_variant_Standard" localDescriptionUpper="@ui_tooltip_variant_Standard" allowInCustomGames="1" enabled="1" default="1" />
+
+	<Variant name="Hardcore" localName="@ui_variant_Hardcore" localDescription="@ui_tooltip_variant_Hardcore" localDescriptionUpper="@ui_tooltip_variant_Hardcore" allowInCustomGames="1" enabled="1" default="0" >
+		<Options>
+			<Option setting="g_scorelimit 150" />
+			<Option setting="g_maxHealthMultiplier 0.25" />
+			<Option setting="g_mpRegenerationRate 1" />
+			<Option setting="g_mpHeadshotsOnly 1" />
+		</Options>
+	</Variant>
+
+</Variants>

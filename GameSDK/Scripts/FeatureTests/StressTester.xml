@@ -1,0 +1,204 @@
+<FeatureTester>
+	<Tests setName="setup">
+		<FeatureTest name="SetupCVars" enabled="true">
+			<DoConsoleCommand command="g_playerUsesDedicatedInput 1" />
+			<DoConsoleCommand command="g_dummyPlayersMove 1" />
+			<DoConsoleCommand command="g_dummyPlayersFire 1" />
+			<DoConsoleCommand command="g_dummyPlayersCommitSuicide 1" />
+			<DoConsoleCommand command="g_dummyPlayersShowDebugText 1" />
+			<DoConsoleCommand command="autotest_enabled 0" />
+			<DoconsoleCommand command="g_testStatus 1" />
+		</FeatureTest>
+
+		<FeatureTest name="SetupRandomWandering" enabled="true" require="localPlayerExists">
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<DoConsoleCommand command="g_playerEnableDedicatedInput 1" />
+			<DoConsoleCommand command="g_scoreLimit 0" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="disablePlayerDedicatedInput">
+		<FeatureTest name="dummyPlayersMove" enabled="true" require="localPlayerExists">
+			<DoConsoleCommand command="g_playerUsesDedicatedInput 0" />
+			<DoConsoleCommand command="g_playerEnableDedicatedInput 0" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="disableDummyPlayersFire">
+		<FeatureTest name="disableDummyPlayersFire" enabled="true" require="localPlayerExists">
+			<DoConsoleCommand command="g_dummyPlayersFire 0" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="disableDummyPlayersMove">
+		<FeatureTest name="dummyPlayersMove" enabled="true" require="localPlayerExists">
+			<DoConsoleCommand command="g_dummyPlayersMove 0" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="disableDummyPlayersSuicide">
+		<FeatureTest name="disableDummyPlayersSuicide" enabled="true" require="localPlayerExists">
+			<DoConsoleCommand command="g_dummyPlayersCommitSuicide 0" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="infiniteTimeLimit">
+		<FeatureTest name="infTimeLimit" enabled="true" require="localPlayerExists">
+			<DoConsoleCommand command="g_timeLimit 0" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="10minRounds">
+		<FeatureTest name="10minRounds" enabled="true" require="localPlayerExists">
+			<DoConsoleCommand command="g_timeLimit 10" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="5minRounds">
+		<FeatureTest name="5minRounds" enabled="true" require="localPlayerExists">
+			<DoConsoleCommand command="g_timeLimit 5" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="2minRounds">
+		<FeatureTest name="2minRounds" enabled="true" require="localPlayerExists">
+			<DoConsoleCommand command="g_timeLimit 2" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="1minRounds">
+		<FeatureTest name="1minRounds" enabled="true" require="localPlayerExists">
+			<DoConsoleCommand command="g_timeLimit 1" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="spawnDummyPlayers11">
+		<FeatureTest name="spawnDummyPlayers11" enabled="true" require="localPlayerExists">
+			<DoConsoleCommand command="removedummyplayers" />			
+			<DoConsoleCommand command="spawnDummyPlayers 11" />			
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="spawnDummyPlayers5">
+		<FeatureTest name="spawnDummyPlayers5" enabled="true" require="localPlayerExists">
+			<DoConsoleCommand command="removedummyplayers" />			
+			<DoConsoleCommand command="spawnDummyPlayers 5" />			
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="repeatThese">
+		<FeatureTest name="EachWeaponForAWhile" enabled="true" require="localPlayerExists" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;LTag;C4;FragGrenades;FlashBangGrenades" maxTime="3600">
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<SetItem className="%1" />
+			<Wait duration="6" />
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<MovePlayerToOtherEntity localPlayer="true" className="DummyPlayer" />
+			<SetItem className="%1" />
+			<Wait duration="6" />
+			<DoConsoleCommand command="kill" />
+			<Wait duration="5" />
+		</FeatureTest>
+		
+		<FeatureTest name="Restart" enabled="true">
+			<DoConsoleCommand command="g_testStatus 0" />
+			<DoConsoleCommand command="ft_runall repeatThese" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="repeatTheseShort">
+		<FeatureTest name="EachWeaponForAWhile" enabled="true" require="localPlayerExists" iterateOverParams="Hammer;Gauss;DSG1;Jackal;K-Volt;mike;FlashBangGrenades" maxTime="3600">
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<SetItem className="%1" />
+			<Wait duration="5" />
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<MovePlayerToOtherEntity localPlayer="true" className="DummyPlayer" />
+			<SetItem className="%1" />
+			<Wait duration="4" />
+			<DoConsoleCommand command="kill" />
+			<Wait duration="5" />
+		</FeatureTest>
+		
+		<FeatureTest name="Restart" enabled="true">
+			<DoConsoleCommand command="g_testStatus 0" />
+			<DoConsoleCommand command="ft_runall repeatTheseShort" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="repeat2MinThese11">
+		<FeatureTest name="2min11Dummy" enabled="true" require="localPlayerExists">
+			<RunFeatureTest testName="Setupcvars" />
+			<RunFeatureTest testName="SetupRandomWandering" />
+			<RunFeatureTest testName="spawnDummyPlayers11" />
+			<DoConsoleCommand command="kill" />			
+		</FeatureTest>
+		<FeatureTest name="EachWeaponForAWhile2MinNew" enabled="true" require="localPlayerExists" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;LTag;C4;FragGrenades;FlashBangGrenades" maxTime="3600">
+			<RunFeatureTest testName="2minrounds" />
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<SetItem className="%1" />
+			<Wait duration="6" />
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<MovePlayerToOtherEntity localPlayer="true" className="DummyPlayer" />
+			<SetItem className="%1" />
+			<Wait duration="6" />
+			<DoConsoleCommand command="kill" />
+			<Wait duration="5" />
+		</FeatureTest>
+
+		<FeatureTest name="Restart2min11" enabled="true">
+			<DoConsoleCommand command="ft_runall repeat2MinThese11" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="repeatThese11">
+		<FeatureTest name="11Dummy" enabled="true" require="localPlayerExists">
+			<RunFeatureTest testName="Setupcvars" />
+			<RunFeatureTest testName="SetupRandomWandering" />
+			<RunFeatureTest testName="spawnDummyPlayers11" />
+			<DoConsoleCommand command="kill" />			
+		</FeatureTest>
+		<FeatureTest name="EachWeaponForAWhileNew" enabled="true" require="localPlayerExists" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;LTag;C4;FragGrenades;FlashBangGrenades" maxTime="3600">
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<SetItem className="%1" />
+			<Wait duration="6" />
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<MovePlayerToOtherEntity localPlayer="true" className="DummyPlayer" />
+			<SetItem className="%1" />
+			<Wait duration="6" />
+			<DoConsoleCommand command="kill" />
+			<Wait duration="5" />
+		</FeatureTest>
+
+		<FeatureTest name="Restart11" enabled="true">
+			<DoConsoleCommand command="ft_runall repeatThese11" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="timeddemo">
+		<FeatureTest name="StatsGather" enabled="true" require="localPlayerExists" maxTime="3600">
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<Wait duration="2" />
+			<DoConsoleCommand command="demo autotest" />
+			<Wait duration="3600" />
+			<DoConsoleCommand command="g_testStatus 0" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="AutoResourceList">
+		<FeatureTest name="hangAround" enabled="true" require="localPlayerExists" maxTime="60">
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<Wait duration="2" />
+			<DoConsoleCommand command="quit" />
+		</FeatureTest>
+	</Tests>
+</FeatureTester>

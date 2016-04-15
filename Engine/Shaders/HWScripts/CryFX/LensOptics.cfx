@@ -1,0 +1,676 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "ShadeLib.cfi"
+#include "ModificatorTC.cfi"
+
+float Script : STANDARDSGLOBAL
+<
+	string Script =
+		"NoPreview;"
+		"LocalConstants;"
+		"ShaderDrawType = Custom;"
+		"ForceDrawLast;"
+		"ShaderType = FX;"
+>;
+
+struct InpuptVS
+{
+	half3 pos : POSITION;
+	half2 uv : TEXCOORD0;
+	half4 color : COLOR0;
+};
+
+struct InputScreenVS
+{
+	half3 pos : POSITION;
+	half2 uv : TEXCOORD0;
+};
+
+struct OutputVS
+{
+	half4 hpos:POSITION;
+	half4 uv:TEXCOORD0;
+	half3 center:TEXCOORD1;
+	half4 color:COLOR0;
+};
+
+struct OutputScreenVS
+{
+	half4 hpos : POSITION;
+	half2 uv : TEXCOORD0;
+};
+
+struct  OutputGhostVS
+{
+	half4 hpos : POSITION;
+	half2 uv : TEXCOORD0;
+	half4 color : COLOR0;
+};
+
+struct OutputCameraOrbsVS
+{
+	half4 hpos : POSITION;
+	half2 uv : TEXCOORD0;
+	half3 litVec:TEXCOORD1;
+	half4 color : COLOR0;
+};
+
+struct OutputShafeOcclusionVS
+{
+	half4 hpos:POSITION;
+	half3 uvz:TEXCOORD0;
+	half2 fsuv:TEXCOORD1;
+	half4 color:COLOR0;
+};
+
+struct OutputShafeVS
+{
+	half4 hpos:POSITION;
+	half2 uv:TEXCOORD0;
+	half4 center:TEXCOORD1;
+	half4 color:COLOR0;
+};
+
+OutputScreenVS screenQuadVS( InputScreenVS IN )
+{
+	OutputScreenVS OUT;
+	OUT.hpos.xy = IN.uv * 2-1;
+	OUT.hpos.zw = float2(0, 1);
+	
+#if %_RT_REVERSE_DEPTH
+	OUT.hPos.z = OUT.hPos.w - OUT.hPos.z;
+#endif
+	
+	OUT.uv = float2( IN.uv.x, 1-IN.uv.y );
+	return OUT;
+}
+
+half4 externTint;
+half4 wposAndSize;
+#define srcWorldPos wposAndSize.xyz
+#define size wposAndSize.w
+half2 baseTexSize;
+float3x4 xform;
+sampler2D occPattern : register(s5);   // general occlusion
+half4 dynamics;
+half4 occPatternInfo;
+half4 ScreenWidthHeight;
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+half4 HDRParams : PB_HDRParams;
+
+half4 ToneMappedPreMulAlpha( half4 OUT )
+{
+	// Use-pre multiplied alpha for LDR version (consoles)
+	OUT.rgb *= OUT.a;
+	// Apply tone mapping on the fly
+	half3 compressedCol = ( saturate((OUT * (HDRParams.x * OUT + HDRParams.y)) / (OUT * (HDRParams.x * OUT + 1.7h) + HDRParams.z) ) );
+	return half4( compressedCol, OUT.a  );
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+half2 computeUnitLocalQuad( half2 uv ) 
+{
+	return uv*2-1;
+}
+
+void ComputeBasicVertexOutputs( 
+	half2 unitLocalQuad,
+	half3 projPos,
+	half2 uv,
+	half4 color,
+	out half4 hpos,
+	out half2 uvOut,
+	out half4 colorOut )
+{
+	half3 localQuad;
+	localQuad.xy = unitLocalQuad * size;
+
+#if %_RT_SAMPLE0
+	half2 rotSinCos = normalize( half2(projPos.x, 1-projPos.y)*2-1 );
+	half2 tmp = localQuad.xy;
+	localQuad.x = tmp.x * rotSinCos.x - tmp.y * rotSinCos.y;
+	localQuad.y = tmp.y * rotSinCos.x + tmp.x * rotSinCos.y;
+#endif
+
+	localQuad = mul(  half3(localQuad.xy,1), (float3x3)xform );
+	localQuad.z = 0.5;
+
+#if %_RT_SAMPLE5
+ 	half2 aspectCorrectionRatio = ( half2(ScreenWidthHeight.xy) / max(ScreenWidthHeight.x, ScreenWidthHeight.y) ).yx;
+ 	localQuad.xy *= aspectCorrectionRatio;
+#endif
+
+	half2 rectTexScalingRatio = half2(baseTexSize.xy) / max(baseTexSize.x, baseTexSize.y);
+	localQuad.xy *= rectTexScalingRatio;
+	
+	half brightness = projPos.z;
+	projPos.y = 1-projPos.y;
+	hpos.xy = projPos*2-1 + localQuad.xy;
+	hpos.zw = half2(localQuad.z,1);
+
+	uvOut = uv;
+	colorOut = half4(color.rgb*brightness,color.a);
+}
+
+half4 meshCenterAndBrt;
+#define meshCenter meshCenterAndBrt.xyz
+#define brightness meshCenterAndBrt.w
+
+OutputVS commonMeshVS( InpuptVS IN )
+{
+	OutputVS OUT;
+
+	IN.pos.xy *= size;
+
+#if %_RT_SAMPLE0
+	half2 dir = meshCenter.xy * 2 - 1;
+	half2 rotSinCos = normalize( dir );
+	half2 tmp = IN.pos.xy;
+	IN.pos.x = tmp.x * rotSinCos.x - tmp.y * rotSinCos.y;
+	IN.pos.y = tmp.y * rotSinCos.x + tmp.x * rotSinCos.y;
+#endif
+
+	IN.pos = mul( float3(IN.pos.xy,1), (float3x3)xform );
+	IN.pos.z = 0.5;
+
+#if %_RT_SAMPLE1
+ 	half2 aspectCorrectionRatio = ( half2(ScreenWidthHeight.xy) / max(ScreenWidthHeight.x, ScreenWidthHeight.y) ).yx;
+ 	IN.pos.xy *= aspectCorrectionRatio;
+#endif
+
+	OUT.hpos.xyz = half3(IN.pos.xyz  * 0.5) + meshCenter;
+	OUT.hpos.y = 1 - OUT.hpos.y;
+	OUT.hpos.xy = OUT.hpos.xy * 2 - 1;
+	OUT.hpos.z = 0;
+	OUT.hpos.w = 1;
+
+	OUT.uv.xy = IN.uv;
+	OUT.uv.zw = OUT.hpos.xy;
+	OUT.color = GetInputColor(IN.color) * brightness * externTint * dynamics.x;
+	OUT.center = half3( meshCenter.x, 1-meshCenter.y, meshCenter.z );
+	OUT.center.xy = OUT.center.xy * 2 -1;
+
+	return OUT;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Ghost
+
+half4 ghostTileInfo;
+#define ghostTileDim ghostTileInfo.xy
+#define ghostTileIndex ghostTileInfo.w
+
+ OutputGhostVS lensGhostVS( InpuptVS IN )
+{
+	OutputGhostVS OUT;
+	half2 unitLocalQuad = computeUnitLocalQuad( IN.uv );
+	ComputeBasicVertexOutputs( unitLocalQuad, IN.pos, IN.uv, GetInputColor(IN.color), OUT.hpos, OUT.uv, OUT.color );
+
+	half2 spriteIdx2d;
+	spriteIdx2d.y = floor(ghostTileIndex/(ghostTileDim.x));
+	spriteIdx2d.x = ghostTileIndex - spriteIdx2d.y * ghostTileDim.x;
+
+	OUT.uv = IN.uv;
+	OUT.color *= dynamics.x;
+
+	return OUT;
+}
+
+sampler2D ghostSpriteTiles : register(s0);
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+half4 lensGhostPS(  OutputGhostVS IN ) : COLOR
+{
+	half4 color = DecodeRGBK( tex2D( ghostSpriteTiles, IN.uv ), 32, false );
+#if %_RT_SAMPLE3
+	color *= tex2D( occPattern, occPatternInfo.xy+half2(occPatternInfo.z*IN.uv.x,occPatternInfo.w*(1-IN.uv.y)) ).r;
+#endif
+	return ToneMappedPreMulAlpha(color * IN.color);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Glow
+
+half4 lumaParams;
+#define focusFactor lumaParams.x
+#define gamma lumaParams.y
+
+half4 GlowPS( OutputVS IN ) : COLOR
+{
+	#define thou IN.uv.x
+	#define theta IN.uv.y
+	
+	half constArea = 1;
+	half fadingArea = pow( lerp( constArea, 0, saturate((thou-focusFactor)/(1-focusFactor)) ), gamma);
+
+	const half fadingSpan = 0.001;
+	half transition = saturate( lerp( 1,  0, (focusFactor-thou)/fadingSpan )  );
+	half finalGrad = lerp( constArea, fadingArea, transition );
+
+	return ToneMappedPreMulAlpha(IN.color * finalGrad);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Chromatic ring
+
+half useSpectrumTex;
+sampler2D spectrumMap : register(s0);
+
+half4 ChromaticRingPS( OutputVS IN ) : COLOR
+{
+	#define thou IN.uv.x
+	half dist = (thou*2-1);
+	half alpha = exp( -4*dist*dist ) - exp(-4);
+	half3 clr = tex2D( spectrumMap, half2( 0.5, 1-IN.uv.x ) ).rgb;
+
+	return ToneMappedPreMulAlpha(half4( clr*IN.color.rgb,  alpha*IN.color.a ));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Iris shafts
+
+sampler2D irisBaseMap : register(s1);
+
+half4 IrisShaftsGlowPS( OutputVS IN ) : COLOR
+{
+	half3 color = tex2D( irisBaseMap, half2( IN.uv.x, 1-IN.uv.y ) ).rgb;
+#if %_RT_SAMPLE2
+	color *= tex2D( spectrumMap, IN.uv ).rgb;
+#endif
+	return ToneMappedPreMulAlpha(half4(color*IN.color.rgb, IN.color.a));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Streaks
+
+half4 StreaksPS( OutputVS IN ) : COLOR
+{
+	half3 color = saturate( exp( -8*IN.uv.x*IN.uv.x ) );
+#if %_RT_SAMPLE2
+	color *= tex2D( spectrumMap, half2( 0.5, 1-IN.uv.x ) ).rgb;
+#endif
+	return ToneMappedPreMulAlpha(half4( color*IN.color.rgb, IN.color.a ));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Camera Orbs
+
+half3 lightProjPos;
+half4 lightColorInfo;
+#define lightColor lightColorInfo.xyz
+#define illumRange lightColorInfo.w
+
+OutputCameraOrbsVS CameraOrbsVS( InpuptVS IN )
+{
+	OutputCameraOrbsVS OUT;
+	OUT.hpos.xyz = mul( (float3x3)xform, float3(IN.pos.xy,1) );
+	OUT.hpos.zw = half2(0,1);
+
+	half3 surfPos;
+	surfPos.xy = OUT.hpos.xy;
+	surfPos.z = 0;
+
+	half3 lPos = half3(lightProjPos.x, 1-lightProjPos.y, lightProjPos.z) *2 -1;
+	half3 distDiff = lPos-surfPos.xyz;
+
+#if %_RT_SAMPLE5
+	half2 aspectCorrectionRatio = ( half2(ScreenWidthHeight.xy) / max(ScreenWidthHeight.x, ScreenWidthHeight.y) ).yx;
+	distDiff.xy /= aspectCorrectionRatio;
+#endif
+
+	half distSq = dot( distDiff.xy, distDiff.xy )/illumRange;
+	half illum = exp2( -10 * (distSq) );
+
+	OUT.uv = IN.uv;
+	OUT.color = GetInputColor(IN.color) * half4(lightColor*illum, 1) * dynamics.x;
+	OUT.litVec = normalize( half3( lPos.xy - surfPos.xy, 1 ) );
+
+	return OUT;
+}
+
+half detailIllum( sampler2D tex, half2 uv, half3 dxy, half3 litVec, half bumpiness )
+{
+	#define bumpCh r
+	half center = tex2D( tex, uv );
+	half orbClrRight = tex2D( tex, uv + dxy.xz ).bumpCh;
+	half orbClrTop = tex2D( tex, uv + dxy.zy ).bumpCh;
+	half3 xVec = normalize( half3( dxy.x,0, (orbClrRight-center.bumpCh)*bumpiness ) );
+	half3 yVec = normalize( half3( 0,dxy.y, (orbClrTop-center.bumpCh)*bumpiness ) );
+	half3 bumpNormal = cross( yVec, xVec );
+	// TODO: tangent rotation
+	half3 eyeVec = half3(0,0,-1);
+	half orbDiffuse = dot( litVec, bumpNormal );
+	half3 eyeReflect = reflect( eyeVec, bumpNormal );
+	half orbSpec = pow( saturate(dot(eyeReflect,litVec)-0.05), 7 );
+
+	return orbSpec;
+}
+
+sampler2D orbMap :register(s0);
+sampler2D lensMap :register(s2);
+
+half4 lensDetailParams;
+#define lensTexStrength (lensDetailParams.x)
+#define lensDetailShadingStrength (lensDetailParams.y)
+#define lensDetailBumpiness (lensDetailParams.z)
+
+sampler2D ambientMap : register(s1);
+half4 ambientDiffuseRGBK;
+half4 advShadingParams;
+#define absorptance advShadingParams.x
+#define transparency advShadingParams.y
+
+half4 ComputeCameraOrbsColor( OutputCameraOrbsVS IN, half4 orbClr )
+{
+	half4 detailClr = 0;
+
+#if %_RT_SAMPLE4
+	// this is screen space, just use neighboor pixels
+	half3 dxy = half3( ddx(IN.uv.x), ddy(IN.uv.y), 0 )*3;
+	half detailLum = detailIllum( orbMap, IN.uv, dxy, IN.litVec, lensDetailBumpiness );
+	detailClr = detailLum;
+	detailClr.a = 1;
+#endif
+
+#if %_RT_SAMPLE3
+	IN.color *= tex2D( occPattern, occPatternInfo.xy+half2(occPatternInfo.z*IN.uv.x,occPatternInfo.w*(1-IN.uv.y)) ).r;
+#endif
+
+#if %_RT_SAMPLE2
+	half shadow = (1-orbClr);
+	shadow = saturate(pow( shadow, absorptance ));
+	half4 ambientDirect = tex2D( ambientMap, IN.uv );
+	half4 ambientDiffuse = DecodeRGBK( ambientDiffuseRGBK, 10, false );
+	half4 dirtClr = IN.color * orbClr*(1-shadow) + (ambientDiffuse + ambientDirect) * saturate(shadow+transparency);
+	return ToneMappedPreMulAlpha(half4(dirtClr.rgb, shadow*transparency ));
+#else
+	return ToneMappedPreMulAlpha(IN.color * (orbClr * lensTexStrength +  detailClr * lensDetailShadingStrength));
+#endif
+}
+
+half4 CameraOrbsPS( OutputCameraOrbsVS IN ) : COLOR
+{
+	return ComputeCameraOrbsColor( IN,tex2D( orbMap, IN.uv ) );
+}
+
+half4 CameraLensPS( OutputCameraOrbsVS IN ) : COLOR
+{
+	return ComputeCameraOrbsColor( IN,tex2D( lensMap, IN.uv ) );
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Shafts
+
+OutputShafeOcclusionVS shaftsOccVS( InpuptVS IN )
+{
+	OutputShafeOcclusionVS OUT;
+
+	half2 unitLocalQuad = computeUnitLocalQuad( IN.uv );
+	half2 uv;
+	ComputeBasicVertexOutputs( unitLocalQuad, IN.pos, IN.uv, GetInputColor(IN.color), OUT.hpos, uv, OUT.color );
+
+	OUT.uvz = half3( uv, IN.pos.z );
+	OUT.fsuv = OUT.hpos.xy*0.5+0.5;
+	OUT.fsuv.y = 1-OUT.fsuv.y;
+
+	return OUT;
+}
+
+sampler2D depthMap : register(s1);
+sampler2D baseMap : register(s0);
+
+half4 shaftsOccPS( OutputShafeOcclusionVS IN ) : COLOR
+{
+	float depth = GetUnnormalizedLinearDownscaledDepth(depthMap, IN.fsuv);
+	half4 baseClr = tex2D( baseMap, IN.uvz.xy );
+	half occ = saturate( sign(depth-IN.uvz.z) ); 
+
+	half2 ndcUV = IN.uvz.xy*2-1;
+	half vig = 1-length(ndcUV);
+
+	return ToneMappedPreMulAlpha(occ*vig*baseClr);
+}
+
+OutputShafeVS shaftsVS( InpuptVS IN )
+{
+	OutputShafeVS OUT;
+	half2 unitLocalQuad = computeUnitLocalQuad( IN.uv );
+	ComputeBasicVertexOutputs( unitLocalQuad, IN.pos, IN.uv, GetInputColor(IN.color), OUT.hpos, OUT.uv, OUT.color );
+	OUT.uv.y = 1-OUT.uv.y;
+	OUT.center.xy = IN.pos.xy;
+	OUT.center.zw = OUT.hpos.xy*0.5+0.5;
+	OUT.center.w = 1-OUT.center.w;
+	return OUT;
+}
+
+sampler2D occMap : register(s1);
+
+half4 shaftsPS( OutputShafeVS IN ) : COLOR
+{
+	const int N_SAMPLE = 30;
+	half2 duv = (IN.center.zw - IN.center.xy) / N_SAMPLE;
+	half decayFactor = pow( 0.98,30.0/N_SAMPLE );
+	half4 color = half4( tex2D(occMap, IN.center.zw).rgb, 1 ) * decayFactor;
+	#define decay (color.w)
+	half2 cuv = IN.center.zw;
+	for( int i=0; i<N_SAMPLE; i++ )
+	{
+		cuv -= duv;
+		color.rgb += tex2D( occMap, cuv ).rgb * decay;
+		decay *= decayFactor;
+	}
+	const half ssFalloff = decayFactor * 0.01;  // falloff curve base factor
+	half2 ndcUV = IN.uv.xy*2-1;
+	half vig = saturate( 1-pow( dot(ndcUV,ndcUV), 0.25) );
+	return ToneMappedPreMulAlpha(half4(color.rgb*IN.color.rgb*vig/N_SAMPLE, IN.color.a));
+}
+
+sampler2D shaftMap:register(s1);
+
+half4 shaftBlendPS( OutputScreenVS IN ) : COLOR
+{
+	half4 shaftColor = tex2D( shaftMap, IN.uv );
+	half4 finalBlendColor = half4( shaftColor.rgb*shaftColor.a, 1 );
+	return ToneMappedPreMulAlpha(finalBlendColor);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+technique Enable
+{
+	CustomRE LensOptics
+	{
+	}
+	
+	pass GhostTest
+	{
+		VertexShader = lensGhostVS() LensOpticsVS;
+		PixelShader = lensGhostPS() LensOpticsPS;
+
+		ZEnable = false;
+		ZWriteEnable = false;
+		ZFunc = LEqual;
+		CullMode = None;
+
+		// Pre-multiplied alpha + screen blending mode to minimize color clipping in LDR mode
+		SrcBlend = ONE;
+		DestBlend = ONE_MINUS_SRC_COLOR;
+		AlphaBlendEnable = true;
+	}
+}
+
+technique Ghost
+{
+	pass p0 
+	{
+		VertexShader = lensGhostVS() LensOpticsVS;
+		PixelShader = lensGhostPS() LensOpticsPS;
+
+		ZEnable = false;
+		ZWriteEnable = false;
+		ZFunc = LEqual;
+		CullMode = None;
+
+		SrcBlend = ONE;
+		DestBlend = ONE_MINUS_SRC_COLOR;
+		AlphaBlendEnable = true;
+	}
+}
+
+technique Glow
+{
+	pass p0 
+	{
+		VertexShader = commonMeshVS() LensOpticsVS;
+		PixelShader = GlowPS() LensOpticsPS;
+
+		ZEnable = false;
+		ZWriteEnable = false;
+		ZFunc = LEqual;
+		CullMode = None;
+
+		SrcBlend = ONE;
+		DestBlend = ONE_MINUS_SRC_COLOR;
+		AlphaBlendEnable = true;
+	}
+}
+
+technique ChromaticRing
+{
+	pass p0 
+	{
+		VertexShader = commonMeshVS() LensOpticsVS;
+		PixelShader = ChromaticRingPS() LensOpticsPS;
+
+		ZEnable = false;
+		ZWriteEnable = false;
+		ZFunc = LEqual;
+		CullMode = None;
+
+		SrcBlend = ONE;
+		DestBlend = ONE_MINUS_SRC_COLOR;
+		AlphaBlendEnable = true;
+	}
+}
+
+technique IrisShafts
+{
+	pass p0
+	{
+		VertexShader = commonMeshVS() LensOpticsVS;
+		PixelShader = IrisShaftsGlowPS() LensOpticsPS;
+
+		ZEnable = false;
+		ZWriteEnable = false;
+		ZFunc = LEqual;
+		CullMode = None;
+
+		SrcBlend = ONE;
+		DestBlend = ONE_MINUS_SRC_COLOR;
+		AlphaBlendEnable = true;
+	}
+}
+
+technique Streaks
+{
+	pass p0
+	{
+		VertexShader = commonMeshVS() LensOpticsVS;
+		PixelShader = StreaksPS() LensOpticsPS;
+
+		ZEnable = false;
+		ZWriteEnable = false;
+		ZFunc = LEqual;
+		CullMode = None;
+
+		SrcBlend = ONE;
+		DestBlend = ONE_MINUS_SRC_COLOR;
+		AlphaBlendEnable = true;
+	}
+}
+
+technique CameraOrbs
+{
+	pass p0
+	{
+		VertexShader = CameraOrbsVS() LensOpticsVS;
+		PixelShader = CameraOrbsPS() LensOpticsPS;
+
+		ZEnable = false;
+		ZWriteEnable = false;
+		ZFunc = LEqual;
+		CullMode = None;
+
+		SrcBlend = ONE;
+		DestBlend = ONE_MINUS_SRC_COLOR;
+		AlphaBlendEnable = true;
+	}
+
+	pass p1
+	{
+		VertexShader = CameraOrbsVS() LensOpticsVS;
+		PixelShader = CameraLensPS() LensOpticsPS;
+
+		ZEnable = false;
+		ZWriteEnable = false;
+		ZFunc = LEqual;
+		CullMode = None;
+
+		SrcBlend = ONE;
+		DestBlend = ONE_MINUS_SRC_COLOR;
+		AlphaBlendEnable = true;
+	}
+}
+
+technique ImageSpaceShafts
+{
+	pass p0
+	{
+		VertexShader = shaftsOccVS() LensOpticsVS;
+		PixelShader = shaftsOccPS() LensOpticsPS;
+
+		ZEnable = false;
+		ZWriteEnable = false;
+		ZFunc = LEqual;
+		CullMode = None;
+
+		SrcBlend = ONE;
+		DestBlend = ONE_MINUS_SRC_COLOR;
+		AlphaBlendEnable = true;
+	}
+
+	pass p1
+	{
+		VertexShader = shaftsVS() LensOpticsVS;
+		PixelShader = shaftsPS() LensOpticsPS;
+
+		ZEnable = false;
+		ZWriteEnable = false;
+		ZFunc = LEqual;
+		CullMode = None;
+
+		SrcBlend = ONE;
+		DestBlend = ONE_MINUS_SRC_COLOR;
+		AlphaBlendEnable = false;
+	}
+
+	pass p2
+	{
+		VertexShader = screenQuadVS() LensOpticsVS;
+		PixelShader = shaftBlendPS() LensOpticsPS;
+
+		ZEnable = false;
+		ZWriteEnable = false;
+		ZFunc = LEqual;
+		CullMode = None;
+
+		SrcBlend = ONE;
+		DestBlend = ONE_MINUS_SRC_COLOR;
+		AlphaBlendEnable = true;
+	}
+}

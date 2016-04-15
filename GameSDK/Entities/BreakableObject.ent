@@ -1,0 +1,4 @@
+<Entity
+ Name="BreakableObject"
+ Script="Scripts/Entities/Physics/BreakableObject.lua"
+/>

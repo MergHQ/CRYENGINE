@@ -1,0 +1,387 @@
+<item name="Shotgun" class="Weapon" category="primary" priority="12" weaponParams="1">
+	<params>
+		<param name="display_name" value="@mp_eShotgun" />
+		<param name="giveable" value="1" />
+		<param name="selectable" value="1" />
+		<param name="itemClass" value="shotgun" />
+		<param name="mass" value="5" />
+		<param name="melee_attack_firemode" value="melee" />
+		<param name="select_delayed_grab_3P" value="1" />
+		<param name="attach_to_back" value="1" />
+		<param name="bone_attachment_01" value="stow_primary1" />
+		<param name="bone_attachment_02" value="stow_primary2" />
+		<param name="suffix" value="shoulder" />
+		<param name="sprintToFireDelay" value="0.2" />
+		<param name="autoReloadDelay" value="0.5" />
+		<param name="runToSprintBlendTime" value="0.4" />
+		<param name="sprintToRunBlendTime" value="0.4" />
+		<param name="sprintToZoomDelay" value="0.2" />
+		<param name="stat_accuracy" value="2" />
+		<param name="stat_rate_of_fire" value="3" />
+		<param name="stat_mobility" value="6" />
+		<param name="stat_damage" value="8" />
+		<param name="stat_range" value="2" />
+		<param name="stat_recoil" value="5" />
+		<param name="tag" value="SDKShotgun" />
+		<param name="adb" value="shotgunWeaponAnims.adb" />
+		<aimAnims/>
+	</params>
+
+	<MovementModifiers speedScale="1.0" rotationScale="1.0" firingSpeedScale="0.8" GAME="SP">
+		<Ironsight speedScale="0.6" rotationScale="0.33" mouseRotationScale="0.9" />
+	</MovementModifiers>
+
+	<MovementModifiers speedScale="1.0" rotationScale="1.0" firingSpeedScale="1.0" GAME="MP">
+		<Ironsight speedScale="0.6" rotationScale="0.33" mouseRotationScale="0.9" />
+	</MovementModifiers>
+
+	<ai_descriptor  handler="instant" burstBulletCountMin="2" burstBulletCountMax="3" draw_time="0.5" spreadRadius="1.35" sweep_width="1.5" sweep_frequency="2.5"
+		burstPauseTimeMin="1.5" burstPauseTimeMax="4.5" singleFireTriggerTime="0.4" pressureMultiplier="1.2" coverFireTime="3.0" />
+
+	<ammos>
+		<ammo name="ShotgunShellSolid" extra="10" amount="10" minAmmo="0" capacity="20" />
+		<ammo name="ShotgunShell" extra="30" amount="10" minAmmo="6" capacity="40" />
+	</ammos>
+
+	<geometry>
+		<firstperson name="Objects/weapons/shotgun/shotgun.cdf" angles="0,0,0" position="0,0,0" />
+		<thirdperson name="Objects/weapons/shotgun/shotgun_tp.cgf" angles="0,0,0" useStreaming="0" />
+	</geometry>
+
+	<firemodes>
+		<firemode type="default">
+			<fire>
+				<param name="ammo_type" value="ShotgunShell" />
+				<param name="hit_type" value="RifleBullet" />
+				<param name="clip_size" value="10"/>
+				<param name="lowAmmoWarningFraction" value="0.34"/>
+				<param name="rate" value="47" GAME="SP" />
+				<param name="rate" value="55" GAME="MP" />
+				<param name="damage" value="0" GAME="SP"/> <!-- damage defined per pellets further below -->
+				<param name="damage" value="0" GAME="MP"/>
+				<param name="bullet_chamber" value="1" />
+				<param name="helper_tp" value="weapon_term" />
+				<param name="nearmiss_signal" value="OnNearMiss" />
+				<param name="damage_drop_per_meter" value="10" GAME="SP"/>
+				<param name="damage_drop_per_meter" value="1.5" GAME="MP"/>
+				<param name="damage_drop_min_distance" value="15" GAME="SP"/>
+				<param name="damage_drop_min_distance" value="10.0" GAME="MP"/>
+				<param name="damage_drop_min_damage" value="0" GAME="SP"/>
+				<param name="damage_drop_min_damage" value="7.5" GAME="MP" />
+				<param name="point_blank_amount" value="2" GAME="MP"/>
+				<param name="point_blank_distance" value="3" GAME="MP"/>
+				<param name="point_blank_falloff_distance" value="5" GAME="MP"/>
+				<param name="knocks_target" value="0"/>
+				<param name="min_damage_for_knockDown" value="0"/>
+				<param name="min_damage_for_knockDown_leg" value="0"/>
+				<param name="holdbreath_fire_anim_damp" value="0.9" GAME="SP"/>
+				<param name="holdbreath_fire_anim_damp" value="1.0" GAME="MP"/>
+				<param name="holdbreath_ffeedback_damp" value="0.75" GAME="SP" />
+				<param name="holdbreath_ffeedback_damp" value="1.0" GAME="MP" />
+				<param name="fillAmmoReloadFraction" value="0.75" />
+				<param name="endReloadFraction" value="0.85" />
+				<param name="tag" value="single" />
+			</fire>
+			<recoil>
+				<param name="max_recoil" value="1" />
+				<param name="attack" value="2.0" GAME="SP"/>
+				<param name="attack" value="1.0" GAME="MP"/>
+				<param name="decay" value="0.8" GAME="SP"/>
+				<param name="decay" value="1.2" GAME="MP"/>
+				<param name="end_decay" value="0.3" GAME="SP"/>
+				<param name="end_decay" value="1.0" GAME="MP"/>
+				<param name="maxx" value="2" GAME="SP"/>
+				<param name="maxx" value="0.5" GAME="MP"/>
+				<param name="maxy" value="10" GAME="SP"/>
+				<param name="maxy" value="30" GAME="MP"/>
+				<param name="randomness" value="0.1" GAME="SP"/>
+				<param name="randomness" value="0.01" GAME="MP"/>
+				<param name="recoil_holdBreathActive_m" value="1.25" GAME="SP" />
+				<param name="recoil_holdBreathActive_m" value="1.0" GAME="MP" />
+				<hints GAME="SP">
+					<hint x="-0.1"	y="0.5" />
+					<hint x="-0.2"	y="0.4" />
+				</hints>
+				<hints GAME="MP">
+					<hint x="0.3"	y="0.2" />
+					<hint x="-0.1"	y="0.3" />
+					<hint x="-0.4"	y="0.3" />
+					<hint x="0.0"	y="0.4" />
+					<hint x="0.4"	y="0.3" />
+					<hint x="0.1"	y="0.2" />
+					<hint x="-0.5"	y="0.3" />
+					<hint x="0.0"	y="0.5" />
+					<hint x="0.5"	y="0.3" />
+					<hint x="0.2"	y="0.4" />
+					<hint x="-0.3"	y="0.3" />
+					<hint x="-0.2"	y="0.2" />
+					<hint x="-0.3"	y="0.4" />
+					<hint x="0.1"	y="0.2" />
+				</hints>
+			</recoil>
+			<spread GAME="SP">
+				<param name="min" value="2.5" />
+				<param name="max" value="2.5" />
+				<param name="attack" value="1.8" />
+				<param name="decay" value="0.9" />
+				<param name="end_decay" value="0.3" />
+				<param name="speed_m" value="0.1" />
+				<param name="rotation_m" value="0" />
+				<param name="spread_jump_m" value="1.0" />
+				<param name="spread_slide_m" value="1.0" />
+				<param name="speed_holdBreathActive_m" value="0.75" />
+				<param name="spread_holdBreathActive_m" value="0.75"  />
+			</spread>
+			<spread GAME="MP">
+				<param name="min" value="0.0" />
+				<!-- Bullet spread is set to zero as the pellet spread is used. -->
+				<param name="max" value="0.0" />
+				<param name="attack" value="0.0" />
+				<param name="decay" value="0.0" />
+				<param name="speed_m" value="0.0" />
+				<param name="rotation_m" value="0.0"/>
+				<param name="spread_jump_m" value="0.0" />
+				<param name="spread_slide_m" value="1.0" />
+				<param name="speed_holdBreathActive_m" value="1.0" />
+				<param name="spread_holdBreathActive_m" value="1.0" />
+			</spread>
+			<muzzleflash aiVisibilityRadius="2.0" >
+				<firstperson effect="weapon_fx.scar.muzzle_flash.muzzle_flash_fp" helper="muzzleflash_effect" />
+				<thirdperson effect="weapon_fx.scar.muzzle_flash.muzzle_flash_tp" helper="muzzleflash_effect" />
+			</muzzleflash>
+			<muzzlesmoke>
+				<firstperson effect="" helper="smoke_effect" />
+				<thirdperson effect="" helper="smoke_effect" />
+			</muzzlesmoke>
+			<reject>
+				<firstperson effect="weapon_fx.scar.shell_eject_fp" helper="shells" GAME="SP" />
+				<firstperson effect="weapon_fx.scar.shell_eject_fp" helper="shells" GAME="MP" />
+				<thirdperson effect="weapon_fx.scar.shell_eject_tp" helper="shells" GAME="SP" />
+			</reject>
+			<shotgun>
+				<param name="pellets" value="8" />
+				<param name="pelletdamage" value="32" />
+				<param name="spread" value="4.5" />
+				<param name="reloadBreakTime" value="0.3" />
+				<param name="endReloadSpeedOverride" value="1.5" />
+			</shotgun>
+		</firemode>
+
+		<firemode name="Shotgun" type="Shotgun">
+			<tracer>
+				<param name="geometryFP" value="Objects/effects/tracer_standard_new.cgf" />
+				<param name="geometry" value="Objects/effects/tracer_standard_new.cgf" />
+				<param name="effectFP" value="weapon_fx.scar.tracer.tracer_fp" />
+				<param name="effect" value="weapon_fx.scar.tracer.tracer_tp" />
+				<param name="speedFP" value="250" />
+				<param name="speed" value="250" />
+				<param name="frequency" value="1" />
+				<param name="helper_fp" value="weapon_term" />
+				<param name="helper_tp" value="weapon_term" />
+				<param name="thicknessFP" value="4" />
+				<param name="thickness" value="4" />
+			</tracer>
+			<shotgun>
+				<param name="pellets" value="8" />
+				<param name="pelletdamage" value="125" GAME="SP"/>
+				<param name="pelletdamage" value="30" GAME="MP"/>
+				<param name="spread" value="7" GAME="SP"/>
+				<param name="spread" value="6" GAME="MP"/>
+				<param name="loadShellOnEndModes" value="sth" />
+				<param name="npc_additional_damage" value="200" GAME="SP"/>
+			</shotgun>
+			<recoil>
+				<param name="angular_impulse" value="0.2" />
+				<param name="back_impulse" value="3.0" />
+			</recoil>
+		</firemode>
+
+		<firemode name="Shotgun_Tight" type="Shotgun">
+			<fire>
+				<param name="damage_drop_min_distance" value="10.0" />
+				<param name="damage_drop_per_meter" value="1.5" />
+				<param name="damage_drop_min_damage" value="4" />
+			</fire>
+			<tracer>
+				<param name="geometryFP" value="Objects/effects/tracer_standard_new.cgf" />
+				<param name="geometry" value="Objects/effects/tracer_standard_new.cgf" />
+				<param name="effectFP" value="weapon_fx.scar.tracer.tracer_fp" />
+				<param name="effect" value="weapon_fx.scar.tracer.tracer_tp" />
+				<param name="speedFP" value="250" />
+				<param name="speed" value="250" />
+				<param name="frequency" value="1" />
+				<param name="helper_fp" value="weapon_term" />
+				<param name="helper_tp" value="weapon_term" />
+				<param name="thicknessFP" value="4" />
+				<param name="thickness" value="4" />
+			</tracer>
+			<shotgun>
+				<param name="pellets" value="8" />
+				<param name="pelletdamage" value="125" GAME="SP"/>
+				<param name="pelletdamage" value="30" GAME="MP"/>
+				<param name="spread" value="3.5" />
+				<param name="loadShellOnEndModes" value="sth" />
+				<param name="npc_additional_damage" value="200" GAME="SP" />
+			</shotgun>
+		</firemode>
+
+		<firemode name="melee" type="Melee">
+			<melee>
+				<param name="helper" value="collision" />
+				<param name="offset" value="0.35" />
+				<param name="damage" value="300" GAME="SP"/>
+				<param name="damage" value="135" GAME="MP"/>
+				<param name="slide_damage" value="300" GAME="SP"/>
+				<param name="slide_damage" value="135" GAME="MP"/>
+				<param name="damage_AI" value="250" />
+				<param name="impulse" value="100" />
+				<param name="impulse_AI_to_Player" value="300"/>
+				<param name="impulse_vehicle" value="400" />
+				<param name="impulse_up_percentage" value="0.4" GAME="SP"/>
+				<param name="range" value="1.8" />
+				<param name="delay" value="0.1" GAME="SP"/>
+				<param name="delay" value="0.025" GAME="MP"/>
+				<param name="aiDelay" value="0.45" />
+				<param name="duration" value="0.3" GAME="SP"/>
+				<param name="duration" value="0.7" GAME="MP"/>
+				<param name="use_melee_weapon_delay" value="0.0" />
+				<CloseAttack>
+					<param name="delay" value="0.25" />
+					<param name="duration" value="0.87" />
+					<param name="range" value="1.5" />
+					<param name="impulse_AI_to_Player" value="300"/>
+				</CloseAttack>
+			</melee>
+		</firemode>
+	</firemodes>
+
+	<zoommodes>
+		<zoommode name="ironsight" type="IronSight">
+			<stereo>
+				<param name="eyeDistance" value="0.002" />
+				<param name="convergenceDistance" value="0.01" />
+			</stereo>
+			<zoom>
+				<param name="suffix" value="iron" />
+				<param name="suffixAG" value="_iron" />
+				<param name="dof" value="1" />
+				<param name="dof_focusMax" value="100.0" />
+				<param name="dof_focusLimit" value="300.0" />
+				<param name="dof_mask" value="textures/weapons/ironzoom_blurmask.dds" />
+				<param name="dof_shoulderMinZ" value="0.3" />
+				<param name="dof_shoulderMinZScale" value="2.0" />
+				<param name="dof_minZ" value="0.25" />
+				<param name="dof_minZScale" value="0.8" />
+				<param name="zoom_in_time" value="0.2" />
+				<param name="zoom_out_time" value="0.2" />
+				<param name="zoom_out_delay" value="0.15" GAME="SP"/>
+				<param name="scope_mode" value="1" />
+				<param name="scope_nearFov" value="52" />
+				<stages>
+					<stage value="1.4" />
+				</stages>
+			</zoom>
+			<zoomSway>
+				<param name="maxX" value="0.006" GAME="SP"/>
+				<param name="maxY" value="0.008" GAME="SP"/>
+				<param name="maxX" value="0.001" GAME="MP"/>
+				<param name="maxY" value="0.002" GAME="MP"/>
+				<param name="stabilizeTime" value="3.0"/>
+				<param name="minScale" value="0.5"/>
+				<param name="crouchScale" value="0.25"/>
+				<param name="holdBreathScale" value="0.1" GAME="SP"/>
+				<param name="holdBreathTime" value="0.5" GAME="SP"/>
+			</zoomSway>
+			<spreadMod>
+				<param name="max_mod" value="0.5" GAME="SP"/>
+				<param name="max_mod" value="0.0" GAME="MP"/>
+				<param name="attack_mod" value="1.0" />
+				<param name="decay_mod" value="1.0" />
+				<param name="speed_m_mod" value="0.25" GAME="SP"/>
+				<param name="speed_m_mod" value="0.5" GAME="MP"/>
+				<param name="min_mod" value="0.5" />
+				<param name="rotation_m_mod" value="1.0" />
+				<param name="spread_crouch_m_mod" value="0.75" GAME="SP"/>
+				<param name="spread_crouch_m_mod" value="1.0" GAME="MP"/>
+				<param name="spread_jump_m_mod" value="1.0" />
+				<param name="spread_slide_m_mod" value="1.0" />
+				<param name="spread_holdBreathActive_m_mod" value="0.5" GAME="SP"/>
+				<param name="spread_holdBreathActive_m_mod" value="1.0" GAME="MP"/>
+				<param name="speed_holdBreathActive_m_mod" value="1.0" GAME="MP"/>
+			</spreadMod>
+			<recoilMod>
+				<param name="max_recoil_mod" value="1.0" />
+				<param name="attack_mod" value="1.0" />
+				<param name="decay_mod" value="1.0" />
+				<param name="end_decay_mod" value="1.0" />
+				<param name="impulse_mod" value="1.0" />
+				<param name="maxx_mod" value="1.0" />
+				<param name="maxy_mod" value="1.0" GAME="SP"/>
+				<param name="maxy_mod" value="0.3" GAME="MP" />
+				<param name="angular_impulse_mod" value="1.0" />
+				<param name="back_impulse_mod" value="1.0" />
+				<param name="recoil_crouch_m_mod" value="0.75" GAME="SP"/>
+				<param name="recoil_crouch_m_mod" value="1.0" GAME="MP"/>
+				<param name="recoil_jump_m_mod" value="1.0" />
+				<param name="recoil_holdBreathActive_m_mod" value="0.6" GAME="SP"/>
+				<param name="recoil_holdBreathActive_m_mod" value="1.0" GAME="MP"/>
+			</recoilMod>
+		</zoommode>
+	</zoommodes>
+
+	<accessories>
+
+		<accessory name="NoAttachmentBottom" category="bottom" exclusive="1" default="1">
+			<attach helper="attachment_bottom" />
+			<detach />
+		</accessory>
+
+		<accessory name="ExtendedClip" category="bottom" exclusive="1" extendsMagazine="1" reloadSpeedMultiplier="0.9">
+			<attach helper="attachment_bottom" />
+			<detach />
+			<params>
+				<firemodes>
+					<firemode type="default" >
+						<fire>
+							<param name="clip_size" value="13" />
+						</fire>
+					</firemode>
+				</firemodes>
+			</params>
+		</accessory>
+
+		<accessory name="ShotgunAmmo" category="ammo" exclusive="1" default="1" GAME="SP">
+			<attach helper="attachment_ammo" />
+			<detach />
+		</accessory>
+
+		<accessory name="ShotgunSolidAmmo" category="ammo" exclusive="1" GAME="SP">
+			<attach helper="attachment_ammo" />
+			<detach />
+			<params>
+				<firemodes>
+					<firemode type="Shotgun">
+						<fire>
+							<param name="ammo_type" value="ShotgunShellSolid" />
+							<param name="hit_type" value="RifleBullet" />
+						</fire>
+						<shotgun>
+							<param name="pellets" value="1" />
+							<param name="pelletdamage" value="700" />
+							<param name="spread" value="0.5" />
+						</shotgun>
+						<tracer>
+							<param name="thicknessFP" value="4" />
+							<param name="thickness" value="4" />
+						</tracer>
+						<reject>
+							<firstperson effect="" helper="shells" />
+							<thirdperson effect="" helper="shells" />
+						</reject>
+					</firemode>
+				</firemodes>
+			</params>
+		</accessory>
+	</accessories>
+
+</item>

@@ -1,0 +1,47 @@
+<ammo name="smokegrenade" class="SmokeGrenade">
+	<geometry>
+		<firstperson name="Objects/weapons/frag_grenade/frag_grenade_used_tp.cgf" scale="1.8"/>
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<whiz>
+		<param name="sound" value="" />
+		<param name="speed" value="15" />
+	</whiz>
+	<physics type="particle">
+		<param name="mass" value="5.0" />
+		<param name="speed" value="28" />
+		<param name="radius" value="0.05" />
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0.5" />
+		<param name="rollAxis" value="1, 0, 0" />
+		<param name="gravity" value="0, 0, -15.8" />
+		<param name="water_gravity" value="0, 0, -9.8" />
+		<param name="thrust" value="0" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="0.5" />
+		<param name="material" value="mat_grenade" />
+		<param name="spin_random" value="270, 270, 270" />
+		<param name="single_contact" value="0" />
+		<param name="traceable" value="1" />
+		<param name="pierceability" value="13" />
+		<param name="no_path_alignment" value="1" />
+	</physics>
+	<params>
+		<param name="display_name" value="@mp_eSmokeGrenade" />
+		<param name="trackOnHUD" value="1" />
+		<param name="lifetime" value="15.0" />
+		<param name="showtime" value="0.05" />
+		<param name="aitype" value="grenade" />
+		<param name="hitRecoil" value="Level1" />
+		<param name="hitRecoilArmorMode" value="Level1" />
+	</params>
+	<trail>
+		<param name="effect" value="weapon_fx.grenade.smoke_trail" />
+		<param name="prime" value="false" />
+	</trail>
+	<grenade>
+	</grenade>
+</ammo>

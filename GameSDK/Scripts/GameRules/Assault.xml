@@ -1,0 +1,98 @@
+<Mode name='Assault'>
+
+	<AssistScoring class='AssistScoring' maxTimeBetweenAttackAndKillForAssist='7000' maxAssistScore='99' assistScoreMultiplier='0.5' />
+
+	<PlayerStats class='StandardPlayerStats' dbgWatchLvl='0' />  <!-- needs to come before Spawning (see: CGameRulesMPSpawningWithLives::EntityRevived()) -->
+
+	<Spawning class='MPSpawningWithLives'
+		midRoundJoining='0'
+		teamGame='1' teamSpawnsType='RoundSwap'
+		usingLua='0'
+		dbgWatchLvl='0'
+    numLives='1'
+		initialAutoSpawnTimer='0'
+	/>
+
+	<Scoring class='StandardScoring'>
+		<Player>
+      <Event type='CombiCapObj_Att_PlayerKill' points='100' />
+      <Event type='CombiCapObj_Def_PlayerKill' points='200' />
+      <Event type='PlayerTeamKill'    points='0' />
+      <Event type='PlayerKillAssist'  points='40' />
+      <Event type='Tagged_PlayerKillAssist' points='25' />
+			<Event type='CombiCapObj_Win'		points='300' />
+			<Event type='CombiCapObj_Def_Win_IntelRemainBonus_Max'			points='0' />	<!-- if all the intel remains then the defenders will get the full amount of this, if half remains then they'll get half of this, and so on...) -->
+			<Event type='CombiCapObj_Def_Lost_TimeRemainBonus_Max'			points='0' />	<!-- see also the defWin_timeRemainBonus_minTime and defWin_timeRemainBonus_minPoints settings in the objectives module further down -->
+			<Event type='CombiCapObj_Att_Lost_IntelDownloadedBonus_Max'	points='0' />	<!-- if all the intel remains then the attackers will get none of this, if half remains then they'll get half of this, and so on...) -->
+			<Event type='CombiCapObj_Capturing_PerSec'									points='10' />		<!-- see also the captureScoringThreshold, captureScoringAssistThreshold and captureScoringAssistFrac settings in the objectives module further down --> 
+			<!--
+			<Event name='enemyKill' points='50' />
+			<Event name='assistKill' points='20' />
+			<Event name='spotAssist' points='10' />
+			<Event name='teamKill' points='-50' />
+			<Event name='selfKill' points='-20' />
+			<Event name='objectiveKill' points='100' />
+			<Event name='initiateCapture' points='20' />
+			-->
+		</Player>
+	  <Team>
+			<Event type='CaptureObjectiveTaken'			points='1' />
+			<Event type='CaptureObjectivesDefended'	points='1' />
+			<!--
+			<Event name='enemyKill'									points='1' />
+			-->
+	  </Team>
+		<!-- TODO! are these still going to be needed? or are they done elsewhere now?
+		<XP>
+			<Event name='moderateSkillKill' points='50' />
+			<Event name='hardSkillKill' points='100' />
+			<Event name='collectDogTag' points='10' />
+		</XP>
+		-->
+	</Scoring>
+
+	<Spectator class='MPSpectator' eatsActorActions='1' enableFree='0' enableFollow='1' enableKiller='1' timeFromDeathTillAutoSpectate='5000'/>
+
+	<State class='StandardState' />
+
+	<StatsRecording class='StandardStatsRecording' />
+
+	<VictoryConditions class='ObjectiveVictoryConditionsTeam' decideRoundWinnerUsingJustPointsScoredInRound='1' playHalfwaySound='0' >
+    <DrawResolution>
+      <level name='ESVC_DrawResolution_level_1' winMessage='ui_msg_as_draw_resolved_data' test='greater' type='int' />
+      <level name='ESVC_DrawResolution_level_2' winMessage='ui_msg_as_draw_resolved_time' test='lessthan' type='float' />
+    </DrawResolution>
+	</VictoryConditions>
+
+	<Teams class='StandardTwoTeams' canTeam1ModifyWeapons='1' canTeam2ModifyWeapons='0'/>
+
+	<PlayerSetup class='StandardSetup'>
+		<TeamSpecifics luaSetupPlayerTeamSpecificsFunc='SetupPlayerTeamSpecifics' luaSetupRemotePlayerTeamSpecificsFunc='SetupRemotePlayerTeamSpecifics' luaResetPlayerTeamSpecificsFunc='ResetPlayerTeamSpecifics' />
+	</PlayerSetup>
+
+	<DamageHandling class='MPDamageHandling'>
+		<Table path='Scripts/GameRules/MPDamageTable.xml' />
+	</DamageHandling>
+
+	<ActorAction class='MPActorAction' />
+
+	<Objectives class='Objective_SimpleEntityBased' teamBase='1'>
+		<Entity class='AssaultIntel' select='All' />
+		<Implementation type='CombiCapture' contestable='0' allowMultiPlayerCaptures='0' goalCombiCaptureTime='50' progressBankingIntervalSecs='5' defWin_timeRemainBonus_minTime='1.0' defWin_timeRemainBonus_minPoints='100.0' captureScoringThreshold='50' doMidThresholdPartialCaptureScoring='0' lastMinuteSkillAssessmentThreshold='0.899'>
+			<Icons ourCapturePoint='EGRMO_AS_IntelPoint_blue' theirCapturePoint='EGRMO_AS_IntelPoint_red' usCapturingPoint='EGRMO_AS_IntelPoint_redToBlue' themCapturingPoint='EGRMO_AS_IntelPoint_blueToRed' />
+			<Audio capturedLoop='Assault_Loop' interrupt='Assault_Interrupt' inactiveLoop='Assault_Inactive' alarmLoop='Assault_HackingAlert'/>
+		</Implementation>
+	</Objectives>
+
+	<Rounds class='StandardRounds' resetScores='0' allowBestOfVictory='1'>
+    <!-- Use default strings ... <EndStrings winMessage="mp_RoundOverWinner" loseMessage="mp_RoundOverWinner" drawMessage="mp_RoundOverDraw" />-->
+    <PrimaryTeam>
+			<StartStrings startNewRoundTeam="ui_msg_as_attacking" startNewRoundSmallBanner="ui_msg_as_matchstart_attack" />
+		</PrimaryTeam>
+		<SecondaryTeam>
+			<StartStrings startNewRoundTeam="ui_msg_as_defending" startNewRoundSmallBanner="ui_msg_as_matchstart_defend" />
+		</SecondaryTeam>
+	</Rounds>
+
+</Mode>
+

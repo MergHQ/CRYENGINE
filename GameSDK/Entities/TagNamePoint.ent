@@ -1,0 +1,5 @@
+<Entity
+	Name="TagNamePoint"
+	Script="Scripts/Entities/Multiplayer/TagNamePoint.lua"
+/>
+

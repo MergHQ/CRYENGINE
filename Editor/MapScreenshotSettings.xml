@@ -1,0 +1,19 @@
+<settings>
+            <r_HDRRendering value="1"/>
+            <r_PostProcessEffects value="0"/>
+            <r_MotionBlur value="0"/>
+            <e_ScreenShotQuality value="0"/>
+            <e_ViewDistRatio value="100000000"/>
+            <r_DisplayInfo value="0"/>
+            <e_StreamCgfPoolSize value="128" />
+            <e_VegetationSpritesDistanceRatio value="20"/>
+            <e_ViewDistRatioVegetation value="100"/>
+            <e_Lods value="0"/>
+            <e_Vegetation value="0"/>
+            <e_TerrainOcclusionCulling value="0"/>
+						<e_OcclusionVolumes value="0"/>
+						<e_shadows value="0"/>
+						<e_portals value="3"/>
+						<e_fog value="0"/>
+						<r_hdrdebug value="1"/>
+</settings>

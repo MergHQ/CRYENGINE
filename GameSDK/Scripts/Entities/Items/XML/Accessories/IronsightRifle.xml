@@ -1,0 +1,15 @@
+<item name="IronsightRifle" class="Accessory" priority="101" >
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="scopeAttachment" value="1" />
+		<param name="display_name" value="@mp_IronsightRifle" />
+		<param name="selectTimeMultiplier" value="1.05" GAME="MP" />
+		<param name="tag" value="ironsight" />
+	</params>
+	<geometry>
+		<firstperson name="Objects/weapons/rifle/rifle_fp_ironsight.cgf" useStreaming="0" />
+		<thirdperson name="Objects/weapons/rifle/rifle_tp_ironsight.cgf" />
+	</geometry>
+</item>

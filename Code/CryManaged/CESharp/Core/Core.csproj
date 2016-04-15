@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <ProjectGuid>{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FB}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>CryEngine</RootNamespace>
+    <AssemblyName>CryEngine.Core</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <UseMSBuildEngine>False</UseMSBuildEngine>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\..\..\bin\win_x64\mono\AddIns</OutputPath>
+    <DefineConstants>DEBUG;TRACE;WIN64</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+    <CustomCommands>
+      <CustomCommands>
+        <Command type="AfterBuild" command="xcopy.EXE /H/Y/R/D &quot;${TargetDir}\${TargetName}*&quot; &quot;${TargetDir}\..\..&quot;" workingdir="${ProjectDir}" externalConsole="True" />
+      </CustomCommands>
+    </CustomCommands>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>..\..\..\..\bin\win_x64\mono\AddIns</OutputPath>
+    <DefineConstants>TRACE;WIN64</DefineConstants>
+    <Optimize>true</Optimize>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\..\..\bin\win_x86\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;WIN86</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <PlatformTarget>x86</PlatformTarget>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>..\..\..\..\bin\win_x86\</OutputPath>
+    <DefineConstants>TRACE;WIN86</DefineConstants>
+    <Optimize>true</Optimize>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <PlatformTarget>x86</PlatformTarget>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Xml" />
+    <Reference Include="CryEngine.Common" Condition="'$(Platform)' == 'x64'">
+      <HintPath>..\..\..\..\bin\win_x64\CryEngine.Common.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="SceneObject.cs" />
+    <Compile Include="System.cs" />
+    <Compile Include="UI\Canvas.cs" />
+    <Compile Include="UI\Panel.cs" />
+    <Compile Include="UI\UIElement.cs" />
+    <Compile Include="Components\Component.cs" />
+    <Compile Include="UI\Components\RectTransform.cs" />
+    <Compile Include="Components\Transform.cs" />
+    <Compile Include="UI\Components\Image.cs" />
+    <Compile Include="Resources\ImageSource.cs" />
+    <Compile Include="Resources\Resource.cs" />
+    <Compile Include="Resources\Texture.cs" />
+    <Compile Include="UI\Components\Text.cs" />
+    <Compile Include="Extentions.cs" />
+    <Compile Include="Resources\ScriptSystem.cs" />
+    <Compile Include="Util\Event.cs" />
+    <Compile Include="UI\CheckBox.cs" />
+    <Compile Include="UI\Components\UIComponent.cs" />
+    <Compile Include="UI\Splitter.cs" />
+    <Compile Include="EntitySystem\Entity.cs" />
+    <Compile Include="UI\Window.cs" />
+    <Compile Include="UI\Components\CollapseCtrl.cs" />
+    <Compile Include="UI\Components\TextCtrl.cs" />
+    <Compile Include="UI\ScrollPanel.cs" />
+    <Compile Include="UI\TextInput.cs" />
+    <Compile Include="Util\Tools.cs" />
+    <Compile Include="Attributes.cs" />
+    <Compile Include="Log.cs" />
+    <Compile Include="FlowSystem\RunScene.cs" />
+    <Compile Include="FlowSystem\FlowNode.cs" />
+    <Compile Include="UI\Button.cs" />
+    <Compile Include="UI\ComboBox.cs" />
+    <Compile Include="UI\Components\ButtonCtrl.cs" />
+    <Compile Include="UI\Components\ComboBoxCtrl.cs" />
+    <Compile Include="UI\Components\CheckBoxCtrl.cs" />
+    <Compile Include="UI\Components\ScrollBarCtrl.cs" />
+    <Compile Include="UI\Components\SplitBarCtrl.cs" />
+    <Compile Include="Components\Camera.cs" />
+    <Compile Include="Components\Application.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <Folder Include="UI\" />
+    <Folder Include="Components\" />
+    <Folder Include="UI\Components\" />
+    <Folder Include="Resources\" />
+    <Folder Include="EntitySystem\" />
+    <Folder Include="FlowSystem\" />
+  </ItemGroup>
+</Project>

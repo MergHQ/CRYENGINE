@@ -1,0 +1,40 @@
+<ammo name="Tank125" class="Rocket">
+	<geometry>
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="0.35" />
+		<param name="speed" value="350" />
+		<param name="radius" value="0.25" />
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, -9.81" />
+		<param name="water_gravity" value="0, 0, -1" />
+		<param name="thrust" value="0" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="8" />
+		<param name="material" value="mat_metal" />
+		<param name="pierceability" value="8" />
+		<param name="single_contact" value="1" />
+	</physics>
+	<explosion>
+		<param name="pressure" value="1600" />
+		<param name="min_radius" value="3" />
+		<param name="max_radius" value="5" />
+		<param name="min_phys_radius" value="1.8" />
+		<param name="max_phys_radius" value="2.5" />
+		<param name="hole_size" value="2" />
+		<param name="terrain_hole_size" value="6" />
+	</explosion>
+	<params>
+		<param name="lifetime" value="5" />
+		<param name="showtime" value="0.15" />
+	</params>
+	<trail>
+		<param name="effect" value="weapon_fx.tank.tank125.tracer.tracer" />
+		<param name="scale" value="0.35" />
+	</trail>
+</ammo>

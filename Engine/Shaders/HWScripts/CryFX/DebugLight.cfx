@@ -1,0 +1,104 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+
+
+float Script : STANDARDSGLOBAL
+<
+  string Script =        
+           "ShaderDrawType = Light;"
+>;
+
+
+// Non-Tweakables
+
+
+float4 objColor : PI_ObjColor;
+
+
+// Structs
+
+
+struct SDebugLightApp2VS
+{
+	float4 pos : POSITION0;
+};
+
+
+struct SDebugLightVS2PS
+{
+	float4 pos : POSITION0;
+	float4 col : COLOR0;
+};
+
+// General pass
+
+
+SDebugLightVS2PS
+DebugLightVS( SDebugLightApp2VS IN )
+{
+  SDebugLightVS2PS OUT = (SDebugLightVS2PS) 0;
+  OUT.pos = mul( vpMatrix, IN.pos );
+  OUT.col = objColor;
+  return OUT;
+}
+
+
+float4
+DebugLightPS( SDebugLightVS2PS IN ) : COLOR0
+{
+  return IN.col;
+}
+
+
+technique General
+<
+  string Script =
+        "TechniqueZ=DebugLightZPass;"
+>
+{
+  pass p0
+  {
+    //ZEnable = true;    
+    //ZWriteEnable = true;    
+		//ZFunc = Equal;
+    //CullMode = Back;        
+		
+    VertexShader = DebugLightVS();
+    PixelShader = DebugLightPS();
+  }
+}
+
+
+// Z pass
+
+SDebugLightVS2PS
+DebugLightZVS( SDebugLightApp2VS IN )
+{
+  SDebugLightVS2PS OUT = (SDebugLightVS2PS) 0;
+  OUT.pos = mul( vpMatrix, IN.pos );
+  return OUT;
+}
+
+
+float4
+DebugLightZPS( SDebugLightVS2PS IN ) : COLOR0
+{
+  return 0.001;
+}
+
+
+technique DebugLightZPass
+{
+  pass p0
+  {    
+    //ZEnable = true;
+    //ZWriteEnable = true;        
+		//ZFunc = LEqual;
+    //CullMode = Back;        
+
+    VertexShader = DebugLightZVS();
+    PixelShader = DebugLightZPS();
+  }
+}

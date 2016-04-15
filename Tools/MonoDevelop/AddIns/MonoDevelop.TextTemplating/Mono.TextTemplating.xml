@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Mono.TextTemplating</name>
+    </assembly>
+    <members>
+        <member name="M:Mono.TextTemplating.TemplateGenerator.GetAdditionalDirectiveProcessors">
+            <summary>
+            Gets any additional directive processors to be included in the processing run.
+            </summary>
+        </member>
+        <member name="P:Mono.TextTemplating.TemplateGenerator.SpecificHostType">
+            <summary>
+            If non-null, the template's Host property will be the full type of this host.
+            </summary>
+        </member>
+        <member name="M:Mono.TextTemplating.TemplatingEngine.GenerateCodeFromMembers(System.CodeDom.Compiler.CodeDomProvider,System.CodeDom.Compiler.CodeGeneratorOptions,System.IO.StringWriter,System.Collections.Generic.IEnumerable{System.CodeDom.CodeTypeMember})">
+            <summary>
+            An implementation of CodeDomProvider.GenerateCodeFromMember that works on Mono.
+            </summary>
+        </member>
+        <member name="T:Mono.TextTemplating.CrossAppDomainAssemblyResolver">
+            <summary>
+            Provides a handler for AssemblyResolve events that looks them up in the domain that created the resolver.
+            </summary>
+        </member>
+    </members>
+</doc>

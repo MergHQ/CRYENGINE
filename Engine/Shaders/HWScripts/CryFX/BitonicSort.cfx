@@ -1,0 +1,102 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2016 Crytek GmbH. All rights reserved.
+
+#include "BitonicSort.cfi"
+
+#define BITONIC_BLOCK_SIZE 1024
+#define TRANSPOSE_BLOCK_SIZE 32
+
+
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+	"NoPreview;"
+	"ShaderType = Compute;"
+>;
+
+
+
+//--------------------------------------------------------------------------------------
+// Structured Buffers
+//--------------------------------------------------------------------------------------
+
+RWStructuredBuffer<BitonicSortItem> BitonicInput : register(u0);
+RWStructuredBuffer<BitonicSortItem> BitonicData : register(u1);
+
+
+cbuffer bitonicParamsCB : register(b8)
+{
+	uint g_iLevel;
+	uint g_iLevelMask;
+	uint g_iWidth;
+	uint g_iHeight;
+};
+
+
+
+groupshared BitonicSortItem bitonic_shared[BITONIC_BLOCK_SIZE];
+groupshared BitonicSortItem bitonic_transpose_shared[TRANSPOSE_BLOCK_SIZE*TRANSPOSE_BLOCK_SIZE];
+
+
+
+//--------------------------------------------------------------------------------------
+// Bitonic Sort Compute Shader
+//--------------------------------------------------------------------------------------
+[numthreads(BITONIC_BLOCK_SIZE, 1, 1)]
+void BitonicSortCS(uint3 DTid : SV_DispatchThreadID, uint GI : SV_GroupIndex)
+{
+	// Load shared data
+	bitonic_shared[GI] = BitonicData[DTid.x];
+	GroupMemoryBarrierWithGroupSync();
+
+	// Sort the shared data
+	for (uint j = g_iLevel >> 1; j > 0; j >>= 1)
+	{
+		bool pred = (bitonic_shared[GI&~j].key > bitonic_shared[GI|j].key) == (bool)(g_iLevelMask & DTid.x);
+		uint result_idx = pred ? (GI^j) : GI;
+		BitonicSortItem item = bitonic_shared[result_idx];
+		
+		GroupMemoryBarrierWithGroupSync();
+		bitonic_shared[GI] = item;
+		
+		GroupMemoryBarrierWithGroupSync();
+	}
+
+	// Store shared data
+	BitonicData[DTid.x] = bitonic_shared[GI];
+}
+
+
+
+//--------------------------------------------------------------------------------------
+// Matrix Transpose Compute Shader
+//--------------------------------------------------------------------------------------
+[numthreads(TRANSPOSE_BLOCK_SIZE, TRANSPOSE_BLOCK_SIZE, 1)]
+void BitonicTransposeCS(uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint GI : SV_GroupIndex )
+{
+	bitonic_transpose_shared[GI] = BitonicInput[DTid.y * g_iWidth + DTid.x];
+	GroupMemoryBarrierWithGroupSync();
+
+	uint2 XY = DTid.yx - GTid.yx + GTid.xy;
+	BitonicData[XY.y * g_iHeight + XY.x] = bitonic_transpose_shared[GTid.x * TRANSPOSE_BLOCK_SIZE + GTid.y];
+}
+
+
+
+technique BitonicSort
+{
+  pass p0
+  {
+		ComputeShader = BitonicSortCS();
+  }
+}
+
+technique BitonicTranspose
+{
+  pass p0
+  {
+		ComputeShader = BitonicTransposeCS();
+  }
+}

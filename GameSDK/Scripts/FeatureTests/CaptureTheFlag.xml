@@ -1,0 +1,56 @@
+<FeatureTester>
+	<Settings>
+		<ListEntitiesWhenFail className="CTFBase" />
+		<ListEntitiesWhenFail className="CTFFlag" />
+		<AlwaysFailWhenHit checkpointName="GameRules_OnEndGame" />
+	</Settings>
+	
+	<Tests setName="utils">
+		<FeatureTest name="UtilPlayerSpawn">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_SvDoNotReviveTooSoonAfterDeath" />
+			<TrySpawnPlayer localPlayer="true" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<WaitSingleFrame />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilGoToEnemyBase">
+			<SetResponseToHittingCCCPoint response="completeSubroutine" checkpointName="CarryHelper_LocalPlayerEnterArea" />
+			<MovePlayerToOtherEntity localPlayer="true" className="CTFBase" onTeam="friend" />
+			<Wait duration="0.1" />
+			<Fail />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilGoToOwnBase">
+			<SetResponseToHittingCCCPoint response="completeSubroutine" checkpointName="CarryHelper_LocalPlayerEnterArea" />
+			<MovePlayerToOtherEntity localPlayer="true" className="CTFBase" onTeam="enemy" />
+			<Wait duration="0.1" />
+			<Fail />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilCollectNearbyFlag">
+			<OverrideButtonInput_Press inputName="reload" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_ClModifyScore" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="5" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="setup">
+		<FeatureTest name="SetGameParams" description="Set-up game parameters so that the game doesn't end during the tests" enabled="true" owners="tomh">
+			<DoConsoleCommand command="g_scoreLimit 1000" />
+			<DoConsoleCommand command="pl_spawnCorpseOnDeath 0" />
+		</FeatureTest>
+	</Tests>
+		
+	<Tests setName="captureTests">
+		<FeatureTest name="SimpleCapture" description="Take enemy flag from enemy base to player's base" require="localPlayerExists" enabled="true" owners="tomh">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="CarryHelper_LocallyPickupableEntityIsNowSet" />
+			<RunFeatureTest testName="UtilGoToEnemyBase" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.1" />
+			<RunFeatureTest testName="UtilCollectNearbyFlag" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_ClModifyScore" />
+			<RunFeatureTest testName="UtilGoToOwnBase" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.1" />
+		</FeatureTest>
+	</Tests>
+</FeatureTester>

@@ -1,0 +1,17 @@
+<item name="SniperScope" class="Accessory" priority="103" >
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="scopeAttachment" value="1" />
+		<param name="display_name" value="@mp_eSScope" />
+		<param name="selectTimeMultiplier" value="1.2" GAME="SP" />
+		<param name="selectTimeMultiplier" value="1.05" GAME="MP" />
+		<CrosshairTexture name="Objects/weapons/attachments/sniper/textures/sniper_scope_a_crosshair_diff.tif" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/attachments/sniper/sniper_scope_a_fp.cgf" useStreaming="0" />
+		<thirdperson name="objects/weapons/attachments/sniper/sniper_scope_a_tp.cgf" />
+		<aux1        name="objects/weapons/attachments/sniper/sniper_scope_a_zoom.cgf" useStreaming="0" />
+	</geometry>
+</item>

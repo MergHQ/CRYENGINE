@@ -1,0 +1,82 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2004.
+// -------------------------------------------------------------------------
+//  File name:   Water.ext
+//  Version:     v1.00
+//  Created:     13/02/2005 by Tiago Sousa
+//  Compilers:   
+//  Description: Water extension used by the editor
+//               for automatic shader generation (based on "Water" shader template)
+//
+// -------------------------------------------------------------------------
+//  History:
+//
+////////////////////////////////////////////////////////////////////////////
+
+Version (1.00)
+
+Property
+{
+  Name = %NORMAL_MAP
+  Mask = 0x1
+  Property    (Normal map)
+  Description (Use normal-map texture)
+  DependencySet = $TEX_Normals
+  DependencyReset = $TEX_Normals
+  Hidden
+}
+
+Property
+{
+  Name = %ENVIRONMENT_MAP
+  Mask = 0x4
+  Property    (Environment map)
+  Description (Use environment map as separate texture)
+  DependencySet = $TEX_EnvCM
+  DependencyReset = $TEX_EnvCM
+  Hidden
+}
+
+Property
+{
+  Name = %SUN_SHINE
+  Mask = 0x20
+  Property    (Sunshine)
+  Description (Activate for water sunshine)
+}
+
+Property
+{
+  Name = %FAKE_CAMERA_MOVEMENT
+  Mask = 0x100
+  Property    (Fake camera movement)
+  Description (Activate fake camera movement for scenes in ocean)
+}
+
+Property
+{
+  Name = %NO_REFRACTION_BUMP
+  Mask = 0x200
+  Property    (No refraction bump)
+  Description (Disables refraction bump)
+}
+
+Property
+{
+  Name = %FOAM
+  Mask = 0x400
+  Property    (Foam)
+  Description (Enables foam)
+}
+
+Property
+{
+  Name = %WATER_TESSELLATION_DX11
+  Mask = 0x800
+  DependencySet = $HW_WaterTessellation
+  DependencyReset = $HW_WaterTessellation
+  Hidden  
+}

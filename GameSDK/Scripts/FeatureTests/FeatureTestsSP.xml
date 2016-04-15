@@ -1,0 +1,193 @@
+<FeatureTester>
+	<Settings>
+	</Settings>
+	
+	<Tests setName="utils">
+		<FeatureTest name="UtilPlayerSpawn">
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<WaitSingleFrame />
+		</FeatureTest>
+	</Tests>
+
+  <Tests setName="fgTests">
+    <FeatureTest name="RunFGTestsQL" description="Runs all registered flow graph tests with quickload" owners="willw" enabled="true" maxTime="2400">
+      <!-- Note: Long timeout is used as FG tests run with a fixed time step -->
+	  <RunFeatureTest testName="UtilPlayerSpawn" />
+      <RunFlowGraphFeatureTests reloadLevel="true" quickload="false" waitScheduled="30.0" timeOut="2400.0" />
+	  <RunFlowGraphFeatureTests reloadLevel="false" quickload="true" waitScheduled="30.0" timeOut="2400.0" />
+    </FeatureTest>
+  </Tests>
+  
+  <Tests setName="fgTestsNoQuickLoad">
+    <FeatureTest name="RunFGTests" description="Runs all registered flow graph tests" owners="willw" enabled="true" maxTime="2400">
+      <!-- Note: Long timeout is used as FG tests run with a fixed time step -->
+	  <RunFeatureTest testName="UtilPlayerSpawn" />
+      <RunFlowGraphFeatureTests reloadLevel="true" quickload="false" waitScheduled="30.0" timeOut="2400.0" />
+    </FeatureTest>
+  </Tests>
+	
+	<Tests setName="soloTests">
+		<FeatureTest name="LocalPlayerExists" description="Local player should exist" require="localPlayerExists" enabled="true" maxTime="30" owners="timf">
+		</FeatureTest>
+
+		<FeatureTest name="WeaponZoom" description="Holding iron-sight button enables iron-sight mode" enabled="true" iterateOverParams="Revolver;K-Volt;SCAR;Mk60" owners="alexh">
+			<WatchCCCPoint checkpointName="PlayerWeapon_IronSightOn" />
+			<WatchCCCPoint checkpointName="PlayerWeapon_IronSightOff" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<OverrideButtonInput_Press inputName="attack2_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerWeapon_IronSightOn"/>
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<CheckNumCCCPointHits checkpointName="PlayerWeapon_IronSightOn" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="PlayerWeapon_IronSightOff" expectedNumHits="0" />
+			<OverrideButtonInput_Release inputName="attack2_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerWeapon_IronSightOff"/>
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<CheckNumCCCPointHits checkpointName="PlayerWeapon_IronSightOn" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="PlayerWeapon_IronSightOff" expectedNumHits="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="WeaponAutomaticShoot" description="Pressing shoot fires current weapon" enabled="true" iterateOverParams="K-Volt;SCAR;Mk60" owners="alexh" >
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_Shoot" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_ApplySpreadRandom" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.1" />
+			<WaitSingleFrame />
+		</FeatureTest>
+		
+		<FeatureTest name="WeaponManualReload" description="Reload button reloads current weapon" enabled="true" iterateOverParams="K-Volt;SCAR;Mk60" owners="alexh">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_StartReload" />
+			<OverrideButtonInput_Press inputName="reload" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_EndReload"/>
+			<WaitUntilHitAllExpectedCCCPoints timeOut="15" />
+		</FeatureTest>
+
+		<FeatureTest name="WeaponMelee" description="Pressing melee button performs a melee (and 2nd immediate press doesn't trigger another)" enabled="true" iterateOverParams="Revolver;K-Volt;SCAR;Mk60" owners="alexh">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<WatchCCCPoint checkpointName="Melee_LocalActorMelee" />
+			<OverrideButtonInput_Press inputName="special" />
+			<CheckNumCCCPointHits checkpointName="Melee_LocalActorMelee" expectedNumHits="1" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="special" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Press inputName="special" />
+			<CheckNumCCCPointHits checkpointName="Melee_LocalActorMelee" expectedNumHits="1" />
+		</FeatureTest>
+
+		<FeatureTest name="WeaponEmitTracer" description="Pressing shoot emits tracers from the current weapon" enabled="true" iterateOverParams="K-Volt;SCAR;Mk60" owners="alexh">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="%1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_EmitTracer"/>
+			<WaitUntilHitAllExpectedCCCPoints timeOut="1.0" />
+			<WaitSingleFrame />
+		</FeatureTest>
+
+		<FeatureTest name="GrenadeThrow" description="Hold attack button to prime a grenade, release button to throw it" enabled="true" owners="alexh">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="FragGrenades" />
+			<WatchCCCPoint checkpointName="Throw_Prime" />
+			<WatchCCCPoint checkpointName="Throw_Start" />
+			<WatchCCCPoint checkpointName="Throw_Stop" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<CheckNumCCCPointHits checkpointName="Throw_Prime" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="Throw_Start" expectedNumHits="1" />
+			<Wait duration="0.7" />
+			<CheckNumCCCPointHits checkpointName="Throw_Stop" expectedNumHits="0" />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<CheckNumCCCPointHits checkpointName="Throw_Stop" expectedNumHits="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="GrenadeExplode" description="A thrown grenade explodes and is destroyed" enabled="true" owners="alexh">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_Explode"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeDestroyed"/>
+			<WaitUntilHitAllExpectedCCCPoints timeOut="5" />
+		</FeatureTest>
+
+		<FeatureTest name="FlashBangDroppedAtFeet" description="A flashbang exploding at the player's feet blinds him" enabled="true" owners="alexh">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="FlashBangGrenades" />
+			<OverrideAnalogInput inputName="xi_rotatepitch" value="-2" />
+			<Wait duration="1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Throw_Shoot"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeLaunched"/>
+			<WaitUntilHitAllExpectedCCCPoints timeOut="3" />			
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_FlashbangExplode"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeDestroyed"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="FlashBang_Explode_BlindLocalPlayer"/>
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="FlashBang_Explode_NearbyButBlockedByGeometry"/>
+			<WaitUntilHitAllExpectedCCCPoints timeOut="5" />
+		</FeatureTest>
+
+		<FeatureTest name="RevolverShoot" description="Pressing shoot fires the revolver" enabled="true" owners="alexh">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetItem className="Revolver" />
+			<WatchCCCPoint checkpointName="Single_StartFire" />
+			<WatchCCCPoint checkpointName="Single_StopFire" />
+			<WatchCCCPoint checkpointName="Single_Shoot" />
+			<WatchCCCPoint checkpointName="Single_ApplySpreadRandom" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<CheckNumCCCPointHits checkpointName="Single_StartFire" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="Single_Shoot" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="Single_ApplySpreadRandom" expectedNumHits="1" />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<CheckNumCCCPointHits checkpointName="Single_StopFire" expectedNumHits="1" />
+		</FeatureTest>
+
+		<FeatureTest name="PerkCountermeasuresReduceFlash" description="Countermeasures perk reduces duration of flashbang effect" enabled="true" owners="alexh;timf;benp">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<DoConsoleCommand command="Perk +Countermeasures" />
+			<SetItem className="FlashBangGrenades" />
+			<OverrideAnalogInput inputName="xi_rotatepitch" value="-2" />
+			<Wait duration="1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_VisorProtector_ScaleFlashbangEffect"/>
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="FlashBang_Explode_NearbyButBlockedByGeometry"/>
+			<WaitUntilHitAllExpectedCCCPoints timeOut="10" />
+		</FeatureTest>
+
+		<FeatureTest name="SprintButtonWhileStanding" description="Check the sprint button doesn't do anything when not moving" enabled="true" owners="benito">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerMovement_SprintOn" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerMovement_SprintOff" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintRequestIgnored" />
+			<OverrideButtonInput_Press inputName="sprint" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="3.0" />
+		</FeatureTest>
+
+		<FeatureTest name="SprintButtonWhileRunning" description="Check the sprint button triggers sprint when moving" enabled="true" owners="benito">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<OverrideAnalogInput inputName="xi_movey" value="1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintOn" />
+			<OverrideButtonInput_Press inputName="sprint" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="3.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintOff" />
+			<OverrideAnalogInput inputName="xi_movey" value="0" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="3.0" />
+		</FeatureTest>
+		
+		<FeatureTest name="SprintToCrouch" description="Check crouching cancels sprinting" enabled="true" owners="benito">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<OverrideAnalogInput inputName="xi_movey" value="1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintOn" />
+			<OverrideButtonInput_Press inputName="sprint" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="3.0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_SprintOff" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerStartCrouch" />
+			<OverrideButtonInput_Press inputName="crouch" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="3.0" />
+		</FeatureTest>    
+	</Tests>
+
+</FeatureTester>

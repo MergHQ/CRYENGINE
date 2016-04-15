@@ -1,0 +1,20 @@
+<!--  Colour Library
+154, 213, 183, 255" - Green HUD Colour
+255, 200, 0, 255" - Yellow HUD Colour 
+172, 0, 0, 255"   - Red HUD Colour -->
+
+<InteractiveEntityMonitor>
+	<default color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" /> <!--R,G,B,A [0, 255] -->
+	<c3mp_airport color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />
+	<c3mp_bridge color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />
+	<c3mp_canyon color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />
+	<c3mp_cave color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />	
+	<c3mp_con_ed color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />	
+	<c3mp_dam color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />
+	<c3mp_fields color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />
+	<c3mp_museum color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />	
+	<c3mp_river color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />
+	<c3mp_rooftop_gardens color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />	
+	<c3mp_swamp_boat color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />	
+	<c3mp_tanker color="154, 213, 183, 255" shoot_color="172, 0, 0, 255" />	
+</InteractiveEntityMonitor>

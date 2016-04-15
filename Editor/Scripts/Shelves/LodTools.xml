@@ -1,0 +1,5 @@
+<toolboxmacros>
+ <macro title="GenerateLod" tooltip="Generates a 50% lod from the selected object">
+  <command type="1" text="general.run_file_parameters('generatelod.py','50.0')" bVariableToggle="0"/>
+ </macro>
+</toolboxmacros>

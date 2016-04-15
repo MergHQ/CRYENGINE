@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.NUnit</name>
+    </assembly>
+    <members>
+        <member name="E:MonoDevelop.NUnit.NUnitService.TestSessionStarting">
+            <summary>
+            Occurs just before a test session is started
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.NUnit.External.RemoteUnhandledException">
+            <summary>
+            Exception class that can be serialized
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.NUnit.IResultsStoreSerializer">
+            <summary>
+            Encapsulates serialization/deserialization logic
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.NUnit.IResultsStoreSerializer.Serialize(System.String,MonoDevelop.NUnit.TestRecord)">
+            <summary>
+            Serialize the record into the specified path.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.NUnit.IResultsStoreSerializer.Deserialize(System.String)">
+            <summary>
+            Deserialize the TestRecord from the sepcified path if possible.
+            Return null if deserialization is impossible.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.NUnit.BinaryResultsStore">
+            <summary>
+            ResultsStore implementation that uses binary serializer
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.NUnit.BinaryResultsStoreSerializer">
+            <summary>
+            Serializer implementation that uses ICSharpCode.NRefactory.Utils.FastSerializer
+            as it's main method to serialize test records. The serializer is backward compatible
+            with the old xml-based serialization and will deserialize test record from xml
+            if the binary form is not yet present.
+            </summary>
+        </member>
+    </members>
+</doc>

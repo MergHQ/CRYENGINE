@@ -1,0 +1,102 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#if ENABLE_TESSELLATION
+
+struct HS_CONTROL_POINT_OUTPUT_CUSTOMRENDER
+{
+	hsControlPointShared controlPoint;
+
+  float4 cVision : TEXCOORDN;
+
+#if %_RT_SAMPLE1
+  float4 vTangent  : TEXCOORDN;
+  float4 vBinormal : TEXCOORDN;
+#endif
+};
+
+///////////////// hull shader //////////////////
+
+HS_CONSTANT_DATA_OUTPUT CustomRenderPassConstantsHS(InputPatch<vert2fragCustomRender, 3> p, uint PatchID : SV_PrimitiveID)
+{
+	const float3 vP0 = p[0].vView.xyz + g_VS_WorldViewPos.xyz;
+	const float3 vP1 = p[1].vView.xyz + g_VS_WorldViewPos.xyz;
+	const float3 vP2 = p[2].vView.xyz + g_VS_WorldViewPos.xyz;
+	HS_CONSTANT_DATA_OUTPUT output = CommonConstantsHS(vP0, vP1, vP2, g_VS_WorldViewPos.xyz, g_VS_WorldViewPos.xyz, PatchID);
+
+	return output;
+}
+
+[domain("tri")]
+[partitioning("fractional_odd")]
+[outputtopology("triangle_cw")]
+[outputcontrolpoints(3)]
+[patchconstantfunc("CustomRenderPassConstantsHS")]
+[maxtessfactor(MAX_TESS_FACTOR)]
+HS_CONTROL_POINT_OUTPUT_CUSTOMRENDER Common_CustomRenderPassHS(InputPatch<vert2fragCustomRender, 3> inputPatch, uint uCPID : SV_OutputControlPointID)
+{
+	HS_CONTROL_POINT_OUTPUT_CUSTOMRENDER	output = (HS_CONTROL_POINT_OUTPUT_CUSTOMRENDER)0;
+
+	output.controlPoint.vView       = inputPatch[uCPID].vView;
+	output.controlPoint.vNormal     = inputPatch[uCPID].vNormal;
+	output.controlPoint.vBaseTC     = inputPatch[uCPID].baseTC;
+
+	output.cVision        = inputPatch[uCPID].cVision;
+
+#if %_RT_SAMPLE1
+	output.vTangent     = inputPatch[uCPID].vTangent;
+	output.vBinormal    = inputPatch[uCPID].vBinormal;
+#endif
+
+	return output;
+}
+
+///////////////// domain shader //////////////////
+
+void FillEvalInput_CR(in HS_CONTROL_POINT_OUTPUT_CUSTOMRENDER triPatch[3], in HS_CONSTANT_DATA_OUTPUT hsConstData, in float3 vBaryCoords, inout CommonEvaluationInputDS evalInput)
+{
+	evalInput.vBaryCoords = vBaryCoords;
+	FillEvalInputControlPoint(triPatch[0].controlPoint, triPatch[1].controlPoint, triPatch[2].controlPoint, hsConstData, evalInput);
+	evalInput.bRelativePos = true;
+#if %_RT_SAMPLE1
+  FillEvalInputTangentBinormal(triPatch[0].vTangent, triPatch[1].vTangent, triPatch[2].vTangent, triPatch[0].vBinormal.xyzz, triPatch[1].vBinormal.xyzz, triPatch[2].vBinormal.xyzz, evalInput);
+#endif
+
+	evalInput.vViewPos = g_VS_WorldViewPos.xyz;
+}
+
+void ProcessEvalOutput(in CommonEvaluationOutputDS evalOutput, inout vert2fragCustomRender dsOutput)
+{
+	dsOutput.baseTC    = evalOutput.vBaseTC;
+	dsOutput.HPosition = mul(g_VS_ViewProjZeroMatr, float4(evalOutput.vPos.xyz, 1));
+  dsOutput.vView = evalOutput.vPos;
+#if %_RT_SAMPLE1
+	dsOutput.vTangent = evalOutput.vTangent;
+	dsOutput.vBinormal = evalOutput.vBinormal;
+
+	// Add depth bias for thermal vision case, since this is processed after AA resolve so subsamples will be mismatching (results in zfighthing, or schimering) - offset compensates for this
+	dsOutput.HPosition.z -= 0.001; 
+#endif
+}
+
+[domain("tri")]
+vert2fragCustomRender Common_CustomRenderPassDS( HS_CONSTANT_DATA_OUTPUT hsConstData, float3 vBaryCoords : SV_DomainLocation, const OutputPatch<HS_CONTROL_POINT_OUTPUT_CUSTOMRENDER, 3> TrianglePatch )
+{
+	vert2fragCustomRender output = (vert2fragCustomRender)0;
+
+	// Evaluate current position
+	CommonEvaluationInputDS evalInput = (CommonEvaluationInputDS)0;
+	{
+		FillEvalInput_CR(TrianglePatch, hsConstData, vBaryCoords, evalInput);
+		CommonEvaluationOutputDS evalOutput;
+		Evaluate(evalInput, evalOutput);
+		ProcessEvalOutput(evalOutput, output);
+	}
+
+  output.cVision = EvalVec(TrianglePatch[0].cVision, TrianglePatch[1].cVision, TrianglePatch[2].cVision, vBaryCoords);
+  output.screenProj = HPosToScreenTC(output.HPosition);
+
+	return output;
+}
+
+#endif

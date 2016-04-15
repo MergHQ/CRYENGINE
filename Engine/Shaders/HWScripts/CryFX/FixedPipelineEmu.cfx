@@ -1,0 +1,429 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+
+// Color/Alpha arguments
+#define CA_UNKNOWN  0
+#define CA_SPECULAR 1
+#define CA_TEXTURE  2
+#define CA_TEXTURE1 3
+#define CA_NORMAL   4
+#define CA_DIFFUSE  5
+#define CA_PREVIOUS 6
+#define CA_TFACTOR  7
+
+// Color/Alpha operations
+#define CO_DISABLE    1
+#define CO_SELECTARG1 2
+#define CO_DECAL      3
+#define CO_SELECTARG2 4
+#define CO_MODULATE   5
+#define CO_MODULATE2X 6
+#define CO_MODULATE4X 7
+#define CO_BLENDDIFFUSEALPHA 8
+#define CO_BLENDTEXTUREALPHA 9
+#define CO_DETAIL     10
+#define CO_ADD        11
+#define CO_ADDSIGNED  12
+#define CO_ADDSIGNED2X 13
+#define CO_MULTIPLYADD 14
+#define CO_BUMPENVMAP  15
+#define CO_BLEND       16
+#define CO_MODULATEALPHA_ADDCOLOR 17
+#define CO_MODULATECOLOR_ADDALPHA 18
+#define CO_MODULATEINVALPHA_ADDCOLOR 19
+#define CO_MODULATEINVCOLOR_ADDALPHA 20
+#define CO_DOTPRODUCT3 21
+#define CO_LERP        22
+#define CO_SUBTRACT    23
+
+/// Un-Tweakables //////////////////////
+float4x4 compMatrix  : PI_Composite  < register = c0; >; // View*Projection
+float4   TFactor   : PB_TFactor;
+
+sampler2D Texture0 = sampler_state
+{
+  Texture = $White;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+};
+
+samplerCUBE TextureCube0 = sampler_state
+{
+  Texture = $White;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+	AddressU = Clamp;
+	AddressV = Clamp; 
+};
+
+/////////////////////////////
+
+struct a2v
+{
+  float4 Position : POSITION; //in object space
+  float2 baseTC   : TEXCOORD0;
+  float4 Color    : COLOR0;
+};
+
+struct v2f
+{
+  float4 Position  : POSITION;  //in projection space
+#if %_FT_DIFFUSE
+  float4 Color     : COLOR0;
+#endif  
+#if %_FT_TEXTURE
+  float2 baseTC    : TEXCOORD0;
+#endif  
+};
+
+///////////////// vertex shader //////////////////
+v2f FPVS(a2v IN)
+{
+  v2f OUT = (v2f)0; 
+
+  // Position in screen space.
+  float4 vPos = IN.Position;
+  OUT.Position = mul(compMatrix, vPos);
+  
+#if %_FT_TEXTURE
+  OUT.baseTC = IN.baseTC;
+#endif  
+#if %_FT_DIFFUSE
+  OUT.Color = GetInputColor(IN.Color);
+#endif  
+
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+void GetRGBArg(int nType, inout half4 Arg, half4 PrevArg, half4 baseTex, half4 INColor, half4 INColor1, half4 TFactor)
+{
+  if (nType == CA_TEXTURE)
+    Arg.xyz = baseTex.xyz;
+  else
+  if (nType == CA_DIFFUSE)
+		Arg.xyz = INColor.rgb;
+  else
+  if (nType == CA_SPECULAR)
+    Arg.xyz = INColor1.xyz;
+  else
+  if (nType == CA_TFACTOR)
+    Arg.xyz = TFactor.xyz;
+  else
+  if (nType == CA_PREVIOUS)
+    Arg.xyz = PrevArg.xyz;
+}
+
+void GetAlphaArg(int nType, inout half4 Arg, half4 PrevArg, half4 baseTex, half4 INColor, half4 INColor1, half4 TFactor)
+{
+  if (nType == CA_TEXTURE)
+    Arg.w = baseTex.w;
+  else
+  if (nType == CA_DIFFUSE)
+    Arg.w = INColor.w;
+  else
+  if (nType == CA_SPECULAR)
+    Arg.w = INColor1.w;
+  else
+  if (nType == CA_TFACTOR)
+    Arg.w = TFactor.w;
+  else
+  if (nType == CA_PREVIOUS)
+    Arg.w = PrevArg.w;
+}
+
+void RGBColorOp(int nType, inout half4 resColor, half4 Arg1, half4 Arg2, half4 baseTex, half4 INColor)
+{
+  if (nType == CO_MODULATE)
+    resColor.xyz = Arg1.xyz * Arg2.xyz;
+  else
+  if (nType == CO_SELECTARG1)
+    resColor.xyz = Arg1.xyz;
+  else
+  if (nType == CO_SELECTARG2)
+    resColor.xyz = Arg2.xyz;
+  else
+  if (nType == CO_ADD)
+    resColor.xyz = Arg1.xyz + Arg2.xyz;
+  else
+  if (nType == CO_MODULATE2X)
+    resColor.xyz = Arg1.xyz * Arg2.xyz * 2;
+  else
+  if (nType == CO_MODULATE4X)
+    resColor.xyz = Arg1.xyz * Arg2.xyz * 4;
+  else
+  if (nType == CO_BLENDDIFFUSEALPHA)
+    resColor.xyz = Arg1.xyz * INColor.a + Arg2.xyz * (1-INColor.a);
+  else
+  if (nType == CO_BLENDTEXTUREALPHA)
+    resColor.xyz = Arg1.xyz * baseTex.a + Arg2.xyz * (1-baseTex.a);
+  else
+  if (nType == CO_ADDSIGNED)
+    resColor.xyz = Arg1.xyz + Arg2.xyz - 0.5;
+  else
+  if (nType == CO_ADDSIGNED2X)
+    resColor.xyz = (Arg1.xyz + Arg2.xyz - 0.5) * 2;
+  else
+  if (nType == CO_MODULATEALPHA_ADDCOLOR)
+    resColor.xyz = Arg1.xyz + Arg1.w * Arg2.xyz;
+  else
+  if (nType == CO_MODULATECOLOR_ADDALPHA)
+    resColor.xyz = Arg1.xyz * Arg2.xyz + Arg1.w;
+  else
+  if (nType == CO_MODULATEINVALPHA_ADDCOLOR)
+    resColor.xyz = Arg1.xyz + Arg2.xyz + (1-Arg1.w);
+  else
+  if (nType == CO_MODULATEINVCOLOR_ADDALPHA)
+    resColor.xyz = (1-Arg1.xyz) * Arg2.xyz + Arg1.w;
+  else
+  if (nType == CO_DOTPRODUCT3)
+    resColor.xyz = dot(Arg1.xyz, Arg2.xyz);
+  else
+  if (nType == CO_SUBTRACT)
+    resColor.xyz = Arg1.xyz - Arg2.xyz;
+}
+
+void AlphaColorOp(int nType, inout half4 resColor, half4 Arg1, half4 Arg2, half4 baseTex, half4 INColor)
+{
+  if (nType == CO_MODULATE)
+    resColor.w = Arg1.w * Arg2.w;
+  else
+  if (nType == CO_SELECTARG1)
+    resColor.w = Arg1.w;
+  else
+  if (nType == CO_SELECTARG2)
+    resColor.w = Arg2.w;
+  else
+  if (nType == CO_ADD)
+    resColor.w = Arg1.w + Arg2.w;
+  else
+  if (nType == CO_MODULATE2X)
+    resColor.w = Arg1.w * Arg2.w * 2;
+  else
+  if (nType == CO_MODULATE4X)
+    resColor.w = Arg1.w * Arg2.w * 4;
+  else
+  if (nType == CO_ADDSIGNED)
+    resColor.w = Arg1.w + Arg2.w - 0.5;
+  else
+  if (nType == CO_ADDSIGNED2X)
+    resColor.w = (Arg1.w + Arg2.w - 0.5) * 2;
+  else
+  if (nType == CO_SUBTRACT)
+    resColor.w = Arg1.w - Arg2.w;
+}
+
+pixout FPPS(v2f IN)
+{
+  pixout OUT;
+
+  // load the base
+  half4 baseTex = (float4)0; 
+  half4 Arg01 = (float4)0;
+  half4 Arg02 = (float4)0;
+
+  half4 INDiffuse = (float4)0;
+  half4 INSpecular = (float4)0;
+#if %_FT_TEXTURE
+  baseTex = GetTexture2D(Texture0, IN.baseTC.xy);
+#endif  
+#if %_FT_DIFFUSE
+  INDiffuse = IN.Color;
+#endif
+
+  GetRGBArg(%_FT0_CARG1, Arg01, Arg01, baseTex, INDiffuse, INSpecular, TFactor);
+  GetRGBArg(%_FT0_CARG2, Arg02, Arg02, baseTex, INDiffuse, INSpecular, TFactor);
+  GetAlphaArg(%_FT0_AARG1, Arg01, Arg01, baseTex, INDiffuse, INSpecular, TFactor);
+  GetAlphaArg(%_FT0_AARG2, Arg02, Arg02, baseTex, INDiffuse, INSpecular, TFactor);
+  
+  half4 resColor = (half4)0;
+  RGBColorOp(%_FT0_COP, resColor, Arg01, Arg02, baseTex, INDiffuse);
+  AlphaColorOp(%_FT0_AOP, resColor, Arg01, Arg02, baseTex, INDiffuse);
+      
+  OUT.Color = resColor;
+  
+  return OUT;
+}
+
+//////////////////////////////// technique ////////////////
+
+technique FixedPipeline
+{
+  pass p0
+  {
+    VertexShader = FPVS();
+    
+    ZEnable = true;
+    ZWriteEnable = true;
+    CullMode = None;
+    
+    PixelShader = FPPS();
+  }
+}
+
+
+//==============================================================================================================================
+// Technique which is used for creating input layouts on D3D11
+
+struct SInputLayout
+{
+  float4 Position : POSITION;
+#if %_FT_TEXTURE
+  float4 Tex0     : TEXCOORD0;
+#endif  
+#if %_FT_DIFFUSE
+  float4 Color    : COLOR0;
+#endif  
+#if %_FT_TEXTURE1
+  float3 Tex1     : TEXCOORD1;
+#endif  
+#if %_FT_SPECULAR
+  float4 Color1   : COLOR1;
+#endif  
+#if %_FT_PSIZE
+  float4 PSize    : PSIZE;
+#endif  
+#if %_FT_NORMAL
+  float4 Normal   : NORMAL;
+#endif  
+
+  // streams
+#if %_FT_TANGENT_STREAM || %_FT_QTANGENT_STREAM
+  float4 Tangent  : TANGENT;
+#endif
+#if %_FT_TANGENT_STREAM
+  float4 Binormal : BINORMAL;
+#endif
+#if %_FT_SKIN_STREAM
+  IN_SKIN_STREAM
+#endif
+#if %_FT_VERTEX_VELOCITY_STREAM
+  IN_VERTEX_VELOCITY_STREAM
+#endif
+};
+
+struct v2f_InputLayout
+{
+  float4 Position  : POSITION;
+#if %_FT_SPECULAR
+  float4 Normal    : NORMAL;
+#endif  
+#if %_FT_DIFFUSE
+  float4 Color     : COLOR0;
+#endif  
+#if %_FT_SPECULAR
+  float4 Color1    : COLOR1;
+#endif  
+#if %_FT_TEXTURE
+  float4 Tex0      : TEXCOORD0;
+#endif  
+#if %_FT_TEXTURE1
+  float3 Tex1      : TEXCOORD1;
+#endif  
+#if %_FT_NORMAL
+  float4 Normal    : TEXCOORD2;
+#endif  
+
+#if %_FT_PSIZE
+  float4 PSize     : TEXCOORD3;
+#endif  
+
+  // Tangents stream
+  float4 Tangent  : TEXCOORD4;
+  float4 Binormal : TEXCOORD5;
+
+};
+
+///////////////// vertex shader //////////////////
+v2f_InputLayout InputLayoutVS(SInputLayout IN)
+{
+  v2f_InputLayout OUT = (v2f_InputLayout)0; 
+
+  int nComps = %_FT0_AOP;
+  
+  // Position
+  int nPosType = nComps & 3;
+  if (nPosType == 0 || nPosType == 3)
+    OUT.Position.xy = IN.Position.xy;
+  else
+  if (nPosType == 1)
+    OUT.Position.xyz = IN.Position.xyz;
+  else
+  if (nPosType == 2)
+    OUT.Position.xyzw = IN.Position.xyzw;
+    
+#if %_FT_TEXTURE
+  int nTex0Type = (nComps >> 2) & 3;
+  if (nTex0Type == 0)
+    OUT.Tex0.xy = IN.Tex0.xy;
+  else
+  if (nTex0Type == 1)
+    OUT.Tex0.xyz = IN.Tex0.xyz;
+  else
+  if (nTex0Type == 2)
+    OUT.Tex0.xyzw = IN.Tex0.xyzw;
+#endif  
+#if %_FT_TEXTURE1
+  OUT.Tex1.xyz = IN.Tex1.xyz;
+#endif  
+#if %_FT_NORMAL
+  OUT.Normal.xyzw = IN.Normal.xyzw;
+#endif  
+#if %_FT_DIFFUSE
+  int nDifType = (nComps >> 4) & 3;
+  if (nDifType == 1)
+    OUT.Color.xyz = IN.Color.xyz;
+  else
+  if (nDifType == 2)
+    OUT.Color.xyzw = IN.Color.xyzw;
+#endif  
+#if %_FT_SPECULAR
+  OUT.Color1.xyzw = IN.Color1.xyzw;
+#endif  
+#if %_FT_PSIZE
+  OUT.PSize = IN.PSize;
+#endif  
+
+  // Additional streams
+#if %_FT_TANGENT_STREAM || %_FT_QTANGENT_STREAM
+  OUT.Tangent = IN.Tangent;
+#endif
+#if %_FT_TANGENT_STREAM
+  OUT.Binormal = IN.Binormal;
+#endif    
+#if %_FT_SKIN_STREAM
+  OUT.Tangent *= IN.BlendWeights;
+  //OUT.Binormal *= IN.BoneSpace;
+  OUT.Binormal += IN.BlendIndices;
+#endif    
+#if %_FT_VERTEX_VELOCITY_STREAM
+  OUT.Tangent.xyz *= IN.VertexVelocity;
+#endif    
+
+  return OUT;
+}
+
+pixout DummyPS(v2f_InputLayout IN)
+{
+  pixout OUT;
+
+  OUT.Color = 0;
+  
+  return OUT;
+}
+
+technique InputLayout
+{
+  pass p0
+  {
+    VertexShader = InputLayoutVS();
+    PixelShader = DummyPS();
+  }
+}
+
+/////////////////////// eof ///

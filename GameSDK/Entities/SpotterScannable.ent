@@ -1,0 +1,5 @@
+<Entity
+	Name="SpotterScannable"
+	Script="Scripts/Entities/Others/SpotterScannable.lua"
+	Invisible="1"
+/>

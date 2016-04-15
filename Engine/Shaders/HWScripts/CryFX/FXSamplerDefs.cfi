@@ -1,0 +1,90 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+//=== Shared samplers =========================================================
+
+// Material textures. TODO: remove sRGBLookup as it cannot work with resource sets
+#define DIFFUSEMAP            Texture2D   diffuseTex          : register(t0)       <sRGBLookup = true>          = TM_Diffuse;
+#define NORMALMAP             Texture2D   normalsTex          : register(t1)       <UIName = "Normalmap">       = TM_Normals;
+#define SPECULARMAP           Texture2D   specularTex         : register(t2)                                    = TM_Specular;
+#define ENVIRONMENTCUBEMAP    TextureCube envCubeTex          : register(t3)                                    = TM_Env;
+#define DETAILMAP             Texture2D   detailTex           : register(t4)       <sRGBLookup = true>          = TM_Detail;
+#define SMOOTHNESSMAP         Texture2D   smoothnessTex       : register(t5)                                    = TM_Smoothness;
+#define HEIGHTMAP             Texture2D   heightTex           : register(t6)                                    = TM_Height;
+#define DECALMAP              Texture2D   decalTex            : register(t7)                                    = TM_DecalOverlay;
+#define SUBSURFACEMAP         Texture2D   subsurfaceTex       : register(t8)       <sRGBLookup = true>          = TM_SubSurface;
+#define CUSTOMMAP             Texture2D   customTex           : register(t9)                                    = TM_Custom;
+#define CUSTOMSECONDARYMAP    Texture2D   customSecondaryTex  : register(t10)                                   = TM_CustomSecondary;
+#define OPACITYMAP            Texture2D   opacityTex          : register(t11)                                   = TM_Opacity;
+#define TRANSLUCENCYMAP       Texture2D   translucencyTex     : register(t12)                                   = TM_Translucency;
+#define EMITTANCEMAP          Texture2D   emittanceTex        : register(t13)                                   = TM_Emittance;
+#define	flowTex               detailTex  
+
+// GBuffer per pass textures.
+#define WIND_GRID_MAP         Texture2D   windGridTex         : register(t27)                                   = TS_WindGrid;  
+#define	TERRAIN_NORM_MAP      Texture2D   terrainNormTex      : register(t28)                                   = TS_TerrainNormMap;
+#define	TERRAIN_BASE_MAP      Texture2D   terrainBaseTex      : register(t29)                                   = TS_TerrainBaseMap;
+#define NORMALS_FITTING_MAP   Texture2D   normalsFittingTex   : register(t30)                                   = "EngineAssets/ScreenSpace/NormalsFitting.dds";
+#define DISSOLVE_NOISE_MAP    Texture2D   dissolveNoiseTex    : register(t31)                                   = "EngineAssets/Textures/noise.dds";  
+// NOTE: DXOrbis only supports 32 shader slots at this time, don't use t32 or higher if DXOrbis support is desired!
+
+// Forward etc
+#define SCENE_NORMALS_MAP     Texture2D   sceneNormalsTex                                                       = TS_SceneNormals;
+#define SCENE_NORMALS_BENT    Texture2D   sceneNormalsBentTex                                                   = TS_SceneNormalsBent;
+#define SCENE_DIFFUSEACC_MAP  Texture2D   sceneDiffuseAccTex                                                    = TS_SceneDiffuseAcc;
+#define SCENE_SPECULARACC_MAP Texture2D   sceneSpecularAccTex                                                   = TS_SceneSpecularAcc;
+
+// Material sampler states
+SamplerState ssMaterialAnisoHigh       : register(s0) = SS_MaterialAnisoHighWrap;
+SamplerState ssMaterialAnisoLow        : register(s1) = SS_MaterialAnisoLowWrap;
+SamplerState ssMaterialTrilinear       : register(s2) = SS_MaterialTrilinearWrap;
+SamplerState ssMaterialBilinear        : register(s3) = SS_MaterialBilinearWrap; 
+
+SamplerState ssMaterialTrilinearClamp  : register(s4) = SS_MaterialTrilinearClamp;
+SamplerState ssMaterialBilinearClamp   : register(s5) = SS_MaterialBilinearClamp;
+
+SamplerState ssMaterialAnisoHighBorder : register(s6) = SS_MaterialAnisoHighBorder; 
+SamplerState ssMaterialTrilinearBorder : register(s7) = SS_MaterialTrilinearBorder; 
+
+// Generic sampler states
+SamplerState ssPointWrap                : register(s8) = SS_PointWrap;
+SamplerState ssPointClamp               : register(s9) = SS_PointClamp;
+
+// TODO: Texture/Sampler split and bind via semantic and fixed slot
+#define SCENEDEPTHMAP  \
+sampler2D sceneDepthSampler = sampler_state \
+{ \
+	Texture = $ZTarget; \
+	MinFilter = POINT; \
+	MagFilter = POINT; \
+	MipFilter = POINT; \
+	AddressU = Clamp; \
+	AddressV = Clamp; \
+};
+
+#define CLOUD_SHADOW_MAP \
+sampler2D cloudShadowMap = sampler_state \
+{ \
+ Texture = $CloudsLM; \
+ MinFilter = LINEAR; \
+ MagFilter = LINEAR; \
+ MipFilter = POINT; \
+ AddressU = Wrap; \
+ AddressV = Wrap; \
+};
+
+#define DEFAULT_CUBE_MAP \
+samplerCUBE defaultProbeSamplerCUBE = sampler_state \
+{ \
+  Texture = EngineAssets/Shading/defaultProbe_cm.tif; \
+  MinFilter = LINEAR; \
+  MagFilter = LINEAR; \
+  MipFilter = LINEAR; \
+  AddressU = Clamp; \
+  AddressV = Clamp; \
+  AddressW = Clamp;	\
+};
+
+SamplerState TrilinearClampSamplerState : SS_TrilinearClamp;
+SamplerState TrilinearWrapSamplerState : SS_TrilinearWrap;
+

@@ -1,0 +1,17 @@
+<!-- defines what values are saved/loaded from persistant map stats that are flagged-->
+<PersistantMapStats>
+	<Type name="GameRules" >
+	</Type>
+	
+	<Type name="MPWeapons" >	
+	</Type>
+	
+	<Type name="Weapon" >
+	</Type>
+	
+	<Type name="HitType" >
+	</Type>
+	
+	<Type name="Level" >
+	</Type>
+</PersistantMapStats>

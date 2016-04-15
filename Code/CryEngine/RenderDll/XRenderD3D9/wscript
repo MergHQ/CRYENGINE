@@ -1,0 +1,180 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+import os
+from waflib.TaskGen import after_method, feature
+from waflib import Logs
+
+import os
+from waflib import Logs
+
+def build(bld):
+	additional_defines = []
+
+	if not os.path.isdir(Path('Code/SDKs/NVAPI')):
+		Logs.warn('[WARNING] NVAPI SDK not found, excluding from the build.')
+		additional_defines += ['EXCLUDE_NV_API']
+
+	if not os.path.isdir(Path('Code/SDKs/AMD')):
+		Logs.warn('[WARNING] AMD AGS SDK not found, excluding from the build.')
+		additional_defines += ['EXCLUDE_AMD_API']
+
+	bld.CryEngineModule(
+		target       = 'CryRenderD3D11',
+		vs_filter    = 'CryEngine',
+
+		file_list    = 'core_renderer.waf_files',
+		pch          = '../StdAfx.cpp',
+		includes     = [ '..', Path('Code/SDKs/squish-ccr') ],
+		defines      = [ 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
+		use_module   = [ 'lzma', 'lzss', 'lz4' ],
+
+		win_features    = [ 'copy_d3d_compiler' ],
+		win_file_list   = 'mesh_baker.waf_files',
+		win_lib         = [ 'dxguid', 'd3d11', 'd3d10', 'd3dcompiler', 'Ole32', 'Gdi32', 'wininet', 'Shell32' ],			
+		win_linkflags   = [ '/NODEFAULTLIB:libcmt.lib' ], ## AMD AGS static lib references this
+		win_use_module  = [ 'oculus' ],
+
+		durango_file_list  = 'mesh_baker.waf_files',
+		durango_lib        = [ 'ws2_32', 'SmartGlassInterop', 'd3dcompiler', 'dxguid', 'xg_x', 'uuid', 'kernelx' ],
+
+		orbis_file_list    = 'orbis_renderer.waf_files',
+		orbis_defines      = 'CRY_USE_GNM',
+		orbis_lib          = [ 'SceSystemService_stub_weak', 'SceGnmDriver_stub_weak' ],
+		orbis_includes     = [ '../../..' ],
+
+		# LTO on orbis renderer + gnm in performance/release
+		orbis_performance_cxxflags = '-flto',
+		orbis_release_cxxflags = '-flto',
+		orbis_debug_lib = [ 'SceGnm', 'SceGnmx' ],
+		orbis_profile_lib = [ 'SceGnm', 'SceGnmx' ],
+		orbis_performance_lib = [ 'SceGnm_lto', 'SceGnmx_lto' ],
+		orbis_release_lib = [ 'SceGnm_lto', 'SceGnmx_lto' ],
+	)
+
+	bld.CryEngineModule(
+		target      = 'CryRenderOpenGL',
+		vs_filter   = 'CryEngine',
+
+		file_list   = [ 'core_renderer.waf_files', 'opengl_renderer.waf_files' ],
+		pch         = '../StdAfx.cpp',
+		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
+		defines     = [ 'OPENGL', 'DO_RENDERSTATS', '_RENDERER' ],
+		use_module  = [ 'lzma', 'lzss', 'lz4' ],
+
+		win_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_wgl.waf_files'],
+		win_includes     = [ Path('Code/SDKs/squish-ccr'), Path('Code/Tools/LibTIFF'), Path('Code/Tools/HLSLCrossCompiler/include') ],
+		win_lib          = [ 'opengl32', 'winmm', 'Ole32', 'Gdi32', 'wininet', 'Shell32', 'libHLSLcc'  ],
+		win_libpath      = [ Path('Code/Tools/HLSLCrossCompiler/lib/win64') ],
+		win_linkflags    = [ '/NODEFAULTLIB:libcmt.lib' ], ## AMD AGS static lib references this
+		win_use_module   = [ 'oculus' ],
+
+		darwin_file_list = 'mesh_baker.waf_files',
+		darwin_includes  = [ Path('Code/SDKs/SDL2/include/SDL'), Path('Code/SDKs/SDL2/include/mac'), Path('Code/Tools/HLSLCrossCompiler/include') ],
+		darwin_lib       = [ 'SDL2', 'HLSLcc' ],
+		darwin_libpath   = [ Path('Code/SDKs/SDL2/lib/mac'), Path('Code/Tools/HLSLCrossCompiler/lib/mac') ],
+		darwin_framework = [ 'OpenGL', 'ApplicationServices', 'IOKit' ],
+
+		linux_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_glx.waf_files'],
+		linux_lib          = [ 'HLSLcc' ],
+		linux_includes     = [ Path('Code/Tools/HLSLCrossCompiler/include') ],
+		linux_x64_libpath  = [ Path('Code/Tools/HLSLCrossCompiler/lib/linux')],
+		linux_module_extensions = [ 'sdl2' ],
+
+		android_file_list  = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_egl.waf_files'],
+		android_includes   = [ Path('Code/CryEngine/CrySystem'),
+		                       Path('Code/SDKs/SDL2/include/linux'),
+		                       Path('Code/SDKs/SDL2/include/SDL'),
+		                       Path('Code/Tools/SDLExtension/src/include'),
+		                       Path('Code/Tools/HLSLCrossCompiler/include')
+		                     ],
+		android_defines    = [ 'GLEW_MX', 'DXGL_ANDROID_GL' ]
+	)
+
+	# CryRenderD3D12 can only be built using VS 2015.
+	build_d3d12 = ('MSVC_VERSION' in bld.env and bld.env['MSVC_VERSION'] == '14.0')
+	parse_d3d12 = ('build' not in bld.cmd)
+
+	if build_d3d12 or parse_d3d12:
+		bld.CryEngineModule(
+			target      = 'CryRenderD3D12',
+			vs_filter   = 'CryEngine',
+			
+			file_list   = [ 'core_renderer.waf_files' ],
+			pchv        = '../StdAfx.cpp',
+			includes    = [ '..', Path('Code/SDKs'), Path('Code/SDKs/squish-ccr') ],
+			defines     = [ 'DIRECT3D10', 'CRY_USE_DX12', 'XRENDERD3D10_EXPORTS', 'DO_RENDERSTATS', '_RENDERER' ],
+			use_module  = [ 'lzma', 'lzss', 'lz4' ],
+
+			# , 'd3d11'
+			win_features     = [ 'copy_d3d_compiler' ],
+			win_file_list    = [ 'mesh_baker.waf_files', 'dx12_renderer.waf_files' ],
+			win_includes     = [ Path('Code/Tools/LibTIFF'), Path('Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes') ],
+			win_lib          = [ 'dxguid', 'd3d12', 'dxgi', 'd3dcompiler', 'Ole32', 'Gdi32', 'wininet', 'Shell32' ],
+			win_linkflags    = [ '/NODEFAULTLIB:libcmt.lib' ], ## AMD AGS static lib references this
+			win_use_module   = [ 'oculus' ],
+			
+			# additional_settings = Settings( files = '../Common/lzss.cpp', disable_pch = True )
+		)
+	else:
+		Logs.warn('MSVC 14.0 is not being used - CryRenderD3D12 cannot be built.')
+
+	# GNM backend may not be available, so check here
+	if os.path.isdir(Path('Code/SDKs/Orbis')) and os.path.isdir(Path('Code/CryEngine/RenderDll/XRenderD3D9/GNM')) and ('orbis' in bld.get_supported_platforms()):
+		rsc_output_folder = 'Tools/RemoteShaderCompiler'
+		compiler_version = '"ORBIS/V028"' # Must be quoted
+
+		# GNM render backend
+		bld.CryEngineModule(
+			target      = 'CryRenderGNM',
+			vs_filter   = 'CryEngine',
+			file_list   = [ 'core_renderer.waf_files', 'GNM/GnmRenderer.waf_files' ],
+			defines     = [ '_RENDERER', 'DO_RENDERSTATS', 'CRY_USE_GNM', 'CRY_USE_GNM_RENDERER', 'CRY_GNM_SHADER_COMPILER_VERSION=' + compiler_version ],
+			lib         = [ 'SceSystemService_stub_weak', 'SceGnmDriver_stub_weak' ],
+			includes    = [ '..' ],
+			use_module  = [ 'lzma', 'lzss', 'lz4' ],
+
+			performance_cxxflags = '-flto',
+			release_cxxflags     = '-flto',
+			debug_lib            = [ 'SceGnm', 'SceGnmx', 'SceDbg_stub_weak' ],
+			profile_lib          = [ 'SceGnm', 'SceGnmx', 'SceDbg_stub_weak' ],
+			performance_lib      = [ 'SceGnm_lto', 'SceGnmx_lto' ],
+			release_lib          = [ 'SceGnm_lto', 'SceGnmx_lto' ],
+		)
+
+		# GNM shader compiler
+		bld.CryConsoleApplication(
+			target     = 'GnmShaderCompiler',
+			vs_filter  = 'Tools',
+			file_list  = 'GNM/GnmShaderCompiler.waf_files',
+			defines    = [ '_CRT_SECURE_NO_WARNINGS' ],
+			cxxflags   = [ '/EHsc', '/GR' ],
+			includes   = Path('Code/SDKs/Orbis/target/include_common'),
+			libpath    = Path('Code/SDKs/Orbis/host_tools/lib'),
+			lib        = 'libSceShaderWavePsslc',
+			features   = 'copy_psslc',
+
+			output_sub_folder = Path(os.path.join(rsc_output_folder, 'Compiler', compiler_version)),
+			force_static_crt  = True,
+		)
+
+
+@feature('copy_psslc')
+@after_method('apply_link')
+def feature_copy_psslc(self):
+	bld = self.bld
+	platform = bld.env['PLATFORM']
+	configuration = bld.env['CONFIGURATION']
+
+	if platform  == 'project_generator':
+		return
+
+	output_folder = bld.get_output_folders(platform, configuration)[0]
+	
+	if hasattr(self, 'output_sub_folder'):
+		if os.path.isabs(self.output_sub_folder):
+			output_node = bld.root.make_node(self.output_sub_folder)
+		else:
+			output_node = output_folder.make_node(self.output_sub_folder)
+
+	psslc_dir = Path('Code/SDKs/Orbis/host_tools/bin')
+	psslc_dll = 'libSceShaderWavePsslc.dll'
+	self.create_task('copy_outputs', bld.root.make_node(os.path.join(psslc_dir, psslc_dll)), output_node.make_node(psslc_dll))

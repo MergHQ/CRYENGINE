@@ -1,0 +1,39 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryEngineStaticModule( 
+		target    = 'alembic', 
+		vs_filter = 'Libs',
+		file_list = 'alembic.waf_files',
+		exclude_from_static_code_analyzer = True,
+
+		includes  = [ Path('Code/SDKs/Alembic/lib') ],
+
+		defines   = [
+			'NOMINMAX', # No min/max macro (from Windows.h)
+			'_SCL_SECURE_NO_WARNINGS', # Potentially unsafe use of std::copy
+		],
+
+		cxxflags  = [ 
+			'/GR', '/EHsc', # Enable exceptions
+			'/W0', # Disable warnings from 3rdParty code
+
+			# Force-include <algorithm>, because some code uses std::min without including it (this is actually a bug).
+			# This only is a problem with VS2015, previous VS versions std::min was pulled in via other headers as well.
+			# Since the current version of this code relies on the old behavior, we will do this hack to make it work.
+			# Hopefully this can be removed once Alembic code is updated to work better with VS2015.
+			'/FIalgorithm',  
+		],
+
+		use_module = [
+			'hdf5',
+			'ilmbase',
+		],
+
+		module_provides = dict(
+			includes = [
+				Path('Code/SDKs/Alembic/lib'),
+			],
+		),
+	)

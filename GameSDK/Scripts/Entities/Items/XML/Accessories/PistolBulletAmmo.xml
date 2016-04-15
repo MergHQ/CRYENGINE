@@ -1,0 +1,13 @@
+<item name="PistolBulletAmmo" class="Accessory" priority="103">
+	<params>
+		<param name="display_name" value="@mp_ePistolBulletAmmo" />
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+	</params>
+	<!-- No reason to define additional accessoryAmmo for this accessory as default accessories cannot give additional ammo. Instead, define in Weapon script -->
+	<geometry>
+		<firstperson name="Objects/weapons/attachments/pistol_magazine/pistol_magazine_fp.cgf" useStreaming="0" />
+		<thirdperson name="Objects/weapons/attachments/pistol_magazine/pistol_magazine_tp.cgf"/>
+	</geometry>
+</item>

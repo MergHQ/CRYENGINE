@@ -1,0 +1,1334 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "PostEffectsLib.cfi"
+#include "ShadeLib.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "NoPreview;"
+           "LocalConstants;"
+           "ShaderDrawType = Custom;"
+           "ShaderType = PostProcess;"
+>; 
+
+/// PostAA techniques /////////////////////////////////////////////////////////////////////////
+
+/// Specific data ////////////////////////
+
+float4x4 mViewProjPrev;
+float4x4 mReprojection;
+half4 vParams;
+
+// parameters for batched techniques into same pass
+half4 vLensOpticsParams;
+half4 vDebugParams;
+half4 PostAAParams;
+
+float4 RcpFrameOpt;
+float4 RcpFrameOpt2;
+
+////////////////// samplers /////////////////////
+
+struct vtxOutAA
+{
+  OUT_HPOS_IN_WPOS
+
+  float4 baseTC      : TEXCOORD0;
+  float4 CamVec      : TEXCOORD1;
+};
+
+vtxOutAA PostAA_VS(vtxInWPOS IN)
+{
+  vtxOutAA OUT = (vtxOutAA)0; 
+
+  float4 vPos = IN.Position;
+  vPos.y = 1 -vPos.y;
+	OUT.HPosition = float4(vPos.xy*2-1, vPos.z, 1.0);
+
+  OUT.baseTC.xy = IN.baseTC.xy;
+	OUT.baseTC.zw = 1.0 / g_VS_HPosScale.xy;
+  OUT.CamVec.xyz = IN.CamVec;
+
+  return OUT;
+}
+
+///////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Nvidia FXAA 3.9
+
+#define FXAA_EXTREME_QUALITY
+
+#if FXAA_EXTREME_QUALITY
+
+	// extreme quality
+  #define FXAA_QUALITY__PS 12
+  #define FXAA_QUALITY__P0 1.0
+  #define FXAA_QUALITY__P1 1.0
+  #define FXAA_QUALITY__P2 1.0
+  #define FXAA_QUALITY__P3 1.0
+  #define FXAA_QUALITY__P4 1.0
+  #define FXAA_QUALITY__P5 1.5
+  #define FXAA_QUALITY__P6 2.0
+  #define FXAA_QUALITY__P7 2.0
+  #define FXAA_QUALITY__P8 2.0
+  #define FXAA_QUALITY__P9 2.0
+  #define FXAA_QUALITY__P10 4.0
+  #define FXAA_QUALITY__P11 8.00
+
+#else
+
+	// default quality
+	#define FXAA_QUALITY__PS 5
+	#define FXAA_QUALITY__P0 1.0
+	#define FXAA_QUALITY__P1 1.5
+	#define FXAA_QUALITY__P2 2.0
+	#define FXAA_QUALITY__P3 4.0
+	#define FXAA_QUALITY__P4 12.0
+
+#endif
+
+float4 sampler2DTop(sampler2D t, float2 p) 
+{
+	return tex2Dlod(t, float4(p, 0.0, 0.0));
+}
+
+float4 sampler2DOff(sampler2D t, float2 p, float2 o, float2 r) 
+{
+	return tex2Dlod(t, float4(p + (o * r), 0, 0));
+}
+
+pixout Fxaa3(vtxOutAA IN)
+{
+
+  pixout OUT = (pixout) 1;
+	//OUT.Color =0;//1- float4(sampler2DTop(_tex0, IN.baseTC.xy).xyz, lumaM);
+	//return OUT;
+
+	//	Convert CryENGINE inputs to fxaa inputs
+	float2 pos = IN.baseTC.xy;
+	float2 fxaaQualityRcpFrame = PS_ScreenSize.zw * 2.0;
+	//   1.00 - upper limit (softer)
+	//   0.75 - default amount of filtering
+	//   0.50 - lower limit (sharper, less sub-pixel aliasing removal)
+	//   0.25 - almost off
+	//   0.00 - completely off
+	float fxaaQualitySubpix = 0.5;
+	//   0.333 - too little (faster)
+	//   0.250 - low quality
+	//   0.166 - default
+	//   0.125 - high quality 
+	//   0.063 - overkill (slower)
+	float fxaaQualityEdgeThreshold = 0.166;
+	//   0.0833 - upper limit (default, the start of visible unfiltered edges)
+	//   0.0625 - high quality (faster)
+	//   0.0312 - visible limit (slower)
+	float fxaaQualityEdgeThresholdMin = 0.0833;
+
+
+  float2 posM;
+  posM.x = pos.x;
+  posM.y = pos.y;
+
+	float4 rgbyM = sampler2DTop(_tex0, posM);
+
+  #define lumaM rgbyM.w
+
+  float lumaS = sampler2DOff(_tex0, posM, float2( 0, 1), fxaaQualityRcpFrame.xy).w;
+  float lumaE = sampler2DOff(_tex0, posM, float2( 1, 0), fxaaQualityRcpFrame.xy).w;
+  float lumaN = sampler2DOff(_tex0, posM, float2( 0,-1), fxaaQualityRcpFrame.xy).w;
+  float lumaW = sampler2DOff(_tex0, posM, float2(-1, 0), fxaaQualityRcpFrame.xy).w;
+
+  float maxSM = max(lumaS, lumaM);
+  float minSM = min(lumaS, lumaM);
+  float maxESM = max(lumaE, maxSM);
+  float minESM = min(lumaE, minSM);
+  float maxWN = max(lumaN, lumaW);
+  float minWN = min(lumaN, lumaW);
+  float rangeMax = max(maxWN, maxESM);
+  float rangeMin = min(minWN, minESM);
+  float rangeMaxScaled = rangeMax * fxaaQualityEdgeThreshold;
+  float range = rangeMax - rangeMin;
+  float rangeMaxClamped = max(fxaaQualityEdgeThresholdMin, rangeMaxScaled);
+  bool earlyExit = range < rangeMaxClamped;
+
+  if(earlyExit)
+	{
+		OUT.Color = rgbyM;
+		OUT.Color.w = 1;
+    return OUT;
+	}
+
+
+  float lumaNW = sampler2DOff(_tex0, posM, float2(-1,-1), fxaaQualityRcpFrame.xy).w;
+  float lumaSE = sampler2DOff(_tex0, posM, float2( 1, 1), fxaaQualityRcpFrame.xy).w;
+  float lumaNE = sampler2DOff(_tex0, posM, float2( 1,-1), fxaaQualityRcpFrame.xy).w;
+  float lumaSW = sampler2DOff(_tex0, posM, float2(-1, 1), fxaaQualityRcpFrame.xy).w;
+
+  float lumaNS = lumaN + lumaS;
+  float lumaWE = lumaW + lumaE;
+  float subpixRcpRange = 1.0/range;
+  float subpixNSWE = lumaNS + lumaWE;
+  float edgeHorz1 = (-2.0 * lumaM) + lumaNS;
+  float edgeVert1 = (-2.0 * lumaM) + lumaWE;
+
+  float lumaNESE = lumaNE + lumaSE;
+  float lumaNWNE = lumaNW + lumaNE;
+  float edgeHorz2 = (-2.0 * lumaE) + lumaNESE;
+  float edgeVert2 = (-2.0 * lumaN) + lumaNWNE;
+
+  float lumaNWSW = lumaNW + lumaSW;
+  float lumaSWSE = lumaSW + lumaSE;
+  float edgeHorz4 = (abs(edgeHorz1) * 2.0) + abs(edgeHorz2);
+  float edgeVert4 = (abs(edgeVert1) * 2.0) + abs(edgeVert2);
+  float edgeHorz3 = (-2.0 * lumaW) + lumaNWSW;
+  float edgeVert3 = (-2.0 * lumaS) + lumaSWSE;
+  float edgeHorz = abs(edgeHorz3) + edgeHorz4;
+  float edgeVert = abs(edgeVert3) + edgeVert4;
+
+  float subpixNWSWNESE = lumaNWSW + lumaNESE;
+  float lengthSign = fxaaQualityRcpFrame.x;
+  bool horzSpan = edgeHorz >= edgeVert;
+  float subpixA = subpixNSWE * 2.0 + subpixNWSWNESE;
+
+  if(!horzSpan) lumaN = lumaW;
+  if(!horzSpan) lumaS = lumaE;
+  if(horzSpan) lengthSign = fxaaQualityRcpFrame.y;
+
+  float subpixB = (subpixA * (1.0/12.0)) - lumaM;
+
+  float gradientN = lumaN - lumaM;
+  float gradientS = lumaS - lumaM;
+  float lumaNN = lumaN + lumaM;
+  float lumaSS = lumaS + lumaM;
+  bool pairN = abs(gradientN) >= abs(gradientS);
+  float gradient = max(abs(gradientN), abs(gradientS));
+  if(pairN) lengthSign = -lengthSign;
+
+#if ORBIS
+	// shader compiler workaround
+  float subpixC = clamp(abs(subpixB) * subpixRcpRange, 0.0f, 0.999999f);
+#else
+	float subpixC = saturate(abs(subpixB) * subpixRcpRange);
+#endif
+
+  float2 posB;
+  posB.x = posM.x;
+  posB.y = posM.y;
+  float2 offNP;
+  offNP.x = (!horzSpan) ? 0.0 : fxaaQualityRcpFrame.x;
+  offNP.y = ( horzSpan) ? 0.0 : fxaaQualityRcpFrame.y;
+  if(!horzSpan) posB.x += lengthSign * 0.5;
+  if( horzSpan) posB.y += lengthSign * 0.5;
+
+  float2 posN;
+  posN.x = posB.x - offNP.x * FXAA_QUALITY__P0;
+  posN.y = posB.y - offNP.y * FXAA_QUALITY__P0;
+  float2 posP;
+  posP.x = posB.x + offNP.x * FXAA_QUALITY__P0;
+  posP.y = posB.y + offNP.y * FXAA_QUALITY__P0;
+  float subpixD = ((-2.0)*subpixC) + 3.0;
+  float lumaEndN = sampler2DTop(_tex0, posN).w;
+  float subpixE = subpixC * subpixC;
+  float lumaEndP = sampler2DTop(_tex0, posP).w;
+
+  if(!pairN) lumaNN = lumaSS;
+  float gradientScaled = gradient * 1.0/4.0;
+  float lumaMM = lumaM - lumaNN * 0.5;
+  float subpixF = subpixD * subpixE;
+  bool lumaMLTZero = lumaMM < 0.0;
+
+  lumaEndN -= lumaNN * 0.5;
+  lumaEndP -= lumaNN * 0.5;
+  bool doneN = abs(lumaEndN) >= gradientScaled;
+  bool doneP = abs(lumaEndP) >= gradientScaled;
+  if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P1;
+  if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P1;
+  bool doneNP = (!doneN) || (!doneP);
+  if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P1;
+  if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P1;
+
+  if(doneNP) 
+  {
+      if(!doneN) lumaEndN = sampler2DTop(_tex0, posN.xy).w;
+      if(!doneP) lumaEndP = sampler2DTop(_tex0, posP.xy).w;
+      if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+      if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+      doneN = abs(lumaEndN) >= gradientScaled;
+      doneP = abs(lumaEndP) >= gradientScaled;
+      if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P2;
+      if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P2;
+      doneNP = (!doneN) || (!doneP);
+      if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P2;
+      if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P2;
+
+      if(doneNP) 
+      {
+					if(!doneN) lumaEndN = sampler2DTop(_tex0, posN.xy).w;
+					if(!doneP) lumaEndP = sampler2DTop(_tex0, posP.xy).w;
+					if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+					if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+					doneN = abs(lumaEndN) >= gradientScaled;
+					doneP = abs(lumaEndP) >= gradientScaled;
+					if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P3;
+					if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P3;
+					doneNP = (!doneN) || (!doneP);
+					if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P3;
+					if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P3;
+
+					if(doneNP) 
+					{
+							if(!doneN) lumaEndN = sampler2DTop(_tex0, posN.xy).w;
+							if(!doneP) lumaEndP = sampler2DTop(_tex0, posP.xy).w;
+							if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+							if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+							doneN = abs(lumaEndN) >= gradientScaled;
+							doneP = abs(lumaEndP) >= gradientScaled;
+							if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P4;
+							if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P4;
+							doneNP = (!doneN) || (!doneP);
+							if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P4;
+							if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P4;
+
+#if FXAA_EXTREME_QUALITY
+
+						if(doneNP) 
+						{
+								if(!doneN) lumaEndN = sampler2DTop(_tex0, posN.xy).w;
+								if(!doneP) lumaEndP = sampler2DTop(_tex0, posP.xy).w;
+								if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+								if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+								doneN = abs(lumaEndN) >= gradientScaled;
+								doneP = abs(lumaEndP) >= gradientScaled;
+								if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P5;
+								if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P5;
+								doneNP = (!doneN) || (!doneP);
+								if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P5;
+								if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P5;
+
+								if(doneNP) 
+								{
+										if(!doneN) lumaEndN = sampler2DTop(_tex0, posN.xy).w;
+										if(!doneP) lumaEndP = sampler2DTop(_tex0, posP.xy).w;
+										if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+										if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+										doneN = abs(lumaEndN) >= gradientScaled;
+										doneP = abs(lumaEndP) >= gradientScaled;
+										if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P6;
+										if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P6;
+										doneNP = (!doneN) || (!doneP);
+										if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P6;
+										if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P6;
+
+										if(doneNP) 
+										{
+												if(!doneN) lumaEndN = sampler2DTop(_tex0, posN.xy).w;
+												if(!doneP) lumaEndP = sampler2DTop(_tex0, posP.xy).w;
+												if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+												if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+												doneN = abs(lumaEndN) >= gradientScaled;
+												doneP = abs(lumaEndP) >= gradientScaled;
+												if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P7;
+												if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P7;
+												doneNP = (!doneN) || (!doneP);
+												if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P7;
+												if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P7;
+
+												if(doneNP) 
+												{
+														if(!doneN) lumaEndN = sampler2DTop(_tex0, posN.xy).w;
+														if(!doneP) lumaEndP = sampler2DTop(_tex0, posP.xy).w;
+														if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+														if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+														doneN = abs(lumaEndN) >= gradientScaled;
+														doneP = abs(lumaEndP) >= gradientScaled;
+														if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P8;
+														if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P8;
+														doneNP = (!doneN) || (!doneP);
+														if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P8;
+														if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P8;
+
+
+														if(doneNP) 
+														{
+																if(!doneN) lumaEndN = sampler2DTop(_tex0, posN.xy).w;
+																if(!doneP) lumaEndP = sampler2DTop(_tex0, posP.xy).w;
+																if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+																if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+																doneN = abs(lumaEndN) >= gradientScaled;
+																doneP = abs(lumaEndP) >= gradientScaled;
+																if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P9;
+																if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P9;
+																doneNP = (!doneN) || (!doneP);
+																if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P9;
+																if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P9;
+
+																if(doneNP) 
+																{
+																		if(!doneN) lumaEndN = sampler2DTop(_tex0, posN.xy).w;
+																		if(!doneP) lumaEndP = sampler2DTop(_tex0, posP.xy).w;
+																		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+																		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+																		doneN = abs(lumaEndN) >= gradientScaled;
+																		doneP = abs(lumaEndP) >= gradientScaled;
+																		if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P10;
+																		if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P10;
+																		doneNP = (!doneN) || (!doneP);
+																		if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P10;
+																		if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P10;
+
+
+																		if(doneNP) 
+																		{
+																				if(!doneN) lumaEndN = sampler2DTop(_tex0, posN.xy).w;
+																				if(!doneP) lumaEndP = sampler2DTop(_tex0, posP.xy).w;
+																				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+																				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+																				doneN = abs(lumaEndN) >= gradientScaled;
+																				doneP = abs(lumaEndP) >= gradientScaled;
+																				if(!doneN) posN.x -= offNP.x * FXAA_QUALITY__P11;
+																				if(!doneN) posN.y -= offNP.y * FXAA_QUALITY__P11;
+																				doneNP = (!doneN) || (!doneP);
+																				if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P11;
+																				if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P11;
+																		}
+																}
+														}
+												}
+										}
+								}
+						}
+
+#endif
+					}
+      }
+  }
+
+
+  float dstN = posM.x - posN.x;
+  float dstP = posP.x - posM.x;
+  if(!horzSpan) dstN = posM.y - posN.y;
+  if(!horzSpan) dstP = posP.y - posM.y;
+
+  bool goodSpanN = (lumaEndN < 0.0) != lumaMLTZero;
+  float spanLength = (dstP + dstN);
+  bool goodSpanP = (lumaEndP < 0.0) != lumaMLTZero;
+  float spanLengthRcp = 1.0/spanLength;
+
+  bool directionN = dstN < dstP;
+  float dst = min(dstN, dstP);
+  bool goodSpan = directionN ? goodSpanN : goodSpanP;
+  float subpixG = subpixF * subpixF;
+  float pixelOffset = (dst * (-spanLengthRcp)) + 0.5;
+  float subpixH = subpixG * fxaaQualitySubpix;
+
+  float pixelOffsetGood = goodSpan ? pixelOffset : 0.0;
+  float pixelOffsetSubpix = max(pixelOffsetGood, subpixH);
+  if(!horzSpan) posM.x += pixelOffsetSubpix * lengthSign;
+  if( horzSpan) posM.y += pixelOffsetSubpix * lengthSign;
+
+  OUT.Color = float4(sampler2DTop(_tex0, posM).xyz, lumaM);
+
+	OUT.Color.w  = 1;
+
+	return OUT;
+}
+half4 FxaaConsoles(sampler2D tex, float2 pos, float4 fxaaConsolePosPos) 
+{
+  half3 dir = 0;
+  half4 lumaNe = tex2Dlod(tex, half4(fxaaConsolePosPos.zy, 0, 0));
+
+	lumaNe.w += half(1.0/512.0);
+	dir.x = -lumaNe.w;
+	dir.z = -lumaNe.w;
+
+  half4 lumaSw = tex2Dlod(tex, half4(fxaaConsolePosPos.xw, 0, 0));
+	dir.x += lumaSw.w;
+	dir.z += lumaSw.w;
+
+  half4 lumaNw = tex2Dlod(tex, half4(fxaaConsolePosPos.xy, 0, 0));
+	dir.x -= lumaNw.w;
+	dir.z += lumaNw.w;
+
+  half4 lumaSe = tex2Dlod(tex, half4(fxaaConsolePosPos.zw, 0, 0));
+	dir.x += lumaSe.w;
+	dir.z -= lumaSe.w;
+
+  half4 dir1_pos;
+  dir1_pos.xy = normalize(dir.xyz).xz;
+  half dirAbsMinTimesC = min(abs(dir1_pos.x), abs(dir1_pos.y)) * 16.0h; // 8.0 is sharper, 4.0 is softer, 2.0 is really soft
+
+  half4 dir2_pos;
+  dir2_pos.xy = clamp(dir1_pos.xy / dirAbsMinTimesC, half(-2.0), half(2.0));
+  dir1_pos.zw = pos.xy;
+  dir2_pos.zw = pos.xy;
+  half4 temp1N;
+  temp1N.xy = dir1_pos.zw - dir1_pos.xy * RcpFrameOpt.zw;
+
+  temp1N = tex2Dlod(tex, half4(temp1N.xy, 0.0, 0.0));
+  half4 rgby1;
+  rgby1.xy = dir1_pos.zw + dir1_pos.xy * RcpFrameOpt.zw;
+
+  rgby1 = tex2Dlod(tex, half4(rgby1.xy, 0.0, 0.0));
+  rgby1 = (temp1N + rgby1) * 0.5;
+
+  half4 temp2N;
+  temp2N.xy = dir2_pos.zw - dir2_pos.xy * RcpFrameOpt2.zw;
+  temp2N = tex2Dlod(tex, half4(temp2N.xy, 0.0, 0.0));
+
+  half4 rgby2;
+  rgby2.xy = dir2_pos.zw + dir2_pos.xy * RcpFrameOpt2.zw;
+  rgby2 = tex2Dlod(tex, half4(rgby2.xy, 0.0, 0.0));
+  rgby2 = (temp2N + rgby2) * 0.5;
+
+  half lumaMin = min(min(lumaNw.w, lumaSw.w), min(lumaNe.w, lumaSe.w));
+  half lumaMax = max(max(lumaNw.w, lumaSw.w), max(lumaNe.w, lumaSe.w));
+
+  rgby2 = (rgby2 + rgby1) * 0.5;
+
+  bool twoTapLt = rgby2.w < lumaMin;
+  bool twoTapGt = rgby2.w > lumaMax;
+
+  if(twoTapLt || twoTapGt) rgby2 = rgby1;
+
+  return rgby2; 
+}
+
+///////////////// pixel shader //////////////////
+float4 sqr(float4 x)
+{
+	return x * x;
+}
+
+float IntersectAABB(float3 rayDir, float3 rayOrg, float3 boxExt)
+{
+	if (length(rayDir) < 1e-6) return 1;
+
+	// Intersection using slabs
+	float3 rcpDir = rcp(rayDir);
+	float3 tNeg = ( boxExt - rayOrg) * rcpDir;
+	float3 tPos = (-boxExt - rayOrg) * rcpDir;
+	return max(max(min(tNeg.x, tPos.x), min(tNeg.y, tPos.y)), min(tNeg.z, tPos.z));
+}
+
+float ClipHistory(half3 cHistory, half3 cM, half3 cMin, half3 cMax)
+{
+	// Clip color difference against neighborhood min/max AABB
+	// Clipped color is cHistory + rayDir * result
+	
+	float3 boxCenter = (cMax + cMin) * 0.5;
+	float3 boxExtents = cMax - boxCenter;
+	
+	float3 rayDir = cM - cHistory;
+	float3 rayOrg = cHistory - boxCenter;
+	
+	return saturate(IntersectAABB(rayDir, rayOrg, boxExtents));
+}
+
+Texture2D<float4> PostAA_DepthTex : register(t16);
+
+pixout PostAA_PS(vtxOutAA IN)
+{
+  pixout OUT = (pixout) 0;
+	
+#if %_RT_SAMPLE4
+	//OUT.Color = FxaaConsoles(_tex0, IN.baseTC.xy, (IN.baseTC.xyxy + 2.0f * PS_ScreenSize.zwzw * float4(-1, -1, 1, 1)) * PS_HPosScale.xyxy);
+	OUT = Fxaa3(IN);
+	return OUT;
+#endif	
+
+	const float2 tc = IN.baseTC.xy;
+	const float2 texel = PS_ScreenSize.zw * 2;
+	
+	// Compute velocity vector for static geometry
+#if %_RT_SAMPLE2
+	const float3 vPosWS = WorldViewPos.xyz + IN.CamVec.xyz * GetLinearDepth(_tex2, tc).x; 
+	float3 vPosHPrev = mViewProjPrev[0].xyw * vPosWS.x + (mViewProjPrev[1].xyw * vPosWS.y + (mViewProjPrev[2].xyw * vPosWS.z + mViewProjPrev[3].xyw)); // <=> mul(float4(vPosWS, 1.0), mViewProjPrev).xyw;
+	vPosHPrev.xy /= vPosHPrev.z;	// Screen space position of pixel in previous frame
+#else
+	// Use native depth and for more accurate reprojection
+	float depth = PostAA_DepthTex.Load(int3(IN.WPos.xy, 0));
+	float4 vPosHPrev = mul(float4(IN.baseTC.x, IN.baseTC.y, depth, 1.0), mReprojection);
+	vPosHPrev.xy /= vPosHPrev.w;
+#endif
+	
+	float2 vObj = tex2D(_tex3, tc);
+	float2 v = (vObj.x==0) ? vPosHPrev.xy - tc : DecodeMotionVector(vObj);
+
+#if %_RT_SAMPLE2
+	// SMAA 1TX Mode
+	float fMaxFramesL = vParams.z;		// Frames to keep in history (low freq). Higher = less aliasing, but blurier result. Lower = sharper result, but more aliasing.
+	float fMaxFramesH = vParams.w;		// Frames to keep in history (high freq). Higher = less aliasing, but blurier result. Lower = sharper result, but more aliasing.
+	
+ 	// Curr frame and neighbor texels
+	half3 cM	= sqr(tex2D(_tex0, tc));
+	half3 cTL = sqr(tex2D(_tex0, tc + texel * float2(-0.5f, -0.5f)));
+	half3 cTR = sqr(tex2D(_tex0, tc + texel * float2( 0.5f, -0.5f)));
+	half3 cBL = sqr(tex2D(_tex0, tc + texel * float2(-0.5f,  0.5f)));
+	half3 cBR = sqr(tex2D(_tex0, tc + texel * float2( 0.5f,  0.5f)));
+	
+	half3 cBlur = (cTL + cTR + cBL + cBR) * 0.25f;
+	cM.rgb = saturate( lerp(cBlur, cM, vParams.x) );
+		
+	half3 cMin = min(min(min(min(cTL, cTR), cBL), cBR), cM);
+	half3 cMax = max(max(max(max(cTL, cTR), cBL), cBR), cM);	
+	
+	float3 cAcc = sqr(tex2D(_tex1, (tc * IN.baseTC.zw) + v));	
+	cAcc.rgb = clamp((cAcc), cMin, cMax); // Limit acc buffer color range to current frame
+	
+	half3 cHiFreq = sqrt(abs( cBlur.rgb - cM.rgb));
+	OUT.Color.rgb = sqrt( lerp(cAcc, cM, saturate(rcp(lerp(fMaxFramesL, fMaxFramesH, cHiFreq))) ) );
+	OUT.Color.a = 1-saturate(rcp(lerp(fMaxFramesL, fMaxFramesH, cHiFreq))); // debug output
+
+#else
+	// New SMAA 2TX Mode
+	
+	// Curr frame and neighbor texels
+	half3 cM	= tex2D(_tex4, tc);
+	half3 cTL = tex2D(_tex4, tc + texel * float2(-1.0f, -1.0f));
+	half3 cTR = tex2D(_tex4, tc + texel * float2( 1.0f, -1.0f));
+	half3 cBL = tex2D(_tex4, tc + texel * float2(-1.0f,  1.0f));
+	half3 cBR = tex2D(_tex4, tc + texel * float2( 1.0f,  1.0f));
+	
+	half3 cMin = min(min(min(min(cTL, cTR), cBL), cBR), cM);
+	half3 cMax = max(max(max(max(cTL, cTR), cBL), cBR), cM);
+	
+	half3 cHistory = tex2D(_tex5, tc + v);	
+	
+	bool offscreen = max( abs((tc.x + v.x)*2 - 1), abs((tc.y + v.y)*2 - 1) ) >= 1.0;
+	float clipLength = 1;
+	
+	[branch] if (!offscreen)
+	{
+		clipLength = ClipHistory(cHistory, cM, cMin, cMax);
+	
+		// Try to identify subpixel changes
+		half3 prevTL = tex2Dlod( _tex5, float4(tc + v + texel * float2(-1.0f, -1.0f), 0, 0) );
+		half3 prevTR = tex2Dlod( _tex5, float4(tc + v + texel * float2( 1.0f, -1.0f), 0, 0) );
+		half3 prevBL = tex2Dlod( _tex5, float4(tc + v + texel * float2(-1.0f,  1.0f), 0, 0) );
+		half3 prevBR = tex2Dlod( _tex5, float4(tc + v + texel * float2( 1.0f,  1.0f), 0, 0) );
+		
+		float neighborDiff = length(clamp(prevTL, cMin, cMax) - prevTL) + length(clamp(prevTR, cMin, cMax) - prevTR) +
+												 length(clamp(prevBL, cMin, cMax) - prevBL) + length(clamp(prevBR, cMin, cMax) - prevBR);
+		
+		if (neighborDiff < 0.02) clipLength = 0;
+	}
+	
+	float blendAmount = saturate( length(cHistory - cM) * 10 );
+	
+	// Apply color clipping
+	cHistory = lerp(cHistory, cM, clipLength);
+	
+	// Exponential moving average of current frame and history
+	const float MaxFramesL = 2.5, MaxFramesH = 5;  // If too high, 8 bit sRGB precision not enough to converge
+	OUT.Color.rgb = lerp( cHistory, cM, saturate(rcp(lerp(MaxFramesL, MaxFramesH, blendAmount))) );
+	
+	// Reencode in sRGB
+	OUT.Color.xyz = (OUT.Color.xyz < 0.0031308) ? 12.92 * OUT.Color.xyz : 1.055 * pow(OUT.Color.xyz, 1.0 / 2.4) - float3(0.055, 0.055, 0.055);
+#endif
+
+  return OUT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// SMAA
+
+// medium quality
+#define SMAA_THRESHOLD 0.1
+#define SMAA_MAX_SEARCH_STEPS 8
+#define SMAA_MAX_SEARCH_STEPS_DIAG 0
+#define SMAA_CORNER_ROUNDING 0
+
+// high quality
+//#define SMAA_THRESHOLD 0.1
+//#define SMAA_MAX_SEARCH_STEPS 16
+//#define SMAA_MAX_SEARCH_STEPS_DIAG 8
+//#define SMAA_CORNER_ROUNDING 25
+
+#define SMAA_AREATEX_MAX_DISTANCE 16
+#define SMAA_AREATEX_MAX_DISTANCE_DIAG 20
+
+#define SMAA_AREATEX_SUBTEX_SIZE 0.1428571
+
+#define SCALE_PIXELSIZE 2
+
+pixout LumaEdgeDetectionSMAA_PS(vtxOutAA IN)
+{
+  pixout OUT = (pixout) 0;
+
+	PS_ScreenSize.zw *= SCALE_PIXELSIZE * PS_HPosScale.xy;
+
+  float2 threshold = SMAA_THRESHOLD;
+
+  // Calculate lumas:
+  float3 weights = float3(0.2126, 0.7152, 0.0722);
+  float L = dot(tex2D(_tex0, IN.baseTC.xy).rgb, weights);
+  float Lleft = dot(tex2D(_tex0, IN.baseTC.xy + float2(-1, 0) * PS_ScreenSize.zw).rgb, weights);
+  float Ltop  = dot(tex2D(_tex0, IN.baseTC.xy + float2( 0, -1) * PS_ScreenSize.zw).rgb, weights);
+
+  // We do the usual threshold:
+  float4 delta;
+  delta.xy = abs(L.xx - float2(Lleft, Ltop));
+  float2 edges = step(threshold, delta.xy);
+
+  // Then discard if there is no edge:
+  if (dot(edges, 1.0) == 0.0)
+      discard;// this supported on cg ? else clip(-1)
+
+  // Calculate right and bottom deltas:
+  float Lright = dot(tex2D(_tex0, IN.baseTC.xy + float2(1, 0) * PS_ScreenSize.zw).rgb, weights);
+  float Lbottom  = dot(tex2D(_tex0, IN.baseTC.xy + float2(0, 1) * PS_ScreenSize.zw).rgb, weights);
+  delta.zw = abs(L.xx - float2(Lright, Lbottom));
+
+  // Calculate the maximum delta in the direct neighborhood:
+  float maxDelta = max(max(max(delta.x, delta.y), delta.z), delta.w);
+
+  // Calculate left-left and top-top deltas:
+  float Lleftleft = dot(tex2D(_tex0, IN.baseTC.xy + float2(-2, 0) * PS_ScreenSize.zw).rgb, weights);
+  float Ltoptop = dot(tex2D(_tex0, IN.baseTC.xy + float2(0, -2) * PS_ScreenSize.zw).rgb, weights);
+  delta.zw = abs(float2(Lleft, Ltop) - float2(Lleftleft, Ltoptop));
+
+  // Calculate the final maximum delta:
+  maxDelta = max(max(maxDelta, delta.z), delta.w);
+  edges.xy *= step(0.5 * maxDelta, delta.xy);
+
+	OUT.Color = float4(edges, 0.0, 0.0);
+
+	return OUT;
+}
+
+// Diagonal Search Functions
+
+#if SMAA_MAX_SEARCH_STEPS_DIAG || SMAA_FORCE_DIAGONAL_DETECTION
+
+// These functions allows to perform diagonal pattern searches. 
+float SMAASearchDiag1(sampler2D edgesTex, float2 texcoord, float2 dir, float c)
+{
+  texcoord += dir * PS_ScreenSize.zw;
+  float2 e = 0;
+  float i = 0;
+  for (i = 0; i < SMAA_MAX_SEARCH_STEPS_DIAG; i++) 
+	{
+      e.rg = tex2Dlod(edgesTex, float4(texcoord, 0, 0) ).rg;
+      [flatten] if (dot(e, 1.0) < 1.9) break;
+      texcoord += dir * PS_ScreenSize.zw;
+  }
+  return i + float(e.g > 0.9) * c;
+}
+
+float SMAASearchDiag2(sampler2D edgesTex, float2 texcoord, float2 dir, float c) 
+{
+  texcoord += dir * PS_ScreenSize.zw;
+  float2 e = 0;
+  float i = 0;
+  for (i = 0; i < SMAA_MAX_SEARCH_STEPS_DIAG; i++) 
+	{
+      e.g = tex2Dlod(edgesTex, float4(texcoord, 0, 0)).g;
+      e.r = tex2Dlod(edgesTex, float4(texcoord + float2(1, 0)* PS_ScreenSize.zw, 0, 0)).r;
+      [flatten] if (dot(e, 1.0) < 1.9) break;
+      texcoord += dir * PS_ScreenSize.zw;
+  }
+  return i + float(e.g > 0.9) * c;
+}
+ 
+float2 SMAAAreaDiag(sampler2D areaTex, float2 distance, float2 e, float offset) 
+{
+  float2 texcoord = SMAA_AREATEX_MAX_DISTANCE_DIAG * e + distance;
+
+	float2 SMAA_AREATEX_PIXEL_SIZE = 1.0 / float2(160.0, 560.0);
+
+  // We do a scale and bias for mapping to texel space:
+  texcoord = SMAA_AREATEX_PIXEL_SIZE * texcoord + (0.5 * SMAA_AREATEX_PIXEL_SIZE);
+
+  // Diagonal areas are on the second half of the texture:
+  texcoord.x += 0.5;
+
+  // Move to proper place, according to the subpixel offset:
+  texcoord.y += SMAA_AREATEX_SUBTEX_SIZE * offset;
+
+  return tex2Dlod(areaTex, float4(texcoord, 0, 0) ).rg;
+}
+
+//This searches for diagonal patterns and returns the corresponding weights.
+float2 SMAACalculateDiagWeights(sampler2D edgesTex, sampler2D areaTex, float2 texcoord, float2 e, half4 subsampleIndices) 
+{
+    float2 weights = 0.0;
+
+    float2 d;
+    d.x = e.r? SMAASearchDiag1(edgesTex, texcoord, float2(-1.0,  1.0), 1.0) : 0.0;
+    d.y = SMAASearchDiag1(edgesTex, texcoord, float2(1.0, -1.0), 0.0);
+
+    [branch]
+    if (d.r + d.g > 2)  // d.r + d.g + 1 > 3
+		{ 
+        float4 coords = mad(float4(-d.r, d.r, d.g, -d.g), PS_ScreenSize.zwzw, texcoord.xyxy);
+
+        float4 c;
+        c.x = tex2Dlod(edgesTex, float4(coords.xy + float2(-1,  0) * PS_ScreenSize.zw, 0, 0) ).g;
+        c.y = tex2Dlod(edgesTex, float4(coords.xy + float2( 0,  0) * PS_ScreenSize.zw, 0, 0) ).r;
+        c.z = tex2Dlod(edgesTex, float4(coords.zw + float2( 1,  0) * PS_ScreenSize.zw, 0, 0) ).g;
+        c.w = tex2Dlod(edgesTex, float4(coords.zw + float2( 1, -1) * PS_ScreenSize.zw, 0, 0) ).r;
+        float2 e = 2.0 * c.xz + c.yw;
+        e *= step(d.rg, SMAA_MAX_SEARCH_STEPS_DIAG - 1);
+
+        weights += SMAAAreaDiag(areaTex, d, e, subsampleIndices.z);
+    }
+
+    d.x = SMAASearchDiag2(edgesTex, texcoord, float2(-1.0, -1.0), 0.0);
+    float right = tex2Dlod(edgesTex, float4(texcoord + float2(1, 0) * PS_ScreenSize.zw, 0, 0) ).r;
+    d.y = right? SMAASearchDiag2(edgesTex, texcoord, float2(1.0, 1.0), 1.0) : 0.0;
+
+    [branch]
+    if (d.r + d.g > 2)  // d.r + d.g + 1 > 3
+		{ 
+        float4 coords = mad(float4(-d.r, -d.r, d.g, d.g), PS_ScreenSize.zwzw, texcoord.xyxy);
+
+        float4 c;
+        c.x  = tex2Dlod(edgesTex, float4(coords.xy + float2(-1,  0)* PS_ScreenSize.zw, 0, 0) ).g;
+        c.y  = tex2Dlod(edgesTex, float4(coords.xy + float2( 0, -1)* PS_ScreenSize.zw, 0, 0) ).r;
+        c.zw = tex2Dlod(edgesTex, float4(coords.zw + float2( 1,  0)* PS_ScreenSize.zw, 0, 0) ).gr;
+        float2 e = 2.0 * c.xz + c.yw;
+        e *= step(d.rg, SMAA_MAX_SEARCH_STEPS_DIAG - 1);
+
+        weights += SMAAAreaDiag(areaTex, d, e, subsampleIndices.w).gr;
+    }
+
+    return weights;
+}
+
+#endif
+
+// Horizontal/Vertical Search Functions
+float SMAASearchLength(sampler2D searchTex, float2 e, float bias, float scale) 
+{
+  e.r = bias + e.r * scale;
+  return 255.0 * tex2Dlod(searchTex, float4(e, 0, 0)).r;//r;
+}
+
+float SMAASearchXLeft(sampler2D edgesTex, sampler2D searchTex, float2 texcoord, float end) 
+{   
+  float2 e = float2(0.0, 1.0);
+  while (texcoord.x > end && 
+         e.g > 0.8281 && // Is there some edge not activated?
+         e.r == 0.0) { // Or is there a crossing edge that breaks the line?
+      e = tex2Dlod(edgesTex, float4(texcoord, 0, 0)).rg;
+      texcoord -= float2(2.0, 0.0) * PS_ScreenSize.zw;
+  }
+
+  // We correct the previous (-0.25, -0.125) offset we applied:
+  texcoord.x += 0.25 * PS_ScreenSize.z;
+
+  // The searches are bias by 1, so adjust the coords accordingly:
+  texcoord.x += PS_ScreenSize.z;
+
+  // Disambiguate the length added by the last step:
+  texcoord.x += 2.0 * PS_ScreenSize.z; // Undo last step
+  texcoord.x -= PS_ScreenSize.z * SMAASearchLength(searchTex, e, 0.0, 0.5);
+
+  return texcoord.x;
+}
+
+float SMAASearchXRight(sampler2D edgesTex, sampler2D searchTex, float2 texcoord, float end) 
+{
+	//PS_ScreenSize.zw *= SCALE_PIXELSIZE;
+
+  float2 e = float2(0.0, 1.0);
+  while (texcoord.x < end && 
+         e.g > 0.8281 && // Is there some edge not activated?
+         e.r == 0.0) { // Or is there a crossing edge that breaks the line?
+      e = tex2Dlod(edgesTex, float4(texcoord, 0, 0)).rg;
+      texcoord += float2(2.0, 0.0) * PS_ScreenSize.zw;
+  }
+
+  texcoord.x -= 0.25 * PS_ScreenSize.z;
+  texcoord.x -= PS_ScreenSize.z;
+  texcoord.x -= 2.0 * PS_ScreenSize.z;
+  texcoord.x += PS_ScreenSize.z * SMAASearchLength(searchTex, e, 0.5, 0.5);
+  return texcoord.x;
+}
+
+float SMAASearchYUp(sampler2D edgesTex, sampler2D searchTex, float2 texcoord, float end)
+{
+  float2 e = float2(1.0, 0.0);
+  while (texcoord.y > end && 
+         e.r > 0.8281 && // Is there some edge not activated?
+         e.g == 0.0) { // Or is there a crossing edge that breaks the line?
+      e = tex2Dlod(edgesTex, float4(texcoord, 0, 0)).rg;
+      texcoord -= float2(0.0, 2.0) * PS_ScreenSize.zw;
+  }
+
+  texcoord.y += 0.25 * PS_ScreenSize.w;
+  texcoord.y += PS_ScreenSize.w;
+  texcoord.y += 2.0 * PS_ScreenSize.w;
+  texcoord.y -= PS_ScreenSize.w * SMAASearchLength(searchTex, e.gr, 0.0, 0.5);
+  return texcoord.y;
+}
+
+float SMAASearchYDown(sampler2D edgesTex, sampler2D searchTex, float2 texcoord, float end) 
+{
+  float2 e = float2(1.0, 0.0);
+  while (texcoord.y < end && 
+         e.r > 0.8281 && // Is there some edge not activated?
+         e.g == 0.0) { // Or is there a crossing edge that breaks the line?
+      e = tex2Dlod(edgesTex, float4(texcoord, 0, 0)).rg;
+      texcoord += float2(0.0, 2.0) * PS_ScreenSize.zw;
+  }
+  
+  texcoord.y -= 0.25 * PS_ScreenSize.w;
+  texcoord.y -= PS_ScreenSize.w;
+  texcoord.y -= 2.0 * PS_ScreenSize.w;
+  texcoord.y += PS_ScreenSize.w * SMAASearchLength(searchTex, e.gr, 0.5, 0.5);
+  return texcoord.y;
+}
+
+//Ok, we have the distance and both crossing edges. So, what are the areas
+//at each side of current edge? 
+float2 SMAAArea(sampler2D areaTex, float2 distance, float e1, float e2, float offset) 
+{
+  // Rounding prevents precision errors of bilinear filtering:
+  float2 texcoord = SMAA_AREATEX_MAX_DISTANCE * round(4.0 * float2(e1, e2)) + distance;
+  
+	float2 SMAA_AREATEX_PIXEL_SIZE = 1.0 / float2(160.0, 560.0);
+
+  // We do a scale and bias for mapping to texel space:
+  texcoord = SMAA_AREATEX_PIXEL_SIZE * texcoord + (0.5 * SMAA_AREATEX_PIXEL_SIZE);
+
+  // Move to proper place, according to the subpixel offset:
+  texcoord.y += SMAA_AREATEX_SUBTEX_SIZE * offset;
+
+  return tex2Dlod(areaTex, float4(texcoord, 0, 0)).rg;
+}
+
+// Corner Detection Functions
+void SMAADetectHorizontalCornerPattern(sampler2D edgesTex, inout float2 weights, float2 texcoord, float2 d) 
+{
+#if SMAA_CORNER_ROUNDING || SMAA_FORCE_CORNER_DETECTION
+
+    float4 coords = mad(float4(d.x, 0.0, d.y, 0.0),
+                        PS_ScreenSize.zwzw, texcoord.xyxy);
+    float2 e;
+    e.r = tex2Dlod(edgesTex, float4(coords.xy + float2(0.0,  1.0) * PS_ScreenSize.zw, 0, 0) ).r;
+    bool left = abs(d.x) < abs(d.y);
+    e.g = tex2Dlod(edgesTex, float4(coords.xy + float2(0.0, -2.0)* PS_ScreenSize.zw, 0, 0) ).r;
+    if (left) 
+			weights *= saturate(SMAA_CORNER_ROUNDING / 100.0 + 1.0 - e);
+
+    e.r = tex2Dlod(edgesTex, float4(coords.zw + float2(1.0,  1.0)* PS_ScreenSize.zw, 0, 0) ).r;
+    e.g = tex2Dlod(edgesTex, float4(coords.zw + float2(1.0, -2.0)* PS_ScreenSize.zw, 0, 0) ).r;
+    if (!left) 
+			weights *= saturate(SMAA_CORNER_ROUNDING / 100.0 + 1.0 - e);
+
+#endif
+}
+
+void SMAADetectVerticalCornerPattern(sampler2D edgesTex, inout float2 weights, float2 texcoord, float2 d) 
+{
+#if SMAA_CORNER_ROUNDING || SMAA_FORCE_CORNER_DETECTION
+
+    float4 coords = mad(float4(0.0, d.x, 0.0, d.y),
+                        PS_ScreenSize.zwzw, texcoord.xyxy);
+    float2 e;
+    e.r = tex2Dlod(edgesTex, float4(coords.xy+float2( 1.0, 0.0)*PS_ScreenSize.zw, 0, 0) ).g;
+    bool left = abs(d.x) < abs(d.y);
+    e.g = tex2Dlod(edgesTex, float4(coords.xy+float2(-2.0, 0.0)*PS_ScreenSize.zw, 0, 0) ).g;
+    if (left) 
+			weights *= saturate(SMAA_CORNER_ROUNDING / 100.0 + 1.0 - e);
+
+    e.r = tex2Dlod(edgesTex, float4(coords.zw+float2( 1.0, 1.0)*PS_ScreenSize.zw, 0, 0) ).g;
+    e.g = tex2Dlod(edgesTex, float4(coords.zw+float2(-2.0, 1.0)*PS_ScreenSize.zw, 0, 0) ).g;
+    if (!left) 
+			weights *= saturate(SMAA_CORNER_ROUNDING / 100.0 + 1.0 - e);
+
+#endif
+}
+
+// Second pass: Blending Weight Calculation
+pixout BlendWeightSMAA_PS(vtxOutAA IN)
+{
+	pixout OUT = (pixout) 0;
+	// tex0 = edgesTex
+	// tex1 = areaTex
+	// tex2 = searchTex
+
+  float4 weights = 0.0;
+	
+	// todo prebake on vs
+	PS_ScreenSize.zw *= SCALE_PIXELSIZE;
+
+	float2 pixcoord = IN.baseTC.xy /PS_ScreenSize.zw;	
+	float4 offset[3] =
+	{
+		float4(IN.baseTC.xyxy + float4(-0.25, -0.125,  1.25, -0.125) * PS_ScreenSize.zwzw),
+		float4(IN.baseTC.xyxy + float4(-0.125, -0.25, -0.125,  1.25) * PS_ScreenSize.zwzw),
+		float4(IN.baseTC.xyxy)
+	};
+
+	offset[2] = float4(offset[0].xz, offset[1].yw) + float4(-2, 2, -2, 2) * PS_ScreenSize.zzww * SMAA_MAX_SEARCH_STEPS;
+
+  float2 e = tex2D(_tex0, IN.baseTC.xy).rg;
+	const float4 vSubSampleIndices = 0;
+
+  [branch]
+  if (e.g > 0.0h) // Edge at north
+	{ 
+      #if SMAA_MAX_SEARCH_STEPS_DIAG || SMAA_FORCE_DIAGONAL_DETECTION
+      weights.rg = SMAACalculateDiagWeights(_tex0, _tex1, IN.baseTC.xy, e, vSubSampleIndices);
+
+      // We give priority to diagonals, so if we find a diagonal we skip 
+      // horizontal/vertical processing.
+      [branch]
+      if (dot(weights.rg, 1.0) == 0.0) {
+
+      #endif
+
+      float2 d;
+
+      // Find the distance to the left:
+      float2 coords;
+      coords.x = SMAASearchXLeft(_tex0, _tex2, offset[0].xy, offset[2].x);
+      coords.y = offset[1].y;
+      d.x = coords.x;
+
+      // Now fetch the left crossing edges, two at a time using bilinear
+      // filtering. Sampling at -0.25 (see @CROSSING_OFFSET) enables to
+      // discern what value each edge has:
+      float e1 = tex2Dlod(_tex0, float4(coords, 0, 0)).r; //IN.baseTC.xy
+
+      // Find the distance to the right:
+      coords.x = SMAASearchXRight(_tex0, _tex2, offset[0].zw, offset[2].y);
+      d.y = coords.x; //IN.baseTC.x;
+
+      // We want the distances to be in pixel units (doing this here allow to
+      // better interleave arithmetic and memory accesses):
+      d = d / PS_ScreenSize.z - pixcoord.x;
+
+      // SMAAArea below needs a sqrt, as the areas texture is compressed 
+      // quadratically:
+      float2 sqrt_d = sqrt(abs(d));
+
+      // Fetch the right crossing edges:
+      float e2 = tex2Dlod(_tex0, float4(coords + float2(1, 0) * PS_ScreenSize.zw, 0, 0)).r;; //IN.baseTC.xy
+
+      // Ok, we know how this pattern looks like, now it is time for getting
+      // the actual area:
+      weights.rg = SMAAArea(_tex1, sqrt_d, e1, e2, vSubSampleIndices.y);
+
+      // Fix corners:
+      SMAADetectHorizontalCornerPattern(_tex0, weights.rg, IN.baseTC.xy, d); //texcoord
+
+      #if SMAA_MAX_SEARCH_STEPS_DIAG || SMAA_FORCE_DIAGONAL_DETECTION
+
+      } 
+			else
+			{
+          e.r = 0.0; // Skip vertical processing.
+			}
+
+      #endif
+  }
+
+  [branch]
+  if (e.r > 0.0f)		// Edge at west
+	{ 
+      float2 d;
+
+      // Find the distance to the top:
+      float2 coords;
+      coords.y = SMAASearchYUp(_tex0, _tex2, offset[1].xy, offset[2].z);
+      coords.x = offset[0].x;
+      d.x = coords.y;
+
+      // Fetch the top crossing edges:
+      float e1 = tex2Dlod(_tex0, float4(coords, 0, 0)).g;
+
+      // Find the distance to the bottom:
+      coords.y = SMAASearchYDown(_tex0, _tex2, offset[1].zw, offset[2].w);
+      d.y = coords.y;
+
+      // We want the distances to be in pixel units:
+      d = d / PS_ScreenSize.w - pixcoord.y;
+
+      // SMAAArea below needs a sqrt, as the areas texture is compressed 
+      // quadratically:
+      float2 sqrt_d = sqrt(abs(d));
+
+      // Fetch the bottom crossing edges:
+      float e2 = tex2Dlod(_tex0, float4(coords + float2(0, 1)*PS_ScreenSize.zw, 0, 0)).g;
+
+      // Get the area for this direction:
+      weights.ba = SMAAArea(_tex1, sqrt_d, e1, e2, vSubSampleIndices.x);
+
+      // Fix corners:
+      SMAADetectVerticalCornerPattern(_tex0, weights.ba, IN.baseTC.xy, d);
+  }
+
+	OUT.Color = weights;//*10;
+
+  return OUT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pixout NeighborhoodBlendingSMAA_PS(vtxOutAA IN)
+{
+	pixout OUT = (pixout) 0;
+
+	PS_ScreenSize.zw *= SCALE_PIXELSIZE;;
+
+  // Fetch the blending weights for current pixel:
+  float4 topLeft = tex2D(_tex0, IN.baseTC.xy);
+  float bottom = tex2D(_tex0, IN.baseTC.xy + float2(0, 1) * PS_ScreenSize.zw).g;
+  float right = tex2D(_tex0,  IN.baseTC.xy + float2(1, 0) * PS_ScreenSize.zw).a;
+  float4 a = float4(topLeft.r, bottom, topLeft.b, right);
+
+  [branch]
+  if (dot(a, 1.0) < 1e-5)
+	{
+		OUT.Color = tex2Dlod(_tex1, float4(IN.baseTC.xy, 0, 0));
+    return OUT;
+	}
+  else 
+	{
+      float4 color = 0.0;
+
+      // Up to 4 lines can be crossing a pixel (one through each edge). We
+      // favor blending by choosing the line with the maximum weight for each
+      // direction:
+      float2 offset;
+      offset.x = a.a > a.b? a.a : -a.b; // left vs. right 
+      offset.y = a.g > a.r? a.g : -a.r; // top vs. bottom
+
+      // Then we go in the direction that has the maximum weight:
+      if (abs(offset.x) > abs(offset.y)) // horizontal vs. vertical
+          offset.y = 0.0;
+      else
+          offset.x = 0.0;
+
+      // Fetch the opposite color and lerp by hand:
+      float4 C = tex2Dlod(_tex1, float4(IN.baseTC.xy, 0, 0));
+      IN.baseTC.xy += sign(offset) * PS_ScreenSize.zw;
+      float4 Cop = tex2Dlod(_tex1, float4(IN.baseTC.xy, 0, 0));
+			
+			// convert to linear
+			C *= C;
+			Cop *= Cop;
+
+      float s = abs(offset.x) > abs(offset.y)? abs(offset.x) : abs(offset.y);
+      OUT.Color = lerp(C, Cop, s);
+
+			// convert back to gamma 2.0
+			OUT.Color = sqrt( OUT.Color );
+
+			return OUT;
+  }
+
+	return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique PostAA
+{
+  pass p0
+  {
+    VertexShader = PostAA_VS() PostAA_VS;
+    PixelShader = PostAA_PS() PostAA_PS;
+    CullMode = None;        
+  }
+}
+
+// SMAA
+
+technique LumaEdgeDetectionSMAA
+{
+  pass p0
+  {
+    VertexShader = PostAA_VS() PostAA_VS;
+    PixelShader = LumaEdgeDetectionSMAA_PS() PostAA_PS;
+    CullMode = None;        
+  }
+}
+
+technique BlendWeightSMAA
+{
+  pass p0
+  {
+    VertexShader = PostAA_VS() PostAA_VS;
+    PixelShader = BlendWeightSMAA_PS() PostAA_PS;
+    CullMode = None;        
+  }
+}
+
+technique NeighborhoodBlendingSMAA
+{
+  pass p0
+  {
+    VertexShader = PostAA_VS() PostAA_VS;
+    PixelShader = NeighborhoodBlendingSMAA_PS() PostAA_PS;
+    CullMode = None;        
+  }
+}
+
+//////////////////////// 
+// Debug modes for MSAA
+
+pixout MsaaDebugPS(vtxOut IN)
+{
+  pixout OUT = (pixout) 0;
+  half4 c0 = tex2D(_tex0, IN.baseTC.xy).x; 
+#if !%_RT_SAMPLE0
+	clip(c0.x-0.5);
+#endif
+	OUT.Color = half4(c0.x, 0, 0, 1);
+  return OUT;
+}
+
+technique MsaaDebug
+{
+  pass p0
+  {
+    VertexShader = FsQuadVS() PostAA_VS;
+    PixelShader = MsaaDebugPS() PostAA_PS;
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+sampler3D filmGrainMap : register(s6);
+
+float4 HDRParams;
+float4 HDREyeAdaptation;
+float Time = {PB_time};
+
+// Grain technique was moved out of HDR post process, since TAA filters pixel sized noise out
+void ApplyFilmGrain(inout half4 cScene, in half3 cColor, float4 baseTC)
+{
+	const float fSceneLum = tex2D(_tex7, baseTC).x;
+	const half fSceneKey = 1.03h - 2.0h / (2.0h + log2(fSceneLum + 1.0));
+	const half fExposure = clamp(fSceneKey / fSceneLum, HDREyeAdaptation.y, HDREyeAdaptation.z);
+
+	// Film grain simulation
+	half fFilmGrain = tex3D(filmGrainMap, float4(baseTC.xy * 4.0f * float2(PS_ScreenSize.x / PS_ScreenSize.y, 1.0f), Time * 3, 0)).x;
+	fFilmGrain = lerp(0.5h, fFilmGrain, HDRParams.w);
+	fFilmGrain = lerp(fFilmGrain, 0.5h, sqrt(fExposure));
+
+	// Overlay blending
+	cScene.xyz = step(0.5, cColor.xyz);
+	cScene.xyz = lerp((cColor.xyz * fFilmGrain * 2.h), (1.h - (2.h * (1.h - cColor.xyz) * (1.h - fFilmGrain))), cScene.xyz);
+}
+
+pixout PostAAComposites_PS(vtxOutAA IN)
+{
+  pixout OUT = (pixout) 0;
+
+	OUT.Color = tex2D(_tex0, IN.baseTC);
+	
+#if %_RT_SAMPLE2	
+	// Apply sharpening
+	half3 cTL = sqr(tex2D(_tex0, IN.baseTC + PS_ScreenSize.zw * 2 * float2(-0.5, -0.5)));
+	half3 cTR = sqr(tex2D(_tex0, IN.baseTC + PS_ScreenSize.zw * 2 * float2( 0.5, -0.5)));
+	half3 cBL = sqr(tex2D(_tex0, IN.baseTC + PS_ScreenSize.zw * 2 * float2(-0.5,  0.5)));
+	half3 cBR = sqr(tex2D(_tex0, IN.baseTC + PS_ScreenSize.zw * 2 * float2( 0.5,  0.5)));
+	half3 cFiltered = (cTL + cTR + cBL + cBR) * 0.25h;
+	OUT.Color.rgb = sqrt( saturate(lerp( cFiltered, OUT.Color.rgb * OUT.Color.rgb, vParams.x )) );
+#endif
+	
+	ApplyFilmGrain(OUT.Color, OUT.Color, IN.baseTC);
+
+	// Apply lens composite
+#if %_RT_SAMPLE1
+	half4 cLensOpticsComposite = tex2D(_tex5, IN.baseTC.xy);
+	#if %_RT_SAMPLE3
+		half2 vTexelSize = 2.0h * PS_ScreenSize.zw * vLensOpticsParams.w;
+		cLensOpticsComposite.r = tex2D(_tex5, (IN.baseTC.xy-0.5) * (1 + vTexelSize)+ 0.5).r;
+	#endif
+		OUT.Color.rgb += cLensOpticsComposite * (1-OUT.Color.rgb);// should blend in linear space, but increases cost further
+#endif
+
+	// Range rescaling
+#if %_RT_SAMPLE4
+	OUT.Color.xyz = (16.0/255.0) + OUT.Color.xyz * ((235.0 - 16.0) / 255.0);
+#endif
+
+	return OUT;
+}
+
+technique PostAAComposites
+{
+  pass p0
+  {
+    VertexShader = PostAA_VS() PostAA_VS;
+    PixelShader = PostAAComposites_PS() PostAA_PS;
+    CullMode = None;        
+  }
+}
+
+pixout DebugPostAA_PS(vtxOutAA IN)
+{
+  pixout OUT = (pixout) 0;
+	vDebugParams.xy = clamp(vDebugParams.xy, 0, PS_ScreenSize.xy);
+	OUT.Color = tex2D(_tex0, IN.WPos.xy * PS_ScreenSize.zw * 2.0); 
+	
+	const float2 tcZoomed = ((IN.WPos.xy - vDebugParams.xy) * rcp(vDebugParams.w) + vDebugParams.xy) * PS_ScreenSize.zw * 2.0;	
+	const float2 vArea = (IN.WPos.xy-(vDebugParams.xy - PS_ScreenSize.xy * 0.25 ));	
+	const float2 vZoomedArea = (vArea > 0 && vArea < PS_ScreenSize.xy * 0.5) ? float2(1,1) : float2(0,0);
+	const float2 vBorder = (((vArea.xy >= 0 && vArea.xy < 1) || (vArea.xy >= PS_ScreenSize.xy*0.5-1 && vArea.xy < PS_ScreenSize.xy*0.5)) && vArea.yx > 0 && vArea.yx < PS_ScreenSize.yx*0.5) ? float2(1,1) : float2(0,0);
+
+	OUT.Color = lerp(OUT.Color, tex2D(_tex0, tcZoomed), min(vZoomedArea.x, vZoomedArea.y));		
+	OUT.Color = max(OUT.Color, max(vBorder.x, vBorder.y));
+
+  return OUT;
+}
+
+technique DebugPostAA
+{
+  pass p0
+  {
+    VertexShader = PostAA_VS() PostAA_VS;
+    PixelShader = DebugPostAA_PS() PostAA_PS;
+    CullMode = None;        
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pixout UpscaleImagePS(vtxOut IN)
+{
+	// vParams.xy: source width, source height
+	
+	pixout OUT = (pixout) 0;
+	
+	float2 texCoords = IN.baseTC.xy * vParams.xy + 0.5;
+	float2 intPart = floor(texCoords);
+	float2 f = texCoords - intPart;
+	
+	// Apply smoothstep function to get a mixture between nearest neighbor and linear filtering
+	f = f*f * (3 - 2*f);
+
+	texCoords = intPart + f;
+	texCoords = (texCoords - 0.5) / vParams.xy;
+	
+	// Read linearized texture
+	OUT.Color = tex2D(_tex0, texCoords);
+	
+	// Reencode color in sRGB space
+	OUT.Color.xyz = (OUT.Color.xyz < 0.0031308) ? 12.92 * OUT.Color.xyz : 1.055 * pow(OUT.Color.xyz, 1.0 / 2.4) - float3(0.055, 0.055, 0.055);
+	
+  return OUT;
+}
+
+technique UpscaleImage
+{
+  pass p0
+  {
+    VertexShader = BaseVS();
+    PixelShader = UpscaleImagePS() PostAA_PS;
+  }
+}

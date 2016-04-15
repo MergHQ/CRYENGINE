@@ -1,0 +1,493 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+//--------------------------------------------------------------------------------------------------  		   
+// Common Shadow map functions
+//--------------------------------------------------------------------------------------------------
+
+// Bit mask for forward shadows. Needs to match up with engine side
+#define FORWARD_SHADOWS_CASCADE_0           0x1
+#define FORWARD_SHADOWS_CASCADE_1           0x2
+#define FORWARD_SHADOWS_CASCADE_2           0x4
+#define FORWARD_SHADOWS_CASCADE_3           0x8
+
+#define FORWARD_SHADOWS_CASCADE0_SINGLE_TAP 0x10
+#define FORWARD_SHADOWS_CLOUD_SHADOWS       0x20
+
+//ShadowGen parameters
+//PSMWARP_MATRIX //instance parameter
+float4x4 warpPsmMatrix    : PB_TempMatr1[0];
+float4 LPos               : PI_OSCameraPos < vsregister = c6; >;
+float4 vAdaption	: PB_TempData[13];
+
+//--------------------------------------------------------------------------------------------------
+//Shadow pass
+
+float4 vInvShadowMapSize : PB_TempData[9];
+
+float4x4 TexGen0          : PB_TempMatr0[0] < vsregister = VS_REG_PB_9; >;
+float4x4 TexGen1          : PB_TempMatr1[0] < vsregister = VS_REG_PB_0; >;
+float4x4 TexGen2          : PB_TempMatr2[0];
+float4x4 TexGen3          : PB_TempMatr3[0];
+
+float4 vCamPos						: PB_TempData[0];
+
+float4 LSPos              : PB_TempData[5];
+
+float4 fShadowFadingDist : PB_TempData[8]; //= 120;
+
+// defines how hard depth test is (default is 100 - hard test)
+float4 fDepthTestBias			: PB_TempData[1];
+float4 fOneDivFarDist  		: PB_TempData[2];
+float4 fDepthShift				: PB_TempData[3];
+float4 fKernelRadius      : PB_TempData[4];
+
+float4 vGSMOffsets01        : PB_TempData[6];		// (lod[0].offsetx,lod[0].offsety,lod[1].offsetx,lod[1].offsety)
+float4 vGSMOffsets23        : PB_TempData[7];		// (lod[2].offsetx,lod[2].offsety,lod[3].offsetx,lod[3].offsety)
+
+#define MAX_SHADOW_SAMPLES_NUM 16
+#define HALF_MAX_SHADOW_SAMPLES_NUM 8
+
+float4 irreg_kernel_cube[MAX_SHADOW_SAMPLES_NUM]	: PB_IrregKernel;
+float4 regular_kernel[5]		: PB_RegularKernel;
+
+float4 irreg_kernel_2d[HALF_MAX_SHADOW_SAMPLES_NUM]	: PB_IrregKernel;
+
+float4 CloudShadowAnimParams	: PB_CloudShadowAnimParams;
+float4 CloudShadowParams			: PB_CloudShadowParams;
+	
+SamplerState SAMPLER_STATE_depthMapSamplerLinear : SS_Shadow0
+{
+    // sampler state
+    Filter = MIN_MAG_LINEAR_MIP_POINT;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+
+Texture2D<float4> depthMapSamplerLinear : TS_Shadow0;
+
+//single shadow maps
+SamplerComparisonState SAMPLER_STATE_depthMapSampler : SS_Shadow2
+{
+    Filter = COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+
+Texture2D<float4> depthMapSampler0 : TS_Shadow0;
+Texture2D<float4> depthMapSampler1 : TS_Shadow2;
+Texture2D<float4> depthMapSampler2 : TS_Shadow4;
+Texture2D<float4> depthMapSampler3 : TS_Shadow6;
+
+sampler2D sRotSampler = sampler_state
+{
+  Texture = EngineAssets/Textures/rotrandom.dds;
+  MinFilter = POINT;
+  MagFilter = POINT;
+  MipFilter = POINT; 
+  AddressU = Wrap;
+  AddressV = Wrap;	
+};
+
+//prefarable state
+/*  Texture = EngineAssets/Textures/rotrandom.dds;
+	//enable Point filtermode for MinFilter
+  MinFilter = POINT;
+  MagFilter = LINEAR;
+  MipFilter = POINT; 
+  AddressU = Wrap;
+  AddressV = Wrap;	
+*/
+
+sampler2D sRotSamplerCM = sampler_state
+{
+  Texture = EngineAssets/Textures/rotrandomCM.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = NONE; 
+  AddressU = Wrap;
+  AddressV = Wrap;	
+};
+
+CLOUD_SHADOW_MAP
+
+sampler3D volCloudShadowSampler = sampler_state
+{
+	Texture = $VolCloudShadows;
+	MinFilter = LINEAR;
+	MagFilter = LINEAR;
+	MipFilter = LINEAR;
+	AddressU = Mirror;
+	AddressV = Mirror;
+	AddressW = Clamp;
+};
+
+
+void ShadowTexSpace(float4 vPos, float4x4 TexGen, float4x4 InstMatrix, float fInvFarDist, out float4 p)
+{
+
+  float4x4 shadowM = mul(TexGen, InstMatrix);
+	p = mul(shadowM, vPos);
+
+	//apply linear space for all shadow formats for now
+#if !%_RT_POINT_LIGHT 
+	p.z = p.z * fInvFarDist;
+#endif
+}
+
+//version for non-instanced objects
+void ShadowTexSpace(float4 vPos, float4x4 shadowM, float fInvFarDist, out float4 p)
+{
+	p = mul(shadowM, vPos);
+
+	//apply linear space for all shadow formats for now
+#if !%_RT_POINT_LIGHT 
+	p.z = p.z * fInvFarDist;
+#endif
+}
+
+void CubemapTexSpace(float4 vWorldPos, float fInvFarDist, out float4 p)
+{
+	p = (vWorldPos - LSPos) * fInvFarDist;
+}
+
+//should match to the kernel table
+int GetShadowSamplesNum()
+{
+  int nSamples;
+#if !%_RT_QUALITY && !%_RT_QUALITY1
+   nSamples = 4;	//low spec
+#elif %_RT_QUALITY && !%_RT_QUALITY1
+   nSamples = 8;  //med spec
+#elif !%_RT_QUALITY && %_RT_QUALITY1
+   nSamples = 16;//8;  //high spec
+#elif %_RT_QUALITY && %_RT_QUALITY1
+   nSamples = 16;//8; //veryhigh 
+#else
+   // #warning Unknown shader quality mode
+   nSamples = 1;
+#endif  
+
+  return nSamples;
+}
+
+int GetShadowQuality()
+{
+  int nQuality;
+#if !%_RT_QUALITY && !%_RT_QUALITY1
+   nQuality = QUALITY_LOW;
+#elif %_RT_QUALITY && !%_RT_QUALITY1
+   nQuality = QUALITY_MEDIUM;
+#elif !%_RT_QUALITY && %_RT_QUALITY1
+   nQuality = QUALITY_HIGH;
+#elif %_RT_QUALITY && %_RT_QUALITY1
+   nQuality = QUALITY_VERYHIGH;
+#else
+   // #warning Unknown shader quality mode
+   nQuality = QUALITY_VERYHIGH;
+#endif  
+  return nQuality;
+}
+
+//should match to the kernel table
+float2 GetKernelSize()
+{
+  float2 KernelSize;
+  if (GetShadowQuality() == QUALITY_LOW)
+  {
+    KernelSize = float2(1.1f,1.1f);	//low spec
+  }
+	else
+  {
+    KernelSize = fKernelRadius.xy;
+  }
+
+#if %_RT_POINT_LIGHT && !%_RT_SAMPLE4
+  if (GetShadowQuality() != QUALITY_VERYHIGH)
+  {
+    //adjust kernel size based on sm scale
+    KernelSize *= float2 (1.0f/3.0f, 1.0f/2.0f);
+  }
+#endif
+
+  return KernelSize;
+}
+
+void shadow_sample(Texture2D depthMap, float3 p, out float shadow, bool bForceDepthFetch = false)
+{
+		if (bForceDepthFetch)
+		{
+		shadow = depthMap.SampleLevel( SAMPLER_STATE_depthMapSamplerLinear, p.xy, 0.0f).x;
+		}
+		else
+		{
+		shadow = depthMap.SampleCmpLevelZero( SAMPLER_STATE_depthMapSampler, p.xy, p.z );
+		}
+}
+
+void SampleRotated(Texture2D depthMap, float3 p, float4 rotMatr, float2 kernel, out float result)
+{
+		// Rotate tap for this pixel location
+		float2 rotatedOff;
+
+		rotatedOff.x = dot(rotMatr.xy, kernel);
+		rotatedOff.y = dot(rotMatr.zw, kernel);
+
+		float2 fetchPos = p.xy + rotatedOff.xy;
+
+		shadow_sample(depthMap, float3(fetchPos.xy, p.z), result);
+}
+
+void DoubleSampleRotated(Texture2D depthMap, float3 p, float4 rotMatr, float4 kernel, out float2 result, bool bForceDepthFetch = false)
+{
+		// Rotate tap for this pixel location
+		float4 rotatedOff;
+
+		rotatedOff = rotMatr.xyzw * kernel.xxww +
+								 rotMatr.zwxy * kernel.yyzz;
+
+
+		float4 fetchPos = p.xyxy + rotatedOff;
+
+		shadow_sample(depthMap, float3(fetchPos.xy,p.z), result.x, bForceDepthFetch);
+		shadow_sample(depthMap, float3(fetchPos.zw,p.z), result.y, bForceDepthFetch);
+}
+
+void irregular_filter_impl(Texture2D depthMap, float4 p, float4 rotMatr, float2 kernelRadius, out float shadowTest, const bool bContactHardening = false)
+{
+  half kernelOffset = 0;
+	half kernelSize = GetShadowSamplesNum()/2;
+
+	#define KERNEL_STEP_SIZE 2
+
+	/////////////////////////////
+	//depth range estimation
+	if (bContactHardening)
+	{
+		float accumArea = 0.0f;
+		float accumCoverage = 0.01f;
+		float2 kernelScale = kernelRadius * 2.7;
+
+		for(int i=kernelOffset; i<kernelSize; i+=KERNEL_STEP_SIZE) // Loop over taps
+		{
+			float4 sampleDepth;
+			shadow_sample(depthMapSampler0, float3(p.xy + irreg_kernel_2d[i+0].xy * kernelScale, 0), sampleDepth.x, true);
+			shadow_sample(depthMapSampler0, float3(p.xy + irreg_kernel_2d[i+0].zw * kernelScale, 0), sampleDepth.y, true);
+			shadow_sample(depthMapSampler0, float3(p.xy + irreg_kernel_2d[i+1].xy * kernelScale, 0), sampleDepth.z, true);
+			shadow_sample(depthMapSampler0, float3(p.xy + irreg_kernel_2d[i+1].zw * kernelScale, 0), sampleDepth.w, true);
+
+			float4 localArea = ( p.zzzz - sampleDepth);
+			float4 samplNum = localArea > 0.0f;
+			accumCoverage += dot(samplNum, float4(1,1,1,1));
+
+			localArea = min(abs(localArea), vAdaption.xxxx); 
+			accumArea += dot(localArea.xyzw, samplNum.xyzw);
+		}
+
+		float kernelAdjScale = 0.0f;
+
+		if (accumCoverage > 0.1f)
+		{
+			kernelAdjScale = accumArea/accumCoverage;
+			kernelAdjScale = kernelAdjScale * vAdaption.y;
+			rotMatr *= max(kernelAdjScale,vAdaption.z);
+		}
+		else
+		{
+			rotMatr *= vAdaption.z;
+		}
+	}
+	/////////////////////////////
+	
+	shadowTest = 0;
+		
+  [unroll]
+	for(int i=kernelOffset; i<kernelSize; i+=KERNEL_STEP_SIZE) // Loop over taps
+	{
+		half4 inShadow;
+		DoubleSampleRotated(depthMap, p.xyz, rotMatr, irreg_kernel_2d[i+0], inShadow.xy);
+		DoubleSampleRotated(depthMap, p.xyz, rotMatr, irreg_kernel_2d[i+1], inShadow.zw);
+
+    half fInvSamplNum = (1.0 / GetShadowSamplesNum());
+		shadowTest += dot(inShadow,fInvSamplNum.xxxx);
+	}
+
+	shadowTest = pow(shadowTest,2);
+}
+
+// Bring parameters into tex space first and then call irregular_filter_impl 
+void irregular_filter(Texture2D depthMap, sampler2D sRotations, float4 p, float2 NoiseP, float2 KernelSize, out float shadowTest, const bool bContactHardening = false)
+{
+	float2 randDirTC = NoiseP.xy * (KernelSize.y * 15.h);
+	float2 kernelRadius = KernelSize * vInvShadowMapSize.xx;
+
+	half2 rotSample = GetTexture2D(sRotations, randDirTC.xy).xy * kernelRadius.xy;
+	float4 rotMatr = float4(rotSample.x, -rotSample.y, rotSample.y, rotSample.x);
+	
+	irregular_filter_impl(depthMapSampler0, p, rotMatr, kernelRadius, shadowTest, bContactHardening);
+}
+
+float GetVolumetricCloudShadow(float3 worldPos)
+{
+#if %_PS
+	const float3 sunDir = g_PS_SunLightDir.xyz;
+#elif %_VS
+	const float3 sunDir = g_VS_SunLightDir.xyz;
+#elif %_CS
+	const float3 sunDir = g_VS_SunLightDir.xyz;
+#elif %_DS
+	const float3 sunDir = g_VS_SunLightDir.xyz;
+#else
+	const float3 sunDir = normalize(float3(0.1, 0.1, 1.0));
+#endif
+
+	const float cloudBottomAltitude = CloudShadowParams.x;
+	const float cloudTopAltitude = CloudShadowParams.y;
+	const float invCloudShadowRamp = CloudShadowParams.z;
+	const float invCloudThickness = CloudShadowParams.w;
+	const float2 worldAlignmentOffset = CloudShadowAnimParams.xy;
+	const float2 invTilingSize = CloudShadowAnimParams.zw;
+	const float2 textureCenterOffset = float2(0.5f, 0.5f);
+
+	const float d = (abs(sunDir.z) < 0.0000001f) ? sign(sunDir.z) * 0.0000001f : sunDir.z;
+	const float t = (worldPos.z > cloudBottomAltitude) ? 0.0f : (cloudBottomAltitude - worldPos.z) / d;
+	const float decayAboveCloud = 1.0f - saturate((cloudTopAltitude - worldPos.z) * invCloudShadowRamp);
+
+	float3 uvw;
+	uvw.xy = (t * sunDir.xy + (worldPos.xy - worldAlignmentOffset.xy)) * invTilingSize.xy + textureCenterOffset.xy;
+	uvw.z = saturate((worldPos.z - cloudBottomAltitude) * invCloudThickness);
+
+	float opticalThickness = tex3Dlod(volCloudShadowSampler, float4(uvw.xyz, 0)).x;
+	return max(decayAboveCloud, exp(-opticalThickness));
+}
+
+float GetCloudShadowCommon(float3 worldPos, sampler2D sShadowMap, float4 vAnimParams, float4 vParams)
+{
+	float2 uv = ComputeCloudShadowMapUV(worldPos);
+	float fCloudsShadow = saturate( GetTexture2DLod(sShadowMap, float4((uv * vAnimParams.xy - vAnimParams.zw) , 0, 0)).r * vParams.w );
+	return vParams.z>0 ? 1 - fCloudsShadow : fCloudsShadow;
+}
+
+float GetCloudShadow(float3 worldPos)
+{
+	return GetCloudShadowCommon(worldPos, cloudShadowMap, CloudShadowAnimParams, CloudShadowParams);
+}
+
+uint GetForwardShadowsCascadeMask()
+{
+	return asuint(fKernelRadius.z);
+}
+
+bool ShadowCascadeSample(Texture2D depthMap, float4 p, float2 randDirTC, float fDepthTestBias, out float fShadow, bool bSingleTap = false)
+{	
+	fShadow = 1;
+	
+	p.xy /= p.w;
+	p.z -= fDepthTestBias;
+		
+	if(p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1 && p.z <= 1)
+	{
+		if(bSingleTap)
+		{
+			shadow_sample(depthMap, p.xyz, fShadow);
+		}
+		else
+		{
+			irregular_filter(depthMap, sRotSampler, p, randDirTC, GetKernelSize(), fShadow);
+		}
+		return true;
+	}
+	
+	return false;
+}
+
+float ShadowDepthTest(float3 worldPos, bool bSampleCloudShadows = true, bool bForceSingleTap = false)
+{
+	const uint nCascadeMask = GetForwardShadowsCascadeMask();
+	const bool bSingleTapFirstCascade = bForceSingleTap || (nCascadeMask & FORWARD_SHADOWS_CASCADE0_SINGLE_TAP);
+	
+	float fShadow = 1;
+	
+	if(nCascadeMask != 0) 
+	{	
+		float4 p;
+		ShadowTexSpace(float4(worldPos, 1), TexGen0, fOneDivFarDist.x, p);
+		const float2 randDirTC = p.xy / p.w * 1000.0;
+		
+		bool bDone = ShadowCascadeSample(depthMapSampler0, p, randDirTC, fDepthTestBias.x, fShadow, bSingleTapFirstCascade);
+
+		[branch]
+		if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_1))
+		{
+			ShadowTexSpace(float4(worldPos, 1), TexGen1, fOneDivFarDist.y, p);
+			bDone = ShadowCascadeSample(depthMapSampler1, p, randDirTC, fDepthTestBias.y, fShadow, true);
+		
+			[branch]
+			if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_2))
+			{
+				ShadowTexSpace(float4(worldPos, 1), TexGen2, fOneDivFarDist.z, p);
+				bDone = ShadowCascadeSample(depthMapSampler2, p, randDirTC, fDepthTestBias.z, fShadow, true);
+				
+				[branch]
+				if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_3))
+				{
+					ShadowTexSpace(float4(worldPos, 1), TexGen3, fOneDivFarDist.w, p);
+					ShadowCascadeSample(depthMapSampler3, p, randDirTC, fDepthTestBias.w, fShadow, true);
+				}
+			}
+		}
+	}
+
+	if(bSampleCloudShadows && (nCascadeMask & FORWARD_SHADOWS_CLOUD_SHADOWS))
+	{
+		float fCloudShadow = GetCloudShadow(worldPos);
+		fShadow *= fCloudShadow;
+	}
+	
+	return fShadow;
+}
+
+Texture2D <float4> sceneDepthTextureSS : TS_ZTarget  ;
+
+void CalculateDetailSSShadow(const float fDepth0, const float3 vPosWS, const float3 vPosLight, const float4x4 matComosite, inout float fInShadow, const bool bUseTexture2D = false)
+{
+	float4 vTC0 = mul(matComosite, float4(vPosWS, 1));
+
+	float4 vTC1 = mul(matComosite, float4(vPosWS + normalize(vPosLight - vPosWS), 1));
+
+	float4 vTCD = (vTC1 - vTC0) * 0.0013;
+
+	vTC0 += vTCD;
+
+	float fInSSS = 1;
+
+	for (int s = 0; s < 16; s++)
+	{
+		float4 vTC = vTC0 / vTC0.w;
+		vTC.xy = vTC.xy*0.5f + 0.5f;
+		vTC.y = 1 - vTC.y;
+
+		if (vTC.x < 0 || vTC.x>1 || vTC.y < 0 || vTC.y>1)
+			break;
+
+		float fScrDepth = 0;
+		if(bUseTexture2D)
+			fScrDepth = GetLinearDepth( sceneDepthTextureSS, vTC.xy ) * PS_NearFarClipDist.y;
+		else
+			fScrDepth = GetLinearDepth(_tex0, float4(vTC.xy, 0, 0)) * PS_NearFarClipDist.y;
+
+		float fRayDepth = GetLinearDepth(g_PS_ProjRatio.y / (vTC.z - g_PS_ProjRatio.x)) * PS_NearFarClipDist.y - .0045f;
+			
+		float fSurDens = 1 - 200 * max((fScrDepth - fRayDepth), max(fRayDepth - fScrDepth - .03, 0) / 3);
+
+		fInSSS = min(fInSSS, 1 - fSurDens);
+
+		vTC0 += vTCD;
+
+		vTCD *= 1.05;
+	}
+
+	fInSSS = lerp(fInSSS, 1, saturate(fDepth0 * PS_NearFarClipDist.y - 1.f));
+
+	fInShadow = min(fInSSS, fInShadow);
+}

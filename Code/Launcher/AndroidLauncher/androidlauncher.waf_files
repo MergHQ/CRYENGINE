@@ -1,0 +1,16 @@
+{
+	"NoUberFile": 
+	{
+		"Root":
+		[
+			"AndroidManifest.xml",
+			"Main.cpp",
+			"../../SDKs/SDL2/src/src/main/android/SDL_android_main.c"
+		],
+		"Java Files" :
+		[
+			"SDLActivity.java",
+			"CryEngineActivity.java"
+		]
+	}
+}

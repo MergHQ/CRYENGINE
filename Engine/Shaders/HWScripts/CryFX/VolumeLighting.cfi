@@ -1,0 +1,2475 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "LightVolumes.cfi"
+
+
+#define ENABLE_5X5_NEIGHBOR_VOXEL_SEARCH
+//#define ENABLE_SPHERE_INTERSECTION
+#define ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+#define ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+
+
+#define EARLY_REJECTION_LENGTH										(6.0f)
+#define EARLY_REJECTION_VOXELS										(2.0f)
+#define MAX_NUM_FOG_VOLUMES												(64)
+#define VOLUMETRIC_FOG_RANGE_SHIFT_INSCATTER			(16.0f)
+
+#define BLOCK_SIZE_X								(4)
+#define BLOCK_SIZE_Y								(4)
+#define BLOCK_SIZE_Z								(4)
+
+
+////////////////////////////////////////////////////////////////////////////
+// Shared constants, structures and functions
+////////////////////////////////////////////////////////////////////////////
+float4 ScreenInfo;
+
+// xyz: size of thread groups, w: number of entities
+float4 DispatchSize;
+
+
+struct SVolumeLightCullInfo
+{
+	uint      volumeType;
+	uint      padding;
+	float2    depthBounds;
+
+	float4    posRad;
+
+	float4    volumeParams0;
+	float4    volumeParams1;
+	float4    volumeParams2;
+};
+
+struct SVolumeLightShadeInfo
+{
+	uint      lightType;
+	uint      resIndex;
+	uint			shadowMaskIndex;
+	uint			stencilID;
+
+	float4    posRad;
+
+	float2    attenuationParams;
+	float2    shadowParams;
+
+	float4    color;
+
+	float4		shadowChannelIndex;
+
+	float4x4  projectorMatrix;
+	float4x4  shadowMatrix;
+};
+
+struct SFogVolumeCullInfo
+{
+	float4    posRad;
+	float4    volumeParams0;
+	float4    volumeParams1;
+	float4    volumeParams2;
+};
+
+struct SFogVolumeInjectInfo
+{
+	uint			miscFlag;	// 1: volumeType, 8: stencilRef, 1: affectThisAreaOnly, 22: reserved
+	float3		fogColor;
+
+	float			globalDensity;
+	float3		fogVolumePos;
+
+	float3		heightFalloffBasePoint;
+	float			invSoftEdgeLerp;
+
+	float3		heightFallOffDirScaled;
+	float			densityOffset;
+
+	float4		rampParams;
+
+	float3		windOffset;
+	float			noiseElapsedTime;
+
+	float3		noiseSpatialFrequency;
+	float			noiseScale;
+
+	float3		eyePosInOS;
+	float			noiseOffset;
+
+	float3		emission;
+	float			padding;
+
+	float3x4	worldToObjMatrix;
+};
+
+float3 vfEncodeInscattering(float3 rawVal)
+{
+	return rawVal.xyz * VOLUMETRIC_FOG_RANGE_SHIFT_INSCATTER;
+}
+
+float3 vfDecodeInscattering(float3 rawVal)
+{
+	return rawVal.xyz / VOLUMETRIC_FOG_RANGE_SHIFT_INSCATTER;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+RWTexture3D<float3> BlurredInscatteringOutput				: register(u0);
+
+Texture3D<float3> BlurredInscatteringInput					: register(t0);
+#else
+RWTexture3D<float4> BlurredInscatteringOutput				: register(u0);
+
+Texture3D<float4> BlurredInscatteringInput					: register(t0);
+#endif
+Texture2D<float> BlurredInscatteringDepthMaxInput		: register(t1);
+
+SamplerState BlurredInscatteringInputSampler				: register(s0);
+
+groupshared float SourceColorR[16 * 8];
+groupshared float SourceColorG[16 * 8];
+groupshared float SourceColorB[16 * 8];
+groupshared float SourceDensity[16 * 8];
+groupshared float SourceDepthMax[16 * 8];
+
+[numthreads(8, 8, 1)]
+void BlurHorizontalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+	int4 loc = int4(gid.xy * 8, DispatchThreadID.z, 0);
+	loc.xy -= int2(4, 0);
+
+	float curDepth = (DispatchThreadID.z + 0.0f) / ScreenInfo.w;// set offset to zero to blend two slices.
+
+	float maxDistance = vfDistributionParams.y + vfDistributionParams.x;
+
+	for(int i = 0; i < 2; ++i)
+	{
+		int2 offset;
+		offset.x = gtid.x + (gtid.y & 0x1 ? 8: 0);
+		offset.y = (i * 4) + (gtid.y >> 1);
+
+		int4 p = loc;
+		p.xy += offset.xy;
+		p.x = clamp(p.x, 0, int(ScreenSize.x - 1));
+		p.y = clamp(p.y, 0, int(ScreenSize.y - 1));
+
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+#if 1
+		// use Load instruction because of no need to blend two slices.
+		float3 v = BlurredInscatteringInput.Load(p);
+#else
+		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
+		float3 v = BlurredInscatteringInput.SampleLevel(BlurredInscatteringInputSampler, tc, 0);
+#endif
+#else
+#if 1
+		// use Load instruction because of no need to blend two slices.
+		float4 v = BlurredInscatteringInput.Load(p);
+#else
+		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
+		float4 v = BlurredInscatteringInput.SampleLevel(BlurredInscatteringInputSampler, tc, 0);
+#endif
+#endif
+
+		int index = offset.x + offset.y * 16;
+		SourceColorR[index] = v.r;
+		SourceColorG[index] = v.g;
+		SourceColorB[index] = v.b;
+#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+		SourceDensity[index] = v.a;
+#endif
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+		float depthMax = BlurredInscatteringDepthMaxInput.Load(int3(p.xy, 0));
+		SourceDepthMax[index] = depthMax * maxDistance;
+#endif
+	}
+
+	float depthFront = GetVolumetricFogLinearDepth(DispatchThreadID.z - 1.0f);
+	float earlyRejectDepth = GetVolumetricFogLinearDepth(DispatchThreadID.z - 1.0f - EARLY_REJECTION_VOXELS);
+	depthFront = min(depthFront - EARLY_REJECTION_LENGTH, earlyRejectDepth);
+
+	GroupMemoryBarrierWithGroupSync();
+
+	const float weights[9] =
+	{
+		1.0f/256.0f, 8.0f/256.0f, 28.0f/256.0f,
+		56.0f/256.0f, 70.0f/256.0f, 56.0f/256.0f,
+		28.0f/256.0f, 8.0f/256.0f, 1.0f/256.0f,
+	};
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+	float3 value = float3(0.0f, 0.0f, 0.0f);
+#else
+	float4 value = float4(0.0f, 0.0f, 0.0f, 0.0f);
+#endif
+	float totalWeight = 0.0f;
+
+	for(int i = -4; i <= 4; ++i)
+	{
+		int2 loc = gtid.xyz + int2(4, 0);
+		loc.x += i;
+		float w = weights[i + 4];
+		int index = loc.x + loc.y * 16;
+
+#if !ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+		value.r += w * SourceColorR[index];
+		value.g += w * SourceColorG[index];
+		value.b += w * SourceColorB[index];
+#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+		value.a += w * SourceDensity[index];
+#endif
+#else
+		float depthMax = SourceDepthMax[index];
+		if(depthMax > depthFront)
+		{
+			value.r += w * SourceColorR[index];
+			value.g += w * SourceColorG[index];
+			value.b += w * SourceColorB[index];
+#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+			value.a += w * SourceDensity[index];
+#endif
+			totalWeight += w;
+		}
+#endif
+	}
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+	value = (totalWeight > 0.0f) ? (value / totalWeight) : 0.0f;
+#endif
+
+	BlurredInscatteringOutput[DispatchThreadID.xyz] = value;
+}
+
+[numthreads(8, 8, 1)]
+void BlurVerticalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+	int4 loc = int4(gid.xy * 8, DispatchThreadID.z, 0);
+	loc.xy -= int2(0, 4);
+
+	float curDepth = (DispatchThreadID.z + 0.0f) / ScreenInfo.w;// set offset to zero to blend two slices.
+
+	float maxDistance = vfDistributionParams.y + vfDistributionParams.x;
+
+	for(int i = 0; i < 2; ++i)
+	{
+		int2 offset;
+		offset.x = gtid.x;
+		offset.y = (i * 8) + (gtid.y);
+
+		int4 p = loc;
+		p.xy += offset.xy;
+		p.x = clamp(p.x, 0, int(ScreenSize.x - 1));
+		p.y = clamp(p.y, 0, int(ScreenSize.y - 1));
+
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+#if 0
+		float3 v = BlurredInscatteringInput.Load(p);
+#else
+		// use SampleLevel because of blending two slices.
+		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
+		float3 v = BlurredInscatteringInput.SampleLevel(BlurredInscatteringInputSampler, tc, 0);
+#endif
+#else
+#if 0
+		float4 v = BlurredInscatteringInput.Load(p);
+#else
+		// use SampleLevel because of blending two slices.
+		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
+		float4 v = BlurredInscatteringInput.SampleLevel(BlurredInscatteringInputSampler, tc, 0);
+#endif
+#endif
+
+		int index = offset.x + offset.y * 8;
+		SourceColorR[index] = v.r;
+		SourceColorG[index] = v.g;
+		SourceColorB[index] = v.b;
+#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+		SourceDensity[index] = v.a;
+#endif
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+		float depthMax = BlurredInscatteringDepthMaxInput.Load(int3(p.xy, 0));
+		SourceDepthMax[index] = depthMax * maxDistance;
+#endif
+	}
+
+	float depthFront = GetVolumetricFogLinearDepth(DispatchThreadID.z - 1.0f);
+	float earlyRejectDepth = GetVolumetricFogLinearDepth(DispatchThreadID.z - 1.0f - EARLY_REJECTION_VOXELS);
+	depthFront = min(depthFront - EARLY_REJECTION_LENGTH, earlyRejectDepth);
+
+	GroupMemoryBarrierWithGroupSync();
+
+	const float weights[9] =
+	{
+		1.0f/256.0f, 8.0f/256.0f, 28.0f/256.0f,
+		56.0f/256.0f, 70.0f/256.0f, 56.0f/256.0f,
+		28.0f/256.0f, 8.0f/256.0f, 1.0f/256.0f,
+	};
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+	float3 value = float3(0.0f, 0.0f, 0.0f);
+#else
+	float4 value = float4(0.0f, 0.0f, 0.0f, 0.0f);
+#endif
+	float totalWeight = 0.0f;
+
+	for(int i = -4; i <= 4; ++i)
+	{
+		int2 loc = gtid.xyz + int2(0, 4);
+		loc.y += i;
+		float w = weights[i + 4];
+		int index = loc.x + loc.y * 8;
+
+#if !ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+		value.r += w * SourceColorR[index];
+		value.g += w * SourceColorG[index];
+		value.b += w * SourceColorB[index];
+#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+		value.a += w * SourceDensity[index];
+#endif
+#else
+		float depthMax = SourceDepthMax[index];
+		if(depthMax > depthFront)
+		{
+			value.r += w * SourceColorR[index];
+			value.g += w * SourceColorG[index];
+			value.b += w * SourceColorB[index];
+#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+			value.a += w * SourceDensity[index];
+#endif
+			totalWeight += w;
+		}
+#endif
+	}
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+	value = (totalWeight > 0.0f) ? (value / totalWeight) : 0.0f;
+#else
+	value.xyz = (totalWeight > 0.0f) ? (value.xyz / totalWeight) : 0.0f;
+	value.w = (totalWeight > 0.0f) ? (value.w / totalWeight) : (0.0f / 0.0f);// set NaN as the mark of empty voxel.
+#endif
+#endif
+
+	BlurredInscatteringOutput[DispatchThreadID.xyz] = value;
+}
+
+technique BlurHorizontalInscatteringVolume
+{
+  pass p0
+  {
+    ComputeShader = BlurHorizontalInscatteringVolumeCS() BlurHorizontalInscatteringVolumeCS;
+  }
+}
+
+technique BlurVerticalInscatteringVolume
+{
+  pass p0
+  {
+    ComputeShader = BlurVerticalInscatteringVolumeCS() BlurVerticalInscatteringVolumeCS;
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+RWTexture3D<float> BlurredDensityOutput					: register(u0);
+
+Texture3D<float> BlurredDensityInput						: register(t0);
+Texture2D<float> BlurredDensityDepthMaxInput		: register(t1);
+
+SamplerState BlurredDensityInputSampler					: register(s0);
+
+[numthreads(8, 8, 1)]
+void BlurHorizontalDensityVolumeCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+	int4 loc = int4(gid.xy * 8, DispatchThreadID.z, 0);
+	loc.xy -= int2(4, 0);
+
+	float curDepth = (DispatchThreadID.z + 0.0f) / ScreenInfo.w;// set offset to zero to blend two slices.
+
+	float maxDistance = vfDistributionParams.y + vfDistributionParams.x;
+
+	for(int i = 0; i < 2; ++i)
+	{
+		int2 offset;
+		offset.x = gtid.x + (gtid.y & 0x1 ? 8: 0);
+		offset.y = (i * 4) + (gtid.y >> 1);
+
+		int4 p = loc;
+		p.xy += offset.xy;
+		p.x = clamp(p.x, 0, int(ScreenSize.x - 1));
+		p.y = clamp(p.y, 0, int(ScreenSize.y - 1));
+
+#if 1
+		// use Load instruction because of no need to blend two slices.
+		float v = BlurredDensityInput.Load(p);
+#else
+		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
+		float v = BlurredDensityInput.SampleLevel(BlurredDensityInputSampler, tc, 0);
+#endif
+
+		int index = offset.x + offset.y * 16;
+		SourceDensity[index] = v;
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+		float depthMax = BlurredInscatteringDepthMaxInput[p.xy];
+		SourceDepthMax[index] = depthMax * maxDistance;
+#endif
+	}
+
+	float depthFront = GetVolumetricFogLinearDepth(DispatchThreadID.z - 1.0f);
+	float earlyRejectDepth = GetVolumetricFogLinearDepth(DispatchThreadID.z - 1.0f - EARLY_REJECTION_VOXELS);
+	depthFront = min(depthFront - EARLY_REJECTION_LENGTH, earlyRejectDepth);
+
+	GroupMemoryBarrierWithGroupSync();
+
+	const float weights[9] =
+	{
+		1.0f/256.0f, 8.0f/256.0f, 28.0f/256.0f,
+		56.0f/256.0f, 70.0f/256.0f, 56.0f/256.0f,
+		28.0f/256.0f, 8.0f/256.0f, 1.0f/256.0f,
+	};
+	float value = 0.0f;
+	float totalWeight = 0.0f;
+
+	for(int i = -4; i <= 4; ++i)
+	{
+		int2 loc = gtid.xyz + int2(4, 0);
+		loc.x += i;
+		float w = weights[i + 4];
+		int index = loc.x + loc.y * 16;
+
+#if !ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+		value += w * SourceDensity[index];
+#else
+		float depthMax = SourceDepthMax[index];
+		if(depthMax > depthFront)
+		{
+			value += w * SourceDensity[index];
+			totalWeight += w;
+		}
+#endif
+	}
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+	value = (totalWeight > 0.0f) ? (value / totalWeight) : 0.0f;
+#endif
+
+	BlurredDensityOutput[DispatchThreadID.xyz] = value;
+}
+
+[numthreads(8, 8, 1)]
+void BlurVerticalDensityVolumeCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+	int4 loc = int4(gid.xy * 8, DispatchThreadID.z, 0);
+	loc.xy -= int2(0, 4);
+
+	float curDepth = (DispatchThreadID.z + 0.0f) / ScreenInfo.w;// set offset to zero to blend two slices.
+
+	float maxDistance = vfDistributionParams.y + vfDistributionParams.x;
+
+	for(int i = 0; i < 2; ++i)
+	{
+		int2 offset;
+		offset.x = gtid.x;
+		offset.y = (i * 8) + (gtid.y);
+
+		int4 p = loc;
+		p.xy += offset.xy;
+		p.x = clamp(p.x, 0, int(ScreenSize.x - 1));
+		p.y = clamp(p.y, 0, int(ScreenSize.y - 1));
+
+#if 0
+		float v = BlurredDensityInput.Load(p);
+#else
+		// use SampleLevel because of blending two slices.
+		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
+		float v = BlurredDensityInput.SampleLevel(BlurredDensityInputSampler, tc, 0);
+#endif
+
+		int index = offset.x + offset.y * 8;
+		SourceDensity[index] = v;
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+		float depthMax = BlurredInscatteringDepthMaxInput[p.xy];
+		SourceDepthMax[index] = depthMax * maxDistance;
+#endif
+	}
+
+	float depthFront = GetVolumetricFogLinearDepth(DispatchThreadID.z - 1.0f);
+	float earlyRejectDepth = GetVolumetricFogLinearDepth(DispatchThreadID.z - 1.0f - EARLY_REJECTION_VOXELS);
+	depthFront = min(depthFront - EARLY_REJECTION_LENGTH, earlyRejectDepth);
+
+	GroupMemoryBarrierWithGroupSync();
+
+	const float weights[9] =
+	{
+		1.0f/256.0f, 8.0f/256.0f, 28.0f/256.0f,
+		56.0f/256.0f, 70.0f/256.0f, 56.0f/256.0f,
+		28.0f/256.0f, 8.0f/256.0f, 1.0f/256.0f,
+	};
+	float value = 0.0f;
+	float totalWeight = 0.0f;
+
+	for(int i = -4; i <= 4; ++i)
+	{
+		int2 loc = gtid.xyz + int2(0, 4);
+		loc.y += i;
+		float w = weights[i + 4];
+		int index = loc.x + loc.y * 8;
+
+#if !ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+		value += w * SourceDensity[index];
+#else
+		float depthMax = SourceDepthMax[index];
+		if(depthMax > depthFront)
+		{
+			value += w * SourceDensity[index];
+			totalWeight += w;
+		}
+#endif
+	}
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+	value = (totalWeight > 0.0f) ? (value / totalWeight) : (0.0f / 0.0f);// set NaN as the mark of empty voxel.
+#endif
+
+	BlurredDensityOutput[DispatchThreadID.xyz] = value;
+}
+
+technique BlurHorizontalDensityVolume
+{
+  pass p0
+  {
+    ComputeShader = BlurHorizontalDensityVolumeCS() BlurHorizontalDensityVolumeCS;
+  }
+}
+
+technique BlurVerticalDensityVolume
+{
+  pass p0
+  {
+    ComputeShader = BlurVerticalDensityVolumeCS() BlurVerticalDensityVolumeCS;
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+float GetExponentialHeightFogDensity(float3 cameraToWorldPos, float linearDepth)
+{
+	const float heightFogScale = vfHeightDensityParams.x;
+	const float volFogDensityAtViewer = vfHeightDensityParams.y;
+
+	// NOTE: volFogDensityAtViewer = log2(e) * fogDensity * exp(heightScale * vfViewPos.z + heightOffset);
+	float fogDensityAtCamera = volFogDensityAtViewer / 1.44269502f;// log2(e) = 1.44269502
+
+	float fogDensityDifference = exp(heightFogScale * cameraToWorldPos.z);
+
+	float fogDensityAtWorldPos = saturate(fogDensityAtCamera * fogDensityDifference);// limit maximum fog density.
+
+	// depth based ramp
+	// using length instead of linearDepth is correct but it causes ring artifact so currently keep using linearDepth.
+	float a = vfHeightDensityRampParams.z;// 1 / (rampEnd - rampStart)
+	float b = vfHeightDensityRampParams.w;// rampStart / (rampEnd - rampStart)
+	float r = saturate(linearDepth * a - b);
+	fogDensityAtWorldPos *= r;
+
+	return fogDensityAtWorldPos;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+RWTexture3D<float>	VolumetricFogDensityOutput				: register(u0);
+RWTexture3D<float3>	VolumetricFogColorDensityOutput		: register(u1);
+RWTexture3D<float3>	VolumetricFogEmissiveOutput				: register(u2);
+
+Texture2DArray<uint2> VolumetricClipVolumeStencil : TS_VolumetricClipVolumeStencil;
+StructuredBuffer<SFogVolumeInjectInfo> FogVolumeInjectInfo : register(t8);
+StructuredBuffer<SFogVolumeCullInfo> FogVolumeCullInfo : register(t9);
+Texture2D<float> InjectFogDensityMaxDepthInput : register(t10);
+
+float4 InjectFogDensityParams;
+
+groupshared uint countFogVolume;
+groupshared uint indicesFogVolume[MAX_NUM_FOG_VOLUMES];
+
+void CullFogVolume(in float2 tileScale, in float2 tileBias
+									 , in uint numVolumes, in uint GroupIndex
+									 , in float depth, in float depthFront)
+{
+	if(GroupIndex == 0)
+	{
+		countFogVolume = 0;
+	}
+
+	GroupMemoryBarrierWithGroupSync();
+
+
+	const uint maxThreadNum = BLOCK_SIZE_X * BLOCK_SIZE_Y * BLOCK_SIZE_Z;
+
+	// Extract projection matrix columns (including PostAA bias)
+	float4 col1 = float4( ProjParams.x * tileScale.x, 0.0f, ProjParams.z + tileBias.x, 0.0f );
+	float4 col2 = float4( 0.0f, -ProjParams.y * tileScale.y, ProjParams.w + tileBias.y, 0.0f );
+	float4 col4 = float4( 0.0f, 0.0f, 1.0f, 0.0f );
+
+	float4 frustumPlanes[4];
+	frustumPlanes[0] = normalize( col4 - col1 );
+	frustumPlanes[1] = normalize( col4 + col1 );
+	frustumPlanes[2] = normalize( col4 - col2 );
+	frustumPlanes[3] = normalize( col4 + col2 );
+
+	[branch] if(GroupIndex < numVolumes)
+	{
+		SFogVolumeCullInfo ci = FogVolumeCullInfo[GroupIndex];
+
+		// Test far plane
+		float2 depthBounds = float2(ci.posRad.z - ci.posRad.w, ci.posRad.z + ci.posRad.w);
+		bool inFrustum = (depthBounds.x <= depth);
+
+		// Test near plane
+		inFrustum = inFrustum && (depthBounds.y >= depthFront);
+
+		if(inFrustum)
+		{
+			float4 dists;
+
+			[unroll] for (uint fp = 0; fp < 4; ++fp)
+			{
+				dists[fp] = dot( frustumPlanes[fp], float4( ci.posRad.xyz, 1 ) );
+			}
+
+			// OBB culling
+			float4 u0 = ci.volumeParams0;
+			float4 u1 = ci.volumeParams1;
+			float4 u2 = ci.volumeParams2;
+			[unroll] for (uint j = 0; j < 4; ++j)
+			{
+				float r = dot( float3( u0.w, u1.w, u2.w ), float3( abs(dot( frustumPlanes[j].xyz, u0.xyz )), abs(dot( frustumPlanes[j].xyz, u1.xyz )), abs(dot( frustumPlanes[j].xyz, u2.xyz )) ) ) ;
+				inFrustum = inFrustum && (-dists[j] <= r);// detect OBB intersects or is inside the plane.
+			}
+		}
+
+		[branch] if(inFrustum)
+		{
+			uint i;
+			InterlockedAdd(countFogVolume, 1, i);
+			indicesFogVolume[i] = GroupIndex;
+		}
+	}
+
+	GroupMemoryBarrierWithGroupSync();
+}
+
+void AccumulateDensityFogVolume(inout float density, inout float3 densityColor, inout float3 emissive
+																, in uint numVolumes, in uint clipVolumeIndex, in float3 eyeRay
+																, in float depth, in float depthFront, in float jitter, in float invDist)
+{
+	for(uint i = 0; i < numVolumes; ++i)
+	{
+		uint index = indicesFogVolume[i];
+		SFogVolumeInjectInfo fv = FogVolumeInjectInfo[index];
+
+		uint injectFlag = 1;
+
+		// cull with clip volume
+		const uint stencilRef = (fv.miscFlag >> 1) & 0xFF;
+		if(((fv.miscFlag >> 9) & 0x1) && (stencilRef != clipVolumeIndex))
+		{
+			injectFlag = 0;
+		}
+
+		// fine-grained culling and finding intersected eye ray segment
+		float tS = 0.0f;
+		float tE = 0.0f;
+		[branch] if(injectFlag)
+		{
+			float3 eyeDirInWS = eyeRay.xyz;
+			float3 cameraLookDirInOS = mul( (float3x3)fv.worldToObjMatrix, eyeDirInWS.xyz );
+
+			float invOfScaledCamDirLength;
+
+			[branch] if((fv.miscFlag & 0x1) == 0)
+			{
+				// ray tracing in OS for Ellipsoid
+				const float3 cameraPosInOS = fv.eyePosInOS;
+				invOfScaledCamDirLength = rsqrt( dot( cameraLookDirInOS, cameraLookDirInOS ) );
+				cameraLookDirInOS *= invOfScaledCamDirLength;
+
+				// calc coefficients for ellipsoid parametrization (just a simple unit-sphere in its own space)
+				float B = dot( cameraPosInOS, cameraLookDirInOS );
+				float Bsq = B * B;
+				float C = dot( cameraPosInOS, cameraPosInOS ) - 1.0f;
+
+				// solve quadratic equation
+				float discr = Bsq - C;
+				float discrSqrt = sqrt( discr );
+
+				injectFlag = ( discr >= 0.0 ) ? 1 : 0;// if( discr >= 0.0 ) then ray hit
+				//clip( discrSqrt - B ); // now handled by "tE = max( ... );" below
+
+				float2 t = max( 0, float2( -B - discrSqrt, -B + discrSqrt ) );
+				tS = t.x;
+				tE = t.y;
+			}
+			else
+			{
+				// ray tracing in OS for Box
+				invOfScaledCamDirLength = rsqrt( dot( cameraLookDirInOS, cameraLookDirInOS ) );
+				cameraLookDirInOS *= invOfScaledCamDirLength;
+
+				const float3 eyePosInOS = fv.eyePosInOS;
+				const float3 invCameraLookDirInOS = 1 / cameraLookDirInOS;
+				const float3 tPosPlane = (1 - eyePosInOS) * invCameraLookDirInOS;
+				const float3 tNegPlane = (-1 - eyePosInOS) * invCameraLookDirInOS;
+
+				float3 tFrontFace = cameraLookDirInOS > 0 ? tNegPlane : tPosPlane;
+				float3 tBackFace = cameraLookDirInOS > 0 ? tPosPlane : tNegPlane;
+
+				// filter any NAN introduced by division above in case cameraLookDirInOS is parallel to front/back planes of fog volume box
+				tFrontFace = max( min( tFrontFace, (float3)10000000 ), (float3)-10000000 ); //tFrontFace = tFrontFace > 10000000 ? 0 : tFrontFace;
+				tBackFace = max( min( tBackFace, (float3)10000000 ), (float3)-10000000 ); //tBackFace = tBackFace > 10000000 ? 0 : tBackFace;
+
+				float2 t = max( 0, float2( max( tFrontFace.x, max( tFrontFace.y, tFrontFace.z ) ), 
+				           min( tBackFace.x, min( tBackFace.y, tBackFace.z ) ) ) );
+
+				tS = t.x;
+				tE = t.y;
+			}
+
+			const float3 cameraLookDirInWS = eyeDirInWS.xyz * invOfScaledCamDirLength;
+			float toLinearDepth = dot( cameraLookDirInWS, -CV_CameraFrontVector.xyz );
+			tS *= toLinearDepth;
+			tE *= toLinearDepth;
+
+			// cull a voxel which isn't included in intersected line segment.
+			if(tE < depthFront || depth < tS)
+			{
+				injectFlag = 0;
+			}
+		}
+
+		[branch] if(injectFlag)
+		{
+			// clip a voxel with intersected segment.
+			tS = clamp(tS, depthFront, depth);
+			tE = clamp(tE, depthFront, depth);
+
+			// calculate coverage factor of a voxel.
+			float coverage = saturate((tE - tS) * invDist);
+
+			// calculate sampling position inside a voxel.
+			const float3 cameraPosInWS = PS_WorldViewPos.xyz;
+			float linearDepth = lerp(tS, tE, jitter);
+			float3 position = linearDepth * eyeRay + cameraPosInWS;
+
+			const float3 posNoise = position.xyz + fv.windOffset.xyz;
+			float densityNoise = vfGetDensityNoise(posNoise, fv.noiseScale, fv.noiseOffset, fv.noiseElapsedTime, fv.noiseSpatialFrequency);
+
+			// calculation of density
+			float fogInt = exp( -dot( position.xyz - fv.heightFalloffBasePoint.xyz, fv.heightFallOffDirScaled.xyz ) );
+
+			// Volume attenuation(Soft edge)
+			float3 fogDirWS = fv.fogVolumePos.xyz - position.xyz;
+			float3 fogDirOS = mul( (float3x3)fv.worldToObjMatrix, fogDirWS.xyz );
+			[branch] if((fv.miscFlag & 0x1) != 0)
+			{
+				fogDirOS = MapCubeToSphere(fogDirOS);// Map the direction (spherical) to a cube
+			}
+			const float invFalloffMax = fv.invSoftEdgeLerp;
+			fogInt = saturate(fogInt * vfGetVolumeAttenuation(fogDirOS, 1, invFalloffMax));
+
+			// final calculation of density
+			fogInt = saturate(densityNoise * fv.globalDensity.x * (fogInt - fv.densityOffset.x));
+
+			// depth based ramp
+			// using length instead of linearDepth is correct but it causes ring artifact so currently keep using linearDepth.
+			half r = saturate(linearDepth * fv.rampParams.x + fv.rampParams.y);
+			r = r * (2 - r);
+			r = r * fv.rampParams.z + fv.rampParams.w;
+			fogInt *= r;
+
+			// final density is multiplied by coverage factor to reduce aliasing.
+			fogInt *= coverage;
+
+			// accumulate attributes of participating media
+			density += fogInt;
+			densityColor += fv.fogColor.xyz * fogInt;
+			emissive += fv.emission.xyz * fogInt;
+		}
+	}
+}
+
+[numthreads(BLOCK_SIZE_X, BLOCK_SIZE_Y, BLOCK_SIZE_Z)]
+void InjectFogDensityCS(uint3 DispatchThreadID : SV_DispatchThreadID
+												, uint GroupIndex : SV_GroupIndex, uint3 GroupID : SV_GroupID)
+{
+	float maxDistance = vfDistributionParams.y + vfDistributionParams.x;
+	float maxLinearDepth = InjectFogDensityMaxDepthInput[DispatchThreadID.xy].x * maxDistance;
+
+	uint numVolumes = InjectFogDensityParams.y;
+
+	// Scale and bias for frustum to fit grid cells
+	float2 numTiles = ceil( ScreenSize.xy / float2(BLOCK_SIZE_X, BLOCK_SIZE_Y) );
+	float2 tileScale = numTiles / 2.0;
+	float2 tileBias = tileScale - float2( GroupID.xy );
+
+	float depthGridFront = GetVolumetricFogLinearDepth(float(GroupID.z) * BLOCK_SIZE_Z - 1);
+	float depthGridBack = GetVolumetricFogLinearDepth(float(GroupID.z) * BLOCK_SIZE_Z + 3);
+
+	CullFogVolume(tileScale, tileBias, numVolumes, GroupIndex, depthGridBack, depthGridFront);
+
+	// read number of volumes from group shared memory after culling.
+	numVolumes = countFogVolume;
+
+
+	const float3 pixelCoord = DispatchThreadID.xyz;
+
+	// read clip volume stencil value
+#if DURANGO || ORBIS
+	int nStencilVal = VolumetricClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).r;
+#else
+	int nStencilVal = VolumetricClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).g;
+#endif
+	const uint clipVolumeStencilID = vfGetClipVolumeStencilID(nStencilVal);
+	const uint clipVolumeIndex = clipVolumeStencilID & (MAX_CLIPVOLUMES-1);
+	const uint clipVolumeData = TiledClipVolumeInfo[clipVolumeIndex].data;
+
+	// Barycentric interpolation for reconstructing position
+	float2 vPixelUV = (pixelCoord.xy + 0.5f) * ScreenSize.zw;
+	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * FrustumTL.xyz + (vPixelUV.x * FrustumTR.xyz + (vPixelUV.y * FrustumBL.xyz)));
+	float n = dot(-CV_CameraFrontVector, vCamVec);
+	float3 normalizedCamVec = vCamVec / n;
+
+	float depthIndex = pixelCoord.z;
+	float depth = GetVolumetricFogLinearDepth(depthIndex);
+	float depthFront = GetVolumetricFogLinearDepth(depthIndex - 1.0f);
+
+	const float frameCount = vfDistributionParams.w;
+	const float jitter = GetJitterInternal(pixelCoord.xy, frameCount.xx);
+
+	float density = 0.0f;
+	float3 densityColor = float3(0.0f, 0.0f, 0.0f);
+	float3 emissive = float3(0.0f, 0.0f, 0.0f);
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+	// early rejection with max-depth
+	float earlyRejectDepth = GetVolumetricFogLinearDepth(depthIndex - 1.0f - EARLY_REJECTION_VOXELS);
+	earlyRejectDepth = min(earlyRejectDepth, depthFront - EARLY_REJECTION_LENGTH);
+	if(earlyRejectDepth < maxLinearDepth)
+	{
+		// discard fog density behind max-depth
+		if(depthFront < maxLinearDepth && maxLinearDepth <= depth)
+		{
+			depth = maxLinearDepth;
+		}
+#endif
+
+	// global atmospheric fog
+	// densityColor isn't added here because it's done separately in InjectVolumetricInscatteringCS.
+	float d = lerp(depthFront, depth, jitter);
+	float3 cameraToWorldPos = d * normalizedCamVec;
+	density = GetExponentialHeightFogDensity(cameraToWorldPos, depth);// match this depth with the depth in InjectVolumetricInscatteringCS function.
+
+	// clip global fog by VisArea
+	density = (clipVolumeData & CLIPVOLUME_AFFECTED_BY_SUN) ? density : 0.0f;
+
+	// FogVolumes
+	float invDist = (depth - depthFront) > 0.000001f ? (1.0f / (depth - depthFront)) : 0.0f;
+	AccumulateDensityFogVolume(density.x, densityColor.xyz, emissive.xyz, numVolumes, clipVolumeIndex, normalizedCamVec, depth, depthFront, jitter, invDist);
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+	}
+#endif
+
+	//if(all(pixelCoord.xyz < float3(ScreenSize.xy, InjectFogDensityParams.x)))
+	{
+		VolumetricFogDensityOutput[DispatchThreadID.xyz] = density.x;
+		VolumetricFogColorDensityOutput[DispatchThreadID.xyz] = densityColor.rgb;
+		VolumetricFogEmissiveOutput[DispatchThreadID.xyz] = emissive.rgb;
+	}
+}
+
+technique InjectFogDensity
+{
+  pass p0
+  {
+    ComputeShader = InjectFogDensityCS() InjectFogDensityCS;
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+RWTexture2D<float> MaxDepthOutput		: register(u0);
+
+Texture2D<float> DepthMaxInput: register(t0);
+
+SamplerState DepthInputSampler		: register(s0);
+
+float4 maxDepthDispatchParams;
+
+[numthreads(8, 8, 1)]
+void StoreDownscaledMaxDepthHorizontalCS(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+	const uint2 pixelCoord = DispatchThreadID.xy;
+	//if(all(DispatchThreadID.xy < ScreenSize.xy))
+	{
+		const float scale = maxDepthDispatchParams.x;
+		const float invScale = maxDepthDispatchParams.y;
+		float2 vPixelUV = (pixelCoord.xy) * ScreenSize.zw;
+
+		float maxDepth = 0.0f;
+		float num = ceil(scale / 2.0f) * 2.0f;
+		vPixelUV += ScreenSize.zw / float2(scale, 2.0f);
+
+		for(int i = 0; i < num; i+=2)
+		{
+			float4 depth = DepthMaxInput.GatherRed(DepthInputSampler, vPixelUV.xy, int2(i, 0));
+			maxDepth = max(maxDepth, max(max(depth.x, depth.y), max(depth.z, depth.w)));
+		}
+
+		float maxDistance = vfDistributionParams.y + vfDistributionParams.x;
+		maxDepth = maxDepth * PS_NearFarClipDist.y / maxDistance;
+
+		MaxDepthOutput[DispatchThreadID.xy] = maxDepth;
+	}
+}
+
+[numthreads(8, 8, 1)]
+void StoreDownscaledMaxDepthVerticalCS(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+	const uint2 pixelCoord = DispatchThreadID.xy;
+	//if(all(DispatchThreadID.xy < ScreenSize.xy))
+	{
+		const float scale = maxDepthDispatchParams.x;
+		const float invScale = maxDepthDispatchParams.y;
+		float2 vPixelUV = (pixelCoord.xy) * ScreenSize.zw;
+
+		float maxDepth = 0.0f;
+		float num = ceil(scale / 2.0f) * 2.0f;
+		vPixelUV += ScreenSize.zw / float2(2.0f, scale);
+
+		for(int i = 0; i < num; i+=2)
+		{
+			float4 depth = DepthMaxInput.GatherRed(DepthInputSampler, vPixelUV.xy, int2(0, i));
+			maxDepth = max(maxDepth, max(max(depth.x, depth.y), max(depth.z, depth.w)));
+		}
+
+		MaxDepthOutput[DispatchThreadID.xy] = maxDepth;
+	}
+}
+
+technique StoreDownscaledMaxDepthHorizontal
+{
+  pass p0
+  {
+    ComputeShader = StoreDownscaledMaxDepthHorizontalCS() StoreDownscaledMaxDepthCS;
+  }
+}
+
+technique StoreDownscaledMaxDepthVertical
+{
+  pass p0
+  {
+    ComputeShader = StoreDownscaledMaxDepthVerticalCS() StoreDownscaledMaxDepthCS;
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+RWBuffer<uint> LightGridOutput : register(u0);
+RWBuffer<uint> LightCountOutput : register(u1);
+
+StructuredBuffer<SVolumeLightCullInfo> VolumeLightsCullInfo : register(t0);
+
+groupshared uint LightCountGrid;
+groupshared uint LightIndicesGrid[TILED_SHADING_MAX_NUM_LIGHTS];
+
+[numthreads(BLOCK_SIZE_X, BLOCK_SIZE_Y, BLOCK_SIZE_Z)]
+void BuildLightListGridCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint GroupIndex : SV_GroupIndex, uint3 GroupID : SV_GroupID)
+{
+	const uint maxThreadNum = BLOCK_SIZE_X * BLOCK_SIZE_Y * BLOCK_SIZE_Z;
+
+	if(GroupIndex == 0)
+	{
+		LightCountGrid = 0;
+	}
+
+	// Scale and bias for frustum to fit grid cells
+	float2 numTiles = ceil( ScreenSize.xy / float2(BLOCK_SIZE_X, BLOCK_SIZE_Y) );
+	float2 tileScale = numTiles / 2.0;
+	float2 tileBias = tileScale - float2( GroupID.xy );
+	
+	// Extract projection matrix columns (including PostAA bias)
+	float4 col1 = float4( ProjParams.x * tileScale.x, 0.0f, ProjParams.z + tileBias.x, 0.0f );
+	float4 col2 = float4( 0.0f, -ProjParams.y * tileScale.y, ProjParams.w + tileBias.y, 0.0f );
+	float4 col4 = float4( 0.0f, 0.0f, 1.0f, 0.0f );
+
+	float4 frustumPlanes[4];
+	frustumPlanes[0] = normalize( col4 - col1 );
+	frustumPlanes[1] = normalize( col4 + col1 );
+	frustumPlanes[2] = normalize( col4 - col2 );
+	frustumPlanes[3] = normalize( col4 + col2 );
+
+
+	const uint maxLightsNum = DispatchSize.w;
+
+	float depthFront = GetVolumetricFogLinearDepth(float(GroupID.z) * BLOCK_SIZE_Z - 1);
+	float depthBack = GetVolumetricFogLinearDepth(float(GroupID.z) * BLOCK_SIZE_Z + 3);
+
+	GroupMemoryBarrierWithGroupSync();
+
+	// Cull light against frustum planes
+	for(uint lightIdx = GroupIndex; lightIdx < maxLightsNum; lightIdx += maxThreadNum)
+	{
+		bool inFrustum;
+
+		// Test far plane
+		float2 depthBounds = VolumeLightsCullInfo[lightIdx].depthBounds;
+		inFrustum = min( depthBounds.x, depthBounds.y ) <= depthBack;
+
+		// Test near plane
+		inFrustum = inFrustum && max( depthBounds.x, depthBounds.y ) >= depthFront;
+
+		if (inFrustum)
+		{
+			float4 lightPosRad = VolumeLightsCullInfo[lightIdx].posRad;
+			uint volumeType = VolumeLightsCullInfo[lightIdx].volumeType;
+
+			float4 lightDists;
+
+			[unroll]
+			for (uint j = 0; j < 4; ++j)
+			{
+				lightDists[j] = dot( frustumPlanes[j], float4( lightPosRad.xyz, 1 ) );
+			}
+			
+			if (volumeType == TILEDLIGHT_VOLUME_SPHERE)
+			{
+				[unroll]
+				for (uint j = 0; j < 4; ++j)
+				{
+					// Simple sphere culling
+					inFrustum = inFrustum && (lightDists[j] >= -lightPosRad.w);
+				}
+			}
+			else if (volumeType == TILEDLIGHT_VOLUME_CONE)
+			{
+				const float4 spotParams = VolumeLightsCullInfo[lightIdx].volumeParams0;
+				
+				[unroll]
+				for (uint j = 0; j < 4; ++j)
+				{
+					// Cone culling
+					float3 v = spotParams.xyz;
+					float3 Q = lightPosRad.xyz - v * lightPosRad.w;
+					Q += spotParams.w * (frustumPlanes[j].xyz - v * dot( v, frustumPlanes[j].xyz ));
+					float dBase = dot( frustumPlanes[j], float4( Q, 1.0f ) );
+					inFrustum = inFrustum && ((lightDists[j] > 0 || dBase > 0) && lightDists[j] >= -lightPosRad.w);  // Including sphere test for more accurate culling
+				}
+			}
+			else if (volumeType == TILEDLIGHT_VOLUME_OBB)
+			{
+				float4 u0 = VolumeLightsCullInfo[lightIdx].volumeParams0;
+				float4 u1 = VolumeLightsCullInfo[lightIdx].volumeParams1;
+				float4 u2 = VolumeLightsCullInfo[lightIdx].volumeParams2;
+				
+				[unroll]
+				for (uint j = 0; j < 4; ++j)
+				{
+					// OBB culling
+					float r = dot( float3( u0.w, u1.w, u2.w ), float3( abs(dot( frustumPlanes[j].xyz, u0.xyz )), abs(dot( frustumPlanes[j].xyz, u1.xyz )), abs(dot( frustumPlanes[j].xyz, u2.xyz )) ) ) ;
+					inFrustum = inFrustum && (-lightDists[j] <= r);// detect OBB intersects or is inside the plane.
+				}
+			}
+		}
+
+		[branch]
+		if (inFrustum)
+		{
+			uint index;
+			InterlockedAdd(LightCountGrid, 1, index);
+			LightIndicesGrid[index] = lightIdx;
+		}
+	}
+
+	GroupMemoryBarrierWithGroupSync();
+
+	uint maxCount = LightCountGrid;
+	const uint3 dispatchSize = DispatchSize.xyz;
+	uint bufferIdx = ( GroupID.z * dispatchSize.x * dispatchSize.y + GroupID.y * dispatchSize.x + GroupID.x);
+	[branch] if(GroupIndex == 0)
+	{
+		LightCountOutput[bufferIdx] = maxCount;
+	}
+
+	bufferIdx *= TILED_SHADING_MAX_NUM_LIGHTS;
+	[loop] for(uint i = GroupIndex; i < maxCount; i += maxThreadNum)
+	{
+		uint lightIndex = LightIndicesGrid[i];
+		LightGridOutput[bufferIdx + i] = lightIndex;
+	}
+}
+
+technique BuildLightListGrid
+{
+  pass p0
+  {
+    ComputeShader = BuildLightListGridCS() BuildLightListGridCS;
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+Texture2D<float4> depthMapVFTexture0 : register(t5);
+Texture2D<float4> depthMapVFTexture1 : register(t6);
+Texture2D<float4> depthMapVFTexture2 : register(t7);
+
+bool ShadowCascadeSampleVolumetricFog(Texture2D depthMap, float4 p, float2 randDirTC, float fDepthTestBias, out float fShadow, bool bSingleTap = false)
+{
+	fShadow = 1;
+
+	p.xy /= p.w;
+	p.z += fDepthTestBias;// add depth bias to reduce light leaking.
+
+	if(p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1 && p.z <= 1)
+	{
+		shadow_sample(depthMap, p.xyz, fShadow);
+		return true;
+	}
+
+	return false;
+}
+
+float ShadowDepthTestVolumetricFog(float3 worldPos, bool bSampleCloudShadows = true)
+{
+	const uint nCascadeMask = GetForwardShadowsCascadeMask();
+
+	float fShadow = 1;
+
+	if(nCascadeMask != 0)
+	{
+		float4 p;
+		ShadowTexSpace(float4(worldPos, 1), TexGen0, fOneDivFarDist.x, p);
+		const float2 randDirTC = 0;
+
+#if !%_RT_SAMPLE0 && !%_RT_SAMPLE1
+		bool bDone = ShadowCascadeSampleVolumetricFog(depthMapSampler0, p, randDirTC, fDepthTestBias.x, fShadow, true);
+#else
+		bool bDone = ShadowCascadeSampleVolumetricFog(depthMapVFTexture0, p, randDirTC, fDepthTestBias.x, fShadow, true);
+#endif
+
+		[branch]
+		if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_1))
+		{
+			ShadowTexSpace(float4(worldPos, 1), TexGen1, fOneDivFarDist.y, p);
+#if !%_RT_SAMPLE0 && !%_RT_SAMPLE1
+			bDone = ShadowCascadeSampleVolumetricFog(depthMapSampler1, p, randDirTC, fDepthTestBias.y, fShadow, true);
+#else
+			bDone = ShadowCascadeSampleVolumetricFog(depthMapVFTexture1, p, randDirTC, fDepthTestBias.y, fShadow, true);
+#endif
+
+#if %_RT_SAMPLE0 && %_RT_SAMPLE1
+			[branch]
+			if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_3))
+			{
+				ShadowTexSpace(float4(worldPos, 1), TexGen3, fOneDivFarDist.w, p);
+				ShadowCascadeSampleVolumetricFog(depthMapSampler3, p, randDirTC, fDepthTestBias.w, fShadow, true);
+			}
+#elif %_RT_SAMPLE1
+			[branch]
+			if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_2))
+			{
+				ShadowTexSpace(float4(worldPos, 1), TexGen2, fOneDivFarDist.z, p);
+				bDone = ShadowCascadeSampleVolumetricFog(depthMapVFTexture2, p, randDirTC, fDepthTestBias.z, fShadow, true);
+
+				[branch]
+				if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_3))
+				{
+					ShadowTexSpace(float4(worldPos, 1), TexGen3, fOneDivFarDist.w, p);
+					ShadowCascadeSampleVolumetricFog(depthMapSampler3, p, randDirTC, fDepthTestBias.w, fShadow, true);
+				}
+			}
+#else //%_RT_SAMPLE0 || (!%_RT_SAMPLE0 && !%_RT_SAMPLE1)
+			[branch]
+			if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_2))
+			{
+				ShadowTexSpace(float4(worldPos, 1), TexGen2, fOneDivFarDist.z, p);
+				bDone = ShadowCascadeSampleVolumetricFog(depthMapSampler2, p, randDirTC, fDepthTestBias.z, fShadow, true);
+
+				[branch]
+				if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_3))
+				{
+					ShadowTexSpace(float4(worldPos, 1), TexGen3, fOneDivFarDist.w, p);
+					ShadowCascadeSampleVolumetricFog(depthMapSampler3, p, randDirTC, fDepthTestBias.w, fShadow, true);
+				}
+			}
+#endif
+		}
+	}
+
+	if(bSampleCloudShadows && (nCascadeMask & FORWARD_SHADOWS_CLOUD_SHADOWS))
+	{
+		float fCloudShadow = GetCloudShadow(worldPos);
+		fShadow *= fCloudShadow;
+	}
+
+	return fShadow;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+float AccumulateSunShadow(in float depth, in float depthFront, in float3 eyeRay, in float jitter, in float index, in float count, in float depthIndex, in float maxLinearZ)
+{
+	float shadow;
+
+#if %_RT_LIGHTVOLUME0 && %_RT_LIGHTVOLUME1
+	const float countShadow = 4;
+#elif %_RT_LIGHTVOLUME1
+	const float countShadow = 3;
+#elif %_RT_LIGHTVOLUME0
+	const float countShadow = 2;
+#else
+	const float countShadow = 1;
+#endif
+
+#if %_RT_LIGHTVOLUME0 || %_RT_LIGHTVOLUME1 || %_RT_SAMPLE4 || %_RT_SAMPLE5
+	// get sun and cloud shadow
+	shadow = 0;
+	for(uint s = 0; s < countShadow; ++s)
+	{
+#if 1
+		float d = lerp(depthFront, depth, ((countShadow * index) + s + jitter) / (countShadow * count));
+#else
+		depthIndex = depthIndex - (((index * count) + s + jitter) / (countShadow * count));
+		float d = GetVolumetricFogLinearDepth(depthIndex);
+#endif
+		float3 worldPosition = d * eyeRay + PS_WorldViewPos.xyz;
+
+		// add shadow bias
+		worldPosition -= SunDir.xyz * exp2(1.442695f * 4.0f * min(0.0f, d - maxLinearZ));
+
+		shadow += ShadowDepthTestVolumetricFog(worldPosition.xyz, true);
+	}
+	shadow /= countShadow;
+#else
+	// get sun and cloud shadow
+	float d = lerp(depthFront, depth, jitter);
+	float3 worldPosition = d * eyeRay + PS_WorldViewPos.xyz;
+	worldPosition -= SunDir.xyz * exp2(1.442695f * 4.0f * min(0.0f, d - maxLinearZ));// add shadow bias
+	shadow = ShadowDepthTestVolumetricFog(worldPosition.xyz, true);
+#endif
+
+	return shadow;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+Buffer<uint> LightGridInput : register(t8);
+Buffer<uint> LightCountInput : register(t9);
+Texture2D<float> MaxDepthBuffer : register(t10);
+Texture2DArray<uint2> ClipVolumeStencil : register(t11);
+StructuredBuffer<SVolumeLightShadeInfo> VolumeLightsShadeInfo : register(t12);
+Texture3D<float3> VolumetricFogDensityColorInput : register(t13);
+#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+Texture3D<float> VolumetricFogDensityInput : register(t14);
+#endif
+Texture3D<float3> VolumetricFogEmissiveInput : register(t15);
+
+float4 ExponentialHeightFogColor;
+float4 InjectInscatteringParams;
+
+groupshared uint gridLightCount;
+groupshared uint gridLightIndices[TILED_SHADING_MAX_NUM_LIGHTS];
+
+void AccumulateInscatteringRegularLights(inout float3 inscatter, in float depth, in float depthFront, in float3 eyeRay, in float3 normalizedEyeRay, in float jitter, in float maxLinearZ, uint clipVolumeData, uint clipVolumeStencilID)
+{
+	float probeWeightSum = 0.0f;
+	const float clipVolumeBlendFactor = 0.0f;
+
+	for (uint i = 0; i < gridLightCount; ++i)
+	{
+		uint lightIndex = gridLightIndices[i];//LightGridInput[bufferIdx + i];
+
+		uint lightType = VolumeLightsShadeInfo[lightIndex].lightType;
+
+		// clipVolumeBlendWeight should be 0 or 1 because clipVolumeBlendFactor is always 0.
+		float clipVolumeBlendWeight = CalcClipVolumeBlendWeight(clipVolumeStencilID, clipVolumeData, clipVolumeBlendFactor, VolumeLightsShadeInfo[lightIndex].stencilID);
+
+		// envorinment probes
+		bool applyProbes = true;
+		if (applyProbes)
+		{
+			if (lightType == TILEDLIGHT_TYPE_PROBE && probeWeightSum < 1 && clipVolumeBlendWeight > 0.0f)
+			{
+				SVolumeLightShadeInfo light = VolumeLightsShadeInfo[lightIndex];
+				float3 lightPos = light.posRad.xyz;
+
+				float d = lerp(depthFront, depth, jitter);
+				float3 position = d * eyeRay;
+
+				float3 lightVec = lightPos.xyz - position;
+
+				// Compute attenuation for box
+				float3 tmpLightVec;
+				tmpLightVec.x = dot( light.projectorMatrix[0].xyz, lightVec );
+				tmpLightVec.y = dot( light.projectorMatrix[1].xyz, lightVec );
+				tmpLightVec.z = dot( light.projectorMatrix[2].xyz, lightVec );
+
+				[branch] if (max( max( abs(tmpLightVec.x), abs(tmpLightVec.y) ), abs(tmpLightVec.z) ) < 1)  // Required for correctness and performance
+				{
+					tmpLightVec = MapCubeToSphere( tmpLightVec );
+
+					const float AttenuationFalloffMax = 0.8f;// keep AttenuationFalloffMax as high as possible to mitigate sharp transition between probes.
+					float attenuation = GetAttenuation( tmpLightVec, 1, true, AttenuationFalloffMax) * light.attenuationParams.x;
+
+					// Diffuse
+					//float4 diffuseProbe = DiffuseCubeArray.SampleLevel( TrilinearClampSamplerState, float4( -CV_CameraFrontVector, light.resIndex ), 0 );
+					float4 diffuseProbe = DiffuseCubeArray.SampleLevel( TrilinearClampSamplerState, float4( eyeRay, light.resIndex ), 0 );
+					diffuseProbe.rgb = DecodeHDRCubemap( diffuseProbe ).xyz;
+
+					VolumetricFogLight fragLight;
+					fragLight.fFallOff = (1 - probeWeightSum) * attenuation;
+					fragLight.cDiffuse = diffuseProbe.rgb * light.color.rgb;
+					fragLight.radialLobe = 0.0f;
+					fragLight.dotLE = 1.0f;
+					fragLight.k = 0.0f;
+					fragLight.k2 = 1.0f;
+
+					probeWeightSum += fragLight.fFallOff;
+
+					inscatter += GetVolumetricFogInscattering(fragLight, true);
+				}
+			}
+		}
+
+		// Ambient lights
+		bool applyAmbientLights = true;
+		if(applyAmbientLights)
+		{
+			if (TILEDLIGHT_TYPE_AMBIENT_POINT <= lightType && lightType <= TILEDLIGHT_TYPE_AMBIENT_AREA && clipVolumeBlendWeight > 0.0f)
+			{
+				SVolumeLightShadeInfo light = VolumeLightsShadeInfo[lightIndex];
+
+				float d = lerp(depthFront, depth, jitter);
+				float3 position = d * eyeRay;
+
+				float3 lightVec = light.posRad.xyz - position.xyz;
+
+				float filter = 1;
+				float attenuation;
+				float NdotL;
+
+				if (lightType == TILEDLIGHT_TYPE_AMBIENT_AREA)
+				{
+					lightVec = ComputeNearestLightOnRectangle(position.xyz, lightVec, light.projectorMatrix);
+
+					attenuation = GetAttenuation( lightVec, 1.0 / light.posRad.w );
+
+					lightVec = normalize( lightVec );
+					float PdotL = dot( -lightVec, light.projectorMatrix[0].xyz );
+
+					attenuation *= GetSpotAttenuation(PdotL, light.projectorMatrix[3].w, light.posRad.w); // spot falloff for area light
+					attenuation *= attenuation;
+
+					NdotL = saturate( PdotL );
+				}
+				else
+				{
+					[branch] if (light.attenuationParams.x > 0)
+						attenuation = GetPhysicalLightAttenuation( length( lightVec ), 1.0 / light.posRad.w, light.attenuationParams.x );
+					else
+						attenuation = GetAttenuation( lightVec, 1.0 / light.posRad.w );
+
+					NdotL = 1;
+
+					if (lightType == TILEDLIGHT_TYPE_AMBIENT_PROJECTOR)
+					{
+						filter = 0;
+						[branch] if (attenuation > 0)
+						{
+							float4 vProjTC = mul( light.projectorMatrix, float4( position, 1 ) );
+							vProjTC.xy /= vProjTC.w;
+						
+							if (vProjTC.w > 0 && max( abs(vProjTC.x * 2 - 1), abs(vProjTC.y * 2 - 1) ) < 1)  // Avoid back-projection
+								filter = SpotTexArray.SampleLevel( TrilinearClampSamplerState, float3( vProjTC.xy, light.resIndex ), 4 ).x;
+						}
+					}
+					else
+					{
+						attenuation *= attenuation;
+					}
+				}
+
+				float3 lightTerm = lerp( float3( 1, 1, 1 ), light.color.xyz, attenuation * filter * NdotL );
+				inscatter.xyz *= lightTerm.xyz;
+			}
+		}
+
+		// regular lights except sun light and area light
+		if (lightType > TILEDLIGHT_TYPE_AMBIENT_AREA && clipVolumeBlendWeight > 0.0f)
+		{
+			const float4 posRad = VolumeLightsShadeInfo[lightIndex].posRad;
+
+			float coverage = 1.0f;
+			const float plane = 0.008f;
+			float d0 = depthFront;
+			float d1 = depth;
+			if(lightType == TILEDLIGHT_TYPE_REGULAR_PROJECTOR)
+			{
+				float3 position = depth * eyeRay;
+				float3 pf = depthFront * eyeRay;
+
+				float3 lightPos = posRad.xyz;
+				float3 fv = normalize(VolumeLightsShadeInfo[lightIndex].projectorMatrix[2].xyz);
+				float3 lv0 = position - lightPos;
+				float b0 = dot(fv, lv0);
+
+				// find the intersection between sampling line segment and spot light frustum.
+				float d = dot(fv, ((fv * plane) + lightPos));
+				float3 ab = position - pf;
+				float t = (d - dot(fv, pf)) / dot(fv, ab);
+				if(t >= 0.0f && t <= 1.0f)
+				{
+					if(b0 < plane)
+					{
+						position = t * ab + pf;
+						d1 = (d1 - d0) * t + depthFront;
+					}
+					else
+					{
+						pf = t * ab + pf;
+						d0 = (d1 - d0) * t + depthFront;
+					}
+				}
+
+				float4 projTC1 = mul( VolumeLightsShadeInfo[lightIndex].projectorMatrix, float4( position, 1.0f ) );
+				projTC1.xy /= projTC1.w;
+
+				float4 projTC0 = mul( VolumeLightsShadeInfo[lightIndex].projectorMatrix, float4( pf, 1.0f ) );
+				projTC0.xy /= projTC0.w;
+
+				float2 a0 = projTC0.xy - projTC1.xy;
+				float tmin = 0.0f;
+				float tmax = 1.0f;
+				for(uint i = 0; i < 2; ++i)
+				{
+					float t0 = (0.0f - projTC1[i]) / a0[i];
+					float t1 = (1.0f - projTC1[i]) / a0[i];
+					float tminT = min(t0, t1);
+					float tmaxT = max(t0, t1);
+					if(abs(a0[i]) > 0.0f)
+					{
+						tmin = max(tmin, tminT);
+						tmax = min(tmax, tmaxT);
+					}
+					else
+					{
+						if(projTC1[i] < 0.0f || projTC1[i] > 1.0f)
+						{
+							// set no intersection condition
+							tmin = 1.0f;
+							tmax = 0.0f;
+						}
+					}
+				}
+
+				if(tmin > tmax)
+				{
+					// no intersection found
+					tmin = 0.0f;
+					tmax = 1.0f;
+				}
+				//else
+				//{
+				//	tmin = clamp(tmin, 0.0f, 1.0f);
+				//	tmax = clamp(tmax, 0.0f, 1.0f);
+				//}
+
+				// perspective correct interpolation
+				if(projTC1.w > 0.0f && projTC0.w > 0.0f)
+				{
+					float w0 = rcp(projTC0.w);
+					float w1 = rcp(projTC1.w);
+					float td0 = d0 * w0;
+					float td1 = d1 * w1;
+					d0 = lerp(td1, td0, tmax);
+					d1 = lerp(td1, td0, tmin);
+					float wmax = lerp(w1, w0, tmax);
+					float wmin = lerp(w1, w0, tmin);
+					d0 /= wmax;
+					d1 /= wmin;
+				}
+
+				coverage = abs(depth - depthFront);
+				coverage = saturate(coverage > 0.0f ? abs(d1 - d0) / coverage : 0.0f);
+			}
+#if ENABLE_SPHERE_INTERSECTION
+			else if(lightType != TILEDLIGHT_TYPE_REGULAR_AREA) // TILEDLIGHT_TYPE_REGULAR_POINT or TILEDLIGHT_TYPE_REGULAR_POINTFACE
+			{
+				// find the intersection between sampling line segment and sphere.
+				float3 pf = depthFront * eyeRay;
+				float3 d = depth * eyeRay - pf;
+				float len = length(d);
+				float q = rcp(len);
+				d *= q;
+				float3 lightPos = posRad.xyz;
+				float3 m = pf - lightPos;
+				float b = dot(m, d);
+				float c = dot(m, m) - (posRad.w * posRad.w);
+				float discr = b * b - c;
+
+				float det = sqrt(discr);
+				float t0 = -b - det;
+				float t1 = -b + det;
+
+				if((c > 0.0f && b > 0.0f) || (discr < 0.0f))
+				{
+					// no intersection with sphere
+					t0 = 0.0f;
+					t1 = len;
+				}
+
+				t0 = clamp(t0, 0.0f, len);
+				t1 = clamp(t1, 0.0f, len);
+
+				coverage = saturate((t1 - t0) * q);
+				d0 = t0 + depthFront;
+				d1 = t1 + depthFront;
+			}
+#endif
+
+#if %_RT_SAMPLE4
+			const float count = 2.0f;
+			[loop] for(float ri = 0; ri < count; ++ri)
+#elif %_RT_SAMPLE5
+			const float count = 4.0f;
+			[loop] for(float ri = 0; ri < count; ++ri)
+#else
+			const float count = 1.0f;
+			const float ri = 0.0f;
+#endif
+			{
+#if %_RT_SAMPLE4 || %_RT_SAMPLE5
+				float interpDepth = lerp(d0, d1, (ri + jitter) / count);
+				float3 position = interpDepth * eyeRay;
+#else
+				float interpDepth = lerp(d0, d1, jitter);
+				float3 position = interpDepth * eyeRay;
+#endif
+
+				float3 lightVec = posRad.xyz - position;
+#if %_RT_SAMPLE2
+				if (lightType == TILEDLIGHT_TYPE_REGULAR_AREA)
+				{
+					lightVec = ComputeNearestLightOnRectangle(position.xyz, lightVec, VolumeLightsShadeInfo[lightIndex].projectorMatrix);
+				}
+#endif
+				float lightDist = length( lightVec );
+
+				if(lightDist < posRad.w)
+				{
+					SVolumeLightShadeInfo light = VolumeLightsShadeInfo[lightIndex];
+					const uint SkipShading = 0x1;
+					const uint ShadowMap = 0x2;
+					uint flag = 0;
+
+#if !%_RT_SAMPLE2
+					VolumetricFogLight fragLight;
+					float3 vLight = normalize( lightVec );
+					fragLight.k = InjectInscatteringParams.x;
+					fragLight.k2 = InjectInscatteringParams.y;
+					fragLight.dotLE = dot(vLight, normalizedEyeRay);
+					fragLight.cDiffuse = light.color.rgb;
+					fragLight.radialLobe = light.color.w;
+					fragLight.fFallOff = (1.0f/ count) * coverage * GetPhysicalLightAttenuation( lightDist, 1.0 / posRad.w, light.attenuationParams.x );
+#else
+					VolumetricFogLight fragLight;
+					fragLight.k = InjectInscatteringParams.x;
+					fragLight.k2 = InjectInscatteringParams.y;
+					fragLight.cDiffuse = light.color.rgb;
+					fragLight.radialLobe = light.color.w;
+					fragLight.fFallOff = (1.0f/ count) * coverage * GetPhysicalLightAttenuation( lightDist, 1.0 / posRad.w, light.attenuationParams.x );
+					float3 vLight = normalize( lightVec );
+					if (lightType == TILEDLIGHT_TYPE_REGULAR_AREA)
+					{
+						float PdotL = dot( -vLight.xyz, light.projectorMatrix[0].xyz );
+						fragLight.fFallOff *= GetSpotAttenuation( PdotL, light.projectorMatrix[3].w, posRad.w ) * step( 0, PdotL );
+						fragLight.fFallOff *= saturate( PdotL );
+					}
+					fragLight.dotLE = dot(vLight, normalizedEyeRay);
+#endif
+
+#if %_RT_LIGHTVOLUME0 || %_RT_LIGHTVOLUME1
+#else
+					// calculate shadow bias
+					float3 vShadowBias = vLight * exp2(1.442695f * 4.0f * min(0.0f, lerp(depthFront, depth, jitter) - maxLinearZ));
+#endif
+
+					if (lightType == TILEDLIGHT_TYPE_REGULAR_PROJECTOR)
+					{
+						if (fragLight.fFallOff > 0)
+						{
+							float4 projTC = mul( light.projectorMatrix, float4( position, 1.0f ) );
+							projTC.xy /= projTC.w;
+						
+							if (projTC.w < plane || min( projTC.x, projTC.y ) < 0 || max( projTC.x, projTC.y ) > 1)  // Avoid back-projection
+								flag |= SkipShading;
+							else
+								fragLight.cDiffuse *= SpotTexArray.SampleLevel( TrilinearClampSamplerState, float3(projTC.xy, light.resIndex), 4 ).xxx;
+
+							if (light.shadowParams.x > 0)
+								flag |= ShadowMap;
+						}
+					}
+					else if (lightType == TILEDLIGHT_TYPE_REGULAR_POINTFACE)
+					{
+						float3 dir = abs( vLight );
+						uint cubeFace = dir.x > dir.y ? (dir.x > dir.z ? (vLight.x < 0 ? 0 : 1) : (vLight.z < 0 ? 4 : 5)) :
+																						(dir.y > dir.z ? (vLight.y < 0 ? 2 : 3) : (vLight.z < 0 ? 4 : 5));
+
+						if (light.resIndex != cubeFace)
+							flag |= SkipShading;
+						else
+							flag |= ShadowMap;
+					}
+#if %_RT_SAMPLE2
+					else if (lightType == TILEDLIGHT_TYPE_REGULAR_AREA)
+					{
+						if (light.shadowParams.x > 0)
+								flag |= ShadowMap;
+					}
+#endif
+
+					if (!(flag & SkipShading))
+					{
+						if (flag & ShadowMap)
+						{
+#if %_RT_LIGHTVOLUME0 && %_RT_LIGHTVOLUME1
+							const float countShadow = 4;
+#elif %_RT_LIGHTVOLUME1
+							const float countShadow = 3;
+#elif %_RT_LIGHTVOLUME0
+							const float countShadow = 2;
+#endif
+
+#if %_RT_LIGHTVOLUME0 || %_RT_LIGHTVOLUME1
+							float shadowing = 0;
+							for(float s = 0; s < countShadow; ++s)
+							{
+	#if 1
+								// nice looking but need a few more registers.
+								float d = lerp(d0, d1, ((ri * count) + s + jitter) / (countShadow * count));
+								float3 bias = vLight * exp2(1.442695f * 4.0f * min(0.0f, d - maxLinearZ));// calculate shadow bias
+								float3 pos = d * eyeRay - bias;// add bias for reducing light leaking.
+	#else
+								// less register number.
+								float3 pos = d * eyeRay - vShadowBias;// add bias for reducing light leaking.
+	#endif
+
+								float4 P0 = mul( light.shadowMatrix, float4( pos, 1 ) );
+								P0.xy /= P0.w;
+								shadowing += ShadowPool.SampleCmpLevelZero( SampStateComp, P0.xy, P0.z );
+							}
+							fragLight.fFallOff *= shadowing / countShadow;
+#else
+	#if 1
+							// less register number
+							position -= vShadowBias;// add bias for reducing light leaking.
+	#else
+							float3 bias = vLight * exp2(1.442695f * 4.0f * min(0.0f, d - maxLinearZ));// calculate shadow bias
+							position = d * eyeRay - bias;// add bias for reducing light leaking.
+	#endif
+							float4 P0 = mul( light.shadowMatrix, float4( position, 1 ) );
+							P0.xy /= P0.w;
+							fragLight.fFallOff *= ShadowPool.SampleCmpLevelZero( SampStateComp, P0.xy, P0.z );
+#endif
+						}
+
+						inscatter += GetVolumetricFogInscattering(fragLight, false);
+					}
+				}
+			}
+		}
+	}
+}
+
+float3 CombineInscatteringSunAndRegularLights(in float3 inscatterRegularLights, in float3 localFogColor, in float density, in float shadowSun, in float3 normalizedEyeRay, in bool execFlag)
+{
+	float3 globalFogColor = density.xxx * ExponentialHeightFogColor.xyz;
+	float3 inscatterGlobalFogByFogColor = globalFogColor.xyz * inscatterRegularLights.xyz;
+	float3 inscatterLocalFog = inscatterRegularLights.xyz;
+
+	[branch] if(execFlag)
+	{
+		// calculate primary and secondary sun inscattering for global fog, and blend them.
+		VolumetricFogSunLight vfSunLight;
+		vfSunLight.dotLE = dot(SunDir.xyz, normalizedEyeRay);
+		vfSunLight.fFallOff = shadowSun;
+		vfSunLight.blendFactor = vfScatteringBlendParams.x;
+		vfSunLight.blendMode = vfScatteringBlendParams.y;
+		vfSunLight.cDiffuse1 = vfScatteringColor.xyz;// SunColor * FogAlbedoColor1
+		vfSunLight.cDiffuse2 = vfScatteringSecondaryColor.xyz;// SunColor * FogAlbedoColor2
+		vfSunLight.anisotropy1.x = vfScatteringParams.z;
+		vfSunLight.anisotropy1.y = vfScatteringParams.w;// 1.0 - k * k
+		vfSunLight.anisotropy2.x = vfScatteringColor.w;
+		vfSunLight.anisotropy2.y = vfScatteringSecondaryColor.w;// 1.0 - k * k
+		inscatterGlobalFogByFogColor += density.xxx * GetVolumetricFogInscatteringSun(vfSunLight);
+
+		// calculate sun inscattering for all participating media except global fog.
+		VolumetricFogLight vfLight;
+		vfLight.cDiffuse = SunColor.rgb;
+		vfLight.k = InjectInscatteringParams.x;
+		vfLight.k2 = InjectInscatteringParams.y;
+		vfLight.dotLE = vfSunLight.dotLE;
+		vfLight.fFallOff = shadowSun;
+		vfLight.radialLobe = 0.0f;
+		inscatterLocalFog += GetVolumetricFogInscattering(vfLight, false);
+	}
+
+	// combine sun and other inscattering.
+	// the result is multiplied by fog density color prior to ray-marching.
+	float3 inscatterByFogColor = (inscatterLocalFog.xyz * localFogColor.xyz) + inscatterGlobalFogByFogColor.xyz;
+
+	return inscatterByFogColor;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+RWTexture3D<float3> VolumetricFogInscatterOUT	: register(u0);
+#else
+RWTexture3D<float4> VolumetricFogInscatterOUT	: register(u0);
+#endif
+
+[numthreads(BLOCK_SIZE_X, BLOCK_SIZE_Y, BLOCK_SIZE_Z)]
+void InjectVolumetricInscatteringCS(uint3 DispatchThreadID : SV_DispatchThreadID
+																																 ,uint GroupIndex : SV_GroupIndex
+																																 ,uint3 GroupID : SV_GroupID)
+{
+	const uint3 dispatchSize = DispatchSize.xyz;
+	uint bufferIdx = ( GroupID.z * dispatchSize.x * dispatchSize.y + GroupID.y * dispatchSize.x + GroupID.x);
+
+	if(GroupIndex == 0)
+	{
+		gridLightCount = LightCountInput[bufferIdx];
+	}
+
+	const uint threadNum = BLOCK_SIZE_X * BLOCK_SIZE_Y * BLOCK_SIZE_Z;
+	bufferIdx *= TILED_SHADING_MAX_NUM_LIGHTS;
+
+	GroupMemoryBarrierWithGroupSync();
+
+	[loop] for(uint i = GroupIndex; i < gridLightCount; i += threadNum)
+	{
+		uint lightIndex = LightGridInput[bufferIdx + i];
+		gridLightIndices[i] = lightIndex;
+	}
+
+	GroupMemoryBarrierWithGroupSync();
+
+#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+	float globalAndLocalFogDensity = VolumetricFogDensityInput[DispatchThreadID.xyz].x;
+#endif
+
+	float3 localFogColor = VolumetricFogDensityColorInput[DispatchThreadID.xyz].xyz;
+
+	float maxDistance = vfDistributionParams.y + vfDistributionParams.x;
+	float maxLinearZ = MaxDepthBuffer[DispatchThreadID.xy] * maxDistance;
+
+	int nStencilVal;
+#if DURANGO || ORBIS
+	nStencilVal = ClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).r;
+#else
+	nStencilVal = ClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).g;
+#endif
+	const uint clipVolumeStencilID = vfGetClipVolumeStencilID(nStencilVal);
+	const uint clipVolumeData = TiledClipVolumeInfo[clipVolumeStencilID & (MAX_CLIPVOLUMES-1)].data;
+
+	// Barycentric interpolation for reconstructing position
+	const float3 pixelCoord = DispatchThreadID.xyz;
+	float2 vPixelUV = (pixelCoord.xy + 0.5f) * ScreenSize.zw;
+	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * FrustumTL.xyz + (vPixelUV.x * FrustumTR.xyz + (vPixelUV.y * FrustumBL.xyz)));
+
+	float n = dot(-CV_CameraFrontVector, vCamVec);
+	float3 normalizedCamVec = vCamVec / n;
+	float3 normalizedEyeRay = normalize(normalizedCamVec);
+
+	const float frameCount = vfDistributionParams.w;
+	float jitter = GetJitterInternal(pixelCoord.xy, frameCount.xx);
+
+	// voxel depth range is biased to reduce light leaking.
+	float depthIndex = pixelCoord.z;
+	float depth = GetVolumetricFogLinearDepth(depthIndex);
+	float depthFront = GetVolumetricFogLinearDepth(depthIndex - 1);
+
+	float3 inscatter = float3(0.0f, 0.0f, 0.0f);
+
+#if !ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+	// early rejection with max-depth
+	float earlyRejectDepth = max(0.0f, GetVolumetricFogLinearDepth(pixelCoord.z) - EARLY_REJECTION_LENGTH);
+	if(earlyRejectDepth <= maxLinearZ)
+	{
+#else
+	// early rejection with max-depth
+	float earlyRejectDepth = GetVolumetricFogLinearDepth(depthIndex - 1.0f - EARLY_REJECTION_VOXELS);
+	earlyRejectDepth = min(earlyRejectDepth, depthFront - EARLY_REJECTION_LENGTH);
+	if(earlyRejectDepth < maxLinearZ)
+	{
+		// discard inscattering behind max-depth
+		if(depthFront < maxLinearZ && maxLinearZ <= depth)
+		{
+			depth = maxLinearZ;
+		}
+#endif
+
+		float3 inscatterRegularLights = 0.0f;
+		AccumulateInscatteringRegularLights(inscatterRegularLights, depth, depthFront, normalizedCamVec, normalizedEyeRay, jitter, maxLinearZ, clipVolumeData, clipVolumeStencilID);
+
+		// calculate global fog density
+		float d = lerp(depthFront, depth, jitter);
+		const float3 cameraToWorldPos = d * normalizedCamVec;
+		float globalFogDensity = GetExponentialHeightFogDensity(cameraToWorldPos, d);
+
+		// clip global fog by VisArea
+		globalFogDensity = (clipVolumeData & CLIPVOLUME_AFFECTED_BY_SUN) ? globalFogDensity : 0.0f;
+
+
+		bool exec = (clipVolumeData & CLIPVOLUME_AFFECTED_BY_SUN) ? 1 : 0;
+
+#if %_RT_SAMPLE4
+		float shadowSun = 0.0f;
+		const float count = exec ? 2.0f : 0.0f;
+		[loop] for(float ri = 0; ri < count; ++ri)
+		{
+			shadowSun += AccumulateSunShadow(depth, depthFront, normalizedCamVec, jitter, ri, count, depthIndex, maxLinearZ);
+		}
+		shadowSun = (count > 0.0f) ? shadowSun / count : shadowSun;
+#elif %_RT_SAMPLE5
+		float shadowSun = 0.0f;
+		const float count = exec ? 4.0f : 0.0f;
+		[loop] for(float ri = 0; ri < count; ++ri)
+		{
+			shadowSun += AccumulateSunShadow(depth, depthFront, normalizedCamVec, jitter, ri, count, depthIndex, maxLinearZ);
+		}
+		shadowSun = (count > 0.0f) ? shadowSun / count : shadowSun;
+#else
+		float shadowSun = 0.0f;
+		if(exec)
+		{
+			shadowSun = AccumulateSunShadow(depth, depthFront, normalizedCamVec, jitter, 0, 1, depthIndex, maxLinearZ);
+		}
+#endif
+
+		inscatter = CombineInscatteringSunAndRegularLights(inscatterRegularLights, localFogColor, globalFogDensity, shadowSun, normalizedEyeRay, exec);
+
+		// add emissive from participating media.
+		inscatter += VolumetricFogEmissiveInput[DispatchThreadID.xyz].xyz;
+	}
+
+	inscatter.xyz = vfEncodeInscattering(inscatter.xyz);
+
+	//if(all(pixelCoord.xyz < float3(ScreenSize.xy, ScreenInfo.w)))
+	{
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+		VolumetricFogInscatterOUT[DispatchThreadID.xyz] = inscatter.xyz;
+#else
+		VolumetricFogInscatterOUT[DispatchThreadID.xyz] = float4(inscatter.xyz, globalAndLocalFogDensity.x);
+#endif
+	}
+}
+
+technique InjectVolumetricInscattering
+{
+  pass p0
+  {
+    ComputeShader = InjectVolumetricInscatteringCS() VolumeLightInjectionCS;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+RWTexture3D<float4> VolumetricFogOutput		: register(u0);
+
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+Texture3D<float3>	InscatteringInput				: register(t0);
+Texture3D<float>	FogDensityInput					: register(t1);
+#else
+Texture3D<float4>	InscatteringInput				: register(t0);
+#endif
+
+[numthreads(8, 8, 1)]
+void RaymarchVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+	const uint2 pixelCoord = DispatchThreadID.xy;
+	//if(all(pixelCoord.xy < ScreenSize.xy))
+	{
+		const float scatterCoefficient = vfScatteringParams.x;
+		const float extinctionCoefficient = vfScatteringParams.y;
+
+		float2 vPixelUV = (pixelCoord.xy + 0.5f) * ScreenSize.zw;
+
+		// Barycentric interpolation for reconstructing position
+		float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * FrustumTL.xyz + (vPixelUV.x * FrustumTR.xyz + (vPixelUV.y * FrustumBL.xyz)));
+
+		float n = dot(-CV_CameraFrontVector, normalize(vCamVec));
+		float3 normalizedFactor = 1 / n;
+
+		const uint maxStepNum = ScreenInfo.w;
+		float transmittance = 1.0f;
+		float3 inscatter = 0.0f;
+
+		[loop] for(uint step = 0; step < maxStepNum; ++step)
+		{
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+			float3 v = InscatteringInput[uint3(pixelCoord.xy, step)].xyz;
+			float density = FogDensityInput[uint3(pixelCoord.xy, step)].x;
+#else
+			float4 v = InscatteringInput[uint3(pixelCoord.xy, step)].xyzw;
+			float density = v.w;
+#endif
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+			// remove NaN as the empty mark.
+			density.x = isfinite(density.x) ? density.x : 0.0f;
+#endif
+
+			v.xyz = vfDecodeInscattering(v.xyz);
+
+			float depthIndex = step;
+			float depthFront = GetVolumetricFogLinearDepth(depthIndex - 1.0f);
+			float depthBack = GetVolumetricFogLinearDepth(depthIndex);
+
+			float stepSize = depthBack - depthFront;
+			stepSize *= normalizedFactor;
+
+			float3 S = scatterCoefficient * v.xyz;// info: v.xyz = inscatter.xyz * densityColor.rgb
+			float muE = max(0.000000001f, extinctionCoefficient * density.x);
+			float trns = exp(-muE * stepSize);
+			float3 Sint = ((-S * trns) + S) / muE;// integral of attenuated inscattering within voxel
+
+			inscatter += transmittance * Sint;
+			transmittance *= trns;
+
+			VolumetricFogOutput[uint3(pixelCoord.xy, step)] = float4(inscatter.xyz, transmittance);
+		}
+	}
+}
+
+technique RaymarchVolumetricFog
+{
+  pass p0
+  {
+    ComputeShader = RaymarchVolumetricFogCS() RaymarchVolumetricFogCS;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+RWTexture3D<float3> ReprojectVolumetricFogInscatterOutput		: register(u0);
+RWTexture3D<float> ReprojectVolumetricFogDensityOutput			: register(u1);
+
+Texture3D<float3> CurFrameInscatteringInput					: register(t0);
+Texture3D<float3> PrevFrameInscatteringInput				: register(t1);
+Texture3D<float3> CurFrameFogDensityInput						: register(t2);
+Texture3D<float3> PrevFrameFogDensityInput					: register(t3);
+Texture2D<float> ReprojectMaxDepthInput							: register(t4);
+#else
+RWTexture3D<float4> ReprojectVolumetricFogInscatterOutput		: register(u0);
+
+Texture3D<float4> CurFrameInscatteringInput					: register(t0);
+Texture3D<float4> PrevFrameInscatteringInput				: register(t1);
+Texture2D<float> ReprojectMaxDepthInput							: register(t2);
+#endif
+
+SamplerState ReprojectInputSampler		: register(s0);
+SamplerState ReprojectPointInputSampler		: register(s1);
+
+float4x4 PrevViewProjMatrix;
+
+#if ENABLE_5X5_NEIGHBOR_VOXEL_SEARCH
+groupshared float CurrentLuminance[8 * 8 * 4];
+#else
+groupshared float CurrentLuminance[8 * 8 * 6];
+#endif
+
+[numthreads(4, 4, 4)]
+void ReprojectVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+	float maxDistance = vfDistributionParams.y + vfDistributionParams.x;
+	float maxLinearDepth = maxDistance * ReprojectMaxDepthInput.Load(int3(DispatchThreadID.xy, 0));
+#endif
+
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+	float3 current = CurFrameInscatteringInput[DispatchThreadID.xyz].xyz;
+	float currDensity = CurFrameFogDensityInput[DispatchThreadID.xyz].x;
+#else
+	float4 current = CurFrameInscatteringInput[DispatchThreadID.xyz].xyzw;
+#endif
+
+	current.xyz = vfDecodeInscattering(current.xyz);
+
+#if %_RT_SAMPLE5
+	{
+#if ENABLE_5X5_NEIGHBOR_VOXEL_SEARCH
+		int3 loc = int3(gid.xyz * 4);
+		loc.xy -= int2(2, 2);
+
+		for(int i = 0; i < 4; ++i)
+		{
+			int3 offset;
+			offset.x = gtid.x + (gtid.y & 0x1 ? 4: 0);
+			offset.y = (gtid.z * 2) + (gtid.y >> 1);
+			offset.z = i;
+
+			int3 p = loc + offset;
+			p.x = clamp(p.x, 0, int(ScreenSize.x - 1));
+			p.y = clamp(p.y, 0, int(ScreenSize.y - 1));
+			float3 v = CurFrameInscatteringInput[p.xyz].xyz;
+
+			int index = (offset.x + (offset.y * 8)) + (offset.z * 64);
+			CurrentLuminance[index] = GetLuminance(v.xyz);
+		}
+#else
+		int3 loc = int3(gid.xyz * 4);
+		loc.xyz -= int3(1, 1, 1);
+
+		for(int i = 0; i < 6; ++i)
+		{
+			int3 offset;
+			offset.x = gtid.x + (gtid.y & 0x1 ? 4: 0);
+			offset.y = (gtid.z * 2) + (gtid.y >> 1);
+			offset.z = i;
+
+			int3 p = loc + offset;
+			p.x = clamp(p.x, 0, int(ScreenSize.x - 1));
+			p.y = clamp(p.y, 0, int(ScreenSize.y - 1));
+			float3 v = CurFrameInscatteringInput[p.xyz].xyz;
+
+			int index = (offset.x + (offset.y * 8)) + (offset.z * 64);
+			CurrentLuminance[index] = (offset.y < 6 && offset.x < 6) ? GetLuminance(v.xyz) : 0;
+		}
+#endif
+	}
+#endif
+
+	// Barycentric interpolation for reconstructing position
+	const uint3 pixelCoord = DispatchThreadID.xyz;
+	float2 vPixelUV = (pixelCoord.xy + 0.5f) * ScreenSize.zw;
+	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * FrustumTL.xyz + (vPixelUV.x * FrustumTR.xyz + (vPixelUV.y * FrustumBL.xyz)));
+
+	float n = dot(-CV_CameraFrontVector, vCamVec);
+	float3 normalizedCamVec = vCamVec / n;
+
+	float depthIndex = pixelCoord.z;
+	float depth = GetVolumetricFogLinearDepth(depthIndex);
+	float depthFront = GetVolumetricFogLinearDepth(depthIndex - 1.0f);
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+	// If a voxel is on max-depth, voxel's position is restricted to the front of max-depth to reduce light leaking.
+	if(depthFront < maxLinearDepth && maxLinearDepth <= depth)
+	{
+		depth = maxLinearDepth;
+	}
+#endif
+
+	float3 position = depth * normalizedCamVec;
+	float3 worldPos = PS_WorldViewPos.xyz + position;
+
+	float4 reprojPos = mul( float4(worldPos, 1), PrevViewProjMatrix );
+	float3 tc;
+	tc.xy = reprojPos.xy / reprojPos.w;
+	tc.z = GetVolumetricFogDepthTexcoord(reprojPos.w);
+
+	const float halfSizeTC = 0.5f;
+	const float endFadeTC = 0.6f;
+	const float startFadeTC = 0.49f;
+	const float borderLength = endFadeTC - halfSizeTC;
+	const float minTC = 0.0f - borderLength;
+	const float maxTC = 1.0f + borderLength;
+	const float near = vfSamplingParams.x;
+	float blendFactor = (all(tc.xyz > minTC) && all(tc.xyz < maxTC) && (reprojPos.w > near)) ? ScreenInfo.z : 0.0f;
+
+#if %_RT_SAMPLE5
+	GroupMemoryBarrierWithGroupSync();
+#endif
+
+	if(blendFactor > 0.0f)
+	{
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+		float3 prev = PrevFrameInscatteringInput.SampleLevel(ReprojectInputSampler, tc, 0).xyz;
+		float prevDensity = PrevFrameFogDensityInput.SampleLevel(ReprojectInputSampler, tc, 0).x;
+#else
+		float4 prev = PrevFrameInscatteringInput.SampleLevel(ReprojectInputSampler, tc, 0).xyzw;
+		float prevDensity = prev.w;
+#endif
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+		// if a previous frame's voxel contains NaN, it's empty so it should not be blended with current frame's voxel.
+		if(isfinite(prevDensity.x))
+		{
+#endif
+
+		prev.xyz = vfDecodeInscattering(prev.xyz);
+
+		// To reduce smear artifact around screen edges, blend factor decreases on screen edges.
+		const float nomalizationFactor = 1.0f / (endFadeTC - startFadeTC);
+		float3 f = 1.0f - saturate((abs(tc.xyz - halfSizeTC) - startFadeTC) * nomalizationFactor);
+		f.xyz = f.xyz * f.xyz * (-2.0f * f.xyz + 3.0f);
+		blendFactor *= saturate(f.x * f.y * f.z);
+
+#if !%_RT_SAMPLE5
+		// conservative ghost reduction
+
+		// eliminate NaN and Inf
+		prev.xyz = isfinite(prev.xyz) ? prev.xyz : float3(0.0f, 0.0f, 0.0f);
+		prevDensity = isfinite(prevDensity) ? prevDensity : 1.0f;
+
+		// distance in volume texture space
+		float invMaxIndex = vfSamplingParams.w;
+		float dt = length(tc - float3(vPixelUV, ((float)pixelCoord.z + 0.5f) * invMaxIndex));
+		float velocityFactor = exp2(-dt*32.0f);
+
+		// huge different previsou voxel value should be rejected.
+		float lc = dot(float3(0.3f, 0.6f, 0.1f), current.xyz);
+		float lp = dot(float3(0.3f, 0.6f, 0.1f), prev.xyz);
+		float k = 0.9f;//0.4f;
+		float w = exp2(-abs(lc - lp) * k);
+
+		//w = lerp(w, 1.0f, velocityFactor);
+		w = min(w, velocityFactor);
+
+		float r = 0.9f;//0.7f
+		float similarityFactor = ((w * r) + (1.0f - r));
+
+		blendFactor *= similarityFactor;
+#else
+		// advanced ghost reduction
+
+#if ENABLE_5X5_NEIGHBOR_VOXEL_SEARCH
+		// gather 5x5 neighbor voxel luminances
+		int index = (gtid.x + (gtid.y * 8)) + (gtid.z * 64);
+		float v0 = CurrentLuminance[index];
+		index += 1;
+		float v1 = CurrentLuminance[index];
+		index += 1;
+		float v2 = CurrentLuminance[index];
+		index += 1;
+		float v3 = CurrentLuminance[index];
+		index += 1;
+		float v4 = CurrentLuminance[index];
+		index += 4;
+		float minl = vfEncodeInscattering(65504.0f).x;
+		float maxl = 0.0f;
+		// voxel luminance may be NaN, but min and max instructions ignore NaN.
+		minl = min(min(min(min(min(v0, v1), v2), v3), v4), minl);
+		maxl = max(max(max(max(max(v0, v1), v2), v3), v4), maxl);
+
+		v0 = CurrentLuminance[index];
+		index += 1;
+		v1 = CurrentLuminance[index];
+		index += 1;
+		v2 = CurrentLuminance[index];
+		index += 1;
+		v3 = CurrentLuminance[index];
+		index += 1;
+		v4 = CurrentLuminance[index];
+		index += 4;
+		minl = min(min(min(min(min(v0, v1), v2), v3), v4), minl);
+		maxl = max(max(max(max(max(v0, v1), v2), v3), v4), maxl);
+
+		v0 = CurrentLuminance[index];
+		index += 1;
+		v1 = CurrentLuminance[index];
+		index += 1;
+		v2 = CurrentLuminance[index];
+		index += 1;
+		v3 = CurrentLuminance[index];
+		index += 1;
+		v4 = CurrentLuminance[index];
+		index += 4;
+		minl = min(min(min(min(min(v0, v1), v2), v3), v4), minl);
+		maxl = max(max(max(max(max(v0, v1), v2), v3), v4), maxl);
+
+		v0 = CurrentLuminance[index];
+		index += 1;
+		v1 = CurrentLuminance[index];
+		index += 1;
+		v2 = CurrentLuminance[index];
+		index += 1;
+		v3 = CurrentLuminance[index];
+		index += 1;
+		v4 = CurrentLuminance[index];
+		index += 4;
+		minl = min(min(min(min(min(v0, v1), v2), v3), v4), minl);
+		maxl = max(max(max(max(max(v0, v1), v2), v3), v4), maxl);
+
+		v0 = CurrentLuminance[index];
+		index += 1;
+		v1 = CurrentLuminance[index];
+		index += 1;
+		v2 = CurrentLuminance[index];
+		index += 1;
+		v3 = CurrentLuminance[index];
+		index += 1;
+		v4 = CurrentLuminance[index];
+		//index += 4;
+		minl = min(min(min(min(min(v0, v1), v2), v3), v4), minl);
+		maxl = max(max(max(max(max(v0, v1), v2), v3), v4), maxl);
+
+#else
+
+		// gather 3x3x3 neighbor voxel luminances
+		float minl = vfEncodeInscattering(65504.0f).x;
+		float maxl = 0.0f;
+		for(int z = 0; z < 3; ++z)
+		{
+			int index = (gtid.x + (gtid.y * 8)) + ((gtid.z + z) * 64);
+			float v0 = CurrentLuminance[index];
+			index += 1;
+			float v1 = CurrentLuminance[index];
+			index += 1;
+			float v2 = CurrentLuminance[index];
+			index += 6;
+			minl = min(min(v0, v1), min(v2, minl));
+			maxl = max(max(v0, v1), max(v2, maxl));
+
+			v0 = CurrentLuminance[index];
+			index += 1;
+			v1 = CurrentLuminance[index];
+			index += 1;
+			v2 = CurrentLuminance[index];
+			index += 6;
+			minl = min(min(v0, v1), min(v2, minl));
+			maxl = max(max(v0, v1), max(v2, maxl));
+
+			v0 = CurrentLuminance[index];
+			index += 1;
+			v1 = CurrentLuminance[index];
+			index += 1;
+			v2 = CurrentLuminance[index];
+			//index += 6;
+			minl = min(min(v0, v1), min(v2, minl));
+			maxl = max(max(v0, v1), max(v2, maxl));
+		}
+#endif
+
+		minl = vfDecodeInscattering(minl.xxx).x;
+		maxl = vfDecodeInscattering(maxl.xxx).x;
+
+		// distance in volume texture space
+		float invMaxIndex = vfSamplingParams.w;
+		float dt = tc.z - (((float)pixelCoord.z + 0.5f) * invMaxIndex);
+		float velocityFactor = saturate(exp2(-abs(dt) * 80.0f));
+		blendFactor *= lerp(0.5f, 1.0f, velocityFactor);
+
+		// eliminate NaN and Inf
+		prev.xyz = isfinite(prev.xyz) ? prev.xyz : float3(0.0f, 0.0f, 0.0f);
+		prevDensity = isfinite(prevDensity) ? prevDensity : 1.0f;
+
+		// luminance similarity among neighbor voxels
+		float pl = GetLuminance(prev.xyz);
+		float cpl = clamp(pl, minl, maxl);
+		const float ratio = 0.1f;// from 0.1 to 0.3f is good due to less ghosting.
+#if 1
+		float diff = pl - cpl;
+		float w = diff > 0.0f ? -24.0f : 48.0f;
+		float similarityFactor = saturate(exp2(w * diff));
+
+		// luminance similarity between current and previous voxel
+		float cl = GetLuminance(current.xyz);//lerp(minl, maxl, 0.5f);
+		similarityFactor = min(similarityFactor, lerp(0.6f, 1.0f, saturate(exp2(-8.0f * abs(pl - cl)))));
+#else
+		float similarityFactor = saturate(exp2(-20.0f * (pl - cpl)));// bright previous value is rejected.
+#endif
+
+		blendFactor *= lerp(similarityFactor, 1.0f, ratio);
+#endif
+
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+		current = lerp(current, prev, blendFactor);
+		currDensity = lerp(currDensity, prevDensity, blendFactor);
+#else
+		current.xyz = lerp(current.xyz, prev.xyz, blendFactor);
+		current.w = lerp(current.w, prevDensity, blendFactor);
+#endif
+
+#if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
+		}
+#endif
+	}
+
+	current.xyz = vfEncodeInscattering(current.xyz);
+
+#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+	ReprojectVolumetricFogInscatterOutput[pixelCoord.xyz] = current;
+	ReprojectVolumetricFogDensityOutput[pixelCoord.xyz] = currDensity;
+#else
+	ReprojectVolumetricFogInscatterOutput[pixelCoord.xyz] = current;
+#endif
+}
+
+technique ReprojectVolumetricFog
+{
+  pass p0
+  {
+    ComputeShader = ReprojectVolumetricFogCS() ReprojectVolumetricFogCS;
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+struct vtxOutVolumetricFog
+{
+  float4 HPosition	: POSITION;
+  float2 baseTC			: TEXCOORD;
+};
+
+float4 ParamDepth;
+
+vtxOutVolumetricFog StoreJitteringDepthToClipVolumeDepthVS(vtxIn IN)
+{
+	vtxOutVolumetricFog OUT; 
+	OUT.HPosition = Get2dHPos(IN.Position);
+	OUT.baseTC.xy = IN.baseTC.xy;
+	return OUT;
+}
+
+void StoreJitteringDepthToClipVolumeDepthPS(vtxOutVolumetricFog IN
+																					 ,out float4 Color : COLOR0
+																					 ,out float Depth : DEPTH)
+{
+	Color = 0.0f;
+
+	uint2 pixelCoord = PS_ScreenSize.xy * IN.baseTC.xy;
+	float jitter = GetJitterInternal(pixelCoord.xy * 128.0f, float2(0.5f, 1.5f));
+	const float bias = -0.5f;// half voxel size bias for reducing light and fog leaking.
+	float depthIndex = ParamDepth.x - jitter + bias;
+	float linearDepth = GetVolumetricFogLinearDepth(depthIndex);
+	float zPersp = saturate((ParamDepth.y + linearDepth * ParamDepth.z) / linearDepth);
+	Depth = abs(ParamDepth.w - zPersp);// When ReverseDepth is on, ParamDepth.w = 1.0f, otherwise ParamDepth.w = 0.0f.
+}
+
+technique StoreJitteringDepthToClipVolumeDepth
+{
+  pass p0
+  {
+    VertexShader = StoreJitteringDepthToClipVolumeDepthVS();
+    PixelShader = StoreJitteringDepthToClipVolumeDepthPS();
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// 
+////////////////////////////////////////////////////////////////////////////
+//#define ENABLE_DOWNSCALE_AVERAGED_DEPTH_SHADOW_MAP
+
+Texture2D<float4> DownscaleShadowMapTexture : register(t0);
+SamplerState DownscaleShadowMapSampler : register(s0);
+
+vtxOutVolumetricFog RenderDownscaledShadowMapVS(vtxIn IN)
+{
+	vtxOutVolumetricFog OUT; 
+	OUT.HPosition = Get2dHPos(IN.Position);
+	OUT.baseTC.xy = IN.baseTC.xy;
+	return OUT;
+}
+
+void RenderDownscaledShadowMapPS(vtxOutVolumetricFog IN, out float Depth : DEPTH)
+{
+#if %_RT_LIGHTVOLUME0 && %_RT_LIGHTVOLUME1
+	Texture2D depthMap = depthMapSampler2;
+#elif %_RT_LIGHTVOLUME1
+	Texture2D depthMap = depthMapSampler1;
+#elif %_RT_LIGHTVOLUME0
+	Texture2D depthMap = depthMapSampler0;
+#else
+	Texture2D depthMap = depthMapSampler0;
+#endif
+
+	// downscale depth shadow map
+	float4 shadow = depthMap.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(0,0));
+	shadow = min(shadow, depthMap.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(2,0)));
+	shadow = min(shadow, depthMap.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(0,2)));
+	shadow = min(shadow, depthMap.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(2,2)));
+	Depth = min(min(min(shadow.x, shadow.y), shadow.z), shadow.w);
+}
+
+void DownscaleShadowMap2PS(vtxOutVolumetricFog IN, out float Depth : DEPTH)
+{
+	// downscale depth shadow map
+#if ENABLE_DOWNSCALE_AVERAGED_DEPTH_SHADOW_MAP
+	float4 shadow = DownscaleShadowMapTexture.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(0,0));
+	Depth = dot(shadow.xyzw, 0.25f);
+#else
+	float4 shadow = DownscaleShadowMapTexture.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(0,0));
+	Depth = min(min(min(shadow.x, shadow.y), shadow.z), shadow.w);
+#endif
+}
+
+void DownscaleShadowMap4PS(vtxOutVolumetricFog IN, out float Depth : DEPTH)
+{
+	// downscale depth shadow map
+#if ENABLE_DOWNSCALE_AVERAGED_DEPTH_SHADOW_MAP
+	float4 shadow = DownscaleShadowMapTexture.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(0,0));
+	shadow += DownscaleShadowMapTexture.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(2,0));
+	shadow += DownscaleShadowMapTexture.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(0,2));
+	shadow += DownscaleShadowMapTexture.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(2,2));
+	Depth = 0.25f * dot(shadow.xyzw, 0.25f);
+#else
+	float4 shadow = DownscaleShadowMapTexture.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(0,0));
+	shadow = min(shadow, DownscaleShadowMapTexture.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(2,0)));
+	shadow = min(shadow, DownscaleShadowMapTexture.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(0,2)));
+	shadow = min(shadow, DownscaleShadowMapTexture.GatherRed(DownscaleShadowMapSampler, IN.baseTC.xy, int2(2,2)));
+	Depth = min(min(min(shadow.x, shadow.y), shadow.z), shadow.w);
+#endif
+}
+
+technique RenderDownscaledShadowMap
+{
+  pass p0
+  {
+    VertexShader = RenderDownscaledShadowMapVS();
+    PixelShader = RenderDownscaledShadowMapPS() RenderDownscaledShadowMapPS;
+  }
+}
+
+technique DownscaleShadowMap2
+{
+  pass p0
+  {
+    VertexShader = RenderDownscaledShadowMapVS();
+    PixelShader = DownscaleShadowMap2PS();
+  }
+}
+
+technique DownscaleShadowMap4
+{
+  pass p0
+  {
+    VertexShader = RenderDownscaledShadowMapVS();
+    PixelShader = DownscaleShadowMap4PS();
+  }
+}
+

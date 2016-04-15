@@ -1,0 +1,118 @@
+<Mode name='Extraction'>
+
+	<PlayerStats class='StandardPlayerStats' />
+
+	<Spawning class='MPSpawningWithLives' teamGame='1' teamSpawnsType='Standard' usingLua='0' />
+
+	<StatsRecording class='StandardStatsRecording' />
+
+	<Scoring class='StandardScoring'>
+    <Player>
+      <!-- <Event type='PlayerKill'        points='50' /> disabled so attacking and defending kills can work -->
+      <Event type='PlayerTeamKill'    points='0' />
+      <Event type='PlayerKillAssist'  points='20' />
+      <Event type='Tagged_PlayerKillAssist' points='25' />
+      <Event type='CarryObjectiveTaken' points='100' />
+      <Event type='CarryObjectiveRetrieved' points='300' />
+      <Event type='CarryObjectiveCarrierKilled' points='100' />
+      <Event type='Extraction_AttackingKill' points='100' />
+      <Event type='Extraction_DefendingKill' points='100' />
+			<Event type='Extraction_ObjectiveReturnDefend' points='50' />
+<!--      <Event type='FlagAssist' points='20' /> -->
+    </Player>
+    <Team>
+		  <Event type='CarryObjectiveRetrieved' points='1' />
+    </Team>
+	</Scoring>
+
+	<ScoreRewards enabled='1' />
+
+	<AssistScoring class='AssistScoring' maxTimeBetweenAttackAndKillForAssist='7000' maxAssistScore='99' assistScoreMultiplier='0.5' />
+
+	<Teams class='StandardTwoTeams' />
+
+	<State class='StandardState' />
+
+  <VictoryConditions class='ExtractionVictoryConditions' winOnPrimaryTeamDead='1' winOnSecondaryTeamDead='1'>
+    <!--<DrawResolution>
+      <level name='ESVC_DrawResolution_level_1' winMessage='ui_msg_ext_draw_resolved_time' test='lessthan' type='float' />
+    </DrawResolution>-->
+  </VictoryConditions>
+
+	<PlayerSetup class='StandardSetup'>
+	</PlayerSetup>
+
+	<DamageHandling class='MPDamageHandling'>
+		<Table path='Scripts/GameRules/MPDamageTable.xml' />
+	</DamageHandling>
+
+	<ActorAction class='MPActorAction' />
+
+	<Spectator class='MPSpectator' eatsActorActions='1' enableFree='0' enableFollow='1' enableKiller='1' timeFromDeathTillAutoSpectate='5000' />
+
+	<Objectives class='Objective_Extraction' spawnAt='ExtractionWeaponSpawn' extractAt='ExtractionPoint' fallbackGun='Hammer' invertTeams='1' droppedTimerLength='30' defensiveKillRadius='20.0' defendingDroppedRadius='20.0' defendingDroppedTimeToScore='10.0' pickUpVisCheckHeight='1.0' >
+		<Physics type='Networked' />
+		<AtBaseIcons friendlyStealth='ERGMO_EXT_StealthAtBase_blue' hostileStealth='ERGMO_EXT_StealthAtBase_red' friendlyArmour='ERGMO_EXT_ArmourAtBase_blue' hostileArmour='ERGMO_EXT_ArmourAtBase_red' />
+		<CarriedIcons friendlyStealth='ERGMO_EXT_StealthCarried_blue' hostileStealth='ERGMO_EXT_StealthCarried_red' friendlyArmour='ERGMO_EXT_ArmourCarried_blue' hostileArmour='ERGMO_EXT_ArmourCarried_red' />	
+		<DroppedIcons friendlyStealth='ERGMO_EXT_StealthDropped_blue' hostileStealth='ERGMO_EXT_StealthDropped_red' friendlyArmour='ERGMO_EXT_ArmourDropped_blue' hostileArmour='ERGMO_EXT_ArmourDropped_red' />
+		<BaseIcons  friendly='ERGMO_EXT_ExtractionPoint' hostile='ERGMO_EXT_ExtractionPoint' />
+		
+		<Strings 
+			powerCell='ui_msg_ext_power_cell'
+      friendlyPickUp='ui_msg_ext_tick_picked_up_0' 
+      hostilePickUp='ui_msg_ext_tick_picked_up_1' 
+      friendlyDropped='ui_msg_ext_tick_dropped_0' 
+      hostileDropped='ui_msg_ext_tick_dropped_1' 
+      defenderReturned='ui_msg_ext_tick_returned_0' 
+      attackerReturned='ui_msg_ext_tick_returned_1' 
+      friendlyExtracted='ui_msg_ext_tick_extracted_0' 
+      hostileExtracted='ui_msg_ext_tick_extracted_1' 
+      friendlyExtractedEffect='ui_msg_ext_tick_extracted_effect_0' 
+      hostileExtractedEffect='ui_msg_ext_tick_extracted_effect_1' 
+      statusAttackersTicksSafe='ui_msg_ext_status_0'
+      statusDefendersTicksSafe='ui_msg_ext_status_1'
+      statusAttackerCarryingTick='ui_msg_ext_status_2'
+      statusDefendersTickCarriedDropped='ui_msg_ext_status_3'
+      iconTextDefend='ui_icon_ex_defend'
+      iconTextEscort='ui_icon_ex_escort'
+      iconTextSeize='ui_icon_ex_seize'
+      iconTextKill='ui_icon_ex_kill'
+      iconTextExtraction='ui_icon_ex_extraction'
+			hasTaken='ui_msg_ext_has_taken'
+			hasExtracted='ui_msg_ext_has_extracted'
+			hasDropped='ui_msg_ext_has_dropped'
+     />
+		<Offset x='0.0' y='0.0' z='1.0' />
+		<Sounds
+			pickUpFriendly='GamemodeGoodMinor'
+			pickUpHostile='GamemodeBadMinor'
+			extractedFriendly='GamemodeGoodMajor'
+			extractedHostile='GamemodeBadMajor'
+			returnedDefender='GamemodeGoodMinor'		
+			returnedAttacker='GamemodeBadMinor'
+			droppedFriendly='GamemodeBadMinor'
+			droppedHostile='GamemodeGoodMinor'
+			/>
+	</Objectives>
+
+  <!-- resetScores is actually resetTeamScores -->
+	<Rounds class='StandardRounds' resetScores='1' suddenDeathTimeSecs='30'>
+
+		<EndStrings>
+			<Strings reason="TimeLimitReached" winMessage="" loseMessage="" />
+			<VictoryStrings round="Even" reason="TimeLimitReached" winMessage="ui_msg_ext_restart_half_time" loseMessage="ui_msg_ext_restart_half_time" />
+			<VictoryStrings round="Odd" reason="TimeLimitReached" winMessage="ui_msg_ext_restart_full_time" loseMessage="ui_msg_ext_restart_full_time" />
+		</EndStrings>
+
+		<PrimaryTeam>
+			<Entity class='ExtractionPoint' luaActivateFunc='ActivateSite' luaDeactivateFunc='DeactivateSite' select='Random' count='2' />
+			<StartStrings startNewRoundTeam='ui_msg_ext_attacking' startNewRoundSmallBanner='ui_msg_ex_matchstart_attack' />
+		</PrimaryTeam>
+		<SecondaryTeam>
+			<Entity class='ExtractionWeaponSpawn' luaActivateFunc='ActivateSite' luaDeactivateFunc='DeactivateSite' select='Random' count='3' />
+			<StartStrings startNewRoundTeam='ui_msg_ext_defending' startNewRoundSmallBanner='ui_msg_ex_matchstart_defend' />
+		</SecondaryTeam>
+	</Rounds>
+
+</Mode>
+

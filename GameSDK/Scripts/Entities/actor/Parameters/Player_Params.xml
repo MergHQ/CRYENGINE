@@ -1,0 +1,193 @@
+<ActorParams type="CPlayer" >
+
+	<HitRecoilTable>
+		<!--Projectiles-->
+		<HitRecoil name="Level1" filterDelay="0.25" minDamage="-50" maxDamage="100" shakeCurveAttack="0.5" shakeShiftIntensity="0.01" shakePitchIntensity="0.05" shakeRollIntensity="0.1" shakeTime="0.15" ffWeight="0.3" ffDelay="0.0" ffEffectName="weaponfiresingleheavy" />
+		<HitRecoil name="Level2" filterDelay="0.25" minDamage="-50" maxDamage="100" shakeCurveAttack="0.5" shakeShiftIntensity="0.02" shakePitchIntensity="0.1" shakeRollIntensity="0.15" shakeTime="0.2" ffWeight="0.5" ffDelay="0.0" ffEffectName="weaponfiresingleheavy" />
+		<HitRecoil name="Level3" filterDelay="0.5" minDamage="-50" maxDamage="100" shakeCurveAttack="0.5" shakeShiftIntensity="0.02" shakePitchIntensity="0.15" shakeRollIntensity="0.20" shakeTime="0.3" ffWeight="0.7" ffDelay="0.0" ffEffectName="weaponfiresingleheavy" />
+		<HitRecoil name="Level4" filterDelay="0.5" minDamage="-50" maxDamage="100" shakeCurveAttack="0.5" shakeShiftIntensity="0.02" shakePitchIntensity="0.2" shakeRollIntensity="0.25" shakeTime="0.3" ffWeight="0.7" ffDelay="0.0" ffEffectName="weaponfiresingleheavy" />
+		<HitRecoil name="Level5" filterDelay="0.5" minDamage="-50" maxDamage="100" shakeCurveAttack="0.5" shakeShiftIntensity="0.03" shakePitchIntensity="0.25" shakeRollIntensity="0.3" shakeTime="0.3" ffWeight="0.7" ffDelay="0.0" ffEffectName="weaponfiresingleheavy" />
+		<HitRecoil name="Level1_mp" filterDelay="0.25" minDamage="-5" maxDamage="30" shakeCurveAttack="0.5" shakeShiftIntensity="0.01" shakePitchIntensity="0.01" shakeRollIntensity="0.1" shakeTime="0.05" ffWeight="0.3" ffDelay="0.0" ffEffectName="weaponfiresingleheavy" />
+		<HitRecoil name="Level2_mp" filterDelay="0.25" minDamage="-5" maxDamage="30" shakeCurveAttack="0.5" shakeShiftIntensity="0.01" shakePitchIntensity="0.05" shakeRollIntensity="0.25" shakeTime="0.07" ffWeight="0.5" ffDelay="0.0" ffEffectName="weaponfiresingleheavy" />
+		<HitRecoil name="Level3_mp" filterDelay="0.25" minDamage="-5" maxDamage="30" shakeCurveAttack="0.5" shakeShiftIntensity="0.01" shakePitchIntensity="0.1" shakeRollIntensity="0.5" shakeTime="0.09" ffWeight="0.7" ffDelay="0.0" ffEffectName="weaponfiresingleheavy" />
+		<HitRecoil name="Level4_mp" filterDelay="0.25" minDamage="-5" maxDamage="30" shakeCurveAttack="0.5" shakeShiftIntensity="0.01" shakePitchIntensity="0.15" shakeRollIntensity="0.7" shakeTime="0.1" ffWeight="0.8" ffDelay="0.0" ffEffectName="weaponfiresingleheavy" />
+		<HitRecoil name="Level5_mp" filterDelay="0.25" minDamage="-5" maxDamage="30" shakeCurveAttack="0.5" shakeShiftIntensity="0.01" shakePitchIntensity="0.2" shakeRollIntensity="0.9" shakeTime="0.1" ffWeight="0.9" ffDelay="0.0" ffEffectName="weaponfiresingleheavy" />
+
+		<!--HitTypes (non-projectile only)-->
+		<HitRecoil name="melee" doubleAttack="0.4" doubleAttackTime="0.06" filterDelay="0.25" minDamage="-300" maxDamage="750" shakeCurveAttack="1" shakeShiftIntensity="0.1" shakePitchIntensity="0.5" shakeRollIntensity="1.0" shakeTime="0.6" ffAmplifierA="0.8" ffAmplifierB="0.9" ffTime="0.2" GAME="SP" ffEffectName="empty_effect" />
+		<HitRecoil name="melee" doubleAttack="0.4" doubleAttackTime="0.08" filterDelay="0.25" minDamage="-5" maxDamage="80" shakeCurveAttack="0.5" shakeShiftIntensity="0.01" shakePitchIntensity="1.0" shakeRollIntensity="1.0" shakeTime="0.15" ffAmplifierA="0.8" ffAmplifierB="0.9" ffTime="0.25" GAME="MP" ffEffectName="empty_effect" />    
+	</HitRecoilTable>
+
+	<PlayerRotation>
+		<Normal>
+			<Vertical angle_min="-70" angle_max="80" />
+		</Normal>
+		<Crouch>
+			<Vertical angle_min="-70" angle_max="80" />
+		</Crouch>
+		<Sliding>
+			<Horizontal angle_min="0" angle_max="100" />
+			<Vertical angle_min="0" angle_max="40" />
+		</Sliding>
+		<Sprinting>
+			<Vertical angle_min="-35" angle_max="45" />
+		</Sprinting>
+		<Swim>
+			<Vertical angle_min="-45" angle_max="80" />
+		</Swim>
+		<MountedGun>
+			<Vertical angle_min="-89" angle_max="60" />
+		</MountedGun>
+	</PlayerRotation>
+
+	<PlayerRotation3rdPerson>
+		<Normal>
+			<Vertical angle_min="-50" angle_max="60" />
+		</Normal>
+		<Crouch>
+			<Vertical angle_min="-40" angle_max="50" />
+		</Crouch>
+		<Sliding>
+			<Horizontal angle_min="0" angle_max="100" />
+			<Vertical angle_min="0" angle_max="40" />
+		</Sliding>
+		<Sprinting>
+			<Vertical angle_min="-35" angle_max="45" />
+		</Sprinting>
+		<Swim>
+			<Vertical angle_min="-45" angle_max="80" />
+		</Swim>
+		<MountedGun>
+			<Vertical angle_min="-89" angle_max="60" />
+		</MountedGun>
+	</PlayerRotation3rdPerson>
+
+	<LandBob maxTime="0.6" maxBob="0.5" maxFallDist="3.0" />
+
+	<SwimmingParams>
+		<!-- SP is current using the defaults-->
+		<Sprint swimSpeedSprintSpeedMul="1.5" swimUpSprintSpeedMul="1.5" swimNoSuitSprintSpeedMul="1.25" GAME="MP" />
+
+		<!-- If you want to disable dolphin jumping, then just set the threshold speeds to be very large (e.g. 100)-->
+		<!-- Threshold speed here is the vertical speed-->
+		<Dolphin swimDolphinJumpDepth="0.1" swimDolphinJumpThresholdSpeed="3.0" swimDolphinJumpSpeedModification="-3.0" />
+	</SwimmingParams>
+
+	<LedgeGrabbingParams normalSpeedUp="1.0" powerSpeedUp="1.0" mobilitySpeedUp="1.5" mobilitySpeedUpMaximum="1.75" >
+		<!--SP PARAMS-->
+		<LedgeNearByParams searchDir="0.0, 1.0f, -0.1" maxDistance="1.3" maxAngleDeviationFromSearchDirInDegrees="40" maxExtendedAngleDeviationFromSearchDirInDegrees="60" GAME="SP" />
+		<PullUpMidAir 	positionOffset="0.0, 0.5, 1.8" moveDuration="0.95" correctionDuration="0.15" GAME="SP" />
+		<PullUpFalling 	positionOffset="0.0, 0.5, 1.8" moveDuration="0.95" correctionDuration="0.15" GAME="SP" />
+		<PullUpMidAir_NoSuit 	positionOffset="0.0, 0.5, 1.8" moveDuration="1.2" correctionDuration="0.15" GAME="SP" />
+		<PullUpFalling_NoSuit 	positionOffset="0.0, 0.5, 1.8" moveDuration="1.2" correctionDuration="0.15" GAME="SP" />
+		<PullUpQuick 	positionOffset="0.0, 0.3, 1.0" moveDuration="0.35" correctionDuration="0.05" keepOrientation="1" GAME="SP" />
+		<VaultOver positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" ledgeType="Thin" isVault="1" exitVelocityY="6" exitVelocityZ="-4" keepOrientation="1" GAME="SP" />
+		<VaultOverIntoFall positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" agInput="vaultOver" agInputMobility="vaultOver" ledgeType="" isVault="1" exitVelocityY="6" exitVelocityZ="-4" keepOrientation="1" endFalling="1" GAME="SP"/>
+		<VaultOnto positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" ledgeType="Wide" isVault="1" exitVelocityY="6" keepOrientation="1" GAME="SP" />
+		<HighVaultOver positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" ledgeType="Thin" isHighVault="1" exitVelocityY="6" exitVelocityZ="-4" keepOrientation="1" GAME="SP" />
+		<HighVaultOverIntoFall positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" agInput="vaultOver" agInputMobility="vaultOver" ledgeType="" isHighVault="1" exitVelocityY="6" exitVelocityZ="-4" keepOrientation="1" endFalling="1" GAME="SP"/>
+		<HighVaultOnto positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" ledgeType="Wide" isHighVault="1" exitVelocityY="6" keepOrientation="1" GAME="SP" />
+
+		<!--MP PARAMS-->
+		<LedgeNearByParams searchDir="0.0, 1.0f, -0.1" maxDistance="1.3" maxAngleDeviationFromSearchDirInDegrees="40" maxExtendedAngleDeviationFromSearchDirInDegrees="60" GAME="MP"/>
+		<PullUpMidAir 	positionOffset="0.0, 0.5, 1.8" moveDuration="0.65" correctionDuration="0.15" GAME="MP" />
+		<PullUpFalling 	positionOffset="0.0, 0.5, 1.8" moveDuration="0.65" correctionDuration="0.15" GAME="MP" />
+		<PullUpMidAir_NoSuit 	positionOffset="0.0, 0.5, 1.8" moveDuration="1.2" correctionDuration="0.15" GAME="MP" />
+		<PullUpFalling_NoSuit 	positionOffset="0.0, 0.5, 1.8" moveDuration="1.2" correctionDuration="0.15" GAME="MP" />
+		<PullUpQuick 	positionOffset="0.0, 0.3, 1.0" moveDuration="0.35" correctionDuration="0.05"  keepOrientation="1" GAME="MP" />
+		<VaultOver positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" ledgeType="Thin" isVault="1" exitVelocityY="2" exitVelocityZ="-4" keepOrientation="1" GAME="MP" />
+		<VaultOverIntoFall positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" agInput="vaultOver" agInputMobility="vaultOver" ledgeType="" isVault="1" exitVelocityY="2" exitVelocityZ="-4" keepOrientation="1" endFalling="1" GAME="MP" />
+		<VaultOnto positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" ledgeType="Wide" isVault="1" exitVelocityY="6" keepOrientation="1" GAME="MP" />
+		<HighVaultOver positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" ledgeType="Thin" isHighVault="1" exitVelocityY="2" exitVelocityZ="-4" keepOrientation="1" GAME="MP" />
+		<HighVaultOverIntoFall positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" agInput="vaultOver" agInputMobility="vaultOver" ledgeType="" isHighVault="1" exitVelocityY="2" exitVelocityZ="-4" keepOrientation="1" endFalling="1" GAME="MP" />
+		<HighVaultOnto positionOffset="0.0, 1.7, 1.2" moveDuration="0.5" correctionDuration="0.05" ledgeType="Wide" isHighVault="1" exitVelocityY="6" keepOrientation="1" GAME="MP" />
+	</LedgeGrabbingParams>
+ 
+	<StealthKill attackAttemptRange="1.0" attackAttemptTime="0.5" attackAttemptSpeed="8.5">
+		<!--<Drone>
+			<Params impulseBone="Hull" impulseScale="1.0" maxDist="2.0" maxHeightDiff="0.75" angleRange="140" requiresCloak="1" cloakInterference="1" />
+		</Drone>-->
+		<Human>
+			<Params impulseBone="Bip01 Spine2" impulseScale="1.0"  maxDist="2.0" maxHeightDiff="0.75" angleRange="140" requiresCloak="1" cloakInterference="1" />
+			<Anims>
+				<Anim playerAnimation="stand_tac_stealthKill_human_1p_01" enemyAnimation="stand_tac_stealthKill_human_01" useKnife="1" />
+				<Anim playerAnimation="stand_tac_stealthKill_human_1p_03" enemyAnimation="stand_tac_stealthKill_human_03" useKnife="0" />
+			</Anims>
+		</Human>
+		<Player>
+			<Params impulseBone="Bip01 Spine2" impulseScale="1.0" maxDist="1.2" extendedMaxDist="3.6" maxHeightDiff="0.75" angleRange="120" requiresCloak="0" cloakInterference="1" />
+			<Anims>
+				<Anim playerAnimation="stand_tac_stealthKill_human_1p_02" enemyAnimation="stand_tac_stealthKill_human_02" useKnife="1" />
+				<Anim playerAnimation="stand_tac_stealthKill_human_1p_03" enemyAnimation="stand_tac_stealthKill_human_03" useKnife="0" />
+				<Anim playerAnimation="stand_tac_stealthKill_human_1p_04" enemyAnimation="stand_tac_stealthKill_human_04" useKnife="0" />
+			</Anims>
+		</Player>
+		<DummyPlayer>
+			<Params impulseBone="Bip01 Spine2" impulseScale="1.0" maxDist="1.2" extendedMaxDist="3.6" maxHeightDiff="0.75" angleRange="120" requiresCloak="0" cloakInterference="1" />
+			<Anims>
+				<Anim playerAnimation="stand_tac_stealthKill_human_1p_02" enemyAnimation="stand_tac_stealthKill_human_02" useKnife="1" />
+				<Anim playerAnimation="stand_tac_stealthKill_human_1p_03" enemyAnimation="stand_tac_stealthKill_human_03" useKnife="0" />
+				<Anim playerAnimation="stand_tac_stealthKill_human_1p_04" enemyAnimation="stand_tac_stealthKill_human_04" useKnife="0" />
+			</Anims>
+		</DummyPlayer>
+	</StealthKill>
+
+	<LargeObjectInteraction>
+		<!--if angle between player and object orientation is bigger than SideImpulseAngle, then is a 'side' interaction. if less, is 'front'-->
+		<GlobalParams ImpulseDelay="0.65f" SideImpulseAngle="30" ImpulseFactorNoPower="0.75" ImpulseFactorMaximumPower="1.1" InteractionDistanceSP="2.5" InteractionDistanceMP="1.25" />
+		<FrontImpulse VerticalAngle="10" Speed="16" RotationFactor="4" GAME="SP" />
+		<SideImpulse VerticalAngle="10" Speed="14" RotationFactor="10" GAME="SP" />
+		<FrontImpulse VerticalAngle="10" Speed="25" RotationFactor="4" GAME="MP" />
+		<SideImpulse VerticalAngle="10" Speed="20" RotationFactor="10" GAME="MP" />
+		<Assistance  AngleThreshold2D="30" DistanceThreshold="15" />
+		<MPKickableCar>
+			<!-- Three throw types, Front, Side, Diagonal -->
+			<!-- SIDE, anything angle greater than SideImpulseAngle will be a side throw -->
+			<!-- FRONT, anything angle less than FrontImpulseAngle will be a front kick -->
+			<!-- DIAGONAL, otherwise the angles in between are diagonal kicks -->
+			<MPParams SideImpulseAngle="70" FrontImpulseAngle="30" Timer="1.3" />
+			<FrontImpulse VerticalAngle="15" Speed="16" RotationFactor="0" SwingRotationFactor="0.05" GAME="MP" />
+			<DiagonalImpulse VerticalAngle="5" Speed="14" RotationFactor="0" SwingRotationFactor="0.2" GAME="MP" />
+			<SideImpulse VerticalAngle="20" Speed="12" RotationFactor="8" SwingRotationFactor="0.1" GAME="MP" />
+
+			<FrontImpulse VerticalAngle="15" Speed="12" RotationFactor="0" SwingRotationFactor="0.05" GAME="SP" />
+			<DiagonalImpulse VerticalAngle="5" Speed="10" RotationFactor="0" SwingRotationFactor="0.2" GAME="SP" />
+			<SideImpulse VerticalAngle="20" Speed="9" RotationFactor="8" SwingRotationFactor="0.1" GAME="SP" />
+		</MPKickableCar>
+	</LargeObjectInteraction>
+
+	<ThermalVision>
+		<SP heat="0.65" />
+		<MP heat="0.75" />
+	</ThermalVision>
+
+	<SprintStamina>
+		<Settings depleteRatePerSec="0.05" regenDelaySecs="0.7" regenDelayExtremeSecs="1.0" regenRatePerSec="1.0" breatheSoundStaminaThreshold="0.5" minimumSprintingTimeToPlayStopSound="1.0" GAME="SP" />
+		<Settings depleteRatePerSec="0.2" regenDelaySecs="3.8" regenDelayExtremeSecs="4.0" regenRatePerSec="50" breatheSoundStaminaThreshold="0.5" minimumSprintingTimeToPlayStopSound="0.0" GAME="MP" />
+	</SprintStamina>
+
+	<!-- Variations of the follow cam (Where the camera tracks target entity) which can be cycled through in the order listed here -->
+	<!-- targetOffset adjusts where the camera should point at relative to the target entity. The value is in the target's local space -->
+	<!-- viewOffset is the amount the camera should be shifted by. Does not affect rotation. The value is in the view space. -->
+	<!-- offsetSpeeds are the speeds for the left-right(x), in-out(y) and up-down(z) camera offsets. Leave at 0 to use the 'cameraSpeed' param value.  -->
+	<!-- desiredDistance is how far the camera should be placed from the target horizontally. This is an ideal value which will change to avoid obstructions. -->
+	<!-- cameraHeightOffset is how high/low the camera should be placed in relation to the target entity -->
+	<!-- cameraYaw is the camera's rotation about the target entity. The value is in degrees and moves clockwise about the target. 0.0 faces the same direction as the target. -->
+	<!-- cameraSpeed controls how quickly the camera moves when following a moving target. A value of 0 is an instant snap (No "lag"). -->
+	<!-- cameraFov allows an override fov for this camera view. A value of 0 keeps the existing fov. Value is in degrees. -->
+	<!-- allowOrbitYaw allows the player to adjust the camera yaw value themselves -->
+	<!-- allowOrbitPitch allows the player to adjust the camera pitch value themselves -->
+	<!-- useEyeDir uses the target's eye direction (when available. ie. actors) to control the camera rather than the entity matrix  -->
+	<!-- userSelectable allows the view to be used changed to during the follow mode. -->
+	<!-- disableHeightAdj stops the camera shifting upwards when collisions are found and does a check against the target to avoid target clipping. -->
+	<FollowCameraSettings>
+		<Settings name="Default" targetOffset="0.0, 0.0, 1.5" viewOffset="0.0, 0.0, 0.0" offsetSpeeds="0,0,0" desiredDistance="3.0" cameraHeightOffset="0.75" cameraYaw="0.0" cameraSpeed="5" cameraFov="0" allowOrbitYaw="1" allowOrbitPitch="1" useEyeDir="0" userSelectable="1" disableHeightAdj="0" /> <!-- C2 settings w/ orbiting -->
+		<Settings name="SideCam" targetOffset="0.2, 0.0, 1.5" viewOffset="0.35, 1.0, 0.0" offsetSpeeds="2,2,2" desiredDistance="3.0" cameraHeightOffset="-1.75" cameraYaw="-15.0"  cameraSpeed="50" cameraFov="25" allowOrbitYaw="0" allowOrbitPitch="0" useEyeDir="0" userSelectable="1" disableHeightAdj="0" />
+		<Settings name="Profile" targetOffset="0.1, 0.0, 1.5" viewOffset="0.275, 2.0, -0.1" offsetSpeeds="2,2,2" desiredDistance="3.0" cameraHeightOffset="-1.5" cameraYaw="-90" cameraSpeed="40" cameraFov="70" allowOrbitYaw="0" allowOrbitPitch="0" useEyeDir="0" userSelectable="1" disableHeightAdj="0" />
+		<Settings name="BehindFar" targetOffset="0.0, 1.0, 2.0" viewOffset="0.0, 0.0, 0.0" offsetSpeeds="10,10,10" desiredDistance="3.0" cameraHeightOffset="-1.5" cameraYaw="0" cameraSpeed="40" cameraFov="100" allowOrbitYaw="0" allowOrbitPitch="0" useEyeDir="0" userSelectable="1" disableHeightAdj="0" />
+		<Settings name="FacingBack" targetOffset="0.0, 0.0, 1.5" viewOffset="-0.3, 0.0, 0.15" offsetSpeeds="2,2,2" desiredDistance="3.0" cameraHeightOffset="-3.0" cameraYaw="155" cameraSpeed="40" cameraFov="40" allowOrbitYaw="0" allowOrbitPitch="0" useEyeDir="0" userSelectable="1" disableHeightAdj="0" />
+		<!--	<Settings name="FollowClose" targetOffset="0.05, 1.3, 2.1" viewOffset="0.085, 0.0, -0.6" offsetSpeeds="2,2,2" desiredDistance="2.0" cameraHeightOffset="-1.75" cameraYaw="-8" cameraSpeed="40" cameraFov="20" allowOrbitYaw="0" allowOrbitPitch="0" useEyeDir="1" userSelectable="1" disableHeightAdj="0" /> -->
+		<Settings name="Killer" targetOffset="0.0, 0.0, 1.95" viewOffset="0.2, 0.0, -0.6" offsetSpeeds="50,10,20" desiredDistance="1.8" cameraHeightOffset="-1.5" cameraYaw="200.5" cameraSpeed="50" cameraFov="0" allowOrbitYaw="0" allowOrbitPitch="0" useEyeDir="0" userSelectable="0" disableHeightAdj="1" />
+	</FollowCameraSettings>
+  
+</ActorParams>

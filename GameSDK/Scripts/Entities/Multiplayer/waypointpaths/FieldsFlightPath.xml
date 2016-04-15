@@ -1,0 +1,6 @@
+<WaypointPath>
+  <Path>
+    <Node index="1" speed="5" />  
+    <Node index="5" wait="5" />
+  </Path>
+</WaypointPath>

@@ -1,0 +1,567 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "ShadeLib.cfi"
+#include "PostEffectsLib.cfi"
+
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "NoPreview;"
+           "LocalConstants;"
+           "ShaderDrawType = Custom;"
+           "ShaderType = PostProcess;"
+>; 
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+// Variables and constants
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+#define PACK_PRECISION 65536.0f
+#define INV_PACK_PRECISION (1.0f/65536.0f)
+
+float4 g_SnowVolumeParams < psregister = c0; >;
+float4 g_SnowMultipliers < psregister = c1; >;
+float4 g_WindDirection < psregister = c2; >;
+float4 g_fWaterLevel : PB_WaterLevel < psregister = c3; > ;
+float4 g_WorldViewPos < psregister = c4; > ;
+float4 g_SnowOcc_WindOffs < psregister = c5; >;
+float4 g_DisplacementParams;
+float3x4 g_SnowOcc_TransMat;
+float3x4 g_CameraMatrix;
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+// Structs
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+struct pixoutPOM
+{
+  float4 Color0 : COLOR0;
+  float4 Color1 : COLOR1;
+};
+
+struct pixoutSnow
+{
+	float4 Diffuse  : COLOR0;
+	float4 Normals  : COLOR1;
+	float4 Specular : COLOR2;
+	float4 Blending : COLOR3;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+// Functions
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+half3 GetWorldPos( half fDepth, half3 vCamVec )
+{
+	return fDepth * vCamVec + g_WorldViewPos.xyz;
+}
+
+float2 PackDepth( float fDepth )
+{
+	//return float2( int(fDepth) << 16, fDepth );
+
+	// Distribute precision to 2 channels.
+ 	float fIntPart;  
+ 	float fFracPart = modf(fDepth * PACK_PRECISION, fIntPart);  
+ 	return float2(fIntPart * INV_PACK_PRECISION, fFracPart);
+}
+
+float UnpackDepth( float2 fPackedDepth )
+{
+	//return (int(fPackedDepth.x) >> 16) + fPackedDepth.y;//(data.x / 255 + data.y * 255/256)
+	return (fPackedDepth.y * INV_PACK_PRECISION + fPackedDepth.x);
+}
+
+float UnpackDepthScaled( float2 fPackedDepth )
+{
+	return UnpackDepth( fPackedDepth ) * PS_NearFarClipDist.y;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+// Samplers
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+sampler2D sceneBuffer0 : register(s0); // diffuse
+sampler2D sceneBuffer1 : register(s1); // normals
+sampler2D sceneBuffer2 : register(s2); // specular
+
+sampler2D sceneDepthMapSampler : register(s7)
+{
+  Texture = $ZTarget;
+  MinFilter = POINT;
+  MagFilter = POINT;
+  MipFilter = POINT; 
+  AddressU = Clamp;
+  AddressV = Clamp;	
+};
+
+sampler2D sceneSampler : register(s6)
+{
+  Texture = $SceneTarget;
+  MinFilter = POINT;
+  MagFilter = POINT;
+  MipFilter = POINT;
+  AddressU = Clamp;
+  AddressV = Clamp;
+	sRGBLookup = true;
+};
+
+sampler2D snowFrostBumpSampler = sampler_state
+{    
+  Texture = EngineAssets/Textures/frozen/frost_noise3.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+  AddressU = Wrap;
+  AddressV = Wrap;
+};
+
+sampler2D snowDerivativesMapSampler = sampler_state
+{
+  Texture = EngineAssets/Textures/perlinNoiseDerivatives.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+  AddressU = Wrap;
+  AddressV = Wrap;
+};
+
+sampler2D snowSpatterMapSampler = sampler_state
+{    
+  Texture = EngineAssets/Textures/frozen/snow_spatter.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+  AddressU = Wrap;
+  AddressV = Wrap;
+};
+
+sampler2D frostBubblesBumpSampler = sampler_state
+{    
+  Texture = EngineAssets/Textures/frozen/frost_noise4.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = POINT; 
+  AddressU = Wrap;
+  AddressV = Wrap;
+};
+
+sampler2D snowOcclusionMapSampler = sampler_state
+{
+  Texture = $RainOcclusion;
+  MinFilter = POINT;
+  MagFilter = POINT;
+  MipFilter = POINT;
+  AddressU = Border;
+  AddressV = Border;
+	BorderColor = {1,1,1,1};
+};
+
+sampler3D volumeNoiseSampler = sampler_state
+{  
+  Texture = EngineAssets/Textures/Noise3D.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR; 
+  AddressU = Wrap;
+  AddressV = Wrap;
+  AddressW = Wrap;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+// Pixel Shaders
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+pixoutSnow DeferredSnowPS( vtxOutWPOS IN )
+{
+	pixoutSnow OUT = (pixoutSnow) 0;
+
+	OUT.Diffuse = tex2D(sceneBuffer0, IN.baseTC.xy); // diffuse
+	OUT.Normals = tex2D(sceneBuffer1, IN.baseTC.xy); // normals
+	OUT.Specular = tex2D(sceneBuffer2, IN.baseTC.xy); // specular
+	
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Get world depth and position.
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	float fDepth = GetLinearDepth( sceneDepthMapSampler, IN.baseTC.xy );
+	float3 vPosition = GetWorldPos( fDepth, IN.CamVec );
+	
+	half3 vView = normalize(g_WorldViewPos.xyz - vPosition.xyz);
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
+	// Decode gbuffer data
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	MaterialAttribsCommon attribs = DecodeGBuffer( OUT.Normals, OUT.Diffuse, OUT.Specular );
+
+	half3 vNormal = attribs.NormalWorld;
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Compute XYZ blending for world-space texture sampling.
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	half3 vSurfBlend = abs( vNormal.xyz );
+	vSurfBlend = saturate( vSurfBlend - 0.25 );
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Compute perturbed normal using partial derivatives.
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	half3 vSnowNormal = vNormal;
+
+	float3 vSigmaX = ddx( vPosition.xyz );
+ 	float3 vSigmaY = ddy( vPosition.xyz );
+ 	
+ 	float3 vR1 = cross(vSigmaY, vNormal);
+	float3 vR2 = cross(vNormal, vSigmaX);	
+	float fDet = dot(vSigmaX, vR1);
+	
+	// Fetch deriavtive sampler.
+	float3 vPosDeriv = vPosition * 1.7f;
+	half2 dHdST = EXPAND(tex2D(snowDerivativesMapSampler, vPosDeriv.xy)) * vSurfBlend.z;
+	dHdST += EXPAND(tex2D(snowDerivativesMapSampler, vPosDeriv.yz)) * vSurfBlend.x;
+	dHdST += EXPAND(tex2D(snowDerivativesMapSampler, vPosDeriv.zx)) * vSurfBlend.y;
+	dHdST *= 8.h;
+		 	
+ 	float2 dHdxy = float2( dot(dHdST.xy, vSigmaX), dot(dHdST.xy, vSigmaY) );
+
+	float3 vGrad = sign(fDet) * ( dHdxy.x * vR1 + (dHdxy.y * vR2) );
+	vSnowNormal = (abs(fDet) * vNormal - vGrad);
+	vSnowNormal /= length(vSnowNormal) + 1e-6;
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Compute attenuation factor.
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	half fAttenuation = saturate( GetAttenuation(g_SnowVolumeParams.xyz - vPosition.xyz, g_SnowVolumeParams.w) );
+	half fWaterAtten = saturate((vPosition.z - g_fWaterLevel.x + 0.125h) * 4.h);
+	fAttenuation *= (fWaterAtten * fWaterAtten);
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Fetch spattering mask.
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	half3 vSpatterTC = vPosition.xyz * 10.0h;
+	half fSpatter = tex2D(snowSpatterMapSampler, vSpatterTC.yz).x * vSurfBlend.x;
+	fSpatter += tex2D(snowSpatterMapSampler, vSpatterTC.zx).x * vSurfBlend.y;
+	fSpatter += tex2D(snowSpatterMapSampler, vSpatterTC.xy).x * vSurfBlend.z;
+	half fSpatterVariation = fSpatter * 0.1h * saturate(1.0h - g_SnowMultipliers.x * 0.1h);	
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Compute variation.
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	float3 tcVariation = vPosition * 0.5f;
+	float fFrostVariation = tex3D(volumeNoiseSampler, tcVariation * 0.25h  ).w;
+	fFrostVariation *= tex3D(volumeNoiseSampler, tcVariation * 0.5h + fFrostVariation).w*2;
+	fFrostVariation *= tex3D(volumeNoiseSampler, tcVariation * 1.25h + (fFrostVariation - fSpatterVariation * fFrostVariation)).w * 4;   
+	fFrostVariation = saturate(fFrostVariation * 0.5h - 0.125h);
+	float fFreezingVariation = fFrostVariation;
+	
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Compute frost pattern.
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	half2 vDisp = fFrostVariation * 0.01h;
+	half fFrostOnSides = saturate(saturate(vNormal.z-0.3h)*10.h);
+	
+	half3 vFrostTC = vPosition.xyz * 2.5h + vDisp.xyx;
+	half4 vFrostNoise = tex2D(snowFrostBumpSampler, vFrostTC.yz) * vSurfBlend.x; 
+	vFrostNoise += tex2D(snowFrostBumpSampler, vFrostTC.zx) * vSurfBlend.y; 
+	vFrostNoise += tex2D(snowFrostBumpSampler, vFrostTC.xy) * vSurfBlend.z;
+	vFrostNoise.xyz = normalize(vFrostNoise.xyz);
+	vFrostNoise.w = dot(vFrostNoise.xyz, 0.33) * 2 - 1;
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Compute occlusion using occlusion buffer (if active).
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	half fOcclusion = 1.h;
+#if %_RT_SAMPLE0
+	static const half2 vOffs = half2(0, 1.h/RAIN_OCC_MAP_SIZE);
+
+	// Occlusion coordinates, offset along normal for some variation and spattered for nice transition.
+	half3 vOccMapCoords = mul((float3x4)g_SnowOcc_TransMat, float4(vPosition.xyz, 1.f));
+	vOccMapCoords.y = 1.h - vOccMapCoords.y;
+	vOccMapCoords.xy += g_SnowOcc_WindOffs.xy;
+	vOccMapCoords.z += 0.025h;
+	
+	// Fetch occlusion buffer.
+	half4 vOccDepth;
+	vOccDepth.x = tex2D(snowOcclusionMapSampler, vOccMapCoords.xy).x;
+	vOccDepth.y = tex2D(snowOcclusionMapSampler, vOccMapCoords.xy + vOffs.yx).x;
+	vOccDepth.z = tex2D(snowOcclusionMapSampler, vOccMapCoords.xy + vOffs.xy).x;
+	vOccDepth.w = tex2D(snowOcclusionMapSampler, vOccMapCoords.xy + vOffs.yy).x;
+		
+	// bilinear interpolation for smooth transition
+	half4 bOccCheck = (vOccDepth==1.0f) ? 1.0f : saturate(512.0h * (vOccMapCoords.z - (255.h/256.h - vOccDepth)));
+	const half2 vTexelPos = frac(vOccMapCoords.xy * RAIN_OCC_MAP_SIZE);
+	bOccCheck.xy = lerp(bOccCheck.xy, bOccCheck.zw, vTexelPos.y);
+	fOcclusion = lerp(bOccCheck.x, bOccCheck.y, vTexelPos.x);	
+#endif
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Snow and forst accumulation amounts.
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	half fAmount = min(10.h, g_SnowMultipliers.x) * fAttenuation * fOcclusion;
+	half fSnowAmount = max(1e-6h, 10.h / max(1e-6h, fAmount));
+	half fFrostAmount = saturate(g_SnowMultipliers.y * fAttenuation * fOcclusion);
+	half fFrostPower = max(0.5h, (2.0h - min(1.h, g_SnowMultipliers.y)) * fAttenuation);
+	half fSurfaceFreezing = g_SnowMultipliers.z;
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Compute frost bubbles.
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	half3 vParallax = vView * saturate(vFrostNoise.w) * 0.25h;
+	
+	// Unfortunately using world-space, need to sample on every axis.
+	// If we can get smooth/face normals, we can do frac(vPosition)*4 and apply vSurfBlend for UVs and sample only 4 times for parallax.
+ 	vFrostTC *= 2.0;
+	half3 vBubbles = 0;
+
+	vBubbles.x += tex2D(frostBubblesBumpSampler, vFrostTC.yz + float2(0.25h,0) + vParallax.yz).w;
+	vBubbles.y += tex2D(frostBubblesBumpSampler, vFrostTC.zx + float2(0.25h,0) + vParallax.zx).w;
+	vBubbles.z += tex2D(frostBubblesBumpSampler, vFrostTC.xy + float2(0.25h,0) + vParallax.xy).w;
+		    
+	vBubbles.x += tex2D(frostBubblesBumpSampler, vFrostTC.yz + (float2(0,0.15h) + 2.h * vParallax.yz)).w;
+	vBubbles.y += tex2D(frostBubblesBumpSampler, vFrostTC.zx + (float2(0,0.15h) + 2.h * vParallax.zx)).w;
+	vBubbles.z += tex2D(frostBubblesBumpSampler, vFrostTC.xy + (float2(0,0.15h) + 2.h * vParallax.xy)).w;
+	
+	vBubbles.x += tex2D(frostBubblesBumpSampler, vFrostTC.yz + (float2(0.35h,0.75h) + 3.h * vParallax.yz)).w;
+	vBubbles.y += tex2D(frostBubblesBumpSampler, vFrostTC.zx + (float2(0.35h,0.75h) + 3.h * vParallax.zx)).w;
+	vBubbles.z += tex2D(frostBubblesBumpSampler, vFrostTC.xy + (float2(0.35h,0.75h) + 3.h * vParallax.xy)).w;
+	
+	vBubbles *= vSurfBlend;
+
+	half3 vBubblesFrost = pow(vBubbles * fFrostVariation * fFrostAmount, fFrostPower);
+	half2 fBubbles = saturate(half2(dot(vBubbles, 1.h), dot(vBubblesFrost, 1.h))-0.25h);
+	fFrostVariation = saturate(fFrostVariation-saturate(1.h-fAmount*0.1h)); // 8 inst
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Compute frost glitter.
+	half2 fGlitterBubbles = fBubbles * ((fBubbles*0.333h > 0.2h) ? 20.h : 1.h);
+ 	
+ 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Compute snow diffuse variation and blending
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	half fIceTop = saturate(1.h - 0.4h*fFrostVariation);
+	half fIceTopZ = saturate((pow(vNormal.z, fSnowAmount)-0.2h)*10.h);	
+
+ 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Output blending data for displacement
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	OUT.Blending.r = fBubbles.y;
+	OUT.Blending.g = fIceTop; 	
+	OUT.Blending.b = saturate(fSurfaceFreezing * vNormal.z * fFreezingVariation * fAttenuation);
+	OUT.Blending.a = fIceTopZ * saturate(fFrostVariation*8.h);	
+	OUT.Blending.r += OUT.Blending.b * saturate( dot(OUT.Diffuse.rgb, 1) * 1.5f );
+
+ 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Output diffuse results
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	attribs.Albedo = lerp( attribs.Albedo, fIceTop, OUT.Blending.a ) + OUT.Blending.r; 
+
+ 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Output normals results
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	attribs.NormalWorld = lerp( vNormal.xyz, vSnowNormal.xyz, OUT.Blending.a );
+
+ 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Output specular/gloss results
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	attribs.Smoothness = lerp( attribs.Smoothness, fSpatter * 0.4, OUT.Blending.a ) + fGlitterBubbles.y;
+	attribs.Reflectance = lerp( attribs.Reflectance, fSpatter * (40.0/255.0), OUT.Blending.a ) + fGlitterBubbles.y;
+
+	EncodeGBuffer( attribs, OUT.Normals, OUT.Diffuse, OUT.Specular );
+
+	return OUT;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+
+pixout DeferredSnowPOM_PS( vtxOut IN )
+{
+	pixout OUT = (pixout) 0;
+
+	const float fDepth = GetLinearDepthScaled( sceneDepthMapSampler, IN.baseTC.xy );
+	const float3 vNormal = DecodeGBufferNormal( GetSceneTex( sceneNormalsTex, IN.baseTC.xy ) );
+	const float4 cSnowMap = tex2D( _tex0, IN.baseTC.xy );
+					
+ 	const float displace = -512.h * cSnowMap.a;// / fDepth;
+ 	
+ 	const float3 ss_normal = (mul( g_CameraMatrix, vNormal.xyz ));
+ 	const float ys  = IN.baseTC.y * 2.0 - 1.0;
+ 	const float dy  = ss_normal.y * displace * 0.01;
+ 					 
+ 	OUT.Color.x = (dy/(fDepth+1e-6)) * 0.1 + 0.5;
+ 	OUT.Color.y = saturate(-ss_normal.y) / (fDepth+1e-6);
+			
+	return OUT;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+pixout_fp DeferredSnowPOM_Min_PS( vtxOut IN )
+{
+	pixout_fp OUT = (pixout_fp) 0;
+
+	OUT.Color.xy = tex2D( _tex0, IN.baseTC );
+	OUT.Color.xy = min(OUT.Color, tex2D( _tex0, IN.baseTC + PS_ScreenSize.zw * half2( 0, 4) ));
+	OUT.Color.xy = min(OUT.Color, tex2D( _tex0, IN.baseTC + PS_ScreenSize.zw * half2( 0,-4) ));
+
+	// Distribute precision to 2 channels.
+	const float fDepth = GetLinearDepth( sceneDepthMapSampler, IN.baseTC.xy );	
+	OUT.Color.zw = PackDepth( fDepth );
+
+	return OUT;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+// Iterative POM, shader will run 3 times using small sample counts.
+// This way we don't sample 100x+ to get decent results on edges.
+
+pixoutPOM DeferredSnowPOM_Apply_PS( vtxOut IN )
+{
+	pixoutPOM OUT = (pixoutPOM) 0;
+
+	float4 NB0 = tex2D(_tex1, IN.baseTC.xy);
+	float fDepth = UnpackDepth(NB0.zw);	
+
+	// Pass-through for early out.
+	OUT.Color0 = tex2D( _tex0, IN.baseTC.xy );
+#if %_RT_SAMPLE0
+	OUT.Color1 = fDepth;
+#else
+	OUT.Color1 = NB0;
+#endif
+	fDepth *= PS_NearFarClipDist.y;
+						
+	const float bumpScale = 0.0375f * g_DisplacementParams.x;
+	const int numSteps = 10;
+	const float step = 1.0 / numSteps;
+		
+	const float borderSize = 0.2f * NB0.y;	
+	const float borderDist = 1.h-IN.baseTC.y;
+	const float edgeWeight = borderDist >= borderSize ? 1 : pow(borderDist / borderSize, 0.75f);
+				
+	const float2 delta = half2(0, -1) * edgeWeight * bumpScale / numSteps;
+	const float2 baseTC = IN.baseTC - 0.5 * numSteps * delta;
+	float4 offset = float4(baseTC.xy + delta, 0, 0);
+
+	float height = 1 - step;	
+	float4 NB1 = tex2D(_tex1, offset);
+	float fDepthOff = UnpackDepthScaled(NB1.zw);
+
+	for (int i=0; i<numSteps; i++)
+	{
+		if (NB1.x < height)
+		{
+			NB0 = NB1;
+			
+			height -= step;
+			offset.xy += delta;
+
+			NB1 = tex2Dlod(_tex1, offset);
+			fDepthOff = UnpackDepthScaled(NB1.zw);
+		}
+	}
+	
+	// Early out depth-test.
+ 	if(fDepthOff > fDepth || NB1.x < 0.5)
+ 		return OUT;
+	
+	float4 offsetBest = offset;
+	float error = 1.0;
+
+	float t1 = height;
+	float t0 = t1 + step;
+
+	float delta1 = t1 - NB1.x;
+	float delta0 = t0 - NB0.x;
+
+	float4 intersect = float4(delta * numSteps, delta * numSteps + baseTC);
+
+	for (int i=0; i<2; i++)
+	{
+		if (abs(error) > 0.01)
+		{
+			float denom = delta1 - delta0;
+			float t = (t0 * delta1 - t1 * delta0) / denom;
+			offsetBest.xy = -t * intersect.xy + intersect.zw;
+
+			float4 NB = tex2Dlod(_tex1, offsetBest);
+
+			error = t - NB.x;
+			if (error < 0)
+			{
+				delta1 = error;
+				t1 = t;
+			}
+			else
+			{
+				delta0 = error;
+				t0 = t;
+			}
+		}
+	}
+	
+	OUT.Color0 = tex2Dlod( _tex0, offsetBest );
+
+	float4 vDepthPOM = tex2Dlod( _tex1, offsetBest );	
+#if %_RT_SAMPLE0
+	OUT.Color1 = UnpackDepth(vDepthPOM.zw);
+#else
+	OUT.Color1 = vDepthPOM;
+#endif
+
+	return OUT;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+// Techniques
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+technique Snow
+{
+	pass p0
+	{
+		VertexShader = BaseWPOSVS() HDRPostProcessVS;
+		PixelShader = DeferredSnowPS() HDRPostProcessPS;
+		CullMode = None;
+	}
+}
+
+technique ParallaxMapPrepass
+{
+	pass p0
+	{
+		VertexShader = BaseVS();
+		PixelShader = DeferredSnowPOM_PS();
+		CullMode = None;
+	}
+}
+
+technique ParallaxMapMin
+{
+	pass p0
+	{
+		VertexShader = BaseVS();
+		PixelShader = DeferredSnowPOM_Min_PS();
+		CullMode = None;
+	}
+}
+
+technique ParallaxMapApply
+{
+	pass p0
+	{
+		VertexShader = BaseVS() HDRPostProcessVS;
+		PixelShader = DeferredSnowPOM_Apply_PS() HDRPostProcessPS;
+		CullMode = None;
+	}
+}
+
+/////////////////////// eof ///

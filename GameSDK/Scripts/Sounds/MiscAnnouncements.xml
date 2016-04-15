@@ -1,0 +1,9 @@
+<MiscAnnouncements>
+	<OnWeaponFiring>
+	<!--<OnWeaponFired weaponClass="LightningGun" announcement="GetBoltSniper" />
+		<OnWeaponFired weaponClass="plasma_thrower" announcement="GetIncinerator" />
+		<OnWeaponFired weaponClass="Grunt_PlasmaRifle" announcement="GetPinch" />
+		<OnWeaponFired weaponClass="Heavy_minigun" announcement="GetReaper" />
+		<OnWeaponFired weaponClass="Heavy_mortar" announcement="GetXpac" />-->
+	</OnWeaponFiring>
+</MiscAnnouncements>

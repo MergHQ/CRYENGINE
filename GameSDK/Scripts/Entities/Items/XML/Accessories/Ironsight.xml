@@ -1,0 +1,13 @@
+<item name="Ironsight" class="Accessory" priority="103" >
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="scopeAttachment" value="1" />
+		<param name="display_name" value="@mp_eIronsight" />
+		<param name="selectTimeMultiplier" value="0.6" GAME="SP" />
+		<param name="selectTimeMultiplier" value="0.75" GAME="MP" />
+	</params>
+	<geometry>
+	</geometry>
+</item>

@@ -1,0 +1,169 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+
+float4 TINTCOLOUR;
+float4 MISSCOLOUR;
+float2 PIXSIZE;
+float  FIXNORMAL;
+sampler2D SrcTexture : register(s0);
+
+struct a2v
+{
+  float3 pos	   : POSITION;
+  float2 texCoord  : TEXCOORD0;
+};
+
+struct v2f
+{
+  float4 pos	   : POSITION;
+  float2 texCoord  : TEXCOORD0;
+};
+
+v2f MeshBakerDilate_VS(a2v IN)
+{
+  v2f OUT;
+  OUT.pos.xy=float4(IN.pos.xy*float2(2.0f,-2.0f)+float2(-1.0f, +1.0f),0.0f,1.0f);
+  OUT.pos.z=IN.pos.z;
+  OUT.pos.w=1.0f;
+  OUT.texCoord=IN.texCoord;
+  return OUT;
+}
+
+float4 Dilate(v2f IN)
+{
+  float weights[8];
+  weights[0]=weights[2]=weights[5]=weights[7]=0.707f; // approx 1.0f/sqrtf(2.0f)
+  weights[1]=weights[3]=weights[4]=weights[6]=1.0f;
+
+  float4 samples[8];
+  samples[0]=tex2D(SrcTexture, IN.texCoord+float2(-1*PIXSIZE.x, -1*PIXSIZE.y));
+  samples[1]=tex2D(SrcTexture, IN.texCoord+float2(+0*PIXSIZE.x, -1*PIXSIZE.y));
+  samples[2]=tex2D(SrcTexture, IN.texCoord+float2(+1*PIXSIZE.x, -1*PIXSIZE.y));
+  samples[3]=tex2D(SrcTexture, IN.texCoord+float2(-1*PIXSIZE.x, +0*PIXSIZE.y));
+  samples[4]=tex2D(SrcTexture, IN.texCoord+float2(+1*PIXSIZE.x, +0*PIXSIZE.y));
+  samples[5]=tex2D(SrcTexture, IN.texCoord+float2(-1*PIXSIZE.x, +1*PIXSIZE.y));
+  samples[6]=tex2D(SrcTexture, IN.texCoord+float2(+0*PIXSIZE.x, +1*PIXSIZE.y));
+  samples[7]=tex2D(SrcTexture, IN.texCoord+float2(+1*PIXSIZE.x, +1*PIXSIZE.y));
+
+  float4 total=0.0f;
+  float count=0.0f;
+  [unroll]
+  for (int i=0; i<8; i++)
+  {
+    float4 diff=samples[i].xyzw-MISSCOLOUR.xyzw;
+    if (dot(diff,diff)!=0)
+    {
+      total+=samples[i]*weights[i];
+      count+=weights[i];
+    }
+  }
+  if (count==0.0)
+    clip(-1);
+  
+  float4 ret=total/count;
+  return ret;
+}
+
+pixout MeshBakerDilate_PS(v2f IN)
+{
+  pixout OUT;
+  OUT.Color=Dilate(IN);
+  return OUT;
+}
+
+pixout MeshBakerDilateThresholdAlpha_PS(v2f IN)
+{
+  pixout OUT=MeshBakerDilate_PS(IN);
+  OUT.Color.w=round(OUT.Color.w);
+  return OUT;
+}
+
+pixout MeshBakerDilateZeroAlpha_PS(v2f IN)
+{
+  pixout OUT=MeshBakerDilate_PS(IN);
+  OUT.Color.w=0.0f;
+  return OUT;
+}
+
+pixout MeshBakerFixGamma_PS(v2f IN)
+{
+  pixout OUT;
+	
+	OUT.Color = tex2D(SrcTexture, IN.texCoord);
+	
+	// Final gamma correction not required as we output in sRGB space during baking to ensure consistent decal blending
+	//OUT.Color.rgb = LinearToSRGB(OUT.Color.rgb);
+
+  return OUT;
+}
+
+pixout MeshBakerFixNormals_PS(v2f IN)
+{
+  pixout OUT;
+
+  float4 inColour=tex2D(SrcTexture, IN.texCoord);
+  OUT.Color.xyzw=inColour.xyzw;
+
+  return OUT;
+}
+
+pixout MeshBakerPassthrough_PS(v2f IN)
+{
+  pixout OUT;
+  OUT.Color=tex2D(SrcTexture, IN.texCoord) * TINTCOLOUR;
+  return OUT;
+}
+
+technique MeshBakerDilate
+{
+  pass p0
+  {
+    VertexShader = MeshBakerDilate_VS();
+    PixelShader = MeshBakerDilateThresholdAlpha_PS();
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+  pass p1
+  {
+    VertexShader = MeshBakerDilate_VS();
+    PixelShader = MeshBakerDilate_PS();
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+  pass p2
+  {
+    VertexShader = MeshBakerDilate_VS();
+    PixelShader = MeshBakerDilateZeroAlpha_PS();
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+  pass p3
+  {
+    VertexShader = MeshBakerDilate_VS();
+    PixelShader = MeshBakerFixGamma_PS();
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+  pass p4
+  {
+    VertexShader = MeshBakerDilate_VS();
+    PixelShader = MeshBakerFixNormals_PS();
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+  pass p5
+  {
+    VertexShader = MeshBakerDilate_VS();
+    PixelShader = MeshBakerPassthrough_PS();
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}

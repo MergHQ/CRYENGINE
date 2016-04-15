@@ -1,0 +1,12 @@
+<downloadmgr_config>
+	<resources>
+		<!-- rss and tos are a localisable resources -->
+		<!-- %LANGUAGE% is replaced with the contents of the g_langauge cvar -->
+		<!--<resource name="rss" url="rss-%LANGUAGE%.xml" maxSize="4096" />-->
+		<!-- first line of tos should be VERSION: <versionnum> -->
+		<!--<resource name="mycrysistos" url="mycrysistos-%LANGUAGE%.sztxt" maxSize="60000" />
+		<resource name="permissions" url="permissions.xml" maxSize="4096" />
+		<resource name="datapatch" url="datapatch.szxml" maxSize="20000" />
+		<resource name="anticheatconfig" url="anticheatconfig.szxml" maxSize="20000" />-->
+	</resources>
+</downloadmgr_config>

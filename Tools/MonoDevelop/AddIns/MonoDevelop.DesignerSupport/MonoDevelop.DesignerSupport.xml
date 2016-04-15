@@ -1,0 +1,131 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.DesignerSupport</name>
+    </assembly>
+    <members>
+        <member name="M:MonoDevelop.DesignerSupport.Toolbox.ToolboxItemToolboxLoader.GetNode(System.Type,System.ComponentModel.ToolboxItemAttribute,System.String,System.String,MonoDevelop.Core.ClrVersion)">
+            <param name="type">The <see cref="T:System.Type"/> of the item for which a node should be created.</param>
+            <param name="attribute">The <see cref="T:System.ComponentModel.ToolboxItemAttribute"/> that was applied to the type.</param>
+            <param name="attributeCategory"> The node's category as detected from the <see cref="T:System.ComponentModel.CategoryAttribute"/>. 
+            If it's null or empty, the method will need to infer a value.</param>
+            <param name="assemblyPath"> If the assembly is a system package, this value will be null. Else, the method will 
+            need to record the full path in the node.</param>
+        </member>
+        <member name="T:MonoDevelop.DesignerSupport.IPropertyProvider">
+            <summary>
+            Property providers can be used to create "proxy" objects which provide editable
+            properties for a given object. When the designer support service finds a IPropertyPadProvider
+            implementation, it gets the selected object from that pad provider, and then checks all
+            registered property providers, looking one which supports the object. If it is found, it
+            calls CreateProvider and the returned object will be given to the property pad.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.DesignerSupport.ClassOutlineTextEditorExtension">
+            <summary>
+            Displays a types and members outline of the current document.
+            </summary>
+            <remarks>
+            Document types and members are displayed in a tree view.
+            The displayed nodes can be sorted by changing the sorting properties state.
+            The sort behaviour is serialized into MonoDevelopProperties.xml.
+            Nodes with lower sortKey value will be sorted before nodes with higher value.
+            Nodes with equal sortKey will be sorted by string comparison of the name of the nodes.
+            The string comparison ignores symbols (e.g. sort 'Foo()' next to '~Foo()').
+            </remarks>
+            <seealso cref="T:MonoDevelop.DesignerSupport.ClassOutlineNodeComparer"/>
+            <seealso cref="T:MonoDevelop.DesignerSupport.ClassOutlineSettings"/>
+        </member>
+        <member name="T:MonoDevelop.DesignerSupport.IPropertyPadCustomizer">
+            <summary>
+            Implement this interface if you need to customize the property grid
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.DesignerSupport.IPropertyPadCustomizer.Customize(MonoDevelop.Ide.Gui.IPadWindow,MonoDevelop.Components.PropertyGrid.PropertyGrid)">
+            <summary>
+            Called to customize the property pad. This method is called even
+            when using a custom property pad provided by ICustomPropertyPadProvider,
+            in which case propertyGrid is set to null.
+            </summary>
+            <param name='padWindow'>
+            Pad window.
+            </param>
+            <param name='propertyGrid'>
+            Property grid. It will be null when using a custom property pad.
+            </param>
+        </member>
+        <member name="T:MonoDevelop.DesignerSupport.ClassOutlineNodeComparer">
+            <remarks>
+            This implementation uses a primary sort key (int based on node's group) and
+            a secondary sort key (string based on node's name) for comparison.
+            </remarks>
+            <seealso cref="T:MonoDevelop.DesignerSupport.ClassOutlineSettings"/>
+        </member>
+        <member name="M:MonoDevelop.DesignerSupport.ClassOutlineNodeComparer.#ctor(MonoDevelop.Ide.TypeSystem.Ambience,MonoDevelop.DesignerSupport.ClassOutlineSettings,Gtk.TreeModel)">
+            <param name="ambience">
+            The ambience used on retrieval of node names.
+            </param>
+            <param name="settings">
+            The properties used on retrieval of node sort keys and sorting settings.
+            </param>
+            <param name="model">
+            The model containing the nodes to compare.
+            </param>
+        </member>
+        <member name="M:MonoDevelop.DesignerSupport.ClassOutlineNodeComparer.CompareNodes(Gtk.TreeModel,Gtk.TreeIter,Gtk.TreeIter)">
+            <summary>
+            Compares nodes by primary (group) and secondary (name) sort keys depending on
+            sort properties.
+            </summary>
+            <remarks>
+            For methods, constructors and destructors are sorted at the top.
+            </remarks>
+            <param name="model">
+            The TreeModel that the iterators refer to.
+            </param>
+            <param name="node1">
+            The first tree node that will be compared.
+            </param>
+            <param name="node2">
+            The second tree node that will be compared.
+            </param>
+            <returns>
+            Less than zero if nodeA &lt; nodeB
+            Zero if nodeA == nodeB.
+            Greater than zero if nodeA &gt; nodeB.
+            </returns>
+        </member>
+        <member name="M:MonoDevelop.DesignerSupport.ClassOutlineNodeComparer.GetSortName(System.Object)">
+            <summary>
+            Returns the name of the node that should be used as a secondary sort key.
+            </summary>
+            <param name="node">
+            A node in the tree. Expected to be either an IMember or a FoldingRegion.
+            </param>
+            <returns>
+            A string representing the secondary sort key.
+            The empty string if node is neither an IMember nor a FoldingRegion.
+            </returns>
+        </member>
+        <member name="T:MonoDevelop.DesignerSupport.ClassOutlineSortingPreferencesDialog">
+            <summary>
+            Provides a priority list of the groups that items in the class outline can be grouped in.
+            </summary>
+            <remarks>
+            The user can sort the list with button presses and thereby change the order of groups
+            in the outline, while grouping is active.
+            </remarks>
+        </member>
+        <member name="T:MonoDevelop.DesignerSupport.ClassOutlineSettings">
+            <summary>
+            Stores sorting status and is serialized to configuration properties.
+            </summary>
+            <remarks>
+            Stores the sorting configuration, e.g. if the class outline is currently sorted
+            or what primary sort key values the individual node groups have. This class is
+            serialized to the configuration file MonoDevelopProperties.xml.
+            </remarks>
+            <seealso cref="T:MonoDevelop.DesignerSupport.ClassOutlineTextEditorExtension"/>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,288 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+////////////////////////////////////////////////////////////////////////////////
+// Round color to RGB565 and expand
+////////////////////////////////////////////////////////////////////////////////
+float3 roundAndExpand(in float3 v, out float3 w)
+{
+	w = v;
+	v.x = round(saturate(v.x) * 31.0f);
+	v.y = round(saturate(v.y) * 63.0f);
+	v.z = round(saturate(v.z) * 31.0f);
+	v.x *= 0.03227752766457f; // approximate integer bit expansion.
+	v.y *= 0.01583151765563f;
+	v.z *= 0.03227752766457f;
+	return v;
+}
+
+#define ISOLATE	
+
+// Use power method to find the first eigenvector.
+// http://www.miislita.com/information-retrieval-tutorial/matrix-tutorial-3-eigenvalues-eigenvectors.html
+float3 firstEigenVector( const in float mx[6] )
+{
+	// 8 iterations seems to be more than enough.
+	float3 v = float3(1.0f, 1.0f, 1.0f);
+	for(int i = 0; i < 8; i++)
+	{
+		const float x = v.x * mx[0] + v.y * mx[1] + v.z * mx[2];
+		const float y = v.x * mx[1] + v.y * mx[3] + v.z * mx[4];
+		const float z = v.x * mx[2] + v.y * mx[4] + v.z * mx[5];
+		const float m = max(max(x, y), z);
+		float iv = 1.f / max(0.01f, m);
+		if(m == 0.0f) iv = 0.f;
+		v = float3(x*iv, y*iv, z*iv);
+	}
+
+	return v;
+}
+
+float3 bestFitLine(const in float3 colors[16], const in float3 colorMean)
+{
+	// Compute covariance matrix of the given colors.
+	float covariance[6] = { 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
+	for (int i = 0; i < 16; i++)
+	{
+		const float3 a = colors[i] - colorMean;
+		covariance[0] += a.x * a.x;
+		covariance[1] += a.x * a.y;
+		covariance[2] += a.x * a.z;
+		covariance[3] += a.y * a.y;
+		covariance[4] += a.y * a.z;
+		covariance[5] += a.z * a.z;
+	}
+
+	// Compute first eigen vector.
+	return firstEigenVector(covariance);	// should be always positively defined
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Lightweight DXT1 compression
+////////////////////////////////////////////////////////////////////////////////
+
+float3 getMeanColor(const in float3 colors[16])
+{
+	float3 meanColor = 0.f;
+	for(int i = 0; i < 16;i++)
+		meanColor += colors[i];
+	meanColor /= 16.f;
+	return meanColor;
+}
+
+float4 getError(const in float3 color[16], const in float3 colorPoint, int i)
+{
+	static const float3 vLum = 1.f;//float3(1.f, 1.3f, 1.f);
+	return float4(	dot(color[i*4 + 0] - colorPoint, (color[i*4 + 0] - colorPoint) * vLum),
+									dot(color[i*4 + 1] - colorPoint, (color[i*4 + 1] - colorPoint) * vLum),
+									dot(color[i*4 + 2] - colorPoint, (color[i*4 + 2] - colorPoint) * vLum),
+									dot(color[i*4 + 3] - colorPoint, (color[i*4 + 3] - colorPoint) * vLum));
+}
+
+float4 getIndex(const in float3 color[16], const in float3 colorPoints[4], int i)
+{
+	const float4 d0 = getError(color, colorPoints[0], i);
+	const float4 d1 = getError(color, colorPoints[1], i);
+	const float4 d2 = getError(color, colorPoints[2], i);
+	const float4 d3 = getError(color, colorPoints[3], i);
+	const float4 b0 = d0 > d3;
+	const float4 b1 = d1 > d2;
+	const float4 b2 = d0 > d2;
+	const float4 b3 = d1 > d3;
+	const float4 b4 = d2 > d3;
+	return b0 * b4 + saturate(b1 * b2 + b0 * b3) * 2.f;
+}
+
+float2 getIndices(const in float3 colors[16], const in float3 start, const in float3 end)
+{
+	static const float3 vR5G6B5RangeClamp = float3(31.f, 63.f, 31.f);
+	static const float3 vInvR5G6B5RangeClamp = float3(1.f, 1.f, 1.f) / vR5G6B5RangeClamp;
+	float3 colorPoints[4];
+	colorPoints[0] = round(end * vR5G6B5RangeClamp) * vInvR5G6B5RangeClamp;
+	colorPoints[1] = round(start * vR5G6B5RangeClamp) * vInvR5G6B5RangeClamp;
+	colorPoints[2] = lerp(colorPoints[0], colorPoints[1], 1.f / 3.f);
+	colorPoints[3] = lerp(colorPoints[0], colorPoints[1], 2.f / 3.f);
+
+	float2 res = 0;
+	static const float4 vShift = float4(1.f, 4.f, 16.f, 64.f);
+	res.x  = dot(getIndex(colors, colorPoints, 0), vShift);
+	res.x += dot(getIndex(colors, colorPoints, 1), vShift * 256.f);
+	res.y  = dot(getIndex(colors, colorPoints, 2), vShift);
+	res.y += dot(getIndex(colors, colorPoints, 3), vShift * 256.f);
+
+	//const float3 delta = end - start;
+	//if(dot(delta, delta) < 1.f / 10)
+	//	res = 0;
+
+	return res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Save DXT block
+////////////////////////////////////////////////////////////////////////////////
+
+float R5G6B5ToFloat(const in float3 color)
+{
+	static const float3 vR5G6B5RangeClamp = float3(31.f, 63.f, 31.f);
+	static const float3 vShift = float3(2048.f, 32.f, 1.f);	// (64.f, 1.f, 2048.f) 2048=exp2(6+5), 32=exp2(5), 1=exp2(0)
+	static const float3 vDPConst = vShift * vR5G6B5RangeClamp;
+	return dot(round(color * vR5G6B5RangeClamp), vShift);//dot(color, vDPConst);//
+}
+
+void findLeastSquares(const in float3 colors[16], out float3 bestStart, out float3 bestEnd)
+{
+	// Find the min and max values in each channel
+	bestStart = colors[0];
+	bestEnd = colors[0];
+	for (int i = 1; i < 16;i++)
+	{
+		bestStart = min(bestStart, colors[i]);
+		bestEnd   = max(bestEnd, colors[i]);
+	}
+
+	// Find the channel with the largest range
+	float3 diff = bestEnd - bestStart;
+	float3 select = float3(1, 0, 0);
+	if (diff.g > diff.r)
+		select = float3(0, 1, 0);
+	if (diff.b > max(diff.r, diff.g))
+		select = float3(0, 0, 1);
+
+	// Use the highest range channel as a base for finding the end point colors
+	float maxChValue = dot(bestEnd, select);
+	float minChValue = dot(bestStart, select);
+
+	// Find sum(y) and sum(x * y) for the Least Squares fitting
+	float3 sumY = 0;
+	float3 sumXY = 0;
+	for (int x = 0; x < 16;x++)
+	{
+		sumY  += colors[x];
+		sumXY += colors[x] * dot(colors[x], select);
+	}
+	// Find the sum(x) and sum(x^2)
+	float sumX  = dot(sumY,  select);
+	float sumX2 = dot(sumXY, select);
+
+	// Do a Least Squares fitting to y = a + b * x
+	float3 b = (16.0f * sumXY - sumX * sumY) / (16.0f * sumX2 - sumX * sumX);
+	float3 a = (sumY - b * sumX) / 16.0f;
+
+	// Compute the end points
+	float3 ch0 = saturate(a + b * maxChValue);
+	float3 ch1 = saturate(a + b * minChValue);
+
+	bool3 b3 = (bestStart != bestEnd);
+	bestEnd   = b3 ? ch0 : bestStart;
+	bestStart = b3 ? ch1 : bestStart;
+}
+
+void fitToDir(const in float3 colors[16], const in float3 vDir, out float3 bestStart, out float3 bestEnd)
+{
+	float bestMin = dot(colors[0], vDir);
+	float bestMax = bestMin;
+	bestEnd = bestStart = colors[0];
+	for(int i = 1; i < 16;i++)
+	{
+		const float fDot = dot(colors[i], vDir);
+		if(fDot < bestMin)
+		{
+			bestMin = fDot;
+			bestStart = colors[i];
+		}
+		if(fDot > bestMax)
+		{
+			bestMax = fDot;
+			bestEnd = colors[i];
+		}
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Compress color block
+////////////////////////////////////////////////////////////////////////////////
+float4 compress(const in float3 colors[16])
+{
+	// find endpoints
+	float3 bestStart, bestEnd;
+	//fitToDir(colors, bestFitLine(colors, getMeanColor(colors)), bestStart, bestEnd);
+	findLeastSquares(colors, bestStart, bestEnd);
+
+	float4 result;
+
+	// Write endpoints.
+	result.r = R5G6B5ToFloat(bestEnd);
+	result.g = R5G6B5ToFloat(bestStart);
+
+	// Select min and max values
+	if (result.r < result.g)
+	{
+		float3 tmp = result.r;
+		result.r = result.g;
+		result.g  = tmp;
+
+		result.ba = getIndices(colors, bestEnd, bestStart);
+	}
+	else if (result.r == result.g)
+	{
+		// Make c0 > c1
+		result.g = 0.f; // Set blue LSB to 1
+
+		// compute indices for texels
+		result.ba = 0;
+	}
+	else
+	{
+		result.ba = getIndices(colors, bestStart, bestEnd);
+	}
+
+	return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Standard FX routine
+////////////////////////////////////////////////////////////////////////////////
+
+sampler2D srcSampler : register(s0);
+
+float4 g_vSrcRTSize;
+float4 g_vDstRTSize;
+float4 g_vSrcRTRect;
+
+void DXTCompressVS(const in float4 iPosition	: POSITION0,
+									 const in float2 iTexCoords : TEXCOORD0,
+									 			out float4 oPosition	: POSITION0,
+									 			out float2 oTexCoords	: TEXCOORD0)
+{
+	oPosition = iPosition;
+	oPosition.xy = oPosition.xy * 2 - 1;
+	oPosition.y = -oPosition.y;
+	// remap texture coords from dest to src
+	oTexCoords = g_vSrcRTRect.xy * g_vSrcRTSize.zw + iTexCoords * g_vSrcRTRect.zw * g_vSrcRTSize.zw;
+	oTexCoords -= g_vSrcRTSize.zw * .5f;
+}
+
+//[maxtempreg(25)]
+float4 DXTCompressPS(const in float2 vTexCoords : TEXCOORD0) : COLOR0
+{
+	float3 colors[16];
+
+	// fetch data
+	for(int i=0;i<16;i++)
+	{
+		const float2 curTexCoord = vTexCoords + float2(fmod(i, 4), round(i/4)) * g_vSrcRTSize.zw;
+		colors[i] = tex2D(srcSampler, curTexCoord).rgb;
+	}
+
+	// main stage: compress it
+	return compress(colors);
+}
+
+technique DXTCompress
+{
+  pass p0
+  {
+    VertexShader = DXTCompressVS();
+    PixelShader = DXTCompressPS();
+  }
+}

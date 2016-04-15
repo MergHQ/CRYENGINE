@@ -1,0 +1,190 @@
+<FeatureTester>
+	<Settings>
+		<ListEntitiesWhenFail className="CrashSiteLocation" />
+		<AlwaysFailWhenHit checkpointName="GameRules_OnEndGame" />
+	</Settings>
+	
+	<Tests setName="utils">
+		<FeatureTest name="UtilPlayerSpawn">
+			<!-- Let's make the player regenerate health really quickly... -->
+			<DoConsoleCommand command="pl_health.normal_threshold_time_to_regenerateMP 0.25" />
+			<DoConsoleCommand command="pl_health.normal_regeneration_rateMP 1000" />
+			
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_SvDoNotReviveTooSoonAfterDeath" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="HoldObjective_LocalPlayerEnterArea" customMessage="Player has spawned right next to a crash site! That's going to mess up the tests!" />
+			<TrySpawnPlayer localPlayer="true" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<WaitSingleFrame />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilPlayerFindCrashedShip">
+			<DoConsoleCommand command="gameRules_captureObjective_overrideCaptureTime 100000"/> <!-- So capture process goes really slowly until the next test starts! -->
+			<SetResponseToHittingCCCPoint response="completeSubroutine" checkpointName="HoldObjective_LocalPlayerEnterArea" />
+			<MovePlayerToOtherEntity localPlayer="true" className="CrashSiteLocation" />
+			<Wait duration="1" />
+			<Fail />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilEnableFlyMode">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_FlyMode_Off" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_FlyMode_FlyCollisionsOn" />
+			<SetResponseToHittingCCCPoint response="completeSubroutine" checkpointName="PlayerState_FlyMode_FlyCollisionsOff" />
+			<OverrideButtonInput_Release inputName="flymode" /> <!-- Using 'Release' instead of 'Press' because they both change fly mode and we don't want to automatically send a release event when the test is complete -->
+			<Fail />
+		</FeatureTest>
+
+		<FeatureTest name="UtilDisableFlyMode">
+			<SetResponseToHittingCCCPoint response="completeSubroutine" checkpointName="PlayerState_FlyMode_Off" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_FlyMode_FlyCollisionsOn" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_FlyMode_FlyCollisionsOff" />
+			<OverrideButtonInput_Release inputName="flymode" /> <!-- Using 'Release' instead of 'Press' because they both change fly mode and we don't want to automatically send a release event when the test is complete -->
+			<Fail />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="setup">
+		<FeatureTest name="SetGameParams" description="Set-up game parameters so that the game doesn't end during the tests" enabled="true" owners="benjo">
+			<DoConsoleCommand command="pl_spawnCorpseOnDeath 0" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHObjectiveCreated" description="Check that a crashed ship gets created" speed="4" enabled="true" maxTime="120" owners="benjo" >
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HoldObjective_AddEntity" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="30" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHPlayerExists" description="Check that a player gets created" require="localPlayerExists" enabled="true" maxTime="120" owners="benjo">
+			<DoConsoleCommand command="g_scoreLimit 0" />
+			<DoConsoleCommand command="g_timeLimit 0" />
+		</FeatureTest>
+				
+		<FeatureTest name="KotHPlayerSpawns" description="Check that a player gets brought to life" require="localPlayerExists" enabled="true" owners="benjo" prerequisite="KotHPlayerExists">
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+		</FeatureTest>
+		
+		<FeatureTest name="KotHObjectiveIconAdded" description="Check that an objective icon gets created" require="localPlayerExists" enabled="true" speed="8" maxTime="125" owners="benjo" prerequisite="KotHObjectiveCreated">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="KingOfTheHillObjective_SetNewIcon" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="120" />
+		</FeatureTest>
+		
+		<FeatureTest name="KotHObjectiveHitsGround" description="Check that the crashed ship hits the ground" enabled="true" speed="4" owners="benjo" prerequisite="KotHObjectiveIconAdded">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Audio_ScriptStopEntitySignal" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Audio_ScriptPlayEntitySignal" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="55" />
+		</FeatureTest>
+	</Tests>
+		
+	<Tests setName="crashsite">
+		<FeatureTest name="KotHTeamMarinesCapture" description="Local player on team marines captures the current crashed ship" enabled="true" owners="benjo">
+			<DoConsoleCommand command="kill" />
+			<DoConsoleCommand command="team marines" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="KingOfTheHillObjective_SiteCapturedByFriendlyTeam" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HoldObjective_TeamMarinesNowInProximity" />
+			<RunFeatureTest testName="UtilPlayerFindCrashedShip" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHKillWhileInArea" description="Kill local player while inside the crashed ship radius" enabled="true" owners="benjo" prerequisite="KotHTeamMarinesCapture">
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerDied" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HoldObjective_PlayerWithinRangeKilled" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HoldObjective_LocalPlayerLeaveArea" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HoldObjective_NeitherTeamNowInProximity" />
+			<DoConsoleCommand command="kill" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHTeamCellCapture" description="Local player on team cell captures the current crashed ship" enabled="true" owners="benjo">
+			<DoConsoleCommand command="kill" />
+			<DoConsoleCommand command="team cell" />
+			<RunFeatureTest testName="UtilPlayerSpawn" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="KingOfTheHillObjective_SiteCapturedByFriendlyTeam" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HoldObjective_TeamCellNowInProximity" />
+			<RunFeatureTest testName="UtilPlayerFindCrashedShip" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.5" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHTeamMarinesScore" description="Team marines can score by holding the objective" enabled="true" owners="benjo">
+			<RunFeatureTest testName="KotHTeamMarinesCapture" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="KingOfTheHillObjective_TeamMarinesScored" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="10" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHTeamCellScore" description="Team cell can score by holding the objective" enabled="true" owners="benjo">
+			<RunFeatureTest testName="KotHTeamCellCapture" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="KingOfTheHillObjective_TeamCellScored" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="10" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHLeaveArea" description="Local player leaves the current crashed ship area" enabled="true" owners="benjo">
+			<RunFeatureTest testName="KotHTeamMarinesCapture" />
+			<RunFeatureTest testName="UtilEnableFlyMode" />
+			<SetResponseToHittingCCCPoint response="completeSubroutine" checkpointName="HoldObjective_LocalPlayerLeaveArea" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HoldObjective_NeitherTeamNowInProximity" />
+			<OverrideAnalogInput inputName="xi_movey" value="-1" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHReturnToArea" description="Local player returns to current crashed ship, site becomes captured again" enabled="true" owners="benjo" prerequisite="KotHLeaveArea">
+			<SetResponseToHittingCCCPoint response="completeSubroutine" checkpointName="HoldObjective_LocalPlayerEnterArea" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HoldObjective_TeamMarinesNowInProximity" />
+			<OverrideAnalogInput inputName="xi_movey" value="1" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+			<RunFeatureTest testName="UtilDisableFlyMode" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHObjectiveDestroyed" description="Captured ship eventually gets destroyed" enabled="true" owners="benjo">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HoldObjective_CleanUpActiveCaptureEntity" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="300" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHSecondObjectiveCreated" description="Check that a 2nd crashed ship gets created" enabled="true" owners="benjo" prerequisite="KotHObjectiveDestroyed">
+			<RunFeatureTest testName="KotHObjectiveCreated" />
+		</FeatureTest>
+		
+		<FeatureTest name="KotHSecondObjectiveIconAdded" description="Check that an objective icon gets created" enabled="true" maxTime="125" owners="benjo" prerequisite="KotHSecondObjectiveCreated">
+			<RunFeatureTest testName="KotHObjectiveIconAdded" />
+		</FeatureTest>
+		
+		<FeatureTest name="KotHSecondObjectiveHitsGround" description="Check that the crashed ship hits the ground" enabled="true" owners="benjo" prerequisite="KotHSecondObjectiveIconAdded">
+			<RunFeatureTest testName="KotHObjectiveHitsGround" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHSecondObjectiveStartCapture" description="Local player can still capture the site" enabled="true" owners="benjo" prerequisite="KotHSecondObjectiveHitsGround">
+			<RunFeatureTest testName="KotHTeamMarinesCapture" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHSecondObjectiveScore" description="Local player can still capture the site" enabled="true" owners="benjo" prerequisite="KotHSecondObjectiveStartCapture">
+			<RunFeatureTest testName="KotHTeamMarinesScore" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHSecondObjectiveDestroyed" description="Captured ship eventually gets destroyed" enabled="true" owners="benjo" prerequisite="KotHSecondObjectiveScore">
+			<RunFeatureTest testName="KotHObjectiveDestroyed" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHThirdObjectiveCreated" description="Check that a 3rd crashed ship gets created" enabled="true" owners="benjo" prerequisite="KotHSecondObjectiveDestroyed">
+			<RunFeatureTest testName="KotHObjectiveCreated" />
+		</FeatureTest>
+		
+		<FeatureTest name="KotHThirdObjectiveIconAdded" description="Check that an objective icon gets created" enabled="true" maxTime="125" owners="benjo" prerequisite="KotHThirdObjectiveCreated">
+			<RunFeatureTest testName="KotHObjectiveIconAdded" />
+		</FeatureTest>
+		
+		<FeatureTest name="KotHThirdObjectiveHitsGround" description="Check that the crashed ship hits the ground" enabled="true" owners="benjo" prerequisite="KotHThirdObjectiveIconAdded">
+			<RunFeatureTest testName="KotHObjectiveHitsGround" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHThirdObjectiveStartCapture" description="Local player can still capture the site" enabled="true" owners="benjo" prerequisite="KotHThirdObjectiveHitsGround">
+			<RunFeatureTest testName="KotHTeamMarinesCapture" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHThirdObjectiveScore" description="Local player can still capture the site" enabled="true" owners="benjo" prerequisite="KotHThirdObjectiveStartCapture">
+			<RunFeatureTest testName="KotHTeamMarinesScore" />
+		</FeatureTest>
+
+		<FeatureTest name="KotHThirdObjectiveDestroyed" description="Captured ship eventually gets destroyed" enabled="true" owners="benjo" prerequisite="KotHThirdObjectiveScore">
+			<RunFeatureTest testName="KotHObjectiveDestroyed" />
+		</FeatureTest>
+	</Tests>
+</FeatureTester>

@@ -1,0 +1,80 @@
+<Mode name='CrashSite'>
+
+	<Spawning class='MPRSSpawning' teamGame='1' teamSpawnsType='Initial' usingLua='0' />
+
+	<Scoring class='StandardScoring'>
+    <Player>
+			<Event type='PlayerKill'        points='100' />
+			<Event type='PlayerTeamKill'    points='0' />
+			<Event type='PlayerKillAssist'  points='20' />
+		     	<Event type='Tagged_PlayerKillAssist' points='25' />
+			<Event type='KingOfTheHillObjectiveHeld' points='50' />
+      <Event type='HoldObj_OffensiveKill' points='50' />
+      <Event type='HoldObj_DefensiveKill' points='100' />
+    </Player>
+	  <Team>
+			<Event type='KingOfTheHillObjectiveHeld' points='5' />
+	  </Team>
+	</Scoring>
+
+	<ScoreRewards enabled='1' />
+
+	<AssistScoring class='AssistScoring' maxTimeBetweenAttackAndKillForAssist='7000' maxAssistScore='99' assistScoreMultiplier='0.5' />
+
+	<PlayerStats class='StandardPlayerStats' />
+	<StatsRecording class='StandardStatsRecording' />
+
+	<Teams class='StandardTwoTeams' />
+
+	<State class='StandardState'>
+		<StartStrings startMatch='ui_msg_cs_matchstart' />
+	</State>
+	
+	<VictoryConditions class='StandardVictoryConditionsTeam' />
+
+	<PlayerSetup class='StandardSetup' />
+
+	<DamageHandling class='MPDamageHandling'>
+		<Table path='Scripts/GameRules/MPDamageTable.xml' />
+	</DamageHandling>
+
+	<ActorAction class='MPActorAction' />
+
+	<Spectator class='MPSpectator' eatsActorActions='1' enableFree='0' enableFollow='1' enableKiller='1' timeFromDeathTillAutoSpectate='5000' />
+
+	<Objectives class='Objective_SimpleEntityBased' teamBase='1'>
+		<Entity class='CrashSiteLocation' select='Random_Weighted' time='100' timeBetweenLocations='5' update='all' count='1'/>
+		<Implementation type='KingOfTheHill' scoreTime='4' additionalPlayerTimerMultiplier='1.0'>
+			<Icons neutral='EGRMO_CS_CapturePoint_neutral' friendly='EGRMO_CS_CapturePoint_teamOwned' hostile='EGRMO_CS_CapturePoint_enemyOwned' contested='EGRMO_CS_CapturePoint_contention' checkFunc='ShouldShowHudIcon' />
+			<Audio capturedLoop='Crashsite_Loop' />
+      <!-- friendlyCapture='ui_msg_cs_site_captured_0' enemyCapture='ui_msg_cs_site_captured_1' newEntity='ui_msg_cs_new_crashsite' friendlyLost='ui_msg_cs_lost_0' enemyLost='ui_msg_cs_lost_1' -->
+			<Strings
+				gameStateNeutral='ui_msg_cs_status_0'
+				gameStateFriendly='ui_msg_cs_status_1'
+				gameStateEnemy='ui_msg_cs_status_2'
+				gameStateDestructing='ui_msg_cs_status_3'
+				gameStateIncoming='ui_msg_cs_status_4'
+				iconTextDefend='ui_icon_cs_defend'
+				iconTextClear='ui_icon_cs_clear'
+				iconTextCapture='ui_icon_cs_capture'
+			/>
+			<SpawnParams type='avoid' distance='40' />
+      <EffectData>
+        <ParticleEffect name='cw2_gameplay.crash_site.drop_pod_capture_area' particleGeomMaterial='Objects/effects/cylinder_a.mtl'/>
+        <RingEntity geom='Objects/effects/cw2_captureArea.cgf'/>
+        <Params alphaLerpSpeed='0.5' 
+                materialColorLerpSpeed='1.0' 
+                particleColorLerpSpeed='1.0' 
+                alphaFadeInDelayDuration='1.9' 
+                particleEffectScale='0.075' 
+                ringGeomScale='0.084' 
+                friendlyColor='0.0,1.0,0.2' 
+                enemyColor='0.1,0.0,0.0' 
+                neutralColor='1.0,1.0,1.0'/>
+      </EffectData>
+			<RadiusPulse time='3.0' checkFunc='ShouldDoPulseEffect' />
+		</Implementation>
+	</Objectives>
+
+</Mode>
+

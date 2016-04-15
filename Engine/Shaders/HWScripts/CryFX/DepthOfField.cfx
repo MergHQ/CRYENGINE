@@ -1,0 +1,946 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "PostEffectsLib.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "NoPreview;"
+           "LocalConstants;"
+           "ShaderDrawType = Custom;"
+           "ShaderType = PostProcess;"
+>; 
+
+/// Specific data ////////////////////////
+
+/// Constants ////////////////////////////
+
+float4 dofParamsFocus;
+float4 dofParamsBlur;
+float4 pixelSizes;
+float4 dofParamsOther = {0.2, 0.4, 0, 0};
+
+/// Samplers /////////////////////////////
+
+///////////////// vertex shader //////////////////
+
+  //half f=fDepth-(half)dofParamsFocus.z;
+ 
+  //// 0 - in focus
+  //// 1 or -1 - completely out of focus
+  //if(fDepth<(half)dofParamsFocus.z)
+  //{
+  //  f/=(half)dofParamsFocus.x;      
+		//f *= -1;
+  //}
+  //else
+  //{
+  //  f/=dofParamsFocus.y;         
+  //  //f=clamp(f, 0, 1);//-(half)dofParamsOther.x);   
+
+
+///////////////// pixel shader //////////////////
+half GetDepthBlurinessBiased(half fDepth)
+{
+  half f=0; 
+
+  // 0 - in focus
+  // 1 or -1 - completely out of focus
+    
+  if(fDepth>(half)dofParamsFocus.y)
+  {
+    //f=0;//(fDepth-(half)dofParamsFocus.y)/(half)dofParamsFocus.z; // max range
+		f=(fDepth-(half)dofParamsFocus.y)/(half)dofParamsFocus.z; // max range
+    f=saturate(f);
+		
+  }
+  else
+  if(fDepth<(half)dofParamsFocus.x)
+  {
+    //f=1;//((half)dofParamsFocus.x-fDepth)/(half)dofParamsFocus.w;  // min range
+    
+    f=(1-fDepth/dofParamsFocus.x)/dofParamsFocus.w;  // min range
+		f=saturate(f);
+		
+		f *= -1;
+    
+    //f=clamp(f, 0, 1-/*dofParamsOther.x*/);   // make sure there's a diference blur between max range and min range
+  }
+  
+  return f;
+}
+
+pixout CopyDepthToAlphaBiasedNoMaskPS(vtxOut IN)
+{
+  pixout OUT;  
+
+  // temporary workaround for D3D11 hlsl compiler bug
+  OUT.Color = tex2D(_tex0, IN.baseTC.xy);
+    
+  half4 depthMap = (GetLinearDepth(_tex0, IN.baseTC.xy));        	
+  half depthNormalized =depthMap.x*PS_NearFarClipDist.y;
+  half depth = (GetDepthBlurinessBiased(depthNormalized))*dofParamsFocus.w;	  
+    
+#if %_RT_SAMPLE0
+  half3 cScreen = max( tex2D(_tex1, IN.baseTC.xy).xyz, 0);
+
+  // do same nan check as in hdr pass
+  cScreen.rgb = (cScreen.rgb> 10000.0f)? half3(1, 1, 1): cScreen.rgb;
+
+
+  OUT.Color.xyzw = half4( cScreen.xyz, (depth*0.5+0.5) );
+#else
+  OUT.Color = (depth*0.5+0.5);
+#endif
+  
+  return OUT;
+}
+
+pixout CopyDepthToAlphaBiasedPS(vtxOut IN)
+{
+  pixout OUT;  
+
+  // temporary workaround for D3D11 hlsl compiler bug
+  OUT.Color = tex2D(_tex0, IN.baseTC.xy);
+
+  half depthMaskColor = 1;//tex2D(_tex1, IN.baseTC.xy).x;  
+    
+  half4 depthMap = ( GetLinearDepth(_tex0, IN.baseTC.xy) );        	
+  half depthNormalized =depthMap.x*PS_NearFarClipDist.y;
+  half depth = (GetDepthBlurinessBiased(depthNormalized) * depthMaskColor)*dofParamsFocus.w;	  
+
+#if %_RT_SAMPLE0
+  half3 cScreen = max( tex2D(_tex2, IN.baseTC.xy).xyz, 0);
+
+
+  //cScreen = max( min( cScreen, (float3)10000000 ), 0 );
+  // do same nan check as in hdr pass
+  cScreen.rgb = (cScreen.rgb> 10000.0f)? half3(1, 1, 1): cScreen.rgb;
+
+
+  OUT.Color.xyzw = half4( cScreen.xyz, saturate(depth*0.5+0.5) );
+
+#else
+  OUT.Color = saturate(depth*0.5+0.5);
+#endif
+  
+  return OUT;
+}
+
+
+half GetDepthBluriness(half fDepth)
+{  
+  /*
+  half f= fDepth-(half)dofParamsFocus.z;
+
+  half2 f_vec = saturate(f.xx / (half2)dofParamsFocus.xy);
+  f_vec.y = min(f_vec.y, 1.0-(half)dofParamsOther.x);
+
+  return (fDepth<(half)dofParamsFocus.z)? f_vec.x : f_vec.y ;
+  */
+  
+#if %_RT_SAMPLE1
+  
+  half f=fDepth;//-(half)dofParamsFocus.z;
+
+  // 0 - in focus
+  // 1 or -1 - completely out of focus
+  
+  //  < 0 - out of focus near
+  if(fDepth<(half)dofParamsFocus.z)
+  {
+    f = -( fDepth - dofParamsFocus.z) / (half)dofParamsFocus.x;      
+  }
+  else
+  {
+    //  > 0 - out of focus far
+    f = (fDepth -dofParamsFocus.z) / dofParamsFocus.y;         
+  }    
+#else
+  half f=fDepth-(half)dofParamsFocus.z;
+ 
+  // 0 - in focus
+  // 1 or -1 - completely out of focus
+  if(fDepth<(half)dofParamsFocus.z)
+  {
+    f/=(half)dofParamsFocus.x;      
+		f *= -1;
+  }
+  else
+  {
+    f/=dofParamsFocus.y;         
+    //f=clamp(f, 0, 1);//-(half)dofParamsOther.x);   
+  }
+
+#endif
+
+  return f;
+}
+
+pixout CopyDepthToAlphaNoMaskPS(vtxOut IN)
+{
+  pixout OUT;  
+
+  // temporary workaround for D3D11 hlsl compiler bug
+  OUT.Color = tex2D(_tex0, IN.baseTC.xy);
+    
+  half4 depthMap = GetLinearDepth(_tex0, IN.baseTC.xy);        	
+  half depthNormalized = depthMap.x*PS_NearFarClipDist.y;	  
+
+#if %_RT_SAMPLE1
+  half depth = (GetDepthBluriness(depthNormalized));	   // lerp to 0.5
+#else
+  half depth = (GetDepthBluriness(depthNormalized))*dofParamsFocus.w;	   // lerp to 0.5
+#endif
+
+#if %_RT_SAMPLE0
+
+	half3 cScreen = max( tex2D(_tex1, IN.baseTC.xy).xyz, 0);
+  cScreen.rgb = (cScreen.rgb> 10000.0f)? half3(1, 1, 1): cScreen.rgb;
+
+
+  OUT.Color.xyzw = half4( cScreen.xyz, saturate(depth*0.5+0.5) );
+
+#else
+  OUT.Color = saturate( (depth) * 0.5+0.5 );
+#endif
+  
+  return OUT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Bokeh Blur
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float4 bokehParams;
+float4 psWeights;
+float4 psBokehOffsets[15];
+
+
+float Time = {PB_time};
+
+pixout BokehBlurPS( vtxOut IN )
+{
+  pixout OUT = (pixout) 0;
+
+  half4 center_tap =  tex2D(_tex0, IN.baseTC.xy); 
+
+#if !%_RT_SAMPLE0
+  half center_tap_a = saturate(center_tap.a*2-1);
+  half bokehScale = center_tap_a; //(center_tap_a>=0)?saturate(center_tap_a):1; 
+  psWeights.xy *= bokehScale*bokehParams.w;
+
+  half4 cAcc = half4(center_tap.xyz * psWeights.z, 0.0); 
+  half fdiv = psWeights.z;
+
+#else
+
+  half center_tap_a = 1-saturate(center_tap.a*2);
+  half bokehScale = center_tap_a;
+  psWeights.xy *= bokehParams.w;
+  half4 cAcc = half4(center_tap.xyz, center_tap_a) * psWeights.z; 
+  half fdiv = psWeights.z;
+
+#endif
+ 
+  // For very hi specs: could rotate samples based on depth distance and distance to screen center
+
+  for(int s = 0; s < 15; s++)
+  {    
+#if %_RT_SAMPLE0
+    half4 offset_tap = tex2D(_tex0, IN.baseTC.xy + (psBokehOffsets[s]) * psWeights.xy); 
+
+    // near out-focus blur - todo: figure out how to scale offsets cheaply
+    offset_tap.a =  1-saturate(offset_tap.a*2);
+    float fAtten = psBokehOffsets[s].w;
+    cAcc += half4(offset_tap.xyz, 0) *fAtten;
+
+    cAcc.w = max(offset_tap.a, cAcc.w);//cAcc.w);
+    fdiv += fAtten;
+#else
+    
+    half4 offset_tap = tex2D(_tex0, IN.baseTC.xy + psBokehOffsets[s] * psWeights.xy); 
+
+    // far out-focus blur
+    offset_tap.a = saturate(offset_tap.a*2-1);
+    
+    // Attenuate color based on occlusion - looks a bit better - more 30 instructions though
+    half fSampleColorScale = offset_tap.a;
+
+    // rescale samples offsets based on depth mask 
+    offset_tap = tex2D(_tex0, IN.baseTC.xy + psBokehOffsets[s] * psWeights.xy*offset_tap.a); 
+    float fAtten = psBokehOffsets[s].w;;
+
+    cAcc += half4(offset_tap.xyz, offset_tap.w) * fSampleColorScale * fAtten;
+    fdiv += fSampleColorScale * fAtten; 
+#endif
+  }
+
+#if !%_RT_SAMPLE0
+  cAcc /= fdiv; //cAcc.w;
+  OUT.Color = cAcc;
+#else
+  cAcc.xyz /= fdiv; //cAcc.w;
+
+  cAcc.w = (1 - cAcc.w)*0.5;
+  OUT.Color = half4(cAcc.xyz,cAcc.w);//(1 - cAcc.w)*0.5 ) ;
+#endif
+
+  return OUT;
+}
+
+pixout FarOutFocusPS( vtxOut IN )
+{
+  pixout OUT = (pixout) 0;
+
+  OUT.Color =  tex2D(_tex0, IN.baseTC.xy + psWeights); 
+
+  return OUT;
+}
+
+pixout InFocusPS( vtxOut IN )
+{
+  pixout OUT = (pixout) 0;
+
+  half4 cSceneFocus = tex2D(_tex0, IN.baseTC.xy);
+  half4 cSceneFarUnfocus = tex2D(_tex1, IN.baseTC.xy);
+  //OUT.Color = lerp(cSceneFocus, cSceneFarUnfocus, bokehParams.w *saturate( max(abs(cSceneFocus.w*2-1), abs(cSceneFarUnfocus.w*2-1)))); 
+  //OUT.Color.w = cSceneFocus.w;
+  
+  OUT.Color = lerp(cSceneFocus, cSceneFarUnfocus, bokehParams.w *saturate( max( saturate(cSceneFocus.w*2-1), saturate(cSceneFarUnfocus.w*2-1)))); 
+  //OUT.Color = lerp(cSceneFocus, cSceneFarUnfocus, bokehParams.w *saturate( saturate(cSceneFarUnfocus.w*2-1))); 
+
+  //OUT.Color = lerp(cSceneFocus, cSceneFarUnfocus, bokehParams.w *saturate( max(saturate(cSceneFocus.w*2-1), cSceneFarUnfocus.w))); 
+  OUT.Color.w = cSceneFocus.w;//saturate( max( cSceneFocus.w, cSceneFarUnfocus.w)); // cSceneFocus.w;
+
+  return OUT;
+}
+
+pixout NearOutFocusPS( vtxOut IN )
+{
+  pixout OUT = (pixout) 0;
+
+  half4 cSceneFocus = tex2D(_tex0, IN.baseTC.xy);  
+  cSceneFocus.w = 1-saturate(cSceneFocus.w*2);
+
+  half4 cSceneNearUnfocus = tex2D(_tex1, IN.baseTC.xy);
+  cSceneNearUnfocus.w = 1-saturate(cSceneNearUnfocus.w*2);
+
+  //half4 cSceneNearUnfocusBlurry = tex2D(_tex2, IN.baseTC.xy);
+  //cSceneNearUnfocusBlurry.w = 1-saturate(cSceneNearUnfocusBlurry.w*2);
+
+  //cSceneNearUnfocus.w = max(cSceneNearUnfocusBlurry.w, cSceneNearUnfocus.w);
+  
+  // Scale down infocus range to minimize silhouete artefact - for very hi specs we should had intermediate layer step
+  //cSceneFocus.w *= 1.;
+  //cSceneFocus.w = cSceneFocus.w*0.5+cSceneNearUnfocus.w*0.5;
+
+  //bokehParams.w = 1;
+  //Blend factor: take the maximum between in-focus scene and out of focus
+  half fLayerBlend = bokehParams.w * saturate(max(cSceneFocus.w, cSceneNearUnfocus.w));;
+  //half fLayerBlend = bokehParams.w * saturate( cSceneNearUnfocus.w );;
+
+  //OUT.Color = lerp(cSceneFocus, cSceneNearUnfocus, saturate(fLayerBlend*2)); ;
+  OUT.Color = lerp(cSceneFocus, cSceneNearUnfocus, saturate(fLayerBlend)); ;
+
+  //fLayerBlend =  saturate(max(OUT.Color.w, bokehParams.w *cSceneNearUnfocus.w));;
+  //OUT.Color = lerp(OUT.Color, cSceneNearUnfocusBlurry, saturate(bokehParams.w*(cSceneNearUnfocus.w -0.5)*2)); ;
+  
+  //OUT.Color = cSceneFocus+cSceneFocus.w;
+
+  return OUT;
+}
+
+technique BokehBlur
+{
+  pass p0
+  {        
+    CullMode = None;        
+    
+    VertexShader = BaseVS();
+    PixelShader = BokehBlurPS();    
+  }
+}
+
+technique DofFarOutOfFocus
+{
+  pass p0
+  {        
+    CullMode = None;        
+    
+    VertexShader = BaseVS();
+    PixelShader = FarOutFocusPS();    
+  }
+}
+
+technique DofInFocus
+{
+  pass p0
+  {        
+    CullMode = None;        
+    
+    VertexShader = BaseVS();
+    PixelShader = InFocusPS();    
+  }
+}
+
+technique NearOutFocus
+{
+  pass p0
+  {        
+    CullMode = None;        
+    
+    VertexShader = BaseVS();
+    PixelShader = NearOutFocusPS();    
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float4 dofBokehSamples[64] < psregister = c32; >;
+
+struct pixoutMRT
+{
+	half4 cFarDof  : COLOR0;
+  //half4 cNearDof  : COLOR0;
+	//half4 cFarDof  : COLOR1;
+};
+
+
+pixoutMRT DofHiQualityNearFarSetupPS(vtxOut IN)
+{
+  pixoutMRT OUT = (pixoutMRT) 0;
+  int nQuality = GetShaderQuality();
+
+	float fScale = 0.975;
+  const int tapCount = 65;
+  float2 poisson[65] =
+  {		
+		-1.0*fScale, 0,
+		-2.0*fScale, 0,
+		-3.0*fScale, 0,
+		 0.0, 0,
+		 3.0*fScale, 0,
+		 2.0*fScale, 0,
+		 1.0*fScale, 0,
+		 // 7
+
+		-1.0*fScale, -1.0*fScale,
+		-2.0*fScale, -1.0*fScale,
+		-3.0*fScale, - 1.0*fScale,
+		 0.0, -1.0*fScale,
+		 3.0*fScale, -1.0*fScale,
+		 2.0*fScale, -1.0*fScale,
+		 1.0*fScale, -1.0*fScale,
+		 // 14
+
+		-1.0*fScale, 1.0*fScale,
+		-2.0*fScale, 1.0*fScale,
+		-3.0*fScale,  1.0*fScale,
+		  0.0, 1.0*fScale,
+		 3.0*fScale, 1.0*fScale,
+		 2.0*fScale, 1.0*fScale,
+		 1.0*fScale, 1.0*fScale,
+		 // 21
+
+		-2.0*fScale,  2.0*fScale,
+		-1.0*fScale,  2.0*fScale,
+		 0.0, 2.0*fScale,
+		 1.0*fScale,  2.0*fScale,
+		 2.0*fScale, 2.0*fScale,
+		 // 26
+
+		-2.0*fScale, -2.0*fScale,
+		-1.0*fScale, -2.0*fScale,
+		  0.0, -2.0*fScale,
+		 1.0*fScale, -2.0*fScale,
+		 2.0*fScale, -2.0*fScale,
+		 // 31
+
+
+		-1.0*fScale, 3.0*fScale,
+		 0.0, 3.0*fScale,
+		 1.0*fScale, 3.0*fScale,
+		 // 34
+
+		-1.0*fScale, -3.0*fScale,
+		 0.0, -3.0*fScale,
+		 1.0*fScale, -3.0*fScale,
+		 // 37
+
+		-1.5, -3.5,
+		 0.5, -3.5,
+		 -0.5, -3.5,
+		 1.5, -3.5,
+		 // 41
+
+		-1.5, 3.5,
+		 0.5, 3.5,
+		 -0.5, 3.5,
+		 1.5, 3.5,
+		 // 45
+
+		3.5,-1.5, 
+		3.5, 0.5,
+		3.5, -0.5,
+		3.5, 1.5,
+		// 49
+
+		-3.5,-1.5, 
+		-3.5, 0.5,
+		-3.5, -0.5,
+		-3.5, 1.5,
+		// 53
+
+		-2.0, 3.0, 
+		-2.5, 2.5,
+		-3.0, 2.0,
+		// 56
+
+   	-2.0, -3.0, 
+		-2.5, -2.5,
+		-3.0, -2.0,
+		// 59
+
+		2.0, 3.0, 
+		2.5, 2.5,
+		3.0, 2.0,
+		// 62
+
+   	2.0, -3.0, 
+		2.5, -2.5,
+		3.0, -2.0,
+		// 65
+	};
+  
+  half discRadius;
+  half discRadiusLow;
+  half centerDepth;
+  half centerDepthLow;
+        
+
+//	IN.baseTC.xy += pixelSizes.xy*0.5;
+
+  // fetch center tap from blured low res image
+  //centerDepth = tex2D(_tex1, IN.baseTC.xy + vNoise * pixelSizes.zw).w;    
+	centerDepth = tex2D(_tex0, IN.baseTC.xy).w;    
+
+  discRadius=(centerDepth*(half)dofParamsBlur.y-(half)dofParamsBlur.x);
+  
+	pixelSizes.xy *= 1.0 / 4.0;
+
+  float2 texsize_hi = 0.5 * pixelSizes.xy * discRadius * dofParamsBlur.w;
+  float2 near_texsize_hi =0.25* pixelSizes.xy * dofParamsBlur.w*(half)dofParamsBlur.y; //discRadius * 
+
+	centerDepth = centerDepth*2-1;
+	
+	float4 cOutNear=0;
+	float4 cOutFar=0;
+	
+  [unroll]
+  for(int t=0; t<tapCount; t++)
+  { 
+    half4 tap =tex2D(_tex0, IN.baseTC.xy + poisson[t] * texsize_hi);
+		tap.a =  saturate( -(tap.a*2-1) );
+		//tap *= saturate(tap.a*2-1) > saturate(centerDepth) - 0.01;
+    cOutFar += tap;
+		//tap.a = 1;
+
+  //  cOutFar.xyz += tap.xyz * tap.a;
+  //  cOutFar.w += tap.a;   
+
+    //tap =tex2D(_tex0, IN.baseTC.xy + poisson[t] * near_texsize_hi*4);
+    
+
+    //cOutNear.xyz += tap.xyz;// * tap.a;
+    //cOutNear.w += 1.5* tap.a;   
+
+  }
+                  
+
+//	half fFocusRangeNearMin =  vDofParamsFocus1.y * saturate( 1 - (fCenterDepth / vDofParamsFocus1.x) ) ;
+
+ // OUT.cNearDof.xyz = cOutNear /tapCount;
+	//OUT.cNearDof.w = cOutNear.a /tapCount;
+
+  OUT.cFarDof.xyz = cOutFar /tapCount;
+	OUT.cFarDof.w = cOutFar.a /tapCount;
+	
+  return OUT;
+}
+
+
+pixout DofHiQualityPS(vtxOut IN)
+{
+  pixout OUT = (pixout) 0;
+  int nQuality = GetShaderQuality();
+
+	half4 cInFocus = tex2D(_tex0, IN.baseTC.xy);
+	
+	half4 cNearOutFocus = tex2D(_tex1, IN.baseTC.xy);
+	half4 cFarOutFocus = tex2D(_tex2, IN.baseTC.xy);
+
+	// simple blending
+
+	//// Compose far dof
+	//half4 cFinal = lerp(cInFocus, cFarOutFocus, saturate(cInFocus.w*2-1) );
+	//// Compose near dof
+	//cFinal = lerp(cFinal, cNearOutFocus, saturate(cNearOutFocus.w*10) );
+
+	//OUT.Color = cFinal;
+	//return OUT;
+
+	float fScale = 0.975;
+  const int tapCount = 37;
+  float2 poisson[37] =
+  {		
+		-1.0*fScale, 0,
+		-2.0*fScale, 0,
+		-3.0*fScale, 0,
+		 0.0, 0,
+		 3.0*fScale, 0,
+		 2.0*fScale, 0,
+		 1.0*fScale, 0,
+		 // 7
+
+		-1.0*fScale, -1.0*fScale,
+		-2.0*fScale, -1.0*fScale,
+		-3.0*fScale, - 1.0*fScale,
+		 0.0, -1.0*fScale,
+		 3.0*fScale, -1.0*fScale,
+		 2.0*fScale, -1.0*fScale,
+		 1.0*fScale, -1.0*fScale,
+		 // 14
+
+		-1.0*fScale, 1.0*fScale,
+		-2.0*fScale, 1.0*fScale,
+		-3.0*fScale,  1.0*fScale,
+		  0.0, 1.0*fScale,
+		 3.0*fScale, 1.0*fScale,
+		 2.0*fScale, 1.0*fScale,
+		 1.0*fScale, 1.0*fScale,
+		 // 21
+
+		-2.0*fScale,  2.0*fScale,
+		-1.0*fScale,  2.0*fScale,
+		 0.0, 2.0*fScale,
+		 1.0*fScale,  2.0*fScale,
+		 2.0*fScale, 2.0*fScale,
+		 // 26
+
+		-2.0*fScale, -2.0*fScale,
+		-1.0*fScale, -2.0*fScale,
+		  0.0, -2.0*fScale,
+		 1.0*fScale, -2.0*fScale,
+		 2.0*fScale, -2.0*fScale,
+		 // 31
+
+
+		-1.0*fScale, 3.0*fScale,
+		 0.0, 3.0*fScale,
+		 1.0*fScale, 3.0*fScale,
+		 // 34
+
+		-1.0*fScale, -3.0*fScale,
+		 0.0, -3.0*fScale,
+		 1.0*fScale, -3.0*fScale,
+		 // 37
+
+		//-1.5, -3.5,
+		// 0.5, -3.5,
+		// -0.5, -3.5,
+		// 1.5, -3.5,
+		// // 41
+
+		//-1.5, 3.5,
+		// 0.5, 3.5,
+		// -0.5, 3.5,
+		// 1.5, 3.5,
+		// // 45
+
+		//3.5,-1.5, 
+		//3.5, 0.5,
+		//3.5, -0.5,
+		//3.5, 1.5,
+		//// 49
+
+		//-3.5,-1.5, 
+		//-3.5, 0.5,
+		//-3.5, -0.5,
+		//-3.5, 1.5,
+		//// 53
+
+		//-2.0, 3.0, 
+		//-2.5, 2.5,
+		//-3.0, 2.0,
+		//// 56
+
+  // 	-2.0, -3.0, 
+		//-2.5, -2.5,
+		//-3.0, -2.0,
+		//// 59
+
+		//2.0, 3.0, 
+		//2.5, 2.5,
+		//3.0, 2.0,
+		//// 62
+
+  // 	2.0, -3.0, 
+		//2.5, -2.5,
+		//3.0, -2.0,
+		//// 65
+	};
+
+  
+  half discRadius;
+  half discRadiusLow;
+  half centerDepth;
+  half centerDepthLow;
+        
+
+  // fetch center tap from blured low res image
+  //centerDepth = tex2D(_tex1, IN.baseTC.xy + vNoise * pixelSizes.zw).w;    
+	centerDepth = tex2D(_tex0, IN.baseTC.xy).w;    
+
+  discRadius=(centerDepth*(half)dofParamsBlur.y-(half)dofParamsBlur.x);
+  
+	pixelSizes.xy *= 1.0 / 3.0;
+  float2 texsize_hi = 0.5 * pixelSizes.xy * discRadius * dofParamsBlur.w;
+
+	centerDepth = centerDepth*2-1;
+	
+	float4 cOut=0;
+
+  [unroll]
+  for(int t=0; t<tapCount; t++)
+  { 
+    half4 tap =tex2D(_tex0, IN.baseTC.xy + poisson[t] * texsize_hi);
+		//tap *= saturate(tap.a*2-1) > saturate(centerDepth) - 0.01;
+    cOut += tap;
+  }
+                  
+  cInFocus = cOut /tapCount;
+
+	// Compose far dof
+	half4 cFinal = lerp(cInFocus, cFarOutFocus, saturate( max(cFarOutFocus.w*10, abs(cInFocus.w*2-1) ) ) );;
+	// Compose near dof
+	//cFinal = lerp(cFinal, cNearOutFocus, saturate( sqrt(cNearOutFocus.w)) );
+
+	OUT.Color = cFinal;
+
+  return OUT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// dof stencil pre-pass research
+
+pixout DofStencilPrepassPS(vtxOut IN)
+{
+	pixout OUT;
+
+	// debug
+	OUT.Color = saturate( tex2D(_tex0, IN.baseTC.xy).w * 2 - 1 );
+	
+#if %_RT_SAMPLE0
+	// In focus
+	if( abs(OUT.Color.x - (1.0/255.0) ) < 25.0 / 255.0 )  // range should come from constant
+		clip(-1);
+#else
+	// Far away - out of focus
+	//OUT.Color = (OUT.Color.x >= 0.8)? float4(1,0,0,1) : OUT.Color;
+	if( abs(OUT.Color.x - (203.0/255.0) ) < 1.0 / 255.0 ) //&& OUT.Color.x < 1.0)
+	//if( abs(OUT.Color.x - (101.0/255.0) ) > 1.0 / 255.0 )
+  //if( abs(OUT.Color.x - (1.0/255.0) ) > 1.0 / 255.0 )
+		clip(-1);
+#endif
+
+	OUT.Color = 1;
+	//OUT.Color = (OUT.Color.x > 250.0/255.0)? float4(0,1,0,1) : OUT.Color;
+
+	return OUT;
+}
+
+pixout DofOutOfFocusPS(vtxOut IN)
+{
+	pixout OUT;
+	OUT.Color = tex2D(_tex0, IN.baseTC.xy);
+	//half4 cFocus = tex2D(_tex0, IN.baseTC.xy);
+	//half4 cOutFocus = tex2D(_tex1, IN.baseTC.xy);
+	//OUT.Color = lerp(cFocus, cOutFocus, saturate(cFocus.w*2.0-1.0));
+//	if( abs(OUT.Color.x - (203.0/255.0) ) < 1.0 / 255.0 )
+		//OUT.Color = float4(1,0,0,1);
+//		clip(-1);
+
+	return OUT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pixout DofPS(vtxOut IN)
+{
+  pixout OUT = (pixout) 0;
+
+  const int tapCount = 8;
+
+  float2 poisson[8] =
+  {
+       0.0,    0.0,
+     0.527, -0.085,
+    -0.040,  0.536,
+    -0.670, -0.179,
+    -0.419, -0.616,
+     0.440, -0.639,
+    -0.757,  0.349,
+     0.574,  0.685
+  };
+
+  half4 cOut=0;
+  half discRadius;
+  half discRadiusLow;
+  half centerDepth;
+	half centerDepthLow;
+        
+  // temporary workaround for D3D11 hlsl compiler bug
+  OUT.Color = tex2D(_tex0, IN.baseTC.xy);
+        
+  // fetch center tap from blured low res image
+	centerDepth=tex2D(_tex0, IN.baseTC.xy).w; 
+  centerDepthLow=tex2D(_tex1, IN.baseTC.xy).w; 
+
+  discRadius=(centerDepth*(half)dofParamsBlur.y-(half)dofParamsBlur.x);
+  discRadiusLow=discRadius*(half)dofParamsOther.y;
+  
+  pixelSizes.xy=(half2)pixelSizes.xy*discRadius;
+  pixelSizes.wz=(half2)pixelSizes.zw*discRadiusLow;
+
+	//// debug
+	//OUT.Color = saturate(tex2D(_tex1, IN.baseTC.xy).w*2-1);
+	//
+	//OUT.Color = (OUT.Color.x == 203.0/255.0)? float4(1,0,0,1) : OUT.Color;
+	//OUT.Color = (OUT.Color.x > 250.0/255.0)? float4(0,1,0,1) : OUT.Color;
+
+
+	//return OUT;
+
+  [unroll]
+  for(int t=0; t<tapCount; t++)
+  { 
+    half4 tapHigh=tex2D(_tex0, IN.baseTC.xy+ poisson[t]*(half2)pixelSizes.xy);                
+    half4 tapLow=tex2D(_tex1, IN.baseTC.xy+ poisson[t]*(half2)pixelSizes.wz);        
+        
+    half tapLerp=(tapHigh.a*2.0-1.0);        
+    half4 tap=lerp(tapHigh, tapLow, saturate(tapLerp));    
+    
+    // Apply leak reduction. Make sure only to reduce on focused areas            
+    tap.a=(tapLow.a-centerDepth+(half)dofParamsOther.x>0.0)? 1: saturate(tap.a*2.0-1.0);    
+        
+    cOut.xyz+=tap.a*tap.xyz;
+    cOut.w+=tap.a;
+  }
+
+#if %_RT_SAMPLE3
+	// apply nearest dof bleeding
+	OUT.Color.xyz = lerp(cOut.xyz/cOut.w, tex2D(_tex1, IN.baseTC), saturate(10*-(centerDepthLow*2-1)) ) ;
+#else
+  OUT.Color = cOut/cOut.w;
+#endif
+
+	
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique CopyDepthToAlphaNoMask
+{
+  pass p0
+  {        
+    CullMode = None;        
+
+         
+    VertexShader = BaseVS() PostDofVS;
+    PixelShader = CopyDepthToAlphaNoMaskPS() PostDofPS;    
+  }
+}
+
+technique CopyDepthToAlphaBiasedNoMask
+{
+  pass p0
+  {        
+    CullMode = None;        
+            
+    VertexShader = BaseVS() PostDofVS;
+    PixelShader = CopyDepthToAlphaBiasedNoMaskPS() PostDofPS;    
+
+  }
+}
+
+technique CopyDepthToAlphaBiased
+{
+  pass p0
+  {        
+    CullMode = None;        
+            
+    VertexShader = BaseVS() PostDofVS;
+    PixelShader = CopyDepthToAlphaBiasedPS() PostDofPS;    
+
+  }
+}
+
+technique DepthOfField
+{
+  pass p0
+  {        
+    CullMode = None;        
+    
+    VertexShader = BaseVS();
+    PixelShader = DofPS();    
+  }
+}
+
+technique DofStencilPrepass
+{
+  pass p0
+  {        
+    CullMode = None;        
+    
+    VertexShader = BaseVS() PostDofVS;
+    PixelShader = DofStencilPrepassPS() PostDofPS;    
+  }
+}
+
+technique DofOutOfFocus
+{
+  pass p0
+  {        
+    CullMode = None;        
+    
+    VertexShader = BaseVS();
+    PixelShader = DofOutOfFocusPS();    
+  }
+}
+
+technique DofHiQualityNearFarSetup
+{
+  pass p0
+  {        
+    CullMode = None;        
+    
+    VertexShader = BaseVS();
+    PixelShader = DofHiQualityNearFarSetupPS();    
+  }
+}
+
+technique DofHiQuality
+{
+  pass p0
+  {        
+    CullMode = None;        
+    
+    VertexShader = BaseVS();
+    PixelShader = DofHiQualityPS();    
+  }
+}

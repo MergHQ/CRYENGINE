@@ -1,0 +1,286 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B5D507B0-8FD2-4BAD-880B-2362D4358D61}</ProjectGuid>
+    <RootNamespace>PRT</RootNamespace>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccProvider>Perforce Source Control Provider:{8D316614-311A-48F4-85F7-DF7020F62357}</SccProvider>
+    <SccAuxPath />
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\PRT\VC11\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\..\BinTemp\$(ProjectName)\$(PlatformName)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\PRT\VC11\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)..\..\..\..\BinTemp\$(ProjectName)\$(PlatformName)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\PRT\VC11\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\..\BinTemp\$(ProjectName)\$(PlatformName)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\PRT\VC11\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)..\..\..\..\BinTemp\$(ProjectName)\$(PlatformName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>$(ProjectName)_DEBUG_x64</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>$(ProjectName)_x64</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>$(ProjectName)_DEBUG</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\..\CryEngine\CryCommon; ..\..\..\Tools\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>USE_MEM_ALLOCATOR;WIN32;_DEBUG;_CONSOLE;PRT_COMPILE;NOT_USE_CRY_STRING;OFFLINE_COMPUTATION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\..\CryEngine\CryCommon; ..\..\..\Tools\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>USE_MEM_ALLOCATOR;WIN32;_DEBUG;_CONSOLE;PRT_COMPILE;NOT_USE_CRY_STRING;OFFLINE_COMPUTATION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>..\..\..\CryEngine\CryCommon; ..\..\..\Tools\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>USE_MEM_ALLOCATOR;WIN32;NDEBUG;_CONSOLE; PRT_COMPILE;NOT_USE_CRY_MEMORY_MANAGER;NOT_USE_CRY_STRING;OFFLINE_COMPUTATION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>..\..\..\CryEngine\CryCommon; ..\..\..\Tools\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>USE_MEM_ALLOCATOR;WIN32;NDEBUG;_CONSOLE; PRT_COMPILE;NOT_USE_CRY_MEMORY_MANAGER;NOT_USE_CRY_STRING;OFFLINE_COMPUTATION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="SampleGenerator.cpp" />
+    <ClCompile Include="AlphaTextureMaterial.cpp" />
+    <ClCompile Include="BacklightingAlphaTextureMaterial.cpp" />
+    <ClCompile Include="BaseTextureMaterial.cpp" />
+    <ClCompile Include="DefaultAlphaMaterial.cpp" />
+    <ClCompile Include="DefaultBacklightingMaterial.cpp" />
+    <ClCompile Include="DefaultMaterial.cpp" />
+    <ClCompile Include="MaterialFactory.cpp" />
+    <ClCompile Include="PrintTransferObserver.cpp" />
+    <ClCompile Include="Transfer.cpp" />
+    <ClCompile Include="TransferParameters.cpp" />
+    <ClCompile Include="SimpleIndexedMesh.cpp" />
+    <ClCompile Include="SimpleTriangleRasterizer.cpp" />
+    <ClCompile Include="SHFramework.cpp" />
+    <ClCompile Include="SHLog.cpp" />
+    <ClCompile Include="FullVisCache.cpp" />
+    <ClCompile Include="RayCaster.cpp" />
+    <ClCompile Include="SHAllocator.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="CommonImageReader.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="HDRImageReader.cpp" />
+    <ClCompile Include="ImageFactory.cpp" />
+    <ClCompile Include="TIFImageReader.cpp" />
+    <ClCompile Include="ITransferConfigurator.cpp" />
+    <ClCompile Include="TransferConfiguratorFactory.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\PRT\CompressedLookupTable.inl" />
+    <None Include="..\..\PRT\MeshCoefficientStreams.inl" />
+    <None Include="..\..\PRT\PRTTypes.inl" />
+    <None Include="..\..\PRT\QuantizedSamplesHolder.inl" />
+    <None Include="..\..\PRT\SHCompressor.inl" />
+    <None Include="..\..\PRT\SHFramework.inl" />
+    <None Include="..\..\PRT\SHRotate.inl" />
+    <None Include="..\..\PRT\SimpleIndexedMesh.inl" />
+    <None Include="..\..\PRT\TransferParameters.inl" />
+    <None Include="SampleRetrieval.inl" />
+    <None Include="SubTriManager.inl" />
+    <None Include="FullVisCache.inl" />
+    <None Include="RayCache.inl" />
+    <None Include="DefaultTransferConfigurator.inl" />
+    <None Include="VegetationTransferConfigurator.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\PRT\CompressedLookupTable.h" />
+    <ClInclude Include="..\..\PRT\IObserver.h" />
+    <ClInclude Include="..\..\PRT\ISHLog.h" />
+    <ClInclude Include="..\..\PRT\ISHMaterial.h" />
+    <ClInclude Include="..\..\PRT\ITransferConfigurator.h" />
+    <ClInclude Include="..\..\PRT\Legendre.h" />
+    <ClInclude Include="..\..\PRT\MaterialFactory.h" />
+    <ClInclude Include="..\..\PRT\MeshCoefficientStreams.h" />
+    <ClInclude Include="..\..\PRT\PRTTypes.h" />
+    <ClInclude Include="..\..\PRT\QuantizedSamplesHolder.h" />
+    <ClInclude Include="..\..\PRT\SHAllocator.h" />
+    <ClInclude Include="..\..\PRT\SHCompressor.h" />
+    <ClInclude Include="..\..\PRT\SHFramework.h" />
+    <ClInclude Include="..\..\PRT\SHFrameworkBasis.h" />
+    <ClInclude Include="..\..\PRT\SHMath.h" />
+    <ClInclude Include="..\..\PRT\SHRotate.h" />
+    <ClInclude Include="..\..\PRT\SimpleIndexedMesh.h" />
+    <ClInclude Include="..\..\PRT\SmartPtrAllocator.h" />
+    <ClInclude Include="..\..\PRT\TransferParameters.h" />
+    <ClInclude Include="Icosahedron.h" />
+    <ClInclude Include="ISampleGenerator.h" />
+    <ClInclude Include="RandomSampleGen.h" />
+    <ClInclude Include="SampleGenerator.h" />
+    <ClInclude Include="SampleRetrieval.h" />
+    <ClInclude Include="SubTriManager.h" />
+    <ClInclude Include="AlphaTextureMaterial.h" />
+    <ClInclude Include="BacklightingAlphaTextureMaterial.h" />
+    <ClInclude Include="BaseTextureMaterial.h" />
+    <ClInclude Include="DefaultAlphaMaterial.h" />
+    <ClInclude Include="DefaultBacklightingMaterial.h" />
+    <ClInclude Include="DefaultMaterial.h" />
+    <ClInclude Include="BasicUtils.h" />
+    <ClInclude Include="ITransfer.h" />
+    <ClInclude Include="PrintTransferObserver.h" />
+    <ClInclude Include="Transfer.h" />
+    <ClInclude Include="SimpleTriangleRasterizer.h" />
+    <ClInclude Include="SHLog.h" />
+    <ClInclude Include="FullVisCache.h" />
+    <ClInclude Include="RasterCube.h" />
+    <ClInclude Include="RasterTable.h" />
+    <ClInclude Include="RayCache.h" />
+    <ClInclude Include="RayCaster.h" />
+    <ClInclude Include="TangentSpaceCalculation.h" />
+    <ClInclude Include="CommonImageReader.h" />
+    <ClInclude Include="HDRImageReader.h" />
+    <ClInclude Include="IImageReader.h" />
+    <ClInclude Include="ImageFactory.h" />
+    <ClInclude Include="TIFImageReader.h" />
+    <ClInclude Include="DefaultTransferConfigurator.h" />
+    <ClInclude Include="TransferConfiguratorFactory.h" />
+    <ClInclude Include="VegetationTransferConfigurator.h" />
+    <ClInclude Include="stdafx.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

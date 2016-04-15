@@ -1,0 +1,13 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryLauncher( 
+		target      = 'WindowsLauncher', 
+		vs_filter	= 'Launcher',
+		win_file_list   = 'launcher.waf_files', 
+		features    = [ 'copy_dbghelp' ],
+
+		lib                  = 'Shell32', 
+		additional_manifests = 'DPIAware.xml', 		
+	)	

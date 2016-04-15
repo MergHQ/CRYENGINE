@@ -1,0 +1,16 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryEngineModule(
+		target     = 'CryFont',
+		vs_filter  = 'CryEngine',
+		file_list  = 'cryfont.waf_files',
+
+		pch        = 'StdAfx.cpp',
+		use_module = [ 'freetype' ],
+
+		win_lib    = 'Shell32',
+
+		darwin_framework  = [ 'CoreServices', 'Carbon', 'ApplicationServices' ],
+	)

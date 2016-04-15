@@ -1,0 +1,32 @@
+<!-- RichPresence on 360/ps3 -->
+<RichPresence>
+	<!-- Maps -->
+	<!-- name: the name of the .cry map file -->
+	<!-- id: the context enum id provided by the xlast for 360 (we map these ids internally for ps3) -->
+	<Element name="c3mp_rooftop_gardens" id="0" />	
+	<Element name="c3mp_museum" id="1" />
+	<Element name="c3mp_airport" id="2" />	
+	<Element name="c3mp_dam" id="3" />	
+	<Element name="c3mp_bridge" id="4" />	
+	<Element name="c3mp_canyon" id="5" />
+	<Element name="c3mp_river" id="6" />
+	<Element name="c3mp_swamp_boat" id="7" />
+	<Element name="c3mp_cave" id="8" />	
+	<Element name="c3mp_fields" id="9" />	
+	<Element name="c3mp_con_ed" id="10" />	
+	<Element name="c3mp_tanker" id="11" />		
+
+	<!-- GameRules -->
+	<!-- name: class name of the game rules -->
+	<!-- id: the context enum id provided by the xlast for 360 (ps3 is handled internally) -->
+	<Element name="InstantAction" id="0" />
+	<Element name="TeamInstantAction" id="1" />
+	<Element name="Assault" id="2" />
+	<Element name="CaptureTheFlag" id="3" />
+	<Element name="Extraction" id="4" />
+	<Element name="CrashSite" id="5" />
+	<Element name="AllOrNothing" id="6" />
+	<Element name="BombTheBase" id="7" />
+	<Element name="PowerStruggle" id="8" />
+	<Element name="Gladiator" id="9" />
+</RichPresence>
