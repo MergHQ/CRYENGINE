@@ -1,0 +1,34 @@
+<VariantOptions>
+
+	<!-- 
+		Option Restrictions are limitations placed on the cvars found inside the custom variant options
+
+		Each restriction node consists of two conditions, these are both checked whenever either of the 
+		cvars involved are modified, if both conditions return true then the cvar that has NOT just been
+		modified is set to it's fallback value.
+		
+		For instance if we have this :
+			<Restriction>
+				<Operand var="g_autoReviveTime" lessThan="7" fallback="7" />
+				<Operand var="g_modevarivar_disableKillCam" equal="0" fallback="1" />
+			</Restriction>
+		and we set g_autoReviveTime to 3 while g_modevarivar_disableKillCam=0, both conditions now return
+		true, since we're in the process of modifying g_autoReviveTime we change g_modevarivar_disableKillCam
+		to it's fallback value of 1.  If we then decide to change g_modevarivar_disableKillCam back to 0
+		then this time g_autoReviveTime will be set to 7.  This allows players to always set whatever option
+		they want, we just sanity check and correct the other values as required to accommodate it
+
+		Possible comparison types are:
+			equal					var	== value
+			notEqual			var != value
+			lessThan			var < value
+			greaterThan		var > value
+	-->
+	
+	<Restriction>
+		<!-- With a revive time less than 7, we don't have time to play the killcam -->
+		<Operand var="g_autoReviveTime" lessThan="7" fallback="7" />
+		<Operand var="g_modevarivar_disableKillCam" equal="0" fallback="1" />
+	</Restriction>
+
+</VariantOptions>

@@ -1,0 +1,31 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2004.
+// -------------------------------------------------------------------------
+//  File name:   TemplBeamProc.ext
+//  Version:     v1.00
+//  Created:     07/02/2007 by Tiago Sousa
+// -------------------------------------------------------------------------
+//  History:
+//
+////////////////////////////////////////////////////////////////////////////
+
+Version (1.00)
+
+Property
+{
+  Name = %NOISE
+  Mask = 0x1
+  Property    (Noise map)
+  Description (Use animated 3D noise)
+}
+
+Property
+{
+  Name = %MUZZLEFLASH
+  Mask = 0x2
+  Property    (Muzzleflash)
+  Description (Use as muzzle flash)
+}

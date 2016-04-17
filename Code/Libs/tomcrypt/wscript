@@ -1,0 +1,45 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	msvc_warning_flags = [
+		'/wd4267', # Truncate size_t -> int from strlen() result
+		'/wd4244', # Truncate intptr_t -> int from pointer subtraction
+		'/wd4101', # Unreferenced local variable
+		'/wd4333', # Potential shift-right by too large amount
+		'/wd4334', # Shift left result converted from 32-bit to 64-bit
+		'/wd4311', # Pointer truncation from T1* to T2
+	]
+
+	bld.CryEngineStaticModule(
+		target    = 'tomcrypt',
+		vs_filter = 'Libs',
+		file_list = 'tomcrypt.waf_files',
+		exclude_from_static_code_analyzer = True,
+
+		includes = [ Path('Code/SDKs/LibTomMath'), Path('Code/SDKs/LibTomCrypt/src/headers') ],
+		defines  = [
+			'LTM_DESC',                # Meaning we will use LibTomMath for LibTomCrypt
+			'LTC_SOURCE',              # Meaning we are compiling from sources (ie, not client side)
+			'LTC_NO_ROLC',             # Disables some assembly that's not supported in Clang
+			'_CRT_SECURE_NO_WARNINGS', # For MSVC to not complain about standard C functions
+			'malloc=malloc',           # This triggers LibTomCrypt to not declare malloc (with an incompatible signature)
+		],
+
+		debug_defines       = [ 'ARGTYPE=2' ], # Debug/Profile: Use printf to signal function argument problems
+		profile_defines     = [ 'ARGTYPE=2' ],
+		performance_defines = [ 'ARGTYPE=3' ], # Performance/Release: Don't check for function argument problems
+		release_defines     = [ 'ARGTYPE=3' ],
+		
+		win_cflags = msvc_warning_flags,
+		durango_cflags = msvc_warning_flags,
+
+		module_provides = dict(
+			includes            = [ Path('Code/SDKs/LibTomMath'), Path('Code/SDKs/LibTomCrypt/src/headers') ],
+			defines             = [ 'LTM_DESC' ],
+			debug_defines       = [ 'ARGTYPE=2' ],
+			profile_defines     = [ 'ARGTYPE=2' ],
+			performance_defines = [ 'ARGTYPE=3' ],
+			release_defines     = [ 'ARGTYPE=3' ],
+		),
+	)

@@ -1,0 +1,189 @@
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+#include "StdAfx.h"
+#include "DX12CommandListFence.hpp"
+#include "DriverD3D.h"
+
+extern CD3D9Renderer gcpRendD3D;
+
+namespace NCryDX12
+{
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+CCommandListFence::CCommandListFence(CDevice* device)
+	: m_pDevice(device)
+	, m_LastCompletedValue(0)
+	, m_CurrentValue(0)
+{
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+CCommandListFence::~CCommandListFence()
+{
+	m_pFence->Release();
+	CloseHandle(m_FenceEvent);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool CCommandListFence::Init()
+{
+	ID3D12Fence* fence = NULL;
+	if (S_OK != m_pDevice->GetD3D12Device()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)))
+	{
+		DX12_ERROR("Could not create fence object!");
+		return false;
+	}
+
+	m_pFence = fence;
+	fence->Release();
+
+	m_pFence->Signal(m_LastCompletedValue);
+	m_FenceEvent = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
+
+	return true;
+}
+
+void CCommandListFence::WaitForFence(UINT64 fenceValue)
+{
+	if (!IsCompleted(fenceValue))
+	{
+		DX12_LOG(g_nPrintDX12, "Waiting CPU for fence: %d (is %d currently)", fenceValue, m_pFence->GetCompletedValue());
+		{
+#ifdef CRY_USE_DX12_MULTIADAPTER
+			// Waiting in a multi-adapter situation can be more complex
+			if (m_pDevice->WaitForCompletion(m_pFence, fenceValue))
+#endif
+			{
+				m_pFence->SetEventOnCompletion(fenceValue, m_FenceEvent);
+				WaitForSingleObject(m_FenceEvent, INFINITE);
+			}
+		}
+		DX12_LOG(g_nPrintDX12, "Completed CPU on fence: %d", m_pFence->GetCompletedValue());
+
+		AdvanceCompletion();
+	}
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+CCommandListFenceSet::CCommandListFenceSet(CDevice* device)
+	: m_pDevice(device)
+{
+	m_LastCompletedValues[CMDQUEUE_GRAPHICS] =
+	  m_LastCompletedValues[CMDQUEUE_COMPUTE] =
+	    m_LastCompletedValues[CMDQUEUE_COPY] = 0;
+	m_SubmittedValues[CMDQUEUE_GRAPHICS] =
+	  m_SubmittedValues[CMDQUEUE_COMPUTE] =
+	    m_SubmittedValues[CMDQUEUE_COPY] = 0;
+	m_CurrentValues[CMDQUEUE_GRAPHICS] =
+	  m_CurrentValues[CMDQUEUE_COMPUTE] =
+	    m_CurrentValues[CMDQUEUE_COPY] = 0;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+CCommandListFenceSet::~CCommandListFenceSet()
+{
+	for (int i = 0; i < CMDQUEUE_NUM; ++i)
+	{
+		m_pFences[i]->Release();
+
+		CloseHandle(m_FenceEvents[i]);
+	}
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool CCommandListFenceSet::Init()
+{
+	for (int i = 0; i < CMDQUEUE_NUM; ++i)
+	{
+		ID3D12Fence* fence = NULL;
+		if (S_OK != m_pDevice->GetD3D12Device()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)))
+		{
+			DX12_ERROR("Could not create fence object!");
+			return false;
+		}
+
+		m_pFences[i] = fence;
+		m_pFences[i]->Signal(m_LastCompletedValues[i]);
+		m_FenceEvents[i] = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
+	}
+
+	return true;
+}
+
+void CCommandListFenceSet::WaitForFence(const UINT64 fenceValue, const int id) const
+{
+	DX12_LOG(g_nPrintDX12, "Waiting CPU for fence %s: %d (is %d currently)",
+	         id == CMDQUEUE_GRAPHICS ? "gfx" : id == CMDQUEUE_COMPUTE ? "cmp" : "cpy",
+	         fenceValue,
+	         m_pFences[id]->GetCompletedValue());
+
+	{
+#ifdef CRY_USE_DX12_MULTIADAPTER
+		// NOTE: Waiting in a multi-adapter situation can be more complex
+		if (!m_pDevice->WaitForCompletion(m_pFences[id], fenceValue))
+#endif
+		{
+			m_pFences[id]->SetEventOnCompletion(fenceValue, m_FenceEvents[id]);
+			WaitForSingleObject(m_FenceEvents[id], INFINITE);
+		}
+	}
+
+	DX12_LOG(g_nPrintDX12, "Completed CPU on fence %s: %d",
+	         id == CMDQUEUE_GRAPHICS ? "gfx" : id == CMDQUEUE_COMPUTE ? "cmp" : "cpy",
+	         m_pFences[id]->GetCompletedValue());
+
+	AdvanceCompletion(id);
+}
+
+void CCommandListFenceSet::WaitForFence(const UINT64 (&fenceValues)[CMDQUEUE_NUM]) const
+{
+	// TODO: the pool which waits for the fence can be omitted (in-order-execution)
+	DX12_LOG(g_nPrintDX12, "Waiting CPU for fences: [%d,%d,%d] (is [%d,%d,%d] currently)",
+	         fenceValues[CMDQUEUE_GRAPHICS],
+	         fenceValues[CMDQUEUE_COMPUTE],
+	         fenceValues[CMDQUEUE_COPY],
+	         m_pFences[CMDQUEUE_GRAPHICS]->GetCompletedValue(),
+	         m_pFences[CMDQUEUE_COMPUTE]->GetCompletedValue(),
+	         m_pFences[CMDQUEUE_COPY]->GetCompletedValue());
+
+	{
+#ifdef CRY_USE_DX12_MULTIADAPTER
+		if (m_pDevice->IsMultiAdapter())
+		{
+			// NOTE: Waiting in a multi-adapter situation can be more complex
+			// In this case we can't collect all events to wait for all events at the same time
+			for (int id = 0; id < CMDQUEUE_NUM; ++id)
+			{
+				if (fenceValues[id] && (m_LastCompletedValues[id] < fenceValues[id]))
+				{
+					m_pDevice->WaitForCompletion(m_pFences[id], fenceValues[id]);
+				}
+			}
+		}
+		else
+#endif
+		{
+			// NOTE: event does ONLY trigger when the value has been set (it'll lock when trying with 0)
+			int numObjects = 0;
+			for (int id = 0; id < CMDQUEUE_NUM; ++id)
+			{
+				if (fenceValues[id] && (m_LastCompletedValues[id] < fenceValues[id]))
+				{
+					m_pFences[id]->SetEventOnCompletion(fenceValues[id], m_FenceEvents[numObjects++]);
+				}
+			}
+
+			WaitForMultipleObjects(numObjects, m_FenceEvents, true, INFINITE);
+		}
+	}
+
+	DX12_LOG(g_nPrintDX12, "Completed CPU on fences: [%d,%d,%d]",
+	         m_pFences[CMDQUEUE_GRAPHICS]->GetCompletedValue(),
+	         m_pFences[CMDQUEUE_COMPUTE]->GetCompletedValue(),
+	         m_pFences[CMDQUEUE_COPY]->GetCompletedValue());
+
+	AdvanceCompletion();
+}
+
+}

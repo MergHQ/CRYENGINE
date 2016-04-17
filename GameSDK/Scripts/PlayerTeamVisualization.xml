@@ -1,0 +1,18 @@
+<!-- This file allows you to set team materials on players for multiplayer games. See TeamVisualizationManager.cpp for more information -->
+
+<Root>
+	<PlayerTeamVisualization>
+		<!-- Any players with this model will receive changes. You can define multiple models by adding new <Model...> sections -->
+		<Model name="Objects/characters/human/sdk_player/sdk_player.cdf">
+			<Friendly materialName="objects/characters/human/sdk_player/sdk_player_blue"/>
+			<Hostile materialName="objects/characters/human/sdk_player/sdk_player_red"/>
+			<DeadFriendly materialName="objects/characters/human/sdk_player/sdk_player_blue"/>
+			<DeadHostile materialName="objects/characters/human/sdk_player/sdk_player_red"/>
+			<!-- Define which BodyAttachments on the character should receive the changes -->
+			<BodyAttachments>
+				<BodyAttachment name="jacket" />
+				<BodyAttachment name="shirt" />
+			</BodyAttachments>
+		</Model>
+	</PlayerTeamVisualization>
+</Root>

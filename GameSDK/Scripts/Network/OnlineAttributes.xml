@@ -1,0 +1,12 @@
+<OnlineAttributes version="29">
+	<!-- Default -->
+	<Attr name="OnlineAttributes/version" type="int" onlineOnly="1" />
+	<Attr name="TestInt1" type="int" onlineOnly="1" />
+	<Attr name="TestInt2" type="int" onlineOnly="1" />
+	<Attr name="TestInt3" type="int" onlineOnly="1" />
+	<Attr name="TestFloat1" type="float" onlineOnly="1" />
+	<Attr name="TestFloat2" type="float" onlineOnly="1" />
+	<Attr name="TestFloat3" type="float" onlineOnly="1" />
+
+	<!-- Player Progression -->
+	</OnlineAttributes>

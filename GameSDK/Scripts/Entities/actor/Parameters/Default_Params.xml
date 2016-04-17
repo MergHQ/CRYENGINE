@@ -1,0 +1,197 @@
+<EntityClassParams type="Default">
+	<!-- Some systems (like ActorImpulseHandler) load data from here if no parameters for that system are specified 
+	on the entity class's (or actor class) xml -->
+
+	<ActorImpulses>
+	<!--
+	***************************************************************************************************************
+	Death Impulses parameterization
+	***************************************************************************************************************
+	DeathImpulses attributes:
+	maxRagdollImpulse 			 : (optional) Maximum impulse value allowed for non-angular impulses. 1000 if not specified
+	
+	DeathImpulses can hold an arbitrary number of ImpulseSets, each of which will hold some conditions
+	to be "selected". All conditions are optional, if a condition is not present it will count as if
+	that condition were always fullfilled. Conditions are expressed as attributes of the <ImpulseSet> element,
+	and can hold an arbitrary number of values separated by commas (spaces are considered part of each element, so
+	be careful with them). These are all the possible conditions:
+	
+	hitTypes								 : (optional) The impulseSet will be selected if the hit type is inside this list
+	bulletTypes						   : (optional) The impulseSet will be selected if the hit bullet type is part of this list
+	partIDs 							 	 : (optional) The impulseSet will be selected if the id of the impacted part is part of this list
+	
+	Other attributes on <ImpulseSet>: 
+	angularImpulseScale      : (optional) it scales an angular impulse generated in the code and related to the damage and 
+	                           position of the shot (i.e.: if it's 0 it nullify the angular impulse)
+	
+	Each ImpulseSet can contain any number of Impulses. All of them will be triggered if the ImpulseSet is selected
+	Each Impulse can have this properties (Optional means you don't need to provide it):
+	
+	useDirection   : (optional) If true, it uses the direction of the last shot received as the direction 
+	                 of the impulse if not true or not specified it uses the "direction" property value
+	direction 		 : (required) If "useDirection" is true this will multiply the last shot received direction. It's 
+	                 normally used like a mask, so if you specify {x=0, y=0, z=1} that means only the z 
+	                 component of the direction of the last hit received would be used for the impulse direction.
+	                 If "useDirection" is false or not specified then this will be the impulse direction
+	useStrength    : (optional) If true, it uses the damage of the last shot received as the strength for the
+	                 impulse
+	strength			 : (required) If "useStrength" is true this value will be multiplied by the damage of the last shot
+	                 received to obtain the strength of the impulse.
+	                 If "useStrength" is false or not specified this value will be the strength used by the
+	                 impulse
+	partID				 : (optional) If a number, this specifies the body part (in the physical skeleton) that 
+	                 will receive the impulse.
+	                 If -1, this means the impulse is applied to all the skeleton overall (similar to 
+	                 applying it to the bip)
+	                 If not specified, this means the impulse is applied to the same part and location where 
+	                 the last shot impacted
+	***************************************************************************************************************
+	-->
+	
+		<DeathImpulses maxRagdollImpulse="1000">
+			<!-- Collisions -->
+			<ImpulseSet hitTypes="collision" angularImpulseScale="0.1">
+				<Impulse 
+					direction="0, 0, 1" 
+					useStrength="1"
+					partID="-1"
+					strength="0.5"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					useStrength="1"
+					partID="-1"
+					strength="0.5"
+					/>					
+			</ImpulseSet>
+		
+			<!-- Explosions -->
+			<ImpulseSet hitTypes="explosion,frag,Tank125" angularImpulseScale="0.3">
+				<Impulse 
+					direction="0, 0, 1" 
+					useStrength="1"
+					partID="-1"
+					strength="5"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					useStrength="1"
+					partID="-1"
+					strength="5"
+					/>					
+			</ImpulseSet>
+			
+			<!-- Melee -->
+			<ImpulseSet hitTypes="melee" angularImpulseScale="0.0">
+				<Impulse 
+					direction="0, 0, 1" 
+					partID="-1"
+					strength="200"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 0" 
+					useStrength="1"
+					partID="-1"
+					strength="0.8"
+					/>
+			</ImpulseSet>
+
+      <!-- Kick/Uppercut -->
+      <ImpulseSet hitTypes="meleeKick,meleeUppercut" angularImpulseScale="0.0">
+        <Impulse
+					direction="0, 0, 1"
+					useStrength="1"
+					partID="-1"
+					strength="4"
+					/>
+        <Impulse
+					useDirection="1"
+					direction="1, 1, 1"
+					useStrength="1"
+					partID="-1"
+					strength="10"
+					/>
+      </ImpulseSet>
+
+			<!-- Shotgun Bullet? -->
+			<ImpulseSet bulletTypes="1" angularImpulseScale="0.3">
+				<Impulse 
+					direction="0, 0, 1" 
+					useStrength="1"
+					partID="-1"
+					strength="3"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					useStrength="1"
+					partID="-1"
+					strength="2"
+					/>
+			</ImpulseSet>			
+			
+			<!-- Assault/Light Bullet? -->
+			<ImpulseSet bulletTypes="2" angularImpulseScale="0.4">
+				<Impulse 
+					direction="0, 0, 1" 
+					strength="30"
+					partID="-1"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					useStrength="1"
+					strength="5"
+					/>
+			</ImpulseSet>			
+			
+			<!-- Sniper Bullet? -->
+			<ImpulseSet bulletTypes="3" angularImpulseScale="0.6">
+				<Impulse 
+					direction="0, 0, 1" 
+					strength="40"
+					partID="-1"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					useStrength="1"
+					strength="2"
+					/>
+			</ImpulseSet>			
+			
+			<!-- Hurricane Bullet? -->
+			<ImpulseSet bulletTypes="4" angularImpulseScale="0.6">
+				<Impulse 
+					direction="0, 0, 1" 
+					strength="100"
+					partID="-1"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					useStrength="1"
+					strength="4"
+					/>
+			</ImpulseSet>			
+
+			<!-- Gauss Bullet? -->
+			<ImpulseSet bulletTypes="5">
+				<Impulse 
+					direction="0, 0, 1" 
+					strength="150"
+					partID="-1"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					useStrength="1"
+					strength="4"
+					/>
+			</ImpulseSet>			
+		</DeathImpulses>
+	</ActorImpulses>
+</EntityClassParams>

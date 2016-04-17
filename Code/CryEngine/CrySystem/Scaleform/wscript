@@ -1,0 +1,22 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	# Some platforms can never build to shared libraries, so we need to skip the helper library for those.
+	can_target_shared_libraries = True
+	try:
+		can_target_shared_libraries = not ('orbis' in bld.env['PLATFORM'] or 'android' in bld.env['PLATFORM'])
+	except:
+		pass
+
+	if can_target_shared_libraries:
+		bld.CryEngineModule(
+			target            = 'CryScaleformHelper',
+			vs_filter         = 'CryExtensions',
+			file_list         = 'scaleform_helper.waf_files',
+			use_module        = ['zlib', 'expat'],
+			win_lib           = ['Ole32', 'Winmm'],
+			defines           = ['CRY_IS_SCALEFORM_HELPER'],
+			includes          = ['..'],
+			module_extensions = ['scaleform'],
+		)

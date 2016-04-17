@@ -1,0 +1,84 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2016 Crytek GmbH. All rights reserved.
+
+// GPU Random number generators based on this article:
+//		http://www.reedbeta.com/blog/2013/01/12/quick-and-easy-gpu-random-numbers-in-d3d11/
+
+
+// As Reference: LC Generator
+uint RandLcg(uint rngState)
+{
+    // LCG values from Numerical Recipes
+    rngState = 1664525 * rngState + 1013904223;
+    return rngState;
+}
+
+// Better option: XorShift from George Marsaglia's paper
+uint RandXorshift(uint rngState)
+{
+    rngState ^= (rngState << 13);
+    rngState ^= (rngState >> 17);
+    rngState ^= (rngState << 5);
+    return rngState;
+}
+
+uint WangHash(uint seed)
+{
+	seed = (seed ^ 61) ^ (seed >> 16);
+	seed *= 9;
+	seed = seed ^ (seed >> 4);
+	seed *= 0x27d4eb2d;
+	seed = seed ^ (seed >> 15);
+	return seed;
+}
+
+// "private"
+int randKey;
+
+// initialization of Random Number Generator
+void SetKeyInt(int key)
+{
+	randKey = key;
+}
+
+void SetKeyFloat(float key)
+{
+	randKey = (uint)(key*1024.f*1024.f);
+}
+
+// Public Random Number Generation Functions
+uint Rand()
+{
+	++randKey;
+	return WangHash(RandXorshift(randKey));
+}
+
+float RandUNorm()
+{
+	return float(Rand()) * (1.0f / 4294967296.0f);
+}
+
+float RandSNorm()
+{
+	return RandUNorm() * 2.0f - 1.0f;
+}
+
+#define gf_PI 3.1415
+
+float3 RandSphere()
+{
+	float z = RandSNorm();
+	float theta = RandSNorm() * gf_PI;
+	float z2 = sqrt(1.0f - z*z);
+	float s = sin(theta);
+	float c = cos(theta);
+	return float3(c * z2, s * z2, z);
+}
+
+float2 RandCircle()
+{
+	const float theta = RandUNorm() * 2.0f * gf_PI;
+	float s = sin(theta);
+	float c = cos(theta);
+	return float2(c, s);
+}

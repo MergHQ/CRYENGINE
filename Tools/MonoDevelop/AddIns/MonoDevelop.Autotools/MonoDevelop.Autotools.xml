@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.Autotools</name>
+    </assembly>
+    <members>
+        <member name="M:MonoDevelop.Autotools.SolutionMakefileHandler.GetAllProjects(MonoDevelop.Projects.SolutionFolder,MonoDevelop.Projects.SolutionConfiguration,MonoDevelop.Autotools.Set{MonoDevelop.Projects.SolutionItem}@,MonoDevelop.Autotools.Set{MonoDevelop.Projects.SolutionItem}@)">
+            returns a set of projects that a combine contains and a set of projects
+            that are referenced from combine projects but not part of the combine
+        </member>
+        <member name="T:MonoDevelop.Autotools.TemplateEngine">
+            This class allows for instantiation of template texts that contain
+            %%VARNAME%% sequences. The class contains a hashtable of replacements
+            that are used to replace the variables
+        </member>
+        <member name="P:MonoDevelop.Autotools.MakefileData.ParallelProcesses">
+            <summary>
+            The number of parallel build processes to use
+            </summary>
+        </member>
+    </members>
+</doc>

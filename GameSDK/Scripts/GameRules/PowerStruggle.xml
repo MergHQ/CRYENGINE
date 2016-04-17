@@ -1,0 +1,98 @@
+<Mode name='PowerStruggle'>
+
+	<Spawning class='MPRSSpawning' teamGame='1' teamSpawnsType='Initial' usingLua='0' />
+
+	<Scoring class='StandardScoring'>
+    <Player>
+			<Event type='PlayerKill'        points='100' />
+			<Event type='PlayerTeamKill'    points='0' />
+			<Event type='PlayerKillAssist'  points='20' />
+			<Event type='Tagged_PlayerKillAssist' points='25' />
+			<Event type='KingOfTheHillObjectiveHeld' points='30' />
+      <Event type='HoldObj_OffensiveKill' points='100' />
+      <Event type='HoldObj_DefensiveKill' points='100' />
+      <Event type='PowerStruggle_CaptureSpear' points='250' />
+    </Player>
+	  <Team maxScore='100'>
+			<Event type='CaptureObjectiveHeld' points='1' />
+    </Team>
+	</Scoring>
+
+	<ScoreRewards enabled='1' />
+
+	<AssistScoring class='AssistScoring' maxTimeBetweenAttackAndKillForAssist='7000'  maxAssistScore='99' assistScoreMultiplier='0.5'/>
+
+	<PlayerStats class='StandardPlayerStats' />
+	<StatsRecording class='StandardStatsRecording' />
+
+	<Teams class='StandardTwoTeams' />
+
+  <State class='StandardState' />
+
+  <VictoryConditions class='StandardVictoryConditionsTeam' playHalfwaySoundAfterUpdatingTimeLimit='0'>
+    <DrawResolution>
+      <level name='ESVC_DrawResolution_level_1' test='greater' type='float' />
+    </DrawResolution>
+  </VictoryConditions>
+
+	<PlayerSetup class='StandardSetup' />
+
+	<DamageHandling class='MPDamageHandling'>
+		<Table path='Scripts/GameRules/MPDamageTable.xml' />
+	</DamageHandling>
+
+	<ActorAction class='MPActorAction' />
+
+	<Spectator class='MPSpectator' eatsActorActions='1' enableFree='0' enableFollow='1' enableKiller='1' timeFromDeathTillAutoSpectate='5000' />
+
+	<Objectives class='Objective_PowerStruggle' >
+		<Params
+			scoreTimerLength='1.0'
+			captureIncrementMultiplier='0.055'
+			captureDecayMultiplier='0.10 '
+			chargeSpeed='0.0014'
+      additionalAttackerTimeReductionPercentage='42.0'
+      avoidSpawnPOIDistance='30.0'
+    />
+		<Icons
+			neutralNode						= 'EGRMO_PS_Node_Neutral'
+			friendlyNode					= 'EGRMO_PS_Node_Friendly'
+			hostileNode						= 'EGRMO_PS_Node_Hostile'
+			friendlyCapturingNode	= 'EGRMO_PS_Node_FriendlyCapturing'
+			hostileCapturingNode	= 'EGRMO_PS_Node_HostileCapturing'
+      friendlyCapturingNodeFromHostile	= 'EGRMO_PS_Node_FriendlyCapturingFromHostile'
+			hostileCapturingNodeFromFriendly	= 'EGRMO_PS_Node_HostileCapturingFromFriendly'
+      contentionOverNode    = 'ERGMO_PS_Node_Contention'
+  	/>
+		<Strings
+			friendlyCaptured			  = 'ui_msg_sp_spear_captured'
+			hostileCaptured				  = 'ui_msg_sp_spear_lost'
+      enemyCapturingASpear    = 'ui_msg_sp_enemy_capturing'
+      friendlyCapturingASpear = 'ui_msg_sp_friendly_capturing'
+      weHaveNoSpears          = 'ui_msg_sp_no_spears'
+      weHave1Spear            = 'ui_msg_sp_one_spear'
+      weHaveNSpears           = 'ui_msg_sp_multiple_spears'
+      newSpearsEmerging       = 'ui_msg_sp_new_spears'
+      friendlyCharged20       = 'ui_msg_sp_our_energy_20'
+      friendlyCharged40       = 'ui_msg_sp_our_energy_40'
+      friendlyCharged60       = 'ui_msg_sp_our_energy_60'
+      friendlyCharged80       = 'ui_msg_sp_our_energy_80'
+      friendlyCharged90       = 'ui_msg_sp_our_energy_90'
+      enemyCharged20          = 'ui_msg_sp_enemy_energy_20'
+      enemyCharged40          = 'ui_msg_sp_enemy_energy_40'
+      enemyCharged60          = 'ui_msg_sp_enemy_energy_60'
+      enemyCharged80          = 'ui_msg_sp_enemy_energy_80'
+      enemyCharged90          = 'ui_msg_sp_enemy_energy_90'
+      captureTheSpears        = 'ui_msg_sp_initial'
+			captured								= 'ui_msg_sp_captured'
+			capturing								= 'ui_msg_sp_capturing'
+		/>
+    <Audio 
+      capturedLoop                  = 'spear_loop' 
+			spearGoingUp									= 'spear_up'
+      positiveSignal 							  = 'GamemodeGoodMajor'
+			negativeSignal 								= 'GamemodeBadMajor'
+     />
+	</Objectives>
+</Mode>
+

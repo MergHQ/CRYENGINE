@@ -1,0 +1,221 @@
+<?xml version="1.0"?>
+<!-- Death and Hit Reactions System Param Definition -->
+
+<!-- DTD for defining entities and avoid duplication as much as possible -->
+<!DOCTYPE HitDeathReactions_Definitions [
+	<!-- Internal General XML Entity to store cardinal entities used by several properties -->
+	<!ENTITY ECardinalDirections "
+  	<Enum>
+  		<!-- 90 degrees cone directions -->
+			<Value>left</Value>
+			<Value>right</Value>
+			<Value>forward</Value>
+			<Value>back</Value>
+			
+			<!-- 180 degrees directions -->
+			<Value>ahead</Value>
+			<Value>behind</Value>
+			<Value>rightSide</Value>
+			<Value>leftSide</Value>
+		</Enum>
+	">
+  <!ENTITY EStances "
+  		<Enum>
+  			<!-- Same global variable names as registered on ScriptBind_AI -->
+  			<Value>STANCE_PRONE</Value>
+  			<Value>STANCE_CROUCH</Value>
+  			<Value>STANCE_STAND</Value>
+  			<Value>STANCE_RELAXED</Value>
+  			<Value>STANCE_ALERTED</Value>
+  			<Value>STANCE_STEALTH</Value>
+  			<Value>STANCE_LOW_COVER</Value>
+  			<Value>STANCE_HIGH_COVER</Value>
+  			<Value>STANCE_SWIM</Value>
+  			<Value>STANCE_LASTSTAND</Value>
+  		</Enum>
+  ">
+ 	
+	<!ENTITY EAirState "
+  	<Enum>
+			<Value>onGround</Value>
+			<Value>onGroundOrObject</Value>
+			<Value>onObject</Value>
+			<Value>inAir</Value>
+		</Enum>
+	">	
+	
+	<!ENTITY EAllowedParts "
+ 		<Enum>
+			<!-- sg1_preset.chr, shotgunner_red.cdf physic bones -->
+			<Value>Bip01 Head</Value>
+			<Value>Bip01 Spine1</Value>
+			<Value>Bip01 Spine</Value>
+			<Value>Bip01 Pelvis</Value>
+			<Value>Bip01 L UpperArm</Value>
+			<Value>Bip01 R UpperArm</Value>
+			<Value>Bip01 L ForeArm</Value>
+			<Value>Bip01 R ForeArm</Value>
+			<Value>Bip01 L Thigh</Value>
+			<Value>Bip01 R Thigh</Value>
+			<Value>Bip01 L Calf</Value>
+			<Value>Bip01 R Calf</Value>				
+			<Value>Bip01 L Foot</Value>
+			<Value>Bip01 R Foot</Value>	
+							
+			<!-- add physic bone names for other skeletons that use this system from here -->
+		</Enum>
+  ">
+ 	<!ENTITY EHitTypes '
+    <Enum>
+			<!-- Should be in synch with CGameRulesCommonDamageHandling::Init -->
+			<!-- Also used in hitDeathTags.xml -->
+			<Value>melee</Value>
+			<Value>collision</Value>
+			<Value>frag</Value>
+			<Value>explosion</Value>
+			<Value>stealthKill</Value>
+			<Value>silentMelee</Value>
+			<Value>punish</Value>
+			<Value>punishFall</Value>
+			<Value>mike_burn</Value>
+			<Value>fall</Value>
+			<Value>normal</Value>
+			<Value>fire</Value>
+			<Value>bullet</Value>
+			<Value>stamp</Value>
+			<Value>environmentalThrow</Value>
+			<Value>meleeLeft</Value>
+			<Value>meleeRight</Value>
+			<Value>meleeKick</Value>
+			<Value>meleeUppercut</Value>
+			<Value>vehicleDestruction</Value>
+			<Value>electricity</Value>
+			<Value>stealthKill_Maximum</Value>
+			<Value>eventDamage</Value>
+			<Value>VTOLExplosion</Value>
+			<Value>environmentalMelee</Value>
+	  </Enum>
+  '>
+
+ 
+	<!ENTITY ValidationProperties '
+  	<Property name="validationFunc" type="string" optional="1" />
+		<Property name="destructibleEvent" type="string" optional="1" /> <!-- used for destructible-system-driven reactions -->
+  	<Property name="minimumSpeed" type="float" optional="1" />
+  	<Property name="maximumSpeed" type="float" optional="1" />
+  	<Property name="minimumDamage" type="float" optional="1" />
+  	<Property name="maximumDamage" type="float" optional="1" />
+		<Array 		name="OnlyWhenPassingHealthThresholds" elementName="HealthThreshold" type="float" extendable="1" optional="1"/>
+  	<Property name="minimumDistanceToShooter" type="float" optional="1" />
+  	<Property name="maximumDistanceToShooter" type="float" optional="1" />
+  	<Property name="movementDirection" type="string" optional="1" >
+  		&ECardinalDirections;
+  	</Property>
+  	<Property name="shotOrigin" type="string" optional="1">
+  		&ECardinalDirections;
+  	</Property>
+  	<Property name="airState" type="string" optional="1" >
+  		&EAirState;
+  	</Property>		
+		<Array name="AllowedStances" elementName="Stance" type="string" extendable="1" optional="1">
+  	</Array>
+  	<Property name="probabilityPercent" type="float" optional="1"/>
+		<Array name="AllowedParts" elementName="Part" type="string" extendable="1" optional="1">
+		</Array>
+		<Array name="AllowedHitTypes" elementName="HitType" type="string" extendable="1" optional="1">
+		</Array>
+		<Array name="AllowedProjectiles" elementName="Projectile" type="string" extendable="1" optional="1">
+			<!-- ToDo Supply an enum constraint list when there is a definitive list of weapon classes 
+			(currently too many classes and changing too often to be worth writing a list here right now) -->
+		</Array>
+		<Array name="AllowedWeapons" elementName="Weapon" type="string" extendable="1" optional="1">
+			<!-- ToDo Supply an enum constraint list when there is a definitive list of weapon classes 
+			(currently too many classes and changing too often to be worth writing a list here right now) -->
+		</Array>
+  	<Property name="onlyIfUsingMountedItem" type="bool" optional="1" />
+	'>
+
+	<!-- Internal General XML Entity to reference common properties on hit and death reactions -->	
+  <!ENTITY CommonProperties '
+  	<!-- Validation properties -->
+  	&ValidationProperties;
+  	<Array name="ValidationSection" elementName="Validation" extendable="1" optional="1">
+  		&ValidationProperties;
+  	</Array>
+  
+  	<!-- Execution properties -->
+  	<Table name="AnimGraphReaction" optional="1">
+  		<Property name="inputValue" type="string" optional="0" />
+			<Array name="Variations" elementName="Variation" extendable="1" optional="1">
+				<Property name="name" type="string" />
+				<Property name="value" type="string" />
+			</Array>
+  	</Table>
+  	
+  	<Property name="animName" type="string" optional="1" />
+  	<Table name="ReactionAnim" optional="1">
+    	<Property name="additive" type="bool" optional="1" />  	
+    	<Property name="layer" type="int" optional="1" />  	
+    	<Property name="overrideTransTimeToAG" type="float" optional="1" />
+			<Array name="AnimNames" elementName="AnimName" extendable="1" optional="1">
+				<Property name="name" type="string" />
+				<Property name="variants" type="int" optional="1"/>
+			</Array>  	
+  	</Table>
+  	
+  	<Property name="metaTag" type="string" optional="1" />
+    <Property name="manqReaction" type="int" optional="1"/>
+  	<Property name="interactiveAction" type="string" optional="1"/>
+  	<Property name="reactionFunc" type="string" optional="1" />
+    <Property name="reactionEndFunc" type="string" optional="1" />
+  	<Property name="AISignal" type="string" optional="1" />
+  	<Property name="ragdollOnCollision" type="bool" optional="1" />
+		<Property name="collisionCheckIntersectionWithGround" type="bool" optional="1" />
+  	<Property name="noRagdollOnEnd" type="bool" optional="1" />
+  	<Property name="noAnimCamera" type="bool" optional="1" />
+		<Property name="reactionFinishesAiming" type="bool" optional="1" />
+		<Property name="endVelocity" type="Vec3" optional="1" />
+  	<Property name="reactionOnCollision" type="int" optional="1" />
+  	<Property name="snapOrientationAngle" type="int" optional="1"/>
+  	<Property name="snapToMovementDir" type="int" optional="1"/>
+  	<Property name="pauseAI" type="bool" optional="1" />
+  '>
+
+  <!-- This external general entity definition would be far more convenient than an internal entity, 
+  but since currently CryEngine hasn't defined its own ExternalEntityRefHandler on Expat we cannot 
+  parse files on external entities
+  <!ENTITY CommonProperties SYSTEM "./HitDeathReactions_Def_CommonProperties.xml"> -->
+]>
+
+<Definition root="DeathHitReactionsParams">
+	<Table name="HitDeathReactionsConfig" optional="1">
+  	<Property name="collisionBone" type="string" optional="1" />  	
+  	<Property name="collisionRadius" type="float" optional="1" />  	
+  	<Property name="collisionVerticalOffset" type="float" optional="1" />  	
+  	<Property name="collMaxHorzAngle" type="float" optional="1" />  	
+  	<Property name="collMaxMovAngle" type="float" optional="1" />  	
+  	<Property name="collReactionStartDist" type="float" optional="1" />  	
+  	<Property name="maxRagdolImpulse" type="float" optional="1" />  	
+  	<Property name="maximumReactionTime" type="float" optional="1" />
+    <Property name="maxRagdollTime" type="float" optional="1" />
+    <Property name="manqTargetTag" type="string" optional="1" />
+    <Property name="animDatabaseSlave" type="string" optional="1" />
+	</Table>
+
+  <Array name="TagMap" elementName="Tag" extendable="1" optional="1">
+    <Property name="value" type="string" />
+    &CommonProperties;
+  </Array>
+
+  <Array name="HitReactionParams" elementName="HitReactionParam" extendable="1" optional="1">
+  	&CommonProperties;
+  </Array> 
+  
+  <Array name="DeathReactionParams" elementName="DeathReactionParam" extendable="1" optional="1">
+  	&CommonProperties;
+  </Array>
+
+  <Array name="CollisionReactionParams" elementName="CollisionReaction" extendable="1" optional="1">
+  	&CommonProperties;
+  </Array>  
+</Definition>

@@ -1,0 +1,119 @@
+<Mode name='CaptureTheFlag'>
+
+	<PlayerStats class='StandardPlayerStats' />
+
+	<Spawning class='MPRSSpawning'
+			teamGame='1' 
+			teamSpawnsType='RoundSwap'
+			usingLua='0'
+			dbgWatchLvl='0'
+	/>
+
+	<StatsRecording class='StandardStatsRecording' />
+
+	<Scoring class='StandardScoring'>
+		<Player>
+			<Event type='PlayerKill'					points='100' />
+			<Event type='PlayerTeamKill'				points='0' />
+			<Event type='PlayerKillAssist'				points='20' />
+			<Event type='Tagged_PlayerKillAssist'		points='25' />
+			<Event type='CarryObjectiveCompleted'		points='250' />
+			<Event type='CarryObjectiveTaken'			points='100' /> <!-- FLAG_TAKEN - Flag taken from base. -->
+			<Event type='CarryObjectiveDefended'		points='100' /> <!-- FLAG_DEFENDED - Killing an enemy within defined radius of allied base while the ally flag is there - in addition to Kill score. -->
+			<Event type='CarryObjectiveCarrierKilled'	points='100' /> <!-- FLAG_CARRIER_KILLED - Extra points for killing the flag carrier. -->
+		</Player>
+		<Team>
+			<Event type='CarryObjectiveCompleted' points='1' />
+		</Team>
+	</Scoring>
+
+	<ScoreRewards enabled='1' />
+
+	<AssistScoring class='AssistScoring' maxTimeBetweenAttackAndKillForAssist='7000' maxAssistScore='99' assistScoreMultiplier='0.5' />
+
+	<Teams class='StandardTwoTeams' />
+
+	<State class='StandardState' />
+
+	<!-- NOTE by default there's no score limit, but if a score limit gets set in a private match then treatScoreRoundVictoryAsGameVictory=1 means that reaching that score should end the entire game instead of just the round -->
+	<VictoryConditions class='StandardVictoryConditionsTeam' treatScoreRoundVictoryAsGameVictory='1' decideGameWinnerWithTeamScore='1' />
+
+	<PlayerSetup class='StandardSetup'>
+		<TeamSpecifics luaSetupPlayerTeamSpecificsFunc='SetupPlayerTeamSpecifics' />
+		<RemoveItemsOnDrop>
+			<IgnoreEntity class='CTFFlag' />
+		</RemoveItemsOnDrop>
+	</PlayerSetup>
+
+	<DamageHandling class='MPDamageHandling'>
+		<Table path='Scripts/GameRules/MPDamageTable.xml' />
+	</DamageHandling>
+
+	<ActorAction class='MPActorAction' />
+
+	<Spectator class='MPSpectator' eatsActorActions='1' enableFree='0' enableFollow='1' enableKiller='1' timeFromDeathTillAutoSpectate='5000' />
+
+	<Objectives class='Objective_CTF'>
+		<Params
+			droppedResetTimer = '30.0'
+			retrieveFlagDist  = '2.0'
+			pickUpVisCheckHeight = '1.0'
+		/>
+
+		<!-- Needs to be a valid and available weapon -->
+		<FallbackWeapon class='Pistol' />
+
+		<Strings
+			complete	= 'ui_msg_ctf_score_3'
+
+			iconDefend	= 'ui_icon_ctf_defend'
+			iconReturn	= 'ui_icon_ctf_return'
+			iconEscort	= 'ui_icon_ctf_escort'
+			iconSeize	= 'ui_icon_ctf_seize'
+			iconKill	= 'ui_icon_ctf_kill'
+			iconBase	= 'ui_icon_ctf_base'
+
+			hasTaken	= 'ui_msg_ctf_has_taken'
+			hasCaptured	= 'ui_msg_ctf_has_captured'
+			hasDropped	= 'ui_msg_ctf_has_dropped'
+			hasReturned	= 'ui_msg_ctf_has_returned'
+		/>
+		<Icons
+			friendlyFlagCarried		= 'EGRMO_CTF_Flag_carried_red'
+			hostileFlagCarried		= 'EGRMO_CTF_Flag_carried_blue'
+			friendlyFlagDropped		= 'EGRMO_CTF_Flag_dropped_blue'
+			hostileFlagDropped		= 'EGRMO_CTF_Flag_dropped_red'
+			friendlyBaseWithFlag	= 'EGRMO_CTF_Base_with_flag_blue'
+			hostileBaseWithFlag		= 'EGRMO_CTF_Base_with_flag_red'
+			friendlyBaseWithNoFlag	= 'EGRMO_CTF_Base_no_flag_blue'
+			hostileBaseWithNoFlag	= 'EGRMO_CTF_Base_no_flag_red'
+		/>
+		<Sounds
+			friendlyComplete	= 'GamemodeGoodMajor'
+			hostileComplete		= 'GamemodeBadMajor'
+			friendlyPickup		= 'GamemodeGoodMinor'
+			hostilePickup		= 'GamemodeBadMinor'
+			friendlyReturn		= 'GamemodeGoodMinor'
+			hostileReturn		= 'GamemodeBadMinor'
+			friendlyDropped		= 'GamemodeBadMinor'
+			enemyDropped		= 'GamemodeGoodMinor'
+
+			baseAlarmOff		= 'CTFBaseAlarmOff'
+			baseAlarm			= 'CTFBaseAlarm'
+		/>
+	</Objectives>
+
+	<Rounds class='StandardRounds' resetScores='0'>
+		<EndStrings>
+			<Strings reason="TimeLimitReached" winMessage="ui_msg_ctf_restart_time_winning" loseMessage="ui_msg_ctf_restart_time_losing" drawMessage="ui_msg_ctf_restart_time_drawing" />
+		</EndStrings>
+
+		<PrimaryTeam>
+			<StartStrings startNewRoundSmallBanner='ui_msg_ctf_matchstart' showTeamBanner='1' />
+		</PrimaryTeam>
+		<SecondaryTeam>
+			<StartStrings startNewRoundSmallBanner='ui_msg_ctf_matchstart' showTeamBanner='1' />
+		</SecondaryTeam>
+	</Rounds>
+
+</Mode>

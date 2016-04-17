@@ -1,0 +1,23 @@
+Version (1.00)
+
+Property
+{
+  Name = %NO_MOON
+  Mask = 0x02
+  Property    (No moon)
+  Description (Sky dome doesn't render moon)
+}
+Property
+{
+  Name = %NO_NIGHT_SKY_GRADIENT
+  Mask = 0x04
+  Property    (No night sky gradient)
+  Description (Sky dome doesn't render night sky gradient)
+}
+Property
+{
+  Name = %NO_DAY_SKY_GRADIENT
+  Mask = 0x08
+  Property    (No day sky gradient)
+  Description (Sky dome doesn't render day sky gradient)
+}

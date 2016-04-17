@@ -1,0 +1,4 @@
+<Entity
+ Name="SpectatorPoint" 
+ Script="Scripts/Entities/Multiplayer/SpectatorPoint.lua"
+/>

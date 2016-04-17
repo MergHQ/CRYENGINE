@@ -1,0 +1,72 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+
+//===========================================================================
+// Validations
+// Removing of redundant and mutually exclusive flags to prevent generating
+// of the vertex/pixel shaders
+// TODO: make special validations for PS.1.1 only support
+
+#if %SPECULAR_NCM && %VIEWVEC_NCM
+    #undefine %VIEWVEC_NCM
+    #warning Parameter _VIEWVEC_NCM was ignored
+#endif
+
+#if %DIFFUSE_PERPIXEL
+  #if %DIFFUSE_NCM
+    #undefine %DIFFUSE_NCM
+    #warning Parameter _DIFFUSE_NCM was ignored
+  #endif
+#endif
+
+#if %PARALLAX_OCCLUSION_MAPPING || %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+#if %PHONG_TESSELLATION
+	#undefine %PHONG_TESSELLATION
+#endif
+#if %PN_TESSELLATION
+	#undefine %PN_TESSELLATION
+#endif
+#if %DISPLACEMENT_MAPPING
+	#undefine %DISPLACEMENT_MAPPING
+#endif
+#endif
+
+#ifdef FEATURE_MESH_TESSELLATION
+	#if %PHONG_TESSELLATION || %PN_TESSELLATION || %DISPLACEMENT_MAPPING
+		#define ENABLE_TESSELLATION 1
+	#endif
+#endif
+
+#ifndef ENABLE_TESSELLATION
+	#if %PHONG_TESSELLATION
+		#undefine %PHONG_TESSELLATION
+	#endif
+	#if %PN_TESSELLATION
+		#undefine %PN_TESSELLATION
+	#endif
+	#if %DISPLACEMENT_MAPPING
+		#undefine %DISPLACEMENT_MAPPING
+	#endif
+#endif
+
+#if %BLENDLAYER
+	#if %DIRTLAYER	
+		#undefine %DIRTLAYER
+	#endif
+	#if %DECAL
+		#undefine %DECAL
+	#endif
+#endif
+
+#if !%ALLOW_SILHOUETTE_POM || %DECAL || !FEATURE_GEOMETRY_SHADERS
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+	#undefine %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+#endif
+#endif
+
+#if %DECAL
+	#if %SUBSURFACE_SCATTERING
+		#undefine %SUBSURFACE_SCATTERING
+	#endif
+#endif

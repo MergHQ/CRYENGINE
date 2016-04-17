@@ -1,0 +1,23 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+	bld.CryEngineModule(
+		target     = 'CryAction',
+		vs_filter  = 'Projects',		
+		file_list  = ['cryaction.waf_files'],
+
+		durango_file_list  = ['cryaction_durango.waf_files'],
+		orbis_file_list  = ['cryaction_orbis.waf_files'],
+
+		pch        = 'StdAfx.cpp',
+		win_cxxflags = [ 
+			'/Zm200',
+			],
+		
+		win_lib    = 'Shell32',
+
+		use_module = [
+			'md5'
+		]
+
+	)

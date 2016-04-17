@@ -1,0 +1,2242 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+// Implementation of SVO based features like GI and volume rendering
+
+#if FEATURE_SVO_GI
+
+#include "Common.cfi"
+#include "ShadeLib.cfi"
+#include "vertexLib.cfi"
+#include "CommonSVO.cfi"
+#include "ShadowCommon.cfi"
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Defines
+#define VOX_AIR_ALBEDO_COLOR 0.01f
+#define VOX_COMPUTE_NUM_THREADS 16
+#define VOX_DEPTH_BIAS 0
+#define VOX_DEPTH_SCALE 1
+#define VOX_REPROJECT 1
+
+#define vSkyColorTop float3(SvoTreeSettings5.z, SvoTreeSettings5.w, SvoParamsSpecular.y)
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Constants
+float SVO_Time = PB_Time;
+float3x4	SVO_ReprojectionMatrix;
+float4	SVO_FrameIdByte;
+float4 SVO_CamPos;
+#ifdef SVO_LMAPS
+float4 SVO_FrustumVerticesCam0;
+float4 SVO_FrustumVerticesCam1;
+float4 SVO_FrustumVerticesCam2;
+float4 SVO_FrustumVerticesCam3;
+float3x4 SVO_CameraMatrix;
+float4 SVO_PassId_VS;
+float4x4 SVO_ViewProj;
+#endif // SVO_LMAPS
+float4 SVO_TargetResScale;
+float4 SVO_SrcPixSize;
+float4x4 SVO_NodesForUpdate0;
+float4x4 SVO_NodesForUpdate1;
+float4x4 SVO_NodesForUpdate2;
+float4x4 SVO_NodesForUpdate3;
+float4 SVO_CloudShadowAnimParams;
+float4 SVO_CloudShadowParams;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Samplers
+sampler2D sceneGBuffer0 : register(s14);
+sampler2D sceneGBuffer1 : register(s5);
+sampler2D sceneGBuffer2 : register(s7);
+sampler2D sceneSvoMap : register(s13);
+
+
+sampler2D sceneNormalsSamplerWSAO : register(s5) = sampler_state
+{
+	Texture = $SceneNormalsMap;
+	MinFilter = POINT;
+	MagFilter = POINT;
+	MipFilter = POINT;
+	AddressU = Clamp;
+	AddressV = Clamp;
+	Global = true;
+};
+
+sampler2D sceneAldSampler : register(s10);
+sampler2D sceneRgbSampler : register(s11);
+
+sampler2D sceneAldSamplerMin : register(s10);
+sampler2D sceneRgbSamplerMin : register(s11);
+sampler2D sceneAldSamplerMax : register(s12);
+sampler2D sceneRgbSamplerMax : register(s13);
+
+sampler2D sceneRgbSamplerMinPrev : register(s0);
+sampler2D sceneAldSamplerMinPrev : register(s1);
+sampler2D sceneRgbSamplerMaxPrev : register(s2);
+sampler2D sceneAldSamplerMaxPrev : register(s3);
+
+sampler2D sceneFinOutPrev : register(s9);
+
+sampler2D SVO_cloudShadowMap : register(s15);
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Structures
+struct vtxOutWPOS
+{
+	float4 HPosition : POSITION;
+	float4 baseTC : TEXCOORD0;
+	float4 CamVec : TEXCOORD1;
+};
+
+struct vtxInWPOS
+{
+	IN_P
+		IN_TBASE
+		float3 CamVec : TEXCOORD1;
+};
+
+struct pixoutMRT
+{
+	half4 Diffuse : COLOR0;
+	half4 Specular : COLOR1;
+	half4 Diffuse1 : COLOR2;
+	half4 Specular1 : COLOR3;
+};
+
+struct pixout_RenderAtmosphere
+{
+	half4 Air_RGBA_Min : COLOR0;
+	half4 SVO_Shadow : COLOR1;
+	half4 Air_RGBA_Max : COLOR2;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Shader flags
+
+// _RT_SAMPLE0        Low spec mode
+// _RT_SAMPLE1        Global environment map is available
+// _RT_SAMPLE2        Troposphere is enabled
+// _RT_SAMPLE3        Volumetric lightmaps enabled
+// _RT_SAMPLE4        ON - diffuse compuations, OFF - specular
+// _RT_SAMPLE5        Albedo and normals in use
+// _RT_HW_PCF_COMPARE Half-res kernel
+// _RT_LIGHT_TEX_PROJ Simple RSM sun
+// _RT_POINT_LIGHT		Simple RSM point lights
+// _RT_BLEND_WITH_TERRAIN_COLOR SS depth tracing
+// _RT_MOTION_BLUR    Dual tracing for multi-GPU
+// _RT_SPRITE					Occlusion capsules
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Functions
+
+float3 GetDiffuseKernel(out int GI_DIFFUSE_KERNEL_TILING, const int nElemId, const bool bFullSphere = true)
+{
+	if (IsDiffuseMode())
+	{
+		const int nGiDiffuseSampleNum = 512;
+		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
+		if (bFullSphere)
+		{
+			const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_S_512;
+			return arrGiDiffuseKernel[nElemId];
+		}
+		else
+		{
+			const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_512;
+			return arrGiDiffuseKernel[nElemId];
+		}
+	}
+	else
+	{
+		const int nGiDiffuseSampleNum = 128;
+		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
+		const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_128;
+		return arrGiDiffuseKernel[nElemId];
+	}
+}
+
+float3 GetWorldSpaceNormals(float2 tc, out float fTransmittanceY, float3 vCamVec)
+{
+	half4 bufferA = tex2D(sceneGBuffer0, tc);
+	float3 vNorm0 = DecodeGBufferNormal(bufferA);
+	if (IsDiffuseMode())
+		fTransmittanceY = saturate(DecodeGBufferTransmittanceLum(bufferA));
+	else
+		fTransmittanceY = 0;
+	return vNorm0;
+}
+
+MaterialAttribsCommon DecodeGBufferChannels(in float2 tc)
+{
+	return DecodeGBuffer(tex2D(sceneGBuffer0, tc), tex2D(sceneGBuffer1, tc), tex2D(sceneGBuffer2, tc));
+}
+
+float3 GetVoxCenter(uint3 coord, uint3 coord0, uint3 coord1, float4 voxAreaMin, float4 voxAreaMax)
+{
+	return voxAreaMin + (voxAreaMax - voxAreaMin) * float3(coord - coord0) / float3(coord1 + 1 - coord0) + voxAreaMin.w / VOX_BRICK_TEXRES / 2;
+}
+
+float rand(float2 n)
+{
+	return frac(sin(dot(n.xy, float2(12.9898, 78.233)))* 43758.5453);
+}
+
+void GetRndRotationMat(in float3 vPos0, in float3 vNor0, out half2x2 mSampleRotMat)
+{
+	float3 vNorAbs = abs(vNor0);
+
+	float2 vC = 0;
+	if ((vNorAbs.x > vNorAbs.y) && (vNorAbs.x > vNorAbs.z))
+		vC = vPos0.yz;
+	else if ((vNorAbs.y > vNorAbs.x) && (vNorAbs.y > vNorAbs.z))
+		vC = vPos0.xz;
+	else
+		vC = vPos0.xy;
+
+	const half jitterIndex = dot(rand(vC), half2(1, .25));
+	half2 vJitterSinCos = half2(sin(PI_X2 * jitterIndex), cos(PI_X2 * jitterIndex));
+	const half2x2 _mSampleRotMat = { vJitterSinCos.y, vJitterSinCos.x, -vJitterSinCos.x, vJitterSinCos.y };
+	mSampleRotMat = _mSampleRotMat;
+}
+
+vert2FragGeneral VoxelRayTraceVS(app2vertGeneral IN)
+{
+	vert2FragGeneral OUT = (vert2FragGeneral)0;
+
+	streamPos vertPassPos = (streamPos)0;
+
+	OUT.vView.xyz = g_VS_WorldViewPos.xyz;
+
+	vs_shared_output(IN, OUT, vertPassPos, true);
+
+	OUT.screenProj.x = IN.vertCommon.baseTC.x;
+	OUT.screenProj.y = 1 - IN.vertCommon.baseTC.y;
+
+	OUT.baseTC.xyz = IN.vertCommon.Position.xyz;
+
+	return OUT;
+}
+
+int GetNodeRequestedForUpdate(int nItemId)
+{
+	float nRes = -2.f;
+
+	const int SVO_MAX_NODE_GROUPS = 4;
+
+	if( nItemId >= 0 && nItemId < SVO_MAX_NODE_GROUPS*4*4 )
+	{
+		int g = nItemId / 16; nItemId -= g * 16;
+		int x = nItemId / 4; nItemId -= x * 4;
+		int y = nItemId;
+
+		if (g == 0)
+		{
+			nRes = SVO_NodesForUpdate0[x][y];
+		}
+		else if (g == 1)
+		{
+			nRes = SVO_NodesForUpdate1[x][y];
+		}
+		else if (g == 2)
+		{
+			nRes = SVO_NodesForUpdate2[x][y];
+		}
+		else if (g == 3)
+		{
+			nRes = SVO_NodesForUpdate3[x][y];
+		}
+	}
+
+	return int(nRes + 0.1f);
+}
+
+float3 GetSkyColor(const float3 vDir, const float fConeSev)
+{
+	float fAmplifier = 1.f;
+#if %_PS
+	fAmplifier = IsDiffuseMode() ? SvoParamsDiffuse.w : SvoParamsSpecular.w;
+#endif
+
+#if !%_RT_SAMPLE5 && %_PS
+	if (SvoParamsSkyColor.w < 0)
+		return -SvoParamsSkyColor.w * vSkyColorTop.xyz * fAmplifier;
+	return SvoParamsSkyColor.w * fAmplifier;
+#endif
+
+#if %_RT_SAMPLE1
+	float3 vAmb = DecodeHDRCubemap(texCUBElod(globalSpecCM, half4(vDir, saturate(1.f - fConeSev)*3.f))) * SvoParamsMisc.w;
+#else
+	float3 vAmb = vSkyColorTop;
+#endif
+
+	if (SvoParamsSkyColor.w < 0)
+		return vAmb * -SvoParamsSkyColor.w * fAmplifier;
+
+	return vAmb * SvoParamsSkyColor.w * fAmplifier;
+}
+
+struct Segment
+{
+	float3 P0;
+	float3 P1;
+};
+
+float GetPointToSegmentDistance(float3 P, Segment S, out float3 vOutDir)
+{
+	float3 v = S.P1 - S.P0;
+	float3 w = P - S.P0;
+	float3 closestPoint;
+
+	float c1 = dot(w,v);
+	float c2 = dot(v,v);
+
+	if ( c1 <= 0 )
+	{
+		closestPoint = S.P0;
+	}
+	else if ( c2 <= c1 )
+	{
+		closestPoint = S.P1;
+	}
+	else
+	{
+		float b = c1 / c2;
+		closestPoint = S.P0 + b * v;
+	}
+
+	vOutDir = closestPoint-P;
+	return length(vOutDir);
+}
+
+//		Source: http://geomalgorithms.com/a07-_distance.html
+float GetSegmentToSegmentDistance(Segment S1, Segment S2)
+{
+	float3   u = S1.P1 - S1.P0;
+	float3   v = S2.P1 - S2.P0;
+	float3   w = S1.P0 - S2.P0;
+	float    a = dot(u,u);         // always >= 0
+	float    b = dot(u,v);
+	float    c = dot(v,v);         // always >= 0
+	float    d = dot(u,w);
+	float    e = dot(v,w);
+	float    D = a*c - b*b;        // always >= 0
+	float    sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
+	float    tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
+
+	const float SMALL_NUM = 0.001f;
+
+	// compute the line parameters of the two closest points
+	if (D < SMALL_NUM) 
+	{ 
+		// the lines are almost parallel
+		sN = 0.0;         // force using point P0 on segment S1
+		sD = 1.0;         // to prevent possible division by 0.0 later
+		tN = e;
+		tD = c;
+	}
+	else 
+	{                 
+		// get the closest points on the infinite lines
+		sN = (b*e - c*d);
+		tN = (a*e - b*d);
+		if (sN < 0.0) 
+		{        
+			// sc < 0 => the s=0 edge is visible
+			sN = 0.0;
+			tN = e;
+			tD = c;
+		}
+		else if (sN > sD) 
+		{  
+			// sc > 1  => the s=1 edge is visible
+			sN = sD;
+			tN = e + b;
+			tD = c;
+		}
+	}
+
+	if (tN < 0.0) 
+	{            
+		// tc < 0 => the t=0 edge is visible
+		tN = 0.0;
+		// recompute sc for this edge
+		if (-d < 0.0)
+			sN = 0.0;
+		else if (-d > a)
+			sN = sD;
+		else 
+		{
+			sN = -d;
+			sD = a;
+		}
+	}
+	else if (tN > tD) 
+	{      
+		// tc > 1  => the t=1 edge is visible
+		tN = tD;
+		// recompute sc for this edge
+		if ((-d + b) < 0.0)
+			sN = 0;
+		else if ((-d + b) > a)
+			sN = sD;
+		else 
+		{
+			sN = (-d +  b);
+			sD = a;
+		}
+	}
+
+	// finally do the division to get sc and tc
+	sc = (abs(sN) < SMALL_NUM ? 0.0 : sN / sD);
+	tc = (abs(tN) < SMALL_NUM ? 0.0 : tN / tD);
+
+	// get the difference of the two closest points
+	float3 dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
+
+	return length(dP);   // return the closest distance
+}
+
+struct SAnalyticalOccluder
+{
+	float4 P0;
+	float4 P1;
+};
+
+float4 SVO_AnalyticalOccluders[64];
+
+void ProcessAnalyticalOccluders(Ray r, inout float4 vC)
+{
+	float fOccl = 0;
+
+	for(int n=0; n<32; n++)
+	{
+		SAnalyticalOccluder oc;
+		oc.P0 = SVO_AnalyticalOccluders[n*2+0];
+		oc.P1 = SVO_AnalyticalOccluders[n*2+1];
+
+		if(oc.P0.w)
+		{
+			Segment s0;
+
+			float3 startpoint = r.startpoint + r.direction*oc.P0.w*.125;
+
+			s0.P0 = startpoint;
+			s0.P1 = startpoint + r.direction * 4.f;
+
+			Segment s1;
+			s1.P0 = oc.P0.xyz;
+			s1.P1 = oc.P1.xyz;
+
+			float fDist = GetSegmentToSegmentDistance( s0, s1 );
+
+			s0.P0 = startpoint;
+			s0.P1 = startpoint + r.direction * 0.001f;
+
+			float3 dP;
+			float fSegDist = GetPointToSegmentDistance( startpoint, s1, dP );
+
+			float3 vSegDir = normalize(dP);
+			float fSegLen = length(oc.P0.xyz - oc.P1.xyz);
+
+			fOccl = max(fOccl, (1 - pow(max(0, fDist - oc.P0.w*.9f) / (oc.P0.w + fSegDist/2), 1)) * saturate(1 - fSegDist/6.f) * saturate(.5 + dot(vSegDir, r.direction)));
+		}
+		else
+			break;
+	}
+
+	vC = lerp(vC, float4(0,0,0,1), fOccl);
+}
+
+float4 ConeTraceTreeAndSkyEx(Ray r, float fConeSev, out float4 vNor1, const float fConesColorSatur = 1.f, const float fMultTriRT = 0, const bool bSpecular = false, bool bForceUseLighting = false, const bool bAllowSkyLight = true, float3 vSurfNorm = 0)
+{
+	float4 vPos1 = 0; vNor1 = 0;
+	float4 vC = ConeTraceTree(r, fConeSev, vPos1, vNor1, bSpecular ? (length(r.startpoint - PS_WorldViewPos.xyz)*.25 + .25) : 0, SvoParamsDiffuse.y, 0.f, 1.f, 0, fMultTriRT, 0, false, bSpecular, bForceUseLighting, vSurfNorm);
+
+	// apply cloud shadows
+	float fCloudsShadow = 1.f;
+#if %_PS
+	fCloudsShadow = GetCloudShadowCommon(r.startpoint, SVO_cloudShadowMap, SVO_CloudShadowAnimParams, SVO_CloudShadowParams);
+#endif
+
+	//float3 vAOTint = lerp(float3(1,1,1), float3(1.5, 1.5, 0), saturate((vC.a-.3)/.7));
+	vC.xyz = vC.xyz*fCloudsShadow + GetSkyColor(r.direction, fConeSev) * (saturate(1 - vC.a)) * bAllowSkyLight * (fCloudsShadow*0.2 + 0.8);
+	vC.xyz = lerp((vC.x + vC.y + vC.z) / 3, vC.xyz, fConesColorSatur);
+
+	return vC;
+}
+
+float4 ConeTraceTreeAndSky(const Ray r, const float fConeSev, const float fConesColorSatur = 1.f, const float fMultTriRT = 0, const bool bSpecular = false, const bool bForceUseLighting = false, float3 vSurfNorm = 0)
+{
+	float4 vNor1 = 0;
+	return ConeTraceTreeAndSkyEx(r, fConeSev, vNor1, fConesColorSatur, fMultTriRT, bSpecular, bForceUseLighting, true, vSurfNorm);
+}
+
+pixout SvoDebugDrawPS(vert2FragGeneral IN)
+{
+	pixout OUT = (pixout)0;
+
+	float4 cDiffuseMap = 1;
+
+	// define ray
+	Ray r;
+	r.startpoint = PS_WorldViewPos.xyz;
+	r.direction = normalize(IN.baseTC.xyz - PS_WorldViewPos.xyz);
+
+	float4 vPos0 = 0, vNormal = 0;
+
+#if DURANGO	|| ORBIS
+	cDiffuseMap = ConeTraceTree(r, SvoParamsSpecular.x, vPos0, vNormal, 0, 256.f);
+	cDiffuseMap.xyz = float3(int3(vPos0.xyz) & 1);
+#else
+	//	cDiffuseMap = ConeTraceTreeAndSky(r,  SvoParamsSpecular.x, 1, 0, true, true);
+	cDiffuseMap = ConeTraceTree(r, SvoParamsSpecular.x, vPos0, vNormal, 0, 256.f, 0.f, 1.f, 0, 0, 0, false, false, true, 0, (int)SvoParamsSkyColor.z);
+	// cDiffuseMap.xyz = float3(int3(vPos0.xyz) & 1);
+#endif
+
+	//	cDiffuseMap.xyz = (vNormal)*.5+.5;
+
+	cDiffuseMap.w = 1;
+
+	OUT.Color = pow(cDiffuseMap, 1) / 16;
+	OUT.Color.w = 1;
+
+	return OUT;
+}
+
+vert2fragZ RenderLightingCommonVS_Z(vtxInWPOS IN)
+{
+	vert2fragZ OUT = (vert2fragZ)0;
+
+	OUT.HPosition = Get2dHPos(IN.Position);
+	OUT.baseTC.xy = IN.baseTC.xy;
+	OUT.baseTC.zw = 0;//IN.baseTC * SVO_ScreenSize.xy * 0.25;
+	OUT.vNormalWS.xyz = IN.CamVec;
+
+	return OUT;
+}
+
+vtxOutWPOS RenderLightingCommonVS(vtxInWPOS IN)
+{
+	vtxOutWPOS OUT = (vtxOutWPOS)0;
+
+	OUT.HPosition = Get2dHPos(IN.Position);
+	OUT.baseTC.xy = IN.baseTC.xy;
+	OUT.baseTC.zw = 0;//IN.baseTC * SVO_ScreenSize.xy * 0.25;
+	OUT.CamVec.xyz = IN.CamVec;
+
+	return OUT;
+}
+
+float3 GetWorldPos(float fDepth, float3 vCamVec)
+{
+	return fDepth * vCamVec + PS_WorldViewPos.xyz; // Return world space position
+}
+
+void GetRotationV0(half3 n, out half3x3 rotMat)
+{
+	half h = 1 / (1 + n.z);
+	rotMat._m00 = h*n.y*n.y + n.z;	rotMat._m01 = -h*n.y*n.x;			rotMat._m02 = -n.x;
+	rotMat._m10 = -h*n.y*n.x;			rotMat._m11 = h*n.x*n.x + n.z;	rotMat._m12 = -n.y;
+	rotMat._m20 = n.x;						rotMat._m21 = n.y;						rotMat._m22 = n.z;
+}
+
+float3 Reproject(in half2 vScreenPos, in float fDepth, in float3x4 matReproj)
+{
+	float4 pos = float4(vScreenPos, 1.f, 1.f / fDepth);
+	pos.xyz = mul(matReproj, pos);
+	pos.xy /= pos.z;
+	pos.z *= fDepth;
+	pos.xy = lerp(vScreenPos.xy, pos.xy, saturate((fDepth-SvoParamsMisc2.y) / (SvoParamsMisc2.y*0.5f))); // 1p weapon fix
+	return pos.xyz;
+}
+
+void GetAverNormAndSmooth(float2 tcIn, out float3 vAverNor, out float fAverSmoothness, out float fAverTransmittanceY, float3 vCamVec, out float3 vAverReflectance, out float fDepthMin, out float fDepthMax)
+{
+	vAverNor = 0;
+	fAverSmoothness = 0;
+	vAverReflectance = 0;
+	fAverTransmittanceY = 0;
+	float fSummW = 0;
+	int nRange = 1;
+	float2 vR = 0.5f / PS_ScreenSize.xy;
+	float fDepthRange = 0.12;
+	float fDepth0 = GetLinearDepth(sceneDepthMapSampler, tcIn);
+	fDepthMin = fDepthMax = fDepth0;
+	for (int x = 0; x <= nRange; x++) for (int y = 0; y <= nRange; y++)
+	{
+		float2 tc1 = tcIn + vR * float2(x, y);
+		MaterialAttribsCommon gbuffer1 = DecodeGBufferChannels(tc1);
+		float fDepth1 = GetLinearDepth(sceneDepthMapSampler, tc1);
+		if (fDepth1 < fDepthMin)
+			fDepthMin = fDepth1;
+		if (fDepth1 > fDepthMax)
+			fDepthMax = fDepth1;
+
+		const float fW = saturate(fDepthRange - abs(1.f - fDepth0 / fDepth1)) + .001;
+
+		fAverSmoothness += gbuffer1.Smoothness * fW;
+		vAverReflectance += gbuffer1.Reflectance * fW;
+		float fTransmittanceY = 0;
+		vAverNor += GetWorldSpaceNormals(tc1, fTransmittanceY, vCamVec).xyz * fW;
+		fAverTransmittanceY += fTransmittanceY * fW;
+
+		fSummW += fW;
+	}
+
+	float normalVar = 1.0 / length(vAverNor / fSummW) - 1.0;
+	vAverNor = normalize(vAverNor);
+	fAverSmoothness /= fSummW;
+	fAverSmoothness /= 1 + normalVar * 25;
+	fAverTransmittanceY /= fSummW;
+	vAverReflectance /= fSummW;
+}
+
+float GetBlendMin(float2 tcDiff, float3 vAverReflectance, float fAverSmoothness, float fDepth)
+{
+	float fMinBlend = SVO_TargetResScale.z;
+
+	fMinBlend /= fDepth*PS_NearFarClipDist.y / 2.f + 1.f;
+
+	fMinBlend += SVO_TargetResScale.w + 0.05f;
+
+	if (!IsDiffuseMode())
+	{
+		float fDistTCRat = IsDiffuseMode() ? 0 : saturate(length(tcDiff) / .02f);
+
+		// reduce ghosting for mirrors
+		fMinBlend = saturate(max(fMinBlend + fDistTCRat, 0.7 * saturate(GetLuminance(vAverReflectance*fAverSmoothness))));
+	}
+
+	return fMinBlend;
+}
+
+pixoutMRT DemosaicPS(vtxOutWPOS IN)
+{
+	pixoutMRT OUT = (pixoutMRT)0;
+
+	// read position and normal
+	float3 vPos0 = GetWorldPos(VOX_DEPTH_SCALE*GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) - VOX_DEPTH_BIAS, IN.CamVec);
+
+	float3 vNor0 = 0; float fAverSmoothness = 0; float fAverTransmittanceY = 0; float3 vAverReflectance = 0;
+	float fDepthMin = 0, fDepthMax = 0;
+	GetAverNormAndSmooth(IN.baseTC.xy, vNor0, fAverSmoothness, fAverTransmittanceY, normalize(IN.CamVec), vAverReflectance, fDepthMin, fDepthMax);
+
+	float2 vLowResBestTC = IN.baseTC.xy;
+
+	float4 vALD0 = 0;
+	float4 vRGB0 = 0;
+	float4 vALD1 = 0;
+	float4 vRGB1 = 0;
+
+#if VOX_REPROJECT
+	// blend with prev frame ALD in order to remove flickering
+	float fDepthC = GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
+	float3 vReprojTC = Reproject(vLowResBestTC.xy, fDepthC, SVO_ReprojectionMatrix);
+#endif
+
+	int GI_DIFFUSE_KERNEL_TILING;
+	GetDiffuseKernel(GI_DIFFUSE_KERNEL_TILING, 0);
+
+#if %_RT_SAMPLE0
+	int nRange = GI_DIFFUSE_KERNEL_TILING  * 0.7;
+#else
+	int nRange = GI_DIFFUSE_KERNEL_TILING;
+#endif
+
+	if (!IsDiffuseMode())
+		nRange = clamp(saturate(1 - (fAverSmoothness*1.3 - .5) / (1 - .5)) * (float)nRange, 1, GI_DIFFUSE_KERNEL_TILING);
+
+	// reduce range at distance
+	const float fDistM = length(vPos0 - PS_WorldViewPos.xyz);
+
+	//#if %_RT_SAMPLE0
+	//nRange = lerp(nRange, nRange / 2, saturate((fDistM - 8) / 8));
+	//#endif
+
+	float fResScale = 1.f;
+	float2 vR = 2.f * fResScale / (int2(PS_ScreenSize.xy / fResScale)*fResScale);
+	float fSumm0 = 0;
+	float fSumm1 = 0;
+	float fDepthRange = 0.12 + 0.08 * saturate(1.f - dot(normalize(IN.CamVec), -vNor0)); // floor fix
+	float fDotMax = .25;
+
+	float2 vShift;
+	if (IsDiffuseMode())
+		vShift = vR / 2;
+	else
+		vShift = vR / 4;
+
+	float2 vSnap = vR / 2;
+
+	float2 vLowResBestTC_Sn = float2(int2(vLowResBestTC / vSnap))*vSnap + vShift;
+
+#if %_RT_SAMPLE3
+	const int nStep = 2;
+#else
+	const int nStep = 1;
+#endif
+
+	float3 vFocus = IsDiffuseMode() ? vNor0 : reflect(normalize(IN.CamVec), vNor0);
+
+	// reduce border noise
+	float2 vBorder = (nRange / 2)*vR * 1;
+	vLowResBestTC_Sn = clamp(vLowResBestTC_Sn, vBorder, 1 - vBorder);
+
+	float fRangeFade = 1.2f + 0.5f * saturate(1 - fDistM / 16);
+
+	//	if(GetLinearDepth( sceneDepthMapSampler, IN.baseTC.xy) < 0.8f)
+	for (int x = -nRange / 2; x <= nRange / 2; x += nStep)
+		for (int y = -nRange / 2; y <= nRange / 2; y += nStep)
+		{
+			float4 tc = saturate(float4(vLowResBestTC_Sn + vR * float2(x, y), 0, 0));
+
+			float4 texALD = tex2Dlod(sceneAldSampler, tc);
+			float4 texRGB = tex2Dlod(sceneRgbSampler, tc);
+
+			float fNewDepth = texRGB.w;
+			float3 vNorm = texALD;
+
+			float fDistW = saturate(fRangeFade - sqrt(x*x + y*y) / max(1, nRange / 2));
+
+			float fDotTest = lerp(.25, saturate(fAverTransmittanceY * 4 + dot(normalize(vNorm), vFocus) - fDotMax), saturate(length(vNorm) / max(0.0001, texALD.w) * 8.f)) + .001;
+
+			float fDepTest0 = saturate((fDepthRange - abs(1.f - fNewDepth / fDepthMin)) * 4) + .001;
+			float fDepTest1 = saturate((fDepthRange - abs(1.f - fNewDepth / fDepthMax)) * 4) + .001;
+
+			float fWeigth0 = fDepTest0 * fDotTest * fDistW;
+			float fWeigth1 = fDepTest1 * fDotTest * fDistW;
+
+			fWeigth0 = lerp(.015f, fWeigth0, saturate(texALD.w * 1000));
+			fWeigth1 = lerp(.015f, fWeigth1, saturate(texALD.w * 1000));
+
+			vALD0 += texALD*fWeigth0;
+			vRGB0 += texRGB*fWeigth0;
+			vALD1 += texALD*fWeigth1;
+			vRGB1 += texRGB*fWeigth1;
+
+			fSumm0 += fWeigth0;
+			fSumm1 += fWeigth1;
+		}
+
+	if (fSumm0)
+	{
+		vALD0 /= fSumm0;
+		vRGB0.xyz = normalize(vRGB0.xyz);
+	}
+	if (fSumm1)
+	{
+		vALD1 /= fSumm1;
+		vRGB1.xyz = normalize(vRGB1.xyz);
+	}
+
+	OUT.Diffuse.xyz = vRGB0;
+	OUT.Diffuse.w = fDepthMin;
+	OUT.Specular = vALD0;
+
+	OUT.Diffuse1.xyz = vRGB1;
+	OUT.Diffuse1.w = fDepthMax;
+	OUT.Specular1 = vALD1;
+
+#ifdef %_RT_SPRITE
+	{
+		Ray r;
+		r.direction = normalize(vALD0.xyz);
+		r.startpoint = vPos0;
+		float4 vC = 0;
+		ProcessAnalyticalOccluders(r, vC);	
+		float fDot = saturate(dot(r.direction, vNor0)) * saturate(length(vALD0.xyz) / vALD0.w);
+		OUT.Specular  *= 1 - vC.w * fDot;
+		OUT.Specular1 *= 1 - vC.w * fDot;
+	}
+#endif
+
+	float3 vReprojTC_Min = Reproject(IN.baseTC.xy, fDepthMin, SVO_ReprojectionMatrix);
+	float3 vReprojTC_Max = Reproject(IN.baseTC.xy, fDepthMax, SVO_ReprojectionMatrix);
+
+	float fDepthMinPrev = tex2Dlod(sceneRgbSamplerMinPrev, float4(vReprojTC_Min.xy, 0, 0)).w;
+	float fDepthMaxPrev = tex2Dlod(sceneRgbSamplerMaxPrev, float4(vReprojTC_Max.xy, 0, 0)).w;
+
+	float fOut_Min = vReprojTC_Min.x < 0 || vReprojTC_Min.x > 1 || vReprojTC_Min.y < 0 || vReprojTC_Min.y > 1;
+	float fOut_Max = vReprojTC_Max.x < 0 || vReprojTC_Max.x > 1 || vReprojTC_Max.y < 0 || vReprojTC_Max.y > 1;
+
+	float fMinBlend = GetBlendMin(vReprojTC.xy - IN.baseTC.xy, 1, fAverSmoothness, fDepthC);
+
+	float fBlendMin = saturate(fOut_Min + fMinBlend + abs(1 - fDepthMin / fDepthMinPrev) * 8);
+	float fBlendMax = saturate(fOut_Max + fMinBlend + abs(1 - fDepthMax / fDepthMaxPrev) * 8);
+
+	OUT.Diffuse = clamp(lerp(tex2Dlod(sceneRgbSamplerMinPrev, float4(vReprojTC_Min.xy, 0, 0)), OUT.Diffuse, fBlendMin), -8, 8);
+	OUT.Specular = clamp(lerp(tex2Dlod(sceneAldSamplerMinPrev, float4(vReprojTC_Min.xy, 0, 0)), OUT.Specular, fBlendMin), -8, 8);
+
+	OUT.Diffuse1 = clamp(lerp(tex2Dlod(sceneRgbSamplerMaxPrev, float4(vReprojTC_Max.xy, 0, 0)), OUT.Diffuse1, fBlendMax), -8, 8);
+	OUT.Specular1 = clamp(lerp(tex2Dlod(sceneAldSamplerMaxPrev, float4(vReprojTC_Max.xy, 0, 0)), OUT.Specular1, fBlendMax), -8, 8);
+
+	return OUT;
+}
+
+void ProcessLights(inout float4 vALD, inout float4 vRGB, in float3 vPos0, in float3 vNor0, in float fOffset, bool bSpec, float3 vReflection, float fSpecPow, float fLightRadMin, bool bAllowDynamicVoxels = true, bool bShadows = true, float fCustomSunConesLen = 0, bool bSkipSun = false)
+{
+#if %_RT_SAMPLE5
+
+	for (int nLightId = 0; nLightId < 32; nLightId++)
+	{
+		float4 vPosR = 0, vDirF = 0, vCol = 0;
+
+		if (!GetLightTI(nLightId, vPosR, vDirF, vCol))
+			break;
+
+		if (vPosR.w < fLightRadMin)
+			continue;
+
+		if (nLightId == 0 && bSkipSun && vPosR.w>2000)
+			continue;
+
+		Ray r;
+		r.direction = (vPosR.xyz - vPos0);
+		float fDist = length(r.direction);
+		if (fDist > vPosR.w)
+			continue;
+
+		r.direction = normalize(r.direction);
+
+		float fNdotL = saturate(dot(vNor0, r.direction) + (1.f - length(vNor0)));
+
+		if (fNdotL > 0)
+		{
+			float fFovAtt = 1.f;
+
+			if (vDirF.w)
+			{
+				float fAngle = acos(dot(vDirF.xyz, -r.direction));
+				float fAngleMax = (vDirF.w / 180.f * 3.14f / 2.f);
+				fFovAtt = saturate((fAngleMax - fAngle)*8.f);
+			}
+
+			if (fFovAtt > 0)
+			{
+				float fRayLen = min(fDist - fOffset * 2, min(fDist*.9f, fCustomSunConesLen ? fCustomSunConesLen : (SvoParamsDiffuse.y * 2)));
+
+				if (length(vCol.xyz) < 0.01f)
+					continue;
+
+				if (bSpec)
+				{
+					float fPowAmount = sqrt(saturate(dot(vReflection, r.direction)));
+					fPowAmount = saturate(pow(fPowAmount, fSpecPow*255.f)) - 0.01;
+
+					if (fPowAmount > 0)
+					{
+						r.startpoint = vPos0 + vNor0*fOffset / 40 + r.direction*fOffset;
+
+						float4 vPos1 = 0, vNor1 = 0;
+						float4 vC = 0;
+						if (vCol.a > 0 && bShadows)
+							vC = ConeTraceTree(r, SvoParamsCommon.x, vPos1, vNor1, 0, fRayLen);
+
+						float3 vColorAdd = fNdotL * (1.f - vC.a) * vCol.xyz * saturate(1.f - fDist / vPosR.w) * fFovAtt * fPowAmount;// * vShadowCol;
+
+						float fSunBr = length(vColorAdd);
+						vALD.xyz += fSunBr * r.direction;
+						vALD.w += fSunBr;
+						vRGB.xyz += vColorAdd;
+					}
+				}
+				else
+				{
+					r.startpoint = vPos0 + vNor0*fOffset / 3 + r.direction*fOffset;
+
+					float4 vPos1 = 0, vNor1 = 0;
+
+					float4 vC = 0;
+					if (vCol.a > 0 && bShadows)
+						vC = ConeTraceTree(r, SvoParamsCommon.x, vPos1, vNor1, 0, fRayLen);
+
+					float3 vColorAdd = fNdotL * (1.f - vC.a) * vCol.xyz * saturate(1.f - fDist / vPosR.w) * fFovAtt;// * vShadowCol;
+
+					if (vPosR.w < 5000) // if point light
+						vColorAdd *= SvoParamsMisc2.x;
+
+					float fSunBr = length(vColorAdd);
+					vALD.xyz += fSunBr * r.direction;
+					vALD.w += fSunBr;
+					vRGB.xyz += vColorAdd;
+				}
+			}
+		}
+	}
+
+#endif
+}
+
+#ifdef SVO_LMAPS
+
+pixoutMRT ConeTracePS_NID_GS(vtxOutWPOS IN)
+{
+	pixoutMRT OUT = (pixoutMRT)0;
+
+	int nAtlasOffset = (int)IN.CamVec.w + .45;
+	float3 tcMin = ComputeDataTC(nAtlasOffset);
+
+	float4 voxAreaMin, voxAreaMax;
+	ReadNodeCropBox(tcMin, voxAreaMin, voxAreaMax);
+
+	IN.HPosition = mul(SVO_ViewProj, IN.baseTC);
+	IN.HPosition /= IN.HPosition.w;
+	IN.HPosition.xy = IN.HPosition.xy*0.5f + 0.5f;
+	IN.HPosition.y = 1 - IN.HPosition.y;
+	IN.baseTC.xy = IN.HPosition.xy;
+
+	float3 x0 = lerp(SVO_FrustumVerticesCam0, SVO_FrustumVerticesCam1, 1 - IN.baseTC.x);
+	float3 x1 = lerp(SVO_FrustumVerticesCam3, SVO_FrustumVerticesCam2, 1 - IN.baseTC.x);
+	IN.CamVec.xyz = lerp(x0, x1, IN.baseTC.y);
+
+	// reconstruct position
+#if %_RT_SAMPLE3
+	float3 vPos0 = GetWorldPos(GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy), IN.CamVec);
+#else
+	float3 vPos0 = GetWorldPos(VOX_DEPTH_SCALE*GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) - VOX_DEPTH_BIAS, IN.CamVec);
+#endif
+
+	if (!IsPointInAABB(vPos0, voxAreaMin, voxAreaMax))
+	{
+		clip(-1);
+		return OUT;
+	}
+
+	OUT.Diffuse.w = nAtlasOffset;
+	OUT.Diffuse.x = 1.f / 255.f*(nAtlasOffset & 255); nAtlasOffset /= 256;
+	OUT.Diffuse.y = 1.f / 255.f*(nAtlasOffset & 255); nAtlasOffset /= 256;
+	OUT.Diffuse.z = 1.f / 255.f*(nAtlasOffset & 255); nAtlasOffset /= 256;
+	return OUT;
+}
+
+bool ConeTraceBrick_LM(const float3 vRayStartPos, inout Ray r, const float _fDistanceIn, inout float fDistance, const float fDistanceMax,
+	inout float4 vPosOut, inout float4 vNormal, const float3 tcMin, inout float4 vRgbOut, const float fAlphaRef, const float fLodRatio,
+	const float fAlphaRefMin, const float fAlphaRefMax, const int nPredictionMode, const float fMultTriRT, const bool bAirOnlyMode, const bool bApplyGlobalDensity, const bool bSpecular)
+{
+	bool bRes = true;
+
+	float4 voxAreaMin, voxAreaMax;
+	ReadNodeCropBox(tcMin, voxAreaMin, voxAreaMax);
+	const float ocNodeSize = voxAreaMin.w;
+
+	const float3 vHalfTexSizeWS = 0.5f / VOX_BRICK_TEXRES * ocNodeSize;
+	const float3 vBoxSize = voxAreaMax.xyz - voxAreaMin.xyz;
+
+	float tmin = 0, tmax = 0;
+	const float fSafetyBorder = 0.001f;
+	//	const bool bHit = IntersectRayAABB(r, voxAreaMin.xyz-fSafetyBorder, voxAreaMax.xyz+fSafetyBorder, tmin, tmax);
+
+	//if( bHit && (tmax>0))
+	{
+		const float3 vMulTC = 1.f / ocNodeSize*vBoxSize / VOX_ATLAS_SIZE*VOX_SUBBLOCK_SIZE_RATIO;
+
+		float3 vNextTC = tcMin + ((clamp(r.startpoint, voxAreaMin + vHalfTexSizeWS, voxAreaMax - vHalfTexSizeWS) - voxAreaMin.xyz) / (vBoxSize))*vMulTC;
+
+		vRgbOut = tex3Dlod(brickPool_Rgbs, float4(vNextTC.xyz, 0));
+
+		vNormal = tex3Dlod(brickPool_Norm, float4(vNextTC.xyz, 0));
+	}
+
+	return bRes;
+}
+
+void ConeTrace_LM_PS(in vtxOutWPOS IN, out float4 vALD, out float4 vRGB)
+{
+	float3 vPos0 = GetWorldPos(GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy), IN.CamVec);
+	float fTransmittanceY = 0;
+	float3 vNor0 = normalize(GetWorldSpaceNormals(IN.baseTC.xy, fTransmittanceY, normalize(IN.CamVec)).xyz);
+
+	vALD = 0;
+	vRGB = 0;
+
+	float fNewDepth = GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
+
+	int nAtlasOffset = tex2Dlod(sceneSvoMap, float4(IN.baseTC.xy, 0, 0)).w;
+
+	if (nAtlasOffset < 0 || tex2Dlod(sceneSvoMap, float4(IN.baseTC.xy, 0, 0)).z)
+	{
+		vALD = float4(0, 0, 0, 0);
+		vRGB = 0.1;
+		vRGB.w = fNewDepth;
+		return;
+	}
+
+	float3 tcMin = ComputeDataTC(nAtlasOffset);
+	float4 voxAreaMin, voxAreaMax;
+	ReadNodeCropBox(tcMin, voxAreaMin, voxAreaMax);
+
+	float fOffset = voxAreaMin.w / 96;
+
+	Ray r;
+	r.direction = normalize(vNor0);
+	r.startpoint = vPos0 + vNor0*fOffset;
+
+	float4 vRgbOut = 0;
+	float fDistance = 0;
+	float4 vPos1 = 0, vNor1 = 0;
+	bool bCompleted = ConeTraceBrick_LM(r.startpoint, r, 0, fDistance, 8,
+		vPos1, vNor1, tcMin, vRgbOut, .9f, 1.8f,
+		0, 1, 0, 0, false, false, false);
+
+	vALD = vNor1;
+	vALD.xyz = vALD.xyz * 2 - 1;
+	vALD /= max(vRgbOut.w, .01f);
+
+	float4 vC = vRgbOut;
+	vC /= max(vRgbOut.w, .01f);
+
+	vRGB.xyz = (vC.xyz + .001);
+
+	vRGB.w = fNewDepth;
+}
+
+#endif // SVO_LMAPS
+
+float4 SVO_PortalsPos[16];
+float4 SVO_PortalsDir[16];
+
+#define MAX_BEST_PORTALS 2
+
+void FindBestPortals(float3 vPos0, float3 vNor0, out float4 arrBestPortalPos[MAX_BEST_PORTALS])
+{
+	float arrBestW[MAX_BEST_PORTALS];
+	for (int n = 0; n < MAX_BEST_PORTALS; n++)
+	{
+		arrBestW[n] = 0;
+		arrBestPortalPos[n] = 0;
+	}
+
+	for (int p = 0; p < 16; p++)
+	{
+		if (SVO_PortalsPos[p].z)
+		{
+			float3 vDir = normalize(SVO_PortalsPos[p].xyz - vPos0.xyz);
+
+			if (dot(vDir, vNor0) >= 0 && dot(vDir, -SVO_PortalsDir[p].xyz) >= 0)
+			{
+				float fD = length(SVO_PortalsPos[p].xyz - vPos0.xyz);
+
+				if (fD > SvoParamsDiffuse.y)
+					continue;
+
+				float fW = 1.f / (fD + 0.01f);
+
+				int nWorstSlot = 0;
+				for (int n = 1; n < MAX_BEST_PORTALS; n++)
+				{
+					if (arrBestW[n] < arrBestW[nWorstSlot])
+						nWorstSlot = n;
+				}
+
+				if (fW > arrBestW[nWorstSlot])
+				{
+					arrBestPortalPos[nWorstSlot] = SVO_PortalsPos[p];
+					arrBestW[nWorstSlot] = fW;
+				}
+			}
+		}
+	}
+}
+
+pixoutMRT ConeTracePS(vtxOutWPOS IN)
+{
+	pixoutMRT OUT = (pixoutMRT)0;
+
+	float4 vALD = 0;
+	float4 vRGB = 0;
+
+	#if %_RT_SAMPLE3
+		#ifdef SVO_LMAPS
+				ConeTrace_LM_PS(IN, vALD, vRGB);
+		#endif
+	#else
+
+	// reconstruct position
+	float3 vPos0 = GetWorldPos(VOX_DEPTH_SCALE*GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) - VOX_DEPTH_BIAS, IN.CamVec);
+
+	float3 vNor0 = 0; float fAverSmoothness = 0; float fAverTransmittanceY = 0; float3 vAverReflectance = 0;
+	float fDepthMin = 0, fDepthMax = 0;
+	GetAverNormAndSmooth(IN.baseTC.xy, vNor0, fAverSmoothness, fAverTransmittanceY, normalize(IN.CamVec), vAverReflectance, fDepthMin, fDepthMax);
+
+	float fDistM = length(vPos0 - PS_WorldViewPos.xyz);
+
+	//float fOffset = VOX_MIN_VOX_SIZE*2/3 + fDistM/96; // TODO: make cone trace func skip first 1-2 voxels instead of offset here
+
+	float3 vFocus = IsDiffuseMode() ? vNor0 : reflect(normalize(IN.CamVec), vNor0);
+
+	float fNewDepth = GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
+
+	int2 nXY = int2(IN.baseTC.xy*PS_ScreenSize.xy);
+
+	int GI_DIFFUSE_KERNEL_TILING;
+	GetDiffuseKernel(GI_DIFFUSE_KERNEL_TILING, 0);
+
+	int x = nXY.x&(GI_DIFFUSE_KERNEL_TILING - (int)1);
+	int y = nXY.y&(GI_DIFFUSE_KERNEL_TILING - (int)1);
+	int i = x*GI_DIFFUSE_KERNEL_TILING + y;
+
+#if %_RT_MOTION_BLUR
+	const int nPassesNum = 2;
+#else
+	const int nPassesNum = 1;
+#endif
+
+	for(int p=0; p<nPassesNum; p++)
+	{
+		int s = (nPassesNum == 1) ? (int(SVO_FrameIdByte.x)&1) : (p);
+
+		Ray r;
+
+		const int nGiDiffuseSampleNum = GI_DIFFUSE_KERNEL_TILING*GI_DIFFUSE_KERNEL_TILING * 2;
+		float3 kern = GetDiffuseKernel(GI_DIFFUSE_KERNEL_TILING, i + (s/**2 + p*/)*nGiDiffuseSampleNum / 2);
+
+		{ // dual kernel
+			half3x3 rotMat = 0;
+			GetRotationV0(vFocus, rotMat);
+			bool bRotate = dot(vFocus, float3(0, 0, 1)) > -0.999f;
+			float3 kernOpa = GetDiffuseKernel(GI_DIFFUSE_KERNEL_TILING, i + (s/**2 + p*/)*nGiDiffuseSampleNum / 2, false);
+
+			if ((nPassesNum == 1) && IsDiffuseMode() && !SVO_TargetResScale.w) // TODO: use rotation instead of flip
+			{
+				if(int(SVO_FrameIdByte.x/2)&1)
+					kernOpa.x = -kernOpa.x;
+				if(int(SVO_FrameIdByte.x/2)&2)
+					kernOpa.y = -kernOpa.y;
+			}
+
+			if (bRotate)
+				kernOpa = normalize(mul(normalize(kernOpa), rotMat));
+			else
+				kernOpa = normalize(float3(kernOpa.x, kernOpa.y, -kernOpa.z));
+
+			if (IsDiffuseMode())
+				kern = lerp(kernOpa, kern, saturate(fAverTransmittanceY * 4));
+			else
+				kern = kernOpa;
+		}
+
+		half power;
+		if (IsDiffuseMode())
+		{
+			//kern.z += SvoParamsCommon.y;
+			power = 0;
+		}
+		else
+		{
+			// Fresnel
+			//fAverSmoothness = lerp(fAverSmoothness, 1, pow(1 - dot(-normalize(IN.CamVec), vNor0), 2));
+
+			power = exp2(10.h * fAverSmoothness + 1.h);
+			kern += vFocus * power / 25;
+		}
+
+		r.direction = normalize(kern);
+
+		r.startpoint = vPos0;
+
+#if !%_RT_SAMPLE5
+		r.startpoint += (vFocus * saturate(1 - fAverTransmittanceY * 4) + r.direction * .3) * (VOX_MIN_VOX_SIZE + fDistM*.025f);
+#endif
+
+#if %_RT_SAMPLE5
+		{
+			float4 arrBestPortalPos[MAX_BEST_PORTALS];
+			FindBestPortals(vPos0, vNor0, arrBestPortalPos);
+			float4 bestPortalPos = arrBestPortalPos[i&int(MAX_BEST_PORTALS - 1)];
+			float3 lightPos = bestPortalPos;
+			float lightSize = bestPortalPos.w;
+			if (lightPos.z)
+			{
+				float3 vDir = normalize(lightPos - vPos0);
+				float fDist = length(lightPos - vPos0);
+				float fLerp = SvoTreeSettings5.y * saturate(fDist / lightSize) * pow(saturate(dot(vDir, vNor0.xyz)), .25) * saturate(abs(SvoParamsSkyColor.w));
+				if (!IsDiffuseMode())
+				{
+					// reduce kernel distortion for mirrors
+					fLerp *= 1 - saturate(fAverSmoothness) * saturate(GetLuminance(vAverReflectance));
+				}
+				r.direction = normalize(lerp(r.direction, vDir, fLerp));
+			}
+		}
+#endif
+
+		float4 vC = 0;
+		//		if(GetLinearDepth( sceneDepthMapSampler, IN.baseTC.xy) < 0.8f)
+		vC = ConeTraceTreeAndSky(r, SvoParamsDiffuse.x + power / 3000, SvoParamsInject.z, 0, false, false, normalize(vNor0)*saturate(1 - fAverTransmittanceY * 4));
+
+		vC *= lerp(1.f, SvoParamsInject.w, saturate(fAverTransmittanceY * 8));
+
+		vC /= nPassesNum;
+
+		float fBr = length(vC.xyz);
+		vALD.xyz += r.direction*fBr;
+		vALD.w += fBr;
+		vRGB.xyz += vC.xyz;
+	}
+
+	vRGB.xyz += 0.001f;
+	vRGB.w = fNewDepth;
+
+#endif
+
+#if VOX_REPROJECT
+	half2 vReprojTC = Reproject(IN.baseTC.xy, vRGB.w, SVO_ReprojectionMatrix);
+
+	half2 TSRadius = 0;
+	const float2 bValid = (vReprojTC > TSRadius) && (vReprojTC < (1.h - TSRadius));
+
+	// blend with prev values
+	float fOldDepth = tex2Dlod(sceneRgbSampler, float4(vReprojTC.xy, 0, 0)).w;
+	float4 vALDPrev = tex2Dlod(sceneAldSampler, float4(vReprojTC.xy, 0, 0));
+	float4 vRGBPrev = tex2Dlod(sceneRgbSampler, float4(vReprojTC.xy, 0, 0));
+	float fPrevDepth = GetLinearDepth(sceneDepthMapSampler, vReprojTC.xy);
+
+	float fMinBlend = GetBlendMin(vReprojTC.xy - IN.baseTC.xy, vAverReflectance, fAverSmoothness, fNewDepth);
+
+	float fBlendRatio = (bValid.x && bValid.y) ? saturate(fMinBlend + abs(1 - vRGB.w / fOldDepth) * 4) : 1;
+
+	{
+		OUT.Diffuse = lerp(vALDPrev, vALD, fBlendRatio);
+		OUT.Specular = lerp(vRGBPrev, vRGB, fBlendRatio);
+		OUT.Specular.w = vRGB.w;
+	}
+#else	
+	OUT.Diffuse = vALD;
+	OUT.Specular = vRGB;
+	OUT.Specular.w = vRGB.w;
+#endif
+
+	return OUT;
+}
+
+pixout_RenderAtmosphere RenderAtmospherePS(vtxOutWPOS IN)
+{
+	pixout_RenderAtmosphere OUT = (pixout_RenderAtmosphere)0;
+
+	MaterialAttribsCommon gbuffer = DecodeGBufferChannels(IN.baseTC.xy);
+
+	float fDepth0 = GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
+	float fDepthMin = fDepth0;
+	float fDepthMax = fDepth0;
+
+	float3 vPos0 = GetWorldPos(fDepth0, IN.CamVec);
+
+	float3 ray_endpoint = vPos0;
+	float3 ray_endpoint_min = ray_endpoint;
+	float3 ray_endpoint_max = ray_endpoint;
+
+	int nRange = int(SVO_TargetResScale.x); // TODO: SVO_TargetResScale.x is wrong!!!
+	float2 vR = 1.f / PS_ScreenSize.xy / nRange;
+
+	// find min/max depth ray end in the area
+	for (int x = -nRange / 2; x <= nRange / 2; x++) for (int y = -nRange / 2; y <= nRange / 2; y++)
+	{
+		float2 tc = IN.baseTC.xy + vR * float2(x, y);
+
+		float fDepth = GetLinearDepth(sceneDepthMapSampler, tc);
+
+		if (fDepth < fDepthMin)
+		{
+			ray_endpoint_min = GetWorldPos(fDepth, IN.CamVec);
+			fDepthMin = fDepth;
+		}
+
+		if (fDepth > fDepthMax)
+		{
+			ray_endpoint_max = GetWorldPos(fDepth, IN.CamVec);
+			fDepthMax = fDepth;
+		}
+	}
+
+	Ray r;
+	r.startpoint = PS_WorldViewPos.xyz + float3(0, 0, .125);
+
+	float fTraceMaxDist = 1024 * 4;//SvoParamsDiffuse.y;
+	float fDistanceMax = min(fTraceMaxDist, length(ray_endpoint_max - r.startpoint));
+	float fDistanceMin = min(fTraceMaxDist, length(ray_endpoint_min - r.startpoint));
+
+	r.direction = normalize(vPos0.xyz - PS_WorldViewPos.xyz);
+	r.startpoint += r.direction / 10;
+
+	float fLod = 2;
+
+	OUT.SVO_Shadow.r = fDepthMin;
+	OUT.SVO_Shadow.g = fDepthMax;
+
+	fDistanceMin = min(fTraceMaxDist, length(ray_endpoint_min - r.startpoint));
+	fDistanceMax = min(fTraceMaxDist, length(ray_endpoint_max - r.startpoint));
+
+	{
+		float4 vPos1 = 0, vNor1 = 0;
+		float4 vAirMax = ConeTraceTree(r, fLod, vPos1, vNor1, fDistanceMin, fDistanceMax, 0.f, 1.f, 0, 0, SVO_TRACE_MODE_AIR, true, true); // air
+
+		float4 vAirMin = vNor1;
+		if (vAirMin.w == 0)
+			vAirMin = vAirMax;
+		if (fDepth0 != 1)
+			vAirMin.xyz /= saturate(vAirMin.w + .001);
+		OUT.Air_RGBA_Min.xyz = (vAirMin.xyz * SvoParamsSpecular.z);
+		OUT.Air_RGBA_Min.w = vAirMin.w;
+
+		if (fDepth0 != 1)
+			vAirMax.xyz /= saturate(vAirMax.w + .001);
+		OUT.Air_RGBA_Max.xyz = (vAirMax.xyz * SvoParamsSpecular.z);
+		OUT.Air_RGBA_Max.w = vAirMax.w;
+	}
+
+	//	float3 lightDir=0;
+	//	float4 vPosR=0, vDirF=0, vCol=0;
+	//if(GetLightTI(0, vPosR, vDirF, vCol)) 
+	//lightDir = normalize(vPosR-vPos0.xyz);
+
+	if (fDistanceMax == fTraceMaxDist)
+	{
+		// add the sky
+		//OUT.Diffuse.xyz += (1-OUT.Diffuse.w) * VOX_SKY_COLOR * 6;
+
+		// add the sun spot on the sky
+		//if(vPosR.w > SUN_LIGHT_RADIUS)
+		{
+			//			float fDotRef = .96;
+			//		OUT.Diffuse.xyz += (1-OUT.Diffuse.w) * pow(saturate(dot(r.direction, lightDir)-fDotRef)/(1-fDotRef), 22) * vCol * 4;
+		}
+
+		//OUT.Diffuse.w = 1;
+	}
+
+	//OUT.Diffuse.w = 0;
+
+	//if(vPosR.w > SUN_LIGHT_RADIUS)
+	{
+		/*#if !%_RT_SAMPLE0
+		if(fDistanceMax != fTraceMaxDist)
+		{
+		// air sun shadows
+		r.direction = lightDir;
+		r.startpoint = vPos0 + r.direction;
+
+		float4 vPos1=0, vNor1=0;
+		OUT.SVO_Shadow.a = saturate(1.f - ConeTraceTree(r, SvoParamsCommon.x, vPos1, vNor1, 0, 4000, 0.f, 1.f, 0, 0, false).a); // air
+		}
+		else
+		#endif*/
+		OUT.SVO_Shadow.a = 1;
+	}
+
+	return OUT;
+}
+
+[numthreads(VOX_COMPUTE_NUM_THREADS, VOX_COMPUTE_NUM_THREADS, 1)]
+void ComputeClearBricks(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID, uint Gidx : SV_GroupIndex)
+{
+	int nNodeOffset = GetNodeRequestedForUpdate(Gid.x);
+	if (nNodeOffset >= 0)
+	{
+		float3 vDataTC = ComputeDataTC(nNodeOffset);
+
+		uint3 coord0 = vDataTC * float3(VOX_TEX_POOL_DIM);
+		uint3 coord1 = coord0 + uint(VOX_BRICK_TEXRES);
+		uint3 coord = coord0 + uint3(GTid.x, GTid.y, Gid.y);
+
+		float4 pixel = 0;
+		UAV_7[coord] = FlOAT4_TO_UINT(pixel);
+		UAV_5[coord] = FlOAT4_TO_UINT(pixel);
+		UAV_6[coord] = FlOAT4_TO_UINT(pixel);
+		UAV_0[coord] = FlOAT4_TO_UINT(float4(.5, .5, .5, 0));
+
+		UAV_3[coord] = UAV_4[coord];
+	}
+}
+
+float noise(float3 q)
+{
+	float fVal = 0;
+	fVal += tex2Dlod(noiseSampler2D, float4(q.xz, 0, 0)).g - .5;
+	fVal += tex2Dlod(noiseSampler2D, float4(q.yz, 0, 0)).g - .5;
+	fVal += tex2Dlod(noiseSampler2D, float4(q.xy, 0, 0)).g - .5;
+	return fVal*1.25f;
+}
+
+float MapCloudsInt(float3 vPos0)
+{
+	float3 q = vPos0 * VOX_TI_ATMO_CLOUDS_GEN_FREQ / float3(VOX_WORLD_SIZE, VOX_WORLD_SIZE, VOX_WORLD_SIZE / 2);
+
+	float noq = noise(q*VOX_TI_ATMO_CLOUDS_TURB_FREQ);
+	q.x += sin(noq)*VOX_TI_ATMO_CLOUDS_TURB_SCALE;
+	q.z += cos(noq)*VOX_TI_ATMO_CLOUDS_TURB_SCALE;
+
+	float f = 0;
+	float k = .5;
+	float f2 = 0;
+
+	if (VOX_TI_ATMO_CLOUDS_GEN_FREQ)
+		for (int p = 0; p < 4; p++)
+		{
+			float fNoise = noise(q);
+			f += k*fNoise;
+			f2 += k*fNoise;
+			q = q*VOX_TI_ATMO_CLOUDS_GEN_FREQ_STEP;//2.02; 
+
+			float noq = noise(q*VOX_TI_ATMO_CLOUDS_TURB_FREQ);
+			q.x += sin(noq)*VOX_TI_ATMO_CLOUDS_TURB_SCALE;
+			q.y += cos(noq)*VOX_TI_ATMO_CLOUDS_TURB_SCALE;
+
+			k *= VOX_TI_ATMO_CLOUDS_GEN_SCALE;
+		}
+
+	return (f);
+}
+
+float MapClouds(float3 vPos0, bool bFogVolumes)
+{
+	float f = MapCloudsInt(vPos0);
+
+	float fcloudsLayerZ = VOX_TI_ATMO_CLOUDS_GEN_HEIGHT * 2 / 3;
+	float fH = pow(saturate((abs(fcloudsLayerZ - vPos0.z) / (VOX_TI_ATMO_CLOUDS_GEN_HEIGHT / 3))), 4);
+
+	float fXYBorder = VOX_WORLD_SIZE / 32;
+	fH += saturate((fXYBorder - vPos0.x) / fXYBorder);
+	fH += saturate((fXYBorder - vPos0.y) / fXYBorder);
+	fH += 1.f - saturate((VOX_WORLD_SIZE - vPos0.x) / fXYBorder);
+	fH += 1.f - saturate((VOX_WORLD_SIZE - vPos0.y) / fXYBorder);
+
+	f = min(pow(saturate((f - fH - .35) / 1000), .75), .0025);
+
+	if (bFogVolumes)
+	{
+		if (VOX_TI_ATMO_HEIGHT_LAYER0 > VOX_TI_ATMO_HEIGHT_GROUND)
+			f = max(f, VOX_TI_ATMO_HEIGHT_LAYER0_DENS*saturate(1 - (VOX_TI_ATMO_HEIGHT_LAYER0_RAND*MapCloudsInt(vPos0 * 512 / (VOX_TI_ATMO_HEIGHT_LAYER0 - VOX_TI_ATMO_HEIGHT_GROUND))) - (vPos0.z - VOX_TI_ATMO_HEIGHT_GROUND) / (VOX_TI_ATMO_HEIGHT_LAYER0 - VOX_TI_ATMO_HEIGHT_GROUND)));
+		else if (VOX_TI_ATMO_HEIGHT_LAYER0 < 0)
+			f = max(f, VOX_TI_ATMO_HEIGHT_LAYER0_DENS*saturate(-VOX_TI_ATMO_HEIGHT_LAYER0 - vPos0.z));
+
+		if (VOX_TI_ATMO_HEIGHT_LAYER1 > VOX_TI_ATMO_HEIGHT_GROUND)
+			f = max(f, VOX_TI_ATMO_HEIGHT_LAYER1_DENS*saturate(1 - (VOX_TI_ATMO_HEIGHT_LAYER1_RAND*MapCloudsInt(vPos0 * 512 / (VOX_TI_ATMO_HEIGHT_LAYER1 - VOX_TI_ATMO_HEIGHT_GROUND))) - (vPos0.z - VOX_TI_ATMO_HEIGHT_GROUND) / (VOX_TI_ATMO_HEIGHT_LAYER1 - VOX_TI_ATMO_HEIGHT_GROUND)));
+		else if (VOX_TI_ATMO_HEIGHT_LAYER1 < 0)
+			f = max(f, VOX_TI_ATMO_HEIGHT_LAYER1_DENS*saturate(-VOX_TI_ATMO_HEIGHT_LAYER1 - vPos0.z));
+	}
+
+	return saturate(f);
+}
+
+[numthreads(VOX_COMPUTE_NUM_THREADS, VOX_COMPUTE_NUM_THREADS, 1)]
+void ComputeInjectAtmosphere(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID, uint Gidx : SV_GroupIndex)
+{
+	int nNodeOffset = GetNodeRequestedForUpdate(Gid.x);
+	if (nNodeOffset >= 0)
+	{
+		float3 vDataTC = ComputeDataTC(nNodeOffset);
+		float4 voxAreaMin, voxAreaMax;
+		float fNodeFrameId = ReadNodeCropBox(vDataTC, voxAreaMin, voxAreaMax);
+
+		// find region for update
+		float3 vTC0, vTC1;
+		PrepareBrickInjection(vDataTC, vTC0, vTC1);
+		uint3 coord0 = saturate(vTC0)*VOX_TEX_POOL_DIM;
+		uint3 coord1 = saturate(vTC1)*VOX_TEX_POOL_DIM;
+		uint3 coord = coord0 + uint3(GTid.x, GTid.y, Gid.y);
+
+		if ((coord.x <= coord1.x && coord.y <= coord1.y && coord.z <= coord1.z))
+		{
+			float4 pixOld = UINT_TO_FlOAT4(UAV_7[coord]);
+
+			if (!pixOld.x && !pixOld.y && !pixOld.z)
+			{
+				float3 vPos0 = GetVoxCenter(coord, coord0, coord1, voxAreaMin, voxAreaMax);
+
+				float f = 0;
+				if (SvoParamsSpecular.z)
+					f = saturate(MapClouds(vPos0, true));
+
+				pixOld.a = sqrt(f);
+
+				UAV_7[coord] = FlOAT4_TO_UINT(pixOld);
+			}
+		}
+	}
+}
+
+[numthreads(VOX_COMPUTE_NUM_THREADS, VOX_COMPUTE_NUM_THREADS, 1)]
+void ComputeDirectStaticLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID, uint Gidx : SV_GroupIndex)
+{
+	int nNodeOffset = GetNodeRequestedForUpdate(Gid.x);
+	if (nNodeOffset >= 0)
+	{
+		float3 vDataTC = ComputeDataTC(nNodeOffset);
+		float4 voxAreaMin, voxAreaMax;
+		float fNodeFrameId = ReadNodeCropBox(vDataTC, voxAreaMin, voxAreaMax);
+
+		// find region for update
+		float3 vTC0, vTC1;
+		PrepareBrickInjection(vDataTC, vTC0, vTC1);
+		uint3 coord0 = saturate(vTC0)*VOX_TEX_POOL_DIM;
+		uint3 coord1 = saturate(vTC1)*VOX_TEX_POOL_DIM;
+		uint3 coord = coord0 + uint3(GTid.x, GTid.y, Gid.y);
+
+		float4 pixel = UINT_TO_FlOAT4(UAV_2[coord]);
+
+		if ((coord.x <= coord1.x && coord.y <= coord1.y && coord.z <= coord1.z))
+		{
+			// get geom normal
+			float3 vNor0 = 0;
+
+			// get world position
+			float3 vPos0 = GetVoxCenter(coord, coord0, coord1, voxAreaMin, voxAreaMax);
+
+			bool bFogVolumes = true;
+
+			float4 vOPAC = tex3Dlod(brickPool_Opac, float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0));
+			bool bAir = (!vOPAC.x && !vOPAC.y && !vOPAC.z);
+
+			if (bAir)
+			{
+
+			}
+			else
+			{
+				// get geom normal
+				vNor0 = UINT_TO_FlOAT4(UAV_5[coord]);
+				vNor0.xyz = (vNor0.zyx - .5) * 2;
+			}
+
+			// compute normal from density
+			/*float3 vNormD=0;
+			{
+			float4 pixel_c = UINT_TO_FlOAT4(UAV_2[coord]); // bad
+			float fSumm=0;
+			for(int x=-1; x<=1; x++)
+			for(int y=-1; y<=1; y++)
+			for(int z=-1; z<=1; z++)
+			{
+			int3 coord_n = coord+int3(x,y,z);
+			coord_n = clamp(coord_n, coord0, coord1);
+			float4 pixel_n = UINT_TO_FlOAT4(UAV_2[coord_n]);
+			vNormD += float3(x,y,z)*(pixel_c.w - pixel_n.w);
+			fSumm++;
+			}
+			if(length(vNormD.xyz)>.5)
+			vNormD = normalize(vNormD);
+			else
+			vNormD = 0;
+			}*/
+
+			float4 vALD = 0; float4 vRGB = 0;
+
+			bool bSunRsmSUccess = false;
+			/*
+			float4 vSunPosR=0, vSunDirF=0, vSunCol=0;
+			GetLightTI(0, vSunPosR, vSunDirF, vSunCol);
+
+			// use sun RSM if possibe
+			if(dot(vNor0, normalize(vSunPosR.xyz - vPos0.xyz))>0.5 && vSunPosR.w>5000)
+			if(SVO_RsmSunCol.r || SVO_RsmSunCol.g || SVO_RsmSunCol.b)
+			{
+			float4 vShadTC = mul(SVO_RsmSunShadowProj, float4(vPos0.xyz + vNor0.xyz*voxAreaMin.w/VOX_BRICK_TEXRES/4 - PS_WorldViewPos.xyz, 1.f));
+
+			vShadTC.xy /= vShadTC.w;
+
+			float fFilerScale = 1;//(0.9 + 0.1*voxAreaMin.w / 1);
+
+			half4 vSunLightAlbedo = 0;
+
+			if(vShadTC.x >= 0 && vShadTC.x <= 1 && vShadTC.y >= 0 && vShadTC.y <= 1 && vShadTC.z <= 1)
+			{
+			for(int x=-1; x<=1; x++) for(int y=-1; y<=1; y++)
+			{
+			float2 tc = vShadTC.xy + float2(x,y) / 1024.f * fFilerScale;
+
+			float fShadowDepth = tex2Dlod(SVO_RsmSunShadowMap, float4(tc,0,0)).r;
+
+			float fSunVis = saturate(1.f - abs(fShadowDepth - vShadTC.z - 0.00025)*1000 / fFilerScale);
+
+			vSunLightAlbedo.xyz += tex2Dlod(SVO_RsmSunColorsMap, float4(tc,0,0)).xyz*fSunVis;
+
+			vSunLightAlbedo.w += 1.f;
+			}
+
+			vSunLightAlbedo /= vSunLightAlbedo.w;
+
+			if(length(vSunLightAlbedo)>.1)
+			{
+			vRGB.xyz = SVO_RsmSunCol.rgb;
+			pixel.xyz = vSunLightAlbedo;
+			}
+
+			bSunRsmSUccess = true;
+			}
+			}*/
+
+			// cone-trace if RSM was not possibe
+			{
+				float fLength = length(vNor0);
+
+#if %_RT_SAMPLE2
+				if (fLength > 0.25 || !fLength)
+#else
+				if (fLength > 0.25)
+#endif
+					ProcessLights(vALD, vRGB, vPos0, fLength ? (vNor0 / fLength * 0.75) : 0, voxAreaMin.w / VOX_BRICK_TEXRES * 2, false, 0, 0, 1.f, false, true, 4000, bSunRsmSUccess);
+			}
+
+			vRGB.xyz *= SvoParamsInject.x;
+
+			// add glow
+			vRGB.xyz += pixel.w * SvoParamsMisc.x;
+
+			// add bias
+			vRGB.xyz += max(0, SvoParamsCommon.z * vSkyColorTop.z);
+
+			if (SvoTreeSettings5.x > 0)
+			{
+				float4 arrBestPortalPos[MAX_BEST_PORTALS];
+				FindBestPortals(vPos0, vNor0, arrBestPortalPos);
+				for (int i = 0; i < MAX_BEST_PORTALS; i++)
+				{
+					float4 bestPortalPos = arrBestPortalPos[i];
+					float3 lightPos = bestPortalPos;
+					float lightSize = bestPortalPos.w;
+					if (lightPos.z)
+					{
+						float3 vDir = normalize(lightPos - vPos0);
+						float fDist = length(lightPos - vPos0);
+
+						Ray r;
+						r.direction = vDir;
+						r.startpoint = vPos0;
+						float4 vNor1 = 0;
+						vRGB.xyz += ConeTraceTreeAndSkyEx(r, SvoParamsDiffuse.x, vNor1, 1.f, 0, false, false, true) * SvoTreeSettings5.x / MAX_BEST_PORTALS * saturate(fDist / lightSize);
+					}
+				}
+			}
+
+			if (bAir)
+			{
+#if %_RT_SAMPLE2
+				float3 vAmb = 0;
+				/*float fSky = saturate(vPos0.z-abs(VOX_TI_ATMO_HEIGHT_LAYER1));
+				if(fSky) // simple sky AO
+				{
+
+				// AO
+				float fAirAO = 1;
+				int nRange = 1;
+				float f = MapClouds(vPos0, false);
+				for(int x=-nRange; x<=nRange; x+=nRange*2)
+				for(int y=-nRange; y<=nRange; y+=nRange*2)
+				for(int z=-nRange; z<=nRange; z+=nRange*2)
+				fAirAO -= (MapClouds(vPos0 + float3(x,y,z) * 40, false))*100;
+				fAirAO = saturate(fAirAO);
+
+				vAmb = GetSkyColor(vNor0, 0) * fSky * fAirAO / 2;
+				}*/
+
+				pixel = float4(vAmb + vRGB.xyz * VOX_AIR_ALBEDO_COLOR, 0);
+#endif
+			}
+			else
+			{
+				pixel.xyz *= vRGB.xyz;
+			}
+
+			pixel.w = 0;
+
+			pixel = EncodeHDR(pixel);
+
+			UAV_7[coord] = FlOAT4_TO_UINT(pixel);
+			UAV_6[coord] = FlOAT4_TO_UINT(pixel);
+		}
+	}
+}
+
+[numthreads(VOX_COMPUTE_NUM_THREADS, VOX_COMPUTE_NUM_THREADS, 1)]
+void ComputeDirectDynamicLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID, uint Gidx : SV_GroupIndex)
+{
+	int nNodeOffset = GetNodeRequestedForUpdate(Gid.x);
+	if (nNodeOffset >= 0)
+	{
+		float3 vDataTC = ComputeDataTC(nNodeOffset);
+		float4 voxAreaMin, voxAreaMax;
+		float fNodeFrameId = ReadNodeCropBox(vDataTC, voxAreaMin, voxAreaMax);
+
+		// find region for update
+		float3 vTC0, vTC1;
+		PrepareBrickInjection(vDataTC, vTC0, vTC1);
+		uint3 coord0 = saturate(vTC0)*VOX_TEX_POOL_DIM;
+		uint3 coord1 = saturate(vTC1)*VOX_TEX_POOL_DIM;
+		uint3 coord = coord0 + uint3(GTid.x, GTid.y, Gid.y);
+
+		float4 pixel = UINT_TO_FlOAT4(UAV_2[coord]);
+
+		float4 vOPAC = tex3Dlod(brickPool_Opac, float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0));
+		bool bAir = (!vOPAC.x && !vOPAC.y && !vOPAC.z);
+
+		if (!bAir)
+			if ((coord.x <= coord1.x && coord.y <= coord1.y && coord.z <= coord1.z))
+			{
+				// get geom normal
+				float3 vNor0 = 0;
+
+				// get world position
+				float3 vPos0 = GetVoxCenter(coord, coord0, coord1, voxAreaMin, voxAreaMax);
+
+				bool bFogVolumes = true;
+
+				// compute geom normal
+				//				vNor0 = tex3Dlod( brickPool_Norm,  float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0) );				
+				//			vNor0.xyz = (vNor0.zyx-.5)*2;
+
+				float4 vALD = 0; float4 vRGB = 0;
+
+				//			float fLength = length(vNor0);
+				//			if(fLength > 0.25)
+
+				if (length(vPos0.xyz - SVO_CamPos.xyz) < 24)
+				{
+					ProcessTiledLights(vRGB, vPos0, 0, voxAreaMin.w / VOX_BRICK_TEXRES);
+
+#if !%_RT_SAMPLE0
+					if (voxAreaMin.w <= VOX_MIN_NODE_SIZE*SVO_RsmSunDir.w)
+					{
+						if (SVO_RsmSunCol.r || SVO_RsmSunCol.g || SVO_RsmSunCol.b)
+						{
+							float4 vShadTC = mul(SVO_RsmSunShadowProj, float4(vPos0.xyz + vNor0.xyz*voxAreaMin.w / VOX_BRICK_TEXRES / 4 + SVO_RsmSunDir.xyz*voxAreaMin.w / VOX_BRICK_TEXRES - PS_WorldViewPos.xyz, 1.f));
+							vShadTC.xy /= vShadTC.w;
+
+							if (vShadTC.x >= 0 && vShadTC.x <= 1 && vShadTC.y >= 0 && vShadTC.y <= 1 && vShadTC.z <= 1)
+							{
+								float fShadowDepth = tex2Dlod(SVO_RsmSunShadowMap, float4(vShadTC.xy, 0, 0)).r;
+								half3 vMatNormal = tex2Dlod(SVO_RsmSunNormalMap, float4(vShadTC.xy, 0, 0)).rgb;
+
+								if (dot(vMatNormal, 1) < 0.01)
+									vMatNormal = float3(0, 0, 1); // terrain
+								else
+									vMatNormal = vMatNormal * 2 - 1;
+
+								vRGB.xyz += SVO_RsmSunCol.xyz * (fShadowDepth > vShadTC.z) * saturate(dot(vMatNormal.xyz, SVO_RsmSunDir.xyz));
+							}
+						}
+					}
+#endif // _RT_SAMPLE0
+				}
+
+				{
+					pixel.xyz *= vRGB.xyz * SvoParamsInject.x;
+				}
+
+				float4 pixOld = UINT_TO_FlOAT4(UAV_5[coord]);
+				pixOld.xyz = DecodeHDR(pixOld); pixOld.w = 0;
+				pixOld.xyz = max(pixel.xyz, pixOld.xyz);
+				pixOld = EncodeHDR(pixOld);
+				UAV_7[coord] = FlOAT4_TO_UINT(pixOld);
+			}
+	}
+}
+
+[numthreads(VOX_COMPUTE_NUM_THREADS, VOX_COMPUTE_NUM_THREADS, 1)]
+void ComputePropagateLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID, uint Gidx : SV_GroupIndex)
+{
+	int nNodeOffset = GetNodeRequestedForUpdate(Gid.x);
+	if (nNodeOffset >= 0)
+	{
+		float3 vDataTC = ComputeDataTC(nNodeOffset);
+		float4 voxAreaMin, voxAreaMax;
+		float fNodeFrameId = ReadNodeCropBox(vDataTC, voxAreaMin, voxAreaMax);
+
+		// find region for update
+		float3 vTC0, vTC1;
+		PrepareBrickInjection(vDataTC, vTC0, vTC1);
+		uint3 coord0 = saturate(vTC0)*VOX_TEX_POOL_DIM;
+		uint3 coord1 = saturate(vTC1)*VOX_TEX_POOL_DIM;
+
+		uint3 coord = coord0 + uint3(GTid.x, GTid.y, Gid.y);
+
+		float4 pixel = tex3Dlod(brickPool_Rgbs, float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0));
+
+		pixel.xyz = DecodeHDR(pixel);
+		pixel.w = 0;
+
+		float4 vOPAC = tex3Dlod(brickPool_Opac, float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0));
+		const bool bSolid = (vOPAC.x || vOPAC.y || vOPAC.z);
+
+#if !%_RT_SAMPLE2
+		if (!bSolid)
+			return;
+#endif
+
+		const int nPassId = SvoParamsMisc.y;
+		const int nPassesNum = SvoParamsMisc.z;
+
+		if (SvoParamsInject.y && (coord.x <= coord1.x && coord.y <= coord1.y && coord.z <= coord1.z))
+		{
+			// get world normal
+			float3 vNor0 = tex3Dlod(brickPool_Norm, float4(1.f / VOX_TEX_POOL_DIM * coord.xyz + 0.5f / VOX_TEX_POOL_DIM, 0));
+			vNor0.xyz = 2 * (vNor0.zyx - 0.5f);
+
+			if (!bSolid)
+				vNor0 = float3(0, 0, 1);
+			else
+			{
+				float3 vNormD = 0;
+
+				float pixel_c = UINT_TO_FlOAT4(UAV_0[coord]).w;
+
+				for (int x = -1; x <= 1; x++)
+					for (int y = -1; y <= 1; y++)
+						for (int z = -1; z <= 1; z++)
+						{
+							int3 coord_n = coord + int3(x, y, z);
+
+							if (coord_n.x <= coord1.x && coord_n.y <= coord1.y && coord_n.z <= coord1.z)
+								if (coord_n.x >= coord0.x && coord_n.y >= coord0.y && coord_n.z >= coord0.z)
+								{
+									float pixel_n = UINT_TO_FlOAT4(UAV_0[coord_n]).w;
+									vNormD += float3(x, y, z)*(pixel_c - pixel_n);
+								}
+						}
+
+				vNormD /= 16;
+
+				if (length(vNormD) > length(vNor0))
+					vNor0.xyz = normalize(vNormD);
+
+				vNor0.xyz = normalize(vNor0.xyz);
+			}
+
+			// get world position
+			float3 vPos0 = GetVoxCenter(coord, coord0, coord1, voxAreaMin, voxAreaMax);
+
+			float fVoxSize = voxAreaMin.w / VOX_BRICK_TEXRES;
+
+			half3x3 rotMat = 0;
+			GetRotationV0(vNor0, rotMat);
+
+			float3 vCollectedLight = 0;
+			float4 vCollectedALD = 0;
+
+			{
+				half2x2 mSampleRotMat;
+				if (bSolid)
+					GetRndRotationMat(vPos0 + nPassId, vNor0, mSampleRotMat);
+				else
+					GetRndRotationMat(vPos0 + vPos0.z, vNor0, mSampleRotMat);
+
+#if %_RT_HW_PCF_COMPARE
+				const int nSampleNum = 16;
+#else
+				const int nSampleNum = 32;
+#endif
+
+				for (int s = 0; s < nSampleNum; s++)
+				{
+					float3 kern;
+
+#if %_RT_HW_PCF_COMPARE
+					if (bSolid)
+						kern = kernel_HS_16[s];
+					else
+						kern = kernel_S_16[s];
+#else
+					if (bSolid)
+						kern = kernel_HS_32[s];
+					else
+						kern = kernel_S_32[s];
+#endif
+
+					// apply random rotation
+					kern.xy = mul(kern.xy, mSampleRotMat);
+
+					Ray r;
+					if (bSolid)
+						r.direction = mul(normalize(kern), rotMat);
+					else
+						r.direction = kern;
+
+					r.startpoint = vPos0 + vNor0*fVoxSize * 2 + r.direction*fVoxSize*1.5f;
+
+					float fConeSev = SvoParamsDiffuse.x; // .1f;
+
+					float4 vNor1 = 0;
+
+					float4 vC = ConeTraceTreeAndSkyEx(r, fConeSev, vNor1, 1.f, 0, false, false, nPassId == 0);
+
+					vCollectedLight += vC;
+
+					vCollectedALD.xyz += length(vC.xyz)*r.direction;
+					vCollectedALD.w += length(vC.xyz);
+				}
+
+				if (bSolid)
+					vCollectedLight /= nSampleNum;
+				else
+					vCollectedLight /= nSampleNum;///2;
+
+				vCollectedALD /= nSampleNum;
+			}
+
+			// desaturate
+			vCollectedLight.xyz = lerp((vCollectedLight.x + vCollectedLight.y + vCollectedLight.z) / 3, vCollectedLight.xyz, SvoParamsInject.z);
+
+			RWTexture3D<uint> UAV_Albedo = UAV_0;
+			RWTexture3D<uint> UAV_Direct = UAV_1;
+			RWTexture3D<uint> UAV_Popag1 = UAV_2;
+			RWTexture3D<uint> UAV_Popag2 = UAV_3;
+			RWTexture3D<uint> UAV_Out = UAV_5;
+			RWTexture3D<uint> UAV_OutDir = UAV_6;
+			RWTexture3D<uint> UAV_DYNL = UAV_7;
+
+			float4 vAlbedo = UINT_TO_FlOAT4(UAV_Albedo[coord]);
+			if (!bSolid)
+				vAlbedo = VOX_AIR_ALBEDO_COLOR;
+
+#if %_RT_SAMPLE3
+			//			vCollectedLight *= SvoParamsInject.y;
+#else
+			vCollectedLight *= vAlbedo.xyz;// * SvoParamsInject.y;
+#endif
+
+			vCollectedLight.xyz = pow(vCollectedLight.xyz, SvoParamsInject.y); // helps to propagate bounces furter
+
+			if ((nPassId == 0) && (nPassesNum == 1))
+			{ // single propagation pass
+#if %_RT_SAMPLE3
+				pixel.xyz = vCollectedLight.xyz;
+#else
+				pixel.xyz = (pixel.xyz + vCollectedLight);
+#endif
+			}
+			else if ((nPassId == 0) && (nPassesNum == 2))
+			{ // first of two passes
+				pixel.xyz = vCollectedLight;
+			}
+			else if ((nPassId == 1) && (nPassesNum == 2))
+			{ // second of two passes
+				pixel.xyz = (pixel.xyz + vCollectedLight);
+
+#if %_RT_SAMPLE3
+				pixel.xyz = pixel.xyz;
+#else
+				pixel.xyz = (pixel.xyz + DecodeHDR(UINT_TO_FlOAT4(UAV_Direct[coord])));
+#endif
+			}
+
+			pixel = EncodeHDR(pixel);
+
+			UAV_Out[coord] = FlOAT4_TO_UINT(pixel);
+			UAV_DYNL[coord] = FlOAT4_TO_UINT(pixel);
+
+#if %_RT_SAMPLE3
+			{
+				vCollectedALD.xyz = vCollectedALD.xyz*.75 + .5;
+				UAV_OutDir[coord] = FlOAT4_TO_UINT(vCollectedALD);
+
+				for (int x = -1; x <= 1; x++) for (int y = -1; y <= 1; y++) for (int z = -1; z <= 1; z++)
+				{
+					int3 coord_n = coord + int3(x, y, z);
+					if (coord_n.x <= coord1.x && coord_n.y <= coord1.y && coord_n.z <= coord1.z)
+						if (coord_n.x >= coord0.x && coord_n.y >= coord0.y && coord_n.z >= coord0.z)
+						{
+							float4 vOldRGB = UINT_TO_FlOAT4(UAV_Out[coord_n]);
+							float4 vOldALD = UINT_TO_FlOAT4(UAV_OutDir[coord_n]);
+
+							float4 pixel_N = tex3Dlod(brickPool_Rgbs, float4(1.f / VOX_TEX_POOL_DIM * coord_n.xyz + 0.5f / VOX_TEX_POOL_DIM, 0));
+
+							if (vCollectedALD.w > vOldALD.w && pixel_N.w == 0)
+							{
+								UAV_Out[coord_n] = FlOAT4_TO_UINT(pixel);
+								UAV_OutDir[coord_n] = FlOAT4_TO_UINT(vCollectedALD);
+							}
+						}
+				}
+			}
+#endif
+		}
+	}
+}
+
+#ifdef SVO_LMAPS
+
+vert2FragGeneral VoxelRayTraceVS_GS(app2vertGeneral IN)
+{
+	vert2FragGeneral OUT = (vert2FragGeneral)0;
+
+	streamPos vertPassPos = (streamPos)0;
+
+	OUT.vView.xyz = g_VS_WorldViewPos.xyz;
+	OUT.vView.w = IN.vertCommon.baseTC.x;
+
+	OUT.HPosition.xyz = IN.vertCommon.Position.xyz;
+	OUT.HPosition.w = 1.0f;
+
+	OUT.screenProj.x = IN.vertCommon.baseTC.x;
+	OUT.screenProj.y = 1 - IN.vertCommon.baseTC.y;
+
+	float fNodeSize = IN.vertCommon.baseTC.y;
+	OUT.baseTC.x = IN.vertCommon.Color.r*fNodeSize;
+	OUT.baseTC.y = IN.vertCommon.Color.g*fNodeSize;
+	OUT.baseTC.z = IN.vertCommon.Color.b*fNodeSize;
+	OUT.baseTC.w = IN.vertCommon.Color.a;
+
+	return OUT;
+}
+
+[maxvertexcount((2 + 4 * 2) + 4 * 2)]
+void BoxGenGS_GS(point vert2FragGeneral InPos[1], inout TriangleStream<vtxOutWPOS> SpriteStream)
+{
+	vtxOutWPOS OUT = (vtxOutWPOS)0;
+
+#if !%_RT_SAMPLE3
+	if (SVO_PassId_VS.x == 0 && InPos[0].baseTC.w < SVO_PassId_VS.w) // skip non opac bricks for layer 0
+		return;
+#endif
+
+	float4 vWorldPos;
+	vWorldPos.xyz = InPos[0].HPosition.xyz;// -g_VS_WorldViewPos.xyz;
+	vWorldPos.w = 1.0f;
+
+	OUT.baseTC.w = 1.0f;
+
+	OUT.CamVec.w = InPos[0].vView.w;
+
+	float3 vBoxSize = InPos[0].baseTC.xyz;
+
+	for (int v = 0; v < 18; v++)
+	{
+		OUT.HPosition = vWorldPos;
+
+		OUT.HPosition.xyz += box_expansion[v] * vBoxSize;
+
+		OUT.CamVec.xyz = OUT.HPosition.xyz - g_VS_WorldViewPos.xyz;
+
+		OUT.baseTC = OUT.HPosition; // box vertex pos WS
+
+		OUT.HPosition = mul(g_VS_ViewProjMatr, OUT.HPosition); // transform into screen space
+
+		//OUT.baseTC.xy = (OUT.HPosition.xy / OUT.HPosition.w / 2 + .5);
+
+		if (v == 10 || v == 14)
+			SpriteStream.RestartStrip();
+
+		SpriteStream.Append(OUT);
+	}
+
+	SpriteStream.RestartStrip();
+}
+
+#endif // SVO_LMAPS
+
+pixoutMRT UpScalePS(vtxOutWPOS IN)
+{
+	pixoutMRT OUT = (pixoutMRT)0;
+
+	const float fDepthRange = .12;
+	const float fDotMax = .35;
+	const float fDepthC = GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
+	float fTransmittanceY = 0;
+	const float3 vNor0 = normalize(GetWorldSpaceNormals(IN.baseTC.xy, fTransmittanceY, normalize(IN.CamVec)).xyz);
+
+	float3 vFocus = IsDiffuseMode() ? vNor0 : reflect(normalize(IN.CamVec), vNor0);
+
+	float4 vRGB = 0;
+	float4 vALD = 0;
+	float fAverSmoothness = 0;
+	for (int x = -1; x <= 1; x += 2) for (int y = -1; y <= 1; y += 2)
+	{
+		const float2 tc1 = IN.baseTC.xy + float2(x, y) * SVO_SrcPixSize.xy / 2;
+		const float4 tc = float4(tc1 + 0.5f / PS_ScreenSize.xy, 0, 0);
+
+		const float4 vSampleDiff_RGB_Min = tex2Dlod(sceneRgbSamplerMin, tc);
+		const float4 vSampleDiff_ALD_Min = tex2Dlod(sceneAldSamplerMin, tc);
+		const float4 vSampleDiff_RGB_Max = tex2Dlod(sceneRgbSamplerMax, tc);
+		const float4 vSampleDiff_ALD_Max = tex2Dlod(sceneAldSamplerMax, tc);
+
+		const float fDepthMin = vSampleDiff_RGB_Min.w;
+		const float fDepthMax = vSampleDiff_RGB_Max.w;
+
+		float fLerp = saturate((fDepthC - fDepthMin) / max(fDepthMax - fDepthMin, 0.0001f));
+
+		float4 vSampleDiff_RGB = lerp(vSampleDiff_RGB_Min, vSampleDiff_RGB_Max, fLerp);
+		float4 vSampleDiff_ALD = lerp(vSampleDiff_ALD_Min, vSampleDiff_ALD_Max, fLerp);
+
+		const float fDepth1 = vSampleDiff_RGB.w;
+		const float3 vNorm = vSampleDiff_ALD;
+
+		float fDotTest = lerp(.25, saturate(fTransmittanceY * 4 + dot(normalize(vNorm), vFocus) - fDotMax), saturate(length(vNorm) / max(0.0001, vSampleDiff_ALD.w) * 8.f)) + .001;
+
+		float fDepTest = saturate((fDepthRange - abs(1.f - fDepthC / fDepth1)) * 4) + .001;
+
+		const float fW = fDepTest * fDotTest;
+
+		vRGB.xyz += vSampleDiff_RGB.xyz*fW;
+		vALD += vSampleDiff_ALD*fW;
+		MaterialAttribsCommon gbuffer = DecodeGBufferChannels(tc1);
+		fAverSmoothness += gbuffer.Smoothness*fW;
+		vRGB.w += fW;
+	}
+
+	if (vRGB.w)
+	{
+		vRGB.xyz /= vRGB.w;
+		vALD /= vRGB.w;
+		fAverSmoothness /= vRGB.w;
+	}
+
+	// copmute lighting
+	float fDirIntens = max(0, length(vALD.xyz)) * saturate(1 - fTransmittanceY);
+
+	MaterialAttribsCommon gbuffer = DecodeGBufferChannels(IN.baseTC.xy);
+	half power = IsDiffuseMode() ? 1.f : exp2(12.h * gbuffer.Smoothness + 0.5h);
+
+	float3 vH = IsDiffuseMode() ? normalize(vALD.xyz) : normalize(-normalize(IN.CamVec) + normalize(vALD.xyz));
+
+	float NdotH = dot(vNor0, vH);
+	float fIntensity = fDirIntens*pow(saturate(NdotH), power) + max(0, vALD.w - fDirIntens);
+
+	if (IsDiffuseMode())
+	{
+		OUT.Diffuse.xyz = vRGB * fIntensity;
+	}
+	else
+	{
+		float so = gbuffer.Smoothness;
+		// Fresnel smoothness
+		gbuffer.Smoothness = lerp(gbuffer.Smoothness, 1, pow(1 - dot(-normalize(IN.CamVec), vNor0), 2));
+
+		//OUT.Diffuse.xyz = vRGB * vALD.w;
+
+		OUT.Diffuse.xyz = lerp(vRGB * fIntensity, vRGB * vALD.w, pow(gbuffer.Smoothness, 2));
+
+		float4 vFinalDiffuse = tex2Dlod(SVO_DiffuseFinRT, float4(IN.baseTC.xy, 0, 0));
+
+		OUT.Diffuse = lerp(vFinalDiffuse, OUT.Diffuse, saturate(pow(gbuffer.Smoothness * 2 - .75, 1)));
+
+		// Fresnel amplify
+		OUT.Diffuse.xyz *= 1 + pow(saturate(1 - so), 4) * pow(saturate(1 - dot(-normalize(IN.CamVec), vNor0)), 7) * 2;
+
+		OUT.Diffuse.a = 1;
+	}
+
+#if !%_RT_SAMPLE5
+	if (IsDiffuseMode())
+		OUT.Diffuse.xyz += max(0, SvoParamsCommon.z * vSkyColorTop.z);
+	else
+		OUT.Diffuse.xyz += max(0, -SvoParamsCommon.z * vSkyColorTop.z) * 0.15f;
+#endif
+
+	OUT.Diffuse.w = fDepthC;
+
+	float3 vReprojTC = Reproject(IN.baseTC.xy, fDepthC, SVO_ReprojectionMatrix);
+
+	float4 valPrev = tex2Dlod(sceneFinOutPrev, float4(vReprojTC.xy, 0, 0));
+
+	float fOut = vReprojTC.x < 0 || vReprojTC.x > 1 || vReprojTC.y < 0 || vReprojTC.y > 1;
+
+	float fMinBlend = GetBlendMin(vReprojTC.xy - IN.baseTC.xy, 1, fAverSmoothness, fDepthC);
+
+	float fBlend = saturate(fOut + fMinBlend + abs(1 - fDepthC / valPrev.w) * 16);
+
+	// detect high contrast difference
+	float fDiff = dot(abs(1.f - OUT.Diffuse.xyz / valPrev.xyz), half3( 0.33f, 0.33f, 0.33f ));
+	if(fDiff > 0.5f)
+		fBlend = 1.f;
+
+	OUT.Diffuse = clamp(lerp(valPrev, OUT.Diffuse, fBlend), 0, 8);
+
+	return OUT;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Rendering techniques
+
+technique SvoDebugDraw
+{
+	pass p0
+	{
+		VertexShader = VoxelRayTraceVS() GeneralVS;
+		PixelShader = SvoDebugDrawPS() GeneralPS;
+		CullMode = None;
+	}
+}
+
+technique ConeTracePass
+	{
+		pass p0
+		{
+			VertexShader = RenderLightingCommonVS();
+			PixelShader = ConeTracePS();
+			CullMode = None;
+		}
+	}
+
+#ifdef SVO_LMAPS
+
+	technique ConeTracePS_NID
+		{
+			pass p0
+			{
+				VertexShader = VoxelRayTraceVS_GS();
+				GeometryShader = BoxGenGS_GS();
+				PixelShader = ConeTracePS_NID_GS();
+
+				ZEnable = true;
+				ZWriteEnable = true;
+				CullMode = Front;
+			}
+		}
+
+#endif
+
+		technique RenderAtmosphere
+			{
+				pass p0
+				{
+					VertexShader = RenderLightingCommonVS();
+					PixelShader = RenderAtmospherePS();
+					CullMode = None;
+				}
+			}
+
+			technique DemosaicPass
+				{
+					pass p0
+					{
+						VertexShader = RenderLightingCommonVS();
+						PixelShader = DemosaicPS();
+						CullMode = None;
+					}
+				}
+
+				technique UpScalePass
+					{
+						pass p0
+						{
+							VertexShader = RenderLightingCommonVS();
+							PixelShader = UpScalePS();
+							CullMode = None;
+						}
+					}
+
+					/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+					// Compute techniques
+
+					technique
+					ComputeClearBricks{ pass p0{ ComputeShader =
+					ComputeClearBricks(); } }
+
+					technique
+					ComputeInjectAtmosphere{ pass p0{ ComputeShader =
+					ComputeInjectAtmosphere(); } }
+
+					technique
+					ComputeDirectStaticLighting{ pass p0{ ComputeShader =
+					ComputeDirectStaticLighting(); } }
+
+					technique
+					ComputeDirectDynamicLighting{ pass p0{ ComputeShader =
+					ComputeDirectDynamicLighting(); } }
+
+					technique
+					ComputePropagateLighting{ pass p0{ ComputeShader =
+					ComputePropagateLighting(); } }
+
+#endif // FEATURE_SVO_GI

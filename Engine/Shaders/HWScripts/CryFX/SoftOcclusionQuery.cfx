@@ -1,0 +1,123 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "ShadeLib.cfi"
+
+float Script : STANDARDSGLOBAL
+<
+string Script =
+	"NoPreview;"
+	"LocalConstants;"
+	"ShaderDrawType = Custom;"
+	"ShaderType = FX;"
+>;
+
+struct VS_IN
+{
+	float3 pos : POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+struct VS_OUT
+{
+	float4 hpos : POSITION;
+	float3 uvz : TEXCOORD0;
+};
+
+VS_OUT quadVS( VS_IN IN )
+{
+	VS_OUT OUT;
+	OUT.hpos = float4(IN.pos.xy,0,1);
+	OUT.uvz = float3(IN.uv, (IN.pos.z));
+	return OUT;
+}
+
+sampler2D depthMap : register(s0);
+float4 renderOccPlanePS( VS_OUT IN ) : COLOR
+{
+	float depth = GetUnnormalizedLinearDownscaledDepth(depthMap, IN.uvz.xy);
+
+	float4 ret;
+	ret.x = saturate(sign(depth-IN.uvz.z));
+	return ret.xxxx;
+}
+
+float4 occlusionNormalizedSize;
+
+sampler2D occMap : register(s0);
+float4 gatherResultPS( VS_OUT IN ) : COLOR
+{
+	half4 result = half4(0,0,0,0);
+	#define occResult result.r
+	#define dirResult result.a
+
+	half2 dirResultVec = 0;
+	half3 delta = half3( -0.25*occlusionNormalizedSize.x, 0.25*occlusionNormalizedSize.y, 0 );
+	half3 direction = half3( -0.5, 0.5, 0 );
+
+	half texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.zz) ).r;
+	occResult = texel;
+
+	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.xz) ).r; // Left
+	occResult += texel;
+	dirResultVec += texel * normalize(delta.xz*2-1);
+
+	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.zx) ).r; // Up
+	occResult += texel;
+	dirResultVec += texel * normalize(direction.zx);
+
+	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.zy) ).r; // Bottom
+	occResult += texel;
+	dirResultVec += texel * normalize(direction.zy);
+
+	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.yz) ).r; // Right
+	occResult += texel;
+	dirResultVec += texel * normalize(direction.yz);
+
+	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.xx) ).r; // Left,Up
+	occResult += texel;
+	dirResultVec += texel * normalize(direction.xx);
+
+	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.yx) ).r; // Right,Up
+	occResult += texel;
+	dirResultVec += texel * normalize(direction.yx);
+
+	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.yy) ).r; // Right,Bottom
+	occResult += texel;
+	dirResultVec += texel * normalize(direction.yy);
+
+	texel = tex2D( occMap, ClampScreenTC(IN.uvz.xy + delta.xy) ).r; // Left,Bottom
+	occResult += texel;
+	dirResultVec += texel * normalize(direction.xy);
+
+	occResult /= 9;
+	dirResultVec = normalize(dirResultVec);
+
+	// Instead of using a range from (-1/2)PI to (1/2)PI here is using a range from (1/2)PI to (3/2)PI.
+	const half kPI = 3.1415927;
+	dirResult = (atan2( -dirResultVec.y, -dirResultVec.x )+kPI)/(kPI*2);
+
+	return result;
+}
+
+technique Main
+{
+	pass p0
+	{
+		VertexShader = quadVS();
+		PixelShader = renderOccPlanePS();
+
+		ZEnable = false;
+	    ZWriteEnable = false;
+	}
+
+	pass p1
+	{
+		VertexShader = quadVS();
+		PixelShader = gatherResultPS();
+
+		ZEnable = false;
+	    ZWriteEnable = false;
+	}
+}

@@ -1,0 +1,131 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2004.
+// -------------------------------------------------------------------------
+//  File name:   Vegetation.ext
+//  Version:     v1.00
+//  Created:     20/01/2005 by Tiago Sousa
+//  Compilers:   
+//  Description: Vegetation extension used by the editor
+//               for automatic shader generation (based on "Vegetation" shader template)
+//
+//  Notes: The mask value should be changed and ordered properly, else when
+// adding new ones they will be active by default if there is one after active
+//
+// -------------------------------------------------------------------------
+//  History:
+//
+////////////////////////////////////////////////////////////////////////////
+
+Version (1.00)
+
+UsesCommonGlobalFlags
+
+Property
+{
+  Name = %NORMAL_MAP
+  Mask = 0x1
+  Property    (Normal map)
+  Description (Use normal-map texture)
+  DependencySet = $TEX_Normals
+  DependencyReset = $TEX_Normals
+  Hidden
+}
+
+Property
+{
+  Name = %SPECULAR_MAP
+  Mask = 0x10
+  Property    (Specular map)
+  Description (Use specular map as separate texture)
+  DependencySet = $TEX_Specular
+  DependencyReset = $TEX_Specular
+  Hidden
+}
+
+Property
+{
+  Name = %LEAVES
+  Mask = 0x100
+  Property    (Leaves)
+  Description (Activate for leaves only ! Use leaf shading and leaves animation)
+}
+
+Property
+{
+  Name = %GRASS
+  Mask = 0x2000         
+  Property    (Grass)
+  Description (Activate for grass only ! Use simple grass rendering)
+}
+
+Property
+{
+  Name = %DETAIL_BENDING
+  Mask = 0x10000
+  Property    (Detail bending)
+  Description (Activate for leaves and grass only. Make sure to paint required vertex colors also)
+}
+
+Property
+{
+  Name = %DETAIL_MAPPING
+  Mask = 0x20000
+  Property    (Detail mapping)
+  Description (Use detail mapping)
+  DependencyReset = $TEX_Detail
+}
+
+Property
+{
+  Name = %BLENDLAYER
+  Mask = 0x80000
+  Property    (Blendlayer)
+  Description (Normal-mapped diffuse layer blended on top of base material)
+}
+
+Property
+{
+  Name = %VERTCOLORS
+  Mask = 0x100000
+  DependencySet = $UserEnabled
+  Hidden
+}
+
+Property
+{
+  Name = %TEMP_VEGETATION
+  Mask = 0x8000000
+  DependencySet = $UserEnabled
+  Hidden
+}
+
+#ifdef FEATURE_MESH_TESSELLATION
+Property
+{
+  Name = %DISPLACEMENT_MAPPING
+  Mask = 0x10000000
+  Property    (Displacement mapping)
+  Description (Use displacement mapping (requires height map (_displ)))
+  //DependencySet = $TEX_Height
+  DependencyReset = $TEX_Normals
+}
+
+Property
+{
+  Name = %PHONG_TESSELLATION
+  Mask = 0x20000000
+  Property    (Phong tessellation)
+  Description (Use rough approximation of smooth surface subdivision)
+}
+
+Property
+{
+  Name = %PN_TESSELLATION
+  Mask = 0x40000000
+  Property    (PN triangles tessellation)
+  Description (Use rough approximation of smooth surface subdivision)
+}
+#endif

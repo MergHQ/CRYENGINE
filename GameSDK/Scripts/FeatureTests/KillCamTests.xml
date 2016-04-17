@@ -1,0 +1,112 @@
+<FeatureTester>
+	<Settings>
+		<AlwaysFailWhenHit checkpointName="GameRules_OnEndGame" />
+	</Settings>
+
+	<Tests setName="utils">
+		<FeatureTest name="UtilSpawnBothPlayers" require="localPlayerExists">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_SvDoNotReviveTooSoonAfterDeath" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_SvPerformRevive" />
+			<TrySpawnPlayer who="localPlayer" />
+			<TrySpawnPlayer who="firstRemotePlayer" />
+			<WaitUntilPlayerIsAlive who="localPlayer|firstRemotePlayer" />
+			<WaitSingleFrame />
+		</FeatureTest>
+
+		<FeatureTest name="UtilLocalCrouch">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerMovement_LocalPlayerStopCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerStartCrouch" />
+			<OverrideButtonInput_Press inputName="crouch" />
+			<Wait duration="0.0" />
+		</FeatureTest>
+
+		<FeatureTest name="UtilWaitUntilFacingOtherPlayer">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_LocalPlayerNowTargettingNobody" />
+			<WaitUntilPlayerAimingAt targetType="enemy" who="localPlayer" />
+			<Wait duration="1.5" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="runOnClient">
+		<FeatureTest name="TryConnect" description="Keep trying to connect until it works" require="noLevelLoaded" enabled="true" owners="markf;martinsh">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Net_ConnectFailed" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Net_ChannelDestroyed" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Init" />
+			<DoConsoleCommand command="connect" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="45" />
+		</FeatureTest>
+
+		<FeatureTest name="ClientHasBothPlayersJoined" description="Check that both players join the game" require="remotePlayerExists|localPlayerExists" maxTime="120" enabled="true" owners="markf;martinsh" prerequisite="TryConnect">
+		</FeatureTest>
+
+		<FeatureTest name="ClientHasBothPlayersSpawned" description="Check that both players get created" enabled="true" owners="markf;martinsh" prerequisite="ClientHasBothPlayersJoined">
+			<WaitUntilPlayerIsAlive who="localPlayer|firstRemotePlayer" />
+		</FeatureTest>
+
+		<FeatureTest name="ClientToldLocalPlayerKilled" description="Server kills client" enabled="true" owners="martinsh" prerequisite="ClientHasBothPlayersSpawned">
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="CRecordingSystem_StartPlayback" customMessage="Started kill-cam playback before dying!" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerDied" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="45" />
+		</FeatureTest>
+
+		<FeatureTest name="KillCamStarted" description="Check that the kill cam replay started" enabled="true" owners="martinsh" prerequisite="ClientToldLocalPlayerKilled">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="CRecordingSystem_StartPlayback" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="45" />
+		</FeatureTest>
+
+		<FeatureTest name="ReplayShoot" description="Check that the replay shooting has worked as expected" enabled="true" owners="martinsh" prerequisite="KillCamStarted">
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="CRecordingSystem_StopPlayback" customMessage="Ended kill-cam playback without a shot having been fired" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_ReplayShoot" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="45" />
+		</FeatureTest>
+
+		<FeatureTest name="KillCamEnded" description="Check that the kill cam replay has ended" require="localPlayerExists" enabled="true" owners="martinsh" prerequisite="ReplayShoot">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="CRecordingSystem_StopPlayback" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="45" />
+		</FeatureTest>
+		
+		<FeatureTest name="ClientRespawnsOnClient" description="Check the client comes back" enabled="true" owners="martinsh" prerequisite="KillCamEnded">
+			<WaitUntilPlayerIsAlive who="localPlayer|firstRemotePlayer" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="runOnServer">
+		<FeatureTest name="ServerHasLocalPlayer" description="Setup" require="localPlayerExists" enabled="true" maxTime="90" owners="markf;martinsh">
+		</FeatureTest>
+
+		<FeatureTest name="ServerHasBothPlayers" description="Setup" require="localPlayerExists|remotePlayerExists" enabled="true" maxTime="120" owners="markf;martinsh" prerequisite="ServerHasLocalPlayer" >
+		</FeatureTest>
+
+		<FeatureTest name="ShootTestSetup" description="Get players into position" enabled="true" maxTime="90" owners="markf;martinsh" prerequisite="ServerHasBothPlayers" >
+			<DoConsoleCommand command="g_minTeamLimit 10" />
+			<RunFeatureTest testName="UtilSpawnBothPlayers" />
+			<Wait duration="15" />
+			<Switch>
+				<Case level="Wars/cw2_pier">
+					<DoConsoleCommand command="playerGoto 284 342 155 0 0 180" />
+					<DoConsoleCommand command="sv_moveClientsTo 284 338 155 0 0 0" />
+				</Case>
+				<Default>
+					<DoConsoleCommand command="playerGoto 1800 500 268 0 0 0" />
+					<DoConsoleCommand command="sv_moveClientsTo 1800 504 268 0 0 180" />
+				</Default>
+			</Switch>
+			<RunFeatureTest testName="UtilLocalCrouch" />
+			<RunFeatureTest testName="UtilWaitUntilFacingOtherPlayer" />
+			<Wait duration="5" />
+		</FeatureTest>
+
+		<FeatureTest name="ShootKillOtherPlayer" description="Local player guns down remote player" enabled="true" owners="alexh;martinsh" prerequisite="ShootTestSetup">
+			<!-- Relies on local player facing remote player... which will be the case if run straight after 'ShootTestSetup' (above) -->
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_Shoot" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<SetResponseToHittingCCCPoint response="completeTest" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<Wait duration="5" />
+		</FeatureTest>
+		
+		<FeatureTest name="ClientRespawnsOnServer" description="Check the client comes back" enabled="true" owners="martinsh" maxTime="120" prerequisite="ShootKillOtherPlayer">
+			<WaitUntilPlayerIsAlive who="localPlayer|firstRemotePlayer" />
+		</FeatureTest>
+	</Tests>
+</FeatureTester>

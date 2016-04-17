@@ -1,0 +1,75 @@
+<loadouts>
+	<!-- WEAPONS IN ORDER OF UNLOCK FOR SIMPLICITY ON UI SCREENS-->
+	<!-- 0:Secondary, 1:SubMachineGuns 2:Assault Rifles, 3:Sniper Rifles, 4:Shotguns, 4:Heavy -->
+	<Weapon>
+		<item name="Rifle" >
+			<Name value="@mp_eRifle" /> <!-- Localization string for display in-game -->
+			<TypeName value="@ui_lo_type_assault_rifle" /> <!-- Localization string for display in-game -->
+			<Description value="@ui_lo_rifle_desc" /> <!-- Localization string for display in-game -->
+			<Subcategory value="2" /> <!-- See available categories above -->
+			<AllowedPackageGroups value="SDK" /> <!-- Groups are defined in EquipmentLoadoutPackages.xml... Use '|' as a delimiter, example "SDK|MyKit2|Mykit3" -->
+		</item>
+
+		<item name="Pistol">
+			<Name value="@mp_ePistol" />
+			<TypeName value="@ui_lo_type_secondary" />
+			<Description value="@ui_lo_pistol_desc" />
+			<Subcategory value="0" />
+			<AllowedPackageGroups value="SDK" />
+		</item>
+
+		<item name="Shotgun">
+			<Name value="@mp_eShotgun" />
+			<TypeName value="@ui_lo_type_shotgun" />
+			<Description value="@ui_lo_shotgun_desc" />
+			<Subcategory value="4" />
+			<AllowedPackageGroups value="SDK" />
+		</item>
+	</Weapon>
+
+	<!-- EXPLOSIVES -->
+	<Explosive>
+		<item name="RocketLauncher">
+			<Name value="@mp_eRocketLauncher" />
+			<TypeName value="@ui_lo_type_expl" />
+			<Description value="@ui_lo_rocketlauncher_desc" />
+			<AllowedPackageGroups value="SDK" />
+		</item>
+
+		<item name="FragGrenades">
+			<Name value="@mp_eFragGrenades" />
+			<TypeName value="@ui_lo_type_expl" />
+			<Description value="@ui_lo_grenades_desc" />
+			<AllowedPackageGroups value="SDK" />
+		</item>
+
+		<item name="SmokeGrenades">
+			<Name value="@mp_eSmokeGrenades" />
+			<TypeName value="@ui_lo_type_expl" />
+			<Description value="@ui_lo_smokegrenades_desc" />
+			<AllowedPackageGroups value="SDK" />
+		</item>
+	</Explosive>
+
+	<!-- ATTACHMENTS -->
+	<!-- 0:Scopes, 1:Barrel 2:Under-Barrel, (3:Weapon Skins *special case, don't use here*) -->
+
+	<Attachment>
+		<item name="IronsightRifle" >
+			<Name value="@mp_IronsightRifle" />
+			<Description value="@ui_lo_att_ironsightrifle_desc" />
+			<Subcategory value="0" />
+			<AllowedPackageGroups value="SDK" />
+		</item>
+	</Attachment>
+
+	<Attachment>
+		<item name="Flashlight" >
+			<Name value="@mp_eFlashlight" />
+			<Description value="@ui_lo_att_flashlight_desc" />
+			<Subcategory value="2" />
+			<AllowedPackageGroups value="SDK" />
+		</item>
+	</Attachment>
+
+</loadouts>

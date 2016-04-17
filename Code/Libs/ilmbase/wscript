@@ -1,0 +1,54 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+	# Paths to include
+	ilm_includes = [
+		Path('Code/SDKs/ilmbase/Half'),
+		Path('Code/SDKs/ilmbase/Iex'),
+		Path('Code/SDKs/ilmbase/IexMath'),
+		Path('Code/SDKs/ilmbase/Imath'),
+		Path('Code/SDKs/ilmbase/config.windows'),
+	]
+
+	# ILM library
+	bld.CryEngineStaticModule( 
+		target    = 'ilmbase', 
+		vs_filter = 'Libs',
+		file_list = 'ilmbase.waf_files',
+		exclude_from_static_code_analyzer = True,
+
+		includes  = ilm_includes,
+		
+		defines   = [
+			'NOMINMAX', # No min/max macro (from Windows.h)
+		],
+
+		cxxflags  = [
+			'/GR', '/EHsc', # Enable exceptions
+			'/W0', # Disable warnings in 3rdParty code
+		],
+
+		module_provides = dict(
+			includes = ilm_includes
+		),
+	)
+
+	# Tool to create toFloat.h
+	bld.CryConsoleApplication(
+		target    = 'toFloat',
+		vs_filter = 'Tools/ilm',
+		file_list = 'toFloat.waf_files',
+		exclude_from_static_code_analyzer = True,
+		defines   = [ '_HAS_EXCEPTIONS=0' ],
+		cxxflags  = [ '/MT', '/W0' ],
+	)
+
+	# Tool to create eLut.h
+	bld.CryConsoleApplication(
+		target    = 'eLut',
+		vs_filter = 'Tools/ilm',
+		file_list = 'eLut.waf_files',
+		exclude_from_static_code_analyzer = True,
+		defines   = [ '_HAS_EXCEPTIONS=0' ],
+		cxxflags  = [ '/MT', '/W0' ],
+	)

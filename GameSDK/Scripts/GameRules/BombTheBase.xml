@@ -1,0 +1,74 @@
+<Mode name='BombTheBase'>
+
+	<Spawning class='MPRSSpawning' teamGame='1' teamSpawnsType='Standard' usingLua='0' />
+
+	<Scoring class='StandardScoring'>
+		<Player>
+      <Event type='PlayerKill'        points='50' />
+      <Event type='PlayerTeamKill'    points='-50' />
+      <Event type='Suicide'           points='-20' />
+      <Event type='PlayerKillAssist'  points='20' />
+      <Event type='CarryObjectiveCompleted' points='150' />
+      <Event type='CarryObjectiveDefended' points='100' />														<!-- ?sc --> 							 <!--				FLAG_DEFENDED - Killing an enemy within defined radius of allied base while the ally flag is there - in addition to Kill score. -->
+      <Event type='CarryObjectiveTaken' points='20'  />								     <!-- NID! --> <!--       FLAG_TAKEN - Flag taken from base. -->
+      <!--TODO<Event type='carryObjCarrierProtected' points='100' /> --> 												<!-- ?sc -->							 <!-- TODO: FLAG_CARRIER_PROTECTED - Killing an enemy who had damaged the flag carrier within ~10 secs before the kill - in addition to Kill score. -->
+      <Event type='CarryObjectiveCarrierKilled' points='100' />															<!-- ?sc --> <!-- NID! --> <!--       FLAG_CARRIER_KILLED - Extra points for killing the flag carrier. -->
+    </Player>
+    <Team>
+      <Event type='BombTheBaseCompleted' points='1' />
+		</Team>
+	</Scoring>
+
+	<ScoreRewards enabled='1' />
+
+	<AssistScoring class='AssistScoring' maxTimeBetweenAttackAndKillForAssist='7000' maxAssistScore='99' assistScoreMultiplier='0.5' />
+
+	<PlayerStats class='StandardPlayerStats' />
+	<StatsRecording class='StandardStatsRecording' />
+
+	<Teams class='StandardTwoTeams' />
+
+	<State class='StandardState' />
+	
+	<VictoryConditions class='StandardVictoryConditionsTeam' />
+
+	<PlayerSetup class='StandardSetup' />
+
+	<DamageHandling class='MPDamageHandling'>
+		<Table path='Scripts/GameRules/MPDamageTable.xml' />
+	</DamageHandling>
+
+	<ActorAction class='MPActorAction' />
+
+	<Spectator class='MPSpectator' eatsActorActions='1' enableFree='0' enableFollow='1' enableKiller='1' timeFromDeathTillAutoSpectate='5000' />
+
+	<!-- TODO: Set objective icons using strings (so we don't need a horrible enum) -->
+	<!-- TODO: Add in specific icons for BombTheBase -->
+	<Objectives class='ProgressiveObjectives' teamBased='1'>
+		<Stage>
+			<!--
+			<Objective type='SimpleEntityBased'>
+				<Entity class='BTBBomb' select='All' scan='1' />
+				<Entity class='BTBBombSite' select='All' />
+				<Implementation type='Carry' removeOnCompletion='1' invertTargets='1' deployTime='5'>
+					<BaseIcons friendly='EGRMO_EXT_ExtractionPoint_blue' hostile='EGRMO_EXT_ExtractionPoint_red' />
+				</Implementation>
+			</Objective>
+			-->
+			<Objective type='Helper_NeutralSpawn' spawn='BTBBomb' spawnAt='BTBBombBase' maxAtOnce='1'>
+				<Offset x='0.0' y='0.0' z='0.5' />
+				<!--			<Rotation x='0.0' y='0.0' z='1.570796' />	-->
+				<Reset onRemoved='1' onRemovedTime='5' />
+			</Objective>
+			<Objective type='Helper_Carry' class='BTBBomb'>
+				<Pickup type='Item' />
+				<DroppedIcons neutral='EGRMO_PSL_CapturePoint_neutral' friendly='EGRMO_EXT_Weapon_blue' hostile='EGRMO_EXT_Weapon_red' />
+				<CarriedIcons friendly='EGRMO_EXT_Weapon_carried_blue' hostile='EGRMO_EXT_Weapon_carried_red' />
+				<Strings friendlyPickedUp='ui_msg_btb_pickedup_0' hostilePickedUp='ui_msg_btb_pickedup_1' friendlyDropped='ui_msg_btb_dropped_0' hostileDropped='ui_msg_btb_dropped_1' />
+			</Objective>
+			<Objective type='Helper_Icon' class='BTBBombSite' friendlyIcon='28' hostileIcon='29' />
+		</Stage>
+	</Objectives>
+
+</Mode>
+

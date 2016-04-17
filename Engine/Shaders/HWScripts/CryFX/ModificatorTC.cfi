@@ -1,0 +1,77 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+
+//===========================================================================
+// Texture modificators general support (used in SandBox editor)
+// Handle texture coordinates generating/modification
+
+float4x4 _ModelView      : PB_View;
+float4x4 _ModelView_IT   : PB_View_IT;
+
+// Texture slots
+#define TS_DIFFUSE  0
+
+// Texture gen types
+#define TCG_OBJECT  1
+
+// Note: when removing slots from renderer side - plz make sure to update then here
+#define	EFTT_DIFFUSE           0
+#define EFTT_NORMAL            1
+#define EFTT_SPECULAR          2
+#define EFTT_ENV               3
+#define EFTT_DETAIL_OVERLAY    4
+#define EFTT_SMOOTHNESS        5
+#define EFTT_HEIGHT            6
+#define EFTT_DECAL_OVERLAY     7
+#define EFTT_SUBSURFACE        8
+#define EFTT_CUSTOM            9
+#define EFTT_CUSTOM_SECONDARY 10
+#define EFTT_OPACITY          11
+#define EFTT_TRANSLUCENCY     12
+#define EFTT_EMITTANCE        13
+
+// Texture modificators/generators matrices
+float4x4 _TCMMatrix      : PB_TCMMatrix[EFTT_DIFFUSE];
+float4x4 _TCMMatrixDecal : PB_TCMMatrix[EFTT_DECAL_OVERLAY]; 
+float4x4 _TCGMatrix   : PI_TCGMatrix;
+    
+float4 _TCModify(float4 inTC, out float4 outTC, float4 vPos, float3 vNorm, int nTSlot)
+{
+#if %_TT_TEXCOORD_GEN_OBJECT_LINEAR || %_TT_TEXCOORD_MATRIX
+  if (nTSlot == TS_DIFFUSE)
+  {  
+//#ifdef %_TT_TEXCOORD_GEN_OBJECT_LINEAR  // TODO: Remove when confirmed that not needed any more
+//    inTC = mul(_TCGMatrix, vPos);
+//#endif
+#if %_TT_TEXCOORD_MATRIX
+    inTC.xyzw = mul(inTC, CM_MatrixTCM);
+#endif
+  }
+#endif
+  
+  outTC.xyzw = inTC.xyzw;
+  
+  return inTC;
+}
+
+void _TCModifyDecal(in streamPos vertPassPos, out float4 outTC, out float3 outDistAtten )
+{
+	float4 vPosDecal = vertPassPos.Position;  
+	float3 vNorm = vertPassPos.ObjToTangentSpace[2];
+	outDistAtten = 1;
+
+#if %_RT_DECAL_TEXGEN_2D
+
+  // tex gen for 2d projected decals
+  outTC.x = dot( DecalTangent, vPosDecal );
+  outTC.y = dot( DecalBinormal, vPosDecal );  
+  outTC.zw = 0;  
+  
+  // attenuation for 2d projected decals
+  float3 DistAtten = vPosDecal.xyz - DecalAtten.xyz;
+  DistAtten = mul( vertPassPos.ObjToTangentSpace, DistAtten );          
+  outDistAtten = DistAtten / DecalAtten.w;   
+
+#endif  
+}

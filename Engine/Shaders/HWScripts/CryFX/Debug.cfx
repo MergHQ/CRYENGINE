@@ -1,0 +1,214 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "ShadeLib.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "ShaderDrawType = Custom;"
+>;
+
+/// Un-Tweakables //////////////////////
+float4x4 CompMatrix  : PI_Composite  < vsregister = c0; >; // View*Projection
+
+sampler2D baseMap : register(s0);
+sampler2D paletteMap : register(s1);
+sampler2D baseMapRG : register(s0);
+sampler2D baseMapBA : register(s1);
+
+struct app2vert
+{
+  IN_P
+  IN_TBASE
+	IN_C0
+};
+
+struct vert2frag
+{
+  float4 HPosition  : POSITION;
+  float2 baseTC     : TEXCOORD0;
+};
+
+vert2frag TransformCompVS(app2vert IN)
+{
+  vert2frag OUT = (vert2frag)0; 
+
+  // Position in screen space.
+  float4 vPos = IN.Position;
+  OUT.HPosition = mul(CompMatrix, vPos);
+  
+  OUT.baseTC.xy = IN.baseTC.xy;
+
+  return OUT;
+}
+
+vert2frag TransformVS(app2vert IN)
+{
+  vert2frag OUT = (vert2frag)0; 
+
+  // Position in screen space.
+  float4 vPos = IN.Position;
+  OUT.HPosition = mul(vpMatrix, vPos);
+  
+  OUT.baseTC.xy = IN.baseTC.xy;
+
+  return OUT;
+}
+
+pixout Debug_ShowMRTPS(vert2frag IN)
+{
+  pixout OUT;
+
+  half4 vColor;
+  vColor.xy = tex2D(baseMapRG, IN.baseTC.xy).xy;
+  vColor.zw = tex2D(baseMapBA, IN.baseTC.xy).xy;
+    
+  OUT.Color = vColor;
+
+  return OUT;
+}
+
+pixout Debug_ShowRPS(vert2frag IN)
+{
+  pixout OUT;
+
+  OUT.Color = tex2D(baseMap, IN.baseTC.xy).x;
+
+  return OUT;
+}
+
+pixout ShowInstructionsPS(vert2frag IN)
+{
+  pixout OUT;
+
+  float4 vVal = tex2D(baseMap, IN.baseTC.xy);
+  float fVal = vVal.x;
+  OUT.Color = tex2D(paletteMap, float2(0.25, fVal));
+  
+
+  return OUT;
+}
+
+pixout GradInstructionsPS(vert2frag IN)
+{
+  pixout OUT;
+
+  OUT.Color = tex2D(paletteMap, float2(0.25, IN.baseTC.y));
+  
+  return OUT;
+}
+
+
+
+technique Debug_ShowMRT
+{
+  pass p0
+  {
+    VertexShader = TransformVS();
+    
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+    
+    PixelShader = Debug_ShowMRTPS();
+  }
+}
+
+technique Debug_ShowR
+{
+  pass p0
+  {
+    VertexShader = TransformVS();
+    
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+    
+    PixelShader = Debug_ShowRPS();
+  }
+}
+
+technique ShowInstructions
+{
+  pass p0
+  {
+    VertexShader = TransformCompVS();
+    
+    ZEnable = true;
+    ZWriteEnable = true;
+    CullMode = None;
+   
+    PixelShader = ShowInstructionsPS();
+  }
+}
+
+technique InstructionsGrad
+{
+  pass p0
+  {
+    VertexShader = TransformCompVS();
+    
+    ZEnable = true;
+    ZWriteEnable = true;
+    CullMode = None;
+   
+    PixelShader = GradInstructionsPS();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Debug_RenderTarget technique /////////////////////////////////////////////////////////////////////////
+
+/// Specific data ////////////////////////
+
+/// Constants ////////////////////////////
+
+float4 colorMultiplier;
+float4 showRTFlags; // onlyAlpha, RGBKEncoded, aliased, 0
+
+////////////////// samplers /////////////////////
+
+///////////////// vertex shader //////////////////
+
+///////////////// pixel shader //////////////////
+pixout Debug_RenderTargetPS(vert2frag IN)
+{
+	pixout OUT = (pixout)0;
+	
+	const float onlyAlpha = showRTFlags.x;
+	const float RGBKEncoded = showRTFlags.y;
+	const float aliased = showRTFlags.z;
+
+	half4 color = tex2D(baseMap, IN.baseTC.xy);
+	
+	if (RGBKEncoded > 0.5f)
+	{
+		color.rgb = DecodeRGBK(color, SCENE_HDR_MULTIPLIER, false);
+	}
+	else if (aliased > 0.5f)
+	{
+		color.rgb = Decode7E3F(color).rgb;
+	}
+	
+	color *= colorMultiplier;	
+	OUT.Color = lerp(color, color.wwww, onlyAlpha);
+
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique Debug_RenderTarget
+{
+	pass p0
+	{
+		VertexShader = TransformVS();
+		PixelShader = Debug_RenderTargetPS();
+		CullMode = None;
+	}
+}
+
+/////////////////////// eof ///

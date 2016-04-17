@@ -1,0 +1,18 @@
+<HitTypes>
+	<!-- This file is loaded as a non-native fallback to CGameRulesCommonDamageHandling::Init -->
+	<!-- Also add these to Animations/Mannequin/ADB/hitDeathTags.xml -->
+	<hit_type name="repair" flags="SinglePlayerOnly"/>
+	<hit_type name="event" flags="SinglePlayerOnly"/>
+	<hit_type name="impulse_hit" flags="SinglePlayerOnly"/>
+	<hit_type name="disableCollisions" flags="Server"/>
+	<hit_type name="heavyBullet" flags="ValidationRequired"/>
+	<hit_type name="PistolBullet" flags="ValidationRequired"/>
+	<hit_type name="PistolBulletIncendiary" flags="ValidationRequired"/>
+	<hit_type name="RifleBullet" flags="ValidationRequired"/>
+	<hit_type name="ShotgunShell" flags="ValidationRequired"/>
+	<hit_type name="ShotgunShellSolid" flags="ValidationRequired"/>
+	<hit_type name="Tank125" flags="ValidationRequired"/>
+	<hit_type name="MGBullet" flags="ValidationRequired"/>
+	<hit_type name="Rocket" flags="ValidationRequired"/>
+	<hit_type name="ExplosiveGrenade" flags="ValidationRequired"/>
+</HitTypes>

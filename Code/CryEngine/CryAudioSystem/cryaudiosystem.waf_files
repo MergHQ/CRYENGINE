@@ -1,0 +1,42 @@
+{
+	"NoUberFile":
+	{
+		"Root":
+		[
+			"stdafx.cpp",
+			"stdafx.h"
+		]
+	},
+	"CryAudioSystem_uber_0.cpp":
+	{
+		"Source Files":
+		[
+			"ATL.cpp",
+			"ATLAudioObject.cpp",
+			"ATLComponents.cpp",
+			"ATLEntities.cpp",
+			"AudioProxy.cpp",
+			"AudioRequests.cpp",
+			"AudioSystem.cpp",
+			"AudioSystemImpl_NULL.cpp",
+			"CryAudioSystem.cpp",
+			"FileCacheManager.cpp",
+			"SoundCVars.cpp"
+		],
+		"Header Files":
+		[
+			"ATL.h",
+			"ATLAudioObject.h",
+			"ATLComponents.h",
+			"ATLEntities.h",
+			"ATLUtils.h",
+			"AudioInternalInterfaces.h",
+			"AudioProxy.h",
+			"AudioSystem.h",
+			"AudioSystemImpl_NULL.h",
+			"FileCacheManager.h",
+			"resource.h",
+			"SoundCVars.h"
+		]
+	}
+}

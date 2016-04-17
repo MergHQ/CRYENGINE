@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>WindowsPlatform</name>
+    </assembly>
+    <members>
+        <member name="T:MonoDevelop.Platform.SelectEncodingControl">
+            <summary>
+            Interaction logic for SelectEncodingControl.xaml
+            </summary>
+            <summary>
+            SelectEncodingControl
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Platform.SelectEncodingControl.InitializeComponent">
+            <summary>
+            InitializeComponent
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Platform.IOleWindow.GetWindow(System.IntPtr@)">
+            <summary>
+            Returns the window handle to one of the windows participating in in-place activation
+            (frame, document, parent, or in-place object window).
+            </summary>
+            <param name="phwnd">Pointer to where to return the window handle.</param>
+        </member>
+        <member name="M:MonoDevelop.Platform.IOleWindow.ContextSensitiveHelp(System.Boolean)">
+            <summary>
+            Determines whether context-sensitive help mode should be entered during an
+            in-place activation session.
+            </summary>
+            <param name="fEnterMode"><c>true</c> if help mode should be entered;
+            <c>false</c> if it should be exited.</param>
+        </member>
+        <member name="F:MonoDevelop.Platform.Windows.Native.CredentialsUiWindowsFlags.Generic">
+            <summary>
+            The caller is requesting that the credential provider return the user name and password in plain text.
+            This value cannot be combined with SECURE_PROMPT.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.Platform.Windows.Native.CredentialsUiWindowsFlags.Checkbox">
+            <summary>
+            The Save check box is displayed in the dialog box.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.Platform.Windows.Native.CredentialsUiWindowsFlags.AuthenticationPackageOnly">
+            <summary>
+            Only credential providers that support the authentication package specified by the authPackage parameter should be enumerated.
+            This value cannot be combined with InputCredentialsOnly.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.Platform.Windows.Native.CredentialsUiWindowsFlags.InputCredentialsOnly">
+            <summary>
+            Only the credentials specified by the InAuthBuffer parameter for the authentication package specified by the authPackage parameter should be enumerated.
+            If this flag is set, and the InAuthBuffer parameter is NULL, the function fails.
+            This value cannot be combined with AuthenticationPackageOnly.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.Platform.Windows.Native.CredentialsUiWindowsFlags.EnumerateOnlyAdministrators">
+            <summary>
+            Credential providers should enumerate only administrators. This value is intended for User Account Control (UAC) purposes only. We recommend that external callers not set this flag.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.Platform.Windows.Native.CredentialsUiWindowsFlags.EnumerateOnlyCurrentUser">
+            <summary>
+            Only the incoming credentials for the authentication package specified by the authPackage parameter should be enumerated.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.Platform.Windows.Native.CredentialsUiWindowsFlags.ShowOnSecureDesktop">
+            <summary>
+            The credential dialog box should be displayed on the secure desktop. This value cannot be combined with Generic.
+            Windows Vista: This value is not supported until Windows Vista with SP1.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.Platform.Windows.Native.CredentialsUiWindowsFlags.ShouldPackTo32BitBoundary">
+            <summary>
+            The credential provider should align the credential BLOB pointed to by the refOutAuthBuffer parameter to a 32-bit boundary, even if the provider is running on a 64-bit system.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Platform.Windows.NativeCredential.GetNativeCredential(MonoDevelop.Platform.Windows.Credential)">
+            <summary>
+            This method derives a NativeCredential instance from a given Credential instance.
+            </summary>
+            <param name="cred">The managed Credential counterpart containing data to be stored.</param>
+            <returns>A NativeCredential instance that is derived from the given Credential
+            instance.</returns>
+        </member>
+    </members>
+</doc>

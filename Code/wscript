@@ -1,0 +1,17 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+SUBFOLDERS =	[
+	'CryEngine',
+	'Launcher',
+	'CryExtensions',
+	'CryManaged',
+	'Sandbox',
+	'Tools',
+	'Libs'
+	]
+	
+def build(bld):
+	# Recursive into all sub projects	
+	bld.recurse(SUBFOLDERS, mandatory=False)
+
+	

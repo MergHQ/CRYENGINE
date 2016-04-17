@@ -1,0 +1,28 @@
+{
+  "NoUberFile":{
+    "CryAssert":[
+      "CryAssert/CryAssert_Windows.h"
+    ],
+    "CryCore":[
+      {
+        "Platform":[
+          "CryCore/Platform/CryPlatform.Win32.h",
+          "CryCore/Platform/CryPlatform.Win64.h",
+          "CryCore/Platform/Win32specific.h",
+          "CryCore/Platform/Win64specific.h"
+        ]
+      }
+    ],
+    "CrySystem":[
+      {
+        "Profilers":[
+          {
+            "FrameProfiler":[
+              "CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.pc.h"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+*.pak
+
+system.cfg
+editor.cfg
+.bootstrap*.*
+
+#Ignore Bin folders
+Bin32/*
+Bin64/*
+BinTemp/*
+
+#Ignore 3rd party SDKs
+Code/SDKs/*
+Code/Tools/SDKs/*
+Code/Sandbox/SDKs/*
+
+#Ignore auto generated cmake and waf solutions
+Solution_Win64/*
+Solution_Win64/*
+Solutions/*
+_WAF_/*
+
+#temp files
+Code/GameSDK/GameDll/durango_title_id.h
+USER/*
+TestResults/*
+GameSDK/*
+Editor/EditorEventLog.xml
+Editor/EditorLayout.xml
+Editor*.log
+LogBackups/*
+*.pyo

@@ -1,0 +1,305 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "PostEffectsLib.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "NoPreview;"
+           "LocalConstants;"
+           "ShaderDrawType = Custom;"
+           "ShaderType = PostProcess;"
+>;
+
+struct app2Vert
+{
+  IN_P
+
+  float2 baseTC   : TEXCOORDN; 
+
+  //IN_TANG_STREAM
+};
+
+struct vert2Frag
+{  
+  OUT_P
+  float4 baseTC     : TEXCOORDN;
+  float4 tcProj     : TEXCOORDN;
+};
+
+struct pixoutHUD
+{
+  half4 Color  : COLOR0;
+#if %_RT_SAMPLE0
+	half4 Color1  : COLOR1;
+#endif
+};
+
+float4x4 mViewProj < vsregister = c0; >;
+float4 HudParams < psregister = c0; >;
+float4 HudEffectParams[5];  // [0] x= dof amount, y= glow amount, z= interference strength, w = shadow strength
+							// [1] x= Rand Tex lookup width, y= Rand Tex lookup height, z= free, w = signed rand 1
+							// [2] x = randomGrainStrengthScale, y= randomFadeStrengthScale, z= chromaShiftStrength, w= chromaShiftDist
+							// [3] x= disruptScale, y= disruptMovementScale, z= noiseStrength, w = barScale
+							// [4] xyz= barColor, w= dofInterferenceStrength
+float4 HudOverrideColorMult; // xyz = Override color multiplier - Control glow flash color, w = per plane opacity
+float4 HudTexCoordParams < vsregister = c4; psregister = c6; >;  // uv adjustment to match hud viewport
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// UV space hud downsample Downsample4x4 technique /////////////////////////////////////////////////
+
+///////////////// vertex shader //////////////////
+
+vert2Frag Downsample4x4_VS(app2Vert IN)
+{
+  vert2Frag OUT = (vert2Frag) 0;
+
+  float2 vPos = float2( IN.baseTC.x, 1 - IN.baseTC.y) * 2.0 - 1.0;
+  OUT.HPosition = float4(vPos, 0, 1.0);
+  OUT.baseTC.xy =  HPosToScreenTC( OUT.HPosition ) * HudTexCoordParams.xy;
+
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+pixout Downsample4x4_PS(vert2Frag IN)
+{
+  pixout OUT = (pixout) 0;  
+
+	float2 tcBase = IN.baseTC.xy;
+
+  const half fSampleCount= 5.0;
+  const half fRecipSampleCount =1.0h/fSampleCount;
+
+  float2 vBlurSamples[4]=
+  {
+    float2( 0.96f,  0.25f),
+    float2(-0.25f,  0.96f),
+    float2(-0.96f, -0.25f),
+    float2( 0.25f, -0.96f),
+  };
+
+  int i=0;
+  half4 cSum=0;
+
+	// quincux downsample
+	cSum+=tex2D(_tex0,tcBase );
+  cSum+=tex2D(_tex0,tcBase + vBlurSamples[0] * ScrSize.zw );
+  cSum+=tex2D(_tex0,tcBase + vBlurSamples[1] * ScrSize.zw );
+  cSum+=tex2D(_tex0,tcBase + vBlurSamples[2] * ScrSize.zw );
+  cSum+=tex2D(_tex0,tcBase + vBlurSamples[3] * ScrSize.zw );
+
+	// Use alpha as a mask - 0 means it is allowed glow/dof geometry area
+	// this allows us to save 1 clear and artefacts (since destination target reused for other processes)
+	OUT.Color = half4( cSum.rgb * fRecipSampleCount, 0);
+
+  return OUT;  
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// General hud rendering technique /////////////////////////////////////////////////////////////////
+
+///////////////// vertex shader //////////////////
+
+vert2Frag HUD3D_VS(app2Vert IN)
+{
+  vert2Frag OUT = (vert2Frag) 0;
+
+	OUT.baseTC.xy = IN.baseTC.xy; 
+
+	// adjust uvs to match real hud view port (instead of render target size)
+	OUT.baseTC.xy = OUT.baseTC.xy * HudTexCoordParams.xy;
+	OUT.baseTC.zw = OUT.baseTC.xy * HudTexCoordParams.zw;
+
+#if %_RT_DEBUG1
+	// Project hud onto flash texture by using uv coords as positions
+	// Could use a matrix for this, but trying to avoid release specific code
+	OUT.HPosition.x = OUT.baseTC.x * 2.0 - 1.0;
+	OUT.HPosition.y = (1.0 - OUT.baseTC.y) * 2.0 - 1.0;
+	OUT.HPosition.w = 1.0;
+#else
+	OUT.HPosition = mul(mViewProj, float4(IN.Position.xyz, 1));
+	OUT.tcProj = HPosToScreenTC(OUT.HPosition);
+#endif // _RT_DEBUG1
+
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+pixoutHUD UpdateBloomRT_PS(vert2Frag IN)
+{
+  pixoutHUD OUT = (pixoutHUD) 1;  
+	
+#if %_RT_SAMPLE1
+	// HUD mask for Nano Glass
+	OUT.Color.w = (dot(tex2D(_tex0, IN.baseTC.zw),1.0) > 0) ? 1.0 : 0.0;
+#else
+	OUT.Color = tex2D(_tex0, IN.baseTC.zw);
+#endif
+
+	return OUT;
+}
+
+pixoutHUD HUD3D_PS(vert2Frag IN)
+{
+  pixoutHUD OUT = (pixoutHUD) 1;  
+
+	
+#if %_RT_DEBUG2
+	// Override colour for solid fill and wire frame views
+	OUT.Color = HudEffectParams[0];
+#else
+	
+	float4 baseTC = IN.baseTC;
+	half shadowAmount = HudEffectParams[0].w;
+	
+#if %_RT_SAMPLE1
+
+	#define interferanceScale				HudEffectParams[0].z
+	#define randTexLookup					HudEffectParams[1]
+	#define signedRand						HudEffectParams[1].w
+	#define disruptionScale					HudEffectParams[3].x
+	#define disruptionMovementScale			HudEffectParams[3].y
+
+	// Disruption
+	float disruptionSizeTC = (baseTC.y + randTexLookup.y) * disruptionScale;
+	half3 disruptionCol = tex2Dlod(_tex2, float4(disruptionSizeTC,disruptionSizeTC,0.0,0.0));
+	
+	half disruptionMovement = interferanceScale * disruptionMovementScale;
+	float2 disruptionTC = baseTC + (disruptionCol * signedRand * disruptionMovement);
+	
+	float2 offsetTC = (disruptionCol * signedRand * disruptionMovement);
+	baseTC += offsetTC.xyxy;
+	
+	// Scale shadow by inverse of interference, shadow currently doesn't support interference
+	shadowAmount *= (1.0-interferanceScale);
+#endif
+	
+	#define dofAmount			HudEffectParams[0].x
+	#define glowAmount			HudEffectParams[0].y
+
+	float2 tcHalfTexOffset = PS_ScreenSize.zw*4;
+
+	half4 cDiffuseDownsampled  = tex2D(_tex1, (IN.tcProj.xy/IN.tcProj.w) + tcHalfTexOffset); //baseTC.zw);
+	cDiffuseDownsampled *= saturate(1-8 *cDiffuseDownsampled.w); // apply masking
+
+	half4 cDiffuse = tex2D(_tex0, baseTC);
+	
+	OUT.Color = lerp(cDiffuse * (1 + glowAmount), cDiffuseDownsampled , saturate( max(0.45, dofAmount)) /** hudItemDofStrength */);  // simple 2d dof
+	
+	
+	half fInterlation = (frac(( (IN.tcProj.y/IN.tcProj.w)) * PS_ScreenSize.y *0.5  ) > 0.5)? 1.1 : 0.9;
+	OUT.Color.xyz *= fInterlation;
+
+	
+	// Add glow	
+	OUT.Color.xyz += cDiffuseDownsampled * glowAmount * 2.0;//2.5;// * (1-OUT.Color.xyz)	; 
+
+	OUT.Color *= HudParams;
+	OUT.Color.w +=  dot(cDiffuseDownsampled.xyz, shadowAmount);
+	// better darkening. Weight red more heavily since it needs more contrast to be readable
+//	OUT.Color.w += dot(OUT.Color.xyz, shadowAmount*float3(1.7, 0.8, 0.8));
+
+	// Apply override alpha (Used for ghosted plane in Alien HUD)
+	OUT.Color *= HudOverrideColorMult.w;
+
+	// Apply override color multipliers (Used to change the glow flash color for Alien HUD)
+	OUT.Color.rgb *= HudOverrideColorMult.xyz;
+
+#if %_RT_SAMPLE1
+	
+	#define dofInterferenceStrength		HudEffectParams[4].w
+	#define grainStrength				HudEffectParams[2].x
+	#define barColor					HudEffectParams[4].xyz
+	#define barScale					HudEffectParams[3].w
+	#define fadeStrength				HudEffectParams[2].y
+	#define noiseStrength				HudEffectParams[3].z
+	#define chromaShiftDist				HudEffectParams[2].w
+	#define chromaShiftStrength			HudEffectParams[2].z
+	
+	// Grain
+    float2 grainTC = (IN.baseTC.xy * (PS_ScreenSize.xy/64.0)) + randTexLookup.xy;
+    half2 grainCol = tex2Dlod(_tex2, float4(grainTC,0.0,0.0));
+	half grain = 1.0 - (grainCol.x * grainStrength);
+	
+	// Fade original color
+	OUT.Color.xyz *= (1.0 - (interferanceScale * fadeStrength));
+	
+	// Horizontal Bars
+	float barSizeTC = (baseTC.y + randTexLookup.y) * barScale;
+	half3 barNoise = tex2Dlod(_tex2, float4(barSizeTC,barSizeTC,0.0,0.0));
+	float3 barNoiseColor = barColor * barNoise.y * barNoise.y * interferanceScale;
+
+	// Noise
+	half3 noise = barNoiseColor * grain * dofInterferenceStrength * noiseStrength;
+	OUT.Color.xyz += OUT.Color.xyz * noise;
+
+	// Chromatic Aberration
+	half2 shift = randTexLookup.xy * interferanceScale * chromaShiftDist;
+	 
+    half3 chromaShiftCol;
+    chromaShiftCol.x = tex2D(_tex0, disruptionTC + shift).x;
+    chromaShiftCol.y = tex2D(_tex0, disruptionTC + half2(shift.x,0.0)).y;
+    chromaShiftCol.z = tex2D(_tex0, disruptionTC + half2(0.0,shift.y)).z;
+    OUT.Color.xyz += chromaShiftCol.xyz * noise * chromaShiftStrength * dofInterferenceStrength * dofInterferenceStrength;
+
+#endif
+
+#endif // _RT_DEBUG2
+
+#if %_RT_SAMPLE0
+	OUT.Color1 = OUT.Color;
+#endif
+
+  return OUT;  
+}
+
+//////////////////////////////// techniques ////////////////
+
+technique Downsample4x4
+{
+  pass p0
+  {
+    VertexShader = Downsample4x4_VS() PostHUD3D_VS;
+    PixelShader = Downsample4x4_PS() PostHUD3D_PS;
+    
+    ZEnable = true;
+    ZWriteEnable = false;
+    ZFunc = LEqual;
+    CullMode = Back;
+  }     
+}
+
+technique UpdateBloomRT
+{
+  pass p0
+  {
+    VertexShader = HUD3D_VS() PostHUD3D_VS;
+    PixelShader = UpdateBloomRT_PS() PostHUD3D_PS;
+    
+    ZEnable = true;
+    ZWriteEnable = false;
+    ZFunc = LEqual;
+    CullMode = Back;
+  }     
+}
+technique General
+{
+  pass p0
+  {
+    VertexShader = HUD3D_VS() PostHUD3D_VS;
+    PixelShader = HUD3D_PS() PostHUD3D_PS;
+    
+    ZEnable = true;
+    ZWriteEnable = false;
+    ZFunc = LEqual;
+    CullMode = Back;
+  }     
+}
+
+/////////////////////// eof ///

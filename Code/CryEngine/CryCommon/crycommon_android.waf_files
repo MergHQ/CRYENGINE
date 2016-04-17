@@ -1,0 +1,14 @@
+{
+  "NoUberFile":{
+    "CryAssert":[
+      "CryAssert/CryAssert_Android.h"
+    ],
+    "CryCore":[
+      {
+        "Platform":[
+          "CryCore/Platform/AndroidSpecific.h"
+        ]
+      }
+    ]
+  }
+}

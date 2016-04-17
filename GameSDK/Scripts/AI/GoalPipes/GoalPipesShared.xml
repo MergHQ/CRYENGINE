@@ -1,0 +1,673 @@
+<GoalPipes>
+  
+	<GoalPipe name="MoveToMiddleClickPositionInEditor">
+		<Move to="RefPoint" speed="Sprint" stance="Stand" />
+	</GoalPipe>
+	
+	<GoalPipe name="MoveWhileInFormation">
+		<Loop>
+			<Move to="Formation" stance="Alerted" speed="Walk" />
+		</Loop>
+	</GoalPipe>
+	
+	<GoalPipe name="AvoidThreatUsingCover">
+		<TacticalPos name="AvoidThreatCover" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<FireCmd mode="Off"/>
+			<Stance id="Stand"/>
+			<Speed id="Sprint"/>
+      		<Script block="false" code="AI.SetMovementContext(entity.id, 2)"/>
+      		<Hide register="Cover"/>
+			<Signal name="AvoidImmediateThreatDone"/>
+		<Else/>
+			<Signal name="AvoidThreatCoverNotFound"/>
+		</If>
+		<Timeout interval="1"/>
+	</GoalPipe>
+
+	<GoalPipe name="AvoidThreatUsingGrid">
+		<TacticalPos name="AvoidThreatGrid" register="RefPoint"/>
+		<If IF_LASTOP_SUCCEED="">
+			<FireCmd mode="Off"/>
+			<Stance id="Stand"/>
+			<Speed id="Sprint"/>
+      		<Script block="false" code="AI.SetMovementContext(entity.id, 2)"/>
+      		<Stick locateName="refpoint" requestPartialPath="false"/>
+			<Signal name="AvoidImmediateThreatDone"/>
+		</If>
+		<Timeout interval="1"/>
+	</GoalPipe>
+
+	<GoalPipe name="ReactionFromIdleDelay">
+		<Timeout interval="0.25"/>
+		<Script code="entity:CallBehaviorFunction('DelayDone')"/>
+	</GoalPipe>
+
+  <GoalPipe name="DumbFire">
+		<FireCmd mode="Burst"/>
+		<AdjustAim timeout="10"/>
+		<FireCmd mode="Off"/>
+	</GoalPipe>
+	
+	<GoalPipe name="DoNothing">
+		<FireCmd mode="Off"/>
+		<Stance id="Relaxed"/>
+	</GoalPipe>
+
+	<GoalPipe name="do_nothing">
+		<FireCmd mode="Off"/>
+		<Stance id="Relaxed"/>
+	</GoalPipe>
+	
+	<GoalPipe name="LookAtRefPoint">
+		<Group>
+			<Locate blocking="false" name="refpoint"/>
+			<LookAt blocking="false" useLastOp="true" continuous="true" useBodyDir="true"/>
+		</Group>
+		<Timeout interval="1.5"/>
+	</GoalPipe>
+	
+	<GoalPipe name="LookAtAttentionTarget">
+		<Group>
+			<Locate name="atttarget"/>
+			<LookAt useLastOp="true" continuous="false" useBodyDir="true"/>
+		</Group>
+		<Timeout interval="1.5"/>
+	</GoalPipe>
+
+	<GoalPipe name="InvestigateSlowlyAttentionTarget">
+		<Timeout intervalMin="0.1" intervalMax="0.5"/>
+		<Speed id="Walk"/>
+		<Stance id="Alerted"/>
+		<Group>
+			<Locate name="atttarget"/>
+      <LookAt useLastOp="true" continuous="false" useBodyDir="true"/>
+		</Group>
+		<Timeout intervalMin="1.0" intervalMax="2.5"/>
+    	<Stick duration="3" locateName="atttarget" requestPartialPath="true"/>
+    	<If IF_RANDOM="0.5" >
+      		<Timeout intervalMin="0.0" intervalMax="1.0"/>
+      		<Communicate name="comm_alert_point_search" channel="Search" expirity="0.5"/>
+      		<Communicate name="comm_alert_point_checked" channel="Search" expirity="0.5"/>
+   		</If>
+		<Timeout intervalMin="1.0" intervalMax="4.0"/>
+	</GoalPipe>
+
+  <GoalPipe name="LookAroundAttentionTargetAlerted">
+    <Timeout intervalMin="0.5" intervalMax="1.5"/>
+    <Speed id="Walk"/>
+    <Stance id="Alerted"/>
+	<Group>
+		<Locate name="atttarget"/>
+    	<LookAt useLastOp="true" continuous="false" useBodyDir="true"/>
+    </Group>
+    <Stick duration="5" locateName="atttarget" requestPartialPath="true"/>
+    <If IF_RANDOM="0.5" >
+      <Timeout intervalMin="0.0" intervalMax="1.0"/>
+      <Communicate name="comm_alert_point_search" channel="Search" expirity="0.5"/>
+      <Communicate name="comm_alert_point_checked" channel="Search" expirity="0.5"/>
+    </If>
+    <Timeout interval="0.5"/>
+  </GoalPipe>
+
+  <GoalPipe name="CheckSuspectedSound">
+    <Communicate name="comm_alert_hear_suspected_target" channel="Group" minSilence="0.2" expirity="0.5"/>
+    <Communicate name="comm_idle_unknown_target_nothing" channel="Group" expirity="0.5"/>
+    <Timeout interval="0.5"/>
+    <Script code="entity:CallBehaviorFunction('OnCheckedSuspected')"/>
+  </GoalPipe>
+
+  <GoalPipe name="CheckSuspectedVisual">
+    <Communicate name="comm_idle_interested" channel="Group" minSilence="0.2" expirity="0.5"/>
+    <Locate name="atttarget"/>
+    <LookAt useLastOp="true" continuous="false" useBodyDir="true"/>
+    <Timeout intervalMin="6.0" intervalMax="7.5"/>
+    <Communicate name="comm_idle_unknown_target_nothing" channel="Group" expirity="0.5"/>
+    <Timeout interval="0.25"/>
+    <Script code="entity:CallBehaviorFunction('OnCheckedSuspected')"/>
+  </GoalPipe>  
+  
+  <GoalPipe name="InvestigateAttentionTargetRelaxed">
+    <Timeout intervalMin="0.1" intervalMax="2"/>
+    <Speed id="Walk"/>
+    <Group>
+      <Locate name="atttarget"/>
+      <LookAt useLastOp="true" continuous="false" useBodyDir="true"/>
+    </Group>
+    <Stick duration="6" locateName="atttarget" requestPartialPath="true"/>
+    <Script code="entity:CallBehaviorFunction('OnSearchPointReached')"/>
+    <Timeout intervalMin="0.5" intervalMax="1.5"/>
+  </GoalPipe>
+
+  <GoalPipe name="InvestigateAttentionTarget">
+		<Timeout intervalMin="0.1" intervalMax="2"/>
+		<Speed id="Walk"/>
+		<Stance id="Alerted"/>
+		<Group>
+			<Locate name="atttarget"/>
+      <LookAt useLastOp="true" continuous="false" useBodyDir="true"/>
+    </Group>
+    <Stick duration="6" locateName="atttarget" requestPartialPath="true"/>
+    <Script code="entity:CallBehaviorFunction('OnSearchPointReached')"/>
+    <If IF_RANDOM="0.5" >
+      <Timeout intervalMin="0.0" intervalMax="0.5"/>
+      <Communicate name="comm_alert_point_search" channel="Search" expirity="0.5"/>
+      <Communicate name="comm_alert_point_checked" channel="Search" expirity="0.5"/>
+    </If>
+    <Timeout intervalMin="0.5" intervalMax="1.5"/>
+	</GoalPipe>
+
+  <GoalPipe name="LookAtAttentionTargetAlerted">
+    <Timeout intervalMin="0.075" intervalMax="0.15"/>
+    <Stance id="Alerted"/>
+    <Group>
+      <Locate name="atttarget"/>
+      <LookAt useLastOp="true" continuous="false" useBodyDir="true"/>
+    </Group>
+  </GoalPipe>
+
+  <GoalPipe name="WalkTowardsAttentionTargetAlerted">
+    <Timeout intervalMin="0.0" intervalMax="1.5"/>
+    <Stance id="Alerted"/>
+    <Group>
+      <Locate name="atttarget"/>
+      <LookAt useLastOp="true" continuous="false" useBodyDir="true"/>
+    </Group>
+    <Stick duration="6" locateName="atttarget" requestPartialPath="true"/>
+    <Script code="entity:CallBehaviorFunction('OnSearchPointReached')"/>    
+    <If IF_RANDOM="0.5" >
+      <Timeout intervalMin="0.0" intervalMax="0.5"/>      
+      <Communicate name="comm_alert_point_search" channel="Search" expirity="0.5"/>
+      <Communicate name="comm_alert_point_checked" channel="Search" expirity="0.5"/>
+    </If>
+  </GoalPipe>
+
+  <GoalPipe name="DefaultReactionToSoundFromPotentialTarget">
+		<SubGoalPipe name="LookAtRefPoint"/>
+		<Signal blocking="false" name="GoBackToNormalBehavior"/>
+	</GoalPipe>
+	
+	<GoalPipe name="Empty">
+		<Timeout interval="2"/>
+	</GoalPipe>
+	
+	<GoalPipe name="Fail">
+		<Speed blocking="false" id="Walk"/>
+		<Stance id="Stand"/>
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+		<Group>
+			<Locate blocking="false" name="atttarget"/>
+			<FireCmd mode="BurstWhileMoving"/>
+			<SeekCover hide="false" radius="5" iterations="3" useLastOpAsBackup="true" towardsLastOpResult="true"/>
+		</Group>
+		<Timeout interval="0.5"/>
+	</GoalPipe>
+	
+	<GoalPipe name="HideUnderPressure">
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+	</GoalPipe>
+	
+	<GoalPipe name="StayHidden">
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+	</GoalPipe>
+		
+	<GoalPipe name="CrouchUnderPressure">
+		<Stance blocking="false" id="Stand"/>
+		<Timeout interval="2"/>
+	</GoalPipe>
+	
+	<GoalPipe name="AdjustAimAndFire">
+		<AdjustAim timeout="2"/>
+	</GoalPipe>
+	
+	<GoalPipe name="FireFromCover">
+		<Speed id="Run"/>
+		<Strafe distance="99" strafeWhileMoving="true"/>
+	
+		<FireCmd mode="Burst"/>
+		<AdjustAim timeout="3.5"/>
+		<FireCmd mode="Off"/>
+		<Timeout intervalMin="0.25" intervalMax="1"/>
+		
+		<Signal name="CheckDistance"/>
+	</GoalPipe>
+	
+	<GoalPipe name="FireFromCoverAggressive">
+		<Speed blocking="false" id="Run"/>
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+	
+		<Timeout intervalMin="0.5" intervalMax="0.85"/>
+		<FireCmd mode="Burst"/>
+		<AdjustAim timeout="1.5"/>
+		<FireCmd mode="Off"/>
+		<Timeout intervalMin="0.5" intervalMax="0.85"/>
+		<AdjustAim timeout="1.5"/>
+		<FireCmd mode="Off"/>
+		<Timeout intervalMin="0.5" intervalMax="0.85"/>
+		
+		<Signal blocking="false" name="CheckDistance"/>
+	</GoalPipe>
+	
+	<GoalPipe name="FireFromCoverUnderPressure">
+		<Speed id="Run"/>
+		<Strafe distance="99" strafeWhileMoving="true"/>
+	
+		<FireCmd mode="Burst"/>
+		<AdjustAim timeout="2.5"/>
+		<FireCmd mode="Off"/>
+		<Timeout intervalMin="0.75" intervalMax="1.5"/>
+		
+		<Signal name="CheckDistance"/>
+	</GoalPipe>
+	
+	<GoalPipe name="DefendFireFromCover">
+		<Speed blocking="false" id="Run"/>
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+	
+		<FireCmd mode="Burst"/>
+		<AdjustAim timeout="4.5"/>
+		<FireCmd mode="Off"/>
+		<Timeout intervalMin="0.15" intervalMax="0.75"/>
+		
+		<Signal blocking="false" name="CheckDistance"/>
+	</GoalPipe>
+	
+	<GoalPipe name="DefendFireFromCoverUnderPressure">
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+		<FireCmd mode="Off"/>
+		<Timeout intervalMin="0.5" intervalMax="1.5"/>
+		<FireCmd mode="Burst"/>
+		<AdjustAim timeout="1.5"/>
+	</GoalPipe>
+	
+	<GoalPipe name="MoveToDefendTarget">
+		<Stance blocking="false" id="Stand"/>
+		<Speed blocking="false" id="Run"/>
+		<Strafe blocking="false"/>
+		<Stick distance="2" locateName="refpoint" requestPartialPath="true"/>
+		<Signal blocking="false" name="OnDefendTargetReached"/>
+	</GoalPipe>
+	
+	<GoalPipe name="RunToCover">
+		<Speed blocking="false" id="Run"/>
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+		<Stance blocking="false" id="Stand"/>
+		<Hide register="Cover"/>
+	</GoalPipe>
+	
+	<GoalPipe name="WalkToCover">
+		<Speed id="Walk"/>
+		<Strafe distance="99" strafeWhileMoving="true"/>
+		<Stance id="Stand"/>
+		<Hide register="Cover"/>
+	</GoalPipe>
+		
+	<GoalPipe name="SprintToCover">
+		<Speed blocking="false" id="Sprint"/>
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+		<Stance blocking="false" id="Stand"/>
+		<Hide register="Cover"/>
+	</GoalPipe>
+		
+	<GoalPipe name="ReactToPressure">
+		<TacticalPos name="UnderPressureHidespotQuery" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<FireCmd mode="BurstWhileMoving"/>
+			<SubGoalPipe name="RunToCover"/>
+		<Else/>
+			<Stance blocking="false" id="Stand"/>
+		</If>
+	</GoalPipe>
+	
+	<GoalPipe name="RunToDefendHidespot">
+		<TacticalPos name="DefendHidespotQuery" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<SubGoalPipe name="RunToCover"/>
+		<Else/>
+			<Stance blocking="false" id="Crouch"/>
+		</If>
+	</GoalPipe>
+		
+	<!-- Movement	-->
+	
+	<GoalPipe name="MoveAndStrafeToReferencePoint">
+		<Stance id="Stand"/>
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+		<Stick locateName="refpoint" requestPartialPath="true"/>
+		<Signal blocking="false" name="OnReferencePointReached"/>
+	</GoalPipe>
+	
+	<GoalPipe name="RunAndStrafeToReferencePoint">
+		<Speed id="Sprint"/>
+		<SubGoalPipe name="MoveAndStrafeToReferencePoint"/>
+	</GoalPipe>
+	
+	<GoalPipe name="WalkAndStrafeToReferencePoint">
+		<Speed id="Run"/>
+		<SubGoalPipe name="MoveAndStrafeToReferencePoint"/>
+	</GoalPipe>
+	
+	<GoalPipe name="MoveToReferencePoint">
+		<Stance id="Stand"/>
+		<Strafe blocking="false"/>
+		<Stick locateName="refpoint" requestPartialPath="true" continuous="false" />
+		<Signal blocking="false" name="OnReferencePointReached"/>
+	</GoalPipe>
+	
+	<GoalPipe name="MoveToAttentionTarget">
+		<Stance id="Stand"/>
+		<Strafe blocking="false"/>
+		<Stick locateName="atttarget" requestPartialPath="true"/>
+		<Signal blocking="false" name="OnAttentionTargetReached"/>
+	</GoalPipe>
+	
+	<GoalPipe name="AssaultReferencePointRun">
+		<Stance id="Stand"/>
+		<Speed id="Run"/>
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+		<Stick locateName="refpoint"/> <!-- TODO: Request partial path so we don't stall here if it's a long path -->
+		<If IF_LASTOP_SUCCEED="">
+			<Signal blocking="false" name="OnAssaultTargetReached"/>
+		<Else/>
+			<Signal blocking="false" name="OnAssaultFailed"/>
+		</If>
+	</GoalPipe>
+	
+	<GoalPipe name="AssaultReferencePointWalk">
+		<Stance id="Stand"/>
+		<Speed id="Walk"/>
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+		<Stick locateName="refpoint"/>
+		<Signal blocking="false" name="OnAssaultTargetReached"/>
+	</GoalPipe>
+	
+	<GoalPipe name="SprintToReferencePoint">
+		<Speed id="Sprint"/>
+		<SubGoalPipe name="MoveToReferencePoint"/>
+	</GoalPipe>
+	
+	<GoalPipe name="RunToReferencePoint">
+		<Speed id="Run"/>
+		<SubGoalPipe name="MoveToReferencePoint"/>
+	</GoalPipe>
+	
+	<GoalPipe name="WalkToReferencePoint">
+		<Speed id="Walk"/>
+		<SubGoalPipe name="MoveToReferencePoint"/>
+	</GoalPipe>
+	
+	<GoalPipe name="WalkSlowlyToReferencePoint">
+		<Speed slow="true"/>
+		<SubGoalPipe name="MoveToReferencePoint"/>
+	</GoalPipe>
+	
+	<GoalPipe name="RunToAttentionTarget">
+		<Speed id="Run"/>
+		<SubGoalPipe name="MoveToAttentionTarget"/>
+	</GoalPipe>
+	
+	<GoalPipe name="WalkToAttentionTarget">
+		<Speed id="Walk"/>
+		<SubGoalPipe name="MoveToAttentionTarget"/>
+	</GoalPipe>
+	
+	<GoalPipe name="WalkSlowlyToAttentionTarget">
+		<Speed slow="true"/>
+		<SubGoalPipe name="MoveToAttentionTarget"/>
+	</GoalPipe>
+	
+	<GoalPipe name="ApproachManeuver">
+		<TacticalPos name="ApproachHidespotQuery" register="RefPoint"/>
+		<If IF_LASTOP_SUCCEED="">
+			<FireCmd mode="BurstWhileMoving"/>
+			<Speed id="Run"/>
+			<Stance id="Stand"/>
+			<Strafe distanceStart="5" distanceEnd="3"/>
+			<Stick locateName="refpoint" requestPartialPath="true"/>
+			<Signal blocking="false" name="OnReferencePointReached"/>
+		<Else/>
+			<Signal blocking="false" name="OnTPSQueryFail"/>
+		</If>
+	</GoalPipe>
+	
+	<GoalPipe name="ApproachManeuverFirstContact">
+		<Stance blocking="false" id="Stand"/>
+		<FireCmd mode="Off"/>
+		<Timeout interval="0.5"/>
+		<TacticalPos name="ApproachHidespotQuery" register="RefPoint"/>
+		<If IF_LASTOP_SUCCEED="">
+			<FireCmd mode="BurstWhileMoving"/>
+			<SubGoalPipe name="RunToReferencePoint"/>
+		<Else/>
+			<Signal blocking="false" name="OnTPSQueryFail"/>
+		</If>
+	</GoalPipe>
+	
+	
+	<!-- Misc -->
+
+	 <GoalPipe name="LookInDirOfDeadMember">
+		<Timeout intervalMin="0.0" intervalMax="2.0" />
+		<Stance id="Alerted" />
+		<Timeout intervalMin="0.5" intervalMax="3.0" />
+		<Locate name="refpoint" />
+		<LookAt continuous="false" useBodyDir="true" useLastOp="true" angleThreshold="5" />
+		<Script code="entity:CallBehaviorFunction('OnLookAtDone')"/>
+		<Timeout interval="999" />
+	</GoalPipe>
+
+	<GoalPipe name="GoBackToLastIdlePos">
+		<SubGoalPipe name="WalkToReferencePoint"/>
+		<Script blocking="false" code="if(entity.Behavior.OnLastIdlePosReached) then entity.Behavior:OnLastIdlePosReached(entity) end"/>
+	</GoalPipe>
+	
+	<GoalPipe name="LookAtAndGotoRefPoint">
+		<Speed blocking="false" id="Walk"/>
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+		<Stance blocking="false" id="Stand"/>
+		<Group>
+			<Locate blocking="false" name="refpoint"/>
+			<LookAt blocking="false" useLastOp="true" continuous="true" useBodyDir="true"/>
+		</Group>
+		<Timeout intervalMin="1" intervalMax="2"/>
+		<Stick locateName="refpoint" requestPartialPath="true"/>
+		<Signal blocking="false" name="OnReferencePointReached"/>
+	</GoalPipe>
+	
+	<GoalPipe name="LookAtAndGotoProbTarget">
+		<Speed id="Walk"/>
+		<Strafe distance="99" strafeWhileMoving="true"/>
+		<Stance id="Stand"/>
+		<Group>
+			<Locate name="probtarget"/>
+			<LookAt useLastOp="true" continuous="true" useBodyDir="true"/>
+		</Group>
+		<Timeout intervalMin="1" intervalMax="2"/>
+		<Stick locateName="probtarget" requestPartialPath="true"/>
+		<Signal name="OnReferencePointReached"/>
+	</GoalPipe>
+	
+	<GoalPipe name="SearchLookAround">
+		<Speed blocking="false" id="Walk"/>
+		<Strafe blocking="false" distance="99"/>
+		<Stance blocking="false" id="Stand"/>
+		<Loop>
+			<LookAround lookAroundRange="360" scanRange="5" interval="60" breakOnLiveTarget="true"/>
+		</Loop>
+	</GoalPipe>
+	
+	<GoalPipe name="Melee">
+		<Stance id="Stand"/>
+		<FireCmd mode="Melee"/>
+		<Timeout intervalMin="0.5" intervalMax="1"/>
+		<Signal name="OnMeleeDone"/>
+	</GoalPipe>
+	
+	<GoalPipe name="PerformMelee">
+		<Stance id="Stand"/>
+		<FireCmd mode="Melee"/>
+		<Timeout interval="5"/>
+		<Signal name="OnPerformMeleeTimeOut"/>
+	</GoalPipe>
+	
+	<GoalPipe name="SearchGoToReferencePoint">
+		<Stance id="Stand"/>
+		<Strafe blocking="false"/>
+		<Stick distance="2" locateName="refpoint" requestPartialPath="true"/>
+		<Signal blocking="false" name="OnReferencePointReached"/>
+	</GoalPipe>
+	
+	<GoalPipe name="SearchGoToAttentionTarget">
+		<Strafe blocking="false"/>
+		<Stick distance="2" locateName="atttarget" requestPartialPath="true"/>
+		<Signal blocking="false" name="OnReferencePointReached"/>
+	</GoalPipe>
+	
+	<GoalPipe name="SearchRunToReferencePoint">
+		<Speed blocking="false" id="Run"/>
+		<SubGoalPipe name="SearchGoToReferencePoint"/>
+	</GoalPipe>
+	
+	<GoalPipe name="SearchWalkToReferencePoint">
+		<Speed blocking="false" id="Walk"/>
+		<SubGoalPipe name="SearchGoToReferencePoint"/>
+	</GoalPipe>
+	
+	<GoalPipe name="SearchWalkToAttentionTarget">
+		<Speed blocking="false" id="Walk"/>
+		<SubGoalPipe name="SearchGoToAttentionTarget"/>
+	</GoalPipe>
+	
+	<GoalPipe name="SearchApproachCautiously">
+		<TacticalPos name="ApproachHidespotQuery" register="RefPoint"/>
+		<If IF_LASTOP_SUCCEED="">
+			<SubGoalPipe name="SearchWalkToReferencePoint"/>
+		<Else/>
+			<Signal blocking="false" name="OnTPSQueryFail"/>
+		</If>
+	</GoalPipe>
+	
+	<GoalPipe name="SearchApproachConfident">
+		<TacticalPos name="ApproachHidespotQuery" register="RefPoint"/>
+		<If IF_LASTOP_SUCCEED="">
+			<SubGoalPipe name="SearchRunToReferencePoint"/>
+		<Else/>
+			<Signal blocking="false" name="OnTPSQueryFail"/>
+		</If>
+	</GoalPipe>
+	
+	<GoalPipe name="WalkAndStrafeToAttentionTarget">
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+		<Speed blocking="false" id="Walk"/>
+		<Stick distance="2" locateName="atttarget" requestPartialPath="true"/>
+	</GoalPipe>
+	
+	<GoalPipe name="BulletReaction">
+		<Speed blocking="false" id="Run"/>
+		<Stance id="Stand"/>
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+		<Timeout interval="0.3"/>
+		<Group>
+			<Locate blocking="false" name="probtarget"/>
+			<SeekCover radius="2" iterations="3" useLastOpAsBackup="true" towardsLastOpResult="true"/>
+		</Group>
+		<Signal name="OnBulletReactionDone"/>
+	</GoalPipe>
+	
+	<GoalPipe name="ShortStrafeSearch">
+		<Speed blocking="false" id="Walk"/>
+		<Stance id="Stand"/>
+		<Strafe blocking="false" distance="99" strafeWhileMoving="true"/>
+		<Group>
+			<Locate blocking="false" name="atttarget"/>
+			<SeekCover hide="false" radius="5" iterations="3" useLastOpAsBackup="true" towardsLastOpResult="true"/>
+		</Group>
+		<Timeout intervalMin="0.25" intervalMax="0.55"/>
+		<Group>
+			<Locate blocking="false" name="atttarget"/>
+			<SeekCover hide="false" radius="5" iterations="3" useLastOpAsBackup="true" towardsLastOpResult="true"/>
+		</Group>
+		<Signal name="OnShortStrafeSearchDone"/>
+	</GoalPipe>
+	
+	<GoalPipe name="ApproachAndShootObject">
+		<Speed blocking="false" id="Run"/>
+		<FireCmd mode="Burst"/>
+		<Stick distance="true" locateName="refpoint" requestPartialPath="true"/>
+		<Timeout interval="5"/>
+	</GoalPipe>
+	
+	<GoalPipe name="AttackTargetObject">
+		<TacticalPos name="ApproachTargetQuery" register="RefPoint"/>
+		<If IF_LASTOP_SUCCEED="">
+			<FireCmd mode="BurstWhileMoving"/>
+			<SubGoalPipe name="ApproachAndShootObject"/>
+		<Else/>
+			<Signal blocking="false" name="OnTPSQueryFail"/>
+		</If>
+	</GoalPipe>
+	
+	<GoalPipe name="TakeCoverAndReload">
+		<FireCmd mode="BurstWhileMoving"/>
+		<TacticalPos name="LowAmmoHidespotQuery" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<Speed id="Run"/>
+			<Strafe distanceStart="4" distanceEnd="3" strafeWhileMoving="true"/>
+			<Stance id="Stand"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Signal name="OnTPSQueryFail"/>
+			<Stance id="Stand"/>
+		</If>
+		<Script code="entity:Reload();"/>
+		<Signal name="OnDoReloadReadability"/>
+		<Timeout interval="10"/>
+	</GoalPipe>
+	
+	<GoalPipe name="DefendTakeCoverAndReload">
+		<TacticalPos name="DefendHidespotUnderPressureQuery" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<FireCmd mode="BurstWhileMoving"/>
+			<Speed id="Run"/>
+			<Strafe distanceStart="4" distanceEnd="3" strafeWhileMoving="true"/>
+			<Stance id="Stand"/>
+			<Hide register="Cover"/>
+		<Else/>
+			<Stance blocking="false" id="Stand"/>
+		</If>
+		<Stance blocking="false" id="LowCover"/>
+		<Script blocking="false" code="entity:Reload();"/>
+		<Timeout interval="2"/>
+	</GoalPipe>
+	
+	<GoalPipe name="Reload">
+		<Script blocking="false" code="entity:Reload();"/>
+		<Signal blocking="false" name="OnDoReloadReadability"/>
+		<Timeout interval="4"/>
+	</GoalPipe>
+	
+	<!-- Check if this is being used -->
+	<GoalPipe name="RunToCombatHidespot">
+		<TacticalPos name="CombatHidespotQuery" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<FireCmd mode="BurstWhileMoving"/>
+			<SubGoalPipe name="RunToCover"/>
+		<Else/>
+			<Signal blocking="false" name="OnNoFlankHidespotFound"/>
+		</If>
+	</GoalPipe>
+	
+	<GoalPipe name="RunToCombatHidespotFirstContact">
+		<FireCmd blocking="false" mode="Off"/>
+		<Stance blocking="false" id="Stand"/>
+		<Timeout interval="0.5"/>
+		<TacticalPos name="CombatHidespotQuery" register="Cover"/>
+		<If IF_LASTOP_SUCCEED="">
+			<SubGoalPipe name="RunToCover"/>
+		<Else/>
+			<Signal blocking="false" name="OnNoFlankHidespotFound"/>
+		</If>
+		<Signal blocking="false" name="OnFirstContactDone"/>
+	</GoalPipe> 
+  
+</GoalPipes>

@@ -1,0 +1,83 @@
+<Modes>
+
+	<GameMode name='SinglePlayer'>
+		<Alias name='SP' />
+		<Rules path='Scripts/GameRules/SinglePlayer.xml' />
+		<DefaultHudState name="sp_core_hud" />
+	</GameMode>
+
+	<GameMode name='InstantAction' usePlayerTeamVisualization='0'>
+		<Alias name='IA' />
+		<Alias name='DM' />
+		<Alias name='DeathMatch' />
+		<LevelLocation path='Multiplayer/' />
+		<LevelLocation path='Dlc/' />
+		<Rules path='Scripts/GameRules/InstantAction.xml' />
+		<DefaultHudState name="mp_ia" />
+	</GameMode>
+
+	<GameMode name='TeamInstantAction' teamBased='1' useLobbyTeamBalancing='1' usePlayerTeamVisualization='1'>
+		<Alias name='TIA' />
+		<Alias name='TDM' />
+		<Alias name='TeamDeathMatch' />
+		<LevelLocation path='Multiplayer/' />
+		<LevelLocation path='Dlc/' />
+		<Rules path='Scripts/GameRules/TeamInstantAction.xml' />
+		<DefaultHudState name="mp_tia" />
+	</GameMode>
+
+	<GameMode name='CaptureTheFlag' teamBased='1' useLobbyTeamBalancing='1' usePlayerTeamVisualization='0'>
+		<Alias name='CTF' />
+		<Alias name='CaptureTheRelay' />
+		<Alias name='CTR' />
+		<LevelLocation path='Multiplayer/' />
+		<LevelLocation path='Dlc/' />
+		<Rules path='Scripts/GameRules/CaptureTheFlag.xml' />
+		<DefaultHudState name="mp_ctf" />
+	</GameMode>
+
+	<GameMode name='CrashSite' teamBased='1' useLobbyTeamBalancing='1' usePlayerTeamVisualization='1'>
+		<Alias name='CS' />
+		<LevelLocation path='Multiplayer/' />
+		<LevelLocation path='Dlc/' />
+		<Rules path='Scripts/GameRules/CrashSite.xml' />
+		<DefaultHudState name="mp_tia" />
+	</GameMode>
+
+	<GameMode name='PowerStruggle' teamBased='1' useLobbyTeamBalancing='1' usePlayerTeamVisualization='1'>
+		<Alias name='PS' />
+		<Alias name='Spears' />
+		<Alias name='SPR' />
+		<LevelLocation path='Multiplayer/' />
+		<LevelLocation path='Dlc/' />
+		<Rules path='Scripts/GameRules/PowerStruggle.xml' />
+		<DefaultHudState name="mp_psl" />
+	</GameMode>
+
+	<GameMode name='Assault' teamBased='1' useLobbyTeamBalancing='1' usePlayerTeamVisualization='1'>
+		<Alias name='AS' />
+		<LevelLocation path='Multiplayer/' />
+		<LevelLocation path='Dlc/' />
+		<Rules path='Scripts/GameRules/Assault.xml' />
+		<DefaultHudState name="mp_as" />
+	</GameMode>
+
+	<GameMode name='Extraction' teamBased='1' useLobbyTeamBalancing='1' usePlayerTeamVisualization='1'>
+		<Alias name='EXT' />
+		<LevelLocation path='Multiplayer/' />
+		<LevelLocation path='Dlc/' />
+		<Rules path='Scripts/GameRules/Extraction.xml' />
+		<DefaultHudState name='mp_tia' />
+	</GameMode>
+
+	<GameMode name='Gladiator' teamBased='1' useLobbyTeamBalancing='0' usePlayerTeamVisualization='1'>
+		<Alias name='GL' />
+		<Alias name='Hunter' />
+		<Alias name='HTR' />
+		<LevelLocation path='Multiplayer/' />
+		<LevelLocation path='Dlc/' />
+		<Rules path='Scripts/GameRules/Gladiator.xml' />
+		<DefaultHudState name='mp_ia' />
+	</GameMode>
+
+</Modes>

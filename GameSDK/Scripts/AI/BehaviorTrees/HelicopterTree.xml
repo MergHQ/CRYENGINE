@@ -1,0 +1,413 @@
+<BehaviorTree>
+
+	<Variables>
+		<Variable name="TargetVisible" default="false" />
+		<Variable name="InFollowPathState" default="false" />
+		<Variable name="FiringAllowed" default="true" />
+	</Variables>
+
+	<SignalVariables>
+		<Signal name="OnEnemySeen" variable="TargetVisible" value="true" />
+		<Signal name="OnLostSightOfTarget" variable="TargetVisible" value="false" />
+
+		<Signal name="StartFollowPath" variable="InFollowPathState" value="true" />
+		<Signal name="GoToRefPoint" variable="InFollowPathState" value="false" />
+		<Signal name="StopFollowPath" variable="InFollowPathState" value="false" />
+
+		<Signal name="FiringAllowed" variable="FiringAllowed" value="true" />
+		<Signal name="FiringNotAllowed" variable="FiringAllowed" value="false" />
+	</SignalVariables>
+
+	<Timestamps>
+		<Timestamp name="TargetSpotted" exclusiveTo="LostSightOfTarget" setOnEvent="OnEnemySeen" />
+		<Timestamp name="LostSightOfTarget" exclusiveTo="TargetSpotted" setOnEvent="OnLostSightOfTarget" />
+	</Timestamps>
+
+	<Root>
+		<Sequence>
+
+			<Parallel>
+
+				<!-- Movement control -->
+				<StateMachine>
+
+					<State name="Hover">
+						<Transitions>
+							<Transition to="FollowPath" onEvent="StartFollowPath" />
+							<Transition to="GoToRefPoint" onEvent="GoToRefPoint" />
+						</Transitions>
+						<BehaviorTree>
+							<Hover />
+						</BehaviorTree>
+					</State>
+
+
+					<State name="FollowPath" >
+						<Transitions>
+							<Transition to="Hover" onEvent="OnFollowPathEnd" />
+							<Transition to="Hover" onEvent="StopFollowPath" />
+							<Transition to="GoToRefPoint" onEvent="GoToRefPoint" />
+						</Transitions>
+						<BehaviorTree>
+							<Loop>
+								<Parallel successMode="any">
+
+									<Sequence>
+										<Log message="I am following a path." />
+										<Fly lookaheadDistance="25.0" pathRadius="10.0" decelerateDistance="20.0" pathEndDistance="1" desiredSpeed="15" maxStartDistanceAlongNonLoopingPath="30" loopAlongPath="0" />
+										<Log message="Reached end of the path." />
+										<Signal name="OnFollowPathEnd" />
+										<Hover />
+									</Sequence>
+
+									<Sequence>
+										<WaitForEvent name="StartFollowPath" />
+										<Log message="I have been requested to follow a different path." />
+										<Signal name="OnFollowPathCancelled" />
+									</Sequence>
+
+								</Parallel>
+							</Loop>
+						</BehaviorTree>
+					</State>
+
+
+					<State name="GoToRefPoint" >
+						<Transitions>
+							<Transition to="FollowPath" onEvent="StartFollowPath" />
+							<Transition to="Hover" onEvent="StopFollowPath" />
+						</Transitions>
+						<BehaviorTree>
+							<Loop>
+								<Parallel successMode="any">
+
+									<Sequence>
+										<Log message="I am going to a target point in a path." />
+										<Fly lookaheadDistance="25.0" pathRadius="10.0" decelerateDistance="20.0" pathEndDistance="1" desiredSpeed="15" maxStartDistanceAlongNonLoopingPath="30" loopAlongPath="0" goToRefPoint="1" startPathFromClosestLocation="1" />
+										<Parallel successMode="any">
+											<Hover />
+											<Sequence>
+												<WaitForEvent name="GoToRefPoint" />
+												<Log message="I have been requested to go to a different point in the path once I had already reached my previous point." />
+											</Sequence>
+										</Parallel>
+									</Sequence>
+
+									<Sequence>
+										<Wait duration="5" />
+										<WaitForEvent name="GoToRefPoint" />
+										<Log message="I have been requested to go to a different point in the path before reaching the path end." />
+									</Sequence>
+
+								</Parallel>
+							</Loop>
+						</BehaviorTree>
+					</State>
+				</StateMachine>
+
+
+				<!-- Combat and target control -->
+				<StateMachine>
+
+					<State name="NoCombat">
+						<Transitions>
+							<Transition to="Combat" onEvent="CombatTargetEnabled" />
+						</Transitions>
+						<BehaviorTree>
+
+							<Sequence>
+								<Log message="I'm not in combat mode." />
+
+								<StateMachine>
+									<State name="Idle">
+										<Transitions>
+											<Transition to="ForcedFire" onEvent="StartForceFire" />
+										</Transitions>
+										<BehaviorTree>
+											<Wait duration="-1" />
+										</BehaviorTree>
+									</State>
+
+									<State name="ForcedFire">
+										<Transitions>
+											<Transition to="Idle" onEvent="OnForceFireFinished" />
+											<Transition to="Idle" onEvent="StopForceFire" />
+										</Transitions>
+										<BehaviorTree>
+											<Parallel>
+												<Log message="I am going to shoot towards a forced target while not in combat mode." />
+
+												<FlyForceAttentionTarget />
+
+												<FlyAimAtCombatTarget />
+
+												<Sequence>
+													<Parallel successMode="any">
+														<Wait duration="0.3" />
+														<SuppressFailure>
+															<WaitAlignedWithAttentionTarget toleranceDegrees="30" />
+														</SuppressFailure>
+													</Parallel>
+
+													<!-- Firing command -->
+													<Selector>
+														<LuaGate code="return entity:IsAllowedToUseSecondaryWeapon();" >
+															<RandomGate opensWithChance="0.8">
+																<Parallel successMode="any" >
+																	<FlyShoot useSecondaryWeapon="1" />
+																	<Wait duration="4"/>
+																</Parallel>
+															</RandomGate>
+														</LuaGate>
+														<LuaGate code="return entity:IsAllowedToUsePrimaryWeapon();" >
+															<SuppressFailure>
+																<Parallel successMode="any" >
+																	<FlyShoot />
+																	<Wait duration="7"/>
+																</Parallel>
+															</SuppressFailure>
+														</LuaGate>
+														<LuaGate code="return entity:IsAllowedToUseSecondaryWeapon();" >
+															<Parallel successMode="any" >
+																<FlyShoot useSecondaryWeapon="1" />
+																<Wait duration="4"/>
+															</Parallel>
+														</LuaGate>
+														<Log message="I am not able to fire!" />
+													</Selector>
+													<!-- ~Firing command -->
+
+													<Signal name="OnForceFireFinished" />
+													<Wait duration="-1" />
+												</Sequence>
+
+											</Parallel>
+										</BehaviorTree>
+									</State>
+								</StateMachine>
+
+							</Sequence>
+						
+						</BehaviorTree>
+					</State>
+
+					<State name="LeavingCombat">
+						<Transitions>
+							<Transition to="NoCombat" onEvent="OnLeavingCombatFinished" />
+						</Transitions>
+						<BehaviorTree>
+							<Sequence>
+								<Log message="exiting combat mode" />
+								<Signal name="StartFollowPath" />
+								<Signal name="OnLeavingCombatFinished" />
+								<Wait duration="-1" />
+							</Sequence>
+						</BehaviorTree>
+					</State>
+
+					<State name="Combat">
+						<Transitions>
+							<Transition to="LeavingCombat" onEvent="CombatTargetDisabled" />
+						</Transitions>
+						<BehaviorTree>
+							<Sequence>
+								<Log message="I'm in combat mode." />
+								<Parallel>
+
+									<!-- Forced target -->
+									<StateMachine>
+										<State name="Idle">
+											<Transitions>
+												<Transition to="ForcedFire" onEvent="StartForceFire" />
+											</Transitions>
+											<BehaviorTree>
+												<Wait duration="-1" />
+											</BehaviorTree>
+										</State>
+
+										<State name="ForcedFire">
+											<Transitions>
+												<Transition to="Idle" onEvent="StopForceFire" />
+											</Transitions>
+											<BehaviorTree>
+												<Sequence>
+													<Log message="I am going to force a specific attention target while maintaining the normal combat behaviour." />
+													<FlyForceAttentionTarget />
+												</Sequence>
+											</BehaviorTree>
+										</State>
+									</StateMachine>
+
+
+									<!-- Looking at target -->
+									<Priority>
+
+										<Case condition="TargetVisible">
+											<FlyAimAtCombatTarget />
+										</Case>
+
+										<Case>
+											<Sequence>
+												<Parallel successMode="any">
+													<WaitUntilTime since="LostSightOfTarget" isMoreThan="30" />
+													<FlyAimAtCombatTarget />
+												</Parallel>
+												<Wait duration="-1" />
+											</Sequence>
+										</Case>
+
+
+
+									</Priority>
+
+									<!-- Firing -->
+									<Priority>
+										<Case condition="TargetVisible">
+											<Priority>
+												<Case condition="FiringAllowed" >
+													<Loop>
+														<Sequence>
+															<Parallel successMode="any">
+																<Wait duration="0.4" />
+																<SuppressFailure>
+																	<WaitAlignedWithAttentionTarget toleranceDegrees="40" />
+																</SuppressFailure>
+															</Parallel>
+
+															<!-- Firing command -->
+															<Selector>
+																<LuaGate code="return entity:IsAllowedToUseSecondaryWeapon();" >
+																	<RandomGate opensWithChance="0.8">
+																		<Parallel successMode="any" >
+																			<FlyShoot useSecondaryWeapon="1" />
+																			<Wait duration="4"/>
+																		</Parallel>
+																	</RandomGate>
+																</LuaGate>
+																<LuaGate code="return entity:IsAllowedToUsePrimaryWeapon();" >
+																	<SuppressFailure>
+																		<Parallel successMode="any" >
+																			<FlyShoot />
+																			<Wait duration="7"/>
+																		</Parallel>
+																	</SuppressFailure>
+																</LuaGate>
+																<LuaGate code="return entity:IsAllowedToUseSecondaryWeapon();" >
+																	<Parallel successMode="any" >
+																		<FlyShoot useSecondaryWeapon="1" />
+																		<Wait duration="4"/>
+																	</Parallel>
+																</LuaGate>
+																<Log message="I am not able to fire!" />
+															</Selector>
+															<!-- ~Firing command -->
+
+															<Wait duration="6" />
+														</Sequence>
+													</Loop>
+												</Case>
+												<Case>
+													<Wait duration="-1" />
+												</Case>
+											</Priority>
+										</Case>
+
+										<Case>
+											<Wait duration="-1" />
+										</Case>
+									</Priority>
+
+									<!-- Positioning -->
+									<Loop>
+
+										<!-- Hovering or going to ref point and lost target for too long TODO: Follow path vs GoToRefPoint -->
+
+										<Parallel>
+
+											<StateMachine>
+												<State name="FindGoodPositioning">
+													<Transitions>
+														<Transition to="DoNotCareAboutGoodPositioning" onEvent="GoToDoNotCareAboutGoodPositioning" />
+													</Transitions>
+													<BehaviorTree>
+														<Parallel>
+
+															<Loop>
+																<SuppressFailure>
+																	<IfCondition condition="!InFollowPathState">
+																		<IfTime since="LostSightOfTarget" isMoreThan="10" >
+																			<Sequence>
+																				<Log message="I have not seen the target for a while." />
+																				<Signal name="StartFollowPath" />
+																				<Signal name="GoToDoNotCareAboutGoodPositioning" />
+																				<Wait duration="-1" />
+																			</Sequence>
+																		</IfTime>
+																	</IfCondition>
+																</SuppressFailure>
+															</Loop>
+
+															<Loop>
+																<SuppressFailure>
+																	<!-- <IfCondition condition="!TargetVisible"> -->
+																	<Sequence>
+																		<QueryTPS name="HelicopterFindGoodFiringSpot" register="RefPoint" />
+																		<Signal name="GoToRefPoint" />
+																		<Wait duration="3" />
+																	</Sequence>
+																	<!-- </IfCondition> -->
+																</SuppressFailure>
+															</Loop>
+
+														</Parallel>
+													</BehaviorTree>
+												</State>
+
+												<State name="DoNotCareAboutGoodPositioning">
+													<Transitions>
+														<Transition to="FindGoodPositioning" onEvent="GoToFindGoodPositioning" />
+													</Transitions>
+													<BehaviorTree>
+														<Loop>
+															<SuppressFailure>
+																<IfCondition condition="!InFollowPathState">
+																	<Sequence>
+																		<Signal name="GoToFindGoodPositioning" />
+																		<Wait duration="-1" />
+																	</Sequence>
+																</IfCondition>
+															</SuppressFailure>
+														</Loop>
+													</BehaviorTree>
+												</State>
+											</StateMachine>
+
+											<!-- Stopping follow path when detecting target -->
+											<Loop>
+												<SuppressFailure>
+													<IfCondition condition="InFollowPathState">
+														<IfTime since="TargetSpotted" isMoreThan="0.75">
+															<!-- TODO: Don't stop if directy on top of target! -->
+															<Signal name="StopFollowPath" />
+
+														</IfTime>
+													</IfCondition>
+												</SuppressFailure>
+											</Loop>
+
+										</Parallel>
+
+									</Loop>
+								</Parallel>
+
+							</Sequence>
+						</BehaviorTree>
+					</State>
+
+				</StateMachine>
+
+			</Parallel>
+
+		</Sequence>
+	</Root>
+</BehaviorTree>

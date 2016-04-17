@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.Gettext</name>
+    </assembly>
+    <members>
+        <member name="M:MonoDevelop.Gettext.Catalog.#ctor(MonoDevelop.Gettext.TranslationProject)">
+            <summary>
+            Creates empty catalog
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Gettext.Catalog.Load(MonoDevelop.Core.IProgressMonitor,System.String)">
+            <summary>
+            Loads catalog from .po file.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.Gettext.Catalog.Count">
+            <value>
+            The number of strings/translations in the catalog.
+            </value>
+        </member>
+        <member name="P:MonoDevelop.Gettext.Catalog.Item(System.Int32)">
+            <value>
+            Gets n-th item in the catalog (read-write access).
+            </value>
+        </member>
+        <member name="P:MonoDevelop.Gettext.Catalog.PluralFormsCount">
+            <value>
+            Returns plural forms count: taken from Plural-Forms header if present, 0 otherwise
+            </value>
+        </member>
+    </members>
+</doc>

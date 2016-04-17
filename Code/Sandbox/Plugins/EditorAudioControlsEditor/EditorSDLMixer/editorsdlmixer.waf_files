@@ -1,0 +1,17 @@
+{
+	"EditorSDLMixer_uber_0.cpp":
+	{
+		"Root":
+		[
+			"AudioSystemControl_sdlmixer.cpp",
+			"AudioSystemControl_sdlmixer.h",
+			"AudioSystemEditor_sdlmixer.cpp",
+			"AudioSystemEditor_sdlmixer.h",
+			"main.cpp",
+			"SDLMixerProjectLoader.h",
+			"SDLMixerProjectLoader.cpp",
+			"StdAfx.h",
+			"StdAfx.cpp"
+		]
+	}
+}

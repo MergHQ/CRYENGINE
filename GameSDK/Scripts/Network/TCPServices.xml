@@ -1,0 +1,7 @@
+<TCPServices>
+	<!-- ps3 needs fully qualified domain name -->
+	<TCPService config="download" port="80" server="" serviceID="" serverInfo="" prefix=""/>
+	<TCPService config="telemetry" port="80" server="" serviceID="" serverInfo="" prefix=""/>
+	<TCPService config="telemetry_xbox360" port="80" server="" serviceID="" serverInfo="" prefix=""/>
+  <TCPService config="download_xbox360" port="80" server="" serviceID="" serverInfo="" prefix=""/>
+</TCPServices>

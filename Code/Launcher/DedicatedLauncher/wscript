@@ -1,0 +1,11 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryDedicatedServer( 
+		target      = 'DedicatedLauncher', 
+		vs_filter   = 'Launcher',
+		
+		win_file_list   = 'launcher.waf_files', 
+		lib         = 'Shell32', 
+	)	

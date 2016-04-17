@@ -1,0 +1,127 @@
+<item name="PickAndThrowWeapon" class="PickAndThrowWeapon" category="medium" priority="0" weaponParams="1">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="mass" value="10" />
+		<param name="itemClass" value="nw" />
+		<animPrecache name="PickAndThrow" >
+			<precache DBAFile="animations/human/male/weapons/pickable/pickable_1p.dba" thirdperson="0"/>
+			<precache DBAFile="animations/human/male/weapons/pickable/pickable_3p.dba" thirdperson="1"/>
+		</animPrecache>
+	</params>
+	<PickAndThrowParams>
+		<GrabParams_1h> <!-- this one needs to be first, so it is used as default type. is important for objects that somehow dont have helper -->
+			<param name="helper" value="player_grab_1h" />
+			<param name="attachment" value="player_grab" />
+			<param name="grab_action_part1" value="grabObjectSimple" />
+			<param name="drop_action" value="dropObjectSimple" />
+			<param name="melee_action" value="melee_1h" />
+			<param name="melee_delay" value="0.15" />
+			<param name="meleeAction_duration" value="0.30" />
+			<param name="melee_mfxLibrary" value="melee_1h" />
+			<param name="timePicking" value="0.15" />
+			<throwParams>
+				<param name="throw_action" value="throwObjectSimple" />
+				<param name="charged_object_throw_action" value="throwObjectSimple" />
+				<param name="throwSpeed" value="15" />
+			</throwParams>
+		</GrabParams_1h>
+		<GrabParams_2h>
+			<param name="helper" value="player_grab" /> <!-- on the object -->
+			<param name="attachment" value="player_grab" /> <!-- on the nanosuit -->
+			<param name="grab_action_part1" value="grabObjectSimple" />
+			<param name="drop_action" value="dropObjectSimple" />
+			<param name="melee_action" value="melee_2h" />
+			<param name="melee_delay" value="0.15" /> <!-- time, relative to the start of the melee animation, when the melee hit is actually applied -->
+			<param name="meleeAction_duration" value="0.30" />	<!-- duration of the full melee action. In practice it defines the minimun time between melee actions. -->
+			<param name="melee_mfxLibrary" value="melee_2h" />
+			<param name="timePicking" value="0.15" />
+			<!-- default values -->
+			<!--<param name="timePicking" value="0.2" /> total time picking the object. this includes the time the hand moves to the object, and the time the hand comes back with the object
+			<param name="timeToStickAtPicking" value="0.1" /> time that the object remains free after picking starts, it is glued to the hands after this interval
+			<param name="timeThrowing" value="0.5" />
+			<param name="timeToFreeAtThrowing" value="0.1" /> time that the object remains glued to the hand after throwing starts, it is freed after this interval
+			<param name="throwSpeed" value = "12" />
+			<param name="autoThrowSpeed" value = "1" /> speed used when the throw happens without direct action from the player: the NPC is killed, or the energy runs out.
+			<param name="timeDropping" value="0.5" />
+			<param name="timeToFreeAtDropping" value="0.1" /> time that the object remains "in contact" with the player after dropping starts (no collisions with player, and using "near" drawing style to avoid clipping )
+			<param name="dropSpeedForward" value="2.0" />-->
+			<throwParams>
+				<param name="throw_action" value="throwObjectSimple" />
+				<param name="charged_object_throw_action" value="throwSimpleObject" />
+				<param name="throwSpeed" value="15" />
+			</throwParams>
+		</GrabParams_2h>
+
+		<!-- GrabAndThrow generic NPC -->
+		<GrabParams_NPC_Human GAME="SP">
+			<param name="NPCType" value="Human" />
+			<param name="timePicking" value="0.2" />
+			<param name="helper" value="player_grabNPC" />
+			<param name="attachment" value="player_grabNPC" />
+			<param name="grab_action_part1" value="grab_enemy_front_part1" />
+			<param name="grab_action" value="grab_enemy_front" />
+			<param name="throw_action" value="throw_enemy_front" />
+			<param name="drop_action" value="throw" />
+			<param name="timeToStickAtPicking" value="0.1" /> <!-- time that the object remains free after picking starts, it is glued to the hands after this interval -->
+			<param name="melee_action" value="kill_grabbedNPC_front" />
+			<param name="timeToKillGrabbedNPC" value="1" /> <!-- time between the killing animation starts and the NPC is actually killed -->
+			<param name="melee_mfxLibrary" value="melee" />
+			<param name="throwSpeed" value="12" />
+			<param name="autoThrowSpeed" value="1" />
+			<param name="tag" value="slaveHuman" />
+			<param name="dbaFile" value="animations/mannequin/adb/humanSlaveAnims3P.adb" />
+			<param name="pose" value="pickNPCFront" />
+			<param name="holdingEnergyConsumption" value ="10" /> <!-- energy consumption/sec while holding the enemy (it will be drop dead if the suit energy drops to 0) -->
+			<param name="shieldingHits" value="1" /> <!-- how many hits the NPC protects the player while is grabbed -->
+			<param name="audioSignalHitOnNPC" value ="Human_FeedbackHit2D" /> <!-- audio signal played when the NPC is hit while being grabbed (and not killed) -->
+			<param name="dropSpeedForward" value="2.0" />
+			<param name="timeToFreeAtDropping" value="0.4" />
+			<killGrabbedNPCParams>
+				<param name="action" value="grabNPCKill" />
+			</killGrabbedNPCParams>
+			<throwParams>
+				<param name="throw_action" value="throw" />
+				<param name="timeToFreeAtThrowing" value="0.4" />
+				<param name="timeToRestorePhysicsAfterFree" value="0.3" />
+			</throwParams>
+		</GrabParams_NPC_Human>
+	</PickAndThrowParams>
+
+	<MovementModifiers speedScale="0.8" rotationScale="0.8" >
+		<aimZoom speedScale="0.6" rotationScale="0.33" mouseRotationScale="0.9" GAME="MP" />
+	</MovementModifiers>
+
+	<zoommodes GAME="MP">
+		<zoommode name="aimZoom" type="IronSight">
+			<stereo>
+				<param name="eyeDistance" value="0.002" />
+				<param name="convergenceDistance" value="0.01" />
+			</stereo>
+			<zoom>
+				<param name="suffix" value="iron" />
+				<param name="dof" value="1" />
+				<param name="dof_focusMax" value="100.0" />
+				<param name="dof_focusLimit" value="300.0" />
+				<param name="dof_mask" value="textures/weapons/ironzoom_blurmask.dds" />
+				<param name="dof_shoulderMinZ" value="0.6" />
+				<param name="dof_shoulderMinZScale" value="2.0" />
+				<param name="dof_minZ" value="1.0" />
+				<param name="dof_minZScale" value="2.0" />
+				<param name="zoom_in_time" value="0.25" />
+				<param name="zoom_out_time" value="0.25" />
+				<stages>
+					<stage value="1.4" />
+				</stages>
+			</zoom>
+			<zoomSway>
+				<param name="maxX" value="0.006" />
+				<param name="maxY" value="0.007" />
+				<param name="stabilizeTime" value="3.0" />
+				<param name="minScale" value="0.5"/>
+				<param name="crouchScale" value="0.25"/>
+				<param name="proneScale" value="0.5"/>
+			</zoomSway>
+		</zoommode>
+	</zoommodes>
+</item>

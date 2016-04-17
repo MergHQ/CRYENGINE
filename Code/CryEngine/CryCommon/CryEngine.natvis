@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <!-- CryEngine math types -->
+  <Type Name="Vec2_tpl&lt;*&gt;">
+    <AlternativeType Name="Vec2"/>
+    <DisplayString>~ Vec2: [{x}, {y}]</DisplayString>
+    <Expand>
+      <Item Name="X">x</Item>
+      <Item Name="Y">y</Item>
+      <Item Name="LengthSquared">x*x+y*y</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Vec3_tpl&lt;*&gt;">
+    <AlternativeType Name="Vec3"/>
+    <DisplayString>~ Vec3: [{x}, {y}, {z}]</DisplayString>
+    <Expand>
+      <Item Name="X">x</Item>
+      <Item Name="Y">y</Item>
+      <Item Name="Z">z</Item>
+      <Item Name="LengthSquared">x*x+y*y+z*z</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Vec4_tpl&lt;*&gt;">
+    <AlternativeType Name="Vec4"/>
+    <DisplayString>~ Vec4: [{x}, {y}, {z}, {w}]</DisplayString>
+    <Expand>
+      <Item Name="X">x</Item>
+      <Item Name="Y">y</Item>
+      <Item Name="Z">z</Item>
+      <Item Name="W">w</Item>
+      <Item Name="LengthSquared">x*x+y*y+z*z+w*w</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Quat_tpl&lt;*&gt;">
+    <AlternativeType Name="Quat" />
+    <DisplayString>~ Quat: [{v.x}, {v.y}, {v.z}, {w}]</DisplayString>
+    <Expand>
+      <Item Name="X">v.x</Item>
+      <Item Name="Y">v.y</Item>
+      <Item Name="Z">v.z</Item>
+      <Item Name="W">w</Item>
+      <Item Name="LengthSquared">v.x*v.x+v.y*v.y+v.z*v.z+w*w</Item>
+      <Synthetic Name="Matrix">
+        <Expand>
+          <Synthetic Name="Row: 0">
+            <DisplayString>[{2*(v.x*v.x+w*w)-1}, {2*(v.y*v.x+v.z*w)}, {2*(v.z*v.x-v.y*w)}]</DisplayString>
+          </Synthetic>
+          <Synthetic Name="Row: 1">
+            <DisplayString>[{2*(v.x*v.y-v.z*w)}, {2*(v.y*v.y+w*w)-1}, {2*(v.z*v.y+v.x*w)}]</DisplayString>
+          </Synthetic>
+          <Synthetic Name="Row: 2">
+            <DisplayString>[{2*(v.x*v.z+v.y*w)}, {2*(v.y*v.z-v.x*w)}, {2*(v.z*v.z+w*w)-1}]</DisplayString>
+          </Synthetic>
+        </Expand>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="Matrix33_tpl&lt;*&gt;">
+    <AlternativeType Name="Matrix33" />
+    <AlternativeType Name="Matrix33A" />
+    <DisplayString>~ Matrix3x3</DisplayString>
+    <Expand>
+      <Synthetic Name="Row: 0">
+        <DisplayString>[{m00}, {m01}, {m02}]</DisplayString>
+      </Synthetic>
+      <Synthetic Name="Row: 1">
+        <DisplayString>[{m10}, {m11}, {m12}]</DisplayString>
+      </Synthetic>
+      <Synthetic Name="Row: 2">
+        <DisplayString>[{m20}, {m21}, {m22}]</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="Matrix34_tpl&lt;*&gt;">
+    <AlternativeType Name="Matrix34" />
+    <AlternativeType Name="Matrix34A" />
+    <DisplayString>~ Matrix3x4</DisplayString>
+    <Expand>
+      <Synthetic Name="Row: 0">
+        <DisplayString>[{m00}, {m01}, {m02}, {m03}]</DisplayString>
+      </Synthetic>
+      <Synthetic Name="Row: 1">
+        <DisplayString>[{m10}, {m11}, {m12}, {m13}]</DisplayString>
+      </Synthetic>
+      <Synthetic Name="Row: 2">
+        <DisplayString>[{m20}, {m21}, {m22}, {m23}]</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="Matrix44_tpl&lt;*&gt;">
+    <AlternativeType Name="Matrix44" />
+    <AlternativeType Name="Matrix44A" />
+    <DisplayString>~ Matrix4x4</DisplayString>
+    <Expand>
+      <Synthetic Name="Row: 0">
+        <DisplayString>[{m00}, {m01}, {m02}, {m03}]</DisplayString>
+      </Synthetic>
+      <Synthetic Name="Row: 1">
+        <DisplayString>[{m10}, {m11}, {m12}, {m13}]</DisplayString>
+      </Synthetic>
+      <Synthetic Name="Row: 2">
+        <DisplayString>[{m20}, {m21}, {m22}, {m23}]</DisplayString>
+      </Synthetic>
+      <Synthetic Name="Row: 3">
+        <DisplayString>[{m30}, {m31}, {m32}, {m33}]</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <!-- CryEngine container types -->
+  <Type Name="TArray&lt;*&gt;">
+    <DisplayString Condition="m_nCount == 0">~ empty</DisplayString>
+    <DisplayString>~ TArray: {m_nCount,d} items</DisplayString>
+    <Expand>
+      <Item Name="[size]">m_nCount,d</Item>
+      <Item Name="[capacity]">m_nAllocatedCount,d</Item>
+      <ArrayItems>
+        <Size>m_nCount</Size>
+        <ValuePointer>m_pElements</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="PodArray&lt;*,*&gt;">
+    <DisplayString Condition="m_nCount == 0">~ empty</DisplayString>
+    <DisplayString>~ PodArray: {m_nCount,d} items</DisplayString>
+    <Expand>
+      <Item Name="Size" Condition="m_nCount != 0">m_nCount</Item>
+      <Item Name="Capacity" Condition="m_nCount != 0">m_nAllocatedCount</Item>
+      <Item Name="OverAlloc" Condition="$T2 != 0 &amp;&amp; m_nCount != 0" >$T2</Item>
+      <ArrayItems>
+        <Size>m_nCount</Size>
+        <ValuePointer>m_pElements</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- NArray::ArrayStorage> -->
+  <Type Name="NArray::ArrayStorage::Store&lt;*,*&gt;&gt;">
+    <DisplayString>~ Array: size={m_nCount}</DisplayString>
+    <Expand>
+      <Item Name="[size]">m_nCount</Item>
+      <ArrayItems>
+        <Size>m_nCount</Size>
+        <ValuePointer>m_aElems</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- DynArray<FastDynStorage> -->
+  <Type Name="DynArray&lt;*,*,NArray::FastDynStorage&lt;*&gt;&gt;">
+    <DisplayString>~ FastDynArray: size={m_nCount}</DisplayString>
+    <Expand>
+      <Item Name="[size]">m_nCount</Item>
+      <Item Name="[capacity]">m_nCapacity</Item>
+      <ArrayItems>
+        <Size>m_nCount</Size>
+        <ValuePointer>m_aElems</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="CRingBuffer&lt;*,*,*&gt;">
+    <DisplayString Condition="m_count == 0">~ empty</DisplayString>
+    <DisplayString>~ CRingBuffer: {m_count,d} items</DisplayString>
+    <Expand>
+      <Item Name="Size" Condition="m_count != 0">m_count,d</Item>
+      <Item Name="Capacity" Condition="m_count != 0">$T2,d</Item>
+      <CustomListItems>
+        <Variable Name="i" InitialValue="0"/>
+        <Variable Name="j" InitialValue="m_begin"/>
+        <Size>m_count</Size>
+        <Loop>
+          <Break Condition="i == m_count"/>
+          <Item>*(($T1*)&amp;m_storage + j)</Item>
+          <Exec>++i</Exec>
+          <Exec>++j</Exec>
+          <Exec Condition="j == $T2">j=0</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="VectorMap&lt;*,*&gt;">
+    <DisplayString>~ VectorMap: {{ size={m_entries._Mypair._Myval2._Mylast - m_entries._Mypair._Myval2._Myfirst} }}</DisplayString>
+    <Expand>
+      <CustomListItems>
+        <Variable Name="pValue" InitialValue="m_entries._Mypair._Myval2._Myfirst" />
+        <Loop>
+          <Break Condition="pValue == m_entries._Mypair._Myval2._Mylast" />
+          <Item Name="[{pValue-&gt;first}]">pValue-&gt;second</Item>
+          <Exec>pValue = ++pValue</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
+  <!-- DynArray<SmallDynStorage> (modified copy from Tools/CryTypes.natvis) -->
+  <Type Name="DynArray&lt;*,*,NArray::SmallDynStorage&lt;*&gt;&gt;">
+    <DisplayString>~ DynArray: size={(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1)),d}</DisplayString>
+    <Expand>
+      <Item Name="Size" Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) != 0">(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))</Item>
+      <Item Name="Capacity" Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) != 0">*($T2*)(m_aElems + ((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))))</Item>
+      <Item Name="Capacity" Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) == 0">(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))</Item>
+      <ArrayItems Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) != 0">
+        <Size>(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))</Size>
+        <ValuePointer>m_aElems</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="TDoublyLinkedList&lt;*&gt;">
+    <DisplayString Condition="m_pFirstNode == 0">~ empty</DisplayString>
+    <DisplayString>~ TDoublyLinkedList</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>m_pFirstNode</HeadPointer>
+        <NextPointer>m_pNext</NextPointer>
+        <ValueNode>($T1*)this</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+  <!-- CryEngine string types -->
+  <Type Name="CryStringT&lt;char&gt;">
+    <AlternativeType Name="string" />
+    <DisplayString Condition="*m_str == 0">~ empty</DisplayString>
+    <DisplayString>~ UTF8: {m_str,s8b}</DisplayString>
+    <StringView Condition="m_str != 0">m_str,s8</StringView>
+    <Expand>
+      <Item Name="Size" Condition="*m_str != 0">((CryStringT&lt;char&gt;::StrHeader *)m_str)[-1].nLength</Item>
+      <Item Name="Capacity" Condition="*m_str != 0">((CryStringT&lt;char&gt;::StrHeader *)m_str)[-1].nAllocSize</Item>
+      <Item Name="RefCount" Condition="*m_str != 0">((CryStringT&lt;char&gt;::StrHeader *)m_str)[-1].nRefCount</Item>
+      <Item Name="Value" Condition="*m_str != 0">m_str,s8b</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryStringT&lt;unsigned short&gt;">
+    <AlternativeType Name="wstring" />
+    <DisplayString Condition="*m_str == 0">~ empty</DisplayString>
+    <DisplayString>~ UTF16: {m_str,sub}</DisplayString>
+    <StringView Condition="m_str != 0">m_str,su</StringView>
+    <Expand>
+      <Item Name="Size" Condition="*m_str != 0">((CryStringT&lt;unsigned short&gt;::StrHeader *)m_str)[-1].nLength</Item>
+      <Item Name="Capacity" Condition="*m_str != 0">((CryStringT&lt;unsigned short&gt;::StrHeader *)m_str)[-1].nAllocSize</Item>
+      <Item Name="RefCount" Condition="*m_str != 0">((CryStringT&lt;unsigned short&gt;::StrHeader *)m_str)[-1].nRefCount</Item>
+      <Item Name="Value" Condition="*m_str != 0">m_str,sub</Item>
+    </Expand>
+  </Type>
+
+  <!-- CryEngine wrapper types -->
+  <Type Name="_smart_ptr&lt;*&gt;">
+    <DisplayString Condition="p == 0">~ empty</DisplayString>
+    <DisplayString>~ SmartPtr: {*p}</DisplayString>
+    <Expand>
+      <ExpandedItem Condition="p != 0">p</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <!-- stl overrides -->
+  <Type Name="std::shared_ptr&lt;*&gt;">
+    <DisplayString Condition="_Ptr == 0">~ empty</DisplayString>
+    <DisplayString>~ shared_ptr: {*_Ptr}</DisplayString>
+    <Expand>
+      <ExpandedItem Condition="_Ptr != nullptr">_Ptr</ExpandedItem>
+      <Item Name="SharedRefCount" Condition="_Ptr != nullptr">_Rep-&gt;_Uses</Item>
+    </Expand>
+  </Type>
+
+  <!-- CryEngine misc types -->
+  <Type Name="CTexture">
+    <DisplayString>~ CTexture: Dim={m_nWidth,d}x{m_nHeight,d}, Fmt={m_eTFDst}: Name={m_SrcName}</DisplayString>
+  </Type>
+
+</AutoVisualizer>

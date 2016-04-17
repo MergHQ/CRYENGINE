@@ -1,0 +1,89 @@
+{
+	"description"                           : "Configuration to build the Engine and the GameZero Project",
+	"valid_platforms"                       : [ "win", "durango", "orbis", "linux", "darwin", "android" ],
+	"valid_configuration"                   : [ "debug", "profile", "performance", "release" ],
+	"visual_studio_name"                    : "GameZero",
+
+	"game_projects"                         : "GameZero",
+
+	"module_extensions"                     : ["scaleform"],
+	"win_module_extensions"                 : ["audio_fmod", "brofiler", "openvr", "osvr"],
+
+	"modules" :
+	[
+		"CryCommon",
+		"Cry3DEngine",
+		"CryAISystem",
+		"CryAnimation",
+		"CryDescriptor",
+		"CryDynamicResponseSystem",
+		"CryEntitySystem",
+		"CryFont",
+		"CryInput",
+		"CryLobby",
+		"CryMovie",
+		"CryNetwork",
+		"CryParticleSystem",
+		"CryPhysics",
+		"CryScriptSystem",
+		"CryAudioSystem",
+		"CryAudioCommon",
+		"CryAudioImplWwise",
+		"CrySystem",
+		"CryScaleformHelper",
+		"CryAction",
+		"HWScripts",
+
+		"zlib",
+		"expat",
+		"lz4",
+		"md5",
+		"lzma",
+		"lzss",
+		"lua",
+		"freetype",
+		"bigdigits",
+		"yasli",
+		"tomcrypt",
+
+		"CryGameZero"
+	],
+	
+	"win_force_shared_monolithic_build_modules" : 
+	[
+		"CryAudioImplSDLMixer",
+		"CryAudioImplWwise",
+		"CryAudioImplFmod",
+		
+		"CryRenderOpenGL",
+		"CryRenderD3D11",
+		"CryRenderD3D12",
+
+		"CryScaleformHelper"
+	],
+
+	"win_modules"                           : ["WindowsLauncher", "CryRenderD3D11", "CryRenderD3D12", "CryRenderOpenGL", "CryAudioImplSDLMixer", "CryAudioImplFmod", "oculus"],
+	"win_debug_modules"                     : ["DedicatedLauncher", "CryLiveCreate", "GameStream"],
+	"win_profile_modules"                   : ["DedicatedLauncher", "CryLiveCreate", "GameStream"],
+
+	"win_performance_defines"               : "PURE_CLIENT",
+	"win_performance_monolithic_build"      : "True",
+	"win_release_defines"                   : "PURE_CLIENT",
+	"win_release_monolithic_build"          : "True",
+
+	"durango_modules"                       : [ "DurangoLauncher", "CryRenderD3D11", "ESraLibCore" ],
+	"durango_performance_monolithic_build"  : "True",
+	"durango_release_monolithic_build"      : "True",
+
+	"orbis_modules"                         : [ "OrbisLauncher", "CryRenderD3D11" ],
+	"orbis_monolithic_build"                : "True",
+	"orbis_debug_modules"                   : ["CryLiveCreate"],
+	"orbis_profile_modules"                 : ["CryLiveCreate"],
+
+	"linux_modules"                         : [ "LinuxLauncher", "CryRenderOpenGL", "CryAudioImplSDLMixer", "CryAudioImplFmod", "assert_term" ],
+
+	"darwin_modules"                        : [ "MacLauncher", "CryRenderOpenGL" ],
+
+	"android_modules"                       : [ "AndroidLauncher", "CryRenderOpenGL" ],
+	"android_monolithic_build"              : "True"
+}

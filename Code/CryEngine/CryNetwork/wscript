@@ -1,0 +1,25 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryEngineModule(
+		target       = 'CryNetwork',
+		vs_filter    = 'CryEngine',		
+		file_list    = 'crynetwork.waf_files',
+		durango_file_list    = 'crynetwork_durango.waf_files',
+
+		pch          = 'StdAfx.cpp',		
+		includes     = [ Path('Code/SDKs/speex-1.0.5/include') ],
+
+		use_module = [ 'bigdigits' ],
+
+		win_linkflags   = '/NODEFAULTLIB:libcmt.lib',
+		win_lib         = [ 'Ws2_32', 'Mswsock', 'libspeex-1.0.5' ],
+		win_x86_libpath = Path('Code/SDKs/speex-1.0.5/lib/win32'),			
+		win_x64_libpath = Path('Code/SDKs/speex-1.0.5/lib/x64'),				
+
+		durango_lib     = 'Ws2_32'
+	)
+
+	# Recursive into all sub projects
+	bld.recurse( 'Lobby' )

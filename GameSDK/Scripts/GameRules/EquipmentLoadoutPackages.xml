@@ -1,0 +1,63 @@
+<default>
+	<!-- This file is used for Multiplayer equipment packs. It differs from the Sandbox equipment pack editor because it translates directly with in-game UI, if your game uses classes/kits for players. -->
+	<!-- Use Flow Graph in your level to set a default equipment pack if your game doesn't use classes/kits. Game:MP:SetEquipmentLoadout to set which pack to use by default. -->
+	<!-- The id field is incremented per-group. Set included weapons/explosives/attachments for each loadout. -->
+	<!-- Attachments need to be placed directly after the weapon they're intended to be attached to -->
+
+	<!-- ========================== SDK Loadouts ========================== -->
+	<Group name="SDK">
+		<!-- pack 0 in Flow Graph -->
+		<loadout name              = "Rifle" 
+				displayName        = "@ui_loadout_sdk_name1"
+				displayDescription = "@ui_loadout_sdk_desc1"
+				id                 = "1">
+				<Weapon name="Rifle" />
+				<Attachment name="IronsightRifle" />
+				<Weapon name="Pistol" />
+				<Explosive name="FragGrenades" />
+		</loadout>
+
+		<!-- pack 1 -->
+		<loadout name              = "Shotgun" 
+				displayName        = "@ui_loadout_sdk_name2"
+				displayDescription = "@ui_loadout_sdk_desc2"
+				id                 = "2">
+				<Weapon name="Shotgun" />
+				<Weapon name="Pistol" />
+				<Explosive name="FragGrenades" />
+		</loadout>
+
+		<!-- pack 2 -->
+		<loadout name              = "Armageddon" 
+				displayName        = "@ui_loadout_sdk_name3"
+				displayDescription = "@ui_loadout_sdk_desc3"
+				id                 = "3">
+				<Weapon name="Rifle" />
+				<Attachment name="IronsightRifle" />
+				<Weapon name="Pistol" />
+				<Attachment name="Flashlight" />
+				<Weapon name="Shotgun" />
+				<Explosive name="RocketLauncher" />
+				<Explosive name="FragGrenades" />
+				<Explosive name="SmokeGrenades" />
+		</loadout>
+		
+		<!-- pack 3 -->
+		<loadout name              = "CaptureTheFlag" 
+				displayName        = "@ui_loadout_sdk_name4"
+				displayDescription = "@ui_loadout_sdk_desc4"
+				id                 = "4">
+				<Weapon name="Rifle" />
+				<Attachment name="IronsightRifle" />
+				<Weapon name="Pistol" />
+				<Attachment name="Flashlight" />
+				<Explosive name="FragGrenades" />
+		</loadout>
+	</Group>
+
+	<!-- This automatically changes characters depending on the main weapon -->
+	<Classic rebel="Objects/characters/your_character_path_%s.cdf" cell="Objects/characters/your_other_character_path/%s.cdf">
+		<Map weapon="Main_weapon_name" rebel="01" />
+	</Classic>
+
+</default>

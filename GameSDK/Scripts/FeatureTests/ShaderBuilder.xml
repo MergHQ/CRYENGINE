@@ -1,0 +1,41 @@
+<FeatureTester>
+	<Tests setName="setup">
+		<FeatureTest name="SetupCVars" enabled="true">
+			<DoConsoleCommand command="g_playerUsesDedicatedInput 1" />
+			<DoConsoleCommand command="g_dummyPlayersMove 1" />
+			<DoConsoleCommand command="g_dummyPlayersFire 1" />
+      <DoConsoleCommand command="g_dummyPlayersCommitSuicide 1" />
+      <DoConsoleCommand command="g_dummyPlayersShowDebugText 1" />
+			<DoConsoleCommand command="autotest_enabled 0" />
+		</FeatureTest>
+
+		<FeatureTest name="SetupRandomWandering" enabled="true" require="localPlayerExists">
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<DoConsoleCommand command="g_playerEnableDedicatedInput 1" />
+			<DoConsoleCommand command="g_scoreLimit 0" />
+			<DoConsoleCommand command="g_timeLimit 0" />
+			<DoConsoleCommand command="spawnDummyPlayers 5" />			
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="repeatThese">
+		<FeatureTest name="EachWeaponForAWhile" enabled="true" require="localPlayerExists" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;LTag;C4;FragGrenades;FlashBangGrenades" maxTime="3600">
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<SetItem className="%1" />
+			<Wait duration="6" />
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive localPlayer="true" />
+			<MovePlayerToOtherEntity localPlayer="true" className="DummyPlayer" />
+			<SetItem className="%1" />
+			<Wait duration="6" />
+			<DoConsoleCommand command="kill" />
+			<Wait duration="5" />
+		</FeatureTest>
+		
+		<FeatureTest name="Restart" enabled="true">
+			<DoConsoleCommand command="ft_runall repeatThese" />
+		</FeatureTest>
+	</Tests>
+</FeatureTester>

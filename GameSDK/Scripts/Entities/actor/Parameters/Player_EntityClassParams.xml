@@ -1,0 +1,10 @@
+<EntityClassParams type="Player">
+	<ActorImpulses>
+		<DeathImpulses maxRagdollImpulse="1800">
+			<CopyImpulsesFrom class="Human"/>
+		</DeathImpulses>
+	</ActorImpulses>
+	
+	<DamageEffectParams>				
+	</DamageEffectParams>
+</EntityClassParams>

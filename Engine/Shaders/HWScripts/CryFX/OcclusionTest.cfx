@@ -1,0 +1,60 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script = "ShaderDrawType = Custom;";
+>;
+
+float4x4 CompMatrix  : PI_Composite < vsregister = c0; >;
+
+struct a2v
+{
+  float4 Position : POSITION; 
+  float2 baseTC   : TEXCOORD0;
+  IN_C0
+};
+
+struct v2f
+{
+  float4 Position  : POSITION;
+};
+
+///////////////// vertex shader //////////////////
+
+v2f OcclusionTestVS(a2v IN)
+{
+  v2f OUT = (v2f)0; 
+  OUT.Position = mul(CompMatrix, IN.Position);
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+pixout OcclusionTestPS(v2f IN)
+{
+  pixout OUT = (pixout ) 0;
+  OUT.Color = half4(4,0,0,1);
+  return OUT;
+}
+
+//////////////////////////////// technique ////////////////
+
+technique General
+{
+  pass p0
+  {
+    VertexShader = OcclusionTestVS();
+    PixelShader = OcclusionTestPS();
+    
+    ZEnable = true;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}
+
+
+/////////////////////// eof ///

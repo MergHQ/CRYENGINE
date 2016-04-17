@@ -1,0 +1,719 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.Refactoring</name>
+    </assembly>
+    <members>
+        <member name="M:MonoDevelop.Refactoring.RefactoringService.QueueCodeIssueAnalysis(MonoDevelop.CodeIssues.IAnalysisJob,System.String)">
+            <summary>
+            Queues a code analysis job.
+            </summary>
+            <param name="job">The job to queue.</param>
+            <param name="progressMessage">
+            The message used for a progress monitor, or null if no progress monitor should be used.
+            </param>
+        </member>
+        <member name="F:MonoDevelop.CodeIssues.BaseCodeIssueProvider.severity">
+            <summary>
+            Gets the current (user defined) severity.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.BaseCodeIssueProvider.SetSeverity(ICSharpCode.NRefactory.Refactoring.Severity)">
+            <summary>
+            Sets the user defined severity.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.BaseCodeIssueProvider.SetIsEnabled(System.Boolean)">
+            <summary>
+            Sets the user defined severity.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.BaseCodeIssueProvider.GetIssues(System.Object,System.Threading.CancellationToken)">
+            <summary>
+            Gets all the code issues inside a document.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.BaseCodeIssueProvider.MimeType">
+            <summary>
+            Gets or sets the type of the MIME the provider is attached to.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.BaseCodeIssueProvider.Title">
+            <summary>
+            Gets or sets the title of the issue provider (used in the option panel).
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.BaseCodeIssueProvider.Description">
+            <summary>
+            Gets or sets the description of the issue provider (used in the option panel).
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.BaseCodeIssueProvider.IdString">
+            <summary>
+            Gets the identifier string used as property ID tag.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.BaseCodeIssueProvider.DefaultSeverity">
+            <summary>
+            Gets or sets the default severity. Note that GetSeverity () should be called to get the valid value inside the IDE.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.BaseCodeIssueProvider.IsEnabledByDefault">
+            <summary>
+            Gets or sets a value indicating whether this issue is enabled. Note that GetIsEnabled () should be called to get the valid value inside the IDE.
+            </summary>
+            <value><c>true</c> if this instance is enabled; otherwise, <c>false</c>.</value>
+        </member>
+        <member name="T:MonoDevelop.CodeIssues.CodeIssueProvider">
+            <summary>
+            A code issue provider is a factory that creates code issues of a given document.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.CodeIssueProvider.GetEffectiveProviderSet">
+            <summary>
+            Gets the effective set of providers. The effective set of providers
+            is either the sub issues (if it has sub issues) or simply itself (otherwise).
+            </summary>
+            <returns>The effective provider set.</returns>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.CodeIssueProvider.Category">
+            <summary>
+            Gets or sets the category of the issue provider (used in the option panel).
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.CodeIssueProvider.HasSubIssues">
+            <summary>
+            If true this issue has sub issues.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.CodeIssueProvider.SubIssues">
+            <summary>
+            Gets the sub issues of this issue. If HasSubIssus == false an InvalidOperationException is thrown.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.CodeIssues.CodeIssue">
+            <summary>
+            A code issue marks an issue inside a text editor. An issue is a description shown in the tooltip and
+            (optionally) a set of code actions to solve the issue.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.CodeIssue.#ctor(ICSharpCode.NRefactory.Refactoring.IssueMarker,System.String,System.String,Mono.TextEditor.DocumentLocation,Mono.TextEditor.DocumentLocation,System.String,System.Collections.Generic.IEnumerable{MonoDevelop.CodeActions.CodeAction})">
+            <summary>
+            Initializes a new instance of the <see cref="T:MonoDevelop.CodeIssues.CodeIssue"/> class.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.CodeIssue.#ctor(ICSharpCode.NRefactory.Refactoring.IssueMarker,System.String,ICSharpCode.NRefactory.TypeSystem.DomRegion,System.String,System.Collections.Generic.IEnumerable{MonoDevelop.CodeActions.CodeAction})">
+            <summary>
+            Initializes a new instance of the <see cref="T:MonoDevelop.CodeIssues.CodeIssue"/> class.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.CodeIssue.Description">
+            <summary>
+            Gets or sets the description shown in the tooltip.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.CodeIssue.Region">
+            <summary>
+            Gets or sets the region of the issue.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.CodeIssue.IssueMarker">
+            <summary>
+            Gets or sets a value indicating how this issue should be marked inside the text editor.
+            Note: There is only one code issue provider generated therfore providers need to be state less.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.CodeIssue.Actions">
+            <summary>
+            Gets or sets the code actions to solve the issue.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.CodeIssue.ActionProvider">
+            <summary>
+            Gets or sets the code action providers for this issue.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.CodeActions.CodeAction">
+            <summary>
+            A code action represents a menu entry that does edit operation in one document.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeActions.CodeAction.Run(MonoDevelop.Ide.TypeSystem.IRefactoringContext,System.Object)">
+            <summary>
+            Performs the specified code action in document at loc.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeAction.Title">
+            <summary>
+            Gets or sets the menu item text.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeAction.IdString">
+            <summary>
+            Gets or sets the id string. The id is used to identify a specific code action.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeAction.DocumentRegion">
+            <summary>
+            The region of the code action.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeAction.InspectorType">
+            <summary>
+            Gets or sets the type of the inspector that is the source of this action.
+            </summary>
+            <value>The type of the inspector.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeAction.SiblingKey">
+            <summary>
+            Gets or sets the sibling key.
+            </summary>
+            <value>The sibling key.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeAction.Severity">
+            <summary>
+            Gets or sets the severity of the code action.
+            </summary>
+            <value>The severity.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeAction.SupportsBatchRunning">
+            <summary>
+            True if <see cref="M:MonoDevelop.CodeActions.CodeAction.BatchRun(MonoDevelop.Ide.Gui.Document,ICSharpCode.NRefactory.TextLocation)"/> can be used on the current instance.
+            </summary>
+            <value><c>true</c> if supports batch running; otherwise, <c>false</c>.</value>
+        </member>
+        <member name="T:MonoDevelop.CodeActions.CodeActionProvider">
+            <summary>
+            A code action provider is a factory that creates code actions for a document at a given location.
+            Note: There is only one code action provider generated therfore providers need to be state less.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeActions.CodeActionProvider.GetActions(MonoDevelop.Ide.Gui.Document,System.Object,ICSharpCode.NRefactory.TextLocation,System.Threading.CancellationToken)">
+            <summary>
+            Gets all the code actions in document at given location.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeActionProvider.MimeType">
+            <summary>
+            Gets or sets the type of the MIME the provider is attached to.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeActionProvider.Category">
+            <summary>
+            Gets or sets the category of the provider (used in the option panel).
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeActionProvider.Title">
+            <summary>
+            Gets or sets the title of the provider (used in the option panel).
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeActionProvider.Description">
+            <summary>
+            Gets or sets the description of the provider (used in the option panel).
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeActions.CodeActionProvider.IdString">
+            <summary>
+            Gets the identifier string used as property ID tag.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.CodeActions.ICodeActionProviderSource">
+            <summary>
+            A code action provider source provides a way for language backends to add a set of generated code action providers.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeActions.ICodeActionProviderSource.GetProviders">
+            <summary>
+            Gets the providers.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.CodeIssues.ICodeIssueProviderSource">
+            <summary>
+            A code issue provider source provides a way for language backends to add a set of generated code issue providers.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.ICodeIssueProviderSource.GetProviders">
+            <summary>
+            Gets the providers.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.CodeIssues.DefaultCodeIssueCategories">
+            <summary>
+            Default code issue categories provide strings to common categories used in the code issue options panel.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Refactoring.ExtensionMethods.GetSharedResolver(MonoDevelop.Ide.Gui.Document)">
+            <summary>
+            Returns a full C# syntax tree resolver which is shared between semantic highlighting, source analysis and refactoring.
+            For code analysis tasks this should be used instead of generating an own resolver. Only exception is if a local resolving is done using a 
+            resolve navigator.
+            Note: The shared resolver is fully resolved.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.IGroupingProvider.GetIssueGroup(MonoDevelop.CodeIssues.IssueGroup,MonoDevelop.CodeIssues.IssueSummary)">
+            <summary>
+            Gets the issue group for the <see cref="T:MonoDevelop.CodeIssues.IssueGroup"/> specified in <paramref name="issue"/>.
+            </summary>
+            <returns>The issue group.</returns>
+            <param name="parentGroup">The parent group.</param> 
+            <param name="issue">The <see cref="T:MonoDevelop.CodeIssues.IssueSummary"/> to return a group for.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.IGroupingProvider.Reset">
+            <summary>
+            Removes the set of cached groups.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IGroupingProvider.Next">
+            <summary>
+            The <see cref="T:MonoDevelop.CodeIssues.IGroupingProvider"/> to be applied after the current instance. Never returns null.
+            </summary>
+            <value>The next.</value>
+            <exception cref="T:System.InvalidOperationException">
+            Thrown by both accessors if <see cref="P:MonoDevelop.CodeIssues.IGroupingProvider.SupportsNext"/> is false.
+            </exception>
+        </member>
+        <member name="E:MonoDevelop.CodeIssues.IGroupingProvider.NextChanged">
+            <summary>
+            Occurs when <see cref="P:MonoDevelop.CodeIssues.IGroupingProvider.Next"/> changes.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IGroupingProvider.SupportsNext">
+            <summary>
+            Gets a value indicating whether this <see cref="T:MonoDevelop.CodeIssues.IGroupingProvider"/>
+            supports the usage of <see cref="P:MonoDevelop.CodeIssues.IGroupingProvider.Next"/> .
+            </summary>
+            <value>True if <see cref="P:MonoDevelop.CodeIssues.IGroupingProvider.Next"/> can be used.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IIssueTreeNode.Text">
+            <summary>
+            The text that should be displayed in the ui.
+            </summary>
+            <value>The text.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IIssueTreeNode.Children">
+            <summary>
+            The children of this instance.
+            </summary>
+            <value>The children.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IIssueTreeNode.HasVisibleChildren">
+            <summary>
+            Indicates whether this instance has any children.
+            </summary>
+            <value><c>true</c> if this instance has children; otherwise, <c>false</c>.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IIssueTreeNode.Visible">
+            <summary>
+            Indicates whether this node should be shown in the ui.
+            </summary>
+            <value><c>true</c> if the current instance should be shown; otherwise, <c>false</c>.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IIssueTreeNode.AllChildren">
+            <summary>
+            Gets all children including nested children of this instance.
+            </summary>
+            <value>All children.</value>
+        </member>
+        <member name="E:MonoDevelop.CodeIssues.IIssueTreeNode.ChildrenInvalidated">
+            <summary>
+            Occurs when children of this node are invalidated.
+            </summary>
+        </member>
+        <member name="E:MonoDevelop.CodeIssues.IIssueTreeNode.ChildAdded">
+            <summary>
+            Occurs when children of this node are invalidated.
+            </summary>
+        </member>
+        <member name="E:MonoDevelop.CodeIssues.IIssueTreeNode.TextChanged">
+            <summary>
+            Occurs when <see cref="P:MonoDevelop.CodeIssues.IIssueTreeNode.Text"/> is updated.
+            </summary>
+        </member>
+        <member name="E:MonoDevelop.CodeIssues.IIssueTreeNode.VisibleChanged">
+            <summary>
+            Occurs when <see cref="P:MonoDevelop.CodeIssues.IIssueTreeNode.Visible"/> is updated.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueSummary.IssueDescription">
+            <summary>
+            The description of the issue.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueSummary.Region">
+            <summary>
+            The region.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueSummary.ProviderCategory">
+            <summary>
+            Gets or sets the category of the issue provider.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueSummary.ProviderTitle">
+            <summary>
+            Gets or sets the title of the issue provider.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueSummary.ProviderDescription">
+            <summary>
+            Gets or sets the description of the issue provider.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueSummary.Severity">
+            <summary>
+            Gets or sets the severity.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueSummary.IssueMarker">
+            <summary>
+            Gets or sets a value indicating how this issue should be marked inside the text editor.
+            Note: There is only one code issue provider generated therfore providers need to be state less.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueSummary.File">
+            <summary>
+            Gets or sets the file that this issue was found in.
+            </summary>
+            <value>The file.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueSummary.Project">
+            <summary>
+            Gets or sets the project this issue was found in.
+            </summary>
+            <value>The project.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueSummary.InspectorIdString">
+            <summary>
+            Gets or sets the type of the inspector that was the source of this issue.
+            </summary>
+            <value>The type of the inspector.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueSummary.Actions">
+            <summary>
+            Gets or sets the actions available to fix this issue.
+            </summary>
+            <value>The actions.</value>
+        </member>
+        <member name="T:MonoDevelop.CodeIssues.IssueGroup">
+            <summary>
+            Represents the cached information saved for each issue detected in a source file.
+            </summary>
+            <remarks>
+            This class is thread safe.
+            </remarks>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.IIssueSummarySink.AddIssue(MonoDevelop.CodeIssues.IssueSummary)">
+            <summary>
+            Adds a <see cref="T:MonoDevelop.CodeIssues.IssueSummary"/> to the sink.
+            </summary>
+            <param name="issueSummary">The Issue summary.</param>
+        </member>
+        <member name="F:MonoDevelop.CodeIssues.IssueGroup.groups">
+            <summary>
+            A list of groups produced by the <see cref="F:MonoDevelop.CodeIssues.IssueGroup.groupingProvider"/>.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.IssueGroup.#ctor(MonoDevelop.CodeIssues.IGroupingProvider,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:MonoDevelop.CodeIssues.IssueGroup"/> class.
+            </summary>
+            <param name="nextProvider">
+            The <see cref="T:MonoDevelop.CodeIssues.IGroupingProvider"/> to use when grouping <see cref="T:MonoDevelop.CodeIssues.IssueSummary"/> instances.
+            </param>
+            <param name="description">A string describing the contents of this group.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.IssueGroup.EnableProcessing">
+            <summary>
+            Makes this instance start processing issues.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueGroup.Description">
+            <summary>
+            Gets the description.
+            </summary>
+            <value>The description.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.IssueGroup.IssueCount">
+            <summary>
+            Gets a value indicating whether this instance issue count.
+            </summary>
+            <value><c>true</c> if this instance issue count; otherwise, <c>false</c>.</value>
+        </member>
+        <member name="F:MonoDevelop.CodeIssues.AbstractGroupingProvider`1.groups">
+            <summary>
+            Associates a parent group and grouping key to a child group.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.GroupingProviderEventArgs.GroupingProvider">
+            <summary>
+            The <see cref="T:MonoDevelop.CodeIssues.IGroupingProvider"/> whose Next reference has changed.
+            </summary>
+            <value>The grouping provider.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.GroupingProviderEventArgs.OldNext">
+            <summary>
+            The old value of the Next reference.
+            </summary>
+            <value>The old value.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.ActionSummary.Title">
+            <summary>
+            Gets or sets the title.
+            </summary>
+            <value>The title.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.ActionSummary.SiblingKey">
+            <summary>
+            Gets or sets the sibling key.
+            </summary>
+            <value>The sibling key.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.ActionSummary.Batchable">
+            <summary>
+            Gets a value indicating whether this <see cref="T:MonoDevelop.CodeIssues.ActionSummary"/> is batchable.
+            </summary>
+            <value><c>true</c> if batchable; otherwise, <c>false</c>.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.ActionSummary.IssueSummary">
+            <summary>
+            Gets or sets the <see cref="P:MonoDevelop.CodeIssues.ActionSummary.IssueSummary"/> representing the source of this action.
+            </summary>
+            <value>The issue summary.</value>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.BatchFixer.TryFixIssues(System.Collections.Generic.IEnumerable{MonoDevelop.CodeIssues.ActionSummary})">
+            <summary>
+            Tries to apply the actions passed in <paramref name="actions"/>.
+            </summary>
+            <param name="actions">The actions to apply.</param>
+            <returns>The fixed code actions.</returns>
+        </member>
+        <member name="T:MonoDevelop.CodeIssues.IAnalysisJob">
+            <summary>
+            Represents an analysis job. Implementations must be thread safe.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.IAnalysisJob.GetFiles">
+            <summary>
+            Gets the file names affected by this job.
+            </summary>
+            <remarks>
+            The return value of this method may not change after the initial invocation.
+            </remarks>
+            <returns>The file names.</returns>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.IAnalysisJob.GetIssueProviders(MonoDevelop.Projects.ProjectFile)">
+            <summary>
+            Gets the issue providers for the file specified in <paramref name="file"/>.
+            </summary>
+            <returns>The issue providers to run on the specified file.</returns>
+            <param name="file">The file.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.IAnalysisJob.AddResult(MonoDevelop.Projects.ProjectFile,MonoDevelop.CodeIssues.BaseCodeIssueProvider,System.Collections.Generic.IEnumerable{MonoDevelop.CodeIssues.CodeIssue})">
+            <summary>
+            Adds the results to this job.
+            </summary>
+            <param name="file">The file that the results apply to.</param>
+            <param name="provider">The provider that provided the issues.</param>
+            <param name="issues">The issues detected in the specified file.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.IAnalysisJob.AddError(MonoDevelop.Projects.ProjectFile,MonoDevelop.CodeIssues.BaseCodeIssueProvider)">
+            <summary>
+            Notifies the job that there was an error running the specified provider on the specified file.
+            </summary>
+            <param name="file">The file.</param>
+            <param name="provider">The provider.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.IAnalysisJob.NotifyCancelled">
+            <summary>
+            Called when this job is cancelled to notify the instance about that change.
+            </summary>
+            <remarks>
+            The caller does NOT have to ensure that this is the last method called.
+            Specifically, <see cref="M:MonoDevelop.CodeIssues.IAnalysisJob.AddResult(MonoDevelop.Projects.ProjectFile,MonoDevelop.CodeIssues.BaseCodeIssueProvider,System.Collections.Generic.IEnumerable{MonoDevelop.CodeIssues.CodeIssue})"/> can be called after this method has been invoked.
+            </remarks>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.IAnalysisJob.SetCompleted">
+            <summary>
+            Notifies the job that all files have been processed.
+            </summary>
+        </member>
+        <member name="E:MonoDevelop.CodeIssues.IAnalysisJob.CodeIssueAdded">
+            <summary>
+            Occurs when new code issues are added.
+            </summary>
+        </member>
+        <member name="E:MonoDevelop.CodeIssues.IAnalysisJob.Completed">
+            <summary>
+            Occurs when the job is completed.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.CodeIssues.AnalysisJobQueue.slices">
+            <summary>
+            The list of items in the queue.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.CodeIssues.AnalysisJobQueue.sorted">
+            <summary>
+            Indicates whether queueItems is sorted.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.AnalysisJobQueue.Add(MonoDevelop.CodeIssues.IAnalysisJob)">
+            <summary>
+            Adds the specified job to the queue.
+            </summary>
+            <param name="job">The job.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.AnalysisJobQueue.Remove(MonoDevelop.CodeIssues.IAnalysisJob)">
+            <summary>
+            Remove the specified job from the queue.
+            </summary>
+            <param name="job">The job to remove.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.AnalysisJobQueue.Dequeue(System.Int32)">
+            <summary>
+            Dequeues a number of elements less than or equal to <paramref name="maxNumber"/>.
+            </summary>
+            <param name="maxNumber">The index.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.AnalysisJobQueue.InvalidateSort">
+            <summary>
+            Notifies the rest of the class that <see cref="F:MonoDevelop.CodeIssues.AnalysisJobQueue.slices"/> is no longer sorted.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.AnalysisJobQueue.EnsureSorted">
+            <summary>
+            Ensures that <see cref="F:MonoDevelop.CodeIssues.AnalysisJobQueue.slices"/> is sorted.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.CodeIssues.CodeIssueEventArgs">
+            <summary>
+            Code issue event arguments.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.CodeIssueEventArgs.#ctor(MonoDevelop.Projects.ProjectFile,MonoDevelop.CodeIssues.BaseCodeIssueProvider,System.Collections.Generic.IEnumerable{MonoDevelop.CodeIssues.CodeIssue})">
+            <summary>
+            Initializes a new instance of the <see cref="T:MonoDevelop.CodeIssues.CodeIssueEventArgs"/> class.
+            </summary>
+            <param name="codeIssues">The code issues.</param>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.CodeIssueEventArgs.File">
+            <summary>
+            Gets the analyzed file.
+            </summary>
+            <value>The analyzed file.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.CodeIssueEventArgs.Provider">
+            <summary>
+            Gets the provider.
+            </summary>
+            <value>The code issue provider that provided the issues.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.CodeIssueEventArgs.CodeIssues">
+            <summary>
+            Gets the code issues.
+            </summary>
+            <value>The new code issues.</value>
+        </member>
+        <member name="T:MonoDevelop.CodeIssues.SimpleAnalysisJob">
+            <summary>
+            A simple analysis job.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.SimpleAnalysisJob.#ctor(System.Collections.Generic.IList{MonoDevelop.Projects.ProjectFile})">
+            <summary>
+            Initializes a new instance of the <see cref="T:MonoDevelop.CodeIssues.SimpleAnalysisJob"/> class.
+            </summary>
+            <param name="files">The files to analyze.</param>
+        </member>
+        <member name="T:MonoDevelop.CodeIssues.JobSlice">
+            <summary>
+            Represents a unit of analysis at the time of analysis. Essentially this
+            maps a file to the jobs that wants to run analysis on it so the runner
+            can parse the file once and then make progress on all the jobs.
+            This class is not thread safe.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.CodeIssues.JobSlice.jobs">
+            <summary>
+            The jobs to run on the file specified in <see cref="!:FileName"/>.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.CodeIssues.JobSlice.statuses">
+            <summary>
+            The status to report to when this slice is complete.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.JobSlice.#ctor(MonoDevelop.Projects.ProjectFile)">
+            <summary>
+            Initializes a new instance of the <see cref="T:MonoDevelop.CodeIssues.JobSlice"/> class.
+            </summary>
+            <param name="file">The file.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.JobSlice.AddJob(MonoDevelop.CodeIssues.IAnalysisJob,MonoDevelop.CodeIssues.JobStatus)">
+            <summary>
+            Adds a job to be run on this file.
+            </summary>
+            <param name="job">The job.</param>
+            <param name = "status">The status of the job.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.JobSlice.GetJobs">
+            <summary>
+            Gets the current jobs.
+            </summary>
+            <returns>The jobs.</returns>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.JobSlice.RemoveJob(MonoDevelop.CodeIssues.IAnalysisJob)">
+            <summary>
+            Removes the specified job.
+            If the job is the last job in this instance it requests cancellation of it's CancellationToken.
+            </summary>
+            <param name="job">The job to remove.</param>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.JobSlice.File">
+            <summary>
+            The name of a file to be analyzed.
+            </summary>
+            <value>The name of the file.</value>
+        </member>
+        <member name="P:MonoDevelop.CodeIssues.JobSlice.CancellationToken">
+            <summary>
+            Gets the cancellation token for this work unit.
+            </summary>
+            <value>A cancellation token.</value>
+        </member>
+        <member name="T:MonoDevelop.CodeIssues.JobStatus">
+            <summary>
+            Keeps track of the status of a possibly partially executed job.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.CodeIssues.JobStatus.job">
+            <summary>
+            The job.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.CodeIssues.JobStatus.slices">
+            <summary>
+            The slices that the job has been split into.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.JobStatus.#ctor(MonoDevelop.CodeIssues.IAnalysisJob)">
+            <summary>
+            Initializes a new instance of the <see cref="T:MonoDevelop.CodeIssues.JobStatus"/> class.
+            </summary>
+            <param name="job">The job.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.JobStatus.AddSlice(MonoDevelop.CodeIssues.JobSlice)">
+            <summary>
+            Adds another slice. This method should not be called after <see cref="M:MonoDevelop.CodeIssues.JobStatus.MarkAsComplete(MonoDevelop.CodeIssues.JobSlice)"/> has been called.
+            </summary>
+            <param name="slice">Slice.</param>
+        </member>
+        <member name="M:MonoDevelop.CodeIssues.JobStatus.MarkAsComplete(MonoDevelop.CodeIssues.JobSlice)">
+            <summary>
+            Marks a slice of the job as complete and marks the job as completed if all slices have been completed.
+            </summary>
+            <param name="slice">The completed slice.</param>
+        </member>
+    </members>
+</doc>

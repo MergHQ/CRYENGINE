@@ -1,0 +1,805 @@
+<FeatureTester>
+	<Settings>
+		<AlwaysFailWhenHit checkpointName="GameRules_OnEndGame" />
+	</Settings>
+	
+	<Tests setName="utils">
+		<FeatureTest name="UtilBothSpawnReadyForTeleport" speed="5">
+			<DoConsoleCommand command="pl_health.normal_threshold_time_to_regenerateMP 0.25" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_SvDoNotReviveTooSoonAfterDeath" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_SvPerformRevive" />
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive who="localPlayer|firstRemotePlayer" />
+			<DoConsoleCommand command="pl_health.normal_threshold_time_to_regenerateMP 6" />
+			<DoConsoleCommand command="pl_spawnCorpseOnDeath 0" />
+			<DoConsoleCommand command="g_playersWithDisabledDedicatedInputCrouch 0" />
+			<DoConsoleCommand command="g_DisableScoring 1" />
+			<DoConsoleCommand command="g_DisableCollisionDamage 1" />
+			<DoConsoleCommand command="g_AutoReviveTime 0.1" />
+			<DoConsoleCommand command="g_droppedItemVanishTimer 1.f" />
+			<Wait duration="1" />
+			<DoConsoleCommand command="perk none" />
+			<DoConsoleCommand command="sv_sendConsoleCommand perk none" />
+		</FeatureTest>
+
+		<FeatureTest name="UtilMeleeFriend" speed="5">
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Camera_DoShake" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Melee_LocalActorMelee" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Melee_PerformLocal" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Melee_HitSomethingWithRayCast" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Melee_PressedButMeleeNotAllowed" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="Melee_SwingAndAMiss" customMessage="Melee failed to hit anything" />
+			<OverrideButtonInput_Press inputName="special" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="special" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilDropGrenade" speed="4">
+			<SetItem className="%1" />
+			<OverrideAnalogInput inputName="xi_rotatepitch" value="-2" />
+			<Wait duration="1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeLaunched"/>
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_Explode"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeDestroyed"/>
+			<WaitUntilHitAllExpectedCCCPoints timeOut="10" />
+			<Wait duration="1" />
+		</FeatureTest>
+
+		<FeatureTest name="UtilOvercookGrenade" speed="4">
+			<SetItem className="%1" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_Explode"/>
+			<WaitUntilHitAllExpectedCCCPoints timeOut="10" />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<Wait duration="1" />
+		</FeatureTest>
+
+		<FeatureTest name="MeleeRepeat" speed="3">
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Melee_PressedButMeleeNotAllowed" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Camera_DoShake" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Melee_LocalActorMelee" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Melee_PerformLocal" />
+			<OverrideButtonInput_Press inputName="special" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="1.5" />
+			<Wait duration="2" />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilWaitUntilFacingOtherPlayer">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_LocalPlayerNowTargettingNobody" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<WaitUntilPlayerAimingAt targetType="anybody" who="localPlayer" />
+			<Wait duration="0.5" />
+			<SetLocalPlayerLookAt who="" bone="" />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilLocalCrouch">
+			<WaitUntilPlayerIsAlive who="localPlayer" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerMovement_LocalPlayerStopCrouch" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerStartCrouch" />
+			<OverrideButtonInput_Press inputName="crouch" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilLocalStand">
+			<WaitUntilPlayerIsAlive who="localPlayer" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerMovement_LocalPlayerStopCrouch" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerMovement_LocalPlayerStartCrouch" />
+			<OverrideButtonInput_Press inputName="crouch" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+		</FeatureTest>
+
+		<FeatureTest name="UtilPlace20mApart">
+			<RunFeatureTest testName="UtilBothSpawnReadyForTeleport" />
+			<Switch>
+				<Case level="Wars/cw2_pier">
+					<DoConsoleCommand command="playerGoto 257 364 144.5 0 0 -90" />
+					<DoConsoleCommand command="sv_moveClientsTo 277 364 144.5 0 0 90" />
+				</Case>
+				<Case level="Wars/cw2_rooftop_gardens">
+					<DoConsoleCommand command="playerGoto 1060 845 186 0 0 90" />
+					<DoConsoleCommand command="sv_moveClientsTo 1040 845 186 0 0 -90" />
+				</Case>
+				<Default>
+					<DoConsoleCommand command="playerGoto 1800 500 268 0 0 0" />
+					<DoConsoleCommand command="sv_moveClientsTo 1800 520 268 0 0 180" />
+				</Default>
+			</Switch>
+			<RunFeatureTest testName="UtilLocalCrouch" />
+			<RunFeatureTest testName="UtilWaitUntilFacingOtherPlayer" />
+		</FeatureTest>
+
+		<FeatureTest name="UtilPlace4mApart">
+			<RunFeatureTest testName="UtilBothSpawnReadyForTeleport" />
+			<Switch>
+				<Case level="Wars/cw2_pier">
+					<DoConsoleCommand command="playerGoto 284 342 155 0 0 180" />
+					<DoConsoleCommand command="sv_moveClientsTo 284 338 155 0 0 0" />
+				</Case>
+				<Case level="Wars/cw2_rooftop_gardens">
+					<DoConsoleCommand command="playerGoto 1058 834 186 0 0 90" />
+					<DoConsoleCommand command="sv_moveClientsTo 1054 834 186 0 0 -90" />
+				</Case>
+				<Default>
+					<DoConsoleCommand command="playerGoto 1800 500 268 0 0 0" />
+					<DoConsoleCommand command="sv_moveClientsTo 1800 504 268 0 0 180" />
+				</Default>
+			</Switch>
+			<RunFeatureTest testName="UtilLocalCrouch" />
+			<RunFeatureTest testName="UtilWaitUntilFacingOtherPlayer" />
+		</FeatureTest>
+
+		<FeatureTest name="UtilPlace1mApart">
+			<RunFeatureTest testName="UtilBothSpawnReadyForTeleport" />
+			<Switch>
+				<Case level="Wars/cw2_pier">
+					<DoConsoleCommand command="playerGoto 253 343 155 0 0 180" />
+					<DoConsoleCommand command="sv_moveClientsTo 253 342 155 0 0 0" />
+				</Case>
+				<Case level="Wars/cw2_rooftop_gardens">
+					<DoConsoleCommand command="playerGoto 1009 851 191 0 0 90" />
+					<DoConsoleCommand command="sv_moveClientsTo 1008 851 191 0 0 -90" />
+				</Case>
+				<Default>
+					<DoConsoleCommand command="playerGoto 1800 500 268 0 0 0" />
+					<DoConsoleCommand command="sv_moveClientsTo 1800 501 268 0 0 180" />
+				</Default>
+			</Switch>
+			<RunFeatureTest testName="UtilLocalCrouch" />
+			<RunFeatureTest testName="UtilWaitUntilFacingOtherPlayer" />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilPlace1mBehind">
+			<RunFeatureTest testName="UtilBothSpawnReadyForTeleport" />
+			<Switch>
+				<Case level="Wars/cw2_pier">
+					<DoConsoleCommand command="playerGoto 253 343 155 0 0 180" />
+					<DoConsoleCommand command="sv_moveClientsTo 253 342 155 0 0 180" />
+				</Case>
+				<Case level="Wars/cw2_rooftop_gardens">
+					<DoConsoleCommand command="playerGoto 978 826 194 0 0 -90" />
+					<DoConsoleCommand command="sv_moveClientsTo 979 826 194 0 0 -90" />
+				</Case>
+				<Default>
+					<DoConsoleCommand command="playerGoto 1800 500 268 0 0 0" />
+					<DoConsoleCommand command="sv_moveClientsTo 1800 501 268 0 0 0" />
+				</Default>
+			</Switch>
+			<RunFeatureTest testName="UtilLocalCrouch" />
+			<RunFeatureTest testName="UtilWaitUntilFacingOtherPlayer" />
+		</FeatureTest>
+				
+		<FeatureTest name="UtilWaitForRemotePlayerFullHealth">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_OtherPlayerHealthRegenerate" />
+			<Wait duration="0.1" />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilWaitForRemotePlayerHealthRecharge">
+			<DoConsoleCommand command="pl_health.normal_threshold_time_to_regenerateMP 0.25" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_OtherPlayerHealthRegenerate" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="20" />
+			<RunFeatureTest testName="UtilWaitForRemotePlayerFullHealth" />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilMakeFriends">
+			<DoConsoleCommand command="pl_spawnCorpseOnDeath 0" />
+			<DoConsoleCommand command="g_AutoReviveTime 1.0" />
+			<Wait duration="0.25"/>
+			<DoConsoleCommand command="kill"/>
+ 			<DoConsoleCommand command="sv_sendConsoleCommand kill"/>
+			<Wait duration="0.25"/>
+			<DoConsoleCommand command="team cell"/>
+			<DoConsoleCommand command="sv_sendConsoleCommand team cell"/>
+		</FeatureTest>
+
+		<FeatureTest name="UtilMakeEnemies">
+			<DoConsoleCommand command="pl_spawnCorpseOnDeath 0" />
+			<DoConsoleCommand command="g_AutoReviveTime 1.0" />
+			<Wait duration="0.25"/>
+			<DoConsoleCommand command="kill"/>
+			<DoConsoleCommand command="sv_sendConsoleCommand kill"/>
+			<Wait duration="0.25"/>
+			<DoConsoleCommand command="team marines"/>
+			<DoConsoleCommand command="sv_sendConsoleCommand team cell"/>
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="runOnClient">
+		<FeatureTest name="TryConnect" description="Keep trying to connect until it works" require="noLevelLoaded" enabled="true" owners="markf;andyc">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Net_ConnectFailed" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Net_ChannelDestroyed" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Init" />
+			<DoConsoleCommand command="connect" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="45" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="waitForInit">
+		<FeatureTest name="LocalClientArrive" description="Needed before other tests are run" require="localPlayerExists" enabled="true" owners="markf;benjo">
+		</FeatureTest>
+		
+		<FeatureTest name="DedicatedClientArrive" description="Needed before other tests are run" require="remotePlayerExists" enabled="true" maxTime="120" owners="markf;benjo">
+		</FeatureTest>
+		
+		<FeatureTest name="SetGameParams" description="Set-up game parameters so that the game doesn't end during the tests" enabled="true" owners="timf">
+			<DoConsoleCommand command="g_scoreLimit 1000" />
+			<DoConsoleCommand command="g_timeLimit 60" />
+			<DoConsoleCommand command="sv_randomLoadoutMethod RandGenerated onSpawn" />
+			<DoConsoleCommand command="pl_health.normal_regeneration_rateMP 1000" />
+			<DoConsoleCommand command="pl_velocityInterpAlwaysSnap 1" />
+		</FeatureTest>
+		
+		<FeatureTest name="DedicatedClientSpawns" description="Dedicated client player spawns itself in" require="remotePlayerExists" enabled="true" owners="markf;benjo" prerequisite="DedicatedClientArrive">
+			<DoConsoleCommand command="g_loadoutServerControlled 1" />
+			<WaitUntilPlayerIsAlive who="firstRemotePlayer" timeout="30"/>
+		</FeatureTest>
+		
+		<FeatureTest name="AllAimingUtilsOK" description="Local player can see remote player when teleported into predetermined position" require="localPlayerExists|remotePlayerExists" enabled="true" owners="timf" prerequisite="DedicatedClientSpawns" >
+			<RunFeatureTest testName="UtilPlace20mApart" />
+			<RunFeatureTest testName="UtilPlace4mApart" />
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<RunFeatureTest testName="UtilPlace1mBehind" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="clientWhenGameVanishes">
+		<FeatureTest name="ClientNoticeServerHasGone" description="Client should automatically return to front end if game is killed by server" enabled="true" maxTime="140" owners="markf;benjo">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Release" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerBeingDestroyed" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerBeingDestroyed" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="120" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="serverQuit">
+		<FeatureTest name="ServerQuit" description="Make the server quit" enabled="true" owners="markf;benjo">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Release" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerBeingDestroyed" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerBeingDestroyed" />
+			<DoConsoleCommand command="disconnect" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="1" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="remotePlayerAiming">
+		<FeatureTest name="RemotePlayerAimingAtLocalPlayer" description="Server is informed that remote player is aiming at local player" require="localPlayerExists|remotePlayerExists" enabled="true" speed="2" owners="timf;markf" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace4mApart" />
+			<RunFeatureTest testName="UtilLocalStand" />
+			<DoConsoleCommand command="g_playersWithDisabledDedicatedInputCrouch 1" />
+			<WaitUntilPlayerAimingAt targetType="anybody" who="localPlayer|firstRemotePlayer" />
+		</FeatureTest>
+		
+		<FeatureTest name="RemotePlayerStopsAimingAtLocalPlayerJumping" description="Server is informed that remote player stops aiming at local player if local player jumps" require="localPlayerExists|remotePlayerExists" enabled="true" speed="0.5" owners="timf;markf" prerequisite="RemotePlayerAimingAtLocalPlayer">
+			<RunFeatureTest testName="RemotePlayerAimingAtLocalPlayer" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_RemotePlayerNowTargettingNobody" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_RemotePlayerNowTargettingSomebody" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<RunFeatureTest testName="UtilLocalCrouch" />
+			<WaitUntilPlayerAimingAt targetType="anybody" who="firstRemotePlayer" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0" />
+		</FeatureTest>
+		
+		<FeatureTest name="RemotePlayerStopsAimingAtLocalPlayerStrafing" description="Server is informed that remote player stops aiming at local player if local player strafes away" require="localPlayerExists|remotePlayerExists" enabled="true" speed="2" owners="timf;markf" prerequisite="RemotePlayerAimingAtLocalPlayer">
+			<RunFeatureTest testName="RemotePlayerAimingAtLocalPlayer" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_RemotePlayerNowTargettingNobody" />
+			<OverrideAnalogInput inputName="xi_movex" value="1" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<OverrideAnalogInput inputName="xi_movex" value="0.1" />
+			<Wait duration="0.5" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_RemotePlayerNowTargettingSomebody" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_RemotePlayerNowTargettingNobody" />
+			<OverrideAnalogInput inputName="xi_movex" value="0" />
+			<Wait duration="1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_RemotePlayerNowTargettingSomebody" />
+			<OverrideAnalogInput inputName="xi_movex" value="-0.1" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="20" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="runOnServer">
+		<FeatureTest name="ServerTestSetup" description="Put players on opposite teams" require="localPlayerExists|remotePlayerExists" enabled="true" owners="timf" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilMakeEnemies" />
+		</FeatureTest>
+		
+		<FeatureTest name="ShootOtherPlayer" description="Local player injures remote player" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="SCAR;Feline;SCARAB;Mk60;K-Volt;Revolver;Nova" speed="2" owners="alexh" prerequisite="AllAimingUtilsOK" >
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_NonLocalPlayerDied" customMessage="Player was killed by a single shot!" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_Shoot" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<RunFeatureTest testName="UtilWaitForRemotePlayerHealthRecharge" />
+		</FeatureTest>
+		
+		<FeatureTest name="ShootKillOtherPlayer" description="Local player guns down remote player" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="SCAR;Feline;SCARAB;Mk60;K-Volt" speed="2" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace4mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_Shoot" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<SetResponseToHittingCCCPoint response="completeTest" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<Wait duration="5" />
+			<Fail />
+		</FeatureTest>
+				
+		<FeatureTest name="MeleeDoesDamage" description="Local player injures remote player with a melee" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Marshall;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag;C4;FragGrenades;FlashBangGrenades" speed="2" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_NonLocalPlayerDied" customMessage="Player was killed by a single melee!" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="Melee_SwingAndAMiss" customMessage="Melee failed to hit anything" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Melee_LocalActorMelee" />
+			<OverrideButtonInput_Press inputName="special" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<RunFeatureTest testName="UtilWaitForRemotePlayerHealthRecharge" />
+		</FeatureTest>
+
+		<FeatureTest name="MeleeFromBehind" description="Local player meleeing remote player from behind kills in a single hit" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Marshall;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag;C4;FragGrenades;FlashBangGrenades" speed="2" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace1mBehind" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Melee_LocalActorMelee" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="Melee_SwingAndAMiss" customMessage="Melee failed to hit anything" />
+			<OverrideButtonInput_Press inputName="special" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+		</FeatureTest>
+
+		<FeatureTest name="MeleeCanKill" description="Local player kills remote player with multiple melees" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Marshall;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag;C4;FragGrenades;FlashBangGrenades" speed="2" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="completeTest" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="Melee_SwingAndAMiss" customMessage="Melee failed to hit anything" />
+			<OverrideAnalogInput inputName="xi_movey" value="0.2" />
+			<RunFeatureTest testName="MeleeRepeat" />
+			<Fail />
+		</FeatureTest>
+		
+		<FeatureTest name="TurnTest" description="As local player turns he keeps sees/stops seeing remote player" require="localPlayerExists|remotePlayerExists" enabled="true" owners="benito" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace4mApart" />
+			<OverrideAnalogInput inputName="xi_rotateyaw" value="1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerNowTargettingNobody" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerNowTargettingSomebody" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerNowTargettingNobody" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerNowTargettingSomebody" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="5" />
+			<OverrideAnalogInput inputName="xi_rotateyaw" value="-1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerNowTargettingNobody" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerNowTargettingSomebody" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerNowTargettingNobody" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerNowTargettingSomebody" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="5" />
+		</FeatureTest>
+
+		<FeatureTest name="ShotgunToChestCloseRange" description="Single shotgun blast from close range kills a player" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="Marshall" speed="2" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+		</FeatureTest>
+		
+		<FeatureTest name="ShotgunToHeadCloseRange" description="Single shotgun blast from close range kills a player" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="Marshall" speed="2" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="HEAD" />
+			<RunFeatureTest testName="UtilLocalStand" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+		</FeatureTest>
+
+		<FeatureTest name="ShotgunKillIncreasesPlayerScore" description="Killing an enemy increases a player's score" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="Marshall" speed="2" owners="benjo" prerequisite="ShotgunToHeadCloseRange">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="HEAD" />
+			<RunFeatureTest testName="UtilLocalStand" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_SvModifyScore" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_ClModifyScore" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HUD_DisplayScoreIncrease" />
+			<DoConsoleCommand command="g_DisableScoring 0" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+		</FeatureTest>
+		
+		<FeatureTest name="ZoomShootOtherPlayer" description="Local player injures remote player" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="SCAR;Feline;SCARAB;Mk60;K-Volt;Revolver;Nova" speed="2" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace20mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_NonLocalPlayerDied" customMessage="Player was killed by a single shot!" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerWeapon_IronSightOn" />
+			<OverrideButtonInput_Press inputName="attack2_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_Shoot" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<RunFeatureTest testName="UtilWaitForRemotePlayerHealthRecharge" />
+		</FeatureTest>
+		
+		<FeatureTest name="ZoomShootOtherPlayerDies" description="Local player guns down remote player" require="localPlayerExists|remotePlayerExists" enabled="true" speed="2" iterateOverParams="SCAR;Feline;SCARAB;Mk60;K-Volt" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace20mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerWeapon_IronSightOn" />
+			<OverrideButtonInput_Press inputName="attack2_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Single_Shoot" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<SetResponseToHittingCCCPoint response="completeTest" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<Wait duration="5" />
+			<Fail />
+		</FeatureTest>
+
+		<FeatureTest name="ZoomLaunchExplosive" description="Local player injures distant remote player with a launched explosive" require="localPlayerExists|remotePlayerExists" enabled="true" speed="2" iterateOverParams="JAW;LTag" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace20mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerWeapon_IronSightOn" />
+			<OverrideButtonInput_Press inputName="attack2_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="2" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Projectile_GrenadeLaunched" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<SetResponseToHittingCCCPoint response="completeTest" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<Wait duration="5" />
+			<Fail />
+		</FeatureTest>
+
+		<FeatureTest name="GrenadeTest" description="Can throw a grenade at a targetted enemy and kill him" require="localPlayerExists|remotePlayerExists" enabled="false" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace20mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="HEAD" />
+			<RunFeatureTest testName="UtilLocalStand" />
+			<SetItem className="FragGrenades" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Throw_Prime" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Throw_Start" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Throw_Stop" />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<SetResponseToHittingCCCPoint response="completeTest" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<Wait duration="5" />
+			<Fail />
+		</FeatureTest>
+		
+		<FeatureTest name="GrenadeDroppedNearEnemy" description="Can kill a nearby enemy with a grenade" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="FragGrenades" speed="2" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<WatchCCCPoint checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<WatchCCCPoint checkpointName="PlayerState_NonLocalPlayerDied"/>
+			<RunFeatureTest testName="UtilDropGrenade" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_OtherPlayerHealthReduced" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_NonLocalPlayerDied" expectedNumHits="1" />
+		</FeatureTest>
+
+		<FeatureTest name="GrenadeOvercookedNearEnemy" description="Can kill a nearby enemy with a grenade" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="FragGrenades" speed="2" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<WatchCCCPoint checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<WatchCCCPoint checkpointName="PlayerState_NonLocalPlayerDied"/>
+			<RunFeatureTest testName="UtilOvercookGrenade" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_OtherPlayerHealthReduced" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_NonLocalPlayerDied" expectedNumHits="1" />
+		</FeatureTest>
+
+		<FeatureTest name="GrenadeOvercooked20mFromEnemy" description="An enemy 20m away from an exploding grenade shouldn't get injured" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="FragGrenades" speed="2" owners="alexh" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace20mApart" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_OtherPlayerHealthReduced" customMessage="Enemy shouldn't be injured when this far away from exploding grenade!"/>
+			<RunFeatureTest testName="UtilOvercookGrenade" />
+		</FeatureTest>
+
+		<FeatureTest name="StampDoesDamage" description="Local player injures remote player with stamp perk" require="localPlayerExists|remotePlayerExists" enabled="true" owners="timf;benp" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<DoConsoleCommand command="Perk -Stamp" />
+			<DoConsoleCommand command="Perk +Stamp" />
+			<OverrideAnalogInput inputName="xi_movey" value="0.2" />
+			<SetResponseToHittingCCCPoint checkpointName="Perk_Stamp_ShowPrompt" response="expectedNext"/>
+			<WaitUntilHitAllExpectedCCCPoints timeout="2" />
+			<OverrideButtonInput_Release inputName="jump" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_Stamp_Triggered"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_Stamp_HitGround"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_Stamp_DoDamage"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<OverrideButtonInput_Press inputName="crouch" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="crouch" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="teamPerks">
+		<FeatureTest name="TeamPerkRadarMe" description="Test functionality of enhanced radar perk" require="localPlayerExists" enabled="true" owners="benp" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilBothSpawnReadyForTeleport" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_TeamPerkWithTimeout_Enter_LocalPlayer" />
+			<DoConsoleCommand command="perk +TeamSuperRadar" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="TeamPerk_EnhancedRadarOn_MyTeam" />
+			<DoConsoleCommand command="perkActivateTeamPerk" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="TeamPerk_EnhancedRadarOff_MyTeam" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_TeamPerkWithTimeout_Leave_LocalPlayer" />
+			<DoConsoleCommand command="perk -TeamSuperRadar" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="0.1" />
+		</FeatureTest>
+
+		<FeatureTest name="TeamPerkRadarFriend" description="Test functionality of enhanced radar perk" require="localPlayerExists" enabled="true" owners="benp" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilMakeFriends" />
+			<RunFeatureTest testName="UtilBothSpawnReadyForTeleport" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_TeamPerkWithTimeout_Enter_NonLocalPlayer" />
+			<DoConsoleCommand command="sv_sendConsoleCommand perk +TeamSuperRadar" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="TeamPerk_EnhancedRadarOn_MyTeam" />
+			<DoConsoleCommand command="sv_sendConsoleCommand perkActivateTeamPerk" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="TeamPerk_EnhancedRadarOff_MyTeam" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_TeamPerkWithTimeout_Leave_NonLocalPlayer" />
+			<DoConsoleCommand command="sv_sendConsoleCommand perk -TeamSuperRadar" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+		</FeatureTest>
+
+		<FeatureTest name="TeamPerkRadarEnemy" description="Test functionality of enhanced radar perk" require="localPlayerExists" enabled="true" owners="benp" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilMakeEnemies" />
+			<RunFeatureTest testName="UtilBothSpawnReadyForTeleport" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_TeamPerkWithTimeout_Enter_NonLocalPlayer" />
+			<DoConsoleCommand command="sv_sendConsoleCommand perk +TeamSuperRadar" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="TeamPerk_EnhancedRadarOn_EnemyTeam" />
+			<DoConsoleCommand command="sv_sendConsoleCommand perkActivateTeamPerk" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="TeamPerk_EnhancedRadarOff_EnemyTeam" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Perk_TeamPerkWithTimeout_Leave_NonLocalPlayer" />
+			<DoConsoleCommand command="sv_sendConsoleCommand perk -TeamSuperRadar" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="friendlyFireTests">
+		<FeatureTest name="FriendlySetup" description="Put both players on the same team" require="localPlayerExists|remotePlayerExists" enabled="true" owners="timf" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilMakeFriends" />
+		</FeatureTest>
+		
+		<FeatureTest name="FriendlyShotgun" description="Bullets should only injure friends if friendly fire ratio is non-zero" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="Jackal" speed="2" owners="alexh" prerequisite="FriendlySetup">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="HEAD" />
+			<RunFeatureTest testName="UtilLocalStand" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<DoConsoleCommand command="g_friendlyFireRatio 0"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Shotgun_Fired" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<SetItem className="%1" />
+			<DoConsoleCommand command="g_friendlyFireRatio 0.1"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="Shotgun_Fired" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitSingleFrame />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+			<!--
+			<SetItem className="%1" />
+			<DoConsoleCommand command="g_friendlyFireRatio 1"/>
+			<SetResponseToHittingCCCPoint response="nothing" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<RunFeatureTest testName="ShotgunToChestCloseRange" />
+			<RunFeatureTest testName="ShotgunToHeadCloseRange" />
+			-->
+		</FeatureTest>	
+
+		<FeatureTest name="FriendlyShotgunKillDecreasesPlayerScore" description="Killing a friend decreases a player's score" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="Marshall" speed="2" owners="benjo" prerequisite="FriendlyShotgun">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="HEAD" />
+			<RunFeatureTest testName="UtilLocalStand" />
+			<SetItem className="%1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_SvModifyScore" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_ClModifyScore" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="HUD_DisplayScoreDecrease" />
+			<DoConsoleCommand command="g_friendlyFireRatio 1"/>
+			<DoConsoleCommand command="g_DisableScoring 0" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="0.5" />
+		</FeatureTest>		
+
+		<FeatureTest name="FriendlyMeleeNoDamage" description="Test meleeing a friend with friendly fire ratio set to 0" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag;C4;FragGrenades;FlashBangGrenades" speed="2" owners="alexh" prerequisite="FriendlySetup">
+			<RunFeatureTest testName="UtilPlace1mBehind" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_OtherPlayerHealthReduced" customMessage="Target was injured when friendly fire ratio was 0!"/>
+			<DoConsoleCommand command="g_friendlyFireRatio 0"/>
+			<RunFeatureTest testName="UtilMeleeFriend" />
+		</FeatureTest>	
+
+		<FeatureTest name="FriendlyMeleeReducedDamage" description="Test meleeing a friend with friendly fire ratio set to 0.1" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag;C4;FragGrenades;FlashBangGrenades" speed="2" owners="alexh" prerequisite="FriendlySetup">
+			<RunFeatureTest testName="UtilPlace1mBehind" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<WatchCCCPoint checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_NonLocalPlayerDied" customMessage="Target died when friendly fire ratio shouldn't have allowed it"/>
+			<DoConsoleCommand command="g_friendlyFireRatio 0.1"/>
+			<RunFeatureTest testName="UtilMeleeFriend" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_OtherPlayerHealthReduced" expectedNumHits="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="FriendlyMeleeFullDamage" description="Test meleeing a friend with friendly fire ratio set to 1" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="Revolver;Hammer;Gauss;DSG1;Grendel;Nova;Jackal;K-Volt;SCAR;Feline;SCARAB;AY69;Mk60;mike;JAW;LTag;C4;FragGrenades;FlashBangGrenades" speed="2" owners="alexh" prerequisite="FriendlySetup">
+			<RunFeatureTest testName="UtilPlace1mBehind" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<WatchCCCPoint checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<WatchCCCPoint checkpointName="PlayerState_NonLocalPlayerDied"/>
+			<DoConsoleCommand command="g_friendlyFireRatio 1"/>
+			<RunFeatureTest testName="UtilMeleeFriend" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_OtherPlayerHealthReduced" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_NonLocalPlayerDied" expectedNumHits="1" />
+		</FeatureTest>	
+
+		<FeatureTest name="FriendlyDroppedGrenadeNoDamage" description="Test detonating a grenade near a friend with friendly fire ratio set to 0" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="FragGrenades" speed="2" owners="alexh" prerequisite="FriendlySetup">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_OtherPlayerHealthReduced" customMessage="Target was injured when friendly fire ratio was 0!"/>
+			<DoConsoleCommand command="g_friendlyFireRatio 0"/>
+			<RunFeatureTest testName="UtilDropGrenade" />
+		</FeatureTest>
+
+		<FeatureTest name="FriendlyDroppedGrenadeReducedDamage" description="Test detonating a grenade near a friend with friendly fire ratio set to 0.1" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="FragGrenades" speed="2" owners="alexh" prerequisite="FriendlySetup">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<WatchCCCPoint checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_NonLocalPlayerDied" customMessage="Target died when friendly fire ratio shouldn't have allowed it"/>
+			<DoConsoleCommand command="g_friendlyFireRatio 0.1"/>
+			<RunFeatureTest testName="UtilDropGrenade" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_OtherPlayerHealthReduced" expectedNumHits="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="FriendlyDroppedGrenadeFullDamage" description="Test detonating a grenade near a friend with friendly fire ratio set to 1" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="FragGrenades" speed="2" owners="alexh" prerequisite="FriendlySetup">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<WatchCCCPoint checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<WatchCCCPoint checkpointName="PlayerState_NonLocalPlayerDied"/>
+			<DoConsoleCommand command="g_friendlyFireRatio 1"/>
+			<RunFeatureTest testName="UtilDropGrenade" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_OtherPlayerHealthReduced" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_NonLocalPlayerDied" expectedNumHits="1" />
+		</FeatureTest>
+
+		<FeatureTest name="FriendlyHeldGrenadeNoDamage" description="Test detonating a grenade near a friend with friendly fire ratio set to 0" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="FragGrenades" speed="2" owners="alexh" prerequisite="FriendlySetup">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_OtherPlayerHealthReduced" customMessage="Target was injured when friendly fire ratio was 0!"/>
+			<DoConsoleCommand command="g_friendlyFireRatio 0"/>
+			<RunFeatureTest testName="UtilOvercookGrenade" />
+		</FeatureTest>
+
+		<FeatureTest name="FriendlyHeldGrenadeReducedDamage" description="Test detonating a grenade near a friend with friendly fire ratio set to 0.1" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="FragGrenades" speed="2" owners="alexh" prerequisite="FriendlySetup">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<WatchCCCPoint checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<SetResponseToHittingCCCPoint response="failTest" checkpointName="PlayerState_NonLocalPlayerDied" customMessage="Target died when friendly fire ratio shouldn't have allowed it"/>
+			<DoConsoleCommand command="g_friendlyFireRatio 0.1"/>
+			<RunFeatureTest testName="UtilOvercookGrenade" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_OtherPlayerHealthReduced" expectedNumHits="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="FriendlyHeldGrenadeFullDamage" description="Test detonating a grenade near a friend with friendly fire ratio set to 1" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="FragGrenades" speed="2" owners="alexh" prerequisite="FriendlySetup">
+			<RunFeatureTest testName="UtilPlace1mApart" />
+			<WatchCCCPoint checkpointName="PlayerState_OtherPlayerHealthReduced" />
+			<WatchCCCPoint checkpointName="PlayerState_NonLocalPlayerDied"/>
+			<DoConsoleCommand command="g_friendlyFireRatio 1"/>
+			<RunFeatureTest testName="UtilOvercookGrenade" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_OtherPlayerHealthReduced" expectedNumHits="1" />
+			<CheckNumCCCPointHits checkpointName="PlayerState_NonLocalPlayerDied" expectedNumHits="1" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="deathTests">
+		<FeatureTest name="LocalPlayerFallToDeath" description="Player dies when falling a long way" require="localPlayerExists" enabled="true" owners="benito;tombe" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilBothSpawnReadyForTeleport" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<Switch>
+				<Case level="Wars/cw2_pier">
+					<DoConsoleCommand command="playerGoto 284 338 300 0 0 0" />
+				</Case>
+				<Default>
+					<DoConsoleCommand command="playerGoto 1800 504 400 0 0 180" />
+				</Default>
+			</Switch>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerDied" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="30" />
+		</FeatureTest>
+
+		<FeatureTest name="RemotePlayerFallToDeath" description="Player dies when falling a long way" require="remotePlayerExists" enabled="true" owners="benito;markf;tombe" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilBothSpawnReadyForTeleport" />
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE" />
+			<Switch>
+				<Case level="Wars/cw2_pier">
+					<DoConsoleCommand command="sv_moveClientsTo 284 338 300 0 0 0" />
+				</Case>
+				<Default>
+					<DoConsoleCommand command="sv_moveClientsTo 1800 504 400 0 0 180" />
+				</Default>
+			</Switch>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="30" />
+		</FeatureTest>
+
+		<FeatureTest name="RemotePlayerCanSuicide" description="Remote player dies when activating 'kill' console command" require="remotePlayerExists" enabled="true" owners="markf" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilPlace4mApart" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<DoConsoleCommand command="sv_sendConsoleCommand kill" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+
+		<FeatureTest name="RemotePlayerNoLongerATargetWhenDies" description="The local player no longer targets a dead remote player" require="remotePlayerExists" enabled="true" owners="timf;colin;tombe" prerequisite="RemotePlayerCanSuicide">
+			<RunFeatureTest testName="UtilPlace4mApart" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerNowTargettingNobody" />
+			<DoConsoleCommand command="sv_sendConsoleCommand kill" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+
+		<FeatureTest name="CreateCorpseForRemotePlayer" description="Remote player is cloned to create a corpse" require="remotePlayerExists" enabled="true" owners="tombe" prerequisite="RemotePlayerCanSuicide">
+			<RunFeatureTest testName="UtilPlace4mApart" />
+			<DoConsoleCommand command="pl_spawnCorpseOnDeath 1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerCloneOnDeath" />
+			<DoConsoleCommand command="sv_sendConsoleCommand kill" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+
+		<FeatureTest name="CreateCorpseForLocalPlayer" description="Local player is cloned to create a corpse" require="localPlayerExists" enabled="true" owners="tombe" prerequisite="AllAimingUtilsOK">
+			<RunFeatureTest testName="UtilBothSpawnReadyForTeleport" />
+			<DoConsoleCommand command="pl_spawnCorpseOnDeath 1" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerDied" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerCloneOnDeath" />
+			<DoConsoleCommand command="kill" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="5" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="restartTests">
+		<FeatureTest name="LevelRestart" description="Restarting the level should reset game rules" enabled="true" owners="benjo" prerequisite="DedicatedClientArrive">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Restart" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerBeingDestroyed"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerBeingDestroyed"/>
+			<!-- SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_ClientConnect_Reset"/ -->
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRulesStandardState_EnterInGame"/>
+			<DoConsoleCommand command="sv_restart" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="1" />
+		</FeatureTest>
+		
+		<FeatureTest name="PlayersBackAfterRestart" description="Players return after level restart" require="localPlayerExists|remotePlayerExists" enabled="true" owners="benjo" prerequisite="LevelRestart">
+			<RunFeatureTest testName="UtilMakeEnemies" />
+		</FeatureTest>
+		
+		<FeatureTest name="PlayersSpawnInAfterRestart" description="Players respawn after level restart" require="localPlayerExists|remotePlayerExists" enabled="true" owners="benjo" prerequisite="LevelRestart">
+			<WaitUntilPlayerIsAlive who="localPlayer|firstRemotePlayer" />
+		</FeatureTest>
+
+		<FeatureTest name="WeaponsStillWorkAfterRestart" description="Local player injures remote player" require="localPlayerExists|remotePlayerExists" enabled="true" iterateOverParams="SCAR;Feline;SCARAB;Mk60;K-Volt;Revolver;Nova" owners="alexh" prerequisite="PlayersSpawnInAfterRestart" >
+			<RunFeatureTest testName="ShootOtherPlayer" />
+		</FeatureTest>
+	</Tests>
+</FeatureTester>

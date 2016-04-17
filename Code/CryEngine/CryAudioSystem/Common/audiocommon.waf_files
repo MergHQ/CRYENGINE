@@ -1,0 +1,14 @@
+{
+	"NoUberFile":
+	{
+		"Root":
+		[
+			"ATLEntityData.h",
+			"AudioLogger.h",
+			"IAudioSystemImplementation.h",
+			"SharedAudioData.h",
+			"SoundAllocator.h",
+			"STLSoundAllocator.h"
+		]
+	}
+}

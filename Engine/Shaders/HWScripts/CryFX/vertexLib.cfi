@@ -1,0 +1,480 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+
+// Common vertex shader. Since almost all techniques share a similar vertex shader, a common vertex shader
+// has been created to save some work/code lines and as an optimization at the same time. 
+//
+//  Notes:
+//    - When adding new features here, make sure they work with instancing
+
+
+#if !%TEMP_VEGETATION
+
+ #define INST_STREAM_CUSTOM                          \
+  #if %_RT_INSTANCING_ATTR													 \
+    float4 InstAmbientOp  : TEXCOORDN;               \
+   #if %_RT_FOG                                      \
+    float4 InstAvgFogVolumeContrib   : TEXCOORDN;    \
+   #endif                                            \
+  #endif                                             \
+  
+#endif
+
+///////////////// Vertex/texture modifiers //////////////////
+
+#include "ModificatorVT.cfi"
+#include "ModificatorTC.cfi"
+
+///////////////// General vertex output //////////////////
+
+struct v2f_sh
+{
+	#if %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+		float4 HPosition  : POSITION;
+	#endif
+
+	#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+		float4 vView     : TEXCOORDN;	// For shadow gen this is world position
+		half4 vNormal    : TEXCOORDN;
+	#endif
+
+	#if (ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION) || %_RT_ALPHATEST || %_RT_ALPHABLEND || %_RT_SAMPLE4 || %_RT_DISSOLVE
+		float2 baseTC : TEXCOORDN;
+	#endif	
+
+	#if !%_RT_HW_PCF_COMPARE || %_RT_CUBEMAP0 || %_RT_SAMPLE0
+		float Depth  : TEXCOORDN;
+	#endif
+
+	#if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4
+		half3 Normal  : TEXCOORDN;
+		float2 Depth2  : TEXCOORDN;
+	#endif
+};
+
+struct vert2FragGeneral
+{  
+#if %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+  OUT_HPOS_IN_WPOS
+#endif  
+  float4 baseTC     : TEXCOORDN;
+
+#if %_RT_FOG || %ANISO_SPECULAR || %TEMP_EYES || %OFFSET_BUMP_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+  float4 vTangent  : TEXCOORDN;
+  float4 vBinormal : TEXCOORDN;
+#endif
+
+  float4 vView     : TEXCOORDN;       
+  
+  float4 screenProj : TEXCOORDN;   //z used for instanced alpha test value  
+
+#if %_RT_DECAL_TEXGEN_2D 
+  float3 DistAtten : TEXCOORDN;
+#endif  
+
+#if %_RT_FOG && !%_RT_DECAL_TEXGEN_2D
+  float4 AvgFogVolumeContrib : TEXCOORDN;
+#endif
+
+#if %_RT_FOG || %_RT_DECAL_TEXGEN_2D || %DECAL
+  float4 Ambient   : TEXCOORDN;
+#endif
+
+#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+  half4 vNormal    : TEXCOORDN;
+#endif
+
+#if %VERTCOLORS || %DIRTLAYER || %BLENDLAYER
+	float4 Color      : COLOR0;
+#endif
+
+	MSAA_SAMPLE_INDEX_PS
+};
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+struct vert2GeomGeneral
+{
+	vert2FragGeneral IN;
+
+	float3 viewExtr : TEXCOORDN;
+	float4 hPosExtr : TEXCOORDN;
+};
+
+struct geom2FragGeneral
+{
+	vert2FragGeneral IN;
+};
+#endif
+
+struct vert2fragZ
+{
+#if %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+	OUT_HPOS_IN_WPOS
+#endif
+ 
+	float4 baseTC     : TEXCOORDN;
+
+#if (!%GRASS && !%TEMP_TERRAIN) || %_RT_ALPHABLEND 
+	// Every mesh outputs tangent space. Grass and base terrain are particular cases, they just output normal
+	half4 vTangent   : TEXCOORDN;
+	half4 vBinormal  : TEXCOORDN;
+#endif
+	half4 vNormalWS   : TEXCOORDN;
+
+
+#if %VERTCOLORS || %DIRTLAYER || %BLENDLAYER 
+	half4 Color      : COLOR0;
+#endif
+
+#if %TEMP_TERRAIN || (%TEMP_VEGETATION && %_RT_BLEND_WITH_TERRAIN_COLOR)
+	float4 terrainParams0    : TEXCOORDN;
+#endif
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %OFFSET_BUMP_MAPPING || %_RT_ALPHABLEND || %TEMP_EYES || %LEAVES || %GRASS
+	#if ORBIS
+		half4 viewTS   : TEXCOORDN;
+	#else
+		half3 viewTS   : TEXCOORDN;
+	#endif
+#endif
+
+	// deferred shading tdb: double check tessellation paths if all correct
+#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+	float4 vView     : TEXCOORDN;
+	float4 vNormal     : TEXCOORDN;
+#endif
+
+#if %_RT_MOTION_BLUR && !%_RT_ALPHABLEND
+	float3 HPosPrev : TEXCOORDN;
+#endif
+
+#if !%TEMP_TERRAIN && !%SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+	FRONT_FACE_PS
+#endif
+};
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+struct vert2geomZ
+{
+	vert2fragZ IN;
+
+	float3 viewExtr     : TEXCOORDN;
+	float4 hPosExtr     : TEXCOORDN;
+
+	float3 wsDirPos     : TEXCOORDN;
+	float3 wsDirPosExtr : TEXCOORDN;
+};
+
+struct geom2fragZ
+{
+	vert2fragZ IN;
+
+	float3 wsTriPos[3]    : TEXCOORDN;
+	float3 wsTriDispl[3]  : TEXCOORDN;
+	float4 wsClipPlane[5] : TEXCOORDN;
+	float3 wsViewDir      : TEXCOORDN;
+
+	float3 texGenU        : TEXCOORDN;
+	float3 texGenV        : TEXCOORDN;
+};
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Common motion blur functions
+
+float3x4 MotionBlurData : PI_MotionBlurData;
+
+float4x4 Matrix_Inst_General_Prev(inout streamPos IN)
+{
+	float4x4 matInstPrev;
+
+	// Instancing support
+#if %_RT_PER_INSTANCE_CB_TEMP
+	matInstPrev[0] = PerInstancePrevWorldMatrix[0];
+	matInstPrev[1] = PerInstancePrevWorldMatrix[1];
+	matInstPrev[2] = PerInstancePrevWorldMatrix[2];
+	matInstPrev[3] = float4(0, 0, 0, 1);
+#elif %_RT_INSTANCING_ATTR
+	matInstPrev[0] = IN.InstMotionBlurData[0];
+	matInstPrev[1] = IN.InstMotionBlurData[1];
+	matInstPrev[2] = IN.InstMotionBlurData[2];
+	matInstPrev[3] = float4(0, 0, 0, 1);
+#else
+	matInstPrev[0] = MotionBlurData[0];
+	matInstPrev[1] = MotionBlurData[1];
+	matInstPrev[2] = MotionBlurData[2];
+	matInstPrev[3] = float4(0, 0, 0, 1);
+#endif
+
+	// Compose matrixes
+#if %_RT_NEAREST	
+	IN.InstMatrix = mul(CV_PrevViewProjNearestMatr, matInstPrev);
+#else
+	IN.InstMatrix = mul(CV_PrevViewProjMatr, matInstPrev);
+#endif
+
+	return matInstPrev;
+}
+
+// Output previous view space position (If skinning used, position is skinned)
+float4 Pos_Prev_VS_General(float4x4 VPMatrix, inout streamPos IN)
+{
+  float4 HPosition;
+
+  static const float4x4 MatrixIdentity =
+	{
+		float4(1,0,0,0),
+		float4(0,1,0,0),
+		float4(0,0,1,0),
+		float4(0,0,0,1)
+	};
+  
+  Matrix_Inst_General_Prev(IN);	// Apply instanced matrix 
+  HPosition = _pos_Modificators(IN.InstMatrix, MatrixIdentity, IN, true, true, 1.f);
+   
+  return HPosition;
+}
+
+///////////////// Shared vertex shader computations //////////////////
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+void vs_shared_output( in app2vertGeneral IN, inout vert2FragGeneral OUT, inout vert2GeomGeneral OUT_ext, inout streamPos vertPassPos, bool bUseBump, bool bRelativeToCam=true )
+#else
+void vs_shared_output( in app2vertGeneral IN, inout vert2FragGeneral OUT, inout streamPos vertPassPos, bool bUseBump, bool bRelativeToCam=true )
+#endif
+{
+  // Common data
+  
+  streamPos_FromGeneral(IN, vertPassPos);
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+	const float3 SilPomDispl = SilPomDisplacement * TangNormal(IN.vertCommon.Tangent, IN.vertCommon.Binormal);
+	vertPassPos.Position.xyz += SilPomDispl * -HeightBias;
+#endif
+
+  float4 vPosDecal = vertPassPos.Position;
+  
+  float4 HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos, bRelativeToCam);     
+  float3 vNorm = vertPassPos.ObjToTangentSpace[2];
+
+  float4 baseTC = vertPassPos.baseTC;
+#if %_RT_DECAL_TEXGEN_2D 
+	_TCModifyDecal( vertPassPos, baseTC, OUT.DistAtten );
+#endif
+
+  // Apply texture modifiers
+ _TCModify(baseTC, OUT.baseTC, vertPassPos.Position, vNorm, TS_DIFFUSE);
+ 
+#if %_RT_FOG || %_RT_DECAL_TEXGEN_2D || %DECAL
+
+  // Output ambient color - for alpha blending, recursive rendering passes, decals also require ambient.w (opacity parameter)
+   OUT.Ambient = AmbientOp;
+
+  #if %_RT_INSTANCING_ATTR
+    #fetchinst (OUT.Ambient = IN.InstAmbientOp, vertPassPos.nInstance);
+  #endif
+
+#endif
+
+#if %_RT_FOG || %ANISO_SPECULAR || %TEMP_EYES || %OFFSET_BUMP_MAPPING || %PARALLAX_OCCLUSION_MAPPING || %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+    // Output tangents only for cases that require it - alpha blending, recursive passes and anisotropic specular
+    // Note: Normalization required for normal diffuse map in world space in case scale used - Do not remove
+    float3 worldTangentS = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[0]) );
+    float3 worldTangentT = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[1]) );
+    float3 worldTangentN = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[2]) );
+    
+    OUT.vTangent = float4(worldTangentS, vertPassPos.Tangent.w); 
+    OUT.vBinormal.xyz = worldTangentT;
+#endif
+
+  OUT.vView.xyz = vertPassPos.WorldPos.xyz;
+#if %_RT_OBJ_IDENTITY
+  OUT.vView.xyz -= g_VS_WorldViewPos.xyz;
+#else
+  vertPassPos.WorldPos.xyz += g_VS_WorldViewPos.xyz;
+#endif
+  
+#if !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+  OUT.HPosition = HPosition;
+#else
+  OUT.vNormal.xyz = normalize(mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.Normal.xyz));
+#endif
+
+  // Output the screen-space texture coordinates - for shadows and general projections
+  OUT.screenProj = HPosToScreenTC(HPosition);
+
+  // Output fog into view-vector W component (to save interpolator)
+#if %_RT_FOG && !%_RT_DECAL_TEXGEN_2D
+#if !%_RT_VOLUMETRIC_FOG
+  OUT.vView.w = GetVolumetricFogDensity(OUT.vView.xyz + g_VS_WorldViewPos.xyz);
+
+ #if %_RT_INSTANCING_ATTR
+   #fetchinst (OUT.AvgFogVolumeContrib = IN.InstAvgFogVolumeContrib, vertPassPos.nInstance);  
+ #else
+   OUT.AvgFogVolumeContrib = AvgFogVolumeContrib;
+ #endif
+
+ #if !%_RT_ALPHABLEND
+    // additive blending case
+    OUT.AvgFogVolumeContrib.w *= OUT.vView.w;
+    OUT.AvgFogVolumeContrib.xyz = 0.0;
+ #endif
+#else
+	OUT.AvgFogVolumeContrib = GetVolumetricFogAnalyticalColor(OUT.vView.xyz).xyzw;
+#endif
+#else
+  OUT.vView.w = vertPassPos.Position.w;
+#endif
+
+#if %VERTCOLORS || %DIRTLAYER || %BLENDLAYER
+  OUT.Color = vertPassPos.Color;
+#endif
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+{
+	streamPos vertPassPosTmp = vertPassPos;
+	vertPassPosTmp.Position.xyz += SilPomDispl;
+
+	const float3 vPosExtr = mul(vertPassPosTmp.InstMatrix, vertPassPosTmp.Position).xyz;
+
+	OUT_ext.viewExtr = vPosExtr;
+	OUT_ext.hPosExtr = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPosTmp);
+}
+#endif
+}
+
+#if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
+void EmitVertexG(in vert2GeomGeneral v, in bool top, inout TriangleStream<geom2FragGeneral> OutStream)
+{
+  geom2FragGeneral Out;
+  Out.IN = v.IN;
+
+  if (top)
+  {
+    Out.IN.HPosition = v.hPosExtr;
+    Out.IN.screenProj = HPosToScreenTC(v.hPosExtr);
+    Out.IN.vView.xyz = v.viewExtr;
+  }
+
+  OutStream.Append(Out);
+}
+
+void EmitPrismG(in vert2GeomGeneral v0, in vert2GeomGeneral v1, in vert2GeomGeneral v2, inout TriangleStream<geom2FragGeneral> OutStream)
+{
+	EmitVertexG(v0, true, OutStream);
+	EmitVertexG(v1, true, OutStream);
+	EmitVertexG(v2, true, OutStream);
+
+	EmitVertexG(v2, false, OutStream);
+	EmitVertexG(v0,  true, OutStream);
+	EmitVertexG(v0, false, OutStream);
+	EmitVertexG(v1,  true, OutStream);
+	EmitVertexG(v1, false, OutStream);
+	EmitVertexG(v2, false, OutStream);
+
+
+	OutStream.RestartStrip();
+}
+
+struct SilhouetteInfo
+{
+	float3 wsTriPos[3];
+	float3 wsTriDispl[3];
+	float4 wsClipPlane[5];
+
+	float3 texGenU;
+	float3 texGenV;
+};
+
+float4 SetupPlane(in float3 p0, in float3 p1, in float3 p2)
+{
+	float3 d0 = p1 - p0;
+	float3 d1 = p2 - p0;
+
+	float3 n = cross(d0, d1);
+	return float4(n, dot(n, p0));
+}
+
+float4 SetupEdgePlane(in vert2geomZ v0, in vert2geomZ v1)
+{
+	float4 p = SetupPlane(v0.wsDirPosExtr, v1.wsDirPos, v1.wsDirPosExtr);
+	if (dot(p.xyz, v0.wsDirPos) > p.w)
+		p = SetupPlane(v0.wsDirPosExtr, v0.wsDirPos, v1.wsDirPosExtr);
+	return p;
+}
+
+SilhouetteInfo SetupSilhouetteInfo(in vert2geomZ v0, in vert2geomZ v1, in vert2geomZ v2)
+{
+	SilhouetteInfo res = (SilhouetteInfo) 0;
+
+	res.wsTriPos[0] = v0.wsDirPos;
+	res.wsTriPos[1] = v1.wsDirPos;
+	res.wsTriPos[2] = v2.wsDirPos;
+
+	res.wsTriDispl[0] = v0.wsDirPosExtr - v0.wsDirPos;
+	res.wsTriDispl[1] = v1.wsDirPosExtr - v1.wsDirPos;
+	res.wsTriDispl[2] = v2.wsDirPosExtr - v2.wsDirPos;
+
+	res.wsClipPlane[0] = SetupPlane(v0.wsDirPosExtr, v1.wsDirPosExtr, v2.wsDirPosExtr); // top
+	res.wsClipPlane[1] = SetupPlane(v0.wsDirPos, v2.wsDirPos, v1.wsDirPos); // bottom
+	res.wsClipPlane[2] = SetupEdgePlane(v0, v1); // edge 0-1
+	res.wsClipPlane[3] = SetupEdgePlane(v1, v2); // edge 1-2
+	res.wsClipPlane[4] = SetupEdgePlane(v2, v0); // edge 2-0
+
+	res.texGenU = float3(v0.IN.baseTC.x, v1.IN.baseTC.x, v2.IN.baseTC.x);
+	res.texGenV = float3(v0.IN.baseTC.y, v1.IN.baseTC.y, v2.IN.baseTC.y);
+
+	return res;
+}
+
+void EmitVertexZ(in vert2geomZ v, in bool top, in SilhouetteInfo info, inout TriangleStream<geom2fragZ> OutStream)
+{
+	geom2fragZ Out = (geom2fragZ) 0;
+
+	Out.IN = v.IN;
+
+	if (top)
+	{
+		Out.IN.HPosition = v.hPosExtr;
+		Out.IN.viewTS = v.viewExtr;
+	}
+
+	for (int i=0; i<3; i++)
+	{
+		Out.wsTriPos[i] = info.wsTriPos[i];
+		Out.wsTriDispl[i] = info.wsTriDispl[i];
+	}
+
+	for (int i=0; i<5; i++)
+	{
+		Out.wsClipPlane[i] = info.wsClipPlane[i];
+	}
+
+	Out.wsViewDir = (top==true) ? v.wsDirPosExtr : v.wsDirPos;
+
+	Out.texGenU = info.texGenU;
+	Out.texGenV = info.texGenV;
+
+	OutStream.Append(Out);
+}
+
+void EmitPrismZ(in vert2geomZ v0, in vert2geomZ v1, in vert2geomZ v2, inout TriangleStream<geom2fragZ> OutStream)
+{
+	SilhouetteInfo info = SetupSilhouetteInfo(v0, v1, v2);
+
+	EmitVertexZ(v0, true, info, OutStream);
+	EmitVertexZ(v1, true, info, OutStream);
+	EmitVertexZ(v2, true, info, OutStream);
+
+	EmitVertexZ(v2, false, info, OutStream);
+	EmitVertexZ(v0,  true, info, OutStream);
+	EmitVertexZ(v0, false, info, OutStream);
+	EmitVertexZ(v1,  true, info, OutStream);
+	EmitVertexZ(v1, false, info, OutStream);
+	EmitVertexZ(v2, false, info, OutStream);
+	OutStream.RestartStrip();
+}
+#endif
+
+/////////////////////// eof ///

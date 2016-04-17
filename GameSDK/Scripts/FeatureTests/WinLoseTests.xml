@@ -1,0 +1,154 @@
+<FeatureTester>
+	<Settings>
+	</Settings>
+	
+	<Tests setName="utils">
+		<FeatureTest name="UtilSpawnBothPlayers" require="localPlayerExists">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_SvDoNotReviveTooSoonAfterDeath" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_SvPerformRevive" />
+			<TrySpawnPlayer who="localPlayer" />
+			<TrySpawnPlayer who="firstRemotePlayer" />
+			<WaitUntilPlayerIsAlive who="localPlayer|firstRemotePlayer" />
+			<WaitSingleFrame />
+		</FeatureTest>
+
+		<FeatureTest name="UtilWaitUntilFacingOtherPlayer">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_LocalPlayerNowTargettingNobody" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="PlayerState_RemotePlayerNowTargettingNobody" />
+			<WaitUntilPlayerAimingAt targetType="enemy" who="localPlayer|firstRemotePlayer" />
+			<Wait duration="0.5" />
+		</FeatureTest>
+		
+		<FeatureTest name="UtilMakeFriends">
+			<DoConsoleCommand command="pl_spawnCorpseOnDeath 0" />
+			<DoConsoleCommand command="g_AutoReviveTime 1.0" />
+			<Wait duration="0.25"/>
+			<DoConsoleCommand command="kill"/>
+ 			<DoConsoleCommand command="sv_sendConsoleCommand kill"/>
+			<Wait duration="0.25"/>
+			<DoConsoleCommand command="team cell"/>
+			<DoConsoleCommand command="sv_sendConsoleCommand team cell"/>
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="clientSetup">
+		<FeatureTest name="TryConnect" description="Keep trying to connect until it works" require="noLevelLoaded" enabled="true" owners="markf;andyc" maxTime="120">
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Net_ConnectFailed" />
+			<SetResponseToHittingCCCPoint response="restartSubroutine" checkpointName="Net_ChannelDestroyed" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_PostInit" />
+			<DoConsoleCommand command="connect" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="100" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="waitForPlayers">
+		<FeatureTest name="LocalPlayerExists" description="Needed before other tests are run" require="localPlayerExists" enabled="true" owners="markf;benjo">
+		</FeatureTest>
+		
+		<FeatureTest name="BothPlayersExist" description="Needed before other tests are run" require="localPlayerExists|remotePlayerExists" enabled="true" maxTime="120" owners="markf;benjo" prerequisite="LocalPlayerExists">
+		</FeatureTest>
+		
+		<FeatureTest name="BothPlayersAlive" description="Needed before other tests are run" require="localPlayerExists|remotePlayerExists" enabled="true" owners="markf;benjo" prerequisite="BothPlayersExist">
+			<WaitUntilPlayerIsAlive who="localPlayer|firstRemotePlayer" timeout="30"/>
+		</FeatureTest>
+	</Tests>
+
+	<Tests setName="serverSetup">
+		<FeatureTest name="PositionPlayers" description="Needed before other tests are run" require="localPlayerExists|remotePlayerExists" enabled="true" speed="2" owners="benjo" prerequisite="BothPlayersAlive">
+			<DoConsoleCommand command="g_scoreLimit 1" />
+			<DoConsoleCommand command="pl_velocityInterpAlwaysSnap 1" />
+			<RunFeatureTest testName="UtilSpawnBothPlayers" />
+			<Wait duration="2" />
+			<Switch>
+				<Case level="Wars/cw2_pier">
+					<DoConsoleCommand command="playerGoto 284 342 155 0 0 180" />
+					<DoConsoleCommand command="sv_moveClientsTo 284 338 155 0 0 0" />
+				</Case>
+				<Default>
+					<DoConsoleCommand command="playerGoto 1800 500 268 0 0 0" />
+					<DoConsoleCommand command="sv_moveClientsTo 1800 504 268 0 0 180" />
+				</Default>
+			</Switch>
+			<WaitUntilPlayerIsAlive who="localPlayer|firstRemotePlayer" timeout="30"/>
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="killEnemyWinGame">
+		<FeatureTest name="DoKill" description="Local player guns down an enemy to win the game" require="localPlayerExists|remotePlayerExists" enabled="true" speed="2" owners="benjo" prerequisite="BothPlayersAlive">
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE2" />
+			<RunFeatureTest testName="UtilWaitUntilFacingOtherPlayer" />
+			<Wait duration="2" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_ClModifyScore" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_OnEndGame" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_GameOverWin" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerProgression_GameOver" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerProgression_MatchBonusWin" />
+			<OverrideButtonInput_Press inputName="attack1_xi" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="5" />
+			<OverrideButtonInput_Release inputName="attack1_xi" />
+		</FeatureTest>		
+	</Tests>
+
+	<Tests setName="putOnSameTeam">
+		<FeatureTest name="DoSameTeam" description="Put everyone on the same team and expect that team to win the game" require="localPlayerExists|remotePlayerExists" enabled="true" speed="2" owners="benjo;tomh" prerequisite="BothPlayersAlive">
+			<DoConsoleCommand command="g_disable_OpponentsDisconnectedGameEnd 0" />
+			<RunFeatureTest testName="UtilMakeFriends" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_OnEndGame" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_GameOverWin" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerProgression_GameOver" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerProgression_MatchBonusWin" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="5" />
+		</FeatureTest>		
+	</Tests>
+
+	<Tests setName="expectToLose">
+		<FeatureTest name="WaitUntilLose" description="Local player is killed so should lose the game" require="localPlayerExists|remotePlayerExists" enabled="true" speed="2" owners="benjo" prerequisite="BothPlayersAlive">
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE2" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerDied" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_OnEndGame" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_GameOverLose" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerProgression_GameOver" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerProgression_MatchBonusLose" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="45" />
+		</FeatureTest>		
+	</Tests>
+	
+	<Tests setName="cycleLevel">
+		<FeatureTest name="DestroyPlayersAndRules" description="Tear it all down!" require="localPlayerExists|remotePlayerExists" enabled="true" owners="benjo" prerequisite="BothPlayersExist">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_LocalPlayerBeingDestroyed" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerBeingDestroyed" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Release" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Destroyed" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="45" />
+		</FeatureTest>
+		
+		<FeatureTest name="NextRoundBegins" description="Bring it all back!" enabled="true" owners="markf;benjo" prerequisite="DestroyPlayersAndRules">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="WeaponSystem_OnLoadingStart" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Init" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_PostInit" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="WeaponSystem_OnLoadingComplete" />			
+			<WaitUntilHitAllExpectedCCCPoints timeOut="58" />
+		</FeatureTest>
+
+		<FeatureTest name="NextRoundCreatePlayers" description="Bring back the players!" require="localPlayerExists|remotePlayerExists" enabled="true" owners="markf;benjo" prerequisite="NextRoundBegins">
+			<RunFeatureTest testName="BothPlayersAlive" />
+		</FeatureTest>
+
+		<!-- This is run on both server and client, so it only needs to move the local player... -->
+		<FeatureTest name="NextRoundPlayersStillAimOK" description="Players should be enemies again" require="localPlayerExists|remotePlayerExists" enabled="true" speed="2" owners="benjo" prerequisite="NextRoundCreatePlayers">
+			<Switch>
+				<Case level="Wars/cw2_pier">
+					<DoConsoleCommand command="playerGoto 284 342 155 0 0 180" />
+				</Case>
+				<Default>
+					<DoConsoleCommand command="playerGoto 1800 500 268 0 0 0" />
+				</Default>
+			</Switch>
+			<SetLocalPlayerLookAt who="firstRemotePlayer" bone="SPINE2" />
+			<Wait duration="0.5" />
+			<OverrideAnalogInput inputName="xi_movey" value="-0.5" />
+			<RunFeatureTest testName="UtilWaitUntilFacingOtherPlayer" />
+		</FeatureTest>
+	</Tests>
+</FeatureTester>

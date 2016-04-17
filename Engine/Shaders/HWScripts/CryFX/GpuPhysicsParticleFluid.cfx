@@ -1,0 +1,909 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2016 Crytek GmbH. All rights reserved.
+
+float Script : STANDARDSGLOBAL<string Script = "NoPreview;"
+                                               "ShaderType = Compute;"
+                                               "LocalConstants;">;
+
+cbuffer g_simulationParameters : register(b3)
+{
+  float c_simulationDeltaTime;
+  float c_stiffness;
+  float c_gravityConstant;
+  float c_h;
+  float c_r0;
+  float c_mass;
+  float c_maxVelocity;
+  float c_maxForce;
+  float c_atmosphericDrag;
+  float c_cohesion;
+  float c_baroclinity;
+  float c_worldOffsetX;
+  float c_worldOffsetY;
+  float c_worldOffsetZ;
+  float c_particleInfluence;
+  float c_pad1;
+  int c_numberOfIterations;
+  int c_gridSizeX;
+  int c_gridSizeY;
+  int c_gridSizeZ;
+  int c_numberOfBodies;
+  int c_numberBodiesInject;
+  int c_pad3;
+  int c_pad4;
+};
+
+struct SBody
+{
+  float3 x;
+  float3 v;
+  float3 xp;
+  float density;
+  float densityPredicted;
+  float alpha;
+  float3 vorticity;
+  int phase;
+  float lifeTime;
+};
+
+struct SGridCell
+{
+  uint count;
+  uint sum;
+  uint blockSum;
+};
+
+#define SDF_GRADIENT_FUDGE 0.005f
+StructuredBuffer<int> adjescencyList : register(t0);
+StructuredBuffer<float> heightField : register(t1);
+StructuredBuffer<int> Volume : register(t2);
+RWStructuredBuffer<SBody> bodies : register(u0);
+RWStructuredBuffer<SBody> bodiesTemp : register(u1);
+RWStructuredBuffer<uint> bodiesOffsets : register(u2);
+RWStructuredBuffer<SGridCell> grid : register(u3);
+
+float sqr(float x) { return x * x; }
+float cube(float x) { return x * x * x; }
+
+float SampleDistance(float3 pos, StructuredBuffer<int> SDF)
+{
+	pos -= float3(c_worldOffsetX, c_worldOffsetY, c_worldOffsetZ);
+
+	float px = clamp(pos.x / c_h, 0.f, c_gridSizeX - 1);
+	float py = clamp(pos.y / c_h, 0.f, c_gridSizeY - 1);
+	float pz = clamp(pos.z / c_h, 0.f, c_gridSizeZ - 1);
+	float fx = px - floor(px), fy = py - floor(py), fz = pz - floor(pz);
+	uint ix = floor(px), iy = floor(py), iz = floor(pz);
+	float result = 0.f;
+
+	result += SDF[(ix+0)+(iy+0)*c_gridSizeX+(iz+0)*c_gridSizeX*c_gridSizeY]*(1.f/65384.f)*(1.f-fz)*(1.f-fy)*(1.f-fx);
+	result += SDF[(ix+1)+(iy+0)*c_gridSizeX+(iz+0)*c_gridSizeX*c_gridSizeY]*(1.f/65384.f)*(1.f-fz)*(1.f-fy)*(    fx);
+	result += SDF[(ix+0)+(iy+1)*c_gridSizeX+(iz+0)*c_gridSizeX*c_gridSizeY]*(1.f/65384.f)*(1.f-fz)*(    fy)*(1.f-fx);
+	result += SDF[(ix+1)+(iy+1)*c_gridSizeX+(iz+0)*c_gridSizeX*c_gridSizeY]*(1.f/65384.f)*(1.f-fz)*(    fy)*(    fx);
+	result += SDF[(ix+0)+(iy+0)*c_gridSizeX+(iz+1)*c_gridSizeX*c_gridSizeY]*(1.f/65384.f)*(    fz)*(1.f-fy)*(1.f-fx);
+	result += SDF[(ix+1)+(iy+0)*c_gridSizeX+(iz+1)*c_gridSizeX*c_gridSizeY]*(1.f/65384.f)*(    fz)*(1.f-fy)*(    fx);
+	result += SDF[(ix+0)+(iy+1)*c_gridSizeX+(iz+1)*c_gridSizeX*c_gridSizeY]*(1.f/65384.f)*(    fz)*(    fy)*(1.f-fx);
+	result += SDF[(ix+1)+(iy+1)*c_gridSizeX+(iz+1)*c_gridSizeX*c_gridSizeY]*(1.f/65384.f)*(    fz)*(    fy)*(    fx);
+
+	return result; 
+}
+
+float3 SampleGradient(float3 pos, StructuredBuffer<int> SDF)
+{
+	float3 result = float3(0.f, 0.f, 0.f);
+	const float fudge = SDF_GRADIENT_FUDGE / c_h;
+	float3 dx = float3(fudge, 0.00f, 0.00f);
+	float3 dy = float3(0.00f, fudge, 0.00f);
+	float3 dz = float3(0.00f, 0.00f, fudge);
+
+	result.x = SampleDistance(pos + dx, SDF) - SampleDistance(pos - dx, SDF);
+	result.y = SampleDistance(pos + dy, SDF) - SampleDistance(pos - dy, SDF);
+	result.z = SampleDistance(pos + dz, SDF) - SampleDistance(pos - dz, SDF);
+
+	result *= 1.f / (2.f * fudge);
+
+	return normalize(result);
+}
+
+float d_w(float p2)
+{
+  return 315.f / (64.f * 3.1415f * cube(cube(c_h))) *
+                  cube(c_h*c_h - p2);
+}
+
+float3 d_dw(float3 p)
+{
+  float l = length(p);
+  const float t = -45.f / (3.1415f * cube(c_h) *
+                           cube(c_h)) *
+                  sqr(c_h - l) / (l + 0.001f);
+  return p * t;
+}
+
+float3 d_lapw(float3 p, float h)
+{
+  const float l = length(p);
+  return (45.f / (3.1415f * cube(c_h) * cube(c_h)))*sqr(c_h - l);
+}
+
+float d_c(float r)
+{
+	if (r > c_h || r < 0.0)
+		return 0;
+
+	float prefactor = 32.0 / 3.1415 / cube(cube(c_h));
+
+	if (r > c_h * 0.5 && r <= c_h)
+		return prefactor * cube(c_h - r) * cube(r);
+
+	return prefactor * (2.0 * cube(c_h - r) * cube(r) - cube(c_h) * cube(c_h) / 64.0);
+}
+
+uint3 GridCalculateCell(float3 pos)
+{
+	float oneOverCellSize = 1.0f / c_h;
+	pos -= float3(c_worldOffsetX, c_worldOffsetY, c_worldOffsetZ);
+
+	uint gi = clamp((uint)(pos.x * oneOverCellSize), 0u, (uint)c_gridSizeX);
+	uint gj = clamp((uint)(pos.y * oneOverCellSize), 0u, (uint)c_gridSizeY);
+	uint gk = clamp((uint)(pos.z * oneOverCellSize), 0u, (uint)c_gridSizeZ);
+	return uint3(gi, gj, gk);
+}
+
+uint GridConstuctKey(uint3 xyz)
+{
+  return xyz.x + xyz.y * c_gridSizeX +
+         xyz.z * c_gridSizeX * c_gridSizeY;
+}
+
+[numthreads(1024, 1, 1)] 
+void ClearGridCS(uint3 DTid : SV_DispatchThreadID)
+{
+  grid[DTid.x].count = 0;
+}
+
+[numthreads(1024, 1, 1)] 
+void AssignAndCountCS(uint3 DTid : SV_DispatchThreadID)
+{
+  unsigned int i = DTid.x;
+  if (i < c_numberOfBodies)
+  {
+    const uint3 gridPos = GridCalculateCell(bodies[i].x);
+    const uint cell = GridConstuctKey(gridPos);
+    InterlockedAdd(grid[cell].count, 1, bodiesOffsets[i]);
+  }
+}
+
+groupshared uint temp[2 * 512];
+
+[numthreads(512, 1, 1)] 
+void PrefixSumBlocksCS(uint3 threadIdx : SV_GroupThreadID, 
+						uint3 groupIdx : SV_GroupID)
+{
+  int thid = threadIdx.x;
+  int blockDim_x = 512;
+  int baseIndex = groupIdx.x * (blockDim_x << 1);
+  int mem_ai = baseIndex + threadIdx.x;
+  int mem_bi = mem_ai + blockDim_x;
+
+  int ai = thid;
+  int bi = thid + blockDim_x;
+
+  temp[ai] = grid[mem_ai].count;
+  temp[bi] = grid[mem_bi].count;
+
+  unsigned int stride = 1;
+
+  // build the sum in place up the tree
+  for (int d = blockDim_x; d > 0; d >>= 1)
+  {
+    AllMemoryBarrierWithGroupSync();
+
+    if (thid < d)
+    {
+      int i = 2 * stride * thid;
+      int ai = i + stride - 1;
+      int bi = ai + stride;
+      temp[bi] += temp[ai];
+    }
+    stride *= 2;
+  }
+
+  if (thid == 0)
+  {
+    int index = (blockDim_x << 1) - 1;
+    temp[index] = 0;
+  }
+
+  // traverse down the tree building the scan in place
+  for (int d = 1; d <= blockDim_x; d *= 2)
+  {
+    stride >>= 1;
+    AllMemoryBarrierWithGroupSync();
+
+    if (thid < d)
+    {
+      int i = 2 * stride * thid;
+      int ai = i + stride - 1;
+      int bi = ai + stride;
+      int t = temp[ai];
+      temp[ai] = temp[bi];
+      temp[bi] += t;
+    }
+  }
+  AllMemoryBarrierWithGroupSync();
+
+  grid[mem_ai].blockSum = temp[ai];
+  grid[mem_bi].blockSum = temp[bi];
+}
+[numthreads(1024, 1, 1)] 
+void BuildGridIndicesCS(uint3 DTid : SV_DispatchThreadID)
+{
+  uint cell = DTid;
+  if (grid[cell].count > 0)
+  {
+	int previousSum = 0;
+	for (int i = 0; i < cell / 1024; ++i)
+	{
+		// [PFX2_TODO_GPU]: add last entry of each block until the own, not perfect yet
+		previousSum +=
+			grid[(i + 1) * 1024 - 1].blockSum + grid[(i + 1) * 1024 - 1].count;
+	}
+
+	grid[cell].sum = previousSum + grid[cell].blockSum;
+  }
+}
+
+[numthreads(1024, 1, 1)] 
+void RearrangeParticlesCS(uint3 DTid : SV_DispatchThreadID)
+{
+  uint i = DTid;
+  if (i < c_numberOfBodies)
+  {
+    uint3 gridPos = GridCalculateCell(bodies[i].x);
+    uint cell = GridConstuctKey(gridPos);
+    uint gridID = grid[cell].sum + bodiesOffsets[i];
+    bodiesTemp[gridID] = bodies[i];
+  }
+}
+
+#include "GpuParticlesCommon.cfi"
+#include "GpuCollisionScreenSpace.cfi"
+
+[numthreads(1024, 1, 1)] void CollisionScreenSpaceCS(uint3 DTid : SV_DispatchThreadID)
+{
+	uint i = DTid;
+	if (i < c_numberOfBodies)
+	{
+		// screenspace collision
+		float3 vpos = bodies[i].xp;
+		float distance = ScreenSpaceDistancePoint(vpos, 0.1, c_h);
+		if (distance < c_h)
+		{
+			float3 surface = ComputeGradient(vpos);
+			bodies[i].xp = bodies[i].x;
+			const float restitution = 1.0f;
+			bodies[i].x =
+				bodies[i].xp - c_simulationDeltaTime * reflect(bodies[i].v, -surface) * restitution;
+		}
+		// [PFX2_TODO_GPU]: This should go somewhere else
+		bodies[i].phase = 0;
+		bodies[i].lifeTime += 0.016;
+	}
+}
+
+[numthreads(1024, 1, 1)] 
+void CalcLambdaCS(uint3 DTid : SV_DispatchThreadID)
+{
+	uint i = DTid;
+
+	if (i < c_numberOfBodies)
+	{
+		float denom = 0.f;
+		float density = 0.f;
+		float3 r = float(0.0, 0.0, 0.0);
+
+		float3 myPos = bodiesTemp[i].xp;
+
+		uint3 gridPos = GridCalculateCell(bodiesTemp[i].xp);
+		unsigned int cell = GridConstuctKey(gridPos);
+		for (int n = 0; n < 27; ++n)
+		{
+			int neighborCell = cell + adjescencyList[n];
+			if (neighborCell > 0 && neighborCell < c_gridSizeX * c_gridSizeY * c_gridSizeZ)
+			{
+				uint gridStart = grid[neighborCell].sum;
+				uint gridEnd = gridStart + grid[neighborCell].count;
+
+				for (uint k = gridStart; k < gridEnd; ++k)
+				{
+					float3 d = myPos - bodiesTemp[k].xp;
+
+					float l2 = dot(d, d);
+					if (l2 < c_h * c_h)
+					{
+						float3 dw = d_dw(d);
+						float3 dc = dw / c_r0;
+						denom += dot(dc, dc);
+						density += d_w(l2);
+						// sum for k == i
+						r += dw;
+					}
+				}
+			}
+		}
+		r /= c_r0;
+		denom += dot(r, r);
+		bodiesTemp[i].density = -constraint / (denom + 0.01);
+	}
+}
+
+// here i try the method presented for a pressure solver
+// in Bender Koshier 2015
+[numthreads(1024, 1, 1)] 
+void CalcDensityCurrCS(uint3 DTid : SV_DispatchThreadID)
+{
+	uint i = DTid;
+
+	if (i < c_numberOfBodies)
+	{
+		float d = 0.0;
+
+		float3 vp = (bodiesTemp[i].xp - bodiesTemp[i].x) / c_simulationDeltaTime;
+		float3 myPos = bodiesTemp[i].x;
+
+		uint3 gridPos = GridCalculateCell(bodiesTemp[i].x);
+		unsigned int cell = GridConstuctKey(gridPos);
+		for (int n = 0; n < 27; ++n)
+		{
+			int neighborCell = cell + adjescencyList[n];
+			if (neighborCell > 0 && neighborCell < c_gridSizeX * c_gridSizeY * c_gridSizeZ)
+			{
+				uint gridStart = grid[neighborCell].sum;
+				uint gridEnd = gridStart + grid[neighborCell].count;
+
+				for (uint k = gridStart; k < gridEnd; ++k)
+				{
+					float3 r = myPos - bodiesTemp[k].x;
+
+					float l2 = dot(r, r);
+					if (l2 < c_h * c_h)
+					{
+						d += c_mass * d_w(l2);
+					}
+				}
+			}
+		}
+	}
+}
+
+// here i try the method presented for a pressure solver
+// in Bender Koshier 2015
+[numthreads(1024, 1, 1)] 
+void PredictDensityCS(uint3 DTid : SV_DispatchThreadID)
+{
+	uint i = DTid;
+
+	if (i < c_numberOfBodies)
+	{
+		float d = 0.0;
+		float dp = 0.0;
+		float3 a = 0.0;
+		float a2 = 0.0;
+		float ddelta = 0.0f;
+
+		float3 vp = (bodiesTemp[i].xp - bodiesTemp[i].x) / c_simulationDeltaTime;
+		float3 myPos = bodiesTemp[i].x;
+
+		uint3 gridPos = GridCalculateCell(bodiesTemp[i].x);
+		unsigned int cell = GridConstuctKey(gridPos);
+		for (int n = 0; n < 27; ++n)
+		{
+			int neighborCell = cell + adjescencyList[n];
+			if (neighborCell > 0 && neighborCell < c_gridSizeX * c_gridSizeY * c_gridSizeZ)
+			{
+				uint gridStart = grid[neighborCell].sum;
+				uint gridEnd = gridStart + grid[neighborCell].count;
+
+				for (uint k = gridStart; k < gridEnd; ++k)
+				{
+					float3 r = myPos - bodiesTemp[k].x;
+
+					float l2 = dot(r, r);
+					if (l2 < c_h * c_h)
+					{
+						float3 vp2 = (bodiesTemp[k].xp - bodiesTemp[k].x) / c_simulationDeltaTime;
+						dp += (vp - vp2) * d_dw(r);
+						d += c_mass * d_w(l2);
+						float3 a_ = c_mass * d_dw(r);
+						a += a_;
+						a2 += dot(a_, a_);
+					}
+				}
+			}
+		}
+
+		bodiesTemp[i].density = d;
+		bodiesTemp[i].densityPredicted = d + dp * c_simulationDeltaTime * c_mass;
+		bodiesTemp[i].alpha = max(a2 + dot(a, a), 0.00001);
+	}
+}
+
+float KappaFactor(int i)
+{
+	float kappa = (bodiesTemp[i].densityPredicted - c_r0) * c_stiffness;
+	return max(kappa, 0.0);
+}
+
+[numthreads(1024, 1, 1)] 
+void CorrectDensityErrorCS(uint3 DTid : SV_DispatchThreadID)
+{
+	uint i = DTid;
+
+	if (i < c_numberOfBodies)
+	{
+		float3 correction = float3(0.0, 0.0, 0.0);
+
+		float3 myPos = bodiesTemp[i].x;
+
+		float3 force = float3(0.f, 0.f, 0.f);
+		float3 velGradient = float3(0.f, 0.f, 0.f);
+		float3 normal = float3(0.0, 0.0, 0.0);
+
+		uint3 gridPos = GridCalculateCell(bodiesTemp[i].x);
+		unsigned int cell = GridConstuctKey(gridPos);
+		for (int n = 0; n < 27; ++n)
+		{
+			int neighborCell = cell + adjescencyList[n];
+			if (neighborCell > 0 && neighborCell < c_gridSizeX * c_gridSizeY * c_gridSizeZ)
+			{
+				uint gridStart = grid[neighborCell].sum;
+				uint gridEnd = gridStart + grid[neighborCell].count;
+
+				for (uint k = gridStart; k < gridEnd; ++k)
+				{
+					float3 d = myPos - bodiesTemp[k].x;
+
+					float l2 = dot(d, d);
+					if (l2 < c_h * c_h)
+					{
+						velGradient += c_mass / bodiesTemp[k].density * d_dw(d) * abs(bodiesTemp[k].v);
+						normal += c_mass / bodiesTemp[k].density * d_dw(d);
+						correction += 
+							(KappaFactor(i) / sqr(bodiesTemp[i].density) +
+							KappaFactor(k) / sqr(bodiesTemp[k].density)) *
+							d_dw(d);
+
+						float3 forceVorticity = cross(bodiesTemp[k].vorticity, d) * d_w(l2);
+						force += forceVorticity;
+
+						float3 forceCohesion =
+								c_cohesion * c_mass * c_mass * d_c(sqrt(l2)) * d / (sqrt(l2) + 0.00001);
+						force += forceCohesion;
+					}
+				}
+			}
+		}
+		float3 vp = (bodiesTemp[i].xp - bodiesTemp[i].x) / c_simulationDeltaTime;
+		//	bodiesTemp[i].vp += - c_simulationDeltaTime * c_mass * correction;
+		vp += -c_simulationDeltaTime * c_mass * correction;
+		vp += force * c_simulationDeltaTime;
+
+		bodiesTemp[i].xp = bodiesTemp[i].x + vp * c_simulationDeltaTime;
+		bodiesTemp[i].vorticity += 
+			(bodiesTemp[i].vorticity * velGradient * 0.1f +
+			c_baroclinity * cross(normal, float3(0, 0, c_gravityConstant))) *
+			c_simulationDeltaTime;
+	}
+}
+
+float KappaForDivergence(int i)
+{
+  // because densityPredicted was calculated exaclty with sum (m_j * (v_i - v_j)) * Delta W
+  float DrhoDt_i = (bodiesTemp[i].densityPredicted - bodiesTemp[i].density) * 10.0;
+  return max(DrhoDt_i, 0.0);
+}
+
+[numthreads(1024, 1, 1)] 
+void CorrectDivergenceErrorCS(uint3 DTid : SV_DispatchThreadID)
+{
+	uint i = DTid;
+
+	if (i < c_numberOfBodies)
+	{
+		float3 d_vp = float3(0.0, 0.0, 0.0);
+
+		float kappa_i = KappaForDivergence(i);
+
+		float3 myPos = bodiesTemp[i].x;
+		uint3 gridPos = GridCalculateCell(bodiesTemp[i].x);
+		unsigned int cell = GridConstuctKey(gridPos);
+		for (int n = 0; n < 27; ++n)
+		{
+			int neighborCell = cell + adjescencyList[n];
+			if (neighborCell > 0 && neighborCell < c_gridSizeX * c_gridSizeY * c_gridSizeZ)
+			{
+				uint gridStart = grid[neighborCell].sum;
+				uint gridEnd = gridStart + grid[neighborCell].count;
+				for (uint k = gridStart; k < gridEnd; ++k)
+				{
+					float3 d = myPos - bodiesTemp[k].x;
+					float l2 = dot(d, d);
+					if (l2 < c_h * c_h)
+					{
+						float kappa_k = KappaForDivergence(k);
+						d_vp += (kappa_i / bodiesTemp[i].density + kappa_k / bodiesTemp[i].density) * d_dw(d);
+					}
+				}
+			}
+		}
+		float3 vp = (bodiesTemp[i].xp - bodiesTemp[i].x) / c_simulationDeltaTime;
+		vp += -c_simulationDeltaTime * c_mass * d_vp * c_mass * c_simulationDeltaTime;
+		bodiesTemp[i].xp = bodiesTemp[i].x + vp * c_simulationDeltaTime;
+	}
+}
+
+[numthreads(1024, 1, 1)] 
+void CalcDensityCS(uint3 DTid : SV_DispatchThreadID)
+{
+	uint i = DTid;
+
+	if (i < c_numberOfBodies)
+	{
+		float3 r = float3(0.0, 0.0,0.0);
+		float3 myPos = bodiesTemp[i].xp;
+		float d = 0.0;
+
+		uint3 gridPos = GridCalculateCell(bodiesTemp[i].xp);
+		unsigned int cell = GridConstuctKey(gridPos);
+		for (int n = 0; n < 27; ++n)
+		{
+			int neighborCell = cell + adjescencyList[n];
+			if (neighborCell > 0 && neighborCell < c_gridSizeX * c_gridSizeY * c_gridSizeZ)
+			{
+				uint gridStart = grid[neighborCell].sum;
+				uint gridEnd = gridStart + grid[neighborCell].count;
+
+				for (uint k = gridStart; k < gridEnd; ++k)
+				{
+					float3 r = myPos - bodiesTemp[k].xp;
+					float l2 = dot(r, r);
+					if (l2 < c_h * c_h)
+					{
+						d += c_mass * d_w(l2);
+					}
+				}
+			}
+		}
+		bodiesTemp[i].density = d;
+	}
+}
+
+float CalculatePressure(float density, float exponent)
+{
+  return c_stiffness * max(pow(density / c_r0, exponent) - 1.0, 0.0);
+}
+
+float3 CalcGradientPressure(float r, float pressure_i, float pressure_k, float density_i, float density_k, float3 diff)
+{
+  float pressureAvg = 0.5 * (pressure_i + pressure_k);
+  return c_mass * (-45.0 / (3.1415f * cube(sqr(c_h)))) * pressureAvg / density_k * (c_h - r) * (c_h - r) / (r+0.001) * diff;
+}
+
+[numthreads(1024, 1, 1)] 
+void DeltaPosPressureCS(uint3 DTid : SV_DispatchThreadID)
+{
+	uint i = DTid;
+
+	if (i < c_numberOfBodies)
+	{
+		float3 myPos = bodiesTemp[i].x;
+		float3 normal = float3(0.0, 0.0, 0.0);
+		float3 vel = (bodiesTemp[i].xp - bodiesTemp[i].x) / c_simulationDeltaTime;
+
+		float3 force = float3(0.f, 0.f, 0.f);
+		float stiffness = c_stiffness * 1.0;
+		float3 velGradient = float3(0.f, 0.f, 0.f);
+
+		float pressure_i = CalculatePressure(bodiesTemp[i].densityPredicted, 1.0);
+
+		uint3 gridPos = GridCalculateCell(bodiesTemp[i].x);
+		unsigned int cell = GridConstuctKey(gridPos);
+		for (int n = 0; n < 27; ++n)
+		{
+			int neighborCell = cell + adjescencyList[n];
+			if (neighborCell > 0 && neighborCell < c_gridSizeX * c_gridSizeY * c_gridSizeZ)
+			{
+				uint gridStart = grid[neighborCell].sum;
+				uint gridEnd = gridStart + grid[neighborCell].count;
+
+				for (uint k = gridStart; k < gridEnd; k++)
+				{
+					float3 d = bodiesTemp[k].x - myPos;
+
+					const float l2 = dot(d, d);
+					if (l2 < c_h * c_h)
+					{
+						velGradient += c_mass / bodiesTemp[k].density * d_dw(d) * abs(bodiesTemp[k].v);
+						normal += c_mass / bodiesTemp[k].density * d_dw(d);
+						float pressure_k = CalculatePressure(bodiesTemp[k].densityPredicted, 1.0);
+
+						float3 forcePressure = 
+							CalcGradientPressure(sqrt(l2), pressure_i, pressure_k, bodiesTemp[i].densityPredicted, bodiesTemp[k].densityPredicted, d);
+						//float3 forcePressure =
+						//		d_dw(d) * (pressure_i + pressure_k) / (2.0 * lamb[i] * lamb[k]) * c_mass;
+ 
+						force += forcePressure;
+
+						float3 forceVorticity = cross(bodiesTemp[k].vorticity, d) * d_w(l2);
+						force += forceVorticity;
+
+						float3 forceCohesion =
+							c_cohesion * c_mass * c_mass * d_c(sqrt(l2)) * d / (sqrt(l2) + 0.00001);
+						force += forceCohesion;
+					}
+				}
+			}
+		}
+
+		// force clamping
+		float l = length(force);
+		if (l > c_maxForce)
+		{
+			force *= c_maxForce / l;
+		}
+		
+		vel += force * c_simulationDeltaTime;
+		bodiesTemp[i].xp = bodiesTemp[i].x + vel * c_simulationDeltaTime;
+		bodiesTemp[i].vorticity += (bodiesTemp[i].vorticity * velGradient * 0.1f  +
+			c_baroclinity * cross(normal, float3(0, 0, c_gravityConstant))) * c_simulationDeltaTime;
+	}
+}
+
+[numthreads(1024, 1, 1)] 
+void DeltaPosCS(uint3 DTid : SV_DispatchThreadID)
+{
+	uint i = DTid;
+	if (i < c_numberOfBodies)
+	{
+		float3 deltaPos = float3(0.f, 0.f, 0.f);
+		float3 myPos = bodiesTemp[i].xp;
+		float reference = d_w(0.3 * 0.3 * c_h * c_h);
+
+		uint3 gridPos = GridCalculateCell(bodiesTemp[i].xp);
+		unsigned int cell = GridConstuctKey(gridPos);
+		for (int n = 0; n < 27; ++n)
+		{
+			int neighborCell = cell + adjescencyList[n];
+			if (neighborCell > 0 && neighborCell < c_gridSizeX * c_gridSizeY * c_gridSizeZ)
+			{
+				uint gridStart = grid[neighborCell].sum;
+				uint gridEnd = gridStart + grid[neighborCell].count;
+
+				for (uint k = gridStart; k < gridEnd; k++)
+				{
+					float3 d = myPos - bodiesTemp[k].xp;
+					const float l2 = dot(d, d);
+					if (l2 < c_h * c_h)
+					{
+						float r = d_w(l2) / reference;
+						const float scorr = -0.5f * r * r * r * r;
+						const float s = bodiesTemp[i].density + bodiesTemp[k].density + scorr;
+
+						float3 g = d_dw(d);
+						deltaPos = deltaPos + g * s;
+					}
+				}
+			}
+		}
+		bodiesTemp[i].xp += deltaPos / (c_r0 * 10.0);
+	}
+}
+
+bool IsInDomain(float3 pos)
+{
+	if (pos.x < c_worldOffsetX)
+	  return false;
+	if (pos.y < c_worldOffsetY)
+	  return false;
+	if (pos.z < c_worldOffsetZ)
+	  return false;
+	if (pos.x >= c_worldOffsetX + c_gridSizeX * c_h)
+	  return false;
+	if (pos.y >= c_worldOffsetY + c_gridSizeY * c_h)
+	  return false;
+	if (pos.z >= c_worldOffsetZ + c_gridSizeZ * c_h)
+	  return false;
+	  
+	return true;
+}
+
+[numthreads(1024, 1, 1)] 
+void PositionUpdateCS(uint3 DTid : SV_DispatchThreadID)
+{
+	unsigned int j = DTid;
+
+	if (j < c_numberOfBodies)
+	{
+		if (bodiesTemp[j].lifeTime > 3.0)
+			return;
+
+		if (!IsInDomain(bodiesTemp[j].x))
+			return;
+
+		unsigned int i = bodies.IncrementCounter();
+
+		// copy back arrays
+		bodies[i] = bodiesTemp[j];
+
+		// position update
+		bodies[i].v = (bodies[i].xp - bodies[i].x) / c_simulationDeltaTime;
+
+		// safety
+		float l = length(bodies[i].v);
+		if (l > c_maxVelocity)
+		{
+			bodies[i].v *= c_maxVelocity / l;
+			bodies[i].xp = bodies[i].x + bodies[i].v * c_simulationDeltaTime;
+		}
+		bodies[i].x = bodies[i].xp;
+
+		// velocity modification goes here
+
+		float3 fdrag = -c_atmosphericDrag * (bodies[i].v) * (1 - bodies[i].density / c_r0);
+		bodies[i].v += c_simulationDeltaTime * fdrag;
+
+		// apply gravity
+		bodies[i].v.z -= c_simulationDeltaTime * c_gravityConstant;
+		// predict position
+		bodies[i].xp = bodies[i].x + bodies[i].v * c_simulationDeltaTime;
+	}
+}
+
+StructuredBuffer<SBody> bodiesInject : register(t0);
+
+[numthreads(1024, 1, 1)] 
+void BodiesInjectCS(uint3 DTid : SV_DispatchThreadID)
+{
+	int i = DTid.x;
+	if (i < c_numberBodiesInject)
+	{
+		bodies[c_numberOfBodies + i] = bodiesInject[i];
+	}
+}
+
+RWStructuredBuffer<SDefaultParticleData> externalParticleData : register(u5);
+
+[numthreads(1024, 1, 1)] 
+void EvolveExternalParticlesCS(uint3 DTid : SV_DispatchThreadID)
+{
+	int i = DTid.x;
+	if (i < c_numParticles)
+	{
+		float density = 0.0;
+		float3 avgVel = float3(0.0, 0.0, 0.0);
+
+		float3 myPos = externalParticleData[i].position;
+		uint3 gridPos = GridCalculateCell(myPos);
+		unsigned int cell = GridConstuctKey(gridPos);
+
+		for (int n = 0; n < 27; ++n)
+		{
+			int neighborCell = cell + adjescencyList[n];
+			if (neighborCell > 0 && neighborCell < c_gridSizeX * c_gridSizeY * c_gridSizeZ)
+			{
+				uint gridStart = grid[neighborCell].sum;
+				uint gridEnd = gridStart + grid[neighborCell].count;
+
+				for (uint k = gridStart; k < gridEnd; k++)
+				{
+					float3 d = myPos - bodiesTemp[k].x;
+					const float l2 = dot(d, d);
+					if (l2 < c_h * c_h)
+					{
+						float w = d_w(l2);
+						density += w;
+						avgVel += bodiesTemp[k].v * w;
+						bodiesTemp[k].phase = 1;
+						bodiesTemp[k].lifeTime = 0.0;
+					}
+				}
+			}
+		}
+		if (density > 0.0)
+		{
+			float3 vel = (avgVel / density);
+			externalParticleData[i].velocity += (vel - externalParticleData[i].velocity) * c_particleInfluence;
+		}
+		else
+			externalParticleData[i].velocity = 0.0;
+	}
+}
+
+//////////////////////////////// techniques ////////////////
+
+technique ClearGrid
+{
+  pass p0 { ComputeShader = ClearGridCS(); }
+}
+
+technique AssignAndCount
+{
+  pass p0 { ComputeShader = AssignAndCountCS(); }
+}
+
+technique PrefixSumBlocks
+{
+  pass p0 { ComputeShader = PrefixSumBlocksCS(); }
+}
+
+technique BuildGridIndices
+{
+  pass p0 { ComputeShader = BuildGridIndicesCS(); }
+}
+
+technique RearrangeParticles
+{
+  pass p0 { ComputeShader = RearrangeParticlesCS(); }
+}
+
+technique CollisionScreenSpace
+{
+  pass p0 { ComputeShader = CollisionScreenSpaceCS(); }
+}
+
+technique CalcLambda
+{
+  pass p0 { ComputeShader = CalcLambdaCS(); }
+}
+
+technique CalcDensity
+{
+  pass p0 { ComputeShader = CalcDensityCS(); }
+}
+technique CalcDensityCurr
+{
+  pass p0 { ComputeShader = CalcDensityCurrCS(); }
+}
+
+technique DeltaPosPressure
+{
+  pass p0 { ComputeShader = DeltaPosPressureCS(); }
+}
+
+technique DeltaPos
+{
+  pass p0 { ComputeShader = DeltaPosCS(); }
+}
+
+technique PositionUpdate
+{
+  pass p0 { ComputeShader = PositionUpdateCS(); }
+}
+
+technique BodiesInject
+{
+	pass p0 { ComputeShader = BodiesInjectCS(); }
+}
+
+technique EvolveExternalParticles
+{
+	pass p0 { ComputeShader = EvolveExternalParticlesCS(); }
+}
+
+technique PredictDensity
+{
+  pass p0 { ComputeShader = PredictDensityCS(); }
+}
+
+technique CorrectDensityError
+{
+  pass p0 { ComputeShader = CorrectDensityErrorCS(); }
+}
+
+technique CorrectDivergenceError
+{
+  pass p0 { ComputeShader = CorrectDivergenceErrorCS(); }
+}
+
+/////////////////////// eof ///

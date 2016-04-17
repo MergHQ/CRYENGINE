@@ -1,0 +1,22 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'lua', 
+		vs_filter = 'Libs',
+		file_list = 'lua.waf_files',
+		exclude_from_static_code_analyzer = True,
+
+		module_provides = dict(
+			includes = [ Path('Code/SDKs/Lua/src'), ],
+		),
+	)
+
+	bld.CryConsoleApplication(
+		target     = 'LuaCompiler',
+		vs_filter  = 'Tools',
+		file_list  = 'luac.waf_files',
+		exclude_from_static_code_analyzer = True,
+		use_module = [ 'lua' ],
+	)

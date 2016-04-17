@@ -1,0 +1,27 @@
+<MercyTimeFilters>
+  <!-- Projectile
+        class  - Projectile class name
+        filter - 'none' apply damage no matter the owner / 'self' apply damage unless the player is the owner -->
+  <DifficultyFilters>
+    <Difficulty level="1" killAfterHits="3" />
+    <Difficulty level="2" killAfterHits="2" />
+    <Difficulty level="3" killAfterHits="1" />
+    <Difficulty level="4" killAfterHits="1" />
+    <Difficulty level="5" killAfterHits="1" />
+  </DifficultyFilters>
+  <ProjectileFilters>
+    <Projectile class="SmartMineExplosive" filter="none" /> <!-- Note 'self' won't work with mines right now shot by the player -->
+    <Projectile class="explosivegrenade" filter="self" />
+    <Projectile class="alienrocket" filter="self" />
+    <Projectile class="alienmortar" filter="self" />
+    <Projectile class="Pinger_Plasma" filter="self" />
+    <Projectile class="LightningBolt" filter="self" />
+    <Projectile class="Gunship_missile" filter="none" />
+    <Projectile class="GaussBullet" filter="self" />
+    <Projectile class="AlienBatteryExplosive" filter="none" />  
+    <Projectile class="GruntGrenade" filter="none" />
+    <Projectile class="TowerRocket" filter="none" />
+    <Projectile class="rocket" filter="self" />
+    <Projectile class="HuskRocket" filter="none" />
+  </ProjectileFilters>
+</MercyTimeFilters>

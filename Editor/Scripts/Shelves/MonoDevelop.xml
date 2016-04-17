@@ -1,0 +1,8 @@
+<toolboxmacros>
+ <macro title="Open MonoDevelop" shortcut="" icon="icons\mono_open.png" tooltip="Open MonoDevelop">
+  <command type="3" text="plugin.mono_open_monodevelop" bVariableToggle="0"/>
+ </macro>
+ <macro title="Reload Game" shortcut="" icon="icons\mono_reload.png" tooltip="Reload the managed game assembly">
+  <command type="3" text="plugin.mono_reload_game" bVariableToggle="0"/>
+ </macro>
+</toolboxmacros>

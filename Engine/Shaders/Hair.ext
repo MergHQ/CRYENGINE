@@ -1,0 +1,110 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2004.
+// -------------------------------------------------------------------------
+//  File name:   Hair.ext
+//  Version:     v1.00
+//  Created:     01/08/2005 by Tiago Sousa
+//  Compilers:   
+//  Description: Hair shader extension used by the editor
+//               for automatic shader generation (based on "Hair" shader template)
+// -------------------------------------------------------------------------
+//  History:
+//
+////////////////////////////////////////////////////////////////////////////
+
+Version (1.00)
+
+UsesCommonGlobalFlags
+
+Property
+{
+  Name = %NORMAL_MAP
+  Mask = 0x1
+  Property    (Normal map)
+  Description (Use normal-map texture)
+  DependencySet = $TEX_Normals
+  DependencyReset = $TEX_Normals
+  Hidden
+}
+
+Property
+{
+  Name = %VERTCOLORS
+  Mask = 0x10
+  Property    (Vertex Colors)
+  Description (Use vertex colors)
+}
+
+Property
+{
+  Name = %HAIR_PASS
+  Mask = 0x20
+  Property    (Hair Pass)
+  DependencySet = $UserEnabled
+  Hidden
+}
+
+Property
+{
+  Name = %ANISO_SPECULAR
+  Mask = 0x40
+  Property    (Anisotropic specular)
+  DependencySet = $UserEnabled
+  Hidden
+}
+
+Property
+{
+  Name = %DIRECTION_MAP
+  Mask = 0x200
+  Property    (Direction map)
+  Description (Use direction map as separate texture)
+  DependencySet = $TEX_Detail
+  DependencyReset = $TEX_Detail
+  Hidden
+}
+
+Property
+{
+  Name = %VIEW_ALIGNED_STRANDS
+  Mask = 0x800
+  Property    (View aligned strands)
+  Description (View aligned cards that get extruded from thin quads with texture u-coords 0 and 1)
+}
+
+Property
+{
+  Name = %THIN_HAIR
+  Mask = 0x1000
+  Property    (Thin hair)
+  Description (Thin alpha-blended hair)
+}
+
+Property
+{
+  Name = %HAIR_AMBIENT
+  Mask = 0x2000
+  Property    (Ambient cubemap)
+  Description (Use (nearest) cubemap specified in environment map slot for ambient lighting)
+  DependencyReset = $TEX_EnvCM
+}
+
+Property
+{
+  Name = %ENFORCE_TILED_SHADING
+  Mask = 0x4000
+  Property    (Enforce tiled shading)
+  Description (Force hair to be fully affected by tiled shading. This can be expensive for dense hair meshes.)
+}
+
+Property
+{
+  Name = %WIND_BENDING
+  Mask = 0x40000000
+  Property    (Wind bending)
+  Description (Gets affected by wind entities. Use extra shader parameters to tweak look.)
+}
+

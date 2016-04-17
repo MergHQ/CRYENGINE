@@ -1,0 +1,171 @@
+<ProcDefs>
+	<Aiming anim="false">
+		<Params />
+	</Aiming>
+	<Looking anim="false">
+		<Params />
+	</Looking>
+	<AimPose anim="true">
+		<Params blendTime="1.0" layer="0"/>
+	</AimPose>
+	<LookPose anim="true">
+		<Params blendTime="1.0" layer="0"/>
+	</LookPose>
+	<RandomLookAround anim="true">
+		<Params smoothTime="1.0" layer="4" yawMin="-1.0" yawMax="1.0" pitchMin="0.0" pitchMax="0.5" timeMin="1.0" timeMax="2.0" />
+	</RandomLookAround >
+	<RandomAimAround anim="false">
+		<Params smoothTime="1.0" layer="4" yawMin="-1.0" yawMax="1.0" pitchMin="0.0" pitchMax="0.5" timeMin="1.0" timeMax="2.0" />
+	</RandomAimAround>
+	<PositionAdjust anim="false">
+		<Params x="-1.0" y="1.0" z="0.0" yaw="0.0"/>
+		<Inputs>
+			<Input name="TargetPos" type="WorldPosition"/>
+		</Inputs>
+	</PositionAdjust >
+	<PositionAdjustAnimPos anim="false">
+		<Params ignoreRotation ="0.0" ignorePosition ="0.0"/>
+		<Inputs>
+			<Input name="TargetPos" type="WorldPosition"/>
+		</Inputs>
+	</PositionAdjustAnimPos >
+	<PositionAdjustAnimPosContinuously anim="false">
+		<Params />
+		<Inputs>
+			<Input name="TargetPos" type="WorldPosition"/>
+		</Inputs>
+	</PositionAdjustAnimPosContinuously >
+	<PositionAdjustTargetLocator anim="false"  string="Locator" crcString="SlaveScope">
+		<Params targetState="-1"/>
+	</PositionAdjustTargetLocator >
+	<SwapHand anim="false">
+		<Params />
+	</SwapHand >
+	<AttachPnT anim="false" string="AttachmentPt">
+		<Params />
+	</AttachPnT >
+	<Audio anim="false" string="StartTrigger" string2="StopTrigger" crcString="AttachmentJoint" >
+		<Params
+			radius="0.0"
+			synchedStop="0.0"
+			forceStopOnExit="0.0"
+			/>
+	</Audio>
+	<ParticleEffect anim="false" string="Effect" locator="1" referenceBone="1">
+		<Params cloneAttachment="0"/>
+	</ParticleEffect>
+	<Ragdoll anim="false">
+		<Params	sleep="0.0" stiffness="500.0" />
+	</Ragdoll>
+	<ForceFeedback anim="false" string="ForceFeedbackID">
+		<Params scale="1.0" delay="0.0"/>
+	</ForceFeedback>
+	<WeaponPose anim="false">
+		<Params
+      pose_type="0.0"
+      zoom_transition_angle="0.0"
+      position_x="0.0"
+      position_y="0.0"
+      position_z="0.0"
+      rotation_x="0.0"
+      rotation_y="0.0"
+      rotation_z="0.0"
+    />
+	</WeaponPose>
+	<WeaponSway anim="false">
+		<Params
+      easeFactorInc="0.0"
+	    easeFactorDec="0.0"
+	    strafeScopeFactor="0.0"
+	    rotateScopeFactor="0.0"
+	    velocityInterpolationMultiplier="0.0"
+	    velocityLowPassFilter="0.0"
+	    accelerationSmoothing="0.0"
+	    accelerationFrontAugmentation="0.0"
+	    verticalVelocityScale="0.0"
+	    sprintCameraAnimation="0.0"
+	    look_offset_x="0.0"
+      look_offset_y="0.0"
+	    horiz_look_rot_x="0.0"
+      horiz_look_rot_y="0.0"
+      horiz_look_rot_z="0.0"
+	    vert_look_rot_x="0.0"
+      vert_look_rot_y="0.0"
+      vert_look_rot_z="0.0"
+	    strafe_offset_x="0.0"
+      strafe_offset_y="0.0"
+      strafe_offset_z="0.0"
+	    side_strafe_rot_x="0.0"
+      side_strafe_rot_y="0.0"
+      side_strafe_rot_z="0.0"
+	    front_strafe_rot_x="0.0"
+      front_strafe_rot_y="0.0"
+      front_strafe_rot_z="0.0"
+    />
+	</WeaponSway>
+	<WeaponRecoil anim="false">
+		<Params
+      dampStrength="0.0"
+	    fireRecoilTime="0.0"
+	    fireRecoilStrengthFirst="0.0"
+	    fireRecoilStrength="0.0"
+	    angleRecoilStrength="0.0"
+	    randomness="0.0"
+    />
+	</WeaponRecoil>
+	<WeaponBump anim="false">
+		<Params
+      time="0.0"
+      shift="0.0"
+      rotation="0.0"
+    />
+	</WeaponBump>
+	<WeaponWiggle anim="false">
+		<Params
+      frequency="0.0"
+      intensity="0.0"
+    />
+	</WeaponWiggle>
+	<TurretAimPose anim="true">
+		<Params blendTime="1.0" layer="4" horizontalAimSmoothTime="0.5" verticalAimSmoothtime="0" maxYawDegreesPerSecond="180" maxPitchDegreesPerSecond="50"/>
+	</TurretAimPose>
+	<LayerWeight anim="false" string="LayerWeightParam">
+		<Params layer="0" invert="0" />
+	</LayerWeight>
+  <LayerAnimSpeed anim="false" string="LayerAnimSpeedParam">
+    <Params layer="0" invert="0" />
+  </LayerAnimSpeed>
+	<LayerManualUpdate anim="false" string="LayerUpdateParam">
+		<Params layer="0" />
+	</LayerManualUpdate>
+	<AttachProp anim="false" string="Filename" crcString="Attachment">
+	</AttachProp>
+	<AttachEntity anim="0" string="EntityParamName" crcString="Attachment">
+	</AttachEntity>
+	<WeightedList anim="false" crcString="Param">
+		<Params layer="0" />
+	</WeightedList>
+	<ManualUpdateList anim="false" crcString="Param">
+		<Params layer="0" />
+	</ManualUpdateList>
+	<CompromiseCover anim="false">
+		<Params />
+	</CompromiseCover>
+	<ActionEvent anim="false" crcString="EventName">
+	</ActionEvent>
+	<CopyNormalizedTime anim="false" crcString="SourceScope">
+		<Params sourceLayer="0" layer="0"/>
+	</CopyNormalizedTime>
+	<MovementControlMethod anim="false">
+		<Params horizontal="0" vertical="0"/>
+	</MovementControlMethod>
+	<ColliderMode crcString="ColliderMode" anim="false"/>
+	<AISignal anim="false" string="EnterAndExitSignalNames"/>
+	<FacialSequence anim="false" string="Filename">
+		<Params continueAfterExit="0" looping="0" />
+	</FacialSequence>
+	<SetStance string="Stance" />
+	<AimSmoothing anim="false">
+		<Params smoothTimeSeconds="0.1" maxYawDegreesPerSecond="360" maxPitchDegreesPerSecond="360" />
+	</AimSmoothing>
+</ProcDefs>

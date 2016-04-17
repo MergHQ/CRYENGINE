@@ -1,0 +1,4 @@
+<Entity
+ Name="BTBBombBase"
+ Script="Scripts/Entities/Multiplayer/BTBBombBase.lua"
+/>

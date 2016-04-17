@@ -1,0 +1,10 @@
+<Graph Description="" Group="asd" enabled="1" MultiPlayer="ClientServer">
+ <Nodes>
+  <Node Id="1" Class="Mono:RunScene" pos="-70,-130,0" flags="0"/>
+  <Node Id="3" Class="Entity:EntityId" pos="-190,-230,0" flags="0" GraphEntity="0">
+   <Inputs entityId="0"/>
+  </Node>
+ </Nodes>
+ <Edges />
+ <GraphTokens />
+</Graph>

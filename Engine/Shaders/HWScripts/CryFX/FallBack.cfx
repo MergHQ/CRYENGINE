@@ -1,0 +1,124 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+// Uniform data
+float4x4 vpMatrix      : PI_ViewProjection < register = c0; >;
+float4 BaseTCMatrix    : PB_TerrainBaseMatrix;
+
+sampler2D TextureCompiling = sampler_state
+{
+  Texture = EngineAssets/TextureMsg/ShaderCompiling.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+};
+
+sampler2D TextureError = sampler_state
+{
+  Texture = EngineAssets/TextureMsg/ShaderError.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR;
+};
+
+// Structure of vertex shader input for geometries
+struct App2VS
+{
+	float4 pos : POSITION;
+	float2 tex : TEXCOORD0;
+	float4 col : COLOR;
+};
+
+// Structure of vertex shader input for geometries
+struct App2VS_Ter
+{
+	float4 pos : POSITION;
+};
+
+// Structure of vertex shader output = pixel shader input
+struct VS2PS
+{
+	float4 pos : POSITION;
+	float2 tex : TEXCOORD0;
+	float4 col : COLOR;
+};
+
+
+// Default vertex shader to transform auxiliary 3D geometries
+VS2PS Sync_VS( App2VS IN )
+{
+  VS2PS OUT = (VS2PS) 0;
+
+  OUT.pos = mul( vpMatrix, IN.pos );
+  OUT.tex = IN.tex;
+  OUT.col = IN.col;
+
+  return OUT;
+}
+
+// Default vertex shader to transform auxiliary 3D geometries
+VS2PS Sync_Ter_VS( App2VS_Ter IN )
+{
+  VS2PS OUT = (VS2PS) 0;
+
+  OUT.pos = mul( vpMatrix, IN.pos );
+  OUT.tex.x = dot(float4(0, BaseTCMatrix[0], 0, BaseTCMatrix[1]), OUT.pos);          
+  OUT.tex.y = dot(float4(BaseTCMatrix[0], 0, 0, BaseTCMatrix[2]), OUT.pos);          
+
+  return OUT;
+}
+
+// Default pixel shader to render 3D geometries and geometry objects
+float4 Sync_Comp_PS( VS2PS IN ) : COLOR0
+{
+  float4 baseTex = GetTexture2D(TextureCompiling, IN.tex.xy);
+  baseTex.xyz *= 2 * IN.col.xyz;
+  return baseTex;
+}
+
+float4 Sync_Err_PS( VS2PS IN ) : COLOR0
+{
+  float4 baseTex = GetTexture2D(TextureError, IN.tex.xy);
+  baseTex.xyz *= 2 * IN.col.xyz;
+  return baseTex;
+}
+
+//=========================================================================================
+
+// Default technique for geometry rendering
+technique Comp
+{
+  pass p0
+  {
+    VertexShader = Sync_VS();
+    PixelShader = Sync_Comp_PS();
+  }
+}
+
+technique Err
+{
+  pass p0
+  {
+    VertexShader = Sync_VS();
+    PixelShader = Sync_Err_PS();
+  }
+}
+
+// Default technique for geometry rendering
+technique Comp_Ter
+{
+  pass p0
+  {
+    VertexShader = Sync_Ter_VS();
+    PixelShader = Sync_Comp_PS();
+  }
+}
+
+technique Err_Ter
+{
+  pass p0
+  {
+    VertexShader = Sync_Ter_VS();
+    PixelShader = Sync_Err_PS();
+  }
+}

@@ -1,0 +1,4 @@
+<Entity
+	Name="MissionObjective"
+	Script="Scripts/Entities/Others/MissionObjective.lua"
+/>

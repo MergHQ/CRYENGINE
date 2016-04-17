@@ -1,0 +1,44 @@
+<!-- current disabled via SURVIVOR_ONE_ENABLED -->
+
+<Mode name='AllOrNothing'>
+
+	<PlayerStats class='StandardPlayerStats' dbgWatchLvl='0' />  <!-- needs to come before spawning (see: CGameRulesMPSpawningWithLives::EntityRevived()) -->
+	<StatsRecording class='StandardStatsRecording' />
+
+  <Spawning class='MPSpawningWithLives' dbgWatchLvl='0' teamGame='0' teamSpawnsType='None' usingLua='0'
+ 						tmpPlayerEliminatedMsg=' has been eliminated!' eliminatedMarkerDuration='10.0' tmpPlayerEliminatedMarkerTxt='' allowMidRoundJoiningBeforeFirstDeath='1' /> <!-- numLives='6' -->
+
+	<Scoring class='StandardScoring'>
+    <Player>
+      <Event type='PlayerKill'        points='50' />
+      <Event type='Suicide'           points='-20' />
+      <Event type='AON_Win'           points='200' />
+      <!-- <Event type='AON_Draw'          points='50' /> -->
+    </Player>
+	</Scoring>
+	
+	<AssistScoring class='AssistScoring' maxTimeBetweenAttackAndKillForAssist='7000' maxAssistScore='99' assistScoreMultiplier='0.5' /> <!-- Self destruct perk needs this -->
+
+	<State class='StandardState' />
+
+	<VictoryConditions class='SurvivorOneVictoryConditions' dbgWatchLvl='0' checkScore='0' checkTime='1' tmpTimeLimit='2' tmpExtraTime='1' radarStage0TimeLimit='60.0' radarStage0PingTime='0.0' radarStage1TimeLimit='120.0' radarStage1PingTime='15.0' radarStage2TimeLimit='180.0' radarStage2PingTime='10.0' scoreIncreasePerElimination='10'
+		luaFuncStartSuddenDeathSv='SvStartSuddenDeath' luaFuncEndSuddenDeathSv='SvEndSuddenDeath' tmpSuddenDeathMsg='Sudden Death!' />
+
+	<PlayerSetup class='StandardSetup' />
+
+	<DamageHandling class='MPDamageHandling'>
+		<Table path='Scripts/GameRules/MPDamageTable.xml' />
+	</DamageHandling>
+
+	<ActorAction class='MPActorAction' />
+
+	<Spectator class='MPSpectator' eatsActorActions='1' enableFree='0' enableFollow='0' enableKiller='1' enableFollowWhenNoLivesLeft='1' serverAlwaysAllowsSpectatorModeChange='1' timeFromDeathTillAutoSpectate='5000' />
+
+  <!-- -->
+	<Rounds class='StandardRounds' resetScores='0' suddenDeathTimeSecs='60' > 
+    <!-- Use default strings ... <EndStrings winMessage="mp_RoundOverWinner" loseMessage="mp_RoundOverWinner" drawMessage="mp_RoundOverDraw" />-->
+  <!--   -->
+  </Rounds>
+
+</Mode>
+

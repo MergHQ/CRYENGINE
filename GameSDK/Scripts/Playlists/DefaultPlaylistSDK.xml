@@ -1,0 +1,17 @@
+<Playlist randomize="1" includeNonPresentLevels="1">
+
+	<ExtendedInfo
+		enabled="1"
+		requiresUnlocking="0"
+		uniquename="DEFSDK"
+		localname="@ui_playlist_name_defsdk"
+		localdescription="@ui_playlist_desc_defsdk"
+		supportedvariants="Standard|Hardcore"
+		image="textures/defaults/defaultnouvs.tif"
+	/>
+
+	<!-- Level Rotation -->
+	<level name="Multiplayer/Airfield" gameRules="InstantAction" />
+	<level name="Multiplayer/Airfield" gameRules="TeamInstantAction" />
+
+</Playlist>

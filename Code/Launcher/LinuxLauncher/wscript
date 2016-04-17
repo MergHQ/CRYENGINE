@@ -1,0 +1,22 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	tsk = bld.CryLauncher(
+		target      = 'LinuxLauncher',
+		vs_filter   = 'Launcher',
+		win_file_list   = 'linuxlauncher.waf_files', # always show linux launcher as a project on windows platforms
+		linux_file_list   = 'linuxlauncher.waf_files',
+		includes    = [ Path('Code/CryEngine/CrySystem') ],
+		linux_module_extensions = [ 'sdl2', 'ncurses'],
+
+		create_linux_launcher = True
+	)
+
+	bld.CryConsoleApplication(
+		target      = 'assert_term',
+		vs_filter   = "Launcher",
+		win_file_list   = 'assert_term.waf_files', # always show linux launcher as a project on windows platforms
+		linux_file_list   = 'assert_term.waf_files',
+		linux_module_extensions = ['ncurses']
+	)

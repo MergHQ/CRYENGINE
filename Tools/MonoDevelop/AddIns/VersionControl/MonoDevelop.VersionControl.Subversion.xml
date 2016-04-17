@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.VersionControl.Subversion</name>
+    </assembly>
+    <members>
+        <member name="M:MonoDevelop.VersionControl.Subversion.SubversionBackend.GetTextAtRevision(System.String,MonoDevelop.VersionControl.Revision,System.String)">
+            <summary>
+            Returns the text for a file at a particular revision. If the file is binary, 'null' is returned
+            </summary>
+            <returns>
+            The text at revision or 'null' if the file is binary.
+            </returns>
+            <param name='repositoryPath'>
+            Repository path.
+            </param>
+            <param name='revision'>
+            Revision.
+            </param>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Subversion.SubversionBackend.GetAnnotations(MonoDevelop.VersionControl.Repository,MonoDevelop.Core.FilePath,MonoDevelop.VersionControl.Subversion.SvnRevision,MonoDevelop.VersionControl.Subversion.SvnRevision)">
+            <summary>
+            Get annotations for a versioned file.
+            </summary>
+            <returns>
+            A <see cref="T:System.String"/> annotation for each line in file.
+            </returns>
+        </member>
+    </members>
+</doc>

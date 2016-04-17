@@ -1,0 +1,19 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryEngineStaticModule( 
+		target    = 'szip', 
+		vs_filter = 'Libs',
+		file_list = 'szip.waf_files',
+		exclude_from_static_code_analyzer = True,
+		includes  = [ Path('Code/SDKs/szip/src') ],
+		defines   = [ 'HDF' ], # Because we want to support HDF in this library
+		cflags    = [ '/W0' ], # Disable warnings in 3rdParty code
+
+		module_provides = dict(
+			includes = [
+				Path('Code/SDKs/szip/src'),
+			],
+		),
+	)

@@ -1,0 +1,43 @@
+<!--
+
+Summary:
+	This file contains the id mappings used for blaze game reporting and stats, value "1" is reserved in each category
+	as a fallback option in case the requested entity is not found (i.e. we add a new map but it hasn't made it into this
+	file yet).
+
+Limits:
+	Limits are set on the blaze servers and require a config change to update, please talk to Colin when doing this.
+	Current limits are 1->12 for gamemodes, 1->20 for maps, 1->35 for weapons and 1-22 for perks, 1-16 for damage types.
+
+Best practices:
+	It is nicer not to modify values of entities already in this mapping, since blaze has no idea what any of them mean
+	it will happily return your previous SCAR stats when you're expecting Grendel stats, if the file ends up as a mess we
+	can tidy it up all at once at a suitable point - i.e. when everyone is expecting it!  Removing old entries is fine and
+	using entries that previously belonged to something that no longer exists is ok so long as you realise there may be
+	some stray stats in the database for it.
+
+-->
+
+<StatsEntityIds>
+	<GameModes default="1">
+		<Entity name="InstantAction"				value="2" />
+	</GameModes>
+
+	<Maps default="1">
+	</Maps>
+
+	<Weapons default="1">
+		<!-- Loadout weapons -->
+		<!-- Implicit Aliasing means that if there are duplicate values, the first name in this list will be returned for that value-->
+	</Weapons>
+  
+	<WeaponExtensions>
+		<!-- For things that aren't weapons (don't have entity classes), but count as them -->
+		<!-- Values should follow on from above list (or atleast not conflict) -->
+	</WeaponExtensions>
+
+	<DamageTypes default="1">
+	</DamageTypes>
+  
+</StatsEntityIds>
+

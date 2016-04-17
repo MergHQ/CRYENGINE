@@ -1,0 +1,41 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2004.
+// -------------------------------------------------------------------------
+//  File name:   Particles.ext
+//  Version:     v1.00
+//  Created:     16/2/2004 by Andrey Honich.
+//  Compilers:   
+//  Description: Particles shader extension used by the editor
+//               for automatic shader generation (based on "Particles" shader template)
+// -------------------------------------------------------------------------
+//  History:
+//
+////////////////////////////////////////////////////////////////////////////
+
+Version (1.00)
+
+Property
+{
+  Name = %DIFFUSE
+  Mask = 0x1
+  Hidden
+}
+
+Property
+{
+  Name = %SIMPLE
+  Mask = 0x2
+  Property    (Simple distance clouds)
+  Description (Use distance clouds with no volumetric shading computations)
+}
+
+Property
+{
+  Name = %ADVANCED
+  Mask = 0x4
+  Property    (Advanced distance clouds)
+  Description (Use distance clouds with more accurate shading computations)
+}

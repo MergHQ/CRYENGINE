@@ -1,0 +1,33 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'expat', 
+		vs_filter = 'Libs',
+		file_list = 'expat.waf_files',
+		exclude_from_static_code_analyzer = True,
+
+		defines = [
+			# these two defines must be consistent in this library, as well as all code that consumes this library
+			'XML_STATIC', # this will be used as a static library
+			# 'XML_LARGE_SIZE', # for support of 4GB+ XML files
+			# 'XML_UNICODE', # switches to wchar_t and UTF-16
+			
+			# these are private configuration for Expat, they only need to be set when compiling the library
+			'XML_CONTEXT_BYTES=1024', # 1024 is the default value
+			'HAVE_MEMMOVE', # all our supported platforms have memmove()
+			'BYTEORDER=1234' # all our current platforms are little-endian, if we ever need big-endian, we should set it to 4321 on these platforms
+		],
+
+		module_provides = dict(
+			defines  = [ 'XML_STATIC' ],
+			includes = [ Path('Code/SDKs/expat-2.1.0/lib'), ],
+		),
+
+		# conversion warning if XML_LARGE_SIZE is not set and the target is 64-bit (pointer subtraction)
+		# however, since we can never load 4GB+ files in that case, the truncation to 32-bit is actually safe
+		# setting XML_LARGE_SIZE would require rebuilding Scaleform to be 100% sure we don't break their ABI
+		win_cflags = [ '/wd4244' ], 
+		durango_cflags = [ '/wd4244' ],
+	)

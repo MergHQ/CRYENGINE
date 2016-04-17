@@ -1,0 +1,12 @@
+<item name="ExtendedClip" class="Accessory" priority="103" >
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="display_name" value="@mp_eExtendedClip" />
+		<param name="selectTimeMultiplier" value="1.05" GAME="MP" />
+		<param name="tag" value="extendedClip" />
+	</params>
+	<geometry>
+	</geometry>
+</item>

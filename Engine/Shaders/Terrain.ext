@@ -1,0 +1,77 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2004.
+// -------------------------------------------------------------------------
+//  File name:   TerrainLayer.ext
+//  Version:     v1.00
+//  Created:     16/2/2004 by Andrey Honich.
+//  Compilers:   
+//  Description: TerrainLayer shader extension used by the editor
+//               for automatic shader generation (based on "TerrainLayer" shader template)
+// -------------------------------------------------------------------------
+//  History:
+//
+////////////////////////////////////////////////////////////////////////////
+
+Version (1.00)
+
+UsesCommonGlobalFlags
+
+Property
+{
+  Name = %NORMAL_MAP
+  Mask = 0x1
+  Property    (Normal map)
+  Description (Use normal-map texture)
+  DependencySet = $TEX_Normals
+  DependencyReset = $TEX_Normals
+  Hidden
+}
+
+Property
+{
+  Name = %SPECULAR_MAP
+  Mask = 0x200
+  Property    (Specular map)
+  Description (Use specular map as separate texture)
+  DependencySet = $TEX_Specular
+  DependencyReset = $TEX_Specular
+  Hidden
+}
+
+Property
+{
+  Name = %OFFSET_BUMP_MAPPING
+  Mask = 0x1000
+  Property    (Offset bump mapping)
+  Description (Use offset bump mapping (requires height map (_displ)))
+  DependencyReset = $TEX_Normals
+}
+
+Property
+{
+  Name = %DETAIL_MAPPING
+  Mask = 0x8000
+  Property    (Detail mapping)
+  Description (Use detail mapping)
+  DependencyReset = $TEX_Detail
+}
+
+Property
+{
+  Name = %PARALLAX_OCCLUSION_MAPPING
+  Mask = 0x8000000
+  Property    (Parallax occlusion mapping)
+  Description (Use parallax occlusion mapping (requires height map (_displ)))
+  DependencyReset = $TEX_Normals
+}
+
+Property
+{
+  Name = %TEMP_TERRAIN
+  Mask = 0x40000000
+  DependencySet = $UserEnabled
+  Hidden
+}

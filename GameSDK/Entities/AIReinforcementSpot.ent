@@ -1,0 +1,5 @@
+<Entity
+ Name="AIReinforcementSpot"
+ Script="Scripts/Entities/AI/AIReinforcementSpot.lua"
+ Invisible="1"
+/>

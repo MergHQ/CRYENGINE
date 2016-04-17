@@ -1,0 +1,189 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+
+// particle shader used from particle effects specifying a material
+// code for actual shader is shared
+
+#define USE_MATERIAL
+
+#include "Common.cfi"
+#include "ParticleVT.cfi"
+#include "ModificatorVT.cfi"
+#include "ShadeLib.cfi"
+#include "LightPropagationVolumes.cfi"
+#include "LightVolumes.cfi"
+#include "ParticlesShadowPass.cfi"
+
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "Public;"
+           "NoPreview;"
+#if %DEPTH_FIXUP
+					 "DepthFixup;"
+#endif
+#if %REFRACTION
+           "Refractive;"
+           "ShaderDrawType = General;"
+#else 
+           "ShaderDrawType = Light;"
+#endif
+
+           "ShaderType = Particle;";
+>;
+
+Texture2D customTex : register(t9) 
+<
+#if %SCREEN_SPACE_DEFORMATION
+  UIName = "Refraction Normal";
+#elif %DEFORMATION
+  UIName = "Deformation Normal";
+#endif
+> = TM_Custom;
+
+Texture2D customSecondaryTex : register(t10)
+<
+  UIName = "Colour Lookup Map";
+> = TM_CustomSecondary;
+
+Texture2D glowTex: register(t4)
+<
+	UIName = "Glow Map";
+> = TM_Detail;
+
+#if %REFRACTION
+  float RefrBumpScale
+  <  
+    register = REG_PM_PARAM_0.x;
+    string UIHelp = "Set refraction bump scale \nMin value = 0, Max value = 2.0 \nCorrect name - RefrBumpScale";                     
+    string UIName = "Refraction Bump Scale";    
+    
+    string UIWidget = "slider";
+    float UIMin = 0.0;
+    float UIMax = 2.0;
+    float UIStep = 0.1;
+  > = 0.1;
+#endif
+
+float4  AnimGenParams = { PB_time 1.0, PB_time 0.5, PB_time 0.25, PB_time 0.125};
+
+#if %SCREEN_SPACE_DEFORMATION 
+
+float AnimSpeed
+<
+  register = REG_PM_PARAM_0.y;
+  string UIName = "Perturbation anim speed";   
+  
+  string UIWidget = "slider";
+  float UIMin = -10.0;
+  float UIMax = 10.0;
+  float UIStep = 0.005;
+> = 0.2;
+
+float PerturbationScale
+<
+  register = REG_PM_PARAM_0.z;
+  string UIName = "Perturbation tilling";   
+  
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 32.0;
+  float UIStep = 0.005;
+> = 0.5;
+
+float PerturbationStrength
+<
+  register = REG_PM_PARAM_0.w;
+  string UIName = "Perturbation amount";   
+  
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 2.0;
+  float UIStep = 0.005;
+> = 0.01;
+
+#elif %DEFORMATION
+
+float DeformTile
+<
+  register = REG_PM_PARAM_1.x;
+  string UIName = "Deform tiling";     
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.005;
+> = 0.1;
+
+float DeformAmount
+<
+  register = REG_PM_PARAM_1.y;
+  string UIName = "Deform amount";     
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 0.2;
+  float UIStep = 0.005;
+> = 0.0;
+
+float DeformAnimSpeed
+<
+  register = REG_PM_PARAM_1.z;
+  string UIName = "Deform anim speed";     
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.005;
+> = 0.0;
+
+#endif
+
+#if %COLOR_LOOKUP
+
+
+float ColLookupAmplitude
+<
+  register = REG_PM_PARAM_1.w;
+  string UIName = "Color lookup amplitude";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 32.0;
+  float UIStep = 0.005;
+> = 1.0;
+
+float ColLookupColPhase
+<
+  register = REG_PM_PARAM_2.x;
+  string UIName = "Color lookup color phase";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 32.0;
+  float UIStep = 0.005;
+> = 1.0;
+
+#endif
+
+half GlobalIlluminationAmount
+<
+  register = REG_PM_PARAM_2.y;
+  string UIName = "Global Illumination Amount";   
+  
+  string UIWidget = "slider";
+  float UIMin = 0.01;
+  float UIMax = 30.0;
+  float UIStep = 0.01;
+> = 1;
+
+#if %DEPTH_FIXUP
+half DepthFixupThreshold
+<
+  register = REG_PM_PARAM_2.z;
+  string UIName = "Threshold for writing depth";   
+  
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.01;
+> = 0.05;
+#endif
+
+#include "Particles.cfi"

@@ -1,0 +1,47 @@
+<item name="TankCannon" class="VehicleWeapon" invisible="1" weaponParams="1">
+	<params>
+		<param name="giveable" value="0" />
+		<param name="selectable" value="0" />
+		<param name="pickable" value="0" />
+		<param name="mountable" value="1" />
+		<param name="usable" value="0" />
+		<param name="arms" value="0" />
+		<param name="actionController" value="itemControllerDef.xml" />
+	</params>
+	<ammos>
+		<ammo name="Tank125" extra="30" amount="0" />
+	</ammos>
+	<firemodes>
+		<firemode name="Automatic" type="Automatic">
+			<fire>
+				<param name="ammo_type" value="Tank125" />
+				<param name="clip_size" value="-1" />
+				<param name="rate" value="15" />
+				<param name="damage" value="600" />
+			</fire>
+			<recoil>
+				<param name="impulse" value="50000" />
+			</recoil>
+			<recoilShake>
+				<params name="rotateShake" value="2, 2, 2" />
+				<params name="shiftShake" value="0.01, 0.5, 0.01" />
+				<params name="frequency" value="0.1" />
+				<params name="time" value="0.2" />
+				<params name="randomness" value="0.2" />
+			</recoilShake> 
+			<muzzleflash>
+				<firstperson effect="weapon_fx.tank.tank125.muzzle_flash.muzzle_flash" helper="cannonOut" light_helper="cannonOut" light_radius="20" light_time="0.06" light_color="236,183,83" light_diffuse_mult="10" />
+				<thirdperson effect="weapon_fx.tank.tank125.muzzle_flash.muzzle_flash" helper="cannonOut" light_helper="cannonOut" light_radius="20" light_time="0.06" light_color="236,183,83" light_diffuse_mult="10" />
+			</muzzleflash>
+			<muzzlesmoke>
+				<firstperson effect="" helper="cannonOut" />
+				<thirdperson effect="" helper="cannonOut" />
+			</muzzlesmoke>
+			<dust>
+				<param name="mfxtag" value="dust_tankcannon" />
+				<param name="maxheight" value="10" />
+				<param name="maxheightscale" value="0.5" />
+			</dust>
+		</firemode>
+	</firemodes>
+</item>

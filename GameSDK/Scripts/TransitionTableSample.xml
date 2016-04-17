@@ -1,0 +1,104 @@
+<!-- 
+How this works:
+There is two sub tags to a transition: Gateway and Anim. At least one of the two should be there.
+If a transitional animation is defined, then the realignment of the position and rotation must
+be completely finished before the transition into the next animation is started. 
+Please consider this in setting the timings.
+
+
+Gateway Tag: 	
+							name 				= name of the gateway animation (as mapped in the cal file)
+							BlendInTime	= transition time from the previous animation (how fast to blend into the gateway)
+							HoldTime		= holding time for gateway at a 100% (usually 0.00)
+
+Anim Tag: 		
+							name 							= can be "" empty! name of the transitional animation (as mapped in the cal file)
+							UseTimeWarp 			= align the footsteps, only needed when blending into a locomotion animation (this requires markup in AnimPrototyping.xml!!)
+							BlendInTime				= transition time from gateway (or previous animation) into the transition animation
+							BlendOutTime			= transition time into the next animation
+					
+DecouplePositions:
+							AlignDelayRot			=	don't start re-aligning rotation immediately, wait for this amount of time
+							AlignDelayPos			= don't start re-aligning position immediately, wait for this amount of time
+							AlignDurationRot	=	re-aligning the rotation should take exactly this long
+							AlignDurationPos	=	re-aligning the position should take exactly this long
+
+Blend Tag:
+							blendTime					=	If there is no Anim tag (and ONLY then) this time will be used to blend out from the gateway
+																	If there is also no gateway tag, this time will be used to blend from first animation to second
+-->
+
+<Transitions>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Right180Left">
+		<!-- <Gateway name="Transition_combat_nw_StrafeRight180_GT" BlendInTime="0.2" HoldTime="0.0"/> -->
+		<Anim name="Transition_combat_nw_StrafeRight180_TA" UseTimeWarp="1" BlendInTime="0.3" BlendOutTime="0.5"/>
+		<DecouplePositions AlignDelayRot="0.1" AlignDelayPos="0.1" AlignDurationRot="0.5" AlignDurationPos = "0.30"/>
+ 	</Transition>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Left180Right">
+		<!-- <Gateway name="Transition_combat_nw_StrafeLeft180_GT" BlendInTime="0.2" HoldTime="0.0"/> -->
+		<Anim name="Transition_combat_nw_StrafeLeft180_TA" UseTimeWarp="1" BlendInTime="0.3" BlendOutTime="0.5"/>
+		<DecouplePositions AlignDelayRot="0.1" AlignDelayPos="0.1" AlignDurationRot="0.5" AlignDurationPos = "0.3"/>
+ 	</Transition>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Front180Back">
+		<!-- <Gateway name="Transition_combat_Riffle_Forward180Back_GT" BlendInTime="0.20" HoldTime="0.0"/> -->
+		<Anim name="Transition_combat_Riffle_Forward180Back_TA" UseTimeWarp="1" BlendInTime="0.2" BlendOutTime="0.5"/>
+		<DecouplePositions />
+ 	</Transition>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Back180Front">
+		<Anim name="Transition_combat_Riffle_Backwards180Forward_TA" UseTimeWarp="1" BlendInTime="0.2" BlendOutTime="0.4" AlignDelayRot="0.2" AlignDelayPos="0.3" AlignDurationRot="0.40" AlignDurationPos = "0.40"/>
+		<DecouplePositions AlignDelayRot="0.0" AlignDelayPos="0.3" AlignDurationRot="0.4" AlignDurationPos = "0.40"/>
+ 	</Transition>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Front90Left">
+		<!-- <Gateway name="Transition_combat_Riffle_F90L_GT" BlendInTime="0.2" HoldTime="0.0"/> -->
+		<Anim name="Transition_combat_Riffle_F90L_TA" UseTimeWarp="1" BlendInTime="0.2" BlendOutTime="0.5"/>
+		<DecouplePositions AlignDelayRot="0.0" AlignDelayPos="0.1" AlignDurationRot="0.20" AlignDurationPos = "0.30"/>
+ 	</Transition>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Front90Right">
+		<!-- <Gateway name="Transition_combat_Riffle_F90R_GT" BlendInTime="0.2" HoldTime="0"/> -->
+		<Anim name="Transition_combat_Riffle_F90R_TA" UseTimeWarp="1" BlendInTime="0.3" BlendOutTime="0.4"/>
+		<DecouplePositions AlignDelayRot="0.0" AlignDelayPos="0.1" AlignDurationRot="0.50" AlignDurationPos = "0.3"/>
+ 	</Transition>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Back90Left">
+		<Anim name="Transition_combat_Riffle_Back90Left_TA" UseTimeWarp="1" BlendInTime="0.3" BlendOutTime="0.5"/>
+		<DecouplePositions AlignDelayRot="0.1" AlignDelayPos="0.1" AlignDurationRot="0.50" AlignDurationPos = "0.30"/>
+ 	</Transition>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Back90Right">
+		<Anim name="Transition_combat_Riffle_Back90Right_TA" UseTimeWarp="1" BlendInTime="0.3" BlendOutTime="0.5"/>
+		<DecouplePositions AlignDelayRot="0.1" AlignDelayPos="0.1" AlignDurationRot="0.50" AlignDurationPos = "0.30"/>
+ 	</Transition>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Front35Left">
+	<!--	<Gateway name="" BlendInTime="0.10" HoldTime="0.00"/> -->
+		<Anim name="Transition_combat_Riffle_Forward35Left_TA" UseTimeWarp="1" BlendInTime="0.3" BlendOutTime="0.70"/>
+		<Blend blendTime="0.20"/>
+		<DecouplePositions AlignDelayRot="0.0" AlignDelayPos="0.2" AlignDurationRot="0.4" AlignDurationPos = "0.4"/>
+ 	</Transition>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Front35Right">
+	<!--	<Gateway name="Transition_combat_Riffle_Forward35Right_GT" BlendInTime="0.10" HoldTime="0.00"/> -->
+		<Anim name="Transition_combat_Riffle_Forward35Right_TA" UseTimeWarp="1" BlendInTime="0.3" BlendOutTime="0.50"/>
+		<Blend blendTime="0.20"/>
+		<DecouplePositions AlignDelayRot="0.0" AlignDelayPos="0.0" AlignDurationRot="0.3" AlignDurationPos = "0.3"/>
+ 	</Transition>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Back35Left">
+		<Gateway name="Transition_ErrorPose_01" BlendInTime="0.10" HoldTime="0.00"/>    
+		<Blend blendTime="0.10"/>
+		<DecouplePositions AlignDelayRot="0.0" AlignDelayPos="0.0" AlignDurationRot="0.05" AlignDurationPos = "0.05"/>
+ 	</Transition>
+
+	<Transition AnimIn="CombatStrafe" AnimOut="Back35Right">
+		<Gateway name="Transition_ErrorPose_01" BlendInTime="0.10" HoldTime="0.00"/>
+		<Blend blendTime="0.10" />
+ 	</Transition>
+
+</Transitions>
+

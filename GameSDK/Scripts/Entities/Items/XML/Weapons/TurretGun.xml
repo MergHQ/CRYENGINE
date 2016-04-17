@@ -1,0 +1,40 @@
+<item name="TurretGun" class="Weapon" weaponParams="1">
+	<params>
+		<param name="giveable" value="0" />
+		<param name="selectable" value="0" />
+		<param name="pickable" value="0" />
+		<param name="mountable" value="0" />
+		<param name="usable" value="0" />
+		<param name="mass" value="0" />
+		<param name="light_helper" value="light" />
+		<param name="soundAdb" value="HumanTurret_Gun.adb" />
+		<param name="actionController" value="itemControllerDef.xml" />
+	</params>
+	<firemodes>
+		<firemode name="Rapid" type="Rapid">
+			<fire>
+				<param name="ammo_type" value="MGbullet" />
+				<param name="rate" value="350" />
+				<param name="damage" value="170" />
+				<param name="clip_size" value="-1" />
+				<param name="hit_type" value="HeavyBullet" />
+			</fire>
+			<spread>
+				<param name="min" value="0.05" />
+				<param name="max" value="0.15" />
+				<param name="attack" value="0.015" />
+				<param name="decay" value="0.15" />
+			</spread>
+			<rapid>
+				<param name="min_speed" value="4.0" />
+				<param name="max_speed" value="4.0" />
+				<param name="acceleration" value="100" />
+				<param name="deceleration" value="-100" />
+
+			</rapid>
+			<muzzleflash>
+				<thirdperson effect="weapon_fx.tank.mg.tracer.standard_fp" helper="gun"  /> 
+			</muzzleflash>
+		</firemode>
+	</firemodes>
+</item>

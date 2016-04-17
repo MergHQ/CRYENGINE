@@ -1,0 +1,571 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+				"Public;"           
+				"SupportsAttrInstancing;"
+			#if %VERTCOLORS
+        "VertexColors;"
+			#endif
+			#if %EYE_AO_OVERLAY
+				"EyeOverlay;"
+			#elif %EYE_SPECULAR_OVERLAY
+				"ForceDrawFirst;"  // Draw before other objects in transparent list (important for eyelashes)
+			#else
+				"ForceZpass;"
+			#endif
+				"ShaderDrawType = Light;"
+				"ShaderType = General;"
+>;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////// Custom shading pass structure /////////////////////////////////////
+
+struct fragPassCustom
+{
+	half fIrisMask;
+	half3 vCorneaNormal;
+	half3 vConcavityNormalTS;
+	half4 cOcclusionMap;
+};
+
+struct fragLightPassCustom
+{
+}; 
+
+
+#include "ShadeLib.cfi"
+
+// Un-Tweakables /////////////////
+float4x4 mViewProj : PI_Composite;
+float4x4 mViewProjI : PB_UnProjMatrix;  // invert( view projection matrix )
+
+//////////////////////////////// Common vertex shader ////////////////
+
+#include "VertexLib.cfi"
+
+//////////////////////////////// Samplers ////////////////
+
+ENVIRONMENTCUBEMAP
+DISSOLVE_NOISE_MAP
+
+Texture2D corneaBumpTex : register(t9)
+<
+  UIName = "Cornea Bump Map";
+  UIDescription = "Bump map for the cornea";
+> = TM_Custom;
+
+sampler2D sceneDiffuseMapSampler = sampler_state
+{
+  Texture = $SceneDiffuse;
+  MinFilter = POINT;
+  MagFilter = POINT;
+  MipFilter = POINT;
+  AddressU = Clamp;
+  AddressV = Clamp;
+};
+
+Texture2DArray<float4> sunShadowMask = TS_ShadowMask;
+
+// Tweakables /////////////////
+
+#if !%EYE_AO_OVERLAY && !%EYE_SPECULAR_OVERLAY
+	half IrisDepth
+	< 
+		register = REG_PM_PARAM_0.x;
+		string UIHelp = "Set iris depth";                     
+		string UIName = "Iris Depth";  
+  
+		string UIWidget = "slider";
+		float UIMin = 0.0;
+		float UIMax = 0.1;
+		float UIStep = 0.001;
+	> = 0.005;
+
+	half ScleraSSS
+	<
+		register = REG_PM_PARAM_0.y;
+		string UIHelp = "Change the subsurface scattering amount for the sclera";
+		string UIName = "Sclera SSS";
+		string UIWidget = "slider";
+		float UIMin = 0.0;
+		float UIMax = 1.0;
+		float UIStep = 0.005;
+	> = 0.4;
+
+	half IrisSSS
+	<
+		register = REG_PM_PARAM_0.z;
+		string UIHelp = "Change the subsurface scattering amount for the iris";
+		string UIName = "Iris SSS";
+		string UIWidget = "slider";
+		float UIMin = 0.0;
+		float UIMax = 2.0;
+		float UIStep = 0.005;
+	> = 0.6;
+
+	half IrisShadowing
+	<
+		register = REG_PM_PARAM_0.w;
+		string UIHelp = "Strength of shadowing on small details in the iris";
+		string UIName = "Iris Shadowing";
+		string UIWidget = "slider";
+		float UIMin = 0.0;
+		float UIMax = 15.0;
+		float UIStep = 0.1;
+	> = 5.0;
+	
+	half4 IrisColor
+	<
+	  register = REG_PM_PARAM_1;
+	  string UIHelp = "Alter iris color";                   
+	  string UIName = "Iris Color";    
+
+	  string UIWidget = "color";
+	> = {0.5, 0.5, 0.5, 1.0};
+		
+	half CorneaRefraction
+	<
+		register = REG_PM_PARAM_2.x;
+		string UIHelp = "Change the strength of refraction caused by the cornea";
+		string UIName = "Cornea Refraction";
+		string UIWidget = "slider";
+		float UIMin = 0.0;
+		float UIMax = 1.0;
+		float UIStep = 0.005;
+	> = 0.01;
+		
+	half CorneaSmoothness
+	<
+		register = REG_PM_PARAM_2.y;
+		string UIHelp = "Change the smoothness/gloss of the sclera";
+		string UIName = "Cornea Smoothness";
+		string UIWidget = "slider";
+		float UIMin = 0.0;
+		float UIMax = 1.0;
+		float UIStep = 0.005;
+	> = 1;
+#elif %EYE_AO_OVERLAY
+	half DiffOccStrength
+	< 
+	  register = REG_PM_PARAM_2.z;
+	  string UIHelp = "Set strength of diffuse occlusion";                     
+	  string UIName = "Diffuse occlusion strength";  
+  
+	  string UIWidget = "slider";
+	  float UIMin = 0.0;
+	  float UIMax = 1.0;
+	  float UIStep = 0.001;
+	> = 1.0;
+
+	half SpecOccStrength
+	< 
+	  register = REG_PM_PARAM_2.w;
+	  string UIHelp = "Set strength of specular occlusion";                     
+	  string UIName = "Specular occlusion strength";  
+  
+	  string UIWidget = "slider";
+	  float UIMin = 0.0;
+	  float UIMax = 1.0;
+	  float UIStep = 0.001;
+	> = 1.0;
+#endif
+
+#if %EYE_SPECULAR_OVERLAY
+	half DepthBiasScale
+	< 
+	  register = REG_PM_PARAM_3.x;
+	  string UIHelp = "Scale of depth bias to avoid clipping.";                     
+	  string UIName = "Depth bias scale";  
+  
+	  string UIWidget = "slider";
+	  float UIMin = 0.0;
+	  float UIMax = 1.0;
+	  float UIStep = 0.001;
+	> = 0.1;
+#endif
+
+vert2FragGeneral EyeVS(app2vertGeneral IN)
+{
+  vert2FragGeneral OUT = (vert2FragGeneral)0;
+  
+  streamPos vertPassPos = (streamPos)0;
+  vs_shared_output( IN, OUT, vertPassPos, false );
+
+#if %EYE_SPECULAR_OVERLAY
+  // pull overlay z in front
+  OUT.HPosition = OUT.HPosition * CV_DecalZFightingRemedy.x - CV_DecalZFightingRemedy.wwyw * (1.h - DepthBiasScale) / OUT.HPosition.w;
+#endif
+
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+float GetSunShadowMask(float4 screenProj)
+{
+	float maskValue = 0;
+	
+#if %_RT_HDR_MODE	
+	float2 tcScreen = screenProj.xy / screenProj.w;
+	int4 vPixCoord = int4(tcScreen * PS_ScreenSize.xy, 0, 0);
+	maskValue = sunShadowMask.Load(vPixCoord).r;
+#endif
+	
+	return maskValue;
+}
+
+float2 ComputeEyeParallax(in float h0, in float2 baseTC, in float lod, in float3 viewDirNrm, in float displacement)
+{
+	static const int numSteps = 8;
+	const float step = 1.0h / numSteps;
+
+	float2 delta = float2(viewDirNrm.x, viewDirNrm.y) * displacement / (-viewDirNrm.z * numSteps); // / max(-viewDirNrm.z * numSteps, 0.1)
+	
+	float height = 1.0h - step;
+	float4 offset = float4(baseTC + delta, 0, lod);
+	float h1 = GetHeightTexLod(heightTex, offset);
+
+	for (int i=0; i<numSteps; i++)
+	{
+		[flatten]
+		if (h1 >= height)
+			break;
+
+		h0 = h1;
+
+		height -= step;
+		offset.xy += delta;
+
+		h1 = GetHeightTexLod(heightTex, offset);
+	}
+
+	float4 offsetBest = offset;
+	float error = 1.0;
+
+	float t1 = height;
+	float t0 = t1 + step;
+
+	float delta1 = t1 - h1;
+	float delta0 = t0 - h0;
+
+	float4 intersect = float4(delta * numSteps, delta * numSteps + baseTC);
+
+	for (int i=0; i<10; i++)
+	{
+		[flatten]
+		if (abs(error) <= 0.01)
+			break;
+
+		float denom = delta1 - delta0;
+		float t = (t0 * delta1 - t1 * delta0) / denom;
+		offsetBest.xy = -t * intersect.xy + intersect.zw;
+
+		float h2 = GetHeightTexLod(heightTex, offsetBest);
+
+		error = t - h2;
+		if (error < 0)
+		{
+			delta1 = error;
+			t1 = t;
+		}
+		else
+		{
+			delta0 = error;
+			t0 = t;
+		}
+	}
+	return offsetBest.xy - baseTC.xy;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void frag_unify_parameters( inout fragPass pPass )
+{
+  pPass.bRenormalizeNormal = true;
+  pPass.bCustomComposition = true;
+  pPass.bHemisphereLighting = true;
+  pPass.bDisableAlphaTestD3D11 = true;
+	pPass.bVertexColors = false;
+
+  pPass.fFresnel_Bias = 1.0;
+  pPass.fFresnel_Scale = 0.0;
+
+#if %ENVIRONMENT_MAP
+   pPass.nReflectionMapping = REFLECT_CUBE;
+#endif 
+
+#if %_RT_TILED_SHADING
+	pPass.nReflectionMapping = 0;
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void frag_custom_begin(inout fragPass pPass)
+{  
+	pPass.fAlpha = 1;
+
+#if %EYE_SPECULAR_OVERLAY
+	float2 tcProj = pPass.IN.screenProj.xy / pPass.IN.screenProj.w;
+      #if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1
+        pPass.fSceneDepthRT = GetDecodedSceneDepthMS(tcProj, GetMSAASampleNum(), pPass.IN.uSample );
+      #else
+        pPass.fSceneDepthRT = DecodeSceneDepth(sceneDepthSampler, pPass.IN.screenProj.xyww);
+      #endif
+
+	pPass.cSpecularMap = half4(MatSpecColor.xyz, 1);
+
+	// No normal map
+	pPass.vNormal.xyz = normalize(pPass.IN.vNormal.xyz);
+	pPass.fNdotE = (dot(pPass.vView.xyz, pPass.vNormal.xyz));                                        // 1 alu
+	pPass.vReflVec = (2.0h * pPass.fNdotE * pPass.vNormal.xyz) - pPass.vView.xyz;                      // 2 alu  		    
+#else
+	pPass.cSpecularMap = half4(MatSpecColor.xyz, 1);
+	
+	pPass.fGloss *= GetSmoothnessTex(smoothnessTex, pPass.IN.baseTC.xy);
+	pPass.fGloss = lerp(pPass.fGloss, CorneaSmoothness, pPass.cDiffuseMap.w);
+
+	// todo: msaa, chrominance approach
+#if %_RT_HDR_MODE
+	pPass.pCustom.cOcclusionMap = GetTexture2DProj(sceneDiffuseMapSampler, pPass.IN.screenProj);
+#else
+	pPass.pCustom.cOcclusionMap = 0;
+#endif
+
+	float3 vViewTS =  mul(pPass.mTangentToWS, pPass.vView).xyz;
+	float fIrisDepth = GetHeightTex(heightTex, pPass.IN.baseTC.xy);
+	const float lod = ComputeTextureLOD(pPass.IN.baseTC.xy, ResInfoBump.xy);
+	float2 offset = ComputeEyeParallax(fIrisDepth, pPass.IN.baseTC, lod, vViewTS, IrisDepth * 10.0f);
+
+	half3 cCorneaBump = GetNormalMap(corneaBumpTex, pPass.IN.baseTC.xy);
+	pPass.pCustom.vCorneaNormal = normalize(mul(cCorneaBump, pPass.mTangentToWS));
+	
+	pPass.cDiffuseMap = GetDiffuseTex(diffuseTex, pPass.IN.baseTC.xy + offset);
+	offset += refract( vViewTS, cCorneaBump, 0.75f ) * CorneaRefraction * pPass.cDiffuseMap.w;
+	pPass.IN.baseTC.xy += offset;
+
+	pPass.cDiffuseMap = GetDiffuseTex(diffuseTex, pPass.IN.baseTC.xy);
+	// Apply iris color
+	pPass.cDiffuseMap.xyz = lerp(saturate(2 * IrisColor * pPass.cDiffuseMap.xyz), pPass.cDiffuseMap.xyz, pow(1.h - pPass.cDiffuseMap.w, 8.h));
+	
+	pPass.cBumpMap.xyz = GetNormalMap(normalsTex, pPass.IN.baseTC.xy);
+	pPass.vNormal.xyz = normalize(mul(pPass.cBumpMap, pPass.mTangentToWS));
+	
+	half3 vConcavityNormal;
+	vConcavityNormal.xy = -GetXYNormalMap(corneaBumpTex, pPass.IN.baseTC.xy) * 4;
+	vConcavityNormal.z = sqrt(saturate(1.h + dot(vConcavityNormal.xy, -vConcavityNormal.xy)));
+	pPass.pCustom.vConcavityNormalTS = normalize(vConcavityNormal);
+	
+	pPass.fNdotE = (dot(pPass.vView.xyz, pPass.pCustom.vCorneaNormal.xyz));
+	pPass.vReflVec = (2.0h * pPass.fNdotE * pPass.pCustom.vCorneaNormal.xyz) - pPass.vView.xyz;   
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void frag_custom_per_light(inout fragPass pPass, inout fragLightPass pLight)
+{
+	half fNdotL = saturate( pLight.fNdotL );  
+
+	half3 cDiffuse = 0;
+
+	if (pLight.nType == LT_DIRECTIONAL)
+		pLight.fOcclShadow = 1-GetSunShadowMask(pPass.IN.screenProj).r;
+		
+#if %EYE_SPECULAR_OVERLAY
+	// Specular Term
+	half3 cSpecular = BlinnBRDF(pPass.vNormal.xyz, pPass.vView.xyz, pLight.vLight.xyz, pPass.fGloss) * pPass.cSpecularMap.xyz;
+	cSpecular *= fNdotL;
+#else
+	
+	half fNdotLVertex = dot(pLight.vLight, pPass.IN.vNormal);
+	half fNdotLCornea = dot(pLight.vLight, pPass.pCustom.vCorneaNormal);
+	
+	// Energy conserving wrap lighting for Iris SSS
+	half cIrisShading = pow( saturate( (pLight.fNdotL + IrisSSS) / (1 + IrisSSS) ), 2 ) * (2 + 1) / (2 * (1 + IrisSSS));
+	
+	// Apply simple light scattering effect
+	const float3 vLightTS = mul(pPass.mTangentToWS, pLight.vLight.xyz);
+	half scattering = 0.5 + saturate(pow(dot(vLightTS, pPass.pCustom.vConcavityNormalTS), 8)) * 2;
+	cIrisShading *= lerp( 1, scattering, pow(saturate(fNdotLVertex + 0.2), 0.2) );
+	
+	// Energy conserving wrap lighting for Sclera SSS
+	half scleraWrapDenom = 1 + ScleraSSS;
+	half cScleraShading = saturate((fNdotLVertex + ScleraSSS) / (scleraWrapDenom * scleraWrapDenom));
+
+	// Blend between sclera and iris shading and apply light color and intensity
+	cDiffuse.rgb = lerp(cScleraShading, cIrisShading, pPass.cDiffuseMap.w);
+	cDiffuse.rgb *= pLight.cDiffuse.xyz;
+
+	// Specular term (use Blinn BRDF with moderate max exponent to avoid excessive aliasing of tiny highlights)
+	half3 cSpecular = BlinnBRDF(pPass.pCustom.vCorneaNormal, pPass.vView.xyz, pLight.vLight.xyz, pPass.fGloss) * pPass.cSpecularMap.xyz;
+	cSpecular *= fNdotLCornea;
+
+	// Iris self-shadowing
+	if (pLight.nType == LT_DIRECTIONAL)
+	{
+		const float2 lightDelta = float2(vLightTS.x, vLightTS.y) * IrisDepth;
+		const float2 uv = pPass.IN.baseTC.xy;
+		
+		const float h0 = GetHeightTex(heightTex, half4(uv, 0, 0));
+		float h = max(h0, GetHeightTex(heightTex, half4(uv + 1.000 * lightDelta, 0, 0)));
+		h = max(h, GetHeightTex(heightTex, half4(uv + 0.666 * lightDelta, 0, 0)));
+		h = max(h, GetHeightTex(heightTex, half4(uv + 0.333 * lightDelta, 0, 0)));
+		cDiffuse.rgb *= 1.0h - saturate((h - h0) * IrisShadowing) * pPass.cDiffuseMap.w;
+	}
+#endif
+	cSpecular *= pLight.cSpecular.xyz;
+
+	half3 cK = pLight.fOcclShadow * pLight.fFallOff * pLight.cFilter; 
+	pPass.cDiffuseAcc.xyz += cDiffuse.xyz * cK.xyz;
+	pPass.cSpecularAcc.xyz += cSpecular.xyz * cK.xyz;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void frag_custom_ambient(inout fragPass pPass, inout half3 cAmbient)
+{
+  //pPass.cAmbientAcc.xyz += cAmbient.xyz;                                                             // 1 alu
+	
+	if (pPass.nReflectionMapping)
+	{
+		// Use low mip level of specular cubemap as irradiance approximation
+		pPass.cAmbientAcc.xyz += DecodeHDRCubemap( GetEnvCubeTexLod( envCubeTex, half4(pPass.vNormal.xyz, 5) ) ).xyz;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "TiledShading.cfi"
+
+void frag_custom_end(inout fragPass pPass, inout half3 cFinal)
+{
+#if %_RT_TILED_SHADING	
+	#if !%EYE_SPECULAR_OVERLAY
+		const bool applyProbes = true;
+	#else
+		const bool applyProbes = false;
+	#endif
+	
+	TiledForwardShading(pPass, true, applyProbes);
+#endif
+	
+#if %EYE_SPECULAR_OVERLAY
+	half3 cDiffuse = 0;
+
+	// Apply environment map.
+	if( pPass.nReflectionMapping )
+	{
+		half3 fresnel = GetEnvmapFresnel( pPass.cSpecularMap.xyz, pPass.fGloss, pPass.fNdotE );
+		pPass.cSpecularAcc.xyz += pPass.cEnvironment.xyz * fresnel;
+	}
+
+	half3 cSpecular = pPass.cSpecularAcc.xyz * pPass.cDiffuseMap.x * pPass.IN.Color.x;
+	
+	pPass.fAlpha = 1;
+#else
+	half3 diffuseOccl = 1 - pPass.pCustom.cOcclusionMap.xxx * half3(0.85, 0.95, 1);
+	half3 cDiffuse = (pPass.cAmbientAcc.xyz + pPass.cDiffuseAcc.xyz) * diffuseOccl;
+	cDiffuse.xyz *= pPass.cDiffuseMap.xyz * MatDifColor.xyz;
+
+	// Apply environment map.
+	if( pPass.nReflectionMapping )
+	{
+		half3 fresnel = GetEnvmapFresnel( pPass.cSpecularMap.xyz, pPass.fGloss, pPass.fNdotE );
+		pPass.cSpecularAcc.xyz += pPass.cEnvironment.xyz * fresnel;                       
+	}
+	
+	half3 cSpecular = pPass.cSpecularAcc.xyz * pPass.pCustom.cOcclusionMap.y; 
+#endif
+
+	cFinal.xyz = cDiffuse + cSpecular;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "fragLib.cfi"
+
+///////////////// pixel shader //////////////////
+
+pixout EyePS(vert2FragGeneral IN)
+{
+  pixout OUT = (pixout) 0;  
+    
+#if %EYE_AO_OVERLAY
+  half4 cDiffuseMap = GetDiffuseTex(diffuseTex, IN.baseTC.xy);
+  half4 cSpecularMap = GetSpecularTex(specularTex, IN.baseTC.xy);
+
+  half fDiffOcc = cDiffuseMap.w * DiffOccStrength;
+  half fSpecOcc = lerp(1.h, cSpecularMap.w, SpecOccStrength);
+
+  OUT.Color = half4(fDiffOcc, fSpecOcc, 0, 0);
+#else
+  // Initialize fragPass structure
+  fragPass pPass = (fragPass) 0;
+  frag_unify(pPass, IN);
+  half4 cFinal = frag_shared_output(pPass);
+
+  HDROutput(OUT, cFinal, 1);
+#endif
+ 
+  return OUT; 
+}
+
+//////////////////////////////// technique ////////////////
+
+technique General
+<
+#if !%EYE_SPECULAR_OVERLAY && !%EYE_AO_OVERLAY  // No special passes for overlays
+	string Script = 
+		"TechniqueZ=ZPass;"
+		"TechniqueMotionBlur=MotionBlurPass;"
+		"TechniqueCustomRender=CustomRenderPass;"
+		"TechniqueShadowGen=ShadowGen;"         
+		"TechniqueDebug=DebugPass;"
+#endif
+>
+{
+	pass p0
+	{
+	VertexShader = EyeVS() EyeVS;
+	PixelShader = EyePS() EyePS;  
+
+	ZEnable = true;
+#if %EYE_SPECULAR_OVERLAY || %EYE_AO_OVERLAY
+	ZWriteEnable = false;
+	#if %EYE_SPECULAR_OVERLAY
+		SrcBlend = ONE;
+		DestBlend = ONE;
+		AlphaBlendEnable = true;
+	#endif
+#else	
+	ZWriteEnable = true; // this is explicit disabled when zpass enabled 
+	CullMode = Back;
+	ZFunc = LEqual;
+#endif
+	}    
+}
+
+
+//////////////////////////////// Common techniques ////////////////
+
+#include "CommonZPass.cfi"
+#include "CommonMotionBlurPass.cfi"
+#include "ShadowCommon.cfi"
+#include "CommonShadowGenPass.cfi"
+#include "CommonDebugPass.cfi"
+#include "CommonViewsPass.cfi"
+
+/////////////////////// eof ///

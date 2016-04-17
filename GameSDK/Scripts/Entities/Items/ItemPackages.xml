@@ -1,0 +1,17 @@
+<!-- The ItemPackages script allows you to create new DisplayNames for items, depending on what accessories they have fitted 
+     You can specify multiple accessories, separated by a semicolon -->
+
+<ItemPackages>
+
+	<!-- Pistol -->
+	<package display_name="@mp_eFlashlightPistol" item="Pistol" setup="Flashlight" />
+	<package display_name="@mp_eExplosivePistol" item="Pistol" setup="PistolIncendiaryAmmo" />
+	<package display_name="@mp_eAssaultPistol" item="Pistol" setup="Flashlight;PistolIncendiaryAmmo" />
+
+	<!-- Rifle -->
+	<package display_name="@mp_eSilencedRifle" item="Rifle" setup="Silencer" />
+
+	<!-- Shotgun -->
+	<package display_name="@mp_eSlugShotgun" item="Shotgun" setup="ShotgunSolidAmmo" />
+
+</ItemPackages>

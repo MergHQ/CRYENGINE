@@ -1,0 +1,9 @@
+{
+	"NoUberFile": 
+	{
+		"RootLuac":
+		[
+			"../../SDKs/Lua/src/luac.c"
+		]
+	}
+}

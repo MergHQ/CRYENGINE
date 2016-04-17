@@ -1,0 +1,44 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+
+//===========================================================================
+// Validations
+// Removing of redundant and mutually exclusive flags to prevent generating
+// of the vertex/pixel shaders
+
+#if !%GRASS && !%LEAVES
+  #if %DETAIL_BENDING
+    #undefine %DETAIL_BENDING
+  #endif    
+#endif
+
+#if %GRASS
+  #if %DETAIL_MAPPING
+    #undefine %DETAIL_MAPPING
+  #endif
+#endif
+
+#if %LEAVES
+  #if %BLENDLAYER
+    #undefine %BLENDLAYER
+  #endif
+#endif
+
+#ifdef FEATURE_MESH_TESSELLATION
+	#if %PHONG_TESSELLATION || %PN_TESSELLATION || %DISPLACEMENT_MAPPING
+		#define ENABLE_TESSELLATION 1
+	#endif
+#endif
+
+#ifndef ENABLE_TESSELLATION
+	#if %PHONG_TESSELLATION
+		#undefine %PHONG_TESSELLATION
+	#endif
+	#if %PN_TESSELLATION
+		#undefine %PN_TESSELLATION
+	#endif
+	#if %DISPLACEMENT_MAPPING
+		#undefine %DISPLACEMENT_MAPPING
+	#endif
+#endif

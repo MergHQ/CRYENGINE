@@ -1,0 +1,185 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2016 Crytek GmbH. All rights reserved.
+											   
+// default particle data			
+struct SDefaultParticleData
+{
+	float3 position;
+	float3 velocity;
+	uint color;
+	uint auxData;
+}; 
+
+struct SAuxData
+{
+	float normalAge;
+	float size;
+	int isDead;
+};
+
+struct SReadbackData
+{
+	int3 min;
+	int3 max;
+};
+
+
+struct SInitialData
+{
+	float3 position;
+	float3 velocity;
+};
+
+// Feature Parameter definitions
+
+cbuffer g_particleParameters : register(b4)
+{
+	float4x4 c_viewProjection;
+	float4 c_emitterOrientation;
+	float3 c_emitterPosition;
+	float c_deltaTime;
+	float3 c_physAccel;
+	float c_currentTime;
+	float3 c_physWind;
+	float c_farToNearDistance;
+	float3 c_cameraPosition;
+	float c_lifeTime;
+	int c_numParticles;
+	int c_numNewBorns;
+	int c_numKilled;
+	int c_sortMode;
+	int c_managerSlot;
+};
+
+cbuffer g_motionParameters : register(b6)
+{
+	float3 c_uniformAcceleration;
+	float g_motionParameters_pad0;
+	float3 c_uniformWind;
+	float g_motionParameters_pad1;
+	float c_gravity;
+	float c_drag;
+	float c_windMultiplier;
+};
+
+cbuffer g_effectorBrownianParameters : register(b7)
+{
+	float3 c_brownian_scale;
+	float c_brownian_speed;
+};
+
+cbuffer g_effectorSimplexParameters : register(b8)
+{
+	float3 c_simplex_scale;
+	float c_simplex_speed;
+	float c_simplex_size;
+	float c_simplex_rate;
+	int c_simplex_octaves;
+};
+
+cbuffer g_effectorCurlParameters : register(b9)
+{
+	float3 c_curl_scale;
+	float c_curl_speed;
+	float c_curl_size;
+	float c_curl_rate;
+	int c_curl_octaves;
+};
+
+cbuffer g_effectorGravityParameters : register(b10)
+{
+	float3 c_gravity_axis;
+	float c_gravity_acceleration;
+	float c_gravity_decay;
+	float c_gravity_pad0;
+	float c_gravity_pad1;
+	float c_gravity_pad2;
+	int c_gravity_type;
+};
+
+cbuffer g_effectorVortexParameters : register(b11)
+{
+	float3 c_vortex_axis;
+	float c_vortex_speed;
+	float c_vortex_decay;
+	float c_vortex_pad0;
+	float c_vortex_pad1;
+	float c_vortex_pad2;
+	int c_vortex_direction;
+};
+
+cbuffer g_pixelSizeParameters : register(b12)
+{
+	float4 c_pixelsize_projectionPlane;
+	float c_pixelsize_min;
+	float c_pixelsize_invMin;
+	float c_pixelsize_max;
+	float c_pixelsize_minDrawPixels;
+	int   c_pixelsize_affectOpacity;
+};
+
+RWStructuredBuffer<SDefaultParticleData> defaultParticleData : register(u0);
+
+// Packs float4 in [0,1] range into [0-255] uint
+uint PackFloat4(float4 val)
+{
+	return 
+		(uint(val.z*255.0f)<<0)  | 
+		(uint(val.y*255.0f)<<8)  | 
+		(uint(val.x*255.0f)<<16) | 
+		(uint(val.w*255.0f)<<24);
+}
+
+// Unpacks values and returns float4 in [0,1] range
+float4 UnpackFloat4(uint value)
+{
+	return float4(
+	((value>>16)&0xFF)/255.0,	
+	((value>>8)&0xFF)/255.0,
+	((value>>0)&0xFF)/255.0,
+	((value>>24)&0xFF)/255.0);
+}
+
+// Packs auxiliary data into one uint32
+// age needs to be in the interval [-1,1], size in [0,1] and isDead is boolean 
+uint PackAuxData(float age, float size, int isDead)
+{
+	// we multiply with a value slightly under the integer range, so that it never overflows
+	// as long as size or age <= 1.0
+ 	// integer ranges are:
+	// 524288.0 = 2^20 / 2 for age
+	// 2048.0 = 2^11 for size
+
+	age = min(1.0, age);
+	size = min(1.0, size);
+
+	return (uint((age + 1.0)*524287.99) << 12) | (uint(size*2047.99) << 1) | (isDead & 0x1);
+}
+
+// Unpacks auxiliary data from one uint32
+SAuxData UnpackAuxData(uint value)
+{
+	SAuxData data;
+	data.normalAge = ((value>>12)&0xFFFFFF)/524287.99 - 1.0;
+	data.size = ((value>>1)&0x7FF)/2047.99;
+	data.isDead = value & 0x1;
+	return data;
+}
+
+bool IsDead(int i)
+{
+	return defaultParticleData[i].auxData & 0x1;
+}
+
+float3 quatMult(float4 q, float3 v)
+{
+	float3 r2;
+	r2.x=(q.y*v.z-q.z*v.y)+q.w*v.x;
+	r2.y=(q.z*v.x-q.x*v.z)+q.w*v.y;
+	r2.z=(q.x*v.y-q.y*v.x)+q.w*v.z;
+	float3 o;
+	o.x=(r2.z*q.y-r2.y*q.z); o.x+=o.x+v.x;
+	o.y=(r2.x*q.z-r2.z*q.x); o.y+=o.y+v.y;
+	o.z=(r2.y*q.x-r2.x*q.y); o.z+=o.z+v.z;
+	return o;
+}

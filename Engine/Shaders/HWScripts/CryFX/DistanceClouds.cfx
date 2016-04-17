@@ -1,0 +1,412 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "ShadeLib.cfi"
+
+float Script : STANDARDSGLOBAL
+<
+	string Script =
+		"Public;"
+		"Decal;"
+		"ShaderDrawType = General;"
+        "ShaderType = FX;"
+>;
+
+#if !%SIMPLE
+
+float4 CameraRightVector			: PB_CameraRight;
+float4 CameraUpVector				: PB_CameraUp;
+
+float3 ShadeColorFromSun			: PB_CloudShadingColorSun;
+float3 ShadeColorFromSky			: PB_CloudShadingColorSky;
+
+#if %ADVANCED
+
+float AlphaMultiplier
+<
+  register = REG_PM_PARAM_0.x;
+	string UIHelp = "Alpha multiplier for cloud texture";
+	string UIName = "Alpha Multiplier";
+		
+	string UIWidget = "slider";
+	float UIMin = 0.1;
+	float UIMax = 6.0;
+	float UIStep = 0.05;
+> = 1.0;
+
+float AlphaSaturation
+<
+  register = REG_PM_PARAM_0.y;
+	string UIHelp = "Alpha saturation of cloud texture";
+	string UIName = "Alpha Saturation";
+		
+	string UIWidget = "slider";
+	float UIMin = 0.1;
+	float UIMax = 4.0;
+	float UIStep = 0.05;
+> = 1.0;
+
+float CloudHeight
+<
+  register = REG_PM_PARAM_0.z;
+	string UIHelp = "Height of the cloud layer";
+	string UIName = "Cloud Height";
+	
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.001;
+> = 0.3;
+
+float DensitySun
+<
+  register = REG_PM_PARAM_0.w;
+	string UIHelp = "Cloud density used for sun light scattering";
+	string UIName = "Density Sun";
+		
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 6.0;
+	float UIStep = 0.05;
+> = 1.5;
+
+float DensitySky
+<
+  register = REG_PM_PARAM_1.x;
+	string UIHelp = "Cloud density used for sky light scattering";
+	string UIName = "Density Sky";
+		
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 16.0;
+	float UIStep = 0.1;
+> = 4.5;
+
+#else
+
+float Attenuation
+<
+  register = REG_PM_PARAM_1.y;
+	string UIHelp = "Attenuation of light scattered through cloud";
+	string UIName = "Attenuation";
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 5.0;
+	float UIStep = 0.01;
+> = 0.6;
+
+
+float StepSize
+<
+  register = REG_PM_PARAM_1.z;
+	string UIHelp = "Step size through cloud texture";
+	string UIName = "StepSize";
+	
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.001;
+> = 0.004;
+
+
+float AlphaSaturation
+<
+  register = REG_PM_PARAM_1.w;
+	string UIHelp = "Alpha saturation of cloud texture";
+	string UIName = "AlphaSaturation";
+		
+	string UIWidget = "slider";
+	float UIMin = 0.1;
+	float UIMax = 10.0;
+	float UIStep = 0.1;
+> = 2.0;
+
+
+float SunColorMultiplier
+<
+  register = REG_PM_PARAM_2.x;
+	string UIHelp = "Sun color multiplier";
+	string UIName = "SunColorMultiplier";
+		
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 16.0;
+	float UIStep = 0.1;
+> = 4.0;
+
+
+float SkyColorMultiplier
+<
+  register = REG_PM_PARAM_2.y;
+	string UIHelp = "Sky color multiplier";
+	string UIName = "SkyColorMultiplier";
+		
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 16.0;
+	float UIStep = 0.1;
+> = 1.5;
+
+#endif
+
+#else
+
+float Opacity
+<
+  register = REG_PM_PARAM_2.z;
+	string UIHelp = "Opacity modifier for the cloud";
+	string UIName = "Opacity";
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.01;
+> = 1.0;
+
+float Exposure
+<
+  register = REG_PM_PARAM_2.w;
+	string UIHelp = "Exposure to enable HDR on LDR texture";
+	string UIName = "Exposure";
+	string UIWidget = "slider";
+	float UIMin = 0.1;
+	float UIMax = 40.0;
+	float UIStep = 0.1;
+> = 1.0;
+
+#endif
+
+struct a2v
+{
+	float4 Position	: POSITION;
+	float2 baseTC	: TEXCOORD0;
+	float4 color	: COLOR0;
+	float4 Tangent	: TANGENT;
+	float4 Binormal	: BINORMAL;
+};
+
+
+struct v2f
+{
+	float4 Position		: POSITION;
+	float2 baseTC		: TEXCOORD0;
+	float3 toSun		: TEXCOORD1;
+};
+
+
+struct v2f_simple
+{
+	float4 Position		: POSITION;
+	float2 baseTC		: TEXCOORD0;
+};
+
+
+v2f DistanceCloudsVS(a2v IN)
+{
+	v2f OUT = (v2f)0;
+
+	// Position in screen space
+	float4 vPos = IN.Position;
+	OUT.Position = mul(vpMatrix, vPos);
+	
+#ifndef %_RT_REVERSE_DEPTH
+	OUT.Position.z = OUT.Position.w;
+#else
+	OUT.Position.z = 0;
+#endif
+	
+	OUT.baseTC.xy = IN.baseTC.xy;
+	
+  float3x3 objToTangentSpace;
+  objToTangentSpace[0] = IN.Tangent.xyz;
+  objToTangentSpace[1] = IN.Binormal.xyz;
+  objToTangentSpace[2] = normalize(cross(objToTangentSpace[0], objToTangentSpace[1])) * IN.Tangent.w;
+
+	OUT.toSun = mul( objToTangentSpace, g_VS_SunLightDir.xyz );
+
+	return OUT; 
+}
+
+
+pixout DistanceCloudsPS(v2f IN)
+{
+	pixout OUT;
+	
+   // Debug output
+ #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
+   DebugOutput(OUT.Color, float4(IN.baseTC, 0, 1));
+   return OUT;
+ #endif
+	
+	const int c_numSamples = 8;
+	
+	float3 toSun = normalize( IN.toSun.xyz );
+	float2 sampleDir = toSun.xy * StepSize;
+	float2 uv = IN.baseTC.xy;
+
+	float opacity = GetTexture2D( diffuseTex, ssMaterialTrilinearClamp, uv ).x;
+	float density = 0;
+
+	//float height = -opacity;
+	//toSun *= 2.0 / (float) c_numSamples;
+	
+	for( int i = 0; i < c_numSamples; i++ )
+	{
+		float t = GetTexture2D( diffuseTex, ssMaterialTrilinearClamp, uv + i * sampleDir ).x;
+		density += t /** step( abs( height ), t )*/;
+		//height += toSun.z;
+	}
+	
+  // Re-scale range
+
+	float c = exp2( -Attenuation * density );
+	float a = pow( opacity, AlphaSaturation );
+	float3 col = lerp( SkyColorMultiplier * ShadeColorFromSky.xyz, SunColorMultiplier * ShadeColorFromSun.xyz, c );
+  // Re-scale range
+  col *= PS_HDR_RANGE_ADAPT_MAX;
+
+	half4 Color = half4( col, a );
+
+	HDROutput(OUT, Color, 1);
+	
+	return OUT;
+}
+
+
+int GetNumSamples()
+{
+  const int quality = GetShaderQuality();
+  int nSamples = 16;
+  if (quality > QUALITY_LOW)
+    nSamples = 24;
+  if (quality > QUALITY_MEDIUM)
+    nSamples = 32;
+  if (quality > QUALITY_HIGH)
+    nSamples = 48;
+  return nSamples;
+}
+
+pixout DistanceCloudsAdvancedPS(v2f IN)
+{
+	pixout OUT;
+
+	const int numSamples = GetNumSamples();
+
+	// Q: is this a greyscale map?
+	float height = GetTexture2D( diffuseTex, ssMaterialTrilinearClamp, IN.baseTC.xy ).x;
+	
+	clip( height - 0.0001 );
+	
+	float3 curTracePos = float3( IN.baseTC.xy, height * CloudHeight );
+	float3 toSun = normalize( IN.toSun.xyz );
+	
+	// Intersection of sun vector with cloud AABB using slabs
+	float3 invToSun = 1.0 / (toSun == 0 ? float3(0.00001, 0.00001, 0.00001) : toSun);
+	float3 tbottom = (float3( 0, 0, -CloudHeight ) - curTracePos) * invToSun;
+	float3 ttop = (float3( 1, 1, CloudHeight ) - curTracePos) * invToSun;
+	float3 tmax = max( ttop, tbottom );
+	float2 t0 = min( tmax.xx, tmax.yz );
+	float distAABB = min( t0.x, t0.y );
+	
+	float3 sampleDir = toSun * distAABB / numSamples;
+	
+	// Accumulate cloud density along sun vector
+	float density = 0;
+	[unroll]
+	for( int i = 0; i < numSamples; i++ )
+	{
+		curTracePos += sampleDir;
+		float height2 = GetTexture2D( diffuseTex, ssMaterialTrilinearClamp, curTracePos.xy ).x * CloudHeight;
+		density += abs( curTracePos.z ) < height2 ? height2 : 0.0;
+	}
+	
+	density *= 64.0 / numSamples;
+	
+	// Sky light scattering
+	float scatteringSky = exp( -height * CloudHeight * DensitySky );
+	
+	// Sun light forward scattering
+	float scatteringSun = exp( -DensitySun * density );
+	
+	// Full shading
+	float3 col = ShadeColorFromSky.xyz * scatteringSky + ShadeColorFromSun.xyz * scatteringSun;
+	
+	// Opacity
+	float alpha = pow( saturate( height * AlphaMultiplier ), AlphaSaturation );
+  
+	// Final color encoding
+	half4 Color = half4( col * PS_HDR_RANGE_ADAPT_MAX, alpha );
+	HDROutput( OUT, Color, 1 );
+
+	return OUT;
+}
+
+
+v2f_simple DistanceCloudsSimpleVS(a2v IN)
+{
+	v2f_simple OUT = (v2f_simple)0;
+
+	// Position in screen space
+	float4 vPos = IN.Position;
+	OUT.Position = mul(vpMatrix, vPos);
+	OUT.Position.z = OUT.Position.w;
+	
+#if %_RT_REVERSE_DEPTH
+	OUT.Position.z = OUT.Position.w - OUT.Position.z;
+#endif
+	
+	OUT.baseTC.xy = IN.baseTC.xy;
+
+	return OUT; 
+}
+
+
+pixout DistanceCloudsSimplePS(v2f_simple IN)
+{
+	pixout OUT;
+	
+   // Debug output
+ #if %_RT_DEBUG0 || %_RT_DEBUG1 || %_RT_DEBUG2 || %_RT_DEBUG3
+   DebugOutput(OUT.Color, float4(IN.baseTC, 0, 1));
+   return OUT;
+ #endif
+
+	half4 col = GetTexture2D( diffuseTex, ssMaterialTrilinearClamp, IN.baseTC.xy);
+	OUT.Color = half4(MatDifColor.xyz * col.xyz, col.w * Opacity);
+	
+	OUT.Color.rgb *= Exposure;
+
+  // Re-scale range
+  OUT.Color.rgb *= PS_HDR_RANGE_ADAPT_MAX;
+
+	return OUT;
+}
+
+
+technique General
+{
+	pass p0
+	{
+#if !%SIMPLE
+		VertexShader = DistanceCloudsVS() DistanceCloudsVS;
+#else
+		VertexShader = DistanceCloudsSimpleVS() DistanceCloudsVS;
+#endif
+		ZEnable = true;
+		ZWriteEnable = false;
+		CullMode = None;
+		
+		AlphaBlendEnable = true;
+		SrcBlend = SrcAlpha;
+		DestBlend = InvSrcAlpha;
+#if !%SIMPLE
+		#if %ADVANCED
+			PixelShader = DistanceCloudsAdvancedPS() DistanceCloudsPS;
+		#else
+			PixelShader = DistanceCloudsPS() DistanceCloudsPS;
+		#endif
+#else
+		PixelShader = DistanceCloudsSimplePS() DistanceCloudsPS;
+#endif
+	}
+}

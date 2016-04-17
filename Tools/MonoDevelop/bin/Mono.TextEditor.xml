@@ -1,0 +1,1340 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Mono.TextEditor</name>
+    </assembly>
+    <members>
+        <member name="M:Mono.TextEditor.TextEditorData.FixVirtualIndentation">
+            <summary>
+            Removes the indent on the caret line, if the indent mode is set to virtual and the indent matches
+            the current virtual indent in that line.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextEditorData.EnsureCaretIsNotVirtual">
+            <summary>
+            Ensures the caret is not in a virtual position by adding whitespaces up to caret position.
+            That method should always be called in an undo group.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextEditorData.CreateImmutable(System.String,System.Boolean)">
+            <summary>
+            Creates the a text editor data object which document can't be changed. This is useful for 'view' only
+            documents.
+            </summary>
+            <remarks>
+            The Document itself is very fast because it uses a special case buffer and line splitter implementation.
+            Additionally highlighting is turned off as default.
+            </remarks>
+        </member>
+        <member name="E:Mono.TextEditor.TextEditorData.EditModeChanged">
+            <summary>
+            Occurs when the edit mode changed.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.TextEditorData.SuppressTooltips">
+            <summary>
+            If set the tooltips wont show up.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.TextEditorData.EolMarker">
+            <value>
+            The eol mark used in this document - it's taken from the first line in the document,
+            if no eol mark is found it's using the default (Environment.NewLine).
+            The value is saved, even when all lines are deleted the eol marker will still be the old eol marker.
+            </value>
+        </member>
+        <member name="P:Mono.TextEditor.TextEditorData.SelectionRange">
+            <summary>
+            Gets or sets the selection range. If nothing is selected (Caret.Offset, 0) is returned.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.TextEditorData.TextPasteHandler">
+            <summary>
+            Gets or sets the text paste handler.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.Highlighting.ISyntaxMode">
+            <summary>
+            The basic interface for all syntax modes
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Highlighting.ISyntaxMode.GetChunks(Mono.TextEditor.Highlighting.ColorScheme,Mono.TextEditor.DocumentLine,System.Int32,System.Int32)">
+            <summary>
+            Gets colorized segments (aka chunks) from offset to offset + length.
+            </summary>
+            <param name='style'>
+            The color scheme used te generate the chunks.
+            </param>
+            <param name='line'>
+            The starting line at (offset). This is the same as Document.GetLineByOffset (offset).
+            </param>
+            <param name='offset'>
+            The starting offset.
+            </param>
+            <param name='length'>
+            The length of the text converted to chunks.
+            </param>
+        </member>
+        <member name="P:Mono.TextEditor.Highlighting.ISyntaxMode.Document">
+            <summary>
+            Gets or sets the document the syntax mode is attached to. To detach it's set to null.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Caret.ActivateAutoScrollWithoutMove">
+            <summary>
+            Activates auto scroll to caret on next caret move.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Caret.MoveCaretBeforeFoldings">
+            <summary>
+            This method should be called after a fold segment is folded, to ensure
+            that the caret is in a valid state.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.Caret.Mode">
+            <summary>
+            The current mode of the caret
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.Caret.AutoUpdatePosition">
+            <summary>
+            Gets or sets a value indicating whether this <see cref="T:Mono.TextEditor.Caret"/> will listen to text chagne events to update the caret position.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.CaretMode">
+            <summary>
+            Possible visual modes for the caret
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.MarginMarker">
+            <summary>
+            The margin marker is a specialized text line marker used to change how a margins of a line are drawn.
+            (If the margin supports custom drawing plugins)
+            Note: This is not used for the text view margin, which is handled by the basic TextLineMarker class.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextLineMarker.DrawBackground(Mono.TextEditor.TextEditor,Cairo.Context,System.Double,Mono.TextEditor.LineMetrics)">
+            <summary>
+            Draws the background of the text.
+            </summary>
+            <returns><c>true</c>, if background was drawn, <c>false</c> otherwise.</returns>
+            <param name="editor">The editor.</param>
+            <param name="cr">The cairo context.</param>
+            <param name="y">The y coordinate.</param>
+            <param name="metrics">The line metrics.</param>
+        </member>
+        <member name="M:Mono.TextEditor.TextLineMarker.DrawAfterEol(Mono.TextEditor.TextEditor,Cairo.Context,System.Double,Mono.TextEditor.EndOfLineMetrics)">
+            <summary>
+            Is used to draw in the area after the visible text.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.MarginMarker.CanDrawBackground(Mono.TextEditor.Margin)">
+            <summary>
+            Determines whether this margin marker can draw the background of the specified margin.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.MarginMarker.CanDrawForeground(Mono.TextEditor.Margin)">
+            <summary>
+            Determines whether this margin marker can draw the foreground of the specified margin.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.MarginMarker.DrawForeground(Mono.TextEditor.TextEditor,Cairo.Context,Mono.TextEditor.MarginDrawMetrics)">
+            <summary>
+            Draws the foreground of the specified margin.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.MarginMarker.DrawBackground(Mono.TextEditor.TextEditor,Cairo.Context,Mono.TextEditor.MarginDrawMetrics)">
+            <summary>
+            Draws the background of the specified margin.
+            </summary>
+            <returns>true, if the background is drawn. false if the margin should fallback to the default background renderer. </returns>
+        </member>
+        <member name="M:Mono.TextEditor.MarginMarker.InformMousePress(Mono.TextEditor.TextEditor,Mono.TextEditor.Margin,Mono.TextEditor.MarginMouseEventArgs)">
+            <summary>
+            Informs the margin marker of a mouse press event.
+            </summary>
+            <param name="editor">The text editor in which the event press occured.</param>
+            <param name="margin">The margin in which the event occured.</param>
+            <param name="args">The event arguments.</param>
+        </member>
+        <member name="M:Mono.TextEditor.MarginMarker.InformMouseRelease(Mono.TextEditor.TextEditor,Mono.TextEditor.Margin,Mono.TextEditor.MarginMouseEventArgs)">
+            <summary>
+            Informs the margin marker of a mouse release event.
+            </summary>
+            <param name="editor">The text editor in which the event press occured.</param>
+            <param name="margin">The margin in which the event occured.</param>
+            <param name="args">The event arguments.</param>
+        </member>
+        <member name="M:Mono.TextEditor.MarginMarker.InformMouseHover(Mono.TextEditor.TextEditor,Mono.TextEditor.Margin,Mono.TextEditor.MarginMouseEventArgs)">
+            <summary>
+            Informs the margin marker of a mouse hover event.
+            </summary>
+            <param name="editor">The text editor in which the event press occured.</param>
+            <param name="margin">The margin in which the event occured.</param>
+            <param name="args">The event arguments.</param>
+        </member>
+        <member name="F:Mono.TextEditor.Vi.ViEditMode.currentMacro">
+            <summary>
+            The macro currently being implemented. Will be set to null and checked as a flag when required.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Vi.ViEditMode.RegexReplace(System.Text.RegularExpressions.Match)">
+            <summary>
+            Runs an in-place replacement on the selection or the current line
+            using the "pattern", "replacement", and "trailer" groups of match.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Vi.ViEditMode.PasteAfter(System.Boolean)">
+            <summary>
+            Pastes the selection after the caret,
+            or replacing an existing selection.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Vi.ViEditMode.PasteBefore(System.Boolean)">
+            <summary>
+            Pastes the selection before the caret,
+            or replacing an existing selection.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.Vi.ViWordFindStrategy">
+            <summary>
+            A word find strategy to mimic vi's
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Vi.ViWordFindStrategy.FindNextSubwordOffset(Mono.TextEditor.TextDocument,System.Int32)">
+            <summary>
+            Move to next non-whitespace change in character class.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Vi.ViWordFindStrategy.FindNextWordOffset(Mono.TextEditor.TextDocument,System.Int32)">
+            <summary>
+            Move past next whitespace group.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Vi.ViWordFindStrategy.FindPrevSubwordOffset(Mono.TextEditor.TextDocument,System.Int32)">
+            <summary>
+            Move to previous non-whitespace change in character class.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Vi.ViWordFindStrategy.FindPrevWordOffset(Mono.TextEditor.TextDocument,System.Int32)">
+            <summary>
+            Move to end of previous whitespace group.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Vi.ViWordFindStrategy.GetCharacterClass(System.Char)">
+            <summary>
+            Gets the character class for a given character.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.Vi.ViMacro">
+            <summary>
+            Implements a Vi macro. Only the keys pressed need to be stored. Though this class
+            is not exactly required, it provides a possible place to extend the code.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.Vi.ViMacro.KeysPressed">
+            <summary>
+            This <see cref="T:System.Collections.Queue"/> of KeySets determine the ultimate functionality
+            of the macro this ViMacro object represents.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.Vi.ViMacro.KeySet">
+            <summary>
+            One of these determines a complete set of arguments passed to HandleKeyPress. I am
+            still not sure about whether each of these fields is indepedent in itself or may 
+            be eliminated and re-constructed later.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Vi.ViMark.#ctor(System.Char)">
+            <summary>
+            Only way to construct a ViMark.
+            </summary>
+            <param name="markCharacter">
+            The <see cref="T:System.Char"/> with which the ViMark object needs to be
+            associated.
+            </param>
+        </member>
+        <member name="T:Mono.TextEditor.Theatrics.SmartScrolledWindow">
+            <summary>
+            A scrolled window with the ability to put widgets beside the scrollbars.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.Theatrics.BounceFadePopupWindow">
+            <summary>
+            Tooltip that "bounces", then fades away.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.Theatrics.BounceFadePopupWindow.Duration">
+            <summary>Duration of the animation, in milliseconds.</summary>
+        </member>
+        <member name="P:Mono.TextEditor.Theatrics.BounceFadePopupWindow.ExpandWidth">
+            <summary>The number of pixels by which the window's width will expand</summary>
+        </member>
+        <member name="P:Mono.TextEditor.Theatrics.BounceFadePopupWindow.ExpandHeight">
+            <summary>The number of pixels by which the window's height will expand</summary>
+        </member>
+        <member name="P:Mono.TextEditor.Theatrics.BounceFadePopupWindow.BounceEasing">
+            <summary>The easing used for the bounce part of the animation.</summary>
+        </member>
+        <member name="T:Mono.TextEditor.Theatrics.BounceFadePopupWidget">
+            <summary>
+            Tooltip that "bounces", then fades away.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.Theatrics.BounceFadePopupWidget.Duration">
+            <summary>Duration of the animation, in milliseconds.</summary>
+        </member>
+        <member name="P:Mono.TextEditor.Theatrics.BounceFadePopupWidget.ExpandWidth">
+            <summary>The number of pixels by which the window's width will expand</summary>
+        </member>
+        <member name="P:Mono.TextEditor.Theatrics.BounceFadePopupWidget.ExpandHeight">
+            <summary>The number of pixels by which the window's height will expand</summary>
+        </member>
+        <member name="P:Mono.TextEditor.Theatrics.BounceFadePopupWidget.BounceEasing">
+            <summary>The easing used for the bounce part of the animation.</summary>
+        </member>
+        <member name="T:Mono.TextEditor.Highlighting.CloneableStack`1">
+            <summary>
+            A fast stack used by spans in highlighting that is:
+            * cloneable in constant time
+            * equatable in constant time
+            * when enumerating the items go from top to bottom (the .NET stack implementation does the opposite)
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.Diff.CreateDiffs``1(Mono.TextEditor.Utils.DiffData{``0},Mono.TextEditor.Utils.DiffData{``0})">
+            <summary>Scan the tables of which lines are inserted and deleted,
+            producing an edit script in forward order.
+            </summary>
+            dynamic array
+        </member>
+        <member name="M:Mono.TextEditor.Utils.Diff.SMS``1(Mono.TextEditor.Utils.DiffData{``0},System.Int32,System.Int32,Mono.TextEditor.Utils.DiffData{``0},System.Int32,System.Int32,System.Int32[],System.Int32[])">
+            <summary>
+            This is the algorithm to find the Shortest Middle Snake (SMS).
+            </summary>
+            <param name="dataA">sequence A</param>
+            <param name="lowerA">lower bound of the actual range in DataA</param>
+            <param name="upperA">upper bound of the actual range in DataA (exclusive)</param>
+            <param name="dataB">sequence B</param>
+            <param name="lowerB">lower bound of the actual range in DataB</param>
+            <param name="upperB">upper bound of the actual range in DataB (exclusive)</param>
+            <param name="downVector">a vector for the (0,0) to (x,y) search. Passed as a parameter for speed reasons.</param>
+            <param name="upVector">a vector for the (u,v) to (N,M) search. Passed as a parameter for speed reasons.</param>
+            <returns>a MiddleSnakeData record containing x,y and u,v</returns>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.Diff.LCS``1(Mono.TextEditor.Utils.DiffData{``0},System.Int32,System.Int32,Mono.TextEditor.Utils.DiffData{``0},System.Int32,System.Int32,System.Int32[],System.Int32[])">
+            <summary>
+            This is the divide-and-conquer implementation of the longest common-subsequence (LCS)
+            algorithm.
+            The published algorithm passes recursively parts of the A and B sequences.
+            To avoid copying these arrays the lower and upper bounds are passed while the sequences stay constant.
+            </summary>
+            <param name="dataA">sequence A</param>
+            <param name="lowerA">lower bound of the actual range in DataA</param>
+            <param name="upperA">upper bound of the actual range in DataA (exclusive)</param>
+            <param name="dataB">sequence B</param>
+            <param name="lowerB">lower bound of the actual range in DataB</param>
+            <param name="upperB">upper bound of the actual range in DataB (exclusive)</param>
+            <param name="downVector">a vector for the (0,0) to (x,y) search. Passed as a parameter for speed reasons.</param>
+            <param name="upVector">a vector for the (u,v) to (N,M) search. Passed as a parameter for speed reasons.</param>
+        </member>
+        <member name="T:Mono.TextEditor.Utils.Diff.SMSRD">
+            <summary>
+            Shortest Middle Snake Return Data
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.Utils.DiffData`1">
+            <summary>Data on one input file being compared.
+            </summary>
+        </member>
+        <member name="F:Mono.TextEditor.Utils.DiffData`1.Length">
+            <summary>Number of elements (lines).</summary>
+        </member>
+        <member name="F:Mono.TextEditor.Utils.DiffData`1.Data">
+            <summary>Buffer of numbers that will be compared.</summary>
+        </member>
+        <member name="F:Mono.TextEditor.Utils.DiffData`1.Modified">
+            <summary>
+            Array of booleans that flag for modified data.
+            This is the result of the diff.
+            This means deletedA in the first Data or inserted in the second Data.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.DiffData`1.#ctor(`0[])">
+            <summary>
+            Initialize the Diff-Data buffer.
+            </summary>
+            <param name="initData">reference to the buffer</param>
+        </member>
+        <member name="T:Mono.TextEditor.Vi.ViBuilder">
+            <summary>
+            Returns true if it handled the keystroke.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.Utils.TextBreaker">
+            <summary>
+            A utility class for breaking up the text in TextEditors
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.TextBreaker.BreakLinesIntoWords(Mono.TextEditor.TextEditor,System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            Breaks the lines into words in the form of a list of <see cref="T:Mono.TextEditor.TextSegment">TextSegments</see>. A 'word' is defined as an identifier (a series of letters, digits or underscores)
+            or a single non-identifier character (including white space characters)
+            </summary>
+            <returns>
+            The list of segments representing the 'words' in the lines
+            </returns>
+            <param name="editor">
+            The text editor to get the words from
+            </param>
+            <param name="startLine">
+            The first line in the editor's documents to get the words from
+            </param>
+            <param name="lineCount">
+            The number of lines to get words from
+            </param>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.TextBreaker.BreakLinesIntoWords(Mono.TextEditor.TextDocument,System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            Breaks the lines into words in the form of a list of <see cref="T:Mono.TextEditor.TextSegment">TextSegments</see>. A 'word' is defined as an identifier (a series of letters, digits or underscores)
+            or a single non-identifier character (including white space characters)
+            </summary>
+            <returns>
+            The list of segments representing the 'words' in the lines
+            </returns>
+            <param name="document">
+            The document to get the words from
+            </param>
+            <param name="startLine">
+            The first line in the documents to get the words from
+            </param>
+            <param name="lineCount">
+            The number of lines to get words from
+            </param>
+        </member>
+        <member name="T:Mono.TextEditor.HeightTree">
+            <summary>
+            The height tree stores the heights of lines and provides a performant conversion between y and lineNumber.
+            It takes care of message bubble heights and the height of folded sections.
+            </summary>
+        </member>
+        <member name="F:Mono.TextEditor.IndentStyle.None">
+            <summary>
+            No indentation occurs
+            </summary>
+        </member>
+        <member name="F:Mono.TextEditor.IndentStyle.Auto">
+            <summary>
+            The indentation from the line above will be
+            taken to indent the current line
+            </summary>
+        </member>
+        <member name="F:Mono.TextEditor.IndentStyle.Smart">
+            <summary>
+            Intelligent, context sensitive indentation will occur
+            </summary>
+        </member>
+        <member name="F:Mono.TextEditor.IndentStyle.Virtual">
+            <summary>
+            Intelligent, context sensitive indentation that minimizes whitespaces will occur
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.Utils.TextFileUtility">
+            <summary>
+            This class handles text input from files, streams and byte arrays with auto-detect encoding.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.TextFileUtility.GetBuffer(System.String,System.Text.Encoding,System.Boolean)">
+            <summary>
+            Returns a byte array containing the text encoded by a specified encoding &amp; bom.
+            </summary>
+            <param name="text">The text to encode.</param>
+            <param name="encoding">The encoding.</param>
+            <param name="hadBom">If set to <c>true</c> a bom will be prepended.</param>
+        </member>
+        <member name="T:Mono.TextEditor.Utils.TextFileUtility.UnicodeVerifier">
+            <summary>
+            Unicode verifier
+            </summary> 
+        </member>
+        <member name="T:Mono.TextEditor.Utils.TextFileUtility.WindowsCodePageVerifier">
+            <summary>
+            Code page 1252 was the long time default on windows. This encoding is a superset of ISO 8859-1.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.Utils.TextFileUtility.WindowsCodePageVerifier.WindowsCodePage">
+            <summary>
+            Try to guess the windows code page using the default encoding, on non windows system default
+            to 1252 (western encoding).
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.Utils.TextFileUtility.CodePage858Verifier">
+            <summary>
+            Code page 858 supports old DOS style files extended with the euro sign.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.Utils.TextFileUtility.GB18030CodePageVerifier">
+            <summary>
+            Try to detect chinese encoding.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.MiscActions.TransposeCharacters(Mono.TextEditor.TextEditorData)">
+            <summary>
+            Transpose characters (Emacs C-t)
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.MiscActions.RecenterEditor(Mono.TextEditor.TextEditorData)">
+            <summary>
+            Emacs c-l recenter editor command.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.FoldActions">
+            <summary>
+            Actions for manipulating folds in a document
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FoldActions.GetOutermostClosedFold(Mono.TextEditor.TextEditorData)">
+            <summary>
+            Gets the outermost closed fold pertaining to the current caret position
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FoldActions.GetInnermostOpenedFold(Mono.TextEditor.TextEditorData)">
+            <summary>
+            Gets the innermost opened fold containing the current caret position
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FoldActions.OpenFold(Mono.TextEditor.TextEditorData)">
+            <summary>
+            Opens the current fold
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FoldActions.CloseFold(Mono.TextEditor.TextEditorData)">
+            <summary>
+            Closes the current fold
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FoldActions.ToggleFold(Mono.TextEditor.TextEditorData)">
+            <summary>
+            If the caret is on a closed fold, opens it; 
+            else closes the current fold.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FoldActions.OpenFoldRecursive(Mono.TextEditor.TextEditorData)">
+            <summary>
+            Opens the current fold and all its children
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FoldActions.CloseFoldRecursive(Mono.TextEditor.TextEditorData)">
+            <summary>
+            Closes the current fold and all its parents
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FoldActions.ToggleFoldRecursive(Mono.TextEditor.TextEditorData)">
+            <summary>
+            If the caret is on a closed fold, opens it and all its children; 
+            else closes the current fold and all its parents.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FoldActions.ToggleAllFolds(Mono.TextEditor.TextEditorData)">
+            <summary>
+            If one fold is closed call OpenAllFolds, otherwise CloseAllFolds
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FoldActions.OpenAllFolds(Mono.TextEditor.TextEditorData)">
+            <summary>
+            Opens all folds in the current document.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FoldActions.CloseAllFolds(Mono.TextEditor.TextEditorData)">
+            <summary>
+            Closes all folds in the current document.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.GtkWorkarounds.MapKeys(Gdk.EventKey,Gdk.Key@,Gdk.ModifierType@,Mono.TextEditor.KeyboardShortcut[]@)">
+            <summary>Map raw GTK key input to work around platform bugs and decompose accelerator keys</summary>
+            <param name='evt'>The raw key event</param>
+            <param name='key'>The composed key</param>
+            <param name='state'>The composed modifiers</param>
+            <param name='shortcuts'>All the key/modifier decompositions that can be used as accelerators</param>
+        </member>
+        <member name="M:Mono.TextEditor.GtkWorkarounds.RightInside(Gdk.Rectangle)">
+            <summary>X coordinate of the pixels inside the right edge of the rectangle</summary>
+            <remarks>Workaround for inconsistency of Right property between GTK# versions</remarks>
+        </member>
+        <member name="M:Mono.TextEditor.GtkWorkarounds.BottomInside(Gdk.Rectangle)">
+            <summary>Y coordinate of the pixels inside the bottom edge of the rectangle</summary>
+            <remarks>Workaround for inconsistency of Bottom property between GTK# versions#</remarks>
+        </member>
+        <member name="M:Mono.TextEditor.GtkWorkarounds.ShowNativeShadow(Gtk.Window,System.Boolean)">
+            <summary>
+            Shows or hides the shadow of the window rendered by the native toolkit
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.MarginMouseEventArgs.RawEvent">
+            <summary>
+            The raw GDK event. May be null if the event was synthesized.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.PangoUtil.CreateLayout(Gtk.Widget)">
+            <summary>
+            This doesn't leak Pango layouts, unlike some other ways to create them in GTK# &lt;= 2.12.11
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.FastPangoAttrList">
+            <summary>
+            This creates a Pango list and applies attributes to it with *much* less overhead than the GTK# version.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.FastPangoAttrList.InsertOffsetList(Pango.AttrList,System.UInt32,System.UInt32)">
+            <summary>
+            Like Splice, except it only offsets/clamps the inserted items, doesn't affect items already in the list.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.DocumentRegion">
+            <summary>
+            An (Begin, End) pair representing a document span. It's a TextSegment working with lines &amp; columns instead of offsets.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.IBuffer.Replace(System.Int32,System.Int32,System.String)">
+            <summary>
+            Replaces text.
+            </summary>
+            <param name="offset">The starting offset of the text to be replaced.</param>
+            <param name="count">The length of the text to be replaced.</param>
+            <param name="value">The new text.</param>
+        </member>
+        <member name="M:Mono.TextEditor.IBuffer.GetTextAt(System.Int32,System.Int32)">
+            <summary>
+            Retrieves the text for a portion of the document.
+            </summary>
+            <exception cref="T:System.ArgumentOutOfRangeException">offset or length is outside the valid range.</exception>
+            <remarks>This is the same as Text.Substring, but is more efficient because
+             it doesn't require creating a String object for the whole document.</remarks>
+        </member>
+        <member name="M:Mono.TextEditor.IBuffer.GetCharAt(System.Int32)">
+            <summary>
+            Gets a character at the specified position in the document.
+            </summary>
+            <paramref name="offset">The index of the character to get.</paramref>
+            <exception cref="T:System.ArgumentOutOfRangeException">Offset is outside the valid range (0 to TextLength-1).</exception>
+            <returns>The character at the specified position.</returns>
+            <remarks>This is the same as Text[offset], but is more efficient because
+             it doesn't require creating a String object.</remarks>
+        </member>
+        <member name="M:Mono.TextEditor.IBuffer.IndexOf(System.Char,System.Int32,System.Int32)">
+            <summary>
+            Gets the index of the first occurrence of the character in the specified array.
+            </summary>
+            <param name="c">Character to search for</param>
+            <param name="startIndex">Start index of the area to search.</param>
+            <param name="count">Length of the area to search.</param>
+            <returns>The first index where the character was found; or -1 if no occurrence was found.</returns>
+        </member>
+        <member name="M:Mono.TextEditor.IBuffer.IndexOfAny(System.Char[],System.Int32,System.Int32)">
+            <summary>
+            Gets the index of the first occurrence of any character in the specified array.
+            </summary>
+            <param name="anyOf">Characters to search for</param>
+            <param name="startIndex">Start index of the area to search.</param>
+            <param name="count">Length of the area to search.</param>
+            <returns>The first index where any character was found; or -1 if no occurrence was found.</returns>
+        </member>
+        <member name="M:Mono.TextEditor.IBuffer.IndexOf(System.String,System.Int32,System.Int32,System.StringComparison)">
+            <summary>
+            Gets the index of the first occurrence of the specified search text in this text source.
+            </summary>
+            <param name="searchText">The search text</param>
+            <param name="startIndex">Start index of the area to search.</param>
+            <param name="count">Length of the area to search.</param>
+            <param name="comparisonType">String comparison to use.</param>
+            <returns>The first index where the search term was found; or -1 if no occurrence was found.</returns>
+        </member>
+        <member name="M:Mono.TextEditor.IBuffer.LastIndexOf(System.Char,System.Int32,System.Int32)">
+            <summary>
+            Gets the index of the last occurrence of the specified character in this text source.
+            </summary>
+            <param name="c">The search character</param>
+            <param name="startIndex">Start index of the area to search.</param>
+            <param name="count">Length of the area to search.</param>
+            <returns>The last index where the search term was found; or -1 if no occurrence was found.</returns>
+            <remarks>The search proceeds backwards from (startIndex+count) to startIndex.
+            This is different than the meaning of the parameters on string.LastIndexOf!</remarks>
+        </member>
+        <member name="M:Mono.TextEditor.IBuffer.LastIndexOf(System.String,System.Int32,System.Int32,System.StringComparison)">
+            <summary>
+            Gets the index of the last occurrence of the specified search text in this text source.
+            </summary>
+            <param name="searchText">The search text</param>
+            <param name="startIndex">Start index of the area to search.</param>
+            <param name="count">Length of the area to search.</param>
+            <param name="comparisonType">String comparison to use.</param>
+            <returns>The last index where the search term was found; or -1 if no occurrence was found.</returns>
+            <remarks>The search proceeds backwards from (startIndex+count) to startIndex.
+            This is different than the meaning of the parameters on string.LastIndexOf!</remarks>
+        </member>
+        <member name="P:Mono.TextEditor.IBuffer.TextLength">
+            <summary>
+            Gets the total text length.
+            </summary>
+            <returns>The length of the text, in characters.</returns>
+            <remarks>This is the same as Text.Length, but is more efficient because
+             it doesn't require creating a String object.</remarks>
+        </member>
+        <member name="P:Mono.TextEditor.IBuffer.Text">
+            <summary>
+            Gets the whole text as string.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.ILineSplitter.Initalize(System.String,Mono.TextEditor.DocumentLine@)">
+            <summary>
+            Initializes the splitter with a new text. No events are fired during this process.
+            </summary>
+            <param name="text"></param>
+        </member>
+        <member name="P:Mono.TextEditor.ILineSplitter.LineEndingMismatch">
+            <summary>
+            True if during initialization a line ending mismatch was encountered.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.DocumentLine">
+            <summary>
+            A line inside a <see cref="T:Mono.TextEditor.TextDocument"/>.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.DocumentLine.GetIndentation(Mono.TextEditor.TextDocument)">
+            <summary>
+            This method gets the line indentation.
+            </summary>
+            <param name="doc">
+            The <see cref="T:Mono.TextEditor.TextDocument"/> the line belongs to.
+            </param>
+            <returns>
+            The indentation of the line (all whitespace chars up to the first non ws char).
+            </returns>
+        </member>
+        <member name="M:Mono.TextEditor.DocumentLine.Contains(System.Int32)">
+            <summary>
+            Determines whether this line contains the specified offset. 
+            </summary>
+            <returns>
+            <c>true</c> if this line contains the specified offset (upper bound exclusive); otherwise, <c>false</c>.
+            </returns>
+            <param name='offset'>
+            The offset.
+            </param>
+        </member>
+        <member name="M:Mono.TextEditor.DocumentLine.Contains(Mono.TextEditor.TextSegment)">
+            <summary>
+            Determines whether this line contains the specified segment. 
+            </summary>
+            <returns>
+            <c>true</c> if this line contains the specified segment (upper bound inclusive); otherwise, <c>false</c>.
+            </returns>
+            <param name='segment'>
+            The segment.
+            </param>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.Length">
+            <summary>
+            Gets the length of the line.
+            </summary>
+            <remarks>The length does not include the line delimeter.</remarks>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.UnicodeNewline">
+            <summary>
+            Gets the unicode newline for this line. Returns UnicodeNewline.Unknown for no new line (in the last line of the document)
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.DelimiterLength">
+            <summary>
+            Gets the length of the line terminator.
+            Returns 1 or 2; or 0 at the end of the document.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.Offset">
+            <summary>
+            Gets the start offset of the line.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.LengthIncludingDelimiter">
+            <summary>
+            Gets the length of the line including the line delimiter.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.Segment">
+            <summary>
+            Gets the text segment of the line.
+            </summary>
+            <remarks>The text segment does not include the line delimeter.</remarks>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.SegmentIncludingDelimiter">
+            <summary>
+            Gets the text segment of the line including the line delimiter.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.EndOffset">
+            <summary>
+            Gets the end offset of the line.
+            </summary>
+            <remarks>The end offset does not include the line delimeter.</remarks>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.EndOffsetIncludingDelimiter">
+            <summary>
+            Gets the end offset of the line including the line delimiter.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.LineNumber">
+            <summary>
+            Gets the number of this line.
+            The first line has the number 1.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.NextLine">
+            <summary>
+            Gets the next line. Returns null if this is the last line in the document.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.DocumentLine.PreviousLine">
+            <summary>
+            Gets the previous line. Returns null if this is the first line in the document.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.SegmentTree`1">
+            <summary>
+            A segment tree contains overlapping segments and get all segments overlapping a segment. It's implemented as a augmented interval tree
+            described in Cormen et al. (2001, Section 14.3: Interval trees, pp. 311–317).
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.GetLineText(System.Int32)">
+            <summary>
+            Gets the line text without the delimiter.
+            </summary>
+            <returns>
+            The line text.
+            </returns>
+            <param name='line'>
+            The line number.
+            </param>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.IndexOf(System.Char,System.Int32,System.Int32)">
+            <summary>
+            Gets the index of the first occurrence of the character in the specified array.
+            </summary>
+            <param name="c">Character to search for</param>
+            <param name="startIndex">Start index of the area to search.</param>
+            <param name="count">Length of the area to search.</param>
+            <returns>The first index where the character was found; or -1 if no occurrence was found.</returns>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.IndexOfAny(System.Char[],System.Int32,System.Int32)">
+            <summary>
+            Gets the index of the first occurrence of any character in the specified array.
+            </summary>
+            <param name="anyOf">Characters to search for</param>
+            <param name="startIndex">Start index of the area to search.</param>
+            <param name="count">Length of the area to search.</param>
+            <returns>The first index where any character was found; or -1 if no occurrence was found.</returns>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.IndexOf(System.String,System.Int32,System.Int32,System.StringComparison)">
+            <summary>
+            Gets the index of the first occurrence of the specified search text in this text source.
+            </summary>
+            <param name="searchText">The search text</param>
+            <param name="startIndex">Start index of the area to search.</param>
+            <param name="count">Length of the area to search.</param>
+            <param name="comparisonType">String comparison to use.</param>
+            <returns>The first index where the search term was found; or -1 if no occurrence was found.</returns>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.LastIndexOf(System.Char,System.Int32,System.Int32)">
+            <summary>
+            Gets the index of the last occurrence of the specified character in this text source.
+            </summary>
+            <param name="c">The search character</param>
+            <param name="startIndex">Start index of the area to search.</param>
+            <param name="count">Length of the area to search.</param>
+            <returns>The last index where the search term was found; or -1 if no occurrence was found.</returns>
+            <remarks>The search proceeds backwards from (startIndex+count) to startIndex.
+            This is different than the meaning of the parameters on string.LastIndexOf!</remarks>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.LastIndexOf(System.String,System.Int32,System.Int32,System.StringComparison)">
+            <summary>
+            Gets the index of the last occurrence of the specified search text in this text source.
+            </summary>
+            <param name="searchText">The search text</param>
+            <param name="startIndex">Start index of the area to search.</param>
+            <param name="count">Length of the area to search.</param>
+            <param name="comparisonType">String comparison to use.</param>
+            <returns>The last index where the search term was found; or -1 if no occurrence was found.</returns>
+            <remarks>The search proceeds backwards from (startIndex+count) to startIndex.
+            This is different than the meaning of the parameters on string.LastIndexOf!</remarks>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.SetNotDirtyState">
+            <summary>
+            Marks the document not dirty at this point (should be called after save).
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.UpdateFoldSegmentWorker(System.Collections.Generic.List{Mono.TextEditor.FoldSegment},System.Boolean@,System.Threading.CancellationToken)">
+            <summary>
+            Updates the fold segments in a background worker thread. Don't call this method outside of a background worker.
+            Use UpdateFoldSegments instead.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.RemoveMarker(Mono.TextEditor.TextSegmentMarker)">
+            <summary>
+            Removes a marker from the document.
+            </summary>
+            <returns><c>true</c>, if marker was removed, <c>false</c> otherwise.</returns>
+            <param name="marker">Marker.</param>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.UnRegisterVirtualTextMarker(Mono.TextEditor.IExtendingTextLineMarker)">
+            <summary>
+            un register virtual text marker.
+            </summary>
+            <param name='marker'>
+            marker.
+            </param>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.InformLoadComplete">
+            <summary>
+            Informs the document when the content is loaded. All outstanding actions are executed.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextDocument.RunWhenLoaded(System.Action)">
+            <summary>
+            Performs an action when the content is loaded.
+            </summary>
+            <param name='action'>
+            The action to run.
+            </param>
+        </member>
+        <member name="P:Mono.TextEditor.TextDocument.IsLoaded">
+            <summary>
+            Gets a value indicating whether this instance is loaded.
+            </summary>
+            <value>
+            <c>true</c> if this instance is loaded; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="T:Mono.TextEditor.PrimitiveLineSplitter">
+            <summary>
+            A very fast line splitter for read-only documents that generates lines only on demand.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.StringBuffer">
+            <summary>
+            Simple implementation of the buffer interface to support fast read-only documents.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.TextSegment">
+            <summary>
+            An (Offset, Length) pair representing a text span.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextSegment.#ctor(System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Mono.TextEditor.TextSegment"/> struct.
+            </summary>
+            <param name="offset">
+            The offset of the segment.
+            </param>
+            <param name="length">
+            The length of the segment.
+            </param>
+        </member>
+        <member name="M:Mono.TextEditor.TextSegment.Contains(System.Int32)">
+            <summary>
+            Determines whether this instance contains the specified offset. 
+            </summary>
+            <returns>
+            <c>true</c> if this instance contains the specified offset (upper bound exclusive); otherwise, <c>false</c>.
+            </returns>
+            <param name='offset'>
+            The offset.
+            </param>
+        </member>
+        <member name="M:Mono.TextEditor.TextSegment.Contains(Mono.TextEditor.TextSegment)">
+            <summary>
+            Determines whether this instance contains the specified segment. 
+            </summary>
+            <returns>
+            <c>true</c> if this instance contains the specified segment (upper bound inclusive); otherwise, <c>false</c>.
+            </returns>
+            <param name='segment'>
+            The segment.
+            </param>
+        </member>
+        <member name="M:Mono.TextEditor.TextSegment.IsInside(System.Int32)">
+            <summary>
+            Determines whether this instance is inside the specified offset. 
+            </summary>
+            <returns>
+            <c>true</c> if this instance is inside the specified offset (upper bound inclusive); otherwise, <c>false</c>.
+            </returns>
+            <param name='offset'>
+            The offset offset.
+            </param>
+        </member>
+        <member name="M:Mono.TextEditor.TextSegment.Equals(Mono.TextEditor.TextSegment)">
+            <summary>
+            Determines whether the specified <see cref="T:Mono.TextEditor.TextSegment"/> is equal to the current <see cref="T:Mono.TextEditor.TextSegment"/>.
+            </summary>
+            <param name="other">
+            The <see cref="T:Mono.TextEditor.TextSegment"/> to compare with the current <see cref="T:Mono.TextEditor.TextSegment"/>.
+            </param>
+            <returns>
+            <c>true</c> if the specified <see cref="T:Mono.TextEditor.TextSegment"/> is equal to the current
+            <see cref="T:Mono.TextEditor.TextSegment"/>; otherwise, <c>false</c>.
+            </returns>
+        </member>
+        <member name="M:Mono.TextEditor.TextSegment.Equals(System.Object)">
+            <summary>
+            Determines whether the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:Mono.TextEditor.TextSegment"/>.
+            </summary>
+            <param name="obj">
+            The <see cref="T:System.Object"/> to compare with the current <see cref="T:Mono.TextEditor.TextSegment"/>.
+            </param>
+            <returns>
+            <c>true</c> if the specified <see cref="T:System.Object"/> is equal to the current
+            <see cref="T:Mono.TextEditor.TextSegment"/>; otherwise, <c>false</c>.
+            </returns>
+        </member>
+        <member name="M:Mono.TextEditor.TextSegment.GetHashCode">
+            <summary>
+            Serves as a hash function for a <see cref="T:Mono.TextEditor.TextSegment"/> object.
+            </summary>
+            <returns>
+            A hash code for this instance that is suitable for use in hashing algorithms and data structures such as a hash table.
+            </returns>
+        </member>
+        <member name="M:Mono.TextEditor.TextSegment.ToString">
+            <summary>
+            Returns a <see cref="T:System.String"/> that represents the current <see cref="T:Mono.TextEditor.TextSegment"/>.
+            </summary>
+            <returns>
+            A <see cref="T:System.String"/> that represents the current <see cref="T:Mono.TextEditor.TextSegment"/>.
+            </returns>
+        </member>
+        <member name="P:Mono.TextEditor.TextSegment.Offset">
+            <summary>
+             Gets the start offset of the segment. 
+            </summary>
+            <value>
+            The offset.
+            </value>
+        </member>
+        <member name="P:Mono.TextEditor.TextSegment.Length">
+            <summary>
+            Gets the length of the segment. 
+            </summary>
+            <value>
+            The length.
+            </value>
+        </member>
+        <member name="P:Mono.TextEditor.TextSegment.EndOffset">
+            <summary>
+            Gets the end offset of the segment. 
+            </summary>
+            <remarks>
+            EndOffset = Offset + Length;
+            </remarks>
+            <value>
+            The end offset.
+            </value>
+        </member>
+        <member name="P:Mono.TextEditor.TextSegment.IsEmpty">
+            <summary>
+            Gets a value indicating whether this instance is empty.
+            </summary>
+            <value>
+            <c>true</c> if this instance is empty; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:Mono.TextEditor.TextSegment.IsInvalid">
+            <summary>
+            Gets a value indicating whether this instance is invalid.
+            </summary>
+            <value>
+            <c>true</c> if this instance is invalid; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="F:Mono.TextEditor.TextViewMargin.highlightCaretLine">
+            <summary>
+            Set to true to highlight the caret line temporarly. It's
+            the same as the option, but is unset when the caret moves.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.BufferedTextReader">
+            <summary>
+            Wraps the IBuffer interface to a System.IO.TextReader model.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.ISelectionSurroundingProvider">
+            <summary>
+            A selection surrounding provider handles a special handling how the text editor behaves when the user
+            types a key with a selection. The selection can be surrounded instead of beeing replaced.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.ISelectionSurroundingProvider.GetSelectionSurroundings(Mono.TextEditor.TextEditorData,System.UInt32,System.String@,System.String@)">
+            <summary>
+            Gets the selection surroundings for a given unicode key.
+            </summary>
+            <returns>
+            true, if the key is valid for a surrounding action.
+            </returns>
+            <param name='unicodeKey'>
+            The key to handle.
+            </param>
+            <param name='start'>
+            The start of the surrounding
+            </param>
+            <param name='end'>
+            The end of the surrounding
+            </param>
+        </member>
+        <member name="T:Mono.TextEditor.NullSelectionSurroundingProvider">
+            <summary>
+            Null selection surrounding provider. Basically turns off that feature.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.DefaultSelectionSurroundingProvider">
+            <summary>
+            Default selection surrounding provider.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.IActionTextLineMarker.MousePressed(Mono.TextEditor.TextEditor,Mono.TextEditor.MarginMouseEventArgs)">
+            <returns>
+            true, if the mouse press was handled - false otherwise.
+            </returns>
+        </member>
+        <member name="M:Mono.TextEditor.TextArea.SimulateKeyPress(Gdk.Key,System.UInt32,Gdk.ModifierType)">
+            <summary>Handles key input after key mapping and input methods.</summary>
+            <param name="key">The mapped keycode.</param>
+            <param name="unicodeChar">A UCS4 character. If this is nonzero, it overrides the keycode.</param>
+            <param name="modifier">Keyboard modifier, excluding any consumed by key mapping or IM.</param>
+        </member>
+        <member name="M:Mono.TextEditor.TextArea.SetCursor(Gdk.Cursor)">
+            <summary>
+            Sets the mouse cursor of the gdk window and avoids unnecessary native calls.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextArea.ResetMouseState">
+            <summary>
+            Use this method with care.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextArea.ScrollTo(Gdk.Rectangle)">
+            <summary>
+            Scrolls the editor as required for making the specified area visible 
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextArea.GetTextEditorData">
+            <summary>
+            Use with care.
+            </summary>
+            <returns>
+            A <see cref="T:Mono.TextEditor.TextEditorData"/>
+            </returns>
+        </member>
+        <member name="M:Mono.TextEditor.TextArea.PulseCharacter(Mono.TextEditor.DocumentLocation)">
+            <summary>
+            Initiate a pulse at the specified document location
+            </summary>
+            <param name="pulseStart">
+            A <see cref="T:Mono.TextEditor.DocumentLocation"/>
+            </param>
+        </member>
+        <member name="M:Mono.TextEditor.TextArea.YToLine(System.Double)">
+            <summary>
+            Calculates the line number at line start (in one visual line could be several logical lines be displayed).
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextArea.InsertMargin(System.Int32,Mono.TextEditor.Margin)">
+            <summary>
+            Inserts a margin at the specified list position
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextArea.HasMargin(System.Type)">
+            <summary>
+            Checks whether the editor has a margin of a given type
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextArea.GetMargin(System.Type)">
+            <summary>
+            Gets the first margin of a given type
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextArea.GetTopLevelWidgetPosition(Gtk.Widget,System.Int32@,System.Int32@)">
+            <summary>
+            Returns the position of an embedded widget
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.TextArea.TabsToSpaces">
+            <summary>
+            Gets or sets a value indicating whether this <see cref="T:Mono.TextEditor.TextEditor"/> converts tabs to spaces.
+            It is possible to overwrite the default options value for certain languages (like F#).
+            </summary>
+            <value>
+            <c>true</c> if tabs to spaces should be converted; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="M:Mono.TextEditor.TextEditor.GetTopLevelWidgetPosition(Gtk.Widget,System.Int32@,System.Int32@)">
+            <summary>
+            Returns the position of an embedded widget
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.TextEditor.GetTextEditorData">
+            <summary>
+            Use with care.
+            </summary>
+            <returns>
+            A <see cref="T:Mono.TextEditor.TextEditorData"/>
+            </returns>
+        </member>
+        <member name="M:Mono.TextEditor.TextEditor.OnIMProcessedKeyPressEvent(Gdk.Key,System.UInt32,Gdk.ModifierType)">
+            <remarks>
+            The Key may be null if it has been handled by the IMContext. In such cases, the char is the value.
+            </remarks>
+        </member>
+        <member name="M:Mono.TextEditor.TextEditor.PulseCharacter(Mono.TextEditor.DocumentLocation)">
+            <summary>
+            Initiate a pulse at the specified document location
+            </summary>
+            <param name="pulseStart">
+            A <see cref="T:Mono.TextEditor.DocumentLocation"/>
+            </param>
+        </member>
+        <member name="M:Mono.TextEditor.TextEditor.YToLine(System.Double)">
+            <summary>
+            Calculates the line number at line start (in one visual line could be several logical lines be displayed).
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.TextEditor.TabsToSpaces">
+            <summary>
+            Gets or sets a value indicating whether this <see cref="T:Mono.TextEditor.TextEditor"/> converts tabs to spaces.
+            It is possible to overwrite the default options value for certain languages (like F#).
+            </summary>
+            <value>
+            <c>true</c> if tabs to spaces should be converted; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="T:Mono.TextEditor.Utils.HtmlWriter">
+            <summary>
+            This class is used for converting a highlighted document to html.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.HtmlWriter.GenerateCFHtmlHeader(System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Generates a CF_HTML clipboard format header.
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.Vi.ViModeAbortException">
+            <summary>
+            Thrown to indicate that the vi parser was unable to recognize the key
+            sequence and should abort quietly.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Vi.ViModeAbortException.#ctor">
+            <summary>
+            Thrown to indicate that the vi parser was unable to recognize the key
+            sequence and should abort quietly.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Vi.ViModeAbortException.#ctor(System.String)">
+            <summary>
+            Thrown to indicate that the vi parser was unable to recognize the key
+            sequence and should abort quietly.
+            </summary>
+            <param name="reason">The reason for the abort. May be displayed to the user</param>
+        </member>
+        <member name="T:Mono.TextEditor.MarginDrawMetrics">
+            <summary>
+            Contains all information about a margin draw event. This class is used inside <see cref="T:Mono.TextEditor.MarginMarker"/>.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.MarginDrawMetrics.Margin">
+            <summary>
+            The margin that should be drawn.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.MarginDrawMetrics.Area">
+            <summary>
+            The area that needs to be redrawn.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.MarginDrawMetrics.LineSegment">
+            <summary>
+            The line segment the margin should draw (can be null).
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.MarginDrawMetrics.LineNumber">
+            <summary>
+            The line number of the line segment (can be negative, if the line segment is null).
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.MarginDrawMetrics.X">
+            <summary>
+            The X position of the margin.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.MarginDrawMetrics.Y">
+            <summary>
+            The Y postion of the margin draw event.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.MarginDrawMetrics.Width">
+            <summary>
+            The Width of the margin.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.MarginDrawMetrics.Height">
+            <summary>
+            The height of the current line.
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.MarginDrawMetrics.Right">
+            <summary>
+            X + Width
+            </summary>
+        </member>
+        <member name="P:Mono.TextEditor.MarginDrawMetrics.Bottom">
+            <summary>
+            Y + Height
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.CompressingTreeList`1.#ctor(System.Collections.Generic.IEqualityComparer{`0})">
+            <summary>
+            Creates a new CompressingTreeList instance.
+            </summary>
+            <param name="equalityComparer">The equality comparer used for comparing consequtive values.
+            A single node may be used to store the multiple values that are considered equal.</param>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.CompressingTreeList`1.#ctor(System.Func{`0,`0,System.Boolean})">
+            <summary>
+            Creates a new CompressingTreeList instance.
+            </summary>
+            <param name="comparisonFunc">A function that checks two values for equality. If this
+            function returns true, a single node may be used to store the two values.</param>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.CompressingTreeList`1.InsertRange(System.Int32,System.Int32,`0)">
+            <summary>
+            Inserts <paramref name="item"/> <paramref name="count"/> times at position
+            <paramref name="index"/>.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.CompressingTreeList`1.RemoveRange(System.Int32,System.Int32)">
+            <summary>
+            Removes <paramref name="count"/> items starting at position
+            <paramref name="index"/>.
+            </summary>
+        </member>
+        <member name="M:Mono.TextEditor.Utils.CompressingTreeList`1.SetRange(System.Int32,System.Int32,`0)">
+            <summary>
+            Sets <paramref name="count"/> indices starting at <paramref name="index"/> to
+            <paramref name="item"/>
+            </summary>
+        </member>
+        <member name="T:Mono.TextEditor.LayoutCache">
+            <summary>
+            Caches native pango layout objects.
+            </summary>
+        </member>
+    </members>
+</doc>

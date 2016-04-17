@@ -1,0 +1,22 @@
+<BattlechatterVars>
+	<bc_minTimeBetweenBattlechatter		value="3.5"		/> <!--Time between battlechatter per person-->
+	<bc_maxTimeCanDitto								value="1.0"		/> <!--max time between plays for a player to say ditto speech-->
+	<bc_timeNeededForQuiet						value="45.0"	/> <!--Time needed without shooting for quiet battlechatter to trigger-->
+	<bc_NearEndOfGameTime							value="60.0"	/> <!--Seconds remaining to trigger TimeRemaining Good/Bad-->
+	<bc_NearEndOfGameScore						value="20"		/> <!--Points to score limit remaining to trigger TimeRemaining Good/Bad-->
+	<bc_AreaClearedDistance						value="20.0"	/> <!--Distance the enemy actors are for area cleared to be triggered-->
+	<bc_FriendlyActorVoiceIndex				value="0"			/> <!--Index of friendly voices to start-->
+	<bc_FriendlyActorVoiceRange				value="5"			/> <!--Number of friendly voices (e.g voice 0, 1, 2, 3, 4)-->
+	<bc_EnemyActorVoiceIndex					value="5"			/> <!--Index of enemy voices to start-->
+	<bc_EnemyActorVoiceRange					value="3"			/> <!--Number of enemy voices (e.g voice 5, 6, 7)-->
+	<bc_FriendlyHunterActorVoiceIndex value="0"			/> <!-- Index of friendly hunter voices to start -->
+	<bc_FriendlyHunterActorVoiceRange value="8"     /> <!-- Number of friendly hunter voices (eg all voices 0,1,2,3,4,5,6,7) -->
+	<bc_EnemyHunterActorVoiceIndex		value="0"			/> <!-- Index of enemy hunter voices to start -->
+	<bc_EnemyHunterActorVoiceRange		value="8"			/> <!-- Number of enemy hunter voices (eg all voices 0,1,2,3,4,5,6,7) -->
+	<bc_defaultLoadTimeout						value="2.0"		/> <!--How long in seconds we'll wait before playing another sound (or until the sound is streamed and we have the actual length)-->
+	<bc_canSeeActorEnterVTOL_rangeSq	value="2500.0"/> <!--Range squared needed for can see actor entering a VTOL -->
+	<bc_canSeeMicrowaveBeam_rangeSq		value="2500.0"/> <!-- Range squared needed for can see Microwave beam attack -->
+	<bc_canSeeLocalPlayerGetObjective_rangeSq value="2500.0"/> <!-- range squared needed for team mates to see local player get objective -->
+	<bc_minSkillShot_rangeSq value="1200"/> <!-- range squared needed for a kill shot to be classed as a skillshot -->
+	<bc_canSeePlayerDownloadingData_rangeSq value="2500.0"/> <!-- range squared needed for team mates to see another team mate download some data from a data terminal -->
+</BattlechatterVars>

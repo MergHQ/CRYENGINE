@@ -1,0 +1,71 @@
+#include "Common.cfi"
+#include "VertexLib.cfi"
+#include "ShadeLib.cfi"
+
+struct v2f
+{
+	float4 HPosition  : POSITION;   
+	float4 baseTC     : TEXCOORDN;
+	float4 vTangent   : TEXCOORDN;
+	float4 vBinormal  : TEXCOORDN;
+	float4 vView      : TEXCOORDN;  
+	float4 screenPos : TEXCOORDN;
+};
+
+v2f MonoFrameworkUIVS(app2vertGeneral IN)
+{
+	v2f OUT = (v2f)0; 
+
+	// Common data
+	streamPos vertPassPos = (streamPos)0;
+	streamPos_FromGeneral(IN, vertPassPos);
+
+	OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);    
+
+	OUT.baseTC = vertPassPos.baseTC;
+
+	float3 worldTangentS = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[0]) );
+	float3 worldTangentT = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[1]) );
+	float3 worldTangentN = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[2]) );
+
+	OUT.vTangent = float4(worldTangentS, vertPassPos.Tangent.w); 
+	OUT.vBinormal.xyz = worldTangentT;
+	OUT.screenPos = HPosToScreenTC(OUT.HPosition);
+
+	float3 viewVec = ViewPos.xyz - vertPassPos.Position.xyz;
+	OUT.vView.xyz= (mul(vertPassPos.ObjToTangentSpace, viewVec.xyz));
+	OUT.vView.w = OUT.HPosition.w;
+
+	return OUT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pixout MonoFrameworkUIPS(v2f IN)
+{
+	pixout OUT = (pixout) 0;
+	OUT.Color = GetDiffuseTex(diffuseTex, IN.baseTC.xy);
+	return OUT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+technique General
+{
+	pass p0
+	{
+		VertexShader = MonoFrameworkUIVS() WaterFallVS;
+		PixelShader = MonoFrameworkUIPS() WaterFallPS;
+
+		ZEnable = false;
+		ZFunc = LEqual;
+		ZWriteEnable = false;
+		CullMode = Back;
+
+		SrcBlend = SRC_ALPHA;
+		DestBlend = ONE_MINUS_SRC_ALPHA;
+		AlphaBlendEnable = true;
+	}
+}

@@ -1,0 +1,4 @@
+<Entity
+ Name="Ladder" 
+ Script="Scripts/Entities/Others/Ladder.lua"
+/>

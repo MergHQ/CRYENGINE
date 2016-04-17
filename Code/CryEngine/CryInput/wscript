@@ -1,0 +1,41 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+import os
+
+def build(bld):
+
+	additional_win_file_lists = []
+	additional_win_defines = []
+	
+	if os.path.isdir(Path('Code/SDKs/OrbisPad')):
+		additional_win_file_lists += ['cryinput_orbis_shared.waf_files']
+		additional_win_defines += ['WANT_ORBISPAD_WIN']	
+
+	bld.CryEngineModule( 
+		target      = 'CryInput',
+		vs_filter   = 'CryEngine',
+		file_list   = ['cryinput.waf_files'],
+
+		win_file_list       = ['cryinput_dx.waf_files'] + additional_win_file_lists,
+		durango_file_list   = ['cryinput_synergy.waf_files', 'cryinput_durango.waf_files'],
+		linux_file_list     = ['cryinput_synergy.waf_files', 'cryinput_sdl.waf_files'],
+		android_file_list   = ['cryinput_synergy.waf_files', 'cryinput_sdl.waf_files'],
+		orbis_file_list     = ['cryinput_synergy.waf_files', 'cryinput_orbis.waf_files', 'cryinput_orbis_shared.waf_files'],
+
+		pch         = 'StdAfx.cpp', 		
+
+		win_lib           = [ 'dinput8', 'dxguid' ],
+		win_x64_includes  = Path('Code/SDKs/OrbisPad/include'),
+		win_defines       = additional_win_defines,
+
+		durango_lib       = ['uuid', 'Ws2_32' ],
+		durango_cxxflags  = [ '/EHsc', '/ZW' ],
+
+		darwin_lib        = 'SDL2',
+		darwin_libpath    = Path('Code/SDKs/SDL2/lib/mac'),
+		darwin_includes   = [ Path('Code/SDKs/SDL2/include/mac'), Path('Code/SDKs/SDL2/include/SDL'), Path('Code/SDKs/SDL2/SDL@8112/include') ],
+
+		linux_module_extensions = [ 'sdl2' ],
+
+		android_includes  = [ Path('Code/SDKs/SDL2/include/linux'), Path('Code/SDKs/SDL2/include/SDL') ],
+	)

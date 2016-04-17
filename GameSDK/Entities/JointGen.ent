@@ -1,0 +1,4 @@
+<Entity
+	Name="JointGen"
+	Script="Scripts/Entities/Physics/JointGen.lua"
+/>

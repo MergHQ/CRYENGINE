@@ -1,0 +1,95 @@
+{
+    "MainWindowGeometry": "AdnQywACAAAAAAAAAAAAAAAAB38AAAQPAAABJQAAAKcAAAW4AAAD1wAAAAACAAAAB4A=",
+    "MainWindowState": "AAAA/wAAAAD9AAAAAAAAB4AAAAOwAAAABAAAAAIAAAAIAAAAAvwAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAoAAAAeAFMAdABhAG4AZABhAHIAZABUAG8AbwBsAEIAYQByAAAAAAD/////AAAAAAAAAAAAAAAiAEUAZABpAHQAIABNAG8AZABlAHMAVABvAG8AbABCAGEAcgEAAAAA/////wAAAAAAAAAAAAAAJABDAG8AbwByAGQAaQBuAGEAdABlAHMAVABvAG8AbABCAGEAcgEAAACL/////wAAAAAAAAAAAAAAJABDAG8AbgBzAHQAcgBhAGkAbgB0AHMAVABvAG8AbABCAGEAcgAAAAEW/////wAAAAAAAAAAAAAAIABTAGUAbABlAGMAdABpAG8AbgBUAG8AbwBsAEIAYQByAQAAARb/////AAAAAAAAAAAAAAAcAFAAaAB5AHMAaQBjAHMAVABvAG8AbABCAGEAcgAAAAOM/////wAAAAAAAAAAAAAAFgBHAGEAbQBlAFQAbwBvAGwAQgBhAHIBAAACT/////8AAAAAAAAAAAAAABgAQQB1AGQAaQBvAFQAbwBvAGwAQgBhAHIAAAAEov////8AAAAAAAAAAAAAABwATABhAHkAbwB1AHQAcwBUAG8AbwBsAEIAYQByAQAAAtr/////AAAAAAAAAAAAAAAgAFYAaQBlAHcATQBvAGQAZQBzAFQAbwBvAGwAQgBhAHIAAAAD8AAAAT0AAAAAAAAAAAAAAAIAAAABAAAAJABOAGUAdwAgAFQAbwBvAGwAQgBhAHIAVABvAG8AbABCAGEAcgAAAAAA/////wAAAAAAAAAAAAAAAwAAAAA=",
+    "ToolsLayout": {
+        "floatingWindows": [
+        ],
+        "mainWrapper": {
+            "geometry": "AdnQywACAAAAAAAAAAAAAAAAB38AAAOvAAAAAAAAAAAAAAd/AAADrwAAAAAAAAAAB4A=",
+            "splitter": {
+                "items": [
+                    {
+                        "currentIndex": 2,
+                        "objectNames": [
+                            "Perspective",
+                            "Mannequin Editor",
+                            "Character Tool"
+                        ],
+                        "type": "area"
+                    },
+                    {
+                        "currentIndex": 0,
+                        "objectNames": [
+                            "Level Explorer",
+                            "Properties"
+                        ],
+                        "type": "area"
+                    }
+                ],
+                "state": "AAAA/wAAAAEAAAACAAAGNQAAAUcA/////wEAAAABAA==",
+                "type": "splitter"
+            }
+        },
+        "toolWindowManagerStateFormat": 2
+    },
+    "Windows": {
+        "Character Tool": {
+            "class": "Character Tool",
+            "state": {
+            }
+        },
+        "Level Explorer": {
+            "class": "Level Explorer",
+            "state": {
+                "filters": {
+                    "expanded": false
+                },
+                "model": 2,
+                "showActiveLayerLabel": true,
+                "syncSelection": true,
+                "treeView": {
+                    "columnVisiblity": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        false,
+                        true,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false
+                    ]
+                }
+            }
+        },
+        "Mannequin Editor": {
+            "class": "Mannequin Editor"
+        },
+        "Perspective": {
+            "class": "ViewportClass_Perspective",
+            "state": {
+                "cameraSpeed": 1,
+                "fitToWindow": true,
+                "xViewportRes": 800,
+                "yViewportRes": 453
+            }
+        },
+        "Properties": {
+            "class": "Properties",
+            "state": {
+            }
+        }
+    }
+}

@@ -1,0 +1,529 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.Xml</name>
+    </assembly>
+    <members>
+        <member name="M:MonoDevelop.Xml.Parser.XmlParserState.PushChar(System.Char,MonoDevelop.Xml.Parser.IXmlParserContext,System.String@)">
+            <summary>
+            When the <see cref="N:MonoDevelop.Xml.Parser"/> advances by one character, it calls this method 
+            on the currently active <see cref="T:MonoDevelop.Xml.Parser.XmlParserState"/> to determine the next state.
+            </summary>
+            <param name="c">The current character.</param>
+            <param name="context">The parser context.</param>
+            <param name="rollback"> If set non-null, the parser will be rolled back that number 
+            of characters (empty string means replay current char to the next state.
+            Note that this will not change the DOM state.</param>
+            <returns>
+            The next state. A new or parent <see cref="T:MonoDevelop.Xml.Parser.XmlParserState"/> will change the parser state; 
+            the current state or null will not.
+            </returns>
+        </member>
+        <member name="M:MonoDevelop.Xml.Parser.XmlChar.IsValidIANAEncoding(System.String)">
+            <summary>
+            Returns true if the encoding name is a valid IANA encoding.
+            This method does not verify that there is a decoder available
+            for this encoding, only that the characters are valid for an
+            IANA encoding name.
+            </summary>
+            <param name="ianaEncoding">The encoding to check.</param>
+            <returns></returns>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.BaseXmlEditorExtension.AddMiscBeginTags(MonoDevelop.Ide.CodeCompletion.CompletionDataList)">
+            <summary>
+            Adds CDATA and comment begin tags.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.Xml.Completion.XmlSchemaCompletionData">
+            <summary>
+            Holds the completion (intellisense) data for an xml schema.
+            </summary>
+        </member>
+        <member name="F:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.prohibitedAttributes">
+            <summary>
+            Stores attributes that have been prohibited whilst the code
+            generates the attribute completion data.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.#ctor(System.IO.TextReader)">
+            <summary>
+            Creates completion data from the schema passed in 
+            via the reader object.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.#ctor(System.Xml.XmlTextReader)">
+            <summary>
+            Creates completion data from the schema passed in 
+            via the reader object.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.#ctor(System.String)">
+            <summary>
+            Creates the completion data from the specified schema file.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.#ctor(System.String,System.String)">
+            <summary>
+            Creates the completion data from the specified schema file and uses
+            the specified baseUri to resolve any referenced schemas.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.GetUri(System.String)">
+            <summary>
+            Converts the filename into a valid Uri.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.GetElementCompletionData">
+            <summary>
+            Gets the possible root elements for an xml document using this schema.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.GetElementCompletionData(System.String)">
+            <summary>
+            Gets the possible root elements for an xml document using this schema.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.GetAttributeCompletionData(MonoDevelop.Xml.Completion.XmlElementPath)">
+            <summary>
+            Gets the attribute completion data for the xml element that exists
+            at the end of the specified path.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.GetChildElementCompletionData(MonoDevelop.Xml.Completion.XmlElementPath)">
+            <summary>
+            Gets the child element completion data for the xml element that exists
+            at the end of the specified path.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.GetAttributeValueCompletionData(MonoDevelop.Xml.Completion.XmlElementPath,System.String)">
+            <summary>
+            Gets the autocomplete data for the specified attribute value.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindElement(MonoDevelop.Xml.Completion.XmlElementPath)">
+            <summary>
+            Finds the element that exists at the specified path.
+            </summary>
+            <remarks>This method is not used when generating completion data,
+            but is a useful method when locating an element so we can jump
+            to its schema definition.</remarks>
+            <returns><see langword="null"/> if no element can be found.</returns>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindElement(MonoDevelop.Xml.Completion.QualifiedName)">
+            <summary>
+            Finds an element in the schema.
+            </summary>
+            <remarks>
+            Only looks at the elements that are defined in the 
+            root of the schema so it will not find any elements
+            that are defined inside any complex types.
+            </remarks>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindComplexType(MonoDevelop.Xml.Completion.QualifiedName)">
+            <summary>
+            Finds the complex type with the specified name.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindAttribute(System.Xml.Schema.XmlSchemaElement,System.String)">
+            <summary>
+            Finds the specified attribute name given the element.
+            </summary>
+            <remarks>This method is not used when generating completion data,
+            but is a useful method when locating an attribute so we can jump
+            to its schema definition.</remarks>
+            <returns><see langword="null"/> if no attribute can be found.</returns>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindAttributeGroup(System.String)">
+            <summary>
+            Finds the attribute group with the specified name.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindSimpleType(System.String)">
+            <summary>
+            Finds the simple type with the specified name.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindAttribute(System.String)">
+            <summary>
+            Finds the specified attribute in the schema. This method only checks
+            the attributes defined in the root of the schema.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindGroup(System.String)">
+            <summary>
+            Finds the schema group with the specified name.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.CreateQualifiedName(System.String)">
+            <summary>
+            Takes the name and creates a qualified name using the namespace of this
+            schema.
+            </summary>
+            <remarks>If the name is of the form myprefix:mytype then the correct 
+            namespace is determined from the prefix. If the name is not of this
+            form then no prefix is added.</remarks>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.SchemaValidation(System.Object,System.Xml.Schema.ValidationEventArgs)">
+            <summary>
+            Handler for schema validation errors.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.ReadSchema(System.Xml.XmlReader)">
+            <summary>
+            Loads the schema.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindElement(System.Xml.XmlQualifiedName)">
+            <summary>
+            Finds an element in the schema.
+            </summary>
+            <remarks>
+            Only looks at the elements that are defined in the 
+            root of the schema so it will not find any elements
+            that are defined inside any complex types.
+            </remarks>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.GetElementAsComplexType(System.Xml.Schema.XmlSchemaElement)">
+            <summary>
+            Converts the element to a complex type if possible.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.IsProhibitedAttribute(System.Xml.Schema.XmlSchemaAttribute)">
+            <summary>
+            Checks that the attribute is prohibited or has been flagged
+            as prohibited previously. 
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.GetAttributeCompletionData(MonoDevelop.Xml.Completion.XmlCompletionDataList,System.Xml.Schema.XmlSchemaAttributeGroupRef)">
+            <summary>
+            Gets attribute completion data from a group ref.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindChildElement(System.Xml.Schema.XmlSchemaElement,MonoDevelop.Xml.Completion.QualifiedName)">
+            <summary>
+            Finds an element that matches the specified <paramref name="name"/>
+            from the children of the given <paramref name="element"/>.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindChildElement(System.Xml.Schema.XmlSchemaComplexContentExtension,MonoDevelop.Xml.Completion.QualifiedName)">
+            <summary>
+            Finds the named child element contained in the extension element.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindChildElement(System.Xml.Schema.XmlSchemaComplexContentRestriction,MonoDevelop.Xml.Completion.QualifiedName)">
+            <summary>
+            Finds the named child element contained in the restriction element.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindElement(System.Xml.Schema.XmlSchemaObjectCollection,MonoDevelop.Xml.Completion.QualifiedName)">
+            <summary>
+            Finds the element in the collection of schema objects.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.GetBooleanAttributeValueCompletionData(MonoDevelop.Xml.Completion.XmlCompletionDataList)">
+            <summary>
+            Gets the set of attribute values for an xs:boolean type.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.AddSubstitionGroupElements(MonoDevelop.Xml.Completion.XmlCompletionDataList,System.Xml.XmlQualifiedName,System.String)">
+            <summary>
+            Adds any elements that have the specified substitution group.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlSchemaCompletionData.FindSubstitutionGroupElement(System.Xml.XmlQualifiedName,MonoDevelop.Xml.Completion.QualifiedName)">
+            <summary>
+            Looks for the substitution group element of the specified name.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.Xml.Completion.XmlCompletionData">
+            <summary>
+            Holds the text for  namespace, child element or attribute 
+            autocomplete (intellisense).
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.Xml.Completion.XmlCompletionData.Description">
+            <summary>
+            Returns the xml item's documentation as retrieved from
+            the xs:annotation/xs:documentation element.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.Xml.Completion.XmlCompletionData.DataType">
+            <summary>
+            The type of text held in this object.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlCompletionDataList.AddElement(System.String,System.String,System.String)">
+            <summary>
+            Adds an element completion data to the collection if it does not 
+            already exist.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlCompletionDataList.AddElement(System.String,System.String,System.Xml.Schema.XmlSchemaAnnotation)">
+            <summary>
+            Adds an element completion data to the collection if it does not 
+            already exist.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlCompletionDataList.GetDocumentation(System.Xml.Schema.XmlSchemaAnnotation)">
+            <summary>
+            Gets the documentation from the annotation element.
+            </summary>
+            <remarks>
+            All documentation elements are added.  All text nodes inside
+            the documentation element are added.
+            </remarks>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlNamespacePrefixMap.GetPrefix(System.String)">
+            <summary>Gets the prefix registered for the namespace, empty if it's 
+            the default namespace, or null if it's not registered.</summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlNamespacePrefixMap.GetNamespace(System.String)">
+            <summary>Gets the namespace registered for prefix, or default namespace if prefix is empty.</summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlNamespacePrefixMap.AddPrefix(System.String,System.String)">
+            <summary>Registers a namespace for a prefix, or the default namespace if the prefix is empty.</summary>
+        </member>
+        <member name="T:MonoDevelop.Xml.Editor.XmlEditorOptions">
+            <summary>
+            The Xml Editor options.
+            </summary>
+        </member>
+        <member name="E:MonoDevelop.Xml.Editor.XmlEditorOptions.XmlFileAssociationChanged">
+            <summary>Raised when any use scheme association changes </summary>
+        </member>
+        <member name="P:MonoDevelop.Xml.Editor.XmlEditorOptions.AutoInsertFragments">
+            <summary>
+            Automatically insert fragments such as ="" when committing an attribute and > when pressing / in a tag.
+            Off by default since it forces the user to alter typing behaviour.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlTextEditorExtension.FindSchema(MonoDevelop.Xml.Completion.IXmlSchemaCompletionDataCollection,MonoDevelop.Xml.Completion.XmlElementPath)">
+            <summary>
+            Finds the schema given the xml element path.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlTextEditorExtension.GetSchemaObjectSelected(MonoDevelop.Xml.Completion.XmlSchemaCompletionData)">
+            <summary>
+            Gets the XmlSchemaObject that defines the currently selected xml element or attribute.
+            </summary>
+            <param name="currentSchemaCompletionData">This is the schema completion data for the schema currently being 
+            displayed. This can be null if the document is not a schema.</param>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlTextEditorExtension.GetSchemaObjectReferenced(MonoDevelop.Xml.Completion.XmlSchemaCompletionData,System.Xml.Schema.XmlSchemaElement,System.Xml.Schema.XmlSchemaAttribute)">
+             <summary>
+             If the attribute value found references another item in the schema
+             return this instead of the attribute schema object. For example, if the
+             user can select the attribute value and the code will work out the schema object pointed to by the ref
+             or type attribute:
+            
+             xs:element ref="ref-name"
+             xs:attribute type="type-name"
+             </summary>
+             <returns>
+             The <paramref name="attribute"/> if no schema object was referenced.
+             </returns>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlTextEditorExtension.IsXmlSchemaNamespace(System.Xml.Schema.XmlSchemaElement)">
+            <summary>
+            Checks whether the element belongs to the XSD namespace.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlTextEditorExtension.FindSchemaObjectReference(System.String,MonoDevelop.Xml.Completion.XmlSchemaCompletionData,System.String)">
+            <summary>
+            Attempts to locate the reference name in the specified schema.
+            </summary>
+            <param name="name">The reference to look up.</param>
+            <param name="schemaCompletionData">The schema completion data to use to
+            find the reference.</param>
+            <param name="elementName">The element to determine what sort of reference it is
+            (e.g. group, attribute, element).</param>
+            <returns><see langword="null"/> if no match can be found.</returns>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlTextEditorExtension.FindSchemaObjectType(System.String,MonoDevelop.Xml.Completion.XmlSchemaCompletionData,System.String)">
+            <summary>
+            Attempts to locate the type name in the specified schema.
+            </summary>
+            <param name="name">The type to look up.</param>
+            <param name="schemaCompletionData">The schema completion data to use to
+            find the type.</param>
+            <param name="elementName">The element to determine what sort of type it is
+            (e.g. group, attribute, element).</param>
+            <returns><see langword="null"/> if no match can be found.</returns>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlTextEditorExtension.UserSchemaAdded(System.Object,System.EventArgs)">
+            Updates the default schema association since the schema may have been added.
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlTextEditorExtension.IsFileNameHandled(System.String)">
+            <summary>
+            Determines whether the file can be displayed by
+            the xml editor.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.Xml.Editor.XmlTextEditorExtension.StylesheetFileName">
+            <summary>
+            Gets or sets the stylesheet associated with this xml file.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.Xml.Editor.XmlFileAssociation">
+            <summary>Represents an file extension that can be handled by the editor.</summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlEditorService.CreateXmlTextWriter(MonoDevelop.Ide.Gui.Document,System.IO.TextWriter)">
+            <summary>
+            Creates a XmlTextWriter using the current text editor
+            properties for indentation.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlEditorService.Transform(System.String,System.String)">
+            <summary>
+            Runs an XSL transform on the input xml.
+            </summary>
+            <param name="input">The input xml to transform.</param>
+            <param name="transform">The transform xml.</param>
+            <returns>The output of the transform.</returns>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlEditorService.ValidateWellFormedness(MonoDevelop.Core.IProgressMonitor,System.String,System.String)">
+            <summary>
+            Checks that the xml in this view is well-formed.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlEditorService.ValidateXml(MonoDevelop.Core.IProgressMonitor,System.String,System.String)">
+            <summary>
+            Validates the xml against known schemas.
+            </summary>		
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlEditorService.ValidateSchema(MonoDevelop.Core.IProgressMonitor,System.String,System.String)">
+            <summary>
+            Validates the schema.
+            </summary>		
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlEditorService.BrowseForStylesheetFile">
+            <summary>Allows the user to browse the file system for a stylesheet.</summary>
+            <returns>The stylesheet filename the user selected; otherwise null.</returns>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlEditorService.BrowseForSchemaFile">
+            <summary>Allows the user to browse the file system for a schema.</summary>
+            <returns>The schema filename the user selected; otherwise null.</returns>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlSchemaManager.GetNamespacePrefixForFileName(System.String)">
+            <summary>
+            Gets the namespace prefix that is associated with the
+            specified file extension.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlSchemaManager.RemoveUserSchema(System.String)">
+            <summary>
+            Removes the schema with the specified namespace from the
+            user schemas folder and removes the completion data.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlSchemaManager.AddUserSchema(MonoDevelop.Xml.Completion.XmlSchemaCompletionData)">
+            <summary>
+            Adds the schema to the user schemas folder and makes the
+            schema available to the xml editor.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlSchemaManager.IsXmlSchemaNamespace(System.String)">
+            <summary>
+            Determines whether the specified namespace is actually the W3C namespace for
+            XSD files.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlSchemaManager.LoadSchema(System.Collections.Generic.List{MonoDevelop.Xml.Completion.XmlSchemaCompletionData},System.String,System.Boolean)">
+            <summary>
+            Reads an individual schema and adds it to the collection.
+            </summary>
+            <remarks>
+            If the schema namespace exists in the collection it is not added.
+            </remarks>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlFileAssociationManager.GetExtensions">
+            <summary>File extensions that have XML associations.</summary>
+            <returns>LowerInvariant file extensions.</returns>
+        </member>
+        <member name="T:MonoDevelop.Xml.Editor.XmlEditorOptionsPanel">
+            <summary>
+            Configuration settings for the xml editor.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.Xml.Editor.XmlSchemasPanel">
+            <summary>
+            Shows the xml schemas that MonoDevelop knows about.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Editor.XmlSchemasPanelWidget.ScrollToSelection(Gtk.TreeView)">
+            <summary>
+            Scrolls the list so the specified item is visible.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.Xml.Completion.QualifiedName">
+            <summary>
+            An <see cref="T:System.Xml.XmlQualifiedName"/> with the namespace prefix.
+            </summary>
+            <remarks>
+            The namespace prefix active for a namespace is 
+            needed when an element is inserted via autocompletion. This
+            class just adds this extra information alongside the 
+            <see cref="T:System.Xml.XmlQualifiedName"/>.
+            </remarks>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.QualifiedName.Equals(System.Object)">
+            <summary>
+            A qualified name is considered equal if the namespace and 
+            name are the same.  The prefix is ignored.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.Xml.Completion.QualifiedName.Namespace">
+            <summary>
+            Gets the namespace of the qualified name.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.Xml.Completion.QualifiedName.Name">
+            <summary>
+            Gets the name of the element.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.Xml.Completion.QualifiedName.Prefix">
+            <summary>
+            Gets the namespace prefix used.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.Xml.Completion.XmlElementPath">
+            <summary>
+            Represents the path to an xml element starting from the root of the
+            document.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlElementPath.Compact">
+            <summary>
+            Compacts the path so it only contains the elements that are from 
+            the namespace of the last element in the path. 
+            </summary>
+            <remarks>This method is used when we need to know the path for a
+            particular namespace and do not care about the complete path.
+            </remarks>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlElementPath.Equals(System.Object)">
+            <summary>
+            An xml element path is considered to be equal if 
+            each path item has the same name and namespace.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlElementPath.RemoveParentElements(System.Int32)">
+            <summary>
+            Removes elements up to and including the specified index.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.Xml.Completion.XmlElementPath.FindNonMatchingParentElement(System.String)">
+            <summary>
+            Finds the first parent that does belong in the specified
+            namespace.
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.Xml.Completion.XmlElementPath.Elements">
+            <summary>
+            Gets the elements specifying the path.
+            </summary>
+            <remarks>The order of the elements determines the path.</remarks>
+        </member>
+    </members>
+</doc>

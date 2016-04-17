@@ -1,0 +1,13 @@
+<item name="ShotgunAmmo" class="Accessory" priority="103" >
+	<geometry>
+	</geometry>
+
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="display_name" value="@mp_eShotgunAmmo" />
+		<param name="selectTimeMultiplier" value="1.05" GAME="MP" />
+	</params>
+
+</item>

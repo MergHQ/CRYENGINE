@@ -1,0 +1,19 @@
+{
+  "NoUberFile":{
+    "CryAssert":[
+      "CryAssert/CryAssert_Mac.h",
+      "CryAssert/CryAssert_iOS.h"
+    ],
+    "CryCore":[
+      {
+        "Platform":[
+          "CryPlatform/IPlatformOS.h",
+          "CryPlatform/AppleSpecific.h",
+          "CryPlatform/iOSSpecific.h",
+          "CryPlatform/MacSpecific.h",
+          "CryPlatform/CryPlatform.Darwin.h"
+        ]
+      }
+    ]
+  }
+}

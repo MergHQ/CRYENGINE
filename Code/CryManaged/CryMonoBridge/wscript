@@ -1,0 +1,17 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+	
+def build(bld):
+	bld.CryEngineModule(
+		features                = 'swig',
+		target                  = 'CryMonoBridge',
+		vs_filter               = 'CryEngine',
+		file_list               = 'crymonobridge.waf_files',
+		pch                     = 'StdAfx.cpp',
+		
+		cxxflags                = [ '/EHsc', '/bigobj' ],
+		
+		includes                = [ Path('Code/CryEngine/CryAction') ],
+		win_lib                 = [ 'Shell32' ],
+		
+		win_module_extensions   = [ "mono" ]
+	)

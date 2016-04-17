@@ -1,0 +1,17 @@
+<item name="AssaultScope" class="Accessory" priority="103" >
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="scopeAttachment" value="1" />
+		<param name="display_name" value="@mp_eAScope" />
+		<param name="selectTimeMultiplier" value="1.05" GAME="MP" />
+		<param name="tag" value="assaultScope" />
+		<CrosshairTexture name="Objects/weapons/attachments/assault/textures/assault_crosshair_diff.tif" />
+	</params>
+	<geometry>
+		<firstperson name="Objects/weapons/attachments/assault/assault_scope_fp.cgf" useStreaming="0" />
+		<thirdperson name="Objects/weapons/attachments/assault/assault_scope_tp.cgf" />
+		<aux1        name="Objects/weapons/attachments/assault/assault_scope_zoom.cgf" useStreaming="0" />
+	</geometry>
+</item>

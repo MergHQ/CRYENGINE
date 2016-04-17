@@ -1,0 +1,48 @@
+<FeatureTester>
+	<Settings>
+	</Settings>
+	
+	<Tests setName="frontEndTests">
+		<FeatureTest name="FrontEndInit" description="Check a front end menu is created when the game loads" require="noLevelLoaded" enabled="false" owners="benjo">
+			<!-- On an overnight build, we seem to hit FrontEnd_MenuButtonCallbackClear before the first feature test can start, so this test fails... it can be revisited later! -->
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="FrontEnd_ScreenForward" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="10" />
+		</FeatureTest>
+		
+		<FeatureTest name="FrontEndSignIn" description="Pressing button selected by default on first front-end screen selects the next screen" require="noLevelLoaded" enabled="false" owners="benjo">
+			<SetResponseToHittingCCCPoint response="completeTest" checkpointName="PlayerProfile_Verified"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerProfile_SignIn"/>
+			<DoMenuCommand command="verify_profile main" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="1" />
+			<!-- By this point PlayerProfile_Verified should have been hit! If not, something's gone wrong, so... -->
+			<Fail />
+		</FeatureTest>
+
+		<FeatureTest name="FrontEndStartMultiplayer" description="Start a multiplayer game" require="noLevelLoaded" enabled="true" owners="benjo">
+			<!-- Should probably perform a series of menu commands which should start a level loading, rather than do console commands -->
+			<DoConsoleCommand command="sv_gamerules tia" />
+			<DoConsoleCommand command="net_setOnlineMode lan" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Init"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_PostInit"/>
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="WeaponSystem_OnLoadingComplete"/>
+			<DoConsoleCommand command="map cw2_collided_buildings s nb" />
+			<WaitUntilHitAllExpectedCCCPoints timeOut="5" />
+		</FeatureTest>
+
+		<FeatureTest name="LocalPlayerCreated" description="Local player should get created" require="localPlayerExists" enabled="true" prerequisite="FrontEndStartMultiplayer" owners="markf;benjo">
+		</FeatureTest>
+
+		<FeatureTest name="LocalPlayerSpawned" description="Local player should be able to spawn in" require="localPlayerExists" enabled="true" prerequisite="LocalPlayerCreated" owners="markf;benjo">
+			<TrySpawnPlayer who="localPlayer" />
+			<WaitUntilPlayerIsAlive who="localPlayer" />
+			<WaitSingleFrame />
+		</FeatureTest>
+
+		<FeatureTest name="InGameReturnToMain" description="Check the disconnect command exits the current level" prerequisite="FrontEndStartMultiplayer" require="inLevel" enabled="true" owners="benjo">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_Release"/>
+			<DoConsoleCommand command="disconnect" />
+			<!--SetResponseToHittingCCCPoint response="expectedNext" checkpointName="FrontEnd_ReturnToMain"/-->
+			<WaitUntilHitAllExpectedCCCPoints timeOut="3" />
+		</FeatureTest>
+	</Tests>
+</FeatureTester>

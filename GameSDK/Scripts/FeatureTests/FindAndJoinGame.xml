@@ -1,0 +1,74 @@
+<FeatureTester>
+	<Settings>
+	</Settings>
+	
+	<Tests setName="multiplayerGameServer">
+		<FeatureTest name="multiplayerGameCreateGame" description="Create a game which should then appear to clients in the game list" require="noLevelLoaded" enabled="true" owners="markf">
+			<DoConsoleCommand command="sv_servername AutomatedFeatureTestServer" />
+			<DoConsoleCommand command="sv_gamerules tia" />
+			<DoConsoleCommand command="g_enableInitialLoadoutScreen 0"/>
+			<DoConsoleCommand command="g_gameRules_startTimerLength 15" />
+			<DoConsoleCommand command="g_minplayerlimit 0" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameLobby_CreateSession" />
+			<DoConsoleCommand command="map cw2_rooftop_gardens s" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="WeaponSystem_OnLoadingStart" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="WeaponSystem_OnLoadingComplete" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="30" />
+		</FeatureTest>
+
+		<FeatureTest name="multiplayerGameRemotePlayerInit" description="Check remote player becomes initialized" maxTime="120" require="inLevel" enabled="true" owners="markf">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_Init" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_PostInit" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="100" />
+		</FeatureTest>
+
+		<FeatureTest name="multiplayerGameStartCountdownBegins" description="Check game start countdown begins after client has joined" require="inLevel" enabled="true" owners="markf">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRules_SvGameStartCountdownBegin" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="10" />
+		</FeatureTest>
+
+		<FeatureTest name="multiplayerGameClientRevive" description="Check client is revived after the countdown is finished" require="inLevel" enabled="true" owners="benjo">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="GameRulesStandardState_EnterInGame" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_SvPerformRevive" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="20" />
+			<Wait duration="5" />
+		</FeatureTest>		
+
+		<FeatureTest name="multiplayerGameSeesClientDie" description="Check server notices when a client is killed" require="remotePlayerExists" enabled="true" owners="markf">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerDied" />
+			<DoConsoleCommand command="sv_sendConsoleCommand kill" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="30" />
+		</FeatureTest>
+
+		<FeatureTest name="multiplayerGameSeesClientQuit" description="Check server notices when a client quits the game" require="remotePlayerExists" enabled="true" owners="markf">
+			<DoConsoleCommand command="sv_sendConsoleCommand quit" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="PlayerState_NonLocalPlayerBeingDestroyed" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="60" />
+		</FeatureTest>
+	</Tests>
+	
+	<Tests setName="multiplayerGameClient">
+		<FeatureTest name="multiplayerGameFindGame" description="Check a server appears in the game list" require="noLevelLoaded" enabled="true" owners="markf;benjo">
+			<WatchCCCPoint checkpointName="GameLobby_StartSearchingForServers" />
+			<SetResponseToHittingCCCPoint checkpointName="GameLobby_ShowJoinableGame" response="completeTest"/>
+			<SetResponseToHittingCCCPoint checkpointName="GameLobby_UpdateComplete" response="restartTest"/>
+			<DoConsoleCommand command="net_onlyListGameServersContainingText AutomatedFeatureTestServer" />
+			<DoMenuCommand command="goto join_game" />
+			<Wait duration="60" />
+			<CheckNumCCCPointHits checkpointName="GameLobby_StartSearchingForServers" expectedNumHits="1" />
+			<Fail />
+		</FeatureTest>
+		
+		<FeatureTest name="multiplayerGameConnect" description="Connect to multiplayer game" require="noLevelLoaded" enabled="true" owners="markf">
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="WeaponSystem_OnLoadingStart" />
+			<SetResponseToHittingCCCPoint response="expectedNext" checkpointName="WeaponSystem_OnLoadingComplete" />
+			<DoConsoleCommand command="g_enableInitialLoadoutScreen 0"/>
+			<DoConsoleCommand command="connect" />
+			<WaitUntilHitAllExpectedCCCPoints timeout="60" />
+		</FeatureTest>
+		
+		<FeatureTest name="multiplayerGameClientSpawned" description="Check the client notices getting brought to life" require="localPlayerExists" enabled="true" owners="markf">
+			<WaitUntilPlayerIsAlive who="localPlayer" timeout="60"/>
+		</FeatureTest>
+	</Tests>
+</FeatureTester>

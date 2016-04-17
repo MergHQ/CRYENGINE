@@ -1,0 +1,19 @@
+{
+	
+	"CryInput_dx_uber.cpp":
+	{
+		"DX":
+		[
+			"XInputDevice.cpp",
+			"XInputDevice.h",
+			"DXInput.cpp",
+			"DXInputDevice.cpp",
+			"Keyboard.cpp",
+			"Mouse.cpp",
+			"DXInput.h",
+			"DXInputDevice.h",
+			"Keyboard.h",
+			"Mouse.h"
+		]
+	}
+}

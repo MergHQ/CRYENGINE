@@ -1,0 +1,83 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+
+// Lean zprepass for most expensive cases, skips tessellated geom
+
+struct vert2fragZPrepass
+{
+	OUT_P
+#if %_RT_ALPHATEST
+	float4 baseTC     : TEXCOORDN;
+#endif
+};
+
+struct pixout_zprepass
+{
+#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST
+	uint uCoverageMask	: SV_Coverage;
+#endif
+};
+
+vert2fragZPrepass Common_ZPrepassVS(app2vertZGeneral IN)
+{
+	vert2fragZPrepass OUT = (vert2fragZPrepass)0;
+	streamPos vertPassPos = (streamPos)0;
+	streamPos_FromZ(IN, vertPassPos);
+
+	OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+	
+#if %_RT_ALPHATEST
+    // For regular materials using alpha test, we use PB_AlphaTest
+	int nInstance = 0;
+	#if %_RT_ENVIRONMENT_CUBEMAP
+		nInstance = vertPassPos.nInstance;
+	#endif
+    float4 fAlphaTest = Get_SPI_AlphaTest(nInstance);
+
+	// todo: generalize alpha testing code
+	OUT.baseTC = vertPassPos.baseTC; 
+	OUT.baseTC.wz = fAlphaTest.wx;
+	#if %LEAVES
+		float3 worldTangentS = mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[0]);
+		float3 worldTangentT = mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[1]);
+		float3 worldTangentN = mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[2]);
+		OUT.baseTC.w = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, OUT.baseTC.w);
+	#endif
+#endif
+
+	return OUT;
+}
+
+pixout_zprepass Common_ZPrepassPS(vert2fragZPrepass IN)
+{
+	pixout_zprepass OUT = (pixout_zprepass) 0;
+
+#if %_RT_ALPHATEST
+	half fDiffuseAlpha = GetAlphaTex(diffuseTex, IN.baseTC.xy);
+	#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST
+		 GetAlphaCoverageMask( diffuseTex, IN.baseTC.xy, IN.baseTC.w, fDiffuseAlpha, OUT.uCoverageMask);
+	#endif
+
+	clip(fDiffuseAlpha - IN.baseTC.w);
+#endif
+
+	return OUT;
+}
+
+technique ZPrepass
+{
+	pass p0
+	{
+		VertexShader = Common_ZPrepassVS() ZVS;
+		PixelShader = Common_ZPrepassPS() ZPS;
+
+		ZEnable = true;
+		ZWriteEnable = true; 
+		CullMode = Back;
+
+#if %GRASS || %LEAVES
+		CullMode = None;
+#endif
+	}
+}

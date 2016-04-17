@@ -1,0 +1,97 @@
+<EntityClassParams type="Human">
+  <PickAndThrowProxyParams
+    proxyShape="capsule"
+    proxyRadius="0.4"
+    proxyHeight="0.5"
+    proxyPivot="0.0, 0.0, 1.1"
+  />
+
+  <ActorImpulses>
+		<DeathImpulses maxRagdollImpulse="1000">
+			<!-- melee -->
+			<ImpulseSet hitTypes="melee" angularImpulseScale="0.0" partIDs="Bip01 Head">
+				<Impulse 
+					direction="0, 0, 1" 
+					partID="-1"
+					strength="100"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 0" 
+					useStrength="1"
+					partID="-1"
+					strength="0.04"
+					/>
+			</ImpulseSet>
+
+			<!-- shotgun -->			
+			<ImpulseSet bulletTypes="1" partIDs="Bip01 Head">
+				<Impulse 
+					direction="0, 0, 1" 
+					strength="500"
+					partID="-1"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					useStrength="1"
+					partID="-1"
+					strength="2"
+					/>					
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					strength="150"
+					partID="Bip01 Head"
+					/>					
+			</ImpulseSet>
+
+			<!-- assault / light bullet -->			
+			<ImpulseSet bulletTypes="2" partIDs="Bip01 Head">
+				<Impulse 
+					direction="0, 0, 1" 
+					strength="40"
+					partID="-1"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					strength="75"
+					partID="Bip01 Head"
+					/>					
+			</ImpulseSet>
+
+			<!-- Sniper and Hurricane -->			
+			<ImpulseSet bulletTypes="3,4" partIDs="Bip01 Head">
+				<Impulse 
+					direction="0, 0, 1" 
+					strength="40"
+					partID="-1"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					strength="100"
+					partID="Bip01 Head"
+					/>					
+			</ImpulseSet>
+
+			<!-- Gauss -->			
+			<ImpulseSet bulletTypes="5" partIDs="Bip01 Head">
+				<Impulse 
+					direction="0, 0, 1" 
+					strength="150"
+					partID="-1"
+					/>
+				<Impulse 
+					useDirection="1"
+					direction="1, 1, 1" 
+					strength="200"
+					partID="Bip01 Head"
+					/>					
+			</ImpulseSet>
+			
+			<CopyImpulsesFrom class="Default"/>
+		</DeathImpulses>
+	</ActorImpulses>
+</EntityClassParams>

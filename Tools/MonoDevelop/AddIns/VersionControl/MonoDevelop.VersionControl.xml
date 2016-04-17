@@ -1,0 +1,316 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.VersionControl</name>
+    </assembly>
+    <members>
+        <member name="M:MonoDevelop.VersionControl.Views.StatusView.OnCreatePatch(System.Object,System.EventArgs)">
+            <summary>
+            Handler for "Create Patch" toolbar button click.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.VersionControl.CommitDialogExtension">
+            <summary>
+            Base class for commit dialog extensions.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.CommitDialogExtension.Initialize(MonoDevelop.VersionControl.ChangeSet)">
+            <summary>
+            Initialize the extension.
+            </summary>
+            <param name='changeSet'>
+            The changeSet being committed
+            </param>
+            <returns>
+            True if the extension is valid for the provided change set.
+            False otherwise (the OnBeginCommit and OnEndCommit methods
+            won't be called).
+            </returns>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.CommitDialogExtension.OnBeginCommit(MonoDevelop.VersionControl.ChangeSet)">
+            <summary>
+            Called when the commit operation starts.
+            </summary>
+            <param name='changeSet'>
+            The changeSet being committed
+            </param>
+            <returns>
+            False if the commit cannot continue.
+            </returns>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.CommitDialogExtension.OnEndCommit(MonoDevelop.VersionControl.ChangeSet,System.Boolean)">
+            <summary>
+            Called when the commit operation ends
+            </summary>
+            <param name='changeSet'>
+            The changeSet being committed
+            </param>
+            <param name='success'>
+            True if the commit succeeded.
+            </param>
+        </member>
+        <member name="P:MonoDevelop.VersionControl.CommitDialogExtension.AllowCommit">
+            <summary>
+            Gets or sets a value indicating whether commit can proceed.
+            </summary>
+            <remarks>
+            This property can be set to False to prevent the commit to proceed
+            (the commit button in the commit dialog will be disabled). Use it
+            for example when the extension requires some data that has not been
+            provided by the user.
+            </remarks>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Repository.GetVersionInfo(System.Collections.Generic.IEnumerable{MonoDevelop.Core.FilePath},MonoDevelop.VersionControl.VersionInfoQueryFlags)">
+            <summary>
+            Returns the versioning status of a set of files or directories
+            </summary>
+            <param name='paths'>
+            A list of files or directories
+            </param>
+            <param name='queryFlags'>
+            Use VersionInfoQueryFlags enum for options.
+            </param>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Repository.GetRevisionChanges(MonoDevelop.VersionControl.Revision)">
+            <summary>
+            Returns the list of changes done in the given revision
+            </summary>
+            <param name='revision'>
+            A revision
+            </param>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Repository.OnGetVersionInfo(System.Collections.Generic.IEnumerable{MonoDevelop.Core.FilePath},System.Boolean)">
+            <summary>
+            Returns the versioning status of a set of files or directories
+            </summary>
+            <param name='paths'>
+            A list of files or directories
+            </param>
+            <param name='getRemoteStatus'>
+            True if remote status information has to be included
+            </param>
+            <remarks>
+            This method must return a VersionInfo object for every path in the 'paths' argument.
+            </remarks>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Repository.CreatePatch(System.Collections.Generic.IEnumerable{MonoDevelop.VersionControl.DiffInfo})">
+            <summary>
+            Creates a patch from a set of DiffInfos.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Repository.PathDiff(MonoDevelop.Core.FilePath,MonoDevelop.VersionControl.Revision,MonoDevelop.VersionControl.Revision)">
+            <summary>
+            Returns a recursive diff set for a revision range.
+            </summary>
+            <param name="localPath">
+            A <see cref="T:MonoDevelop.Core.FilePath"/>: A local file path to diff; 
+            directories will be diffed recursively.
+            </param>
+            <param name="fromRevision">
+            A <see cref="T:MonoDevelop.VersionControl.Revision"/>: The beginning revision
+            </param>
+            <param name="toRevision">
+            A <see cref="T:MonoDevelop.VersionControl.Revision"/>: The ending revision
+            </param>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Repository.GetAnnotations(MonoDevelop.Core.FilePath)">
+            <summary>
+            Retrieves annotations for a given path in the repository.
+            </summary>
+            <param name="repositoryPath">
+            A <see cref="T:MonoDevelop.Core.FilePath"/>
+            </param>
+            <returns>
+            A <see cref="T:System.String"/> corresponding to each line 
+            of the file to which repositoryPath points.
+            </returns>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Repository.OnGetRevisionChanges(MonoDevelop.VersionControl.Revision)">
+            <summary>
+            Returns the list of changes done in the given revision
+            </summary>
+            <param name='revision'>
+            A revision
+            </param>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.VersionControlSystem.CreateRepositoryInstance">
+            <summary>
+            Creates an instance of a repository for this version control system
+            </summary>
+            <returns>
+            The repository instance.
+            </returns>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.VersionControlSystem.OnCreateRepositoryInstance">
+            <summary>
+            Creates an instance of a repository for this version control system
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.VersionControlSystem.CreateRepositoryEditor(MonoDevelop.VersionControl.Repository)">
+            <summary>
+            Creates an editor object for a repository.
+            </summary>
+            <returns>
+            The repository editor.
+            </returns>
+            <param name='repo'>
+            A repository
+            </param>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.VersionControlSystem.GetRepositoryReference(MonoDevelop.Core.FilePath,System.String)">
+            <summary>
+            Gets a repository for a given local path and identifier
+            </summary>
+            <returns>
+            The repository.
+            </returns>
+            <param name='path'>
+            A local path
+            </param>
+            <param name='id'>
+            An identifier. This identifier is generated by MD and normally identifies
+            a project.
+            </param>
+            <remarks>
+            If the local path belongs to a repository that has already returned
+            in previous calls, the same repository instance should be returned
+            to optimize memory and resource use. MonoDevelop keeps track of
+            repository references and will Dispose the repository only when
+            the last reference to the repo is freed.
+            </remarks>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.VersionControlSystem.GetRepositoryPath(MonoDevelop.Core.FilePath,System.String)">
+            <summary>
+            Gets the repository path root under this version control system.
+            </summary>
+            <returns>The repository path.</returns>
+            <param name="path">The path to start the repository detection from.</param>
+            <param name="id">An identifier. This identifier is generated by MD and normally identifiers a project.</param>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.VersionControlSystem.OnGetRepositoryPath(MonoDevelop.Core.FilePath,System.String)">
+            <summary>
+            Gets the repository path root under this version control system.
+            </summary>
+            <returns>The repository path.</returns>
+            <param name="path">The path to start the repository detection from.</param>
+            <param name="id">An identifier. This identifier is generated by MD and normally identifiers a project.</param>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.VersionControlSystem.StoreRepositoryReference(MonoDevelop.VersionControl.Repository,MonoDevelop.Core.FilePath,System.String)">
+            <summary>
+            Currently unused
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.VersionControl.VersionControlSystem.Id">
+            <summary>
+            Identifier of the version control system
+            </summary>
+            <value>
+            The identifier.
+            </value>
+            <remarks>
+            This identifier is stored in configuration files, so it should not change.
+            The default implementation returns the full name of the class.
+            </remarks>
+        </member>
+        <member name="P:MonoDevelop.VersionControl.VersionControlSystem.Name">
+            <summary>
+            Display name of the version control system
+            </summary>
+        </member>
+        <member name="P:MonoDevelop.VersionControl.VersionControlSystem.Version">
+            <summary>
+            The version of the native version control system compatible with this system.
+            </summary>
+            <value>The version string.</value>
+        </member>
+        <member name="P:MonoDevelop.VersionControl.VersionControlSystem.IsInstalled">
+            <summary>
+            Gets a value indicating whether this version control system is available
+            </summary>
+            <remarks>
+            If the version control system depends on some native tools or libraries, this method should
+            check if those dependencies are properly installed and return <c>false</c> if they are not.
+            </remarks>
+        </member>
+        <member name="T:MonoDevelop.VersionControl.CreatePatchCommand">
+            <summary>
+            Class for creating patches from VersionControlItems
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.CreatePatchCommand.CreatePatch(MonoDevelop.VersionControl.VersionControlItemList,System.Boolean)">
+            <summary>
+            Creates a patch from a VersionControlItemList
+            </summary>
+            <param name="items">
+            A <see cref="T:MonoDevelop.VersionControl.VersionControlItemList"/> from which to create a patch.
+            </param>
+            <param name="test">
+            A <see cref="T:System.Boolean"/>: Whether this is a test run.
+            </param>
+            <returns>
+            A <see cref="T:System.Boolean"/>: Whether the patch creation succeeded.
+            </returns>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.CreatePatchCommand.CanCreatePatch(MonoDevelop.VersionControl.ChangeSet)">
+            <summary>
+            Determines whether a patch can be created 
+            from a ChangeSet.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.CreatePatchCommand.CanCreatePatch(MonoDevelop.VersionControl.VersionControlItemList)">
+            <summary>
+            Determines whether a patch can be created 
+            from a VersionControlItemList.
+            </summary>
+        </member>
+        <member name="T:MonoDevelop.VersionControl.Views.DiffParser">
+            <summary>
+            Parser for unified diffs
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Views.BlameWidget.BlameRenderer.UpdateAnnotations">
+            <summary>
+            Reloads annotations for the current document
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Views.BlameWidget.BlameRenderer.EditorDocumentLineChanged(System.Object,Mono.TextEditor.LineEventArgs)">
+            <summary>
+            Marks a line as locally modified
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Views.BlameWidget.BlameRenderer.EditorDocumentTextReplacing(System.Object,Mono.TextEditor.DocumentChangeEventArgs)">
+            <summary>
+            Marks necessary lines modified when text is replaced
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Views.BlameWidget.BlameRenderer.GetCommitMessage(System.Int32,System.Boolean)">
+            <summary>
+            Gets the commit message matching a given annotation index.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.VersionControl.Views.BlameWidget.BlameRenderer.TruncRevision(System.String,System.Int32)">
+            <summary>
+            Truncates the revision. This is done by trying to find the shortest matching number.
+            </summary>
+            <returns>
+            The shortest revision number (down to a minimum length of initialLength).
+            </returns>
+            <param name='revision'>
+            The revision.
+            </param>
+            <param name='initalLength'>
+            Inital length.
+            </param> 
+        </member>
+        <member name="P:MonoDevelop.VersionControl.Views.DropDownBox.DefaultIconHeight">
+            <summary>
+            This is so that the height doesn't jump around depending whether there's an icon assigned or not.
+            </summary>
+        </member>
+        <member name="E:MonoDevelop.VersionControl.Views.ChangeSetView.DiffDataLoaded">
+            <summary>
+            Fired when content difference data is loaded
+            </summary>
+        </member>
+    </members>
+</doc>

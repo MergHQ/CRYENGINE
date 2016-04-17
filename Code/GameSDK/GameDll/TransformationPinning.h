@@ -1,0 +1,57 @@
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+#ifndef TransformationPinning_h
+#define TransformationPinning_h
+
+class CRY_ALIGN(32) CTransformationPinning :
+	public ITransformationPinning
+{
+public:
+	struct TransformationPinJoint
+	{
+		enum Type
+		{
+			Copy		= 'C',
+			Feather		= 'F',
+			Inherit		= 'I'
+		};
+	};
+
+	CRYINTERFACE_BEGIN()
+		CRYINTERFACE_ADD(IAnimationPoseModifier)
+		CRYINTERFACE_ADD(ITransformationPinning)
+	CRYINTERFACE_END()
+
+	CRYGENERATE_CLASS(CTransformationPinning, "AnimationPoseModifier_TransformationPin", 0xcc34ddea972e47da, 0x93f9cdcb98c28c8e)
+
+public:
+
+public:
+	virtual void SetBlendWeight(float factor) override;
+	virtual void SetJoint(uint32 jntID) override;
+	virtual void SetSource(ICharacterInstance* source) override;
+
+	// IAnimationPoseModifier
+public:
+	virtual bool Prepare(const SAnimationPoseModifierParams& params) override { return true; }
+	virtual bool Execute(const SAnimationPoseModifierParams& params) override;
+	virtual void Synchronize() override {}
+
+	void GetMemoryUsage( ICrySizer *pSizer ) const override
+	{
+		pSizer->AddObject(this, sizeof(*this));
+	}
+private:
+	float m_factor;
+
+	uint32 m_jointID;
+	char *m_jointTypes;
+	uint32 m_numJoints;
+	ICharacterInstance* m_source;
+	bool m_jointsInitialised;
+
+	void Init(const SAnimationPoseModifierParams& params);
+
+};
+
+#endif // TransformationPinning_h

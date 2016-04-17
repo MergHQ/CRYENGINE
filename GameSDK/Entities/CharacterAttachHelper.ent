@@ -1,0 +1,5 @@
+<Entity
+ Name="CharacterAttachHelper" 
+ Script="Scripts/Entities/Others/CharacterAttachHelper.lua" 
+ Invisible="1"
+/>

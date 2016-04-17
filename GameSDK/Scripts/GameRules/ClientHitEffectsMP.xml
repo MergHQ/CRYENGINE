@@ -1,0 +1,25 @@
+<!-- Library in Libs/MaterialEffects/FXLibs/ -->
+<Effects library="bulletimpacts">
+
+	<Normal>
+		<default effect="hit_mat_flesh"/>
+		<melee effect="melee_hit_mat_flesh"/>
+		<PistolBullet effect="hit_mat_flesh"/>
+		<RifleBullet effect="hit_mat_flesh"/>
+	</Normal>
+
+	<!--<Armour>
+		<Team>
+			<default effect="hit_armour_team1"/>
+			<PistolBullet effect="hit_50bullet_armour_team1"/>
+			<RifleBullet effect="hit_50bullet_armour_team1"/>
+		</Team>
+
+		<Team>
+			<default effect="hit_armour_team2"/>
+			<PistolBullet effect="hit_50bullet_armour_team2"/>
+			<RifleBullet effect="hit_50bullet_armour_team2"/>
+		</Team>
+	</Armour>-->
+
+</Effects>

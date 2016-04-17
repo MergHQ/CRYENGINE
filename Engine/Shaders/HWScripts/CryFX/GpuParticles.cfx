@@ -1,0 +1,654 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2016 Crytek GmbH. All rights reserved.
+
+float Script : STANDARDSGLOBAL<string Script = "NoPreview;"
+                                               "ShaderType = Compute;"
+                                               "LocalConstants;">;
+										
+#include "Common.cfi"
+#include "shadeLib.cfi"	   
+#include "GpuRand.cfi"
+#include "GpuSNoise.cfi"
+#include "GpuParticlesCommon.cfi"
+#include "GpuMergeSort.cfi"
+#include "BitonicSort.cfi"
+#include "GpuCollisionScreenSpace.cfi"
+
+RWStructuredBuffer<SDefaultParticleData> defaultParticleDataTemp : register(u1);
+
+RWStructuredBuffer<SMergeSortItem> sortItems : register(u1);
+StructuredBuffer<SMergeSortItem> sortItemsRO : register(t1);
+
+[numthreads(1024, 1, 1)] 
+void PrepareSortCS(uint3 DTid : SV_DispatchThreadID)
+{
+	int i = DTid.x;
+	sortItems[i].payload = i;
+	if (i < c_numParticles)
+	{
+		float key = 0.0;
+		bool invert = false;
+		if (c_sortMode <= 2) // Spacial Sorting
+		{
+			float3 diff = defaultParticleData[i].position - c_cameraPosition;
+			key = dot(diff, diff);
+		
+		}
+		else // Age Sorting
+		{
+			SAuxData auxData = UnpackAuxData(defaultParticleData[i].auxData);
+			key = auxData.normalAge;
+		}
+		
+		if (c_sortMode == 1 || c_sortMode == 3) // Invert Order
+				key = 1.0 / key;
+				
+		sortItems[i].key = asuint(key) + 1;
+	}
+	else
+		// make sure these always end up last, and are less than 0xFFFFFFFF
+		sortItems[i].key = 0xFFFFFFFE;
+}
+
+technique PrepareSort
+{
+	pass p0 { ComputeShader = PrepareSortCS(); }
+}
+
+[numthreads(1024, 1, 1)] 
+void ReorderParticlesCS(uint3 DTid : SV_DispatchThreadID)
+{
+	int i = DTid.x;
+	if (i < c_numParticles)
+	{
+		defaultParticleDataTemp[i] = defaultParticleData[sortItemsRO[i].payload];
+	}
+}
+
+technique ReorderParticles
+{
+	pass p0 { ComputeShader = ReorderParticlesCS(); }
+}
+
+RWStructuredBuffer<int> killList : register(u1);
+RWStructuredBuffer<uint> counter : register(u2);
+RWStructuredBuffer<SReadbackData> readback : register(u3);
+
+// this corresponds to gpu_pfx2::kBoundsScale on the C++ side
+// a conversion scale to apply on the floats since the atomics are only
+// defined for integers
+#define FLOAT_SCALE 100.f
+#define BLOCK_DIM_BOUNDS 1024
+#define GRID_DIM_BOUNDS 16
+#define BOUNDS_MAX 200000000
+
+SReadbackData LoadReadbackData(float3 p)
+{
+	SReadbackData result;
+	result.min.x = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.x * FLOAT_SCALE));
+	result.min.y = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.y * FLOAT_SCALE)); 
+	result.min.z = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.z * FLOAT_SCALE));
+	result.max.x = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.x * FLOAT_SCALE));
+	result.max.y = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.y * FLOAT_SCALE));
+	result.max.z = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.z * FLOAT_SCALE));
+	return result;
+}
+
+SReadbackData MinMaxCombine(SReadbackData a, SReadbackData b)
+{
+	SReadbackData r;
+	r.min.x = min(a.min.x, b.min.x);
+	r.min.y = min(a.min.y, b.min.y);
+	r.min.z = min(a.min.z, b.min.z);
+	r.max.x = max(a.max.x, b.max.x);
+	r.max.y = max(a.max.y, b.max.y);
+	r.max.z = max(a.max.z, b.max.z);
+	return r;
+}
+
+
+groupshared SReadbackData calcBoundsShared[BLOCK_DIM_BOUNDS];
+
+[numthreads(BLOCK_DIM_BOUNDS, 1, 1)] 
+void CalculateBoundsCS(uint3 threadIdx : SV_GroupThreadID, uint3 groupIdx : SV_GroupID)
+{
+    int tid = threadIdx.x;
+    int gid = (BLOCK_DIM_BOUNDS * groupIdx.x) + tid;
+
+	SReadbackData me;
+	me.min = int3( BOUNDS_MAX,  BOUNDS_MAX,  BOUNDS_MAX);
+	me.max = int3(-BOUNDS_MAX, -BOUNDS_MAX, -BOUNDS_MAX);
+    
+	while (gid < c_numParticles) 
+	{
+		SReadbackData next = LoadReadbackData(defaultParticleData[gid].position);
+        me = MinMaxCombine(me, next);
+        gid += GRID_DIM_BOUNDS * BLOCK_DIM_BOUNDS;
+    }
+	
+	calcBoundsShared[tid] = me;
+
+	AllMemoryBarrierWithGroupSync();
+
+    gid = (BLOCK_DIM_BOUNDS * groupIdx.x) + tid;
+    for (int s = BLOCK_DIM_BOUNDS / 2; s > 0; s >>= 1) 
+    {
+        if (tid < s && gid < c_numParticles)
+            calcBoundsShared[tid] = MinMaxCombine(calcBoundsShared[tid], calcBoundsShared[tid + s]);
+
+		AllMemoryBarrierWithGroupSync();
+    }
+
+    if (tid == 0)
+	{
+		InterlockedMin(readback[c_managerSlot].min.x, calcBoundsShared[0].min.x);
+		InterlockedMin(readback[c_managerSlot].min.y, calcBoundsShared[0].min.y);
+		InterlockedMin(readback[c_managerSlot].min.z, calcBoundsShared[0].min.z);
+		InterlockedMax(readback[c_managerSlot].max.x, calcBoundsShared[0].max.x);
+		InterlockedMax(readback[c_managerSlot].max.y, calcBoundsShared[0].max.y);
+		InterlockedMax(readback[c_managerSlot].max.z, calcBoundsShared[0].max.z);
+	}
+}
+
+technique CalculateBounds
+{
+	pass p0 { ComputeShader = CalculateBoundsCS(); }
+}
+
+[numthreads(1024, 1, 1)] 
+void FillKillListCS(uint3 DTid : SV_DispatchThreadID)
+{
+	int j = DTid.x;
+	if (j < c_numParticles)
+	{
+		// leave out dead particles
+		if (IsDead(j))
+		{
+			unsigned int i; 
+			InterlockedAdd(counter[c_managerSlot], 1, i);
+			// copy over the particle data
+			killList[i] = j;
+		}
+	}
+	
+	// hijack for clearing bbox for now
+	if (j == 0)
+	{
+		readback[c_managerSlot].min = int3( BOUNDS_MAX,  BOUNDS_MAX,  BOUNDS_MAX);
+		readback[c_managerSlot].max = int3(-BOUNDS_MAX, -BOUNDS_MAX, -BOUNDS_MAX);
+	}
+}
+
+technique FillKillList
+{
+	pass p0 { ComputeShader = FillKillListCS(); }
+}
+
+[numthreads(1024, 1, 1)] 
+void SwapToEndCS(uint3 DTid : SV_DispatchThreadID)
+{
+	int i = DTid.x;
+	if (i < c_numKilled)
+	{
+		int slot = killList[i];
+		// if slot is 
+		if (slot < c_numParticles - c_numKilled)
+		{
+			// here we are repurposing the killList counter
+			// because we just need an atomic increment
+			int swapSlot; 
+			InterlockedAdd(counter[c_managerSlot], 1, swapSlot);
+			
+			// if this one is dead too, get a new one
+			while (IsDead(c_numParticles - 1 - swapSlot))
+			{
+				InterlockedAdd(counter[c_managerSlot], 1, swapSlot);
+			}
+			
+			defaultParticleData[slot] = defaultParticleData[c_numParticles - 1 - swapSlot];
+		}
+	}
+}
+
+technique SwapToEnd
+{
+	pass p0 { ComputeShader = SwapToEndCS(); }
+}
+			
+// SRV slots (not all of them need to be used)
+StructuredBuffer<float> sizeTable : register(t0);
+StructuredBuffer<float3> colorTable : register(t1);
+StructuredBuffer<float> opacityTable : register(t2);
+
+float DeltaTime(float normAge, float frameTime)
+{
+	return (normAge >= 0.0) ? frameTime : -(normAge * frameTime);
+}
+
+float3 Potential(float4 s)
+{
+	float4 offy = float4(149, 311, 191, 491);
+	float4 offz = float4(233, 197, 43, 59);
+	float3 potential = float3(
+		SNoiseGrad(s).w,
+		SNoiseGrad(s + offy).w,
+		SNoiseGrad(s + offz).w);
+	return potential;
+}
+
+// [PFX2_TODO_GPU]: There is still something wrong here, needs investigation
+float3 PotentialWithGradient(float4 s, float size)
+{
+	float4 offy = float4(149, 311, 191, 491);
+	float4 offz = float4(233, 197, 43, 59);
+	float3 potential = float3(
+		SNoise(s),
+		SNoise(s + offy),
+		SNoise(s + offz));
+
+	float obstacleDistance = ScreenSpaceDistance(s.xyz * size, 0.0, 0.0);
+	float distanceFalloff = 5.0;
+
+	if (obstacleDistance > distanceFalloff)
+		return potential;
+	else
+	{
+		float m =  (distanceFalloff - obstacleDistance) / distanceFalloff;
+		float3 distanceGradient = ComputeGradient(s.xyz * size);
+		float dp = dot (potential, distanceGradient);
+		return (1.0 - m) * potential + m * dp * distanceGradient;
+	}
+}
+
+float3 Curl(float4 s)
+{
+	float4 offy = float4(149, 311, 191, 491);
+	float4 offz = float4(233, 197, 43, 59);
+	float3 gradX = SNoiseGrad(s).xyz;
+	float3 gradY = SNoiseGrad(s + offy).xyz;
+	float3 gradZ = SNoiseGrad(s + offz).xyz;
+	
+	return float3(
+		gradY.z - gradZ.y,
+		gradZ.x - gradX.z,
+		gradX.y - gradY.x);
+}
+
+float3 FractalPotential(float4 s, uint octaves)
+{
+	float3 total = float3(0,0,0);
+	float mult = 1.0;
+	float totalMult = 0.0;
+	for (uint i = 0; i < octaves; ++i)
+	{
+		totalMult = mult + totalMult;
+		mult = 0.5 * mult;
+	}
+	mult = 1.0 / totalMult;
+	for (uint i = 0; i < octaves; ++i)
+	{
+		total = Potential(s) * mult + total;
+		mult = mult * 0.5;
+	}
+	return total;
+}
+
+float3 FractalCurl(float4 s, uint octaves)
+{
+	float3 total = float3(0,0,0);
+	float mult = 1.0;
+	float totalMult = 0.0;
+	for (uint i = 0; i < octaves; ++i)
+	{
+		totalMult = mult + totalMult;
+		mult = 0.5 * mult;
+	}
+	mult = 1.0 / totalMult;
+	for (uint i = 0; i < octaves; ++i)
+	{
+		total = Curl(s) * mult + total;
+		mult = mult * 0.5;
+	}
+	return total;
+}
+
+
+float DistFromPlane(float4 plane, float3 pt)
+{
+	return dot(plane.xyz, pt) + plane.w;
+}
+
+[numthreads(1024, 1, 1)] 
+void FeatureUpdateCS(uint3 DTid : SV_DispatchThreadID)
+{
+	int i = DTid.x;
+	if (i < c_numParticles)
+	{
+		SAuxData auxData = UnpackAuxData(defaultParticleData[i].auxData);
+		float4 color = UnpackFloat4(defaultParticleData[i].color);
+		float normAge = auxData.normalAge;
+		float size = auxData.size;
+		float dT = DeltaTime(normAge, c_deltaTime);
+		normAge = min(1.0, max(0.0, normAge));
+
+		// Linearly interpolating the OverTime modifiers
+		float normAgeArray = normAge * 15.0;
+		int normAgeBaseSlot = (int) normAgeArray;
+		int normAgeNextSlot = min(normAgeBaseSlot + 1, 15);
+		float mix = normAgeArray - normAgeBaseSlot;
+
+#if %PFX_UPDATE_OPACITY
+		color.w = (1.0 - mix) * opacityTable[normAgeBaseSlot] + mix * opacityTable[normAgeNextSlot];
+#endif
+
+#if %PFX_UPDATE_COLOR
+		color.xyz = (1.0 - mix) * colorTable[normAgeBaseSlot] + mix * colorTable[normAgeNextSlot];
+#endif
+
+#if %PFX_UPDATE_SIZE
+		size = (1.0 - mix) * sizeTable[normAgeBaseSlot] + mix * sizeTable[normAgeNextSlot];
+#endif
+
+#if %PFX_UPDATE_MOTION_LINEARINTEGRAL
+		float3 p0 = defaultParticleData[i].position;
+		float3 v0 = defaultParticleData[i].velocity;
+		float3 p1 = v0 * dT + p0;
+		defaultParticleData[i].position = p1;
+#endif
+
+#if %PFX_UPDATE_MOTION_DRAGFAST
+		float3 physAccel = c_physAccel;
+		float3 physWind = c_physWind * c_windMultiplier + c_uniformWind;
+
+		float3 p0 = defaultParticleData[i].position;
+		float3 v0 = defaultParticleData[i].velocity;
+		
+		float3 partAccel = float3(0.0, 0.0, 0.0);
+		float3 fieldVel = float3(0.0, 0.0, 0.0);
+#endif
+
+#if %PFX_UPDATE_PIXELSIZE
+		{
+			float epsilon = 1.0f / 1024.0f;
+			float3 position = defaultParticleData[i].position;
+			float size0 = size;
+			float distance = max(epsilon, DistFromPlane(c_pixelsize_projectionPlane, position));
+			float pixelSize0 = rcp(distance * c_pixelsize_minDrawPixels) * size0;
+			float pixelSize1 = clamp(pixelSize0, c_pixelsize_min, c_pixelsize_max);
+			float size1 = pixelSize1 * distance * c_pixelsize_minDrawPixels;
+			size = size1;
+			
+			if (c_pixelsize_affectOpacity)
+			{
+				float alpha0 = color.w;
+				float alpha1 = alpha0 * saturate(pixelSize0 * c_pixelsize_invMin);
+				color.w = alpha1;
+			}
+		}
+#endif
+
+#if %PFX_COLLISION_SCREENSPACE
+		float radius = 0.5;
+		float dist = ScreenSpaceDistancePoint(defaultParticleData[i].position, 0.1, radius);
+		if (dist < radius)
+		{
+			float3 normal = ComputeGradient(defaultParticleData[i].position);
+			v0 = reflect(v0, normal) * 0.5;
+		}
+#endif
+		// the effectors are supposed to write into partAccel and fieldVel
+#if %PFX_UPDATE_MOTION_BROWNIAN
+		{
+			float time = max(1.0f/1024.0f, c_deltaTime);
+			float speed = c_brownian_speed / sqrt(time);
+			SetKeyFloat(p0.x);
+			float keyX = RandSNorm();
+			SetKeyFloat(p0.y);
+			float keyY = RandSNorm();
+			SetKeyFloat(p0.z);
+			float keyZ = RandSNorm();
+			float3 accel = float3(keyX, keyY, keyZ) * speed;
+			partAccel += accel;
+		}
+#endif
+		
+#if %PFX_UPDATE_MOTION_SIMPLEX
+		{
+			float minSize = 1.0 / ((float)(1 << 15)); // small enough and prevents SIMD exceptions
+			float time = c_currentTime * c_simplex_rate;
+			float invSize = 1.0 / (max(minSize, c_simplex_size));
+			float speed = c_simplex_speed;
+			uint octaves = c_simplex_octaves;
+			float scalex = c_simplex_scale.x;
+			float scaley = c_simplex_scale.y;
+			float scalez = c_simplex_scale.z;
+
+			float4 s;
+			s.x = p0.x * invSize;
+			s.y = p0.y * invSize;
+			s.z = p0.z * invSize;
+			s.w = time;
+
+			float3 fieldSample = FractalPotential(s, octaves);
+			fieldSample.x = fieldSample.x * scalex;
+			fieldSample.y = fieldSample.y * scaley;
+			fieldSample.z = fieldSample.z * scalez;
+			fieldVel += fieldSample * speed;
+		}
+#endif
+
+#if %PFX_UPDATE_MOTION_CURL
+		{
+			float minSize = 1.0 / ((float)(1 << 15)); // small enough and prevents SIMD exceptions
+			float time = c_currentTime * c_curl_rate;
+			float invSize = 1.0 / (max(minSize, c_curl_size));
+			float speed = c_curl_speed;
+			uint octaves = c_curl_octaves;
+			float scalex = c_curl_scale.x;
+			float scaley = c_curl_scale.y;
+			float scalez = c_curl_scale.z;
+
+			float4 s;
+			s.x = p0.x * invSize;
+			s.y = p0.y * invSize;
+			s.z = p0.z * invSize;
+			s.w = time;
+
+			float3 fieldSample = FractalCurl(s, octaves);
+			fieldSample.x = fieldSample.x * scalex;
+			fieldSample.y = fieldSample.y * scaley;
+			fieldSample.z = fieldSample.z * scalez;
+			fieldVel += fieldSample * speed;
+		}
+#endif
+
+#if %PFX_UPDATE_MOTION_GRAVITY
+		{
+			float3 parentPosition = c_emitterPosition;
+
+			float3 accelVec;
+			if (c_gravity_type == 1)
+			{
+				float3 axis = quatMult(c_emitterOrientation,c_gravity_axis);
+				accelVec = (parentPosition+dot(axis,p0-parentPosition)*axis)-p0;
+			}
+			else
+			{
+				accelVec = parentPosition - p0;
+			}
+			float decay = 1.0 / (c_gravity_decay * c_gravity_decay);
+			float d2 = dot(accelVec,accelVec);
+			float gravity = 1.0 / (1.0 + decay * d2) * c_gravity_acceleration;
+			partAccel += normalize(accelVec) * gravity;
+		}
+#endif
+
+#if %PFX_UPDATE_MOTION_VORTEX
+		{
+			float decay = 1.0/(c_vortex_decay*c_vortex_decay);
+			float speed = c_vortex_speed * (c_vortex_direction == 0 ? -1.0 : 1.0);
+			float3 parentPosition = c_emitterPosition;
+			float3 axis = quatMult(c_emitterOrientation,c_vortex_axis);
+			float3 toAxis = (parentPosition+axis*dot(axis,p0-parentPosition))-p0;
+			float d2 = dot(toAxis, toAxis);
+			toAxis = normalize(toAxis);
+			float vortexSpeed = 1.0 / (1.0 + decay * d2) * speed;
+			fieldVel += cross(toAxis,axis)*vortexSpeed;
+		}
+#endif
+
+#if %PFX_UPDATE_MOTION_DRAGFAST
+		float3 partVel = physWind + fieldVel;
+
+		float gravMult = c_gravity;
+		float drag = c_drag;
+
+		float3 a = (physAccel * gravMult + partAccel) + c_uniformAcceleration;
+		float3 accel = (partVel - v0) * drag + a;        
+		float halfDtSqr = (dT * dT) * 0.5f;    // 1/2 dT²
+		float3 p1 = accel * halfDtSqr + v0 * dT + p0;    
+		float3 v1 = accel * dT + v0; 
+
+		defaultParticleData[i].position = p1;
+		defaultParticleData[i].velocity = v1;
+#endif
+		// progress age
+		float invLifeTime = 1.0 / c_lifeTime;
+		float normalAge1 = dT * invLifeTime + normAge;
+		bool isDead = 0;
+		if (normalAge1 >= 1.0f)
+			isDead = 1;
+
+		defaultParticleData[i].color = PackFloat4(color);
+		defaultParticleData[i].auxData = PackAuxData(normalAge1, size, isDead);
+	}
+}
+
+technique FeatureUpdate
+{
+	pass p0 { ComputeShader = FeatureUpdateCS(); }
+}
+
+
+cbuffer g_initializationParameters : register(b5)
+{
+	float3 c_init_offset;
+	float c_init_velocity;
+	float3 c_init_box;
+	float c_init_velocityScale;
+	float3 c_init_scale;
+	float c_init_radius;
+	float3 c_init_color;
+	float c_init_size;
+	float3 c_init_direction;
+	float c_init_opacity;
+	float c_init_angle;
+	float c_init_directionScale;
+	float c_init_omniVelocity;
+};
+
+StructuredBuffer<uint> newBornIndices : register(t0);
+StructuredBuffer<SInitialData> parentData : register(t1);
+
+[numthreads(1024, 1, 1)] 
+void FeatureInitializationCS(uint3 DTid : SV_DispatchThreadID)
+{
+	int i = DTid.x;
+	if (i < c_numNewBorns)
+	{
+	    int b = c_numParticles - c_numNewBorns + i;
+		float3 position = parentData[newBornIndices[i]].position;
+		float3 velocity = parentData[newBornIndices[i]].velocity * c_init_velocityScale;
+		float fraction = 1.0 - (float)(i) / c_numNewBorns;
+		uint auxData = PackAuxData(-fraction, c_init_size, 0);
+		float4 color = float4(c_init_color, c_init_opacity);
+		position += parentData[newBornIndices[i]].velocity * c_deltaTime * fraction;
+		
+		// seed the random number generator for the location features etc.
+		SetKeyFloat(position.x + (i + c_currentTime) * 0.01);
+#if %PFX_INIT_LOCATION_OFFSET
+		position += c_init_offset * c_init_scale.x;
+#endif
+
+#if %PFX_INIT_LOCATION_BOX
+		{
+			float3 oOffset = float3(
+			RandSNorm() * c_init_box.x,
+			RandSNorm() * c_init_box.y,
+			RandSNorm() * c_init_box.z);
+
+			position += oOffset * c_init_scale.x;
+		}
+#endif
+		float EPSILON = 1.0f / 2048.0f;
+#if %PFX_INIT_LOCATION_SPHERE
+		{
+			float3 sphere = RandSphere();
+			sphere.x *= c_init_scale.x;
+			sphere.y *= c_init_scale.y;
+			sphere.z *= c_init_scale.z;
+		
+			if (c_init_radius > EPSILON)
+			{
+				position += sphere * c_init_radius;
+			}
+			if (c_init_velocity > EPSILON)
+			{
+				velocity += sphere * c_init_velocity;
+			}
+		}
+#endif
+#if %PFX_INIT_LOCATION_CIRCLE
+		{
+			float3 disc = float3(RandCircle(), 0.0);
+			disc.x *= c_init_scale.x;
+			disc.y *= c_init_scale.y;
+		
+			if (c_init_radius > EPSILON)
+			{
+				float3 oPosition = disc * c_init_radius;
+				position += quatMult(c_emitterOrientation, oPosition);
+			}
+			if (c_init_velocity > EPSILON)
+			{
+				velocity += disc * c_init_velocity;
+			}
+		}
+#endif
+
+#if %PFX_INIT_VELOCITY_CONE
+		{
+			float2 disc = RandCircle();
+			float angle = c_init_angle;
+			float as = sin(angle), ac = cos(angle);
+			float3 dir = float3(disc.x * as, disc.y * as, ac);
+			float3 oVelocity = dir * c_init_velocity;
+			velocity += quatMult(c_emitterOrientation, oVelocity);
+		}
+#endif
+
+#if %PFX_INIT_VELOCITY_DIRECTIONAL
+		{
+			float3 oVelocity = c_init_direction * c_init_directionScale;
+			velocity += quatMult(c_emitterOrientation, oVelocity);
+		}
+#endif
+
+#if %PFX_INIT_VELOCITY_OMNIDIRECTIONAL
+		{
+			float3 sphere = RandSphere();
+			float3 oVelocity = sphere * c_init_omniVelocity;
+			velocity += oVelocity;
+		}
+#endif
+		defaultParticleData[b].position = position;
+		defaultParticleData[b].velocity = velocity;
+		defaultParticleData[b].auxData = auxData;
+		defaultParticleData[b].color = PackFloat4(color);
+	}
+}
+
+technique FeatureInitialization
+{
+	pass p0 { ComputeShader = FeatureInitializationCS(); }
+}

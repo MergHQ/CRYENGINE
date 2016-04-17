@@ -1,0 +1,70 @@
+<ammo name="explosivegrenade" class="Grenade">
+	<geometry>
+		<firstperson name="objects/weapons/frag_grenade/frag_grenade_used_tp.cgf" scale="1.4" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+		<whiz>
+		<param name="sound" value="sounds/physics_bullets:whizzes:grenade_whiz" />
+		<param name="speed" value="15" />
+	</whiz>
+	<physics type="particle">
+		<param name="mass" value="1.0" />
+		<param name="speed" value="30" />
+		<param name="radius" value="0.05" />
+		<param name="air_resistance" value="0" /> <!-- be wary of this it takes wind into account and can blow grenades off course-->
+		<param name="rollAxis" value="1, 0, 0" />
+		<param name="water_resistance" value="1" />
+		<param name="gravity" value="0, 0, -15.8"/>
+		<param name="water_gravity" value="0, 0, -9.8" />
+		<param name="thrust" value="0" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="0.25" GAME="SP" />
+		<param name="min_bounce_speed" value="0.5" GAME="MP" />
+		<param name="material" value="mat_metal" />
+		<param name="spin_random" value="720, 720, 720" />
+		<param name="single_contact" value="0" />
+		<param name="traceable" value="1" />
+		<param name="pierceability" value="13" />
+		<param name="no_path_alignment" value="1" />
+	</physics>
+	<explosion>
+		<param name="pressure" value="1500" />
+		<param name="min_radius" value="4" />
+		<param name="max_radius" value="12" />
+		<param name="sound_radius" value="150" GAME="SP"/>
+		<param name="min_phys_radius" value="2.2" />
+		<param name="max_phys_radius" value="3" />
+		<param name="hole_size" value="2" />
+		<param name="terrain_hole_size" value="3" />
+		<param name="radialblurdist" value="30" />
+		<param name="type" value="frag" />
+		<param name="friendly_fire" value="team" GAME="SP"/>
+	</explosion>
+	<trail>
+		<param name="effect" value="weapon_fx.grenade.trail" />
+	</trail>
+	<params>
+		<param name="ammo_category" value="grenade" />
+		<param name="display_name" value="@mp_eExplosiveGrenade" />
+		<param name="trackOnHUD" value="0"/>
+		<param name="lifetime" value="4.0" GAME="SP"/>
+		<param name="lifetime" value="3.5" GAME="MP"/>
+		<param name="showtime" value="0.05" />
+		<param name="aitype" value="grenade" />
+		<param name="hitRecoil" value="Level5" GAME="SP"/>
+		<param name="hitRecoil" value="Level5_mp" GAME="MP"/>
+		<param name="hitRecoilArmorMode" value="Level3" GAME="SP"/>
+		<param name="hitRecoilArmorMode" value="Level2_mp" GAME="MP"/>
+		<param name="mpProjectileDestructDelay" value="2.0" GAME="MP"/>
+	</params>
+	<grenade>
+	</grenade>
+	<collision>
+		<param name="damageScale" value="0.2" GAME="SP"/>
+		<param name="damageLimit" value="0.0" GAME="SP"/>
+		<param name="damageLimit" value="10.0" GAME="MP" />
+	</collision>
+</ammo>

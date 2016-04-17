@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <ProjectGuid>{7B3F1234-1CFE-4CCF-B1CB-12345F86D6F1}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>CryEngine.Sydewinder</RootNamespace>
+    <AssemblyName>CryEngine.Sydewinder</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\bin\win_x64\mono\AddIns</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>..\..\bin\win_x64\mono\AddIns</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="CryEngine.Common">
+      <HintPath>..\..\bin\win_x64\CryEngine.Common.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Types\Player.cs" />
+    <Compile Include="Types\Enemy.cs" />
+    <Compile Include="Types\Weapon.cs" />
+    <Compile Include="Ui\MainMenu.cs" />
+    <Compile Include="SydewinderApp.cs" />
+    <Compile Include="Ui\Hud.cs" />
+    <Compile Include="Framework\GamePool.cs" />
+    <Compile Include="Types\GameObjectBase.cs" />
+    <Compile Include="Types\LevelGeometry.cs" />
+    <Compile Include="Framework\EntityCollisionCheck.cs" />
+    <Compile Include="GameData.cs" />
+    <Compile Include="Framework\FrameTime.cs" />
+    <Compile Include="Framework\MultiSoundPlayer.cs" />
+    <Compile Include="Ui\Table.cs" />
+    <Compile Include="Framework\Utils.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\CESharp\Core\Core.csproj">
+      <Project>{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FB}</Project>
+      <Name>Core</Name>
+      <Private>False</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Ui\" />
+    <Folder Include="Framework\" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,11 @@
+<Mode name='SinglePlayer'>
+
+	<!-- Modules want to be switched with SP versions at some point -->
+	<StatsRecording class="StandardStatsRecording" />
+	<Spawning class='SpawningBase' teamGame='1' teamSpawnsType='None' isHQSpawningCompatible='0' />
+
+  <DamageHandling class='SPDamageHandling' >
+    <MercyTimeFilters path='Scripts/GameRules/SPMercyTimeFilters.xml' />
+  </DamageHandling>  
+
+</Mode>

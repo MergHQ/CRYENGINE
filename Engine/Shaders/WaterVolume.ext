@@ -1,0 +1,107 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2004.
+// -------------------------------------------------------------------------
+//  File name:   WaterVolume.ext
+//  Version:     v1.00
+//  Created:     07/05/2012 by Tiago Sousa
+//  Compilers:   
+//  Description: Water extension used by the editor
+//               for automatic shader generation (based on "Water" shader template)
+//
+// -------------------------------------------------------------------------
+//  History:
+//
+////////////////////////////////////////////////////////////////////////////
+
+Version (1.00)
+
+Property
+{
+  Name = %SSREFL
+  Mask = 0x1
+  Property    (Realtime Reflection)
+  Description (Approximate realtime reflections)
+  DependencyReset = $TEX_EnvCM
+}
+
+Property
+{
+  Name = %FLOW
+  Mask = 0x2
+  Property    (Water flow)
+  Description (Enable water to flow along geometry uvs)
+}
+
+Property
+{
+  Name = %FLOW_MAP
+  Mask = 0x4
+  Property    (Water flow map)
+  Description (Enable water flow along a flow map)
+}
+
+Property
+{
+  Name = %FLOW_MAP_STRENGTH
+  Mask = 0x100
+  Property    (Water flow map strength)
+  Description (Enable additional water flow strength controls - requires blue channel for strength)
+}
+
+Property
+{
+  Name = %SUN_SPECULAR
+  Mask = 0x8
+  Property    (Sun specular)
+  Description (Activate for water sunshine)
+}
+
+Property
+{
+  Name = %SPECULAR_MAP
+  Mask = 0x10
+  Property    (Specular map)
+  Description (Use specular map as separate texture)
+  DependencySet = $TEX_Specular
+  DependencyReset = $TEX_Specular
+  Hidden
+}
+
+Property
+{
+  Name = %DEBUG_FLOW_MAP
+  Mask = 0x20
+  Property    (Debug flow map)
+  Description (Enable visualizing flow map)
+}
+
+Property
+{
+  Name = %FOAM
+  Mask = 0x40
+  Property    (Foam)
+  Description (Enables foam)
+}
+
+Property
+{
+  Name = %DECAL_MAP
+  Mask = 0x80
+  Property    (Decal map)
+  Description (Use tilling decal map as separate texture)
+  DependencySet = $TEX_Custom
+  DependencyReset = $TEX_Custom
+  Hidden
+}
+
+Property
+{
+  Name = %WATER_TESSELLATION_DX11
+  Mask = 0x80000000
+  DependencySet = $HW_WaterTessellation
+  DependencyReset = $HW_WaterTessellation
+  Hidden  
+}

@@ -1,0 +1,29 @@
+<MatchMaking>
+	<MatchmakingParams id='1' duration='25000' >
+		<Param paramName='Playlist' ThresholdName='requireExactMatch' platform='xbox|ps3' />
+		<Param paramName='Variant' ThresholdName='requireExactMatch' platform='xbox|ps3' />
+		<!--<Param paramName='Mode' ThresholdName='requireExactMatch' platform='pc' />-->
+		<Param paramName='ProfileGameModes' platform='pc' />
+		<Param paramName='Ranked' ThresholdName='requireExactMatch' platform='pc' />
+		<Param paramName='Squad' ThresholdName='quickMatch' />
+		
+		<Param paramName='GameSizeRule' ThresholdName='testDecay' min='2' desired='10' /> <!--min and max are actually probably fixed by game-->
+		<Param paramName='HostBalancingRule' ThresholdName='matchAny' />
+		<Param paramName='HostViabilityRule' ThresholdName='hostViability' />
+		<Param paramName='PingSiteRule' ThresholdName='quickMatch' />
+		<!-- Needs initializing in UserManager framework.cfg <Param paramName='GeoLocationRule' ThresholdName='quickMatch' /> -->
+		<Param paramName='SkillRule' ThresholdName='decay' />
+		<Param paramName='DNFRule' ThresholdName='lessThan' maxPercent='30' />
+	</MatchmakingParams>
+	
+	<MatchmakingParams id='2' duration='3000' >
+		<Param paramName='Playlist' ThresholdName='requireExactMatch' platform='xbox|ps3' />
+		<Param paramName='Variant' ThresholdName='requireExactMatch' platform='xbox|ps3' />
+		<!--<Param paramName='Mode' ThresholdName='requireExactMatch' platform='pc' />-->
+		<Param paramName='ProfileGameModes' platform='pc' />
+		<Param paramName='Ranked' ThresholdName='requireExactMatch' platform='pc' />
+		<Param paramName='GameSizeRule' ThresholdName='matchAny' min='1' desired='10' /> <!--min and max are actually probably fixed by game-->
+		<Param paramName='Squad' ThresholdName='quickMatch' />
+	</MatchmakingParams>
+	
+</MatchMaking>

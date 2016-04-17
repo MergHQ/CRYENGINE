@@ -1,0 +1,50 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2016 Crytek GmbH. All rights reserved.
+
+Texture2D<float4> depthMapTexture : register(t3);
+
+SamplerState textureSampler : register(s0);
+SamplerState texturePointSampler : register(s1);
+
+float3 ScreenSpaceTextureCoordsWithLinearDepth(float3 worldPos)
+{
+	float4 screenPos = mul(float4(worldPos, 1.0), c_viewProjection);
+	screenPos.xyz /= screenPos.w;
+	float2 texturePos = screenPos.xy * 0.5 + 0.5;
+	texturePos.y = 1.0 - texturePos.y;
+
+	float depth = c_viewProjection._43 / (screenPos.z - c_viewProjection._33);
+
+	return float3(texturePos, depth);
+}
+
+float ScreenSpaceDistance(float3 worldPos, float offset, float radius)
+{
+	float3 coords = ScreenSpaceTextureCoordsWithLinearDepth(worldPos);
+	float depth = coords.z;
+	float depthCompare = depthMapTexture.SampleLevel(textureSampler, coords.xy, 0).x * c_farToNearDistance;
+	return abs(depth - depthCompare - radius + offset);
+}
+
+float ScreenSpaceDistancePoint(float3 worldPos, float offset, float radius)
+{
+	float3 coords = ScreenSpaceTextureCoordsWithLinearDepth(worldPos);
+	float depth = coords.z;
+	float depthCompare = depthMapTexture.SampleLevel(texturePointSampler, coords.xy, 0).x * c_farToNearDistance;
+	return abs(depth - depthCompare - radius + offset);
+}
+
+float3 ComputeGradient(float3 worldPos)
+{
+	const float e = 0.01f;
+	float3 dx = float3(e, 0, 0);
+	float3 dy = float3(0, e, 0);
+	float3 dz = float3(0, 0, e);
+
+	float d = ScreenSpaceDistance(worldPos, 0.0, 0.0);
+	float dfdx = ScreenSpaceDistance(worldPos + dx, 0.0, 0.0);
+	float dfdy = ScreenSpaceDistance(worldPos + dy, 0.0, 0.0);
+	float dfdz = ScreenSpaceDistance(worldPos + dz, 0.0, 0.0);
+
+	return normalize(float3(dfdx - d, dfdy - d, dfdz - d));
+}

@@ -1,0 +1,4 @@
+<Entity
+ Name="DestroyedVehicle" 
+ Script="Scripts/Entities/Vehicles/DestroyedVehicle.lua"
+/>

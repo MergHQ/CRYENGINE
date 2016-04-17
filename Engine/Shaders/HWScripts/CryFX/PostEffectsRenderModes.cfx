@@ -1,0 +1,598 @@
+// CRYENGINE Source Code File
+// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+
+#include "Common.cfi"
+#include "PostEffectsLib.cfi"
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "NoPreview;"
+           "LocalConstants;"
+           "ShaderDrawType = Custom;"
+           "ShaderType = FX;"
+>; 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Nightvision technique (depreceated - kept for backwards compatibility/tbr) /////////////////////
+
+float4 nightVisionParamsVS;
+float4 nightVisionParamsPS;
+
+///////////////// vertex shader //////////////////
+
+struct vtxOutNightVision
+{
+  float4 HPosition  : POSITION;
+  float2 baseTC    : TEXCOORDN;
+  float4 noiseTC    : TEXCOORDN;  
+  
+};
+
+vtxOutNightVision NightVisionVS(vtxIn IN)
+{
+  vtxOutNightVision OUT = (vtxOutNightVision)0; 
+  OUT.HPosition = Get2dHPos(IN.Position);
+  OUT.baseTC.xy = IN.baseTC.xy;
+  
+  
+  float2 scale = g_VS_ScreenSize.xy / 128.0;      
+  float2 pixScale = 128.0 / g_VS_ScreenSize.xy;      
+          
+  // make sure noise is correctly texel to pixel mapped 
+  IN.baseTC.xy *= scale;          
+  OUT.noiseTC.xy = IN.baseTC.xy + (nightVisionParamsVS.xy ) * pixScale;              
+  OUT.noiseTC.wz = IN.baseTC.xy + (nightVisionParamsVS.zw + 0.333) * pixScale ;              
+  
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+pixout NightVisionPS(vtxOutNightVision IN)
+{
+  pixout OUT;
+
+  int nQuality = GetShaderQuality();
+
+  const int flareCount = 4;
+
+  half4 cScreen = tex2D(_tex0, IN.baseTC.xy);
+  half4 cScreenOrig = cScreen;
+
+  half4 cScreenBlurred = tex2D(_tex1, IN.baseTC.xy);
+  
+  // sharpen screen
+  cScreen =  saturate(lerp(cScreenBlurred,cScreen,  2));
+  half fLum = dot(cScreen.xyz, 0.33);
+
+  float fSceneLum = 0.5;
+//#if %_RT_HDR_MODE  
+// fSceneLum = tex2D(_tex4, IN.baseTC.xy).x *0.125;
+//#endif
+
+  // add noisy glow
+  half fNoise = dot(tex2D(_tex2, IN.noiseTC.xy).xy, 0.5);
+  fNoise += dot(tex2D(_tex2, IN.noiseTC.wz).xy, 0.5);
+  fNoise *= 0.25;;
+
+  half fInterlation = abs(frac((IN.baseTC.y)*PS_ScreenSize.y*0.25)*2-1)*0.75+0.25;
+  fNoise = (fInterlation + fInterlation*fNoise);
+
+  // Darken edges (and lerp between 1.0 and darken term). Overbright white areas also
+  half fDistToCenter = length(IN.baseTC.xy * 2 - 1);
+  half fDarken = saturate( 1 - fDistToCenter*0.7);  
+
+  half4 cScreenEdges = 0;//
+  if( flareCount )
+  {
+    cScreenEdges = tex2D(_tex1, IN.baseTC.xy - normalize((IN.baseTC.xy+0.005*(tex2D(_tex3, IN.noiseTC.xy).xy*2-1)) * 2 - 1)*0.15);
+    cScreenEdges += tex2D(_tex1, IN.baseTC.xy - normalize((IN.baseTC.xy+0.005*(tex2D(_tex3, IN.noiseTC.xy).xy*2-1)) * 2 - 1)*0.2);
+    cScreenEdges += tex2D(_tex1, IN.baseTC.xy - normalize((IN.baseTC.xy+0.005*(tex2D(_tex3, IN.noiseTC.xy).xy*2-1)) * 2 - 1)*0.25);
+    cScreenEdges *= 0.333;
+    cScreenEdges =cScreenEdges*0.75  + 0.25 *tex2D(_tex1, IN.baseTC.xy - normalize((IN.baseTC.xy+0.005*(tex2D(_tex3, IN.noiseTC.xy).xy*2-1)) * 2 - 1)*0.4);
+  }
+  else
+    cScreenEdges = tex2D(_tex1, IN.baseTC.xy);
+
+  half fBlurEdges = fDistToCenter;
+  fBlurEdges *= fBlurEdges;
+  fBlurEdges *= fBlurEdges;
+
+  cScreen = lerp(cScreen, cScreenEdges, saturate(fBlurEdges*0.5));
+  cScreen = (cScreen  + cScreenBlurred * saturate(fNoise));
+            
+  fLum = dot(cScreen.xyz, 0.33);;
+  
+               
+  // Output final color and add grainy noise on top
+  OUT.Color = cScreen * fDarken;
+
+//if %_RT_HDR_MODE  
+  OUT.Color.xyz =   (1 - exp( -  4*( OUT.Color.xyz+ saturate(cScreenBlurred*1.25  -fNoise))));
+//else
+  //OUT.Color.xyz = fSceneLum *(fSceneLum * 0.25 + saturate(cScreenBlurred * 2 -(fNoise)   )) + (1 - exp( -4*(OUT.Color.xyz  )));
+//endif
+  
+  // get absolute value, stuff totaly black will get whitish
+
+  fLum = ( dot(OUT.Color.xyz, 0.33) );
+  OUT.Color.xyz = tex2D(_tex3, fLum.xx);
+
+  //OUT.Color.xyz =   (1 - exp( -( *OUT.Color.xyz) ) );
+  OUT.Color.xyz= max( lerp(0.5, OUT.Color.xyz, 1.25), 0);
+  OUT.Color.xyz = lerp(fLum, OUT.Color.xyz,0.65);
+
+  OUT.Color.xyz = lerp(cScreenOrig.xyz, OUT.Color.xyz, nightVisionParamsPS.w*nightVisionParamsPS.w);
+
+  // overbright sligthly
+  //OUT.Color.xyz *= 1.25;
+          
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique NightVision
+{
+  pass p0
+  {
+    VertexShader = NightVisionVS() PostRenderModesVS;
+    PixelShader = NightVisionPS() PostRenderModesPS;
+    CullMode = None;    
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// "Night vision" ghosthing technique /////////////////////////////////////////////////////////////
+
+float4 NightVisionParamsPS;
+
+///////////////// vertex shader //////////////////
+struct vtxOutNightVisionGhosting
+{
+  float4 HPosition  : POSITION;
+  float2 baseTC			: TEXCOORDN;
+};
+
+vtxOutNightVisionGhosting NightVisionGhostingVS(vtxInWPOS IN)
+{
+  vtxOutNightVisionGhosting OUT = (vtxOutNightVisionGhosting)0; 
+  float4 vPos = IN.Position;
+  vPos.y = 1 -vPos.y;
+
+  OUT.HPosition = float4(vPos.xy*2-1, vPos.z, 1.0);
+  OUT.baseTC =  HPosToScreenTC(OUT.HPosition);
+  
+  return OUT;
+}
+
+pixout NightVisionGhostingPS(vtxOutNightVisionGhosting IN)
+{
+  pixout OUT = (pixout) 0;
+
+	OUT.Color = half4( tex2D(_tex0, IN.baseTC.xy).xyz, 0.2h);
+
+  return OUT;
+}
+
+technique NightVisionGhosting
+{
+  pass p0
+  {
+    VertexShader = NightVisionGhostingVS();
+    PixelShader = NightVisionGhostingPS();
+    CullMode = None;    
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// "Sonar vision" technique /////////////////////////////////////////////////////////////////////////
+
+// Visual styling references:
+//	http://www.youtube.com/watch?v=EpOcO08dHvo&feature=related
+//	http://www.youtube.com/watch?v=tUjN36akJz0&feature=related
+//	http://www.youtube.com/watch?v=j5eJxH0gv1A&feature=related
+//	http://www.youtube.com/watch?v=Vgkneyfe31A&feature=related
+
+float4 SonarVisionParamsVS;
+float4 SonarVisionParamsPS;
+
+///////////////// vertex shader //////////////////
+
+struct vtxOutSonarVision
+{
+  float4 HPosition  : POSITION;
+  float2 baseTC			: TEXCOORDN;
+  float4 noiseTC		: TEXCOORDN;  
+	float3 CamVec			: TEXCOORDN;  
+};
+
+vtxOutSonarVision SonarVisionVS(vtxInWPOS IN)
+{
+  vtxOutSonarVision OUT = (vtxOutSonarVision)0; 
+
+  float4 vPos = IN.Position;
+
+  vPos.y = 1 -vPos.y;
+  OUT.HPosition = float4(vPos.xy*2-1, vPos.z, 1.0);
+
+  OUT.baseTC =  HPosToScreenTC(OUT.HPosition);
+  OUT.CamVec.xyz = IN.CamVec;
+  
+  float2 scale = g_VS_ScreenSize.xy / 128.0;      
+  float2 pixScale = 128.0 / g_VS_ScreenSize.xy;      
+
+  // make sure noise is correctly texel to pixel mapped 
+  IN.baseTC.xy *= scale;          
+  OUT.noiseTC.xy = IN.baseTC.xy + (SonarVisionParamsVS.xy ) * pixScale;              
+  OUT.noiseTC.wz = IN.baseTC.xy + (SonarVisionParamsVS.zw + 0.333) * pixScale ;              
+
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+pixout SonarVisionAmbientPS(vtxOutSonarVision IN)
+{
+  pixout OUT = (pixout) 0;
+
+	float fDepth = GetLinearDepth(_tex0, IN.baseTC.xy);
+	
+	float3 vPosWS = IN.CamVec.xyz * fDepth ;
+	half3 vNormal = DecodeGBufferNormal( tex2D(_tex1, IN.baseTC.xy) );
+
+	half3 vView = normalize(-vPosWS);
+	half fNdotE = ( dot(vView.xyz, vNormal.xyz) );
+	half fFarMask = fDepth <= 0.99;
+
+	// Ambient is composed of 3 sonar hits (based on radial dist)
+	half fSonarNearRange =0.5h; // 20 cm
+	half fSonarRange = 40.0h;
+	half fSonarSpeedMul = 0.075h;
+
+	half3 vRadius = frac( 5*AnimGenParams * fSonarSpeedMul + half3(0.0h, -0.6h, -0.2h)   ) * fSonarRange;
+  half3 vDist =   1 - saturate( abs( (vRadius  - length( vPosWS ) ) / fSonarNearRange ) );	
+  half fFallOffs = dot(vDist.xz, 1);
+
+	OUT.Color = fFallOffs;
+
+	half fSonarImpulses = OUT.Color.x + 0.005h;
+	OUT.Color = saturate(pow(saturate(1-fNdotE),8)*0.1) + fSonarImpulses * pow(fNdotE,8) + fSonarImpulses * pow(1-fNdotE,4)*4;
+	OUT.Color.xyz *= fFarMask;
+
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+
+pixout SonarVisionSoundHintPS(vtxOutSonarVision IN)
+{
+  pixout OUT = (pixout) 0;
+
+	half3 vNoise = (tex2D(_tex2, IN.noiseTC.xy).xyz*2-1);//dot(tex2D(_tex4, IN.noiseTC.xy).xyz, half3(0.33, 0.59, 0.1));
+
+	float fDepth = GetLinearDepth(_tex0, IN.baseTC.xy /*+ vNoise * 0.01h*/);
+	
+	// Compute audio sonar hints
+	float3 vPosWS = IN.CamVec.xyz * fDepth;
+	float3 vPosSonarWS = SonarVisionParamsPS;
+	SonarVisionParamsPS.w *=2;
+
+	half3 vNormal = DecodeGBufferNormal( tex2D(_tex1, IN.baseTC.xy+vNoise*0.01h) );
+	half3 vView = normalize(-vPosWS);
+	half fNdotE = ( dot(vView.xyz, vNormal.xyz) );
+
+	half fInvRadius = 1.0 / (2 * SonarVisionParamsPS.w);
+  half3 vDist = (vPosSonarWS - ( WorldViewPos.xyz +  vPosWS) ) * fInvRadius;
+  half fFallOff =pow( 1 - abs( saturate(1-dot(vDist, vDist))*2-1 ), 0.5) * 0.5h;
+
+  fFallOff +=pow( 1 - abs( saturate(1-dot(vDist, vDist))*2-1 ), 2);
+
+  half fSonarImpulses = (1-SonarVisionParamsPS.w) * fFallOff;
+
+	OUT.Color = fSonarImpulses * (pow(fNdotE,8) + pow(1-fNdotE,4)*4);
+
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+pixout SonarVisionFinalCompositionPS(vtxOutSonarVision IN)
+{
+  pixout OUT = (pixout) 0;
+
+	// add noisy glow
+  half3 vNoise = dot(tex2D(_tex5, IN.noiseTC.xy).xyz, half3(0.33, 0.59, 0.1));
+
+	float fDepth = GetLinearDepth(_tex0, IN.baseTC.xy);
+
+	half3 vVectorNoise = tex2D(_tex5, IN.noiseTC.xy).xyz*2-1;
+	vVectorNoise *= 0.75h;
+
+	half4 cColor = tex2D(_tex2, IN.baseTC.xy + vVectorNoise * 0.00125f);
+
+	cColor += tex2D(_tex3, IN.baseTC.xy + vVectorNoise * 0.0015f);
+
+	cColor = tex2D(_tex4, IN.baseTC.xy + vVectorNoise * 0.0015f);
+
+	half fInterlation = frac(IN.baseTC.y * PS_ScreenSize.y * 0.25) > 0.5? 1.1: 0.9;
+
+	// Apply vignetting
+	half fCenterDist = dot((IN.baseTC.xy*2-1), (IN.baseTC.xy*2-1));
+	half fVignetting = saturate(1 - (fCenterDist - 0.6) * 0.85);
+
+	OUT.Color.xyz = (vNoise.x*0.2+0.8) *fVignetting * fInterlation ;
+	
+	// set color
+	OUT.Color.xyz *= tex2D(_tex6,  cColor.x ) * 1.25 * pow( cColor.x, 0.25);
+
+  return OUT;
+}
+
+pixout SonarVisionGhostingPS(vtxOutSonarVision IN)
+{
+  pixout OUT = (pixout) 0;
+
+	OUT.Color = half4( tex2D(_tex0, IN.baseTC.xy).xyz, 1 - SonarVisionParamsPS.w * (1.0 / 4.0) * 33.0h );
+
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique SonarVisionAmbient
+{
+  pass p0
+  {
+    VertexShader = SonarVisionVS();
+    PixelShader = SonarVisionAmbientPS();
+    CullMode = None;    
+  }
+}
+
+technique SonarVisionSoundHint
+{
+  pass p0
+  {
+    VertexShader = SonarVisionVS();
+    PixelShader = SonarVisionSoundHintPS();
+    CullMode = None;    
+  }
+}
+
+technique SonarVisionFinalComposition
+{
+  pass p0
+  {
+    VertexShader = SonarVisionVS();
+    PixelShader = SonarVisionFinalCompositionPS();
+    CullMode = None;    
+  }
+}
+
+technique SonarVisionGhosting
+{
+  pass p0
+  {
+    VertexShader = SonarVisionVS();
+    PixelShader = SonarVisionGhostingPS();
+    CullMode = None;    
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// "Thermal vision" technique /////////////////////////////////////////////////////////////////////
+
+// Visual styling references:
+//	http://www.youtube.com/watch?v=SnQcyyDJLCo&feature=related
+//	http://www.youtube.com/watch?v=CqW10oFUbGQ&feature=related
+//	http://www.youtube.com/watch?v=sCW9bnk03o4&feature=related
+//	http://www.youtube.com/watch?v=PO_kDqwDZ3A&feature=related
+//	http://www.youtube.com/watch?v=6fASzACILH4&feature=related
+//	http://www.youtube.com/watch?v=Z6-CiSyI9oE&feature=channel
+
+float4 ThermalVisionParamsVS;  // (xyzw = random % 1024)
+float4 ThermalVisionParamsVS2; // (xy = frame scale, zw = unused)
+float4 ThermalVisionParamsPS;
+
+///////////////// vertex shader //////////////////
+
+struct vtxOutThermalVision
+{
+  float4 HPosition  : POSITION;
+  float4 baseTC			: TEXCOORDN;
+  float4 noiseTC		: TEXCOORDN;  
+	float3 CamVec			: TEXCOORDN;  
+};
+
+vtxOutThermalVision ThermalVisionVS(vtxInWPOS IN)
+{
+  vtxOutThermalVision OUT = (vtxOutThermalVision)0; 
+
+  float4 vPos = IN.Position;
+
+  vPos.y = 1 -vPos.y;
+  OUT.HPosition = float4(vPos.xy*2-1, vPos.z, 1.0);
+
+  OUT.baseTC =  HPosToScreenTC(OUT.HPosition);
+  OUT.baseTC.zw = OUT.baseTC.xy * ThermalVisionParamsVS2.xy;
+  OUT.CamVec.xyz = IN.CamVec;
+  
+  
+  float2 scale = g_VS_ScreenSize.xy / 128.0;      
+  float2 pixScale = 128.0 / g_VS_ScreenSize.xy;      
+          
+  // make sure noise is correctly texel to pixel mapped 
+  IN.baseTC.xy *= scale;          
+  OUT.noiseTC.xy = IN.baseTC.xy + (ThermalVisionParamsVS.xy ) * pixScale;              
+  OUT.noiseTC.wz = IN.baseTC.xy + (ThermalVisionParamsVS.zw + 0.333) * pixScale ;              
+  
+  return OUT;
+}
+
+///////////////// pixel shader //////////////////
+pixout ThermalVisionAmbientPS(vtxOutThermalVision IN)
+{
+  pixout OUT = (pixout) 0;
+
+	// uncomment out for regular thermal vision
+
+	//half3 vNoise = tex2D(_tex4, IN.noiseTC.xy).xyz*2-1;
+	//IN.baseTC.xy += vNoise *0.001;
+
+	//float fDepth = GetLinearDepth(_tex0, IN.baseTC.xy);
+	//float3 vPosWS = IN.CamVec.xyz * fDepth;
+
+	//half3 vNormal = DecodeGBufferNormal( tex2D(_tex1, IN.baseTC.xy) );
+	//half3 vView = normalize(-vPosWS);
+	//half fNdotE = ( dot(vView.xyz, vNormal.xyz) );
+	//fNdotE *= fDepth <= 0.99;
+
+	//OUT.Color.xyz = fNdotE*fNdotE*fNdotE*fNdotE * 0.3h * (0.8 + 0.2 * ( abs( frac(AnimGenParams*10)*2-1 ) + abs(frac(0.2 + 0.6* AnimGenParams)*2-1)) );
+
+	//OUT.Color.xyz *= 1-saturate( dot(vPosWS.xyz, vPosWS.xyz) * ThermalVisionParamsPS.w );
+
+
+	// Nightvision mixed with thermal vision
+
+	half3 vNoise = 0;//tex2D(_tex4, IN.noiseTC.xy).xyz*2-1;
+	IN.baseTC.xy += vNoise *0.001;
+
+	float fDepth = GetLinearDepth(_tex0, IN.baseTC.xy);
+	float3 vPosWS = IN.CamVec.xyz * fDepth;
+
+	fDepth *= PS_NearFarClipDist.y;
+	//float3 vPosWS = IN.CamVec.xyz * fDepth ;
+
+	// Ambient is composed of 3 sonar hits (based on radial dist)
+	half fSonarNearRange = 2.0h; // 20 cm
+	half fSonarRange = 40.0h;
+	half fSonarSpeedMul = 0.1h;
+
+	//AnimGenParams *= 2.0;
+	half3 vRadius = frac( AnimGenParams * fSonarSpeedMul + half3(0.0h, -0.6h, -0.5h)   ) * fSonarRange;
+	half3 vDist =   1 - saturate( abs( (vRadius  - fDepth ) ) / fSonarNearRange );	
+  //half3 vDist =   1 - saturate( abs( (vRadius  - length( vPosWS ) ) / fSonarNearRange ) );	
+  half fFallOffs = dot(vDist.xz, 1);
+	//fFallOffs *= fFallOffs;
+//	fFallOffs *= fFallOffs;
+
+
+
+	half fDistAtten = 1-saturate(fDepth *0.01); // expose cvar
+	fDistAtten *=fDistAtten;
+
+	OUT.Color.xyz = 0;//0.5*fFallOffs * saturate(4*fDistAtten) ;
+	//half3( 2.0h, 0.2h, 0.01h)*
+
+	//OUT.Diffuse.xyz += half3( 2.0h, 0.2h, 0.01h)*fFallOffs*5;
+	//OUT.Specular.xyz += half3( 2.0h, 0.2h, 0.01h)*fFallOffs*5;
+
+//	half3 vNormal = DecodeGBufferNormal( tex2D(_tex1, IN.baseTC.xy) );
+	//half3 vView = normalize(-vPosWS);
+	//half fNdotE = ( dot(vView.xyz, vNormal.xyz) );
+	//fNdotE *= fDepth <= 0.99;
+
+	//OUT.Color.xyz = fNdotE*fNdotE*fNdotE*fNdotE * 0.3h * (0.8 + 0.2 * ( abs( frac(AnimGenParams*10)*2-1 ) + abs(frac(0.2 + 0.6* AnimGenParams)*2-1)) );
+
+	//OUT.Color.xyz *= 1-saturate( dot(vPosWS.xyz, vPosWS.xyz) * ThermalVisionParamsPS.w );
+
+  return OUT;
+}
+
+pixout ThermalVisionCompositionPS(vtxOutThermalVision IN)
+{
+	pixout OUT = (pixout)0;
+
+	// per-pixel noise
+	half3 vNoise = tex2D(_tex3, IN.noiseTC.xy).xyz *2-1;
+
+	half3 cOrigScene = tex2D(_tex0, IN.baseTC.xy + vNoise * 0.0001 * max(1, 32*ThermalVisionParamsPS.x)).xyz;
+	vNoise *= max(1, ThermalVisionParamsPS.x*4);
+
+	half3 cScene = tex2D(_tex5, IN.baseTC.zw + vNoise * 0.001).xyz;
+	half3 cBlurredScene = tex2D(_tex1, IN.baseTC.xy + vNoise * 0.001).xyz;
+	half3 cBlurredScene02 = tex2D(_tex2, IN.baseTC.xy + vNoise * 0.001).xyz;
+	half3 cImageNoise = 0.02 * ( dot(tex2D(_tex3, IN.noiseTC.xy).xyz, 0.33) - 0.5);
+#if %_RT_SAMPLE0
+	half3 cBlurredScenePrevFrame = 0;
+#else
+	half3 cBlurredScenePrevFrame = tex2D(_tex6, IN.baseTC.xy + vNoise * 0.001).xyz;
+#endif
+
+	half2 fInterlation = frac(IN.baseTC.y * PS_ScreenSize.y * 0.25) > 0.5? half2(1.1,1.3): half2(0.9,0.7);
+
+	// transition from brights to darks - use also heat values fading in
+	half fTransitionFunc = abs(frac((-0.5*cScene.x+cOrigScene.x)*0.5 -0.5 + ThermalVisionParamsPS.w)*2-1);
+	fTransitionFunc *= fTransitionFunc;	
+	cScene.x  += fTransitionFunc * ThermalVisionParamsPS.z;
+
+	cScene.x *= cScene.x;
+	cScene.x *= cScene.x;
+	half fHeatSource = cImageNoise +0.2* (cScene.x+ cBlurredScene.x*2+ cBlurredScene02.x*2 + cBlurredScenePrevFrame.x*2);	
+
+	OUT.Color.xyz = tex2D(_tex4, fInterlation.x*fHeatSource);
+	OUT.Color.xyz = pow(OUT.Color.xyz, 2.0);
+
+	half fBlendMask = saturate(cScene.x + cBlurredScene.x +cBlurredScene02*4 +  cBlurredScenePrevFrame.x*2);
+
+#if %_RT_SAMPLE0
+	// Night-vision digital modifiers
+	half fCenterDist = dot(IN.baseTC.xy*2-1, IN.baseTC.xy*2-1);
+	half fInvCenterDist = 0.8h - 0.8h * fCenterDist;
+	half fOrigSceneGray = dot(cOrigScene.xyz, fInvCenterDist - fBlendMask);
+	
+	fOrigSceneGray *= fOrigSceneGray * fInterlation.y;
+	cOrigScene = max(0, fOrigSceneGray - vNoise.x * 0.1h);
+#else
+	half fOrigSceneGray = dot(cOrigScene.xyz, 0.1h);
+#endif
+
+	cOrigScene = lerp(cOrigScene, fOrigSceneGray, fBlendMask);
+	OUT.Color.xyz = cOrigScene + OUT.Color.xyz * fBlendMask*(1-cOrigScene);
+
+	return OUT;
+}
+
+pixout ThermalVisionGhostingPS(vtxOutThermalVision IN)
+{
+  pixout OUT = (pixout) 0;
+
+	OUT.Color = half4( tex2D(_tex0, IN.baseTC.xy).xyz, 0.25 );
+
+  return OUT;
+}
+
+////////////////// technique /////////////////////
+
+technique ThermalVisionAmbient
+{
+  pass p0
+  {
+    VertexShader = ThermalVisionVS();
+    PixelShader = ThermalVisionAmbientPS();
+    CullMode = None;    
+  }
+}
+
+technique ThermalVisionComposition
+{
+  pass p0
+  {
+    VertexShader = ThermalVisionVS();
+    PixelShader = ThermalVisionCompositionPS() ThermalVisionPS;
+    CullMode = None;    
+  }
+}
+
+technique ThermalVisionGhosting
+{
+  pass p0
+  {
+    VertexShader = ThermalVisionVS();
+    PixelShader = ThermalVisionGhostingPS();
+    CullMode = None;    
+  }
+}
+
+/////////////////////// eof ///
+

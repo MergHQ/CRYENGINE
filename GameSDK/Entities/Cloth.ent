@@ -1,0 +1,5 @@
+<Entity
+ Name="Cloth"
+ Script="Scripts/Entities/Physics/Cloth.lua"
+
+/>

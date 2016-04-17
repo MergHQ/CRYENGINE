@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MonoDevelop.DocFood</name>
+    </assembly>
+    <members>
+        <member name="M:MonoDevelop.DocFood.DocFoodTextEditorExtension.SelectSummary(System.Int32,System.Int32,System.String)">
+            <summary>
+            Make the summary content selected
+            </summary>
+            <returns>
+            <c>true</c>, if summary was selected, <c>false</c> if summary was not found.
+            </returns>
+            <param name='offset'>
+            Offset in document where the documentation is inserted
+            </param>
+            <param name='insertedLength'>
+            the length of the summary content.
+            </param>
+            <param name='documentation'>
+            Documentation containing the summary
+            </param>
+        </member>
+        <member name="T:MonoDevelop.DocFood.Options.ExpansionsPanel">
+            <summary>
+            Expansions panel.
+            </summary>
+        </member>
+        <member name="M:MonoDevelop.DocFood.Options.ExpansionsPanel.CreatePanelWidget">
+            <summary>
+            Creates the panel widget.
+            </summary>
+            <returns>
+            The panel widget.
+            </returns>
+        </member>
+    </members>
+</doc>

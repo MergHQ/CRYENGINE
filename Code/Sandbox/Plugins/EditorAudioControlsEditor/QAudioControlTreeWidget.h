@@ -1,0 +1,55 @@
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+#pragma once
+#include <QTreeWidget.h>
+#include <QTreeView>
+#include <QDropEvent>
+#include <QStandardItem>
+#include <QMimeData>
+#include <QSortFilterProxyModel>
+#include <ACETypes.h>
+#include "ATLControlsModel.h"
+
+namespace ACE
+{
+class CATLControl;
+class CATLControlsModel;
+}
+
+class QFolderItem : public QStandardItem
+{
+public:
+	explicit QFolderItem(const QString& sName);
+};
+
+class QAudioControlItem : public QStandardItem
+{
+public:
+	QAudioControlItem(const QString& sName, ACE::CATLControl* pControl);
+};
+
+class QAudioControlSortProxy : public QSortFilterProxyModel
+{
+public:
+	explicit QAudioControlSortProxy(QObject* pParent = 0);
+	bool setData(const QModelIndex& index, const QVariant& value, int role /* = Qt::EditRole */);
+
+protected:
+	bool lessThan(const QModelIndex& left, const QModelIndex& right) const;
+};
+
+class QAudioControlsTreeView : public QTreeView
+{
+public:
+	explicit QAudioControlsTreeView(QWidget* pParent = 0);
+	void scrollTo(const QModelIndex& index, ScrollHint hint = EnsureVisible);
+	bool IsEditing();
+	void SaveExpandedState();
+	void RestoreExpandedState();
+
+private:
+	void SaveExpandedState(QModelIndex& index);
+
+	std::vector<QPersistentModelIndex> m_storedExpandedItems;
+
+};

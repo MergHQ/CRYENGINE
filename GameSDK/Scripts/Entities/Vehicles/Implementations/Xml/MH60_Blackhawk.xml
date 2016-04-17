@@ -1,0 +1,335 @@
+<Vehicle name="MH60_Blackhawk">
+	<Physics pushable="0">
+		<Buoyancy waterDensity="150" waterResistance="2500"/>
+		<Simulation maxTimeStep="0.02" minEnergy="0.16" maxLoggedCollisions="2"/>
+	</Physics>
+	<Damages submergedRatioMax="0.4" submergedDamageMult="20" collDamageThreshold="10" groundCollisionMinMult="0.5" groundCollisionMaxMult="5" groundCollisionMinSpeed="3" groundCollisionMaxSpeed="60" >
+		<DamageMultipliers>
+			<DamageMultiplier damageType="PistolBullet" multiplier="0.1"/>
+			<DamageMultiplier damageType="RifleBullet" multiplier="0.125"/>
+			<DamageMultiplier damageType="melee" multiplier="0"/>
+			<DamageMultiplier damageType="collision" multiplier="0.5"/>
+		</DamageMultipliers>
+		<DamagesGroups>
+			<DamagesGroup name="Destroy" useTemplate="VehicleDestroy">
+				<DamagesSubGroups>
+					<DamagesSubGroup delay="0" randomness="1">
+						<DamageBehaviors>
+							<DamageBehavior class="Explosion">
+								<Explosion damage="2500" helper="engineSmokeOut" pressure="3000" radius="10" minRadius="5" physRadius="3" minPhysRadius="2.2" />
+							</DamageBehavior>
+						</DamageBehaviors>
+					</DamagesSubGroup>
+				</DamagesSubGroups>
+			</DamagesGroup>
+			<DamagesGroup name="DestroyEngine">
+				<DamagesSubGroups>
+					<DamagesSubGroup delay="0" randomness="0">
+						<DamageBehaviors>
+							<DamageBehavior class="MovementNotification">
+								<MovementNotification isDamageAlwaysFull="1"/>
+							</DamageBehavior>
+							<DamageBehavior class="CameraShake">
+								<CameraShake />
+							</DamageBehavior>
+						</DamageBehaviors>
+					</DamagesSubGroup>
+				</DamagesSubGroups>
+			</DamagesGroup>
+		</DamagesGroups>
+	</Damages>
+	<Components>
+		<Component name="hull" damageMax="8000" major="1" minBound="-8.8309450,-14.015456,-0.94689238" maxBound="9.0925131,8.98273,5.4283361" useBoundsFromParts="0">
+			<DamageBehaviors>
+				<DamageBehavior class="Group" damageRatioMin="1">
+					<Group name="Destroy"/>
+				</DamageBehavior>
+				<DamageBehavior class="Group" damageRatioMin="1">
+					<Group name="DestroyEngine"/>
+				</DamageBehavior>
+				<DamageBehavior class="Effect" damageRatioMin="0.1" damageRatioMax="0.5" ignoreVehicleDestruction="1">
+					<Effect effect="HullDamaged25"/>
+				</DamageBehavior>
+				<DamageBehavior class="Effect" damageRatioMin="0.5" damageRatioMax="1" ignoreVehicleDestruction="1">
+					<Effect effect="HullDamaged75"/>
+				</DamageBehavior>
+			</DamageBehaviors>
+		</Component>
+		<Component name="backrotor" damageMax="1500" major="1" minBound="-1.6,-11.939,1.7024" maxBound="1.6,-08.5796,5.3024" useBoundsFromParts="0" hullAffection="1">
+			<DamageMultipliers>
+				<DamageMultiplier damageType="PistolBullet" multiplier="0.1"/>
+				<DamageMultiplier damageType="RifleBullet" multiplier="0.125"/>
+			</DamageMultipliers>
+			<DamageBehaviors>
+				<DamageBehavior class="Effect" damageRatioMin="0.25" damageRatioMax="0.5">
+					<Effect effect="BackRotorDamaged" disableAfterExplosion="1"/>
+				</DamageBehavior>
+				<DamageBehavior class="Effect" damageRatioMin="0.5">
+					<Effect effect="BackRotorExplosion" disableAfterExplosion="1"/>
+				</DamageBehavior>
+				<DamageBehavior class="MovementNotification" damageRatioMin="1">
+					<MovementNotification isSteering="1"/>
+				</DamageBehavior>
+				<DamageBehavior class="AISignal" damageRatioMin="1" ignoreVehicleDestruction="1">
+					<AISignal signalId="1" signalText="TO_HELI_EMERGENCYLANDING"/>
+				</DamageBehavior>
+			</DamageBehaviors>
+		</Component>
+		<Component name="engine" damageMax="2000" major="1" minBound="-1.75,-3.0576,2.0326" maxBound="1.75,1.9277,3.6919" useBoundsFromParts="0" hullAffection="1">
+			<DamageMultipliers>
+				<DamageMultiplier damageType="PistolBullet" multiplier="0.01"/>
+				<DamageMultiplier damageType="RifleBullet" multiplier="0.0125"/>
+			</DamageMultipliers>
+			<DamageBehaviors>
+				<DamageBehavior class="Group" damageRatioMin="1">
+					<Group name="DestroyEngine"/>
+				</DamageBehavior>
+				<DamageBehavior class="Effect" damageRatioMin="0.1" damageRatioMax="0.5">
+					<Effect effect="EngineDamaged25" disableAfterExplosion="1"/>
+				</DamageBehavior>
+				<DamageBehavior class="Effect" damageRatioMin="0.5" damageRatioMax="1">
+					<Effect effect="EngineDamaged75" disableAfterExplosion="1"/>
+				</DamageBehavior>
+			</DamageBehaviors>
+		</Component>
+		<Component name="cockpit" damageMax="0" major="1" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="0" hullAffection="1">
+			<DamageBehaviors />
+		</Component>
+		<Component name="rotortails" damageMax="1000" major="0" minBound="-9.4877,-9.1875,3.0403" maxBound="9.4857,8.0596,3.9053" useBoundsFromParts="0" hullAffection="1">
+			<DamageMultipliers>
+				<DamageMultiplier damageType="collision" multiplier="1"/>
+			</DamageMultipliers>
+			<DamageBehaviors>
+				<DamageBehavior class="Group" damageRatioMin="1">
+					<Group name="Destroy"/>
+				</DamageBehavior>
+			</DamageBehaviors>
+		</Component>
+	</Components>
+	<Parts>
+		<Part name="body" class="Animated" mass="18000">
+			<Parts>
+				<Part name="hull" class="AnimatedJoint">
+					<Parts />
+				</Part>
+			</Parts>
+			<Animated filename="Objects/vehicles/mh60_blackhawk/mh60.cga" filenameDestroyed="Objects/vehicles/mh60_blackhawk/mh60_damaged.cga"/>
+		</Part>
+		<Part name="tailRotorLightRed" class="Light" helper="tailLightRed">
+			<Light type="HeliRedFlash"/>
+		</Part>
+		<Part name="tailRotorLightWhite" class="Light" helper="tailLightWhite">
+			<Light type="HeliWhite"/>
+		</Part>
+		<Part name="frontLightGreen" class="Light" helper="frontLightGreen">
+			<Light type="HeliGreen"/>
+		</Part>
+		<Part name="frontLightRed" class="Light" helper="frontLightRed">
+			<Light type="HeliRed"/>
+		</Part>
+		<Part name="bottomLightWhite" class="Light" helper="bottomLightWhite">
+			<Light type="HeliWhiteFlash"/>
+		</Part>
+	</Parts>
+	<Helpers>
+		<Helper name="pilot_enter_pos" position="-1.74573,2.95679,0.281693" direction="0,1,0" part="body"/>
+		<Helper name="pilot_sit_pos" position="-0.625,2.9,1.2945" direction="0,1,0" part="body"/>
+		<Helper name="gunner_enter_pos" position="1.74573,2.95679,0.281693" direction="0,1,0" part="body"/>
+		<Helper name="gunner_sit_pos" position="0.625,2.9,1.2945" direction="0,1,0" part="body"/>
+		<Helper name="passenger_enter_left_pos" position="-2.5,0,0.2" direction="0,1,0" part="body"/>
+		<Helper name="passenger_enter_right_pos" position="2.5,0,0.2" direction="0,1,0" part="body"/>
+		<Helper name="passenger3_sit_pos" position="-0.26,1,1.2" direction="0,1,0" part="body"/>
+		<Helper name="passenger4_sit_pos" position="0.26,1,1.2" direction="0,1,0" part="body"/>
+		<Helper name="passenger5_sit_pos" position="-0.26,0.4,1.2" direction="0,-1,0" part="body"/>
+		<Helper name="passenger6_sit_pos" position="0.26,0.4,1.2" direction="0,-1,0" part="body"/>
+		<Helper name="passenger7_sit_pos" position="-0.8,-1.15,1.2" direction="0,1,0" part="body"/>
+		<Helper name="passenger8_sit_pos" position="-0.26,-1.15,1.2" direction="0,1,0" part="body"/>
+		<Helper name="passenger9_sit_pos" position="0.26,-1.15,1.2" direction="0,1,0" part="body"/>
+		<Helper name="passenger10_sit_pos" position="0.8,-1.15,1.2" direction="0,1,0" part="body"/>
+		<Helper name="engineSmokeOut" position="0,-0.8943,2.4389" direction="0,1,0" part="body"/>
+		<Helper name="rotorSmokeOut" position="0,-12.178,3.9585" direction="0,1,0" part="body"/>
+		<Helper name="engine_exhaust_left" position="-1.22,-2.50391,2.5485" direction="0,-0.90609,-0.423" part="body"/>
+		<Helper name="engine_exhaust_right" position="1.22,-2.50391,2.5485" direction="0,-0.9659,-0.259" part="body"/>
+		<Helper name="wind_emitter" position="0,0,4.5" direction="0,0,-1" part="body"/>
+		<Helper name="burningPos" position="0,-3.0549,1.2778" direction="0,1,0" part="body"/>
+		<Helper name="frontLightRed" position="-1.525,2.14,0.6495" direction="-0.9962,0.0872,0" part="body"/>
+		<Helper name="frontLightGreen" position="1.525,2.14,0.6495" direction="1,0,0" part="body"/>
+		<Helper name="tailLightWhite" position="-0.0056,-11.20,3.935" direction="0,-1,0" part="body"/>
+		<Helper name="tailLightRed" position="0,-10.45,4.31" direction="0,0,1" part="body"/>
+		<Helper name="bottomLightWhite" position="0.0015,-5.6502,0.5722" direction="0,0,-1" part="body"/>
+	</Helpers>
+	<Actions>
+	</Actions>
+	<Seats>
+		<Seat name="pilot" enterHelper="pilot_enter_pos" exitHelper="pilot_enter_pos" sitHelper="pilot_sit_pos" isDriver="1" isPassengerShielded="1" AimPart="" seatGroupIndex="1" actionMap="helicopter">
+			<Views>
+				<View class="ActionThirdPerson" canRotate="0">
+					<ActionThirdPerson cameraPosOffset="0,2,1" cameraAimOffset="0,0,0" lagSpeed="5" velocityMult="0.009,0.009,0.009"/>
+				</View>
+				<View class="FirstPerson" canRotate="0" rotationMin="-20,0,-80" rotationMax="10,0,80" hideplayer="1">
+					<FirstPerson offset="0,-0.5,0"/>
+				</View>
+			</Views>
+			<SeatActions>
+				<SeatAction class="Lights">
+					<Lights activation="toggle">
+						<LightParts>
+							<LightPart value="tailRotorLightRed"/>
+							<LightPart value="tailRotorLightWhite"/>
+							<LightPart value="frontLightGreen"/>
+							<LightPart value="frontLightRed"/>
+							<LightPart value="bottomLightWhite"/>
+						</LightParts>
+					</Lights>
+				</SeatAction>
+			</SeatActions>
+			<Sounds inout="0" mood="1"/>
+		</Seat>
+		<Seat name="gunner" enterHelper="gunner_enter_pos" exitHelper="gunner_enter_pos" sitHelper="gunner_sit_pos" isDriver="0" AimPart="" seatGroupIndex="2">
+			<Views>
+				<View class="FirstPerson" canRotate="1" rotationMin="-45,0,-70" rotationMax="25,0,70">
+					<FirstPerson />
+				</View>
+			</Views>
+			<SeatActions />
+			<Sounds inout="0" mood="1"/>
+		</Seat>
+		<Seat name="passenger1" enterHelper="passenger_enter_left_pos" exitHelper="passenger_enter_left_pos" sitHelper="passenger3_sit_pos" isDriver="0" AimPart="" seatGroupIndex="3">
+			<Views>
+				<View class="FirstPerson" canRotate="1" rotationMin="-45,0,-70" rotationMax="25,0,70">
+					<FirstPerson />
+				</View>
+			</Views>
+			<SeatActions />
+			<Sounds inout="0" mood="1"/>
+		</Seat>
+		<Seat name="passenger2" enterHelper="passenger_enter_right_pos" exitHelper="passenger_enter_right_pos" sitHelper="passenger4_sit_pos" isDriver="0" AimPart="" seatGroupIndex="3">
+			<Views>
+				<View class="FirstPerson" canRotate="1" rotationMin="-45,0,-70" rotationMax="25,0,70">
+					<FirstPerson />
+				</View>
+			</Views>
+			<SeatActions />
+			<Sounds inout="0" mood="1"/>
+		</Seat>
+		<Seat name="passenger3" enterHelper="passenger_enter_left_pos" exitHelper="passenger_enter_left_pos" sitHelper="passenger5_sit_pos" isDriver="0" AimPart="" seatGroupIndex="4">
+			<Views>
+				<View class="FirstPerson" canRotate="1" rotationMin="-45,0,-70" rotationMax="25,0,70">
+					<FirstPerson />
+				</View>
+			</Views>
+			<SeatActions />
+			<Sounds inout="0" mood="1"/>
+		</Seat>
+		<Seat name="passenger4" enterHelper="passenger_enter_right_pos" exitHelper="passenger_enter_right_pos" sitHelper="passenger6_sit_pos" isDriver="0" AimPart="" seatGroupIndex="4">
+			<Views>
+				<View class="FirstPerson" canRotate="1" rotationMin="-45,0,-70" rotationMax="25,0,70">
+					<FirstPerson />
+				</View>
+			</Views>
+			<SeatActions />
+			<Sounds inout="0" mood="1"/>
+		</Seat>
+		<Seat name="passenger5" enterHelper="passenger_enter_left_pos" exitHelper="passenger_enter_left_pos" sitHelper="passenger7_sit_pos" isDriver="0" AimPart="" seatGroupIndex="5">
+			<Views>
+				<View class="FirstPerson" canRotate="1" rotationMin="-45,0,-70" rotationMax="25,0,70">
+					<FirstPerson />
+				</View>
+			</Views>
+			<SeatActions />
+			<Sounds inout="0" mood="1"/>
+		</Seat>
+		<Seat name="passenger6" enterHelper="passenger_enter_left_pos" exitHelper="passenger_enter_left_pos" sitHelper="passenger8_sit_pos" isDriver="0" AimPart="" seatGroupIndex="5">
+			<Views>
+				<View class="FirstPerson" canRotate="1" rotationMin="-45,0,-70" rotationMax="25,0,70">
+					<FirstPerson />
+				</View>
+			</Views>
+			<SeatActions />
+			<Sounds inout="0" mood="1"/>
+		</Seat>
+		<Seat name="passenger7" enterHelper="passenger_enter_right_pos" exitHelper="passenger_enter_right_pos" sitHelper="passenger9_sit_pos" isDriver="0" AimPart="" seatGroupIndex="5">
+			<Views>
+				<View class="FirstPerson" canRotate="1" rotationMin="-45,0,-70" rotationMax="25,0,70">
+					<FirstPerson />
+				</View>
+			</Views>
+			<SeatActions />
+			<Sounds inout="0" mood="1"/>
+		</Seat>
+		<Seat name="passenger8" enterHelper="passenger_enter_right_pos" exitHelper="passenger_enter_right_pos" sitHelper="passenger10_sit_pos" isDriver="0" AimPart="" seatGroupIndex="5">
+			<Views>
+				<View class="FirstPerson" canRotate="1" rotationMin="-45,0,-70" rotationMax="25,0,70">
+					<FirstPerson />
+				</View>
+			</Views>
+			<SeatActions />
+			<Sounds inout="0" mood="1"/>
+		</Seat>
+	</Seats>
+	<MovementParams>
+		<Helicopter 
+				engineWarmupDelay="3" enginePowerMax="2" engineIgnitionTime="4" 
+				powerInputConst="1" powerInputDamping="-0.75" rotationDamping="20" velDamping="0.3" relaxForce="2" applyNoiseAsVelocity="0" altitudeMax="500" 
+				maxFwdSpeed="10" maxLeftSpeed="10" maxSpeed="10" maxUpSpeed="10" basicSpeedFraction="0.7"
+				maxTiltAngle="0.55" tiltPerVelDifference="0.04" rotorDiskTiltScale="0.45" 
+				maxYawRate="3.142" yawInputConst="4" yawInputDamping="-0.5" yawDecreaseWithSpeed="12" yawPerRoll="-0.1" yawResponsiveness="29" 
+				maxRollAngle="60" extraRollForTurn="0.5" rollForTurnForce="0.5" rollResponsiveness="18" rollDamping="0.5" 
+				maxPitchAngle="35" pitchResponsiveness="19" pitchActionPerTilt="5" pitchInputConst="3" >
+			<HandlingArcade> 
+				<Speed acceleration="150" maxSpeedUpDown="10" accelerationStrength="1" maxSpeedForward="25" maxSpeedBackward="25" maxSpeedLeftRight="15" maxYawSpeed="1"/> 
+				<AutoPitch autoPitchForward="45" autoPitchBack="45" alignToForwardVel="0" autoRoll="45" changeSpeed="1"/> 
+				<AI yawResponse="360"/>
+			</HandlingArcade>
+			<Animations engine="rotor"/>
+			<SoundParams engineSoundPosition="engineSmokeOut" runSoundDelay="1.8" rpmPitchSpeed="1.2"/>
+		</Helicopter>
+	</MovementParams>
+	<Particles mfxRow="vfx_Helicopter">
+		<Exhaust insideWater="0" outsideWater="1">
+			<Helpers>
+				<Helper value="engine_exhaust_left"/>
+				<Helper value="engine_exhaust_right"/>
+			</Helpers>
+			<EngineStart effect="Vehicles.MH60_BlackHawk.Engine.Start"/>
+			<EngineStop effect="Vehicles.MH60_BlackHawk.Engine.Stop"/>
+			<EngineRunning effect="Vehicles.MH60_BlackHawk.Engine.Running" boostEffect="Vehicles.MH60_BlackHawk.Engine.Boost" baseSizeScale="1" 
+				minSpeed="0"  minSpeedSizeScale="1" minSpeedCountScale="1" minSpeedSpeedScale="1" minPower="0" minPowerSizeScale="1" minPowerCountScale="1" minPowerSpeedScale="1" 
+				maxSpeed="20" maxSpeedSizeScale="1" maxSpeedCountScale="1" maxSpeedSpeedScale="1" maxPower="1" maxPowerSizeScale="1" maxPowerCountScale="1" maxPowerSpeedScale="1"/>
+		</Exhaust>
+		<DamageEffects>
+			<DamageEffect name="EngineDamaged25" helper="engineSmokeOut" effect="Vehicles.MH60_BlackHawk.Damage.Engine_25"/>
+			<DamageEffect name="EngineDamaged75" helper="engineSmokeOut" effect="Vehicles.MH60_BlackHawk.Damage.Engine_75" gravityDirection="0,0,1" pulsePeriod="0"/>
+			<DamageEffect name="HullDamaged25" helper="burningPos" effect="Vehicles.MH60_BlackHawk.Damage.Hull_25" gravityDirection="0,0,1" pulsePeriod="0"/>
+			<DamageEffect name="HullDamaged75" helper="burningPos" effect="Vehicles.MH60_BlackHawk.Damage.Hull_75" gravityDirection="0,0,1" pulsePeriod="0"/>
+			<DamageEffect name="VehicleDestroyed" helper="burningPos" effect="Vehicles.MH60_BlackHawk.Damage.Destroyed"/>
+			<DamageEffect name="RotorDamaged" helper="Rotor" effect="Vehicles.MH60_BlackHawk.Damage.RotorDamaged"/>
+			<DamageEffect name="RotorExplosion" helper="Rotor" effect="Vehicles.MH60_BlackHawk.Damage.RotorDestroyed"/>
+			<DamageEffect name="BackRotorDamaged" helper="BackRotor" effect="Vehicles.MH60_BlackHawk.Damage.TailRotorDamaged"/>
+			<DamageEffect name="BackRotorExplosion" helper="BackRotor" effect="Vehicles.MH60_BlackHawk.Damage.TailRotorDestroyed"/>
+		</DamageEffects>
+		<EnvironmentLayers>
+			<EnvironmentLayer 
+					minSpeed="0"  minSpeedSizeScale="1" minSpeedCountScale="1" minSpeedSpeedScale="1" minPowerSizeScale="0.5" minPowerCountScale="0.5"
+					maxSpeed="10" maxSpeedSizeScale="1" maxSpeedCountScale="1" maxSpeedSpeedScale="1" maxPowerSizeScale="1.0" maxPowerCountScale="1.0">
+				<Alignment alignGroundHeight="35" maxHeightSizeScale="1" maxHeightCountScale="1" alignToWater="0"/>
+				<Emitters />
+				<Wheels />
+			</EnvironmentLayer>
+		</EnvironmentLayers>
+	</Particles>
+	<Animations>
+		<Animation name="rotor" part="body">
+			<States>
+				<State name="default" animation="rotate" soundHelper="rotorSmokeOut" isLooped="1" speedDefault="0" speedMin="0.05" speedMax="1.0">
+					<Materials>
+						<Material name="rotor_main" setting="opacity" invertValue="1"/>
+						<Material name="decal" setting="opacity" invertValue="0"/>
+						<Material name="rotor_main_blending" setting="opacity" invertValue="0"/>
+					</Materials>
+				</State>
+			</States>
+		</Animation>
+	</Animations>
+	<Mannequin tag="helicopter" controllerDef="Animations/Mannequin/ADB/MH60_BlackhawkControllerDefs.xml" vehicleADB="Animations/Mannequin/ADB/MH60_BlackhawkAnims.adb" passengerADB="Animations/Mannequin/ADB/humanMH60_BlackhawkAnims.adb"/>
+</Vehicle>

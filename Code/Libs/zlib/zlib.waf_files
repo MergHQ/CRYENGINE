@@ -1,0 +1,34 @@
+{
+	"NoUberFile":
+	{
+		"Root":
+		[
+			"../../SDKs/zlib-1.2.8/adler32.c",
+			"../../SDKs/zlib-1.2.8/compress.c",
+			"../../SDKs/zlib-1.2.8/crc32.c",
+			"../../SDKs/zlib-1.2.8/crc32.h",
+			"../../SDKs/zlib-1.2.8/deflate.c",
+			"../../SDKs/zlib-1.2.8/deflate.h",
+			"../../SDKs/zlib-1.2.8/gzclose.c",
+			"../../SDKs/zlib-1.2.8/gzguts.h",
+			"../../SDKs/zlib-1.2.8/gzlib.c",
+			"../../SDKs/zlib-1.2.8/gzread.c",
+			"../../SDKs/zlib-1.2.8/gzwrite.c",
+			"../../SDKs/zlib-1.2.8/infback.c",
+			"../../SDKs/zlib-1.2.8/inffast.c",
+			"../../SDKs/zlib-1.2.8/inffast.h",
+			"../../SDKs/zlib-1.2.8/inffixed.h",
+			"../../SDKs/zlib-1.2.8/inflate.c",
+			"../../SDKs/zlib-1.2.8/inflate.h",
+			"../../SDKs/zlib-1.2.8/inftrees.c",
+			"../../SDKs/zlib-1.2.8/inftrees.h",
+			"../../SDKs/zlib-1.2.8/trees.c",
+			"../../SDKs/zlib-1.2.8/trees.h",
+			"../../SDKs/zlib-1.2.8/uncompr.c",
+			"../../SDKs/zlib-1.2.8/zconf.h",
+			"../../SDKs/zlib-1.2.8/zlib.h",
+			"../../SDKs/zlib-1.2.8/zutil.c",
+			"../../SDKs/zlib-1.2.8/zutil.h"			
+		]
+	}
+}

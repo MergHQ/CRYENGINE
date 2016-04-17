@@ -1,0 +1,17 @@
+<item name="PistolIncendiaryAmmo" class="Accessory" priority="103" >
+	<params>
+		<param name="display_name" value="@mp_ePistolIncendiaryAmmo" />
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="attachment_gives_ammo" value="1" />
+	</params>
+	<!-- Give additional 9 rounds when this accessory is picked up -->
+	<accessoryAmmo>
+		<ammo name="PistolBulletIncendiary" amount="9" />
+	</accessoryAmmo>
+	<geometry>
+		<firstperson name="Objects/weapons/attachments/pistol_magazine/pistol_magazine_inc_fp.cgf" useStreaming="0" />
+		<thirdperson name="Objects/weapons/attachments/pistol_magazine/pistol_magazine_inc_tp.cgf"/>
+	</geometry>
+</item>

@@ -1,0 +1,60 @@
+<ammo name="RifleBullet" class="Bullet">
+	<geometry>
+	</geometry>
+	<flags>
+		<param name="clientonly" value="1" />
+		<param name="reusable" value="1" />
+	</flags>
+	<whiz> 
+		<param name="sound" value="Play_p_pro_flyby_bullet_close" />
+		<param name="distance" value="5.0" />
+	</whiz>
+	<ricochet>
+		<param name="sound" value="Play_p_pro_ricochet_bullet" />
+	</ricochet>
+	<physics type="particle">
+		<param name="mass" value="0.1" GAME="SP"/>
+		<param name="mass" value="0.2" GAME="MP"/>
+		<param name="speed" value="1100" />
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0" />
+		<param name="gravity" value="0, 0, -1" />
+		<param name="water_gravity" value="0, 0, -1" />
+		<param name="material" value="mat_metal" />
+		<param name="pierceability" value="1" GAME="SP"/>
+		<param name="pierceability" value="2" GAME="MP"/>
+		<param name="single_contact" value="1" />
+		<pierceabilityLevels GAME="SP">
+			<param name="level3" value="0" />
+			<param name="level2" value="35" />
+			<param name="level1" value="50" />
+			<param name="maxPenetrationThickness" value="0.5" />
+		</pierceabilityLevels>
+		<pierceabilityLevels GAME="MP">
+			<param name="level3" value="0" />
+			<param name="level2" value="65" />
+			<param name="level1" value="90" />
+			<param name="maxPenetrationThickness" value="0.4" />
+		</pierceabilityLevels>
+	</physics>
+	<params>
+		<param name="display_name" value="@mp_eRifleBullet" />
+		<param name="ammo_category" value="Regular" />
+		<param name="lifetime" value="1.5" GAME="SP" />
+		<param name="lifetime" value="0.37" GAME="MP" />
+		<param name="showtime" value="0.15" />
+		<param name="bulletType" value="2" /> <!-- Bullet Type 2 - Assault rifle bullet -->
+		<param name="hitRecoil" value="Level2" GAME="SP"/>
+		<param name="hitRecoil" value="Level3_mp" GAME="MP"/>
+		<param name="hitRecoilArmorMode" value="Level1" GAME="SP"/>
+		<param name="hitRecoilArmorMode" value="Level1_mp" GAME="MP"/>
+	</params>
+	<trailUnderWater>
+		<param name="effect" value="" />
+		<param name="scale" value="" />
+	</trailUnderWater>
+	<BulletTimeParams GAME="MP" >
+		<param name="geometry" value=""/>
+		<param name="effect" value=""/>
+	</BulletTimeParams>
+</ammo>

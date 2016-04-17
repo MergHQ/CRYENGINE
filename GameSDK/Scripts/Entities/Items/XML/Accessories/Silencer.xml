@@ -1,0 +1,14 @@
+<item name="Silencer" class="Accessory">
+	<params>
+		<param name="display_name" value="@mp_eSilencer" />
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="selectTimeMultiplier" value="1.1" GAME="MP" />
+		<param name="tag" value="silencer" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/rifle/rifle_fp_silencer.cgf" useStreaming="0" />
+		<thirdperson name="objects/weapons/rifle/rifle_tp_silencer.cgf"/>
+	</geometry>
+</item>

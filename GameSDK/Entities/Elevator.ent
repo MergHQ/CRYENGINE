@@ -1,0 +1,4 @@
+<Entity
+ Name="Elevator" 
+ Script="Scripts/Entities/Elevators/Elevator.lua"
+/>
