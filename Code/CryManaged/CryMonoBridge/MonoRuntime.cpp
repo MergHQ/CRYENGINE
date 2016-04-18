@@ -267,7 +267,7 @@ void CMonoRuntime::LoadGame()
 	}
 	
 	// Make sure debugger is connected.
-	CrySleep(30);
+	CrySleep(100);
 
 	m_gameLibrary->RunMethod("CryEngine.MonoLauncher.App:Initialize()");
 

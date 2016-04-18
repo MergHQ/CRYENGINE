@@ -75,7 +75,7 @@ namespace CryEngine
 			{
 				return _isActiveByHierarchy && Active;
 			}
-		} ///< Propagates hierarchical activity flag to children and components. 
+		} ///< Propagates hierarchical activity flag to children and components. Do not set directly.
 
 		void InitMethods(Type t)
 		{

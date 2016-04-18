@@ -48,6 +48,7 @@ namespace CryEngine.UI.Components
 		[DataMember]
 		Rect _spacing;
 		Point _center;
+		Point _pivot = new Point (0.5f, 0.5f);
 		bool _needsRefresh = true;
 		[DataMember]
 		ClampMode _clampMode = ClampMode.Self;
@@ -64,6 +65,7 @@ namespace CryEngine.UI.Components
 		public Point Size { set { _width = value.x; _height = value.y; _needsRefresh = true; } } ///< Sets the owner elements size.
 		public Rect Spacing { set { _spacing = value; _needsRefresh = true; } get { return _spacing; } } ///< Modifies the potentially visible area, defines by ClampMode.
 		public ClampMode ClampMode { set{ _clampMode = value; _clampRect = null; } get { return _clampMode; } } ///< Defines how clamping should be computed in ClampRect.
+		public Point Pivot { get{ return _pivot; } set { _pivot = value; _needsRefresh = true; }} ///< Defines the center of the element, relative to its size.
 
 		public bool NeedsRefresh { get { return _needsRefresh; } } ///< Indicates whether this RectTransform needs a layout refresh.
 		public RectTransform PRT { get { return (Transform.Parent != null && Transform.Parent.Owner is UIElement) ? (Transform.Parent.Owner as UIElement).RectTransform : null; } } ///< Returns Parent elements RectTransform, if available.
@@ -167,41 +169,42 @@ namespace CryEngine.UI.Components
 			}
 			else
 			{
+				var pivot = _padding.TopLeft + new Point((Pivot.x - 0.5f) * Width, (Pivot.y - 0.5f) * Height);
 				switch (_alignment)
 				{
 				case Alignment.Center: 
-					_center = prt.Center + _padding.TopLeft; break;
+					_center = prt.Center + pivot; break;
 				case Alignment.Top: 
-					_center = prt.Top + _padding.TopLeft; break;
+					_center = prt.Top + pivot; break;
 				case Alignment.TopRight: 
-					_center = prt.TopRight + _padding.TopLeft; break;
+					_center = prt.TopRight + pivot; break;
 				case Alignment.Right: 
-					_center = prt.Right + _padding.TopLeft; break;
+					_center = prt.Right + pivot; break;
 				case Alignment.BottomRight:
-					_center = prt.BottomRight + _padding.TopLeft; break;
+					_center = prt.BottomRight + pivot; break;
 				case Alignment.Bottom: 
-					_center = prt.Bottom + _padding.TopLeft; break;
+					_center = prt.Bottom + pivot; break;
 				case Alignment.BottomLeft: 
-					_center = prt.BottomLeft + _padding.TopLeft; break;
+					_center = prt.BottomLeft + pivot; break;
 				case Alignment.Left:
-					_center = prt.Left + _padding.TopLeft; break;
+					_center = prt.Left + pivot; break;
 				case Alignment.TopLeft: 
-					_center = prt.TopLeft + _padding.TopLeft; break;
+					_center = prt.TopLeft + pivot; break;
 
 				case Alignment.TopHStretch:
 					_width = prt.Width - _padding.Right - _padding.Left;
-					_center = prt.TopLeft + _padding.TopLeft + new Point(_width/2, -_padding.Bottom); break;
+					_center = prt.TopLeft + pivot + new Point(_width/2, -_padding.Bottom); break;
 				case Alignment.BottomHStretch:
 					_width = prt.Width - _padding.Right - _padding.Left;
-					_center = prt.BottomLeft + _padding.TopLeft + new Point(_width/2, -_padding.Bottom); break;
+					_center = prt.BottomLeft + pivot + new Point(_width/2, -_padding.Bottom); break;
 				case Alignment.RightVStretch:
 					_height = prt.Height - _padding.Top - _padding.Bottom;
-					_center = prt.TopRight + _padding.TopLeft + new Point(-_padding.Right, _height/2); break;
+					_center = prt.TopRight + pivot + new Point(-_padding.Right, _height/2); break;
 
 				case Alignment.Stretch:
 					_width = prt.Width - _padding.Right - _padding.Left;
 					_height = prt.Height - _padding.Bottom - _padding.Top;
-					_center = prt.TopLeft + _padding.TopLeft + new Point(_width/2, _height/2); break;
+					_center = prt.TopLeft + pivot + new Point(_width/2, _height/2); break;
 				default:
 					break;
 				}

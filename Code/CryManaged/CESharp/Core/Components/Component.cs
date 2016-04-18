@@ -191,7 +191,7 @@ namespace CryEngine.Components
 			instance.InitMethods (t);
 
 			if (instance._OnAwake != null)
-				instance._OnAwake.Invoke (instance, null);
+				instance._OnAwake.InvokeSecure (instance);
 			instance.Active = true;
 			return instance;
 		}
