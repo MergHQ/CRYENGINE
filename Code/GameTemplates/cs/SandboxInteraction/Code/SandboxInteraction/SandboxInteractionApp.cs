@@ -29,14 +29,9 @@ namespace CryEngine.SandboxInteraction
 
 			Camera.Current = Owner.AddComponent<Camera> ();
 			Camera.Current.OnPlayerEntityAssigned += InitCamera;
+			Mouse.ShowCursor ();
 
-			SystemHandler.EditorGameStart += () => 
-			{
-				Debug.Log ("Editor Game Started");
-				InitCamera (Camera.Current);
-			};
-			SystemHandler.EditorGameEnded += EditorGameEnded;
-
+			InitCamera (Camera.Current);
 			Program.OnSignal += OnFlowNodeSignal;
 		}
 
@@ -48,13 +43,12 @@ namespace CryEngine.SandboxInteraction
 			cam.ForwardDirection = -stance;
 		}
 
-		void EditorGameEnded()
+		public void OnDestroy()
 		{
-			Debug.Log ("Editor Game Ending");
-
 			if (_currentScene != null)
 				_currentScene.Cleanup ();
 			_currentScene = null;
+			Mouse.HideCursor();
 		}
 
 		public void OnUpdate()
@@ -76,12 +70,7 @@ namespace CryEngine.SandboxInteraction
 				{
 					_currentScene = null;
 					if (n.Return == "Exit")
-					{
-						if (Env.IsSandbox)
-							Env.Console.ExecuteString("ed_disable_game_mode");
-						else 							
-							Shutdown();
-					}
+						Shutdown();
 				};
 			}
 			else if (runScene.SceneName == "GoCloseup")

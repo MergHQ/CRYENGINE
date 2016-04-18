@@ -91,8 +91,13 @@ namespace CryEngine.Components
 			if (!_isShutdown) 
 			{
 				Root.Destroy ();
-				if (_activeShutdown)
-					Global.gEnv.pSystem.Quit ();
+				if (_activeShutdown) 
+				{
+					if (Env.IsSandbox)
+						AddIn.InterDomainHandler.RaiseRequestQuit();
+					else 
+						Global.gEnv.pSystem.Quit ();
+				}
 				_isShutdown = true;
 			}
 		}

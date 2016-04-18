@@ -499,6 +499,9 @@ namespace CryEngine
 		/// </summary>
 		public override void OnPostUpdate (float fDeltaTime)
 		{
+			// Calculate time used to render last frame.
+			FrameTime.Update();
+
 			var updateReceivers = new List<IGameUpdateReceiver> (_updateReceivers);
 			foreach (IGameUpdateReceiver obj in updateReceivers)
 				obj.OnUpdate ();
@@ -593,14 +596,12 @@ namespace CryEngine
 			_isInitialized = true;
 
 			SystemHandler.Instantiate ();
-			CryEngine.Input.Instanciate();
+			CryEngine.Input.Instanciate ();
 			Screen.Instanciate ();
 			CryEngine.Mouse.Instantiate ();
 			SceneManager.Instantiate ();
-			GameFramework.Instantiate();
+			GameFramework.Instantiate ();
 			LevelSystem.Instantiate ();
-			Mouse.IncrementCounter ();
-			//EntityFramework.Instantiate ();
 		}
 
 		/// <summary>
@@ -625,8 +626,11 @@ namespace CryEngine
 
 	public class AddIn : ICryEngineAddIn
 	{
-		public void Initialize()
-		{			
+		public static InterDomainHandler InterDomainHandler { get; private set; }
+
+		public void Initialize(InterDomainHandler handler)
+		{
+			InterDomainHandler = handler;
 			Env.Initialize ();
 		}
 
@@ -805,6 +809,7 @@ namespace CryEngine
 		private static bool _updateLeftUp = false;
 		private static uint s_hitEntityId = 0;
 		private static Vec2 s_hitEntityUV = new Vec2();
+		private static bool _cursorVisible = false;
 
 		public static Point CursorPosition { get { return new Point (_lmx, _lmy); } } ///< Current Mouse Cursor Position, refreshed before update loop.
 		public static bool LeftDown { get; private set; } ///< Indicates whether left mouse button is Down during one update phase.
@@ -825,6 +830,20 @@ namespace CryEngine
 			{
 				return Entity.ById (HitEntityId);
 			}
+		}
+
+		public static void ShowCursor()
+		{
+			if (!_cursorVisible)
+				Env.Mouse.IncrementCounter();
+			_cursorVisible = true;
+		}
+
+		public static void HideCursor()
+		{
+			if (_cursorVisible)
+				Env.Mouse.DecrementCounter();
+			_cursorVisible = false;
 		}
 
 		/// <summary>
@@ -967,6 +986,60 @@ namespace CryEngine
 				_instance.Dispose();
 				_instance = null;
 			}
+		}
+	}
+
+	/// <summary>
+	/// Maps trigger identifier names to id's of internal audio project. Audio projects can be setup via SDL, WWISE or FMOD. 
+	/// </summary>
+	public class AudioManager
+	{
+		private static Dictionary<string, uint> _triggerByName = new Dictionary<string, uint> ();
+
+		/// <summary>
+		/// Gets trigger ID by trigger name. Plays back trigger with respect to currently loaded audio lib.
+		/// </summary>
+		/// <returns><c>true</c>, if trigger loaded successfully.</returns>
+		/// <param name="triggerName">Trigger name.</param>
+		public static bool PlayTrigger(string triggerName)
+		{
+			uint triggerId;
+			if (!_triggerByName.TryGetValue (triggerName, out triggerId))
+				triggerId = _triggerByName [triggerName] = Env.AudioSystem.GetAudioTriggerId (triggerName);
+
+			if (triggerId != 0)
+				Env.AudioSystem.PlayAudioTriggerId (triggerId);
+			return triggerId != 0;
+		}
+	}
+
+	/// <summary>
+	/// General purpose randomizer.
+	/// </summary>
+	public class Rand
+	{
+		private static Random _random = new Random((int)DateTime.Now.Ticks);
+
+		/// <summary>
+		/// Returns next double between 0 and 1.
+		/// </summary>
+		/// <value>The next double.</value>
+		public static double NextDouble
+		{
+			get 
+			{
+				return _random.NextDouble ();					
+			}
+		}
+
+		/// <summary>
+		/// Returns next int between 0 and range - 1.
+		/// </summary>
+		/// <returns>The int.</returns>
+		/// <param name="range">Range.</param>
+		public static int NextInt(int range)
+		{
+			return _random.Next(range);
 		}
 	}
 }
