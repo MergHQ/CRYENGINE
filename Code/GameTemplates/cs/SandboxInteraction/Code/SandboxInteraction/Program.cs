@@ -14,11 +14,13 @@ namespace CryEngine.SandboxInteraction
 	public class Program : ICryEngineAddIn
 	{
 		public static event EventHandler<FlowNode, PropertyInfo> OnSignal;
-		Application _app;
 
-		public void Initialize()
+		private Application _app;
+
+		public void Initialize(InterDomainHandler handler)
 		{
-			Env.Console.ExecuteString ("map SandboxInteraction");
+			if (!Env.IsSandbox)
+				Env.Console.ExecuteString ("map SandboxInteraction");
 			_app = Application.Instantiate<SandboxInteractionApp>();
 		}
 
@@ -30,7 +32,7 @@ namespace CryEngine.SandboxInteraction
 
 		public void Shutdown()
 		{
-			_app.Shutdown(false);
+			_app.Shutdown (false);
 		}
 	}
 }

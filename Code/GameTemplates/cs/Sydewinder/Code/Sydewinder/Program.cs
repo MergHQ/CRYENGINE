@@ -21,12 +21,11 @@ namespace CryEngine.Sydewinder
 		/// <summary>
 		/// Add-In Entry point.
 		/// </summary>
-		public void Initialize()
+		public void Initialize(InterDomainHandler handler)
 		{
-			if (Env.IsSandbox)
-				return;
-			
-			Env.Console.ExecuteString ("map Canyon");
+			if (!Env.IsSandbox) 
+				Env.Console.ExecuteString ("map Canyon");
+
 			GameApp = Application.Instantiate<SydewinderApp>();
 
 			// Initialize Highscore with file name.
@@ -35,7 +34,7 @@ namespace CryEngine.Sydewinder
 			GameApp.GameOver += showHighscore =>
 			{
 				// Reset field of view to ehance 3D look.
-				Camera.Current.FieldOfView = 60f;
+				Camera.FieldOfView = 60f;
 
 				UI.MainMenu.SetInactive();
 				if (showHighscore)
@@ -51,22 +50,21 @@ namespace CryEngine.Sydewinder
 		{
 			var mainMenu = UI.MainMenu.GetMainMenu(GameApp.Root);
 			UI.MainMenu.SelectedMenuPage (0);
+			Mouse.ShowCursor ();
 
 			mainMenu.StartClicked += () => 
 			{
-				Env.Mouse.DecrementCounter ();
-
+				Mouse.HideCursor ();
 				GameApp.Reset ();
 				UI.MainMenu.SetInactive ();
 			};
 			mainMenu.ExitClicked += () => 
 			{
-				Env.Mouse.DecrementCounter ();
-
+				Mouse.HideCursor ();
 				if (!Env.IsSandbox)
 					GameApp.Shutdown ();
 
-				GameApp.ThemeSongPlayer.Stop();
+				AudioManager.PlayTrigger("game_stop");
 				mainMenu.Destroy ();
 			};
 
@@ -86,8 +84,7 @@ namespace CryEngine.Sydewinder
 		/// </summary>
 		public void Shutdown()
 		{
-			if (GameApp != null)
-				GameApp.Shutdown(false);
+			GameApp.Shutdown(false);
 		}
 	}
 }

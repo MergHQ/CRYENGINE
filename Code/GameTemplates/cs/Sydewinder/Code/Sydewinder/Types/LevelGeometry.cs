@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using CryEngine.Common;
-using CryEngine.Sydewinder.Framework;
 using CryEngine.Components;
 using CryEngine.EntitySystem;
 
@@ -34,16 +33,6 @@ namespace CryEngine.Sydewinder.Types
 		private Entity _rotatingRingOne = null;
 		private Entity _rotatingRingTwo = null;
 
-		/// <summary>
-		/// To randomly generate tunnel and door numbers
-		/// </summary>
-		private static Random _randomizer = new Random();
-
-		public static Random Randomizer
-		{
-			get { return _randomizer;}
-		}
-
 		public LevelGeometry()
 		{
 			_tunnelElementsQueue = new Queue<Tunnel>();
@@ -51,7 +40,7 @@ namespace CryEngine.Sydewinder.Types
 			// Get position.
 			Vec3 firstTunnelPos = EntitySystem.Entity.ByName("TunnelSpawnPoint").Position;
 
-			_lastTunnel = new Tunnel(firstTunnelPos, 0);
+			_lastTunnel = Tunnel.Create(firstTunnelPos, 0);
 			_lastTunnel.Speed = LevelGeometry.GlobalGeomSpeed;
 
 			_tunnelElementsQueue.Enqueue(_lastTunnel);
@@ -85,10 +74,10 @@ namespace CryEngine.Sydewinder.Types
 
 				// Ensure the next tunnel element is different from the previous one.
 				while (newTunnelNumber == _lastTunnelNumber)
-					newTunnelNumber = _randomizer.Next(0, 4);
+					newTunnelNumber = Rand.NextInt(4);
 
 				_lastTunnelNumber = newTunnelNumber;
-				_lastTunnel = new Tunnel(new Vec3(lastTunnelPos.x, (lastTunnelPos.y + 100f), lastTunnelPos.z), newTunnelNumber);
+				_lastTunnel = Tunnel.Create(new Vec3(lastTunnelPos.x, (lastTunnelPos.y + 100f), lastTunnelPos.z), newTunnelNumber);
 				_lastTunnel.Speed = LevelGeometry.GlobalGeomSpeed;
 				_tunnelElementsQueue.Enqueue(_lastTunnel);
 			}
@@ -119,7 +108,7 @@ namespace CryEngine.Sydewinder.Types
 		/// <summary>
 		/// The tunnel types.
 		/// </summary>
-		private readonly ObjectSkin[] _tunnelTypes = new ObjectSkin[]
+		private static readonly ObjectSkin[] TunnelTypes = new ObjectSkin[]
 		{			
 			new ObjectSkin("objects/levelgeometry/tunnel_01.cgf"),
 			new ObjectSkin("objects/levelgeometry/tunnel_02.cgf"),
@@ -132,24 +121,13 @@ namespace CryEngine.Sydewinder.Types
 		/// </summary>
 		/// <param name="position">Position.</param>
 		/// <param name="tunnelType">Tunnel type.</param>
-		public Tunnel(Vec3 position, int tunnelType)
+		public static Tunnel Create(Vec3 pos, int tunnelType)
 		{
-			if (tunnelType < 0 && tunnelType >= _tunnelTypes.Length)
+			if (tunnelType < 0 && tunnelType >= TunnelTypes.Length)
 				throw new ArgumentOutOfRangeException (
-					string.Format ("tunnelType must betwenn 0 and {0}", (_tunnelTypes.Length - 1).ToString()));
+					string.Format ("tunnelType must betwenn 0 and {0}", (TunnelTypes.Length - 1).ToString()));
 
-			var tunnelSpawnParams = new SEntitySpawnParams() 
-			{
-				vPosition = position,
-				pClass = Env.EntitySystem.GetClassRegistry().GetDefaultClass()
-			};
-
-			var spawnedEntity = Env.EntitySystem.SpawnEntity(tunnelSpawnParams);
-			Entity = new EntitySystem.Entity(spawnedEntity);
-
-			// Load geometry.
-			spawnedEntity.LoadGeometry(0, _tunnelTypes[tunnelType].Geometry);
-
+			var tunnel = Entity.Instantiate<Tunnel> (pos, Quat.Identity, 1.0f, TunnelTypes[tunnelType].Geometry);
 			if (tunnelType == 1)
 			{
 				var physics = new SEntityPhysicalizeParams() 
@@ -158,11 +136,11 @@ namespace CryEngine.Sydewinder.Types
 					mass = 1f,
 					type = (int)EPhysicalizationType.ePT_Rigid,
 				};
-
-				spawnedEntity.Physicalize(physics);
+				tunnel.BaseEntity.Physicalize(physics);
 			}
 
-			AddToGamePoolWithDoor(position);
+			tunnel.AddToGamePoolWithDoor(pos);
+			return tunnel;
 		}
 
 		private void AddToGamePoolWithDoor(Vec3 position = null)
@@ -173,13 +151,13 @@ namespace CryEngine.Sydewinder.Types
 				position = this.Position;
 
 			// Create a door case as connector between tunnels.
-			_tunnelDoor = new Door(new Vec3(position.x, position.y, position.z), 0);
+			_tunnelDoor = Door.Create(new Vec3(position.x, position.y, position.z), 0);
 			_tunnelDoor.Speed = LevelGeometry.GlobalGeomSpeed;
 
 			// Create random door types
-			int rand = LevelGeometry.Randomizer.Next(0, 3);
+			int rand = Rand.NextInt(3);
 			if (rand != 0) {
-				_tunnelDoor = new Door (new Vec3 (position.x, position.y, position.z), rand);
+				_tunnelDoor = Door.Create (new Vec3 (position.x, position.y, position.z), rand);
 				_tunnelDoor.Speed = LevelGeometry.GlobalGeomSpeed;
 			}
 
@@ -188,7 +166,7 @@ namespace CryEngine.Sydewinder.Types
 			// Till 'MaxValue' as the for-loop is quit when once the first empty position is discovered.
 			for (int i = 1; i < int.MaxValue; i++)
 			{
-				Vec3 helperPos = Entity.GetHelperPos(0, "Light_0" + i.ToString());
+				Vec3 helperPos = GetHelperPos(0, "Light_0" + i.ToString());
 
 				if (helperPos.x != 0 || helperPos.y != 0 || helperPos.z != 0)
 				{
@@ -200,24 +178,18 @@ namespace CryEngine.Sydewinder.Types
 						m_BaseSpecMult = 1f
 					};
 
-					Entity.LoadLight (i, light);
-					Entity.SetTM(i, Matrix34.Create(Vec3.One, Quat.Identity, helperPos));
+					LoadLight (i, light);
+					SetTM(i, Matrix34.Create(Vec3.One, Quat.Identity, helperPos));
 				}
 				else
 					break;
 			}
 		}
 
-		public override void Collision()
-		{
-			// Undestroyable
-			return;
-		}
-
 		public void Purge()
 		{
-			GamePool.FlagForPurge(this.Entity.ID);
-			GamePool.FlagForPurge(_tunnelDoor.Entity.ID);
+			GamePool.FlagForPurge(ID);
+			GamePool.FlagForPurge(_tunnelDoor.ID);
 		}
 	}
 
@@ -228,7 +200,7 @@ namespace CryEngine.Sydewinder.Types
 		/// <summary>
 		/// The door types.
 		/// </summary>
-		private readonly ObjectSkin[] _doorTypes = new ObjectSkin[]
+		private static readonly ObjectSkin[] DoorTypes = new ObjectSkin[]
 		{			
 			new ObjectSkin("objects/levelgeometry/door_01.cgf"), // Door Case
 			new ObjectSkin("objects/levelgeometry/door_02.cgf"), // Bottom Door
@@ -241,30 +213,15 @@ namespace CryEngine.Sydewinder.Types
 		/// </summary>
 		/// <param name="position">Position.</param>
 		/// <param name="doorType">Door type.</param>
-		public Door(Vec3 position, int doorType)
+		public static Door Create(Vec3 pos, int doorType)
 		{
-			if (doorType < 0 && doorType >= _doorTypes.Length)
+			if (doorType < 0 && doorType >= DoorTypes.Length)
 				throw new ArgumentOutOfRangeException (
-					string.Format ("doorType must betwenn 0 and {0}", (_doorTypes.Length - 1).ToString()));
+					string.Format ("doorType must betwenn 0 and {0}", (DoorTypes.Length - 1).ToString()));
 
-			Entity = EntitySystem.Entity.Instantiate (position, Quat.Identity, 1, _doorTypes [doorType].Geometry, _doorTypes[doorType].Material);
-
-			GamePool.AddObjectToPool(this);
-
-			string explosionSoundPath = System.IO.Path.Combine(Application.DataPath, "sounds/door_smash.wav");
-			ExplosionSound = new MultiSoundPlayer(explosionSoundPath);
-		}
-
-		public override void Collision()
-		{
-			// Destroying Doors not allowed yet.
-			return;
-		}
-
-		public void Destroy()
-		{
-			// Destroying Doors not allowed yet.
-			return;
+			var door = Entity.Instantiate<Door> (pos, Quat.Identity, 1, DoorTypes [doorType].Geometry, DoorTypes[doorType].Material);
+			GamePool.AddObjectToPool(door);
+			return door;
 		}
 	}
 }

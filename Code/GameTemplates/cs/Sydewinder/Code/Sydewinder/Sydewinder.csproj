@@ -31,6 +31,30 @@
     <Prefer32Bit>true</Prefer32Bit>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\win_x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <PlatformTarget>x86</PlatformTarget>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\win_x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <PlatformTarget>x86</PlatformTarget>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
@@ -49,19 +73,15 @@
     <Compile Include="Ui\MainMenu.cs" />
     <Compile Include="SydewinderApp.cs" />
     <Compile Include="Ui\Hud.cs" />
-    <Compile Include="Framework\GamePool.cs" />
     <Compile Include="Types\GameObjectBase.cs" />
     <Compile Include="Types\LevelGeometry.cs" />
-    <Compile Include="Framework\EntityCollisionCheck.cs" />
     <Compile Include="GameData.cs" />
-    <Compile Include="Framework\FrameTime.cs" />
-    <Compile Include="Framework\MultiSoundPlayer.cs" />
     <Compile Include="Ui\Table.cs" />
-    <Compile Include="Framework\Utils.cs" />
+    <Compile Include="GamePool.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <ProjectReference Include="..\CESharp\Core\Core.csproj">
+    <ProjectReference Include="..\CryManaged\CESharp\Core\Core.csproj">
       <Project>{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FB}</Project>
       <Name>Core</Name>
       <Private>False</Private>
@@ -69,6 +89,5 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Ui\" />
-    <Folder Include="Framework\" />
   </ItemGroup>
 </Project>

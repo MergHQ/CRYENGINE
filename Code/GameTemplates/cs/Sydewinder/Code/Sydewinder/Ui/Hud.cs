@@ -210,13 +210,13 @@ namespace CryEngine.Sydewinder
 
 		public void ShowGamePauseDialog()
 		{
-			Env.Mouse.IncrementCounter();
+			Mouse.ShowCursor ();
 			_gamePausedDialogPanel.Active = true;
 		}
 
 		public void HideGamePauseDialog()
 		{
-			Env.Mouse.DecrementCounter();
+			Mouse.HideCursor ();
 			_gamePausedDialogPanel.Active = false;
 		}
 

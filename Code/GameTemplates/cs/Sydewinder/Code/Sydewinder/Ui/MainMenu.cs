@@ -10,6 +10,7 @@ using CryEngine.UI;
 using CryEngine;
 using CryEngine.UI.Components;
 using CryEngine.Resources;
+using CryEngine.EntitySystem;
 
 namespace CryEngine.Sydewinder.UI
 {
@@ -77,7 +78,7 @@ namespace CryEngine.Sydewinder.UI
 			_mainMenuPage = SceneObject.Instantiate<Canvas>(Root);
 
 			// Get Entity placed in level.
-			_mainMenuPage.SetupOnTargetEntity (EntitySystem.Entity.ByName("UIPlane"), TEXTURE_RESOLUTION);
+			_mainMenuPage.SetupTargetEntity (Entity.ByName("UIPlane"), TEXTURE_RESOLUTION);
 
 			Window mainMenuWindow = SceneObject.Instantiate<Window>(_mainMenuPage);
 
@@ -118,7 +119,7 @@ namespace CryEngine.Sydewinder.UI
 			_highscorePage = SceneObject.Instantiate<Canvas>(Root);
 
 			// Get plane entity for highscore menu item.
-			_highscorePage.SetupOnTargetEntity (EntitySystem.Entity.ByName("UIPlane_Highscore"), TEXTURE_RESOLUTION);
+			_highscorePage.SetupTargetEntity (Entity.ByName("UIPlane_Highscore"), TEXTURE_RESOLUTION);
 
 			Window highscoreWindow = SceneObject.Instantiate<Window>(_highscorePage);
 
@@ -159,16 +160,8 @@ namespace CryEngine.Sydewinder.UI
 					b.Ctrl.Text.Height = 48;
 					b.BackgroundImageUrl = buttonBackgroundURL;
 					b.BackgroundImageInvertedUrl = buttonHighlightedURL;
-					b.Ctrl.OnPressed += () => 
-					{
-						string soundPath = System.IO.Path.Combine(Application.DataPath, "sounds/menu_select.wav");
-						new MultiSoundPlayer(soundPath).Play();								
-					};
-					b.Ctrl.OnFocusEnter += () =>
-					{
-						string soundPath = System.IO.Path.Combine(Application.DataPath, "sounds/menu_switch.wav");
-						new MultiSoundPlayer(soundPath).Play();								
-					};
+					b.Ctrl.OnPressed += () => AudioManager.PlayTrigger("menu_select");
+					b.Ctrl.OnFocusEnter += () => AudioManager.PlayTrigger("menu_switch");
 				});
 			});
 		}
@@ -178,7 +171,7 @@ namespace CryEngine.Sydewinder.UI
 			SelectedMenuPage (0);
 
 			Vec3 finalPosition = new Vec3(86, 37, 75);
-			Vec3 finalFwdDirection = Env.EntitySystem.FindEntityByName("UIPlane").GetPos() - finalPosition;
+			Vec3 finalFwdDirection = Entity.ByName("UIPlane").Position - finalPosition;
 
 			if (animated)
 			{
@@ -198,7 +191,7 @@ namespace CryEngine.Sydewinder.UI
 
 			// Set final position and view direction.
 			Vec3 finalPosition = new Vec3(68, 81, 73);
-			Vec3 finalFwdDirection = Env.EntitySystem.FindEntityByName("UIPlane_Highscore").GetPos() - finalPosition;
+			Vec3 finalFwdDirection = Entity.ByName("UIPlane_Highscore").Position - finalPosition;
 
 			if (animated)
 			{
