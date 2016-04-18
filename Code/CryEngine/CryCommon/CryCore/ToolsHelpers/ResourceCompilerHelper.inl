@@ -528,10 +528,10 @@ ERcExitCode CResourceCompilerHelper::InvokeResourceCompiler(const char* szSrcFil
 	wRemoteCmdLine.append(szToolsDir);
 	wRemoteCmdLine.appendAscii("/rc/");
 	wRemoteCmdLine.appendAscii(RC_EXECUTABLE);
-	wRemoteCmdLine.appendAscii(" \"");
+	wRemoteCmdLine.appendAscii("\"");
 
 	// Parameters
-	wRemoteCmdLine.appendAscii("\"");
+	wRemoteCmdLine.appendAscii(" \"");
 	if (IsRelativePath(szSrcFilePath))
 	{
 		wRemoteCmdLine.append(szProjectDir);
