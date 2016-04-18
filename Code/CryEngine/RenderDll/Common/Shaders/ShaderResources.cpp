@@ -619,7 +619,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		Vec4 deformWave(0, 0, 0, 1);
 		if (m_pDeformInfo && m_pDeformInfo->m_fDividerX != 0)
 		{
-			deformWave.x = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_RealTime * m_pDeformInfo->m_WaveX.m_Freq + m_pDeformInfo->m_WaveX.m_Phase;
+			deformWave.x = m_pDeformInfo->m_WaveX.m_Freq + m_pDeformInfo->m_WaveX.m_Phase;
 			deformWave.y = m_pDeformInfo->m_WaveX.m_Amp;
 			deformWave.z = m_pDeformInfo->m_WaveX.m_Level;
 			deformWave.w = 1.0f / m_pDeformInfo->m_fDividerX;

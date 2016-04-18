@@ -887,8 +887,9 @@ void pos_wind_General(inout float4 InPos, float3 vNorm, float4 cVtxColors, strea
 
 void _VTModify(inout float4 inPos, float3 vNorm, float4x4 InstMatrix, streamPos IN, bool bRelativeToCam, int nType)
 {
-  // CM_DeformWave: .x=time*Freq+Phase; .y=Amp; .z=Level; .w=VertDivider
+	// CM_DeformWave: .x=time*Freq+Phase; .y=Amp; .z=Level; .w=VertDivider
 	
+	const half fTime = g_VS_AnimGenParams.z;
 	float4 vTC = 0;
  #if !%TEMP_TERRAIN
   vTC = IN.baseTC;
@@ -898,22 +899,22 @@ void _VTModify(inout float4 inPos, float3 vNorm, float4x4 InstMatrix, streamPos 
   if (nType == VTM_SINWAVE)
   {
     float f = (inPos.x + inPos.y + inPos.z) * CM_DeformWave.w;
-    f = (f + CM_DeformWave.x) * 3.1415926;
+    f = (f + CM_DeformWave.x * fTime) * 3.1415926;
     float fWave = sin(f) * CM_DeformWave.y + CM_DeformWave.z;
     inPos.xyz += vNorm.xyz * fWave;
   }
   else
   if (nType == VTM_SINWAVE_VTXCOL)
   {
-		float f = (inPos.x + inPos.y + inPos.z) * CM_DeformWave.w * IN.Color.y;
-    f = (f + CM_DeformWave.x + IN.Color.x) * 3.1415926;
+	float f = (inPos.x + inPos.y + inPos.z) * CM_DeformWave.w * IN.Color.y;
+    f = (f + (CM_DeformWave.x * fTime) + IN.Color.x) * 3.1415926;
     float fWave = sin(f) * CM_DeformWave.y + CM_DeformWave.z;
     inPos.xyz += vNorm.xyz * fWave * IN.Color.z;
   }
   else
   if (nType == VTM_SQUEEZE)
   {
-    float f = CM_DeformWave.x * 3.1415926;
+    float f = (CM_DeformWave.x * fTime) * 3.1415926;
     float fWave = sin(f) * CM_DeformWave.y + CM_DeformWave.z;
     inPos.xyz += vNorm.xyz * fWave;
   }
@@ -921,7 +922,7 @@ void _VTModify(inout float4 inPos, float3 vNorm, float4x4 InstMatrix, streamPos 
   if (nType == VTM_BULGE)
   {
     float f = (vTC.x + vTC.y + inPos.x + inPos.y + inPos.z) * CM_DeformWave.w;
-    f = (f + CM_DeformWave.x) * 3.1415926;
+    f = (f + CM_DeformWave.x * fTime) * 3.1415926;
     float fWave = sin(f) * CM_DeformWave.y + CM_DeformWave.z;
     inPos.xyz += vNorm.xyz * fWave;
   }
