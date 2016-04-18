@@ -15,7 +15,7 @@ namespace CryEngine.SampleApp
 	{
 		Application _app;
 
-		public void Initialize()
+		public void Initialize(InterDomainHandler handler)
 		{
 			_app = Application.Instantiate<SampleApp>();
 		}

@@ -16,8 +16,8 @@ namespace CryEngine.MonoLauncher
 {
 	class AddIn : MarshalByRefObject 
 	{
-		Assembly _assembly;
-		ICryEngineAddIn _addIn;
+		private Assembly _assembly;
+		private ICryEngineAddIn _addIn;
 
 		public static AddIn CreateInDomain(AppDomain domain)
 		{
@@ -41,9 +41,9 @@ namespace CryEngine.MonoLauncher
 			return _addIn != null;
 		}
 
-		public void Initialize()
+		public void Initialize(InterDomainHandler handler)
 		{
-			_addIn.Initialize ();
+			_addIn.Initialize (handler);
 		}
 
 		public void OnFlowNodeSignal(FlowNode node, PropertyInfo signal)
@@ -59,15 +59,28 @@ namespace CryEngine.MonoLauncher
 
 	public class AddInManager : IMonoListener
 	{
-		FileSystemWatcher _assemblyWatcher;
-		AppDomain _hostDomain;
-		Dictionary<string, AddIn> _addInByName;
-		DateTime _bootTime = DateTime.MaxValue;
-		List<KeyValuePair<FlowNode, PropertyInfo>> _nodesToRun = new List<KeyValuePair<FlowNode, PropertyInfo>>();
-		bool _addInsLoaded = false;
+		public static event EventHandler AppUnloaded;
+
+		public static InterDomainHandler InterDomainHandler { get; private set; }
+
+		private FileSystemWatcher _assemblyWatcher;
+		private AppDomain _hostDomain;
+		private Dictionary<string, AddIn> _addInByName;
+		private List<KeyValuePair<FlowNode, PropertyInfo>> _nodesToRun = new List<KeyValuePair<FlowNode, PropertyInfo>>();
+		private bool _addInsLoaded = false;
+		private bool _notifyUnload = false;
+		private bool _notifyUnloaded = false;
+
+		public DateTime BootTime = DateTime.MaxValue;
 
 		public AddInManager()
 		{
+			InterDomainHandler = new InterDomainHandler ();
+			InterDomainHandler.RequestQuit += () => 
+			{
+				_notifyUnload = true;
+			};
+
 			_addInByName = new Dictionary<string, AddIn> ();
 			AppDomain.CurrentDomain.AssemblyResolve += LoadFromExecutingFolder;
 
@@ -101,7 +114,7 @@ namespace CryEngine.MonoLauncher
 
 		List<AppDomain> _oldDomains = new List<AppDomain>();
 
-		void UnloadApplication()
+		public void UnloadApplication()
 		{
 			if (_hostDomain != null) 
 			{
@@ -122,21 +135,26 @@ namespace CryEngine.MonoLauncher
 				//AppDomain.Unload (_hostDomain); // Leads to crash on reload. Need to investigate...
 				_oldDomains.Add(_hostDomain);
 				_addInsLoaded = false;
+
+				_hostDomain = null;
+				_notifyUnloaded = true;
 			}
-			_hostDomain = null;
 		}
 
-		void AddAssembly(string url)
+		private void AddAssembly(string url)
 		{
 			UnloadApplication ();
 			_addInByName [url] = null;
-			_bootTime = DateTime.Now.AddSeconds (1.0f);
+
+			// In case we are in Sandbox, we should leave loading to GameStarted event.
+			if (!Env.IsSandbox)
+				BootTime = DateTime.Now.AddSeconds (1.0f);
 		}
 
 		public override void OnUpdate (int updateFlags, int nPauseMode)
 		{
 			// Load AddIns if there are.
-			if (_bootTime < DateTime.Now) 
+			if (BootTime < DateTime.Now) 
 			{
 				string searchDir = Global.gEnv.pMonoRuntime.GetProjectDllDir ();
 				if (String.IsNullOrEmpty (searchDir)) {
@@ -173,7 +191,7 @@ namespace CryEngine.MonoLauncher
 					{
 						try
 						{
-							addin.Initialize ();
+							addin.Initialize (InterDomainHandler);
 						}
 						catch(Exception ex)
 						{
@@ -183,7 +201,7 @@ namespace CryEngine.MonoLauncher
 					}
 				}
 				
-				_bootTime = DateTime.MaxValue;
+				BootTime = DateTime.MaxValue;
 				_addInsLoaded = true;
 			}
 
@@ -201,6 +219,19 @@ namespace CryEngine.MonoLauncher
 					}
 				}
 				_nodesToRun.Clear ();
+			}
+
+			if (_notifyUnload) 
+			{
+				_notifyUnload = false;
+				UnloadApplication ();
+			}
+
+			if (_notifyUnloaded) 
+			{
+				_notifyUnloaded = false;
+				if (AppUnloaded != null)
+					AppUnloaded ();
 			}
 		}
 

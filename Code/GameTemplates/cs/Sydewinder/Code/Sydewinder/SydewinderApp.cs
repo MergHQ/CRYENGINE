@@ -7,7 +7,6 @@ using System.Linq;
 using CryEngine.Common;
 using CryEngine.Components;
 using CryEngine.Sydewinder.Types;
-using CryEngine.Sydewinder.Framework;
 using CryEngine.Sydewinder.UI;
 using CryEngine.UI;
 using CryEngine.UI.Components;
@@ -39,11 +38,6 @@ namespace CryEngine.Sydewinder
 		private Player _player = null;
 
 		/// <summary>
-		/// Used for various random creations (eg. time between spawning enemies).
-		/// </summary>
-		private Random _randomizer = new Random(DateTime.Now.Millisecond);
-
-		/// <summary>
 		/// The spawn timer will count up to SPAWN_EVERY_SECONDS and will be reset after spawning enemy.
 		/// </summary>
 		private float _spawnTimer = 0;
@@ -65,10 +59,6 @@ namespace CryEngine.Sydewinder
 		/// </summary>
 		private LevelGeometry _levelElements = null;
 
-		private string _themeSongPath = System.IO.Path.Combine(Application.DataPath, "sounds/Gumbel-Killing_Bosses.wav");	
-
-		public MultiSoundPlayer ThemeSongPlayer { get; private set; }
-
 		public void ResumeGame()
 		{
 			State = GameState.Running;
@@ -78,9 +68,7 @@ namespace CryEngine.Sydewinder
 
 		public virtual void OnAwake()
 		{
-			// Play backround music.
-			ThemeSongPlayer = new MultiSoundPlayer(_themeSongPath, true);
-			ThemeSongPlayer.Play ();
+			AudioManager.PlayTrigger ("game_start");
 
 			// Initialize highscore functionality.
 			_gameData = new GameData();
@@ -97,14 +85,13 @@ namespace CryEngine.Sydewinder
 			Camera.Current = Root.AddComponent<Camera>();
 			Camera.Current.OnPlayerEntityAssigned += c => UI.MainMenu.SetupMainMenuPerspective();
 
-			_player = new Player();
 			_totalGameTime = 0;
 			State = GameState.Finished;
 		}
 
 		public void Reset()
 		{
-			Camera.Current.FieldOfView = 20f;
+			Camera.FieldOfView = 20f;
 
 			// Init Head Up Display
 			InitializeHud();
@@ -116,10 +103,10 @@ namespace CryEngine.Sydewinder
 			// Searches for inital tunnel in level and initializes movement of other tunnel elements.
 			_levelElements = new LevelGeometry();
 
-			_player.Respawn(new Vec3(65, 633, 69));
+			_player = Player.Create(new Vec3(65, 633, 69));
 
 			// Set camera forth/back based on FOV.
-			Camera.Current.Position = new Vec3((Camera.Current.FieldOfView == 20 ? 145f : 106f), 635f, 70f);
+			Camera.Current.Position = new Vec3(145f, 635f, 70f);
 			Camera.Current.ForwardDirection = new Vec3(-1f, 0f, 0f);
 			State = GameState.Running;
 		}
@@ -137,7 +124,7 @@ namespace CryEngine.Sydewinder
 
 		public void OnDestroy()
 		{
-			ThemeSongPlayer.Stop ();
+			AudioManager.PlayTrigger("game_stop");
 
 			// Un-Hook Key input event.
 			Input.OnKey -= Input_OnKey;
@@ -150,9 +137,6 @@ namespace CryEngine.Sydewinder
 
 		public virtual void OnUpdate()
 		{
-			// Calculate time used to render last frame.
-			FrameTime.Update();
-
 			// Ensures physics won't kick in while paused.
 			if (State == GameState.Paused)
 				GamePool.UpdatePoolForPausedGame();
@@ -174,9 +158,7 @@ namespace CryEngine.Sydewinder
 				{
 					_gameOverTime = DateTime.Now;
 
-					// Enable mouse again.
-					Env.Mouse.IncrementCounter();
-
+					Mouse.ShowCursor ();
 					Hud.CurrentHud.ShowGameOverDialog();
 				} 
 			}
@@ -185,7 +167,7 @@ namespace CryEngine.Sydewinder
 			_levelElements.UpdateGeometry();
 
 			// Check Key input and update player speed.
-			if (_player.Entity.Exists) 
+			if (_player.Exists) 
 			{
 				_player.CheckCoolDown();
 				_player.UpdateSpeed();
@@ -207,8 +189,8 @@ namespace CryEngine.Sydewinder
 				// Reset spawn timer.
 				_spawnTimer = 0;
 
-				int waveType = _randomizer.Next(0, 3);
-				int enemyType = _randomizer.Next(0, 3);
+				int waveType = Rand.NextInt(3);
+				int enemyType = Rand.NextInt(3);
 
 				// Increase speed for each difficulty level.
 				Vec3 waveSpeed = new Vec3 (0f, -11f - (Hud.CurrentHud.Stage * 2), 0f);
@@ -219,7 +201,7 @@ namespace CryEngine.Sydewinder
 				}
 				else if((Enemy.WaveType)waveType == Enemy.WaveType.HorizontalLine)
 				{
-					var waveOffset = _randomizer.Next (0, 3);
+					var waveOffset = Rand.NextInt(3);
 					Enemy.SpawnWave(new Vec3(65, 664, 72 + waveOffset), enemyType, Enemy.WaveType.HorizontalLine, waveSpeed);
 					Enemy.SpawnWave(new Vec3(65, 664, 64 + waveOffset), enemyType, Enemy.WaveType.HorizontalLine, waveSpeed);
 				}
@@ -246,10 +228,8 @@ namespace CryEngine.Sydewinder
 			if (State != GameState.Paused)
 			{
 				// Fire primary player weapon.
-				if ((e.KeyPressed (EKeyId.eKI_Space) || e.KeyPressed (EKeyId.eKI_XI_A)) && _player.Entity != null && _player.Entity.Exists) 
-				{
+				if ((e.KeyPressed (EKeyId.eKI_Space) || e.KeyPressed (EKeyId.eKI_XI_A)) && _player.Exists) 
 					_player.Fire();
-				}
 			}
 
 			if ((State != GameState.Finished) && (e.KeyPressed(EKeyId.eKI_Escape) || e.KeyPressed(EKeyId.eKI_XI_Start))) 

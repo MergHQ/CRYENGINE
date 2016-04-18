@@ -162,12 +162,15 @@ namespace CryEngine.UI
 		/// </summary>
 		/// <param name="target">Target Entity.</param>
 		/// <param name="resolution">Resolution of UI texture in 3D space.</param>
-		public void SetupOnTargetEntity(EntitySystem.Entity target, int resolution=768)
+		public bool SetupTargetEntity(EntitySystem.Entity target, int resolution=768)
 		{
+			if (target == null)
+				return false;
 			byte[] data = new byte[resolution * resolution * 4];
 			TargetTexture = new Texture(resolution, resolution, data, true, false, true);
 			target.Material.SetTexture(TargetTexture.ID);
 			TargetEntity = target;
+			return true;
 		}
 
 		void TryAdaptMouseInput(ref int x, ref int y)

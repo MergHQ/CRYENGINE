@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using CryEngine.Components;
 using CryEngine.Common;
 using CryEngine.Sydewinder.UI;
-using CryEngine.Sydewinder.Framework;
+using CryEngine.EntitySystem;
 
 namespace CryEngine.Sydewinder.Types
 {	
@@ -14,7 +14,7 @@ namespace CryEngine.Sydewinder.Types
 		/// <summary>
 		/// The enemy types.
 		/// </summary>
-		private readonly ObjectSkin[] _enemyTypes = new ObjectSkin[]
+		private static readonly ObjectSkin[] EnemyTypes = new ObjectSkin[]
 		{
 			new ObjectSkin("objects/ships/enemy_01.cgf"),
 			new ObjectSkin("objects/ships/enemy_02.cgf"),
@@ -27,21 +27,21 @@ namespace CryEngine.Sydewinder.Types
 		public WeaponBase Weapon { get; set; }
 		public float FlightDirectionAngle { get; set; }
 
-		public Enemy(int type, Vec3 position)
+		public static Enemy Create(int type, Vec3 pos)
 		{
-			Entity = EntitySystem.Entity.Instantiate (position, Quat.Identity, 0.5f, _enemyTypes [type].Geometry);
+			var enemy = Entity.Instantiate<Enemy>(pos, Quat.Identity, 0.5f, EnemyTypes [type].Geometry);
 
-			if (_enemyTypes[type].Material != null)
-				Entity.Material = Env.Engine.GetMaterialManager().LoadMaterial(_enemyTypes[type].Material);
+			if (EnemyTypes[type].Material != null)
+				enemy.Material = Env.Engine.GetMaterialManager().LoadMaterial(EnemyTypes[type].Material);
 
 			// Rotate Z-Axis in degrees to have enemy facing forward.
-			Entity.Rotation = Quat.CreateRotationZ(Utils.Deg2Rad(90f));
+			enemy.Rotation = Quat.CreateRotationZ(Utils.Deg2Rad(90f));
 
 			var pfx = Env.ParticleManager.FindEffect("spaceship.Trails.blue_fire_trail");
-			Entity.LoadParticleEmitter(1, pfx, 0.5f);
+			enemy.LoadParticleEmitter(1, pfx, 0.5f);
 		
 			// Get position of jet on enemy (Note: Non-Existing position means x, y and z are all 0).
-			Vec3 jetPosition = Entity.GetHelperPos(0, "particle_01");
+			Vec3 jetPosition = enemy.GetHelperPos(0, "particle_01");
 
 			// NOTE ON MATRIX34
 			// ----------------
@@ -50,24 +50,28 @@ namespace CryEngine.Sydewinder.Types
 			// Third Vec3 parameter indicates position
 
 			// Scale, Rotate and Position particle effect to ensure it's shown at the back of the ship.
-			Entity.SetTM(1, Matrix34.Create(Vec3.One, Quat.CreateRotationX(Utils.Deg2Rad(270f)), jetPosition));	
-
-			// Attach to entity collision event
-			EntityCollisionCheck.SubscribeToEntityCollision(Entity.ID);
+			enemy.SetTM(1, Matrix34.Create(Vec3.One, Quat.CreateRotationX(Utils.Deg2Rad(270f)), jetPosition));	
 
 			// Put into game loop.
-			GamePool.AddObjectToPool(this);
+			GamePool.AddObjectToPool(enemy);
+			return enemy;
+		}
+
+		protected override void OnCollision(DestroyableBase hitEnt)
+		{
+			if (hitEnt is Player || (hitEnt is DefaultAmmo && !(hitEnt as DefaultAmmo).IsHostile))
+				ProcessHit ();
 		}
 
 		public override Vec3 Move ()
 		{
-			var entPos = Entity.Position;
+			var entPos = Position;
 			Vec3 screenRelativePosition = Env.Renderer.ProjectToScreen(entPos.x, entPos.y, entPos.z);
 
 			if (screenRelativePosition.x < -10f) 
 			{
 				Destroy(false);
-				return Entity.Position;
+				return entPos;
 			}
 
 			// Flying in a smooth wave form
@@ -76,23 +80,17 @@ namespace CryEngine.Sydewinder.Types
 
 			// Spawn projectile in front of Ship to avoid collision with self
 			if (Weapon != null) 
-				Weapon.Fire(Entity.Position - new Vec3(0,3,0));
+				Weapon.Fire(entPos - new Vec3(0,3,0));
 
 			return base.Move ();
 		}
 
-		private void OnEntityCollision(IEntity entity, SEntityEvent arg)
-		{		
-			arg.GetEventPhysCollision ().GetFirstVelocity (); 	
-			Collision();
-		}
-
-		public override void Collision()
+		public void ProcessHit()
 		{
 			DrainLife (HitDamage);
 			if(Life <= 0)
 				Destroy();
-			// ToDo: Check what has caused the collision.
+
 			Program.GameApp.MakeScore(100 * Hud.CurrentHud.Stage);
 		}
 
@@ -100,9 +98,9 @@ namespace CryEngine.Sydewinder.Types
 		{
 			DrainLife(MaxLife);
 			base.Destroy (withEffect);
-			GamePool.FlagForPurge(Entity.ID);
+			GamePool.FlagForPurge(ID);
 			if(Weapon != null)
-				GamePool.FlagForPurge (Weapon.Entity.ID);
+				GamePool.FlagForPurge (Weapon.ID);
 		}
 
 		public enum WaveType
@@ -119,7 +117,7 @@ namespace CryEngine.Sydewinder.Types
 		/// <param name="enemyType">Enemy type.</param>
 		/// <param name="waveType">Wave type.</param>
 		/// <param name="speed">Speed.</param>
-		public static void SpawnWave(Vec3 position, int enemyType, WaveType waveType, Vec3 speed)
+		public static void SpawnWave(Vec3 pos, int enemyType, WaveType waveType, Vec3 speed)
 		{
 			// Spawn distance should be calculated based on geometry measurement.
 			// Not swigged yet!
@@ -131,11 +129,11 @@ namespace CryEngine.Sydewinder.Types
 			case WaveType.VerticalLine:
 				for (int i = 0; i < 5; i++) 
 				{
-					var spawnPos = new Vec3 (position.x, position.y, position.z - (4 * i));
-					var enemy = new Enemy (enemyType, spawnPos);
+					var spawnPos = new Vec3 (pos.x, pos.y, pos.z - (4 * i));
+					var enemy = Enemy.Create (enemyType, spawnPos);
 					var projectileSpeed = new Vec3(0f, speed.y - 4f, 0f);
 					enemy.Speed = speed;
-					enemy.Weapon = new LightGun (projectileSpeed);
+					enemy.Weapon = LightGun.Create (projectileSpeed);
 				}
 				break;
 
@@ -143,8 +141,8 @@ namespace CryEngine.Sydewinder.Types
 				for (int i = 0; i < 5; i++) 
 				{
 					var xVariation = 0.001f * (i+1); // Minimal offset to avoid flickering of Particles which overlapping.
-					var spawnPos = new Vec3 (position.x + xVariation, position.y + (4 * i), position.z);
-					var enemy = new Enemy (enemyType, spawnPos);
+					var spawnPos = new Vec3 (pos.x + xVariation, pos.y + (4 * i), pos.z);
+					var enemy = Enemy.Create (enemyType, spawnPos);
 					enemy.Speed = speed;
 					enemy.FlightDirectionAngle = -45 * i;
 				}
@@ -153,8 +151,8 @@ namespace CryEngine.Sydewinder.Types
 				for (int i = 0; i < 4; i++) 
 				{
 					var xVariation = 0.001f * (i+1); // Minimal offset to avoid flickering of Particles which overlapping.
-					var spawnPos = new Vec3 (position.x + xVariation, position.y + (4 * i), position.z - (4 * i));
-					var enemy = new Enemy (enemyType, spawnPos);
+					var spawnPos = new Vec3 (pos.x + xVariation, pos.y + (4 * i), pos.z - (4 * i));
+					var enemy = Enemy.Create (enemyType, spawnPos);
 					enemy.Speed = speed;
 					enemy.FlightDirectionAngle = -45 * i;
 				}

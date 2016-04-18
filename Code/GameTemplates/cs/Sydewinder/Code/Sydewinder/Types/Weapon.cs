@@ -5,7 +5,7 @@ using CryEngine.Sydewinder.Types;
 using CryEngine.Sydewinder.UI;
 using CryEngine.Common;
 using CryEngine.Components;
-using CryEngine.Sydewinder.Framework;
+using CryEngine.EntitySystem;
 
 namespace CryEngine.Sydewinder
 {	
@@ -15,11 +15,6 @@ namespace CryEngine.Sydewinder
 	public abstract class WeaponBase : DestroyableBase
 	{
 		/// <summary>
-		/// The firing sound of the weapon.
-		/// </summary>
-		protected MultiSoundPlayer _firingSound;
-
-		/// <summary>
 		/// Gets or sets the cool down time.
 		/// </summary>
 		/// <value>The cool down time in seconds.</value>
@@ -28,11 +23,7 @@ namespace CryEngine.Sydewinder
 		/// <summary>
 		/// Fire this instance.
 		/// </summary>
-		public virtual void Fire(Vec3 position)
-		{
-			if (_firingSound != null)
-				_firingSound.Play();
-		}
+		public abstract void Fire(Vec3 position);
 	}
 
 	/// <summary>
@@ -44,23 +35,15 @@ namespace CryEngine.Sydewinder
 		private IParticleEffect _shot = Env.ParticleManager.FindEffect("spaceship.Weapon.player_shot");
 		private IParticleEffect _shotSmoke = Env.ParticleManager.FindEffect("spaceship.Weapon.player_shot_smoke");
 
-		public Gun(Vec3 firingDirection)
+		public static Gun Create(Vec3 firingDirection)
 		{
-			Speed = firingDirection;
-
-			// Audio taken from Y:\SOUND\Crytek Sound Library\Spfx\Synth Fx\Laser.
-			string laserSoundFile = System.IO.Path.Combine(Application.DataPath, "sounds/laser_nrm.wav");
-			_firingSound = new MultiSoundPlayer(laserSoundFile);
-
 			// We need an ID. Otherwise we can not add this to pool.
-			var _sEntitySpawnParams = new SEntitySpawnParams();
-			_sEntitySpawnParams.pClass = Env.EntitySystem.GetClassRegistry().GetDefaultClass();
-
-			var spawnedEntity = Env.EntitySystem.SpawnEntity(_sEntitySpawnParams, true);
-			Entity = new EntitySystem.Entity (spawnedEntity);
+			var gun = Entity.Instantiate<Gun>(Vec3.Zero, Quat.Identity);
+			gun.Speed = firingDirection;
 
 			// This is currently used to register Gun for receiving update calls (Move) which decreases the cool-downtimer.
-			GamePool.AddObjectToPool(this);
+			GamePool.AddObjectToPool(gun);
+			return gun;
 		}
 
 		public override void Fire(Vec3 position)//, Vec3 fireDirection)
@@ -70,9 +53,8 @@ namespace CryEngine.Sydewinder
 				return;
 
 			// Creating an instance of the ammo will automatically fire the ammo
-			new DefaultAmmo(position, Speed, false, _shot, _shotSmoke);
-
-			base.Fire(position);
+			DefaultAmmo.Create(position, Speed, false, _shot, _shotSmoke);
+			AudioManager.PlayTrigger ("laser_player");
 		}
 
 		public override Vec3 Move()
@@ -83,10 +65,11 @@ namespace CryEngine.Sydewinder
 			return base.Move();
 		}
 
-		public override void Collision()
-		{			
-			GamePool.FlagForPurge(Entity.ID);
-		}
+		/*protected override void OnCollision(DestroyableBase hitEnt)
+		{
+			if (!(hitEnt is ProjectileBase))
+				GamePool.FlagForPurge(ID);
+		}*/
 	}
 
 	/// <summary>
@@ -98,24 +81,17 @@ namespace CryEngine.Sydewinder
 		private IParticleEffect _shot = Env.ParticleManager.FindEffect("spaceship.Weapon.enemy_shot");
 		private IParticleEffect _shotSmoke = Env.ParticleManager.FindEffect("spaceship.Weapon.enemy_shot_smoke");
 
-		public LightGun(Vec3 firingDirection)
+		public static LightGun Create(Vec3 firingDirection)
 		{
-			Speed = firingDirection;
-
-			string laserSoundFile = System.IO.Path.Combine(Application.DataPath, "sounds/laser_charged.wav");
-			_firingSound = new MultiSoundPlayer(laserSoundFile);
+			var lightGun = Entity.Instantiate<LightGun> (Vec3.Zero, Quat.Identity);
+			lightGun.Speed = firingDirection;
 
 			// Weapon is usded by enemy. Prevent from firing immediatelly after spawn.
-			CoolDownTime = 0.3f;
-
-			// We need an ID. Otherwise we can not add this to pool (Because Dictionary chrashing while adding 0).
-			var _sEntitySpawnParams = new SEntitySpawnParams();
-			_sEntitySpawnParams.pClass = Env.EntitySystem.GetClassRegistry().GetDefaultClass();
-			var spawnedEntity = Env.EntitySystem.SpawnEntity(_sEntitySpawnParams, true);
-			Entity = new EntitySystem.Entity (spawnedEntity);
+			lightGun.CoolDownTime = 0.3f;
 
 			// This is currently used to register Gun for receiving update calls (Move) which decreases the cool-downtimer.
-			GamePool.AddObjectToPool(this);
+			GamePool.AddObjectToPool(lightGun);
+			return lightGun;
 		}
 
 		public override void Fire(Vec3 position)
@@ -124,16 +100,13 @@ namespace CryEngine.Sydewinder
 			if (CoolDownTime > 0)
 				return;
 
-			if (_firingSound != null)
-				_firingSound.Play();
+			AudioManager.PlayTrigger ("laser_charged");
 
 			// Creating an instance of the ammo will automatically fire the ammo
-			new DefaultAmmo(position, Speed, true, _shot, _shotSmoke);
+			DefaultAmmo.Create(position, Speed, true, _shot, _shotSmoke);
 
 			// Start cool down timer again (if necessary).
 			CoolDownTime = 1.5f;
-
-			base.Fire(position);
 		}
 
 		public override Vec3 Move()
@@ -144,10 +117,11 @@ namespace CryEngine.Sydewinder
 			return base.Move();
 		}
 
-		public override void Collision()
-		{			
-			GamePool.FlagForPurge(Entity.ID);
-		}
+		/*protected override void OnCollision(DestroyableBase hitEnt)
+		{
+			if (!(hitEnt is ProjectileBase))
+				GamePool.FlagForPurge(ID);
+		}*/
 	}
 
 	/// <summary>
@@ -158,7 +132,7 @@ namespace CryEngine.Sydewinder
 		protected IParticleEffect WeaponBulletParticleEffect { get; set; }
 		protected IParticleEffect WeaponSmokeParticleEffect { get; set; }
 
-		public bool IsHostile { get; private set;}
+		public bool IsHostile { get; protected set;}
 
 		/// <summary>
 		/// Gets or sets the life time until instance should disapear.
@@ -166,20 +140,13 @@ namespace CryEngine.Sydewinder
 		/// <value>The life time in seconds.</value>
 		public float LifeTime { get; protected set; }
 
-		public ProjectileBase(bool isHostile, IParticleEffect weaponTrailParticleEffect, IParticleEffect weaponSmokeParticleEffect)
-		{
-			IsHostile = isHostile;
-			WeaponSmokeParticleEffect = weaponSmokeParticleEffect;
-			WeaponBulletParticleEffect = weaponTrailParticleEffect;
-		}
-
 		protected void SpawnParticles()
 		{ 
 			if (WeaponBulletParticleEffect != null)
-				Entity.LoadParticleEmitter(1, WeaponBulletParticleEffect);
+				LoadParticleEmitter(1, WeaponBulletParticleEffect);
 
 			if (WeaponSmokeParticleEffect != null)
-				Entity.LoadParticleEmitter(2, WeaponSmokeParticleEffect);
+				LoadParticleEmitter(2, WeaponSmokeParticleEffect);
 		}
 
 		public override Vec3 Move()
@@ -189,19 +156,19 @@ namespace CryEngine.Sydewinder
 				LifeTime -= FrameTime.Current;			
 			}
 			else				
-				GamePool.FlagForPurge(Entity.ID); // Let destroy current projectile.
+				GamePool.FlagForPurge(ID); // Let destroy current projectile.
 
 			return base.Move();
 		}
 
-		public override void Collision()
+		protected override void OnCollision(DestroyableBase hitEnt)
 		{
 			// Always remove projectile on collision.
-			GamePool.FlagForPurge(Entity.ID);
+			GamePool.FlagForPurge (ID);
 
 			// Kill particle trail (bullet)
 			if (WeaponBulletParticleEffect != null)
-				Entity.GetParticleEmitter(1).Kill();
+				GetParticleEmitter (1).Kill ();
 		}
 	}
 
@@ -210,23 +177,20 @@ namespace CryEngine.Sydewinder
 	/// </summary>
 	public class DefaultAmmo : ProjectileBase
 	{
-		public DefaultAmmo(Vec3 position, Vec3 speed, bool isHostile, IParticleEffect weaponTrailParticleEffect, IParticleEffect weaponSmokeParticleEffect) 
-			: base(isHostile, weaponTrailParticleEffect, weaponSmokeParticleEffect)
+		public static DefaultAmmo Create(Vec3 pos, Vec3 speed, bool isHostile, IParticleEffect weaponTrailParticleEffect, IParticleEffect weaponSmokeParticleEffect) 
 		{
-			LifeTime = 3f;
-			Speed = speed;
-			Entity = EntitySystem.Entity.Instantiate (position, Quat.Identity, 0.5f, "objects/default/primitive_sphere.cgf");
+			var ammo = Entity.Instantiate<DefaultAmmo> (pos, Quat.Identity, 0.5f, "objects/default/primitive_sphere.cgf");
+			ammo.LifeTime = 3f;
+			ammo.Speed = speed;
+			ammo.IsHostile = isHostile;
+			ammo.WeaponSmokeParticleEffect = weaponSmokeParticleEffect;
+			ammo.WeaponBulletParticleEffect = weaponTrailParticleEffect;
 
 			// Causes geometry not to be rendered, as the entity particle effect is used as bullet
-			Entity.SetSlotFlag(0, EEntitySlotFlags.ENTITY_SLOT_RENDER_NEAREST);
-
-			// Attach to entity collision event
-			EntityCollisionCheck.SubscribeToEntityCollision(Entity.ID);
-			
-			// Spawn particles on bullet
-			base.SpawnParticles();
-
-			GamePool.AddObjectToPool(this);
+			ammo.SetSlotFlag(0, EEntitySlotFlags.ENTITY_SLOT_RENDER_NEAREST);
+			ammo.SpawnParticles();
+			GamePool.AddObjectToPool(ammo);
+			return ammo;
 		}
 	}
 }

@@ -17,7 +17,7 @@ namespace CryEngine.Components
 		private Entity _hostEntity;
 		private Vec3 _position = Vec3.Up;
 		private Vec3 _forwardDir = Vec3.Forward;
-		private float _fieldOfView = 60f;
+		private static ICVar _fovCVar;
 
 		public Entity HostEntity
 		{
@@ -68,19 +68,25 @@ namespace CryEngine.Components
 			}
 		} ///< Sets rotation of assigned HostEntity
 
-		public float FieldOfView
+		/// <summary>
+		/// Gets or sets the field of view by CVar.
+		/// </summary>
+		/// <value>The field of view.</value>
+		public static float FieldOfView
 		{
 			get
-			{ return _fieldOfView; }
+			{ 
+				if (_fovCVar == null)
+					_fovCVar = Env.Console.GetCVar ("gamezero_cam_fov");
+				return _fovCVar.GetFVal();
+			}
 			set
 			{
-				_fieldOfView = value;
-
-				// Use "en-US" to correctly format decimal place as point
-				Env.Console.ExecuteString("gamezero_cam_fov " + _fieldOfView.ToString(CultureInfo.CreateSpecificCulture("en-US")));
+				if (_fovCVar == null)
+					_fovCVar = Env.Console.GetCVar ("gamezero_cam_fov");
+				_fovCVar.Set (value);
 			}
 		}
-
 
 		/// <summary>
 		/// Tries to find and assign Player Entity from scene automatically.

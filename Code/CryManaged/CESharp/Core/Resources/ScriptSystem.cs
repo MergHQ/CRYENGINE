@@ -11,6 +11,17 @@ using CryEngine.FlowSystem;
 
 namespace CryEngine.Resources
 {
+	public class InterDomainHandler : MarshalByRefObject
+	{
+		public event EventHandler RequestQuit;
+
+		public void RaiseRequestQuit()
+		{
+			if (RequestQuit != null)
+				RequestQuit ();
+		}
+	}
+
 	/// <summary>
 	/// Interface which must be implemented to allow for an assembly to be automatically instanciated by the framework on runtime. If an assembly holds a class which implements this interface, ScriptSystem will watch the assembly for modifications. If the file is changed, the plugin will be newly instanciated.
 	/// </summary>
@@ -19,7 +30,7 @@ namespace CryEngine.Resources
 		/// <summary>
 		/// Supposed to initialize the assembly.
 		/// </summary>
-		void Initialize();
+		void Initialize(InterDomainHandler handler);
 
 		/// <summary>
 		/// Raises the run scene function.
