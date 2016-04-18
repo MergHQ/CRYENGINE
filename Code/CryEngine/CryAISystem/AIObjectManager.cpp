@@ -13,8 +13,6 @@
 #include "ObjectContainer.h"
 #include "./TargetSelection/TargetTrackManager.h"
 
-#include "IActorSystem.h"
-
 //////////////////////////////////////////////////////////////////////////
 //	SAIObjectCreationHelper - helper for serializing AI objects
 //	(used for both normal and bookmark serialization)

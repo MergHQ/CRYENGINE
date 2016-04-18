@@ -39,7 +39,7 @@
 #include <CrySystem/ITextModeConsole.h>
 #include "HardwareMouse.h"
 #include <CryEntitySystem/IEntitySystem.h> // <> required for Interfuscator
-#include "IActorSystem.h"
+#include <CryGame/IGame.h>
 #include "NullImplementation/NULLRenderAuxGeom.h"
 
 #include "MiniGUI/MiniGUI.h"

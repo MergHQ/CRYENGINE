@@ -102,7 +102,8 @@ WATERMARKDATA(_m);
 
 #include "HMDManager.h"
 
-#include <ILevelSystem.h>
+#include <../CryAction/ILevelSystem.h>
+#include <../CryAction/IViewSystem.h>
 
 #include <CryCore/CrtDebugStats.h>
 
@@ -121,8 +122,6 @@ CMTSafeHeap* g_pPakHeap = 0;// = &g_pakHeap;
 
 //////////////////////////////////////////////////////////////////////////
 #include "Validator.h"
-
-#include "IViewSystem.h"
 
 #if CRY_PLATFORM_ANDROID
 namespace

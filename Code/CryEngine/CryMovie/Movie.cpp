@@ -33,7 +33,7 @@
 #include <CryGame/IGameFramework.h>
 #include <CryGame/IGame.h>
 #include <CryMovie/AnimKey_impl.h>
-#include "IViewSystem.h"
+#include <../CryAction/IViewSystem.h>
 
 int CMovieSystem::m_mov_NoCutscenes = 0;
 float CMovieSystem::m_mov_cameraPrecacheTime = 1.f;

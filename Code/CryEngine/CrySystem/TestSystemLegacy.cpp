@@ -12,8 +12,7 @@
 #include "TestSystemLegacy.h"
 #include "DebugCallStack.h"                 // DebugCallStack
 
-#include "IGameRulesSystem.h"               // IGameRulesSystem
-#include <ILevelSystem.h>                   // ILevelSystemListener
+#include <../CryAction/ILevelSystem.h>                   // ILevelSystemListener
 
 extern int CryMemoryGetAllocatedSize();
 

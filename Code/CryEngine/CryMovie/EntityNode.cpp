@@ -25,11 +25,12 @@
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryGame/IGameFramework.h>
-#include "IActorSystem.h"
+
+#include <../CryAction/IActorSystem.h>
 #define HEAD_BONE_NAME "Bip01 Head"
-#include "ICryMannequinDefs.h"
-#include "ICryMannequin.h"
-#include "IAnimatedCharacter.h"
+#include <../CryAction/ICryMannequinDefs.h>
+#include <../CryAction/ICryMannequin.h>
+#include <../CryAction/IAnimatedCharacter.h>
 
 #define s_nodeParamsInitialized s_nodeParamsInitializedEnt
 #define s_nodeParams            s_nodeParamsEnt
