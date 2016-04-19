@@ -5319,18 +5319,36 @@ bool CHWShader_D3D::mfSetTextures(const std::vector<SCGTexture>& Textures, EHWSh
 			break;
 		case ECGT_TerrainBaseMap:
 			{
-				int nTex0 = 0, nTex1 = 0;
-				gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTex0, nTex1);
-				CTexture* tex = CTexture::GetByID(nTex0);
-				tex->ApplyTexture(nTUnit, eSHClass, SResourceView::DefaultViewSRGB);
+				int tex0 = 0, tex1 = 0;
+				ITerrain* const pTerrain = gEnv->p3DEngine->GetITerrain();
+				if (pTerrain)
+				{
+					pTerrain->GetAtlasTexId(tex0, tex1);
+					CTexture* const pTex = CTexture::GetByID(tex0);
+					pTex->ApplyTexture(nTUnit, eSHClass, SResourceView::DefaultViewSRGB);
+				}
+				else
+				{
+					CTexture* const pTex = CTexture::s_ptexBlack;
+					pTex->ApplyTexture(nTUnit, eSHClass, SResourceView::DefaultViewSRGB);
+				}
 			}
 			break;
 		case ECGT_TerrainNormMap:
 			{
-				int nTex0 = 0, nTex1 = 0;
-				gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTex0, nTex1);
-				CTexture* tex = CTexture::GetByID(nTex1);
-				tex->ApplyTexture(nTUnit, eSHClass, SResourceView::DefaultView);
+				int tex0 = 0, tex1 = 0;
+				ITerrain* const pTerrain = gEnv->p3DEngine->GetITerrain();
+				if (pTerrain)
+				{
+					pTerrain->GetAtlasTexId(tex0, tex1);
+					CTexture* const pTex = CTexture::GetByID(tex1);
+					pTex->ApplyTexture(nTUnit, eSHClass, SResourceView::DefaultView);
+				}
+				else
+				{
+					CTexture* const pTex = CTexture::s_ptexBlack;
+					pTex->ApplyTexture(nTUnit, eSHClass, SResourceView::DefaultView);
+				}
 			}
 			break;
 		case ECGT_WindGrid:
