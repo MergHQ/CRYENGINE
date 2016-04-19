@@ -155,6 +155,7 @@ CShaderResources::CShaderResources(SInputShaderResources* pSrc)
 
 	m_pipelineStateCache = std::make_shared<CGraphicsPipelineStateLocalCache>();
 	Reset();
+
 	m_szMaterialName = pSrc->m_szMaterialName;
 	m_TexturePath = pSrc->m_TexturePath;
 	m_ResFlags = pSrc->m_ResFlags;
@@ -599,6 +600,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 	{
 		Matrix44 matrixTCM(IDENTITY);
 		SEfResTexture* pTex = m_Textures[EFTT_DIFFUSE];
+
 		if (pTex && pTex->m_Ext.m_pTexModifier)
 		{
 			pTex->Update(EFTT_DIFFUSE);
@@ -758,20 +760,10 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		}
 	}
 
-	D3D11_BUFFER_DESC bd;
-	ZeroStruct(bd);
-
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-
-	//bd.Usage = D3D11_USAGE_DYNAMIC;
-	//bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	CConstantBuffer** ppBuf = &m_pCB;
 	CHWShader_D3D::mfUnbindCB(*ppBuf);
-	HRESULT hr = S_FALSE;
 	SAFE_RELEASE(*ppBuf);
+
 	if (m_Constants.size())
 	{
 		*ppBuf = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(m_Constants.size() * sizeof(Vec4), false);
@@ -796,6 +788,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 	{
 		m_pCompiledResourceSet = CCryDeviceWrapper::GetObjectFactory().CreateResourceSet();
 	}
+
 	if (m_pCompiledResourceSet)
 	{
 		// Compile resource set from current material
@@ -835,7 +828,7 @@ void CShaderResources::CloneConstants(const IRenderShaderResources* pISrc)
 			pCB0Dst = pCB0Src;
 		}
 
-		m_pCompiledResourceSet = CCryDeviceWrapper::GetObjectFactory().CloneResourceSet(pSrc->m_pCompiledResourceSet);
+		m_pCompiledResourceSet = pSrc->m_pCompiledResourceSet ? CCryDeviceWrapper::GetObjectFactory().CloneResourceSet(pSrc->m_pCompiledResourceSet) : nullptr;
 	}
 }
 
