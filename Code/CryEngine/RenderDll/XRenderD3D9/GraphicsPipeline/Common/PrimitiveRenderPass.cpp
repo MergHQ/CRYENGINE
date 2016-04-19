@@ -246,7 +246,8 @@ CPrimitiveRenderPass::CPrimitiveRenderPass()
 	, m_pDepthTarget(nullptr)
 {
 	m_pRenderTargets.fill(nullptr);
-	m_renderTargetViews.fill(SResourceView::DefaultRendertargtView);
+	const SResourceView::KeyType fillValue = SResourceView::DefaultRendertargtView;
+	m_renderTargetViews.fill(fillValue);
 	ZeroStruct(m_viewport);
 
 	CCompiledRenderPrimitive::AddPrimitiveGeometryCacheUser();
