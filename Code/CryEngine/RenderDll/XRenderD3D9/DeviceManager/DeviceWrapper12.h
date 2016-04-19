@@ -143,8 +143,10 @@ class CDeviceResourceSet
 public:
 	enum EFlags
 	{
-		EFlags_None = 0,
-		EFlags_ForceSetAllState,
+		EFlags_None              = 0,
+		EFlags_ForceSetAllState  = BIT(0),
+		EFlags_DynamicUpdates    = BIT(1),
+		EFlags_PendingAllocation = BIT(2),
 	};
 
 	CDeviceResourceSet(EFlags flags);

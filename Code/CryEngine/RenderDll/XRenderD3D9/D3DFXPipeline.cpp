@@ -2952,6 +2952,7 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 							CREMeshImpl* pM = (CREMeshImpl*) pRE;
 							if (pM->m_CustomData || pCurRes != pRes) // Custom data can indicate some shader parameters are from mesh
 							{
+
 								pCurVS->mfSetParametersPB();
 								pCurPS->mfSetParametersPB();
 								if (pCurPS->m_pCurInst)
@@ -3931,21 +3932,10 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 	}
 }
 
-// Flush current render item
-void CD3D9Renderer::FX_FlushShader_General()
+bool CD3D9Renderer::FX_UpdateDynamicShaderResources(const CShaderResources* shaderResources, uint32 batchFilter, uint32 flags2)
 {
-	FUNCTION_PROFILER_RENDER_FLAT
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
-	if (!rRP.m_pRE && !rRP.m_RendNumVerts)
-		return;
-
-	CShader* ef = rRP.m_pShader;
-	if (!ef)
-		return;
-
 	// update dynamic texture sources based on a shared RT only
-	const CShaderResources* rsr = rRP.m_pShaderResources;
+	const CShaderResources* rsr = shaderResources;
 	if (rsr && gRenDev->m_CurRenderEye == LEFT_EYE)
 	{
 		const SEfResTexture* pDiffuse = rsr->GetTexture(EFTT_DIFFUSE);
@@ -3956,10 +3946,10 @@ void CD3D9Renderer::FX_FlushShader_General()
 			{
 				if (pDynTexSrc->GetSourceType() == IDynTextureSource::DTS_I_FLASHPLAYER)
 				{
-					if (rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS)
-						return; // explicitly disable motion blur pass for flash assets
+					if (flags2 & RBPF2_MOTIONBLURPASS)
+						return false; // explicitly disable motion blur pass for flash assets
 
-					if (rRP.m_nBatchFilter & (FB_GENERAL | FB_TRANSPARENT))
+					if (batchFilter & (FB_GENERAL | FB_TRANSPARENT))
 					{
 						// save pipeline state
 						SRenderPipeline& rp = gcpRendD3D->m_RP; // !!! don't use rRP as it's taken from rd (__restrict); the compiler will optimize the save/restore instructions !!!
@@ -3985,6 +3975,26 @@ void CD3D9Renderer::FX_FlushShader_General()
 			}
 		}
 	}
+
+	return true;
+}
+
+// Flush current render item
+void CD3D9Renderer::FX_FlushShader_General()
+{
+	FUNCTION_PROFILER_RENDER_FLAT
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
+	if (!rRP.m_pRE && !rRP.m_RendNumVerts)
+		return;
+
+	CShader* ef = rRP.m_pShader;
+	if (!ef)
+		return;
+
+	const CShaderResources* rsr = rRP.m_pShaderResources;
+	if (!FX_UpdateDynamicShaderResources(rsr, rRP.m_nBatchFilter, rRP.m_PersFlags2))
+		return;
 
 	if ((ef->m_Flags & EF_SUPPORTSDEFERREDSHADING_FULL) && (rRP.m_PersFlags2 & RBPF2_FORWARD_SHADING_PASS) && (!rsr->IsEmissive()))
 		return;
@@ -4911,7 +4921,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 	{
 		// Get current render target from the RT stack
 		if (!CRenderer::CV_r_debugrefraction)
-			FX_ScreenStretchRect(Tex); // should encode hdr format
+			FX_ScreenStretchRect(Tex);   // should encode hdr format
 		else
 			FX_ClearTarget(Tex, Clr_Debug);
 
@@ -5072,7 +5082,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 		// get texture surface
 		// Get current render target from the RT stack
 		if (!CRenderer::CV_r_debugrefraction)
-			FX_ScreenStretchRect(Tex); // should encode hdr format
+			FX_ScreenStretchRect(Tex);   // should encode hdr format
 		else
 			FX_ClearTarget(Tex, Clr_Debug);
 

@@ -654,16 +654,26 @@ bool CDeviceResourceSet::Fill(CShader* pShader, CShaderResources* pResources, ES
 
 	for (EEfResTextures texType = EFTT_DIFFUSE; texType < EFTT_MAX; texType = EEfResTextures(texType + 1))
 	{
+		SResourceView::KeyType view = SResourceView::DefaultView;
 		CTexture* pTex = TextureHelpers::LookupTexDefault(texType);
 		if (pResources->m_Textures[texType])
 		{
 			const STexSamplerRT& smp = pResources->m_Textures[texType]->m_Sampler;
 			if (smp.m_pDynTexSource)
 			{
+				view = SResourceView::DefaultViewSRGB;
+				m_Flags = EFlags(m_Flags | EFlags_DynamicUpdates);
+
 				if (ITexture* pITex = smp.m_pDynTexSource->GetTexture())
 				{
 					int texID = pITex->GetTextureID();
+					m_Flags = EFlags(m_Flags & ~EFlags_PendingAllocation);
 					pTex = CTexture::GetByID(texID);
+				}
+				else
+				{
+					m_Flags = EFlags(m_Flags | EFlags_PendingAllocation);
+					pTex = CTexture::s_ptexBlackAlpha;
 				}
 			}
 			else
@@ -674,7 +684,7 @@ bool CDeviceResourceSet::Fill(CShader* pShader, CShaderResources* pResources, ES
 
 		CRY_ASSERT(pTex);
 		auto bindSlot = IShader::GetTextureSlot(texType);
-		SetTexture(bindSlot, pTex, SResourceView::DefaultView, shaderStages);
+		SetTexture(bindSlot, pTex, view, shaderStages);
 		bindSlotMask &= ~(uint64(1) << bindSlot);
 	}
 
@@ -689,6 +699,7 @@ bool CDeviceResourceSet::Fill(CShader* pShader, CShaderResources* pResources, ES
 
 	// Eventually we should only have one constant buffer for all shader stages. for now just pick the one from the pixel shader
 	m_ConstantBuffers[eConstantBufferShaderSlot_PerMaterial] = SConstantBufferData(pResources->m_pCB, shaderStages);
+	m_bDirty = true;
 
 	return true;
 }
