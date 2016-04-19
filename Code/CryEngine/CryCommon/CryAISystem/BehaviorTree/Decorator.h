@@ -20,8 +20,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		return LoadChildFromXml(xml, context);
 	}
@@ -60,8 +60,8 @@ protected:
 
 	LoadResult LoadChildFromXml(const XmlNodeRef& xml, const LoadContext& context)
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		if (xml->getChildCount() != 1)
 		{

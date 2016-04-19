@@ -637,9 +637,9 @@ protected:
 		// Convert exp.
 		int32 iExp = (uBits >> 23) & 0xFF;
 		iExp -= 127 + nEXP_MIN;
-		IF(iExp < 0, 0)
-		// Underflow.
-		return 0;
+		IF (iExp < 0, 0)
+			// Underflow.
+			return 0;
 
 		// Reduce mantissa.
 		uint32 uMant = uBits >> (23 - nMANT_BITS);
@@ -675,8 +675,8 @@ protected:
 
 	static ILINE float ToFloat(S bits)
 	{
-		IF(bits == 0, 0)
-		return 0.f;
+		IF (bits == 0, 0)
+			return 0.f;
 
 		uint32 uBits = ToFloatCore(bits);
 		return *(float*)&uBits;

@@ -141,8 +141,8 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ACTION);
 
-	IF_UNLIKELY(!m_audioParams.trigger.IsValid())
-	return;
+	IF_UNLIKELY (!m_audioParams.trigger.IsValid())
+		return;
 
 	IEntity* pOwnerEntity = (params.audioProxyEntityId != 0) ? gEnv->pEntitySystem->GetEntity(params.audioProxyEntityId) : NULL;
 	if (pOwnerEntity)

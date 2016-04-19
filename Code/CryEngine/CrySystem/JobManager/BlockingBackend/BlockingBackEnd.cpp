@@ -133,8 +133,8 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 		pJobManager->IncreaseRunFallbackJobs();
 #endif
 	// allocate fallback infoblock if needed
-	IF(cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
-	pFallbackInfoBlock = new JobManager::SInfoBlock();
+	IF (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
+		pFallbackInfoBlock = new JobManager::SInfoBlock();
 
 	// copy info block into job queue
 	PREFAST_ASSUME(pFallbackInfoBlock);
@@ -186,7 +186,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 	FlushLine128(&rJobInfoBlock, 384);
 #endif
 
-	IF(cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
+	IF (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
 	{
 		// in case of a fallback job, add self to per thread list (thus no synchronization needed)
 		JobManager::detail::PushToFallbackJobList(&rJobInfoBlock);
@@ -219,7 +219,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 		CJobManager* __restrict pJobManager = CJobManager::Instance();
 		JobManager::SInfoBlock* pFallbackInfoBlock = JobManager::detail::PopFromFallbackJobList();
 
-		IF(pFallbackInfoBlock, 0)
+		IF (pFallbackInfoBlock, 0)
 		{
 			CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Fallback");
 
@@ -242,8 +242,8 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 
 			m_rSemaphore.Acquire();
 
-			IF(m_bStop == true, 0)
-			break;
+			IF (m_bStop == true, 0)
+				break;
 
 			bool bFoundBlockingFallbackJob = false;
 
@@ -345,7 +345,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 		///////////////////////////////////////////////////////////////////////////
 		// now we have a valid SInfoBlock to start work on it
 		// check if it is a producer/consumer queue job
-		IF(infoBlock.HasQueue(), 0)
+		IF (infoBlock.HasQueue(), 0)
 		{
 			DoWorkProducerConsumerQueue(infoBlock);
 		}
@@ -357,7 +357,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 
 			// store job start time
 #if defined(JOBMANAGER_SUPPORT_PROFILING) && 0
-			IF(infoBlock.GetJobState(), 1)
+			IF (infoBlock.GetJobState(), 1)
 			{
 				SJobState* pJobState = infoBlock.GetJobState();
 				pJobState->LockProfilingData();
@@ -395,7 +395,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 			workerProfiler->RecordJob(infoBlock.frameProfIndex, m_nId, static_cast<const uint32>(infoBlock.jobId), static_cast<const uint32>(nEndTime - nStartTime));
 #endif
 
-			IF(infoBlock.GetJobState(), 1)
+			IF (infoBlock.GetJobState(), 1)
 			{
 				SJobState* pJobState = infoBlock.GetJobState();
 				pJobState->SetStopped();
@@ -453,7 +453,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::DoWorkProducerCo
 		SAddPacketData* const __restrict pAddPacketData = (SAddPacketData*)((unsigned char*)curPullPtr + cParamSize);
 
 		// do we need another job invoker (multi-type job prod/con queue)
-		IF(pAddPacketData->nInvokerIndex != nJobInvokerIdx, 0)
+		IF (pAddPacketData->nInvokerIndex != nJobInvokerIdx, 0)
 		{
 			nJobInvokerIdx = pAddPacketData->nInvokerIndex;
 			pInvoker = pJobManager->GetJobInvoker(nJobInvokerIdx);
@@ -476,7 +476,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::DoWorkProducerCo
 		(*pInvoker)(pParamMem);
 
 		// mark job as finished
-		IF(pAddPacketData->pJobState, 1)
+		IF (pAddPacketData->pJobState, 1)
 		{
 			pAddPacketData->pJobState->SetStopped();
 		}
@@ -491,7 +491,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::DoWorkProducerCo
 		*pQueuePull = curPullPtr;
 
 		// check if we need to wake up the producer from a queue full state
-		IF((curPushPtr & 1) == 1, 0)
+		IF ((curPushPtr & 1) == 1, 0)
 		{
 			(*pQueuePush) = curPushPtr & ~1;
 			pQueue->m_pQueueFullSemaphore->Release();
@@ -501,7 +501,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::DoWorkProducerCo
 		curPushPtr = curPushPtr & ~1;
 
 		// work on next packet if still there
-		IF(curPushPtr != curPullPtr, 1)
+		IF (curPushPtr != curPullPtr, 1)
 		{
 			continue;
 		}

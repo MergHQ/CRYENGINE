@@ -75,8 +75,8 @@ class CompositeWithChildLoader : public Composite<INodePtr>
 public:
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		return ConstructChildNodesFromXml(xml, context);
 	}

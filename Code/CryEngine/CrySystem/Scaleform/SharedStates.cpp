@@ -192,8 +192,8 @@ UInt CryGFxTranslator::GetCaps() const
 
 void CryGFxTranslator::Translate(TranslateInfo* pTranslateInfo)
 {
-	IF(m_pILocMan == 0, 0)
-	m_pILocMan = gEnv->pSystem->GetLocalizationManager();
+	IF (m_pILocMan == 0, 0)
+		m_pILocMan = gEnv->pSystem->GetLocalizationManager();
 
 	if (!m_pILocMan || !pTranslateInfo)
 		return;

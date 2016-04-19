@@ -1806,7 +1806,7 @@ void CAnimatedCharacter::GenerateMovementRequest()
 	// 21/09/2012: Workaround for cases in which ResetVars() is called after PrepareAnimatedCharacterForUpdate() but before GenerateMovementRequest()
 	// This could turn into a proper 'cache' of useful variables like curFrameTime, velocity, ... which gets properly invalidated
 	// whenever ResetVars() is called.
-	IF_UNLIKELY(m_curFrameTime == 0.0f)
+	IF_UNLIKELY (m_curFrameTime == 0.0f)
 	{
 		UpdateTime();
 	}

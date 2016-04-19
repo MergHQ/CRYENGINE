@@ -138,12 +138,12 @@ bool CheckHResult(long const hr
                   , const char* file
                   , const int line)
 {
-	IF(hr == S_OK, 1)
+	IF (hr == S_OK, 1)
 	{
 		return true;
 	}
 	CryLogAlways("[%s:%d] d3d error: '%s'", file, line, ToString(hr));
-	IF(breakOnError, 0)
+	IF (breakOnError, 0)
 	{
 		__debugbreak();
 	}
@@ -4553,7 +4553,7 @@ HRESULT CD3D9Renderer::FX_SetVStream(int nID, const void* pB, uint32 nOffs, uint
 HRESULT CD3D9Renderer::FX_SetIStream(const void* pB, uint32 nOffs, RenderIndexType idxType)
 {
 #if !defined(_RELEASE) && !defined(SUPPORT_FLEXIBLE_INDEXBUFFER)
-	IF(idxType == Index32 || idxType == Index16 && (nOffs & 1), 0) __debugbreak();
+	IF (idxType == Index32 || idxType == Index16 && (nOffs & 1), 0) __debugbreak();
 #endif
 
 	D3DIndexBuffer* pIB = (D3DIndexBuffer*)pB;
@@ -6237,7 +6237,7 @@ bool CD3D9Renderer::EnableFog(bool enable)
 ///////////////////////////////////////////
 void CD3D9Renderer::FX_PushWireframeMode(int mode)
 {
-	IF(m_nWireFrameStack >= MAX_WIREFRAME_STACK, 0)
+	IF (m_nWireFrameStack >= MAX_WIREFRAME_STACK, 0)
 	{
 		CryFatalError("Pushing more than %d different WireFrame Modes onto stack", MAX_WIREFRAME_STACK);
 	}
@@ -6250,7 +6250,7 @@ void CD3D9Renderer::FX_PushWireframeMode(int mode)
 
 void CD3D9Renderer::FX_PopWireframeMode()
 {
-	IF(m_nWireFrameStack == 0, 0)
+	IF (m_nWireFrameStack == 0, 0)
 	{
 		CryFatalError("WireFrame Mode more often popped than pushed");
 	}

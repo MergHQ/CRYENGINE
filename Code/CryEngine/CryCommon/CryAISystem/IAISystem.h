@@ -910,7 +910,7 @@ public:
 	{
 		IAISystem* pAISystem = gEnv->pAISystem;
 		uint64 nTicks = CryGetTicks();
-		IF(pAISystem != NULL, 1)
+		IF (pAISystem != NULL, 1)
 		{
 			pAISystem->AddFrameTicks(nTicks - m_nTicks);
 		}

@@ -316,10 +316,10 @@ void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 		//    if(m_lstActiveProcObjNodes.Count())
 		//    m_lstActiveProcObjNodes[0]->RemoveProcObjects(false);
 
-		IF(GetCVars()->e_ProcVegetation == 2, 0)
-		for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
-			DrawBBox(m_lstActiveProcObjNodes[i]->GetBBoxVirtual(),
-			         m_lstActiveProcObjNodes[i]->IsProcObjectsReady() ? Col_Green : Col_Red);
+		IF (GetCVars()->e_ProcVegetation == 2, 0)
+			for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
+				DrawBBox(m_lstActiveProcObjNodes[i]->GetBBoxVirtual(),
+				         m_lstActiveProcObjNodes[i]->IsProcObjectsReady() ? Col_Green : Col_Red);
 	}
 }
 

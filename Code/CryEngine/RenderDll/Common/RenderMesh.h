@@ -265,8 +265,8 @@ public:
 		{
 			int nRef = Release();
 #if !defined(_RELEASE) && defined(_DEBUG)
-			IF(nRef < 0, 0)
-			__debugbreak();
+			IF (nRef < 0, 0)
+				__debugbreak();
 #endif
 			if (nRef == 0)
 				return;

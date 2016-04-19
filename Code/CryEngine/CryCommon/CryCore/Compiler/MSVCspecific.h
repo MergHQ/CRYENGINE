@@ -69,7 +69,6 @@
 
 //! Static branch-prediction helpers
 #define IF(condition, hint)    if (condition)
-#define WHILE(condition, hint) while (condition)
 #define IF_UNLIKELY(condition) if (condition)
 #define IF_LIKELY(condition)   if (condition)
 

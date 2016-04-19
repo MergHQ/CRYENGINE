@@ -562,7 +562,7 @@ void CParticle::Init(SParticleUpdateContext const& context, float fAge, CParticl
 	Set(data.pStatObj);
 	Set(data.pPhysEnt);
 
-	IF(data.pPhysEnt && data.pStatObj, false)
+	IF (data.pPhysEnt && data.pStatObj, false)
 	{
 		// Pre-generated physics entity.
 		m_pPhysEnt->AddRef();
@@ -948,7 +948,7 @@ void CParticle::Update(SParticleUpdateContext const& context, float fFrameTime, 
 	// Move
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
-	IF(m_pPhysEnt, false)
+	IF (m_pPhysEnt, false)
 	{
 		// Use physics engine to move particles.
 		GetPhysicsState();
@@ -1515,14 +1515,14 @@ CParticle::~CParticle()
 {
 	m_pEmitter->Release();
 
-	IF(m_pPhysEnt, 0)
+	IF (m_pPhysEnt, 0)
 	{
 		GetPhysicalWorld()->DestroyPhysicalEntity(m_pPhysEnt);
 	}
 
 	GeomRef::Release();
 
-	IF(m_pCollisionInfo, 0)
+	IF (m_pCollisionInfo, 0)
 	{
 		m_pCollisionInfo->Clear();
 		ParticleObjectAllocator().Deallocate(m_pCollisionInfo, sizeof(SCollisionInfo));

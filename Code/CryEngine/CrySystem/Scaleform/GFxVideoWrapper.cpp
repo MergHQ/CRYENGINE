@@ -50,7 +50,7 @@ void        CriUserErrorCallback(const char* errid, unsigned long p1, unsigned l
 	CryGFxLog::GetAccess().LogError("<Video codec> %s", pMsg ? pMsg : "Unspecified error!");
 			#if !defined(_RELEASE)
 	ICVar* const pVar = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_error_debugbreak") : nullptr;
-	IF(pVar && pVar->GetIVal(), 0)
+	IF (pVar && pVar->GetIVal(), 0)
 	{
 		__debugbreak();
 	}

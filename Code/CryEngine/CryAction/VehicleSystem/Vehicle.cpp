@@ -3187,7 +3187,7 @@ IVehicleAnimation* CVehicle::GetAnimation(const char* name)
 bool CVehicle::AddHelper(const char* pName, Vec3 position, Vec3 direction, IVehiclePart* pPart)
 {
 	TVehicleHelperMap::iterator it = m_helpers.find(CONST_TEMP_STRING(pName));
-	IF_UNLIKELY(it != m_helpers.end())
+	IF_UNLIKELY (it != m_helpers.end())
 	{
 		GameWarning("Vehicle::AddHelper: Helper '%s' already defined for vehicle '%s', skipping", pName, GetEntity()->GetClass()->GetName());
 		return true;

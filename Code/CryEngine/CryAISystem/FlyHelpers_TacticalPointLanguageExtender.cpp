@@ -36,7 +36,7 @@ bool CTacticalPointLanguageExtender::GeneratePoints(TGenerateParameters& paramet
 
 	if (queryNameCrc == s_pointsInDesignerPathCrc)
 	{
-		IF_UNLIKELY(details.fDensity <= 1.0f)
+		IF_UNLIKELY (details.fDensity <= 1.0f)
 		{
 			return false;
 		}
@@ -45,13 +45,13 @@ bool CTacticalPointLanguageExtender::GeneratePoints(TGenerateParameters& paramet
 		CRY_ASSERT(pEntity);
 
 		IAIObject* pAiObject = pEntity->GetAI();
-		IF_UNLIKELY(!pAiObject)
+		IF_UNLIKELY (!pAiObject)
 		{
 			return false;
 		}
 
 		CPipeUser* pPipeUser = pAiObject->CastToCPipeUser();
-		IF_UNLIKELY(!pPipeUser)
+		IF_UNLIKELY (!pPipeUser)
 		{
 			return false;
 		}
@@ -61,13 +61,13 @@ bool CTacticalPointLanguageExtender::GeneratePoints(TGenerateParameters& paramet
 
 		SShape path;
 		const bool getPathSuccess = gAIEnv.pNavigation->GetDesignerPath(pathName, path);
-		IF_UNLIKELY(!getPathSuccess)
+		IF_UNLIKELY (!getPathSuccess)
 		{
 			return false;
 		}
 
 		const bool isValidPath = (!path.shape.empty());
-		IF_UNLIKELY(!isValidPath)
+		IF_UNLIKELY (!isValidPath)
 		{
 			return false;
 		}

@@ -40,7 +40,7 @@ bool CCryDXGLRenderTargetView::Initialize(NCryOpenGL::CContext* pContext)
 
 NCryOpenGL::SOutputMergerView* CCryDXGLRenderTargetView::GetGLView(NCryOpenGL::CContext* pContext)
 {
-	IF_UNLIKELY(!m_spGLView)
+	IF_UNLIKELY (!m_spGLView)
 	{
 		if (!Initialize(pContext))
 			DXGL_FATAL("Deferred output merger view creation failed");

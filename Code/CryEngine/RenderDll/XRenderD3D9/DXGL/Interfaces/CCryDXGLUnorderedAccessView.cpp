@@ -40,7 +40,7 @@ bool CCryDXGLUnorderedAccessView::Initialize(NCryOpenGL::CContext* pContext)
 
 NCryOpenGL::SShaderView* CCryDXGLUnorderedAccessView::GetGLView(NCryOpenGL::CContext* pContext)
 {
-	IF_UNLIKELY(!m_spGLView)
+	IF_UNLIKELY (!m_spGLView)
 	{
 		if (!Initialize(pContext))
 			DXGL_FATAL("Deferred unordered access view creation failed");

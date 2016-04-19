@@ -72,7 +72,7 @@ bool CVehiclePartSubPart::Init(IVehicle* pVehicle, const CVehicleParams& table, 
 
 				IStatObj::SSubObject* pSubObject = NULL;
 
-				IF_UNLIKELY(!gEnv->pCryPak->IsFileExist(stateFileName))
+				IF_UNLIKELY (!gEnv->pCryPak->IsFileExist(stateFileName))
 				{
 					continue;
 				}

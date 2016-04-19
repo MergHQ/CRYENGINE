@@ -373,8 +373,8 @@ struct IRenderNode : public IShadowCaster
 
 	ILINE int GetDrawFrame(int nRecursionLevel = 0) const
 	{
-		IF(!m_pTempData, 0)
-		return 0;
+		IF (!m_pTempData, 0)
+			return 0;
 
 		int* pDrawFrames = (int*)m_pTempData;
 		return pDrawFrames[nRecursionLevel];

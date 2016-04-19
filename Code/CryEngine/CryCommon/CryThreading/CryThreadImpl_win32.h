@@ -460,7 +460,7 @@ bool N_ProducerSingleConsumerQueueBase::Pop(void* pObj, volatile uint32& rProduc
 	if (rRunning == 0 && rProducerIndex - rComsumerIndex == 0)
 	{
 		SFallbackList* pFallback = (SFallbackList*)CryInterlockedPopEntrySList(fallbackList);
-		IF(pFallback, 0)
+		IF (pFallback, 0)
 		{
 			memcpy(pObj, pFallback->object, nObjectSize);
 			CryModuleMemalignFree(pFallback);

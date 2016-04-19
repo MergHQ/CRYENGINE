@@ -26,7 +26,7 @@ CReadStream* CReadStream::Allocate(CStreamEngine* pEngine, const EStreamTaskType
 	char* pFree = reinterpret_cast<char*>(CryInterlockedPopEntrySList(s_freeRequests));
 
 	CReadStream* pReq;
-	IF_LIKELY(pFree)
+	IF_LIKELY (pFree)
 	{
 		ptrdiff_t offs = offsetof(CReadStream, m_nextFree);
 		pReq = reinterpret_cast<CReadStream*>(pFree - offs);

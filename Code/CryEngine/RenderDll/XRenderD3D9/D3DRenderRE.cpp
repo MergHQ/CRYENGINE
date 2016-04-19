@@ -889,7 +889,7 @@ bool CREWaterVolume::mfDraw(CShader* ef, SShaderPass* sfm)
 
 	CD3D9Renderer* rd(gcpRendD3D);
 
-	IF(ef->m_eShaderType != eST_Water, 0)
+	IF (ef->m_eShaderType != eST_Water, 0)
 	{
 #if !defined(_RELEASE)
 		// CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR, "Incorrect shader set for water / water fog volume");

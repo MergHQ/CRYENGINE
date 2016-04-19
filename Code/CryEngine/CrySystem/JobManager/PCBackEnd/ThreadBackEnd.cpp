@@ -134,8 +134,8 @@ void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator
 		pJobManager->IncreaseRunFallbackJobs();
 #endif
 	// allocate fallback infoblock if needed
-	IF(cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
-	pFallbackInfoBlock = new JobManager::SInfoBlock();
+	IF (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
+		pFallbackInfoBlock = new JobManager::SInfoBlock();
 
 	// copy info block into job queue
 	PREFAST_ASSUME(pFallbackInfoBlock);
@@ -187,7 +187,7 @@ void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator
 	FlushLine128(&rJobInfoBlock, 384);
 #endif
 
-	IF(cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
+	IF (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
 	{
 		// catch submission from regular workers to the blocking backend
 		if (crJob.IsBlocking())
@@ -258,7 +258,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 		uint32 nPriorityLevel = ~0;
 		JobManager::SInfoBlock* pFallbackInfoBlock = JobManager::detail::PopFromFallbackJobList();
 
-		IF(pFallbackInfoBlock, 0)
+		IF (pFallbackInfoBlock, 0)
 		{
 			CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Fallback");
 
@@ -295,8 +295,8 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 				nTicksInJobExecution = 0;
 			}
 
-			IF(m_bStop == true, 0)
-			break;
+			IF (m_bStop == true, 0)
+				break;
 
 			///////////////////////////////////////////////////////////////////////////
 			// multiple steps to get a job of the queue
@@ -364,7 +364,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 		///////////////////////////////////////////////////////////////////////////
 		// now we have a valid SInfoBlock to start work on it
 		// check if it is a producer/consumer queue job
-		IF(infoBlock.HasQueue(), 0)
+		IF (infoBlock.HasQueue(), 0)
 		{
 			DoWorkProducerConsumerQueue(infoBlock);
 		}
@@ -420,7 +420,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 			workerProfiler->RecordJob(infoBlock.frameProfIndex, m_nId, static_cast<const uint32>(infoBlock.jobId), static_cast<const uint32>(nEndTime - nStartTime));
 #endif
 
-			IF(infoBlock.GetJobState(), 1)
+			IF (infoBlock.GetJobState(), 1)
 			{
 				SJobState* pJobState = infoBlock.GetJobState();
 				pJobState->SetStopped();
@@ -488,7 +488,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::DoWorkProducerConsum
 #endif
 
 		// do we need another job invoker (multi-type job prod/con queue)
-		IF(pAddPacketData->nInvokerIndex != nJobInvokerIdx, 0)
+		IF (pAddPacketData->nInvokerIndex != nJobInvokerIdx, 0)
 		{
 			nJobInvokerIdx = pAddPacketData->nInvokerIndex;
 			pInvoker = pJobManager->GetJobInvoker(nJobInvokerIdx);
@@ -514,7 +514,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::DoWorkProducerConsum
 		}
 
 		// mark job as finished
-		IF(pAddPacketData->pJobState, 1)
+		IF (pAddPacketData->pJobState, 1)
 		{
 			pAddPacketData->pJobState->SetStopped();
 		}
@@ -533,7 +533,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::DoWorkProducerConsum
 		*pQueuePull = curPullPtr;
 
 		// check if we need to wake up the producer from a queue full state
-		IF((curPushPtr & 1) == 1, 0)
+		IF ((curPushPtr & 1) == 1, 0)
 		{
 			(*pQueuePush) = curPushPtr & ~1;
 			pQueue->m_pQueueFullSemaphore->Release();
@@ -543,7 +543,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::DoWorkProducerConsum
 		curPushPtr = curPushPtr & ~1;
 
 		// work on next packet if still there
-		IF(curPushPtr != curPullPtr, 1)
+		IF (curPushPtr != curPullPtr, 1)
 		{
 			continue;
 		}

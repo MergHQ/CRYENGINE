@@ -180,7 +180,7 @@ HRESULT CDeviceManager::LockDirectAccessBuffer(D3DBuffer* pBuff, int32 nBindFlag
 	memset(&mappedResource, 0x0, sizeof(mappedResource));
 
 	hr = gcpRendD3D->GetDeviceContext().Map(pBuff, 0, nLockFlags, 0, &mappedResource);
-	IF(FAILED(hr), 0)
+	IF (FAILED(hr), 0)
 	{
 		CHECK_HRESULT(hr);
 		return 0;

@@ -46,8 +46,8 @@ public:
 
 	virtual void OnEnter(float blendTime, float duration, const SLookPoseParams& params)
 	{
-		IF(m_charInstance == NULL, false)
-		return;
+		IF (m_charInstance == NULL, false)
+			return;
 
 		m_paramTargetCrc = CCrc32::ComputeLowercase("LookTarget");
 		m_token = kInvalidToken;
@@ -82,8 +82,8 @@ public:
 
 	virtual void OnExit(float blendTime)
 	{
-		IF(m_charInstance == NULL, false)
-		return;
+		IF (m_charInstance == NULL, false)
+			return;
 
 		IAnimationPoseBlenderDir* poseBlenderLook = m_charInstance->GetISkeletonPose()->GetIPoseBlenderLook();
 
@@ -101,8 +101,8 @@ public:
 
 	virtual void Update(float timePassed)
 	{
-		IF(m_charInstance == NULL, false)
-		return;
+		IF (m_charInstance == NULL, false)
+			return;
 
 		Vec3 lookAtTarget;
 		if (GetParam(m_paramTargetCrc, lookAtTarget))

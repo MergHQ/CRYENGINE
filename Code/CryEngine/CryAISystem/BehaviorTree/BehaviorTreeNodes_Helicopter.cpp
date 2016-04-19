@@ -260,7 +260,7 @@ public:
 		CPipeUser* pPipeUser = context.entity.GetAI()->CastToCPipeUser();
 
 		IAIObject* pAttentionTarget = pPipeUser->GetAttentionTarget();
-		IF_UNLIKELY(!pAttentionTarget)
+		IF_UNLIKELY (!pAttentionTarget)
 		{
 			return Failure;
 		}
@@ -324,7 +324,7 @@ public:
 		CRY_ASSERT(pEntity);
 
 		IScriptTable* pScriptTable = pEntity->GetScriptTable();
-		IF_UNLIKELY(!pScriptTable)
+		IF_UNLIKELY (!pScriptTable)
 		{
 			return;
 		}
@@ -339,7 +339,7 @@ public:
 		bool isValidPath = false;
 		SShape path;
 		const bool getPathSuccess = gAIEnv.pNavigation->GetDesignerPath(pathName, path);
-		IF_LIKELY(getPathSuccess)
+		IF_LIKELY (getPathSuccess)
 		{
 			isValidPath = (!path.shape.empty());
 		}
@@ -370,7 +370,7 @@ public:
 	{
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		IF_UNLIKELY(!runtimeData.isValidPath)
+		IF_UNLIKELY (!runtimeData.isValidPath)
 		{
 			return Failure;
 		}
@@ -386,7 +386,7 @@ public:
 		IEntity* pEntity = pPipeUser->GetEntity();
 		assert(pEntity != NULL);
 		IScriptTable* pScriptTable = pEntity->GetScriptTable();
-		IF_LIKELY(pScriptTable != NULL)
+		IF_LIKELY (pScriptTable != NULL)
 		{
 			float desiredSpeed = 0.0f;
 			if (pScriptTable->GetValue("Helicopter_Speed", desiredSpeed))
@@ -508,7 +508,7 @@ public:
 		CRY_ASSERT(pEntity);
 
 		IScriptTable* pScriptTable = pEntity->GetScriptTable();
-		IF_UNLIKELY(!pScriptTable)
+		IF_UNLIKELY (!pScriptTable)
 		{
 			return;
 		}
@@ -521,13 +521,13 @@ public:
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		IEntity* pTargetEntity = gEnv->pEntitySystem->GetEntity(runtimeData.targetEntityId);
-		IF_UNLIKELY(pTargetEntity == NULL)
+		IF_UNLIKELY (pTargetEntity == NULL)
 		{
 			return Running;
 		}
 
 		IAIObject* pTargetAi = pTargetEntity->GetAI();
-		IF_UNLIKELY(pTargetEntity == NULL)
+		IF_UNLIKELY (pTargetEntity == NULL)
 		{
 			return Running;
 		}
