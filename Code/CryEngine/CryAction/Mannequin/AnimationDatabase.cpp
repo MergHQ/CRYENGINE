@@ -318,16 +318,6 @@ float AppendBlend(SFragmentData& outFragmentData, const SBlendQueryResult& blend
 	return fragmentTime;
 }
 
-SFragmentData* CAnimationDatabase::CreateSFragmentDataRaw() const
-{
-	return new SFragmentData;
-}
-
-void CAnimationDatabase::DestroySFragmentDataRaw(SFragmentData* ptr) const
-{
-	delete ptr;
-}
-
 uint32 CAnimationDatabase::Query(SFragmentData& outFragmentData, const SBlendQuery& inBlendQuery, uint32 inOptionIdx, const IAnimationSet* inAnimSet, SFragmentSelection* outFragSelection) const
 {
 	uint32 retFlags = 0;
