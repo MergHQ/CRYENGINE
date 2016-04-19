@@ -942,8 +942,6 @@ typedef void (* MannAssetCallback)(const SAnimAssetReport& assetReport, void* _c
 
 class IAnimationDatabase
 {
-	friend class SFragmentDataRAII;
-
 public:
 	virtual ~IAnimationDatabase() {}
 
@@ -987,61 +985,6 @@ public:
 	virtual bool                  ClearSubADBFilter(const string& sADBFileName) = 0;
 
 	virtual void                  QueryUsedTags(const FragmentID fragmentID, const SFragTagState& filter, SFragTagState& usedTags) const = 0;
-
-protected:
-
-	//! Factory method for SFragmentData, to handle dll-scope
-	virtual SFragmentData* CreateSFragmentDataRaw() const = 0;
-	virtual void           DestroySFragmentDataRaw(SFragmentData* ptr) const = 0;
-};
-
-class SFragmentDataRAII
-{
-public:
-
-	SFragmentDataRAII(const IAnimationDatabase* adb) : m_adb(adb), m_sfd(nullptr)
-	{
-		if (m_adb)
-		{
-			m_sfd = m_adb->CreateSFragmentDataRaw();
-		}
-	}
-
-	~SFragmentDataRAII()
-	{
-		Clear();
-	}
-
-	SFragmentData* Get() { return m_sfd; }
-
-	void           Clear()
-	{
-		if (m_adb && m_sfd)
-		{
-			m_adb->DestroySFragmentDataRaw(m_sfd);
-		}
-	}
-
-	SFragmentDataRAII& operator=(SFragmentDataRAII&& other)
-	{
-		if (!other.m_adb) return *this;
-		if (this != &other)
-		{
-			Clear();
-			m_adb = other.m_adb;
-			m_sfd = other.m_sfd;
-			other.m_adb = nullptr;
-			other.m_sfd = nullptr;
-		}
-		return *this;
-	}
-
-private:
-	SFragmentDataRAII(const SFragmentDataRAII& other);
-	SFragmentDataRAII& operator=(const SFragmentDataRAII&);
-
-	const IAnimationDatabase* m_adb;
-	SFragmentData*            m_sfd;
 };
 
 class IAnimationDatabaseManager

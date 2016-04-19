@@ -169,47 +169,46 @@ struct SCRCRef<1, THash>
 
 	SCRCRef()
 		: crc(INVALID)
+		, stringValue()
 	{
 	}
 
 	explicit SCRCRef(const char* const nameString)
 		: crc(INVALID)
+		, stringValue()
 	{
 		SetByString(nameString);
 	}
 
 	SCRCRef(const SCRCRef<1>& other)
 		: crc(INVALID)
+		, stringValue()
 	{
-		SetByString(other.stringValue);
-	}
-
-	~SCRCRef()
-	{
-		CleanUp();
+		SetByString(other.c_str());
 	}
 
 	SCRCRef<1>& operator=(const SCRCRef<1>& other)
 	{
 		if (&other != this)
 		{
-			SetByString(other.stringValue);
+			SetByString(other.c_str());
 		}
 		return *this;
 	}
 
-	void CleanUp()
-	{
-		crc = INVALID;
-	}
-
 	void SetByString(const char* const nameString)
 	{
-		CleanUp();
 		if (nameString && (nameString[0] != '\0'))
 		{
-			stringValue = string(nameString);
+			const size_t lengthPlusOne = strlen(nameString) + 1;
+			stringValue.assign(nameString, nameString + lengthPlusOne);
+
 			crc = THash::CalculateHash(nameString);
+		}
+		else
+		{
+			stringValue.clear();
+			crc = INVALID;
 		}
 	}
 
@@ -220,7 +219,7 @@ struct SCRCRef<1, THash>
 
 	ILINE const char* c_str() const
 	{
-		return stringValue.c_str();
+		return stringValue.empty() ? "" : stringValue.data();
 	}
 
 	ILINE SCRCRef<1>& operator=(const char* const s)
@@ -255,7 +254,7 @@ struct SCRCRef<1, THash>
 	TInt crc;
 
 private:
-	string stringValue;
+	DynArray<char> stringValue;
 };
 
 typedef SCRCRef<STORE_TAG_STRINGS>      STagRef;
