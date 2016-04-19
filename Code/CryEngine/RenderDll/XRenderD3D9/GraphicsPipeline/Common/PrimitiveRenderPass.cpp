@@ -162,22 +162,24 @@ CCompiledRenderPrimitive::EDirtyFlags CCompiledRenderPrimitive::Compile(CDeviceG
 	}
 
 	if (m_dirtyMask & (eDirty_Technique | eDirty_RenderState | eDirty_Resources))
+	{
 		partialPsoDesc.m_pResourceLayout = m_pResourceLayout.get();
-	partialPsoDesc.m_pShader = m_pShader;
-	partialPsoDesc.m_technique = m_techniqueName;
-	partialPsoDesc.m_ShaderFlags_RT = m_rtMask;
-	partialPsoDesc.m_ShaderFlags_MD = 0;
-	partialPsoDesc.m_ShaderFlags_MDV = 0;
-	partialPsoDesc.m_PrimitiveType = eptTriangleList;
-	partialPsoDesc.m_VertexFormat = m_primitiveGeometry.vertexFormat;
-	partialPsoDesc.m_RenderState = m_renderState;
-	partialPsoDesc.m_CullMode = m_cullMode;
-	m_pPipelineState = CCryDeviceWrapper::GetObjectFactory().CreateGraphicsPSO(partialPsoDesc);
+		partialPsoDesc.m_pShader = m_pShader;
+		partialPsoDesc.m_technique = m_techniqueName;
+		partialPsoDesc.m_ShaderFlags_RT = m_rtMask;
+		partialPsoDesc.m_ShaderFlags_MD = 0;
+		partialPsoDesc.m_ShaderFlags_MDV = 0;
+		partialPsoDesc.m_PrimitiveType = eptTriangleList;
+		partialPsoDesc.m_VertexFormat = m_primitiveGeometry.vertexFormat;
+		partialPsoDesc.m_RenderState = m_renderState;
+		partialPsoDesc.m_CullMode = m_cullMode;
+		m_pPipelineState = CCryDeviceWrapper::GetObjectFactory().CreateGraphicsPSO(partialPsoDesc);
 
-	if (!m_pPipelineState || !m_pPipelineState->IsValid())
-		return m_dirtyMask;
+		if (!m_pPipelineState || !m_pPipelineState->IsValid())
+			return m_dirtyMask;
 
-	m_currentPsoUpdateCount = m_pPipelineState->GetUpdateCount();
+		m_currentPsoUpdateCount = m_pPipelineState->GetUpdateCount();
+	}
 
 	m_dirtyMask = eDirty_None;
 	return m_dirtyMask;
@@ -189,15 +191,17 @@ void CCompiledRenderPrimitive::AddPrimitiveGeometryCacheUser()
 	{
 		CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-		SPrimitiveGeometry& primitiveGeometry = s_primitiveGeometryCache[ePrim_Triangle];
+		{
+			SPrimitiveGeometry& primitiveGeometry = s_primitiveGeometryCache[ePrim_Triangle];
 
-		SVF_P3F_C4B_T2F fullscreenTriVertices[3];
-		SPostEffectsUtils::GetFullScreenTri(fullscreenTriVertices, 0, 0, 1.0f);
-		primitiveGeometry.vertexStream.hStream = gcpRendD3D->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_DYNAMIC, 3 * sizeof(SVF_P3F_C4B_T2F));
-		primitiveGeometry.vertexStream.nStride = sizeof(SVF_P3F_C4B_T2F);
-		primitiveGeometry.vertexFormat = eVF_P3F_C4B_T2F;
-		primitiveGeometry.vertexOrIndexCount = 3;
-		gcpRendD3D->m_DevBufMan.UpdateBuffer(primitiveGeometry.vertexStream.hStream, fullscreenTriVertices, sizeof(fullscreenTriVertices));
+			SVF_P3F_C4B_T2F fullscreenTriVertices[3];
+			SPostEffectsUtils::GetFullScreenTri(fullscreenTriVertices, 0, 0, 1.0f);
+			primitiveGeometry.vertexStream.hStream = gcpRendD3D->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_DYNAMIC, 3 * sizeof(SVF_P3F_C4B_T2F));
+			primitiveGeometry.vertexStream.nStride = sizeof(SVF_P3F_C4B_T2F);
+			primitiveGeometry.vertexFormat = eVF_P3F_C4B_T2F;
+			primitiveGeometry.vertexOrIndexCount = 3;
+			gcpRendD3D->m_DevBufMan.UpdateBuffer(primitiveGeometry.vertexStream.hStream, fullscreenTriVertices, sizeof(fullscreenTriVertices));
+		}
 
 		{
 			SPrimitiveGeometry& primitiveGeometry = s_primitiveGeometryCache[ePrim_Box];

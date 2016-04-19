@@ -146,10 +146,10 @@ extern "C"
 	#endif
 		gEnv->pWindow = startupParams.hWnd;
 #endif
-#if defined(_LIB)
+
 		ICryFactoryRegistryImpl* pCryFactoryImpl = static_cast<ICryFactoryRegistryImpl*>(pSystem->GetCryFactoryRegistry());
 		pCryFactoryImpl->RegisterFactories(g_pHeadToRegFactories);
-#endif
+
 		// the earliest point the system exists - w2e tell the callback
 		if (startupParams.pUserCallback)
 			startupParams.pUserCallback->OnSystemConnect(pSystem);
