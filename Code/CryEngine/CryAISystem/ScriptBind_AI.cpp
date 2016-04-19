@@ -11547,21 +11547,21 @@ int CScriptBind_AI::GetGroupScopeUserCount(IFunctionHandler* pH, ScriptHandle en
 {
 	EntityId entityID = static_cast<EntityId>(entityIdHandle.n);
 	IEntity* entity = gEnv->pEntitySystem->GetEntity(entityID);
-	IF_UNLIKELY(entity == NULL)
+	IF_UNLIKELY (entity == NULL)
 	{
 		AIWarningID("<CScriptBind_AI> ", "GetGroupScopeUserCount(): Invalid entity ID!");
 		return pH->EndFunction();
 	}
 
 	CAIActor* actor = CastToCAIActorSafe(entity->GetAI());
-	IF_UNLIKELY(actor == NULL)
+	IF_UNLIKELY (actor == NULL)
 	{
 		AIWarningID("<CScriptBind_AI> ", "GetGroupScopeUserCount(): Entity '%s' has no actor representation!", entity->GetName());
 		return pH->EndFunction();
 	}
 
 	CAIGroup* aiGroup = GetAISystem()->GetAIGroup(actor->GetGroupId());
-	IF_UNLIKELY(aiGroup == NULL)
+	IF_UNLIKELY (aiGroup == NULL)
 	{
 		AIWarningID("<CScriptBind_AI> ", "GetGroupScopeUserCount(): Entity '%s' is not part of a group!", entity->GetName());
 		return pH->EndFunction();
@@ -11591,32 +11591,32 @@ int CScriptBind_AI::SetLastOpResult(IFunctionHandler* pH, ScriptHandle entityIdH
 {
 	EntityId entityId = static_cast<EntityId>(entityIdHandle.n);
 	IEntity* entity = gEnv->pEntitySystem->GetEntity(entityId);
-	IF_UNLIKELY(!entity)
+	IF_UNLIKELY (!entity)
 	{
 		return pH->EndFunction();
 	}
 
 	IAIObject* aiObject = entity->GetAI();
-	IF_UNLIKELY(!aiObject)
+	IF_UNLIKELY (!aiObject)
 	{
 		return pH->EndFunction();
 	}
 
 	CPipeUser* pipeUser = CastToCPipeUserSafe(aiObject);
-	IF_UNLIKELY(!pipeUser)
+	IF_UNLIKELY (!pipeUser)
 	{
 		return pH->EndFunction();
 	}
 
 	EntityId targetEntityId = static_cast<EntityId>(targetEntityIdHandle.n);
 	IEntity* targetEntity = gEnv->pEntitySystem->GetEntity(targetEntityId);
-	IF_UNLIKELY(!targetEntity)
+	IF_UNLIKELY (!targetEntity)
 	{
 		return pH->EndFunction();
 	}
 
 	CAIObject* targetAIObject = gAIEnv.pObjectContainer->GetAIObject(targetEntity->GetAIObjectID());
-	IF_UNLIKELY(!targetAIObject)
+	IF_UNLIKELY (!targetAIObject)
 	{
 		return pH->EndFunction();
 	}

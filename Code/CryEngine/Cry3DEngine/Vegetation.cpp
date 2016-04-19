@@ -827,7 +827,7 @@ void CVegetation::UpdateSpriteInfo(SVegetationSpriteInfo& si, float fSpriteAmoun
 	const float nMin = 1;
 	const float nMax = 255;
 
-	IF(GetCVars()->e_Dissolve, 1)
+	IF (GetCVars()->e_Dissolve, 1)
 	{
 		si.ucAlphaTestRef = SATURATEB((int)((1.f - fSpriteAmount) * nMax + fSpriteAmount * nMin));
 	}

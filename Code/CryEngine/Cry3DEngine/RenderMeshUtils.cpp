@@ -172,8 +172,8 @@ void CRenderMeshUtils::RayIntersectionAsync(SIntersectionData* pIntersectionRMDa
 
 bool CRenderMeshUtils::RayIntersectionImpl(SIntersectionData* pIntersectionRMData, SRayHitInfo* phitInfo, IMaterial* pMtl, bool bAsync)
 {
-	IF(phitInfo->bGetVertColorAndTC, 0)
-	return RayIntersectionFastImpl(*pIntersectionRMData, *phitInfo, pMtl, bAsync);
+	IF (phitInfo->bGetVertColorAndTC, 0)
+		return RayIntersectionFastImpl(*pIntersectionRMData, *phitInfo, pMtl, bAsync);
 
 	SIntersectionData& rIntersectionRMData = *pIntersectionRMData;
 	SRayHitInfo& hitInfo = *phitInfo;
@@ -267,8 +267,8 @@ bool CRenderMeshUtils::RayIntersectionImpl(SIntersectionData* pIntersectionRMDat
 	{
 		CRenderChunk* pChunk = &Chunks[nChunkId];
 
-		IF(pChunk->m_nMatFlags & MTL_FLAG_NODRAW || !pChunk->pRE, 0)
-		continue;
+		IF (pChunk->m_nMatFlags & MTL_FLAG_NODRAW || !pChunk->pRE, 0)
+			continue;
 		const int16 nChunkMatID = pChunk->m_nMatID;
 
 		bool b2Sided = false;
@@ -289,7 +289,7 @@ bool CRenderMeshUtils::RayIntersectionImpl(SIntersectionData* pIntersectionRMDat
 		int nLastIndexId = pChunk->nFirstIndexId + pChunk->nNumIndices;
 		const vtx_idx* __restrict pIndices = rIntersectionRMData.pInds;
 
-		IF(nLastIndexId - 1 >= nInds, 0)
+		IF (nLastIndexId - 1 >= nInds, 0)
 		{
 			Error("%s (%s): invalid mesh chunk", __FUNCTION__, rIntersectionRMData.pRenderMesh->GetSourceName());
 			rIntersectionRMData.bResult = false;
@@ -305,7 +305,7 @@ bool CRenderMeshUtils::RayIntersectionImpl(SIntersectionData* pIntersectionRMDat
 
 			for (; i < p; i += 3)//process all prefetched vertices
 			{
-				IF(pInds[i + 2] >= nVerts, 0)
+				IF (pInds[i + 2] >= nVerts, 0)
 				{
 					Error("%s (%s): invalid mesh indices", __FUNCTION__, rIntersectionRMData.pRenderMesh->GetSourceName());
 					rIntersectionRMData.bResult = false;
@@ -654,8 +654,8 @@ bool CRenderMeshUtils::ProcessBoxIntersection(Ray& inRay, SRayHitInfo& hitInfo, 
 		{
 			CRenderChunk* pChunk(&Chunks[nChunkId]);
 
-			IF(pChunk->m_nMatFlags & MTL_FLAG_NODRAW || !pChunk->pRE, 0)
-			continue;
+			IF (pChunk->m_nMatFlags & MTL_FLAG_NODRAW || !pChunk->pRE, 0)
+				continue;
 
 			const int16 nChunkMatID = pChunk->m_nMatID;
 

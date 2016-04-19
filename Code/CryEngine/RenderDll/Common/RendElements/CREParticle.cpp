@@ -179,7 +179,7 @@ void CREParticle::mfPrepare(bool bCheckOverflow)
 	PREFAST_ASSUME(rRP.m_pCurObject);
 
 	////////////////////////////////////////////////////////////////////////////////////
-	IF((rRP.m_lightVolumeBuffer.HasVolumes()) & ((rRP.m_pCurObject->m_ObjFlags & FOB_LIGHTVOLUME) > 0), 1)
+	IF ((rRP.m_lightVolumeBuffer.HasVolumes()) & ((rRP.m_pCurObject->m_ObjFlags & FOB_LIGHTVOLUME) > 0), 1)
 	{
 		SRenderObjData* pOD = rRP.m_pCurObject->GetObjData();
 #ifndef _RELEASE

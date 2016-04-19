@@ -309,7 +309,7 @@ void CResStreamDirCallback::StreamOnComplete(IReadStream* pStream, unsigned nErr
 	CryAutoLock<CryCriticalSection> lock(pStreamInfo->m_StreamLock);
 
 	CResFile* pRes = pStreamInfo->m_pRes;
-	IF(!pRes, 0) return;
+	IF (!pRes, 0) return;
 	assert(pRes->m_bDirStreaming);
 
 	if (!nError)

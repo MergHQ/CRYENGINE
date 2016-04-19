@@ -2308,8 +2308,8 @@ int CFileHandleCache::FClose(FILE* pHandle)
 FILE* CFileHandleCache::GetRealFileHandle(FILE* pHandle)
 {
 	// handle stdout and stderr :/
-	IF(pHandle == stdout || pHandle == stderr, 0)
-	return pHandle;
+	IF (pHandle == stdout || pHandle == stderr, 0)
+		return pHandle;
 
 	AUTO_LOCK_T(CryCriticalSection, m_Lock);
 	uint32 nCachePos = GetCachePos(pHandle);

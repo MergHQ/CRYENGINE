@@ -2891,7 +2891,7 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 			Warning("Warning: Skinned geometry used without character instance");
 		}
 	}
-	IF(bHWSkinning && (rRP.m_pCurObject->m_ObjFlags & FOB_SKINNED) && !CV_r_character_nodeform, 0)
+	IF (bHWSkinning && (rRP.m_pCurObject->m_ObjFlags & FOB_SKINNED) && !CV_r_character_nodeform, 0)
 	{
 		FX_DrawBatchSkinned(pSh, pPass, pSkinningData);
 	}

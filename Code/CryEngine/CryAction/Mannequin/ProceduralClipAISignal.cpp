@@ -50,7 +50,7 @@ public:
 		ExtractSignalNames(params.dataString.c_str(), &onEnterSignalName, &m_onExitSignalName);
 
 		IAIActor* aiActor = GetAIActor();
-		IF_UNLIKELY(aiActor == NULL)
+		IF_UNLIKELY (aiActor == NULL)
 		{
 			return;
 		}
@@ -73,7 +73,7 @@ public:
 		}
 
 		IAIActor* aiActor = GetAIActor();
-		IF_UNLIKELY(aiActor == NULL)
+		IF_UNLIKELY (aiActor == NULL)
 		{
 			return;
 		}
@@ -91,12 +91,12 @@ private:
 
 	IAIActor* GetAIActor() const
 	{
-		IF_UNLIKELY(m_entity == NULL)
+		IF_UNLIKELY (m_entity == NULL)
 		{
 			return NULL;
 		}
 		IAIObject* aiObject = m_entity->GetAI();
-		IF_UNLIKELY(aiObject == NULL)
+		IF_UNLIKELY (aiObject == NULL)
 		{
 			return NULL;
 		}
@@ -113,7 +113,7 @@ private:
 		onEnterSignalString->clear();
 		onExitSignalString->clear();
 
-		IF_UNLIKELY(dataString == NULL)
+		IF_UNLIKELY (dataString == NULL)
 		{
 			return;
 		}

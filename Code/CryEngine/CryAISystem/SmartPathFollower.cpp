@@ -102,13 +102,13 @@ float InterpolatedPath::FindSegmentIndexAtDistance(float requestedDistance, size
    {
    TestPathFollower()
    {
-    InterpolatedPath p;
+   InterpolatedPath p;
 
-    p.push_back( SPathControlPoint2( IAISystem::NAV_UNSET, Vec3(784.01086, 764.79883, 72.698608), 0 ) );
-    p.push_back( SPathControlPoint2( IAISystem::NAV_UNSET, Vec3(783.87500, 764.75000, 72.750000), 0 ) );
+   p.push_back( SPathControlPoint2( IAISystem::NAV_UNSET, Vec3(784.01086, 764.79883, 72.698608), 0 ) );
+   p.push_back( SPathControlPoint2( IAISystem::NAV_UNSET, Vec3(783.87500, 764.75000, 72.750000), 0 ) );
 
-    const float r = p.FindClosestSegmentIndex( Vec3(786.97339, 751.88739, 72.055885), 0, 5 );
-    const float s = p.FindClosestSegmentIndex( Vec3(786.97339, 751.88739, 72.600000), 0, 5 );
+   const float r = p.FindClosestSegmentIndex( Vec3(786.97339, 751.88739, 72.055885), 0, 5 );
+   const float s = p.FindClosestSegmentIndex( Vec3(786.97339, 751.88739, 72.600000), 0, 5 );
    }
    } g__;
  */
@@ -431,40 +431,40 @@ CSmartPathFollower::~CSmartPathFollower()
    // Move along the path starting at minTestDist
    for (float testOffsetDist = minTestDist; testOffsetDist < lengthToTestAbs; testOffsetDist += advanceDist)
    {
-    float testDist = startDistance + (testOffsetDist * dirMultiplier);
-    float testIndex = m_path.FindSegmentIndexAtDistance(testDist);			// TODO: Optimize, needs range look-up support
+   float testDist = startDistance + (testOffsetDist * dirMultiplier);
+   float testIndex = m_path.FindSegmentIndexAtDistance(testDist);			// TODO: Optimize, needs range look-up support
 
-    if (CanReachTarget(m_curPos, testIndex))
+   if (CanReachTarget(m_curPos, testIndex))
+   {
+    reachableIndex = testIndex;
+
+    // If looking behind, return the first reachable index found
+    if (!lookingAhead)
     {
-      reachableIndex = testIndex;
-
-      // If looking behind, return the first reachable index found
-      if (!lookingAhead)
-      {
-        //m_safePathOptimal = true;
-        return true;
-      }
+    //m_safePathOptimal = true;
+    return true;
     }
-    else	// Can't reach target at this index
+   }
+   else	// Can't reach target at this index
+   {
+    // If looking ahead & there is a previous valid index
+    if (lookingAhead && reachableIndex >= 0.0f)
     {
-      // If looking ahead & there is a previous valid index
-      if (lookingAhead && reachableIndex >= 0.0f)
-      {
-        // Indicate the safe path is now optimal (continue using it until)
-        //m_safePathOptimal = true;
-        return true;
-      }
-      // Otherwise, keep looking (expensive but copes with weird situations better)
+    // Indicate the safe path is now optimal (continue using it until)
+    //m_safePathOptimal = true;
+    return true;
     }
+    // Otherwise, keep looking (expensive but copes with weird situations better)
+   }
 
-    // Increase the advance distance
-    advanceDist *= 1.5f;
+   // Increase the advance distance
+   advanceDist *= 1.5f;
    }
 
    // Finally, always test the endIndex (to support start/end of path)
    if (CanReachTarget(m_curPos, endIndex))
    {
-    reachableIndex = endIndex;
+   reachableIndex = endIndex;
    }
 
    return (reachableIndex >= 0.0f);
@@ -955,7 +955,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 		else
 		{
 			currentIndex = m_path.FindClosestSegmentIndex(curPos, 0.0f, 5.0f);  // We're at the start of the path,
-			                                                                    // so we should be within 5m
+			// so we should be within 5m
 
 			const float currentDistance = m_path.GetDistanceAtSegmentIndex(currentIndex);
 			lookAheadIndex = m_path.FindSegmentIndexAtDistance(currentDistance + LookAheadDistance);
@@ -1197,7 +1197,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 		//s_passibilityCheckMaxCount = max(s_passibilityCheckMaxCount, m_reachTestCount);
 		//dc->Draw3dLabel(m_curPos + up, 1.5f, "%d/%d (%d)", m_reachTestCount, s_passibilityCheckMaxCount, s_cheapTestSuccess);
 	}
-#endif    // !defined _RELEASE
+#endif      // !defined _RELEASE
 
 	return targetReachable;
 }
@@ -1470,8 +1470,8 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 
 			MNM::vector3_t mnmStartLoc = MNM::vector3_t(MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z));
 			MNM::TriangleID triStart = grid.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange);
-			IF_UNLIKELY(!triStart)
-			return false;
+			IF_UNLIKELY (!triStart)
+				return false;
 
 			float currentZ = startLoc.z;
 			for (size_t i = 0; i < length; ++i)

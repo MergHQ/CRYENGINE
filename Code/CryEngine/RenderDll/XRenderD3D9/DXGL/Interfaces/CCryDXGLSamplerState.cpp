@@ -38,7 +38,7 @@ bool CCryDXGLSamplerState::Initialize(NCryOpenGL::CContext* pContext)
 
 void CCryDXGLSamplerState::Apply(uint32 uStage, uint32 uSlot, NCryOpenGL::CContext* pContext)
 {
-	IF_UNLIKELY(!m_pGLState)
+	IF_UNLIKELY (!m_pGLState)
 	{
 		if (!Initialize(pContext))
 			DXGL_FATAL("Deferred sampler state creation failed");

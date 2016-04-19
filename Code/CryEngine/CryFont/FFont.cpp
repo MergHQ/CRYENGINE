@@ -146,24 +146,24 @@ void CFFont::Free()
 
 void CFFont::DrawString(float x, float y, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
 {
-	IF(!pStr, 0)
-	return;
+	IF (!pStr, 0)
+		return;
 
 	DrawStringUInternal(x, y, 1.0f, pStr, asciiMultiLine, ctx);
 }
 
 void CFFont::DrawString(float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
 {
-	IF(!pStr, 0)
-	return;
+	IF (!pStr, 0)
+		return;
 
 	DrawStringUInternal(x, y, z, pStr, asciiMultiLine, ctx);
 }
 
 void CFFont::DrawStringUInternal(float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
 {
-	IF(!pStr || !m_pFontTexture || ctx.m_fxIdx >= m_effects.size() || m_effects[ctx.m_fxIdx].m_passes.empty(), 0)
-	return;
+	IF (!pStr || !m_pFontTexture || ctx.m_fxIdx >= m_effects.size() || m_effects[ctx.m_fxIdx].m_passes.empty(), 0)
+		return;
 
 	IRenderer* pRenderer = gEnv->pRenderer;
 	assert(pRenderer);
@@ -180,8 +180,8 @@ void CFFont::RenderCallback(float x, float y, float z, const char* pStr, const b
 {
 	const size_t fxSize = m_effects.size();
 
-	IF(fxSize && m_texID == -1 && !InitTexture(), 0)
-	return;
+	IF (fxSize && m_texID == -1 && !InitTexture(), 0)
+		return;
 
 	Prepare(pStr, true);
 
@@ -313,7 +313,7 @@ void CFFont::RenderCallback(float x, float y, float z, const char* pStr, const b
 			float y1 = baseXY.y + textSize.y + 6;
 
 			bool culled = false;
-			IF(ctx.m_clippingEnabled, 0)
+			IF (ctx.m_clippingEnabled, 0)
 			{
 				float clipX = ctx.m_clipX;
 				float clipY = ctx.m_clipY;
@@ -332,7 +332,7 @@ void CFFont::RenderCallback(float x, float y, float z, const char* pStr, const b
 				//	culled = true;
 			}
 
-			IF(!culled, 1)
+			IF (!culled, 1)
 			{
 				Vec3 v0(x0, y0, z);
 				Vec3 v2(x1, y1, z);
@@ -579,7 +579,7 @@ void CFFont::RenderCallback(float x, float y, float z, const char* pStr, const b
 			pVertex[vbOffset + 5].st = tc0;
 			vbOffset += 6;
 
-			IF(vbOffset == MaxDrawVBQuads * 6, 0)
+			IF (vbOffset == MaxDrawVBQuads * 6, 0)
 			{
 				pRenderer->DrawDynVB(m_pDrawVB, 0, vbOffset, 0, prtTriangleList);
 				vbOffset = 0;
@@ -593,8 +593,8 @@ void CFFont::RenderCallback(float x, float y, float z, const char* pStr, const b
 			charX += advance;
 		}
 
-		IF(vbOffset, 1)
-		pRenderer->DrawDynVB(m_pDrawVB, 0, vbOffset, 0, prtTriangleList);
+		IF (vbOffset, 1)
+			pRenderer->DrawDynVB(m_pDrawVB, 0, vbOffset, 0, prtTriangleList);
 	}
 
 	// restore the old states
@@ -603,8 +603,8 @@ void CFFont::RenderCallback(float x, float y, float z, const char* pStr, const b
 
 Vec2 CFFont::GetTextSize(const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
 {
-	IF(!pStr, 0)
-	return Vec2(0.0f, 0.0f);
+	IF (!pStr, 0)
+		return Vec2(0.0f, 0.0f);
 
 	return GetTextSizeUInternal(pStr, asciiMultiLine, ctx);
 }
@@ -613,8 +613,8 @@ Vec2 CFFont::GetTextSizeUInternal(const char* pStr, const bool asciiMultiLine, c
 {
 	const size_t fxSize = m_effects.size();
 
-	IF(!pStr || !m_pFontTexture || !fxSize, 0)
-	return Vec2(0, 0);
+	IF (!pStr || !m_pFontTexture || !fxSize, 0)
+		return Vec2(0, 0);
 
 	Prepare(pStr, false);
 

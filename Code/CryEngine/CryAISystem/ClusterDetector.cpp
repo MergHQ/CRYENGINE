@@ -282,7 +282,7 @@ void ClusterDetector::UpdateClustersCenter()
 	ClusterDetector::ClustersArray::iterator it = m_internalState.clusters.begin();
 	for (; it != m_internalState.clusters.end(); ++it)
 	{
-		IF_UNLIKELY(it->numberOfElements == 0)
+		IF_UNLIKELY (it->numberOfElements == 0)
 		{
 			// This should not happen anymore but if it does, for specific
 			// of layout the points to be clustered, it's still gracefully

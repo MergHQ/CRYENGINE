@@ -876,7 +876,7 @@ void CD3D9Renderer::GenerateObjSprites(PodArray<struct SVegetationSpriteInfo>* p
 				gEnv->pLog->LogWarning("Trying to generate sprite for non suitable stat object. Please turn off sprite gen for group \"%s\" around (%.3f, %.3f, %.3f) and re-export the level!", pGroupFilePath, loc.x, loc.y, loc.z);
 				add = false;
 			}
-			IF(add, 1)
+			IF (add, 1)
 #endif
 			sSGI.AddElem(SGI);
 		}

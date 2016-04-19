@@ -196,11 +196,11 @@ struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
 		assert(nSize <= m_arrController.size());
 		assert(m_arrController.size() == nSize);
 
-		IF(m_arrController.size() != nSize, false)
-		return NULL;
+		IF (m_arrController.size() != nSize, false)
+			return NULL;
 
-		IF(nSize == 0, false)   // don't try to search in empty arrays
-		return NULL;
+		IF (nSize == 0, false)   // don't try to search in empty arrays
+			return NULL;
 
 		const uint32* arrControllerLookup = &m_arrControllerLookupVector[0];
 		int32 low = 0;

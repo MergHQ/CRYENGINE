@@ -769,8 +769,8 @@ void CCullThread::CheckOcclusion(SRenderingPassInfo passInfo)
 ///////////////////////////////////////////////////////////////////////////////
 bool CCullThread::TestAABB(const AABB& rAABB, float fEntDistance, float fVerticalExpand)
 {
-	IF(GetCVars()->e_CheckOcclusion == 0, 0)
-	return true;
+	IF (GetCVars()->e_CheckOcclusion == 0, 0)
+		return true;
 
 	const AABB PosAABB = AABB(m_Position, 0.5f);
 	const float Bias = GetCVars()->e_CoverageBufferAABBExpand;
@@ -800,8 +800,8 @@ bool CCullThread::TestAABB(const AABB& rAABB, float fEntDistance, float fVertica
 
 bool CCullThread::TestQuad(const Vec3& vCenter, const Vec3& vAxisX, const Vec3& vAxisY)
 {
-	IF(GetCVars()->e_CheckOcclusion == 0, 0)
-	return true;
+	IF (GetCVars()->e_CheckOcclusion == 0, 0)
+		return true;
 
 	if (!m_Enabled)
 		return true;

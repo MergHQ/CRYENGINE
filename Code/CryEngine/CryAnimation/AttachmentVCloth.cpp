@@ -769,8 +769,8 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	// get skinning data
 	const int numClothLods = m_clothPiece.GetNumLods();
 	const bool swSkin = (nRenderLOD == 0) && (Console::GetInst().ca_vaEnable != 0) && (nRenderLOD < numClothLods);
-	IF(!swSkin, 1)
-	pObj->m_ObjFlags |= FOB_SKINNED;
+	IF (!swSkin, 1)
+		pObj->m_ObjFlags |= FOB_SKINNED;
 
 	pD->m_pSkinningData = GetVertexTransformationData(swSkin, nRenderLOD);
 	m_pRenderSkin->m_arrModelMeshes[nRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
@@ -796,7 +796,7 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 
 		pRenderMesh = m_pRenderMeshsSW[iCurrentRenderMeshID];
 
-		IF(pRenderMesh && bNewFrame, 1)
+		IF (pRenderMesh && bNewFrame, 1)
 		{
 			CModelMesh* pModelMesh = m_pRenderSkin->GetModelMesh(nRenderLOD);
 			CSoftwareMesh& geometry = pModelMesh->m_softwareMesh;

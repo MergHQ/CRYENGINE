@@ -577,8 +577,8 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 	// get skinning data
 	const bool swSkin = (nRenderLOD == 0) && ShouldSwSkin() && (Console::GetInst().ca_vaEnable != 0);
 
-	IF(!swSkin, 1)
-	pObj->m_ObjFlags |= FOB_SKINNED;
+	IF (!swSkin, 1)
+		pObj->m_ObjFlags |= FOB_SKINNED;
 
 	if (swSkin && bNewFrame)
 	{
@@ -616,7 +616,7 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 
 		pRenderMesh = m_pRenderMeshsSW[iCurrentRenderMeshID];
 
-		IF(pRenderMesh && bNewFrame, 1)
+		IF (pRenderMesh && bNewFrame, 1)
 		{
 			CModelMesh* pModelMesh = m_pModelSkin->GetModelMesh(nRenderLOD);
 			CSoftwareMesh& geometry = pModelMesh->m_softwareMesh;

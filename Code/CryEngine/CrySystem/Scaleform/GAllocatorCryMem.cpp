@@ -57,16 +57,16 @@ void* GSysAllocCryMem::Alloc(UPInt size, UPInt align)
 
 	#if defined(TRACK_ALLOCATIONS)
 	CryInterlockedExchangeAdd(&m_stats.AllocCount, 1);
-	IF(ptr, 1)
+	IF (ptr, 1)
 	{
 		CryInterlockedExchangeAdd(&m_stats.Allocated, size);
-		IF(allocateInHeap, 1)
-		CryInterlockedExchangeAdd(&m_stats.AllocatedInHeap, size);
+		IF (allocateInHeap, 1)
+			CryInterlockedExchangeAdd(&m_stats.AllocatedInHeap, size);
 	}
 	#endif
 
 	#if !defined(_RELEASE)
-	IF(!ptr, 0)
+	IF (!ptr, 0)
 	{
 		CryGFxLog::GetAccess().LogError("Allocation request for %d bytes failed. Unexpected behavior to occur!", (int)size);
 		CryGFxLog::GetAccess().LogError("Either ran out of memory or Flash address space is fragmented");
@@ -76,7 +76,7 @@ void* GSysAllocCryMem::Alloc(UPInt size, UPInt align)
 		CryGFxLog::GetAccess().LogError("%.2f MB address space size for Flash heap", m_addressSpaceSize / (1024.0f * 1024.0f));
 		CryGFxLog::GetAccess().LogError("%d bytes is size threshold for allocations to go through Flash heap", FlashHeapAllocSizeThreshold);
 		ICVar* const pVar = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_error_debugbreak") : nullptr;
-		IF(pVar && pVar->GetIVal(), 0)
+		IF (pVar && pVar->GetIVal(), 0)
 		{
 			__debugbreak();
 		}
@@ -90,11 +90,11 @@ bool GSysAllocCryMem::Free(void* ptr, UPInt size, UPInt align)
 {
 	#if defined(TRACK_ALLOCATIONS)
 	CryInterlockedExchangeAdd(&m_stats.FreeCount, 1);
-	IF(ptr, 1)
+	IF (ptr, 1)
 	{
 		CryInterlockedExchangeAdd(&m_stats.Allocated, -(long)size);
-		IF(size < FlashHeapAllocSizeThreshold, 1)
-		CryInterlockedExchangeAdd(&m_stats.AllocatedInHeap, -(long)size);
+		IF (size < FlashHeapAllocSizeThreshold, 1)
+			CryInterlockedExchangeAdd(&m_stats.AllocatedInHeap, -(long)size);
 	}
 	#endif
 
@@ -291,7 +291,7 @@ void GFxMemoryArenaWrapper::Destroy(unsigned int arenaID)
 	CryAutoCriticalSection lock(m_lock);
 
 	#if !defined(_RELEASE)
-	IF(!m_arenasRefCnt[arenaID], 0) __debugbreak();
+	IF (!m_arenasRefCnt[arenaID], 0) __debugbreak();
 	#endif
 	if (!--m_arenasRefCnt[arenaID])
 	{

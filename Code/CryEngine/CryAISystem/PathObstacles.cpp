@@ -1082,8 +1082,8 @@ void CPathObstacles::CalculateObstaclesAroundActor(const CPipeUser* pPipeUser)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
-	IF_UNLIKELY(!pPipeUser)
-	return;
+	IF_UNLIKELY (!pPipeUser)
+		return;
 
 	const float criticalDist = 2.0f;
 	const int64 criticalTimeMs = 2000;

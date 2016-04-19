@@ -582,7 +582,7 @@ CDefragAllocator::Index CDefragAllocator::AllocateChunk()
 		CDBA_ASSERT(result == (m_chunks.size() - 1));
 	}
 
-	IF_LIKELY(result != InvalidChunkIdx)
+	IF_LIKELY (result != InvalidChunkIdx)
 	{
 		SDefragAllocChunk& chunk = m_chunks[result];
 		chunk.attr.SetBusy(false);
@@ -662,7 +662,7 @@ IDefragAllocator::Hdl CDefragAllocator::Allocate_Locked(size_t sz, size_t alignm
 	{
 		SplitResult sr = SplitFreeBlock(bestChunkIdx, sz, alignment, true);
 
-		IF_LIKELY(sr.bSuccessful)
+		IF_LIKELY (sr.bSuccessful)
 		{
 			SDefragAllocChunk& bestChunk = m_chunks[bestChunkIdx];
 			CDBA_ASSERT(bestChunk.attr.GetSize() == sz);
@@ -1037,8 +1037,8 @@ size_t CDefragAllocator::Defrag_FindMovesBwd(PendingMove** pMoves, size_t maxMov
 					if (dstChunkIdx != InvalidChunkIdx)
 					{
 						PendingMove* pPM = AllocPendingMove();
-						IF_UNLIKELY(!pPM)
-						return numMoves;
+						IF_UNLIKELY (!pPM)
+							return numMoves;
 
 						// Found a possible move, so try and mark the chunk as moveable - as long as it's still a valid candidate.
 						if (TryMarkAsMoving(candidateChunk, 0xffffffff))
@@ -1118,8 +1118,8 @@ size_t CDefragAllocator::Defrag_FindMovesBwd(PendingMove** pMoves, size_t maxMov
 					if (dstChunkIdx != InvalidChunkIdx)
 					{
 						PendingMove* pPM = AllocPendingMove();
-						IF_UNLIKELY(!pPM)
-						return numMoves;
+						IF_UNLIKELY (!pPM)
+							return numMoves;
 
 						// Found a possible move, so try and mark the chunk as moveable - as long as it's still a valid candidate.
 						if (TryMarkAsMoving(candidateChunk, 0xffffffff))
@@ -1224,8 +1224,8 @@ size_t CDefragAllocator::Defrag_FindMovesFwd(PendingMove** pMoves, size_t maxMov
 				if (dstChunkIdx != InvalidChunkIdx)
 				{
 					PendingMove* pPM = AllocPendingMove();
-					IF_UNLIKELY(!pPM)
-					return numMoves;
+					IF_UNLIKELY (!pPM)
+						return numMoves;
 
 					CDBA_ASSERT(!m_chunks[dstChunkIdx].attr.IsBusy());
 					CDBA_ASSERT(m_chunks[dstChunkIdx].attr.GetSize() >= candidateChunkAttr.GetSize());

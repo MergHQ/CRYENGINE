@@ -1194,8 +1194,8 @@ bool CShaderMan::LoadShaderStartupCache()
 void CShaderMan::UnloadShaderStartupCache()
 {
 	// Called from the MT so need to flush RT
-	IF(gRenDev->m_pRT, 1)
-	gRenDev->m_pRT->FlushAndWait();
+	IF (gRenDev->m_pRT, 1)
+		gRenDev->m_pRT->FlushAndWait();
 
 #if defined(SHADERS_SERIALIZING)
 	// Free all import data allowing us to close the startup pack
@@ -1789,7 +1789,7 @@ void CShaderResources::CreateModifiers(SInputShaderResources* pInRes)
 		SEfResTexture* pDst = m_Textures[i];
 		pDst->m_Ext.m_nUpdateFlags = 0;
 
-		IF(pDst->m_Sampler.m_pDynTexSource, 0)
+		IF (pDst->m_Sampler.m_pDynTexSource, 0)
 		{
 			if (!pDst->m_Ext.m_pTexModifier)
 			{
@@ -1944,7 +1944,7 @@ void SEfResTexture::Update(int nTSlot)
 
 	const SEfTexModificator* const pMod = m_Ext.m_pTexModifier;
 
-	IF(!pMod, 1)
+	IF (!pMod, 1)
 	{
 		if (nTSlot == 0)
 			rd->m_RP.m_FlagsShader_MD |= m_Ext.m_nUpdateFlags;
@@ -1997,7 +1997,7 @@ void SEfResTexture::UpdateWithModifier(int nTSlot)
 	pMod->m_Tiling[1] = (float)__fsel(-fabsf(fTiling1), 1.0f, fTiling1);
 
 	IDynTextureSourceImpl* pDynTexSrcImpl = (IDynTextureSourceImpl*) m_Sampler.m_pDynTexSource;
-	IF(pDynTexSrcImpl, 0)
+	IF (pDynTexSrcImpl, 0)
 	{
 		Matrix44& m = pMod->m_TexMatrix;
 		m.SetIdentity();

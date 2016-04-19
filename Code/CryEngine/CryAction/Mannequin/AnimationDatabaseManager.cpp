@@ -2578,7 +2578,7 @@ std::vector<CAnimationDatabase*> CAnimationDatabaseManager::FindImpactedDatabase
 	}
 
 	CRY_ASSERT(false == databases.empty());
-	IF_UNLIKELY(databases.empty())
+	IF_UNLIKELY (databases.empty())
 	{
 		databases.push_back(const_cast<CAnimationDatabase*>(pWorkingDatabase));
 	}

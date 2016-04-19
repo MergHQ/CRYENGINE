@@ -1306,7 +1306,7 @@ void CTexture::StreamUpdateStats()
 					pTex->m_bUsedRecently = 1;
 					pBegunUsing[nBegun++] = pTex;
 
-					IF_UNLIKELY(nBegun == CRY_ARRAY_COUNT(pBegunUsing))
+					IF_UNLIKELY (nBegun == CRY_ARRAY_COUNT(pBegunUsing))
 					{
 						pListener->OnBegunUsingTextures(pBegunUsing, nBegun);
 						nBegun = 0;
@@ -1320,7 +1320,7 @@ void CTexture::StreamUpdateStats()
 					pTex->m_bUsedRecently = 0;
 					pStoppedUsing[nStopped++] = pTex;
 
-					IF_UNLIKELY(nStopped == CRY_ARRAY_COUNT(pStoppedUsing))
+					IF_UNLIKELY (nStopped == CRY_ARRAY_COUNT(pStoppedUsing))
 					{
 						pListener->OnEndedUsingTextures(pStoppedUsing, nStopped);
 						nStopped = 0;

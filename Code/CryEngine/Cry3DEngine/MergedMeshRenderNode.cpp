@@ -1026,17 +1026,17 @@ static inline void ExtractSphereSet(
 			if (pent->GetiForeignData() == PHYS_FOREIGN_ID_ENTITY)
 			{
 				IEntity* pEntity = (IEntity*)pent->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
-				IF(!pEntity, 0)
-				return;
+				IF (!pEntity, 0)
+					return;
 				ICharacterInstance* pCharInstance = pEntity->GetCharacter(0);
-				IF(!pCharInstance, 0)
-				return;
+				IF (!pCharInstance, 0)
+					return;
 				ISkeletonPose* pSkeletonPose = pCharInstance->GetISkeletonPose();
-				IF(!pSkeletonPose, 0)
-				return;
+				IF (!pSkeletonPose, 0)
+					return;
 				IPhysicalEntity* pEnt = pSkeletonPose->GetCharacterPhysics();
-				IF(!pEnt || pEnt->GetType() != PE_ARTICULATED, 0)
-				return;
+				IF (!pEnt || pEnt->GetType() != PE_ARTICULATED, 0)
+					return;
 				ExtractSphereSet(pEnt, pColliders, nColliders, visibleAABB, true);
 			}
 		}
@@ -1524,7 +1524,7 @@ bool CGeometryManager::PrepareLOD(SMMRMGeometry* geometry, CStatObj* host, size_
 
 	// ChrisR: The below block is disabled for now as it requires all levels to be re-exported
 	// It will be enabled in two weeks and the above comment removed
-	IF((!(renderMesh = statObj->GetRenderMesh())) || (!gEnv->IsEditor() && (Cry3DEngineBase::m_p3DEngine->m_bInShutDown || Cry3DEngineBase::m_p3DEngine->m_bInUnload)), 0)
+	IF ((!(renderMesh = statObj->GetRenderMesh())) || (!gEnv->IsEditor() && (Cry3DEngineBase::m_p3DEngine->m_bInShutDown || Cry3DEngineBase::m_p3DEngine->m_bInUnload)), 0)
 	{
 		geometry->state = SMMRMGeometry::NO_RENDERMESH;
 		return false;
@@ -1648,12 +1648,12 @@ bool CGeometryManager::PrepareLOD(SMMRMGeometry* geometry, CStatObj* host, size_
 			if (weights) weightsForIndex = weights[index];
 			for (size_t k = 0; k < chunk->nvertices; ++k)
 			{
-				IF(vtx[index] != chunk->general[k].xyz, 1) continue;
-				IF(colour && colour[index] != chunk->general[k].color.dcolor, 1) continue;
-				IF(uv && uv[index] != chunk->general[k].st, 1) continue;
-				IF(qtangents && qtangents[index] != chunk->qtangents[k], 1) continue;
-				IF(norm && norm[index].ToVec3() != chunk->normals[k], 1) continue;
-				IF(weights && chunk->weights[k] != weightsForIndex, 1) continue;
+				IF (vtx[index] != chunk->general[k].xyz, 1) continue;
+				IF (colour && colour[index] != chunk->general[k].color.dcolor, 1) continue;
+				IF (uv && uv[index] != chunk->general[k].st, 1) continue;
+				IF (qtangents && qtangents[index] != chunk->qtangents[k], 1) continue;
+				IF (norm && norm[index].ToVec3() != chunk->normals[k], 1) continue;
+				IF (weights && chunk->weights[k] != weightsForIndex, 1) continue;
 				chkidx = (vtx_idx)k;
 				break;
 			}
@@ -1745,7 +1745,7 @@ void CGeometryManager::PrepareGeometry(SMMRMGeometry* geometry)
 	{
 		bool bResubmit = false;
 		success &= PrepareLOD(geometry, statObj, i, bResubmit);
-		IF(bResubmit, 0)
+		IF (bResubmit, 0)
 		{
 			CrySleep(10);
 			TPVRNPrepGeomJob job(geometry);
@@ -2296,14 +2296,14 @@ IRenderNode* CMergedMeshRenderNode::AddInstance(const SProcVegSample& sample)
 
 	SMMRMGroupHeader* header = NULL;
 	StatInstGroup* group = &GetStatObjGroup(sample.InstGroupId);
-	IF(!group, 0)
+	IF (!group, 0)
 	{
 		CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR,
 		           "CMergedMeshRenderNode::AddInstance no valid statinstgroup given");
 		return NULL;
 	}
 	CStatObj* statObj = group->GetStatObj();
-	IF(!statObj, 0)
+	IF (!statObj, 0)
 	{
 		CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR,
 		           "CMergedMeshRenderNode::AddInstance no valid statobj given");
@@ -2511,8 +2511,8 @@ void CMergedMeshRenderNode::CreateRenderMesh(RENDERMESH_UPDATE_TYPE type, const 
 	{
 		MEMORY_SCOPE_CHECK_HEAP();
 		SMMRMGroupHeader* group = &m_groups[i];
-		IF(group->numSamples == 0 || group->specMismatch || ((int)type != (int)group->is_dynamic), 0)
-		continue;
+		IF (group->numSamples == 0 || group->specMismatch || ((int)type != (int)group->is_dynamic), 0)
+			continue;
 		size_t ii = 0, iv = 0;
 		for (j = 0; j < group->numVisbleChunks; ++j)
 		{
@@ -2562,8 +2562,8 @@ void CMergedMeshRenderNode::CreateRenderMesh(RENDERMESH_UPDATE_TYPE type, const 
 	{
 		MEMORY_SCOPE_CHECK_HEAP();
 		SMMRMGroupHeader* group = &m_groups[i];
-		IF(group->numSamples == 0 || group->specMismatch || ((int)type != (int)group->is_dynamic) || num_vi[i] == 0, 0)
-		continue;
+		IF (group->numSamples == 0 || group->specMismatch || ((int)type != (int)group->is_dynamic) || num_vi[i] == 0, 0)
+			continue;
 		SMMRM* mesh = &renderMeshes[groups_mesh[i]];
 		SMMRMUpdateContext& update = mesh->updates[num_updates[groups_mesh[i]]++];
 		update.group = group;
@@ -2640,10 +2640,10 @@ done:
 			vtx_idx* idxBuf = NULL;
 
 			vtxBuf.data = (Vec3f16*)rm->GetPosPtrNoCache(vtxBuf.iStride, FSL_CREATE_MODE);
-			IF(mesh->hasNormals, 1)
-			nrmBuf.data = (Vec3f16*)rm->GetNormPtr(nrmBuf.iStride, FSL_CREATE_MODE);
-			IF(mesh->hasTangents, 1)
-			tgtBuf.data = (SPipTangents*)rm->GetTangentPtr(tgtBuf.iStride, FSL_CREATE_MODE);
+			IF (mesh->hasNormals, 1)
+				nrmBuf.data = (Vec3f16*)rm->GetNormPtr(nrmBuf.iStride, FSL_CREATE_MODE);
+			IF (mesh->hasTangents, 1)
+				tgtBuf.data = (SPipTangents*)rm->GetTangentPtr(tgtBuf.iStride, FSL_CREATE_MODE);
 			idxBuf = rm->GetIndexPtr(FSL_CREATE_MODE);
 
 			if (!rm->CanRender() || !vtxBuf || !idxBuf ||
@@ -3028,8 +3028,8 @@ void CMergedMeshRenderNode::RenderRenderMesh(
 		for (size_t j = 0; j < mesh.rms.size(); ++j)
 		{
 			IRenderMesh* rm = mesh.rms[j];
-			IF(!rm, 0)
-			continue;
+			IF (!rm, 0)
+				continue;
 
 			rm->Render(roMat, passInfo);
 		}
@@ -3045,8 +3045,8 @@ bool CMergedMeshRenderNode::PostRender(const SRenderingPassInfo& passInfo)
 
 	// Sadly because of the interleaved renderchunks structure, we can
 	// only start building a mesh when all culling tasks have completed.
-	IF(m_cullState.IsRunning(), 1)
-	return true;
+	IF (m_cullState.IsRunning(), 1)
+		return true;
 
 	const float distance = (s_mmrm_globals.camera.GetPosition() - m_pos).len();
 
@@ -3646,7 +3646,7 @@ uint32 CMergedMeshRenderNode::VisibleInstances(uint32 frameId) const
 
 uint32 CMergedMeshRenderNode::SpineCount() const
 {
-	IF(gEnv->IsEditor() || m_SpineCount == (size_t)-1, 0)
+	IF (gEnv->IsEditor() || m_SpineCount == (size_t)-1, 0)
 	{
 		uint32 count = 0u;
 		bool all_prepared = true;
@@ -3658,8 +3658,8 @@ uint32 CMergedMeshRenderNode::SpineCount() const
 				count += m_groups[i].procGeom->numSpineVtx * m_groups[i].numSamples;
 			}
 		}
-		IF(all_prepared, 1)
-		m_SpineCount = count;
+		IF (all_prepared, 1)
+			m_SpineCount = count;
 		return (count);
 	}
 	return m_SpineCount;
@@ -3667,7 +3667,7 @@ uint32 CMergedMeshRenderNode::SpineCount() const
 
 uint32 CMergedMeshRenderNode::DeformCount() const
 {
-	IF(gEnv->IsEditor() || m_DeformCount == (size_t)-1, 0)
+	IF (gEnv->IsEditor() || m_DeformCount == (size_t)-1, 0)
 	{
 		uint32 count = 0u;
 		bool all_prepared = true;
@@ -3679,8 +3679,8 @@ uint32 CMergedMeshRenderNode::DeformCount() const
 				count += m_groups[i].procGeom->numVtx;
 			}
 		}
-		IF(all_prepared, 1)
-		m_DeformCount = count;
+		IF (all_prepared, 1)
+			m_DeformCount = count;
 		return count;
 	}
 	return m_DeformCount;
@@ -3710,7 +3710,7 @@ bool CMergedMeshRenderNode::UpdateStreamableComponents(
   , bool bFullUpdate)
 {
 	CObjManager* pObjManager = GetObjManager();
-	IF(m_usedMaterials.size() == 0u, 0)
+	IF (m_usedMaterials.size() == 0u, 0)
 	{
 		for (size_t i = 0; i < m_nGroups; ++i)
 		{
@@ -3744,12 +3744,12 @@ bool CMergedMeshRenderNode::UpdateStreamableComponents(
 
 bool CMergedMeshRenderNode::SyncAllJobs()
 {
-	IF(m_cullState.IsRunning(), 0)
-	return false;
-	IF(m_updateState.IsRunning(), 0)
-	return false;
-	IF(m_spineInitializationState.IsRunning(), 0)
-	return false;
+	IF (m_cullState.IsRunning(), 0)
+		return false;
+	IF (m_updateState.IsRunning(), 0)
+		return false;
+	IF (m_spineInitializationState.IsRunning(), 0)
+		return false;
 	return true;
 }
 
@@ -4425,17 +4425,17 @@ void CMergedMeshesManager::Update(const SRenderingPassInfo& passInfo)
 #if !defined(_RELEASE)
 			if (GetCVars()->e_MergedMeshesDebug & 0x2) node->PrintState(yPos);
 #endif
-			IF(node->m_LastDrawFrame != frameId, 1)
+			IF (node->m_LastDrawFrame != frameId, 1)
 			{
 				node->m_SizeInVRam = 0u;
 				node->DeleteRenderMesh(CMergedMeshRenderNode::RUT_DYNAMIC);
 			}
-			IF((frameId - node->m_LastDrawFrame) > 0x7ffff, 1) // arbitrary high number
+			IF ((frameId - node->m_LastDrawFrame) > 0x7ffff, 1) // arbitrary high number
 			{
 				node->m_SizeInVRam = 0u;
 				node->DeleteRenderMesh(CMergedMeshRenderNode::RUT_STATIC);
 			}
-			IF(i + 1 < nActiveNodes, 1) CryPrefetch(m_ActiveNodes[i + 1]);
+			IF (i + 1 < nActiveNodes, 1) CryPrefetch(m_ActiveNodes[i + 1]);
 			if (node->m_State == CMergedMeshRenderNode::INITIALIZED
 			    || node->m_State == CMergedMeshRenderNode::DIRTY
 			    || node->m_State == CMergedMeshRenderNode::PREPARING)
@@ -4494,7 +4494,7 @@ void CMergedMeshesManager::Update(const SRenderingPassInfo& passInfo)
 #if 0 && !defined(_RELEASE)
 			if (GetCVars()->e_MergedMeshesDebug & 0x2) node->PrintState(yPos);
 #endif
-			IF(i + 1 < nVisibleNodes, 1) CryPrefetch(m_VisibleNodes[i + 1]);
+			IF (i + 1 < nVisibleNodes, 1) CryPrefetch(m_VisibleNodes[i + 1]);
 			if ((hadOverflow && node->m_LastDrawFrame != frameId)
 			    || node->m_State == CMergedMeshRenderNode::INITIALIZED
 			    || node->m_State == CMergedMeshRenderNode::DIRTY
@@ -4660,8 +4660,8 @@ void CMergedMeshesManager::PostRenderMeshes(const SRenderingPassInfo& passInfo)
 		bool done = true;
 		for (size_t i = 0; i < m_PostRenderNodes.size(); ++i)
 		{
-			IF(m_PostRenderNodes[i] == NULL, 1)
-			continue;
+			IF (m_PostRenderNodes[i] == NULL, 1)
+				continue;
 			if (m_PostRenderNodes[i]->PostRender(passInfo) == false)
 			{
 				m_PostRenderNodes[i] = NULL;
@@ -5023,7 +5023,7 @@ void CDeformableNode::RenderInternalDeform(
 				m_bbox.Add(group->procGeom->aabb.max);
 				pData->m_State = SDeformableData::READY;
 			case SDeformableData::READY: // fallthru from PREPARED
-				IF(update_chunks, 0)
+				IF (update_chunks, 0)
 				{
 					for (size_t j = 0; j < geom->numChunks[0]; ++j)
 					{

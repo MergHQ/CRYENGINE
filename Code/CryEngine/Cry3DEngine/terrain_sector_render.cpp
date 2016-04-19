@@ -86,7 +86,7 @@ void CTerrainTempDataStorage<Type >::Add(const Type& obj)
 	assert(m_nCount < m_nCap);
 
 	// special case for when a reallocation is needed
-	IF(m_nCount == m_nCap, false)
+	IF (m_nCount == m_nCap, false)
 	{
 		CryFatalError("terrain sector scheduled update error");
 		return;
@@ -746,9 +746,9 @@ void CTerrainNode::AddIndexAliased(int _x, int _y, int _step, int nSectorSize, P
 	CTerrain* pTerrain = GetTerrain();
 	int nHeightMapUnitSize = CTerrain::GetHeightMapUnitSize();
 
-	IF(_x && _x < nSectorSize && plstNeighbourSectors, true)
+	IF (_x && _x < nSectorSize && plstNeighbourSectors, true)
 	{
-		IF(_y == 0, false)
+		IF (_y == 0, false)
 		{
 			if (CTerrainNode* pNode = pTerrain->GetSecInfo(m_nOriginX + _x, m_nOriginY + _y - _step, m_nSID))
 			{
@@ -776,9 +776,9 @@ void CTerrainNode::AddIndexAliased(int _x, int _y, int _step, int nSectorSize, P
 		}
 	}
 
-	IF(_y && _y < nSectorSize && plstNeighbourSectors, true)
+	IF (_y && _y < nSectorSize && plstNeighbourSectors, true)
 	{
-		IF(_x == 0, false)
+		IF (_x == 0, false)
 		{
 			if (CTerrainNode* pNode = pTerrain->GetSecInfo(m_nOriginX + _x - _step, m_nOriginY + _y, m_nSID))
 			{

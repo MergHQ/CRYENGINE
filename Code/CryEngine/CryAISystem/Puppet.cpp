@@ -2961,8 +2961,8 @@ void CPuppet::FireCommand(float updateTime)
 		return;
 	}
 
-	IF_UNLIKELY(m_fireMode == FIREMODE_VEHICLE)
-	return;
+	IF_UNLIKELY (m_fireMode == FIREMODE_VEHICLE)
+		return;
 
 	CAIObject* pAttentionTarget = m_refAttentionTarget.GetAIObject();
 	if (pAttentionTarget && ((pAttentionTarget->GetType() == AIOBJECT_TARGET) || pAttentionTarget->IsAgent()))

@@ -357,11 +357,11 @@ void COctreeNode::CompileObjects()
 		{
 			int nFlags = pObj->GetRndFlags();
 
-			IF(nFlags & nSkipShadowCastersRndFlags, 0)
-			continue;
+			IF (nFlags & nSkipShadowCastersRndFlags, 0)
+				continue;
 
-			IF(GetCVars()->e_ShadowsPerObject && gEnv->p3DEngine->GetPerObjectShadow(pObj), 0)
-			continue;
+			IF (GetCVars()->e_ShadowsPerObject && gEnv->p3DEngine->GetPerObjectShadow(pObj), 0)
+				continue;
 
 			EERType eRType = pObj->GetRenderNodeType();
 			float WSMaxViewDist = pObj->GetMaxViewDist();
@@ -383,8 +383,8 @@ void COctreeNode::CompileObjects()
 		{
 			pNext = pObj->m_pNext;
 
-			IF(pObj->m_dwRndFlags & ERF_HIDDEN, 0)
-			continue;
+			IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
+				continue;
 
 			bool bVegetHasAlphaTrans = false;
 
@@ -526,8 +526,8 @@ void COctreeNode::UpdateStaticInstancing()
 			pInst->InvalidatePermanentRenderObject();
 		}
 
-		IF(pObj->m_dwRndFlags & ERF_HIDDEN, 0)
-		continue;
+		IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
+			continue;
 
 		Matrix34A objMatrix;
 		CStatObj* pStatObj = (CStatObj*)pInst->GetEntityStatObj(0, 0, &objMatrix);
@@ -1889,8 +1889,8 @@ bool COctreeNode::UpdateStreamingPriority(PodArray<COctreeNode*>& arrRecursion, 
 			if (pObj->m_pNext)
 				cryPrefetchT0SSE(pObj->m_pNext);
 
-			IF(pObj->m_dwRndFlags & ERF_HIDDEN, 0)
-			continue;
+			IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
+				continue;
 
 #ifdef _DEBUG
 			const char* szName = pObj->GetName();

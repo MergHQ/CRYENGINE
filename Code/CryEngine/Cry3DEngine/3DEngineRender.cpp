@@ -842,7 +842,7 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (!GetCVars()->e_Render)
 		return;
 
-	IF(!m_bEditor && (m_bInShutDown || m_bInUnload) && !GetRenderer()->IsPost3DRendererEnabled(), 0)
+	IF (!m_bEditor && (m_bInShutDown || m_bInUnload) && !GetRenderer()->IsPost3DRendererEnabled(), 0)
 	{
 		// Do not render during shutdown/unloading (should never reach here, unless something wrong with game/editor code)
 		return;
@@ -907,7 +907,7 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 	}
 #endif //SEG_WORLD
 
-	IF(GetCVars()->e_DebugDraw, 0)
+	IF (GetCVars()->e_DebugDraw, 0)
 	{
 		f32 fColor[4] = { 1, 1, 0, 1 };
 
@@ -1490,8 +1490,8 @@ void C3DEngine::RenderInternal(const int nRenderFlags, const SRenderingPassInfo&
 	RenderScene(nRenderFlags, passInfo);
 
 #ifndef _RELEASE
-	IF(GetCVars()->e_LightVolumesDebug, 0)
-	m_LightVolumesMgr.DrawDebug(passInfo);
+	IF (GetCVars()->e_LightVolumesDebug, 0)
+		m_LightVolumesMgr.DrawDebug(passInfo);
 #endif
 
 	if (m_pObjManager && passInfo.IsGeneralPass())
@@ -2263,14 +2263,14 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	Vec3 vPos = GetRenderingCamera().GetPosition();
 
 	// display out of memory message if an allocation failed
-	IF(gEnv->bIsOutOfMemory, 0)
+	IF (gEnv->bIsOutOfMemory, 0)
 	{
 		ColorF fColor(1.0f, 0.0f, 0.0f, 1.0f);
 		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, 4.0f, fColor, "**** Out of Memory ****");
 		fTextPosY += 40.0f;
 	}
 	// display out of memory message if an allocation failed
-	IF(gEnv->bIsOutOfVideoMemory, 0)
+	IF (gEnv->bIsOutOfVideoMemory, 0)
 	{
 		ColorF fColor(1.0f, 0.0f, 0.0f, 1.0f);
 		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, 4.0f, fColor, "**** Out of Video Memory ****");
@@ -2992,7 +2992,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		const float curPhysWaitTime = TICKS_TO_MS(gUpdateTimes[gUpdateTimeIdx].physWaitTime);
 		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE_SMALL, curPhysTime > MAX_PHYS_TIME ? Col_Red : Col_White, "%3.1f ms   WaitPhys", curPhysWaitTime);
 
-		IF(gEnv->pPhysicalWorld, 1)
+		IF (gEnv->pPhysicalWorld, 1)
 		{
 			const float curPLETime = TICKS_TO_MS(gEnv->pPhysicalWorld->GetPumpLoggedEventsTicks());
 			DrawTextRightAligned(fTextPosX, fTextPosY += (fTextStepY - STEP_SMALL_DIFF), DISPLAY_INFO_SCALE_SMALL, curPLETime > MAX_PLE_TIME ? Col_Red : Col_White, "%3.1f ms    PhysEv", curPLETime);
@@ -3000,7 +3000,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		float partTicks = 0;
 
 		IParticleManager* pPartMan = gEnv->p3DEngine->GetParticleManager();
-		IF(pPartMan != NULL, 1)
+		IF (pPartMan != NULL, 1)
 		{
 	#if CRY_PLATFORM_MOBILE
 			const float maxVal = 4.f;
@@ -3025,7 +3025,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		}
 
 		ICharacterManager* pCharManager = gEnv->pCharacterManager;
-		IF(pCharManager != NULL, 1)
+		IF (pCharManager != NULL, 1)
 		{
 	#if CRY_PLATFORM_MOBILE
 			const float maxVal = 5.f;
@@ -3040,7 +3040,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		}
 
 		IAISystem* pAISystem = gEnv->pAISystem;
-		IF(pAISystem != NULL, 1)
+		IF (pAISystem != NULL, 1)
 		{
 	#if CRY_PLATFORM_MOBILE
 			const float maxVal = 6.f;

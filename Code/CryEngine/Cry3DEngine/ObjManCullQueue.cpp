@@ -112,10 +112,10 @@ void NCullQueue::SCullQueue::ProcessInternal(uint32 mainFrameID, CZBufferCuller*
 			for (SCullItem* it = &localQueue.cullItemBuf[localQueue.cullBufReadHeadIndex]; it != cEnd; ++it)
 			{
 				SCullItem& rItem = *it;
-				IF(!(rItem.BufferID & a), 1)
-				continue;
+				IF (!(rItem.BufferID & a), 1)
+					continue;
 
-				IF((rItem.BufferID & 1), 0)  //zbuffer
+				IF ((rItem.BufferID & 1), 0)  //zbuffer
 				{
 					if (!cullBuffer.IsObjectVisible(rItem.objBox, eoot_OBJECT, 0.f, &rItem.pOcclTestVars->nLastOccludedMainFrameID))
 						rItem.pOcclTestVars->nLastOccludedMainFrameID = mainFrameID;
@@ -137,8 +137,8 @@ void NCullQueue::SCullQueue::ProcessInternal(uint32 mainFrameID, CZBufferCuller*
 		for (SCullItem* it = localQueue.cullItemBuf; it != cEnd; ++it)
 		{
 			SCullItem& rItem = *it;
-			IF((rItem.BufferID & 6) & (rItem.pOcclTestVars->nLastNoShadowCastMainFrameID != mainFrameID), 1)
-			rItem.pOcclTestVars->nLastShadowCastMainFrameID = mainFrameID;
+			IF ((rItem.BufferID & 6) & (rItem.pOcclTestVars->nLastNoShadowCastMainFrameID != mainFrameID), 1)
+				rItem.pOcclTestVars->nLastShadowCastMainFrameID = mainFrameID;
 		}
 
 	}

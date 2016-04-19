@@ -23,10 +23,10 @@ CryCriticalSection g_ParticlePoolInitLock;
 ///////////////////////////////////////////////////////////////////////////////
 ParticleObjectPool& ParticleObjectAllocator()
 {
-	IF(g_bParticleObjectPoolInitialized == false, 0)
+	IF (g_bParticleObjectPoolInitialized == false, 0)
 	{
 		AUTO_LOCK(g_ParticlePoolInitLock);
-		IF(g_bParticleObjectPoolInitialized == false, 0)
+		IF (g_bParticleObjectPoolInitialized == false, 0)
 		{
 			new(sStorageParticleObjectPool) ParticleObjectPool();
 			alias_cast<ParticleObjectPool*>(sStorageParticleObjectPool)->Init(Cry3DEngineBase::GetCVars()->e_ParticlesPoolSize << 10);

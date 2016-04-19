@@ -31,7 +31,7 @@ CCryDXGLQuery::~CCryDXGLQuery()
 
 NCryOpenGL::SQuery* CCryDXGLQuery::GetGLQuery(NCryOpenGL::CContext* pContext)
 {
-	IF_UNLIKELY(!m_spGLQuery)
+	IF_UNLIKELY (!m_spGLQuery)
 	{
 		m_spGLQuery = NCryOpenGL::CreateQuery(m_kDesc, pContext);
 		if (!m_spGLQuery)

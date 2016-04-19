@@ -185,7 +185,7 @@ void CAIPlayer::CollectExposedCoverRayComplete(const QueuedRayID& rayID, const R
 void CAIPlayer::GetObservablePositions(ObservableParams& observableParams) const
 {
 	IEntity* entity = GetEntity();
-	IF_UNLIKELY(!entity)
+	IF_UNLIKELY (!entity)
 	{
 		return;
 	}

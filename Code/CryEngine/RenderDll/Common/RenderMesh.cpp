@@ -515,7 +515,7 @@ CRenderMesh::CRenderMesh(const char* szType, const char* szSourceName, bool bLoc
 	for (size_t i = 0; i < 2; ++i)
 		m_asyncUpdateState[i] = m_asyncUpdateStateCounter[i] = 0;
 
-	IF(bLock, 0)//when called from another thread like the Streaming AsyncCallbackCGF, we need to lock it
+	IF (bLock, 0)//when called from another thread like the Streaming AsyncCallbackCGF, we need to lock it
 	{
 		LockForThreadAccess();
 	}
@@ -641,7 +641,7 @@ void CRenderMesh::ReleaseRenderChunks(TRenderChunkArray* pChunks)
 SMeshStream* CRenderMesh::GetVertexStream(int nStream, uint32 nFlags)
 {
 	SMeshStream*& pMS = m_VBStream[nStream];
-	IF(!pMS && (nFlags & FSL_WRITE), 0)
+	IF (!pMS && (nFlags & FSL_WRITE), 0)
 	{
 		pMS = new(AllocateMeshInstanceData(sizeof(SMeshStream), alignof(SMeshStream)))SMeshStream;
 	}
@@ -1045,8 +1045,8 @@ void CRenderMesh::UnlockStream(int nStream)
 	}
 
 	SMeshStream* pMS = GetVertexStream(nStream, 0);
-	IF(pMS, 1)
-	pMS->m_nLockFlags &= ~(FSL_WRITE | FSL_READ | FSL_SYSTEM | FSL_VIDEO);
+	IF (pMS, 1)
+		pMS->m_nLockFlags &= ~(FSL_WRITE | FSL_READ | FSL_SYSTEM | FSL_VIDEO);
 }
 void CRenderMesh::UnlockIndexStream()
 {
@@ -2393,8 +2393,8 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh* pVContainer, EVertexFormat eVF, ui
 
 	m_nFlags &= ~FRM_SKINNEDNEXTDRAW;
 
-	IF(!CanRender(), 0)
-	return false;
+	IF (!CanRender(), 0)
+		return false;
 
 	FUNCTION_PROFILER_RENDER_FLAT
 	  PrefetchVertexStreams();
@@ -4524,16 +4524,16 @@ D3DBuffer* CRenderMesh::_GetD3DVB(int nStream, size_t* offs) const
 {
 	if (SMeshStream* pMS = GetVertexStream(nStream))
 	{
-		IF(pMS->m_nID != ~0u, 1)
-		return gRenDev->m_DevBufMan.GetD3D(pMS->m_nID, offs);
+		IF (pMS->m_nID != ~0u, 1)
+			return gRenDev->m_DevBufMan.GetD3D(pMS->m_nID, offs);
 	}
 	return NULL;
 }
 
 D3DBuffer* CRenderMesh::_GetD3DIB(size_t* offs) const
 {
-	IF(m_IBStream.m_nID != ~0u, 1)
-	return gRenDev->m_DevBufMan.GetD3D(m_IBStream.m_nID, offs);
+	IF (m_IBStream.m_nID != ~0u, 1)
+		return gRenDev->m_DevBufMan.GetD3D(m_IBStream.m_nID, offs);
 	return NULL;
 }
 
@@ -4689,8 +4689,8 @@ void CRenderMesh::Render(CRenderObject* pObj, const SRenderingPassInfo& passInfo
 
 	FUNCTION_PROFILER(GetISystem(), PROFILE_RENDERER);
 
-	IF(!CanRender(), 0)
-	return;
+	IF (!CanRender(), 0)
+		return;
 
 	CRenderer* RESTRICT_POINTER rd = gRenDev;
 	bool bSkinned = (GetChunksSkinned().size() && (pObj->m_ObjFlags & (FOB_SKINNED)));

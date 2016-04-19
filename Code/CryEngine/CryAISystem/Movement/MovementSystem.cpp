@@ -18,8 +18,8 @@ bool IsActorValidForMovementUpdateContextCreation(MovementActor& actor)
 	if (actor.callbacks.getPathFollowerFunction && actor.callbacks.getPathFollowerFunction())
 	{
 		assert(actor.planner.get() != NULL);
-		IF_UNLIKELY(actor.planner.get() == NULL)
-		return false;
+		IF_UNLIKELY (actor.planner.get() == NULL)
+			return false;
 
 		return true;
 	}
@@ -355,7 +355,7 @@ MovementSystem::ActorUpdateStatus MovementSystem::UpdateActor(MovementActor& act
 	// updating the passed in actor. Everything is validated once, here,
 	// before anything else is called, so there's no need to validate again!
 
-	IF_UNLIKELY(!IsActorValidForMovementUpdateContextCreation(actor))
+	IF_UNLIKELY (!IsActorValidForMovementUpdateContextCreation(actor))
 	{
 		return ActorCanBeRemoved;
 	}

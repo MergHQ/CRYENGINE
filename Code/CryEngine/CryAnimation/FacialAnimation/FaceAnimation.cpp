@@ -164,8 +164,8 @@ bool CFacialAnimationContext::Update(CFaceState& faceState, const QuatTS& rAnimL
 	}
 	//////////////////////////////////////////////////////////////////////////
 
-	IF_UNLIKELY(Console::GetInst().ca_DebugFacial == 2)
-	m_debugText = "";
+	IF_UNLIKELY (Console::GetInst().ca_DebugFacial == 2)
+		m_debugText = "";
 
 	for (uint32 nCurChannel = 0; nCurChannel < m_channels.size(); )
 	{
@@ -175,8 +175,8 @@ bool CFacialAnimationContext::Update(CFaceState& faceState, const QuatTS& rAnimL
 		// the startFadeTime most not lie in the future for an active channel
 		// this however CAN happen after a saveload - with horrible consequences
 		// (exploding faces bug)
-		IF_UNLIKELY(m_time < channel.startFadeTime)
-		channel.startFadeTime = m_time;
+		IF_UNLIKELY (m_time < channel.startFadeTime)
+			channel.startFadeTime = m_time;
 
 		// Update channel weight.
 		switch (channel.status)
@@ -197,8 +197,8 @@ bool CFacialAnimationContext::Update(CFaceState& faceState, const QuatTS& rAnimL
 			{
 				float fFadingTime = (m_time - channel.startFadeTime).GetSeconds();
 
-				IF_UNLIKELY(channel.fFadeTime == 0)
-				channel.fFadeTime = 0.001f;
+				IF_UNLIKELY (channel.fFadeTime == 0)
+					channel.fFadeTime = 0.001f;
 
 				float dt = fFadingTime / channel.fFadeTime;
 
@@ -216,8 +216,8 @@ bool CFacialAnimationContext::Update(CFaceState& faceState, const QuatTS& rAnimL
 		case SFacialEffectorChannel::STATUS_FADE_OUT:
 			{
 				float fFadingTime = (m_time - channel.startFadeTime).GetSeconds();
-				IF_UNLIKELY(channel.fFadeTime == 0)
-				channel.fFadeTime = 0.001f;
+				IF_UNLIKELY (channel.fFadeTime == 0)
+					channel.fFadeTime = 0.001f;
 				float dt = fFadingTime / channel.fFadeTime;
 				if (dt >= 1.0f)
 				{
@@ -261,7 +261,7 @@ bool CFacialAnimationContext::Update(CFaceState& faceState, const QuatTS& rAnimL
 		m_nTotalAppliedEffectors = 0;
 	}
 
-	IF_UNLIKELY(Console::GetInst().ca_DebugFacial == 2)
+	IF_UNLIKELY (Console::GetInst().ca_DebugFacial == 2)
 	{
 		CCharInstance* pChar = m_pFace->GetMasterCharacter();
 		if (pChar)
@@ -282,11 +282,11 @@ bool CFacialAnimationContext::Update(CFaceState& faceState, const QuatTS& rAnimL
 		const float newBoneRotationSmoothingRemainingTime = m_fBoneRotationSmoothingRemainingTime - deltaTime;
 		m_fBoneRotationSmoothingRemainingTime = max(0.f, newBoneRotationSmoothingRemainingTime);
 
-		IF_UNLIKELY(Console::GetInst().ca_DebugFacial)
+		IF_UNLIKELY (Console::GetInst().ca_DebugFacial)
 		{
 			if (oldBoneRotationSmoothingRemainingTime)
 			{
-				IF_UNLIKELY(newBoneRotationSmoothingRemainingTime < 0.0f)
+				IF_UNLIKELY (newBoneRotationSmoothingRemainingTime < 0.0f)
 				{
 					CryLogAlways("CFacialAnimationContext::Update(this=%p) disabling bone rotation smoothing.", this);
 				}
@@ -369,7 +369,7 @@ void CFacialAnimationContext::ApplyEffector(CFaceState& faceState, CFacialEffect
 		return;
 	}
 
-	IF_UNLIKELY(Console::GetInst().ca_DebugFacial == 2)
+	IF_UNLIKELY (Console::GetInst().ca_DebugFacial == 2)
 	{
 		string str;
 		str.Format("%s:%.2f, ", pEffector->GetIdentifier().GetString(), fWeight);
@@ -392,8 +392,8 @@ void CFacialAnimationContext::ApplyEffector(CFaceState& faceState, CFacialEffect
 				// functionality.
 
 				float fSubBalance = fBalance;
-				IF_UNLIKELY(pCtrl->GetConstantBalance() != 0)
-				fSubBalance = pCtrl->GetConstantBalance();
+				IF_UNLIKELY (pCtrl->GetConstantBalance() != 0)
+					fSubBalance = pCtrl->GetConstantBalance();
 #else
 				const float fSubBalance = 0.f;
 #endif
@@ -416,7 +416,7 @@ void CFacialAnimationContext::UpdatePlayingSequences(const QuatTS& rAnimLocation
 	{
 		SPlayingSequence& seq = m_sequences[i];
 
-		IF_UNLIKELY(Console::GetInst().ca_DebugFacial == 1)
+		IF_UNLIKELY (Console::GetInst().ca_DebugFacial == 1)
 		{
 			Vec3 pos = rAnimLocationNext.t;
 			float color[4] = { 1, 1, 1, 1 };
@@ -428,7 +428,7 @@ void CFacialAnimationContext::UpdatePlayingSequences(const QuatTS& rAnimLocation
 			continue;
 
 		seq.playTime = (curTime - seq.startTime).GetSeconds();
-		IF_UNLIKELY(seq.playTime >= seq.timeRange.end)
+		IF_UNLIKELY (seq.playTime >= seq.timeRange.end)
 		{
 			if (seq.bLooping)
 			{
@@ -506,7 +506,7 @@ void CFacialAnimationContext::PlaySequence(CFacialAnimSequence* pSequence, bool 
 	seq.pSequenceInstance->BindChannels(this, pSequence);
 	m_sequences.push_back(seq);
 
-	IF_UNLIKELY(Console::GetInst().ca_DebugFacial)
+	IF_UNLIKELY (Console::GetInst().ca_DebugFacial)
 	{
 		CryLogAlways("Play Facial Sequence %s", pSequence->GetName());
 	}
@@ -590,7 +590,7 @@ void CFacialAnimationContext::StopAllSequences()
 	}
 	m_sequences.clear();
 
-	IF_UNLIKELY(Console::GetInst().ca_DebugFacial)
+	IF_UNLIKELY (Console::GetInst().ca_DebugFacial)
 	{
 		CryLogAlways("Stop All Facial Sequences");
 	}

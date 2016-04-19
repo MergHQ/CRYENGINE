@@ -115,13 +115,13 @@ void MNM::PathfinderUtils::QueuedRequest::SetupExplosiveDangers()
 
 void MNM::PathfinderUtils::QueuedRequest::SetupGroupMatesAvoidance()
 {
-	IF_UNLIKELY(!pRequester)
+	IF_UNLIKELY (!pRequester)
 	{
 		return;
 	}
 
 	IAIObject* requesterAIObject = pRequester->GetPathAgentEntity()->GetAI();
-	IF_UNLIKELY(!requesterAIObject)
+	IF_UNLIKELY (!requesterAIObject)
 	{
 		return;
 	}

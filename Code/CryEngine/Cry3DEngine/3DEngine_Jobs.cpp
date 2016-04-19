@@ -339,11 +339,11 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 	//  int y=0;
 #endif
 
-	IF(bUnRegisterOnly, 0)
+	IF (bUnRegisterOnly, 0)
 	{
 		UnRegisterEntityImpl(pEnt);
 		return;
-	};
+	}
 
 	AABB aabb;
 	pEnt->FillBBox(aabb);

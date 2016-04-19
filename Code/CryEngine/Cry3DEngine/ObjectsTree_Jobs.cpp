@@ -131,7 +131,7 @@ void COctreeNode::RenderContent(int nRenderMask, const Vec3& vAmbColor, const SR
 {
 	if (GetCVars()->e_StatObjBufferRenderTasks == 1 && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion"))
 		GetObjManager()->AddCullJobProducer();
-	IF(m_pRenderContentJobQueue == NULL, 0)
+	IF (m_pRenderContentJobQueue == NULL, 0)
 	{
 		m_pRenderContentJobQueue = CryAlignedNew<TRenderContentJobQueue>();
 	}
@@ -238,8 +238,8 @@ void COctreeNode::RenderVegetations(TDoublyLinkedList<IRenderNode>* lstObjects, 
 		if (pNext)
 			cryPrefetchT0SSE(pNext);
 
-		IF(pObj->m_dwRndFlags & ERF_HIDDEN, 0)
-		continue;
+		IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
+			continue;
 
 		if (pObj->m_dwRndFlags & ERF_STATIC_INSTANCING)
 			break;
@@ -314,8 +314,8 @@ void COctreeNode::RenderBrushes(TDoublyLinkedList<IRenderNode>* lstObjects, bool
 		if (pObj->m_pNext)
 			cryPrefetchT0SSE(pObj->m_pNext);
 
-		IF(pObj->m_dwRndFlags & ERF_HIDDEN, 0)
-		continue;
+		IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
+			continue;
 		AABB objBox;
 		memcpy(&objBox, &pObj->m_WSBBox, sizeof(AABB));
 
@@ -363,8 +363,8 @@ void COctreeNode::RenderDecalsAndRoads(TDoublyLinkedList<IRenderNode>* lstObject
 		if (pObj->m_pNext)
 			cryPrefetchT0SSE(pObj->m_pNext);
 
-		IF(pObj->m_dwRndFlags & ERF_HIDDEN, 0)
-		continue;
+		IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
+			continue;
 
 		pObj->FillBBox(objBox);
 
@@ -417,8 +417,8 @@ void COctreeNode::RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects
 		if (pObj->m_pNext)
 			cryPrefetchT0SSE(pObj->m_pNext);
 
-		IF(pObj->m_dwRndFlags & ERF_HIDDEN, 0)
-		continue;
+		IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
+			continue;
 
 		pObj->FillBBox(objBox);
 		EERType rnType = pObj->GetRenderNodeType();
@@ -750,8 +750,8 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 	EERType eRType = pObj->GetRenderNodeType();
 	float WSMaxViewDist = pObj->GetMaxViewDist();
 
-	IF(nFlags & ERF_HIDDEN, 0)
-	return;
+	IF (nFlags & ERF_HIDDEN, 0)
+		return;
 
 	const Vec3& sunDir = Get3DEngine()->GetSunDirNormalized();
 	uint32 sunDirX = (uint32)(sunDir.x * 63.5f + 63.5f);
@@ -1145,12 +1145,12 @@ bool CObjManager::LoadOcclusionMesh(const char* pFileName)
 void CObjManager::PushIntoCullQueue(const SCheckOcclusionJobData& rCheckOcclusionData)
 {
 #if !defined(_RELEASE)
-	IF(!m_CullThread.IsActive(), 0)
+	IF (!m_CullThread.IsActive(), 0)
 	{
 		__debugbreak();
 	}
-	IF(rCheckOcclusionData.type == SCheckOcclusionJobData::QUIT, 0)
-	m_CullThread.SetActive(false);
+	IF (rCheckOcclusionData.type == SCheckOcclusionJobData::QUIT, 0)
+		m_CullThread.SetActive(false);
 #endif
 	m_CheckOcclusionQueue.Push(rCheckOcclusionData);
 }
