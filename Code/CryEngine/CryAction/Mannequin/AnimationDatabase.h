@@ -264,11 +264,6 @@ public:
 
 	static void  RegisterCVars();
 
-protected:
-
-	virtual SFragmentData* CreateSFragmentDataRaw() const;
-	virtual void           DestroySFragmentDataRaw(SFragmentData* ptr) const;
-
 private:
 
 	void              EnumerateFragmentAnimAssets(const CFragment* pFragment, const IAnimationSet* animSet, SAnimAssetReport& assetReport, MannAssetCallback assetCallback, void* callbackContext) const;
