@@ -20,7 +20,7 @@ def build(bld):
 		linux_file_list   = ['platformos.waf_files', 'crysystem_posix.waf_files'],
 		darwin_file_list  = ['platformos.waf_files', 'crysystem_posix.waf_files'],
 		android_file_list = ['platformos.waf_files', 'crysystem_posix.waf_files'],
-		orbis_file_list   = ['crysystem_sce.waf_files', 'crysystem_sce.waf_files', 'crysystem_posix.waf_files',  'crysystem_orbis.waf_files'],
+		orbis_file_list   = ['crysystem_sce.waf_files', 'crysystem_posix.waf_files',  'crysystem_orbis.waf_files'],
 
 		pch  = 'StdAfx.cpp',
 
