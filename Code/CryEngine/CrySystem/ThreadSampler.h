@@ -82,26 +82,26 @@ public:
 	    {                                             \
 	      return n;                                   \
 	    }                                             \
-                                                    \
+	                                                  \
 	    DWORD memorySize() const                      \
 	    {                                             \
 	      return n * sizeof(TSample) + sizeof(DWORD); \
 	    }                                             \
-                                                    \
+	                                                  \
 	    TSample& operator[](DWORD index)              \
 	    {                                             \
 	      index = (index + driverData.index) % n;     \
 	      return driverData.samples[index];           \
 	    }                                             \
-                                                    \
+	                                                  \
 	    friend class CWinThreadSampler;               \
-                                                    \
+	                                                  \
 	  private:                                        \
 	    TSamples ## m()                               \
 	    {                                             \
 	      memset(&driverData, 0, sizeof(driverData)); \
 	    };                                            \
-                                                    \
+	                                                  \
 	    struct                                        \
 	    {                                             \
 	      DWORD   index;                              \

@@ -2150,10 +2150,10 @@ public:
 	byte* GetSubImageData32(int nX, int nY, int nW, int nH, int& nOutTexDim);
 
 	// API depended functions
-	void Unbind();
-	bool Resolve(int nTarget = 0, bool bUseViewportSize = false);
-	bool CreateDeviceTexture(byte * pData[6]);
-	bool RT_CreateDeviceTexture(byte * pData[6]);
+	void               Unbind();
+	bool               Resolve(int nTarget = 0, bool bUseViewportSize = false);
+	bool               CreateDeviceTexture(byte* pData[6]);
+	bool               RT_CreateDeviceTexture(byte* pData[6]);
 	bool               CreateRenderTarget(ETEX_Format eTF, const ColorF& cClear);
 	void               ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload = false);
 	void               Apply(int nTUnit, int nState = -1, int nTexMatSlot = EFTT_UNKNOWN, int nSUnit = -1, SResourceView::KeyType nResViewKey = SResourceView::DefaultView, EHWShaderClass eHWSC = eHWSC_Pixel);

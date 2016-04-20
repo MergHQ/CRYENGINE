@@ -19,12 +19,12 @@ namespace ZipEncrypt
 {
 #ifdef INCLUDE_LIBTOMCRYPT
 void Init(const uint8* pKeyData, uint32 keyLen);
-bool StartStreamCipher(unsigned char key[16], unsigned char IV[16], symmetric_CTR * pCTR, const unsigned int offset = 0);
+bool StartStreamCipher(unsigned char key[16], unsigned char IV[16], symmetric_CTR* pCTR, const unsigned int offset = 0);
 void FinishStreamCipher(symmetric_CTR* pCTR);
 bool DecryptBufferWithStreamCipher(unsigned char* inBuffer, unsigned char* outBuffer, size_t bufferSize, symmetric_CTR* pCTR);
 bool DecryptBufferWithStreamCipher(unsigned char* inBuffer, size_t bufferSize, unsigned char key[16], unsigned char IV[16]);
 int  GetEncryptionKeyIndex(const ZipDir::FileEntry* pFileEntry);
-void GetEncryptionInitialVector(const ZipDir::FileEntry * pFileEntry, unsigned char IV[16]);
+void GetEncryptionInitialVector(const ZipDir::FileEntry* pFileEntry, unsigned char IV[16]);
 
 bool RSA_VerifyData(void* inBuffer, int sizeIn, unsigned char* signedHash, int signedHashSize, rsa_key& publicKey);
 bool RSA_VerifyData(const unsigned char** inBuffers, unsigned int* sizesIn, const int numBuffers, unsigned char* signedHash, int signedHashSize, rsa_key& publicKey);

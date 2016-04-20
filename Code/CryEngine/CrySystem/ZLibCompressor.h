@@ -21,7 +21,7 @@ public:
 
 	virtual void                MD5Init(SMD5Context* pIOCtx);
 	virtual void                MD5Update(SMD5Context* pIOCtx, const char* pInBuff, unsigned int len);
-	virtual void MD5Final(SMD5Context * pIOCtx, char outDigest[16]);
+	virtual void                MD5Final(SMD5Context* pIOCtx, char outDigest[16]);
 };
 
 #endif // __ZLIBCOMPRESSOR_H__

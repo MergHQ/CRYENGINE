@@ -157,40 +157,40 @@ private:
 	typedef CryLobbyID<SCryLANSearchHandle, MAX_LAN_SEARCHES> CryLANSearchHandle;
 	#define CryLANInvalidSearchHandle CryLANSearchHandle()
 
-	ECryLobbyError        StartTask(ETask task, CryMatchMakingTaskID* mmTaskID, CryLobbyTaskID* lTaskID, CryLobbySessionHandle h, void* cb, void* cbArg);
-	void                  StartTaskRunning(CryMatchMakingTaskID mmTaskID);
-	void                  StopTaskRunning(CryMatchMakingTaskID mmTaskID);
-	void                  EndTask(CryMatchMakingTaskID mmTaskID);
-	ECryLobbyError        CreateSessionHandle(CryLobbySessionHandle* h, bool host, uint32 createFlags, int numUsers);
+	ECryLobbyError             StartTask(ETask task, CryMatchMakingTaskID* mmTaskID, CryLobbyTaskID* lTaskID, CryLobbySessionHandle h, void* cb, void* cbArg);
+	void                       StartTaskRunning(CryMatchMakingTaskID mmTaskID);
+	void                       StopTaskRunning(CryMatchMakingTaskID mmTaskID);
+	void                       EndTask(CryMatchMakingTaskID mmTaskID);
+	ECryLobbyError             CreateSessionHandle(CryLobbySessionHandle* h, bool host, uint32 createFlags, int numUsers);
 	CryMatchMakingConnectionID AddRemoteConnection(CryLobbySessionHandle h, CryLobbyConnectionID connectionID, SCryMatchMakingConnectionUID uid, uint32 ip, uint16 port, uint32 numUsers, const char* name, uint8 userData[CRYLOBBY_USER_DATA_SIZE_IN_BYTES], bool isDedicated);
-	virtual void          FreeRemoteConnection(CryLobbySessionHandle h, CryMatchMakingConnectionID id);
-	virtual uint64        GetSIDFromSessionHandle(CryLobbySessionHandle h);
-	ECryLobbyError        CreateSessionSearchHandle(CryLANSearchHandle* h);
-	ECryLobbyError        SetSessionUserData(CryLobbySessionHandle h, SCrySessionUserData* data, uint32 numData);
-	ECryLobbyError        SetSessionData(CryLobbySessionHandle h, SCrySessionData* data);
-	size_t                CalculateServerDataSize(CryLobbySessionHandle h);
-	size_t                CalculateServerDataSize() const;
-	void                  SendServerData(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
-	void                  ServerDataToGame(CryMatchMakingTaskID mmTaskID, uint32 ip, uint16 port, TMemHdl params, uint32 length);
-	void                  ProcessServerData(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
-	CryLobbySessionHandle FindSessionFromServerID(CryLobbySessionHandle h);
+	virtual void               FreeRemoteConnection(CryLobbySessionHandle h, CryMatchMakingConnectionID id);
+	virtual uint64             GetSIDFromSessionHandle(CryLobbySessionHandle h);
+	ECryLobbyError             CreateSessionSearchHandle(CryLANSearchHandle* h);
+	ECryLobbyError             SetSessionUserData(CryLobbySessionHandle h, SCrySessionUserData* data, uint32 numData);
+	ECryLobbyError             SetSessionData(CryLobbySessionHandle h, SCrySessionData* data);
+	size_t                     CalculateServerDataSize(CryLobbySessionHandle h);
+	size_t                     CalculateServerDataSize() const;
+	void                       SendServerData(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
+	void                       ServerDataToGame(CryMatchMakingTaskID mmTaskID, uint32 ip, uint16 port, TMemHdl params, uint32 length);
+	void                       ProcessServerData(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
+	CryLobbySessionHandle      FindSessionFromServerID(CryLobbySessionHandle h);
 
-	void                  StartSessionJoin(CryMatchMakingTaskID mmTaskID);
-	void                  TickSessionJoin(CryMatchMakingTaskID mmTaskID);
-	void                  ProcessSessionRequestJoin(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
-	void                  ProcessSessionRequestJoinResult(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
-	void                  ProcessSessionAddRemoteConnections(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
+	void                       StartSessionJoin(CryMatchMakingTaskID mmTaskID);
+	void                       TickSessionJoin(CryMatchMakingTaskID mmTaskID);
+	void                       ProcessSessionRequestJoin(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
+	void                       ProcessSessionRequestJoinResult(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
+	void                       ProcessSessionAddRemoteConnections(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
 
-	void                  StartSessionDelete(CryMatchMakingTaskID mmTaskID);
+	void                       StartSessionDelete(CryMatchMakingTaskID mmTaskID);
 
-	void                  SendSessionQuery(CTimeValue tv, uint32 index, bool broadcast);
-	void                  SetLocalUserName(CryLobbySessionHandle h, uint32 localUserIndex);
-	virtual const char*   GetConnectionName(CCryMatchMaking::SSession::SRConnection* pConnection, uint32 localUserIndex) const;
-	void                  StartSessionSetLocalUserData(CryMatchMakingTaskID mmTaskID);
-	void                  ProcessLocalUserData(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
-	void                  EndSessionGetUsers(CryMatchMakingTaskID mmTaskID);
+	void                       SendSessionQuery(CTimeValue tv, uint32 index, bool broadcast);
+	void                       SetLocalUserName(CryLobbySessionHandle h, uint32 localUserIndex);
+	virtual const char*        GetConnectionName(CCryMatchMaking::SSession::SRConnection* pConnection, uint32 localUserIndex) const;
+	void                       StartSessionSetLocalUserData(CryMatchMakingTaskID mmTaskID);
+	void                       ProcessLocalUserData(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
+	void                       EndSessionGetUsers(CryMatchMakingTaskID mmTaskID);
 
-	TNetAddress           GetHostAddressFromSessionHandle(CrySessionHandle h);
+	TNetAddress                GetHostAddressFromSessionHandle(CrySessionHandle h);
 
 	#if NETWORK_HOST_MIGRATION
 	void           HostMigrationServerNT(CryMatchMakingTaskID mmTaskID);

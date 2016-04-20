@@ -101,18 +101,18 @@ public:
 
 	virtual IPlatformOS::ECDP_Start                              StartUsingCachePaks(const int user, bool* outWritesOccurred);
 	virtual IPlatformOS::ECDP_End                                EndUsingCachePaks(const int user);
-	virtual IPlatformOS::ECDP_Open DoesCachePakExist(const char* const filename, const size_t size, unsigned char md5[16]);
-	virtual IPlatformOS::ECDP_Open OpenCachePak(const char* const filename, const char* const bindRoot, const size_t size, unsigned char md5[16]);
-	virtual IPlatformOS::ECDP_Close      CloseCachePak(const char* const filename);
-	virtual IPlatformOS::ECDP_Delete     DeleteCachePak(const char* const filename);
-	virtual IPlatformOS::ECDP_Write      WriteCachePak(const char* const filename, const void* const pData, const size_t numBytes);
+	virtual IPlatformOS::ECDP_Open                               DoesCachePakExist(const char* const filename, const size_t size, unsigned char md5[16]);
+	virtual IPlatformOS::ECDP_Open                               OpenCachePak(const char* const filename, const char* const bindRoot, const size_t size, unsigned char md5[16]);
+	virtual IPlatformOS::ECDP_Close                              CloseCachePak(const char* const filename);
+	virtual IPlatformOS::ECDP_Delete                             DeleteCachePak(const char* const filename);
+	virtual IPlatformOS::ECDP_Write                              WriteCachePak(const char* const filename, const void* const pData, const size_t numBytes);
 
-	virtual IPlatformOS::EZipExtractFail ExtractZips(const char* path);
+	virtual IPlatformOS::EZipExtractFail                         ExtractZips(const char* path);
 
-	virtual void                         SetOpticalDriveIdle(bool bIdle);
-	virtual void                         AllowOpticalDriveUsage(bool bAllow);
+	virtual void                                                 SetOpticalDriveIdle(bool bIdle);
+	virtual void                                                 AllowOpticalDriveUsage(bool bAllow);
 
-	virtual bool                         GetLocalIPAddress(char* ipAddress, uint32& ip, int length) const;
+	virtual bool                                                 GetLocalIPAddress(char* ipAddress, uint32& ip, int length) const;
 
 	// ~IPlatformOS
 

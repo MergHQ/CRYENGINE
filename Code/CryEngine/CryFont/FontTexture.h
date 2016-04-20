@@ -108,8 +108,8 @@ public:
 	int PreCacheString(const char* szString, int* pUpdated = 0);
 	// Arguments:
 	//   pSlot - function does nothing if this pointer is 0
-	void GetTextureCoord(CTextureSlot * pSlot, float texCoords[4], int& iCharSizeX, int& iCharSizeY, int& iCharOffsetX, int& iCharOffsetY) const;
-	int GetCharacterWidth(uint32 cChar) const;
+	void GetTextureCoord(CTextureSlot* pSlot, float texCoords[4], int& iCharSizeX, int& iCharSizeY, int& iCharOffsetX, int& iCharOffsetY) const;
+	int  GetCharacterWidth(uint32 cChar) const;
 	//	int GetCharHeightByChar(wchar_t cChar);
 
 	// useful for special feature rendering interleaved with fonts (e.g. box behind the text)

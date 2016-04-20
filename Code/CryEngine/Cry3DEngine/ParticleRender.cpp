@@ -791,7 +791,7 @@ void CParticle::ComputeRenderData(SParticleRenderData& RenderData, const SPartic
 
 	RenderData.fSize = m_Loc.s;
 
-	IF(Context.m_fMinDrawAngle != 0, false)
+	IF (Context.m_fMinDrawAngle != 0, false)
 	{
 		float fRadius = RenderData.fSize * fObjectSize;
 		if (sqr(fRadius) < sqr(Context.m_fMinDrawAngle) * RenderData.fDistCamSq)
@@ -897,7 +897,7 @@ float CParticle::ComputeRenderAlpha(const SParticleRenderData& RenderData, float
 	}
 
 	// Clip against visibility areas
-	IF(Context.m_pClipVisArea, false)
+	IF (Context.m_pClipVisArea, false)
 	{
 		Vec3 vNormal;
 		if (params.eFacing == params.eFacing.Camera)

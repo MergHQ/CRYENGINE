@@ -444,7 +444,7 @@ public:
 	uint32                       GetLastTimeUsed() { return m_nLastTimeUsed; }
 
 	void                         AddIndexAliased(int _x, int _y, int _step, int nSectorSize, PodArray<CTerrainNode*>* plstNeighbourSectors, CStripsInfo* pArrayInfo, const SRenderingPassInfo& passInfo);
-	static void GenerateIndicesForAllSurfaces(IRenderMesh * pRM, bool bOnlyBorder, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo * pSurfaceTypeInfos, int nSID, CUpdateTerrainTempData * pUpdateTerrainTempData = NULL);
+	static void                  GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBorder, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, int nSID, CUpdateTerrainTempData* pUpdateTerrainTempData = NULL);
 	void                         BuildIndices(CStripsInfo& si, PodArray<CTerrainNode*>* pNeighbourSectors, bool bSafetyBorder, const SRenderingPassInfo& passInfo);
 
 	void                         BuildIndices_Wrapper(SRenderingPassInfo passInfo);

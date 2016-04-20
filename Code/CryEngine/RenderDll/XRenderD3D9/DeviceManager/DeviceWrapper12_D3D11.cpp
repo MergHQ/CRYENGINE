@@ -206,12 +206,12 @@ struct CDeviceResourceSet_DX11 : CDeviceResourceSet
 	}
 
 	virtual void Build() final;
-
+	  
 	void         Clear();
 
 	// set via reflection from shader
-	std::array<std::array<ID3D11ShaderResourceView*, MAX_TMU>, eHWSC_Num>                        compiledSRVs;
-	std::array<std::array<ID3D11SamplerState*, MAX_TMU>, eHWSC_Num>                        compiledSamplers;
+	std::array<std::array<ID3D11ShaderResourceView*, MAX_TMU>, eHWSC_Num> compiledSRVs;
+	std::array<std::array<ID3D11SamplerState*, MAX_TMU>, eHWSC_Num> compiledSamplers;
 
 	// set directly
 	std::array<std::array<SCompiledConstantBuffer, eConstantBufferShaderSlot_Count>, eHWSC_Num> compiledCBs;
@@ -220,9 +220,9 @@ struct CDeviceResourceSet_DX11 : CDeviceResourceSet
 	std::array<std::array<SCompiledBuffer, ResourceSetBufferCount>, eHWSC_Num> compiledBuffers;
 	std::array<uint8, eHWSC_Num> numCompiledBuffers;
 
-	std::vector<_smart_ptr<ID3D11ShaderResourceView>>                                          m_SRVInUse;
-	std::vector<_smart_ptr<ID3D11SamplerState>>                                                m_SamplersInUse;
-	std::vector<_smart_ptr<D3DBuffer>>                                                         m_CBInUse;
+	std::vector<_smart_ptr<ID3D11ShaderResourceView>> m_SRVInUse;
+	std::vector<_smart_ptr<ID3D11SamplerState>> m_SamplersInUse;
+	std::vector<_smart_ptr<D3DBuffer>> m_CBInUse;
 
 };
 
@@ -375,22 +375,22 @@ public:
 	void SetResources_RequestedByShaderOnly(const CDeviceResourceSet_DX11* pResources);
 	void SetResources_All(const CDeviceResourceSet_DX11* pResources);
 
-	SCachedValue<ID3D11DepthStencilState*>              m_CurrentDS;
-	SCachedValue<ID3D11RasterizerState*>                m_CurrentRS;
-	SCachedValue<ID3D11BlendState*>                     m_CurrentBS;
-	SCachedValue<ID3D11InputLayout*>                    m_CurrentInputLayout;
-	SCachedValue<D3D11_PRIMITIVE_TOPOLOGY>              m_CurrentTopology;
-	SCachedValue<void*>                                 m_CurrentShader[eHWSC_Num];
-	SCachedValue<ID3D11ShaderResourceView*>             m_CurrentSRV[eHWSC_Num][MAX_TMU];
-	SCachedValue<ID3D11SamplerState*>                   m_CurrentSamplerState[eHWSC_Num][MAX_TMU];
-	SCachedValue<uint64>                                m_CurrentCB[eHWSC_Num][eConstantBufferShaderSlot_Count];
-	SCachedValue<const CDeviceInputStream*>             m_CurrentVertexStreams;
+	SCachedValue<ID3D11DepthStencilState*> m_CurrentDS;
+	SCachedValue<ID3D11RasterizerState*> m_CurrentRS;
+	SCachedValue<ID3D11BlendState*> m_CurrentBS;
+	SCachedValue<ID3D11InputLayout*> m_CurrentInputLayout;
+	SCachedValue<D3D11_PRIMITIVE_TOPOLOGY> m_CurrentTopology;
+	SCachedValue<void*> m_CurrentShader[eHWSC_Num];
+	SCachedValue<ID3D11ShaderResourceView*> m_CurrentSRV[eHWSC_Num][MAX_TMU];
+	SCachedValue<ID3D11SamplerState*> m_CurrentSamplerState[eHWSC_Num][MAX_TMU];
+	SCachedValue<uint64> m_CurrentCB[eHWSC_Num][eConstantBufferShaderSlot_Count];
+	SCachedValue<const CDeviceInputStream*> m_CurrentVertexStreams;
 
 	std::array<std::array<uint8, MAX_TMU>, eHWSC_Num> m_SRVs;
 	std::array<std::array<uint8, MAX_TMU>, eHWSC_Num> m_Samplers;
 
-	std::array<uint8, eHWSC_Num>                        m_NumSRVs;
-	std::array<uint8, eHWSC_Num>                        m_NumSamplers;
+	std::array<uint8, eHWSC_Num> m_NumSRVs;
+	std::array<uint8, eHWSC_Num> m_NumSamplers;
 
 	EShaderStage m_ValidShaderStages;
 

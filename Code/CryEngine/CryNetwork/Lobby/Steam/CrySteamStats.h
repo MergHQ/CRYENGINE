@@ -124,7 +124,7 @@ private:
 	CRYSTEAM_CALLBACK(CCrySteamStats, OnUserStatsReceived, UserStatsReceived_t, m_callUserStatsReceived);
 	CRYSTEAM_CALLBACK(CCrySteamStats, OnUserStatsStored, UserStatsStored_t, m_callUserStatsStored);
 
-	STask m_task[MAX_STATS_TASKS];
+	STask                              m_task[MAX_STATS_TASKS];
 	DynArray<SRegisterLeaderBoardData> m_leaderBoards;
 	DynArray<SRegisterUserData>        m_userData;
 	uint32                             m_numLeaderBoards;

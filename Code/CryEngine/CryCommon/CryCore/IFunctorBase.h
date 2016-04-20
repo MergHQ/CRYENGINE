@@ -41,7 +41,7 @@ protected:
 };
 
 //! Base Template for specialization. Not intended for direct usage.
-template<typename tType>  class TFunctor : public IFunctorBase
+template<typename tType> class TFunctor : public IFunctorBase
 {
 };
 

@@ -415,7 +415,7 @@ public:
 	virtual Vec4                     GetCausticsParams() const;
 	virtual Vec4                     GetOceanAnimationCausticsParams() const;
 	virtual void                     GetOceanAnimationParams(Vec4& pParams0, Vec4& pParams1) const;
-	virtual void GetHDRSetupParams(Vec4 pParams[5]) const;
+	virtual void                     GetHDRSetupParams(Vec4 pParams[5]) const;
 	virtual void                     CreateDecal(const CryEngineDecalInfo& Decal);
 	virtual void                     DrawFarTrees(const SRenderingPassInfo& passInfo);
 	virtual void                     GenerateFarTrees(const SRenderingPassInfo& passInfo);
@@ -478,16 +478,16 @@ public:
 	virtual float                GetLightsHDRDynamicPowerFactor() const;
 
 	// Return true if tessellation is allowed (by cvars) into currently set shadow map LOD
-	bool         IsTessellationAllowedForShadowMap(const SRenderingPassInfo& passInfo) const;
+	bool                              IsTessellationAllowedForShadowMap(const SRenderingPassInfo& passInfo) const;
 	// Return true if tessellation is allowed for given render object
-	virtual bool IsTessellationAllowed(const CRenderObject* pObj, const SRenderingPassInfo& passInfo, bool bIgnoreShadowPass = false) const;
+	virtual bool                      IsTessellationAllowed(const CRenderObject* pObj, const SRenderingPassInfo& passInfo, bool bIgnoreShadowPass = false) const;
 
-	virtual void SetRenderNodeMaterialAtPosition(EERType eNodeType, const Vec3& vPos, IMaterial* pMat);
-	virtual void OverrideCameraPrecachePoint(const Vec3& vPos);
-	virtual int  AddPrecachePoint(const Vec3& vPos, const Vec3& vDir, float fTimeOut = 3.f, float fImportanceFactor = 1.0f);
-	virtual void ClearPrecachePoint(int id);
-	virtual void ClearAllPrecachePoints();
-	virtual void GetPrecacheRoundIds(int pRoundIds[MAX_STREAM_PREDICTION_ZONES]);
+	virtual void                      SetRenderNodeMaterialAtPosition(EERType eNodeType, const Vec3& vPos, IMaterial* pMat);
+	virtual void                      OverrideCameraPrecachePoint(const Vec3& vPos);
+	virtual int                       AddPrecachePoint(const Vec3& vPos, const Vec3& vDir, float fTimeOut = 3.f, float fImportanceFactor = 1.0f);
+	virtual void                      ClearPrecachePoint(int id);
+	virtual void                      ClearAllPrecachePoints();
+	virtual void                      GetPrecacheRoundIds(int pRoundIds[MAX_STREAM_PREDICTION_ZONES]);
 
 	virtual void                      TraceFogVolumes(const Vec3& worldPos, ColorF& fogVolumeContrib, const SRenderingPassInfo& passInfo);
 
