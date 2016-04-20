@@ -313,8 +313,8 @@ struct ICryPak
 	//! \return Pointer to the constructed path (can be either szSourcePath, or szDestPath, or NULL in case of error.
 	virtual const char* AdjustFileName(const char* src, char dst[g_nMaxPath], unsigned nFlags) = 0;
 
-	virtual bool Init(const char* szBasePath) = 0;
-	virtual void Release() = 0;
+	virtual bool        Init(const char* szBasePath) = 0;
+	virtual void        Release() = 0;
 
 	//! \return true if given pak path is installed to HDD.
 	//! If no file path is given it will return true if whole application is installed to HDD.

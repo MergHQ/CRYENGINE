@@ -307,7 +307,7 @@ public:
 		}
 
 		CPA_ASSERT(pPrev == Last());            //ERROR validating item-list, broken list, does not end at specified Last item
-		CPA_ASSERT(!pReferenceItem);              //ERROR reference item not found in the item-list
+		CPA_ASSERT(!pReferenceItem);            //ERROR reference item not found in the item-list
 	}
 	ILINE size_t Count() const { return m_Count; }
 };

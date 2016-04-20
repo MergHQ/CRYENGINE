@@ -137,7 +137,7 @@ protected:
 		{
 			SetRTs(NULL, NULL);
 		}
-		void SetRTs(CTexture * pRT0[3], CTexture * pRT1[3]);
+		void              SetRTs(CTexture* pRT0[3], CTexture* pRT1[3]);
 		inline CTexture** GetTarget() { return m_pRT[m_nCurrent]; }
 		void              Swap()      { m_nCurrent = (m_nCurrent + 1) % 2; }
 	protected:

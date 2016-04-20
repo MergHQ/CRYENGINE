@@ -173,8 +173,8 @@ public:
 static const Handable<BroadcastableD3D12DescriptorHeap<2>*, 2>::D3D12_CPU_DELTA_ADDRESS emptyCPUDeltaDH = { 0ULL, 0ULL };
 static const Handable<BroadcastableD3D12DescriptorHeap<2>*, 2>::D3D12_GPU_DELTA_ADDRESS emptyGPUDeltaDH = { 0ULL, 0ULL };
 UINT32 Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_HighHandle = 0UL;
-std::vector<BroadcastableD3D12DescriptorHeap<2>*>                                       Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_AddressTableLookUp(DX12_MULTIGPU_NUM_DESCRIPTORHEAPS, 0ULL);
+std::vector<BroadcastableD3D12DescriptorHeap<2>*> Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_AddressTableLookUp(DX12_MULTIGPU_NUM_DESCRIPTORHEAPS, 0ULL);
 std::vector<Handable<BroadcastableD3D12DescriptorHeap<2>*, 2>::D3D12_CPU_DELTA_ADDRESS> Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_DeltaCPUAddressTableLookUp(DX12_MULTIGPU_NUM_DESCRIPTORHEAPS, emptyCPUDeltaDH);
 std::vector<Handable<BroadcastableD3D12DescriptorHeap<2>*, 2>::D3D12_GPU_DELTA_ADDRESS> Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_DeltaGPUAddressTableLookUp(DX12_MULTIGPU_NUM_DESCRIPTORHEAPS, emptyGPUDeltaDH);
-ConcQueue<BoundMPMC, UINT32>                                                            Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_FreeHandles;
+ConcQueue<BoundMPMC, UINT32> Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_FreeHandles;
 #endif

@@ -265,11 +265,11 @@ void CVehicleViewBase::OnStopUsing()
 
 	IVehicleMovement* pMovement = m_pVehicle->GetMovement();
 
-#define CLEAR_ACTION(aamvar, actionid)                           \
-  if (aamvar == eAAM_OnPress)                                    \
-  {                                                              \
-    aamvar = eAAM_OnRelease;                                     \
-    if (pMovement) pMovement->OnAction(actionid, aamvar, 0.0f);  \
+#define CLEAR_ACTION(aamvar, actionid)                          \
+  if (aamvar == eAAM_OnPress)                                   \
+  {                                                             \
+    aamvar = eAAM_OnRelease;                                    \
+    if (pMovement) pMovement->OnAction(actionid, aamvar, 0.0f); \
   }
 
 	CLEAR_ACTION(m_yawLeftActionOnBorderAAM, eVAI_TurnLeft);

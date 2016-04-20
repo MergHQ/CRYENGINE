@@ -136,7 +136,7 @@ public:
 	void STDMETHODCALLTYPE                      GSGetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState** ppSamplers);
 	void STDMETHODCALLTYPE                      OMGetRenderTargets(UINT NumViews, ID3D11RenderTargetView** ppRenderTargetViews, ID3D11DepthStencilView** ppDepthStencilView);
 	void STDMETHODCALLTYPE                      OMGetRenderTargetsAndUnorderedAccessViews(UINT NumRTVs, ID3D11RenderTargetView** ppRenderTargetViews, ID3D11DepthStencilView** ppDepthStencilView, UINT UAVStartSlot, UINT NumUAVs, ID3D11UnorderedAccessView** ppUnorderedAccessViews);
-	void STDMETHODCALLTYPE OMGetBlendState(ID3D11BlendState * *ppBlendState, FLOAT BlendFactor[4], UINT * pSampleMask);
+	void STDMETHODCALLTYPE                      OMGetBlendState(ID3D11BlendState** ppBlendState, FLOAT BlendFactor[4], UINT* pSampleMask);
 	void STDMETHODCALLTYPE                      OMGetDepthStencilState(ID3D11DepthStencilState** ppDepthStencilState, UINT* pStencilRef);
 	void STDMETHODCALLTYPE                      SOGetTargets(UINT NumBuffers, ID3D11Buffer** ppSOTargets);
 	void STDMETHODCALLTYPE                      RSGetState(ID3D11RasterizerState** ppRasterizerState);

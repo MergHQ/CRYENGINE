@@ -337,8 +337,8 @@ private:
 	bool                                m_disableRuntimeFileAccess[2];
 
 	//threads which we don't want to access files from during the game
-	threadID m_mainThreadId;
-	threadID m_renderThreadId;
+	threadID             m_mainThreadId;
+	threadID             m_renderThreadId;
 
 	CryFixedStringT<128> m_sLocalizationFolder;
 
@@ -349,7 +349,7 @@ private:
 	bool InitPack(const char* szBasePath, unsigned nFlags = FLAGS_PATH_REAL);
 
 	// Return true if alias was adjusted
-	bool AdjustAliases(char* dst);
+	bool        AdjustAliases(char* dst);
 	const char* AdjustFileNameInternal(const char* src, char dst[g_nMaxPath], unsigned nFlags);
 
 #if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)

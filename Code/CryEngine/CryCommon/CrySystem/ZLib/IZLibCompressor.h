@@ -199,7 +199,7 @@ public:
 	virtual void MD5Update(SMD5Context* pIOCtx, const char* pInBuff, unsigned int len) = 0;
 
 	//! Close the MD5 context and extract the final 16 byte MD5 digest value.
-	virtual void MD5Final(SMD5Context * pIOCtx, char outDigest[16]) = 0;
+	virtual void MD5Final(SMD5Context* pIOCtx, char outDigest[16]) = 0;
 	// </interfuscator:shuffle>
 };
 

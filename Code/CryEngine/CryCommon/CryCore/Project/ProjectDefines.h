@@ -173,7 +173,7 @@ extern void SliceAndSleep(const char* pFunc, int line);
 #endif
 
 #if !defined(_RELEASE)
-	#define USE_FRAME_PROFILER    // comment this define to remove most profiler related code in the engine
+	#define USE_FRAME_PROFILER // comment this define to remove most profiler related code in the engine
 	#define CRY_TRACE_HEAP
 #endif
 
@@ -375,7 +375,7 @@ extern void SliceAndSleep(const char* pFunc, int line);
 	#define SUPPORT_UNSIGNED_PAKS //Enable to load paks that aren't RSA signed
 #endif                          //!_RELEASE || PERFORMANCE_BUILD
 #if !CRY_PLATFORM_DURANGO
-	#define SUPPORT_RSA_PAK_SIGNING                     //RSA signature verification
+	#define SUPPORT_RSA_PAK_SIGNING //RSA signature verification
 #endif
 
 #if CRY_PLATFORM_DURANGO

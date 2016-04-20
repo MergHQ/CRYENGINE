@@ -40,7 +40,7 @@ namespace GeomCacheDecoder
 void DecodeIFrame(const CGeomCache* pGeomCache, char* pData);
 
 // Decodes a bi-directional predicted frame
-void DecodeBFrame(const CGeomCache * pGeomCache, char* pData, char* pPrevFramesData[2],
+void DecodeBFrame(const CGeomCache* pGeomCache, char* pData, char* pPrevFramesData[2],
                   char* pFloorIndexFrameData, char* pCeilIndexFrameData);
 
 bool PrepareFillMeshData(SGeomCacheRenderMeshUpdateContext& updateContext, const SGeomCacheStaticMeshData& staticMeshData,

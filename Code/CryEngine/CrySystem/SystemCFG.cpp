@@ -103,10 +103,10 @@ void CSystem::QueryVersionInfo()
 	GetModuleFileName(NULL, moduleName, _MAX_PATH);  //retrieves the PATH for the current module
 
 	#ifdef _LIB
-	GetModuleFileName(NULL, moduleName, _MAX_PATH);  //retrieves the PATH for the current module
-	#else                                    //_LIB
-	cry_strcpy(moduleName, "CrySystem.dll"); // we want to version from the system dll
-	#endif                                   //_LIB
+	GetModuleFileName(NULL, moduleName, _MAX_PATH); //retrieves the PATH for the current module
+	#else                                           //_LIB
+	cry_strcpy(moduleName, "CrySystem.dll");        // we want to version from the system dll
+	#endif                                          //_LIB
 
 	int verSize = GetFileVersionInfoSize(moduleName, &dwHandle);
 	if (verSize > 0)

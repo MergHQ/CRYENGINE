@@ -245,15 +245,15 @@ class CShaderManBin
 {
 	friend class CShaderMan;
 
-	SShaderBin*      LoadBinShader(FILE* fpBin, const char* szName, const char* szNameBin, bool bReadParams);
-	SShaderBin*      SaveBinShader(uint32 nSourceCRC32, const char* szName, bool bInclude, FILE* fpSrc);
-	bool             SaveBinShaderLocalInfo(SShaderBin* pBin, uint32 dwName, uint64 nMaskGenFX, TArray<int32>& Funcs, std::vector<SFXParam>& Params, std::vector<SFXSampler>& Samplers, std::vector<SFXTexture>& Textures);
-	SParamCacheInfo* GetParamInfo(SShaderBin* pBin, uint32 dwName, uint64 nMaskGenFX);
+	SShaderBin*       LoadBinShader(FILE* fpBin, const char* szName, const char* szNameBin, bool bReadParams);
+	SShaderBin*       SaveBinShader(uint32 nSourceCRC32, const char* szName, bool bInclude, FILE* fpSrc);
+	bool              SaveBinShaderLocalInfo(SShaderBin* pBin, uint32 dwName, uint64 nMaskGenFX, TArray<int32>& Funcs, std::vector<SFXParam>& Params, std::vector<SFXSampler>& Samplers, std::vector<SFXTexture>& Textures);
+	SParamCacheInfo*  GetParamInfo(SShaderBin* pBin, uint32 dwName, uint64 nMaskGenFX);
 
-	void             AddGenMacroses(SShaderGen* shG, CParserBin& Parser, uint64 nMaskGen);
+	void              AddGenMacroses(SShaderGen* shG, CParserBin& Parser, uint64 nMaskGen);
 
-	bool ParseBinFX_Global_Annotations(CParserBin & Parser, SParserFrame & Frame, bool* bPublic, CCryNameR techStart[2]);
-	bool ParseBinFX_Global(CParserBin & Parser, SParserFrame & Frame, bool* bPublic, CCryNameR techStart[2]);
+	bool              ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFrame& Frame, bool* bPublic, CCryNameR techStart[2]);
+	bool              ParseBinFX_Global(CParserBin& Parser, SParserFrame& Frame, bool* bPublic, CCryNameR techStart[2]);
 	bool              ParseBinFX_Sampler_Annotations_Script(CParserBin& Parser, SParserFrame& Frame, STexSamplerFX* pSampler);
 	bool              ParseBinFX_Sampler_Annotations(CParserBin& Parser, SParserFrame& Frame, STexSamplerFX* pSampler);
 	bool              ParseBinFX_Sampler(CParserBin& Parser, SParserFrame& Data, uint32 dwName, SParserFrame Annotations, EToken samplerType);

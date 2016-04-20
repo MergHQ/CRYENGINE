@@ -51,11 +51,11 @@ const uint32 CryMatchMakingNubConnectionTimeOut = 10000;
 		  if (gEnv->IsDedicated())                                                                              \
 		  {                                                                                                     \
 		    CCryLANLobbyService* pLobbyService = (CCryLANLobbyService*)gEnv->pLobby->GetLobbyService(eCLS_LAN); \
-                                                                                                            \
+		                                                                                                        \
 		    if (pLobbyService)                                                                                  \
 		    {                                                                                                   \
 		      CCryDedicatedServer* pDedicatedServer = pLobbyService->GetDedicatedServer();                      \
-                                                                                                            \
+		                                                                                                        \
 		      if (pDedicatedServer && (pDedicatedServer != this))                                               \
 		      {                                                                                                 \
 		        pDedicatedServer->func;                                                                         \
