@@ -440,19 +440,19 @@ private:
 		}
 
 		IAIObject* pAiObject = pEntity->GetAI();
-		IF_UNLIKELY(pAiObject == NULL)
+		IF_UNLIKELY (pAiObject == NULL)
 		{
 			return;
 		}
 
 		IAIActor* pAiActor = pAiObject->CastToIAIActor();
-		IF_UNLIKELY(pAiActor == NULL)
+		IF_UNLIKELY (pAiActor == NULL)
 		{
 			return;
 		}
 
 		IScriptTable* pEntityTable = pEntity->GetScriptTable();
-		IF_UNLIKELY(pEntityTable == NULL)
+		IF_UNLIKELY (pEntityTable == NULL)
 		{
 			return;
 		}
@@ -471,7 +471,7 @@ private:
 	void StartFollowPath(SActivationInfo* pActInfo, const StartFollowPathLocationMode startPathLocationMode)
 	{
 		IEntity* pEntity = pActInfo->pEntity;
-		IF_UNLIKELY(pEntity == NULL)
+		IF_UNLIKELY (pEntity == NULL)
 		{
 			return;
 		}
@@ -479,19 +479,19 @@ private:
 		Reset(pActInfo);
 
 		IScriptTable* pEntityTable = pEntity->GetScriptTable();
-		IF_UNLIKELY(pEntityTable == NULL)
+		IF_UNLIKELY (pEntityTable == NULL)
 		{
 			return;
 		}
 
 		IAIObject* pAiObject = pEntity->GetAI();
-		IF_UNLIKELY(pAiObject == NULL)
+		IF_UNLIKELY (pAiObject == NULL)
 		{
 			return;
 		}
 
 		IAIActor* pAiActor = pAiObject->CastToIAIActor();
-		IF_UNLIKELY(pAiActor == NULL)
+		IF_UNLIKELY (pAiActor == NULL)
 		{
 			return;
 		}
@@ -598,7 +598,7 @@ public:
 			if (IsPortActive(pActInfo, eInputPort_Enable))
 			{
 				IScriptTable* pEntityTable = pEntity->GetScriptTable();
-				IF_UNLIKELY(pEntityTable == NULL)
+				IF_UNLIKELY (pEntityTable == NULL)
 				{
 					return;
 				}

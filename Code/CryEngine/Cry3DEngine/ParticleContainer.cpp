@@ -675,7 +675,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 	if (fDistSq > sqr(fMaxDist) && !pParams->fMinPixels)
 		return;
 
-	IF(pParams->fCameraMaxDistance, 0)
+	IF (pParams->fCameraMaxDistance, 0)
 	{
 		float fFOV = passInfo.GetCamera().GetFov();
 		if (fDistSq * sqr(fFOV) > sqr(pParams->fCameraMaxDistance))
@@ -733,13 +733,13 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		// Copy pre-computed render and state flags.
 		uint64 nObjFlags = pParams->nRenObjFlags & PRParams.m_nRenObjFlags;
 
-		IF(pParams->eFacing == pParams->eFacing.Water, 0)
+		IF (pParams->eFacing == pParams->eFacing.Water, 0)
 		{
 			// Water-aligned particles are always rendered before water, to avoid intersection artifacts
 			if (passInfo.IsRecursivePass())
 				return;
-			IF(Get3DEngine()->GetOceanRenderFlags() & OCR_NO_DRAW, 0)
-			return;
+			IF (Get3DEngine()->GetOceanRenderFlags() & OCR_NO_DRAW, 0)
+				return;
 		}
 		else
 		{
@@ -795,7 +795,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 			*((Vec4*)&pOD->m_fTempVars[0]) = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		;
 
-		IF(!!pParams->fHeatScale, 0)
+		IF (!!pParams->fHeatScale, 0)
 		{
 			pOD->m_nVisionScale = MAX_HEATSCALE;
 			uint32 nHeatAmount = pParams->fHeatScale.GetStore();

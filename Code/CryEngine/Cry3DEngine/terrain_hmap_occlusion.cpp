@@ -43,7 +43,7 @@ bool CHeightMap::IsBoxOccluded
 	vTopMin.z = vTopMax.z;
 
 	// skip testing huge boxes
-	IF((vTopMax.x - vTopMin.x) > 100000 || (vTopMax.y - vTopMin.y) > 100000, false)
+	IF ((vTopMax.x - vTopMin.x) > 100000 || (vTopMax.y - vTopMin.y) > 100000, false)
 	{
 		pOcclTestVars->nTerrainOccLastFrame = 0;
 		return false;
@@ -52,7 +52,7 @@ bool CHeightMap::IsBoxOccluded
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 
 	// return 'not occluded' if camera is inside of box
-	IF(vCamPos.x <= vTopMax.x && vCamPos.x >= vTopMin.x && vCamPos.y <= vTopMax.y && vCamPos.y >= vTopMin.y, false)
+	IF (vCamPos.x <= vTopMax.x && vCamPos.x >= vTopMin.x && vCamPos.y <= vTopMax.y && vCamPos.y >= vTopMin.y, false)
 	{
 		pOcclTestVars->nTerrainOccLastFrame = 0;
 		return false;

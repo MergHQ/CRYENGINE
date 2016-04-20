@@ -806,7 +806,7 @@ void MeshGrid::PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangl
                                                 const vector3_t& bestNodePosition, const TriangleID nextTriangleID, const unsigned int edgeIndex
                                                 , const vector3_t& finalLocation, vector3_t& outPosition) const
 {
-	IF_UNLIKELY(edgeIndex == MNM::Constants::InvalidEdgeIndex)
+	IF_UNLIKELY (edgeIndex == MNM::Constants::InvalidEdgeIndex)
 	{
 		// For SO links we don't set up the edgeIndex value since it's more probable that the animations
 		// ending point is better approximated by the triangle center value
@@ -903,7 +903,7 @@ MeshGrid::EWayQueryResult MeshGrid::FindWay(WayQueryRequest& inputRequest, WayQu
 				WayTriangleData bestNodeID = element.triData;
 
 				lastBestNodeID = bestNodeID;
-				IF_UNLIKELY(bestNodeID.triangleID == inputRequest.To())
+				IF_UNLIKELY (bestNodeID.triangleID == inputRequest.To())
 				{
 					workingSet.aStarOpenList.StepDone();
 					break;
@@ -995,7 +995,7 @@ MeshGrid::EWayQueryResult MeshGrid::FindWay(WayQueryRequest& inputRequest, WayQu
 
 					if (inserted)
 					{
-						IF_UNLIKELY(nextTri.triangleID == inputRequest.To())
+						IF_UNLIKELY (nextTri.triangleID == inputRequest.To())
 						{
 							nextNode->location = endLocation;
 						}

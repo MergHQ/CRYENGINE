@@ -566,8 +566,8 @@ void CRenderer::Draw2dText(float posX, float posY, const char* pStr, const SDraw
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::Draw2dTextWithDepth(float posX, float posY, float posZ, const char* pStr, const SDrawTextInfo& ti)
 {
-	IF(!m_pDefaultFont, 0)
-	return;
+	IF (!m_pDefaultFont, 0)
+		return;
 
 	IFFont* pFont = m_pDefaultFont;
 

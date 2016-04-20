@@ -1327,8 +1327,8 @@ inline void JobManager::CProdConsQueue<TJobType, Size >::AddPacket
 )
 {
 	const uint32 cPacketSize = crPacket.GetPacketSize();
-	IF(m_Initialized == 0, 0)
-	Init(cPacketSize);
+	IF (m_Initialized == 0, 0)
+		Init(cPacketSize);
 
 	assert(m_RingBufferEnd == m_RingBufferStart + Size * (cPacketSize + sizeof(SAddPacketData)));
 
@@ -1337,7 +1337,7 @@ inline void JobManager::CProdConsQueue<TJobType, Size >::AddPacket
 	// don't overtake the pull ptr
 
 	SJobSyncVariable curQueueRunningState = m_QueueRunningState;
-	IF((cpCurPush == m_pPull) && (curQueueRunningState.IsRunning()), 0)
+	IF ((cpCurPush == m_pPull) && (curQueueRunningState.IsRunning()), 0)
 	{
 
 		INT_PTR nPushPtr = (INT_PTR)cpCurPush;
@@ -1379,8 +1379,8 @@ inline void JobManager::CProdConsQueue<TJobType, Size >::AddPacket
 #endif
 
 		// C-A-S successful, now we need to do a yield-wait
-		IF(bNeedSemaphoreWait, 0)
-		m_pQueueFullSemaphore->Acquire();
+		IF (bNeedSemaphoreWait, 0)
+			m_pQueueFullSemaphore->Acquire();
 		else
 			m_pQueueFullSemaphore->SetStopped();
 

@@ -907,7 +907,7 @@ public:
 		, m_capture(capture)
 	{
 		assert(m_pRenderer);
-		IF(m_capture, 0)
+		IF (m_capture, 0)
 		{
 			GRendererXRender::Stats stats;
 			m_pRenderer->GetRenderStats(&stats, false);
@@ -918,7 +918,7 @@ public:
 
 	~CCaptureDrawStats()
 	{
-		IF(m_capture, 0)
+		IF (m_capture, 0)
 		{
 			GRendererXRender::Stats stats;
 			m_pRenderer->GetRenderStats(&stats, false);
@@ -944,20 +944,20 @@ private:
 		#define CAPTURE_DRAW_STATS_END \
 		  }
 
-		#define FREEZE_VAROBJ(defRet)                                     \
-		  IF(ms_sys_flash_info && SFlashProfilerData::DisplayFrozen(), 0) \
-		  return defRet;
+		#define FREEZE_VAROBJ(defRet)                                      \
+		  IF (ms_sys_flash_info && SFlashProfilerData::DisplayFrozen(), 0) \
+		    return defRet;
 
-		#define FLASH_PROFILE_FUNC_PRECOND(defRet, funcID)                                                                      \
-		  IF((funcID != eFncDisplay) && !IsFlashEnabled() || ms_sys_flash_info && m_pProfilerData &&                            \
-		     (m_pProfilerData->PreventFunctionExectution() || funcID != eFncDisplay && SFlashProfilerData::DisplayFrozen()), 0) \
-		  return defRet;
+		#define FLASH_PROFILE_FUNC_PRECOND(defRet, funcID)                                                                       \
+		  IF ((funcID != eFncDisplay) && !IsFlashEnabled() || ms_sys_flash_info && m_pProfilerData &&                            \
+		      (m_pProfilerData->PreventFunctionExectution() || funcID != eFncDisplay && SFlashProfilerData::DisplayFrozen()), 0) \
+		    return defRet;
 
 		#define FLASH_PROFILE_FUNC_BUILDPROFILER_BEGIN(numArgs)                \
 		  CFlashFunctionProfiler * pProfiler(0);                               \
 		  char memFlashProfiler[sizeof(CFlashFunctionProfiler)];               \
 		  char memFuncArgs[(numArgs > 0 ? numArgs : 1) * sizeof(SPODVariant)]; \
-		  IF(ms_sys_flash_info, 0)                                             \
+		  IF (ms_sys_flash_info, 0)                                            \
 		  {                                                                    \
 		    int numArgsInit(0);                                                \
 		    SPODVariant* pArg((SPODVariant*)memFuncArgs);
@@ -1088,8 +1088,8 @@ public:
 		while (true)
 		{
 			const uint32 curAccum = ms_deltaTicksAccum;
-			IF(curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), (LONG) (curAccum + delta), (LONG) curAccum), 1)
-			break;
+			IF (curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), (LONG) (curAccum + delta), (LONG) curAccum), 1)
+				break;
 		}
 		#else
 		ms_deltaTicksAccum += delta;
@@ -1107,8 +1107,8 @@ public:
 		while (true)
 		{
 			const uint32 curAccum = ms_deltaTicksAccum;
-			IF(curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), 0, (LONG) curAccum), 1)
-			break;
+			IF (curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), 0, (LONG) curAccum), 1)
+				break;
 		}
 		#else
 		ms_deltaTicksAccum = 0;
@@ -1190,8 +1190,8 @@ private:
 
 static CryCriticalSection s_displaySync;
 
-	#define SYNC_DISPLAY_BEGIN       \
-	  IF(s_displaySync.TryLock(), 1) \
+	#define SYNC_DISPLAY_BEGIN        \
+	  IF (s_displaySync.TryLock(), 1) \
 	  {
 
 	#define SYNC_DISPLAY_END  \
@@ -2547,12 +2547,12 @@ void CFlashPlayer::Release()
 
 	LONG refCount(CryInterlockedDecrement(&m_refCount));
 	assert(refCount >= 0);
-	IF(refCount == 0, 0)
+	IF (refCount == 0, 0)
 	{
 	#if !defined(_RELEASE)
 		{
 			const int curRelaseGuardCount = m_releaseGuardCount;
-			IF(0 != CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&m_releaseGuardCount), (LONG) curRelaseGuardCount, (LONG) curRelaseGuardCount), 0)
+			IF (0 != CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&m_releaseGuardCount), (LONG) curRelaseGuardCount, (LONG) curRelaseGuardCount), 0)
 			{
 				SET_LOG_CONTEXT(m_filePath);
 				CryGFxLog::GetAccess().LogError("Releasing flash player object while in a guarded section (AS callbacks into C++ code, etc)! Enforce breaking into the debugger...");
@@ -3284,8 +3284,8 @@ void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool
 
 			if (finalPlayback)
 			{
-				IF(devLost, 0)
-				cmdBuf.DropResourceRefs();
+				IF (devLost, 0)
+					cmdBuf.DropResourceRefs();
 				cmdBuf.Reset(0);
 			}
 
@@ -4529,7 +4529,7 @@ void CFlashPlayer::RenderFlashInfo()
 
 	if (ms_sys_flash_info)
 	{
-		IF(ms_sys_flash_info == 3, 0)
+		IF (ms_sys_flash_info == 3, 0)
 		{
 			int fontCacheTexId = GTextureXRenderBase::GetFontCacheTextureID();
 			if (pRenderer->EF_GetTextureByID(fontCacheTexId))
@@ -4566,7 +4566,7 @@ void CFlashPlayer::RenderFlashInfo()
 		float xAdj = 0.0f;
 		float yAdj = 0.0f;
 
-		IF(ms_sys_flash_info == 4 || ms_sys_flash_info == 5, 0)
+		IF (ms_sys_flash_info == 4 || ms_sys_flash_info == 5, 0)
 		{
 			struct PrintHeapInfo : public GMemoryHeap::HeapVisitor
 			{

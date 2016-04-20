@@ -521,12 +521,12 @@ void CD3D9Renderer::FX_Invalidate()
 
 void CD3D9Renderer::FX_UnbindBuffer(D3DBuffer* buffer)
 {
-	IF(!buffer, 0)
-	return;
+	IF (!buffer, 0)
+		return;
 
 	for (int i = 0; i < MAX_STREAMS; i++)
 	{
-		IF(m_RP.m_VertexStreams[i].pStream == buffer, 0)
+		IF (m_RP.m_VertexStreams[i].pStream == buffer, 0)
 		{
 			D3DBuffer* pNullBuffer = NULL;
 			uint32 zeroStrideOffset = 0;
@@ -534,7 +534,7 @@ void CD3D9Renderer::FX_UnbindBuffer(D3DBuffer* buffer)
 			m_RP.m_VertexStreams[i].pStream = NULL;
 		}
 	}
-	IF(m_RP.m_pIndexStream == buffer, 0)
+	IF (m_RP.m_pIndexStream == buffer, 0)
 	{
 		m_DevMan.BindIB(NULL, 0, DXGI_FORMAT_R16_UINT);
 		m_RP.m_pIndexStream = NULL;

@@ -993,7 +993,7 @@ public:
 	~CAnimationLightProfileSection()
 	{
 		ICharacterManager* pCharacterManager = gEnv->pCharacterManager;
-		IF(pCharacterManager != NULL, 1)
+		IF (pCharacterManager != NULL, 1)
 		{
 			pCharacterManager->AddFrameTicks(CryGetTicks() - m_nTicks);
 		}
@@ -1011,7 +1011,7 @@ public:
 	~CAnimationLightSyncProfileSection()
 	{
 		ICharacterManager* pCharacterManager = gEnv->pCharacterManager;
-		IF(pCharacterManager != NULL, 1)
+		IF (pCharacterManager != NULL, 1)
 		{
 			pCharacterManager->AddFrameSyncTicks(CryGetTicks() - m_nTicks);
 		}

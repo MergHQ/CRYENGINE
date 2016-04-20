@@ -649,7 +649,7 @@ public:
 	~CParticleLightProfileSection()
 	{
 		IParticleManager* pPartMan = gEnv->p3DEngine->GetParticleManager();
-		IF(pPartMan != NULL, 1)
+		IF (pPartMan != NULL, 1)
 		{
 			pPartMan->GetLightProfileCounts().AddFrameTicks(CryGetTicks() - m_nTicks);
 		}
@@ -667,7 +667,7 @@ public:
 	~CParticleLightProfileSectionSyncTime()
 	{
 		IParticleManager* pPartMan = gEnv->p3DEngine->GetParticleManager();
-		IF(pPartMan != NULL, 1)
+		IF (pPartMan != NULL, 1)
 		{
 			pPartMan->GetLightProfileCounts().AddFrameSyncTicks(CryGetTicks() - m_nTicks);
 		}

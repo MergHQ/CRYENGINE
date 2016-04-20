@@ -267,8 +267,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& node, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(node, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(node, context) == LoadFailure)
+			return LoadFailure;
 
 		m_behaviorName = node->getAttr("name");
 		return LoadSuccess;
@@ -467,8 +467,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		// Speed? Stance?
 		m_movementStyle.ReadFromXml(xml);
@@ -506,7 +506,7 @@ public:
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
 		CPipeUser* pipeUser = GetPipeUser(context);
-		IF_UNLIKELY(!pipeUser)
+		IF_UNLIKELY (!pipeUser)
 		{
 			ErrorReporter(*this, context).LogError("Expected pipe user");
 			return;
@@ -650,7 +650,7 @@ private:
 			{
 				Vec3 initialPosition;
 				bool initialPositionIsValid = pipeUser.GetInitialPosition(initialPosition);
-				IF_UNLIKELY(!initialPositionIsValid)
+				IF_UNLIKELY (!initialPositionIsValid)
 				{
 					return Vec3Constants<float>::fVec3_Zero;
 				}
@@ -800,8 +800,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		const char* queryName = xml->getAttr("name");
 		m_queryID = queryName ? gEnv->pAISystem->GetTacticalPointSystem()->GetQueryID(queryName) : TPSQueryID(0);
@@ -1239,8 +1239,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		ICommunicationManager* communicationManager = gEnv->pAISystem->GetCommunicationManager();
 
@@ -1323,7 +1323,7 @@ protected:
 			request.eventListener = &runtimeData;
 
 		IAIActorProxy* proxy = GetPipeUser(context)->GetProxy();
-		IF_UNLIKELY(!proxy)
+		IF_UNLIKELY (!proxy)
 		{
 			ErrorReporter(*this, context).LogError("Communication failed to start, agent did not have a valid AI proxy.");
 			return;
@@ -1418,7 +1418,7 @@ public:
 		LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context)
 		{
 			m_name = xml->getAttr("name");
-			IF_UNLIKELY(m_name.empty())
+			IF_UNLIKELY (m_name.empty())
 			{
 				gEnv->pLog->LogError("Empty or missing 'name' attribute for Animate node at line %d.", xml->getLine());
 				return LoadFailure;
@@ -1438,8 +1438,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		return m_configurationData.LoadFromXml(xml, context);
 	}
@@ -1461,8 +1461,8 @@ protected:
 		runtimeData.signalWasSet = proxy->SetAGInput(GetAGInputMode(), m_configurationData.m_name, m_configurationData.m_urgent);
 
 		assert(runtimeData.signalWasSet);
-		IF_UNLIKELY(!runtimeData.signalWasSet)
-		gEnv->pLog->LogError("Animate behavior tree node failed call to SetAGInput(%i, %s).", GetAGInputMode(), m_configurationData.m_name.c_str());
+		IF_UNLIKELY (!runtimeData.signalWasSet)
+			gEnv->pLog->LogError("Animate behavior tree node failed call to SetAGInput(%i, %s).", GetAGInputMode(), m_configurationData.m_name.c_str());
 
 		if (m_configurationData.m_setBodyDirectionTowardsAttentionTarget)
 		{
@@ -1500,8 +1500,8 @@ protected:
 	virtual Status Update(const UpdateContext& context) override
 	{
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
-		IF_UNLIKELY(!runtimeData.signalWasSet)
-		return Success;
+		IF_UNLIKELY (!runtimeData.signalWasSet)
+			return Success;
 
 		if (m_configurationData.m_playMode == PlayOnce)
 		{
@@ -1571,8 +1571,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		m_signalName = xml->getAttr("name");
 		s_signalDictionaries.filters.Get(xml, "filter", m_filter);
@@ -1804,7 +1804,7 @@ private:
 		if (scriptFunction)
 		{
 			IEntity* entity = gEnv->pEntitySystem->GetEntity(entityId);
-			IF_UNLIKELY(!entity)
+			IF_UNLIKELY (!entity)
 			{
 				return;
 			}
@@ -1831,11 +1831,11 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(Action::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (Action::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		const stack_string code = xml->getAttr("code");
-		IF_UNLIKELY(code.empty())
+		IF_UNLIKELY (code.empty())
 		{
 			gEnv->pLog->LogError("ExecuteLua node on line %d must have some Lua code in the 'code' attribute.", xml->getLine());
 			return LoadFailure;
@@ -1857,8 +1857,8 @@ private:
 	void ExecuteScript(SmartScriptFunction scriptFunction, const EntityId entityId) const
 	{
 		IEntity* entity = gEnv->pEntitySystem->GetEntity(entityId);
-		IF_UNLIKELY(!entity)
-		return;
+		IF_UNLIKELY (!entity)
+			return;
 
 		IScriptSystem* scriptSystem = gEnv->pScriptSystem;
 		scriptSystem->SetGlobalValue("entity", entity->GetScriptTable());
@@ -1885,18 +1885,18 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		const stack_string code = xml->getAttr("code");
-		IF_UNLIKELY(code.empty())
+		IF_UNLIKELY (code.empty())
 		{
 			ErrorReporter(*this, context).LogError("Missing or empty 'code' attribute.");
 			return LoadFailure;
 		}
 
 		m_scriptFunction.reset(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(code.c_str(), code.length(), "AssertLua behavior tree node"));
-		IF_UNLIKELY(!m_scriptFunction)
+		IF_UNLIKELY (!m_scriptFunction)
 		{
 			ErrorReporter(*this, context).LogError("Failed to compile Lua code '%s'.", code.c_str());
 			return LoadFailure;
@@ -1911,8 +1911,8 @@ protected:
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
 		IEntity* entity = gEnv->pEntitySystem->GetEntity(context.entityId);
-		IF_UNLIKELY(!entity)
-		return Failure;
+		IF_UNLIKELY (!entity)
+			return Failure;
 
 		bool luaReturnValue = false;
 		gEnv->pScriptSystem->SetGlobalValue("entity", entity->GetScriptTable());
@@ -2082,8 +2082,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		const stack_string str = xml->getAttr("at");
 		if (str == "ClosestGroupMember")
@@ -2216,8 +2216,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		float angleThresholdInDegrees = 30.0f;
 		xml->getAttr("angleThreshold", angleThresholdInDegrees);
@@ -2255,7 +2255,7 @@ protected:
 		if (m_aimAtReferencePoint)
 		{
 			CAIObject* referencePoint = pipeUser.GetRefPoint();
-			IF_UNLIKELY(!referencePoint)
+			IF_UNLIKELY (!referencePoint)
 			{
 				return;
 			}
@@ -2296,10 +2296,10 @@ protected:
 	{
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		IF_UNLIKELY(!runtimeData.fireTarget)
-		return Success;
+		IF_UNLIKELY (!runtimeData.fireTarget)
+			return Success;
 		CAIObject* fireTargetAIObject = runtimeData.fireTarget.GetAIObject();
-		IF_UNLIKELY(fireTargetAIObject == NULL)
+		IF_UNLIKELY (fireTargetAIObject == NULL)
 		{
 			ErrorReporter(*this, context).LogError("Expected fire target!");
 			CRY_ASSERT_MESSAGE(false, "Behavior Tree node Aim suddenly lost its fire target!!");
@@ -2372,8 +2372,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		float maxAngleRange = 30.0f;
 		xml->getAttr("maxAngleRange", maxAngleRange);
@@ -2403,7 +2403,7 @@ protected:
 
 		CPipeUser* pipeUser = GetPipeUser(context);
 
-		IF_UNLIKELY(!pipeUser)
+		IF_UNLIKELY (!pipeUser)
 		{
 			ErrorReporter(*this, context).LogError("Agent must be a pipe user but isn't.");
 			return;
@@ -2452,8 +2452,8 @@ protected:
 	{
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		IF_UNLIKELY(!runtimeData.fireTarget)
-		return Success;
+		IF_UNLIKELY (!runtimeData.fireTarget)
+			return Success;
 
 		const CTimeValue now = gEnv->pTimer->GetFrameStartTime();
 		const float elapsedSecondsFromPreviousUpdate = now.GetDifferenceInSeconds(runtimeData.lastUpdateTime);
@@ -2516,8 +2516,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		m_alignWithTarget = false;
 		m_turnTarget = TurnTarget_Invalid;
@@ -2864,8 +2864,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		m_waitUntilStopped = false;
 		xml->getAttr("waitUntilStopped", m_waitUntilStopped);
@@ -2943,7 +2943,7 @@ private:
 		assert(gEnv->pGame != NULL);
 
 		IGameFramework* gameFramework = gEnv->pGame->GetIGameFramework();
-		IF_UNLIKELY(gameFramework == NULL)
+		IF_UNLIKELY (gameFramework == NULL)
 		{
 			return NULL;
 		}
@@ -2961,13 +2961,13 @@ private:
 
 	bool IsIdleFragmentRunning(const UpdateContext& context, RuntimeData& runtimeData) const
 	{
-		IF_UNLIKELY(runtimeData.motionIdleScopeID == SCOPE_ID_INVALID)
+		IF_UNLIKELY (runtimeData.motionIdleScopeID == SCOPE_ID_INVALID)
 		{
 			return false;
 		}
 
 		IActionController* actionController = GetActionController(context.entityId);
-		IF_UNLIKELY(actionController == NULL)
+		IF_UNLIKELY (actionController == NULL)
 		{
 			assert(false);
 			return false;
@@ -2981,7 +2981,7 @@ private:
 	bool LinkWithMannequin(const EntityId entityID, RuntimeData& runtimeData)
 	{
 		IActionController* actionController = GetActionController(entityID);
-		IF_UNLIKELY(actionController == NULL)
+		IF_UNLIKELY (actionController == NULL)
 		{
 			assert(false);
 			return false;
@@ -3035,7 +3035,7 @@ protected:
 		IAIObject* referencePoint = pipeUser.GetRefPoint();
 		IEntity* entity = pipeUser.GetEntity();
 
-		IF_UNLIKELY(referencePoint == NULL || entity == NULL)
+		IF_UNLIKELY (referencePoint == NULL || entity == NULL)
 		{
 			gEnv->pLog->LogError("Modular behavior tree node 'Teleport' tried to teleport to the reference point but either the reference point or the entity was NULL.");
 
@@ -3230,8 +3230,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		const stack_string modeStr = xml->getAttr("mode");
 		if (modeStr == "UseLiveTarget")
@@ -3424,10 +3424,10 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
-		IF_UNLIKELY(!xml->getAttr("duration", m_duration))
+		IF_UNLIKELY (!xml->getAttr("duration", m_duration))
 		{
 			ErrorReporter(*this, context).LogError("Missing 'duration' attribute.");
 			return LoadFailure;
@@ -3435,7 +3435,7 @@ public:
 
 		if (xml->haveAttr("fireMode"))
 		{
-			IF_UNLIKELY(!g_fireModeDictionary.fireMode.Get(xml, "fireMode", m_fireMode))
+			IF_UNLIKELY (!g_fireModeDictionary.fireMode.Get(xml, "fireMode", m_fireMode))
 			{
 				ErrorReporter(*this, context).LogError("Invalid 'fireMode' attribute.");
 				return LoadFailure;
@@ -3521,28 +3521,28 @@ protected:
 		if (now < runtimeData.nextPostureQueryTime)
 			return Running;
 
-		IF_UNLIKELY(!pipeUser)
+		IF_UNLIKELY (!pipeUser)
 		{
 			ErrorReporter(*this, context).LogError("Agent must be a pipe user but isn't.");
 			return Failure;
 		}
 
 		CPuppet* puppet = pipeUser->CastToCPuppet();
-		IF_UNLIKELY(!puppet)
+		IF_UNLIKELY (!puppet)
 		{
 			ErrorReporter(*this, context).LogError("Agent must be a puppet but isn't.");
 			return Failure;
 		}
 
 		const IAIObject* target = pipeUser->GetAttentionTarget();
-		IF_UNLIKELY(!target)
-		return Failure;
+		IF_UNLIKELY (!target)
+			return Failure;
 
 		const Vec3 targetPosition = target->GetPos();
 
 		const CoverID& coverID = pipeUser->GetCoverID();
-		IF_UNLIKELY(coverID == 0)
-		return Failure;
+		IF_UNLIKELY (coverID == 0)
+			return Failure;
 
 		Vec3 coverNormal(1, 0, 0);
 		const Vec3 coverPosition = gAIEnv.pCoverSystem->GetCoverLocation(coverID, pipeUser->GetParameters().distanceToCover, NULL, &coverNormal);
@@ -3666,28 +3666,28 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
-		IF_UNLIKELY(!xml->getAttr("duration", m_duration) || m_duration < 0.0f)
+		IF_UNLIKELY (!xml->getAttr("duration", m_duration) || m_duration < 0.0f)
 		{
 			ErrorReporter(*this, context).LogError("Missing or invalid 'duration' attribute.");
 			return LoadFailure;
 		}
 
-		IF_UNLIKELY(!g_shootDictionary.shootAt.Get(xml, "at", m_shootAt))
+		IF_UNLIKELY (!g_shootDictionary.shootAt.Get(xml, "at", m_shootAt))
 		{
 			ErrorReporter(*this, context).LogError("Missing or invalid 'at' attribute.");
 			return LoadFailure;
 		}
 
-		IF_UNLIKELY(!g_fireModeDictionary.fireMode.Get(xml, "fireMode", m_fireMode))
+		IF_UNLIKELY (!g_fireModeDictionary.fireMode.Get(xml, "fireMode", m_fireMode))
 		{
 			ErrorReporter(*this, context).LogError("Missing or invalid 'fireMode' attribute.");
 			return LoadFailure;
 		}
 
-		IF_UNLIKELY(!s_stanceDictionary.stances.Get(xml, "stance", m_stance))
+		IF_UNLIKELY (!s_stanceDictionary.stances.Get(xml, "stance", m_stance))
 		{
 			ErrorReporter(*this, context).LogError("Missing or invalid 'stance' attribute.");
 			return LoadFailure;
@@ -3695,7 +3695,7 @@ public:
 
 		if (m_shootAt == LocalSpacePosition)
 		{
-			IF_UNLIKELY(!xml->getAttr("position", m_position))
+			IF_UNLIKELY (!xml->getAttr("position", m_position))
 			{
 				ErrorReporter(*this, context).LogError("Missing or invalid 'position' attribute.");
 				return LoadFailure;
@@ -3718,7 +3718,7 @@ protected:
 		BaseClass::OnInitialize(context);
 
 		CPipeUser* pipeUser = GetPipeUser(context);
-		IF_UNLIKELY(!pipeUser)
+		IF_UNLIKELY (!pipeUser)
 		{
 			ErrorReporter(*this, context).LogError("Agent wasn't a pipe user.");
 			return;
@@ -3903,10 +3903,10 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
-		IF_UNLIKELY(!xml->getAttr("timeout", m_timeout) || m_timeout < 0.0f)
+		IF_UNLIKELY (!xml->getAttr("timeout", m_timeout) || m_timeout < 0.0f)
 		{
 			ErrorReporter(*this, context).LogError("Missing or invalid 'timeout' attribute.");
 			return LoadFailure;

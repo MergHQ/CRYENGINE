@@ -52,7 +52,6 @@
 
 //! Static branch-prediction helpers
 #define IF(condition, hint)    if (__builtin_expect(!!(condition), hint))
-#define WHILE(condition, hint) while (__builtin_expect(!!(condition), hint))
 #define IF_UNLIKELY(condition) if (__builtin_expect(!!(condition), 0))
 #define IF_LIKELY(condition)   if (__builtin_expect(!!(condition), 1))
 

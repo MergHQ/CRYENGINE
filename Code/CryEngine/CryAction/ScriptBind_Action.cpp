@@ -1010,7 +1010,7 @@ int CScriptBind_Action::SetAimQueryMode(IFunctionHandler* pH, ScriptHandle entit
 //
 int CScriptBind_Action::PreLoadADB(IFunctionHandler* pH, const char* adbFileName)
 {
-	IF_LIKELY(adbFileName != NULL)
+	IF_LIKELY (adbFileName != NULL)
 	{
 		IMannequin& mannequinInterface = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
 		if (mannequinInterface.GetAnimationDatabaseManager().Load(adbFileName) == NULL)

@@ -891,8 +891,10 @@ D3DFormat CTexture::ConvertToStencilOnlyFmt(D3DFormat nFormat)
 	switch (nFormat)
 	{
 	case DXGI_FORMAT_R32G8X24_TYPELESS:
+	case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
 		return DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
 	case DXGI_FORMAT_R24G8_TYPELESS:
+	case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
 		return DXGI_FORMAT_X24_TYPELESS_G8_UINT;
 
 	default:
@@ -908,14 +910,17 @@ D3DFormat CTexture::ConvertToDepthOnlyFmt(D3DFormat nFormat)
 	switch (nFormat)
 	{
 	case DXGI_FORMAT_R16_TYPELESS:
+	case DXGI_FORMAT_D16_UNORM:
 		return DXGI_FORMAT_R16_UNORM;
 	case DXGI_FORMAT_R24G8_TYPELESS:
+	case DXGI_FORMAT_D24_UNORM_S8_UINT:
 		return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
 	case DXGI_FORMAT_R32_TYPELESS:
+	case DXGI_FORMAT_D32_FLOAT:
 		return DXGI_FORMAT_R32_FLOAT;
 	case DXGI_FORMAT_R32G8X24_TYPELESS:
+	case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
 		return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
-	//      case DXGI_FORMAT_R32G32_TYPELESS:       return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 
 	default:
 		break;                                       //pass through
@@ -2360,8 +2365,8 @@ void CTexture::SetTexStates()
 
 static uint32 sAddressMode(int nAddress)
 {
-	IF(nAddress < 0, 0)
-	nAddress = TADDR_WRAP;
+	IF (nAddress < 0, 0)
+		nAddress = TADDR_WRAP;
 
 	switch (nAddress)
 	{
@@ -2407,8 +2412,8 @@ bool STexState::SetClampMode(int nAddressU, int nAddressV, int nAddressW)
 
 bool STexState::SetFilterMode(int nFilter)
 {
-	IF(nFilter < 0, 0)
-	nFilter = FILTER_TRILINEAR;
+	IF (nFilter < 0, 0)
+		nFilter = FILTER_TRILINEAR;
 
 	if (m_pDeviceState)
 	{
@@ -2870,7 +2875,7 @@ void CTexture::ApplyTexture(int nTUnit, EHWShaderClass eHWSC, SResourceView::Key
 		}
 	}
 
-	IF(this != CTexture::s_pTexNULL && (!pDevTex || !pDevTex->GetBaseTexture()), 0)
+	IF (this != CTexture::s_pTexNULL && (!pDevTex || !pDevTex->GetBaseTexture()), 0)
 	{
 		// apply black by default
 		if (CTexture::s_ptexBlack)
@@ -3043,7 +3048,7 @@ void CTexture::Apply(int nTUnit, int nState, int nTexMatSlot, int nSUnit, SResou
 			m_nStreamingPriority = max((int8)m_nStreamingPriority, TextureHelpers::LookupTexPriority((EEfResTextures)nTexMatSlot));
 	}
 
-	IF(this != CTexture::s_pTexNULL && (!pDevTex || !pDevTex->GetBaseTexture()), 0)
+	IF (this != CTexture::s_pTexNULL && (!pDevTex || !pDevTex->GetBaseTexture()), 0)
 	{
 		// apply black by default
 		if (CTexture::s_ptexBlack)

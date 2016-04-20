@@ -542,11 +542,11 @@ void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const Job
 #endif
 
 	// == dispatch to the right BackEnd == //
-	IF(crJob.IsBlocking() == false && (bUseJobSystem == false || m_Initialized == false), 0)
-	return static_cast<FallBackBackEnd::CFallBackBackEnd*>(m_pFallBackBackEnd)->FallBackBackEnd::CFallBackBackEnd::AddJob(crJob, cJobHandle, infoBlock);
+	IF (crJob.IsBlocking() == false && (bUseJobSystem == false || m_Initialized == false), 0)
+		return static_cast<FallBackBackEnd::CFallBackBackEnd*>(m_pFallBackBackEnd)->FallBackBackEnd::CFallBackBackEnd::AddJob(crJob, cJobHandle, infoBlock);
 
-	IF(m_pBlockingBackEnd && crJob.IsBlocking(), 0)
-	return static_cast<BlockingBackEnd::CBlockingBackEnd*>(m_pBlockingBackEnd)->BlockingBackEnd::CBlockingBackEnd::AddJob(crJob, cJobHandle, infoBlock);
+	IF (m_pBlockingBackEnd && crJob.IsBlocking(), 0)
+		return static_cast<BlockingBackEnd::CBlockingBackEnd*>(m_pBlockingBackEnd)->BlockingBackEnd::CBlockingBackEnd::AddJob(crJob, cJobHandle, infoBlock);
 
 	// default case is the threadbackend
 	if (m_pThreadBackEnd)
@@ -605,7 +605,7 @@ bool JobManager::CJobManager::InvokeAsJob(const char* cpJobName) const
 #endif
 
 	// try to find the jobname in the job filter list
-	IF(m_pJobFilter, 0)
+	IF (m_pJobFilter, 0)
 	{
 		if (const char* p = strstr(m_pJobFilter, cpJobName))
 			if (p == m_pJobFilter || p[-1] == ',')
@@ -630,8 +630,8 @@ JobManager::SJobProfilingData* JobManager::CJobManager::GetProfilingData(uint16 
 	uint32 nFrameIdx = (nProfilerIndex & 0xC000) >> 14; // frame index is encoded in the top two bits
 	uint32 nProfilingDataEntryIndex = (nProfilerIndex & ~0xC000);
 
-	IF(nProfilingDataEntryIndex >= SJobProfilingDataContainer::nCapturedEntriesPerFrame, 0)
-	return &m_profilingData.m_DymmyProfilingData;
+	IF (nProfilingDataEntryIndex >= SJobProfilingDataContainer::nCapturedEntriesPerFrame, 0)
+		return &m_profilingData.m_DymmyProfilingData;
 
 	JobManager::SJobProfilingData* pProfilingData = &m_profilingData.arrJobProfilingData[nFrameIdx][nProfilingDataEntryIndex];
 	return pProfilingData;
@@ -1053,12 +1053,12 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 			SJobProfilingData profilingData = m_profilingData.arrJobProfilingData[nIdx][i];
 
 			// skip invalid entries
-			IF(profilingData.jobHandle == NULL, 0)
-			continue;
+			IF (profilingData.jobHandle == NULL, 0)
+				continue;
 
 			// skip jobs which did never run
-			IF(profilingData.nEndTime.GetValue() == 0 || profilingData.nStartTime.GetValue() == 0, 0)
-			continue;
+			IF (profilingData.nEndTime.GetValue() == 0 || profilingData.nStartTime.GetValue() == 0, 0)
+				continue;
 
 			// get the job profiling rendering data structure
 			SJobProflingRenderData* pJobProfilingRenderingData =
@@ -1432,7 +1432,7 @@ void JobManager::CJobManager::PushProfilingMarker(const char* pName)
 	static threadID nMainThreadId = ~0;
 	static threadID nRenderThreadId = ~0;
 	static bool bInitialized = false;
-	IF(!bInitialized, 0)
+	IF (!bInitialized, 0)
 	{
 		if (!gEnv->pRenderer)
 			return;
@@ -1456,7 +1456,7 @@ void JobManager::CJobManager::PopProfilingMarker()
 	static threadID nMainThreadId = ~0;
 	static threadID nRenderThreadId = ~0;
 	static bool bInitialized = false;
-	IF(!bInitialized, 0)
+	IF (!bInitialized, 0)
 	{
 		if (!gEnv->pRenderer)
 			return;
@@ -1636,7 +1636,7 @@ void JobManager::detail::PushToFallbackJobList(JobManager::SInfoBlock* pInfoBloc
 JobManager::SInfoBlock* JobManager::detail::PopFromFallbackJobList()
 {
 	JobManager::SInfoBlock* pRet = (JobManager::SInfoBlock*)TLS_GET(uintptr_t, gFallbackInfoBlocks);
-	IF(pRet != NULL, 0)
+	IF (pRet != NULL, 0)
 	{
 		TLS_SET(gFallbackInfoBlocks, (uintptr_t)pRet->pNext);
 	}

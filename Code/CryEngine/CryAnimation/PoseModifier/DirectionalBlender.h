@@ -161,12 +161,12 @@ private:
 
 		ILINE void Smooth(const Vec2& targetValue, const f32 deltaTimeSeconds, const f32 smoothTimeSeconds, const Vec2& maxRadiansPerSecond)
 		{
-			IF_UNLIKELY(smoothingDone)
+			IF_UNLIKELY (smoothingDone)
 			{
 				return;
 			}
 
-			IF_UNLIKELY(shouldSnap)
+			IF_UNLIKELY (shouldSnap)
 			{
 				value = targetValue;
 				rate.zero();

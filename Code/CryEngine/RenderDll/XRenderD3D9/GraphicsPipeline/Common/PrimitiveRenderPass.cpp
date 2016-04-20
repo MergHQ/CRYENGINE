@@ -242,7 +242,14 @@ void CCompiledRenderPrimitive::RemovePrimitiveGeometryCacheUser()
 CPrimitiveRenderPass::CPrimitiveRenderPass()
 	: m_primitiveCount(0)
 	, m_bDirty(true)
+	, m_numRenderTargets(0)
+	, m_pDepthTarget(nullptr)
 {
+	m_pRenderTargets.fill(nullptr);
+	const SResourceView::KeyType fillValue = SResourceView::DefaultRendertargtView;
+	m_renderTargetViews.fill(fillValue);
+	ZeroStruct(m_viewport);
+
 	CCompiledRenderPrimitive::AddPrimitiveGeometryCacheUser();
 }
 

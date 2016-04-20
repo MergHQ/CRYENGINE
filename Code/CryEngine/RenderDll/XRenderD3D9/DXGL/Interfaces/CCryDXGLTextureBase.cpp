@@ -35,8 +35,8 @@ CCryDXGLTextureBase::~CCryDXGLTextureBase()
 NCryOpenGL::STexture* CCryDXGLTextureBase::GetGLTexture()
 {
 #if CRY_OPENGL_SINGLE_CONTEXT
-	IF_UNLIKELY(!m_spGLResource)
-	Initialize();
+	IF_UNLIKELY (!m_spGLResource)
+		Initialize();
 #endif
 	return static_cast<NCryOpenGL::STexture*>(m_spGLResource.get());
 }

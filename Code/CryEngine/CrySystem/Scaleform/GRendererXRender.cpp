@@ -15,9 +15,9 @@
 
 	#if defined(_DEBUG)
 
-		#define _RECORD_CMD_PREFIX           \
-		  IF(m_pCmdBuf && IsMainThread(), 0) \
-		  {                                  \
+		#define _RECORD_CMD_PREFIX            \
+		  IF (m_pCmdBuf && IsMainThread(), 0) \
+		  {                                   \
 		    size_t startPos = (size_t) -1;
 
 		#define _RECORD_CMD(cmd)        \
@@ -50,8 +50,8 @@
 
 	#else // #if defined(_DEBUG)
 
-		#define _RECORD_CMD_PREFIX           \
-		  IF(m_pCmdBuf && IsMainThread(), 0) \
+		#define _RECORD_CMD_PREFIX            \
+		  IF (m_pCmdBuf && IsMainThread(), 0) \
 		  {
 
 		#define _RECORD_CMD(cmd) \
@@ -155,19 +155,19 @@ const FillTextureNULL FillTextureNULL::s_singleInst;
 
 static inline void GTextureAddRef(GTexture* p)
 {
-	IF(p, 1)
-	p->AddRef();
+	IF (p, 1)
+		p->AddRef();
 }
 
 static inline void GTextureRelease(GTexture* p)
 {
-	IF(p, 1)
-	p->Release();
+	IF (p, 1)
+		p->Release();
 }
 
 	#define _RECORD_CMD_ARG_FILLTEX(pFill) \
-	  IF(!pFill, 0)                        \
-	  pFill = &FillTextureNULL::Get();     \
+	  IF (!pFill, 0)                       \
+	    pFill = &FillTextureNULL::Get();   \
 	  _RECORD_CMD_ARG(*pFill)              \
 	  GTextureAddRef(pFill->pTexture);
 
@@ -870,7 +870,7 @@ void GRendererXRender::ApplyBlendMode(BlendType blendMode)
 {
 	SSF_GlobalDrawParams& params = *(SSF_GlobalDrawParams*) m_pDrawParams;
 
-	IF(ms_sys_flash_debugdraw, 0)
+	IF (ms_sys_flash_debugdraw, 0)
 	{
 		m_curBlendMode = Blend_None;
 		params.blendModeStates = 0;
@@ -963,8 +963,8 @@ void GRendererXRender::ApplyColor(const GColor& src)
 void GRendererXRender::ApplyTextureInfo(unsigned int texSlot, const FillTexture* pFill)
 {
 	assert(texSlot < 2);
-	IF(texSlot >= 2, 0)
-	return;
+	IF (texSlot >= 2, 0)
+		return;
 
 	SSF_GlobalDrawParams::STextureInfo& texInfo(m_pDrawParams->texture[texSlot]);
 	if (pFill && pFill->pTexture)
@@ -1181,7 +1181,7 @@ void GRendererXRender::SetVertexData(const void* pVertices, int numVertices, Ver
 	const size_t dataSize = numVertices * VertexSize(vf);
 	CCachedDataStore* pStore = CCachedDataStore::Create(this, pCache, Cached_Vertex, pVertices, dataSize);
 	_RECORD_CMD_ARG(pStore)
-	IF(!pStore, 0)
+	IF (!pStore, 0)
 	{
 		_RECORD_CMD_DATA(pVertices, dataSize)
 	}
@@ -1245,7 +1245,7 @@ void GRendererXRender::SetIndexData(const void* pIndices, int numIndices, IndexF
 	const size_t dataSize = numIndices * IndexSize(idxf);
 	CCachedDataStore* pStore = CCachedDataStore::Create(this, pCache, Cached_Index, pIndices, dataSize);
 	_RECORD_CMD_ARG(pStore)
-	IF(!pStore, 0)
+	IF (!pStore, 0)
 	{
 		_RECORD_CMD_DATA(pIndices, dataSize)
 	}
@@ -1289,8 +1289,8 @@ void GRendererXRender::DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
 
 	SSF_GlobalDrawParams& params = *(SSF_GlobalDrawParams*) m_pDrawParams;
-	IF((m_renderMasked && !m_stencilAvail) || params.vertexFmt == SSF_GlobalDrawParams::Vertex_None || params.indexFmt == SSF_GlobalDrawParams::Index_None, 0)
-	return;
+	IF ((m_renderMasked && !m_stencilAvail) || params.vertexFmt == SSF_GlobalDrawParams::Vertex_None || params.indexFmt == SSF_GlobalDrawParams::Index_None, 0)
+		return;
 
 	assert(params.vertexFmt != SSF_GlobalDrawParams::Vertex_None);
 	assert(params.indexFmt == SSF_GlobalDrawParams::Index_16);
@@ -1318,8 +1318,8 @@ void GRendererXRender::DrawLineStrip(int baseVertexIndex, int lineCount)
 	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
 
 	SSF_GlobalDrawParams& params = *(SSF_GlobalDrawParams*) m_pDrawParams;
-	IF((m_renderMasked && !m_stencilAvail) || params.vertexFmt != SSF_GlobalDrawParams::Vertex_XY16i, 0)
-	return;
+	IF ((m_renderMasked && !m_stencilAvail) || params.vertexFmt != SSF_GlobalDrawParams::Vertex_XY16i, 0)
+		return;
 
 	// setup render parameters
 	ApplyMatrix(&m_mat);
@@ -1453,7 +1453,7 @@ void GRendererXRender::DrawBitmaps(BitmapDesc* pBitmapList, int listSize, int st
 		const size_t dataSize = listSize * sizeof(BitmapDesc);
 		CCachedDataStore* pStore = CCachedDataStore::Create(this, pCache, Cached_BitmapList, pBitmapList, dataSize);
 		_RECORD_CMD_ARG(pStore)
-		IF(!pStore, 0)
+		IF (!pStore, 0)
 		{
 			_RECORD_CMD_DATA(pBitmapList, dataSize)
 		}
@@ -1472,8 +1472,8 @@ void GRendererXRender::DrawBitmaps(BitmapDesc* pBitmapList, int listSize, int st
 
 	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
 
-	IF(!pBitmapList || !pTi, 0)
-	return;
+	IF (!pBitmapList || !pTi, 0)
+		return;
 
 	// resize buffer
 	uint32 numVertices(4 * count + (count - 1) * 2);
@@ -1603,8 +1603,8 @@ void GRendererXRender::BeginSubmitMask(SubmitMaskMode maskMode)
 	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
 
 	m_renderMasked = true;
-	IF(!m_stencilAvail || ms_sys_flash_debugdraw == 2, 0)
-	return;
+	IF (!m_stencilAvail || ms_sys_flash_debugdraw == 2, 0)
+		return;
 
 	SSF_GlobalDrawParams& params = *(SSF_GlobalDrawParams*) m_pDrawParams;
 	params.renderMaskedStates = GS_STENCIL | GS_COLMASK_NONE;
@@ -1655,8 +1655,8 @@ void GRendererXRender::EndSubmitMask()
 	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
 
 	m_renderMasked = true;
-	IF(!m_stencilAvail || ms_sys_flash_debugdraw == 2, 0)
-	return;
+	IF (!m_stencilAvail || ms_sys_flash_debugdraw == 2, 0)
+		return;
 
 	SSF_GlobalDrawParams& params = *(SSF_GlobalDrawParams*) m_pDrawParams;
 	params.renderMaskedStates = GS_STENCIL;
@@ -1671,8 +1671,8 @@ void GRendererXRender::DisableMask()
 	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
 
 	m_renderMasked = false;
-	IF(!m_stencilAvail || ms_sys_flash_debugdraw == 2, 0)
-	return;
+	IF (!m_stencilAvail || ms_sys_flash_debugdraw == 2, 0)
+		return;
 
 	SSF_GlobalDrawParams& params = *(SSF_GlobalDrawParams*) m_pDrawParams;
 	params.renderMaskedStates = 0;

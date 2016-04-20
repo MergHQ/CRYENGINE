@@ -635,7 +635,7 @@ struct SControllerDef
 
 	const SFragmentDef& GetFragmentDef(FragmentID fragment) const
 	{
-		IF_LIKELY(m_fragmentIDs.IsValidTagID(fragment))
+		IF_LIKELY (m_fragmentIDs.IsValidTagID(fragment))
 		{
 			return m_fragmentDef[fragment];
 		}
@@ -654,7 +654,7 @@ struct SControllerDef
 	const ActionScopes GetScopeMask(FragmentID fragID, const SFragTagState& fragTagState, TagID subContext = TAG_ID_INVALID) const
 	{
 		ActionScopes scopeMask = ACTION_SCOPES_NONE;
-		IF_LIKELY(m_fragmentIDs.IsValidTagID(fragID))
+		IF_LIKELY (m_fragmentIDs.IsValidTagID(fragID))
 		{
 			const CTagDefinition* pFragTagDef = m_fragmentIDs.GetSubTagDefinition(fragID);
 			scopeMask = *m_fragmentDef[fragID].scopeMaskList.GetBestMatch(fragTagState, &m_tags, pFragTagDef);

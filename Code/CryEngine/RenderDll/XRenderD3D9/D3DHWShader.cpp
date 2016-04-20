@@ -5428,14 +5428,14 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 			}
 		}
 
-		IF(pSM && pSM->m_pAnimInfo, 0)
+		IF (pSM && pSM->m_pAnimInfo, 0)
 		{
 			STexSamplerRT* pRT = (STexSamplerRT*)pSM;
 			pRT->Update();
 			tx = pRT->m_pTex;
 		}
 
-		IF(!tx || tx->GetCustomID() <= 0 && smpTexType != tx->GetTexType(), 0)
+		IF (!tx || tx->GetCustomID() <= 0 && smpTexType != tx->GetTexType(), 0)
 		{
 #if !defined(_RELEASE)
 			string matName = "unknown";

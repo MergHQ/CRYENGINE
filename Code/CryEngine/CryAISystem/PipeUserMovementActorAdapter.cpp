@@ -120,8 +120,8 @@ void PipeUserMovementActorAdapter::ResetMovementContext()
 void PipeUserMovementActorAdapter::UpdateCoverLocations()
 {
 	CoverID coverID = m_attachedPipeUser.GetCoverID();
-	IF_UNLIKELY(coverID == 0)
-	return;
+	IF_UNLIKELY (coverID == 0)
+		return;
 
 	float radius = m_attachedPipeUser.GetParameters().distanceToCover;
 	Vec3 coverNormal(ZERO);

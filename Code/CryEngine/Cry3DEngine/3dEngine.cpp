@@ -1372,8 +1372,8 @@ void C3DEngine::SelectEntity(IRenderNode* pEntity)
 
 void C3DEngine::CreateDecal(const struct CryEngineDecalInfo& decal)
 {
-	IF(!GetCVars()->e_DecalsAllowGameDecals, 0)
-	return;
+	IF (!GetCVars()->e_DecalsAllowGameDecals, 0)
+		return;
 
 	if (GetCVars()->e_Decals == 2)
 	{

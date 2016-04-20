@@ -56,8 +56,8 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	pObj->m_pRenderNode = this;
 	pObj->m_II.m_Matrix = userData.objMat;
 	pObj->m_fAlpha = 1.f;
-	IF(!m_bDrawLast, 1)
-	pObj->m_nSort = fastround_positive(pObj->m_fDistance * 2.0f);
+	IF (!m_bDrawLast, 1)
+		pObj->m_nSort = fastround_positive(pObj->m_fDistance * 2.0f);
 	else
 		pObj->m_fSort = 10000.0f;
 

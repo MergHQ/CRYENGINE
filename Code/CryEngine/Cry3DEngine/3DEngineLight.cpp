@@ -260,8 +260,8 @@ void C3DEngine::AddDynamicLightSource(const class CDLight& LSource, ILightSource
 		if ((LSource.m_Flags & DLF_SUN && !(GetCVars()->e_CoverageBuffer == 2)) || LSource.m_Flags & DLF_REFLECTIVE_SHADOWMAP)
 		{
 			// sun
-			IF(LSource.m_Color.Max() <= 0.0f || !GetCVars()->e_Sun, 0)
-			return;   // sun disabled
+			IF (LSource.m_Color.Max() <= 0.0f || !GetCVars()->e_Sun, 0)
+				return; // sun disabled
 		}
 		else if (GetCVars()->e_DynamicLightsFrameIdVisTest > 1 && (GetCVars()->e_CoverageBuffer != 2))
 		{
@@ -321,8 +321,8 @@ void C3DEngine::AddDynamicLightSource(const class CDLight& LSource, ILightSource
 			//m_lstDynLights[i]->m_BaseOrigin = m_lstDynLights[i]->m_Origin;
 
 			ColorF cNewColor;
-			IF_LIKELY((m_lstDynLights[i]->m_Flags & DLF_DEFERRED_CUBEMAPS) == 0)
-			cNewColor = ColorF(LSource.m_Color.r * fFadeout, LSource.m_Color.g * fFadeout, LSource.m_Color.b * fFadeout, LSource.m_Color.a);
+			IF_LIKELY ((m_lstDynLights[i]->m_Flags & DLF_DEFERRED_CUBEMAPS) == 0)
+				cNewColor = ColorF(LSource.m_Color.r * fFadeout, LSource.m_Color.g * fFadeout, LSource.m_Color.b * fFadeout, LSource.m_Color.a);
 			else
 				cNewColor = ColorF(LSource.m_Color.r, LSource.m_Color.g, LSource.m_Color.b, clamp_tpl(fFadeout, 0.f, 1.f)); // use separate
 			m_lstDynLights[i]->SetLightColor(cNewColor);

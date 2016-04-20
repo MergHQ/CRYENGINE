@@ -894,7 +894,7 @@ void CHWShader_D3D::mfLogShaderCacheMiss(SHWSInstance* pInst)
 void CHWShader_D3D::mfLogShaderRequest(SHWSInstance* pInst)
 {
 #if !defined(_RELEASE)
-	IF(CRenderer::CV_r_shaderssubmitrequestline > 1, 0)
-	mfSubmitRequestLine(pInst);
+	IF (CRenderer::CV_r_shaderssubmitrequestline > 1, 0)
+		mfSubmitRequestLine(pInst);
 #endif
 }

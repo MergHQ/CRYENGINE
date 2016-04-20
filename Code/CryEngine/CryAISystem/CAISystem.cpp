@@ -6843,7 +6843,7 @@ void CAISystem::UpdateCollisionAvoidance(const AIActorVector& agents, float upda
 		CAIActor* actor = *it;
 		CPipeUser* pipeUser = actor->CastToCPipeUser();
 
-		IF_UNLIKELY(!IsParticipatingInCollisionAvoidance(actor))
+		IF_UNLIKELY (!IsParticipatingInCollisionAvoidance(actor))
 		{
 			continue;
 		}

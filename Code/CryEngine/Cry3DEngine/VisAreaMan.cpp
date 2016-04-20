@@ -1969,7 +1969,7 @@ CVisArea* CVisAreaManager::CreateTypeOcclArea()
 
 void CVisAreaManager::InitAABBTree()
 {
-	IF(!m_pAABBTree, 0)
+	IF (!m_pAABBTree, 0)
 	{
 		UpdateAABBTree();
 	}

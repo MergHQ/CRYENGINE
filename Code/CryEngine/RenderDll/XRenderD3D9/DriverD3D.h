@@ -1161,6 +1161,8 @@ public:
 	static void FX_FlushShader_General();
 	static void FX_FlushShader_ZPass();
 
+	static bool FX_UpdateDynamicShaderResources(const CShaderResources* shaderResources, uint32 batchFilter, uint32 flags2);
+
 	static void FX_SelectTechnique(CShader* pShader, SShaderTechnique* pTech);
 
 	void        FX_UnbindBuffer(D3DBuffer*);

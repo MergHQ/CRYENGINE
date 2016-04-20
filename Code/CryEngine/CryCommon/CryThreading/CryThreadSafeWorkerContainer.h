@@ -201,7 +201,7 @@ inline T& CThreadSafeWorkerContainer<T >::operator[](size_t n)
 {
 	const uint32 nHasWorkerEncodedIndex = (n & 0x80000000) >> 31;
 
-	IF((m_isCoalesced && !nHasWorkerEncodedIndex), 1)
+	IF ((m_isCoalesced && !nHasWorkerEncodedIndex), 1)
 	{
 		return m_coalescedArr[n];
 	}
@@ -424,8 +424,8 @@ inline void CThreadSafeWorkerContainer<T >::CoalesceMemory()
 		minSizeNeeded += m_workers[i].m_dataSize;
 	}
 
-	IF(minSizeNeeded >= m_coalescedArrCapacity, 0)
-	ReserverCoalescedMemory(minSizeNeeded + (minSizeNeeded / 4));
+	IF (minSizeNeeded >= m_coalescedArrCapacity, 0)
+		ReserverCoalescedMemory(minSizeNeeded + (minSizeNeeded / 4));
 
 	// Copy data to coalesced array
 	uint32 nOffest = 0;
@@ -489,8 +489,8 @@ template<typename T>
 inline T* CThreadSafeWorkerContainer<T >::push_back_impl(size_t& nIndex)
 {
 	// Avoid writing to thread share resource and take hit of 'if statement to avoid false-sharing between threads
-	IF(m_isCoalesced, 0)
-	m_isCoalesced = false;
+	IF (m_isCoalesced, 0)
+		m_isCoalesced = false;
 
 	// Get worker id
 	const uint32 nWorkerThreadId = GetWorkerId_threadlocal();

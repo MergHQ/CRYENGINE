@@ -41,11 +41,11 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		const size_t maxChildCount = std::numeric_limits<IndexType>::max();
-		IF_UNLIKELY((size_t)xml->getChildCount() > maxChildCount)
+		IF_UNLIKELY ((size_t)xml->getChildCount() > maxChildCount)
 		{
 			ErrorReporter(*this, context).LogError("Too many children. Max %d children are supported.", maxChildCount);
 			return LoadFailure;
@@ -258,7 +258,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& node, const LoadContext& context) override
 	{
-		IF_UNLIKELY(node->getChildCount() > 32)
+		IF_UNLIKELY (node->getChildCount() > 32)
 		{
 			ErrorReporter(*this, context).LogError("Too many children. Max 32 children allowed.");
 			return LoadFailure;
@@ -512,8 +512,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		m_desiredRepeatCount = 0;   // 0 means infinite
 		xml->getAttr("count", m_desiredRepeatCount);
@@ -611,8 +611,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		m_maxAttemptCount = 0;   // 0 means infinite
 		xml->getAttr("attemptCount", m_maxAttemptCount);
@@ -784,18 +784,18 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		const int childCount = xml->getChildCount();
-		IF_UNLIKELY(childCount < 1)
+		IF_UNLIKELY (childCount < 1)
 		{
 			ErrorReporter(*this, context).LogError("A priority node must have at least one case childs.");
 			return LoadFailure;
 		}
 
 		const size_t maxChildCount = std::numeric_limits<CaseIndexType>::max();
-		IF_UNLIKELY((size_t)childCount >= maxChildCount)
+		IF_UNLIKELY ((size_t)childCount >= maxChildCount)
 		{
 			ErrorReporter(*this, context).LogError("Max %d children allowed.", maxChildCount);
 			return LoadFailure;
@@ -807,7 +807,7 @@ public:
 			Case priorityCase;
 			XmlNodeRef caseXml = xml->getChild(i);
 
-			IF_UNLIKELY(priorityCase.LoadFromXml(caseXml, context) == LoadFailure)
+			IF_UNLIKELY (priorityCase.LoadFromXml(caseXml, context) == LoadFailure)
 			{
 				ErrorReporter(*this, context).LogError("Failed to load Case.");
 				return LoadFailure;
@@ -887,8 +887,8 @@ protected:
 			}
 		}
 
-		IF_UNLIKELY(currentChildIndex >= m_cases.size())
-		return Failure;
+		IF_UNLIKELY (currentChildIndex >= m_cases.size())
+			return Failure;
 
 		return m_cases[currentChildIndex].node->Tick(context);
 	}
@@ -1199,13 +1199,13 @@ public:
 	{
 		const size_t maxChildCount = std::numeric_limits<StateIndexType>::max();
 
-		IF_UNLIKELY((size_t)xml->getChildCount() >= maxChildCount)
+		IF_UNLIKELY ((size_t)xml->getChildCount() >= maxChildCount)
 		{
 			ErrorReporter(*this, context).LogError("Too many children. Max %d allowed.", maxChildCount);
 			return LoadFailure;
 		}
 
-		IF_UNLIKELY(xml->getChildCount() <= 0)
+		IF_UNLIKELY (xml->getChildCount() <= 0)
 		{
 			ErrorReporter(*this, context).LogError("A state machine node must contain at least one child state node.");
 			return LoadFailure;
@@ -1380,11 +1380,11 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		const stack_string eventName = xml->getAttr("name");
-		IF_UNLIKELY(eventName.empty())
+		IF_UNLIKELY (eventName.empty())
 		{
 			ErrorReporter(*this, context).LogError("Could not find the 'name' attribute.");
 			return LoadFailure;
@@ -1582,8 +1582,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		const stack_string conditionString = xml->getAttr("condition");
 		if (conditionString.empty())
@@ -1665,8 +1665,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		const stack_string conditionString = xml->getAttr("condition");
 		if (conditionString.empty())
@@ -1676,7 +1676,7 @@ public:
 		}
 
 		m_condition = Variables::Expression(conditionString, context.variableDeclarations);
-		IF_UNLIKELY(!m_condition.Valid())
+		IF_UNLIKELY (!m_condition.Valid())
 		{
 			ErrorReporter(*this, context).LogError("Couldn't get behavior variables.");
 			return LoadFailure;
@@ -2007,11 +2007,11 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
-		IF_UNLIKELY(BaseClass::LoadFromXml(xml, context) == LoadFailure)
-		return LoadFailure;
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			return LoadFailure;
 
 		const stack_string eventName = xml->getAttr("name");
-		IF_UNLIKELY(eventName.empty())
+		IF_UNLIKELY (eventName.empty())
 		{
 			gEnv->pLog->LogError("WaitForEvent could not find the 'name' attribute at line %d.", xml->getLine());
 			return LoadFailure;
@@ -2417,7 +2417,7 @@ public:
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
 		const stack_string timestampName = xml->getAttr("since");
-		IF_UNLIKELY(timestampName.empty())
+		IF_UNLIKELY (timestampName.empty())
 		{
 			ErrorReporter(*this, context).LogError("Missing or invalid 'since' attribute.");
 			return LoadFailure;

@@ -2229,8 +2229,8 @@ void SRenderThread::ProcessCommands()
 	#if !defined(_RELEASE)
 		// Ensure that the command hasn't been processed already
 		int* pProcessed = (int*)(pP + sizeof(int));
-		IF_UNLIKELY(*pProcessed)
-		__debugbreak();
+		IF_UNLIKELY (*pProcessed)
+			__debugbreak();
 		*pProcessed = 1;
 		n += sizeof(int);
 	#endif
@@ -3486,8 +3486,8 @@ bool SRenderThread::IsFailed()
 bool CRenderer::FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce)
 {
 	SRenderThread* pRT = m_pRT;
-	IF(!pRT, 0)
-	return true;
+	IF (!pRT, 0)
+		return true;
 	if (pRT->IsRenderThread(true))
 	{
 		SSystemGlobalEnvironment* pEnv = iSystem->GetGlobalEnvironment();

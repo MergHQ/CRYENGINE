@@ -344,7 +344,7 @@ public:
 		threadID threadId = CryGetCurrentThreadId();
 		int32 iterations = 0;
 retry:
-		IF(CryInterlockedCompareExchange(&(this->m_lock), 1L, 0L) == 0L, 1)
+		IF (CryInterlockedCompareExchange(&(this->m_lock), 1L, 0L) == 0L, 1)
 		{
 			assert(m_owner == 0u && m_counter == 0u);
 			m_owner = threadId;
@@ -352,8 +352,8 @@ retry:
 		}
 		else
 		{
-			IF(m_owner == threadId, 1)
-			++ m_counter;
+			IF (m_owner == threadId, 1)
+				++m_counter;
 			else
 			{
 				CrySleep((1 & isneg(SPIN_COUNT - iterations++)));
@@ -365,7 +365,7 @@ retry:
 	bool TryLock()
 	{
 		threadID threadId = CryGetCurrentThreadId();
-		IF(CryInterlockedCompareExchange(&m_lock, 1L, 0L) == 0L, 1)
+		IF (CryInterlockedCompareExchange(&m_lock, 1L, 0L) == 0L, 1)
 		{
 			assert(m_owner == 0u && m_counter == 0u);
 			m_owner = threadId;
@@ -374,7 +374,7 @@ retry:
 		}
 		else
 		{
-			IF(m_owner == threadId, 1)
+			IF (m_owner == threadId, 1)
 			{
 				++m_counter;
 				return true;
@@ -389,7 +389,7 @@ retry:
 	void Unlock()
 	{
 		assert(m_owner == CryGetCurrentThreadId() && m_counter != 0u);
-		IF((m_counter -= 1) == 0u, 1)
+		IF ((m_counter -= 1) == 0u, 1)
 		{
 			m_owner = 0u;
 			m_lock = 0L;

@@ -712,7 +712,7 @@ void CFlowNode_AISequenceActionAnimation::HandleSequenceEvent(SequenceEvent sequ
 			SequenceAgent agent(agentEntityId);
 			IPipeUser* pipeUser = agent.GetPipeUser();
 			assert(pipeUser);
-			IF_LIKELY(pipeUser)
+			IF_LIKELY (pipeUser)
 			{
 				Vec3 position(ZERO);
 				Vec3 direction(ZERO);
@@ -841,13 +841,13 @@ void CFlowNode_AISequenceActionAnimation::ClearAnimation(bool bHurry)
 {
 	IAIObject* aiObject = GetAssignedEntityAIObject();
 	assert(aiObject);
-	IF_UNLIKELY(!aiObject)
-	return;
+	IF_UNLIKELY (!aiObject)
+		return;
 
 	IAIActorProxy* aiActorProxy = aiObject->GetProxy();
 	assert(aiActorProxy);
-	IF_UNLIKELY(!aiActorProxy)
-	return;
+	IF_UNLIKELY (!aiActorProxy)
+		return;
 
 	if (GetPortBool(&m_actInfo, InputPort_OneShot))
 	{

@@ -53,8 +53,8 @@ struct SDamageLUTSorter
 //====================================================================
 bool CPuppet::ActorObstructingAim(const CAIActor* pActor, const Vec3& firePos, const Vec3& dir, const Ray& fireRay) const
 {
-	IF_UNLIKELY(!pActor)
-	return false;
+	IF_UNLIKELY (!pActor)
+		return false;
 
 	const Vec3 normalizedFireDirectionXY = Vec3(dir.x, dir.y, 0.0f).GetNormalizedSafe();
 	Vec3 directionFromFirePositionToOtherAgentPosition = pActor->GetPhysicsPos() - firePos;

@@ -20,7 +20,7 @@ public:
 	INodePtr CreateBehaviorTreeRootNodeFromBehaviorTreeXml(const XmlNodeRef& behaviorTreeXmlNode, const LoadContext& context) const
 	{
 		XmlNodeRef rootXmlNode = behaviorTreeXmlNode->findChild("Root");
-		IF_UNLIKELY(!rootXmlNode)
+		IF_UNLIKELY (!rootXmlNode)
 		{
 			gEnv->pLog->LogError("Failed to load behavior tree '%s'. The 'Root' node is missing.", context.treeName);
 			return INodePtr();
