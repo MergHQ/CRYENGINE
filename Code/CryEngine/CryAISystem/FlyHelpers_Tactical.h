@@ -13,7 +13,7 @@ ILINE bool IsVisible(CPipeUser* pPipeUser, IEntity* pTargetEntity)
 	CRY_ASSERT(pTargetEntity);
 
 	const IAIObject* pTargetAiObject = pTargetEntity->GetAI();
-	IF_UNLIKELY(!pTargetAiObject)
+	IF_UNLIKELY (!pTargetAiObject)
 	{
 		// This case is not properly handled because we don't care about it for the moment.
 		return false;

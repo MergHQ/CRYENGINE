@@ -43,8 +43,8 @@ void CREMeshImpl::mfPrepare(bool bCheckOverflow)
 	if (bCheckOverflow)
 		rd->FX_CheckOverflow(0, 0, this);
 
-	IF(!m_pRenderMesh, 0)
-	return;
+	IF (!m_pRenderMesh, 0)
+		return;
 
 	rd->m_RP.m_CurVFormat = m_pRenderMesh->_GetVertexFormat();
 
@@ -83,12 +83,12 @@ void CREMeshImpl::mfPrecache(const SShaderItem& SH)
 {
 	DETAILED_PROFILE_MARKER("CREMeshImpl::mfPrecache");
 	CShader* pSH = (CShader*)SH.m_pShader;
-	IF(!pSH, 0)
-	return;
-	IF(!m_pRenderMesh, 0)
-	return;
-	IF(m_pRenderMesh->_HasVBStream(VSF_GENERAL), 0)
-	return;
+	IF (!pSH, 0)
+		return;
+	IF (!m_pRenderMesh, 0)
+		return;
+	IF (m_pRenderMesh->_HasVBStream(VSF_GENERAL), 0)
+		return;
 
 	mfCheckUpdate(pSH->m_eVertexFormat, VSM_TANGENTS, gRenDev->m_RP.m_TI[gRenDev->m_RP.m_nFillThreadID].m_nFrameUpdateID);
 }
@@ -97,8 +97,8 @@ bool CREMeshImpl::mfUpdate(EVertexFormat eVertFormat, int Flags, bool bTessellat
 {
 	DETAILED_PROFILE_MARKER("CREMeshImpl::mfUpdate");
 	FUNCTION_PROFILER_RENDER_FLAT
-	  IF(m_pRenderMesh == NULL, 0)
-	return false;
+	IF (m_pRenderMesh == NULL, 0)
+		return false;
 
 	CRenderer* rd = gRenDev;
 	const int threadId = rd->m_RP.m_nProcessThreadID;
@@ -276,8 +276,8 @@ bool CREMeshImpl::BindRemappedSkinningData(uint32 guid)
 bool CREMeshImpl::mfPreDraw(SShaderPass* sl)
 {
 	DETAILED_PROFILE_MARKER("CREMeshImpl::mfPreDraw");
-	IF(!m_pRenderMesh, 0)
-	return false;
+	IF (!m_pRenderMesh, 0)
+		return false;
 
 	//PROFILE_LABEL_SHADER(m_pRenderMesh->GetSourceName() ? m_pRenderMesh->GetSourceName() : "Unknown mesh-resource name");
 

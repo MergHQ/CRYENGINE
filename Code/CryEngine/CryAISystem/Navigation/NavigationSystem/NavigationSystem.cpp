@@ -3626,8 +3626,8 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 		if (CAIObject* debugObjectEnd = gAIEnv.pAIObjectManager->GetAIObjectByName("MNMRayEnd"))
 		{
 			NavigationMeshID meshID = navigationSystem.GetEnclosingMeshID(m_agentTypeID, debugObjectStart->GetPos());
-			IF_UNLIKELY(!meshID)
-			return;
+			IF_UNLIKELY (!meshID)
+				return;
 
 			NavigationMesh& mesh = navigationSystem.m_meshes[meshID];
 			const MNM::MeshGrid::Params& paramsGrid = mesh.grid.GetParams();
@@ -3728,8 +3728,8 @@ void NavigationSystemDebugDraw::DebugDrawClosestPoint(NavigationSystem& navigati
 	if (CAIObject* debugObject = gAIEnv.pAIObjectManager->GetAIObjectByName("MNMClosestPoint"))
 	{
 		NavigationMeshID meshID = navigationSystem.GetEnclosingMeshID(m_agentTypeID, debugObject->GetPos());
-		IF_UNLIKELY(!meshID)
-		return;
+		IF_UNLIKELY (!meshID)
+			return;
 
 		NavigationMesh& mesh = navigationSystem.m_meshes[meshID];
 		const MNM::MeshGrid& grid = mesh.grid;
@@ -3766,8 +3766,8 @@ void NavigationSystemDebugDraw::DebugDrawGroundPoint(NavigationSystem& navigatio
 	if (CAIObject* debugObject = gAIEnv.pAIObjectManager->GetAIObjectByName("MNMGroundPoint"))
 	{
 		NavigationMeshID meshID = navigationSystem.GetEnclosingMeshID(m_agentTypeID, debugObject->GetPos());
-		IF_UNLIKELY(!meshID)
-		return;
+		IF_UNLIKELY (!meshID)
+			return;
 
 		NavigationMesh& mesh = navigationSystem.m_meshes[meshID];
 		const MNM::MeshGrid& grid = mesh.grid;
@@ -3796,8 +3796,8 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 		if (CAIObject* debugObjectEnd = gAIEnv.pAIObjectManager->GetAIObjectByName("MNMPathEnd"))
 		{
 			NavigationMeshID meshID = navigationSystem.GetEnclosingMeshID(m_agentTypeID, debugObjectStart->GetPos());
-			IF_UNLIKELY(!meshID)
-			return;
+			IF_UNLIKELY (!meshID)
+				return;
 
 			NavigationMesh& mesh = navigationSystem.m_meshes[meshID];
 			const MNM::MeshGrid& grid = mesh.grid;

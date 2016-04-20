@@ -1514,16 +1514,16 @@ void CAIGroup::NotifyReinfDone(const IAIObject* obj, bool isDone)
 bool CAIGroup::EnterGroupScope(const CAIActor* pMember, const GroupScopeID scopeID, const uint32 allowedConcurrentUsers)
 {
 	TUnitList::iterator theUnit = std::find(m_Units.begin(), m_Units.end(), pMember);
-	IF_UNLIKELY(theUnit == m_Units.end())
-	return false;
+	IF_UNLIKELY (theUnit == m_Units.end())
+		return false;
 
-	IF_UNLIKELY(GetAmountOfActorsInScope(scopeID) >= allowedConcurrentUsers)
+	IF_UNLIKELY (GetAmountOfActorsInScope(scopeID) >= allowedConcurrentUsers)
 	{
 		return false;
 	}
 
 	const tAIObjectID memberId = pMember->GetAIObjectID();
-	IF_UNLIKELY(m_groupScopes.find(memberId) != m_groupScopes.end())
+	IF_UNLIKELY (m_groupScopes.find(memberId) != m_groupScopes.end())
 	{
 		return false;
 	}
@@ -1598,7 +1598,7 @@ uint32 CAIGroup::GetAmountOfActorsInScope(const GroupScopeID scopeID) const
 
 GroupScopeID CAIGroup::GetGroupScopeId(const char* scopeName)
 {
-	IF_UNLIKELY(scopeName == NULL)
+	IF_UNLIKELY (scopeName == NULL)
 	{
 		assert(false);
 		return (GroupScopeID)0;

@@ -153,8 +153,8 @@ void* ParticleObjectPool::Allocate_128Byte()
 		void* pMemoryBlock = CryInterlockedPopEntrySList(m_freeList4KB);
 
 		// stop if we ran out of pool memory
-		IF(pMemoryBlock == NULL, 0)
-		return NULL;
+		IF (pMemoryBlock == NULL, 0)
+			return NULL;
 
 #if defined(TRACK_PARTICLE_POOL_USAGE)
 		CryInterlockedAdd(alias_cast<volatile int*>(&m_nMemory128Bytes), 4 * 1024);
@@ -204,8 +204,8 @@ void* ParticleObjectPool::Allocate_256Byte()
 		// allocation failed, refill list from a 4KB block if we have one
 		void* pMemoryBlock = CryInterlockedPopEntrySList(m_freeList4KB);
 		// stop if we ran out of pool memory
-		IF(pMemoryBlock == NULL, 0)
-		return NULL;
+		IF (pMemoryBlock == NULL, 0)
+			return NULL;
 
 #if defined(TRACK_PARTICLE_POOL_USAGE)
 		CryInterlockedAdd(alias_cast<volatile int*>(&m_nMemory256Bytes), 4 * 1024);
@@ -255,8 +255,8 @@ void* ParticleObjectPool::Allocate_512Byte()
 		// allocation failed, refill list from a 4KB block if we have one
 		void* pMemoryBlock = CryInterlockedPopEntrySList(m_freeList4KB);
 		// stop if we ran out of pool memory
-		IF(pMemoryBlock == NULL, 0)
-		return NULL;
+		IF (pMemoryBlock == NULL, 0)
+			return NULL;
 
 #if defined(TRACK_PARTICLE_POOL_USAGE)
 		CryInterlockedAdd(alias_cast<volatile int*>(&m_nMemory512Bytes), 4 * 1024);
@@ -279,8 +279,8 @@ void* ParticleObjectPool::Allocate_512Byte()
 ///////////////////////////////////////////////////////////////////////////////
 void ParticleObjectPool::Deallocate_128Byte(void* pPtr)
 {
-	IF(!pPtr, 0)
-	return;
+	IF (!pPtr, 0)
+		return;
 
 	CryInterlockedPushEntrySList(m_freeList128Bytes, *alias_cast<SLockFreeSingleLinkedListEntry*>(pPtr));
 #if defined(TRACK_PARTICLE_POOL_USAGE)
@@ -292,8 +292,8 @@ void ParticleObjectPool::Deallocate_128Byte(void* pPtr)
 ///////////////////////////////////////////////////////////////////////////////
 void ParticleObjectPool::Deallocate_256Byte(void* pPtr)
 {
-	IF(!pPtr, 0)
-	return;
+	IF (!pPtr, 0)
+		return;
 
 	CryInterlockedPushEntrySList(m_freeList256Bytes, *alias_cast<SLockFreeSingleLinkedListEntry*>(pPtr));
 #if defined(TRACK_PARTICLE_POOL_USAGE)
@@ -305,8 +305,8 @@ void ParticleObjectPool::Deallocate_256Byte(void* pPtr)
 ///////////////////////////////////////////////////////////////////////////////
 void ParticleObjectPool::Deallocate_512Byte(void* pPtr)
 {
-	IF(!pPtr, 0)
-	return;
+	IF (!pPtr, 0)
+		return;
 
 	CryInterlockedPushEntrySList(m_freeList512Bytes, *alias_cast<SLockFreeSingleLinkedListEntry*>(pPtr));
 #if defined(TRACK_PARTICLE_POOL_USAGE)

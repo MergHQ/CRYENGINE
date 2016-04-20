@@ -329,7 +329,7 @@ void CFacialModel::FillInfoMapFromFaceState(CFacialDisplaceInfo& info, CFaceStat
 	// support the code interface to force the neck and eye orientations.
 	{
 		// Make sure we use the master skeleton, in case we are an attachment.
-		IF_UNLIKELY(forcedRotations)
+		IF_UNLIKELY (forcedRotations)
 		{
 			for (int rotIndex = 0; rotIndex < numForcedRotations; ++rotIndex)
 			{

@@ -602,7 +602,7 @@ int GTextureXRenderYUV::Map(int level, int n, MapRect* maps, int /*flags*/)
 		void* pBits = 0;
 		uint32 pitch = 0;
 		ok = pRenderer->SF_MapTexture(m_texIDs[i], level, pBits, pitch);
-		IF(ok, 1)
+		IF (ok, 1)
 		{
 			maps[i].width = Res(i, m_width);
 			maps[i].height = Res(i, m_height);
@@ -658,8 +658,8 @@ bool GTextureXRenderYUV::Unmap(int level, int n, MapRect* maps, int /*flags*/)
 	IRenderer* pRenderer = m_pRendererXRender->GetXRender();
 	for (int32 i = 0; i < m_numIDs; ++i)
 	{
-		IF(maps[i].pData, 1)
-		pRenderer->SF_UnmapTexture(m_texIDs[i], level);
+		IF (maps[i].pData, 1)
+			pRenderer->SF_UnmapTexture(m_texIDs[i], level);
 	}
 	return true;
 }

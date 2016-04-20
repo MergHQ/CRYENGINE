@@ -744,14 +744,25 @@ void CRenderView::UpdateModifiedShaderItems()
 	{
 		auto pShaderResources = item.first;
 		auto pShader = item.second;
+		auto pResourceSet = pShaderResources->m_pCompiledResourceSet;
+
+		if (pResourceSet && (pResourceSet->GetFlags() & CDeviceResourceSet::EFlags_DynamicUpdates))
+		{
+			gcpRendD3D->FX_UpdateDynamicShaderResources(pShaderResources, FB_GENERAL, 0);
+		}
+
+		if (pResourceSet && (pResourceSet->GetFlags() & CDeviceResourceSet::EFlags_PendingAllocation))
+		{
+			pResourceSet->Fill(pShader, pShaderResources, EShaderStage_AllWithoutCompute);
+		}
 
 		if (pShaderResources->HasDynamicTexModifiers())
 		{
 			pShaderResources->RT_UpdateConstants(pShader);
 		}
-		else if (pShaderResources->m_pCompiledResourceSet && pShaderResources->m_pCompiledResourceSet->IsDirty())
+		else if (pResourceSet && pResourceSet->IsDirty())
 		{
-			pShaderResources->m_pCompiledResourceSet->Build();
+			pResourceSet->Build();
 		}
 	}
 
@@ -943,6 +954,7 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 				SRendItem::mfSortByLight(&renderItems[nStart], n, true, false, false);
 			}
 		}
+		break;
 
 	case EFSLIST_AFTER_POSTPROCESS:
 	case EFSLIST_AFTER_HDRPOSTPROCESS:
@@ -1019,7 +1031,6 @@ void CRenderView::AddRenderItemsFromClientPolys()
 
 		uint32 nBatchFlags = FB_GENERAL;
 		nBatchFlags |= (pl->m_nCPFlags & CREClientPoly::efAfterWater) ? 0 : FB_BELOW_WATER;
-		;
 
 		//if (pTech && pShaderResources)
 		//{
@@ -1150,7 +1161,9 @@ void CRenderView::CheckAndScheduleForUpdate(const SShaderItem& shaderItem)
 
 	if (pSR && pShader)
 	{
-		if (pSR->HasDynamicTexModifiers() || (pSR->m_pCompiledResourceSet && pSR->m_pCompiledResourceSet->IsDirty()))
+		auto& pRS = pSR->m_pCompiledResourceSet;
+
+		if (pSR->HasDynamicTexModifiers() || (pRS.get() && (pRS->IsDirty() || (pRS->GetFlags() & (CDeviceResourceSet::EFlags_DynamicUpdates | CDeviceResourceSet::EFlags_PendingAllocation)))))
 		{
 			if (CryInterlockedExchange((volatile LONG*)&pSR->m_nUpdateFrameID, (uint32)m_frameId) != (uint32)m_frameId)
 			{

@@ -43,7 +43,7 @@ bool CObjManager::IsBoxOccluded_HeightMap
 
 	//unlikely
 	const bool cBoxTooLarge = ((vTopMax.x - vTopMin.x) > 10000) | ((vTopMax.y - vTopMin.y) > 10000);
-	IF(cBoxTooLarge, false)
+	IF (cBoxTooLarge, false)
 	{
 		pOcclTestVars->nLastOccludedMainFrameID = cMainID;
 		pOcclTestVars->nTerrainOccLastFrame = 1;
@@ -53,7 +53,7 @@ bool CObjManager::IsBoxOccluded_HeightMap
 	const Vec3& vCamPos = passInfo.GetCamera().GetPosition();
 
 	const bool cCamInsideBox = (vCamPos.x <= vTopMax.x) & (vCamPos.x >= vTopMin.x) & (vCamPos.y <= vTopMax.y) & (vCamPos.y >= vTopMin.y);
-	IF(cCamInsideBox, false)
+	IF (cCamInsideBox, false)
 	{
 		if ((eOcclusionObjectType != eoot_OCCLUDER && eOcclusionObjectType != eoot_OCCELL_OCCLUDER))
 			pOcclTestVars->nLastVisibleMainFrameID = cMainID;

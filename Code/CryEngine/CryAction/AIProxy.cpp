@@ -274,7 +274,7 @@ void CreateTestVoiceLibraryNameFromBasicName(const string& basicName, string& te
 
 const char* CAIProxy::GetVoiceLibraryName(const bool useForcedDefaultName /* = false */) const
 {
-	IF_UNLIKELY(useForcedDefaultName)
+	IF_UNLIKELY (useForcedDefaultName)
 	{
 		return m_voiceLibraryWhenForcingTest.c_str();
 	}
@@ -1675,7 +1675,7 @@ IActor* CAIProxy::GetActor() const
 //----------------------------------------------------------------------------------------------------------
 void CAIProxy::SendSignal(int signalID, const char* szText, IEntity* pSender, const IAISignalExtraData* pData, uint32 crc /* = 0u */)
 {
-	IF_UNLIKELY(crc == 0u)
+	IF_UNLIKELY (crc == 0u)
 	{
 		crc = CCrc32::Compute(szText);
 	}

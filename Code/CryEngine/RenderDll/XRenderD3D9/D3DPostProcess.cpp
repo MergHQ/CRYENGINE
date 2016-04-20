@@ -1127,8 +1127,8 @@ void CPostEffectsMgr::End()
 bool CREPostProcess::mfDraw(CShader* ef, SShaderPass* sfm)
 {
 	CPostEffectsMgr* pPostMgr = PostEffectMgr();
-	IF(!gcpRendD3D || !CRenderer::CV_r_PostProcess || pPostMgr->GetEffects().empty() || gcpRendD3D->GetWireframeMode() > R_SOLID_MODE, 0)
-	return 0;
+	IF (!gcpRendD3D || !CRenderer::CV_r_PostProcess || pPostMgr->GetEffects().empty() || gcpRendD3D->GetWireframeMode() > R_SOLID_MODE, 0)
+		return 0;
 
 	// Skip hdr/post processing when rendering different camera views
 	if ((gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_MIRRORCULL) || (gcpRendD3D->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN))
@@ -1137,14 +1137,14 @@ bool CREPostProcess::mfDraw(CShader* ef, SShaderPass* sfm)
 	if (gcpRendD3D->m_bDeviceLost)
 		return 0;
 
-	IF(!CShaderMan::s_shPostEffects, 0)
-	return 0;
+	IF (!CShaderMan::s_shPostEffects, 0)
+		return 0;
 
-	IF(!CTexture::IsTextureExist(CTexture::s_ptexBackBuffer), 0)
-	return 0;
+	IF (!CTexture::IsTextureExist(CTexture::s_ptexBackBuffer), 0)
+		return 0;
 
-	IF(!CTexture::IsTextureExist(CTexture::s_ptexSceneTarget), 0)
-	return 0;
+	IF (!CTexture::IsTextureExist(CTexture::s_ptexSceneTarget), 0)
+		return 0;
 
 	PROFILE_LABEL_SCOPE("POST EFFECTS");
 

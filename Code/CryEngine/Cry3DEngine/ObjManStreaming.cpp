@@ -219,7 +219,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 				}
 			}
 
-			IF_UNLIKELY(bNeedsUnique)
+			IF_UNLIKELY (bNeedsUnique)
 			{
 				std::sort(m_arrStreamingNodeStack.begin(), m_arrStreamingNodeStack.end());
 				m_arrStreamingNodeStack.resize(std::distance(m_arrStreamingNodeStack.begin(), std::unique(m_arrStreamingNodeStack.begin(), m_arrStreamingNodeStack.end())));
@@ -347,7 +347,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 			}
 		}
 
-		IF_UNLIKELY(bNeedsUnique)
+		IF_UNLIKELY (bNeedsUnique)
 		{
 			std::sort(fastStreamingNodeStack.begin(), fastStreamingNodeStack.end());
 			fastStreamingNodeStack.resize(std::distance(fastStreamingNodeStack.begin(), std::unique(fastStreamingNodeStack.begin(), fastStreamingNodeStack.end())));
@@ -474,8 +474,8 @@ void CObjManager::ProcessObjectsStreaming(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	IF(!GetCVars()->e_StreamCgf, 0)
-	return;
+	IF (!GetCVars()->e_StreamCgf, 0)
+		return;
 
 	// this assert is most likely triggered by forgetting to call
 	// 3dEngine::SyncProcessStreamingUpdate at the end of the frame, leading to multiple
@@ -891,7 +891,7 @@ void CObjManager::ProcessObjectsStreaming_Stats(const SRenderingPassInfo& passIn
 					pObj->m_nStatsInUse = 1;
 					pBegunUse[nBegunUse++] = pObj;
 
-					IF_UNLIKELY(nBegunUse == CRY_ARRAY_COUNT(pBegunUse))
+					IF_UNLIKELY (nBegunUse == CRY_ARRAY_COUNT(pBegunUse))
 					{
 						pListener->OnBegunUsingStreamedObjects(pBegunUse, nBegunUse);
 						nBegunUse = 0;
@@ -905,7 +905,7 @@ void CObjManager::ProcessObjectsStreaming_Stats(const SRenderingPassInfo& passIn
 					pObj->m_nStatsInUse = 0;
 					pEndUse[nEndUse++] = pObj;
 
-					IF_UNLIKELY(nEndUse == CRY_ARRAY_COUNT(pEndUse))
+					IF_UNLIKELY (nEndUse == CRY_ARRAY_COUNT(pEndUse))
 					{
 						pListener->OnEndedUsingStreamedObjects(pEndUse, nEndUse);
 						nEndUse = 0;

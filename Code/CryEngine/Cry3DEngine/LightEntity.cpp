@@ -174,8 +174,8 @@ void C3DEngine::UpdateSunLightSource(const SRenderingPassInfo& passInfo)
 
 	m_pSun->SetRndFlags(ERF_OUTDOORONLY, true);
 
-	IF(GetCVars()->e_Sun && m_pTerrain, 1)
-	RegisterEntity(m_pSun);
+	IF (GetCVars()->e_Sun && m_pTerrain, 1)
+		RegisterEntity(m_pSun);
 	else
 		UnRegisterEntityAsJob(m_pSun);
 }
@@ -2067,7 +2067,7 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 			}
 
 			const float mult = SATURATE(6.f * (1.f - (rParams.fDistance / m_fWSMaxViewDist)));
-			IF(m_light.m_Color.Luminance() * mult > 0, 1)
+			IF (m_light.m_Color.Luminance() * mult > 0, 1)
 			{
 				if (passInfo.IsGeneralPass())
 					Get3DEngine()->SetupLightScissors(&m_light, passInfo);

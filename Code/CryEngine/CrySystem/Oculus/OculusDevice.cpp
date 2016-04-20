@@ -156,10 +156,10 @@ void Device::Release()
 {
 	long refCount = CryInterlockedDecrement(&m_refCount);
 	#if !defined(_RELEASE)
-	IF(refCount < 0, 0)
-	__debugbreak();
+	IF (refCount < 0, 0)
+		__debugbreak();
 	#endif
-	IF(refCount == 0, 0)
+	IF (refCount == 0, 0)
 	{
 		delete this;
 	}

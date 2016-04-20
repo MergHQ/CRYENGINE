@@ -40,7 +40,7 @@ bool CCryDXGLDepthStencilView::Initialize(NCryOpenGL::CContext* pContext)
 
 NCryOpenGL::SOutputMergerView* CCryDXGLDepthStencilView::GetGLView(NCryOpenGL::CContext* pContext)
 {
-	IF_UNLIKELY(!m_spGLView)
+	IF_UNLIKELY (!m_spGLView)
 	{
 		if (!Initialize(pContext))
 			DXGL_FATAL("Deferred depth stencil view creation failed");

@@ -44,15 +44,15 @@ void CPlanningTextureStreamer::BeginUpdateSchedule()
 
 	TStreamerTextureVec& textures = GetTextures();
 
-	IF_UNLIKELY(textures.empty())
-	return;
+	IF_UNLIKELY (textures.empty())
+		return;
 
 	SPlanningSortState& sortInput = m_sortState;
 
 	sortInput.pTextures = &textures;
 	sortInput.nTextures = textures.size();
 
-	IF_UNLIKELY(CRenderer::CV_r_texturesstreamingSuppress)
+	IF_UNLIKELY (CRenderer::CV_r_texturesstreamingSuppress)
 	{
 		m_state = S_QueuedForSync;
 		return;
@@ -240,8 +240,8 @@ void CPlanningTextureStreamer::ApplySchedule(EApplyScheduleFlags asf)
 			  ++nReqIdx)
 			{
 				CTexture* pTex = requested[nReqIdx].first;
-				IF_UNLIKELY(!pTex->m_bStreamed)
-				continue;
+				IF_UNLIKELY (!pTex->m_bStreamed)
+					continue;
 
 				int nTexRequestedMip = requested[nReqIdx].second;
 

@@ -849,7 +849,7 @@ void CAIActor::UpdateDamageParts(DamagePartVector& parts)
 
 void CAIActor::OnAIHandlerSentSignal(const char* signalText, uint32 crc)
 {
-	IF_UNLIKELY(crc == 0)
+	IF_UNLIKELY (crc == 0)
 	{
 		crc = CCrc32::Compute(signalText);
 	}
@@ -2092,8 +2092,8 @@ IAIObject::EFieldOfViewResult CAIActor::CheckPointInFOV(const Vec3& point, float
 	const float squaredEyeToPointDistance = eyeToPointDisplacement.GetLengthSquared();
 
 	const bool pointIsAtEyePosition = (squaredEyeToPointDistance <= std::numeric_limits<float>::epsilon());
-	IF_UNLIKELY(pointIsAtEyePosition)
-	return eFOV_Outside;
+	IF_UNLIKELY (pointIsAtEyePosition)
+		return eFOV_Outside;
 
 	if (squaredEyeToPointDistance <= sqr(sightRange))
 	{

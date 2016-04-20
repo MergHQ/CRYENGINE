@@ -16,7 +16,7 @@ void SetSwitchState(const char* switchIdName, const char* switchValue, IEntityAu
 	{
 		AudioSwitchStateId switchStateId(INVALID_AUDIO_SWITCH_STATE_ID);
 		pAudioSystem->GetAudioSwitchStateId(switchControlId, switchValue, switchStateId);
-		IF_UNLIKELY(switchStateId == INVALID_AUDIO_SWITCH_STATE_ID)
+		IF_UNLIKELY (switchStateId == INVALID_AUDIO_SWITCH_STATE_ID)
 		{
 			CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "CommunicationHandler - You are trying to switch the state of the audio switch '%s' to the value '%s'. This switch state doesn't exist.", switchIdName, switchValue);
 		}

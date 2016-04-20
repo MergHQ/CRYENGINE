@@ -41,7 +41,7 @@ void CryAssertTrace(const char* szFormat, ...)
 
 bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, bool* pIgnore)
 {
-	IF_UNLIKELY(!gEnv || !gEnv->pSystem || !gEnv->pLog)
+	IF_UNLIKELY (!gEnv || !gEnv->pSystem || !gEnv->pLog)
 	{
 		return false;
 	}

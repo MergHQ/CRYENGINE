@@ -296,7 +296,7 @@ bool CTerrainNode::CheckVis(bool bAllInside, bool bAllowRenderIntoCBuffer, const
 	}
 
 	// update procedural vegetation
-	IF(passInfo.IsGeneralPass() && GetTerrain()->m_bProcVegetationInUse && GetCVars()->e_ProcVegetation, 0)
+	IF (passInfo.IsGeneralPass() && GetTerrain()->m_bProcVegetationInUse && GetCVars()->e_ProcVegetation, 0)
 	{
 		CTerrainNode* pNode = this;
 

@@ -29,7 +29,7 @@ struct NodeSerializationHints
 static void HandleXmlLineNumberSerialization(Serialization::IArchive& archive, const uint32 xmlLineNumber)
 {
 	const NodeSerializationHints* hintsContext = archive.context<NodeSerializationHints>();
-	IF_LIKELY(hintsContext != nullptr)
+	IF_LIKELY (hintsContext != nullptr)
 	{
 		if (hintsContext->showXmlLineNumbers)
 		{

@@ -26,7 +26,7 @@ void CLightVolumesMgr::Reset()
 
 uint16 CLightVolumesMgr::RegisterVolume(const Vec3& vPos, f32 fRadius, uint8 nClipVolumeRef, const SRenderingPassInfo& passInfo)
 {
-	IF((m_bUpdateLightVolumes & (m_pLightVolsInfo.size() < LV_MAX_COUNT)) && fRadius < 256.0f, 1)
+	IF ((m_bUpdateLightVolumes & (m_pLightVolsInfo.size() < LV_MAX_COUNT)) && fRadius < 256.0f, 1)
 	{
 		FUNCTION_PROFILER_3DENGINE;
 
@@ -70,7 +70,7 @@ uint16 CLightVolumesMgr::RegisterVolume(const Vec3& vPos, f32 fRadius, uint8 nCl
 
 void CLightVolumesMgr::RegisterLight(const CDLight& pDL, uint32 nLightID, const SRenderingPassInfo& passInfo)
 {
-	IF((m_bUpdateLightVolumes & !(pDL.m_Flags & LV_DLF_LIGHTVOLUMES_MASK)), 1)
+	IF ((m_bUpdateLightVolumes & !(pDL.m_Flags & LV_DLF_LIGHTVOLUMES_MASK)), 1)
 	{
 		FUNCTION_PROFILER_3DENGINE;
 
@@ -115,7 +115,7 @@ void CLightVolumesMgr::AddLight(const SRenderLight& pLight, const SLightVolInfo*
 			Vec3 lightColor = pLight.m_Color.toVec3();
 
 			// Adjust light intensity so that the intended brightness is reached 1 meter from the light's surface
-			IF(!(pLight.m_Flags & (DLF_AREA_LIGHT | DLF_AMBIENT)), 1)
+			IF (!(pLight.m_Flags & (DLF_AREA_LIGHT | DLF_AMBIENT)), 1)
 			{
 				fAttenuationBulbSize = max(fAttenuationBulbSize, 0.001f);
 
@@ -199,7 +199,7 @@ void CLightVolumesMgr::Update(const SRenderingPassInfo& passInfo)
 					CryPrefetch(&pNextDL);
 					CryPrefetch(&pNextDL.m_ObjMatrix);
 
-					IF(nLightProcessed[nLightId] != v + 1, 1)
+					IF (nLightProcessed[nLightId] != v + 1, 1)
 					{
 						nLightProcessed[nLightId] = v + 1;
 						AddLight(pDL, &m_pLightVolsInfo[v], lightVols[v]);

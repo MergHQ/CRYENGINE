@@ -662,7 +662,7 @@ inline bool N_ProducerSingleConsumerQueueBase::Pop(void* pObj, volatile uint32& 
 	do
 	{
 		SFallbackList* pFallback = (SFallbackList*)CryInterlockedPopEntrySList(fallbackList);
-		IF(pFallback, 0)
+		IF (pFallback, 0)
 		{
 			memcpy(pObj, pFallback->object, nObjectSize);
 			CryModuleMemalignFree(pFallback);
@@ -679,7 +679,7 @@ inline bool N_ProducerSingleConsumerQueueBase::Pop(void* pObj, volatile uint32& 
 	{
 		// if the queue was empty, make sure we really are empty
 		SFallbackList* pFallback = (SFallbackList*)CryInterlockedPopEntrySList(fallbackList);
-		IF(pFallback, 0)
+		IF (pFallback, 0)
 		{
 			memcpy(pObj, pFallback->object, nObjectSize);
 			CryModuleMemalignFree(pFallback);

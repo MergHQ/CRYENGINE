@@ -418,7 +418,7 @@ void BehaviorTreeManager::Update()
 		const Status behaviorStatus = instance.behaviorTreeTemplate->rootNode->Tick(updateContext);
 		const bool bExecutionError = (behaviorStatus == Success) || (behaviorStatus == Failure);
 
-		IF_UNLIKELY(bExecutionError)
+		IF_UNLIKELY (bExecutionError)
 		{
 			string message;
 			message.Format("Modular Behavior Tree Error Status: The root node for entity '%s' %s. Having the root succeed or fail is considered undefined behavior and the tree should be designed in a way that the root node is always running.", agentEntity ? agentEntity->GetName() : "", (behaviorStatus == Success ? "SUCCEEDED" : "FAILED"));

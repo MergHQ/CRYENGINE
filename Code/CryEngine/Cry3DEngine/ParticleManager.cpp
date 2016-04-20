@@ -1731,7 +1731,7 @@ void CParticleManager::UpdatePhysAreasChanged()
 	{
 		const SPhysAreaNodeProxy& proxy = m_physAreaChangedProxies[i];
 
-		IF(!proxy.bIsValid, 0)
+		IF (!proxy.bIsValid, 0)
 		{
 			continue;
 		}

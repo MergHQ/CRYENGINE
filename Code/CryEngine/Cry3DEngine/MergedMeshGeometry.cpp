@@ -3345,7 +3345,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 										switch (_Lineseg_Sphere(Lineseg(npt[off + l], npt[off + l + 1]), Sphere(sph.center, sph.r), its[0], its[1]))
 										{
 										case 0x0:
-											IF(l > 0 && (contacts[l].i < 0) && (npt[off + l] - sph.center).len2() < sqr(sph.r), 0)
+											IF (l > 0 && (contacts[l].i < 0) && (npt[off + l] - sph.center).len2() < sqr(sph.r), 0)
 											{
 												contacts[l].p.n = (npt[off + l] - sph.center);
 												contacts[l].p.n *= (float)isqrt_tpl(max(contacts[l].p.n.len2(), sqr(FLT_EPSILON)));
@@ -3353,7 +3353,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 												contacts[l].i = off + l;
 												intersection = true;
 											}
-											IF(contacts[l + 1].i < 0 && (npt[off + l + 1] - sph.center).len2() < sqr(sph.r), 0)
+											IF (contacts[l + 1].i < 0 && (npt[off + l + 1] - sph.center).len2() < sqr(sph.r), 0)
 											{
 												contacts[l + 1].p.n = (npt[off + l + 1] - sph.center);
 												contacts[l + 1].p.n *= (float)isqrt_tpl(max(contacts[l + 1].p.n.len2(), sqr(FLT_EPSILON)));
@@ -3363,7 +3363,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 											}
 											break;
 										case 0x1: /*first_point_in_sphere:*/
-											IF(contacts[l + 1].i < 0, 1)
+											IF (contacts[l + 1].i < 0, 1)
 											{
 												contacts[l + 1].p.n = (npt[off + l + 1] - sph.center);
 												contacts[l + 1].p.n *= (float)isqrt_tpl(max(contacts[l + 1].p.n.len2(), sqr(FLT_EPSILON)));
@@ -3373,7 +3373,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 											}
 											break;
 										case 0x2: /*second_point_in_sphere:*/
-											IF(contacts[l].i < 0 && l > 0, 1)
+											IF (contacts[l].i < 0 && l > 0, 1)
 											{
 												contacts[l].p.n = (npt[off + l] - sph.center);
 												contacts[l].p.n *= (float)isqrt_tpl(max(contacts[l].p.n.len2(), sqr(FLT_EPSILON)));
@@ -3383,7 +3383,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 											}
 											break;
 										case 0x3: /*both_points_in_sphere:*/
-											IF(contacts[l].i < 0 && contacts[l + 1].i < 0, 1)
+											IF (contacts[l].i < 0 && contacts[l + 1].i < 0, 1)
 											{
 												Vec3 centre = (its[0] + its[1]) * 0.5f;
 												Vec3 normal = (centre - sph.center);
@@ -3391,7 +3391,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 												normal *= (float)isqrt_tpl(max(normal.len2(), sqr(FLT_EPSILON)));
 												float dist = -((sph.center + normal * sph.r) * normal);
 
-												IF(l > 0, 1)
+												IF (l > 0, 1)
 												{
 													contacts[l].p.n = normal;
 													contacts[l].p.d = dist;
@@ -3404,7 +3404,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 											}
 											break;
 										}
-										IF(intersection, 0)
+										IF (intersection, 0)
 										{
 											spines[base + off + 0].vel.x = MMRM_PLASTICITY_TIME;
 											max_iter = max(context.max_iter + 2, max_iter);
@@ -3433,7 +3433,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 											continue;
 										Vec3 spt = spine.GetPoint(t0);
 										Vec3 plpt = pl.GetPoint(t1) + projectile.dir * projectile.r * (1.0f - (distanceSq / radiusSq));
-										IF(contacts[l].i < 0 && l > 0, 1)
+										IF (contacts[l].i < 0 && l > 0, 1)
 										{
 											contacts[l].p.n = (npt[off + l] - plpt);
 											contacts[l].p.n *= (float)isqrt_tpl(max(contacts[l].p.n.len2(), sqr(FLT_EPSILON)));
@@ -3441,7 +3441,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 											contacts[l].i = off + l;
 											intersection = true;
 										}
-										IF(contacts[l + 1].i < 0, 1)
+										IF (contacts[l + 1].i < 0, 1)
 										{
 											contacts[l + 1].p.n = (npt[off + l + 1] - plpt);
 											contacts[l + 1].p.n *= (float)isqrt_tpl(max(contacts[l + 1].p.n.len2(), sqr(FLT_EPSILON)));
@@ -3449,7 +3449,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 											contacts[l + 1].i = off + l + 1;
 											intersection = true;
 										}
-										IF(intersection, 1)
+										IF (intersection, 1)
 										{
 											max_iter = max(context.max_iter + 3, max_iter);
 											kL = 1.f / (float)max_iter;

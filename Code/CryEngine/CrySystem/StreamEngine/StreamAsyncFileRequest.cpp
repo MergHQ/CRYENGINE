@@ -494,7 +494,7 @@ void CAsyncIOFileRequest::FreeBuffer()
 CAsyncIOFileRequest* CAsyncIOFileRequest::Allocate(EStreamTaskType eType)
 {
 	CAsyncIOFileRequest* pReq = static_cast<CAsyncIOFileRequest*>(CryInterlockedPopEntrySList(s_freeRequests));
-	IF_UNLIKELY(!pReq)
+	IF_UNLIKELY (!pReq)
 	{
 		pReq = new CAsyncIOFileRequest;
 	}

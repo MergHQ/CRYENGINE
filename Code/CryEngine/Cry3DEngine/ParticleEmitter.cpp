@@ -153,7 +153,7 @@ void CParticleEmitter::UpdateState()
 	{
 		bool bCreateAreaChangeProxy = m_nPhysAreaChangedProxyId == ~0;
 
-		IF(bCreateAreaChangeProxy || !(m_PhysEnviron.m_nNonUniformFlags & EFF_LOADED), 0)
+		IF (bCreateAreaChangeProxy || !(m_PhysEnviron.m_nNonUniformFlags & EFF_LOADED), 0)
 		{
 			// For initial bounds computation, query the physical environment at the origin.
 			m_PhysEnviron.GetPhysAreas(CParticleManager::Instance()->GetPhysEnviron(), AABB(vPos),
@@ -919,12 +919,12 @@ void CParticleEmitter::Render(SRendParams const& RenParams, const SRenderingPass
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
 
-	IF(!passInfo.RenderParticles(), 0)
-	return;
+	IF (!passInfo.RenderParticles(), 0)
+		return;
 
-	IF(passInfo.IsRecursivePass() && (m_nEnvFlags & REN_BIND_CAMERA), 0)
-	// Render only in main camera.
-	return;
+	IF (passInfo.IsRecursivePass() && (m_nEnvFlags & REN_BIND_CAMERA), 0)
+		// Render only in main camera.
+		return;
 
 	if (!IsActive())
 		return;

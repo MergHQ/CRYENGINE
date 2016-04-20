@@ -217,8 +217,8 @@ size_t CStreamEngine::StartBatchRead(IReadStreamPtr* pStreamsOut, const StreamRe
 				for (size_t i = 0; i < nStreamsInBatch; ++i)
 				{
 					CAsyncIOFileRequest* pFileRequest = pFileReqs[i];
-					IF_UNLIKELY(!StartFileRequest(pFileRequest))
-					pFileRequest->Release();
+					IF_UNLIKELY (!StartFileRequest(pFileRequest))
+						pFileRequest->Release();
 				}
 			}
 		}

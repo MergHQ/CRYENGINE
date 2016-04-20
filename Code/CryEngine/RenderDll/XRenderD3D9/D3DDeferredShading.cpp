@@ -313,7 +313,7 @@ uint32 CDeferredShading::AddLight(const CDLight& pDL, float fMult, const SRender
 		idx = passInfo.GetRenderView()->GetLightsCount(LightType) - 1;
 	}
 
-	IF_LIKELY((pDL.m_Flags & (DLF_DEFERRED_CUBEMAPS | DLF_AMBIENT)) == 0)
+	IF_LIKELY ((pDL.m_Flags & (DLF_DEFERRED_CUBEMAPS | DLF_AMBIENT)) == 0)
 	{
 		pAddedLight->m_Color *= fMult;
 		pAddedLight->m_SpecMult *= fMult;
@@ -3616,7 +3616,7 @@ void CDeferredShading::CreateDeferredMaps()
 	}
 
 	// Pre-create shadow pool
-	IF(gcpRendD3D->m_pRT->IsRenderThread() && gEnv->p3DEngine, 1)
+	IF (gcpRendD3D->m_pRT->IsRenderThread() && gEnv->p3DEngine, 1)
 	{
 		//init shadow pool size
 		static ICVar* p_e_ShadowsPoolSize = iConsole->GetCVar("e_ShadowsPoolSize");

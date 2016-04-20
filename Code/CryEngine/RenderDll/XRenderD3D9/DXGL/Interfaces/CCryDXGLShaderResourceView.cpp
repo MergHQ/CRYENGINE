@@ -40,7 +40,7 @@ bool CCryDXGLShaderResourceView::Initialize(NCryOpenGL::CContext* pContext)
 
 NCryOpenGL::SShaderView* CCryDXGLShaderResourceView::GetGLView(NCryOpenGL::CContext* pContext)
 {
-	IF_UNLIKELY(!m_spGLView)
+	IF_UNLIKELY (!m_spGLView)
 	{
 		if (!Initialize(pContext))
 			DXGL_FATAL("Deferred shader resource view creation failed");

@@ -309,8 +309,8 @@ void C3DHud::DownsampleHud4x4(CTexture* pDstRT)
 
 	SEfResTexture* pDiffuse = NULL;
 	SShaderTechnique* pShaderTech = CShaderMan::s_sh3DHUD->mfFindTechnique(m_pDownsampleTechName);
-	IF(!pShaderTech, 0)
-	return;
+	IF (!pShaderTech, 0)
+		return;
 
 	PROFILE_LABEL_SCOPE("3D HUD DOWNSAMPLE 4X4");
 
@@ -358,8 +358,8 @@ void C3DHud::UpdateBloomRT(CTexture* pDstRT, CTexture* pBlurDst)
 
 	SEfResTexture* pDiffuse = NULL;
 	SShaderTechnique* pShaderTech = CShaderMan::s_sh3DHUD->mfFindTechnique(m_pUpdateBloomTechName);
-	IF(!pShaderTech, 0)
-	return;
+	IF (!pShaderTech, 0)
+		return;
 
 	PROFILE_LABEL_SCOPE("UPDATE BLOOM RT");
 
@@ -536,8 +536,8 @@ void C3DHud::RenderFinalPass()
 
 	const uint32 nThreadID = rd->m_RP.m_nProcessThreadID;
 	SShaderTechnique* pShaderTech = CShaderMan::s_sh3DHUD->mfFindTechnique(m_pGeneralTechName);
-	IF(!pShaderTech, 0)
-	return;
+	IF (!pShaderTech, 0)
+		return;
 
 	UpdateBloomRT(CTexture::s_ptexBackBufferScaled[1], CTexture::s_ptexBackBufferScaledTemp[1]);
 

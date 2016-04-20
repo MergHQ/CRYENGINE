@@ -36,8 +36,8 @@
 void        ScriptWarning(const char*, ...) PRINTF_PARAMS(1, 2);
 inline void ScriptWarning(const char* format, ...)
 {
-	IF(!format, 0)
-	return;
+	IF (!format, 0)
+		return;
 
 	char buffer[MAX_WARNING_LENGTH];
 	va_list args;

@@ -70,12 +70,12 @@ SVehicleLightParamsConstPtr LoadVehicleLightParams(ISharedParamsManager* pShared
 {
 	const XmlNodeRef lightsRootNode = gEnv->pSystem->LoadXmlFromFile("Scripts/Entities/Vehicles/Lights/DefaultVehicleLights.xml");
 
-	IF_UNLIKELY(lightsRootNode == (IXmlNode*)NULL)
-	return SVehicleLightParamsConstPtr();
+	IF_UNLIKELY (lightsRootNode == (IXmlNode*)NULL)
+		return SVehicleLightParamsConstPtr();
 
 	const XmlNodeRef lightsListNode = lightsRootNode->findChild("Lights");
-	IF_UNLIKELY(lightsListNode == (IXmlNode*)NULL)
-	return SVehicleLightParamsConstPtr();
+	IF_UNLIKELY (lightsListNode == (IXmlNode*)NULL)
+		return SVehicleLightParamsConstPtr();
 
 	const int numberOfLights = lightsListNode->getChildCount();
 
@@ -84,8 +84,8 @@ SVehicleLightParamsConstPtr LoadVehicleLightParams(ISharedParamsManager* pShared
 		const XmlNodeRef lightParamsNode = lightsListNode->getChild(i);
 		assert(lightParamsNode != (IXmlNode*)NULL);
 
-		IF_UNLIKELY(strcmp(lightParamsNode->getTag(), "Light") != 0)
-		continue;
+		IF_UNLIKELY (strcmp(lightParamsNode->getTag(), "Light") != 0)
+			continue;
 
 		const char* type = lightParamsNode->getAttr("type");
 

@@ -336,7 +336,7 @@ PostureManager::PostureQueryID PostureManager::QueryPosture(const PostureQuery& 
 				const AABB physicsBoundingBox = mate.physicsBoundingBox;
 
 				Vec3 dummyPoint;
-				IF_UNLIKELY(Intersect::Ray_AABB(fireRay, physicsBoundingBox, dummyPoint))
+				IF_UNLIKELY (Intersect::Ray_AABB(fireRay, physicsBoundingBox, dummyPoint))
 				{
 					valid = false;
 					break;
@@ -353,7 +353,7 @@ PostureManager::PostureQueryID PostureManager::QueryPosture(const PostureQuery& 
 						toeToHead *= (len - 0.3f) / len;
 
 					Vec3 dummy;
-					IF_UNLIKELY(Intersect::Ray_Sphere(fireRay, Sphere(footPosition + toeToHead, 0.4f + 0.05f), dummy, dummy))
+					IF_UNLIKELY (Intersect::Ray_Sphere(fireRay, Sphere(footPosition + toeToHead, 0.4f + 0.05f), dummy, dummy))
 					{
 						valid = false;
 						break;

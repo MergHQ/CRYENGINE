@@ -27,7 +27,7 @@ void JobManager::FallBackBackEnd::CFallBackBackEnd::AddJob(JobManager::CJobDeleg
 	CJobManager* __restrict pJobManager = CJobManager::Instance();
 
 	// just execute the job in the calling context
-	IF(rInfoBlock.HasQueue(), 0)
+	IF (rInfoBlock.HasQueue(), 0)
 	{
 		JobManager::SProdConsQueueBase* pQueue = (JobManager::SProdConsQueueBase*)rInfoBlock.GetQueue();
 		JobManager::SJobSyncVariable* pQueueState = &pQueue->m_QueueRunningState;
@@ -51,7 +51,7 @@ void JobManager::FallBackBackEnd::CFallBackBackEnd::AddJob(JobManager::CJobDeleg
 		(*pInvoker)(pParamMem);
 
 		// mark job as finished
-		IF(pAddPacketData->pJobState, 1)
+		IF (pAddPacketData->pJobState, 1)
 		{
 			pAddPacketData->pJobState->SetStopped();
 		}
@@ -81,7 +81,7 @@ void JobManager::FallBackBackEnd::CFallBackBackEnd::AddJob(JobManager::CJobDeleg
 			(*delegator)((void*)pParamMem);
 		}
 
-		IF(rInfoBlock.GetJobState(), 1)
+		IF (rInfoBlock.GetJobState(), 1)
 		{
 			SJobState* pJobState = rInfoBlock.GetJobState();
 			pJobState->SetStopped();

@@ -152,7 +152,7 @@ bool CBaseResource::UnRegister()
 
 int32 CBaseResource::Release()
 {
-	IF(m_nRefCount > 0, 1)
+	IF (m_nRefCount > 0, 1)
 	{
 		int32 nRef = CryInterlockedDecrement(&m_nRefCount);
 		if (nRef < 0)

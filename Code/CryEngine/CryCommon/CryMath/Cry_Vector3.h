@@ -366,7 +366,7 @@ template<typename F> struct Vec3_tpl
 	{
 		CRY_MATH_ASSERT(this->IsValid());
 		F fLen2 = x * x + y * y + z * z;
-		IF(VecPrecisionValues<F>::CheckGreater(fLen2), 1)
+		IF (VecPrecisionValues<F>::CheckGreater(fLen2), 1)
 		{
 			F fInvLen = isqrt_tpl(fLen2);
 			x *= fInvLen;
@@ -404,7 +404,7 @@ template<typename F> struct Vec3_tpl
 	ILINE Vec3_tpl GetNormalizedSafe(const struct Vec3_tpl<F>& safe = Vec3Constants<F>::fVec3_OneX) const
 	{
 		F fLen2 = x * x + y * y + z * z;
-		IF(VecPrecisionValues<F>::CheckGreater(fLen2), 1)
+		IF (VecPrecisionValues<F>::CheckGreater(fLen2), 1)
 		{
 			F fInvLen = isqrt_tpl(fLen2);
 			return *this * fInvLen;

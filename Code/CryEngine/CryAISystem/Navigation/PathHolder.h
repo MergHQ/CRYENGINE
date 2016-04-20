@@ -107,8 +107,8 @@ public:
 
 	void FillNavPath(INavPath& navPath)
 	{
-		IF_UNLIKELY(m_path.empty())
-		return;
+		IF_UNLIKELY (m_path.empty())
+			return;
 
 		typename PathHolderPath::const_iterator it = m_path.begin();
 		typename PathHolderPath::const_iterator end = m_path.end();

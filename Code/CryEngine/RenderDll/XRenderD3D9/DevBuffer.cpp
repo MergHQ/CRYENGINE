@@ -349,7 +349,7 @@ public:
 	uint32 Allocate()
 	{
 		size_t key = ~0u;
-		IF(m_partition + 1 >= m_capacity, 0)
+		IF (m_partition + 1 >= m_capacity, 0)
 		{
 			ScopedSwitchToGlobalHeap heap_switch;
 			size_t old_capacity = m_capacity;
@@ -1385,8 +1385,8 @@ struct CDynamicDefragAllocator
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
 		MEMORY_SCOPE_CHECK_HEAP();
-		IF(item->m_defrag_handle != IDefragAllocator::InvalidHdl, 1)
-		m_defrag_allocator->Free(item->m_defrag_handle);
+		IF (item->m_defrag_handle != IDefragAllocator::InvalidHdl, 1)
+			m_defrag_allocator->Free(item->m_defrag_handle);
 		m_item_table.Free(item->m_handle);
 	}
 
@@ -1394,8 +1394,8 @@ struct CDynamicDefragAllocator
 
 	void Update(uint32 inflight, uint32 frame_id, bool allow_defragmentation)
 	{
-		IF(m_defrag_policy && allow_defragmentation, 1)
-		m_defrag_allocator->DefragmentTick(s_PoolConfig.m_pool_max_moves_per_update - inflight, s_PoolConfig.m_pool_bank_size);
+		IF (m_defrag_policy && allow_defragmentation, 1)
+			m_defrag_allocator->DefragmentTick(s_PoolConfig.m_pool_max_moves_per_update - inflight, s_PoolConfig.m_pool_bank_size);
 	}
 
 	void PinItem(SBufferPoolItem* item)
@@ -1451,8 +1451,8 @@ struct CPartitionAllocator
 	uint32     allocate()
 	{
 		size_t key = ~0u;
-		IF(m_partition + 1 >= m_capacity, 0)
-		return ~0u;
+		IF (m_partition + 1 >= m_capacity, 0)
+			return ~0u;
 		uint32 storage_index = m_table[key = m_partition++];
 		m_remap[storage_index] = key;
 		return storage_index;
@@ -1897,8 +1897,8 @@ struct CBufferPoolImpl
 		for (size_t i = 0, end = m_banks.size(); i < end; ++i)
 		{
 			SBufferPoolBank& bank = m_bank_table[m_banks[i]];
-			IF(bank.m_capacity != bank.m_free_space, 1)
-			continue;
+			IF (bank.m_capacity != bank.m_free_space, 1)
+				continue;
 			DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
 			UnsetStreamSources(bank.m_buffer);
 			SAFE_RELEASE(bank.m_buffer);
@@ -1982,7 +1982,7 @@ struct CBufferPoolImpl
 		// The below should never happen in practice, but who knows for sure, so to be
 		// on the safe side we account for the fact that the allocator might want to move
 		// an allocation onto an empty bank.
-		IF(bank->m_buffer == NULL, 0)
+		IF (bank->m_buffer == NULL, 0)
 		{
 			if (RecreateBank(bank) == false)
 			{
@@ -2090,7 +2090,7 @@ public:
 		// Handle the case where an allocation cannot be satisfied by a pool bank
 		// as the size is too large and create a free standing buffer therefore.
 		// Note: Care should be taken to reduce the amount of unpooled items!
-		IF(size > s_PoolConfig.m_pool_bank_size, 0)
+		IF (size > s_PoolConfig.m_pool_bank_size, 0)
 		{
 freestanding:
 			if (gRenDev->m_DevMan.CreateBuffer(
@@ -2132,7 +2132,7 @@ retry:
 			item->m_offset &= s_PoolConfig.m_pool_bank_mask;
 			DEVBUFFERMAN_ASSERT(bank_index < m_banks.size());
 			bank = &m_bank_table[m_banks[bank_index]];
-			IF(bank->m_buffer == NULL, 0)
+			IF (bank->m_buffer == NULL, 0)
 			{
 				if (RecreateBank(bank) == false)
 				{
@@ -2184,7 +2184,7 @@ retry:
 	{
 		DEVBUFFERMAN_ASSERT(item);
 		// Handle un pooled buffers
-		IF((item->m_bank) == ~0u, 0)
+		IF ((item->m_bank) == ~0u, 0)
 		{
 			UnsetStreamSources(item->m_buffer);
 			SAFE_RELEASE(item->m_buffer);
@@ -2313,14 +2313,14 @@ retry:
 		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
 
 		DEVBUFFERMAN_VERIFY(item->m_used);
-		IF(item->m_bank != ~0u, 1)
-		m_allocator.PinItem(item);
+		IF (item->m_bank != ~0u, 1)
+			m_allocator.PinItem(item);
 #if !BUFFER_USE_STAGED_UPDATES
-		IF(item->m_bank != ~0u, 1)
+		IF (item->m_bank != ~0u, 1)
 		{
 			SBufferPoolBank& bank = m_bank_table[m_banks[item->m_bank]];
-			IF(bank.m_base_ptr != NULL && CRenderer::CV_r_buffer_enable_lockless_updates, 1)
-			return bank.m_base_ptr + item->m_offset;
+			IF (bank.m_base_ptr != NULL && CRenderer::CV_r_buffer_enable_lockless_updates, 1)
+				return bank.m_base_ptr + item->m_offset;
 		}
 #endif
 		return m_updater.BeginRead(item->m_buffer, item->m_size, item->m_offset);
@@ -2334,9 +2334,9 @@ retry:
 		// to make sure that we do not contend with the gpu on an already
 		// used item's buffer update.
 		size_t item_handle = item->m_handle;
-		IF(item->m_bank != ~0u, 1)
-		m_allocator.PinItem(item);
-		IF(item->m_bank != ~0u && item->m_used /*&& gRenDev->m_DevMan.SyncFence(m_current_fence, false, false) != S_OK*/, 0)
+		IF (item->m_bank != ~0u, 1)
+			m_allocator.PinItem(item);
+		IF (item->m_bank != ~0u && item->m_used /*&& gRenDev->m_DevMan.SyncFence(m_current_fence, false, false) != S_OK*/, 0)
 		{
 			item_handle_t handle = Allocate(item->m_size);
 			if (handle == ~0u)
@@ -2351,8 +2351,8 @@ retry:
 			// the idea of moving this item because it will be invalidated
 			// soon as we are moving the allocation to a pristine location (not used by the gpu).
 			// Relocate the old item to the new pristine allocation
-			IF(new_item->m_bank != ~0u, 1)
-			m_allocator.PinItem(new_item);
+			IF (new_item->m_bank != ~0u, 1)
+				m_allocator.PinItem(new_item);
 
 			// Return the memory of the newly allocated item
 			item = new_item;
@@ -2368,11 +2368,11 @@ retry:
 			item->m_gpu_flush = 1;
 		}
 #if !BUFFER_USE_STAGED_UPDATES
-		IF(item->m_bank != ~0u, 1)
+		IF (item->m_bank != ~0u, 1)
 		{
 			SBufferPoolBank& bank = m_bank_table[m_banks[item->m_bank]];
-			IF(bank.m_base_ptr != NULL && CRenderer::CV_r_buffer_enable_lockless_updates, 1)
-			return bank.m_base_ptr + item->m_offset;
+			IF (bank.m_base_ptr != NULL && CRenderer::CV_r_buffer_enable_lockless_updates, 1)
+				return bank.m_base_ptr + item->m_offset;
 		}
 #endif
 		return m_updater.BeginWrite(item->m_buffer, item->m_size, item->m_offset);
@@ -2380,10 +2380,10 @@ retry:
 
 	void EndReadWrite(SBufferPoolItem* item, bool requires_flush)
 	{
-		IF(item->m_cow_handle != ~0u, 0)
+		IF (item->m_cow_handle != ~0u, 0)
 		{
 			SBufferPoolItem* new_item = &m_item_table[item->m_cow_handle];
-			IF(gRenDev->m_pRT->IsRenderThread(), 1)
+			IF (gRenDev->m_pRT->IsRenderThread(), 1)
 			{
 				// As we are now relocating the allocation, we also need
 				// to free the previous allocation
@@ -2399,11 +2399,11 @@ retry:
 			}
 		}
 #if !BUFFER_USE_STAGED_UPDATES
-		IF(item->m_bank != ~0u, 1)
+		IF (item->m_bank != ~0u, 1)
 		{
 			m_allocator.UnpinItem(item);
 			SBufferPoolBank* bank = &m_bank_table[m_banks[item->m_bank]];
-			IF(bank->m_base_ptr != NULL && CRenderer::CV_r_buffer_enable_lockless_updates, 1)
+			IF (bank->m_base_ptr != NULL && CRenderer::CV_r_buffer_enable_lockless_updates, 1)
 			{
 	#if BUFFER_ENABLE_DIRECT_ACCESS
 				if (item->m_cpu_flush)
@@ -2443,7 +2443,7 @@ retry:
 		if (item->m_size <= s_PoolConfig.m_pool_bank_size)
 		{
 			void* const dst = BeginWrite(item);
-			IF(dst, 1)
+			IF (dst, 1)
 			{
 				const size_t csize = min((size_t)item->m_size, size);
 				const bool requires_flush = CopyData(dst, src, csize);
@@ -2463,7 +2463,7 @@ retry:
 		{
 			const size_t sz = min(size - offset, s_PoolConfig.m_pool_bank_size);
 			void* const dst = m_updater.BeginWrite(item->m_buffer, sz, item->m_offset + offset);
-			IF(dst, 1)
+			IF (dst, 1)
 			{
 				const bool requires_flush = CopyData(dst, ((char*)src) + offset, sz);
 			}
@@ -2682,7 +2682,7 @@ public:
 		DEVBUFFERMAN_ASSERT(size <= item->m_size);
 		DEVBUFFERMAN_ASSERT(item->m_size <= m_backing_buffer.m_capacity);
 		void* const dst = BeginWrite(item);
-		IF(dst, 1)
+		IF (dst, 1)
 		{
 			const size_t csize = min((size_t)item->m_size, size);
 			const bool requires_flush = CopyData(dst, src, csize);
@@ -3345,8 +3345,8 @@ void CDeviceBufferManager::Sync(uint32 frameId)
 	for (size_t i = 0; i < BBT_MAX; ++i)
 		for (size_t j = 0; j < BU_MAX; ++j)
 		{
-			IF(s_PoolManager.m_pools[i][j] == NULL, 0)
-			continue;
+			IF (s_PoolManager.m_pools[i][j] == NULL, 0)
+				continue;
 			SREC_AUTO_LOCK(s_PoolManager.m_pools[i][j]->m_lock);
 			s_PoolManager.m_pools[i][j]->Sync();
 		}
@@ -3371,8 +3371,8 @@ void CDeviceBufferManager::ReleaseEmptyBanks(uint32 frameId)
 	for (size_t i = 0; i < BBT_MAX; ++i)
 		for (size_t j = 0; j < BU_MAX; ++j)
 		{
-			IF(s_PoolManager.m_pools[i][j] == NULL, 0)
-			continue;
+			IF (s_PoolManager.m_pools[i][j] == NULL, 0)
+				continue;
 			SREC_AUTO_LOCK(s_PoolManager.m_pools[i][j]->m_lock);
 			s_PoolManager.m_pools[i][j]->ReleaseEmptyBanks();
 		}
@@ -3412,8 +3412,8 @@ void CDeviceBufferManager::Update(uint32 frameId, bool called_during_loading)
 	for (size_t i = 0; i < BBT_MAX; ++i)
 		for (size_t j = 0; j < BU_MAX; ++j)
 		{
-			IF(s_PoolManager.m_pools[i][j] == NULL, 0)
-			continue;
+			IF (s_PoolManager.m_pools[i][j] == NULL, 0)
+				continue;
 			SREC_AUTO_LOCK(s_PoolManager.m_pools[i][j]->m_lock);
 			s_PoolManager.m_pools[i][j]->Update(frameId
 			                                    , s_PoolManager.m_fences[frameId & SPoolConfig::POOL_FRAME_QUERY_MASK]
@@ -3606,8 +3606,8 @@ void CDeviceBufferManager::PinItem_Locked(buffer_handle_t handle)
 {
 	DEVBUFFERMAN_ASSERT(handle != ~0u);
 	SBufferPoolItem& item = *reinterpret_cast<SBufferPoolItem*>(handle);
-	IF(item.m_bank != ~0u, 1)
-	item.m_defrag_allocator->Pin(item.m_defrag_handle);
+	IF (item.m_bank != ~0u, 1)
+		item.m_defrag_allocator->Pin(item.m_defrag_handle);
 }
 void CDeviceBufferManager::PinItem(buffer_handle_t handle)
 {
@@ -3625,8 +3625,8 @@ void CDeviceBufferManager::UnpinItem_Locked(buffer_handle_t handle)
 {
 	DEVBUFFERMAN_ASSERT(handle != ~0u);
 	SBufferPoolItem& item = *reinterpret_cast<SBufferPoolItem*>(handle);
-	IF(item.m_bank != ~0u, 1)
-	item.m_defrag_allocator->Unpin(item.m_defrag_handle);
+	IF (item.m_bank != ~0u, 1)
+		item.m_defrag_allocator->Unpin(item.m_defrag_handle);
 }
 void CDeviceBufferManager::UnpinItem(buffer_handle_t handle)
 {

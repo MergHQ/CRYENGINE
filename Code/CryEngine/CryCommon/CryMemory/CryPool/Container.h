@@ -518,10 +518,10 @@ public:
 	template<class T>
 	ILINE bool Free(T ID, bool ForceBoundsCheck = false)
 	{
-		IF(!ID, false)
-		return true;
-		IF(!InBounds(ID, BoundsCheck | ForceBoundsCheck), false)
-		return false;
+		IF (!ID, false)
+			return true;
+		IF (!InBounds(ID, BoundsCheck | ForceBoundsCheck), false)
+			return false;
 
 		CListItemReference* pItem = Item(ID);
 		FreedMemory(pItem->MemSize());

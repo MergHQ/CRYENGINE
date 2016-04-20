@@ -75,8 +75,8 @@ bool MNM::IslandConnections::CanNavigateBetweenIslands(const IEntity* pEntityToT
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
 	const static MNM::GlobalIslandID invalidID(MNM::Constants::eGlobalIsland_InvalidIslandID);
-	IF_UNLIKELY(fromIsland == invalidID || toIsland == invalidID)
-	return false;
+	IF_UNLIKELY (fromIsland == invalidID || toIsland == invalidID)
+		return false;
 
 	if (fromIsland == toIsland)
 		return true;

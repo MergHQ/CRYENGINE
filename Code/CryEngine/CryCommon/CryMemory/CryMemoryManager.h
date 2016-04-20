@@ -498,14 +498,14 @@ public:
 		: m_old(0)
 		, m_cond(cond)
 	{
-		IF(cond, 0)
-		m_old = CryGetIMemoryManager()->LocalSwitchToGlobalHeap();
+		IF (cond, 0)
+			m_old = CryGetIMemoryManager()->LocalSwitchToGlobalHeap();
 	}
 
 	ILINE ~CondScopedSwitchToGlobalHeap()
 	{
-		IF(m_cond, 0)
-		CryGetIMemoryManager()->LocalSwitchToHeap(m_old);
+		IF (m_cond, 0)
+			CryGetIMemoryManager()->LocalSwitchToHeap(m_old);
 	}
 
 private:

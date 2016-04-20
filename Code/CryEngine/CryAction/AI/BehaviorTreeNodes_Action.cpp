@@ -60,7 +60,7 @@ public:
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
 	{
 		const string fragName = xml->getAttr("name");
-		IF_UNLIKELY(fragName.empty())
+		IF_UNLIKELY (fragName.empty())
 		{
 			ErrorReporter(*this, context).LogError("Missing attribute 'name'.");
 			return LoadFailure;
@@ -97,14 +97,14 @@ protected:
 	{
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		IF_UNLIKELY(!runtimeData.actionQueuedFlag)
+		IF_UNLIKELY (!runtimeData.actionQueuedFlag)
 		{
 			return Failure;
 		}
 
 		assert(runtimeData.action.get() != NULL);
 		const IAction::EStatus currentActionStatus = runtimeData.action->GetStatus();
-		IF_UNLIKELY((currentActionStatus == IAction::None) || (currentActionStatus == IAction::Finished))
+		IF_UNLIKELY ((currentActionStatus == IAction::None) || (currentActionStatus == IAction::Finished))
 		{
 			return Success;
 		}
@@ -120,24 +120,24 @@ private:
 
 		IActor* actor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(context.entityId);
 
-		IF_UNLIKELY(actor == NULL)
+		IF_UNLIKELY (actor == NULL)
 		{
 			assert(false);
 			return;
 		}
 
 		IAnimatedCharacter* animChar = actor->GetAnimatedCharacter();
-		IF_UNLIKELY(animChar == NULL)
+		IF_UNLIKELY (animChar == NULL)
 		{
 			assert(false);
 			return;
 		}
 
-		IF_LIKELY(runtimeData.action.get() == NULL)
+		IF_LIKELY (runtimeData.action.get() == NULL)
 		{
 			IActionController* pIActionController = animChar->GetActionController();
 			const FragmentID fragID = pIActionController->GetFragID(m_fragNameCrc32);
-			IF_LIKELY(fragID == FRAGMENT_ID_INVALID)
+			IF_LIKELY (fragID == FRAGMENT_ID_INVALID)
 			{
 #ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
 				ErrorReporter(*this, context).LogError("Invalid fragment name '%s'", m_fragName);

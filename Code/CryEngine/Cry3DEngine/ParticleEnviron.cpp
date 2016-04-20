@@ -382,7 +382,7 @@ bool SPhysEnviron::PhysicsCollision(ray_hit& hit, Vec3 const& vStart, Vec3 const
 		if (nEnvFlags & ENV_DYNAMIC_ENT)
 			ent_collide |= ent_rigid | ent_sleeping_rigid | ent_living | ent_independent;
 
-		IF(ent_collide, false)
+		IF (ent_collide, false)
 		{
 			// rwi_ flags copied from similar code in CParticleEntity.
 			ray_hit hit_loc;

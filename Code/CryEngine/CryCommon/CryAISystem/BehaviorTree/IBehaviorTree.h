@@ -211,7 +211,7 @@ public:
 	void Pop(Status s)
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
-		IF_UNLIKELY(s == Failure || s == Success)
+		IF_UNLIKELY (s == Failure || s == Success)
 		{
 			m_succeededAndFailedNodes.push_back(m_debugNodeStack.back());
 		}

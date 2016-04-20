@@ -61,8 +61,8 @@ void CCryDXGLBuffer::Initialize()
 NCryOpenGL::SBuffer* CCryDXGLBuffer::GetGLBuffer()
 {
 #if CRY_OPENGL_SINGLE_CONTEXT
-	IF_UNLIKELY(!m_spGLResource)
-	Initialize();
+	IF_UNLIKELY (!m_spGLResource)
+		Initialize();
 #endif
 	return static_cast<NCryOpenGL::SBuffer*>(m_spGLResource.get());
 }

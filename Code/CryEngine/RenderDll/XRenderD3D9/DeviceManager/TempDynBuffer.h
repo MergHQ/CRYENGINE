@@ -92,7 +92,7 @@ void TempDynBufferBase<T, bindType, Validator >::AllocateInternal(size_t numElem
 	                         ? BU_WHEN_LOADINGTHREAD_ACTIVE // use a separate pool for everything in video rendering mode
 	                         : BU_TRANSIENT_RT;             // default to transient_RT
 	m_handle = m_DevBufMan.Create(bindType, usageType, numElements * elementSize);
-	IF(m_handle != invalidHandle, 1)
+	IF (m_handle != invalidHandle, 1)
 	{
 		m_numElements = numElements;
 		m_validator.Set(Allocated);
@@ -102,7 +102,7 @@ void TempDynBufferBase<T, bindType, Validator >::AllocateInternal(size_t numElem
 template<typename T, BUFFER_BIND_TYPE bindType, class Validator>
 void TempDynBufferBase<T, bindType, Validator >::Release()
 {
-	IF(m_handle != invalidHandle, 1)
+	IF (m_handle != invalidHandle, 1)
 	{
 		m_validator.Check2(Allocated, Filled);
 		m_DevBufMan.Destroy(m_handle);

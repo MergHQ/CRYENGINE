@@ -434,14 +434,14 @@ public:
 		f32 t;
 		uint32 key = m_position.GetKey(normalizedTime, t);
 
-		IF(key == 0, true)
+		IF (key == 0, true)
 		{
 			CryPrefetch(m_position.GetKeys());
 			GetPosValueFromKey(0, pos);
 		}
 		else
 		{
-			IF(key < m_position.GetNumCount(), true)
+			IF (key < m_position.GetNumCount(), true)
 			{
 				// assume that the 48bit(6byte) encodings are used(can be wrong but should be right the most time)
 				const char* pKeys = m_position.GetKeys();
@@ -473,7 +473,7 @@ public:
 		f32 t;
 		uint32 key = m_rotation.GetKey(normalizedTime, t);
 
-		IF(key == 0, true)
+		IF (key == 0, true)
 		{
 			CryPrefetch(m_rotation.GetKeys());
 
@@ -483,7 +483,7 @@ public:
 		}
 		else
 		{
-			IF(key < m_rotation.GetNumCount(), true)
+			IF (key < m_rotation.GetNumCount(), true)
 			{
 				// assume that the 48bit(6byte) encodings are used(can be wrong but should be right the most time)
 				const char* pKeys = m_rotation.GetKeys();
@@ -524,25 +524,25 @@ public:
 		const char* pKeys = m_rotation.GetKeys();
 
 		// branches ordered by probability
-		IF(format == eSmallTree48BitQuat, true)
+		IF (format == eSmallTree48BitQuat, true)
 		{
 			load_value<SmallTree48BitQuat>(key, pKeys, val);
 		}
 		else
 		{
-			IF(format == eSmallTree64BitExtQuat, true)
+			IF (format == eSmallTree64BitExtQuat, true)
 			{
 				load_value<SmallTree64BitExtQuat>(key, pKeys, val);
 			}
 			else
 			{
-				IF(format == eSmallTree64BitQuat, true)
+				IF (format == eSmallTree64BitQuat, true)
 				{
 					load_value<SmallTree64BitQuat>(key, pKeys, val);
 				}
 				else
 				{
-					IF(format == eNoCompressQuat, true)
+					IF (format == eNoCompressQuat, true)
 					{
 						load_value<NoCompressQuat>(key, pKeys, val);
 					}
@@ -559,7 +559,7 @@ public:
 	void GetPosValueFromKey(uint32 key, Vec3& val) const
 	{
 		// branches ordered by probability
-		IF(m_position.getCompressionType() == eNoCompressVec3, 1)
+		IF (m_position.getCompressionType() == eNoCompressVec3, 1)
 		{
 			load_value<NoCompressVec3>(key, m_position.GetKeys(), val);
 		}
@@ -645,19 +645,19 @@ static uint32 GetKeySelector(f32 normalized_time, f32& difference_time, const Co
 	EKeyTimesFormat format = rConData.getTimeFormat();
 
 	// branches ordered by probability
-	IF(format == eByte, true)
+	IF (format == eByte, true)
 	{
 		return rConData.GetKeyByteData<uint8>(normalized_time, difference_time, data);
 	}
 	else
 	{
-		IF(format == eUINT16, 1)
+		IF (format == eUINT16, 1)
 		{
 			return rConData.GetKeyByteData<uint16>(normalized_time, difference_time, data);
 		}
 		else
 		{
-			IF(format == eF32, 1)
+			IF (format == eF32, 1)
 			{
 				return rConData.GetKeyByteData<f32>(normalized_time, difference_time, data);
 			}
