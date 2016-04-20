@@ -79,7 +79,8 @@ public:
 	};
 
 	CStandardGraphicsPipeline()
-		: m_bUtilityPassesInitialized(false)
+		: m_bInitialized(false)
+		, m_bUtilityPassesInitialized(false)
 		, m_numInvalidDrawcalls(0)
 	{}
 
@@ -137,6 +138,7 @@ private:
 
 	CRenderView*                  m_pCurrentRenderView;
 
+	bool                          m_bInitialized;
 	bool                          m_bUtilityPassesInitialized;
 
 private:
