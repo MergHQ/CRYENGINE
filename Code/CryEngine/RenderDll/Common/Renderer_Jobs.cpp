@@ -383,6 +383,8 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 		nAW |= nz2one((nList == EFSLIST_GENERAL) | (nList == EFSLIST_TERRAINLAYER) | (nList == EFSLIST_DECAL));
 
 		passInfo.GetRenderView()->AddRenderItem(re, obj, SH, nList, nBatchFlags, passInfo.GetRendItemSorter(), false, passInfo.IsAuxWindow());
+		if (nBatchFlags & FB_DEBUG)
+			passInfo.GetRenderView()->AddRenderItem(re, obj, SH, EFSLIST_FORWARD_OPAQUE, nBatchFlags, passInfo.GetRendItemSorter(), false, passInfo.IsAuxWindow());
 	}
 }
 
