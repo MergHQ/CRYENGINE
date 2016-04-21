@@ -46,7 +46,7 @@ public:
 	virtual bool               RemoveAuxAudioProxy(AudioProxyId const audioProxyId);
 	virtual void               SetAuxAudioProxyOffset(Matrix34 const& offset, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID);
 	virtual Matrix34 const&    GetAuxAudioProxyOffset(AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID);
-	virtual void               PlayFile(char const* const _szFile, AudioProxyId const _audioProxyId = DEFAULT_AUDIO_PROXY_ID, SAudioCallBackInfo const& _callBackInfo = SAudioCallBackInfo::GetEmptyObject());
+	virtual bool               PlayFile(char const* const _szFile, AudioProxyId const _audioProxyId = DEFAULT_AUDIO_PROXY_ID, SAudioCallBackInfo const& _callBackInfo = SAudioCallBackInfo::GetEmptyObject());
 	virtual void               StopFile(char const* const _szFile, AudioProxyId const _audioProxyId = DEFAULT_AUDIO_PROXY_ID);
 	virtual bool               ExecuteTrigger(AudioControlId const audioTriggerId, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject());
 	virtual void               StopTrigger(AudioControlId const audioTriggerId, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID);
