@@ -29,7 +29,6 @@
 #include "CloudsManager.h"
 #include "MatMan.h"
 #include "VolumeObjectRenderNode.h"
-#include "GlobalIllumination.h"
 #include <CryString/CryPath.h>
 #include <CryMemory/ILocalMemoryUsage.h>
 #include <CryCore/BitFiddling.h>
@@ -2383,8 +2382,10 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	m_pRenderer->EF_Query(EFQ_AAMode, sAAMode);
 	AppendString(szFlagsEnd, sAAMode);
 
-	if (m_pGlobalIlluminationManager && m_pGlobalIlluminationManager->IsEnabled())
-		AppendString(szFlagsEnd, "GI");
+#if defined(FEATURE_SVO_GI)
+	if (GetCVars()->e_svoTI_Apply)
+		AppendString(szFlagsEnd, "SVOGI");
+#endif
 
 	if (IsAreaActivationInUse())
 		AppendString(szFlagsEnd, "LA");
@@ -3365,7 +3366,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		DRAW_OBJ_STATS(eERType_VolumeObject);
 		DRAW_OBJ_STATS(eERType_Rope);
 		DRAW_OBJ_STATS(eERType_PrismObject);
-		DRAW_OBJ_STATS(eERType_LightPropagationVolume);
 		DRAW_OBJ_STATS(eERType_RenderProxy);
 		DRAW_OBJ_STATS(eERType_GameEffect);
 		DRAW_OBJ_STATS(eERType_BreakableGlass);

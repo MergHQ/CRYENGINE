@@ -324,7 +324,6 @@ public:
 	static CShader*              s_ShaderTreeSprites;
 	static CShader*              s_ShaderScaleForm;
 	static CShader*              s_ShaderStars;
-	static CShader*              s_ShaderLPV;
 	static CShader*              s_ShaderShadowBlur;
 	static CShader*              s_ShaderShadowMaskGen;
 #if defined(FEATURE_SVO_GI)

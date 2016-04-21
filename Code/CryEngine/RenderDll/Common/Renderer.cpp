@@ -1901,9 +1901,6 @@ CRendElementBase* CRenderer::EF_CreateRE(EDataType edt)
 	case eDATA_VolumeObject:
 		re = new CREVolumeObject;
 		break;
-	case eDATA_LightPropagationVolume:
-		re = new CRELightPropagationVolume;
-		break;
 #if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
 	case eDATA_PrismObject:
 		re = new CREPrismObject;

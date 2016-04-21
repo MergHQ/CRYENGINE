@@ -27,7 +27,6 @@ CShader* CShaderMan::s_ShaderFPEmu;
 CShader* CShaderMan::s_ShaderFallback;
 CShader* CShaderMan::s_ShaderScaleForm;
 CShader* CShaderMan::s_ShaderStars;
-CShader* CShaderMan::s_ShaderLPV;
 CShader* CShaderMan::s_ShaderTreeSprites;
 CShader* CShaderMan::s_ShaderShadowBlur;
 CShader* CShaderMan::s_ShaderShadowMaskGen;
@@ -1038,8 +1037,6 @@ void CShaderMan::mfInitGlobal(void)
 				g_HWSR_MaskBit[HWSR_SAMPLE4] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_SAMPLE5")
 				g_HWSR_MaskBit[HWSR_SAMPLE5] = gb->m_Mask;
-			else if (gb->m_ParamName == "%_RT_GLOBAL_ILLUMINATION")
-				g_HWSR_MaskBit[HWSR_GLOBAL_ILLUMINATION] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_ANIM_BLEND")
 				g_HWSR_MaskBit[HWSR_ANIM_BLEND] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_MOTION_BLUR")
@@ -1412,7 +1409,6 @@ void CShaderMan::mfReleaseSystemShaders()
 	SAFE_RELEASE_FORCE(s_ShaderFallback);
 	SAFE_RELEASE_FORCE(s_ShaderScaleForm);
 	SAFE_RELEASE_FORCE(s_ShaderStars);
-	SAFE_RELEASE_FORCE(s_ShaderLPV);
 	SAFE_RELEASE_FORCE(s_ShaderTreeSprites);
 	SAFE_RELEASE_FORCE(s_ShaderShadowBlur);
 	SAFE_RELEASE_FORCE(s_ShaderShadowMaskGen);
@@ -1502,7 +1498,6 @@ void CShaderMan::mfLoadDefaultSystemShaders()
 		mfRefreshSystemShader("PostEffectsRenderModes", CShaderMan::s_shPostEffectsRenderModes);
 		mfRefreshSystemShader("PostAA", CShaderMan::s_shPostAA);
 		mfRefreshSystemShader("ShadowBlur", CShaderMan::s_ShaderShadowBlur);
-		mfRefreshSystemShader("LightPropagationVolumes", CShaderMan::s_ShaderLPV);
 		mfRefreshSystemShader("Sunshafts", CShaderMan::s_shPostSunShafts);
 		mfRefreshSystemShader("Clouds", CShaderMan::s_ShaderClouds);
 	}

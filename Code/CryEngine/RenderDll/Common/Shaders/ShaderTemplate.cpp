@@ -405,18 +405,6 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 		TexPic = CTexture::s_ptexSceneDiffuseAccMapMS;
 	else if (!stricmp(mapname, "$SceneSpecularAccMS"))
 		TexPic = CTexture::s_ptexSceneSpecularAccMapMS;
-	else if (!stricmp(mapname, "$LPV_Red_RT"))
-		TexPic = CTexture::s_ptexLPV_RTs[0];
-	else if (!stricmp(mapname, "$LPV_Green_RT"))
-		TexPic = CTexture::s_ptexLPV_RTs[1];
-	else if (!stricmp(mapname, "$LPV_Blue_RT"))
-		TexPic = CTexture::s_ptexLPV_RTs[2];
-	else if (!stricmp(mapname, "$RSM_Flux_RT"))
-		TexPic = CTexture::s_ptexRSMFlux;
-	else if (!stricmp(mapname, "$RSM_Normals_RT"))
-		TexPic = CTexture::s_ptexRSMNormals;
-	else if (!stricmp(mapname, "$RSM_Depth_RT"))
-		TexPic = CTexture::s_ptexRSMDepth;
 	else if (!stricmp(mapname, "$VolCloudShadows"))
 		TexPic = CTexture::s_ptexVolCloudShadow;
 

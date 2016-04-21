@@ -5,7 +5,6 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryCore/CryCrc32.h>
 #include "../Common/Shaders/RemoteCompiler.h"
-#include "D3DLightPropagationVolume.h"
 #include "../Common/PostProcess/PostEffects.h"
 #include "D3DPostProcess.h"
 
@@ -4422,32 +4421,6 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 			case ECGP_PB_VisionMtlParams:
 				sVisionMtlParams(sData);
 				break;
-			case ECGP_Matr_PB_GIGridMatrix:
-				{
-					if (LPVManager.IsGIRenderable())
-					{
-						CRELightPropagationVolume* pGIVolume = LPVManager.GetCurrentGIVolume();
-						if (pGIVolume)
-						{
-							Matrix44A* pMat = alias_cast<Matrix44A*>(&sData[0]);
-							*pMat = pGIVolume->GetRenderSettings().m_mat;
-						}
-					}
-					break;
-				}
-			case ECGP_Matr_PB_GIInvGridMatrix:
-				{
-					if (LPVManager.IsGIRenderable())
-					{
-						CRELightPropagationVolume* pGIVolume = LPVManager.GetCurrentGIVolume();
-						if (pGIVolume)
-						{
-							Matrix44A* pMat = alias_cast<Matrix44A*>(&sData[0]);
-							*pMat = pGIVolume->GetRenderSettings().m_matInv;
-						}
-					}
-					break;
-				}
 			case ECGP_Matr_PB_TCMMatrix:
 				{
 					SEfResTexture* pRT = rRP.m_ShaderTexResources[ParamBind->m_nID];
@@ -4456,95 +4429,6 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 					else
 					{
 						Store(sData, r->m_IdentityMatrix);
-					}
-					break;
-				}
-			case ECGP_PB_GIGridSize:
-				{
-					if (LPVManager.IsGIRenderable())
-					{
-						CRELightPropagationVolume* pGIVolume = LPVManager.GetCurrentGIVolume();
-						if (pGIVolume)
-						{
-							const Vec4& vSize = pGIVolume->GetRenderSettings().m_gridDimensions;
-							sData[0].f[0] = vSize.x;
-							sData[0].f[1] = vSize.y;
-							sData[0].f[2] = vSize.z;
-							sData[0].f[3] = vSize.w;
-						}
-					}
-					break;
-				}
-			case ECGP_PB_GIInvGridSize:
-				{
-					if (LPVManager.IsGIRenderable())
-					{
-						CRELightPropagationVolume* pGIVolume = LPVManager.GetCurrentGIVolume();
-						if (pGIVolume)
-						{
-							const Vec4& vInvSize = pGIVolume->GetRenderSettings().m_invGridDimensions;
-							sData[0].f[0] = vInvSize.x;
-							sData[0].f[1] = vInvSize.y;
-							sData[0].f[2] = vInvSize.z;
-							sData[0].f[3] = vInvSize.w;
-						}
-					}
-					break;
-				}
-			case ECGP_PB_GIGridSpaceCamPos:
-				{
-					if (LPVManager.IsGIRenderable())
-					{
-						CRELightPropagationVolume* pGIVolume = LPVManager.GetCurrentGIVolume();
-						if (pGIVolume)
-						{
-							const Vec4 vGridSpaceCamPos(pGIVolume->GetRenderSettings().m_mat.TransformPoint(vCamPos), 1.f);
-							sData[0].f[0] = vGridSpaceCamPos.x;
-							sData[0].f[1] = vGridSpaceCamPos.y;
-							sData[0].f[2] = vGridSpaceCamPos.z;
-							sData[0].f[3] = vGridSpaceCamPos.w;
-						}
-					}
-					break;
-				}
-			case ECGP_PB_GIAttenuation:
-				{
-					if (LPVManager.IsGIRenderable())
-					{
-						CRELightPropagationVolume* pGIVolume = LPVManager.GetCurrentGIVolume();
-						if (pGIVolume)
-						{
-							const float d = pGIVolume->GetVisibleDistance() * .5f;
-							const float offset = min(d * .5f, 20.f);
-							// att(d) = kd+b;
-							const float k = -1.f / offset;
-							const float b = d / offset;
-							float fGIAmount = pGIVolume->GetIntensity() * gEnv->p3DEngine->GetGIAmount();
-							// Apply LBuffers range rescale
-							fGIAmount *= gcpRendD3D->m_fAdaptedSceneScaleLBuffer;
-							const Vec4 vAttenuation(k, b, fGIAmount, CRenderer::CV_r_ParticlesAmountGI);
-							sData[0].f[0] = vAttenuation.x;
-							sData[0].f[1] = vAttenuation.y;
-							sData[0].f[2] = vAttenuation.z;
-							sData[0].f[3] = vAttenuation.w;
-						}
-					}
-					break;
-				}
-			case ECGP_PB_GIGridCenter:
-				{
-					if (LPVManager.IsGIRenderable())
-					{
-						CRELightPropagationVolume* pGIVolume = LPVManager.GetCurrentGIVolume();
-						if (pGIVolume)
-						{
-							const Vec3 gridCenter = pGIVolume->GetRenderSettings().m_matInv.TransformPoint(Vec3(.5f, .5f, .5f));
-							Vec4 vGridCenter(gridCenter, 0);
-							sData[0].f[0] = vGridCenter.x;
-							sData[0].f[1] = vGridCenter.y;
-							sData[0].f[2] = vGridCenter.z;
-							sData[0].f[3] = vGridCenter.w;
-						}
 					}
 					break;
 				}
@@ -5979,30 +5863,6 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 #endif
 					}
 
-				case TO_LPV_R:
-					if (CTexture::s_ptexLPV_RTs[0])
-						CTexture::s_ptexLPV_RTs[0]->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit);
-					break;
-				case TO_LPV_G:
-					if (CTexture::s_ptexLPV_RTs[1])
-						CTexture::s_ptexLPV_RTs[1]->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit);
-					break;
-				case TO_LPV_B:
-					if (CTexture::s_ptexLPV_RTs[2])
-						CTexture::s_ptexLPV_RTs[2]->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit);
-					break;
-				case TO_RSM_NORMAL:
-					if (CTexture::s_ptexRSMNormals)
-						CTexture::s_ptexRSMNormals->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit);
-					break;
-				case TO_RSM_COLOR:
-					if (CTexture::s_ptexRSMFlux)
-						CTexture::s_ptexRSMFlux->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit);
-					break;
-				case TO_RSM_DEPTH:
-					if (CTexture::s_ptexRSMDepth)
-						CTexture::s_ptexRSMDepth->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit);
-					break;
 				default:
 					{
 #if defined(FEATURE_SVO_GI)

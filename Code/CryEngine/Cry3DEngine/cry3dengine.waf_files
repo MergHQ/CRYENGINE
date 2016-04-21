@@ -320,13 +320,6 @@
 			"FogVolumeRenderNode_Jobs.cpp",
 			"FogVolumeRenderNode.h"
 		],
-		"Effects/LightPropagationVolumes":
-		[
-			"GlobalIllumination.cpp",
-			"LPVRenderNode.cpp",
-			"GlobalIllumination.h",
-			"LPVRenderNode.h"
-		],
 		"RenderNodes":
 		[
 			"MergedMeshRenderNode.cpp",

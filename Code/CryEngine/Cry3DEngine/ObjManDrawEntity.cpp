@@ -211,7 +211,6 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 		if (!passInfo.RenderWaterVolumes()) return;
 		break;
 	case eERType_Light:
-	case eERType_LightPropagationVolume:
 		if (!GetCVars()->e_DynamicLights || !passInfo.RenderEntities()) return;
 		break;
 	case eERType_Road:

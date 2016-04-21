@@ -188,8 +188,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_CBufferUseNativeDepth);
 float CRendererCVars::CV_r_DeferredShadingLightLodRatio;
 float CRendererCVars::CV_r_DeferredShadingLightStencilRatio;
 
-AllocateConstIntCVar(CRendererCVars, CV_r_LightPropagationVolumes);
-
 int CRendererCVars::CV_r_HDRRendering;
 AllocateConstIntCVar(CRendererCVars, CV_r_HDRDebug);
 int CRendererCVars::CV_r_HDRBloom;
@@ -1250,11 +1248,6 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_DeferredShadingAmbientSClear", CV_r_DeferredShadingAmbientSClear, 1, VF_NULL,
 	               "Clear stencil buffer after ambient pass (prevents artifacts on Nvidia hw)\n");
-
-	DefineConstIntCVar3("r_LightPropagationVolumes", CV_r_LightPropagationVolumes, 1, VF_CHEAT,
-	                    "Toggles Light Propagation Volumes.\n"
-	                    "Usage: r_LightPropagationVolumes [0/1]\n"
-	                    "Default is 1 (on)");
 
 	REGISTER_CVAR3_CB("r_HDRRendering", CV_r_HDRRendering, 1, VF_DUMPTODISK,
 	                  "Toggles HDR rendering.\n"

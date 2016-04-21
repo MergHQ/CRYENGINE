@@ -2263,7 +2263,7 @@ enum eDynamicLightFlags
 	DLF_POINT                   = BIT(6),
 	DLF_PROJECT                 = BIT(7),
 	DLF_LIGHT_BEAM              = BIT(8),
-	DLF_REFLECTIVE_SHADOWMAP    = BIT(9),
+//	UNUSED										= BIT(9),
 	DLF_IGNORES_VISAREAS        = BIT(10),
 	DLF_DEFERRED_CUBEMAPS       = BIT(11),
 	DLF_HAS_CLIP_VOLUME         = BIT(12),
@@ -2278,7 +2278,7 @@ enum eDynamicLightFlags
 	DLF_AMBIENT                 = BIT(21),   //!< Ambient light (has name indicates, used for replacing ambient).
 	DLF_INDOOR_ONLY             = BIT(22),   //!< Do not affect height map.
 	DLF_VOLUMETRIC_FOG          = BIT(23),   //!< Affects volumetric fog.
-	DLF_ALLOW_LPV               = BIT(24),   //!< Add only to  Light Propagation Volume if it's possible.
+//	UNUSED										= BIT(24),   //!< Add only to  Light Propagation Volume if it's possible.
 	DLF_ATTACH_TO_SUN           = BIT(25),   //!< Add only to  Light Propagation Volume if it's possible.
 	DLF_TRACKVIEW_TIMESCRUBBING = BIT(26),   //!< Add only to  Light Propagation Volume if it's possible.
 	DLF_VOLUMETRIC_FOG_ONLY     = BIT(27),   //!< Affects only volumetric fog.
