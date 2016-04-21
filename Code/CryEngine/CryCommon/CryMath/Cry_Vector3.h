@@ -778,7 +778,7 @@ template<class F1, class F2> ILINE Vec3_tpl<F1> operator/(const Vec3_tpl<F1>& v0
 	return Vec3_tpl<F1>(v0.x / v1.x, v0.y / v1.y, v0.z / v1.z);
 }
 
-template<class F>  ILINE bool IsEquivalent(const Vec3_tpl<F>& v0, const Vec3_tpl<F>& v1, f32 epsilon = VEC_EPSILON)
+template<class F> ILINE bool IsEquivalent(const Vec3_tpl<F>& v0, const Vec3_tpl<F>& v1, f32 epsilon = VEC_EPSILON)
 {
 	return  ((fabs_tpl(v0.x - v1.x) <= epsilon) && (fabs_tpl(v0.y - v1.y) <= epsilon) && (fabs_tpl(v0.z - v1.z) <= epsilon));
 }

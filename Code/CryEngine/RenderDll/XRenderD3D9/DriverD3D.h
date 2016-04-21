@@ -540,7 +540,7 @@ public:
 
 	void         RT_DrawUITextureInternal(S2DImage& img);
 	void         RT_RenderUITextures();
-	void RT_DrawImageWithUVInternal(float xpos, float ypos, float z, float w, float h, int texture_id, float s[4], float t[4], DWORD col, bool filtered = true);
+	void         RT_DrawImageWithUVInternal(float xpos, float ypos, float z, float w, float h, int texture_id, float s[4], float t[4], DWORD col, bool filtered = true);
 	void         RT_Draw2dImageInternal(S2DImage* images, uint32 numImages, bool stereoLeftEye = true);
 	// =======================================================================================
 

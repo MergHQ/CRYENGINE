@@ -38,10 +38,10 @@
 #define PACKET_RESERVED_BYTES (32)
 
 #if LOG_INCOMING_MESSAGES
-	#define LOG_INCOMING_MESSAGE(bitMask, fmt, ...) if (0 == (CNetCVars::Get().LogNetMessages & (bitMask))) ; else \
+	#define LOG_INCOMING_MESSAGE(bitMask, fmt, ...) if (0 == (CNetCVars::Get().LogNetMessages & (bitMask))); else \
 	  NetLog(fmt, __VA_ARGS__)
 #elif ENABLE_CORRUPT_PACKET_DUMP
-	#define LOG_INCOMING_MESSAGE(bitMask, fmt, ...) if (!CNetCVars::Get().doingPacketReplay()) ; else \
+	#define LOG_INCOMING_MESSAGE(bitMask, fmt, ...) if (!CNetCVars::Get().doingPacketReplay()); else \
 	  NetLog(fmt, __VA_ARGS__)
 #else
 	#define LOG_INCOMING_MESSAGE(bitMask, fmt, ...) do \

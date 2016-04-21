@@ -40,7 +40,7 @@ public:
 	virtual ~ITriangleInputProxy(){}
 
 	virtual uint32 GetTriangleCount() const = 0;
-	virtual void GetTriangleIndices(const uint32 indwTriNo, uint32 outdwPos[3], uint32 outdwNorm[3], uint32 outdwUV[3]) const = 0;
+	virtual void   GetTriangleIndices(const uint32 indwTriNo, uint32 outdwPos[3], uint32 outdwNorm[3], uint32 outdwUV[3]) const = 0;
 	virtual void   GetPos(const uint32 indwPos, Vec3& outfPos) const = 0;
 	virtual void   GetUV(const uint32 indwPos, Vec2& outfUV) const = 0;
 	virtual void   GetNorm(const uint32 indwTriNo, const uint32 indwVertNo, Vec3& outfNorm) const = 0;
@@ -53,7 +53,7 @@ public:
 	eCalculateTangentSpaceErrorCode CalculateTangentSpace(const ITriangleInputProxy& inInput, bool bUseCustomNormals, bool bIgnoreDegeneracies, string& errorMessage);
 
 	size_t                          GetBaseCount();
-	void GetTriangleBaseIndices(const uint32 indwTriNo, uint32 outdwBase[3]);
+	void                            GetTriangleBaseIndices(const uint32 indwTriNo, uint32 outdwBase[3]);
 
 	//! returns a orthogonal base (perpendicular and normalized)
 	void GetBase(const uint32 indwPos, float* outU, float* outV, float* outN);

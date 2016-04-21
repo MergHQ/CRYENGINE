@@ -160,7 +160,7 @@ public:
 	static void  CheckAllocateBrick(ColorB*& pPtr, int nElems, bool bClean = false);
 	static void  CheckAllocateTexturePool();
 	static void  FreeBrick(ColorB*& pPtr);
-	static void MakeFolderName(char szFolder[256], bool bCreateDirectory = false);
+	static void  MakeFolderName(char szFolder[256], bool bCreateDirectory = false);
 	static void  SetVoxCamera(const CCamera& newCam);
 	static void  UpdateStreamingEngine();
 	static void  ErrorTerminate(const char* format, ...);

@@ -12,7 +12,7 @@ namespace CryEngine.Editor
 	{
 		Application _app;
 
-		public void Initialize()
+		public void Initialize(InterDomainHandler handler)
 		{
 			_app = Application.Instantiate<Editor> ();
 		}

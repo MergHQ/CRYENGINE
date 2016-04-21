@@ -18,7 +18,7 @@ class CSyncedFilePak : public ICryPak
 public:
 	explicit CSyncedFilePak(CSyncedFileSet& fileset) : m_fileset(fileset) {}
 
-	virtual const char* AdjustFileName(const char* src, char dst[g_nMaxPath], unsigned nFlags, bool* bFoundInPak);
+	virtual const char*                  AdjustFileName(const char* src, char dst[g_nMaxPath], unsigned nFlags, bool* bFoundInPak);
 	virtual bool                         Init(const char* szBasePath);
 	virtual void                         Release();
 	virtual bool                         OpenPack(const char* pName, unsigned nFlags);

@@ -334,7 +334,7 @@ private:
 	//////////////////////////////////////////////////////////////////////////////
 	// Remote connection housekeeping
 	CryMatchMakingConnectionID AddRemoteConnection(CryLobbySessionHandle h, CryLobbyConnectionID connectionID, SCryMatchMakingConnectionUID uid, CSteamID steamID, uint32 numUsers, const char* name, uint8 userData[CRYLOBBY_USER_DATA_SIZE_IN_BYTES], bool isDedicated);
-	virtual void FreeRemoteConnection(CryLobbySessionHandle h, CryMatchMakingConnectionID id);
+	virtual void               FreeRemoteConnection(CryLobbySessionHandle h, CryMatchMakingConnectionID id);
 	//////////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////////
@@ -414,7 +414,7 @@ private:
 	#endif // !defined(_RELEASE)
 
 	SRegisteredUserData m_registeredUserData;
-	CryLobbyIDArray<SSession, CryLobbySessionHandle, MAX_MATCHMAKING_SESSIONS>  m_sessions;
+	CryLobbyIDArray<SSession, CryLobbySessionHandle, MAX_MATCHMAKING_SESSIONS> m_sessions;
 	STask               m_task[MAX_MATCHMAKING_TASKS];
 };
 

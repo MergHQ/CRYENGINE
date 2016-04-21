@@ -112,7 +112,7 @@ struct ID3D11DeviceContext
 	virtual void STDMETHODCALLTYPE                      GSGetSamplers(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState** ppSamplers) = 0;
 	virtual void STDMETHODCALLTYPE                      OMGetRenderTargets(UINT NumViews, ID3D11RenderTargetView** ppRenderTargetViews, ID3D11DepthStencilView** ppDepthStencilView) = 0;
 	virtual void STDMETHODCALLTYPE                      OMGetRenderTargetsAndUnorderedAccessViews(UINT NumRTVs, ID3D11RenderTargetView** ppRenderTargetViews, ID3D11DepthStencilView** ppDepthStencilView, UINT UAVStartSlot, UINT NumUAVs, ID3D11UnorderedAccessView** ppUnorderedAccessViews) = 0;
-	virtual void STDMETHODCALLTYPE OMGetBlendState(ID3D11BlendState * *ppBlendState, FLOAT BlendFactor[4], UINT * pSampleMask) = 0;
+	virtual void STDMETHODCALLTYPE                      OMGetBlendState(ID3D11BlendState** ppBlendState, FLOAT BlendFactor[4], UINT* pSampleMask) = 0;
 	virtual void STDMETHODCALLTYPE                      OMGetDepthStencilState(ID3D11DepthStencilState** ppDepthStencilState, UINT* pStencilRef) = 0;
 	virtual void STDMETHODCALLTYPE                      SOGetTargets(UINT NumBuffers, ID3D11Buffer** ppSOTargets) = 0;
 	virtual void STDMETHODCALLTYPE                      RSGetState(ID3D11RasterizerState** ppRasterizerState) = 0;

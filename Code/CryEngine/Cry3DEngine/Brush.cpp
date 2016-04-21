@@ -644,6 +644,7 @@ void CBrush::SetMaterial(IMaterial* pMat)
 	// register and get brush material id
 	m_pMaterial = pMat;
 
+	InvalidatePermanentRenderObject();
 	UpdateExecuteAsPreProcessJobFlag();
 }
 

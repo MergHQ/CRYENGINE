@@ -10,8 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef OPTARGS_H
-#define OPTARGS_H
+#pragma once
 
 //! Facilities for collecting options in a struct, and quickly constructing them.
 //! Used, for example, as construction argument. Safer and more informative than bool arguments.
@@ -73,7 +72,7 @@ private:
   enum E ## Var {}; TOptVar<E ## Var, Type, TThis, init> Var; \
 
 #define BIT_STRUCT(Struc, Int)                                                                \
-  typedef Struc TThis; typedef In tTInt;                                                      \
+  typedef Struc TThis; typedef Int TInt;                                                      \
   TInt Mask() const { return *(const TInt*)this; }                                            \
   TInt& Mask() { return *(TInt*)this; }                                                       \
   Struc(TInt init = 0) { COMPILE_TIME_ASSERT(sizeof(TThis) == sizeof(TInt)); Mask() = init; } \
@@ -83,4 +82,4 @@ private:
   bool Var() const { return _ ## Var; }                  \
   TThis& Var(bool val) { _ ## Var = val; return *this; } \
 
-#endif // OPTARGS_H
+// *INDENT-ON*

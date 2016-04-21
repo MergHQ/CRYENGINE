@@ -30,21 +30,21 @@ public:
 	// ITimeOfDay
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual int  GetPresetCount() const { return m_presets.size(); }
-	virtual bool GetPresetsInfos(SPresetInfo* resultArray, unsigned int arraySize) const;
-	virtual bool SetCurrentPreset(const char* szPresetName);
-	virtual bool AddNewPreset(const char* szPresetName);
-	virtual bool RemovePreset(const char* szPresetName);
-	virtual bool SavePreset(const char* szPresetName) const;
-	virtual bool LoadPreset(const char* szFilePath);
-	virtual void ResetPreset(const char* szPresetName);
+	virtual int   GetPresetCount() const { return m_presets.size(); }
+	virtual bool  GetPresetsInfos(SPresetInfo* resultArray, unsigned int arraySize) const;
+	virtual bool  SetCurrentPreset(const char* szPresetName);
+	virtual bool  AddNewPreset(const char* szPresetName);
+	virtual bool  RemovePreset(const char* szPresetName);
+	virtual bool  SavePreset(const char* szPresetName) const;
+	virtual bool  LoadPreset(const char* szFilePath);
+	virtual void  ResetPreset(const char* szPresetName);
 
-	virtual bool ImportPreset(const char* szPresetName, const char* szFilePath);
-	virtual bool ExportPreset(const char* szPresetName, const char* szFilePath) const;
+	virtual bool  ImportPreset(const char* szPresetName, const char* szFilePath);
+	virtual bool  ExportPreset(const char* szPresetName, const char* szFilePath) const;
 
-	virtual int  GetVariableCount() { return ITimeOfDay::PARAM_TOTAL; };
-	virtual bool GetVariableInfo(int nIndex, SVariableInfo& varInfo);
-	virtual void SetVariableValue(int nIndex, float fValue[3]);
+	virtual int   GetVariableCount() { return ITimeOfDay::PARAM_TOTAL; };
+	virtual bool  GetVariableInfo(int nIndex, SVariableInfo& varInfo);
+	virtual void  SetVariableValue(int nIndex, float fValue[3]);
 
 	virtual bool  InterpolateVarInRange(int nIndex, float fMin, float fMax, unsigned int nCount, Vec3* resultArray) const;
 	virtual uint  GetSplineKeysCount(int nIndex, int nSpline) const;

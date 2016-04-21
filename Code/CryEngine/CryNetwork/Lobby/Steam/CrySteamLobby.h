@@ -107,13 +107,13 @@ public:
 
 private:
 	#if USE_CRY_MATCHMAKING
-	_smart_ptr<CCrySteamMatchMaking>  m_pMatchmaking;
+	_smart_ptr<CCrySteamMatchMaking> m_pMatchmaking;
 	#endif // USE_CRY_MATCHMAKING
 	#if USE_CRY_STATS
-	_smart_ptr<CCrySteamStats>        m_pStats;
+	_smart_ptr<CCrySteamStats> m_pStats;
 	#endif // USE_CRY_STATS
 
-	_smart_ptr<CCrySteamReward>       m_pReward;
+	_smart_ptr<CCrySteamReward> m_pReward;
 
 	#if USE_CRY_VOICE && USE_STEAM_VOICE
 	_smart_ptr<CCrySteamVoice> m_pVoice;

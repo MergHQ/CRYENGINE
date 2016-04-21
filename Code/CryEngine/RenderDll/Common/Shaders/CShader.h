@@ -486,24 +486,24 @@ public:
 		return false;
 	}
 
-	void        RT_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CShaderResources* Res);
-	void        RT_SetShaderQuality(EShaderType eST, EShaderQuality eSQ);
+	void              RT_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CShaderResources* Res);
+	void              RT_SetShaderQuality(EShaderType eST, EShaderQuality eSQ);
 
-	void        CreateShaderMaskGenString(const CShader* pSH, stack_string& flagString);
-	void        CreateShaderExportRequestLine(const CShader* pSH, stack_string& exportString);
+	void              CreateShaderMaskGenString(const CShader* pSH, stack_string& flagString);
+	void              CreateShaderExportRequestLine(const CShader* pSH, stack_string& exportString);
 
-	SFXParam*   mfGetFXParameter(std::vector<SFXParam>& Params, const char* param);
-	SFXSampler* mfGetFXSampler(std::vector<SFXSampler>& Params, const char* param);
-	SFXTexture* mfGetFXTexture(std::vector<SFXTexture>& Params, const char* param);
-	const char* mfParseFX_Parameter(const string& buf, EParamType eType, const char* szName);
-	void mfParseFX_Annotations_Script(char* buf, CShader * ef, std::vector<SFXStruct> &Structs, bool* bPublic, CCryNameR techStart[2]);
-	void mfParseFX_Annotations(char* buf, CShader * ef, std::vector<SFXStruct> &Structs, bool* bPublic, CCryNameR techStart[2]);
-	void mfParseFXTechnique_Annotations_Script(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, SShaderTechnique* pShTech, bool* bPublic, std::vector<SShaderTechParseParams>& techParams);
-	void mfParseFXTechnique_Annotations(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, SShaderTechnique* pShTech, bool* bPublic, std::vector<SShaderTechParseParams>& techParams);
-	void mfParseFXSampler_Annotations_Script(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, STexSamplerFX* pSamp);
-	void mfParseFXSampler_Annotations(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, STexSamplerFX* pSamp);
-	void              mfParseFX_Global(SFXParam & pr, CShader * ef, std::vector<SFXStruct> &Structs, CCryNameR techStart[2]);
-	bool              mfParseDummyFX_Global(std::vector<SFXStruct> &Structs, char* annot, CCryNameR techStart[2]);
+	SFXParam*         mfGetFXParameter(std::vector<SFXParam>& Params, const char* param);
+	SFXSampler*       mfGetFXSampler(std::vector<SFXSampler>& Params, const char* param);
+	SFXTexture*       mfGetFXTexture(std::vector<SFXTexture>& Params, const char* param);
+	const char*       mfParseFX_Parameter(const string& buf, EParamType eType, const char* szName);
+	void              mfParseFX_Annotations_Script(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, bool* bPublic, CCryNameR techStart[2]);
+	void              mfParseFX_Annotations(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, bool* bPublic, CCryNameR techStart[2]);
+	void              mfParseFXTechnique_Annotations_Script(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, SShaderTechnique* pShTech, bool* bPublic, std::vector<SShaderTechParseParams>& techParams);
+	void              mfParseFXTechnique_Annotations(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, SShaderTechnique* pShTech, bool* bPublic, std::vector<SShaderTechParseParams>& techParams);
+	void              mfParseFXSampler_Annotations_Script(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, STexSamplerFX* pSamp);
+	void              mfParseFXSampler_Annotations(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, STexSamplerFX* pSamp);
+	void              mfParseFX_Global(SFXParam& pr, CShader* ef, std::vector<SFXStruct>& Structs, CCryNameR techStart[2]);
+	bool              mfParseDummyFX_Global(std::vector<SFXStruct>& Structs, char* annot, CCryNameR techStart[2]);
 	const string&     mfParseFXTechnique_GenerateShaderScript(std::vector<SFXStruct>& Structs, FXMacro& Macros, std::vector<SFXParam>& Params, std::vector<SFXParam>& AffectedParams, const char* szEntryFunc, CShader* ef, EHWShaderClass eSHClass, const char* szShaderName, uint32& nAffectMask, const char* szType);
 	bool              mfParseFXTechnique_MergeParameters(std::vector<SFXStruct>& Structs, std::vector<SFXParam>& Params, std::vector<int>& AffectedFunc, SFXStruct* pMainFunc, CShader* ef, EHWShaderClass eSHClass, const char* szShaderName, std::vector<SFXParam>& NewParams);
 	CTexture*         mfParseFXTechnique_LoadShaderTexture(STexSamplerRT* smp, const char* szName, SShaderPass* pShPass, CShader* ef, int nIndex, byte ColorOp, byte AlphaOp, byte ColorArg, byte AlphaArg);
@@ -515,7 +515,7 @@ public:
 	bool              mfParseLightStyle(CLightStyle* ls, char* buf);
 	bool              mfParseFXLightStyle(char* buf, int nID, CShader* ef, std::vector<SFXStruct>& Structs);
 	CShader*          mfParseFX(char* buf, CShader* ef, CShader* efGen, uint64 nMaskGen);
-	void mfPostLoadFX(CShader * efT, std::vector<SShaderTechParseParams> &techParams, CCryNameR techStart[2]);
+	void              mfPostLoadFX(CShader* efT, std::vector<SShaderTechParseParams>& techParams, CCryNameR techStart[2]);
 	bool              mfParseDummyFX(char* buf, std::vector<string>& ShaderNames, const char* szName);
 	bool              mfAddFXShaderNames(const char* szName, std::vector<string>* ShaderNames, bool bUpdateCRC);
 	bool              mfInitShadersDummy(bool bUpdateCRC);
