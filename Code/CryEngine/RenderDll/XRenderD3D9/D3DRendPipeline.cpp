@@ -20,7 +20,6 @@
 #include "D3DPostProcess.h"
 #include "D3DStereo.h"
 #include "D3DHWShader.h"
-#include "D3DLightPropagationVolume.h"
 #include "D3DTiledShading.h"
 #include "../Common/Shaders/RemoteCompiler.h"
 #include "../Common/ReverseDepth.h"
@@ -487,9 +486,6 @@ void CD3D9Renderer::EF_Init()
 		m_pStereoRenderer->CreateResources();
 		m_pStereoRenderer->Update();
 	}
-
-	// Force early construction of Light Propagation Volumes manager
-	LPVManager.Instance();
 
 	assert(m_pBackBuffer == m_pBackBuffers[CD3D9Renderer::GetCurrentBackBufferIndex(m_pSwapChain)]);
 	if (m_pBackBuffer != m_pBackBuffers[CD3D9Renderer::GetCurrentBackBufferIndex(m_pSwapChain)])
@@ -6054,9 +6050,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 			UpdatePrevMatrix(bAllowPostProcess);
 
-			if (LPVManager.IsGIRenderable())
-				LPVManager.SetGIVolumes(LPVManager.GetCurrentGIVolume());
-
 			{
 				PROFILE_LABEL_SCOPE("TRANSPARENT_BW");
 
@@ -6075,14 +6068,8 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 				GetTiledShading().UnbindForwardShadingResources();
 			}
 
-			if (LPVManager.IsGIRenderable())
-				LPVManager.UnsetGIVolumes();
-
 			if (nFlags & SHDF_ALLOW_WATER)
 				FX_RenderWater(RenderFunc);
-
-			if (LPVManager.IsGIRenderable())
-				LPVManager.SetGIVolumes(LPVManager.GetCurrentGIVolume());
 
 			{
 				PROFILE_LABEL_SCOPE("TRANSPARENT_AW");
@@ -6105,9 +6092,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 					FX_DepthFixupMerge();
 				}
 			}
-
-			if (LPVManager.IsGIRenderable())
-				LPVManager.UnsetGIVolumes();
 
 			FX_ProcessHalfResParticlesRenderList(pRenderView, EFSLIST_HALFRES_PARTICLES, RenderFunc, bLighting);
 

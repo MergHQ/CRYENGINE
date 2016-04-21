@@ -52,8 +52,6 @@
 #include "RopeRenderNode.h"
 #include "RenderMeshMerger.h"
 #include "PhysCallbacks.h"
-#include "LPVRenderNode.h"
-#include "GlobalIllumination.h"
 #include "DeferredCollisionEvent.h"
 #include "MergedMeshRenderNode.h"
 #include "BreakableGlassRenderNode.h"

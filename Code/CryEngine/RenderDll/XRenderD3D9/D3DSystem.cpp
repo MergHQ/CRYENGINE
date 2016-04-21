@@ -32,7 +32,6 @@ LINK_SYSTEM_LIBRARY("d3d11.lib")
 #endif
 
 #include "D3DStereo.h"
-#include "D3DLightPropagationVolume.h"
 #include "D3DPostProcess.h"
 #include "D3DREBreakableGlassBuffer.h"
 #include "NullD3D11Device.h"
@@ -1019,7 +1018,6 @@ void CD3D9Renderer::ShutDownFast()
 void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 {
 	CREBreakableGlassBuffer::RT_ReleaseInstance();
-	LPVManager.Shutdown();
 	SAFE_DELETE(m_pColorGradingControllerD3D);
 	SAFE_DELETE(m_pPostProcessMgr);
 	SAFE_DELETE(m_pWaterSimMgr);

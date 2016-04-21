@@ -200,16 +200,6 @@ Property
 
 Property
 {
-  Name = %_RT_GLOBAL_ILLUMINATION
-  Mask = 0x80
-  Precache = ParticleVS
-  Precache = ParticleHS
-  Precache = ParticleDS
-  Precache = ParticlePS
-}
-
-Property
-{
   Name = %_RT_ALPHATEST
   Mask = 0x100
   Precache = ShadowGenVS

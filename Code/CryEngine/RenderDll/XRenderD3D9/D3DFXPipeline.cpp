@@ -10,7 +10,6 @@
 
 #include "StdAfx.h"
 #include "DriverD3D.h"
-#include "D3DLightPropagationVolume.h"
 #include "D3DPostProcess.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryEntitySystem/IEntityRenderState.h>
@@ -4177,12 +4176,6 @@ void CD3D9Renderer::FX_FlushShader_General()
 		else if (ef->m_Flags2 & EF2_ALPHABLENDSHADOWS)
 			rd->FX_SetupShadowsForTransp();
 
-		if (!(objFlags & FOB_REQUIRES_RESOLVE))
-		{
-			if ((objFlags & FOB_GLOBAL_ILLUMINATION) && LPVManager.IsGIRenderable())
-				rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_GLOBAL_ILLUMINATION];
-		}
-
 		if (rRP.m_pCurObject->m_RState & OS_ENVIRONMENT_CUBEMAP)
 			rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_ENVIRONMENT_CUBEMAP];
 
@@ -4311,9 +4304,9 @@ void CD3D9Renderer::FX_FlushShader_ShadowGen()
 
 	// RSMs
 #if defined(FEATURE_SVO_GI)
-	if (shadowInfo.m_pCurShadowFrustum->m_Flags & DLF_REFLECTIVE_SHADOWMAP || CSvoRenderer::GetRsmColorMap(*shadowInfo.m_pCurShadowFrustum))
+	if (CSvoRenderer::GetRsmColorMap(*shadowInfo.m_pCurShadowFrustum))
 #else
-	if (shadowInfo.m_pCurShadowFrustum->m_Flags & DLF_REFLECTIVE_SHADOWMAP)
+	if (false)
 #endif
 	{
 		rd->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE4];
@@ -4357,9 +4350,7 @@ void CD3D9Renderer::FX_FlushShader_ShadowGen()
 
 	//rd->EF_ApplyQuality();
 
-	const bool bRSMs = shadowInfo.m_pCurShadowFrustum && shadowInfo.m_pCurShadowFrustum->bReflectiveShadowMap;
-
-	if ((rRP.m_ObjFlags & FOB_BENDED) && !bRSMs)
+	if (rRP.m_ObjFlags & FOB_BENDED)
 		rRP.m_FlagsShader_MDV |= MDV_BENDING;
 	rRP.m_FlagsShader_RT |= rRP.m_pCurObject->m_nRTMask;
 	if (rRP.m_RIs[0].Num() <= 1 && !(rRP.m_ObjFlags & FOB_TRANS_MASK))

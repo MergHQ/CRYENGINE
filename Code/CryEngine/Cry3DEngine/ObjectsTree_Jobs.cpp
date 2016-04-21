@@ -38,7 +38,6 @@
 #include "RoadRenderNode.h"
 #include "WaterVolumeRenderNode.h"
 #include "DistanceCloudRenderNode.h"
-#include "LPVRenderNode.h"
 
 #include <CryThreading/IJobManager_JobDelegator.h>
 DECLARE_JOB("OctreeNodeRender", TRenderContentJob, COctreeNode::RenderContentJobEntry);
@@ -1914,39 +1913,6 @@ Vec3 CRopeRenderNode::GetPos(bool bWorldOnly) const
 
 ///////////////////////////////////////////////////////////////////////////////
 IMaterial* CRopeRenderNode::GetMaterial(Vec3* pHitPos) const
-{
-	return m_pMaterial;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void CLPVRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CLPVRenderNode::GetBBox();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-EERType CLPVRenderNode::GetRenderNodeType()
-{
-	return eERType_LightPropagationVolume;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-float CLPVRenderNode::GetMaxViewDist()
-{
-	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
-		return max(GetCVars()->e_ViewDistMin, CLPVRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());
-	return max(GetCVars()->e_ViewDistMin, CLPVRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatio * GetViewDistRatioNormilized());
-}
-
-///////////////////////////////////////////////////////////////////////////////
-Vec3 CLPVRenderNode::GetPos(bool bWorldOnly) const
-{
-	return m_pos;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-IMaterial* CLPVRenderNode::GetMaterial(Vec3* pHitPos) const
 {
 	return m_pMaterial;
 }

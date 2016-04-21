@@ -484,7 +484,6 @@
           "CryRenderer/RenderElements/CREBreakableGlass.h",
           "CryRenderer/RenderElements/CREBreakableGlassConfig.h",
           "CryRenderer/RenderElements/CREBreakableGlassHelpers.h",
-          "CryRenderer/RenderElements/CRELightPropagationVolume.h",
           "CryRenderer/RenderElements/CREBaseCloud.h",
           "CryRenderer/RenderElements/CREFarTreeSprites.h",
           "CryRenderer/RenderElements/CREFogVolume.h",

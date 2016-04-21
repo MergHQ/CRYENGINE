@@ -22,12 +22,11 @@
 #include "ObjectsTree.h"
 #include "Brush.h"
 #include "ClipVolumeManager.h"
-#include "LPVRenderNode.h"
 
 void C3DEngine::RegisterLightSourceInSectors(CDLight* pDynLight, int nSID, const SRenderingPassInfo& passInfo)
 {
 	// AntonK: this hack for colored shadow maps is temporary, since we will render it another way in the future
-	if (pDynLight->m_Flags & DLF_SUN || pDynLight->m_Flags & DLF_REFLECTIVE_SHADOWMAP || !m_pTerrain || !pDynLight->m_pOwner)
+	if (pDynLight->m_Flags & DLF_SUN || !m_pTerrain || !pDynLight->m_pOwner)
 		return;
 
 	if (GetRenderer()->EF_IsFakeDLight(pDynLight))
@@ -103,7 +102,7 @@ void CLightEntity::SetLightProperties(const CDLight& light)
 	PodArray<ILightSource*>& lightEntities = *engine->GetLightEntities();
 
 	//on consoles we force all lights (except sun) to be deferred
-	if (GetCVars()->e_DynamicLightsForceDeferred && !(m_light.m_Flags & (DLF_SUN | DLF_REFLECTIVE_SHADOWMAP | DLF_POST_3D_RENDERER)))
+	if (GetCVars()->e_DynamicLightsForceDeferred && !(m_light.m_Flags & (DLF_SUN | DLF_POST_3D_RENDERER)))
 		m_light.m_Flags |= DLF_DEFERRED_LIGHT;
 
 	if (light.m_Flags & DLF_DEFERRED_LIGHT)
@@ -257,7 +256,7 @@ void C3DEngine::AddDynamicLightSource(const class CDLight& LSource, ILightSource
 
 	if (!(LSource.m_Flags & DLF_POST_3D_RENDERER))
 	{
-		if ((LSource.m_Flags & DLF_SUN && !(GetCVars()->e_CoverageBuffer == 2)) || LSource.m_Flags & DLF_REFLECTIVE_SHADOWMAP)
+		if (LSource.m_Flags & DLF_SUN && !(GetCVars()->e_CoverageBuffer == 2))
 		{
 			// sun
 			IF (LSource.m_Color.Max() <= 0.0f || !GetCVars()->e_Sun, 0)
@@ -275,7 +274,7 @@ void C3DEngine::AddDynamicLightSource(const class CDLight& LSource, ILightSource
 			int nMaxReqursion = (LSource.m_Flags & DLF_THIS_AREA_ONLY) ? 2 : 3;
 			if (!m_pObjManager || !m_pVisAreaManager || !m_pVisAreaManager->IsEntityVisAreaVisible(pEnt, nMaxReqursion, &LSource, passInfo))
 			{
-				if (LSource.m_Flags & (DLF_SUN | DLF_REFLECTIVE_SHADOWMAP) && m_pVisAreaManager && m_pVisAreaManager->m_bSunIsNeeded)
+				if (LSource.m_Flags & DLF_SUN && m_pVisAreaManager && m_pVisAreaManager->m_bSunIsNeeded)
 				{
 					// sun may be used in indoor even if outdoor is not visible
 				}
@@ -471,34 +470,26 @@ void C3DEngine::PrepareLightSourcesForRendering_0(const SRenderingPassInfo& pass
 				}
 			}
 
-			if ((m_lstDynLights[i]->m_Flags & DLF_DEFERRED_LIGHT)
-			    && !(m_lstDynLights[i]->m_Flags & DLF_REFLECTIVE_SHADOWMAP)) // ignore RSM lights processing
+			if (m_lstDynLights[i]->m_Flags & DLF_DEFERRED_LIGHT)
 			{
-				bool bAdded = false;
-				if (m_lstDynLights[i]->m_Flags & DLF_ALLOW_LPV)
-					bAdded |= CLPVRenderNode::TryInsertLightIntoVolumes(*m_lstDynLights[i]);
+				CDLight* pLight = m_lstDynLights[i];
+				CLightEntity* pLightEntity = (CLightEntity*)pLight->m_pOwner;
 
-				if (!bAdded)
+				if (passInfo.RenderShadows() && (pLight->m_Flags & DLF_CASTSHADOW_MAPS) && pLight->m_Id >= 0)
 				{
-					CDLight* pLight = m_lstDynLights[i];
-					CLightEntity* pLightEntity = (CLightEntity*)pLight->m_pOwner;
+					pLightEntity->UpdateGSMLightSourceShadowFrustum(passInfo);
 
-					if (passInfo.RenderShadows() && (pLight->m_Flags & DLF_CASTSHADOW_MAPS) && pLight->m_Id >= 0)
+					if (pLightEntity->m_pShadowMapInfo)
 					{
-						pLightEntity->UpdateGSMLightSourceShadowFrustum(passInfo);
-
-						if (pLightEntity->m_pShadowMapInfo)
-						{
-							pLight->m_pShadowMapFrustums = reinterpret_cast<ShadowMapFrustum**>(pLightEntity->m_pShadowMapInfo->pGSM);
-							for (int nLod = 0; nLod < MAX_GSM_LODS_NUM && pLight->m_pShadowMapFrustums[nLod]; nLod++)
-								pLight->m_pShadowMapFrustums[nLod]->nDLightId = pLight->m_Id;
-						}
+						pLight->m_pShadowMapFrustums = reinterpret_cast<ShadowMapFrustum**>(pLightEntity->m_pShadowMapInfo->pGSM);
+						for (int nLod = 0; nLod < MAX_GSM_LODS_NUM && pLight->m_pShadowMapFrustums[nLod]; nLod++)
+							pLight->m_pShadowMapFrustums[nLod]->nDLightId = pLight->m_Id;
 					}
+				}
 
-					if (GetCVars()->e_DynamicLights)
-					{
-						AddLightToRenderer(*m_lstDynLights[i], 1.f, passInfo);
-					}
+				if (GetCVars()->e_DynamicLights)
+				{
+					AddLightToRenderer(*m_lstDynLights[i], 1.f, passInfo);
 				}
 
 				FreeLightSourceComponents(m_lstDynLights[i]);
@@ -804,12 +795,6 @@ static inline bool CmpCastShadowFlag(const CDLight* p1, const CDLight* p2)
 		return true;
 	else if ((p1->m_Flags & DLF_SUN) < (p2->m_Flags & DLF_SUN))
 		return false;
-
-	// move RSM as last shadow caster
-	if ((p1->m_Flags & DLF_REFLECTIVE_SHADOWMAP) > (p2->m_Flags & DLF_REFLECTIVE_SHADOWMAP))
-		return false;
-	else if ((p1->m_Flags & DLF_REFLECTIVE_SHADOWMAP) < (p2->m_Flags & DLF_REFLECTIVE_SHADOWMAP))
-		return true;
 
 	// move shadow casters first
 	if ((p1->m_Flags & DLF_CASTSHADOW_MAPS) > (p2->m_Flags & DLF_CASTSHADOW_MAPS))

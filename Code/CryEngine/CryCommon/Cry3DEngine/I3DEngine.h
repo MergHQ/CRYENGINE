@@ -2414,7 +2414,6 @@ struct SRendItemSorter
 	//! to ensure the deferred shading pass is after all LPV objects.
 	enum EDeferredPreprocess
 	{
-		eLPVPass             = 0,
 		eDeferredShadingPass = BIT(30)
 	};
 	void   IncreaseOctreeCounter()   { nValue += eOctreeNodeCounter; }
@@ -2474,7 +2473,6 @@ struct SRenderingPassInfo
 		SHADOW_MAP_NONE = 0,
 		SHADOW_MAP_GSM,
 		SHADOW_MAP_LOCAL,
-		SHADOW_MAP_REFLECTIVE,
 		SHADOW_MAP_CACHED,
 		SHADOW_MAP_CACHED_MGPU_COPY
 	};
@@ -3031,8 +3029,6 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(CRen
 		else
 			passInfo.m_eShadowMapRendering = SHADOW_MAP_GSM;
 	}
-	else if (nLightFlags & DLF_REFLECTIVE_SHADOWMAP)
-		passInfo.m_eShadowMapRendering = static_cast<uint8>(SHADOW_MAP_REFLECTIVE);
 	else if (nLightFlags & (DLF_POINT | DLF_PROJECT | DLF_AREA_LIGHT))
 		passInfo.m_eShadowMapRendering = static_cast<uint8>(SHADOW_MAP_LOCAL);
 	else
