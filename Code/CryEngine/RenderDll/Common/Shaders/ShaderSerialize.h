@@ -53,7 +53,7 @@ inline void sAlignData(TArray<byte>& Dst, uint32 align)
 	}
 }
 
-template<typename T>  void sAddData(TArray<byte>& Dst, T Src, uint32 align = 0)
+template<typename T> void sAddData(TArray<byte>& Dst, T Src, uint32 align = 0)
 {
 	int nSize = sizeof(T);
 	byte* pDst = Dst.Grow(nSize);

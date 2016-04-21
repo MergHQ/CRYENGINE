@@ -40,19 +40,19 @@ typedef enum D3D11_SHADER_VERSION_TYPE
 
 typedef struct _D3D11_SIGNATURE_PARAMETER_DESC
 {
-	LPCSTR                      SemanticName;     // Name of the semantic
-	UINT                        SemanticIndex;    // Index of the semantic
-	UINT                        Register;         // Number of member variables
-	D3D_NAME                    SystemValueType;  // A predefined system value, or D3D_NAME_UNDEFINED if not applicable
-	D3D_REGISTER_COMPONENT_TYPE ComponentType;  // Scalar type (e.g. uint, float, etc.)
-	BYTE                        Mask;             // Mask to indicate which components of the register
-	                                              // are used (combination of D3D10_COMPONENT_MASK values)
-	BYTE                        ReadWriteMask;    // Mask to indicate whether a given component is
-	                                              // never written (if this is an output signature) or
-	                                              // always read (if this is an input signature).
-	                                              // (combination of D3D10_COMPONENT_MASK values)
-	UINT              Stream;                     // Stream index
-	D3D_MIN_PRECISION MinPrecision;               // Minimum desired interpolation precision
+	LPCSTR                      SemanticName;    // Name of the semantic
+	UINT                        SemanticIndex;   // Index of the semantic
+	UINT                        Register;        // Number of member variables
+	D3D_NAME                    SystemValueType; // A predefined system value, or D3D_NAME_UNDEFINED if not applicable
+	D3D_REGISTER_COMPONENT_TYPE ComponentType;   // Scalar type (e.g. uint, float, etc.)
+	BYTE                        Mask;            // Mask to indicate which components of the register
+	                                             // are used (combination of D3D10_COMPONENT_MASK values)
+	BYTE                        ReadWriteMask;   // Mask to indicate whether a given component is
+	                                             // never written (if this is an output signature) or
+	                                             // always read (if this is an input signature).
+	                                             // (combination of D3D10_COMPONENT_MASK values)
+	UINT              Stream;                    // Stream index
+	D3D_MIN_PRECISION MinPrecision;              // Minimum desired interpolation precision
 } D3D11_SIGNATURE_PARAMETER_DESC;
 
 typedef struct _D3D11_SHADER_BUFFER_DESC

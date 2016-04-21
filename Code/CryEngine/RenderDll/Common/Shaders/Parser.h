@@ -46,10 +46,10 @@ int    shGetInt(const char* buf);
 int    shGetHex(const char* buf);
 uint64 shGetHex64(const char* buf);
 void   shGetVector(char* buf, Vec3& v);
-void shGetVector(char* buf, float v[3]);
+void   shGetVector(char* buf, float v[3]);
 void   shGetVector4(char* buf, vec4_t& v);
 void   shGetColor(const char* buf, ColorF& v);
-void shGetColor(char* buf, float v[4]);
+void   shGetColor(char* buf, float v[4]);
 int    shGetVar(char** buf, char** vr, char** val);
 
 #endif

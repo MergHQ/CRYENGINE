@@ -434,7 +434,7 @@ public:
 	virtual void OMSetRenderTargetsAndUnorderedAccessViews_PreCallHook(UINT NumRTVs, ID3D11RenderTargetView* const* ppRenderTargetViews, ID3D11DepthStencilView* pDepthStencilView, UINT UAVStartSlot, UINT NumUAVs, ID3D11UnorderedAccessView* const* ppUnorderedAccessViews, const UINT* pUAVInitialCounts);
 	virtual void OMGetRenderTargetsAndUnorderedAccessViews_PreCallHook(UINT NumRTVs, ID3D11RenderTargetView** ppRenderTargetViews, ID3D11DepthStencilView** ppDepthStencilView, UINT UAVStartSlot, UINT NumUAVs, ID3D11UnorderedAccessView** ppUnorderedAccessViews);
 	virtual void OMSetBlendState_PreCallHook(ID3D11BlendState* pBlendState, const FLOAT BlendFactor[4], UINT SampleMask);
-	virtual void OMGetBlendState_PreCallHook(ID3D11BlendState * *ppBlendState, FLOAT BlendFactor[4], UINT * pSampleMask);
+	virtual void OMGetBlendState_PreCallHook(ID3D11BlendState** ppBlendState, FLOAT BlendFactor[4], UINT* pSampleMask);
 	virtual void OMSetDepthStencilState_PreCallHook(ID3D11DepthStencilState* pDepthStencilState, UINT StencilRef);
 	virtual void OMGetDepthStencilState_PreCallHook(ID3D11DepthStencilState** ppDepthStencilState, UINT* pStencilRef);
 

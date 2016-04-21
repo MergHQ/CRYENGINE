@@ -2056,8 +2056,8 @@ private:
 	void SilhouetteCombineBlurAndOutline(CTexture* pOutlineTex, CTexture* pGlowTex);
 	void ApplyShaderQuality(EShaderType shaderType = eST_General);
 
-	void          ProcessRenderList(int list, uint32 batchFilter, uint8 groupId, float screenRect[4], bool bCustomRender = false);
-	void          ProcessBatchesList(int listStart, int listEnd, uint32 batchFilter, uint8 groupId, float screenRect[4], bool bCustomRender = false);
+	void ProcessRenderList(int list, uint32 batchFilter, uint8 groupId, float screenRect[4], bool bCustomRender = false);
+	void ProcessBatchesList(int listStart, int listEnd, uint32 batchFilter, uint8 groupId, float screenRect[4], bool bCustomRender = false);
 
 	CCryNameTSCRC m_gammaCorrectionTechName;
 	CCryNameTSCRC m_alphaCorrectionTechName;

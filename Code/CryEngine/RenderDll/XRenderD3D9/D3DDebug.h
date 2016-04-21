@@ -49,7 +49,7 @@ private:
 	D3D11_MESSAGE_ID m_arrBreakOnIDsList[MAX_NUM_DEBUG_MSG_IDS];
 	UINT             m_nNumCurrBreakOnIDs;
 
-	UINT             ParseIDs(const char* strMsgIDList, D3D11_MESSAGE_ID arrMsgList[MAX_NUM_DEBUG_MSG_IDS]) const;
+	UINT ParseIDs(const char* strMsgIDList, D3D11_MESSAGE_ID arrMsgList[MAX_NUM_DEBUG_MSG_IDS]) const;
 };
 
 #endif // #if defined(SUPPORT_D3D_DEBUG_RUNTIME)

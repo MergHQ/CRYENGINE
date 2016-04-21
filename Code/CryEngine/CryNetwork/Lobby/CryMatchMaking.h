@@ -468,7 +468,7 @@ protected:
 	void                       TickSessionReleaseDedicatedServer(CryMatchMakingTaskID mmTaskID);
 	void                       EndSessionReleaseDedicatedServer(CryMatchMakingTaskID mmTaskID);
 	void                       ProcessRequestReleaseDedicatedServerResult(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
-	void SendServerInfo(CryLobbySessionHandle h, CryMatchMakingConnectionID connectionID, CryMatchMakingTaskID mmTaskID, CryLobbySendID sendIDs[MAX_LOBBY_CONNECTIONS]);
+	void                       SendServerInfo(CryLobbySessionHandle h, CryMatchMakingConnectionID connectionID, CryMatchMakingTaskID mmTaskID, CryLobbySendID sendIDs[MAX_LOBBY_CONNECTIONS]);
 	void                       ProcessSessionServerInfo(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);
 	void                       SessionConnectToServer(CryLobbySessionHandle h, const TNetAddress& addr, SCryMatchMakingConnectionUID uid);
 	void                       ProcessSessionRequestJoinServerResult(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket);

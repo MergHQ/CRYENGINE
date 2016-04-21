@@ -527,7 +527,7 @@ private:
 	void GC_Lazy_RunEstablisher(EContextEstablishTaskResult (CContextEstablisher::* func)(SContextEstablishState&), EContextViewState state);
 	void GC_Lazy_StateSink(_smart_ptr<CNetContextState> ) {}
 
-	CHistory* m_history[eH_NUM_HISTORIES];
+	CHistory*                           m_history[eH_NUM_HISTORIES];
 
 	static _smart_ptr<CNetContextState> m_BackupContextStateDuringMigration;
 

@@ -79,11 +79,13 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CToneMappingStage>(m_pToneMappingStage, eStage_ToneMapping);
 	RegisterStage<CSunShaftsStage>(m_pSunShaftsStage, eStage_Sunshafts);
 	RegisterStage<CPostAAStage>(m_pPostAAStage, eStage_PostAA);
+
+	m_bInitialized = true;
 }
 
 void CStandardGraphicsPipeline::ReleaseBuffers()
 {
-	if (m_pSceneGBufferStage)
+	if (m_bInitialized && m_pSceneGBufferStage)
 		m_pSceneGBufferStage->ReleaseBuffers();
 }
 

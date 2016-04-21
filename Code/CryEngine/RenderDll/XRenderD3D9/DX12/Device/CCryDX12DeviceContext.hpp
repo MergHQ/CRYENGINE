@@ -562,9 +562,9 @@ public:
 	  _Out_writes_opt_(NumUAVs)  ID3D11UnorderedAccessView * *ppUnorderedAccessViews) final;
 
 	virtual void STDMETHODCALLTYPE OMGetBlendState(
-	  _Out_opt_ ID3D11BlendState * *ppBlendState,
+	  _Out_opt_ ID3D11BlendState** ppBlendState,
 	  _Out_opt_ FLOAT BlendFactor[4],
-	  _Out_opt_ UINT * pSampleMask) final;
+	  _Out_opt_ UINT* pSampleMask) final;
 
 	virtual void STDMETHODCALLTYPE OMGetDepthStencilState(
 	  _Out_opt_ ID3D11DepthStencilState** ppDepthStencilState,

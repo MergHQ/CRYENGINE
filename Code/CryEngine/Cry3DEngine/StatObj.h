@@ -186,7 +186,7 @@ struct SPhysGeomArray
 		else
 		{
 			int i;
-			for (i = m_array.size() - 1; i >= 0 && m_array[i].type != idx; i--) ;
+			for (i = m_array.size() - 1; i >= 0 && m_array[i].type != idx; i--);
 			return i >= 0 ? m_array[i].pgeom : 0;
 		}
 	}

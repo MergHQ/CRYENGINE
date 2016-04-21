@@ -94,7 +94,7 @@ private:
 	void                         InitialiseBoneIDs();
 	void                         FindLookAngleAndStrength(EyeID eye, float& angle, float& strength, const QuatT& additionalRotation);
 	void                         DisplayDebugInfoForEye(const QuatTS& rAnimLocationNext, EyeID eye, const string& text);
-	void CalculateEyeAdditionalRotation(CCharInstance * pCharacter, CFaceState * pFaceState, CFacialEffectorsLibrary * pEffectorsLibrary, QuatT additionalRotation[EyeCOUNT]);
+	void                         CalculateEyeAdditionalRotation(CCharInstance* pCharacter, CFaceState* pFaceState, CFacialEffectorsLibrary* pEffectorsLibrary, QuatT additionalRotation[EyeCOUNT]);
 	const CFaceIdentifierHandle* RetrieveEffectorIdentifiers() const;
 
 	CFacialInstance*   m_pInstance;

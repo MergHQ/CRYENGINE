@@ -44,7 +44,7 @@ class CGameServerNub :
 		SBannedPlayer(int32 profId, uint32 addr, const CTimeValue& tv) : profileId(profId), ip(addr), time(tv) {}
 
 		int32      profileId; //profile id
-		uint32     ip; //in LAN we use ip
+		uint32     ip;        //in LAN we use ip
 		CTimeValue time;
 	};
 	typedef std::vector<SBannedPlayer> TBannedVector;
