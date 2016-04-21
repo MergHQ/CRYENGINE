@@ -9,7 +9,6 @@ namespace CryAudio
 {
 namespace Impl
 {
-
 class CAudioSystemImpl_sdlmixer final : public IAudioImpl
 {
 public:
@@ -85,21 +84,24 @@ public:
 
 private:
 
-	static char const* const s_szSDLFileTag;
-	static char const* const s_szSDLEventTag;
-	static char const* const s_szSDLCommonAttribute;
-	static char const* const s_szSDLSoundLibraryPath;
-	static char const* const s_szSDLEventTypeTag;
-	static char const* const s_szSDLEventPanningEnabledTag;
-	static char const* const s_szSDLEventAttenuationEnabledTag;
-	static char const* const s_szSDLEventAttenuationMinDistanceTag;
-	static char const* const s_szSDLEventAttenuationMaxDistanceTag;
-	static char const* const s_szSDLEventVolumeTag;
-	static char const* const s_szSDLEventLoopCountTag;
-	static char const* const s_szSDLEventIdTag;
+	static char const* const      s_szSDLFileTag;
+	static char const* const      s_szSDLEventTag;
+	static char const* const      s_szSDLCommonAttribute;
+	static char const* const      s_szSDLSoundLibraryPath;
+	static char const* const      s_szSDLEventTypeTag;
+	static char const* const      s_szSDLEventPanningEnabledTag;
+	static char const* const      s_szSDLEventAttenuationEnabledTag;
+	static char const* const      s_szSDLEventAttenuationMinDistanceTag;
+	static char const* const      s_szSDLEventAttenuationMaxDistanceTag;
+	static char const* const      s_szSDLEventVolumeTag;
+	static char const* const      s_szSDLEventLoopCountTag;
+	static char const* const      s_szSDLEventIdTag;
 
-	string                   m_sGameFolder;
-	size_t                   m_nMemoryAlignment;
+	string                        m_sGameFolder;
+	size_t                        m_nMemoryAlignment;
+	string                        m_language;
+
+	ICVar*                        m_pCVarFileExtension;
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	std::map<AudioObjectId, string>             m_idToName;
