@@ -170,57 +170,59 @@ size_t CArea::MemStat()
 void CArea::AddSegment(const a2DPoint& p0, const a2DPoint& p1, bool const bObstructSound)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-	a2DSegment* newSegment = new a2DSegment;
-	newSegment->bObstructSound = bObstructSound;
+	a2DSegment* const pSegment = new a2DSegment;
+	pSegment->bObstructSound = bObstructSound;
+	UpdateSegment(*pSegment, p0, p1);
+	m_areaSegments.push_back(pSegment);
+}
 
-	//if this is horizontal line set flag. This segment is needed only for distance calculations
-	if (p1.y == p0.y)
-		newSegment->isHorizontal = true;
-	else
-		newSegment->isHorizontal = false;
+//////////////////////////////////////////////////////////////////////////
+void CArea::UpdateSegment(a2DSegment& segment, a2DPoint const& p0, a2DPoint const& p1)
+{
+	// If this is horizontal line set flag. This segment is needed only for distance calculations.
+	segment.isHorizontal = p1.y == p0.y;
 
 	if (p0.x < p1.x)
 	{
-		newSegment->bbox.min.x = p0.x;
-		newSegment->bbox.max.x = p1.x;
+		segment.bbox.min.x = p0.x;
+		segment.bbox.max.x = p1.x;
 	}
 	else
 	{
-		newSegment->bbox.min.x = p1.x;
-		newSegment->bbox.max.x = p0.x;
+		segment.bbox.min.x = p1.x;
+		segment.bbox.max.x = p0.x;
 	}
 
 	if (p0.y < p1.y)
 	{
-		newSegment->bbox.min.y = p0.y;
-		newSegment->bbox.max.y = p1.y;
+		segment.bbox.min.y = p0.y;
+		segment.bbox.max.y = p1.y;
 	}
 	else
 	{
-		newSegment->bbox.min.y = p1.y;
-		newSegment->bbox.max.y = p0.y;
+		segment.bbox.min.y = p1.y;
+		segment.bbox.max.y = p0.y;
 	}
 
-	if (!newSegment->isHorizontal)
+	if (!segment.isHorizontal)
 	{
 		//if this is vertical line - special case
 		if (p1.x == p0.x)
 		{
-			newSegment->k = 0;
-			newSegment->b = p0.x;
+			segment.k = 0.0f;
+			segment.b = p0.x;
 		}
 		else
 		{
-			newSegment->k = (p1.y - p0.y) / (p1.x - p0.x);
-			newSegment->b = p0.y - newSegment->k * p0.x;
+			segment.k = (p1.y - p0.y) / (p1.x - p0.x);
+			segment.b = p0.y - segment.k * p0.x;
 		}
 	}
 	else
 	{
-		newSegment->k = 0;
-		newSegment->b = 0;
+		segment.k = 0.0f;
+		segment.b = 0.0f;
 	}
-	m_areaSegments.push_back(newSegment);
 }
 
 // calculates min distance from point within area to the border of area
@@ -725,7 +727,7 @@ float CArea::ClosestPointOnHullDistSq(EntityId const nEntityID, Vec3 const& Poin
 							Vec3 endSeg(curSg->GetEnd().x, curSg->GetEnd().y, Point3d.z);
 							Lineseg line(startSeg, endSeg);
 
-							/// Returns distance from a point to a line segment, ignoring the z coordinates
+							// Returns distance from a point to a line segment, ignoring the z coordinates
 							fXDistSq = Distance::Point_Lineseg2DSq(Point3d, line, fT);
 
 							float fThisDistance = 0.0f;
@@ -2270,64 +2272,21 @@ void CArea::MovePoints(Vec3 const* const pPoints, size_t const numLocalPoints)
 {
 	if (!m_areaSegments.empty() && numLocalPoints > 0)
 	{
-		a2DSegment* seg;
+		a2DSegment* pSegment = nullptr;
 		size_t i = 1;
 
 		for (; i < numLocalPoints; ++i)
 		{
-			seg = m_areaSegments[i - 1];
+			pSegment = m_areaSegments[i - 1];
 			a2DPoint const& p0 = *((CArea::a2DPoint*)(pPoints + i - 1));
 			a2DPoint const& p1 = *((CArea::a2DPoint*)(pPoints + i));
-
-			if (p0.x < p1.x)
-			{
-				seg->bbox.min.x = p0.x;
-				seg->bbox.max.x = p1.x;
-			}
-			else
-			{
-				seg->bbox.min.x = p1.x;
-				seg->bbox.max.x = p0.x;
-			}
-
-			if (p0.y < p1.y)
-			{
-				seg->bbox.min.y = p0.y;
-				seg->bbox.max.y = p1.y;
-			}
-			else
-			{
-				seg->bbox.min.y = p1.y;
-				seg->bbox.max.y = p0.y;
-			}
+			UpdateSegment(*pSegment, p0, p1);
 		}
 
-		seg = m_areaSegments[i - 1];
+		pSegment = m_areaSegments[i - 1];
 		a2DPoint const& p0 = *((CArea::a2DPoint*)(pPoints + i - 1));
 		a2DPoint const& p1 = *((CArea::a2DPoint*)(pPoints));
-
-		if (p0.x < p1.x)
-		{
-			seg->bbox.min.x = p0.x;
-			seg->bbox.max.x = p1.x;
-		}
-		else
-		{
-			seg->bbox.min.x = p1.x;
-			seg->bbox.max.x = p0.x;
-		}
-
-		if (p0.y < p1.y)
-		{
-			seg->bbox.min.y = p0.y;
-			seg->bbox.max.y = p1.y;
-		}
-		else
-		{
-			seg->bbox.min.y = p1.y;
-			seg->bbox.max.y = p0.y;
-		}
-
+		UpdateSegment(*pSegment, p0, p1);
 		m_origin = pPoints[0].z;
 
 		for (size_t i = 1; i < numLocalPoints; ++i)

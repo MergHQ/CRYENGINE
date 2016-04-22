@@ -63,20 +63,21 @@ public:
 
 	struct a2DBBox
 	{
-		a2DPoint min;   // 2D BBox min
-		a2DPoint max;   // 2D BBox max
-		bool     PointOutBBox2D(const a2DPoint& point) const
+		bool PointOutBBox2D(const a2DPoint& point) const
 		{
 			return (point.x < min.x || point.x > max.x || point.y < min.y || point.y > max.y);
 		}
+
 		bool PointOutBBox2DVertical(const a2DPoint& point) const
 		{
 			return (point.y <= min.y || point.y > max.y || point.x > max.x);
 		}
+
 		bool BBoxOutBBox2D(const a2DBBox& box) const
 		{
 			return (box.max.x < min.x || box.min.x > max.x || box.max.y < min.y || box.min.y > max.y);
 		}
+
 		ILINE bool Overlaps2D(const AABB& bb) const
 		{
 			if (min.x > bb.max.x) return false;
@@ -85,6 +86,9 @@ public:
 			if (max.y < bb.min.y) return false;
 			return true; //the aabb's overlap
 		}
+
+		a2DPoint min; // 2D BBox min
+		a2DPoint max; // 2D BBox max
 	};
 
 	struct a2DSegment
@@ -95,26 +99,28 @@ public:
 			k(0.0f),
 			b(0.0f){}
 
-		bool    bObstructSound; // Does it obstruct sounds?
-		bool    isHorizontal;   //horizontal flag
-		float   k, b;           //line parameters y=kx+b
-		a2DBBox bbox;           // segment's BBox
-
-		bool    IntersectsXPos(const a2DPoint& point) const
+		bool IntersectsXPos(const a2DPoint& point) const
 		{
-			return (point.x < (point.y - b) / k);
-		}
-
-		float GetIntersectX(const a2DPoint& point) const
-		{
-			return (point.y - b) / k;
+			if (k != 0.0f)
+			{
+				return (point.x < (point.y - b) / k);
+			}
+			else
+			{
+				return (point.y - b) > 0.0f;
+			}
 		}
 
 		bool IntersectsXPosVertical(const a2DPoint& point) const
 		{
-			if (k == 0.0f)
+			if (k != 0.0f)
+			{
+				return false;
+			}
+			else
+			{
 				return (point.x <= b);
-			return false;
+			}
 		}
 
 		a2DPoint const GetStart() const
@@ -126,6 +132,11 @@ public:
 		{
 			return a2DPoint(bbox.max.x, (float)__fsel(k, bbox.max.y, bbox.min.y));
 		}
+
+		bool    bObstructSound; // Does it obstruct sounds?
+		bool    isHorizontal;   // horizontal flag
+		float   k, b;           // line parameters y=kx+b
+		a2DBBox bbox;           // segment's BBox
 	};
 
 	struct SBoxHolder
@@ -309,6 +320,7 @@ private:
 	~CArea();
 
 	void           AddSegment(const a2DPoint& p0, const a2DPoint& p1, bool const nObstructSound);
+	void           UpdateSegment(a2DSegment& segment, a2DPoint const& p0, a2DPoint const& p1);
 	void           CalcBBox();
 	const a2DBBox& GetBBox() const;
 	a2DBBox&       GetBBox();
