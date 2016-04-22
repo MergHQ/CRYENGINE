@@ -976,15 +976,12 @@ void CTiledShading::Render(CRenderView* pRenderView, Vec4* clipVolumeParams)
 
 void CTiledShading::BindForwardShadingResources(CShader*, CDeviceManager::SHADER_TYPE shaderType)
 {
-	if (!CRenderer::CV_r_DeferredShadingTiled)
-		return;
-
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	CTexture* ptexGiDiff = CTexture::s_ptexBlack;
 	CTexture* ptexGiSpec = CTexture::s_ptexBlack;
-	CTexture* ptexRsmCol = NULL;
-	CTexture* ptexRsmNor = NULL;
+	CTexture* ptexRsmCol = CTexture::s_ptexBlack;
+	CTexture* ptexRsmNor = CTexture::s_ptexBlack;
 
 #if defined(FEATURE_SVO_GI)
 	if (CSvoRenderer::GetInstance()->IsActive() && CSvoRenderer::GetInstance()->GetSpecularFinRT())
@@ -995,6 +992,16 @@ void CTiledShading::BindForwardShadingResources(CShader*, CDeviceManager::SHADER
 		ptexRsmNor = (CTexture*)CSvoRenderer::GetInstance()->GetRsmPoolNor();
 	}
 #endif
+
+	if (!CRenderer::CV_r_DeferredShadingTiled)
+	{
+		rd->m_DevMan.BindSRV(shaderType, ptexGiDiff->GetShaderResourceView(), 24);
+		rd->m_DevMan.BindSRV(shaderType, ptexGiSpec->GetShaderResourceView(), 25);
+		rd->m_DevMan.BindSRV(shaderType, ptexRsmCol->GetShaderResourceView(), 26);
+		rd->m_DevMan.BindSRV(shaderType, ptexRsmNor->GetShaderResourceView(), 27);
+
+		return;
+	}
 
 	D3DShaderResource* pTiledBaseRes[12] = {
 		m_LightShadeInfoBuf.GetSRV(),
@@ -1007,8 +1014,8 @@ void CTiledShading::BindForwardShadingResources(CShader*, CDeviceManager::SHADER
 		m_clipVolumeInfoBuf.GetSRV(),
 		ptexGiDiff->GetShaderResourceView(),
 		ptexGiSpec->GetShaderResourceView(),
-		ptexRsmCol ? ptexRsmCol->GetShaderResourceView() : NULL,
-		ptexRsmNor ? ptexRsmNor->GetShaderResourceView() : NULL,
+		ptexRsmCol->GetShaderResourceView(),
+		ptexRsmNor->GetShaderResourceView(),
 	};
 	rd->m_DevMan.BindSRV(shaderType, pTiledBaseRes, 16, 12);
 

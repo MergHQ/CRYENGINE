@@ -486,10 +486,11 @@ void frag_custom_end(inout fragPass pPass, inout half3 cFinal)
 	#if %_RT_QUALITY1 || %ENFORCE_TILED_SHADING
 		TiledForwardShading(pPass, highQualityShadowFiltering, false);
 	#else
-		TiledForwardShading(pPass, false, false, false);	
+		TiledForwardShading(pPass, false, false, false);
 	#endif
 #else
-	TiledForwardShading(pPass, false, false, false);	
+	float2 tcProj = pPass.IN.screenProj.xy / pPass.IN.screenProj.w;
+	ApplyGI(pPass.cSpecularAcc, pPass.cAmbientAcc, pPass.cDiffuseAcc, tcProj + .5f / PS_ScreenSize.xy, pPass.fGloss, pPass.cSpecularMap, ForwGiDiffuseRT, ForwGiSpecularRT, (int)(ForwGiIntegrationMode.y));
 #endif
 	
 	// Final composition
