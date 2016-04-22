@@ -60,6 +60,11 @@
 
 		"CryScaleformHelper"
 	],
+	
+	"durango_force_shared_monolithic_build_modules" : 
+	[
+		"CryScaleformHelper"
+	],
 
 	"win_modules"                           : ["WindowsLauncher",  "CryRenderD3D11", "CryRenderD3D12", "CryRenderOpenGL", "CryAudioImplSDLMixer", "CryAudioImplFmod", "oculus"],
 	"win_debug_modules"                     : ["DedicatedLauncher", "CryLiveCreate", "GameStream"],
