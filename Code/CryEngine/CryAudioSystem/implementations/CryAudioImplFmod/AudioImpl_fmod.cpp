@@ -1354,6 +1354,31 @@ bool CAudioImpl_fmod::LoadMasterBanks()
 			fileData.fileSize = static_cast<int>(masterBankStringsFileSize);
 			fmodResult = m_pSystem->loadBankCustom(&bankInfo, FMOD_STUDIO_LOAD_BANK_NORMAL, &m_pStringsBank);
 			ASSERT_FMOD_OK;
+
+			if (m_pMasterBank != nullptr)
+			{
+				int numBuses = 0;
+				fmodResult = m_pMasterBank->getBusCount(&numBuses);
+				ASSERT_FMOD_OK;
+
+				if (numBuses > 0)
+				{
+					FMOD::Studio::Bus** pBuses = nullptr;
+					POOL_NEW_CUSTOM(FMOD::Studio::Bus*, pBuses, numBuses);
+					int numRetrievedBuses = 0;
+					fmodResult = m_pMasterBank->getBusList(pBuses, numBuses, &numRetrievedBuses);
+					ASSERT_FMOD_OK;
+					CRY_ASSERT(numBuses == numRetrievedBuses);
+
+					for (int i = 0; i < numRetrievedBuses; ++i)
+					{
+						fmodResult = pBuses[i]->lockChannelGroup();
+						ASSERT_FMOD_OK;
+					}
+
+					POOL_FREE(pBuses);
+				}
+			}
 		}
 	}
 	else
