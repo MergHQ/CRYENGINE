@@ -108,9 +108,6 @@ CCryLobby::CCryLobby()
 	m_gfwlExtras = NULL;
 #endif
 
-	m_pRebroadcaster = new CCryRebroadcaster(this);
-	NET_ASSERT(m_pRebroadcaster != NULL);
-
 #if NETWORK_HOST_MIGRATION
 	//m_hostMigrationListeners.reserve(10);
 	AddHostMigrationEventListener(this, "CryLobby", ELPT_Engine);
@@ -131,8 +128,6 @@ CCryLobby::~CCryLobby()
 #if NETWORK_HOST_MIGRATION
 	RemoveHostMigrationEventListener(this);
 #endif
-
-	SAFE_DELETE(m_pRebroadcaster);
 
 	for (a = 0; a < eCLS_NumServices; a++)
 	{

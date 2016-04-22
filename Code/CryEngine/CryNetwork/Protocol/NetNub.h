@@ -318,10 +318,6 @@ private:
 	int                   m_keepAliveLocks;
 	CryCriticalSection    m_lockChannels;
 
-#if NETWORK_REBROADCASTER
-	uint8 m_rebroadcasterPacketBuffer[MAX_UDP_PACKET_SIZE];
-#endif
-
 	bool SendPendingConnect(SPendingConnection& pc);
 	void SendConnecting(const TNetAddress& to, SConnecting& con);
 	void AddDisconnectEntry(const TNetAddress& ip, CrySessionHandle session, EDisconnectionCause cause, const char* reason);

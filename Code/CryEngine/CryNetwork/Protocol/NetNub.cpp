@@ -930,105 +930,7 @@ bool CNetNub::SendTo(const uint8* pData, size_t nSize, const TNetAddress& to)
 	//  return false;
 
 	ESocketError se = eSE_Ok;
-
-#if NETWORK_REBROADCASTER
-	// Can we talk to this destination directly?
-	TNetChannelID fromChannelID = 0;
-	TNetChannelID toChannelID = 0;
-	TNetChannelID routeChannelID = 0;
-	CCryRebroadcaster* pRebroadcaster = NULL;
-	CCryLobby* pLobby = (CCryLobby*)CCryLobby::GetLobby();
-	if (pLobby)
-	{
-		pRebroadcaster = pLobby->GetRebroadcaster();
-	}
-
-	if (pRebroadcaster)
-	{
-		fromChannelID = pRebroadcaster->GetLocalChannelID();
-		toChannelID = pRebroadcaster->GetChannelIDForAddress(to);
-		routeChannelID = pRebroadcaster->FindRoute(fromChannelID, toChannelID);
-	}
-
-	if (CNetwork::Get()->IsRebroadcasterEnabled() && fromChannelID != 0 && toChannelID != 0)
-	{
-		if (routeChannelID == 0)
-		{
-			// If the routeChannelID is 0, it means the destination is effectively unreachable.
-			if ((gEnv->bHostMigrating && gEnv->bMultiplayer))
-			{
-				// There's a host migration event in progress; ignore this packet
-				return true;
-			}
-			else
-			{
-				se = eSE_Unrecoverable;
-			}
-		}
-	}
-
-	if (routeChannelID != toChannelID)
-	{
-		if (se != eSE_Unrecoverable)
-		{
-			if (Frame_HeaderToID[pData[0]] == eH_Rebroadcaster)
-			{
-				// This is a rebroadcaster packet en-route, so bump the hop count
-				SRebroadcasterFrameHeader* pHeader = reinterpret_cast<SRebroadcasterFrameHeader*>(const_cast<uint8*>(pData));
-				++pHeader->hopCount;
-			}
-			else
-			{
-				// Make sure there's enough space in the packet buffer to prepend a rebroadcaster frame header
-				STATIC_CHECK(RESERVED_PACKET_BYTES >= sizeof(SRebroadcasterFrameHeader), INSUFFICIENT_RESERVED_PACKET_BYTES);
-
-				// Can't send directly so wrap in a rebroadcaster frame
-				SRebroadcasterFrameHeader* pHeader = reinterpret_cast<SRebroadcasterFrameHeader*>(&m_rebroadcasterPacketBuffer);
-				pHeader->frameHeaderID = Frame_IDToHeader[eH_Rebroadcaster]; // Frame header id signifying a rebroadcaster packet
-				pHeader->hopCount = 1;
-				pHeader->sourceID = fromChannelID;    // where the packet is originally from
-				pHeader->destinationID = toChannelID; // where the packet should ultimately end up
-
-				// Prevent potential buffer overrun
-				size_t copySize = nSize < (sizeof(m_rebroadcasterPacketBuffer) - sizeof(SRebroadcasterFrameHeader)) ? nSize : 0;
-				if (copySize > 0)
-				{
-					memcpy(m_rebroadcasterPacketBuffer + sizeof(SRebroadcasterFrameHeader), pData, nSize);
-					nSize += sizeof(SRebroadcasterFrameHeader);
-				}
-				else
-				{
-					NetWarning("Rebroadcaster: packet too large to reroute - discarding");
-					return true;
-				}
-			}
-
-			TNetAddress rerouteTo;
-			if (pRebroadcaster && pRebroadcaster->GetAddressForChannelID(routeChannelID, rerouteTo))
-			{
-				se = m_pSocketMain->Send(m_rebroadcasterPacketBuffer, nSize, rerouteTo);
-
-	#if NETWORK_REBROADCASTER_LOG
-				static CTimeValue lastUpdate(0.0f);
-				if (g_time - lastUpdate > 0.5f)
-				{
-					NetQuickLog(false, 5, "Rebroadcaster: packet rerouted on machine %i: originally from %i to %i; routing via %i", fromChannelID, fromChannelID, toChannelID, routeChannelID);
-					lastUpdate = g_time;
-				}
-	#endif
-			}
-			else
-			{
-				NetWarning("Rebroadcaster: *WARNING* unable to determine address for channel id %i in CNetNub::SendTo() - packet discarded", routeChannelID);
-			}
-
-		}
-	}
-	else
-#endif
-	{
-		se = m_pSocketMain->Send(pData, nSize, to);
-	}
+	se = m_pSocketMain->Send(pData, nSize, to);
 
 	if (se != eSE_Ok)
 	{
@@ -1147,92 +1049,6 @@ void CNetNub::OnPacket(const TNetAddress& from, const uint8* pData, uint32 nLeng
 			ProcessAlreadyConnecting(from, pData, nLength);
 			processed = true;
 			break;
-#if NETWORK_REBROADCASTER
-		case eH_Rebroadcaster:
-			{
-				// Intercept rebroadcaster header and redirect as appropriate
-				const SRebroadcasterFrameHeader* pHeader = reinterpret_cast<const SRebroadcasterFrameHeader*>(pData);
-				CCryRebroadcaster* pRebroadcaster = NULL;
-				CCryLobby* pLobby = (CCryLobby*)CCryLobby::GetLobby();
-				if (pLobby)
-				{
-					pRebroadcaster = pLobby->GetRebroadcaster();
-				}
-
-				TNetChannelID localChannelID;
-				if (pRebroadcaster)
-				{
-					localChannelID = pRebroadcaster->GetLocalChannelID();
-				}
-
-				if (pHeader->destinationID != localChannelID)
-				{
-					if (CNetwork::Get()->IsRebroadcasterEnabled())
-					{
-						// This packet still needs forwarding
-						TNetChannelID routeChannelID = 0;
-						if (pRebroadcaster)
-						{
-							routeChannelID = pRebroadcaster->FindRoute(localChannelID, pHeader->destinationID);
-						}
-
-						if (routeChannelID != 0)
-						{
-							TNetAddress to;
-							if (pRebroadcaster && pRebroadcaster->GetAddressForChannelID(routeChannelID, to))
-							{
-								SendTo(pData, nLength, to);
-
-	#if NETWORK_REBROADCASTER_LOG
-								static CTimeValue lastUpdate(0.0f);
-								if (g_time - lastUpdate > 0.5f)
-								{
-									NetQuickLog(false, 5, "Rebroadcaster: packet rerouted on machine %i: originally from %i to %i; routing %s %i", localChannelID, pHeader->sourceID, pHeader->destinationID, ((routeChannelID == pHeader->destinationID) ? "to" : "via"), routeChannelID);
-									lastUpdate = g_time;
-								}
-	#endif
-							}
-							else
-							{
-								NetWarning("Rebroadcaster: *WARNING* unable to determine address for channel id %i in CNetNub::OnPacket() (forwarding) - packet discarded", routeChannelID);
-							}
-						}
-					}
-
-					// If the packet can't be routed on for some reason, simply consume it here
-				}
-				else
-				{
-					// Fudge the 'from' address to look like it came directly from the source
-					TNetAddress source;
-					if (pRebroadcaster && pRebroadcaster->GetAddressForChannelID(pHeader->sourceID, source))
-					{
-	#if NETWORK_REBROADCASTER_LOG
-						static CTimeValue lastUpdate(0.0f);
-						if (g_time - lastUpdate > 0.5f)
-						{
-							NetQuickLog(false, 5, "Rebroadcaster: packet arrived on machine %i after %i hops: originally from %i", pHeader->destinationID, pHeader->hopCount, pHeader->sourceID);
-							lastUpdate = g_time;
-						}
-	#endif
-
-						// Strip the rebroadcaster header
-						pData += sizeof(SRebroadcasterFrameHeader);
-						nLength -= sizeof(SRebroadcasterFrameHeader);
-
-						OnPacket(source, pData, nLength);
-					}
-					else
-					{
-						NetWarning("Rebroadcaster: *WARNING* unable to determine address for channel id %i in CNetNub::OnPacket() (forwarding) - packet discarded", pHeader->sourceID);
-					}
-
-				}
-
-				processed = true;
-			}
-			break;
-#endif
 		}
 
 	if (!processed)
@@ -1293,43 +1109,6 @@ void CNetNub::ProcessDisconnect(const TNetAddress& from, const uint8* pData, uin
 	CNetChannel* pNetChannel = GetChannelForIP(from, 0);
 	uint8 cause = eDC_Unknown;
 	string reason;
-
-#if NETWORK_REBROADCASTER
-	if (pNetChannel)
-	{
-		CCryRebroadcaster* pRebroadcaster = NULL;
-		CCryLobby* pLobby = (CCryLobby*)CCryLobby::GetLobby();
-		if (pLobby)
-		{
-			pRebroadcaster = pLobby->GetRebroadcaster();
-		}
-
-		if (pRebroadcaster)
-		{
-			pRebroadcaster->DeleteConnection(pNetChannel, true, gEnv->bServer);
-		}
-	}
-#endif
-
-#if NETWORK_HOST_MIGRATION
-	// Call matchmaking here as this triggers off the host migration process.
-	// If this is not done before CNetChannel::Die() then host migration will
-	// fail as the client will be disconnected before his state can be cached.
-	if (pNetChannel)
-	{
-		bool autoMigrate = m_pNetwork->IsHostMigrationEnabled();
-		if (autoMigrate)
-		{
-			ICryMatchMakingPrivate* pMatchmaking = (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking();
-			if (pMatchmaking)
-			{
-				CryLog("CNetNub::ProcessDisconnect calling SessionDisconnectRemoteConnection");
-
-				pMatchmaking->SessionDisconnectRemoteConnectionFromNub(pNetChannel->GetSession(), (EDisconnectionCause)pData[1]);
-			}
-		}
-	}
-#endif
 
 	if (nSize < 2)
 	{
@@ -1442,22 +1221,6 @@ void CNetNub::DisconnectChannel(EDisconnectionCause cause, const TNetAddress* pF
 		pChannel = GetChannelForIP(*pFrom, 0);
 	}
 
-#if NETWORK_REBROADCASTER
-	if (pChannel)
-	{
-		CCryRebroadcaster* pRebroadcaster = NULL;
-		CCryLobby* pLobby = (CCryLobby*)CCryLobby::GetLobby();
-		if (pLobby)
-		{
-			pRebroadcaster = pLobby->GetRebroadcaster();
-		}
-
-		if (pRebroadcaster)
-		{
-			pRebroadcaster->DeleteConnection(pChannel, false, gEnv->bServer);
-		}
-	}
-#endif
 	if (pChannel)
 	{
 		pChannel->Destroy(cause, reason);
@@ -2086,21 +1849,6 @@ void CNetNub::GC_CreateChannel(CNetChannel* pNetChannel, string connectionString
 		delete pNetChannel;
 		return;
 	}
-
-#if NETWORK_REBROADCASTER
-	if (reinterpret_cast<INetChannel*>(res.pChannel) == pNetChannel)
-	{
-		// This is a rebroadcaster channel
-		res.pChannel = NULL;
-	}
-
-	if (!gEnv->bServer)
-	{
-		// Pure clients need to associate the INetChannel* with the address stored
-		// in the rebroadcaster mesh (different on each client)
-		CNetwork::Get()->AddRebroadcasterConnection(pNetChannel, 0);
-	}
-#endif
 
 	pNetChannel->Init(this, res.pChannel);
 

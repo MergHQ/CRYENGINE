@@ -882,19 +882,6 @@ struct INetwork
 	virtual SNetProfileStackEntry* NpGetNullProfile() = 0;
 
 	/////////////////////////////////////////////////////////////////////////////
-	// Rebroadcaster.
-
-	//! IsRebroadcasterEnabled.
-	//! Informs the caller if the rebroadcaster is enabled or not.
-	virtual bool IsRebroadcasterEnabled(void) const = 0;
-
-	//! Adds a connection to the rebroadcaster mesh.
-	//! \param pChannel   Pointer to the channel being added.
-	//! \param channelID  Game side channel ID associated with pChannel (if known).
-	virtual void AddRebroadcasterConnection(INetChannel* pChannel, TNetChannelID channelID) = 0;
-	/////////////////////////////////////////////////////////////////////////////
-
-	/////////////////////////////////////////////////////////////////////////////
 	// Host Migration.
 	virtual void EnableHostMigration(bool bEnabled) = 0;
 	virtual bool IsHostMigrationEnabled(void) = 0;
@@ -1672,7 +1659,6 @@ struct INetChannel : public INetMessageSink
 	virtual void            SetChannelMask(ChannelMaskType newMask) = 0;
 	virtual void            SetClient(INetContext* pNetContext) = 0;
 	virtual void            SetServer(INetContext* pNetContext) = 0;
-	virtual void            SetPeer(INetContext* pNetContext) = 0;
 
 	//! Sets/resets the server password.
 	//! \param password New password string; will be checked at every context change if the length > 0.

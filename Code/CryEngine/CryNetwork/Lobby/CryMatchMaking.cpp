@@ -1080,16 +1080,6 @@ void CCryMatchMaking::FreeSessionHandle(CryLobbySessionHandle h)
 		}
 	}
 
-	#if NETWORK_REBROADCASTER
-	// There are no sessions active so reset the master enable
-	// switch on the Rebroadcaster so it can be used in the next
-	// session if required
-	CCryRebroadcaster* pRebroadcaster = m_lobby->GetRebroadcaster();
-	if (pRebroadcaster)
-	{
-		pRebroadcaster->Reset();
-	}
-	#endif
 }
 
 CryMatchMakingConnectionID CCryMatchMaking::AddRemoteConnection(CryLobbySessionHandle h, CryLobbyConnectionID connectionID, SCryMatchMakingConnectionUID uid, uint32 numUsers)
