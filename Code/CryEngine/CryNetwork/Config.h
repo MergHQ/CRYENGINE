@@ -291,12 +291,8 @@
 //   2 = synchronize files from server *IF* in devmode
 #define SERVER_FILE_SYNC_MODE     0
 
-#define NETWORK_REBROADCASTER     (0)
-#define NETWORK_REBROADCASTER_LOG (0)
-#if NETWORK_REBROADCASTER
-	#error Rebroadcaster unsupported at this time
-#endif
-
+// vladimirsi: Host migration ultimate flag. It belongs in the CryLobby now
+// and will be moved there in the //ce/task_lobby_extraction stream.
 #if PC_CONSOLE_NET_COMPATIBLE
 	#define NETWORK_HOST_MIGRATION (1)
 #else
@@ -396,7 +392,6 @@
 	#undef LOG_BREAKABILITY
 	#undef LOG_ENTITYID_ERRORS
 	#undef LOG_MESSAGE_DROPS
-	#undef NETWORK_REBROADCASTER_LOG
 	#undef ENABLE_NETWORK_MEM_INFO
 	#undef ENABLE_SERIALIZATION_LOGGING
 
@@ -461,7 +456,6 @@
 	#define LOG_BREAKABILITY                           0
 	#define LOG_ENTITYID_ERRORS                        0
 	#define LOG_MESSAGE_DROPS                          0
-	#define NETWORK_REBROADCASTER_LOG                  (0)
 	#define ENABLE_SERIALIZATION_LOGGING               0
 
 #endif

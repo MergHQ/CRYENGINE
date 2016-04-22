@@ -41,7 +41,6 @@
 
 #include "Config.h"
 #include "ICryLobbyPrivate.h"
-#include "CryRebroadcaster.h"
 #include <CryLobby/CryLobbyPacket.h>
 #include "LobbyCVars.h"
 
@@ -530,8 +529,6 @@ public:
 	void                        LockToGameMutex()      { m_safetyToGameMutex.Lock(); }
 	void                        UnlockToGameMutex()    { m_safetyToGameMutex.Unlock(); }
 
-	CCryRebroadcaster*          GetRebroadcaster(void) { return m_pRebroadcaster; }
-
 	uint32                      TimeSincePacketInMS(CryLobbyConnectionID c) const;
 	void                        ForceTimeoutConnection(CryLobbyConnectionID c);
 	void                        SetServicePacketEnd(ECryLobbyService service, uint32 end) { m_servicePacketEnd[service] = end; CalculatePacketTypeEncoding(); }
@@ -810,7 +807,6 @@ private:
 	CWorkQueue                    m_toGameQueue;
 	CWorkQueue                    m_fromGameQueue;
 
-	CCryRebroadcaster*            m_pRebroadcaster;
 	CryLobbyMutex                 m_mutex;
 	CryLobbyMutex                 m_safetyToGameMutex;
 	CryLobbyConfigurationCallback m_configCB;   // allows platform specific configuration to be requested by any attached service

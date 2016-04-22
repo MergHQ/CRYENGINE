@@ -761,23 +761,6 @@ INetNub* CNetwork::CreateNub(const char* address, IGameNub* pGameNub,
 		return NULL;
 	}
 
-#if NETWORK_REBROADCASTER
-	CCryRebroadcaster* pRebroadcaster = NULL;
-	CCryLobby* pLobby = (CCryLobby*)CCryLobby::GetLobby();
-	if (pLobby)
-	{
-		pRebroadcaster = pLobby->GetRebroadcaster();
-	}
-
-	if (pRebroadcaster != NULL)
-	{
-		// Rebroadcaster uses the first nub created (game server nub on the server and game client nub on subsequent clients)
-		// This is necessary as these nubs are the only nubs that can have external communication (the game client nub that's
-		// created on the server is for local datagrams only and will silently consume non-local traffic).
-		pRebroadcaster->SetNetNub(pNub);
-	}
-#endif
-
 	AddMember(pNub);
 	CNetwork::Get()->WakeThread();
 	return pNub;
@@ -2091,68 +2074,14 @@ bool CNetwork::ConvertAddr(const TNetAddress& addrIn, CRYSOCKADDR* pSockAddr, in
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Rebroadcaster
-bool CNetwork::IsRebroadcasterEnabled(void) const
-{
-	bool enabled = false;
-
-#if NETWORK_REBROADCASTER
-	CCryRebroadcaster* pRebroadcaster = NULL;
-	CCryLobby* pLobby = (CCryLobby*)CCryLobby::GetLobby();
-	if (pLobby)
-	{
-		pRebroadcaster = pLobby->GetRebroadcaster();
-	}
-
-	if (pRebroadcaster)
-	{
-		enabled = pRebroadcaster->IsEnabled();
-	}
-#endif
-
-	return enabled;
-}
-
-void CNetwork::AddRebroadcasterConnection(INetChannel* pChannel, TNetChannelID channelID)
-{
-#if NETWORK_REBROADCASTER
-	CCryRebroadcaster* pRebroadcaster = NULL;
-	CCryLobby* pLobby = (CCryLobby*)CCryLobby::GetLobby();
-	if (pLobby)
-	{
-		pRebroadcaster = pLobby->GetRebroadcaster();
-	}
-
-	if (pRebroadcaster)
-	{
-		pRebroadcaster->AddConnection(pChannel, channelID);
-	}
-#endif
-}
-/////////////////////////////////////////////////////////////////////////////
-
-/////////////////////////////////////////////////////////////////////////////
 // Host Migration
 void CNetwork::EnableHostMigration(bool bEnabled)
 {
-#if NETWORK_HOST_MIGRATION
-	if (gEnv->pLobby)
-	{
-		((ICryLobbyPrivate*)gEnv->pLobby)->GetCVars().netAutoMigrateHost = (bEnabled) ? 1 : 0;
-	}
-#endif
 }
 
 bool CNetwork::IsHostMigrationEnabled(void)
 {
-	bool enabled = false;
-#if NETWORK_HOST_MIGRATION
-	if (gEnv->pLobby)
-	{
-		enabled = (((ICryLobbyPrivate*)gEnv->pLobby)->GetCVars().netAutoMigrateHost != 0);
-	}
-#endif
-	return enabled;
+	return false;
 }
 
 void CNetwork::TerminateHostMigration(CrySessionHandle gh)
