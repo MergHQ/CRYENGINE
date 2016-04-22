@@ -265,7 +265,7 @@
 		{
 			"long_form"      : "--run-bootstrap-automatically",
 			"attribute"      : "auto_run_bootstrap",
-			"default_value"  : "True",
+			"default_value"  : "True", 
 			"description"    : "Should Bootstrap be executed by WAF (based on a timestamp file)"
 		},
 		{
