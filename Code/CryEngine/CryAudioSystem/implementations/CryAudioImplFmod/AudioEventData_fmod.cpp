@@ -104,52 +104,55 @@ void CAudioEvent_fmod::TrySetEnvironment(CAudioEnvironment_fmod const* const pEn
 {
 	if (m_pInstance != nullptr && m_pMasterTrack != nullptr)
 	{
-		int numDSPs = 0;
-		FMOD_RESULT fmodResult = m_pMasterTrack->getNumDSPs(&numDSPs);
-		ASSERT_FMOD_OK;
-
-		fmodResult = pEnvironment->pBus->lockChannelGroup();
-		ASSERT_FMOD_OK;
 		FMOD::ChannelGroup* pChannelGroup = nullptr;
-		fmodResult = pEnvironment->pBus->getChannelGroup(&pChannelGroup);
-		ASSERT_FMOD_OK;
-		FMOD::DSP* pReturn = nullptr;
-		fmodResult = pChannelGroup->getDSP(FMOD_CHANNELCONTROL_DSP_TAIL, &pReturn);
-		ASSERT_FMOD_OK;
-		int returnId1 = FMOD_IMPL_INVALID_INDEX;
-		fmodResult = pReturn->getParameterInt(FMOD_DSP_RETURN_ID, &returnId1, nullptr, 0);
+		FMOD_RESULT fmodResult = pEnvironment->pBus->getChannelGroup(&pChannelGroup);
 		ASSERT_FMOD_OK;
 
-		for (int i = 0; i < numDSPs; ++i)
+		if (pChannelGroup != nullptr)
 		{
-			FMOD::DSP* pSend = nullptr;
-			fmodResult = m_pMasterTrack->getDSP(i, &pSend);
+			FMOD::DSP* pReturn = nullptr;
+			fmodResult = pChannelGroup->getDSP(FMOD_CHANNELCONTROL_DSP_TAIL, &pReturn);
 			ASSERT_FMOD_OK;
 
-			if (pSend != nullptr)
+			if (pReturn != nullptr)
 			{
-				FMOD_DSP_TYPE dspType;
-				fmodResult = pSend->getType(&dspType);
+				int returnId1 = FMOD_IMPL_INVALID_INDEX;
+				fmodResult = pReturn->getParameterInt(FMOD_DSP_RETURN_ID, &returnId1, nullptr, 0);
 				ASSERT_FMOD_OK;
 
-				if (dspType == FMOD_DSP_TYPE_SEND)
+				int numDSPs = 0;
+				fmodResult = m_pMasterTrack->getNumDSPs(&numDSPs);
+				ASSERT_FMOD_OK;
+
+				for (int i = 0; i < numDSPs; ++i)
 				{
-					int returnId2 = FMOD_IMPL_INVALID_INDEX;
-					fmodResult = pSend->getParameterInt(FMOD_DSP_RETURN_ID, &returnId2, nullptr, 0);
+					FMOD::DSP* pSend = nullptr;
+					fmodResult = m_pMasterTrack->getDSP(i, &pSend);
 					ASSERT_FMOD_OK;
 
-					if (returnId1 == returnId2)
+					if (pSend != nullptr)
 					{
-						fmodResult = pSend->setParameterFloat(FMOD_DSP_SEND_LEVEL, value);
+						FMOD_DSP_TYPE dspType;
+						fmodResult = pSend->getType(&dspType);
 						ASSERT_FMOD_OK;
-						break;
+
+						if (dspType == FMOD_DSP_TYPE_SEND)
+						{
+							int returnId2 = FMOD_IMPL_INVALID_INDEX;
+							fmodResult = pSend->getParameterInt(FMOD_DSP_RETURN_ID, &returnId2, nullptr, 0);
+							ASSERT_FMOD_OK;
+
+							if (returnId1 == returnId2)
+							{
+								fmodResult = pSend->setParameterFloat(FMOD_DSP_SEND_LEVEL, value);
+								ASSERT_FMOD_OK;
+								break;
+							}
+						}
 					}
 				}
 			}
 		}
-
-		fmodResult = pEnvironment->pBus->unlockChannelGroup();
-		ASSERT_FMOD_OK;
 	}
 	else
 	{
