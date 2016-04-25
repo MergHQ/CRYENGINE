@@ -115,27 +115,31 @@ struct pixout_RenderAtmosphere
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Shader flags
 
-// _RT_SAMPLE0        Low spec mode
-// _RT_SAMPLE1        Global environment map is available
-// _RT_SAMPLE2        Troposphere is enabled
-// _RT_SAMPLE3        Volumetric lightmaps enabled
-// _RT_SAMPLE4        ON - diffuse compuations, OFF - specular
-// _RT_SAMPLE5        Albedo and normals in use
-// _RT_HW_PCF_COMPARE Half-res kernel
-// _RT_LIGHT_TEX_PROJ Simple RSM sun
-// _RT_POINT_LIGHT		Simple RSM point lights
+// _RT_SAMPLE0									Low spec mode
+// _RT_SAMPLE1									Global environment map is available
+// _RT_SAMPLE2									Troposphere is enabled
+// _RT_SAMPLE3									Volumetric lightmaps enabled
+// _RT_SAMPLE4									ON - diffuse compuations, OFF - specular
+// _RT_SAMPLE5									Albedo and normals in use
+// _RT_HW_PCF_COMPARE						Half-res kernel
+// _RT_LIGHT_TEX_PROJ						Simple RSM sun
+// _RT_POINT_LIGHT							Simple RSM point lights
 // _RT_BLEND_WITH_TERRAIN_COLOR SS depth tracing
-// _RT_MOTION_BLUR    Dual tracing for multi-GPU
-// _RT_SPRITE					Occlusion capsules
+// _RT_MOTION_BLUR							Dual tracing for multi-GPU
+// _RT_SPRITE										Occlusion capsules
+// _RT_AMBIENT_OCCLUSION				Sun RSM Inject in modes 1-2
+// _RT_VOLUMETRIC_FOG						Use RSM albedo colors and normals
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions
 
-float3 GetDiffuseKernel(out int GI_DIFFUSE_KERNEL_TILING, const int nElemId, const bool bFullSphere = true)
+float3 GetDiffuseKernel(out int GI_DIFFUSE_KERNEL_TILING, int nElemId, const bool bFullSphere = true)
 {
 	if (IsDiffuseMode())
 	{
 		const int nGiDiffuseSampleNum = 512;
+		nElemId = nElemId & (nGiDiffuseSampleNum - 1);
+
 		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
 		if (bFullSphere)
 		{
@@ -151,6 +155,8 @@ float3 GetDiffuseKernel(out int GI_DIFFUSE_KERNEL_TILING, const int nElemId, con
 	else
 	{
 		const int nGiDiffuseSampleNum = 128;
+		nElemId = nElemId & (nGiDiffuseSampleNum - 1);
+
 		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
 		const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_128;
 		return arrGiDiffuseKernel[nElemId];
@@ -1077,28 +1083,31 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 	int y = nXY.y&(GI_DIFFUSE_KERNEL_TILING - (int)1);
 	int i = x*GI_DIFFUSE_KERNEL_TILING + y;
 
+	const int nFramesNum = SVO_TargetResScale.w ? 1 : 2;
+
 #if %_RT_MOTION_BLUR
 	const int nPassesNum = 2;
 #else
-	const int nPassesNum = 1;
+	const int nPassesNum = IsDiffuseMode() ? 1 : 2;
 #endif
 
 	for(int p=0; p<nPassesNum; p++)
 	{
-		int s = (nPassesNum == 1) ? (int(SVO_FrameIdByte.x)&1) : (p);
+		int s = (nFramesNum == 2) ? (int(SVO_FrameIdByte.x) & 1) : 0;
+		s += p * nFramesNum;
 
 		Ray r;
 
 		const int nGiDiffuseSampleNum = GI_DIFFUSE_KERNEL_TILING*GI_DIFFUSE_KERNEL_TILING * 2;
-		float3 kern = GetDiffuseKernel(GI_DIFFUSE_KERNEL_TILING, i + (s/**2 + p*/)*nGiDiffuseSampleNum / 2);
+		float3 kern = GetDiffuseKernel(GI_DIFFUSE_KERNEL_TILING, i + s * nGiDiffuseSampleNum / nFramesNum / nPassesNum);
 
 		{ // dual kernel
 			half3x3 rotMat = 0;
 			GetRotationV0(vFocus, rotMat);
 			bool bRotate = dot(vFocus, float3(0, 0, 1)) > -0.999f;
-			float3 kernOpa = GetDiffuseKernel(GI_DIFFUSE_KERNEL_TILING, i + (s/**2 + p*/)*nGiDiffuseSampleNum / 2, false);
+			float3 kernOpa = GetDiffuseKernel(GI_DIFFUSE_KERNEL_TILING, i + s * nGiDiffuseSampleNum / nFramesNum / nPassesNum, false);
 
-			if ((nPassesNum == 1) && IsDiffuseMode() && !SVO_TargetResScale.w) // TODO: use rotation instead of flip
+			if (nFramesNum == 2) // TODO: use rotation instead of flip
 			{
 				if(int(SVO_FrameIdByte.x/2)&1)
 					kernOpa.x = -kernOpa.x;
@@ -1129,7 +1138,7 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 			//fAverSmoothness = lerp(fAverSmoothness, 1, pow(1 - dot(-normalize(IN.CamVec), vNor0), 2));
 
 			power = exp2(10.h * fAverSmoothness + 1.h);
-			kern += vFocus * power / 25;
+			kern += vFocus *power / 25;
 		}
 
 		r.direction = normalize(kern);
@@ -1695,7 +1704,8 @@ void ComputeDirectDynamicLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupT
 				{
 					ProcessTiledLights(vRGB, vPos0, 0, voxAreaMin.w / VOX_BRICK_TEXRES);
 
-#if !%_RT_SAMPLE0
+#if %_RT_AMBIENT_OCCLUSION
+					// additional sun RSM inject
 					if (voxAreaMin.w <= VOX_MIN_NODE_SIZE*SVO_RsmSunDir.w)
 					{
 						if (SVO_RsmSunCol.r || SVO_RsmSunCol.g || SVO_RsmSunCol.b)
@@ -1717,7 +1727,7 @@ void ComputeDirectDynamicLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupT
 							}
 						}
 					}
-#endif // _RT_SAMPLE0
+#endif // _RT_AMBIENT_OCCLUSION
 				}
 
 				{
@@ -2043,7 +2053,7 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 	for (int x = -1; x <= 1; x += 2) for (int y = -1; y <= 1; y += 2)
 	{
 		const float2 tc1 = IN.baseTC.xy + float2(x, y) * SVO_SrcPixSize.xy / 2;
-		const float4 tc = float4(tc1 + 0.5f / PS_ScreenSize.xy, 0, 0);
+		const float4 tc = float4(tc1, 0, 0);
 
 		const float4 vSampleDiff_RGB_Min = tex2Dlod(sceneRgbSamplerMin, tc);
 		const float4 vSampleDiff_ALD_Min = tex2Dlod(sceneAldSamplerMin, tc);
