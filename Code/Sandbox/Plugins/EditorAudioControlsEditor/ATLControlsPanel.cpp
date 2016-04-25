@@ -461,7 +461,7 @@ void CATLControlsPanel::CreateSwitchControl()
 void CATLControlsPanel::CreateStateControl()
 {
 	QStandardItem* pSelectedItem = GetCurrentItem();
-	if (pSelectedItem && IsValidParent(pSelectedItem, eACEControlType_State))
+	if (pSelectedItem && m_pTreeModel->IsValidParent(pSelectedItem->index(), eACEControlType_State))
 	{
 		CATLControl* pControl = m_pTreeModel->CreateControl(eACEControlType_State, "state", GetControlFromItem(pSelectedItem));
 		if (pControl)
@@ -531,23 +531,6 @@ QStandardItem* CATLControlsPanel::CreateFolder()
 	return pFolder;
 }
 
-bool CATLControlsPanel::IsValidParent(QStandardItem* pParent, const EACEControlType eControlType)
-{
-	if (pParent->data(eDataRole_Type) == eItemType_Folder)
-	{
-		return eControlType != eACEControlType_State;
-	}
-	else if (eControlType == eACEControlType_State)
-	{
-		CATLControl* pControl = GetControlFromItem(pParent);
-		if (pControl)
-		{
-			return pControl->GetType() == eACEControlType_Switch;
-		}
-	}
-	return false;
-}
-
 QStandardItem* CATLControlsPanel::AddControl(CATLControl* pControl)
 {
 	if (pControl)
@@ -556,7 +539,7 @@ QStandardItem* CATLControlsPanel::AddControl(CATLControl* pControl)
 		QStandardItem* pParent = GetCurrentItem();
 		if (pParent)
 		{
-			while (pParent && !IsValidParent(pParent, pControl->GetType()))
+			while (pParent && !m_pTreeModel->IsValidParent(pParent->index(), pControl->GetType()))
 			{
 				pParent = pParent->parent();
 			}
@@ -634,7 +617,6 @@ void CATLControlsPanel::ShowControlsContextMenu(const QPoint& pos)
 	pAction = new QAction(tr("Collapse All"), this);
 	connect(pAction, SIGNAL(triggered()), m_pATLControlsTree, SLOT(collapseAll()));
 	contextMenu.addAction(pAction);
-
 	contextMenu.exec(m_pATLControlsTree->mapToGlobal(pos));
 }
 
@@ -758,79 +740,39 @@ void CATLControlsPanel::HandleExternalDropEvent(QDropEvent* pDropEvent)
 					IAudioSystemItem* pAudioSystemControl = pAudioSystemEditorImpl->GetControl(id);
 					if (pAudioSystemControl)
 					{
-						const EACEControlType eControlType = pAudioSystemEditorImpl->ImplTypeToATLType(pAudioSystemControl->GetType());
+						const EACEControlType controlType = pAudioSystemEditorImpl->ImplTypeToATLType(pAudioSystemControl->GetType());
 
-						// If dropped outside any folder, create a folder at the root to contain the new control
-						const QModelIndex index = m_pProxyModel->mapToSource(m_pATLControlsTree->indexAt(pDropEvent->pos()));
-						QStandardItem* pTargetItem = m_pTreeModel->itemFromIndex(index);
-						if (!pTargetItem)
+						// Find a suitable parent for the new control
+						QModelIndex index = m_pProxyModel->mapToSource(m_pATLControlsTree->indexAt(pDropEvent->pos()));
+						while (index.isValid() && !m_pTreeModel->IsValidParent(index, controlType))
 						{
-							pTargetItem = m_pTreeModel->CreateFolder(nullptr, "new folder");
+							index = index.parent();
 						}
 
-						// Find a suitable parent for the dropped control
-						CATLControl* pATLParent = nullptr;
-						CATLControl* pTargetControl = GetControlFromItem(pTargetItem);
-						if (pTargetControl && pTargetControl->GetType() == eControlType)
+						if (index.isValid())
 						{
-							// If dropped in a control of the same type, we can assume the parent is valid, so we select it
-							pTargetItem = pTargetItem->parent();
-							pATLParent = GetControlFromItem(pTargetItem);
-						}
-						else
-						{
-							// If the dragged control has a parent, need to find a suitable parent on the ATL side first
-							const IAudioSystemItem* pAudioControlParent = pAudioSystemControl->GetParent();
-							if (pAudioControlParent && pAudioControlParent->GetType() != AUDIO_SYSTEM_INVALID_TYPE)
+							QStandardItem* pTargetItem = m_pTreeModel->itemFromIndex(index);
+							if (pTargetItem)
 							{
-								// Is the place where item was dropped compatible with the parent we are looking for
-								if (IsValidParent(pTargetItem, eControlType))
+								// Create the new control and connect it to the one dragged in externally
+								string controlName = pAudioSystemControl->GetName();
+								if (controlType == eACEControlType_Preload)
 								{
-									pATLParent = GetControlFromItem(pTargetItem);
+									PathUtil::RemoveExtension(controlName);
 								}
-								else
+
+								CATLControl* pTargetControl = m_pTreeModel->CreateControl(controlType, controlName, GetControlFromItem(pTargetItem));
+								if (pTargetControl)
 								{
-									// If place where item was dropped is not valid as a parent, we have to look for a valid control where to create one that is
-									const EACEControlType eParentType = pAudioSystemEditorImpl->ImplTypeToATLType(pAudioControlParent->GetType());
-									QStandardItem* pParent = pTargetItem;
-									while (pParent && !IsValidParent(pParent, eParentType))
+									ConnectionPtr pAudioConnection = pAudioSystemEditorImpl->CreateConnectionToControl(pTargetControl->GetType(), pAudioSystemControl);
+									if (pAudioConnection)
 									{
-										pParent = pParent->parent();
+										pTargetControl->AddConnection(pAudioConnection);
 									}
 
-									if (pParent)
-									{
-										pATLParent = m_pTreeModel->CreateControl(eParentType, pAudioControlParent->GetName());
-										pTargetItem = m_pTreeModel->AddControl(pATLParent, pParent);
-									}
+									pTargetItem = m_pTreeModel->AddControl(pTargetControl, pTargetItem);
+									SelectItem(pTargetItem);
 								}
-							}
-						}
-
-						if (pTargetItem)
-						{
-							while (pTargetItem && !IsValidParent(pTargetItem, eControlType))
-							{
-								pTargetItem = pTargetItem->parent();
-							}
-
-							// Create the new control and connect it to the one dragged in externally
-							string sControlName = pAudioSystemControl->GetName();
-							if (eControlType == eACEControlType_Preload)
-							{
-								PathUtil::RemoveExtension(sControlName);
-							}
-							CATLControl* pTargetControl = m_pTreeModel->CreateControl(eControlType, sControlName, pATLParent);
-							if (pTargetControl)
-							{
-								ConnectionPtr pAudioConnection = pAudioSystemEditorImpl->CreateConnectionToControl(pTargetControl->GetType(), pAudioSystemControl);
-								if (pAudioConnection)
-								{
-									pTargetControl->AddConnection(pAudioConnection);
-								}
-								pTargetItem = m_pTreeModel->AddControl(pTargetControl, pTargetItem);
-
-								SelectItem(pTargetItem);
 							}
 						}
 					}

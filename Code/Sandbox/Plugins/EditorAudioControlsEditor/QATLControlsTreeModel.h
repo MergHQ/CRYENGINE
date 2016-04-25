@@ -30,6 +30,7 @@ public:
 	void           RemoveItems(QModelIndexList indexList);
 
 	void           SetItemAsDirty(QStandardItem* pItem);
+	bool           IsValidParent(const QModelIndex& parent, const EACEControlType controlType) const;
 
 private:
 	void           DeleteInternalData(QModelIndex root);
