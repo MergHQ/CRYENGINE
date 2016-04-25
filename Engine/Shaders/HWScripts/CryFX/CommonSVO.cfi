@@ -1192,14 +1192,20 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 #if %_RT_LIGHT_TEX_PROJ
 				{
 					half3 vSunLight = 0;		
-					float4 vShadTC = mul(SVO_RsmSunShadowProj, float4(r.startpoint.xyz-PS_WorldViewPos.xyz, 1.f));
+					float4 vShadTC = mul(SVO_RsmSunShadowProj, float4(r.startpoint.xyz - PS_WorldViewPos.xyz, 1.f));
 					vShadTC.xy /= vShadTC.w;
-					if(vShadTC.x >= 0 && vShadTC.x <= 1 && vShadTC.y >= 0 && vShadTC.y <= 1 && vShadTC.z <= 1)
+					if (vShadTC.x >= 0 && vShadTC.x <= 1 && vShadTC.y >= 0 && vShadTC.y <= 1 && vShadTC.z <= 1)
 					{
 						float fShadowDepth = tex2Dlod(SVO_RsmSunShadowMap, float4(vShadTC.xy,0,0)).r;
 						vSunLight = (fShadowDepth > vShadTC.z + .0007);
+
+#if %_RT_VOLUMETRIC_FOG
 						half4 vMatColor = tex2Dlod(SVO_RsmSunColorsMap, float4(vShadTC.xy, 0, 0)).rgba;
 						half3 vMatNormal= tex2Dlod(SVO_RsmSunNormalMap, float4(vShadTC.xy,0,0)).rgb;
+#else
+						half4 vMatColor = half4(SvoParamsMisc2.zzz, 0.15f);
+						half3 vMatNormal = 0;
+#endif
 						//vMatColor.xyz = pow(vMatColor.xyz, 1.0/2.2);
 						float fMatIntens = dot(vMatColor.xyz, .333f);
 						vMatColor.xyz += saturate(SvoParamsMisc2.z - fMatIntens);
@@ -1208,12 +1214,14 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 						float fRSM = saturate(1 - (8 / ocNodeSize) * 450 * abs(fShadowDepth - vShadTC.z));
 						vRGBD.a = max(vRGBD.a, fRSM * vMatColor.a);
 
+#if %_RT_VOLUMETRIC_FOG
 						if(dot(vMatNormal, 1) < 0.01)
 							vMatNormal = float3(0,0,1); // terrain
 						else
 							vMatNormal = vMatNormal*2 - 1;
 
 						if(dot(vMatNormal, r.direction) < 0.7)
+#endif
 							vRgbOut.xyz += vRGBD.xyz * lerp(fRSM, vRGBD.a, vOPAC.a==0) * saturate(1-vRgbOut.a);// * fOverDist * (dot( float3(0,0,1), r.direction )<0.8);
 					}
 				}
