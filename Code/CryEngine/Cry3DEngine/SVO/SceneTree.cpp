@@ -1779,7 +1779,6 @@ void CSvoEnv::GetSvoBricksForUpdate(PodArray<I3DEngine::SSvoNodeInfo>& arrNodeIn
 		fCheckVal += GetCVars()->e_svoTI_DiffuseBias * 10;
 		fCheckVal += GetCVars()->e_svoMinNodeSize;
 		fCheckVal += GetCVars()->e_svoMaxNodeSize;
-		fCheckVal += GetCVars()->e_svoTI_LowSpecMode;
 		fCheckVal += (float)(m_fStreamingStartTime < 0);
 		fCheckVal += GetCVars()->e_Sun;
 		static int e_svoTI_Troposphere_Active_Max = 0;

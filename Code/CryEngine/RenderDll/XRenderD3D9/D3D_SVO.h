@@ -119,10 +119,11 @@ protected:
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 	struct SVoxPool
 	{
-		SVoxPool() { nTexId = 0; pUAV = 0; }
+		SVoxPool() { nTexId = 0; pUAV = 0; pSRV = 0; }
 		void Init(ITexture* pTex);
 		int     nTexId;
 		D3DUAV* pUAV;
+		D3DShaderResource* pSRV;
 	};
 
 	SVoxPool vp_OPAC;
@@ -221,6 +222,7 @@ protected:
 	  INIT_SVO_CVAR(float, e_svoTI_MinReflectance);                 \
 	  INIT_SVO_CVAR(int, e_svoTI_DualTracing);                      \
 	  INIT_SVO_CVAR(int, e_svoTI_AnalyticalOccluders);              \
+		INIT_SVO_CVAR(int, e_svoTI_RsmUseColors);											\
 	  // INIT_ALL_SVO_CVARS
 
 	#define INIT_SVO_CVAR(_type, _var) _type _var;
