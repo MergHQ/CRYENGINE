@@ -17,11 +17,13 @@
 
 class IGeneralMemoryHeap;
 
-// These two Macros can be used to allocate memory in the module's memory pool.
-// The first one creates a PTR that stores a new instance of a CLASS, the second one uses a pre-created PTR to save the new instance
-// Both will only execute the constructor if the allocation succeeded
-#define POOL_NEW_CREATE(CLASS, PTR) CLASS * PTR = static_cast<CLASS*>(AUDIO_ALLOCATOR_MEMORY_POOL.Allocate<void*>(sizeof(CLASS), AUDIO_MEMORY_ALIGNMENT, # CLASS)); (PTR == nullptr) ? nullptr : new(PTR) CLASS
-#define POOL_NEW(CLASS, PTR)        PTR = static_cast<CLASS*>(AUDIO_ALLOCATOR_MEMORY_POOL.Allocate<void*>(sizeof(CLASS), AUDIO_MEMORY_ALIGNMENT, # CLASS)); (PTR == nullptr) ? nullptr : new(PTR) CLASS
+// These macros can be used to allocate memory in the module's memory pool.
+// The first one allows for allocating memory of custom size.
+// The second one creates a PTR that stores a new instance of a CLASS, the third one uses a pre-created PTR to save the new instance.
+// Second and third will both only execute the constructor if the allocation succeeded.
+#define POOL_NEW_CUSTOM(CLASS, PTR, NUM) PTR = static_cast<CLASS*>(AUDIO_ALLOCATOR_MEMORY_POOL.Allocate<void*>(sizeof(CLASS) * static_cast<size_t>(NUM), AUDIO_MEMORY_ALIGNMENT, # CLASS));
+#define POOL_NEW_CREATE(CLASS, PTR)      CLASS * PTR = static_cast<CLASS*>(AUDIO_ALLOCATOR_MEMORY_POOL.Allocate<void*>(sizeof(CLASS), AUDIO_MEMORY_ALIGNMENT, # CLASS)); (PTR == nullptr) ? nullptr : new(PTR) CLASS
+#define POOL_NEW(CLASS, PTR)             PTR = static_cast<CLASS*>(AUDIO_ALLOCATOR_MEMORY_POOL.Allocate<void*>(sizeof(CLASS), AUDIO_MEMORY_ALIGNMENT, # CLASS)); (PTR == nullptr) ? nullptr : new(PTR) CLASS
 
 // These two macros are used to destroy the objects allocated in the module's memory pool and free their memory
 // The second one is designed to be used for const pointers
