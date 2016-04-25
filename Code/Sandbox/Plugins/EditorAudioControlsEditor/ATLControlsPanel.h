@@ -47,7 +47,6 @@ private:
 	QStandardItem* GetCurrentItem();
 	CATLControl*   GetControlFromItem(QStandardItem* pItem);
 	CATLControl*   GetControlFromIndex(QModelIndex index);
-	bool           IsValidParent(QStandardItem* pParent, const EACEControlType eControlType);
 
 	void           HandleExternalDropEvent(QDropEvent* pDropEvent);
 

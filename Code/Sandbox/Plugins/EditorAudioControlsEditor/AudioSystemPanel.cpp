@@ -96,7 +96,9 @@ CAudioSystemPanel::CAudioSystemPanel()
 	pTreeView->setModel(m_pModelProxy);
 	pVerticalLayout->addWidget(pTreeView);
 
-	connect(CAudioControlsEditorPlugin::GetImplementationManger(), &CImplementationManager::ImplementationChanged, [&]()
+	// Update the middleware name label.
+	// Note the 'this' ptr being passed as a context variable so that Qt can disconnect this lambda when the object is destroyed (ie. the ACE is closed).
+	connect(CAudioControlsEditorPlugin::GetImplementationManger(), &CImplementationManager::ImplementationChanged, this, [&]()
 		{
 			IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 			if (pAudioImpl)

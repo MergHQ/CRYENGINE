@@ -6,6 +6,7 @@
 #include "QAudioControlTreeWidget.h"
 #include "IEditor.h"
 #include "AudioControlsEditorUndo.h"
+#include "IAudioSystemEditor.h"
 
 #include <QtUtil.h>
 #include <QStandardItem>
@@ -341,27 +342,56 @@ bool QATLTreeModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, 
 	return QStandardItemModel::dropMimeData(pData, action, row, column, parent);
 }
 
+bool QATLTreeModel::IsValidParent(const QModelIndex& parent, const EACEControlType controlType) const
+{
+	if (parent.data(eDataRole_Type) == eItemType_Folder)
+	{
+		return controlType != eACEControlType_State;
+	}
+	else if (controlType == eACEControlType_State)
+	{
+		const CATLControl* const pControl = m_pControlsModel->GetControlByID(parent.data(eDataRole_Id).toUInt());
+		if (pControl)
+		{
+			return pControl->GetType() == eACEControlType_Switch;
+		}
+	}
+	return false;
+}
+
 bool QATLTreeModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const
 {
 	if (!parent.isValid())
 	{
 		return false;
 	}
-	else if (parent.data(eDataRole_Type) == eItemType_AudioControl)
+
+	const IAudioSystemEditor* const pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+	if (pAudioSystem)
 	{
-		// Prevent dropping on switches
-		CID nID = parent.data(eDataRole_Id).toUInt();
-		CATLControl* pControl = m_pControlsModel->GetControlByID(nID);
-		if (pControl)
+		const QString format = QAudioSystemModel::ms_szMimeType;
+		if (pData->hasFormat(format))
 		{
-			EACEControlType eType = pControl->GetType();
-			if (eType == eACEControlType_Switch || eType == eACEControlType_State)
+			QByteArray encoded = pData->data(format);
+			QDataStream stream(&encoded, QIODevice::ReadOnly);
+			while (!stream.atEnd())
 			{
-				return false;
+				CID id;
+				stream >> id;
+				if (id != ACE_INVALID_ID)
+				{
+					const IAudioSystemItem* const pItem = pAudioSystem->GetControl(id);
+					if (pItem)
+					{
+						if (!IsValidParent(parent, pAudioSystem->ImplTypeToATLType(pItem->GetType())))
+						{
+							return false;
+						}
+					}
+				}
 			}
 		}
 	}
-
 	return QStandardItemModel::canDropMimeData(pData, action, row, column, parent);
 }
 }
