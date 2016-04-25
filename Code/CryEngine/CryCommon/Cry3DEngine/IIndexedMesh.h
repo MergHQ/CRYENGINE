@@ -1790,7 +1790,8 @@ public:
 			fGeometricTotal += logf(areas[i]);
 		}
 
-		m_geometricMeanFaceArea = expf(fGeometricTotal / areasCount);
+		// Cannot use expf(), because junk bits in xmm0 sometimes raise an "invalid floating operation"  (msvc 19.00.23026).
+		m_geometricMeanFaceArea = (float)exp((double)fGeometricTotal / areasCount);
 
 		assert(m_geometricMeanFaceArea > 0.0f);
 
