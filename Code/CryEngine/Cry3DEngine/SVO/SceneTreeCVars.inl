@@ -109,7 +109,7 @@ REGISTER_CVAR_AUTO(float, e_svoMinNodeSize, 0, VF_NULL,
 REGISTER_CVAR_AUTO(int, e_svoTI_SkipNonGILights, 0, VF_NULL,
                    "Disable all lights except sun and lights marked to be used for GI\nThis mode ignores all local environment probes and ambient lights");
 REGISTER_CVAR_AUTO(int, e_svoTI_LowSpecMode, 0, VF_NULL,
-                   "Set low spec mode\nValues greater than 0 simplify shaders and scale down internal render targets\nIf set to -2 it will be initialized by value specified in sys_spec_Shading.cfg (on level load)");
+                   "Set low spec mode\nValues greater than 0 scale down internal render targets and simplify shaders\nIf set to -2 it will be initialized by value specified in sys_spec_Shading.cfg (on level load or on spec change)");
 REGISTER_CVAR_AUTO(int, e_svoTI_HalfresKernel, 0, VF_EXPERIMENTAL,
                    "Use less rays for secondary bounce for faster update\nDifference is only visible with number of bounces more than 1");
 REGISTER_CVAR_AUTO(int, e_svoTI_UseLightProbes, 0, VF_NULL,
@@ -123,7 +123,7 @@ REGISTER_CVAR_AUTO(float, e_svoTI_SSAOAmount, 0, VF_NULL,
 REGISTER_CVAR_AUTO(float, e_svoTI_ObjectsMaxViewDistance, 0, VF_NULL,
                    "Voxelize only objects with maximum view distance greater than this value (only big and important objects)\nIf set to 0 - disable this check and also disable skipping of too small triangles\nChanges are visible after full re-voxelization (click <Update geometry> or restart)");
 REGISTER_CVAR_AUTO(int, e_svoTI_SunRSMInject, 0, VF_EXPERIMENTAL,
-                   "Enable additional RSM sun injection\nHelps getting sun bounces in over-occluded areas where primary injection methods are not able to inject enough sun light\nWorks only in LowSpecMode 0");
+                   "Enable additional RSM sun injection\nHelps getting sun bounces in over-occluded areas where primary injection methods are not able to inject enough sun light");
 REGISTER_CVAR_AUTO(float, e_svoTI_SSDepthTrace, 0, VF_EXPERIMENTAL,
                    "Use SS depth tracing together with voxel tracing");
 
@@ -204,6 +204,7 @@ REGISTER_CVAR_AUTO(float, e_svoTI_Troposphere_CloudGenTurb_Scale, 0, VF_EXPERIME
 REGISTER_CVAR_AUTO(float, e_svoTI_Troposphere_Density, 0, VF_EXPERIMENTAL, "Density of the atmosphere");
 REGISTER_CVAR_AUTO(int, e_svoTI_Troposphere_Subdivide, 0, VF_EXPERIMENTAL, "Build detailed SVO also in areas not filled by geometry");
 REGISTER_CVAR_AUTO(float, e_svoTI_RsmConeMaxLength, 12.f, VF_NULL, "Maximum length of the RSM rays (in meters)\nShorter rays work faster");
+REGISTER_CVAR_AUTO(int, e_svoTI_RsmUseColors, 1, VF_NULL, "Render also albedo colors and normals during RSM generation and use it in cone tracing");
 REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_Max, 100, VF_NULL, "Controls amount of voxels allowed to refresh every frame");
 REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_MaxEdit, 10000, VF_NULL, "Controls amount of voxels allowed to refresh every frame during lights editing");
 REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_Max_Overhead, 50, VF_NULL, "Controls amount of voxels allowed to refresh every frame");

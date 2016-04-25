@@ -125,7 +125,7 @@
       <UpdateGeometry type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <MinNodeSize type="Float" value="8.0" min="0.5" max="512" TipCVar="e_svo*"/>
       <SkipNonGILights type="BOOL" value="0" TipCVar="e_svoTI_*"/>
-      <LowSpecMode type="Int" value="0" min="-2" max="14" TipCVar="e_svoTI_*"/>
+      <LowSpecMode type="Int" value="-2" min="-2" max="14" TipCVar="e_svoTI_*"/>
       <HalfresKernel type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <UseLightProbes type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <VoxelizaionLODRatio type="Float" value="1.8" min="0.5" max="4" TipCVar="e_svoTI_*"/>

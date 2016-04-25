@@ -16,10 +16,9 @@
 	#include "D3DPostProcess.h"
 	#include "D3D_SVO.h"
 	#include "D3DTiledShading.h"
-
-//#pragma optimize("",off)
-
 	#include "Common/RenderView.h"
+
+// #pragma optimize("",off)
 
 CSvoRenderer* CSvoRenderer::s_pInstance = 0;
 
@@ -362,7 +361,8 @@ void CSvoRenderer::ExecuteComputeShader(CShader* pSH, const char* szTechFinalNam
 
 		// update OPAC
 		pDeviceCtx->CSSetUnorderedAccessViews(2, 1, &vp_RGB0.pUAV, &UAVInitialCounts);
-		pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &vp_OPAC.pUAV, &UAVInitialCounts);
+		if(vp_OPAC.pUAV)
+			pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &vp_OPAC.pUAV, &UAVInitialCounts);
 
 		SetupSvoTexturesForRead(m_texInfo, eHWSC_Compute, 0, 1);
 
@@ -444,7 +444,8 @@ void CSvoRenderer::ExecuteComputeShader(CShader* pSH, const char* szTechFinalNam
 
 		if (vp_RGB4.pUAV)
 			pDeviceCtx->CSSetUnorderedAccessViews(3, 1, &vp_RGB4.pUAV, &UAVInitialCounts);
-		pDeviceCtx->CSSetUnorderedAccessViews(4, 1, &vp_OPAC.pUAV, &UAVInitialCounts);
+		if(vp_OPAC.pUAV)
+			pDeviceCtx->CSSetUnorderedAccessViews(4, 1, &vp_OPAC.pUAV, &UAVInitialCounts);
 		if (vp_RGB3.pUAV)
 			pDeviceCtx->CSSetUnorderedAccessViews(6, 1, &vp_RGB3.pUAV, &UAVInitialCounts);
 		pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &vp_RGB1.pUAV, &UAVInitialCounts);
@@ -1661,6 +1662,18 @@ void CSvoRenderer::SetShaderFlags(bool bDiffuseMode, bool bPixelShader)
 		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SPRITE];
 	else
 		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SPRITE];
+
+	if (!bPixelShader && e_svoTI_SunRSMInject)
+		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_AMBIENT_OCCLUSION];
+	else
+		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_AMBIENT_OCCLUSION];
+
+#if !CRY_PLATFORM_CONSOLE
+	if (bPixelShader && e_svoTI_RsmUseColors > 0)
+		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG];
+	else
+#endif
+		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG];
 }
 
 int CSvoRenderer::GetIntegratioMode()
@@ -1993,7 +2006,7 @@ void CSvoRenderer::BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, CDev
 
 CTexture* CSvoRenderer::GetRsmColorMap(const ShadowMapFrustum& rFr, bool bCheckUpdate)
 {
-	if (IsActive() && (rFr.nShadowMapLod == CSvoRenderer::GetInstance()->e_svoTI_GsmCascadeLod) && CSvoRenderer::GetInstance()->e_svoTI_InjectionMultiplier)
+	if (IsActive() && (rFr.nShadowMapLod == CSvoRenderer::GetInstance()->e_svoTI_GsmCascadeLod) && CSvoRenderer::GetInstance()->e_svoTI_InjectionMultiplier && CSvoRenderer::GetInstance()->e_svoTI_RsmUseColors >= 0)
 	{
 		if (bCheckUpdate)
 			CSvoRenderer::GetInstance()->CheckCreateUpdateRT(CSvoRenderer::GetInstance()->m_pRsmColorMap, rFr.nShadowMapSize, rFr.nShadowMapSize, eTF_R8G8B8A8, eTT_2D, FT_STATE_CLAMP, "SVO_SUN_RSM_COLOR");
@@ -2001,7 +2014,7 @@ CTexture* CSvoRenderer::GetRsmColorMap(const ShadowMapFrustum& rFr, bool bCheckU
 		return CSvoRenderer::GetInstance()->m_pRsmColorMap;
 	}
 
-	if (IsActive() && rFr.bUseShadowsPool && CSvoRenderer::GetInstance()->e_svoTI_InjectionMultiplier && rFr.m_Flags & DLF_USE_FOR_SVOGI)
+	if (IsActive() && rFr.bUseShadowsPool && CSvoRenderer::GetInstance()->e_svoTI_InjectionMultiplier && CSvoRenderer::GetInstance()->e_svoTI_RsmUseColors >= 0 && rFr.m_Flags & DLF_USE_FOR_SVOGI)
 	{
 		if (bCheckUpdate)
 			CSvoRenderer::GetInstance()->CheckCreateUpdateRT(CSvoRenderer::GetInstance()->m_pRsmPoolCol, gcpRendD3D->m_nShadowPoolWidth, gcpRendD3D->m_nShadowPoolHeight, eTF_R8G8B8A8, eTT_2D, FT_STATE_CLAMP, "SVO_PRJ_RSM_COLOR");
@@ -2014,7 +2027,7 @@ CTexture* CSvoRenderer::GetRsmColorMap(const ShadowMapFrustum& rFr, bool bCheckU
 
 CTexture* CSvoRenderer::GetRsmNormlMap(const ShadowMapFrustum& rFr, bool bCheckUpdate)
 {
-	if (IsActive() && (rFr.nShadowMapLod == CSvoRenderer::GetInstance()->e_svoTI_GsmCascadeLod) && CSvoRenderer::GetInstance()->e_svoTI_InjectionMultiplier)
+	if (IsActive() && (rFr.nShadowMapLod == CSvoRenderer::GetInstance()->e_svoTI_GsmCascadeLod) && CSvoRenderer::GetInstance()->e_svoTI_InjectionMultiplier && CSvoRenderer::GetInstance()->e_svoTI_RsmUseColors >= 0)
 	{
 		if (bCheckUpdate)
 			CSvoRenderer::GetInstance()->CheckCreateUpdateRT(CSvoRenderer::GetInstance()->m_pRsmNormlMap, rFr.nShadowMapSize, rFr.nShadowMapSize, eTF_R8G8B8A8, eTT_2D, FT_STATE_CLAMP, "SVO_SUN_RSM_NORMAL");
@@ -2022,7 +2035,7 @@ CTexture* CSvoRenderer::GetRsmNormlMap(const ShadowMapFrustum& rFr, bool bCheckU
 		return CSvoRenderer::GetInstance()->m_pRsmNormlMap;
 	}
 
-	if (IsActive() && rFr.bUseShadowsPool && CSvoRenderer::GetInstance()->e_svoTI_InjectionMultiplier && rFr.m_Flags & DLF_USE_FOR_SVOGI)
+	if (IsActive() && rFr.bUseShadowsPool && CSvoRenderer::GetInstance()->e_svoTI_InjectionMultiplier && CSvoRenderer::GetInstance()->e_svoTI_RsmUseColors >= 0 && rFr.m_Flags & DLF_USE_FOR_SVOGI)
 	{
 		if (bCheckUpdate)
 			CSvoRenderer::GetInstance()->CheckCreateUpdateRT(CSvoRenderer::GetInstance()->m_pRsmPoolNor, gcpRendD3D->m_nShadowPoolWidth, gcpRendD3D->m_nShadowPoolHeight, eTF_R8G8B8A8, eTT_2D, FT_STATE_CLAMP, "SVO_PRJ_RSM_NORMAL");
@@ -2059,7 +2072,12 @@ void CSvoRenderer::SVoxPool::Init(ITexture* _pTex)
 	if (pTex)
 	{
 		if (CSvoRenderer::s_pInstance && CSvoRenderer::s_pInstance->GetIntegratioMode())
-			pUAV = pTex->GetDeviceUAV();
+		{
+			if(pTex->GetFlags() & FT_USAGE_UAV_RWTEXTURE)
+				pUAV = pTex->GetDeviceUAV();
+			else
+				pSRV = pTex->GetShaderResourceView();
+		}
 
 		nTexId = pTex->GetTextureID();
 	}
