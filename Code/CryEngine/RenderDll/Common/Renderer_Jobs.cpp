@@ -310,80 +310,82 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 		AddEf_HandleForceFlags(nList, nAW, nBatchFlags, nShaderFlags, nShaderFlags2, obj);
 	}
 
+
+	// Always force cloaked geometry to render after water
+	//if (obj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) nAW = 1;   -> branchless
+	nAW |= nz2one(obj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
+
+	if (nShaderFlags & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE) || nCloakRenderedMask)
 	{
+		SRenderObjData* pOD = obj->GetObjData();
 
-		// Always force cloaked geometry to render after water
-		//if (obj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) nAW = 1;   -> branchless
-		nAW |= nz2one(obj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
-
-		if (nShaderFlags & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE) || nCloakRenderedMask)
+		if (obj->m_pRenderNode && pOD)
 		{
-			SRenderObjData* pOD = obj->GetObjData();
-
-			if (obj->m_pRenderNode && pOD)
+			const int32 align16 = (16 - 1);
+			const int32 shift16 = 4;
+			if (CRenderer::CV_r_RefractionPartialResolves)
 			{
-				const int32 align16 = (16 - 1);
-				const int32 shift16 = 4;
-				if (CRenderer::CV_r_RefractionPartialResolves)
-				{
-					AABB aabb;
-					IRenderNode* pRenderNode = obj->m_pRenderNode;
-					pRenderNode->FillBBox(aabb);
+				AABB aabb;
+				IRenderNode* pRenderNode = obj->m_pRenderNode;
+				pRenderNode->FillBBox(aabb);
 
-					int iOut[4];
+				int iOut[4];
 
-					passInfo.GetCamera().CalcScreenBounds(&iOut[0], &aabb, CRenderer::GetWidth(), CRenderer::GetHeight());
-					pOD->m_screenBounds[0] = min(iOut[0] >> shift16, 255);
-					pOD->m_screenBounds[1] = min(iOut[1] >> shift16, 255);
-					pOD->m_screenBounds[2] = min((iOut[2] + align16) >> shift16, 255);
-					pOD->m_screenBounds[3] = min((iOut[3] + align16) >> shift16, 255);
+				passInfo.GetCamera().CalcScreenBounds(&iOut[0], &aabb, CRenderer::GetWidth(), CRenderer::GetHeight());
+				pOD->m_screenBounds[0] = min(iOut[0] >> shift16, 255);
+				pOD->m_screenBounds[1] = min(iOut[1] >> shift16, 255);
+				pOD->m_screenBounds[2] = min((iOut[2] + align16) >> shift16, 255);
+				pOD->m_screenBounds[3] = min((iOut[3] + align16) >> shift16, 255);
 
 #if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-					if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_3D_BOUNDS)
-					{
-						// Debug bounding box view for refraction partial resolves
-						IRenderAuxGeom* pAuxRenderer = gEnv->pRenderer->GetIRenderAuxGeom();
-						if (pAuxRenderer)
-						{
-							SAuxGeomRenderFlags oldRenderFlags = pAuxRenderer->GetRenderFlags();
-
-							SAuxGeomRenderFlags newRenderFlags;
-							newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
-							newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
-							pAuxRenderer->SetRenderFlags(newRenderFlags);
-
-							const bool bSolid = true;
-							const ColorB solidColor(64, 64, 255, 64);
-							pAuxRenderer->DrawAABB(aabb, bSolid, solidColor, eBBD_Faceted);
-
-							const ColorB wireframeColor(255, 0, 0, 255);
-							pAuxRenderer->DrawAABB(aabb, !bSolid, wireframeColor, eBBD_Faceted);
-
-							// Set previous Aux render flags back again
-							pAuxRenderer->SetRenderFlags(oldRenderFlags);
-						}
-					}
-#endif
-				}
-				else if (nShaderFlags & EF_FORCEREFRACTIONUPDATE)
+				if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_3D_BOUNDS)
 				{
-					pOD->m_screenBounds[0] = 0;
-					pOD->m_screenBounds[1] = 0;
-					pOD->m_screenBounds[2] = min((CRenderer::GetWidth()) >> shift16, 255);
-					pOD->m_screenBounds[3] = min((CRenderer::GetHeight()) >> shift16, 255);
+					// Debug bounding box view for refraction partial resolves
+					IRenderAuxGeom* pAuxRenderer = gEnv->pRenderer->GetIRenderAuxGeom();
+					if (pAuxRenderer)
+					{
+						SAuxGeomRenderFlags oldRenderFlags = pAuxRenderer->GetRenderFlags();
+
+						SAuxGeomRenderFlags newRenderFlags;
+						newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
+						newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
+						pAuxRenderer->SetRenderFlags(newRenderFlags);
+
+						const bool bSolid = true;
+						const ColorB solidColor(64, 64, 255, 64);
+						pAuxRenderer->DrawAABB(aabb, bSolid, solidColor, eBBD_Faceted);
+
+						const ColorB wireframeColor(255, 0, 0, 255);
+						pAuxRenderer->DrawAABB(aabb, !bSolid, wireframeColor, eBBD_Faceted);
+
+						// Set previous Aux render flags back again
+						pAuxRenderer->SetRenderFlags(oldRenderFlags);
+					}
 				}
+#endif
+			}
+			else if (nShaderFlags & EF_FORCEREFRACTIONUPDATE)
+			{
+				pOD->m_screenBounds[0] = 0;
+				pOD->m_screenBounds[1] = 0;
+				pOD->m_screenBounds[2] = min((CRenderer::GetWidth()) >> shift16, 255);
+				pOD->m_screenBounds[3] = min((CRenderer::GetHeight()) >> shift16, 255);
 			}
 		}
-
-		// final step, for post 3d items, remove them from any other list than POST_3D_RENDER
-		// (have to do this here as the batch needed to go through the normal nList assign path first)
-		nBatchFlags = iselmask(nz2mask(nBatchFlags & FB_POST_3D_RENDER), FB_POST_3D_RENDER, nBatchFlags);
-
-		// No need to sort opaque passes by water/after water. Ensure always on same list for more coherent sorting
-		nAW |= nz2one((nList == EFSLIST_GENERAL) | (nList == EFSLIST_TERRAINLAYER) | (nList == EFSLIST_DECAL));
-
-		passInfo.GetRenderView()->AddRenderItem(re, obj, SH, nList, nBatchFlags, passInfo.GetRendItemSorter(), false, passInfo.IsAuxWindow());
 	}
+
+	// final step, for post 3d items, remove them from any other list than POST_3D_RENDER
+	// (have to do this here as the batch needed to go through the normal nList assign path first)
+	nBatchFlags = iselmask(nz2mask(nBatchFlags & FB_POST_3D_RENDER), FB_POST_3D_RENDER, nBatchFlags);
+
+	// No need to sort opaque passes by water/after water. Ensure always on same list for more coherent sorting
+	nAW |= nz2one((nList == EFSLIST_GENERAL) | (nList == EFSLIST_TERRAINLAYER) | (nList == EFSLIST_DECAL));
+
+	passInfo.GetRenderView()->AddRenderItem(re, obj, SH, nList, nBatchFlags, passInfo.GetRendItemSorter(), false, passInfo.IsAuxWindow());
+
+	if (nBatchFlags & FB_DEBUG)
+		passInfo.GetRenderView()->AddRenderItem(re, obj, SH, EFSLIST_FORWARD_OPAQUE, nBatchFlags, passInfo.GetRendItemSorter(), false, passInfo.IsAuxWindow());
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
