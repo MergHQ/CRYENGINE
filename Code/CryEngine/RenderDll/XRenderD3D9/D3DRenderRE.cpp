@@ -514,7 +514,7 @@ void CStars::Render(bool bUseMoon)
 	I3DEngine* p3DEngine(gEnv->p3DEngine);
 	float starIntensity(p3DEngine->GetGlobalParameter(E3DPARAM_NIGHSKY_STAR_INTENSITY));
 
-	if (m_pStarMesh && m_pShader && rd->m_RP.m_nPassGroupID == EFSLIST_GENERAL && (rd->m_RP.m_nBatchFilter & FB_GENERAL) && starIntensity > 1e-3f)
+	if (m_pStarMesh && m_pShader && rd->m_RP.m_nPassGroupID == EFSLIST_FORWARD_OPAQUE && (rd->m_RP.m_nBatchFilter & FB_GENERAL) && starIntensity > 1e-3f)
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// set shader

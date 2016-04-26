@@ -517,8 +517,12 @@ void CVars::Init()
 	REGISTER_CVAR(e_CoverageBufferTerrainExpand, 0.025f, VF_NULL,
 	              "expanding the AABB Z axis of terrain to avoid flat terrain flickering");
 
-	REGISTER_CVAR(e_CoverageBufferReproj, 0, VF_NULL,
-	              "Use re-projection technique on CBuffer, 1 simple reproject, 2 additional hole filling, 4 using ocm mesh for occlusion checking");
+	REGISTER_CVAR(e_CoverageBufferReproj, 6, VF_NULL,
+	              "Selects occlusion culling mode\n"
+	              "  1 - Simple reprojection\n"
+	              "  2 - Reprojection with hole filling\n"
+	              "  4 - Rasterized occlusion meshes\n"
+	              "  6 - Reprojection and occlusion meshes");
 	REGISTER_CVAR(e_CoverageBufferRastPolyLimit, 60000, VF_NULL,
 	              "maximum amount of polys to rasterize cap, 0 means no limit\ndefault is 500000");
 	REGISTER_CVAR(e_CoverageBufferShowOccluder, 0, VF_NULL,
