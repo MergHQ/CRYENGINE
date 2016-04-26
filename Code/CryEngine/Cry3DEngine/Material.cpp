@@ -95,6 +95,7 @@ CMatInfo::CMatInfo()
 {
 	m_nRefCount = 0;
 	m_Flags = 0;
+	m_nModificationId = 0;
 
 	m_nSurfaceTypeId = 0;
 
@@ -289,6 +290,7 @@ void CMatInfo::SetShaderItem(const SShaderItem& _ShaderItem)
 
 	m_shaderItem = _ShaderItem;
 	gEnv->pRenderer->UpdateShaderItem(&m_shaderItem, this);
+	IncrementModificationId();
 
 	UpdateMaterialFlags();
 
@@ -312,6 +314,7 @@ void CMatInfo::AssignShaderItem(const SShaderItem& _ShaderItem)
 
 	m_shaderItem = _ShaderItem;
 	gEnv->pRenderer->UpdateShaderItem(&m_shaderItem, this);
+	IncrementModificationId();
 
 	UpdateMaterialFlags();
 }
@@ -710,6 +713,7 @@ bool CMatInfo::SetGetMaterialParamFloat(const char* sParamName, float& v, bool b
 		if (bEmissive != m_shaderItem.m_pShaderResources->IsEmissive())
 		{
 			GetRenderer()->ForceUpdateShaderItem(&m_shaderItem, this);
+			IncrementModificationId();
 		}
 
 		m_shaderItem.m_pShaderResources->UpdateConstants(m_shaderItem.m_pShader);

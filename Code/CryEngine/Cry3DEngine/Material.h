@@ -211,6 +211,9 @@ public:
 	void           UpdateShaderItems();
 	void           RefreshShaderResourceConstants();
 
+	virtual void IncrementModificationId() final { m_nModificationId++; }
+	uint32 GetModificationId() const { return m_nModificationId; }
+
 	//////////////////////////////////////////////////////////////////////////
 	void SetSketchMode(int mode);
 	void SetTexelDensityDebug(int mode);
@@ -273,6 +276,9 @@ private:
 	bool        m_bDeleted;
 
 	SShaderItem m_shaderItem;
+
+	// Used to detect the cases when dependent permanent render objects have to be updated
+	uint32 m_nModificationId;
 
 #ifdef SUPPORT_MATERIAL_SKETCH
 	_smart_ptr<IShader> m_pPreSketchShader;

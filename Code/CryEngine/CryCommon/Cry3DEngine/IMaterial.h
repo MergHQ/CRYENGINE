@@ -278,6 +278,9 @@ struct IMaterial
 	//! Shader item.
 	virtual void SetShaderItem(const SShaderItem& _ShaderItem) = 0;
 
+	//! Used to detect the cases when dependent permanent render objects have to be updated
+	virtual void IncrementModificationId() = 0;
+
 	//! EF_LoadShaderItem return value with RefCount = 1, so if you'll use SetShaderItem after EF_LoadShaderItem use Assign function.
 	virtual void               AssignShaderItem(const SShaderItem& _ShaderItem) = 0;
 	virtual SShaderItem&       GetShaderItem() = 0;

@@ -988,8 +988,10 @@ void CTiledShading::BindForwardShadingResources(CShader*, CDeviceManager::SHADER
 	{
 		ptexGiDiff = (CTexture*)CSvoRenderer::GetInstance()->GetDiffuseFinRT();
 		ptexGiSpec = (CTexture*)CSvoRenderer::GetInstance()->GetSpecularFinRT();
-		ptexRsmCol = (CTexture*)CSvoRenderer::GetInstance()->GetRsmPoolCol();
-		ptexRsmNor = (CTexture*)CSvoRenderer::GetInstance()->GetRsmPoolNor();
+		if(CSvoRenderer::GetInstance()->GetRsmPoolCol())
+			ptexRsmCol = (CTexture*)CSvoRenderer::GetInstance()->GetRsmPoolCol();
+		if(CSvoRenderer::GetInstance()->GetRsmPoolNor())
+			ptexRsmNor = (CTexture*)CSvoRenderer::GetInstance()->GetRsmPoolNor();
 	}
 #endif
 

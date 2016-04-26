@@ -472,7 +472,7 @@ public:
 	void         BeginOcclusionCulling(const SRenderingPassInfo& passInfo);
 	void         EndOcclusionCulling();
 	void         RenderBufferedRenderMeshes(const SRenderingPassInfo& passInfo);
-
+	uint32			 GetResourcesModificationChecksum(IRenderNode * pOwnerNode) const;
 	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const SRenderingPassInfo& passInfo) const;
 
 private:
