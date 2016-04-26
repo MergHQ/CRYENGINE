@@ -16,6 +16,8 @@
 #include <CrySystem/IConsole.h>     // <> required for Interfuscator
 #include <CrySystem/File/ICryPak.h> // <> required for Interfuscator
 #include <CryMath/Bezier.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
+#include <CryAudio/IAudioSystem.h>
 #include <CryMovie/AnimTime.h>
 
 #include <CrySerialization/IArchive.h>
