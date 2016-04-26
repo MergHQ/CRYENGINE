@@ -1084,7 +1084,15 @@ template<typename F> struct Matrix33_tpl
 typedef Matrix33_tpl<f32>  Matrix33;  //!< Always 32 bit.
 typedef Matrix33_tpl<f64>  Matrix33d; //!< Always 64 bit.
 typedef Matrix33_tpl<real> Matrix33r; //!< Variable float precision. depending on the target system it can be between 32, 64 or 80 bit.
-typedef                    CRY_ALIGN (16) Matrix33_tpl<f32> Matrix33A;
+#if CRY_COMPILER_GCC
+/* GCC has a bug where TYPE_USER_ALIGN is ignored in certain situations with template layouts
+ * the user speficied alignment is not correctly stored with the new type unless it's layed before.
+ * This bug has been fixed for gcc5: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65734
+ * Workaroud by forcing the template which needs to be aligned to be fully instantiated: (deprecated so it's not used by accident)
+ */
+struct __attribute__((deprecated)) Matrix33_f32_dont_use : public Matrix33_tpl<f32> {};
+#endif
+typedef CRY_ALIGN (16) Matrix33_tpl<f32> Matrix33A;
 
 //! Implementation of Matrix33.
 template<class F1, class F2>
