@@ -543,11 +543,19 @@ bool ExecuteEvent(SATLAudioObjectData_sdlmixer* const pAudioObject, SATLTriggerI
 	return bSuccess;
 }
 
-bool PlayFile(CryAudio::Impl::SATLAudioObjectData_sdlmixer* const pAudioObject, CryAudio::Impl::CAudioStandaloneFile_sdlmixer* const pEventInstance, const char* szFilePath)
+bool PlayFile(CryAudio::Impl::SATLAudioObjectData_sdlmixer* const pAudioObject
+	, CryAudio::Impl::CAudioStandaloneFile_sdlmixer* const pEventInstance
+	, const CryAudio::Impl::SATLTriggerImplData_sdlmixer* const pUsedTrigger
+	, const char* const szFilePath)
 {
+	if (!pUsedTrigger)
+	{
+		return false;
+	}
+	
 	TSampleID idForThisFile = pEventInstance->fileId;
 	Mix_Chunk* pSample = stl::find_in_map(g_sampleData, idForThisFile, nullptr);
-	
+
 	if (!pSample)
 	{
 		if (LoadSampleImpl(idForThisFile, szFilePath))
@@ -559,7 +567,7 @@ bool PlayFile(CryAudio::Impl::SATLAudioObjectData_sdlmixer* const pAudioObject, 
 			return false;
 		}
 	}
-	
+
 	TSampleIdUsageCounterMap::iterator it = g_usageCounters.find(idForThisFile);
 	if (it != g_usageCounters.end())
 	{
@@ -572,23 +580,27 @@ bool PlayFile(CryAudio::Impl::SATLAudioObjectData_sdlmixer* const pAudioObject, 
 
 	if (!g_freeChannels.empty())
 	{
-
-		int nChannelID = Mix_PlayChannel(g_freeChannels.front(), pSample, 0);
-		if (nChannelID >= 0)
+		int loopCount = pUsedTrigger->nLoopCount;
+		if (loopCount > 0)
 		{
-			SATLTriggerImplData_sdlmixer defaultTrigger;  //we use the default values of and trigger for playback of standaloneFiles.
+			// For SDL Mixer 0 loops means play only once, 1 loop play twice, etc ...
+			--loopCount;
+		}
 
+		int channelId = Mix_PlayChannel(g_freeChannels.front(), pSample, loopCount);
+		if (channelId >= 0)
+		{
 			g_freeChannels.pop();
-			Mix_Volume(nChannelID, g_bMuted ? 0 : defaultTrigger.nVolume);
+			Mix_Volume(channelId, g_bMuted ? 0 : pUsedTrigger->nVolume);
 
 			// Get distance and angle from the listener to the audio object
 			float fDistance = 0.0f;
 			float fAngle = 0.0f;
 			GetDistanceAngleToObject(g_listenerPosition, pAudioObject->position, fDistance, fAngle);
-			SetChannelPosition(&defaultTrigger, nChannelID, fDistance, fAngle);
+			SetChannelPosition(pUsedTrigger, channelId, fDistance, fAngle);
 
-			g_channels[nChannelID].pAudioObject = pAudioObject;
-			pEventInstance->channels.push_back(nChannelID);
+			g_channels[channelId].pAudioObject = pAudioObject;
+			pEventInstance->channels.push_back(channelId);
 		}
 		else
 		{

@@ -32,7 +32,7 @@ void            UnloadSample(const TSampleID nID);
 // Events
 CryAudio::Impl::SATLTriggerImplData_sdlmixer* CreateEventData();
 bool                                          ExecuteEvent(CryAudio::Impl::SATLAudioObjectData_sdlmixer* const pAudioObject, CryAudio::Impl::SATLTriggerImplData_sdlmixer const* const pEventStaticData, CryAudio::Impl::SATLEventData_sdlmixer* const pEventInstance);
-bool                                          PlayFile(CryAudio::Impl::SATLAudioObjectData_sdlmixer* const pAudioObject, CryAudio::Impl::CAudioStandaloneFile_sdlmixer* const pEventInstance, const char* szFilePath);
+bool                                          PlayFile(CryAudio::Impl::SATLAudioObjectData_sdlmixer* const pAudioObject, CryAudio::Impl::CAudioStandaloneFile_sdlmixer* const pEventInstance, const CryAudio::Impl::SATLTriggerImplData_sdlmixer* const pUsedTrigger, const char* const szFilePath);
 bool                                          StopFile(CryAudio::Impl::SATLAudioObjectData_sdlmixer* const pAudioObject, AudioStandaloneFileId const fileInstanceID);
 
 // stops an specific event instance

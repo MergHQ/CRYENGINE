@@ -662,11 +662,15 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_PlayFile> : publi
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_PlayFile> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_PlayFile)
 		, file(pAORData->szFile)
+		, usedAudioTriggerId(pAORData->usedAudioTriggerId)
+		, bLocalized(pAORData->bLocalized)
 	{}
 
 	virtual ~SAudioObjectRequestDataInternal() {}
 
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> const file;
+	AudioControlId const usedAudioTriggerId;
+	bool const bLocalized;
 
 	DELETE_DEFAULT_CONSTRUCTOR(SAudioObjectRequestDataInternal);
 	PREVENT_OBJECT_COPY(SAudioObjectRequestDataInternal);
