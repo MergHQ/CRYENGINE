@@ -887,7 +887,7 @@ void CShadowMapStage::Execute()
 
 				curPass.PreRender();
 				curPass.SetPassResources(m_pResourceLayout, curPass.GetResources());
-				curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide);
+				curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide, -1, -1, EFSLIST_SHADOW_GEN);
 			}
 		}
 	}
