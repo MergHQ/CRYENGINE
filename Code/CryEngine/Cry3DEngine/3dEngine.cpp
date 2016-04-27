@@ -4555,6 +4555,18 @@ bool C3DEngine::CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempDat
 {
 	assert(pRNode);
 
+	// detect render resources modification (for example because of streaming or material editing)
+	if (pRNode->m_pTempData && !(pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID) && pRNode->m_pTempData->userData.nStatObjLastModificationId)
+	{
+		uint32 nNewModificationId = GetObjManager()->GetResourcesModificationChecksum(pRNode);
+
+		if (nNewModificationId != pRNode->m_pTempData->userData.nStatObjLastModificationId)
+		{
+			pRNode->InvalidatePermanentRenderObject();
+			pRNode->m_pTempData->userData.nStatObjLastModificationId = nNewModificationId;
+		}
+	}
+
 	SRenderNodeTempData* pCurrentTempData = *ppTempData;
 	if (pCurrentTempData && pCurrentTempData->IsValid() && !(pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID))
 	{

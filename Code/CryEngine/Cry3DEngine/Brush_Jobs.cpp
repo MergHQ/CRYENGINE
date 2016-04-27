@@ -48,9 +48,6 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pObj, &lodValue, passInfo))
 		return;
 
-	if (CStatObj* pStatObj = (CStatObj*)CBrush::GetEntityStatObj())
-		userData.nStatObjLastModificationId = pStatObj->GetModificationId();
-
 	pObj->m_fDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
 
 	pObj->m_pRenderNode = this;

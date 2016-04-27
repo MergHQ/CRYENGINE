@@ -88,7 +88,8 @@ namespace CryEngine.Sydewinder
 		public void StoreToFile()
 		{
 			var data = Tools.ToJSON(this);
-			File.SetAttributes(_url, FileAttributes.Normal);
+			if (File.Exists(_url))
+				File.SetAttributes(_url, FileAttributes.Normal);
 			File.WriteAllText(_url, data);
 		}
 	}

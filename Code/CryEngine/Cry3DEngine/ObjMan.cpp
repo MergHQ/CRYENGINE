@@ -1277,6 +1277,9 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 				CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
 				MemoryBarrier();
 				pTempData->userData.arrPermanentRenderObjects[nLod] = pRenderObject;
+
+				// Store resources modification checksum
+				pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
 			}
 
 			// Return false to fill the object.
@@ -1287,4 +1290,18 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 	pRenderObject = gEnv->pRenderer->EF_GetObject_Temp(passInfo.ThreadID());
 
 	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+uint32 CObjManager::GetResourcesModificationChecksum(IRenderNode * pOwnerNode) const
+{
+	uint32 nModificationId = 1;
+
+	if (CStatObj* pStatObj = (CStatObj*)pOwnerNode->GetEntityStatObj())
+		nModificationId += pStatObj->GetModificationId();
+
+	if (CMatInfo* pMatInfo = (CMatInfo*)pOwnerNode->GetMaterial())
+		nModificationId += pMatInfo->GetModificationId();
+
+	return nModificationId;
 }

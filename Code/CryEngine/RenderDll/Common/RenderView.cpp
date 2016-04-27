@@ -51,7 +51,7 @@ void CRenderView::Clear()
 	for (int i = 0; i < EFSLIST_NUM; i++)
 	{
 		m_renderItems[i].clear();
-		m_BatchFlags[0] = 0;
+		m_BatchFlags[i] = 0;
 	}
 
 	for (int i = 0; i < eDLT_NumLightTypes; i++)
