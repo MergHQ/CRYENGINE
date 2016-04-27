@@ -229,7 +229,7 @@ void CSceneRenderPass::EndRenderPass(CDeviceGraphicsCommandListRef RESTRICT_REFE
 	// Nothing to cleanup at the moment
 }
 
-void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart, int listEnd)
+void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart, int listEnd, int profilingListID)
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	SRenderPipeline& rp = pRenderer->m_RP;
@@ -252,8 +252,8 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 	passContext.rendItems.start = listStart < 0 ? 0 : listStart;
 	passContext.rendItems.end = listEnd < 0 ? pRenderView->GetRenderItems(list).size() : listEnd;
 
-	rp.m_nPassGroupID = list;
-	rp.m_nPassGroupDIP = list;
+	rp.m_nPassGroupID = profilingListID < 0 ? list : profilingListID;
+	rp.m_nPassGroupDIP = profilingListID < 0 ? list : profilingListID;
 
 	CHWShader_D3D::mfCommitParamsGlobal();
 
