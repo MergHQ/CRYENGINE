@@ -4579,6 +4579,7 @@ bool C3DEngine::CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempDat
 	{
 		if (GetObjManager()->GetResourcesModificationChecksum(pRNode) != pCurrentTempData->userData.nStatObjLastModificationId)
 		{
+			pRNode->InvalidatePermanentRenderObject();
 			bValid = false;
 		}
 	}
