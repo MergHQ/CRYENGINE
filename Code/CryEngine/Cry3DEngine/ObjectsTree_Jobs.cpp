@@ -1062,19 +1062,6 @@ void CObjManager::RenderBrush(CBrush* pEnt, PodArray<CDLight*>* pAffectingLights
 	// check cvars
 	assert(passInfo.RenderBrushes());
 
-	// detect mesh modifications (for example because of streaming)
-	if (pEnt->m_pTempData && !(pEnt->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID))
-	{
-		if (CStatObj* pStatObj = (CStatObj*)pEnt->GetEntityStatObj())
-		{
-			if (pStatObj->GetModificationId() != pEnt->m_pTempData->userData.nStatObjLastModificationId)
-			{
-				pEnt->InvalidatePermanentRenderObject();
-				pEnt->m_pTempData->userData.nStatObjLastModificationId = pStatObj->GetModificationId();
-			}
-		}
-	}
-
 	// check-allocate RNTmpData for visible objects
 	if (!Get3DEngine()->CheckAndCreateRenderNodeTempData(&pEnt->m_pTempData, pEnt, passInfo))
 	{

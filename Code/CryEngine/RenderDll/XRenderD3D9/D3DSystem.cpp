@@ -2741,8 +2741,8 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 		if (FAILED(hr))
 			return hr;
 		rd->m_pNativeZTexture = new CTexture(FT_USAGE_DEPTHSTENCIL | FT_DONT_STREAM, clearValues, pNativeZTexture);
-		rd->m_pNativeZTarget = rd->m_pZTexture->GetDevTexture()->Get2DTexture();
-		rd->m_pNativeZSurface = rd->m_pZTexture->GetDeviceDepthStencilView(0, -1, dsTextureDesc.SampleDesc.Count > 1, false);
+		rd->m_pNativeZTarget = rd->m_pNativeZTexture->GetDevTexture()->Get2DTexture();
+		rd->m_pNativeZSurface = rd->m_pNativeZTexture->GetDeviceDepthStencilView(0, -1, dsTextureDesc.SampleDesc.Count > 1, false);
 		rd->m_pNativeZTexture->SetShaderResourceView(rd->m_pNativeZTexture->GetDeviceDepthReadOnlySRV(0, -1, dsTextureDesc.SampleDesc.Count > 1), dsTextureDesc.SampleDesc.Count > 1);
 
 #if !defined(RELEASE) && CRY_PLATFORM_WINDOWS

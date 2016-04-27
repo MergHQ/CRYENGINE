@@ -17,10 +17,8 @@ float Script : STANDARDSGLOBAL
 struct app2Vert
 {
   IN_P
-
-  float2 baseTC   : TEXCOORDN; 
-
-  //IN_TANG_STREAM
+  float2 baseTC  : TEXCOORDN; 
+	float4 Color   : COLOR;
 };
 
 struct vert2Frag
