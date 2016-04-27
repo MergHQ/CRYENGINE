@@ -47,29 +47,29 @@ struct CNodeCGF : public _cfg_reference_target<CNodeCGF>
 	ENodeType     type;
 	char          name[64];
 	string        properties;
-	Matrix34      localTM;     //!< Local space transformation matrix.
-	Matrix34      worldTM;     //!< World space transformation matrix.
-	CNodeCGF*     pParent;     //!< Pointer to parent node.
-	CNodeCGF*     pSharedMesh; //!< Not NULL if this node is sharing mesh and physics from referenced Node.
-	CMesh*        pMesh;       //!< Pointer to mesh loaded for this node. (Only when type == NODE_MESH).
+	Matrix34      localTM;                      //!< Local space transformation matrix.
+	Matrix34      worldTM;                      //!< World space transformation matrix.
+	CNodeCGF*     pParent;                      //!< Pointer to parent node.
+	CNodeCGF*     pSharedMesh;                  //!< Not NULL if this node is sharing mesh and physics from referenced Node.
+	CMesh*        pMesh;                        //!< Pointer to mesh loaded for this node. (Only when type == NODE_MESH).
 
-	HelperTypes   helperType; //!< Only relevant if type==NODE_HELPER.
-	Vec3          helperSize; //!< Only relevant if type==NODE_HELPER.
+	HelperTypes   helperType;                   //!< Only relevant if type==NODE_HELPER.
+	Vec3          helperSize;                   //!< Only relevant if type==NODE_HELPER.
 
-	CMaterialCGF* pMaterial; //!< Material node.
+	CMaterialCGF* pMaterial;                     //!< Material node.
 
 	//! Physical data of the node with mesh.
-	int            nPhysicalizeFlags;   //!< Saved into the nFlags2 chunk member.
+	int            nPhysicalizeFlags;           //!< Saved into the nFlags2 chunk member.
 	DynArray<char> physicalGeomData[4];
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Used internally.
-	int nChunkId;       //!< Chunk id as loaded from CGF.
-	int nParentChunkId; //!< Chunk id of parent Node.
-	int nObjectChunkId; //!< Chunk id of the corresponding mesh.
-	int pos_cont_id;    //!< Position controller chunk id.
-	int rot_cont_id;    //!< Rotation controller chunk id.
-	int scl_cont_id;    //!< Scale controller chunk id.
+	int nChunkId;                               //!< Chunk id as loaded from CGF.
+	int nParentChunkId;                         //!< Chunk id of parent Node.
+	int nObjectChunkId;                         //!< Chunk id of the corresponding mesh.
+	int pos_cont_id;                            //!< Position controller chunk id.
+	int rot_cont_id;                            //!< Rotation controller chunk id.
+	int scl_cont_id;                            //!< Scale controller chunk id.
 	//////////////////////////////////////////////////////////////////////////
 
 	//! True if worldTM is identity.
@@ -90,7 +90,7 @@ struct CNodeCGF : public _cfg_reference_target<CNodeCGF>
 	};
 	MeshInfo    meshInfo;
 
-	CrySkinVtx* pSkinInfo; //!< for skinning with skeleton meshes (deformable objects)
+	CrySkinVtx* pSkinInfo;                       //!< for skinning with skeleton meshes (deformable objects)
 
 	//! Constructor.
 	void Init()
@@ -175,12 +175,12 @@ typedef MorphTargets* MorphTargetsPtr;
 
 struct IntSkinVertex
 {
-	Vec3   __obsolete0;         //!< Thin/fat vertex position. Must be removed in the next RC refactoring.
-	Vec3   pos;                 //!< Vertex-position of model.2
-	Vec3   __obsolete2;         //!< Thin/fat vertex position. Must be removed in the next RC refactoring.
+	Vec3   __obsolete0; //!< Thin/fat vertex position. Must be removed in the next RC refactoring.
+	Vec3   pos;         //!< Vertex-position of model.2
+	Vec3   __obsolete2; //!< Thin/fat vertex position. Must be removed in the next RC refactoring.
 	uint16 boneIDs[4];
 	f32    weights[4];
-	ColorB color;   //!< Index for blend-array.
+	ColorB color;       //!< Index for blend-array.
 	void   GetMemoryUsage(ICrySizer* pSizer) const {}
 	AUTO_STRUCT_INFO;
 };
@@ -327,7 +327,7 @@ struct DirectionalBlends
 		m_nStartJointIdx = -1;
 		m_nRotStartJointIdx = -1;
 		m_strReferenceJointName = 0;
-		m_nReferenceJointIdx = 1;      // By default we use the Pelvis.
+		m_nReferenceJointIdx = 1;                     // By default we use the Pelvis.
 	};
 	void GetMemoryUsage(ICrySizer* pSizer) const {}
 };
@@ -340,9 +340,9 @@ struct CSkinningInfo : public _reference_target_t
 	DynArray<SJointsAimIK_Pos>  m_LookIK_Pos;       //!< Positional joints used for Look-IK.
 	DynArray<DirectionalBlends> m_LookDirBlends;    //!< Positional joints used for Look-IK.
 
-	DynArray<SJointsAimIK_Rot>  m_AimIK_Rot;    //!< Rotational joints used for Aim-IK.
-	DynArray<SJointsAimIK_Pos>  m_AimIK_Pos;    //!< Positional joints used for Aim-IK.
-	DynArray<DirectionalBlends> m_AimDirBlends; //!< Positional joints used for Aim-IK.
+	DynArray<SJointsAimIK_Rot>  m_AimIK_Rot;        //!< Rotational joints used for Aim-IK.
+	DynArray<SJointsAimIK_Pos>  m_AimIK_Pos;        //!< Positional joints used for Aim-IK.
+	DynArray<DirectionalBlends> m_AimDirBlends;     //!< Positional joints used for Aim-IK.
 
 	DynArray<PhysicalProxy>     m_arrPhyBoneMeshes; //!< Collision proxy.
 	DynArray<MorphTargetsPtr>   m_arrMorphTargets;
@@ -353,10 +353,8 @@ struct CSkinningInfo : public _reference_target_t
 	DynArray<MeshCollisionInfo> m_arrCollisions;
 
 	uint32                      m_numChunks;
-	bool                        m_bRotatedMorphTargets;
-	bool                        m_bProperBBoxes;
 
-	CSkinningInfo() : m_bRotatedMorphTargets(false), m_bProperBBoxes(false) {}
+	CSkinningInfo(){}
 
 	~CSkinningInfo()
 	{
@@ -381,7 +379,7 @@ struct CSkinningInfo : public _reference_target_t
 		int32 numJoints = m_arrBonesDesc.size();
 		if (nJointID >= 0 && nJointID < numJoints)
 			return m_arrBonesDesc[nJointID].m_arrBoneName;
-		return ""; // invalid bone id
+		return "";     // invalid bone id
 	}
 
 };
@@ -477,7 +475,7 @@ struct SFoliageInfoCGF
 	{
 		if (pSpines)
 		{
-			for (int i = 1; i < nSpines; i++) // spines 1..n-1 use the same buffer, so make sure they don't delete it
+			for (int i = 1; i < nSpines; i++)      // spines 1..n-1 use the same buffer, so make sure they don't delete it
 				pSpines[i].pVtx = 0, pSpines[i].pSegDim = 0;
 			delete[] pSpines;
 		}

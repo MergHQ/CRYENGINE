@@ -1164,11 +1164,6 @@ bool CLoaderCGF::ReadCompiledMorphTargets(IChunkFile::ChunkDesc* pChunkDesc)
 		const uint8* rawdata = ((const uint8*)pChunkDesc->data) + sizeof(chunk);
 
 		CSkinningInfo* const pSkinningInfo = m_pCGF->GetSkinningInfo();
-		if (pChunkDesc->chunkVersion == chunk.VERSION1)
-		{
-			pSkinningInfo->m_bRotatedMorphTargets = true;
-		}
-
 		for (uint32 i = 0; i < chunk.numMorphTargets; ++i)
 		{
 			MorphTargetsPtr pSm = new MorphTargets;
@@ -1283,40 +1278,9 @@ bool CLoaderCGF::ReadCompiledBonesBoxes(IChunkFile::ChunkDesc* pChunkDesc)
 	if (pChunkDesc->chunkVersion == COMPILED_BONEBOXES_CHUNK_DESC_0800::VERSION ||
 	    pChunkDesc->chunkVersion == COMPILED_BONEBOXES_CHUNK_DESC_0800::VERSION1)
 	{
-		CSkinningInfo* const pSkinningInfo = m_pCGF->GetSkinningInfo();
-
-		if (pChunkDesc->chunkVersion == COMPILED_BONEBOXES_CHUNK_DESC_0800::VERSION1)
-		{
-			pSkinningInfo->m_bProperBBoxes = false;
-			if (pSkinningInfo->m_arrCollisions.empty())
-			{
-				pSkinningInfo->m_bProperBBoxes = true;
-			}
-			else
-			{
-				// CHECK FOR AT LEAST 1 EMPTY
-				for (int n = 0; n < pSkinningInfo->m_arrCollisions.size(); ++n)
-				{
-					const bool bValid = !pSkinningInfo->m_arrCollisions[n].m_aABB.IsReset();
-					if (bValid)
-					{
-						pSkinningInfo->m_bProperBBoxes = true;
-						break;
-					}
-				}
-			}
-
-			/* Ivo: this warning is not needed. It happens always if a character has no physics-proxy, and many simple characters don't have one
-			   if (!pSkinningInfo->m_bProperBBoxes)
-			   {
-			   CryWarning(VALIDATOR_MODULE_3DENGINE,VALIDATOR_WARNING,"%s: Invalid bones bounds", m_filename);
-			   }*/
-
-			pSkinningInfo->m_bProperBBoxes = false;
-		}
-
 		char* pSrc = (char*)pChunkDesc->data;
 
+		CSkinningInfo* const pSkinningInfo = m_pCGF->GetSkinningInfo();
 		pSkinningInfo->m_arrCollisions.push_back(MeshCollisionInfo());
 		MeshCollisionInfo& info = pSkinningInfo->m_arrCollisions[pSkinningInfo->m_arrCollisions.size() - 1];
 
@@ -2247,7 +2211,7 @@ CContentCGF* CLoaderCGF::MakeCompiledSkinCGF(
   CContentCGF* pCGF, std::vector<int>* pVertexRemapping, std::vector<int>* pIndexRemapping) PREFAST_SUPPRESS_WARNING(6262) //function uses > 32k stack space
 {
 	CContentCGF* const pCompiledCGF = new CContentCGF(pCGF->GetFilename());
-	*pCompiledCGF->GetExportInfo() = *pCGF->GetExportInfo(); // Copy export info.
+	*pCompiledCGF->GetExportInfo() = *pCGF->GetExportInfo();                                                                   // Copy export info.
 
 	// Compile mesh.
 	// Note that this function cannot fill/return mapping arrays properly in case of
@@ -2600,7 +2564,7 @@ bool CLoaderCGF::LoadGeomChunk(CNodeCGF* pNode, IChunkFile::ChunkDesc* pChunkDes
 		const int maxLinkCount =
 		  m_pCGF->GetExportInfo()->b8WeightsPerVertex
 		  ? 8
-		  : ((m_maxWeightsPerVertex <= 8) ? m_maxWeightsPerVertex : 8);  // CMesh doesn't support more than 8 weights
+		  : ((m_maxWeightsPerVertex <= 8) ? m_maxWeightsPerVertex : 8);      // CMesh doesn't support more than 8 weights
 
 		const bool bSwapEndianness = pChunkDesc->bSwapEndian;
 		pChunkDesc->bSwapEndian = false;
@@ -2644,7 +2608,7 @@ bool CLoaderCGF::LoadGeomChunk(CNodeCGF* pNode, IChunkFile::ChunkDesc* pChunkDes
 			CryVertex* p;
 			StepData(p, pMeshChunkData, chunk->nVerts, bSwapEndianness);
 
-			err = mesh.SetPositions(&p->p.x, chunk->nVerts, sizeof(*p), VERTEX_SCALE);  // VERTEX_SCALE - to convert from centimeters to meters
+			err = mesh.SetPositions(&p->p.x, chunk->nVerts, sizeof(*p), VERTEX_SCALE);       // VERTEX_SCALE - to convert from centimeters to meters
 			if (!err)
 			{
 				err = mesh.SetNormals(&p->n.x, chunk->nVerts, sizeof(*p));
@@ -3954,7 +3918,7 @@ CMaterialCGF* CLoaderCGF::LoadMaterialNameChunk(IChunkFile::ChunkDesc* pChunkDes
 		pMtlCGF->nPhysicalizeType = chunk.nPhysicalizeType;
 		if ((unsigned int)pMtlCGF->nPhysicalizeType <= (PHYS_GEOM_TYPE_DEFAULT_PROXY - PHYS_GEOM_TYPE_DEFAULT))
 		{
-			pMtlCGF->nPhysicalizeType += PHYS_GEOM_TYPE_DEFAULT; // fixup if was exported with PHYS_GEOM_TYPE_DEFAULT==0
+			pMtlCGF->nPhysicalizeType += PHYS_GEOM_TYPE_DEFAULT;   // fixup if was exported with PHYS_GEOM_TYPE_DEFAULT==0
 		}
 
 		if (pMtlCGF->nPhysicalizeType != PHYS_GEOM_TYPE_NONE &&

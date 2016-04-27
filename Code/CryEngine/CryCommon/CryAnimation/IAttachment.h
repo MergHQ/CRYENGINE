@@ -31,20 +31,24 @@ enum AttachmentTypes
 
 enum AttachmentFlags
 {
-	// Static Flags.
-	FLAGS_ATTACH_HIDE_ATTACHMENT          = 0x01,   //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_PHYSICALIZED_RAYS        = 0x02,   //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_PHYSICALIZED_COLLISIONS  = 0x04,   //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_SW_SKINNING              = 0x08,   //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD = 0x10,   //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_LINEAR_SKINNING          = 0x20,   //!< Already stored in CDF, so don't change this.
-
+	//Static Flags
+	FLAGS_ATTACH_HIDE_ATTACHMENT          = BIT(0),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_PHYSICALIZED_RAYS        = BIT(1),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_PHYSICALIZED_COLLISIONS  = BIT(2),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_SW_SKINNING              = BIT(3),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD = BIT(4),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_LINEAR_SKINNING          = BIT(5),  //!< Already stored in CDF, so don't change this.
 	FLAGS_ATTACH_PHYSICALIZED             = FLAGS_ATTACH_PHYSICALIZED_RAYS | FLAGS_ATTACH_PHYSICALIZED_COLLISIONS,
 
-	// Dynamic Flags.
-	FLAGS_ATTACH_VISIBLE            = BIT(13),  //!< We set this flag if we can render the object.
-	FLAGS_ATTACH_PROJECTED          = BIT(14),  //!< We set this flag if we can attacht the object to a triangle.
-	FLAGS_ATTACH_WAS_PHYSICALIZED   = BIT(15),  //!< The attachment actually was physicalized.
+	// Geometry deformation using direct compute
+	FLAGS_ATTACH_DC_DEFORMATION_SKINNING  = BIT(6),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_DC_DEFORMATION_PREMORPHS = BIT(7),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_DC_DEFORMATION_TANGENTS  = BIT(8),  //!< Already stored in CDF, so don't change this.
+
+	// Dynamic Flags
+	FLAGS_ATTACH_VISIBLE            = BIT(13),    //!< We set this flag if we can render the object.
+	FLAGS_ATTACH_PROJECTED          = BIT(14),    //!< We set this flag if we can attacht the object to a triangle.
+	FLAGS_ATTACH_WAS_PHYSICALIZED   = BIT(15),    //!< The attachment actually was physicalized.
 	FLAGS_ATTACH_HIDE_MAIN_PASS     = BIT(16),
 	FLAGS_ATTACH_HIDE_SHADOW_PASS   = BIT(17),
 	FLAGS_ATTACH_HIDE_RECURSION     = BIT(18),
@@ -52,27 +56,27 @@ enum AttachmentFlags
 	FLAGS_ATTACH_NO_BBOX_INFLUENCE  = BIT(21),
 	FLAGS_ATTACH_COMBINEATTACHMENT  = BIT(24),
 	FLAGS_ATTACH_ID_MASK            = BIT(25) | BIT(26) | BIT(27) | BIT(28) | BIT(29),
-	FLAGS_ATTACH_MERGED_FOR_SHADOWS = BIT(30),  //!< The attachment has been merged with other attachments for shadow rendering.
+	FLAGS_ATTACH_MERGED_FOR_SHADOWS = BIT(30),    //!< The attachment has been merged with other attachments for shadow rendering.
 };
 
 struct SVClothParams
 {
-	float  thickness;          //!< The radius of the particles.
-	float  collisionDamping;   //!< Dampens only non-colliding particles.
-	float  dragDamping;        //!< A value around 1 - smaller for less stretch stiffness, bigger for over-relaxation.
-	float  stretchStiffness;   //!< A value around 1 - smaller for less stretch stiffness, bigger for over-relaxation.
-	float  shearStiffness;     //!< A smaller than 1 value affecting the shear constraints.
-	float  bendStiffness;      //!< A smaller than 1 value affecting the bend constraints.
-	int    numIterations;      //!< Number of iterations for the positional PGS solver (contacts & edges).
-	float  timeStep;           //!< The (pseudo)fixed time step for the simulator.
-	float  rigidDamping;       //!< Blending factor between local and world space rotation.
-	float  translationBlend;   //!< Blending factor between local and world space translation.
-	float  rotationBlend;      //!< Blending factor between local and world space rotation.
-	float  friction;           //!< Friction coefficient for particles at contact points.
-	float  pullStiffness;      //!< The strength of pulling pinched vertices towards the anchor position [0..1].
-	float  tolerance;          //!< Collision tolerance expressed by a factor of thickness.
-	float* weights;            //!< Per vertex weights used for blending with animation.
-	float  maxBlendWeight;     //!< Maximum value of pull stiffness for blending with animation.
+	float  thickness;                             //!< The radius of the particles.
+	float  collisionDamping;                      //!< Dampens only non-colliding particles.
+	float  dragDamping;                           //!< A value around 1 - smaller for less stretch stiffness, bigger for over-relaxation.
+	float  stretchStiffness;                      //!< A value around 1 - smaller for less stretch stiffness, bigger for over-relaxation.
+	float  shearStiffness;                        //!< A smaller than 1 value affecting the shear constraints.
+	float  bendStiffness;                         //!< A smaller than 1 value affecting the bend constraints.
+	int    numIterations;                         //!< Number of iterations for the positional PGS solver (contacts & edges).
+	float  timeStep;                              //!< The (pseudo)fixed time step for the simulator.
+	float  rigidDamping;                          //!< Blending factor between local and world space rotation.
+	float  translationBlend;                      //!< Blending factor between local and world space translation.
+	float  rotationBlend;                         //!< Blending factor between local and world space rotation.
+	float  friction;                              //!< Friction coefficient for particles at contact points.
+	float  pullStiffness;                         //!< The strength of pulling pinched vertices towards the anchor position [0..1].
+	float  tolerance;                             //!< Collision tolerance expressed by a factor of thickness.
+	float* weights;                               //!< Per vertex weights used for blending with animation.
+	float  maxBlendWeight;                        //!< Maximum value of pull stiffness for blending with animation.
 	float  maxAnimDistance;
 	float  windBlend;
 	int    collDampingRange;
@@ -158,7 +162,7 @@ struct SimulationParams
 
 	int32              m_nProjectionType;
 	CCryName           m_strDirTransJoint;
-	DynArray<CCryName> m_arrProxyNames;  //!< Test capsules/sphere joint against these colliders.
+	DynArray<CCryName> m_arrProxyNames; //!< Test capsules/sphere joint against these colliders.
 
 	SimulationParams()
 	{
@@ -167,7 +171,7 @@ struct SimulationParams
 		m_useDebugText = 0;
 		m_useSimulation = 1;
 		m_useRedirect = 0;
-		m_nSimFPS = 10;               //!< Don't set to 0.
+		m_nSimFPS = 10;                   //!< Don't set to 0.
 
 		m_fMaxAngle = 45.0f;
 		m_vDiskRotation.set(0, 0);
@@ -272,7 +276,7 @@ struct IAttachmentManager
 	virtual IAttachment*        GetInterfaceByName(const char* szName) const = 0;
 	virtual IAttachment*        GetInterfaceByIndex(uint32 c) const = 0;
 	virtual IAttachment*        GetInterfaceByNameCRC(uint32 nameCRC) const = 0;
-	virtual IAttachment*        GetInterfaceByPhysId(int id) const = 0; //!< Takes physical partid as input.
+	virtual IAttachment*        GetInterfaceByPhysId(int id) const = 0;    //!< Takes physical partid as input.
 
 	virtual int32               GetAttachmentCount() const = 0;
 	virtual int32               GetIndexByName(const char* szName) const = 0;
@@ -606,11 +610,19 @@ struct CSKINAttachment : public IAttachmentObject
 	virtual void     ProcessAttachment(IAttachment* pIAttachment) override {};
 
 	IMaterial*       GetBaseMaterial(uint32 nLOD) const override;
-	void             SetReplacementMaterial(IMaterial* pMaterial, uint32 nLOD) override { m_pReplacementMaterial[nLOD] = pMaterial;  }
-	IMaterial*       GetReplacementMaterial(uint32 nLOD) const override                 { return m_pReplacementMaterial[nLOD]; }
+	void             SetReplacementMaterial(IMaterial* pMaterial, uint32 nLOD) override
+	{
+		nLOD = clamp_tpl<uint32>(nLOD, 0, g_nMaxGeomLodLevels - 1);
+		m_pReplacementMaterial[nLOD] = pMaterial;
+	}
+	IMaterial* GetReplacementMaterial(uint32 nLOD) const override
+	{
+		nLOD = clamp_tpl<uint32>(nLOD, 0, g_nMaxGeomLodLevels - 1);
+		return m_pReplacementMaterial[nLOD];
+	}
 
 	_smart_ptr<IAttachmentSkin> m_pIAttachmentSkin;
-	_smart_ptr<IMaterial>       m_pReplacementMaterial[6];
+	_smart_ptr<IMaterial>       m_pReplacementMaterial[g_nMaxGeomLodLevels];
 };
 
 inline IMaterial* CSKINAttachment::GetBaseMaterial(uint32 nLOD) const

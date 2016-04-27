@@ -3237,6 +3237,12 @@ void CRendererCVars::InitCVars()
 	CV_r_reloadshaders = 0;
 #endif
 
+	// compute skinning cvars
+	DefineConstIntCVar(r_ComputeSkinning, 1, VF_NULL, "Activate skinning via compute shaders");
+	DefineConstIntCVar(r_ComputeSkinningMorphs, 1, VF_NULL, "Apply morphs before skinning");
+	DefineConstIntCVar(r_ComputeSkinningTangents, 1, VF_NULL, "Calculate new tangents after skinning is computed");
+	DefineConstIntCVar(r_ComputeSkinningDebugDraw, 0, VF_NULL, "Enable debug draw mode for geometry deformation");
+
 	//////////////////////////////////////////////////////////////////////////
 	InitExternalCVars();
 }

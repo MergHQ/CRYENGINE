@@ -14,6 +14,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryEntitySystem/IEntityRenderState.h>
 #include "../Common/ReverseDepth.h"
+#include "../Common/ComputeSkinningStorage.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "D3D_SVO.h"
@@ -2616,10 +2617,27 @@ void CD3D9Renderer::FX_DrawBatchSkinned(CShader* pSh, SShaderPass* pPass, SSkinn
 	rRP.m_RendNumGroup = 0;
 	rRP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_VERTEX_VELOCITY];
 
-	if (pSkinningData->nHWSkinningFlags & eHWS_SkinnedLinear)
-		rRP.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_SKELETON_SSD_LINEAR]);
+	ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
+	bool bDoComputeDeformation = (cvar_gd && cvar_gd->GetIVal()) && (pSkinningData->nHWSkinningFlags & eHWS_DC_deformation_Skinning);
+
+	// here we decide if we go compute or vertex skinning
+	// problem is once the rRP.m_FlagsShader_RT gets vertex skinning removed, if the UAV is not available in the below rendering loop,
+	// the mesh won't get drawn. There is need for another way to do this
+	if (bDoComputeDeformation)
+	{
+		rRP.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_COMPUTE_SKINNING]);
+		if (pSkinningData->nHWSkinningFlags & eHWS_SkinnedLinear)
+			rRP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SKELETON_SSD_LINEAR]);
+		else
+			rRP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SKELETON_SSD]);
+	}
 	else
-		rRP.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_SKELETON_SSD]);
+	{
+		if (pSkinningData->nHWSkinningFlags & eHWS_SkinnedLinear)
+			rRP.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_SKELETON_SSD_LINEAR]);
+		else
+			rRP.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_SKELETON_SSD]);
+	}
 
 	CHWShader_D3D* pCurHS, * pCurDS;
 	bool bTessEnabled = FX_SetTessellationShaders(pCurHS, pCurDS, pPass);
@@ -2693,36 +2711,68 @@ void CD3D9Renderer::FX_DrawBatchSkinned(CShader* pSh, SShaderPass* pPass, SSkinn
 		if (pOD)
 		{
 			SSkinningData* const pSkinningData = pOD->m_pSkinningData;
-			if (!pRE->BindRemappedSkinningData(pSkinningData->remapGUID))
+			if (pSkinningData)
 			{
-				continue;
-			}
+				bool bUseOldPipeline = true;
+				CGpuBuffer* skinnedUAVBuffer = NULL;
+				if (bDoComputeDeformation)
+				{
+					// at this point rRP.m_FlagsShader_RT has the vertex skinning reset so if the UAV is not available
+					// the mesh will be skipped. This has to be done in a different way and also changed the way streams
+					// are binded for compute vs vertex
+					auto it = pRE->m_pRenderMesh->m_outVerticesUAV.find(pSkinningData->pCustomTag);
+					if (it != pRE->m_pRenderMesh->m_outVerticesUAV.end())
+					{
+						skinnedUAVBuffer = gRenDev->GetComputeSkinningStorage()->GetResource((*it).second.skinnedUAVHandle);
+						if (skinnedUAVBuffer)
+							bUseOldPipeline = false;
+					}
+				}
 
-			pBuffer[0] = alias_cast<SCharacterInstanceCB*>(pSkinningData->pCharInstCB)->m_buffer;
+				if (!bUseOldPipeline)
+				{
+					m_DevMan.BindSRV(CDeviceManager::TYPE_VS, skinnedUAVBuffer->GetSRV(), 16);
+					if (rRP.m_pRE)
+						rRP.m_pRE->mfDraw(pSh, pPass);
+					else
+						FX_DrawIndexedMesh(eptTriangleList);
 
-			// get previous data for motion blur if available
-			if (pSkinningData->pPreviousSkinningRenderData)
-			{
-				pBuffer[1] = alias_cast<SCharacterInstanceCB*>(pSkinningData->pPreviousSkinningRenderData->pCharInstCB)->m_buffer;
+					m_DevMan.BindSRV(CDeviceManager::TYPE_VS, NULL, 16);
+				}
+				else
+				{
+					if (!pRE->BindRemappedSkinningData(pSkinningData->remapGUID))
+					{
+						continue;
+					}
+
+					pBuffer[0] = alias_cast<SCharacterInstanceCB*>(pSkinningData->pCharInstCB)->boneTransformsBuffer;
+
+					// get previous data for motion blur if available
+					if (pSkinningData->pPreviousSkinningRenderData)
+					{
+						pBuffer[1] = alias_cast<SCharacterInstanceCB*>(pSkinningData->pPreviousSkinningRenderData->pCharInstCB)->boneTransformsBuffer;
+					}
+
+#ifndef _RELEASE
+					rRP.m_PS[nThreadID].m_NumRendSkinnedObjects++;
+#endif
+
+					m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, pBuffer[0], 9);
+					m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, pBuffer[1], 10);
+					{
+						DETAILED_PROFILE_MARKER("DrawSkinned");
+						if (rRP.m_pRE)
+							rRP.m_pRE->mfDraw(pSh, pPass);
+						else
+							FX_DrawIndexedMesh(eptTriangleList);
+					}
+				}
 			}
 		}
 		else
 		{
 			continue;
-		}
-
-#ifndef _RELEASE
-		rRP.m_PS[nThreadID].m_NumRendSkinnedObjects++;
-#endif
-
-		m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, pBuffer[0], 9);
-		m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, pBuffer[1], 10);
-		{
-			DETAILED_PROFILE_MARKER("DrawSkinned");
-			if (rRP.m_pRE)
-				rRP.m_pRE->mfDraw(pSh, pPass);
-			else
-				FX_DrawIndexedMesh(eptTriangleList);
 		}
 	}
 

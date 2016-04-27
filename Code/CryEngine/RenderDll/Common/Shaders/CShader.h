@@ -342,6 +342,7 @@ public:
 	static CShader*              s_ShaderDXTCompress;
 	static CShader*              s_ShaderStereo;
 	static CShader*              s_ShaderClouds;
+	static CShader*              s_shaderComputeSkinning;
 
 	const SInputShaderResources* m_pCurInputResources;
 	SShaderGen*                  m_pGlobalExt;
@@ -571,7 +572,7 @@ public:
 
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
 	#pragma warning( push )           //AMD Port
-	#pragma warning( disable : 4267 )     // conversion from 'size_t' to 'XXX', possible loss of data
+	#pragma warning( disable : 4267 ) // conversion from 'size_t' to 'XXX', possible loss of data
 #endif
 
 	int Size()
@@ -599,9 +600,9 @@ public:
 };
 
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-	#pragma warning( pop )            //AMD Port
+	#pragma warning( pop ) //AMD Port
 #endif
 
 //=====================================================================
 
-#endif  // __CSHADER_H__
+#endif                   // __CSHADER_H__

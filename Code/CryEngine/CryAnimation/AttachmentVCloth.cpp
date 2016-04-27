@@ -26,7 +26,7 @@ void CAttachmentVCLOTH::ReleaseSoftwareRenderMeshes()
 uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentObject, ISkin* pISkinRender, uint32 nLoadingFlags)
 {
 	if (pIAttachmentObject == 0)
-		return 0; //no attachment objects
+		return 0;                                                             //no attachment objects
 
 	if (pISkinRender == 0)
 		CryFatalError("CryAnimation: if you create the binding for a Skin-Attachment, then you have to pass the pointer to an ISkin as well");
@@ -39,8 +39,8 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 	if (m_pRenderSkin != pCSkinRenderModel)
 	{
 		ReleaseRenderSkin();
-		g_pCharacterManager->RegisterInstanceVCloth(pCSkinRenderModel, this); //register this CAttachmentVCLOTH instance in CSkin.
-		m_pRenderSkin = pCSkinRenderModel;                                    //increase the Ref-Counter
+		g_pCharacterManager->RegisterInstanceVCloth(pCSkinRenderModel, this);  //register this CAttachmentVCLOTH instance in CSkin.
+		m_pRenderSkin = pCSkinRenderModel;                                     //increase the Ref-Counter
 	}
 
 	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
@@ -63,7 +63,7 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 		else
 			NotMatchingNames++, g_pILog->LogError("The joint-name (%s) of SKIN (%s) was not found in SKEL:  %s", m_pRenderSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(), pSkinFilePath, pSkelFilePath);
 #endif
-	} //for loop
+	}                                                                       //for loop
 
 	if (NotMatchingNames)
 	{
@@ -99,7 +99,7 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 		IRenderMesh* pRenderMesh = pModelMesh->m_pIRenderMesh;
 		if (!pRenderMesh)
 			continue;
-		pRenderMesh->CreateRemappedBoneIndicesPair(m_arrRemapTable, pDefaultSkeleton->GetGuid());
+		pRenderMesh->CreateRemappedBoneIndicesPair(m_arrRemapTable, pDefaultSkeleton->GetGuid(), this);
 	}
 
 	SAFE_RELEASE(m_pIAttachmentObject);
@@ -139,8 +139,8 @@ uint32 CAttachmentVCLOTH::AddSimBinding(const ISkin& pISkinRender, uint32 nLoadi
 	if (m_pSimSkin != pCSkinRenderModel)
 	{
 		ReleaseSimSkin();
-		g_pCharacterManager->RegisterInstanceVCloth(pCSkinRenderModel, this); //register this CAttachmentVCLOTH instance in CSkin.
-		m_pSimSkin = pCSkinRenderModel;                                       //increase the Ref-Counter
+		g_pCharacterManager->RegisterInstanceVCloth(pCSkinRenderModel, this);  //register this CAttachmentVCLOTH instance in CSkin.
+		m_pSimSkin = pCSkinRenderModel;                                        //increase the Ref-Counter
 	}
 
 	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
@@ -163,12 +163,12 @@ uint32 CAttachmentVCLOTH::AddSimBinding(const ISkin& pISkinRender, uint32 nLoadi
 		else
 			NotMatchingNames++, g_pILog->LogError("The joint-name (%s) of SKIN (%s) was not found in SKEL:  %s", m_pSimSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(), pSkinFilePath, pSkelFilePath);
 #endif
-	} //for loop
+	}                                                                       //for loop
 
 	if (NotMatchingNames)
 	{
 		CryFatalError("CryAnimation: the simulation-attachment is supposed to have the same skeleton as the render-attachment");
-		return 0; //critical! incompatible skeletons. cant create skin-attachment
+		return 0;                                                             //critical! incompatible skeletons. cant create skin-attachment
 	}
 
 	return 1;
@@ -263,7 +263,7 @@ void CAttachmentVCLOTH::UpdateRemapTable()
 		if (nID >= 0)
 			m_arrRemapTable[js] = nID;
 		else
-			CryFatalError("ModelError: data-corruption when executing UpdateRemapTable for SKEL (%s) and SKIN (%s) ", pSkelFilePath, pSkinFilePath); //a fail in this case is virtually impossible, because the SKINs are alread attached
+			CryFatalError("ModelError: data-corruption when executing UpdateRemapTable for SKEL (%s) and SKIN (%s) ", pSkelFilePath, pSkinFilePath);   //a fail in this case is virtually impossible, because the SKINs are alread attached
 	}
 
 	// Patch the remapping
@@ -273,13 +273,13 @@ void CAttachmentVCLOTH::UpdateRemapTable()
 		IRenderMesh* pRenderMesh = pModelMesh->m_pIRenderMesh;
 		if (!pRenderMesh)
 			continue;
-		pRenderMesh->CreateRemappedBoneIndicesPair(m_arrRemapTable, pDefaultSkeleton->GetGuid());
+		pRenderMesh->CreateRemappedBoneIndicesPair(m_arrRemapTable, pDefaultSkeleton->GetGuid(), this);
 	}
 
 	CModelMesh* pSimModelMesh = m_pSimSkin->GetModelMesh(0);
 	IRenderMesh* pSimRenderMesh = pSimModelMesh->m_pIRenderMesh;
 	if (pSimRenderMesh)
-		pSimRenderMesh->CreateRemappedBoneIndicesPair(m_arrSimRemapTable, pDefaultSkeleton->GetGuid());
+		pSimRenderMesh->CreateRemappedBoneIndicesPair(m_arrSimRemapTable, pDefaultSkeleton->GetGuid(), this);
 }
 
 void CAttachmentVCLOTH::ReleaseSimRemapTablePair()
@@ -558,7 +558,7 @@ ILINE void DrawVertexDebug(
 
 _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint lod, uint id)
 {
-	m_pRenderMeshsSW[id] = NULL; // smart pointer release
+	m_pRenderMeshsSW[id] = NULL;   // smart pointer release
 
 	if (m_pRenderSkin == 0)
 		return _smart_ptr<IRenderMesh>(NULL);
@@ -621,7 +621,7 @@ _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint 
 
 #ifndef _RELEASE
 	m_vertexAnimation.m_vertexAnimationStats.sCharInstanceName = m_pAttachmentManager->m_pSkelInstance->GetFilePath();
-	m_vertexAnimation.m_vertexAnimationStats.sAttachmentName = "";//m_Name; TODO fix
+	m_vertexAnimation.m_vertexAnimationStats.sAttachmentName = "";                               //m_Name; TODO fix
 	m_vertexAnimation.m_vertexAnimationStats.pCharInstance = m_pAttachmentManager->m_pSkelInstance;
 #endif
 	return m_pRenderMeshsSW[id];
@@ -640,10 +640,10 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	if (nDesiredRenderLOD >= numLODs)
 	{
 		if (m_AttFlags & FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD)
-			return;                        //early exit, if LOD-file doesn't exist
-		nDesiredRenderLOD = numLODs - 1; //render the last existing LOD-file
+			return;                                                                                  //early exit, if LOD-file doesn't exist
+		nDesiredRenderLOD = numLODs - 1;                                                           //render the last existing LOD-file
 	}
-	int nRenderLOD = m_pRenderSkin->SelectNearestLoadedLOD(nDesiredRenderLOD);  //we can render only loaded LODs
+	int nRenderLOD = m_pRenderSkin->SelectNearestLoadedLOD(nDesiredRenderLOD);                     //we can render only loaded LODs
 
 	m_pRenderSkin->m_arrModelMeshes[nRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
 	m_pSimSkin->m_arrModelMeshes[nRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
@@ -655,9 +655,9 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	Matrix34 FinalMat34 = rWorldMat34;
 	RendParams.pMatrix = &FinalMat34;
 	RendParams.pInstance = this;
-	RendParams.pMaterial = (IMaterial*)m_pIAttachmentObject->GetReplacementMaterial(nRenderLOD); //the Replacement-Material has priority
+	RendParams.pMaterial = (IMaterial*)m_pIAttachmentObject->GetReplacementMaterial(nRenderLOD);   //the Replacement-Material has priority
 	if (RendParams.pMaterial == 0)
-		RendParams.pMaterial = (IMaterial*)m_pRenderSkin->GetIMaterial(nRenderLOD); //as a fall back take the Base-Material from the model
+		RendParams.pMaterial = (IMaterial*)m_pRenderSkin->GetIMaterial(nRenderLOD);                  //as a fall back take the Base-Material from the model
 
 	bool bNewFrame = false;
 	if (m_vertexAnimation.m_skinningPoolID != gEnv->pRenderer->EF_GetSkinningPoolID())
@@ -669,7 +669,7 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 
 	if (bNewFrame && nRenderLOD < m_clothPiece.GetNumLods())
 	{
-		bool visible = m_clothPiece.IsAlwaysVisible(); //||
+		bool visible = m_clothPiece.IsAlwaysVisible();                                               //||
 		//        g_pCharacterManager->GetClothManager()->QueryVisibility((uint64)m_pAttachmentManager, center, passInfo.IsGeneralPass());
 		if (m_clothPiece.PrepareCloth(m_pAttachmentManager->m_pSkelInstance->m_SkeletonPose, rWorldMat34, visible, nRenderLOD))
 		{
@@ -745,7 +745,7 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	else if (RendParams.nCustomFlags & COB_POST_3D_RENDER)
 	{
 		memcpy(&pD->m_fTempVars[5], &RendParams.fCustomData[0], sizeof(float) * 4);
-		pObj->m_fAlpha = 1.0f; // Use the alpha in the post effect instead of here
+		pObj->m_fAlpha = 1.0f;     // Use the alpha in the post effect instead of here
 		pD->m_fTempVars[9] = RendParams.fAlpha;
 	}
 	pObj->m_DissolveRef = RendParams.nDissolveRef;
@@ -971,7 +971,7 @@ void CAttachmentVCLOTH::TriggerMeshStreaming(uint32 nDesiredRenderLOD, const SRe
 	if (numLODs == 0)
 		return;
 	if (m_AttFlags & FLAGS_ATTACH_HIDE_ATTACHMENT)
-		return;  //mesh not visible
+		return;                          //mesh not visible
 	if (nDesiredRenderLOD >= numLODs)
 	{
 		if (m_AttFlags & FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD)
@@ -1034,6 +1034,7 @@ SSkinningData* CAttachmentVCLOTH::GetVertexTransformationData(bool bVertexAnimat
 	}
 
 	SSkinningData* pSkinningData = gEnv->pRenderer->EF_CreateRemappedSkinningData(nNumBones, pMaster->arrSkinningRendererData[nList].pSkinningData, nCustomDataSize, pMaster->m_pDefaultSkeleton->GetGuid());
+	pSkinningData->pCustomTag = this;
 	if (nCustomDataSize)
 	{
 		SVertexAnimationJob* pVertexAnimation = new(pSkinningData->pCustomData)SVertexAnimationJob();
@@ -1128,14 +1129,14 @@ void CAttachmentVCLOTH::SoftwareSkinningDQ_VS_Emulator(CModelMesh* pModelMesh, M
 	if (pQTangents == 0)
 		return;
 	int32 nSkinningStride;
-	uint8* pSkinningInfo = pModelMesh->m_pIRenderMesh->GetHWSkinPtr(nSkinningStride, FSL_READ);        //pointer to weights and bone-id
+	uint8* pSkinningInfo = pModelMesh->m_pIRenderMesh->GetHWSkinPtr(nSkinningStride, FSL_READ);     //pointer to weights and bone-id
 	if (pSkinningInfo == 0)
 		return;
 
-	DualQuat arrRemapSkinQuat[MAX_JOINT_AMOUNT];  //dual quaternions for skinning
+	DualQuat arrRemapSkinQuat[MAX_JOINT_AMOUNT];                                                //dual quaternions for skinning
 	for (size_t b = 0; b < m_arrRemapTable.size(); ++b)
 	{
-		const uint16 sidx = m_arrRemapTable[b]; //is array can be different for every skin-attachment
+		const uint16 sidx = m_arrRemapTable[b];                                                     //is array can be different for every skin-attachment
 		arrRemapSkinQuat[b] = pSkinningTransformations[sidx];
 	}
 
@@ -1191,17 +1192,17 @@ void CAttachmentVCLOTH::SoftwareSkinningDQ_VS_Emulator(CModelMesh* pModelMesh, M
 			f32 l = 1.0f / wquat.nq.GetLength();
 			wquat.nq *= l;
 			wquat.dq *= l;
-			g_arrExtSkinnedStream[e] = rRenderMat34 * (wquat * hwPosition);  //transform position by dual-quaternion
+			g_arrExtSkinnedStream[e] = rRenderMat34 * (wquat * hwPosition);       //transform position by dual-quaternion
 
 			Quat QTangent = hwQTangent.GetQ();
 			assert(QTangent.IsUnit());
 
 			g_arrQTangents[e] = wquat.nq * QTangent;
 			if (g_arrQTangents[e].w < 0.0f)
-				g_arrQTangents[e] = -g_arrQTangents[e]; //make it positive
+				g_arrQTangents[e] = -g_arrQTangents[e];                         //make it positive
 			f32 flip = QTangent.w < 0 ? -1.0f : 1.0f;
 			if (flip < 0)
-				g_arrQTangents[e] = -g_arrQTangents[e]; //make it negative
+				g_arrQTangents[e] = -g_arrQTangents[e];                         //make it negative
 		}
 	}
 	g_YLine += 0x10;
@@ -1396,7 +1397,7 @@ bool CClothSimulator::AddGeometry(phys_geometry* pgeom)
 	for (int i = 0; i < m_nVtx; i++)
 	{
 		m_particlesHot[i].pos = Vector4(pMesh->pVertices[i]);
-		m_particlesCold[i].prevPos = m_particlesHot[i].pos; // vel = 0
+		m_particlesCold[i].prevPos = m_particlesHot[i].pos;   // vel = 0
 	}
 
 	SEdgeInfo(*pInfo)[3] = new SEdgeInfo[pMesh->nTris][3];
@@ -1418,7 +1419,7 @@ bool CClothSimulator::AddGeometry(phys_geometry* pgeom)
 				const Vec3& v3 = pMesh->pVertices[i3];
 				int i4 = pMesh->pIndices[adjTri * 3 + dec_mod3[adjEdge]];
 				const Vec3& v4 = pMesh->pVertices[i4];
-				cost = fabs((v1 - v2).len() - (v3 - v4).len()); // difference between diagonals
+				cost = fabs((v1 - v2).len() - (v3 - v4).len());         // difference between diagonals
 				// get the lowest value, although it should be the same
 				if (pInfo[adjTri][adjEdge].m_cost < cost)
 					cost = pInfo[adjTri][adjEdge].m_cost;
@@ -1716,7 +1717,7 @@ void CClothSimulator::StartStep(float time_interval, const QuatT& location)
 	}
 
 	// blend world space with local space movement
-	const float rotationBlend = m_config.rotationBlend; //max(m_angModulator, m_config.rotationBlend);
+	const float rotationBlend = m_config.rotationBlend;   //max(m_angModulator, m_config.rotationBlend);
 	if ((m_config.rotationBlend > 0.f || m_config.translationBlend > 0.f) && !m_permCollidables.empty())
 	{
 		Quaternion dq(IDENTITY);
@@ -1809,7 +1810,7 @@ static ILINE bool PrimitiveRayCast(const f32 cr, const f32 ca, const SRay& ray, 
 #endif
 
 		Quotient tmin(1, 1);
-		int iFeature = -1; // TODO: remove or change
+		int iFeature = -1;        // TODO: remove or change
 		float a = ray.dir.len2();
 		for (int icap = 0; icap < 2; icap++)
 		{
@@ -1893,7 +1894,7 @@ void CClothSimulator::DetectCollisions()
 		m_particlesCold[i].pContact = NULL;
 		if (pContact && j >= 0)
 		{
-			Vector4 currPos = (m_particlesHot[i].pos - collidables[j].offset) * collidables[j].R; // TODO: move out
+			Vector4 currPos = (m_particlesHot[i].pos - collidables[j].offset) * collidables[j].R;       // TODO: move out
 			Vector4 prevPos = (m_particlesCold[i].oldPos - collidables[j].oldOffset) * collidables[j].oldR;
 			Vector4 delta = currPos - prevPos;
 			SRay ray;
@@ -2151,7 +2152,7 @@ int CClothSimulator::Step(float animBlend)
 			float depth = (m_particlesHot[idx].pos - m_contacts[i].pt) * n;
 			if (depth < 0)
 			{
-				float stiffness = max(animBlend * m_config.maxBlendWeight, m_config.pullStiffness * m_particlesHot[i].alpha); // TODO: try and take this out
+				float stiffness = max(animBlend * m_config.maxBlendWeight, m_config.pullStiffness * m_particlesHot[i].alpha);        // TODO: try and take this out
 				m_particlesHot[idx].pos -= (1.f - stiffness) * depth * n;
 				m_particlesHot[idx].timer = 0;
 			}
@@ -2356,7 +2357,7 @@ bool CClothPiece::PrepareCloth(CSkeletonPose& skeletonPose, const Matrix34& worl
 	m_pCharInstance = skeletonPose.m_pInstance;
 	if (m_lastVisible != visible)
 	{
-		m_hideCounter = 0; // trigger a phase change
+		m_hideCounter = 0;                 // trigger a phase change
 	}
 	m_lastVisible = visible;
 
@@ -2364,11 +2365,11 @@ bool CClothPiece::PrepareCloth(CSkeletonPose& skeletonPose, const Matrix34& worl
 	{
 		m_hideCounter++;
 		float f = (float)m_hideCounter / (float)HIDE_INTERVAL;
-		f = 2.f * sqrt(f) - f; // nice super-linear function
+		f = 2.f * sqrt(f) - f;           // nice super-linear function
 		m_animBlend = max(m_animBlend, visible ? 1 - f : f);
-		visible = true; // force it to be still visible
+		visible = true;                  // force it to be still visible
 	}
-	if (!visible) // no need to do the rest if falling back to GPU skinning
+	if (!visible)                       // no need to do the rest if falling back to GPU skinning
 		return false;
 
 	WaitForJob(true);
@@ -2388,7 +2389,7 @@ bool CClothPiece::PrepareCloth(CSkeletonPose& skeletonPose, const Matrix34& worl
 	}
 
 	m_currentLod = min(lod, m_numLods - 1);
-	m_charLocation = QuatT(worldMat); // TODO: direct conversion
+	m_charLocation = QuatT(worldMat);    // TODO: direct conversion
 
 	//  if (m_bSingleThreaded)
 	//  {
@@ -2683,7 +2684,7 @@ void SClothGeometry::AllocateBuffer()
 		buff->m_arrDstPositions.resize(nVtx);
 		buff->m_arrDstTangents.resize(nVtx);
 
-		buff->m_tmpClothVtx.resize(nUniqueVtx + 1); // leave room for unaligned store
+		buff->m_tmpClothVtx.resize(nUniqueVtx + 1);   // leave room for unaligned store
 		buff->m_normals.resize(nUniqueVtx);
 
 		buff->m_tangents.resize(maxVertices);

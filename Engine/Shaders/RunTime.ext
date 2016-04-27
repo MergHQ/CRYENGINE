@@ -1130,6 +1130,35 @@ Property
 
 Property
 {
+	Name = %_RT_COMPUTE_SKINNING
+		Mask = 0x20000000000000
+		Precache = GeneralVS
+		Precache = ClothVS
+		Precache = SkinVS 
+		Precache = HairVS	
+		Precache = EyeVS
+		Precache = GlassVS
+		Precache = VegetationVS    
+		Precache = ShadowVS
+		Precache = ShadowGenVS
+		Precache = ZVS
+		Precache = DetailVS
+		Precache = GlowVS
+		Precache = MotionBlurVS
+		Precache = FurVS
+		Precache = SoftAlphaTestPassVS
+		Precache = CausticsVS
+		Precache = CustomRenderVS
+		Precache = EffectLayerVS
+		Precache = CloakVS
+		Precache = MethaGenVS
+		Precache = DebugPassVS
+		Precache = CloakVS
+		Precache = DynamicOverlay
+}
+
+Property
+{
   Name = %_RT_REVERSE_DEPTH
 	Mask = 0x8000000000000
 	Precache = DistanceCloudsVS
