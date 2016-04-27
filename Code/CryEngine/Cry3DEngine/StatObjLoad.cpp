@@ -569,6 +569,11 @@ static _smart_ptr<IMaterial> LoadCGFMaterial(CMatMan* pMatMan, const char* szMat
 		}
 	}
 
+#if defined(FEATURE_SVO_GI)
+	if ((Cry3DEngineBase::GetCVars()->e_svoTI_Active >= 0) && (gEnv->IsEditor() || Cry3DEngineBase::GetCVars()->e_svoTI_Apply))
+		pMaterial->SetKeepLowResSysCopyForDiffTex();
+#endif
+
 	return pMaterial;
 }
 
