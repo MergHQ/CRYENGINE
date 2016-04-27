@@ -4570,20 +4570,20 @@ bool C3DEngine::CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempDat
 {
 	assert(pRNode);
 
-	// detect render resources modification (for example because of streaming or material editing)
-	if (pRNode->m_pTempData && !(pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID) && pRNode->m_pTempData->userData.nStatObjLastModificationId)
-	{
-		uint32 nNewModificationId = GetObjManager()->GetResourcesModificationChecksum(pRNode);
+	SRenderNodeTempData* pCurrentTempData = *ppTempData;
 
-		if (nNewModificationId != pRNode->m_pTempData->userData.nStatObjLastModificationId)
+	bool bValid = (pCurrentTempData && pCurrentTempData->IsValid() && !(pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID));
+
+	// detect render resources modification (for example because of mesh streaming or material editing)
+	if (bValid && pCurrentTempData->userData.nStatObjLastModificationId)
+	{
+		if (GetObjManager()->GetResourcesModificationChecksum(pRNode) != pCurrentTempData->userData.nStatObjLastModificationId)
 		{
-			pRNode->InvalidatePermanentRenderObject();
-			pRNode->m_pTempData->userData.nStatObjLastModificationId = nNewModificationId;
+			bValid = false;
 		}
 	}
 
-	SRenderNodeTempData* pCurrentTempData = *ppTempData;
-	if (pCurrentTempData && pCurrentTempData->IsValid() && !(pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID))
+	if (bValid)
 	{
 		return m_visibleNodesManager.SetLastSeenFrame(pCurrentTempData, passInfo);
 	}
@@ -4591,6 +4591,7 @@ bool C3DEngine::CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempDat
 	{
 		CreateRenderNodeTempData(ppTempData, pRNode, passInfo);
 	}
+
 	return true;
 }
 

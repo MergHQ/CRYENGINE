@@ -796,8 +796,19 @@ void COctreeNode::FillShadowMapCastersList(const ShadowMapFrustumParams& params,
 		{
 			PrefetchLine(&m_arrChilds[i + 1]->m_nLightMaskFrameId, 0);
 		}
-		if (m_arrChilds[i] && (m_arrChilds[i]->m_renderFlags & ERF_CASTSHADOWMAPS) && (!params.bSun || !params.pShadowHull || m_arrChilds[i]->nFillShadowCastersSkipFrameId != frameID))
-			m_arrChilds[i]->FillShadowMapCastersList(params, bNodeCompletellyInFrustum);
+
+		if (m_arrChilds[i] && (m_arrChilds[i]->m_renderFlags & ERF_CASTSHADOWMAPS))
+		{
+			bool bContinue = m_arrChilds[i]->nFillShadowCastersSkipFrameId != frameID;
+
+#ifdef FEATURE_SVO_GI
+			if (GetCVars()->e_svoTI_Apply && GetCVars()->e_svoTI_InjectionMultiplier && (params.pFr->nShadowMapLod == GetCVars()->e_svoTI_GsmCascadeLod))
+				bContinue = true;
+#endif
+
+			if (!params.bSun || !params.pShadowHull || bContinue)
+				m_arrChilds[i]->FillShadowMapCastersList(params, bNodeCompletellyInFrustum);
+		}
 	}
 }
 

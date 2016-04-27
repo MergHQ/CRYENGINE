@@ -135,11 +135,11 @@ bool CShadowMapStage::CreatePipelineState(const SGraphicsPipelineStateDescriptio
 			psoDesc.m_CullMode = eCULL_Front; //front faces culling by default for terrain
 	}
 
-	if (passID == ePass_DirectionalLight || passID == ePass_DirectionalLightCached)
+	if (passID == ePass_DirectionalLight || passID == ePass_DirectionalLightCached || passID == ePass_DirectionalLightRSM)
 	{
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
 	}
-	else if (passID == ePass_LocalLight)
+	else if (passID == ePass_LocalLight || passID == ePass_LocalLightRSM)
 	{
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_CUBEMAP0];
@@ -150,12 +150,10 @@ bool CShadowMapStage::CreatePipelineState(const SGraphicsPipelineStateDescriptio
 			psoDesc.m_CullMode = (psoDesc.m_CullMode == eCULL_Front) ? eCULL_Back : eCULL_Front;
 		}
 	}
-	else if (passID == ePass_DirectionalLightRSM || passID == ePass_LocalLightRSM)
+
+	if (passID == ePass_DirectionalLightRSM || passID == ePass_LocalLightRSM)
 	{
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE4];
-
-		if (passID == ePass_LocalLightRSM)
-			psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_CUBEMAP0] | g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
 
 		if (!bTwoSided)
 			psoDesc.m_CullMode = eCULL_Back;
