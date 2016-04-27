@@ -142,7 +142,7 @@ void CryCHRLoader::EndStreamSkinSync(IReadStream* pStream)
 
 				if (guid > 0)
 				{
-					pRenderMesh->CreateRemappedBoneIndicesPair(pAttachmentSkin->m_arrRemapTable, guid);
+					pRenderMesh->CreateRemappedBoneIndicesPair(pAttachmentSkin->m_arrRemapTable, guid, pAttachmentSkin);
 				}
 
 				pAttachmentSkin->m_pAttachmentManager->RequestMergeCharacterAttachments();
@@ -160,7 +160,7 @@ void CryCHRLoader::EndStreamSkinSync(IReadStream* pStream)
 						IRenderMesh* pVCSimRenderMesh = pAttachmentVCloth->m_pSimSkin->GetIRenderMesh(0);
 						if (pVCSimRenderMesh && (pVCSimRenderMesh == pRenderMesh))
 						{
-							pVCSimRenderMesh->CreateRemappedBoneIndicesPair(pAttachmentVCloth->m_arrSimRemapTable, guid);
+							pVCSimRenderMesh->CreateRemappedBoneIndicesPair(pAttachmentVCloth->m_arrSimRemapTable, guid, pAttachmentVCloth);
 						}
 					}
 
@@ -169,7 +169,7 @@ void CryCHRLoader::EndStreamSkinSync(IReadStream* pStream)
 						IRenderMesh* pVCRenderMesh = pAttachmentVCloth->m_pRenderSkin->GetIRenderMesh(0);
 						if (pVCRenderMesh && (pVCRenderMesh == pRenderMesh))
 						{
-							pVCRenderMesh->CreateRemappedBoneIndicesPair(pAttachmentVCloth->m_arrRemapTable, guid);
+							pVCRenderMesh->CreateRemappedBoneIndicesPair(pAttachmentVCloth->m_arrRemapTable, guid, pAttachmentVCloth);
 						}
 					}
 

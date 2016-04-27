@@ -149,7 +149,9 @@
 			"HWScripts/CryFX/OcclusionTest.cfx",
 			"HWScripts/CryFX/ReferenceImage.cfx",
 			"HWScripts/CryFX/Scaleform.cfx",
-			"HWScripts/CryFX/SoftOcclusionQuery.cfx"
+			"HWScripts/CryFX/SoftOcclusionQuery.cfx",
+			"HWScripts/CryFX/ComputeSkinning.cfx",
+			"HWScripts/CryFX/ComputeSkinningUtils.cfi"
 		],
 		"CryFX/Particles":
 		[	

@@ -479,6 +479,7 @@
       "CryRenderer/IColorGradingController.h",
       "CryRenderer/IGpuParticles.h",
       "CryRenderer/IGpuPhysics.h",
+      "CryRenderer/IComputeSkinning.h",
       {
         "RenderElements":[
           "CryRenderer/RenderElements/CREBreakableGlass.h",

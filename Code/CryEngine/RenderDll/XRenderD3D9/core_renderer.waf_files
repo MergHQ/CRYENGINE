@@ -315,7 +315,9 @@
 			"../Common/RenderMesh_Render.cpp",
 			"../Common/RenderMesh_SetMesh.cpp",
 			"../Common/RenderMesh.cpp",
-			"../Common/RenderMesh.h"
+			"../Common/RenderMesh.h",
+			"../Common/ComputeSkinningStorage.cpp",
+			"../Common/ComputeSkinningStorage.h"
 		],
 		"Common/Shaders":
 		[
@@ -483,7 +485,9 @@
       "GraphicsPipeline/SunShafts.h",
 			"GraphicsPipeline/SunShafts.cpp",
 			"GraphicsPipeline/ToneMapping.h",
-			"GraphicsPipeline/ToneMapping.cpp"
+			"GraphicsPipeline/ToneMapping.cpp",
+			"GraphicsPipeline/ComputeSkinning.h",
+			"GraphicsPipeline/ComputeSkinning.cpp"
 		]
 	},
 	"NoUberFile":

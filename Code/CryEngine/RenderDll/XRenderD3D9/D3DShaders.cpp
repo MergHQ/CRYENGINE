@@ -16,7 +16,6 @@
 #include <CrySystem/File/IResourceManager.h>
 
 //==================================================================================
-
 bool CShader::FXSetTechnique(const CCryNameTSCRC& Name)
 {
 	assert(gRenDev->m_pRT->IsRenderThread());
