@@ -84,6 +84,8 @@ public:
 
 	void Reset()
 	{
+		fileId = INVALID_AUDIO_STANDALONE_FILE_ID;
+		fileInstanceId = INVALID_AUDIO_STANDALONE_FILE_ID;
 		channels.clear();
 		fileName.clear();
 	}
@@ -91,7 +93,6 @@ public:
 	AudioStandaloneFileId fileId;                       // ID unique to the file, only needed for the 'finished' request
 	AudioStandaloneFileId fileInstanceId;               // ID unique to the file instance, only needed for the 'finished' request
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> fileName;
-
 	TChannelList                                channels;
 };
 

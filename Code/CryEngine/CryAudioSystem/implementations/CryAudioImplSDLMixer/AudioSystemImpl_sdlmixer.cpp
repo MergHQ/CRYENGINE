@@ -216,11 +216,22 @@ EAudioRequestStatus CAudioSystemImpl_sdlmixer::PlayFile(SAudioStandaloneFileInfo
 		pPlayStandaloneEvent->fileName = _pAudioStandaloneFileInfo->szFileName;
 		pPlayStandaloneEvent->fileId = _pAudioStandaloneFileInfo->fileId;
 		pPlayStandaloneEvent->fileInstanceId = _pAudioStandaloneFileInfo->fileInstanceId;
+		const SATLTriggerImplData_sdlmixer* pUsedTrigger = static_cast<const SATLTriggerImplData_sdlmixer*>(_pAudioStandaloneFileInfo->pUsedAudioTrigger);
 
+		static string s_localizedfilesFolder = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + m_language + CRY_NATIVE_PATH_SEPSTR;
+		static string s_nonLocalizedfilesFolder = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR;
 		static string filePath;
-		filePath = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + m_language +  CRY_NATIVE_PATH_SEPSTR + AUDIO_SYSTEM_DATA_ROOT + CRY_NATIVE_PATH_SEPSTR + _pAudioStandaloneFileInfo->szFileName + m_pCVarFileExtension->GetString();
 
-		if (SDLMixer::SoundEngine::PlayFile(pSDLAudioObjectData, pPlayStandaloneEvent, filePath.c_str()))
+		if (_pAudioStandaloneFileInfo->bLocalized)
+		{
+			filePath = s_localizedfilesFolder + _pAudioStandaloneFileInfo->szFileName + m_pCVarFileExtension->GetString();
+		}
+		else
+		{
+			filePath = s_nonLocalizedfilesFolder + _pAudioStandaloneFileInfo->szFileName + m_pCVarFileExtension->GetString();
+		}
+
+		if (SDLMixer::SoundEngine::PlayFile(pSDLAudioObjectData, pPlayStandaloneEvent, pUsedTrigger, filePath.c_str()))
 		{
 			return eAudioRequestStatus_Success;
 		}
