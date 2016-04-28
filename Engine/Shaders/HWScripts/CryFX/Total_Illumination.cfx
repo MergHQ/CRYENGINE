@@ -1173,7 +1173,7 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 
 		float4 vC = 0;
 		//		if(GetLinearDepth( sceneDepthMapSampler, IN.baseTC.xy) < 0.8f)
-		vC = ConeTraceTreeAndSky(r, SvoParamsDiffuse.x + power / 3000, SvoParamsInject.z, 0, false, false, normalize(vNor0)*saturate(1 - fAverTransmittanceY * 4));
+		vC = ConeTraceTreeAndSky(r, SvoParamsDiffuse.x + power / 10000, SvoParamsInject.z, 0, false, false, normalize(vNor0)*saturate(1 - fAverTransmittanceY * 4));
 
 		vC *= lerp(1.f, SvoParamsInject.w, saturate(fAverTransmittanceY * 8));
 
@@ -2110,7 +2110,7 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 	{
 		float so = gbuffer.Smoothness;
 		// Fresnel smoothness
-		gbuffer.Smoothness = lerp(gbuffer.Smoothness, 1, pow(1 - dot(-normalize(IN.CamVec), vNor0), 2));
+//		gbuffer.Smoothness = lerp(gbuffer.Smoothness, 1, pow(1 - dot(-normalize(IN.CamVec), vNor0), 2));
 
 		//OUT.Diffuse.xyz = vRGB * vALD.w;
 
@@ -2118,10 +2118,10 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 
 		float4 vFinalDiffuse = tex2Dlod(SVO_DiffuseFinRT, float4(IN.baseTC.xy, 0, 0));
 
-		OUT.Diffuse = lerp(vFinalDiffuse, OUT.Diffuse, saturate(pow(gbuffer.Smoothness * 2 - .75, 1)));
+		OUT.Diffuse = lerp(vFinalDiffuse, OUT.Diffuse, saturate(pow(gbuffer.Smoothness * 3 - .75, 1)));
 
 		// Fresnel amplify
-		OUT.Diffuse.xyz *= 1 + pow(saturate(1 - so), 4) * pow(saturate(1 - dot(-normalize(IN.CamVec), vNor0)), 7) * 2;
+		//OUT.Diffuse.xyz *= 1 + pow(saturate(1 - so), 4) * pow(saturate(1 - dot(-normalize(IN.CamVec), vNor0)), 7) * 2;
 
 		OUT.Diffuse.a = 1;
 	}

@@ -1202,7 +1202,7 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 {
 	if (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0)
 	{
-		if (passInfo.IsRecursivePass() || (pTempData && (pTempData->userData.m_pFoliage || (pTempData->userData.pOwnerNode->GetRndFlags() & ERF_SELECTED))))
+		if (passInfo.IsRecursivePass() || (pTempData && (pTempData->userData.m_pFoliage || (pTempData->userData.pOwnerNode && (pTempData->userData.pOwnerNode->GetRndFlags() & ERF_SELECTED)))))
 		{
 			// Recursive and Debug passes do not support permanent render objects now...
 			pRenderObject = gEnv->pRenderer->EF_GetObject_Temp(passInfo.ThreadID());

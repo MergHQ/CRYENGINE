@@ -187,8 +187,10 @@ pixout_shadow Common_SG_PS(v2f_sh IN)
 		#endif
 
 		#if	%TEMP_VEGETATION
-		OUT.Color.a = min(baseColor.a, CP_ShadowGen_VegetationAlphaClamp.x);
-	#endif
+			OUT.Color.a = CP_ShadowGen_VegetationAlphaClamp.x;
+		#else
+			OUT.Color.a = 1.f;
+		#endif
 
 	#endif
 #endif
