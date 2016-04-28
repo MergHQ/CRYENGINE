@@ -976,12 +976,12 @@ bool ConeTraceBrick_SSR(const float3 vRayStartPos,  Ray r, const float _fDistanc
 	{
 		Ray rOrig = r;
 
-		float fStepSize = 0.5f;
+		float fStepSize = 0.125f;
 
 		r.startpoint += r.direction*.1;
 		fDistance = fDistanceIn + length(r.startpoint - vRayStartPos); 
 
-		for(int s=0; s<16; s++)
+		for(int s=0; s<64; s++)
 		{
 			float fVoxSize = (1 + (fDistM*2.5 + fDistance) * .5) / 7;
 
@@ -1001,11 +1001,11 @@ bool ConeTraceBrick_SSR(const float3 vRayStartPos,  Ray r, const float _fDistanc
         vTC0.y = 1-vTC0.y;
 
 				// read depth
-				float fScrDepth = GetLinearDepth(tex2Dlod( sceneDepthMapSampler, float4(vTC0.xy,0,0) ).x) * PS_NearFarClipDist.y;
-        float fRayDepth = GetLinearDepth( g_PS_ProjRatio.y / (vTC0.z - g_PS_ProjRatio.x) ) * PS_NearFarClipDist.y - 0.05;
-				float fSurDens = saturate(1 - 1.f/(1+fDistM/5)*max((fScrDepth - fRayDepth), (fRayDepth - fScrDepth)/4) - 1 / 1.25);
-				float fFade = saturate(100*(1.f - 2.f*max(abs(vTC0.x-.5),abs(vTC0.y-.5))));
-				vRGBD.a = max(vRGBD.a, saturate(fSurDens*fFade*1000));
+				float fScrDepth = GetLinearDepth(tex2Dlod(sceneDepthMapSampler, float4(vTC0.xy, 0, 0)).x) * PS_NearFarClipDist.y;
+				float fRayDepth = GetLinearDepth(g_PS_ProjRatio.y / (vTC0.z - g_PS_ProjRatio.x)) * PS_NearFarClipDist.y - 0.05;
+				float fSurDens = saturate(1 - max((fScrDepth - fRayDepth), (fRayDepth - fScrDepth) / 2) > SvoParamsDiffuse.z);
+				float fFade = saturate(18 * (1.f - 2.f*max(abs(vTC0.x - .5), abs(vTC0.y - .5))));
+				vRGBD.a = max(vRGBD.a, fSurDens*fFade);
 
 #if %_RT_SAMPLE5
 				if(!IsDiffuseMode())
@@ -1580,7 +1580,7 @@ float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, ou
 #if %_RT_SAMPLE5
 		if(nDescentId == 0)
 		{
-			float fOffset = (curNode.vMax.x-curNode.vMin.x) / VOX_BRICK_TEXRES * 2.f;// * 2 / 3;
+			float fOffset = (curNode.vMax.x-curNode.vMin.x) / VOX_BRICK_TEXRES * (IsDiffuseMode() ? 2.f : 1.f);
 			rayForTree.startpoint += vSurfNorm * fOffset;// + rayForTree.direction * fOffset / 3;
 			vRayStartPos += vSurfNorm * fOffset;// + rayForTree.direction * fOffset / 3;
 			vSurfNormOffset = vSurfNorm * fOffset;

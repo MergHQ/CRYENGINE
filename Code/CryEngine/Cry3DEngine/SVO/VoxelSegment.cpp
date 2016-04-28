@@ -20,8 +20,9 @@
 	#include "brush.h"
 	#include "SceneTree.h"
 	#include <CryThreading/IJobManager_JobDelegator.h>
+	#include <CryAnimation/ICryAnimation.h>
 
-	#define SVO_CPU_VOXELIZATION_OFFSET_MESH    0.02f
+	#define SVO_CPU_VOXELIZATION_OFFSET_MESH    0
 	#define SVO_CPU_VOXELIZATION_OFFSET_TERRAIN -0.04f
 	#define SVO_CPU_VOXELIZATION_OFFSET_VISAREA (Cry3DEngineBase::GetCVars()->e_svoMinNodeSize / (float)nVoxTexMaxDim)
 	#define SVO_CPU_VOXELIZATION_POOL_SIZE_MB   (12 * 1024)
@@ -1825,7 +1826,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 	{
 		for (int nObjType = 0; nObjType < eERType_TypesNum; nObjType++)
 		{
-			if ((bThisIsAreaParent && nObjType == eERType_Brush) || (nObjType == eERType_Vegetation))
+			if ((bThisIsAreaParent && (nObjType == eERType_Brush || nObjType == eERType_RenderProxy)) || (nObjType == eERType_Vegetation))
 			{
 				PodArray<IRenderNode*> arrRenderNodes;
 
@@ -1870,61 +1871,123 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 						continue;
 					}
 
-					if (IMaterial* pMaterial = pNode->GetMaterial())
+					int nMaxSlots = 1;
+					int nMaxSubSlots = 1;
+					if (pNode->GetRenderNodeType() == eERType_RenderProxy)
 					{
-						Matrix34A mat;
-						pNode->GetEntityStatObj(0, 0, &mat);
-						SObjInfo info;
-						info.matObjInv = mat.GetInverted();
-						info.matObj = mat;
-						info.pStatObj = (CStatObj*)pNode->GetEntityStatObj(0, 0, NULL);
-						if (!info.pStatObj)
+						if (!strstr(pNode->GetName(), "_TI_VOX"))
 							continue;
+						nMaxSlots = 32;
+						nMaxSubSlots = 32;
+					}
 
-						int nLod = GetCVars()->e_svoTI_ObjectsLod;
 
-						if (bThisIsLowLodNode)
-							nLod++;
-
-						EFileStreamingStatus eStreamingStatusParent = info.pStatObj->m_eStreamingStatus;
-						bool bUnloadable = info.pStatObj->IsUnloadable();
-
-						info.pStatObj = (CStatObj*)info.pStatObj->GetLodObject(nLod, true);
-
-						if (pNode->GetRenderNodeType() == eERType_Brush)
-							info.fObjScale = ((CBrush*)pNode)->m_fMatrixScale;
-						else if (pNode->GetRenderNodeType() == eERType_Vegetation)
-							info.fObjScale = ((CVegetation*)pNode)->GetScale();
-						else
-							assert(!"Undefined object type");
-
-						info.pMat = pMaterial;
-
-						if (info.pStatObj->m_nFlags & STATIC_OBJECT_HIDDEN)
-							continue;
-
-						info.bIndoor = pNode->GetEntityVisArea() != 0;
-
-						info.bVegetation = (nObjType == eERType_Vegetation);
-
-						if (parrObjects)
+					for (int nSlotId = 0; nSlotId < nMaxSlots; nSlotId++)
+					{
+						for (int nSubSlotId = 0; nSubSlotId < nMaxSubSlots; nSubSlotId++)
 						{
-							parrObjects->Add(info);
-						}
-						else if (info.pStatObj->m_eStreamingStatus != ecss_Ready && eStreamingStatusParent != ecss_Ready && bUnloadable)
-						{
-							// request streaming of missing meshes
-							if (Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizaionPostpone == 2)
-							{
-								info.pStatObj->UpdateStreamableComponents(0.5f, info.matObj, false, nLod);
-							}
+							Matrix34A nodeTM;
+							CStatObj* pStatObj = (CStatObj*)pNode->GetEntityStatObj(nSlotId, nSubSlotId, &nodeTM);
 
-							if (Cry3DEngineBase::GetCVars()->e_svoDebug == 7)
+							IMaterial* pMaterial = pNode->GetMaterial();
+							if (!pMaterial && pStatObj)
+								pMaterial = pStatObj->GetMaterial();
+
+							if(pMaterial)
 							{
-								Cry3DEngineBase::Get3DEngine()->DrawBBox(pNode->GetBBox(), Col_Red);
-								GetRenderer()->DrawLabel(pNode->GetBBox().GetCenter(), 1.3f, "%s", info.pStatObj->GetFilePath());
+								SObjInfo info;
+								info.matObjInv = nodeTM.GetInverted();
+								info.matObj = nodeTM;
+								info.pStatObj = (CStatObj*)pNode->GetEntityStatObj(nSlotId, nSubSlotId, NULL);
+
+								if (!info.pStatObj && nObjType == eERType_RenderProxy)
+								{
+									if (ICharacterInstance* pChar = pNode->GetEntityCharacter(nSlotId, &nodeTM))
+									{
+										// spawn decals on CGA components
+										ISkeletonPose* pSkeletonPose = pChar->GetISkeletonPose();
+										uint32 numJoints = pChar->GetIDefaultSkeleton().GetJointCount();
+
+										// spawn decal on every sub-object intersecting decal bbox
+										uint32 nJointId = nSubSlotId;
+
+										if (nJointId >= numJoints)
+											break;
+
+										CStatObj* pStatObj = (CStatObj*)pSkeletonPose->GetStatObjOnJoint(nJointId);
+
+										if (pStatObj && !(pStatObj->GetFlags() & STATIC_OBJECT_HIDDEN) && pStatObj->GetRenderMesh())
+										{
+											assert(!pStatObj->GetSubObjectCount());
+
+											Matrix34 subSlotTM = nodeTM * Matrix34(pSkeletonPose->GetAbsJointByID(nJointId));
+											AABB objBoxWS = AABB::CreateTransformedAABB(subSlotTM, pStatObj->GetAABB());
+
+											if (Overlap::AABB_AABB(objBoxWS, cloudBoxWS))
+											{
+												info.matObjInv = subSlotTM.GetInverted();
+												info.matObj = subSlotTM;
+												info.pStatObj = pStatObj;
+												pMaterial = pSkeletonPose->GetMaterialOnJoint(nJointId);
+												if (!pMaterial)
+													pMaterial = pStatObj->GetMaterial();
+											}
+										}
+									}
+								}
+
+								if (!info.pStatObj)
+									continue;
+
+								int nLod = GetCVars()->e_svoTI_ObjectsLod;
+
+								if (bThisIsLowLodNode)
+									nLod++;
+
+								info.pStatObj = (CStatObj*)info.pStatObj->GetLodObject(nLod, true);
+
+								CStatObj * pParent = info.pStatObj->GetParentObject() ? ((CStatObj*)info.pStatObj->GetParentObject()) : (CStatObj*)info.pStatObj;
+								EFileStreamingStatus eStreamingStatusParent = pParent->m_eStreamingStatus;
+								bool bUnloadable = pParent->IsUnloadable();
+
+								if (pNode->GetRenderNodeType() == eERType_Brush)
+									info.fObjScale = ((CBrush*)pNode)->m_fMatrixScale;
+								else if (pNode->GetRenderNodeType() == eERType_Vegetation)
+									info.fObjScale = ((CVegetation*)pNode)->GetScale();
+								else if (pNode->GetRenderNodeType() == eERType_RenderProxy)
+									info.fObjScale = 1.f;
+								else
+									assert(!"Undefined object type");
+
+								info.pMat = pMaterial;
+
+								if (info.pStatObj->m_nFlags & STATIC_OBJECT_HIDDEN)
+									continue;
+
+								info.bIndoor = pNode->GetEntityVisArea() != 0;
+
+								info.bVegetation = (nObjType == eERType_Vegetation);
+
+								if (parrObjects)
+								{
+									parrObjects->Add(info);
+								}
+								else if (eStreamingStatusParent != ecss_Ready && bUnloadable)
+								{
+									// request streaming of missing meshes
+									if (Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizaionPostpone == 2)
+									{
+										info.pStatObj->UpdateStreamableComponents(0.5f, info.matObj, false, nLod);
+									}
+
+									if (Cry3DEngineBase::GetCVars()->e_svoDebug == 7)
+									{
+										Cry3DEngineBase::Get3DEngine()->DrawBBox(pNode->GetBBox(), Col_Red);
+										GetRenderer()->DrawLabel(pNode->GetBBox().GetCenter(), 1.3f, "%s", info.pStatObj->GetFilePath());
+									}
+									bSuccess = false;
+								}
 							}
-							bSuccess = false;
 						}
 					}
 				}

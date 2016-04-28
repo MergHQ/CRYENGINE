@@ -25,7 +25,7 @@ public:
 
 	void ExtractRenderTargetFormats(CDeviceGraphicsPSODesc& psoDesc);
 
-	void DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart = -1, int listEnd = -1);
+	void DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart = -1, int listEnd = -1, int profilingListID = -1);
 
 	// Called from rendering backend (has to be threadsafe)
 	void               PrepareRenderPassForUse(CDeviceGraphicsCommandListRef RESTRICT_REFERENCE commandList);
