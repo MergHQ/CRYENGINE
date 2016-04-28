@@ -1709,7 +1709,7 @@ struct pe_status_constraint : pe_status
 struct pe_status_area : pe_status
 {
 	enum entype { type_id = ePE_status_area };
-	pe_status_area() { type = type_id; bUniformOnly = false; ctr.zero(); size.zero(); vel.zero(); MARK_UNUSED gravity, pb; pLockUpdate = 0; pSurface = 0; }
+	pe_status_area() { type = type_id; bUniformOnly = false; ctr.zero(); size.zero(); vel.zero(); MARK_UNUSED gravity, ptClosest; pLockUpdate = 0; pSurface = 0; }
 
 	// inputs.
 	Vec3 ctr, size;             //!< query bounds
@@ -1721,6 +1721,10 @@ struct pe_status_area : pe_status
 	pe_params_buoyancy pb;
 	volatile int*      pLockUpdate;
 	IGeometry*         pSurface;
+
+	// alternative query: closest point
+	Vec3               ptClosest;	 // input-output
+	Vec3               dirClosest; // output
 };
 
 ////////// living entity statuses
