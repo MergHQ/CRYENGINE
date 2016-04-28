@@ -287,6 +287,6 @@ void CStorage::DebugDraw()
 		++offset;
 	}
 }
-}
 
 #endif
+}
