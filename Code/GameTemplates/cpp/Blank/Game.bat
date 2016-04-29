@@ -4,7 +4,6 @@ setlocal ENABLEEXTENSIONS
 set projectcfg=project.cfg
 set binpath=bin\win_x64
 set executable=%binpath%\GameSDK.exe
-set regkeyname=HKEY_CURRENT_USER\Software\Crytek\CryEngine
 
 if not exist "%projectcfg%" (
     1>&2 echo "Error: %projectcfg% not found!"
@@ -21,8 +20,14 @@ if not defined engine_version (
 )
 
 for /F "usebackq tokens=2,* skip=2" %%L in (
-	`reg query "%regkeyname%" /v %engine_version%`
+	`reg query "HKEY_CURRENT_USER\Software\Crytek\CryEngine" /v %engine_version%`	
 ) do set "engine_root=%%M"
+
+if not defined engine_root (
+	for /F "usebackq tokens=2,* skip=2" %%L in (
+		`reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Crytek\CryEngine" /v %engine_version%`
+	) do set "engine_root=%%M"
+)
 
 if defined engine_root (
 	if not exist "%engine_root%\%executable%" (
