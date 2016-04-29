@@ -33,7 +33,7 @@ def build(bld):
 		win_linkflags   = [ '/NODEFAULTLIB:libcmt.lib' ], ## AMD AGS static lib references this
 		win_use_module  = [ 'oculus' ],
 
-		durango_file_list  = 'mesh_baker.waf_files',
+		durango_file_list  = [ 'durango_renderer.waf_files', 'mesh_baker.waf_files' ],
 		durango_lib        = [ 'ws2_32', 'SmartGlassInterop', 'd3dcompiler', 'dxguid', 'xg_x', 'uuid', 'kernelx' ],
 
 		orbis_file_list    = 'orbis_renderer.waf_files',
