@@ -1,5 +1,7 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
-
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Copyright (C), Crytek Studios, 2002.
 // -------------------------------------------------------------------------
 //  File name:   CGFContent.h
 //  Version:     v1.00
@@ -359,7 +361,9 @@ struct CSkinningInfo : public _reference_target_t
 	~CSkinningInfo()
 	{
 		for (DynArray<MorphTargetsPtr>::iterator it = m_arrMorphTargets.begin(), end = m_arrMorphTargets.end(); it != end; ++it)
+		{
 			delete *it;
+		}
 	}
 
 	int32 GetJointIDByName(const char* strJointName) const
@@ -382,6 +386,88 @@ struct CSkinningInfo : public _reference_target_t
 		return "";     // invalid bone id
 	}
 
+};
+
+// Fixed-size data stored for each vertex in a VCloth mesh.
+struct SVClothVertexAttributes
+{
+	// Improved long range attachments.
+	uint32 lraIdx;
+	uint32 lraNextParent;
+	f32    lraDist;
+
+	AUTO_STRUCT_INFO;
+};
+
+struct SVClothLink
+{
+	int32 i1, i2;
+	f32   lenSqr;
+
+	AUTO_STRUCT_INFO;
+};
+
+enum EVClothLink
+{
+	eVClothLink_Stretch = 0,
+	eVClothLink_Shear   = 1,
+	eVClothLink_Bend    = 2,
+
+	eVClothLink_COUNT
+};
+
+struct SVClothChunkVertex
+{
+	SVClothVertexAttributes attributes;
+	int                     linkCount[eVClothLink_COUNT];
+
+	AUTO_STRUCT_INFO;
+};
+
+struct SVClothVertex
+{
+	SVClothVertexAttributes attributes;
+
+	AUTO_STRUCT_INFO;
+};
+
+struct SVClothLraNotAttachedOrderedIdx
+{
+	int lraNotAttachedOrderedIdx;
+	SVClothLraNotAttachedOrderedIdx() : lraNotAttachedOrderedIdx(-1) {}
+
+	AUTO_STRUCT_INFO;
+};
+
+struct SVClothBendTrianglePair
+{
+	// Params
+	f32    angle;      //!< initial angle between triangles
+	uint32 p0, p1;     //!< shared edge
+	uint32 p2;         //!< first triangle // oriented 0,1,2
+	uint32 p3;         //!< second triangle // reverse oriented 1,0,3
+	uint32 idxNormal0; //!< idx of BendTriangle for first triangle
+	uint32 idxNormal1; //!< idx of BendTriangle for second triangle
+	SVClothBendTrianglePair() : p0(-1), p1(-1), p2(-1), p3(-1), idxNormal0(-1), idxNormal1(-1), angle(0) {}
+
+	AUTO_STRUCT_INFO;
+};
+
+struct SVClothBendTriangle
+{
+	uint32 p0, p1, p2; //!< Indices of according triangle
+	SVClothBendTriangle() : p0(-1), p1(-1), p2(-1) {}
+
+	AUTO_STRUCT_INFO;
+};
+
+struct SVClothInfoCGF
+{
+	DynArray<SVClothVertex>                   m_vertices;
+	DynArray<SVClothBendTrianglePair>         m_trianglePairs;
+	DynArray<SVClothBendTriangle>             m_triangles;
+	DynArray<SVClothLraNotAttachedOrderedIdx> m_lraNotAttachedOrderedIdx;
+	DynArray<SVClothLink>                     m_links[eVClothLink_COUNT];
 };
 
 //! This structure represents Material inside CGF.
@@ -476,7 +562,9 @@ struct SFoliageInfoCGF
 		if (pSpines)
 		{
 			for (int i = 1; i < nSpines; i++)      // spines 1..n-1 use the same buffer, so make sure they don't delete it
+			{
 				pSpines[i].pVtx = 0, pSpines[i].pSegDim = 0;
+			}
 			delete[] pSpines;
 		}
 		if (pBoneMapping) delete[] pBoneMapping;
@@ -500,6 +588,7 @@ struct CExportInfoCGF
 	bool         bNoMesh;
 	bool         bWantF32Vertices;
 	bool         b8WeightsPerVertex;
+	bool         bMakeVCloth;
 
 	bool         bFromColladaXSI;
 	bool         bFromColladaMAX;
@@ -524,6 +613,7 @@ public:
 		m_exportInfo.bUseCustomNormals = false;
 		m_exportInfo.bWantF32Vertices = false;
 		m_exportInfo.b8WeightsPerVertex = false;
+		m_exportInfo.bMakeVCloth = false;
 		m_pCommonMaterial = 0;
 		m_bConsoleFormat = false;
 		m_pOwnChunkFile = 0;
@@ -671,6 +761,11 @@ public:
 		return &m_foliageInfo;
 	}
 
+	SVClothInfoCGF* GetVClothInfo()
+	{
+		return &m_vclothInfo;
+	}
+
 	bool GetConsoleFormat()
 	{
 		return m_bConsoleFormat;
@@ -709,6 +804,7 @@ private:
 	CPhysicalizeInfoCGF                m_physicsInfo;
 	CExportInfoCGF                     m_exportInfo;
 	SFoliageInfoCGF                    m_foliageInfo;
+	SVClothInfoCGF                     m_vclothInfo;
 
 	IChunkFile*                        m_pOwnChunkFile;
 };

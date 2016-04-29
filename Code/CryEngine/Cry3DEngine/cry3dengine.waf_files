@@ -286,7 +286,9 @@
 			"CGF/ChunkFileReaders.h",
 			"CGF/ChunkFileReaders.cpp",
 			"CGF/ChunkFileWriters.h",
-			"CGF/ChunkFileWriters.cpp"
+			"CGF/ChunkFileWriters.cpp",
+			"CGF/VClothSaver.h",
+			"CGF/VClothSaver.cpp"
 		],
 		"Brush":
 		[

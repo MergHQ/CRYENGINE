@@ -45,7 +45,7 @@ enum AttachmentFlags
 	FLAGS_ATTACH_DC_DEFORMATION_PREMORPHS = BIT(7),  //!< Already stored in CDF, so don't change this.
 	FLAGS_ATTACH_DC_DEFORMATION_TANGENTS  = BIT(8),  //!< Already stored in CDF, so don't change this.
 
-	// Dynamic Flags
+	// Dynamic Flags.
 	FLAGS_ATTACH_VISIBLE            = BIT(13),    //!< We set this flag if we can render the object.
 	FLAGS_ATTACH_PROJECTED          = BIT(14),    //!< We set this flag if we can attacht the object to a triangle.
 	FLAGS_ATTACH_WAS_PHYSICALIZED   = BIT(15),    //!< The attachment actually was physicalized.
@@ -61,65 +61,136 @@ enum AttachmentFlags
 
 struct SVClothParams
 {
-	float  thickness;                             //!< The radius of the particles.
-	float  collisionDamping;                      //!< Dampens only non-colliding particles.
-	float  dragDamping;                           //!< A value around 1 - smaller for less stretch stiffness, bigger for over-relaxation.
-	float  stretchStiffness;                      //!< A value around 1 - smaller for less stretch stiffness, bigger for over-relaxation.
-	float  shearStiffness;                        //!< A smaller than 1 value affecting the shear constraints.
-	float  bendStiffness;                         //!< A smaller than 1 value affecting the bend constraints.
-	int    numIterations;                         //!< Number of iterations for the positional PGS solver (contacts & edges).
-	float  timeStep;                              //!< The (pseudo)fixed time step for the simulator.
-	float  rigidDamping;                          //!< Blending factor between local and world space rotation.
-	float  translationBlend;                      //!< Blending factor between local and world space translation.
-	float  rotationBlend;                         //!< Blending factor between local and world space rotation.
-	float  friction;                              //!< Friction coefficient for particles at contact points.
-	float  pullStiffness;                         //!< The strength of pulling pinched vertices towards the anchor position [0..1].
-	float  tolerance;                             //!< Collision tolerance expressed by a factor of thickness.
-	float* weights;                               //!< Per vertex weights used for blending with animation.
-	float  maxBlendWeight;                        //!< Maximum value of pull stiffness for blending with animation.
-	float  maxAnimDistance;
-	float  windBlend;
-	int    collDampingRange;
-	float  stiffnessGradient;
-	bool   halfStretchIterations;
-	bool   hide;
+	// Animation Control
+	bool  forceSkinning;                   //!< If enabled, simulation is skipped and skinning is enforced.
+	float forceSkinningFpsThreshold;       //!< If the framerate drops under the provided FPS, simulation is skipped and skinning is enforced.
+	float forceSkinningTranslateThreshold; //!< If the translation is larger than this value, simulation is skipped and skinning is enforced.
+	bool  checkAnimationRewind;            //!< Check for Rewind in animation, if enabled, the cloth is re-initialized to collision-proxies in that case
+	float disableSimulationAtDistance;     //! Disable simulation / enable skinning in dependance of camera distance.
+	float disableSimulationTimeRange;      //!< Within this time range, the fading process (skinning vs. simulation) is done.
+
+	// Simulation and Collision
+	float timeStep;                     //!< The (pseudo)fixed time step for the simulator.
+	int   timeStepsMax;                 //!< Number of maximum iterations for the time discretization in a single step
+	int   numIterations;                //!< Number of iterations for the positional stiffness & collision solver (contacts & edges).
+	int   collideEveryNthStep;          //!< for stiffness & collision solver: collide only every Nth step
+	float collisionMultipleShiftFactor; //!< for collision solver: if a particle collides with more than one collider at the same time, the particle is shifted by this factor in the average direction
+	float gravityFactor;
+
+	// Stiffness and Elasticity
+	float stretchStiffness;             //!< Value from 0.0 to 1.0 - smaller for less stretch stiffness, bigger for over-relaxation.
+	float shearStiffness;               //!< Tweak the shear constraints.
+	float bendStiffness;                //!< Tweak the bend constraints.
+	float bendStiffnessByTrianglesAngle;//!< Bend stiffness depending on triangle angles, thus, the stiffness is not affecting elasticity.
+	float pullStiffness;                //!< The strength of pulling vertices towards the skinned position [0..1].
+
+	// Friction and Damping
+	float friction;                     //!< Global fricion, is reducing velocity by provided factor.
+	float rigidDamping;                 //!< Damping stiffness into rigid-body. 0.0 represents no damping, 1.0 represents rigid cloth.
+	float springDamping;                //!< Damping of springs.
+	bool  springDampingPerSubstep;      //!< Also damp springs in substeps.
+	float collisionDampingTangential;   //!< Tangential damping factor in case of collisions
+
+	// Long Range Attachments
+	bool  longRangeAttachments;                     // Enables LRA.
+	float longRangeAttachmentsAllowedExtension;     // Allowed extension, e.g. 0.1 = 10%.
+	float longRangeAttachmentsMaximumShiftFactor;   // Scales maximum shift per iteration to closest neighbor, e.g. 0.5 -> half way to closest neighbor.
+	float longRangeAttachmentsShiftCollisionFactor; // Scales in case of shift the velocity.
+
+	// Test Reset Damping
+	int   resetDampingRange;            //!< No of frames, within resetDampingFactor is used within simulation for dampening the system.
+	float resetDampingFactor;           //!< Strength of initial damping.
+
+	// Additional
+	float translationBlend;             //!< Blending factor between local and world space translation.
+	float rotationBlend;                //!< Blending factor between local and world space rotation.
+	float externalBlend;                //!< Blending with world space transformation.
+	float maxAnimDistance;
+	float filterLaplace;
+
+	// Debug
 	bool   isMainCharacter;
-
-	string simMeshName;
 	string renderMeshName;
-
 	string renderBinding;
+	string simMeshName;
 	string simBinding;
+	string material;
+	float  debugDrawVerticesRadius;
+	int    debugDrawCloth;
+	int    debugDrawLRA;       //!< Debug long range attachments (LRA).
+	int    debugPrint;
 
-	SVClothParams()
-		: timeStep(0.01f)
-		, numIterations(20)
-		, thickness(0.01f)
-		, pullStiffness(0)
+	float* weights;            //!< Per vertex weights used for blending with animation.
+	bool   hide;
+	bool   disableSimulation;
+
+public:
+
+	SVClothParams() :
+
+		// Animation Control
+		forceSkinning(false)
+		, forceSkinningFpsThreshold(25.0f)
+		, forceSkinningTranslateThreshold(1.0f)
+		, checkAnimationRewind(true)
+		, disableSimulationAtDistance(10.0)
+		, disableSimulationTimeRange(0.5f)
+
+		// Simulation and Collision
+		, timeStep(0.007f)
+		, timeStepsMax(50)
+		, numIterations(5)
+		, collideEveryNthStep(2)
+		, collisionMultipleShiftFactor(0.0f)
+		, gravityFactor(0.1f)
+
+		// Stiffness and Elasticity
 		, stretchStiffness(1)
 		, shearStiffness(0)
 		, bendStiffness(0)
-		, collisionDamping(1)
-		, dragDamping(1)
-		, rigidDamping(0)
-		, translationBlend(1)
-		, rotationBlend(1)
+		, bendStiffnessByTrianglesAngle(0)
+		, pullStiffness(0)
+
+		// Friction and Damping
 		, friction(0)
-		, tolerance(1.5f)
+		, rigidDamping(0)
+		, springDamping(0)
+		, springDampingPerSubstep(true)
+		, collisionDampingTangential(0)
+
+		// Long Range Attachments
+		, longRangeAttachments(false)
+		, longRangeAttachmentsAllowedExtension(0.0)     // allowed extension, e.g. 0.1 = 10%
+		, longRangeAttachmentsMaximumShiftFactor(0.25)  // scales maximum shift per iteration to closest neighbor, e.g. 0.5 -> half way to closest neighbor
+		, longRangeAttachmentsShiftCollisionFactor(0.5) // scales in case of shift the velocity, 0.0=no shift, 1.0=no velocity change, -1=increase velocity by change
+
+		// Test Reset Damping
+		, resetDampingRange(3)
+		, resetDampingFactor(0)
+
+		// Additional
+		, translationBlend(0)
+		, rotationBlend(0)
+		, externalBlend(0)
 		, maxAnimDistance(0)
-		, windBlend(0)
-		, collDampingRange(3)
-		, maxBlendWeight(1)
-		, stiffnessGradient(0)
-		, halfStretchIterations(false)
-		, simMeshName("")
+		, filterLaplace(0.0f)
+
+		// Debug
+		, isMainCharacter(true)
 		, renderMeshName("")
 		, renderBinding("")
+		, simMeshName("")
 		, simBinding("")
+		, material("")
+		, debugDrawVerticesRadius(0.01f)
+		, debugDrawCloth(1)
+		, debugDrawLRA(0) // long range attachments
+		, debugPrint(0)
+
+		, weights(nullptr)
 		, hide(false)
-		, isMainCharacter(false)
-	{
-	}
+		, disableSimulation(false)
+	{}
 };
 
 struct SimulationParams
@@ -398,6 +469,7 @@ struct IAttachment
 	virtual SimulationParams&    GetSimulationParams()                                                                   { static SimulationParams ap; return ap; }
 	virtual void                 PostUpdateSimulationParams(bool bAttachmentSortingRequired, const char* pJointName = 0) {}
 	virtual RowSimulationParams& GetRowParams()                                                                          { static RowSimulationParams ap; return ap; }
+	virtual void                 SetVClothParams(const SVClothParams& params)                                            {}
 
 	virtual size_t               SizeOfThis() const = 0;
 	virtual void                 Serialize(TSerialize ser) = 0; // TODO: should be const
@@ -549,8 +621,7 @@ inline IMaterial* CCGFAttachment::GetBaseMaterial(uint32 nLOD) const
 struct CSKELAttachment : public IAttachmentObject
 {
 	CSKELAttachment()
-	{
-	}
+	{}
 
 	virtual EType GetAttachmentType() override { return eAttachment_Skeleton; };
 	void          RenderAttachment(SRendParams& rParams, const SRenderingPassInfo& passInfo) override
@@ -599,8 +670,7 @@ inline IMaterial* CSKELAttachment::GetBaseMaterial(uint32 nLOD) const
 struct CSKINAttachment : public IAttachmentObject
 {
 	CSKINAttachment()
-	{
-	}
+	{}
 
 	virtual EType    GetAttachmentType() override                          { return eAttachment_SkinMesh; };
 	virtual AABB     GetAABB() const override                              { return AABB(AABB::RESET); };
