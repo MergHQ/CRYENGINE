@@ -223,7 +223,7 @@ void Console::Init()
 	DefineConstIntCVar(ca_DrawCloth, 1, VF_CHEAT, "bitfield: 2 shows particles, 4 shows proxies, 6 shows both");
 	DefineConstIntCVar(ca_ClothBlending, 1, VF_CHEAT, "if this is 0 blending with animation is disabled");
 	DefineConstIntCVar(ca_ClothBypassSimulation, 0, VF_CHEAT, "if this is 0 actual cloth simulation is disabled (wrap skinning still works)");
-	DefineConstIntCVar(ca_ClothMaxChars, 10, VF_CHEAT, "max characters with cloth on screen");
+	DefineConstIntCVar(ca_ClothMaxChars, 20, VF_CHEAT, "max characters with cloth on screen");
 
 }
 

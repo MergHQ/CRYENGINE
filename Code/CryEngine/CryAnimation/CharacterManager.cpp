@@ -1130,6 +1130,7 @@ SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pA
 	// look for welded vertices and prune them
 	int nWelded = 0;
 	std::vector<Vec3> unweldedVerts;
+	unweldedVerts.reserve(ret.nVtx);
 	if (!ret.weldMap)
 		ret.weldMap = new vtx_idx[ret.nVtx];
 	// TODO: faster welded vertices detector - this is O(n^2)
@@ -1164,6 +1165,7 @@ SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pA
 
 	// create the physics geometry (CTriMesh)
 	IGeometry* pSimPhysMesh = g_pIPhysicalWorld->GetGeomManager()->CreateMesh(&unweldedVerts[0], unweldedIndices, 0, 0, nSimIndices / 3, 0);
+
 	delete[] unweldedIndices;
 
 	// register phys geometry
@@ -1339,6 +1341,7 @@ SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pA
 
 	// allocate working buffers
 	ret.AllocateBuffer();
+
 	return &ret;
 }
 

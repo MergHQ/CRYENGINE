@@ -415,6 +415,11 @@ bool CLoaderCGF::LoadChunks(bool bJustGeometry)
 				if (!LoadFoliageInfoChunk(pChunkDesc))
 					return false;
 				break;
+
+			case ChunkType_VCloth:
+				if (!LoadVClothChunk(pChunkDesc))
+					return false;
+				break;
 			}
 		}
 		else
@@ -659,7 +664,7 @@ bool CLoaderCGF::ReadBoneHierarchy(IChunkFile::ChunkDesc* pChunkDesc)
 	}
 
 	m_pBoneAnimRawData = pChunk + 1;
-	m_pBoneAnimRawDataEnd = ((const char*) pChunk) + pChunkDesc->size;
+	m_pBoneAnimRawDataEnd = ((const char*)pChunk) + pChunkDesc->size;
 
 	BONE_ENTITY* const pBones = (BONE_ENTITY*)m_pBoneAnimRawData;
 
@@ -679,8 +684,8 @@ bool CLoaderCGF::ReadBoneHierarchy(IChunkFile::ChunkDesc* pChunkDesc)
 	   {
 	   if (pBones[i].ParentID == -1)
 	   {
-	    m_LastError = "The skeleton has multiple roots. Only single-rooted skeletons are supported in this version.");
-	    return false;
+	   m_LastError = "The skeleton has multiple roots. Only single-rooted skeletons are supported in this version.");
+	   return false;
 	   }
 	   }
 	 */
@@ -1497,7 +1502,7 @@ bool SplitIntoRBatches(
 		}
 	}
 
-	arrSubsets.resize(arrBatches.size());         //subsets of the mesh as they appear in video-mem
+	arrSubsets.resize(arrBatches.size());           //subsets of the mesh as they appear in video-mem
 	for (uint32 m = 0; m < arrBatches.size(); m++)
 	{
 		uint32 mat = arrBatches[m].MaterialID;
@@ -1712,14 +1717,14 @@ bool CLoaderCGF::ProcessSkinning()
 	   //-----------------------------------------------------------------
 	   for (uint32 i=0; i<numIntVertices; ++i)
 	   {
-	    pMesh->m_pColor0[i].r = (pMesh->m_pColor0[i].r>0x80) ? 0xff : 0x00;
-	    pMesh->m_pColor0[i].g = (pMesh->m_pColor0[i].g>0x80) ? 0xff : 0x00;
-	    pMesh->m_pColor0[i].b = (pMesh->m_pColor0[i].b>0x80) ? 0xff : 0x00;
-	    pMesh->m_pColor0[i].a = 0;
-	    //calculate the index (this is the only value we need in the vertex-shader)
-	    if (pMesh->m_pColor0[i].r) pMesh->m_pColor0[i].a|=1;
-	    if (pMesh->m_pColor0[i].g) pMesh->m_pColor0[i].a|=2;
-	    if (pMesh->m_pColor0[i].b) pMesh->m_pColor0[i].a|=4;
+	   pMesh->m_pColor0[i].r = (pMesh->m_pColor0[i].r>0x80) ? 0xff : 0x00;
+	   pMesh->m_pColor0[i].g = (pMesh->m_pColor0[i].g>0x80) ? 0xff : 0x00;
+	   pMesh->m_pColor0[i].b = (pMesh->m_pColor0[i].b>0x80) ? 0xff : 0x00;
+	   pMesh->m_pColor0[i].a = 0;
+	   //calculate the index (this is the only value we need in the vertex-shader)
+	   if (pMesh->m_pColor0[i].r) pMesh->m_pColor0[i].a|=1;
+	   if (pMesh->m_pColor0[i].g) pMesh->m_pColor0[i].a|=2;
+	   if (pMesh->m_pColor0[i].b) pMesh->m_pColor0[i].a|=4;
 	   }
 	   }
 	   ----------------------------------------------------------------------------- */
@@ -2211,7 +2216,7 @@ CContentCGF* CLoaderCGF::MakeCompiledSkinCGF(
   CContentCGF* pCGF, std::vector<int>* pVertexRemapping, std::vector<int>* pIndexRemapping) PREFAST_SUPPRESS_WARNING(6262) //function uses > 32k stack space
 {
 	CContentCGF* const pCompiledCGF = new CContentCGF(pCGF->GetFilename());
-	*pCompiledCGF->GetExportInfo() = *pCGF->GetExportInfo();                                                                   // Copy export info.
+	*pCompiledCGF->GetExportInfo() = *pCGF->GetExportInfo(); // Copy export info.
 
 	// Compile mesh.
 	// Note that this function cannot fill/return mapping arrays properly in case of
@@ -2322,6 +2327,11 @@ bool CLoaderCGF::LoadExportFlagsChunk(IChunkFile::ChunkDesc* pChunkDesc)
 		pExportInfo->b8WeightsPerVertex = true;
 	else
 		pExportInfo->b8WeightsPerVertex = false;
+
+	if (chunk.flags & EXPORT_FLAGS_CHUNK_DESC::MAKE_VCLOTH)
+		pExportInfo->bMakeVCloth = true;
+	else
+		pExportInfo->bMakeVCloth = false;
 
 	return true;
 }
@@ -3741,6 +3751,84 @@ bool CLoaderCGF::LoadFoliageInfoChunk(IChunkFile::ChunkDesc* pChunkDesc)
 			fi.pSpines[i].iAttachSeg = pSpineSrc[i].iAttachSeg - 1;
 			fi.pSpines[i].pVtx = pSpineVtx + j;
 			fi.pSpines[i].pSegDim = pSpineSegDim + j;
+		}
+	}
+
+	return true;
+}
+
+bool CLoaderCGF::LoadVClothChunk(IChunkFile::ChunkDesc* pChunkDesc)
+{
+	if (pChunkDesc->chunkVersion != VCLOTH_CHUNK::VERSION)
+	{
+		m_LastError.Format("Unknown version of FoliageInfo chunk");
+		return false;
+	}
+
+	SVClothInfoCGF* const pVClothInfo = m_pCGF->GetVClothInfo();
+
+	const char* pCursor = (const char*)pChunkDesc->data;
+
+	VCLOTH_CHUNK* const pChunk = (VCLOTH_CHUNK*)pCursor;
+	const bool bSwapEndian = pChunkDesc->bSwapEndian;
+	SwapEndian(*pChunk, bSwapEndian);
+	pChunkDesc->bSwapEndian = false;
+
+	// Read vertices.
+	{
+		pCursor += sizeof(VCLOTH_CHUNK);
+		SVClothChunkVertex* const pChunkVertices = (SVClothChunkVertex*)pCursor;
+		SwapEndian(pChunkVertices, pChunk->vertexCount, bSwapEndian);
+
+		pVClothInfo->m_vertices.resize(pChunk->vertexCount);
+		for (uint32 vid = 0; vid < pChunk->vertexCount; ++vid)
+		{
+			const SVClothChunkVertex& chunkVertex = pChunkVertices[vid];
+			SVClothVertex& vertex = pVClothInfo->m_vertices[vid];
+
+			vertex.attributes = chunkVertex.attributes;
+		}
+	}
+
+	// Read triangles.
+	{
+		pCursor += sizeof(SVClothChunkVertex) * pChunk->vertexCount;
+		SVClothBendTriangle* const pTriangles = (SVClothBendTriangle*)pCursor;
+		SwapEndian(pTriangles, pChunk->bendTriangleCount, bSwapEndian);
+
+		pVClothInfo->m_triangles.assign(pTriangles, pTriangles + pChunk->bendTriangleCount);
+	}
+
+	// Read triangle pairs.
+	{
+		pCursor += sizeof(SVClothBendTriangle) * pChunk->bendTriangleCount;
+		SVClothBendTrianglePair* const pTrianglePairs = (SVClothBendTrianglePair*)pCursor;
+		SwapEndian(pTrianglePairs, pChunk->bendTrianglePairCount, bSwapEndian);
+
+		pVClothInfo->m_trianglePairs.assign(pTrianglePairs, pTrianglePairs + pChunk->bendTrianglePairCount);
+	}
+
+	// Read lraNotAttachedOrderedIdx.
+	{
+		pCursor += sizeof(SVClothBendTrianglePair) * pChunk->bendTrianglePairCount;
+		SVClothLraNotAttachedOrderedIdx* const pLraNotAttachedOrderedIdx = (SVClothLraNotAttachedOrderedIdx*)pCursor;
+		SwapEndian(pLraNotAttachedOrderedIdx, pChunk->lraNotAttachedOrderedIdxCount, bSwapEndian);
+
+		pVClothInfo->m_lraNotAttachedOrderedIdx.assign(pLraNotAttachedOrderedIdx, pLraNotAttachedOrderedIdx + pChunk->lraNotAttachedOrderedIdxCount);
+	}
+
+	// Read links.
+	{
+		pCursor += sizeof(SVClothLraNotAttachedOrderedIdx) * pChunk->lraNotAttachedOrderedIdxCount;
+
+		for (int lid = 0; lid < eVClothLink_COUNT; ++lid)
+		{
+			SVClothLink* const pLinks = (SVClothLink*)pCursor;
+			SwapEndian(pLinks, pChunk->linkCount[lid], bSwapEndian);
+
+			pVClothInfo->m_links[lid].assign(pLinks, pLinks + pChunk->linkCount[lid]);
+
+			pCursor += sizeof(SVClothLink) * pChunk->linkCount[lid];
 		}
 	}
 
