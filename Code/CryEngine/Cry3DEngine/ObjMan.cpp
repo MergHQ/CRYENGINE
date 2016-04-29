@@ -1279,7 +1279,8 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 				pTempData->userData.arrPermanentRenderObjects[nLod] = pRenderObject;
 
 				// Store resources modification checksum
-				pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
+				if(pTempData->IsValid())
+					pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
 			}
 
 			// Return false to fill the object.
