@@ -192,6 +192,7 @@ Device::Device(vr::IVRSystem* pSystem)
 	, m_hmdTrackingDisabled(false)
 	, m_hmdQuadDistance(CVars::hmd_quad_distance)
 	, m_hmdQuadWidth(CVars::hmd_quad_width)
+	, m_hmdQuadAbsolute(CVars::hmd_quad_absolute)
 {
 	CreateDevice();
 	CryVR::CVars::RegisterListener(this);
@@ -606,13 +607,17 @@ void Device::UpdateInternal(EInternalUpdate type)
 		}
 	}
 
-	if (m_hmdQuadDistance != CVars::hmd_quad_distance)
+	if (m_hmdQuadDistance != CVars::hmd_quad_distance || m_hmdQuadAbsolute != CVars::hmd_quad_absolute)
 	{
+		m_hmdQuadAbsolute = CVars::hmd_quad_absolute;
 		m_hmdQuadDistance = CVars::hmd_quad_distance;
 		for (int id = 0; id < RenderLayer::eQuadLayers_Total; id++)
 		{
 			m_overlays[id].pos = vr::RawConvert(Matrix34::CreateTranslationMat(Vec3(0, 0, -m_hmdQuadDistance)));
-			m_overlay->SetOverlayTransformTrackedDeviceRelative(m_overlays[id].handle, vr::k_unTrackedDeviceIndex_Hmd, &(m_overlays[id].pos));
+			if(m_hmdQuadAbsolute)
+				m_overlay->SetOverlayTransformAbsolute(m_overlays[id].handle, CVars::hmd_reference_point == 1 ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, &(m_overlays[id].pos));
+			else
+				m_overlay->SetOverlayTransformTrackedDeviceRelative(m_overlays[id].handle, vr::k_unTrackedDeviceIndex_Hmd, &(m_overlays[id].pos));
 		}
 	}
 	if (m_hmdQuadWidth != CVars::hmd_quad_width)
@@ -938,7 +943,10 @@ void Device::OnSetupOverlay(int id, ERenderAPI api, ERenderColorSpace colorSpace
 	vr::VRTextureBounds_t overlayTextureBounds = { 0, 0, 1.f, 1.f };
 	m_overlay->SetOverlayTextureBounds(m_overlays[id].handle, &overlayTextureBounds);
 	m_overlay->SetOverlayTexture(m_overlays[id].handle, m_overlays[id].vrTexture);
-	m_overlay->SetOverlayTransformTrackedDeviceRelative(m_overlays[id].handle, vr::k_unTrackedDeviceIndex_Hmd, &(m_overlays[id].pos));
+	if (m_hmdQuadAbsolute)
+		m_overlay->SetOverlayTransformAbsolute(m_overlays[id].handle, CVars::hmd_reference_point == 1 ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated, &(m_overlays[id].pos));
+	else
+		m_overlay->SetOverlayTransformTrackedDeviceRelative(m_overlays[id].handle, vr::k_unTrackedDeviceIndex_Hmd, &(m_overlays[id].pos));
 	m_overlay->SetOverlayWidthInMeters(m_overlays[id].handle, m_hmdQuadWidth);
 	m_overlay->SetHighQualityOverlay(m_overlays[id].handle);
 	m_overlay->HideOverlay(m_overlays[id].handle);

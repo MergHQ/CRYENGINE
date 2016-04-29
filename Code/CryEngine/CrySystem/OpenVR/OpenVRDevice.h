@@ -151,6 +151,7 @@ private:
 	bool                    m_hmdTrackingDisabled;
 	float                   m_hmdQuadDistance;
 	float                   m_hmdQuadWidth;
+	int                     m_hmdQuadAbsolute;
 };
 } // namespace OpenVR
 } // namespace CryVR
