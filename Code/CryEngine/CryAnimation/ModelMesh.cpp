@@ -336,7 +336,7 @@ void CModelMesh::CreateMorphsBuffer(CMesh* pMesh)
 
 			uint32 bidx = i >> 5;
 			uint32 bset = i & 31;
-			pMesh->m_vertexMorphsBitfield[vertexIndex + (bidx * numVertices)] |= uint64(1u << bset);
+			pMesh->m_vertexMorphsBitfield[vertexIndex + (bidx * numVertices)] |= uint64(1ull << bset);
 		}
 	}
 
