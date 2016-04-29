@@ -214,5 +214,6 @@ void CBrush::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
 ///////////////////////////////////////////////////////////////////////////////
 bool CBrush::CanExecuteRenderAsJob()
 {
-	return !HasDeformableData();
+	// disabled as workaround for CE-9292 crash
+	return false;// !HasDeformableData();
 }
