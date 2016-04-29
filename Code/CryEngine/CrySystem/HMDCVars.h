@@ -52,6 +52,7 @@ public:
 	static int   hmd_reference_point;
 	static float hmd_quad_distance;
 	static float hmd_quad_width;
+	static int hmd_quad_absolute;
 #endif                           // defined(INCLUDE_OPENVR_SDK)
 
 private:
@@ -143,6 +144,8 @@ public:
 		REGISTER_CVAR2("hmd_quad_distance", &hmd_quad_distance, hmd_quad_distance, VF_NULL, "Distance between eyes and UI quad");
 
 		REGISTER_CVAR2("hmd_quad_width", &hmd_quad_width, hmd_quad_width, VF_NULL, "Width of the UI quad in meters");
+
+		REGISTER_CVAR2("hmd_quad_absolute", &hmd_quad_absolute, hmd_quad_absolute, VF_NULL, "Should quads be placed relative to the HMD or in absolute tracking space? (Default = 1: Absolute UI positioning)");
 #endif // defined(INCLUDE_OPENVR_SDK)
 
 		REGISTER_COMMAND("hmd_recenter_pose", &OnHmdRecenter,
@@ -169,6 +172,7 @@ public:
 			pConsole->UnregisterVariable("hmd_reference_point");
 			pConsole->UnregisterVariable("hmd_quad_distance");
 			pConsole->UnregisterVariable("hmd_quad_width");
+			pConsole->UnregisterVariable("hmd_quad_absolute");
 #endif  // defined(INCLUDE_OPENVR_SDK)
 		}
 

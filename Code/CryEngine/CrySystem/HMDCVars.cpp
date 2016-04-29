@@ -26,5 +26,6 @@ float CVars::hmd_projection_screen_dist = 1.0f;
 int CVars::hmd_reference_point = 0;
 float CVars::hmd_quad_distance = 0.25f;
 float CVars::hmd_quad_width = 1.0f;
+int CVars::hmd_quad_absolute = 1;
 #endif // defined(INCLUDE_OPENVR_SDK)
 }
