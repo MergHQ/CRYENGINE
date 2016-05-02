@@ -5,15 +5,6 @@
 
 #pragma once
 
-#define USE_LAN                      1
-#define USE_LOBBY_REMOTE_CONNECTIONS 1
-#define USE_CRY_MATCHMAKING          1
-#define USE_CRY_VOICE                1
-#define USE_CRY_ONLINE_STORAGE       1
-#define USE_CRY_STATS                1
-#define USE_CRY_FRIENDS              1
-#define USE_CRY_TCPSERVICE           1
-
 // enable a good toolkit of debug stuff for when you're developing code
 #define USUAL_DEBUG_STUFF 0
 
@@ -291,31 +282,11 @@
 //   2 = synchronize files from server *IF* in devmode
 #define SERVER_FILE_SYNC_MODE     0
 
-// vladimirsi: Host migration ultimate flag. It belongs in the CryLobby now
-// and will be moved there in the //ce/task_lobby_extraction stream.
-#if PC_CONSOLE_NET_COMPATIBLE
-	#define NETWORK_HOST_MIGRATION (1)
-#else
-	#define NETWORK_HOST_MIGRATION (0)
-#endif
-
-#if NETWORK_HOST_MIGRATION
-	#if defined(PURE_CLIENT)
-		#error Pure clients DO NOT support host migration
-	#endif
-#endif
-
 #ifdef _RELEASE
-	#define ENABLE_CRYLOBBY_DEBUG_TESTS              0
-	#define HOST_MIGRATION_SOAK_TEST_BREAK_DETECTION 0
 	#define ENABLE_CORRUPT_PACKET_DUMP               0
-	#define ENABLE_HOST_MIGRATION_STATE_CHECK        0
 	#define ENABLE_DEBUG_PACKET_DATA_SIZE            0
 #else
-	#define ENABLE_CRYLOBBY_DEBUG_TESTS              1
-	#define HOST_MIGRATION_SOAK_TEST_BREAK_DETECTION (1 && NETWORK_HOST_MIGRATION)
 	#define ENABLE_CORRUPT_PACKET_DUMP               1
-	#define ENABLE_HOST_MIGRATION_STATE_CHECK        NETWORK_HOST_MIGRATION
 // ENABLE_DEBUG_PACKET_DATA_SIZE isn't supported by arithstream
 	#define ENABLE_DEBUG_PACKET_DATA_SIZE            (0 && !USE_ARITHSTREAM)
 #endif

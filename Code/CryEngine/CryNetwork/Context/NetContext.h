@@ -20,7 +20,7 @@
 #include <queue>
 #include <memory>
 #include "INetContextListener.h"
-#include "Socket/NetAddress.h"
+#include <CryNetwork/NetAddress.h>
 #include "INetworkMember.h"
 #include "Streams/ArithStream.h"
 #include "SessionID.h"

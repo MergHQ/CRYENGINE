@@ -9,8 +9,7 @@
 	#include "Protocol/PacketRateCalculator.h"
 #endif
 
-#include "Lobby/ICryMatchMakingPrivate.h"
-#include "Lobby/CryLobby.h"
+#include <CryLobby/CommonICryMatchMaking.h>
 #include <CryNetwork/CrySocks.h>
 
 #if CRY_PLATFORM_ORBIS

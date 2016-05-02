@@ -17,8 +17,6 @@
 #include "Streams/ByteStream.h"
 #include "NetProfile.h"
 
-#include "Lobby/ICryMatchMakingPrivate.h"
-
 #if ENABLE_SESSION_IDS
 static int SessionIDCounter = 10101;
 #endif

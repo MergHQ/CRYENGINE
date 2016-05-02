@@ -221,7 +221,7 @@ class CEngineModule_CryAudioSystem:public IEngineModule
 
 			s_currentModuleName = m_pAudioImplNameCVar->GetString();
 
-			if (env.pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), initParams, false))
+			if (env.pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), false))
 			{
 				PrepareAudioSystem(env.pAudioSystem);
 			}
@@ -261,7 +261,7 @@ class CEngineModule_CryAudioSystem:public IEngineModule
 
 		// First try to load and initialize the new engine module.
 		// This will release the currently running implementation but only if the library loaded successfully.
-		if (gEnv->pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), systemInitParams, false))
+		if (gEnv->pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), false))
 		{
 			SAudioRequest request;
 			request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;

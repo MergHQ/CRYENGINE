@@ -7,8 +7,6 @@
 
 	#include "Network.h"
 
-	#include "Lobby/ICryMatchMakingPrivate.h"
-
 CSocketIOManagerLobbyIDAddr::CSocketIOManagerLobbyIDAddr() : CSocketIOManager(eSIOMC_NoBuffering)
 {
 }

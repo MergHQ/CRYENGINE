@@ -21,8 +21,6 @@
 #include "VoiceContext.h"
 #include "SyncedFileSet.h"
 
-#include "Lobby/ICryMatchMakingPrivate.h"
-
 #if ENABLE_DEBUG_KIT
 	#pragma warning(disable:4355)
 	#include <CryEntitySystem/IEntitySystem.h>

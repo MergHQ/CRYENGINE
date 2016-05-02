@@ -910,6 +910,11 @@ void CTelemetryCollector::UpdateClientName()
 
 bool CTelemetryCollector::InitService()
 {
+	if (!gEnv->pNetwork->GetLobby())
+	{
+		return false;
+	}
+
 	// for debugging
 	ICryLobbyService*		pLobbyService = gEnv->pNetwork->GetLobby()->GetLobbyService();
 

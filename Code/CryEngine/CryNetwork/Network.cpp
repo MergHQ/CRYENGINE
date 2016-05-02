@@ -42,8 +42,6 @@
 #include <CrySystem/ITextModeConsole.h>
 #include "Http/AutoConfigDownloader.h"
 
-#include "Lobby/ICryLobbyPrivate.h"
-#include <CryLobby/ICryMatchMaking.h>
 #include "NetProfile.h"
 
 #include "Cryptography/StreamCipher.h"
@@ -58,7 +56,7 @@
 	#include "PsApi.h"
 #endif
 
-#include "Lobby/ICryMatchMakingPrivate.h"
+#include <CryLobby/CommonICryMatchMaking.h>
 #include <CryThreading/IThreadManager.h>
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
@@ -713,7 +711,7 @@ void CNetwork::LobbyTimerCallback(NetTimerId id, void* pUserData, CTimeValue tim
 
 	if (gEnv->pLobby)
 	{
-		((ICryLobbyPrivate*)gEnv->pLobby)->Tick(false);
+		gEnv->pLobby->Tick(false);
 	}
 
 	pNetwork->m_lobbyTimer = TIMER.ADDTIMER(g_time + pNetwork->m_lobbyTimerInterval, LobbyTimerCallback, pNetwork, "LobbyTimer");
@@ -2083,15 +2081,6 @@ bool CNetwork::IsHostMigrationEnabled(void)
 
 void CNetwork::TerminateHostMigration(CrySessionHandle gh)
 {
-	ICryLobby* pLobby = GetLobby();
-	if (pLobby)
-	{
-		ICryMatchMaking* pMatchMaking = pLobby->GetMatchMaking();
-		if (pMatchMaking)
-		{
-			pMatchMaking->TerminateHostMigration(gh);
-		}
-	}
 }
 
 void CNetwork::AddHostMigrationEventListener(IHostMigrationEventListener* pListener, const char* pWho, EListenerPriorityType priority)

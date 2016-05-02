@@ -23,7 +23,7 @@
 #include "Protocol/StatsCollector.h"
 #include "Protocol/FrameTypes.h"
 #include "Errors.h"
-#include "Socket/NetAddress.h"
+#include "Socket/NetResolver.h"
 #include "INetworkPrivate.h"
 #include "INetworkMember.h"
 #include <CryNetwork/NetHelpers.h>

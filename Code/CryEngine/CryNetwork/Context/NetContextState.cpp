@@ -9,7 +9,6 @@
 #include "UpdateAspectDataContext.h"
 #include "AutoFreeHandle.h"
 #include "Config.h"
-#include "Lobby/ICryMatchMakingPrivate.h"
 
 #include <CryGame/IGameFramework.h>       // LOCAL_PLAYER_ENTITY_ID
 #include <CryEntitySystem/IEntitySystem.h>

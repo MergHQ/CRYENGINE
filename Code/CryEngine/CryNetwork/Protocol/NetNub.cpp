@@ -23,7 +23,7 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include "Network.h"
 #include <CryMemory/STLGlobalAllocator.h>
-#include "Lobby/ICryMatchMakingPrivate.h"
+#include <CryLobby/CommonICryMatchMaking.h>
 
 static const float STATS_UPDATE_INTERVAL_NUB = 0.25f;
 static const float KESTIMEOUT = 30.0f;
@@ -285,7 +285,7 @@ CNetNub::~CNetNub()
 	{
 		m_pSocketMain->UnregisterListener(this);
 		ISocketIOManager* pSocketIOManager = &CNetwork::Get()->GetInternalSocketIOManager();
-		if (m_pLobby->GetLobbyServiceType() == eCLS_Online)
+		if (m_pLobby && m_pLobby->GetLobbyServiceType() == eCLS_Online)
 		{
 			pSocketIOManager = &CNetwork::Get()->GetExternalSocketIOManager();
 		}
@@ -692,18 +692,12 @@ bool CNetNub::SendPendingConnect(SPendingConnection& pc)
 		{
 			NetWarning("Connection to %s timed out", RESOLVER.ToString(pc.to).c_str());
 			TO_GAME(&CNetNub::GC_FailedActiveConnect, this, eDC_Timeout, string().Format("Connection attempt to %s timed out", RESOLVER.ToString(pc.to).c_str()), CNubKeepAliveLock(this));
-#if USE_CRY_MATCHMAKING
-			ICryMatchMakingPrivate* pMatchMaking = NULL;
-			if (m_pLobby)
+			auto pMatchMaking = m_pLobby ? (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking() : nullptr;
+			if (pMatchMaking)
 			{
-				pMatchMaking = (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking();
-				if (pMatchMaking)
-				{
-					CryLog("CNetNub::SendPendingConnect calling SessionDisconnectRemoteConnection");
-					pMatchMaking->SessionDisconnectRemoteConnectionFromNub(pc.session, eDC_Timeout);
-				}
+				CryLog("CNetNub::SendPendingConnect calling SessionDisconnectRemoteConnection");
+				pMatchMaking->SessionDisconnectRemoteConnectionFromNub(pc.session, eDC_Timeout);
 			}
-#endif              // USE_CRY_MATCHMAKING
 			return false; // staying in this state too long
 		}
 
@@ -1249,11 +1243,9 @@ void CNetNub::DisconnectChannel(EDisconnectionCause cause, const TNetAddress* pF
 
 void CNetNub::DisconnectChannel(EDisconnectionCause cause, CrySessionHandle session, const char* pReason)
 {
-#if USE_CRY_MATCHMAKING
 	SCOPED_GLOBAL_LOCK;
 
-	ICryMatchMakingPrivate* pMatchMaking = (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking();
-
+	auto pMatchMaking = m_pLobby ? (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking() : nullptr;
 	if (pMatchMaking)
 	{
 		uint32 id = pMatchMaking->GetChannelIDFromGameSessionHandle(session);
@@ -1268,16 +1260,13 @@ void CNetNub::DisconnectChannel(EDisconnectionCause cause, CrySessionHandle sess
 			}
 		}
 	}
-#endif // USE_CRY_MATCHMAKING
 }
 
 INetChannel* CNetNub::GetChannelFromSessionHandle(CrySessionHandle session)
 {
-#if USE_CRY_MATCHMAKING
 	SCOPED_GLOBAL_LOCK;
 
-	ICryMatchMakingPrivate* pMatchMaking = (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking();
-
+	auto pMatchMaking = m_pLobby ? (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking() : nullptr;
 	if (pMatchMaking)
 	{
 		uint32 id = pMatchMaking->GetChannelIDFromGameSessionHandle(session);
@@ -1292,8 +1281,6 @@ INetChannel* CNetNub::GetChannelFromSessionHandle(CrySessionHandle session)
 			}
 		}
 	}
-#endif // USE_CRY_MATCHMAKING
-
 	return NULL;
 }
 
@@ -1396,17 +1383,11 @@ void CNetNub::ProcessLanQuery(const TNetAddress& from)
 
 void CNetNub::LobbySafeDisconnect(CNetChannel* pChannel, EDisconnectionCause cause, const char* reason)
 {
-#if USE_CRY_MATCHMAKING
-	if (m_pLobby)
+	auto pMatchMaking = m_pLobby ? (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking() : nullptr;
+	if (pMatchMaking)
 	{
-		ICryMatchMaking* pMatchMaking = m_pLobby->GetMatchMaking();
-		if (pMatchMaking)
-		{
-			return;   // dont process the disconnect event, leave it for the lobby to deal with
-		}
+		return;   // dont process the disconnect event, leave it for the lobby to deal with
 	}
-#endif // USE_CRY_MATCHMAKING
-
 	pChannel->Disconnect(cause, reason);
 }
 
@@ -1709,10 +1690,7 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 
 	SendKeyExchange0(from, iterCon->second, doNotRegenerate);
 
-#if USE_CRY_MATCHMAKING
-	ICryMatchMaking* pMatchMaking = m_pLobby->GetMatchMaking();
-
-	if (pMatchMaking && gEnv->bMultiplayer)
+	if (gEnv->bMultiplayer && m_pLobby && m_pLobby->GetMatchMaking())
 	{
 		// m_disconnectMap can sometimes still hold this address if client disconnects and connect again quickly and some of the disconnect packets got lost.
 		// If this happens this client will be disconnected straight away as we think it should have been disconnected.
@@ -1723,7 +1701,7 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 
 		CRY_ASSERT_MESSAGE(session != CrySessionInvalidHandle, "Incoming connection with no session");
 
-		if (session == CrySessionInvalidHandle || !((ICryMatchMakingPrivate*)pMatchMaking)->IsNetAddressInLobbyConnection(from))
+		if (session == CrySessionInvalidHandle || !((ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking())->IsNetAddressInLobbyConnection(from))
 		{
 			if (session != CrySessionInvalidHandle)
 			{
@@ -1732,7 +1710,6 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 			AddDisconnectEntry(from, session, eDC_ProtocolError, "Invalid session");
 		}
 	}
-#endif // USE_CRY_MATCHMAKING
 
 	iterCon->second.connectionString = connectionString;
 	iterCon->second.kes = eKES_SentKeyExchange;
@@ -1816,12 +1793,9 @@ void CNetNub::GC_CreateChannel(CNetChannel* pNetChannel, string connectionString
 		}
 	}
 
-#if USE_CRY_MATCHMAKING
-	ICryMatchMakingPrivate* pMatchMaking = (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking();
-
-	if (pMatchMaking && gEnv->bMultiplayer)
+	if (gEnv->bMultiplayer && m_pLobby && m_pLobby->GetMatchMaking())
 	{
-		if (!pMatchMaking->IsNetAddressInLobbyConnection(pNetChannel->GetIP()))
+		if (!((ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking())->IsNetAddressInLobbyConnection(pNetChannel->GetIP()))
 		{
 			CryLogAlways("Canary : Duplicate Channel ID - Work around");
 
@@ -1836,7 +1810,6 @@ void CNetNub::GC_CreateChannel(CNetChannel* pNetChannel, string connectionString
 			return;
 		}
 	}
-#endif
 
 	SCreateChannelResult res = m_pGameNub->CreateChannel(pNetChannel, connectionString.empty() ? NULL : connectionString.c_str());
 	if (!res.pChannel)
@@ -1894,17 +1867,13 @@ void CNetNub::SendConnecting(const TNetAddress& to, SConnecting& con)
 
 void CNetNub::AddDisconnectEntry(const TNetAddress& ip, CrySessionHandle session, EDisconnectionCause cause, const char* reason)
 {
-#if USE_CRY_MATCHMAKING
-	ICryMatchMakingPrivate* pMatchmaking = (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking();
-
 	// If we are using CCryMatchMaking then it is responsible for the connections so don't send nub disconnects just inform matchmaking.
-	if (pMatchmaking)
+	if (m_pLobby && m_pLobby->GetMatchMaking())
 	{
 		CryLog("CNetNub::AddDisconnectEntry calling SessionDisconnectRemoteConnection reason %s", reason ? reason : "no reason");
-		pMatchmaking->SessionDisconnectRemoteConnectionFromNub(session, cause);
+		((ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking())->SessionDisconnectRemoteConnectionFromNub(session, cause);
 	}
 	else
-#endif // USE_CRY_MATCHMAKING
 	{
 		SDisconnect dc;
 		dc.when = g_time;

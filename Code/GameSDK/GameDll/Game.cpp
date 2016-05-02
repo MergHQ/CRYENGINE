@@ -933,8 +933,6 @@ bool CGame::Init(IGameFramework *pFramework)
 
 		gEnv->pNetwork->SetMultithreadingMode(INetwork::NETWORK_MT_PRIORITY_NORMAL);
 
-		gEnv->pNetwork->GetLobby()->SetUserPacketEnd(eGUPD_End);
-
 #if CRY_PLATFORM_WINDOWS
 		if (gEnv->IsDedicated())
 		{
@@ -946,43 +944,55 @@ bool CGame::Init(IGameFramework *pFramework)
 			}
 		}
 #endif
-#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD) || defined(IS_EAAS)
-		if ( !(g_pGameCVars && (g_pGameCVars->g_useOnlineServiceForDedicated) && gEnv->IsDedicated()))
+
+		if (!gEnv->pSystem->InitializeEngineModule("CryLobby", "EngineModule_CryLobby", false))
 		{
-			error = gEnv->pNetwork->GetLobby()->Initialise(eCLS_LAN, features, CGameBrowser::ConfigurationCallback, CGameBrowser::InitialiseCallback, this);
-			CRY_ASSERT_MESSAGE( error == eCLE_Success, "Failed to initialize LAN lobby service" );
+			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Error creating Lobby System!");
 		}
+
+		auto pLobby = gEnv->pNetwork->GetLobby();
+		if (pLobby)
+		{
+			pLobby->SetUserPacketEnd(eGUPD_End);
+
+#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD) || defined(IS_EAAS)
+			if (!(g_pGameCVars && (g_pGameCVars->g_useOnlineServiceForDedicated) && gEnv->IsDedicated()))
+			{
+				error = pLobby->Initialise(eCLS_LAN, features, CGameBrowser::ConfigurationCallback, CGameBrowser::InitialiseCallback, this);
+				CRY_ASSERT_MESSAGE(error == eCLE_Success, "Failed to initialize LAN lobby service");
+			}
 #endif // #if !defined(_RELEASE) || defined(PERFORMANCE_BUILD) || defined(IS_EAAS)
 
-		if(!gEnv->IsDedicated())
-		{
-			error = gEnv->pNetwork->GetLobby()->Initialise(eCLS_Online, features, CGameBrowser::ConfigurationCallback, CGameBrowser::InitialiseCallback, this);
-		}
-		else
-		{
-			CryLog("Online lobby currently not supported for dedicated sever. Not initialized");
-		}
-
-		//CRY_ASSERT_MESSAGE( error == eCLE_Success, "Failed to initialize online lobby service" );
-		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_COMMENT, "Online Lobby not supported in the default SDK.");
-		m_pSquadManager = new CSquadManager();		// MUST be done before game browser is constructed
-
-		m_pGameBrowser = new CGameBrowser();
-
-		//Set the matchmaking version based on the build version if g_matchmakingversion is a default value
-		if (!gEnv->IsEditor() && g_pGameCVars->g_MatchmakingVersion <= 1)
-		{
-			const int internalBuildVersion = gEnv->pSystem->GetBuildVersion().v[0];
-			CryLog("BuildVersion %d", internalBuildVersion);
-			if (internalBuildVersion != 1)
+			if (!gEnv->IsDedicated())
 			{
-				g_pGameCVars->g_MatchmakingVersion = internalBuildVersion;
+				error = pLobby->Initialise(eCLS_Online, features, CGameBrowser::ConfigurationCallback, CGameBrowser::InitialiseCallback, this);
 			}
-		}
+			else
+			{
+				CryLog("Online lobby currently not supported for dedicated sever. Not initialized");
+			}
 
-		CGameBrowser::InitLobbyServiceType();
-		
-		m_pGameLobbyManager = new CGameLobbyManager();
+			//CRY_ASSERT_MESSAGE( error == eCLE_Success, "Failed to initialize online lobby service" );
+			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_COMMENT, "Online Lobby not supported in the default SDK.");
+			m_pSquadManager = new CSquadManager();		// MUST be done before game browser is constructed
+
+			m_pGameBrowser = new CGameBrowser();
+
+			//Set the matchmaking version based on the build version if g_matchmakingversion is a default value
+			if (!gEnv->IsEditor() && g_pGameCVars->g_MatchmakingVersion <= 1)
+			{
+				const int internalBuildVersion = gEnv->pSystem->GetBuildVersion().v[0];
+				CryLog("BuildVersion %d", internalBuildVersion);
+				if (internalBuildVersion != 1)
+				{
+					g_pGameCVars->g_MatchmakingVersion = internalBuildVersion;
+				}
+			}
+
+			CGameBrowser::InitLobbyServiceType();
+
+			m_pGameLobbyManager = new CGameLobbyManager();
+		}
 	}
 
 	m_pGameAchievements = new CGameAchievements;	//Should be after GameLobbyManager
@@ -1417,7 +1427,7 @@ void CGame::InitGameType(bool multiplayer, bool fromInit /*= false*/)
 		}
 #endif
 
-		if (!gEnv->IsDedicated())
+		if (!gEnv->IsDedicated() && gEnv->pNetwork->GetLobby())
 		{
 			// Late initialise voice service if playing multiplayer (and not a dedicated server)
 			gEnv->pNetwork->GetLobby()->Initialise(eCLS_Online, eCLSO_Voice, CGameBrowser::ConfigurationCallback, NULL, NULL);
@@ -1450,7 +1460,10 @@ void CGame::InitGameType(bool multiplayer, bool fromInit /*= false*/)
 	{
 		gEnv->pNetwork->SetMultithreadingMode(INetwork::NETWORK_MT_PRIORITY_NORMAL);
 		// Early terminate voice service if playing single player (attempt to save memory)
-		gEnv->pNetwork->GetLobby()->Terminate(eCLS_Online, eCLSO_Voice, NULL, NULL);
+		if (gEnv->pNetwork->GetLobby())
+		{
+			gEnv->pNetwork->GetLobby()->Terminate(eCLS_Online, eCLSO_Voice, NULL, NULL);
+		}
 	}
 #endif
 
@@ -1691,7 +1704,7 @@ void CGame::InitGameType(bool multiplayer, bool fromInit /*= false*/)
 			CRY_ASSERT( m_pMatchMakingTelemetry == NULL );
 
 			//LAN mode won't produce useful results for matchmaking telemetry
-			if( gEnv->pNetwork->GetLobby()->GetLobbyServiceType() == eCLS_Online )
+			if( gEnv->pNetwork->GetLobby() && gEnv->pNetwork->GetLobby()->GetLobbyServiceType() == eCLS_Online )
 			{
 				m_pMatchMakingTelemetry = new CMatchmakingTelemetry();
 			}
