@@ -122,8 +122,6 @@ ENameRequestResult
 CCryTCPService::GetAddress(
   CRYSOCKADDR_IN& addr)
 {
-	ScopedSwitchToGlobalHeap useGlobalHeap;
-
 	ENameRequestResult result = eNRR_Failed;
 
 	switch (m_resolveState)

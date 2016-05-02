@@ -222,37 +222,33 @@ void CSystem::RenderEnd(bool bRenderStats)
 		if (m_env.pGame)
 			m_env.pGame->RenderGameWarnings();
 
-		{
-			// keep debug allocations out of level heap
-			ScopedSwitchToGlobalHeap globalHeap;
 
 #if !defined(_RELEASE) && !CRY_PLATFORM_DURANGO
-			if (bRenderStats)
-				RenderPhysicsHelpers();
+		if (bRenderStats)
+			RenderPhysicsHelpers();
 #endif
 
 #if !defined (_RELEASE)
-			// Flush render data and swap buffers.
-			m_env.pRenderer->RenderDebug(bRenderStats);
+		// Flush render data and swap buffers.
+		m_env.pRenderer->RenderDebug(bRenderStats);
 #endif
 
-			RenderJobStats();
+		RenderJobStats();
 
 #if defined(USE_PERFHUD)
-			if (m_pPerfHUD)
-				m_pPerfHUD->Draw();
-			if (m_pMiniGUI)
-				m_pMiniGUI->Draw();
+		if (m_pPerfHUD)
+			m_pPerfHUD->Draw();
+		if (m_pMiniGUI)
+			m_pMiniGUI->Draw();
 #endif
 
-			if (bRenderStats)
-			{
-				RenderStatistics();
-			}
-
-			if (IConsole* pConsole = GetIConsole())
-				pConsole->Draw();
+		if (bRenderStats)
+		{
+			RenderStatistics();
 		}
+
+		if (IConsole* pConsole = GetIConsole())
+			pConsole->Draw();
 
 		m_env.pRenderer->ForceGC(); // XXX Rename this
 		m_env.pRenderer->EndFrame();
@@ -276,7 +272,6 @@ void CSystem::RenderEnd(bool bRenderStats)
 void CSystem::RenderPhysicsHelpers()
 {
 #if !defined (_RELEASE)
-	ScopedSwitchToGlobalHeap globalHeap;
 	if (gEnv->pPhysicalWorld)
 	{
 		char str[128];
@@ -589,8 +584,6 @@ void CSystem::DisplayErrorMessage(const char* acMessage,
                                   const float* pfColor,
                                   bool bHardError)
 {
-	ScopedSwitchToGlobalHeap useGlobalHeap;
-
 	SErrorMessage message;
 	message.m_Message = acMessage;
 	if (pfColor)

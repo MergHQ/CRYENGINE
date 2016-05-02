@@ -1911,7 +1911,6 @@ SDepthTexture* CD3D9Renderer::FX_GetDepthSurface(int nWidth, int nHeight, bool b
 
 SDepthTexture* CD3D9Renderer::FX_CreateDepthSurface(int nWidth, int nHeight, bool bAA)
 {
-	ScopedSwitchToGlobalHeap useGlobalHeap;
 	CDeviceTexture* pZTexture;
 	HRESULT hr;
 

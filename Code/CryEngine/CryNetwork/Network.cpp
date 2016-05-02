@@ -160,8 +160,6 @@ public:
 	// Start accepting work on thread
 	virtual void ThreadEntry()
 	{
-		ScopedSwitchToGlobalHeap useGlobalHeap;
-
 		while (Get()->UpdateTick(true) && gEnv && gEnv->pSystem && !gEnv->pSystem->IsQuitting())
 		{
 		}
@@ -668,7 +666,6 @@ void CNetwork::SetMultithreadingMode(ENetwork_Multithreading_Mode threadingMode)
 		//Threading is currently disabled - start and set prio
 		if (m_multithreadedMode == NETWORK_MT_OFF)
 		{
-			ScopedSwitchToGlobalHeap globalHeap;
 			m_pThread.reset(new CNetworkThread());
 
 			if (!gEnv->pThreadManager->SpawnThread(m_pThread.get(), "Network"))

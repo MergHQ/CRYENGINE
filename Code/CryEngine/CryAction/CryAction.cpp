@@ -362,7 +362,6 @@ CCryAction::CCryAction()
 	m_pPhysicsQueues(0),
 	m_PreUpdateTicks(0),
 	m_levelPrecachingDone(false),
-	m_usingLevelHeap(false),
 	m_pGameVolumesManager(NULL),
 	m_pNetMsgDispatcher(0)
 {
@@ -2062,8 +2061,6 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 
 	XMLCPB::CDebugUtils::Create();
 
-	CryGetIMemoryManager()->InitialiseLevelHeap();
-
 	if (!gEnv->IsDedicated())
 	{
 		XMLCPB::InitializeCompressorThread();
@@ -2906,49 +2903,6 @@ void CCryAction::SetLevelPrecachingDone(bool bValue)
 	m_levelPrecachingDone = bValue;
 }
 
-void CCryAction::SwitchToLevelHeap(const char* acLevelName)
-{
-#if CAPTURE_REPLAY_LOG
-	static int loadCount = 0;
-	if (acLevelName)
-	{
-		CryGetIMemReplay()->AddLabelFmt("loadStart%d_%s", loadCount++, acLevelName);
-	}
-	else
-	{
-		CryGetIMemReplay()->AddLabelFmt("loadStart%d", loadCount++);
-	}
-#endif
-
-	if (m_usingLevelHeap == false)
-	{
-		CryLog("[MEM] Switching to level heap");
-		INDENT_LOG_DURING_SCOPE();
-
-		ISystem* pSystem = GetISystem();
-		ISystemEventDispatcher* pSystemEventDispatcher = pSystem ? pSystem->GetISystemEventDispatcher() : NULL;
-
-		m_usingLevelHeap = true;
-
-		if (pSystemEventDispatcher)
-		{
-			pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_SWITCHING_TO_LEVEL_HEAP, 0, 0);
-		}
-
-		CryGetIMemoryManager()->SwitchToLevelHeap();
-
-		if (pSystemEventDispatcher)
-		{
-			pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_SWITCHED_TO_LEVEL_HEAP, 0, 0);
-		}
-	}
-
-#ifdef SHUTDOWN_RENDERER_BETWEEN_LEVELS
-	// Free render resources that may have been allocated in frontend
-	gEnv->pRenderer->FreeResources(FRR_SYSTEM_RESOURCES);
-#endif
-}
-
 bool CCryAction::StartGameContext(const SGameStartParams* pGameStartParams)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -3130,32 +3084,6 @@ void CCryAction::EndGameContext()
 		}
 	}
 #endif
-
-	if (!gEnv->IsEditor())
-	{
-		if (m_usingLevelHeap == true)
-		{
-			CryLog("[MEM] Switching to global heap");
-			INDENT_LOG_DURING_SCOPE();
-
-			ISystem* pSystem = GetISystem();
-			ISystemEventDispatcher* pSystemEventDispatcher = pSystem ? pSystem->GetISystemEventDispatcher() : NULL;
-
-			m_usingLevelHeap = false;
-
-			if (pSystemEventDispatcher)
-			{
-				pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_SWITCHING_TO_GLOBAL_HEAP, 0, 0);
-			}
-
-			CryGetIMemoryManager()->SwitchToGlobalHeap();
-
-			if (pSystemEventDispatcher)
-			{
-				pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_SWITCHED_TO_GLOBAL_HEAP, 0, 0);
-			}
-		}
-	}
 
 	if (gEnv && gEnv->pSystem)
 	{
@@ -5157,7 +5085,6 @@ void CCryAction::StartNetworkStallTicker(bool includeMinimalUpdate)
 			CRY_ASSERT(m_networkStallTickerReferences == 0);
 
 			// Spawn thread to tick needed tasks
-			ScopedSwitchToGlobalHeap useGlobalHeap;
 			m_pNetworkStallTickerThread = new CNetworkStallTickerThread();
 
 			if (!gEnv->pThreadManager->SpawnThread(m_pNetworkStallTickerThread, "NetworkStallTicker"))

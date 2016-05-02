@@ -82,12 +82,6 @@ struct STCPServiceData : public CMultiThreadRefCount
 		}
 	};
 
-	void* operator new(size_t sz)
-	{
-		ScopedSwitchToGlobalHeap useGlobalHeap;
-		return ::operator new(sz);
-	}
-
 	CryTCPServiceCallback      tcpServCb;      //!< Callback function to indicate success/failure of posting.
 	CryTCPServiceReplyCallback tcpServReplyCb; //!< Callback function to receive reply.
 	float                      m_quietTimer;   //!< Time in seconds since data was last sent or received for this data packet. timer is only incremented once a socket is allocated and the transaction begins.

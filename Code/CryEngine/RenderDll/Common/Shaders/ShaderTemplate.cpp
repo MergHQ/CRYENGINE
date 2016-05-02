@@ -90,7 +90,6 @@ CShaderResources* CShaderMan::mfCreateShaderResources(const SInputShaderResource
 	pSR->m_nRefCounter = 1;
 	if (!CShader::s_ShaderResources_known.Num())
 	{
-		ScopedSwitchToGlobalHeap globalHeap;
 		CShader::s_ShaderResources_known.AddIndex(1);
 		CShaderResources* pSRNULL = new CShaderResources;
 		pSRNULL->m_nRefCounter = 1;
@@ -110,7 +109,6 @@ CShaderResources* CShaderMan::mfCreateShaderResources(const SInputShaderResource
 	}
 	else
 	{
-		ScopedSwitchToGlobalHeap globalHeap;
 		pSR->m_Id = CShader::s_ShaderResources_known.Num();
 		pSR->m_IdGroup = pSR->m_Id;
 		CShader::s_ShaderResources_known.AddElem(pSR);

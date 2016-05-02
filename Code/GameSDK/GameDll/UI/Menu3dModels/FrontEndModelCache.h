@@ -59,9 +59,6 @@ private:
 	void CreateSupportForFrontEnd3dModels();
 	void ReleaseSupportForFrontEnd3dModels();
 
-	void SwitchToLevelHeap();
-	void SwitchToGlobalHeap();
-
 #if FEMC_CACHE_FILE_ACCESSES
 	ILINE static void SetReasonForLoggingFileOpens(const char* pNewReason)
 	{

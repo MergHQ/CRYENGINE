@@ -235,7 +235,6 @@ CShaderResources* CShaderResources::Clone() const
 		return CShader::s_ShaderResources_known[1];
 	}
 	pSR->m_Id = CShader::s_ShaderResources_known.Num();
-	ScopedSwitchToGlobalHeap globalHeap;
 	CShader::s_ShaderResources_known.AddElem(pSR);
 
 	return pSR;

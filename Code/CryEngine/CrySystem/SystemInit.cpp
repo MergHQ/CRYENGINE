@@ -80,7 +80,6 @@
 #include "ZLibCompressor.h"
 #include "ZLibDecompressor.h"
 #include "LZ4Decompressor.h"
-#include <CryCore/Platform/LevelHeap.h>
 #include "OverloadSceneManager/OverloadSceneManager.h"
 #include "ServiceNetwork.h"
 #include "RemoteCommand.h"
@@ -5248,10 +5247,6 @@ void CSystem::CreateSystemVars()
 	REGISTER_COMMAND("memReplayLabel", &AddReplayLabel, 0, "record a label in the mem replay log");
 	REGISTER_COMMAND("memReplayInfo", &ReplayInfo, 0, "output some info about the replay log");
 	REGISTER_COMMAND("memReplayAddSizerTree", &AddReplaySizerTree, 0, "output in-game sizer information to the log");
-#endif
-
-#if USE_LEVEL_HEAP
-	CLevelHeap::RegisterCVars();
 #endif
 
 #ifndef MEMMAN_STATIC

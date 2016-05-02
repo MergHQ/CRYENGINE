@@ -2703,8 +2703,6 @@ void CTexture::LoadDefaultSystemTextures()
 
 	if (!m_bLoadedSystem)
 	{
-		ScopedSwitchToGlobalHeap useGlobalHeap;
-
 		m_bLoadedSystem = true;
 
 		// Textures loaded directly from file
@@ -2888,7 +2886,6 @@ void CTexture::LoadDefaultSystemTextures()
 			if (!s_ptexZTarget)
 			{
 				//for d3d10 we cannot free it during level transition, therefore allocate once and keep it
-				ScopedSwitchToGlobalHeap globalHeapScope;
 				s_ptexZTarget = CTexture::CreateTextureObject("$ZTarget", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 			}
 

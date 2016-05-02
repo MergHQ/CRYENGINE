@@ -242,8 +242,6 @@ bool CTerrainUpdateDispatcher::AddJob(CTerrainNode* pNode, bool executeAsJob, co
 
 		if (executeAsJob)
 		{
-			ScopedSwitchToGlobalHeap useGlobalHeap;
-
 			TBuildIndicesJob jobIndice(passInfo);
 			jobIndice.SetClassInstance(pNode);
 			jobIndice.RegisterJobState(&pUpdateTerrainTempData->m_JobStateBuildIndices);
