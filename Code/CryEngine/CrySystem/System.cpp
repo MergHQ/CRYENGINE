@@ -195,10 +195,12 @@ struct SCVarsWhitelistConfigSink : public ILoadConfigurationEntrySink
 /////////////////////////////////////////////////////////////////////////////////
 // System Implementation.
 //////////////////////////////////////////////////////////////////////////
-CSystem::CSystem()
+CSystem::CSystem(const SSystemInitParams &startupParams)
+	:
 #if defined(SYS_ENV_AS_STRUCT)
-	: m_env(gEnv)
+	m_env(gEnv),
 #endif
+	m_startupParams(startupParams)
 {
 	m_systemGlobalState = ESYSTEM_GLOBAL_STATE_UNKNOWN;
 	m_iHeight = 0;

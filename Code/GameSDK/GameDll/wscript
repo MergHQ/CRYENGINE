@@ -13,6 +13,8 @@ def build(bld):
 
 		win_lib       = [ 'shell32', 'Gdi32' ],
 
+		use_module       = [ 'CryLobby' ],
+
 
 		durango_lib         = [ 'etwplus', 'ixmlhttprequest2', 'Ws2_32', 'uuid' ],
 		durango_use_module  = [ 'ESraLibCore' ],

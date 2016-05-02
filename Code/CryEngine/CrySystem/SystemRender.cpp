@@ -54,7 +54,7 @@ extern CMTSafeHeap* g_pPakHeap;
 extern int CryMemoryGetAllocatedSize();
 
 /////////////////////////////////////////////////////////////////////////////////
-void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
+void CSystem::CreateRendererVars()
 {
 	int iFullScreenDefault = 1;
 	int iDisplayInfoDefault = 0;
@@ -107,12 +107,12 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 #else
 	const char* p_r_DriverDef = "DX9";              // required to be deactivated for final release
 #endif
-	if (startupParams.pCvarsDefault)
+	if (m_startupParams.pCvarsDefault)
 	{
 		// hack to customize the default value of r_Driver
-		SCvarsDefault* pCvarsDefault = startupParams.pCvarsDefault;
+		SCvarsDefault* pCvarsDefault = m_startupParams.pCvarsDefault;
 		if (pCvarsDefault->sz_r_DriverDef && pCvarsDefault->sz_r_DriverDef[0])
-			p_r_DriverDef = startupParams.pCvarsDefault->sz_r_DriverDef;
+			p_r_DriverDef = m_startupParams.pCvarsDefault->sz_r_DriverDef;
 	}
 
 	m_rDriver = REGISTER_STRING("r_Driver", p_r_DriverDef, VF_DUMPTODISK,

@@ -22,8 +22,8 @@
 #include "NetTimer.h"
 #include <vector>
 #include "Config.h"
-#include <CryLobby/ICryLobby.h>
-#include <CryLobby/ICryMatchMaking.h>
+#include <CryLobby/CommonICryLobby.h>
+#include <CryLobby/CommonICryMatchMaking.h>
 
 class CNetChannel;
 class CNetwork;

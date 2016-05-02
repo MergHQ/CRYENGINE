@@ -1532,7 +1532,7 @@ struct ISystem
 
 	//! Loads a dynamic library, creates and initializes an instance of the module class
 	//! \note HintEaaS is used to load EaaS release configuration, it's ignored in all other configurations; pass true if the sourcecode for the module is available to EaaS users.
-	virtual bool InitializeEngineModule(const char* dllName, const char* moduleClassName, const SSystemInitParams& initParams, bool bQuitIfNotFound) = 0;
+	virtual bool InitializeEngineModule(const char* dllName, const char* moduleClassName, bool bQuitIfNotFound) = 0;
 
 	//! Unloads a dynamic library as well as the corresponding instance of the module class
 	virtual bool UnloadEngineModule(const char* dllName, const char* moduleClassName) = 0;
