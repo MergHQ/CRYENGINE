@@ -989,7 +989,8 @@ bool CD3D9Renderer::PrepareDepthMap(CRenderView* pRenderView, ShadowMapFrustum* 
 			int arrViewport[4];
 
 			CTexture* pColorTarget = pShadowFrustum->bUseHWShadowMap ? NULL : pShadowFrustum->pDepthTex;
-			SDepthTexture* pDepthTarget = FX_GetDepthSurface(pShadowFrustum->nTextureWidth, pShadowFrustum->nTextureHeight, false);
+			SDepthTexture* pDepthTarget = pShadowFrustum->bUseHWShadowMap? &D3dSurface : FX_GetDepthSurface(pShadowFrustum->nTextureWidth, pShadowFrustum->nTextureHeight, false);
+			//SDepthTexture* pDepthTarget = FX_GetDepthSurface(pShadowFrustum->nTextureWidth, pShadowFrustum->nTextureHeight, false);
 
 #if defined(FEATURE_SVO_GI)
 			if (CSvoRenderer::GetRsmColorMap(*pShadowFrustum, true) && CSvoRenderer::GetRsmNormlMap(*pShadowFrustum, true))
