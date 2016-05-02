@@ -510,7 +510,6 @@ CCryTCPServiceFactory::CloseConnection(
 
 CCryTCPServicePtr CCryTCPServiceFactory::CreateTCPService(const TServiceConfigName& serviceConfigName)
 {
-	ScopedSwitchToGlobalHeap useGlobalHeap;
 	CCryTCPService* pService = NULL;
 
 	for (std::vector<STCPServiceConfig>::iterator it = m_configs.begin(); it != m_configs.end(); ++it)
@@ -533,7 +532,6 @@ CCryTCPServicePtr CCryTCPServiceFactory::CreateTCPService(const TServiceConfigNa
 
 CCryTCPServicePtr CCryTCPServiceFactory::CreateTCPService(const TServerName& serverName, uint16 port, const TURLPrefix urlPrefix)
 {
-	ScopedSwitchToGlobalHeap useGlobalHeap;
 	CCryTCPService* pService = new CCryTCPService(this);
 
 	if (pService)

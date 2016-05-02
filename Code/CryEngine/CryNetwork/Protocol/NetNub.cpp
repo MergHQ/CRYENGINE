@@ -1791,8 +1791,6 @@ void CNetNub::GC_CreateChannel(CNetChannel* pNetChannel, string connectionString
 	// see CSystem::Update -> CNetwork::SyncWithGame
 	//SCOPED_GLOBAL_LOCK; - no need to lock
 
-	ScopedSwitchToGlobalHeap useGlobalHeap;
-
 	TConnectingMap::iterator iterCon = m_connectingMap.find(pNetChannel->GetIP());
 	bool fromRequest = iterCon != m_connectingMap.end();
 

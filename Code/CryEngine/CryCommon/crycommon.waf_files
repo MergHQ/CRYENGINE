@@ -88,7 +88,6 @@
           "CryCore/Platform/CryAtlMfc.h",
           "CryCore/Platform/CryDLMalloc.h",
           "CryCore/Platform/CryLibrary.h",
-          "CryCore/Platform/LevelHeap.h",
           "CryCore/Platform/platform.h",
           "CryCore/Platform/platform_impl.inl",
           "CryCore/Platform/WindowsUtils.h",

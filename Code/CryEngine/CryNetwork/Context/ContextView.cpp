@@ -983,8 +983,6 @@ void CContextView::GC_GetEstablishmentOrder()
 	ASSERT_PRIMARY_THREAD;
 	ASSERT_GLOBAL_LOCK;
 
-	ScopedSwitchToGlobalHeap globalHeap;
-
 	CContextEstablisherPtr pEstablisher = new CContextEstablisher();
 	pEstablisher->OnFailDisconnect(Parent());
 

@@ -3222,8 +3222,6 @@ void CGame::OnPostUpdate(float fDeltaTime)
 
 void CGame::OnSaveGame(ISaveGame* pSaveGame)
 {
-	ScopedSwitchToGlobalHeap useGlobalHeap;
-
 	CPlayer *pPlayer = static_cast<CPlayer*>(GetIGameFramework()->GetClientActor());
 	GetGameRules()->PlayerPosForRespawn(pPlayer, true);
 
@@ -4027,8 +4025,6 @@ void CGame::LoadMappedLevelNames( const char* xmlPath )
 
 IGameStateRecorder* CGame::CreateGameStateRecorder(IGameplayListener* pL)
 {
-	ScopedSwitchToGlobalHeap globalHeap;
-
 	CGameStateRecorder* pGSP = new CGameStateRecorder();
 	
 	if(pGSP)
@@ -4255,39 +4251,35 @@ void CGame::UploadSessionTelemetry(void)
 
 		m_telemetryCollector->SubmitFromMemory("playtime.xml",str.c_str(),str.length(),CTelemetryCollector::k_tf_none);
 		
+		CryFixedStringT<255> localFileName;
+
+		if (m_performanceBuffer)
 		{
-			ScopedSwitchToGlobalHeap globalHeap;
-
-			CryFixedStringT<255> localFileName;
-
-			if (m_performanceBuffer)
-			{
-				m_performanceBuffer->SubmitToServer("frametimes.log");
-				localFileName.Format("%%USER%%/MiscTelemetry/%s_frametimes.log", m_telemetryCollector->GetSessionId().c_str() );
-				m_performanceBuffer->DumpToFile(localFileName.c_str());
-				m_performanceBuffer->Reset();
-			}
-			if (m_bandwidthBuffer)
-			{
-				m_bandwidthBuffer->SubmitToServer("bandwidth.log");
-				localFileName.Format("%%USER%%/MiscTelemetry/%s_bandwidth.log", m_telemetryCollector->GetSessionId().c_str() );
-				m_bandwidthBuffer->DumpToFile(localFileName.c_str());
-				m_bandwidthBuffer->Reset();
-			}
-			if (m_memoryTrackingBuffer)
-			{
-				m_memoryTrackingBuffer->SubmitToServer("memory.log");
-				localFileName.Format("%%USER%%/MiscTelemetry/%s_memory.log", m_telemetryCollector->GetSessionId().c_str() );
-				m_memoryTrackingBuffer->DumpToFile(localFileName.c_str());
-				m_memoryTrackingBuffer->Reset();
-			}
-			if(m_soundTrackingBuffer)
-			{
-				m_soundTrackingBuffer->SubmitToServer("sound.log");
-				localFileName.Format("%%USER%%/MiscTelemetry/%s_sound.log", m_telemetryCollector->GetSessionId().c_str() );
-				m_soundTrackingBuffer->DumpToFile(localFileName.c_str());
-				m_soundTrackingBuffer->Reset();
-			}
+			m_performanceBuffer->SubmitToServer("frametimes.log");
+			localFileName.Format("%%USER%%/MiscTelemetry/%s_frametimes.log", m_telemetryCollector->GetSessionId().c_str() );
+			m_performanceBuffer->DumpToFile(localFileName.c_str());
+			m_performanceBuffer->Reset();
+		}
+		if (m_bandwidthBuffer)
+		{
+			m_bandwidthBuffer->SubmitToServer("bandwidth.log");
+			localFileName.Format("%%USER%%/MiscTelemetry/%s_bandwidth.log", m_telemetryCollector->GetSessionId().c_str() );
+			m_bandwidthBuffer->DumpToFile(localFileName.c_str());
+			m_bandwidthBuffer->Reset();
+		}
+		if (m_memoryTrackingBuffer)
+		{
+			m_memoryTrackingBuffer->SubmitToServer("memory.log");
+			localFileName.Format("%%USER%%/MiscTelemetry/%s_memory.log", m_telemetryCollector->GetSessionId().c_str() );
+			m_memoryTrackingBuffer->DumpToFile(localFileName.c_str());
+			m_memoryTrackingBuffer->Reset();
+		}
+		if(m_soundTrackingBuffer)
+		{
+			m_soundTrackingBuffer->SubmitToServer("sound.log");
+			localFileName.Format("%%USER%%/MiscTelemetry/%s_sound.log", m_telemetryCollector->GetSessionId().c_str() );
+			m_soundTrackingBuffer->DumpToFile(localFileName.c_str());
+			m_soundTrackingBuffer->Reset();
 		}
 
 		//Make summarystats.xml - one row for all the summary stats we output

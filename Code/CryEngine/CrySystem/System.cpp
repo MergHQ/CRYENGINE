@@ -1131,7 +1131,6 @@ void CSystem::CreatePhysicsThread()
 {
 	if (!m_PhysThread)
 	{
-		ScopedSwitchToGlobalHeap globalHeap;
 		m_PhysThread = new CPhysicsThreadTask;
 		if (!gEnv->pThreadManager->SpawnThread(m_PhysThread, "Physics"))
 		{
@@ -2085,15 +2084,11 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 		if ((cur_time - it->first) < a_second)
 			break;
 
-	{
-		ScopedSwitchToGlobalHeap globalHeap;
+	if (it != m_updateTimes.begin())
+		m_updateTimes.erase(m_updateTimes.begin(), it);
 
-		if (it != m_updateTimes.begin())
-			m_updateTimes.erase(m_updateTimes.begin(), it);
-
-		float updateTime = (cur_time - updateStart).GetMilliSeconds();
-		m_updateTimes.push_back(std::make_pair(cur_time, updateTime));
-	}
+	float updateTime = (cur_time - updateStart).GetMilliSeconds();
+	m_updateTimes.push_back(std::make_pair(cur_time, updateTime));
 
 	UpdateUpdateTimes();
 

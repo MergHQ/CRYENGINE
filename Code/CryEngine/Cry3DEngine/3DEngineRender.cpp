@@ -2795,26 +2795,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		}
 		else
 		{
-
-	#if TRACK_LEVEL_HEAP_USAGE
-			{
-				bool usingLevelHeap;
-				size_t lvlAllocs, lvlSize;
-				bool leaked = CryGetIMemoryManager()->GetLevelHeapViolationState(usingLevelHeap, lvlAllocs, lvlSize);
-				if (usingLevelHeap)
-				{
-					if (leaked)
-					{
-						DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, 1.3f, Col_Red, "Level Heap Leaked (%i allocs, totalling %iKB)", (int) lvlAllocs, (int) (lvlSize / 1024));
-					}
-					else
-					{
-						DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, 1.3f, Col_Green, "Level Heap Healthy");
-					}
-				}
-			}
-	#endif
-
 	#ifndef _RELEASE
 			// Checkpoint loading information
 			if (!gEnv->bMultiplayer)

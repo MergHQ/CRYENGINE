@@ -152,7 +152,6 @@ void CNetContextState::ChangeSubscription(INetContextListenerPtr pListener, INet
 unsigned CNetContextState::ChangeSubscription(TSubscriptions& subscriptions, INetContextListenerPtr pListener, unsigned events)
 {
 	ASSERT_GLOBAL_LOCK;
-	ScopedSwitchToGlobalHeap useGlobalHeap;
 	for (TSubscriptions::iterator iter = subscriptions.begin(); iter != subscriptions.end(); ++iter)
 	{
 		if (iter->pListener == pListener)

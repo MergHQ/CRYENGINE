@@ -1769,7 +1769,6 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 			continue;
 		if (nFile == m_arrOpenFiles.size())
 		{
-			ScopedSwitchToGlobalHeap globalHeap;
 			m_arrOpenFiles.resize(nFile + 1);
 		}
 		if (pFileData != NULL && (nInputFlags & FOPEN_HINT_DIRECT_OPERATION) && !pFileData->m_pZip->IsInMemory())

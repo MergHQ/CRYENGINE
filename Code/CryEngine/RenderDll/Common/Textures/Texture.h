@@ -2234,7 +2234,6 @@ public:
 
 		if (i == nTexStatesSize)
 		{
-			ScopedSwitchToGlobalHeap useGlobalHeap;
 			s_TexStates.push_back(TS);
 			s_TexStates[i].PostCreate();
 		}
