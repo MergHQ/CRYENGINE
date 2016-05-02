@@ -1748,9 +1748,6 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 	if (!m_pRT->IsRenderThread())
 		DXGLUnbindDeviceContext(GetDeviceContext().GetRealDeviceContext(), !CV_r_multithreaded);
 	#endif
-	// Temporarily disabled in OpenGL because it crashes
-	CRenderer::CV_r_GpuParticles = 0;
-	CRenderer::CV_r_GraphicsPipeline = 0;
 #endif //defined(OPENGL) && !DXGL_FULL_EMULATION
 
 	if (!bShaderCacheGen)
