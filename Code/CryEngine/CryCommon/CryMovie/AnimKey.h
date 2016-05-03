@@ -129,7 +129,7 @@ struct SEventKey : public STrackDurationKey
 	{
 		STrackDurationKey::Serialize(ar);
 
-		ar(Serialization::SequenceEventPicker(m_event), "event", "Event");
+		ar(Serialization::EntityEventPicker(m_event), "event", "Event");
 		ar(m_eventValue, "eventValue", "Event Value");
 		ar(m_animation, "animation", "Animation");
 		ar(m_value, "value", "Value");
