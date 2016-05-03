@@ -326,8 +326,8 @@ def load_win_x64_android_arm_gcc_common_settings(conf):
 		platform_target + '/usr/lib'
 	]	 
 	# Introduce the compiler to generate 32 bit code
-	v['CFLAGS'] += [ '-mfpu=neon', '-mfloat-abi=softfp', '-march=armv7-a' ]
-	v['CXXFLAGS'] += [ '-mfpu=neon', '-mfloat-abi=softfp', '-march=armv7-a' ]	
+	v['CFLAGS'] += [ '-mfpu=neon', '-mfloat-abi=softfp', '-march=armv7-a', '-fno-inline' ]
+	v['CXXFLAGS'] += [ '-mfpu=neon', '-mfloat-abi=softfp', '-march=armv7-a', '-fno-inline' ]	
 	
 	v['CFLAGS'] += [ '--sysroot=' + android_ndk_platform_compiler_target ]
 	v['CXXFLAGS'] += [ '--sysroot=' + android_ndk_platform_compiler_target ]
