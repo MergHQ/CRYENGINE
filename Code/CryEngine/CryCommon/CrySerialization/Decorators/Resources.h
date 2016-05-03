@@ -29,6 +29,7 @@ template<class T> ResourceSelector<T> SmartObjectClasses(T& s)            { retu
 template<class T> ResourceSelector<T> MaterialPicker(T& s)                { return ResourceSelector<T>(s, "Material"); }
 template<class T> ResourceSelector<T> LevelLayerPicker(T& s)              { return ResourceSelector<T>(s, "LevelLayer"); }
 template<class T> ResourceSelector<T> SequenceEventPicker(T& s)           { return ResourceSelector<T>(s, "SequenceEvent"); }
+template<class T> ResourceSelector<T> EntityEventPicker(T& s)             { return ResourceSelector<T>(s, "EntityEvent"); }
 template<class T> ResourceSelector<T> SequenceCameraPicker(T& s)          { return ResourceSelector<T>(s, "SequenceCamera"); }
 template<class T> ResourceSelector<T> CharacterAnimationPicker(T& s)      { return ResourceSelector<T>(s, "CharacterAnimation"); }
 template<class T> ResourceSelector<T> TrackCharacterAnimationPicker(T& s) { return ResourceSelector<T>(s, "TrackCharacterAnimation"); }

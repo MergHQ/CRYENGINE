@@ -1099,6 +1099,7 @@ EditorStyleHelper {
 	qproperty-timelineSplitterMoving: rgb(0, 161, 222);
 	qproperty-timelineSelectionLines: rgb(0, 0, 0);
 	qproperty-timelineSelectionLinesFocused: rgb(0, 161, 222);
+	qproperty-timelineDisabledColor: rgba(65, 65, 65, 200);
 
 	/* Curve editor */
 	qproperty-curveRangeHighlight: rgb(72, 72, 72);
