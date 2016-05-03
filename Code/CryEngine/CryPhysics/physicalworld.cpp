@@ -1164,7 +1164,7 @@ int CPhysicalWorld::DestroyPhysicalEntity(IPhysicalEntity* _pent,int mode,int bT
 				((CPhysicalEntity*)ppc)->m_iForeignData = -1;
 			}
 		} else
-			((CPhysArea*)ppc)->m_bDeleted = 1;
+			((CPhysArea*)ppc)->m_bDeleted = mode!=2;
 	mode &= 3;
 
 	//if (m_lockStep & (bThreadSafe^1))

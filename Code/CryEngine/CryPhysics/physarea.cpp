@@ -1369,6 +1369,8 @@ void CPhysArea::Update(float dt)
 
 void CPhysArea::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 {	
+	if (m_bDeleted)
+		return;
 	//ReadLock lock(m_lockUpdate);
 	if (flags & pe_helper_bbox) {
 		int i,j;
