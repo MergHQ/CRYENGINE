@@ -399,7 +399,7 @@ cbuffer g_gpuParticleVertexShaderParameters : register(b4)
 StructuredBuffer<SDefaultParticleData> gpuParticleSRV : register(t7);
 OutputVS GpuParticleVS(uint vertID: SV_VertexID)
 {
-	const uint particleId = (vertID >> 2);
+	const uint particleId = (vertID >> 2) + asuint(PullVerticesInfo.x);
 	float4 Position = float4(gpuParticleSRV[particleId].position, 1.0);
 	app2vertParticleGeneral IN = (app2vertParticleGeneral)0;
 	uint color = gpuParticleSRV[particleId].color;
