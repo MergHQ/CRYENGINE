@@ -46,10 +46,12 @@ bool CREGpuParticle::mfDraw(CShader* ef, SShaderPass* sfm)
 		gcpRendD3D->FX_SetVStream(0, nullptr, 0, 3 * sizeof(float));
 		rp.m_particleBuffer.BindSpriteIB();
 		rp.m_lightVolumeBuffer.BindSRVs();
-
+		rp.m_RendNumVerts = totalNumSprites;
+		rp.m_FirstVertex = 0;
+		
 		for (;; )
 		{
-			const uint numSprites = min(totalNumSprites, maxNumSprites);
+			const uint numSprites = min(uint(rp.m_RendNumVerts), maxNumSprites);
 			rd->FX_DrawIndexedPrimitive(eptTriangleList, 0, 0, 0, 0, numSprites * 6);
 			rp.m_RendNumVerts -= numSprites;
 			rp.m_FirstVertex += numSprites;
