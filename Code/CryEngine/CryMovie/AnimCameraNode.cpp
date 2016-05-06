@@ -527,8 +527,12 @@ Ang3 CAnimCameraNode::ShakeParam::ApplyCameraShake(CPNoise3& noiseGen, SAnimTime
 	                        (t + 10.0f) * this->frequency.y * this->noiseFreqMult,
 	                        (t + 30.5f) * this->frequency.z * this->noiseFreqMult);
 
-	rotation.x = noiseGen.Noise1D(this->phase.x) * this->amplitude.x * this->amplitudeMult;
+	const float phaseDelta = boost::get<float>(pFreqTrack->GetValue(time));
 
+	this->phase += this->frequency * phaseDelta;
+	this->phaseNoise += this->frequency * this->noiseFreqMult * phaseDelta;
+
+	rotation.x = noiseGen.Noise1D(this->phase.x) * this->amplitude.x * this->amplitudeMult;
 	rotationNoise.x = noiseGen.Noise1D(this->phaseNoise.x) * this->amplitude.x * noiseAmpMult;
 
 	rotation.y = noiseGen.Noise1D(this->phase.y) * this->amplitude.y * this->amplitudeMult;
