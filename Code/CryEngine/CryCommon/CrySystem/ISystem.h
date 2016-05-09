@@ -1197,6 +1197,9 @@ struct ISystem
 
 	virtual bool IsUIFrameworkMode() { return false; }
 
+	//! Fills the output array by random numbers using CMTRand_int32 generator
+	virtual void FillRandomMT(uint32* pOutWords, uint32 numWords) = 0;
+
 	// Return the related subsystem interface.
 
 	virtual IZLibCompressor*       GetIZLibCompressor() = 0;

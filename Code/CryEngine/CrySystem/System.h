@@ -235,7 +235,7 @@ class CXConsole;
 class CSystem : public ISystem, public ILoadConfigurationEntrySink, public ISystemEventListener, public IWindowMessageHandler
 {
 public:
-	CSystem(const SSystemInitParams &startupParams);
+	CSystem(const SSystemInitParams& startupParams);
 	~CSystem();
 	bool        IsUIFrameworkMode() override { return m_bUIFrameworkMode; }
 
@@ -253,7 +253,7 @@ public:
 	///////////////////////////////////////////////////////////////////////////
 	//! @name ISystem implementation
 	//@{
-	virtual bool Init();
+	virtual bool                      Init();
 	virtual void                      Release() override;
 
 	virtual SSystemGlobalEnvironment* GetGlobalEnvironment() override { return &m_env; }
@@ -311,6 +311,7 @@ public:
 	virtual int                  GetApplicationInstance() override;
 	virtual sUpdateTimes&        GetCurrentUpdateTimeStats() override;
 	virtual const sUpdateTimes*  GetUpdateTimeStats(uint32&, uint32&) override;
+	virtual void                 FillRandomMT(uint32* pOutWords, uint32 numWords) override;
 
 	IGame*                       GetIGame() override            { return m_env.pGame; }
 	INetwork*                    GetINetwork() override         { return m_env.pNetwork; }
@@ -921,6 +922,10 @@ private: // ------------------------------------------------------
 	uint64 m_nUpdateCounter;
 
 	int    sys_ProfileLevelLoading, sys_ProfileLevelLoadingDump;
+
+	// MT random generator
+	CryCriticalSection m_mtLock;
+	CMTRand_int32*     m_pMtState;
 
 public:
 	//! Pointer to the download manager
