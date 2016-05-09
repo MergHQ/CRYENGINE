@@ -459,6 +459,11 @@ enum ESystemEvent
 
 	//! Sent if the CrySystem module initialized successfully.
 	ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE,
+
+	//! Sent if the window containing the running game loses focus, but application itself still has focus
+	//! This is needed because some sub-systems still want to work even without focus on main application
+	//! while others would prefer to suspend their operation
+	ESYSTEM_EVENT_GAMEWINDOW_ACTIVATE,
 };
 
 //! User defined callback, which can be passed to ISystem.
