@@ -1,7 +1,7 @@
 // CRYENGINE Source Code File
 // Copyright 2001-2016 Crytek GmbH. All rights reserved.
 
-#include "GeomDeformationUtils.cfi"
+#include "ComputeSkinningUtils.cfi"
 
 float Script : STANDARDSGLOBAL
 	<
