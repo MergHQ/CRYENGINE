@@ -195,7 +195,7 @@ struct SCVarsWhitelistConfigSink : public ILoadConfigurationEntrySink
 /////////////////////////////////////////////////////////////////////////////////
 // System Implementation.
 //////////////////////////////////////////////////////////////////////////
-CSystem::CSystem(const SSystemInitParams &startupParams)
+CSystem::CSystem(const SSystemInitParams& startupParams)
 	:
 #if defined(SYS_ENV_AS_STRUCT)
 	m_env(gEnv),
@@ -286,6 +286,7 @@ CSystem::CSystem(const SSystemInitParams &startupParams)
 	m_sysNoUpdate = NULL;
 	m_pMemoryManager = NULL;
 	m_pProcess = NULL;
+	m_pMtState = NULL;
 
 	m_pValidator = NULL;
 	m_pCmdLine = NULL;
@@ -2745,6 +2746,25 @@ const sUpdateTimes* CSystem::GetUpdateTimeStats(uint32& index, uint32& num)
 	index = m_UpdateTimesIdx;
 	num = NUM_UPDATE_TIMES;
 	return m_UpdateTimes;
+}
+
+void CSystem::FillRandomMT(uint32* pOutWords, uint32 numWords)
+{
+	AUTO_LOCK(m_mtLock);
+	if (!m_pMtState)
+	{
+		struct TicksTime
+		{
+			int64 ticks;
+			time_t tm;
+		};
+
+		TicksTime tt = { CryGetTicks(), time(nullptr) };
+		m_pMtState = new CMTRand_int32(reinterpret_cast<uint32*>(&tt), sizeof(tt) / sizeof(uint32));
+	}
+
+	for (uint32 i = 0; i < numWords; ++i)
+		pOutWords[i] = m_pMtState->GenerateUint32();
 }
 
 void CSystem::UpdateUpdateTimes()
