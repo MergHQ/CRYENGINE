@@ -102,10 +102,12 @@ void ProcessChannelFinishedRequests(TChannelFinishedRequests& queue)
 			SATLAudioObjectData_sdlmixer* pAudioObject = g_channels[finishedChannelId].pAudioObject;
 			if (pAudioObject)
 			{
-				const TEventInstanceList::iterator eventsEnd = pAudioObject->events.end();
-				for (TEventInstanceList::iterator eventsIt = pAudioObject->events.begin(); eventsIt != eventsEnd; ++eventsIt)
+				TEventInstanceList::iterator eventsEnd = pAudioObject->events.end();
+				for (TEventInstanceList::iterator eventsIt = pAudioObject->events.begin(); eventsIt != eventsEnd; )
 				{
 					SATLEventData_sdlmixer* pEventInstance = *eventsIt;
+					TEventInstanceList::iterator eventsCurrent = eventsIt;
+					++eventsIt;
 					if (pEventInstance)
 					{
 						const TChannelList::iterator channelsEnd = pEventInstance->channels.end();
@@ -116,7 +118,8 @@ void ProcessChannelFinishedRequests(TChannelFinishedRequests& queue)
 								pEventInstance->channels.erase(channelIt);
 								if (pEventInstance->channels.empty())
 								{
-									pAudioObject->events.erase(eventsIt);
+									eventsIt = pAudioObject->events.erase(eventsCurrent);
+									eventsEnd = pAudioObject->events.end();
 									EventFinishedPlaying(pEventInstance->nEventID);
 								}
 								break;
@@ -124,10 +127,12 @@ void ProcessChannelFinishedRequests(TChannelFinishedRequests& queue)
 						}
 					}
 				}
-				const TStandAloneFileInstanceList::iterator standaloneFilesEnd = pAudioObject->standaloneFiles.end();
-				for (TStandAloneFileInstanceList::iterator standaloneFilesIt = pAudioObject->standaloneFiles.begin(); standaloneFilesIt != standaloneFilesEnd; ++standaloneFilesIt)
+				TStandAloneFileInstanceList::iterator standaloneFilesEnd = pAudioObject->standaloneFiles.end();
+				for (TStandAloneFileInstanceList::iterator standaloneFilesIt = pAudioObject->standaloneFiles.begin(); standaloneFilesIt != standaloneFilesEnd; )
 				{
 					CAudioStandaloneFile_sdlmixer* pStandaloneFileInstance = *standaloneFilesIt;
+					TStandAloneFileInstanceList::iterator standaloneFilesCurrent = standaloneFilesIt;
+					++standaloneFilesIt;
 					if (pStandaloneFileInstance)
 					{
 						const TChannelList::iterator channelsEnd = pStandaloneFileInstance->channels.end();
@@ -138,7 +143,8 @@ void ProcessChannelFinishedRequests(TChannelFinishedRequests& queue)
 								pStandaloneFileInstance->channels.erase(channelIt);
 								if (pStandaloneFileInstance->channels.empty())
 								{
-									pAudioObject->standaloneFiles.erase(standaloneFilesIt);
+									standaloneFilesIt = pAudioObject->standaloneFiles.erase(standaloneFilesCurrent);
+									standaloneFilesEnd = pAudioObject->standaloneFiles.end();
 									StandaloneFileFinishedPlaying(pStandaloneFileInstance->fileInstanceId, pStandaloneFileInstance->fileName.c_str());
 
 									TSampleIdUsageCounterMap::iterator it = g_usageCounters.find(pStandaloneFileInstance->fileId);
@@ -544,15 +550,15 @@ bool ExecuteEvent(SATLAudioObjectData_sdlmixer* const pAudioObject, SATLTriggerI
 }
 
 bool PlayFile(CryAudio::Impl::SATLAudioObjectData_sdlmixer* const pAudioObject
-	, CryAudio::Impl::CAudioStandaloneFile_sdlmixer* const pEventInstance
-	, const CryAudio::Impl::SATLTriggerImplData_sdlmixer* const pUsedTrigger
-	, const char* const szFilePath)
+              , CryAudio::Impl::CAudioStandaloneFile_sdlmixer* const pEventInstance
+              , const CryAudio::Impl::SATLTriggerImplData_sdlmixer* const pUsedTrigger
+              , const char* const szFilePath)
 {
 	if (!pUsedTrigger)
 	{
 		return false;
 	}
-	
+
 	TSampleID idForThisFile = pEventInstance->fileId;
 	Mix_Chunk* pSample = stl::find_in_map(g_sampleData, idForThisFile, nullptr);
 
