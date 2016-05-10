@@ -2021,7 +2021,7 @@ void CPhysicalWorld::ProcessNextEntityIsland(float time_interval, int ipass, int
 				groupTimeStep = min(groupTimeStep, pent->GetMaxTimeStep(time_interval));
 			for(pent=m_pTmpEntList1[i],bStepValid=1,phead=0; pent; pent=pent_next) {
 				pent_next=pent->m_next_coll;
-				if (pent->m_iSimClass<3)
+				if (pent->m_iSimClass<3 || pent->GetType()==PE_ARTICULATED)
 					bStepValid &= (phead=pent)->Step(groupTimeStep);
 				pent->m_bMoved = 1;
 			}
@@ -2510,6 +2510,7 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 		m_updateTimes[3] = m_timePhysics;
 	}
 
+	m_bWorldStep = 3;
 	if (!m_vars.bSingleStepMode || m_vars.bDoStep) {
 		if (flags & ent_independent) {
 			m_pCurEnt = m_pTypedEntsPerm[4];
