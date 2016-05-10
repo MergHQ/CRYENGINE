@@ -467,11 +467,11 @@ bool CNetNub::ConnectTo(const char* address, const char* connectionString)
 		}
 	}
 
-	if (session != CrySessionInvalidHandle && pLobby && pLobby->GetMatchMaking())
+	ICryMatchMakingPrivate* pMMPrivate = pLobby ? pLobby->GetMatchMakingPrivate() : nullptr;
+	if (session != CrySessionInvalidHandle && pMMPrivate)
 	{
-		ICryMatchMakingPrivate* pMatchMakingPriv8 = (ICryMatchMakingPrivate*)pLobby->GetMatchMaking();
 		TNetAddressVec tmp;
-		tmp.push_back(pMatchMakingPriv8->GetHostAddressFromSessionHandle(session));
+		tmp.push_back(pMMPrivate->GetHostAddressFromSessionHandle(session));
 		DoConnectTo(tmp, session, connectionString, conlk);
 		return true;
 	}
@@ -692,11 +692,11 @@ bool CNetNub::SendPendingConnect(SPendingConnection& pc)
 		{
 			NetWarning("Connection to %s timed out", RESOLVER.ToString(pc.to).c_str());
 			TO_GAME(&CNetNub::GC_FailedActiveConnect, this, eDC_Timeout, string().Format("Connection attempt to %s timed out", RESOLVER.ToString(pc.to).c_str()), CNubKeepAliveLock(this));
-			auto pMatchMaking = m_pLobby ? (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking() : nullptr;
-			if (pMatchMaking)
+			ICryMatchMakingPrivate* pMMPrivate = m_pLobby ? m_pLobby->GetMatchMakingPrivate() : nullptr;
+			if (pMMPrivate)
 			{
 				CryLog("CNetNub::SendPendingConnect calling SessionDisconnectRemoteConnection");
-				pMatchMaking->SessionDisconnectRemoteConnectionFromNub(pc.session, eDC_Timeout);
+				pMMPrivate->SessionDisconnectRemoteConnectionFromNub(pc.session, eDC_Timeout);
 			}
 			return false; // staying in this state too long
 		}
@@ -841,18 +841,11 @@ bool CNetNub::Init(CNetwork* pNetwork)
 	flags |= eSF_BigBuffer;
 
 	ISocketIOManager* pSocketIOManager = &CNetwork::Get()->GetInternalSocketIOManager();
-	if (m_pLobby)
+	ICryMatchMakingPrivate* pMMPrivate = m_pLobby ? m_pLobby->GetMatchMakingPrivate() : nullptr;
+	if (pMMPrivate && pMMPrivate->GetLobbyServiceTypeForNubSession() == eCLS_Online)
 	{
-		ICryMatchMakingPrivate* pMatchMaking = (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking();
-
-		if (pMatchMaking)
-		{
-			if (pMatchMaking->GetLobbyServiceTypeForNubSession() == eCLS_Online)
-			{
-				flags |= eSF_Online;
-				pSocketIOManager = &CNetwork::Get()->GetExternalSocketIOManager();
-			}
-		}
+		flags |= eSF_Online;
+		pSocketIOManager = &CNetwork::Get()->GetExternalSocketIOManager();
 	}
 
 	m_pSocketMain = pSocketIOManager->CreateDatagramSocket(m_addr, flags);
@@ -1245,16 +1238,16 @@ void CNetNub::DisconnectChannel(EDisconnectionCause cause, CrySessionHandle sess
 {
 	SCOPED_GLOBAL_LOCK;
 
-	auto pMatchMaking = m_pLobby ? (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking() : nullptr;
-	if (pMatchMaking)
+	ICryMatchMakingPrivate* pMMPrivate = m_pLobby ? m_pLobby->GetMatchMakingPrivate() : nullptr;
+	if (pMMPrivate)
 	{
-		uint32 id = pMatchMaking->GetChannelIDFromGameSessionHandle(session);
+		uint32 id = pMMPrivate->GetChannelIDFromGameSessionHandle(session);
 
 		for (TChannelMap::const_iterator iter = m_channels.begin(); iter != m_channels.end(); ++iter)
 		{
 			CNetChannel* pChannel = iter->second->GetNetChannel();
 
-			if (pMatchMaking->GetChannelIDFromGameSessionHandle(pChannel->GetSession()) == id)
+			if (pMMPrivate->GetChannelIDFromGameSessionHandle(pChannel->GetSession()) == id)
 			{
 				DisconnectChannel(cause, &iter->first, pChannel, pReason);
 			}
@@ -1266,16 +1259,16 @@ INetChannel* CNetNub::GetChannelFromSessionHandle(CrySessionHandle session)
 {
 	SCOPED_GLOBAL_LOCK;
 
-	auto pMatchMaking = m_pLobby ? (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking() : nullptr;
-	if (pMatchMaking)
+	ICryMatchMakingPrivate* pMMPrivate = m_pLobby ? m_pLobby->GetMatchMakingPrivate() : nullptr;
+	if (pMMPrivate)
 	{
-		uint32 id = pMatchMaking->GetChannelIDFromGameSessionHandle(session);
+		uint32 id = pMMPrivate->GetChannelIDFromGameSessionHandle(session);
 
 		for (TChannelMap::const_iterator iter = m_channels.begin(); iter != m_channels.end(); ++iter)
 		{
 			CNetChannel* pChannel = iter->second->GetNetChannel();
 
-			if (pMatchMaking->GetChannelIDFromGameSessionHandle(pChannel->GetSession()) == id)
+			if (pMMPrivate->GetChannelIDFromGameSessionHandle(pChannel->GetSession()) == id)
 			{
 				return pChannel;
 			}
@@ -1383,8 +1376,8 @@ void CNetNub::ProcessLanQuery(const TNetAddress& from)
 
 void CNetNub::LobbySafeDisconnect(CNetChannel* pChannel, EDisconnectionCause cause, const char* reason)
 {
-	auto pMatchMaking = m_pLobby ? (ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking() : nullptr;
-	if (pMatchMaking)
+	ICryMatchMakingPrivate* pMMPrivate = m_pLobby ? m_pLobby->GetMatchMakingPrivate() : nullptr;
+	if (pMMPrivate)
 	{
 		return;   // dont process the disconnect event, leave it for the lobby to deal with
 	}
@@ -1701,7 +1694,7 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 
 		CRY_ASSERT_MESSAGE(session != CrySessionInvalidHandle, "Incoming connection with no session");
 
-		if (session == CrySessionInvalidHandle || !((ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking())->IsNetAddressInLobbyConnection(from))
+		if (session == CrySessionInvalidHandle || !m_pLobby->GetMatchMakingPrivate()->IsNetAddressInLobbyConnection(from))
 		{
 			if (session != CrySessionInvalidHandle)
 			{
@@ -1795,7 +1788,7 @@ void CNetNub::GC_CreateChannel(CNetChannel* pNetChannel, string connectionString
 
 	if (gEnv->bMultiplayer && m_pLobby && m_pLobby->GetMatchMaking())
 	{
-		if (!((ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking())->IsNetAddressInLobbyConnection(pNetChannel->GetIP()))
+		if (!m_pLobby->GetMatchMakingPrivate()->IsNetAddressInLobbyConnection(pNetChannel->GetIP()))
 		{
 			CryLogAlways("Canary : Duplicate Channel ID - Work around");
 
@@ -1871,7 +1864,7 @@ void CNetNub::AddDisconnectEntry(const TNetAddress& ip, CrySessionHandle session
 	if (m_pLobby && m_pLobby->GetMatchMaking())
 	{
 		CryLog("CNetNub::AddDisconnectEntry calling SessionDisconnectRemoteConnection reason %s", reason ? reason : "no reason");
-		((ICryMatchMakingPrivate*)m_pLobby->GetMatchMaking())->SessionDisconnectRemoteConnectionFromNub(session, cause);
+		m_pLobby->GetMatchMakingPrivate()->SessionDisconnectRemoteConnectionFromNub(session, cause);
 	}
 	else
 	{

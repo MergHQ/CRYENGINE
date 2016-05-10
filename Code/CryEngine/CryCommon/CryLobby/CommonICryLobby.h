@@ -208,6 +208,12 @@ public:
 	//! \return Pointer to an ICryMatchMaking associated with the current lobby service.
 	virtual ICryMatchMaking* GetMatchMaking() = 0;
 
+	//! Get the CryNetwork-specific interface of MatchMaking.
+	virtual ICryMatchMakingPrivate* GetMatchMakingPrivate() = 0;
+
+	//! Get a base MatchMaking interface for console-issued matchmaking commands.
+	virtual ICryMatchMakingConsoleCommands* GetMatchMakingConsoleCommands() = 0;
+
 	//! Get the current voice service.
 	//! \return Pointer to an ICryVoice associated with the current lobby service.
 	virtual ICryVoice* GetVoice() = 0;

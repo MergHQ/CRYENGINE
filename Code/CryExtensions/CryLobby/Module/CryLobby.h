@@ -463,6 +463,10 @@ public:
 		{ return m_services[m_service]; }
 	virtual ICryMatchMaking*       GetMatchMaking() override
 		{ return m_services[m_service] ? m_services[m_service]->GetMatchMaking() : NULL; }
+	virtual ICryMatchMakingPrivate* GetMatchMakingPrivate() override
+		{ return static_cast<ICryMatchMakingPrivate *>(GetMatchMaking());	}
+	virtual ICryMatchMakingConsoleCommands* GetMatchMakingConsoleCommands() override
+		{ return static_cast<ICryMatchMakingConsoleCommands *>(GetMatchMaking());	}
 	virtual ICryVoice*             GetVoice() override
 		{ return m_services[m_service] ? m_services[m_service]->GetVoice() : NULL; }
 	virtual ICryReward*            GetReward() override

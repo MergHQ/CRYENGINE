@@ -860,8 +860,8 @@ void CCryAction::ConnectCmd(IConsoleCmdArgs* args)
 	// hosted session at the address specified in cl_serveraddr
 	if (tempHost.find("<session>") == tempHost.npos)
 	{
-		auto pMatchMaking = gEnv->pLobby ?
-			(ICryMatchMakingConsoleCommands*)(gEnv->pLobby->GetMatchMaking()) : NULL;
+		ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ?
+			gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 		if (pMatchMaking)
 		{
 			CrySessionID session = pMatchMaking->GetSessionIDFromConsole();
@@ -934,8 +934,8 @@ void CCryAction::VersionCmd(IConsoleCmdArgs* args)
 //------------------------------------------------------------------------
 void CCryAction::StatusCmd(IConsoleCmdArgs* pArgs)
 {
-	auto pMatchMaking = gEnv->pLobby ? 
-		(ICryMatchMakingConsoleCommands*)(gEnv->pLobby->GetMatchMaking()) : NULL;
+	ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ?
+		gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 
 	if ((pMatchMaking != NULL) && (pArgs->GetArgCount() > 1))
 	{
@@ -950,8 +950,8 @@ void CCryAction::StatusCmd(IConsoleCmdArgs* pArgs)
 
 void CCryAction::LegacyStatusCmd(IConsoleCmdArgs* args)
 {
-	auto pMatchMaking = gEnv->pLobby ?
-		(ICryMatchMakingConsoleCommands*)(gEnv->pLobby->GetMatchMaking()) : NULL;
+	ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ?
+		gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 
 	CGameServerNub* pServerNub = CCryAction::GetCryAction()->GetGameServerNub();
 	if (!pServerNub)
@@ -1127,8 +1127,8 @@ void CCryAction::KickPlayerCmd(IConsoleCmdArgs* pArgs)
 				}
 			}
 
-			auto pMatchMaking = gEnv->pLobby ?
-				(ICryMatchMakingConsoleCommands*)(gEnv->pLobby->GetMatchMaking()) : NULL;
+			ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ?
+				gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 			if (pMatchMaking != NULL)
 			{
 				pMatchMaking->KickCmd(cx, id, pName, eDC_Kicked);
@@ -1188,8 +1188,8 @@ void CCryAction::KickPlayerByIdCmd(IConsoleCmdArgs* pArgs)
 			uint32 id;
 			sscanf_s(pArgs->GetArg(1), "%u", &id);
 
-			auto pMatchMaking = gEnv->pLobby ?
-				(ICryMatchMakingConsoleCommands*)(gEnv->pLobby->GetMatchMaking()) : NULL;
+			ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ?
+				gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 			if (pMatchMaking != NULL)
 			{
 				pMatchMaking->KickCmd(id, 0, NULL, eDC_Kicked);
@@ -1242,8 +1242,8 @@ void CCryAction::BanPlayerCmd(IConsoleCmdArgs* pArgs)
 
 #if CRY_PLATFORM_WINDOWS
 
-	auto pMatchMaking = gEnv->pLobby ?
-		(ICryMatchMakingConsoleCommands*)(gEnv->pLobby->GetMatchMaking()) : NULL;
+	ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ?
+		gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 
 	if (pMatchMaking != NULL)
 	{
@@ -1340,8 +1340,8 @@ void CCryAction::LegacyBanPlayerCmd(IConsoleCmdArgs* args)
 
 void CCryAction::BanStatusCmd(IConsoleCmdArgs* pArgs)
 {
-	auto pMatchMaking = gEnv->pLobby ?
-		(ICryMatchMakingConsoleCommands*)(gEnv->pLobby->GetMatchMaking()) : NULL;
+	ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ?
+		gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 
 	if (pMatchMaking != NULL)
 	{
@@ -1364,8 +1364,8 @@ void CCryAction::UnbanPlayerCmd(IConsoleCmdArgs* pArgs)
 
 #if CRY_PLATFORM_WINDOWS
 
-	auto pMatchMaking = gEnv->pLobby ?
-		(ICryMatchMakingConsoleCommands*)(gEnv->pLobby->GetMatchMaking()) : NULL;
+	ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ?
+		gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 
 	if (pMatchMaking != NULL)
 	{
