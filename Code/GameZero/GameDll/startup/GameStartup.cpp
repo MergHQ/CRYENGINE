@@ -331,7 +331,10 @@ bool CGameStartup::InitFramework(SSystemInitParams& startupParams)
 	ModuleInitISystem(m_pFramework->GetISystem(), GAME_NAME);
 
 #if CRY_PLATFORM_WINDOWS
-	SetWindowLongPtr(reinterpret_cast<HWND>(gEnv->pRenderer->GetHWND()), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+	if (gEnv->pRenderer)
+	{
+		SetWindowLongPtr(reinterpret_cast<HWND>(gEnv->pRenderer->GetHWND()), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+	}
 #endif
 
 	return true;
