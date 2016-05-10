@@ -1506,16 +1506,11 @@ CNetwork::eTickReturnState CNetwork::DoMainTick(bool mt)
 		if (!mt)
 			waitTime = 0;
 #endif // !USE_ACCURATE_NET_TIMERS
-		ICryLobby* const pLobby = gEnv->pLobby;
-		if (pLobby)
+		ICryMatchMakingPrivate* pMMPrivate = gEnv->pLobby ? gEnv->pLobby->GetMatchMakingPrivate() : nullptr;
+		if (pMMPrivate)
 		{
-			ICryMatchMakingPrivate* pMatchmakingPriv8 = (ICryMatchMakingPrivate*)pLobby->GetMatchMaking();
-			if (pMatchmakingPriv8)
-			{
-				pMatchmakingPriv8->LobbyAddrIDTick();
-			}
+			pMMPrivate->LobbyAddrIDTick();
 		}
-
 		m_mutex.Unlock();
 	}
 	else
