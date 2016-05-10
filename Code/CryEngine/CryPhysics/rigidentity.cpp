@@ -845,7 +845,7 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 			m_pConstraintInfos[i].damping = damping;
 		}
 
-		if (pBuddy0!=WORLD_ENTITY && pBuddy0->m_iSimClass>3) {
+		if (pBuddy0!=WORLD_ENTITY && pBuddy0->m_iSimClass>3 && pBuddy0->GetType()!=PE_ARTICULATED) {
 			pe_status_pos sp; pBuddy0->GetStatus(&sp);
 			m_pConstraints[i].pent[1] = (CPhysicalEntity*)pBuddy0;
 			m_pConstraintInfos[i].qframe_rel[1] = !sp.q*qframe[1];
@@ -3520,7 +3520,7 @@ int CRigidEntity::Update(float time_interval, float damping)
 		m_nRestMask = (m_nRestMask<<1) | (m_bAwake^1);
 	}
 	m_bStable = 0;
-	m_body.integrator = isneg(m_nColliders-1);
+	(m_body.flags &= ~rb_RK4) |= rb_RK4*isneg(m_nColliders-1);
 
 	//doneupdate:
 	/*if (m_pWorld->m_vars.bMultiplayer) {
