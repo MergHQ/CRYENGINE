@@ -539,12 +539,14 @@ struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType
 		: SAudioCallbackManagerRequestDataInternalBase(eAudioCallbackManagerRequestType_ReportStartedFile)
 		, audioStandaloneFileInstanceId(pACMRData->audioStandaloneFileInstanceId)
 		, file(pACMRData->szFile)
+		, bSuccess(pACMRData->bSuccess)
 	{}
 
 	virtual ~SAudioCallbackManagerRequestDataInternal() {}
 
-	AudioStandaloneFileId const                         audioStandaloneFileInstanceId;
+	AudioStandaloneFileId const                       audioStandaloneFileInstanceId;
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> const file;
+	bool const bSuccess;
 
 	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestDataInternal);
 	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestDataInternal);
@@ -562,7 +564,7 @@ struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType
 
 	virtual ~SAudioCallbackManagerRequestDataInternal() {}
 
-	AudioStandaloneFileId const                         audioStandaloneFileInstanceId;
+	AudioStandaloneFileId const                       audioStandaloneFileInstanceId;
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> const file;
 
 	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestDataInternal);
@@ -669,7 +671,7 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_PlayFile> : publi
 	virtual ~SAudioObjectRequestDataInternal() {}
 
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> const file;
-	AudioControlId const usedAudioTriggerId;
+	AudioControlId const                              usedAudioTriggerId;
 	bool const bLocalized;
 
 	DELETE_DEFAULT_CONSTRUCTOR(SAudioObjectRequestDataInternal);

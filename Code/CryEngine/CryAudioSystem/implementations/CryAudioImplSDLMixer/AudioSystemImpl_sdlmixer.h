@@ -62,12 +62,12 @@ public:
 	virtual void                     DeleteAudioEnvironment(IAudioEnvironment const* const pOldAudioEnvironment) override;
 	virtual IAudioObject*            NewGlobalAudioObject(AudioObjectId const audioObjectID) override;
 	virtual IAudioObject*            NewAudioObject(AudioObjectId const audioObjectID) override;
-	virtual void                     DeleteAudioObject(IAudioObject* const pOldAudioObject) override;
+	virtual void                     DeleteAudioObject(IAudioObject const* const pOldAudioObject) override;
 	virtual IAudioListener*          NewDefaultAudioListener(AudioObjectId const audioObjectId) override;
 	virtual IAudioListener*          NewAudioListener(AudioObjectId const audioObjectId) override;
 	virtual void                     DeleteAudioListener(IAudioListener* const pOldListenerData) override;
 	virtual IAudioEvent*             NewAudioEvent(AudioEventId const audioEventID) override;
-	virtual void                     DeleteAudioEvent(IAudioEvent* const pOldAudioEvent) override;
+	virtual void                     DeleteAudioEvent(IAudioEvent const* const pOldAudioEvent) override;
 	virtual void                     ResetAudioEvent(IAudioEvent* const pAudioEvent) override;
 	virtual IAudioStandaloneFile*    NewAudioStandaloneFile() override;
 	virtual void                     DeleteAudioStandaloneFile(IAudioStandaloneFile const* const _pOldAudioStandaloneFile) override;
@@ -84,24 +84,24 @@ public:
 
 private:
 
-	static char const* const      s_szSDLFileTag;
-	static char const* const      s_szSDLEventTag;
-	static char const* const      s_szSDLCommonAttribute;
-	static char const* const      s_szSDLSoundLibraryPath;
-	static char const* const      s_szSDLEventTypeTag;
-	static char const* const      s_szSDLEventPanningEnabledTag;
-	static char const* const      s_szSDLEventAttenuationEnabledTag;
-	static char const* const      s_szSDLEventAttenuationMinDistanceTag;
-	static char const* const      s_szSDLEventAttenuationMaxDistanceTag;
-	static char const* const      s_szSDLEventVolumeTag;
-	static char const* const      s_szSDLEventLoopCountTag;
-	static char const* const      s_szSDLEventIdTag;
+	static char const* const s_szSDLFileTag;
+	static char const* const s_szSDLEventTag;
+	static char const* const s_szSDLCommonAttribute;
+	static char const* const s_szSDLSoundLibraryPath;
+	static char const* const s_szSDLEventTypeTag;
+	static char const* const s_szSDLEventPanningEnabledTag;
+	static char const* const s_szSDLEventAttenuationEnabledTag;
+	static char const* const s_szSDLEventAttenuationMinDistanceTag;
+	static char const* const s_szSDLEventAttenuationMaxDistanceTag;
+	static char const* const s_szSDLEventVolumeTag;
+	static char const* const s_szSDLEventLoopCountTag;
+	static char const* const s_szSDLEventIdTag;
 
-	string                        m_sGameFolder;
-	size_t                        m_nMemoryAlignment;
-	string                        m_language;
+	string                   m_sGameFolder;
+	size_t                   m_nMemoryAlignment;
+	string                   m_language;
 
-	ICVar*                        m_pCVarFileExtension;
+	ICVar*                   m_pCVarFileExtension;
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	std::map<AudioObjectId, string>             m_idToName;

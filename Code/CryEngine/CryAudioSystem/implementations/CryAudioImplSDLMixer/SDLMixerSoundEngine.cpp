@@ -57,7 +57,7 @@ TChannelFinishedRequests g_channelFinishedRequests[eCFRQID_COUNT];
 CryCriticalSection g_channelFinishedCriticalSection;
 
 // Audio Objects
-typedef std::vector<SATLAudioObjectData_sdlmixer*> TAudioObjectList;
+typedef std::vector<SATLAudioObjectData_sdlmixer*, STLSoundAllocator<SATLAudioObjectData_sdlmixer*>> TAudioObjectList;
 TAudioObjectList g_audioObjects;
 
 // Listeners

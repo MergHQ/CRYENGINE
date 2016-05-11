@@ -185,9 +185,9 @@ void CAudioStandaloneFileManager::ReleaseStandaloneFile(CATLStandaloneFile* cons
 
 		pStandaloneFile->Clear();
 
+		m_pImpl->ResetAudioStandaloneFile(pStandaloneFile->m_pImplData);
 		if (m_audioStandaloneFilePool.m_reserved.size() < m_audioStandaloneFilePool.m_reserveSize)
 		{
-			m_pImpl->ResetAudioStandaloneFile(pStandaloneFile->m_pImplData);
 			m_audioStandaloneFilePool.m_reserved.push_back(pStandaloneFile);
 		}
 		else
@@ -411,12 +411,11 @@ void CAudioEventManager::ReleaseImplInstance(CATLEvent* const pOldEvent)
 	if (pOldEvent != nullptr)
 	{
 		pOldEvent->Clear();
+		m_pImpl->ResetAudioEvent(pOldEvent->m_pImplData);
 
 		if (m_audioEventPool.m_reserved.size() < m_audioEventPool.m_reserveSize)
 		{
 			// can return the instance to the reserved pool
-			m_pImpl->ResetAudioEvent(pOldEvent->m_pImplData);
-
 			m_audioEventPool.m_reserved.push_back(pOldEvent);
 		}
 		else
@@ -956,10 +955,10 @@ bool CAudioObjectManager::ReleaseInstance(CATLAudioObject* const pOldObject)
 		pOldObject->Clear();
 		bSuccess = (m_pImpl->UnregisterAudioObject(pOldObject->GetImplDataPtr()) == eAudioRequestStatus_Success);
 
+		m_pImpl->ResetAudioObject(pOldObject->GetImplDataPtr());
 		if (m_audioObjectPool.m_reserved.size() < m_audioObjectPool.m_reserveSize)
 		{
 			// can return the instance to the reserved pool
-			m_pImpl->ResetAudioObject(pOldObject->GetImplDataPtr());
 			m_audioObjectPool.m_reserved.push_back(pOldObject);
 		}
 		else
@@ -1703,6 +1702,7 @@ void CATLXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, EAu
 										g_audioLogger.Log(eAudioLogType_Warning, "Preload request \"%s\" could not create file entry from tag \"%s\"!", sAudioPreloadRequestName, pConfigGroupNode->getChild(k)->getTag());
 									}
 								}
+								cFileEntryIDs.shrink_to_fit();
 
 								CATLPreloadRequest* pPreloadRequest = stl::find_in_map(m_preloadRequests, nAudioPreloadRequestID, nullptr);
 
@@ -1826,6 +1826,8 @@ void CATLXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironment
 					}
 				}
 
+				cImplPtrs.shrink_to_fit();
+
 				if (!cImplPtrs.empty())
 				{
 					POOL_NEW_CREATE(CATLAudioEnvironment, pNewEnvironment)(nATLEnvironmentID, dataScope, cImplPtrs);
@@ -1906,6 +1908,8 @@ void CATLXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, EAud
 						}
 					}
 				}
+
+				cImplPtrs.shrink_to_fit();
 
 				POOL_NEW_CREATE(CATLTrigger, pNewTrigger)(nATLTriggerID, dataScope, cImplPtrs, maxRadius);
 
@@ -2058,6 +2062,7 @@ void CATLXMLProcessor::ParseAudioRtpcs(XmlNodeRef const pXMLRtpcRoot, EAudioData
 						}
 					}
 				}
+				cImplPtrs.shrink_to_fit();
 
 				POOL_NEW_CREATE(CATLRtpc, pNewRtpc)(nATLRtpcID, dataScope, cImplPtrs);
 
