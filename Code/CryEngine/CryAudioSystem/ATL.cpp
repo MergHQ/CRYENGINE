@@ -912,10 +912,10 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(C
 			if (pAudioStandaloneFile != nullptr)
 			{
 				m_audioObjectMgr.GetStartedStandaloneFileRequestData(pAudioStandaloneFile, request);
-				pAudioStandaloneFile->m_state = eAudioStandaloneFileState_Playing;
+				pAudioStandaloneFile->m_state = (pRequestData->bSuccess) ? eAudioStandaloneFileState_Playing : eAudioStandaloneFileState_None;
 			}
 
-			result = eAudioRequestStatus_Success;
+			result = (pRequestData->bSuccess) ? eAudioRequestStatus_Success : eAudioRequestStatus_Failure;
 
 			break;
 		}
@@ -1325,6 +1325,7 @@ void CAudioTranslationLayer::ReleaseImpl()
 	// During audio middleware shutdown we do not allow for any new requests originating from the "dying" audio middleware!
 	m_flags |= eAudioInternalStates_AudioMiddlewareShuttingDown;
 
+	m_pImpl->ResetAudioObject(m_pGlobalAudioObject->GetImplDataPtr());
 	m_pImpl->DeleteAudioObject(m_pGlobalAudioObject->GetImplDataPtr());
 	m_pGlobalAudioObject->SetImplDataPtr(nullptr);
 

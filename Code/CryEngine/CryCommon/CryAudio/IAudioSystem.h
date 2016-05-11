@@ -528,16 +528,18 @@ struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportS
 {
 	explicit SAudioCallbackManagerRequestData(
 	  AudioStandaloneFileId const _audioStandaloneFileInstanceId,
-	  char const* const _szFile)
+	  char const* const _szFile, bool _bSuccess)
 		: SAudioCallbackManagerRequestDataBase(eAudioCallbackManagerRequestType_ReportStartedFile)
 		, audioStandaloneFileInstanceId(_audioStandaloneFileInstanceId)
 		, szFile(_szFile)
+		, bSuccess(_bSuccess)
 	{}
 
 	virtual ~SAudioCallbackManagerRequestData() {}
 
 	AudioStandaloneFileId const audioStandaloneFileInstanceId;
 	char const* const           szFile;
+	bool const                  bSuccess;
 
 	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestData);
 	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestData);

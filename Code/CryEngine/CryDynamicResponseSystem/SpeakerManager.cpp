@@ -27,10 +27,8 @@ using namespace CryDRS;
 CSpeakerManager::CSpeakerManager() : m_pActiveSpeakerVariable(nullptr)
 {
 	//the audio callbacks we are interested in, all related to audio-asset (trigger or standaloneFile) finished or failed to start
-	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance);
-	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, eAudioRequestType_AudioObjectRequest, eAudioObjectRequestType_ExecuteTrigger);
-	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportStoppedFile);
-	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, eAudioRequestType_AudioObjectRequest, eAudioObjectRequestType_PlayFile);
+	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance | eAudioCallbackManagerRequestType_ReportStoppedFile | eAudioCallbackManagerRequestType_ReportStartedFile);
+	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, eAudioRequestType_AudioObjectRequest, eAudioObjectRequestType_ExecuteTrigger | eAudioObjectRequestType_PlayFile);
 
 	m_audioRtpcIdGlobal = INVALID_AUDIO_CONTROL_ID;
 	m_audioRtpcIdLocal = INVALID_AUDIO_CONTROL_ID;
@@ -548,11 +546,11 @@ void CSpeakerManager::OnAudioCallback(const SAudioRequestInfo* const pAudioReque
 	const CDialogLine* pDialogLine = reinterpret_cast<const CDialogLine*>(pAudioRequestInfo->pUserData);
 	const CResponseActor* pActor = reinterpret_cast<const CResponseActor*>(pAudioRequestInfo->pUserDataOwner);
 
-	if (pAudioRequestInfo->audioRequestType == eAudioRequestType_AudioObjectRequest
-	    && (pAudioRequestInfo->specificAudioRequest == eAudioObjectRequestType_ExecuteTrigger || pAudioRequestInfo->specificAudioRequest == eAudioObjectRequestType_PlayFile)
-	    && pAudioRequestInfo->requestResult == eAudioRequestResult_Failure)
+	if (pAudioRequestInfo->requestResult == eAudioRequestResult_Failure &&
+		(pAudioRequestInfo->audioRequestType == eAudioRequestType_AudioObjectRequest && (pAudioRequestInfo->specificAudioRequest == eAudioObjectRequestType_ExecuteTrigger || pAudioRequestInfo->specificAudioRequest == eAudioObjectRequestType_PlayFile)
+		|| pAudioRequestInfo->audioRequestType == eAudioRequestType_AudioCallbackManagerRequest && pAudioRequestInfo->specificAudioRequest == eAudioCallbackManagerRequestType_ReportStartedFile))
 	{
-		//handling of failure executing the start or stop trigger
+		//handling of failure executing the start / stop trigger or the standalone file
 		for (SpeakerList::iterator it = pSpeakerManager->m_activeSpeakers.begin(), itEnd = pSpeakerManager->m_activeSpeakers.end(); it != itEnd; ++it)
 		{
 			if (it->pActor == pActor && pDialogLine == it->pPickedLine)
