@@ -3069,8 +3069,12 @@ int CArticulatedEntity::Update(float time_interval, float damping)
 			CollectPendingImpulses(0,active);
 			if (active) {
 				PropagateImpulses(m_M0inv*-m_Ya_vec[0]);
-				for(int i=0;i<m_nJoints;i++)
+				for(int i=0;i<m_nJoints;i++) {
+					for(int j=0;j<m_joints[i].nActiveAngles;j++) 
+						if (max(m_joints[i].prev_dq[j]*m_joints[i].dq[j], fabs_tpl(m_joints[i].dq[j])*0.2f-fabs_tpl(m_joints[i].prev_dq[j]))<0)
+							m_joints[i].dq[j] = 0;
 					SyncBodyWithJoint(i,2);
+				}
 			}
 		}
 		if (active) {
