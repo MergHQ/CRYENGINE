@@ -247,7 +247,7 @@ private:
 	void                                     ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, EAudioDataScope const dataScope);
 	void                                     ParseAudioSwitches(XmlNodeRef const pXMLSwitchRoot, EAudioDataScope const dataScope);
 	void                                     ParseAudioRtpcs(XmlNodeRef const pXMLRtpcRoot, EAudioDataScope const dataScope);
-	void                                     ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, EAudioDataScope const dataScope, char const* const szFolderName);
+	void                                     ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, EAudioDataScope const dataScope, char const* const szFolderName, uint const version);
 	void                                     ParseAudioEnvironments(XmlNodeRef const pAudioEnvironmentRoot, EAudioDataScope const dataScope);
 
 	CryAudio::Impl::IAudioTrigger const*     NewInternalAudioTrigger(XmlNodeRef const pXMLTriggerRoot);
