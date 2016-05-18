@@ -44,9 +44,6 @@ void CUIInput::InitEventSystem()
 		|| !g_pGame->GetIGameFramework() 
 		|| !g_pGame->GetIGameFramework()->GetIActionMapManager() )
 	{
-#if defined(INCLUDE_SCALEFORM_SDK)
-		assert(false);
-#endif
 		return;
 	}
 

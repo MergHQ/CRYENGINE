@@ -3194,7 +3194,7 @@ void CD3D9Renderer::EF_EndEf2D(const bool bSort)
 {
 }
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 
 //////////////////////////////////////////////////////////////////////////
 struct SSF_ResourcesD3D
@@ -4290,7 +4290,7 @@ bool CD3D9Renderer::SF_UnmapTexture(int texID, int level)
 	return false;
 }
 
-#endif //INCLUDE_SCALEFORM_SDK
+#endif // defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 
 //========================================================================================================
 

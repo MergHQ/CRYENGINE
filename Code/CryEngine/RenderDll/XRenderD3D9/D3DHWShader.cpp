@@ -2771,7 +2771,7 @@ NO_INLINE void sRTRect(UFloat4* sData, CD3D9Renderer* r)
 	sData[0].f[3] = r->m_cEF.m_RTRect.w;
 }
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 NO_INLINE void sSFCompMat(UFloat4* sData, CD3D9Renderer* r)
 {
 	const SSF_GlobalDrawParams* pParams(r->SF_GetGlobalDrawParams());
@@ -4301,7 +4301,7 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 			case ECGP_PF_NearFarDist:
 				sNearFarDist(sData, r);
 				break;
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 			case ECGP_Matr_PB_SFCompMat:
 				sSFCompMat(sData, r);
 				break;
@@ -5017,7 +5017,7 @@ bool CHWShader_D3D::mfSetTextures(const std::vector<SCGTexture>& Textures, EHWSh
 			}
 			break;
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 		case ECGT_SF_Slot0:
 		case ECGT_SF_Slot1:
 		case ECGT_SF_SlotY:
@@ -5804,7 +5804,7 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 					}
 					break;
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 				case TO_FROMSF0:
 				case TO_FROMSF1:
 				case TO_FROMSFY:

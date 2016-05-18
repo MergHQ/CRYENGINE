@@ -21,7 +21,7 @@
 	#include <dlfcn.h>
 #endif
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	#include <CrySystem/Scaleform/IScaleformHelper.h>
 #endif
 
@@ -3021,7 +3021,7 @@ L_done:;
 			m_pHmdManager->SetupAction(IHmdManager::eHmdSetupAction_Init);
 		}
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 		if (!gEnv->IsDedicated())
 		{
 			if (!InitializeEngineModule(DLL_SCALEFORM, "EngineModule_ScaleformHelper", startupParams, false))
@@ -5293,7 +5293,7 @@ void CSystem::CreateSystemVars()
 
 	REGISTER_CVAR2("sys_error_debugbreak", &g_cvars.sys_error_debugbreak, 0, VF_CHEAT, "__debugbreak() if a VALIDATOR_ERROR_DBGBREAK message is hit");
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	if (gEnv->pScaleformHelper)
 	{
 		gEnv->pScaleformHelper->InitCVars();

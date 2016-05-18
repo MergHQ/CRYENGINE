@@ -20,7 +20,7 @@
 	#include "DurangoDebugCallstack.h"
 #endif
 
-#if INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	#include <CrySystem/Scaleform/IScaleformHelper.h>
 #endif
 
@@ -110,7 +110,7 @@ public:
 		case ESYSTEM_EVENT_LEVEL_LOAD_START:
 		case ESYSTEM_EVENT_LEVEL_LOAD_END:
 			{
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 				if (!gEnv->IsDedicated() && gEnv->pScaleformHelper)
 				{
 					gEnv->pScaleformHelper->ResetMeshCache();
