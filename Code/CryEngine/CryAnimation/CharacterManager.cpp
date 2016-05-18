@@ -3934,7 +3934,6 @@ void CharacterManager::RenderDebugInstances(const SRenderingPassInfo& passInfo)
 		rp.AmbientColor.g = m_arrCharacterBase[i].m_AmbientColor.g;
 		rp.AmbientColor.b = m_arrCharacterBase[i].m_AmbientColor.b;
 		rp.AmbientColor.a = 1;
-		rp.nDLightMask = 7;
 		rp.dwFObjFlags = 0;
 		rp.dwFObjFlags |= FOB_TRANS_MASK;
 		rp.pMatrix = &rEntityMat;

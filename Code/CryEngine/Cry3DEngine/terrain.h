@@ -509,7 +509,6 @@ public:
 	void HighlightTerrain(int x1, int y1, int x2, int y2, int nSID = GetDefSID());
 	bool CanPaintSurfaceType(int x, int y, int r, uint16 usGlobalSurfaceType);
 	void GetVisibleSectorsInAABB(PodArray<struct CTerrainNode*>& lstBoxSectors, const AABB& boxBox);
-	void RegisterLightMaskInSectors(CDLight* pLight, int nSID, const SRenderingPassInfo& passInfo);
 	void LoadSurfaceTypesFromXML(XmlNodeRef pDoc, int nSID);
 	void UpdateSurfaceTypes(int nSID);
 	bool RenderArea(Vec3 vPos, float fRadius, _smart_ptr<IRenderMesh>& arrLightRenderMeshs, CRenderObject* pObj, IMaterial* pMaterial, const char* szComment, float* pCustomData, Plane* planes, const SRenderingPassInfo& passInfo);
@@ -592,9 +591,6 @@ public:
 	{
 		return m_pTerrainEf;
 	}
-
-	void   SetSunLightMask(uint32 nSunLightMask) { m_nSunLightMask = nSunLightMask; }
-	uint32 GetSunLightMask()                     { return m_nSunLightMask; }
 
 	int m_nWhiteTexId;
 	int m_nBlackTexId;
@@ -706,7 +702,6 @@ protected: // ------------------------------------------------------------------
 	_smart_ptr<IMaterial>            m_pImposterEf;
 
 	float                            m_fOceanWaterLevel;
-	uint32                           m_nSunLightMask;
 
 	PodArray<struct CTerrainNode*>   m_lstVisSectors;
 	PodArray<struct CTerrainNode*>   m_lstUpdatedSectors;

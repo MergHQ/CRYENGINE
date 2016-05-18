@@ -998,12 +998,12 @@ bool CObjManager::IsAfterWater(const Vec3& vPos, const Vec3& vCamPos, const SRen
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjManager::RenderObjectDebugInfo(IRenderNode* pEnt, float fEntDistance, int nDLightMask, const SRenderingPassInfo& passInfo)
+void CObjManager::RenderObjectDebugInfo(IRenderNode* pEnt, float fEntDistance, const SRenderingPassInfo& passInfo)
 {
 	if (!passInfo.IsGeneralPass())
 		return;
 
-	m_arrRenderDebugInfo.push_back(SObjManRenderDebugInfo(pEnt, fEntDistance, nDLightMask));
+	m_arrRenderDebugInfo.push_back(SObjManRenderDebugInfo(pEnt, fEntDistance));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1078,15 +1078,9 @@ void CObjManager::RenderBrush(CBrush* pEnt, PodArray<CDLight*>* pAffectingLights
 	if (!pEnt || !pEnt->m_pTempData)
 		return;
 
-	uint32 nDynLMMask = 0;
-	if (bSunOnly)
-		nDynLMMask = 1;
-	else if (pAffectingLights)
-		nDynLMMask = m_p3DEngine->BuildLightMask(objBox, pAffectingLights, pVisArea, (pEnt->m_dwRndFlags & ERF_OUTDOORONLY) != 0, passInfo);
-
 	//////////////////////////////////////////////////////////////////////////
 	const CLodValue lodValue = pEnt->ComputeLod(pEnt->m_pTempData->userData.nWantedLod, passInfo);
-	pEnt->Render(lodValue, passInfo, pTerrainTexInfo, nDynLMMask, pAffectingLights);
+	pEnt->Render(lodValue, passInfo, pTerrainTexInfo, pAffectingLights);
 }
 
 //////////////////////////////////////////////////////////////////////////

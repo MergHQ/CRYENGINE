@@ -340,8 +340,6 @@ void CTerrainNode::Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bo
 
 	uint8 m_cNewGeomMML = m_cCurrGeomMML = m_cNewGeomMML_Min = m_cNewGeomMML_Max = m_cNodeNewTexMML = m_cNodeNewTexMML_Min = 0;
 
-	m_nLightMaskFrameId = 0;
-
 	m_pLeafData = 0;
 
 	m_nTreeLevel = 0;

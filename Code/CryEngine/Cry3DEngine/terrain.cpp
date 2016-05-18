@@ -493,27 +493,6 @@ void CTerrain::GetVisibleSectorsInAABB(PodArray<struct CTerrainNode*>& lstBoxSec
 	}
 }
 
-void CTerrain::RegisterLightMaskInSectors(CDLight* pLight, int nSID, const SRenderingPassInfo& passInfo)
-{
-	if (!GetParentNode(nSID))
-		return;
-
-	FUNCTION_PROFILER_3DENGINE;
-
-	assert(pLight->m_Id >= 0 || 1);
-	//assert(!pLight->m_Shader.m_pShader || !(pLight->m_Shader.m_pShader->GetLFlags() & LMF_DISABLE));
-
-	// get intersected outdoor sectors
-	m_lstSectors.Clear();
-	AABB aabbBox(pLight->m_Origin - Vec3(pLight->m_fRadius, pLight->m_fRadius, pLight->m_fRadius),
-	             pLight->m_Origin + Vec3(pLight->m_fRadius, pLight->m_fRadius, pLight->m_fRadius));
-	GetParentNode(nSID)->IntersectTerrainAABB(aabbBox, m_lstSectors);
-
-	// set lmask in all affected sectors
-	for (int s = 0; s < m_lstSectors.Count(); s++)
-		m_lstSectors[s]->AddLightSource(pLight, passInfo);
-}
-
 void CTerrain::IntersectWithShadowFrustum(PodArray<CTerrainNode*>* plstResult, ShadowMapFrustum* pFrustum, int nSID, const SRenderingPassInfo& passInfo)
 {
 #ifdef SEG_WORLD

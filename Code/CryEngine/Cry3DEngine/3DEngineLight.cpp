@@ -36,9 +36,6 @@ void C3DEngine::RegisterLightSourceInSectors(CDLight* pDynLight, int nSID, const
 	IVisArea* pLightArea = pDynLight->m_pOwner->GetEntityVisArea();
 	if (!pLightArea || ((pDynLight->m_Flags & DLF_PROJECT) && pLightArea->IsConnectedToOutdoor()))
 	{
-		if (m_bShowTerrainSurface)
-			m_pTerrain->RegisterLightMaskInSectors(pDynLight, nSID, passInfo);
-
 		if (m_pObjectsTree[nSID])
 			m_pObjectsTree[nSID]->AddLightSource(pDynLight, passInfo);
 	}
@@ -355,13 +352,6 @@ void C3DEngine::PrepareLightSourcesForRendering_0(const SRenderingPassInfo& pass
 	FUNCTION_PROFILER_3DENGINE;
 
 	const CCamera& rCamera = passInfo.GetCamera();
-	// reset lists of lsource pointers in sectors
-	if (m_pTerrain)
-	{
-		bool bSunFound = m_lstDynLights.Count() && (m_lstDynLights.GetAt(0)->m_Flags & DLF_SUN);
-		m_pTerrain->SetSunLightMask(bSunFound ? 1 : 0);
-		//ResetDLightMaskInSectors(bSunFound ? 1 : 0);
-	}
 
 	m_lstDynLightsNoLight.Clear();
 
@@ -1166,46 +1156,6 @@ void C3DEngine::SetupLightScissors(CDLight* pLight, const SRenderingPassInfo& pa
 		}
 	}
 #endif
-}
-
-uint32 C3DEngine::BuildLightMask(const AABB& objBox, const SRenderingPassInfo& passInfo)
-{
-	FUNCTION_PROFILER_3DENGINE;
-
-	CVisArea* pArea = (CVisArea*)GetVisAreaFromPos(objBox.GetCenter());
-
-	if (pArea)
-	{
-		COctreeNode* pObjectsTree = pArea->m_pObjectsTree;
-
-		if (!pObjectsTree)
-			return 0;
-
-		pObjectsTree = pObjectsTree->FindNodeContainingBox(objBox);
-
-		if (!pObjectsTree)
-			return 0;
-
-		return BuildLightMask(objBox, pObjectsTree->GetAffectingLights(passInfo), pArea, false, passInfo);
-	}
-
-	for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-	{
-		if (!IsSegmentSafeToUse(nSID))
-			continue;
-
-		if (COctreeNode* pObjectsTree = m_pObjectsTree[nSID])
-		{
-			pObjectsTree = pObjectsTree->FindNodeContainingBox(objBox);
-
-			if (!pObjectsTree)
-				continue;
-
-			return BuildLightMask(objBox, pObjectsTree->GetAffectingLights(passInfo), pArea, false, passInfo);
-		}
-	}
-
-	return 0;
 }
 
 void C3DEngine::RemoveEntityLightSources(IRenderNode* pEntity)
