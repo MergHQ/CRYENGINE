@@ -556,7 +556,6 @@
       "CryNetwork/INetwork.h",
       "CryNetwork/INetworkService.h",
       "CryNetwork/INotificationNetwork.h",
-      "CryNetwork/INetworkingState.h",
       "CryNetwork/IServiceNetwork.h",
       "CryNetwork/NetHelpers.h",
       "CryNetwork/NetAddress.h",
