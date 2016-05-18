@@ -1684,8 +1684,8 @@ void CryAudio::Impl::CAudioImpl_wwise::LoadEventsMetadata()
 					XmlNodeRef pIncludedEventsNode = pSoundBankNode->findChild("IncludedEvents");
 					if (pIncludedEventsNode)
 					{
-						const int size = pIncludedEventsNode->getChildCount();
-						for (int j = 0; j < size; ++j)
+						const int size2 = pIncludedEventsNode->getChildCount();
+						for (int j = 0; j < size2; ++j)
 						{
 							XmlNodeRef pEventNode = pIncludedEventsNode->getChild(j);
 							if (pEventNode)
