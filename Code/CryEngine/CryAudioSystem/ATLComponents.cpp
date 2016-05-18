@@ -1623,7 +1623,6 @@ void CATLXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, EAu
 
 			if (audioPreloadRequestID != INVALID_AUDIO_PRELOAD_REQUEST_ID)
 			{
-
 				XmlNodeRef pFileListParentNode = nullptr;
 				if (version >= 2)
 				{
@@ -1646,7 +1645,6 @@ void CATLXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, EAu
 
 					if (preloadRequestChidrenCount > 1)
 					{
-
 						// We need to have at least two children: ATLPlatforms and at least one ATLConfigGroup
 						XmlNodeRef const pPlatformsNode(pPreloadRequestNode->getChild(0));
 						char const* szATLConfigGroupName = nullptr;
@@ -1728,8 +1726,6 @@ void CATLXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, EAu
 						// Add to existing preload request.
 						pPreloadRequest->m_fileEntryIds.insert(pPreloadRequest->m_fileEntryIds.end(), cFileEntryIDs.begin(), cFileEntryIDs.end());
 					}
-
-					break;    // no need to look through the rest of the ConfigGroups
 				}
 			}
 			else

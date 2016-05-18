@@ -401,7 +401,6 @@ EAudioRequestStatus CAudioImpl_fmod::UpdateAudioObject(IAudioObject* const pAudi
 //////////////////////////////////////////////////////////////////////////
 EAudioRequestStatus CAudioImpl_fmod::PlayFile(SAudioStandaloneFileInfo* const _pAudioStandaloneFileInfo)
 {
-	EAudioRequestStatus result = eAudioRequestStatus_Failure;
 	CAudioObject_fmod* const pFmodAudioObject = static_cast<CAudioObject_fmod* const>(_pAudioStandaloneFileInfo->pAudioObject);
 	CAudioTrigger_fmod const* const pFmodAudioTrigger = static_cast<CAudioTrigger_fmod const* const>(_pAudioStandaloneFileInfo->pUsedAudioTrigger);
 	CAudioStandaloneFile_fmod* const pPlayStandaloneEvent = static_cast<CAudioStandaloneFile_fmod* const>(_pAudioStandaloneFileInfo->pImplData);
@@ -707,9 +706,9 @@ EAudioRequestStatus CAudioImpl_fmod::SetRtpc(
 		}
 		else
 		{
-			for (auto const pAudioObject : m_registeredAudioObjects)
+			for (auto const pRegisteredAudioObject : m_registeredAudioObjects)
 			{
-				pAudioObject->SetParameter(pFmodAudioParameter, value);
+				pRegisteredAudioObject->SetParameter(pFmodAudioParameter, value);
 			}
 		}
 
@@ -740,9 +739,9 @@ EAudioRequestStatus CAudioImpl_fmod::SetSwitchState(
 		}
 		else
 		{
-			for (auto const pAudioObject : m_registeredAudioObjects)
+			for (auto const pRegisteredAudioObject : m_registeredAudioObjects)
 			{
-				pAudioObject->SetSwitch(pFmodAudioSwitchState);
+				pRegisteredAudioObject->SetSwitch(pFmodAudioSwitchState);
 			}
 		}
 

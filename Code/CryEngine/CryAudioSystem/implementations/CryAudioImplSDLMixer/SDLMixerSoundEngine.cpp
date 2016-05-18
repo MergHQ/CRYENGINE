@@ -337,7 +337,7 @@ const SampleId LoadSampleFromMemory(void* pMemory, const size_t size, const stri
 	SDL_RWops* pData = SDL_RWFromMem(pMemory, size);
 	if (pData)
 	{
-		Mix_Chunk* pSample = Mix_LoadWAV_RW(pData, 0);
+		pSample = Mix_LoadWAV_RW(pData, 0);
 		if (pSample != nullptr)
 		{
 			g_sampleData[id] = pSample;
