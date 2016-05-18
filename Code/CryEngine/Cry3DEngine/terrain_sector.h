@@ -435,10 +435,6 @@ public:
 
 	int                 GetMML(int dist, int mmMin, int mmMax);
 
-	PodArray<CDLight*>* GetAffectingLights(const SRenderingPassInfo& passInfo);
-	void                AddLightSource(CDLight* pSource, const SRenderingPassInfo& passInfo);
-	void                CheckInitAffectingLights(const SRenderingPassInfo& passInfo);
-
 	//	void GenerateIndicesForQuad(IRenderMesh * pRM, Vec3 vBoxMin, Vec3 vBoxMax, PodArray<uint16> & dstIndices);
 
 	uint32                       GetLastTimeUsed() { return m_nLastTimeUsed; }
@@ -511,9 +507,6 @@ protected:
 	CUpdateTerrainTempData* m_pUpdateTerrainTempData;
 
 public:
-
-	PodArray<CDLight*>         m_lstAffectingLights;
-	uint32                     m_nLightMaskFrameId;
 
 	PodArray<SSurfaceTypeInfo> m_lstSurfaceTypeInfo;
 

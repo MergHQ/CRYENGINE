@@ -357,7 +357,6 @@ void CD3D9Renderer::MakeSprites(TArray<SSpriteGenInfo>& SGI, const SRenderingPas
 	CV_r_usezpass = 0;
 
 	rParms.dwFObjFlags |= FOB_TRANS_MASK;
-	rParms.nDLightMask = 1;
 	rParms.fRenderQuality = 0.0f;
 	rParms.pRenderNode = (struct IRenderNode*)(intptr_t)-1; // avoid random skipping of rendering
 

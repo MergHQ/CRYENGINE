@@ -31,7 +31,6 @@ CTerrain::CTerrain(const STerrainInfo& TerrainInfo)
 	//	ZeroStruct(m_TerrainTextureLayer);
 	//	m_ucpDiffTexTmpBuffer = 0;
 	m_pTerrainEf = 0;
-	m_nSunLightMask = 0;
 	//	ZeroStruct(m_SSurfaceType); // staic
 	m_pOcean = 0;
 	m_eEndianOfTexture = eLittleEndian;

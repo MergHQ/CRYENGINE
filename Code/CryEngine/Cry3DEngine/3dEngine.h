@@ -703,8 +703,6 @@ public:
 	virtual void RenderScene(const int nRenderFlags, const SRenderingPassInfo& passInfo);
 	virtual void DebugDraw_UpdateDebugNode();
 
-	uint32       BuildLightMask(const AABB& objBox, const SRenderingPassInfo& passInfo);
-	uint32       BuildLightMask(const AABB& objBox, PodArray<CDLight*>* pAffectingLights, CVisArea* pObjArea, bool bObjOutdoorOnly, const SRenderingPassInfo& passInfo, SRestLightingInfo* pRestLightingInfo = NULL);
 	void         DebugDraw_Draw();
 	bool         IsOutdoorVisible();
 	void         RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo);

@@ -2828,8 +2828,6 @@ struct SRendParams
 
 	float                     fRenderQuality; //!< Quality of shaders rendering.
 
-	uint32                    nDLightMask; //!< Light mask to specify which light to use on the object.
-
 	int32                     dwFObjFlags; //!< Approximate information about the lights not included into nDLightMask.
 
 	uint32                    nMaterialLayersBlend; //!< Material layers blending amount
