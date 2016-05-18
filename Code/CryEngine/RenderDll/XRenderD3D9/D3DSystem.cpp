@@ -1065,7 +1065,7 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 	if (m_bShaderCacheGen)
 		GetDevice().ReleaseDevice();
 #endif
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	SF_DestroyResources();
 #endif
 
