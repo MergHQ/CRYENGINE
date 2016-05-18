@@ -1400,13 +1400,6 @@
          "VehicleMovementHelicopter.h",
          "VehicleMovementStdWheeled.h"
       ],
-      "XboxOneLive":
-      [
-         "XboxOneLive/CryEngineSDK_XBLiveEvents.h",
-         "XboxOneLive/XboxLiveGameEvents.cpp",
-         "XboxOneLive/XboxLiveGameEvents.h",
-         "XboxOneLive/CryEngineSDK_XBLiveEvents.man"
-      ],
       "DynamicResponseSystem":
       [
         "DynamicResponseSystem/GameTokenToDrsTranslator.cpp",
