@@ -368,7 +368,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 
 #if CRY_PLATFORM_DURANGO
 //#define SUPPORT_SMARTGLASS // Disabled - needs fixing with April XDK
-//#define SUPPORT_DURANGO_LEGACY_MULTIPLAYER // March 2016 XDK dropped Party concept
 #endif
 
 #if defined(SUPPORT_RSA_AND_STREAMCIPHER_PAK_ENCRYPTION) || defined(SUPPORT_RSA_PAK_SIGNING)

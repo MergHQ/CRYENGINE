@@ -17,6 +17,5 @@ def build(bld):
 
 		durango_file_list   = 'gamedllsdk_durango.waf_files',
 		durango_lib         = [ 'etwplus', 'ixmlhttprequest2', 'Ws2_32', 'uuid' ],
-		durango_use_module  = [ 'ESraLibCore' ],
 		durango_cxxflags    = [ '/EHsc', '/ZW' ],
 	)

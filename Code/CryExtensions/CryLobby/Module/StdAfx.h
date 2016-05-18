@@ -24,7 +24,7 @@
 #include <stdarg.h>
 
 #if CRY_PLATFORM_DURANGO
-	#define USE_DURANGOLIVE 1
+	#define USE_DURANGOLIVE 0 // not supported - requires to be rewritten with xsapi 2.0
 #else
 	#define USE_DURANGOLIVE 0
 #endif

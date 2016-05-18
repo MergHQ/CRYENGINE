@@ -200,9 +200,8 @@
 
 #define PRODUCT_VERSION_MAX_STRING_LENGTH (256)
 
-#if CRY_PLATFORM_DURANGO
+#if CRY_PLATFORM_DURANGO 
 #include "XboxOneLive/XboxLiveGameEvents.h"
-#include "Network/MatchMakingUtils.h"
 #endif
 
 #ifndef _LIB
@@ -5034,15 +5033,6 @@ void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 				}
 			}
 			break;
-
-#if defined(SUPPORT_DURANGO_LEGACY_MULTIPLAYER)
-		case ESYSTEM_EVENT_ACTIVATION_EVENT:
-			{
-				// Always need to call this to ensure hookup of global even callbacks.
-				MatchmakingUtils::OnActivated( 0 );
-			}
-			break;
-#endif
 
 		case ESYSTEM_EVENT_USER_CHANGED:
 
