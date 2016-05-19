@@ -49,7 +49,6 @@
 #include <IPlayerProfiles.h>
 #include <CryLobby/ICryLobbyUI.h>
 #include <CrySystem/ILocalizationManager.h>
-#include <CryEntitySystem/IEntityPoolManager.h>
 #include <CrySystem/File/IResourceManager.h>
 #include <CryAction/ICustomActions.h>
 
@@ -230,8 +229,6 @@ CTacticalPointLanguageExtender g_tacticalPointLanguageExtender;
 
 static CRevertibleConfigLoader s_gameModeCVars(96, 5120);	// 5k - needs to hold enough room for patched cvars as well as multiplayer.cfg
 static CRevertibleConfigLoader s_levelCVars(20, 1024);
-
-static bool s_usingGlobalHeap = true;
 
 static void OnChangedStereoRenderDevice(ICVar*	pStereoRenderDevice);
 
@@ -1465,9 +1462,6 @@ void CGame::InitGameType(bool multiplayer, bool fromInit /*= false*/)
 		}
 	}
 #endif
-
-	// Toggle entity pooling system, only used for singleplayer
-	gEnv->pEntitySystem->GetIEntityPoolManager()->Enable(!multiplayer);
 
 	// Switch CryNetwork to the correct threading mode
 	gEnv->bMultiplayer=multiplayer;
@@ -4871,16 +4865,6 @@ void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 {
 	switch (event)
 	{
-		case ESYSTEM_EVENT_SWITCHING_TO_LEVEL_HEAP:
-		{
-			assert (s_usingGlobalHeap);
-			s_usingGlobalHeap = false;
-			CryLog ("Switched to level heap!");
-			INDENT_LOG_DURING_SCOPE();
-			CFrontEndModelCache::Allow3dFrontEndAssets(false,true);
-		}
-		break;
-
 		case ESYSTEM_EVENT_LEVEL_LOAD_PREPARE:
 		{
 			CryLog ("Preparing to load level!");
@@ -4973,22 +4957,10 @@ void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 				m_pParameterGameEffect->Reset();
 			}
 			SAFE_DELETE(m_pRecordingSystem);
-			if (s_usingGlobalHeap)
-			{
-				CFrontEndModelCache::Allow3dFrontEndAssets(true,false);
-			}
-		}
-		break;
-
-		case ESYSTEM_EVENT_SWITCHED_TO_GLOBAL_HEAP:
-		{
-			assert (!s_usingGlobalHeap);
-			s_usingGlobalHeap = true;
-			CryLog ("Switched to global heap!");
-			INDENT_LOG_DURING_SCOPE();
 			CFrontEndModelCache::Allow3dFrontEndAssets(true,false);
 		}
 		break;
+
 		case ESYSTEM_EVENT_TIME_OF_DAY_SET:
 		{
 			CGameRules* const pGameRules = GetGameRules();
