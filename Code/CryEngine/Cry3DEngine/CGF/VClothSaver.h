@@ -2,14 +2,10 @@
 
 #pragma once
 
-//#include <CryString/CryPath.h>
+#include <CryMath/Cry_Geo.h>
 #include <CryCore/CryTypeInfo.h>
 //#include "../CryEngine/Cry3DEngine/CGF/ChunkFile.h"
 #include <Cry3DEngine/CGF/CGFContent.h>
-//#include "../CGA/Controller.h"
-//#include "../CGA/ControllerPQ.h"
-//#include "../CGA/ControllerPQLog.h"
-//#include "LoaderCAF.h"
 
 class CChunkData;
 struct SVClothInfoCGF;

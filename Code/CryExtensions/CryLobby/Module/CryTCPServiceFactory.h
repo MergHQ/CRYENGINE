@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "CryLobby.h"
+
 #if USE_CRY_TCPSERVICE
 
 	#include <CryNetwork/CrySocks.h>

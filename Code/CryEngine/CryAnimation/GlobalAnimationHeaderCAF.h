@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-
+#ifndef RESOURCE_COMPILER
 #include "GlobalAnimationHeader.h"
 #include "Controller.h"
 #include "ControllerPQLog.h"
@@ -312,3 +312,4 @@ inline bool raw_movable<GlobalAnimationHeaderCAF>(GlobalAnimationHeaderCAF const
 {
 	return true;
 }
+#endif

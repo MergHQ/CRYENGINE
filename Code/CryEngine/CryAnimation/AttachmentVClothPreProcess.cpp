@@ -1,7 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
+#include "stdafx.h"
 #include <CryMath/Cry_Math.h>
-#include <CryPhysics/physinterface.h>
+#include <CryPhysics/primitives.h>
 #include "../CryPhysics/quotient.h"
 #include "AttachmentVClothPreProcess.h"
 

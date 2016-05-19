@@ -359,6 +359,9 @@ enum ECryLobbyConnectionState
 #define PRARG_MMCINFO(mmcid, lcid, uid)       PRARG_MMCID(mmcid), PRARG_LCID(lcid), PRARG_UID(uid)
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+class CCryTCPServiceFactory;
+typedef _smart_ptr<CCryTCPServiceFactory> CCryTCPServiceFactoryPtr;
+
 class CCryLobbyService : public CMultiThreadRefCount, public ICryLobbyService
 {
 public:

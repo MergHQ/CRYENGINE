@@ -12,7 +12,6 @@
 
 #include "StdAfx.h"
 #include "CryTCPService.h"
-#include "CryTCPServiceFactory.h"
 
 #if CRY_PLATFORM_ORBIS
 	#include <netinet/tcp.h>
