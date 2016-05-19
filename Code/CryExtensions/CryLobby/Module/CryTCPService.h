@@ -13,8 +13,8 @@
 #ifndef __CRYTCPSERVICE_H__
 #define __CRYTCPSERVICE_H__
 
-#include "CryTCPServiceFactory.h"
 #include "CryLobby.h"
+#include "CryTCPServiceFactory.h"
 #include "Socket/NetResolver.h"
 
 #if USE_CRY_TCPSERVICE

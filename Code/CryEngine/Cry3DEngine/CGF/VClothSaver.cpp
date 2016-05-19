@@ -1,8 +1,9 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
+#include "StdAfx.h"
 #include "VClothSaver.h"
 #include "ChunkData.h"
-#include "../../CryCommon/Cry3DEngine//CGF/CGFContent.h"
+#include "../../CryCommon/Cry3DEngine/CGF/CGFContent.h"
 
 CSaverVCloth::CSaverVCloth(CChunkData& chunkData, const SVClothInfoCGF* pVClothInfo, bool swapEndian) : m_pChunkData(&chunkData), m_pVClothInfo(pVClothInfo)
 {

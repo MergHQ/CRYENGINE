@@ -7,6 +7,7 @@
 
 #include <CryMath/Cry_Geo.h>
 #include <CryCore/stridedptr.h>
+#include "primitives.h"
 #ifdef NEED_ENDIAN_SWAP
 	#include <CryCore/CryEndian.h>
 #endif

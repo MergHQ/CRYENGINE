@@ -4,6 +4,7 @@
 
 #include <vector>
 #include "CryMath/Cry_Vector3.h"
+#include <Cry3DEngine/CGF/CGFContent.h>
 
 namespace VClothPreProcessUtils {
 struct STriInfo;

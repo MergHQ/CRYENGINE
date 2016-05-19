@@ -1,3 +1,4 @@
+#include "StdAfx.h"
 #include "ComputeSkinningStorage.h"
 
 namespace compute_skinning
