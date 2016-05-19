@@ -328,18 +328,6 @@ enum ESystemEvent
 	//! End 3D post rendering.
 	ESYSTEM_EVENT_3D_POST_RENDERING_END,
 
-	//! Called before switching to level memory heap.
-	ESYSTEM_EVENT_SWITCHING_TO_LEVEL_HEAP,
-
-	//! Called after switching to level memory heap.
-	ESYSTEM_EVENT_SWITCHED_TO_LEVEL_HEAP,
-
-	//! Called before switching to global memory heap.
-	ESYSTEM_EVENT_SWITCHING_TO_GLOBAL_HEAP,
-
-	//! Called after switching to global memory heap.
-	ESYSTEM_EVENT_SWITCHED_TO_GLOBAL_HEAP,
-
 	//! Sent after precaching of the streaming system has been done.
 	ESYSTEM_EVENT_LEVEL_PRECACHE_END,
 
