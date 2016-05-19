@@ -96,7 +96,7 @@ WATERMARKDATA(_m);
 	#include "Steamworks/public/steam/steam_api.h"
 #endif
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	#include <CrySystem/Scaleform/IScaleformHelper.h>
 #endif
 
@@ -642,7 +642,7 @@ void CSystem::ShutDown()
 		m_env.pPhysicalWorld->SetPhysicsEventClient(0);
 	}
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	if (m_env.pRenderer)
 		m_env.pRenderer->FlushRTCommands(true, true, true);
 
@@ -851,7 +851,7 @@ void CSystem::Quit()
 			GetIRenderer()->ShutDownFast();
 		}
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 		if (m_env.pRenderer)
 			m_env.pRenderer->FlushRTCommands(true, true, true);
 
@@ -2917,7 +2917,7 @@ void CSystem::OnLanguageCVarChanged(ICVar* const pLanguage)
 					pLocalizationManager->LoadLocalizationDataByTag(tag.c_str());
 				}
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 				if (gEnv->pScaleformHelper)
 				{
 					gEnv->pScaleformHelper->SetTranslatorDirty(true);

@@ -23,6 +23,7 @@
 // Scaleform base configuration
 #if defined(DEDICATED_SERVER)
 	#undef INCLUDE_SCALEFORM_SDK   // Not used in dedicated server
+	#undef CRY_FEATURE_SCALEFORM_HELPER
 #endif
 #if CRY_PLATFORM_MOBILE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	#undef INCLUDE_SCALEFORM_VIDEO // Not currently supported on these platforms
