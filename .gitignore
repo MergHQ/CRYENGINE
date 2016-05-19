@@ -1,32 +1,30 @@
 *.pak
 
-system.cfg
-editor.cfg
-.bootstrap*.*
+/user.cfg
+/system.cfg
+/editor.cfg
+/.bootstrap*.*
 
-#Ignore Bin folders
-Bin32/*
-Bin64/*
-BinTemp/*
+# Ignore bin folders
+/bin/*
+/BinTemp/*
 
-#Ignore 3rd party SDKs
-Code/SDKs/*
-Code/Tools/SDKs/*
-Code/Sandbox/SDKs/*
+# Ignore auto generated cmake and waf solutions
+/Solutions/*
 
-#Ignore auto generated cmake and waf solutions
-Solution_Win64/*
-Solution_Win64/*
-Solutions/*
-_WAF_/*
-
-#temp files
-Code/GameSDK/GameDll/durango_title_id.h
-USER/*
-TestResults/*
-GameSDK/*
-Editor/EditorEventLog.xml
-Editor/EditorLayout.xml
-Editor*.log
-LogBackups/*
+# Temp files
+/user/*
+/user(1)/*
+/user(2)/*
+*.log
+*.dmp
+/TestResults/*
+/LogBackups/*
 *.pyo
+*.pyc
+
+/.depproj/*
+/project.sln
+
+# Might contain a license key, so don't add it to a repo.
+/Code/Tools/waf-1.7.13/recode.lic
