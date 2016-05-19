@@ -15,6 +15,9 @@ def check_path_exists(path):
 
 @module_extension('scaleform')
 def module_extensions_scaleform(ctx, kw, entry_prefix, platform, configuration):
+	# If the module extension is pulled in, we want to use the helper even if Scaleform SDK is not available
+	kw[entry_prefix + 'defines'] += [ 'CRY_FEATURE_SCALEFORM_HELPER' ]
+
 	# Only include scaleform if it exists
 	if not check_path_exists(ctx.CreateRootRelativePath('Code/SDKs/Scaleform')):
 		return

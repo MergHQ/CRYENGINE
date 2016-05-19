@@ -497,7 +497,7 @@ void CD3D9Renderer::InitRenderer()
 	}
 #endif
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	SF_CreateResources();
 	assert(m_pSFResD3D);
 #endif

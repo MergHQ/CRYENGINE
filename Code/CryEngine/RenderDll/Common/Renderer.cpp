@@ -224,7 +224,7 @@ void CRenderer::InitRenderer()
 
 	m_volumetricCloudTexId = 0;
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	m_pSFDrawParams = 0;
 #endif
 
@@ -3808,7 +3808,7 @@ bool CRenderer::WriteJPG(byte* dat, int wdt, int hgt, char* name, int src_bits_p
 	return ::WriteJPG(dat, wdt, hgt, name, src_bits_per_pixel, nQuality);
 }
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::SF_ConfigMask(ESFMaskOp maskOp, unsigned int stencilRef)
@@ -3873,7 +3873,7 @@ void CRenderer::SF_GetMeshMaxSize(int& numVertices, int& numIndices) const
 	numIndices = m_RP.m_MaxTris * 3;
 }
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 
 //////////////////////////////////////////////////////////////////////////
 ITexture* CRenderer::CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags)

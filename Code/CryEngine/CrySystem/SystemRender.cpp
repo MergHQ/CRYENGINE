@@ -170,7 +170,7 @@ void CSystem::RenderBegin()
 		++gEnv->nMainFrameID;
 	}
 
-#if defined (INCLUDE_SCALEFORM_SDK)
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	if (rndAvail && !gEnv->IsDedicated() && gEnv->pScaleformHelper)
 	{
 		// render thread IDs might get updated in BeginFrame() so update GFx render layer

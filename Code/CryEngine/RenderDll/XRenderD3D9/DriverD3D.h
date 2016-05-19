@@ -837,7 +837,7 @@ public:
 	void         DrawObjSprites(PodArray<SVegetationSpriteInfo>* pList, SSpriteInfo* pSPInfo, const int nSPI, bool bZ, bool bShadows);
 	void         ObjSpritesFlush(SVF_P3F_C4B_T2F* pVerts, uint16* pInds, int numSprites, void*& pCurVB, SShaderTechnique* pTech, bool bZ);
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	void                     SF_CreateResources();
 	void                     SF_PrecacheShaders();
 	void                     SF_DestroyResources();
@@ -856,7 +856,7 @@ public:
 	virtual bool             SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) override;
 	virtual bool             SF_MapTexture(int texID, int level, void*& pBits, uint32& pitch) override;
 	virtual bool             SF_UnmapTexture(int texID, int level) override;
-#else // INCLUDE_SCALEFORM_SDK
+#else // defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	virtual void             SF_DrawIndexedTriList(int baseVertexIndex, int minVertexIndex, int numVertices, int startIndex, int triangleCount, const SSF_GlobalDrawParams& params) override {}
 	virtual void             SF_DrawLineStrip(int baseVertexIndex, int lineCount, const SSF_GlobalDrawParams& params) override                                                               {}
 	virtual void             SF_DrawGlyphClear(const SSF_GlobalDrawParams& params) override                                                                                                  {}
@@ -865,7 +865,7 @@ public:
 	virtual bool             SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) override   { return false; }
 	virtual bool             SF_MapTexture(int texID, int level, void*& pBits, uint32& pitch) override                                                                                       { return false; }
 	virtual bool             SF_UnmapTexture(int texID, int level) override                                                                                                                  { return false; }
-#endif // INCLUDE_SCALEFORM_SDK
+#endif // defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 
 	virtual void SetProfileMarker(const char* label, ESPM mode) const override;
 
@@ -1595,7 +1595,7 @@ private:
 	DeviceInfo m_devInfo;
 #endif
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	struct SSF_ResourcesD3D* m_pSFResD3D;
 #endif
 
@@ -1724,13 +1724,13 @@ inline uint32 CD3D9Renderer::ApplyIndexBufferBindOffset(uint32 firstIndex)
 #endif
 }
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 inline SSF_ResourcesD3D& CD3D9Renderer::SF_GetResources()
 {
 	assert(m_pSFResD3D);
 	return *m_pSFResD3D;
 }
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

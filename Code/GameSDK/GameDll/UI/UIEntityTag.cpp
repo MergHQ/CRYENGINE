@@ -21,9 +21,6 @@
 ////////////////////////////////////////////////////////////////////////////
 void CUIEntityTag::InitEventSystem()
 {
-#if defined(INCLUDE_SCALEFORM_SDK)
-	assert(gEnv->pFlashUI);
-#endif
 	if (!gEnv->pFlashUI)
 		return;
 
