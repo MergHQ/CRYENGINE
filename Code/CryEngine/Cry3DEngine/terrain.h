@@ -512,7 +512,7 @@ public:
 	void LoadSurfaceTypesFromXML(XmlNodeRef pDoc, int nSID);
 	void UpdateSurfaceTypes(int nSID);
 	bool RenderArea(Vec3 vPos, float fRadius, _smart_ptr<IRenderMesh>& arrLightRenderMeshs, CRenderObject* pObj, IMaterial* pMaterial, const char* szComment, float* pCustomData, Plane* planes, const SRenderingPassInfo& passInfo);
-	void IntersectWithShadowFrustum(PodArray<CTerrainNode*>* plstResult, ShadowMapFrustum* pFrustum, int nSID, const SRenderingPassInfo& passInfo);
+	void IntersectWithShadowFrustum(PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, int nSID, const SRenderingPassInfo& passInfo);
 	void IntersectWithBox(const AABB& aabbBox, PodArray<CTerrainNode*>* plstResult, int nSID);
 	void MarkAllSectorsAsUncompiled(int nSID);
 	void BuildErrorsTableForArea(float* pLodErrors, int nMaxLods, int X1, int Y1, int X2, int Y2, float* pTerrainBlock,
@@ -604,7 +604,7 @@ public:
 	CTerrainNode*                 FindMinNodeContainingBox(const AABB& someBox, int nSID);
 	int                           FindMinNodesContainingBox(const AABB& someBox, PodArray<CTerrainNode*>& arrNodes);
 	int                           GetTerrainLightmapTexId(Vec4& vTexGenInfo, int nSID);
-	void                          GetAtlasTexId(int& nTex0, int& nTex1, int nSID);
+	void GetAtlasTexId(int& nTex0, int& nTex1, int& nTex2, int nSID);
 
 	_smart_ptr<IRenderMesh>       MakeAreaRenderMesh(const Vec3& vPos, float fRadius, IMaterial* pMat, const char* szLSourceName, Plane* planes);
 
@@ -722,7 +722,7 @@ protected: // ------------------------------------------------------------------
 	PodArray<CTerrainNode*>   m_lstActiveTextureNodes;
 	PodArray<CTerrainNode*>   m_lstActiveProcObjNodes;
 
-	CTextureCache             m_texCache[2];
+	CTextureCache m_texCache[3]; // RGB, Normal and Height
 
 	EEndian                   m_eEndianOfTexture;
 
@@ -733,6 +733,8 @@ protected: // ------------------------------------------------------------------
 #if defined(FEATURE_SVO_GI)
 	PodArray<ColorB>* m_pTerrainRgbLowResSystemCopy;
 #endif
+
+	_smart_ptr<IRenderMesh> m_pSharedRenderMesh;
 
 public:
 	bool    SetCompiledData(byte* pData, int nDataSize, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable, bool bHotUpdate, SHotUpdateInfo* pExportInfo, int nSID, Vec3 vSegmentOrigin);

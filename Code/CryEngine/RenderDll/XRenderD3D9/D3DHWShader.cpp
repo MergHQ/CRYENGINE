@@ -5203,11 +5203,11 @@ bool CHWShader_D3D::mfSetTextures(const std::vector<SCGTexture>& Textures, EHWSh
 			break;
 		case ECGT_TerrainBaseMap:
 			{
-				int tex0 = 0, tex1 = 0;
+				int tex0 = 0, tex1 = 0, tex2 = 0;
 				ITerrain* const pTerrain = gEnv->p3DEngine->GetITerrain();
 				if (pTerrain)
 				{
-					pTerrain->GetAtlasTexId(tex0, tex1);
+					pTerrain->GetAtlasTexId(tex0, tex1, tex2);
 					CTexture* const pTex = CTexture::GetByID(tex0);
 					pTex->ApplyTexture(nTUnit, eSHClass, SResourceView::DefaultViewSRGB);
 				}
@@ -5220,12 +5220,29 @@ bool CHWShader_D3D::mfSetTextures(const std::vector<SCGTexture>& Textures, EHWSh
 			break;
 		case ECGT_TerrainNormMap:
 			{
-				int tex0 = 0, tex1 = 0;
+				int tex0 = 0, tex1 = 0, tex2 = 0;
 				ITerrain* const pTerrain = gEnv->p3DEngine->GetITerrain();
 				if (pTerrain)
 				{
-					pTerrain->GetAtlasTexId(tex0, tex1);
+					pTerrain->GetAtlasTexId(tex0, tex1, tex2);
 					CTexture* const pTex = CTexture::GetByID(tex1);
+					pTex->ApplyTexture(nTUnit, eSHClass, SResourceView::DefaultView);
+				}
+				else
+				{
+					CTexture* const pTex = CTexture::s_ptexBlack;
+					pTex->ApplyTexture(nTUnit, eSHClass, SResourceView::DefaultView);
+				}
+			}
+			break;
+		case ECGT_TerrainElevMap:
+			{
+				int tex0 = 0, tex1 = 0, tex2 = 0;
+				ITerrain* const pTerrain = gEnv->p3DEngine->GetITerrain();
+				if (pTerrain)
+				{
+					pTerrain->GetAtlasTexId(tex0, tex1, tex2);
+					CTexture* const pTex = CTexture::GetByID(tex2);
 					pTex->ApplyTexture(nTUnit, eSHClass, SResourceView::DefaultView);
 				}
 				else
@@ -5312,14 +5329,14 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 			}
 		}
 
-		IF (pSM && pSM->m_pAnimInfo, 0)
+		IF(pSM && pSM->m_pAnimInfo, 0)
 		{
 			STexSamplerRT* pRT = (STexSamplerRT*)pSM;
 			pRT->Update();
 			tx = pRT->m_pTex;
 		}
 
-		IF (!tx || tx->GetCustomID() <= 0 && smpTexType != tx->GetTexType(), 0)
+		IF(!tx || tx->GetCustomID() <= 0 && smpTexType != tx->GetTexType(), 0)
 		{
 #if !defined(_RELEASE)
 			string matName = "unknown";
@@ -5535,8 +5552,8 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 							else if ((rd->m_RP.m_ObjFlags & FOB_BLEND_WITH_TERRAIN_COLOR) && (nCustomID < 0))
 							{
 								// terrain atlas texture id
-								int nTexID0, nTexID1;
-								gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTexID0, nTexID1);
+							int nTexID0, nTexID1, nTexID2;
+							gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTexID0, nTexID1, nTexID2);
 								pTex = CTexture::GetByID(nTexID0);
 							}
 						}

@@ -111,29 +111,12 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 			}
 		}
 
-		bool bNeedRenderTerrain = (GetTerrain() && GetCVars()->e_GsmCastFromTerrain && (pLight->m_Flags & DLF_SUN) != 0);
+		bool bNeedRenderTerrain = (GetTerrain() && Get3DEngine()->m_bSunShadowsFromTerrain && (pLight->m_Flags & DLF_SUN) != 0);
 
 		if (bNeedRenderTerrain && passInfo.RenderTerrain() && Get3DEngine()->m_bShowTerrainSurface)
 		{
 			// find all caster sectors
-			GetTerrain()->IntersectWithShadowFrustum(&lstCastingNodes, pFr, GetDefSID(), passInfo);
-
-			// make list of entities
-			for (int s = 0; s < lstCastingNodes.Count(); s++)
-			{
-				CTerrainNode* pNode = (CTerrainNode*)lstCastingNodes[s];
-
-				if (pLight->m_Flags & DLF_SUN)
-				{
-					if (pNode->m_nGSMFrameId == passInfo.GetFrameID())
-						continue;
-
-					if (bNeedRenderTerrain && pFr->FrustumPlanes[0].IsAABBVisible_EH(pNode->GetBBoxVirtual()) == CULL_INCLUSION)
-						pNode->m_nGSMFrameId = passInfo.GetFrameID();   // mark as completely present in some LOD
-				}
-
-				pFr->castersList.Add(pNode);
-			}
+			GetTerrain()->IntersectWithShadowFrustum(&pFr->castersList, pFr, GetDefSID(), passInfo);
 		}
 	}
 

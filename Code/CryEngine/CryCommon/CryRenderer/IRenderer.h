@@ -1107,21 +1107,15 @@ struct SAAFormat
 //! Info about Terrain sector texturing.
 struct SSectorTextureSet
 {
-	SSectorTextureSet(unsigned short nT0, unsigned short nT1)
-		: stencilBox(Vec3(0, 0, 0), Vec3(0, 0, 0)),
-		nodeBox(Vec3(0, 0, 0), Vec3(0, 0, 0))
+	SSectorTextureSet()
 	{
-		nTex0 = nT0;
-		nTex1 = nT1;
-		fTerrainMaxZ = fTerrainMinZ = fTexOffsetX = fTexOffsetY = 0;
+		ZeroStruct(*this);
 		fTexScale = 1.f;
-		nSlot0 = nSlot1 = -1;
+		nSlot0 = nSlot1 = nSlot2 = -1;
 	}
 
-	unsigned short nTex0, nTex1, nSlot0, nSlot1;
-	float          fTexOffsetX, fTexOffsetY, fTexScale, fTerrainMinZ, fTerrainMaxZ;
-	AABB           nodeBox;
-	AABB           stencilBox;
+	unsigned short nTex0, nTex1, nTex2, nSlot0, nSlot1, nSlot2;
+	float          fTexOffsetX, fTexOffsetY, fTexScale;
 };
 
 struct IRenderNode;

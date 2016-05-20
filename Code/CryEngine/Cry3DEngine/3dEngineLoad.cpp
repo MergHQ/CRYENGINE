@@ -1379,6 +1379,11 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	}
 
 	{
+		const char* pText = GetXMLAttribText(pInputNode, "EnvState", "SunShadowsFromTerrain", "true");
+		m_bSunShadowsFromTerrain = (!strcmp(pText, "true") || !strcmp(pText, "1")) && GetCVars()->e_GsmCastFromTerrain;
+	}
+
+	{
 		const char* pText = GetXMLAttribText(pInputNode, "EnvState", "UseLayersActivation", "false");
 		Get3DEngine()->m_bAreaActivationInUse = !strcmp(pText, "true") || !strcmp(pText, "1");
 	}
