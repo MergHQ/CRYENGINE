@@ -635,6 +635,7 @@ enum ECGTexture : uint8
 
 	ECGT_TerrainNormMap,
 	ECGT_TerrainBaseMap,
+	ECGT_TerrainElevMap,
 
 	ECGT_WindGrid,
 
