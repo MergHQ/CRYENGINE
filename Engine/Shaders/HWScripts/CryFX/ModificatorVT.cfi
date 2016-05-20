@@ -102,7 +102,7 @@ float4 DecodeBending(float3 vPos, float4 BendInfo)
 	float2 vFreq = float2(fWaveFreq, fWaveFreq*1.125);
 
 	half2 tc = (vPos.xy - g_VS_WindGridOffs.xy) * g_VS_WindGridOffs.zw;
-	half4 vWindVec = GetTexture2DLod(windGridTex, ssMaterialBilinearClamp, float4(tc.xy, 0, 0));
+	half2 vWindVec = GetTexture2DLod(windGridTex, ssMaterialBilinearClamp, float4(tc.xy, 0, 0)).xy;
 
 	const float fWAVE_PARALLEL = 0.008f;
 	const float fWAVE_TRANSVERSE = 0.002f;
@@ -112,7 +112,7 @@ float4 DecodeBending(float3 vPos, float4 BendInfo)
 
 	half4 result;	
 	result.xy = vAddBending.xy * 50.f + vWindVec.xy;
-	result.z = length(vWindVec) * 2.f;
+	result.z = length(vWindVec.xy) * 2.f;
 	result.w = length(vAddBending + vWindVec.xy) * 0.3f;
 	result.xyz *= BendInfo.w;
 
