@@ -1,16 +1,20 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "QATLControlsTreeModel.h"
-#include "AudioControl.h"
-#include "QAudioControlTreeWidget.h"
-#include "IEditor.h"
-#include "AudioControlsEditorUndo.h"
-#include "IAudioSystemEditor.h"
 
 #include <QtUtil.h>
 #include <QStandardItem>
 #include <QMessageBox>
+
+#include "AudioControl.h"
+#include "AudioControlsEditorPlugin.h"
+#include "AudioControlsEditorUndo.h"
+#include "AudioSystemModel.h"
+#include "IAudioSystemEditor.h"
+#include "IAudioSystemItem.h"
+#include "IEditor.h"
+#include "QATLControlsTreeModel.h"
+#include "QAudioControlTreeWidget.h"
 
 namespace ACE
 {
