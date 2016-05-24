@@ -451,7 +451,7 @@ void CVars::Init()
 		"Max length of ray (for version 1)");
 	REGISTER_CVAR(e_TerrainMeshInstancingMinLod, 3, VF_NULL,
 		"Mesh instancing is used for distant terrain sectors and for shadow map generation");
-	REGISTER_CVAR(e_TerrainMeshInstancingShadowBias, 0.35f, VF_NULL,
+	REGISTER_CVAR(e_TerrainMeshInstancingShadowBias, 0.5f, VF_NULL,
 		"During shadow map generation render distant terrain sectors little lower for less problems with terrain self-shadowing");
 	REGISTER_CVAR(e_StreamPredictionUpdateTimeSlice, 0.4f, VF_NULL,
 	              "Maximum amount of time to spend for scene streaming priority update in milliseconds");

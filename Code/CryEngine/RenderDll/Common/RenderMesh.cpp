@@ -5072,9 +5072,6 @@ void CRenderMesh::AddShadowPassMergedChunkIndicesAndVertices(CRenderChunk* pCurr
 	if (m_Chunks.size() == 0)
 		return;
 
-	if (gRenDev->m_RP.m_pCurObject->m_ObjFlags & (FOB_SKINNED))
-		return;
-
 	if (pMaterial == NULL)
 		return;
 

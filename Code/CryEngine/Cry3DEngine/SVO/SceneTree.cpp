@@ -2326,6 +2326,8 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 	//GetCVars()->e_svoTI_Troposphere_Subdivide = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Subdivide", "0"));
 	GetCVars()->e_svoTI_Troposphere_Subdivide = GetCVars()->e_svoTI_Troposphere_Active;
 
+	GetCVars()->e_svoTI_AnalyticalOccluders = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "AnalyticalOccluders", "0"));
+
 	int nLowSpecMode = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "LowSpecMode", "0"));
 	if (nLowSpecMode > -2 && gEnv->IsEditor()) // otherwise we use value from sys_spec_Light.cfg
 		GetCVars()->e_svoTI_LowSpecMode = nLowSpecMode;
@@ -2519,8 +2521,9 @@ void CSvoEnv::CollectAnalyticalOccluders()
 				{
 					bool bSphere = strstr(pStatObj->GetFilePath(), "sphere") != NULL;
 					bool bCube = strstr(pStatObj->GetFilePath(), "cube") != NULL;
+					bool bCylinder = strstr(pStatObj->GetFilePath(), "cylinder") != NULL;
 
-					if (bCube)
+					if (bCube || bCylinder)
 					{
 						Vec3 vCenter = pStatObj->GetAABB().GetCenter();
 						Vec3 vX = Vec3(1, 0, 0);
@@ -2541,7 +2544,11 @@ void CSvoEnv::CollectAnalyticalOccluders()
 						obb.v2 = vZ.GetNormalized();
 						obb.e2 = vZ.GetLength();
 						obb.c = vCenter;
-						obb.type = (float)I3DEngine::SAnalyticalOccluder::eOBB;
+
+						if(bCube)
+							obb.type = (float)I3DEngine::SAnalyticalOccluder::eOBB;
+						else
+							obb.type = (float)I3DEngine::SAnalyticalOccluder::eCylinder;
 
 						m_AnalyticalOccluders.Add(obb);
 					}

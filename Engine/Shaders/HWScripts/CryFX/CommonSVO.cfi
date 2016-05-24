@@ -22,6 +22,7 @@ float4 SvoParamsMisc     : PB_SvoParams5; // emissive mult, propagation pass id,
 float4 SvoParamsMisc2    : PB_SvoParams6; // point light mult, 0, 0, 0
 float4 SvoParamsSkyColor : PB_SvoParams4; // r, g, b, mult
 float4 SvoParamsSpecular : PB_SvoParams3; // wid, caust mult, air brightness, mult
+float4 SvoParamsMisc3		 : PB_SvoParams7; // AO len, AO soft
 
 sampler2D sceneDepthMapSampler : register(s4) = sampler_state
 {

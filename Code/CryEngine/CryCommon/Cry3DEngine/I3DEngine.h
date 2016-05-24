@@ -2241,7 +2241,8 @@ struct I3DEngine : public IProcess
 		enum AnalyticalOccluderType
 		{
 			eCapsule = 0,
-			eOBB
+			eOBB,
+			eCylinder
 		};
 
 		Vec3  v0;
