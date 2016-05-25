@@ -2468,19 +2468,6 @@ void CD3D9Renderer::DebugDrawStats1()
 	nSize = 0;
 	size_t nSizeD = 0;
 	size_t nSizeAll = 0;
-	for (FXCompressedShadersItor it = CHWShader::m_CompressedShaders.begin(); it != CHWShader::m_CompressedShaders.end(); ++it)
-	{
-		SHWActivatedShader* pAS = it->second;
-		for (FXCompressedShaderItor itor = pAS->m_CompressedShaders.begin(); itor != pAS->m_CompressedShaders.end(); ++itor)
-		{
-			n++;
-			SCompressedData& Data = itor->second;
-			nSize += Data.m_nSizeCompressedShader;
-			nSizeD += Data.m_nSizeDecompressedShader;
-		}
-	}
-	nSizeAll = sizeOfMapP(CHWShader::m_CompressedShaders);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Compressed Shaders in memory: %d (size: %.3f Mb), Decompressed size: %.3f Mb, Overall: %.3f", n, BYTES_TO_MB(nSize), BYTES_TO_MB(nSizeD), BYTES_TO_MB(nSizeAll));
 
 	FXShaderCacheItor FXitor;
 	size_t nCache = 0;
@@ -7206,10 +7193,6 @@ void CD3D9Renderer::GetMemoryUsage(ICrySizer* Sizer)
 			Name = CHWShader::mfGetClassName(eHWSC_Pixel);
 			pRL = CBaseResource::GetResourcesForClass(Name);
 			Sizer->AddObject(pRL);
-		}
-		{
-			SIZER_COMPONENT_NAME(Sizer, "Compressed Shaders");
-			Sizer->AddObject(CHWShader::m_CompressedShaders);
 		}
 
 		{

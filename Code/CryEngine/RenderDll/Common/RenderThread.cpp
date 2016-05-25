@@ -787,20 +787,7 @@ void SRenderThread::RC_StopVideoThread()
 	EndCommand(p);
 }
 
-void SRenderThread::RC_PreactivateShaders()
-{
-	if (IsRenderThread())
-	{
-		CHWShader::RT_PreactivateShaders();
-		return;
-	}
-
-	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_PreactivateShaders, 0);
-	EndCommand(p);
-}
-
-void SRenderThread::RC_PrecacheShader(CShader* pShader, SShaderCombination& cmb, bool bForce, bool bCompressedOnly, CShaderResources* pRes)
+void SRenderThread::RC_PrecacheShader(CShader* pShader, SShaderCombination& cmb, bool bForce, CShaderResources* pRes)
 {
 	if (IsRenderLoadingThread())
 	{
@@ -813,13 +800,12 @@ void SRenderThread::RC_PrecacheShader(CShader* pShader, SShaderCombination& cmb,
 		memcpy(p, &cmb, sizeof(cmb));
 		p += sizeof(SShaderCombination);
 		AddDWORD(p, bForce);
-		AddDWORD(p, bCompressedOnly);
 		AddPointer(p, pRes);
 		EndCommandTo(p, m_CommandsLoading);
 	}
 	else if (IsRenderThread())
 	{
-		pShader->mfPrecache(cmb, bForce, bCompressedOnly, pRes);
+		pShader->mfPrecache(cmb, bForce, pRes);
 		return;
 	}
 	else
@@ -833,7 +819,6 @@ void SRenderThread::RC_PrecacheShader(CShader* pShader, SShaderCombination& cmb,
 		memcpy(p, &cmb, sizeof(cmb));
 		p += sizeof(SShaderCombination);
 		AddDWORD(p, bForce);
-		AddDWORD(p, bCompressedOnly);
 		AddPointer(p, pRes);
 		EndCommand(p);
 	}
@@ -3009,11 +2994,6 @@ void SRenderThread::ProcessCommands()
 				SDynTexture_Shadow::RT_EntityDelete(pRN);
 			}
 			break;
-		case eRC_PreactivateShaders:
-			{
-				CHWShader::RT_PreactivateShaders();
-			}
-			break;
 		case eRC_SubmitWind:
 			{
 				const SWindGrid* pWind = ReadCommand<SWindGrid*>(n);
@@ -3025,10 +3005,9 @@ void SRenderThread::ProcessCommands()
 				CShader* pShader = ReadCommand<CShader*>(n);
 				SShaderCombination cmb = ReadCommand<SShaderCombination>(n);
 				bool bForce = ReadCommand<DWORD>(n) != 0;
-				bool bCompressedOnly = ReadCommand<DWORD>(n) != 0;
 				CShaderResources* pRes = ReadCommand<CShaderResources*>(n);
 
-				pShader->mfPrecache(cmb, bForce, bCompressedOnly, pRes);
+				pShader->mfPrecache(cmb, bForce, pRes);
 
 				SAFE_RELEASE(pRes);
 				pShader->Release();

@@ -148,7 +148,6 @@ enum ERenderCommand
 	eRC_StopVideoThread,
 
 	eRC_RenderDebug,
-	eRC_PreactivateShaders,
 	eRC_PrecacheShader,
 
 	eRC_RelinkTexture,
@@ -571,9 +570,8 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_SetCull(int nMode);
 	void RC_SetScissor(bool bEnable, int sX, int sY, int sWdt, int sHgt);
 	void RC_SelectGPU(int nGPU);
-	void RC_PreactivateShaders();
 	void RC_SubmitWind(const SWindGrid * pWind);
-	void RC_PrecacheShader(CShader * pShader, SShaderCombination & cmb, bool bForce, bool bCompressedOnly, CShaderResources * pRes);
+	void RC_PrecacheShader(CShader * pShader, SShaderCombination & cmb, bool bForce, CShaderResources * pRes);
 	void RC_PushProfileMarker(char* label);
 	void RC_PopProfileMarker(char* label);
 	void RC_DrawLines(Vec3 v[], int nump, ColorF & col, int flags, float fGround);

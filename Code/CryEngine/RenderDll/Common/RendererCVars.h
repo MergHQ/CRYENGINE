@@ -127,7 +127,6 @@ public:
 	static int   CV_r_shadersdurango;
 #endif
 	//  static int CV_r_envcmwrite;
-	static int CV_r_shaderspreactivate;
 	static int CV_r_shadersremotecompiler;
 	static int CV_r_shadersasynccompiling;
 	static int CV_r_shadersasyncactivation;

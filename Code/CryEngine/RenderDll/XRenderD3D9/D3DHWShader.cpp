@@ -796,7 +796,7 @@ void CHWShader_D3D::mfConstructFX(FXShaderToken* Table, TArray<uint32>* pSHData)
 	}
 }
 
-bool CHWShader_D3D::mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, bool bCompressedOnly, CShader* pSH, CShaderResources* pRes)
+bool CHWShader_D3D::mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, CShader* pSH, CShaderResources* pRes)
 {
 	assert(gRenDev->m_pRT->IsRenderThread());
 
@@ -837,7 +837,7 @@ bool CHWShader_D3D::mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallb
 		SHWSInstance* pInst = mfGetInstance(pSH, Ident, HWSF_PRECACHE_INST);
 		pInst->m_bFallback = bFallback;
 		pInst->m_fLastAccess = gRenDev->m_RP.m_TI[gRenDev->m_RP.m_nProcessThreadID].m_RealTime;
-		mfActivate(pSH, nFlags, NULL, NULL, bCompressedOnly);
+		mfActivate(pSH, nFlags, NULL, NULL);
 	}
 
 	return bRes;
@@ -6034,7 +6034,7 @@ ED3DShError CHWShader_D3D::mfFallBack(SHWSInstance*& pInst, int nStatus)
 		if (!pHWSH->m_Insts.size())
 		{
 			SShaderCombination cmb;
-			pHWSH->mfPrecache(cmb, true, true, false, gRenDev->m_RP.m_pShader, gRenDev->m_RP.m_pShaderResources);
+			pHWSH->mfPrecache(cmb, true, true, gRenDev->m_RP.m_pShader, gRenDev->m_RP.m_pShaderResources);
 		}
 		if (pHWSH->m_Insts.size())
 		{
@@ -6078,7 +6078,7 @@ ED3DShError CHWShader_D3D::mfIsValid_Int(SHWSInstance*& pInst, bool bFinalise)
 			nStatus = mfAsyncCompileReady(pInst);
 			if (nStatus == 1)
 			{
-				if (gcpRendD3D->m_cEF.m_nCombinationsProcess <= 0 || gcpRendD3D->m_cEF.m_bActivatePhase)
+				if (gcpRendD3D->m_cEF.m_nCombinationsProcess <= 0)
 				{
 					assert(pInst->m_Handle.m_pShader != NULL);
 				}
@@ -6218,37 +6218,10 @@ struct InstContainerByHash
 	}
 };
 
-CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(CShader* pSH, int nHashInstance, uint64 GLMask)
+CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetHashInst(InstContainer *pInstCont, uint32 identHash, SShaderCombIdent& Ident, InstContainerIt& it)
 {
-	DETAILED_PROFILE_MARKER("mfGetInstance");
-	FUNCTION_PROFILER_RENDER_FLAT
-	InstContainer* pInstCont = &m_Insts;
-	InstContainerIt it = std::lower_bound(pInstCont->begin(), pInstCont->end(), nHashInstance, InstContainerByHash());
-	assert(it != pInstCont->end() && nHashInstance == (*it)->m_Ident.m_nHash);
-
-	return (*it);
-}
-
-CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(CShader* pSH, SShaderCombIdent& Ident, uint32 nFlags)
-{
-	DETAILED_PROFILE_MARKER("mfGetInstance");
-	FUNCTION_PROFILER_RENDER_FLAT
-	SHWSInstance* pInst = m_pCurInst;
-	if (pInst && !pInst->m_bFallback)
-	{
-		assert(pInst->m_eClass < eHWSC_Num);
-
-		const SShaderCombIdent& other = pInst->m_Ident;
-		// other will have been through PostCreate, and so won't have the platform mask set anymore
-		if ((Ident.m_MDVMask & ~SF_PLATFORM) == other.m_MDVMask && Ident.m_RTMask == other.m_RTMask && Ident.m_GLMask == other.m_GLMask && Ident.m_FastCompare1 == other.m_FastCompare1 && Ident.m_pipelineState.opaque == other.m_pipelineState.opaque)
-			return pInst;
-	}
-	InstContainer* pInstCont = &m_Insts;
-	pInst = 0;
-
-	uint32 identHash = Ident.PostCreate();
-
-	InstContainerIt it = std::lower_bound(pInstCont->begin(), pInstCont->end(), identHash, InstContainerByHash());
+	SHWSInstance* pInst = NULL;
+	it = std::lower_bound(pInstCont->begin(), pInstCont->end(), identHash, InstContainerByHash());
 	InstContainerIt itOther = it;
 	while (it != pInstCont->end() && identHash == (*it)->m_Ident.m_nHash)
 	{
@@ -6277,6 +6250,41 @@ CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(CShader* pSH, SShaderC
 			--itOther;
 		}
 	}
+	return pInst;
+}
+
+CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(CShader* pSH, int nHashInstance, SShaderCombIdent& Ident)
+{
+	DETAILED_PROFILE_MARKER("mfGetInstance");
+	FUNCTION_PROFILER_RENDER_FLAT
+	InstContainer* pInstCont = &m_Insts;
+
+	InstContainerIt it;
+	SHWSInstance *pInst = mfGetHashInst(pInstCont, nHashInstance, Ident, it);
+
+	return pInst;
+}
+
+CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(CShader* pSH, SShaderCombIdent& Ident, uint32 nFlags)
+{
+	DETAILED_PROFILE_MARKER("mfGetInstance");
+	FUNCTION_PROFILER_RENDER_FLAT
+	SHWSInstance* pInst = m_pCurInst;
+	if (pInst && !pInst->m_bFallback)
+	{
+		assert(pInst->m_eClass < eHWSC_Num);
+
+		const SShaderCombIdent& other = pInst->m_Ident;
+		// other will have been through PostCreate, and so won't have the platform mask set anymore
+		if ((Ident.m_MDVMask & ~SF_PLATFORM) == other.m_MDVMask && Ident.m_RTMask == other.m_RTMask && Ident.m_GLMask == other.m_GLMask && Ident.m_FastCompare1 == other.m_FastCompare1 && Ident.m_pipelineState.opaque == other.m_pipelineState.opaque)
+			return pInst;
+	}
+	InstContainer* pInstCont = &m_Insts;
+
+	uint32 identHash = Ident.PostCreate();
+
+	InstContainerIt it;
+	pInst = mfGetHashInst(pInstCont, identHash, Ident, it);
 
 	if (pInst == 0)
 	{

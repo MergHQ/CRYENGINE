@@ -359,7 +359,6 @@ public:
 
 	EShaderCacheMode             m_eCacheMode;
 
-	bool                         m_bActivatePhase;
 	char*                        m_szShaderPrecache;
 
 	FXShaderCacheCombinations    m_ShaderCacheCombinations[2];
@@ -542,10 +541,6 @@ public:
 	string            mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState pipelineState) const;
 	const char*       mfGetLevelListName() const;
 	void              mfExportShaders();
-
-	bool              mfReleasePreactivatedShaderData();
-	bool              mfPreactivateShaders2(const char* szPak, const char* szPath, bool bPersistent, const char* szBindRoot);
-	bool              mfPreactivate2(CResFileLookupDataMan& LevelLookup, string szPathPerLevel, string szPathGlobal, bool bVS, bool bPersistent);
 
 	bool              mfPreloadBinaryShaders();
 

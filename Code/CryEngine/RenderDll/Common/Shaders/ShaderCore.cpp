@@ -53,7 +53,6 @@ TArray<CShaderResources*> CShader::s_ShaderResources_known(0, 2600);  // Based o
 TArray<CLightStyle*> CLightStyle::s_LStyles;
 
 SResourceContainer* CShaderMan::s_pContainer;                        // List/Map of objects for shaders resource class
-FXCompressedShaders CHWShader::m_CompressedShaders;
 
 uint64 g_HWSR_MaskBit[HWSR_MAX];
 
@@ -1091,7 +1090,6 @@ void CShaderMan::mfInit(void)
 		{
 			CRenderer::CV_r_shadersAllowCompilation = 1; // allow compilation
 			CRenderer::CV_r_shaderslogcachemisses = 0;   // don't bother about cache misses
-			CRenderer::CV_r_shaderspreactivate = 0;      // don't load the level caches
 			CParserBin::m_bEditable = true;
 			CRenderer::CV_r_shadersImport = 0;           // don't allow shader importing
 
@@ -1137,25 +1135,9 @@ void CShaderMan::mfInit(void)
 
 		mfInitShadersCacheMissLog();
 
-		if (!gRenDev->IsEditorMode() && !gRenDev->IsShaderCacheGenMode())
-		{
-			if (CRenderer::CV_r_shaderspreactivate == 3)
-			{
-				gEnv->pCryPak->LoadPakToMemory("shaderCache.pak", ICryPak::eInMemoryPakLocale_CPU);
-
-				mfPreactivateShaders2("", "Shaders/Cache/", true, PathUtil::GetGameFolder() + "/");
-
-				gEnv->pCryPak->LoadPakToMemory("shaderCache.pak", ICryPak::eInMemoryPakLocale_Unload);
-			}
-			else if (CRenderer::CV_r_shaderspreactivate)
-				mfPreactivateShaders2("", "ShaderCache/", true, PathUtil::GetGameFolder() + "/");
-		}
-
 		if (CRenderer::CV_r_shadersAllowCompilation)
 		{
 			mfInitShadersCache(false, NULL, NULL, 0);
-			if (CRenderer::CV_r_shaderspreactivate == 2)
-				mfInitShadersCache(false, NULL, NULL, 1);
 		}
 
 #if CRY_PLATFORM_DESKTOP
@@ -1187,7 +1169,7 @@ void CShaderMan::mfInit(void)
 
 bool CShaderMan::LoadShaderStartupCache()
 {
-	return gEnv->pCryPak->OpenPack(PathUtil::GetGameFolder() + "/", "Engine/ShaderCacheStartup.pak", ICryPak::FLAGS_PAK_IN_MEMORY | ICryPak::FLAGS_PATH_REAL);
+	return true; //gEnv->pCryPak->OpenPack(PathUtil::GetGameFolder() + "/", "Engine/ShaderCacheStartup.pak", ICryPak::FLAGS_PAK_IN_MEMORY | ICryPak::FLAGS_PATH_REAL);
 }
 
 void CShaderMan::UnloadShaderStartupCache()
@@ -1201,7 +1183,7 @@ void CShaderMan::UnloadShaderStartupCache()
 	ClearSResourceCache();
 #endif
 
-	gEnv->pCryPak->ClosePack("Engine/ShaderCacheStartup.pak");
+	//gEnv->pCryPak->ClosePack("Engine/ShaderCacheStartup.pak");
 }
 
 void CShaderMan::mfPostInit()
