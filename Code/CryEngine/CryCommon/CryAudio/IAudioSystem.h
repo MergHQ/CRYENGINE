@@ -27,6 +27,7 @@ typedef unsigned int EntityId;
 // Forward declarations.
 struct IVisArea;
 struct ICVar;
+class CAudioRayInfo;
 
 namespace CryAudio
 {
@@ -81,9 +82,8 @@ enum EAudioCallbackManagerRequestType : AudioEnumFlagsType
 	eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance = BIT(2), //!< Only used internally!
 	eAudioCallbackManagerRequestType_ReportStartedFile             = BIT(3), //!< Only used internally!
 	eAudioCallbackManagerRequestType_ReportStoppedFile             = BIT(4), //!< Only used internally!
-	eAudioCallbackManagerRequestType_ReportProcessedObstructionRay = BIT(5), //!< Only used internally!
-	eAudioCallbackManagerRequestType_ReportVirtualizedEvent        = BIT(6), //!< Only used internally!
-	eAudioCallbackManagerRequestType_ReportPhysicalizedEvent       = BIT(7), //!< Only used internally!
+	eAudioCallbackManagerRequestType_ReportVirtualizedEvent        = BIT(5), //!< Only used internally!
+	eAudioCallbackManagerRequestType_ReportPhysicalizedEvent       = BIT(6), //!< Only used internally!
 };
 
 enum EAudioListenerRequestType : AudioEnumFlagsType
@@ -109,14 +109,17 @@ enum EAudioObjectRequestType : AudioEnumFlagsType
 	eAudioObjectRequestType_SetEnvironmentAmount = BIT(11),
 	eAudioObjectRequestType_ResetEnvironments    = BIT(12),
 	eAudioObjectRequestType_ReleaseObject        = BIT(13),
+	eAudioObjectRequestType_ProcessPhysicsRay    = BIT(14), //!< Only used internally!
 };
 
 enum EAudioOcclusionType : AudioEnumFlagsType
 {
 	eAudioOcclusionType_None,
 	eAudioOcclusionType_Ignore,
-	eAudioOcclusionType_SingleRay,
-	eAudioOcclusionType_MultiRay,
+	eAudioOcclusionType_Adaptive,
+	eAudioOcclusionType_Low,
+	eAudioOcclusionType_Medium,
+	eAudioOcclusionType_High,
 
 	eAudioOcclusionType_Count,
 };
@@ -567,25 +570,6 @@ struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportS
 };
 
 //////////////////////////////////////////////////////////////////////////
-template<>
-struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportProcessedObstructionRay> : public SAudioCallbackManagerRequestDataBase
-{
-	explicit SAudioCallbackManagerRequestData(AudioObjectId const _audioObjectId, size_t const _rayId = (size_t)-1)
-		: SAudioCallbackManagerRequestDataBase(eAudioCallbackManagerRequestType_ReportProcessedObstructionRay)
-		, audioObjectId(_audioObjectId)
-		, rayId(_rayId)
-	{}
-
-	virtual ~SAudioCallbackManagerRequestData() {}
-
-	AudioObjectId const audioObjectId;
-	size_t const        rayId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestData);
-};
-
-//////////////////////////////////////////////////////////////////////////
 struct SAudioObjectRequestDataBase : public SAudioRequestDataBase
 {
 	explicit SAudioObjectRequestDataBase(EAudioObjectRequestType const _type)
@@ -854,6 +838,23 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironmentAmount> : p
 	AudioEnvironmentId audioEnvironmentId;
 	float              amount;
 
+	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioObjectRequestData<eAudioObjectRequestType_ProcessPhysicsRay> : public SAudioObjectRequestDataBase
+{
+	explicit SAudioObjectRequestData(CAudioRayInfo* const _pAudioRayInfo)
+		: SAudioObjectRequestDataBase(eAudioObjectRequestType_ProcessPhysicsRay)
+		, pAudioRayInfo(_pAudioRayInfo)
+	{}
+
+	virtual ~SAudioObjectRequestData() {}
+
+	CAudioRayInfo* const pAudioRayInfo;
+
+	DELETE_DEFAULT_CONSTRUCTOR(SAudioObjectRequestData);
 	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 

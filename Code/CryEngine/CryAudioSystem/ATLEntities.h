@@ -56,8 +56,10 @@ struct SATLInternalControlIDs
 	static AudioControlId        objectDopplerRtpcId;
 	static AudioControlId        objectVelocityRtpcId;
 	static AudioSwitchStateId    ignoreStateId;
-	static AudioSwitchStateId    singleRayStateId;
-	static AudioSwitchStateId    multiRayStateId;
+	static AudioSwitchStateId    adaptiveStateId;
+	static AudioSwitchStateId    lowStateId;
+	static AudioSwitchStateId    mediumStateId;
+	static AudioSwitchStateId    highStateId;
 	static AudioSwitchStateId    onStateId;
 	static AudioSwitchStateId    offStateId;
 	static AudioPreloadRequestId globalPreloadRequestId;

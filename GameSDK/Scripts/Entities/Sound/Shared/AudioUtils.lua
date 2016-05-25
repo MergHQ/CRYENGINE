@@ -1,6 +1,6 @@
 AudioUtils = {
 	sObstructionCalcSwitchName = "ObstrOcclCalcType",
-	sObstructionStateNames = {"Ignore", "SingleRay", "MultiRay"},
+	sObstructionStateNames = {"ignore", "adaptive", "low", "medium", "high"},
 }
 
 ----------------------------------------------------------------------------------------

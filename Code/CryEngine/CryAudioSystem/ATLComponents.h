@@ -102,7 +102,7 @@ class CAudioObjectManager
 {
 public:
 	typedef std::unordered_map<AudioObjectId const, CATLAudioObject* const, std::hash<AudioObjectId>, std::equal_to<AudioObjectId>, STLSoundAllocator<std::pair<AudioObjectId const, CATLAudioObject* const>>>
-		RegisteredAudioObjectsMap;
+	  RegisteredAudioObjectsMap;
 
 	explicit CAudioObjectManager(CAudioEventManager& _audioEventMgr, CAudioStandaloneFileManager& _audioStandaloneFileMgr);
 	virtual ~CAudioObjectManager();
@@ -119,7 +119,6 @@ public:
 	void             ReportFinishedEvent(CATLEvent* const pEvent, bool const bSuccess);
 	void             GetStartedStandaloneFileRequestData(CATLStandaloneFile* const _pStandaloneFile, CAudioRequestInternal& _request);
 	void             ReportFinishedStandaloneFile(CATLStandaloneFile* const _pStandaloneFile);
-	void             ReportObstructionRay(AudioObjectId const audioObjectId, size_t const rayId);
 	void             ReleasePendingRays();
 	bool             IsActive(CATLAudioObject const* const pAudioObject) const;
 

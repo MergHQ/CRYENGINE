@@ -19,14 +19,18 @@ CAudioCVars::CAudioCVars()
 	: m_audioPrimaryPoolSize(0)
 	, m_fileCacheManagerSize(0)
 	, m_audioObjectPoolSize(0)
-	, m_nAudioEventPoolSize(0)
+	, m_audioEventPoolSize(0)
 	, m_audioStandaloneFilePoolSize(0)
 	, m_audioProxiesInitType(0)
+	, m_tickWithMainThread(0)
 	, m_occlusionMaxDistance(0.0f)
 	, m_occlusionMaxSyncDistance(0.0f)
+	, m_occlusionHighDistance(0.0f)
+	, m_occlusionMediumDistance(0.0f)
 	, m_fullObstructionMaxDistance(0.0f)
 	, m_positionUpdateThreshold(0.0f)
 	, m_velocityTrackingThreshold(0.0f)
+	, m_occlusionRayLengthOffset(0.0f)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	, m_ignoreWindowFocus(0)
 	, m_drawAudioDebug(0)
@@ -52,86 +56,107 @@ void CAudioCVars::RegisterVariables()
 	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on PC
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PC
 	m_audioObjectPoolSize = 256;
-	m_nAudioEventPoolSize = 256;
+	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 0;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
+	m_occlusionHighDistance = 10.0f;
+	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
 	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
+	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_DURANGO
 	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on XboxOne
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on XboxOne
 	m_audioObjectPoolSize = 256;
-	m_nAudioEventPoolSize = 256;
+	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 0;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
+	m_occlusionHighDistance = 10.0f;
+	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
 	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
+	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_ORBIS
 	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on PS4
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PS4
 	m_audioObjectPoolSize = 256;
-	m_nAudioEventPoolSize = 256;
+	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 0;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
+	m_occlusionHighDistance = 10.0f;
+	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
 	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
+	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_MAC
 	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on Mac
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Mac
 	m_audioObjectPoolSize = 256;
-	m_nAudioEventPoolSize = 256;
+	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 0;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
+	m_occlusionHighDistance = 10.0f;
+	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
 	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
+	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_LINUX
 	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on Linux
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Linux
 	m_audioObjectPoolSize = 256;
-	m_nAudioEventPoolSize = 256;
+	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 0;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
+	m_occlusionHighDistance = 10.0f;
+	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
 	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
+	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_IOS
 	m_audioPrimaryPoolSize = 16 << 10;       // 16 MiB on iOS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on iOS
 	m_audioObjectPoolSize = 256;
-	m_nAudioEventPoolSize = 256;
+	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 0;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
+	m_occlusionHighDistance = 10.0f;
+	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
 	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
+	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_ANDROID
 	m_audioPrimaryPoolSize = 4 << 10;       // 4 MiB
 	m_fileCacheManagerSize = 72 << 10;      // 72 MiB
 	m_audioObjectPoolSize = 256;
-	m_nAudioEventPoolSize = 256;
+	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 0;
 	m_audioProxiesInitType = 0;
 	m_occlusionMaxDistance = 500.0f;
 	m_occlusionMaxSyncDistance = 10.0f;
+	m_occlusionHighDistance = 10.0f;
+	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
 	m_positionUpdateThreshold = 0.1f;
 	m_velocityTrackingThreshold = 0.1f;
+	m_occlusionRayLengthOffset = 0.1f;
 #else
 	#error "Undefined platform."
 #endif
@@ -151,6 +176,16 @@ void CAudioCVars::RegisterVariables()
 	               "Usage: s_OcclusionMaxSyncDistance [0/...]\n"
 	               "Default: 10 m\n");
 
+	REGISTER_CVAR2("s_OcclusionHighDistance", &m_occlusionHighDistance, m_occlusionHighDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "Within this distance occlusion calculation uses the most sample points for highest granularity.\n"
+	               "Usage: s_OcclusionHighDistance [0/...]\n"
+	               "Default: 10 m\n");
+
+	REGISTER_CVAR2("s_OcclusionMediumDistance", &m_occlusionMediumDistance, m_occlusionMediumDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "Between end of high and this distance occlusion calculation uses a medium amount of sample points for medium granularity.\n"
+	               "Usage: s_OcclusionMediumDistance [0/...]\n"
+	               "Default: 80 m\n");
+
 	REGISTER_CVAR2("s_FullObstructionMaxDistance", &m_fullObstructionMaxDistance, m_fullObstructionMaxDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "for the sounds, whose distance to the listener is greater than this value, the obstruction is value gets attenuated with distance.\n"
 	               "Usage: s_FullObstructionMaxDistance [0/...]\n"
@@ -167,6 +202,12 @@ void CAudioCVars::RegisterVariables()
 	               "Usage: s_VelocityTrackingThreshold [0/...]\n"
 	               "Default: 0.1 (10 cm/s)\n");
 
+	REGISTER_CVAR2("s_OcclusionRayLengthOffset", &m_occlusionRayLengthOffset, m_occlusionRayLengthOffset, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "A physics ray cast between audio listener and audio object stops at this distance before it hits the audio object.\n"
+	               "Effectively forming a bubble of this radius around the audio object where occlusion is ignored.\n"
+	               "Usage: s_OcclusionRayLengthOffset [0/...]\n"
+	               "Default: 0.1 (10 cm)\n");
+
 	REGISTER_CVAR2("s_FileCacheManagerSize", &m_fileCacheManagerSize, m_fileCacheManagerSize, VF_REQUIRE_APP_RESTART,
 	               "Sets the size in KiB the AFCM will allocate on the heap.\n"
 	               "Usage: s_FileCacheManagerSize [0/...]\n"
@@ -177,7 +218,7 @@ void CAudioCVars::RegisterVariables()
 	               "Usage: s_AudioObjectPoolSize [0/...]\n"
 	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
 
-	REGISTER_CVAR2("s_AudioEventPoolSize", &m_nAudioEventPoolSize, m_nAudioEventPoolSize, VF_REQUIRE_APP_RESTART,
+	REGISTER_CVAR2("s_AudioEventPoolSize", &m_audioEventPoolSize, m_audioEventPoolSize, VF_REQUIRE_APP_RESTART,
 	               "Sets the number of preallocated audio events.\n"
 	               "Usage: s_AudioEventPoolSize [0/...]\n"
 	               "Default PC: 256, XboxOne: 256, PS4: 256, Mac: 256, Linux: 256, iOS: 256, Android: 256\n");
@@ -198,6 +239,11 @@ void CAudioCVars::RegisterVariables()
 	               "1: All AudioProxies initialize synchronously.\n"
 	               "2: All AudioProxies initialize asynchronously.\n"
 	               "Usage: s_AudioProxiesInitType [0/1/2]\n"
+	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
+
+	REGISTER_CVAR2("s_TickWithMainThread", &m_tickWithMainThread, m_tickWithMainThread, VF_REQUIRE_APP_RESTART,
+	               "Sets whether work on the audio thread is done in sync with the main thread or on its own pace.\n"
+	               "Usage: s_TickWithMainThread [0/1]\n"
 	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
 
 	REGISTER_COMMAND("s_ExecuteTrigger", CmdExecuteTrigger, VF_CHEAT,
@@ -283,14 +329,16 @@ void CAudioCVars::RegisterVariables()
 
 	REGISTER_CVAR2("s_AudioObjectsRayType", &m_audioObjectsRayType, m_audioObjectsRayType, VF_DEV_ONLY,
 	               "Can override AudioObjects' obstruction/occlusion ray type on a global scale.\n"
-	               "If set it determines whether AudioObjects use no, single or multi rays.\n"
+	               "If set it determines whether AudioObjects use no, adaptive, low, medium or high granularity for rays.\n"
 	               "This is a performance type cvar and can be used to turn audio ray casting globally off\n"
 	               "or force it on every AudioObject to a given mode.\n"
 	               "0: AudioObject specific ray casting.\n"
 	               "1: All AudioObjects ignore ray casting.\n"
-	               "2: All AudioObjects use single ray casting.\n"
-	               "3: All AudioObjects use multi ray casting.\n"
-	               "Usage: s_AudioObjectsRayType [0/1/2/3]\n"
+	               "2: All AudioObjects use adaptive ray casting.\n"
+	               "3: All AudioObjects use low ray casting.\n"
+	               "4: All AudioObjects use medium ray casting.\n"
+	               "5: All AudioObjects use high ray casting.\n"
+	               "Usage: s_AudioObjectsRayType [0/1/2/3/4/5]\n"
 	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
 
 	m_pAudioTriggersDebugFilter = REGISTER_STRING("s_AudioTriggersDebugFilter", "", 0,
@@ -316,6 +364,8 @@ void CAudioCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_AudioPrimaryPoolSize");
 		pConsole->UnregisterVariable("s_OcclusionMaxDistance");
 		pConsole->UnregisterVariable("s_OcclusionMaxSyncDistance");
+		pConsole->UnregisterVariable("s_OcclusionHighDistance");
+		pConsole->UnregisterVariable("s_OcclusionMediumDistance");
 		pConsole->UnregisterVariable("s_FullObstructionMaxDistance");
 		pConsole->UnregisterVariable("s_PositionUpdateThreshold");
 		pConsole->UnregisterVariable("s_VelocityTrackingThreshold");
@@ -324,6 +374,7 @@ void CAudioCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_AudioEventPoolSize");
 		pConsole->UnregisterVariable("s_AudioStandaloneFilePoolSize");
 		pConsole->UnregisterVariable("s_AudioProxiesInitType");
+		pConsole->UnregisterVariable("s_TickWithMainThread");
 		pConsole->UnregisterVariable("s_ExecuteTrigger");
 		pConsole->UnregisterVariable("s_StopTrigger");
 		pConsole->UnregisterVariable("s_SetRtpc");

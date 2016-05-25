@@ -17,15 +17,19 @@ public:
 	int   m_audioPrimaryPoolSize;
 	int   m_fileCacheManagerSize;
 	int   m_audioObjectPoolSize;
-	int   m_nAudioEventPoolSize;
+	int   m_audioEventPoolSize;
 	int   m_audioStandaloneFilePoolSize;
 	int   m_audioProxiesInitType;
+	int   m_tickWithMainThread;
 
 	float m_occlusionMaxDistance;
 	float m_occlusionMaxSyncDistance;
+	float m_occlusionHighDistance;
+	float m_occlusionMediumDistance;
 	float m_fullObstructionMaxDistance;
 	float m_positionUpdateThreshold;
 	float m_velocityTrackingThreshold;
+	float m_occlusionRayLengthOffset;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	int    m_ignoreWindowFocus;

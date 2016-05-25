@@ -200,7 +200,7 @@ void CAudioStandaloneFileManager::ReleaseStandaloneFile(CATLStandaloneFile* cons
 
 //////////////////////////////////////////////////////////////////////////
 CAudioEventManager::CAudioEventManager()
-	: m_audioEventPool(g_audioCVars.m_nAudioEventPoolSize, 1)
+	: m_audioEventPool(g_audioCVars.m_audioEventPoolSize, 1)
 	, m_pImpl(nullptr)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	, m_pDebugNameStore(nullptr)
@@ -508,14 +508,6 @@ void CAudioObjectManager::Init(IAudioImpl* const pImpl)
 
 	size_t const numPooledAudioObjects = m_audioObjectPool.m_reserved.size();
 	size_t const numRegisteredAudioObjects = m_registeredAudioObjects.size();
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if ((numPooledAudioObjects + numRegisteredAudioObjects) > std::numeric_limits<size_t>::max())
-	{
-		CryFatalError("Exceeding numeric limits during CAudioObjectManager::Init");
-	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
 	size_t const numTotalObjects = numPooledAudioObjects + numRegisteredAudioObjects;
 	CRY_ASSERT(!(numTotalObjects > 0 && numTotalObjects < m_audioObjectPool.m_reserveSize));
 
@@ -602,21 +594,28 @@ void CAudioObjectManager::Update(float const deltaTime, SAudioObject3DAttributes
 		SAudioObject3DAttributes const& attributes = pAudioObject->Get3DAttributes();
 		float const distance = (attributes.transformation.GetPosition() - listenerAttributes.transformation.GetPosition()).GetLength();
 		float const radius = pAudioObject->GetMaxRadius();
+
 		if (radius <= 0.0f || distance < radius)
 		{
-			pAudioObject->RemoveFlag(eAudioObjectFlags_Virtual);
+			if ((pAudioObject->GetFlags() & eAudioObjectFlags_Virtual) > 0)
+			{
+				pAudioObject->RemoveFlag(eAudioObjectFlags_Virtual);
+			}
 		}
 		else
 		{
-			pAudioObject->SetFlag(eAudioObjectFlags_Virtual);
+			if ((pAudioObject->GetFlags() & eAudioObjectFlags_Virtual) == 0)
+			{
+				pAudioObject->SetFlag(eAudioObjectFlags_Virtual);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			pAudioObject->ResetObstructionRays();
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+				pAudioObject->ResetObstructionRays();
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+			}
 		}
 
 		if (IsActive(pAudioObject))
 		{
-			pAudioObject->Update(deltaTime, listenerAttributes);
+			pAudioObject->Update(deltaTime, distance, listenerAttributes.transformation.GetPosition());
 
 			if (pAudioObject->CanRunObstructionOcclusion())
 			{
@@ -880,27 +879,6 @@ void CAudioObjectManager::ReportFinishedStandaloneFile(CATLStandaloneFile* const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObjectManager::ReportObstructionRay(AudioObjectId const audioObjectId, size_t const rayId)
-{
-	CATLAudioObject* const pAudioObject = LookupId(audioObjectId);
-
-	if (pAudioObject != nullptr)
-	{
-		pAudioObject->ReportPhysicsRayProcessed(rayId);
-	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	else
-	{
-		g_audioLogger.Log(
-		  eAudioLogType_Warning,
-		  "Reporting Ray %" PRISIZE_T " from Object %s: Object no longer exists!",
-		  rayId,
-		  m_pDebugNameStore->LookupAudioObjectName(audioObjectId));
-	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
 CATLAudioObject* CAudioObjectManager::GetInstance()
 {
 	CATLAudioObject* pAudioObject = nullptr;
@@ -935,7 +913,7 @@ bool CAudioObjectManager::ReleaseInstance(CATLAudioObject* const pOldObject)
 {
 	CRY_ASSERT(pOldObject);
 	bool bSuccess = false;
-	
+
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	m_pDebugNameStore->RemoveAudioObject(static_cast<AudioObjectId const>(pOldObject->GetId()));
 	pOldObject->CheckBeforeRemoval(m_pDebugNameStore);

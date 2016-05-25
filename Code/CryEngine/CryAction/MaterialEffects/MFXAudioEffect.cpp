@@ -164,7 +164,7 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 			MaterialEffectsUtils::PrepareForAudioTriggerExecution<IAudioProxy>(pIAudioProxy, m_audioParams, params);
 
 			pIAudioProxy->SetPosition(params.pos);
-			pIAudioProxy->SetOcclusionType(eAudioOcclusionType_SingleRay);
+			pIAudioProxy->SetOcclusionType(eAudioOcclusionType_Low);
 			pIAudioProxy->SetCurrentEnvironments();
 			pIAudioProxy->ExecuteTrigger(m_audioParams.trigger.GetTriggerId());
 		}

@@ -28,6 +28,7 @@ public:
 	uint             GetErrorCodeMask() const { return m_errorCodeMask; }
 
 private:
+	typedef std::vector<const char*> SwitchStates;
 	void           LoadAllLibrariesInFolder(const string& folderPath, const string& level);
 	void           LoadControlsLibrary(XmlNodeRef pRoot, const string& filepath, const string& level, const string& filename, uint version);
 	CATLControl*   LoadControl(XmlNodeRef pNode, QStandardItem* pFolder, Scope scope, uint version);
@@ -36,7 +37,7 @@ private:
 	void           LoadConnections(XmlNodeRef root, CATLControl* pControl);
 
 	void           CreateDefaultControls();
-	void           CreateDefaultSwitch(QStandardItem* pFolder, const char* szExternalName, const char* szInternalName, const std::vector<const char*>& states);
+	void           CreateDefaultSwitch(QStandardItem* pFolder, const char* szExternalName, const char* szInternalName, const SwitchStates& states);
 
 	QStandardItem* AddControl(CATLControl* pControl, QStandardItem* pFolder);
 

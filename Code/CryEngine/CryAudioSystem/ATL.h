@@ -132,7 +132,7 @@ private:
 	CATLXMLProcessor            m_xmlProcessor;
 
 	// Utility members
-	uint32                      m_lastMainThreadFramId;
+	uint32                      m_lastMainThreadFrameId;
 	volatile AudioEnumFlagsType m_flags;
 	CryAudio::Impl::IAudioImpl* m_pImpl;
 

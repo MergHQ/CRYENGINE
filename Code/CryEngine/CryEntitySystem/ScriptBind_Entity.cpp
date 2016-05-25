@@ -3554,7 +3554,9 @@ int CScriptBind_Entity::SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEnt
 		pTable->GetValue("intergration_type", vehicle_params.iIntegrationType);
 		pTable->GetValue("max_time_step_vehicle", vehicle_params.maxTimeStep);
 		if (pTable->GetValue("sleep_speed_vehicle", fSpeed))
+		{
 			vehicle_params.minEnergy = fSpeed * fSpeed;
+		}
 		pTable->GetValue("damping_vehicle", vehicle_params.damping);
 		pTable->GetValue("max_braking_friction", vehicle_params.maxBrakingFriction);
 		pTable->GetValue("engine_minRPM", vehicle_params.engineMinRPM);
@@ -4373,31 +4375,28 @@ int CScriptBind_Entity::SetAudioObstructionCalcType(IFunctionHandler* pH, int co
 
 	if (pIEntityAudioProxy)
 	{
-		EAudioOcclusionType eObstructionCalcType = eAudioOcclusionType_None;
+		EAudioOcclusionType audioOcclusionType = eAudioOcclusionType_None;
 
 		switch (nObstructionCalcType)
 		{
 		case 1:
-			{
-				eObstructionCalcType = eAudioOcclusionType_Ignore;
-
-				break;
-			}
+			audioOcclusionType = eAudioOcclusionType_Ignore;
+			break;
 		case 2:
-			{
-				eObstructionCalcType = eAudioOcclusionType_SingleRay;
-
-				break;
-			}
+			audioOcclusionType = eAudioOcclusionType_Adaptive;
+			break;
 		case 3:
-			{
-				eObstructionCalcType = eAudioOcclusionType_MultiRay;
-
-				break;
-			}
+			audioOcclusionType = eAudioOcclusionType_Low;
+			break;
+		case 4:
+			audioOcclusionType = eAudioOcclusionType_Medium;
+			break;
+		case 5:
+			audioOcclusionType = eAudioOcclusionType_High;
+			break;
 		}
 
-		pIEntityAudioProxy->SetObstructionCalcType(eObstructionCalcType, HandleToInt<AudioProxyId>(hAudioProxyLocalID));
+		pIEntityAudioProxy->SetObstructionCalcType(audioOcclusionType, HandleToInt<AudioProxyId>(hAudioProxyLocalID));
 	}
 
 	return pH->EndFunction();

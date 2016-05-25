@@ -16,7 +16,7 @@ AudioAreaAmbience = {
 		audioTriggerStopTrigger = "",
 		audioRTPCRtpc = "",
 		audioEnvironmentEnvironment = "",
-		eiSoundObstructionType = 1, -- Clamped between 1 and 3. 1=Ignore, 2=SingleRay, 3=MultiRay
+		eiSoundObstructionType = 1, -- Clamped between 1 and 5. 1=ignore, 2=adaptive, 3=low, 4=medium, 5=high
 		fRtpcDistance = 5.0,
 		fEnvironmentDistance = 5.0,
 		audioRTPCGlobalRtpc = "",
@@ -134,8 +134,8 @@ end
 function AudioAreaAmbience:OnPropertyChange()
 	if (self.Properties.eiSoundObstructionType < 1) then
 		self.Properties.eiSoundObstructionType = 1;
-	elseif (self.Properties.eiSoundObstructionType > 3) then
-		self.Properties.eiSoundObstructionType = 3;
+	elseif (self.Properties.eiSoundObstructionType > 5) then
+		self.Properties.eiSoundObstructionType = 5;
 	end
 	
 	self:_LookupControlIDs();

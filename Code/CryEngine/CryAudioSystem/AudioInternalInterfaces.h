@@ -572,25 +572,6 @@ struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType
 };
 
 //////////////////////////////////////////////////////////////////////////
-template<>
-struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportProcessedObstructionRay> : public SAudioCallbackManagerRequestDataInternalBase
-{
-	explicit SAudioCallbackManagerRequestDataInternal(SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportProcessedObstructionRay> const* const pACMRData)
-		: SAudioCallbackManagerRequestDataInternalBase(eAudioCallbackManagerRequestType_ReportProcessedObstructionRay)
-		, rayId(pACMRData->rayId)
-		, audioObjectId(pACMRData->audioObjectId)
-	{}
-
-	virtual ~SAudioCallbackManagerRequestDataInternal() {}
-
-	AudioObjectId const audioObjectId;
-	size_t const        rayId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestDataInternal);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestDataInternal);
-};
-
-//////////////////////////////////////////////////////////////////////////
 struct SAudioObjectRequestDataInternalBase : public SAudioRequestDataInternal
 {
 	explicit SAudioObjectRequestDataInternalBase(EAudioObjectRequestType const _type)
@@ -817,6 +798,23 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetEnvironmentAmo
 
 	AudioEnvironmentId const audioEnvironmentId;
 	float const              amount;
+
+	DELETE_DEFAULT_CONSTRUCTOR(SAudioObjectRequestDataInternal);
+	PREVENT_OBJECT_COPY(SAudioObjectRequestDataInternal);
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_ProcessPhysicsRay> : public SAudioObjectRequestDataInternalBase
+{
+	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_ProcessPhysicsRay> const* const pACMRData)
+		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_ProcessPhysicsRay)
+		, pAudioRayInfo(pACMRData->pAudioRayInfo)
+	{}
+
+	virtual ~SAudioObjectRequestDataInternal() {}
+
+	CAudioRayInfo* const pAudioRayInfo;
 
 	DELETE_DEFAULT_CONSTRUCTOR(SAudioObjectRequestDataInternal);
 	PREVENT_OBJECT_COPY(SAudioObjectRequestDataInternal);

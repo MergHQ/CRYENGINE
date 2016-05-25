@@ -366,13 +366,13 @@ void CAudioControlsLoader::CreateDefaultControls()
 		}
 
 		{
-			const char* arr[] = { "Ignore", "SingleRay", "MultiRay" };
-			std::vector<const char*> states(arr, arr + sizeof(arr) / sizeof(arr[0]));
+			const char* arr[] = { "ignore", "adaptive", "low", "medium", "high" };
+			SwitchStates states(arr, arr + sizeof(arr) / sizeof(arr[0]));
 			CreateDefaultSwitch(pFolder, "ObstrOcclCalcType", "ObstructionOcclusionCalculationType", states);
 		}
 		{
 			const char* arr[] = { "on", "off" };
-			std::vector<const char*> states(arr, arr + sizeof(arr) / sizeof(arr[0]));
+			SwitchStates states(arr, arr + sizeof(arr) / sizeof(arr[0]));
 			CreateDefaultSwitch(pFolder, "object_velocity_tracking", "object_velocity_tracking", states);
 			CreateDefaultSwitch(pFolder, "object_doppler_tracking", "object_doppler_tracking", states);
 		}
@@ -384,7 +384,7 @@ void CAudioControlsLoader::CreateDefaultControls()
 	}
 }
 
-void CAudioControlsLoader::CreateDefaultSwitch(QStandardItem* pFolder, const char* szExternalName, const char* szInternalName, const std::vector<const char*>& states)
+void CAudioControlsLoader::CreateDefaultSwitch(QStandardItem* pFolder, const char* szExternalName, const char* szInternalName, const SwitchStates& states)
 {
 	CATLControl* pControl = m_pModel->FindControl(szExternalName, eACEControlType_Switch, m_pModel->GetGlobalScope());
 	QStandardItem* pSwitch = nullptr;
@@ -394,6 +394,32 @@ void CAudioControlsLoader::CreateDefaultSwitch(QStandardItem* pFolder, const cha
 		if (!indexes.empty())
 		{
 			pSwitch = m_pLayout->itemFromIndex(indexes.at(0));
+			int rowIndex = 0;
+			int rowCount = pSwitch->rowCount();
+			while (rowIndex < rowCount)
+			{
+				bool bRemove = true;
+				const QStandardItem* const pChild = pSwitch->child(rowIndex);
+				for (const auto& szStateName : states)
+				{
+					if (pChild && pChild->data(Qt::DisplayRole) == szStateName)
+					{
+						bRemove = false;
+						break;
+					}
+				}
+
+				if (bRemove)
+				{
+					pControl->RemoveChild(m_pModel->GetControlByID(pChild->data(eDataRole_Id).toUInt()));
+					pSwitch->removeRow(rowIndex);
+					rowCount = pSwitch->rowCount();
+				}
+				else
+				{
+					++rowIndex;
+				}
+			}
 		}
 	}
 	else
@@ -403,7 +429,7 @@ void CAudioControlsLoader::CreateDefaultSwitch(QStandardItem* pFolder, const cha
 	}
 	if (pSwitch)
 	{
-		for (auto szStateName : states)
+		for (const auto& szStateName : states)
 		{
 			CATLControl* pChild = m_pModel->FindControl(szStateName, eACEControlType_State, m_pModel->GetGlobalScope(), pControl);
 			if (pChild == nullptr)
