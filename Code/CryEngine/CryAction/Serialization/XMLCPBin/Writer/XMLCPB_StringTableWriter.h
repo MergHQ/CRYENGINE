@@ -98,6 +98,13 @@ private:
 		return (const char*)m_buffer.GetPointerFromAddr(*addr);
 	}
 
+	bool HasStringID(const char* pString) const
+	{
+		//Prefer HasStringID() for use in asserts to avoid cppcheck believeing GetStringID() is causing unwanted side effects
+		CStringTableWriter* self = const_cast<CStringTableWriter*> (this);
+		return self->GetStringID(pString, false) != XMLCPB_INVALID_ID;
+	}
+
 	StringID AddString(const char* pString, size_t hash);
 
 	typedef std::vector<FlatAddr> FlatAddrVec;

@@ -121,9 +121,6 @@ private:
 	std::vector<SGameServer> m_servers;
 	char*                    m_astrServers[120];
 	int                      m_iServers;
-
-	//flag for server sorting
-	bool m_bSortingNeeded;
 };
 
 #endif

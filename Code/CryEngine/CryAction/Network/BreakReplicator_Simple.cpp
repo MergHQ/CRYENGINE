@@ -389,18 +389,17 @@ IPhysicalEntity* CObjectIdentifier::FindPhysicalEntity()
 	#define BS_MAX_NUM_TO_PLAYBACK  10
 
 BreakStream::BreakStream()
+	: m_pent(nullptr)
+	, m_breakIdx(0xffff)
+	, m_subBreakIdx(~0)
+	, m_mode(k_invalid)
+	, m_type(0)
+	, m_numFramesLeft(0)
+	, m_invalidFindCount(0)
+	, m_waitForDependent(0)
+	, m_logHostMigrationInfo(1)
 {
-	#if defined(_DEBUG)
-	// No need to set this, its done by the serialiser or the break_replicator
-	m_breakIdx = 0xffff;
-	#endif
-	m_subBreakIdx = ~0;
-	m_waitForDependent = 0;
-	m_pent = NULL;
-	m_numFramesLeft = 0;
-	m_mode = k_invalid;
-	m_invalidFindCount = 0;
-	m_logHostMigrationInfo = 1;
+	m_identifier.Reset();
 }
 
 BreakStream::~BreakStream()
@@ -1121,7 +1120,13 @@ CBreakReplicator* CBreakReplicator::m_pThis = NULL;
 int CBreakReplicator::m_accurateWorldPosNumBits = 0;
 int CBreakReplicator::m_inaccurateWorldPosNumBits = 0;
 
+// Suppress warning for unintialized array CBreakReplicator::m_pendingStreams
+// cppcheck-suppress uninitMemberVar
 CBreakReplicator::CBreakReplicator(CGameContext* pGameCtx)
+	: m_bDefineProtocolMode_server (false)
+	, m_activeStartIdx(0)
+	, m_numPendingStreams(0)
+	, m_timeSinceLevelLoaded(-1.0f)
 {
 	(void)pGameCtx;
 
@@ -1134,9 +1139,7 @@ CBreakReplicator::CBreakReplicator(CGameContext* pGameCtx)
 
 	DEBUG_ASSERT(m_pThis == NULL);
 	m_pThis = this;
-	m_streams.reserve(100);
-	m_activeStartIdx = 0;
-	m_numPendingStreams = 0;
+	m_streams.reserve(100);	
 
 	// Initialise a dummy stream. This is used as a place holder for
 	// stream indexes that have not yet been serialised over on a client
@@ -1159,7 +1162,6 @@ CBreakReplicator::CBreakReplicator(CGameContext* pGameCtx)
 	}
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
-	m_timeSinceLevelLoaded = -1.f;
 
 	float max = CNetworkCVars::Get().BreakMaxWorldSize;
 	m_inaccurateWorldPosNumBits = IntegerLog2_RoundUp(uint32(max / WORLD_POS_SAMPLE_DISTANCE_APPART_INACCURATE));

@@ -11,8 +11,7 @@
 //#pragma inline_depth(0)
 
 CVehiclePartWaterRipplesGenerator::CVehiclePartWaterRipplesGenerator()
-	: m_pVehicle(NULL)
-	, m_localOffset(ZERO)
+	: m_localOffset(ZERO)
 	, m_waterRipplesScale(1.0f)
 	, m_waterRipplesStrength(1.0f)
 	, m_minMovementSpeed(1.0f)
@@ -29,8 +28,6 @@ bool CVehiclePartWaterRipplesGenerator::Init(IVehicle* pVehicle, const CVehicleP
 {
 	if (!CVehiclePartBase::Init(pVehicle, table, parent, initInfo, eVPT_Massbox))
 		return false;
-
-	m_pVehicle = pVehicle;
 
 	const CVehicleParams waterRipplesTable = table.findChild("WaterRipplesGen");
 	if (waterRipplesTable)

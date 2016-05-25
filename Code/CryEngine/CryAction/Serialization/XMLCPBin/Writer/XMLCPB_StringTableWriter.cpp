@@ -15,12 +15,13 @@ const StringID CStringTableWriter::SEARCHING_ID = 0Xfffffffe;
 //////////////////////////////////////////////////////////////////////////
 
 CStringTableWriter::CStringTableWriter(int maxNumStrings, int bufferSize)
-	: m_maxNumStrings(maxNumStrings)
-	, m_buffer(bufferSize)
-	, m_pWriter(NULL)
-	, m_pCheckString(NULL)
+	: m_buffer(bufferSize)
 	, m_sortedIndexes(256, StringHasher(GetThis()), StringHasher(GetThis()))
+	, m_pWriter(nullptr)
+	, m_maxNumStrings(maxNumStrings)
+	, m_pCheckString(nullptr)
 {
+	m_checkAddr.hash = 0;
 }
 
 CStringTableWriter::~CStringTableWriter()
@@ -84,7 +85,7 @@ StringID CStringTableWriter::GetStringID(const char* pString, bool addIfCantFind
 StringID CStringTableWriter::AddString(const char* pString, size_t hash)
 {
 	assert(m_stringAddrs.size() < m_maxNumStrings);
-	assert(GetStringID(pString, false) == XMLCPB_INVALID_ID);
+	assert(!HasStringID(pString));
 
 	int size = strlen(pString) + 1;
 
