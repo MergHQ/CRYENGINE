@@ -223,6 +223,9 @@ protected:
 	  INIT_SVO_CVAR(int, e_svoTI_DualTracing);                      \
 	  INIT_SVO_CVAR(int, e_svoTI_AnalyticalOccluders);              \
 		INIT_SVO_CVAR(int, e_svoTI_RsmUseColors);											\
+		INIT_SVO_CVAR(float, e_svoTI_AnalyticalOccludersRange);				\
+		INIT_SVO_CVAR(float, e_svoTI_AnalyticalOccludersSoftness);		\
+
 	  // INIT_ALL_SVO_CVARS
 
 	#define INIT_SVO_CVAR(_type, _var) _type _var;

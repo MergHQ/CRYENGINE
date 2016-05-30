@@ -56,7 +56,7 @@ void CREMeshImpl::mfPrepare(bool bCheckOverflow)
 		rd->m_RP.m_RendNumIndices = m_nNumIndices;
 		rd->m_RP.m_RendNumVerts = m_nNumVerts;
 
-		if (rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_PersFlags & (RBPF_SHADOWGEN) && (gRenDev->m_RP.m_PersFlags2 & RBPF2_DISABLECOLORWRITES))
+		if (rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_PersFlags & (RBPF_SHADOWGEN) && (gRenDev->m_RP.m_PersFlags2 & RBPF2_DISABLECOLORWRITES) && !(gRenDev->m_RP.m_pCurObject->m_ObjFlags & FOB_SKINNED))
 		{
 			IMaterial* pMaterial = (gRenDev->m_RP.m_pCurObject) ? (gRenDev->m_RP.m_pCurObject->m_pCurrMaterial) : NULL;
 			m_pRenderMesh->AddShadowPassMergedChunkIndicesAndVertices(m_pChunk, pMaterial, rd->m_RP.m_RendNumVerts, rd->m_RP.m_RendNumIndices);

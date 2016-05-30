@@ -1562,6 +1562,15 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 			break;
 		}
 
+	case ECGP_PB_SvoParams7:
+		{
+			sData[0].f[0] = pSR->e_svoTI_AnalyticalOccludersRange;
+			sData[0].f[1] = pSR->e_svoTI_AnalyticalOccludersSoftness;
+			sData[0].f[2] = 0;
+			sData[0].f[3] = 0;
+			break;
+		}
+
 	default:
 		bRes = false;
 	}
