@@ -528,14 +528,14 @@ QPropertyGroupBox {
 
 QPropertyGroupHeader {
 	background-color:rgb(100,100,100);
-	margin: 0px -100px 0px -20px;
+	margin: 0px -3px 0px -20px;
 	margin-top:1px;
 	margin-bottom:1px;
 }
 
 QPropertySplitter {
 	background-color:rgb(73,73,73);
-	margin: -1px 3px -1px 30000px;
+	margin: -1px -3px -1px 7px;
 }
 
 QPushButton::hover {
