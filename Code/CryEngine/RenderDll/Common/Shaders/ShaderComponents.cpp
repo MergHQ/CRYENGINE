@@ -792,6 +792,7 @@ static STextureDB sTextures[] =
 	STextureDB(PARAM(TS_RainOcclusion,                ECGT_RainOcclusion),                0),
 	STextureDB(PARAM(TS_TerrainNormMap,               ECGT_TerrainNormMap),               0),
 	STextureDB(PARAM(TS_TerrainBaseMap,               ECGT_TerrainBaseMap),               0),
+	STextureDB(PARAM(TS_TerrainElevMap,								ECGT_TerrainElevMap),								0),
 	STextureDB(PARAM(TS_WindGrid,                     ECGT_WindGrid),                     0),
 
 	STextureDB()

@@ -360,8 +360,8 @@ void CVars::Init()
 	                   "Maximum cascade number to render tessellated shadows (0 = no tessellation for sun shadows)");
 	DefineConstIntCVar(e_ShadowsTessellateDLights, 0, VF_NULL,
 	                   "Disable/enable tessellation for local lights shadows");
-	REGISTER_CVAR(e_GsmCastFromTerrain, e_GsmCastFromTerrainDefault, VF_NULL,
-	              "Cast shadows from terrain");
+	REGISTER_CVAR(e_GsmCastFromTerrain, 1, VF_NULL,
+	              "Allows sun shadows from terrain to be activated in editor level settings");
 	DefineConstIntCVar(e_ShadowsFrustums, 0, VF_CHEAT,
 	                   "Debug");
 	DefineConstIntCVar(e_ShadowsDebug, 0, VF_CHEAT,
@@ -448,7 +448,13 @@ void CVars::Init()
 	DefineConstFloatCVar(e_TerrainOcclusionCullingStepSizeDelta, VF_CHEAT,
 	                     "Step size scale on every next step (for version 1)");
 	REGISTER_CVAR(e_TerrainOcclusionCullingMaxDist, 200.f, VF_NULL,
-	              "Max length of ray (for version 1)");
+		"Max length of ray (for version 1)");
+	REGISTER_CVAR(e_TerrainMeshInstancingMinLod, 3, VF_NULL,
+		"Mesh instancing is used for distant terrain sectors and for shadow map generation");
+	REGISTER_CVAR(e_TerrainMeshInstancingShadowLodRatio, 0.3f, VF_NULL,
+		"Smaller values produce less draw calls and less polygons for terrain shadow map generation");
+	REGISTER_CVAR(e_TerrainMeshInstancingShadowBias, 0.5f, VF_NULL,
+		"During shadow map generation render distant terrain sectors little lower for less problems with terrain self-shadowing");
 	REGISTER_CVAR(e_StreamPredictionUpdateTimeSlice, 0.4f, VF_NULL,
 	              "Maximum amount of time to spend for scene streaming priority update in milliseconds");
 	REGISTER_CVAR(e_StreamAutoMipFactorSpeedThreshold, 0.f, VF_NULL,
