@@ -247,11 +247,11 @@ bool Serialization::CXmlIArchive::operator()(IContainer& ser, const char* name, 
 	CRY_ASSERT(name);
 	CRY_ASSERT(name[0]);
 
-	bool serializeSuccess = true;
-
 	XmlNodeRef pChild = XmlUtil::FindChildNode(m_pRootNode, m_childIndexOverride, m_childIndexHint, name);
 	if (pChild)
 	{
+		bool serializeSuccess = true;
+
 		const int elementCount = pChild->getChildCount();
 		ser.resize(elementCount);
 
@@ -269,9 +269,10 @@ bool Serialization::CXmlIArchive::operator()(IContainer& ser, const char* name, 
 				ser.next();
 			}
 		}
-	}
 
-	return serializeSuccess;
+		return serializeSuccess;
+	}
+	return false;
 }
 
 void Serialization::CXmlIArchive::validatorMessage(bool error, const void* handle, const TypeID& type, const char* message)
