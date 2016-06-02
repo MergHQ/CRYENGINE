@@ -1,17 +1,17 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+#include "AudioObject.h"
+#include "AudioEvent.h"
 #include <AudioLogger.h>
-#include "AudioObjectData_fmod.h"
-#include "AudioEventData_fmod.h"
 
-using namespace CryAudio::Impl;
+using namespace CryAudio::Impl::Fmod;
 
 extern FmodSwitchToIndexMap g_switchToIndex;
 extern AudioParameterToIndexMap g_parameterToIndex;
 
 //////////////////////////////////////////////////////////////////////////
-CAudioObject_fmod::CAudioObject_fmod(AudioObjectId const _id)
+CAudioObject::CAudioObject(AudioObjectId const _id)
 	: m_id(_id)
 {
 	ZeroStruct(m_attributes);
@@ -21,13 +21,13 @@ CAudioObject_fmod::CAudioObject_fmod(AudioObjectId const _id)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::RemoveAudioEvent(CAudioEvent_fmod* const pAudioEvent)
+void CAudioObject::RemoveAudioEvent(CAudioEvent* const pAudioEvent)
 {
 	stl::find_and_erase(m_audioEvents, pAudioEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioObject_fmod::SetAudioEvent(CAudioEvent_fmod* const pAudioEvent)
+bool CAudioObject::SetAudioEvent(CAudioEvent* const pAudioEvent)
 {
 	bool bSuccess = false;
 
@@ -65,7 +65,7 @@ bool CAudioObject_fmod::SetAudioEvent(CAudioEvent_fmod* const pAudioEvent)
 			}
 			else
 			{
-				g_audioImplLogger_fmod.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod parameter during \"AddAudioEvent\": %s", parameterPair.first->GetName().c_str());
+				g_audioImplLogger.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod parameter during \"AddAudioEvent\": %s", parameterPair.first->GetName().c_str());
 			}
 		}
 
@@ -96,7 +96,7 @@ bool CAudioObject_fmod::SetAudioEvent(CAudioEvent_fmod* const pAudioEvent)
 			}
 			else
 			{
-				g_audioImplLogger_fmod.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod switch during \"AddAudioEvent\": %s", switchPair.second->name.c_str());
+				g_audioImplLogger.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod switch during \"AddAudioEvent\": %s", switchPair.second->name.c_str());
 			}
 		}
 
@@ -115,13 +115,13 @@ bool CAudioObject_fmod::SetAudioEvent(CAudioEvent_fmod* const pAudioEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::RemoveParameter(CAudioParameter_fmod const* const pParameter)
+void CAudioObject::RemoveParameter(CAudioParameter const* const pParameter)
 {
 	m_audioParameters.erase(pParameter);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::SetParameter(CAudioParameter_fmod const* const pAudioParameter, float const value)
+void CAudioObject::SetParameter(CAudioParameter const* const pAudioParameter, float const value)
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
@@ -145,7 +145,7 @@ void CAudioObject_fmod::SetParameter(CAudioParameter_fmod const* const pAudioPar
 					}
 					else
 					{
-						g_audioImplLogger_fmod.Log(eAudioLogType_Warning, "Unknown Fmod parameter index (%d) for (%s)", iter->second, pAudioParameter->GetName().c_str());
+						g_audioImplLogger.Log(eAudioLogType_Warning, "Unknown Fmod parameter index (%d) for (%s)", iter->second, pAudioParameter->GetName().c_str());
 					}
 				}
 				else
@@ -176,7 +176,7 @@ void CAudioObject_fmod::SetParameter(CAudioParameter_fmod const* const pAudioPar
 			}
 			else
 			{
-				g_audioImplLogger_fmod.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod parameter: %s", pAudioParameter->GetName().c_str());
+				g_audioImplLogger.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod parameter: %s", pAudioParameter->GetName().c_str());
 			}
 		}
 	}
@@ -194,13 +194,13 @@ void CAudioObject_fmod::SetParameter(CAudioParameter_fmod const* const pAudioPar
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::RemoveSwitch(CAudioSwitchState_fmod const* const pSwitch)
+void CAudioObject::RemoveSwitch(CAudioSwitchState const* const pSwitch)
 {
 	m_audioSwitches.erase(pSwitch->eventPathId);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::SetSwitch(CAudioSwitchState_fmod const* const pSwitch)
+void CAudioObject::SetSwitch(CAudioSwitchState const* const pSwitch)
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
@@ -251,7 +251,7 @@ void CAudioObject_fmod::SetSwitch(CAudioSwitchState_fmod const* const pSwitch)
 			}
 			else
 			{
-				g_audioImplLogger_fmod.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod switch: %s", pSwitch->name.c_str());
+				g_audioImplLogger.Log(eAudioLogType_Warning, "Trying to set an unknown Fmod switch: %s", pSwitch->name.c_str());
 			}
 		}
 	}
@@ -269,13 +269,13 @@ void CAudioObject_fmod::SetSwitch(CAudioSwitchState_fmod const* const pSwitch)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::RemoveEnvironment(CAudioEnvironment_fmod const* const pEnvironment)
+void CAudioObject::RemoveEnvironment(CAudioEnvironment const* const pEnvironment)
 {
 	m_audioEnvironments.erase(pEnvironment);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::SetEnvironment(CAudioEnvironment_fmod const* const pEnvironment, float const value)
+void CAudioObject::SetEnvironment(CAudioEnvironment const* const pEnvironment, float const value)
 {
 	bool bSet = true;
 	AudioEnvironments::iterator const iter(m_audioEnvironments.find(pEnvironment));
@@ -302,7 +302,7 @@ void CAudioObject_fmod::SetEnvironment(CAudioEnvironment_fmod const* const pEnvi
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::Set3DAttributes(SAudioObject3DAttributes const& attributes)
+void CAudioObject::Set3DAttributes(SAudioObject3DAttributes const& attributes)
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 	FillFmodObjectPosition(attributes, m_attributes);
@@ -315,7 +315,7 @@ void CAudioObject_fmod::Set3DAttributes(SAudioObject3DAttributes const& attribut
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::StopAllEvents()
+void CAudioObject::StopAllEvents()
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
@@ -327,7 +327,7 @@ void CAudioObject_fmod::StopAllEvents()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::StopEvent(uint32 const eventPathId)
+void CAudioObject::StopEvent(uint32 const eventPathId)
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
@@ -342,7 +342,7 @@ void CAudioObject_fmod::StopEvent(uint32 const eventPathId)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CAudioObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
 {
 	for (auto const pAudioEvent : m_audioEvents)
 	{
@@ -351,7 +351,7 @@ void CAudioObject_fmod::SetObstructionOcclusion(float const obstruction, float c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioObject_fmod::Reset()
+void CAudioObject::Reset()
 {
 	m_audioEvents.clear();
 	m_audioParameters.clear();

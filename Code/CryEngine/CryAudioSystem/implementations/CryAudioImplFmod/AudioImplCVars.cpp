@@ -1,13 +1,13 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioImplCVars_fmod.h"
+#include "AudioImplCVars.h"
 #include <CrySystem/IConsole.h>
 
-using namespace CryAudio::Impl;
+using namespace CryAudio::Impl::Fmod;
 
 //////////////////////////////////////////////////////////////////////////
-CAudioImplCVars_fmod::CAudioImplCVars_fmod()
+CAudioImplCVars::CAudioImplCVars()
 	: m_primaryMemoryPoolSize(0)
 	, m_maxChannels(0)
 	, m_enableLiveUpdate(0)
@@ -25,12 +25,12 @@ CAudioImplCVars_fmod::CAudioImplCVars_fmod()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioImplCVars_fmod::~CAudioImplCVars_fmod()
+CAudioImplCVars::~CAudioImplCVars()
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImplCVars_fmod::RegisterVariables()
+void CAudioImplCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS
 	m_primaryMemoryPoolSize = 128 << 10;  // 128 MiB
@@ -137,7 +137,7 @@ void CAudioImplCVars_fmod::RegisterVariables()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioImplCVars_fmod::UnregisterVariables()
+void CAudioImplCVars::UnregisterVariables()
 {
 	IConsole* const pConsole = gEnv->pConsole;
 

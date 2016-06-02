@@ -1,14 +1,14 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioEventData_fmod.h"
-#include "AudioObjectData_fmod.h"
-#include "AudioImplCVars_fmod.h"
+#include "AudioEvent.h"
+#include "AudioObject.h"
+#include "AudioImplCVars.h"
 
-using namespace CryAudio::Impl;
+using namespace CryAudio::Impl::Fmod;
 
 //////////////////////////////////////////////////////////////////////////
-bool CAudioEvent_fmod::PrepareForOcclusion()
+bool CAudioEvent::PrepareForOcclusion()
 {
 	m_pMasterTrack = nullptr;
 	FMOD_RESULT fmodResult = m_pInstance->getChannelGroup(&m_pMasterTrack);
@@ -61,7 +61,7 @@ bool CAudioEvent_fmod::PrepareForOcclusion()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEvent_fmod::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CAudioEvent::SetObstructionOcclusion(float const obstruction, float const occlusion)
 {
 	if (m_pOcclusionParameter != nullptr)
 	{
@@ -70,7 +70,7 @@ void CAudioEvent_fmod::SetObstructionOcclusion(float const obstruction, float co
 	}
 	else if (m_pLowpass != nullptr)
 	{
-		float const range = m_lowpassFrequencyMax - std::max(m_lowpassFrequencyMin, g_audioImplCVars_fmod.m_lowpassMinCutoffFrequency);
+		float const range = m_lowpassFrequencyMax - std::max(m_lowpassFrequencyMin, g_audioImplCVars.m_lowpassMinCutoffFrequency);
 		float const value = m_lowpassFrequencyMax - (occlusion * range);
 		FMOD_RESULT const fmodResult = m_pLowpass->setParameterFloat(FMOD_DSP_LOWPASS_CUTOFF, value);
 		ASSERT_FMOD_OK;
@@ -78,7 +78,7 @@ void CAudioEvent_fmod::SetObstructionOcclusion(float const obstruction, float co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEvent_fmod::Reset()
+void CAudioEvent::Reset()
 {
 	if (m_pInstance != nullptr)
 	{
@@ -100,7 +100,7 @@ void CAudioEvent_fmod::Reset()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEvent_fmod::TrySetEnvironment(CAudioEnvironment_fmod const* const pEnvironment, float const value)
+void CAudioEvent::TrySetEnvironment(CAudioEnvironment const* const pEnvironment, float const value)
 {
 	if (m_pInstance != nullptr && m_pMasterTrack != nullptr)
 	{

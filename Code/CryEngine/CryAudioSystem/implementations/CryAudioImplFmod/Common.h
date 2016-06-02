@@ -18,6 +18,8 @@ namespace CryAudio
 {
 namespace Impl
 {
+namespace Fmod
+{
 ///////////////////////////////////////////////////////////////////////////
 inline void FillFmodObjectPosition(SAudioObject3DAttributes const& inAttributes, FMOD_3D_ATTRIBUTES& outAttributes)
 {
@@ -36,6 +38,7 @@ inline void FillFmodObjectPosition(SAudioObject3DAttributes const& inAttributes,
 	outAttributes.velocity.x = inAttributes.velocity.x;
 	outAttributes.velocity.z = inAttributes.velocity.y;
 	outAttributes.velocity.y = inAttributes.velocity.z;
+}
 }
 }
 }

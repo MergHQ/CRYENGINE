@@ -1,8 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioImplCVars_fmod.h"
-#include "AudioImpl_fmod.h"
+#include "AudioImplCVars.h"
+#include "AudioImpl.h"
 #include <CryAudio/IAudioSystem.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CrySystem/IEngineModule.h>
@@ -13,15 +13,15 @@
 	#include <shapexmacontext.h>
 #endif // CRY_PLATFORM_DURANGO
 
-using namespace CryAudio::Impl;
+using namespace CryAudio::Impl::Fmod;
 
 // Define global objects.
-CSoundAllocator g_audioImplMemoryPool_fmod;
-CAudioLogger g_audioImplLogger_fmod;
-CAudioImplCVars_fmod CryAudio::Impl::g_audioImplCVars_fmod;
+CSoundAllocator g_audioImplMemoryPool;
+CAudioLogger g_audioImplLogger;
+CAudioImplCVars CryAudio::Impl::Fmod::g_audioImplCVars;
 
 #if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
-tMemoryPoolReferenced g_audioImplMemoryPoolSecondary_fmod;
+tMemoryPoolReferenced g_audioImplMemoryPoolSecondary;
 #endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 
 //////////////////////////////////////////////////////////////////////////
@@ -39,9 +39,9 @@ class CEngineModule_CryAudioImplFmod : public IEngineModule
 	{
 		// Initialize memory pools.
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Audio Implementation Memory Pool Primary");
-		size_t const poolSize = g_audioImplCVars_fmod.m_primaryMemoryPoolSize << 10;
+		size_t const poolSize = g_audioImplCVars.m_primaryMemoryPoolSize << 10;
 		uint8* const pPoolMemory = new uint8[poolSize];
-		g_audioImplMemoryPool_fmod.InitMem(poolSize, pPoolMemory, "Fmod Implementation Audio Pool");
+		g_audioImplMemoryPool.InitMem(poolSize, pPoolMemory, "Fmod Implementation Audio Pool");
 
 #if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
 		size_t secondarySize = 0;
@@ -49,21 +49,21 @@ class CEngineModule_CryAudioImplFmod : public IEngineModule
 
 	#if CRY_PLATFORM_DURANGO
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Implementation Audio Pool Secondary");
-		secondarySize = g_audioImplCVars_fmod.m_secondaryMemoryPoolSize << 10;
+		secondarySize = g_audioImplCVars.m_secondaryMemoryPoolSize << 10;
 
 		APU_ADDRESS temp;
 		HRESULT const result = ApuAlloc(&pSecondaryMemory, &temp, secondarySize, SHAPE_XMA_INPUT_BUFFER_ALIGNMENT);
 		CRY_ASSERT(result == S_OK);
 	#endif // CRY_PLATFORM_DURANGO
 
-		g_audioImplMemoryPoolSecondary_fmod.InitMem(secondarySize, (uint8*)pSecondaryMemory);
+		g_audioImplMemoryPoolSecondary.InitMem(secondarySize, (uint8*)pSecondaryMemory);
 #endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 
-		POOL_NEW_CREATE(CAudioImpl_fmod, pImpl);
+		POOL_NEW_CREATE(CAudioImpl, pImpl);
 
 		if (pImpl != nullptr)
 		{
-			g_audioImplLogger_fmod.Log(eAudioLogType_Always, "CryAudioImplFmod loaded");
+			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplFmod loaded");
 
 			SAudioRequest request;
 			request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking | eAudioRequestFlags_SyncCallback;
@@ -77,7 +77,7 @@ class CEngineModule_CryAudioImplFmod : public IEngineModule
 		}
 		else
 		{
-			g_audioImplLogger_fmod.Log(eAudioLogType_Always, "CryAudioImplFmod failed to load");
+			g_audioImplLogger.Log(eAudioLogType_Always, "CryAudioImplFmod failed to load");
 		}
 
 		return m_bSuccess;
@@ -97,7 +97,7 @@ bool CEngineModule_CryAudioImplFmod::m_bSuccess = false;
 
 CEngineModule_CryAudioImplFmod::CEngineModule_CryAudioImplFmod()
 {
-	g_audioImplCVars_fmod.RegisterVariables();
+	g_audioImplCVars.RegisterVariables();
 }
 
 CEngineModule_CryAudioImplFmod::~CEngineModule_CryAudioImplFmod()

@@ -6,12 +6,14 @@ namespace CryAudio
 {
 namespace Impl
 {
-class CAudioImplCVars_fmod
+namespace Fmod
+{
+class CAudioImplCVars
 {
 public:
 
-	CAudioImplCVars_fmod();
-	~CAudioImplCVars_fmod();
+	CAudioImplCVars();
+	~CAudioImplCVars();
 
 	void RegisterVariables();
 	void UnregisterVariables();
@@ -28,14 +30,15 @@ public:
 
 #if CRY_PLATFORM_DURANGO
 	int m_secondaryMemoryPoolSize;
-#endif // CRY_PLATFORM_DURANGO
+#endif  // CRY_PLATFORM_DURANGO
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
-	PREVENT_OBJECT_COPY(CAudioImplCVars_fmod);
+	PREVENT_OBJECT_COPY(CAudioImplCVars);
 };
 
-extern CAudioImplCVars_fmod g_audioImplCVars_fmod;
+extern CAudioImplCVars g_audioImplCVars;
+}
 }
 }

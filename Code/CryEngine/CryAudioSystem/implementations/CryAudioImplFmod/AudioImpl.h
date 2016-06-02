@@ -2,19 +2,21 @@
 
 #pragma once
 
-#include "ATLEntities_fmod.h"
+#include "ATLEntities.h"
 #include <IAudioSystemImplementation.h>
 
 namespace CryAudio
 {
 namespace Impl
 {
-class CAudioImpl_fmod final : public IAudioImpl
+namespace Fmod
+{
+class CAudioImpl final : public IAudioImpl
 {
 public:
 
-	CAudioImpl_fmod();
-	virtual ~CAudioImpl_fmod();
+	CAudioImpl();
+	virtual ~CAudioImpl();
 
 	// IAudioImpl
 	virtual void                     Update(float const deltaTime) override;
@@ -106,10 +108,10 @@ private:
 	void                UnloadMasterBanks();
 	EAudioRequestStatus MuteMasterBus(bool const bMute);
 
-	AudioObjectId m_globalAudioObjectID;
-	AudioObjects  m_registeredAudioObjects;
-	AudioEvents   m_pendingAudioEvents;
-	StandaloneFiles m_pendingStandaloneFiles;
+	AudioObjectId                                  m_globalAudioObjectID;
+	AudioObjects                                   m_registeredAudioObjects;
+	AudioEvents                                    m_pendingAudioEvents;
+	StandaloneFiles                                m_pendingStandaloneFiles;
 
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH>    m_regularSoundBankFolder;
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH>    m_localizedSoundBankFolder;
@@ -122,7 +124,8 @@ private:
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	CryFixedStringT<MAX_AUDIO_MISC_STRING_LENGTH> m_fullImplString;
-#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
+}
 }
 }
