@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "FileIOHandler_wwise.h"
-#include "ATLEntities_wwise.h"
+#include "FileIOHandler.h"
+#include "ATLEntities.h"
 
 #if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) && !defined(IS_EAAS)
 	#define WWISE_USE_OCULUS
@@ -13,12 +13,14 @@ namespace CryAudio
 {
 namespace Impl
 {
-class CAudioImpl_wwise final : public IAudioImpl
+namespace Wwise
+{
+class CAudioImpl final : public IAudioImpl
 {
 public:
 
-	CAudioImpl_wwise();
-	virtual ~CAudioImpl_wwise();
+	CAudioImpl();
+	virtual ~CAudioImpl();
 
 	// IAudioImpl
 	virtual void                     Update(float const deltaTime) override;
@@ -110,17 +112,17 @@ private:
 		bool operator()(std::pair<AkAuxBusID, float> const& pair1, std::pair<AkAuxBusID, float> const& pair2) const;
 	};
 
-	void                           LoadEventsMetadata();
-	SAudioSwitchState_wwise const* ParseWwiseSwitchOrState(XmlNodeRef pNode, EWwiseSwitchType eType);
-	SAudioSwitchState_wwise const* ParseWwiseRtpcSwitch(XmlNodeRef pNode);
-	void                           ParseRtpcImpl(XmlNodeRef const pNode, AkRtpcID& rtpcId, float& multiplier, float& shift);
-	EAudioRequestStatus            PrepUnprepTriggerSync(IAudioTrigger const* const pAudioTrigger, bool bPrepare);
-	EAudioRequestStatus            PrepUnprepTriggerAsync(IAudioTrigger const* const pAudioTrigger, IAudioEvent* const pAudioEvent, bool bPrepare);
-	EAudioRequestStatus            PostEnvironmentAmounts(IAudioObject* const pAudioObject);
+	void                     LoadEventsMetadata();
+	SAudioSwitchState const* ParseWwiseSwitchOrState(XmlNodeRef pNode, EWwiseSwitchType eType);
+	SAudioSwitchState const* ParseWwiseRtpcSwitch(XmlNodeRef pNode);
+	void                     ParseRtpcImpl(XmlNodeRef const pNode, AkRtpcID& rtpcId, float& multiplier, float& shift);
+	EAudioRequestStatus      PrepUnprepTriggerSync(IAudioTrigger const* const pAudioTrigger, bool bPrepare);
+	EAudioRequestStatus      PrepUnprepTriggerAsync(IAudioTrigger const* const pAudioTrigger, IAudioEvent* const pAudioEvent, bool bPrepare);
+	EAudioRequestStatus      PostEnvironmentAmounts(IAudioObject* const pAudioObject);
 
 	AkGameObjectID                              m_dummyGameObjectId;
 	AkBankID                                    m_initBankId;
-	CFileIOHandler_wwise                        m_fileIOHandler;
+	CFileIOHandler                              m_fileIOHandler;
 
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> m_regularSoundBankFolder;
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> m_localizedSoundBankFolder;
@@ -137,15 +139,16 @@ private:
 
 #if !defined(WWISE_FOR_RELEASE)
 	bool m_bCommSystemInitialized;
-#endif // !WWISE_FOR_RELEASE
+#endif  // !WWISE_FOR_RELEASE
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> m_fullImplString;
-#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 #if defined(WWISE_USE_OCULUS)
 	void* m_pOculusSpatializerLibrary;
-#endif // WWISE_USE_OCULUS
+#endif  // WWISE_USE_OCULUS
 };
+}
 }
 }

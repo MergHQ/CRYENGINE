@@ -4,12 +4,18 @@
 
 #include <AK/SoundEngine/Common/AkStreamMgrModule.h>
 
-class CFileIOHandler_wwise : public AK::StreamMgr::IAkFileLocationResolver, public AK::StreamMgr::IAkIOHookBlocking
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Wwise
+{
+class CFileIOHandler : public AK::StreamMgr::IAkFileLocationResolver, public AK::StreamMgr::IAkIOHookBlocking
 {
 public:
 
-	CFileIOHandler_wwise();
-	virtual ~CFileIOHandler_wwise();
+	CFileIOHandler();
+	virtual ~CFileIOHandler();
 
 	AKRESULT Init(AkDeviceSettings const& rDeviceSettings, bool const bAsyncOpen = false);
 	void     ShutDown();
@@ -41,5 +47,8 @@ private:
 	bool       m_bAsyncOpen;
 	AkDeviceID m_nDeviceID;
 
-	PREVENT_OBJECT_COPY(CFileIOHandler_wwise);
+	PREVENT_OBJECT_COPY(CFileIOHandler);
 };
+}
+}
+}

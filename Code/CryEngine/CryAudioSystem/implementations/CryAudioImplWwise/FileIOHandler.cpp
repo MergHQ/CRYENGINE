@@ -1,10 +1,12 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "FileIOHandler_wwise.h"
+#include "FileIOHandler.h"
 #include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CrySystem/File/ICryPak.h>
 #include <AK/Tools/Common/AkPlatformFuncs.h>
+
+using namespace CryAudio::Impl::Wwise;
 
 #define MAX_NUMBER_STRING_SIZE   (10)       // 4G
 #define ID_TO_STRING_FORMAT_BANK AKTEXT("%u.bnk")
@@ -25,7 +27,7 @@ AkFileHandle GetFileHandle(FILE* const pFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileIOHandler_wwise::CFileIOHandler_wwise()
+CFileIOHandler::CFileIOHandler()
 	: m_bAsyncOpen(false)
 {
 	memset(m_sBankPath, 0, AK_MAX_PATH * sizeof(AkOSChar));
@@ -33,12 +35,12 @@ CFileIOHandler_wwise::CFileIOHandler_wwise()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileIOHandler_wwise::~CFileIOHandler_wwise()
+CFileIOHandler::~CFileIOHandler()
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CFileIOHandler_wwise::Init(AkDeviceSettings const& rDeviceSettings, bool const bAsyncOpen /* = false */)
+AKRESULT CFileIOHandler::Init(AkDeviceSettings const& rDeviceSettings, bool const bAsyncOpen /* = false */)
 {
 	AKRESULT eResult = AK_Fail;
 
@@ -70,7 +72,7 @@ AKRESULT CFileIOHandler_wwise::Init(AkDeviceSettings const& rDeviceSettings, boo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileIOHandler_wwise::ShutDown()
+void CFileIOHandler::ShutDown()
 {
 	if (AK::StreamMgr::GetFileLocationResolver() == this)
 	{
@@ -81,7 +83,7 @@ void CFileIOHandler_wwise::ShutDown()
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CFileIOHandler_wwise::Open(AkOSChar const* sFileName, AkOpenMode eOpenMode, AkFileSystemFlags* pFlags, bool& rSyncOpen, AkFileDesc& rFileDesc)
+AKRESULT CFileIOHandler::Open(AkOSChar const* sFileName, AkOpenMode eOpenMode, AkFileSystemFlags* pFlags, bool& rSyncOpen, AkFileDesc& rFileDesc)
 {
 	AKRESULT eResult = AK_Fail;
 
@@ -163,7 +165,7 @@ AKRESULT CFileIOHandler_wwise::Open(AkOSChar const* sFileName, AkOpenMode eOpenM
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CFileIOHandler_wwise::Open(AkFileID nFileID, AkOpenMode eOpenMode, AkFileSystemFlags* pFlags, bool& rSyncOpen, AkFileDesc& rFileDesc)
+AKRESULT CFileIOHandler::Open(AkFileID nFileID, AkOpenMode eOpenMode, AkFileSystemFlags* pFlags, bool& rSyncOpen, AkFileDesc& rFileDesc)
 {
 	AKRESULT eResult = AK_Fail;
 
@@ -217,7 +219,7 @@ AKRESULT CFileIOHandler_wwise::Open(AkFileID nFileID, AkOpenMode eOpenMode, AkFi
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CFileIOHandler_wwise::Read(AkFileDesc& rFileDesc, AkIoHeuristics const& rHeuristics, void* pBuffer, AkIOTransferInfo& rTransferInfo)
+AKRESULT CFileIOHandler::Read(AkFileDesc& rFileDesc, AkIoHeuristics const& rHeuristics, void* pBuffer, AkIOTransferInfo& rTransferInfo)
 {
 	AKASSERT(pBuffer != nullptr && rFileDesc.hFile != AkFileHandle(INVALID_HANDLE_VALUE));
 
@@ -237,7 +239,7 @@ AKRESULT CFileIOHandler_wwise::Read(AkFileDesc& rFileDesc, AkIoHeuristics const&
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CFileIOHandler_wwise::Write(AkFileDesc& rFileDesc, AkIoHeuristics const& rHeuristics, void* pBuffer, AkIOTransferInfo& rTransferInfo)
+AKRESULT CFileIOHandler::Write(AkFileDesc& rFileDesc, AkIoHeuristics const& rHeuristics, void* pBuffer, AkIOTransferInfo& rTransferInfo)
 {
 	AKASSERT(pBuffer != nullptr && rFileDesc.hFile != AkFileHandle(INVALID_HANDLE_VALUE));
 
@@ -257,7 +259,7 @@ AKRESULT CFileIOHandler_wwise::Write(AkFileDesc& rFileDesc, AkIoHeuristics const
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CFileIOHandler_wwise::Close(AkFileDesc& rFileDesc)
+AKRESULT CFileIOHandler::Close(AkFileDesc& rFileDesc)
 {
 	AKRESULT eResult = AK_Fail;
 
@@ -274,31 +276,31 @@ AKRESULT CFileIOHandler_wwise::Close(AkFileDesc& rFileDesc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-AkUInt32 CFileIOHandler_wwise::GetBlockSize(AkFileDesc& in_fileDesc)
+AkUInt32 CFileIOHandler::GetBlockSize(AkFileDesc& in_fileDesc)
 {
 	// No constraint on block size (file seeking).
 	return 1;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileIOHandler_wwise::GetDeviceDesc(AkDeviceDesc& out_deviceDesc)
+void CFileIOHandler::GetDeviceDesc(AkDeviceDesc& out_deviceDesc)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-AkUInt32 CFileIOHandler_wwise::GetDeviceData()
+AkUInt32 CFileIOHandler::GetDeviceData()
 {
 	return 1;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileIOHandler_wwise::SetBankPath(AkOSChar const* const sBankPath)
+void CFileIOHandler::SetBankPath(AkOSChar const* const sBankPath)
 {
 	AKPLATFORM::SafeStrCpy(m_sBankPath, sBankPath, AK_MAX_PATH);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileIOHandler_wwise::SetLanguageFolder(AkOSChar const* const sLanguageFolder)
+void CFileIOHandler::SetLanguageFolder(AkOSChar const* const sLanguageFolder)
 {
 	AKPLATFORM::SafeStrCpy(m_sLanguageFolder, sLanguageFolder, AK_MAX_PATH);
 }
