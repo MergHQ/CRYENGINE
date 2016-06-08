@@ -270,7 +270,7 @@ struct SShaderAsyncInfo
 	#define D3D10CreateBlob D3DCreateBlob
 #endif
 
-	int                  m_nHashInst;
+	int                  m_nHashInstance;
 	uint64               m_RTMask;
 	uint32               m_LightMask;
 	uint32               m_MDMask;
@@ -304,7 +304,7 @@ struct SShaderAsyncInfo
 	SShaderAsyncInfo()
 		: m_Next(nullptr)
 		, m_Prev(nullptr)
-		, m_nHashInst(-1)
+		, m_nHashInstance(-1)
 		, m_RTMask(0)
 		, m_LightMask(0)
 		, m_MDMask(0)
@@ -472,7 +472,6 @@ class CHWShader_D3D : public CHWShader
 		byte                       m_bDeleted         : 1;
 		byte                       m_bHasPMParams     : 1;
 		byte                       m_bFallback        : 1;
-		byte                       m_bCompressed      : 1;
 		byte                       m_bAsyncActivating : 1;
 		byte                       m_bHasSendRequest  : 1;
 		byte                       m_nVertexFormat;
@@ -508,7 +507,6 @@ class CHWShader_D3D : public CHWShader
 			, m_bDeleted(false)
 			, m_bHasPMParams(false)
 			, m_bFallback(false)
-			, m_bCompressed(false)
 			, m_bAsyncActivating(false)
 			, m_bHasSendRequest(false)
 			, m_nVertexFormat(1)
@@ -688,7 +686,6 @@ public:
 
 	//============================================================================
 	// Binary cache support
-	SShaderCacheHeaderItem* mfGetCompressedItem(uint32 nFlags, int32& nSize);
 	SShaderCacheHeaderItem* mfGetCacheItem(uint32& nFlags, int32& nSize);
 	static bool             mfAddCacheItem(SShaderCache* pCache, SShaderCacheHeaderItem* pItem, const byte* pData, int nLen, bool bFlush, CCryNameTSCRC Name);
 
@@ -1302,8 +1299,6 @@ public:
 			if (!mfActivate(pSH, nFlags))
 			{
 				pInst = m_pCurInst;
-				if (gRenDev->m_cEF.m_bActivatePhase)
-					return 0;
 				if (!pInst->IsAsyncCompiling())
 					pInst->m_Handle.SetNonCompilable();
 				else
@@ -1387,7 +1382,8 @@ public:
 	static bool   mfSetSamplers(const std::vector<SCGSampler>& Samplers, EHWShaderClass eHWClass);
 	static bool   mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers, EHWShaderClass eHWClass);
 	SHWSInstance* mfGetInstance(CShader* pSH, SShaderCombIdent& Ident, uint32 nFlags);
-	SHWSInstance* mfGetInstance(CShader* pSH, int nHashInstance, uint64 GLMask);
+	SHWSInstance* mfGetInstance(CShader* pSH, int nHashInstance, SShaderCombIdent& Ident);
+	SHWSInstance* mfGetHashInst(InstContainer *pInstCont, uint32 identHash, SShaderCombIdent& Ident, InstContainerIt& it);
 	static void   mfPrepareShaderDebugInfo(SHWSInstance* pInst, CHWShader_D3D* pSH, const char* szAsm, std::vector<SCGBind>& InstBindVars, void* pBuffer);
 	void          mfGetSrcFileName(char* srcName, int nSize);
 	static void   mfGetDstFileName(SHWSInstance* pInst, CHWShader_D3D* pSH, char* dstname, int nSize, byte bType);
@@ -1402,7 +1398,7 @@ public:
 public:
 	bool        mfGetCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& pSHData, uint64 nMaskGen);
 	bool        mfGenerateScript(CShader* pSH, SHWSInstance*& pInst, std::vector<SCGBind>& InstBindVars, uint32 nFlags, FXShaderToken* Table, TArray<uint32>* pSHData, TArray<char>& sNewScr);
-	bool        mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table = NULL, TArray<uint32>* pSHData = NULL, bool bCompressedOnly = false);
+	bool        mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table = NULL, TArray<uint32>* pSHData = NULL);
 
 	void        SetTokenFlags(uint32 nToken);
 	uint64      CheckToken(uint32 nToken);
@@ -1459,7 +1455,7 @@ public:
 	virtual const char* mfGetEntryName()       { return m_EntryFunc.c_str(); }
 	virtual bool        mfFlushCacheFile();
 	virtual bool        Export(SShaderSerializeContext& SC);
-	virtual bool        mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, bool bCompressedOnly, CShader* pSH, CShaderResources* pRes);
+	virtual bool        mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, CShader* pSH, CShaderResources* pRes);
 
 	// Vertex shader specific functions
 	virtual EVertexFormat mfVertexFormat(bool& bUseTangents, bool& bUseLM, bool& bUseHWSkin);

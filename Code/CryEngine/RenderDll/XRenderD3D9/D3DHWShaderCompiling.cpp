@@ -2029,55 +2029,6 @@ SShaderDevCache* CHWShader::mfInitDevCache(const char* name, CHWShader* pSH)
 	return pCache;
 }
 
-#include <lzss/LZSS.H>
-
-SShaderCacheHeaderItem* CHWShader_D3D::mfGetCompressedItem(uint32 nFlags, int32& nSize)
-{
-	SHWSInstance* pInst = m_pCurInst;
-	/*if (pInst->m_GLMask == 0x200000000 && pInst->m_RTMask == 0x800000000000)
-	   {
-	   int nnn = 0;
-	   }*/
-	char name[128];
-	{
-		cry_strcpy(name, GetName());
-		char* s = strchr(name, '(');
-		if (s)
-			s[0] = 0;
-	}
-	CCryNameTSCRC Name = name;
-	FXCompressedShadersItor it = CHWShader::m_CompressedShaders.find(Name);
-	if (it == CHWShader::m_CompressedShaders.end())
-		return NULL;
-	SHWActivatedShader* pAS = it->second;
-	assert(pAS);
-	if (!pAS)
-		return NULL;
-	mfGenName(pInst, name, 128, 1);
-	Name = name;
-	FXCompressedShaderRemapItor itR = pAS->m_Remap.find(Name);
-	if (itR == pAS->m_Remap.end())
-		return NULL;
-	int nDevID = itR->second;
-	FXCompressedShaderItor itS = pAS->m_CompressedShaders.find(nDevID);
-	if (itS == pAS->m_CompressedShaders.end())
-		return NULL;
-	SCompressedData& CD = itS->second;
-	assert(CD.m_pCompressedShader);
-	if (!CD.m_pCompressedShader)
-		return NULL;
-	byte* pData = new byte[CD.m_nSizeDecompressedShader];
-	if (!pData)
-		return NULL;
-	pInst->m_DeviceObjectID = nDevID;
-	Decodem(CD.m_pCompressedShader, pData, CD.m_nSizeCompressedShader);
-	SShaderCacheHeaderItem* pIt = (SShaderCacheHeaderItem*)pData;
-	if (CParserBin::m_bEndians)
-		SwapEndian(*pIt, eBigEndian);
-	nSize = CD.m_nSizeDecompressedShader;
-	return pIt;
-}
-
 SShaderCacheHeaderItem* CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSize)
 {
 	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
@@ -2777,7 +2728,7 @@ bool CHWShader_D3D::mfUploadHW(SHWSInstance* pInst, byte* pBuf, uint32 nSize, CS
 	if (!pInst->m_Handle.m_pShader)
 		pInst->m_Handle.SetShader(new SD3DShader);
 
-	if ((m_eSHClass == eHWSC_Vertex) && (!(nFlags & HWSF_PRECACHE) || gRenDev->m_cEF.m_bActivatePhase) && !pInst->m_bFallback)
+	if ((m_eSHClass == eHWSC_Vertex) && (!(nFlags & HWSF_PRECACHE)) && !pInst->m_bFallback)
 		mfUpdateFXVertexFormat(pInst, pSH);
 
 	pInst->m_nDataSize = nSize;
@@ -2827,7 +2778,7 @@ bool CHWShader_D3D::mfUploadHW(LPD3D10BLOB pShader, SHWSInstance* pInst, CShader
 	if (pShader && !(m_Flags & HWSG_PRECACHEPHASE))
 	{
 		DWORD* pCode = (DWORD*)pShader->GetBufferPointer();
-		if (gcpRendD3D->m_cEF.m_nCombinationsProcess >= 0 && !gcpRendD3D->m_cEF.m_bActivatePhase)
+		if (gcpRendD3D->m_cEF.m_nCombinationsProcess >= 0)
 		{
 			pInst->m_Handle.SetFake();
 		}
@@ -2905,12 +2856,12 @@ bool CHWShader_D3D::mfActivateCacheItem(CShader* pSH, SShaderCacheHeaderItem* pI
 			SAFE_RELEASE(pS);
 		}
 #endif
-		if ((m_eSHClass == eHWSC_Vertex) && (!(nFlags & HWSF_PRECACHE) || gRenDev->m_cEF.m_bActivatePhase) && !pInst->m_bFallback)
+		if ((m_eSHClass == eHWSC_Vertex) && (!(nFlags & HWSF_PRECACHE)) && !pInst->m_bFallback)
 			mfUpdateFXVertexFormat(pInst, pSH);
 	}
 	else
 	{
-		if (gcpRendD3D->m_cEF.m_nCombinationsProcess > 0 && !gcpRendD3D->m_cEF.m_bActivatePhase)
+		if (gcpRendD3D->m_cEF.m_nCombinationsProcess > 0)
 		{
 			pInst->m_Handle.SetFake();
 		}
@@ -3005,18 +2956,15 @@ bool CHWShader_D3D::mfCreateCacheItem(SHWSInstance* pInst, std::vector<SCGBind>&
 	CCryNameTSCRC nm = CCryNameTSCRC(name);
 	bool bRes = mfAddCacheItem(pSH->m_pGlobalCache, &h, pNewData, (int)(pP - pNewData), false, nm);
 	SAFE_DELETE_ARRAY(pNewData);
-	if (gRenDev->m_cEF.m_bActivatePhase || (!(pSH->m_Flags & HWSG_PRECACHEPHASE) && gRenDev->m_cEF.m_nCombinationsProcess <= 0))
+	if ((!(pSH->m_Flags & HWSG_PRECACHEPHASE) && gRenDev->m_cEF.m_nCombinationsProcess <= 0))
 	{
-		if (!gRenDev->m_cEF.m_bActivatePhase)
+		if (bShaderThread && false)
 		{
-			if (bShaderThread && false)
-			{
-				if (pInst->m_pAsync)
-					pInst->m_pAsync->m_bPendedFlush = true;
-			}
-			else
-				pSH->mfFlushCacheFile();
+			if (pInst->m_pAsync)
+				pInst->m_pAsync->m_bPendedFlush = true;
 		}
+		else
+			pSH->mfFlushCacheFile();
 		cry_strcpy(name, pSH->GetName());
 		char* s = strchr(name, '(');
 		if (s)
@@ -3145,7 +3093,13 @@ void SShaderAsyncInfo::FlushPendingShaders()
 		CHWShader_D3D* pSH = pAI->m_pShader;
 		if (pSH)
 		{
-			CHWShader_D3D::SHWSInstance* pInst = pSH->mfGetInstance(pAI->m_pFXShader, pAI->m_nHashInst, pSH->m_nMaskGenShader);
+			SShaderCombIdent Ident;
+			Ident.m_GLMask = pSH->m_nMaskGenShader;
+			Ident.m_LightMask = pAI->m_LightMask;
+			Ident.m_RTMask = pAI->m_RTMask;
+			Ident.m_MDMask = pAI->m_MDMask;
+			Ident.m_MDVMask = pAI->m_MDVMask;
+			CHWShader_D3D::SHWSInstance* pInst = pSH->mfGetInstance(pAI->m_pFXShader, pAI->m_nHashInstance, Ident);
 			if (pInst->m_pAsync != pAI)
 				CryFatalError("Shader instance async info doesn't match queued async info.");
 			pSH->mfAsyncCompileReady(pInst);
@@ -3347,7 +3301,7 @@ bool CHWShader_D3D::mfRequestAsync(CShader* pSH, SHWSInstance* pInst, std::vecto
 	pInst->m_pAsync->m_nCombination = gRenDev->m_cEF.m_nCombinationsProcess;
 	assert(!stricmp(m_NameSourceFX.c_str(), pInst->m_pAsync->m_pFXShader->m_NameFile.c_str()));
 	InstContainer* pInstCont = &m_Insts;
-	pInst->m_pAsync->m_nHashInst = pInst->m_Ident.m_nHash;
+	pInst->m_pAsync->m_nHashInstance = pInst->m_Ident.m_nHash;
 	pInst->m_pAsync->m_RTMask = pInst->m_Ident.m_RTMask;
 	pInst->m_pAsync->m_LightMask = pInst->m_Ident.m_LightMask;
 	pInst->m_pAsync->m_MDMask = pInst->m_Ident.m_MDMask;
@@ -3794,7 +3748,7 @@ bool CHWShader_D3D::mfCreateShaderEnv(int nThread, SHWSInstance* pInst, LPD3D10B
 }
 
 // Compile pixel/vertex shader for the current instance properties
-bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table, TArray<uint32>* pSHData, bool bCompressedOnly)
+bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table, TArray<uint32>* pSHData)
 {
 	PROFILE_FRAME(Shader_HWShaderActivate);
 
@@ -3833,15 +3787,7 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 			m_pDevCache = mfInitDevCache(nameCache, this);
 
 		int32 nSize;
-		SShaderCacheHeaderItem* pCacheItem = mfGetCompressedItem(nFlags, nSize);
-		if (pCacheItem)
-			pInst->m_bCompressed = true;
-		else if (bCompressedOnly)
-		{
-			// don't activate if shader isn't found in compressed shader data
-			return false;
-		}
-		else
+		SShaderCacheHeaderItem* pCacheItem = NULL;
 		{
 			// if shader compiling is enabled, make sure the user folder shader caches are also available
 			bool bReadOnly = CRenderer::CV_r_shadersAllowCompilation == 0;
@@ -3854,7 +3800,7 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 					bAsync = false;
 				m_pGlobalCache = mfInitCache(nameCache, this, true, m_CRC32, bReadOnly, bAsync);
 			}
-			if (gRenDev->m_cEF.m_nCombinationsProcess >= 0 && !gRenDev->m_cEF.m_bActivatePhase)
+			if (gRenDev->m_cEF.m_nCombinationsProcess >= 0)
 			{
 				mfGetDstFileName(pInst, this, nameCache, 256, 0);
 				fpStripExtension(nameCache, nameCache);
@@ -3869,7 +3815,7 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 		{
 			if (Table && CRenderer::CV_r_shadersAllowCompilation)
 				mfGetCacheTokenMap(Table, pSHData, m_nMaskGenShader);
-			if (((m_Flags & HWSG_PRECACHEPHASE) || gRenDev->m_cEF.m_nCombinationsProcess >= 0) && !gRenDev->m_cEF.m_bActivatePhase)
+			if (((m_Flags & HWSG_PRECACHEPHASE) || gRenDev->m_cEF.m_nCombinationsProcess >= 0))
 			{
 				byte* pData = (byte*)pCacheItem;
 				SAFE_DELETE_ARRAY(pData);
@@ -3879,59 +3825,12 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 			byte* pData = (byte*)pCacheItem;
 			SAFE_DELETE_ARRAY(pData);
 			pCacheItem = NULL;
-			if (CRenderer::CV_r_shaderspreactivate == 2 && !gRenDev->m_cEF.m_bActivatePhase)
-			{
-				t0 = gEnv->pTimer->GetAsyncCurTime() - t0;
-				iLog->Log(
-				  "Warning: Shader activation (%.3f ms): %s"
-#if defined(__GNUC__)
-				  "(%llx)"
-#else
-				  "(%I64x)"
-#endif
-				  "(%x)(%x)(%x)(%llx)(%s)...", t0 * 1000.0f,
-				  GetName(), pInst->m_Ident.m_RTMask, pInst->m_Ident.m_LightMask, pInst->m_Ident.m_MDMask, pInst->m_Ident.m_MDVMask, pInst->m_Ident.m_pipelineState.opaque, mfProfileString(pInst->m_eClass));
-				char name[256];
-				cry_strcpy(name, GetName());
-				char* s = strchr(name, '(');
-				if (s) s[0] = 0;
-				string pName;
-				SShaderCombIdent Ident(m_nMaskGenFX, pInst->m_Ident);
-				gRenDev->m_cEF.mfInsertNewCombination(Ident, pInst->m_eClass, name, 0, &pName, false);
-				iLog->Log(
-				  "...Shader list entry: %s "
-#if defined(__GNUC__)
-				  "(%llx)"
-#else
-				  "(%I64x)"
-#endif
-				  , pName.c_str(), m_nMaskGenFX);
-			}
 			if (bRes)
 				return (pInst->m_Handle.m_pShader != NULL);
 			pCacheItem = NULL;
 		}
 		else if (pCacheItem && pCacheItem->m_Class == 255)
 		{
-			byte* pData = (byte*)pCacheItem;
-			SAFE_DELETE_ARRAY(pData);
-			pCacheItem = NULL;
-			return false;
-		}
-		else if (gRenDev->m_cEF.m_bActivatePhase)
-		{
-			if (CRenderer::CV_r_shadersdebug > 0)
-			{
-				iLog->Log(
-				  "Warning: Shader %s"
-#if defined(__GNUC__)
-				  "(%llx)"
-#else
-				  "(%I64x)"
-#endif
-				  "(%x)(%x)(%x)(%llx)(%s) wasn't compiled before preactivating phase",
-				  GetName(), pInst->m_Ident.m_RTMask, pInst->m_Ident.m_LightMask, pInst->m_Ident.m_MDMask, pInst->m_Ident.m_MDVMask, pInst->m_Ident.m_pipelineState.opaque, mfProfileString(pInst->m_eClass));
-			}
 			byte* pData = (byte*)pCacheItem;
 			SAFE_DELETE_ARRAY(pData);
 			pCacheItem = NULL;
@@ -3971,7 +3870,7 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 			ASSERT_IN_SHADER(bScriptSuccess);
 		}
 
-		if (!pInst->m_bAsyncActivating && !bCompressedOnly)
+		if (!pInst->m_bAsyncActivating)
 		{
 			// report miss in global cache to log and/or callback
 			mfLogShaderCacheMiss(pInst);
@@ -4882,19 +4781,3 @@ const char* CHWShader::GetCurrentShaderCombinations(bool bForLevel)
 	return pPtr;
 }
 
-bool CHWShader::PreactivateShaders()
-{
-	bool bRes = true;
-
-	if (CRenderer::CV_r_shaderspreactivate)
-	{
-		gRenDev->m_pRT->RC_PreactivateShaders();
-	}
-
-	return bRes;
-}
-
-void CHWShader::RT_PreactivateShaders()
-{
-	gRenDev->m_cEF.mfPreloadBinaryShaders();
-}

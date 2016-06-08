@@ -527,23 +527,6 @@ struct SCompressedData
 typedef std::map<int, struct SD3DShader*> FXDeviceShader;
 typedef FXDeviceShader::iterator          FXDeviceShaderItor;
 
-typedef std::map<int, SCompressedData>    FXCompressedShader;
-typedef FXCompressedShader::iterator      FXCompressedShaderItor;
-typedef std::map<CCryNameTSCRC, int>      FXCompressedShaderRemap;
-typedef FXCompressedShaderRemap::iterator FXCompressedShaderRemapItor;
-struct SHWActivatedShader
-{
-	bool                    m_bPersistent;
-	FXCompressedShader      m_CompressedShaders;
-	FXCompressedShaderRemap m_Remap;
-	~SHWActivatedShader();
-
-	int  Size();
-	void GetMemoryUsage(ICrySizer* pSizer) const;
-};
-typedef std::map<CCryNameTSCRC, SHWActivatedShader*> FXCompressedShaders;
-typedef FXCompressedShaders::iterator                FXCompressedShadersItor;
-
 #define CACHE_READONLY 0
 #define CACHE_USER     1
 
@@ -777,7 +760,7 @@ public:
 	virtual const char* mfGetEntryName() = 0;
 	virtual void        mfUpdatePreprocessFlags(SShaderTechnique* pTech) = 0;
 	virtual bool        mfFlushCacheFile() = 0;
-	virtual bool        mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, bool bCompressedOnly, CShader* pSH, CShaderResources* pRes) = 0;
+	virtual bool        mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, CShader* pSH, CShaderResources* pRes) = 0;
 
 	virtual bool        Export(SShaderSerializeContext& SC) = 0;
 	static CHWShader*   Import(SShaderSerializeContext& SC, int nOffs, uint32 CRC32, CShader* pSH);
@@ -805,8 +788,6 @@ public:
 	}
 
 	static const char*      GetCurrentShaderCombinations(bool bForLevel);
-	static bool             PreactivateShaders();
-	static void             RT_PreactivateShaders();
 
 	static byte*            mfIgnoreRemapsFromCache(int nRemaps, byte* pP);
 	static byte*            mfIgnoreBindsFromCache(int nParams, byte* pP);
@@ -825,8 +806,6 @@ public:
 	// Import/Export
 	static bool ImportSamplers(SShaderSerializeContext& SC, struct SCHWShader* pSHW, byte*& pData, std::vector<STexSamplerRT>& Samplers);
 	static bool ImportParams(SShaderSerializeContext& SC, SCHWShader* pSHW, byte*& pData, std::vector<SFXParam>& Params);
-
-	static FXCompressedShaders m_CompressedShaders;
 };
 
 inline void SortLightTypes(int Types[4], int nCount)
@@ -1336,7 +1315,7 @@ public:
 
 	//=======================================================================================
 
-	bool              mfPrecache(SShaderCombination& cmb, bool bForce, bool bCompressedOnly, CShaderResources* pRes);
+	bool              mfPrecache(SShaderCombination& cmb, bool bForce, CShaderResources* pRes);
 
 	SShaderTechnique* mfFindTechnique(const CCryNameTSCRC& name)
 	{
