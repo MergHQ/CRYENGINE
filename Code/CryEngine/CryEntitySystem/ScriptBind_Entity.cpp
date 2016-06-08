@@ -8503,7 +8503,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 	IEntityClass* pEntityClass = pEntity->GetClass();
 	if (!pEntityClass->FindEventInfo(sEventName, eventInfo))
 	{
-		EntityWarning("ActivateOutput called with undefined event %s for entity %s", sEventName, pEntity->GetEntityTextDescription());
+		EntityWarning("ActivateOutput called with undefined event %s for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 		return pH->EndFunction();
 	}
 
@@ -8517,7 +8517,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 		{
 			int value = 0;
 			if (!pH->GetParam(2, value))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			event.nParam[2] = (INT_PTR)&value;
 			pEntity->SendEvent(event);
 		}
@@ -8526,7 +8526,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 		{
 			float value = 0;
 			if (!pH->GetParam(2, value))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			event.nParam[2] = (INT_PTR)&value;
 			pEntity->SendEvent(event);
 		}
@@ -8535,7 +8535,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 		{
 			bool value = false;
 			if (!pH->GetParam(2, value))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			event.nParam[2] = (INT_PTR)&value;
 			pEntity->SendEvent(event);
 		}
@@ -8544,7 +8544,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 		{
 			Vec3 value(0, 0, 0);
 			if (!pH->GetParam(2, value))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			event.nParam[2] = (INT_PTR)&value;
 			pEntity->SendEvent(event);
 		}
@@ -8554,7 +8554,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 			EntityId value = 0;
 			ScriptHandle entityId;
 			if (!pH->GetParam(2, entityId))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			value = (EntityId)entityId.n;
 			event.nParam[2] = (INT_PTR)&value;
 			pEntity->SendEvent(event);
@@ -8564,7 +8564,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 		{
 			const char* value = "";
 			if (!pH->GetParam(2, value))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			event.nParam[2] = (INT_PTR)value;
 			pEntity->SendEvent(event);
 		}

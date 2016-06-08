@@ -2123,7 +2123,7 @@ void CPlayer::PrePhysicsUpdate()
 			// NOTE: outputting this info here is 'was happened last frame' not 'what was decided this frame' as it occurs before the prePhysicsEvent is dispatched
 			// also IsOnGround and IsInAir can possibly both be false e.g. - if you're swimming
 			// May be able to remove this log now the new HSM debugging is in if it offers the same/improved functionality
-			CryWatch ("%s stance=%s flyMode=%d %s %s%s%s%s", GetEntity()->GetEntityTextDescription(), GetStanceName(GetStance()), m_stats.flyMode, IsOnGround() ? "ON-GROUND" : "IN-AIR", IsThirdPerson() ? "THIRD-PERSON" : "FIRST-PERSON", IsDead() ? "DEAD" : "ALIVE", m_stats.isScoped ? " SCOPED" : "", m_stats.isInBlendRagdoll ? " FALLNPLAY" : "");
+			CryWatch ("%s stance=%s flyMode=%d %s %s%s%s%s", GetEntity()->GetEntityTextDescription().c_str(), GetStanceName(GetStance()), m_stats.flyMode, IsOnGround() ? "ON-GROUND" : "IN-AIR", IsThirdPerson() ? "THIRD-PERSON" : "FIRST-PERSON", IsDead() ? "DEAD" : "ALIVE", m_stats.isScoped ? " SCOPED" : "", m_stats.isInBlendRagdoll ? " FALLNPLAY" : "");
 		}
 #endif
 

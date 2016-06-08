@@ -107,7 +107,7 @@ bool VerifyEntities(const TBasicEntityDatas& basicEntityData)
 		{
 			if (!pEntity->IsGarbage() && !(pEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE) && (0 != strcmp(it->className, pEntity->GetClass()->GetName())))
 			{
-				GameWarning("[LoadGame] Entity ID=%d '%s', class mismatch, should be '%s'", pEntity->GetId(), pEntity->GetEntityTextDescription(), it->className.c_str());
+				GameWarning("[LoadGame] Entity ID=%d '%s', class mismatch, should be '%s'", pEntity->GetId(), pEntity->GetEntityTextDescription().c_str(), it->className.c_str());
 				return false;
 			}
 		}
@@ -521,7 +521,7 @@ void CGameSerialize::DeleteDynamicEntities(const TBasicEntityDatas& basicEntityD
 		if (nEntityFlags & ENTITY_FLAG_UNREMOVABLE)
 		{
 #ifdef EXCESSIVE_ENTITY_DEBUG
-			CryLogAlways(">Unremovable Entity ID=%d Name='%s'", pEntity->GetId(), pEntity->GetEntityTextDescription());
+			CryLogAlways(">Unremovable Entity ID=%d Name='%s'", pEntity->GetId(), pEntity->GetEntityTextDescription().c_str());
 #endif
 
 			tempSearchEntity.id = pEntity->GetId();
@@ -536,7 +536,7 @@ void CGameSerialize::DeleteDynamicEntities(const TBasicEntityDatas& basicEntityD
 		else
 		{
 #ifdef EXCESSIVE_ENTITY_DEBUG
-			CryLogAlways(">Removing Entity ID=%d Name='%s'", pEntity->GetId(), pEntity->GetEntityTextDescription());
+			CryLogAlways(">Removing Entity ID=%d Name='%s'", pEntity->GetId(), pEntity->GetEntityTextDescription().c_str());
 #endif
 
 			pEntity->ResetKeepAliveCounter();
@@ -564,7 +564,7 @@ void CGameSerialize::DumpEntities()
 		IEntity* pEntity = pIt->Next();
 		if (pEntity)
 		{
-			CryLogAlways("ID=%u Name='%s'", pEntity->GetId(), pEntity->GetEntityTextDescription());
+			CryLogAlways("ID=%u Name='%s'", pEntity->GetId(), pEntity->GetEntityTextDescription().c_str());
 		}
 		else
 		{
@@ -861,7 +861,7 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 			{
 				tempSearchEntity.id = pNextEntity->GetId();
 				if ((stl::binary_find(loadEnvironment.m_basicEntityData.begin(), loadEnvironment.m_basicEntityData.end(), tempSearchEntity) == loadEnvironment.m_basicEntityData.end()))
-					GameWarning("[LoadGame] Entities were spawned that are not in the save file! : %s with ID=%d", pNextEntity->GetEntityTextDescription(), pNextEntity->GetId());
+					GameWarning("[LoadGame] Entities were spawned that are not in the save file! : %s with ID=%d", pNextEntity->GetEntityTextDescription().c_str(), pNextEntity->GetId());
 			}
 		}
 	}
@@ -1274,7 +1274,7 @@ bool CGameSerialize::SaveGameData(SSaveEnvironment& savEnv, TSerialize& gameStat
 				{
 					if ((pEntity->GetPhysics() && pEntity->GetPhysics()->GetType() == PE_ROPE) == !pass)
 						continue;
-					CRY_ASSERT_TRACE(!(pEntity->GetFlags() & ENTITY_FLAG_LOCAL_PLAYER), ("%s has ENTITY_FLAG_LOCAL_PLAYER - local player should not be in m_serializeEntities!", pEntity->GetEntityTextDescription()));
+					CRY_ASSERT_TRACE(!(pEntity->GetFlags() & ENTITY_FLAG_LOCAL_PLAYER), ("%s has ENTITY_FLAG_LOCAL_PLAYER - local player should not be in m_serializeEntities!", pEntity->GetEntityTextDescription().c_str()));
 
 					// c++ entity data
 					gameState.BeginGroup("Entity");
@@ -1794,7 +1794,7 @@ void CGameSerialize::LoadGameData(SLoadEnvironment& loadEnv)
 		// extra sanity check for matching class
 		if (!(pEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE) && iter->className != pEntity->GetClass()->GetName())
 		{
-			GameWarning("[LoadGame] Entity class mismatch ID=%d %s, should have class '%s'", pEntity->GetId(), pEntity->GetEntityTextDescription(), iter->className.c_str());
+			GameWarning("[LoadGame] Entity class mismatch ID=%d %s, should have class '%s'", pEntity->GetId(), pEntity->GetEntityTextDescription().c_str(), iter->className.c_str());
 			loadEnv.m_bLoadingErrors = true;
 			continue;
 		}

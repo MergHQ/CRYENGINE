@@ -383,7 +383,7 @@ ISerializableInfoPtr CVehicle::GetSpawnInfo()
 //------------------------------------------------------------------------
 bool CVehicle::Init(IGameObject* pGameObject)
 {
-	CryLog("Init vehicle: %s", pGameObject->GetEntity()->GetEntityTextDescription());
+	CryLog("Init vehicle: %s", pGameObject->GetEntity()->GetEntityTextDescription().c_str());
 	INDENT_LOG_DURING_SCOPE();
 
 	SetGameObject(pGameObject);
@@ -3068,7 +3068,9 @@ bool CVehicle::OnUsed(EntityId userId, int index)
 		if (!CanEnter(userId))
 			return false;
 
-		CryLog("[VEHICLE] %s is using vehicle %s...", pUser->GetEntity()->GetEntityTextDescription(), GetEntity()->GetEntityTextDescription());
+		const string userDesc = pUser->GetEntity()->GetEntityTextDescription();
+		const string vehicleDesc = GetEntity()->GetEntityTextDescription();
+		CryLog("[VEHICLE] %s is using vehicle %s...", userDesc.c_str(), vehicleDesc.c_str());
 		INDENT_LOG_DURING_SCOPE();
 
 		if (m_usesVehicleActionToEnter)

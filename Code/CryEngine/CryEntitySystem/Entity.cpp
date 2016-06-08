@@ -60,8 +60,6 @@ namespace
 Matrix34 sIdentityMatrix = Matrix34::CreateIdentity();
 }
 
-string CEntity::m_szDescription;
-
 namespace
 {
 struct FEntityProxyReload_ExceptScript
@@ -864,7 +862,7 @@ void CEntity::AttachChild(IEntity* pChildEntity, const SChildAttachParams& attac
 #endif
 	if (pChildEntity == this)
 	{
-		EntityWarning("Trying to attaching Entity %s to itself", GetEntityTextDescription());
+		EntityWarning("Trying to attaching Entity %s to itself", GetEntityTextDescription().c_str());
 		return;
 	}
 
@@ -1461,10 +1459,9 @@ void CEntity::SetUpdatePolicy(EEntityUpdatePolicy eUpdatePolicy)
 }
 
 //////////////////////////////////////////////////////////////////////////
-const char* CEntity::GetEntityTextDescription() const
+string CEntity::GetEntityTextDescription() const
 {
-	m_szDescription = m_szName + " (" + m_pClass->GetName() + ")";
-	return m_szDescription;
+	return m_szName + " (" + m_pClass->GetName() + ")";
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2833,7 +2830,7 @@ void CEntity::LogEvent(SEntityEvent& event, CTimeValue dt)
 	s_LastLoggedFrame = nFrameId;
 
 	float fTimeMs = dt.GetMilliSeconds();
-	CryLogAlways("<Frame:%d><EntityEvent> [%s](%X)\t[%.2fms]\t%s", nFrameId, sName, (int)event.nParam[0], fTimeMs, GetEntityTextDescription());
+	CryLogAlways("<Frame:%d><EntityEvent> [%s](%X)\t[%.2fms]\t%s", nFrameId, sName, (int)event.nParam[0], fTimeMs, GetEntityTextDescription().c_str());
 }
 
 IAIObject* CEntity::GetAIObject()

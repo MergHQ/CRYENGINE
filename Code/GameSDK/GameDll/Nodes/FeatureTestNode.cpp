@@ -518,7 +518,7 @@ bool CFlowNode_FeatureTest::StartNextTestRun()
 
 			CryLogAlways("Starting test: \"%s[%s]\". Max time: %fs. Entity start pos: (%f, %f, %f)",
 										Name(),
-										pSeqEntity->GetEntityTextDescription(),
+										pSeqEntity->GetEntityTextDescription().c_str(),
 										GetPortFloat(&m_actInfo, eInputPorts_MaxTime),
 										m_entityStartPos.x, m_entityStartPos.y, m_entityStartPos.z);
 

@@ -413,8 +413,6 @@ void CEntitySystem::Unload()
 
 	UnloadAreas();
 
-	CEntity::ClearStaticData();
-
 	stl::free_container(m_currentTimers);
 	m_pEntityArchetypeManager->Reset();
 
@@ -706,7 +704,7 @@ IEntity* CEntitySystem::SpawnEntity(SEntitySpawnParams& params, bool bAutoInit)
 			pEntity = m_EntityArray[IdToHandle(params.id).GetIndex()];
 
 			if (pEntity)
-				EntityWarning("Entity with id=%d, %s already spawned on this client...override", pEntity->GetId(), pEntity->GetEntityTextDescription());
+				EntityWarning("Entity with id=%d, %s already spawned on this client...override", pEntity->GetId(), pEntity->GetEntityTextDescription().c_str());
 			else
 				m_EntitySaltBuffer.InsertKnownHandle(IdToHandle(params.id));
 		}
@@ -1764,7 +1762,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 			if (pEntity)
 			{
 #ifdef _DEBUG
-				INDENT_LOG_DURING_SCOPE(true, "While updating %s...", pEntity->GetEntityTextDescription());
+				INDENT_LOG_DURING_SCOPE(true, "While updating %s...", pEntity->GetEntityTextDescription().c_str());
 #endif
 				pEntity->Update(ctx);
 			}
@@ -1802,7 +1800,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 				continue;
 
 #ifdef _DEBUG
-			INDENT_LOG_DURING_SCOPE(true, "While updating %s...", ce->GetEntityTextDescription());
+			INDENT_LOG_DURING_SCOPE(true, "While updating %s...", ce->GetEntityTextDescription().c_str());
 #endif
 			ce->Update(ctx);
 			ctx.numUpdatedEntities++;
@@ -1833,12 +1831,12 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 					{
 						fDiff = gEnv->pTimer->GetCurrTime() - pProxy->GetLastSeenTime();
 						if (bProfileEntitiesToLog)
-							CryLogAlways("(%d) %.3f ms : %s (was last visible %0.2f seconds ago)-AI =%s (%s)", nCounter, timeMs, ce->GetEntityTextDescription(), fDiff, bIsAI ? "" : "NOT an AI", bAIEnabled ? "true" : "false");
+							CryLogAlways("(%d) %.3f ms : %s (was last visible %0.2f seconds ago)-AI =%s (%s)", nCounter, timeMs, ce->GetEntityTextDescription().c_str(), fDiff, bIsAI ? "" : "NOT an AI", bAIEnabled ? "true" : "false");
 					}
 					else
 					{
 						if (bProfileEntitiesToLog)
-							CryLogAlways("(%d) %.3f ms : %s -AI =%s (%s) ", nCounter, timeMs, ce->GetEntityTextDescription(), bIsAI ? "" : "NOT an AI", bAIEnabled ? "true" : "false");
+							CryLogAlways("(%d) %.3f ms : %s -AI =%s (%s) ", nCounter, timeMs, ce->GetEntityTextDescription().c_str(), bIsAI ? "" : "NOT an AI", bAIEnabled ? "true" : "false");
 					}
 
 					if (bProfileEntitiesDesigner && (pProxy && bIsAI))
@@ -1846,9 +1844,9 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 						if (((fDiff > 180) && ce->HasAI()) || !bAIEnabled)
 						{
 							if ((fDiff > 180) && ce->HasAI())
-								cry_sprintf(szProfInfo, "Entity: %s is updated, but is not visible for more then 3 min", ce->GetEntityTextDescription());
+								cry_sprintf(szProfInfo, "Entity: %s is updated, but is not visible for more then 3 min", ce->GetEntityTextDescription().c_str());
 							else
-								cry_sprintf(szProfInfo, "Entity: %s is force being updated, but is not required by AI", ce->GetEntityTextDescription());
+								cry_sprintf(szProfInfo, "Entity: %s is force being updated, but is not required by AI", ce->GetEntityTextDescription().c_str());
 							float colors[4] = { 1, 1, 1, 1 };
 							gEnv->pRenderer->Draw2dLabel(xpos, ypos, 1.5f, colors, false, "%s", szProfInfo);
 							ypos += 12;
@@ -1915,7 +1913,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 
 					if (ce)
 					{
-						CryLogAlways("(%u) : %s ", dwRet, ce->GetEntityTextDescription());
+						CryLogAlways("(%u) : %s ", dwRet, ce->GetEntityTextDescription().c_str());
 						++dwRet;
 					}
 				} //dwI
@@ -2064,7 +2062,7 @@ void CEntitySystem::AddTimerEvent(SEntityTimerEvent& event, CTimeValue startTime
 	{
 		CEntity* pEntity = GetEntityFromID(event.entityId);
 		if (pEntity)
-			CryLogAlways("SetTimer (timerID=%d,time=%dms) for Entity %s", event.nTimerId, event.nMilliSeconds, pEntity->GetEntityTextDescription());
+			CryLogAlways("SetTimer (timerID=%d,time=%dms) for Entity %s", event.nTimerId, event.nMilliSeconds, pEntity->GetEntityTextDescription().c_str());
 	}
 }
 
@@ -2192,7 +2190,7 @@ void CEntitySystem::UpdateTimers()
 				if (CVar::es_DebugTimers)
 				{
 					if (pEntity)
-						CryLogAlways("OnTimer Event (timerID=%d,time=%dms) for Entity %s (which is %s)", event.nTimerId, event.nMilliSeconds, pEntity->GetEntityTextDescription(), pEntity->IsActive() ? "active" : "inactive");
+						CryLogAlways("OnTimer Event (timerID=%d,time=%dms) for Entity %s (which is %s)", event.nTimerId, event.nMilliSeconds, pEntity->GetEntityTextDescription().c_str(), pEntity->IsActive() ? "active" : "inactive");
 				}
 			}
 		}
@@ -2483,9 +2481,9 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 
 			CRenderProxy* pProxy = ce->GetRenderProxy();
 			if (pProxy)
-				cry_sprintf(szProfInfo, "%.3f ms : %s (%0.2f ago)", timeMs, ce->GetEntityTextDescription(), gEnv->pTimer->GetCurrTime() - pProxy->GetLastSeenTime());
+				cry_sprintf(szProfInfo, "%.3f ms : %s (%0.2f ago)", timeMs, ce->GetEntityTextDescription().c_str(), gEnv->pTimer->GetCurrTime() - pProxy->GetLastSeenTime());
 			else
-				cry_sprintf(szProfInfo, "%.3f ms : %s", timeMs, ce->GetEntityTextDescription());
+				cry_sprintf(szProfInfo, "%.3f ms : %s", timeMs, ce->GetEntityTextDescription().c_str());
 			if (timeMs > 0.5f)
 			{
 				pRender->DrawLabelEx(wp, 1.3f, colorsYellow, true, true, "%s", szProfInfo);
@@ -2516,7 +2514,7 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 		else
 		{
 			float colors[4] = { 1, 1, 1, 1 };
-			pRender->DrawLabelEx(wp, 1.2f, colors, true, true, "%s", ce->GetEntityTextDescription());
+			pRender->DrawLabelEx(wp, 1.2f, colors, true, true, "%s", ce->GetEntityTextDescription().c_str());
 		}
 
 		boundsColor.set(255, 255, 0, 255);
@@ -3668,7 +3666,7 @@ void CEntitySystem::DoPrePhysicsUpdate()
 		if (pEntity)
 		{
 #ifdef _DEBUG
-			INDENT_LOG_DURING_SCOPE(true, "While doing pre-physics update of %s...", pEntity->GetEntityTextDescription());
+			INDENT_LOG_DURING_SCOPE(true, "While doing pre-physics update of %s...", pEntity->GetEntityTextDescription().c_str());
 #endif
 			pEntity->PrePhysicsUpdate(fFrameTime);
 		}

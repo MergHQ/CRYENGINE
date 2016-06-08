@@ -618,7 +618,7 @@ struct IEntity
 	//! Retrieves the entity archetype.
 	//! Entity archetype contain definition for entity script properties.
 	//! \return Pointer to the entity archetype interface.
-	virtual IEntityArchetype* GetArchetype() = 0;
+	virtual IEntityArchetype* GetArchetype() const = 0;
 
 	//! Sets entity flags, completely replaces all flags which are already set in the entity.
 	//! \param flags Flag values which are defined in EEntityFlags.
@@ -662,7 +662,7 @@ struct IEntity
 	virtual const char* GetName() const = 0;
 
 	//! Returns textual description of entity for logging.
-	virtual const char* GetEntityTextDescription() const = 0;
+	virtual string GetEntityTextDescription() const = 0;
 
 	//! Serializes entity parameters to/from XML.
 	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading) = 0;
