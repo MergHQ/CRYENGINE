@@ -960,7 +960,9 @@ public:
 	};
 	enum EOutputs
 	{
+		eOut_Done,
 		eOut_Success,
+		eOut_Fail
 	};
 
 	CFlowNode_AIEnterVehicle(IFlowNode::SActivationInfo* pActInfo) : CFlowNode_AIForceableBase<true>(pActInfo) {}
@@ -990,7 +992,9 @@ public:
 	};
 	enum EOutputs
 	{
+		eOut_Done,
 		eOut_Success,
+		eOut_Fail
 	};
 
 	CFlowNode_AIExitVehicle(IFlowNode::SActivationInfo* pActInfo) : TBase(pActInfo) {}
