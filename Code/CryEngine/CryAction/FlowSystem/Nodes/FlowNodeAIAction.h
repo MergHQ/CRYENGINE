@@ -19,7 +19,6 @@
 #include "FlowBaseNode.h"
 #include "Vehicle/FlowVehicleBase.h"
 #include "IAnimationGraph.h"
-#include <CryEntitySystem/IEntityPoolManager.h>
 
 #include "Vehicle/FlowVehicleBase.h"
 
@@ -27,7 +26,7 @@
 // base AI Flow node
 //////////////////////////////////////////////////////////////////////////
 template<bool TBlocking>
-class CFlowNode_AIBase : public CFlowBaseNode<eNCT_Instanced>, public IEntityEventListener, public IGoalPipeListener, public IEntityPoolListener
+class CFlowNode_AIBase : public CFlowBaseNode<eNCT_Instanced>, public IEntityEventListener, public IGoalPipeListener
 {
 public:
 	static const bool m_bBlocking = TBlocking;
@@ -62,10 +61,6 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityEventListener
 	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event);
-
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityPoolListener
-	virtual void OnEntityReturnedToPool(EntityId entityId, IEntity* pEntity);
 
 	void         RegisterEvents();
 	virtual void UnregisterEvents();

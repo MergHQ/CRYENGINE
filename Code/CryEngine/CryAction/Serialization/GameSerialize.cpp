@@ -21,7 +21,6 @@
 #include "MaterialEffects/MaterialEffects.h"
 #include "Network/GameContext.h"
 #include "Network/GameServerNub.h"
-#include <CryEntitySystem/IEntityPoolManager.h>
 
 #ifdef USE_COPYPROTECTION
 	#include "CopyProtection.h"
@@ -202,7 +201,7 @@ void CGameSerialize::OnSpawn(IEntity* pEntity, SEntitySpawnParams&)
 {
 	assert(pEntity);
 
-	if (!gEnv->bMultiplayer && !(pEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE) && !pEntity->IsFromPool())
+	if (!gEnv->bMultiplayer && !(pEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
 	{
 		bool bSerializeEntity = gEnv->pEntitySystem->ShouldSerializedEntity(pEntity);
 
@@ -857,7 +856,7 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 		{
 			IEntity* pNextEntity = pIt->Next();
 			uint32 flags = pNextEntity->GetFlags();
-			if (!pNextEntity->IsGarbage() && !pNextEntity->IsFromPool() && !(flags & ENTITY_FLAG_UNREMOVABLE && flags & ENTITY_FLAG_NO_SAVE))
+			if (!pNextEntity->IsGarbage() && !(flags & ENTITY_FLAG_UNREMOVABLE && flags & ENTITY_FLAG_NO_SAVE))
 			{
 				tempSearchEntity.id = pNextEntity->GetId();
 				if ((stl::binary_find(loadEnvironment.m_basicEntityData.begin(), loadEnvironment.m_basicEntityData.end(), tempSearchEntity) == loadEnvironment.m_basicEntityData.end()))
@@ -1073,12 +1072,6 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 				continue;
 			}
 
-			if (pEntity->IsFromPool())
-			{
-				// GameWarning("Skipping Entity %d '%s' '%s' IsFromPool", pEntity->GetId(), pEntity->GetName(), pEntity->GetClass()->GetName());
-				continue;
-			}
-
 			{
 				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Basic entity data serialization");
 
@@ -1160,18 +1153,6 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 		gameState.EndGroup();
 
 		savEnv.m_checkpoint.Check("EntityPrep");
-	}
-
-	// Entity pools get serialized just before the normal entity data, so they can be re-created just before
-	//	the normal entities are re-created
-	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Entity pool serialization");
-
-		// Store entity ids sorted in a file.
-		IEntityPoolManager* pEntityPoolManager = gEnv->pEntitySystem->GetIEntityPoolManager();
-		assert(pEntityPoolManager);
-
-		pEntityPoolManager->Serialize(gameState);
 	}
 
 	{
@@ -1268,9 +1249,7 @@ bool CGameSerialize::SaveGameData(SSaveEnvironment& savEnv, TSerialize& gameStat
 				EntityId id = *iter;
 				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
 
-				// pooled AI appear in the save list because they are present in the editor. They are saved by the pool manager
-				//	so we can skip them here
-				if (pEntity && !pEntity->IsFromPool())
+				if (pEntity)
 				{
 					if ((pEntity->GetPhysics() && pEntity->GetPhysics()->GetType() == PE_ROPE) == !pass)
 						continue;
@@ -1631,11 +1610,6 @@ bool CGameSerialize::LoadEntities(SLoadEnvironment& loadEnv, std::unique_ptr<TSe
 
 	//fix breakables forced ids
 	pEntitySystem->SetNextSpawnId(0);
-
-	// Serialize entity pools (will recreate all entities that existed from the pool on save)
-	IEntityPoolManager* pEntityPoolManager = gEnv->pEntitySystem->GetIEntityPoolManager();
-	assert(pEntityPoolManager);
-	pEntityPoolManager->Serialize(*loadEnv.m_pSer);
 
 	// basic entity data
 	LoadBasicEntityData(loadEnv);

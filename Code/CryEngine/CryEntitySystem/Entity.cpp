@@ -237,7 +237,6 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_bWasRelocated = 0;
 	m_bNotInheritXform = 0;
 	m_bInShutDown = 0;
-	m_bIsFromPool = 0;
 	m_bLoadedFromLevelFile = 0;
 
 	m_pGridLocation = 0;
@@ -447,19 +446,6 @@ bool CEntity::ReloadEntity(SEntityLoadParams& loadParams)
 	}
 
 	return bResult;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntity::SetPoolControl(bool bSet)
-{
-	m_bIsFromPool = bSet;
-
-	if (bSet)
-	{
-		// Initially turned off
-		Activate(false);
-		Hide(true);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2556,12 +2542,6 @@ bool CEntity::RegisterInAISystem(const AIObjectParams& params)
 		IAIObjectManager* pAIObjMgr = pAISystem->GetAIObjectManager();
 		if (IAIObject* pAIObject = GetAIObject())
 		{
-			CRY_ASSERT_TRACE(!m_bIsFromPool, ("Reregistering pool entity \"%s\" AI will break everything! (wierd behavior, dangling pointers, etc.", GetName()));
-			if (m_bIsFromPool)
-			{
-				return false;
-			}
-
 			pAIObjMgr->RemoveObject(m_aiObjectID);
 			m_aiObjectID = INVALID_AIOBJECTID;
 			// The RemoveObject() call triggers immediate complete cleanup. Ideally the system would wait, as it does for internal removals. {2009/04/07}

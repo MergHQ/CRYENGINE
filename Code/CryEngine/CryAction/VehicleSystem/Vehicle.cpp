@@ -1243,7 +1243,6 @@ void CVehicle::ProcessEvent(SEntityEvent& entityEvent)
 		break;
 
 	case ENTITY_EVENT_DONE:
-	case ENTITY_EVENT_RETURNING_TO_POOL:
 		{
 			// Passengers should exit now.
 			for (TVehicleSeatVector::iterator it = m_seats.begin(), end = m_seats.end(); it != end; ++it)

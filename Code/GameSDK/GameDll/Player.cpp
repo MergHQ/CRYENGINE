@@ -1417,16 +1417,6 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 			}
 		}
 		break;
-	case ENTITY_EVENT_RETURNING_TO_POOL:
-		{
-			IVehicle *pVehicle = GetLinkedVehicle();
-			if (pVehicle)
-			{
-				pVehicle->ClientEvictPassenger(this);
-				GetEntity()->Hide(true);
-			}
-		}
-		break;
 	case ENTITY_EVENT_DONE:
 		{
 			//NB IsClient doesn't work at this point

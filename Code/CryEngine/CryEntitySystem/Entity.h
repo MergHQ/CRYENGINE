@@ -169,8 +169,6 @@ public:
 	virtual void Activate(bool bActive) override;
 	virtual bool IsActive() const override { return m_bActive; }
 
-	virtual bool IsFromPool() const override { return IsPoolControlled(); }
-
 	virtual void PrePhysicsActivate(bool bActive) override;
 	virtual bool IsPrePhysicsActive() override;
 
@@ -327,9 +325,6 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	bool ReloadEntity(SEntityLoadParams& loadParams);
 
-	void SetPoolControl(bool bSet);
-	bool IsPoolControlled() const { return m_bIsFromPool; }
-
 	//////////////////////////////////////////////////////////////////////////
 	// Activates entity only for specified number of frames.
 	// numUpdates must be a small number from 0-15.
@@ -441,7 +436,6 @@ private:
 	unsigned int m_bNotInheritXform     : 1;        // Inherit or not transformation from parent.
 	unsigned int m_bInShutDown          : 1;        // Entity is being shut down.
 
-	unsigned int m_bIsFromPool          : 1;    // Set if entity was created through the pool system
 	mutable bool m_bDirtyForwardDir     : 1;    // Cached world transformed forward vector
 	unsigned int m_bLoadedFromLevelFile : 1;    // Entity was loaded from level file
 	#ifdef SEG_WORLD

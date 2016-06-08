@@ -31,7 +31,6 @@
 #include <CryNetwork/ISerialize.h>
 #include "EntityLayer.h"
 #include "EntityLoadManager.h"
-#include "EntityPoolManager.h"
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CryEntitySystem/IBreakableManager.h>
 #include <CryGame/IGame.h>
@@ -278,7 +277,6 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 	m_pEventDistributer = new CComponentEventDistributer(CVar::pUpdateType->GetIVal());
 
 	m_pEntityLoadManager = new CEntityLoadManager(this);
-	m_pEntityPoolManager = new CEntityPoolManager(this);
 
 	m_pPartitionGrid = new CPartitionGrid;
 	m_pProximityTriggerSystem = new CProximityTriggerSystem;
@@ -325,7 +323,6 @@ CEntitySystem::~CEntitySystem()
 	SAFE_DELETE(m_pEntityScriptBinding);
 	SAFE_DELETE(m_pEventDistributer);
 	SAFE_DELETE(m_pEntityLoadManager);
-	SAFE_DELETE(m_pEntityPoolManager);
 
 	SAFE_DELETE(m_pPhysicsEventListener);
 
@@ -439,9 +436,6 @@ void CEntitySystem::Reset()
 	m_pEntityLoadManager->Reset();
 
 	m_pEventDistributer->Reset();
-
-	assert(m_pEntityPoolManager);
-	m_pEntityPoolManager->Reset();
 
 	// Flush the physics linetest and events queue
 	if (gEnv->pPhysicalWorld)
@@ -589,11 +583,6 @@ void CEntitySystem::OnEntityReused(IEntity* pEntity, SEntitySpawnParams& params)
 	{
 		(*si)->OnReused(pEntity, params);
 	}
-
-	assert(m_pEntityPoolManager);
-	CEntity* pCEntity = (CEntity*)pEntity;
-	if (pCEntity && pCEntity->IsPoolControlled())
-		m_pEntityPoolManager->OnPoolEntityInUse(pCEntity, params.prevId);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -716,28 +705,19 @@ IEntity* CEntitySystem::SpawnEntity(SEntitySpawnParams& params, bool bAutoInit)
 
 	if (!pEntity)
 	{
-		// Is this entity class pooled, if so take entity from pool.
-		if (params.bCreatedThroughPool && m_pEntityPoolManager->IsClassUsingPools(params.pClass))
+		// Makes new entity.
+		pEntity = new CEntity(params);
+		// put it into the entity map
+		m_EntityArray[IdToHandle(params.id).GetIndex()] = pEntity;
+
+		if (params.guid)
+			RegisterEntityGuid(params.guid, params.id);
+
+		if (bAutoInit)
 		{
-			pEntity = m_pEntityPoolManager->PrepareDynamicFromPool(params, bAutoInit);
-		}
-
-		if (!pEntity)
-		{
-			// Makes new entity.
-			pEntity = new CEntity(params);
-			// put it into the entity map
-			m_EntityArray[IdToHandle(params.id).GetIndex()] = pEntity;
-
-			if (params.guid)
-				RegisterEntityGuid(params.guid, params.id);
-
-			if (bAutoInit)
+			if (!InitEntity(pEntity, params))   // calls DeleteEntity() on failure
 			{
-				if (!InitEntity(pEntity, params))   // calls DeleteEntity() on failure
-				{
-					return NULL;
-				}
+				return NULL;
 			}
 		}
 	}
@@ -851,8 +831,6 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 
 	if (pEntity)
 	{
-		CRY_ASSERT_MESSAGE(!pEntity->IsFromPool(), "About to delete an entity who is still marked as coming from the pool");
-
 		if (gEnv->pGame)
 		{
 			IGameFramework* pFramework = gEnv->pGame->GetIGameFramework();
@@ -942,11 +920,7 @@ void CEntitySystem::RemoveEntity(EntityId entity, bool bForceRemoveNow)
 			return;
 		}
 
-		if (pEntity->IsFromPool())
-		{
-			m_pEntityPoolManager->ReturnToPool(entity, false);
-		}
-		else if (!pEntity->m_bGarbage)
+		if (!pEntity->m_bGarbage)
 		{
 			EntitySystemSinks& sinks = m_sinks[static_log2 < IEntitySystem::OnRemove > ::value];
 			EntitySystemSinks::iterator si = sinks.begin();
@@ -1214,8 +1188,6 @@ void CEntitySystem::Update()
 
 		UpdateEngineCVars();
 
-		m_pEntityPoolManager->Update();
-
 #if defined(USE_GEOM_CACHES)
 		m_pGeomCacheAttachmentManager->Update();
 #endif
@@ -1275,9 +1247,6 @@ void CEntitySystem::Update()
 
 	if (CVar::pDrawAreaGrid->GetIVal() != 0)
 		m_pAreaManager->DrawGrid();
-
-	if (CVar::es_DebugPool != 0)
-		m_pEntityPoolManager->DebugDraw();
 
 	if (CVar::es_DebugEntityUsage > 0)
 		DebugDrawEntityUsage();
@@ -1368,7 +1337,6 @@ void CEntitySystem::DebugDrawEntityUsage()
 		}
 
 		pRenderer->Draw2dLabel(fColumnX_Class, fColumnY, 1.2f, colWhite, false, "%s", sTitle.c_str());
-		pRenderer->Draw2dLabel(fColumnX_TotalCount, fColumnY, 1.2f, colWhite, true, "Total / Pool Counts");
 		pRenderer->Draw2dLabel(fColumnX_ActiveCount, fColumnY, 1.2f, colWhite, true, "Active");
 		pRenderer->Draw2dLabel(fColumnX_HiddenCount, fColumnY, 1.2f, colWhite, true, "Hidden");
 		pRenderer->Draw2dLabel(fColumnX_MemoryUsage, fColumnY, 1.2f, colWhite, true, "Memory Usage");
@@ -1414,7 +1382,6 @@ void CEntitySystem::DebugDrawEntityUsage()
 			}
 
 			pRenderer->Draw2dLabel(fColumnX_Class, fColumnY, 1.0f, colWhite, false, "%s", szName);
-			pRenderer->Draw2dLabel(fColumnX_TotalCount, fColumnY, 1.0f, colWhite, true, "%u / %u", uTotalCount, m_pEntityPoolManager->GetPoolSizeByClass(szName));
 			pRenderer->Draw2dLabel(fColumnX_ActiveCount, fColumnY, 1.0f, colWhite, true, "%u", uActiveCount);
 			pRenderer->Draw2dLabel(fColumnX_HiddenCount, fColumnY, 1.0f, colWhite, true, "%u", uHiddenCount);
 			pRenderer->Draw2dLabel(fColumnX_MemoryUsage, fColumnY, 1.0f, colWhite, true, "%u (%uKb)", uTotalMemory, uTotalMemory / 1000);
@@ -2026,11 +1993,6 @@ void CEntitySystem::GetMemoryStatistics(ICrySizer* pSizer) const
 	pSizer->AddObject(this, sizeof(*this));
 
 	{
-		SIZER_COMPONENT_NAME(pSizer, "EntityPool");
-		m_pEntityPoolManager->GetMemoryStatistics(pSizer);
-	}
-
-	{
 		SIZER_COMPONENT_NAME(pSizer, "EntityLoad");
 		m_pEntityLoadManager->GetMemoryStatistics(pSizer);
 	}
@@ -2341,16 +2303,12 @@ bool CEntitySystem::OnLoadLevel(const char* szLevelPath)
 {
 	int nTerrainSize = gEnv->p3DEngine ? gEnv->p3DEngine->GetTerrainSize() : 0;
 	ResizeProximityGrid(nTerrainSize, nTerrainSize);
-
-	assert(m_pEntityPoolManager);
-	return m_pEntityPoolManager->OnLoadLevel(szLevelPath);
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::OnLevelLoadStart()
 {
-	assert(m_pEntityPoolManager);
-	m_pEntityPoolManager->OnLevelLoadStart();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2361,12 +2319,6 @@ void CEntitySystem::LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFi
 
 	//Update loading screen and important tick functions
 	SYNCHRONOUS_LOADING_TICK();
-
-	assert(m_pEntityPoolManager);
-	if (!m_pEntityPoolManager->CreatePools())
-	{
-		EntityWarning("CEntitySystem::LoadEntities : Failed when prepairing the Entity Pools.");
-	}
 
 	//Update loading screen and important tick functions
 	SYNCHRONOUS_LOADING_TICK();
