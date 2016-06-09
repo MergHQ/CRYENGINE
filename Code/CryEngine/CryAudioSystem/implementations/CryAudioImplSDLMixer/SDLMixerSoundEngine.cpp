@@ -306,17 +306,21 @@ bool LoadSampleImpl(const TSampleID nID, const string& sSamplePath)
 	return bSuccess;
 }
 
-const TSampleID LoadSample(const string& sSampleFilePath)
+const TSampleID LoadSample(const string& sampleFilePath, bool bOnlyMetadata)
 {
-	const TSampleID nID = GetIDFromFilePath(sSampleFilePath);
-	if (stl::find_in_map(g_sampleData, nID, nullptr) == nullptr)
+	const TSampleID id = GetIDFromFilePath(sampleFilePath);
+	if (stl::find_in_map(g_sampleData, id, nullptr) == nullptr)
 	{
-		if (!LoadSampleImpl(nID, sSampleFilePath))
+		if (bOnlyMetadata)
+		{
+			g_samplePaths[id] = g_sampleDataRootDir + sampleFilePath;
+		}
+		else if (!LoadSampleImpl(id, sampleFilePath))
 		{
 			return SDL_MIXER_INVALID_SAMPLE_ID;
 		}
 	}
-	return nID;
+	return id;
 }
 
 const TSampleID LoadSampleFromMemory(void* pMemory, const size_t nSize, const string& sSamplePath, const TSampleID overrideId)
@@ -544,15 +548,15 @@ bool ExecuteEvent(SATLAudioObjectData_sdlmixer* const pAudioObject, SATLTriggerI
 }
 
 bool PlayFile(CryAudio::Impl::SATLAudioObjectData_sdlmixer* const pAudioObject
-	, CryAudio::Impl::CAudioStandaloneFile_sdlmixer* const pEventInstance
-	, const CryAudio::Impl::SATLTriggerImplData_sdlmixer* const pUsedTrigger
-	, const char* const szFilePath)
+              , CryAudio::Impl::CAudioStandaloneFile_sdlmixer* const pEventInstance
+              , const CryAudio::Impl::SATLTriggerImplData_sdlmixer* const pUsedTrigger
+              , const char* const szFilePath)
 {
 	if (!pUsedTrigger)
 	{
 		return false;
 	}
-	
+
 	TSampleID idForThisFile = pEventInstance->fileId;
 	Mix_Chunk* pSample = stl::find_in_map(g_sampleData, idForThisFile, nullptr);
 

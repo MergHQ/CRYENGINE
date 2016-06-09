@@ -25,7 +25,7 @@ void UnMute();
 void Stop();
 
 // Load / Unload samples
-const TSampleID LoadSample(const string& sSampleFilePath);
+const TSampleID LoadSample(const string& sampleFilePath, bool bOnlyMetadata);
 const TSampleID LoadSampleFromMemory(void* pMemory, const size_t nSize, const string& sSamplePath, const TSampleID nID = 0);
 void            UnloadSample(const TSampleID nID);
 
