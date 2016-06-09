@@ -167,7 +167,7 @@ EAudioRequestStatus CAudioImpl::RegisterAudioObject(IAudioObject* const pAudioOb
 
 	if (pSdlMixerObject)
 	{
-		RegisterAudioObject(pSdlMixerObject);
+		SoundEngine::RegisterAudioObject(pSdlMixerObject);
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 		m_idToName[pSdlMixerObject->audioObjectId] = szAudioObjectName;
 #endif
@@ -181,7 +181,7 @@ EAudioRequestStatus CAudioImpl::RegisterAudioObject(IAudioObject* const pAudioOb
 	SAudioObject* const pSdlMixerObject = static_cast<SAudioObject* const>(pAudioObject);
 	if (pSdlMixerObject)
 	{
-		RegisterAudioObject(pSdlMixerObject);
+		SoundEngine::RegisterAudioObject(pSdlMixerObject);
 		return eAudioRequestStatus_Success;
 	}
 	return eAudioRequestStatus_Failure;
@@ -192,7 +192,7 @@ EAudioRequestStatus CAudioImpl::UnregisterAudioObject(IAudioObject* const pAudio
 	SAudioObject* const pSdlMixerObject = static_cast<SAudioObject* const>(pAudioObject);
 	if (pSdlMixerObject)
 	{
-		UnregisterAudioObject(pSdlMixerObject);
+		SoundEngine::UnregisterAudioObject(pSdlMixerObject);
 		return eAudioRequestStatus_Success;
 	}
 	return eAudioRequestStatus_Failure;
