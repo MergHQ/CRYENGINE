@@ -10,6 +10,7 @@
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 #include <CrySerialization/StringList.h>
+#include "ConfigurationManager.h"
 
 namespace ACE
 {
