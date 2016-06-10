@@ -452,6 +452,8 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 			char const* const szFileName = pAudioTriggerNode->getAttr(s_szSDLCommonAttribute);
 			pNewTriggerImpl->sampleId = GetIDFromString(szFileName);
 
+			SoundEngine::LoadSample(szFileName, true);
+
 			pNewTriggerImpl->bStartEvent = (_stricmp(pAudioTriggerNode->getAttr(s_szSDLEventTypeTag), "stop") != 0);
 			if (pNewTriggerImpl->bStartEvent)
 			{
