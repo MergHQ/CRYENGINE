@@ -146,7 +146,6 @@ NavigationSystem::NavigationSystem(const char* configName)
 	SetupTasks();
 
 	m_worldMonitor = WorldMonitor(functor(*this, &NavigationSystem::WorldChanged));
-	StartWorldMonitoring();
 
 	ReloadConfig();
 
@@ -2390,9 +2389,9 @@ void NavigationSystem::SetupTasks()
 	m_free = 0;
 }
 
-void NavigationSystem::RegisterArea(const char* shapeName)
+bool NavigationSystem::RegisterArea(const char* shapeName, NavigationVolumeID& outVolumeId)
 {
-	m_volumesManager.RegisterArea(shapeName);
+	return m_volumesManager.RegisterArea(shapeName, outVolumeId);
 }
 
 void NavigationSystem::UnRegisterArea(const char* shapeName)
@@ -2413,6 +2412,51 @@ void NavigationSystem::SetAreaId(const char* shapeName, NavigationVolumeID id)
 void NavigationSystem::UpdateAreaNameForId(const NavigationVolumeID id, const char* newShapeName)
 {
 	m_volumesManager.UpdateNameForAreaID(id, newShapeName);
+}
+
+void NavigationSystem::RemoveLoadedMeshesWithoutRegisteredAreas()
+{
+	std::vector<NavigationVolumeID> volumesToRemove;
+	m_volumesManager.GetLoadedUnregisteredVolumes(volumesToRemove);
+
+	if (!volumesToRemove.empty())
+	{
+		std::vector<NavigationMeshID> meshesToRemove;
+
+		for (const NavigationVolumeID& volumeId : volumesToRemove)
+		{
+			AILogComment("Removing Navigation Volume id = %u because it was created by loaded unregistered navigation area.",
+			             (uint32)volumeId);
+
+			for (const AgentType& agentType : m_agentTypes)
+			{
+				for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+				{
+					const NavigationMeshID meshID = meshInfo.id;
+					const NavigationMesh& mesh = m_meshes[meshID];
+
+					if (mesh.boundary == volumeId)
+					{
+						meshesToRemove.push_back(meshID);
+						AILogComment("Removing NavMesh '%s' (meshId = %u, agent = %s) because it uses loaded unregistered navigation area id = %u.",
+						             mesh.name.c_str(), (uint32)meshID, agentType.name.c_str(), (uint32)volumeId);
+					}
+				}
+			}
+		}
+
+		for (const NavigationMeshID& meshId : meshesToRemove)
+		{
+			DestroyMesh(meshId);
+		}
+
+		for (const NavigationVolumeID& volumeId : volumesToRemove)
+		{
+			DestroyVolume(volumeId);
+		}
+	}
+
+	m_volumesManager.ClearLoadedAreas();
 }
 
 void NavigationSystem::StartWorldMonitoring()
@@ -2726,6 +2770,8 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 
 	m_pEditorBackgroundUpdate->Pause(true);
 
+	m_volumesManager.ClearLoadedAreas();
+
 	CCryFile file;
 	if (false != file.Open(fileName, "rb"))
 	{
@@ -2792,10 +2838,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 				uint32 areaIDUint32 = 0;
 				file.ReadType(&areaIDUint32);
 #if !defined(SEG_WORLD)
-				if (gEnv->IsEditor())
-				{
-					m_volumesManager.SetAreaID(areaName, NavigationVolumeID(areaIDUint32));
-				}
+				m_volumesManager.RegisterAreaFromLoadedData(areaName, NavigationVolumeID(areaIDUint32));
 #endif
 			}
 
@@ -2857,12 +2900,6 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 
 					const size_t fileSeekPositionForNextMesh = file.GetPosition() + totalMeshMemory;
 
-					if (gEnv->IsEditor() && !m_volumesManager.IsAreaPresent(meshName))
-					{
-						file.Seek(fileSeekPositionForNextMesh, SEEK_SET);
-						continue;
-					}
-
 					// Reading mesh boundary
 #ifdef SW_NAVMESH_USE_GUID
 					NavigationVolumeGUID boundaryGUID = 0;
@@ -2872,6 +2909,39 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					file.ReadType(&boundaryIDuint32);
 					NavigationVolumeID boundaryID = NavigationVolumeID(boundaryIDuint32);
 #endif
+
+					{
+						if (m_volumesManager.GetLoadedAreaID(meshName) != boundaryID)
+						{
+							AIWarning("The NavMesh '%s' (agent = '%s', meshId = %u, boundaryVolumeId = %u) and the loaded corresponding Navigation Area have different IDs. Data might be corrupted.",
+							          meshName, agentName, meshIDuint32, (uint32)boundaryID);
+						}
+
+						const NavigationVolumeID existingAreaId = m_volumesManager.GetAreaID(meshName);
+						if (existingAreaId != boundaryID)
+						{
+							if (!m_volumesManager.IsAreaPresent(meshName))
+							{
+								if (!m_volumesManager.IsLoadedAreaPresent(meshName))
+								{
+									AIWarning("The NavMesh '%s' (agent = '%s', meshId = %u, boundaryVolumeId = %u) doesn't have a loaded corresponding Navigation Area. Data might be corrupted.",
+									          meshName, agentName, meshIDuint32, (uint32)boundaryID);
+								}
+							}
+							else
+							{
+								if (existingAreaId == NavigationVolumeID() && bAfterExporting)
+								{
+									// Expected situation
+								}
+								else
+								{
+									AIWarning("The NavMesh '%s' (agent = '%s', meshId = %u, boundaryVolumeId = %u) and the existing corresponding Navigation Area have different IDs. Data might be corrupted.",
+									          meshName, agentName, meshIDuint32, (uint32)boundaryID);
+								}
+							}
+						}
+					}
 
 					//Saving the volume used by the boundary
 					MNM::BoundingVolume volume;
