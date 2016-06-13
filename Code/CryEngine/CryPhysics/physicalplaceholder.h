@@ -15,9 +15,9 @@ struct CRY_ALIGN(4) pe_gridthunk {
 	uint64 iSimClass : 3;
 	uint64 bFirstInCell : 1;
 	unsigned char BBox[4];
-	class CPhysicalPlaceholder *pent;
 	int BBoxZ0 : 16;
 	int BBoxZ1 : 16;
+	class CPhysicalPlaceholder *pent;
 };
 #pragma pack(pop)
 
