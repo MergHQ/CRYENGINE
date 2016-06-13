@@ -134,7 +134,7 @@ public:
 
 	DynArray<SVertexFrameState>& GetFrameStates() { return m_frameStates; }
 
-	bool                         CreateFrameStates(const CSoftwareVertexFrames& vertexFrames, const CDefaultSkeleton& skeleton);
+	void                         CreateFrameStates(const CSoftwareVertexFrames& vertexFrames, const CDefaultSkeleton& skeleton);
 	void                         UpdateFrameWeightsFromPose(const Skeleton::CPoseData& pose);
 
 private:

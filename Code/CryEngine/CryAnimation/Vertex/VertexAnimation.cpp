@@ -278,50 +278,23 @@ uint FindVertexFrameIndex(const CSoftwareVertexFrames& vertexFrames, const char*
 	return -1;
 }
 
-bool CVertexAnimation::CreateFrameStates(const CSoftwareVertexFrames& vertexFrames, const CDefaultSkeleton& skeleton)
+void CVertexAnimation::CreateFrameStates(const CSoftwareVertexFrames& vertexFrames, const CDefaultSkeleton& skeleton)
 {
-	static const char* BLEND_VERTEX_NAME = "_blendWeightVertex";
-	static const uint BLEND_VERTEX_NAME_LENGTH = strlen(BLEND_VERTEX_NAME);
+	static const char MORPH_TARGET_CONTROLLER_SUFFIX[] = "_blendWeightVertex";
 
-	if (!vertexFrames.GetCount())
-		return false;
+	m_frameStates.reserve(vertexFrames.GetCount());
 
-	const SSoftwareVertexFrame* pVertexFrames = vertexFrames.GetFrames();
-	const uint jointCount = skeleton.GetJointCount();
-	const CDefaultSkeleton::SJoint* pModelJoints = &skeleton.m_arrModelJoints[0];
-
-	char name[256];
-	for (uint i = 0; i < jointCount; ++i)
+	for (uint32 i = 0, limit = vertexFrames.GetCount(); i < limit; ++i)
 	{
-		const char* jointName = pModelJoints[i].m_strJointName.c_str();
-		const char* jointNameEnd = strstr(jointName, BLEND_VERTEX_NAME);
-		if (!jointNameEnd)
-			continue;
-		if (strlen(jointNameEnd) != BLEND_VERTEX_NAME_LENGTH)
-			continue;
+		const auto& vertexFrame = vertexFrames.GetFrames()[i];
+		const auto& expectedControllerName = stack_string(vertexFrame.name) + MORPH_TARGET_CONTROLLER_SUFFIX;
 
-		uint length = uint(jointNameEnd - jointName);
-		if (length > sizeof(name) - 1)
-			length = 0;
-		if (!length)
-			continue;
-
-		memcpy(name, jointName, length);
-		name[length] = '\0';
-
-		uint frameIndex = FindVertexFrameIndex(vertexFrames, name);
-		if (frameIndex != -1)
-		{
-			m_frameStates.push_back();
-			m_frameStates.back().pFrame = &pVertexFrames[frameIndex];
-			m_frameStates.back().jointIndex = i;
-			m_frameStates.back().frameIndex = frameIndex;
-			m_frameStates.back().flags = 0;
-		}
+		m_frameStates.push_back();
+		m_frameStates.back().pFrame = &vertexFrame;
+		m_frameStates.back().jointIndex = skeleton.GetJointIDByName(expectedControllerName);
+		m_frameStates.back().frameIndex = i;
+		m_frameStates.back().flags = 0;
 	}
-
-	return true;
-
 }
 
 void CVertexAnimation::UpdateFrameWeightsFromPose(const Skeleton::CPoseData& pose)
