@@ -993,7 +993,7 @@ struct pe_params_car : pe_params
 		MARK_UNUSED engineMaxRPM, iIntegrationType, axleFriction, enginePower, maxSteer, maxTimeStep, minEnergy, damping, brakeTorque;
 		MARK_UNUSED engineMinRPM, engineShiftUpRPM, engineShiftDownRPM, engineIdleRPM, engineStartRPM, clutchSpeed, nGears, gearRatios, kStabilizer;
 		MARK_UNUSED slipThreshold, gearDirSwitchRPM, kDynFriction, minBrakingFriction, maxBrakingFriction, steerTrackNeutralTurn, maxGear, minGear, pullTilt;
-		MARK_UNUSED maxTilt, bKeepTractionWhenTilted;
+		MARK_UNUSED maxTilt, bKeepTractionWhenTilted, wheelMassScale;
 	}
 
 	float  axleFriction;       //!< friction torque at axes divided by mass of vehicle
@@ -1025,6 +1025,7 @@ struct pe_params_car : pe_params
 	float  pullTilt;                //!< for tracked vehicles, tilt angle of pulling force towards ground
 	float  maxTilt;                 //!< maximum wheel contact normal tilt (left or right) after which it acts as a locked part of the hull; it's a cosine of the angle
 	int    bKeepTractionWhenTilted; //!< keeps wheel traction in tilted mode
+	float  wheelMassScale;          //!< scales wheels' masses for inertia computations (default 0)
 };
 
 struct pe_params_wheel : pe_params

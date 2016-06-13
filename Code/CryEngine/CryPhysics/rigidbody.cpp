@@ -110,7 +110,7 @@ void RigidBody::Step(float dt)
 
 	float E0 = 0;
 	Quat dq;
-	if (!(flags & rb_RK4))
+	if (!(flags & rb_RK4) && w.len2()*sqr(dt)<sqr(0.2f))
 		dq = w_dt(w,dt);
 	else {
 		E0 = L*w;
