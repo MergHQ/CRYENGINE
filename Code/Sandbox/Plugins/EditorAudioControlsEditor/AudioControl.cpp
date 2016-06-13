@@ -8,7 +8,6 @@
 #include <IAudioSystemItem.h>
 #include <ACETypes.h>
 #include "AudioControlsEditorPlugin.h"
-#include "ConfigurationManager.h"
 #include "ImplementationManager.h"
 #include <CrySerialization/StringList.h>
 #include "ConfigurationManager.h"
