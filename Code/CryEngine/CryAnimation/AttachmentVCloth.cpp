@@ -2017,12 +2017,12 @@ void CClothSimulator::PositionsProjectToProxySurface(f32 t01)
 				if (false)
 				{
 					const int id0 = colliderId[0];
-					const Quaternion& m0 = collidables[id0].qLerp.q;                          // transformation matrix
+					const Quaternion& m0 = collidables[id0].qLerp.q;                        // transformation matrix
 					Vector4 ipos0 = (m_particlesHot[i].pos - collidables[id0].offset) * m0; // particles position in collider space
 					const float dist0 = VClothUtils::ColliderDistance(collidables[id0], ipos0);
 
 					const int id1 = colliderId[1];
-					const Quaternion& m1 = collidables[id1].qLerp.q;                          // transformation matrix
+					const Quaternion& m1 = collidables[id1].qLerp.q;                        // transformation matrix
 					Vector4 ipos1 = (m_particlesHot[i].pos - collidables[id1].offset) * m1; // particles position in collider space
 					const float dist1 = VClothUtils::ColliderDistance(collidables[id1], ipos1);
 
@@ -2123,7 +2123,8 @@ void CClothSimulator::DecreaseFadeInOutTimer(float dt)
 
 bool CClothSimulator::CheckCameraDistanceLessThan(float dist) const
 {
-	Vec3 distV = gEnv->p3DEngine->GetRenderingCamera().GetPosition() - m_pAttachmentManager->m_pSkelInstance->m_location.t; // distance vector to camera
+	Vec3 distV = gEnv->p3DEngine->GetRenderingCamera().GetPosition() - m_pAttachmentManager->m_pSkelInstance->m_location.t; // distance vector to camera (animation pivot)
+	distV -= m_pAttachmentManager->m_pSkelInstance->GetAABB().GetCenter();                                                  // use center of actual position (determined by BB), not of pivot
 	float distSqr = distV.dot(distV);
 	return distSqr < dist * dist;
 }
@@ -3327,6 +3328,7 @@ void CClothPiece::SkinSimulationToRenderMesh(int lod, CVertexData& vertexData, c
 
 		if (m_clothGeom->skinMap[lod][i].iMap < 0)
 			continue;
+
 #ifdef CLOTH_SSE
 		Vector4 p = SkinByTriangle(i, pVtx, lod);
 		p.StoreAligned((float*)&newPos);
