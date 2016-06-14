@@ -13,8 +13,7 @@ class CSceneGBufferStage : public CGraphicsPipelineStage
 {
 	enum EPerPassTexture
 	{
-		ePerPassTexture_TerrainElevMap = 26,
-		ePerPassTexture_WindGrid,
+		ePerPassTexture_WindGrid = 27,
 		ePerPassTexture_TerrainNormMap,
 		ePerPassTexture_TerrainBaseMap,
 		ePerPassTexture_NormalsFitting,

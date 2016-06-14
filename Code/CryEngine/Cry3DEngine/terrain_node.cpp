@@ -121,7 +121,7 @@ void CTerrainNode::SetupTexturing(bool bMakeUncompressedForEditing, const SRende
 #ifndef _RELEASE
 	if (gEnv->IsEditor())
 	{
-		if (CTerrainNode* pTextureSourceNode = GetReadyTexSourceNode(passInfo.IsShadowPass() ? 0 : m_cNodeNewTexMML, ett_Diffuse))
+		if (CTerrainNode* pTextureSourceNode = GetReadyTexSourceNode(m_cNodeNewTexMML, ett_Diffuse))
 		{
 			if (pTextureSourceNode->m_eTextureEditingState == eTES_SectorIsModified_AtlasIsDirty && C3DEngine::m_pGetLayerIdAtCallback)
 			{
@@ -135,7 +135,7 @@ void CTerrainNode::SetupTexturing(bool bMakeUncompressedForEditing, const SRende
 	CheckLeafData();
 
 	// find parent node containing requested texture lod
-	CTerrainNode* pTextureSourceNode = GetReadyTexSourceNode(passInfo.IsShadowPass() ? 0 : m_cNodeNewTexMML, ett_Diffuse);
+	CTerrainNode* pTextureSourceNode = GetReadyTexSourceNode(m_cNodeNewTexMML, ett_Diffuse);
 
 	if (!pTextureSourceNode) // at least root texture has to be loaded
 		pTextureSourceNode = m_pTerrain->GetParentNode(m_nSID);
@@ -174,9 +174,6 @@ void CTerrainNode::SetupTexturing(bool bMakeUncompressedForEditing, const SRende
 
 	m_nTexSet.nTex1 = (pTextureSourceNode && pTextureSourceNode->m_nNodeTexSet.nTex1) ?
 	                  pTextureSourceNode->m_nNodeTexSet.nTex1 : nDefaultTexId;
-
-	m_nTexSet.nTex2 = (pTextureSourceNode && pTextureSourceNode->m_nNodeTexSet.nTex2) ?
-										pTextureSourceNode->m_nNodeTexSet.nTex2 : nDefaultTexId;
 
 	if (pTextureSourceNode && pTextureSourceNode->m_nNodeTexSet.nTex0)
 		m_nTexSet = pTextureSourceNode->m_nNodeTexSet;
@@ -642,7 +639,7 @@ int CTerrainNode::GetAreaLOD(const SRenderingPassInfo& passInfo)
 bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	bool bMeshIsUpToDate = true; // actually bUpdateNOTRequired
+	bool bUpdateRequired = false; // actually bUpdateNOTRequired
 
 	if (m_arrfDistance[passInfo.GetRecursiveLevel()] < 8) // make sure near sectors are always potentially visible
 		m_nLastTimeUsed = fastftol_positive(GetCurTimeSec());
@@ -665,7 +662,7 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 
 	SetupTexturing(false, passInfo);
 
-	bMeshIsUpToDate = RenderSector(passInfo);
+	bUpdateRequired = RenderSector(passInfo);
 
 	if (GetCVars()->e_TerrainBBoxes)
 	{
@@ -711,7 +708,7 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 		}
 	}
 
-	return bMeshIsUpToDate;
+	return bUpdateRequired;
 }
 
 float CTerrainNode::GetSurfaceTypeAmount(Vec3 vPos, int nSurfType)
@@ -1172,18 +1169,27 @@ void CTerrainNode::UpdateDetailLayersInfo(bool bRecursive)
 	}
 }
 
-void CTerrainNode::IntersectWithShadowFrustum(bool bAllIn, PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, const float fHalfGSMBoxSize, const SRenderingPassInfo& passInfo)
+void CTerrainNode::IntersectWithShadowFrustum(bool bAllIn, PodArray<CTerrainNode*>* plstResult, ShadowMapFrustum* pFrustum, const float fHalfGSMBoxSize, const SRenderingPassInfo& passInfo)
 {
 	if (bAllIn || (pFrustum && pFrustum->IntersectAABB(GetBBox(), &bAllIn)))
 	{
 		float fSectorSize = GetBBox().max.x - GetBBox().min.x;
-		if (m_pChilds && (fSectorSize*GetCVars()->e_TerrainMeshInstancingShadowLodRatio > fHalfGSMBoxSize || (m_nTreeLevel > GetCVars()->e_TerrainMeshInstancingMinLod && pFrustum->IsCached())))
+		if (m_pChilds && (fSectorSize > fHalfGSMBoxSize || fSectorSize > 128))
 		{
 			for (int i = 0; i < 4; i++)
 				m_pChilds[i].IntersectWithShadowFrustum(bAllIn, plstResult, pFrustum, fHalfGSMBoxSize, passInfo);
 		}
 		else
 		{
+			if (!GetLeafData() || !GetLeafData()->m_pRenderMesh || (m_cNewGeomMML == MML_NOT_SET && GetLeafData() && GetLeafData()->m_pRenderMesh))
+			{
+				m_arrfDistance[passInfo.GetRecursiveLevel()] = GetPointToBoxDistance(passInfo.GetCamera().GetPosition(), GetBBox());
+				SetLOD(passInfo);
+				int nSectorSize = CTerrain::GetSectorSize() << m_nTreeLevel;
+				while ((1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize() < nSectorSize / 64)
+					m_cNewGeomMML++;
+			}
+
 			plstResult->Add(this);
 		}
 	}
@@ -1231,13 +1237,10 @@ void CTerrainNode::UnloadNodeTexture(bool bRecursive)
 	if (m_nNodeTexSet.nTex1)
 		m_pTerrain->m_texCache[1].ReleaseTexture(m_nNodeTexSet.nTex1, m_nNodeTexSet.nSlot1);
 
-	if (m_nNodeTexSet.nTex2)
-		m_pTerrain->m_texCache[2].ReleaseTexture(m_nNodeTexSet.nTex2, m_nNodeTexSet.nSlot2);
-
 	if (m_nNodeTexSet.nTex0 && GetCVars()->e_TerrainTextureStreamingDebug == 2)
 		PrintMessage("Texture released %d, Level=%d", GetSecIndex(), m_nTreeLevel);
 
-	m_nNodeTexSet = SSectorTextureSet();
+	m_nNodeTexSet = SSectorTextureSet(0, 0);
 
 	for (int i = 0; m_pChilds && bRecursive && i < 4; i++)
 		m_pChilds[i].UnloadNodeTexture(bRecursive);
@@ -1328,6 +1331,18 @@ void CTerrainNode::Render(const SRendParams& RendParams, const SRenderingPassInf
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	// render only prepared nodes for now
+	if (!GetLeafData() || !GetLeafData()->m_pRenderMesh)
+	{
+		// get distances
+		m_arrfDistance[passInfo.GetRecursiveLevel()] = GetPointToBoxDistance(passInfo.GetCamera().GetPosition(), GetBBox());
+		SetLOD(passInfo);
+
+		int nSectorSize = CTerrain::GetSectorSize() << m_nTreeLevel;
+		while ((1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize() < nSectorSize / 64)
+			m_cNewGeomMML++;
+	}
+
 	if (GetCVars()->e_TerrainDrawThisSectorOnly)
 	{
 		if (
@@ -1338,20 +1353,14 @@ void CTerrainNode::Render(const SRendParams& RendParams, const SRenderingPassInf
 			return; // false;
 	}
 
-	if (passInfo.IsShadowPass())
-	{
-		// render shadow gen using fast path and mesh instancing
-		DrawArray(passInfo);
-	}
-	else
-	{
-		CheckLeafData();
+	CheckLeafData();
 
-		if (!RenderSector(passInfo) && m_pTerrain)
-			m_pTerrain->m_pTerrainUpdateDispatcher->QueueJob(this, passInfo);
-	}
+	if (!RenderSector(passInfo) && m_pTerrain)
+		m_pTerrain->m_pTerrainUpdateDispatcher->QueueJob(this, passInfo);
 
 	m_nLastTimeUsed = fastftol_positive(GetCurTimeSec());
+
+	//	return true;
 }
 
 /*bool CTerrainNode::CheckUpdateLightMap()

@@ -1187,7 +1187,7 @@ void CD3D9Renderer::DrawObjSprites(PodArray<SVegetationSpriteInfo>* pList, SSpri
 					pTerrTex->Apply(3, nTerrainTexState);
 
 					static CCryNameR SpritesOutdoorAOVertInfoName("SpritesOutdoorAOVertInfo");
-					const Vec4 cSPVal(pTexInfo->fTexOffsetX, pTexInfo->fTexOffsetY, pTexInfo->fTexScale, 0);
+					const Vec4 cSPVal(pTexInfo->fTexOffsetX, pTexInfo->fTexOffsetY, pTexInfo->fTexScale, pTexInfo->fTerrainMinZ);
 					m_cEF.s_ShaderTreeSprites->FXSetVSFloat(SpritesOutdoorAOVertInfoName, &cSPVal, 1);
 				}
 				else

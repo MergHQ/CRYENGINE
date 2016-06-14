@@ -831,7 +831,6 @@ public:
 	float                 m_fSunClipPlaneRange;
 	float                 m_fSunClipPlaneRangeShift;
 	bool                  m_bSunShadows;
-	bool                  m_bSunShadowsFromTerrain;
 
 	int                   m_nCloudShadowTexId;
 

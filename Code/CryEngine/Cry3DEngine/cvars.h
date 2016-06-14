@@ -42,6 +42,7 @@ struct CVars : public Cry3DEngineBase
 #else
 	enum { e_StatObjValidateDefault = 1 };  // Validate meshes in all but release builds.
 #endif
+	enum { e_GsmCastFromTerrainDefault = 0 };
 #ifdef CONSOLE_CONST_CVAR_MODE
 	enum { e_DisplayMemoryUsageIconDefault = 0 };
 #else
@@ -404,9 +405,6 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_DynamicLightsConsistentSortOrder, 1);
 	DeclareConstIntCVar(e_StreamCgfDebug, 0);
 	float e_TerrainOcclusionCullingMaxDist;
-	int e_TerrainMeshInstancingMinLod;
-	float e_TerrainMeshInstancingShadowLodRatio;
-	float e_TerrainMeshInstancingShadowBias;
 	int   e_StatObjTessellationMode;
 	DeclareConstIntCVar(e_OcclusionLazyHideFrames, 0);
 	DeclareConstIntCVar(e_CoverageBufferCullIndividualBrushesMaxNodeSize, 0);

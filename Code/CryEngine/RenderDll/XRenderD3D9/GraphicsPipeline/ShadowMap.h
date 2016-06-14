@@ -13,8 +13,7 @@ class CShadowMapStage : public CGraphicsPipelineStage
 {
 	enum EPerPassTexture
 	{
-		EPerPassTexture_TerrainElevMap = 26,
-		EPerPassTexture_WindGrid = 27,
+		EPerPassTexture_WindGrid       = 27,
 		EPerPassTexture_TerrainBaseMap = 29,
 		EPerPassTexture_DissolveNoise  = 31
 	};

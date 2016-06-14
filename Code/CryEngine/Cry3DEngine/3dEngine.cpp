@@ -242,7 +242,6 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_nOceanRenderFlags = 0;
 
 	m_bSunShadows = m_bShowTerrainSurface = true;
-	m_bSunShadowsFromTerrain = false;
 	m_nSunAdditionalCascades = 0;
 	m_CachedShadowsBounds.Reset();
 	m_nCachedShadowsUpdateStrategy = ShadowMapFrustum::ShadowCacheData::eFullUpdate;
@@ -4675,8 +4674,7 @@ void C3DEngine::ObjectsTreeMarkAsUncompiled(const IRenderNode* pRenderNode)
 			curNode->MarkAsUncompiled(pRenderNode);
 	}
 
-	if(GetVisAreaManager())
-		GetVisAreaManager()->MarkAllSectorsAsUncompiled(pRenderNode);
+	GetVisAreaManager()->MarkAllSectorsAsUncompiled(pRenderNode);
 }
 
 void C3DEngine::OnObjectModified(IRenderNode* pRenderNode, uint dwFlags)

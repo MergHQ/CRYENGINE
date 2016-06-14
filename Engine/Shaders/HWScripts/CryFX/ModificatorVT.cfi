@@ -1503,59 +1503,48 @@ float4 Pos_VS_General(float4x4 VPMatrix, inout streamPos IN, bool bRelativeToCam
 {
 ISOLATE
 {
-	float4 HPosition;
+  float4 HPosition;
 
 #if %_RT_OBJ_IDENTITY
-	VPMatrix = g_VS_ViewProjMatr;
+  VPMatrix = g_VS_ViewProjMatr;
 #endif
 
 #if %_RT_NEAREST
-	bRelativeToCam = false;
-
-	#if %_RT_PER_INSTANCE_CB_TEMP
+  bRelativeToCam = false;
+  
+  #if %_RT_PER_INSTANCE_CB_TEMP
 		VPMatrix = CV_ViewProjNearestMatr;
+  #endif
+#endif
+
+  // Get instanced matrix
+  Matrix_Inst_General(IN);
+  if (bRelativeToCam)
+  {
+	#if !%_RT_OBJ_IDENTITY 
+		IN.InstMatrix[0][3] -= g_VS_WorldViewPos.x;
+    IN.InstMatrix[1][3] -= g_VS_WorldViewPos.y;
+    IN.InstMatrix[2][3] -= g_VS_WorldViewPos.z;
 	#endif
-#endif
-
-		// Get instanced matrix
-		Matrix_Inst_General(IN);
-		if (bRelativeToCam)
-		{
-		#if !%_RT_OBJ_IDENTITY 
-			IN.InstMatrix[0][3] -= g_VS_WorldViewPos.x;
-			IN.InstMatrix[1][3] -= g_VS_WorldViewPos.y;
-			IN.InstMatrix[2][3] -= g_VS_WorldViewPos.z;
-		#endif
-		}
-	 HPosition = _pos_Modificators(VPMatrix, IN.InstMatrix, IN, bRelativeToCam);
-
-	#if %TEMP_TERRAIN
-		float4 terrainInfo = Get_SPI_BlendWithTerrainColInfo();
-		if (terrainInfo.w<0)
-		{
-			// Read Z from the texture
-			float2 xy = float2(terrainInfo.zz*(IN.WorldPos).yx + terrainInfo.xy);
-			IN.Position.z = IN.Position.z * IN.InstMatrix[0][0] + GetTexture2DLod(terrainElevTex, ssMaterialTrilinearClamp, float4(xy, 0, 0)) + terrainInfo.w;
-			HPosition = _pos_Modificators(VPMatrix, IN.InstMatrix, IN, bRelativeToCam);
-		}
-#endif
+  }
+  HPosition = _pos_Modificators(VPMatrix, IN.InstMatrix, IN, bRelativeToCam);
 
   return HPosition;
 }
 }
 
-float4 Pos_VS_Terrain(float fOffsetZ, float4x4 VPMatrix, inout streamPos IN, bool bSG = false)
+float4 Pos_VS_Terrain(float fOffsetZ, float4x4 VPMatrix, inout streamPos IN, bool bSG=false)
 {
-	float4 InPos = IN.Position;
+  float4 InPos = IN.Position;
 #if %_RT_OBJ_IDENTITY
-	if (!bSG)
-		InPos.xyz -= g_VS_WorldViewPos.xyz;
+  if (!bSG)
+    InPos.xyz -= g_VS_WorldViewPos.xyz;
 #endif
 
 #if %_RT_REVERSE_DEPTH
 	fOffsetZ = -fOffsetZ;
 #endif 
-	IN.InstMatrix = GetInstanceMatrix();
+  IN.InstMatrix = GetInstanceMatrix();
 
 #if !%_RT_OBJ_IDENTITY
 	// Position relative to camera
@@ -1564,24 +1553,12 @@ float4 Pos_VS_Terrain(float fOffsetZ, float4x4 VPMatrix, inout streamPos IN, boo
 	IN.InstMatrix[2][3] -= g_VS_WorldViewPos.z;
 #endif
 
-	float4 HPosition = _pos_HPos(VPMatrix, IN.InstMatrix, InPos);
-	const float fDefaultNearPlaneDist = 0.25;
+  float4 HPosition = _pos_HPos(VPMatrix, IN.InstMatrix, InPos);
+  const float fDefaultNearPlaneDist = 0.25;
 	HPosition.z += fOffsetZ * (g_VS_NearFarClipDist.x / fDefaultNearPlaneDist);
 
-	IN.WorldPos = mul(IN.InstMatrix, IN.Position);
-
-#if %TEMP_TERRAIN
-	float4 terrainInfo = Get_SPI_BlendWithTerrainColInfo();
-	if (terrainInfo.w<0)
-	{
-		// Read Z from the texture
-		float2 xy = float2(terrainInfo.zz*(IN.WorldPos + g_VS_WorldViewPos).yx + terrainInfo.xy);
-		InPos.z = InPos.z * IN.InstMatrix[0][0] + GetTexture2DLod(terrainElevTex, ssMaterialTrilinearClamp, float4(xy, 0, 0));
-		HPosition = _pos_HPos(VPMatrix, IN.InstMatrix, InPos);
-		HPosition.z += fOffsetZ * (g_VS_NearFarClipDist.x / fDefaultNearPlaneDist);
-	}
-#endif
-
+  IN.WorldPos = mul(IN.InstMatrix, IN.Position);
+  
   return HPosition;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////

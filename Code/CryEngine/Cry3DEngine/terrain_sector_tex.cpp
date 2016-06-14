@@ -17,7 +17,7 @@
 #include "ObjMan.h"
 
 // load textures from buffer
-int CTerrainNode::CreateSectorTexturesFromBuffer(float * pSectorHeightMap)
+int CTerrainNode::CreateSectorTexturesFromBuffer()
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -32,9 +32,6 @@ int CTerrainNode::CreateSectorTexturesFromBuffer(float * pSectorHeightMap)
 
 	// make normal map
 	m_nNodeTexSet.nTex1 = m_pTerrain->m_texCache[1].GetTexture(GetTerrain()->m_arrBaseTexInfos[m_nSID].m_ucpDiffTexTmpBuffer + pLayers[0].nSectorSizeBytes, m_nNodeTexSet.nSlot1);
-
-	// make height map
-	m_nNodeTexSet.nTex2 = m_pTerrain->m_texCache[2].GetTexture((byte*)pSectorHeightMap, m_nNodeTexSet.nSlot2);
 
 	if (GetCVars()->e_TerrainTextureStreamingDebug == 2)
 		PrintMessage("CTerrainNode::CreateSectorTexturesFromBuffer: sector %d, level=%d", GetSecIndex(), m_nTreeLevel);
@@ -62,42 +59,6 @@ int CTerrainNode::CreateSectorTexturesFromBuffer(float * pSectorHeightMap)
 	return (m_nNodeTexSet.nTex0 > 0);
 }
 
-void CTerrainNode::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
-{
-	FUNCTION_PROFILER_3DENGINE;
-
-	if (pStream->IsError())
-	{
-		// file was not loaded successfully
-		if (pStream->GetError() == ERROR_USER_ABORT)
-			Warning("CTerrainNode::StreamAsyncOnComplete: node streaming aborted, sector %d, level=%d", GetSecIndex(), m_nTreeLevel);
-		else
-		{
-			Warning("CTerrainNode::StreamAsyncOnComplete: error streaming node, sector %d, level=%d, error=%s", GetSecIndex(), m_nTreeLevel, pStream->GetErrorName());
-			assert(!"Error streaming node");
-		}
-		m_eTexStreamingStatus = ecss_NotLoaded;
-		m_pReadStream = NULL;
-		return;
-	}
-
-	// fill sector height map data
-	int nTexSize = m_pTerrain->m_texCache[2].m_nDim;
-	float fBoxSize = GetBBox().GetSize().x;
-	Array2d<float> arrHmData;
-	arrHmData.Allocate(nTexSize);
-	for (int x = 0; x < nTexSize; x++) for (int y = 0; y < nTexSize; y++)
-	{
-		arrHmData[x][y] = m_pTerrain->GetZApr(
-			(float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
-			(float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize), 0);
-	}
-
-	STerrainTextureLayerFileHeader* pLayers = GetTerrain()->m_arrBaseTexInfos[m_nSID].m_TerrainTextureLayer;
-
-	memcpy((float*)pStream->GetUserData(), arrHmData.GetData(), arrHmData.GetDataSize());
-}
-
 void CTerrainNode::StreamOnComplete(IReadStream* pStream, unsigned nError)
 {
 	FUNCTION_PROFILER_3DENGINE;
@@ -118,8 +79,12 @@ void CTerrainNode::StreamOnComplete(IReadStream* pStream, unsigned nError)
 	}
 
 	memcpy(GetTerrain()->m_arrBaseTexInfos[m_nSID].m_ucpDiffTexTmpBuffer, pStream->GetBuffer(), pStream->GetBytesRead());
-	CreateSectorTexturesFromBuffer((float*)pStream->GetUserData());
-	delete [] (float*)pStream->GetUserData();
+	CreateSectorTexturesFromBuffer();
+
+	AABB boxWS = GetBBox();
+	m_nNodeTexSet.fTerrainMinZ = boxWS.min.z;
+	m_nNodeTexSet.fTerrainMaxZ = boxWS.max.z;
+	m_nNodeTexSet.nodeBox = boxWS;
 
 	CalculateTexGen(this, m_nNodeTexSet.fTexOffsetX, m_nNodeTexSet.fTexOffsetY, m_nNodeTexSet.fTexScale);
 
@@ -160,8 +125,7 @@ void CTerrainNode::StartSectorTexturesStreaming(bool bFinishNow)
 	                  + m_nNodeTextureOffset * nSectorDataSize;
 
 	// start streaming
-	StreamReadParams params;	
-	params.dwUserData = (DWORD_PTR) new float[m_pTerrain->m_texCache[2].m_nDim * m_pTerrain->m_texCache[2].m_nDim];
+	StreamReadParams params;
 	params.nSize = nSectorDataSize;
 	params.nLoadTime = 1000;
 	params.nMaxLoadTime = 0;
@@ -184,9 +148,8 @@ void CTerrainNode::StartSectorTexturesStreaming(bool bFinishNow)
 void CTerrainNode::CalculateTexGen(const CTerrainNode* pTextureSourceNode, float& fTexOffsetX, float& fTexOffsetY, float& fTexScale)
 {
 	float fSectorSizeScale = 1.0f;
-	uint16 nSectorSizePixels = GetTerrain()->m_arrBaseTexInfos[m_nSID].m_TerrainTextureLayer[0].nSectorSizePixels;
-	if (nSectorSizePixels)
-		fSectorSizeScale -= 1.0f / (float)(nSectorSizePixels); // we don't use half texel border so we have to compensate
+	if (GetTerrain()->m_arrBaseTexInfos[m_nSID].m_TerrainTextureLayer[0].nSectorSizePixels)
+		fSectorSizeScale -= 1.0f / (float)(GetTerrain()->m_arrBaseTexInfos[m_nSID].m_TerrainTextureLayer[0].nSectorSizePixels); // we don't use half texel border so we have to compensate
 
 	float dCSS = fSectorSizeScale / (CTerrain::GetSectorSize() << pTextureSourceNode->m_nTreeLevel);
 	fTexOffsetX = -dCSS * pTextureSourceNode->m_nOriginY + GetTerrain()->m_arrSegmentOrigns[m_nSID].y;
@@ -194,7 +157,7 @@ void CTerrainNode::CalculateTexGen(const CTerrainNode* pTextureSourceNode, float
 	fTexScale = dCSS;
 
 	// shift texture by 0.5 pixel
-	if (float fTexRes = nSectorSizePixels)
+	if (float fTexRes = GetTerrain()->m_arrBaseTexInfos[m_nSID].m_TerrainTextureLayer[0].nSectorSizePixels)
 	{
 		fTexOffsetX += 0.5f / fTexRes;
 		fTexOffsetY += 0.5f / fTexRes;

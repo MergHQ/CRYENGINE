@@ -777,7 +777,7 @@ struct ITerrain
 	virtual int GetTerrainLightmapTexId(Vec4& vTexGenInfo, int nSID = 0) = 0;
 
 	//! Return terrain texture atlas texture id's.
-	virtual void GetAtlasTexId(int& nTex0, int& nTex1, int& nTex2, int nSID = 0) = 0;
+	virtual void GetAtlasTexId(int& nTex0, int& nTex1, int nSID = 0) = 0;
 
 	//! \return object and material table for Exporting.
 	virtual void GetStatObjAndMatTables(DynArray<IStatObj*>* pStatObjTable, DynArray<IMaterial*>* pMatTable, DynArray<IStatInstGroup*>* pStatInstGroupTable, uint32 nObjTypeMask, int nSID) = 0;
