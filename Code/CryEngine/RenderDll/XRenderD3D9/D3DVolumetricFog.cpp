@@ -610,12 +610,6 @@ void CVolumetricFog::DestroyResources(bool destroyResolutionIndependentResources
 	assert((m_ClipVolumeDSVArray && m_InscatteringVolume) || !(m_ClipVolumeDSVArray || m_InscatteringVolume));
 	if (m_ClipVolumeDSVArray && m_InscatteringVolume)
 	{
-		int depth = m_InscatteringVolume->GetDepth();
-		for (int i = 0; i < depth; ++i)
-		{
-			if (m_ClipVolumeDSVArray[i])
-				((ID3D11DepthStencilView*)m_ClipVolumeDSVArray[i])->Release();
-		}
 		delete[] m_ClipVolumeDSVArray;
 		m_ClipVolumeDSVArray = NULL;
 	}
