@@ -837,8 +837,8 @@ public:
 	virtual pe_type GetType() const { return PE_AREA; }
 	virtual CPhysicalEntity *GetEntity();
 	virtual CPhysicalEntity *GetEntityFast() { return GetEntity(); }
-	virtual int AddRef() { CryInterlockedAdd(&m_lockRef, 1); return m_lockRef; }
-	virtual int Release() { CryInterlockedAdd(&m_lockRef, -1); return m_lockRef; }
+	virtual int AddRef() { return CryInterlockedIncrement(&m_lockRef); }
+	virtual int Release() { return CryInterlockedDecrement(&m_lockRef); }
 
 	virtual int SetParams(pe_params* params,int bThreadSafe=1);
 	virtual int Action(pe_action* action,int bThreadSafe=1);
