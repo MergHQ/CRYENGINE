@@ -696,7 +696,7 @@ def BuildTaskGenerator(ctx, kw):
 		return False 		# Dont build during configure
 		
 	if ctx.cmd == 'generate_uber_files':
-		ctx(features='generate_uber_file', uber_file_list=kw['file_list_content'], target=target, pch=os.path.basename( kw.get('pch', '') ))
+		ctx(features='generate_uber_file', uber_file_list=kw['file_list_content'], target=target, pch=kw.get('pch', ''))
 		return False 		# Dont do the normal build when generating uber files
 		
 	if ctx.env['PLATFORM'] == 'cppcheck':
@@ -811,7 +811,7 @@ def CreateStaticModule(ctx, *k, **kw):
 		return
 	
 	if ctx.cmd == 'generate_uber_files':
-		ctx(features='generate_uber_file', uber_file_list=kw['file_list_content'], target=kw['target'], pch=os.path.basename( kw.get('pch', '') ))
+		ctx(features='generate_uber_file', uber_file_list=kw['file_list_content'], target=kw['target'], pch=kw.get('pch', ''))
 		return
 		
 	# Setup TaskGenerator specific settings	

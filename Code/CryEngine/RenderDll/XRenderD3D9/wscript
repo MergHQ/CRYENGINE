@@ -106,7 +106,7 @@ def build(bld):
 			vs_filter   = 'CryEngine',
 			
 			file_list   = [ 'core_renderer.waf_files' ],
-			pchv        = '../StdAfx.cpp',
+			pch        = '../StdAfx.cpp',
 			includes    = [ '..', Path('Code/SDKs'), Path('Code/SDKs/squish-ccr') ],
 			defines     = [ 'DIRECT3D10', 'CRY_USE_DX12', 'XRENDERD3D10_EXPORTS', 'DO_RENDERSTATS', '_RENDERER' ],
 			use_module  = [ 'lzma', 'lzss', 'lz4' ],
@@ -134,6 +134,7 @@ def build(bld):
 			target      = 'CryRenderGNM',
 			vs_filter   = 'CryEngine',
 			file_list   = [ 'core_renderer.waf_files', 'GNM/GnmRenderer.waf_files' ],
+			pch        = '../StdAfx.cpp',
 			defines     = [ '_RENDERER', 'DO_RENDERSTATS', 'CRY_USE_GNM', 'CRY_USE_GNM_RENDERER', 'CRY_GNM_SHADER_COMPILER_VERSION=' + compiler_version ],
 			lib         = [ 'SceSystemService_stub_weak', 'SceGnmDriver_stub_weak' ],
 			includes    = [ '..' ],
