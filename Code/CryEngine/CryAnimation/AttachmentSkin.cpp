@@ -445,7 +445,7 @@ void CAttachmentSKIN::CullVertexFrames(const SRenderingPassInfo& passInfo, float
 		SVertexFrameState& frameState = frameStates[i];
 		if (const SSoftwareVertexFrame* const pMorphTarget = frameState.pFrame)
 		{
-			if ((frameState.weight * pMorphTarget->vertexMaxLength * fDeltaSize) < fPixelThreshold)
+			if (std::abs(frameState.weight * pMorphTarget->vertexMaxLength * fDeltaSize) < fPixelThreshold)
 			{
 				frameState.flags |= VA_FRAME_CULLED;
 			}

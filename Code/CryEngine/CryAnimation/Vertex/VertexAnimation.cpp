@@ -169,7 +169,7 @@ bool CVertexAnimation::CompileAdds(CVertexCommandBuffer& commandBuffer)
 		const SVertexFrameState& frameState = m_frameStates[i];
 		const SSoftwareVertexFrame* const pVertexFrame = frameState.pFrame;
 		const bool bCullFrame = bAllowCulling && (frameState.flags & VA_FRAME_CULLED);
-		const bool bUseFrame = frameState.weight > 0.0f && !bCullFrame;
+		const bool bUseFrame = std::abs(frameState.weight) > 0.0f && !bCullFrame;
 
 		if (pVertexFrame && (bUseFrame || bDebugCulling))
 		{
