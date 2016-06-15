@@ -299,7 +299,8 @@ int tri_box_lin_unprojection(unprojection_mode *pmode, const triangle *ptri,int 
 			t0.set(dp_x_edge1*ncontact, ncontact.len2()*tmax.y); t0.y = 1.0/t0.y;
 			pcontact->t = tmax.x*t0.y*ncontact.len2();
 			pcontact->pt = ptri->pt[i] + (ptri->pt[inc_mod3[i]]-ptri->pt[i])*t0.x*t0.y + pmode->dir*pcontact->t;
-			pcontact->n = (ncontact*pbox->Basis)*sgnnz((pt[i]-pt[dec_mod3[i]])*ncontact);
+			pcontact->n = ncontact*pbox->Basis;
+			pcontact->n *= sgnnz(pcontact->n*(pbox->center-pcontact->pt));
 			pcontact->iFeature[0] = 0xA0 | i;
 			pcontact->iFeature[1] = 0x20 | idbest&0xF;
 	}
