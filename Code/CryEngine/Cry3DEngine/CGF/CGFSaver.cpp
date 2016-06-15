@@ -2,9 +2,6 @@
 
 #include "StdAfx.h"
 
-#define INCLUDE_SAVECGF
-// galakau test
-
 #if defined(RESOURCE_COMPILER) || defined(INCLUDE_SAVECGF)
 
 	#include "CGFSaver.h"
