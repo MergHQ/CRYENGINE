@@ -1106,6 +1106,81 @@ void CharacterManager::UnregisterInstanceVCloth(CSkin* pDefaultSkinning, CAttach
 #endif
 }
 
+// find wrapping projection for render mesh to simulationmesh
+static inline void WrapRenderVertexToSimMesh(
+  mesh_data const& simMesh,
+  std::vector<std::vector<int>> const& simAdjTris,
+  Vec3 const& renderVtxPos,
+  SSkinMapEntry& renderVtxMapOut)
+{
+	// search closest particle in simMesh
+	int closestIdx = -1;
+	float closestDistance2 = FLT_MAX;
+	for (int i = 0; i < simMesh.nVertices; i++)
+	{
+		Vec3 delta = renderVtxPos - simMesh.pVertices[i];
+		float len2 = delta.len2();
+		if (len2 < closestDistance2) { closestIdx = i; closestDistance2 = len2; }
+	}
+
+	// if render particle is very close to sim particle, then use direct mapping to that position
+	const float threshold2 = 0.001f * 0.001f;
+	if (closestDistance2 < threshold2)
+	{
+		renderVtxMapOut.iMap = closestIdx;
+		renderVtxMapOut.s = 0.f;
+		renderVtxMapOut.t = 0.f;
+		renderVtxMapOut.h = 0.f;
+		return;
+	}
+
+	// search triangle with positive uv - this is the ideal case
+	// go through all the adjacent triangles and find the best fit
+	for (size_t j = 0; j < simAdjTris[closestIdx].size(); j++)
+	{
+		const int tri = simAdjTris[closestIdx][j];
+
+		// get triangles side/neighbor vertices to closest point
+		int i2 = 0;
+		for (int k = 0; k < 3; k++)
+		{
+			int idx = simMesh.pIndices[tri * 3 + k];
+			if (idx == closestIdx)
+				i2 = k;
+		}
+		const int idx0 = simMesh.pIndices[tri * 3 + inc_mod3[i2]];
+		const int idx1 = simMesh.pIndices[tri * 3 + dec_mod3[i2]];
+
+		// barycentric and distance to render mesh
+		float s, t, h;
+		const Vec3 u = simMesh.pVertices[idx0] - simMesh.pVertices[closestIdx];
+		const Vec3 v = simMesh.pVertices[idx1] - simMesh.pVertices[closestIdx];
+		Vec3 w = renderVtxPos - simMesh.pVertices[closestIdx];
+		Vec3 n = (u ^ v).normalized();
+		h = w * n;
+		w -= h * n;
+		const float d00 = u * u;
+		const float d01 = u * v;
+		const float d11 = v * v;
+		const float d20 = w * u;
+		const float d21 = w * v;
+		const float denom = d00 * d11 - d01 * d01;
+		s = (d11 * d20 - d01 * d21) / denom;
+		t = (d00 * d21 - d01 * d20) / denom;
+
+		// if s,t are positive, keep this value, as it is a good mapping
+		// if either s or t is < 0 - set this only, if no other tri (e.g., with positive uv) has been found, not ideal but in worst case better than nothing...
+		if ((s >= 0 && t >= 0) || (renderVtxMapOut.iTri < 0))
+		{
+			renderVtxMapOut.iMap = i2;
+			renderVtxMapOut.iTri = tri;
+			renderVtxMapOut.s = s;
+			renderVtxMapOut.t = t;
+			renderVtxMapOut.h = h;
+		}
+	}
+}
+
 SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pAttachementVCloth, _smart_ptr<IRenderMesh> pRenderMeshes[])
 {
 	assert(pAttachementVCloth.GetClothCacheKey() > 0);
@@ -1225,76 +1300,20 @@ SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pA
 		int numUnmapped = 0;
 		for (int i = 0; i < nVtx; i++)
 		{
+			// init as 'no skinning/triangle-mapping found', this is used below to detect the number of unmapped vertices
 			skinMap[i].iTri = -1;
-			float minLen2 = 1e37f;
-			// TODO: this is O(n^2); do something smarter
-			for (int iMap = 0; iMap < md->nVertices; iMap++)
-			{
-				Vec3 delta = pVtx[i] - md->pVertices[iMap];
-				float len2 = delta.len2();
-				if (len2 < minLen2)
-				{
-					const float threshold2 = 0.001f * 0.001f;
-					if (minLen2 > threshold2)
-					{
-						// go through all the adjacent triangles and find the best fit
-						for (size_t j = 0; j < adjTris[iMap].size(); j++)
-						{
-							int tri = adjTris[iMap][j];
 
-							// get side vertices
-							int i2 = 0;
-							for (int k = 0; k < 3; k++)
-							{
-								int idx = md->pIndices[tri * 3 + k];
-								if (idx == iMap)
-									i2 = k;
-							}
-
-							int idx0 = md->pIndices[tri * 3 + inc_mod3[i2]];
-							int idx1 = md->pIndices[tri * 3 + dec_mod3[i2]];
-
-							// barycentric and distance to render mesh
-							float s, t, h;
-							Vec3 u = md->pVertices[idx0] - md->pVertices[iMap];
-							Vec3 v = md->pVertices[idx1] - md->pVertices[iMap];
-							Vec3 w = pVtx[i] - md->pVertices[iMap];
-							Vec3 n = (u ^ v).normalized();
-							h = w * n;
-							w -= h * n;
-							float d00 = u * u;
-							float d01 = u * v;
-							float d11 = v * v;
-							float d20 = w * u;
-							float d21 = w * v;
-							float denom = d00 * d11 - d01 * d01;
-							s = (d11 * d20 - d01 * d21) / denom;
-							t = (d00 * d21 - d01 * d20) / denom;
-
-							if (s >= 0 && t >= 0)
-							{
-								skinMap[i].iMap = i2;
-								skinMap[i].iTri = tri;
-								skinMap[i].s = s;
-								skinMap[i].t = t;
-								skinMap[i].h = h;
-								minLen2 = len2;
-							}
-						}
-					}
-					else
-					{
-						skinMap[i].iMap = iMap;
-						skinMap[i].s = 0.f;
-						skinMap[i].t = 0.f;
-						skinMap[i].h = 0.f;
-						minLen2 = len2;
-					}
-				}
-			}
+			// wrap render mesh to sim mesh
+			mesh_data const& simMesh = *md;
+			std::vector<std::vector<int>> const& simAdjTris = adjTris;
+			Vec3 const& renderVtx = pVtx[i];
+			SSkinMapEntry& renderVtxMap = skinMap[i];
+			WrapRenderVertexToSimMesh(simMesh, simAdjTris, renderVtx, renderVtxMap); // determine best wrapping in 'renderVtxMap', i.e. skinMap[i]
 
 			if (skinMap[i].iTri < 0)
+			{
 				numUnmapped++;
+			}
 		}
 		if (numUnmapped)
 			CryLog("[Character cloth] Unmapped vertices: %d", numUnmapped);
