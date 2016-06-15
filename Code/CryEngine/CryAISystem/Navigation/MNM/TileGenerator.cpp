@@ -86,34 +86,44 @@ static uchar s_CornerTable[3][3][3] =
 	// *INDENT-ON* - disable uncrustify's indenting, as I want to preserve specific comment formatting.
 };
 
+namespace PinchCornerTable
+{
+
+enum EBitMask : uint8
+{
+	eExt = BIT(0), //!< pinch point on external contour
+	eInt = BIT(1)  //!< pinch point on internal contour
+};
+
 // Pinch corner table is used to detect unremovable pinch points on external contours
 // using neighbour classes.
 // Indexing order: left, front-left, front.
 // TODO pavloi 2016.03.21: s_CornerTable and s_PinchCornerTable can be merged together (bitmask).
-// TODO pavloi 2016.03.22: s_PinchCornerTable doesn't work on internal (hole) contours properly.
-static const uchar s_PinchCornerTable[3][3][3] =
+static const uint8 s_PinchCornerTable[3][3][3] =
 {
 	// *INDENT-OFF* - disable uncrustify's indenting, as I want to preserve specific comment formatting.
 	{// UW
-	 // UW, NB, WB
-		{ 0, 0, 0 }, // UW
-		{ 1, 0, 1 }, // NB
-		{ 1, 0, 0 }, // WB
+	 //   UW         , NB  , WB
+		{ 0          , 0   , 0    }, // UW
+		{ eExt | eInt, 0   , eExt }, // NB
+		{ eExt | eInt, eInt, 0    }, // WB
 	},
 	{// NB
-	 // UW, NB, WB
-		{ 0, 0, 0 }, // UW
-		{ 0, 0, 0 }, // NB
-		{ 0, 0, 0 }, // WB
+	 //   UW         , NB  , WB
+		{ 0          , eInt, 0    }, // UW
+		{ 0          , 0   , 0    }, // NB
+		{ eInt       , eInt, 0    }, // WB
 	},
 	{// WB
-	 // UW, NB, WB
-		{ 0, 0, 1 }, // UW
-		{ 1, 0, 1 }, // NB
-		{ 0, 0, 0 }, // WB
+	 //   UW         , NB  , WB
+		{ 0          , 0   , eExt }, // UW
+		{ eExt       , 0   , eExt }, // NB
+		{ 0          , 0   , 0    }, // WB
 	},
 	// *INDENT-ON* - disable uncrustify's indenting, as I want to preserve specific comment formatting.
 };
+
+}
 
 /*static */ size_t TileGenerator::BorderSizeH(const Params& params)
 {
@@ -392,7 +402,7 @@ struct TileGenerator::SFilterWalkableParams
 
 struct TileGenerator::SSpanClearance
 {
-	SSpanClearance(const SSpanCoord& spanCoord, const CompactSpanGrid::Span& span, const CompactSpanGrid::Cell cell, const TileGenerator::SFilterWalkableParams& filterParams, const CompactSpanGrid& spanGrid)
+	SSpanClearance(const SSpanCoord& spanCoord, const CompactSpanGrid::Span& span, const CompactSpanGrid::Cell& cell, const TileGenerator::SFilterWalkableParams& filterParams, const CompactSpanGrid& spanGrid)
 	{
 		top = span.bottom + span.height;
 		nextBottom = filterParams.spaceTop;
@@ -1429,7 +1439,7 @@ bool TileGenerator::GatherSurroundingInfo(const Vec2i& vertex, const Vec2i& dire
 }
 
 void TileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& direction, const uint16 top,
-                                           const uint16 climbableVoxelCount, ContourVertex& contourVertex, SContourVertexDebugInfo* pDebugInfo) const
+                                           const uint16 climbableVoxelCount, ContourVertex& contourVertex, const bool bInternalContour, SContourVertexDebugInfo* pDebugInfo) const
 {
 	const size_t xoffs = (direction.x == 1) | (direction.y == -1);
 	const size_t yoffs = (direction.y == 1) | (direction.x == 1);
@@ -1448,6 +1458,8 @@ void TileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& dir
 		// contour can walk into borderV span.
 		if (m_spanGrid.GetSpanAt(vertex.x, vertex.y, top, climbableVoxelCount, index))
 			internalBorderV = (m_labels[index] & BorderLabelV) != 0;
+
+		assert((internalBorderV && bInternalContour) || !internalBorderV);
 	}
 
 	// NOTE pavloi 2016.03.15: either we above lower borderV, or we're hitting an upper borderV.
@@ -1575,7 +1587,8 @@ void TileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& dir
 		}
 	}
 
-	if (s_PinchCornerTable[lclass][flclass][fclass])
+	const uint8 pinchTableMask = bInternalContour ? PinchCornerTable::eInt : PinchCornerTable::eExt;
+	if (PinchCornerTable::s_PinchCornerTable[lclass][flclass][fclass] & pinchTableMask)
 	{
 		flags |= ContourVertex::Unremovable;
 		DebugAddContourVertexUnremovableReason(pDebugInfo, "Pinch");
@@ -1701,8 +1714,10 @@ int TileGenerator::LabelTracerPath(const TileGenerator::TracerPath& path, size_t
 		}
 #endif
 
+		const bool bInternalContour = (internalLabelFlags & InternalContour) != 0;
+
 		// Add a vertex at each point.
-		DetermineContourVertex(Vec2i(curr.pos), curr.GetDir(), curr.pos.z, static_cast<uint16>(climbableVoxelCount), *&vertex, pDebugInfo);
+		DetermineContourVertex(Vec2i(curr.pos), curr.GetDir(), curr.pos.z, static_cast<uint16>(climbableVoxelCount), *&vertex, bInternalContour, pDebugInfo);
 
 		// Get the paint values for the current neighbour and the next neighbour. If they don't match then we must have a vert.
 		const bool bImportantVert = (m_paint[curr.indexOut] != m_paint[next.indexOut]);
@@ -1715,13 +1730,14 @@ int TileGenerator::LabelTracerPath(const TileGenerator::TracerPath& path, size_t
 		{
 			if (!(vertex.flags & ContourVertex::Unremovable))
 			{
-				// TODO pavloi 2016.03.22: so far may happen only for hole contours,
-				// but I don't think it's a problem. Pinch points on external contours should
-				// be properly detected using pinch contour table.
+				// NOTE pavloi 2016.06.15: since pinch contour table works for both external and
+				// internal contours, this should never happen. But just in case.
+				AIWarning("[MNM] TileGenerator potential issue: removable pinch point, origin (%g,%g,%g), tracer (%d,%d,%d)",
+				          m_params.origin.x, m_params.origin.y, m_params.origin.z,
+				          curr.pos.x, curr.pos.y, curr.pos.z);
 
-				//CryLogAlways(" removable pinch point, origin (%g,%g,%g), tracer (%d,%d,%d)",
-				//	m_params.origin.x, m_params.origin.y, m_params.origin.z,
-				//	curr.pos.x, curr.pos.y, curr.pos.z);
+				vertex.flags |= ContourVertex::Unremovable;
+				DebugAddContourVertexUnremovableReason(pDebugInfo, "next pinch");
 			}
 		}
 		AddContourVertex(vertex, region, contour);
@@ -2174,13 +2190,13 @@ bool TileGenerator::SimplifyContour(const Contour& contour, const real_t& tolera
 		{
 			const ContourVertex& v = contour[i];
 
-			if ((v.x < min.x) || ((v.x == min.x) && (v.y > min.y)))
+			if ((v.x < min.x) || ((v.x == min.x) && (v.y < min.y)))
 			{
 				minVertex = i;
 				min = Vec3i(v.x, v.y, v.z);
 			}
 
-			if ((v.x > max.x) || ((v.x == max.x) && (v.y > min.y)))
+			if ((v.x > max.x) || ((v.x == max.x) && (v.y > max.y)))
 			{
 				maxVertex = i;
 				max = Vec3i(v.x, v.y, v.z);

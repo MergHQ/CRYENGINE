@@ -568,7 +568,7 @@ protected:
 	                           const uint16 climbableVoxelCount, size_t& height, SurroundingSpanInfo& left, SurroundingSpanInfo& front,
 	                           SurroundingSpanInfo& frontLeft) const;
 	void        DetermineContourVertex(const Vec2i& vertex, const Vec2i& direction, uint16 top,
-	                                   uint16 climbableVoxelCount, ContourVertex& contourVertex, SContourVertexDebugInfo* pDebugInfo) const;
+	                                   uint16 climbableVoxelCount, ContourVertex& contourVertex, const bool bInternalContour, SContourVertexDebugInfo* pDebugInfo) const;
 	inline bool ContourVertexRemovable(const ContourVertex& contourVertex) const
 	{
 		return ((contourVertex.flags & ContourVertex::TileBoundary) == 0)
