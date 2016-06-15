@@ -28,7 +28,6 @@ public:
 
 	float M,Minv; // mass, 1.0/mass (0 for static objects)
 	float V; // volume
-	struct ArticulatedBody *pArtic; // optional articulated body host
 	Diag33 Ibody; // diagonalized inertia tensor (aligned with body's axes of inertia)
 	Diag33 Ibody_inv; // { 1/Ibody.ii }
 	quaternionf qfb; // frame->body rotation
