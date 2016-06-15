@@ -869,7 +869,6 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 
 		if (action->flags & constraint_no_rotation) {
 			i = RegisterConstraint(pt0,pt1,ipart[0], pBuddy,ipart[1], contact_angular|contact_constraint_3dof,flagsInfo,pConstraintEnt);
-			m_pConstraintInfos[i].pConstraintEnt = (CPhysicalEntity*)action->pConstraintEntity;
 			m_pConstraints[i].nloc=nloc; m_pConstraintInfos[i].qframe_rel[0]=qframe[0];	m_pConstraintInfos[i].qframe_rel[1]=qframe[1];
 			m_pConstraintInfos[i].id = id; m_pConstraintInfos[i].damping = damping;
 			if (!is_unused(action->maxBendTorque)) m_pConstraintInfos[i].limit=action->maxBendTorque;
