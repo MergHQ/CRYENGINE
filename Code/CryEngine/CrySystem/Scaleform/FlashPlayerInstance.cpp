@@ -2057,13 +2057,13 @@ bool CFlashVariableObject::SetColorTransform(const SFlashCxform& cx)
 	{
 		GRenderer::Cxform cxform;
 		cxform.M_[0][0] = cx.mul.r;
-		cxform.M_[0][1] = cx.add.r;
+		cxform.M_[0][1] = static_cast<float>(cx.add.r);
 		cxform.M_[1][0] = cx.mul.g;
-		cxform.M_[1][1] = cx.add.g;
+		cxform.M_[1][1] = static_cast<float>(cx.add.g);
 		cxform.M_[2][0] = cx.mul.b;
-		cxform.M_[2][1] = cx.add.b;
+		cxform.M_[2][1] = static_cast<float>(cx.add.b);
 		cxform.M_[3][0] = cx.mul.a;
-		cxform.M_[3][1] = cx.add.a;
+		cxform.M_[3][1] = static_cast<float>(cx.add.a);
 		res = m_value.SetColorTransform(cxform);
 	}
 	return res;
@@ -2084,13 +2084,13 @@ bool CFlashVariableObject::GetColorTransform(SFlashCxform& cx) const
 		if (res)
 		{
 			cx.mul.r = cxform.M_[0][0];
-			cx.add.r = cxform.M_[0][1];
+			cx.add.r = static_cast<uint8>(cxform.M_[0][1]);
 			cx.mul.g = cxform.M_[1][0];
-			cx.add.g = cxform.M_[1][1];
+			cx.add.g = static_cast<uint8>(cxform.M_[1][1]);
 			cx.mul.b = cxform.M_[2][0];
-			cx.add.b = cxform.M_[2][1];
+			cx.add.b = static_cast<uint8>(cxform.M_[2][1]);
 			cx.mul.a = cxform.M_[3][0];
-			cx.add.a = cxform.M_[3][1];
+			cx.add.a = static_cast<uint8>(cxform.M_[3][1]);
 		}
 	}
 	return res;
