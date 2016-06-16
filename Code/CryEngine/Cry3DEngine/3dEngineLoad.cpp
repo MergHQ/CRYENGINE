@@ -1379,7 +1379,7 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode, int nSID)
 	}
 
 	{
-		const char* pText = GetXMLAttribText(pInputNode, "EnvState", "SunShadowsFromTerrain", "true");
+		const char* pText = GetXMLAttribText(pInputNode, "EnvState", "SunShadowsFromTerrain", "false");
 		m_bSunShadowsFromTerrain = (!strcmp(pText, "true") || !strcmp(pText, "1")) && GetCVars()->e_GsmCastFromTerrain;
 	}
 

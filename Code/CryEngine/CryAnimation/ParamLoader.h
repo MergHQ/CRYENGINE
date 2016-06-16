@@ -135,12 +135,10 @@ private:
 	bool   LoadIKDefRecoil(const XmlNodeRef aimNode);
 	bool   LoadIKDefLookIK(const XmlNodeRef aimNode);
 	bool   LoadIKDefAimIK(const XmlNodeRef aimNode);
-
 	bool   LoadLod(const XmlNodeRef lodNode);
-
 	bool   LoadBBoxInclusionList(const XmlNodeRef node);
 	bool   LoadBBoxExtension(const XmlNodeRef node);
-
+	bool   LoadShadowCapsulesList(const XmlNodeRef node);
 	int    ListProcessed(const char* paramFileName);
 
 	// helper functions for interfacing SAnimListInfo

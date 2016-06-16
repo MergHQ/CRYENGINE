@@ -48,16 +48,9 @@ REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizaionPostpone, 2, VF_NULL, "1 - Postpone v
 REGISTER_CVAR_AUTO(float, e_svoTI_MinVoxelOpacity, 0.1f, VF_NULL, "Voxelize only geometry with opacity higher than specified value");
 REGISTER_CVAR_AUTO(float, e_svoTI_MinReflectance, 0.2f, VF_NULL, "Controls light bouncing from very dark surfaces (and from surfaces missing in RSM)");
 REGISTER_CVAR_AUTO(int, e_svoTI_ObjectsLod, 1, VF_NULL, "Mesh LOD used for voxelization\nChanges are visible only after re-voxelization (click <Update geometry> or restart)");
-REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalOccluders, 0, VF_NULL, "Enable support for hand-placed occlusion shapes like box, cylinder and capsule\nThis also enables indirect shadows from characters (see e_svoTI_AnalyticalOccludersBoneNames)");
+REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalOccluders, 0, VF_NULL, "Enable support for hand-placed occlusion shapes like box, cylinder and capsule\nThis also enables indirect shadows from characters (shadow capsules are defined in .chrparams file)");
 REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersRange, 3.f, VF_NULL, "Shadow length");
 REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersSoftness, 0.5f, VF_NULL, "Shadow softness");
-
-REGISTER_CVAR_AUTO_STRING(e_svoTI_AnalyticalOccludersBoneNames, "Bip01#Head Bip01#Neck Bip01#Spine Bip01#$#Calf Bip01#$#Foot Bip01#$#Toe0 Bip01#$#ForeTwist1 Bip01#$#Finger20", VF_NULL, 
-									 "Names of bones used to construct occlusion capsules for characters\n"
-									 "Names must be separated by spaces, order is important\n"
-									 "Spaces in names must be replaced by '#'\n"
-									 "'$' means 'R' and 'L'\n"
-									 "'*' means 'Right' and 'Left'");
 
 #ifdef CVAR_CPP
 m_arrVars.Clear();

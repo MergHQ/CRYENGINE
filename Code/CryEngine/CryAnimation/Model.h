@@ -464,6 +464,10 @@ public:
 	{
 		return m_arrModelJoints[jointIndex].m_PhysInfo.pPhysGeom;
 	}
+	virtual const DynArray<SBoneShadowCapsule>& GetShadowCapsules() const
+	{
+		return m_ShadowCapsulesList;
+	}
 
 	bool LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags);
 	void LoadCHRPARAMS(const char* paramFileName);
@@ -527,6 +531,7 @@ public:
 	PoseBlenderAimDesc               m_poseBlenderAimDesc;
 	uint32                           m_usePhysProxyBBox;
 	DynArray<int32>                  m_BBoxIncludeList;
+	DynArray<SBoneShadowCapsule>m_ShadowCapsulesList;
 	AABB                             m_AABBExtension;
 	AABB                             m_ModelAABB; //AABB of the model in default pose
 	bool                             m_bHasPhysics2;

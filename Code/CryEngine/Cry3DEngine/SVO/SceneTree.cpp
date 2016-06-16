@@ -1118,7 +1118,6 @@ CSvoEnv::CSvoEnv(const AABB& worldBox)
 	GetRenderer()->GetISvoRenderer(); // allocate SVO sub-system in renderer
 	m_bFirst_SvoFreezeTime = m_bFirst_StartStreaming = true;
 	m_bStreamingDonePrev = false;
-	ZeroStruct(m_arrOccluderBoneNames);
 }
 
 CSvoEnv::~CSvoEnv()
@@ -2364,9 +2363,6 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 	for (; fSize > 0.01f && fSize >= GetCVars()->e_svoMinNodeSize * 2.f; fSize /= 2.f)
 		;
 	GetCVars()->e_svoMinNodeSize = fSize;
-
-	if (gSvoEnv)
-		ZeroStruct(gSvoEnv->m_arrOccluderBoneNames);
 }
 
 void CVars::RegisterTICVars()
@@ -2602,149 +2598,37 @@ void CSvoEnv::CollectAnalyticalOccluders()
 				{
 					if (ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose())
 					{
-						if (!m_arrOccluderBoneNames[0][0])
-							InitOccluderBoneNames();
+						IDefaultSkeleton& rDefaultSkeleton = pCharacter->GetIDefaultSkeleton();
 
-						if (m_arrOccluderBoneNames[0][0])
+						const DynArray<SBoneShadowCapsule>& capsuleInfos = rDefaultSkeleton.GetShadowCapsules();
+
+						for (int32 capsuleId = 0; capsuleId < capsuleInfos.size(); capsuleId++)
 						{
-							Vec3 arrBonePos[MAX_BONES];
+							const SBoneShadowCapsule& capsuleInfo = capsuleInfos[capsuleId];
 
-							for (int i = 0; i < MAX_BONES; i++)
+							Vec3 arrBonePositions[2];
+
+							for (int nJointSlot = 0; nJointSlot< 2; nJointSlot++)
 							{
-								int nJointID = pCharacter->GetIDefaultSkeleton().GetJointIDByName(m_arrOccluderBoneNames[i]);
+								int nJointID = capsuleInfo.arrJoints[nJointSlot];
+
 								if (nJointID >= 0)
 								{
 									Matrix34A tm34 = matParent * Matrix34(pSkeletonPose->GetAbsJointByID(nJointID));
-									arrBonePos[i] = tm34.GetTranslation();
+									arrBonePositions[nJointSlot] = tm34.GetTranslation();
 								}
 								else
 								{
-									arrBonePos[i].zero();
+									arrBonePositions[nJointSlot].zero();
 								}
 							}
 
 							I3DEngine::SAnalyticalOccluder capsule;
 							capsule.type = (float)I3DEngine::SAnalyticalOccluder::eCapsule;
 
-							// head
-							capsule.radius = .08;
-							capsule.v0 = arrBonePos[0];
-							capsule.v1 = arrBonePos[1];
-							m_AnalyticalOccluders.Add(capsule);
-
-							// spine
-							capsule.radius = .1;
-							capsule.v0 = arrBonePos[1];
-							capsule.v1 = arrBonePos[2];
-							m_AnalyticalOccluders.Add(capsule);
-
-							// hand R
-							capsule.radius = .06;
-							capsule.v0 = arrBonePos[1];
-							capsule.v1 = arrBonePos[9];
-							m_AnalyticalOccluders.Add(capsule);
-							capsule.v0 = arrBonePos[9];
-							capsule.v1 = arrBonePos[11];
-							m_AnalyticalOccluders.Add(capsule);
-
-							// hand L
-							capsule.v0 = arrBonePos[1];
-							capsule.v1 = arrBonePos[10];
-							m_AnalyticalOccluders.Add(capsule);
-							capsule.v0 = arrBonePos[10];
-							capsule.v1 = arrBonePos[12];
-							m_AnalyticalOccluders.Add(capsule);
-
-							// leg R
-							capsule.radius = .08;
-							capsule.v0 = arrBonePos[2];
-							capsule.v1 = arrBonePos[3];
-							m_AnalyticalOccluders.Add(capsule);
-							capsule.v0 = arrBonePos[3];
-							capsule.v1 = arrBonePos[5];
-							m_AnalyticalOccluders.Add(capsule);
-							capsule.v0 = arrBonePos[5];
-							capsule.v1 = arrBonePos[7];
-							m_AnalyticalOccluders.Add(capsule);
-
-							// leg R
-							capsule.v0 = arrBonePos[2];
-							capsule.v1 = arrBonePos[4];
-							m_AnalyticalOccluders.Add(capsule);
-							capsule.v0 = arrBonePos[4];
-							capsule.v1 = arrBonePos[6];
-							m_AnalyticalOccluders.Add(capsule);
-							capsule.v0 = arrBonePos[6];
-							capsule.v1 = arrBonePos[8];
-							m_AnalyticalOccluders.Add(capsule);
-						}
-					}
-				}
-
-				// convert bounding boxes of physical proxy primitives into capsules
-				if (GetCVars()->e_svoTI_AnalyticalOccluders == 2)
-				{
-					IPhysicalEntity* pPE = pCharacter->GetPhysEntity();
-
-					for (int i = 0; i < 64; i++)
-					{
-						pe_params_part pp;
-						pp.ipart = i;
-						if (!pPE->GetParams(&pp))
-							break;
-
-						if (!pp.pPhysGeom && pp.pPhysGeom->pGeom)
-							continue;
-
-						int nType = pp.pPhysGeom->pGeom->GetType();
-
-						if (nType == GEOM_CAPSULE || nType == GEOM_BOX || nType == GEOM_SPHERE || nType == GEOM_CYLINDER || nType == GEOM_TRIMESH)
-						{
-							primitives::box box;
-							pp.pPhysGeom->pGeom->GetBBox(&box);
-
-							int longestAxis = 0;
-							if ((box.size.x > box.size.y) && (box.size.x > box.size.z))
-								longestAxis = 0;
-							else if ((box.size.y > box.size.x) && (box.size.y > box.size.z))
-								longestAxis = 1;
-							else
-								longestAxis = 2;
-
-							float longestLen = box.size[longestAxis];
-
-							int shortestAxis = 0;
-							if ((box.size.x < box.size.y) && (box.size.x < box.size.z))
-								shortestAxis = 0;
-							else if ((box.size.y < box.size.x) && (box.size.y < box.size.z))
-								shortestAxis = 1;
-							else
-								shortestAxis = 2;
-
-							float shortestLen = box.size[shortestAxis];
-
-							if (shortestLen + longestLen < .1)
-								continue;
-
-							pe_params_articulated_body pab;
-							pPE->GetParams(&pab);
-
-							Vec3 center_world = pp.q * box.center + pp.pos + pab.posHostPivot;
-							Vec3 axisMain = pp.q * box.Basis.TransformVector(Vec3(longestAxis == 0, longestAxis == 1, longestAxis == 2)) * max(0.01f, longestLen - shortestLen * 0.5f);
-							Vec3 axisSide = pp.q * box.Basis.TransformVector(Vec3(shortestAxis == 0, shortestAxis == 1, shortestAxis == 2)) * shortestLen * 0.5f;
-
-							Vec3 v0 = center_world - axisMain;
-							Vec3 v1 = center_world + axisMain;
-
-							v0 = matParent.TransformPoint(v0);
-							v1 = matParent.TransformPoint(v1);
-
-							I3DEngine::SAnalyticalOccluder capsule;
-							capsule.type = (float)I3DEngine::SAnalyticalOccluder::eCapsule;
-
-							capsule.radius = .1f;// axisSide.GetLength();
-							capsule.v0 = v0;
-							capsule.v1 = v1;
+							capsule.radius = capsuleInfo.radius;
+							capsule.v0 = arrBonePositions[0];
+							capsule.v1 = arrBonePositions[1];
 
 							m_AnalyticalOccluders.Add(capsule);
 						}
@@ -2770,54 +2654,6 @@ void CSvoEnv::CollectAnalyticalOccluders()
 		// sort by importance
 		if (m_AnalyticalOccluders.Count() > 1)
 			qsort(m_AnalyticalOccluders.GetElements(), m_AnalyticalOccluders.Count(), sizeof(m_AnalyticalOccluders[0]), SAnalyticalOccluder_Compare);
-	}
-}
-
-void CSvoEnv::InitOccluderBoneNames()
-{
-	const char* szBoneNames = GetCVars()->e_svoTI_AnalyticalOccludersBoneNames->GetString();
-
-	ZeroStruct(m_arrOccluderBoneNames);
-
-	if (sscanf(szBoneNames, "%s %s %s %s %s %s %s %s",
-		m_arrOccluderBoneNames[0], m_arrOccluderBoneNames[1], m_arrOccluderBoneNames[2], m_arrOccluderBoneNames[3], m_arrOccluderBoneNames[5], m_arrOccluderBoneNames[7], m_arrOccluderBoneNames[9], m_arrOccluderBoneNames[11]))
-	{
-		if (sscanf(szBoneNames, "%s %s %s %s %s %s %s %s",
-			m_arrOccluderBoneNames[0], m_arrOccluderBoneNames[1], m_arrOccluderBoneNames[2], m_arrOccluderBoneNames[4], m_arrOccluderBoneNames[6], m_arrOccluderBoneNames[8], m_arrOccluderBoneNames[10], m_arrOccluderBoneNames[12]))
-		{
-			// restore spaces
-			for (int i = 0; i < sizeof(m_arrOccluderBoneNames); i++)
-			{
-				if (((char*)&m_arrOccluderBoneNames[0])[i] == '#')
-					((char*)&m_arrOccluderBoneNames[0])[i] = ' ';
-			}
-
-			// replace '*'
-			for (int i = 0; i < MAX_BONES; i++)
-			{
-				if (char* p = strstr(m_arrOccluderBoneNames[i], "*"))
-				{
-					const char * pInsert = (i & 1) ? "Right" : "Left";
-
-					memmove(p + strlen(pInsert), p + 1, strlen(p + 1));
-
-					memcpy(p, pInsert, strlen(pInsert));
-				}
-			}
-
-			// replace '$'
-			for (int i = 0; i < MAX_BONES; i++)
-			{
-				if (char* p = strstr(m_arrOccluderBoneNames[i], "$"))
-				{
-					const char * pInsert = (i & 1) ? "R" : "L";
-
-					memmove(p + strlen(pInsert), p + 1, strlen(p + 1));
-
-					memcpy(p, pInsert, strlen(pInsert));
-				}
-			}
-		}
 	}
 }
 

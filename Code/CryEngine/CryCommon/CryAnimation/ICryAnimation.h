@@ -345,6 +345,12 @@ struct SJointProperty
 	};
 };
 
+struct SBoneShadowCapsule
+{
+	int32 arrJoints[2];
+	float radius;
+};
+
 //////////////////////////////////////////////////////////////////////////
 typedef unsigned int LimbIKDefinitionHandle;
 
@@ -386,6 +392,10 @@ struct IDefaultSkeleton
 	virtual uint32               GetTextureMemoryUsage2(ICrySizer* pSizer = 0) const = 0;
 	virtual uint32               GetMeshMemoryUsage(ICrySizer* pSizer = 0) const = 0;
 	// END: Will become deprecated.
+
+	//! Retrieves list of shadow capsules for soft indirect shadows
+	virtual const DynArray<SBoneShadowCapsule>&  GetShadowCapsules() const = 0;
+
 	// </interfuscator:shuffle>
 };
 
