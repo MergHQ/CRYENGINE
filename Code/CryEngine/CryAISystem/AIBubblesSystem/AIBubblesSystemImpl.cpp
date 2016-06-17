@@ -61,15 +61,16 @@ SBubbleRequestId CAIBubblesSystem::QueueMessage(const char* messageName, const S
 	{
 		const SBubbleRequestId requestId = ++m_requestIdCounter;
 
-		if(request.GetRequestType() == SAIBubbleRequest::eRT_PrototypeDialog)
-			requestsList.push_back(SAIBubbleRequestContainer(requestId, messageNameId,request));
+		if (request.GetRequestType() == SAIBubbleRequest::eRT_PrototypeDialog)
+			requestsList.push_back(SAIBubbleRequestContainer(requestId, messageNameId, request));
 		else
-			requestsList.push_front(SAIBubbleRequestContainer(requestId, messageNameId,request));
+			requestsList.push_front(SAIBubbleRequestContainer(requestId, messageNameId, request));
 
 		// Log the message and if it's needed show the blocking popup
+		stack_string sTmp;
 		stack_string sMessage;
-		request.GetMessage(sMessage);
-		sMessage.Format("%s - Message: %s", pEntity->GetName(), sMessage.c_str());
+		request.GetMessage(sTmp);
+		sMessage.Format("%s - Message: %s", pEntity->GetName(), sTmp.c_str());
 
 		LogMessage(sMessage.c_str(), requestFlags);
 
@@ -136,7 +137,7 @@ public:
 
 			if (m_drawContext->ProjectToScreen(entityPos.x, entityPos.y, entityPos.z, &x, &y, &z))
 			{
-				if ( ( z >= 0.0f ) && ( z <= 1.0f ) )
+				if ((z >= 0.0f) && (z <= 1.0f))
 				{
 					m_bOnScreen = true;
 
@@ -144,7 +145,7 @@ public:
 					y *= m_drawContext->GetHeight() * 0.01f;
 
 					m_bubbleOnscreenPos = Vec3(x, y, z);
-					
+
 					const float distance = gEnv->pSystem->GetViewCamera().GetPosition().GetDistance(entityPos);
 					m_currentTextSize = gAIEnv.CVars.BubblesSystemFontSize / distance;
 				}
@@ -154,9 +155,9 @@ public:
 		return true;
 	}
 
-	bool IsOnScreen() const 
-	{ 
-		return m_bOnScreen; 
+	bool IsOnScreen() const
+	{
+		return m_bOnScreen;
 	}
 
 	void DrawBubble(const char* const message, const size_t numberOfLines, const EBubbleRequestOption flags)
@@ -170,7 +171,7 @@ public:
 		bool bUseDepthTest;
 		if (flags & eBNS_BalloonOverrideDepthTestCVar)
 		{
-			bUseDepthTest  = (flags & eBNS_BalloonUseDepthTest) != 0;
+			bUseDepthTest = (flags & eBNS_BalloonUseDepthTest) != 0;
 		}
 		else
 		{
@@ -187,9 +188,9 @@ private:
 	{
 		SDrawTextInfo ti;
 		ti.xscale = ti.yscale = m_currentTextSize;
-		ti.flags = eDrawText_IgnoreOverscan | eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Center 
-			| (bDepthTest ? eDrawText_DepthTest : 0)
-			| (bFramed ? eDrawText_Framed : 0);
+		ti.flags = eDrawText_IgnoreOverscan | eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Center
+		           | (bDepthTest ? eDrawText_DepthTest : 0)
+		           | (bFramed ? eDrawText_Framed : 0);
 		ti.color[0] = 0.0f;
 		ti.color[1] = 0.0f;
 		ti.color[2] = 0.0f;
@@ -200,13 +201,12 @@ private:
 
 private:
 	CDebugDrawContext& m_drawContext;
-	EntityId m_entityId;
-	Vec3 m_bubbleOnscreenPos;
-	float m_currentTextSize;
-	bool m_bInitialized;
-	bool m_bOnScreen;
+	EntityId           m_entityId;
+	Vec3               m_bubbleOnscreenPos;
+	float              m_currentTextSize;
+	bool               m_bInitialized;
+	bool               m_bOnScreen;
 };
-
 
 void CAIBubblesSystem::Update()
 {
@@ -231,7 +231,7 @@ void CAIBubblesSystem::Update()
 				{
 					SAIBubbleRequestContainer& requestContainer = *reqIt;
 					bool result = DisplaySpeechBubble(requestContainer, bubbleRender);
-					if(requestContainer.IsOld(currentTimestamp) || !result)
+					if (requestContainer.IsOld(currentTimestamp) || !result)
 					{
 						reqIt = requestsList.erase(reqIt);
 					}
@@ -252,7 +252,7 @@ bool CAIBubblesSystem::DisplaySpeechBubble(SAIBubbleRequestContainer& requestCon
 
 	const SAIBubbleRequest& request = requestContainer.GetRequest();
 
-	if(ShouldSuppressMessageVisibility(request.GetRequestType()))
+	if (ShouldSuppressMessageVisibility(request.GetRequestType()))
 	{
 		// We only want to suppress the visibility of the message
 		// but we don't want to remove it from the queue
@@ -263,7 +263,7 @@ bool CAIBubblesSystem::DisplaySpeechBubble(SAIBubbleRequestContainer& requestCon
 	{
 		return true;
 	}
-	
+
 	const TBubbleRequestOptionFlags requestFlags = request.GetFlags();
 
 	if (requestFlags & eBNS_Balloon && gAIEnv.CVars.BubblesSystemAlertnessFilter & eBNS_Balloon)
@@ -334,7 +334,7 @@ bool CAIBubblesSystem::ShouldSuppressMessageVisibility(const SAIBubbleRequest::E
 
 bool CAIBubblesSystem::ShouldFilterOutMessage(const uint32 messsageNameUniqueId) const
 {
-	if (m_messageNameFilterSet.empty()) 
+	if (m_messageNameFilterSet.empty())
 	{
 		return false;
 	}
@@ -348,15 +348,16 @@ void CAIBubblesSystem::SetNameFilter(const char* szMessageNameFilter)
 	{
 		return;
 	}
-	
+
 	stack_string messageNameFilter = szMessageNameFilter;
 	const size_t length = messageNameFilter.length();
 	int pos = 0;
-	do 
+	do
 	{
 		stack_string token = messageNameFilter.Tokenize(" ", pos);
 		m_messageNameFilterSet.insert(ComputeMessageNameId(token.c_str()));
-	} while (pos < length);
+	}
+	while (pos < length);
 }
 
 #endif // CRYAISYSTEM_DEBUG
