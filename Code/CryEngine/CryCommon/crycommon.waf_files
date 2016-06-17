@@ -387,6 +387,7 @@
       "CryAISystem/ISelectionTreeManager.h",
       "CryAISystem/VisionMapTypes.h",
       "CryAISystem/MovementStyle.h",
+      "CryAISystem/IAIBubblesSystem.h",
       {
         "BehaviorTree":[
           "CryAISystem/BehaviorTree/IBehaviorTree.h",
