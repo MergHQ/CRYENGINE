@@ -30,36 +30,36 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineModule(CryAudioImplWwise PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
-target_include_directories(${THIS_PROJECT} PRIVATE ../../Common ${SDK_DIR}/Audio )
+target_include_directories(${THIS_PROJECT} PRIVATE ../../Common ${SDK_DIR}/Audio/oculus/wwise/Include ${SDK_DIR}/Audio/wwise/SDK/include )
 
 if(WIN64)
 	set( WWISE_PLATFORM_PATH x64 )
 	set( WWISE_PLATFORM_PREFIX WIN )
 elseif(WIN32)
-	set( WWISE_PLATFORM_PATH win32 )
+	set( WWISE_PLATFORM_PATH Win32 )
 	set( WWISE_PLATFORM_PREFIX WIN )
 elseif(LINUX64)
 	target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
-	set( WWISE_PLATFORM_PATH linux/x64 )
+	set( WWISE_PLATFORM_PATH Linux_x64 )
 	set( WWISE_PLATFORM_PREFIX LINUX )
 elseif(DURANGO)
-	set( WWISE_PLATFORM_PATH xboxone )
+	set( WWISE_PLATFORM_PATH XboxOne_ )
 	set( WWISE_PLATFORM_PREFIX DURANGO )
 elseif(ORBIS)
-	set( WWISE_PLATFORM_PATH ps4 )
+	set( WWISE_PLATFORM_PATH PS4 )
 	set( WWISE_PLATFORM_PREFIX ORBIS )
 elseif(APPLE)
-	set( WWISE_PLATFORM_PATH darwin/x64 )
+	set( WWISE_PLATFORM_PATH Mac )
 	set( WWISE_PLATFORM_PREFIX DARWIN )
 elseif(ANDROID)
-	set( WWISE_PLATFORM_PATH android/armeabi )
+	set( WWISE_PLATFORM_PATH android-9_armeabi-v7a )
 	set( WWISE_PLATFORM_PREFIX ANDROID )
 endif()
 
 if ((WIN64 OR WIN32 OR DURANGO) AND MSVC)
-	set(WWISE_LIB_PATH "${SDK_DIR}/Audio/AK/lib/${WWISE_PLATFORM_PATH}/$<LOWER_CASE:$<CONFIG>>/${MSVC_LIB_PREFIX}/")
+	set(WWISE_LIB_PATH "${SDK_DIR}/Audio/wwise/SDK/${WWISE_PLATFORM_PATH}_${MSVC_LIB_PREFIX}/$<CONFIG>/lib/")
 else()
-	set(WWISE_LIB_PATH "${SDK_DIR}/Audio/AK/lib/${WWISE_PLATFORM_PATH}/$<LOWER_CASE:$<CONFIG>>/")
+	set(WWISE_LIB_PATH "${SDK_DIR}/Audio/wwise/SDK/${WWISE_PLATFORM_PATH}/$<CONFIG>/lib/")
 endif()
 
 set( COMM_CENTRAL_LIBS CommunicationCentral )
@@ -85,6 +85,7 @@ set( WWISE_PLUGIN_LIBS
 	AkParametricEQFX
 	AkPeakLimiterFX
 	AkPitchShifterFX
+	AkRecorderFX
 	AkRoomVerbFX
 	AkSilenceSource
 	AkSineSource
@@ -121,7 +122,7 @@ make_library(COMMON_WWISE_LIBS ${WWISE_LIB_PATH})
 make_library(COMM_CENTRAL_LIBS ${WWISE_LIB_PATH})
 
 set( WIN_LIBS Ole32 dxguid ws2_32 Dsound XINPUT9_1_0 Msacm32 )
-set( WIN_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} AkMP3Source AuroHeadphoneFX AuroPannerMixer )
+set( WIN_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} AuroHeadphoneFX AuroPannerMixer )
 make_library(WIN_WWISE_LIBS ${WWISE_LIB_PATH})
 set( WIN_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${WIN_WWISE_LIBS} ${WIN_LIBS} )
 set( WIN_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${WIN_RELEASE_LIBS} "${WWISE_LIB_PATH}SFLib.lib" )

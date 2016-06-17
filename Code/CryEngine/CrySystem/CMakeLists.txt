@@ -283,7 +283,6 @@ add_sources("CrySystem_uber_3.cpp"
 		"ZipDirList.h"
 		"ZipDirStructures.h"
 		"ZipDirTree.h"
-		"ZipFile.h"
 		"ZipFileFormat.h"
 		"ZipFileFormat_info.h"
 )
