@@ -2810,7 +2810,8 @@ void CharacterManager::ClearBSPACECache()
 
 int32 CharacterManager::LoadCDF(const char* pathname)
 {
-	XmlNodeRef root = g_pISystem->LoadXmlFromFile(pathname);
+	LOADING_TIME_PROFILE_SECTION_ARGS(pathname);
+	XmlNodeRef root	= g_pISystem->LoadXmlFromFile(pathname);
 	if (root == 0)
 	{
 		g_pILog->LogError("CryAnimation: failed to parse XML file: %s", pathname);
@@ -2885,7 +2886,7 @@ int32 CharacterManager::LoadCDFFromXML(XmlNodeRef root, const char* pathname)
 
 ICharacterInstance* CharacterManager::LoadCharacterDefinition(const string pathname, uint32 nLoadingFlags)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	LOADING_TIME_PROFILE_SECTION_ARGS(pathname.c_str());
 	CRY_DEFINE_ASSET_SCOPE("CDF", pathname.c_str());
 
 	uint32 nLogWarnings = (nLoadingFlags & CA_DisableLogWarnings) == 0;

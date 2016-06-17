@@ -602,6 +602,7 @@ EntityId CEntitySystem::GenerateEntityId(bool bStaticId)
 //////////////////////////////////////////////////////////////////////
 IEntity* CEntitySystem::SpawnEntity(SEntitySpawnParams& params, bool bAutoInit)
 {
+	LOADING_TIME_PROFILE_SECTION_ARGS((params.pClass ? params.pClass->GetName() : "Unknown"));
 	FUNCTION_PROFILER(m_pISystem, PROFILE_ENTITY);
 
 #ifndef _RELEASE

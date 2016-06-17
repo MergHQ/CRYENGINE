@@ -373,7 +373,7 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 {
 	using namespace SkelLoader_Helpers;
 
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	LOADING_TIME_PROFILE_SECTION_ARGS(szFilePath);
 
 	COMPILE_TIME_ASSERT(sizeof(TFace) == 6);
 

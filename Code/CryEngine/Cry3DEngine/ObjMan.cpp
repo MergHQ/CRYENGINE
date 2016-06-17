@@ -379,7 +379,7 @@ CStatObj* CObjManager::LoadStatObj(const char* __szFileName
 		m_pDefaultCGF->m_bDefaultObject = true;
 	}
 
-	LOADING_TIME_PROFILE_SECTION;
+	LOADING_TIME_PROFILE_SECTION_ARGS(__szFileName);
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Static Geometry");
 
 	if (ppSubObject)
