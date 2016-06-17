@@ -85,13 +85,13 @@ struct IAudioImpl;
 
 enum EAudioObjectFlags : AudioEnumFlagsType
 {
-	eAudioObjectFlags_None                = 0,
-	eAudioObjectFlags_TrackDoppler        = BIT(0),
-	eAudioObjectFlags_TrackVelocity       = BIT(1),
-	eAudioObjectFlags_NeedsDopplerUpdate  = BIT(2),
-	eAudioObjectFlags_NeedsVelocityUpdate = BIT(3),
-	eAudioObjectFlags_DoNotRelease        = BIT(4),
-	eAudioObjectFlags_Virtual             = BIT(5),
+	eAudioObjectFlags_None                 = 0,
+	eAudioObjectFlags_TrackDoppler         = BIT(0),
+	eAudioObjectFlags_TrackVelocity        = BIT(1),
+	eAudioObjectFlags_NeedsDopplerUpdate   = BIT(2),
+	eAudioObjectFlags_NeedsVelocityUpdate  = BIT(3),
+	eAudioObjectFlags_DoNotRelease         = BIT(4),
+	eAudioObjectFlags_Virtual              = BIT(5),
 };
 
 enum EAudioSubsystem : AudioEnumFlagsType

@@ -16,6 +16,8 @@ CAudioImplCVars::CAudioImplCVars()
 	, m_soundEngineDefaultMemoryPoolSize(0)
 	, m_commandQueueMemoryPoolSize(0)
 	, m_lowerEngineDefaultPoolSize(0)
+	, m_enableEventManagerThread(0)
+	, m_enableSoundBankManagerThread(0)
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	, m_enableCommSystem(0)
 	, m_enableOutputCapture(0)
@@ -42,6 +44,8 @@ void CAudioImplCVars::RegisterVariables()
 	m_soundEngineDefaultMemoryPoolSize = 32 << 10; // 32 MiB
 	m_commandQueueMemoryPoolSize = 512;            // 512 KiB
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
+	m_enableEventManagerThread = 1;
+	m_enableSoundBankManagerThread = 1;
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
@@ -55,6 +59,8 @@ void CAudioImplCVars::RegisterVariables()
 	m_soundEngineDefaultMemoryPoolSize = 32 << 10; // 32 MiB
 	m_commandQueueMemoryPoolSize = 512;            // 512 KiB
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
+	m_enableEventManagerThread = 1;
+	m_enableSoundBankManagerThread = 1;
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
@@ -68,6 +74,8 @@ void CAudioImplCVars::RegisterVariables()
 	m_soundEngineDefaultMemoryPoolSize = 32 << 10; // 32 MiB
 	m_commandQueueMemoryPoolSize = 512;            // 512 KiB
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
+	m_enableEventManagerThread = 1;
+	m_enableSoundBankManagerThread = 1;
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
@@ -81,6 +89,8 @@ void CAudioImplCVars::RegisterVariables()
 	m_soundEngineDefaultMemoryPoolSize = 32 << 10; // 32 MiB
 	m_commandQueueMemoryPoolSize = 512;            // 512 KiB
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
+	m_enableEventManagerThread = 1;
+	m_enableSoundBankManagerThread = 1;
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
@@ -94,6 +104,8 @@ void CAudioImplCVars::RegisterVariables()
 	m_soundEngineDefaultMemoryPoolSize = 32 << 10; // 32 MiB
 	m_commandQueueMemoryPoolSize = 512;            // 512 KiB
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
+	m_enableEventManagerThread = 1;
+	m_enableSoundBankManagerThread = 1;
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
@@ -107,6 +119,8 @@ void CAudioImplCVars::RegisterVariables()
 	m_soundEngineDefaultMemoryPoolSize = 32 << 10; // 32 MiB
 	m_commandQueueMemoryPoolSize = 512;            // 512 KiB
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
+	m_enableEventManagerThread = 1;
+	m_enableSoundBankManagerThread = 1;
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
@@ -120,6 +134,8 @@ void CAudioImplCVars::RegisterVariables()
 	m_soundEngineDefaultMemoryPoolSize = 32 << 10; // 32 MiB
 	m_commandQueueMemoryPoolSize = 512;            // 512 KiB
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
+	m_enableEventManagerThread = 1;
+	m_enableSoundBankManagerThread = 1;
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
@@ -168,6 +184,16 @@ void CAudioImplCVars::RegisterVariables()
 	               "Usage: s_WwiseLowerEngineDefaultPoolSize [0/...]\n"
 	               "Default PC: 16384 (16 MiB), XboxOne: 16384 (16 MiB), PS4: 16384 (16 MiB), Mac: 16384 (16 MiB), Linux: 16384 (16 MiB), iOS: 16384 (16 MiB), Android: 16384 (16 MiB)\n");
 
+	REGISTER_CVAR2("s_WwiseEnableEventManagerThread", &m_enableEventManagerThread, m_enableEventManagerThread, VF_REQUIRE_APP_RESTART,
+	               "Specifies whether Wwise should initialize using its EventManager thread or not.\n"
+	               "Usage: s_WwiseEnableEventManagerThread [0/1]\n"
+	               "Default: 1 (on)\n");
+
+	REGISTER_CVAR2("s_WwiseEnableSoundBankManagerThread", &m_enableSoundBankManagerThread, m_enableSoundBankManagerThread, VF_REQUIRE_APP_RESTART,
+	               "Specifies whether Wwise should initialize using its SoundBankManager thread or not.\n"
+	               "Usage: s_WwiseEnableSoundBankManagerThread [0/1]\n"
+	               "Default: 1 (on)\n");
+
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	REGISTER_CVAR2("s_WwiseEnableCommSystem", &m_enableCommSystem, 0, VF_REQUIRE_APP_RESTART,
 	               "Specifies whether Wwise should initialize using its Comm system or not.\n"
@@ -208,6 +234,8 @@ void CAudioImplCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_WwiseSoundEngineDefaultMemoryPoolSize");
 		pConsole->UnregisterVariable("s_WwiseCommandQueueMemoryPoolSize");
 		pConsole->UnregisterVariable("s_WwiseLowerEngineDefaultPoolSize");
+		pConsole->UnregisterVariable("s_WwiseEnableEventManagerThread");
+		pConsole->UnregisterVariable("s_WwiseEnableSoundBankManagerThread");
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 		pConsole->UnregisterVariable("s_WwiseEnableCommSystem");

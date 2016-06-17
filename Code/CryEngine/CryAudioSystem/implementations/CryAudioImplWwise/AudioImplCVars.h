@@ -26,6 +26,8 @@ public:
 	int m_soundEngineDefaultMemoryPoolSize;
 	int m_commandQueueMemoryPoolSize;
 	int m_lowerEngineDefaultPoolSize;
+	int m_enableEventManagerThread;
+	int m_enableSoundBankManagerThread;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	int m_enableCommSystem;

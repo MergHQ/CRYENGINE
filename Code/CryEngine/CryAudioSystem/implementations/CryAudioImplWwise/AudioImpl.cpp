@@ -6,6 +6,7 @@
 #include "FileIOHandler.h"
 #include "Common.h"
 #include <SharedAudioData.h>
+#include <CryThreading/IThreadManager.h>
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>     // Sound engine
 #include <AK/MotionEngine/Common/AkMotionEngine.h>   // Motion Engine
@@ -50,6 +51,87 @@ char const* const CAudioImpl::s_szWwiseMutiplierAttribute = "wwise_value_multipl
 char const* const CAudioImpl::s_szWwiseShiftAttribute = "wwise_value_shift";
 char const* const CAudioImpl::s_szWwiseLocalisedAttribute = "wwise_localised";
 char const* const CAudioImpl::s_szSoundBanksInfoFilename = "SoundbanksInfo.xml";
+
+class CAuxWwiseAudioThread : public IThread
+{
+public:
+
+	CAuxWwiseAudioThread()
+		: m_pImpl(nullptr)
+		, m_bQuit(false)
+		, m_threadState(eAuxWwiseAudioThreadState_Wait)
+	{}
+
+	~CAuxWwiseAudioThread() {}
+
+	enum EAuxWwiseAudioThreadState : int
+	{
+		eAuxWwiseAudioThreadState_Wait = 0,
+		eAuxWwiseAudioThreadState_Start,
+		eAuxWwiseAudioThreadState_Stop,
+	};
+
+	void Init(CAudioImpl* const pImpl)
+	{
+		m_pImpl = pImpl;
+
+		if (!gEnv->pThreadManager->SpawnThread(this, "AuxWwiseAudioThread"))
+		{
+			CryFatalError("Error spawning \"AuxWwiseAudioThread\" thread.");
+		}
+	}
+
+	void ThreadEntry()
+	{
+		while (!m_bQuit)
+		{
+			m_lock.Lock();
+
+			if (m_threadState == eAuxWwiseAudioThreadState_Stop)
+			{
+				m_threadState = eAuxWwiseAudioThreadState_Wait;
+				m_sem.Notify();
+			}
+
+			while (m_threadState == eAuxWwiseAudioThreadState_Wait)
+			{
+				m_sem.Wait(m_lock);
+			}
+
+			m_lock.Unlock();
+
+			if (m_bQuit)
+			{
+				break;
+			}
+
+			m_pImpl->Update(0.0f);
+		}
+	}
+
+	void SignalStopWork()
+	{
+		m_bQuit = true;
+		m_threadState = eAuxWwiseAudioThreadState_Start;
+		m_sem.Notify();
+		gEnv->pThreadManager->JoinThread(this, eJM_Join);
+	}
+
+	bool IsActive()
+	{
+		// JoinThread returns true if thread is not running.
+		// JoinThread returns false if thread is still running
+		return !gEnv->pThreadManager->JoinThread(this, eJM_TryJoin);
+	}
+
+	CAudioImpl*                        m_pImpl;
+	volatile bool                      m_bQuit;
+	volatile EAuxWwiseAudioThreadState m_threadState;
+	CryMutex                           m_lock;
+	CryConditionVariable               m_sem;
+};
+
+CAuxWwiseAudioThread g_auxAudioThread;
 
 /////////////////////////////////////////////////////////////////////////////////
 //                              MEMORY HOOKS SETUP
@@ -317,7 +399,7 @@ EAudioRequestStatus CAudioImpl::Init()
 
 	if (wwiseResult != AK_Success)
 	{
-		g_audioImplLogger.Log(eAudioLogType_Error, "m_oFileIOHandler.Init() returned AKRESULT %d", wwiseResult);
+		g_audioImplLogger.Log(eAudioLogType_Error, "m_fileIOHandler.Init() returned AKRESULT %d", wwiseResult);
 		ShutDown();
 
 		return eAudioRequestStatus_Failure;
@@ -340,12 +422,20 @@ EAudioRequestStatus CAudioImpl::Init()
 	initSettings.uPrepareEventMemoryPoolID = prepareMemPoolId;
 	initSettings.bEnableGameSyncPreparation = false;//TODO: ???
 
+	initSettings.bUseLEngineThread = g_audioImplCVars.m_enableEventManagerThread > 0;
+	initSettings.bUseSoundBankMgrThread = g_audioImplCVars.m_enableSoundBankManagerThread > 0;
+
+	// We need this additional thread during bank unloading if the user decided to run Wwise without the EventManager thread.
+	if (g_audioImplCVars.m_enableEventManagerThread == 0)
+	{
+		g_auxAudioThread.Init(this);
+	}
+
 	AkPlatformInitSettings platformInitSettings;
 	AK::SoundEngine::GetDefaultPlatformInitSettings(platformInitSettings);
 	platformInitSettings.uLEngineDefaultPoolSize = g_audioImplCVars.m_lowerEngineDefaultPoolSize << 10;
 
 	// Bank Manager thread settings
-
 	if (pBankManger->paramActivityFlag & SThreadConfig::eThreadParamFlag_Affinity)
 		platformInitSettings.threadBankManager.dwAffinityMask = pBankManger->affinityFlag;
 
@@ -567,7 +657,16 @@ EAudioRequestStatus CAudioImpl::ShutDown()
 			g_audioImplLogger.Log(eAudioLogType_Warning, "AK::SoundEngine::UnregisterGameObject() failed for the Dummyobject with AKRESULT %d", wwiseResult);
 		}
 
-		wwiseResult = AK::SoundEngine::ClearBanks();
+		if (g_audioImplCVars.m_enableEventManagerThread > 0)
+		{
+			wwiseResult = AK::SoundEngine::ClearBanks();
+		}
+		else
+		{
+			SignalAuxAudioThread();
+			wwiseResult = AK::SoundEngine::ClearBanks();
+			g_auxAudioThread.SignalStopWork();
+		}
 
 		if (wwiseResult != AK_Success)
 		{
@@ -619,14 +718,9 @@ EAudioRequestStatus CAudioImpl::Release()
 	POOL_FREE(this);
 
 	// Freeing Memory Pool Memory again
-	uint8* pMemSystem = g_audioImplMemoryPool.Data();
+	uint8 const* const pMemSystem = g_audioImplMemoryPool.Data();
 	g_audioImplMemoryPool.UnInitMem();
-
-	if (pMemSystem)
-	{
-		delete[] (uint8*)(pMemSystem);
-	}
-
+	delete[] pMemSystem;
 	g_audioImplCVars.UnregisterVariables();
 
 	return eAudioRequestStatus_Success;
@@ -910,7 +1004,7 @@ EAudioRequestStatus CAudioImpl::StopAllEvents(IAudioObject* const _pAudioObject)
 ///////////////////////////////////////////////////////////////////////////
 EAudioRequestStatus CAudioImpl::Set3DAttributes(
   IAudioObject* const pAudioObject,
-	CryAudio::Impl::SAudioObject3DAttributes const& attributes)
+  CryAudio::Impl::SAudioObject3DAttributes const& attributes)
 {
 	EAudioRequestStatus result = eAudioRequestStatus_Failure;
 
@@ -1199,7 +1293,7 @@ EAudioRequestStatus CAudioImpl::SetObstructionOcclusion(
 ///////////////////////////////////////////////////////////////////////////
 EAudioRequestStatus CAudioImpl::SetListener3DAttributes(
   IAudioListener* const pAudioListener,
-	CryAudio::Impl::SAudioObject3DAttributes const& attributes)
+  CryAudio::Impl::SAudioObject3DAttributes const& attributes)
 {
 	EAudioRequestStatus result = eAudioRequestStatus_Failure;
 
@@ -1276,7 +1370,19 @@ EAudioRequestStatus CAudioImpl::UnregisterInMemoryFile(SAudioFileEntryInfo* cons
 
 		if (pFileDataWwise != nullptr)
 		{
-			AKRESULT const wwiseResult = AK::SoundEngine::UnloadBank(pFileDataWwise->bankId, pFileEntryInfo->pFileData);
+			AKRESULT wwiseResult = AK_Fail;
+
+			// If the EventManager thread has been disabled the synchronous UnloadBank version will get stuck.
+			if (g_audioImplCVars.m_enableEventManagerThread > 0)
+			{
+				wwiseResult = AK::SoundEngine::UnloadBank(pFileDataWwise->bankId, pFileEntryInfo->pFileData);
+			}
+			else
+			{
+				SignalAuxAudioThread();
+				wwiseResult = AK::SoundEngine::UnloadBank(pFileDataWwise->bankId, pFileEntryInfo->pFileData);
+				WaitForAuxAudioThread();
+			}
 
 			if (IS_WWISE_OK(wwiseResult))
 			{
@@ -1975,6 +2081,30 @@ EAudioRequestStatus CAudioImpl::PostEnvironmentAmounts(IAudioObject* const pAudi
 	}
 
 	return result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioImpl::SignalAuxAudioThread()
+{
+	g_auxAudioThread.m_lock.Lock();
+	g_auxAudioThread.m_threadState = CAuxWwiseAudioThread::eAuxWwiseAudioThreadState_Start;
+	g_auxAudioThread.m_lock.Unlock();
+	g_auxAudioThread.m_sem.Notify();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioImpl::WaitForAuxAudioThread()
+{
+	g_auxAudioThread.m_lock.Lock();
+	g_auxAudioThread.m_threadState = CAuxWwiseAudioThread::eAuxWwiseAudioThreadState_Stop;
+
+	// Wait until the AuxWwiseAudioThread is actually waiting again and not processing any work.
+	while (g_auxAudioThread.m_threadState != CAuxWwiseAudioThread::eAuxWwiseAudioThreadState_Wait)
+	{
+		g_auxAudioThread.m_sem.Wait(g_auxAudioThread.m_lock);
+	}
+
+	g_auxAudioThread.m_lock.Unlock();
 }
 
 //////////////////////////////////////////////////////////////////////////

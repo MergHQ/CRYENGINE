@@ -119,6 +119,8 @@ private:
 	EAudioRequestStatus      PrepUnprepTriggerSync(IAudioTrigger const* const pAudioTrigger, bool bPrepare);
 	EAudioRequestStatus      PrepUnprepTriggerAsync(IAudioTrigger const* const pAudioTrigger, IAudioEvent* const pAudioEvent, bool bPrepare);
 	EAudioRequestStatus      PostEnvironmentAmounts(IAudioObject* const pAudioObject);
+	void                     SignalAuxAudioThread();
+	void                     WaitForAuxAudioThread();
 
 	AkGameObjectID                              m_dummyGameObjectId;
 	AkBankID                                    m_initBankId;

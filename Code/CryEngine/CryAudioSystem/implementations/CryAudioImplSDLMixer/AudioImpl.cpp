@@ -114,15 +114,11 @@ EAudioRequestStatus CAudioImpl::Release()
 	POOL_FREE(this);
 
 	// Freeing Memory Pool Memory again
-	uint8* pMemSystem = g_audioImplMemoryPool.Data();
+	uint8 const* const pMemSystem = g_audioImplMemoryPool.Data();
 	g_audioImplMemoryPool.UnInitMem();
-
-	if (pMemSystem)
-	{
-		delete[](uint8*)(pMemSystem);
-	}
-
+	delete[] pMemSystem;
 	g_audioImplCVars.UnregisterVariables();
+
 	return eAudioRequestStatus_Success;
 }
 
@@ -316,8 +312,8 @@ EAudioRequestStatus CAudioImpl::StopAllEvents(IAudioObject* const pAudioObject)
 }
 
 EAudioRequestStatus CAudioImpl::Set3DAttributes(
-	IAudioObject* const pAudioObject,
-	CryAudio::Impl::SAudioObject3DAttributes const& attributes)
+  IAudioObject* const pAudioObject,
+  CryAudio::Impl::SAudioObject3DAttributes const& attributes)
 {
 	SAudioObject* const pSdlMixerObject = static_cast<SAudioObject* const>(pAudioObject);
 	if (pSdlMixerObject)
@@ -349,8 +345,8 @@ EAudioRequestStatus CAudioImpl::SetEnvironment(IAudioObject* const pAudioObject,
 }
 
 EAudioRequestStatus CAudioImpl::SetListener3DAttributes(
-	IAudioListener* const pAudioListener,
-	CryAudio::Impl::SAudioObject3DAttributes const& attributes)
+  IAudioListener* const pAudioListener,
+  CryAudio::Impl::SAudioObject3DAttributes const& attributes)
 {
 	SAudioListener* const pListener = static_cast<SAudioListener* const>(pAudioListener);
 	if (pListener)

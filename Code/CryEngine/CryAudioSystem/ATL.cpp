@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 #include "ATL.h"
-#include "ATLComponents.h"
 #include "AudioImpl.h"
 #include "SoundCVars.h"
 #include "AudioProxy.h"
@@ -94,7 +93,7 @@ bool CAudioTranslationLayer::Initialize()
 	// Add the callback for the obstruction calculation.
 	gEnv->pPhysicalWorld->AddEventClient(
 	  EventPhysRWIResult::id,
-	  &CATLAudioObject::CPropagationProcessor::OnObstructionTest,
+	  &CPropagationProcessor::OnObstructionTest,
 	  1);
 
 	// TODO: Rather parse a "default data" type XML to import ATL required controls!
@@ -116,7 +115,7 @@ bool CAudioTranslationLayer::ShutDown()
 		// remove the callback for the obstruction calculation
 		gEnv->pPhysicalWorld->RemoveEventClient(
 		  EventPhysRWIResult::id,
-		  &CATLAudioObject::CPropagationProcessor::OnObstructionTest,
+		  &CPropagationProcessor::OnObstructionTest,
 		  1);
 	}
 
@@ -2031,9 +2030,7 @@ EAudioRequestStatus CAudioTranslationLayer::SetInternalSwitchState(
 			if (pInternalStateData->internalAudioSwitchStateId == SATLInternalControlIDs::ignoreStateId)
 			{
 				pAudioObject->SetOcclusionType(eAudioOcclusionType_Ignore, audioListenerPosition);
-				SATLSoundPropagationData propagationData;
-				pAudioObject->GetPropagationData(propagationData);
-				m_pImpl->SetObstructionOcclusion(pAudioObject->GetImplDataPtr(), propagationData.obstruction, propagationData.occlusion);
+				m_pImpl->SetObstructionOcclusion(pAudioObject->GetImplDataPtr(), 0.0f, 0.0f);
 			}
 			else if (pInternalStateData->internalAudioSwitchStateId == SATLInternalControlIDs::adaptiveStateId)
 			{
@@ -2045,7 +2042,7 @@ EAudioRequestStatus CAudioTranslationLayer::SetInternalSwitchState(
 			}
 			else if (pInternalStateData->internalAudioSwitchStateId == SATLInternalControlIDs::mediumStateId)
 			{
-				pAudioObject->SetOcclusionType(eAudioOcclusionType_Medium,audioListenerPosition);
+				pAudioObject->SetOcclusionType(eAudioOcclusionType_Medium, audioListenerPosition);
 			}
 			else if (pInternalStateData->internalAudioSwitchStateId == SATLInternalControlIDs::highStateId)
 			{
@@ -2054,9 +2051,7 @@ EAudioRequestStatus CAudioTranslationLayer::SetInternalSwitchState(
 			else
 			{
 				pAudioObject->SetOcclusionType(eAudioOcclusionType_Ignore, audioListenerPosition);
-				SATLSoundPropagationData propagationData;
-				pAudioObject->GetPropagationData(propagationData);
-				m_pImpl->SetObstructionOcclusion(pAudioObject->GetImplDataPtr(), propagationData.obstruction, propagationData.occlusion);
+				m_pImpl->SetObstructionOcclusion(pAudioObject->GetImplDataPtr(), 0.0f, 0.0f);
 			}
 		}
 	}
@@ -2272,8 +2267,8 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		size_t const nEvents = m_audioEventMgr.GetNumActive();
 		size_t const nListeners = m_audioListenerMgr.GetNumActive();
 		size_t const nNumEventListeners = m_audioEventListenerMgr.GetNumEventListeners();
-		fSyncRays += (CATLAudioObject::CPropagationProcessor::s_totalSyncPhysRays - fSyncRays) * SMOOTHING_ALPHA;
-		fAsyncRays += (CATLAudioObject::CPropagationProcessor::s_totalAsyncPhysRays - fAsyncRays) * SMOOTHING_ALPHA * 0.1f;
+		fSyncRays += (CPropagationProcessor::s_totalSyncPhysRays - fSyncRays) * SMOOTHING_ALPHA;
+		fAsyncRays += (CPropagationProcessor::s_totalAsyncPhysRays - fAsyncRays) * SMOOTHING_ALPHA * 0.1f;
 
 		bool const bActive = true;
 		float const fColorListener[4] =

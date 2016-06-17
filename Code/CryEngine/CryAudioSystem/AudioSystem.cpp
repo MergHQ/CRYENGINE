@@ -253,7 +253,7 @@ void CAudioSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 	case ESYSTEM_EVENT_LEVEL_UNLOAD:
 		{
 			// This event is issued in Editor and Game mode.
-			CATLAudioObject::CPropagationProcessor::s_bCanIssueRWIs = false;
+			CPropagationProcessor::s_bCanIssueRWIs = false;
 
 			SAudioManagerRequestDataInternal<eAudioManagerRequestType_ReleasePendingRays> requestData;
 			CAudioRequestInternal request(&requestData);
@@ -265,7 +265,7 @@ void CAudioSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 	case ESYSTEM_EVENT_LEVEL_LOAD_END:
 		{
 			// This event is issued in Editor and Game mode.
-			CATLAudioObject::CPropagationProcessor::s_bCanIssueRWIs = true;
+			CPropagationProcessor::s_bCanIssueRWIs = true;
 
 			break;
 		}

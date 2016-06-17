@@ -369,6 +369,7 @@ void CAudioCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_FullObstructionMaxDistance");
 		pConsole->UnregisterVariable("s_PositionUpdateThreshold");
 		pConsole->UnregisterVariable("s_VelocityTrackingThreshold");
+		pConsole->UnregisterVariable("s_OcclusionRayLengthOffset");
 		pConsole->UnregisterVariable("s_FileCacheManagerSize");
 		pConsole->UnregisterVariable("s_AudioObjectPoolSize");
 		pConsole->UnregisterVariable("s_AudioEventPoolSize");
@@ -379,6 +380,7 @@ void CAudioCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_StopTrigger");
 		pConsole->UnregisterVariable("s_SetRtpc");
 		pConsole->UnregisterVariable("s_SetSwitchState");
+		pConsole->UnregisterVariable("s_DefaultStandaloneFilesAudioTrigger");
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
