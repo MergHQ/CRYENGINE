@@ -536,8 +536,8 @@ void CAnimEntityNode::InitializeTrackDefaultValue(IAnimTrack* pTrack, const CAni
 
 void CAnimEntityNode::CreateDefaultTracks()
 {
-	// Default tracks for Entities are controlled through the toolbar menu
-	// in MannequinDialog.
+	CreateTrack(eAnimParamType_Position);
+	CreateTrack(eAnimParamType_Rotation);
 }
 
 CAnimEntityNode::~CAnimEntityNode()
