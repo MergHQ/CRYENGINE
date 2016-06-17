@@ -1993,7 +1993,7 @@ int CRigidEntity::RegisterConstraint(const Vec3 &pt0,const Vec3 &pt1, int ipart0
 	if (i>=m_nConstraintsAlloc) {
 		entity_contact *pConstraints = m_pConstraints;
 		constraint_info *pInfos = m_pConstraintInfos;
-		int nConstraints = m_nConstraintsAlloc;
+		int nConstraints = m_nConstraintsAlloc;	// cppcheck-suppress memsetClass
 		memcpy(m_pConstraints = new entity_contact[(m_nConstraintsAlloc=(i&~7)+8)], pConstraints, nConstraints*sizeof(entity_contact));
 		memcpy(m_pConstraintInfos = new constraint_info[m_nConstraintsAlloc], pInfos, nConstraints*sizeof(constraint_info));
 		delete[] pConstraints;

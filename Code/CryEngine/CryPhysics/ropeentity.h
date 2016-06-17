@@ -181,7 +181,6 @@ class CRopeEntity : public CPhysicalEntity {
 	quaternionf m_qBody[2][2];
 	Vec3 m_dir0dst;
 	Vec3 m_collBBox[2];
-	float m_jobE;
 
 	ROPE_SAFE_ARRAY(rope_vtx) m_vtx;
 	ROPE_SAFE_ARRAY(rope_vtx) m_vtx1;

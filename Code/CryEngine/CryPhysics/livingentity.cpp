@@ -354,7 +354,7 @@ int CLivingEntity::SetParams(pe_params *_params, int bThreadSafe)
 	if (_params->type==pe_player_dimensions::type_id) {
 		pe_player_dimensions *params = (pe_player_dimensions*)_params;
 		ENTITY_VALIDATE("CLivingEntity:SetParams(player_dimensions)",params);
-		if (is_unused(params->sizeCollider)) params->sizeCollider = m_size;
+ 		if (is_unused(params->sizeCollider)) params->sizeCollider = m_size;
 		if (is_unused(params->heightCollider)) params->heightCollider = m_hCyl;
 		if (is_unused(params->heightPivot)) params->heightPivot = m_hPivot;
 		if (is_unused(params->bUseCapsule)) params->bUseCapsule = m_bUseCapsule;
@@ -1170,7 +1170,7 @@ void CLivingEntity::RegisterUnprojContact(const le_contact &unproj)
 	if (m_nContacts==m_nContactsAlloc) {
 		le_contact *pContacts = m_pContacts;
 		m_pContacts = new le_contact[m_nContactsAlloc+=4];
-		NO_BUFFER_OVERRUN
+		NO_BUFFER_OVERRUN	// cppcheck-suppress memsetClass
 		memcpy(m_pContacts, pContacts, m_nContacts*sizeof(le_contact));
 		delete[] pContacts;
 	}
