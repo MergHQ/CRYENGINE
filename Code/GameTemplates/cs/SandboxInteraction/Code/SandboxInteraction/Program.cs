@@ -19,11 +19,18 @@ namespace CryEngine.SandboxInteraction
 
 		public void Initialize(InterDomainHandler handler)
 		{
+		}
+
+		public void StartGame()
+		{
 			if (!Env.IsSandbox)
 				Env.Console.ExecuteString ("map SandboxInteraction");
 			_app = Application.Instantiate<SandboxInteractionApp>();
 		}
 
+		/// <summary>
+		/// Not used in this application. Implementation required by interface.
+		/// </summary>
 		public void OnFlowNodeSignal(FlowNode node, PropertyInfo signal)
 		{
 			if (OnSignal != null)
@@ -31,6 +38,13 @@ namespace CryEngine.SandboxInteraction
 		}
 
 		public void Shutdown()
+		{
+		}
+
+		/// <summary>
+		/// Called when engine is being shut down or if application is reloaded.
+		/// </summary>
+		public void EndGame()
 		{
 			_app.Shutdown (false);
 		}

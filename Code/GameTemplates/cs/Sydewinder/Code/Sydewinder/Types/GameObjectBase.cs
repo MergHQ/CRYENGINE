@@ -107,7 +107,7 @@ namespace CryEngine.Sydewinder
 				return Position;
 			}
 
-			Vec3 newPosition = Position + FrameTime.Normalize(Speed); 
+			Vec3 newPosition = Position + Speed * FrameTime.Delta;
 			Position = newPosition;
 			return newPosition;
 		}

@@ -1,0 +1,82 @@
+<ATLConfig atl_name="Sydewinder" atl_version="1">
+ <AudioTriggers>
+  <ATLTrigger atl_name="menu_switch">
+   <FmodEvent fmod_name="menu_switch"/>
+   <WwiseEvent wwise_name="Play_menu_switch"/>
+   <SDLMixerEvent sdl_name="menu_switch.ogg" event_type="start" enable_panning="false" enable_distance_attenuation="false" attenuation_dist_min="0" attenuation_dist_max="100" volume="-14" loop_count="1"/>
+  </ATLTrigger>
+  <ATLTrigger atl_name="menu_select">
+   <FmodEvent fmod_name="menu_select"/>
+   <WwiseEvent wwise_name="Play_menu_select"/>
+   <SDLMixerEvent sdl_name="menu_select.ogg" event_type="start" enable_panning="false" enable_distance_attenuation="false" attenuation_dist_min="0" attenuation_dist_max="100" volume="-14" loop_count="1"/>
+  </ATLTrigger>
+  <ATLTrigger atl_name="door_smash">
+   <FmodEvent fmod_name="door_smash"/>
+   <WwiseEvent wwise_name="Play_door_smash"/>
+   <SDLMixerEvent sdl_name="door_smash.ogg" event_type="start" enable_panning="false" enable_distance_attenuation="false" attenuation_dist_min="0" attenuation_dist_max="100" volume="-14" loop_count="1"/>
+  </ATLTrigger>
+  <ATLTrigger atl_name="enemy_explosion_03">
+   <FmodEvent fmod_name="enemy_explosion_03"/>
+   <WwiseEvent wwise_name="Play_enemy_explosion_03"/>
+   <SDLMixerEvent sdl_name="enemy_explosion_03.ogg" event_type="start" enable_panning="false" enable_distance_attenuation="false" attenuation_dist_min="0" attenuation_dist_max="100" volume="-14" loop_count="1"/>
+  </ATLTrigger>
+  <ATLTrigger atl_name="enemy_explosion_02">
+   <FmodEvent fmod_name="enemy_explosion_02"/>
+   <WwiseEvent wwise_name="Play_enemy_explosion_02"/>
+   <SDLMixerEvent sdl_name="enemy_explosion_02.ogg" event_type="start" enable_panning="false" enable_distance_attenuation="false" attenuation_dist_min="0" attenuation_dist_max="100" volume="-14" loop_count="1"/>
+  </ATLTrigger>
+  <ATLTrigger atl_name="enemy_explosion_01">
+   <FmodEvent fmod_name="enemy_explosion_01"/>
+   <WwiseEvent wwise_name="Play_enemy_explosion_01"/>
+   <SDLMixerEvent sdl_name="enemy_explosion_01.ogg" event_type="start" enable_panning="false" enable_distance_attenuation="false" attenuation_dist_min="0" attenuation_dist_max="100" volume="-14" loop_count="1"/>
+  </ATLTrigger>
+  <ATLTrigger atl_name="player_explosion">
+   <FmodEvent fmod_name="player_explosion"/>
+   <WwiseEvent wwise_name="Play_player_explosion"/>
+   <SDLMixerEvent sdl_name="player_explosion.ogg" event_type="start" enable_panning="false" enable_distance_attenuation="false" attenuation_dist_min="0" attenuation_dist_max="100" volume="-14" loop_count="1"/>
+  </ATLTrigger>
+  <ATLTrigger atl_name="laser_charged">
+   <FmodEvent fmod_name="laser_charged"/>
+   <WwiseEvent wwise_name="Play_laser_charged"/>
+   <SDLMixerEvent sdl_name="laser_charged.ogg" event_type="start" enable_panning="false" enable_distance_attenuation="false" attenuation_dist_min="0" attenuation_dist_max="100" volume="-14" loop_count="1"/>
+  </ATLTrigger>
+  <ATLTrigger atl_name="laser_enemy">
+   <FmodEvent fmod_name="laser_01"/>
+   <WwiseEvent wwise_name="Play_laser_01"/>
+   <SDLMixerEvent sdl_name="laser_01.ogg" event_type="start" enable_panning="false" enable_distance_attenuation="false" attenuation_dist_min="0" attenuation_dist_max="100" volume="-14" loop_count="1"/>
+  </ATLTrigger>
+  <ATLTrigger atl_name="laser_player">
+   <FmodEvent fmod_name="laser_nrm"/>
+   <WwiseEvent wwise_name="Play_laser_nrm"/>
+   <SDLMixerEvent sdl_name="laser_nrm.ogg" event_type="start" enable_panning="false" enable_distance_attenuation="false" attenuation_dist_min="0" attenuation_dist_max="100" volume="-14" loop_count="1"/>
+  </ATLTrigger>
+  <ATLTrigger atl_name="game_stop">
+   <FmodEvent fmod_name="Gumbel - Killing Bosses" fmod_event_type="stop"/>
+   <WwiseEvent wwise_name="Stop_Gumbel___Killing_Bosses"/>
+   <SDLMixerEvent sdl_name="Gumbel - Killing Bosses.ogg" event_type="stop"/>
+  </ATLTrigger>
+  <ATLTrigger atl_name="game_start">
+   <FmodEvent fmod_name="Gumbel - Killing Bosses"/>
+   <WwiseEvent wwise_name="Play_Gumbel___Killing_Bosses"/>
+   <SDLMixerEvent sdl_name="Gumbel - Killing Bosses.ogg" event_type="start" enable_panning="false" enable_distance_attenuation="false" attenuation_dist_min="0" attenuation_dist_max="100" volume="-14" loop_count="-1"/>
+  </ATLTrigger>
+ </AudioTriggers>
+ <AudioPreloads>
+  <ATLPreloadRequest atl_name="global" atl_type="AutoLoad">
+   <ATLPlatforms>
+    <Platform atl_name="pc" atl_config_group_name="default"/>
+    <Platform atl_name="ps4" atl_config_group_name="default"/>
+    <Platform atl_name="xbox" atl_config_group_name="default"/>
+    <Platform atl_name="mac" atl_config_group_name="default"/>
+    <Platform atl_name="linux" atl_config_group_name="default"/>
+   </ATLPlatforms>
+   <ATLConfigGroup atl_name="default">
+    <FmodFile fmod_name="global.bank"/>
+    <WwiseFile wwise_name="sydewinder.bnk"/>
+   </ATLConfigGroup>
+  </ATLPreloadRequest>
+ </AudioPreloads>
+ <EditorData>
+  <Folders />
+ </EditorData>
+</ATLConfig>

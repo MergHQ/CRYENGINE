@@ -1,0 +1,5 @@
+<Material MtlFlags="524320" Shader="MonoFrameworkUI" GenMask="0" StringGenMask="" SurfaceType="mat_metal_thick" MatTemplate="" Diffuse="1,1,1" Specular="0,0,0" Emittance="0,0,0,0" Opacity="1" Shininess="10" CloakAmount="0" vertModifType="0" LayerAct="1">
+ <Textures>
+  <Texture Map="Diffuse" File="textures/marble_gen_068_diff.dds"/>
+ </Textures>
+</Material>

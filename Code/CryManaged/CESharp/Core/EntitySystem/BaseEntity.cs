@@ -21,8 +21,17 @@ namespace CryEngine.EntitySystem
 		#endregion
 
 		#region Properties
+		/// <summary>
+		/// EntityId of the native CRYENGINE entity.
+		/// </summary>
 		public uint Id { get { return _entity != null ? _entity.GetId () : 0; } }
+		/// <summary>
+		/// Reference to the native CRYENGINE entity.
+		/// </summary>
 		public IEntity NativeEntity { get { return _entity; } }
+		/// <summary>
+		/// Reference to the managed entity class.
+		/// </summary>
 		public EntityClass EntityClass { get { return _entityClass; } }
 		#endregion
 

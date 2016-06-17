@@ -103,7 +103,7 @@ namespace CryEngine.Sydewinder
 
 		public void UpdateSpeed()
 		{			
-			float acceleration = FrameTime.Normalize(_acceleration);
+			float acceleration = _acceleration * FrameTime.Delta;
 
 			// xVal = Controls left/right direction with control values between -1 and 1.
 			float xVal = Input.GetInputValue(EKeyId.eKI_XI_ThumbLX);
@@ -145,17 +145,23 @@ namespace CryEngine.Sydewinder
 			else if (_upSpeed > 0)
 				_upSpeed = Math.Max(0.001f, _upSpeed - yAcceleration);
 
+			// In case there is an eyetracker enabled, we use it.
+			var eyePos = Input.GetAxis("EyeTracker");
+			if (eyePos != null) 
+			{
+				var currentScreenPos = Env.Renderer.ProjectToScreen (Position);
+				_upSpeed = 1 - (eyePos - currentScreenPos).Normalized.y * 20;
+			}
 
 			// Usded to ensure the player does not move outside of the visible window.
 			// ProjectToScreen returns a Vec3. Each value between 0 and 100 means it is visible on screen in this dimension.
-			Vec3 nextPos = Position + FrameTime.Normalize(new Vec3(0, _forwardSpeed, _upSpeed));
-			Vec3 screenPosition = Env.Renderer.ProjectToScreen(nextPos.x, nextPos.y, nextPos.z);
-
+			Vec3 nextPos = Position + new Vec3(0, _forwardSpeed, _upSpeed) * FrameTime.Delta;
+			var screenPosition = Env.Renderer.ProjectToScreen(nextPos);
 			// In case new position on screen is outside of bounds
-			if (screenPosition.x <=5 || screenPosition.x >= 95)
+			if (screenPosition.x <=0.05f || screenPosition.x >= 0.95f)
 				_forwardSpeed = 0.001f;
 
-			if (screenPosition.y <= 15 || screenPosition.y >= 75)
+			if (screenPosition.y <= 0.15f || screenPosition.y >= 0.75f)
 				_upSpeed = 0.001f;
 
 			Speed = new Vec3(0, _forwardSpeed, _upSpeed);
@@ -224,7 +230,7 @@ namespace CryEngine.Sydewinder
 			else
 			{
 				// Based on the previous frametime, calculate how many frames might be needed before 2 more seconds are over
-				_impactCoolDownFrameCount = (int)(2f / FrameTime.Current);
+				_impactCoolDownFrameCount = (int)(2f / FrameTime.Delta);
 
 				int framesForEachBlink = _impactCoolDownFrameCount / 10;
 

@@ -88,11 +88,8 @@ namespace CryEngine.Sydewinder.Types
 
 		private void RotateSatelliteRings()
 		{
-			Quat ringOneRot = new Quat(_rotatingRingOne.Rotation);
-			Quat ringTwoRot = new Quat(_rotatingRingTwo.Rotation);
-
-			_rotatingRingOne.Rotation = ringOneRot * Quat.CreateRotationZ(Utils.Deg2Rad(FrameTime.Normalize(10f)));
-			_rotatingRingTwo.Rotation = ringTwoRot * Quat.CreateRotationZ(Utils.Deg2Rad(FrameTime.Normalize(-10f)));
+			_rotatingRingOne.Rotation *= Quat.CreateRotationZ(Utils.Deg2Rad(FrameTime.Delta * 10f));
+			_rotatingRingTwo.Rotation *= Quat.CreateRotationZ(Utils.Deg2Rad(FrameTime.Delta * -10f));
 		}
 	}
 

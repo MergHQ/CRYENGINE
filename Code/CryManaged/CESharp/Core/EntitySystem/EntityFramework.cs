@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 using CryEngine.Common;
 using CryEngine.Resources;
 
@@ -21,9 +22,21 @@ namespace CryEngine.EntitySystem
 	public static class EntityFramework
 	{
 		#region Fields
+		/// <summary>
+		/// Event sink responsible to forward native entity system events to the managed EntityFramework.
+		/// </summary>
 		private static EntitySystemSink s_entitySystemSink;
+		/// <summary>
+		/// Managed entity class registry.
+		/// </summary>
 		private static EntityClassRegistry s_entityClassRegistry;
+		/// <summary>
+		/// IMonoListener instance, forwarding an Update-event for each frame.
+		/// </summary>
 		private static EntityUpdateListener s_entityUpdateListener;
+		/// <summary>
+		/// Registry of created managed entity instances. Key corresponds to the native EntityId
+		/// </summary>
 		private static Dictionary<uint, BaseEntity> s_managedEntities;
 		#endregion
 
@@ -135,6 +148,26 @@ namespace CryEngine.EntitySystem
 			return s_managedEntities [id];
 		}
 
+        /// <summary>
+        /// Get managed CESharp entity instance for a given Type. Returns null if no entity of the specified Type exists.
+        /// </summary>
+        /// <returns>The entity.</returns>
+        /// <typeparam name="T">The 1st type parameter.</typeparam>
+        public static T GetEntity<T>() where T : BaseEntity
+        {
+            return s_managedEntities.Values.OfType<T>().FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Get managed CESharp entity instances for a given Type. Returns an empty list if no entities of the specified Type exist.
+        /// </summary>
+        /// <returns>The entities.</returns>
+        /// <typeparam name="T">The 1st type parameter.</typeparam>
+        public static List<T> GetEntities<T>() where T : BaseEntity
+        {
+            return s_managedEntities.Values.OfType<T>().ToList();
+        }
+
 		/// <summary>
 		/// Spawn a new instance of the given CESharp entity.
 		/// </summary>
@@ -152,6 +185,7 @@ namespace CryEngine.EntitySystem
 				string test = cls.Description.sName + i.ToString ();
 				if (Global.gEnv.pEntitySystem.FindEntityByName (test) == null)
 					name = test;
+                i++;
 			}
 
 			SEntitySpawnParams sParams = new SEntitySpawnParams ();
@@ -159,11 +193,23 @@ namespace CryEngine.EntitySystem
 			sParams.pClass = cls.NativeClass;
 			IEntity pEnt = Global.gEnv.pEntitySystem.SpawnEntity (sParams);
 
-			Log.Info ("[EntityFramework] Spawn entity: {0} ({1})", name, cls.ProtoType.Name);
-			T instance = (T)cls.CreateInstance (pEnt);
-			cls.NativeClass.LoadScript (true);
-			s_managedEntities.Add (pEnt.GetId(), instance);
-			return instance;
+            if (s_managedEntities.ContainsKey(pEnt.GetId()))
+            {
+				if (s_managedEntities [pEnt.GetId ()].GetType () == typeof(T)) {
+					return s_managedEntities [pEnt.GetId ()] as T;
+				} else {
+					Log.Error ("[EntityFramework] Entity {0} already registered, but with a different type ({1} instead of {2})", pEnt.GetId (), pEnt.GetType ().FullName, typeof(T).FullName);
+					return null;
+				}
+            }
+            else
+            {
+                Log.Info ("[EntityFramework] Spawn entity: {0} ({1})", name, cls.ProtoType.Name);
+                T instance = (T)cls.CreateInstance (pEnt);
+                cls.NativeClass.LoadScript (true);
+                s_managedEntities.Add(pEnt.GetId(), instance);
+                return instance;
+            }
 		}
 
 		/// <summary>
@@ -177,9 +223,9 @@ namespace CryEngine.EntitySystem
 			EntityClass managedClass = s_entityClassRegistry.GetEntityClass (arg1);
 			if (managedClass == null)
 				return;
-
+			
 			Log.Info ("[EntityFramework] Spawn entity: {0} ({1})", arg1.sName, managedClass.ProtoType.Name);
-			s_managedEntities.Add (pEntity.GetId(), managedClass.CreateInstance(pEntity));
+			s_managedEntities.Add (pEntity.GetId (), managedClass.CreateInstance (pEntity, arg1.HasEntityNode () ? arg1.entityNode : null));
 		}
 
 		/// <summary>

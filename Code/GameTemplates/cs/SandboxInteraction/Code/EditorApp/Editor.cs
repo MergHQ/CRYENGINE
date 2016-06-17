@@ -20,7 +20,7 @@ namespace CryEngine.Editor
 
 		public void OnAwake ()
 		{
-			Debug.Log ("Editor Awaken");
+			Log.Info ("Editor Awaken");
 
 			_canvas = SceneObject.Instantiate<Canvas>(Root);
 			const int RES = 768;
@@ -127,7 +127,7 @@ namespace CryEngine.Editor
 
 		public void OnDestroy ()
 		{
-			Debug.Log ("Editor Destroyed");
+			Log.Info ("Editor Destroyed");
 		}
 	}
 }

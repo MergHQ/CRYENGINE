@@ -65,4 +65,30 @@ namespace CryEngine.Resources
 		/// </summary>
 		void Shutdown();
 	}
+
+	/// <summary>
+	/// Implements ICryEngineAddIn to ease compatibility in external Add-Ins.
+	/// </summary>
+	public class CryEngineAddIn : ICryEngineAddIn
+	{
+		public virtual void Initialize(InterDomainHandler handler)
+		{
+		}
+
+		public virtual void OnFlowNodeSignal(FlowNode node, PropertyInfo signal)
+		{
+		}
+
+		public virtual void StartGame()
+		{
+		}
+
+		public virtual void EndGame()
+		{
+		}
+
+		public virtual void Shutdown()
+		{
+		}
+	}
 }

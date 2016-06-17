@@ -282,7 +282,7 @@ namespace CryEngine.EntitySystem
 
 		protected override bool Set (string strValue)
 		{
-			return Convert.ToBoolean (strValue, CultureInfo.InvariantCulture);
+            return strValue == "1";
 		}
 		#endregion
 	}

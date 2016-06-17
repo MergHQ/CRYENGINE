@@ -17,6 +17,10 @@ namespace CryEngine.SampleApp
 
 		public void Initialize(InterDomainHandler handler)
 		{
+		}
+
+		public void StartGame()
+		{
 			_app = Application.Instantiate<SampleApp>();
 		}
 
@@ -29,6 +33,13 @@ namespace CryEngine.SampleApp
 		}
 
 		public void Shutdown()
+		{
+		}
+
+		/// <summary>
+		/// Called when engine is being shut down or if application is reloaded.
+		/// </summary>
+		public void EndGame()
 		{
 			_app.Shutdown(false);
 		}

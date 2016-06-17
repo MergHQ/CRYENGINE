@@ -65,22 +65,19 @@ namespace CryEngine.Sydewinder.Types
 
 		public override Vec3 Move ()
 		{
-			var entPos = Position;
-			Vec3 screenRelativePosition = Env.Renderer.ProjectToScreen(entPos.x, entPos.y, entPos.z);
-
-			if (screenRelativePosition.x < -10f) 
+			if (Env.Renderer.ProjectToScreen(Position).x < -0.1f) 
 			{
 				Destroy(false);
-				return entPos;
+				return Position;
 			}
 
 			// Flying in a smooth wave form
 			Speed = new Vec3 (Speed.x, Speed.y, 2.2f * (float)Math.Sin(Utils.Deg2Rad(FlightDirectionAngle)));
-			FlightDirectionAngle += FrameTime.Normalize(_flightAngleIncrement);
+			FlightDirectionAngle += FrameTime.Delta * _flightAngleIncrement;
 
 			// Spawn projectile in front of Ship to avoid collision with self
 			if (Weapon != null) 
-				Weapon.Fire(entPos - new Vec3(0,3,0));
+				Weapon.Fire(Position - new Vec3(0,3,0));
 
 			return base.Move ();
 		}

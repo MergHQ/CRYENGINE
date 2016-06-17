@@ -1,0 +1,104 @@
+<Material MtlFlags="524544" vertModifType="0">
+ <SubMaterials>
+  <Material Name="tunnel_base" MtlFlags="524416" Shader="Illum" GenMask="20400001" StringGenMask="%ALLOW_SILHOUETTE_POM%NORMAL_MAP%SUBSURFACE_SCATTERING" SurfaceType="mat_metal" MatTemplate="" Diffuse="0.48514995,0.52099562,0.70110202" Specular="0.80695242,0.80695242,0.80695242" Emittance="1,1,1,2" Opacity="1" Shininess="255" vertModifType="0" LayerAct="1">
+   <Textures>
+    <Texture Map="Diffuse" File="Textures/all_textures/white_diff.dds"/>
+    <Texture Map="Bumpmap" File="Textures/all_textures/gloss80_ddna.dds"/>
+   </Textures>
+   <PublicParams EmittanceMapGamma="1" SSSIndex="0" IndirectColor="0.25,0.25,0.25"/>
+  </Material>
+  <Material Name="tunnel_glass" MtlFlags="526496" Shader="Glass" GenMask="80" StringGenMask="%DEPTH_FOG" SurfaceType="" MatTemplate="" Diffuse="0,0,0" Specular="0.64447981,0.64447981,0.64447981" Opacity="0.050000001" Shininess="255" vertModifType="0" LayerAct="1">
+   <Textures>
+    <Texture Map="Diffuse" File="textures/all_textures/white_diff.dds"/>
+    <Texture Map="Bumpmap" File="textures/all_textures/wet_glass01_ddn.dds">
+     <TexMod TexMod_RotateType="1" TexMod_TexGenType="0" TexMod_bTexGenProjected="0"/>
+    </Texture>
+   </Textures>
+   <PublicParams FogColor="1,1,1" BumpMapTile="3" TintColor="0.038204376,0.81484669,0.81484669" FogCutoffEnd="22" FogDensity="0.2" TintCloudiness="0.056000002" BackLightScale="0.22400001" BumpScale="0"/>
+  </Material>
+  <Material Name="tunnel_pipes" MtlFlags="524416" Shader="Illum" GenMask="20400001" StringGenMask="%ALLOW_SILHOUETTE_POM%NORMAL_MAP%SUBSURFACE_SCATTERING" SurfaceType="mat_plastic" MatTemplate="" Diffuse="0.18782079,0.45641103,0.80695242" Specular="0.040915202,0.040915202,0.040915202" Emittance="0.18782079,0.45641103,0.80695242,1" Opacity="1" Shininess="255" vertModifType="0" LayerAct="1">
+   <Textures>
+    <Texture Map="Diffuse" File="Textures/all_textures/light_leather_diff.dds">
+     <TexMod TexMod_RotateType="0" TexMod_TexGenType="0" TexMod_bTexGenProjected="0" TileU="30" TileV="30"/>
+    </Texture>
+    <Texture Map="Bumpmap" File="Textures/all_textures/leather_ddna.dds"/>
+   </Textures>
+   <PublicParams EmittanceMapGamma="1" SSSIndex="0" IndirectColor="0.25,0.25,0.25"/>
+  </Material>
+  <Material Name="tunnel_edge" MtlFlags="524416" Shader="Illum" GenMask="20400001" StringGenMask="%ALLOW_SILHOUETTE_POM%NORMAL_MAP%SUBSURFACE_SCATTERING" SurfaceType="mat_metal" MatTemplate="" Diffuse="0.15896086,0.70110202,0.67244327" Specular="0.04518621,0.04518621,0.04518621" Emittance="0.15896086,0.70110202,0.67244327,1" Opacity="1" Shininess="228" vertModifType="0" LayerAct="1">
+   <Textures>
+    <Texture Map="Diffuse" File="textures/all_textures/white_diff.dds"/>
+    <Texture Map="Bumpmap" File="Textures/all_textures/gloss80_ddna.dds"/>
+   </Textures>
+   <PublicParams EmittanceMapGamma="1" SSSIndex="0" IndirectColor="0.25,0.25,0.25"/>
+  </Material>
+  <Material Name="tunnel_grid" MtlFlags="524416" Shader="Illum" GenMask="30400001" StringGenMask="%ALLOW_SILHOUETTE_POM%NORMAL_MAP%SPECULAR_MAP%SUBSURFACE_SCATTERING" SurfaceType="mat_metal" MatTemplate="" Diffuse="1,1,1" Specular="1,1,1" Opacity="1" Shininess="255" vertModifType="0" LayerAct="1">
+   <Textures>
+    <Texture Map="Diffuse" File="Textures/all_textures/anodized_metal_diff.dds">
+     <TexMod TexMod_RotateType="0" TexMod_TexGenType="0" TexMod_bTexGenProjected="0" TileU="2" TileV="2"/>
+    </Texture>
+    <Texture Map="Bumpmap" File="Textures/all_textures/gloss70_ddna.dds"/>
+    <Texture Map="Specular" File="Textures/all_textures/anodized_metal_spec.dds"/>
+   </Textures>
+   <PublicParams EmittanceMapGamma="1" SSSIndex="0" IndirectColor="0.25,0.25,0.25"/>
+  </Material>
+  <Material Name="tunnel_whole" MtlFlags="524416" Shader="Illum" GenMask="20000001" StringGenMask="%ALLOW_SILHOUETTE_POM%SUBSURFACE_SCATTERING" SurfaceType="" MatTemplate="" Diffuse="0.058823533,0.058823533,0.058823533" Specular="0,0,0" Opacity="1" Shininess="10" vertModifType="0" LayerAct="1">
+   <Textures>
+    <Texture Map="Diffuse" File="textures/all_textures/white_diff.dds"/>
+   </Textures>
+   <PublicParams EmittanceMapGamma="1" SSSIndex="0" IndirectColor="0.25,0.25,0.25"/>
+  </Material>
+  <Material Name="tunnel_grid2" MtlFlags="524416" Shader="Illum" GenMask="2A400201" StringGenMask="%ALLOW_SILHOUETTE_POM%DETAIL_MAPPING%NORMAL_MAP%OFFSET_BUMP_MAPPING%PARALLAX_OCCLUSION_MAPPING%SUBSURFACE_SCATTERING" SurfaceType="mat_rubber" MatTemplate="" Diffuse="0.023153368,0.023153368,0.023153368" Specular="0.054480281,0.054480281,0.054480281" Emittance="0.027320893,0.027320893,0.027320893,0" Opacity="1" Shininess="255" CloakAmount="0" vertModifType="0" LayerAct="1">
+   <Textures>
+    <Texture Map="Diffuse" File="textures/all_textures/white_diff.dds">
+     <TexMod TexMod_RotateType="0" TexMod_TexGenType="0" TexMod_bTexGenProjected="0" TileU="50" TileV="50" OffsetV="17.5"/>
+    </Texture>
+    <Texture Map="Bumpmap" File="textures/all_textures/rubber_floor_ddna.dds"/>
+    <Texture Map="Detail" File="textures/all_textures/asphalt_2_detail.dds">
+     <TexMod TexMod_RotateType="0" TexMod_TexGenType="0" TexMod_bTexGenProjected="0" TileU="20" TileV="20"/>
+    </Texture>
+    <Texture Map="Heightmap" File="textures/all_textures/rubber_floor_displ.dds"/>
+   </Textures>
+   <PublicParams EmittanceMapGamma="1" PomDisplacement="0.025" DetailDiffuseScale="0.5" SSSIndex="0" DetailBumpScale="0.14" SelfShadowStrength="3" ObmDisplacement="0.0040000002" HeightBias="1" DetailGlossScale="0.5" IndirectColor="0.25,0.25,0.25"/>
+  </Material>
+  <Material Name="tunnel_light" MtlFlags="524416" Shader="Illum" GenMask="20000001" StringGenMask="%ALLOW_SILHOUETTE_POM%SUBSURFACE_SCATTERING" SurfaceType="" MatTemplate="" Diffuse="1,1,1" Specular="1,1,1" Emittance="1,1,1,100" Opacity="1" Shininess="255" vertModifType="0" LayerAct="1">
+   <Textures>
+    <Texture Map="Diffuse" File="Textures/all_textures/white_diff.dds"/>
+    <Texture Map="Emittance" File="Textures/all_textures/white_diff.dds"/>
+   </Textures>
+   <PublicParams EmittanceMapGamma="1" SSSIndex="0" IndirectColor="1,1,1"/>
+  </Material>
+  <Material Name="tunnel_boarders" MtlFlags="524416" Shader="Illum" GenMask="20400001" StringGenMask="%ALLOW_SILHOUETTE_POM%NORMAL_MAP%SUBSURFACE_SCATTERING" SurfaceType="mat_metal" MatTemplate="" Diffuse="0.1620294,0.1620294,0.1620294" Specular="0.04518621,0.04518621,0.04518621" Emittance="0.1620294,0.1620294,0.1620294,1" Opacity="1" Shininess="189" vertModifType="0" LayerAct="1">
+   <Textures>
+    <Texture Map="Diffuse" File="Textures/all_textures/white_diff.dds"/>
+    <Texture Map="Bumpmap" File="Textures/all_textures/gloss80_ddna.dds"/>
+   </Textures>
+   <PublicParams EmittanceMapGamma="1" SSSIndex="0" IndirectColor="0.25,0.25,0.25"/>
+  </Material>
+  <Material Name="tunnel_rims" MtlFlags="524416" Shader="Illum" GenMask="20400001" StringGenMask="%ALLOW_SILHOUETTE_POM%NORMAL_MAP%SUBSURFACE_SCATTERING" SurfaceType="mat_metal" MatTemplate="" Diffuse="0.9046613,0.16513222,0.029556841" Specular="0.25015831,0.25015831,0.25015831" Emittance="0.9046613,0.16513222,0.029556841,1" Opacity="1" Shininess="245" vertModifType="0" LayerAct="1">
+   <Textures>
+    <Texture Map="Diffuse" File="textures/all_textures/white_diff.dds"/>
+    <Texture Map="Bumpmap" File="textures/all_textures/gloss80_ddna.dds"/>
+   </Textures>
+   <PublicParams EmittanceMapGamma="1" SSSIndex="0" IndirectColor="0.25,0.25,0.25"/>
+  </Material>
+  <Material Name="Material #46" MtlFlags="524416" Shader="Illum" GenMask="20000001" StringGenMask="%ALLOW_SILHOUETTE_POM%SUBSURFACE_SCATTERING" SurfaceType="" MatTemplate="" Diffuse="0.58407855,0.58407855,0.58407855" Specular="0,0,0" Shininess="10" vertModifType="0" LayerAct="1">
+   <Textures />
+   <PublicParams EmittanceMapGamma="1" SSSIndex="0" IndirectColor="0.25,0.25,0.25"/>
+  </Material>
+  <Material Name="slice" MtlFlags="524416" Shader="Illum" GenMask="30400001" StringGenMask="%ALLOW_SILHOUETTE_POM%NORMAL_MAP%SPECULAR_MAP%SUBSURFACE_SCATTERING" SurfaceType="mat_metal" MatTemplate="" Diffuse="0,0,0" Specular="1,1,1" Emittance="0.35640016,0.35640016,0.35640016,1" Opacity="1" Shininess="255" vertModifType="0" LayerAct="1">
+   <Textures>
+    <Texture Map="Diffuse" File="Textures/all_textures/metal_dif.dds">
+     <TexMod TexMod_RotateType="0" TexMod_TexGenType="0" TexMod_bTexGenProjected="0" TileU="15" TileV="20" TexMod_WRotateRate="29.998169"/>
+    </Texture>
+    <Texture Map="Bumpmap" File="Textures/all_textures/brushed_steel_ddna.dds">
+     <TexMod TexMod_RotateType="1" TexMod_TexGenType="0" TexMod_bTexGenProjected="0" TexMod_WRotateRate="29.998169"/>
+    </Texture>
+    <Texture Map="Specular" File="Textures/all_textures/iron_spec.dds"/>
+    <Texture Map="Emittance" File="Textures/all_textures/metal_dif.dds"/>
+   </Textures>
+   <PublicParams EmittanceMapGamma="1" SSSIndex="0" IndirectColor="0.24620135,0.24620135,0.24620135"/>
+  </Material>
+ </SubMaterials>
+ <PublicParams EmittanceMapGamma="1" SSSIndex="0" IndirectColor="0.25,0.25,0.25"/>
+</Material>

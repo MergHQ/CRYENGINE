@@ -632,33 +632,19 @@ namespace CryEngine
 		}
 	}
 
-	public class AddIn : ICryEngineAddIn
+	public class AddIn : CryEngineAddIn
 	{
 		public static InterDomainHandler InterDomainHandler { get; private set; }
 
-		public void Initialize(InterDomainHandler handler)
+		public override void Initialize(InterDomainHandler handler)
 		{
 			InterDomainHandler = handler;
 			Env.Initialize (handler);
 		}
 
-		public void OnFlowNodeSignal(FlowNode node, PropertyInfo signal)
-		{
-		}
-
-		public void Shutdown()
+		public override void Shutdown()
 		{
 			Env.Shutdown (InterDomainHandler);
-		}
-
-		public void StartGame()
-		{
-			
-		}
-
-		public void EndGame()
-		{
-			
 		}
 	}
 
