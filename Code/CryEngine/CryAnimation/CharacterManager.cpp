@@ -356,7 +356,7 @@ ICharacterInstance* CharacterManager::CreateInstance(const char* szFilePath, uin
 		return (NULL);                                                      // to prevent a crash in the frequent case the designers will mess
 
 	stack_string strFilePath = szFilePath;
-	CryStringUtils::UnifyFilePath(strFilePath);
+	PathUtil::UnifyFilePath(strFilePath);
 
 #if !CRY_PLATFORM_DESKTOP
 	//there is no char-edit on consoles
@@ -405,7 +405,7 @@ ICharacterInstance* CharacterManager::CreateSKELInstance(const char* strFilePath
 			uint32 numAnims = pModelSKEL->m_pAnimationSet->GetAnimationCount();
 			if (numAnims == 0)
 			{
-				const char* szExt = CryStringUtils::FindExtension(strFilePath);
+				const char* szExt = PathUtil::GetExt(strFilePath);
 				stack_string strGeomFileNameNoExt;
 				strGeomFileNameNoExt.assign(strFilePath, *szExt ? szExt - 1 : szExt);
 				stack_string paramFileName = strGeomFileNameNoExt + "." + CRY_CHARACTER_PARAM_FILE_EXT;
@@ -430,7 +430,7 @@ ISkin* CharacterManager::LoadModelSKIN(const char* szFilePath, uint32 nLoadingFl
 #endif
 
 	stack_string strFilePath = szFilePath;
-	CryStringUtils::UnifyFilePath(strFilePath);
+	PathUtil::UnifyFilePath(strFilePath);
 
 	const char* fileExt = PathUtil::GetExt(strFilePath.c_str());
 	uint32 isSKIN = stricmp(fileExt, CRY_SKIN_FILE_EXT) == 0;
@@ -459,7 +459,7 @@ IDefaultSkeleton* CharacterManager::LoadModelSKEL(const char* szFilePath, uint32
 #endif
 
 	stack_string strFilePath = szFilePath;
-	CryStringUtils::UnifyFilePath(strFilePath);
+	PathUtil::UnifyFilePath(strFilePath);
 
 	const char* fileExt = PathUtil::GetExt(strFilePath.c_str());
 	uint32 isSKEL = stricmp(fileExt, CRY_SKEL_FILE_EXT) == 0;
@@ -668,7 +668,7 @@ bool CharacterManager::LoadAndLockResources(const char* szFilePath, uint32 nLoad
 	g_pI3DEngine = g_pISystem->GetI3DEngine();
 
 	stack_string strFilePath = szFilePath;
-	CryStringUtils::UnifyFilePath(strFilePath);
+	PathUtil::UnifyFilePath(strFilePath);
 	const char* strFileExt = PathUtil::GetExt(strFilePath.c_str());
 
 	const bool isCHR = stricmp(strFileExt, CRY_SKEL_FILE_EXT) == 0;
@@ -3377,7 +3377,7 @@ bool CharacterManager::LoadAnimationImageFileCAF(const char* filenameCAF)
 	}
 
 	stack_string strPath = filenameCAF;
-	CryStringUtils::UnifyFilePath(strPath);
+	PathUtil::UnifyFilePath(strPath);
 
 	_smart_ptr<IChunkFile> pChunkFile = g_pI3DEngine->CreateChunkFile(true);
 	if (!pChunkFile->Read(strPath))
@@ -3471,7 +3471,7 @@ bool CharacterManager::LoadAnimationImageFileAIM(const char* filenameAIM)
 	}
 
 	stack_string strPath = filenameAIM;
-	CryStringUtils::UnifyFilePath(strPath);
+	PathUtil::UnifyFilePath(strPath);
 
 	_smart_ptr<IChunkFile> pChunkFile = g_pI3DEngine->CreateChunkFile(true);
 	if (!pChunkFile->Read(strPath))

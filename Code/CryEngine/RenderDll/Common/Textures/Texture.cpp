@@ -3367,7 +3367,7 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement::CreateIn
 	{
 		char name[_MAX_PATH];
 		cry_strcpy(name, layoutName);
-		CryStringUtils::StripFileExtension(name);
+		PathUtil::RemoveExtension(name);
 		const char* pExt = fpGetExtension(layoutName);
 		if (!pExt || strcmpi(pExt, ".layout") != 0)
 		{

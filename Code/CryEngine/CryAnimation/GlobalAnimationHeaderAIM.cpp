@@ -36,7 +36,7 @@ uint32 GlobalAnimationHeaderAIM::LoadAIM()
 	OnAssetNotFound();
 
 	stack_string strPath = m_FilePath.c_str();
-	CryStringUtils::UnifyFilePath(strPath);
+	PathUtil::UnifyFilePath(strPath);
 
 	if (!pChunkFile->Read(m_FilePath))
 	{

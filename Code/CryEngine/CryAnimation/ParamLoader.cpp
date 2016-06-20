@@ -244,7 +244,7 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 		const char* fileWildcard = strchr(szFile, '*');
 		int32 offset = (int32)(fileWildcard - szFile);
 
-		stack_string filepath = PathUtil::GetParentDirectoryStackString(stack_string(szFolder));
+		stack_string filepath = PathUtil::GetParentDirectory(stack_string(szFolder));
 		char* starPos = strchr(szAnimName, '*');
 		if (starPos)
 			*starPos++ = 0;
@@ -292,7 +292,7 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 				if (PathUtil::MatchWildcard(strFilename.c_str(), szFile))
 				{
 					stack_string animName = szAnimName;
-					animName.append(PathUtil::GetFileName(strFilename).c_str());
+					animName.append(PathUtil::GetFileName(strFilename));
 					if (starPos)
 					{
 						animName.append(starPos);
@@ -394,8 +394,8 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 							bool match2 = PathUtil::MatchWildcard(file, szFile);
 							if (match1 && match2)
 							{
-								stack_string folderPathCurrentFile = PathUtil::GetParentDirectoryStackString(stack_string(currentFile));
-								stack_string folderPathFileName = PathUtil::GetParentDirectoryStackString(stack_string(szFolder));
+								stack_string folderPathCurrentFile = PathUtil::GetParentDirectory(stack_string(currentFile));
+								stack_string folderPathFileName = PathUtil::GetParentDirectory(stack_string(szFolder));
 
 								if (parseSubfolders || (!parseSubfolders && folderPathCurrentFile == folderPathFileName))
 								{
@@ -440,7 +440,7 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 				for (uint32 f = 0; f < numCafFiles; f++)
 				{
 					stack_string currentFile = arrDBAPathNames[f].c_str();
-					CryStringUtils::UnifyFilePath(currentFile);
+					PathUtil::UnifyFilePath(currentFile);
 
 					const char* file = PathUtil::GetFile(currentFile.c_str());
 					const char* ext = PathUtil::GetExt(currentFile.c_str());
@@ -492,7 +492,7 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 
 	SAnimListInfo animList(paramFileName);
 	const char* pFilePath = m_pDefaultSkeleton->GetModelFilePath();
-	const char* pFileName = CryStringUtils::FindFileNameInPath(pFilePath);
+	const char* pFileName = PathUtil::GetFile(pFilePath);
 	animList.arrAnimFiles.push_back(SAnimFile(stack_string(NULL_ANIM_FILE "/") + pFileName, "null"));
 
 	const int BITE = 512;
@@ -838,7 +838,7 @@ bool CParamLoader::AddIfNewModelTracksDatabase(SAnimListInfo& animList, const ch
 {
 
 	stack_string tmp = dataBase;
-	CryStringUtils::UnifyFilePath(tmp);
+	PathUtil::UnifyFilePath(tmp);
 	if (NoModelTracksDatabaseInDependencies(animList, tmp.c_str()))
 	{
 		animList.modelTracksDatabases.push_back(tmp);
@@ -1116,7 +1116,7 @@ bool CParamLoader::LoadShadowCapsulesList(const XmlNodeRef node)
 
 			shadowCapsule.arrJoints[nJ] = jointIndex;
 		}
-		
+
 		if (!capsuleNode->getAttr("Radius", shadowCapsule.radius))
 		{
 			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "LoadShadowCapsulesList Error: Attribute 'Radius' is missing");

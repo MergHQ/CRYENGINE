@@ -77,7 +77,7 @@ QVariant QAudioSystemModel::data(const QModelIndex& index, int role) const
 					case Qt::DisplayRole:
 						return (const char*)pItem->GetName();
 					case Qt::DecorationRole:
-						return QIcon((QtUtil::ToQString(PathUtil::GetEnginePath()) + PathUtil::GetSlash()) + m_pAudioSystem->GetTypeIcon(pItem->GetType()));
+						return QIcon((QtUtil::ToQString(PathUtil::GetEnginePath()) + CRY_NATIVE_PATH_SEPSTR) + m_pAudioSystem->GetTypeIcon(pItem->GetType()));
 					case Qt::ForegroundRole:
 						if (pItem->IsLocalised())
 						{

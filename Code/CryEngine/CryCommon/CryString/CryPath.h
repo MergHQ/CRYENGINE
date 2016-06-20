@@ -1,21 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   CryPath.h
-//  Version:     v1.00
-//  Created:     19/10/2004 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description: Defines namespace PathUtil for operations on files paths.
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __CryPath_h__
-#define __CryPath_h__
 #pragma once
 
-#include <CrySystem/ISystem.h>
+#include <CryCore/Platform/CryWindows.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/IConsole.h>
 
@@ -29,11 +16,13 @@ namespace PathUtil
 {
 inline string GetGameFolder()
 {
-	return (gEnv->pCryPak->GetGameFolder());
+	CRY_ASSERT(gEnv && gEnv->pCryPak);
+	return gEnv->pCryPak->GetGameFolder();
 }
 
 inline string GetLocalizationFolder()
 {
+	CRY_ASSERT(gEnv && gEnv->pCryPak);
 	return gEnv->pCryPak->GetLocalizationFolder();
 }
 
@@ -49,18 +38,22 @@ inline string ToUnixPath(const string& strPath)
 	return strPath;
 }
 
-//! Convert a path to the uniform form in place on stack.
-inline void ToUnixPath(stack_string& rConv)
+template<size_t SIZE>
+inline CryStackStringT<char, SIZE> ToUnixPath(const CryStackStringT<char, SIZE>& strPath)
 {
-	const char* const cpEnd = &(rConv.c_str()[rConv.size()]);
-	char* __restrict pC = rConv.begin();
-	while (pC != cpEnd)
+	if (strPath.find('\\') != CryStackStringT<char, SIZE>::npos)
 	{
-		char c = *pC;
-		if (c == '\\')
-			c = '/';
-		*pC++ = c;
+		CryStackStringT<char, SIZE> path = strPath;
+		path.replace('\\', '/');
+		return path;
 	}
+	return strPath;
+}
+
+inline void ToUnixPath(char*& szPath)
+{
+	const size_t length = strlen(szPath);
+	std::replace(szPath, szPath + length, '\\', '/');
 }
 
 //! Convert a path to the DOS form.
@@ -75,12 +68,10 @@ inline string ToDosPath(const string& strPath)
 	return strPath;
 }
 
-//! Convert a path to lowercase form.
-inline string ToLower(const string& strPath)
+inline void ToDosPath(char*& szPath)
 {
-	string path = strPath;
-	path.MakeLower();
-	return path;
+	const size_t length = strlen(szPath);
+	std::replace(szPath, szPath + length, '/', '\\');
 }
 
 //! Split full file name to path and filename.
@@ -174,7 +165,8 @@ inline string GetPath(const char* filepath)
 }
 
 //! Extract path from full specified file path.
-inline stack_string GetPath(const stack_string& filepath)
+template<size_t SIZE>
+inline CryStackStringT<char, SIZE> GetPath(const CryStackStringT<char, SIZE>& filepath)
 {
 	const char* str = filepath.c_str();
 	for (const char* p = str + filepath.length() - 1; p >= str; --p)
@@ -207,6 +199,23 @@ inline string GetFile(const string& filepath)
 	return filepath;
 }
 
+template<size_t SIZE>
+inline CryStackStringT<char, SIZE> GetFile(const CryStackStringT<char, SIZE>& filepath)
+{
+	const char* str = filepath.c_str();
+	for (const char* p = str + filepath.length() - 1; p >= str; --p)
+	{
+		switch (*p)
+		{
+		case ':':
+		case '/':
+		case '\\':
+			return filepath.substr(p - str + 1);
+		}
+	}
+	return filepath;
+}
+
 inline const char* GetFile(const char* filepath)
 {
 	const size_t len = strlen(filepath);
@@ -223,7 +232,28 @@ inline const char* GetFile(const char* filepath)
 	return filepath;
 }
 
-//! Replace extension for given file.
+//! Remove extension for given file.
+inline void RemoveExtension(char* szFilePath)
+{
+	for (char* p = szFilePath + strlen(szFilePath) - 1; p >= szFilePath; --p)
+	{
+		switch (*p)
+		{
+		case ':':
+		case '/':
+		case '\\':
+			// we've reached a path separator - it means there's no extension in this name
+			return;
+		case '.':
+			// there's an extension in this file name
+			*p = '\0';
+			return;
+		}
+	}
+	// it seems the file name is a pure name, without extension
+}
+
+//! Remove extension for given file.
 inline void RemoveExtension(string& filepath)
 {
 	const char* str = filepath.c_str();
@@ -242,11 +272,12 @@ inline void RemoveExtension(string& filepath)
 			return;
 		}
 	}
-	// it seems the file name is a pure name, without path or extension
+	// it seems the file name is a pure name, without extension
 }
 
 //! Replace extension for given file.
-inline void RemoveExtension(stack_string& filepath)
+template<size_t SIZE>
+inline void RemoveExtension(CryStackStringT<char, SIZE>& filepath)
 {
 	const char* str = filepath.c_str();
 	for (const char* p = str + filepath.length() - 1; p >= str; --p)
@@ -267,10 +298,30 @@ inline void RemoveExtension(stack_string& filepath)
 	// it seems the file name is a pure name, without path or extension
 }
 
+inline string RemoveExtension(const string& filepath)
+{
+	string result = filepath;
+	RemoveExtension(result);
+	return result;
+}
+
 //! Extract file name without extension from full specified file path.
 inline string GetFileName(const string& filepath)
 {
 	string file = filepath;
+	RemoveExtension(file);
+	return GetFile(file);
+}
+
+inline string GetFileName(const char* szFilepath)
+{
+	return GetFileName(string(szFilepath));
+}
+
+template<size_t SIZE>
+inline CryStackStringT<char, SIZE> GetFileName(const CryStackStringT<char, SIZE>& filepath)
+{
+	CryStackStringT<char, SIZE> file = filepath;
 	RemoveExtension(file);
 	return GetFile(file);
 }
@@ -290,12 +341,7 @@ inline string GetEnginePath()
 	return RemoveSlash(szEngineRootDir);
 }
 
-inline string GetSlash()
-{
-	return CRY_NATIVE_PATH_SEPSTR;
-}
-
-//! Add a backslash if necessary.
+//! Add a slash if necessary.
 inline string AddSlash(const string& path)
 {
 	if (path.empty() || path[path.length() - 1] == '/')
@@ -305,8 +351,9 @@ inline string AddSlash(const string& path)
 	return path + "/";
 }
 
-//! Add a backslash if necessary.
-inline stack_string AddSlash(const stack_string& path)
+//! Add a slash if necessary.
+template<size_t SIZE>
+inline CryStackStringT<char, SIZE> AddSlash(const CryStackStringT<char, SIZE>& path)
 {
 	if (path.empty() || path[path.length() - 1] == '/')
 		return path;
@@ -316,15 +363,20 @@ inline stack_string AddSlash(const stack_string& path)
 }
 
 //! Add a backslash if necessary.
-inline string AddSlash(const char* path)
+inline string AddBackslash(const string& path)
 {
-	return AddSlash(string(path));
+	if (path.empty() || path[path.length() - 1] == '\\')
+		return path;
+	if (path[path.length() - 1] == '/')
+		return path.substr(0, path.length() - 1) + "\\";
+	return path + "\\";
 }
 
-inline stack_string ReplaceExtension(const stack_string& filepath, const char* ext)
+template<size_t SIZE>
+inline CryStackStringT<char, SIZE> ReplaceExtension(const CryStackStringT<char, SIZE>& filepath, const char* ext)
 {
-	stack_string str = filepath;
-	if (ext != 0)
+	CryStackStringT<char, SIZE> str = filepath;
+	if (ext != nullptr)
 	{
 		RemoveExtension(str);
 		if (ext[0] != 0 && ext[0] != '.')
@@ -340,7 +392,7 @@ inline stack_string ReplaceExtension(const stack_string& filepath, const char* e
 inline string ReplaceExtension(const string& filepath, const char* ext)
 {
 	string str = filepath;
-	if (ext != 0)
+	if (ext != nullptr)
 	{
 		RemoveExtension(str);
 		if (ext[0] != 0 && ext[0] != '.')
@@ -350,12 +402,6 @@ inline string ReplaceExtension(const string& filepath, const char* ext)
 		str += ext;
 	}
 	return str;
-}
-
-//! Replace extension for given file.
-inline string ReplaceExtension(const char* filepath, const char* ext)
-{
-	return ReplaceExtension(string(filepath), ext);
 }
 
 //! Makes a fully specified file path from path and file name.
@@ -379,15 +425,17 @@ inline string Make(const string& dir, const string& filename, const char* ext)
 }
 
 //! Makes a fully specified file path from path and file name.
-inline stack_string Make(const stack_string& path, const stack_string& file)
+template<size_t SIZE>
+inline CryStackStringT<char, SIZE> Make(const CryStackStringT<char, SIZE>& path, const CryStackStringT<char, SIZE>& file)
 {
 	return AddSlash(path) + file;
 }
 
 //! Makes a fully specified file path from path and file name.
-inline stack_string Make(const stack_string& dir, const stack_string& filename, const stack_string& ext)
+template<size_t SIZE>
+inline CryStackStringT<char, SIZE> Make(const CryStackStringT<char, SIZE>& dir, const CryStackStringT<char, SIZE>& filename, const CryStackStringT<char, SIZE>& ext)
 {
-	stack_string path = ReplaceExtension(filename, ext);
+	CryStackStringT<char, SIZE> path = ReplaceExtension(filename, ext);
 	path = AddSlash(dir) + path;
 	return path;
 }
@@ -405,7 +453,7 @@ inline string Make(const string& path, const char* file)
 }
 
 //! Makes a fully specified file path from path and file name.
-inline string Make(const char path[], const char file[])
+inline string Make(const char* path, const char* file)
 {
 	return Make(string(path), string(file));
 }
@@ -414,12 +462,6 @@ inline string Make(const char path[], const char file[])
 inline string Make(const char* path, const char* file, const char* ext)
 {
 	return Make(string(path), string(file), string(ext));
-}
-
-//! Makes a fully specified file path from path and file name.
-inline string MakeFullPath(const string& relativePath)
-{
-	return relativePath;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -438,10 +480,11 @@ inline string MakeGamePath(const string& path)
 
 //////////////////////////////////////////////////////////////////////////
 //! Make a game correct path out of any input path.
-inline stack_string MakeGamePath(const stack_string& path)
+template<size_t SIZE>
+inline CryStackStringT<char, SIZE> MakeGamePath(const CryStackStringT<char, SIZE>& path)
 {
-	stack_string fullpath = ToUnixPath(path).c_str();
-	stack_string rootDataFolder = ToUnixPath(AddSlash(PathUtil::GetGameFolder())).c_str();
+	CryStackStringT<char, SIZE> fullpath = ToUnixPath(path);
+	CryStackStringT<char, SIZE> rootDataFolder = ToUnixPath(AddSlash(PathUtil::GetGameFolder()));
 	if (fullpath.length() > rootDataFolder.length() && strnicmp(fullpath.c_str(), rootDataFolder.c_str(), rootDataFolder.length()) == 0)
 	{
 		return fullpath.substr(rootDataFolder.length(), fullpath.length() - rootDataFolder.length());
@@ -474,7 +517,7 @@ inline string GetParentDirectory(const string& strFilePath, int nGeneration = 1)
 }
 
 template<typename T, size_t SIZE>
-inline CryStackStringT<T, SIZE> GetParentDirectoryStackString(const CryStackStringT<T, SIZE>& strFilePath, int nGeneration = 1)
+inline CryStackStringT<T, SIZE> GetParentDirectory(const CryStackStringT<T, SIZE>& strFilePath, int nGeneration = 1)
 {
 	for (const char* p = strFilePath.c_str() + strFilePath.length() - 2;   // -2 is for the possible trailing slash: there always must be some trailing symbol which is the file/directory name for which we should get the parent
 	     p >= strFilePath.c_str();
@@ -546,6 +589,302 @@ inline bool MatchWildcard(const char* szString, const char* szWildcard)
 	}
 }
 
+inline bool IsDirectory(const char* szPath)
+{
+	return (GetFileAttributes(szPath) & FILE_ATTRIBUTE_DIRECTORY) != 0;
+}
+
+inline std::vector<string> GetDirectoryStructure(const string& path)
+{
+	if (path.empty())
+	{
+		return std::vector<string>();
+	}
+
+	string currentDirectoryName;
+	const char* pchCurrentPosition = path.c_str();
+	const char* pchLastPosition = path.c_str();
+
+	// It removes as many slashes the path has in its start...
+	// MAYBE and just maybe we should consider paths starting with
+	// more than 2 slashes invalid paths...
+	while ((*pchLastPosition == '\\') || (*pchLastPosition == '/'))
+	{
+		++pchLastPosition;
+		++pchCurrentPosition;
+	}
+
+	std::vector<string> result;
+	do
+	{
+		pchCurrentPosition = strpbrk(pchLastPosition, "\\/");
+		if (pchCurrentPosition == nullptr)
+		{
+			break;
+		}
+		currentDirectoryName.assign(pchLastPosition, pchCurrentPosition);
+		pchLastPosition = pchCurrentPosition + 1;
+		// Again, here we are skipping as many consecutive slashes.
+		while ((*pchLastPosition == '\\') || (*pchLastPosition == '/'))
+		{
+			++pchLastPosition;
+		}
+
+		result.push_back(currentDirectoryName);
+
+	}
+	while (true);
+
+	return result;
+}
+
+enum EPathStyle
+{
+	//! Allows Posix paths:
+	//! - absolute path (/foo/bar)
+	//! - relative path (foo, ../bar) paths
+	//! Output slashes are '/'
+	ePathStyle_Posix,
+
+	//! Allows Posix paths as well as these Windows specific paths:
+	//! - UNC path (\\server\foo\bar)
+	//! - drive-absolute path (c:\foo\bar)
+	//! - drive-relative path (c:foo, c:..\bar)
+	//! Output slashes are '\'
+	ePathStyle_Windows,
+
+#if CRY_PLATFORM_WINAPI
+	ePathStyle_Native = ePathStyle_Windows,
+#elif CRY_PLATFORM_POSIX
+	ePathStyle_Native = ePathStyle_Posix,
+#else
+	#error Native path style is not supported
+#endif
 };
 
-#endif //__CryPath_h__
+//! Simplifies a given file path, such that . and .. are removed (if possible).
+//! Slashes are unified according to the path style and redundant and trailing slashes are removed.
+//! The path-style also determines what inputs are accepted by the function. See EPathStyle enumeration values for more information.
+//! If an error occurs or if the buffer is too small, the buffer will contain an empty string and the function returns false.
+//! \note The output will always be shorter or equal length to the input, so a buffer of the same size as the input will always work.
+inline bool SimplifyFilePath(const char* const szInput, char* const szBuf, const size_t bufLength, const EPathStyle pathStyle)
+{
+
+#define CRY_SIMPLIFY_REJECT { *szBuf = 0; return false; \
+  }
+#define CRY_SIMPLIFY_EMIT(expr) { if (--pOut < szBuf) { *szBuf = 0; return false; } *pOut = expr; }
+
+	if (szBuf == nullptr || bufLength == 0)
+	{
+		return false;
+	}
+	if (szInput == nullptr || (*szInput == 0))
+	{
+		CRY_SIMPLIFY_REJECT;
+	}
+
+	const bool bWinApi = pathStyle == ePathStyle_Windows;
+	const char kSlash = bWinApi ? '\\' : '/';
+	const char* pIn = szInput + strlen(szInput);
+	const char* pLast = pIn - 1;
+	const char* pLastSlash = pIn;
+	char* pOut = szBuf + bufLength;
+	size_t skipElements = 0;
+	bool bDots = true;
+	char driveRelative = 0;
+
+	CRY_SIMPLIFY_EMIT(0); // null-terminator
+	while (pIn != szInput)
+	{
+		assert(pIn >= szInput);
+		const char c = *--pIn;
+		switch (c)
+		{
+		case '\\':
+		case '/':
+			if ((pIn == szInput + 1) && ((szInput[0] == '\\') || (szInput[0] == '/'))) // UNC path
+			{
+				if (!bWinApi || bDots || skipElements != 0)
+				{
+					CRY_SIMPLIFY_REJECT;
+				}
+				CRY_SIMPLIFY_EMIT(kSlash);
+				CRY_SIMPLIFY_EMIT(kSlash);
+				pIn = szInput;
+				continue;
+			}
+			else if (bDots) // handle redundant slashes and . and .. elements
+			{
+				const size_t numDots = pLastSlash - pIn - 1;
+				if (numDots == 2)
+				{
+					++skipElements;
+				}
+				else if ((numDots != 0) && (numDots != 1) && (pIn != pLast))
+				{
+					CRY_SIMPLIFY_REJECT;
+				}
+			}
+			else if (skipElements != 0) // mark eaten element
+			{
+				--skipElements;
+			}
+			if ((*pOut != kSlash) && (skipElements == 0))
+			{
+				if (*pOut != '\0') // don't emit trailing slashes
+				{
+					CRY_SIMPLIFY_EMIT(kSlash);
+				}
+				else if (pIn == szInput || (bWinApi && pIn[-1] == ':')) // exception for single slash input '/' and 'c:\'
+				{
+					CRY_SIMPLIFY_EMIT(kSlash);
+				}
+			}
+			pLastSlash = pIn;
+			bDots = true;
+			continue;
+
+		case '.':
+			if (bDots) // count dots
+			{
+				continue;
+			}
+			break;
+
+		case ':':
+			if (bWinApi) // ':' should belong to a drive, otherwise it is not an allowed char in win
+			{
+				if ((pIn != szInput + 1) || ((pLastSlash == szInput + 2) && (skipElements != 0)))
+				{
+					CRY_SIMPLIFY_REJECT;
+				}
+				else // handle drive identifier
+				{
+					const char driveLetter = pIn[-1];
+					if (!(driveLetter >= 'a' && driveLetter <= 'z') && !(driveLetter >= 'A' && driveLetter <= 'Z'))
+					{
+						CRY_SIMPLIFY_REJECT;
+					}
+					if (pLastSlash == szInput + 2)
+					{
+						if (skipElements != 0)
+						{
+							CRY_SIMPLIFY_REJECT;
+						}
+					}
+					else if (bDots)
+					{
+						const size_t numDots = pLastSlash - pIn - 1;
+						if (numDots == 2)
+						{
+							CRY_SIMPLIFY_EMIT('.');
+							CRY_SIMPLIFY_EMIT('.');
+						}
+						else if (numDots != 1)
+						{
+							CRY_SIMPLIFY_REJECT;
+						}
+					}
+					else if (skipElements != 0)
+					{
+						--skipElements;
+					}
+					driveRelative = driveLetter;
+					pIn = szInput;
+					bDots = false;
+					continue;
+				}
+			}
+		// fall-through
+		default:
+			if (bDots)
+			{
+				if (skipElements == 0)
+				{
+					const size_t numDots = pLastSlash - pIn - 1;
+					for (size_t i = 0; i < numDots; ++i)
+					{
+						CRY_SIMPLIFY_EMIT('.');
+					}
+				}
+				bDots = false;
+			}
+			break;
+		}
+		if (!skipElements)
+		{
+			CRY_SIMPLIFY_EMIT(c);
+		}
+	}
+
+	if (bDots) // record remaining dots
+	{
+		const size_t numDots = pLastSlash - szInput;
+		if (numDots == 2)
+		{
+			++skipElements;
+		}
+		else if (numDots == 1)
+		{
+			if ((*pOut == kSlash) && (skipElements == 0))
+			{
+				++pOut; // leading dot should eat a slash
+			}
+			else if (*pOut == 0)
+			{
+				CRY_SIMPLIFY_EMIT('.'); // special case, the input is only a dot, keep it
+			}
+		}
+		else if (skipElements != 0)
+		{
+			CRY_SIMPLIFY_REJECT;
+		}
+	}
+	else if (skipElements && !driveRelative) // if not bDots, then we read a relative element that needs to be discounted, e.g. a/..
+	{
+		--skipElements;
+	}
+
+	for (size_t i = 0; i < skipElements; ++i) // flush all pending dots
+	{
+		CRY_SIMPLIFY_EMIT('.');
+		CRY_SIMPLIFY_EMIT('.');
+		if (i != skipElements - 1)
+		{
+			CRY_SIMPLIFY_EMIT(kSlash);
+		}
+	}
+
+	if (driveRelative != 0) // Fix up non-absolute but drive-relative paths.
+	{
+		CRY_SIMPLIFY_EMIT(':');
+		CRY_SIMPLIFY_EMIT(driveRelative);
+	}
+
+	if (pOut != szBuf) // left-align in the buffer
+	{
+		const size_t resultLength = szBuf + bufLength - pOut;
+		assert(resultLength > 0);
+		memmove(szBuf, pOut, resultLength);
+	}
+	return true;
+
+#undef CRY_SIMPLIFY_REJECT
+#undef CRY_SIMPLIFY_EMIT
+}
+
+//! Converts \ to / and replaces ASCII characters to lower-case (A-Z only).
+//! This function is ASCII-only and Unicode agnostic.
+template<size_t SIZE>
+inline void UnifyFilePath(CryStackStringT<char, SIZE>& strPath)
+{
+	strPath.replace('\\', '/');
+	strPath.MakeLower();
+}
+
+inline void UnifyFilePath(string& strPath)
+{
+	strPath.replace('\\', '/');
+	strPath.MakeLower();
+}
+}

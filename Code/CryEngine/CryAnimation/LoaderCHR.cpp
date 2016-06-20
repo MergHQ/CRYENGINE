@@ -65,7 +65,7 @@ bool CryCHRLoader::BeginLoadCHRRenderMesh(CDefaultSkeleton* pSkel, const DynArra
 
 	CRY_DEFINE_ASSET_SCOPE(CRY_SKEL_FILE_EXT, szFilePath);
 
-	const char* szExt = CryStringUtils::FindExtension(szFilePath);
+	const char* szExt = PathUtil::GetExt(szFilePath);
 	m_strGeomFileNameNoExt.assign(szFilePath, *szExt ? szExt - 1 : szExt);
 
 	if (m_strGeomFileNameNoExt.empty())
@@ -381,7 +381,7 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 
 	CRY_DEFINE_ASSET_SCOPE(CRY_SKEL_FILE_EXT, szFilePath);
 
-	const char* szExt = CryStringUtils::FindExtension(szFilePath);
+	const char* szExt = PathUtil::GetExt(szFilePath);
 	stack_string strGeomFileNameNoExt;
 	strGeomFileNameNoExt.assign(szFilePath, *szExt ? szExt - 1 : szExt);
 	if (strGeomFileNameNoExt.empty())
@@ -700,7 +700,7 @@ bool CDefaultSkeleton::LoadAnimations(CParamLoader& paramLoader)
 void CDefaultSkeleton::LoadFaceLib(const char* faceLibFile, const char* animDirName, CDefaultSkeleton* pDefaultSkeleton)
 {
 	const char* pFilePath = GetModelFilePath();
-	const char* szExt = CryStringUtils::FindExtension(pFilePath);
+	const char* szExt = PathUtil::GetExt(pFilePath);
 	stack_string strGeomFileNameNoExt;
 	strGeomFileNameNoExt.assign(pFilePath, *szExt ? szExt - 1 : szExt);
 
@@ -719,7 +719,7 @@ void CDefaultSkeleton::LoadFaceLib(const char* faceLibFile, const char* animDirN
 	{
 		// Search in .chr file directory.
 		pLib = g_pCharacterManager->GetIFacialAnimation()->LoadEffectorsLibrary(
-		  PathUtil::Make(PathUtil::GetParentDirectory(strGeomFileNameNoExt), faceLibFile));
+		  PathUtil::Make(PathUtil::GetParentDirectory(strGeomFileNameNoExt), stack_string(faceLibFile)));
 	}
 	if (pLib)
 	{
@@ -761,7 +761,7 @@ uint32 CDefaultSkeleton::ReuseAnimationFiles(CParamLoader& paramLoader, uint32 l
 uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 listID)
 {
 	const char* pFullFilePath = GetModelFilePath();
-	const char* szExt = CryStringUtils::FindExtension(pFullFilePath);
+	const char* szExt = PathUtil::GetExt(pFullFilePath);
 	stack_string strGeomFileNameNoExt;
 	strGeomFileNameNoExt.assign(pFullFilePath, *szExt ? szExt - 1 : szExt);
 
@@ -892,7 +892,7 @@ uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 li
 const string CDefaultSkeleton::GetDefaultAnimDir()
 {
 	const char* pFilePath = GetModelFilePath();
-	const char* szExt = CryStringUtils::FindExtension(pFilePath);
+	const char* szExt = PathUtil::GetExt(pFilePath);
 	stack_string strGeomFileNameNoExt;
 	strGeomFileNameNoExt.assign(pFilePath, *szExt ? szExt - 1 : szExt);
 

@@ -71,7 +71,7 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 			continue;                                                     //invalid
 
 		string AName = nodeAttach->getAttr("AName");
-		CryStringUtils::UnifyFilePath(AName);
+		PathUtil::UnifyFilePath(AName);
 		attach.m_strAttachmentName = AName;
 
 		nodeAttach->getAttr("Rotation", attach.m_AbsoluteDefault.q);
@@ -82,7 +82,7 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 
 		attach.m_strJointName = nodeAttach->getAttr("BoneName");
 		attach.m_strBindingPath = nodeAttach->getAttr("Binding");
-		CryStringUtils::UnifyFilePath(attach.m_strBindingPath);
+		PathUtil::UnifyFilePath(attach.m_strBindingPath);
 		attach.m_strSimBindingPath = nodeAttach->getAttr("simBinding");   //only used for the cloth simulation mesh
 
 		nodeAttach->getAttr("ProxyParams", attach.m_ProxyParams);

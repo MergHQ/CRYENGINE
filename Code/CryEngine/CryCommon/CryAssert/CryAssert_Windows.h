@@ -2,7 +2,7 @@
 
 #pragma once
 #if defined(USE_CRY_ASSERT) && CRY_PLATFORM_WINDOWS
-	#include <CryString/StringUtils.h>
+	#include <CryString/CryPath.h>
 	#include <CryInput/IInput.h>
 
 	#define XTOKENIZE_(x, y) x ## y
@@ -162,7 +162,7 @@ static INT_PTR CALLBACK DlgProc(HWND _hDlg, UINT _uiMsg, WPARAM _wParam, LPARAM 
 			pAssertInfo = (SCryAssertInfo*)_lParam;
 
 			char buf[MAX_PATH];
-			const bool bFolded = CryStringUtils::SimplifyFilePath(pAssertInfo->pszFile, buf, MAX_PATH, CryStringUtils::ePathStyle_Windows);
+			const bool bFolded = PathUtil::SimplifyFilePath(pAssertInfo->pszFile, buf, MAX_PATH, PathUtil::ePathStyle_Windows);
 
 			SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_CONDITION), pAssertInfo->pszCondition);
 			SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_FILE), bFolded ? buf : pAssertInfo->pszFile);

@@ -429,14 +429,14 @@ void CColorGradingControllerD3D::DrawDebugInfo() const
 		{
 			const SColorChartLayer& l = m_layers[i];
 			CTexture* pChart = CTexture::GetByID(l.m_texID);
-			DrawLayer(x, y, w, h, pChart, l.m_blendAmount, CryStringUtils::FindFileNameInPath(pChart->GetName()));
+			DrawLayer(x, y, w, h, pChart, l.m_blendAmount, PathUtil::GetFile(pChart->GetName()));
 			y += h + 4;
 		}
 		if (GetColorChart())
 			DrawLayer(x, y, w, h, GetColorChart(), 1, "FinalChart");
 	}
 	else
-		DrawLayer(x, y, w, h, m_pChartStatic, 1, CryStringUtils::FindFileNameInPath(m_pChartStatic->GetName()));
+		DrawLayer(x, y, w, h, m_pChartStatic, 1, PathUtil::GetFile(m_pChartStatic->GetName()));
 
 	m_pRenderer->RT_FlushTextMessages();
 

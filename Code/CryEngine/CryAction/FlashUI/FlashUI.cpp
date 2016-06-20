@@ -1558,8 +1558,8 @@ IUIElement* CFlashUI::GetUIElementByInstanceStr(const char* sUIInstanceStr) cons
 
 	char name[_MAX_PATH];
 	cry_strcpy(name, sUIInstanceStr);
-	CryStringUtils::StripFileExtension(name);
-	const char* pExt = CryStringUtils::FindExtension(sUIInstanceStr);
+	PathUtil::RemoveExtension(name);
+	const char* pExt = PathUtil::GetExt(sUIInstanceStr);
 	if (*pExt != '\0' && strcmpi(pExt, "ui"))
 		return NULL;
 

@@ -41,7 +41,7 @@ CHeaderTCB* CLoaderTCB::LoadTCB(const char* filename, ILoaderCAFListener* pListe
 CHeaderTCB* CLoaderTCB::LoadTCB(const char* filename, IChunkFile* pChunkFile, ILoaderCAFListener* pListener)
 {
 	stack_string strPath = filename;
-	CryStringUtils::UnifyFilePath(strPath);
+	PathUtil::UnifyFilePath(strPath);
 
 	m_filename = filename;
 

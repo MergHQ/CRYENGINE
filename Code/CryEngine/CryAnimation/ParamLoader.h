@@ -28,7 +28,7 @@ struct SAnimFile
 	SAnimFile(const stack_string& szFilePath, const stack_string& szAnimName)
 	{
 		stack_string tmp = szFilePath;
-		CryStringUtils::UnifyFilePath(tmp);
+		PathUtil::UnifyFilePath(tmp);
 		tmp.MakeLower();
 
 		memset(m_FilePathQ, 0, sizeof(m_FilePathQ));

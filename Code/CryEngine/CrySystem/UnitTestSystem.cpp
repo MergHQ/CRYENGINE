@@ -893,21 +893,21 @@ CRY_UNIT_TEST(CUT_SimplifyFilePath)
 	{
 		for (int i = 0; i < 2; ++i)
 		{
-			CryStringUtils::EPathStyle style = (i == 0 ? CryStringUtils::ePathStyle_Windows : CryStringUtils::ePathStyle_Posix);
+			PathUtil::EPathStyle style = (i == 0 ? PathUtil::ePathStyle_Windows : PathUtil::ePathStyle_Posix);
 			char buf[1];
-			bool result = CryStringUtils::SimplifyFilePath("foo", buf, 1, style);
+			bool result = PathUtil::SimplifyFilePath("foo", buf, 1, style);
 			CRY_UNIT_TEST_ASSERT(!result && !*buf);
 
-			result = CryStringUtils::SimplifyFilePath(nullptr, buf, 1, style);
+			result = PathUtil::SimplifyFilePath(nullptr, buf, 1, style);
 			CRY_UNIT_TEST_ASSERT(!result && !*buf);
 
-			result = CryStringUtils::SimplifyFilePath("foo", nullptr, 9001, style);
+			result = PathUtil::SimplifyFilePath("foo", nullptr, 9001, style);
 			CRY_UNIT_TEST_ASSERT(!result);
 
-			result = CryStringUtils::SimplifyFilePath("foo", buf, 0, style);
+			result = PathUtil::SimplifyFilePath("foo", buf, 0, style);
 			CRY_UNIT_TEST_ASSERT(!result);
 
-			result = CryStringUtils::SimplifyFilePath("", buf, 1, style);
+			result = PathUtil::SimplifyFilePath("", buf, 1, style);
 			CRY_UNIT_TEST_ASSERT(!result && !*buf);
 		}
 	}
@@ -991,9 +991,9 @@ CRY_UNIT_TEST(CUT_SimplifyFilePath)
 
 		for (size_t i = 0; i < numItems; ++i)
 		{
-			bool bWinResult = CryStringUtils::SimplifyFilePath(items[i].szInput, buf, bufLength, CryStringUtils::ePathStyle_Windows);
+			bool bWinResult = PathUtil::SimplifyFilePath(items[i].szInput, buf, bufLength, PathUtil::ePathStyle_Windows);
 			bool bWinMatches = strcmp(buf, items[i].szWinExpected) == 0;
-			bool bUnixResult = CryStringUtils::SimplifyFilePath(items[i].szInput, buf, bufLength, CryStringUtils::ePathStyle_Posix);
+			bool bUnixResult = PathUtil::SimplifyFilePath(items[i].szInput, buf, bufLength, PathUtil::ePathStyle_Posix);
 			bool bUnixMatches = strcmp(buf, items[i].szUnixExpected) == 0;
 			CRY_UNIT_TEST_CHECK_EQUAL(bWinResult, items[i].bWinExpected);
 			CRY_UNIT_TEST_CHECK_EQUAL(bUnixResult, items[i].bUnixExpected);
@@ -1009,12 +1009,12 @@ CRY_UNIT_TEST(CUT_SimplifyFilePath)
 
 		const char* const szComplex1 = "foo/bar/../baz/./../../../../././hi/.";
 		const char* const szResult1 = "../../hi";
-		bool result = CryStringUtils::SimplifyFilePath(szComplex1, buf, bufLength, CryStringUtils::ePathStyle_Posix);
+		bool result = PathUtil::SimplifyFilePath(szComplex1, buf, bufLength, PathUtil::ePathStyle_Posix);
 		CRY_UNIT_TEST_ASSERT(result && strcmp(buf, szResult1) == 0);
 
 		const char* const szComplex2 = "c:/foo/bar/./disappear/disappear/disappear/../.\\../../../baz\\";
 		const char* const szResult2 = "c:\\foo\\baz";
-		result = CryStringUtils::SimplifyFilePath(szComplex2, buf, bufLength, CryStringUtils::ePathStyle_Windows);
+		result = PathUtil::SimplifyFilePath(szComplex2, buf, bufLength, PathUtil::ePathStyle_Windows);
 		CRY_UNIT_TEST_ASSERT(result && strcmp(buf, szResult2) == 0);
 	}
 }

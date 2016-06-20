@@ -4538,7 +4538,7 @@ static void ScreenshotCmd(IConsoleCmdArgs* pParams)
 		sScreenshotName.replace("/", "_");
 		sScreenshotName.replace(":", "_");
 
-		const char* pExtension = CryStringUtils::FindExtension(sScreenshotName);
+		const char* pExtension = PathUtil::GetExt(sScreenshotName);
 
 		if (stricmp("jpg", pExtension) != 0 && stricmp("tga", pExtension) != 0)
 		{

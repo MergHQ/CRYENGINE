@@ -396,7 +396,7 @@ bool CAnimationManager::CreateGlobalHeaderDBA(DynArray<string>& arrFilePathDBA)
 bool CAnimationManager::DBA_PreLoad(const char* pFilePathDBA, bool highPriority)
 {
 	stack_string strPath = pFilePathDBA;
-	CryStringUtils::UnifyFilePath(strPath);
+	PathUtil::UnifyFilePath(strPath);
 
 	uint32 numHeaders = m_arrGlobalHeaderDBA.size();
 	for (uint32 dba = 0; dba < numHeaders; dba++)
@@ -430,7 +430,7 @@ bool CAnimationManager::DBA_PreLoad(const char* pFilePathDBA, bool highPriority)
 bool CAnimationManager::DBA_LockStatus(const char* pFilePathDBA, uint32 status, bool highPriority)
 {
 	stack_string strPath = pFilePathDBA;
-	CryStringUtils::UnifyFilePath(strPath);
+	PathUtil::UnifyFilePath(strPath);
 
 	uint32 numHeaders = m_arrGlobalHeaderDBA.size();
 	for (uint32 dba = 0; dba < numHeaders; dba++)
@@ -456,7 +456,7 @@ bool CAnimationManager::DBA_LockStatus(const char* pFilePathDBA, uint32 status, 
 bool CAnimationManager::DBA_Unload(const char* pFilePathDBA)
 {
 	stack_string strPath = pFilePathDBA;
-	CryStringUtils::UnifyFilePath(strPath);
+	PathUtil::UnifyFilePath(strPath);
 
 	uint32 numHeadersDBA = m_arrGlobalHeaderDBA.size();
 	if (numHeadersDBA == 0)

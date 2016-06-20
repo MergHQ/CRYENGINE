@@ -63,7 +63,7 @@ bool CryCHRLoader::BeginLoadSkinRenderMesh(CSkin* pSkin, int nRenderLod, EStream
 	const char* szFilePath = pSkin->GetModelFilePath();
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
 
-	const char* szExt = CryStringUtils::FindExtension(szFilePath);
+	const char* szExt = PathUtil::GetExt(szFilePath);
 	m_strGeomFileNameNoExt.assign(szFilePath, *szExt ? szExt - 1 : szExt);
 
 	if (m_strGeomFileNameNoExt.empty())
@@ -438,7 +438,7 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 
 	CRY_DEFINE_ASSET_SCOPE(CRY_SKEL_FILE_EXT, szFilePath);
 
-	const char* szExt = CryStringUtils::FindExtension(szFilePath);
+	const char* szExt = PathUtil::GetExt(szFilePath);
 
 	stack_string strGeomFileNameNoExt;
 	strGeomFileNameNoExt.assign(szFilePath, *szExt ? szExt - 1 : szExt);
@@ -509,7 +509,7 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 
 	if (lodCount > 0)
 	{
-		bool isVCloth = cgfs.m_arrContentCGF[0]->GetVClothInfo()->m_vertices.size()>0;
+		bool isVCloth = cgfs.m_arrContentCGF[0]->GetVClothInfo()->m_vertices.size() > 0;
 
 		// fill vcloth data
 		if (isVCloth)

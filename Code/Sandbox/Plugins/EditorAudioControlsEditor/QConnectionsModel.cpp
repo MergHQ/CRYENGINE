@@ -115,7 +115,7 @@ QVariant QConnectionModel::data(const QModelIndex& index, int role) const
 					case Qt::DecorationRole:
 						if (index.column() == eConnectionModelColumns_Name)
 						{
-							return QIcon((QtUtil::ToQString(PathUtil::GetEnginePath()) + PathUtil::GetSlash()) + m_pAudioSystem->GetTypeIcon(pItem->GetType()));
+							return QIcon((QtUtil::ToQString(PathUtil::GetEnginePath()) + CRY_NATIVE_PATH_SEPSTR) + m_pAudioSystem->GetTypeIcon(pItem->GetType()));
 						}
 						break;
 					case Qt::ForegroundRole:
