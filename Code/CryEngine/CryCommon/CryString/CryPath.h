@@ -3,7 +3,6 @@
 #pragma once
 
 #include <CryCore/Platform/CryWindows.h>
-#include <CrySystem/File/ICryPak.h>
 #include <CrySystem/IConsole.h>
 
 #if CRY_PLATFORM_POSIX
@@ -14,17 +13,8 @@
 
 namespace PathUtil
 {
-inline string GetGameFolder()
-{
-	CRY_ASSERT(gEnv && gEnv->pCryPak);
-	return gEnv->pCryPak->GetGameFolder();
-}
-
-inline string GetLocalizationFolder()
-{
-	CRY_ASSERT(gEnv && gEnv->pCryPak);
-	return gEnv->pCryPak->GetLocalizationFolder();
-}
+string GetGameFolder();
+string GetLocalizationFolder();
 
 //! Convert a path to the uniform form.
 inline string ToUnixPath(const string& strPath)
@@ -886,5 +876,22 @@ inline void UnifyFilePath(string& strPath)
 {
 	strPath.replace('\\', '/');
 	strPath.MakeLower();
+}
+}
+
+#include <CrySystem/File/ICryPak.h>
+
+namespace PathUtil
+{
+inline string GetGameFolder()
+{
+	CRY_ASSERT(gEnv && gEnv->pCryPak);
+	return gEnv->pCryPak->GetGameFolder();
+}
+
+inline string GetLocalizationFolder()
+{
+	CRY_ASSERT(gEnv && gEnv->pCryPak);
+	return gEnv->pCryPak->GetLocalizationFolder();
 }
 }
