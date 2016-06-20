@@ -81,6 +81,7 @@ void CATLAudioObject::ReportStartedEvent(CATLEvent* const _pEvent)
 	if (_pEvent->m_pTrigger)
 	{
 		m_maxRadius = std::max(_pEvent->m_pTrigger->m_maxRadius, m_maxRadius);
+		m_occlusionFadeOutDistance = std::max(_pEvent->m_pTrigger->m_occlusionFadeOutDistance, m_occlusionFadeOutDistance);
 	}
 
 	ObjectTriggerStates::iterator const iter(m_triggerStates.find(_pEvent->m_audioTriggerInstanceId));
@@ -141,11 +142,13 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const _pEvent, bool const _
 
 	// recalculate the max radius of the audio object
 	m_maxRadius = 0.0f;
+	m_occlusionFadeOutDistance = 0.0f;
 	for (auto const pEvent : m_activeEvents)
 	{
 		if (pEvent->m_pTrigger)
 		{
 			m_maxRadius = std::max(pEvent->m_pTrigger->m_maxRadius, m_maxRadius);
+			m_occlusionFadeOutDistance = std::max(pEvent->m_pTrigger->m_occlusionFadeOutDistance, m_occlusionFadeOutDistance);
 		}
 	}
 
@@ -353,6 +356,22 @@ void CATLAudioObject::Update(
   Vec3 const& audioListenerPosition)
 {
 	m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition);
+
+	float occlusionFadeOut = 0.0f;
+	if (distance < m_maxRadius)
+	{
+		float const fadeOutStart = m_maxRadius - m_occlusionFadeOutDistance;
+		if (fadeOutStart < distance)
+		{
+			occlusionFadeOut = 1.0f - ((distance - fadeOutStart) / m_occlusionFadeOutDistance);
+		}
+		else
+		{
+			occlusionFadeOut = 1.0f;
+		}
+	}
+
+	m_propagationProcessor.SetOcclusionMultiplier(occlusionFadeOut);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -384,7 +403,7 @@ void CATLAudioObject::SetOcclusionType(EAudioOcclusionType const calcType, Vec3 
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::GetPropagationData(SATLSoundPropagationData& propagationData)
+void CATLAudioObject::GetPropagationData(SATLSoundPropagationData& propagationData) const
 {
 	m_propagationProcessor.GetPropagationData(propagationData);
 }
@@ -707,7 +726,6 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listene
 				auxGeom.DrawSphere(position, radius, ColorB(255, 1, 1, 255));
 				auxGeom.SetRenderFlags(previousRenderFlags);
 			}
-
 			float const fontSize = 1.3f;
 			float const lineHeight = 12.0f;
 

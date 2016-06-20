@@ -53,7 +53,7 @@ public:
 	virtual EAudioRequestStatus      ParseAudioFileEntry(XmlNodeRef const pAudioFileEntryNode, SAudioFileEntryInfo* const pFileEntryInfo) override;
 	virtual void                     DeleteAudioFileEntry(IAudioFileEntry* const pOldAudioFileEntry) override;
 	virtual char const* const        GetAudioFileLocation(SAudioFileEntryInfo* const pFileEntryInfo) override;
-	virtual IAudioTrigger const*     NewAudioTrigger(XmlNodeRef const pAudioTriggerNode, SAudioTriggerInfo& info) override;
+	virtual IAudioTrigger const*     NewAudioTrigger(XmlNodeRef const pAudioTriggerNode) override;
 	virtual void                     DeleteAudioTrigger(IAudioTrigger const* const pOldAudioTrigger) override;
 	virtual IAudioRtpc const*        NewAudioRtpc(XmlNodeRef const pAudioRtpcNode) override;
 	virtual void                     DeleteAudioRtpc(IAudioRtpc const* const pOldAudioRtpc) override;

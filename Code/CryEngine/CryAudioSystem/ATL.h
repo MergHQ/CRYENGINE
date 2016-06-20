@@ -147,6 +147,7 @@ public:
 	bool                      ReserveAudioObjectId(AudioObjectId& audioObjectId, char const* const szAudioObjectName);
 	void                      DrawAudioSystemDebugInfo();
 	CATLDebugNameStore const& GetDebugStore() const { return m_debugNameStore; }
+	void                      GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioTriggerData) const;
 
 private:
 

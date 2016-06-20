@@ -441,7 +441,7 @@ char const* const CAudioImpl::GetAudioFileLocation(SAudioFileEntryInfo* const pF
 	return s_path.c_str();
 }
 
-IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerNode, SAudioTriggerInfo& info)
+IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerNode)
 {
 	SAudioTrigger* pNewTriggerImpl = nullptr;
 	if (_stricmp(pAudioTriggerNode->getTag(), s_szSDLEventTag) == 0)
@@ -469,8 +469,6 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 					pNewTriggerImpl->attenuationMinDistance = -1.0f;
 					pNewTriggerImpl->attenuationMaxDistance = -1.0f;
 				}
-
-				info.maxRadius = pNewTriggerImpl->attenuationMaxDistance;
 
 				// Translate decibel to normalized value.
 				static const int maxVolume = 128;

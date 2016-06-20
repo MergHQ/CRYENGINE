@@ -279,6 +279,18 @@ public:
 	//! <description>Draws text.</description>
 	int DrawText(IFunctionHandler* pH);
 
+	//! <code>System.DrawSphere( x, y, z, radius, r, g, b, a )</code>
+	//!		<param name="x">X position for the centre of the sphere.</param>
+	//!		<param name="y">Y position for the centre of the sphere.</param>
+	//!		<param name="z">Z position for the centre of the sphere.</param>
+	//!		<param name="radius">Radius of the sphere.</param>
+	//!		<param name="r">Red component for the sphere color. Default is 1.</param>
+	//!		<param name="g">Green component for the sphere color. Default is 1.</param>
+	//!		<param name="b">Blue component for the sphere color. Default is 1.</param>
+	//!		<param name="a">Alpha component for the sphere color. Default is 1.</param>
+	//! <description>Draws a wireframe sphere.</description>
+	int DrawSphere(IFunctionHandler* pH, float x, float y, float z, float radius, int r, int g, int b, int a);
+
 	//! <code>System.SetGammaDelta( fDelta )</code>
 	//!		<param name="fDelta">Delta value.</param>
 	//! <description>Sets the gamma/delta value.</description>

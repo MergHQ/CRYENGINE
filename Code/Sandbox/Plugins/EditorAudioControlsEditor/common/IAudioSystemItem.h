@@ -20,6 +20,7 @@ public:
 		, m_bLocalised(false)
 		, m_parent(nullptr)
 		, m_bConnected(false)
+		, m_radius(0.0f)
 	{
 	}
 
@@ -31,6 +32,7 @@ public:
 		, m_bLocalised(false)
 		, m_parent(nullptr)
 		, m_bConnected(false)
+		, m_radius(0.0f)
 	{
 	}
 
@@ -67,6 +69,9 @@ public:
 	void              SetParent(IAudioSystemItem* pParent) { m_parent = pParent; }
 	IAudioSystemItem* GetParent() const                    { return m_parent; }
 
+	void              SetRadius(float radius)              { m_radius = radius; }
+	float             GetRadius() const                    { return m_radius; }
+
 private:
 	CID                            m_id;
 	ItemType                       m_type;
@@ -76,5 +81,6 @@ private:
 	bool                           m_bConnected;
 	std::vector<IAudioSystemItem*> m_children;
 	IAudioSystemItem*              m_parent;
+	float                          m_radius;
 };
 }

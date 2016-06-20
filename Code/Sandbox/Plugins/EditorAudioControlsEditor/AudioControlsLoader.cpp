@@ -234,8 +234,8 @@ CATLControl* CAudioControlsLoader::LoadControl(XmlNodeRef pNode, QStandardItem* 
 		if (pParent)
 		{
 			const string sName = pNode->getAttr("atl_name");
-			const EACEControlType eControlType = TagToType(pNode->getTag());
-			pControl = m_pModel->CreateControl(sName, eControlType);
+			const EACEControlType controlType = TagToType(pNode->getTag());
+			pControl = m_pModel->CreateControl(sName, controlType);
 			if (pControl)
 			{
 				QStandardItem* pItem = new QAudioControlItem(QtUtil::ToQString(pControl->GetName()), pControl);
@@ -244,8 +244,21 @@ CATLControl* CAudioControlsLoader::LoadControl(XmlNodeRef pNode, QStandardItem* 
 					pParent->appendRow(pItem);
 				}
 
-				switch (eControlType)
+				switch (controlType)
 				{
+				case eACEControlType_Trigger:
+					{
+						float radius = 0.0f;
+						pNode->getAttr("atl_radius", radius);
+						pControl->SetRadius(radius);
+
+						float occlusionFadeOutDistance = 0.0f;
+						pNode->getAttr("atl_occlusion_fadeout_distance", occlusionFadeOutDistance);
+						pControl->SetOcclusionFadeOutDistance(occlusionFadeOutDistance);
+
+						LoadConnections(pNode, pControl);
+					}
+					break;
 				case eACEControlType_Switch:
 					{
 						const int nStateCount = pNode->getChildCount();

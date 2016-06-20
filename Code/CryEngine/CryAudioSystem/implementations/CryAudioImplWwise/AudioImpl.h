@@ -58,7 +58,7 @@ public:
 	virtual EAudioRequestStatus      ParseAudioFileEntry(XmlNodeRef const pAudioFileEntryNode, SAudioFileEntryInfo* const pFileEntryInfo) override;
 	virtual void                     DeleteAudioFileEntry(IAudioFileEntry* const pOldAudioFileEntry) override;
 	virtual char const* const        GetAudioFileLocation(SAudioFileEntryInfo* const pFileEntryInfo) override;
-	virtual IAudioTrigger const*     NewAudioTrigger(XmlNodeRef const pAudioTriggerNode, SAudioTriggerInfo& info) override;
+	virtual IAudioTrigger const*     NewAudioTrigger(XmlNodeRef const pAudioTriggerNode) override;
 	virtual void                     DeleteAudioTrigger(IAudioTrigger const* const pOldAudioTrigger) override;
 	virtual IAudioRtpc const*        NewAudioRtpc(XmlNodeRef const pAudioRtpcNode) override;
 	virtual void                     DeleteAudioRtpc(IAudioRtpc const* const pOldAudioRtpc) override;
@@ -105,8 +105,6 @@ private:
 	static char const* const s_szWwiseShiftAttribute;
 	static char const* const s_szWwiseLocalisedAttribute;
 
-	static char const* const s_szSoundBanksInfoFilename;
-
 	struct SEnvPairCompare
 	{
 		bool operator()(std::pair<AkAuxBusID, float> const& pair1, std::pair<AkAuxBusID, float> const& pair2) const;
@@ -131,13 +129,6 @@ private:
 
 	typedef std::map<TAudioGamepadUniqueID, AkUInt8, std::less<TAudioGamepadUniqueID>, STLSoundAllocator<std::pair<TAudioGamepadUniqueID, AkUInt8>>> AudioInputDevices;
 	AudioInputDevices m_mapInputDevices;
-
-	struct SEventInfo
-	{
-		float maxRadius;
-	};
-	typedef std::map<uint32, SEventInfo, std::less<uint32>, STLSoundAllocator<std::pair<uint32, SEventInfo>>> EventsInfoMap;
-	EventsInfoMap m_eventsInfoMap;
 
 #if !defined(WWISE_FOR_RELEASE)
 	bool m_bCommSystemInitialized;

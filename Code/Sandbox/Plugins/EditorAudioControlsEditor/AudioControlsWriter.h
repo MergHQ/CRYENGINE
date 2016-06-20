@@ -42,7 +42,7 @@ public:
 private:
 	void WriteLibrary(const string& sLibraryName, QModelIndex root);
 	void WriteItem(QModelIndex index, const string& sPath, TLibraryStorage& library, bool bParentModified);
-	void WriteControlToXML(XmlNodeRef pNode, CATLControl* pControl, const string& sPath);
+	void WriteControlToXML(XmlNodeRef pNode, CATLControl* pControl, const string& path);
 	void WriteConnectionsToXML(XmlNodeRef pNode, CATLControl* pControl, const int platformIndex = -1);
 	bool IsItemModified(QModelIndex index) const;
 	void WriteEditorData(const QModelIndex& parentIndex, XmlNodeRef pParentNode) const;

@@ -955,5 +955,6 @@ struct IAudioSystem
 	virtual char const*  GetAudioControlName(EAudioControlType const audioControlType, AudioIdType const audioControlId1, AudioIdType const audioControlId2) = 0;
 	virtual void         GetAudioDebugData(SAudioDebugData& audioDebugData) const = 0;
 	virtual void         GetAudioFileData(char const* const szFilename, SAudioFileData& audioFileData) = 0;
+	virtual void         GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioFileData) = 0;
 	// </interfuscator:shuffle>
 };

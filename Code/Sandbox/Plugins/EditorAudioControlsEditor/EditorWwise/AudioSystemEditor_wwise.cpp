@@ -35,6 +35,7 @@ const string g_multAttribute = "wwise_value_multiplier";
 const string g_valueAttribute = "wwise_value";
 const string g_localizedAttribute = "wwise_localised";
 const string g_trueAttribute = "true";
+const string g_soundBanksInfoFilename = "SoundbanksInfo.xml";
 
 ItemType TagToType(const string& tag)
 {
@@ -103,11 +104,9 @@ void CAudioSystemEditor_wwise::Reload(bool bPreserveConnectionStatus)
 {
 	// set all the controls as placeholder as we don't know if
 	// any of them have been removed but still have connections to them
-	TControlMap::const_iterator it = m_controls.begin();
-	TControlMap::const_iterator end = m_controls.end();
-	for (; it != end; ++it)
+	for (auto controlPair : m_controls)
 	{
-		TControlPtr pControl = it->second;
+		TControlPtr pControl = controlPair.second;
 		if (pControl)
 		{
 			pControl->SetPlaceholder(true);
@@ -116,6 +115,7 @@ void CAudioSystemEditor_wwise::Reload(bool bPreserveConnectionStatus)
 	}
 
 	// reload data
+	LoadEventsMetadata();
 	CAudioWwiseLoader loader;
 	loader.Load(this);
 
@@ -131,21 +131,21 @@ void CAudioSystemEditor_wwise::Reload(bool bPreserveConnectionStatus)
 
 IAudioSystemItem* CAudioSystemEditor_wwise::CreateControl(const SControlDef& controlDefinition)
 {
-	string sFullname = controlDefinition.name;
+	string fullname = controlDefinition.name;
 	IAudioSystemItem* pParent = controlDefinition.pParent;
 	if (pParent)
 	{
-		sFullname = controlDefinition.pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + sFullname;
+		fullname = controlDefinition.pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + fullname;
 	}
 
 	if (controlDefinition.bLocalised)
 	{
-		sFullname = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + sFullname;
+		fullname = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + fullname;
 	}
 
-	CID nID = GetID(sFullname);
+	CID id = GetID(fullname);
 
-	IAudioSystemItem* pControl = GetControl(nID);
+	IAudioSystemItem* pControl = GetControl(id);
 	if (pControl)
 	{
 		if (pControl->IsPlaceholder())
@@ -160,16 +160,20 @@ IAudioSystemItem* CAudioSystemEditor_wwise::CreateControl(const SControlDef& con
 	}
 	else
 	{
-		TControlPtr pNewControl = std::make_shared<IAudioSystemControl_wwise>(controlDefinition.name, nID, controlDefinition.type);
+		TControlPtr pNewControl = std::make_shared<IAudioSystemControl_wwise>(controlDefinition.name, id, controlDefinition.type);
 		if (pParent == nullptr)
 		{
 			pParent = &m_rootControl;
 		}
 
+		if (controlDefinition.type == eWwiseItemTypes_Event)
+		{
+			pNewControl->SetRadius(m_eventsInfoMap[id].maxRadius);
+		}
 		pParent->AddChild(pNewControl.get());
 		pNewControl->SetParent(pParent);
 		pNewControl->SetLocalised(controlDefinition.bLocalised);
-		m_controls[nID] = pNewControl;
+		m_controls[id] = pNewControl;
 		return pNewControl.get();
 	}
 }
@@ -501,7 +505,7 @@ ACE::TImplControlTypeMask CAudioSystemEditor_wwise::GetCompatibleTypes(EACEContr
 
 ACE::CID CAudioSystemEditor_wwise::GetID(const string& sName) const
 {
-	return CCrc32::Compute(sName);
+	return CCrc32::ComputeLowercase(sName);
 }
 
 string CAudioSystemEditor_wwise::GetName() const
@@ -548,6 +552,53 @@ void CAudioSystemEditor_wwise::EnableConnection(ConnectionPtr pConnection)
 	{
 		++m_connectionsByID[pControl->GetId()];
 		pControl->SetConnected(true);
+	}
+}
+
+void CAudioSystemEditor_wwise::LoadEventsMetadata()
+{
+	m_eventsInfoMap.clear();
+	string path = m_settings.GetSoundBanksPath();
+	path += CRY_NATIVE_PATH_SEPSTR + g_soundBanksInfoFilename;
+	XmlNodeRef pRootNode = GetISystem()->LoadXmlFromFile(path.c_str());
+	if (pRootNode)
+	{
+		XmlNodeRef pSoundBanksNode = pRootNode->findChild("SoundBanks");
+		if (pSoundBanksNode)
+		{
+			const int size = pSoundBanksNode->getChildCount();
+			for (int i = 0; i < size; ++i)
+			{
+				XmlNodeRef pSoundBankNode = pSoundBanksNode->getChild(i);
+				if (pSoundBankNode)
+				{
+					XmlNodeRef pIncludedEventsNode = pSoundBankNode->findChild("IncludedEvents");
+					if (pIncludedEventsNode)
+					{
+						const int size = pIncludedEventsNode->getChildCount();
+						for (int j = 0; j < size; ++j)
+						{
+							XmlNodeRef pEventNode = pIncludedEventsNode->getChild(j);
+							if (pEventNode)
+							{
+								SEventInfo info;
+								const char* szName = pEventNode->getAttr("Name");
+								if (pEventNode->haveAttr("MaxAttenuation"))
+								{
+									const char* szMaxRadius = pEventNode->getAttr("MaxAttenuation");
+									info.maxRadius = static_cast<float>(atof(szMaxRadius));
+								}
+								else
+								{
+									info.maxRadius = 0.0f;
+								}
+								m_eventsInfoMap[CCrc32::ComputeLowercase(szName)] = info;
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }
 

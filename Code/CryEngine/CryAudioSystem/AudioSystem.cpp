@@ -630,6 +630,14 @@ void CAudioSystem::GetAudioFileData(char const* const szFilename, SAudioFileData
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CAudioSystem::GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioTriggerData)
+{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	m_atl.GetAudioTriggerData(audioTriggerId, audioTriggerData);
+#endif
+}
+
+//////////////////////////////////////////////////////////////////////////
 bool CAudioSystem::ExecuteSyncCallbacks(TAudioRequests& requestQueue)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AUDIO);

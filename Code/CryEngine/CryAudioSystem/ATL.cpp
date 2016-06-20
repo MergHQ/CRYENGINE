@@ -2299,6 +2299,17 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 }
 
 ///////////////////////////////////////////////////////////////////////////
+void CAudioTranslationLayer::GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioTriggerData) const
+{
+	CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, audioTriggerId, nullptr);
+	if (pTrigger != nullptr)
+	{
+		audioTriggerData.radius = pTrigger->m_maxRadius;
+		audioTriggerData.occlusionFadeOutDistance = pTrigger->m_occlusionFadeOutDistance;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::DrawATLComponentDebugInfo(IRenderAuxGeom& auxGeom, float posX, float const posY)
 {
 	m_fileCacheMgr.DrawDebugInfo(auxGeom, posX, posY);

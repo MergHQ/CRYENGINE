@@ -51,7 +51,6 @@ char const* const CAudioImpl::s_szWwiseValueAttribute = "wwise_value";
 char const* const CAudioImpl::s_szWwiseMutiplierAttribute = "wwise_value_multiplier";
 char const* const CAudioImpl::s_szWwiseShiftAttribute = "wwise_value_shift";
 char const* const CAudioImpl::s_szWwiseLocalisedAttribute = "wwise_localised";
-char const* const CAudioImpl::s_szSoundBanksInfoFilename = "SoundbanksInfo.xml";
 
 class CAuxWwiseAudioThread : public IThread
 {
@@ -363,7 +362,6 @@ EAudioRequestStatus CAudioImpl::Init()
 	AkStreamMgrSettings streamSettings;
 	AK::StreamMgr::GetDefaultSettings(streamSettings);
 	streamSettings.uMemorySize = g_audioImplCVars.m_streamManagerMemoryPoolSize << 10; // 64 KiB is the default value!
-
 	if (AK::StreamMgr::Create(streamSettings) == nullptr)
 	{
 		g_audioImplLogger.Log(eAudioLogType_Error, "AK::StreamMgr::Create() failed!\n");
@@ -619,8 +617,6 @@ EAudioRequestStatus CAudioImpl::Init()
 		g_audioImplLogger.Log(eAudioLogType_Error, "Wwise failed to load Init.bnk, returned the AKRESULT: %d", wwiseResult);
 		m_initBankId = AK_INVALID_BANK_ID;
 	}
-
-	LoadEventsMetadata();
 
 	return eAudioRequestStatus_Success;
 }
@@ -1595,7 +1591,7 @@ void CAudioImpl::GamepadDisconnected(TAudioGamepadUniqueID const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerNode, SAudioTriggerInfo& info)
+IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerNode)
 {
 	IAudioTrigger* pAudioTrigger = nullptr;
 
@@ -1607,7 +1603,6 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 		if (uniqueId != AK_INVALID_UNIQUE_ID)
 		{
 			POOL_NEW(SAudioTrigger, pAudioTrigger)(uniqueId);
-			info.maxRadius = m_eventsInfoMap[AudioStringToId(szWwiseEventName)].maxRadius;
 		}
 		else
 		{
@@ -1685,7 +1680,6 @@ void CAudioImpl::DeleteAudioSwitchState(IAudioSwitchState const* const pOldAudio
 IAudioEnvironment const* CAudioImpl::NewAudioEnvironment(XmlNodeRef const pAudioEnvironmentNode)
 {
 	IAudioEnvironment* pAudioEnvironment = nullptr;
-
 	if (_stricmp(pAudioEnvironmentNode->getTag(), s_szWwiseAuxBusTag) == 0)
 	{
 		char const* const szWwiseAuxBusName = pAudioEnvironmentNode->getAttr(s_szWwiseNameAttribute);
@@ -1762,52 +1756,6 @@ void CAudioImpl::GetMemoryInfo(SAudioImplMemoryInfo& memoryInfo) const
 bool CAudioImpl::SEnvPairCompare::operator()(std::pair<AkAuxBusID, float> const& pair1, std::pair<AkAuxBusID, float> const& pair2) const
 {
 	return (pair1.second > pair2.second);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioImpl::LoadEventsMetadata()
-{
-	string const path = m_regularSoundBankFolder + CRY_NATIVE_PATH_SEPSTR + s_szSoundBanksInfoFilename;
-	XmlNodeRef pRootNode = GetISystem()->LoadXmlFromFile(path.c_str());
-	if (pRootNode)
-	{
-		XmlNodeRef pSoundBanksNode = pRootNode->findChild("SoundBanks");
-		if (pSoundBanksNode)
-		{
-			const int size = pSoundBanksNode->getChildCount();
-			for (int i = 0; i < size; ++i)
-			{
-				XmlNodeRef pSoundBankNode = pSoundBanksNode->getChild(i);
-				if (pSoundBankNode)
-				{
-					XmlNodeRef pIncludedEventsNode = pSoundBankNode->findChild("IncludedEvents");
-					if (pIncludedEventsNode)
-					{
-						const int size2 = pIncludedEventsNode->getChildCount();
-						for (int j = 0; j < size2; ++j)
-						{
-							XmlNodeRef pEventNode = pIncludedEventsNode->getChild(j);
-							if (pEventNode)
-							{
-								SEventInfo info;
-								const char* szName = pEventNode->getAttr("Name");
-								if (pEventNode->haveAttr("MaxAttenuation"))
-								{
-									const char* szMaxRadius = pEventNode->getAttr("MaxAttenuation");
-									info.maxRadius = static_cast<float>(atof(szMaxRadius));
-								}
-								else
-								{
-									info.maxRadius = 0.0f;
-								}
-								m_eventsInfoMap[AudioStringToId(szName)] = info;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

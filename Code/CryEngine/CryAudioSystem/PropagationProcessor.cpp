@@ -84,6 +84,7 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 CPropagationProcessor::CPropagationProcessor(AudioObjectId const audioObjectId, CAudioObjectTransformation const& transformation)
 	: m_obstruction(0.0f)
 	, m_occlusion(0.0f)
+	, m_occlusionMultiplier(1.0f)
 	, m_remainingRays(0)
 	, m_rayIndex(0)
 	, m_transformation(transformation)
@@ -285,7 +286,7 @@ void CPropagationProcessor::SetOcclusionType(EAudioOcclusionType const occlusion
 				}
 			}
 
-			m_occlusion = clamp_tpl(totalOcclusion, 0.0f, 1.0f);
+			m_occlusion = clamp_tpl(totalOcclusion, 0.0f, 1.0f) * m_occlusionMultiplier;
 
 			for (auto& rayOcclusion : m_raysOcclusion)
 			{
@@ -377,7 +378,6 @@ void CPropagationProcessor::ReleasePendingRays()
 bool CPropagationProcessor::HasNewOcclusionValues()
 {
 	bool bNewValues = false;
-
 	if (fabs_tpl(m_lastQuerriedOcclusion - m_occlusion) > ATL_FLOAT_EPSILON || fabs_tpl(m_lastQuerriedObstruction - m_obstruction) > ATL_FLOAT_EPSILON)
 	{
 		m_lastQuerriedObstruction = m_obstruction;
@@ -413,7 +413,7 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 				m_occlusion += m_raysOcclusion[i];
 			}
 
-			m_occlusion /= numSamplePositions;
+			m_occlusion = (m_occlusion / numSamplePositions) * m_occlusionMultiplier;
 		}
 	}
 	else
@@ -785,6 +785,12 @@ void CPropagationProcessor::ResetRayData()
 			m_rayDebugInfos[i] = SRayDebugInfo();
 		}
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CPropagationProcessor::SetOcclusionMultiplier(float const occlusionFadeOut)
+{
+	m_occlusionMultiplier = occlusionFadeOut;
 }
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

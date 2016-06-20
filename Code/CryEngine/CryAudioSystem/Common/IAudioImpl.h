@@ -434,7 +434,7 @@ struct IAudioImpl
 	 * @return AudioImplementation code to use the corresponding ATLTriggerImpl; NULL if the new AudioTriggerImplData instance was not created
 	 * @see DeleteAudioTrigger
 	 */
-	virtual IAudioTrigger const* NewAudioTrigger(XmlNodeRef const pAudioTriggerNode, SAudioTriggerInfo& info) = 0;
+	virtual IAudioTrigger const* NewAudioTrigger(XmlNodeRef const pAudioTriggerNode) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied IAudioTrigger instance

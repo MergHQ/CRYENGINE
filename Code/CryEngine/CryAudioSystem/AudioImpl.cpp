@@ -309,7 +309,7 @@ void CAudioImpl::GamepadDisconnected(TAudioGamepadUniqueID const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerNode, SAudioTriggerInfo& info)
+IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerNode)
 {
 	return nullptr;
 }

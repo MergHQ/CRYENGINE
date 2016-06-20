@@ -624,6 +624,11 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, EA
 				cImplPtrs.reserve(nAudioTriggerChildrenCount);
 
 				float maxRadius = 0.0f;
+				pAudioTriggerNode->getAttr(SATLXMLTags::szATLRadiusAttribute, maxRadius);
+
+				float occlusionFadeOutDistance = 0.0f;
+				pAudioTriggerNode->getAttr(SATLXMLTags::szATLOcclusionFadeOutDistanceAttribute, occlusionFadeOutDistance);
+
 				for (size_t m = 0; m < nAudioTriggerChildrenCount; ++m)
 				{
 					XmlNodeRef const pTriggerImplNode(pAudioTriggerNode->getChild(m));
@@ -641,9 +646,7 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, EA
 						}
 						else
 						{
-							SAudioTriggerInfo triggerInfo;
-							pAudioTrigger = m_pImpl->NewAudioTrigger(pTriggerImplNode, triggerInfo);
-							maxRadius = std::max(maxRadius, triggerInfo.maxRadius);
+							pAudioTrigger = m_pImpl->NewAudioTrigger(pTriggerImplNode);
 							eReceiver = eAudioSubsystem_AudioImpl;
 						}
 
@@ -661,7 +664,7 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, EA
 
 				cImplPtrs.shrink_to_fit();
 
-				POOL_NEW_CREATE(CATLTrigger, pNewTrigger)(nATLTriggerID, dataScope, cImplPtrs, maxRadius);
+				POOL_NEW_CREATE(CATLTrigger, pNewTrigger)(nATLTriggerID, dataScope, cImplPtrs, maxRadius, occlusionFadeOutDistance);
 
 				if (pNewTrigger != nullptr)
 				{

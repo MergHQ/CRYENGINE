@@ -40,6 +40,8 @@ struct SATLXMLTags
 	static char const* const szATLInternalNameAttribute;
 	static char const* const szATLTypeAttribute;
 	static char const* const szATLConfigGroupAttribute;
+	static char const* const szATLRadiusAttribute;
+	static char const* const szATLOcclusionFadeOutDistanceAttribute;
 
 	static char const* const szATLDataLoadType;
 };
@@ -85,13 +87,13 @@ struct IAudioImpl;
 
 enum EAudioObjectFlags : AudioEnumFlagsType
 {
-	eAudioObjectFlags_None                 = 0,
-	eAudioObjectFlags_TrackDoppler         = BIT(0),
-	eAudioObjectFlags_TrackVelocity        = BIT(1),
-	eAudioObjectFlags_NeedsDopplerUpdate   = BIT(2),
-	eAudioObjectFlags_NeedsVelocityUpdate  = BIT(3),
-	eAudioObjectFlags_DoNotRelease         = BIT(4),
-	eAudioObjectFlags_Virtual              = BIT(5),
+	eAudioObjectFlags_None                = 0,
+	eAudioObjectFlags_TrackDoppler        = BIT(0),
+	eAudioObjectFlags_TrackVelocity       = BIT(1),
+	eAudioObjectFlags_NeedsDopplerUpdate  = BIT(2),
+	eAudioObjectFlags_NeedsVelocityUpdate = BIT(3),
+	eAudioObjectFlags_DoNotRelease        = BIT(4),
+	eAudioObjectFlags_Virtual             = BIT(5),
 };
 
 enum EAudioSubsystem : AudioEnumFlagsType
@@ -275,16 +277,18 @@ public:
 
 	typedef std::vector<CATLTriggerImpl const*, STLSoundAllocator<CATLTriggerImpl const*>> ImplPtrVec;
 
-	explicit CATLTrigger(AudioControlId const audioTriggerId, EAudioDataScope const dataScope, ImplPtrVec const& implPtrs, float const maxRadius)
+	explicit CATLTrigger(AudioControlId const audioTriggerId, EAudioDataScope const dataScope, ImplPtrVec const& implPtrs, float const maxRadius, float const occlusionFadeOutDistance)
 		: TATLControl(audioTriggerId, dataScope)
 		, m_implPtrs(implPtrs)
 		, m_maxRadius(maxRadius)
+		, m_occlusionFadeOutDistance(occlusionFadeOutDistance)
 	{}
 
 	virtual ~CATLTrigger() {}
 
 	ImplPtrVec const m_implPtrs;
 	float const      m_maxRadius;
+	float const      m_occlusionFadeOutDistance;
 };
 
 class CATLRtpcImpl : public CATLControlImpl

@@ -585,7 +585,7 @@ void CAudioImpl::GamepadDisconnected(TAudioGamepadUniqueID const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerNode, SAudioTriggerInfo& info)
+IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerNode)
 {
 	CAudioTrigger* pAudioTrigger = nullptr;
 	char const* const szTag = pAudioTriggerNode->getTag();
@@ -653,7 +653,6 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 		g_audioImplLogger.Log(eAudioLogType_Warning, "Unknown PortAudio tag: %s", szTag);
 	}
 
-	info.maxRadius = 0;
 	return pAudioTrigger;
 }
 

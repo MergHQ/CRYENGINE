@@ -120,7 +120,8 @@ public:
 		, m_flags(eAudioObjectFlags_None)
 		, m_maxRadius(0.0f)
 		, m_previousVelocity(0.0f)
-		, m_propagationProcessor(audioObjectId, m_attributes.transformation) {}
+		, m_propagationProcessor(audioObjectId, m_attributes.transformation)
+		, m_occlusionFadeOutDistance(0.0f) {}
 
 	~CATLAudioObject() {}
 
@@ -161,6 +162,7 @@ public:
 	CryAudio::Impl::IAudioObject*                   GetImplDataPtr() const                                        { return m_pImplData; }
 
 	float                                           GetMaxRadius() const                                          { return m_maxRadius; }
+	float                                           GetOcclusionFadeOutDistance() const                           { return m_occlusionFadeOutDistance; }
 
 	void                                            Update(float const deltaTime, float const distance, Vec3 const& audioListenerPosition);
 	void                                            Clear();
@@ -170,7 +172,7 @@ public:
 	void                                            SetOcclusionType(EAudioOcclusionType const calcType, Vec3 const& audioListenerPosition);
 	bool                                            CanRunObstructionOcclusion() const { return m_propagationProcessor.CanRunObstructionOcclusion(); }
 	bool                                            HasNewOcclusionValues()            { return m_propagationProcessor.HasNewOcclusionValues(); }
-	void                                            GetPropagationData(SATLSoundPropagationData& propagationData);
+	void                                            GetPropagationData(SATLSoundPropagationData& propagationData) const;
 	void                                            ReleasePendingRays();
 	void                                            SetDopplerTracking(bool const bEnable);
 	void                                            SetVelocityTracking(bool const bEnable);
@@ -200,6 +202,7 @@ private:
 	CryAudio::Impl::SAudioObject3DAttributes m_previousAttributes;
 	CTimeValue                               m_previousTime;
 	CPropagationProcessor                    m_propagationProcessor;
+	float                                    m_occlusionFadeOutDistance;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:

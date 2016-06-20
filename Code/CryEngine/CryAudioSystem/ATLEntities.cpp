@@ -49,6 +49,8 @@ char const* const SATLXMLTags::szATLVersionAttribute = "atl_version";
 char const* const SATLXMLTags::szATLInternalNameAttribute = "atl_internal_name";
 char const* const SATLXMLTags::szATLTypeAttribute = "atl_type";
 char const* const SATLXMLTags::szATLConfigGroupAttribute = "atl_config_group_name";
+char const* const SATLXMLTags::szATLRadiusAttribute = "atl_radius";
+char const* const SATLXMLTags::szATLOcclusionFadeOutDistanceAttribute = "atl_occlusion_fadeout_distance";
 
 char const* const SATLXMLTags::szATLDataLoadType = "AutoLoad";
 

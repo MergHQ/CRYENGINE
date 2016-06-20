@@ -1476,6 +1476,10 @@ ACE--CAudioSystemPanel QCheckBox {
 	width: 90px;
 }
 
+ACE--CInspectorPanel QLabel#ConnectionsTitle {
+	font: bold;
+}
+
 CCollapsibleFrameHeader {
 	background-color:rgb(100,100,100);
 	margin-top:1px;

@@ -285,3 +285,12 @@ struct SAudioFileData
 
 	PREVENT_OBJECT_COPY(SAudioFileData);
 };
+
+struct SAudioTriggerData
+{
+	SAudioTriggerData() : radius(0.0f), occlusionFadeOutDistance(0.0f) {}
+	float radius;
+	float occlusionFadeOutDistance;
+
+	PREVENT_OBJECT_COPY(SAudioTriggerData);
+};

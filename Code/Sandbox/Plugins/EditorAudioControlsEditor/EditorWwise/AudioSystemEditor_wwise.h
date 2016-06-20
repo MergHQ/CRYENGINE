@@ -62,7 +62,7 @@ class CImplementationSettings_wwise final : public IImplementationSettings
 public:
 	CImplementationSettings_wwise()
 		: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise_project")
-		, m_soundBanksPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise") { }
+		, m_soundBanksPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise") {}
 	virtual const char* GetSoundBanksPath() const { return m_soundBanksPath.c_str(); }
 	virtual const char* GetProjectPath() const    { return m_projectPath.c_str(); }
 	virtual void        SetProjectPath(const char* szPath);
@@ -73,7 +73,7 @@ public:
 	}
 
 private:
-	string m_projectPath;
+	string       m_projectPath;
 	const string m_soundBanksPath;
 };
 
@@ -112,6 +112,8 @@ private:
 	CID  GetID(const string& sName) const;
 	void UpdateConnectedStatus();
 
+	void LoadEventsMetadata();
+
 	IAudioSystemItem m_rootControl;
 
 	typedef std::shared_ptr<IAudioSystemItem> TControlPtr;
@@ -121,5 +123,13 @@ private:
 	typedef std::map<CID, int> TConnectionsMap;
 	TConnectionsMap               m_connectionsByID;
 	CImplementationSettings_wwise m_settings;
+
+	struct SEventInfo
+	{
+		float maxRadius;
+	};
+	typedef std::map<uint32, SEventInfo> EventsInfoMap;
+	EventsInfoMap m_eventsInfoMap;
+
 };
 }

@@ -11,6 +11,7 @@
 #include <IAudioSystemEditor.h>
 
 class QPropertyTree;
+class QLabel;
 
 namespace ACE
 {
@@ -39,6 +40,7 @@ private:
 	CATLControlsModel*  m_pATLModel;
 	QConnectionsWidget* m_pConnectionList;
 	QPropertyTree*      m_pPropertyTree;
+	QLabel*             m_pConnectionsLabel;
 	bool                m_bSupressUpdates;
 };
 }
