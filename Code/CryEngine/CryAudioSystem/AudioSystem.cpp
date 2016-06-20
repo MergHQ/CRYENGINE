@@ -4,7 +4,9 @@
 #include "AudioSystem.h"
 #include "SoundCVars.h"
 #include "AudioProxy.h"
+#include "PropagationProcessor.h"
 #include <CrySystem/ITimer.h>
+#include <CryString/CryPath.h>
 
 ///////////////////////////////////////////////////////////////////////////
 CAudioThread::CAudioThread()

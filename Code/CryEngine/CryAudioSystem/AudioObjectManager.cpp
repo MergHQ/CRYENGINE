@@ -4,7 +4,9 @@
 #include "AudioObjectManager.h"
 #include "AudioEventManager.h"
 #include "AudioStandaloneFileManager.h"
+#include "ATLAudioObject.h"
 #include "SoundCVars.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 using namespace CryAudio::Impl;
 

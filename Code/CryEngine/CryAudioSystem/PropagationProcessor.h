@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "ATLEntities.h"
 #include <CryPhysics/IPhysics.h>
 #include <CryAudio/IAudioSystem.h>
 

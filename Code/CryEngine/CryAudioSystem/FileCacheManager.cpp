@@ -7,6 +7,7 @@
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryMemory/IMemory.h>
+#include <CryString/CryPath.h>
 
 using namespace CryAudio::Impl;
 

@@ -8,6 +8,7 @@
 #include "ATLEntities.h"
 #include <CrySystem/File/ICryPak.h>
 #include <CryAudio/IAudioSystem.h>
+#include <CryString/CryPath.h>
 
 using namespace CryAudio::Impl;
 using namespace CryAudio::Impl::Fmod;

@@ -5,10 +5,12 @@
 #include "AudioImpl.h"
 #include "SoundCVars.h"
 #include "AudioProxy.h"
+#include "ATLAudioObject.h"
 #include <CrySystem/ISystem.h>
 #include <CryPhysics/IPhysics.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryString/CryPath.h>
 
 using namespace CryAudio::Impl;
 using namespace CryAudio::Impl::Null;

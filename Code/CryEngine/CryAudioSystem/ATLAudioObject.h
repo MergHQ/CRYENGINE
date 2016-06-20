@@ -3,8 +3,8 @@
 #pragma once
 
 #include "ATLEntities.h"
-#include <CrySystem/TimeValue.h>
 #include "PropagationProcessor.h"
+#include <CrySystem/TimeValue.h>
 
 struct IRenderAuxGeom;
 

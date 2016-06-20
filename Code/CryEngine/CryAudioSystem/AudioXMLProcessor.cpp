@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "AudioXMLProcessor.h"
 #include <IAudioImpl.h>
+#include <CryString/CryPath.h>
 
 using namespace CryAudio::Impl;
 

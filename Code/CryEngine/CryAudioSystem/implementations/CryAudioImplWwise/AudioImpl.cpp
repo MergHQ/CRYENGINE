@@ -7,6 +7,7 @@
 #include "Common.h"
 #include <SharedAudioData.h>
 #include <CryThreading/IThreadManager.h>
+#include <CryString/CryPath.h>
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>     // Sound engine
 #include <AK/MotionEngine/Common/AkMotionEngine.h>   // Motion Engine
