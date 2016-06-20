@@ -2332,6 +2332,9 @@ void CSystem::WarningV(EValidatorModule module, EValidatorSeverity severity, int
 	case VALIDATOR_COMMENT:
 		ltype = ILog::eComment;
 		break;
+	case VALIDATOR_ASSERT:
+		ltype = ILog::eAssert;
+		break;
 	default:
 		break;
 	}
@@ -2755,7 +2758,7 @@ void CSystem::FillRandomMT(uint32* pOutWords, uint32 numWords)
 	{
 		struct TicksTime
 		{
-			int64 ticks;
+			int64  ticks;
 			time_t tm;
 		};
 

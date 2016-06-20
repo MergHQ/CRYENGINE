@@ -263,19 +263,17 @@ void CryAssertTrace(const char* _pszFormat, ...)
 	{
 		return;
 	}
-	if (!gEnv->bIgnoreAllAsserts || gEnv->bTesting)
+
+	if (NULL == _pszFormat)
 	{
-		if (NULL == _pszFormat)
-		{
-			gs_szMessage[0] = '\0';
-		}
-		else
-		{
-			va_list args;
-			va_start(args, _pszFormat);
-			cry_vsprintf(gs_szMessage, _pszFormat, args);
-			va_end(args);
-		}
+		gs_szMessage[0] = '\0';
+	}
+	else
+	{
+		va_list args;
+		va_start(args, _pszFormat);
+		cry_vsprintf(gs_szMessage, _pszFormat, args);
+		va_end(args);
 	}
 }
 
@@ -346,6 +344,21 @@ public:
 private:
 	int m_numberOfShows;
 };
+
+void CryLogAssert(const char* _pszCondition, const char* _pszFile, unsigned int _uiLine, bool* _pbIgnore)
+{
+	if (!gEnv || !gEnv->pSystem)
+		return;
+
+	if (gEnv->pConsole)
+	{
+		static ICVar* pLogAsserts = gEnv->pConsole->GetCVar("sys_log_asserts");
+		if (pLogAsserts && !pLogAsserts->GetIVal())
+			return;
+	}
+
+	GetISystem()->WarningV(VALIDATOR_MODULE_UNKNOWN, VALIDATOR_ASSERT, 0, _pszFile, gs_szMessage, va_list());
+}
 
 bool CryAssert(const char* _pszCondition, const char* _pszFile, unsigned int _uiLine, bool* _pbIgnore)
 {

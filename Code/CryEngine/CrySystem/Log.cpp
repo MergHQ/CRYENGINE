@@ -448,6 +448,7 @@ void CLog::LogV(const ELogType type, int flags, const char* szFormat, va_list ar
 		DefaultVerbosity = 0;
 		break;
 	case eError:
+	case eAssert:
 		DefaultVerbosity = 1;
 		break;
 	case eWarning:
@@ -486,6 +487,9 @@ void CLog::LogV(const ELogType type, int flags, const char* szFormat, va_list ar
 		bError = true;
 		szPrefix = "$4[Error] ";
 		break;
+	case eAssert:
+		bError = true;
+		szPrefix = "$4[Assert] ";
 	case eMessage:
 	case eAlways:
 	case eInput:
@@ -566,6 +570,7 @@ void CLog::LogV(const ELogType type, int flags, const char* szFormat, va_list ar
 		break;
 	case eError:
 	case eErrorAlways:
+	case eAssert:
 		GetISystem()->GetIRemoteConsole()->AddLogError(formatted.c_str());
 		break;
 	default:

@@ -153,6 +153,7 @@ struct SSystemCVars
 #endif
 
 	int sys_asserts;
+	int sys_log_asserts;
 	int sys_error_debugbreak;
 
 	int sys_intromoviesduringinit;

@@ -150,9 +150,10 @@ QToolWindowCustomWrapper#mainWindow > QMainWindow > QMainFrameMenuBar > QMenuBar
 	background-color: rgba(35,35,35,0); /*Make this transparent and add the logo to the MenuBar container*/
 }
 
-QMainFrameMenuBar > QSearchBox {
+QMainFrameMenuBar > CTrayArea > QSearchBox {
 	max-width: 200px;
 	margin-right: 6px;
+	margin-top: 2px;
 }
 
 QResizableMenu
@@ -178,6 +179,146 @@ QResizableMenu > QWidget#InsetBorder QTreeView QScrollBar:vertical {
 QResizableMenu > QWidget#InsetBorder QTreeView::item
 {
 	height: 23px;
+}
+
+CNotificationCenterWidget
+{
+	icon-size: 24px;
+	qproperty-animationDuration: 250;
+	qproperty-animationDistance: 25;
+	qproperty-notificationMaxCount: 20;
+	qproperty-notificationDistance: 10;
+}
+
+CNotificationWidget
+{
+	qproperty-notificationDuration: 2250;
+	background-color: rgb(97,172,236);
+	max-height: 512px;
+	min-width: 256px;
+}
+
+CNotificationWidget > QWidget
+{
+	margin: 1 1 1 1;
+}
+
+CNotificationWidget QLabel#title
+{
+	font-weight: bold;
+	color: rgb(97,172,236);
+}
+
+QResizableMenu#notificationResizableMenu > QWidget#InsetBorder > QWidget
+{
+	margin: 4 5 5 5;
+}
+
+QTabWidget#notificationTabs > QTabBar
+{
+	background: transparent;
+}
+
+QTabWidget#notificationTabs > QTabBar::tab {                              /* secondary tabs */
+	padding: 0 4 0 4;
+	margin-left:2px;
+	margin-top: 0px;
+	color:black;
+	background: qlineargradient(x2:1, y2:1, x2:0, y2:1,
+				stop:0 rgb(150,150,150), stop: 0.1 rgb(140,140,140), stop:1 rgb(150,150,150));
+	height:20px;
+}
+
+QTabWidget#notificationTabs > QTabBar::tab:first{
+	margin-left:0px;
+	border-top-left-radius: 2px;
+	border-top-right-radius: 0px;
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 0px;
+}
+
+QTabWidget#notificationTabs > QTabBar::tab:last{
+	border-top-left-radius: 0px;
+	border-top-right-radius: 2px;
+	border-bottom-left-radius: 0px;
+	border-bottom-right-radius: 2px;
+	margin-left:0px;
+}
+
+QTabWidget#notificationTabs > QTabBar::tab:middle{
+	margin-left:0px;
+	border-top-left-radius: 0px;
+	border-top-right-radius: 0px;
+	border-bottom-left-radius: 0px;
+	border-bottom-right-radius: 0px;
+}
+
+QTabWidget#notificationTabs > QTabBar::tab:hover {
+	color:black;
+	background-color:rgb(180,180,180);
+}
+
+QTabWidget#notificationTabs > QTabBar::tab:selected {
+	color:black;
+	background-color:rgb(97,172,236);
+	padding-bottom:0px;
+}
+
+QTabWidget#notificationTabs::pane
+{
+	background-color: rgb(66, 66, 66);
+	border: none;
+}
+
+QTabWidget#notificationTabs::pane QToolButton
+{
+	margin-top: 2px;
+}
+
+QTabWidget#notificationTabs::pane QLineEdit
+{
+	color: rgb(166,166,166);
+}
+
+CNotificationList
+{
+	background-color: rgb(35, 35, 35);
+}
+
+CNotificationList CNotificationWidget
+{
+	background-color: rgb(35,35,35);
+	max-height: 512px;
+}
+
+CNotificationList > QScrollArea
+{
+	border-top: 2px solid rgb(35,35,35);
+}
+
+CNotificationList QScrollBar:vertical
+{
+	background-color: rgb(35,35,35);
+}
+
+CNotificationList CNotificationWidget > QWidget
+{
+	margin: 0 0 2 0;
+}
+
+QProgressBar {
+	background-color: rgb(35,35,35);
+	border: 0.5px solid rgb(35,35,35);
+	border-radius: 0px;
+	text-align: center;
+	color: rgb(78,78,78, 0);
+	max-height: 6px;
+}
+
+QProgressBar::chunk
+{
+	background-color: rgb(97,172,236);
+	border-radius: 0px;
 }
 
 QMenuBar::item {

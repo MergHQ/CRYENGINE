@@ -5257,6 +5257,7 @@ void CSystem::CreateSystemVars()
 	               "3 = Debug break on Assert\n"
 	               );
 #endif
+	REGISTER_CVAR2("sys_log_asserts", &g_cvars.sys_log_asserts, 1, VF_CHEAT, "Enable/Disable Asserts logging");
 
 	REGISTER_CVAR2("sys_error_debugbreak", &g_cvars.sys_error_debugbreak, 0, VF_CHEAT, "__debugbreak() if a VALIDATOR_ERROR_DBGBREAK message is hit");
 

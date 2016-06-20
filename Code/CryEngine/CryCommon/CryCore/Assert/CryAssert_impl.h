@@ -11,6 +11,13 @@ static bool g_bAssertsAreDisabledForThisModule = false;
 //! We need this pointer so we can access the value even after CSystem is already destroyed.
 static int* g_pAssertsCVarAddress = nullptr;
 
+	#if !CRY_PLATFORM_WINDOWS
+void CryLogAssert(const char* _pszCondition, const char* _pszFile, unsigned int _uiLine, bool* _pbIgnore)
+{
+	// Empty on purpose
+}
+	#endif
+
 	#if CRY_PLATFORM_DURANGO
 		#include <CryAssert/CryAssert_Durango.h>
 	#elif CRY_PLATFORM_MAC
