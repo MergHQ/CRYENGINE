@@ -1018,7 +1018,7 @@ float CLivingEntity::ShootRayDown(le_precomp_entity* pents, int nents, le_precom
 		if (j<pent->m_nColliders)
 			continue;
 		for(j1=pents[i].iPartsBegin;j1<pents[i].iPartsEnd;bHasMatSubst|=pparts[j1++].partflags & geom_mat_substitutor) 
-			if ((pparts[j1].partflags & (collider_flags|geom_no_coll_response)) == collider_flags) {
+			if ((pparts[j1].partflags & collider_flags) && !(pparts[j1].partflags & geom_no_coll_response)) {
 			PrefetchLine(&pparts[j1+1],0);
 			if (bIgnoreSmallObjects && (pentbest || pent->GetRigidBody(j)->v.len2()>1)) {
 				pparts[j1].pgeom->GetBBox(&bbox);
