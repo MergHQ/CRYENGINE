@@ -2958,6 +2958,7 @@ __ae_step++;
 	}
 
 	UpdateConstraints(time_interval);
+	m_bContactsAssigned = 0;
 	AssignContactsToJoints();
 
 	for(idx=0;idx<m_nJoints;idx++) {
