@@ -10,6 +10,7 @@
 #include <CryMath/Cry_Quat.h>
 #include <CryMath/Cry_Matrix34.h>
 #include <CryMath/Cry_Geo.h>
+#include <CrySerialization/Gap.h>
 
 template<typename T>
 bool Serialize(Serialization::IArchive& ar, Vec2_tpl<T>& value, const char* name, const char* label)
@@ -92,6 +93,141 @@ bool Serialize(Serialization::IArchive& ar, Matrix34_tpl<T>& value, const char* 
 
 namespace Serialization
 {
+struct SRotation
+{
+	explicit SRotation(Quat& q)
+		: quat(q)
+	{}
+
+	void Serialize(Serialization::IArchive& ar)
+	{
+	}
+
+	Quat& quat;
+};
+
+inline bool Serialize(Serialization::IArchive& ar, SRotation& value, const char* name, const char* label)
+{
+	if (ar.isEdit())
+	{
+		if (ar.openBlock(name, label))
+		{
+			Vec3 v = Vec3(RAD2DEG(Ang3::GetAnglesXYZ(Matrix33(value.quat))));
+			ar(v.x, "x", "^");
+			ar(v.y, "y", "^");
+			ar(v.z, "z", "^");
+			if (ar.isInput())
+				value.quat = Quat(Ang3(DEG2RAD(v)));
+
+			ar(Serialization::SGap(), "gap", "^");
+			ar.closeBlock();
+			return true;
+		}
+		return false;
+	}
+	else
+	{
+		typedef float (& Array)[4];
+		return ar((Array)value, name, label);
+	}
+}
+
+struct SPosition
+{
+	explicit SPosition(Vec3& v)
+		: vec(v)
+	{}
+
+	void Serialize(Serialization::IArchive& ar)
+	{
+	}
+
+	Vec3& vec;
+};
+
+inline bool Serialize(Serialization::IArchive& ar, SPosition& c, const char* name, const char* label)
+{
+	if (ar.isEdit())
+	{
+		if (ar.openBlock(name, label))
+		{
+			ar(c.vec.x, "x", "^");
+			ar(c.vec.y, "y", "^");
+			ar(c.vec.z, "z", "^");
+			ar(Serialization::SGap(), "gap", "^");
+			ar.closeBlock();
+			return true;
+		}
+		return false;
+	}
+	else
+	{
+		typedef float (* Array)[3];
+		return ar(*((Array) & c.vec.x), name, label);
+	}
+}
+
+struct SUniformScale
+{
+	explicit SUniformScale(Vec3& v, bool& u)
+		: vec(v)
+		, uniform(u)
+	{}
+
+	void Serialize(Serialization::IArchive& ar)
+	{
+	}
+
+	Vec3& vec;
+	bool& uniform;
+};
+
+inline bool Serialize(Serialization::IArchive& ar, SUniformScale& c, const char* name, const char* label)
+{
+	if (ar.isEdit())
+	{
+		if (ar.openBlock(name, label))
+		{
+			bool result = true;
+			if (ar.isInput() && c.uniform)
+			{
+				Vec3 vec = c.vec;
+				ar(vec.x, "x", "^");
+				ar(vec.y, "y", "^");
+				ar(vec.z, "z", "^");
+				result = ar(Serialization::SStruct(c), "scale", "^");
+
+				if (!strcmp(ar.getModifiedRowName(), "x"))
+				{
+					c.vec.x = c.vec.y = c.vec.z = vec.x;
+				}
+				else if (!strcmp(ar.getModifiedRowName(), "y"))
+				{
+					c.vec.x = c.vec.y = c.vec.z = vec.y;
+				}
+				else if (!strcmp(ar.getModifiedRowName(), "z"))
+				{
+					c.vec.x = c.vec.y = c.vec.z = vec.z;
+				}
+			}
+			else
+			{
+				ar(c.vec.x, "x", "^");
+				ar(c.vec.y, "y", "^");
+				ar(c.vec.z, "z", "^");
+				result = ar(Serialization::SStruct(c), "scale", "^");
+			}
+			ar.closeBlock();
+			return result;
+		}
+		return false;
+	}
+	else
+	{
+		typedef float (* Array)[3];
+		return ar(*((Array) & c.vec.x), name, label);
+	}
+}
 
 template<class T>
 bool Serialize(Serialization::IArchive& ar, Serialization::SRadiansAsDeg<T>& value, const char* name, const char* label)

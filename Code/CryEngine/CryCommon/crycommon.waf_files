@@ -611,6 +611,7 @@
       "CrySerialization/DynArray.h",
       "CrySerialization/DynArrayImpl.h",
       "CrySerialization/Enum.h",
+      "CrySerialization/Gap.h",
       "CrySerialization/IArchive.h",
       "CrySerialization/IArchiveHost.h",
       "CrySerialization/IClassFactory.h",
