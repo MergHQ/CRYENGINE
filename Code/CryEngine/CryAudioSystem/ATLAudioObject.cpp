@@ -261,7 +261,6 @@ void CATLAudioObject::ReportPrepUnprepTriggerImpl(AudioTriggerImplId const audio
 		m_triggerImplStates[audioTriggerImplId].flags &= ~eAudioTriggerStatus_Prepared;
 	}
 }
-
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId)
 {
@@ -357,21 +356,24 @@ void CATLAudioObject::Update(
 {
 	m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition);
 
-	float occlusionFadeOut = 0.0f;
-	if (distance < m_maxRadius)
+	if (m_maxRadius > 0.0f)
 	{
-		float const fadeOutStart = m_maxRadius - m_occlusionFadeOutDistance;
-		if (fadeOutStart < distance)
+		float occlusionFadeOut = 0.0f;
+		if (distance < m_maxRadius)
 		{
-			occlusionFadeOut = 1.0f - ((distance - fadeOutStart) / m_occlusionFadeOutDistance);
+			float const fadeOutStart = m_maxRadius - m_occlusionFadeOutDistance;
+			if (fadeOutStart < distance)
+			{
+				occlusionFadeOut = 1.0f - ((distance - fadeOutStart) / m_occlusionFadeOutDistance);
+			}
+			else
+			{
+				occlusionFadeOut = 1.0f;
+			}
 		}
-		else
-		{
-			occlusionFadeOut = 1.0f;
-		}
-	}
 
-	m_propagationProcessor.SetOcclusionMultiplier(occlusionFadeOut);
+		m_propagationProcessor.SetOcclusionMultiplier(occlusionFadeOut);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////

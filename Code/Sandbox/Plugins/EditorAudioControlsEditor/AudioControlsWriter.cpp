@@ -242,8 +242,16 @@ void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CATLControl* pCon
 
 	if (type == eACEControlType_Trigger)
 	{
-		pChildNode->setAttr("atl_radius", pControl->GetRadius());
-		pChildNode->setAttr("atl_occlusion_fadeout_distance", pControl->GetOcclusionFadeOutDistance());
+		const float radius = pControl->GetRadius();
+		if (radius > 0.0f)
+		{
+			pChildNode->setAttr("atl_radius", radius);
+			const float fadeOutDistance = pControl->GetOcclusionFadeOutDistance();
+			if (fadeOutDistance > 0.0f)
+			{
+				pChildNode->setAttr("atl_occlusion_fadeout_distance", fadeOutDistance);
+			}
+		}
 	}
 
 	if (type == eACEControlType_Switch)
