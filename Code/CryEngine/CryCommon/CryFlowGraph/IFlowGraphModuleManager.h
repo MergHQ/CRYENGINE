@@ -110,6 +110,12 @@ typedef _smart_ptr<IFlowGraphModuleIterator> IModuleIteratorPtr;
 
 struct IFlowGraphModuleListener
 {
+	enum class ERootGraphChangeReason
+	{
+		ScanningForModules,
+		LoadModuleFile
+	};
+
 	//! Called once a new module instance was created.
 	virtual void OnModuleInstanceCreated(IFlowGraphModule* module, TModuleInstanceId instanceID) = 0;
 
@@ -123,7 +129,7 @@ struct IFlowGraphModuleListener
 	virtual void OnPostModuleDestroyed() = 0;
 
 	//! Called once a modules root graph has changed.
-	virtual void OnRootGraphChanged(IFlowGraphModule* module) = 0;
+	virtual void OnRootGraphChanged(IFlowGraphModule* module, ERootGraphChangeReason reason) = 0;
 
 	//! Called once the system scanned for new modules.
 	virtual void OnScannedForModules() = 0;

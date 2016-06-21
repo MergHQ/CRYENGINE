@@ -92,7 +92,7 @@ private:
 	void                     ScanFolder(const string& folderName, bool bGlobal);
 
 	CFlowGraphModule*        PreLoadModuleFile(const char* moduleName, const char* fileName, bool bGlobal);
-	void                     LoadModuleGraph(const char* moduleName, const char* fileName);
+	void                     LoadModuleGraph(const char* moduleName, const char* fileName, IFlowGraphModuleListener::ERootGraphChangeReason rootGraphChangeReason);
 
 	void                     DestroyActiveModuleInstances();
 

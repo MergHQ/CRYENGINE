@@ -155,8 +155,9 @@ CFlowGraphModule* CFlowGraphModuleManager::PreLoadModuleFile(const char* moduleN
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFlowGraphModuleManager::LoadModuleGraph(const char* moduleName, const char* fileName)
+void CFlowGraphModuleManager::LoadModuleGraph(const char* moduleName, const char* fileName, IFlowGraphModuleListener::ERootGraphChangeReason rootGraphChangeReason)
 {
+	LOADING_TIME_PROFILE_SECTION_ARGS(fileName);
 	// first check for existing module - must exist by this point
 	CFlowGraphModule* pModule = static_cast<CFlowGraphModule*>(GetModule(moduleName));
 
@@ -168,7 +169,7 @@ void CFlowGraphModuleManager::LoadModuleGraph(const char* moduleName, const char
 		{
 			for (CListenerSet<IFlowGraphModuleListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
 			{
-				notifier->OnRootGraphChanged(pModule);
+				notifier->OnRootGraphChanged(pModule, rootGraphChangeReason);
 			}
 		}
 	}
@@ -196,7 +197,7 @@ IFlowGraphModule* CFlowGraphModuleManager::LoadModuleFile(const char* moduleName
 	}
 
 	pModule = PreLoadModuleFile(moduleName, fileName, bGlobal);
-	LoadModuleGraph(moduleName, fileName);
+	LoadModuleGraph(moduleName, fileName, IFlowGraphModuleListener::ERootGraphChangeReason::LoadModuleFile);
 
 	return pModule;
 }
@@ -490,6 +491,7 @@ void CFlowGraphModuleManager::ScanFolder(const string& folderName, bool bGlobal)
 //////////////////////////////////////////////////////////////////////////
 void CFlowGraphModuleManager::RescanModuleNames(bool bGlobal)
 {
+	LOADING_TIME_PROFILE_SECTION;
 	CryFixedStringT<512> path = "";
 
 	if (bGlobal)
@@ -526,6 +528,8 @@ void CFlowGraphModuleManager::RescanModuleNames(bool bGlobal)
 //////////////////////////////////////////////////////////////////////////
 void CFlowGraphModuleManager::ScanForModules()
 {
+	LOADING_TIME_PROFILE_SECTION;
+
 	// first remove any existing modules
 	ClearModules();
 
@@ -537,7 +541,7 @@ void CFlowGraphModuleManager::ScanForModules()
 	// Second pass: loading the graphs, now all nodes should exist.
 	for (TModulesPathInfo::const_iterator it = m_ModulesPathInfo.begin(), end = m_ModulesPathInfo.end(); it != end; ++it)
 	{
-		LoadModuleGraph(it->first, it->second);
+		LoadModuleGraph(it->first, it->second, IFlowGraphModuleListener::ERootGraphChangeReason::ScanningForModules);
 	}
 
 	for (CListenerSet<IFlowGraphModuleListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
