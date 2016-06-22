@@ -389,6 +389,12 @@ bool CPropagationProcessor::HasNewOcclusionValues()
 }
 
 ///////////////////////////////////////////////////////////////////////////
+void CPropagationProcessor::SetOcclusionMultiplier(float const occlusionFadeOut)
+{
+	m_occlusionMultiplier = occlusionFadeOut;
+}
+
+///////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::ProcessObstructionOcclusion()
 {
 	m_occlusion = 0.0f;
@@ -785,12 +791,6 @@ void CPropagationProcessor::ResetRayData()
 			m_rayDebugInfos[i] = SRayDebugInfo();
 		}
 	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::SetOcclusionMultiplier(float const occlusionFadeOut)
-{
-	m_occlusionMultiplier = occlusionFadeOut;
 }
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
