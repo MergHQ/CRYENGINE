@@ -118,7 +118,8 @@
           "CryCore/ToolsHelpers/SettingsManagerHelpers.h",
           "CryCore/ToolsHelpers/SettingsManagerHelpers.inl",
           "CryCore/ToolsHelpers/EngineSettingsManager.h",
-          "CryCore/ToolsHelpers/EngineSettingsManager.inl"
+          "CryCore/ToolsHelpers/EngineSettingsManager.inl",
+          "CryCore/ToolsHelpers/GuidUtil.h"
         ]
       }
     ],
