@@ -558,39 +558,29 @@ bool CActionScope::PlayPendingProc(uint32 layer)
 	SProcSequencer& sequencer = m_procSequencers[layer];
 
 	sequencer.flags &= ~eSF_Queued;
-
-	if ((sequencer.pos < sequencer.sequence.size()) || ((sequencer.flags & eSF_BlendingOut) != 0))
+	const TProcClipSequence& sequence = sequencer.sequence;
+	const size_t numSequences = sequence.size();
+	const bool bIsBlendOut = ((sequencer.flags & eSF_BlendingOut) != 0);
+	if ((sequencer.pos < numSequences) || bIsBlendOut)
 	{
-		bool playingProc;
-
-		if ((sequencer.flags & eSF_BlendingOut) == 0)
+		const bool bPlayingProc = !bIsBlendOut;
+		if (bPlayingProc)
 		{
-			const SProceduralEntry& proceduralEntry = sequencer.sequence[sequencer.pos];
-
-			sequencer.pos++;
-			float duration = -1.f;
-
-			if (sequencer.pos < sequencer.sequence.size())
-			{
-				duration = sequencer.sequence[sequencer.pos].blend.exitTime - sequencer.blend.exitTime;
-			}
-
+			const SProceduralEntry& proceduralEntry = sequence[sequencer.pos];
+			++sequencer.pos;
+			const float duration = (sequencer.pos < numSequences) ? sequence[sequencer.pos].blend.exitTime : -1.0f;
 			InstallProceduralClip(proceduralEntry, layer, sequencer.blend, duration);
 			ClipInstalled(proceduralEntry.part);
-
-			playingProc = true;
 		}
 		else
 		{
 			SProceduralEntry proc;
-
 			InstallProceduralClip(proc, layer, sequencer.blend, -1.f);
 			sequencer.flags &= ~eSF_BlendingOut;
-			playingProc = false;
 		}
 
 		QueueProcFromSequence(layer, sequencer.pos);
-		return playingProc;
+		return bPlayingProc;
 	}
 
 	return false;
