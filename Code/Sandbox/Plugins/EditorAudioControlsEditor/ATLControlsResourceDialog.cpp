@@ -20,7 +20,7 @@ namespace ACE
 string ATLControlsDialog::ms_controlName = "";
 
 ATLControlsDialog::ATLControlsDialog(QWidget* pParent, EACEControlType eType)
-	: CEditorDialog("ATLControlsDialog")
+	: CEditorDialog("ATLControlsDialog", pParent)
 	, m_eType(eType)
 {
 	setWindowTitle("Choose...");
