@@ -1,5 +1,0 @@
-<TimeOfDay Time="7" TimeStart="12" TimeEnd="12" TimeAnimSpeed="0">
- <Presets>
-  <Preset Name="libs/environmentpresets/canyon.xml" Default="1"/>
- </Presets>
-</TimeOfDay>

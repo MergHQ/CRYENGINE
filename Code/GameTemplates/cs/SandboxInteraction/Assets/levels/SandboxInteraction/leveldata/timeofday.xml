@@ -1,5 +1,0 @@
-<TimeOfDay Time="12" TimeStart="12" TimeEnd="12" TimeAnimSpeed="0">
- <Presets>
-  <Preset Name="libs/environmentpresets/Tutorial_01-03.xml" Default="1"/>
- </Presets>
-</TimeOfDay>
