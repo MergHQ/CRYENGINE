@@ -41,7 +41,7 @@ public:
 	virtual void               SetEnvironmentFadeDistance(float const environmentFadeDistance) override { m_environmentFadeDistance = environmentFadeDistance; }
 	virtual float              GetEnvironmentFadeDistance() const override                              { return m_environmentFadeDistance; }
 	virtual void               SetEnvironmentId(AudioEnvironmentId const environmentId) override        { m_audioEnvironmentId = environmentId; }
-	virtual AudioEnvironmentId GetEnvironmentID() const override                                        { return m_audioEnvironmentId; }
+	virtual AudioEnvironmentId GetEnvironmentId() const override                                        { return m_audioEnvironmentId; }
 	virtual AudioProxyId       CreateAuxAudioProxy() override;
 	virtual bool               RemoveAuxAudioProxy(AudioProxyId const audioProxyId) override;
 	virtual void               SetAuxAudioProxyOffset(Matrix34 const& offset, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID) override;
@@ -98,11 +98,6 @@ private:
 	void             OnListenerMoveInside(Vec3 const& listenerPos);
 	void             OnListenerExclusiveMoveInside(IEntity const* const __restrict pEntity, IEntity const* const __restrict pAreaHigh, IEntity const* const __restrict pAreaLow, float const fade);
 	void             OnMove();
-	void             OnEnter(IEntity const* const pIEntity);
-	void             OnLeaveNear(IEntity const* const pIEntity);
-	void             OnMoveNear(IEntity const* const pIEntity, float const amount);
-	void             OnExclusiveMoveInside(IEntity const* const __restrict pEntity, IEntity const* const __restrict pEntityAreaHigh, IEntity const* const __restrict pEntityAreaLow, float const fade);
-	void             OnAreaCrossing(IEntity const* const pIEntity);
 	TAudioProxyPair& GetAuxAudioProxyPair(AudioProxyId const audioProxyId);
 	void             SetEnvironmentAmountInternal(IEntity const* const pIEntity, float const amount) const;
 

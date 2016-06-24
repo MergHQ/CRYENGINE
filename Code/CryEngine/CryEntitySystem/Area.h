@@ -153,8 +153,8 @@ public:
 	explicit CArea(CAreaManager* pManager);
 
 	//IArea
-	virtual size_t         GetEntityAmount() const         { return m_vEntityID.size(); }
-	virtual const EntityId GetEntityByIdx(int index) const { return m_vEntityID[index]; }
+	virtual size_t         GetEntityAmount() const                  { return m_vEntityID.size(); }
+	virtual const EntityId GetEntityByIdx(size_t const index) const { return m_vEntityID[index]; }
 	virtual void           GetMinMax(Vec3** min, Vec3** max) const
 	{
 		(*min)->x = m_areaBBox.min.x;
@@ -227,7 +227,6 @@ public:
 	float                   GetProximity()          { return m_fProximity; }
 
 	float                   GetGreatestFadeDistance();
-	float                   GetGreatestEnvironmentFadeDistance();
 
 	// Invalidations
 	void InvalidateCachedAreaData(EntityId const nEntityID);
@@ -266,7 +265,7 @@ public:
 	void  EnterArea(IEntity const* const __restrict pEntity);
 	void  LeaveArea(IEntity const* const __restrict pEntity);
 	void  UpdateAreaInside(IEntity const* const __restrict pEntity);
-	void  ExclusiveUpdateAreaInside(IEntity const* const __restrict pEntity, EntityId const AreaHighID, float const fadeValue, float const environmentFadeValue);
+	void  ExclusiveUpdateAreaInside(IEntity const* const __restrict pEntity, EntityId const AreaHighID, float const fadeValue);
 	void  ExclusiveUpdateAreaNear(IEntity const* const __restrict pEntity, EntityId const AreaHighID, float const fadeValue);
 	float CalculateFade(const Vec3& pos3D);
 	void  OnAreaCrossing(IEntity const* const __restrict pEntity);
@@ -285,7 +284,6 @@ public:
 
 	void   SetActive(bool bActive) { m_bIsActive = bActive; }
 	bool   IsActive() const        { return m_bIsActive; }
-	bool   HasSoundAttached();
 
 	void   GetBBox(Vec2& vMin, Vec2& vMax) const;
 	void   GetSolidBoundBox(AABB& outBoundBox) const;
@@ -336,7 +334,6 @@ private:
 	CAreaManager* const m_pAreaManager;
 	float               m_fProximity;
 	float               m_fFadeDistance;
-	float               m_fEnvironmentFadeDistance;
 
 	// attached entities IDs list
 	EntityIdVector   m_vEntityID;
@@ -407,7 +404,6 @@ private:
 
 	bool  m_bIsActive            : 1;
 	bool  m_bInitialized         : 1;
-	bool  m_bHasSoundAttached    : 1;
 	bool  m_bAttachedSoundTested : 1; // can be replaced later with an OnAfterLoad
 	bool  m_bObstructRoof        : 1;
 	bool  m_bObstructFloor       : 1;

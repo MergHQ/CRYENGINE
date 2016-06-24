@@ -132,42 +132,9 @@ void CEntityAudioProxy::OnListenerExclusiveMoveInside(IEntity const* const __res
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityAudioProxy::OnExclusiveMoveInside(IEntity const* const __restrict pEntity, IEntity const* const __restrict pEntityAreaHigh, IEntity const* const __restrict pEntityAreaLow, float const fade)
-{
-	SetEnvironmentAmountInternal(pEntity, fade);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntityAudioProxy::OnListenerEnter(IEntity const* const pEntity)
 {
 	m_pEntity->SetPos(pEntity->GetWorldPos());
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityAudioProxy::OnEnter(IEntity const* const pIEntity)
-{
-	SetEnvironmentAmountInternal(pIEntity, 1.0f);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityAudioProxy::OnLeaveNear(IEntity const* const pIEntity)
-{
-	SetEnvironmentAmountInternal(pIEntity, 0.0f);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityAudioProxy::OnMoveNear(IEntity const* const pIEntity, float const amount)
-{
-	// Note: This can be called for several entities during a frame!
-	SetEnvironmentAmountInternal(pIEntity, amount);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityAudioProxy::OnAreaCrossing(IEntity const* const pIEntity)
-{
-	// pIEntity just crossed into or out of an area that this EAP is attached to.
-	// We reapply our environment to it if provided.
-	SetEnvironmentAmountInternal(pIEntity, 1.0f);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -205,30 +172,6 @@ void CEntityAudioProxy::ProcessEvent(SEntityEvent& event)
 					{
 						OnListenerEnter(pEntity);
 					}
-					else if ((pEntity != nullptr) && (m_audioEnvironmentId != INVALID_AUDIO_ENVIRONMENT_ID))
-					{
-						OnEnter(pEntity);
-					}
-				}
-
-				break;
-			}
-		case ENTITY_EVENT_LEAVEAREA:
-			{
-
-				break;
-			}
-		case ENTITY_EVENT_CROSS_AREA:
-			{
-				if ((m_pEntity->GetFlags() & ENTITY_FLAG_VOLUME_SOUND) > 0)
-				{
-					EntityId const nEntityID = static_cast<EntityId>(event.nParam[0]); // Crossing entity!
-					IEntity* const pEntity = gEnv->pEntitySystem->GetEntity(nEntityID);
-
-					if (pEntity != nullptr)
-					{
-						OnAreaCrossing(pEntity);
-					}
 				}
 
 				break;
@@ -247,27 +190,9 @@ void CEntityAudioProxy::ProcessEvent(SEntityEvent& event)
 						{
 							OnListenerMoveNear(event.vec);
 						}
-						else if (m_audioEnvironmentId != INVALID_AUDIO_ENVIRONMENT_ID)
-						{
-							OnMoveNear(pEntity, event.fParam[2]);
-						}
 					}
 				}
 
-				break;
-			}
-		case ENTITY_EVENT_LEAVENEARAREA:
-			{
-				if ((m_pEntity->GetFlags() & ENTITY_FLAG_VOLUME_SOUND) > 0)
-				{
-					EntityId const nEntityID = static_cast<EntityId>(event.nParam[0]); // Leaving entity!
-					IEntity* const pEntity = gEnv->pEntitySystem->GetEntity(nEntityID);
-
-					if ((pEntity != nullptr) && (pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) == 0)
-					{
-						OnLeaveNear(pEntity);
-					}
-				}
 				break;
 			}
 		case ENTITY_EVENT_MOVEINSIDEAREA:
@@ -292,10 +217,6 @@ void CEntityAudioProxy::ProcessEvent(SEntityEvent& event)
 								if ((pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
 								{
 									OnListenerExclusiveMoveInside(pEntity, pArea2, pArea1, event.fParam[0]);
-								}
-								else
-								{
-									OnExclusiveMoveInside(pEntity, pArea2, pArea1, event.fParam[1]);
 								}
 							}
 							else

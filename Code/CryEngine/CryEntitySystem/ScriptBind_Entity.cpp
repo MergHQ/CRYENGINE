@@ -4461,7 +4461,7 @@ int CScriptBind_Entity::SetAudioEnvironmentID(IFunctionHandler* pH, ScriptHandle
 	if (pIEntityAudioProxy)
 	{
 		AudioEnvironmentId const nAudioEnvironmentIDToSet = HandleToInt<AudioEnvironmentId>(hAudioEnvironmentID);
-		AudioEnvironmentId const nAudioEnvironmentIDToUnset = pIEntityAudioProxy->GetEnvironmentID();
+		AudioEnvironmentId const nAudioEnvironmentIDToUnset = pIEntityAudioProxy->GetEnvironmentId();
 
 		pIEntityAudioProxy->SetEnvironmentId(nAudioEnvironmentIDToSet);
 

@@ -2063,7 +2063,16 @@ void CAudioImpl::OnAudioSystemRefresh()
 
 	if (m_initBankId != AK_INVALID_BANK_ID)
 	{
-		wwiseResult = AK::SoundEngine::UnloadBank(m_initBankId, nullptr);
+		if (g_audioImplCVars.m_enableEventManagerThread > 0)
+		{
+			wwiseResult = AK::SoundEngine::UnloadBank(m_initBankId, nullptr);
+		}
+		else
+		{
+			SignalAuxAudioThread();
+			wwiseResult = AK::SoundEngine::UnloadBank(m_initBankId, nullptr);
+			WaitForAuxAudioThread();
+		}
 
 		if (wwiseResult != AK_Success)
 		{

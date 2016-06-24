@@ -12,7 +12,8 @@ class CArea;
 struct IVisArea;
 struct IAreaManagerEventListener;
 
-typedef std::vector<IAreaManagerEventListener*> TAreaManagerEventListenerVector;
+typedef std::vector<IAreaManagerEventListener*> AreaManagerEventListenerVector;
+typedef std::vector<SAudioAreaInfo>             AreaEnvironments;
 
 //Areas manager
 class CAreaManager : public IAreaManager, public ISystemEventListener
@@ -53,21 +54,19 @@ class CAreaManager : public IAreaManager, public ISystemEventListener
 	struct SAreasCache
 	{
 		SAreasCache()
-			: vLastUpdatePos(ZERO)
+			: lastUpdatePos(ZERO)
 		{}
 
 		bool GetCacheEntry(CArea const* const pAreaToFind, SAreaCacheEntry** const ppAreaCacheEntry)
 		{
 			bool bSuccess = false;
-			* ppAreaCacheEntry = NULL;
-			TAreaCacheVector::iterator Iter(aoAreas.begin());
-			TAreaCacheVector::const_iterator const IterEnd(aoAreas.end());
+			* ppAreaCacheEntry = nullptr;
 
-			for (; Iter != IterEnd; ++Iter)
+			for (auto& entry : entries)
 			{
-				if ((*Iter).pArea == pAreaToFind)
+				if (entry.pArea == pAreaToFind)
 				{
-					* ppAreaCacheEntry = &(*Iter);
+					* ppAreaCacheEntry = &entry;
 					bSuccess = true;
 
 					break;
@@ -77,8 +76,8 @@ class CAreaManager : public IAreaManager, public ISystemEventListener
 			return bSuccess;
 		}
 
-		TAreaCacheVector aoAreas;
-		Vec3             vLastUpdatePos;
+		TAreaCacheVector entries;
+		Vec3             lastUpdatePos;
 	};
 
 	typedef VectorMap<EntityId, SAreasCache> TAreaCacheMap;
@@ -90,7 +89,7 @@ public:
 	~CAreaManager(void);
 
 	//IAreaManager
-	virtual size_t             GetAreaAmount() const override { return m_apAreas.size(); }
+	virtual size_t             GetAreaAmount() const override { return m_areas.size(); }
 	virtual IArea const* const GetArea(size_t const nAreaIndex) const override;
 	virtual size_t             GetOverlappingAreas(const AABB& bb, PodArray<IArea*>& list) const override;
 	virtual void               SetAreasDirty() override;
@@ -113,9 +112,16 @@ public:
 	virtual void TriggerAudioListenerUpdate(IArea const* const _pArea) override;
 
 	// Called every frame.
-	void         Update();
+	void Update();
 
-	bool         ProceedExclusiveUpdateByHigherArea(SAreasCache* const pAreaCache, IEntity const* const pEntity, Vec3 const& rEntityPos, CArea* const pArea, Vec3 const& vOnLowerHull);
+	bool ProceedExclusiveUpdateByHigherArea(
+	  SAreasCache* const pAreaCache,
+	  IEntity const* const pIEntity,
+	  Vec3 const& entityPos,
+	  CArea* const pArea,
+	  Vec3 const& onLowerHull,
+	  AreaEnvironments& areaEnvironments);
+
 	void         NotifyAreas(CArea* const __restrict pArea, SAreasCache const* const pAreaCache, IEntity const* const pEntity);
 
 	virtual void DrawLinkedAreas(EntityId linkedId) const override;
@@ -125,7 +131,7 @@ public:
 
 	void         DrawAreas(const ISystem* const pSystem);
 	void         DrawGrid();
-	unsigned     MemStat();
+	size_t       MemStat();
 	void         ResetAreas();
 	void         UnloadAreas();
 
@@ -145,8 +151,8 @@ protected:
 	friend class CArea;
 	void Unregister(CArea const* const pArea);
 
-	// List of all registered area pointers.
-	TAreaPointers  m_apAreas;
+	// Holds all registered areas.
+	TAreaPointers  m_areas;
 
 	CEntitySystem* m_pEntitySystem;
 	bool           m_bAreasDirty;
@@ -154,12 +160,12 @@ protected:
 
 private:
 
-	TAreaManagerEventListenerVector m_EventListeners;
+	AreaManagerEventListenerVector m_EventListeners;
 
 	//////////////////////////////////////////////////////////////////////////
 	SAreasCache* GetAreaCache(EntityId const nEntityId)
 	{
-		SAreasCache* pAreaCache = NULL;
+		SAreasCache* pAreaCache = nullptr;
 		TAreaCacheMap::iterator const Iter(m_mapAreaCache.find(nEntityId));
 
 		if (Iter != m_mapAreaCache.end())
@@ -183,12 +189,13 @@ private:
 		m_mapAreaCache.erase(nEntityId);
 	}
 
-	void UpdateEntity(Vec3 const& rPos, IEntity const* const pEntity);
+	void UpdateEntity(Vec3 const& position, IEntity* const pIEntity);
 	void UpdateDirtyAreas();
-	void ProcessArea(CArea* const pArea, SAreaCacheEntry& areaCacheEntry, SAreasCache* const pAreaCache, Vec3 const& pos, IEntity const* const pIEntity);
+	void ProcessArea(CArea* const pArea, SAreaCacheEntry& areaCacheEntry, SAreasCache* const pAreaCache, Vec3 const& pos, IEntity const* const pIEntity, AreaEnvironments& areaEnvironments);
 	void ExitArea(IEntity const* const _pEntity, CArea const* const _pArea);
-	void GetEnvFadeValue(SAreasCache const& areaCache, SAreaCacheEntry& areaCacheEntry, Vec3 const& pos, float& outEnvironmentAmount);
-	bool GetEnvFadeValueInner(SAreasCache const& areaCache, SAreaCacheEntry const& areaCacheEntry, Vec3 const& pos, float& outEnvironmentAmount);
+	bool GetEnvFadeValue(SAreasCache const& areaCache, SAreaCacheEntry& areaCacheEntry, Vec3 const& entityPos, EntityId const envProvidingEntityId, AreaEnvironments& areaEnvironments);
+	bool GetEnvFadeValueInner(SAreasCache const& areaCache, SAreaCacheEntry const& areaCacheEntry, Vec3 const& entityPos, Vec3 const& posOnLowerArea, EntityId const envProvidingEntityId, AreaEnvironments& areaEnvironments);
+	bool RetrieveEnvironmentAmount(CArea const* const pArea, float const amount, float const distance, EntityId const envProvidingEntityId, AreaEnvironments& areaEnvironments);
 
 	// Unary predicates for conditional removing!
 	static inline bool IsDoneUpdating(std::pair<EntityId, size_t> const& rEntry)
@@ -231,7 +238,7 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	void CheckArea(CArea const* const pArea)
 	{
-		if (!stl::find(m_apAreas, pArea))
+		if (!stl::find(m_areas, pArea))
 		{
 			CryFatalError("<AreaManager>: area not found in overall areas list!");
 		}

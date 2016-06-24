@@ -356,7 +356,7 @@ struct IEntityAudioProxy : public IEntityProxy
 	virtual void               SetEnvironmentFadeDistance(float const environmentFadeDistance) = 0;
 	virtual float              GetEnvironmentFadeDistance() const = 0;
 	virtual void               SetEnvironmentId(AudioEnvironmentId const environmentId) = 0;
-	virtual AudioEnvironmentId GetEnvironmentID() const = 0;
+	virtual AudioEnvironmentId GetEnvironmentId() const = 0;
 	virtual AudioProxyId       CreateAuxAudioProxy() = 0;
 	virtual bool               RemoveAuxAudioProxy(AudioProxyId const audioProxyId) = 0;
 	virtual void               SetAuxAudioProxyOffset(Matrix34 const& offset, AudioProxyId const audioProxyId = DEFAULT_AUDIO_PROXY_ID) = 0;
@@ -737,7 +737,7 @@ struct IEntityAreaProxy : public IEntityProxy
 	virtual size_t GetNumberOfEntitiesInArea() const = 0;
 
 	//! get entity in area by index
-	virtual EntityId GetEntityInAreaByIdx(size_t index) const = 0;
+	virtual EntityId GetEntityInAreaByIdx(size_t const index) const = 0;
 
 	// </interfuscator:shuffle>
 };

@@ -40,8 +40,6 @@ private:
 
 	void SetTransformationInternal(Matrix34 const& transformation);
 
-	static size_t const        s_maxAreas = 10;
-
 	AudioObjectId              m_audioObjectId;
 	CAudioObjectTransformation m_transformation;
 	AudioEnumFlagsType         m_flags;

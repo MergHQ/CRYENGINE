@@ -17,7 +17,6 @@ CArea::CArea(CAreaManager* pManager)
 	, m_pAreaManager(pManager)
 	, m_fProximity(5.0f)
 	, m_fFadeDistance(-1.0f)
-	, m_fEnvironmentFadeDistance(-1.0f)
 	, m_AreaGroupID(INVALID_AREA_GROUP_ID)
 	, m_nPriority(0)
 	, m_AreaID(-1)
@@ -40,7 +39,6 @@ CArea::CArea(CAreaManager* pManager)
 	m_InvMatrix.SetIdentity();
 	m_WorldTM.SetIdentity();
 	m_bInitialized = false;
-	m_bHasSoundAttached = false;
 	m_bAttachedSoundTested = false;
 	m_mapEntityCachedAreaData.reserve(256);
 
@@ -2495,83 +2493,24 @@ float CArea::GetGreatestFadeDistance()
 	if (m_fFadeDistance < 0.0f || gEnv->IsEditor())
 	{
 		m_fFadeDistance = 0.0f;
-		TEntityIDs::const_iterator Iter(m_vEntityID.begin());
-		TEntityIDs::const_iterator const IterEnd(m_vEntityID.end());
 
-		for (; Iter != IterEnd; ++Iter)
+		for (auto const entityId : m_vEntityID)
 		{
-			IEntity const* const pEntity = GetEntitySystem()->GetEntity((*Iter));
+			IEntity const* const pIEntity = GetEntitySystem()->GetEntity(entityId);
 
-			if (pEntity != nullptr)
+			if (pIEntity != nullptr)
 			{
-				IEntityAudioProxy const* const pIEntityAudioProxy = (IEntityAudioProxy*)pEntity->GetProxy(ENTITY_PROXY_AUDIO);
+				IEntityAudioProxy const* const pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(pIEntity->GetProxy(ENTITY_PROXY_AUDIO));
 
 				if (pIEntityAudioProxy != nullptr)
 				{
-					m_fFadeDistance = max(m_fFadeDistance, pIEntityAudioProxy->GetFadeDistance());
+					m_fFadeDistance = std::max<float>(m_fFadeDistance, pIEntityAudioProxy->GetFadeDistance());
 				}
 			}
 		}
 	}
 
 	return m_fFadeDistance;
-}
-
-//////////////////////////////////////////////////////////////////////////
-float CArea::GetGreatestEnvironmentFadeDistance()
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-
-	if (m_fEnvironmentFadeDistance < 0.0f || gEnv->IsEditor())
-	{
-		m_fEnvironmentFadeDistance = 0.0f;
-		TEntityIDs::const_iterator Iter(m_vEntityID.begin());
-		TEntityIDs::const_iterator const IterEnd(m_vEntityID.end());
-
-		for (; Iter != IterEnd; ++Iter)
-		{
-			IEntity const* const pEntity = GetEntitySystem()->GetEntity((*Iter));
-
-			if (pEntity != nullptr)
-			{
-				IEntityAudioProxy const* const pAudioProxy = (IEntityAudioProxy*)pEntity->GetProxy(ENTITY_PROXY_AUDIO);
-
-				if (pAudioProxy != nullptr)
-				{
-					m_fEnvironmentFadeDistance = max(m_fEnvironmentFadeDistance, pAudioProxy->GetEnvironmentFadeDistance());
-				}
-			}
-		}
-	}
-
-	return m_fEnvironmentFadeDistance;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CArea::HasSoundAttached()
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-	if (m_vEntityID.empty())
-		return false;
-
-	if (!m_bAttachedSoundTested)
-	{
-		for (unsigned int eIdx = 0; eIdx < m_vEntityID.size(); eIdx++)
-		{
-			IEntity* pAreaAttachedEntity = GetEntitySystem()->GetEntity(m_vEntityID[eIdx]);
-			//		ASSERT(pEntity);
-			if (pAreaAttachedEntity)
-			{
-				IEntityClass* pEntityClass = pAreaAttachedEntity->GetClass();
-				string sClassName = pEntityClass->GetName();
-				if (sClassName == "AmbientVolume" || sClassName == "SoundSpot" || sClassName == "ReverbVolume")
-					m_bHasSoundAttached = true;
-			}
-		}
-		m_bAttachedSoundTested = true;
-	}
-
-	return m_bHasSoundAttached;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2611,7 +2550,6 @@ void CArea::AddEntity(const EntityId entId)
 	{
 		m_bAttachedSoundTested = false;
 		m_fFadeDistance = -1.0f;
-		m_fEnvironmentFadeDistance = -1.0f;
 
 		if (CVar::pDrawAreaDebug->GetIVal() == 2)
 		{
@@ -2636,7 +2574,6 @@ void CArea::AddEntity(const EntityId entId)
 			{
 				m_pAreaManager->TriggerAudioListenerUpdate(this);
 				GetGreatestFadeDistance();
-				GetGreatestEnvironmentFadeDistance();
 			}
 		}
 
@@ -2670,7 +2607,6 @@ void CArea::RemoveEntity(EntityId const entId)
 	{
 		m_bAttachedSoundTested = false;
 		m_fFadeDistance = -1.0f;
-		m_fEnvironmentFadeDistance = -1.0f;
 
 		if (CVar::pDrawAreaDebug->GetIVal() == 2)
 		{
@@ -2695,7 +2631,6 @@ void CArea::RemoveEntity(EntityId const entId)
 			{
 				m_pAreaManager->TriggerAudioListenerUpdate(this);
 				GetGreatestFadeDistance();
-				GetGreatestEnvironmentFadeDistance();
 			}
 		}
 
@@ -2724,7 +2659,6 @@ void CArea::RemoveEntities()
 	}
 
 	m_vEntityGuid.clear();
-	m_bHasSoundAttached = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2995,7 +2929,7 @@ void CArea::UpdateAreaInside(IEntity const* const __restrict pSrcEntity)
 
 // pEntity moves in an area, which is controlled by an area with a higher priority
 //////////////////////////////////////////////////////////////////////////
-void CArea::ExclusiveUpdateAreaInside(IEntity const* const __restrict pSrcEntity, EntityId const AreaHighEntityID, float const fadeValue, float const environmentFadeValue)
+void CArea::ExclusiveUpdateAreaInside(IEntity const* const __restrict pSrcEntity, EntityId const AreaHighEntityID, float const fadeValue)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 	if (m_bInitialized)
@@ -3005,11 +2939,11 @@ void CArea::ExclusiveUpdateAreaInside(IEntity const* const __restrict pSrcEntity
 			CryLog("<AreaManager> Area %u Direct Event: %s", m_EntityID, "MOVEINSIDE");
 		}
 
-		size_t const nCount = m_vEntityID.size();
+		size_t const numAttachedEntities = m_vEntityID.size();
 
-		for (size_t eIdx = 0; eIdx < nCount; ++eIdx)
+		for (size_t index = 0; index < numAttachedEntities; ++index)
 		{
-			IEntity* const __restrict pEntity = GetEntitySystem()->GetEntity(m_vEntityID[eIdx]);
+			IEntity* const __restrict pEntity = GetEntitySystem()->GetEntity(m_vEntityID[index]);
 
 			if (pEntity != nullptr)
 			{
@@ -3020,7 +2954,6 @@ void CArea::ExclusiveUpdateAreaInside(IEntity const* const __restrict pSrcEntity
 				event.nParam[2] = m_EntityID; // AreaLowEntityID
 				event.nParam[3] = AreaHighEntityID;
 				event.fParam[0] = fadeValue;
-				event.fParam[1] = environmentFadeValue;
 				pEntity->SendEvent(event);
 			}
 		}

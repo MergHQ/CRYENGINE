@@ -134,7 +134,7 @@ struct IArea
 	// <interfuscator:shuffle>
 	virtual ~IArea(){}
 	virtual size_t         GetEntityAmount() const = 0;
-	virtual const EntityId GetEntityByIdx(int index) const = 0;
+	virtual const EntityId GetEntityByIdx(size_t const index) const = 0;
 	virtual void           GetMinMax(Vec3** min, Vec3** max) const = 0;
 	virtual int            GetGroup() const = 0;
 	virtual int            GetPriority() const = 0;
@@ -177,14 +177,20 @@ public:
 struct SAudioAreaInfo
 {
 	SAudioAreaInfo()
-		: pArea(nullptr)
-		, amount(0.0f)
+		: amount(0.0f)
 		, audioEnvironmentId(INVALID_AUDIO_ENVIRONMENT_ID)
 		, envProvidingEntityId(INVALID_ENTITYID)
-	{
-	}
+	{}
 
-	IArea*             pArea;
+	explicit SAudioAreaInfo(
+	  float const _amount,
+	  AudioEnvironmentId const _audioEnvironmentId,
+	  EntityId const _envProvidingEntityId)
+		: amount(_amount)
+		, audioEnvironmentId(_audioEnvironmentId)
+		, envProvidingEntityId(_envProvidingEntityId)
+	{}
+
 	float              amount;
 	AudioEnvironmentId audioEnvironmentId;
 	EntityId           envProvidingEntityId;

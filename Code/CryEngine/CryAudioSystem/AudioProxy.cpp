@@ -265,6 +265,7 @@ void CAudioProxy::SetCurrentEnvironments(EntityId const entityToIgnore /*= 0*/)
 		ClearEnvironments();
 		IAreaManager* const pAreaManager = gEnv->pEntitySystem->GetAreaManager();
 		size_t numAreas = 0;
+		static size_t const s_maxAreas = 10;
 		static SAudioAreaInfo s_areaInfos[s_maxAreas];
 
 		if (pAreaManager->QueryAudioAreas(m_transformation.GetPosition(), s_areaInfos, s_maxAreas, numAreas))

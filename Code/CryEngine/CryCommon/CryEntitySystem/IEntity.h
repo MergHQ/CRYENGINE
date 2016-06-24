@@ -1,19 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   IEntity.h
-//  Version:     v1.00
-//  Created:     18/5/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
-#include <CryEntitySystem/IComponent.h>
+#include "IComponent.h"
 
 // Forward declarations.
 struct IPhysicalEntity;
@@ -98,7 +87,7 @@ typedef uint32 tAIObjectID;
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-#include <CryEntitySystem/IEntityProxy.h>
+#include "IEntityProxy.h"
 #include <CryNetwork/SerializeFwd.h>
 //////////////////////////////////////////////////////////////////////////
 
@@ -441,7 +430,7 @@ struct SEntityEvent
 		fParam[0] = fParam[1] = fParam[2] = 0.0f;
 	}
 
-	SEntityEvent(EEntityEvent _event)
+	explicit SEntityEvent(EEntityEvent const _event)
 		: event(_event)
 		, vec(ZERO)
 	{

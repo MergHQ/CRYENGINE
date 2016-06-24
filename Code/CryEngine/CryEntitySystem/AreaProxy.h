@@ -91,7 +91,7 @@ public:
 	virtual bool            CalcPointWithin(EntityId const nEntityID, Vec3 const& Point3d, bool const bIgnoreHeight = false) const override { return m_pArea->CalcPointWithin(nEntityID, Point3d, bIgnoreHeight); }
 
 	virtual size_t          GetNumberOfEntitiesInArea() const override;
-	virtual EntityId        GetEntityInAreaByIdx(size_t index) const override;
+	virtual EntityId        GetEntityInAreaByIdx(size_t const index) const override;
 
 	virtual void            GetMemoryUsage(ICrySizer* pSizer) const override
 	{
