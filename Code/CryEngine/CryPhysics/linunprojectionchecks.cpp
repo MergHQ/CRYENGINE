@@ -1635,8 +1635,8 @@ int box_capsule_lin_unprojection(unprojection_mode *pmode, const box *pbox,int i
 	#define check_cap(prim,pprim,iend) \
 		sph.center = pcaps->center+pcaps->axis*pcaps->hh*(iend*2-3); sph.r = pcaps->r;	pmode->dir.zero(); \
 		if (bContact##iend = prim##_sphere_lin_unprojection(pmode, pprim,iFeature1, &sph,-1, &capcont,parea))	\
-			if (capcont.n*pcaps->axis*(iend*2-3)>0) {	\
-				pmode->dir = pcaps->axis*(iend*2-1); \
+			if (capcont.n*pcaps->axis*(iend*2-3)*pcaps->hh > pcaps->hh*0.1f) {	\
+				pmode->dir = pcaps->axis*(3-iend*2); \
 				if (bContact##iend = prim##_sphere_lin_unprojection(pmode, pprim,iFeature1, &sph,-1, &capcont,parea) && (!pcontact->t || capcont.t<pcontact->t))	\
 					*pcontact = capcont, dir_best = pmode->dir;	\
 			}	else if (bContact##iend = capcont.t>pcontact->t)	\
