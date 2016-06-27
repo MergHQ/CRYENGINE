@@ -52,9 +52,8 @@ public:
 
 	//////////////////////////////////////////////////////////
 	// IATLControlModelListener implementation
-	virtual void OnConnectionAdded(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl);
-	virtual void OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl);
-	virtual void OnControlModified(CATLControl* pControl);
+	virtual void OnConnectionAdded(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl) override;
+	virtual void OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl) override;
 	//////////////////////////////////////////////////////////
 
 private:

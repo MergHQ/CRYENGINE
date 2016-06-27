@@ -98,14 +98,14 @@ CAudioSystemPanel::CAudioSystemPanel()
 
 	// Update the middleware name label.
 	// Note the 'this' ptr being passed as a context variable so that Qt can disconnect this lambda when the object is destroyed (ie. the ACE is closed).
-	connect(CAudioControlsEditorPlugin::GetImplementationManger(), &CImplementationManager::ImplementationChanged, this, [&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(std::function<void()>([&]()
 		{
 			IAudioSystemEditor* pAudioImpl = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 			if (pAudioImpl)
 			{
 			  m_pImplNameLabel->setText(QtUtil::ToQString(pAudioImpl->GetName()));
 			}
-	  });
+	  }));
 }
 
 void CAudioSystemPanel::SetAllowedControls(EACEControlType type, bool bAllowed)

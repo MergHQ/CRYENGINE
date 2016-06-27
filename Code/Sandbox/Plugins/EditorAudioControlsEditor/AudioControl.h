@@ -84,9 +84,6 @@ public:
 	void            Serialize(Serialization::IArchive& ar);
 
 private:
-	void SetId(CID id);
-	void SetType(EACEControlType type);
-
 	CID                        m_id;
 	EACEControlType            m_type;
 	string                     m_name;
@@ -105,6 +102,8 @@ private:
 	void         AddRawXMLConnection(XmlNodeRef xmlNode, bool bValid, int platformIndex = -1);
 	XMLNodeList& GetRawXMLConnections(int platformIndex = -1);
 	std::map<int, XMLNodeList> m_connectionNodes;
+
+	bool                       m_modifiedSignalEnabled;
 };
 
 typedef std::shared_ptr<CATLControl> ATLControlPtr;

@@ -219,6 +219,18 @@ CATLControl* QATLTreeModel::GetControlFromIndex(QModelIndex index)
 	return nullptr;
 }
 
+void QATLTreeModel::OnControlAdded(CATLControl* pControl)
+{
+	if (pControl)
+	{
+		QStandardItem* pItem = GetItemFromControlID(pControl->GetId());
+		if (pItem)
+		{
+			SetItemAsDirty(pItem);
+		}
+	}
+}
+
 void QATLTreeModel::OnControlModified(CATLControl* pControl)
 {
 	if (pControl)
@@ -231,6 +243,42 @@ void QATLTreeModel::OnControlModified(CATLControl* pControl)
 			{
 				pItem->setText(sNewName);
 			}
+			SetItemAsDirty(pItem);
+		}
+	}
+}
+
+void QATLTreeModel::OnControlRemoved(CATLControl* pControl)
+{
+	if (pControl)
+	{
+		QStandardItem* pItem = GetItemFromControlID(pControl->GetId());
+		if (pItem)
+		{
+			SetItemAsDirty(pItem);
+		}
+	}
+}
+
+void QATLTreeModel::OnConnectionAdded(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl)
+{
+	if (pControl)
+	{
+		QStandardItem* pItem = GetItemFromControlID(pControl->GetId());
+		if (pItem)
+		{
+			SetItemAsDirty(pItem);
+		}
+	}
+}
+
+void QATLTreeModel::OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl)
+{
+	if (pControl)
+	{
+		QStandardItem* pItem = GetItemFromControlID(pControl->GetId());
+		if (pItem)
+		{
 			SetItemAsDirty(pItem);
 		}
 	}

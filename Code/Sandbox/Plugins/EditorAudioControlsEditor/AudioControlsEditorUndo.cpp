@@ -251,7 +251,6 @@ void CUndoControlModified::SwapData()
 			{
 				pControl->AddConnection(c);
 			}
-			pModel->OnControlModified(pControl);
 
 			m_name = name;
 			m_scope = scope;

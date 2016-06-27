@@ -10,6 +10,7 @@
 
 #include <CrySystem/File/CryFile.h>  // Includes CryPath.h in correct order.
 #include <QtUtil.h>
+#include <CrySandbox/CrySignal.h>
 
 #include <QMimeData>
 #include <QDataStream>
@@ -24,12 +25,20 @@ char const* const QAudioSystemModel::ms_szMimeType = "application/cryengine-audi
 QAudioSystemModel::QAudioSystemModel()
 	: m_pAudioSystem(CAudioControlsEditorPlugin::GetAudioSystemEditorImpl())
 {
-	connect(CAudioControlsEditorPlugin::GetImplementationManger(), &CImplementationManager::ImplementationChanged, [&]()
+
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(std::function<void()>([&]()
 		{
 			m_pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 			beginResetModel();
 			endResetModel();
-	  });
+	  }));
+
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(std::function<void()>([&]()
+		{
+			beginResetModel();
+			m_pAudioSystem = nullptr;
+			endResetModel();
+	  }));
 }
 
 int QAudioSystemModel::rowCount(const QModelIndex& parent) const

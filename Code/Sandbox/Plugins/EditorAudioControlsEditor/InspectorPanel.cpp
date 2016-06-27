@@ -110,7 +110,6 @@ void CInspectorPanel::OnControlModified(ACE::CATLControl* pControl)
 	{
 		m_pPropertyTree->revert();
 	}
-	m_pConnectionList->Reload();
 }
 
 }

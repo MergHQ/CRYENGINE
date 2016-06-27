@@ -28,6 +28,7 @@ class CATLControlsModel
 public:
 	CATLControlsModel();
 	~CATLControlsModel();
+	void         Initialize();
 
 	void         Clear();
 	CATLControl* CreateControl(const string& sControlName, EACEControlType type, CATLControl* pParent = nullptr);

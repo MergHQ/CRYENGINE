@@ -16,6 +16,7 @@
 #include <CryString/CryPath.h>
 #include "ImplementationManager.h"
 #include "QtUtil.h"
+#include <CryIcon.h>
 
 // File watching
 #include <FileSystem/FileSystem_Snapshot.h>
@@ -71,13 +72,13 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	pMenuBar->addAction(pFileMenu->menuAction());
 
 	QAction* pSaveAction = new QAction(this);
-	pSaveAction->setIcon(QIcon(":/Icons/Save_Icon.png"));
+	pSaveAction->setIcon(CryIcon("icons:General/File_Save.ico"));
 	pSaveAction->setText(tr("Save All"));
 	connect(pSaveAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Save);
 	pFileMenu->addAction(pSaveAction);
 
 	QAction* pReloadAction = new QAction(this);
-	pReloadAction->setIcon(QIcon(":/Icons/Load_Icon.png"));
+	pReloadAction->setIcon(CryIcon("icons:General/Reload.ico"));
 	pReloadAction->setText(tr("Reload"));
 	connect(pReloadAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Reload);
 	pFileMenu->addAction(pReloadAction);
@@ -98,7 +99,7 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 		  });
 		connect(m_pATLControlsPanel, &CATLControlsPanel::SelectedControlChanged, this, &CAudioControlsEditorWindow::UpdateFilterFromSelection);
 		connect(m_pATLControlsPanel, &CATLControlsPanel::ControlTypeFiltered, this, &CAudioControlsEditorWindow::FilterControlType);
-		connect(CAudioControlsEditorPlugin::GetImplementationManger(), &CImplementationManager::ImplementationChanged, this, &CAudioControlsEditorWindow::Update);
+		CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(this, &CAudioControlsEditorWindow::Update);
 		connect(m_pAudioSystemPanel, &CAudioSystemPanel::ImplementationSettingsChanged, this, &CAudioControlsEditorWindow::Update);
 
 		GetIEditor()->RegisterNotifyListener(this);

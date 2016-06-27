@@ -29,6 +29,10 @@ public:
 	{
 		ar(mult, "mult", "Multiply");
 		ar(shift, "shift", "Shift");
+		if (ar.isInput())
+		{
+			signalConnectionChanged();
+		}
 	}
 
 	float mult;
@@ -51,6 +55,10 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		ar(value, "value", "Value");
+		if (ar.isInput())
+		{
+			signalConnectionChanged();
+		}
 	}
 
 	float value;

@@ -7,6 +7,7 @@
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/STL.h>
 #include <CrySystem/ISystem.h>
+#include <CrySandbox/CrySignal.h>
 
 namespace ACE
 {
@@ -48,6 +49,8 @@ public:
 	{
 		m_configurationsMask = 0;
 	}
+
+	CCrySignal<void()> signalConnectionChanged;
 
 private:
 	CID  m_id;

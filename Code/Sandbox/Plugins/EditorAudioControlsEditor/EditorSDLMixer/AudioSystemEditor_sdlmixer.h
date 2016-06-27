@@ -73,6 +73,7 @@ public:
 					}
 					minAttenuation = minAtt;
 					maxAttenuation = maxAtt;
+					signalConnectionChanged();
 				}
 				else
 				{

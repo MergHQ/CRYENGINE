@@ -23,13 +23,22 @@ QConnectionModel::QConnectionModel()
 	, m_pAudioSystem(CAudioControlsEditorPlugin::GetAudioSystemEditorImpl())
 {
 	CAudioControlsEditorPlugin::GetATLModel()->AddListener(this);
-	connect(CAudioControlsEditorPlugin::GetImplementationManger(), &CImplementationManager::ImplementationChanged, [&]()
+
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(std::function<void()>([&]()
 		{
 			beginResetModel();
+			m_pAudioSystem = nullptr;
+			m_connectionsCache.clear();
+			endResetModel();
+	  }));
+
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(std::function<void()>([&]()
+		{
 			m_pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
+			beginResetModel();
 			ResetCache();
 			endResetModel();
-	  });
+	  }));
 
 	const std::vector<dll_string>& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
 	for (auto platform : platforms)
@@ -298,16 +307,6 @@ void QConnectionModel::OnConnectionAdded(CATLControl* pControl, IAudioSystemItem
 }
 
 void QConnectionModel::OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl)
-{
-	if (pControl == m_pControl)
-	{
-		beginResetModel();
-		ResetCache();
-		endResetModel();
-	}
-}
-
-void QConnectionModel::OnControlModified(CATLControl* pControl)
 {
 	if (pControl == m_pControl)
 	{

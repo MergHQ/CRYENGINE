@@ -44,6 +44,7 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin(IEditor* editor)
 	ms_implementationManager.LoadImplementation();
 	ReloadModels();
 	ms_layoutModel.Initialize(&ms_ATLModel);
+	ms_ATLModel.Initialize();
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
 }
 

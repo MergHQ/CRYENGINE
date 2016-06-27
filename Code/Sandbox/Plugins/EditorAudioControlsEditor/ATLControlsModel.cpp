@@ -4,6 +4,8 @@
 #include "ATLControlsModel.h"
 #include <CryString/StringUtils.h>
 #include "AudioControlsEditorUndo.h"
+#include "AudioControlsEditorPlugin.h"
+#include "ImplementationManager.h"
 #include <IEditor.h>
 
 namespace ACE
@@ -20,6 +22,22 @@ CATLControlsModel::CATLControlsModel()
 CATLControlsModel::~CATLControlsModel()
 {
 	Clear();
+}
+
+void CATLControlsModel::Initialize()
+{
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(std::function<void()>([&]()
+		{
+			SetSuppressMessages(true);
+			ClearAllConnections();
+			SetSuppressMessages(false);
+	  }));
+
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(std::function<void()>([&]()
+		{
+			ReloadAllConnections();
+			ClearDirtyFlags();
+	  }));
 }
 
 CATLControl* CATLControlsModel::CreateControl(const string& sControlName, EACEControlType eType, CATLControl* pParent)
