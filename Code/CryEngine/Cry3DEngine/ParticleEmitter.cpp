@@ -176,7 +176,7 @@ void CParticleEmitter::UpdateState()
 		}
 	}
 
-	bool bUpdateState = bUpdateBounds || m_fAge >= m_fStateChangeAge;
+	bool bUpdateState = (GetRndFlags()&ERF_HIDDEN)==0 && (bUpdateBounds || m_fAge >= m_fStateChangeAge);
 	if (bUpdateState)
 	{
 		m_fStateChangeAge = fHUGE;
