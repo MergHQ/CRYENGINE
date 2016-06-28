@@ -444,7 +444,7 @@ CDemoPlaybackListener::EInputResult CDemoPlaybackListener::MessageHandler(Entity
 
 	CDemoPlaybackSerializeImpl serImpl(*m_pInput, this);
 	CSimpleSerialize<CDemoPlaybackSerializeImpl> ser(serImpl);
-	TNetMessageCallbackResult r = pDef->handler(pDef->nUser, pSink, TSerialize(&ser), DEMO_PLAYBACK_SEQ_NUMBER, DEMO_PLAYBACK_SEQ_NUMBER, &rmiObj, pChannel);
+	TNetMessageCallbackResult r = pDef->handler(pDef->nUser, pSink, TSerialize(&ser), DEMO_PLAYBACK_SEQ_NUMBER, DEMO_PLAYBACK_SEQ_NUMBER, 0, &rmiObj, pChannel);
 
 	if (!r.first)
 	{

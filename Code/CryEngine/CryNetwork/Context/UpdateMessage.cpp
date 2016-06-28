@@ -429,6 +429,7 @@ EMessageSendResult CUpdateMessage::SendMain(SHistorySyncContext& hsc, INetSender
 	SSendContext ctx;
 	ctx.basisSeq = pSender->nBasisSeq;
 	ctx.currentSeq = pSender->nCurrentSeq;
+	ctx.timeValue = pSender->timeValue;
 	ctx.flags = m_syncFlags;
 	ctx.objId = m_netID;
 	ctx.ctxObj = ctxObj;

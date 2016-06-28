@@ -43,35 +43,44 @@ bool CAdaptiveFloat::Load(XmlNodeRef node, const string& filename, const string&
 	if (m_quantizer.Load(node, filename, child))
 	{
 #if USE_MEMENTO_PREDICTORS
-		int probHeight = 10;
-		node->getAttr("probHeight", probHeight);
-		if (probHeight < 0)
-			ok = false;
-
-		float minRange = 0.1f;
-		float maxRange = 1.0f;
-		node->getAttr("minRange", minRange);
-		node->getAttr("maxRange", maxRange);
-		if (minRange >= maxRange)
-			ok = false;
-
-		float startValue = (m_quantizer.GetMinValue() + m_quantizer.GetMaxValue()) * 0.5f;
-		node->getAttr("start", startValue);
-		if (startValue < m_quantizer.GetMinValue() || startValue > m_quantizer.GetMaxValue())
-			ok = false;
-
-		int inRange = 85;
-		node->getAttr("inRange", inRange);
-		if (inRange < 1 || inRange > 99)
-			return false;
-
-		if (ok)
+		XmlNodeRef childNode = node->findChild(child);
+		if (childNode != 0)
 		{
-			m_nQuantizedMinDifference = m_quantizer.Quantize(m_quantizer.GetMinValue() + minRange);
-			m_nQuantizedMaxDifference = m_quantizer.Quantize(m_quantizer.GetMinValue() + maxRange);
-			m_nQuantizedStartValue = m_quantizer.Quantize(startValue);
-			m_nHeight = probHeight;
-			m_nInRangePercentage = inRange;
+			int timeMode = 0;
+			childNode->getAttr("timeMode", timeMode);
+			if (timeMode != 0)
+				m_predictor.SetMode(CIntegerValuePredictor::ePredictorMode_Time);
+
+			int probHeight = 10;
+			childNode->getAttr("probHeight", probHeight);
+			if (probHeight < 0)
+				ok = false;
+
+			float minRange = 0.1f;
+			float maxRange = 1.0f;
+			childNode->getAttr("minRange", minRange);
+			childNode->getAttr("maxRange", maxRange);
+			if (minRange >= maxRange)
+				ok = false;
+
+			float startValue = (m_quantizer.GetMinValue() + m_quantizer.GetMaxValue()) * 0.5f;
+			childNode->getAttr("start", startValue);
+			if (startValue < m_quantizer.GetMinValue() || startValue > m_quantizer.GetMaxValue())
+				ok = false;
+
+			int inRange = 85;
+			childNode->getAttr("inRange", inRange);
+			if (inRange < 1 || inRange > 126)
+				return false;
+
+			if (ok)
+			{
+				m_nQuantizedMinDifference = m_quantizer.Quantize(m_quantizer.GetMinValue() + minRange);
+				m_nQuantizedMaxDifference = m_quantizer.Quantize(m_quantizer.GetMinValue() + maxRange);
+				m_nQuantizedStartValue = m_quantizer.Quantize(startValue);
+				m_nHeight = probHeight;
+				m_nInRangePercentage = inRange;
+			}
 		}
 #endif
 	}
@@ -102,7 +111,7 @@ void CAdaptiveFloat::NoMemento() const
 #endif
 
 #if USE_ARITHSTREAM
-void CAdaptiveFloat::WriteValue(CCommOutputStream& stm, float value, uint32 mementoAge) const
+void CAdaptiveFloat::WriteValue(CCommOutputStream& stm, float value, uint32 mementoAge, uint32 timeFraction32) const
 {
 	//quantize value
 	uint32 quantized = m_quantizer.Quantize(value);
@@ -110,8 +119,8 @@ void CAdaptiveFloat::WriteValue(CCommOutputStream& stm, float value, uint32 meme
 	//encode quantized value with SquarePulseProbability
 	uint32 left, right;
 	left = right = 0;
-	int32 predicted = m_predictor.Predict(left, right, m_nHeight, m_nQuantizedMinDifference, m_quantizer.GetMaxQuantizedValue(), m_nQuantizedMaxDifference, mementoAge);
-	m_predictor.Update(quantized, predicted, mementoAge);
+	int32 predicted = m_predictor.Predict(left, right, m_nHeight, m_nQuantizedMinDifference, m_quantizer.GetMaxQuantizedValue(), m_nQuantizedMaxDifference, mementoAge, timeFraction32);
+	m_predictor.Update(quantized, predicted, mementoAge, timeFraction32);
 
 	if (m_haveMemento)
 	{
@@ -124,35 +133,42 @@ void CAdaptiveFloat::WriteValue(CCommOutputStream& stm, float value, uint32 meme
 	}
 }
 
-bool CAdaptiveFloat::ReadValue(CCommInputStream& stm, float& value, uint32 mementoAge) const
+bool CAdaptiveFloat::ReadValue(CCommInputStream& stm, float& value, uint32 mementoAge, uint32 timeFraction32) const
 {
 	uint32 left, right;
 	left = right = 0;
-	int32 prediction = m_predictor.Predict(left, right, m_nHeight, m_nQuantizedMinDifference, m_quantizer.GetMaxQuantizedValue(), m_nQuantizedMaxDifference, mementoAge);
+	int32 prediction = m_predictor.Predict(left, right, m_nHeight, m_nQuantizedMinDifference, m_quantizer.GetMaxQuantizedValue(), m_nQuantizedMaxDifference, mementoAge, timeFraction32);
 	uint32 quantized;
+
 	if (m_haveMemento)
 	{
 		if (!SquarePulseProbabilityReadImproved(quantized, stm, left, right, m_nHeight, m_quantizer.GetMaxQuantizedValue(), m_nInRangePercentage, m_quantizer.GetNumBits()))
+		{
+			CryLogAlways("[CAdaptiveFloat::ReadValue] read error!\n");
+
 			return false;
+		}
 	}
 	else
 	{
 		quantized = stm.ReadBits(m_quantizer.GetNumBits());
 	}
-	m_predictor.Update(quantized, prediction, mementoAge);
+
+	m_predictor.Update(quantized, prediction, mementoAge, timeFraction32);
 	value = m_quantizer.Dequantize(quantized);
+
 	NetLogPacketDebug("CAdaptiveFloat::ReadValue %f Min %f Max %f NumBits %d (%f)", value, m_quantizer.GetMinValue(), m_quantizer.GetMaxValue(), m_quantizer.GetNumBits(), stm.GetBitSize());
 	return true;
 }
 #else
-void CAdaptiveFloat::WriteValue(CNetOutputSerializeImpl* stm, float value, uint32 mementoAge) const
+void CAdaptiveFloat::WriteValue(CNetOutputSerializeImpl* stm, float value, uint32 mementoAge, uint32 timeFraction32) const
 {
 	uint32 quantized = m_quantizer.Quantize(value);
 
 	stm->WriteBits(quantized, m_quantizer.GetNumBits());
 }
 
-bool CAdaptiveFloat::ReadValue(CNetInputSerializeImpl* stm, float& value, uint32 mementoAge) const
+bool CAdaptiveFloat::ReadValue(CNetInputSerializeImpl* stm, float& value, uint32 mementoAge, uint32 timeFraction32) const
 {
 	uint32 quantized = stm->ReadBits(m_quantizer.GetNumBits());
 

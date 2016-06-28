@@ -1,21 +1,30 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ICompressionPolicy.h"
+#include "CompressionPolicyTime.h"
 #include "ArithModel.h"
 #include "AdaptiveFloat.h"
+#include "PredictiveFloat.h"
 #include "Protocol/Serialize.h"
 #include "BoolCompress.h"
 
-class CAdaptiveOrientationPolicy
+template<typename FloatType>
+class COrientationPolicyT
 {
 public:
+	COrientationPolicyT()
+	{
+		m_time32 = 0;
+	}
+
 	bool Load(XmlNodeRef node, const string& filename)
 	{
-		return
-		  m_axis[0].Load(node, filename, "Params") &&
+		m_name = node->getAttr("name");
+		bool ret = m_axis[0].Load(node, filename, "Params") &&
 		  m_axis[1].Load(node, filename, "Params") &&
 		  m_axis[2].Load(node, filename, "Params");
+
+		return ret;
 	}
 #if USE_MEMENTO_PREDICTORS
 	bool ReadMemento(CByteInputStream& in) const
@@ -60,14 +69,33 @@ public:
 		m_w.NoMemento();
 	#endif
 	}
-#endif
+
+	bool Manage(CCompressionManager* pManager)
+	{
+		bool ret = false;
+		for (unsigned k = 0; k < 3; k++)
+			ret |= m_axis[k].Manage(pManager, m_name.c_str(), k);
+
+		return ret;
+}
+
+	void Init(CCompressionManager* pManager)
+	{
+		for (int k = 0; k < 3; k++)
+			m_axis[k].Init(m_name.c_str(), k, pManager->GetUseDirectory().c_str(), pManager->GetAccDirectory().c_str());
+	}
+
+#else //USE_MEMENTO_PREDICTORS
+	bool Manage(CCompressionManager* pManager) { return false; }
+	void Init(CCompressionManager* pManager) {}
+#endif //USE_MEMENTO_PREDICTORS
 
 #if USE_ARITHSTREAM
 	bool ReadValue(CCommInputStream& in, Quat& value, CArithModel* pModel, uint32 age) const
 	{
 		bool ok = true;
 		for (int i = 0; ok && i < 3; i++)
-			ok &= m_axis[i].ReadValue(in, value.v[i], age);
+			ok &= m_axis[i].ReadValue(in, value.v[i], age, m_time32);
 		if (!ok)
 			return false;
 
@@ -89,17 +117,18 @@ public:
 		if (!(fabsf(value.GetLength() - 1.0f) < 0.001f))
 			value.Normalize();
 
-		NetLogPacketDebug("CAdaptiveOrientationPolicy::ReadValue Previously Read (CAdaptiveFloat, CAdaptiveFloat, CAdaptiveFloat) (%f, %f, %f, %f) (%f)", value.v.x, value.v.y, value.v.z, value.w, in.GetBitSize());
+		NetLogPacketDebug("TAdaptiveOrientationPolicy::ReadValue Previously Read (CAdaptiveFloat, CAdaptiveFloat, CAdaptiveFloat) (%f, %f, %f, %f) (%f)", value.v.x, value.v.y, value.v.z, value.w, in.GetBitSize());
 
 		return ok;
 	}
+
 	bool WriteValue(CCommOutputStream& out, Quat value, CArithModel* pModel, uint32 age) const
 	{
 		if (fabsf(value.GetLength() - 1.0f) > 0.001f)
 			value.Normalize();
 
 		for (int i = 0; i < 3; i++)
-			m_axis[i].WriteValue(out, value.v[i], age);
+			m_axis[i].WriteValue(out, value.v[i], age, m_time32);
 
 		uint8 changedHalfSphere = 0;
 		bool newHalfSphere = (value.w >= 0);
@@ -133,9 +162,9 @@ public:
 	{
 		bool ok;
 
-		ok = m_axis[0].ReadValue(in, value.v.x, age);
-		ok = ok && m_axis[1].ReadValue(in, value.v.y, age);
-		ok = ok && m_axis[2].ReadValue(in, value.v.z, age);
+		ok = m_axis[0].ReadValue(in, value.v.x, age, m_time32);
+		ok = ok && m_axis[1].ReadValue(in, value.v.y, age, m_time32);
+		ok = ok && m_axis[2].ReadValue(in, value.v.z, age, m_time32);
 
 		float wscale = in->ReadBits(1) ? 1.0f : -1.0f;
 		value.w = 1.0f - (value.v.x * value.v.x + value.v.y * value.v.y + value.v.z * value.v.z);
@@ -144,7 +173,7 @@ public:
 
 		value.Normalize();
 
-		NetLogPacketDebug("CAdaptiveOrientationPolicy::ReadValue Previously Read (CAdaptiveFloat, CAdaptiveFloat, CAdaptiveFloat) (%f, %f, %f, %f) (%f)", value.v.x, value.v.y, value.v.z, value.w, in->GetBitSize());
+		NetLogPacketDebug("TAdaptiveOrientationPolicy::ReadValue Previously Read (CAdaptiveFloat, CAdaptiveFloat, CAdaptiveFloat) (%f, %f, %f, %f) (%f)", value.v.x, value.v.y, value.v.z, value.w, in->GetBitSize());
 
 		return ok;
 	}
@@ -153,9 +182,9 @@ public:
 	{
 		value.Normalize();
 
-		m_axis[0].WriteValue(out, value.v.x, age);
-		m_axis[1].WriteValue(out, value.v.y, age);
-		m_axis[2].WriteValue(out, value.v.z, age);
+		m_axis[0].WriteValue(out, value.v.x, age, m_time32);
+		m_axis[1].WriteValue(out, value.v.y, age, m_time32);
+		m_axis[2].WriteValue(out, value.v.z, age, m_time32);
 		out->WriteBits(value.w >= 0.0f ? 1 : 0, 1);
 
 		return true;
@@ -177,7 +206,7 @@ public:
 
 	void GetMemoryStatistics(ICrySizer* pSizer) const
 	{
-		SIZER_COMPONENT_NAME(pSizer, "CAdaptiveOrientationPolicy");
+		SIZER_COMPONENT_NAME(pSizer, "TAdaptiveOrientationPolicy");
 		pSizer->Add(*this);
 	}
 
@@ -194,9 +223,15 @@ public:
 		return 0;
 	}
 #endif
-
+	void SetTimeValue(uint32 time)
+	{
+		m_time32 = time;
+	}
+	
 private:
-	CAdaptiveFloat m_axis[3];
+	string m_name;
+	mutable uint32 m_time32;
+	FloatType m_axis[3];
 #if USE_ARITHSTREAM
 	mutable bool   m_halfSphere;
 #else
@@ -206,4 +241,8 @@ private:
 #endif
 };
 
-REGISTER_COMPRESSION_POLICY(CAdaptiveOrientationPolicy, "AdaptiveOrientation");
+typedef COrientationPolicyT<CAdaptiveFloat> TAdaptiveOrientationPolicy;
+typedef COrientationPolicyT<CPredictiveFloat> TPredictiveOrientationPolicy;
+
+REGISTER_COMPRESSION_POLICY_TIME(TAdaptiveOrientationPolicy, "AdaptiveOrientation");
+REGISTER_COMPRESSION_POLICY_TIME(TPredictiveOrientationPolicy, "PredictiveOrientation");

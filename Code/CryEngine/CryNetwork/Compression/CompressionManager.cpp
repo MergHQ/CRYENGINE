@@ -9,6 +9,7 @@
 #include "SerializationChunk.h"
 #include "RangedIntPolicy.h"
 #include "OwnChannelCompressionPolicy.h"
+#include "ErrorDistributionEncoding.h"
 #include <queue>
 
 bool CCompressionManager::CCompareChunks::operator()(CSerializationChunk* p0, CSerializationChunk* p1) const
@@ -50,12 +51,20 @@ void CCompressionRegistry::Create()
 
 CCompressionManager::CCompressionManager()
 {
+	m_manageIntervalSeconds = 0;
+
+	m_timeValue = gEnv->pTimer->GetAsyncTime();
+
 	m_pDefaultPolicy = 0;
 	m_pTemporaryChunk = new CSerializationChunk;
+
+	m_threadRunning = false;
+	m_threadRequestQuit = false;
 }
 
 CCompressionManager::~CCompressionManager()
 {
+	TerminateThread();
 	ClearCompressionPolicies(true);
 }
 
@@ -66,6 +75,8 @@ void CCompressionManager::ClearCompressionPolicies(bool includingDefault)
 	m_compressionPolicies.clear();
 	if (includingDefault)
 		m_pDefaultPolicy = NULL;
+
+	m_policiesManageList.clear();
 }
 
 void CCompressionManager::Reset(bool useCompression, bool unloading)
@@ -102,7 +113,20 @@ void CCompressionManager::Reset(bool useCompression, bool unloading)
 
 				string name = loading->getAttr("name");
 				bool processed = true;
-				if (name.empty())
+
+				if (0 == strcmp("Distributions", loading->getTag()))
+				{
+					m_useDirectory = loading->getAttr("use");
+					m_accumulateDirectory = loading->getAttr("accumulate");
+
+					uint32 manageInterval = 0;
+					if (loading->getAttr("manageInterval", manageInterval))
+					{
+						m_manageIntervalSeconds = manageInterval;
+						StartManageThread();
+					}
+				}
+				else if (name.empty())
 				{
 					NetWarning("Policy with no name at %s:%d", filename.c_str(), loading->getLine());
 				}
@@ -161,7 +185,15 @@ void CCompressionManager::Reset(bool useCompression, bool unloading)
 								NetWarning("Failed to create policy %s at %s:%d; reverting to default", name.c_str(), filename.c_str(), loading->getLine());
 								pPolicy = m_pDefaultPolicy;
 							}
+
+							pPolicy->Init(this);
+
+							if (m_manageIntervalSeconds != 0)
+								pPolicy->Manage(this);
+
 							m_compressionPolicies.insert(std::make_pair(nameKey, pPolicy));
+							m_policiesManageList.push_back(nameKey);
+
 						}
 					}
 				}
@@ -176,6 +208,72 @@ void CCompressionManager::Reset(bool useCompression, bool unloading)
 					skipCount++;
 				}
 			}
+		}
+	}
+}
+
+void CCompressionManager::TerminateThread()
+{
+	if (!m_threadRunning)
+		return;
+
+	RequestTerminate();
+	gEnv->pThreadManager->JoinThread(this, eJM_Join);
+	m_threadRunning = false;
+}
+
+void CCompressionManager::RequestTerminate()
+{
+	m_threadRequestQuit = true;
+}
+
+void CCompressionManager::StartManageThread()
+{
+	if (m_threadRunning)
+		return;
+
+	m_threadRequestQuit = false;
+	m_threadRunning = true;
+
+	gEnv->pThreadManager->SpawnThread(this, "CompressionManager");
+}
+
+void CCompressionManager::ThreadEntry()
+{
+	while (!m_threadRequestQuit)
+	{
+		CrySleep(60);
+
+		ManagePolicies();
+	}
+}
+
+void CCompressionManager::ManagePolicies()
+{
+	if (m_manageIntervalSeconds == 0)
+		return;
+
+	CTimeValue val = gEnv->pTimer->GetAsyncTime();
+
+	if (val.GetDifferenceInSeconds(m_timeValue) < m_manageIntervalSeconds)
+		return;
+
+	CErrorDistribution::LogPerformance();
+
+	m_timeValue = val;
+
+	while (!m_policiesManageList.empty())
+	{
+		uint32 name = m_policiesManageList.front();
+		m_policiesManageList.pop_front();
+
+		NetLogAlways("ManagePolicies: %i", name);
+
+		TCompressionPoliciesMap::iterator iter = m_compressionPolicies.find(name);
+		if (iter != m_compressionPolicies.end() && iter->second->Manage(this))
+		{
+			m_policiesManageList.push_back(name);
+			break;
 		}
 	}
 }
@@ -303,4 +401,13 @@ void CCompressionManager::GetMemoryStatistics(ICrySizer* pSizer)
 
 	for (TCompressionPoliciesMap::const_iterator it = m_compressionPolicies.begin(); it != m_compressionPolicies.end(); ++it)
 		it->second->GetMemoryStatistics(pSizer);
+}
+const string& CCompressionManager::GetAccDirectory() const
+{
+	return m_accumulateDirectory;
+}
+
+const string& CCompressionManager::GetUseDirectory() const
+{
+	return m_useDirectory;
 }

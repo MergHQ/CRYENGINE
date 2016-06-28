@@ -223,7 +223,7 @@ private:
 	void                InitSessionIDs();
 	void                RemoveStaticEntity(EntityId id);
 
-	void GC_BindObject(SNetObjectID, CNetObjectBindLock lk, CChangeStateLock cslk);
+	void GC_BindObject( SNetObjectID, CNetObjectBindLock lk, CChangeStateLock cslk, bool levelInit);
 
 	typedef std::auto_ptr<SAuthenticationSalt> TAuthPtr;
 

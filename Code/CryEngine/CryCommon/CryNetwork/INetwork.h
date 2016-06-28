@@ -334,6 +334,7 @@ struct SNetMessageDef
 	  TSerialize,
 	  uint32 curSeq,
 	  uint32 oldSeq,
+	  uint32 timeFraction32,
 	  EntityId* pRmiObject,
 	  INetChannel* pChannel
 	  );
@@ -1182,11 +1183,12 @@ struct INetContext
 
 struct INetSender
 {
-	INetSender(TSerialize sr, uint32 nCurrentSeq, uint32 nBasisSeq, bool isServer) : ser(sr)
+	INetSender(TSerialize sr, uint32 nCurrentSeq, uint32 nBasisSeq, uint32 timeFraction32, bool isServer) : ser(sr)
 	{
 		this->nCurrentSeq = nCurrentSeq;
 		this->nBasisSeq = nBasisSeq;
 		this->isServer = isServer;
+		this->timeValue = timeFraction32;
 	}
 	// <interfuscator:shuffle>
 	virtual ~INetSender(){}
@@ -1199,6 +1201,7 @@ struct INetSender
 	bool           isServer;
 	uint32         nCurrentSeq;
 	uint32         nBasisSeq;
+	uint32         timeValue;
 };
 
 struct INetBaseSendable

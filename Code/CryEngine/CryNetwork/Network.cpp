@@ -273,6 +273,8 @@ CNetwork::~CNetwork()
 	SyncWithGame(eNGS_Shutdown);
 	NET_ASSERT(m_vMembers.empty());
 
+	m_compressionManager.RequestTerminate();
+
 	if (m_multithreadedMode != NETWORK_MT_OFF)
 	{
 		m_pThread->SignalStopWork();
@@ -623,9 +625,12 @@ bool CNetwork::Init(int ncpu)
 
 	REGISTER_POLICY(CAdaptiveBoolPolicy);
 	REGISTER_POLICY(CAdaptiveFloatPolicy);
-	REGISTER_POLICY(CAdaptiveOrientationPolicy);
+	REGISTER_POLICY(TAdaptiveOrientationPolicy);
+	REGISTER_POLICY(TPredictiveOrientationPolicy);
 	REGISTER_POLICY(CAdaptiveUnitVec3Policy);
-	REGISTER_POLICY(CAdaptiveVec3Policy);
+	REGISTER_POLICY(TAdaptiveVec3Policy);
+	REGISTER_POLICY(TPredictiveVec3Policy);
+	REGISTER_POLICY(CInt64Policy);
 	REGISTER_POLICY(CAdaptiveVelocityPolicy);
 	REGISTER_POLICY(CBiggerOrSmallerPolicy);
 	REGISTER_POLICY(CDefaultPolicy);
@@ -639,6 +644,7 @@ bool CNetwork::Init(int ncpu)
 	REGISTER_POLICY(CRangedUnsignedIntPolicy);
 	REGISTER_POLICY(CStringTablePolicy);
 	REGISTER_POLICY(CTimePolicy);
+	REGISTER_POLICY(CTimePolicyWithDistribution);
 	REGISTER_POLICY(TTableDirVec3);
 
 #undef REGISTER_POLICY
@@ -1492,6 +1498,7 @@ CNetwork::eTickReturnState CNetwork::DoMainTick(bool mt)
 		}
 
 		CMementoMemoryManager::Tick();
+		CSimpleHttpServer::GetSingleton().Tick();
 
 #if !USE_ACCURATE_NET_TIMERS
 	#define WAIT_TIME_MIN (1) //in milliseconds
@@ -1652,6 +1659,7 @@ CNetwork::eTickReturnState CNetwork::DoMainTick(bool mt)
 					m_bDelayedExternalWork = true;
 				}
 			}
+
 			m_mutex.Unlock();
 
 			if (pollres <= ISocketIOManager::eEM_UNSPECIFIED)

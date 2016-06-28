@@ -199,6 +199,7 @@ struct SSyncContext
 	{
 		basisSeq = 0xbadf00d;
 		currentSeq = 0xdeadbeef;
+		timeValue = 0xdeadbeef;
 		index = 0xde;
 		flags = 0;
 		pView = 0;
@@ -208,6 +209,7 @@ struct SSyncContext
 	}
 	uint32                basisSeq;
 	uint32                currentSeq;
+	uint32                timeValue;
 	NetworkAspectID       index;
 	SNetObjectID          objId;
 	uint32                flags;

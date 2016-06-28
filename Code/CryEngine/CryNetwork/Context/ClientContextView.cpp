@@ -545,7 +545,7 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, EndUpdateObject, eNRT_Unreli
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, ReconfigureObject, eNRT_UnreliableUnordered, 0)
 {
 	bool ok = false;
-	SReceiveContext ctx = CreateReceiveContext(ser, 7, nCurSeq, nOldSeq, &ok);
+	SReceiveContext ctx = CreateReceiveContext(ser, 7, nCurSeq, nOldSeq, timeFraction32, &ok);
 	if (!ok)
 	{
 		Parent()->Disconnect(eDC_ContextCorruption, "Failed ReconfigureObject 1");
@@ -561,163 +561,163 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, ReconfigureObject, eNRT_Unre
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect0, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(0, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(0, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect1, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(1, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(1, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect2, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(2, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(2, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect3, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(3, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(3, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect4, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(4, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(4, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect5, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(5, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(5, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect6, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(6, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(6, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect7, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(7, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(7, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 #if NUM_ASPECTS > 8
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect8, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(8, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(8, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect9, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(9, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(9, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect10, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(10, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(10, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect11, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(11, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(11, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect12, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(12, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(12, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect13, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(13, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(13, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect14, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(14, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(14, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect15, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(15, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(15, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 #endif//NUM_ASPECTS > 8
 #if NUM_ASPECTS > 16
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect16, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(16, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(16, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect17, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(17, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(17, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect18, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(18, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(18, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect19, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(19, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(19, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect20, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(20, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(20, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect21, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(21, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(21, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect22, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(22, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(22, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect23, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(23, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(23, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect24, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(24, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(24, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect25, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(25, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(25, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect26, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(26, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(26, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect27, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(27, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(27, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect28, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(28, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(28, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect29, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(29, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(29, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect30, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(30, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(30, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, UpdateAspect31, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
 {
-	return UpdateAspect(31, ser, nCurSeq, nOldSeq);
+	return UpdateAspect(31, ser, nCurSeq, nOldSeq, timeFraction32);
 }
 #endif//NUM_ASPECTS > 16
 
@@ -744,7 +744,7 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, RMI_Attachment, eNRT_Unrelia
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, SetAuthority, eNRT_UnreliableUnordered, eMPF_BlocksStateChange | eMPF_DecodeInSync)
 {
 	bool ok = false;
-	SReceiveContext ctx = CreateReceiveContext(ser, 7, nCurSeq, nOldSeq, &ok);
+	SReceiveContext ctx = CreateReceiveContext(ser, 7, nCurSeq, nOldSeq, timeFraction32, &ok);
 	if (!ok)
 		return false;
 	return GetHistory(eH_Auth)->ReadCurrentValue(ctx, !IgnoringCurrentObject());

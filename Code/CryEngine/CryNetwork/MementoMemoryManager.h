@@ -20,7 +20,7 @@
 	#include <CryMemory/BucketAllocator.h>
 #endif
 
-#define MMM_GENERAL_HEAP_SIZE (256 * 1024)
+#define MMM_GENERAL_HEAP_SIZE           (1024 * 1024)
 
 struct IMementoManagedThing
 {

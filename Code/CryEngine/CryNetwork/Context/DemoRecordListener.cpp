@@ -242,7 +242,7 @@ void CDemoRecordListener::SendMessage(INetBaseSendable* pSendable, bool immediat
 	class CDemoMessageSender:public INetSender
 	{
 	public:
-		CDemoMessageSender(TSerialize& ser, CSimpleOutputStream* pOut) : INetSender(ser, 0, 0, true), m_pOut(pOut) {}
+		CDemoMessageSender(TSerialize& ser, CSimpleOutputStream* pOut) : INetSender(ser, 0, 0, 0, true), m_pOut(pOut) {}
 
 		void BeginMessage(const SNetMessageDef* pDef)
 		{

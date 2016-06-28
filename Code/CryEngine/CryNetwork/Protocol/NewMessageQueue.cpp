@@ -1292,9 +1292,9 @@ struct SNetMessageProfileLogger
 
 		string message;
 		uint count;
-		uint minsize;
-		uint maxsize;
-		uint totalsize;
+		float minsize;
+		float maxsize;
+		float totalsize;
 	};
 
 	typedef std::vector<SProfileEntry>           TProfileData;
@@ -1308,13 +1308,13 @@ struct SNetMessageProfileLogger
 	uint64 lastBandwidthSent;
 	int lastPacketsSent;
 
-	void OnMessage(CNetChannel* pNC, uint32 group, const char* message, uint size)
+	void OnMessage(CNetChannel* pNC, uint32 group, const char* message, float size)
 	{
 		OnMessage(msg_profile, pNC, message, size);
 		OnMessage(grp_profile, pNC, KeyToString(group).c_str(), size);
 	}
 
-	static void OnMessage(TProfile& profile, CNetChannel* pNC, const char* message, uint size)
+	static void OnMessage(TProfile& profile, CNetChannel* pNC, const char* message, float size)
 	{
 		TProfile::iterator it = profile.find(pNC);
 		if (it == profile.end())
@@ -1361,14 +1361,14 @@ struct SNetMessageProfileLogger
 
 		if (*firstTime)
 		{
-			fout = fopen(name, "a+");
+			fout = gEnv->pCryPak->FOpen(name, "w+");
 			const char* header = "id\tprefix\tchannel\tmessage\tcount\tmisize\tmaxsize\ttotalsize\tavgsize\n";
 			fprintf(fout, header);
 			* firstTime = 0;
 		}
 		else
 		{
-			fout = fopen(name, "a+");
+			fout = gEnv->pCryPak->FOpen(name, "a+");
 		}
 		return fout;
 	}
@@ -1387,12 +1387,12 @@ struct SNetMessageProfileLogger
 		{
 			static ICVar* pName = gEnv->pConsole->GetCVar("net_profile_deep_bandwidth_logname");
 
-			fout = OpenLogFile(pName->GetString(), &firstTimeLogging);
+			fout = OpenLogFile((string("%USER%/") + pName->GetString()).c_str(), &firstTimeLogging);
 
 			DumpSocketStatistics(fout, "sck");
 
-			DumpProfile(msg_profile, fout, gEnv->bServer ? "msg" : "cl_msg");
-			DumpProfile(grp_profile, fout, gEnv->bServer ? "grp" : "cl_grp");
+			DumpProfile(msg_profile, fout, "msg");
+			DumpProfile(grp_profile, fout, "grp");
 
 			fclose(fout);
 			++dumpCount;
@@ -1425,7 +1425,7 @@ struct SNetMessageProfileLogger
 			{
 				const SProfileEntry& e = it->second.at(i);
 				total += e.totalsize;
-				fprintf(fout, "%u\t%s\t%s\t%s\t%u\t%u\t%u\t%u\t%.2f\n", dumpCount, prefix, name.c_str(), e.message.c_str(), e.count, e.minsize, e.maxsize, e.totalsize, float(e.totalsize) / e.count);
+				fprintf(fout, "%u\t%s\t%s\t%s\t%u\t%.2f\t%.2f\t%.2f\t%.2f\n", dumpCount, prefix, name.c_str(), e.message.c_str(), e.count, e.minsize, e.maxsize, e.totalsize, e.totalsize / e.count);
 			}
 		}
 		fprintf(fout, "Total approx bits written %u\n\n", total);
@@ -1566,7 +1566,7 @@ void CMessageQueue::WriteMessages(IMessageOutput* pOut, const SSchedulingParams&
 
 		uint32 sizeBefore = pStm->GetApproximateSize();
 	#if DEEP_BANDWIDTH_ANALYSIS
-		uint32 accSizeBefore = pStm->GetBitSize();
+		float accSizeBefore = pStm->GetBitSize();
 		g_DBASizePriorToUpdate = accSizeBefore;
 		g_DBAMainProfileBuffer = "";
 	#endif
@@ -1648,7 +1648,7 @@ void CMessageQueue::WriteMessages(IMessageOutput* pOut, const SSchedulingParams&
 	#if DEEP_BANDWIDTH_ANALYSIS
 		g_DBALargeProfileBuffer.Format("%s%s", pEntSend->msg.pSendable ? pEntSend->msg.pSendable->GetDescription() : "<null>", g_DBAMainProfileBuffer.c_str());
 		g_DBAMainProfileBuffer = "";
-		profiler.OnMessage(params.pChannel, pEntSend->pAG ? pEntSend->pAG->id : 'none', g_DBALargeProfileBuffer.c_str(), ((uint32)pStm->GetBitSize()) - accSizeBefore);
+		profiler.OnMessage(params.pChannel, pEntSend->pAG ? pEntSend->pAG->id : 'none', g_DBALargeProfileBuffer.c_str(), ((float)pStm->GetBitSize()) - accSizeBefore);
 	#endif
 	#if ENABLE_PACKET_PREDICTION
 		if (mTag.messageId != 0xFFFFFFFF)

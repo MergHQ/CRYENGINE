@@ -9,6 +9,7 @@ CServerTimer::CServerTimer()
 {
 	m_remoteFrameStartTime = 1.0f;
 	m_frameTime = 0.001f;
+	m_replicationTime = 0;
 }
 
 void CServerTimer::ResetTimer()
@@ -30,6 +31,8 @@ void CServerTimer::UpdateOnFrameStart()
 
 	m_frameTime = (m_remoteFrameStartTime - lastTime).GetSeconds();
 	m_frameTime = CLAMP(m_frameTime, 0.001f, 0.25f);
+
+	m_replicationTime += m_frameTime;
 }
 
 float CServerTimer::GetCurrTime(ETimer /* which */) const
@@ -50,6 +53,11 @@ CTimeValue CServerTimer::GetAsyncTime() const
 float CServerTimer::GetAsyncCurTime()
 {
 	return gEnv->pTimer->GetAsyncCurTime();
+}
+
+float CServerTimer::GetReplicationTime() const
+{
+	return m_replicationTime;
 }
 
 float CServerTimer::GetFrameTime(ETimer /* which */) const

@@ -84,6 +84,7 @@ TNetMessageCallbackResult CGameObjectDispatch::Trampoline(
   TSerialize serialize,
   uint32 curSeq,
   uint32 oldSeq,
+  uint32 timeFraction32,
   EntityId* pEntityId,
   INetChannel* pNetChannel)
 {

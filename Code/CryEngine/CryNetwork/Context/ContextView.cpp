@@ -2360,7 +2360,7 @@ bool CContextView::HaveAuthorityOfObject(SNetObjectID id) const
 		return false;
 }
 
-bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSeq, uint32 nOldSeq)
+bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSeq, uint32 nOldSeq, uint32 timeFraction32)
 {
 	if (IsLocal())
 	{
@@ -2377,6 +2377,7 @@ bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSe
 		return false;
 	}
 
+	
 #if ENABLE_DEBUG_KIT
 	if (CurrentObjectID() != m_acceptedForUpdateObject)
 	{
@@ -2394,7 +2395,7 @@ bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSe
 	// do we have control of this aspect?
 	bool haveControl = (GetSentAspects(CurrentObjectID(), false, eGSAA_DefaultAuthority) & (1 << i)) != 0;
 	bool ok = false;
-	SReceiveContext ctx = CreateReceiveContext(ser, i, nCurSeq, nOldSeq, &ok);
+	SReceiveContext ctx = CreateReceiveContext(ser, i, nCurSeq, nOldSeq, timeFraction32, &ok);
 	if (!ok)
 	{
 		char msg[256];
@@ -2415,12 +2416,13 @@ bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSe
 	return ok;
 }
 
-SReceiveContext CContextView::CreateReceiveContext(TSerialize ser, NetworkAspectID index, uint32 nCurSeq, uint32 nOldSeq, bool* ok)
+SReceiveContext CContextView::CreateReceiveContext(TSerialize ser, NetworkAspectID index, uint32 nCurSeq, uint32 nOldSeq, uint32 timeFraction32, bool* ok)
 {
 	SReceiveContext ctx(ser);
 	*ok = true;
 	ctx.basisSeq = nOldSeq;
 	ctx.currentSeq = nCurSeq;
+	ctx.timeValue = timeFraction32;
 	ctx.flags = 0;
 	ctx.index = index;
 	ctx.objId = CurrentObjectID();

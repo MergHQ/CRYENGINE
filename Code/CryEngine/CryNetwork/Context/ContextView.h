@@ -496,8 +496,8 @@ protected:
 
 	bool            HaveAuthorityOfObject(SNetObjectID id) const;
 	bool            IgnoringCurrentObject() const { return m_ignoringCurObject; }
-	bool            UpdateAspect(NetworkAspectID i, TSerialize pSerialize, uint32 nCurSeq, uint32 nOldSeq);
-	SReceiveContext CreateReceiveContext(TSerialize ser, NetworkAspectID index, uint32 nCurSeq, uint32 nOldSeq, bool* ok);
+	bool            UpdateAspect(NetworkAspectID i, TSerialize pSerialize, uint32 nCurSeq, uint32 nOldSeq, uint32 timeFraction32);
+	SReceiveContext CreateReceiveContext(TSerialize ser, NetworkAspectID index, uint32 nCurSeq, uint32 nOldSeq, uint32 timeFraction32, bool* ok);
 	bool            SetPhysicsTime(CTimeValue tm);
 	void            StartFlushUpdates() { m_flushUpdates = true; CancelUpdates(); }
 

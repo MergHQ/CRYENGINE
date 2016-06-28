@@ -290,7 +290,7 @@ bool CMementoHistory::Serialize(const SSerializeParams& sp)
 	// store the version number for comparison later
 	newState.PutTyped<uint32>() = sp.ctx.ctxObj.xtra->vAspectDataVersion[sp.ctx.index];
 
-	pSer->SetMementoStreams(curState.GetSize() ? &curState : NULL, &newState, mementoAge, sp.isOwner);
+	pSer->SetMementoStreams(curState.GetSize() ? &curState : NULL, &newState, mementoAge, sp.ctx.timeValue, sp.isOwner);
 
 	TMemHdl* pAspectData = sp.pAspectData;
 
