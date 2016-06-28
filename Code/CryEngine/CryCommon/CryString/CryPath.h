@@ -4,6 +4,8 @@
 
 #include <CryCore/Platform/CryWindows.h>
 #include <CrySystem/IConsole.h>
+#include <algorithm>
+#include <type_traits>
 
 #if CRY_PLATFORM_POSIX
 	#define CRY_NATIVE_PATH_SEPSTR "/"
@@ -13,108 +15,128 @@
 
 namespace PathUtil
 {
-string GetGameFolder();
-string GetLocalizationFolder();
+namespace detail
+{
+template<typename>
+struct IsValidStringType : std::false_type {};
+
+template<>
+struct IsValidStringType<string> : std::true_type {};
+
+template<size_t Size>
+struct IsValidStringType<CryStackStringT<char, Size>> : std::true_type {};
+}
 
 //! Convert a path to the uniform form.
-inline string ToUnixPath(const string& strPath)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ ToUnixPath(const TString& strPath)
 {
-	if (strPath.find('\\') != string::npos)
+	if (strPath.find('\\') != TString::npos)
 	{
-		string path = strPath;
+		auto path = strPath;
 		path.replace('\\', '/');
 		return path;
 	}
 	return strPath;
 }
 
-template<size_t SIZE>
-inline CryStackStringT<char, SIZE> ToUnixPath(const CryStackStringT<char, SIZE>& strPath)
+inline string ToUnixPath(const char* szPath)
 {
-	if (strPath.find('\\') != CryStackStringT<char, SIZE>::npos)
-	{
-		CryStackStringT<char, SIZE> path = strPath;
-		path.replace('\\', '/');
-		return path;
-	}
-	return strPath;
-}
-
-inline void ToUnixPath(char*& szPath)
-{
-	const size_t length = strlen(szPath);
-	std::replace(szPath, szPath + length, '\\', '/');
+	return ToUnixPath(string(szPath));
 }
 
 //! Convert a path to the DOS form.
-inline string ToDosPath(const string& strPath)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ ToDosPath(const TString& strPath)
 {
-	if (strPath.find('/') != string::npos)
+	if (strPath.find('/') != TString::npos)
 	{
-		string path = strPath;
+		auto path = strPath;
 		path.replace('/', '\\');
 		return path;
 	}
 	return strPath;
 }
 
-inline void ToDosPath(char*& szPath)
+inline string ToDosPath(const char* szPath)
 {
-	const size_t length = strlen(szPath);
-	std::replace(szPath, szPath + length, '/', '\\');
+	return ToDosPath(string(szPath));
 }
 
 //! Split full file name to path and filename.
 //! \param[in] filepath Full file name including path.
 //! \param[out] path Extracted file path.
 //! \param[out] filename Extracted file (without extension).
-//! \param[out] ext Extracted files extension.
-inline void Split(const string& filepath, string& path, string& filename, string& fext)
+//! \param[out] extension Extracted file's extension (without .).
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value>::type
+inline /*void*/ Split(const TString& filepath, TString& path, TString& filename, TString& extension)
 {
-	path = filename = fext = string();
+	path = filename = extension = TString();
 	if (filepath.empty())
 		return;
-	const char* str = filepath.c_str();
-	const char* pext = str + filepath.length() - 1;
+	const char* szFilepath = filepath.c_str();
+	const char* szExtension = szFilepath + filepath.length() - 1;
 	const char* p;
-	for (p = str + filepath.length() - 1; p >= str; --p)
+	for (p = szExtension; p >= szFilepath; --p)
 	{
 		switch (*p)
 		{
 		case ':':
 		case '/':
 		case '\\':
-			path = filepath.substr(0, p - str + 1);
-			filename = filepath.substr(p - str + 1, pext - p);
+			path = TString(szFilepath, p + 1);
+			filename = TString(p + 1, szExtension);
 			return;
 		case '.':
 			// there's an extension in this file name
-			fext = filepath.substr(p - str + 1);
-			pext = p;
+			extension = filepath.substr(p - szFilepath + 1);
+			szExtension = p;
 			break;
 		}
 	}
-	filename = filepath.substr(p - str + 1, pext - p);
+	filename = filepath.substr(p - szFilepath + 1, szExtension - p);
+}
+
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value>::type
+inline /*void*/ Split(const char* szFilepath, TString& path, TString& filename, TString& extension)
+{
+	return Split(TString(szFilepath), path, filename, extension);
 }
 
 //! Split full file name to path and filename.
 //! \param[in] filepath Full file name inclusing path.
 //! \param[out] path Extracted file path.
 //! \param[out] file Extracted file (with extension).
-inline void Split(const string& filepath, string& path, string& file)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value>::type
+inline /*void*/ Split(const TString& filepath, TString& path, TString& file)
 {
-	string fext;
-	Split(filepath, path, file, fext);
-	file += fext;
+	TString extension;
+	Split(filepath, path, file, extension);
+	if (!extension.empty())
+	{
+		file += "." + extension;
+	}
+}
+
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value>::type
+inline /*void*/ Split(const char* szFilepath, TString& path, TString& file)
+{
+	return Split(TString(szFilepath), path, file);
 }
 
 //! Extract extension from full specified file path.
 //! \return Pointer to the extension (without .) or pointer to an empty 0-terminated string.
 inline const char* GetExt(const char* filepath)
 {
-	const char* str = filepath;
-	size_t len = strlen(filepath);
-	for (const char* p = str + len - 1; p >= str; --p)
+	const char* szFilepath = filepath;
+	const size_t length = strlen(filepath);
+	for (const char* p = szFilepath + length - 1; p >= szFilepath; --p)
 	{
 		switch (*p)
 		{
@@ -131,18 +153,20 @@ inline const char* GetExt(const char* filepath)
 	return "";
 }
 
-//! Extract path from full specified file path.
-inline string GetPath(const string& filepath)
+//! Extract path without filename from full specified file path.
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ GetPath(const TString& filepath)
 {
-	const char* str = filepath.c_str();
-	for (const char* p = str + filepath.length() - 1; p >= str; --p)
+	const char* szFilepath = filepath.c_str();
+	for (const char* p = szFilepath + filepath.length() - 1; p >= szFilepath; --p)
 	{
 		switch (*p)
 		{
 		case ':':
 		case '/':
 		case '\\':
-			return filepath.substr(0, p - str + 1);
+			return filepath.substr(0, p - szFilepath + 1);
 		}
 	}
 	return "";
@@ -154,62 +178,29 @@ inline string GetPath(const char* filepath)
 	return GetPath(string(filepath));
 }
 
-//! Extract path from full specified file path.
-template<size_t SIZE>
-inline CryStackStringT<char, SIZE> GetPath(const CryStackStringT<char, SIZE>& filepath)
-{
-	const char* str = filepath.c_str();
-	for (const char* p = str + filepath.length() - 1; p >= str; --p)
-	{
-		switch (*p)
-		{
-		case ':':
-		case '/':
-		case '\\':
-			return filepath.substr(0, p - str + 1);
-		}
-	}
-	return "";
-}
-
 //! Extract file name with extension from full specified file path.
-inline string GetFile(const string& filepath)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ GetFile(const TString& filepath)
 {
-	const char* str = filepath.c_str();
-	for (const char* p = str + filepath.length() - 1; p >= str; --p)
+	const char* szFilepath = filepath.c_str();
+	for (const char* p = szFilepath + filepath.length() - 1; p >= szFilepath; --p)
 	{
 		switch (*p)
 		{
 		case ':':
 		case '/':
 		case '\\':
-			return filepath.substr(p - str + 1);
+			return filepath.substr(p - szFilepath + 1);
 		}
 	}
 	return filepath;
 }
 
-template<size_t SIZE>
-inline CryStackStringT<char, SIZE> GetFile(const CryStackStringT<char, SIZE>& filepath)
+inline const char* GetFile(const char* szFilepath)
 {
-	const char* str = filepath.c_str();
-	for (const char* p = str + filepath.length() - 1; p >= str; --p)
-	{
-		switch (*p)
-		{
-		case ':':
-		case '/':
-		case '\\':
-			return filepath.substr(p - str + 1);
-		}
-	}
-	return filepath;
-}
-
-inline const char* GetFile(const char* filepath)
-{
-	const size_t len = strlen(filepath);
-	for (const char* p = filepath + len - 1; p >= filepath; --p)
+	const size_t len = strlen(szFilepath);
+	for (const char* p = szFilepath + len - 1; p >= szFilepath; --p)
 	{
 		switch (*p)
 		{
@@ -219,13 +210,16 @@ inline const char* GetFile(const char* filepath)
 			return p + 1;
 		}
 	}
-	return filepath;
+	return szFilepath;
 }
 
 //! Remove extension for given file.
-inline void RemoveExtension(char* szFilePath)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value>::type
+inline /*void*/ RemoveExtension(TString& filepath)
 {
-	for (char* p = szFilePath + strlen(szFilePath) - 1; p >= szFilePath; --p)
+	const char* szFilepath = filepath.c_str();
+	for (const char* p = szFilepath + filepath.length() - 1; p >= szFilepath; --p)
 	{
 		switch (*p)
 		{
@@ -236,71 +230,33 @@ inline void RemoveExtension(char* szFilePath)
 			return;
 		case '.':
 			// there's an extension in this file name
-			*p = '\0';
+			filepath = filepath.erase(p - szFilepath);
 			return;
 		}
 	}
 	// it seems the file name is a pure name, without extension
 }
 
-//! Remove extension for given file.
-inline void RemoveExtension(string& filepath)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ RemoveExtension(const TString& filepath)
 {
-	const char* str = filepath.c_str();
-	for (const char* p = str + filepath.length() - 1; p >= str; --p)
-	{
-		switch (*p)
-		{
-		case ':':
-		case '/':
-		case '\\':
-			// we've reached a path separator - it means there's no extension in this name
-			return;
-		case '.':
-			// there's an extension in this file name
-			filepath = filepath.substr(0, p - str);
-			return;
-		}
-	}
-	// it seems the file name is a pure name, without extension
-}
-
-//! Replace extension for given file.
-template<size_t SIZE>
-inline void RemoveExtension(CryStackStringT<char, SIZE>& filepath)
-{
-	const char* str = filepath.c_str();
-	for (const char* p = str + filepath.length() - 1; p >= str; --p)
-	{
-		switch (*p)
-		{
-		case ':':
-		case '/':
-		case '\\':
-			// we've reached a path separator - it means there's no extension in this name
-			return;
-		case '.':
-			// there's an extension in this file name
-			filepath = filepath.substr(0, p - str);
-			return;
-		}
-	}
-	// it seems the file name is a pure name, without path or extension
-}
-
-inline string RemoveExtension(const string& filepath)
-{
-	string result = filepath;
+	auto result = filepath;
 	RemoveExtension(result);
 	return result;
 }
 
-//! Extract file name without extension from full specified file path.
-inline string GetFileName(const string& filepath)
+inline string RemoveExtension(const char* szFilepath)
 {
-	string file = filepath;
-	RemoveExtension(file);
-	return GetFile(file);
+	return RemoveExtension(string(szFilepath));
+}
+
+//! Extract file name without extension from full specified file path.
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ GetFileName(const TString& filepath)
+{
+	return GetFile(RemoveExtension(filepath));
 }
 
 inline string GetFileName(const char* szFilepath)
@@ -308,20 +264,19 @@ inline string GetFileName(const char* szFilepath)
 	return GetFileName(string(szFilepath));
 }
 
-template<size_t SIZE>
-inline CryStackStringT<char, SIZE> GetFileName(const CryStackStringT<char, SIZE>& filepath)
-{
-	CryStackStringT<char, SIZE> file = filepath;
-	RemoveExtension(file);
-	return GetFile(file);
-}
-
 //! Removes the trailing slash or backslash from a given path.
-inline string RemoveSlash(const string& path)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ RemoveSlash(const TString& path)
 {
 	if (path.empty() || (path[path.length() - 1] != '/' && path[path.length() - 1] != '\\'))
 		return path;
 	return path.substr(0, path.length() - 1);
+}
+
+inline string RemoveSlash(const char* szPath)
+{
+	return RemoveSlash(string(szPath));
 }
 
 inline string GetEnginePath()
@@ -332,7 +287,9 @@ inline string GetEnginePath()
 }
 
 //! Add a slash if necessary.
-inline string AddSlash(const string& path)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ AddSlash(const TString& path)
 {
 	if (path.empty() || path[path.length() - 1] == '/')
 		return path;
@@ -341,19 +298,15 @@ inline string AddSlash(const string& path)
 	return path + "/";
 }
 
-//! Add a slash if necessary.
-template<size_t SIZE>
-inline CryStackStringT<char, SIZE> AddSlash(const CryStackStringT<char, SIZE>& path)
+inline string AddSlash(const char* szPath)
 {
-	if (path.empty() || path[path.length() - 1] == '/')
-		return path;
-	if (path[path.length() - 1] == '\\')
-		return path.substr(0, path.length() - 1) + "/";
-	return path + "/";
+	return AddSlash(string(szPath));
 }
 
 //! Add a backslash if necessary.
-inline string AddBackslash(const string& path)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ AddBackslash(const TString& path)
 {
 	if (path.empty() || path[path.length() - 1] == '\\')
 		return path;
@@ -362,172 +315,90 @@ inline string AddBackslash(const string& path)
 	return path + "\\";
 }
 
-template<size_t SIZE>
-inline CryStackStringT<char, SIZE> ReplaceExtension(const CryStackStringT<char, SIZE>& filepath, const char* ext)
+inline string AddBackslash(const char* szPath)
 {
-	CryStackStringT<char, SIZE> str = filepath;
-	if (ext != nullptr)
-	{
-		RemoveExtension(str);
-		if (ext[0] != 0 && ext[0] != '.')
-		{
-			str += ".";
-		}
-		str += ext;
-	}
-	return str;
+	return AddBackslash(string(szPath));
 }
 
 //! Replace extension for given file.
-inline string ReplaceExtension(const string& filepath, const char* ext)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ ReplaceExtension(const TString& filepath, const char* szExtension)
 {
-	string str = filepath;
-	if (ext != nullptr)
+	CRY_ASSERT(szExtension != nullptr);
+
+	auto str = filepath;
+	if (szExtension != nullptr)
 	{
 		RemoveExtension(str);
-		if (ext[0] != 0 && ext[0] != '.')
+		if (szExtension[0] != 0 && szExtension[0] != '.')
 		{
 			str += ".";
 		}
-		str += ext;
+		str += szExtension;
 	}
 	return str;
 }
 
-//! Makes a fully specified file path from path and file name.
-inline string Make(const string& path, const string& file)
+inline string ReplaceExtension(const char* szFilepath, const char* szExtension)
 {
-	return AddSlash(path) + file;
+	return ReplaceExtension(string(szFilepath), szExtension);
 }
 
 //! Makes a fully specified file path from path and file name.
-inline string Make(const string& dir, const string& filename, const string& ext)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ Make(const TString& directory, const TString& filename)
 {
-	string path = ReplaceExtension(filename, ext);
-	path = AddSlash(dir) + path;
-	return path;
+	return AddSlash(directory) + filename;
+}
+
+inline string Make(const char* szPath, const char* szFilename)
+{
+	return Make(string(szPath), string(szFilename));
 }
 
 //! Makes a fully specified file path from path and file name.
-inline string Make(const string& dir, const string& filename, const char* ext)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ Make(const TString& directory, const TString& filename, const TString& extension)
 {
-	return Make(dir, filename, string(ext));
+	return AddSlash(directory) + ReplaceExtension(filename, extension);
 }
 
-//! Makes a fully specified file path from path and file name.
-template<size_t SIZE>
-inline CryStackStringT<char, SIZE> Make(const CryStackStringT<char, SIZE>& path, const CryStackStringT<char, SIZE>& file)
+inline string Make(const char* szPath, const char* szFilename, const char* szExtension)
 {
-	return AddSlash(path) + file;
+	return Make(string(szPath), string(szFilename), string(szExtension));
 }
 
-//! Makes a fully specified file path from path and file name.
-template<size_t SIZE>
-inline CryStackStringT<char, SIZE> Make(const CryStackStringT<char, SIZE>& dir, const CryStackStringT<char, SIZE>& filename, const CryStackStringT<char, SIZE>& ext)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ GetParentDirectory(const TString& filePath, int generation = 1)
 {
-	CryStackStringT<char, SIZE> path = ReplaceExtension(filename, ext);
-	path = AddSlash(dir) + path;
-	return path;
-}
-
-//! Makes a fully specified file path from path and file name.
-inline string Make(const char* path, const string& file)
-{
-	return Make(string(path), file);
-}
-
-//! Makes a fully specified file path from path and file name.
-inline string Make(const string& path, const char* file)
-{
-	return Make(path, string(file));
-}
-
-//! Makes a fully specified file path from path and file name.
-inline string Make(const char* path, const char* file)
-{
-	return Make(string(path), string(file));
-}
-
-//! Makes a fully specified file path from path and file name.
-inline string Make(const char* path, const char* file, const char* ext)
-{
-	return Make(string(path), string(file), string(ext));
-}
-
-//////////////////////////////////////////////////////////////////////////
-//! Make a game correct path out of any input path.
-inline string MakeGamePath(const string& path)
-{
-	string fullpath = ToUnixPath(path);
-	string rootDataFolder = ToUnixPath(AddSlash(PathUtil::GetGameFolder()));
-	if (fullpath.length() > rootDataFolder.length() && strnicmp(fullpath.c_str(), rootDataFolder.c_str(), rootDataFolder.length()) == 0)
-	{
-		return fullpath.substr(rootDataFolder.length(), fullpath.length() - rootDataFolder.length());
-	}
-	//fullpath = GetRelativePath(path);
-	return fullpath;
-}
-
-//////////////////////////////////////////////////////////////////////////
-//! Make a game correct path out of any input path.
-template<size_t SIZE>
-inline CryStackStringT<char, SIZE> MakeGamePath(const CryStackStringT<char, SIZE>& path)
-{
-	CryStackStringT<char, SIZE> fullpath = ToUnixPath(path);
-	CryStackStringT<char, SIZE> rootDataFolder = ToUnixPath(AddSlash(PathUtil::GetGameFolder()));
-	if (fullpath.length() > rootDataFolder.length() && strnicmp(fullpath.c_str(), rootDataFolder.c_str(), rootDataFolder.length()) == 0)
-	{
-		return fullpath.substr(rootDataFolder.length(), fullpath.length() - rootDataFolder.length());
-	}
-	//fullpath = GetRelativePath(path);
-	return fullpath;
-}
-
-inline string GetParentDirectory(const string& strFilePath, int nGeneration = 1)
-{
-	for (const char* p = strFilePath.c_str() + strFilePath.length() - 2;   // -2 is for the possible trailing slash: there always must be some trailing symbol which is the file/directory name for which we should get the parent
-	     p >= strFilePath.c_str();
+	for (const char* p = filePath.c_str() + filePath.length() - 2;   // -2 is for the possible trailing slash: there always must be some trailing symbol which is the file/directory name for which we should get the parent
+	     p >= filePath.c_str();
 	     --p)
 	{
 		switch (*p)
 		{
 		case ':':
-			return string(strFilePath.c_str(), p);
+			return TString(filePath.c_str(), p);
 		case '/':
 		case '\\':
 			// we've reached a path separator - return everything before it.
-			if (!--nGeneration)
-				return string(strFilePath.c_str(), p);
+			if (!--generation)
+				return TString(filePath.c_str(), p);
 			break;
 		}
 	}
-	;
+
 	// it seems the file name is a pure name, without path or extension
-	return string();
+	return TString();
 }
 
-template<typename T, size_t SIZE>
-inline CryStackStringT<T, SIZE> GetParentDirectory(const CryStackStringT<T, SIZE>& strFilePath, int nGeneration = 1)
+inline string GetParentDirectory(const char* szFilePath, int generation = 1)
 {
-	for (const char* p = strFilePath.c_str() + strFilePath.length() - 2;   // -2 is for the possible trailing slash: there always must be some trailing symbol which is the file/directory name for which we should get the parent
-	     p >= strFilePath.c_str();
-	     --p)
-	{
-		switch (*p)
-		{
-		case ':':
-			return CryStackStringT<T, SIZE>(strFilePath.c_str(), p);
-		case '/':
-		case '\\':
-			// we've reached a path separator - return everything before it.
-			if (!--nGeneration)
-				return CryStackStringT<T, SIZE>(strFilePath.c_str(), p);
-			break;
-		}
-	}
-	;
-	// it seems the file name is a pure name, without path or extension
-	return CryStackStringT<T, SIZE>();
+	return GetParentDirectory(string(szFilePath), generation);
 }
 
 //! \return True if the string matches the wildcard.
@@ -536,17 +407,21 @@ inline bool MatchWildcard(const char* szString, const char* szWildcard)
 	const char* pString = szString, * pWildcard = szWildcard;
 	// skip the obviously the same starting substring
 	while (*pWildcard && *pWildcard != '*' && *pWildcard != '?')
+	{
 		if (*pString != *pWildcard)
 			return false;   // must be exact match unless there's a wildcard character in the wildcard string
 		else
 			++pString, ++pWildcard;
+	}
 
 	if (!*pString)
 	{
 		// this will only match if there are no non-wild characters in the wildcard
 		for (; *pWildcard; ++pWildcard)
+		{
 			if (*pWildcard != '*' && *pWildcard != '?')
 				return false;
+		}
 		return true;
 	}
 
@@ -566,15 +441,19 @@ inline bool MatchWildcard(const char* szString, const char* szWildcard)
 				return true;   // the rest of the string doesn't matter: the wildcard ends with *
 
 			for (; *pString; ++pString)
+			{
 				if (MatchWildcard(pString, pWildcard))
 					return true;
+			}
 
 			return false;
 		}
+
 	case '?':
 		return MatchWildcard(pString + 1, pWildcard + 1) || MatchWildcard(pString, pWildcard + 1);
+
 	default:
-		assert(0);
+		assert(false);
 		return false;
 	}
 }
@@ -619,9 +498,7 @@ inline std::vector<string> GetDirectoryStructure(const string& path)
 		{
 			++pchLastPosition;
 		}
-
 		result.push_back(currentDirectoryName);
-
 	}
 	while (true);
 
@@ -659,9 +536,7 @@ enum EPathStyle
 //! \note The output will always be shorter or equal length to the input, so a buffer of the same size as the input will always work.
 inline bool SimplifyFilePath(const char* const szInput, char* const szBuf, const size_t bufLength, const EPathStyle pathStyle)
 {
-
-#define CRY_SIMPLIFY_REJECT { *szBuf = 0; return false; \
-  }
+#define CRY_SIMPLIFY_REJECT { *szBuf = 0; return false; }
 #define CRY_SIMPLIFY_EMIT(expr) { if (--pOut < szBuf) { *szBuf = 0; return false; } *pOut = expr; }
 
 	if (szBuf == nullptr || bufLength == 0)
@@ -865,17 +740,12 @@ inline bool SimplifyFilePath(const char* const szInput, char* const szBuf, const
 
 //! Converts \ to / and replaces ASCII characters to lower-case (A-Z only).
 //! This function is ASCII-only and Unicode agnostic.
-template<size_t SIZE>
-inline void UnifyFilePath(CryStackStringT<char, SIZE>& strPath)
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value>::type
+inline /*void*/ UnifyFilePath(TString& path)
 {
-	strPath.replace('\\', '/');
-	strPath.MakeLower();
-}
-
-inline void UnifyFilePath(string& strPath)
-{
-	strPath.replace('\\', '/');
-	strPath.MakeLower();
+	path.replace('\\', '/');
+	path.MakeLower();
 }
 }
 
@@ -893,5 +763,24 @@ inline string GetLocalizationFolder()
 {
 	CRY_ASSERT(gEnv && gEnv->pCryPak);
 	return gEnv->pCryPak->GetLocalizationFolder();
+}
+
+//! Make a game correct path out of any input path.
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ MakeGamePath(const TString& path)
+{
+	const auto fullpath = ToUnixPath(path);
+	const auto rootDataFolder = ToUnixPath(AddSlash(PathUtil::GetGameFolder()));
+	if (fullpath.length() > rootDataFolder.length() && strnicmp(fullpath.c_str(), rootDataFolder.c_str(), rootDataFolder.length()) == 0)
+	{
+		return fullpath.substr(rootDataFolder.length(), fullpath.length() - rootDataFolder.length());
+	}
+	return fullpath;
+}
+
+inline string MakeGamePath(const char* szPath)
+{
+	return MakeGamePath(string(szPath));
 }
 }
