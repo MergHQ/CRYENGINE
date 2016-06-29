@@ -539,6 +539,18 @@ public:
 		return sizeof(*this);
 	}
 
+	// Adding this to fix the compilation. The whole hashing is legacy and
+	// will be removed subsequently.
+	virtual SMessageTag GetMessageTag(INetSender* pSender, IMessageMapper* mapper)
+	{
+		SMessageTag mTag;
+		mTag.messageId = mapper->GetMsgId(m_pDef);
+		mTag.varying1 = 0;    // Assuming a 1-1 correspondence with data rates for now
+		mTag.varying2 = 0;    // Assuming a 1-1 correspondence with data rates for now
+
+		return mTag;
+	}
+
 private:
 	const SNetMessageDef* m_pDef;
 	CContextViewPtr       m_pView;
@@ -1836,7 +1848,7 @@ void CContextView::UpdateSchedulerState(SNetObjectID id)
 	SContextViewObjectEx* pVwObjEx = &m_objectsEx[id.id];
 
 #if ENABLE_ASPECT_HASHING
-	NetworkAspectType hashedAspects = (~GetSentAspects(id, true, NULL)) & Context()->HashedAspects();
+	NetworkAspectType hashedAspects = (~GetSentAspects(id, true, eGSAA_DefaultAuthority)) & Context()->HashedAspects();
 	hashedAspects &= ContextState()->GetContextObject(id).xtra->nAspectsEnabled;
 	if (IsLocal())
 		hashedAspects = 0;
@@ -2214,12 +2226,12 @@ void CContextView::ReconfiguredObject(SNetObjectID netID)
 }
 
 #if ENABLE_ASPECT_HASHING
-void CContextView::HashAspect(NetworkAspectID aspectIdx, TSerialize ser)
+bool CContextView::HashAspect(NetworkAspectID aspectIdx, TSerialize ser, uint32, uint32, uint32)
 {
 	if (!Context()->IsMultiplayer())
 	{
 		NET_ASSERT(false);
-		return; // TODO: make sure the logic here is correct - Lin
+		return true; // TODO: make sure the logic here is correct - Lin
 	}
 
 	SNetObjectID id;
@@ -2235,11 +2247,11 @@ void CContextView::HashAspect(NetworkAspectID aspectIdx, TSerialize ser)
 	{
 		if (CVARS.LogLevel >= 3)
 			NetWarning("CContextView::HashAspect: unknown object %s on %s (trying to hash %s)", id.GetText(), m_pParent->GetName(), Context()->GetAspectName(aspectIdx));
-		return;
+		return true;
 	}
 	SContextObjectRef obj = ContextState()->GetContextObject(id);
 	if (!obj.main)
-		return;
+		return true;
 	NET_ASSERT(m_objects.size() > id.id);
 	NET_ASSERT(m_objects[id.id].salt = id.salt);
 	uint32& hashReceived = m_objectsEx[id.id].hashReceived[aspectIdx];
@@ -2248,12 +2260,13 @@ void CContextView::HashAspect(NetworkAspectID aspectIdx, TSerialize ser)
 	else
 		hash = hashReceived;
 	if ((obj.xtra->nAspectsEnabled & (1 << aspectIdx)) == 0)
-		return;
+		return true;
 
 	if (obj.xtra->hash[aspectIdx] && hash && hash != obj.xtra->hash[aspectIdx])
 	{
 		PolluteObjectAspect(id, aspectIdx);
 	}
+	return true;
 }
 #endif
 
@@ -2626,18 +2639,17 @@ void CContextView::NotifyPartialUpdate(SNetObjectID id, NetworkAspectID aspectId
 	Parent()->NetSubstituteSendable(&*pMsg, 0, NULL, &objex.notifyPartialUpdateHandle[aspectIdx]);
 }
 
-void CContextView::PartialAspect(NetworkAspectID aspectIdx, TSerialize ser)
+bool CContextView::PartialAspect(NetworkAspectID aspectIdx, TSerialize ser, uint32, uint32, uint32)
 {
 	SNetObjectID id;
 	NetLogPacketDebug("PartialAspect %d", aspectIdx);
 	ser.Value("obj", id, 'eid');
-	if (!Context()->IsMultiplayer())
-		return;
-	if (!IsObjectEnabled(id))
-		return;
+	if (!Context()->IsMultiplayer() || !IsObjectEnabled(id))
+		return true; // original behavior
 	m_objectsEx[id.id].partialUpdateReceived[aspectIdx] = g_time;
 	m_objectsEx[id.id].partialUpdatesRemaining[aspectIdx] = 5;
 	ChangedObject(id, 0, 1 << aspectIdx);
+	return true;
 }
 
 void CContextView::NetDump(ENetDumpType type, INetDumpLogger& logger)

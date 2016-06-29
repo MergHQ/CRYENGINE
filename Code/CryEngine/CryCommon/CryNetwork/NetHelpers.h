@@ -79,6 +79,20 @@ protected:
 		return def;
 	}
 
+	// Aspect-related messages don't use NET_DECLARE_... macros, and instead
+	// are instantiated by template members variating on the aspect number.
+	// Correct message description is crucial for the protocol, so we compose
+	// it at runtime, even though for members with static duration only.
+	static SNetMessageDef* Helper_AddAspectMessage(
+		SNetMessageDef::HandlerType handler, const char* szDescription, 
+		const int aspectNum, uint32 parallelFlags = 0)
+	{
+		return Helper_AddMessage(handler, eNRT_UnreliableUnordered,
+			// Leak is intentional, but constant.
+			(new string(szDescription + CryStringUtils::toString(aspectNum)))->c_str(),
+			parallelFlags);
+	}
+
 private:
 	struct Statics
 	{
@@ -230,7 +244,7 @@ private:
     TSerialize serialize,                                                                                                          \
     uint32 curSeq,                                                                                                                 \
     uint32 oldSeq,                                                                                                                 \
-    uint32 timeFraction32,                                                                                                                 \
+    uint32 timeFraction32,                                                                                                         \
     EntityId * pEntityId, INetChannel * pChannel)                                                                                  \
   {                                                                                                                                \
     char* p = (char*) handler;                                                                                                     \

@@ -32,6 +32,7 @@
 #include "SyncContext.h"
 #include "NetContext.h"
 #include "STLMementoAllocator.h"
+#include <array>
 
 class CNetContext;
 class CNetChannel;
@@ -103,11 +104,11 @@ struct SContextViewConfiguration
 	const SNetMessageDef* pAddFileData;
 	const SNetMessageDef* pEndSyncFile;
 	const SNetMessageDef* pAllFilesSynced;
-	const SNetMessageDef* pPartialUpdate[NumAspects];
-	const SNetMessageDef* pSetAspectProfileMsgs[NumAspects];
-	const SNetMessageDef* pUpdateAspectMsgs[NumAspects];
+	std::array<const SNetMessageDef*, NumAspects> pPartialUpdate;
+	std::array<const SNetMessageDef*, NumAspects> pSetAspectProfileMsgs;
+	std::array<const SNetMessageDef*, NumAspects> pUpdateAspectMsgs;
 #if ENABLE_ASPECT_HASHING
-	const SNetMessageDef* pHashAspectMsgs[NumAspects];
+	std::array<const SNetMessageDef*, NumAspects> pHashAspectMsgs;
 #endif
 	const SNetMessageDef* pRMIMsgs[eNRT_NumReliabilityTypes + 1];
 };
@@ -329,7 +330,6 @@ protected:
 	bool         ClearAspects(SNetObjectID netID, NetworkAspectType aspects);
 
 	// generalized message handler for child classes
-
 	bool HandleRMI(TSerialize ser, ENetReliabilityType reliability, bool client);
 
 	// an object was destroyed
@@ -349,7 +349,7 @@ protected:
 	virtual void UnboundObject(SNetObjectID id);
 
 #if ENABLE_ASPECT_HASHING
-	void HashAspect(NetworkAspectID aspectIdx, TSerialize ser);
+	bool HashAspect(NetworkAspectID aspectIdx, TSerialize ser, uint32, uint32, uint32);
 #endif
 
 	virtual void InitChannelEstablishmentTasks(IContextEstablisher* pEst);
@@ -361,7 +361,7 @@ protected:
 	void         DefineExtensionsProtocol(IProtocolBuilder*);
 
 	void         PolluteObjectAspect(SNetObjectID netID, NetworkAspectID aspectIdx);
-	void         PartialAspect(NetworkAspectID aspectIdx, TSerialize ser);
+	bool         PartialAspect(NetworkAspectID aspectIdx, TSerialize ser, uint32, uint32, uint32);
 
 private:
 	virtual bool        ShouldInitContext() = 0;
@@ -759,5 +759,32 @@ private:
 	string                   m_name;
 	_smart_ptr<CContextView> m_pView;
 };
+
+// Template helpers for compile-time generation of arrays of aspect-related message definitions.
+typedef unsigned char aspect_num;
+template<template<int> class Func, aspect_num... values>
+struct pack_to_array { static std::array<const SNetMessageDef*, sizeof...(values)> value; };
+
+template<template<int> class Func, aspect_num... values>
+std::array<const SNetMessageDef*, sizeof...(values)> pack_to_array<Func, values...>::value
+	= {{ Func<values>::fun()... }}; // double braces for Clang
+
+template<template<int> class Func, aspect_num k, aspect_num... values>
+struct static_array : static_array<Func, k - 1, k - 1, values...> {};
+
+template<template<int> class Func, aspect_num... values>
+struct static_array<Func, 0, values...> : pack_to_array<Func, values...> {};
+
+// Helper function for aspect-related messages, used by both client- and server-
+// context views. Addresses of these static trampolines are stored in protocol's
+// message definitions and are called on incoming packets. This trampoline 
+// redirects the call to the respective instance.
+template<int AspectNum, class T, bool (T::*memf)(NetworkAspectID, TSerialize, uint32, uint32, uint32)>
+TNetMessageCallbackResult TrampolineAspect(uint32, INetMessageSink *instance,
+	TSerialize serialize, uint32 curSeq, uint32 oldSeq, uint32 timeFraction32, EntityId *, INetChannel *)
+{
+	bool ret = (static_cast<T*>(instance)->*memf)(AspectNum, serialize, curSeq, oldSeq, timeFraction32);
+	return TNetMessageCallbackResult(ret, (INetAtSyncItem*)NULL);
+}
 
 #endif
