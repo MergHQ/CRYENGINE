@@ -209,7 +209,7 @@ CNotificationWidget QLabel#title
 	color: rgb(97,172,236);
 }
 
-QResizableMenu#notificationResizableMenu > QWidget#InsetBorder > QWidget
+QResizableMenu#NotificationCenterResizableMenu > QWidget#InsetBorder > QWidget
 {
 	margin: 4 5 5 5;
 }
