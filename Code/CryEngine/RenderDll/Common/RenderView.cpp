@@ -311,6 +311,8 @@ void CRenderView::SetClipVolumeBlendInfo(const IClipVolume* pClipVolume, int ble
 	CRY_ASSERT(blendInfoCount < SDeferredClipVolume::MaxBlendInfoCount);
 	CRY_ASSERT(nClipVolumeIndex >= 0 && nClipVolumeIndex < m_clipVolumes.size() && m_clipVolumes[nClipVolumeIndex].nStencilRef == pClipVolume->GetStencilRef());
 
+	if (nClipVolumeIndex >= m_clipVolumes.size())
+		return;
 	SDeferredClipVolume& volume = m_clipVolumes[nClipVolumeIndex];
 
 	SDeferredClipVolume::BlendInfo emptyBlendInfo = { -1, Vec4(ZERO) };
