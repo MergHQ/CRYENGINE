@@ -1092,7 +1092,7 @@ void CAIHandler::SetBehavior(const char* szNextBehaviorName, const IAISignalExtr
 		{
 			if (IAIActor* actor = aiObject->CastToIAIActor())
 			{
-				// TODO(márcio): Save a ref here instead of going around the world to get to the other side
+				// TODO(mÃ¡rcio): Save a ref here instead of going around the world to get to the other side
 				const char* currentName = proxy->GetCurrentBehaviorName();
 				const char* previousName = proxy->GetPreviousBehaviorName();
 
@@ -1145,7 +1145,7 @@ void CAIHandler::FindOrLoadBehavior(const char* szBehaviorName, SmartScriptTable
 			//fixme - problem with reloading!!!!
 			gEnv->pScriptSystem->ExecuteFile(szAIBehaviorFileName, true, true);
 
-			// Márcio: We need to load base behaviors here too!
+			// MÃ¡rcio: We need to load base behaviors here too!
 		}
 
 		if (!m_pBehaviorTable->GetValue(szBehaviorName, pBehaviorTable))

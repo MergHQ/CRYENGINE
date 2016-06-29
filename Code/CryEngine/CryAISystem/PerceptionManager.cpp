@@ -242,7 +242,7 @@ bool CPerceptionManager::UpdatePerception(CAIActor* pAIActor, std::vector<CAIObj
 
 				const Vec3& vTargetPos = pTarget->GetPos();
 
-				// TODO(Márcio): Implement
+				// TODO(MÃ¡rcio): Implement
 				// To make it generic, can have the vision map store 2 collision flag fields and alternate them in case of failure.
 				/*
 				   bool skipSoftCover = false;

@@ -9,7 +9,7 @@
    There is a callback to get this list (ordered by ping) as well as to connect to one ...
    -------------------------------------------------------------------------
    History:
-   - 19/06/2006   : Implemented by Jan Müller
+   - 19/06/2006   : Implemented by Jan MÃ¼ller
 *************************************************************************/
 
 #ifndef __GAMEQUERYLISTENER_H__

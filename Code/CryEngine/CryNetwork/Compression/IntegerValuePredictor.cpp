@@ -11,7 +11,7 @@
    Policy and thus is simplyfied and shrinked.
    -------------------------------------------------------------------------
    History:
-   - 14/11/2005   18:45 : Created by Jan Müller
+   - 14/11/2005   18:45 : Created by Jan MÃ¼ller
 *************************************************************************/
 
 #include "StdAfx.h"

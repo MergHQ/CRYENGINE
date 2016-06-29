@@ -779,7 +779,7 @@ void CAIObject::SetObservable(bool observable)
 			for (size_t i = 0; i < static_cast<size_t>(observableParams.skipListSize); ++i)
 				observableParams.skipList[i] = skipList[i];
 
-			// Márcio: Should check for associated objects and add them here too?
+			// MÃ¡rcio: Should check for associated objects and add them here too?
 			if (!m_visionID)
 				m_visionID = gAIEnv.pVisionMap->CreateVisionID(GetName());
 

@@ -8,7 +8,7 @@ Description: Checkpoint Save/Load system for Game03
 
 -------------------------------------------------------------------------
 History:
-- 10:07:2008 : Created By Jan Müller
+- 10:07:2008 : Created By Jan MÃ¼ller
 - 05:02:2009 : Renamed to CheckpointGame for game-specific usage
 
 *************************************************************************/

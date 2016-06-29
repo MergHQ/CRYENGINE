@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+ï»¿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
  -------------------------------------------------------------------------
@@ -7,7 +7,7 @@
   
  -------------------------------------------------------------------------
   History:
-  - 27:10:2004   11:26 : Created by Márcio Martins
+  - 27:10:2004   11:26 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #include "StdAfx.h"
@@ -48,7 +48,7 @@
 #include <IVehicleSystem.h>
 
 
-#pragma warning(disable: 4355)	// ´this´ used in base member initializer list
+#pragma warning(disable: 4355)	// 'this' used in base member initializer list
 
 #if defined(USER_alexll)
 #define ITEM_DEBUG_MEMALLOC

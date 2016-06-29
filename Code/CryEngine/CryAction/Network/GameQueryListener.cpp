@@ -8,7 +8,7 @@
    is keeping a list of all available servers.
    -------------------------------------------------------------------------
    History:
-   - 19/06/2006   : Implemented by Jan Müller
+   - 19/06/2006   : Implemented by Jan MÃ¼ller
 *************************************************************************/
 
 #include "StdAfx.h"

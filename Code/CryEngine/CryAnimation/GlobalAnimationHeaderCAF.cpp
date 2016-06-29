@@ -1239,7 +1239,7 @@ bool GlobalAnimationHeaderCAF::SaveHTR(const char* szAnimationName, const char* 
 	// Export base pose
 
 	//ivo Each line in this section indicates how each bone is initially orientated within
-	//it’s own local coordinate system.
+	//it's own local coordinate system.
 	for (uint32 v = 0; v < numBipedJoints; v++)
 	{
 		const char* pBonename = jointNameArray[v];

@@ -8,7 +8,7 @@ Description: Detonation Fire Mode Implementation
 
 -------------------------------------------------------------------------
 History:
-- 11:9:2004   15:00 : Created by Márcio Martins
+- 11:9:2004   15:00 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #ifndef __DETONATE_H__

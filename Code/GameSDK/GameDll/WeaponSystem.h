@@ -8,7 +8,7 @@ Description: Weapon System
 
 -------------------------------------------------------------------------
 History:
-- 18:10:2005   17:41 : Created by Márcio Martins
+- 18:10:2005   17:41 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #ifndef __WEAPONSYSTEM_H__

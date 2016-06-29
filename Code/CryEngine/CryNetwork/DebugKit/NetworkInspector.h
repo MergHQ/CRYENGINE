@@ -3,7 +3,7 @@
 // -------------------------------------------------------------------------
 //  File name:   NetworkInspector.h
 //  Version:     v1.00
-//  Created:     19/12/2005 by Jan Müller
+//  Created:     19/12/2005 by Jan MÃ¼ller
 //  Compilers:   Visual Studio.NET 2003
 //  Description: The NetworkInspector gets messages from the network.
 //							Once per frame the messages are automatically sorted and

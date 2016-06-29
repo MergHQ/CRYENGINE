@@ -13,7 +13,7 @@
    It can't work on frame-differences larger than 16 Bit.
    -------------------------------------------------------------------------
    History:
-   - 14/11/2005   18:45 : Created by Jan Müller
+   - 14/11/2005   18:45 : Created by Jan MÃ¼ller
 *************************************************************************/
 
 #ifndef INTEGER_VALUE_PREDICTOR

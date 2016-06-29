@@ -208,9 +208,9 @@ void CMFXAudioEffect::LoadParamsFromXml(const XmlNodeRef& paramsNode)
 {
 	// Xml data format
 	/*
-	   <Audio trigger=”footstep”>
-	   <Switch name=”Switch1” state=”switch1_state” />
-	   <Switch name=”Switch2” state=”swtich2_state” />
+	   <Audio trigger="footstep">
+	   <Switch name="Switch1" state="switch1_state" />
+	   <Switch name="Switch2" state="swtich2_state" />
 	   <Switch ... />
 	   </Audio>
 	 */

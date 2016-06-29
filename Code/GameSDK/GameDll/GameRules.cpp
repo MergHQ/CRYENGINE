@@ -5684,7 +5684,7 @@ void CGameRules::OnCollision_NotifyAI( const EventPhys * pEvent )
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 	// Skip the collision handling if there is no AI system or when in multi-player.
-	if (!gEnv->pAISystem || (gEnv->bMultiplayer && !gEnv->bServer)) // Márcio: Enabling AI in Multiplayer!
+	if (!gEnv->pAISystem || (gEnv->bMultiplayer && !gEnv->bServer)) // MÃ¡rcio: Enabling AI in Multiplayer!
 		return;
 
 	IActorSystem* pActorSystem = g_pGame->GetIGameFramework()->GetIActorSystem();

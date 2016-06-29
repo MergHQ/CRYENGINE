@@ -48,7 +48,7 @@
    //forbidden to use!
    -------------------------------------------------------------------------
    History:
-   - 17/11/2005   10:30 : Created by Jan Müller
+   - 17/11/2005   10:30 : Created by Jan MÃ¼ller
    - 01/08/2005           Updated to be used in new compression framework (Craig Tiller)
 *************************************************************************/
 

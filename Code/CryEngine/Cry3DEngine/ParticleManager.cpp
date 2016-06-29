@@ -8,7 +8,7 @@
 //  Description: Manage particle effects and emitters
 // -------------------------------------------------------------------------
 //  History:
-//	- 03:2006				 : Modified by Jan Müller (Serialization)
+//	- 03:2006				 : Modified by Jan MÃ¼ller (Serialization)
 //
 ////////////////////////////////////////////////////////////////////////////
 

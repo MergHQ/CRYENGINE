@@ -383,7 +383,7 @@ void CAIHideObject::GetCoverDistances(bool useLowCover, const Vec3& target, bool
 {
 	Vec3 toTarget = (target - m_pathOrig).GetNormalized();
 
-	if (m_pathNorm.Dot(toTarget) <= 0.2f) //~80บ
+	if (m_pathNorm.Dot(toTarget) <= 0.2f) //~80ยบ
 	{
 		leftUmbra = rightUmbra = 0.0f;
 		leftEdge = rightEdge = 0.0f;

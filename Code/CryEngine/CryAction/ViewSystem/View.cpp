@@ -8,7 +8,7 @@
    -------------------------------------------------------------------------
    History:
    - 20:9:2004     : Created by Filippo De Luca
-   - September 2010: Jens Schöbel created a smooth extended camera shake
+   - September 2010: Jens SchÃ¶bel created a smooth extended camera shake
 
 *************************************************************************/
 #include "StdAfx.h"
