@@ -1048,14 +1048,13 @@ int CArticulatedEntity::Action(pe_action *_action, int bThreadSafe)
 				Awake();
 			}
 		}	else if (!is_unused(action->v)) {
-			pe_status_dynamics sd;
-			GetStatus(&sd);
-
-			pe_action_impulse ai;
-			ai.ipart = m_joints[0].iStartPart;
-			ai.point = sd.centerOfMass;
-			ai.impulse = (action->v-m_body.v)*m_body.M;
-			Action(&ai);
+			Vec3 v = action->v, w = is_unused(action->w) ? action->w : Vec3(0);
+			for(int i=0;i<m_nJoints;i++) {
+				m_joints[i].body.P = (m_joints[i].body.v = v+(w^m_joints[i].body.pos-m_joints[0].body.pos))*m_joints[i].body.M;
+				m_joints[i].body.L = m_joints[i].body.q*(m_joints[i].body.Ibody*(!m_joints[i].body.q*(m_joints[i].body.w = w)));
+				m_joints[i].dq.zero();
+			}
+			m_body.P = (m_body.v=v)*m_body.M;
 		}
 		return 1;
 	}
@@ -1362,6 +1361,7 @@ int CArticulatedEntity::Step(float time_interval)
 			m_posPivot = m_joints[0].body.pos;
 	m_body.pos = m_posPivot;
 	m_posNew = m_posPivot - m_offsPivot;
+	m_body.offsfb = (m_body.pos-m_posNew)*m_qrot;
 	m_bAwake = isneg(m_simTime-2.5f) | (iszero(m_nBodyContacts) & (m_bGrounded^1) & (m_bFloating^1));
 	m_simTime += time_interval;
 	m_simTimeAux += time_interval;
