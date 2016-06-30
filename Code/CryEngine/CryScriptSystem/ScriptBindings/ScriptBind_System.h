@@ -302,8 +302,21 @@ public:
 	//!		<param name="g">Green component for the sphere color. Default is 1.</param>
 	//!		<param name="b">Blue component for the sphere color. Default is 1.</param>
 	//!		<param name="a">Alpha component for the sphere color. Default is 1.</param>
-	//! <description>Draws a wireframe sphere.</description>
+	//! <description>Draws a axis aligned box.</description>
 	int DrawAABB(IFunctionHandler* pH, float x, float y, float z, float x2, float y2, float z2, int r, int g, int b, int a);
+
+	//! <code>System.DrawAABB( x, y, z, x2, y2, z2, r, g, b, a )</code>
+	//!		<param name="x">X component of the centre point of the box.</param>
+	//!		<param name="y">Y component of the centre point of the box.</param>
+	//!		<param name="z">Z component of the centre point of the box.</param>
+	//!		<param name="w">Width of the box.</param>
+	//!		<param name="h">Height of the box.</param>
+	//!		<param name="d">Depth of the box.</param>
+	//!		<param name="rx">Rotation in X of the box.</param>
+	//!		<param name="ry">Rotation in X of the box.</param>
+	//!		<param name="rz">Rotation in X of the box.</param>
+	//! <description>Draws an object bounding box.</description>
+	int DrawOBB(IFunctionHandler* pH, float x, float y, float z, float w, float h, float d, float rx, float ry, float rz);
 
 	//! <code>System.SetGammaDelta( fDelta )</code>
 	//!		<param name="fDelta">Delta value.</param>
