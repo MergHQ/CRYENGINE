@@ -31,6 +31,7 @@ public:
 	//------------------int cvars-------------------------------
 	static ICVar* CV_r_ShowDynTexturesFilter;
 	static ICVar* CV_r_ShaderCompilerServer;
+	static ICVar* CV_r_ShaderCompilerFolderName;
 	static ICVar* CV_r_ShaderCompilerFolderSuffix;
 	static ICVar* CV_r_ShaderEmailTags;
 	static ICVar* CV_r_ShaderEmailCCs;

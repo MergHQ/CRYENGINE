@@ -33,31 +33,40 @@ void CShaderSrv::Init()
 	}
 #endif
 
-	m_RequestLineRootFolder = "";
-
 	ICVar* pGameFolder = gEnv->pConsole->GetCVar("sys_game_folder");
-	ICVar* pCompilerFolderSuffix = CRenderer::CV_r_ShaderCompilerFolderSuffix;
+	ICVar* pCompilerFolderName = CRenderer::CV_r_ShaderCompilerFolderName;
 
-	if (pGameFolder)
+	string gameFolderName = pGameFolder ? pGameFolder->GetString() : "";
+	string compilerFolderName = pCompilerFolderName ? pCompilerFolderName->GetString() : "";
+
+	string folder = "";
+
+	if (!compilerFolderName.empty())
 	{
-		string folder = pGameFolder->GetString();
-		folder.Trim();
-		if (!folder.empty())
-		{
-			if (pCompilerFolderSuffix)
-			{
-				string suffix = pCompilerFolderSuffix->GetString();
-				suffix.Trim();
-				folder.append(suffix);
-			}
-			m_RequestLineRootFolder = folder + string("/");
-		}
+		folder = compilerFolderName;
 	}
-
-	if (m_RequestLineRootFolder.empty())
+	else if (!gameFolderName.empty())
+	{
+		folder = gameFolderName;
+	}
+	else
 	{
 		iLog->Log("ERROR: CShaderSrv::Init: Game folder has not been specified\n");
+		return;
 	}
+
+	ICVar* pCompilerFolderSuffix = CRenderer::CV_r_ShaderCompilerFolderSuffix;
+	
+	folder.Trim();
+	if (pCompilerFolderSuffix)
+	{
+		string suffix = pCompilerFolderSuffix->GetString();
+		suffix.Trim();
+		folder.append(suffix);
+	}
+	folder.append("/");
+
+	m_RequestLineRootFolder = folder;
 }
 
 CShaderSrv& CShaderSrv::Instance()
