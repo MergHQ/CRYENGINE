@@ -14,10 +14,10 @@ CAreaGrid::CAreaGrid()
 	, m_pbitFieldX(nullptr)
 	, m_pbitFieldY(nullptr)
 	, m_pAreaBounds(nullptr)
-	, m_papAreas(nullptr)
+	, m_pAreas(nullptr)
 	, m_bitFieldSizeU32(0)
 	, m_maxNumAreas(0)
-	, m_nCells(0)
+	, m_numCells(0)
 {
 }
 
@@ -31,8 +31,8 @@ CAreaGrid::~CAreaGrid()
 TAreaPointers const& CAreaGrid::GetAreas(uint32 const x, uint32 const y)
 {
 	// Must be empty, don't clear here for performance reasons!
-	assert(m_apAreasTmp.empty());
-	assert(x < m_nCells && y < m_nCells);
+	CRY_ASSERT(m_areasTmp.empty());
+	CRY_ASSERT(x < m_numCells && y < m_numCells);
 
 	uint32 const* const pBitsLHS = m_pbitFieldX + (m_bitFieldSizeU32 * x);
 	uint32 const* const pBitsRHS = m_pbitFieldY + (m_bitFieldSizeU32 * y);
@@ -45,30 +45,30 @@ TAreaPointers const& CAreaGrid::GetAreas(uint32 const x, uint32 const y)
 		{
 			if (currentBitField & 1)
 			{
-				m_apAreasTmp.push_back(m_papAreas->at(offset + j));
+				m_areasTmp.push_back(m_pAreas->at(offset + j));
 			}
 		}
 	}
 
-	return m_apAreasTmp;
+	return m_areasTmp;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAreaGrid::GetAreaIndex(CArea const* const pArea, size_t& nIndexOut)
+bool CAreaGrid::GetAreaIndex(CArea const* const pArea, size_t& outIndex)
 {
 	bool bSuccess = false;
 
-	if (m_papAreas != NULL)
+	if (m_pAreas != nullptr)
 	{
-		TAreaPointers::const_iterator Iter(m_papAreas->begin());
-		TAreaPointers::const_iterator const IterEnd(m_papAreas->end());
+		TAreaPointers::const_iterator Iter(m_pAreas->begin());
+		TAreaPointers::const_iterator const IterEnd(m_pAreas->end());
 
 		for (; Iter != IterEnd; ++Iter)
 		{
 			if ((*Iter) == pArea)
 			{
-				nIndexOut = std::distance(m_papAreas->begin(), Iter);
-				assert(nIndexOut < m_papAreas->size());
+				outIndex = std::distance(m_pAreas->begin(), Iter);
+				CRY_ASSERT(outIndex < m_pAreas->size());
 				bSuccess = true;
 
 				break;
@@ -82,7 +82,7 @@ bool CAreaGrid::GetAreaIndex(CArea const* const pArea, size_t& nIndexOut)
 //////////////////////////////////////////////////////////////////////////
 void CAreaGrid::AddAreaBit(const Vec2i& start, const Vec2i& end, uint32 areaIndex)
 {
-	CRY_ASSERT(start.x >= 0 && start.y >= 0 && end.x < (signed)m_nCells && end.y < (signed)m_nCells);
+	CRY_ASSERT(start.x >= 0 && start.y >= 0 && end.x < (int)m_numCells && end.y < (int)m_numCells);
 	CRY_ASSERT(start.x <= end.x && start.y <= end.y);
 
 	uint32* pBits;
@@ -114,7 +114,7 @@ void CAreaGrid::RemoveAreaBit(uint32 areaIndex)
 		return; // Hasn't been added yet
 	}
 
-	CRY_ASSERT(start.x >= 0 && start.y >= 0 && end.x < (signed)m_nCells && end.y < (signed)m_nCells);
+	CRY_ASSERT(start.x >= 0 && start.y >= 0 && end.x < (int)m_numCells && end.y < (int)m_numCells);
 	CRY_ASSERT(start.x <= end.x && start.y <= end.y);
 
 	uint32* pBits;
@@ -138,34 +138,37 @@ void CAreaGrid::RemoveAreaBit(uint32 areaIndex)
 //////////////////////////////////////////////////////////////////////////
 void CAreaGrid::ClearAllBits()
 {
-	memset(m_pbitFieldX, 0, m_bitFieldSizeU32 * m_nCells * sizeof(m_pbitFieldX[0]));
-	memset(m_pbitFieldY, 0, m_bitFieldSizeU32 * m_nCells * sizeof(m_pbitFieldY[0]));
+	memset(m_pbitFieldX, 0, m_bitFieldSizeU32 * m_numCells * sizeof(m_pbitFieldX[0]));
+	memset(m_pbitFieldY, 0, m_bitFieldSizeU32 * m_numCells * sizeof(m_pbitFieldY[0]));
 	memset(m_pAreaBounds, -1, sizeof(m_pAreaBounds[0]) * m_maxNumAreas);
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CAreaGrid::ResetArea(CArea* pArea)
 {
-	if (m_papAreas == NULL)
-		return false;
+	bool bSuccess = false;
 
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-
-	uint32 index = 0;
-	TAreaPointers::const_iterator it = m_papAreas->begin();
-	TAreaPointers::const_iterator const itEnd = m_papAreas->end();
-	const uint32 numAreas = min((uint32)m_maxNumAreas, (uint32)m_papAreas->size());
-
-	for (; it != itEnd && index < numAreas; ++it, ++index)
+	if (m_pAreas != nullptr)
 	{
-		if (*it == pArea)
+		FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+
+		uint32 index = 0;
+		TAreaPointers::const_iterator iter(m_pAreas->begin());
+		TAreaPointers::const_iterator const iterEnd(m_pAreas->end());
+		uint32 const numAreas = std::min<uint32>((uint32)m_maxNumAreas, (uint32)m_pAreas->size());
+
+		for (; iter != iterEnd && index < numAreas; ++iter, ++index)
 		{
-			RemoveAreaBit(index);
-			AddArea(pArea, index);
-			return true;
+			if (*iter == pArea)
+			{
+				RemoveAreaBit(index);
+				AddArea(pArea, index);
+				bSuccess = true;
+			}
 		}
 	}
-	return false;
+
+	return bSuccess;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -173,45 +176,43 @@ void CAreaGrid::AddArea(CArea* pArea, uint32 areaIndex)
 {
 	// Calculate a loose bounding box (ie one that covers all the region we will have to check this
 	// shape for, including fade area).
-	Vec2 vBBCentre(0, 0);
-	Vec2 vBBExtent(0, 0);
+	Vec2 vBBCentre(0.0f, 0.0f);
+	Vec2 vBBExtent(0.0f, 0.0f);
+
 	switch (pArea ? pArea->GetAreaType() : EEntityAreaType(-1))
 	{
 	case ENTITY_AREA_TYPE_SPHERE:
 		{
-			Vec3 vSphereCentre(ZERO);
-			float fSphereRadius(0.0f);
+			Vec3 sphereCenter(ZERO);
+			float sphereRadius(0.0f);
 			if (pArea)
-				pArea->GetSphere(vSphereCentre, fSphereRadius);
-			vBBCentre = Vec2(vSphereCentre.x, vSphereCentre.y);
-			float const fGreatestFadeDistance = GetGreatestFadeDistance(pArea);
-			vBBExtent = Vec2(fSphereRadius + fGreatestFadeDistance, fSphereRadius + fGreatestFadeDistance);
+				pArea->GetSphere(sphereCenter, sphereRadius);
+			vBBCentre = Vec2(sphereCenter.x, sphereCenter.y);
+			float const greatestFadeDistance = pArea->GetGreatestFadeDistance();
+			vBBExtent = Vec2(sphereRadius + greatestFadeDistance, sphereRadius + greatestFadeDistance);
 		}
 		break;
-
 	case ENTITY_AREA_TYPE_SHAPE:
 		{
-			Vec2 vShapeMin, vShapeMax;
-			pArea->GetBBox(vShapeMin, vShapeMax);
-			vBBCentre = (vShapeMax + vShapeMin) * 0.5f;
-			float const fGreatestFadeDistance = GetGreatestFadeDistance(pArea);
-			vBBExtent = (vShapeMax - vShapeMin) * 0.5f + Vec2(fGreatestFadeDistance, fGreatestFadeDistance);
+			Vec2 shapeMin, shapeMax;
+			pArea->GetBBox(shapeMin, shapeMax);
+			vBBCentre = (shapeMax + shapeMin) * 0.5f;
+			float const greatestFadeDistance = pArea->GetGreatestFadeDistance();
+			vBBExtent = (shapeMax - shapeMin) * 0.5f + Vec2(greatestFadeDistance, greatestFadeDistance);
 		}
 		break;
-
 	case ENTITY_AREA_TYPE_BOX:
 		{
-			Vec3 vBoxMin, vBoxMax;
-			pArea->GetBox(vBoxMin, vBoxMax);
+			Vec3 boxMin, boxMax;
+			pArea->GetBox(boxMin, boxMax);
 			Matrix34 tm;
 			pArea->GetMatrix(tm);
 			vBBCentre = Vec2(tm.GetTranslation());
-			vBBExtent = Matrix33(tm).GetFabs() * (Vec2(vBoxMax - vBoxMin) * 0.5f);
-			float const fGreatestFadeDistance = GetGreatestFadeDistance(pArea);
-			vBBExtent += Vec2(fGreatestFadeDistance, fGreatestFadeDistance);
+			vBBExtent = Matrix33(tm).GetFabs() * (Vec2(boxMax - boxMin) * 0.5f);
+			float const greatestFadeDistance = pArea->GetGreatestFadeDistance();
+			vBBExtent += Vec2(greatestFadeDistance, greatestFadeDistance);
 		}
 		break;
-
 	case ENTITY_AREA_TYPE_SOLID:
 		{
 			AABB boundbox;
@@ -219,12 +220,12 @@ void CAreaGrid::AddArea(CArea* pArea, uint32 areaIndex)
 			Matrix34 tm;
 			pArea->GetMatrix(tm);
 			static const float sqrt2 = 1.42f;
-			float const fGreatestFadeDistance = GetGreatestFadeDistance(pArea);
-			const Vec3 vBoxMinWorld = tm.TransformPoint(boundbox.min);
-			const Vec3 vBoxMaxWorld = tm.TransformPoint(boundbox.max);
-			vBBExtent = Vec2(abs(vBoxMaxWorld.x - vBoxMinWorld.x), abs(vBoxMaxWorld.y - vBoxMinWorld.y)) * sqrt2 * 0.5f;
-			vBBExtent += Vec2(fGreatestFadeDistance, fGreatestFadeDistance);
-			vBBCentre = Vec2(vBoxMinWorld.x + vBoxMaxWorld.x, vBoxMinWorld.y + vBoxMaxWorld.y) * 0.5f;
+			float const greatestFadeDistance = pArea->GetGreatestFadeDistance();
+			Vec3 const boxMinWorld(tm.TransformPoint(boundbox.min));
+			Vec3 const boxMaxWorld(tm.TransformPoint(boundbox.max));
+			vBBExtent = Vec2(abs(boxMaxWorld.x - boxMinWorld.x), abs(boxMaxWorld.y - boxMinWorld.y)) * sqrt2 * 0.5f;
+			vBBExtent += Vec2(greatestFadeDistance, greatestFadeDistance);
+			vBBCentre = Vec2(boxMinWorld.x + boxMaxWorld.x, boxMinWorld.y + boxMaxWorld.y) * 0.5f;
 		}
 		break;
 	}
@@ -233,13 +234,13 @@ void CAreaGrid::AddArea(CArea* pArea, uint32 areaIndex)
 	Vec2i start((int)((vBBCentre.x - vBBExtent.x) * GRID_CELL_SIZE_R), (int)((vBBCentre.y - vBBExtent.y) * GRID_CELL_SIZE_R));
 	Vec2i end((int)((vBBCentre.x + vBBExtent.x) * GRID_CELL_SIZE_R), (int)((vBBCentre.y + vBBExtent.y) * GRID_CELL_SIZE_R));
 
-	if ((end.x | end.y) < 0 || start.x >= (signed)m_nCells || start.y > (signed)m_nCells)
+	if ((end.x | end.y) < 0 || start.x >= (int)m_numCells || start.y > (int)m_numCells)
 		return;
 
-	start.x = max(start.x, 0);
-	start.y = max(start.y, 0);
-	end.x = min(end.x, (int)m_nCells - 1);
-	end.y = min(end.y, (int)m_nCells - 1);
+	start.x = std::max<int>(start.x, 0);
+	start.y = std::max<int>(start.y, 0);
+	end.x = std::min<int>(end.x, (int)m_numCells - 1);
+	end.y = std::min<int>(end.y, (int)m_numCells - 1);
 
 	AddAreaBit(start, end, areaIndex);
 
@@ -250,57 +251,53 @@ void CAreaGrid::AddArea(CArea* pArea, uint32 areaIndex)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAreaGrid::Compile(CEntitySystem* pEntitySystem, TAreaPointers const& rAreas)
+void CAreaGrid::Compile(CEntitySystem* pEntitySystem, TAreaPointers const& areas)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 
-	uint32 nOldCells = m_nCells;
+	uint32 oldNumCells = m_numCells;
 	uint32 terrainSize = gEnv->p3DEngine->GetTerrainSize();
-	uint32 nCells = terrainSize / GRID_CELL_SIZE;
-	nCells = max(nCells, (uint32)2048);
+	uint32 numCells = terrainSize / GRID_CELL_SIZE;
+	numCells = std::max<uint32>(numCells, 2048);
 
 	// No point creating an area grid if there are no areas.
-	if (rAreas.empty() || nCells == 0)
+	if (areas.empty() || numCells == 0)
 	{
 		Reset();
 		return;
 	}
 
-	uint32 const nAreaCount = static_cast<uint32>(rAreas.size());
-	uint32 bitFieldSizeU32 = ((nAreaCount + 31) >> 5);
+	uint32 const numAreas = static_cast<uint32>(areas.size());
+	uint32 bitFieldSizeU32 = ((numAreas + 31) >> 5);
 
-	if (nCells != nOldCells || nAreaCount > m_maxNumAreas || m_bitFieldSizeU32 != bitFieldSizeU32)
+	if (numCells != oldNumCells || numAreas > m_maxNumAreas || m_bitFieldSizeU32 != bitFieldSizeU32)
 	{
 		// Full reset and reallocate bit-fields
 		Reset();
-		m_nCells = nCells;
+		m_numCells = numCells;
 
 		m_bitFieldSizeU32 = bitFieldSizeU32;
-		m_maxNumAreas = nAreaCount;
+		m_maxNumAreas = numAreas;
 
-		assert(m_pbitFieldX == NULL && m_apAreasTmp.empty());
+		CRY_ASSERT(m_pbitFieldX == nullptr && m_areasTmp.empty());
 
-		m_pbitFieldX = new uint32[m_bitFieldSizeU32 * m_nCells];
-		m_pbitFieldY = new uint32[m_bitFieldSizeU32 * m_nCells];
+		m_pbitFieldX = new uint32[m_bitFieldSizeU32 * m_numCells];
+		m_pbitFieldY = new uint32[m_bitFieldSizeU32 * m_numCells];
 
-		m_apAreasTmp.reserve(m_maxNumAreas);
+		m_areasTmp.reserve(m_maxNumAreas);
 
 		m_pAreaBounds = new Vec2i[m_maxNumAreas][2];
 	}
 
-	m_papAreas = &rAreas;
+	m_pAreas = &areas;
 	ClearAllBits();
 
 	m_pEntitySystem = pEntitySystem;
+	uint32 areaIndex = 0;
 
-	// Loop through ALL areas
-	TAreaPointers::const_iterator Iter(rAreas.begin());
-	TAreaPointers::const_iterator const IterEnd(rAreas.end());
-	uint32 nAreaIndex = 0;
-
-	for (; Iter != IterEnd; ++Iter, ++nAreaIndex)
+	for (auto const pArea : areas)
 	{
-		AddArea(*Iter, nAreaIndex);
+		AddArea(pArea, areaIndex++);
 	}
 }
 
@@ -310,25 +307,25 @@ void CAreaGrid::Reset()
 	SAFE_DELETE_ARRAY(m_pbitFieldX);
 	SAFE_DELETE_ARRAY(m_pbitFieldY);
 	SAFE_DELETE_ARRAY(m_pAreaBounds);
-	stl::free_container(m_apAreasTmp);
-	m_papAreas = NULL;
+	stl::free_container(m_areasTmp);
+	m_pAreas = nullptr;
 	m_bitFieldSizeU32 = 0;
 	m_maxNumAreas = 0;
-	m_nCells = 0;
+	m_numCells = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
-TAreaPointers const& CAreaGrid::GetAreas(Vec3 const& rPos)
+TAreaPointers const& CAreaGrid::GetAreas(Vec3 const& position)
 {
 	// Clear this once before the call to GetAreas!
 	ClearTmpAreas();
 
-	if (m_pbitFieldX != NULL)
+	if (m_pbitFieldX != nullptr)
 	{
-		uint32 const gridX = static_cast<uint32>(rPos.x * GRID_CELL_SIZE_R);
-		uint32 const gridY = static_cast<uint32>(rPos.y * GRID_CELL_SIZE_R);
+		uint32 const gridX = static_cast<uint32>(position.x * GRID_CELL_SIZE_R);
+		uint32 const gridY = static_cast<uint32>(position.y * GRID_CELL_SIZE_R);
 
-		if (gridX < m_nCells && gridY < m_nCells)
+		if (gridX < m_numCells && gridY < m_numCells)
 		{
 			return GetAreas(gridX, gridY);
 		}
@@ -338,7 +335,7 @@ TAreaPointers const& CAreaGrid::GetAreas(Vec3 const& rPos)
 		}
 	}
 
-	return m_apAreasTmp;
+	return m_areasTmp;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -365,9 +362,9 @@ void CAreaGrid::Draw()
 		ColorF(1.0f, 1.0f, 1.0f, 1.0f),
 	};
 
-	for (uint32 gridX = 0; gridX < m_nCells; gridX++)
+	for (uint32 gridX = 0; gridX < m_numCells; gridX++)
 	{
-		for (uint32 gridY = 0; gridY < m_nCells; gridY++)
+		for (uint32 gridY = 0; gridY < m_numCells; gridY++)
 		{
 			TAreaPointers const& rAreas = GetAreas(gridX, gridY);
 
@@ -394,7 +391,7 @@ void CAreaGrid::Draw()
 					else
 					{
 						// Areas must be known!
-						assert(0);
+						CRY_ASSERT(false);
 
 						if (divisor == 0.0f)
 						{
@@ -437,34 +434,8 @@ void CAreaGrid::Draw()
 	float const fColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 	gEnv->pRenderer->Draw2dLabel(30, yPos, 1.35f, fColor, false, "Area Grid Mem Use: num cells: %d, memAlloced: %.2fk",
-	                             m_nCells, (4 * m_bitFieldSizeU32 * m_nCells * 2) / 1024.f);
+	                             m_numCells, (4 * m_bitFieldSizeU32 * m_numCells * 2) / 1024.f);
 #endif // _RELEASE
-}
-
-//////////////////////////////////////////////////////////////////////////
-float CAreaGrid::GetGreatestFadeDistance(CArea const* const pArea)
-{
-	float fGreatestFadeDistance = 0.0f;
-	TEntityIDs const& aEntityIDs = (*(pArea->GetEntities()));
-	TEntityIDs::const_iterator Iter(aEntityIDs.begin());
-	TEntityIDs::const_iterator const IterEnd(aEntityIDs.end());
-
-	for (; Iter != IterEnd; ++Iter)
-	{
-		IEntity const* const pEntity = (m_pEntitySystem != NULL) ? m_pEntitySystem->GetEntity((*Iter)) : NULL;
-
-		if (pEntity != NULL)
-		{
-			IEntityAudioProxy const* const pIEntityAudioProxy = (IEntityAudioProxy*)pEntity->GetProxy(ENTITY_PROXY_AUDIO);
-
-			if (pIEntityAudioProxy != NULL)
-			{
-				fGreatestFadeDistance = max(fGreatestFadeDistance, pIEntityAudioProxy->GetFadeDistance());
-			}
-		}
-	}
-
-	return fGreatestFadeDistance;
 }
 
 #ifndef _RELEASE

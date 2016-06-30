@@ -40,6 +40,7 @@ public:
 	virtual float              GetFadeDistance() const override                                         { return m_fadeDistance; }
 	virtual void               SetEnvironmentFadeDistance(float const environmentFadeDistance) override { m_environmentFadeDistance = environmentFadeDistance; }
 	virtual float              GetEnvironmentFadeDistance() const override                              { return m_environmentFadeDistance; }
+	virtual float              GetGreatestFadeDistance() const override;
 	virtual void               SetEnvironmentId(AudioEnvironmentId const environmentId) override        { m_audioEnvironmentId = environmentId; }
 	virtual AudioEnvironmentId GetEnvironmentId() const override                                        { return m_audioEnvironmentId; }
 	virtual AudioProxyId       CreateAuxAudioProxy() override;

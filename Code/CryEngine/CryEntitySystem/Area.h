@@ -153,8 +153,8 @@ public:
 	explicit CArea(CAreaManager* pManager);
 
 	//IArea
-	virtual size_t         GetEntityAmount() const                  { return m_vEntityID.size(); }
-	virtual const EntityId GetEntityByIdx(size_t const index) const { return m_vEntityID[index]; }
+	virtual size_t         GetEntityAmount() const                  { return m_entityIds.size(); }
+	virtual const EntityId GetEntityByIdx(size_t const index) const { return m_entityIds[index]; }
 	virtual void           GetMinMax(Vec3** min, Vec3** max) const
 	{
 		(*min)->x = m_areaBBox.min.x;
@@ -169,24 +169,24 @@ public:
 	// Releases area.
 	void     Release();
 
-	void     SetID(const int id)              { m_AreaID = id; }
-	int      GetID() const                    { return m_AreaID; }
+	void     SetID(const int id)              { m_areaId = id; }
+	int      GetID() const                    { return m_areaId; }
 
-	void     SetEntityID(const EntityId id)   { m_EntityID = id; }
-	EntityId GetEntityID() const              { return m_EntityID; }
+	void     SetEntityID(const EntityId id)   { m_entityId = id; }
+	EntityId GetEntityID() const              { return m_entityId; }
 
-	void     SetGroup(const int id)           { m_AreaGroupID = id; }
-	int      GetGroup() const                 { return m_AreaGroupID; }
+	void     SetGroup(const int id)           { m_areaGroupId = id; }
+	int      GetGroup() const                 { return m_areaGroupId; }
 
-	void     SetPriority(const int nPriority) { m_nPriority = nPriority; }
-	int      GetPriority() const              { return m_nPriority; }
+	void     SetPriority(const int nPriority) { m_priority = nPriority; }
+	int      GetPriority() const              { return m_priority; }
 
 	// Description:
 	//    Sets sound obstruction depending on area type
 	void            SetSoundObstructionOnAreaFace(size_t const index, bool const bObstructs);
 
 	void            SetAreaType(EEntityAreaType type);
-	EEntityAreaType GetAreaType() const { return m_AreaType; }
+	EEntityAreaType GetAreaType() const { return m_areaType; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// These functions also switch area type.
@@ -204,9 +204,9 @@ public:
 	void                    SetMatrix(const Matrix34& tm);
 	void                    GetMatrix(Matrix34& tm) const;
 
-	void                    GetBox(Vec3& min, Vec3& max) const             { min = m_BoxMin; max = m_BoxMax; }
+	void                    GetBox(Vec3& min, Vec3& max) const             { min = m_boxMin; max = m_boxMax; }
 	void                    GetWorldBox(Vec3& rMin, Vec3& rMax) const;
-	void                    GetSphere(Vec3& vCenter, float& fRadius) const { vCenter = m_SphereCenter; fRadius = m_SphereRadius; }
+	void                    GetSphere(Vec3& vCenter, float& fRadius) const { vCenter = m_sphereCenter; fRadius = m_sphereRadius; }
 
 	void                    SetHeight(float fHeight)                       { m_height = fHeight; }
 	float                   GetHeight() const                              { return m_height; }
@@ -214,8 +214,8 @@ public:
 	void                    AddEntity(const EntityId entId);
 	void                    AddEntity(const EntityGUID entGuid);
 	void                    AddEntities(const EntityIdVector& entIDs);
-	const EntityIdVector*   GetEntities() const     { return &m_vEntityID; }
-	const EntityGuidVector* GetEntitiesGuid() const { return &m_vEntityGuid; }
+	const EntityIdVector*   GetEntities() const     { return &m_entityIds; }
+	const EntityGuidVector* GetEntitiesGuid() const { return &m_entityGuids; }
 
 	void                    RemoveEntity(EntityId const entId);
 	void                    RemoveEntity(EntityGUID const entGuid);
@@ -223,10 +223,15 @@ public:
 	void                    ResolveEntityIds();
 	void                    ReleaseCachedAreaData();
 
-	void                    SetProximity(float prx) { m_fProximity = prx; }
-	float                   GetProximity()          { return m_fProximity; }
+	void                    SetProximity(float prx) { m_proximity = prx; }
+	float                   GetProximity()          { return m_proximity; }
 
+	float                   GetFadeDistance();
+	float                   GetEnvironmentFadeDistance();
 	float                   GetGreatestFadeDistance();
+
+	float                   GetInnerFadeDistance() const { return m_innerFadeDistance; }
+	void                    SetInnerFadeDistance(float const distance) { m_innerFadeDistance = distance; }
 
 	// Invalidations
 	void InvalidateCachedAreaData(EntityId const nEntityID);
@@ -262,21 +267,30 @@ public:
 	void SendEvent(SEntityEvent& newEvent, bool bClearCachedEvents = true);
 
 	// Inside
-	void  EnterArea(IEntity const* const __restrict pEntity);
-	void  LeaveArea(IEntity const* const __restrict pEntity);
-	void  UpdateAreaInside(IEntity const* const __restrict pEntity);
-	void  ExclusiveUpdateAreaInside(IEntity const* const __restrict pEntity, EntityId const AreaHighID, float const fadeValue);
-	void  ExclusiveUpdateAreaNear(IEntity const* const __restrict pEntity, EntityId const AreaHighID, float const fadeValue);
+	void  EnterArea(EntityId const entityId);
+	void  LeaveArea(EntityId const entityId);
+	void  ExclusiveUpdateAreaInside(
+		EntityId const entityId,
+		EntityId const higherAreaId,
+		float const fade);
+	void  ExclusiveUpdateAreaNear(
+		EntityId const entityId,
+		EntityId const higherAreaId,
+		float const distance,
+		Vec3 const& position);
 	float CalculateFade(const Vec3& pos3D);
-	void  OnAreaCrossing(IEntity const* const __restrict pEntity);
+	void  OnAreaCrossing(EntityId const entityId);
 
 	// Near
-	void EnterNearArea(IEntity const* const __restrict pEntity, Vec3 const& closestPointToArea);
-	void LeaveNearArea(IEntity const* const __restrict pEntity);
+	void EnterNearArea(
+		EntityId const entityId,
+		Vec3 const& closestPointToArea,
+		float const distance);
+	void LeaveNearArea(EntityId const entityId);
 
 	// Far
-	void   OnAddedToAreaCache(IEntity const* const pEntity);
-	void   OnRemovedFromAreaCache(IEntity const* const pEntity);
+	void   OnAddedToAreaCache(EntityId const entityId);
+	void   OnRemovedFromAreaCache(EntityId const entityId);
 
 	void   Draw(size_t const idx);
 
@@ -332,28 +346,31 @@ private:
 private:
 
 	CAreaManager* const m_pAreaManager;
-	float               m_fProximity;
-	float               m_fFadeDistance;
+	float               m_proximity;
+	float               m_fadeDistance;
+	float               m_environmentFadeDistance;
+	float               m_greatestFadeDistance;
+	float               m_innerFadeDistance;
 
 	// attached entities IDs list
-	EntityIdVector   m_vEntityID;
-	EntityGuidVector m_vEntityGuid;
+	EntityIdVector   m_entityIds;
+	EntityGuidVector m_entityGuids;
 
 	typedef std::vector<SEntityEvent> CachedEvents;
 	CachedEvents             m_cachedEvents;
 
-	int                      m_AreaID;
-	int                      m_AreaGroupID;
-	EntityId                 m_EntityID;
-	int                      m_nPriority;
+	int                      m_areaId;
+	int                      m_areaGroupId;
+	EntityId                 m_entityId;
+	int                      m_priority;
 
-	Matrix34                 m_WorldTM;
-	Matrix34                 m_InvMatrix;
+	Matrix34                 m_worldTM;
+	Matrix34                 m_invMatrix;
 
-	EEntityAreaType          m_AreaType;
+	EEntityAreaType          m_areaType;
 	typedef VectorMap<EntityId, SCachedAreaData> TEntityCachedAreaDataMap;
 	TEntityCachedAreaDataMap m_mapEntityCachedAreaData;
-	Vec3 const               m_oNULLVec;
+	Vec3 const               m_nullVec;
 
 	// for shape areas ----------------------------------------------------------------------
 	// area's bbox
@@ -369,32 +386,32 @@ private:
 	//	IVisArea *m_Sector;
 
 	// for box areas ----------------------------------------------------------------------
-	Vec3         m_BoxMin;
-	Vec3         m_BoxMax;
+	Vec3         m_boxMin;
+	Vec3         m_boxMax;
 	bool         m_bAllObstructed : 1;
-	unsigned int m_nObstructedCount;
+	unsigned int m_numObstructed;
 
 	struct SBoxSideSoundObstruction
 	{
 		bool bObstructed : 1;
-	} m_abBoxSideObstruction[6];
+	} m_boxSideObstruction[6];
 
 	struct SBoxSide
 	{
-		SBoxSide(Vec3 const& rv3MinValues, Vec3 const& rv3MaxValues)
-			: v3MinValues(rv3MinValues),
-			v3MaxValues(rv3MaxValues){}
-		Vec3 const v3MinValues;
-		Vec3 const v3MaxValues;
+		SBoxSide(Vec3 const& _minValues, Vec3 const& _maxValues)
+			: minValues(_minValues),
+			maxValues(_maxValues){}
+		Vec3 const minValues;
+		Vec3 const maxValues;
 	};
 
 	// for sphere areas ----------------------------------------------------------------------
-	Vec3  m_SphereCenter;
-	float m_SphereRadius;
-	float m_SphereRadius2;
+	Vec3  m_sphereCenter;
+	float m_sphereRadius;
+	float m_sphereRadius2;
 
 	// for solid areas -----------------------------------------------------------------------
-	_smart_ptr<CAreaSolid> m_AreaSolid;
+	_smart_ptr<CAreaSolid> m_pAreaSolid;
 
 	//  area vertical origin - the lowest point of area
 	float m_origin;

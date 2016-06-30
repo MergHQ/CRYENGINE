@@ -774,7 +774,7 @@ void CEntity::ShutDown(bool bRemoveAI /*= true*/, bool bRemoveProxies /*= true*/
 
 	if (m_flags & ENTITY_FLAG_TRIGGER_AREAS)
 	{
-		static_cast<CAreaManager*>(g_pIEntitySystem->GetAreaManager())->ExitAllAreas(this);
+		static_cast<CAreaManager*>(g_pIEntitySystem->GetAreaManager())->ExitAllAreas(m_nID);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

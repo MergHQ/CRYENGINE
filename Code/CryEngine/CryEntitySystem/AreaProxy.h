@@ -93,6 +93,9 @@ public:
 	virtual size_t          GetNumberOfEntitiesInArea() const override;
 	virtual EntityId        GetEntityInAreaByIdx(size_t const index) const override;
 
+	virtual float           GetInnerFadeDistance() const override               { return m_pArea->GetInnerFadeDistance(); }
+	virtual void            SetInnerFadeDistance(float const distance) override { m_pArea->SetInnerFadeDistance(distance); }
+
 	virtual void            GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		SIZER_COMPONENT_NAME(pSizer, "CAreaProxy");

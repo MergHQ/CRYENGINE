@@ -15,35 +15,38 @@ CArea::CArea(CAreaManager* pManager)
 	: m_origin(0.0f)
 	, m_height(0.0f)
 	, m_pAreaManager(pManager)
-	, m_fProximity(5.0f)
-	, m_fFadeDistance(-1.0f)
-	, m_AreaGroupID(INVALID_AREA_GROUP_ID)
-	, m_nPriority(0)
-	, m_AreaID(-1)
-	, m_EntityID(INVALID_ENTITYID)
-	, m_BoxMin(ZERO)
-	, m_BoxMax(ZERO)
-	, m_SphereCenter(0)
-	, m_SphereRadius(0)
-	, m_SphereRadius2(0)
+	, m_proximity(5.0f)
+	, m_fadeDistance(-1.0f)
+	, m_environmentFadeDistance(-1.0f)
+	, m_greatestFadeDistance(-1.0f)
+	, m_innerFadeDistance(0.0f)
+	, m_areaGroupId(INVALID_AREA_GROUP_ID)
+	, m_priority(0)
+	, m_areaId(-1)
+	, m_entityId(INVALID_ENTITYID)
+	, m_boxMin(ZERO)
+	, m_boxMax(ZERO)
+	, m_sphereCenter(0)
+	, m_sphereRadius(0)
+	, m_sphereRadius2(0)
 	, m_bIsActive(false)
 	, m_bObstructRoof(false)
 	, m_bObstructFloor(false)
 	, m_bEntityIdsResolved(false)
 	, m_bAllObstructed(0)
-	, m_nObstructedCount(0)
-	, m_AreaSolid(0)
-	, m_oNULLVec(ZERO)
+	, m_numObstructed(0)
+	, m_pAreaSolid(nullptr)
+	, m_nullVec(ZERO)
 {
-	m_AreaType = ENTITY_AREA_TYPE_SHAPE;
-	m_InvMatrix.SetIdentity();
-	m_WorldTM.SetIdentity();
+	m_areaType = ENTITY_AREA_TYPE_SHAPE;
+	m_invMatrix.SetIdentity();
+	m_worldTM.SetIdentity();
 	m_bInitialized = false;
 	m_bAttachedSoundTested = false;
 	m_mapEntityCachedAreaData.reserve(256);
 
 	// All sides not obstructed by default
-	memset(&m_abBoxSideObstruction, 0, 6);
+	memset(&m_boxSideObstruction, 0, 6);
 
 	m_bbox_holder = s_areaBoxes.size();
 	s_areaBoxes.push_back(SBoxHolder());
@@ -73,21 +76,21 @@ void CArea::Release()
 void CArea::SetSoundObstructionOnAreaFace(size_t const index, bool const bObstructs)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-	switch (m_AreaType)
+	switch (m_areaType)
 	{
 	case ENTITY_AREA_TYPE_BOX:
 		{
-			m_abBoxSideObstruction[index].bObstructed = bObstructs ? 1 : 0;
+			m_boxSideObstruction[index].bObstructed = bObstructs ? 1 : 0;
 
-			m_nObstructedCount = 0;
+			m_numObstructed = 0;
 			for (unsigned int i = 0; i < 6; ++i)
 			{
-				if (m_abBoxSideObstruction[i].bObstructed)
-					++m_nObstructedCount;
+				if (m_boxSideObstruction[i].bObstructed)
+					++m_numObstructed;
 			}
 
 			m_bAllObstructed = 0;
-			if (m_nObstructedCount == 6)
+			if (m_numObstructed == 6)
 				m_bAllObstructed = 1;
 		}
 		break;
@@ -126,11 +129,11 @@ void CArea::SetSoundObstructionOnAreaFace(size_t const index, bool const bObstru
 void CArea::SetAreaType(EEntityAreaType type)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-	m_AreaType = type;
+	m_areaType = type;
 
 	// to prevent gravity volumes being evaluated in the
 	// AreaManager::UpdatePlayer function, that caused problems.
-	if (m_AreaType == ENTITY_AREA_TYPE_GRAVITYVOLUME)
+	if (m_areaType == ENTITY_AREA_TYPE_GRAVITYVOLUME)
 		m_pAreaManager->Unregister(this);
 
 }
@@ -233,17 +236,17 @@ float CArea::CalcDistToPoint(a2DPoint const& point) const
 	if (!m_bInitialized)
 		return -1;
 
-	if (m_fProximity == 0.0f)
+	if (m_proximity == 0.0f)
 		return 1.0f;
 
-	float distMin = m_fProximity * m_fProximity;
+	float distMin = m_proximity * m_proximity;
 	float curDist;
 	a2DBBox proximityBox;
 
-	proximityBox.max.x = point.x + m_fProximity;
-	proximityBox.max.y = point.y + m_fProximity;
-	proximityBox.min.x = point.x - m_fProximity;
-	proximityBox.min.y = point.y - m_fProximity;
+	proximityBox.max.x = point.x + m_proximity;
+	proximityBox.max.y = point.y + m_proximity;
+	proximityBox.min.x = point.x - m_proximity;
+	proximityBox.min.y = point.y - m_proximity;
 
 	for (unsigned int sIdx = 0; sIdx < m_areaSegments.size(); sIdx++)
 	{
@@ -299,7 +302,7 @@ float CArea::CalcDistToPoint(a2DPoint const& point) const
 		}
 	}
 
-	return sqrt_tpl(distMin) / m_fProximity; // TODO: Check if "distmin/m_fProximity*m_fProximity" is faster
+	return sqrt_tpl(distMin) / m_proximity; // TODO: Check if "distmin/m_fProximity*m_fProximity" is faster
 }
 
 // check if the point is within the area
@@ -331,35 +334,35 @@ bool CArea::CalcPointWithin(EntityId const nEntityID, Vec3 const& point3d, bool 
 		}
 		else
 		{
-			switch (m_AreaType)
+			switch (m_areaType)
 			{
 			case ENTITY_AREA_TYPE_SPHERE:
 				{
-					Vec3 oPoint(point3d - m_SphereCenter);
+					Vec3 oPoint(point3d - m_sphereCenter);
 
 					if (bIgnoreHeight)
 					{
 						oPoint.z = 0.0f;
 					}
 
-					bResult = (oPoint.GetLengthSquared() < m_SphereRadius2);
+					bResult = (oPoint.GetLengthSquared() < m_sphereRadius2);
 
 					break;
 				}
 			case ENTITY_AREA_TYPE_BOX:
 				{
-					Vec3 p3d = m_InvMatrix.TransformPoint(point3d);
+					Vec3 p3d = m_invMatrix.TransformPoint(point3d);
 
 					if (bIgnoreHeight)
-						p3d.z = m_BoxMax.z;
+						p3d.z = m_boxMax.z;
 
 					// And put the result into the data cache
-					if ((p3d.x < m_BoxMin.x) ||
-					    (p3d.y < m_BoxMin.y) ||
-					    (p3d.z < m_BoxMin.z) ||
-					    (p3d.x > m_BoxMax.x) ||
-					    (p3d.y > m_BoxMax.y) ||
-					    (p3d.z > m_BoxMax.z))
+					if ((p3d.x < m_boxMin.x) ||
+					    (p3d.y < m_boxMin.y) ||
+					    (p3d.z < m_boxMin.z) ||
+					    (p3d.x > m_boxMax.x) ||
+					    (p3d.y > m_boxMax.y) ||
+					    (p3d.z > m_boxMax.z))
 					{
 						bResult = false;
 					}
@@ -374,8 +377,8 @@ bool CArea::CalcPointWithin(EntityId const nEntityID, Vec3 const& point3d, bool 
 				{
 					if (point3d.IsValid())
 					{
-						Vec3 localPoint3D = m_InvMatrix.TransformPoint(point3d);
-						bResult = m_AreaSolid->IsInside(localPoint3D);
+						Vec3 localPoint3D = m_invMatrix.TransformPoint(point3d);
+						bResult = m_pAreaSolid->IsInside(localPoint3D);
 					}
 
 					break;
@@ -489,15 +492,15 @@ float CArea::CalcPointWithinDist(EntityId const nEntityID, Vec3 const& point3d, 
 
 		if (bGoAheadAndCompute)
 		{
-			switch (m_AreaType)
+			switch (m_areaType)
 			{
 			case ENTITY_AREA_TYPE_SPHERE:
 				{
-					Vec3 const sPnt = point3d - m_SphereCenter;
+					Vec3 const sPnt = point3d - m_sphereCenter;
 					float fPointLengthSq = sPnt.GetLengthSquared();
 
-					fMinDist = m_SphereRadius - sPnt.GetLength();
-					fDistanceWithinSq = m_SphereRadius2 - fPointLengthSq;
+					fMinDist = m_sphereRadius - sPnt.GetLength();
+					fDistanceWithinSq = m_sphereRadius2 - fPointLengthSq;
 
 					break;
 				}
@@ -520,11 +523,11 @@ float CArea::CalcPointWithinDist(EntityId const nEntityID, Vec3 const& point3d, 
 				}
 			case ENTITY_AREA_TYPE_SOLID:
 				{
-					Vec3 const localPoint3D(m_InvMatrix.TransformPoint(point3d));
+					Vec3 const localPoint3D(m_invMatrix.TransformPoint(point3d));
 					int queryFlag = bIgnoreSoundObstruction ? CAreaSolid::eSegmentQueryFlag_Obstruction : CAreaSolid::eSegmentQueryFlag_All;
 					Vec3 vOnHull;
 
-					if (m_AreaSolid->QueryNearest(localPoint3D, queryFlag, vOnHull, fDistanceWithinSq))
+					if (m_pAreaSolid->QueryNearest(localPoint3D, queryFlag, vOnHull, fDistanceWithinSq))
 					{
 						fMinDist = (fDistanceWithinSq > 0.0f) ? sqrt_tpl(fDistanceWithinSq) : fMinDist;
 					}
@@ -640,7 +643,7 @@ float CArea::ClosestPointOnHullDistSq(EntityId const nEntityID, Vec3 const& Poin
 		{
 			Vec3 Closest3d(ZERO);
 
-			switch (m_AreaType)
+			switch (m_areaType)
 			{
 			case ENTITY_AREA_TYPE_SOLID:
 				{
@@ -759,9 +762,9 @@ float CArea::ClosestPointOnHullDistSq(EntityId const nEntityID, Vec3 const& Poin
 
 			case ENTITY_AREA_TYPE_SPHERE:
 				{
-					Vec3 Temp = Point3d - m_SphereCenter;
-					OnHull3d = Temp.normalize() * m_SphereRadius;
-					OnHull3d += m_SphereCenter;
+					Vec3 Temp = Point3d - m_sphereCenter;
+					OnHull3d = Temp.normalize() * m_sphereRadius;
+					OnHull3d += m_sphereCenter;
 					fClosestDistance = OnHull3d.GetSquaredDistance(Point3d);
 
 					break;
@@ -774,11 +777,11 @@ float CArea::ClosestPointOnHullDistSq(EntityId const nEntityID, Vec3 const& Poin
 					}
 					else
 					{
-						Vec3 const p3d = m_InvMatrix.TransformPoint(Point3d);
-						AABB const myAABB(m_BoxMin, m_BoxMax);
+						Vec3 const p3d = m_invMatrix.TransformPoint(Point3d);
+						AABB const myAABB(m_boxMin, m_boxMax);
 						fClosestDistance = Distance::Point_AABBSq(p3d, myAABB, OnHull3d);
 
-						if (m_abBoxSideObstruction[4].bObstructed && OnHull3d.z == myAABB.max.z)
+						if (m_boxSideObstruction[4].bObstructed && OnHull3d.z == myAABB.max.z)
 						{
 							// Point is on the roof plane, but may be on the edge already
 							Vec2 vTop(OnHull3d.x, myAABB.max.y);
@@ -816,7 +819,7 @@ float CArea::ClosestPointOnHullDistSq(EntityId const nEntityID, Vec3 const& Poin
 
 						}
 
-						if (m_abBoxSideObstruction[5].bObstructed && OnHull3d.z == myAABB.min.z)
+						if (m_boxSideObstruction[5].bObstructed && OnHull3d.z == myAABB.min.z)
 						{
 							// Point is on the roof plane, but may be on the edge already
 							Vec2 vTop(OnHull3d.x, myAABB.max.y);
@@ -853,7 +856,7 @@ float CArea::ClosestPointOnHullDistSq(EntityId const nEntityID, Vec3 const& Poin
 							fClosestDistance = OnHull3d.GetSquaredDistance(p3d);
 						}
 
-						OnHull3d = m_WorldTM.TransformPoint(OnHull3d);
+						OnHull3d = m_worldTM.TransformPoint(OnHull3d);
 					}
 
 					// TODO transform point back to world ... (why?)
@@ -918,7 +921,7 @@ float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, 
 		{
 			Vec3 Closest3d(ZERO);
 
-			switch (m_AreaType)
+			switch (m_areaType)
 			{
 			case ENTITY_AREA_TYPE_SOLID:
 				{
@@ -1085,9 +1088,9 @@ float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, 
 				}
 			case ENTITY_AREA_TYPE_SPHERE:
 				{
-					Vec3 Temp = Point3d - m_SphereCenter;
-					OnHull3d = Temp.normalize() * m_SphereRadius;
-					OnHull3d += m_SphereCenter;
+					Vec3 Temp = Point3d - m_sphereCenter;
+					OnHull3d = Temp.normalize() * m_sphereRadius;
+					OnHull3d += m_sphereCenter;
 					fClosestDistance = OnHull3d.GetSquaredDistance(Point3d);
 
 					break;
@@ -1100,12 +1103,12 @@ float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, 
 					}
 					else
 					{
-						Vec3 const p3d = m_InvMatrix.TransformPoint(Point3d);
-						AABB const myAABB(m_BoxMin, m_BoxMax);
+						Vec3 const p3d = m_invMatrix.TransformPoint(Point3d);
+						AABB const myAABB(m_boxMin, m_boxMax);
 
 						fClosestDistance = Distance::Point_AABBSq(p3d, myAABB, OnHull3d);
 
-						if (m_abBoxSideObstruction[4].bObstructed && OnHull3d.z == myAABB.max.z)
+						if (m_boxSideObstruction[4].bObstructed && OnHull3d.z == myAABB.max.z)
 						{
 							// Point is on the roof plane, but may be on the edge already
 							Vec2 vTop(OnHull3d.x, myAABB.max.y);
@@ -1142,7 +1145,7 @@ float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, 
 							fClosestDistance = OnHull3d.GetSquaredDistance(p3d);
 						}
 
-						if (m_abBoxSideObstruction[5].bObstructed && OnHull3d.z == myAABB.min.z)
+						if (m_boxSideObstruction[5].bObstructed && OnHull3d.z == myAABB.min.z)
 						{
 							// Point is on the roof plane, but may be on the edge already
 							Vec2 vTop(OnHull3d.x, myAABB.max.y);
@@ -1179,7 +1182,7 @@ float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, 
 							fClosestDistance = OnHull3d.GetSquaredDistance(p3d);
 						}
 
-						OnHull3d = m_WorldTM.TransformPoint(OnHull3d);
+						OnHull3d = m_worldTM.TransformPoint(OnHull3d);
 					}
 
 					break;
@@ -1239,7 +1242,7 @@ float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, 
 		}
 		else
 		{
-			switch (m_AreaType)
+			switch (m_areaType)
 			{
 			case ENTITY_AREA_TYPE_SOLID:
 				{
@@ -1386,9 +1389,9 @@ float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, 
 					Vec3 vTemp(Point3d);
 
 					if (bIgnoreHeight)
-						vTemp.z = m_SphereCenter.z;
+						vTemp.z = m_sphereCenter.z;
 
-					float const fLength = m_SphereCenter.GetDistance(vTemp) - m_SphereRadius;
+					float const fLength = m_sphereCenter.GetDistance(vTemp) - m_sphereRadius;
 					fClosestDistance = fLength * fLength;
 
 					break;
@@ -1402,17 +1405,17 @@ float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, 
 					}
 					else
 					{
-						Vec3 p3d = m_InvMatrix.TransformPoint(Point3d);
+						Vec3 p3d = m_invMatrix.TransformPoint(Point3d);
 						Vec3 OnHull3d;
 
 						if (bIgnoreHeight)
-							p3d.z = m_BoxMin.z;
+							p3d.z = m_boxMin.z;
 
-						AABB myAABB(m_BoxMin, m_BoxMax);
+						AABB myAABB(m_boxMin, m_boxMax);
 
 						fClosestDistance = Distance::Point_AABBSq(p3d, myAABB, OnHull3d);
 
-						if (m_abBoxSideObstruction[4].bObstructed && OnHull3d.z == myAABB.max.z)
+						if (m_boxSideObstruction[4].bObstructed && OnHull3d.z == myAABB.max.z)
 						{
 							// Point is on the roof plane, but may be on the edge already
 							Vec2 vTop(OnHull3d.x, myAABB.max.y);
@@ -1450,7 +1453,7 @@ float CArea::CalcPointNearDistSq(EntityId const nEntityID, Vec3 const& Point3d, 
 
 						}
 
-						if (m_abBoxSideObstruction[5].bObstructed && OnHull3d.z == myAABB.min.z)
+						if (m_boxSideObstruction[5].bObstructed && OnHull3d.z == myAABB.min.z)
 						{
 							// Point is on the floor plane, but may be on the edge already
 							Vec2 vTop(OnHull3d.x, myAABB.max.y);
@@ -1561,12 +1564,12 @@ EAreaPosType CArea::CalcPosType(EntityId const nEntityID, Vec3 const& rPos, bool
 		{
 			bool const bIsIn2DShape = CalcPointWithin(nEntityID, rPos, true, false);
 
-			switch (m_AreaType)
+			switch (m_areaType)
 			{
 			case ENTITY_AREA_TYPE_SOLID:
 				{
-					Vec3 const ov3PosLocalSpace(m_InvMatrix.TransformPoint(rPos));
-					AABB const boundbox(m_AreaSolid->GetBoundBox());
+					Vec3 const ov3PosLocalSpace(m_invMatrix.TransformPoint(rPos));
+					AABB const boundbox(m_pAreaSolid->GetBoundBox());
 
 					if (ov3PosLocalSpace.z < boundbox.min.z)
 						eTempPosType = AREA_POS_TYPE_2DINSIDE_ZBELOW;
@@ -1631,23 +1634,23 @@ EAreaPosType CArea::CalcPosType(EntityId const nEntityID, Vec3 const& rPos, bool
 				}
 			case ENTITY_AREA_TYPE_BOX:
 				{
-					if (m_BoxMax.z > 0.0f)
+					if (m_boxMax.z > 0.0f)
 					{
-						Vec3 const ov3PosLocalSpace(m_InvMatrix.TransformPoint(rPos));
+						Vec3 const ov3PosLocalSpace(m_invMatrix.TransformPoint(rPos));
 						if (bIsIn2DShape)
 						{
-							if (ov3PosLocalSpace.z < m_BoxMin.z) // Warning : Fix for boxes not centered around the base of an entity. Please check before back integrating.
+							if (ov3PosLocalSpace.z < m_boxMin.z) // Warning : Fix for boxes not centered around the base of an entity. Please check before back integrating.
 								eTempPosType = AREA_POS_TYPE_2DINSIDE_ZBELOW;
-							else if (ov3PosLocalSpace.z > m_BoxMax.z)
+							else if (ov3PosLocalSpace.z > m_boxMax.z)
 								eTempPosType = AREA_POS_TYPE_2DINSIDE_ZABOVE;
 							else
 								eTempPosType = AREA_POS_TYPE_2DINSIDE_ZINSIDE;
 						}
 						else
 						{
-							if (ov3PosLocalSpace.z < m_BoxMin.z) // Warning : Fix for boxes not centered around the base of an entity. Please check before back integrating.
+							if (ov3PosLocalSpace.z < m_boxMin.z) // Warning : Fix for boxes not centered around the base of an entity. Please check before back integrating.
 								eTempPosType = AREA_POS_TYPE_2DOUTSIDE_ZBELOW;
-							else if (ov3PosLocalSpace.z > m_BoxMax.z)
+							else if (ov3PosLocalSpace.z > m_boxMax.z)
 								eTempPosType = AREA_POS_TYPE_2DOUTSIDE_ZABOVE;
 							else
 								eTempPosType = AREA_POS_TYPE_2DOUTSIDE_ZINSIDE;
@@ -1666,8 +1669,8 @@ EAreaPosType CArea::CalcPosType(EntityId const nEntityID, Vec3 const& rPos, bool
 				}
 			case ENTITY_AREA_TYPE_SPHERE:
 				{
-					float const fSphereMostTop = m_SphereCenter.z + m_SphereRadius;
-					float const fSphereMostBottom = m_SphereCenter.z - m_SphereRadius;
+					float const fSphereMostTop = m_sphereCenter.z + m_sphereRadius;
+					float const fSphereMostBottom = m_sphereCenter.z - m_sphereRadius;
 					bool const bAbove = rPos.z > fSphereMostTop;
 					bool const bBelow = rPos.z < fSphereMostBottom;
 					bool const bIsIn3DShape = CalcPointWithin(nEntityID, rPos, false);
@@ -1914,109 +1917,109 @@ void CArea::CalcClosestPointToObstructedBox(Vec3& outClosest, float& outClosestD
 
 	if (!m_bAllObstructed)
 	{
-		Vec3 const v3PosLocalSpace(m_InvMatrix.TransformPoint(source)), v3BoxMin = m_BoxMin, v3BoxMax = m_BoxMax;
+		Vec3 const posLocalSpace(m_invMatrix.TransformPoint(source)), boxMin = m_boxMin, boxMax = m_boxMax;
 
 		// Determine the closest side and check for obstruction
-		int nClosestSideIdx = -1;
+		int closestSideIndex = -1;
 		bool bAllObstructedExceptBackside = false;
-		Vec3 aoBoxBackSideEdges[4];
+		Vec3 boxBackSideEdges[4];
 
-		if (v3PosLocalSpace.x > v3BoxMax.x)
+		if (posLocalSpace.x > boxMax.x)
 		{
 			// Side 2 is closest, 4 is backside
-			nClosestSideIdx = 1;
+			closestSideIndex = 1;
 
-			if (m_nObstructedCount == 5 && !m_abBoxSideObstruction[3].bObstructed)
+			if (m_numObstructed == 5 && !m_boxSideObstruction[3].bObstructed)
 			{
 				// Describe possible snapping positions on back side 4
-				aoBoxBackSideEdges[0] = Vec3(v3BoxMin.x, v3BoxMin.y, v3PosLocalSpace.z);
-				aoBoxBackSideEdges[1] = Vec3(v3BoxMin.x, v3PosLocalSpace.y, v3BoxMax.z);
-				aoBoxBackSideEdges[2] = Vec3(v3BoxMin.x, v3BoxMax.y, v3PosLocalSpace.z);
-				aoBoxBackSideEdges[3] = Vec3(v3BoxMin.x, v3PosLocalSpace.y, v3BoxMin.z);
+				boxBackSideEdges[0] = Vec3(boxMin.x, boxMin.y, posLocalSpace.z);
+				boxBackSideEdges[1] = Vec3(boxMin.x, posLocalSpace.y, boxMax.z);
+				boxBackSideEdges[2] = Vec3(boxMin.x, boxMax.y, posLocalSpace.z);
+				boxBackSideEdges[3] = Vec3(boxMin.x, posLocalSpace.y, boxMin.z);
 
 				bAllObstructedExceptBackside = true;
 			}
 		}
-		else if (v3PosLocalSpace.x < v3BoxMin.x)
+		else if (posLocalSpace.x < boxMin.x)
 		{
 			// Side 4 is closest, 2 is backside
-			nClosestSideIdx = 3;
+			closestSideIndex = 3;
 
-			if (m_nObstructedCount == 5 && !m_abBoxSideObstruction[1].bObstructed)
+			if (m_numObstructed == 5 && !m_boxSideObstruction[1].bObstructed)
 			{
 				// Describe possible snapping positions on back side 2
-				aoBoxBackSideEdges[0] = Vec3(v3BoxMax.x, v3BoxMax.y, v3PosLocalSpace.z);
-				aoBoxBackSideEdges[1] = Vec3(v3BoxMax.x, v3PosLocalSpace.y, v3BoxMax.z);
-				aoBoxBackSideEdges[2] = Vec3(v3BoxMax.x, v3BoxMin.y, v3PosLocalSpace.z);
-				aoBoxBackSideEdges[3] = Vec3(v3BoxMax.x, v3PosLocalSpace.y, v3BoxMin.z);
+				boxBackSideEdges[0] = Vec3(boxMax.x, boxMax.y, posLocalSpace.z);
+				boxBackSideEdges[1] = Vec3(boxMax.x, posLocalSpace.y, boxMax.z);
+				boxBackSideEdges[2] = Vec3(boxMax.x, boxMin.y, posLocalSpace.z);
+				boxBackSideEdges[3] = Vec3(boxMax.x, posLocalSpace.y, boxMin.z);
 
 				bAllObstructedExceptBackside = true;
 			}
 		}
 		else
 		{
-			if (v3PosLocalSpace.y < v3BoxMin.y)
+			if (posLocalSpace.y < boxMin.y)
 			{
 				// Side 0 is closest, 2 is backside
-				nClosestSideIdx = 0;
+				closestSideIndex = 0;
 
-				if (m_nObstructedCount == 5 && !m_abBoxSideObstruction[2].bObstructed)
+				if (m_numObstructed == 5 && !m_boxSideObstruction[2].bObstructed)
 				{
 					// Describe possible snapping positions on back side 2
-					aoBoxBackSideEdges[0] = Vec3(v3BoxMin.x, v3BoxMax.y, v3PosLocalSpace.z);
-					aoBoxBackSideEdges[1] = Vec3(v3PosLocalSpace.x, v3BoxMax.y, v3BoxMax.z);
-					aoBoxBackSideEdges[2] = Vec3(v3BoxMax.x, v3BoxMax.y, v3PosLocalSpace.z);
-					aoBoxBackSideEdges[3] = Vec3(v3PosLocalSpace.x, v3BoxMax.y, v3BoxMin.z);
+					boxBackSideEdges[0] = Vec3(boxMin.x, boxMax.y, posLocalSpace.z);
+					boxBackSideEdges[1] = Vec3(posLocalSpace.x, boxMax.y, boxMax.z);
+					boxBackSideEdges[2] = Vec3(boxMax.x, boxMax.y, posLocalSpace.z);
+					boxBackSideEdges[3] = Vec3(posLocalSpace.x, boxMax.y, boxMin.z);
 
 					bAllObstructedExceptBackside = true;
 				}
 			}
-			else if (v3PosLocalSpace.y > v3BoxMax.y)
+			else if (posLocalSpace.y > boxMax.y)
 			{
 				// Side 2 is closest, 0 is backside
-				nClosestSideIdx = 2;
+				closestSideIndex = 2;
 
-				if (m_nObstructedCount == 5 && !m_abBoxSideObstruction[0].bObstructed)
+				if (m_numObstructed == 5 && !m_boxSideObstruction[0].bObstructed)
 				{
 					// Describe possible snapping positions on back side 0
-					aoBoxBackSideEdges[0] = Vec3(v3BoxMax.x, v3BoxMin.y, v3PosLocalSpace.z);
-					aoBoxBackSideEdges[1] = Vec3(v3PosLocalSpace.x, v3BoxMin.y, v3BoxMax.z);
-					aoBoxBackSideEdges[2] = Vec3(v3BoxMin.x, v3BoxMin.y, v3PosLocalSpace.z);
-					aoBoxBackSideEdges[3] = Vec3(v3PosLocalSpace.x, v3BoxMin.y, v3BoxMin.z);
+					boxBackSideEdges[0] = Vec3(boxMax.x, boxMin.y, posLocalSpace.z);
+					boxBackSideEdges[1] = Vec3(posLocalSpace.x, boxMin.y, boxMax.z);
+					boxBackSideEdges[2] = Vec3(boxMin.x, boxMin.y, posLocalSpace.z);
+					boxBackSideEdges[3] = Vec3(posLocalSpace.x, boxMin.y, boxMin.z);
 
 					bAllObstructedExceptBackside = true;
 				}
 			}
 			else
 			{
-				if (v3PosLocalSpace.z < v3BoxMin.z)
+				if (posLocalSpace.z < boxMin.z)
 				{
 					// Side 5 is closest, 4 is backside
-					nClosestSideIdx = 5;
+					closestSideIndex = 5;
 
-					if (m_nObstructedCount == 5 && !m_abBoxSideObstruction[4].bObstructed)
+					if (m_numObstructed == 5 && !m_boxSideObstruction[4].bObstructed)
 					{
 						// Describe possible snapping positions on back side 4
-						aoBoxBackSideEdges[0] = Vec3(v3PosLocalSpace.x, v3BoxMin.y, v3BoxMax.z);
-						aoBoxBackSideEdges[1] = Vec3(v3BoxMin.x, v3PosLocalSpace.y, v3BoxMax.z);
-						aoBoxBackSideEdges[2] = Vec3(v3PosLocalSpace.x, v3BoxMax.y, v3BoxMax.z);
-						aoBoxBackSideEdges[3] = Vec3(v3BoxMax.x, v3PosLocalSpace.y, v3BoxMax.z);
+						boxBackSideEdges[0] = Vec3(posLocalSpace.x, boxMin.y, boxMax.z);
+						boxBackSideEdges[1] = Vec3(boxMin.x, posLocalSpace.y, boxMax.z);
+						boxBackSideEdges[2] = Vec3(posLocalSpace.x, boxMax.y, boxMax.z);
+						boxBackSideEdges[3] = Vec3(boxMax.x, posLocalSpace.y, boxMax.z);
 
 						bAllObstructedExceptBackside = true;
 					}
 				}
-				else if (v3PosLocalSpace.z > v3BoxMax.z)
+				else if (posLocalSpace.z > boxMax.z)
 				{
 					// Side 4 is closest, 5 is backside
-					nClosestSideIdx = 4;
+					closestSideIndex = 4;
 
-					if (m_nObstructedCount == 5 && !m_abBoxSideObstruction[5].bObstructed)
+					if (m_numObstructed == 5 && !m_boxSideObstruction[5].bObstructed)
 					{
 						// Describe possible snapping positions on back side 5
-						aoBoxBackSideEdges[0] = Vec3(v3PosLocalSpace.x, v3BoxMin.y, v3BoxMin.z);
-						aoBoxBackSideEdges[1] = Vec3(v3BoxMin.x, v3PosLocalSpace.y, v3BoxMin.z);
-						aoBoxBackSideEdges[2] = Vec3(v3PosLocalSpace.x, v3BoxMax.y, v3BoxMin.z);
-						aoBoxBackSideEdges[3] = Vec3(v3BoxMax.x, v3PosLocalSpace.y, v3BoxMin.z);
+						boxBackSideEdges[0] = Vec3(posLocalSpace.x, boxMin.y, boxMin.z);
+						boxBackSideEdges[1] = Vec3(boxMin.x, posLocalSpace.y, boxMin.z);
+						boxBackSideEdges[2] = Vec3(posLocalSpace.x, boxMax.y, boxMin.z);
+						boxBackSideEdges[3] = Vec3(boxMax.x, posLocalSpace.y, boxMin.z);
 
 						bAllObstructedExceptBackside = true;
 					}
@@ -2024,45 +2027,46 @@ void CArea::CalcClosestPointToObstructedBox(Vec3& outClosest, float& outClosestD
 				else
 				{
 					// We're inside the box
-					float const fDistSide[6] =
+					float const distanceSide[6] =
 					{
-						abs(m_abBoxSideObstruction[0].bObstructed ? FLT_MAX : v3BoxMin.y - v3PosLocalSpace.y),
-						abs(m_abBoxSideObstruction[1].bObstructed ? FLT_MAX : v3BoxMax.x - v3PosLocalSpace.x),
-						abs(m_abBoxSideObstruction[2].bObstructed ? FLT_MAX : v3BoxMax.y - v3PosLocalSpace.y),
-						abs(m_abBoxSideObstruction[3].bObstructed ? FLT_MAX : v3BoxMin.x - v3PosLocalSpace.x),
-						abs(m_abBoxSideObstruction[4].bObstructed ? FLT_MAX : v3BoxMax.z - v3PosLocalSpace.z),
-						abs(m_abBoxSideObstruction[5].bObstructed ? FLT_MAX : v3BoxMin.z - v3PosLocalSpace.z)
+						fabs(m_boxSideObstruction[0].bObstructed ? FLT_MAX : boxMin.y - posLocalSpace.y),
+						fabs(m_boxSideObstruction[1].bObstructed ? FLT_MAX : boxMax.x - posLocalSpace.x),
+						fabs(m_boxSideObstruction[2].bObstructed ? FLT_MAX : boxMax.y - posLocalSpace.y),
+						fabs(m_boxSideObstruction[3].bObstructed ? FLT_MAX : boxMin.x - posLocalSpace.x),
+						fabs(m_boxSideObstruction[4].bObstructed ? FLT_MAX : boxMax.z - posLocalSpace.z),
+						fabs(m_boxSideObstruction[5].bObstructed ? FLT_MAX : boxMin.z - posLocalSpace.z)
 					};
 
-					float const fClosestDist = min(min(min(fDistSide[0], fDistSide[1]), min(fDistSide[2], fDistSide[3])), min(fDistSide[4], fDistSide[5]));
+					float const closestDistance = std::min<float>(std::min<float>(std::min<float>(distanceSide[0], distanceSide[1]), min(distanceSide[2], distanceSide[3])), min(distanceSide[4], distanceSide[5]));
+
 					for (unsigned int i = 0; i < 6; ++i)
 					{
-						if (fDistSide[i] == fClosestDist)
+						if (distanceSide[i] == closestDistance)
 						{
 							switch (i)
 							{
 							case 0:
-								closest = Vec3(v3PosLocalSpace.x, v3PosLocalSpace.y - fClosestDist, v3PosLocalSpace.z);
+								closest = Vec3(posLocalSpace.x, posLocalSpace.y - closestDistance, posLocalSpace.z);
 								break;
 							case 1:
-								closest = Vec3(v3PosLocalSpace.x + fClosestDist, v3PosLocalSpace.y, v3PosLocalSpace.z);
+								closest = Vec3(posLocalSpace.x + closestDistance, posLocalSpace.y, posLocalSpace.z);
 								break;
 							case 2:
-								closest = Vec3(v3PosLocalSpace.x, v3PosLocalSpace.y + fClosestDist, v3PosLocalSpace.z);
+								closest = Vec3(posLocalSpace.x, posLocalSpace.y + closestDistance, posLocalSpace.z);
 								break;
 							case 3:
-								closest = Vec3(v3PosLocalSpace.x - fClosestDist, v3PosLocalSpace.y, v3PosLocalSpace.z);
+								closest = Vec3(posLocalSpace.x - closestDistance, posLocalSpace.y, posLocalSpace.z);
 								break;
 							case 4:
-								closest = Vec3(v3PosLocalSpace.x, v3PosLocalSpace.y, v3PosLocalSpace.z + fClosestDist);
+								closest = Vec3(posLocalSpace.x, posLocalSpace.y, posLocalSpace.z + closestDistance);
 								break;
 							case 5:
-								closest = Vec3(v3PosLocalSpace.x, v3PosLocalSpace.y, v3PosLocalSpace.z - fClosestDist);
+								closest = Vec3(posLocalSpace.x, posLocalSpace.y, posLocalSpace.z - closestDistance);
 								break;
 							}
 
 							// Transform it all back to world coordinates
-							outClosest = m_WorldTM.TransformPoint(closest);
+							outClosest = m_worldTM.TransformPoint(closest);
 							outClosestDistSq = Vec3(source - outClosest).GetLengthSquared();
 							return;
 						}
@@ -2073,66 +2077,67 @@ void CArea::CalcClosestPointToObstructedBox(Vec3& outClosest, float& outClosestD
 
 		// We're done determining the us facing side and we're not inside the box,
 		// now check if the side not obstructed and return the closest position on it
-		if (nClosestSideIdx > -1 && !m_abBoxSideObstruction[nClosestSideIdx].bObstructed)
+		if (closestSideIndex > -1 && !m_boxSideObstruction[closestSideIndex].bObstructed)
 		{
 			// The shortest side is not obstructed
-			closest.x = min(max(v3PosLocalSpace.x, v3BoxMin.x), v3BoxMax.x);
-			closest.y = min(max(v3PosLocalSpace.y, v3BoxMin.y), v3BoxMax.y);
-			closest.z = min(max(v3PosLocalSpace.z, v3BoxMin.z), v3BoxMax.z);
+			closest.x = std::min<float>(std::max<float>(posLocalSpace.x, boxMin.x), boxMax.x);
+			closest.y = std::min<float>(std::max<float>(posLocalSpace.y, boxMin.y), boxMax.y);
+			closest.z = std::min<float>(std::max<float>(posLocalSpace.z, boxMin.z), boxMax.z);
 
 			// Transform the result back to world values
-			outClosest = m_WorldTM.TransformPoint(closest);
+			outClosest = m_worldTM.TransformPoint(closest);
 			outClosestDistSq = Vec3(source - outClosest).GetLengthSquared();
 			return;
 		}
 
 		// If we get here the closest side was obstructed
 		// Now describe the 6 sides by applying min and max coordinate values
-		SBoxSide const aoBoxSides[6] =
+		SBoxSide const boxSides[6] =
 		{
-			SBoxSide(v3BoxMin,        Vec3(v3BoxMax.x, v3BoxMin.y,  v3BoxMax.z)),
-			SBoxSide(Vec3(v3BoxMax.x, v3BoxMin.y,      v3BoxMin.z), v3BoxMax),
-			SBoxSide(Vec3(v3BoxMin.x, v3BoxMax.y,      v3BoxMin.z), v3BoxMax),
-			SBoxSide(v3BoxMin,        Vec3(v3BoxMin.x, v3BoxMax.y,  v3BoxMax.z)),
-			SBoxSide(Vec3(v3BoxMin.x, v3BoxMin.y,      v3BoxMax.z), v3BoxMax),
-			SBoxSide(v3BoxMin,        Vec3(v3BoxMax.x, v3BoxMax.y,  v3BoxMin.z))
+			SBoxSide(boxMin,        Vec3(boxMax.x, boxMin.y,  boxMax.z)),
+			SBoxSide(Vec3(boxMax.x, boxMin.y,      boxMin.z), boxMax),
+			SBoxSide(Vec3(boxMin.x, boxMax.y,      boxMin.z), boxMax),
+			SBoxSide(boxMin,        Vec3(boxMin.x, boxMax.y,  boxMax.z)),
+			SBoxSide(Vec3(boxMin.x, boxMin.y,      boxMax.z), boxMax),
+			SBoxSide(boxMin,        Vec3(boxMax.x, boxMax.y,  boxMin.z))
 		};
 
 		// Check all non-obstructing sides, get the closest position on them
-		float fClosestDist = FLT_MAX;
-		Vec3 v3ClosestPoint(ZERO);
+		float closestDistance = FLT_MAX;
+		Vec3 closestPoint(ZERO);
 
 		for (unsigned int i = 0; i < 6; ++i)
 		{
-			if (!m_abBoxSideObstruction[i].bObstructed)
+			if (!m_boxSideObstruction[i].bObstructed)
 			{
 				if (bAllObstructedExceptBackside)
 				{
 					// At least 2 axis must be within boundaries, which means we're facing directly a side and snapping is necessary
-					bool const bWithinX = v3PosLocalSpace.x > v3BoxMin.x && v3PosLocalSpace.x < v3BoxMax.x;
-					bool const bWithinY = v3PosLocalSpace.y > v3BoxMin.y && v3PosLocalSpace.y < v3BoxMax.y;
-					bool const bWithinZ = v3PosLocalSpace.z > v3BoxMin.z && v3PosLocalSpace.z < v3BoxMax.z;
+					bool const bWithinX = posLocalSpace.x > boxMin.x && posLocalSpace.x < boxMax.x;
+					bool const bWithinY = posLocalSpace.y > boxMin.y && posLocalSpace.y < boxMax.y;
+					bool const bWithinZ = posLocalSpace.z > boxMin.z && posLocalSpace.z < boxMax.z;
 
 					if (bWithinX && (bWithinY || bWithinZ) ||
 					    bWithinY && (bWithinX || bWithinZ) ||
 					    bWithinZ && (bWithinX || bWithinY))
 					{
 						// Get the distance to the edges and choose the shortest one
-						float const fDistToEdges[4] =
+						float const distanceToEdges[4] =
 						{
-							Vec3(v3PosLocalSpace - aoBoxBackSideEdges[0]).GetLengthSquared(),
-							Vec3(v3PosLocalSpace - aoBoxBackSideEdges[1]).GetLengthSquared(),
-							Vec3(v3PosLocalSpace - aoBoxBackSideEdges[2]).GetLengthSquared(),
-							Vec3(v3PosLocalSpace - aoBoxBackSideEdges[3]).GetLengthSquared()
+							Vec3(posLocalSpace - boxBackSideEdges[0]).GetLengthSquared(),
+							Vec3(posLocalSpace - boxBackSideEdges[1]).GetLengthSquared(),
+							Vec3(posLocalSpace - boxBackSideEdges[2]).GetLengthSquared(),
+							Vec3(posLocalSpace - boxBackSideEdges[3]).GetLengthSquared()
 						};
 
-						float const fClosestDistToEdges = min(min(fDistToEdges[0], fDistToEdges[1]), min(fDistToEdges[2], fDistToEdges[3]));
+						float const closestDistanceToEdges = std::min<float>(std::min<float>(distanceToEdges[0], distanceToEdges[1]), std::min<float>(distanceToEdges[2], distanceToEdges[3]));
+
 						for (unsigned int j = 0; j < 4; ++j)
 						{
-							if (fDistToEdges[j] == fClosestDistToEdges)
+							if (distanceToEdges[j] == closestDistanceToEdges)
 							{
 								// Snap to it
-								closest = aoBoxBackSideEdges[j];
+								closest = boxBackSideEdges[j];
 								break;
 							}
 						}
@@ -2141,21 +2146,22 @@ void CArea::CalcClosestPointToObstructedBox(Vec3& outClosest, float& outClosestD
 					}
 				}
 
-				v3ClosestPoint.x = min(max(v3PosLocalSpace.x, aoBoxSides[i].v3MinValues.x), aoBoxSides[i].v3MaxValues.x);
-				v3ClosestPoint.y = min(max(v3PosLocalSpace.y, aoBoxSides[i].v3MinValues.y), aoBoxSides[i].v3MaxValues.y);
-				v3ClosestPoint.z = min(max(v3PosLocalSpace.z, aoBoxSides[i].v3MinValues.z), aoBoxSides[i].v3MaxValues.z);
+				closestPoint.x = std::min<float>(std::max<float>(posLocalSpace.x, boxSides[i].minValues.x), boxSides[i].maxValues.x);
+				closestPoint.y = std::min<float>(std::max<float>(posLocalSpace.y, boxSides[i].minValues.y), boxSides[i].maxValues.y);
+				closestPoint.z = std::min<float>(std::max<float>(posLocalSpace.z, boxSides[i].minValues.z), boxSides[i].maxValues.z);
 
-				float const fTemp = Vec3(v3PosLocalSpace - v3ClosestPoint).GetLengthSquared();
-				if (fTemp < fClosestDist)
+				float const tempClosestDistance = Vec3(posLocalSpace - closestPoint).GetLengthSquared();
+
+				if (tempClosestDistance < closestDistance)
 				{
-					fClosestDist = fTemp;
-					closest = v3ClosestPoint;
+					closestDistance = tempClosestDistance;
+					closest = closestPoint;
 				}
 			}
 		}
 
 		// Transform the result back to world values
-		outClosest = m_WorldTM.TransformPoint(closest);
+		outClosest = m_worldTM.TransformPoint(closest);
 		outClosestDistSq = Vec3(source - outClosest).GetLengthSquared();
 	}
 	else
@@ -2168,14 +2174,14 @@ void CArea::CalcClosestPointToObstructedBox(Vec3& outClosest, float& outClosestD
 void CArea::CalcClosestPointToSolid(Vec3 const& rv3SourcePos, bool bIgnoreSoundObstruction, float& rfClosestDistSq, Vec3* rv3ClosestPos) const
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-	Vec3 localPoint3D = m_InvMatrix.TransformPoint(rv3SourcePos);
+	Vec3 localPoint3D = m_invMatrix.TransformPoint(rv3SourcePos);
 	int queryFlag = bIgnoreSoundObstruction ? CAreaSolid::eSegmentQueryFlag_All : CAreaSolid::eSegmentQueryFlag_Open;
-	if (m_AreaSolid->IsInside(localPoint3D))
+	if (m_pAreaSolid->IsInside(localPoint3D))
 		queryFlag |= CAreaSolid::eSegmentQueryFlag_UsingReverseSegment;
 	Vec3 closestPos(0, 0, 0);
-	m_AreaSolid->QueryNearest(localPoint3D, queryFlag, closestPos, rfClosestDistSq);
+	m_pAreaSolid->QueryNearest(localPoint3D, queryFlag, closestPos, rfClosestDistSq);
 	if (rv3ClosestPos)
-		*rv3ClosestPos = m_WorldTM.TransformPoint(closestPos);
+		*rv3ClosestPos = m_worldTM.TransformPoint(closestPos);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2200,7 +2206,7 @@ void CArea::InvalidateCachedAreaData(EntityId const nEntityID)
 void CArea::SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstructionSegments, size_t const numLocalPoints)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-	m_AreaType = ENTITY_AREA_TYPE_SHAPE;
+	m_areaType = ENTITY_AREA_TYPE_SHAPE;
 
 	// at least two points needed to create closed shape
 	if (numLocalPoints > 1)
@@ -2305,12 +2311,12 @@ void CArea::SetBox(const Vec3& min, const Vec3& max, const Matrix34& tm)
 {
 	ReleaseAreaData();
 
-	m_AreaType = ENTITY_AREA_TYPE_BOX;
+	m_areaType = ENTITY_AREA_TYPE_BOX;
 	m_bInitialized = true;
-	m_BoxMin = min;
-	m_BoxMax = max;
-	m_WorldTM = tm;
-	m_InvMatrix = tm.GetInverted();
+	m_boxMin = min;
+	m_boxMax = max;
+	m_worldTM = tm;
+	m_invMatrix = tm.GetInverted();
 
 	m_pAreaManager->SetAreaDirty(this);
 }
@@ -2320,37 +2326,37 @@ void CArea::BeginSettingSolid(const Matrix34& worldTM)
 {
 	ReleaseAreaData();
 
-	m_AreaType = ENTITY_AREA_TYPE_SOLID;
+	m_areaType = ENTITY_AREA_TYPE_SOLID;
 	m_bInitialized = true;
-	m_WorldTM = worldTM;
-	m_InvMatrix = m_WorldTM.GetInverted();
-	m_AreaSolid = new CAreaSolid;
+	m_worldTM = worldTM;
+	m_invMatrix = m_worldTM.GetInverted();
+	m_pAreaSolid = new CAreaSolid;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CArea::AddConvexHullToSolid(const Vec3* verticesOfConvexHull, bool bObstruction, int numberOfVertices)
 {
-	if (!m_AreaSolid || m_AreaType != ENTITY_AREA_TYPE_SOLID)
+	if (!m_pAreaSolid || m_areaType != ENTITY_AREA_TYPE_SOLID)
 		return;
 
-	m_AreaSolid->AddSegment(verticesOfConvexHull, bObstruction, numberOfVertices);
+	m_pAreaSolid->AddSegment(verticesOfConvexHull, bObstruction, numberOfVertices);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CArea::EndSettingSolid()
 {
-	if (!m_AreaSolid || m_AreaType != ENTITY_AREA_TYPE_SOLID)
+	if (!m_pAreaSolid || m_areaType != ENTITY_AREA_TYPE_SOLID)
 		return;
 
-	m_AreaSolid->BuildBSP();
+	m_pAreaSolid->BuildBSP();
 	m_pAreaManager->SetAreaDirty(this);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CArea::SetMatrix(const Matrix34& tm)
 {
-	m_InvMatrix = tm.GetInverted();
-	m_WorldTM = tm;
+	m_invMatrix = tm.GetInverted();
+	m_worldTM = tm;
 
 	m_pAreaManager->SetAreaDirty(this);
 }
@@ -2358,13 +2364,13 @@ void CArea::SetMatrix(const Matrix34& tm)
 //////////////////////////////////////////////////////////////////////////
 void CArea::GetMatrix(Matrix34& tm) const
 {
-	tm = m_WorldTM;
+	tm = m_worldTM;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CArea::GetWorldBox(Vec3& rMin, Vec3& rMax) const
 {
-	switch (m_AreaType)
+	switch (m_areaType)
 	{
 	case ENTITY_AREA_TYPE_SHAPE:
 		{
@@ -2379,15 +2385,15 @@ void CArea::GetWorldBox(Vec3& rMin, Vec3& rMax) const
 		}
 	case ENTITY_AREA_TYPE_BOX:
 		{
-			rMin = m_WorldTM.TransformPoint(m_BoxMin);
-			rMax = m_WorldTM.TransformPoint(m_BoxMax);
+			rMin = m_worldTM.TransformPoint(m_boxMin);
+			rMax = m_worldTM.TransformPoint(m_boxMax);
 
 			break;
 		}
 	case ENTITY_AREA_TYPE_SPHERE:
 		{
-			rMin = m_SphereCenter - Vec3(m_SphereRadius, m_SphereRadius, m_SphereRadius);
-			rMax = m_SphereCenter + Vec3(m_SphereRadius, m_SphereRadius, m_SphereRadius);
+			rMin = m_sphereCenter - Vec3(m_sphereRadius, m_sphereRadius, m_sphereRadius);
+			rMax = m_sphereCenter + Vec3(m_sphereRadius, m_sphereRadius, m_sphereRadius);
 
 			break;
 		}
@@ -2424,10 +2430,10 @@ void CArea::SetSphere(const Vec3& center, float fRadius)
 	ReleaseAreaData();
 
 	m_bInitialized = true;
-	m_AreaType = ENTITY_AREA_TYPE_SPHERE;
-	m_SphereCenter = center;
-	m_SphereRadius = fRadius;
-	m_SphereRadius2 = m_SphereRadius * m_SphereRadius;
+	m_areaType = ENTITY_AREA_TYPE_SPHERE;
+	m_sphereCenter = center;
+	m_sphereRadius = fRadius;
+	m_sphereRadius2 = m_sphereRadius * m_sphereRadius;
 
 	m_pAreaManager->SetAreaDirty(this);
 }
@@ -2462,18 +2468,18 @@ void CArea::ResolveEntityIds()
 	if (m_bEntityIdsResolved)
 		return;
 
-	for (unsigned int i = 0; i < m_vEntityGuid.size(); i++)
+	for (unsigned int i = 0; i < m_entityGuids.size(); i++)
 	{
-		EntityId entId = GetEntitySystem()->FindEntityByGuid(m_vEntityGuid[i]);
-		m_vEntityID[i] = entId;
+		EntityId entId = GetEntitySystem()->FindEntityByGuid(m_entityGuids[i]);
+		m_entityIds[i] = entId;
 	}
 
 	// Go through all our entity ids and have the entity system update them, to account
 	// for any cloning
-	unsigned int nSize = m_vEntityID.size();
+	unsigned int nSize = m_entityIds.size();
 	for (unsigned int eIdx = 0; eIdx < nSize; eIdx++)
 	{
-		m_vEntityID[eIdx] = GetEntitySystem()->GetClonedEntityId(m_vEntityID[eIdx], m_EntityID);
+		m_entityIds[eIdx] = GetEntitySystem()->GetClonedEntityId(m_entityIds[eIdx], m_entityId);
 	}
 
 	m_bEntityIdsResolved = true;
@@ -2486,15 +2492,15 @@ void CArea::ReleaseCachedAreaData()
 }
 
 //////////////////////////////////////////////////////////////////////////
-float CArea::GetGreatestFadeDistance()
+float CArea::GetFadeDistance()
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 
-	if (m_fFadeDistance < 0.0f || gEnv->IsEditor())
+	if (m_fadeDistance < 0.0f || gEnv->IsEditor())
 	{
-		m_fFadeDistance = 0.0f;
+		m_fadeDistance = 0.0f;
 
-		for (auto const entityId : m_vEntityID)
+		for (auto const entityId : m_entityIds)
 		{
 			IEntity const* const pIEntity = GetEntitySystem()->GetEntity(entityId);
 
@@ -2504,13 +2510,67 @@ float CArea::GetGreatestFadeDistance()
 
 				if (pIEntityAudioProxy != nullptr)
 				{
-					m_fFadeDistance = std::max<float>(m_fFadeDistance, pIEntityAudioProxy->GetFadeDistance());
+					m_fadeDistance = std::max<float>(m_fadeDistance, pIEntityAudioProxy->GetFadeDistance());
 				}
 			}
 		}
 	}
 
-	return m_fFadeDistance;
+	return m_fadeDistance;
+}
+
+//////////////////////////////////////////////////////////////////////////
+float CArea::GetEnvironmentFadeDistance()
+{
+	if (m_environmentFadeDistance < 0.0f || gEnv->IsEditor())
+	{
+		m_environmentFadeDistance = 0.0f;
+
+		for (auto const entityId : m_entityIds)
+		{
+			IEntity const* const pIEntity = GetEntitySystem()->GetEntity(entityId);
+
+			if (pIEntity != nullptr)
+			{
+				IEntityAudioProxy const* const pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(pIEntity->GetProxy(ENTITY_PROXY_AUDIO));
+
+				if (pIEntityAudioProxy != nullptr)
+				{
+					m_environmentFadeDistance = std::max<float>(m_environmentFadeDistance, pIEntityAudioProxy->GetEnvironmentFadeDistance());
+				}
+			}
+		}
+	}
+
+	return m_environmentFadeDistance;
+}
+
+//////////////////////////////////////////////////////////////////////////
+float CArea::GetGreatestFadeDistance()
+{
+	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+
+	if (m_greatestFadeDistance < 0.0f || gEnv->IsEditor())
+	{
+		m_greatestFadeDistance = 0.0f;
+
+		for (auto const entityId : m_entityIds)
+		{
+			IEntity const* const pIEntity = GetEntitySystem()->GetEntity(entityId);
+
+			if (pIEntity != nullptr)
+			{
+				IEntityAudioProxy const* const pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(pIEntity->GetProxy(ENTITY_PROXY_AUDIO));
+
+				if (pIEntityAudioProxy != nullptr)
+				{
+					m_greatestFadeDistance = std::max<float>(m_greatestFadeDistance, pIEntityAudioProxy->GetGreatestFadeDistance());
+				}
+			}
+		}
+	}
+
+	return m_greatestFadeDistance;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2537,10 +2597,10 @@ CArea::a2DBBox& CArea::GetBBox()
 //////////////////////////////////////////////////////////////////////////
 void CArea::GetSolidBoundBox(AABB& outBoundBox) const
 {
-	if (!m_AreaSolid)
+	if (!m_pAreaSolid)
 		return;
 
-	outBoundBox = m_AreaSolid->GetBoundBox();
+	outBoundBox = m_pAreaSolid->GetBoundBox();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2549,15 +2609,16 @@ void CArea::AddEntity(const EntityId entId)
 	if (entId != INVALID_ENTITYID)
 	{
 		m_bAttachedSoundTested = false;
-		m_fFadeDistance = -1.0f;
+		m_fadeDistance = -1.0f;
+		m_greatestFadeDistance = -1.0f;
 
 		if (CVar::pDrawAreaDebug->GetIVal() == 2)
 		{
-			CryLog("<AreaManager> Area %u Direct Event: %s", m_EntityID, "ATTACH_THIS");
+			CryLog("<AreaManager> Area %u Direct Event: %s", m_entityId, "ATTACH_THIS");
 		}
 
 		// Always add as the entity might not exist yet.
-		stl::push_back_unique(m_vEntityID, entId);
+		stl::push_back_unique(m_entityIds, entId);
 
 		IEntity* const pIEntity = GetEntitySystem()->GetEntity(entId);
 
@@ -2565,8 +2626,8 @@ void CArea::AddEntity(const EntityId entId)
 		{
 			SEntityEvent event;
 			event.event = ENTITY_EVENT_ATTACH_THIS;
-			event.nParam[0] = m_EntityID;
-			event.nParam[1] = m_AreaID;
+			event.nParam[0] = m_entityId;
+			event.nParam[1] = m_areaId;
 			event.nParam[2] = 0;
 			pIEntity->SendEvent(event);
 
@@ -2584,7 +2645,7 @@ void CArea::AddEntity(const EntityId entId)
 //////////////////////////////////////////////////////////////////////////
 void CArea::AddEntity(const EntityGUID entGuid)
 {
-	stl::push_back_unique(m_vEntityGuid, entGuid);
+	stl::push_back_unique(m_entityGuids, entGuid);
 	AddEntity(GetEntitySystem()->FindEntityByGuid(entGuid));
 }
 
@@ -2606,15 +2667,16 @@ void CArea::RemoveEntity(EntityId const entId)
 	if (entId != INVALID_ENTITYID)
 	{
 		m_bAttachedSoundTested = false;
-		m_fFadeDistance = -1.0f;
+		m_fadeDistance = -1.0f;
+		m_greatestFadeDistance = -1.0f;
 
 		if (CVar::pDrawAreaDebug->GetIVal() == 2)
 		{
-			CryLog("<AreaManager> Area %u Direct Event: %s", m_EntityID, "DETACH_THIS");
+			CryLog("<AreaManager> Area %u Direct Event: %s", m_entityId, "DETACH_THIS");
 		}
 
 		// Always remove as the entity might be already gone.
-		stl::find_and_erase(m_vEntityID, entId);
+		stl::find_and_erase(m_entityIds, entId);
 
 		IEntity* const pIEntity = GetEntitySystem()->GetEntity(entId);
 
@@ -2622,8 +2684,8 @@ void CArea::RemoveEntity(EntityId const entId)
 		{
 			SEntityEvent event;
 			event.event = ENTITY_EVENT_DETACH_THIS;
-			event.nParam[0] = m_EntityID;
-			event.nParam[1] = m_AreaID;
+			event.nParam[0] = m_entityId;
+			event.nParam[1] = m_areaId;
 			event.nParam[2] = 0;
 			pIEntity->SendEvent(event);
 
@@ -2641,7 +2703,7 @@ void CArea::RemoveEntity(EntityId const entId)
 //////////////////////////////////////////////////////////////////////////
 void CArea::RemoveEntity(EntityGUID const entGuid)
 {
-	stl::find_and_erase(m_vEntityGuid, entGuid);
+	stl::find_and_erase(m_entityGuids, entGuid);
 	RemoveEntity(GetEntitySystem()->FindEntityByGuid(entGuid));
 }
 
@@ -2649,7 +2711,7 @@ void CArea::RemoveEntity(EntityGUID const entGuid)
 void CArea::RemoveEntities()
 {
 	// Inform all attached entities that they have been disconnected to prevent lost entities.
-	EntityIdVector const tmpVec(std::move(m_vEntityID));
+	EntityIdVector const tmpVec(std::move(m_entityIds));
 	EntityIdVector::const_iterator Iter(tmpVec.begin());
 	EntityIdVector::const_iterator const IterEnd(tmpVec.end());
 
@@ -2658,7 +2720,7 @@ void CArea::RemoveEntities()
 		RemoveEntity(*Iter);
 	}
 
-	m_vEntityGuid.clear();
+	m_entityGuids.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2720,11 +2782,11 @@ void CArea::SendCachedEventsFor(EntityId const nEntityID)
 					if (cachedEvent.event == ENTITY_EVENT_LEAVENEARAREA)
 						sState = "LEAVENEAR";
 
-					CryLog("<AreaManager> Area %u Queued Event: %s", m_EntityID, sState.c_str());
+					CryLog("<AreaManager> Area %u Queued Event: %s", m_entityId, sState.c_str());
 				}
 
-				cachedEvent.nParam[1] = m_AreaID;
-				cachedEvent.nParam[2] = m_EntityID;
+				cachedEvent.nParam[1] = m_areaId;
+				cachedEvent.nParam[2] = m_entityId;
 
 				SendEvent(cachedEvent, false);
 			}
@@ -2739,11 +2801,11 @@ void CArea::SendEvent(SEntityEvent& newEvent, bool bClearCachedEvents /* = true 
 {
 	m_pAreaManager->OnEvent(newEvent.event, (EntityId)newEvent.nParam[0], this);
 
-	size_t const nCountEntities = m_vEntityID.size();
+	size_t const nCountEntities = m_entityIds.size();
 
 	for (size_t eIdx = 0; eIdx < nCountEntities; ++eIdx)
 	{
-		if (IEntity* pAreaAttachedEntity = GetEntitySystem()->GetEntity(m_vEntityID[eIdx]))
+		if (IEntity* pAreaAttachedEntity = GetEntitySystem()->GetEntity(m_entityIds[eIdx]))
 		{
 			pAreaAttachedEntity->SendEvent(newEvent);
 
@@ -2756,33 +2818,31 @@ void CArea::SendEvent(SEntityEvent& newEvent, bool bClearCachedEvents /* = true 
 // do enter area - player was outside, now is inside
 // calls entity OnEnterArea which calls script OnEnterArea( player, AreaID )
 //////////////////////////////////////////////////////////////////////////
-void CArea::EnterArea(IEntity const* const __restrict pEntity)
+void CArea::EnterArea(EntityId const entityId)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 	if (m_bInitialized)
 	{
-		EntityId const nEntityID = pEntity->GetId();
-		TEntityCachedAreaDataMap::iterator Iter(m_mapEntityCachedAreaData.find(nEntityID));
+		TEntityCachedAreaDataMap::iterator Iter(m_mapEntityCachedAreaData.find(entityId));
 
 		if (Iter == m_mapEntityCachedAreaData.end())
 		{
 			// If we get here it means "OnAddedToAreaCache" did not get called, the entity was probably spawned within this area.
-			m_mapEntityCachedAreaData.insert(std::make_pair(nEntityID, SCachedAreaData())).first;
+			m_mapEntityCachedAreaData.insert(std::make_pair(entityId, SCachedAreaData())).first;
 		}
 
 		m_bIsActive = true;
 
 		if (CVar::pDrawAreaDebug->GetIVal() == 2)
 		{
-			CryLog("<AreaManager> Area %u Direct Event: %s", m_EntityID, "ENTER");
+			CryLog("<AreaManager> Area %u Direct Event: %s", m_entityId, "ENTER");
 		}
 
 		SEntityEvent event;
 		event.event = ENTITY_EVENT_ENTERAREA;
-		event.nParam[0] = nEntityID;
-		event.nParam[1] = m_AreaID;
-		event.nParam[2] = m_EntityID;
-		event.fParam[0] = 1.0f; // fading is handled within the near areas.. we've entered the inner area... ensure fade is fully on.. this fixes any time we teleport immediately into a region rather than transfering across the near region
+		event.nParam[0] = entityId;
+		event.nParam[1] = m_areaId;
+		event.nParam[2] = m_entityId;
 
 		SendEvent(event);
 	}
@@ -2791,21 +2851,21 @@ void CArea::EnterArea(IEntity const* const __restrict pEntity)
 // do leave area - player was inside, now is outside
 // calls entity OnLeaveArea which calls script OnLeaveArea( player, AreaID )
 //////////////////////////////////////////////////////////////////////////
-void CArea::LeaveArea(IEntity const* const __restrict pSrcEntity)
+void CArea::LeaveArea(EntityId const entityId)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 	if (m_bInitialized)
 	{
 		if (CVar::pDrawAreaDebug->GetIVal() == 2)
 		{
-			CryLog("<AreaManager> Area %u Direct Event: %s", m_EntityID, "LEAVE");
+			CryLog("<AreaManager> Area %u Direct Event: %s", m_entityId, "LEAVE");
 		}
 
 		SEntityEvent event;
 		event.event = ENTITY_EVENT_LEAVEAREA;
-		event.nParam[0] = pSrcEntity->GetId();
-		event.nParam[1] = m_AreaID;
-		event.nParam[2] = m_EntityID;
+		event.nParam[0] = entityId;
+		event.nParam[1] = m_areaId;
+		event.nParam[2] = m_entityId;
 
 		SendEvent(event);
 	}
@@ -2814,26 +2874,28 @@ void CArea::LeaveArea(IEntity const* const __restrict pSrcEntity)
 // do enter near area - entity was "far", now is "near"
 // calls entity OnEnterNearArea which calls script OnEnterNearArea( entity(player), AreaID )
 //////////////////////////////////////////////////////////////////////////
-void CArea::EnterNearArea(IEntity const* const __restrict pSrcEntity, Vec3 const& closestPointToArea)
+void CArea::EnterNearArea(
+	EntityId const entityId,
+	Vec3 const& closestPointToArea,
+	float const distance)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 	if (m_bInitialized)
 	{
-		EntityId const nEntityID = pSrcEntity->GetId();
-		TEntityCachedAreaDataMap::iterator Iter(m_mapEntityCachedAreaData.find(nEntityID));
+		TEntityCachedAreaDataMap::iterator Iter(m_mapEntityCachedAreaData.find(entityId));
 
 		if (Iter == m_mapEntityCachedAreaData.end())
 		{
 			// If we get here it means "OnAddedToAreaCache" did not get called, the entity was probably spawned within the near region of this area.
-			m_mapEntityCachedAreaData.insert(std::make_pair(nEntityID, SCachedAreaData())).first;
+			m_mapEntityCachedAreaData.insert(std::make_pair(entityId, SCachedAreaData())).first;
 		}
 
 		if (CVar::pDrawAreaDebug->GetIVal() == 2)
 		{
-			CryLog("<AreaManager> Area %u Direct Event: %s", m_EntityID, "ENTERNEAR");
+			CryLog("<AreaManager> Area %u Direct Event: %s", m_entityId, "ENTERNEAR");
 		}
 
-		SEntityEvent event(nEntityID, m_AreaID, m_EntityID, 0, 0.0f, 0.0f, 0.0f, closestPointToArea);
+		SEntityEvent event(entityId, m_areaId, m_entityId, 0, distance, 0.0f, 0.0f, closestPointToArea);
 		event.event = ENTITY_EVENT_ENTERNEARAREA;
 		SendEvent(event);
 	}
@@ -2842,21 +2904,21 @@ void CArea::EnterNearArea(IEntity const* const __restrict pSrcEntity, Vec3 const
 // do leave near area - entity was "near", now is "far"
 // calls entity OnLeaveNearArea which calls script OnLeaveNearArea( entity(player), AreaID )
 //////////////////////////////////////////////////////////////////////////
-void CArea::LeaveNearArea(IEntity const* const __restrict pSrcEntity)
+void CArea::LeaveNearArea(EntityId const entityId)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 	if (m_bInitialized)
 	{
 		if (CVar::pDrawAreaDebug->GetIVal() == 2)
 		{
-			CryLog("<AreaManager> Area %u Direct Event: %s", m_EntityID, "LEAVENEAR");
+			CryLog("<AreaManager> Area %u Direct Event: %s", m_entityId, "LEAVENEAR");
 		}
 
 		SEntityEvent event;
 		event.event = ENTITY_EVENT_LEAVENEARAREA;
-		event.nParam[0] = pSrcEntity->GetId();
-		event.nParam[1] = m_AreaID;
-		event.nParam[2] = m_EntityID;
+		event.nParam[0] = entityId;
+		event.nParam[1] = m_areaId;
+		event.nParam[2] = m_entityId;
 
 		SendEvent(event);
 
@@ -2869,17 +2931,16 @@ void CArea::LeaveNearArea(IEntity const* const __restrict pSrcEntity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CArea::OnAddedToAreaCache(IEntity const* const pEntity)
+void CArea::OnAddedToAreaCache(EntityId const entityId)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 	if (m_bInitialized)
 	{
-		EntityId const nEntityID = pEntity->GetId();
-		TEntityCachedAreaDataMap::iterator Iter(m_mapEntityCachedAreaData.find(nEntityID));
+		TEntityCachedAreaDataMap::iterator Iter(m_mapEntityCachedAreaData.find(entityId));
 
 		if (Iter == m_mapEntityCachedAreaData.end())
 		{
-			m_mapEntityCachedAreaData.insert(std::make_pair(nEntityID, SCachedAreaData())).first;
+			m_mapEntityCachedAreaData.insert(std::make_pair(entityId, SCachedAreaData())).first;
 		}
 		else
 		{
@@ -2890,70 +2951,42 @@ void CArea::OnAddedToAreaCache(IEntity const* const pEntity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CArea::OnRemovedFromAreaCache(IEntity const* const pEntity)
+void CArea::OnRemovedFromAreaCache(EntityId const entityId)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-	m_mapEntityCachedAreaData.erase(pEntity->GetId());
-}
-
-//calculate distance to area - proceed fade. player is inside of the area
-//////////////////////////////////////////////////////////////////////////
-void CArea::UpdateAreaInside(IEntity const* const __restrict pSrcEntity)
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-	if (m_bInitialized)
-	{
-		if (CVar::pDrawAreaDebug->GetIVal() == 2)
-		{
-			CryLog("<AreaManager> Area %u Direct Event: %s", m_EntityID, "MOVEINSIDE");
-		}
-
-		size_t const nCount = m_vEntityID.size();
-
-		for (size_t eIdx = 0; eIdx < nCount; ++eIdx)
-		{
-			IEntity* const __restrict pEntity = GetEntitySystem()->GetEntity(m_vEntityID[eIdx]);
-
-			if (pEntity != nullptr)
-			{
-				SEntityEvent event;
-				event.event = ENTITY_EVENT_MOVEINSIDEAREA;
-				event.nParam[0] = pSrcEntity->GetId();
-				event.nParam[1] = m_AreaID;
-				event.nParam[2] = m_EntityID;
-				pEntity->SendEvent(event);
-			}
-		}
-	}
+	m_mapEntityCachedAreaData.erase(entityId);
 }
 
 // pEntity moves in an area, which is controlled by an area with a higher priority
 //////////////////////////////////////////////////////////////////////////
-void CArea::ExclusiveUpdateAreaInside(IEntity const* const __restrict pSrcEntity, EntityId const AreaHighEntityID, float const fadeValue)
+void CArea::ExclusiveUpdateAreaInside(
+	EntityId const entityId,
+	EntityId const higherAreaId,
+	float const fade)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 	if (m_bInitialized)
 	{
 		if (CVar::pDrawAreaDebug->GetIVal() == 2)
 		{
-			CryLog("<AreaManager> Area %u Direct Event: %s", m_EntityID, "MOVEINSIDE");
+			CryLog("<AreaManager> Area %u Direct Event: %s", m_entityId, "MOVEINSIDE");
 		}
 
-		size_t const numAttachedEntities = m_vEntityID.size();
+		size_t const numAttachedEntities = m_entityIds.size();
 
 		for (size_t index = 0; index < numAttachedEntities; ++index)
 		{
-			IEntity* const __restrict pEntity = GetEntitySystem()->GetEntity(m_vEntityID[index]);
+			IEntity* const pEntity = GetEntitySystem()->GetEntity(m_entityIds[index]);
 
 			if (pEntity != nullptr)
 			{
 				SEntityEvent event;
 				event.event = ENTITY_EVENT_MOVEINSIDEAREA;
-				event.nParam[0] = pSrcEntity->GetId();
-				event.nParam[1] = m_AreaID;
-				event.nParam[2] = m_EntityID; // AreaLowEntityID
-				event.nParam[3] = AreaHighEntityID;
-				event.fParam[0] = fadeValue;
+				event.nParam[0] = entityId;
+				event.nParam[1] = m_areaId;
+				event.nParam[2] = m_entityId; // AreaLowEntityID
+				event.nParam[3] = higherAreaId;
+				event.fParam[0] = fade;
 				pEntity->SendEvent(event);
 			}
 		}
@@ -2962,31 +2995,36 @@ void CArea::ExclusiveUpdateAreaInside(IEntity const* const __restrict pSrcEntity
 
 // pEntity moves near an area, which is controlled by an area with a higher priority
 //////////////////////////////////////////////////////////////////////////
-void CArea::ExclusiveUpdateAreaNear(IEntity const* const __restrict pSrcEntity, EntityId const AreaHighEntityID, float const fadeValue)
+void CArea::ExclusiveUpdateAreaNear(
+	EntityId const entityId,
+	EntityId const higherAreaId,
+	float const distance,
+	Vec3 const& position)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 	if (m_bInitialized)
 	{
 		if (CVar::pDrawAreaDebug->GetIVal() == 2)
 		{
-			CryLogAlways("<AreaManager> Area %u Direct Event: %s", m_EntityID, "MOVENEAR");
+			CryLogAlways("<AreaManager> Area %u Direct Event: %s", m_entityId, "MOVENEAR");
 		}
 
-		size_t const nCount = m_vEntityID.size();
+		size_t const numAttachedEntities = m_entityIds.size();
 
-		for (size_t eIdx = 0; eIdx < nCount; ++eIdx)
+		for (size_t index = 0; index < numAttachedEntities; ++index)
 		{
-			IEntity* const __restrict pEntity = GetEntitySystem()->GetEntity(m_vEntityID[eIdx]);
+			IEntity* const pEntity = GetEntitySystem()->GetEntity(m_entityIds[index]);
 
 			if (pEntity != nullptr)
 			{
 				SEntityEvent event;
 				event.event = ENTITY_EVENT_MOVENEARAREA;
-				event.nParam[0] = pSrcEntity->GetId();
-				event.nParam[1] = m_AreaID;
-				event.nParam[2] = m_EntityID; // AreaLowEntityID
-				event.nParam[3] = AreaHighEntityID;
-				event.fParam[0] = fadeValue;
+				event.nParam[0] = entityId;
+				event.nParam[1] = m_areaId;
+				event.nParam[2] = m_entityId; // AreaLowEntityID
+				event.nParam[3] = higherAreaId;
+				event.fParam[0] = distance;
+				event.vec = position;
 				pEntity->SendEvent(event);
 			}
 		}
@@ -3004,20 +3042,20 @@ float CArea::CalculateFade(const Vec3& pos3D)
 	{
 		a2DPoint const pos = CArea::a2DPoint(pos3D);
 
-		switch (m_AreaType)
+		switch (m_areaType)
 		{
 		case ENTITY_AREA_TYPE_SOLID:
 			{
-				if (m_fProximity <= 0.0f)
+				if (m_proximity <= 0.0f)
 				{
 					fadeCoeff = 1.0f;
 					break;
 				}
 				Vec3 PosOnHull(ZERO);
 				float squaredDistance;
-				if (!m_AreaSolid->QueryNearest(pos3D, CAreaSolid::eSegmentQueryFlag_All, PosOnHull, squaredDistance))
+				if (!m_pAreaSolid->QueryNearest(pos3D, CAreaSolid::eSegmentQueryFlag_All, PosOnHull, squaredDistance))
 					break;
-				fadeCoeff = sqrt_tpl(squaredDistance) / m_fProximity;
+				fadeCoeff = sqrt_tpl(squaredDistance) / m_proximity;
 			}
 			break;
 		case ENTITY_AREA_TYPE_SHAPE:
@@ -3025,35 +3063,35 @@ float CArea::CalculateFade(const Vec3& pos3D)
 			break;
 		case ENTITY_AREA_TYPE_SPHERE:
 			{
-				if (m_fProximity <= 0.0f)
+				if (m_proximity <= 0.0f)
 				{
 					fadeCoeff = 1.0f;
 					break;
 				}
-				Vec3 Delta = pos3D - m_SphereCenter;
-				fadeCoeff = (m_SphereRadius - Delta.GetLength()) / m_fProximity;
+				Vec3 Delta = pos3D - m_sphereCenter;
+				fadeCoeff = (m_sphereRadius - Delta.GetLength()) / m_proximity;
 				if (fadeCoeff > 1.0f)
 					fadeCoeff = 1.0f;
 				break;
 			}
 		case ENTITY_AREA_TYPE_BOX:
 			{
-				if (m_fProximity <= 0.0f)
+				if (m_proximity <= 0.0f)
 				{
 					fadeCoeff = 1.0f;
 					break;
 				}
-				Vec3 p3D = m_InvMatrix.TransformPoint(pos3D);
-				Vec3 MinDelta = p3D - m_BoxMin;
-				Vec3 MaxDelta = m_BoxMax - p3D;
-				Vec3 EdgeDist = (m_BoxMax - m_BoxMin) / 2.0f;
+				Vec3 p3D = m_invMatrix.TransformPoint(pos3D);
+				Vec3 MinDelta = p3D - m_boxMin;
+				Vec3 MaxDelta = m_boxMax - p3D;
+				Vec3 EdgeDist = (m_boxMax - m_boxMin) / 2.0f;
 				if ((!EdgeDist.x) || (!EdgeDist.y) || (!EdgeDist.z))
 				{
 					fadeCoeff = 1.0f;
 					break;
 				}
 
-				float fFadeScale = m_fProximity / 100.0f;
+				float fFadeScale = m_proximity / 100.0f;
 				EdgeDist *= fFadeScale;
 
 				float fMinFade = MinDelta.x / EdgeDist.x;
@@ -3077,24 +3115,23 @@ float CArea::CalculateFade(const Vec3& pos3D)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CArea::OnAreaCrossing(IEntity const* const __restrict pEntity)
+void CArea::OnAreaCrossing(EntityId const entityId)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-	if (m_bInitialized && pEntity != nullptr)
+	if (m_bInitialized)
 	{
-		IEntity* __restrict pAreaAttachedEntity = nullptr;
-		EntityIdVector::const_iterator const IterEnd(m_vEntityID.end());
+		IEntity* pAreaAttachedEntity = nullptr;
 
-		for (EntityIdVector::const_iterator Iter(m_vEntityID.begin()); Iter != IterEnd; ++Iter)
+		for (auto const attachedEntityId : m_entityIds)
 		{
-			pAreaAttachedEntity = GetEntitySystem()->GetEntity(*Iter);
+			pAreaAttachedEntity = GetEntitySystem()->GetEntity(attachedEntityId);
 
 			if (pAreaAttachedEntity != nullptr)
 			{
-				SEntityEvent oEvent;
-				oEvent.event = ENTITY_EVENT_CROSS_AREA;
-				oEvent.nParam[0] = pEntity->GetId();
-				pAreaAttachedEntity->SendEvent(oEvent);
+				SEntityEvent event;
+				event.event = ENTITY_EVENT_CROSS_AREA;
+				event.nParam[0] = entityId;
+				pAreaAttachedEntity->SendEvent(event);
 			}
 		}
 	}
@@ -3121,10 +3158,10 @@ void CArea::Draw(size_t const idx)
 	ColorB color1 = colorsArray[(idx + 1) % (sizeof(colorsArray) / sizeof(ColorB))];
 	// ColorB color2 = colorsArray[(idx+2)%(sizeof(colorsArray)/sizeof(ColorB))];
 
-	switch (m_AreaType)
+	switch (m_areaType)
 	{
 	case ENTITY_AREA_TYPE_SOLID:
-		m_AreaSolid->Draw(m_WorldTM, color, color1);
+		m_pAreaSolid->Draw(m_worldTM, color, color1);
 		break;
 	case ENTITY_AREA_TYPE_SHAPE:
 		{
@@ -3177,32 +3214,32 @@ void CArea::Draw(size_t const idx)
 			color3.a = 64;
 
 			pRC->SetRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
-			pRC->DrawSphere(m_SphereCenter, m_SphereRadius, color3);
+			pRC->DrawSphere(m_sphereCenter, m_sphereRadius, color3);
 			break;
 		}
 	case ENTITY_AREA_TYPE_BOX:
 		{
-			float fLength = m_BoxMax.x - m_BoxMin.x;
-			float fWidth = m_BoxMax.y - m_BoxMin.y;
-			float fHeight = m_BoxMax.z - m_BoxMin.z;
+			float fLength = m_boxMax.x - m_boxMin.x;
+			float fWidth = m_boxMax.y - m_boxMin.y;
+			float fHeight = m_boxMax.z - m_boxMin.z;
 
-			Vec3 v0 = m_BoxMin;
-			Vec3 v1 = Vec3(m_BoxMin.x + fLength, m_BoxMin.y, m_BoxMin.z);
-			Vec3 v2 = Vec3(m_BoxMin.x + fLength, m_BoxMin.y + fWidth, m_BoxMin.z);
-			Vec3 v3 = Vec3(m_BoxMin.x, m_BoxMin.y + fWidth, m_BoxMin.z);
-			Vec3 v4 = Vec3(m_BoxMin.x, m_BoxMin.y, m_BoxMin.z + fHeight);
-			Vec3 v5 = Vec3(m_BoxMin.x + fLength, m_BoxMin.y, m_BoxMin.z + fHeight);
-			Vec3 v6 = Vec3(m_BoxMin.x + fLength, m_BoxMin.y + fWidth, m_BoxMin.z + fHeight);
-			Vec3 v7 = Vec3(m_BoxMin.x, m_BoxMin.y + fWidth, m_BoxMin.z + fHeight);
+			Vec3 v0 = m_boxMin;
+			Vec3 v1 = Vec3(m_boxMin.x + fLength, m_boxMin.y, m_boxMin.z);
+			Vec3 v2 = Vec3(m_boxMin.x + fLength, m_boxMin.y + fWidth, m_boxMin.z);
+			Vec3 v3 = Vec3(m_boxMin.x, m_boxMin.y + fWidth, m_boxMin.z);
+			Vec3 v4 = Vec3(m_boxMin.x, m_boxMin.y, m_boxMin.z + fHeight);
+			Vec3 v5 = Vec3(m_boxMin.x + fLength, m_boxMin.y, m_boxMin.z + fHeight);
+			Vec3 v6 = Vec3(m_boxMin.x + fLength, m_boxMin.y + fWidth, m_boxMin.z + fHeight);
+			Vec3 v7 = Vec3(m_boxMin.x, m_boxMin.y + fWidth, m_boxMin.z + fHeight);
 
-			v0 = m_WorldTM.TransformPoint(v0);
-			v1 = m_WorldTM.TransformPoint(v1);
-			v2 = m_WorldTM.TransformPoint(v2);
-			v3 = m_WorldTM.TransformPoint(v3);
-			v4 = m_WorldTM.TransformPoint(v4);
-			v5 = m_WorldTM.TransformPoint(v5);
-			v6 = m_WorldTM.TransformPoint(v6);
-			v7 = m_WorldTM.TransformPoint(v7);
+			v0 = m_worldTM.TransformPoint(v0);
+			v1 = m_worldTM.TransformPoint(v1);
+			v2 = m_worldTM.TransformPoint(v2);
+			v3 = m_worldTM.TransformPoint(v3);
+			v4 = m_worldTM.TransformPoint(v4);
+			v5 = m_worldTM.TransformPoint(v5);
+			v6 = m_worldTM.TransformPoint(v6);
+			v7 = m_worldTM.TransformPoint(v7);
 
 			// draw lower half of box
 			pRC->DrawLine(v0, color1, v1, color1);
@@ -3242,9 +3279,9 @@ void CArea::ReleaseAreaData()
 void CArea::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	SIZER_COMPONENT_NAME(pSizer, "CArea");
-	if (m_AreaSolid)
+	if (m_pAreaSolid)
 	{
-		m_AreaSolid->GetMemoryUsage(pSizer);
+		m_pAreaSolid->GetMemoryUsage(pSizer);
 	}
 
 	for (size_t i = 0, numSegments(m_areaSegments.size()); i < numSegments; ++i)
@@ -3326,7 +3363,7 @@ Vec3 const& CArea::GetCachedPointOnHull(EntityId const nEntityID) const
 		return Iter->second.oPos;
 	}
 
-	return m_oNULLVec;
+	return m_nullVec;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3343,7 +3380,7 @@ char const* const CArea::GetAreaEntityName() const
 
 	if (pIEntitySystem != nullptr)
 	{
-		IEntity const* const pIEntity = pIEntitySystem->GetEntity(m_EntityID);
+		IEntity const* const pIEntity = pIEntitySystem->GetEntity(m_entityId);
 
 		if (pIEntity != nullptr)
 		{

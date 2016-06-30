@@ -184,6 +184,7 @@ CScriptBind_System::CScriptBind_System(IScriptSystem* pScriptSystem, ISystem* pS
 	SCRIPT_REG_FUNC(Draw2DLine);
 	SCRIPT_REG_FUNC(DrawText);
 	SCRIPT_REG_TEMPLFUNC(DrawSphere, "x, y, z, radius, r, g, b, a");
+	SCRIPT_REG_TEMPLFUNC(DrawAABB, "x, y, z, x2, y2, z2, r, g, b, a");
 	SCRIPT_REG_FUNC(SetGammaDelta);
 
 	SCRIPT_REG_FUNC(ShowConsole);
@@ -1305,6 +1306,27 @@ int CScriptBind_System::DrawSphere(IFunctionHandler* pH, float x, float y, float
 		pRenderAuxGeom->SetRenderFlags(newFlags);
 
 		pRenderAuxGeom->DrawSphere(Vec3(x, y, z), radius, ColorB(r, g, b, a), false);
+
+		pRenderAuxGeom->SetRenderFlags(oldFlags);
+	}
+	return pH->EndFunction();
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+int CScriptBind_System::DrawAABB(IFunctionHandler* pH, float x, float y, float z, float x2, float y2, float z2, int r, int g, int b, int a)
+{
+	IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+	if (pRenderAuxGeom)
+	{
+		SAuxGeomRenderFlags oldFlags = pRenderAuxGeom->GetRenderFlags();
+		SAuxGeomRenderFlags newFlags = oldFlags;
+
+		newFlags.SetCullMode(e_CullModeNone);
+		newFlags.SetAlphaBlendMode(e_AlphaBlended);
+		pRenderAuxGeom->SetRenderFlags(newFlags);
+
+		AABB bbox(Vec3(x, y, z), Vec3(x2, y2, z2));
+		pRenderAuxGeom->DrawAABB(bbox, true, ColorB(r, g, b, a), eBBD_Faceted);
 
 		pRenderAuxGeom->SetRenderFlags(oldFlags);
 	}

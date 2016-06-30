@@ -167,10 +167,10 @@ size_t CAreaManager::GetLinkedAreas(EntityId linkedId, int areaId, std::vector<C
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAreaManager::MarkEntityForUpdate(EntityId const nEntityID)
+void CAreaManager::MarkEntityForUpdate(EntityId const entityId)
 {
 	const size_t framesToUpdate = 1;
-	TEntitiesToUpdateMap::iterator const iter(m_mapEntitiesToUpdate.find(nEntityID));
+	TEntitiesToUpdateMap::iterator const iter(m_mapEntitiesToUpdate.find(entityId));
 
 	if (iter != m_mapEntitiesToUpdate.end())
 	{
@@ -178,7 +178,7 @@ void CAreaManager::MarkEntityForUpdate(EntityId const nEntityID)
 	}
 	else
 	{
-		m_mapEntitiesToUpdate.insert(std::make_pair(nEntityID, framesToUpdate));
+		m_mapEntitiesToUpdate.insert(std::make_pair(entityId, framesToUpdate));
 	}
 }
 
@@ -190,13 +190,14 @@ void CAreaManager::TriggerAudioListenerUpdate(IArea const* const _pArea)
 
 	while (!pIt->IsEnd())
 	{
-		IEntity const* const pEntity = pIt->Next();
+		IEntity const* const pIEntity = pIt->Next();
 
 		// Do this for all audio listener entities.
-		if (pEntity != nullptr && (pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
+		if (pIEntity != nullptr && (pIEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
 		{
-			ExitArea(pEntity, pArea);
-			MarkEntityForUpdate(pEntity->GetId());
+			EntityId const entityId = pIEntity->GetId();
+			ExitArea(entityId, pArea);
+			MarkEntityForUpdate(entityId);
 		}
 	}
 }
@@ -315,7 +316,7 @@ void CAreaManager::UpdateEntity(Vec3 const& position, IEntity* const pIEntity)
 			{
 				// if they are not yet in the cache, add them
 				pAreaCache->entries.push_back(SAreaCacheEntry(pArea, false, false));
-				pArea->OnAddedToAreaCache(pIEntity);
+				pArea->OnAddedToAreaCache(entityId);
 			}
 
 #if defined(DEBUG_AREAMANAGER)
@@ -341,8 +342,8 @@ void CAreaManager::UpdateEntity(Vec3 const& position, IEntity* const pIEntity)
 			// area was just hidden
 			if (bIsHidden && pArea->IsActive())
 			{
-				pArea->LeaveArea(pIEntity);
-				pArea->LeaveNearArea(pIEntity);
+				pArea->LeaveArea(entityId);
+				pArea->LeaveNearArea(entityId);
 				areaCacheEntry.bNear = false;
 				areaCacheEntry.bInside = false;
 				pArea->SetActive(false);
@@ -389,7 +390,7 @@ void CAreaManager::UpdateEntity(Vec3 const& position, IEntity* const pIEntity)
 		// Remove all entries in the cache which are no longer in the grid.
 		if (!pAreaCache->entries.empty())
 		{
-			pAreaCache->entries.erase(std::remove_if(pAreaCache->entries.begin(), pAreaCache->entries.end(), SIsNotInGrid(pIEntity, m_areas, m_areas.size())), pAreaCache->entries.end());
+			pAreaCache->entries.erase(std::remove_if(pAreaCache->entries.begin(), pAreaCache->entries.end(), SIsNotInGrid(entityId, m_areas, m_areas.size())), pAreaCache->entries.end());
 		}
 
 		if (pAreaCache->entries.empty())
@@ -477,8 +478,8 @@ void CAreaManager::ProcessArea(
 {
 	Vec3 Closest3d;
 	bool bExclusiveUpdate = false;
-	EntityId const nEntityID = pIEntity->GetId();
-	bool const bIsPointWithin = (pArea->CalcPosType(nEntityID, pos) == AREA_POS_TYPE_2DINSIDE_ZINSIDE);
+	EntityId const entityId = pIEntity->GetId();
+	bool const bIsPointWithin = (pArea->CalcPosType(entityId, pos) == AREA_POS_TYPE_2DINSIDE_ZINSIDE);
 
 	if (bIsPointWithin)
 	{
@@ -486,12 +487,12 @@ void CAreaManager::ProcessArea(
 		if (!areaCacheEntry.bInside)
 		{
 			// We're inside now and not near anymore.
-			pArea->EnterArea(pIEntity);
+			pArea->EnterArea(entityId);
 			areaCacheEntry.bInside = true;
 			areaCacheEntry.bNear = false;
 
 			// Notify possible lower priority areas about this event.
-			NotifyAreas(pArea, pAreaCache, pIEntity);
+			NotifyAreas(pArea, pAreaCache, entityId);
 		}
 
 		uint32 const nEntityFlagsExtended = pIEntity->GetFlagsExtended();
@@ -499,9 +500,9 @@ void CAreaManager::ProcessArea(
 		if ((nEntityFlagsExtended & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0 || (nEntityFlagsExtended & ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE) > 0)
 		{
 			// This updates the distance to closest border when inside the area. (TODO: Can this be called once from within CalcPosType when position is within area?)
-			pArea->CalcPointWithinDist(nEntityID, pos, false);
+			pArea->CalcPointWithinDist(entityId, pos, false);
 
-			bExclusiveUpdate = ProceedExclusiveUpdateByHigherArea(pAreaCache, pIEntity, pos, pArea, pos, areaEnvironments); // TODO: Double check why "pos" is passed twice!
+			bExclusiveUpdate = ProceedExclusiveUpdateByHigherArea(pAreaCache, entityId, pos, pArea, pos, areaEnvironments); // TODO: Double check why "pos" is passed twice!
 
 			if (!bExclusiveUpdate)
 			{
@@ -509,7 +510,7 @@ void CAreaManager::ProcessArea(
 				{
 					RetrieveEnvironmentAmount(pArea, 1.0f, 0.0f, INVALID_ENTITYID, areaEnvironments);
 
-					SEntityEvent event(nEntityID, 0, 0, 0, 1.0f, 1.0f, 1.0f, pos);
+					SEntityEvent event(entityId, 0, 0, 0, 1.0f, 0.0f, 0.0f, pos);
 					event.event = ENTITY_EVENT_MOVEINSIDEAREA;
 					pArea->AddCachedEvent(event);
 				}
@@ -519,33 +520,34 @@ void CAreaManager::ProcessArea(
 	else
 	{
 		// This is optimized internally and might not recalculate but rather retrieve the cached data.
-		float const distanceSq = pArea->CalcPointNearDistSq(nEntityID, pos, Closest3d, false);
+		float const distanceSq = pArea->CalcPointNearDistSq(entityId, pos, Closest3d, false);
 		float const greatestFadeDistance = pArea->GetGreatestFadeDistance();
 		bool const isNear = ((distanceSq > 0.0f) && (distanceSq < greatestFadeDistance * greatestFadeDistance));
 
 		// Was near or inside but is either far or hidden now.
 		if (areaCacheEntry.bInside)
 		{
-			pArea->LeaveArea(pIEntity);
+			pArea->LeaveArea(entityId);
 			areaCacheEntry.bInside = false;
 
 			// Needs to be temporarily near again.
 			areaCacheEntry.bNear = true;
 
 			// Notify possible lower priority areas about this event.
-			NotifyAreas(pArea, pAreaCache, pIEntity);
+			NotifyAreas(pArea, pAreaCache, entityId);
 		}
 
 		if (isNear)
 		{
 			if (!areaCacheEntry.bNear)
 			{
-				pArea->EnterNearArea(pIEntity, Closest3d);
+				float const distance = sqrt_tpl(distanceSq);
+				pArea->EnterNearArea(entityId, Closest3d, distance);
 				areaCacheEntry.bNear = true;
 			}
 
 			// is near now
-			bExclusiveUpdate = ProceedExclusiveUpdateByHigherArea(pAreaCache, pIEntity, pos, pArea, Closest3d, areaEnvironments);
+			bExclusiveUpdate = ProceedExclusiveUpdateByHigherArea(pAreaCache, entityId, pos, pArea, Closest3d, areaEnvironments);
 
 			// if there is no cached event waiting, Fade can be overwritten
 			if (!bExclusiveUpdate)
@@ -553,17 +555,15 @@ void CAreaManager::ProcessArea(
 				float const distance = sqrt_tpl(distanceSq);
 				RetrieveEnvironmentAmount(pArea, 0.0f, distance, INVALID_ENTITYID, areaEnvironments);
 
-				float const fade = (greatestFadeDistance > 0.0f) ? std::max<float>(0.0f, (greatestFadeDistance - distance) / greatestFadeDistance) : 0.0f;
-
 				CRY_ASSERT(areaCacheEntry.bNear && !areaCacheEntry.bInside); // We must be near but not inside yet!
-				SEntityEvent event(nEntityID, 0, 0, 0, fade, distanceSq, 0.0f, Closest3d);
+				SEntityEvent event(entityId, 0, 0, 0, distance, 0.0f, 0.0f, Closest3d);
 				event.event = ENTITY_EVENT_MOVENEARAREA;
 				pArea->AddCachedEvent(event);
 			}
 		}
 		else if (areaCacheEntry.bNear)
 		{
-			pArea->LeaveNearArea(pIEntity);
+			pArea->LeaveNearArea(entityId);
 			areaCacheEntry.bNear = false;
 
 			RetrieveEnvironmentAmount(pArea, 0.0f, 0.0f, INVALID_ENTITYID, areaEnvironments);
@@ -577,7 +577,7 @@ void CAreaManager::ProcessArea(
 //////////////////////////////////////////////////////////////////////////
 bool CAreaManager::ProceedExclusiveUpdateByHigherArea(
   SAreasCache* const pAreaCache,
-  IEntity const* const pIEntity,
+	EntityId const entityId,
   Vec3 const& entityPos,
   CArea* const pArea,
   Vec3 const& onLowerHull,
@@ -588,8 +588,6 @@ bool CAreaManager::ProceedExclusiveUpdateByHigherArea(
 	// 2) inside-low, not-inside-high: typical approaching high area scenario
 	// 3) not-inside-low, inside-high: reversed approach from within a high area to fade in a low area
 	// 4) inside-low, inside-high: both inside, so we fade in the lower area on the higher area hull, if that point is also in the lower
-
-	EntityId const entityId = pIEntity->GetId();
 	bool bResult = false;
 	int const currentGroupId = pArea->GetGroup();
 
@@ -631,9 +629,8 @@ bool CAreaManager::ProceedExclusiveUpdateByHigherArea(
 				bPosInLowerArea = pAreaCachEntry->bInside;
 			}
 
-			float fLargestDistanceSq = bPosInLowerArea ? 0.0f : FLT_MAX;
+			float largestDistanceSq = bPosInLowerArea ? 0.0f : FLT_MAX;
 			CArea* pHigherAreaWithLargestDistance = nullptr;
-			float fHigherGreatestFadeDistance = 0.0f;
 			Vec3 higherClosest3d(ZERO);
 			bool bPosInHighestArea = false;
 
@@ -646,18 +643,17 @@ bool CAreaManager::ProceedExclusiveUpdateByHigherArea(
 
 				// This is optimized internally and might not recalculate but rather retrieve the cached data.
 				bool const bPosInHighArea = pHigherArea->CalcPointWithin(entityId, entityPos);
-				float const fDistanceSq = pHigherArea->CalcPointNearDistSq(entityId, entityPos, tempHigherClosest3d, false);
+				float const distanceSq = pHigherArea->CalcPointNearDistSq(entityId, entityPos, tempHigherClosest3d, false);
 
-				bool bUseThisArea = fDistanceSq > 0.0f && ((fLargestDistanceSq < fDistanceSq && bPosInLowerArea) || (fDistanceSq < fLargestDistanceSq && !bPosInLowerArea));
+				bool bUseThisArea = distanceSq > 0.0f && ((largestDistanceSq < distanceSq && bPosInLowerArea) || (distanceSq < largestDistanceSq && !bPosInLowerArea));
 				// reject cases when Pos is not inside new High Area and we already found a high area
 				// and add the case where Pos is inside new High Area, but would be rejected by Higher Area,
 				bUseThisArea = (bUseThisArea && !(!bPosInHighArea && bPosInHighestArea)) || (bPosInHighArea && !bPosInHighestArea);
 
 				if (bUseThisArea)
 				{
-					fLargestDistanceSq = fDistanceSq;
+					largestDistanceSq = distanceSq;
 					pHigherAreaWithLargestDistance = pHigherArea;
-					fHigherGreatestFadeDistance = pHigherArea->GetGreatestFadeDistance();
 					higherClosest3d = tempHigherClosest3d;
 					bPosInHighestArea = bPosInHighArea;
 				}
@@ -671,33 +667,31 @@ bool CAreaManager::ProceedExclusiveUpdateByHigherArea(
 				{
 					bool const bHighest3dPointInLowerArea = pArea->CalcPointWithin(INVALID_ENTITYID, higherClosest3d);
 					bool const bLower3dPointInHighestArea = pHigherAreaWithLargestDistance->CalcPointWithin(entityId, onLowerHull);
-					float distanceSq = fLargestDistanceSq;
 
 					// case 1) where approaching the lower area is closer than the higher
 					if (!bPosInLowerArea && !bPosInHighestArea)
 					{
-						float const distanceToLower = onLowerHull.GetSquaredDistance(entityPos);
-						float const distanceToHigher = higherClosest3d.GetSquaredDistance(entityPos);
+						float const distanceToLowerSq = onLowerHull.GetSquaredDistance(entityPos);
+						float const distanceToHigherSq = higherClosest3d.GetSquaredDistance(entityPos);
 
-						if (distanceToLower >= distanceToHigher && (bHighest3dPointInLowerArea || bLower3dPointInHighestArea))
-						{
-							// best thing would be to take onLowerHull and use that Position to calculate a point
-							// on HigherHull, check again, if that would be inside the lower, and fade from there.
-							distanceSq = FLT_MAX;
-						}
-						else
+						if (distanceToLowerSq < distanceToHigherSq || (!bHighest3dPointInLowerArea && !bLower3dPointInHighestArea))
 						{
 							return false;
 						}
+						else
+						{
+							// best thing would be to take onLowerHull and use that Position to calculate a point
+							// on HigherHull, check again, if that would be inside the lower, and fade from there.
+						}
 					}
-
-					float const distance = sqrt_tpl(distanceSq);
-					float fNewFade = (fHigherGreatestFadeDistance > 0.0f) ? std::max<float>(0.0f, (fHigherGreatestFadeDistance - distance) / fHigherGreatestFadeDistance) : 0.0f;
 
 					// case 4)
 					if (bPosInLowerArea && bPosInHighestArea && bHighest3dPointInLowerArea)
 					{
-						pArea->ExclusiveUpdateAreaInside(pIEntity, pHigherAreaWithLargestDistance->GetEntityID(), fNewFade);
+						float const distance = sqrt_tpl(largestDistanceSq);
+						float const innerFadeDistance = pHigherAreaWithLargestDistance->GetInnerFadeDistance();
+						float const fade = (innerFadeDistance > 0.0f) ? std::max<float>(0.0f, (innerFadeDistance - distance) / innerFadeDistance) : 0.0f;
+						pArea->ExclusiveUpdateAreaInside(entityId, pHigherAreaWithLargestDistance->GetEntityID(), fade);
 						RetrieveEnvironmentAmount(pArea, 0.0f, distance, INVALID_ENTITYID, areaEnvironments);
 					}
 					else
@@ -705,10 +699,14 @@ bool CAreaManager::ProceedExclusiveUpdateByHigherArea(
 						// if point on higher hull is not the same as point on lower hull, then lets not fade in the effect
 						if (bPosInHighestArea && onLowerHull.GetDistance(higherClosest3d) > 0.01f)
 						{
-							fNewFade = 0.0f;
+							pArea->ExclusiveUpdateAreaNear(entityId, pHigherAreaWithLargestDistance->GetEntityID(), 0.0f, onLowerHull);
 						}
-
-						pArea->ExclusiveUpdateAreaNear(pIEntity, pHigherAreaWithLargestDistance->GetEntityID(), fNewFade);
+						else
+						{
+							float const distanceToLowerSq = onLowerHull.GetSquaredDistance(entityPos);
+							float const distance = sqrt_tpl(distanceToLowerSq);
+							pArea->ExclusiveUpdateAreaNear(entityId, pHigherAreaWithLargestDistance->GetEntityID(), distance, onLowerHull);
+						}
 					}
 
 					bResult = true;
@@ -721,7 +719,10 @@ bool CAreaManager::ProceedExclusiveUpdateByHigherArea(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAreaManager::NotifyAreas(CArea* const __restrict pArea, SAreasCache const* const pAreaCache, IEntity const* const pEntity)
+void CAreaManager::NotifyAreas(
+	CArea* const __restrict pArea,
+	SAreasCache const* const pAreaCache,
+	EntityId const entityId)
 {
 	int const currentGroupId = pArea->GetGroup();
 
@@ -766,19 +767,19 @@ void CAreaManager::NotifyAreas(CArea* const __restrict pArea, SAreasCache const*
 		{
 			// TODO: This can be split into "OnCrossingInto" and "OnCrossingOutOf"
 			// as currently "OnCrossingOutOf" is really only of interest.
-			pAreaToNotify->OnAreaCrossing(pEntity);
+			pAreaToNotify->OnAreaCrossing(entityId);
 		}
 	}
 
-	OnEvent(ENTITY_EVENT_CROSS_AREA, pEntity->GetId(), pArea);
+	OnEvent(ENTITY_EVENT_CROSS_AREA, entityId, pArea);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAreaManager::ExitArea(IEntity const* const _pEntity, CArea const* const _pArea)
+void CAreaManager::ExitArea(EntityId const entityId, CArea const* const pArea)
 {
-	if (_pEntity != nullptr && _pArea != nullptr)
+	if (pArea != nullptr)
 	{
-		SAreasCache* const pAreaCache = GetAreaCache(_pEntity->GetId());
+		SAreasCache* const pAreaCache = GetAreaCache(entityId);
 
 		if (pAreaCache != nullptr)
 		{
@@ -797,19 +798,19 @@ void CAreaManager::ExitArea(IEntity const* const _pEntity, CArea const* const _p
 					CheckArea(areaCacheEntry.pArea);
 #endif    // DEBUG_AREAMANAGER
 
-					if (_pArea == areaCacheEntry.pArea)
+					if (pArea == areaCacheEntry.pArea)
 					{
 						if (areaCacheEntry.bInside)
 						{
-							areaCacheEntry.pArea->LeaveArea(_pEntity);
-							areaCacheEntry.pArea->LeaveNearArea(_pEntity);
+							areaCacheEntry.pArea->LeaveArea(entityId);
+							areaCacheEntry.pArea->LeaveNearArea(entityId);
 						}
 						else if (areaCacheEntry.bNear)
 						{
-							areaCacheEntry.pArea->LeaveNearArea(_pEntity);
+							areaCacheEntry.pArea->LeaveNearArea(entityId);
 						}
 
-						areaCacheEntry.pArea->OnRemovedFromAreaCache(_pEntity);
+						areaCacheEntry.pArea->OnRemovedFromAreaCache(entityId);
 						pAreaCache->entries.erase(Iter);
 
 						break;
@@ -950,18 +951,17 @@ bool CAreaManager::GetEnvFadeValueInner(
 					// case 1) where approaching the lower area is closer than the higher
 					if (!bPosInLowerArea && !bPosInHighestArea)
 					{
-						float const distanceToLower = posOnLowerArea.GetSquaredDistance(entityPos);
-						float const distanceToHigher = higherClosest3d.GetSquaredDistance(entityPos);
+						float const distanceToLowerSq = posOnLowerArea.GetSquaredDistance(entityPos);
+						float const distanceToHigherSq = higherClosest3d.GetSquaredDistance(entityPos);
 
-						if (distanceToLower >= distanceToHigher && (bHighest3dPointInLowerArea || bLower3dPointInHighestArea))
+						if (distanceToLowerSq < distanceToHigherSq || (!bHighest3dPointInLowerArea && !bLower3dPointInHighestArea))
 						{
-							// best thing would be to take onLowerHull and use that Position to calculate a point
-							// on HigherHull, check again, if that would be inside the lower, and fade from there.
-							distanceSq = FLT_MAX;
+							return false;
 						}
 						else
 						{
-							return false;
+							// best thing would be to take onLowerHull and use that Position to calculate a point
+							// on HigherHull, check again, if that would be inside the lower, and fade from there.
 						}
 					}
 
@@ -1040,36 +1040,36 @@ bool CAreaManager::RetrieveEnvironmentAmount(
 
 // do onexit for all areas pEntity is in - do it before kill pEntity
 //////////////////////////////////////////////////////////////////////////
-void CAreaManager::ExitAllAreas(IEntity const* const pEntity)
+void CAreaManager::ExitAllAreas(EntityId const entityId)
 {
-	SAreasCache* const pAreaCache = GetAreaCache(pEntity->GetId());
+	SAreasCache* const pAreaCache = GetAreaCache(entityId);
 
 	if (pAreaCache != nullptr && !pAreaCache->entries.empty())
 	{
 		for (SAreaCacheEntry const& areaCacheEntry : pAreaCache->entries)
 		{
 #if defined(DEBUG_AREAMANAGER)
-			CheckArea(rCacheEntry.pArea);
+			CheckArea(areaCacheEntry.pArea);
 #endif // DEBUG_AREAMANAGER
 
 			if (areaCacheEntry.bInside)
 			{
-				areaCacheEntry.pArea->LeaveArea(pEntity);
-				areaCacheEntry.pArea->LeaveNearArea(pEntity);
+				areaCacheEntry.pArea->LeaveArea(entityId);
+				areaCacheEntry.pArea->LeaveNearArea(entityId);
 			}
 			else if (areaCacheEntry.bNear)
 			{
-				areaCacheEntry.pArea->LeaveNearArea(pEntity);
+				areaCacheEntry.pArea->LeaveNearArea(entityId);
 			}
 
-			areaCacheEntry.pArea->OnRemovedFromAreaCache(pEntity);
+			areaCacheEntry.pArea->OnRemovedFromAreaCache(entityId);
 		}
 
 		pAreaCache->entries.clear();
-		DeleteAreaCache(pEntity->GetId());
+		DeleteAreaCache(entityId);
 	}
 
-	m_mapEntitiesToUpdate.erase(pEntity->GetId());
+	m_mapEntitiesToUpdate.erase(entityId);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1213,7 +1213,7 @@ void CAreaManager::ResetAreas()
 	     cacheIt != cacheItEnd;
 	     ++cacheIt)
 	{
-		EntityId entityId = cacheIt->first;
+		EntityId const entityId = cacheIt->first;
 		SAreasCache const& areaCache((*cacheIt).second);
 		IEntity* const pEntity = m_pEntitySystem->GetEntity(entityId);
 
@@ -1229,12 +1229,12 @@ void CAreaManager::ResetAreas()
 
 				if (areaCacheEntry.bInside)
 				{
-					pArea->LeaveArea(pEntity);
-					pArea->LeaveNearArea(pEntity);
+					pArea->LeaveArea(entityId);
+					pArea->LeaveNearArea(entityId);
 				}
 				else if (areaCacheEntry.bNear)
 				{
-					pArea->LeaveNearArea(pEntity);
+					pArea->LeaveNearArea(entityId);
 				}
 			}
 		}
@@ -1358,20 +1358,20 @@ size_t CAreaManager::GetOverlappingAreas(const AABB& bb, PodArray<IArea*>& list)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CAreaManager::SIsNotInGrid::operator()(SAreaCacheEntry const& rCacheEntry) const
+bool CAreaManager::SIsNotInGrid::operator()(SAreaCacheEntry const& cacheEntry) const
 {
 	bool bResult = false;
 
 #if defined(DEBUG_AREAMANAGER)
-	if (!stl::find(rapAreas, rCacheEntry.pArea))
+	if (!stl::find(rapAreas, cacheEntry.pArea))
 	{
 		CryFatalError("<AreaManager>: area not found in overall areas list!");
 	}
 #endif // DEBUG_AREAMANAGER
 
-	if (!rCacheEntry.bInGrid)
+	if (!cacheEntry.bInGrid)
 	{
-		rCacheEntry.pArea->OnRemovedFromAreaCache(pEntity);
+		cacheEntry.pArea->OnRemovedFromAreaCache(entityId);
 		bResult = true;
 	}
 
@@ -1390,7 +1390,7 @@ bool CAreaManager::SRemoveIfNoAreasLeft::operator()(VectorMap<EntityId, SAreasCa
 		SAreaCacheEntry const& areaCacheEntry = (*Iter);
 
 #if defined(DEBUG_AREAMANAGER)
-		if (!stl::find(rapAreas, areaCacheEntry.pArea))
+		if (!stl::find(areas, areaCacheEntry.pArea))
 		{
 			CryFatalError("<AreaManager>: area not found in overall areas list!");
 		}

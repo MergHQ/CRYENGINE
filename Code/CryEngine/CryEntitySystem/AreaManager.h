@@ -94,7 +94,7 @@ public:
 	virtual size_t             GetOverlappingAreas(const AABB& bb, PodArray<IArea*>& list) const override;
 	virtual void               SetAreasDirty() override;
 	virtual void               SetAreaDirty(IArea* pArea) override;
-	virtual void               ExitAllAreas(IEntity const* const pEntity) override;
+	virtual void               ExitAllAreas(EntityId const entityId) override;
 	//~IAreaManager
 
 	// ISystemEventListener
@@ -107,7 +107,7 @@ public:
 	CEntitySystem* GetEntitySystem() const { return m_pEntitySystem; };
 
 	// Puts the passed entity ID into the update list for the next update.
-	virtual void MarkEntityForUpdate(EntityId const nEntityID) override;
+	virtual void MarkEntityForUpdate(EntityId const entityId) override;
 
 	virtual void TriggerAudioListenerUpdate(IArea const* const _pArea) override;
 
@@ -116,13 +116,16 @@ public:
 
 	bool ProceedExclusiveUpdateByHigherArea(
 	  SAreasCache* const pAreaCache,
-	  IEntity const* const pIEntity,
+	  EntityId const entityId,
 	  Vec3 const& entityPos,
 	  CArea* const pArea,
 	  Vec3 const& onLowerHull,
 	  AreaEnvironments& areaEnvironments);
 
-	void         NotifyAreas(CArea* const __restrict pArea, SAreasCache const* const pAreaCache, IEntity const* const pEntity);
+	void NotifyAreas(
+	  CArea* const __restrict pArea,
+	  SAreasCache const* const pAreaCache,
+	  EntityId const entityId);
 
 	virtual void DrawLinkedAreas(EntityId linkedId) const override;
 	size_t       GetLinkedAreas(EntityId linkedId, int areaId, std::vector<CArea*>& areas) const;
@@ -192,43 +195,51 @@ private:
 	void UpdateEntity(Vec3 const& position, IEntity* const pIEntity);
 	void UpdateDirtyAreas();
 	void ProcessArea(CArea* const pArea, SAreaCacheEntry& areaCacheEntry, SAreasCache* const pAreaCache, Vec3 const& pos, IEntity const* const pIEntity, AreaEnvironments& areaEnvironments);
-	void ExitArea(IEntity const* const _pEntity, CArea const* const _pArea);
+	void ExitArea(EntityId const entityId, CArea const* const _pArea);
 	bool GetEnvFadeValue(SAreasCache const& areaCache, SAreaCacheEntry& areaCacheEntry, Vec3 const& entityPos, EntityId const envProvidingEntityId, AreaEnvironments& areaEnvironments);
 	bool GetEnvFadeValueInner(SAreasCache const& areaCache, SAreaCacheEntry const& areaCacheEntry, Vec3 const& entityPos, Vec3 const& posOnLowerArea, EntityId const envProvidingEntityId, AreaEnvironments& areaEnvironments);
 	bool RetrieveEnvironmentAmount(CArea const* const pArea, float const amount, float const distance, EntityId const envProvidingEntityId, AreaEnvironments& areaEnvironments);
 
 	// Unary predicates for conditional removing!
-	static inline bool IsDoneUpdating(std::pair<EntityId, size_t> const& rEntry)
+	static inline bool IsDoneUpdating(std::pair<EntityId, size_t> const& entry)
 	{
-		return rEntry.second == 0;
+		return entry.second == 0;
 	}
 
 	struct SIsNotInGrid
 	{
-		SIsNotInGrid(IEntity const* const pPassedEntity, std::vector<CArea*> const& rapPassedAreas, size_t const nPassedCountAreas)
-			: pEntity(pPassedEntity),
-			rapAreas(rapPassedAreas),
-			nCountAreas(nPassedCountAreas){}
+		explicit SIsNotInGrid(
+			EntityId const _entityId,
+			std::vector<CArea*> const& _areas,
+			size_t const _numAreas)
+			: entityId(_entityId),
+			areas(_areas),
+			numAreas(_numAreas)
+		{}
 
-		bool operator()(SAreaCacheEntry const& rCacheEntry) const;
+		bool operator()(SAreaCacheEntry const& cacheEntry) const;
 
-		IEntity const* const       pEntity;
-		std::vector<CArea*> const& rapAreas;
-		size_t const               nCountAreas;
+		EntityId const entityId;
+		std::vector<CArea*> const& areas;
+		size_t const               numAreas;
 	};
 
 	struct SRemoveIfNoAreasLeft
 	{
-		SRemoveIfNoAreasLeft(CArea const* const pPassedArea, std::vector<CArea*> const& rapPassedAreas, size_t const nPassedCountAreas)
-			: pArea(pPassedArea),
-			rapAreas(rapPassedAreas),
-			nCountAreas(nPassedCountAreas){}
+		explicit SRemoveIfNoAreasLeft(
+			CArea const* const _pArea,
+			std::vector<CArea*> const& _areas,
+			size_t const _numAreas)
+			: pArea(_pArea),
+			areas(_areas),
+			numAreas(_numAreas)
+		{}
 
-		bool operator()(VectorMap<EntityId, SAreasCache>::value_type& rCacheEntry) const;
+		bool operator()(VectorMap<EntityId, SAreasCache>::value_type& cacheEntry) const;
 
 		CArea const* const         pArea;
-		std::vector<CArea*> const& rapAreas;
-		size_t const               nCountAreas;
+		std::vector<CArea*> const& areas;
+		size_t const               numAreas;
 	};
 
 	TAreaCacheMap        m_mapAreaCache;          // Area cache per entity id.

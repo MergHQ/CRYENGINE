@@ -291,6 +291,20 @@ public:
 	//! <description>Draws a wireframe sphere.</description>
 	int DrawSphere(IFunctionHandler* pH, float x, float y, float z, float radius, int r, int g, int b, int a);
 
+	//! <code>System.DrawAABB( x, y, z, x2, y2, z2, r, g, b, a )</code>
+	//!		<param name="x">X position of first corner.</param>
+	//!		<param name="y">Y position of first corner.</param>
+	//!		<param name="z">Z position of first corner.</param>
+	//!		<param name="x2">X position of second corner.</param>
+	//!		<param name="y2">Y position of second corner.</param>
+	//!		<param name="z2">Z position of second corner.</param>
+	//!		<param name="r">Red component for the sphere color. Default is 1.</param>
+	//!		<param name="g">Green component for the sphere color. Default is 1.</param>
+	//!		<param name="b">Blue component for the sphere color. Default is 1.</param>
+	//!		<param name="a">Alpha component for the sphere color. Default is 1.</param>
+	//! <description>Draws a wireframe sphere.</description>
+	int DrawAABB(IFunctionHandler* pH, float x, float y, float z, float x2, float y2, float z2, int r, int g, int b, int a);
+
 	//! <code>System.SetGammaDelta( fDelta )</code>
 	//!		<param name="fDelta">Delta value.</param>
 	//! <description>Sets the gamma/delta value.</description>

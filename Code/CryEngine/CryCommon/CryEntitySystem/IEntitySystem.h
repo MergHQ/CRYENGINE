@@ -241,10 +241,10 @@ struct IAreaManager
 	virtual void SetAreaDirty(IArea* pArea) = 0;
 
 	//! Passed in entity exits all areas. Intended for when players are killed.
-	virtual void ExitAllAreas(IEntity const* const pEntity) = 0;
+	virtual void ExitAllAreas(EntityId const entityId) = 0;
 
 	//! Puts the passed entity ID into the update list for the next update.
-	virtual void MarkEntityForUpdate(EntityId const nEntityID) = 0;
+	virtual void MarkEntityForUpdate(EntityId const entityId) = 0;
 
 	//! Forces an audio listener update against the passed area.
 	virtual void TriggerAudioListenerUpdate(IArea const* const _pArea) = 0;

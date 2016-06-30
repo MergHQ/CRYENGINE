@@ -859,7 +859,7 @@ void CView::SetActive(bool const bActive)
 	}
 	else if (m_pAudioListener != nullptr && (m_pAudioListener->GetFlags() & ENTITY_FLAG_TRIGGER_AREAS) != 0)
 	{
-		gEnv->pEntitySystem->GetAreaManager()->ExitAllAreas(m_pAudioListener);
+		gEnv->pEntitySystem->GetAreaManager()->ExitAllAreas(m_pAudioListener->GetId());
 		m_pAudioListener->SetFlagsExtended(m_pAudioListener->GetFlagsExtended() & ~ENTITY_FLAG_EXTENDED_AUDIO_LISTENER);
 	}
 }

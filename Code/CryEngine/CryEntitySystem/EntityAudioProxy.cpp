@@ -120,12 +120,12 @@ void CEntityAudioProxy::OnListenerExclusiveMoveInside(IEntity const* const __res
 	{
 		Vec3 OnHighHull3d(ZERO);
 		Vec3 const oPos(pEntity->GetWorldPos());
-		EntityId const nEntityID = pEntity->GetId();
-		bool const bInsideLow = pAreaProxyLow->CalcPointWithin(nEntityID, oPos);
+		EntityId const entityId = pEntity->GetId();
+		bool const bInsideLow = pAreaProxyLow->CalcPointWithin(entityId, oPos);
 
 		if (bInsideLow)
 		{
-			pAreaProxyHigh->ClosestPointOnHullDistSq(nEntityID, oPos, OnHighHull3d);
+			pAreaProxyHigh->ClosestPointOnHullDistSq(entityId, oPos, OnHighHull3d);
 			m_pEntity->SetPos(OnHighHull3d);
 		}
 	}
@@ -152,9 +152,9 @@ void CEntityAudioProxy::ProcessEvent(SEntityEvent& event)
 		{
 		case ENTITY_EVENT_XFORM:
 			{
-				int const nFlags = (int)event.nParam[0];
+				int const flags = (int)event.nParam[0];
 
-				if ((nFlags & (ENTITY_XFORM_POS | ENTITY_XFORM_ROT)) > 0)
+				if ((flags & (ENTITY_XFORM_POS | ENTITY_XFORM_ROT)) > 0)
 				{
 					OnMove();
 				}
@@ -165,12 +165,12 @@ void CEntityAudioProxy::ProcessEvent(SEntityEvent& event)
 			{
 				if ((m_pEntity->GetFlags() & ENTITY_FLAG_VOLUME_SOUND) > 0)
 				{
-					EntityId const nEntityID = static_cast<EntityId>(event.nParam[0]); // Entering entity!
-					IEntity* const pEntity = gEnv->pEntitySystem->GetEntity(nEntityID);
+					EntityId const entityId = static_cast<EntityId>(event.nParam[0]); // Entering entity!
+					IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(entityId);
 
-					if ((pEntity != nullptr) && (pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
+					if ((pIEntity != nullptr) && (pIEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
 					{
-						OnListenerEnter(pEntity);
+						OnListenerEnter(pIEntity);
 					}
 				}
 
@@ -181,12 +181,12 @@ void CEntityAudioProxy::ProcessEvent(SEntityEvent& event)
 			{
 				if ((m_pEntity->GetFlags() & ENTITY_FLAG_VOLUME_SOUND) > 0)
 				{
-					EntityId const nEntityID = static_cast<EntityId>(event.nParam[0]); // Near entering/moving entity!
-					IEntity* const pEntity = gEnv->pEntitySystem->GetEntity(nEntityID);
+					EntityId const entityId = static_cast<EntityId>(event.nParam[0]); // Near entering/moving entity!
+					IEntity* const pIEntity = gEnv->pEntitySystem->GetEntity(entityId);
 
-					if (pEntity != nullptr)
+					if (pIEntity != nullptr)
 					{
-						if ((pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
+						if ((pIEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
 						{
 							OnListenerMoveNear(event.vec);
 						}
@@ -199,29 +199,29 @@ void CEntityAudioProxy::ProcessEvent(SEntityEvent& event)
 			{
 				if ((m_pEntity->GetFlags() & ENTITY_FLAG_VOLUME_SOUND) > 0)
 				{
-					EntityId const nEntityID = static_cast<EntityId>(event.nParam[0]); // Inside moving entity!
-					IEntity* const __restrict pEntity = gEnv->pEntitySystem->GetEntity(nEntityID);
+					EntityId const entityId = static_cast<EntityId>(event.nParam[0]); // Inside moving entity!
+					IEntity* const __restrict pIEntity = gEnv->pEntitySystem->GetEntity(entityId);
 
-					if (pEntity != nullptr)
+					if (pIEntity != nullptr)
 					{
-						EntityId const nAreaID1 = static_cast<EntityId>(event.nParam[2]); // AreaEntityID (low)
-						EntityId const nAreaID2 = static_cast<EntityId>(event.nParam[3]); // AreaEntityID (high)
+						EntityId const area1Id = static_cast<EntityId>(event.nParam[2]); // AreaEntityID (low)
+						EntityId const area2Id = static_cast<EntityId>(event.nParam[3]); // AreaEntityID (high)
 
-						IEntity* const __restrict pArea1 = gEnv->pEntitySystem->GetEntity(nAreaID1);
-						IEntity* const __restrict pArea2 = gEnv->pEntitySystem->GetEntity(nAreaID2);
+						IEntity* const __restrict pArea1 = gEnv->pEntitySystem->GetEntity(area1Id);
+						IEntity* const __restrict pArea2 = gEnv->pEntitySystem->GetEntity(area2Id);
 
 						if (pArea1 != nullptr)
 						{
 							if (pArea2 != nullptr)
 							{
-								if ((pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
+								if ((pIEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
 								{
-									OnListenerExclusiveMoveInside(pEntity, pArea2, pArea1, event.fParam[0]);
+									OnListenerExclusiveMoveInside(pIEntity, pArea2, pArea1, event.fParam[0]);
 								}
 							}
 							else
 							{
-								if ((pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
+								if ((pIEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
 								{
 									OnListenerMoveInside(event.vec);
 								}
@@ -570,6 +570,12 @@ Matrix34 const& CEntityAudioProxy::GetAuxAudioProxyOffset(AudioProxyId const aud
 
 	static const Matrix34 identityMatrix(IDENTITY);
 	return identityMatrix;
+}
+
+//////////////////////////////////////////////////////////////////////////
+float CEntityAudioProxy::GetGreatestFadeDistance() const
+{
+	return std::max<float>(m_fadeDistance, m_environmentFadeDistance);
 }
 
 //////////////////////////////////////////////////////////////////////////
