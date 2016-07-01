@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AudioControl.h"
+#include "ATLControlsModel.h"
 
 #include <QWidget>
 #include <QListWidget>

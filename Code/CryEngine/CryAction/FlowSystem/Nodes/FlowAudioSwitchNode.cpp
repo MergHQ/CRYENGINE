@@ -9,13 +9,12 @@ public:
 
 	explicit CFlowNode_AudioSwitch(SActivationInfo* pActInfo)
 		: m_currentState(0)
-		, m_audioSwitchId(INVALID_AUDIO_CONTROL_ID)
 	{
 		//sanity checks
-		assert((eIn_SwitchStateNameLast - eIn_SwitchStateNameFirst) == (NUM_STATES - 1));
-		assert((eIn_SetStateLast - eIn_SetStateFirst) == (NUM_STATES - 1));
+		CRY_ASSERT((eIn_SwitchStateNameLast - eIn_SwitchStateNameFirst) == (NUM_STATES - 1));
+		CRY_ASSERT((eIn_SetStateLast - eIn_SetStateFirst) == (NUM_STATES - 1));
 
-		for (uint32 i = 0; i < NUM_STATES; ++i)
+		for (int i = 0; i < NUM_STATES; ++i)
 		{
 			m_audioSwitchStates[i] = INVALID_AUDIO_SWITCH_STATE_ID;
 		}
@@ -82,7 +81,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
 	{
-		uint32 currentState = m_currentState;
+		int currentState = m_currentState;
 		ser.BeginGroup("FlowAudioSwitchNode");
 		ser.Value("current_state", currentState);
 		ser.EndGroup();
@@ -109,18 +108,18 @@ public:
 			{
 				if (IsPortActive(pActInfo, eIn_SwitchName))
 				{
-					GetSwitchID(pActInfo);
+					GetSwitchId(pActInfo);
 				}
 
-				for (uint32 stateIndex = eIn_SwitchStateNameFirst; stateIndex <= eIn_SwitchStateNameLast; ++stateIndex)
+				for (int stateIndex = eIn_SwitchStateNameFirst; stateIndex <= eIn_SwitchStateNameLast; ++stateIndex)
 				{
 					if (IsPortActive(pActInfo, stateIndex))
 					{
-						GetSwitchStateID(pActInfo, stateIndex);
+						GetSwitchStateId(pActInfo, stateIndex);
 					}
 				}
 
-				for (uint32 statePort = eIn_SetStateFirst; statePort <= eIn_SetStateLast; ++statePort)
+				for (int statePort = eIn_SetStateFirst; statePort <= eIn_SetStateLast; ++statePort)
 				{
 					if (IsPortActive(pActInfo, statePort))
 					{
@@ -145,46 +144,46 @@ private:
 	static const int NUM_STATES = 4;
 
 	//////////////////////////////////////////////////////////////////////////
-	void GetSwitchID(SActivationInfo* const pActInfo)
+	void GetSwitchId(SActivationInfo* const pActInfo)
 	{
 		string const& switchName = GetPortString(pActInfo, eIn_SwitchName);
+
 		if (!switchName.empty())
 		{
-			gEnv->pAudioSystem->GetAudioSwitchId(switchName.c_str(), m_audioSwitchId);
+			gEnv->pAudioSystem->GetAudioSwitchId(switchName.c_str(), m_requestData.audioSwitchId);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void GetSwitchStateID(SActivationInfo* const pActInfo, uint32 const stateIndex)
+	void GetSwitchStateId(SActivationInfo* const pActInfo, int const stateIndex)
 	{
 		string const& stateName = GetPortString(pActInfo, stateIndex);
-		if (!stateName.empty() && (m_audioSwitchId != INVALID_AUDIO_CONTROL_ID))
+
+		if (!stateName.empty() && (m_requestData.audioSwitchId != INVALID_AUDIO_CONTROL_ID))
 		{
 			gEnv->pAudioSystem->GetAudioSwitchStateId(
-			  m_audioSwitchId,
+			  m_requestData.audioSwitchId,
 			  stateName.c_str(),
 			  m_audioSwitchStates[stateIndex - eIn_SwitchStateNameFirst]);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void Init(SActivationInfo* const pActInfo, uint32 const currentState)
+	void Init(SActivationInfo* const pActInfo, int const currentState)
 	{
-		if (gEnv->pAudioSystem != NULL)
+		if (gEnv->pAudioSystem != nullptr)
 		{
-			GetSwitchID(pActInfo);
+			GetSwitchId(pActInfo);
 
-			if (m_audioSwitchId != INVALID_AUDIO_CONTROL_ID)
+			if (m_requestData.audioSwitchId != INVALID_AUDIO_CONTROL_ID)
 			{
-				for (uint32 iStateName = eIn_SwitchStateNameFirst; iStateName <= eIn_SwitchStateNameLast; ++iStateName)
+				for (int stateIndex = eIn_SwitchStateNameFirst; stateIndex <= eIn_SwitchStateNameLast; ++stateIndex)
 				{
-					GetSwitchStateID(pActInfo, iStateName);
+					GetSwitchStateId(pActInfo, stateIndex);
 				}
 			}
 
 			m_request.pData = &m_requestData;
-			m_requestData.audioSwitchId = m_audioSwitchId;
-
 			m_currentState = 0;
 
 			if (currentState != 0)
@@ -195,18 +194,18 @@ private:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void SetStateOnProxy(IEntity* const pEntity, uint32 const stateIndex)
+	void SetStateOnProxy(IEntity* const pIEntity, int const stateIndex)
 	{
-		IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+		IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pIEntity->CreateProxy(ENTITY_PROXY_AUDIO));
 
 		if (pIEntityAudioProxy != nullptr)
 		{
-			pIEntityAudioProxy->SetSwitchState(m_audioSwitchId, m_audioSwitchStates[stateIndex]);
+			pIEntityAudioProxy->SetSwitchState(m_requestData.audioSwitchId, m_audioSwitchStates[stateIndex]);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void SetStateOnGlobalObject(uint32 const stateIndex)
+	void SetStateOnGlobalObject(int const stateIndex)
 	{
 		m_requestData.audioSwitchStateId = m_audioSwitchStates[stateIndex];
 
@@ -214,18 +213,18 @@ private:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void SetState(IEntity* const pEntity, int const newState)
+	void SetState(IEntity* const pIEntity, int const newState)
 	{
 		CRY_ASSERT((0 < newState) && (newState <= NUM_STATES));
 
-		// Cannot check for m_nCurrentState != nNewState, because there can be several flowgraph nodes
+		// Cannot check for m_currentState != newState, because there can be several flowgraph nodes
 		// setting the states on the same switch. This particular node might need to set the same state again,
 		// if another node has set a different one in between the calls to set the state on this node.
-		m_currentState = static_cast<uint32>(newState);
+		m_currentState = newState;
 
-		if (pEntity != nullptr)
+		if (pIEntity != nullptr)
 		{
-			SetStateOnProxy(pEntity, m_currentState - 1);
+			SetStateOnProxy(pIEntity, m_currentState - 1);
 		}
 		else
 		{
@@ -234,8 +233,7 @@ private:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	uint32             m_currentState;
-	AudioControlId     m_audioSwitchId;
+	int                m_currentState;
 	AudioSwitchStateId m_audioSwitchStates[NUM_STATES];
 	SAudioRequest      m_request;
 	SAudioObjectRequestData<eAudioObjectRequestType_SetSwitchState> m_requestData;
