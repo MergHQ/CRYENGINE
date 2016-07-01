@@ -231,7 +231,7 @@ int GetNodeRequestedForUpdate(int nItemId)
 
 	const int SVO_MAX_NODE_GROUPS = 4;
 
-	if( nItemId >= 0 && nItemId < SVO_MAX_NODE_GROUPS*4*4 )
+	if (nItemId >= 0 && nItemId < SVO_MAX_NODE_GROUPS * 4 * 4)
 	{
 		int g = nItemId / 16; nItemId -= g * 16;
 		int x = nItemId / 4; nItemId -= x * 4;
@@ -295,14 +295,14 @@ float GetPointToSegmentDistance(float3 P, Segment S, out float3 vOutDir)
 	float3 w = P - S.P0;
 	float3 closestPoint;
 
-	float c1 = dot(w,v);
-	float c2 = dot(v,v);
+	float c1 = dot(w, v);
+	float c2 = dot(v, v);
 
-	if ( c1 <= 0 )
+	if (c1 <= 0)
 	{
 		closestPoint = S.P0;
 	}
-	else if ( c2 <= c1 )
+	else if (c2 <= c1)
 	{
 		closestPoint = S.P1;
 	}
@@ -312,7 +312,7 @@ float GetPointToSegmentDistance(float3 P, Segment S, out float3 vOutDir)
 		closestPoint = S.P0 + b * v;
 	}
 
-	vOutDir = closestPoint-P;
+	vOutDir = closestPoint - P;
 	return length(vOutDir);
 }
 
@@ -322,11 +322,11 @@ float GetSegmentToSegmentDistance(Segment S1, Segment S2)
 	float3   u = S1.P1 - S1.P0;
 	float3   v = S2.P1 - S2.P0;
 	float3   w = S1.P0 - S2.P0;
-	float    a = dot(u,u);         // always >= 0
-	float    b = dot(u,v);
-	float    c = dot(v,v);         // always >= 0
-	float    d = dot(u,w);
-	float    e = dot(v,w);
+	float    a = dot(u, u);         // always >= 0
+	float    b = dot(u, v);
+	float    c = dot(v, v);         // always >= 0
+	float    d = dot(u, w);
+	float    e = dot(v, w);
 	float    D = a*c - b*b;        // always >= 0
 	float    sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
 	float    tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
@@ -334,28 +334,28 @@ float GetSegmentToSegmentDistance(Segment S1, Segment S2)
 	const float SMALL_NUM = 0.001f;
 
 	// compute the line parameters of the two closest points
-	if (D < SMALL_NUM) 
-	{ 
+	if (D < SMALL_NUM)
+	{
 		// the lines are almost parallel
 		sN = 0.0;         // force using point P0 on segment S1
 		sD = 1.0;         // to prevent possible division by 0.0 later
 		tN = e;
 		tD = c;
 	}
-	else 
-	{                 
+	else
+	{
 		// get the closest points on the infinite lines
 		sN = (b*e - c*d);
 		tN = (a*e - b*d);
-		if (sN < 0.0) 
-		{        
+		if (sN < 0.0)
+		{
 			// sc < 0 => the s=0 edge is visible
 			sN = 0.0;
 			tN = e;
 			tD = c;
 		}
-		else if (sN > sD) 
-		{  
+		else if (sN > sD)
+		{
 			// sc > 1  => the s=1 edge is visible
 			sN = sD;
 			tN = e + b;
@@ -363,8 +363,8 @@ float GetSegmentToSegmentDistance(Segment S1, Segment S2)
 		}
 	}
 
-	if (tN < 0.0) 
-	{            
+	if (tN < 0.0)
+	{
 		// tc < 0 => the t=0 edge is visible
 		tN = 0.0;
 		// recompute sc for this edge
@@ -372,14 +372,14 @@ float GetSegmentToSegmentDistance(Segment S1, Segment S2)
 			sN = 0.0;
 		else if (-d > a)
 			sN = sD;
-		else 
+		else
 		{
 			sN = -d;
 			sD = a;
 		}
 	}
-	else if (tN > tD) 
-	{      
+	else if (tN > tD)
+	{
 		// tc > 1  => the t=1 edge is visible
 		tN = tD;
 		// recompute sc for this edge
@@ -387,9 +387,9 @@ float GetSegmentToSegmentDistance(Segment S1, Segment S2)
 			sN = 0;
 		else if ((-d + b) > a)
 			sN = sD;
-		else 
+		else
 		{
-			sN = (-d +  b);
+			sN = (-d + b);
 			sD = a;
 		}
 	}
@@ -453,7 +453,7 @@ struct SAnalyticalOccluder
 
 #define SVO_MAX_ANALYTICAL_OCCLUDERS 64
 
-float4 SVO_AnalyticalOccluders[SVO_MAX_ANALYTICAL_OCCLUDERS*4];
+float4 SVO_AnalyticalOccluders[SVO_MAX_ANALYTICAL_OCCLUDERS * 4];
 
 void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 {
@@ -463,13 +463,13 @@ void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 
 	float fRayLen = SvoParamsMisc3.x;
 
-	for(int n=0; n<SVO_MAX_ANALYTICAL_OCCLUDERS; n++)
+	for (int n = 0; n<SVO_MAX_ANALYTICAL_OCCLUDERS; n++)
 	{
 		SAnalyticalOccluder oc;
 		oc.P0 = SVO_AnalyticalOccluders[n * 4 + 0];
 		oc.P1 = SVO_AnalyticalOccluders[n * 4 + 1];
 		oc.P2 = SVO_AnalyticalOccluders[n * 4 + 2];
-		oc.C  = SVO_AnalyticalOccluders[n * 4 + 3];
+		oc.C = SVO_AnalyticalOccluders[n * 4 + 3];
 
 		if (!oc.P0.w)
 			break;
@@ -479,7 +479,7 @@ void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 		float fRadius = 0;
 		float3 vSegDir = 0;
 
-		if(oc.C.w == 0) // capsule
+		if (oc.C.w == 0) // capsule
 		{
 			float3 startpoint = r.startpoint + r.direction*oc.P0.w*.125;
 
@@ -491,13 +491,13 @@ void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 			s1.P0 = oc.P0.xyz;
 			s1.P1 = oc.P1.xyz;
 
-			fRayDist = GetSegmentToSegmentDistance( s0, s1 );
+			fRayDist = GetSegmentToSegmentDistance(s0, s1);
 
 			s0.P0 = startpoint;
 			s0.P1 = startpoint + r.direction * 0.001f;
 
 			float3 dP;
-			fOrigDist = GetPointToSegmentDistance( startpoint, s1, dP );
+			fOrigDist = GetPointToSegmentDistance(startpoint, s1, dP);
 
 			vSegDir = normalize(dP);
 
@@ -535,7 +535,7 @@ void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 				else if (fD > fRayDist)
 					break;
 
-				fStepSize = min(fD+.01, fStepSize);
+				fStepSize = min(fD + .01, fStepSize);
 			}
 
 			vSegDir = normalize(vMinPoint - r.startpoint);
@@ -546,13 +546,13 @@ void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 		}
 
 		float fO = 1.f - max(0, fRayDist - fRadius * .85) / (fRadius * 0.5 + fOrigDist * SvoParamsMisc3.y + 0.001);
-		if(fOrigDist>0)
+		if (fOrigDist>0)
 			fO *= saturate(1 - fOrigDist / fRayLen) * saturate(.5 + dot(vSegDir, r.direction));
 
 		fOccl = max(fOccl, fO);
 	}
 
-	vC = lerp(vC, float4(0,0,0,1), fOccl);
+	vC = lerp(vC, float4(0, 0, 0, 1), fOccl);
 }
 
 float4 ConeTraceTreeAndSkyEx(Ray r, float fConeSev, out float4 vNor1, const float fConesColorSatur = 1.f, const float fMultTriRT = 0, const bool bSpecular = false, bool bForceUseLighting = false, const bool bAllowSkyLight = true, float3 vSurfNorm = 0)
@@ -564,6 +564,10 @@ float4 ConeTraceTreeAndSkyEx(Ray r, float fConeSev, out float4 vNor1, const floa
 	float fCloudsShadow = 1.f;
 #if %_PS
 	fCloudsShadow = GetCloudShadowCommon(r.startpoint, SVO_cloudShadowMap, SVO_CloudShadowAnimParams, SVO_CloudShadowParams);
+
+	// prevent sky light leaking from the bottom
+	if (r.direction.z < 0 && SvoParamsDiffuse.y > 16.f)
+		vC.a = 1;
 #endif
 
 	//float3 vAOTint = lerp(float3(1,1,1), float3(1.5, 1.5, 0), saturate((vC.a-.3)/.7));
@@ -672,13 +676,13 @@ void GetAverNormAndSmooth(float2 tcIn, out float3 vAverNor, out float fAverSmoot
 	int nRange = 1;
 	float2 vR = 0.5f / PS_ScreenSize.xy;
 	float fDepthRange = 0.12;
-	float fDepth0 = GetLinearDepth(sceneDepthMapSampler, tcIn);
+	float fDepth0 = SampleLinearDepth(sceneDepthMapSampler, tcIn);
 	fDepthMin = fDepthMax = fDepth0;
 	for (int x = 0; x <= nRange; x++) for (int y = 0; y <= nRange; y++)
 	{
 		float2 tc1 = tcIn + vR * float2(x, y);
 		MaterialAttribsCommon gbuffer1 = DecodeGBufferChannels(tc1);
-		float fDepth1 = GetLinearDepth(sceneDepthMapSampler, tc1);
+		float fDepth1 = SampleLinearDepth(sceneDepthMapSampler, tc1);
 		if (fDepth1 < fDepthMin)
 			fDepthMin = fDepth1;
 		if (fDepth1 > fDepthMax)
@@ -716,7 +720,7 @@ float GetBlendMin(float2 tcDiff, float3 vAverReflectance, float fAverSmoothness,
 		float fDistTCRat = IsDiffuseMode() ? 0 : saturate(length(tcDiff) / .05f);
 
 		// reduce ghosting for mirrors
-		fMinBlend = saturate(max((1-(1-fMinBlend)*.7f) + fDistTCRat*(1.f - fMinBlend), 0.7 * saturate(GetLuminance(vAverReflectance*fAverSmoothness))));
+		fMinBlend = saturate(max((1 - (1 - fMinBlend)*.7f) + fDistTCRat*(1.f - fMinBlend), 0.7 * saturate(GetLuminance(vAverReflectance*fAverSmoothness))));
 	}
 
 	return fMinBlend;
@@ -727,11 +731,11 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 	pixoutMRT OUT = (pixoutMRT)0;
 
 	// read position and normal
-	float3 vPos0 = GetWorldPos(VOX_DEPTH_SCALE*GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) - VOX_DEPTH_BIAS, IN.CamVec);
+	float3 vPos0 = GetWorldPos(VOX_DEPTH_SCALE*SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) - VOX_DEPTH_BIAS, IN.CamVec);
 
 	float3 vNor0 = 0; float fAverSmoothness = 0; float fAverTransmittanceY = 0; float3 vAverReflectance = 0;
 	float fDepthMin = 0, fDepthMax = 0;
-	GetAverNormAndSmooth(IN.baseTC.xy, vNor0, fAverSmoothness, fAverTransmittanceY, normalize(IN.CamVec), vAverReflectance, fDepthMin, fDepthMax);
+	GetAverNormAndSmooth(IN.baseTC.xy, vNor0, fAverSmoothness, fAverTransmittanceY, normalize(IN.CamVec.xyz), vAverReflectance, fDepthMin, fDepthMax);
 
 	float2 vLowResBestTC = IN.baseTC.xy;
 
@@ -742,7 +746,7 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 
 #if VOX_REPROJECT
 	// blend with prev frame ALD in order to remove flickering
-	float fDepthC = GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
+	float fDepthC = SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
 	float3 vReprojTC = Reproject(vLowResBestTC.xy, fDepthC, SVO_ReprojectionMatrix);
 #endif
 
@@ -750,7 +754,7 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 	GetDiffuseKernel(GI_DIFFUSE_KERNEL_TILING, 0);
 
 #if %_RT_SAMPLE0
-	int nRange = GI_DIFFUSE_KERNEL_TILING  * 0.7;
+	int nRange = GI_DIFFUSE_KERNEL_TILING;
 #else
 	int nRange = GI_DIFFUSE_KERNEL_TILING;
 #endif
@@ -769,7 +773,7 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 	float2 vR = 2.f * fResScale / (int2(PS_ScreenSize.xy / fResScale)*fResScale);
 	float fSumm0 = 0;
 	float fSumm1 = 0;
-	float fDepthRange = 0.12 + 0.08 * saturate(1.f - dot(normalize(IN.CamVec), -vNor0)); // floor fix
+	float fDepthRange = 0.12 + 0.08 * saturate(1.f - dot(normalize(IN.CamVec.xyz), -vNor0)); // floor fix
 	float fDotMax = .25;
 
 	float2 vShift;
@@ -788,7 +792,7 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 	const int nStep = 1;
 #endif
 
-	float3 vFocus = IsDiffuseMode() ? vNor0 : reflect(normalize(IN.CamVec), vNor0);
+	float3 vFocus = IsDiffuseMode() ? vNor0 : reflect(normalize(IN.CamVec.xyz), vNor0);
 
 	// reduce border noise
 	float2 vBorder = (nRange / 2)*vR * 1;
@@ -796,7 +800,7 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 
 	float fRangeFade = 1.2f + 0.5f * saturate(1 - fDistM / 16);
 
-	//	if(GetLinearDepth( sceneDepthMapSampler, IN.baseTC.xy) < 0.8f)
+	//	if(SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) < 0.8f)
 	for (int x = -nRange / 2; x <= nRange / 2; x += nStep)
 		for (int y = -nRange / 2; y <= nRange / 2; y += nStep)
 		{
@@ -851,15 +855,25 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 
 #ifdef %_RT_SPRITE
 	{
-		Ray r;
-		r.direction = normalize(vALD0.xyz);
-		r.startpoint = vPos0;
 		float4 vC = 0;
+		Ray r;
+
+		r.direction = normalize(vALD0.xyz);
+		r.startpoint = GetWorldPos(VOX_DEPTH_SCALE*fDepthMin - VOX_DEPTH_BIAS, IN.CamVec);
 		float fDirectionality = saturate(length(vALD0.xyz) / vALD0.w);
+		vC = 0;
 		ProcessAnalyticalOccluders(r, vC, IsDiffuseMode() ? fDirectionality : pow(fAverSmoothness, .5));
-		float fDot = saturate(dot(r.direction, vNor0));
-		OUT.Specular  *= 1 - vC.w * fDot;
-		OUT.Specular1 *= 1 - vC.w * fDot;
+		OUT.Specular *= saturate(1 - vC.w);
+
+		if (abs(fDepthMax - fDepthMin) > .0005)
+		{
+			r.direction = normalize(vALD1.xyz);
+			r.startpoint = GetWorldPos(VOX_DEPTH_SCALE*fDepthMax - VOX_DEPTH_BIAS, IN.CamVec);
+			float fDirectionality = saturate(length(vALD1.xyz) / vALD1.w);
+			vC = 0;
+			ProcessAnalyticalOccluders(r, vC, IsDiffuseMode() ? fDirectionality : pow(fAverSmoothness, .5));
+		}
+		OUT.Specular1 *= saturate(1 - vC.w);
 	}
 #endif
 
@@ -1004,9 +1018,9 @@ pixoutMRT ConeTracePS_NID_GS(vtxOutWPOS IN)
 
 	// reconstruct position
 #if %_RT_SAMPLE3
-	float3 vPos0 = GetWorldPos(GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy), IN.CamVec);
+	float3 vPos0 = GetWorldPos(SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy), IN.CamVec);
 #else
-	float3 vPos0 = GetWorldPos(VOX_DEPTH_SCALE*GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) - VOX_DEPTH_BIAS, IN.CamVec);
+	float3 vPos0 = GetWorldPos(VOX_DEPTH_SCALE*SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) - VOX_DEPTH_BIAS, IN.CamVec);
 #endif
 
 	if (!IsPointInAABB(vPos0, voxAreaMin, voxAreaMax))
@@ -1055,14 +1069,14 @@ bool ConeTraceBrick_LM(const float3 vRayStartPos, inout Ray r, const float _fDis
 
 void ConeTrace_LM_PS(in vtxOutWPOS IN, out float4 vALD, out float4 vRGB)
 {
-	float3 vPos0 = GetWorldPos(GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy), IN.CamVec);
+	float3 vPos0 = GetWorldPos(SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy), IN.CamVec);
 	float fTransmittanceY = 0;
-	float3 vNor0 = normalize(GetWorldSpaceNormals(IN.baseTC.xy, fTransmittanceY, normalize(IN.CamVec)).xyz);
+	float3 vNor0 = normalize(GetWorldSpaceNormals(IN.baseTC.xy, fTransmittanceY, normalize(IN.CamVec.xyz)).xyz);
 
 	vALD = 0;
 	vRGB = 0;
 
-	float fNewDepth = GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
+	float fNewDepth = SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
 
 	int nAtlasOffset = tex2Dlod(sceneSvoMap, float4(IN.baseTC.xy, 0, 0)).w;
 
@@ -1158,26 +1172,26 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 	float4 vALD = 0;
 	float4 vRGB = 0;
 
-	#if %_RT_SAMPLE3
-		#ifdef SVO_LMAPS
-				ConeTrace_LM_PS(IN, vALD, vRGB);
-		#endif
-	#else
+#if %_RT_SAMPLE3
+#ifdef SVO_LMAPS
+	ConeTrace_LM_PS(IN, vALD, vRGB);
+#endif
+#else
 
 	// reconstruct position
-	float3 vPos0 = GetWorldPos(VOX_DEPTH_SCALE*GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) - VOX_DEPTH_BIAS, IN.CamVec);
+	float3 vPos0 = GetWorldPos(VOX_DEPTH_SCALE*SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) - VOX_DEPTH_BIAS, IN.CamVec);
 
 	float3 vNor0 = 0; float fAverSmoothness = 0; float fAverTransmittanceY = 0; float3 vAverReflectance = 0;
 	float fDepthMin = 0, fDepthMax = 0;
-	GetAverNormAndSmooth(IN.baseTC.xy, vNor0, fAverSmoothness, fAverTransmittanceY, normalize(IN.CamVec), vAverReflectance, fDepthMin, fDepthMax);
+	GetAverNormAndSmooth(IN.baseTC.xy, vNor0, fAverSmoothness, fAverTransmittanceY, normalize(IN.CamVec.xyz), vAverReflectance, fDepthMin, fDepthMax);
 
 	float fDistM = length(vPos0 - PS_WorldViewPos.xyz);
 
 	//float fOffset = VOX_MIN_VOX_SIZE*2/3 + fDistM/96; // TODO: make cone trace func skip first 1-2 voxels instead of offset here
 
-	float3 vFocus = IsDiffuseMode() ? vNor0 : reflect(normalize(IN.CamVec), vNor0);
+	float3 vFocus = IsDiffuseMode() ? vNor0 : reflect(normalize(IN.CamVec.xyz), vNor0);
 
-	float fNewDepth = GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
+	float fNewDepth = SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
 
 	int2 nXY = int2(IN.baseTC.xy*PS_ScreenSize.xy);
 
@@ -1196,7 +1210,7 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 	const int nPassesNum = IsDiffuseMode() ? 1 : 2;
 #endif
 
-	for(int p=0; p<nPassesNum; p++)
+	for (int p = 0; p<nPassesNum; p++)
 	{
 		int s = (nFramesNum == 2) ? (int(SVO_FrameIdByte.x) & 1) : 0;
 		s += p * nFramesNum;
@@ -1214,9 +1228,9 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 
 			if (nFramesNum == 2) // TODO: use rotation instead of flip
 			{
-				if(int(SVO_FrameIdByte.x/2)&1)
+				if (int(SVO_FrameIdByte.x / 2) & 1)
 					kernOpa.x = -kernOpa.x;
-				if(int(SVO_FrameIdByte.x/2)&2)
+				if (int(SVO_FrameIdByte.x / 2) & 2)
 					kernOpa.y = -kernOpa.y;
 			}
 
@@ -1242,7 +1256,7 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 		else
 		{
 			// Fresnel
-			//fAverSmoothness = lerp(fAverSmoothness, 1, pow(1 - dot(-normalize(IN.CamVec), vNor0), 2));
+			//fAverSmoothness = lerp(fAverSmoothness, 1, pow(1 - dot(-normalize(IN.CamVec.xyz), vNor0), 2));
 
 			power = exp2(10.h * fAverSmoothness + 1.h);
 			kern += vFocus *power / 25;
@@ -1279,7 +1293,7 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 #endif
 
 		float4 vC = 0;
-		//		if(GetLinearDepth( sceneDepthMapSampler, IN.baseTC.xy) < 0.8f)
+		//		if(SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) < 0.8f)
 		vC = ConeTraceTreeAndSky(r, SvoParamsDiffuse.x + power / 10000, SvoParamsInject.z, 0, false, false, normalize(vNor0)*saturate(1 - fAverTransmittanceY * 4));
 
 		vC *= lerp(1.f, SvoParamsInject.w, saturate(fAverTransmittanceY * 8));
@@ -1307,7 +1321,7 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 	float fOldDepth = tex2Dlod(sceneRgbSampler, float4(vReprojTC.xy, 0, 0)).w;
 	float4 vALDPrev = tex2Dlod(sceneAldSampler, float4(vReprojTC.xy, 0, 0));
 	float4 vRGBPrev = tex2Dlod(sceneRgbSampler, float4(vReprojTC.xy, 0, 0));
-	float fPrevDepth = GetLinearDepth(sceneDepthMapSampler, vReprojTC.xy);
+	float fPrevDepth = SampleLinearDepth(sceneDepthMapSampler, vReprojTC.xy);
 
 	float fMinBlend = GetBlendMin(vReprojTC.xy - IN.baseTC.xy, vAverReflectance, fAverSmoothness, fNewDepth);
 
@@ -1333,7 +1347,7 @@ pixout_RenderAtmosphere RenderAtmospherePS(vtxOutWPOS IN)
 
 	MaterialAttribsCommon gbuffer = DecodeGBufferChannels(IN.baseTC.xy);
 
-	float fDepth0 = GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
+	float fDepth0 = SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
 	float fDepthMin = fDepth0;
 	float fDepthMax = fDepth0;
 
@@ -1351,7 +1365,7 @@ pixout_RenderAtmosphere RenderAtmospherePS(vtxOutWPOS IN)
 	{
 		float2 tc = IN.baseTC.xy + vR * float2(x, y);
 
-		float fDepth = GetLinearDepth(sceneDepthMapSampler, tc);
+		float fDepth = SampleLinearDepth(sceneDepthMapSampler, tc);
 
 		if (fDepth < fDepthMin)
 		{
@@ -2148,11 +2162,11 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 
 	const float fDepthRange = .12;
 	const float fDotMax = .35;
-	const float fDepthC = GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
+	const float fDepthC = SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
 	float fTransmittanceY = 0;
-	const float3 vNor0 = normalize(GetWorldSpaceNormals(IN.baseTC.xy, fTransmittanceY, normalize(IN.CamVec)).xyz);
+	const float3 vNor0 = normalize(GetWorldSpaceNormals(IN.baseTC.xy, fTransmittanceY, normalize(IN.CamVec.xyz)).xyz);
 
-	float3 vFocus = IsDiffuseMode() ? vNor0 : reflect(normalize(IN.CamVec), vNor0);
+	float3 vFocus = IsDiffuseMode() ? vNor0 : reflect(normalize(IN.CamVec.xyz), vNor0);
 
 	float4 vRGB = 0;
 	float4 vALD = 0;
@@ -2204,7 +2218,7 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 	MaterialAttribsCommon gbuffer = DecodeGBufferChannels(IN.baseTC.xy);
 	half power = IsDiffuseMode() ? 1.f : exp2(12.h * gbuffer.Smoothness + 0.5h);
 
-	float3 vH = IsDiffuseMode() ? normalize(vALD.xyz) : normalize(-normalize(IN.CamVec) + normalize(vALD.xyz));
+	float3 vH = IsDiffuseMode() ? normalize(vALD.xyz) : normalize(-normalize(IN.CamVec.xyz) + normalize(vALD.xyz));
 
 	float NdotH = dot(vNor0, vH);
 	float fIntensity = fDirIntens*pow(saturate(NdotH), power) + max(0, vALD.w - fDirIntens);
@@ -2217,7 +2231,7 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 	{
 		float so = gbuffer.Smoothness;
 		// Fresnel smoothness
-//		gbuffer.Smoothness = lerp(gbuffer.Smoothness, 1, pow(1 - dot(-normalize(IN.CamVec), vNor0), 2));
+		//		gbuffer.Smoothness = lerp(gbuffer.Smoothness, 1, pow(1 - dot(-normalize(IN.CamVec.xyz), vNor0), 2));
 
 		//OUT.Diffuse.xyz = vRGB * vALD.w;
 
@@ -2228,7 +2242,7 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 		OUT.Diffuse = lerp(vFinalDiffuse, OUT.Diffuse, saturate(pow(gbuffer.Smoothness * 3 - .75, 1)));
 
 		// Fresnel amplify
-		//OUT.Diffuse.xyz *= 1 + pow(saturate(1 - so), 4) * pow(saturate(1 - dot(-normalize(IN.CamVec), vNor0)), 7) * 2;
+		//OUT.Diffuse.xyz *= 1 + pow(saturate(1 - so), 4) * pow(saturate(1 - dot(-normalize(IN.CamVec.xyz), vNor0)), 7) * 2;
 
 		OUT.Diffuse.a = 1;
 	}
@@ -2253,8 +2267,8 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 	float fBlend = saturate(fOut + fMinBlend + abs(1 - fDepthC / valPrev.w) * 16);
 
 	// detect high contrast difference
-	float fDiff = dot(abs(1.f - OUT.Diffuse.xyz / valPrev.xyz), half3( 0.33f, 0.33f, 0.33f ));
-	if(fDiff > 0)
+	float fDiff = dot(abs(1.f - OUT.Diffuse.xyz / valPrev.xyz), half3(0.33f, 0.33f, 0.33f));
+	if (fDiff > 0)
 		fBlend += (1.f - fBlend) * saturate(fDiff * 3);
 
 	OUT.Diffuse = clamp(lerp(valPrev, OUT.Diffuse, fBlend), 0, 8);

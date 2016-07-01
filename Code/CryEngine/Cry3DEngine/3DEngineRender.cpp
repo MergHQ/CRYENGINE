@@ -1679,7 +1679,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		    (m_pVisAreaManager->m_pCurArea || m_pVisAreaManager->m_pCurPortal))
 		{
 			// enable multi-camera culling
-			const_cast<CCamera&>(passInfo.GetCamera()).m_pMultiCamera = &m_pVisAreaManager->m_lstOutdoorPortalCameras;
+			//const_cast<CCamera&>(passInfo.GetCamera()).m_pMultiCamera = &m_pVisAreaManager->m_lstOutdoorPortalCameras;
 		}
 
 		if (IsOutdoorVisible())
