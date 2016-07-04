@@ -101,12 +101,11 @@ public:
 
 private:
 
-	static float const EPSILON;
-
 	//////////////////////////////////////////////////////////////////////////
 	void GetRtpcId(SActivationInfo* const pActInfo)
 	{
 		string const& rtpcName = GetPortString(pActInfo, eIn_RtpcName);
+
 		if (!rtpcName.empty())
 		{
 			gEnv->pAudioSystem->GetAudioRtpcId(rtpcName.c_str(), m_requestData.audioRtpcId);
