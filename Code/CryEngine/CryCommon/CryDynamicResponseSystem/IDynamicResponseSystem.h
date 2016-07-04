@@ -629,6 +629,7 @@ struct IDialogLineDatabase
 	virtual const IDialogLineSet* const GetLineSetById(const CHashedString& lineID) const = 0;
 	virtual IDialogLineSet*             InsertLineSet(uint32 index) = 0;
 	virtual void                        RemoveLineSet(uint32 index) = 0;
+	virtual bool                        ExecuteScript(uint32 index) = 0;
 	virtual void                        Serialize(Serialization::IArchive& ar) = 0;
 	virtual void                        SerializeLinesHistory(Serialization::IArchive& ar) = 0;
 };

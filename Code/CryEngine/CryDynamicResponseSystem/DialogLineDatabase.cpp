@@ -169,6 +169,49 @@ void CDialogLineDatabase::SerializeLinesHistory(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
+bool CDialogLineDatabase::ExecuteScript(uint32 index)
+{
+#if defined(CRY_PLATFORM_WINDOWS)
+	const string linescriptpath = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR "linescript.bat";
+
+	if (gEnv->pCryPak->IsFileExist(linescriptpath, ICryPak::eFileLocation_Any))
+	{
+		DRS::IDialogLineSet* pLineSet = GetLineSetByIndex(index);
+
+		if (pLineSet)
+		{
+			for (int i = 0; i < pLineSet->GetLineCount(); i++)
+			{
+				const IDialogLine* pCurrentLine = pLineSet->GetLineByIndex(i);
+				string startTriggerWithoutPrefix = pCurrentLine->GetStartAudioTrigger();
+
+				const int prefixPos = startTriggerWithoutPrefix.find('_');
+				if (prefixPos != string::npos)
+				{
+					startTriggerWithoutPrefix = startTriggerWithoutPrefix.c_str() + prefixPos + 1;
+				}
+
+				char szBuffer[1024];
+				cry_sprintf(szBuffer, "@SET LINE_ID=%s&SET SUBTITLE=%s&SET AUDIO_TRIGGER=%s&SET AUDIO_TRIGGER_CLEANED=%s&SET ANIMATION_NAME=%s&SET STANDALONE_FILE=%s&%s",
+					pLineSet->GetLineId().GetText().c_str(),
+					pCurrentLine->GetText().c_str(),
+					pCurrentLine->GetStartAudioTrigger().c_str(),
+					startTriggerWithoutPrefix.c_str(),
+					pCurrentLine->GetLipsyncAnimation().c_str(),
+					pCurrentLine->GetStandaloneFile().c_str(),
+					linescriptpath.c_str());
+
+				system(szBuffer);
+			}
+			return true;
+		}
+	}
+#endif //CRY_PLATFORM_WINDOWS
+
+	return false;
+}
+
+//--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 CDialogLineSet::CDialogLineSet()
@@ -281,7 +324,7 @@ void CDialogLineSet::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_lineId, "lineID", "lineID");
 	ar(m_priority, "priority", "Priority");
-	ar(m_lastPickedLine, "lastPicked", 0);
+	ar(m_lastPickedLine, "lastPicked", nullptr);
 	ar(m_flags, "flags", "+Flags");    //bitmask editor widget?
 	ar(m_lines, "lineVariations", "+Lines");
 
@@ -313,7 +356,7 @@ void CDialogLine::Serialize(Serialization::IArchive& ar)
 	ar(m_audioStartTrigger, "audioStartTrigger", "AudioStartTrigger");
 	ar(m_audioStopTrigger, "audioStopTrigger", "AudioStopTrigger");
 	ar(m_lipsyncAnimation, "lipsyncAnim", "LipsyncAnim");
-	ar(m_standaloneFile, "standaloneFile", "standaloneFile");
+	ar(m_standaloneFile, "standaloneFile", "StandaloneFile");
 
 	if (ar.isEdit())
 	{

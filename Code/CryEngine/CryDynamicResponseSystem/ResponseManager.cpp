@@ -605,6 +605,7 @@ void CResponseManager::InformListenerAboutSignalProcessingFinished(
 	}
 }
 
+//--------------------------------------------------------------------------------------------------
 void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 {
 	struct responseStateInfo

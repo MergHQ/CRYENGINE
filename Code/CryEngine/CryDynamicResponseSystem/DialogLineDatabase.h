@@ -92,13 +92,14 @@ public:
 	virtual const DRS::IDialogLineSet* const GetLineSetById(const CHashedString& lineID) const override;
 	virtual DRS::IDialogLineSet*             InsertLineSet(uint32 index) override;
 	virtual void                             RemoveLineSet(uint32 index) override;
+	virtual bool                             ExecuteScript(uint32 index) override;
 	virtual void                             Serialize(Serialization::IArchive& ar) override;
 	virtual void                             SerializeLinesHistory(Serialization::IArchive& ar) override;
 	//////////////////////////////////////////////////////////
 
 private:
 	CHashedString GenerateUniqueId(const string& root);
-
+	
 	typedef std::vector<CDialogLineSet> DialogLineSetList;
 	DialogLineSetList  m_lineSets;
 
