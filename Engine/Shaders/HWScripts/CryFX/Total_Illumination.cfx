@@ -404,52 +404,152 @@ float GetSegmentToSegmentDistance(Segment S1, Segment S2)
 	return length(dP);   // return the closest distance
 }
 
+struct OBB
+{
+	float4 ue[3];
+	float4 c;
+};
+
+//Computes the square distance between point p and OBB b 
+float SqDistPointOBB(float3 p, OBB b, const bool bCylinder)
+{
+	float3 v = p - b.c.xyz;
+	float sqDist = 0.0f;
+	for (int i = 0; i < 3; i++)
+	{
+		float d = dot(v, b.ue[i].xyz);
+		float excess = 0.0f;
+
+		if (d < -b.ue[i].w)
+			excess = d + b.ue[i].w;
+		else if (d > b.ue[i].w)
+			excess = d - b.ue[i].w;
+
+		sqDist += excess * excess;
+	}
+
+	if (bCylinder)
+	{
+		Segment s0;
+		s0.P0 = b.c.xyz + b.ue[2].xyz * b.ue[2].w;
+		s0.P1 = b.c.xyz - b.ue[2].xyz * b.ue[2].w;
+
+		float3 vOutDir = 0;
+		float fSD = GetPointToSegmentDistance(p, s0, vOutDir);
+
+		sqDist = max(sqDist, pow(max(0, fSD - b.ue[0].w), 2.f));
+	}
+
+	return sqDist;
+}
+
 struct SAnalyticalOccluder
 {
 	float4 P0;
 	float4 P1;
+	float4 P2;
+	float4 C;
 };
 
-float4 SVO_AnalyticalOccluders[64];
+#define SVO_MAX_ANALYTICAL_OCCLUDERS 64
 
-void ProcessAnalyticalOccluders(Ray r, inout float4 vC)
+float4 SVO_AnalyticalOccluders[SVO_MAX_ANALYTICAL_OCCLUDERS*4];
+
+void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 {
 	float fOccl = 0;
 
-	for(int n=0; n<32; n++)
+	const float fDistM = length(r.startpoint.xyz - PS_WorldViewPos.xyz);
+
+	float fRayLen = SvoParamsMisc3.x;
+
+	for(int n=0; n<SVO_MAX_ANALYTICAL_OCCLUDERS; n++)
 	{
 		SAnalyticalOccluder oc;
-		oc.P0 = SVO_AnalyticalOccluders[n*2+0];
-		oc.P1 = SVO_AnalyticalOccluders[n*2+1];
+		oc.P0 = SVO_AnalyticalOccluders[n * 4 + 0];
+		oc.P1 = SVO_AnalyticalOccluders[n * 4 + 1];
+		oc.P2 = SVO_AnalyticalOccluders[n * 4 + 2];
+		oc.C  = SVO_AnalyticalOccluders[n * 4 + 3];
 
-		if(oc.P0.w)
+		if (!oc.P0.w)
+			break;
+
+		float fOrigDist = 1000;
+		float fRayDist = 1000;
+		float fRadius = 0;
+		float3 vSegDir = 0;
+
+		if(oc.C.w == 0) // capsule
 		{
-			Segment s0;
-
 			float3 startpoint = r.startpoint + r.direction*oc.P0.w*.125;
 
+			Segment s0;
 			s0.P0 = startpoint;
-			s0.P1 = startpoint + r.direction * 4.f;
+			s0.P1 = startpoint + r.direction * fRayLen;
 
 			Segment s1;
 			s1.P0 = oc.P0.xyz;
 			s1.P1 = oc.P1.xyz;
 
-			float fDist = GetSegmentToSegmentDistance( s0, s1 );
+			fRayDist = GetSegmentToSegmentDistance( s0, s1 );
 
 			s0.P0 = startpoint;
 			s0.P1 = startpoint + r.direction * 0.001f;
 
 			float3 dP;
-			float fSegDist = GetPointToSegmentDistance( startpoint, s1, dP );
+			fOrigDist = GetPointToSegmentDistance( startpoint, s1, dP );
 
-			float3 vSegDir = normalize(dP);
-			float fSegLen = length(oc.P0.xyz - oc.P1.xyz);
+			vSegDir = normalize(dP);
 
-			fOccl = max(fOccl, (1 - pow(max(0, fDist - oc.P0.w*.9f) / (oc.P0.w + fSegDist/2), 1)) * saturate(1 - fSegDist/6.f) * saturate(.5 + dot(vSegDir, r.direction)));
+			fRadius = oc.P0.w;
 		}
-		else
-			break;
+		else if (oc.C.w == 1.f || oc.C.w == 2.f) // obb or cylinder
+		{
+			OBB obb;
+			obb.ue[0] = oc.P0;
+			obb.ue[1] = oc.P1;
+			obb.ue[2] = oc.P2;
+			obb.ue[1].xyz *= -1;
+
+			obb.c = oc.C;
+
+			bool bCylinder = (oc.C.w == 2.f);
+
+			fOrigDist = sqrt(SqDistPointOBB(r.startpoint, obb, bCylinder));
+
+			fRayDist = fOrigDist;
+			float3 vMinPoint = r.startpoint;
+			float fStepSize = fRayLen;
+
+			for (float t = 0, steps = 0; (t < fRayLen) && (steps<32) && fStepSize>0; t += fStepSize, steps++)
+			{
+				float3 vTestPoint = r.startpoint + r.direction * t;
+
+				float fD = sqrt(SqDistPointOBB(vTestPoint, obb, bCylinder));
+
+				if (fD < fRayDist)
+				{
+					fRayDist = fD;
+					vMinPoint = vTestPoint;
+				}
+				else if (fD > fRayDist)
+					break;
+
+				fStepSize = min(fD+.01, fStepSize);
+			}
+
+			vSegDir = normalize(vMinPoint - r.startpoint);
+
+			fOrigDist = min(fOrigDist, length(vMinPoint - r.startpoint));
+
+			fRadius = 0;
+		}
+
+		float fO = 1.f - max(0, fRayDist - fRadius * .99) / (fRadius * 0.5 + fOrigDist * SvoParamsMisc3.y + 0.001);
+		if(fOrigDist>0)
+			fO *= saturate(1 - fOrigDist / fRayLen) * saturate(.5 + dot(vSegDir, r.direction));
+
+		fOccl = max(fOccl, fO);
 	}
 
 	vC = lerp(vC, float4(0,0,0,1), fOccl);
@@ -554,7 +654,11 @@ float3 Reproject(in half2 vScreenPos, in float fDepth, in float3x4 matReproj)
 	pos.xyz = mul(matReproj, pos);
 	pos.xy /= pos.z;
 	pos.z *= fDepth;
-	pos.xy = lerp(vScreenPos.xy, pos.xy, saturate((fDepth-SvoParamsMisc2.y) / (SvoParamsMisc2.y*0.5f))); // 1p weapon fix
+
+	float2 vMV = tex2D(SVO_VelocityRT, vScreenPos);
+	if (vMV.x != 0)
+		pos.xy = vScreenPos + DecodeMotionVector(vMV);
+
 	return pos.xyz;
 }
 
@@ -609,10 +713,10 @@ float GetBlendMin(float2 tcDiff, float3 vAverReflectance, float fAverSmoothness,
 
 	if (!IsDiffuseMode())
 	{
-		float fDistTCRat = IsDiffuseMode() ? 0 : saturate(length(tcDiff) / .02f);
+		float fDistTCRat = IsDiffuseMode() ? 0 : saturate(length(tcDiff) / .05f);
 
 		// reduce ghosting for mirrors
-		fMinBlend = saturate(max(fMinBlend + fDistTCRat, 0.7 * saturate(GetLuminance(vAverReflectance*fAverSmoothness))));
+		fMinBlend = saturate(max((1-(1-fMinBlend)*.7f) + fDistTCRat*(1.f - fMinBlend), 0.7 * saturate(GetLuminance(vAverReflectance*fAverSmoothness))));
 	}
 
 	return fMinBlend;
@@ -751,8 +855,9 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 		r.direction = normalize(vALD0.xyz);
 		r.startpoint = vPos0;
 		float4 vC = 0;
-		ProcessAnalyticalOccluders(r, vC);	
-		float fDot = saturate(dot(r.direction, vNor0)) * saturate(length(vALD0.xyz) / vALD0.w);
+		float fDirectionality = saturate(length(vALD0.xyz) / vALD0.w);
+		ProcessAnalyticalOccluders(r, vC, IsDiffuseMode() ? fDirectionality : pow(fAverSmoothness, .5));
+		float fDot = saturate(dot(r.direction, vNor0));
 		OUT.Specular  *= 1 - vC.w * fDot;
 		OUT.Specular1 *= 1 - vC.w * fDot;
 	}
@@ -1114,6 +1219,8 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 				if(int(SVO_FrameIdByte.x/2)&2)
 					kernOpa.y = -kernOpa.y;
 			}
+
+			kernOpa.z -= SvoParamsCommon.y;
 
 			if (bRotate)
 				kernOpa = normalize(mul(normalize(kernOpa), rotMat));
@@ -2127,10 +2234,10 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 	}
 
 #if !%_RT_SAMPLE5
-	if (IsDiffuseMode())
-		OUT.Diffuse.xyz += max(0, SvoParamsCommon.z * vSkyColorTop.z);
+	if (SvoParamsCommon.z > 0)
+		OUT.Diffuse.xyz += SvoParamsCommon.z * vSkyColorTop.z;
 	else
-		OUT.Diffuse.xyz += max(0, -SvoParamsCommon.z * vSkyColorTop.z) * 0.15f;
+		OUT.Diffuse.xyz += -SvoParamsCommon.z * vSkyColorTop.z * 0.15f;
 #endif
 
 	OUT.Diffuse.w = fDepthC;
@@ -2147,8 +2254,8 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 
 	// detect high contrast difference
 	float fDiff = dot(abs(1.f - OUT.Diffuse.xyz / valPrev.xyz), half3( 0.33f, 0.33f, 0.33f ));
-	if(fDiff > 0.5f)
-		fBlend = 1.f;
+	if(fDiff > 0)
+		fBlend += (1.f - fBlend) * saturate(fDiff * 3);
 
 	OUT.Diffuse = clamp(lerp(valPrev, OUT.Diffuse, fBlend), 0, 8);
 

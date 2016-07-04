@@ -185,9 +185,9 @@ void CAudioStandaloneFileManager::ReleaseStandaloneFile(CATLStandaloneFile* cons
 
 		pStandaloneFile->Clear();
 
+		m_pImpl->ResetAudioStandaloneFile(pStandaloneFile->m_pImplData);
 		if (m_audioStandaloneFilePool.m_reserved.size() < m_audioStandaloneFilePool.m_reserveSize)
 		{
-			m_pImpl->ResetAudioStandaloneFile(pStandaloneFile->m_pImplData);
 			m_audioStandaloneFilePool.m_reserved.push_back(pStandaloneFile);
 		}
 		else
@@ -411,12 +411,11 @@ void CAudioEventManager::ReleaseImplInstance(CATLEvent* const pOldEvent)
 	if (pOldEvent != nullptr)
 	{
 		pOldEvent->Clear();
+		m_pImpl->ResetAudioEvent(pOldEvent->m_pImplData);
 
 		if (m_audioEventPool.m_reserved.size() < m_audioEventPool.m_reserveSize)
 		{
 			// can return the instance to the reserved pool
-			m_pImpl->ResetAudioEvent(pOldEvent->m_pImplData);
-
 			m_audioEventPool.m_reserved.push_back(pOldEvent);
 		}
 		else
@@ -595,9 +594,10 @@ void CAudioObjectManager::Update(float const deltaTime, SAudioObject3DAttributes
 	m_timeSinceLastControlsUpdate += deltaTime;
 	bool const bUpdateControls = m_timeSinceLastControlsUpdate > s_controlsUpdateInterval;
 
-	for (auto const& audioObjectPair : m_registeredAudioObjects)
+	RegisteredAudioObjectsMap::const_iterator iterEnd = m_registeredAudioObjects.cend();
+	for (RegisteredAudioObjectsMap::iterator iter = m_registeredAudioObjects.begin(); iter != iterEnd; )
 	{
-		CATLAudioObject* const pAudioObject = audioObjectPair.second;
+		CATLAudioObject* const pAudioObject = iter->second;
 
 		SAudioObject3DAttributes const& attributes = pAudioObject->Get3DAttributes();
 		float const distance = (attributes.transformation.GetPosition() - listenerAttributes.transformation.GetPosition()).GetLength();
@@ -633,6 +633,17 @@ void CAudioObjectManager::Update(float const deltaTime, SAudioObject3DAttributes
 
 			m_pImpl->UpdateAudioObject(pAudioObject->GetImplDataPtr());
 		}
+		else
+		{
+			if (pAudioObject->CanBeReleased())
+			{
+				m_registeredAudioObjects.erase(iter++);
+				iterEnd = m_registeredAudioObjects.cend();
+				ReleaseInstance(pAudioObject);
+				continue;
+			}
+		}
+		++iter;
 	}
 
 	if (bUpdateControls)
@@ -737,11 +748,6 @@ bool CAudioObjectManager::ReleaseId(AudioObjectId const audioObjectId)
 	if (pAudioObject != nullptr)
 	{
 		pAudioObject->RemoveFlag(eAudioObjectFlags_DoNotRelease);
-
-		if (pAudioObject->CanRelease())
-		{
-			bSuccess = ReleaseInstance(pAudioObject);
-		}
 	}
 
 	return bSuccess;
@@ -799,11 +805,6 @@ void CAudioObjectManager::ReportFinishedEvent(CATLEvent* const pEvent, bool cons
 		if (pAudioObject != nullptr)
 		{
 			pAudioObject->ReportFinishedEvent(pEvent, bSuccess);
-
-			if (pAudioObject->CanRelease())
-			{
-				ReleaseInstance(pAudioObject);
-			}
 		}
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		else
@@ -860,11 +861,6 @@ void CAudioObjectManager::ReportFinishedStandaloneFile(CATLStandaloneFile* const
 		if (pAudioObject != nullptr)
 		{
 			pAudioObject->ReportFinishedStandaloneFile(_pStandaloneFile);
-
-			if (pAudioObject->CanRelease())
-			{
-				ReleaseInstance(pAudioObject);
-			}
 		}
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		else
@@ -891,11 +887,6 @@ void CAudioObjectManager::ReportObstructionRay(AudioObjectId const audioObjectId
 	if (pAudioObject != nullptr)
 	{
 		pAudioObject->ReportPhysicsRayProcessed(rayId);
-
-		if (pAudioObject->CanRelease())
-		{
-			ReleaseInstance(pAudioObject);
-		}
 	}
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else
@@ -942,32 +933,27 @@ CATLAudioObject* CAudioObjectManager::GetInstance()
 //////////////////////////////////////////////////////////////////////////
 bool CAudioObjectManager::ReleaseInstance(CATLAudioObject* const pOldObject)
 {
+	CRY_ASSERT(pOldObject);
 	bool bSuccess = false;
-
-	if (pOldObject != nullptr)
-	{
-		AudioObjectId const nObjectID = pOldObject->GetId();
-		m_registeredAudioObjects.erase(nObjectID);
-
+	
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		m_pDebugNameStore->RemoveAudioObject(nObjectID);
-		pOldObject->CheckBeforeRemoval(m_pDebugNameStore);
+	m_pDebugNameStore->RemoveAudioObject(static_cast<AudioObjectId const>(pOldObject->GetId()));
+	pOldObject->CheckBeforeRemoval(m_pDebugNameStore);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-		pOldObject->Clear();
-		bSuccess = (m_pImpl->UnregisterAudioObject(pOldObject->GetImplDataPtr()) == eAudioRequestStatus_Success);
+	pOldObject->Clear();
+	bSuccess = (m_pImpl->UnregisterAudioObject(pOldObject->GetImplDataPtr()) == eAudioRequestStatus_Success);
 
-		if (m_audioObjectPool.m_reserved.size() < m_audioObjectPool.m_reserveSize)
-		{
-			// can return the instance to the reserved pool
-			m_pImpl->ResetAudioObject(pOldObject->GetImplDataPtr());
-			m_audioObjectPool.m_reserved.push_back(pOldObject);
-		}
-		else
-		{
-			// the reserve pool is full, can return the instance to the implementation to dispose
-			m_pImpl->DeleteAudioObject(pOldObject->GetImplDataPtr());
-			POOL_FREE(pOldObject);
-		}
+	m_pImpl->ResetAudioObject(pOldObject->GetImplDataPtr());
+	if (m_audioObjectPool.m_reserved.size() < m_audioObjectPool.m_reserveSize)
+	{
+		// can return the instance to the reserved pool
+		m_audioObjectPool.m_reserved.push_back(pOldObject);
+	}
+	else
+	{
+		// the reserve pool is full, can return the instance to the implementation to dispose
+		m_pImpl->DeleteAudioObject(pOldObject->GetImplDataPtr());
+		POOL_FREE(pOldObject);
 	}
 
 	return bSuccess;
@@ -976,31 +962,13 @@ bool CAudioObjectManager::ReleaseInstance(CATLAudioObject* const pOldObject)
 //////////////////////////////////////////////////////////////////////////
 void CAudioObjectManager::ReleasePendingRays()
 {
-	if (!m_registeredAudioObjects.empty())
+	for (auto const& audioObjectPair : m_registeredAudioObjects)
 	{
-		TAudioObjectPool::TPointerContainer objectsToRelease;
+		CATLAudioObject* const pAudioObject = audioObjectPair.second;
 
-		for (auto const& audioObjectPair : m_registeredAudioObjects)
+		if (pAudioObject != nullptr)
 		{
-			CATLAudioObject* const pAudioObject = audioObjectPair.second;
-
-			if (pAudioObject != nullptr)
-			{
-				pAudioObject->ReleasePendingRays();
-
-				if (pAudioObject->CanRelease())
-				{
-					objectsToRelease.push_back(pAudioObject);
-				}
-			}
-		}
-
-		if (!objectsToRelease.empty())
-		{
-			for (auto const pAudioObject : objectsToRelease)
-			{
-				ReleaseInstance(pAudioObject);
-			}
+			pAudioObject->ReleasePendingRays();
 		}
 	}
 }
@@ -1703,6 +1671,7 @@ void CATLXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, EAu
 										g_audioLogger.Log(eAudioLogType_Warning, "Preload request \"%s\" could not create file entry from tag \"%s\"!", sAudioPreloadRequestName, pConfigGroupNode->getChild(k)->getTag());
 									}
 								}
+								cFileEntryIDs.shrink_to_fit();
 
 								CATLPreloadRequest* pPreloadRequest = stl::find_in_map(m_preloadRequests, nAudioPreloadRequestID, nullptr);
 
@@ -1826,6 +1795,8 @@ void CATLXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironment
 					}
 				}
 
+				cImplPtrs.shrink_to_fit();
+
 				if (!cImplPtrs.empty())
 				{
 					POOL_NEW_CREATE(CATLAudioEnvironment, pNewEnvironment)(nATLEnvironmentID, dataScope, cImplPtrs);
@@ -1906,6 +1877,8 @@ void CATLXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, EAud
 						}
 					}
 				}
+
+				cImplPtrs.shrink_to_fit();
 
 				POOL_NEW_CREATE(CATLTrigger, pNewTrigger)(nATLTriggerID, dataScope, cImplPtrs, maxRadius);
 
@@ -2058,6 +2031,7 @@ void CATLXMLProcessor::ParseAudioRtpcs(XmlNodeRef const pXMLRtpcRoot, EAudioData
 						}
 					}
 				}
+				cImplPtrs.shrink_to_fit();
 
 				POOL_NEW_CREATE(CATLRtpc, pNewRtpc)(nATLRtpcID, dataScope, cImplPtrs);
 
@@ -2380,8 +2354,8 @@ bool CAudioObjectManager::ReserveId(AudioObjectId& audioObjectId, char const* co
 		}
 		else
 		{
+			m_registeredAudioObjects.erase(static_cast<AudioObjectId const>(pNewObject->GetId()));
 			ReleaseInstance(pNewObject);
-
 			bSuccess = false;
 		}
 	}

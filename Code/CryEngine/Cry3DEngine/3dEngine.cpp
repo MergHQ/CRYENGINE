@@ -3119,25 +3119,29 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 	{
 		SOptimizedOutdoorWindArea WA = windArea;
 		WA.point[1].x = (WA.point[0].x + WA.point[1].x) * 0.5f;
-		WA.point[2] = WA.point[5];
+		WA.point[2] = WA.point[4];
+		WA.windSpeed[2] = WA.windSpeed[4];
 		WA.point[3].y = (WA.point[0].y + WA.point[3].y) * 0.5f;
 		UpdateWindGridArea(rWindGrid, WA, windBox);
 
 		WA = windArea;
 		WA.point[0].x = (WA.point[0].x + WA.point[1].x) * 0.5f;
-		WA.point[3] = WA.point[5];
+		WA.point[3] = WA.point[4];
+		WA.windSpeed[3] = WA.windSpeed[4];
 		WA.point[2].y = (WA.point[1].y + WA.point[2].y) * 0.5f;
 		UpdateWindGridArea(rWindGrid, WA, windBox);
 
 		WA = windArea;
 		WA.point[3].x = (WA.point[3].x + WA.point[2].x) * 0.5f;
-		WA.point[0] = WA.point[5];
+		WA.point[0] = WA.point[4];
+		WA.windSpeed[0] = WA.windSpeed[4];
 		WA.point[1].y = (WA.point[1].y + WA.point[2].y) * 0.5f;
 		UpdateWindGridArea(rWindGrid, WA, windBox);
 
 		WA = windArea;
 		WA.point[2].x = (WA.point[3].x + WA.point[2].x) * 0.5f;
-		WA.point[1] = WA.point[5];
+		WA.point[1] = WA.point[4];
+		WA.windSpeed[1] = WA.windSpeed[4];
 		WA.point[0].y = (WA.point[0].y + WA.point[3].y) * 0.5f;
 		UpdateWindGridArea(rWindGrid, WA, windBox);
 	}

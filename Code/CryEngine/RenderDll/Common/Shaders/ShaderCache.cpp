@@ -42,7 +42,7 @@ uint32 SShaderCombIdent::PostCreate()
 	return hash;
 }
 
-bool CShader::mfPrecache(SShaderCombination& cmb, bool bForce, bool bCompressedOnly, CShaderResources* pRes)
+bool CShader::mfPrecache(SShaderCombination& cmb, bool bForce, CShaderResources* pRes)
 {
 	bool bRes = true;
 
@@ -67,10 +67,10 @@ bool CShader::mfPrecache(SShaderCombination& cmb, bool bForce, bool bCompressedO
 			SShaderCombination c = cmb;
 			gRenDev->m_RP.m_FlagsShader_MD = cmb.m_MDMask;
 			if (Pass.m_PShader)
-				bRes &= Pass.m_PShader->mfPrecache(cmb, bForce, false, bCompressedOnly, this, pRes);
+				bRes &= Pass.m_PShader->mfPrecache(cmb, bForce, false, this, pRes);
 			cmb.m_MDMask = gRenDev->m_RP.m_FlagsShader_MD;
 			if (Pass.m_VShader)
-				bRes &= Pass.m_VShader->mfPrecache(cmb, bForce, false, bCompressedOnly, this, pRes);
+				bRes &= Pass.m_VShader->mfPrecache(cmb, bForce, false, this, pRes);
 			cmb = c;
 		}
 	}
@@ -1530,7 +1530,6 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 
 	// Command line shaders precaching
 	gRenDev->m_Features |= RFT_HW_SM20 | RFT_HW_SM2X | RFT_HW_SM30;
-	m_bActivatePhase = false;
 	FXShaderCacheCombinations* Combinations = &m_ShaderCacheCombinations[0];
 
 	std::vector<SCacheCombination> Cmbs;
@@ -1760,10 +1759,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 							}
 						}
 	#if CRY_PLATFORM_WINDOWS
-						if (!m_bActivatePhase)
-						{
-							gEnv->pSystem->PumpWindowMessage(true);
-						}
+						gEnv->pSystem->PumpWindowMessage(true);
 	#endif
 					}
 				}
@@ -1778,10 +1774,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 			// combinations when no shadertype is defined and the previous shader line
 			// was still async compiling -- needs fix in HWShader for m_nMaskGenFX
 			CHWShader::mfFlushPendedShadersWait(0);
-			if (!m_bActivatePhase)
-			{
-				SAFE_RELEASE(pSH);
-			}
+			SAFE_RELEASE(pSH);
 
 			nProcessed += m_nCombinationsProcess;
 			nCompiled += m_nCombinationsCompiled;
@@ -1832,7 +1825,6 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 	m_eCacheMode = eSC_Normal;
 	m_bReload = false;
 	m_szShaderPrecache = NULL;
-	m_bActivatePhase = false;
 	CRenderer::CV_r_shadersasynccompiling = nAsync;
 
 	gRenDev->m_Features = nSaveFeatures;
@@ -2320,9 +2312,9 @@ bool CShaderMan::mfPreloadBinaryShaders()
 	if (m_Bin.m_bBinaryShadersLoaded)
 		return true;
 
-	bool bFound = iSystem->GetIPak()->LoadPakToMemory("Engine/ShadersBin.pak", ICryPak::eInMemoryPakLocale_CPU);
-	if (!bFound)
-		return false;
+	//bool bFound = iSystem->GetIPak()->LoadPakToMemory("Engine/ShadersBin.pak", ICryPak::eInMemoryPakLocale_CPU);
+	//if (!bFound)
+	//	return false;
 
 #ifndef _RELEASE
 	// also load shaders pak file to memory because shaders are also read, when data not found in bin, and to check the CRC
@@ -2395,7 +2387,7 @@ bool CShaderMan::mfPreloadBinaryShaders()
 	gEnv->pCryPak->FindClose(handle);
 
 	// Unload pak from memory.
-	iSystem->GetIPak()->LoadPakToMemory("Engine/ShadersBin.pak", ICryPak::eInMemoryPakLocale_Unload);
+	//iSystem->GetIPak()->LoadPakToMemory("Engine/ShadersBin.pak", ICryPak::eInMemoryPakLocale_Unload);
 
 #ifndef _RELEASE
 	iSystem->GetIPak()->LoadPakToMemory("Engine/Shaders.pak", ICryPak::eInMemoryPakLocale_Unload);

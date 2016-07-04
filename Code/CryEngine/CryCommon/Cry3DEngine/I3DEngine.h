@@ -2241,13 +2241,23 @@ struct I3DEngine : public IProcess
 		enum AnalyticalOccluderType
 		{
 			eCapsule = 0,
-			eSphere,
-			eBox
+			eOBB,
+			eCylinder
 		};
 
 		Vec3  v0;
-		float radius;
+
+		union
+		{
+			float e0;
+			float radius;
+		};
+
 		Vec3  v1;
+		float e1;
+		Vec3  v2;
+		float e2;
+		Vec3  c;
 		float type;
 	};
 
@@ -2292,7 +2302,7 @@ struct I3DEngine : public IProcess
 		Vec4 arrPortalsPos[SVO_MAX_PORTALS];
 		Vec4 arrPortalsDir[SVO_MAX_PORTALS];
 
-	#define SVO_MAX_ANALYTICAL_OCCLUDERS 32
+	#define SVO_MAX_ANALYTICAL_OCCLUDERS 64
 		SAnalyticalOccluder arrAnalyticalOccluders[SVO_MAX_ANALYTICAL_OCCLUDERS];
 
 		Vec3                vSkyColorTop;

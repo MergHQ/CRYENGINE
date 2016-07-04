@@ -625,7 +625,6 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 
 	RT_GraphicsPipelineShutdown();
 
-	m_cEF.mfReleasePreactivatedShaderData();
 	m_cEF.m_Bin.InvalidateCache();
 	//m_cEF.m_Bin.m_BinPaths.clear();
 	ForceFlushRTCommands();
@@ -697,7 +696,7 @@ void CD3D9Renderer::RT_CreateRenderResources()
 void CD3D9Renderer::RT_PrecacheDefaultShaders()
 {
 	SShaderCombination cmb;
-	m_cEF.s_ShaderStereo->mfPrecache(cmb, true, true, NULL);
+	m_cEF.s_ShaderStereo->mfPrecache(cmb, true, NULL);
 
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	SF_PrecacheShaders();
@@ -806,7 +805,7 @@ void CRenderer::RT_SubmitWind(const SWindGrid* pWind)
 	int nThreadID = m_pRT->m_nCurThreadProcess;
 	pDevTex->UploadFromStagingResource(0, [=](void* pData, uint32 rowPitch, uint32 slicePitch)
 	{
-		cryMemcpy(pData, pWind->m_pData, CTexture::TextureDataSize(pWind->m_nWidth, pWind->m_nHeight, 1, 1, 1, eTF_R16G16));
+		cryMemcpy(pData, pWind->m_pData, CTexture::TextureDataSize(pWind->m_nWidth, pWind->m_nHeight, 1, 1, 1, eTF_R16G16F));
 		return true;
 	});
 }

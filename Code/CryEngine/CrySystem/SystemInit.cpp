@@ -2828,6 +2828,8 @@ L_done:;
 		LoadConfiguration("orbis.cfg", 0, eLoadConfigSystemSpec);
 #elif CRY_PLATFORM_MOBILE
 		LoadConfiguration("mobile.cfg", 0, eLoadConfigInit);
+#elif CRY_PLATFORM_LINUX
+		LoadConfiguration("linux.cfg", 0, eLoadConfigInit);
 #endif
 #if defined(PERFORMANCE_BUILD)
 		LoadConfiguration("performance.cfg", 0, eLoadConfigInit);

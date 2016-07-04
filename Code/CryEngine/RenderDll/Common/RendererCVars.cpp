@@ -289,7 +289,6 @@ int CRendererCVars::CV_r_shadersGL4;
 int CRendererCVars::CV_r_shadersGLES3;
 #endif
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersignoreincludeschanging);
-int CRendererCVars::CV_r_shaderspreactivate;
 int CRendererCVars::CV_r_shadersAllowCompilation;
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersediting);
 AllocateConstIntCVar(CRendererCVars, CV_r_shaderscompileautoactivate);
@@ -2400,8 +2399,6 @@ void CRendererCVars::InitCVars()
 
 	DefineConstIntCVar3("r_ShadersIgnoreIncludesChanging", CV_r_shadersignoreincludeschanging, 0, VF_NULL, "");
 	DefineConstIntCVar3("r_ShadersLazyUnload", CV_r_shaderslazyunload, 0, VF_NULL, "");
-
-	REGISTER_CVAR3("r_ShadersPreactivate", CV_r_shaderspreactivate, SHADERS_PREACTIVATE_DEFAULT_VAL, VF_DUMPTODISK, "");
 
 	REGISTER_CVAR3_CB("r_ShadersAllowCompilation", CV_r_shadersAllowCompilation, SHADERS_ALLOW_COMPILATION_DEFAULT_VAL, VF_NULL, "", OnChange_CV_r_ShadersAllowCompiliation);
 

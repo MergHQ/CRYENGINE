@@ -22,6 +22,7 @@ float4 SvoParamsMisc     : PB_SvoParams5; // emissive mult, propagation pass id,
 float4 SvoParamsMisc2    : PB_SvoParams6; // point light mult, 0, 0, 0
 float4 SvoParamsSkyColor : PB_SvoParams4; // r, g, b, mult
 float4 SvoParamsSpecular : PB_SvoParams3; // wid, caust mult, air brightness, mult
+float4 SvoParamsMisc3		 : PB_SvoParams7; // AO len, AO soft
 
 sampler2D sceneDepthMapSampler : register(s4) = sampler_state
 {
@@ -175,6 +176,7 @@ sampler2D SVO_RsmSunColorsMap : register(s13);
 sampler2D SVO_RsmSunNormalMap : register(s9);
 float4    SVO_RsmSunCol;
 float4    SVO_RsmSunDir;
+sampler2D SVO_VelocityRT : register(s8);
 
 Texture2D<float4> ForwRsmPoolCol : register(t26);
 Texture2D<float4> ForwRsmPoolNor : register(t27);
@@ -981,9 +983,9 @@ bool ConeTraceBrick_SSR(const float3 vRayStartPos,  Ray r, const float _fDistanc
 		r.startpoint += r.direction*.1;
 		fDistance = fDistanceIn + length(r.startpoint - vRayStartPos); 
 
-		for(int s=0; s<64; s++)
+		for(int s=0; s<100; s++)
 		{
-			float fVoxSize = (1 + (fDistM*2.5 + fDistance) * .5) / 7;
+			float fVoxSize = (1 + (fDistM + fDistance) * .5) / 7;
 
 			r.startpoint += r.direction*fVoxSize*fStepSize;
 
@@ -999,6 +1001,9 @@ bool ConeTraceBrick_SSR(const float3 vRayStartPos,  Ray r, const float _fDistanc
         vTC0 /= vTC0.w;
         vTC0.xy = vTC0.xy*0.5f+0.5f;
         vTC0.y = 1-vTC0.y;
+
+				if (vTC0.x < 0 || vTC0.x>1 || vTC0.y < 0 || vTC0.y>1 || vTC0.z < 0 || vTC0.z>1)
+					break;
 
 				// read depth
 				float fScrDepth = GetLinearDepth(tex2Dlod(sceneDepthMapSampler, float4(vTC0.xy, 0, 0)).x) * PS_NearFarClipDist.y;

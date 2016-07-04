@@ -3337,7 +3337,7 @@ void CD3D9Renderer::SF_PrecacheShaders()
 		return;
 
 	SShaderCombination cmb;
-	pShader->mfPrecache(cmb, true, true, NULL);
+	pShader->mfPrecache(cmb, true, NULL);
 }
 
 //////////////////////////////////////////////////////////////////////////

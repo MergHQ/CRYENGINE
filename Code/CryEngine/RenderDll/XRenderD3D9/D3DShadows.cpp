@@ -1809,7 +1809,11 @@ void CD3D9Renderer::FX_MergeShadowMaps(CRenderView* pRenderView, ShadowMapFrustu
 
 	const bool bOutsideFrustum = abs(crop.x) > 1.0f || abs(crop.x + crop.z) > 1.0f || abs(crop.y) > 1.0f || abs(crop.y + crop.w) > 1.0f;
 	const bool bEmptyCachedFrustum = pSrc->nShadowGenMask == 0;
-	const bool bRequireCopy = bOutsideFrustum || bEmptyCachedFrustum || nRendItemCount > 0;
+	bool bRequireCopy = bOutsideFrustum || bEmptyCachedFrustum || nRendItemCount > 0;
+
+#if defined(CRY_PLATFORM_ANDROID)
+	bRequireCopy = bEmptyCachedFrustum; // workaround for shader compiler issues in ReprojectShadowMap on android
+#endif
 
 	pDst->bIncrementalUpdate = true;
 	pDst->mLightViewMatrix = pSrc->mLightViewMatrix * cropMatrix;
@@ -1856,7 +1860,7 @@ void CD3D9Renderer::FX_MergeShadowMaps(CRenderView* pRenderView, ShadowMapFrustu
 			gRenDev->FX_SetState(GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
 
 			Matrix44 mReprojDstToSrc = pDst->mLightViewMatrix.GetInverted() * pSrc->mLightViewMatrix;
-			;
+
 			static CCryNameR paramReprojMatDstToSrc("g_mReprojDstToSrc");
 			CShaderMan::s_ShaderShadowMaskGen->FXSetPSFloat(paramReprojMatDstToSrc, (Vec4*) mReprojDstToSrc.GetData(), 4);
 

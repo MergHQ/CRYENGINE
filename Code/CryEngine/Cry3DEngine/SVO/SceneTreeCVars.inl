@@ -48,10 +48,16 @@ REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizaionPostpone, 2, VF_NULL, "1 - Postpone v
 REGISTER_CVAR_AUTO(float, e_svoTI_MinVoxelOpacity, 0.1f, VF_NULL, "Voxelize only geometry with opacity higher than specified value");
 REGISTER_CVAR_AUTO(float, e_svoTI_MinReflectance, 0.2f, VF_NULL, "Controls light bouncing from very dark surfaces (and from surfaces missing in RSM)");
 REGISTER_CVAR_AUTO(int, e_svoTI_ObjectsLod, 1, VF_NULL, "Mesh LOD used for voxelization\nChanges are visible only after re-voxelization (click <Update geometry> or restart)");
-REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalOccluders, 0, VF_NULL, "Use simplified approximation of character sceleton for indirect shadows");
+REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalOccluders, 0, VF_NULL, "Enable support for hand-placed occlusion shapes like box, cylinder and capsule\nThis also enables indirect shadows from characters (see e_svoTI_AnalyticalOccludersBoneNames)");
+REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersRange, 3.f, VF_NULL, "Shadow length");
+REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersSoftness, 0.5f, VF_NULL, "Shadow softness");
 
-REGISTER_CVAR_AUTO_STRING(e_svoTI_AnalyticalOccludersBoneNames, "Bip01_Head Bip01_Neck Bip01_Spine Bip01_*_Calf Bip01_*_Foot Bip01_*_Toe0 Bip01_*_ForeTwist1 Bip01_*_Finger20",
-                          VF_NULL, "Names of bones used to construct occlusion capsules for characters (Names must be separated by space, order is important, spaces in names must be replaced by underscore, '*' means 'R' or 'L')");
+REGISTER_CVAR_AUTO_STRING(e_svoTI_AnalyticalOccludersBoneNames, "Bip01#Head Bip01#Neck Bip01#Spine Bip01#$#Calf Bip01#$#Foot Bip01#$#Toe0 Bip01#$#ForeTwist1 Bip01#$#Finger20", VF_NULL, 
+									 "Names of bones used to construct occlusion capsules for characters\n"
+									 "Names must be separated by spaces, order is important\n"
+									 "Spaces in names must be replaced by '#'\n"
+									 "'$' means 'R' and 'L'\n"
+									 "'*' means 'Right' and 'Left'");
 
 #ifdef CVAR_CPP
 m_arrVars.Clear();
@@ -98,8 +104,8 @@ REGISTER_CVAR_AUTO(float, e_svoTI_DiffuseConeWidth, 0, VF_NULL,
                    "Controls wideness of diffuse cones\nWider cones work faster but may cause over-occlusion and more light leaking\nNarrow cones are slower and may bring more noise");
 REGISTER_CVAR_AUTO(float, e_svoTI_ConeMaxLength, 0, VF_NULL,
                    "Maximum length of the tracing rays (in meters)\nShorter rays work faster");
-REGISTER_CVAR_AUTO(float, e_svoTI_SpecularAmplifier, 0, VF_EXPERIMENTAL,
-                   "Adjusts the output brightness of cone traced indirect specular component");
+REGISTER_CVAR_AUTO(float, e_svoTI_SpecularAmplifier, 0, VF_NULL,
+                   "Adjusts the output brightness of specular component");
 REGISTER_CVAR_AUTO(int, e_svoTI_UpdateLighting, 0, VF_EXPERIMENTAL,
                    "When switched from OFF to ON - forces single full update of cached lighting\nIf stays enabled - automatically updates lighting if some light source was modified");
 REGISTER_CVAR_AUTO(int, e_svoTI_UpdateGeometry, 0, VF_NULL,
@@ -215,8 +221,7 @@ REGISTER_CVAR_AUTO(float, e_svoVoxDistRatio, 14.f, VF_NULL, "Limits the distance
 REGISTER_CVAR_AUTO(int, e_svoVoxGenRes, 512, VF_NULL, "GPU voxelization dummy render target resolution");
 REGISTER_CVAR_AUTO(float, e_svoVoxNodeRatio, 4.f, VF_NULL, "Limits the real-time GPU voxelization only to leaf SVO nodes");
 REGISTER_CVAR_AUTO(int, e_svoTI_GsmCascadeLod, 2, VF_NULL, "Sun shadow cascade LOD for RSM GI");
-REGISTER_CVAR_AUTO(float, e_svoTI_TemporalFilteringBase, .45f, VF_NULL, "Controls amount of temporal smoothing\n0 = less noise and aliasing, 1 = less ghosting");
-REGISTER_CVAR_AUTO(float, e_svoTI_TemporalFilteringMinDistance, .5f, VF_NULL, "Prevent previous frame re-projection at very near range, mostly for 1p weapon and hands");
+REGISTER_CVAR_AUTO(float, e_svoTI_TemporalFilteringBase, .35f, VF_NULL, "Controls amount of temporal smoothing\n0 = less noise and aliasing, 1 = less ghosting");
 REGISTER_CVAR_AUTO(float, e_svoTI_HighGlossOcclusion, 0.f, VF_NULL, "Normally specular contribution of env probes is corrected by diffuse GI\nThis parameter controls amount of correction (usually darkening) for very glossy and reflective surfaces");
 REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizeUnderTerrain, 0, VF_NULL, "0 = Skip underground triangles during voxelization");
 REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizeHiddenObjects, 0, VF_NULL, "0 = Skip hidden objects during voxelization");
