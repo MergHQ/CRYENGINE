@@ -695,7 +695,8 @@ public:
 
 	virtual void         GetModelViewMatrix(float* mat) override;
 	virtual void         GetProjectionMatrix(float* mat) override;
-	virtual void         SetMatrices(float* pProjMat, float* pViewMat) override;
+	virtual void         GetCameraZeroMatrix(float* mat) override;
+	virtual void         SetMatrices(float* pProjMat, float* pViewMat, float* pZeroMat) override;
 
 	void                 DrawQuad(float x0, float y0, float x1, float y1, const ColorF& color, float z = 1.0f, float s0 = 0, float t0 = 0, float s1 = 1, float t1 = 1);
 	void                 DrawQuad3D(const Vec3& v0, const Vec3& v1, const Vec3& v2, const Vec3& v3, const ColorF& color,

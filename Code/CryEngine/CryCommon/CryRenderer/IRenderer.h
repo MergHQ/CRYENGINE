@@ -1984,6 +1984,8 @@ struct IRenderer//: public IRendererCallbackServer
 	//! \note For editor.
 	virtual void GetProjectionMatrix(float* mat) = 0;
 
+	virtual void GetCameraZeroMatrix(float* mat) = 0;
+
 	virtual bool WriteDDS(byte* dat, int wdt, int hgt, int Size, const char* name, ETEX_Format eF, int NumMips) = 0;
 	virtual bool WriteTGA(byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel) = 0;
 	virtual bool WriteJPG(byte* dat, int wdt, int hgt, char* name, int src_bits_per_pixel, int nQuality = 100) = 0;

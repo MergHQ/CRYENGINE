@@ -1442,7 +1442,7 @@ void SRenderThread::RC_SetCamera()
 
 		gRenDev->GetProjectionMatrix((float*)&pData[0]);
 		gRenDev->GetModelViewMatrix((float*)&pData[sizeof(Matrix44)]);
-		*(Matrix44*)((float*)&pData[sizeof(Matrix44) * 2]) = gRenDev->m_CameraZeroMatrix[m_nCurThreadFill];
+		gRenDev->GetCameraZeroMatrix((float*)&pData[sizeof(Matrix44) * 2]);
 
 		if (gRenDev->m_RP.m_TI[m_nCurThreadFill].m_PersFlags & RBPF_OBLIQUE_FRUSTUM_CLIPPING)
 		{
@@ -2772,8 +2772,7 @@ void SRenderThread::ProcessCommands()
 
 				if (m_eVideoThreadMode == eVTM_Disabled)
 				{
-					gRenDev->SetMatrices(ProjMat.GetData(), ViewMat.GetData());
-					gRenDev->m_CameraZeroMatrix[threadId] = CameraZeroMat;
+					gRenDev->SetMatrices(ProjMat.GetData(), ViewMat.GetData(), CameraZeroMat.GetData());
 
 					gRenDev->RT_SetCameraInfo();
 				}

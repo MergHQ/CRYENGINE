@@ -210,7 +210,7 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const RECT* pCustomV
 	viewInfo.m_CameraProjMatrix = pRenderer->m_CameraProjMatrix;
 	viewInfo.m_ProjMatrix = pRenderer->m_ProjMatrix;
 	viewInfo.m_InvCameraProjMatrix = pRenderer->m_InvCameraProjMatrix;
-	viewInfo.m_CameraProjNearestMatrix = pRenderer->m_CameraZeroMatrix[rp.m_nProcessThreadID] * nearestProj;
+	viewInfo.m_CameraProjNearestMatrix = pRenderer->m_CameraZeroMatrix * nearestProj;
 
 	viewInfo.m_PrevCameraProjMatrix = pRenderer->GetPreviousFrameCameraMatrix() * pRenderer->m_ProjMatrix;
 	viewInfo.m_PrevCameraProjNearestMatrix = pRenderer->GetPreviousFrameCameraMatrix();

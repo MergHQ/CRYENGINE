@@ -714,6 +714,7 @@ void CD3D9Renderer::RT_SetCameraInfo()
 	m_CameraMatrix = m_ViewMatrix;
 
 	GetProjectionMatrix(&m_ProjMatrix(0, 0));
+	GetCameraZeroMatrix(&m_CameraZeroMatrix(0, 0));
 
 	SThreadInfo* const pShaderThreadInfo = &(m_RP.m_TI[m_RP.m_nProcessThreadID]);
 
@@ -740,7 +741,7 @@ void CD3D9Renderer::RT_SetCameraInfo()
 	}
 
 	m_CameraProjMatrix = m_CameraMatrix * m_ProjMatrix;
-	m_CameraProjZeroMatrix = m_CameraZeroMatrix[m_RP.m_nProcessThreadID] * m_ProjMatrix;
+	m_CameraProjZeroMatrix = m_CameraZeroMatrix * m_ProjMatrix;
 
 	// specialized matrix inversion for enhanced precision
 	Matrix44_tpl<f64> mProjInv;

@@ -882,7 +882,8 @@ public:
 	//for editor
 	virtual void GetModelViewMatrix(float* mat) override = 0;
 	virtual void GetProjectionMatrix(float* mat) override = 0;
-	virtual void SetMatrices(float* pProjMat, float* pViewMat) = 0;
+	virtual void GetCameraZeroMatrix(float* mat) override = 0;
+	virtual void SetMatrices(float* pProjMat, float* pViewMat, float* pZeroMat) = 0;
 
 	// NOTE: deprecated
 	virtual void ClearTargetsImmediately(uint32 nFlags) override = 0;
@@ -1329,7 +1330,7 @@ public:
 	Matrix44A m_IdentityMatrix;
 	Matrix44A m_ViewMatrix;
 	Matrix44A m_CameraMatrix;
-	Matrix44A m_CameraZeroMatrix[RT_COMMAND_BUF_COUNT];
+	Matrix44A m_CameraZeroMatrix;
 
 	Matrix44A m_ProjMatrix;
 	Matrix44A m_TranspOrigCameraProjMatrix;

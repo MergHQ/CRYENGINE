@@ -5917,11 +5917,18 @@ void CD3D9Renderer::GetProjectionMatrix(float* mat)
 	*(Matrix44*)mat = *m_RP.m_TI[nThreadID].m_matProj->GetTop();
 }
 
-void CD3D9Renderer::SetMatrices(float* pProjMat, float* pViewMat)
+void CD3D9Renderer::GetCameraZeroMatrix(float* mat)
+{
+	int nThreadID = m_pRT->GetThreadList();
+	*(Matrix44*)mat = m_RP.m_TI[nThreadID].m_matCameraZero;
+}
+
+void CD3D9Renderer::SetMatrices(float* pProjMat, float* pViewMat, float* pZeroMat)
 {
 	int nThreadID = m_pRT->GetThreadList();
 	m_RP.m_TI[nThreadID].m_matProj->LoadMatrix((Matrix44*)pProjMat);
 	m_RP.m_TI[nThreadID].m_matView->LoadMatrix((Matrix44*)pViewMat);
+	m_RP.m_TI[nThreadID].m_matCameraZero = *((Matrix44*)pZeroMat);
 }
 
 ///////////////////////////////////////////
@@ -6082,7 +6089,7 @@ void CD3D9Renderer::SetCamera(const CCamera& cam)
 	mViewFinal.m30 = 0;
 	mViewFinal.m31 = 0;
 	mViewFinal.m32 = 0;
-	m_CameraZeroMatrix[nThreadID] = mViewFinal;
+	m_RP.m_TI[nThreadID].m_matCameraZero = mViewFinal;
 
 	if (m_RP.m_TI[nThreadID].m_PersFlags & RBPF_MIRRORCAMERA)
 		m_RP.m_TI[nThreadID].m_matView->Scale(1, -1, 1);
@@ -6824,8 +6831,9 @@ void CD3D9Renderer::Set2DMode(bool enable, int ortox, int ortoy, float znear, fl
 			m_pRenderAuxGeomD3D->SetOrthoMode(true, m);
 #endif
 		EF_PushMatrix();
-		m = m_RP.m_TI[nThreadID].m_matView->GetTop();
 		m_RP.m_TI[nThreadID].m_matView->LoadIdentity();
+
+		m_RP.m_TI[nThreadID].m_matCameraZero.SetIdentity();
 	}
 	else
 	{
@@ -6839,6 +6847,13 @@ void CD3D9Renderer::Set2DMode(bool enable, int ortox, int ortoy, float znear, fl
 #endif
 		m_RP.m_TI[nThreadID].m_matProj->Pop();
 		EF_PopMatrix();
+
+		Matrix44A mat = *m_RP.m_TI[nThreadID].m_matView->GetTop();
+		mat.m30 = 0;
+		mat.m31 = 0;
+		mat.m32 = 0;
+
+		m_RP.m_TI[nThreadID].m_matCameraZero = mat;
 	}
 	EF_SetCameraInfo();
 }

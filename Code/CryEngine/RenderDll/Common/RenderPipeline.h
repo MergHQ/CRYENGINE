@@ -537,10 +537,11 @@ enum EShapeMeshType
 
 struct SThreadInfo
 {
-	uint32              m_PersFlags; // Never reset
+	uint32              m_PersFlags;                             // Never reset
 	float               m_RealTime;
 	class CMatrixStack* m_matView;
 	class CMatrixStack* m_matProj;
+	Matrix44            m_matCameraZero;
 	CCamera             m_cam;                                   // current camera
 	CRenderCamera       m_rcam;                                  // current camera
 	int                 m_nFrameID;                              // with recursive calls, access through GetFrameID(true)

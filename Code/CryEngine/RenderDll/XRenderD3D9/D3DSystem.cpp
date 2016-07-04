@@ -2304,6 +2304,7 @@ bool CD3D9Renderer::SetRes()
 		m_RP.m_TI[id].m_matProj = new CMatrixStack(16, 0);
 		if (m_RP.m_TI[id].m_matProj == NULL)
 			return false;
+		m_RP.m_TI[id].m_matCameraZero.SetIdentity();
 	}
 
 	m_DevBufMan.Init();

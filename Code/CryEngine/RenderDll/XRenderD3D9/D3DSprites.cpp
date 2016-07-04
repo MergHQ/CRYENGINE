@@ -460,7 +460,7 @@ void CD3D9Renderer::MakeSprites(TArray<SSpriteGenInfo>& SGI, const SRenderingPas
 		m_RP.m_TI[nThreadID].m_PersFlags |= RBPF_FP_MATRIXDIRTY;
 
 		*m_RP.m_TI[nThreadID].m_matView->GetTop() = mView;
-		m_CameraZeroMatrix[nThreadID] = mView;
+		m_RP.m_TI[nThreadID].m_matCameraZero = mView;
 
 		RT_SetCameraInfo();
 
