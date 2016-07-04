@@ -388,8 +388,8 @@ void CAttachmentVCLOTH::ReleaseSimSkin()
 
 CAttachmentVCLOTH::~CAttachmentVCLOTH()
 {
-	int nFrameID = gEnv->pRenderer->EF_GetSkinningPoolID();
-	int nList = nFrameID % 3;
+	const int nFrameID = gEnv->pRenderer ? gEnv->pRenderer->EF_GetSkinningPoolID() : 0;
+	const int nList = nFrameID % 3;
 	if (m_arrSkinningRendererData[nList].nFrameID == nFrameID && m_arrSkinningRendererData[nList].pSkinningData)
 	{
 		if (m_arrSkinningRendererData[nList].pSkinningData->pAsyncJobs)
