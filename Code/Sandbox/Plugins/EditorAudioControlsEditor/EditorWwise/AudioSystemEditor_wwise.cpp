@@ -19,14 +19,28 @@ namespace ACE
 
 const string g_userSettingsFile = "%USER%/audiocontrolseditor_wwise.user";
 
+class CStringAndHash
+{
+	//a small helper class to make comparison of the stored c-string faster, by checking a hash-representation first.
+public:
+	CStringAndHash(const char* pText) : szText(pText), hash(CCrc32::Compute(pText)) {}
+	operator string() const { return szText; }
+	operator const char*() const { return szText; }
+	bool operator ==(const CStringAndHash& other) { return (hash == other.hash && strcmp(szText, other.szText) == 0); }
+
+private:
+	const char* szText;
+	const uint32 hash;
+};
+
 // XML tags
-const string g_switchTag = "WwiseSwitch";
-const string g_stateTag = "WwiseState";
-const string g_fileTag = "WwiseFile";
-const string g_rtpcTag = "WwiseRtpc";
-const string g_eventTag = "WwiseEvent";
-const string g_auxBusTag = "WwiseAuxBus";
-const string g_valueTag = "WwiseValue";
+const CStringAndHash g_switchTag = "WwiseSwitch";
+const CStringAndHash g_stateTag = "WwiseState";
+const CStringAndHash g_fileTag = "WwiseFile";
+const CStringAndHash g_rtpcTag = "WwiseRtpc";
+const CStringAndHash g_eventTag = "WwiseEvent";
+const CStringAndHash g_auxBusTag = "WwiseAuxBus";
+const CStringAndHash g_valueTag = "WwiseValue";
 
 // XML attributes
 const string g_nameAttribute = "wwise_name";
@@ -37,29 +51,30 @@ const string g_localizedAttribute = "wwise_localised";
 const string g_trueAttribute = "true";
 const string g_soundBanksInfoFilename = "SoundbanksInfo.xml";
 
-ItemType TagToType(const string& tag)
+ItemType TagToType(const char* szTag)
 {
-	if (tag == g_switchTag)
-	{
-		return eWwiseItemTypes_SwitchGroup;
-	}
-	else if (tag == g_stateTag)
-	{
-		return eWwiseItemTypes_StateGroup;
-	}
-	else if (tag == g_fileTag)
-	{
-		return eWwiseItemTypes_SoundBank;
-	}
-	else if (tag == g_rtpcTag)
-	{
-		return eWwiseItemTypes_Rtpc;
-	}
-	else if (tag == g_eventTag)
+	CStringAndHash hashedTag(szTag);
+	if (hashedTag == g_eventTag)
 	{
 		return eWwiseItemTypes_Event;
 	}
-	else if (tag == g_auxBusTag)
+	if (hashedTag == g_fileTag)
+	{
+		return eWwiseItemTypes_SoundBank;
+	}
+	if (hashedTag == g_rtpcTag)
+	{
+		return eWwiseItemTypes_Rtpc;
+	}
+	if (hashedTag == g_switchTag)
+	{
+		return eWwiseItemTypes_SwitchGroup;
+	}
+	if (hashedTag == g_stateTag)
+	{
+		return eWwiseItemTypes_StateGroup;
+	}
+	if (hashedTag == g_auxBusTag)
 	{
 		return eWwiseItemTypes_AuxBus;
 	}
@@ -187,18 +202,14 @@ IAudioSystemItem* CAudioSystemEditor_wwise::GetControl(CID id) const
 	return nullptr;
 }
 
-IAudioSystemItem* CAudioSystemEditor_wwise::GetControlByName(const string& sName, bool bIsLocalised, IAudioSystemItem* pParent) const
+IAudioSystemItem* CAudioSystemEditor_wwise::GetControlByName(const string& name, bool bIsLocalised, IAudioSystemItem* pParent) const
 {
-	string sFullName = sName;
-	if (pParent)
-	{
-		sFullName = pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + sFullName;
-	}
+	string fullName = (pParent) ? pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + name : name;
 	if (bIsLocalised)
 	{
-		sFullName = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + sFullName;
+		fullName = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + fullName;
 	}
-	return GetControl(GetID(sFullName));
+	return GetControl(GetID(fullName));
 }
 
 ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionToControl(EACEControlType eATLControlType, IAudioSystemItem* pMiddlewareControl)
@@ -229,13 +240,13 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef p
 {
 	if (pNode)
 	{
-		const string sTag = pNode->getTag();
-		ItemType type = TagToType(sTag);
+		const char* szTag = pNode->getTag();
+		ItemType type = TagToType(szTag);
 		if (type != AUDIO_SYSTEM_INVALID_TYPE)
 		{
-			string name = pNode->getAttr(g_nameAttribute);
-			string localisedAttribute = pNode->getAttr(g_localizedAttribute);
-			bool bLocalised = (localisedAttribute.compareNoCase(g_trueAttribute) == 0);
+			const string name = pNode->getAttr(g_nameAttribute);
+			const string localisedAttribute = pNode->getAttr(g_localizedAttribute);
+			const bool bLocalised = (localisedAttribute.compareNoCase(g_trueAttribute) == 0);
 
 			// If control not found, create a placeholder.
 			// We want to keep that connection even if it's not in the middleware.
@@ -290,33 +301,14 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef p
 						{
 							RtpcConnectionPtr pConnection = std::make_shared<CRtpcConnection>(pControl->GetId());
 
-							float mult = 1.0f;
-							float shift = 0.0f;
-							if (pNode->haveAttr(g_multAttribute))
-							{
-								const string value = pNode->getAttr(g_multAttribute);
-								mult = (float)std::atof(value.c_str());
-							}
-							if (pNode->haveAttr(g_shiftAttribute))
-							{
-								const string value = pNode->getAttr(g_shiftAttribute);
-								shift = (float)std::atof(value.c_str());
-							}
-							pConnection->mult = mult;
-							pConnection->shift = shift;
+							pNode->getAttr(g_multAttribute, pConnection->mult);
+							pNode->getAttr(g_shiftAttribute, pConnection->shift);
 							return pConnection;
 						}
 					case EACEControlType::eACEControlType_State:
 						{
 							StateConnectionPtr pConnection = std::make_shared<CStateToRtpcConnection>(pControl->GetId());
-
-							float value = 0.0f;
-							if (pNode->haveAttr(g_valueAttribute))
-							{
-								const string valueStr = pNode->getAttr(g_valueAttribute);
-								value = (float)std::atof(valueStr.c_str());
-							}
-							pConnection->value = value;
+							pNode->getAttr(g_valueAttribute, pConnection->value);
 							return pConnection;
 						}
 					}
@@ -477,9 +469,9 @@ ACE::EACEControlType CAudioSystemEditor_wwise::ImplTypeToATLType(ItemType type) 
 	return eACEControlType_NumTypes;
 }
 
-ACE::TImplControlTypeMask CAudioSystemEditor_wwise::GetCompatibleTypes(EACEControlType eATLControlType) const
+ACE::TImplControlTypeMask CAudioSystemEditor_wwise::GetCompatibleTypes(EACEControlType atlControlType) const
 {
-	switch (eATLControlType)
+	switch (atlControlType)
 	{
 	case eACEControlType_Trigger:
 		return eWwiseItemTypes_Event;
@@ -503,9 +495,9 @@ ACE::TImplControlTypeMask CAudioSystemEditor_wwise::GetCompatibleTypes(EACEContr
 	return AUDIO_SYSTEM_INVALID_TYPE;
 }
 
-ACE::CID CAudioSystemEditor_wwise::GetID(const string& sName) const
+ACE::CID CAudioSystemEditor_wwise::GetID(const string& name) const
 {
-	return CCrc32::ComputeLowercase(sName);
+	return CCrc32::ComputeLowercase(name);
 }
 
 string CAudioSystemEditor_wwise::GetName() const
@@ -535,13 +527,13 @@ void CAudioSystemEditor_wwise::DisableConnection(ConnectionPtr pConnection)
 	IAudioSystemItem* pControl = GetControl(pConnection->GetID());
 	if (pControl)
 	{
-		int nConnectionCount = m_connectionsByID[pControl->GetId()] - 1;
-		if (nConnectionCount <= 0)
+		int connectionCount = m_connectionsByID[pControl->GetId()] - 1;
+		if (connectionCount <= 0)
 		{
-			nConnectionCount = 0;
+			connectionCount = 0;
 			pControl->SetConnected(false);
 		}
-		m_connectionsByID[pControl->GetId()] = nConnectionCount;
+		m_connectionsByID[pControl->GetId()] = connectionCount;
 	}
 }
 
@@ -566,8 +558,8 @@ void CAudioSystemEditor_wwise::LoadEventsMetadata()
 		XmlNodeRef pSoundBanksNode = pRootNode->findChild("SoundBanks");
 		if (pSoundBanksNode)
 		{
-			const int size = pSoundBanksNode->getChildCount();
-			for (int i = 0; i < size; ++i)
+			const int numSoundBankNodes = pSoundBanksNode->getChildCount();
+			for (int i = 0; i < numSoundBankNodes; ++i)
 			{
 				XmlNodeRef pSoundBankNode = pSoundBanksNode->getChild(i);
 				if (pSoundBankNode)
@@ -575,23 +567,18 @@ void CAudioSystemEditor_wwise::LoadEventsMetadata()
 					XmlNodeRef pIncludedEventsNode = pSoundBankNode->findChild("IncludedEvents");
 					if (pIncludedEventsNode)
 					{
-						const int size = pIncludedEventsNode->getChildCount();
-						for (int j = 0; j < size; ++j)
+						const int numEventNodes = pIncludedEventsNode->getChildCount();
+						for (int j = 0; j < numEventNodes; ++j)
 						{
 							XmlNodeRef pEventNode = pIncludedEventsNode->getChild(j);
 							if (pEventNode)
 							{
 								SEventInfo info;
-								const char* szName = pEventNode->getAttr("Name");
-								if (pEventNode->haveAttr("MaxAttenuation"))
-								{
-									const char* szMaxRadius = pEventNode->getAttr("MaxAttenuation");
-									info.maxRadius = static_cast<float>(atof(szMaxRadius));
-								}
-								else
+								if (!pEventNode->getAttr("MaxAttenuation", info.maxRadius))
 								{
 									info.maxRadius = 0.0f;
 								}
+								const char* szName = pEventNode->getAttr("Name");
 								m_eventsInfoMap[CCrc32::ComputeLowercase(szName)] = info;
 							}
 						}
