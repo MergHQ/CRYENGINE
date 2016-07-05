@@ -302,6 +302,17 @@ void CVisionMap::ObserverChanged(const ObserverID& observerID, const ObserverPar
 		currentObserverParams.entityId = newObserverParams.entityId;
 	}
 
+	if (hint & eChangedUserCondition)
+	{
+		needsUpdate = true;
+	}
+
+	if (hint & eChangedUserConditionCallback)
+	{
+		currentObserverParams.userConditionCallback = newObserverParams.userConditionCallback;
+		needsUpdate = true;
+	}
+
 	if (needsUpdate)
 	{
 		observerInfo.needsPVSUpdate = true;
@@ -399,6 +410,11 @@ void CVisionMap::ObservableChanged(const ObservableID& observableID, const Obser
 	if (hint & eChangedEntityId)
 	{
 		currentObservableParams.entityId = newObservableParams.entityId;
+	}
+
+	if (hint & eChangedUserCondition)
+	{
+		observableVisibilityPotentiallyChanged = true;
 	}
 
 	if (observableVisibilityPotentiallyChanged)
@@ -530,6 +546,14 @@ bool CVisionMap::IsInFoV(const ObserverInfo& observerInfo, const ObservableInfo&
 	return false;
 }
 
+bool CVisionMap::IsUserConditionSatisfied(const ObserverInfo& observerInfo, const ObservableInfo& observableInfo) const
+{
+	if (!observerInfo.observerParams.userConditionCallback)
+		return true;
+
+	return observerInfo.observerParams.userConditionCallback(observerInfo.observerID, observerInfo.observerParams, observableInfo.observableID, observableInfo.observableParams);
+}
+
 bool CVisionMap::ShouldObserve(const ObserverInfo& observerInfo, const ObservableInfo& observableInfo) const
 {
 	const bool matchesType = ((observerInfo.observerParams.typesToObserveMask & observableInfo.observableParams.typeMask) != 0);
@@ -548,6 +572,9 @@ bool CVisionMap::ShouldObserve(const ObserverInfo& observerInfo, const Observabl
 		return false;
 
 	if (!IsInFoV(observerInfo, observableInfo))
+		return false;
+
+	if (!IsUserConditionSatisfied(observerInfo, observableInfo))
 		return false;
 
 	return true;

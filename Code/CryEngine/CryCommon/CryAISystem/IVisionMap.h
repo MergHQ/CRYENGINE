@@ -36,6 +36,8 @@ enum EChangeHint
 	eChangedFOV                   = 1 << 10,
 	eChangedRaycastFlags          = 1 << 11,
 	eChangedEntityId              = 1 << 12,
+	eChangedUserCondition         = 1 << 13,
+	eChangedUserConditionCallback = 1 << 14,
 	eChangedAll                   = 0xffffffff,
 };
 
@@ -109,6 +111,7 @@ struct ObserverParams
 	ObserverParams()
 		: callback(0)
 		, userData(0)
+		, userConditionCallback(0)
 		, skipListSize(0)
 		, faction(0xff)
 		, typeMask(0)
@@ -128,6 +131,11 @@ struct ObserverParams
 	typedef Functor5<const VisionID&, const ObserverParams&, const VisionID&, const ObservableParams&, bool> Callback;
 	Callback callback;
 	void*    userData;
+
+	//! Registered observer can perform some extra game-specific visibility checks in this optional callback
+	//! and answer, whether the observable is *potentially* visible.
+	typedef Functor4wRet<const VisionID&, const ObserverParams&, const VisionID&, const ObservableParams&, bool> UserConditionCallback;
+	UserConditionCallback userConditionCallback;
 
 	//! Physics entities to ignore when ray casting.
 	uint8            skipListSize;
