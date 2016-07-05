@@ -309,11 +309,19 @@ bool CFlowData::SerializeXML(IFlowNode::SActivationInfo* pActInfo, const XmlNode
 			}
 			else
 			{
-				if (node->haveAttr("EntityGUID_64"))
+				if (node->haveAttr("EntityGUID_64") || node->haveAttr("EntityGUID"))
 				{
 					EntityGUID entGuid = 0;
 					node->getAttr("EntityGUID_64", entGuid);
 					entityId = gEnv->pEntitySystem->FindEntityByGuid(entGuid);
+
+					// Is this a runtime prefab?
+					if (!entityId && node->haveAttr("EntityGUID"))
+					{
+						const char* szEntGuid = node->getAttr("EntityGUID");
+						entityId = gEnv->pEntitySystem->FindEntityByEditorGuid(szEntGuid);
+					}
+
 					if (entityId)
 					{
 						if (SetEntityId(entityId))
