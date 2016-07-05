@@ -98,12 +98,19 @@ QToolButton {
 
 QToolButton::hover {
 	border-radius: 2px;
-	background-color: rgba(255,255,255,20);
+	/*background-color: rgba(255,255,255,20);*/
+	background: qlineargradient(y1:1,
+				stop:1 rgba(255,255,255,20), 
+				stop:0.7 rgba(255,255,255,15)); 
 }
 
 QToolButton::checked {
-	background-color: rgb(35,35,35);
+	/*background-color: rgb(35,35,35);*/
+	background: qlineargradient(y1:1,
+				stop:0.3 rgba(0,0,0,80), 
+				stop:0 rgba(0,0,0,50)); 
 	border-radius:2px;
+	color:rgb(97,172,236);
 }
 
 QViewportHeader > QToolButton::menu-indicator {
@@ -123,20 +130,29 @@ QViewportHeader > QToolButton {
 }
 
 QToolButton::pressed {
-	background-color: rgba(0,0,0,50);
-	border:2px solid rgb(97,172,236);
-	padding:-2px;
+	/*background-color:transparent;*/
+	background: qlineargradient(y1:1,
+				stop:0.3 rgba(0,0,0,40), 
+				stop:0 rgba(0,0,0,20));
+	/*border:2px solid rgb(97,172,236);*/
+	/*padding:-2px;*/
 }
 
 QViewportHeader > QToolButton::pressed {
 	color:rgb(97,172,236);
-	background-color:transparent;
+	background: qlineargradient(y1:1,
+				stop:0.3 rgba(0,0,0,20), 
+				stop:0 rgba(0,0,0,0));
 	border-radius:0px;
 }
 
-QViewportHeader > QToolButton::hover {
-	border-radius:2px;
+QViewportHeader > QToolButton::checked{
+	background-color:transparent;
 }
+
+/*QViewportHeader > QToolButton::hover {
+	border-radius:2px;
+}*/
 
 QToolWindowCustomWrapper#mainWindow > QCustomTitleBar {
 	background: center bottom url(icons:Logo/Cryengine_Logo_Top.png) no-repeat rgb(35,35,35);
@@ -153,7 +169,7 @@ QToolWindowCustomWrapper#mainWindow > QMainWindow > QMainFrameMenuBar > QMenuBar
 QMainFrameMenuBar > CTrayArea > QSearchBox {
 	max-width: 200px;
 	margin-right: 6px;
-	margin-top: 2px;
+	margin-top: 0px;
 }
 
 QResizableMenu
@@ -535,7 +551,10 @@ QToolWindowArea > QTabBar {
 
 QToolWindowArea > QTabBar::tab:hover {
 	color:rgb(166,166,166);
-	background-color:rgb(78,78,78);
+	/*background-color:rgb(78,78,78);*/
+	background: qlineargradient(y1:1,
+				stop:1 rgb(58,58,58), 
+				stop:0.5 rgb(45,45,45));
 	border: none;
 	border-top-left-radius: 0px;
 	border-top-right-radius: 0px;
@@ -555,7 +574,10 @@ QToolWindowArea > QTabBar::tab:first, QToolWindowArea > QTabBar::tab:middle, QTo
 
 QToolWindowArea > QTabBar::tab:selected {
 	border-bottom-color: black;
-	background-color: rgb(66,66,66);
+	/*background-color: rgb(66,66,66);*/
+	background: qlineargradient(y1:1,
+				stop:1 rgb(70,70,70), 
+				stop:0.1 rgb(66,66,66));
 	color: rgb(200,200,200);
 	border: none;
 	border-top-left-radius: 0px;
@@ -589,11 +611,21 @@ QTabWidget QMenuBar:item:pressed {
 }
 
 QToolWindowArea > QTabBar > QToolButton { /* arrows on the right side of tabs when there are too many of them */
-	background-color:rgb(50,50,50);
+	background-color:rgb(35,35,35);
+	border:0px;
+	color:rgb(166,166,166);
 }
 
 QToolWindowArea > QTabBar > QToolButton:hover { /* arrows on the right side of tabs when there are too many of them */
-	background-color:rgb(50,50,50);
+	background-color:rgb(35,35,35);
+	border:0px solid;
+	color:rgb(220,220,220);
+}
+
+QToolWindowArea > QTabBar > QToolButton:pressed { /* arrows on the right side of tabs when there are too many of them */
+	background-color:rgb(35,35,35);
+	border:0px;
+	color:rgb(97,172,236);
 }
 
 QScrollBar:vertical {
@@ -779,7 +811,7 @@ QTabWidget QToolBar {
 QTabWidget QSearchBox {
 	margin-left:4px;
 	margin-right:4px;
-	margin-top:2px;
+	margin-top:0px;
 	margin-bottom:0px;
 	/*padding-top:4px;*/
 }
@@ -978,7 +1010,7 @@ QSearchBox {
 	border-radius:2px;
 	margin-left:4px;
 	margin-right:4px;
-	margin-top:4px;
+	margin-top:0px;
 	margin-bottom:0px;
 	background-color:rgb(50,50,50);
 	color:rgb(180,180,180);
@@ -1063,7 +1095,10 @@ QWidget[maximized] QCustomTitleBar #sysMenu {
 
 
 QToolWindowSingleTabAreaFrame > QLabel {
-	background-color: rgb(66,66,66);     /*viewport label*/
+	/*background-color: rgb(66,66,66);     /*viewport label*/
+	background: qlineargradient(y1:1,
+				stop:1 rgb(70,70,70), 
+				stop:0.1 rgb(66,66,66));
 	margin-left:0px;
 	padding-left:2px;
 	color:rgb(200,200,200);
@@ -1077,7 +1112,10 @@ QToolWindowSingleTabAreaFrame > QLabel {
 
 QToolWindowSingleTabAreaFrame #closeButton {
 	border:0;
-	background-color: rgb(66,66,66);
+	/*background-color: rgb(66,66,66);*/
+	background: qlineargradient(y1:1,
+				stop:1 rgb(70,70,70), 
+				stop:0.1 rgb(66,66,66));
 	qproperty-iconSize: 16px;
 	width:16px;
 	height:23px;
@@ -1250,6 +1288,7 @@ EditorStyleHelper {
 	qproperty-activeIconTint: rgb(190, 190, 190);
 	qproperty-selectedIconTint: rgb(97, 172, 236);
 	qproperty-alternateSelectedIconTint: rgb(255, 255, 255);
+	qproperty-contrastingIconTint: rgb(35, 35, 35);
 
 	/* Timeline colors */
 	qproperty-timelineTrackColor: rgb(68, 68, 68);
@@ -1530,4 +1569,150 @@ CMaterialPickerDialog QSplitter::handle:hover {
 CMaterialPickerDialog QSplitter::handle:pressed {
 	background-color: rgb(97,172,236); /*dividing lines*/
 	border: none;
+}
+
+/************************************************************** System File Dialogs ***************************************************/
+
+CSystemFileDialog QSplitter::handle{
+	background-color:rgb(58,58,58);
+}
+
+CSystemFileDialog QTabWidget{
+	color:red;
+	background-color:rgb(35,35,35);
+	margin:0px;
+	padding:0px;
+	border:0px;
+}
+
+CSystemFileDialog QTabWidget QWidget{
+	background-color:rgb(35,35,35);
+	padding:0px;
+	margin:0px;
+}
+
+CSystemFileDialog QTabWidget > QTabBar{
+	color:red;
+	background-color:rgb(66,66,66);
+	padding:0px;
+	margin:0px;
+}
+
+CSystemFileDialog QTabWidget QTreeView QScrollBar:vertical{
+	color:pink;
+	background-color:rgb(66,66,66);
+}
+
+CSystemFileDialog QSplitter{
+	color:red;
+	background-color:rgb(66,66,66);
+	/*padding:-4px;*/
+	margin-bottom:0px;
+	margin-right:0px;
+}
+
+CSystemFileDialog QTreeView{
+	margin-bottom:0px;
+	margin-left:0px;
+	margin-top:0px;
+}
+
+CSystemFileDialog QTreeView QHeaderView{
+	border-top:0px;
+}
+
+CSystemFileDialog QTreeView QHeaderView::section{
+	border-right:2px solid rgb(66,66,66);
+}
+
+CSystemFileDialog QTabBar::tab:first{
+	margin-left:0px;
+}
+
+CSystemFileDialog QTabBar::tab{
+	height:18px;
+	padding-top:2px;
+	margin-bottom:4px;
+	padding-right:-4px;
+	padding-left:12px;
+}
+
+CSystemFileDialog QMenuComboBox{
+	padding-right:0px;
+}
+
+CSystemFileDialog QMenuComboBox > QLineEdit{
+	padding-left:4px;
+}
+
+/* ****************************************************************************** Engine File Dialog ******************************************** */
+
+CEngineFileDialog QSplitter::handle{
+	background-color:rgb(58,58,58);
+}
+
+CEngineFileDialog QTabWidget{
+	color:red;
+	background-color:rgb(35,35,35);
+	margin:0px;
+	padding:0px;
+	border:0px;
+}
+
+CEngineFileDialog QTabWidget QWidget{
+	background-color:rgb(35,35,35);
+	padding:0px;
+	margin:0px;
+}
+
+CEngineFileDialog QTabWidget > QTabBar{
+	color:red;
+	background-color:rgb(66,66,66);
+	padding:0px;
+	margin:0px;
+}
+
+CEngineFileDialog QTabWidget QTreeView QScrollBar:vertical{
+	color:pink;
+	background-color:rgb(66,66,66);
+}
+
+CEngineFileDialog QSplitter{
+	color:red;
+	background-color:rgb(66,66,66);
+	/*padding:-4px;*/
+	margin-bottom:0px;
+	margin-right:0px;
+}
+
+CEngineFileDialog QTreeView{
+	margin:0px;
+}
+
+CEngineFileDialog QTreeView QHeaderView{
+	border-top:0px;
+}
+
+CEngineFileDialog QTreeView QHeaderView::section{
+	border-right:2px solid rgb(66,66,66);
+}
+
+CEngineFileDialog QTabBar::tab:first{
+	margin-left:0px;
+}
+
+CEngineFileDialog QTabBar::tab{
+	height:18px;
+	padding-top:2px;
+	margin-bottom:4px;
+	padding-right:-4px;
+	padding-left:12px;
+}
+
+CEngineFileDialog QMenuComboBox{
+	padding-right:0px;
+}
+
+CEngineFileDialog QMenuComboBox > QLineEdit{
+	padding-left:4px;
 }
