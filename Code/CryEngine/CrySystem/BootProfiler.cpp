@@ -7,7 +7,6 @@
 	#include "BootProfiler.h"
 	#include "ThreadInfo.h"
 	#include <CryThreading/IThreadManager.h>
-	#include <stack>
 
 namespace
 {
@@ -16,7 +15,7 @@ namespace
 enum
 {
 	eMAX_THREADS_TO_PROFILE = 64,
-	eNUM_RECORDS_PER_POOL   = 4680, // so, eNUM_RECORDS_PER_POOL * sizeof(CBootProfilerRecord) == mem consumed by pool item
+	eNUM_RECORDS_PER_POOL   = 4680,   // so, eNUM_RECORDS_PER_POOL * sizeof(CBootProfilerRecord) == mem consumed by pool item
 	// poolmem ~= 1Mb for 1 pool per thread
 };
 
@@ -48,7 +47,7 @@ public:
 				return i;
 		}
 
-		const unsigned int counter = CryInterlockedIncrement(&m_threadCounter) - 1;   //count to index
+		const unsigned int counter = CryInterlockedIncrement(&m_threadCounter) - 1;     //count to index
 		m_threadInfo[counter] = threadID;
 		m_threadNames[counter] = gEnv->pThreadManager->GetThreadName(threadID);
 
@@ -67,7 +66,7 @@ public:
 	}
 
 private:
-	threadID            m_threadInfo[eMAX_THREADS_TO_PROFILE]; //threadIDs
+	threadID            m_threadInfo[eMAX_THREADS_TO_PROFILE];                    //threadIDs
 	CryFixedStringT<32> m_threadNames[eMAX_THREADS_TO_PROFILE];
 	int                 m_threadCounter;
 };
@@ -85,12 +84,10 @@ class CProfileBlockTimes
 protected:
 	LARGE_INTEGER m_startTimeStamp;
 	LARGE_INTEGER m_stopTimeStamp;
-	LARGE_INTEGER m_freq;
 	CProfileBlockTimes()
 	{
 		memset(&m_startTimeStamp, 0, sizeof(m_startTimeStamp));
 		memset(&m_stopTimeStamp, 0, sizeof(m_stopTimeStamp));
-		memset(&m_freq, 0, sizeof(m_freq));
 	}
 };
 
@@ -103,7 +100,7 @@ public:
 	const char*          m_label;
 	LARGE_INTEGER        m_startTimeStamp;
 	LARGE_INTEGER        m_stopTimeStamp;
-	LARGE_INTEGER        m_freq;
+
 	unsigned int         m_threadIndex;
 
 	CBootProfilerRecord* m_pParent;
@@ -114,8 +111,8 @@ public:
 
 	CryFixedStringT<128> m_args;
 
-	ILINE CBootProfilerRecord(const char* label, LARGE_INTEGER timestamp, LARGE_INTEGER freq, unsigned int threadIndex, const char* args) :
-		m_label(label), m_startTimeStamp(timestamp), m_freq(freq), m_threadIndex(threadIndex), m_pParent(nullptr), m_pFirstChild(nullptr), m_pLastChild(nullptr), m_pNextSibling(nullptr)
+	ILINE CBootProfilerRecord(const char* label, LARGE_INTEGER timestamp, unsigned int threadIndex, const char* args) :
+		m_label(label), m_startTimeStamp(timestamp), m_threadIndex(threadIndex), m_pParent(nullptr), m_pFirstChild(nullptr), m_pLastChild(nullptr), m_pNextSibling(nullptr)
 	{
 		memset(&m_stopTimeStamp, 0, sizeof(m_stopTimeStamp));
 		if (args)
@@ -136,12 +133,12 @@ public:
 		pRecord->m_pParent = this;
 	}
 
-	void Print(FILE* file, char* buf, size_t buf_size, size_t depth, LARGE_INTEGER stopTime, const char* threadName, const float timeThreshold)
+	void Print(FILE* file, char* buf, size_t buf_size, size_t depth, LARGE_INTEGER stopTime, LARGE_INTEGER frequency, const char* threadName, const float timeThreshold)
 	{
 		if (m_stopTimeStamp.QuadPart == 0)
 			m_stopTimeStamp = stopTime;
 
-		const float time = (float)(m_stopTimeStamp.QuadPart - m_startTimeStamp.QuadPart) * 1000.f / (float)m_freq.QuadPart;
+		const float time = (float)(m_stopTimeStamp.QuadPart - m_startTimeStamp.QuadPart) * 1000.f / (float)frequency.QuadPart;
 
 		if (timeThreshold > 0.0f && time < timeThreshold)
 		{
@@ -175,7 +172,7 @@ public:
 
 		for (CBootProfilerRecord* pRecord = m_pFirstChild; pRecord; pRecord = pRecord->m_pNextSibling)
 		{
-			pRecord->Print(file, buf, buf_size, depth, m_stopTimeStamp, threadName, timeThreshold);
+			pRecord->Print(file, buf, buf_size, depth, m_stopTimeStamp, frequency, threadName, timeThreshold);
 		}
 
 		cry_sprintf(buf, buf_size, "%s</block>\n", tabs.c_str());
@@ -236,7 +233,7 @@ public:
 
 	float                GetTotalTime() const
 	{
-		const float time = (float)(m_stopTimeStamp.QuadPart - m_startTimeStamp.QuadPart) * 1000.f / (float)m_freq.QuadPart;
+		const float time = (float)(m_stopTimeStamp.QuadPart - m_startTimeStamp.QuadPart) * 1000.f / (float)m_frequency.QuadPart;
 		return time;
 	}
 
@@ -269,6 +266,8 @@ private:
 	SThreadEntry        m_threadEntry[eMAX_THREADS_TO_PROFILE];
 
 	CryFixedStringT<32> m_name;
+
+	LARGE_INTEGER       m_frequency;
 };
 
 unsigned int CBootProfilerSession::sSessionCounter = 0;
@@ -277,6 +276,8 @@ unsigned int CBootProfilerSession::sSessionCounter = 0;
 CBootProfilerSession::CBootProfilerSession(const char* szName) : m_name(szName)
 {
 	memset(m_threadEntry, 0, sizeof(m_threadEntry));
+
+	QueryPerformanceFrequency(&m_frequency);
 }
 
 CBootProfilerSession::~CBootProfilerSession()
@@ -293,11 +294,9 @@ CBootProfilerSession::~CBootProfilerSession()
 
 void CBootProfilerSession::Start()
 {
-	LARGE_INTEGER time, freq;
-	QueryPerformanceFrequency(&freq);
+	LARGE_INTEGER time;
 	QueryPerformanceCounter(&time);
 	m_startTimeStamp = time;
-	m_freq = freq;
 }
 
 void CBootProfilerSession::Stop()
@@ -309,7 +308,6 @@ void CBootProfilerSession::Stop()
 
 CBootProfilerRecord* CBootProfilerSession::StartBlock(const char* name, const char* args, const unsigned int threadIndex)
 {
-	const threadID curThread = CryGetCurrentThreadId();
 	assert(threadIndex < eMAX_THREADS_TO_PROFILE);
 
 	const unsigned int sessionIndex = sSessionCounter;
@@ -323,11 +321,10 @@ CBootProfilerRecord* CBootProfilerSession::StartBlock(const char* name, const ch
 		entry.m_pRecordsPool = pPool;
 
 		CBootProfilerRecord* rec = pPool->allocateRecord();
-		entry.m_pRootRecord = entry.m_pCurrentRecord = new(rec) CBootProfilerRecord("root", m_startTimeStamp, m_freq, threadIndex, args);
+		entry.m_pRootRecord = entry.m_pCurrentRecord = new(rec) CBootProfilerRecord("root", m_startTimeStamp, threadIndex, args);
 	}
 
-	LARGE_INTEGER time, freq;
-	QueryPerformanceFrequency(&freq);
+	LARGE_INTEGER time;
 	QueryPerformanceCounter(&time);
 
 	assert(entry.m_pRootRecord);
@@ -344,7 +341,7 @@ CBootProfilerRecord* CBootProfilerSession::StartBlock(const char* name, const ch
 		rec = pPool->allocateRecord();
 	}
 
-	CBootProfilerRecord* pNewRecord = new(rec) CBootProfilerRecord(name, time, freq, threadIndex, args);
+	CBootProfilerRecord* pNewRecord = new(rec) CBootProfilerRecord(name, time, threadIndex, args);
 	entry.m_pCurrentRecord->AddChild(pNewRecord);
 	entry.m_pCurrentRecord = pNewRecord;
 
@@ -381,8 +378,9 @@ void CBootProfilerSession::CollectResults(const char* filename, const float time
 		return; //TODO: use accessible path when punning from package on durango
 
 	char buf[512];
+	const unsigned int buf_size = sizeof(buf);
 
-	cry_sprintf(buf, "<root>\n");
+	cry_sprintf(buf, buf_size, "<root>\n");
 	fprintf(pFile, "%s", buf);
 
 	const size_t numThreads = gThreadsInterface.GetThreadCount();
@@ -398,23 +396,23 @@ void CBootProfilerSession::CollectResults(const char* filename, const float time
 			if (!threadName)
 				threadName = "UNKNOWN";
 
-			const float time = (float)(pRoot->m_stopTimeStamp.QuadPart - pRoot->m_startTimeStamp.QuadPart) * 1000.f / (float)pRoot->m_freq.QuadPart;
+			const float time = (float)(pRoot->m_stopTimeStamp.QuadPart - pRoot->m_startTimeStamp.QuadPart) * 1000.f / (float)m_frequency.QuadPart;
 
-			cry_sprintf(buf, "\t<thread name=\"%s\" totalTimeMS=\"%f\" startTime=\"%" PRIu64 "\" stopTime=\"%" PRIu64 "\" totalBlocks=\"%u\"> \n", threadName, time,
+			cry_sprintf(buf, buf_size, "\t<thread name=\"%s\" totalTimeMS=\"%f\" startTime=\"%" PRIu64 "\" stopTime=\"%" PRIu64 "\" totalBlocks=\"%u\"> \n", threadName, time,
 			            pRoot->m_startTimeStamp.QuadPart, pRoot->m_stopTimeStamp.QuadPart, entry.m_totalBlocks);
 			fprintf(pFile, "%s", buf);
 
 			for (CBootProfilerRecord* pRecord = pRoot->m_pFirstChild; pRecord; pRecord = pRecord->m_pNextSibling)
 			{
-				pRecord->Print(pFile, buf, sizeof(buf), 2, m_stopTimeStamp, threadName, timeThreshold);
+				pRecord->Print(pFile, buf, buf_size, 2, m_stopTimeStamp, m_frequency, threadName, timeThreshold);
 			}
 
-			cry_sprintf(buf, "\t</thread>\n");
+			cry_sprintf(buf, buf_size, "\t</thread>\n");
 			fprintf(pFile, "%s", buf);
 		}
 	}
 
-	cry_sprintf(buf, "</root>\n");
+	cry_sprintf(buf, buf_size, "</root>\n");
 	fprintf(pFile, "%s", buf);
 
 	::fclose(pFile);
@@ -428,7 +426,11 @@ CBootProfiler& CBootProfiler::GetInstance()
 	return gProfilerInstance;
 }
 
-CBootProfiler::CBootProfiler() : m_pCurrentSession(nullptr), m_pFrameRecord(nullptr), m_levelLoadAdditionalFrames(0)
+CBootProfiler::CBootProfiler()
+	: m_pCurrentSession(nullptr)
+	, m_pPreviousSession(nullptr)
+	, m_pFrameRecord(nullptr)
+	, m_levelLoadAdditionalFrames(0)
 {
 }
 
@@ -471,12 +473,12 @@ void CBootProfiler::StopSession()
 
 CBootProfilerRecord* CBootProfiler::StartBlock(const char* name, const char* args, unsigned int& sessionIndex)
 {
-	if (m_pCurrentSession)
+	if (CBootProfilerSession* pSession = m_pCurrentSession)
 	{
 		const unsigned int curThread = CryGetCurrentThreadId();
 		const unsigned int threadIndex = gThreadsInterface.GetThreadIndexByID(curThread);
 		sessionIndex = CBootProfilerSession::sSessionCounter;
-		return m_pCurrentSession->StartBlock(name, args, threadIndex);
+		return pSession->StartBlock(name, args, threadIndex);
 	}
 	return nullptr;
 }
@@ -520,7 +522,6 @@ void CBootProfiler::StartFrame(const char* name)
 		if (m_pCurrentSession)
 		{
 			CryLogAlways("BootProfiler: failed to start session 'frame_threshold' as another one is active '%s'", m_pCurrentSession->GetName());
-
 		}
 		else
 		{
@@ -546,10 +547,7 @@ void CBootProfiler::StopFrame()
 		--CV_sys_bp_frames;
 		if (0 == CV_sys_bp_frames)
 		{
-			float prevThreshold = CV_sys_bp_time_threshold;
-			CV_sys_bp_time_threshold = 0.001f; // Write all data about frames not using threshold
 			StopSession();
-			CV_sys_bp_time_threshold = prevThreshold;
 		}
 	}
 
@@ -562,13 +560,16 @@ void CBootProfiler::StopFrame()
 		}
 	}
 
+	delete m_pPreviousSession;
+	m_pPreviousSession = NULL;
+
 	static float prev_CV_sys_bp_frames_threshold = CV_sys_bp_frames_threshold;
 	const bool bDisablingThresholdMode = (prev_CV_sys_bp_frames_threshold > 0.0f && CV_sys_bp_frames_threshold == 0.0f);
 
 	if (CV_sys_bp_frames_threshold > 0.0f || bDisablingThresholdMode)
 	{
 		CBootProfilerSession* pSession = m_pCurrentSession;
-		m_pCurrentSession = nullptr;
+
 		pSession->StopBlock(m_pFrameRecord);
 		m_pFrameRecord = nullptr;
 
@@ -579,12 +580,13 @@ void CBootProfiler::StopFrame()
 		{
 			const int frameNum = gEnv->pRenderer->GetFrameID(false);
 			CryFixedStringT<32> sessionName;
-			sessionName.Format("frame_%d", frameNum);
+			sessionName.Format("frame_%d_%3.1fms", frameNum, CV_sys_bp_frames_threshold);
 
 			pSession->CollectResults(sessionName, CV_sys_bp_time_threshold);
 		}
 
-		delete pSession;
+		m_pPreviousSession = pSession;
+		m_pCurrentSession = nullptr;
 	}
 
 	prev_CV_sys_bp_frames_threshold = CV_sys_bp_frames_threshold;
