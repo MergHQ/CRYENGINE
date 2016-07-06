@@ -763,7 +763,7 @@ public:
 		config.nFlags |= EFLN_TARGET_ENTITY;
 		config.pInputPorts = inputs;
 		config.sDescription = _HELP("FlowNode to control force feedback effect on left and right triggers");
-		config.SetCategory(EFLN_APPROVED);
+		config.SetCategory(EFLN_OBSOLETE);
 	}
 
 	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
@@ -793,6 +793,8 @@ public:
 					                                                GetPortBool(pActInfo, eIP_RightTouchToActivate),
 					                                                GetPortFloat(pActInfo, eIP_LeftGain),
 					                                                GetPortFloat(pActInfo, eIP_RightGain),
+					                                                0.0f,
+					                                                0.0f,
 					                                                GetPortInt(pActInfo, eIP_LeftEnvelope),
 					                                                GetPortInt(pActInfo, eIP_RightEnvelope)
 					                                                )

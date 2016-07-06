@@ -450,13 +450,14 @@ struct SFFTriggerOutputData
 	};
 
 	float  leftGain, rightGain;
+	float  leftStrength, rightStrength;
 	uint16 leftEnv, rightEnv;
 	uint32 flags;
 
 	SFFTriggerOutputData()  { Init(Initial::ZeroIt); }
 	SFFTriggerOutputData(Initial::Value v)  { Init(v); }
-	SFFTriggerOutputData(bool leftTouchToActivate, bool rightTouchToActivate, float lTrigger, float rTrigger, uint16 lTriggerEnv, uint16 rTriggerEnv) :
-		leftGain(lTrigger), rightGain(rTrigger), leftEnv(lTriggerEnv), rightEnv(rTriggerEnv)
+	SFFTriggerOutputData(bool leftTouchToActivate, bool rightTouchToActivate, float lTrigger, float rTrigger, float lStrength, float rStrength, uint16 lTriggerEnv, uint16 rTriggerEnv) :
+		leftGain(lTrigger), rightGain(rTrigger), leftStrength(lStrength), rightStrength(rStrength), leftEnv(lTriggerEnv), rightEnv(rTriggerEnv)
 	{
 		SetFlag(Flags::LeftTouchToActivate, leftTouchToActivate);
 		SetFlag(Flags::RightTouchToActivate, rightTouchToActivate);
@@ -467,13 +468,15 @@ struct SFFTriggerOutputData
 		if (v == Initial::ZeroIt)
 		{
 			flags = 0;
-			leftGain = rightGain = 0.f;
+			leftGain = rightGain = 0.0f;
+			leftStrength = rightStrength = 0.0f;
 			leftEnv = rightEnv = 0;
 		}
 		else if (v == Initial::Default)
 		{
 			flags = 0;
-			leftGain = rightGain = 1.f;
+			leftGain = rightGain = 1.0f;
+			leftStrength = rightStrength = 0.0f;
 			leftEnv = rightEnv = 4;
 		}
 	}
