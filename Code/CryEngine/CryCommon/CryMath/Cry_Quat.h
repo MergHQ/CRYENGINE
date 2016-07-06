@@ -4,6 +4,8 @@
 
 #include <limits>
 
+const float RAD_EPSILON = 0.01f;
+
 //! Quaternion.
 template<typename F> struct Quat_tpl
 {
@@ -238,12 +240,12 @@ template<typename F> struct Quat_tpl
 		return w == 1 && v.x == 0 && v.y == 0 && v.z == 0;
 	}
 
-	ILINE bool IsUnit(F e = VEC_EPSILON) const
+	ILINE bool IsUnit(f32 e = VEC_EPSILON) const
 	{
 		return fabs_tpl(1 - (w * w + v.x * v.x + v.y * v.y + v.z * v.z)) < e;
 	}
 
-	ILINE bool IsValid(F e = VEC_EPSILON) const
+	ILINE bool IsValid(f32 e = VEC_EPSILON) const
 	{
 		if (!v.IsValid()) return false;
 		if (!NumberValid(w)) return false;
@@ -309,7 +311,7 @@ template<typename F> struct Quat_tpl
 	//!   Quat q=Quat::CreateRotationX( radiant );
 	//!   or
 	//!   q.SetRotationX( Ang3(1,2,3) );
-	ILINE void SetRotationX(f32 r)
+	ILINE void SetRotationX(F r)
 	{
 		F s, c;
 		sincos_tpl(F(r * F(0.5)), &s, &c);
@@ -318,7 +320,7 @@ template<typename F> struct Quat_tpl
 		v.y = 0;
 		v.z = 0;
 	}
-	ILINE static Quat_tpl<F> CreateRotationX(f32 r)
+	ILINE static Quat_tpl<F> CreateRotationX(F r)
 	{
 		Quat_tpl<F> q;
 		q.SetRotationX(r);
@@ -330,7 +332,7 @@ template<typename F> struct Quat_tpl
 	//!   Quat q=Quat::CreateRotationY( radiant );
 	//!   or
 	//!   q.SetRotationY( radiant );
-	ILINE void SetRotationY(f32 r)
+	ILINE void SetRotationY(F r)
 	{
 		F s, c;
 		sincos_tpl(F(r * F(0.5)), &s, &c);
@@ -339,7 +341,7 @@ template<typename F> struct Quat_tpl
 		v.y = s;
 		v.z = 0;
 	}
-	ILINE static Quat_tpl<F> CreateRotationY(f32 r)
+	ILINE static Quat_tpl<F> CreateRotationY(F r)
 	{
 		Quat_tpl<F> q;
 		q.SetRotationY(r);
@@ -351,7 +353,7 @@ template<typename F> struct Quat_tpl
 	//!   Quat q=Quat::CreateRotationZ( radiant );
 	//!   or
 	//!   q.SetRotationZ( radiant );
-	ILINE void SetRotationZ(f32 r)
+	ILINE void SetRotationZ(F r)
 	{
 		F s, c;
 		sincos_tpl(F(r * F(0.5)), &s, &c);
@@ -360,7 +362,7 @@ template<typename F> struct Quat_tpl
 		v.y = 0;
 		v.z = s;
 	}
-	ILINE static Quat_tpl<F> CreateRotationZ(f32 r)
+	ILINE static Quat_tpl<F> CreateRotationZ(F r)
 	{
 		Quat_tpl<F> q;
 		q.SetRotationZ(r);
@@ -521,19 +523,17 @@ template<typename F> struct Quat_tpl
 
 	//! Get length of quaternion.
 	//! Example:
-	//!   f32 l=q.GetLength();
+	//!   F l=q.GetLength();
 	ILINE F GetLength() const
 	{
 		return sqrt_tpl(w * w + v.x * v.x + v.y * v.y + v.z * v.z);
 	}
 
-	ILINE static bool IsEquivalent(const Quat_tpl<F>& q1, const Quat_tpl<F>& q2, F qe = RAD_EPSILON)
+	ILINE static bool IsEquivalent(const Quat_tpl<F>& q1, const Quat_tpl<F>& q2, f32 qe = RAD_EPSILON)
 	{
-		Quat_tpl<f64> q1r = q1;
-		Quat_tpl<f64> q2r = q2;
-		f64 rad = acos(min(1.0, fabs_tpl(q1r.v.x * q2r.v.x + q1r.v.y * q2r.v.y + q1r.v.z * q2r.v.z + q1r.w * q2r.w)));
-		bool qdif = rad <= qe;
-		return qdif;
+		const F cosmin = F(1) - sqr(qe) * F(0.5f);  // Approx value of cos(qe)
+		F cos = abs(q1 | q2);  // -q is equivalent to q
+		return cos >= cosmin;
 	}
 
 	//! Exponent of a Quaternion.
@@ -714,6 +714,13 @@ template<typename F> struct Quat_tpl
 	AUTO_STRUCT_INFO;
 };
 
+template<typename F>
+ILINE bool IsEquivalent(const Quat_tpl<F>& q1, const Quat_tpl<F>& q2, f32 qe = RAD_EPSILON)
+{
+	return Quat_tpl<F>::IsEquivalent(q1, q2, qe);
+}
+
+
 // Typedefs
 
 #ifndef MAX_API_NUM
@@ -737,7 +744,7 @@ typedef CRY_ALIGN (32) Quatd QuatrA;
 //! If both Quaternion are unit-quaternions, the result is the cosine: p*q=cos(angle).
 //! Example:
 //!   Quat p(1,0,0,0),q(1,0,0,0);
-//!   f32 cosine = ( p | q );
+//!   F cosine = ( p | q );
 template<typename F1, typename F2> ILINE F1 operator|(const Quat_tpl<F1>& q, const Quat_tpl<F2>& p)
 {
 	CRY_MATH_ASSERT(q.v.IsValid());
@@ -1032,12 +1039,9 @@ template<typename F> struct QuatT_tpl
 	ILINE Vec3_tpl<F> GetRow1() const                          { return q.GetRow1(); }
 	ILINE Vec3_tpl<F> GetRow2() const                          { return q.GetRow2(); }
 
-	ILINE static bool IsEquivalent(const QuatT_tpl<F>& qt1, const QuatT_tpl<F>& qt2, F qe = RAD_EPSILON, F ve = VEC_EPSILON)
+	ILINE static bool IsEquivalent(const QuatT_tpl<F>& qt1, const QuatT_tpl<F>& qt2, f32 qe = RAD_EPSILON, f32 ve = VEC_EPSILON)
 	{
-		real rad = acos(min(1.0f, fabs_tpl(qt1.q | qt2.q)));
-		bool qdif = rad <= qe;
-		bool vdif = fabs_tpl(qt1.t.x - qt2.t.x) <= ve && fabs_tpl(qt1.t.y - qt2.t.y) <= ve && fabs_tpl(qt1.t.z - qt2.t.z) <= ve;
-		return (qdif && vdif);
+		return ::IsEquivalent(qt1.q, qt2.q, qe) && ::IsEquivalent(qt1.t, qt2.t, ve);
 	}
 
 	ILINE bool IsValid() const
@@ -1111,6 +1115,13 @@ typedef QuatT_tpl<real> QuatTr;  //!< Variable float precision. depending on the
 //! aligned versions
 typedef CRY_ALIGN (32) QuatT QuatTA;       //!< wastes 4byte per quatT
 typedef CRY_ALIGN (16) QuatTd QuatTrA;
+
+template<typename F>
+ILINE bool IsEquivalent(const QuatT_tpl<F>& qt1, const QuatT_tpl<F>& qt2, f32 qe = RAD_EPSILON, f32 ve = VEC_EPSILON)
+{
+	return QuatT_tpl<F>::IsEquivalent(qt1, qt2, qe, ve);
+}
+
 
 //! Implements the multiplication operator: QuatT=Quatpos*Quat.
 //! AxB = operation B followed by operation A.
@@ -1294,16 +1305,12 @@ template<typename F> struct QuatTS_tpl
 		return d;
 	}
 
-	ILINE static bool IsEquivalent(const QuatTS_tpl<F>& qts1, const QuatTS_tpl<F>& qts2, F qe = RAD_EPSILON, F ve = VEC_EPSILON)
+	ILINE static bool IsEquivalent(const QuatTS_tpl<F>& qts1, const QuatTS_tpl<F>& qts2, f32 qe = RAD_EPSILON, f32 ve = VEC_EPSILON)
 	{
-		f64 rad = acos(min(1.0f, fabs_tpl(qts1.q | qts2.q)));
-		bool qdif = rad <= qe;
-		bool vdif = fabs_tpl(qts1.t.x - qts2.t.x) <= ve && fabs_tpl(qts1.t.y - qts2.t.y) <= ve && fabs_tpl(qts1.t.z - qts2.t.z) <= ve;
-		bool sdif = fabs_tpl(qts1.s - qts2.s) <= ve;
-		return (qdif && vdif && sdif);
+		return ::IsEquivalent(qts1.q, qts2.q, qe) && ::IsEquivalent(qts1.t, qts2.t, ve) && ::IsEquivalent(qts1.s, qts2.s, ve);
 	}
 
-	bool IsValid(F e = VEC_EPSILON) const
+	bool IsValid(f32 e = VEC_EPSILON) const
 	{
 		if (!q.v.IsValid()) return false;
 		if (!NumberValid(q.w)) return false;
@@ -1331,6 +1338,13 @@ typedef QuatTS_tpl<real> QuatTSr;  //!< Variable float precision. depending on t
 // aligned versions
 typedef CRY_ALIGN (16) QuatTS QuatTSA;
 typedef CRY_ALIGN (64) QuatTSd QuatTSrA;
+
+template<typename F>
+ILINE bool IsEquivalent(const QuatTS_tpl<F>& qts1, const QuatTS_tpl<F>& qts2, f32 qe = RAD_EPSILON, f32 ve = VEC_EPSILON)
+{
+	return QuatTS_tpl<F>::IsEquivalent(qts1, qts2, qe, ve);
+}
+
 
 template<class F1, class F2> ILINE QuatTS_tpl<F1> operator*(const QuatTS_tpl<F1>& a, const Quat_tpl<F2>& b)
 {
@@ -1495,16 +1509,12 @@ template<typename F> struct QuatTNS_tpl
 		return d;
 	}
 
-	ILINE static bool IsEquivalent(const QuatTNS_tpl<F>& qts1, const QuatTNS_tpl<F>& qts2, F qe = RAD_EPSILON, F ve = VEC_EPSILON)
+	ILINE static bool IsEquivalent(const QuatTNS_tpl<F>& qts1, const QuatTNS_tpl<F>& qts2, f32 qe = RAD_EPSILON, f32 ve = VEC_EPSILON)
 	{
-		real rad = acos(min(1.0f, fabs_tpl(qts1.q | qts2.q)));
-		bool qdif = rad <= qe;
-		bool vdif = fabs_tpl(qts1.t.x - qts2.t.x) <= ve && fabs_tpl(qts1.t.y - qts2.t.y) <= ve && fabs_tpl(qts1.t.z - qts2.t.z) <= ve;
-		bool sdif = fabs_tpl(qts1.s.x - qts2.s.x) <= ve && fabs_tpl(qts1.s.y - qts2.s.y) <= ve && fabs_tpl(qts1.s.z - qts2.s.z) <= ve;
-		return (qdif && vdif && sdif);
+		return ::IsEquivalent(qts1.q, qts2.q, qe) && ::IsEquivalent(qts1.t, qts2.t, ve) && ::IsEquivalent(qts1.s, qts2.s, ve);
 	}
 
-	bool IsValid(F e = VEC_EPSILON) const
+	bool IsValid(f32 e = VEC_EPSILON) const
 	{
 		if (!q.v.IsValid()) return false;
 		if (!NumberValid(q.w)) return false;
@@ -1535,6 +1545,12 @@ typedef QuatTNS_tpl<f64> QuatTNS_f64;
 typedef CRY_ALIGN (16) QuatTNS QuatTNSA;
 typedef CRY_ALIGN (64) QuatTNSr QuatTNSrA;
 typedef CRY_ALIGN (64) QuatTNS_f64 QuatTNS_f64A;
+
+template<typename F>
+ILINE bool IsEquivalent(const QuatTNS_tpl<F>& qts1, const QuatTNS_tpl<F>& qts2, f32 qe = RAD_EPSILON, f32 ve = VEC_EPSILON)
+{
+	return QuatTNS_tpl<F>::IsEquivalent(qts1, qts2, qe, ve);
+}
 
 template<class F1, class F2> ILINE QuatTNS_tpl<F1> operator*(const QuatTNS_tpl<F1>& a, const Quat_tpl<F2>& b)
 {
@@ -1626,9 +1642,9 @@ template<typename F> struct DualQuat_tpl
 	{
 		// non-dual part (just copy q0):
 		nq = Quat_tpl<F>(m34);
-		f32 tx = m34.m03;
-		f32 ty = m34.m13;
-		f32 tz = m34.m23;
+		F tx = m34.m03;
+		F ty = m34.m13;
+		F tz = m34.m23;
 
 		// dual part:
 		dq.w = -0.5f * (tx * nq.v.x + ty * nq.v.y + tz * nq.v.z);

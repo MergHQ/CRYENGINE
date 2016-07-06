@@ -368,10 +368,9 @@ private:
 
 	ILINE floatv Pulse(floatv time) const
 	{
-		const floatv zero = ToFloatv(0.0f);
 		const floatv one = ToFloatv(1.0f);
 		const floatv pulseWidth = ToFloatv(m_pulseWidth);
-		return FSel(Sub(UPNoise(time), pulseWidth), zero, one);
+		return if_else_zero(UPNoise(time) < pulseWidth, one);
 	}
 
 	bool VersionFix(Serialization::IArchive& ar)
@@ -494,24 +493,9 @@ private:
 
 	// PFX2_TODO : improve functions and place them in a common library
 #ifdef CRY_PFX2_USE_SSE
-	ILINE static __m128 floorf(const __m128 v)
-	{
-		const __m128 zero = _mm_set1_ps(0.0f);
-		const __m128i trunc = _mm_cvttps_epi32(v);
-		const __m128i isNeg = _mm_castps_si128(_mm_cmplt_ps(v, zero));
-		const __m128i oneIfNeg = _mm_and_si128(isNeg, _mm_set1_epi32(0x1));
-		return _mm_cvtepi32_ps(_mm_sub_epi32(trunc, oneIfNeg));
-	}
-
-	ILINE static floatv Frac(floatv x)
-	{
-		return Sub(x, floorf(x));
-	}
-
 	ILINE static floatv SinApproax(floatv x)
 	{
 		const floatv one = ToFloatv(1.0f);
-		const floatv negOne = ToFloatv(-1.0f);
 		const floatv half = ToFloatv(0.5f);
 		const floatv negHalfPi = ToFloatv(-gf_PI * 0.5f);
 		const floatv pi = ToFloatv(gf_PI);
@@ -519,7 +503,7 @@ private:
 		const floatv ipi2 = ToFloatv(1.0f / gf_PI2);
 
 		const floatv x1 = MAdd(Frac(Mul(x, ipi)), pi, negHalfPi);
-		const floatv m = FSel(Sub(Frac(Mul(x, ipi2)), half), one, negOne);
+		const floatv m = sign(Frac(Mul(x, ipi2)) - half);
 
 		const floatv p0 = ToFloatv(-0.4964738f);
 		const floatv p1 = ToFloatv(0.036957536f);
@@ -536,11 +520,6 @@ private:
 		return SinApproax(Sub(x, halfPi));
 	}
 #else
-
-	ILINE static floatv Frac(floatv x)
-	{
-		return x - floorf(x);
-	}
 
 	ILINE static floatv CosApproax(floatv x)
 	{
@@ -563,10 +542,8 @@ private:
 
 	ILINE static floatv Pulse(floatv time)
 	{
-		const floatv minusOne = ToFloatv(-1.0f);
-		const floatv one = ToFloatv(1.0f);
 		const floatv half = ToFloatv(0.5f);
-		return FSel(Sub(Frac(time), half), minusOne, one);
+		return sign(half - Frac(time));
 	}
 
 	EWaveType m_waveType;

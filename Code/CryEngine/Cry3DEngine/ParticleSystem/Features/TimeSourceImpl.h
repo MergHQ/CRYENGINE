@@ -17,7 +17,7 @@ ILINE float AntiAliasParentAge(const float deltaTime, const float selfAge, const
 ILINE floatv AntiAliasParentAge(const floatv deltaTime, const floatv selfAge, const floatv parentInvLifeTime, const floatv parentAge)
 {
 	const floatv tempAntAliasParentAge = MAdd(Mul(selfAge, parentInvLifeTime), deltaTime, parentAge);
-	const floatv sample = FSel(selfAge, parentAge, tempAntAliasParentAge);
+	const floatv sample = __fsel(selfAge, parentAge, tempAntAliasParentAge);
 	return sample;
 }
 #endif
@@ -89,7 +89,7 @@ public:
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
 		const Vec3v velocity = velocities.Load(particleId);
-		return Length(velocity);
+		return velocity.GetLength();
 	}
 private:
 	IVec3Stream velocities;
@@ -106,14 +106,8 @@ public:
 	{
 		const uint32v parentId = parentIds.Load(particleId);
 		const Vec3v velocity = parentVelocities.Load(parentId);
-		const floatv speed = Length(velocity);
-		// PFX2_TODO : refactor this code into hight level instructions
-#ifndef CRY_PFX2_USE_SSE
-		const float sample = (parentId == gInvalidId) ? 0.0f : speed;
-#else
-		const __m128i mask = _mm_cmpeq_epi32(parentId, _mm_set1_epi32(gInvalidId));
-		const floatv sample = CMov(_mm_castsi128_ps(mask), _mm_set1_ps(0.0f), speed);
-#endif
+		const floatv speed = velocity.GetLength();
+		const floatv sample = if_else_zero(parentId != ToUint32v(gInvalidId), speed);
 		return sample;
 	}
 private:

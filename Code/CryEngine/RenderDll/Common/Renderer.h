@@ -109,6 +109,8 @@ struct alloc_info_struct
 	void     GetMemoryUsage(ICrySizer* pSizer) const {}
 };
 
+const float TANGENT30_2 = 0.57735026918962576450914878050196f * 2;   // 2*tan(30)
+
 // Assuming 24 bits of depth precision
 #define DBT_SKY_CULL_DEPTH                    0.99999994f
 

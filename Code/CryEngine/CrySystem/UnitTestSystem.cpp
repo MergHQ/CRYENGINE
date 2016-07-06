@@ -45,6 +45,9 @@ CUnitTestManager::CUnitTestManager()
 	m_failureMsg[0] = '\0';
 	m_pAutoTestsContext = new SAutoTestsContext;
 	assert(m_pAutoTestsContext);
+
+	// Register tests defined in this module
+	CreateTests(CryUnitTest::Test::m_pFirst, "CrySystem");
 }
 
 CUnitTestManager::~CUnitTestManager()
@@ -380,6 +383,176 @@ void CMinimalLogUnitTestReporter::OnTestFinish(IUnitTest* pTest, float fRunTimeI
 }
 
 #if defined(CRY_UNIT_TESTING)
+
+	#if CRY_PLATFORM_SSE2
+
+CRY_UNIT_TEST_SUITE(SIMD)
+{
+	using namespace crymath;
+	const float HALF_EPSILON = 0.00025f;
+
+	template<typename Real>
+	bool IsEquiv(Real a, Real b, float epsilon)
+	{
+		return NumberValid(a) && All(abs(a - b) <= abs(b) * convert<Real>(epsilon));
+	}
+
+	template<typename Real>
+	void FunctionTest(Real (* func)(Real), float in, float res, float epsilon = 0.0f)
+	{
+		Real out = func(convert<Real>(in));
+		CRY_UNIT_TEST_ASSERT(IsEquiv(out, convert<Real>(res), epsilon));
+	}
+
+	template<typename Real>
+	void FunctionTest(Real (* func)(Real, Real), float a, float b, float res, float epsilon = 0.0f)
+	{
+		Real out = func(convert<Real>(a), convert<Real>(b));
+		CRY_UNIT_TEST_ASSERT(IsEquiv(out, convert<Real>(res), epsilon));
+	}
+
+	template<typename Real>
+	void FunctionTest(Real (* func)(Real, Real, Real), float a, float b, float c, float res, float epsilon = 0.0f)
+	{
+		Real out = func(convert<Real>(a), convert<Real>(b), convert<Real>(c));
+		CRY_UNIT_TEST_ASSERT(IsEquiv(out, convert<Real>(res), epsilon));
+	}
+
+	template<typename Real>
+	void FunctionApproxTest(Real (* func)(Real), Real (* func_fast)(Real), float in, float res)
+	{
+		FunctionTest(func, in, res, FLT_EPSILON * 2.0f);
+		FunctionTest(func_fast, in, res, HALF_EPSILON * 2.0f);
+	}
+
+	template<typename Real>
+	void MathTest()
+	{
+		FunctionTest<Real>(floor, 257.85f, 257.0f);
+		FunctionTest<Real>(floor, 124.35f, 124.0f);
+		FunctionTest<Real>(floor, 73.0f, 73.0f);
+		FunctionTest<Real>(floor, 0.806228399f, 0.0f);
+		FunctionTest<Real>(floor, 0.2537399f, 0.0f);
+		FunctionTest<Real>(floor, -0.123432f, -1.0f);
+		FunctionTest<Real>(floor, -0.986552f, -1.0f);
+		FunctionTest<Real>(floor, -5.0f, -5.0f);
+		FunctionTest<Real>(floor, -63.4f, -64.0f);
+		FunctionTest<Real>(floor, -102.7f, -103.0f);
+
+		FunctionTest<Real>(trunc, 257.85f, 257.0f);
+		FunctionTest<Real>(trunc, 124.35f, 124.0f);
+		FunctionTest<Real>(trunc, 73.0f, 73.0f);
+		FunctionTest<Real>(trunc, 0.806228399f, 0.0f);
+		FunctionTest<Real>(trunc, 0.2537399f, 0.0f);
+		FunctionTest<Real>(trunc, -0.123432f, 0.0f);
+		FunctionTest<Real>(trunc, -0.986552f, 0.0f);
+		FunctionTest<Real>(trunc, -5.0f, -5.0f);
+		FunctionTest<Real>(trunc, -63.4f, -63.0f);
+		FunctionTest<Real>(trunc, -102.7f, -102.0f);
+
+		FunctionTest<Real>(max, 257.35f, 510.0f, 510.0f);
+		FunctionTest<Real>(max, -102.0f, -201.4f, -102.0f);
+
+		FunctionTest<Real>(saturate, 0.75f, 0.75f);
+		FunctionTest<Real>(saturate, -0.35f, 0.0f);
+		FunctionTest<Real>(saturate, 2.05f, 1.0f);
+
+		FunctionTest<Real>(abs, 104.35f, 104.35f);
+		FunctionTest<Real>(abs, -24.75f, 24.75f);
+		FunctionTest<Real>(abs, 0.0f, 0.0f);
+
+		FunctionTest<Real>(sign, 93.2f, 1.0f);
+		FunctionTest<Real>(sign, 0.0f, 1.0f);
+		FunctionTest<Real>(sign, -0.0f, -1.0f);
+		FunctionTest<Real>(sign, -0.003, -1.0f);
+
+		FunctionTest<Real>(mod, 3.0f, 1.0f, 0.0f, FLT_EPSILON * 4);
+		FunctionTest<Real>(mod, 0.75f, 0.5f, 0.25f, FLT_EPSILON * 4);
+		FunctionTest<Real>(mod, -0.6f, 0.5f, -0.1f, FLT_EPSILON * 4);
+		FunctionTest<Real>(mod, -0.2f, -0.3f, -0.2f, FLT_EPSILON * 4);
+
+		FunctionTest<Real>(wrap, -6.0f, -1.0f, 3.0f, 2.0f, FLT_EPSILON * 4);
+		FunctionTest<Real>(wrap, -6.3f, 0.0f, 1.0f, 0.7f, FLT_EPSILON * 4);
+		FunctionTest<Real>(wrap, 4.8f, -1.0f, 1.0f, 0.8f, FLT_EPSILON * 4);
+
+		FunctionApproxTest<Real>(sqrt, sqrt_fast, 0.0f, 0.0f);
+		FunctionApproxTest<Real>(sqrt, sqrt_fast, 1e-36f, 1e-18f);
+
+		for (int i = 0; i < 100; ++i)
+		{
+			float f = cry_random(0.0f, 1.0f);
+			f *= f * f * f;
+			f *= 1e6f;
+
+			FunctionApproxTest<Real>(sqrt, sqrt_fast, f * f, f);
+			FunctionApproxTest<Real>(rsqrt, rsqrt_fast, f * f, 1.0f / f);
+
+			f *= cry_random(-1.0f, 1.0f);
+			FunctionApproxTest<Real>(rcp, rcp_fast, f, 1.0f / f);
+		}
+	}
+
+	template<typename V>
+	void CompTest()
+	{
+		CRY_UNIT_TEST_ASSERT(All(convert<V>(-3, -5, 6, 9) == convert<V>(-3, -5, 6, 9)));
+		CRY_UNIT_TEST_ASSERT(Any(convert<V>(-3, -5, 6, 9) != convert<V>(-3, 5, 6, 9)));
+		CRY_UNIT_TEST_ASSERT(All(convert<V>(-3, -5, 6, 9) < convert<V>(4, -2, 7, 10)));
+		CRY_UNIT_TEST_ASSERT(All(convert<V>(-3, -5, 6, 9) <= convert<V>(4, -2, 6, 10)));
+		CRY_UNIT_TEST_ASSERT(All(convert<V>(-3, -5, 6, 9) > convert<V>(-4, -7, -8, 0)));
+		CRY_UNIT_TEST_ASSERT(All(convert<V>(-3, -5, 6, 9) >= convert<V>(-3, -6, 6, 8)));
+	}
+
+	void SelectTest()
+	{
+		CRY_UNIT_TEST_ASSERT(if_else(3 == 4, 1.0f, 2.0f) == 2.0f);
+		CRY_UNIT_TEST_ASSERT(if_else_zero(7.0f != 5.0f, 9) == 9);
+		CRY_UNIT_TEST_ASSERT(__fsel(-7.0f, -5.0f, -3.0f) == -3.0f);
+		CRY_UNIT_TEST_ASSERT(All(if_else(
+		                           convert<f32v4>(0.5f, 0.0f, -7.0f, -0.0f) >= convert<f32v4>(2.0f, -4.0f, -5.0f, 0.0f),
+		                           convert<i32v4>(-3, 3, -5, 0),
+		                           convert<i32v4>(4, 40, -1, -7)
+		                           ) == convert<i32v4>(4, 3, -1, 0)));
+		CRY_UNIT_TEST_ASSERT(All(if_else_zero(
+		                           convert<i32v4>(3, -7, 0, 4) >= convert<i32v4>(2, 7, -1, -8),
+		                           convert<f32v4>(-3.0f, 3.0f, -3.0f, 0.9f)
+		                           ) == convert<f32v4>(-3.0f, 0.0f, -3.0f, 0.9f)));
+		CRY_UNIT_TEST_ASSERT(All(__fsel(
+		                           convert<f32v4>(0.5f, 0.0f, -7.0f, -0.0f),
+		                           convert<f32v4>(2.0f, -4.0f, -5.0f, 2.5f),
+		                           convert<f32v4>(-3.0f, 3.0f, -3.0f, 0.9f)
+		                           ) == convert<f32v4>(2.0f, -4.0f, -3.0f, 2.5f)));
+	}
+
+	void QuadraticTest()
+	{
+		float r[2];
+		for (int i = 0; i < 20; ++i)
+		{
+			float c0 = cry_random(-999.f, 999.f) * (i % 5);
+			float c1 = cry_random(-999.f, 999.f) * (i % 4);
+			float c2 = cry_random(-999.f, 999.f) * (i % 3);
+			int n = solve_quadratic(c2, c1, c0, r);
+			while (--n >= 0)
+			{
+				float f = c0 + c1 * r[n] + c2 * sqr(r[n]);
+				CRY_UNIT_TEST_ASSERT(abs(f) <= 0.01f);
+			}
+		}
+	}
+
+	CRY_UNIT_TEST(CUT_SIMD)
+	{
+		MathTest<float>();
+		MathTest<f32v4>();
+		CompTest<f32v4>();
+		CompTest<i32v4>();
+		QuadraticTest();
+		SelectTest();
+	}
+}
+
+	#endif // CRY_PLATFORM_SSE2
 
 CRY_UNIT_TEST_SUITE(Strings)
 {
@@ -786,7 +959,6 @@ CRY_UNIT_TEST_SUITE(FixedString)
 		str1.reserve(200);
 		CRY_UNIT_TEST_CHECK_EQUAL(str1, "ad1234567890");
 		CRY_UNIT_TEST_ASSERT(str1.capacity() == 200);
-
 		str1.reserve(0);
 		CRY_UNIT_TEST_CHECK_EQUAL(str1, "ad1234567890");
 		CRY_UNIT_TEST_ASSERT(str1.capacity() == str1.length());

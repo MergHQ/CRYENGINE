@@ -310,7 +310,7 @@ Vec3 GetExtremeEmitVec(Vec3 const& vRefDir, SEmitParams const& emit)
 
 		float fCos = clamp_tpl(fEmitCos, emit.fCosMin, emit.fCosMax);
 		Vec3 vEmitMax = emit.vAxis * fCos + vEmitPerpX * sqrt_fast_tpl((1.f - fCos * fCos) / (fPerpLenSq + FLT_MIN));
-		vEmitMax *= if_pos_else(vEmitMax * vRefDir, emit.fSpeedMin, emit.fSpeedMax);
+		vEmitMax *= if_else(vEmitMax * vRefDir >= 0.0f, emit.fSpeedMin, emit.fSpeedMax);
 		return vEmitMax;
 	}
 }

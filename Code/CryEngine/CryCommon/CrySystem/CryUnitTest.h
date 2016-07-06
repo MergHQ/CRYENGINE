@@ -115,6 +115,16 @@ struct IUnitTestManager
 {
 	virtual ~IUnitTestManager(){}
 	virtual IUnitTest* CreateTest(const UnitTestInfo& info) = 0;
+
+	void CreateTests(CryUnitTest::Test* pTest, const char* moduleName = "")
+	{
+		for (; pTest != 0; pTest = pTest->m_pNext)
+		{
+			pTest->m_unitTestInfo.module = moduleName;
+			CreateTest(pTest->m_unitTestInfo);
+		}
+	}
+
 	virtual int        RunAllTests(CryUnitTest::TReporterToUse) = 0;
 	virtual void       RunMatchingTests(const char* sName, UnitTestRunContext& context) = 0;
 	virtual void       RunAutoTests(const char* sSuiteName, const char* sTestName) = 0;
@@ -218,7 +228,7 @@ inline const char* GetSuiteName() { return ""; }
 #define CRY_UNIT_TEST_CHECK_CLOSE(valueA, valueB, epsilon)                                                                      \
   do                                                                                                                            \
   {                                                                                                                             \
-    if (!(fcmp(valueA, valueB, epsilon)))                                                                                       \
+    if (!(IsEquivalent(valueA, valueB, epsilon)))                                                                                       \
     {                                                                                                                           \
       gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause( # valueA " != " # valueB, __FILE__, __LINE__); \
     }                                                                                                                           \

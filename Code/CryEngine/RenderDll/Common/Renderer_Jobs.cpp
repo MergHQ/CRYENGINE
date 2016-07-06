@@ -182,7 +182,7 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 	uint32 nCloakLayerMask = nz2mask(nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
 
 	// Discard 0 alpha blended geometry - this should be discarded earlier on 3dengine side preferably
-	if (fzero(obj->m_fAlpha))
+	if (!obj->m_fAlpha)
 		return;
 	if (pShaderResources && pShaderResources->::CShaderResources::IsInvisible())
 		return;
@@ -956,7 +956,7 @@ int16 CTexture::StreamCalculateMipsSignedFP(float fMipFactor) const
 	assert(IsStreamed());
 	const uint32 nMaxExtent = max(m_nWidth, m_nHeight);
 	float currentMipFactor = fMipFactor * nMaxExtent * nMaxExtent * gRenDev->GetMipDistFactor();
-	float fMip = (0.5f * logf(max(currentMipFactor, 0.1f)) / LN2 + (CRenderer::CV_r_TexturesStreamingMipBias + gRenDev->m_fTexturesStreamingGlobalMipFactor));
+	float fMip = (0.5f * logf(max(currentMipFactor, 0.1f)) / gf_ln2 + (CRenderer::CV_r_TexturesStreamingMipBias + gRenDev->m_fTexturesStreamingGlobalMipFactor));
 	int nMip = static_cast<int>(floorf(fMip * 256.0f));
 	const int nNewMip = min(nMip, (m_nMips - m_CacheFileHeader.m_nMipsPersistent) << 8);
 	return (int16)nNewMip;
@@ -965,7 +965,7 @@ int16 CTexture::StreamCalculateMipsSignedFP(float fMipFactor) const
 float CTexture::StreamCalculateMipFactor(int16 nMipsSigned) const
 {
 	float fMip = nMipsSigned / 256.0f;
-	float currentMipFactor = expf((fMip - (CRenderer::CV_r_TexturesStreamingMipBias + gRenDev->m_fTexturesStreamingGlobalMipFactor)) * 2.0f * LN2);
+	float currentMipFactor = expf((fMip - (CRenderer::CV_r_TexturesStreamingMipBias + gRenDev->m_fTexturesStreamingGlobalMipFactor)) * 2.0f * gf_ln2);
 
 	const uint32 nMaxExtent = max(m_nWidth, m_nHeight);
 	float fMipFactor = currentMipFactor / (nMaxExtent * nMaxExtent * gRenDev->GetMipDistFactor());

@@ -312,14 +312,14 @@ static ILINE float _Point_LinesegSq(const Vec3& p, const Lineseg& lineseg)
 	Vec3 diff = p - lineseg.start;
 	Vec3 dir = lineseg.end - lineseg.start;
 	float fT = diff.Dot(dir);
-	fT = __fself(fT, fT, 0.f);
+	fT = __fsel(fT, fT, 0.f);
 
 	float fSqrLen = dir.len2();
 	float mask = fT - fSqrLen;
-	float mul0 = __fself(mask, 1.f, 0.f);
-	float mul1 = __fself(mask, 0.f, 1.f);
+	float mul0 = __fsel(mask, 1.f, 0.f);
+	float mul1 = __fsel(mask, 0.f, 1.f);
 
-	mul1 /= __fself(mask, 1.f, fSqrLen);
+	mul1 /= __fsel(mask, 1.f, fSqrLen);
 	diff -= dir * (mul0 + mul1);
 
 	return diff.len2();
@@ -428,7 +428,7 @@ static inline size_t CullInstanceList(
 			continue;
 		}
 		int nLodTmp = (int)(distanceSq * lodRatioSq / (max(20.0f * 20.f * diameterSq, 0.001f)));
-		size_t nLod = (size_t) isel(-cullLod, nLodTmp, forceLod);
+		size_t nLod = (size_t) (cullLod ? forceLod : nLodTmp);
 		PREFAST_SUPPRESS_WARNING(6385)
 		for (nLod = std::min(nLod, size_t(MAX_STATOBJ_LODS_NUM - 1)); !(chunks = context.geom->pChunks[nLod]); --nLod)
 			;
@@ -3317,7 +3317,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 						dir[1] *= (float)isqrt_tpl(max(dir[1].len2(), sqr(FLT_EPSILON)));
 						dw0 = dw * (fabs_tpl(1.f - (dw * dir[0]))) * 0.5f;
 						dw0 += dw * (fabs_tpl(1.f - dw * dir[1])) * 0.5f;
-						const Vec3& new_vel = (nvel[off + i] * plasticity + (dw0 * airResistance + Vec3(0, 0, -9.81f)) * dt) * __fself(i_f, 1.f, 0.f) * (1.f - (damping * dt));
+						const Vec3& new_vel = (nvel[off + i] * plasticity + (dw0 * airResistance + Vec3(0, 0, -9.81f)) * dt) * __fsel(i_f, 1.f, 0.f) * (1.f - (damping * dt));
 						npt[off + i] = opt[off + i] + new_vel * dt;
 						nvel[off + i] = new_vel;
 #endif
@@ -3671,7 +3671,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 							d = sqrt_tpl(max(disp.len2(), sqr(FLT_EPSILON)));
 							const float diff = (d - geomSpines[off + i].len * fScale);
 							ndisp = disp / d;
-							npt[off + i] += (-(__fself(i_f, 1.f, 0.f) * iwsum) * (diff) * ndisp) * kL;
+							npt[off + i] += (-(__fsel(i_f, 1.f, 0.f) * iwsum) * (diff) * ndisp) * kL;
 							npt[off + i + 1] += (iwsum * (diff) * ndisp) * kL;
 #endif
 						}

@@ -64,7 +64,7 @@ public:
 		IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 		const float baseAngle = m_angle.GetBaseValue();
-		const float invBaseAngle = __fres(min(-FLT_EPSILON, baseAngle));
+		const float invBaseAngle = rcp_fast(min(-FLT_EPSILON, baseAngle));
 
 		STempModBuffer angles(context, m_angle);
 		STempModBuffer velocityMults(context, m_velocity);
@@ -80,10 +80,10 @@ public:
 			const float velocity = velocityMults.m_stream.SafeLoad(particleId);
 
 			const Vec2 disc = SChaosKey().RandCircle();
-			const float angle = sqrtf(angleMult * invBaseAngle) * baseAngle;
+			const float angle = sqrt(angleMult * invBaseAngle) * baseAngle;
 
 			float as, ac;
-			sincos_tpl(angle, &as, &ac);
+			sincos(angle, &as, &ac);
 			const Vec3 dir = Vec3(disc.x * as, disc.y * as, ac);
 			const Vec3 oVelocity = dir * velocity;
 			const Vec3 wVelocity1 = wVelocity0 + wQuat * oVelocity;

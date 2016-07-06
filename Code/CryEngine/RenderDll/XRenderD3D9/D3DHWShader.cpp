@@ -2308,7 +2308,7 @@ NO_INLINE void sTexelDensityParam(UFloat4* sData)
 				weight = pRenderChunk->m_texelAreaDensity * distance * distance * texWidth * texHeight * pRes->m_Textures[EFTT_DIFFUSE]->GetTiling(0) * pRes->m_Textures[EFTT_DIFFUSE]->GetTiling(1) / (screenHeight * screenHeight);
 			}
 
-			mipLevel = fastround_positive(0.5f * logf(max(weight, 1.0f)) / LN2);
+			mipLevel = fastround_positive(0.5f * logf(max(weight, 1.0f)) / gf_ln2);
 		}
 
 		texWidth /= (1 << mipLevel);
@@ -2371,7 +2371,7 @@ NO_INLINE void sTexelDensityColor(UFloat4* sData)
 					weight = pRenderChunk->m_texelAreaDensity * distance * distance * texWidth * texHeight * pRes->m_Textures[EFTT_DIFFUSE]->GetTiling(0) * pRes->m_Textures[EFTT_DIFFUSE]->GetTiling(1) / (screenHeight * screenHeight);
 				}
 
-				mipLevel = fastround_positive(0.5f * logf(max(weight, 1.0f)) / LN2);
+				mipLevel = fastround_positive(0.5f * logf(max(weight, 1.0f)) / gf_ln2);
 			}
 
 			switch (mipLevel)

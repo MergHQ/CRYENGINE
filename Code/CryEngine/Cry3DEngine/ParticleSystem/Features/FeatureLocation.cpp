@@ -224,7 +224,7 @@ public:
 
 		const float EPSILON = 1.0f / 2048.0f;
 		const bool useRadius = m_radius.GetBaseValue() > EPSILON;
-		const bool useVelocity = fabsf(m_velocity.GetBaseValue()) > EPSILON;
+		const bool useVelocity = abs(m_velocity.GetBaseValue()) > EPSILON;
 
 		if (useRadius && useVelocity)
 			SphericalDist<true, true>(context);
@@ -275,7 +275,7 @@ private:
 
 			if (UseRadius)
 			{
-				const float radius = sqrtf(radiusMult * invBaseRadius) * baseRadius;
+				const float radius = sqrt(radiusMult * invBaseRadius) * baseRadius;
 				const Vec3 wPosition0 = positions.Load(particleId);
 				const Vec3 wPosition1 = wPosition0 + sphereDist * radius;
 				positions.Store(particleId, wPosition1);
@@ -343,7 +343,7 @@ public:
 
 		const float EPSILON = 1.0f / 2048.0f;
 		const bool useRadius = m_radius.GetBaseValue() > EPSILON;
-		const bool useVelocity = fabsf(m_velocity.GetBaseValue()) > EPSILON;
+		const bool useVelocity = abs(m_velocity.GetBaseValue()) > EPSILON;
 
 		if (useRadius && useVelocity)
 			CircularDist<true, true>(context);
@@ -400,7 +400,7 @@ private:
 
 			if (UseRadius)
 			{
-				const float radius = sqrtf(radiusMult * invBaseRadius) * baseRadius;
+				const float radius = sqrt(radiusMult * invBaseRadius) * baseRadius;
 				const Vec3 oPosition = dist3 * radius;
 				const Vec3 wPosition0 = positions.Load(particleId);
 				const Vec3 wPosition1 = wPosition0 + wQuat * oPosition;
@@ -496,7 +496,7 @@ public:
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 		const float EPSILON = 1.0f / 2048.0f;
-		const bool useVelocity = fabsf(m_velocity.GetBaseValue()) > EPSILON;
+		const bool useVelocity = abs(m_velocity.GetBaseValue()) > EPSILON;
 
 		if (useVelocity)
 			SampleGeometry<true>(context);
@@ -672,9 +672,9 @@ public:
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 		const float maxSize = (float)(1 << 12);
-		const float minSize = __fres(maxSize); // small enough and prevents SIMD exceptions
-		const float time = fmodf(gEnv->pTimer->GetCurrTime() * m_rate * minSize, 1.0f) * maxSize;
-		const float invSize = __fres(max(minSize, +m_size));
+		const float minSize = rcp_fast(maxSize); // small enough and prevents SIMD exceptions
+		const float time = mod(gEnv->pTimer->GetCurrTime() * m_rate * minSize, 1.0f) * maxSize;
+		const float invSize = rcp_fast(max(minSize, +m_size));
 		CParticleContainer& container = context.m_container;
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 
@@ -811,18 +811,6 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBeam, "Location", "
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationOmni
 
-ILINE float Trunc(float v)
-{
-#ifdef CRY_PFX2_USE_SSE
-	const __m128 a = _mm_set1_ps(v);
-	const __m128i b = _mm_cvttps_epi32(a);
-	const __m128 c = _mm_cvtepi32_ps(b);
-	return _mm_cvtss_f32(c);
-#else
-	return float(int(v));
-#endif
-}
-
 // Box
 ILINE Vec3 RandomPosZBox(SChaosKey& chaosKey)
 {
@@ -854,9 +842,9 @@ ILINE bool InUnitZSector(const Vec3& pos, Vec2 scrWidth, float epsilon = 0.0f)
 ILINE Vec3 RandomUnitZSector(SChaosKey& chaosKey, Vec2 scrWidth)
 {
 	Vec3 pos(chaosKey.RandSNorm() * scrWidth.x, chaosKey.RandSNorm() * scrWidth.y, chaosKey.RandUNorm());
-	float r = pow_tpl(pos.z, 0.333333f);
+	float r = pow(pos.z, 0.333333f);
 	pos.z = 1.0f;
-	pos *= r * isqrt_fast_tpl(pos.GetLengthSquared());
+	pos *= r * rsqrt_fast(pos.GetLengthSquared());
 	assert(InUnitZSector(pos, scrWidth, 0.0001f));
 	return pos;
 }
@@ -904,7 +892,7 @@ void WrapUnitZSector(Vec3& pos, const Vec3& posPrev, Vec2 scrWidth)
 
 	if (maxMoveIn > 0.0f)
 	{
-		const float moveDist = (minMoveOut - maxMoveIn) * Trunc(minMoveOut / (minMoveOut - maxMoveIn));
+		const float moveDist = (minMoveOut - maxMoveIn) * trunc(minMoveOut / (minMoveOut - maxMoveIn));
 		if (moveDist < 1e6f)
 			pos += delta * moveDist;
 	}
@@ -940,11 +928,11 @@ ILINE bool WrapRotation(Vec3& pos, Vec3& posPrev, Vec3& posRot, Vec2 scrWidth)
 {
 	if (abs(posRot[A]) > posRot.z * scrWidth[A])
 	{
-		float angScr = atan_tpl(scrWidth[A]);
-		float ang = atan2_tpl(abs(posRot[A]), posRot.z);
-		float angRot = (angScr + angScr) * Trunc((angScr + ang) / (angScr + angScr)) * fsgnf(posRot[A]);
+		float angScr = atan(scrWidth[A]);
+		float ang = atan2(abs(posRot[A]), posRot.z);
+		float angRot = (angScr + angScr) * trunc((angScr + ang) / (angScr + angScr)) * fsgnf(posRot[A]);
 		float s, c;
-		sincos_tpl(angRot, &s, &c);
+		sincos(angRot, &s, &c);
 		RotateZ<A>(posRot, s, c);
 		posPrev = posRot;
 		RotateZ<A>(pos, s, c);
@@ -974,7 +962,7 @@ CRY_UNIT_TEST(WrapRotationTest)
 		else if (i % 4 == 1)
 			pos.y = 0;
 		AngleAxis rot;
-		rot.axis = i % 4 == 0 ? Vec3(1, 0, 0) : i % 4 == 1 ? Vec3(0, 1, 0) : chaosKey.RandCircle();
+		rot.axis = i % 4 == 0 ? Vec3(1, 0, 0) : i % 4 == 1 ? Vec3(0, 1, 0) : Vec3(chaosKey.RandCircle());
 		rot.angle = chaosKey.RandUNorm() * gf_PI;
 		Vec3 pos2 = AngleAxis(-rot.angle, rot.axis) * pos;
 		if (!InPosZSector(pos2, scrWidth))

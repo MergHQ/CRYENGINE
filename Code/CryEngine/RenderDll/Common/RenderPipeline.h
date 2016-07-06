@@ -981,7 +981,7 @@ struct SCompareDist
 {
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
-		if (fcmp(a.fDist, b.fDist))
+		if (a.fDist == b.fDist)
 			return a.rendItemSorter.ParticleCounter() < b.rendItemSorter.ParticleCounter();
 
 		return (a.fDist > b.fDist);
@@ -993,7 +993,7 @@ struct SCompareDistInverted
 {
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
-		if (fcmp(a.fDist, b.fDist))
+		if (a.fDist == b.fDist)
 			return a.rendItemSorter.ParticleCounter() > b.rendItemSorter.ParticleCounter();
 
 		return (a.fDist < b.fDist);

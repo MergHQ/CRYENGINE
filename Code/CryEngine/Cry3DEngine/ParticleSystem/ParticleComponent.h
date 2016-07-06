@@ -57,10 +57,10 @@ struct STextureAnimation
 			animPos = min(animPos, 1.f);
 			break;
 		case EAnimationCycle::Loop:
-			animPos = fmod(animPos, 1.f);
+			animPos = mod(animPos, 1.f);
 			break;
 		case EAnimationCycle::Mirror:
-			animPos = 1.f - abs(fmod(animPos, 2.f) - 1.f);
+			animPos = 1.f - abs(mod(animPos, 2.f) - 1.f);
 			break;
 		}
 		return animPos * m_animPosScale;

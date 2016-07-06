@@ -18,9 +18,6 @@ namespace pfx2
 // GPU Random number generators based on this article:
 //		http://www.reedbeta.com/blog/2013/01/12/quick-and-easy-gpu-random-numbers-in-d3d11/
 
-template<typename T> ILINE T ToType(uint32 i)          { return i; }
-template<> ILINE uint32v     ToType<uint32v>(uint32 i) { return ToUint32v(i); }
-
 // Works for both scalar and SSE
 template<typename T>
 ILINE T RngXorShift(T rngState)
@@ -35,10 +32,10 @@ template<typename T>
 ILINE T Jumble(T seed)
 {
 	seed = RngXorShift(seed);
-	seed = (seed ^ ToType<T>(61)) ^ (seed >> Scalar(16));
+	seed = (seed ^ convert<T>(61)) ^ (seed >> Scalar(16));
 	seed += seed << Scalar(3);
 	seed ^= seed >> Scalar(4);
-	seed *= ToType<T>(0x27d4eb2d);
+	seed *= convert<T>(0x27d4eb2d);
 	seed ^= seed >> Scalar(15);
 	return seed;
 }
@@ -88,13 +85,13 @@ ILINE Vec2 SChaosKey::RandCircle()
 {
 	float c, s;
 	const float theta = RandUNorm() * 2.0f * gf_PI;
-	sincos_tpl(theta, &s, &c);
+	sincos(theta, &s, &c);
 	return Vec2(c, s);
 }
 
 ILINE Vec2 SChaosKey::RandDisc()
 {
-	const float dist = sqrtf(RandUNorm());
+	const float dist = sqrt(RandUNorm());
 	return RandCircle() * dist;
 }
 
@@ -103,8 +100,8 @@ ILINE Vec3 SChaosKey::RandSphere()
 	float c, s;
 	const float z = RandSNorm();
 	const float theta = RandSNorm() * gf_PI;
-	const float z2 = sqrtf(1.0f - z * z);
-	sincos_tpl(theta, &s, &c);
+	const float z2 = sqrt(1.0f - z * z);
+	sincos(theta, &s, &c);
 	return Vec3(c * z2, s * z2, z);
 }
 

@@ -474,7 +474,7 @@ template<typename F> struct Matrix33_tpl
 	//! The angle is assumed to be in radians.
 	//! Example:
 	//! Matrix m33; m33.SetRotationX(0.5f);
-	ILINE void SetRotationX(const f32 rad)
+	ILINE void SetRotationX(const F rad)
 	{
 		F s, c;
 		sincos_tpl(rad, &s, &c);
@@ -488,14 +488,14 @@ template<typename F> struct Matrix33_tpl
 		m21 = s;
 		m22 = c;
 	}
-	ILINE static Matrix33_tpl<F> CreateRotationX(const f32 rad)
+	ILINE static Matrix33_tpl<F> CreateRotationX(const F rad)
 	{
 		Matrix33_tpl<F> m33;
 		m33.SetRotationX(rad);
 		return m33;
 	}
 
-	ILINE void SetRotationY(const f32 rad)
+	ILINE void SetRotationY(const F rad)
 	{
 		F s, c;
 		sincos_tpl(rad, &s, &c);
@@ -509,14 +509,14 @@ template<typename F> struct Matrix33_tpl
 		m21 = 0;
 		m22 = c;
 	}
-	ILINE static Matrix33_tpl<F> CreateRotationY(const f32 rad)
+	ILINE static Matrix33_tpl<F> CreateRotationY(const F rad)
 	{
 		Matrix33_tpl<F> m33;
 		m33.SetRotationY(rad);
 		return m33;
 	}
 
-	ILINE void SetRotationZ(const f32 rad)
+	ILINE void SetRotationZ(const F rad)
 	{
 		F s, c;
 		sincos_tpl(rad, &s, &c);
@@ -530,7 +530,7 @@ template<typename F> struct Matrix33_tpl
 		m21 = 0.0f;
 		m22 = 1.0f;
 	}
-	ILINE static Matrix33_tpl<F> CreateRotationZ(const f32 rad)
+	ILINE static Matrix33_tpl<F> CreateRotationZ(const F rad)
 	{
 		Matrix33_tpl<F> m33;
 		m33.SetRotationZ(rad);
@@ -953,7 +953,7 @@ template<typename F> struct Matrix33_tpl
 		m22 = z.z;
 	}
 
-	ILINE f32 Determinant() const
+	ILINE F Determinant() const
 	{
 		return (m00 * m11 * m22) + (m01 * m12 * m20) + (m02 * m10 * m21) - (m02 * m11 * m20) - (m00 * m12 * m21) - (m01 * m10 * m22);
 	}
@@ -1005,7 +1005,7 @@ template<typename F> struct Matrix33_tpl
 		return *this;
 	}
 
-	ILINE static bool IsEquivalent(const Matrix33_tpl<F>& m0, const Matrix33_tpl<F>& m1, F e = VEC_EPSILON)
+	ILINE static bool IsEquivalent(const Matrix33_tpl<F>& m0, const Matrix33_tpl<F>& m1, f32 e = VEC_EPSILON)
 	{
 		return  (
 		  (fabs_tpl(m0.m00 - m1.m00) <= e) && (fabs_tpl(m0.m01 - m1.m01) <= e) && (fabs_tpl(m0.m02 - m1.m02) <= e) &&
@@ -1035,11 +1035,11 @@ template<typename F> struct Matrix33_tpl
 	//! Check if we have an orthonormal-base (general case, works even with reflection matrices).
 	ILINE int IsOrthonormal(F threshold = 0.001) const
 	{
-		f32 d0 = fabs_tpl(GetColumn0() | GetColumn1());
+		F d0 = fabs_tpl(GetColumn0() | GetColumn1());
 		if (d0 > threshold) return 0;
-		f32 d1 = fabs_tpl(GetColumn0() | GetColumn2());
+		F d1 = fabs_tpl(GetColumn0() | GetColumn2());
 		if (d1 > threshold) return 0;
-		f32 d2 = fabs_tpl(GetColumn1() | GetColumn2());
+		F d2 = fabs_tpl(GetColumn1() | GetColumn2());
 		if (d2 > threshold) return 0;
 		int a = (fabs_tpl(1 - (GetColumn0() | GetColumn0()))) < threshold;
 		int b = (fabs_tpl(1 - (GetColumn1() | GetColumn1()))) < threshold;
@@ -1389,5 +1389,12 @@ ILINE Matrix33_tpl<F1>& dotproduct_matrix(const Vec3_tpl<F1>& v, const Vec3_tpl<
 	m.m22 = v.z * op.z;
 	return m;
 }
+
+template<class F>
+ILINE bool IsEquivalent(const Matrix33_tpl<F>& m0, const Matrix33_tpl<F>& m1, f32 e = VEC_EPSILON)
+{
+	return Matrix33_tpl<F>::IsEquivalent(m0, m1, e);
+}
+
 
 #endif //MATRIX33_H

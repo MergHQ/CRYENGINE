@@ -13,10 +13,11 @@
 
 #include "StdAfx.h"
 #include <CryAnimation/ICryAnimation.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <CryMath/Cry_HWVector3.h>
 
 #include "DecalManager.h"
 #include "3dEngine.h"
-#include <Cry3DEngine/IStatObj.h>
 #include "ObjMan.h"
 #include "MatMan.h"
 #include "terrain.h"
@@ -954,8 +955,8 @@ void CDecalManager::MoveToEdge(IRenderMesh* pRM, const float fRadius, Vec3& vOut
 
 	AABB boxRM;
 	pRM->GetBBox(boxRM.min, boxRM.max);
-	Sphere sp(vOutPos, fRadius);
-	if (!Overlap::Sphere_AABB(sp, boxRM))
+	Sphere sphere(vOutPos, fRadius);
+	if (!Overlap::Sphere_AABB(sphere, boxRM))
 		return;
 
 	// get position offset and stride
@@ -1056,12 +1057,11 @@ void CDecalManager::FillBigDecalIndices(IRenderMesh* pRM, Vec3 vPos, float fRadi
 	AABB boxRM;
 	pRM->GetBBox(boxRM.min, boxRM.max);
 
-	Sphere sp(vPos, fRadius);
-	if (!Overlap::Sphere_AABB(sp, boxRM))
+	Sphere sphere(vPos, fRadius);
+	if (!Overlap::Sphere_AABB(sphere, boxRM))
 		return;
 
 	IRenderMesh::ThreadAccessLock lockrm(pRM);
-	HWVSphere hwSphere(sp);
 
 	// get position offset and stride
 	int nInds = pRM->GetIndicesCount();
@@ -1182,7 +1182,7 @@ void CDecalManager::FillBigDecalIndices(IRenderMesh* pRM, Vec3 vPos, float fRadi
 
 					if (SIMDFGreaterThan(fDot, fEpsilon))
 					{
-						if (Overlap::HWVSphere_TriangleFromPoints(hwSphere, v0, v1, v2))
+						if (Overlap::Sphere_Triangle(sphere, Triangle(v0, v1, v2)))
 						{
 							plstIndices->AddList(&pInds[i], 3);
 
@@ -1298,7 +1298,7 @@ void CDecalManager::FillBigDecalIndices(IRenderMesh* pRM, Vec3 vPos, float fRadi
 					// test the face
 					if (SIMDFGreaterThan(fDot, fEpsilon))
 					{
-						if (Overlap::HWVSphere_TriangleFromPoints(hwSphere, v0, v1, v2))
+						if (Overlap::Sphere_Triangle(sphere, Triangle(v0, v1, v2)))
 						{
 							plstIndices->AddList(&pInds[i], 3);
 
@@ -1333,7 +1333,7 @@ void CDecalManager::FillBigDecalIndices(IRenderMesh* pRM, Vec3 vPos, float fRadi
 				// test the face
 				if (SIMDFGreaterThan(fDot, fEpsilon))
 				{
-					if (Overlap::HWVSphere_TriangleFromPoints(hwSphere, v0, v1, v2))
+					if (Overlap::Sphere_Triangle(sphere, Triangle(v0, v1, v2)))
 					{
 						plstIndices->AddList(&pInds[i], 3);
 

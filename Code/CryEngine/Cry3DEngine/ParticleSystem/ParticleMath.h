@@ -14,6 +14,8 @@
 namespace pfx2
 {
 
+using namespace crymath;
+
 #ifdef CRY_PFX2_USE_SSE
 	#define CRY_PFX2_PARTICLESGROUP_STRIDE 4 // can be 8 for AVX or 64 forGPU
 #else
@@ -22,28 +24,19 @@ namespace pfx2
 #define CRY_PFX2_PARTICLESGROUP_LOWER(id) ((id) & ~((CRY_PFX2_PARTICLESGROUP_STRIDE - 1)))
 #define CRY_PFX2_PARTICLESGROUP_UPPER(id) ((id) | ((CRY_PFX2_PARTICLESGROUP_STRIDE - 1)))
 
-#define COMMPOUND_OPERATOR(A, op, B) \
-  ILINE A & operator op ## = (A & a, B b) { return a = a op b; }
-
-#define COMMPOUND_OPERATORS(A, op, B) \
-  A operator op(A a, B b);            \
-  COMMPOUND_OPERATOR(A, op, B)        \
-  ILINE A operator op(A a, B b)       \
-
-
 // 4x vector types of standard types
 #ifdef CRY_PFX2_USE_SSE
-typedef __m128  floatv;
-typedef __m128i uint32v;
-typedef __m128i int32v;
-typedef uint32  uint8v;
-typedef __m128i UColv;
+typedef f32v4  floatv;
+typedef i32v4  uint32v;
+typedef i32v4  int32v;
+typedef uint32 uint8v;
+typedef i32v4  UColv;
 #else
-typedef float   floatv;
-typedef uint32  uint32v;
-typedef int32   int32v;
-typedef uint8   uint8v;
-typedef UCol    UColv;
+typedef float  floatv;
+typedef uint32 uint32v;
+typedef int32  int32v;
+typedef uint8  uint8v;
+typedef UCol   UColv;
 #endif
 
 // 4x vector types of custom types
@@ -213,6 +206,9 @@ private:
 	T* __restrict m_pStream;
 };
 
+///////////////////////////////////////////////////////////////////////////
+// Vector/scalar conversions
+
 floatv  ToFloatv(float v);
 uint32v ToUint32v(uint32 v);
 floatv  ToFloatv(uint32v v);
@@ -220,123 +216,37 @@ uint32v ToUint32v(floatv v);
 Vec3v   ToVec3v(Vec3 v);
 Vec4v   ToVec4v(Vec4 v);
 Planev  ToPlanev(Plane v);
-float   __fsel(const float _a, const float _b, const float _c);
-float   __fres(const float _a);
-float   SafeRcp(const float f);
+
 uint8   FloatToUFrac8Saturate(float v);
 
-// Integer type alias to allow operator overloads
-enum Scalar {};
+///////////////////////////////////////////////////////////////////////////
+// General operator and function equivalents
+template<typename T, typename U> T ILINE Add(const T& a, const U& b)              { return a + b; }
+template<typename T, typename U> T ILINE Sub(const T& a, const U& b)              { return a - b; }
+template<typename T, typename U> T ILINE Mul(const T& a, const U& b)              { return a * b; }
 
-#ifdef CRY_PFX2_USE_SSE
+template<typename T, typename U> T ILINE MAdd(const T& a, const U& b, const T& c) { return a * b + c; }
 
-	#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
+///////////////////////////////////////////////////////////////////////////
+// Vectorized functions
 
-// floatv operators
-bool   operator==(floatv a, floatv b);
-bool   operator==(const TParticleIdv& a, const TParticleIdv& b);
-bool   operator==(const TParticleIdv& a, const TParticleId& b);
-floatv operator+(const floatv a, const floatv b);
-floatv operator-(const floatv a, const floatv b);
-floatv operator-(const floatv a);
-floatv operator*(const floatv a, const floatv b);
-floatv operator&(const floatv a, const floatv b);
+floatv Frac(floatv t);
 
-// uint32v operators
-		#define UINT32V_OPERATORS(op) \
-		  COMMPOUND_OPERATORS(uint32v, op, uint32v)
-
-UINT32V_OPERATORS(+)
-{
-	return _mm_add_epi32(a, b);
-}
-UINT32V_OPERATORS(-)
-{
-	return _mm_sub_epi32(a, b);
-}
-UINT32V_OPERATORS(&)
-{
-	return _mm_and_si128(a, b);
-}
-UINT32V_OPERATORS(|)
-{
-	return _mm_or_si128(a, b);
-}
-UINT32V_OPERATORS(^)
-{
-	return _mm_xor_si128(a, b);
-}
-UINT32V_OPERATORS(<<)
-{
-	return _mm_sll_epi32(a, b);
-}
-UINT32V_OPERATORS(>>)
-{
-	return _mm_srl_epi32(a, b);
-}
-
-UINT32V_OPERATORS(*);
-UINT32V_OPERATORS(/);
-UINT32V_OPERATORS(%);
-
-	#endif
-
-// SSE shift-immediate operators for all compilers
-
-COMMPOUND_OPERATORS(uint32v, <<, Scalar)
-{
-	return _mm_slli_epi32(a, b);
-}
-COMMPOUND_OPERATORS(uint32v, >>, Scalar)
-{
-	return _mm_srli_epi32(a, b);
-}
-
-#endif
-
-Vec3   Min(const Vec3 a, const Vec3 b);
-Vec3   Max(const Vec3 a, const Vec3 b);
-
-floatv Add(const floatv v0, const floatv v1);
-floatv Sub(const floatv v0, const floatv v1);
-floatv Mul(const floatv v0, const floatv v1);
-floatv MAdd(const floatv a, const floatv b, const floatv c);
-floatv Sqrt(const floatv v0);
-floatv CMov(floatv condMask, floatv trueVal, floatv falseVal);
-floatv Min(floatv a, floatv b);
-floatv Max(floatv a, floatv b);
 float  HMin(floatv v0);
 float  HMax(floatv v0);
-floatv FSel(floatv a, floatv b, floatv c); // a < 0 ? c : b
-floatv Rcp(floatv a);
-floatv Lerp(floatv low, floatv high, floatv v);
-floatv Clamp(floatv x, floatv minv, floatv maxv);
-floatv Saturate(floatv x);
 
-// Vec3v operators
-Vec3v        Add(const Vec3v& a, const Vec3v& b);
-Vec3v        Add(const Vec3v& a, const floatv b);
-Vec3v        Sub(const Vec3v& a, const Vec3v& b);
-Vec3v        Sub(const Vec3v& a, const floatv b);
-Vec3v        Mul(const Vec3v& a, const floatv b);
-Vec3v        MAdd(const Vec3v& a, const Vec3v& b, const Vec3v& c);
-Vec3v        MAdd(const Vec3v& a, const floatv b, const Vec3v& c);
-#ifdef CRY_PFX2_USE_SSE
-Vec3v        Min(const Vec3v& a, const Vec3v& b);
-Vec3v        Max(const Vec3v& a, const Vec3v& b);
-#endif
-Vec3         HMin(const Vec3v& v0);
-Vec3         HMax(const Vec3v& v0);
-floatv       Dot(const Vec3v& v0, const Vec3v& v1);
-floatv       Length(const Vec3v& v0);
-const float  DeltaTime(const float normAge, const float frameTime);
-const floatv DeltaTime(const floatv normAge, const floatv frameTime);
+// Vector functions
 
-// Vec4v operators
-Vec4v Add(const Vec4v& a, const Vec4v& b);
+Vec3v Add(const Vec3v& a, const floatv b);
+Vec3v Sub(const Vec3v& a, const floatv b);
 
-// Planef operators
-floatv DistFromPlane(Planev plane, Vec3v point);
+Vec3  HMin(const Vec3v& v0);
+Vec3  HMax(const Vec3v& v0);
+
+// Efficient vector MAdd
+
+template<typename T> Vec3_tpl<T> MAdd(const Vec3_tpl<T>& a, const Vec3_tpl<T>& b, const Vec3_tpl<T>& c);
+template<typename T> Vec3_tpl<T> MAdd(const Vec3_tpl<T>& a, T b, const Vec3_tpl<T>& c);
 
 // Color
 
@@ -352,6 +262,9 @@ ColorFv operator+(const ColorFv& a, const ColorFv& b);
 ColorFv operator*(const ColorFv& a, const ColorFv& b);
 ColorFv operator*(const ColorFv& a, floatv b);
 #endif
+
+// Special
+floatv DeltaTime(floatv normAge, floatv frameTime);
 
 // non vectorized
 

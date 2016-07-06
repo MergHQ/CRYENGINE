@@ -1188,7 +1188,7 @@ public:
 					{
 						const Vec3 currentEntityPos = pCurrentEntity->GetWorldPos();
 						const Vec3 dirToEntity = (currentEntityPos - srcPos).normalized();
-						projAngle = COS2DEG(viewDir.dot(dirToEntity)); // [0..180]
+						projAngle = RAD2DEG(acos(viewDir.dot(dirToEntity))); // [0..180]
 
 						if (projAngle < maxAngleDegrees)
 						{

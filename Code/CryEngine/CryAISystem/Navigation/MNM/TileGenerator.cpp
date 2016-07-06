@@ -2887,7 +2887,7 @@ size_t TileGenerator::Triangulate()
 				const Vec3i cv2(contour[ci2].x, contour[ci2].y, contour[ci2].z);
 				const Vec2i cIn0(cv1.y - cv0.y, cv0.x - cv1.x);
 				const Vec2i cIn1(cv2.y - cv1.y, cv1.x - cv2.x);
-				const bool bCVReflex = (cIn0.Dot(Vec2(cv2 - cv1)) < 0);
+				const bool bCVReflex = (cIn0.Dot(Vec2i(cv2 - cv1)) < 0);
 				const Vec2i cv1_2D(cv1.x, cv1.y);
 				for (size_t hi = 0; hi < numHoles; hi++)
 				{
@@ -2929,7 +2929,7 @@ size_t TileGenerator::Triangulate()
 								const Vec3i hv2(hole.verts[vi2].x, hole.verts[vi2].y, hole.verts[vi2].z);
 								const Vec2i hIn0(hv1.y - hv0.y, hv0.x - hv1.x);
 								const Vec2i hIn1(hv2.y - hv1.y, hv1.x - hv2.x);
-								const bool bHVReflex = (hIn0.Dot(Vec2(hv2 - hv1)) > 0);
+								const bool bHVReflex = (hIn0.Dot(Vec2i(hv2 - hv1)) > 0);
 
 								// Check cv1 is external to the hole.
 								const bool outH0 = hIn0.Dot(diff_2D) > 0;

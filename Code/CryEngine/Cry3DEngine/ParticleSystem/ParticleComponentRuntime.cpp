@@ -374,7 +374,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 		CRY_PFX2_FOR_SPAWNED_PARTICLEGROUP(context)
 		{
 			const floatv lifetime = lifeTimes.Load(particleGroupId);
-			const floatv invLifeTime = Rcp(Max(lifetime, deltaTimev));
+			const floatv invLifeTime = rcp_fast(max(lifetime, deltaTimev));
 			invLifeTimes.Store(particleGroupId, invLifeTime);
 		}
 		CRY_PFX2_FOR_END;
@@ -434,8 +434,8 @@ void CParticleComponentRuntime::CalculateBounds()
 	{
 		const floatv size = sizes.Load(particleGroupId);
 		const Vec3v position = positions.Load(particleGroupId);
-		bbMin = Min(bbMin, Sub(position, size));
-		bbMax = Max(bbMax, Add(position, size));
+		bbMin = min(bbMin, Sub(position, size));
+		bbMax = max(bbMax, Add(position, size));
 	}
 	m_bounds.min = HMin(bbMin);
 	m_bounds.max = HMax(bbMax);
@@ -446,8 +446,8 @@ void CParticleComponentRuntime::CalculateBounds()
 		const float size = sizes.Load(particleId);
 		const Vec3 sizev = Vec3(size, size, size);
 		const Vec3 position = positions.Load(particleId);
-		m_bounds.min = Min(m_bounds.min, position - sizev);
-		m_bounds.max = Max(m_bounds.max, position + sizev);
+		m_bounds.min = min(m_bounds.min, position - sizev);
+		m_bounds.max = max(m_bounds.max, position + sizev);
 	}
 #else
 	const TParticleId lastParticleId = m_container.GetLastParticleId();
@@ -456,8 +456,8 @@ void CParticleComponentRuntime::CalculateBounds()
 		const float size = sizes.Load(particleId);
 		const Vec3 sizev = Vec3(size, size, size);
 		const Vec3 position = positions.Load(particleId);
-		m_bounds.min = Min(m_bounds.min, position - sizev);
-		m_bounds.max = Max(m_bounds.max, position + sizev);
+		m_bounds.min = min(m_bounds.min, position - sizev);
+		m_bounds.max = max(m_bounds.max, position + sizev);
 	}
 #endif
 }
@@ -482,7 +482,7 @@ void CParticleComponentRuntime::AgeUpdate(const SUpdateContext& context)
 		const floatv invLifeTime = invLifeTimes.Load(particleGroupId);
 		const floatv normAge0 = normAges.Load(particleGroupId);
 		const floatv dT = DeltaTime(normAge0, frameTime);
-		const floatv normalAge1 = MAdd(dT, invLifeTime, Max(zero, normAge0));
+		const floatv normalAge1 = MAdd(dT, invLifeTime, max(zero, normAge0));
 		normAges.Store(particleGroupId, normalAge1);
 	}
 	CRY_PFX2_FOR_END;

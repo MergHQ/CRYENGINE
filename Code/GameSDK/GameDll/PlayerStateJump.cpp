@@ -38,6 +38,9 @@ History:
 #include "MovementAction.h"
 #include "PersistantStats.h"
 
+#include <CryMath/Cry_HWVector3.h>
+#include <CryMath/Cry_HWMatrix.h>
+
 CPlayerStateJump::CPlayerStateJump()
 	: m_jumpState(JState_None)
 	, m_jumpLock(0.0f)

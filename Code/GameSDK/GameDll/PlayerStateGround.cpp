@@ -24,6 +24,8 @@ History:
 
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CrySystem/VR/IHMDManager.h>
+#include <CryMath/Cry_HWVector3.h>
+#include <CryMath/Cry_HWMatrix.h>
 
 #ifdef STATE_DEBUG
 static AUTOENUM_BUILDNAMEARRAY(s_ledgeTransitionNames, LedgeTransitionList);

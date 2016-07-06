@@ -115,18 +115,12 @@ template<class ftype> ILINE int sgn_safe(const quotient_tpl<ftype> &op) { return
 template<class ftype> ILINE sgnnz_result_type(ftype) sgnnz_safe(const quotient_tpl<ftype> &op) { return sgnnz(op.x*op.y); }
 template<class ftype> ILINE isneg_result_type(ftype) isneg_safe(const quotient_tpl<ftype> &op) { return isneg(op.x*op.y); }
 template<class ftype> ILINE int isnonneg_safe(const quotient_tpl<ftype> &op) { return isnonneg(op.x)*isnonneg(op.y); }
-template<class ftype> ILINE quotient_tpl<ftype> fabs_tpl(const quotient_tpl<ftype> op) { return quotient_tpl<ftype>(fabs_tpl(op.x),fabs_tpl(op.y)); }
 
-template<class ftype> ILINE quotient_tpl<ftype> max(const quotient_tpl<ftype> &op1,const quotient_tpl<ftype> &op2) { 
-	//int mask1=isneg(op2.x*op1.y-op1.x*op2.y), mask2=mask1^1;
-	//return quotient_tpl<ftype>(op1.x*mask1+op2.x*mask2, op1.y*mask1+op2.y*mask2); 
-	return op1>op2 ? op1:op2;
-}
-template<class ftype> ILINE quotient_tpl<ftype> min(const quotient_tpl<ftype> &op1,const quotient_tpl<ftype> &op2) { 
-	//int mask1=isneg(op1.x*op2.y-op2.x*op1.y), mask2=mask1^1;
-	//return quotient_tpl<ftype>(op1.x*mask1+op2.x*mask2, op1.y*mask1+op2.y*mask2); 
-	return op1<op2 ? op1:op2;
-}
+namespace crymath {
+
+template<class ftype> ILINE quotient_tpl<ftype> abs(const quotient_tpl<ftype> op) { return quotient_tpl<ftype>(abs(op.x), abs(op.y)); }
+
+} // namespace crymath
 
 template<class ftype> ILINE quotient_tpl<ftype> fake_atan2(ftype y,ftype x) {
 	quotient_tpl<ftype> res;

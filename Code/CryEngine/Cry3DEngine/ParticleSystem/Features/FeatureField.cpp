@@ -222,16 +222,16 @@ public:
 		{
 			const Vec3v position = positions.Load(particleGroupId);
 			const floatv size0 = sizes.Load(particleGroupId);
-			const floatv distance = Max(epsilon, DistFromPlane(projectionPlane, position));
-			const floatv pixelSize0 = Mul(Rcp(Mul(distance, minDrawPixels)), size0);
-			const floatv pixelSize1 = Clamp(pixelSize0, minPixelSize, maxPixelSize);
-			const floatv size1 = Mul(pixelSize1, Mul(distance, minDrawPixels));
+			const floatv distance = max(epsilon, projectionPlane.DistFromPlane(position));
+			const floatv pixelSize0 = rcp_fast(distance * minDrawPixels) * size0;
+			const floatv pixelSize1 = clamp(pixelSize0, minPixelSize, maxPixelSize);
+			const floatv size1 = pixelSize1 * distance * minDrawPixels;
 			sizes.Store(particleGroupId, size1);
 
 			if (m_affectOpacity)
 			{
 				const floatv alpha0 = inputAlphas.SafeLoad(particleGroupId);
-				const floatv alpha1 = Mul(alpha0, Saturate(Mul(pixelSize0, invMinPixelSize)));
+				const floatv alpha1 = alpha0 * saturate(pixelSize0 * invMinPixelSize);
 				outputAlphas.Store(particleGroupId, alpha1);
 			}
 		}

@@ -675,15 +675,6 @@ inline bool Sphere_Sphere(const Sphere& s1, const Sphere& s2)
 	return (sqrad > (distc | distc));
 }
 
-ILINE bool HWVSphere_HWVSphere(const HWVSphere& s1, const HWVSphere& s2)
-{
-	simdf fTotalRadius = SIMDFAdd(s1.radius, s2.radius);
-	hwvec3 distc = HWVSub(s1.center, s2.center);
-	simdf fTotalRadiusSqr = SIMDFMult(fTotalRadius, fTotalRadius);
-	simdf fDistanceSqr = HWV3Dot(distc, distc);
-	return SIMDFLessThanEqualB(fDistanceSqr, fTotalRadiusSqr);
-}
-
 //! Sphere_Triangle overlap test.
 //! \retval 0 no overlap.
 //! \retval 1 overlap.
@@ -707,40 +698,6 @@ ILINE bool Sphere_Triangle(const Sphere& s, const Triangle_tpl<F>& t)
 	//...and now the hardcore-test!
 	if ((s.radius * s.radius) < Distance::Point_TriangleSq(s.center, t))  return 0;
 	return 1;   //sphere and triangle are overlapping
-}
-
-ILINE bool HWVSphere_TriangleFromPoints(const HWVSphere& s, const hwvec3& t0, const hwvec3& t1, const hwvec3& t2)
-{
-	//create a "bounding sphere" around triangle for fast rejection test
-	SIMDFConstant(fOneThird, 1.0f / 3.0f);
-
-	hwvec3 middle = HWVMultiplySIMDF(HWVAdd(t0, HWVAdd(t1, t2)), fOneThird);
-
-	hwvec3 ov0 = HWVSub(t0, middle);
-	hwvec3 ov1 = HWVSub(t1, middle);
-	hwvec3 ov2 = HWVSub(t2, middle);
-
-	simdf SqRad0 = HWV3Dot(ov0, ov0);
-	simdf SqRad1 = HWV3Dot(ov1, ov1);
-	simdf SqRad2 = HWV3Dot(ov2, ov2);
-
-	SqRad0 = SIMDFMax(SqRad0, SqRad1);
-	SqRad0 = SIMDFMax(SqRad0, SqRad2);
-
-	//first simple rejection-test...
-	//if( HWVSphere_HWVSphere(s, HWVSphere(middle, SIMDFSqrtEstFast(SqRad0)))==0 )
-	if (HWVSphere_HWVSphere(s, HWVSphere(middle, SIMDFSqrtEst(SqRad0))) == 0)
-	{
-		return 0;   //overlap not possible
-	}
-	else
-	{
-		//...and now the hardcore-test!
-		simdf fRadiusSq = SIMDFMult(s.radius, s.radius);
-		simdf fDistToTriangleSq = Distance::Point_TriangleByPointsSq(s.center, t0, t1, t2);
-
-		return SIMDFLessThanEqualB(fDistToTriangleSq, fRadiusSq);
-	}
 }
 
 /*!

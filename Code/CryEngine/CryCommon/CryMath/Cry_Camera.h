@@ -546,7 +546,7 @@ ILINE void CCamera::CalcScreenBounds(int* vOut, const AABB* pAABB, int nWidth, i
 
 		fIntersect = (float)__fsel(-projected.w, 0.0f, 1.0f);
 
-		if (!fzero(fIntersect) && !fzero(projected.w))
+		if (fIntersect && projected.w)
 		{
 			projected.x /= projected.w;
 			projected.y /= projected.w;

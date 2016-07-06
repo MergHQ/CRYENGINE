@@ -1802,7 +1802,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 		if (i > 0.999) t = 1.0;
 		NLerp2AimPose(rRot, rPos, m_arrRelPose0, m_arrRelPose1, t, m_arrAbsPose);
 		Quatd qt = mid * m_arrAbsPose[nWBone].q;
-		polar[c] = Vec2(PolarCoordinate(qt));
+		polar[c] = Vec2d(PolarCoordinate(qt));
 		weight[c].SetLerp(w0, w1, t);
 		;
 		if (t == 1.0) break;

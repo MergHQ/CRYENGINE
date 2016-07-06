@@ -220,7 +220,7 @@ void CParticleSubEmitter::EmitParticles(SParticleUpdateContext& context)
 							} Interp;
 
 							Interp.bInterp = context.fUpdateTime > 0.f && !params.bMoveRelativeEmitter
-							                 && m_LastLoc.s >= 0.f && !QuatTS::IsEquivalent(locA, locB, 0.0045f, 1e-5f);
+							                 && m_LastLoc.s >= 0.f && !IsEquivalent(locA, locB, 0.0045f, 1e-5f);
 
 							if (params.fMaintainDensity && (Interp.bInterp || params.nEnvFlags & ENV_PHYS_AREA))
 							{
@@ -509,8 +509,8 @@ void CParticleSubEmitter::UpdateForce()
 			{
 				primitives::box curBox;
 				spos.pGeom->GetBBox(&curBox);
-				if (!curBox.center.IsEquivalent(geomBox.center, 0.001f)
-				    || !curBox.size.IsEquivalent(geomBox.size, 0.001f))
+				if (!IsEquivalent(curBox.center, geomBox.center, 0.001f)
+				    || !IsEquivalent(curBox.size, geomBox.size, 0.001f))
 					spos.pGeom = NULL;
 			}
 			if (!spos.pGeom)
@@ -536,8 +536,8 @@ void CParticleSubEmitter::UpdateForce()
 		else
 		{
 			// Update position & box size as needed.
-			if (!spos.pos.IsEquivalent(force.qpLoc.t, 0.01f)
-			    || !Quat::IsEquivalent(spos.q, force.qpLoc.q)
+			if (!IsEquivalent(spos.pos, force.qpLoc.t, 0.01f)
+			    || !IsEquivalent(spos.q, force.qpLoc.q)
 			    || spos.scale != force.qpLoc.s)
 			{
 				pe_params_pos pos;

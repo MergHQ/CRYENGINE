@@ -7,12 +7,6 @@
 
 //#define TEXSTRM_DEFER_UMR
 
-ILINE int bsel(bool c, int t, int f)
-{
-	PREFAST_SUPPRESS_WARNING(6323)
-	return isel(-(int)c, f, t);
-}
-
 struct SPlanningMemoryState
 {
 	ptrdiff_t nMemStreamed;
@@ -176,7 +170,7 @@ struct SPlanningTextureOrderKey
 		nWidth = pTex->GetWidthNonVirtual();
 		nHeight = pTex->GetHeightNonVirtual();
 		nMips = pTex->GetNumMipsNonVirtual();
-		nMipsPersistent = bsel(pTex->IsForceStreamHighRes(), pTex->GetNumMipsNonVirtual(), pTex->GetNumPersistentMips());
+		nMipsPersistent = pTex->IsForceStreamHighRes() ?  pTex->GetNumMipsNonVirtual() : pTex->GetNumPersistentMips();
 		nFormatCode = pTex->StreamGetFormatCode();
 
 		uint32 nSlices = pTex->StreamGetNumSlices();

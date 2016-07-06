@@ -24,6 +24,13 @@
 #include <CryMath/CryHalf.inl>
 #include <CryCore/MetaUtils.h>
 #include <float.h>
+#include <cmath>
+
+#if CRY_PLATFORM_SSE2
+	#include <xmmintrin.h>
+#elif CRY_PLATFORM_NEON
+	#include "arm_neon.h"
+#endif
 
 //! Only enable math asserts in debug builds
 #if defined(_DEBUG)
@@ -32,24 +39,9 @@
 	#define CRY_MATH_ASSERT(x)
 #endif
 
-// Forward declarations
-template<typename F> struct Vec2_tpl;
-template<typename F> struct Vec3_tpl;
-template<typename F> struct Vec4_tpl;
-
-template<typename F> struct Ang3_tpl;
-template<typename F> struct Plane_tpl;
-template<typename F> struct AngleAxis_tpl;
-template<typename F> struct Quat_tpl;
-template<typename F> struct QuatT_tpl;
-template<typename F> struct DualQuat_tpl;
-template<typename F> struct QuatTS_tpl;
-template<typename F> struct QuatTNS_tpl;
-
-template<typename F> struct Diag33_tpl;
-template<typename F> struct Matrix33_tpl;
-template<typename F> struct Matrix34_tpl;
-template<typename F> struct Matrix44_tpl;
+//! General template for converting to/from types. Specialize as needed
+template<typename D> ILINE D             convert()      { return D(0); }
+template<typename D, typename S> ILINE D convert(S val) { return D(val); }
 
 // Definitions
 const f32 gf_PI = f32(3.14159265358979323846264338327950288419716939937510);
@@ -58,9 +50,15 @@ const f64 g_PI = 3.14159265358979323846264338327950288419716939937510;       //!
 const f32 gf_PI2 = f32(3.14159265358979323846264338327950288419716939937510 * 2.0);
 const f64 g_PI2 = 3.14159265358979323846264338327950288419716939937510 * 2.0; //!< 2*pi
 
+const f32 gf_ln2 = 0.69314718055994530941723212145818f;       //!< ln(2)
+
 const f64 sqrt2 = 1.4142135623730950488016887242097;
 const f64 sqrt3 = 1.7320508075688772935274463415059;
 
+#define DEG2RAD(a) ((a) * (gf_PI / 180.0f))
+#define RAD2DEG(a) ((a) * (180.0f / gf_PI))
+
+// MIN and MAX macros are sometimes needed for constant definitions
 #ifndef MAX
 	#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
@@ -68,140 +66,113 @@ const f64 sqrt3 = 1.7320508075688772935274463415059;
 	#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
-#define VEC_EPSILON (0.05f)
-#define RAD_EPSILON (0.01f)
-#define DEG2RAD(a)   ((a) * (gf_PI / 180.0f))
-#define RAD2DEG(a)   ((a) * (180.0f / gf_PI))
-#define DEG2COS(a)   (cos_tpl((a) * (gf_PI / 180.0f)))
-#define COS2DEG(a)   (acos_tpl(a) * (180.0f / gf_PI))
-#define RAD2HCOS(a)  (cos_tpl((a * 0.5f)))
-#define HCOS2RAD(a)  (acos_tpl(a) * 2.0f)
-#define DEG2HCOS(a)  (cos_tpl((a * 0.5f) * (gf_PI / 180.0f)))
-#define DEG2HSIN(a)  (sin_tpl((a * 0.5f) * (gf_PI / 180.0f)))
-#define HCOS2DEG(a)  (acos_tpl(a) * 2.0f * (180.0f / gf_PI))
-#define SIGN_MASK(x) ((intptr_t)(x) >> ((sizeof(size_t) * 8) - 1))
-#define TANGENT30   0.57735026918962576450914878050196f     // tan(30)
-#define TANGENT30_2 0.57735026918962576450914878050196f * 2 // 2*tan(30)
-#define LN2         0.69314718055994530941723212145818f     // ln(2)
-
-ILINE f32                 __fsel(const f32 _a, const f32 _b, const f32 _c)  { return (_a < 0.0f) ? _c : _b; }
-ILINE f64                 __fsel(const f64 _a, const f64 _b, const f64 _c)  { return (_a < 0.0f) ? _c : _b; }
-ILINE f32                 __fself(const f32 _a, const f32 _b, const f32 _c) { return (_a < 0.0f) ? _c : _b; }
-ILINE f32                 __fsels(const f32 _a, const f32 _b, const f32 _c) { return (_a < 0.0f) ? _c : _b; }
-ILINE f32                 __fres(const f32 _a)                              { return 1.f / _a; }
-template<class T> ILINE T isel(int c, T a, T b)                             { return (c < 0) ? b : a; }
-template<class T> ILINE T isel(int64 c, T a, T b)                           { return (c < 0) ? b : a; }
-template<class T> ILINE T iselnz(int c, T a, T b)                           { return c ? a : b; }
-template<class T> ILINE T iselnz(uint32 c, T a, T b)                        { return c ? a : b; }
-template<class T> ILINE T iselnz(int64 c, T a, T b)                         { return c ? a : b; }
-template<class T> ILINE T iselnz(uint64 c, T a, T b)                        { return c ? a : b; }
-
-//! Provides fast way of checking against 0 (saves fcmp).
-ILINE bool fzero(const float& val) { return val == 0.0f; }
-
-//! Provides fast way of checking against 0 (saves fcmp).
-ILINE bool fzero(float* pVal) { return *pVal == 0.0f; }
-
-// Define min/max
+// Define min and max as proper template
 #ifdef min
 	#undef min
-#endif //min
+#endif
 
 #ifdef max
 	#undef max
-#endif //max
+#endif
 
-// Bring min and max from std namespace to global scope.
-template<class T> ILINE T                        min(const T& a, const T& b)                { return b < a ? b : a; }
-template<class T> ILINE T                        max(const T& a, const T& b)                { return a < b ? b : a; }
-template<class T, class _Compare> ILINE const T& min(const T& a, const T& b, _Compare comp) { return comp(b, a) ? b : a; }
-template<class T, class _Compare> ILINE const T& max(const T& a, const T& b, _Compare comp) { return comp(a, b) ? b : a; }
-ILINE int                                        min_branchless(int a, int b)               { int diff = a - b; int mask = diff >> 31; return (b & (~mask)) | (a & mask); }
+template<typename T> ILINE T                 min(T a, T b)                { return b < a ? b : a; }
+template<typename T> ILINE T                 max(T a, T b)                { return a < b ? b : a; }
+template<typename T, class _Compare> ILINE T min(T a, T b, _Compare comp) { return comp(b, a) ? b : a; }
+template<typename T, class _Compare> ILINE T max(T a, T b, _Compare comp) { return comp(a, b) ? b : a; }
+ILINE int                                    min_branchless(int a, int b) { int diff = a - b; int mask = diff >> 31; return (b & (~mask)) | (a & mask); }
 
-template<class T> ILINE T                        clamp_tpl(T X, T Min, T Max)               { return X < Min ? Min : X < Max ? X : Max; }
-template<class T> ILINE void                     Limit(T& val, const T& min, const T& max)
+template<typename T> ILINE void              Limit(T& val, T min, T max)
 {
 	if (val < min)
 		val = min;
 	else if (val > max)
 		val = max;
 }
-template<class T> ILINE T Lerp(const T& a, const T& b, float s) { return T(a + (b - a) * s); }
+template<class T, class U> ILINE T Lerp(const T& a, const T& b, U t) { return a + T((b - a) * t); }
 
-// the portability functions for CPU_X86
+// Selection functions, could be overloaded or optimized as branchless
+
+template<typename S, typename T> ILINE T if_else(S test, T a, T b) { return test ? a : b; }
+template<typename S, typename T> ILINE T if_else_zero(S test, T a) { return test ? a : convert<T>(); }
+
+// Deprecated
+template<typename T> ILINE T __fsel(T a, T b, T c) { return if_else(a >= convert<T>(), b, c); }
 
 #if CRY_PLATFORM_SSE2
-	#include <xmmintrin.h>
+
+// Optimize functions for scalars
+template<> ILINE f32 min(f32 v0, f32 v1)
+{
+	return _mm_cvtss_f32(_mm_min_ss(_mm_set_ss(v0), _mm_set_ss(v1)));
+}
+template<> ILINE f32 max(f32 v0, f32 v1)
+{
+	return _mm_cvtss_f32(_mm_max_ss(_mm_set_ss(v0), _mm_set_ss(v1)));
+}
+
+#endif // CRY_PLATFORM_SSE2
+
+//! Create namespace for standard math functions, imported from std, and our extended versions.
+//! SSE versions implemented in Cry_Math_SSE.h
+namespace crymath
+{
+
+using std::abs;
+using std::floor;
+using std::ceil;
+
+#if !CRY_COMPILER_GCC
+using std::trunc;
+#else
+ILINE f32 trunc(f32 op) { return ::truncf(op); }
+ILINE f64 trunc(f64 op) { return ::trunc(op); }
 #endif
 
-ILINE f32   fabs_tpl(f32 op)                            { return fabsf(op); }
-ILINE f64   fabs_tpl(f64 op)                            { return fabs(op); }
-ILINE int32 fabs_tpl(int32 op)                          { int32 mask = op >> 31; return op + mask ^ mask; }
+using std::sin;
+using std::cos;
+using std::tan;
+using std::asin;
+using std::acos;
+using std::atan;
+using std::atan2;
 
-ILINE f32   floor_tpl(f32 op)                           { return floorf(op); }
-ILINE f64   floor_tpl(f64 op)                           { return floor(op); }
-ILINE int32 floor_tpl(int32 op)                         { return op; }
+template<typename T> ILINE void sincos(T angle, T* pSin, T* pCos) { *pSin = sin(angle); *pCos = cos(angle); }
 
-ILINE f32   ceil_tpl(f32 op)                            { return ceilf(op); }
-ILINE f64   ceil_tpl(f64 op)                            { return ceil(op); }
-ILINE int32 ceil_tpl(int32 op)                          { return op; }
+using std::exp;
+using std::exp;
+using std::log;
+using std::pow;
+using std::sqrt;
 
-ILINE f32   fmod_tpl(f32 x, f32 y)                      { return (f32)fmodf(x, y); }
-ILINE f64   fmod_tpl(f64 x, f64 y)                      { return (f32)fmod(x, y); }
-
-ILINE void  sincos_tpl(f32 angle, f32* pSin, f32* pCos) { *pSin = f32(sin(angle));  *pCos = f32(cos(angle));  }
-ILINE void  sincos_tpl(f64 angle, f64* pSin, f64* pCos) { *pSin = f64(sin(angle));  *pCos = f64(cos(angle));  }
-
-ILINE f32   cos_tpl(f32 op)                             { return cosf(op); }
-ILINE f64   cos_tpl(f64 op)                             { return cos(op); }
-
-ILINE f32   sin_tpl(f32 op)                             { return sinf(op); }
-ILINE f64   sin_tpl(f64 op)                             { return sin(op); }
-
-ILINE f32   acos_tpl(f32 op)                            { return acosf(clamp_tpl(op, -1.0f, +1.0f)); }
-ILINE f64   acos_tpl(f64 op)                            { return acos(clamp_tpl(op, -1.0, +1.0)); }
-
-ILINE f32   asin_tpl(f32 op)                            { return asinf(clamp_tpl(op, -1.0f, +1.0f)); }
-ILINE f64   asin_tpl(f64 op)                            { return asin(clamp_tpl(op, -1.0, +1.0)); }
-
-ILINE f32   atan_tpl(f32 op)                            { return atanf(op); }
-ILINE f64   atan_tpl(f64 op)                            { return atan(op); }
-
-ILINE f32   atan2_tpl(f32 op1, f32 op2)                 { return atan2f(op1, op2); }
-ILINE f64   atan2_tpl(f64 op1, f64 op2)                 { return atan2(op1, op2); }
-
-ILINE f32   tan_tpl(f32 op)                             { return tanf(op); }
-ILINE f64   tan_tpl(f64 op)                             { return tan(op); }
-
-ILINE f32   exp_tpl(f32 op)                             { return expf(op); }
-ILINE f64   exp_tpl(f64 op)                             { return exp(op); }
-
-ILINE f32   log_tpl(f32 op)                             { return logf(op); }
-ILINE f64   log_tpl(f64 op)                             { return log(op); }
-
-ILINE f32   pow_tpl(f32 x, f32 y)                       { return (f32) pow((f64)x, (f64)y); }
-ILINE f64   pow_tpl(f64 x, f64 y)                       { return pow(x, y); }
+// Define rcp, rsqrt, etc for different platforms. Using std::sqrt (already optimal for x64)
 
 #if CRY_PLATFORM_SSE2
-ILINE f32 sqrt_tpl(f32 op)        { __m128 s = _mm_sqrt_ss(_mm_set_ss(op));  float r; _mm_store_ss(&r, s);   return r; }
-ILINE f64 sqrt_tpl(f64 op)        { return sqrt(op); }
 
-ILINE f32 sqrt_fast_tpl(f32 op)   { __m128 s = _mm_sqrt_ss(_mm_set_ss(op)); float r; _mm_store_ss(&r, s);   return r; }
-ILINE f64 sqrt_fast_tpl(f64 op)   { return sqrt(op); }
+ILINE f32 rcp_fast(f32 op)   { return _mm_cvtss_f32(_mm_rcp_ss(_mm_set_ss(op))); }
+ILINE f32 rcp(f32 op)        { float r = rcp_fast(op); return r * (2.0f - op * r); }
 
-ILINE f32 isqrt_tpl(f32 op)       { __m128 s = _mm_rsqrt_ss(_mm_set_ss(op));  float r; _mm_store_ss(&r, s);   return r * (1.5f - op * r * r * 0.5f); }
-ILINE f64 isqrt_tpl(f64 op)       { return 1.0 / sqrt(op); }
+ILINE f32 rsqrt_fast(f32 op) { return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(op))); }
+ILINE f32 rsqrt(f32 op)      { float r = rsqrt_fast(op); return r * (1.5f - op * r * r * 0.5f); }
 
-ILINE f32 isqrt_fast_tpl(f32 op)  { __m128 s = _mm_rsqrt_ss(_mm_set_ss(op)); float r; _mm_store_ss(&r, s);   return r * (1.5f - op * r * r * 0.5f); }
-ILINE f64 isqrt_fast_tpl(f64 op)  { return 1.0 / sqrt(op); }
+ILINE f32 sqrt_fast(f32 op)  { return rsqrt_fast(max(op, FLT_MIN)) * op; }
 
-ILINE f32 isqrt_safe_tpl(f32 op2) { f32 op = op2 + +FLT_MIN;  __m128 s = _mm_rsqrt_ss(_mm_set_ss(op));  float r; _mm_store_ss(&r, s);   return r * (1.5f - op * r * r * 0.5f); }
-ILINE f64 isqrt_safe_tpl(f64 op)  { return 1.0 / sqrt(op + DBL_MIN); }
-#elif CRY_PLATFORM_NEON
-	#include "arm_neon.h"
+ILINE f32 sign(f32 op)
+{
+	__m128 v = _mm_load_ss(&op);
+	__m128 s = _mm_or_ps(_mm_and_ps(v, _mm_set_ss(-0.0f)), _mm_set_ss(1.0f));
+	return _mm_cvtss_f32(s);
+}
+
+#else
+
+ILINE f32 rcp(f32 op)      { return 1.0f / op; }
+ILINE f32 rcp_fast(f32 op) { return 1.0f / op; }
+ILINE f32 sign(f32 op)     { return __fsel(op, 1.0f, -1.0f); }
+
+	#if CRY_PLATFORM_NEON
 
 template<int n>
-float isqrt_helper(float f)
+float rsqrt_helper(float f)
 {
 	float32x2_t v = vdup_n_f32(f);
 	float32x2_t r = vrsqrte_f32(v);
@@ -211,47 +182,113 @@ float isqrt_helper(float f)
 	return vget_lane_f32(r, 0);
 }
 
-ILINE f32 sqrt_tpl(f32 op)       { return op != 0.0f ? op* isqrt_helper<1>(op) : op; }
-ILINE f64 sqrt_tpl(f64 op)       { return sqrt(op); }
+ILINE f32 sqrt_fast(f32 op)  { return op * rsqrt_helper<0>(op); }
+ILINE f32 rsqrt(f32 op)      { return rsqrt_helper<1>(op); }
+ILINE f32 rsqrt_fast(f32 op) { return rsqrt_helper<0>(op); }
 
-ILINE f32 sqrt_fast_tpl(f32 op)  { return op != 0.0f ? op* isqrt_helper<0>(op) : op; }
-ILINE f64 sqrt_fast_tpl(f64 op)  { return sqrt(op); }
+	#else
 
-ILINE f32 isqrt_tpl(f32 op)      { return isqrt_helper<1>(op); }
-ILINE f64 isqrt_tpl(f64 op)      { return 1.0 / sqrt(op); }
+ILINE f32 sqrt_fast(f32 op)  { return sqrt(op); }
+ILINE f32 rsqrt(f32 op)      { return 1.0f / sqrt(op); }
+ILINE f32 rsqrt_fast(f32 op) { return rsqrt(op); }
 
-ILINE f32 isqrt_fast_tpl(f32 op) { return isqrt_helper<0>(op); }
-ILINE f64 isqrt_fast_tpl(f64 op) { return 1.0 / sqrt(op); }
+	#endif
 
-ILINE f32 isqrt_safe_tpl(f32 op) { return isqrt_helper<1>(op + FLT_MIN); }
-ILINE f64 isqrt_safe_tpl(f64 op) { return 1.0 / sqrt(op + DBL_MIN); }
-#else
-	#error unsupported CPU
 #endif
 
-ILINE int32               int_round(f32 f)                   { return f < 0.f ? int32(f - 0.5f) : int32(f + 0.5f); }
-ILINE int32               pos_round(f32 f)                   { return int32(f + 0.5f); }
-ILINE int64               int_round(f64 f)                   { return f < 0.0 ? int64(f - 0.5) : int64(f + 0.5); }
-ILINE int64               pos_round(f64 f)                   { return int64(f + 0.5); }
+ILINE f64 rcp(f64 op)        { return 1.0 / op; }
+ILINE f64 rsqrt(f64 op)      { return 1.0 / sqrt(op); }
 
-ILINE int32               int_ceil(f32 f)                    { int32 i = int32(f); return (f > f32(i)) ? i + 1 : i; }
-ILINE int64               int_ceil(f64 f)                    { int64 i = int64(f); return (f > f64(i)) ? i + 1 : i; }
+ILINE f32 rcp_safe(f32 op)   { return rcp(max(op, FLT_MIN)); }
+ILINE f64 rcp_safe(f64 op)   { return rcp(max(op, DBL_MIN)); }
 
-ILINE float               ufrac8_to_float(float u)           { return u * (1.f / 255.f); }
-ILINE float               ifrac8_to_float(float i)           { return i * (1.f / 127.f); }
-ILINE uint8               float_to_ufrac8(float f)           { int i = pos_round(f * 255.f);  CRY_MATH_ASSERT(i >= 0 && i < 256);   return uint8(i); }
-ILINE int8                float_to_ifrac8(float f)           { int i = int_round(f * 127.f);  CRY_MATH_ASSERT(abs(i) <= 127);   return int8(i); }
+ILINE f32 rsqrt_safe(f32 op) { return rsqrt(max(op, FLT_MIN)); }
+ILINE f64 rsqrt_safe(f64 op) { return rsqrt(max(op, DBL_MIN)); }
 
-template<class F> ILINE F sqr(const F& op)                   { return op * op; }
-template<class F> ILINE F sqr(const Vec2_tpl<F>& op)         { return op | op; }
-template<class F> ILINE F sqr(const Vec3_tpl<F>& op)         { return op | op; }
-template<class F> ILINE F sqr_signed(const F& op)            { return op * fabs_tpl(op); }
-template<class F> ILINE F cube(const F& op)                  { return op * op * op; }
+} // namespace crymath
 
-template<class F> ILINE F square(F fOp)                      { return(fOp * fOp); }
-ILINE float               div_min(float n, float d, float m) { return n * d < m * d * d ? n / d : m; }
+#include "Cry_Math_SSE.h"
 
-ILINE int32               sgnnz(f64 x)
+namespace crymath
+{
+
+template<typename T> ILINE T clamp(T val, T lo, T hi) { return min(max(val, lo), hi); }
+template<typename T> ILINE T saturate(T val)          { return clamp(val, convert<T>(0.0f), convert<T>(1.0f)); }
+
+// std::fmod is extremely slow
+template<typename T> ILINE T mod(T a, T b)
+{
+	return a - trunc(a / b) * b;
+}
+
+template<typename T> ILINE T wrap(T f, T lo, T hi)
+{
+	const T range = hi - lo;
+	return f - floor((f - lo) / range) * range;
+}
+
+template<typename T>
+int solve_quadratic(T a, T b, T c, T x[2])
+{
+	if (a == T(0))
+	{
+		if (b != T(0))
+		{
+			x[0] = -c / b;
+			return 1;
+		}
+		if (c != T(0))
+			return 0;
+		return -1;
+	}
+	else
+	{
+		b /= T(-2);
+		T d = b * b - a * c;
+
+		if (d > T(0))
+		{
+			T s = sqrt(d);
+			T ia = T(1) / a;
+
+			x[0] = (b + s) * ia;
+			x[1] = (b - s) * ia;
+			return 2;
+		}
+		if (d == T(0))
+		{
+			x[0] = b / a;
+			return 1;
+		}
+		return 0;
+	}
+}
+
+} // namespace crymath
+
+ILINE int32                  int_round(f32 f)                   { return f < 0.f ? int32(f - 0.5f) : int32(f + 0.5f); }
+ILINE int64                  int_round(f64 f)                   { return f < 0.0 ? int64(f - 0.5) : int64(f + 0.5); }
+
+ILINE uint32                 pos_round(f32 f)                   { CRY_MATH_ASSERT(f >= 0.0f); return uint32(f + 0.5f); }
+ILINE uint64                 pos_round(f64 f)                   { CRY_MATH_ASSERT(f >= 0.0); return uint64(f + 0.5); }
+
+ILINE int32                  int_ceil(f32 f)                    { int32 i = int32(f); return (f > f32(i)) ? i + 1 : i; }
+ILINE int64                  int_ceil(f64 f)                    { int64 i = int64(f); return (f > f64(i)) ? i + 1 : i; }
+
+ILINE float                  ufrac8_to_float(float u)           { return u * (1.f / 255.f); }
+ILINE float                  ifrac8_to_float(float i)           { return i * (1.f / 127.f); }
+ILINE uint8                  float_to_ufrac8(float f)           { uint i = pos_round(f * 255.f);  CRY_MATH_ASSERT(i < 256);       return uint8(i); }
+ILINE int8                   float_to_ifrac8(float f)           { int i = int_round(f * 127.f);  CRY_MATH_ASSERT(abs(i) < 128);   return int8(i); }
+
+template<typename F> ILINE F sqr(const F& op)                   { return op * op; }
+template<typename F> ILINE F square(const F& op)                { return op * op; }                                   // Deprecated
+template<typename F> ILINE F sqr_signed(const F& op)            { return op * crymath::abs(op); }
+template<typename F> ILINE F cube(const F& op)                  { return op * op * op; }
+
+ILINE float                  div_min(float n, float d, float m) { return n * d < m * d * d ? n / d : m; }
+
+// Float extraction functions
+ILINE int32 sgnnz(f64 x)
 {
 	union
 	{
@@ -389,40 +426,25 @@ ILINE int64 iszero(int64_t x) { return -(x >> 63 ^ (x - 1) >> 63); }
 ILINE int64 iszero(long int x) { return -(x >> 63 ^ (x - 1) >> 63); }
 #endif
 
-ILINE float                   if_neg_else(float test, float val_neg, float val_nonneg) { return (float)__fsel(test, val_nonneg, val_neg); }
-ILINE float                   if_pos_else(float test, float val_pos, float val_nonpos) { return (float)__fsel(-test, val_nonpos, val_pos); }
-template<class F> ILINE int32 inrange(F x, F end1, F end2)                             { return isneg(fabs_tpl(end1 + end2 - x * (F)2) - fabs_tpl(end1 - end2)); }
-template<class F> ILINE F     cond_select(int32 bFirst, F op1, F op2)                  { F arg[2] = { op1, op2 };   return arg[bFirst ^ 1]; }
+template<typename F> ILINE int32 inrange(F x, F end1, F end2) { return isneg(abs(end1 + end2 - x * (F)2) - abs(end1 - end2)); }
 
-template<class F> ILINE int32 idxmax3(const F* pdata)
+template<typename F> ILINE int32 idxmax3(const F* pdata)
 {
 	int32 imax = isneg(pdata[0] - pdata[1]);
 	imax |= isneg(pdata[imax] - pdata[2]) << 1;
 	return imax & (2 | (imax >> 1 ^ 1));
 }
-template<class F> ILINE int32 idxmax3(const Vec3_tpl<F>& vec)
-{
-	int32 imax = isneg(vec.x - vec.y);
-	imax |= isneg(vec[imax] - vec.z) << 1;
-	return imax & (2 | (imax >> 1 ^ 1));
-}
-template<class F> ILINE int32 idxmin3(const F* pdata)
+template<typename F> ILINE int32 idxmin3(const F* pdata)
 {
 	int32 imin = isneg(pdata[1] - pdata[0]);
 	imin |= isneg(pdata[2] - pdata[imin]) << 1;
 	return imin & (2 | (imin >> 1 ^ 1));
 }
-template<class F> ILINE int32 idxmin3(const Vec3_tpl<F>& vec)
-{
-	int32 imin = isneg(vec.y - vec.x);
-	imin |= isneg(vec.z - vec[imin]) << 1;
-	return imin & (2 | (imin >> 1 ^ 1));
-}
 //! Approximation of exp(-x).
-ILINE float approxExp(float x) { return __fres(1.f + x); }
+ILINE float approxExp(float x) { return crymath::rcp_fast(1.f + x); }
 
 //! Approximation of 1.f - exp(-x).
-ILINE float approxOneExp(float x) { return x * __fres(1.f + x); }
+ILINE float approxOneExp(float x) { return x * crymath::rcp_fast(1.f + x); }
 
 //! \return i if x==1<<i (i=0..63)
 ILINE int ilog2(uint64 x)
@@ -444,69 +466,14 @@ ILINE int ilog2(uint64 x)
 #endif
 }
 
-template<class T>
-int solve_quadratic(T a, T b, T c, T x[2])
-{
-	if (a == T(0))
-	{
-		if (b != T(0))
-		{
-			x[0] = -c / b;
-			return 1;
-		}
-		if (c != T(0))
-			return 0;
-		return -1;
-	}
-	else
-	{
-		b /= T(2);
-		T d = b * b - a * c;
-
-		if (d > T(0))
-		{
-			T s = sqrt_tpl(d);
-			T q = -(b + (b > T(0) ? T(1) : T(-1)) * s);
-
-			x[0] = q / a;
-			x[1] = c / q;
-			return 2;
-		}
-		if (d == T(0))
-		{
-			x[0] = -b / a;
-			return 1;
-		}
-		return 0;
-	}
-}
-
-static int32 inc_mod3[] = { 1, 2, 0 }, dec_mod3[] = { 2, 0, 1 };
+const int32 inc_mod3[] = { 1, 2, 0 }, dec_mod3[] = { 2, 0, 1 };
 #ifdef PHYSICS_EXPORTS
-	#define incm3(i) inc_mod3[i]
-	#define decm3(i) dec_mod3[i]
+ILINE int32 incm3(int32 i) { return inc_mod3[i]; }
+ILINE int32 decm3(int32 i) { return dec_mod3[i]; }
 #else
 ILINE int32 incm3(int32 i) { return i + 1 & (i - 2) >> 31; }
 ILINE int32 decm3(int32 i) { return i - 1 + ((i - 1) >> 31 & 3); }
 #endif
-
-//////////////////////////////////////////////////////////////////////////
-enum type_zero { ZERO };
-enum type_min { VMIN };
-enum type_max { VMAX };
-enum type_identity { IDENTITY };
-
-#include "Cry_Vector2.h"
-#include "Cry_Vector3.h"
-#include "Cry_Vector4.h"
-#include "Cry_MatrixDiag.h"
-#include "Cry_Matrix33.h"
-#include "Cry_Matrix34.h"
-#include "Cry_Matrix44.h"
-#include "Cry_Quat.h"
-#include "Cry_HWVector3.h"
-#include "Cry_HWMatrix.h"
-#include "Cry_XOptimise.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -596,7 +563,7 @@ template<typename T> ILINE void SmoothCDWithMaxRate(
 		const float exp = 1.0f / (1.0f + x + 0.48f * x * x + 0.235f * x * x * x);
 		const T unclampedChange = val - to;
 		const T maxChange = maxValRate * smoothTime;
-		const T clampedChange = clamp_tpl<T>(unclampedChange, -maxChange, maxChange);
+		const T clampedChange = crymath::clamp<T>(unclampedChange, -maxChange, maxChange);
 		const T clampedTo = val - clampedChange;
 		const T temp = (T)((valRate + clampedChange * omega) * timeDelta);
 		valRate = (T)((valRate - temp * omega) * exp);
@@ -605,7 +572,7 @@ template<typename T> ILINE void SmoothCDWithMaxRate(
 	else if (timeDelta > 0.0f)
 	{
 		const T unclampedRate = (T)((to - val) / timeDelta);
-		valRate = clamp_tpl<T>(unclampedRate, -maxValRate, maxValRate);
+		valRate = crymath::clamp<T>(unclampedRate, -maxValRate, maxValRate);
 		val += valRate * timeDelta;
 	}
 	else
@@ -620,12 +587,63 @@ template<typename T> ILINE void SmoothCDWithMaxRate(
 inline f32 SmoothBlendValue(const f32 fBlend)
 {
 	const f32 fBlendAdj = fBlend - 0.5f;
-	return (f32)__fsel(-fBlend, 0.f, __fsel(fBlend - 1.f, 1.f, 0.5f - 2.f * (fBlendAdj * fBlendAdj * fBlendAdj) + 1.5f * fBlendAdj));
+	return __fsel(-fBlend, 0.f, __fsel(fBlend - 1.f, 1.f, 0.5f - 2.f * (fBlendAdj * fBlendAdj * fBlendAdj) + 1.5f * fBlendAdj));
 }
 
-//! Function for safe comparsion of floating point  values.
-ILINE bool fcmp(f32 fA, f32 fB, f32 fEpsilon = FLT_EPSILON)
+// Default approximate comparison function
+template<typename F> ILINE bool IsEquivalent(const F& a, const F& b, float epsilon = FLT_EPSILON)
 {
-	return fabs(fA - fB) <= fEpsilon;
+	return sqr(a - b) <= sqr(epsilon);
 }
+
+// Legacy math function names
+#define clamp_tpl      crymath::clamp
+
+#define fabs_tpl       crymath::abs
+#define floor_tpl      crymath::floor
+#define ceil_tpl       crymath::ceil
+
+#define sin_tpl        crymath::sin
+#define cos_tpl        crymath::cos
+#define tan_tpl        crymath::tan
+#define asin_tpl       crymath::asin
+#define acos_tpl       crymath::acos
+#define atan_tpl       crymath::atan
+#define atan2_tpl      crymath::atan2
+#define sincos_tpl     crymath::sincos
+
+#define exp_tpl        crymath::exp
+#define log_tpl        crymath::log
+#define pow_tpl        crymath::pow
+#define fmod_tpl       crymath::mod
+
+#define sqrt_tpl       crymath::sqrt
+#define sqrt_fast_tpl  crymath::sqrt_fast
+
+#define isqrt_tpl      crymath::rsqrt
+#define isqrt_fast_tpl crymath::rsqrt_fast
+#define isqrt_safe_tpl crymath::rsqrt_safe
+
+#define __fres         crymath::rcp
+
+// Previously in Cry_XOptimise.h
+#define FtoI               int
+#define fastftol_positive  int
+#define fastround_positive pos_round
+
+//////////////////////////////////////////////////////////////////////////
+enum type_zero { ZERO };
+enum type_min { VMIN };
+enum type_max { VMAX };
+enum type_identity { IDENTITY };
+
+#include "Cry_Vector2.h"
+#include "Cry_Vector3.h"
+#include "Cry_Vector4.h"
+#include "Cry_MatrixDiag.h"
+#include "Cry_Matrix33.h"
+#include "Cry_Matrix34.h"
+#include "Cry_Matrix44.h"
+#include "Cry_Quat.h"
+
 #endif //math

@@ -182,7 +182,7 @@ public:
 		IMeshObj* pMeshObj = m_pStaticObject;
 
 		const AABB bBox = m_pStaticObject->GetAABB();
-		const float invObjectSize = (m_sizeMode == ESizeMode::Size) ? __fres(bBox.GetRadius()) : 1.0f;
+		const float invObjectSize = (m_sizeMode == ESizeMode::Size) ? rsqrt_fast(bBox.GetRadiusSqr()) : 1.0f;
 		Vec3 offset = (m_originMode == EOriginMode::Center) ? -bBox.GetCenter() : Vec3(ZERO);
 
 		renderParams.dwFObjFlags |= FOB_TRANS_MASK;

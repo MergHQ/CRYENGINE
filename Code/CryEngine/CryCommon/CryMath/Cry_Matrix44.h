@@ -283,7 +283,7 @@ template<typename F> struct Matrix44_tpl
 	//---------------------------------------------------------------------
 
 	//! multiply all m1 matrix's values by f and return the matrix
-	friend  ILINE Matrix44_tpl<F> operator*(const Matrix44_tpl<F>& m, const f32 f)
+	friend  ILINE Matrix44_tpl<F> operator*(const Matrix44_tpl<F>& m, const F f)
 	{
 		CRY_MATH_ASSERT(m.IsValid());
 		Matrix44_tpl<F> r;
@@ -500,7 +500,7 @@ template<typename F> struct Matrix44_tpl
 		return dst;
 	}
 
-	ILINE f32 Determinant() const
+	ILINE F Determinant() const
 	{
 		//determinant is ambiguous: only the upper-left-submatrix's determinant is calculated
 		return (m00 * m11 * m22) + (m01 * m12 * m20) + (m02 * m10 * m21) - (m02 * m11 * m20) - (m00 * m12 * m21) - (m01 * m10 * m22);
@@ -553,7 +553,7 @@ template<typename F> struct Matrix44_tpl
 		if (!NumberValid(m30)) return false;  if (!NumberValid(m31)) return false;  if (!NumberValid(m32)) return false;  if (!NumberValid(m33)) return false;
 		return true;
 	}
-	static bool IsEquivalent(const Matrix44_tpl<F>& m0, const Matrix44_tpl<F>& m1, F e = VEC_EPSILON)
+	static bool IsEquivalent(const Matrix44_tpl<F>& m0, const Matrix44_tpl<F>& m1, f32 e = VEC_EPSILON)
 	{
 		return  (
 		  (fabs_tpl(m0.m00 - m1.m00) <= e) && (fabs_tpl(m0.m01 - m1.m01) <= e) && (fabs_tpl(m0.m02 - m1.m02) <= e) && (fabs_tpl(m0.m03 - m1.m03) <= e) &&
@@ -759,4 +759,9 @@ ILINE Vec4_tpl<F1> operator*(const Vec4_tpl<F1>& v, const Matrix44_tpl<F2>& m)
 	                    v.x * m.m03 + v.y * m.m13 + v.z * m.m23 + v.w * m.m33);
 }
 
+template<class F>
+bool IsEquivalent(const Matrix44_tpl<F>& m0, const Matrix44_tpl<F>& m1, f32 e = VEC_EPSILON)
+{
+	return Matrix44_tpl<F>::IsEquivalent(m0, m1, e);
+}
 #endif //MATRIX_H

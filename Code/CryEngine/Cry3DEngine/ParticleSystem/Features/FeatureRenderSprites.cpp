@@ -232,8 +232,8 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 		non_const(invViewTM.GetRow4(0)) *= frustum.y * invX;
 		non_const(invViewTM.GetRow4(2)) *= frustum.y * invZ;
 
-		projectH = sqrt_tpl(sqr(frustum.x) + sqr(frustum.y)) * invX;
-		projectV = sqrt_tpl(sqr(frustum.z) + sqr(frustum.y)) * invZ;
+		projectH = sqrt(sqr(frustum.x) + sqr(frustum.y)) * invX;
+		projectV = sqrt(sqr(frustum.z) + sqr(frustum.y)) * invZ;
 	}
 
 	CParticleContainer& container = pSpritesContext->m_context.m_container;
@@ -347,7 +347,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 			float waterDist = pSpritesContext->m_physEnviron.GetWaterPlane(
 			  waterPlane, position, radius) * clipWaterSign;
 			waterDist += isAfterWater ? radius * 2.0f : 0.0f;
-			const float waterAlpha = SATURATE(waterDist * __fres(radius));
+			const float waterAlpha = saturate(waterDist * rcp_fast(radius));
 			spriteAlphas[particleId] *= waterAlpha;
 
 			if (waterAlpha > 0.0f)
@@ -401,14 +401,14 @@ void CFeatureRenderSprites::SortSprites(SSpritesContext* pSpritesContext)
 		{
 			const TParticleId particleId = particleIds[i];
 			const Vec3 pPos = positions.Load(particleId);
-			const float dist = __fres(camPos.GetSquaredDistance(pPos));
+			const float dist = rcp_fast(camPos.GetSquaredDistance(pPos));
 			keys[i] = dist;
 		}
 	}
 	if (invertKey)
 	{
 		for (size_t i = 0; i < numSprites; ++i)
-			keys[i] = __fres(keys[i]);
+			keys[i] = rcp_fast(keys[i]);
 	}
 
 	RadixSort(indices.begin(), indices.end(), keys.begin(), keys.end(), memHeap);

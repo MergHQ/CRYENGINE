@@ -6,6 +6,14 @@
 #include "cvars.h"
 #include "AnimationManager.h"
 
+// Angular utilities
+#define DEG2COS(a)   (crymath::cos((a) * (gf_PI / 180.0f)))
+#define COS2DEG(a)   (crymath::acos(a) * (180.0f / gf_PI))
+#define HCOS2RAD(a)  (crymath::acos(a) * 2.0f)
+#define DEG2HCOS(a)  (crymath::cos((a * 0.5f) * (gf_PI / 180.0f)))
+#define DEG2HSIN(a)  (crymath::sin((a * 0.5f) * (gf_PI / 180.0f)))
+#define HCOS2DEG(a)  (crymath::acos(a) * 2.0f * (180.0f / gf_PI))
+
 #define APX_NUM_OF_CGA_ANIMATIONS (200) //to avoid unnecessary resizing of a dynamic array
 #define MAX_FEET_AMOUNT           (4)   //this is used for feetlock
 

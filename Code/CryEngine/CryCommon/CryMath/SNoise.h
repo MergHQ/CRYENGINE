@@ -8,91 +8,17 @@
 
 #pragma once
 
-#if CRY_PLATFORM_SSE2 && CRY_COMPILER_MSVC
-
-ILINE __m128 operator+(const __m128 a, const __m128 b)
-{
-	return _mm_add_ps(a, b);
-}
-
-ILINE __m128 operator-(const __m128 a, const __m128 b)
-{
-	return _mm_sub_ps(a, b);
-}
-
-ILINE __m128 operator-(const float a, const __m128 b)
-{
-	return _mm_sub_ps(_mm_set1_ps(a), b);
-}
-
-ILINE __m128 operator*(const __m128 a, const __m128 b)
-{
-	return _mm_mul_ps(a, b);
-}
-
-ILINE __m128 operator*(const float a, const __m128 b)
-{
-	return _mm_mul_ps(_mm_set1_ps(a), b);
-}
-
-ILINE __m128 operator*(const __m128 a, const float b)
-{
-	return _mm_mul_ps(a, _mm_set1_ps(b));
-}
-
-#endif
-
 namespace crydetail
 {
 
 // helpers to convert glsl code to cryengine
 
-template<typename T>
-ILINE T ToReal(const double v)
-{
-	static_assert(true, "SNoise: Type not supported");
-}
-
 #ifdef CRY_PLATFORM_SSE2
-
-template<>
-ILINE __m128 ToReal(const double v)
-{
-	return _mm_set1_ps(float(v));
-}
-
-ILINE __m128 floorf(const __m128 v)
-{
-	const __m128 zero = _mm_set1_ps(0.0f);
-	const __m128i trunc = _mm_cvttps_epi32(v);
-	const __m128i isNeg = _mm_castps_si128(_mm_cmplt_ps(v, zero));
-	const __m128i oneIfNeg = _mm_and_si128(isNeg, _mm_set1_epi32(0x1));
-	return _mm_cvtepi32_ps(_mm_sub_epi32(trunc, oneIfNeg));
-}
-
-ILINE __m128 max(__m128 v0, __m128 v1)
-{
-	return _mm_max_ps(v0, v1);
-}
-
-ILINE __m128 saturate(const __m128 v)
-{
-	const __m128 v0 = _mm_set1_ps(0.0f);
-	const __m128 v1 = _mm_set1_ps(1.0f);
-	return _mm_max_ps(_mm_min_ps(v1, v), v0);
-}
 
 ILINE __m128 step(__m128 edge, __m128 x)
 {
 	const __m128 m = _mm_cmpge_ps(x, edge);
 	return _mm_and_ps(m, _mm_set1_ps(1.0f));
-}
-
-ILINE __m128 absf(__m128 v0)
-{
-	const __m128 negv0 = _mm_sub_ps(_mm_set1_ps(0.0f), v0);
-	const __m128 m = _mm_cmplt_ps(v0, _mm_set1_ps(0.0f));
-	return _mm_or_ps(_mm_and_ps(m, negv0), _mm_andnot_ps(m, v0));
 }
 
 ILINE __m128 lessThan(__m128 v0, __m128 v1)
@@ -108,36 +34,9 @@ ILINE __m128 fma(__m128 v0, __m128 v1, __m128 v2)
 
 #endif
 
-template<>
-ILINE float ToReal(const double v)
-{
-	return float(v);
-}
-
-ILINE float floorf(const float v)
-{
-	int i = (int)v;
-	return float(i - (i > v));
-}
-
-ILINE float max(float v0, float v1)
-{
-	return v0 > v1 ? v0 : v1;
-}
-
-ILINE float saturate(const float v)
-{
-	return v<0.0f ? 0.0f : v> 1.0f ? 1.0f : v;
-}
-
 ILINE float step(float edge, float x)
 {
 	return x < edge ? 0.0f : 1.0f;
-}
-
-ILINE float absf(float v0)
-{
-	return v0 < 0.0f ? -v0 : v0;
 }
 
 ILINE float lessThan(float v0, float v1)
@@ -168,28 +67,20 @@ Vec4_tpl<Real> ToVec4(Real x)
 	return Vec4_tpl<Real>(x, x, x, x);
 }
 
+using crymath::floor;
+using crymath::saturate;
+using crymath::abs;
+
 template<typename Real>
 Vec3_tpl<Real> floor(Vec3_tpl<Real> x)
 {
-	return Vec3_tpl<Real>(floorf(x.x), floorf(x.y), floorf(x.z));
+	return Vec3_tpl<Real>(floor(x.x), floor(x.y), floor(x.z));
 }
 
 template<typename Real>
 Vec4_tpl<Real> floor(Vec4_tpl<Real> x)
 {
-	return Vec4_tpl<Real>(floorf(x.x), floorf(x.y), floorf(x.z), floorf(x.w));
-}
-
-template<typename Real>
-Vec2_tpl<Real> max(Vec2_tpl<Real> v0, Vec2_tpl<Real> v1)
-{
-	return Vec2_tpl<Real>(max(v0.x, v1.x), max(v0.y, v1.y));
-}
-
-template<typename Real>
-Vec3_tpl<Real> max(Vec3_tpl<Real> v0, Vec3_tpl<Real> v1)
-{
-	return Vec3_tpl<Real>(max(v0.x, v1.x), max(v0.y, v1.y), max(v0.z, v1.z));
+	return Vec4_tpl<Real>(floor(x.x), floor(x.y), floor(x.z), floor(x.w));
 }
 
 template<typename Real>
@@ -247,7 +138,7 @@ Real dot(Vec4_tpl<Real> v0, Vec4_tpl<Real> v1)
 template<typename Real>
 Vec3_tpl<Real> abs(Vec3_tpl<Real> v0)
 {
-	return Vec3_tpl<Real>(absf(v0.x), absf(v0.y), absf(v0.z));
+	return Vec3_tpl<Real>(abs(v0.x), abs(v0.y), abs(v0.z));
 }
 
 template<typename Real>
@@ -375,56 +266,56 @@ Vec4_tpl<Real> wwww(Vec4_tpl<Real> x)
 template<typename Real>
 Vec4_tpl<Real> mod289(Vec4_tpl<Real> x)
 {
-	const Real v289 = ToReal<Real>(289.0);
-	const Real iv289 = ToReal<Real>(1.0 / 289.0);
+	const Real v289 = convert<Real>(289.0);
+	const Real iv289 = convert<Real>(1.0 / 289.0);
 	return x - floor(x * iv289) * v289;
 }
 
 template<typename Real>
 Real mod289(Real x)
 {
-	const Real v289 = ToReal<Real>(289.0);
-	const Real iv289 = ToReal<Real>(1.0 / 289.0);
-	return x - floorf(x * iv289) * v289;
+	const Real v289 = convert<Real>(289.0);
+	const Real iv289 = convert<Real>(1.0 / 289.0);
+	return x - floor(x * iv289) * v289;
 }
 
 template<typename Real>
 Vec4_tpl<Real> permute(Vec4_tpl<Real> x)
 {
-	const Real one = ToReal<Real>(1.0);
-	const Real v34 = ToReal<Real>(34.0);
+	const Real one = convert<Real>(1.0);
+	const Real v34 = convert<Real>(34.0);
 	return mod289(((x * v34) + ToVec4(one)) * x);
 }
 
 template<typename Real>
 Real permute(Real x)
 {
-	const Real one = ToReal<Real>(1.0);
-	const Real v34 = ToReal<Real>(34.0);
+	const Real one = convert<Real>(1.0);
+	const Real v34 = convert<Real>(34.0);
 	return mod289(((x * v34) + one) * x);
 }
 
 template<typename Real>
 Vec4_tpl<Real> taylorInvSqrt(Vec4_tpl<Real> r)
 {
-	return ToVec4(ToReal<Real>(1.79284291400159)) - r * ToReal<Real>(0.85373472095314);
+	return ToVec4(convert<Real>(1.79284291400159)) - r * convert<Real>(0.85373472095314);
 }
 
 template<typename Real>
 Real taylorInvSqrt(Real r)
 {
-	return ToReal<Real>(1.79284291400159) - ToReal<Real>(0.85373472095314) * r;
+	return convert<Real>(1.79284291400159) - convert<Real>(0.85373472095314) * r;
 }
 
 template<typename Real>
 Vec4_tpl<Real> grad4(Real j, Vec4_tpl<Real> ip)
 {
-	const Real zero = ToReal<Real>(0.0);
-	const Real one = ToReal<Real>(1.0);
-	const Real minusOne = ToReal<Real>(-1.0);
-	const Real v2 = ToReal<Real>(2.0);
-	const Real v7 = ToReal<Real>(7.0);
-	const Real v15 = ToReal<Real>(1.5);
+	const Real zero = convert<Real>(0.0);
+	const Real one = convert<Real>(1.0);
+	const Real minusOne = convert<Real>(-1.0);
+	const Real v2 = convert<Real>(2.0);
+	const Real v7 = convert<Real>(7.0);
+	const Real v15 = convert<Real>(1.5);
 	const Vec4_tpl<Real> ones = Vec4_tpl<Real>(one, one, one, minusOne);
 	Vec4_tpl<Real> p, s;
 
@@ -443,17 +334,17 @@ ILINE Real SNoise(Vec4_tpl<Real> v, Vec4_tpl<Real>* pGrad = nullptr)
 {
 	using namespace crydetail;
 
-	const Real zero = ToReal<Real>(0.0);
-	const Real one = ToReal<Real>(1.0);
-	const Real two = ToReal<Real>(2.0);
+	const Real zero = convert<Real>(0.0);
+	const Real one = convert<Real>(1.0);
+	const Real two = convert<Real>(2.0);
 	const Vec4_tpl<Real> C = Vec4_tpl<Real>(
-	  ToReal<Real>(0.138196601125011),   // (5 - sqrt(5))/20  G4
-	  ToReal<Real>(0.276393202250021),   // 2 * G4
-	  ToReal<Real>(0.414589803375032),   // 3 * G4
-	  ToReal<Real>(-0.447213595499958)); // -1 + 4 * G4
+	  convert<Real>(0.138196601125011),   // (5 - sqrt(5))/20  G4
+	  convert<Real>(0.276393202250021),   // 2 * G4
+	  convert<Real>(0.414589803375032),   // 3 * G4
+	  convert<Real>(-0.447213595499958)); // -1 + 4 * G4
 
 	// First corner
-	const Real F4 = ToReal<Real>((sqrtf(5.0f) - 1.0f) / 4.0f);
+	const Real F4 = convert<Real>((sqrtf(5.0f) - 1.0f) / 4.0f);
 	Vec4_tpl<Real> i = floor(v + ToVec4(dot(v, ToVec4(F4))));
 	Vec4_tpl<Real> x0 = v - i + ToVec4(dot(i, xxxx(C)));
 
@@ -499,9 +390,9 @@ ILINE Real SNoise(Vec4_tpl<Real> v, Vec4_tpl<Real>* pGrad = nullptr)
 	// Gradients: 7x7x6 points over a cube, mapped onto a 4-cross polytope
 	// 7*7*6 = 294, which is close to the ring size 17*17 = 289.
 	Vec4_tpl<Real> ip = Vec4_tpl<Real>(
-	  ToReal<Real>(1.0 / 294.0),
-	  ToReal<Real>(1.0 / 49.0),
-	  ToReal<Real>(1.0 / 7.0),
+	  convert<Real>(1.0 / 294.0),
+	  convert<Real>(1.0 / 49.0),
+	  convert<Real>(1.0 / 7.0),
 	  zero);
 
 	Vec4_tpl<Real> p0 = grad4(j0, ip);
@@ -519,8 +410,8 @@ ILINE Real SNoise(Vec4_tpl<Real> v, Vec4_tpl<Real>* pGrad = nullptr)
 	p4 = p4 * taylorInvSqrt(dot(p4, p4));
 
 	// Mix contributions from the five corners
-	const Real v06 = ToReal<Real>(0.6);
-	const Real v49 = ToReal<Real>(49.0);
+	const Real v06 = convert<Real>(0.6);
+	const Real v49 = convert<Real>(49.0);
 	const Vec3_tpl<Real> m10 = max(ToVec3(v06) - Vec3_tpl<Real>(dot(x0, x0), dot(x1, x1), dot(x2, x2)), ToVec3(zero));
 	const Vec2_tpl<Real> m11 = max(ToVec2(v06) - Vec2_tpl<Real>(dot(x3, x3), dot(x4, x4)), ToVec2(zero));
 	const Vec3_tpl<Real> m20 = mul(m10, m10);
@@ -538,7 +429,7 @@ ILINE Real SNoise(Vec4_tpl<Real> v, Vec4_tpl<Real>* pGrad = nullptr)
 
 	if (pGrad)
 	{
-		const Real vm6 = ToReal<Real>(-6.0f);
+		const Real vm6 = convert<Real>(-6.0f);
 		const Vec3_tpl<Real> m30 = mul(m20, m10);
 		const Vec2_tpl<Real> m31 = mul(m21, m11);
 		Vec4_tpl<Real> grad = Vec4_tpl<Real>(zero, zero, zero, zero);

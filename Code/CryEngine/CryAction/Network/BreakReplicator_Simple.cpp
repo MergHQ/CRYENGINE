@@ -430,7 +430,7 @@ bool BreakStream::CanSendPayload()
 
 void BreakStream::OnEndFrame()
 {
-	const int n = iselnz(m_numFramesLeft, m_numFramesLeft - 1, 0);
+	const int n = m_numFramesLeft ? m_numFramesLeft - 1 : 0;
 	if (m_mode == k_playing && n == 0)
 	{
 		if (m_pent)
@@ -686,7 +686,7 @@ void PartBreak::OnEndFrame()
 {
 	DEBUG_ASSERT(m_mode != k_finished);
 
-	m_numFramesLeft = iselnz(m_numFramesLeft, m_numFramesLeft - 1, 0);
+	m_numFramesLeft = m_numFramesLeft ? m_numFramesLeft - 1 : 0;
 
 	if (m_mode == k_recording)
 	{
@@ -1123,7 +1123,7 @@ int CBreakReplicator::m_inaccurateWorldPosNumBits = 0;
 // Suppress warning for unintialized array CBreakReplicator::m_pendingStreams
 // cppcheck-suppress uninitMemberVar
 CBreakReplicator::CBreakReplicator(CGameContext* pGameCtx)
-	: m_bDefineProtocolMode_server (false)
+	: m_bDefineProtocolMode_server(false)
 	, m_activeStartIdx(0)
 	, m_numPendingStreams(0)
 	, m_timeSinceLevelLoaded(-1.0f)
@@ -1139,7 +1139,7 @@ CBreakReplicator::CBreakReplicator(CGameContext* pGameCtx)
 
 	DEBUG_ASSERT(m_pThis == NULL);
 	m_pThis = this;
-	m_streams.reserve(100);	
+	m_streams.reserve(100);
 
 	// Initialise a dummy stream. This is used as a place holder for
 	// stream indexes that have not yet been serialised over on a client

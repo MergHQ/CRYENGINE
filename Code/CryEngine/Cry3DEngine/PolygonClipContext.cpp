@@ -36,11 +36,11 @@ int CPolygonClipContext::ClipEdge(const Vec3& v1, const Vec3& v2, const Plane& C
 	}
 
 	// calculate new vertex
-	Vec3 vIntersectionPoint = v1 + (v2 - v1) * (Ffabs(d1) / (Ffabs(d2) + Ffabs(d1)));
+	Vec3 vIntersectionPoint = v1 + (v2 - v1) * (abs(d1) / (abs(d2) + abs(d1)));
 
 #ifdef _DEBUG
 	float fNewDist = -ClipPlane.DistFromPlane(vIntersectionPoint);
-	assert(Ffabs(fNewDist) < 0.01f);
+	assert(abs(fNewDist) < 0.01f);
 #endif
 
 	if (d1 >= 0 && d2 < 0)

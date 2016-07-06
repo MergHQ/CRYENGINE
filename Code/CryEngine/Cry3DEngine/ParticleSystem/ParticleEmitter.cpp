@@ -276,7 +276,7 @@ void CParticleEmitter::SetLocation(const QuatTS& loc)
 	if (m_registered)
 	{
 		const float deltaTime = gEnv->pTimer->GetFrameTime();
-		const float invDeltaTime = abs(deltaTime) > FLT_EPSILON ? __fres(deltaTime) : 0.0f;
+		const float invDeltaTime = abs(deltaTime) > FLT_EPSILON ? rcp_fast(deltaTime) : 0.0f;
 		const Vec3 velocity0 = m_parentContainer.GetIOVec3Stream(EPVF_Velocity).Load(0);
 		const Vec3 angularVelocity0 = m_parentContainer.GetIOVec3Stream(EPVF_AngularVelocity).Load(0);
 
@@ -296,7 +296,7 @@ void CParticleEmitter::SetLocation(const QuatTS& loc)
 
 void CParticleEmitter::EmitParticle(const EmitParticleData* pData)
 {
-	// PFX2_TODO : this is awfull, make it better
+	// PFX2_TODO : this is awful, make it better
 	CParticleComponentRuntime::SInstance instance;
 	instance.m_parentId = m_parentContainer.GetLastParticleId();
 	m_parentContainer.AddParticle();
@@ -349,7 +349,7 @@ bool CParticleEmitter::UpdateStreamableComponents(float fImportance, const Matri
 		const SComponentParams& params = pComponent->GetComponentParams();
 
 		IMaterial* pMaterial = params.m_pMaterial;
-		CMatInfo* pMatInfo = reinterpret_cast<CMatInfo*>(pMaterial);
+		CMatInfo*  pMatInfo  = reinterpret_cast<CMatInfo*>(pMaterial);
 		if (pMatInfo)
 			pMatInfo->PrecacheMaterial(fEntDistance, nullptr, bFullUpdate);
 

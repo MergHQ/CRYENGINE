@@ -3550,7 +3550,7 @@ struct CubemapsCompare
 		if (l0.m_nSortPriority != l1.m_nSortPriority)
 			return l0.m_nSortPriority < l1.m_nSortPriority;
 
-		if (fcmp(l0.m_fRadius, l1.m_fRadius))
+		if (l0.m_fRadius == l1.m_fRadius)
 			return l0.m_nEntityId < l1.m_nEntityId;
 
 		return l0.m_fRadius > l1.m_fRadius;
@@ -3565,7 +3565,7 @@ struct CubemapsCompareInv
 		if (l0.m_nSortPriority != l1.m_nSortPriority)
 			return l0.m_nSortPriority > l1.m_nSortPriority;
 
-		if (fcmp(l0.m_fRadius, l1.m_fRadius))
+		if (l0.m_fRadius == l1.m_fRadius)
 			return l0.m_nEntityId > l1.m_nEntityId;
 
 		return l0.m_fRadius < l1.m_fRadius;
