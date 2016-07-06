@@ -1716,3 +1716,7 @@ CEngineFileDialog QMenuComboBox{
 CEngineFileDialog QMenuComboBox > QLineEdit{
 	padding-left:4px;
 }
+
+QNumericBox {
+	qproperty-sliderColor: rgb(95,95,95);
+}
