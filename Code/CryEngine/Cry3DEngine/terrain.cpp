@@ -30,7 +30,7 @@ void GetMemoryUsage(ICrySizer* pSizer);
 void CTerrain::AddVisSector(CTerrainNode* newsec)
 {
 	assert(newsec->m_cNewGeomMML < m_nUnitsToSectorBitShift);
-	m_lstVisSectors.Add((CTerrainNode*)newsec);
+	m_lstVisSectors.Add(newsec);
 }
 
 void CTerrain::CheckVis(const SRenderingPassInfo& passInfo)

@@ -328,7 +328,7 @@ void CResponseSystem::_Reset(uint32 resetFlags)
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 
-CResponseActor::CResponseActor(const CHashedString name, EntityId usedEntityID)
+CResponseActor::CResponseActor(const CHashedString& name, EntityId usedEntityID)
 	: m_linkedEntityID(usedEntityID)
 {
 	m_pLocalVariables = CResponseSystem::GetInstance()->GetCollection(name);  //the collection might already be created by conditions or actions.

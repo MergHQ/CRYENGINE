@@ -110,18 +110,14 @@ void CLightEntity::SetLightProperties(const CDLight& light)
 
 const PodArray<CDLight*>* C3DEngine::GetStaticLightSources()
 {
-	// tmp solution since .h files are checked out
-	PodArray<CDLight*>& lstLights = m_tmpLstLights;
-	;
-	lstLights.Clear();
+	m_tmpLstLights.Clear();
 
-	for (int i = 0; i < m_lstStaticLights.Count(); i++)
+	for (ILightSource* pStaticLight : m_lstStaticLights)
 	{
-		CDLight& light = m_lstStaticLights[i]->GetLightProperties();
-		lstLights.Add(&light);
+		m_tmpLstLights.Add(&pStaticLight->GetLightProperties());
 	}
 
-	return &lstLights;
+	return &m_tmpLstLights;
 }
 
 void C3DEngine::FindPotentialLightSources(const SRenderingPassInfo& passInfo)

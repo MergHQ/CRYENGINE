@@ -599,10 +599,6 @@ void CTerrainNode::UpdateRenderMesh(CStripsInfo* pArrayInfo, bool bUpdateVertice
 
 		ERenderMeshType eRMType = eRMT_Dynamic;
 
-#if CRY_PLATFORM_WINDOWS
-		eRMType = eRMT_Dynamic;
-#endif
-
 		pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
 		  m_pUpdateTerrainTempData->m_lstTmpVertArray.GetElements(), m_pUpdateTerrainTempData->m_lstTmpVertArray.Count(), eVF_P2S_N4B_C4B_T1F,
 		  pArrayInfo->idx_array.GetElements(), pArrayInfo->idx_array.Count(),

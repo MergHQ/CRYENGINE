@@ -601,7 +601,7 @@ struct IDialogLineSet
 		None       = 0,
 		Random     = 1 << 0,     //!< Pick one at random (NOT taking user defined PickFactors into consideration).
 		Sequential = 1 << 1,     //!< Pick one after another.
-		Any        = Random | Sequential,
+		Any        = Random | Sequential
 	};
 
 	virtual ~IDialogLineSet() {}
@@ -624,7 +624,7 @@ struct IDialogLineDatabase
 {
 	virtual ~IDialogLineDatabase() {}
 	virtual bool                        Save(const char* szFilePath) = 0;
-	virtual uint32                      GetLineSetCount() = 0;
+	virtual uint32                      GetLineSetCount() const = 0;
 	virtual IDialogLineSet*             GetLineSetByIndex(uint32 index) = 0;
 	virtual const IDialogLineSet* const GetLineSetById(const CHashedString& lineID) const = 0;
 	virtual IDialogLineSet*             InsertLineSet(uint32 index) = 0;

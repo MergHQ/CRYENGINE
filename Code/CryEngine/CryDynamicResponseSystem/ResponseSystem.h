@@ -34,7 +34,7 @@ class CDialogLineDatabase;
 class CResponseActor final : public DRS::IResponseActor
 {
 public:
-	CResponseActor(const CHashedString name, EntityId linkedEntityID);
+	CResponseActor(const CHashedString& name, EntityId linkedEntityID);
 	virtual ~CResponseActor();
 
 	//////////////////////////////////////////////////////////
@@ -105,7 +105,7 @@ public:
 
 	CVariableCollectionManager* GetVariableCollectionManager() const { return m_pVariableCollectionManager; }
 	//we store the current time for the DRS ourselves in a variable, so that we can use this variable in conditions and it allows us to save/load/modify the current DRS time easily
-	float                       GetCurrentDrsTime()                  { return m_CurrentTime.GetSeconds(); }
+	float                       GetCurrentDrsTime() const                  { return m_CurrentTime.GetSeconds(); }
 
 #if defined(DRS_COLLECT_DEBUG_DATA)
 	CResponseSystemDebugDataProvider m_responseSystemDebugDataProvider;
