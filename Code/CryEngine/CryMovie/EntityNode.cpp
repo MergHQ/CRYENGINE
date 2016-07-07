@@ -726,6 +726,10 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 	{
 		pEntity->CreateProxy(ENTITY_PROXY_ENTITYNODE);
 	}
+	
+	// Here in Animate always get local pos, rot, scale value instead of pEntity->GetScale, to avoid comparing Track View value, to Track View value, which will always be the same.
+	// pEntity->GetPos,pEntity->GetRotation, pEntity->GetScale are updated before this, by delegated mode, from Track View key value
+	// pPosTrack->GetValue == pEntity->GetPos etc
 
 	Vec3 pos = m_pos;
 	Quat rotate = m_rotate;
@@ -780,14 +784,14 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 			{
 				pos = boost::get<Vec3>(pPosTrack->GetValue(animContext.time));
 
-				if (!Vec3::IsEquivalent(pos, pEntity->GetPos(), 0.0001f))
+				if (!Vec3::IsEquivalent(pos, GetPos(), 0.0001f))
 				{
 					entityUpdateFlags |= eUpdateEntity_Position;
 				}
 			}
 			else
 			{
-				if (!Vec3::IsEquivalent(pos, pEntity->GetPos(), 0.0001f))
+				if (!Vec3::IsEquivalent(pos, GetPos(), 0.0001f))
 				{
 					entityUpdateFlags |= eUpdateEntity_Position;
 					pos = m_vInterpPos;
@@ -803,14 +807,14 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 			{
 				rotate = boost::get<Quat>(pRotTrack->GetValue(animContext.time));
 
-				if (!CompareRotation(rotate, pEntity->GetRotation(), DEG2RAD(0.0001f)))
+				if (!CompareRotation(rotate, GetRotate(), DEG2RAD(0.0001f)))
 				{
 					entityUpdateFlags |= eUpdateEntity_Rotation;
 				}
 			}
 			else
 			{
-				if (!CompareRotation(rotate, pEntity->GetRotation(), DEG2RAD(0.0001f)))
+				if (!CompareRotation(rotate, GetRotate(), DEG2RAD(0.0001f)))
 				{
 					entityUpdateFlags |= eUpdateEntity_Rotation;
 					rotate = m_interpRot;
@@ -844,7 +848,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 					scale = m_scale;
 				}
 
-				if (!Vec3::IsEquivalent(scale, pEntity->GetScale(), 0.001f))
+				if (!Vec3::IsEquivalent(scale, GetScale(), 0.001f))
 				{
 					bScaleModified = true;
 				}
