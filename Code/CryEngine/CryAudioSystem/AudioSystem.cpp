@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "AudioSystem.h"
-#include "SoundCVars.h"
+#include "AudioCVars.h"
 #include "AudioProxy.h"
 #include "PropagationProcessor.h"
 #include <CrySystem/ITimer.h>

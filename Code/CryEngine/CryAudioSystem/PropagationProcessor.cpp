@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "PropagationProcessor.h"
-#include "SoundCVars.h"
+#include "AudioCVars.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <Cry3DEngine/ISurfaceType.h>

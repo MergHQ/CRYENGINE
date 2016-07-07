@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "AudioStandaloneFileManager.h"
-#include "SoundCVars.h"
+#include "AudioCVars.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <IAudioImpl.h>
 

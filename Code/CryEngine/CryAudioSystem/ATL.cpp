@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "ATL.h"
 #include "AudioImpl.h"
-#include "SoundCVars.h"
+#include "AudioCVars.h"
 #include "AudioProxy.h"
 #include "ATLAudioObject.h"
 #include <CrySystem/ISystem.h>

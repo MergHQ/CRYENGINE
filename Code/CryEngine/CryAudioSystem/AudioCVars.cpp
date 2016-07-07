@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "SoundCVars.h"
+#include "AudioCVars.h"
 #include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
 

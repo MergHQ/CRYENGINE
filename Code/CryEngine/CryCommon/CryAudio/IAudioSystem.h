@@ -71,7 +71,7 @@ enum EAudioManagerRequestType : AudioEnumFlagsType
 	eAudioManagerRequestType_RetriggerAudioControls = BIT(20),
 	eAudioManagerRequestType_ReleasePendingRays     = BIT(21), //!< Only used internally!
 	eAudioManagerRequestType_ReloadControlsData     = BIT(22),
-	eAudioManagerRequestType_GetAudioFileData       = BIT(23),               //!< Only used internally!
+	eAudioManagerRequestType_GetAudioFileData       = BIT(23), //!< Only used internally!
 };
 
 enum EAudioCallbackManagerRequestType : AudioEnumFlagsType
@@ -819,7 +819,7 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_SetVolume> : public SAudi
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironmentAmount> : public SAudioObjectRequestDataBase
+struct SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironmentAmount>  : public SAudioObjectRequestDataBase
 {
 	SAudioObjectRequestData()
 		: SAudioObjectRequestDataBase(eAudioObjectRequestType_SetEnvironmentAmount)
@@ -910,14 +910,14 @@ struct IAudioProxy
 	// <interfuscator:shuffle>
 	virtual ~IAudioProxy() {}
 
-	virtual void          Initialize(char const* const szObjectName, bool const bInitAsync = true) = 0;
+	virtual void          Initialize(char const* const szAudioObjectName, bool const bInitAsync = true) = 0;
 	virtual void          Release() = 0;
 	virtual void          Reset() = 0;
 	virtual void          PlayFile(SAudioPlayFileInfo const& _playbackInfo, SAudioCallBackInfo const& _callBackInfo = SAudioCallBackInfo::GetEmptyObject()) = 0;
 	virtual void          StopFile(char const* const szFile) = 0;
 	virtual void          ExecuteTrigger(AudioControlId const audioTriggerId, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject()) = 0;
 	virtual void          StopTrigger(AudioControlId const audioTriggerId) = 0;
-	virtual void          SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioStateId) = 0;
+	virtual void          SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId) = 0;
 	virtual void          SetRtpcValue(AudioControlId const audioRtpcId, float const value) = 0;
 	virtual void          SetOcclusionType(EAudioOcclusionType const occlusionType) = 0;
 	virtual void          SetTransformation(Matrix34 const& transformation) = 0;

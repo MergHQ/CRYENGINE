@@ -14,14 +14,14 @@ public:
 	CNULLAudioProxy() {}
 	virtual ~CNULLAudioProxy() {}
 
-	virtual void          Initialize(char const* const szObjectName, bool const bInitAsync = true) override                                                           {}
+	virtual void          Initialize(char const* const szAudioObjectName, bool const bInitAsync = true) override                                                      {}
 	virtual void          Release() override                                                                                                                          {}
 	virtual void          Reset() override                                                                                                                            {}
 	virtual void          PlayFile(SAudioPlayFileInfo const& playbackInfo, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject()) override    {}
 	virtual void          StopFile(char const* const szFile) override                                                                                                 {}
 	virtual void          ExecuteTrigger(AudioControlId const audioTriggerId, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject()) override {}
 	virtual void          StopTrigger(AudioControlId const audioTriggerId) override                                                                                   {}
-	virtual void          SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioStateId) override                                          {}
+	virtual void          SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId) override                                    {}
 	virtual void          SetRtpcValue(AudioControlId const audioRtpcId, float const value) override                                                                  {}
 	virtual void          SetOcclusionType(EAudioOcclusionType const occlusionType) override                                                                          {}
 	virtual void          SetTransformation(Matrix34 const& transformation) override                                                                                  {}

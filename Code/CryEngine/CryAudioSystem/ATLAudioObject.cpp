@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "ATLAudioObject.h"
-#include "SoundCVars.h"
+#include "AudioCVars.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 
 using namespace CryAudio::Impl;
