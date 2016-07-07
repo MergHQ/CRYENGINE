@@ -254,6 +254,8 @@ bool SoundEngine::Init()
 	// need to reinit as the global variable might have been initialized with wrong values
 	g_listenerPosition = CAudioObjectTransformation();
 
+	g_audioObjects.reserve(128);
+
 	return true;
 }
 
@@ -273,6 +275,7 @@ void SoundEngine::Release()
 {
 	FreeAllSampleData();
 	g_audioObjects.clear();
+	g_audioObjects.shrink_to_fit();
 	Mix_Quit();
 	Mix_CloseAudio();
 	SDL_Quit();
