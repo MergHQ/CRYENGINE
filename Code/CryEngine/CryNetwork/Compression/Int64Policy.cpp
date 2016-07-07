@@ -112,7 +112,9 @@ public:
 		uint32 symSize = 0xffffffff;
 		uint32 symTotal = 0xffffffff;
 
+#if ENABLE_ACCURATE_BANDWIDTH_PROFILING	
 		float s1 = out.GetBitSize();
+#endif
 
 		bool writeBits = true;
 
@@ -133,10 +135,13 @@ public:
 		if (writeBits)
 			out.WriteBitsLarge(value, 64 - m_ignoreBits);
 
-		float s2 = out.GetBitSize();
-
+#if ENABLE_ACCURATE_BANDWIDTH_PROFILING	
 		if (m_bHaveMemento)
+		{
+			float s2 = out.GetBitSize();
 			Track((int32)value, (int32)predicted, age, m_timeFraction32, s2 - s1, symSize, symTotal);
+		}
+#endif
 
 		Update(value, predicted, age, m_timeFraction32);
 

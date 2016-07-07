@@ -84,7 +84,10 @@ void CErrorDistributionTest::Write()
 
 	bool bLastZero = false;
 
+#if ENABLE_ACCURATE_BANDWIDTH_PROFILING
 	float s = -m_outStream->GetBitSize();
+#endif
+
 	for (uint32 k = 0; k < m_testValues.size(); k++)
 	{
 		if (!m_distribution.WriteValue(m_testValues[k], m_outStream, bLastZero))
@@ -97,11 +100,13 @@ void CErrorDistributionTest::Write()
 
 	m_outStream->Flush();
 
+#if ENABLE_ACCURATE_BANDWIDTH_PROFILING
 	s += m_outStream->GetBitSize();
 
 	char temp[200];
 	cry_sprintf(temp, "Data size: %i writen: %3.3f ratio: %3.3f bits per value: %3.3f\n", (int)(m_testValues.size() * 32), s, s / (float)(m_testValues.size() * 32), s / (float)m_testValues.size());
 	OutputDebugString(temp);
+#endif
 #endif
 }
 

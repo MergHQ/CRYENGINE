@@ -47,7 +47,10 @@ void CPredictiveFloat::WriteValue(CCommOutputStream& stm, float value, uint32 me
 	uint32 symSize = 0xffffffff;
 	uint32 symTotal = 0xffffffff;
 
+#if ENABLE_ACCURATE_BANDWIDTH_PROFILING	
 	float s1 = stm.GetBitSize();
+#endif
+
 	if (m_bHaveMemento)
 	{
 		if (!m_errorDistributionWrite.WriteValue(error, &stm, m_lastTimeZero != 0))
@@ -58,10 +61,13 @@ void CPredictiveFloat::WriteValue(CCommOutputStream& stm, float value, uint32 me
 	else
 		stm.WriteBits(quantized, m_quantizer.GetNumBits());
 
-	float s2 = stm.GetBitSize();
-
+#if ENABLE_ACCURATE_BANDWIDTH_PROFILING
 	if (m_bHaveMemento)
+	{
+		float s2 = stm.GetBitSize();
 		Track(quantized, predicted, mementoAge, timeFraction32, s2 - s1, symSize, symTotal);
+	}
+#endif
 
 	Update(quantized, predicted, mementoAge, timeFraction32);
 }
