@@ -237,6 +237,27 @@ inline /*void*/ RemoveExtension(TString& filepath)
 	// it seems the file name is a pure name, without extension
 }
 
+//! Remove extension for given file.
+inline void RemoveExtension(char* szFilePath)
+{
+	for (char* p = szFilePath + strlen(szFilePath) - 1; p >= szFilePath; --p)
+	{
+		switch (*p)
+		{
+		case ':':
+		case '/':
+		case '\\':
+			// we've reached a path separator - it means there's no extension in this name
+			return;
+		case '.':
+			// there's an extension in this file name
+			*p = '\0';
+			return;
+		}
+	}
+	// it seems the file name is a pure name, without extension
+}
+
 template<typename TString>
 typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
 inline /*TString*/ RemoveExtension(const TString& filepath)
