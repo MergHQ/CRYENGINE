@@ -3471,8 +3471,8 @@ void CTriMesh::CompactMemory()
 			delete[] m_pVtxMap;
 		delete[] m_pVertices.data;
 		m_pVertices = strided_pointer<Vec3>(pNewVertices); m_nVertices=n; m_ivtx0=0; m_pVtxMap=0;
-		m_flags|=mesh_no_booleans;
-	}	// cppcheck-suppress memleak
+		m_flags|=mesh_no_booleans; // cppcheck-suppress memleak
+	}	
 }
 
 int CTriMesh::ExpandVtxList()
