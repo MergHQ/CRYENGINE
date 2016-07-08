@@ -600,12 +600,16 @@ struct ICharacterInstance : IMeshObj
 
 #include <CryAnimation/IAnimationPoseModifier.h>                                                    // <> required for Interfuscator
 
+#ifndef SKELETON_ANIMATION_LAYER_COUNT
+#define SKELETON_ANIMATION_LAYER_COUNT 16
+#endif
+
 struct ISkeletonAnim
 {
 	// <interfuscator:shuffle>
 	enum
 	{
-		LayerCount = 16
+		LayerCount = SKELETON_ANIMATION_LAYER_COUNT
 	};
 
 	virtual ~ISkeletonAnim() {}

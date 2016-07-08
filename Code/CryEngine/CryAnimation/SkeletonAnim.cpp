@@ -115,10 +115,10 @@ void CSkeletonAnim::PoseModifiersPrepare(const QuatTS& location)
 
 	if (m_pSkeletonPose->m_bFullSkeletonUpdate && !m_pSkeletonPose->m_physics.m_bPhysicsRelinquished)
 	{
-		PushPoseModifier(15, m_pSkeletonPose->m_limbIk, "LimbIK");
+		PushPoseModifier(ISkeletonAnim::LayerCount-1, m_pSkeletonPose->m_limbIk, "LimbIK");
 
 		if (m_pSkeletonPose->m_bInstanceVisible && m_pSkeletonPose->m_recoil.get())
-			PushPoseModifier(15, m_pSkeletonPose->m_recoil, "Recoil");
+			PushPoseModifier(ISkeletonAnim::LayerCount-1, m_pSkeletonPose->m_recoil, "Recoil");
 	}
 
 	if (m_pPoseModifierSetup)
