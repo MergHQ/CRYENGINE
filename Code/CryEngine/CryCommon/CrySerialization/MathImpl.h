@@ -230,20 +230,39 @@ inline bool Serialize(Serialization::IArchive& ar, SUniformScale& c, const char*
 }
 
 template<class T>
-bool Serialize(Serialization::IArchive& ar, Serialization::SRadiansAsDeg<T>& value, const char* name, const char* label)
+bool SerializeRadiansAsDeg(Serialization::IArchive& ar, T& radians, const char* name, const char* label)
 {
-	if (ar.isEdit())
+	if (ar.isEdit()) 
 	{
-		float degrees = RAD2DEG(*value.radians);
-		float oldDegrees = degrees;
+		float degrees = RAD2DEG(radians);
+		const float oldDegrees = degrees;
 		if (!ar(degrees, name, label))
 			return false;
 		if (oldDegrees != degrees)
-			*value.radians = DEG2RAD(degrees);
+			radians = DEG2RAD(degrees);
 		return true;
 	}
 	else
-		return ar(*value.radians, name, label);
+		return ar(radians, name, label);
+}
+
+template<class T>
+bool Serialize(Serialization::IArchive& ar, Serialization::SRadiansAsDeg<T>& value, const char* name, const char* label)
+{
+	return SerializeRadiansAsDeg(ar, *value.radians, name, label);
+}
+
+template<class T>
+bool Serialize(Serialization::IArchive& ar, Serialization::SRadiansWithRangeAsDeg<T>& value, const char* name, const char* label)
+{
+	if (!SerializeRadiansAsDeg(ar, *value.radians, name, label))
+		return false;
+
+	if (ar.isInput())
+	{
+		*value.radians = clamp_tpl(*value.radians, value.hardMin, value.hardMax);
+	}
+	return true;
 }
 
 template<class T>

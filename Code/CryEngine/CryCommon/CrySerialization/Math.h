@@ -77,7 +77,28 @@ SRadiansAsDeg<T> RadiansAsDeg(T& radians)
 }
 
 template<class T>
+struct SRadiansWithRangeAsDeg
+{
+	T* radians;
+	T hardMin;
+	T hardMax;
+	SRadiansWithRangeAsDeg(T* radians, T hardMin, T hardMax) 
+		: radians(radians)
+		, hardMin(hardMin)
+		, hardMax(hardMax)
+	{}
+};
+
+template<class T>
+SRadiansWithRangeAsDeg<T> RadiansWithRangeAsDeg(T& radians, T hardMin, T hardMax)
+{
+	return SRadiansWithRangeAsDeg<T>(&radians, hardMin, hardMax);
+}
+
+template<class T>
 bool Serialize(Serialization::IArchive& ar, Serialization::SRadiansAsDeg<T>& value, const char* name, const char* label);
+template<class T>
+bool Serialize(Serialization::IArchive& ar, Serialization::SRadiansWithRangeAsDeg<T>& value, const char* name, const char* label);
 template<class T>
 bool Serialize(Serialization::IArchive& ar, Serialization::SRadianAng3AsDeg<T>& value, const char* name, const char* label);
 
