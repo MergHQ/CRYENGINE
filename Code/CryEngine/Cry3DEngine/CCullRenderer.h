@@ -11,20 +11,8 @@
 // enable this define to allow ingame debugging of the coverage buffer
 #define CULLING_ENABLE_DEBUG_OVERLAY
 
-#if CRY_PLATFORM_DURANGO
-	#define CULLINLINE   inline
-	#define CULLNOINLINE inline
-#elif CRY_PLATFORM_ORBIS
-	#define CULLINLINE   inline
-	#define CULLNOINLINE inline
-#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-	#define CULLINLINE   inline
-	#define CULLNOINLINE inline
-	#pragma message("TODO: remove this when Win64 compiler doesnt crash anymore")
-#else
-	#define CULLINLINE   ILINE
-	#define CULLNOINLINE inline
-#endif
+#define CULLINLINE   ILINE
+#define CULLNOINLINE inline
 
 #pragma warning(push)
 #pragma warning(disable:6262)
