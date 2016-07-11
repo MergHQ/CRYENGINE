@@ -777,9 +777,9 @@ int CRopeEntity::Action(pe_action *_action, int bThreadSafe)
 			}
 			if (m_bTargetPoseActive==1)	for(i=0;i<2;i++) if (m_pTiedTo[i]) {
 				Vec3 pos; quaternionf q(IDENTITY); float scale;
-				if (m_flags & (rope_target_vtx_rel0|rope_target_vtx_rel1))
+				if (m_flags & rope_target_vtx_rel0<<i)
 					m_ptTiedLoc[i] = action->points[m_nSegs*i];
-				else {
+				else if (!(m_flags & (rope_target_vtx_rel0|rope_target_vtx_rel1))) {
 					m_pTiedTo[i]->GetLocTransform(m_iTiedPart[i], pos,q,scale);
 					m_ptTiedLoc[i] = (action->points[m_nSegs*i]-pos)*q;
 				}

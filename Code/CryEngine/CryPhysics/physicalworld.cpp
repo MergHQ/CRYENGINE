@@ -1503,21 +1503,47 @@ static void qsort(CPhysicalEntity **pentlist,float *pmass,int *pids, int ileft,i
 	}
 }
 
-void GroupByOuterEntity(CPhysicalEntity **pentlist, int left,int right)
+CPhysicalEntity* GroupByOuterEntity(CPhysicalEntity *pent0)
 {
-	int i=left,j=right, mi=left+right>>1;
-	INT_PTR m = (INT_PTR)pentlist[mi]->m_pOuterEntity;
-
-	while (i <= j) {
-		while((INT_PTR)pentlist[i]->m_pOuterEntity < m) i++;
-		while(m < (INT_PTR)pentlist[j]->m_pOuterEntity) j--;
-		if (i <= j) {
-			CPhysicalEntity *pent=pentlist[i]; pentlist[i]=pentlist[j]; pentlist[j]=pent;
-			i++; j--;
+#define next m_next_coll2
+#define prev m_next_coll1
+	if (!pent0)
+		return 0;
+	CPhysicalEntity *pent,*pent1=0,*pentLast;
+	for(pent=pent0; pent; pentLast=pent,pent=pent->next) pent->m_bProcessed_aux=1<<31;
+	for(pent=pent0,pent1=0; pent; pent=pent->next) if (pent->m_pOuterEntity && pent->m_pOuterEntity->m_bProcessed_aux>=0) {
+		// temporarily append external outer ents to the list	(in m_bProcessed_aux mark bit 31 = in list, bit 30 = is external)
+		pentLast->next = pent->m_pOuterEntity; pentLast = pent->m_pOuterEntity;
+		pentLast->m_next_coll = pentLast->next; // store previous value of coll_next2
+		pentLast->next = 0; pentLast->m_bProcessed_aux = 3<<30;
+	}
+	for(pent=pent0,pent1=0; pent; pent->prev=pent1,pent1=pent,pent=pent->next);	// double-link the list
+	for(pent=pentLast=pent0; pent; pentLast=pent,pent=pent1) {
+		pent1 = pent->next;	// re-insert pent after its outer entity, if it has any
+		if (pent->m_pOuterEntity && pent!=pent->m_pOuterEntity && pent->prev!=pent->m_pOuterEntity) {
+			if (pent->next) pent->next->prev = pent->prev; 
+			if (pent->prev) pent->prev->next = pent->next;
+			pent->next = pent->m_pOuterEntity->next; pent->prev = pent->m_pOuterEntity;
+			if (pent->m_pOuterEntity->next) pent->m_pOuterEntity->next->prev = pent;
+			pent->m_pOuterEntity->next = pent;
 		}
 	}
-	if (left < j) GroupByOuterEntity(pentlist, left, j);
-	if (i < right) GroupByOuterEntity(pentlist, i, right);
+	for(; pent0->prev; pent0=pent0->prev);
+	pent = pent0;	pentLast = 0;
+	for(int iGroup=-1; pent; pent=pent1) {
+		pent1 = pent->next;
+		if (!pent->m_pOuterEntity || pent->m_pOuterEntity==pent)
+			++iGroup;
+		if (pent->m_bProcessed_aux & 1<<30)	{
+			(pentLast ? pentLast->next : pent0) = pent->next;	 // remove external ents from the list
+			pent->m_next_coll2 = pent->m_next_coll;
+		} else
+			(pentLast=pent)->m_iGroup = iGroup;
+		pent->m_bProcessed_aux = 0;
+	}
+	return pent0;
+#undef prev
+#undef next
 }
 
 int CPhysicalWorld::ReallocTmpEntList(CPhysicalEntity **&pEntList, int iCaller, int szNew)
@@ -2075,13 +2101,8 @@ void CPhysicalWorld::ProcessNextEngagedIndependentEntity(int iCaller)
 		{ WriteLock lock(m_lockNextEntityGroup);
 			if (!m_pCurEnt)
 				break;
-			pent=pentEnd=(CPhysicalEntity*)m_pCurEnt; m_pCurEnt=m_pCurEnt->m_next_coll2;
-			if (pent->m_pOuterEntity || pent->m_next_coll2 && pent->m_next_coll2->m_pOuterEntity==pent) {
-				if (!pent->m_pOuterEntity)
-					pentEnd = pent->m_next_coll2;
-				for(; pentEnd->m_next_coll2 && pentEnd->m_next_coll2->m_pOuterEntity==pentEnd->m_pOuterEntity; pentEnd=pentEnd->m_next_coll2);
-				m_pCurEnt = pentEnd->m_next_coll2;
-			}
+			for(pent=pentEnd=(CPhysicalEntity*)m_pCurEnt; pentEnd->m_next_coll2 && pentEnd->m_next_coll2->m_iGroup==pent->m_iGroup; pentEnd=pentEnd->m_next_coll2); 
+			m_pCurEnt = pentEnd->m_next_coll2;
 		}
 		do {
 			pentNext = pent->m_next_coll2; pent->m_next_coll2 = 0;
@@ -2161,13 +2182,8 @@ void CPhysicalWorld::ProcessNextIndependentEntity(float time_interval, int bSkip
 		{ WriteLock lock(m_lockNextEntityGroup);
 			if (!m_pCurEnt)
 				break;
-			pent=pentEnd=(CPhysicalEntity*)m_pCurEnt; m_pCurEnt=m_pCurEnt->m_next_coll2;
-			if (pent->m_pOuterEntity || pent->m_next_coll2 && pent->m_next_coll2->m_pOuterEntity==pent) {
-				if (!pent->m_pOuterEntity)
-					pentEnd = pent->m_next_coll2;
-				for(; pentEnd->m_next_coll2 && pentEnd->m_next_coll2->m_pOuterEntity==pentEnd->m_pOuterEntity; pentEnd=pentEnd->m_next_coll2);
-				m_pCurEnt = pentEnd->m_next_coll2;
-			}
+			for(pent=pentEnd=(CPhysicalEntity*)m_pCurEnt; pentEnd->m_next_coll2 && pentEnd->m_next_coll2->m_iGroup==pent->m_iGroup; pentEnd=pentEnd->m_next_coll2); 
+			m_pCurEnt = pentEnd->m_next_coll2;
 		}
 		do {
 			if (!(m_bUpdateOnlyFlagged&(pent->m_flags^pef_update) | bSkipFlagged&pent->m_flags)) {
@@ -2466,17 +2482,9 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 							for(pent=m_pTmpEntList1[i]; pent; pent=pent->m_next_coll)
 								pent->m_bMoved=0, pent->m_iGroup=-1;
 						m_bWorldStep = 2;
-						for(i=0,pent=m_pAuxStepEnt; pent; pent=pent->m_next_coll2,i++) {
-							m_pTmpEntList1[i] = pent;
-							if (pent->GetType()==PE_LIVING)
-								((CLivingEntity*)pent)->SyncWithGroundCollider(pent->m_timeIdle);
-						}
-						if (i>0) {
-							GroupByOuterEntity(m_pTmpEntList1, 0,i-1);
-							for(m_pTmpEntList1[--i]->m_next_coll2=0,--i; i>=0; i--) m_pTmpEntList1[i]->m_next_coll2=m_pTmpEntList1[i+1];
-							m_pAuxStepEnt = m_pTmpEntList1[0];
-						}
-						m_pCurEnt=m_pAuxStepEnt; m_pAuxStepEnt=0;
+						for(i=0,pent=m_pAuxStepEnt; pent; pent=pent->m_next_coll2,i++) if (pent->GetType()==PE_LIVING)
+							((CLivingEntity*)pent)->SyncWithGroundCollider(pent->m_timeIdle);
+						m_pCurEnt = GroupByOuterEntity(m_pAuxStepEnt); m_pAuxStepEnt = 0;
 						THREAD_TASK(2, ProcessNextEngagedIndependentEntity(0))
 						m_bWorldStep = 1;
 					}	else
@@ -2518,9 +2526,9 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 	m_bWorldStep = 3;
 	if (!m_vars.bSingleStepMode || m_vars.bDoStep) {
 		if (flags & ent_independent) {
-			m_pCurEnt = m_pTypedEntsPerm[4];
 			for(pent=m_pTypedEntsPerm[4]; pent; pent=pent->m_next)
 				pent->m_next_coll2 = pent->m_next;
+			m_pCurEnt = GroupByOuterEntity(m_pTypedEntsPerm[4]);
 			THREAD_TASK(4, ProcessNextIndependentEntity(time_interval,bSkipFlagged,0));
 			m_updateTimes[4] = m_timePhysics;
 		}
