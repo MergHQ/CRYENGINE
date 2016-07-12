@@ -315,6 +315,9 @@ public:
 										 SSectorTextureSet * pTerrainTexInfo,
 										 const AABB &objBox, float fEntDistance, bool bSunOnly,
 										 CVisArea * pVisArea, bool nCheckOcclusion, const SRenderingPassInfo &passInfo);
+
+	int ComputeDissolve(const CLodValue &lodValueIn, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2]);
+
 	void RenderDecalAndRoad(IRenderNode* pEnt, PodArray<CDLight*>* pAffectingLights,
 	                        const Vec3& vAmbColor, const AABB& objBox, float fEntDistance,
 	                        bool bSunOnly, bool nCheckOcclusion, const SRenderingPassInfo& passInfo);

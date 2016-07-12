@@ -807,7 +807,9 @@ void CVars::Init()
 	                   "Turns On/Off the memory usage icon rendering: 1 on, 0 off.");
 
 	REGISTER_CVAR(e_LodRatio, 6.0f, VF_NULL,
-	              "LOD distance ratio for objects");
+								"LOD distance ratio for objects");
+	REGISTER_CVAR(e_LodTransitionTime, 0.5f, VF_NULL,
+								"If non 0 - use dissolve for smooth LOD transition");
 	REGISTER_CVAR(e_LodFaceAreaTargetSize, 0.005f, VF_NULL,
 	              "Threshold used for LOD computation.");
 	DefineConstFloatCVar(e_LodCompMaxSize, VF_NULL,

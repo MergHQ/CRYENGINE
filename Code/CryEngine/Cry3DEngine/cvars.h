@@ -323,6 +323,7 @@ struct CVars : public Cry3DEngineBase
 	float e_FoliageBranchesTimeout;
 	DeclareConstFloatCVar(e_TerrainOcclusionCullingStepSizeDelta);
 	float e_LodRatio;
+	float e_LodTransitionTime;
 	float e_LodFaceAreaTargetSize;
 	float e_ObjectsTreeNodeMinSize;
 	float e_ObjectsTreeNodeSizeRatio;

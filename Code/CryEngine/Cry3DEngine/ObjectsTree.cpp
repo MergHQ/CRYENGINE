@@ -3470,7 +3470,21 @@ void CObjManager::RenderBrush(CBrush* pEnt, PodArray<CDLight*>* pAffectingLights
 
 	//////////////////////////////////////////////////////////////////////////
 	const CLodValue lodValue = pEnt->ComputeLod(pEnt->m_pTempData->userData.nWantedLod, passInfo);
-	pEnt->Render(lodValue, passInfo, pTerrainTexInfo, pAffectingLights);
+
+	if (GetCVars()->e_LodTransitionTime && passInfo.IsGeneralPass())
+	{
+		// Render current lod and (if needed) previous lod and perform time based lod transition using dissolve
+
+		CLodValue arrlodVals[2];
+		int nLodsNum = ComputeDissolve(lodValue, pEnt, fEntDistance, &arrlodVals[0]);
+
+		for (int i = 0; i < nLodsNum; i++)
+			pEnt->Render(arrlodVals[i], passInfo, pTerrainTexInfo, pAffectingLights);
+	}
+	else
+	{
+		pEnt->Render(lodValue, passInfo, pTerrainTexInfo, pAffectingLights);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

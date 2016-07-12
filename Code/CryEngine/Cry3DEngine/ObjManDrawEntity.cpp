@@ -135,7 +135,21 @@ void CObjManager::RenderVegetation(CVegetation* pEnt, PodArray<CDLight*>* pAffec
 			return;
 
 	const CLodValue lodValue = pEnt->ComputeLod(pEnt->m_pTempData->userData.nWantedLod, passInfo);
-	pEnt->Render(passInfo, lodValue, pTerrainTexInfo);
+
+	if (GetCVars()->e_LodTransitionTime && passInfo.IsGeneralPass())
+	{
+		// Render current lod and (if needed) previous lod and perform time based lod transition using dissolve
+
+		CLodValue arrlodVals[2];
+		int nLodsNum = ComputeDissolve(lodValue, pEnt, fEntDistance, &arrlodVals[0]);
+
+		for (int i = 0; i < nLodsNum; i++)
+			pEnt->Render(passInfo, arrlodVals[i], pTerrainTexInfo);
+	}
+	else
+	{
+		pEnt->Render(passInfo, lodValue, pTerrainTexInfo);
+	}
 }
 
 void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffectingLights,
@@ -320,7 +334,23 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 	DrawParams.nMaterialLayers = pEnt->GetMaterialLayers();
 	DrawParams.lodValue = pEnt->ComputeLod(pEnt->m_pTempData->userData.nWantedLod, passInfo);
 
-	pEnt->Render(DrawParams, passInfo);
+	if (GetCVars()->e_LodTransitionTime && passInfo.IsGeneralPass() && pEnt->GetRenderNodeType() == eERType_RenderProxy && pEnt->GetEntityStatObj())
+	{
+		// Render current lod and (if needed) previous lod and perform time based lod transition using dissolve
+
+		CLodValue arrlodVals[2];
+		int nLodsNum = ComputeDissolve(DrawParams.lodValue, pEnt, fEntDistance, &arrlodVals[0]);
+
+		for (int i = 0; i < nLodsNum; i++)
+		{
+			DrawParams.lodValue = arrlodVals[i];
+			pEnt->Render(DrawParams, passInfo);
+		}
+	}
+	else
+	{
+		pEnt->Render(DrawParams, passInfo);
+	}
 }
 
 void CObjManager::RenderAllObjectDebugInfo()

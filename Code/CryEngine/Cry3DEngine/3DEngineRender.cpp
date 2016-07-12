@@ -1063,6 +1063,7 @@ void C3DEngine::PreWorldStreamUpdate(const CCamera& cam)
 		if (GetCVars()->e_AutoPrecacheCameraJumpDist && fDistance > GetCVars()->e_AutoPrecacheCameraJumpDist)
 		{
 			m_bContentPrecacheRequested = true;
+			m_bResetRNTmpDataPool = true;
 
 			// Invalidate existing precache info
 			m_pObjManager->m_nUpdateStreamingPrioriryRoundIdFast += 8;
