@@ -86,20 +86,12 @@ bool CDialogLineDatabase::Save(const char* szFilePath)
 }
 
 //--------------------------------------------------------------------------------------------------
-const CDialogLine* CDialogLineDatabase::GetLineByID(const CHashedString& lineID, int* pOutPriority)
+void CDialogLineDatabase::Reset()
 {
 	for (CDialogLineSet& currentLineSet : m_lineSets)
 	{
-		if (currentLineSet.GetLineId() == lineID)
-		{
-			if (pOutPriority)
-			{
-				*pOutPriority = currentLineSet.GetPriority();
-			}
-			return currentLineSet.PickLine();
-		}
+		currentLineSet.Reset();
 	}
-	return nullptr;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -119,7 +111,20 @@ IDialogLineSet* CDialogLineDatabase::GetLineSetByIndex(uint index)
 }
 
 //--------------------------------------------------------------------------------------------------
-const IDialogLineSet* const CDialogLineDatabase::GetLineSetById(const CHashedString& lineID) const
+CDialogLineSet* CDialogLineDatabase::GetLineSetById(const CHashedString& lineID)
+{
+	for (CDialogLineSet& currentLineSet : m_lineSets)
+	{
+		if (currentLineSet.GetLineId() == lineID)
+		{
+			return &currentLineSet;
+		}
+	}
+	return nullptr;
+}
+
+//--------------------------------------------------------------------------------------------------
+const DRS::IDialogLineSet* CDialogLineDatabase::GetLineSetById(const CHashedString& lineID) const
 {
 	for (const CDialogLineSet& currentLineSet : m_lineSets)
 	{
@@ -172,6 +177,9 @@ void CDialogLineDatabase::SerializeLinesHistory(Serialization::IArchive& ar)
 bool CDialogLineDatabase::ExecuteScript(uint32 index)
 {
 #if defined(CRY_PLATFORM_WINDOWS)
+	static int maxParallelCmds = 4;  //todo: expose this value to the UI
+	static int counter = 0;
+
 	const string linescriptpath = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR "linescript.bat";
 
 	if (gEnv->pCryPak->IsFileExist(linescriptpath, ICryPak::eFileLocation_Any))
@@ -192,14 +200,17 @@ bool CDialogLineDatabase::ExecuteScript(uint32 index)
 				}
 
 				char szBuffer[1024];
-				cry_sprintf(szBuffer, "@SET LINE_ID=%s&SET SUBTITLE=%s&SET AUDIO_TRIGGER=%s&SET AUDIO_TRIGGER_CLEANED=%s&SET ANIMATION_NAME=%s&SET STANDALONE_FILE=%s&%s",
-				            pLineSet->GetLineId().GetText().c_str(),
-				            pCurrentLine->GetText().c_str(),
-				            pCurrentLine->GetStartAudioTrigger().c_str(),
-				            startTriggerWithoutPrefix.c_str(),
-				            pCurrentLine->GetLipsyncAnimation().c_str(),
-				            pCurrentLine->GetStandaloneFile().c_str(),
-				            linescriptpath.c_str());
+				cry_sprintf(szBuffer, "@SET LINE_ID=%s&SET LINE_ID_HASH=%s&SET SUBTITLE=%s&SET AUDIO_TRIGGER=%s&SET AUDIO_TRIGGER_CLEANED=%s&SET ANIMATION_NAME=%s&SET STANDALONE_FILE=%s&SET VARIATION_INDEX=%s&%s%s",
+					pLineSet->GetLineId().GetText().c_str(),
+					CryStringUtils::toString(pLineSet->GetLineId().GetHash()),
+					pCurrentLine->GetText().c_str(),
+					pCurrentLine->GetStartAudioTrigger().c_str(),
+					startTriggerWithoutPrefix.c_str(),
+					pCurrentLine->GetLipsyncAnimation().c_str(),
+					pCurrentLine->GetStandaloneFile().c_str(),
+					CryStringUtils::toString(i),
+					(++counter % maxParallelCmds == 0) ? "" : "start cmd /c ",
+					linescriptpath.c_str());
 
 				system(szBuffer);
 			}
@@ -216,7 +227,7 @@ bool CDialogLineDatabase::ExecuteScript(uint32 index)
 //--------------------------------------------------------------------------------------------------
 CDialogLineSet::CDialogLineSet()
 	: m_priority(50)
-	, m_flags((int)IDialogLineSet::EPickModeFlags::Random)
+	, m_flags((int)IDialogLineSet::EPickModeFlags::RandomVariation)
 	, m_lastPickedLine(0)
 {
 	m_lines.push_back(CDialogLine());
@@ -237,12 +248,12 @@ const CDialogLine* CDialogLineSet::PickLine()
 		return nullptr;
 	}
 
-	if ((m_flags & (int)IDialogLineSet::EPickModeFlags::Random) > 0)
+	if ((m_flags & (int)IDialogLineSet::EPickModeFlags::RandomVariation) > 0)
 	{
 		const int randomLineIndex = cry_random(0, numLines - 1);
 		return &m_lines[randomLineIndex];
 	}
-	else if ((m_flags & (int)IDialogLineSet::EPickModeFlags::Sequential) > 0)
+	else if ((m_flags & (int)IDialogLineSet::EPickModeFlags::SequentialVariationRepeat) > 0)
 	{
 		if (m_lastPickedLine >= numLines)
 		{
@@ -250,11 +261,50 @@ const CDialogLine* CDialogLineSet::PickLine()
 		}
 		return &m_lines[m_lastPickedLine++];
 	}
+	else if ((m_flags & (int)IDialogLineSet::EPickModeFlags::SequentialVariationClamp) > 0)
+	{
+		if (m_lastPickedLine >= numLines)
+		{
+			return &m_lines[numLines-1];
+		}
+		return &m_lines[m_lastPickedLine++];
+	}
+	else if ((m_flags & (int)IDialogLineSet::EPickModeFlags::SequentialAllSuccessively) > 0)
+	{
+		return &m_lines[0];
+	}
 	else
 	{
 		DrsLogWarning("Could not pick a line from the dialogLineSet, because the RandomMode was set to an illegal value");
 	}
 	return nullptr;
+}
+
+//--------------------------------------------------------------------------------------------------
+const CDialogLine* CDialogLineSet::GetFollowUpLine(const CDialogLine* pCurrentLine)
+{
+	if ((m_flags & (int)IDialogLineSet::EPickModeFlags::SequentialAllSuccessively) > 0)
+	{
+		bool bCurrentLineFound = false;
+		for (const CDialogLine& currentLine : m_lines)
+		{
+			if (bCurrentLineFound) //if the current line was found, this means the next one is the follow up line
+			{
+				return &currentLine;
+			}
+			if (pCurrentLine == &currentLine)
+			{
+				bCurrentLineFound = true;
+			}
+		}
+	}
+	return nullptr;
+}
+
+//--------------------------------------------------------------------------------------------------
+void CDialogLineSet::Reset()
+{
+	m_lastPickedLine = 0;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -324,8 +374,8 @@ void CDialogLineSet::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_lineId, "lineID", "lineID");
 	ar(m_priority, "priority", "Priority");
-	ar(m_lastPickedLine, "lastPicked", nullptr);
-	ar(m_flags, "flags", "+Flags");    //bitmask editor widget?
+	//ar(m_lastPickedLine, "lastPicked", nullptr); //we dont store any runtime data for dialog lines here
+	ar(m_flags, "flags", "+Flags");
 	ar(m_lines, "lineVariations", "+Lines");
 
 #if !defined(_RELEASE)
@@ -335,7 +385,7 @@ void CDialogLineSet::Serialize(Serialization::IArchive& ar)
 		{
 			ar.error(m_priority, "DialogLineSet without a single concrete line");
 		}
-		if ((m_flags & (uint32)(EPickModeFlags::Random)) == 0)
+		if ((m_flags & (uint32)(EPickModeFlags::RandomVariation)) == 0)
 		{
 			ar.error(m_priority, "DialogLineSet without a correct LinePickMode found.");
 		}
@@ -346,7 +396,7 @@ void CDialogLineSet::Serialize(Serialization::IArchive& ar)
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
-CDialogLine::CDialogLine()
+CDialogLine::CDialogLine() : m_pauseLength(0.0f)
 {}
 
 //--------------------------------------------------------------------------------------------------
@@ -357,6 +407,8 @@ void CDialogLine::Serialize(Serialization::IArchive& ar)
 	ar(m_audioStopTrigger, "audioStopTrigger", "AudioStopTrigger");
 	ar(m_lipsyncAnimation, "lipsyncAnim", "LipsyncAnim");
 	ar(m_standaloneFile, "standaloneFile", "StandaloneFile");
+	ar(m_pauseLength, "pauseLength", "PauseLength");
+	ar(m_customData, "customData", "CustomData");
 
 	if (ar.isEdit())
 	{

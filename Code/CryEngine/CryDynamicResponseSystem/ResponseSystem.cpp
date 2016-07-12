@@ -317,6 +317,7 @@ void CResponseSystem::_Reset(uint32 resetFlags)
 	if (resetFlags & DRS::IDynamicResponseSystem::eResetHint_Speaker)
 	{
 		m_pSpeakerManager->Reset();
+		m_pDialogLineDatabase->Reset();
 	}
 	if (resetFlags & DRS::IDynamicResponseSystem::eResetHint_DebugInfos)
 	{
@@ -367,7 +368,7 @@ IEntity* CResponseActor::GetLinkedEntity() const
 }
 
 //--------------------------------------------------------------------------------------------------
-DRS::SignalId CResponseActor::QueueSignal(const CHashedString& signalName, DRS::IVariableCollectionSharedPtr pSignalContext /*= nullptr*/, DRS::IResponseManager::IListener* pSignalListener /*= nullptr*/)
+DRS::SignalInstanceId CResponseActor::QueueSignal(const CHashedString& signalName, DRS::IVariableCollectionSharedPtr pSignalContext /*= nullptr*/, DRS::IResponseManager::IListener* pSignalListener /*= nullptr*/)
 {
 	CResponseManager* pResponseMgr = CResponseSystem::GetInstance()->GetResponseManager();
 	SSignal signal(signalName, this, std::static_pointer_cast<CVariableCollection>(pSignalContext));

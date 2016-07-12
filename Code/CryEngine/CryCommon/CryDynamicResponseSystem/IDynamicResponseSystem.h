@@ -29,8 +29,8 @@ typedef std::shared_ptr<IResponseCondition>             IConditionSharedPtr;
 struct IVariableCollection;
 typedef std::shared_ptr<IVariableCollection> IVariableCollectionSharedPtr;
 
-typedef int                                  SignalId;
-static const SignalId s_InvalidSignalId = -1;
+typedef int                                  SignalInstanceId;
+static const SignalInstanceId s_InvalidSignalId = -1;
 
 typedef int LipSyncID;
 static const LipSyncID s_InvalidLipSyncId = -1;
@@ -50,14 +50,20 @@ struct ISpeakerManager
 	{
 		enum eLineEvent
 		{
-			eLineEvent_Started,                 //line started successfully
-			eLineEvent_Queued,                  //line is waiting to start
-			eLineEvent_Finished,                //line finished successfully
-			eLineEvent_Canceling,               //waiting for stop trigger to finish
-			eLineEvent_Canceled,                //was canceled while playing (by calling cancel or by destroying the actor)
-			eLineEvent_CanceledWhileQueued,     //was canceled while queued (by calling cancel or by destroying the actor)
-			eLineEvent_CouldNotBeStarted,       //was not started because of incorrect data.
-			eLineEvent_SkippedBecauseOfPriority //another more important line was already playing (pLine will hold that line)
+			eLineEvent_Started                   = BIT(0), //line started successfully
+
+			eLineEvent_Finished                  = BIT(1),                                    //line finished successfully
+			eLineEvent_Canceled                  = BIT(2),                                    //was canceled while playing (by calling cancel or by destroying the actor)
+			eLineEvent_HasEndedInAnyWay          = eLineEvent_Finished | eLineEvent_Canceled, //useful combination, if you are only interested in IF the line has ended and not HOW it happened.
+
+			eLineEvent_Queued                    = BIT(3), //line is waiting to start
+			eLineEvent_Canceling                 = BIT(4), //waiting for stop trigger to finish
+
+			eLineEvent_CanceledWhileQueued       = BIT(5),                                                                                              //was canceled while queued (by calling cancel or by destroying the actor)
+			eLineEvent_CouldNotBeStarted         = BIT(6),                                                                                              //was not started because of incorrect data.
+			eLineEvent_SkippedBecauseOfPriority  = BIT(7),                                                                                              //another more important line was already playing (pLine will hold that line)
+			eLineEvent_WasNotStartedForAnyReason = eLineEvent_CanceledWhileQueued | eLineEvent_CouldNotBeStarted | eLineEvent_SkippedBecauseOfPriority, //useful combination, if you are only interested IF the line has not started and not WHY it did not happen.
+
 		};
 		virtual void OnLineEvent(const IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const IDialogLine* pLine) = 0;
 	};
@@ -189,10 +195,10 @@ struct IResponseInstance
 	virtual void SetCurrentActor(IResponseActor* pNewActor) = 0;
 
 	/**
-	 * Will return the EesponseActor that fired the signal in the first place
+	 * Will return the ResponseActor that fired the signal in the first place
 	 *
 	 * Note: pInstance->GetOriginalSender()
-	 * @return return the EesponseActor that fired the signal in the first place
+	 * @return return the ResponseActor that fired the signal in the first place
 	 * @see IResponseAction::Execute, IDynamicResponseSystem::QueueSignal
 	 */
 	virtual IResponseActor* const GetOriginalSender() const = 0;
@@ -207,6 +213,16 @@ struct IResponseInstance
 	virtual const CHashedString& GetSignalName() const = 0;
 
 	/**
+	 * Will return the id of the signal instance that we currently respond to.
+	 * This ID can then be used to register ourselves as a listener to this signal.
+	 *
+	 * Note: pInstance->GetSignalId()
+	 * @return returns the id of the signal-instance that triggered the response
+	 * @see DRS.IResponseManager.AddListener
+	 */
+	virtual const DRS::SignalInstanceId GetSignalInstanceId() const = 0;
+
+	/**
 	 * Will return the context variable collection for this signal (if there was one specified when the signal was queued)
 	 *
 	 * Note: pInstance->GetContextVariables()
@@ -214,6 +230,7 @@ struct IResponseInstance
 	 * @see IResponseAction::Execute, IDynamicResponseSystem::QueueSignal
 	 */
 	virtual IVariableCollectionSharedPtr GetContextVariables() const = 0;
+
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -430,7 +447,7 @@ struct IResponseManager
 			  const CHashedString& _name,
 			  IResponseActor* _pSender,
 			  const IVariableCollectionSharedPtr& _pContext,
-			  SignalId _id) :
+			  SignalInstanceId _id) :
 				name(_name),
 				pSender(_pSender),
 				pContext(_pContext),
@@ -439,7 +456,7 @@ struct IResponseManager
 			const CHashedString&                name;
 			IResponseActor*                     pSender;
 			const IVariableCollectionSharedPtr& pContext;
-			SignalId                            id;
+			const SignalInstanceId              id;
 		};
 
 		virtual void OnSignalProcessingStarted(SSignalInfos& signal, IResponseInstance* pStartedResponse) {}
@@ -455,7 +472,17 @@ struct IResponseManager
 
 	virtual ~IResponseManager() {}
 
-	virtual bool AddListener(IListener* pNewListener, SignalId onlySignalWithID = s_InvalidSignalId) = 0;
+	/**
+	 * will register the given class (derived from DRS.IResponseManager.IListener) as a listener to signal-processing. If a signalInstanceId is provided, only callbacks for that specific instance are sent
+	 * @return returns if successful
+	 * @see DRS.IResponseManager.IListener, CryDRS.CResponseActor.QueueSignal
+	 */
+	virtual bool AddListener(IListener* pNewListener, SignalInstanceId onlySignalWithID = s_InvalidSignalId) = 0;
+	/**
+	 * Will return the listener from the classes to be notified about signal events.
+	 * @return returns if successful
+	 * @see DRS.IResponseManager.IListener
+	 */
 	virtual bool RemoveListener(IListener* pListenerToRemove) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
@@ -530,7 +557,7 @@ struct IResponseActor
 	 * @return returns an unique ID for this signal processing
 	 * @see IDynamicResponseSystem::CreateContextCollection, IDynamicResponseSystem::CancelSignalProcessing
 	 */
-	virtual SignalId QueueSignal(const CHashedString& signalName, IVariableCollectionSharedPtr pSignalContext = nullptr, IResponseManager::IListener* pSignalListener = nullptr) = 0;
+	virtual SignalInstanceId QueueSignal(const CHashedString& signalName, IVariableCollectionSharedPtr pSignalContext = nullptr, IResponseManager::IListener* pSignalListener = nullptr) = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -584,12 +611,16 @@ struct IDialogLine
 	virtual const string& GetEndAudioTrigger() const = 0;
 	virtual const string& GetLipsyncAnimation() const = 0;
 	virtual const string& GetStandaloneFile() const = 0;
+	virtual const float   GetPauseLength() const = 0;
+	virtual const string& GetCustomData() const = 0;
 	virtual void          SetText(const string& text) = 0;
 	virtual void          SetStartAudioTrigger(const string& trigger) = 0;
 	virtual void          SetEndAudioTrigger(const string& trigger) = 0;
 	virtual void          Serialize(Serialization::IArchive& ar) = 0;
 	virtual void          SetLipsyncAnimation(const string& lipsyncAnimation) = 0;
 	virtual void          SetStandaloneFile(const string& standAlonefile) = 0;
+	virtual void          SetPauseLength(float length) = 0;
+	virtual void          SetCustomData(const string& data) = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -598,10 +629,12 @@ struct IDialogLineSet
 {
 	enum class EPickModeFlags
 	{
-		None       = 0,
-		Random     = 1 << 0,     //!< Pick one at random (NOT taking user defined PickFactors into consideration).
-		Sequential = 1 << 1,     //!< Pick one after another.
-		Any        = Random | Sequential
+		None                      = 0,
+		RandomVariation           = 1 << 0, //!< Pick one variation at random
+		SequentialVariationRepeat = 1 << 1, //!< Pick the next variation in the order they are specified (start from the beginning after the last one)
+		SequentialVariationClamp  = 1 << 2, //!< Pick the next variation in the order they are specified (repeat the last one)
+		SequentialAllSuccessively = 1 << 3, //!< Pick all, one after another.
+		Any                       = RandomVariation | SequentialVariationRepeat | SequentialVariationClamp | SequentialAllSuccessively
 	};
 
 	virtual ~IDialogLineSet() {}
@@ -623,15 +656,15 @@ struct IDialogLineSet
 struct IDialogLineDatabase
 {
 	virtual ~IDialogLineDatabase() {}
-	virtual bool                        Save(const char* szFilePath) = 0;
-	virtual uint32                      GetLineSetCount() const = 0;
-	virtual IDialogLineSet*             GetLineSetByIndex(uint32 index) = 0;
-	virtual const IDialogLineSet* const GetLineSetById(const CHashedString& lineID) const = 0;
-	virtual IDialogLineSet*             InsertLineSet(uint32 index) = 0;
-	virtual void                        RemoveLineSet(uint32 index) = 0;
-	virtual bool                        ExecuteScript(uint32 index) = 0;
-	virtual void                        Serialize(Serialization::IArchive& ar) = 0;
-	virtual void                        SerializeLinesHistory(Serialization::IArchive& ar) = 0;
+	virtual bool                  Save(const char* szFilePath) = 0;
+	virtual uint32                GetLineSetCount() const = 0;
+	virtual IDialogLineSet*       GetLineSetByIndex(uint32 index) = 0;
+	virtual const IDialogLineSet* GetLineSetById(const CHashedString& lineID) const = 0;
+	virtual IDialogLineSet*       InsertLineSet(uint32 index) = 0;
+	virtual void                  RemoveLineSet(uint32 index) = 0;
+	virtual bool                  ExecuteScript(uint32 index) = 0;
+	virtual void                  Serialize(Serialization::IArchive& ar) = 0;
+	virtual void                  SerializeLinesHistory(Serialization::IArchive& ar) = 0;
 };
 
 //! WIP

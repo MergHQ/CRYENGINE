@@ -22,7 +22,7 @@ struct SSignal
 {
 	SSignal(const CHashedString& signalName, CResponseActor* pSender, VariableCollectionSharedPtr pSignalContext);
 
-	DRS::SignalId               m_id;
+	DRS::SignalInstanceId       m_id;  //a unique id for this instance of the sent-signal
 	CHashedString               m_signalName;
 	CResponseActor*             m_pSender;
 	VariableCollectionSharedPtr m_pSignalContext;
@@ -54,14 +54,14 @@ public:
 	typedef std::unordered_map<CHashedString, ResponsePtr>                           MappedSignals;
 	typedef std::vector<SSignal>                                                     SignalList;
 	typedef std::vector<CResponseInstance*>                                          ResponseInstanceList;
-	typedef std::vector<std::pair<DRS::IResponseManager::IListener*, DRS::SignalId>> ListenerList;
+	typedef std::vector<std::pair<DRS::IResponseManager::IListener*, DRS::SignalInstanceId>> ListenerList;
 
 	CResponseManager();
 	~CResponseManager();
 
 	//////////////////////////////////////////////////////////
 	// IResponseManager implementation
-	virtual bool                  AddListener(DRS::IResponseManager::IListener* pNewListener, DRS::SignalId signalID = DRS::s_InvalidSignalId) override;
+	virtual bool                  AddListener(DRS::IResponseManager::IListener* pNewListener, DRS::SignalInstanceId signalID = DRS::s_InvalidSignalId) override;
 	virtual bool                  RemoveListener(DRS::IResponseManager::IListener* pListenerToRemove) override;
 
 	virtual DynArray<const char*> GetRecentSignals(DRS::IResponseManager::eSignalFilter filter = DRS::IResponseManager::eSF_All) override;
@@ -95,7 +95,7 @@ private:
 	bool _LoadFromFiles(const string& dataPath);
 
 	void InformListenerAboutSignalProcessingStarted(const SSignal& signal, DRS::IResponseInstance* pInstance);
-	void InformListenerAboutSignalProcessingFinished(const CHashedString& signalName, CResponseActor* pSender, const VariableCollectionSharedPtr& pSignalContext, const DRS::SignalId signalID, DRS::IResponseInstance* pInstance, DRS::IResponseManager::IListener::eProcessingResult outcome);
+	void InformListenerAboutSignalProcessingFinished(const CHashedString& signalName, CResponseActor* pSender, const VariableCollectionSharedPtr& pSignalContext, const DRS::SignalInstanceId signalID, DRS::IResponseInstance* pInstance, DRS::IResponseManager::IListener::eProcessingResult outcome);
 
 	EUsedFileFormat      m_UsedFileFormat;
 

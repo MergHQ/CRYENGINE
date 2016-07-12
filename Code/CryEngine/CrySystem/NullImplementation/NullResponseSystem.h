@@ -55,7 +55,7 @@ public:
 	virtual const DRS::IVariableCollection* GetLocalVariables() const override { return static_cast<const DRS::IVariableCollection*>(&m_pLocalVariables); }
 	virtual EntityId                        GetLinkedEntityID() const override { return INVALID_ENTITYID; }
 	virtual IEntity*                        GetLinkedEntity() const override   { return nullptr; }
-	virtual DRS::SignalId                   QueueSignal(const CHashedString& signalName, DRS::IVariableCollectionSharedPtr pSignalContext = nullptr, DRS::IResponseManager::IListener* pSignalListener = nullptr) override
+	virtual DRS::SignalInstanceId           QueueSignal(const CHashedString& signalName, DRS::IVariableCollectionSharedPtr pSignalContext = nullptr, DRS::IResponseManager::IListener* pSignalListener = nullptr) override
 	{ return DRS::s_InvalidSignalId; }
 	//////////////////////////////////////////////////////////
 

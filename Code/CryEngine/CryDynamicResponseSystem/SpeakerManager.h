@@ -71,12 +71,13 @@ private:
 		eEC_WaitingForStartTrigger = BIT(0),
 		eEC_WaitingForStopTrigger  = BIT(1),
 		eEC_WaitingForTimer        = BIT(2),
-		eEC_WaitingForLipsync      = BIT(3),
+		eEC_WaitingForLipsync      = BIT(3)
 	};
 
 	struct SSpeakInfo
 	{
 		CResponseActor*    pActor;
+		IEntity*		   pEntity;
 		string             text;
 		CHashedString      lineID;
 		const CDialogLine* pPickedLine;
@@ -106,6 +107,8 @@ private:
 
 	void        InformListener(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID, DRS::ISpeakerManager::IListener::eLineEvent event, const CDialogLine* pLine);
 	void        SetNumActiveSpeaker(int newAmountOfSpeaker);
+
+	void StartSpeaking(SSpeakInfo* pSpeakerInfoToUse);
 
 	typedef std::vector<SSpeakInfo> SpeakerList;
 	SpeakerList m_activeSpeakers;

@@ -109,7 +109,7 @@ public:
 							pContextVariableCollection->SetVariableValue(intVariableName.c_str(), intVariableValue);
 						}
 
-						DRS::SignalId signalID;
+						DRS::SignalInstanceId signalID;
 						if (IsOutputConnected(pActInfo, eOut_Done)) //we only need to register ourself as a listener to the signal, if the done port is used
 						{
 							m_actInfo = *pActInfo;

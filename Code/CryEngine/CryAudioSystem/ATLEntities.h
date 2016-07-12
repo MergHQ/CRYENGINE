@@ -625,7 +625,7 @@ private:
 	typedef std::map<AudioControlId, std::pair<CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>, AudioSwitchStateMap>, std::less<AudioControlId>, STLSoundAllocator<std::pair<AudioControlId, std::pair<CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>, AudioSwitchStateMap>>>> AudioSwitchMap;
 	typedef std::map<AudioPreloadRequestId, CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>, std::less<AudioPreloadRequestId>, STLSoundAllocator<std::pair<AudioPreloadRequestId, CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>>>>                                            AudioPreloadRequestsMap;
 	typedef std::map<AudioEnvironmentId, CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>, std::less<AudioEnvironmentId>, STLSoundAllocator<std::pair<AudioEnvironmentId, CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>>>>                                                     AudioEnvironmentMap;
-	typedef std::map<AudioStandaloneFileId, std::pair<CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>, size_t>, std::less<AudioStandaloneFileId>, STLSoundAllocator<std::pair<AudioStandaloneFileId, std::pair<CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>, size_t>>>>      AudioStandaloneFileMap;
+	typedef std::map<AudioStandaloneFileId, std::pair<CryFixedStringT<MAX_AUDIO_FILE_NAME_LENGTH>, size_t>, std::less<AudioStandaloneFileId>, STLSoundAllocator<std::pair<AudioStandaloneFileId, std::pair<CryFixedStringT<MAX_AUDIO_FILE_NAME_LENGTH>, size_t>>>>      AudioStandaloneFileMap;
 
 	AudioObjectMap          m_audioObjectNames;
 	AudioControlMap         m_audioTriggerNames;

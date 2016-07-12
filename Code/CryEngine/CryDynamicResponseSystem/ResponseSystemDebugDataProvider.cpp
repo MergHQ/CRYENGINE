@@ -399,7 +399,6 @@ void CResponseSystemDebugDataProvider::OnLineEvent(const DRS::IResponseActor* pS
 		AddDialogLineFinished(lineID, speakerName, eER_CanceledWhileQueued, "Canceled or actor removed while queued");
 		break;
 	}
-	CResponseSystem::GetInstance()->GetDialogLineDatabase()->GetLineByID(lineID);
 	return;
 }
 

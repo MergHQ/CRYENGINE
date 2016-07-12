@@ -36,7 +36,7 @@ bool CResponseInstance::Update()
 		if ((*it)->Update() != DRS::IResponseActionInstance::CS_RUNNING)
 		{
 			DRS_DEBUG_DATA_ACTION(AddActionFinished(it->get()));
-			it = m_activeActions.erase(it);  //delete finished actions
+			it = m_activeActions.erase(it);  //delete finished action instance
 		}
 		else
 		{
