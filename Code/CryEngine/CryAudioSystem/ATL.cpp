@@ -53,7 +53,6 @@ CAudioTranslationLayer::CAudioTranslationLayer()
 	: m_pGlobalAudioObject(nullptr)
 	, m_globalAudioObjectId(GLOBAL_AUDIO_OBJECT_ID)
 	, m_triggerInstanceIDCounter(1)
-	, m_pDefaultStandaloneFileTrigger(nullptr)
 	, m_audioStandaloneFileMgr()
 	, m_audioEventMgr()
 	, m_audioObjectMgr(m_audioEventMgr, m_audioStandaloneFileMgr)
@@ -1385,14 +1384,17 @@ EAudioRequestStatus CAudioTranslationLayer::PlayFile(
 		fileInfo.szFileName = _szFile;
 		fileInfo.bLocalized = _bLocalized;
 
-		if (!m_pDefaultStandaloneFileTrigger)
+		CATLTrigger const* pAudioTrigger;
+		if (_triggerId == INVALID_AUDIO_CONTROL_ID)
 		{
-			ICVar* const pCVar = gEnv->pConsole->GetCVar("s_DefaultStandaloneFilesAudioTrigger");
+			static ICVar* const pCVar = gEnv->pConsole->GetCVar("s_DefaultStandaloneFilesAudioTrigger");
 			string const defaultTriggerName = (pCVar) ? pCVar->GetString() : "";
-			m_pDefaultStandaloneFileTrigger = stl::find_in_map(m_triggers, static_cast<AudioControlId const>(AudioStringToId(defaultTriggerName)), nullptr);
+			pAudioTrigger = stl::find_in_map(m_triggers, static_cast<AudioControlId const>(AudioStringToId(defaultTriggerName)), nullptr);
 		}
-
-		CATLTrigger const* pAudioTrigger = (_triggerId == INVALID_AUDIO_CONTROL_ID) ? m_pDefaultStandaloneFileTrigger : stl::find_in_map(m_triggers, _triggerId, nullptr);
+		else
+		{
+			pAudioTrigger = stl::find_in_map(m_triggers, _triggerId, nullptr);
+		}
 
 		if (pAudioTrigger != nullptr)
 		{

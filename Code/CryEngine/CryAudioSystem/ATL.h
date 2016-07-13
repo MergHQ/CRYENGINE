@@ -125,8 +125,6 @@ private:
 
 	AudioTriggerInstanceId    m_triggerInstanceIDCounter;
 
-	CATLTrigger const*        m_pDefaultStandaloneFileTrigger;
-
 	// Components
 	CAudioStandaloneFileManager m_audioStandaloneFileMgr;
 	CAudioEventManager          m_audioEventMgr;
