@@ -1402,6 +1402,7 @@ void CMovieSystem::GoToFrame(const char* seqName, float targetFrame)
 void CMovieSystem::StartCapture(IAnimSequence* seq, const SCaptureKey& key)
 {
 	m_bStartCapture = true;
+	m_bEndCapture = false;
 	m_captureSeq = seq;
 	m_captureKey = key;
 }
