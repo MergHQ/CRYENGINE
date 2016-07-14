@@ -1651,7 +1651,7 @@ void VisualizeEmptySocket(const Matrix34& WorldMat34, const QuatT& rAttModelRela
 }
 #endif
 
-void CAttachmentManager::DrawAttachments(const SRendParams& rRendParams, const Matrix34& rWorldMat34, const SRenderingPassInfo& passInfo)
+void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& rWorldMat34, const SRenderingPassInfo& passInfo, const f32 fZoomFactor, const f32 fZoomDistanceSq)
 {
 #ifdef DEFINE_PROFILER_FUNCTION
 	DEFINE_PROFILER_FUNCTION();
@@ -1672,11 +1672,6 @@ void CAttachmentManager::DrawAttachments(const SRendParams& rRendParams, const M
 		return;
 #endif
 
-	f32 fFOV = g_pIRenderer->GetCamera().GetFov();
-	f32 fZoomFactor = 0.0f + 1.0f * (RAD2DEG(fFOV) / 60.f);
-	f32 attachmentCullingRation = (gEnv->bMultiplayer) ? Console::GetInst().ca_AttachmentCullingRationMP : Console::GetInst().ca_AttachmentCullingRation;
-	f32 fZoomDistanceSq = sqr(rRendParams.fDistance * fZoomFactor / attachmentCullingRation);
-
 	uint32 InRecursion = passInfo.IsRecursivePass();
 	const bool InShadow = passInfo.IsShadowPass();
 
@@ -1693,14 +1688,6 @@ void CAttachmentManager::DrawAttachments(const SRendParams& rRendParams, const M
 	else
 		uHideFlags |= FLAGS_ATTACH_HIDE_MAIN_PASS;
 
-	const uint32 uLastAttachmentIndex = numAttachments - 1;
-	uint64 uAdditionalObjFlags = 0;
-	if (m_pSkelInstance->m_rpFlags & CS_FLAG_DRAW_NEAR)
-		uAdditionalObjFlags |= FOB_NEAREST;
-
-	SRendParams rParams(rRendParams);
-	rParams.pMaterial = NULL;    // this is required to avoid the attachments using the parent character material (this is the material that overrides the default material in the attachment)
-	rParams.dwFObjFlags |= uAdditionalObjFlags;
 	if (m_numRedirectionWithAttachment)
 	{
 		for (uint32 i = 0; i < m_sortedRanges[eRange_BoneRedirect].end; i++)
@@ -1799,23 +1786,6 @@ void CAttachmentManager::DrawAttachments(const SRendParams& rRendParams, const M
 			drawOffset += DebugDrawAttachment(pCAttachmentSkin, pCAttachmentSkin->GetISkin(), drawLoc, rParams.pMaterial, debugDrawScale);
 		}
 #endif
-	}
-
-	if (bDrawMergedAttachments && passInfo.IsShadowPass())
-	{
-		if (m_attachmentMergingRequired)
-			MergeCharacterAttachments();
-
-		for (uint32 i = 0; i < m_mergedAttachments.size(); i++)
-		{
-			CAttachmentMerged* pCAttachmentMerged = static_cast<CAttachmentMerged*>(m_mergedAttachments[i].get());
-			const f32 fRadiusSqr = m_pSkelInstance->m_SkeletonPose.GetAABB().GetRadiusSqr();
-			if (fRadiusSqr == 0.0f)
-				continue; //if radius is zero, then the object is most probably not visible and we can continue
-			if (!(rParams.nCustomFlags & COB_POST_3D_RENDER) && fZoomDistanceSq > fRadiusSqr)
-				continue; //too small to render. cancel the update
-			pCAttachmentMerged->DrawAttachment(rParams, passInfo, rWorldMat34, fZoomFactor);
-		}
 	}
 
 	for (uint32 i = m_sortedRanges[eRange_VertexClothOrPendulumRow].begin; i < m_sortedRanges[eRange_VertexClothOrPendulumRow].end; i++)
@@ -1917,6 +1887,30 @@ void CAttachmentManager::DrawAttachments(const SRendParams& rRendParams, const M
 	}
 #endif
 
+}
+
+void CAttachmentManager::DrawMergedAttachments(SRendParams& rParams, const Matrix34& rWorldMat34, const SRenderingPassInfo& passInfo, const f32 fZoomFactor, const f32 fZoomDistanceSq)
+{
+	const bool bDrawMergedAttachments = Console::GetInst().ca_DrawAttachmentsMergedForShadows != 0;
+	if (bDrawMergedAttachments)
+	{
+		if (m_attachmentMergingRequired)
+			MergeCharacterAttachments();
+
+		if (passInfo.IsShadowPass())
+		{
+			for (uint32 i = 0; i < m_mergedAttachments.size(); i++)
+			{
+				CAttachmentMerged* pCAttachmentMerged = static_cast<CAttachmentMerged*>(m_mergedAttachments[i].get());
+				const f32 fRadiusSqr = m_pSkelInstance->m_SkeletonPose.GetAABB().GetRadiusSqr();
+				if (fRadiusSqr == 0.0f)
+					continue; //if radius is zero, then the object is most probably not visible and we can continue
+				if (!(rParams.nCustomFlags & COB_POST_3D_RENDER) && fZoomDistanceSq > fRadiusSqr)
+					continue; //too small to render. cancel the update
+				pCAttachmentMerged->DrawAttachment(rParams, passInfo, rWorldMat34, fZoomFactor);
+			}
+		}
+	}
 }
 
 //------------------------------------------------------------------------------------

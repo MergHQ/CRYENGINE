@@ -101,6 +101,23 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const QuatTS& O
 
 	//------------------------------------------------------------------------
 
+	SRendParams attachmentRendParams(RendParams);
+	{
+		uint64 uAdditionalObjFlags = 0;
+		if (m_rpFlags & CS_FLAG_DRAW_NEAR)
+			uAdditionalObjFlags |= FOB_NEAREST;
+
+		attachmentRendParams.pMaterial = NULL;    // this is required to avoid the attachments using the parent character material (this is the material that overrides the default material in the attachment)
+		attachmentRendParams.dwFObjFlags |= uAdditionalObjFlags;
+	}
+
+	const f32 fFOV = g_pIRenderer->GetCamera().GetFov();
+	const f32 fZoomFactor = 0.0f + 1.0f * (RAD2DEG(fFOV) / 60.f);
+	const f32 attachmentCullingRation = (gEnv->bMultiplayer) ? Console::GetInst().ca_AttachmentCullingRationMP : Console::GetInst().ca_AttachmentCullingRation;
+	const f32 fZoomDistanceSq = sqr(RendParams.fDistance * fZoomFactor / attachmentCullingRation);
+
+	m_AttachmentManager.DrawMergedAttachments(attachmentRendParams, RenderMat34, passInfo, fZoomFactor, fZoomDistanceSq);
+	
 	if (m_pDefaultSkeleton->m_ObjectType == CGA)
 	{
 		Matrix34 mRendMat34 = RenderMat34 * Matrix34(Offset);
@@ -120,7 +137,7 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const QuatTS& O
 	}
 
 	// draw weapon and binded objects
-	m_AttachmentManager.DrawAttachments(RendParams, RenderMat34, passInfo);
+	m_AttachmentManager.DrawAttachments(attachmentRendParams, RenderMat34, passInfo, fZoomFactor, fZoomDistanceSq);
 
 }
 

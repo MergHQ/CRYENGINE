@@ -109,7 +109,8 @@ public:
 
 	void           ProcessAllAttachedObjectsFast();
 
-	void           DrawAttachments(const SRendParams& rRendParams, const Matrix34& m, const SRenderingPassInfo& passInfo);
+	void           DrawAttachments(SRendParams& rRendParams, const Matrix34& m, const SRenderingPassInfo& passInfo, const f32 fZoomFactor, const f32 fZoomDistanceSq);
+	void           DrawMergedAttachments(SRendParams& rRendParams, const Matrix34& m, const SRenderingPassInfo& passInfo, const f32 fZoomFactor, const f32 fZoomDistanceSq);
 
 	virtual int32  RemoveAttachmentByInterface(const IAttachment* pAttachment, uint32 loadingFlags = 0);
 	virtual int32  RemoveAttachmentByName(const char* szName, uint32 loadingFlags = 0);
