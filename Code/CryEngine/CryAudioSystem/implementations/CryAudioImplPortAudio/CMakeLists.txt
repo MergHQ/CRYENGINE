@@ -33,7 +33,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-if(EXISTS ${SDK_DIR}/Audio/portaudio AND EXISTS ${SDK_DIR/Audio/libsndfile)
+if(EXISTS ${SDK_DIR}/Audio/portaudio AND EXISTS ${SDK_DIR/Audio/libsndfile AND (WIN32 OR WIN64))
 	CryEngineModule(CryAudioImplPortAudio PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DPORTAUDIO_FOR_$<UPPER_CASE:$<CONFIG>>)
 	target_include_directories( ${THIS_PROJECT} PRIVATE ../../Common ${SDK_DIR}/Audio/portaudio/inc ${SDK_DIR}/Audio/libsndfile/include)

@@ -446,7 +446,7 @@ end_sources()
 
 CryEngineStaticModule(tomcrypt SOLUTION_FOLDER "Libs")
 target_include_directories(${THIS_PROJECT} PUBLIC ${SDK_DIR}/LibTomMath ${SDK_DIR}/LibTomCrypt/src/headers )
-target_compile_definitions(${THIS_PROJECT} PUBLIC -DLTM_DESC -DARGTYPE=$<$<NOT:$<CONFIG:Release>>:2>$<$<CONFIG:Release>:3> PRIVATE -DLTC_SOURCE -DLTC_NO_ROLC -D_CRT_SECURE_NO_WARNINGS -Dmalloc=malloc)
+target_compile_definitions(${THIS_PROJECT} PUBLIC -DLTC_NO_ROLC -DLTM_DESC -DARGTYPE=$<$<NOT:$<CONFIG:Release>>:2>$<$<CONFIG:Release>:3> PRIVATE -DLTC_SOURCE -D_CRT_SECURE_NO_WARNINGS -Dmalloc=malloc)
 
 if (WIN32 OR WIN64 OR DURANGO)
 	target_compile_options(${THIS_PROJECT} PRIVATE

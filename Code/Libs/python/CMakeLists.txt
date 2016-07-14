@@ -313,8 +313,12 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CreateDynamicModule(python27 SOLUTION_FOLDER "Libs")
-target_compile_options(${THIS_PROJECT} PRIVATE /W0 /FI${CRY_LIBS_DIR}/python/pyconfig.h)
-target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/Python27/Include ${SDK_DIR}/Python27/PC ${SDK_DIR}/Python27/Python )
-target_compile_definitions(${THIS_PROJECT} PRIVATE -DPy_BUILD_CORE)
-target_link_libraries(${THIS_PROJECT} PRIVATE expat zlib shell32)
+if(WIN64)
+	CreateDynamicModule(python27 SOLUTION_FOLDER "Libs")
+	target_compile_options(${THIS_PROJECT} PRIVATE /W0 /FI${CRY_LIBS_DIR}/python/pyconfig.h)
+	target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/Python27/Include ${SDK_DIR}/Python27/PC ${SDK_DIR}/Python27/Python )
+	target_compile_definitions(${THIS_PROJECT} PRIVATE -DPy_BUILD_CORE)
+	target_link_libraries(${THIS_PROJECT} PRIVATE expat zlib shell32)
+else()
+	CryfileContainer(python27 SOLUTION_FOLDER "Libs")
+endif()

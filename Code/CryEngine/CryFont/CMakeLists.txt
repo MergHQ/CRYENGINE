@@ -38,6 +38,11 @@ end_sources()
 
 CryEngineModule(CryFont PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 
+if(DURANGO)
+	# Workaround for C++/CX having "generic" as a keyword
+	target_compile_definitions(${THIS_PROJECT} PRIVATE "-Dgeneric=__identifier(generic)")
+endif()
+
 target_link_libraries( ${THIS_PROJECT} PRIVATE freetype )
 if (WIN32 OR WIN64)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE Shell32 )

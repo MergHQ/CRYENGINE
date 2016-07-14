@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/Tools/CMake/modules")
 
 enable_language(C)
 enable_language(CXX)
@@ -6,13 +8,10 @@ enable_language(CXX)
 
 set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS Debug Profile)
 
-if (${CMAKE_GENERATOR} MATCHES Durango)
-	include(${CMAKE_SOURCE_DIR}/Tools/CMake/MSVC-Durango.cmake)
+if (DURANGO OR ORBIS OR ANDROID)
+	unset(WIN32)
+	unset(WIN64)	
 endif ()
-
-if (${CMAKE_GENERATOR} MATCHES ORBIS)
-	include(${CMAKE_SOURCE_DIR}/Tools/CMake/MSVC-Orbis.cmake)
-endif()
 
 if(WIN32)
 	set(CMAKE_SYSTEM_VERSION 10.0.10586.0)
@@ -31,10 +30,6 @@ if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
 	endif()
 endif()
 
-#if (${BUILD_PLATFORM} MATCHES ANDROID)
-#	include(${CMAKE_SOURCE_DIR}/Tools/CMake/Android.cmake)
-#endif()
-
 include(${CMAKE_SOURCE_DIR}/Tools/CMake/CopyFilesToBin.cmake)
 
 #set(ANDROID TRUE)
@@ -50,14 +45,14 @@ endif(ANDROID)
 
 project(CryEngine_CMake_${BUILD_PLATFORM} CXX C)
 
+set(MODULES CACHE INTERNAL "Modules for monolithic builds" FORCE)
+
 set(INTERMEDIATE_DIRECTORY "${CMAKE_SOURCE_DIR}/BinTemp")
 
-# Bootstrap support
-include(${CMAKE_SOURCE_DIR}/Tools/CMake/Bootstrap.cmake)
-
-if (${CMAKE_GENERATOR} MATCHES Durango OR ${CMAKE_GENERATOR} MATCHES ORBIS)
+if (DURANGO OR ORBIS OR ANDROID)
 	# WIN32 Should be unset  again after project( line to work correctly
 	unset(WIN32)
+	unset(WIN64)
 endif ()
 
 if(WIN32)
@@ -71,7 +66,9 @@ endif()
 # Define Options
 option(OPTION_PROFILE "Enable Profiling" ON)
 option(OPTION_UNITY_BUILD "Enable Unity Build" ON)
-option(OPTION_ENABLE_BROFILER "Enable Brofiler profiler support" ON)
+if(WIN32 OR WIN64)
+	option(OPTION_ENABLE_BROFILER "Enable Brofiler profiler support" ON)
+endif()
 option(OPTION_ENABLE_SDK_OCULUS "Enable Oculus SDK" ON)
 
 # Select Game Project
@@ -82,7 +79,6 @@ list(FIND OPTION_GAME_PROJECT_VALUES ${OPTION_GAME_PROJECT} OPTION_GAME_PROJECT_
 if(${OPTION_GAME_PROJECT_INDEX} EQUAL -1)
 	message(FATAL_ERROR "Option ${OPTION_GAME_PROJECT} is not supported, valid entries are ${OPTION_GAME_PROJECT_VALUES}")
 endif()
-
 
 if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Sandbox")
 	set(OPTION_SANDBOX "No" CACHE STRING "Enable Sandbox")
@@ -152,7 +148,6 @@ set(WINSDK_SDK_DIR "${CMAKE_SOURCE_DIR}/Code/SDKs/Microsoft Windows SDK")
 set(WINSDK_SDK_LIB_DIR "${WINSDK_SDK_DIR}/V8.0/Lib/Win8/um")
 set(WINSDK_SDK_INCLUDE_DIR "${WINSDK_SDK_DIR}/V8.0/Include/um")
 
-include(${CMAKE_SOURCE_DIR}/Tools/CMake/modules/SDL2.cmake)
 
 # custom defines
 set(global_defines "CRYENGINE_DEFINE")
@@ -173,6 +168,11 @@ if (OUTPUT_DIRECTORY)
 	set(EXECUTABLE_OUTPUT_PATH "${OUTPUT_DIRECTORY}")
 endif (OUTPUT_DIRECTORY)
 
+# Bootstrap support
+include(${CMAKE_SOURCE_DIR}/Tools/CMake/Bootstrap.cmake)
+if(OPTION_AUTO_BOOTSTRAP)
+	set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "bootstrap.dat")
+endif()
 
 include(${CMAKE_SOURCE_DIR}/Tools/CMake/CommonMacros.cmake)
 
@@ -206,14 +206,14 @@ foreach( current_define ${platform_defines} )
 	add_definitions(-D${current_define})
 endforeach()
 
-if (OPTION_ENABLE_BROFILER)
+if ((WIN32 OR WIN64) AND OPTION_ENABLE_BROFILER)
 	add_definitions(-DUSE_BROFILER)
 	include_directories( ${SDK_DIR}/Brofiler )
 	link_directories( ${SDK_DIR}/Brofiler )
-	if (WIN32 AND NOT WIN64)
-		set(COMMON_LIBS ${COMMON_LIBS} ProfilerCore32)
-	else()
+	if (WIN64)
 		set(COMMON_LIBS ${COMMON_LIBS} ProfilerCore64)
+	elseif(WIN32)
+		set(COMMON_LIBS ${COMMON_LIBS} ProfilerCore32)
 	endif()
 endif()
 
@@ -224,6 +224,10 @@ if (OPTION_GAME_PROJECT STREQUAL "BenchmarkVR")
 	set_solution_folder("Projects" BenchmarkFramework)
 	set_solution_folder("Projects" CryGameSkyharbor)
 endif()
+
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/SDL2.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/Boost.cmake)
 
 # CryEngine
 add_subdirectory(Code/CryEngine/Cry3DEngine)
@@ -269,17 +273,36 @@ if (OPTION_CRY_EXTENSIONS)
 	#add_subdirectory(Code/CryExtensions/CrySchematyc)
 endif()
 
+add_custom_target(CE DEPENDS CryPhysics CrySystem CryAction CryRenderD3D11
+		CryFont CryNetwork CryMovie CryInput CryAISystem CryAnimation Cry3DEngine
+		CryScriptSystem CryEntitySystem CryAudioSystem CryAudioImplSDLMixer
+		CryDynamicResponseSystem)
+
+
 # Game
 if (OPTION_GAME_PROJECT STREQUAL "GameSDK")
 	add_subdirectory(Code/GameSDK/GameDll)
+
+	add_dependencies(CryGameSDK CE)
+
+	set(GAME_RES_DIR Code/GameSDK/Resources)
+	set(GAME_TARGET CryGameSDK)
 endif()
 
 if (OPTION_GAME_PROJECT STREQUAL "GameMono")
 	add_subdirectory(Code/GameMono/GameDll)
+
+	set(GAME_RES_DIR Code/GameMono/Resources)
+	set(GAME_TARGET CryGameMono)
 endif()
 
 if (OPTION_GAME_PROJECT STREQUAL "GameZero")
 	add_subdirectory(Code/GameZero/GameDll)
+
+	add_dependencies(CryGameZero CE)
+
+	set(GAME_RES_DIR Code/GameZero/Resources)
+	set(GAME_TARGET CryGameZero)
 endif()
 
 # Launchers
@@ -291,6 +314,8 @@ elseif (ORBIS)
 elseif (WIN32)
 	add_subdirectory(Code/Launcher/DedicatedLauncher)
 	add_subdirectory(Code/Launcher/WindowsLauncher)
+
+	add_dependencies(${GAME_TARGET} WindowsLauncher)
 endif ()
 
 #Libs
@@ -332,9 +357,13 @@ if (OPTION_SANDBOX AND WIN64)
 		add_subdirectory(Code/Sandbox/EditorQt)
 		add_subdirectory(Code/Sandbox/Plugins/3DConnexionPlugin)	
 		add_subdirectory(Code/Sandbox/Plugins/EditorConsole)
+		
+		add_custom_target(GameAndTools DEPENDS ${GAME_TARGET} Sandbox)
 	elseif(OPTION_SANDBOX STREQUAL "Legacy")
 		set(EDITOR_DIR "${CMAKE_SOURCE_DIR}/Code/Sandbox/Editor" )
 		add_subdirectory(Code/Sandbox/Editor)
+
+		add_custom_target(GameAndTools DEPENDS ${GAME_TARGET} SandboxLegacy)
 	endif()
 
 	add_subdirectory(Code/Sandbox/Plugins/EditorCommon)
@@ -354,6 +383,7 @@ if (OPTION_SANDBOX AND WIN64)
 	add_subdirectory(Code/Sandbox/Plugins/EditorTrackView)
 	add_subdirectory(Code/Sandbox/Plugins/FbxPlugin)
 	add_subdirectory(Code/Sandbox/Plugins/MeshImporter)
+	add_subdirectory(Code/Sandbox/Plugins/PerforcePlugin)
 endif()
 
 # Resource Compiler
@@ -369,5 +399,8 @@ if (OPTION_RC AND WIN64)
 	add_subdirectory(Code/Tools/RC/ResourceCompilerPC)
 	add_subdirectory(Code/Tools/RC/ResourceCompilerXML)
 endif()
+set(CMAKE_INSTALL_MESSAGE LAZY)
+install(FILES Tools/CMake/modules/CryCommonConfig.cmake DESTINATION share/cmake)
+install(FILES Tools/CMake/modules/CryActionConfig.cmake DESTINATION share/cmake)
 
 copy_binary_files_to_target()

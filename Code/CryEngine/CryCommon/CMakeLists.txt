@@ -208,6 +208,7 @@ add_sources("NoUberFile"
 		"CryAISystem/ISelectionTreeManager.h"
 		"CryAISystem/VisionMapTypes.h"
 		"CryAISystem/MovementStyle.h"
+		"CryAISystem/IAIBubblesSystem.h"
 	SOURCE_GROUP "CryAISystem\\\\BehaviorTree"
 		"CryAISystem/BehaviorTree/IBehaviorTree.h"
 		"CryAISystem/BehaviorTree/IBehaviorTreeGraft.h"
@@ -329,6 +330,7 @@ add_sources("NoUberFile"
 		"CryCore/ToolsHelpers/SettingsManagerHelpers.inl"
 		"CryCore/ToolsHelpers/EngineSettingsManager.h"
 		"CryCore/ToolsHelpers/EngineSettingsManager.inl"
+		"CryCore/ToolsHelpers/GuidUtil.h"
 	SOURCE_GROUP "CryDynamicResponseSystem"
 		"CryDynamicResponseSystem/IDynamicResponseSystem.h"
 		"CryDynamicResponseSystem/IDynamicResponseAction.h"
@@ -411,6 +413,7 @@ add_sources("NoUberFile"
 		"CryMath/Cry_GeoIntersect.h"
 		"CryMath/Cry_GeoOverlap.h"
 		"CryMath/Cry_Math.h"
+		"CryMath/Cry_Math_SSE.h"
 		"CryMath/Cry_Quat.h"
 		"CryMath/Cry_ValidNumber.h"
 		"CryMath/Cry_Vector2.h"
@@ -584,6 +587,7 @@ add_sources("NoUberFile"
 		"CrySerialization/DynArray.h"
 		"CrySerialization/DynArrayImpl.h"
 		"CrySerialization/Enum.h"
+		"CrySerialization/Gap.h"
 		"CrySerialization/IArchive.h"
 		"CrySerialization/IArchiveHost.h"
 		"CrySerialization/IClassFactory.h"
@@ -750,3 +754,17 @@ end_sources()
 #END-FILE-LIST
 
 CryFileContainer(CryCommon SOLUTION_FOLDER Common)
+
+macro(install_headers)
+	foreach(dir ${ARGN})
+		install(DIRECTORY ${dir} DESTINATION include/CryCommon)
+	endforeach()
+endmacro()
+
+install_headers(Cry3DEngine CryAction CryAISystem CryAnimation CryAssert CryAudio)
+install_headers(CryCore CryDynamicResponseSystem CryEntitySystem CryExtension)
+install_headers(CryFlowGraph CryFont CryGame CryInput CryLiveCreate CryLobby CryMath)
+install_headers(CryMemory CryMono CryMovie CryNetwork CryParticleSystem CryPhysics)
+install_headers(CryRenderer CrySandbox CryScriptSystem CrySerialization CryString)
+install_headers(CrySystem CryThreading)
+

@@ -50,3 +50,9 @@ end_sources()
 CryEngineStaticModule(yasli SOLUTION_FOLDER "Libs")
 target_compile_definitions(${THIS_PROJECT} PRIVATE NOT_USE_CRY_MEMORY_MANAGER)
 target_include_directories(${THIS_PROJECT} PUBLIC ${CRY_LIBS_DIR}/yasli ${SDK_DIR}/yasli)
+
+install(DIRECTORY ${CRY_LIBS_DIR}/yasli/yasli DESTINATION include/SDKs/yasli)
+install(DIRECTORY ${CRY_LIBS_DIR}/yasli/PropertyTree DESTINATION include/SDKs/yasli)
+install(DIRECTORY ${SDK_DIR}/yasli/yasli DESTINATION include/SDKs/yasli)
+install(FILES ${CMAKE_CURRENT_LIST_DIR}/yasliConfig.cmake DESTINATION share/cmake)
+

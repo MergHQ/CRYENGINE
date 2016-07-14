@@ -90,10 +90,13 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineStaticModule(prt SOLUTION_FOLDER "Libs")
+if(WIN64)
+	CryEngineStaticModule(prt SOLUTION_FOLDER "Libs")
 
-target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/Tools ${CMAKE_SOURCE_DIR}/Code/Tools/SphericalHarmonics PUBLIC ${CMAKE_SOURCE_DIR}/Code/Tools/PRT)
+	target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/Tools ${CMAKE_SOURCE_DIR}/Code/Tools/SphericalHarmonics PUBLIC ${CMAKE_SOURCE_DIR}/Code/Tools/PRT)
 
-target_compile_definitions(${THIS_PROJECT} PRIVATE -DPRT_COMPILE -DOFFLINE_COMPUTATION )
-target_link_libraries( ${THIS_PROJECT} PRIVATE tiff )
-
+	target_compile_definitions(${THIS_PROJECT} PRIVATE -DPRT_COMPILE -DOFFLINE_COMPUTATION )
+	target_link_libraries( ${THIS_PROJECT} PRIVATE tiff )
+else()
+	CryFileContainer(prt SOLUTION_FOLDER "Libs")
+endif()
