@@ -46,6 +46,8 @@ float4x4 g_mViewProjPrev;
 #define VOX_MIN_VOX_SIZE	(VOX_MIN_NODE_SIZE / VOX_BRICK_TEXRES)
 #define VOX_MAX_NODE_SIZE (SvoTreeSettings1.x)
 #define VOX_MAX_RT_DIST		(SvoTreeSettings1.y)
+#define VOX_CONE_MAX_LEN	(SvoParamsDiffuse.y)
+#define VOX_POST_AO_MAX_DIST  (SvoParamsMisc3.x)
 
 #define VOX_TI_ATMO_HEIGHT_GROUND				(SvoTreeSettings2.x)
 #define VOX_TI_ATMO_HEIGHT_LAYER0				(SvoTreeSettings2.y)
@@ -166,6 +168,10 @@ samplerCUBE globalSpecCM : register (s6)
 #endif
 
 sampler2D noiseSampler2D : register(s15);
+
+sampler2D SVO_RsmSunShadowMapNoVox : register(s0);
+sampler2D SVO_RsmSunColorsMapNoVox : register(s1);
+sampler2D SVO_RsmSunNormalMapNoVox : register(s2);
 
 float4x4  SVO_RsmSunShadowProj;
 sampler2D SVO_RsmSunShadowMap : register(s12);

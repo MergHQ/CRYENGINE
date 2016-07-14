@@ -2242,7 +2242,9 @@ struct I3DEngine : public IProcess
 		{
 			eCapsule = 0,
 			eOBB,
-			eCylinder
+			eCylinder,
+			eOBB_Hard,
+			eCylinder_Hard
 		};
 
 		Vec3  v0;
@@ -2303,7 +2305,7 @@ struct I3DEngine : public IProcess
 		Vec4 arrPortalsDir[SVO_MAX_PORTALS];
 
 	#define SVO_MAX_ANALYTICAL_OCCLUDERS 64
-		SAnalyticalOccluder arrAnalyticalOccluders[SVO_MAX_ANALYTICAL_OCCLUDERS];
+		SAnalyticalOccluder arrAnalyticalOccluders[2][SVO_MAX_ANALYTICAL_OCCLUDERS];
 
 		Vec3                vSkyColorTop;
 		Vec3                vSkyColorBottom;

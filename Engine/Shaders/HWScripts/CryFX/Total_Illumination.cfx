@@ -72,10 +72,10 @@ sampler2D sceneRgbSamplerMin : register(s11);
 sampler2D sceneAldSamplerMax : register(s12);
 sampler2D sceneRgbSamplerMax : register(s13);
 
-sampler2D sceneRgbSamplerMinPrev : register(s0);
-sampler2D sceneAldSamplerMinPrev : register(s1);
-sampler2D sceneRgbSamplerMaxPrev : register(s2);
-sampler2D sceneAldSamplerMaxPrev : register(s3);
+sampler2D sceneRgbSamplerMinPrev : register(s6);
+sampler2D sceneAldSamplerMinPrev : register(s9);
+sampler2D sceneRgbSamplerMaxPrev : register(s12);
+sampler2D sceneAldSamplerMaxPrev : register(s13);
 
 sampler2D sceneFinOutPrev : register(s9);
 
@@ -126,9 +126,11 @@ struct pixout_RenderAtmosphere
 // _RT_POINT_LIGHT							Simple RSM point lights
 // _RT_BLEND_WITH_TERRAIN_COLOR SS depth tracing
 // _RT_MOTION_BLUR							Dual tracing for multi-GPU
-// _RT_SPRITE										Occlusion capsules
+// _RT_LIGHTVOLUME0             Portals in use
+// _RT_SPRITE										Analytical occluders using final ALD light info
 // _RT_AMBIENT_OCCLUSION				Sun RSM Inject in modes 1-2
 // _RT_VOLUMETRIC_FOG						Use RSM albedo colors and normals
+// _RT_LIGHTVOLUME1             Analytical GI mode - voxels are not used
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -137,6 +139,25 @@ float3 GetDiffuseKernel(out int GI_DIFFUSE_KERNEL_TILING, int nElemId, const boo
 {
 	if (IsDiffuseMode())
 	{
+#if %_RT_HW_PCF_COMPARE
+
+		const int nGiDiffuseSampleNum = 128;
+		nElemId = nElemId & (nGiDiffuseSampleNum - 1);
+
+		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
+		if (bFullSphere)
+		{
+			const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_S_128;
+			return arrGiDiffuseKernel[nElemId];
+		}
+		else
+		{
+			const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_128;
+			return arrGiDiffuseKernel[nElemId];
+		}
+
+#else
+
 		const int nGiDiffuseSampleNum = 512;
 		nElemId = nElemId & (nGiDiffuseSampleNum - 1);
 
@@ -151,15 +172,30 @@ float3 GetDiffuseKernel(out int GI_DIFFUSE_KERNEL_TILING, int nElemId, const boo
 			const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_512;
 			return arrGiDiffuseKernel[nElemId];
 		}
+
+#endif
 	}
 	else
 	{
+#if %_RT_HW_PCF_COMPARE
+
+		const int nGiDiffuseSampleNum = 32;
+		nElemId = nElemId & (nGiDiffuseSampleNum - 1);
+
+		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
+		const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_32;
+		return arrGiDiffuseKernel[nElemId];
+
+#else
+
 		const int nGiDiffuseSampleNum = 128;
 		nElemId = nElemId & (nGiDiffuseSampleNum - 1);
 
 		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
 		const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_128;
 		return arrGiDiffuseKernel[nElemId];
+
+#endif
 	}
 }
 
@@ -265,7 +301,7 @@ float3 GetSkyColor(const float3 vDir, const float fConeSev)
 	fAmplifier = IsDiffuseMode() ? SvoParamsDiffuse.w : SvoParamsSpecular.w;
 #endif
 
-#if !%_RT_SAMPLE5 && %_PS
+#if !%_RT_SAMPLE5 && %_PS && !%_RT_LIGHTVOLUME1
 	if (SvoParamsSkyColor.w < 0)
 		return -SvoParamsSkyColor.w * vSkyColorTop.xyz * fAmplifier;
 	return SvoParamsSkyColor.w * fAmplifier;
@@ -454,22 +490,40 @@ struct SAnalyticalOccluder
 #define SVO_MAX_ANALYTICAL_OCCLUDERS 64
 
 float4 SVO_AnalyticalOccluders[SVO_MAX_ANALYTICAL_OCCLUDERS * 4];
+float4 SVO_PostOccluders[SVO_MAX_ANALYTICAL_OCCLUDERS * 4];
 
-void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
+#define AO_eCapsule       0
+#define AO_eOBB           1
+#define AO_eCylinder      2
+#define AO_eOBB_Hard      3
+#define AO_eCylinder_Hard 4
+
+float ProcessAnalyticalOccluders(float fRayLen, Ray r, inout float4 vC, float fDirectionality, const bool bPostOccl)
 {
+	float fHitDist = 1000;
+
 	float fOccl = 0;
 
 	const float fDistM = length(r.startpoint.xyz - PS_WorldViewPos.xyz);
 
-	float fRayLen = SvoParamsMisc3.x;
-
 	for (int n = 0; n<SVO_MAX_ANALYTICAL_OCCLUDERS; n++)
 	{
 		SAnalyticalOccluder oc;
-		oc.P0 = SVO_AnalyticalOccluders[n * 4 + 0];
-		oc.P1 = SVO_AnalyticalOccluders[n * 4 + 1];
-		oc.P2 = SVO_AnalyticalOccluders[n * 4 + 2];
-		oc.C = SVO_AnalyticalOccluders[n * 4 + 3];
+
+		if(bPostOccl)
+		{
+			oc.P0 = SVO_PostOccluders[n * 4 + 0];
+			oc.P1 = SVO_PostOccluders[n * 4 + 1];
+			oc.P2 = SVO_PostOccluders[n * 4 + 2];
+			oc.C  = SVO_PostOccluders[n * 4 + 3];
+		}
+		else
+		{
+			oc.P0 = SVO_AnalyticalOccluders[n * 4 + 0];
+			oc.P1 = SVO_AnalyticalOccluders[n * 4 + 1];
+			oc.P2 = SVO_AnalyticalOccluders[n * 4 + 2];
+      oc.C  = SVO_AnalyticalOccluders[n * 4 + 3];
+		}
 
 		if (!oc.P0.w)
 			break;
@@ -479,7 +533,9 @@ void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 		float fRadius = 0;
 		float3 vSegDir = 0;
 
-		if (oc.C.w == 0) // capsule
+		bool bHardOcclusion = (oc.C.w == AO_eOBB_Hard || oc.C.w == AO_eCylinder_Hard);
+
+		if (oc.C.w == AO_eCapsule) // capsule
 		{
 			float3 startpoint = r.startpoint + r.direction*oc.P0.w*.125;
 
@@ -503,7 +559,7 @@ void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 
 			fRadius = oc.P0.w;
 		}
-		else if (oc.C.w == 1.f || oc.C.w == 2.f) // obb or cylinder
+		else if (oc.C.w <= AO_eCylinder_Hard) // obb or cylinder
 		{
 			OBB obb;
 			obb.ue[0] = oc.P0;
@@ -513,7 +569,7 @@ void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 
 			obb.c = oc.C;
 
-			bool bCylinder = (oc.C.w == 2.f);
+			bool bCylinder = (oc.C.w == AO_eCylinder || oc.C.w == AO_eCylinder_Hard);
 
 			fOrigDist = sqrt(SqDistPointOBB(r.startpoint, obb, bCylinder));
 
@@ -535,7 +591,7 @@ void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 				else if (fD > fRayDist)
 					break;
 
-				fStepSize = min(fD + .01, fStepSize);
+				fStepSize = min(fD + .002, fStepSize);
 			}
 
 			vSegDir = normalize(vMinPoint - r.startpoint);
@@ -545,29 +601,110 @@ void ProcessAnalyticalOccluders(Ray r, inout float4 vC, float fDirectionality)
 			fRadius = 0;
 		}
 
+		if(fRayDist<=0)
+		{
+			if(fOrigDist < fHitDist && fOrigDist < fRayLen)
+				fHitDist = fOrigDist;
+		}
+
 		float fO = 1.f - max(0, fRayDist - fRadius * .85) / (fRadius * 0.5 + fOrigDist * SvoParamsMisc3.y + 0.001);
 		if (fOrigDist>0)
-			fO *= saturate(1 - fOrigDist / fRayLen) * saturate(.5 + dot(vSegDir, r.direction));
+		{
+			fO *= saturate(.5 + dot(vSegDir, r.direction));
+			if(!bHardOcclusion)
+				fO *= saturate(1 - fOrigDist / fRayLen);
+		}
 
 		fOccl = max(fOccl, fO);
 	}
 
 	vC = lerp(vC, float4(0, 0, 0, 1), fOccl);
+
+	return fHitDist;
 }
 
-float4 ConeTraceTreeAndSkyEx(Ray r, float fConeSev, out float4 vNor1, const float fConesColorSatur = 1.f, const float fMultTriRT = 0, const bool bSpecular = false, bool bForceUseLighting = false, const bool bAllowSkyLight = true, float3 vSurfNorm = 0)
+float4 ConeTraceTreeAndSkyEx(float fRayLen, Ray r, float fConeSev, out float4 vNor1, const float fConesColorSatur = 1.f, const float fMultTriRT = 0, const bool bSpecular = false, bool bForceUseLighting = false, const bool bAllowSkyLight = true, float3 vSurfNorm = 0)
 {
+	float fAoHitDist = 1000;
+	float fAoOpacity = 0;
+
+#if %_RT_LIGHTVOLUME1
+	{
+		float4 vC = 0;
+		float fDirectionality = 1;
+		Ray r2 = r;
+		r2.startpoint += r2.direction * 0.01f;
+		fAoHitDist = ProcessAnalyticalOccluders(fRayLen, r2, vC, fDirectionality, false);
+		fAoOpacity = vC.a;
+	}
+#endif
+
 	float4 vPos1 = 0; vNor1 = 0;
-	float4 vC = ConeTraceTree(r, fConeSev, vPos1, vNor1, bSpecular ? (length(r.startpoint - PS_WorldViewPos.xyz)*.25 + .25) : 0, SvoParamsDiffuse.y, 0.f, 1.f, 0, fMultTriRT, 0, false, bSpecular, bForceUseLighting, vSurfNorm);
+	float4 vC = 0;
+
+#if !%_RT_LIGHTVOLUME1
+	vC = ConeTraceTree(r, fConeSev, vPos1, vNor1, bSpecular ? (length(r.startpoint - PS_WorldViewPos.xyz)*.25 + .25) : 0, min(fAoHitDist + VOX_MIN_VOX_SIZE, fRayLen), 0.f, 1.f, 0, fMultTriRT, 0, false, bSpecular, bForceUseLighting, vSurfNorm);
+#else
+
+#if %_RT_LIGHT_TEX_PROJ && %_RT_LIGHTVOLUME1
+	if (fAoHitDist<200)
+	{
+		float3 vHitPoint = r.startpoint + r.direction * fAoHitDist;
+
+		half3 vSunLight = 0;
+		float4 vShadTC = mul(SVO_RsmSunShadowProj, float4(vHitPoint.xyz - PS_WorldViewPos.xyz, 1.f));
+		vShadTC.xy /= vShadTC.w;
+
+		float4 vRGBD = 0;
+
+		if (vShadTC.x >= 0 && vShadTC.x <= 1 && vShadTC.y >= 0 && vShadTC.y <= 1 && vShadTC.z <= 1)
+		{
+			float fShadowDepth = tex2Dlod(SVO_RsmSunShadowMapNoVox, float4(vShadTC.xy, 0, 0)).r;
+			vSunLight = (fShadowDepth > vShadTC.z + .00005);
+
+#if %_RT_VOLUMETRIC_FOG
+			half4 vMatColor = tex2Dlod(SVO_RsmSunColorsMapNoVox, float4(vShadTC.xy, 0, 0)).rgba;
+			half3 vMatNormal = tex2Dlod(SVO_RsmSunNormalMapNoVox, float4(vShadTC.xy, 0, 0)).rgb;
+#else
+			half4 vMatColor = half4(SvoParamsMisc2.zzz, 0.15f);
+			half3 vMatNormal = 0;
+#endif
+			//vMatColor.xyz = pow(vMatColor.xyz, 1.0/2.2);
+			float fMatIntens = dot(vMatColor.xyz, .333f);
+			vMatColor.xyz += saturate(SvoParamsMisc2.z - fMatIntens);
+			vSunLight *= vMatColor.xyz;
+			vRGBD.xyz = vSunLight * SVO_RsmSunCol.xyz * SVO_RsmSunCol.w;
+			float fRSM = saturate(1 - (8 / 8) * 200 * abs(fShadowDepth - vShadTC.z));
+			vRGBD.a = max(vRGBD.a, fRSM * vMatColor.a);
+
+#if %_RT_VOLUMETRIC_FOG
+			if (dot(vMatNormal, 1) < 0.01)
+				vMatNormal = float3(0, 0, 1); // terrain
+			else
+				vMatNormal = vMatNormal * 2 - 1;
+
+			if (dot(vMatNormal, r.direction) < 0.85)
+#endif
+				if(SvoParamsCommon.z)
+					vC.xyz += abs(1.f / SvoParamsCommon.z) * vRGBD.xyz * (vRGBD.a) * saturate(1 - 0);
+		}
+	}
+#endif
+
+#endif
+
+	vC.a = max(fAoOpacity, vC.a);
 
 	// apply cloud shadows
 	float fCloudsShadow = 1.f;
 #if %_PS
 	fCloudsShadow = GetCloudShadowCommon(r.startpoint, SVO_cloudShadowMap, SVO_CloudShadowAnimParams, SVO_CloudShadowParams);
 
+#if !%_RT_LIGHTVOLUME1
 	// prevent sky light leaking from the bottom
-	if (r.direction.z < 0 && SvoParamsDiffuse.y > 16.f)
+	if (r.direction.z < 0 && VOX_CONE_MAX_LEN > 16.f)
 		vC.a = 1;
+#endif
 #endif
 
 	//float3 vAOTint = lerp(float3(1,1,1), float3(1.5, 1.5, 0), saturate((vC.a-.3)/.7));
@@ -577,10 +714,10 @@ float4 ConeTraceTreeAndSkyEx(Ray r, float fConeSev, out float4 vNor1, const floa
 	return vC;
 }
 
-float4 ConeTraceTreeAndSky(const Ray r, const float fConeSev, const float fConesColorSatur = 1.f, const float fMultTriRT = 0, const bool bSpecular = false, const bool bForceUseLighting = false, float3 vSurfNorm = 0)
+float4 ConeTraceTreeAndSky(float fRayLen, const Ray r, const float fConeSev, const float fConesColorSatur = 1.f, const float fMultTriRT = 0, const bool bSpecular = false, const bool bForceUseLighting = false, float3 vSurfNorm = 0)
 {
 	float4 vNor1 = 0;
-	return ConeTraceTreeAndSkyEx(r, fConeSev, vNor1, fConesColorSatur, fMultTriRT, bSpecular, bForceUseLighting, true, vSurfNorm);
+	return ConeTraceTreeAndSkyEx(fRayLen, r, fConeSev, vNor1, fConesColorSatur, fMultTriRT, bSpecular, bForceUseLighting, true, vSurfNorm);
 }
 
 pixout SvoDebugDrawPS(vert2FragGeneral IN)
@@ -666,7 +803,7 @@ float3 Reproject(in half2 vScreenPos, in float fDepth, in float3x4 matReproj)
 	return pos.xyz;
 }
 
-void GetAverNormAndSmooth(float2 tcIn, out float3 vAverNor, out float fAverSmoothness, out float fAverTransmittanceY, float3 vCamVec, out float3 vAverReflectance, out float fDepthMin, out float fDepthMax)
+void GetAverNormAndSmooth(float2 tcIn, out float3 vAverNor, out float fAverSmoothness, out float fAverTransmittanceY, float3 vCamVec, out float3 vAverReflectance, out float fDepthMin, out float fDepthMax, out float3 vNorMin, out float3 vNorMax)
 {
 	vAverNor = 0;
 	fAverSmoothness = 0;
@@ -680,19 +817,25 @@ void GetAverNormAndSmooth(float2 tcIn, out float3 vAverNor, out float fAverSmoot
 	fDepthMin = fDepthMax = fDepth0;
 	for (int x = 0; x <= nRange; x++) for (int y = 0; y <= nRange; y++)
 	{
+		float fTransmittanceY = 0;
 		float2 tc1 = tcIn + vR * float2(x, y);
 		MaterialAttribsCommon gbuffer1 = DecodeGBufferChannels(tc1);
 		float fDepth1 = SampleLinearDepth(sceneDepthMapSampler, tc1);
-		if (fDepth1 < fDepthMin)
+		if (fDepth1 <= fDepthMin)
+		{
 			fDepthMin = fDepth1;
-		if (fDepth1 > fDepthMax)
+			vNorMin = GetWorldSpaceNormals(tc1, fTransmittanceY, vCamVec).xyz;
+		}
+		if (fDepth1 >= fDepthMax)
+		{
 			fDepthMax = fDepth1;
+			vNorMax = GetWorldSpaceNormals(tc1, fTransmittanceY, vCamVec).xyz;
+		}
 
 		const float fW = saturate(fDepthRange - abs(1.f - fDepth0 / fDepth1)) + .001;
 
 		fAverSmoothness += gbuffer1.Smoothness * fW;
 		vAverReflectance += gbuffer1.Reflectance * fW;
-		float fTransmittanceY = 0;
 		vAverNor += GetWorldSpaceNormals(tc1, fTransmittanceY, vCamVec).xyz * fW;
 		fAverTransmittanceY += fTransmittanceY * fW;
 
@@ -717,13 +860,59 @@ float GetBlendMin(float2 tcDiff, float3 vAverReflectance, float fAverSmoothness,
 
 	if (!IsDiffuseMode())
 	{
-		float fDistTCRat = IsDiffuseMode() ? 0 : saturate(length(tcDiff) / .05f);
+		float fDistTCRat = IsDiffuseMode() ? 0 : saturate(length(tcDiff) / .025f);
 
 		// reduce ghosting for mirrors
-		fMinBlend = saturate(max((1 - (1 - fMinBlend)*.7f) + fDistTCRat*(1.f - fMinBlend), 0.7 * saturate(GetLuminance(vAverReflectance*fAverSmoothness))));
+		fMinBlend = saturate(max(fMinBlend + fDistTCRat*(1.f - fMinBlend), 0.7 * saturate(GetLuminance(vAverReflectance*fAverSmoothness))));
 	}
 
 	return fMinBlend;
+}
+
+float4 SVO_PortalsPos[16];
+float4 SVO_PortalsDir[16];
+
+#define MAX_BEST_PORTALS 2
+
+void FindBestPortals(float3 vPos0, float3 vNor0, out float4 arrBestPortalPos[MAX_BEST_PORTALS])
+{
+	float arrBestW[MAX_BEST_PORTALS];
+	for (int n = 0; n < MAX_BEST_PORTALS; n++)
+	{
+		arrBestW[n] = 0;
+		arrBestPortalPos[n] = 0;
+	}
+
+	for (int p = 0; p < 16; p++)
+	{
+		if (SVO_PortalsPos[p].z)
+		{
+			float3 vDir = normalize(SVO_PortalsPos[p].xyz - vPos0.xyz);
+
+			if (dot(vDir, vNor0) >= 0 && dot(vDir, -SVO_PortalsDir[p].xyz) >= 0)
+			{
+				float fD = length(SVO_PortalsPos[p].xyz - vPos0.xyz);
+
+				if (fD > VOX_CONE_MAX_LEN)
+					continue;
+
+				float fW = 1.f / (fD + 0.01f);
+
+				int nWorstSlot = 0;
+				for (int n = 1; n < MAX_BEST_PORTALS; n++)
+				{
+					if (arrBestW[n] < arrBestW[nWorstSlot])
+						nWorstSlot = n;
+				}
+
+				if (fW > arrBestW[nWorstSlot])
+				{
+					arrBestPortalPos[nWorstSlot] = SVO_PortalsPos[p];
+					arrBestW[nWorstSlot] = fW;
+				}
+			}
+		}
+	}
 }
 
 pixoutMRT DemosaicPS(vtxOutWPOS IN)
@@ -735,7 +924,8 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 
 	float3 vNor0 = 0; float fAverSmoothness = 0; float fAverTransmittanceY = 0; float3 vAverReflectance = 0;
 	float fDepthMin = 0, fDepthMax = 0;
-	GetAverNormAndSmooth(IN.baseTC.xy, vNor0, fAverSmoothness, fAverTransmittanceY, normalize(IN.CamVec.xyz), vAverReflectance, fDepthMin, fDepthMax);
+	float3 vNorMin = 0, vNorMax = 0;
+	GetAverNormAndSmooth(IN.baseTC.xy, vNor0, fAverSmoothness, fAverTransmittanceY, normalize(IN.CamVec.xyz), vAverReflectance, fDepthMin, fDepthMax, vNorMin, vNorMax);
 
 	float2 vLowResBestTC = IN.baseTC.xy;
 
@@ -853,27 +1043,112 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 	OUT.Diffuse1.w = fDepthMax;
 	OUT.Specular1 = vALD1;
 
-#ifdef %_RT_SPRITE
+	bool bSameMinMaxDepth = (abs(fDepthMax - fDepthMin)*PS_NearFarClipDist.y < .1) && (dot(vNorMin, vNorMax) > .7);
+
+#if %_RT_LIGHTVOLUME1 && %_RT_LIGHTVOLUME0
+
+	OUT.Specular *= SvoParamsCommon.z;
+	OUT.Specular1 *= SvoParamsCommon.z;
+
+	float4 arrPortOut[2] = 
+	{ 
+		float4(0, 0, 0, 0),
+		float4(0, 0, 0, 0)
+	};
+
+	for (int nPass = 0; nPass < 2; nPass++)
+	{
+		Ray r;
+		r.direction = 0;
+
+		if (!nPass)
+			r.startpoint = GetWorldPos(VOX_DEPTH_SCALE*fDepthMin - VOX_DEPTH_BIAS, IN.CamVec);
+		else
+			r.startpoint = GetWorldPos(VOX_DEPTH_SCALE*fDepthMax - VOX_DEPTH_BIAS, IN.CamVec);
+
+		r.startpoint += vNor0 * 0.01;
+
+		{
+			float4 arrBestPortalPos[MAX_BEST_PORTALS];
+			FindBestPortals(vPos0, vNor0, arrBestPortalPos);
+
+			for (int nPort = 0; nPort<MAX_BEST_PORTALS; nPort++)
+			{
+				float4 bestPortalPos = arrBestPortalPos[nPort];
+				if (bestPortalPos.z)
+				{
+					float3 lightPos = bestPortalPos;
+					float lightSize = bestPortalPos.w;
+
+					//lightPos += SVO_PortalsDir[0].xyz * 2;
+					r.direction = normalize(lightPos - vPos0);
+					float fDist = length(lightPos - vPos0);
+
+					float4 vC4;
+					if (dot(r.direction, vNor0) > 0)
+						vC4 = ConeTraceTreeAndSky(fDist, r, SvoParamsDiffuse.x, SvoParamsInject.z, 0, false, false, vNor0);
+					else
+						vC4 = float4(0, 0, 0, 1);
+
+					float fBr = GetSkyColor(vNor0, 0).b * saturate(1 - vC4.w) * pow(0.3 + 0.7*saturate(dot(normalize(vNor0), r.direction)), .5) * saturate(1 / (fDist + 1));
+
+					if (!nPass)
+					{
+						arrPortOut[0].xyz += r.direction * fBr;
+						arrPortOut[0].w += fBr;
+					}
+					else
+					{
+						arrPortOut[1].xyz += r.direction * fBr;
+						arrPortOut[1].w += fBr;
+					}
+				}
+			}
+		}
+
+		if(bSameMinMaxDepth)
+		{
+			arrPortOut[1] = arrPortOut[0];
+			break;
+		}
+	}
+
+	OUT.Specular += arrPortOut[0];
+	OUT.Specular1 += arrPortOut[1];
+
+#endif
+
+#if %_RT_SPRITE
 	{
 		float4 vC = 0;
 		Ray r;
 
-		r.direction = normalize(vALD0.xyz);
+		r.direction = normalize(OUT.Specular.xyz);
 		r.startpoint = GetWorldPos(VOX_DEPTH_SCALE*fDepthMin - VOX_DEPTH_BIAS, IN.CamVec);
-		float fDirectionality = saturate(length(vALD0.xyz) / vALD0.w);
+		float fDirectionality = saturate(length(OUT.Specular.xyz) / OUT.Specular.w);
 		vC = 0;
-		ProcessAnalyticalOccluders(r, vC, IsDiffuseMode() ? fDirectionality : pow(fAverSmoothness, .5));
-		OUT.Specular *= saturate(1 - vC.w);
+		ProcessAnalyticalOccluders(VOX_POST_AO_MAX_DIST, r, vC, IsDiffuseMode() ? fDirectionality : pow(fAverSmoothness, .5), true);
 
-		if (abs(fDepthMax - fDepthMin) > .0005)
+#if %_RT_LIGHTVOLUME1 && %_RT_LIGHTVOLUME0
+		OUT.Specular *= saturate(1 - vC.w * 0.5);
+#else
+		OUT.Specular *= saturate(1 - vC.w);
+#endif
+
+		if (!bSameMinMaxDepth)
 		{
-			r.direction = normalize(vALD1.xyz);
+			r.direction = normalize(OUT.Specular1.xyz);
 			r.startpoint = GetWorldPos(VOX_DEPTH_SCALE*fDepthMax - VOX_DEPTH_BIAS, IN.CamVec);
-			float fDirectionality = saturate(length(vALD1.xyz) / vALD1.w);
+			float fDirectionality = saturate(length(OUT.Specular1.xyz) / OUT.Specular1.w);
 			vC = 0;
-			ProcessAnalyticalOccluders(r, vC, IsDiffuseMode() ? fDirectionality : pow(fAverSmoothness, .5));
+			ProcessAnalyticalOccluders(VOX_POST_AO_MAX_DIST, r, vC, IsDiffuseMode() ? fDirectionality : pow(fAverSmoothness, .5), true);
 		}
+
+#if %_RT_LIGHTVOLUME1 && %_RT_LIGHTVOLUME0
+		OUT.Specular1 *= saturate(1 - vC.w * 0.5);
+#else
 		OUT.Specular1 *= saturate(1 - vC.w);
+#endif
 	}
 #endif
 
@@ -940,7 +1215,7 @@ void ProcessLights(inout float4 vALD, inout float4 vRGB, in float3 vPos0, in flo
 
 			if (fFovAtt > 0)
 			{
-				float fRayLen = min(fDist - fOffset * 2, min(fDist*.9f, fCustomSunConesLen ? fCustomSunConesLen : (SvoParamsDiffuse.y * 2)));
+				float fRayLen = min(fDist - fOffset * 2, min(fDist*.9f, fCustomSunConesLen ? fCustomSunConesLen : (VOX_CONE_MAX_LEN * 2)));
 
 				if (length(vCol.xyz) < 0.01f)
 					continue;
@@ -1119,52 +1394,6 @@ void ConeTrace_LM_PS(in vtxOutWPOS IN, out float4 vALD, out float4 vRGB)
 
 #endif // SVO_LMAPS
 
-float4 SVO_PortalsPos[16];
-float4 SVO_PortalsDir[16];
-
-#define MAX_BEST_PORTALS 2
-
-void FindBestPortals(float3 vPos0, float3 vNor0, out float4 arrBestPortalPos[MAX_BEST_PORTALS])
-{
-	float arrBestW[MAX_BEST_PORTALS];
-	for (int n = 0; n < MAX_BEST_PORTALS; n++)
-	{
-		arrBestW[n] = 0;
-		arrBestPortalPos[n] = 0;
-	}
-
-	for (int p = 0; p < 16; p++)
-	{
-		if (SVO_PortalsPos[p].z)
-		{
-			float3 vDir = normalize(SVO_PortalsPos[p].xyz - vPos0.xyz);
-
-			if (dot(vDir, vNor0) >= 0 && dot(vDir, -SVO_PortalsDir[p].xyz) >= 0)
-			{
-				float fD = length(SVO_PortalsPos[p].xyz - vPos0.xyz);
-
-				if (fD > SvoParamsDiffuse.y)
-					continue;
-
-				float fW = 1.f / (fD + 0.01f);
-
-				int nWorstSlot = 0;
-				for (int n = 1; n < MAX_BEST_PORTALS; n++)
-				{
-					if (arrBestW[n] < arrBestW[nWorstSlot])
-						nWorstSlot = n;
-				}
-
-				if (fW > arrBestW[nWorstSlot])
-				{
-					arrBestPortalPos[nWorstSlot] = SVO_PortalsPos[p];
-					arrBestW[nWorstSlot] = fW;
-				}
-			}
-		}
-	}
-}
-
 pixoutMRT ConeTracePS(vtxOutWPOS IN)
 {
 	pixoutMRT OUT = (pixoutMRT)0;
@@ -1183,7 +1412,8 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 
 	float3 vNor0 = 0; float fAverSmoothness = 0; float fAverTransmittanceY = 0; float3 vAverReflectance = 0;
 	float fDepthMin = 0, fDepthMax = 0;
-	GetAverNormAndSmooth(IN.baseTC.xy, vNor0, fAverSmoothness, fAverTransmittanceY, normalize(IN.CamVec.xyz), vAverReflectance, fDepthMin, fDepthMax);
+	float3 vNorMin = 0, vNorMax = 0;
+	GetAverNormAndSmooth(IN.baseTC.xy, vNor0, fAverSmoothness, fAverTransmittanceY, normalize(IN.CamVec.xyz), vAverReflectance, fDepthMin, fDepthMax, vNorMin, vNorMax);
 
 	float fDistM = length(vPos0 - PS_WorldViewPos.xyz);
 
@@ -1266,11 +1496,12 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 
 		r.startpoint = vPos0;
 
-#if !%_RT_SAMPLE5
+#if !%_RT_SAMPLE5 && !%_RT_LIGHTVOLUME1
 		r.startpoint += (vFocus * saturate(1 - fAverTransmittanceY * 4) + r.direction * .3) * (VOX_MIN_VOX_SIZE + fDistM*.025f);
 #endif
-
-#if %_RT_SAMPLE5
+		
+#if %_RT_SAMPLE5 && !%_RT_LIGHTVOLUME1 && %_RT_LIGHTVOLUME0
+		if(SvoTreeSettings5.y)
 		{
 			float4 arrBestPortalPos[MAX_BEST_PORTALS];
 			FindBestPortals(vPos0, vNor0, arrBestPortalPos);
@@ -1291,10 +1522,17 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 			}
 		}
 #endif
-
+		
 		float4 vC = 0;
-		//		if(SampleLinearDepth(sceneDepthMapSampler, IN.baseTC.xy) < 0.8f)
-		vC = ConeTraceTreeAndSky(r, SvoParamsDiffuse.x + power / 10000, SvoParamsInject.z, 0, false, false, normalize(vNor0)*saturate(1 - fAverTransmittanceY * 4));
+
+		float fRayLen;
+#if %_RT_LIGHTVOLUME1
+		fRayLen = VOX_POST_AO_MAX_DIST; // in this mode we call ConeTraceTreeAndSky for near range AO info and for light bounces
+#else
+		fRayLen = VOX_CONE_MAX_LEN;
+#endif
+
+		vC = ConeTraceTreeAndSky(fRayLen, r, SvoParamsDiffuse.x + power / 10000, SvoParamsInject.z, 0, false, false, normalize(vNor0)*saturate(1 - fAverTransmittanceY * 4));
 
 		vC *= lerp(1.f, SvoParamsInject.w, saturate(fAverTransmittanceY * 8));
 
@@ -1383,7 +1621,7 @@ pixout_RenderAtmosphere RenderAtmospherePS(vtxOutWPOS IN)
 	Ray r;
 	r.startpoint = PS_WorldViewPos.xyz + float3(0, 0, .125);
 
-	float fTraceMaxDist = 1024 * 4;//SvoParamsDiffuse.y;
+	float fTraceMaxDist = 1024 * 4;
 	float fDistanceMax = min(fTraceMaxDist, length(ray_endpoint_max - r.startpoint));
 	float fDistanceMin = min(fTraceMaxDist, length(ray_endpoint_min - r.startpoint));
 
@@ -1717,6 +1955,7 @@ void ComputeDirectStaticLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupTh
 			// add bias
 			vRGB.xyz += max(0, SvoParamsCommon.z * vSkyColorTop.z);
 
+#if %_RT_LIGHTVOLUME0
 			if (SvoTreeSettings5.x > 0)
 			{
 				float4 arrBestPortalPos[MAX_BEST_PORTALS];
@@ -1735,10 +1974,11 @@ void ComputeDirectStaticLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupTh
 						r.direction = vDir;
 						r.startpoint = vPos0;
 						float4 vNor1 = 0;
-						vRGB.xyz += ConeTraceTreeAndSkyEx(r, SvoParamsDiffuse.x, vNor1, 1.f, 0, false, false, true) * SvoTreeSettings5.x / MAX_BEST_PORTALS * saturate(fDist / lightSize);
+						vRGB.xyz += ConeTraceTreeAndSkyEx(fDist, r, SvoParamsDiffuse.x, vNor1, 1.f, 0, false, false, true) * SvoTreeSettings5.x / MAX_BEST_PORTALS * saturate(fDist / lightSize);
 					}
 				}
 			}
+#endif
 
 			if (bAir)
 			{
@@ -1989,7 +2229,7 @@ void ComputePropagateLighting(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThrea
 
 					float4 vNor1 = 0;
 
-					float4 vC = ConeTraceTreeAndSkyEx(r, fConeSev, vNor1, 1.f, 0, false, false, nPassId == 0);
+					float4 vC = ConeTraceTreeAndSkyEx(VOX_CONE_MAX_LEN, r, fConeSev, vNor1, 1.f, 0, false, false, nPassId == 0);
 
 					vCollectedLight += vC;
 
@@ -2173,7 +2413,12 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 	float fAverSmoothness = 0;
 	for (int x = -1; x <= 1; x += 2) for (int y = -1; y <= 1; y += 2)
 	{
+#if %_RT_LIGHTVOLUME1
+		const float2 tc1 = IN.baseTC.xy + float2(x, y) * SVO_SrcPixSize.xy / 2 - SVO_SrcPixSize.xy / 2;
+#else
 		const float2 tc1 = IN.baseTC.xy + float2(x, y) * SVO_SrcPixSize.xy / 2;
+#endif
+
 		const float4 tc = float4(tc1, 0, 0);
 
 		const float4 vSampleDiff_RGB_Min = tex2Dlod(sceneRgbSamplerMin, tc);
@@ -2247,7 +2492,7 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 		OUT.Diffuse.a = 1;
 	}
 
-#if !%_RT_SAMPLE5
+#if !%_RT_SAMPLE5 && !%_RT_LIGHTVOLUME1
 	if (SvoParamsCommon.z > 0)
 		OUT.Diffuse.xyz += SvoParamsCommon.z * vSkyColorTop.z;
 	else

@@ -906,6 +906,8 @@ Property
   Precache = DeferredPassPS
   Precache = VolumeLightInjectionCS
   Precache = RenderDownscaledShadowMapPS
+  Precache = ConeTraceDiffusePS
+  Precache = DemosaicPS
 }
 
 Property
@@ -914,6 +916,8 @@ Property
   Mask = 0x2000000000
   Precache = VolumeLightInjectionCS
   Precache = RenderDownscaledShadowMapPS
+  Precache = ConeTraceDiffusePS
+  Precache = DemosaicPS
 }
 
 Property
