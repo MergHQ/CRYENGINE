@@ -785,7 +785,7 @@ void CVars::Init()
 	              "Maximum number of 64x64 meter sectors cached in memory");
 	REGISTER_CVAR(e_ProcVegetationMaxChunksInCache, 128, VF_REQUIRE_APP_RESTART,
 	              "Maximum number of object chunks cached in memory");
-	REGISTER_CVAR(e_ProcVegetationMaxObjectsInChunk, 512, VF_REQUIRE_APP_RESTART,
+	REGISTER_CVAR(e_ProcVegetationMaxObjectsInChunk, 1024, VF_REQUIRE_APP_RESTART,
 	              "Maximum number of instances per chunk");
 
 	DefineConstIntCVar(e_Recursion, 1, VF_NULL,

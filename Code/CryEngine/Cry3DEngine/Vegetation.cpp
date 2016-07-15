@@ -299,8 +299,8 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	const Vec3 vObjCenter = GetBBox().GetCenter();
 	const Vec3 vObjPos = GetPos();
 
-	float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
-	float fEntDistance2D = sqrt_tpl(vCamPos.GetSquaredDistance2D(m_vPos)) * passInfo.GetZoomFactor();
+	float fEntDistance = pRenderObject->m_bPermanent ? 0 : sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
+	float fEntDistance2D = pRenderObject->m_bPermanent ? 0 : sqrt_tpl(vCamPos.GetSquaredDistance2D(m_vPos)) * passInfo.GetZoomFactor();
 	bool bUseTerrainColor((vegetGroup.bUseTerrainColor && GetCVars()->e_VegetationUseTerrainColor) || GetCVars()->e_VegetationUseTerrainColor == 2);
 
 	SRenderNodeTempData::SUserData& userData = m_pTempData->userData;
@@ -353,6 +353,11 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 
 	pRenderObject->m_data.m_fMaxViewDistance = m_fWSMaxViewDist;
 
+	if (!pTerrainTexInfo && (pRenderObject->m_ObjFlags & FOB_BLEND_WITH_TERRAIN_COLOR) && passInfo.IsShadowPass() && pRenderObject->m_bPermanent && GetCVars()->e_VegetationUseTerrainColor)
+	{
+		GetObjManager()->FillTerrainTexInfo(m_pOcNode, fEntDistance, pTerrainTexInfo, GetBBox());
+	}
+
 	if (pTerrainTexInfo)
 		if (pRenderObject->m_ObjFlags & (FOB_BLEND_WITH_TERRAIN_COLOR))
 		{
@@ -363,7 +368,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 				float fBlendDistance = GetCVars()->e_VegetationUseTerrainColorDistance;
 
 				if (!fBlendDistance && m_dwRndFlags & ERF_PROCEDURAL)
-					fBlendDistance = -0.3333f;
+					fBlendDistance = -1.f;
 
 				if (fBlendDistance == 0)
 				{

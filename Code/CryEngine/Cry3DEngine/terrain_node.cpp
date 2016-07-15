@@ -802,8 +802,8 @@ bool CTerrainNode::CheckUpdateProcObjects(const SRenderingPassInfo& passInfo)
 					if (m_nTreeLevel != GetCVars()->e_ProcVegetation - 3)
 						continue;
 
-				if (pGroup->fDensity < 0.2f)
-					pGroup->fDensity = 0.2f;
+				if (pGroup->fDensity < 0.5f)
+					pGroup->fDensity = 0.5f;
 
 				float fMinX = (float)m_nOriginX;
 				float fMinY = (float)m_nOriginY;
@@ -979,7 +979,7 @@ void CProcObjSector::ReleaseAllObjects()
 	for (int i = 0; i < m_ProcVegetChunks.Count(); i++)
 	{
 		SProcObjChunk* pChunk = m_ProcVegetChunks[i];
-		for (int o = 0; o < GetCVars()->e_ProcVegetationMaxObjectsInChunk; o++)
+		for (int o = 0; o < pChunk->nAllocatedItems; o++)
 			pChunk->m_pInstances[o].ShutDown();
 		CTerrainNode::m_pProcObjChunkPool->ReleaseObject(m_ProcVegetChunks[i]);
 	}
@@ -1463,7 +1463,8 @@ int CTerrainNode::GetSectorSizeInHeightmapUnits() const
 
 SProcObjChunk::SProcObjChunk()
 {
-	m_pInstances = new CVegetation[GetCVars()->e_ProcVegetationMaxObjectsInChunk];
+	nAllocatedItems = GetCVars()->e_ProcVegetationMaxObjectsInChunk;
+	m_pInstances = new CVegetation[nAllocatedItems];
 }
 
 SProcObjChunk::~SProcObjChunk()

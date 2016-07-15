@@ -282,6 +282,7 @@ public:
 struct SProcObjChunk : public Cry3DEngineBase
 {
 	CVegetation* m_pInstances;
+	int nAllocatedItems;
 	SProcObjChunk();
 	~SProcObjChunk();
 	void GetMemoryUsage(class ICrySizer* pSizer) const;

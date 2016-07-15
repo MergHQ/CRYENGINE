@@ -1374,7 +1374,7 @@ void C3DEngine::OnCasterDeleted(IShadowCaster* pCaster)
 		for (int i = 0; i < pLigts->Count(); i++)
 		{
 			CLightEntity* pLigt = (CLightEntity*)(pLigts->GetAt(i)->m_pOwner);
-			if (pLigt)
+			if (pLigt && (pLigt != m_pSun))
 				pLigt->OnCasterDeleted(pCaster);
 		}
 

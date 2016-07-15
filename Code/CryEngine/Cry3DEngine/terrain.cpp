@@ -261,10 +261,22 @@ void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 	// process procedural objects
 	if (m_lstActiveProcObjNodes.Count())
 	{
-		if (!CTerrainNode::GetProcObjChunkPool())
+		static int paramsCheckSumm = 0;
+		if (!CTerrainNode::GetProcObjChunkPool() || paramsCheckSumm != (MAX_PROC_OBJ_CHUNKS_NUM + MAX_PROC_SECTORS_NUM + GetCVars()->e_ProcVegetationMaxObjectsInChunk))
 		{
+			while (m_lstActiveProcObjNodes.Count() > 0)
+			{
+				m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
+				m_lstActiveProcObjNodes.DeleteLast();
+			}
+
+			delete CTerrainNode::GetProcObjChunkPool();
 			CTerrainNode::SetProcObjChunkPool(new SProcObjChunkPool(MAX_PROC_OBJ_CHUNKS_NUM));
+
+			delete CTerrainNode::GetProcObjPoolMan();
 			CTerrainNode::SetProcObjPoolMan(new CProcVegetPoolMan(MAX_PROC_SECTORS_NUM));
+			
+			paramsCheckSumm = (MAX_PROC_OBJ_CHUNKS_NUM + MAX_PROC_SECTORS_NUM + GetCVars()->e_ProcVegetationMaxObjectsInChunk);
 		}
 
 		// make sure distances are correct
