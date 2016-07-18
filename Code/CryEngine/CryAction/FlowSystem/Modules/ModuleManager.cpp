@@ -398,7 +398,7 @@ bool CFlowGraphModuleManager::RenameModuleXML(const char* moduleName, const char
 	TModulesPathInfo::iterator modulePathEntry = m_ModulesPathInfo.find(moduleName);
 	if (m_ModulesPathInfo.end() != modulePathEntry)
 	{
-		string newNameWithPath = PathUtil::GetPath(modulePathEntry->second);
+		string newNameWithPath = PathUtil::GetPathWithoutFilename(modulePathEntry->second);
 		newNameWithPath += newName;
 		newNameWithPath += ".xml";
 
@@ -475,9 +475,9 @@ void CFlowGraphModuleManager::ScanFolder(const string& folderName, bool bGlobal)
 					PathUtil::MakeGamePath(folderName);
 
 					// initial load: creates module, registers nodes
-					CFlowGraphModule* pModule = PreLoadModuleFile(moduleName.c_str(), PathUtil::GetPath(folderName) + fd.name, bGlobal);
+					CFlowGraphModule* pModule = PreLoadModuleFile(moduleName.c_str(), PathUtil::GetPathWithoutFilename(folderName) + fd.name, bGlobal);
 					// important: the module should be added using its internal name rather than the filename
-					m_ModulesPathInfo.insert(TModulesPathInfo::value_type(pModule->GetName(), PathUtil::GetPath(folderName) + fd.name));
+					m_ModulesPathInfo.insert(TModulesPathInfo::value_type(pModule->GetName(), PathUtil::GetPathWithoutFilename(folderName) + fd.name));
 				}
 			}
 

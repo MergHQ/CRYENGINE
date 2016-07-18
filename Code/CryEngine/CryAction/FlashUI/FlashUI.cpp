@@ -1334,7 +1334,7 @@ void CFlashUI::PreloadTexturesFromNode(const XmlNodeRef& node)
 			const char* pFile = node->getChild(i)->getAttr("file");
 			if (pFile)
 			{
-				string path = PathUtil::GetPath(pFile);
+				string path = PathUtil::GetPathWithoutFilename(pFile);
 				string file = PathUtil::GetFile(pFile);
 				LoadFromFile(path, file, &CFlashUI::PreloadTexture);
 			}

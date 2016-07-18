@@ -1070,7 +1070,7 @@ IMaterial* CMatMan::LoadCGFMaterial(const char* szMaterialName, const char* szCg
 	if (sMtlName.find('/') == stack_string::npos)
 	{
 		// If no slashes in the name assume it is in same folder as a cgf.
-		sMtlName = PathUtil::AddSlash(PathUtil::GetPath(stack_string(szCgfFilename))) + sMtlName;
+		sMtlName = PathUtil::AddSlash(PathUtil::GetPathWithoutFilename(stack_string(szCgfFilename))) + sMtlName;
 	}
 	else
 	{

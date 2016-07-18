@@ -360,7 +360,7 @@ static bool FindFirstMeshAndMaterial(CMesh*& pMesh, CNodeCGF*& pGFXNode, _smart_
 	if (lod == 0 || pMaterial == NULL)
 	{
 		if (pGFXNode->pMaterial)
-			pMaterial = g_pI3DEngine->GetMaterialManager()->LoadCGFMaterial(pGFXNode->pMaterial->name, PathUtil::GetPath(filenameNoExt).c_str());
+			pMaterial = g_pI3DEngine->GetMaterialManager()->LoadCGFMaterial(pGFXNode->pMaterial->name, PathUtil::GetPathWithoutFilename(filenameNoExt).c_str());
 		else
 			pMaterial = g_pI3DEngine->GetMaterialManager()->GetDefaultMaterial();
 	}

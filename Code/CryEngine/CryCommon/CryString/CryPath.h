@@ -153,10 +153,10 @@ inline const char* GetExt(const char* filepath)
 	return "";
 }
 
-//! Extract path without filename from full specified file path.
+//! Removes filename from path. Example: "some/directory/file.ext" => "some/directory/"
 template<typename TString>
 typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
-inline /*TString*/ GetPath(const TString& filepath)
+inline /*TString*/ GetPathWithoutFilename(const TString& filepath)
 {
 	const char* szFilepath = filepath.c_str();
 	for (const char* p = szFilepath + filepath.length() - 1; p >= szFilepath; --p)
@@ -172,10 +172,10 @@ inline /*TString*/ GetPath(const TString& filepath)
 	return "";
 }
 
-//! Extract path from full specified file path.
-inline string GetPath(const char* filepath)
+//! Removes filename from path. Example: "some/directory/file.ext" => "some/directory/"
+inline string GetPathWithoutFilename(const char* filepath)
 {
-	return GetPath(string(filepath));
+	return GetPathWithoutFilename(string(filepath));
 }
 
 //! Extract file name with extension from full specified file path.

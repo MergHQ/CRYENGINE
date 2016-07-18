@@ -276,7 +276,7 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 			{
 				GlobalAnimationHeaderAIM& rAIM = g_AnimationManager.m_arrGlobalAIM[nCafID];
 				stack_string strFilename = PathUtil::GetFile(rAIM.GetFilePath());
-				stack_string strFilePath = PathUtil::GetPath(rAIM.GetFilePath());
+				stack_string strFilePath = PathUtil::GetPathWithoutFilename(rAIM.GetFilePath());
 				const int32 filePathLen = strFilePath.length();
 
 				if (parseSubfolders)

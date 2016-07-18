@@ -191,7 +191,7 @@ void ChannelFinishedPlaying(int nChannel)
 
 void LoadMetadata(const string& sdlMixerAssetPath)
 {
-	g_sampleDataRootDir = PathUtil::GetPath(sdlMixerAssetPath);
+	g_sampleDataRootDir = PathUtil::GetPathWithoutFilename(sdlMixerAssetPath);
 	_finddata_t fd;
 	ICryPak* pCryPak = gEnv->pCryPak;
 	intptr_t handle = pCryPak->FindFirst(sdlMixerAssetPath + "*.*", &fd);

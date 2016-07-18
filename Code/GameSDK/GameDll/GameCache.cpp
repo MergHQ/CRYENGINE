@@ -621,7 +621,7 @@ void CGameCache::GenerateModelVariation( const string& inputName, TCachedModelNa
 
 			// modelName_01 => modelName_XX where XX == nVariation, preserving original path and extension
 			outputName.Format("%s%02d", sFileName.substr(0, size-2).c_str(), desiredVariation);
-			outputName = PathUtil::Make(PathUtil::GetPath(inputName), string(outputName.c_str()), PathUtil::GetExt(inputName)).c_str();
+			outputName = PathUtil::Make(PathUtil::GetPathWithoutFilename(inputName), string(outputName.c_str()), PathUtil::GetExt(inputName)).c_str();
 		}
 	}
 }

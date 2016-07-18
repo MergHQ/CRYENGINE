@@ -255,7 +255,7 @@ int CScriptBind_Game::CacheResource(IFunctionHandler *pH, const char* whoIsReque
 				}
 
 				CryFixedStringT<256> diffuseCubemap;
-				diffuseCubemap.Format("%s%s%s.%s",	PathUtil::AddSlash(PathUtil::GetPath(specularCubemap)).c_str(), 
+				diffuseCubemap.Format("%s%s%s.%s",	PathUtil::AddSlash(PathUtil::GetPathWithoutFilename(specularCubemap)).c_str(), 
 													PathUtil::GetFileName(specularCubemap).c_str(), "_diff", PathUtil::GetExt(specularCubemap));
 
 				// '\\' in filename causing texture duplication

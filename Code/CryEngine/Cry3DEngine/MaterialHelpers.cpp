@@ -352,7 +352,7 @@ void MaterialHelpers::SetTexturesFromXml(SInputShaderResources& pShaderResources
 		    szBaseFileName && szBaseFileName[0])
 		{
 			// Texture file location is relative to material file folder
-			pShaderResources.m_Textures[texId].m_Name = PathUtil::Make(PathUtil::GetPath(szBaseFileName), &szFile[2]);
+			pShaderResources.m_Textures[texId].m_Name = PathUtil::Make(PathUtil::GetPathWithoutFilename(szBaseFileName), &szFile[2]);
 		}
 		else
 		{
@@ -411,7 +411,7 @@ void MaterialHelpers::SetXmlFromTextures(const SInputShaderResources& pShaderRes
 	string basePath;
 	if (szBaseFileName && szBaseFileName[0])
 	{
-		basePath = PathUtil::GetPath(szBaseFileName);
+		basePath = PathUtil::GetPathWithoutFilename(szBaseFileName);
 	}
 
 	for (EEfResTextures texId = EEfResTextures(0); texId < EFTT_MAX; texId = EEfResTextures(texId + 1))

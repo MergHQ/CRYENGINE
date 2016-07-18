@@ -4699,7 +4699,7 @@ void CCryPak::CPakFileWidget::Update()
 bool CCryPak::ForEachArchiveFolderEntry(const char* szArchivePath, const char* szFolderPath, const ArchiveEntrySinkFunction& callback)
 {
 	char szFullPathBuf[CCryPak::g_nMaxPath];
-	const char* szFullPath = AdjustFileName(szArchivePath, szFullPathBuf, FLAGS_PATH_REAL);
+	const char* szFullPath = AdjustFileName(szArchivePath, szFullPathBuf, FLAGS_NEVER_IN_PAK);
 
 	ICryArchive* pArchive = FindArchive(szFullPath);
 	if (!pArchive)

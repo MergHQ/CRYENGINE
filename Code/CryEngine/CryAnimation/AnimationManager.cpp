@@ -872,7 +872,7 @@ bool AnimSearchHelper::AddAnimation(uint32 crc, uint32 gahIndex)
 
 void AnimSearchHelper::AddAnimation(const string& path, uint32 gahIndex)
 {
-	stack_string pathDir = PathUtil::GetPath(path);
+	stack_string pathDir = PathUtil::GetPathWithoutFilename(path);
 	PathUtil::ToUnixPath(pathDir);
 	if (strcmp(pathDir, "animations/human/male/behavior/fear/") == 0)
 		int A = 0;

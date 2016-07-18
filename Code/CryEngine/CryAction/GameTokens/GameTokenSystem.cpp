@@ -469,7 +469,7 @@ void CGameTokenSystem::LoadLibs(const char* sFileSpec)
 
 	ICryPak* pPak = gEnv->pCryPak;
 	_finddata_t fd;
-	string dir = PathUtil::GetPath(sFileSpec);
+	string dir = PathUtil::GetPathWithoutFilename(sFileSpec);
 	intptr_t handle = pPak->FindFirst(sFileSpec, &fd);
 	if (handle != -1)
 	{

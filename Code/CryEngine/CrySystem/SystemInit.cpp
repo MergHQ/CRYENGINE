@@ -4122,7 +4122,7 @@ public:
 		file.ReadRaw(&data[0], fsize);
 
 		// Save this data to target file.
-		string trgFileDir = PathUtil::ToDosPath(PathUtil::RemoveSlash(PathUtil::GetPath(trgFilename)));
+		string trgFileDir = PathUtil::ToDosPath(PathUtil::RemoveSlash(PathUtil::GetPathWithoutFilename(trgFilename)));
 
 		CreateDirectoryPath(trgFileDir);      // ensure path exists
 
