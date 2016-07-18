@@ -1299,8 +1299,9 @@ int CArticulatedEntity::Step(float time_interval)
 			szmax = m_body.v.len()*time_interval;
 		sz.Set(szmax,szmax,szmax);
 		m_nCollEnts = m_pWorld->GetEntitiesAround(m_BBox[0]-sz,m_BBox[1]+sz, m_pCollEntList, m_collTypes|ent_sort_by_mass|ent_triggers, this, 0,iCaller);
+		masktype constrMask = MaskIgnoredColliders(iCaller,1);
 
-		for(i=0;i<m_nCollEnts;i++) if (m_pCollEntList[i]->m_iSimClass>2)
+		for(i=0;i<m_nCollEnts;i++) if (m_pCollEntList[i]->m_iSimClass>2 && !IgnoreCollision(m_pCollEntList[i]->m_collisionClass,m_collisionClass))
 			if (m_pCollEntList[i]->GetType()!=PE_ARTICULATED) {
 				m_pCollEntList[i]->Awake();
 				if (!m_pWorld->m_vars.bMultiplayer || m_pCollEntList[i]->m_iSimClass!=3)
@@ -1316,6 +1317,7 @@ int CArticulatedEntity::Step(float time_interval)
 			m_nCollEnts = j;
 		} else
 			m_nCollEnts = 0;
+		UnmaskIgnoredColliders(constrMask, iCaller);
 	} else 
 		m_nCollEnts = 0;
 
@@ -1366,7 +1368,7 @@ int CArticulatedEntity::Step(float time_interval)
 	m_simTime += time_interval;
 	m_simTimeAux += time_interval;
 	m_maxPenetrationCur = 0;
-	StepJoint(0, time_interval, bBounced, iszero(m_nBodyContacts) & isneg(sqr(m_pWorld->m_vars.maxContactGap)-m_body.v.len2()*sqr(time_interval)), get_iCaller_int());
+	for(i=0; i<m_nJoints; i=StepJoint(i, time_interval, bBounced, iszero(m_nBodyContacts) & isneg(sqr(m_pWorld->m_vars.maxContactGap)-m_body.v.len2()*sqr(time_interval)), get_iCaller_int()));
 	m_bAwake = isneg(-(int)m_bAwake);
 	m_nBodyContacts = m_nDynContacts = 0;
 	for(i=0;i<m_nJoints;i++) m_joints[i].bHasExtContacts = 0;

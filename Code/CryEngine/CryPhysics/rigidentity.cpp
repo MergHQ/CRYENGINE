@@ -345,7 +345,7 @@ void CRigidEntity::RecomputeMassDistribution(int ipart,int bMassChanged)
 	quaternionf bodyq,q=m_qrot.GetNormalized();
 	SaveConstraintFrames();
 
-	m_body.zero();
+	RigidBody body;
 	for(int i=0; i<m_nParts; i++) {
 		V = m_parts[i].pPhysGeom->V*cube(m_parts[i].scale);
 		if (V<=0)
@@ -353,19 +353,20 @@ void CRigidEntity::RecomputeMassDistribution(int ipart,int bMassChanged)
 		bodypos = m_pos + q*(m_parts[i].pos+m_parts[i].q*m_parts[i].pPhysGeom->origin*m_parts[i].scale); 
 		bodyq = (q*m_parts[i].q*m_parts[i].pPhysGeom->q).GetNormalized();
 		if (m_parts[i].mass>0) {
-			if (m_body.M==0)
-				m_body.Create(bodypos,m_parts[i].pPhysGeom->Ibody*cube(m_parts[i].scale)*sqr(m_parts[i].scale),bodyq, V,m_parts[i].mass, q,m_pos);
+			if (body.M==0)
+				body.Create(bodypos,m_parts[i].pPhysGeom->Ibody*cube(m_parts[i].scale)*sqr(m_parts[i].scale),bodyq, V,m_parts[i].mass, q,m_pos);
 			else
-				m_body.Add(bodypos,m_parts[i].pPhysGeom->Ibody*sqr(m_parts[i].scale)*cube(m_parts[i].scale),bodyq, V,m_parts[i].mass);
+				body.Add(bodypos,m_parts[i].pPhysGeom->Ibody*sqr(m_parts[i].scale)*cube(m_parts[i].scale),bodyq, V,m_parts[i].mass);
 		}
 	}
-	if (min(min(min(m_body.M,m_body.Ibody_inv.x),m_body.Ibody_inv.y),m_body.Ibody_inv.z)<0) {
-		m_body.M = m_body.Minv = 0;
-		m_body.Ibody_inv.zero(); m_body.Ibody.zero();
+	if (min(min(min(body.M,body.Ibody_inv.x),body.Ibody_inv.y),body.Ibody_inv.z)<0) {
+		body.M = body.Minv = 0;
+		body.Ibody_inv.zero(); body.Ibody.zero();
 	}	else {
-		m_body.P = (m_body.v=v)*m_body.M; 
-		m_body.L = m_body.q*(m_body.Ibody*(!m_body.q*(m_body.w=w)));
+		body.P = (body.v=v)*body.M; 
+		body.L = body.q*(body.Ibody*(!body.q*(body.w=w)));
 	}
+	m_body = body;
 	m_prevPos = m_body.pos;
 	m_prevq = m_body.q;
 	SaveConstraintFrames(1);
@@ -809,6 +810,8 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 			pt0 = m_qrot*(m_parts[ipart[0]].q*pt0*m_parts[ipart[0]].scale + m_parts[ipart[0]].pos) + m_pos;
 			pt1 = pBuddy->m_qrot*(pBuddy->m_parts[ipart[1]].q*pt1*pBuddy->m_parts[ipart[1]].scale + pBuddy->m_parts[ipart[1]].pos) + pBuddy->m_pos;
 		}
+		if (is_unused(action->pt[1]))
+			pt1 = pt0;
 
 		CPhysicalEntity *pConstraintEnt = is_unused(action->pConstraintEntity) ? 0:(CPhysicalEntity*)action->pConstraintEntity;
 		if (pConstraintEnt && pConstraintEnt->GetType()==PE_AREA)
@@ -1692,7 +1695,7 @@ entity_contact *CRigidEntity::RegisterContactPoint(int idx, const Vec3 &pt, cons
 	pContact->friction = m_pWorld->GetFriction(pcontacts[idx].id[0],pcontacts[idx].id[1], vrel.len2()>sqr(m_pWorld->m_vars.maxContactGap*5));
 	pContact->friction *= iszero((int)pContact->pent[1]->m_parts[pContact->ipart[1]].flags & geom_car_wheel);
 	pContact->friction = max(m_minFriction, pContact->friction);
-	pContact->friction = min( m_pWorld->m_threadData[iCaller].maxGroupFriction, pContact->friction);
+	pContact->friction = min(min(m_pWorld->m_threadData[iCaller].maxGroupFriction, m_maxFriction), pContact->friction);
 	pContact->flags = (pContact->flags & ~contact_archived) | (flags & ~contact_last);
 
 	if (bNoCollResponse) {
@@ -4469,7 +4472,7 @@ void CRigidEntity::ApplyBuoyancy(float time_interval,const Vec3& gravity,pe_para
 		}
 		if (Vfull*Vsubmerged > 0) {
 			submergedFraction = Vsubmerged<Vfull ? Vsubmerged/Vfull : 1.0f;
-			m_dampingEx = max(m_dampingEx, m_damping*(1-submergedFraction)+max(m_waterDamping,pb[ibuoy].waterDamping)*submergedFraction);
+			m_dampingEx = max(m_dampingEx, m_damping*(1-submergedFraction)+max(m_waterDamping*max(0,1-pb[ibuoy].iMedium),pb[ibuoy].waterDamping)*submergedFraction);
 			if (pb[ibuoy].iMedium==0) {
 				waterFraction = max(waterFraction, submergedFraction);
 				if (m_body.M < pb[ibuoy].waterDensity*m_kwaterDensity*m_body.V)
