@@ -60,7 +60,7 @@ ILINE floatv CParticleSpline::Interpolate(const floatv time) const
 	for (pKey++; pKey < pEndKey; pKey++)
 	{
 		const floatv t = _mm_load1_ps(&pKey->time);
-		const mask32v4 condMask = t < tk;
+		const f32mask4 condMask = t < tk;
 		if (!Any(condMask))
 			break;
 		t0 = if_else(condMask, t, t0);

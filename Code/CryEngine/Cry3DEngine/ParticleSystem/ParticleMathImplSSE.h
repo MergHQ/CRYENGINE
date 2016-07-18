@@ -47,8 +47,8 @@ ILINE float ExtractF32(floatv a)
 
 ILINE floatv LoadIndexed4(const float* __restrict pStream, const uint32v index, float defaultVal)
 {
-	const mask32v4 mask = index == convert<uint32v>(gInvalidId);
-	const uint32v mIndex = _mm_andnot_si128(mask, index);
+	const i32mask4 mask = index == convert<uint32v>(gInvalidId);
+	const uint32v mIndex = _mm_andnot_si128((__m128i)mask, index);
 	const uint32v mFirst = _mm_shuffle_epi32(mIndex, 0);
 
 	if (All(index == mFirst + _mm_set_epi32(3, 2, 1, 0)))

@@ -17,23 +17,27 @@ struct Scalar
 
 // Support for SSE 32x4 types
 
-	#if CRY_COMPILER_MSVC
-
+	#if CRY_COMPILER_CLANG
+// __m128i is defined as __v2di instead of __v4si, so we define the correct vector types here to avoid compile errors.
+typedef __v4sf  f32v4;
+typedef __v4si  i32v4;
+	#else
 typedef __m128  f32v4;
 typedef __m128i i32v4;
-typedef __m128i mask32v4;  //!< Result of comparison operators
-
-	#elif defined(CRY_COMPILER_CLANG) || defined(CRY_COMPILER_GCC)
-
-// __m128i is defined as __v2di instead of __v4si, so we use the correct vector types here
-typedef __v4sf f32v4;
-typedef __v4si i32v4;
-
-typedef        int __attribute__((ext_vector_type(4))) mask32v4;  //!< Result of built-in comparison operators
-
 	#endif
 
-//! Override convert<> for vector INTRINSIC types
+//! Define results of comparison operators
+	#if CRY_COMPILER_MSVC
+typedef __m128  f32mask4;
+typedef __m128i i32mask4;
+	#else
+//! Define results of built-in comparison operators.
+//! These must be cast to __m128 or __m128i when calling intrinsic functions.
+typedef decltype (f32v4() == f32v4()) f32mask4;
+typedef decltype (i32v4() == i32v4()) i32mask4;
+	#endif
+
+//! Override convert<> for vector intrinsic types
 template<> ILINE f32v4 convert<f32v4>()         { return _mm_setzero_ps(); }
 template<> ILINE f32v4 convert<f32v4>(float v)  { return _mm_set1_ps(v); }
 template<> ILINE f32v4 convert<f32v4>(double v) { return _mm_set1_ps(float(v)); }
@@ -50,16 +54,15 @@ template<> ILINE i32v4 convert<i32v4>(f32v4 v)  { return _mm_cvttps_epi32(v); }
 template<> ILINE int   convert<int>(i32v4 v)    { return _mm_cvtsi128_si32(v); }
 
 //! Multiple scalar/vector conversion
-template<typename V, typename S> V convert(S s0, S s1, S s2, S s3);
+template<typename V, typename S> V       convert(S s0, S s1, S s2, S s3);
 
-template<> ILINE f32v4             convert<f32v4>(float s0, float s1, float s2, float s3) { return _mm_setr_ps(s0, s1, s2, s3); }
-template<> ILINE f32v4             convert<f32v4>(int s0, int s1, int s2, int s3)         { return _mm_setr_ps(float(s0), float(s1), float(s2), float(s3)); }
-template<> ILINE i32v4             convert<i32v4>(int s0, int s1, int s2, int s3)         { return _mm_setr_epi32(s0, s1, s2, s3); }
+template<> ILINE f32v4                   convert<f32v4>(float s0, float s1, float s2, float s3) { return _mm_setr_ps(s0, s1, s2, s3); }
+template<> ILINE f32v4                   convert<f32v4>(int s0, int s1, int s2, int s3)         { return _mm_setr_ps(float(s0), float(s1), float(s2), float(s3)); }
+template<> ILINE i32v4                   convert<i32v4>(int s0, int s1, int s2, int s3)         { return _mm_setr_epi32(s0, s1, s2, s3); }
 
-//! Casting between SSE types
-template<typename D, typename S> ILINE D simd_cast(S val)          { return D(val); }
-template<> ILINE f32v4                   simd_cast<f32v4>(i32v4 v) { return _mm_castsi128_ps(v); }
-template<> ILINE i32v4                   simd_cast<i32v4>(f32v4 v) { return _mm_castps_si128(v); }
+template<typename D, typename S> ILINE D vcast(S val)                                           { return D(val); }
+template<> ILINE f32v4                   vcast<f32v4>(i32v4 v)                                  { return _mm_castsi128_ps(v); }
+template<> ILINE i32v4                   vcast<i32v4>(f32v4 v)                                  { return _mm_castps_si128(v); }
 
 // Helpers vor defining regular and compound operators together
 	#define COMMPOUND_OPERATOR(A, op, B) \
@@ -79,9 +82,9 @@ template<> ILINE i32v4                   simd_cast<i32v4>(f32v4 v) { return _mm_
 ///////////////////////////////////////////////////////////////////////////
 // Integer
 
-		#define INT32V_COMPARE_OPS(op, opneg, func)                                                                      \
-		  ILINE mask32v4 operator op(i32v4 a, i32v4 b) { return func(a, b); }                                               \
-		  ILINE mask32v4 operator opneg(i32v4 a, i32v4 b) { return _mm_xor_si128(func(a, b), _mm_set1_epi32(0xFFFFFFFF)); } \
+		#define INT32V_COMPARE_OPS(op, opneg, func)                                                                         \
+		  ILINE i32mask4 operator op(i32v4 a, i32v4 b) { return func(a, b); }                                               \
+		  ILINE i32mask4 operator opneg(i32v4 a, i32v4 b) { return _mm_xor_si128(func(a, b), _mm_set1_epi32(0xFFFFFFFF)); } \
 
 INT32V_COMPARE_OPS(==, !=, _mm_cmpeq_epi32)
 INT32V_COMPARE_OPS(>, <=, _mm_cmpgt_epi32)
@@ -161,8 +164,8 @@ ILINE i32v4 operator~(i32v4 a)
 ///////////////////////////////////////////////////////////////////////////
 // Float
 
-		#define FLOAT32V_COMPARE_OP(op, func)                                                   \
-		  ILINE mask32v4 operator op(f32v4 a, f32v4 b) { return simd_cast<mask32v4>(func(a, b)); } \
+		#define FLOAT32V_COMPARE_OP(op, func)                                 \
+		  ILINE f32mask4 operator op(f32v4 a, f32v4 b) { return func(a, b); } \
 
 FLOAT32V_COMPARE_OP(==, _mm_cmpeq_ps)
 FLOAT32V_COMPARE_OP(!=, _mm_cmpneq_ps)
@@ -205,40 +208,52 @@ ILINE f32v4 operator-(f32v4 a)
 // Additional operators and functions for SSE intrinsics
 
 //! Convert comparison results to boolean value
-ILINE bool All(mask32v4 v)
+ILINE bool All(f32mask4 v)
 {
-	return _mm_movemask_ps(simd_cast<f32v4>(v)) == 0xF;
+	return _mm_movemask_ps(vcast<f32v4>(v)) == 0xF;
 }
-ILINE bool Any(mask32v4 v)
+ILINE bool Any(f32mask4 v)
 {
-	return _mm_movemask_ps(simd_cast<f32v4>(v)) != 0;
-}
-
-template<> ILINE i32v4 if_else(mask32v4 mask, i32v4 a, i32v4 b)
-{
-	#ifdef CRY_PFX2_USE_SEE4
-	return simd_cast<i32v4>(_mm_blendv_ps(simd_cast<f32v4>(b), simd_cast<f32v4>(a), simd_cast<f32v4>(mask)));
-	#else
-	return _mm_or_si128(_mm_and_si128(mask, a), _mm_andnot_si128(mask, b));
-	#endif
-}
-template<> ILINE i32v4 if_else_zero(mask32v4 mask, i32v4 a)
-{
-	return _mm_and_si128(mask, a);
+	return _mm_movemask_ps(vcast<f32v4>(v)) != 0;
 }
 
-template<> ILINE f32v4 if_else(mask32v4 mask, f32v4 a, f32v4 b)
+template<> ILINE i32v4 if_else(i32mask4 mask, i32v4 a, i32v4 b)
 {
 	#ifdef CRY_PFX2_USE_SEE4
-	return _mm_blendv_ps(b, a, simd_cast<f32v4>(mask));
+	return vcast<i32v4>(_mm_blendv_ps(vcast<f32v4>(b), vcast<f32v4>(a), vcast<f32v4>(mask)));
 	#else
-	return _mm_or_ps(_mm_and_ps(simd_cast<f32v4>(mask), a), _mm_andnot_ps(simd_cast<f32v4>(mask), b));
+	return (i32v4)_mm_or_si128(_mm_and_si128((__m128i)mask, a), _mm_andnot_si128((__m128i)mask, b));
 	#endif
 }
-template<> ILINE f32v4 if_else_zero(mask32v4 mask, f32v4 a)
+
+template<> ILINE i32v4 if_else_zero(i32mask4 mask, i32v4 a)
 {
-	return _mm_and_ps(simd_cast<f32v4>(mask), a);
+	return (i32v4)_mm_and_si128(vcast<i32v4>(mask), a);
 }
+
+template<> ILINE f32v4 if_else(f32mask4 mask, f32v4 a, f32v4 b)
+{
+	#ifdef CRY_PFX2_USE_SEE4
+	return (f32v4)_mm_blendv_ps(b, a, (__m128)mask);
+	#else
+	return (f32v4)_mm_or_ps(_mm_and_ps((__m128)mask, a), _mm_andnot_ps((__m128)mask, b));
+	#endif
+}
+
+template<> ILINE f32v4 if_else_zero(f32mask4 mask, f32v4 a)
+{
+	return _mm_and_ps((__m128)mask, a);
+}
+
+	#if !CRY_COMPILER_CLANG
+// On clang, f32mask4 == i32mask4. For other compilers, define overloads.
+ILINE bool             All(i32mask4 v)                          { return _mm_movemask_ps(vcast<f32v4>(v)) == 0xF; }
+ILINE bool             Any(i32mask4 v)                          { return _mm_movemask_ps(vcast<f32v4>(v)) != 0; }
+template<> ILINE f32v4 if_else_zero(i32mask4 mask, f32v4 a)     { return if_else_zero(vcast<f32mask4>(mask), a); }
+template<> ILINE f32v4 if_else(i32mask4 mask, f32v4 a, f32v4 b) { return if_else(vcast<f32mask4>(mask), a, b); }
+template<> ILINE i32v4 if_else_zero(f32mask4 mask, i32v4 a)     { return if_else_zero(vcast<i32mask4>(mask), a); }
+template<> ILINE i32v4 if_else(f32mask4 mask, i32v4 a, i32v4 b) { return if_else(vcast<i32mask4>(mask), a, b); }
+	#endif
 
 // SSE shift-immediate operators for all compilers
 COMMPOUND_OPERATORS(i32v4, <<, Scalar)
