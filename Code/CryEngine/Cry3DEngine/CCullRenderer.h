@@ -11,12 +11,8 @@
 // enable this define to allow ingame debugging of the coverage buffer
 #define CULLING_ENABLE_DEBUG_OVERLAY
 
-#define CULLINLINE   ILINE
-#define CULLNOINLINE inline
-
 #pragma warning(push)
 #pragma warning(disable:6262)
-#pragma warning(disable:4554)
 
 namespace NAsyncCull
 {
@@ -94,7 +90,7 @@ private:
 	uint32 m_PolyCount;
 
 	template<bool WRITE, bool CULL, bool CULL_BACKFACES>
-	CULLINLINE bool Triangle(
+	inline bool Triangle(
 	  const NVMath::vec4& rV0,
 	  const NVMath::vec4& rV1,
 	  const NVMath::vec4& rV2)
@@ -201,9 +197,9 @@ private:
 
 	template<bool WRITE, bool CULL, bool PROJECT, bool CULL_BACKFACES>
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-	CULLINLINE bool Triangle2D(NVMath::vec4 rV0, NVMath::vec4 rV1, NVMath::vec4 rV2, uint32 MinX = 0, uint32 MinY = 0, uint32 MaxX = 0, uint32 MaxY = 0, NVMath::vec4& VMinMax = NVMath::Vec4Zero(), NVMath::vec4& V210 = NVMath::Vec4Zero())
+	inline bool Triangle2D(NVMath::vec4 rV0, NVMath::vec4 rV1, NVMath::vec4 rV2, uint32 MinX = 0, uint32 MinY = 0, uint32 MaxX = 0, uint32 MaxY = 0, NVMath::vec4& VMinMax = NVMath::Vec4Zero(), NVMath::vec4& V210 = NVMath::Vec4Zero())
 #else
-	CULLINLINE bool Triangle2D(NVMath::vec4 rV0, NVMath::vec4 rV1, NVMath::vec4 rV2, uint32 MinX = 0, uint32 MinY = 0, uint32 MaxX = 0, uint32 MaxY = 0, NVMath::vec4 VMinMax = NVMath::Vec4Zero (), NVMath::vec4 V210 = NVMath::Vec4Zero ())
+	inline bool Triangle2D(NVMath::vec4 rV0, NVMath::vec4 rV1, NVMath::vec4 rV2, uint32 MinX = 0, uint32 MinY = 0, uint32 MaxX = 0, uint32 MaxY = 0, NVMath::vec4 VMinMax = NVMath::Vec4Zero (), NVMath::vec4 V210 = NVMath::Vec4Zero ())
 #endif
 	{
 		using namespace NVMath;
@@ -335,7 +331,7 @@ private:
 		return CULL && (SignMask(Visible) & (BitX | BitY | BitZ | BitW)) != (BitX | BitY | BitZ | BitW);
 	}
 
-	CULLINLINE bool Quad2D(const NVMath::vec4& rV0, const NVMath::vec4& rV1, const NVMath::vec4& rV3, const NVMath::vec4& rV2)
+	inline bool Quad2D(const NVMath::vec4& rV0, const NVMath::vec4& rV1, const NVMath::vec4& rV3, const NVMath::vec4& rV2)
 	{
 		using namespace NVMath;
 		const vec4 WWW = Shuffle<xzxz>(Shuffle<wwww>(rV0, rV1), Shuffle<wwww>(rV2, rV3));
@@ -438,7 +434,7 @@ public:
 
 	// Note: Arrays are not initialized for performance reasons
 	// cppcheck-suppress uninitMemberVar
-	CULLINLINE CCullRenderer()
+	inline CCullRenderer()
 	{
 		m_ZBuffer = m_ZBufferMainMemory;
 		m_DebugRender = 0;
@@ -470,7 +466,7 @@ public:
 		}
 	}
 
-	CULLINLINE void Clear()
+	inline void Clear()
 	{
 		m_VMaxXY = NVMath::int32Tofloat(NVMath::Vec4(SIZEX, SIZEY, SIZEX, SIZEY));
 		for (uint32 a = 0, S = SIZEX * SIZEY; a < S; a++)
@@ -838,7 +834,7 @@ public:
 
 	}
 
-	CULLNOINLINE int AABBInFrustum(const NVMath::vec4* pViewProj, Vec3 Min, Vec3 Max, Vec3 ViewPos)
+	inline int AABBInFrustum(const NVMath::vec4* pViewProj, Vec3 Min, Vec3 Max, Vec3 ViewPos)
 	{
 		using namespace NVMath;
 		const NVMath::vec4 M0 = pViewProj[0];
@@ -971,7 +967,7 @@ public:
 		return Visible & (Visible << 1);
 	}
 
-	CULLINLINE bool TestQuad(const NVMath::vec4* pViewProj, const Vec3& vCenter, const Vec3& vAxisX, const Vec3& vAxisY)
+	inline bool TestQuad(const NVMath::vec4* pViewProj, const Vec3& vCenter, const Vec3& vAxisX, const Vec3& vAxisY)
 	{
 		const NVMath::vec4 M0 = pViewProj[0];
 		const NVMath::vec4 M1 = pViewProj[1];
@@ -1001,7 +997,7 @@ public:
 		return false;
 	}
 
-	CULLNOINLINE bool TestAABB(const NVMath::vec4* pViewProj, Vec3 Min, Vec3 Max, Vec3 ViewPos)
+	inline bool TestAABB(const NVMath::vec4* pViewProj, Vec3 Min, Vec3 Max, Vec3 ViewPos)
 	{
 		using namespace NVMath;
 		const NVMath::vec4 M0 = pViewProj[0];
@@ -1173,7 +1169,7 @@ public:
 	}
 
 	template<bool NEEDCLIPPING>
-	CULLNOINLINE void Rasterize(const NVMath::vec4* pViewProj, const NVMath::vec4* __restrict pTriangles, size_t TriCount)
+	inline void Rasterize(const NVMath::vec4* pViewProj, const NVMath::vec4* __restrict pTriangles, size_t TriCount)
 	{
 		using namespace NVMath;
 		Prefetch<ECL_LVL1>(pTriangles);
@@ -1377,7 +1373,7 @@ public:
 
 	}
 	template<bool WRITE>
-	CULLNOINLINE bool Rasterize(const NVMath::vec4* pViewProj, tdVertexCacheArg vertexCache,
+	inline bool Rasterize(const NVMath::vec4* pViewProj, tdVertexCacheArg vertexCache,
 	                            const tdIndex* __restrict pIndices, const uint32 ICount,
 	                            const uint8* __restrict pVertices, const uint32 VertexSize, const uint32 VCount)
 	{
@@ -1547,11 +1543,11 @@ public:
 #endif
 	}
 
-	CULLINLINE uint32 SizeX() const
+	inline uint32 SizeX() const
 	{
 		return SIZEX;
 	}
-	CULLINLINE uint32 SizeY() const
+	inline uint32 SizeY() const
 	{
 		return SIZEY;
 	}
