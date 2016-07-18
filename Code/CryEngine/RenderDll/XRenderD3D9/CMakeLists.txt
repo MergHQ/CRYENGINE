@@ -1068,7 +1068,7 @@ if (EXISTS ${SDK_DIR}/Orbis AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/GNM)
 	endif()
 
 	if(WIN64)
-		CryConsoleApplication(GnmShaderCompiler PCH "../StdAfx.cpp" SOLUTION_FOLDER "Tools")
+		CryConsoleApplication(GnmShaderCompiler SOLUTION_FOLDER "Tools")
 
 		# Force static CRT
 		force_static_crt()

@@ -283,8 +283,6 @@ add_custom_target(CE DEPENDS CryPhysics CrySystem CryAction CryRenderD3D11
 if (OPTION_GAME_PROJECT STREQUAL "GameSDK")
 	add_subdirectory(Code/GameSDK/GameDll)
 
-	add_dependencies(CryGameSDK CE)
-
 	set(GAME_RES_DIR Code/GameSDK/Resources)
 	set(GAME_TARGET CryGameSDK)
 endif()
@@ -299,8 +297,6 @@ endif()
 if (OPTION_GAME_PROJECT STREQUAL "GameZero")
 	add_subdirectory(Code/GameZero/GameDll)
 
-	add_dependencies(CryGameZero CE)
-
 	set(GAME_RES_DIR Code/GameZero/Resources)
 	set(GAME_TARGET CryGameZero)
 endif()
@@ -314,8 +310,6 @@ elseif (ORBIS)
 elseif (WIN32)
 	add_subdirectory(Code/Launcher/DedicatedLauncher)
 	add_subdirectory(Code/Launcher/WindowsLauncher)
-
-	add_dependencies(${GAME_TARGET} WindowsLauncher)
 endif ()
 
 #Libs
