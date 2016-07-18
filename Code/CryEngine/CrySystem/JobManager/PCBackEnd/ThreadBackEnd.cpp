@@ -221,17 +221,34 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::SignalStopWork()
 inline CFrameProfiler* GetFrameProfilerForName(const char* name)
 {
 	static std::vector<std::pair<const char*, CFrameProfiler*>> s_profilers;
-	static CryCriticalSection profilersLock;
-	AUTO_LOCK(profilersLock);
-	
-	s_profilers.reserve(256);
+	static CryRWLock s_profilersLock;
+
+	s_profilersLock.RLock();
 	for (auto& p : s_profilers)
 	{
-		if (p.first == name)
+		if (p.first == name) // compare pointer address. not content.
+		{
+			s_profilersLock.RUnlock();
 			return p.second;
+		}
+	}
+	s_profilersLock.RUnlock();
+	
+
+	s_profilersLock.WLock();
+	for (auto& p : s_profilers)
+	{
+		if (p.first == name) // compare pointer address. not content.
+		{
+			s_profilersLock.WUnlock();
+			return p.second;
+		}
 	}
 	CFrameProfiler* pNewProfiler = new CFrameProfiler(PROFILE_SYSTEM, EProfileDescription::REGION, name, "", 0);
+	s_profilers.reserve(256);
 	s_profilers.push_back(std::make_pair(name, pNewProfiler));
+	s_profilersLock.WUnlock();
+
 	return pNewProfiler;
 }
 
