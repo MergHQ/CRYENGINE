@@ -40,17 +40,16 @@ public:
 	//////////////////////////////////////////////////////////
 	// IResponseActor implementation
 	virtual const CHashedString&       GetName() const override;
-	virtual CVariableCollection*       GetLocalVariables() override       { return m_pLocalVariables; }
-	virtual const CVariableCollection* GetLocalVariables() const override { return m_pLocalVariables; }
+	virtual CVariableCollection*       GetLocalVariables() override;
+	virtual const CVariableCollection* GetLocalVariables() const override;
 	virtual EntityId                   GetLinkedEntityID() const override { return m_linkedEntityID; }
 	virtual IEntity*                   GetLinkedEntity() const override;
 	virtual DRS::SignalInstanceId      QueueSignal(const CHashedString& signalName, DRS::IVariableCollectionSharedPtr pSignalContext = nullptr, DRS::IResponseManager::IListener* pSignalListener = nullptr) override;
-
 	//////////////////////////////////////////////////////////
 
 private:
-	const EntityId       m_linkedEntityID;
-	CVariableCollection* m_pLocalVariables;
+	const EntityId      m_linkedEntityID;
+	const CHashedString m_localVariablesCollectionName;  //for now we dont store directly a pointer to the VariableCollection, because we would not get informed, if the collection is deleted/moved from the outside;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -90,6 +89,9 @@ public:
 	virtual CResponseManager*                        GetResponseManager() const override    { return m_pResponseManager; }
 	virtual CSpeakerManager*                         GetSpeakerManager() const override     { return m_pSpeakerManager; }
 
+	void                                             GetCurrentState(DRS::VariableValuesList* pOutCollectionsList, uint32 saveHints = SaveHints_Variables) const override;
+	void                                             SetCurrentState(const DRS::VariableValuesList& outCollectionsList) override;
+
 	virtual void                                     Serialize(Serialization::IArchive& ar) override;
 #if !defined(_RELEASE)
 	virtual void                                     SetCurrentDrsUserName(const char* szNewDrsUserName) override;
@@ -128,7 +130,6 @@ private:
 	ResponseActorList           m_CreatedActors;
 	string                      m_filesFolder;
 	CTimeValue                  m_CurrentTime;
-	CVariable*                  m_pCurrentTimeVariable;
 	bool                        m_bIsCurrentlyUpdating;
 	uint32                      m_pendingResetRequest;
 

@@ -24,7 +24,7 @@ static const int s_characterSlot = 0;  //todo: make this a property of the drs a
 using namespace CryDRS;
 
 //--------------------------------------------------------------------------------------------------
-CSpeakerManager::CSpeakerManager() : m_pActiveSpeakerVariable(nullptr)
+CSpeakerManager::CSpeakerManager()
 {
 	//the audio callbacks we are interested in, all related to audio-asset (trigger or standaloneFile) finished or failed to start
 	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance | eAudioCallbackManagerRequestType_ReportStoppedFile | eAudioCallbackManagerRequestType_ReportStartedFile);
@@ -71,10 +71,6 @@ CSpeakerManager::~CSpeakerManager()
 //--------------------------------------------------------------------------------------------------
 void CSpeakerManager::Init()
 {
-	CVariableCollection* pGlobalVariableCollection = CResponseSystem::GetInstance()->GetCollection("Global");
-	CRY_ASSERT(pGlobalVariableCollection);
-	m_pActiveSpeakerVariable = pGlobalVariableCollection->CreateVariable("ActiveSpeakers", 0);
-
 	if (!m_pLipsyncProvider)
 	{
 		m_pDefaultLipsyncProvider = new CDefaultLipsyncProvider;
@@ -384,14 +380,15 @@ void CSpeakerManager::UpdateAudioProxyPosition(IEntity* pEntity, const SSpeakInf
 bool CSpeakerManager::CancelSpeaking(const DRS::IResponseActor* pActor, int maxPrioToCancel)
 {
 	bool bSomethingWasCanceled = false;
-	for (SpeakerList::iterator it = m_activeSpeakers.begin(); it != m_activeSpeakers.end(); ++it)
+
+	for (SSpeakInfo& speakerInfo : m_activeSpeakers)
 	{
-		if ((it->pActor == pActor || pActor == nullptr) && (it->priority <= maxPrioToCancel || maxPrioToCancel < 0))
+		if ((speakerInfo.pActor == pActor || pActor == nullptr) && (speakerInfo.priority <= maxPrioToCancel || maxPrioToCancel < 0))
 		{
 			//to-check: currently cancel speaking will not execute the stop trigger
-			InformListener(static_cast<const CResponseActor*>(pActor), it->lineID, DRS::ISpeakerManager::IListener::eLineEvent_Canceled, it->pPickedLine);
-			it->endingConditions = eEC_Done;
-			it->finishTime = 0.0f;  //trigger finished, will be removed in the next update then
+			InformListener(speakerInfo.pActor, speakerInfo.lineID, DRS::ISpeakerManager::IListener::eLineEvent_Canceled, speakerInfo.pPickedLine);
+			speakerInfo.endingConditions = eEC_Done;
+			speakerInfo.finishTime = 0.0f;  //trigger finished, will be removed in the next update then
 			bSomethingWasCanceled = true;
 		}
 	}
@@ -403,11 +400,12 @@ void CSpeakerManager::Reset()
 {
 	m_queuedSpeakers.clear();
 
-	for (SpeakerList::iterator it = m_activeSpeakers.begin(), itEnd = m_activeSpeakers.end(); it != itEnd; ++it)
+	for (SSpeakInfo& speakerInfo : m_activeSpeakers)
 	{
 		SET_DRS_USER_SCOPED("SpeakerManager Reset");
-		it->pActor->GetLocalVariables()->SetVariableValue(s_isTalkingVariableName, false);
-		ReleaseSpeakerAudioProxy(*it, true);
+		InformListener(speakerInfo.pActor, speakerInfo.lineID, DRS::ISpeakerManager::IListener::eLineEvent_Canceled, speakerInfo.pPickedLine);
+		speakerInfo.pActor->GetLocalVariables()->SetVariableValue(s_isTalkingVariableName, false);
+		ReleaseSpeakerAudioProxy(speakerInfo, true);
 	}
 	m_activeSpeakers.clear();
 }
@@ -456,21 +454,21 @@ void CSpeakerManager::OnAudioCallback(const SAudioRequestInfo* const pAudioReque
 	     || pAudioRequestInfo->audioRequestType == eAudioRequestType_AudioCallbackManagerRequest && pAudioRequestInfo->specificAudioRequest == eAudioCallbackManagerRequestType_ReportStartedFile))
 	{
 		//handling of failure executing the start / stop trigger or the standalone file
-		for (SpeakerList::iterator it = pSpeakerManager->m_activeSpeakers.begin(), itEnd = pSpeakerManager->m_activeSpeakers.end(); it != itEnd; ++it)
+		for (SSpeakInfo& speakerInfo : pSpeakerManager->m_activeSpeakers)
 		{
-			if (it->pActor == pActor && pDialogLine == it->pPickedLine)
+			if (speakerInfo.pActor == pActor && pDialogLine == speakerInfo.pPickedLine)
 			{
-				if (pAudioRequestInfo->audioControlId == it->startTriggerID)  //if the start trigger fails, we still want to display the subtitle for some time, //will also be met for StandaloneFiles, because startTriggerID == 0
+				if (pAudioRequestInfo->audioControlId == speakerInfo.startTriggerID)  //if the start trigger fails, we still want to display the subtitle for some time, //will also be met for StandaloneFiles, because startTriggerID == 0
 				{
 					int textLength = (pDialogLine) ? strlen(pDialogLine->GetText()) : 16;
-					it->finishTime = CResponseSystem::GetInstance()->GetCurrentDrsTime() + (2.0f + (textLength / 16.0f)) + it->pPickedLine->GetPauseLength();
-					it->endingConditions |= eEC_WaitingForTimer;
-					it->endingConditions &= ~eEC_WaitingForStartTrigger;
+					speakerInfo.finishTime = CResponseSystem::GetInstance()->GetCurrentDrsTime() + (2.0f + (textLength / 16.0f)) + speakerInfo.pPickedLine->GetPauseLength();
+					speakerInfo.endingConditions |= eEC_WaitingForTimer;
+					speakerInfo.endingConditions &= ~eEC_WaitingForStartTrigger;
 				}
-				else if (pAudioRequestInfo->audioControlId == it->stopTriggerID) //if the stop trigger fails, we simply stop the start-trigger directly (in the next update)
+				else if (pAudioRequestInfo->audioControlId == speakerInfo.stopTriggerID) //if the stop trigger fails, we simply stop the start-trigger directly (in the next update)
 				{
-					it->finishTime = 0.0f;
-					it->endingConditions = eEC_Done;
+					speakerInfo.finishTime = 0.0f;
+					speakerInfo.endingConditions = eEC_Done;
 				}
 				return;
 			}
@@ -480,23 +478,23 @@ void CSpeakerManager::OnAudioCallback(const SAudioRequestInfo* const pAudioReque
 	         && (pAudioRequestInfo->specificAudioRequest == eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance
 	             || pAudioRequestInfo->specificAudioRequest == eAudioCallbackManagerRequestType_ReportStoppedFile))
 	{
-		for (SpeakerList::iterator it = pSpeakerManager->m_activeSpeakers.begin(), itEnd = pSpeakerManager->m_activeSpeakers.end(); it != itEnd; ++it)
+		for (SSpeakInfo& speakerInfo : pSpeakerManager->m_activeSpeakers)
 		{
-			if (it->pActor == pActor && pDialogLine == it->pPickedLine)
+			if (speakerInfo.pActor == pActor && pDialogLine == speakerInfo.pPickedLine)
 			{
-				if (pAudioRequestInfo->audioControlId == it->startTriggerID)  //will also be met for StandaloneFiles, because startTriggerID == 0
+				if (pAudioRequestInfo->audioControlId == speakerInfo.startTriggerID)  //will also be met for StandaloneFiles, because startTriggerID == 0
 				{
-					it->endingConditions &= ~eEC_WaitingForStartTrigger;
-					if (it->pPickedLine->GetPauseLength() > 0.0f && (it->endingConditions & eEC_WaitingForTimer) == 0)
+					speakerInfo.endingConditions &= ~eEC_WaitingForStartTrigger;
+					if (speakerInfo.pPickedLine->GetPauseLength() > 0.0f && (speakerInfo.endingConditions & eEC_WaitingForTimer) == 0)
 					{
 						//audio playback is dont, time for the artifical pause, specified by the 'pause' property of the line
-						it->finishTime = CResponseSystem::GetInstance()->GetCurrentDrsTime() + it->pPickedLine->GetPauseLength();
-						it->endingConditions |= eEC_WaitingForTimer;
+						speakerInfo.finishTime = CResponseSystem::GetInstance()->GetCurrentDrsTime() + speakerInfo.pPickedLine->GetPauseLength();
+						speakerInfo.endingConditions |= eEC_WaitingForTimer;
 					}
 				}
-				if (pAudioRequestInfo->audioControlId == it->stopTriggerID)
+				if (pAudioRequestInfo->audioControlId == speakerInfo.stopTriggerID)
 				{
-					it->endingConditions &= ~eEC_WaitingForStopTrigger;
+					speakerInfo.endingConditions &= ~eEC_WaitingForStopTrigger;
 				}
 			}
 		}
@@ -587,7 +585,9 @@ void CSpeakerManager::SetNumActiveSpeaker(int newAmountOfSpeaker)
 	if (m_numActiveSpeaker != newAmountOfSpeaker)
 	{
 		m_numActiveSpeaker = newAmountOfSpeaker;
-		m_pActiveSpeakerVariable->SetValue(newAmountOfSpeaker);
+		CVariableCollection* pGlobalVariableCollection = CResponseSystem::GetInstance()->GetCollection("Global");
+		CVariable* pActiveSpeakerVariable = pGlobalVariableCollection->CreateOrGetVariable("ActiveSpeakers");
+		pActiveSpeakerVariable->SetValue(newAmountOfSpeaker);
 
 		if (m_audioRtpcIdGlobal != INVALID_AUDIO_CONTROL_ID)
 		{

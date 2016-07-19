@@ -29,6 +29,8 @@ typedef std::shared_ptr<IResponseCondition>             IConditionSharedPtr;
 struct IVariableCollection;
 typedef std::shared_ptr<IVariableCollection> IVariableCollectionSharedPtr;
 
+typedef DynArray<std::pair<string, string>> VariableValuesList;
+
 typedef int                                  SignalInstanceId;
 static const SignalInstanceId s_InvalidSignalId = -1;
 
@@ -421,6 +423,20 @@ public:
 	//! Gets a pointer to the ISpeakerManager
 	//! \return A pointer to the ISpeakerManager
 	virtual ISpeakerManager* GetSpeakerManager() const = 0;
+
+	enum eSaveHints
+	{
+		SaveHints_Variables = BIT(0),
+		SaveHints_ResponseData = BIT(1),
+	};
+
+	//! Saves the current state of the DRS as a list of variables
+	//! the saveHints parameter can be used to include additional data in the list.
+	virtual void GetCurrentState(DRS::VariableValuesList* pOutCollectionsList, uint32 saveHints = IDynamicResponseSystem::SaveHints_Variables) const = 0;
+
+	//! Restores a previously stored state of the DRS. 
+	//! Remark: Depending on the implementation you might need to call 'Reset' first, in order to stop all running responses.
+	virtual void SetCurrentState(const DRS::VariableValuesList& outCollectionsList) = 0;
 
 	//! Only needed for debug purposes, informs the system who is currently using it (so that debug outputs than create logs like "flowgraph 'human2' has changed variable X to value 0.3").
 	//! \return the currently source of DRS actions

@@ -611,7 +611,7 @@ void CResponseManager::InformListenerAboutSignalProcessingFinished(
 //--------------------------------------------------------------------------------------------------
 void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 {
-	struct responseStateInfo
+	struct SResponseStateInfo
 	{
 		CHashedString responsename;
 		uint32        executionCount;
@@ -632,12 +632,12 @@ void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 			ar(lastEndTime, "LastEnd", "^>70>LastEnd");
 		}
 	};
-	std::vector<responseStateInfo> responseStates;
+	std::vector<SResponseStateInfo> responseStates;
 
 	if (ar.isInput())
 	{
-		ar(responseStates, "ResponseStates", "-ResponseStates");
-		for (responseStateInfo& current : responseStates)
+		ar(responseStates, "_internal", "-_Internal");
+		for (SResponseStateInfo& current : responseStates)
 		{
 			ResponsePtr pResponse = GetResponse(current.responsename);
 			if (pResponse)
@@ -660,7 +660,64 @@ void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 			responseStates[i].lastEndTime = it->second->GetLastEndTime();
 			++i;
 		}
-		ar(responseStates, "ResponseStates", "ResponseStates");
+		ar(responseStates, "_internal", "_Internal");
+	}
+}
+
+//--------------------------------------------------------------------------------------------------
+void CryDRS::CResponseManager::GetAllResponseData(DRS::VariableValuesList* pOutCollectionsList)
+{
+	std::pair<string, string> temp;
+	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
+	{
+		if (it->second->GetExecutionCounter() > 0)
+		{
+			const string collectionName = "_Internal.";
+			temp.first = collectionName + it->first.GetText();
+			char buffer[128];
+			cry_sprintf(buffer, "%u,%f,%f", it->second->GetExecutionCounter(), it->second->GetLastStartTime(), it->second->GetLastEndTime());
+			temp.second = buffer;
+			pOutCollectionsList->push_back(temp);
+		}
+	}
+}
+
+//--------------------------------------------------------------------------------------------------
+void CryDRS::CResponseManager::SetAllResponseData(const DRS::VariableValuesList& collectionsList)
+{
+	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
+	{
+		it->second->Reset();
+	}
+
+	uint32 executionCounter;
+	float startTime;
+	float endTime;
+
+	string collectionAndVariable;
+	CHashedString responseName;
+	CHashedString collectionName;
+	for (std::pair<string, string> variableValuePair : collectionsList)
+	{
+		collectionAndVariable = variableValuePair.first;
+		const int pos = collectionAndVariable.find('.');
+		collectionName = collectionAndVariable.substr(0, pos);
+
+		if (collectionName == "_Internal")
+		{
+			responseName = collectionAndVariable.substr(pos + 1);
+			ResponsePtr pResponse = GetResponse(responseName);
+			if (pResponse)
+			{
+				string responseData = variableValuePair.second;
+				if (sscanf(variableValuePair.second.c_str(), "%u,%f,%f", &executionCounter, &startTime, &endTime) == 3)
+				{
+					pResponse->SetExecutionCounter(executionCounter);
+					pResponse->SetLastStartTime(startTime);
+					pResponse->SetLastEndTime(endTime);
+				}
+			}
+		}
 	}
 }
 

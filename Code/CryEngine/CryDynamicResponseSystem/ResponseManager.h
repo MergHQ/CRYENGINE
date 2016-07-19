@@ -86,6 +86,9 @@ public:
 	void               CancelSignalProcessing(const SSignal& signal);
 	void               Update();
 
+	void               GetAllResponseData(DRS::VariableValuesList* pOutCollectionsList);
+	void               SetAllResponseData(const DRS::VariableValuesList& collectionsList);
+
 	CResponseInstance* CreateInstance(SSignal& signal, CResponse* pResponse);
 	void               ReleaseInstance(CResponseInstance* pInstance, bool removeFromRunningInstances = true);
 	void               Reset(bool bResetExecutionCounter);

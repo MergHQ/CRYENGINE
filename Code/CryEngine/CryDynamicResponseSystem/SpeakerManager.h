@@ -123,7 +123,6 @@ private:
 	CDefaultLipsyncProvider*                m_pDefaultLipsyncProvider;
 
 	int            m_numActiveSpeaker;
-	CVariable*     m_pActiveSpeakerVariable;
 	AudioControlId m_audioRtpcIdLocal;
 	AudioControlId m_audioRtpcIdGlobal;
 
