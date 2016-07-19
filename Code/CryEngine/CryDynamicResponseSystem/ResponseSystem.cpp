@@ -366,7 +366,7 @@ CResponseActor::~CResponseActor()
 {
 	CResponseSystem::GetInstance()->GetSpeakerManager()->OnActorRemoved(this);
 	CVariableCollection* pLocalVariables = CResponseSystem::GetInstance()->GetCollection(m_localVariablesCollectionName);
-	if (!pLocalVariables)
+	if (pLocalVariables)
 	{
 		CResponseSystem::GetInstance()->ReleaseVariableCollection(pLocalVariables);
 	}
