@@ -6017,6 +6017,8 @@ const char* CDebugDrawListMgr::GetAssetTypeName(I3DEngine::EDebugDrawListAssetTy
 	return "<UNKNOWN>";
 }
 
+#endif //RELEASE
+
 ///////////////////////////////////////////////////////////////////////////////
 float C3DEngine::GetWaterLevel()
 {
@@ -6471,4 +6473,3 @@ Vec3 C3DEngine::GetSunDirNormalized() const
 	return m_vSunDirNormalized;
 }
 
-#endif //RELEASE

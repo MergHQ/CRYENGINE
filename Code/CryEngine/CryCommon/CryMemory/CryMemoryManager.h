@@ -75,7 +75,9 @@ struct _HeapChecker
 	#include <malloc.h>
 #endif
 
-#ifdef CRYSYSTEM_EXPORTS
+#if defined(_LIB)
+	#define CRYMEMORYMANAGER_API
+#elif defined(CRYSYSTEM_EXPORTS)
 	#define CRYMEMORYMANAGER_API DLL_EXPORT
 #else
 	#define CRYMEMORYMANAGER_API DLL_IMPORT
