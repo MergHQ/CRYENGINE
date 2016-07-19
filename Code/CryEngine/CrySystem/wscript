@@ -7,7 +7,7 @@ def build(bld):
 
 	# Oculus can only be built using VS 2015.
 	# This is a limitation of the Oculus code.
-	has_oculus = ('MSVC_VERSION' in bld.env and bld.env['MSVC_VERSION'] == '14.0')
+	has_oculus = bld.env and bld.env['MSVC_VERSION'] and (bld.ToVersionNumbers(bld.env['MSVC_VERSION']) >= bld.ToVersionNumbers('14.0'))
 	oculus_dependency = []
 	if has_oculus:
 		oculus_dependency = [ 'oculus' ]

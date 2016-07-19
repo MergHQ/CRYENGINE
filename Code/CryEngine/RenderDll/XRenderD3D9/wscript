@@ -11,7 +11,7 @@ def build(bld):
 
 	# Oculus can only be built using VS 2015.
 	# This is a limitation of the Oculus code.
-	has_oculus = ('MSVC_VERSION' in bld.env and bld.env['MSVC_VERSION'] == '14.0')
+	has_oculus = bld.env and bld.env['MSVC_VERSION'] and (bld.ToVersionNumbers(bld.env['MSVC_VERSION']) >= bld.ToVersionNumbers('14.0'))
 	oculus_dependency = []
 	if has_oculus:
 		oculus_dependency = [ 'oculus' ]
@@ -98,10 +98,14 @@ def build(bld):
 	)
 
 	# CryRenderD3D12 can only be built using VS 2015.
-	build_d3d12 = ('MSVC_VERSION' in bld.env and bld.env['MSVC_VERSION'] == '14.0')
+	min_msvc_version = '14.0'
+	min_winsdk_version = '10.0.10586.0'
+	
+	build_d3d12_msvc_check = bld.env and bld.env['MSVC_VERSION'] and (bld.ToVersionNumbers(bld.env['MSVC_VERSION']) >= bld.ToVersionNumbers(min_msvc_version))
+	build_d3d12_winsdk_check = bld.env and bld.env['WINSDK_VERSION'] and (bld.ToVersionNumbers(bld.env['WINSDK_VERSION']) >= bld.ToVersionNumbers(min_winsdk_version))
 	parse_d3d12 = ('build' not in bld.cmd)
 
-	if build_d3d12 or parse_d3d12:
+	if build_d3d12_msvc_check and build_d3d12_winsdk_check or parse_d3d12:
 		bld.CryEngineModule(
 			target      = 'CryRenderD3D12',
 			vs_filter   = 'CryEngine',
@@ -123,7 +127,11 @@ def build(bld):
 			# additional_settings = Settings( files = '../Common/lzss.cpp', disable_pch = True )
 		)
 	else:
-		Logs.warn('MSVC 14.0 is not being used - CryRenderD3D12 cannot be built.')
+		if not build_d3d12_msvc_check:
+			bld.cry_warning('CryRenderD3D12 not build. Requires MSVC %s or newer. Current installed: %s' % (min_msvc_version, bld.env['MSVC_VERSION']))
+
+		if not build_d3d12_winsdk_check:
+			bld.cry_warning('CryRenderD3D12 not build. Requires WINDSDK %s or newer - Current installed: %s' % (min_winsdk_version, bld.env['WINSDK_VERSION']))
 
 	# GNM backend may not be available, so check here
 	if os.path.isdir(Path('Code/SDKs/Orbis')) and os.path.isdir(Path('Code/CryEngine/RenderDll/XRenderD3D9/GNM')):
