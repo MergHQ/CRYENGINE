@@ -93,7 +93,6 @@ enum ERenderCommand
 	eRC_AuxFlush,
 	eRC_RenderScene,
 	eRC_PrepareStereo,
-	eRC_CopyToStereoTex,
 	eRC_SetStereoEye,
 	eRC_SetCamera,
 
@@ -595,7 +594,6 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_EndFrame(bool bWait);
 	void RC_TryFlush();
 	void RC_PrepareStereo(int mode, int output);
-	void RC_CopyToStereoTex(int channel);
 	void RC_SetStereoEye(int eye);
 	bool RC_DynTexUpdate(SDynTexture * pTex, int nNewWidth, int nNewHeight);
 	bool RC_DynTexSourceUpdate(IDynTextureSourceImpl * pSrc, float fDistance);

@@ -273,8 +273,6 @@ CScriptBind_System::CScriptBind_System(IScriptSystem* pScriptSystem, ISystem* pS
 	SCRIPT_REG_TEMPLFUNC(SetSkyHighlight, "tableSkyHighlightParams");
 	SCRIPT_REG_TEMPLFUNC(GetSkyHighlight, "");
 
-	SCRIPT_REG_TEMPLFUNC(PushCloudBlocker, "tableCloudBlockerParams");
-
 	SCRIPT_REG_TEMPLFUNC(LoadLocalizationXml, "filename");
 
 	SCRIPT_REG_FUNC(GetFrameID);
@@ -1689,27 +1687,6 @@ int CScriptBind_System::GetSkyHighlight(IFunctionHandler* pH, SmartScriptTable p
 	params->SetValue("size", fSize);
 	params->SetValue("color", vColor);
 	params->SetValue("position", vPos);
-
-	return pH->EndFunction();
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-int CScriptBind_System::PushCloudBlocker(IFunctionHandler* pH, SmartScriptTable tbl)
-{
-	Vec3 vPos(0, 0, 0);
-	float decayStart = 0.0f;
-	float decayEnd = 0.0f;
-	float decayInfluence = 0.0f;
-	int screenSpace = 0;
-	tbl->GetValue("position", vPos);
-	tbl->GetValue("decayStart", decayStart);
-	tbl->GetValue("decayEnd", decayEnd);
-	tbl->GetValue("decayInfluence", decayInfluence);
-	tbl->GetValue("screenSpace", screenSpace);
-	decayStart = max(0.0f, decayStart);
-	decayEnd = max(0.0f, decayEnd);
-	decayInfluence = clamp_tpl<float>(decayInfluence, 0.0f, 1.0f);
-	m_pRenderer->PushVolumetricCloudBlocker(vPos, Vec3(decayStart, decayEnd, decayInfluence), screenSpace);
 
 	return pH->EndFunction();
 }

@@ -68,15 +68,16 @@ public:
 	CLevelTimeSampler(const SUpdateContext& context)
 		: deltaTime(ToFloatv(context.m_deltaTime))
 		, selfAges(context.m_container.GetIFStream(EPDT_NormalAge))
+		, levelTime(ToFloatv(context.m_time))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
 		const floatv selfAge = selfAges.Load(particleId);
-		const floatv levelTime = ToFloatv(gEnv->pTimer->GetCurrTime());
 		return AntiAliasParentAge(deltaTime, selfAge, ToFloatv(1.0f), levelTime);
 	}
 private:
 	IFStream selfAges;
+	floatv   levelTime;
 	floatv   deltaTime;
 };
 
@@ -132,13 +133,27 @@ private:
 	floatv m_attributeValue;
 };
 
+class CChaosSampler
+{
+public:
+	CChaosSampler(const SUpdateContext& context)
+		: m_chaos(context.m_spawnRngv) {}
+	ILINE floatv Sample(TParticleGroupId particleId) const
+	{
+		return m_chaos.RandUNorm();
+	}
+private:
+	SChaosKeyV& m_chaos;
+};
+
 }
 
 ILINE CTimeSource::CTimeSource()
-	: m_timeSource(ETimeSource::SelfTime)
-	, m_fieldSource(ETimeSourceField::Age)
-	, m_scale(1.0f)
-	, m_bias(0.0f)
+	: m_timeSource(ETimeSource::Age)
+	, m_fieldSource(ETimeSourceField(EPDT_LifeTime))
+	, m_sourceOwner(ETimeSourceOwner::Self)
+	, m_timeScale(1.0f)
+	, m_timeBias(0.0f)
 	, m_spawnOnly(true)
 {
 }
@@ -146,72 +161,47 @@ ILINE CTimeSource::CTimeSource()
 template<typename TParam, typename TMod>
 ILINE void CTimeSource::AddToParam(CParticleComponent* pComponent, TParam* pParam, TMod* pModifier)
 {
-	CParticleComponent* pParent = pComponent->GetParentComponent();
 	if (m_spawnOnly)
 		pParam->AddToInitParticles(pModifier);
 	else
 		pParam->AddToUpdate(pModifier);
 
-	//	if (m_timeSource == ETimeSource::SelfOrder)
-	if (m_timeSource == ETimeSource::SpawnFraction)
-		pComponent->AddParticleData(EPDT_SpawnFraction);
-	else if (m_timeSource == ETimeSource::SelfSpeed)
-		pComponent->AddParticleData(EPVF_Velocity);
-	// else if (m_timeSource == ETimeSource::SelfField)
-	else if (m_timeSource == ETimeSource::Field)
-		pComponent->AddParticleData((EParticleDataType)m_fieldSource);
-
-	else if (pParent && m_timeSource == ETimeSource::ParentOrder)
-		pParent->AddParticleData(EPDT_SpawnFraction);
-	else if (pParent && m_timeSource == ETimeSource::ParentSpeed)
-		pParent->AddParticleData(EPVF_Velocity);
-	else if (pParent && m_timeSource == ETimeSource::ParentField)
-		pParent->AddParticleData((EParticleDataType)m_fieldSource);
-}
-
-ILINE void CTimeSource::SerializeInplace(Serialization::IArchive& ar)
-{
-	const auto& context = GetContext(ar);
-	ar(m_timeSource, "TimeSource", "^>120>");
-
-	if (m_timeSource == ETimeSource::Attribute)
-		ar(m_attributeName, "AttributeName", "Attribute Name");
-
-	//	if (m_timeSource == ETimeSource::SelfField || m_timeSource == ETimeSource::ParentField)
-	if (m_timeSource == ETimeSource::Field || m_timeSource == ETimeSource::ParentField)
-		ar(m_fieldSource, "Field", "Field");
-
-	ar(m_scale, "Scale", "Scale");
-	ar(m_bias, "Bias", "Bias");
-
-	if (!context.HasUpdate())
-		m_spawnOnly = true;
-	else if (context.GetDomain() == EMD_PerParticle && m_timeSource == ETimeSource::SelfTime)
-		m_spawnOnly = false;
-	else
-		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
+	CParticleComponent* pSourceComponent = m_sourceOwner == ETimeSourceOwner::Parent ? pComponent->GetParentComponent() : pComponent;
+	if (pSourceComponent)
+	{
+		if (m_timeSource == ETimeSource::SpawnFraction)
+			pSourceComponent->AddParticleData(EPDT_SpawnFraction);
+		else if (m_timeSource == ETimeSource::Speed)
+			pSourceComponent->AddParticleData(EPVF_Velocity);
+		else if (m_timeSource == ETimeSource::Field)
+			pSourceComponent->AddParticleData((EParticleDataType)m_fieldSource);
+	}
 }
 
 ILINE EModDomain CTimeSource::GetDomain() const
 {
-	switch (m_timeSource)
+	switch (m_sourceOwner)
 	{
-	case ETimeSource::SelfTime:
-	//	case ETimeSource::SelfOrder:
-	case ETimeSource::SpawnFraction:
-	case ETimeSource::SelfSpeed:
-	//	case ETimeSource::SelfField:
-	case ETimeSource::Field:
+	case ETimeSourceOwner::Self:
 		return EMD_PerParticle;
-	case ETimeSource::ParentTime:
-	case ETimeSource::ParentOrder:
-	case ETimeSource::ParentSpeed:
-	case ETimeSource::ParentField:
+	case ETimeSourceOwner::Parent:
 		return EMD_PerInstance;
-	case ETimeSource::LevelTime:
-	case ETimeSource::Attribute:
 	default:
 		return EMD_PerEffect;
+	}
+}
+ILINE EParticleDataType CTimeSource::GetDataType() const
+{
+	switch (m_timeSource)
+	{
+	case ETimeSource::Age:
+		return EPDT_NormalAge;
+	case ETimeSource::SpawnFraction:
+		return EPDT_SpawnFraction;
+	case ETimeSource::Field:
+		return EParticleDataType(m_fieldSource);
+	default:
+		return EParticleDataType::size();
 	}
 }
 
@@ -220,49 +210,28 @@ ILINE void CTimeSource::Dispatch(const SUpdateContext& context, const SUpdateRan
 {
 	switch (m_timeSource)
 	{
-	case ETimeSource::SelfTime:
-		((TBase*)this)->DoModify(
-		  context, range, stream,
-		  detail::CSelfStreamSampler(context, EPDT_NormalAge));
-		break;
-	case ETimeSource::ParentTime:
-		if (domain == EMD_PerInstance)
-			((TBase*)this)->DoModify(
-			  context, range, stream,
-			  detail::CSelfStreamSampler(context, EPDT_NormalAge, domain));
-		else
-			((TBase*)this)->DoModify(
-			  context, range, stream,
-			  detail::CParentStreamSampler(context, EPDT_NormalAge));
-		break;
 	case ETimeSource::LevelTime:
 		((TBase*)this)->DoModify(
 		  context, range, stream,
 		  detail::CLevelTimeSampler(context));
 		break;
-	// case ETimeSource::SelfOrder:
-	case ETimeSource::SpawnFraction:
+	case ETimeSource::Attribute:
 		((TBase*)this)->DoModify(
 		  context, range, stream,
-		  detail::CSelfStreamSampler(context, EPDT_SpawnFraction));
+		  detail::CAttributeSampler(context, m_attributeName));
 		break;
-	case ETimeSource::ParentOrder:
-		if (domain == EMD_PerInstance)
-			((TBase*)this)->DoModify(
-			  context, range, stream,
-			  detail::CSelfStreamSampler(context, EPDT_SpawnFraction, domain));
-		else
-			((TBase*)this)->DoModify(
-			  context, range, stream,
-			  detail::CParentStreamSampler(context, EPDT_SpawnFraction));
-		break;
-	case ETimeSource::SelfSpeed:
+	case ETimeSource::Random:
 		((TBase*)this)->DoModify(
 		  context, range, stream,
-		  detail::CSelfSpeedSampler(context));
+		  detail::CChaosSampler(context));
 		break;
-	case ETimeSource::ParentSpeed:
-		if (domain == EMD_PerInstance)
+
+	case ETimeSource::Speed:
+		if (m_sourceOwner == ETimeSourceOwner::Self)
+			((TBase*)this)->DoModify(
+			  context, range, stream,
+			  detail::CSelfSpeedSampler(context));
+		else if (domain == EMD_PerInstance)
 			((TBase*)this)->DoModify(
 			  context, range, stream,
 			  detail::CSelfSpeedSampler(context, domain));
@@ -271,27 +240,24 @@ ILINE void CTimeSource::Dispatch(const SUpdateContext& context, const SUpdateRan
 			  context, range, stream,
 			  detail::CParentSpeedSampler(context, domain));
 		break;
-	// case ETimeSource::SelfField:
-	case ETimeSource::Field:
-		((TBase*)this)->DoModify(
-		  context, range, stream,
-		  detail::CSelfStreamSampler(context, EParticleDataType(m_fieldSource)));
-		break;
-	case ETimeSource::ParentField:
-		if (domain == EMD_PerInstance)
-			((TBase*)this)->DoModify(
-			  context, range, stream,
-			  detail::CSelfStreamSampler(context, EParticleDataType(m_fieldSource), domain));
-		else
-			((TBase*)this)->DoModify(
-			  context, range, stream,
-			  detail::CParentStreamSampler(context, EParticleDataType(m_fieldSource)));
-		break;
-	case ETimeSource::Attribute:
-		((TBase*)this)->DoModify(
-		  context, range, stream,
-		  detail::CAttributeSampler(context, m_attributeName));
-		break;
+	default:
+		{
+			auto dataType = GetDataType();
+			if (m_sourceOwner == ETimeSourceOwner::Self)
+				((TBase*)this)->DoModify(
+				  context, range, stream,
+				  detail::CSelfStreamSampler(context, dataType));
+			else if (domain == EMD_PerInstance)
+				((TBase*)this)->DoModify(
+				  context, range, stream,
+				  detail::CSelfStreamSampler(context, dataType, domain));
+			else
+				((TBase*)this)->DoModify(
+				  context, range, stream,
+				  detail::CParentStreamSampler(context, dataType));
+			break;
+		}
+
 	}
 }
 

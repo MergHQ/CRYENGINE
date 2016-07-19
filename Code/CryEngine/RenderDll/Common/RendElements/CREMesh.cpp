@@ -119,7 +119,6 @@ bool CREMeshImpl::mfUpdate(EVertexFormat eVertFormat, int Flags, bool bTessellat
 		bSucceed = m_pRenderMesh->RT_CheckUpdate(pVContainer, eVertFormat, Flags | VSM_MASK, bTessellation);
 		if (bSucceed)
 		{
-			// Modified data arrived, mark all corresponding REs dirty to trigger necessary recompiles
 			m_pRenderMesh->m_Modified[threadId].erase();
 		}
 	}
@@ -220,12 +219,6 @@ bool CREMeshImpl::GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessella
 	geomInfo.nTessellationPatchIDOffset = m_nPatchIDOffset;
 	geomInfo.eVertFormat = pVContainer->_GetVertexFormat();
 	geomInfo.primitiveType = pVContainer->_GetPrimitiveType();
-
-	geomInfo.streamMask = 0;
-
-	const bool bSkinned = (m_pRenderMesh->m_nFlags & (FRM_SKINNED | FRM_SKINNEDNEXTDRAW)) != 0;
-	if (bSkinned && pVContainer->_HasVBStream(VSF_QTANGENTS))
-		geomInfo.streamMask |= BIT(VSF_QTANGENTS);
 
 	{
 		// Check if needs updating.

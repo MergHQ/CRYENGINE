@@ -106,7 +106,7 @@ void CRECloud::mfPrepare(bool bCheckOverflow)
 	{
 		pRE = new CREImposter;
 		pObj->m_pRE = pRE;
-		pRE->m_State = GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA | GS_ALPHATEST_GREATER;
+		pRE->m_State = GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA | GS_ALPHATEST;
 		pRE->m_AlphaRef = 0;
 	}
 

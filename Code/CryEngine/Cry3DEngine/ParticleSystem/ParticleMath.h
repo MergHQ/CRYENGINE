@@ -217,7 +217,7 @@ Vec3v   ToVec3v(Vec3 v);
 Vec4v   ToVec4v(Vec4 v);
 Planev  ToPlanev(Plane v);
 
-uint8   FloatToUFrac8Saturate(float v);
+uint8  FloatToUFrac8Saturate(float v);
 
 ///////////////////////////////////////////////////////////////////////////
 // General operator and function equivalents

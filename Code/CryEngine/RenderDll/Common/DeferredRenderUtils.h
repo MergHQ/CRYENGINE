@@ -12,8 +12,8 @@
 
 #define SDeferMeshVert SVF_P3F_C4B_T2F
 
-typedef std::vector<SVF_P3F_C4B_T2F> t_arrDeferredMeshVertBuff;
-typedef std::vector<uint16>          t_arrDeferredMeshIndBuff;
+typedef stl::aligned_vector<SVF_P3F_C4B_T2F, CRY_PLATFORM_ALIGNMENT> t_arrDeferredMeshVertBuff;
+typedef stl::aligned_vector<uint16         , CRY_PLATFORM_ALIGNMENT> t_arrDeferredMeshIndBuff;
 
 class CDeferredRenderUtils
 {

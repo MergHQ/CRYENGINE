@@ -287,9 +287,8 @@ int CLightEntity::UpdateGSMLightSourceDynamicShadowFrustum(int nDynamicLodCount,
 
 	for (nLod = 0; nLod < nDynamicLodCount + nDistanceLodCount; nLod++)
 	{
-		float fFOV = (m_light).m_fLightFrustumAngle * 2;
-		bool bDoGSM = (fGSMBoxSize < m_light.m_fRadius * 0.01f && fGSMBoxSize < fDistToLight * 0.5f * (fFOV / 90.f) && fDistToLight < m_light.m_fRadius)
-		              && ((m_light.m_Flags & DLF_SUN) || Get3DEngine()->GetShadowsCascadeCount(&m_light) > 1);
+		const float fFOV = (m_light).m_fLightFrustumAngle * 2;
+		const bool bDoGSM = !!(m_light.m_Flags & DLF_SUN);
 
 		if (bDoGSM)
 		{
@@ -427,7 +426,7 @@ int CLightEntity::UpdateGSMLightSourceNearestShadowFrustum(int nFrustumIndex, co
 	CRY_ASSERT(nFrustumIndex >= 0 && nFrustumIndex < MAX_GSM_LODS_NUM);
 	static ICVar* pDrawNearShadowsCVar = GetConsole()->GetCVar("r_DrawNearShadows");
 
-	if (pDrawNearShadowsCVar && pDrawNearShadowsCVar->GetIVal() > 0)
+	if (pDrawNearShadowsCVar && pDrawNearShadowsCVar->GetIVal() > 0 && nFrustumIndex < CRY_ARRAY_COUNT(m_pShadowMapInfo->pGSM))
 	{
 		if (m_light.m_Flags & DLF_SUN)
 		{
@@ -566,6 +565,9 @@ void CLightEntity::InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAl
 	FUNCTION_PROFILER_3DENGINE;
 
 	assert(nLod >= 0 && nLod < MAX_GSM_LODS_NUM);
+
+	//Toggle between centered or frustrum optimized position for cascade
+	fDistance = GetCVars()->e_ShadowsCascadesCentered ? 0 : fDistance;
 
 	//TOFIX: replace fGSMBoxSize  by fRadius
 	float fRadius = fGSMBoxSize;

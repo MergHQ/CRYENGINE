@@ -203,6 +203,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 		break;
 	case eERType_Cloud:
 	case eERType_DistanceCloud:
+	case eERType_CloudBlocker:
 		if (!passInfo.RenderClouds()) return;
 		break;
 	case eERType_MergedMesh:

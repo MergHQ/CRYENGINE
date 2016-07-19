@@ -27,9 +27,9 @@
 	#define CMDLIST_TYPE_COPY     3 // D3D12_COMMAND_LIST_TYPE_COPY
 
 	#define CMDLIST_DEFAULT       CMDLIST_TYPE_DIRECT
-	#define CMDLIST_GRAPHICS      CMDLIST_TYPE_DIRECT
-	#define CMDLIST_COMPUTE       CMDLIST_TYPE_COMPUTE
-	#define CMDLIST_COPY          CMDLIST_TYPE_COMPUTE // NOTE: CMDLIST_TYPE_COPY is still buggy
+	#define CMDLIST_GRAPHICS      NCryDX12::CCommandListPool::m_MapQueueType[CMDQUEUE_GRAPHICS]
+	#define CMDLIST_COMPUTE       NCryDX12::CCommandListPool::m_MapQueueType[CMDQUEUE_COMPUTE]
+	#define CMDLIST_COPY          NCryDX12::CCommandListPool::m_MapQueueType[CMDQUEUE_COPY]
 
 	#define CMDQUEUE_GRAPHICS_IOE true  // graphics queue will terminate in-order
 	#define CMDQUEUE_COMPUTE_IOE  false // compute queue can terminate out-of-order
@@ -51,7 +51,10 @@ public:
 	CCommandListPool(CDevice* device, CCommandListFenceSet& rCmdFence, int nPoolFenceId);
 	~CCommandListPool();
 
+	void Configure();
 	bool Init(D3D12_COMMAND_LIST_TYPE eType = D3D12_COMMAND_LIST_TYPE(CMDLIST_DEFAULT), UINT nodeMask = 0);
+	void Clear();
+
 	void AcquireCommandList(DX12_PTR(CCommandList) & result) threadsafe;
 	void ForfeitCommandList(DX12_PTR(CCommandList) & result, bool bWait = false) threadsafe;
 	void AcquireCommandLists(uint32 numCLs, DX12_PTR(CCommandList) * results) threadsafe;
@@ -160,11 +163,12 @@ public:
 
 		if (!m_rCmdFences.IsCompleted(fenceValuesMasked))
 		{
-			DX12_LOG(DX12_CONCURRENCY_ANALYZER, "Waiting GPU for fences %s: [%d,%d,%d] (is [%d,%d,%d] currently)",
+			DX12_LOG(DX12_CONCURRENCY_ANALYZER || DX12_FENCE_ANALYZER,
+			         "Waiting GPU for fences %s: [%lld,%lld,%lld] (is [%lld,%lld,%lld] currently)",
 			         m_nPoolFenceId == CMDQUEUE_GRAPHICS ? "gfx" : m_nPoolFenceId == CMDQUEUE_COMPUTE ? "cmp" : "cpy",
-			         fenceValues[CMDQUEUE_GRAPHICS],
-			         fenceValues[CMDQUEUE_COMPUTE],
-			         fenceValues[CMDQUEUE_COPY],
+			         UINT64(fenceValues[CMDQUEUE_GRAPHICS]),
+			         UINT64(fenceValues[CMDQUEUE_COMPUTE]),
+			         UINT64(fenceValues[CMDQUEUE_COPY]),
 			         m_rCmdFences.GetD3D12Fence(CMDQUEUE_GRAPHICS)->GetCompletedValue(),
 			         m_rCmdFences.GetD3D12Fence(CMDQUEUE_COMPUTE)->GetCompletedValue(),
 			         m_rCmdFences.GetD3D12Fence(CMDQUEUE_COPY)->GetCompletedValue());
@@ -185,7 +189,8 @@ public:
 	{
 		if (!m_rCmdFences.IsCompleted(fenceValue, id))
 		{
-			DX12_LOG(DX12_CONCURRENCY_ANALYZER, "Waiting GPU for fence %s: %d (is %d currently)",
+			DX12_LOG(DX12_CONCURRENCY_ANALYZER || DX12_FENCE_ANALYZER,
+			         "Waiting GPU for fence %s: %lld (is %lld currently)",
 			         id == CMDQUEUE_GRAPHICS ? "gfx" : id == CMDQUEUE_COMPUTE ? "cmp" : "cpy",
 			         fenceValue,
 			         m_rCmdFences.GetD3D12Fence(id)->GetCompletedValue());
@@ -281,7 +286,7 @@ public:
 
 private:
 	void ScheduleCommandLists();
-	void                    CreateOrReuseCommandList(DX12_PTR(CCommandList) & result);
+	void CreateOrReuseCommandList(DX12_PTR(CCommandList) & result);
 
 	CDevice*                m_pDevice;
 	CCommandListFenceSet&   m_rCmdFences;
@@ -302,6 +307,9 @@ private:
 	size_t m_PeakNumCommandListsAllocated;
 	size_t m_PeakNumCommandListsInFlight;
 	#endif // DX12_STATS
+
+public:
+	static D3D12_COMMAND_LIST_TYPE m_MapQueueType[CMDQUEUE_NUM];
 };
 
 class CCommandList : public CDeviceObject
@@ -375,14 +383,14 @@ public:
 	// Stage 3
 	UINT64 SignalFenceOnGPU()
 	{
-		DX12_LOG(DX12_CONCURRENCY_ANALYZER, "Signaling GPU fence %s: %d", m_rPool.GetFenceID() == CMDQUEUE_GRAPHICS ? "gfx" : m_rPool.GetFenceID() == CMDQUEUE_COMPUTE ? "cmp" : "cpy", m_CurrentFenceValue);
+		DX12_LOG(DX12_CONCURRENCY_ANALYZER || DX12_FENCE_ANALYZER, "Signaling GPU fence %s: %lld", m_rPool.GetFenceID() == CMDQUEUE_GRAPHICS ? "gfx" : m_rPool.GetFenceID() == CMDQUEUE_COMPUTE ? "cmp" : "cpy", m_CurrentFenceValue);
 		m_rPool.GetAsyncCommandQueue().Signal(m_rPool.GetD3D12Fence(), m_CurrentFenceValue);
 		return m_CurrentFenceValue;
 	}
 
 	UINT64 SignalFenceOnCPU()
 	{
-		DX12_LOG(DX12_CONCURRENCY_ANALYZER, "Signaling CPU fence %s: %d", m_rPool.GetFenceID() == CMDQUEUE_GRAPHICS ? "gfx" : m_rPool.GetFenceID() == CMDQUEUE_COMPUTE ? "cmp" : "cpy", m_CurrentFenceValue);
+		DX12_LOG(DX12_CONCURRENCY_ANALYZER || DX12_FENCE_ANALYZER, "Signaling CPU fence %s: %lld", m_rPool.GetFenceID() == CMDQUEUE_GRAPHICS ? "gfx" : m_rPool.GetFenceID() == CMDQUEUE_COMPUTE ? "cmp" : "cpy", m_CurrentFenceValue);
 		m_rPool.GetD3D12Fence()->Signal(m_CurrentFenceValue);
 		return m_CurrentFenceValue;
 	}
@@ -514,28 +522,39 @@ public:
 	template<class T>
 	ILINE void TrackResourceUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES stateUsage, int cmdBlocker = CMDTYPE_WRITE, int cmdUsage = CMDTYPE_READ)
 	{
+		MaxResourceFenceValue(pResource, cmdBlocker);
+		
 		if (view.MapsFullResource())
-		{
-			TrackResourceUsage(pResource, stateUsage, cmdBlocker, cmdUsage);
-		}
+			EndResourceStateTransition(pResource, stateUsage);
 		else
-		{
-			MaxResourceFenceValue(pResource, cmdBlocker);
 			EndResourceStateTransition(pResource, view, stateUsage);
-			SetResourceFenceValue(pResource, cmdUsage);
-		}
+		
+		SetResourceFenceValue(pResource, cmdUsage);
 	}
 
-	template<class T> ILINE void TrackResourceIBVUsage(T& pResource)                    { TrackResourceUsage(pResource, D3D12_RESOURCE_STATE_INDEX_BUFFER, CMDTYPE_WRITE, CMDTYPE_READ); }
-	template<class T> ILINE void TrackResourceVBVUsage(T& pResource)                    { TrackResourceUsage(pResource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, CMDTYPE_WRITE, CMDTYPE_READ); }
-	template<class T> ILINE void TrackResourceCBVUsage(T& pResource)                    { TrackResourceUsage(pResource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, CMDTYPE_WRITE, CMDTYPE_READ); }
-	//	template<class T> ILINE void TrackResourceSRVUsage(T& pResource, const CView& view) { TrackResourceUsage(pResource, view, D3D12_RESOURCE_STATE_GENERIC_READ,               CMDTYPE_WRITE, CMDTYPE_READ); }
-	template<class T> ILINE void TrackResourceCRVUsage(T& pResource)                    { TrackResourceUsage(pResource, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, CMDTYPE_WRITE, CMDTYPE_READ); }
-	template<class T> ILINE void TrackResourcePRVUsage(T& pResource, const CView& view) { TrackResourceUsage(pResource, view, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CMDTYPE_WRITE, CMDTYPE_READ); }
-	template<class T> ILINE void TrackResourceUAVUsage(T& pResource, const CView& view) { TrackResourceUsage(pResource, view, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, CMDTYPE_ANY, CMDTYPE_ANY);  }
-	template<class T> ILINE void TrackResourceDSVUsage(T& pResource, const CView& view) { TrackResourceUsage(pResource, view, D3D12_RESOURCE_STATE_DEPTH_WRITE, CMDTYPE_ANY, CMDTYPE_WRITE); }
-	template<class T> ILINE void TrackResourceDRVUsage(T& pResource, const CView& view) { TrackResourceUsage(pResource, view, D3D12_RESOURCE_STATE_DEPTH_READ, CMDTYPE_WRITE, CMDTYPE_READ); }
-	template<class T> ILINE void TrackResourceRTVUsage(T& pResource, const CView& view) { TrackResourceUsage(pResource, view, D3D12_RESOURCE_STATE_RENDER_TARGET, CMDTYPE_ANY, CMDTYPE_WRITE); }
+	template<class T> ILINE void   TrackResourceIBVUsage(T& pResource,                    D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_INDEX_BUFFER              ) { TrackResourceUsage(pResource,       desiredState, CMDTYPE_WRITE, CMDTYPE_READ ); }
+	template<class T> ILINE void   TrackResourceVBVUsage(T& pResource,                    D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER) { TrackResourceUsage(pResource,       desiredState, CMDTYPE_WRITE, CMDTYPE_READ ); }
+	template<class T> ILINE void   TrackResourceCBVUsage(T& pResource,                    D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER) { TrackResourceUsage(pResource,       desiredState, CMDTYPE_WRITE, CMDTYPE_READ ); }
+    template<class T> ILINE void   TrackResourceSRVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_GENERIC_READ              ) { TrackResourceUsage(pResource, view, desiredState, CMDTYPE_WRITE, CMDTYPE_READ ); }
+	template<class T> ILINE void   TrackResourceCRVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE ) { TrackResourceUsage(pResource, view, desiredState, CMDTYPE_WRITE, CMDTYPE_READ ); }
+	template<class T> ILINE void   TrackResourcePRVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE     ) { TrackResourceUsage(pResource, view, desiredState, CMDTYPE_WRITE, CMDTYPE_READ ); }
+	template<class T> ILINE void   TrackResourceUAVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS          ) { TrackResourceUsage(pResource, view, desiredState, pResource.IsConcurrentWritable() ? CMDTYPE_WRITE : CMDTYPE_ANY, pResource.IsConcurrentWritable() ? CMDTYPE_READ : CMDTYPE_ANY); }
+	template<class T> ILINE void   TrackResourceUCVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS          ) { TrackResourceUsage(pResource, view, desiredState, CMDTYPE_ANY  , CMDTYPE_WRITE); }
+	template<class T> ILINE void   TrackResourceDSVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_DEPTH_WRITE               ) { TrackResourceUsage(pResource, view, desiredState, CMDTYPE_ANY  , CMDTYPE_WRITE); }
+	template<class T> ILINE void   TrackResourceDRVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_DEPTH_READ                ) { TrackResourceUsage(pResource, view, desiredState, CMDTYPE_WRITE, CMDTYPE_READ ); }
+	template<class T> ILINE void   TrackResourceRTVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_RENDER_TARGET             ) { TrackResourceUsage(pResource, view, desiredState, CMDTYPE_ANY  , CMDTYPE_WRITE); }
+	
+	template<class T> ILINE void PrepareResourceIBVUsage(T& pResource                   , D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_INDEX_BUFFER              ) { if (pResource.NeedsTransitionBarrier(this,       desiredState, true)) TrackResourceUsage(pResource,       desiredState, CMDTYPE_ANY, CMDTYPE_WRITE); }
+	template<class T> ILINE void PrepareResourceVBVUsage(T& pResource                   , D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER) { if (pResource.NeedsTransitionBarrier(this,       desiredState, true)) TrackResourceUsage(pResource,       desiredState, CMDTYPE_ANY, CMDTYPE_WRITE); }
+	template<class T> ILINE void PrepareResourceCBVUsage(T& pResource                   , D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER) { if (pResource.NeedsTransitionBarrier(this,       desiredState, true)) TrackResourceUsage(pResource,       desiredState, CMDTYPE_ANY, CMDTYPE_WRITE); }
+    template<class T> ILINE void PrepareResourceSRVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_GENERIC_READ              ) { if (pResource.NeedsTransitionBarrier(this, view, desiredState, true)) TrackResourceUsage(pResource, view, desiredState, CMDTYPE_ANY, CMDTYPE_WRITE); }
+	template<class T> ILINE void PrepareResourceCRVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE ) { if (pResource.NeedsTransitionBarrier(this, view, desiredState, true)) TrackResourceUsage(pResource, view, desiredState, CMDTYPE_ANY, CMDTYPE_WRITE); }
+	template<class T> ILINE void PrepareResourcePRVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE     ) { if (pResource.NeedsTransitionBarrier(this, view, desiredState, true)) TrackResourceUsage(pResource, view, desiredState, CMDTYPE_ANY, CMDTYPE_WRITE); }
+	template<class T> ILINE void PrepareResourceUAVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS          ) { if (pResource.NeedsTransitionBarrier(this, view, desiredState, true)) TrackResourceUsage(pResource, view, desiredState, CMDTYPE_ANY, CMDTYPE_WRITE); }
+	template<class T> ILINE void PrepareResourceUCVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS          ) { if (pResource.NeedsTransitionBarrier(this, view, desiredState, true)) TrackResourceUsage(pResource, view, desiredState, CMDTYPE_ANY, CMDTYPE_WRITE); }
+	template<class T> ILINE void PrepareResourceDSVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_DEPTH_WRITE               ) { if (pResource.NeedsTransitionBarrier(this, view, desiredState, true)) TrackResourceUsage(pResource, view, desiredState, CMDTYPE_ANY, CMDTYPE_WRITE); }
+	template<class T> ILINE void PrepareResourceDRVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_DEPTH_READ                ) { if (pResource.NeedsTransitionBarrier(this, view, desiredState, true)) TrackResourceUsage(pResource, view, desiredState, CMDTYPE_ANY, CMDTYPE_WRITE); }
+	template<class T> ILINE void PrepareResourceRTVUsage(T& pResource, const CView& view, D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_RENDER_TARGET             ) { if (pResource.NeedsTransitionBarrier(this, view, desiredState, true)) TrackResourceUsage(pResource, view, desiredState, CMDTYPE_ANY, CMDTYPE_WRITE); }
 
 	//---------------------------------------------------------------------------------------------------------------------
 	bool       IsFull(size_t numResources, size_t numSamplers, size_t numRendertargets, size_t numDepthStencils) const;
@@ -691,7 +710,7 @@ public:
 	void         ClearView(const CView& view, const FLOAT rgba[4], UINT NumRects = 0U, const D3D12_RECT* pRect = nullptr);
 
 	void         CopyResource(CResource& pDstResource, CResource& pSrcResource);
-	void         CopySubresource(CResource& pDestResource, UINT destSubResource, UINT x, UINT y, UINT z, CResource& pSrcResource, UINT srcSubResource, const D3D12_BOX* srcBox);
+	void         CopySubresources(CResource& pDestResource, UINT destSubResource, UINT x, UINT y, UINT z, CResource& pSrcResource, UINT srcSubResource, const D3D12_BOX* srcBox, UINT NumSubresources);
 	void         UpdateSubresourceRegion(CResource& pResource, UINT subResource, const D3D12_BOX* box, const void* data, UINT rowPitch, UINT depthPitch);
 	void         UpdateSubresources(CResource& rResource, D3D12_RESOURCE_STATES eAnnouncedState, UINT64 uploadBufferSize, UINT subResources, D3D12_SUBRESOURCE_DATA* subResourceData);
 	void         DiscardResource(CResource& pResource, const D3D12_DISCARD_REGION* pRegion);

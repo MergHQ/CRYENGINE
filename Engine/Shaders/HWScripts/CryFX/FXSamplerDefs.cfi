@@ -48,8 +48,11 @@ SamplerState ssMaterialAnisoHighBorder : register(s6) = SS_MaterialAnisoHighBord
 SamplerState ssMaterialTrilinearBorder : register(s7) = SS_MaterialTrilinearBorder; 
 
 // Generic sampler states
-SamplerState ssPointWrap                : register(s8) = SS_PointWrap;
-SamplerState ssPointClamp               : register(s9) = SS_PointClamp;
+SamplerState ssPointWrap               : register(s8) = SS_PointWrap;
+SamplerState ssPointClamp              : register(s9) = SS_PointClamp;
+
+SamplerState TrilinearWrapSamplerState                = SS_TrilinearWrap;
+SamplerState TrilinearClampSamplerState               = SS_TrilinearClamp;
 
 // TODO: Texture/Sampler split and bind via semantic and fixed slot
 #define SCENEDEPTHMAP  \
@@ -85,7 +88,3 @@ samplerCUBE defaultProbeSamplerCUBE = sampler_state \
   AddressV = Clamp; \
   AddressW = Clamp;	\
 };
-
-SamplerState TrilinearClampSamplerState : SS_TrilinearClamp;
-SamplerState TrilinearWrapSamplerState : SS_TrilinearWrap;
-

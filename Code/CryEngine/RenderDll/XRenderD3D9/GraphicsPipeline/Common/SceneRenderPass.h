@@ -28,9 +28,9 @@ public:
 	void DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart = -1, int listEnd = -1, int profilingListID = -1);
 
 	// Called from rendering backend (has to be threadsafe)
-	void               PrepareRenderPassForUse(CDeviceGraphicsCommandListRef RESTRICT_REFERENCE commandList);
-	void               BeginRenderPass(CDeviceGraphicsCommandListRef RESTRICT_REFERENCE commandList);
-	void               EndRenderPass(CDeviceGraphicsCommandListRef RESTRICT_REFERENCE commandList);
+	void               PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	void               BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	void               EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 
 	uint32             GetStageID()        const { return m_stageID; }
 	uint32             GetPassID()         const { return m_passID; }
@@ -56,6 +56,8 @@ protected:
 	uint32                   m_passID  : 16;
 	uint32                   m_batchFilter;
 	EPassFlags               m_passFlags;
+
+	SProfilingStats          m_profilingStats;
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CSceneRenderPass::EPassFlags)

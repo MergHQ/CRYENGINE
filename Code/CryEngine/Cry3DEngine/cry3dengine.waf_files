@@ -18,11 +18,13 @@
 		],
 		"Water":
 		[
-			"terrain_water_quad.cpp",
-			"WaterWaveRenderNode.cpp",
-			"WaterVolumeRenderNode.cpp",
 			"terrain_water.h",
+			"terrain_water_quad.cpp",
+			"WaterRippleManager.cpp",
+			"WaterRippleManager.h",
+			"WaterVolumeRenderNode.cpp",
 			"WaterVolumeRenderNode.h",
+			"WaterWaveRenderNode.cpp",
 			"WaterWaveRenderNode.h"
 		]
 	},
@@ -292,9 +294,11 @@
 		],
 		"Effects/Clounds":
 		[
+			"CloudBlockerRenderNode.cpp",
 			"CloudRenderNode.cpp",
 			"CloudsManager.cpp",
 			"DistanceCloudRenderNode.cpp",
+			"CloudBlockerRenderNode.h",
 			"CloudRenderNode.h",
 			"CloudsManager.h",
 			"DistanceCloudRenderNode.h"
@@ -362,6 +366,94 @@
 			"GeomCacheDecoder.h",
 			"GeomCacheMeshManager.h",
 			"GeomCacheMeshManager.cpp"
+		]
+	},
+	"ParticleSystem_uber.cpp": 
+	{
+		"ParticleSystem":
+		[
+			"ParticleSystem/ParticleCommon.h",
+			"ParticleSystem/ParticleAttributes.h",
+			"ParticleSystem/ParticleAttributes.cpp",
+			"ParticleSystem/ParticleDataTypes.h",
+			"ParticleSystem/ParticleDataTypesImpl.h",
+			"ParticleSystem/ParticleDebug.h",
+			"ParticleSystem/ParticleDebug.cpp",
+			"ParticleSystem/ParticleComponent.h",
+			"ParticleSystem/ParticleComponentImpl.h",
+			"ParticleSystem/ParticleComponent.cpp",
+			"ParticleSystem/ParticleComponentRuntime.h",
+			"ParticleSystem/ParticleComponentRuntime.cpp",
+			"ParticleSystem/ParticleContainer.h",
+			"ParticleSystem/ParticleContainerImpl.h",
+			"ParticleSystem/ParticleContainer.cpp",
+			"ParticleSystem/ParticleConvert.cpp",
+			"ParticleSystem/ParticleEffect.h",
+			"ParticleSystem/ParticleEffect.cpp",
+			"ParticleSystem/ParticleEmitter.h",
+			"ParticleSystem/ParticleEmitter.cpp",
+			"ParticleSystem/ParticleFeature.h",
+			"ParticleSystem/ParticleFeature.cpp",
+			"ParticleSystem/ParticleJobManager.h",
+			"ParticleSystem/ParticleJobManager.cpp",
+			"ParticleSystem/ParticleMath.h",
+			"ParticleSystem/ParticleMathImpl.h",
+			"ParticleSystem/ParticleMathImplSSE.h",
+			"ParticleSystem/ParticleProfiler.h",
+			"ParticleSystem/ParticleProfiler.cpp",
+			"ParticleSystem/ParticleProfilerImpl.h",
+			"ParticleSystem/ParticleRender.h",
+			"ParticleSystem/ParticleRender.cpp",
+			"ParticleSystem/ParticleRenderImpl.h",
+			"ParticleSystem/ParticleSpline.h",
+			"ParticleSystem/ParticleSpline.cpp",
+			"ParticleSystem/ParticleSplineImpl.h",
+			"ParticleSystem/ParticleSystem.h",
+			"ParticleSystem/ParticleSystem.cpp",
+			"ParticleSystem/ParticleSystemUnit.cpp",
+			"ParticleSystem/ParticleUpdate.h",
+			"ParticleSystem/ParticleUpdate.cpp"
+		]
+	},
+	"ParticleFeatures_uber.cpp": 
+	{
+		"ParticleSystem/Features":
+		[
+			"ParticleSystem/Features/FeatureAudio.cpp",
+			"ParticleSystem/Features/FeatureAngles.cpp",
+			"ParticleSystem/Features/FeatureAppearance.cpp",
+			"ParticleSystem/Features/FeatureColor.h",
+			"ParticleSystem/Features/FeatureColor.cpp",
+			"ParticleSystem/Features/FeatureCollision.cpp",
+			"ParticleSystem/Features/FeatureCollision.h",
+			"ParticleSystem/Features/FeatureCommon.h",
+			"ParticleSystem/Features/FeatureCommonImpl.h",
+			"ParticleSystem/Features/FeatureField.cpp",
+			"ParticleSystem/Features/FeatureFluidDynamics.cpp",
+			"ParticleSystem/Features/FeatureLife.cpp",
+			"ParticleSystem/Features/FeatureLightSource.cpp",
+			"ParticleSystem/Features/FeatureLocation.cpp",
+			"ParticleSystem/Features/Featurekill.cpp",
+			"ParticleSystem/Features/FeatureMotion.cpp",
+			"ParticleSystem/Features/FeatureRenderGpuSprites.h",
+			"ParticleSystem/Features/FeatureRenderGpuSprites.cpp",
+			"ParticleSystem/Features/FeatureRenderMeshes.cpp",
+			"ParticleSystem/Features/FeatureRenderRibbon.cpp",
+			"ParticleSystem/Features/FeatureRenderSprites.cpp",
+			"ParticleSystem/Features/FeatureSecondGen.cpp",
+			"ParticleSystem/Features/FeatureSpawn.cpp",
+			"ParticleSystem/Features/FeatureVelocity.cpp",
+			"ParticleSystem/Features/Modifiers.cpp",
+			"ParticleSystem/Features/ParamMod.h",
+			"ParticleSystem/Features/ParamModImpl.h",
+			"ParticleSystem/Features/ParamTraits.h",
+			"ParticleSystem/Features/ParamTraitsImpl.h",
+			"ParticleSystem/Features/Target.h",
+			"ParticleSystem/Features/Target.cpp",
+			"ParticleSystem/Features/TargetImpl.h",
+			"ParticleSystem/Features/TimeSource.h",
+			"ParticleSystem/Features/TimeSource.cpp",
+			"ParticleSystem/Features/TimeSourceImpl.h"
 		]
 	}
 }

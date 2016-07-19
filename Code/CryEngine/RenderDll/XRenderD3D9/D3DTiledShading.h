@@ -10,6 +10,27 @@
 #ifndef _D3DTILEDSHADING_H_
 #define _D3DTILEDSHADING_H_
 
+#include "GraphicsPipeline/Common/ComputeRenderPass.h"
+
+const uint32 MaxNumTileLights = 255;
+const uint32 LightTileSizeX = 8;
+const uint32 LightTileSizeY = 8;
+
+// Sun area light parameters (same as in standard deferred shading)
+const float TiledShading_SunDistance = 10000.0f;
+const float TiledShading_SunSourceDiameter = 94.0f;  // atan(AngDiameterSun) * 2 * SunDistance, where AngDiameterSun=0.54deg
+
+struct STiledLightCullInfo
+{
+	uint32 volumeType;
+	uint32 PADDING0;
+	Vec2   depthBounds;
+	Vec4   posRad;
+	Vec4   volumeParams0;
+	Vec4   volumeParams1;
+	Vec4   volumeParams2;
+};  // 80 bytes
+
 struct STiledLightShadeInfo
 {
 	uint32   lightType;
@@ -21,14 +42,15 @@ struct STiledLightShadeInfo
 	Vec2     attenuationParams;
 	Vec2     shadowParams;
 	Vec4     color;
-	Vec4     shadowChannelIndex;
 	Matrix44 projectorMatrix;
 	Matrix44 shadowMatrix;
-};  // 256 bytes
+};  // 192 bytes
 
 class CTiledShading
 {
 protected:
+	friend class CTiledShadingStage;
+
 	struct AtlasItem
 	{
 		ITexture* texture;
@@ -48,6 +70,14 @@ protected:
 	};
 
 public:
+	enum ETiledVolumeTypes
+	{
+		tlVolumeSphere = 1,
+		tlVolumeCone   = 2,
+		tlVolumeOBB    = 3,
+		tlVolumeSun    = 4,
+	};
+	
 	CTiledShading();
 
 	void                  CreateResources();
@@ -59,7 +89,12 @@ public:
 	void                  BindForwardShadingResources(CShader* pShader, CDeviceManager::SHADER_TYPE shType = CDeviceManager::TYPE_PS);
 	void                  UnbindForwardShadingResources(CDeviceManager::SHADER_TYPE shType = CDeviceManager::TYPE_PS);
 
+	template<class RenderPassType>
+	void                  BindForwardShadingResources(RenderPassType& pass);
+
+	STiledLightCullInfo*  GetTiledLightCullInfo();
 	STiledLightShadeInfo* GetTiledLightShadeInfo();
+	uint32                GetValidLightCount()                                                 { return m_numValidLights; }
 
 	int                   InsertTextureToSpecularProbeAtlas(CTexture* texture, int arrayIndex) { return InsertTexture(texture, m_specularProbeAtlas, arrayIndex); }
 	int                   InsertTextureToDiffuseProbeAtlas(CTexture* texture, int arrayIndex)  { return InsertTexture(texture, m_diffuseProbeAtlas, arrayIndex); }
@@ -78,7 +113,8 @@ protected:
 
 	CGpuBuffer     m_lightCullInfoBuf;
 	CGpuBuffer     m_LightShadeInfoBuf;
-	CGpuBuffer     m_tileLightIndexBuf;
+	CGpuBuffer     m_tileOpaqueLightMaskBuf;
+	CGpuBuffer     m_tileTranspLightMaskBuf;
 
 	CGpuBuffer     m_clipVolumeInfoBuf;
 
@@ -86,8 +122,10 @@ protected:
 	TextureAtlas   m_diffuseProbeAtlas;
 	TextureAtlas   m_spotTexAtlas;
 
-	uint32         m_nTexStateCompare;
+	uint32         m_samplerTrilinearClamp;
+	uint32         m_samplerCompare;
 
+	uint32         m_numValidLights;
 	uint32         m_numSkippedLights;
 	uint32         m_numAtlasUpdates;
 

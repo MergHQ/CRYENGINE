@@ -43,8 +43,7 @@ public:
 	bool                      IsMultiAdapter() const;
 
 	ID3D12CommandQueue*       GetNativeObject(ID3D12CommandQueue* pQueue, UINT node) const;
-	ID3D12Resource*           CreateBroadcastObject(ID3D12Resource* pResource) const;
-	ID3D12Resource*           CreateBroadcastObject(ID3D12Resource* pResource0, ID3D12Resource* pResourceR) const;
+	ID3D12Resource*           CreateBroadcastObject(ID3D12Resource** pResources) const;
 
 	bool                      WaitForCompletion(ID3D12Fence* pFence, UINT64 fenceValue) const;
 
@@ -54,6 +53,11 @@ public:
 	  _In_ ID3D12Resource* pInputResource,
 	  _Out_ ID3D12Resource** ppOutputResource);
 	#endif
+
+	HRESULT STDMETHODCALLTYPE DuplicateCommittedResource(
+		_In_ ID3D12Resource* pInputResource,
+		_In_ D3D12_RESOURCE_STATES OutputState,
+		_Out_ ID3D12Resource** ppOutputResource);
 
 protected:
 	CDevice(ID3D12Device* d3d12Device, D3D_FEATURE_LEVEL featureLevel, UINT nodeCount, UINT nodeMask);
@@ -99,6 +103,8 @@ public:
 	const CDescriptorHeap&    GetDepthStencilCacheHeap() threadsafe_const    { return m_DepthStencilDescriptorCache; }
 	const CDescriptorHeap&    GetRenderTargetCacheHeap() threadsafe_const    { return m_RenderTargetDescriptorCache; }
 
+	CDescriptorBlock          GetResourceDescriptorScratchSpace()            { return CDescriptorBlock(&m_ResourceDescriptorScratchSpace, 0, m_ResourceDescriptorScratchSpace.GetCapacity()); }
+
 	HRESULT STDMETHODCALLTYPE CreateOrReuseStagingResource(
 	  _In_ ID3D12Resource* pInputResource,
 	  _Out_ ID3D12Resource** ppStagingResource,
@@ -122,6 +128,7 @@ private:
 	CDescriptorHeap m_UnorderedAccessDescriptorCache;
 	CDescriptorHeap m_DepthStencilDescriptorCache;
 	CDescriptorHeap m_RenderTargetDescriptorCache;
+	CDescriptorHeap m_ResourceDescriptorScratchSpace;
 
 	#if defined(_ALLOW_INITIALIZER_LISTS)
 	CDescriptorHeap              m_GlobalDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];

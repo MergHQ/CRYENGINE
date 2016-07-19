@@ -54,7 +54,6 @@ public:
     {                                           \
       if (m_Targets[i])                         \
       {                                         \
-        HRESULT ret;                            \
         if ((ret = m_Targets[i]->func) != S_OK) \
           return ret;                           \
       }                                         \

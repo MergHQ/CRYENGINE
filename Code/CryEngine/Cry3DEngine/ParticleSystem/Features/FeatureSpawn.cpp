@@ -14,8 +14,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureSpawn = false;
-
 namespace pfx2
 {
 

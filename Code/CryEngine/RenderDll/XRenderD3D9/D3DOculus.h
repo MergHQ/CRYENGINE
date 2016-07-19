@@ -53,7 +53,6 @@ private:
 	bool InitializeTextureSwapSet(ID3D11Device* d3dDevice, uint32 eye, CryVR::Oculus::TextureDesc desc, const char* nameFormat);
 	bool InitializeQuadTextureSwapSet(ID3D11Device* d3dDevice, RenderLayer::EQuadLayers id, CryVR::Oculus::TextureDesc desc, const char* nameFormat);
 	bool InitializeMirrorTexture(ID3D11Device* d3dDevice, CryVR::Oculus::TextureDesc desc, const char* name);
-	void UpdateTargetBuffer();
 
 private:
 
@@ -104,9 +103,6 @@ private:
 	CryVR::Oculus::IOculusDevice* m_pOculusDevice;
 	CD3D9Renderer*                m_pRenderer;
 	CD3DStereoRenderer*           m_pStereoRenderer;
-
-	CTexture*                     m_pBackbufferTexture;
-	ID3D11Resource*               m_pBackbufferResource;
 };
 
 #endif //defined(INCLUDE_OCULUS_SDK)

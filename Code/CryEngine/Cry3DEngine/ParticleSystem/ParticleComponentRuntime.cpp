@@ -15,6 +15,9 @@
 namespace pfx2
 {
 
+extern EParticleDataType EPVF_Acceleration, EPVF_VelocityField;
+
+
 CParticleComponentRuntime::CParticleComponentRuntime(CParticleEffect* pEffect, CParticleEmitter* pEmitter, CParticleComponent* pComponent)
 	: m_pEffect(pEffect)
 	, m_pEmitter(pEmitter)
@@ -49,12 +52,9 @@ void CParticleComponentRuntime::Initialize()
 	CParticleComponent* pcomponent = GetComponent();
 
 	m_container.ResetUsedData();
-	for (size_t i = 0; i < EPDT_Count; ++i)
-	{
-		EParticleDataType type = EParticleDataType(i);
+	for (EParticleDataType type(0); type < EParticleDataType::size(); type = type + type.info().dimension)
 		if (pcomponent->UseParticleData(type))
 			m_container.AddParticleData(type);
-	}
 	m_container.Trim();
 }
 
@@ -99,12 +99,8 @@ void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_UpdateTime);
 
-	m_container.FillData<EPDT_AccelerationX>(context, 0.0f);
-	m_container.FillData<EPDT_AccelerationY>(context, 0.0f);
-	m_container.FillData<EPDT_AccelerationZ>(context, 0.0f);
-	m_container.FillData<EPDT_VelocityFieldX>(context, 0.0f);
-	m_container.FillData<EPDT_VelocityFieldY>(context, 0.0f);
-	m_container.FillData<EPDT_VelocityFieldZ>(context, 0.0f);
+	m_container.FillData(EPVF_Acceleration, 0.0f, context.m_updateRange);
+	m_container.FillData(EPVF_VelocityField, 0.0f, context.m_updateRange);
 
 	UpdateFeatures(context);
 	PostUpdateFeatures(context);
@@ -166,7 +162,7 @@ void CParticleComponentRuntime::RemoveAllSubInstances()
 	m_subInstances.clear();
 	AlignInstances();
 	DebugStabilityCheck();
-	m_container.FillData<EPDT_ParentId>(SUpdateContext(this), gInvalidId);
+	m_container.FillData(EPDT_ParentId, gInvalidId, m_container.GetFullRange());
 }
 
 void CParticleComponentRuntime::ReparentParticles(const uint* swapIds, const uint numSwapIds)
@@ -329,7 +325,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 	CRY_PFX2_FOR_END;
 
 	// update orientation if any
-	if (m_container.HasData(EPDT_OrientationX))
+	if (m_container.HasData(EPQF_Orientation))
 	{
 		const Quat defaultQuat = GetEmitter()->GetLocation().q;
 		IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
@@ -344,25 +340,22 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 	}
 
 	// neutral velocity
-	m_container.FillSpawnedData<EPDT_VelocityX>(context, 0.0f);
-	m_container.FillSpawnedData<EPDT_VelocityY>(context, 0.0f);
-	m_container.FillSpawnedData<EPDT_VelocityZ>(context, 0.0f);
+	m_container.FillData(EPVF_Velocity, 0.0f, m_container.GetSpawnedRange());
 
 	// initialize unormrand
-	if (m_container.HasData(EPDT_UNormRand))
+	if (m_container.HasData(EPDT_Random))
 	{
-		IOFStream unormRands = m_container.GetIOFStream(EPDT_UNormRand);
-		SChaosKey chaos;
+		IOFStream unormRands = m_container.GetIOFStream(EPDT_Random);
 		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
 		{
-			const float unormRand = chaos.RandUNorm();
+			const float unormRand = context.m_spawnRng.RandUNorm();
 			unormRands.Store(particleId, unormRand);
 		}
 		CRY_PFX2_FOR_END;
 	}
 
 	// feature init particles
-	m_container.FillSpawnedData<EPDT_State>(context, uint8(ES_NewBorn));
+	m_container.FillData(EPDT_State, uint8(ES_NewBorn), m_container.GetSpawnedRange());
 	for (auto& it : GetComponent()->GetUpdateList(EUL_InitUpdate))
 		it->InitParticles(context);
 
@@ -395,10 +388,11 @@ void CParticleComponentRuntime::UpdateFeatures(const SUpdateContext& context)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-#define PFX2_FLOAT_FIELD_COPY(NAME) \
-  m_container.CopyData<EPDT_ ## NAME, EPDT_ ## NAME ## Init>(context);
-	PFX2_FLOAT_FIELDS(PFX2_FLOAT_FIELD_COPY)
-	m_container.CopyData<EPDT_Color, EPDT_ColorInit>(context);
+	for (EParticleDataType type(0); type < EParticleDataType::size(); type = type + type.info().step())
+	{
+		if (type.info().hasInit)
+			m_container.CopyData(type, InitType(type), context.m_updateRange);
+	}
 
 	for (auto& it : GetComponent()->GetUpdateList(EUL_Update))
 		it->Update(context);

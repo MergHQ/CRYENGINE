@@ -72,6 +72,7 @@ public:
 	virtual void                 SetEntity(IEntity* pEntity, int nSlot) override;
 	virtual void                 SetTarget(const ParticleTarget& target) override;
 	virtual bool                 UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod) override;
+	virtual void                 SetSpawnParams(const SpawnParams& spawnParams) override;
 	// ~pfx2 IParticleEmitter
 
 	// pfx1 IParticleEmitter
@@ -81,7 +82,6 @@ public:
 	virtual void               Restart() override                                      {}
 	virtual void               SetEffect(const IParticleEffect* pEffect) override      {}
 	virtual void               SetEmitGeom(const GeomRef& geom) override               { m_emitterGeometry = geom; }
-	virtual void               SetSpawnParams(const SpawnParams& spawnParams) override {}
 	virtual const SpawnParams& GetSpawnParams() const override                         { static SpawnParams sp; return sp; }
 	virtual void               Update() override;
 	virtual unsigned int       GetAttachedEntityId() override                          { return 0; }
@@ -89,25 +89,30 @@ public:
 	// ~pfx1 CPArticleEmitter
 
 	void                      PostUpdate();
-	CParticleContainer&       GetParentContainer()       { return m_parentContainer; }
+	CParticleContainer&       GetParentContainer() { return m_parentContainer; }
 	const CParticleContainer& GetParentContainer() const { return m_parentContainer; }
 	virtual void              GetParentData(const int parentComponentId, const uint* parentParticleIds, const int numParentParticleIds, SInitialData* data) const override;
-	const TComponentRuntimes& GetRuntimes() const        { return m_componentRuntimes; }
+	const TComponentRuntimes& GetRuntimes() const                   { return m_componentRuntimes; }
 	void                      SetCEffect(CParticleEffect* pEffect);
-	const CParticleEffect*    GetCEffect() const         { return m_pEffect; }
-	CParticleEffect*          GetCEffect()               { return m_pEffect; }
+	const CParticleEffect*    GetCEffect() const                    { return m_pEffect; }
+	CParticleEffect*          GetCEffect()                          { return m_pEffect; }
 	void                      Register();
 	void                      Unregister();
 	bool                      IsIndependent() const { return GetRefCount() == 1; }
 	bool                      HasParticles() const;
 	void                      UpdateEmitGeomFromEntity();
-	const SVisEnviron&        GetVisEnv() const            { return m_visEnviron; }
-	const SPhysEnviron&       GetPhysicsEnv() const        { return m_physEnviron; }
-	const GeomRef&            GetEmitterGeometry() const   { return m_emitterGeometry; }
+	const SVisEnviron&        GetVisEnv() const                     { return m_visEnviron; }
+	const SPhysEnviron&       GetPhysicsEnv() const                 { return m_physEnviron; }
+	const GeomRef&            GetEmitterGeometry() const            { return m_emitterGeometry; }
 	QuatTS                    GetEmitterGeometryLocation() const;
-	const CAttributeInstance& GetAttributeInstance() const { return m_attributeInstance; }
-	const ParticleTarget&     GetTarget() const            { return m_target; }
-	float                     GetViewDistRatio() const     { return m_viewDistRatio; }
+	const CAttributeInstance& GetAttributeInstance() const          { return m_attributeInstance; }
+	const ParticleTarget&     GetTarget() const                     { return m_target; }
+	float                     GetViewDistRatio() const              { return m_viewDistRatio; }
+	CRenderObject*            GetRenderObject(uint threadId, uint renderObjectIdx);
+	void                      SetRenderObject(CRenderObject* pRenderObject, uint threadId, uint renderObjectIdx);
+	float                     GetTime() const { return m_time; }
+	uint32                    GetInitialSeed() const { return m_initialSeed; }
+	uint32                    GetCurrentSeed() const { return m_currentSeed; }
 
 	void                      AccumCounts(SParticleCounts& counts);
 	void                      AddDrawCallCounts(int numRendererdParticles, int numClippedParticles);
@@ -119,7 +124,9 @@ private:
 	void     UpdateFromEntity();
 	void     UpdateTargetFromEntity(IEntity* pEntity);
 	IEntity* GetEmitGeometryEntity() const;
+	void     ResetRenderObjects();
 
+	std::vector<CRenderObject*> m_pRenderObjects[RT_COMMAND_BUF_COUNT];
 	SVisEnviron        m_visEnviron;
 	SPhysEnviron       m_physEnviron;
 	CAttributeInstance m_attributeInstance;
@@ -136,7 +143,10 @@ private:
 	GeomRef            m_emitterGeometry;
 	int                m_emitterGeometrySlot;
 	float              m_viewDistRatio;
+	float              m_time;
 	int                m_editVersion;
+	uint               m_initialSeed;
+	uint               m_currentSeed;
 	bool               m_registered;
 	bool               m_active;
 };

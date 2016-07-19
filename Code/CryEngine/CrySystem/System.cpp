@@ -1595,6 +1595,10 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	}
 #endif
 
+	IGameFramework* pGameFrm = m_env.pGame ? m_env.pGame->GetIGameFramework() : 0;
+	ILevelSystem* pLvlSys = pGameFrm ? pGameFrm->GetILevelSystem() : 0;
+	const bool inLevel = pLvlSys && pLvlSys->GetCurrentLevel() != 0;
+
 	//limit frame rate if vsync is turned off
 	//for consoles this is done inside renderthread to be vsync dependent
 	{
@@ -1614,9 +1618,6 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 
 			if (maxFPS == 0 && vSync == 0)
 			{
-				IGameFramework* pGameFrm = m_env.pGame ? m_env.pGame->GetIGameFramework() : 0;
-				ILevelSystem* pLvlSys = pGameFrm ? pGameFrm->GetILevelSystem() : 0;
-				const bool inLevel = pLvlSys && pLvlSys->GetCurrentLevel() != 0;
 				maxFPS = !inLevel || IsPaused() ? 60 : 0;
 			}
 
@@ -1640,7 +1641,8 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	//update time subsystem
 	m_Time.UpdateOnFrameStart();
 
-	if (m_env.p3DEngine)
+	// Don't do a thing if we're not in a level
+	if (m_env.p3DEngine && inLevel)
 		m_env.p3DEngine->OnFrameStart();
 
 	//////////////////////////////////////////////////////////////////////

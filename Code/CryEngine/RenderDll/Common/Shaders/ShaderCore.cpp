@@ -46,7 +46,6 @@ CShader* CShaderMan::s_ShaderOcclTest;
 CShader* CShaderMan::s_ShaderDXTCompress = NULL;
 CShader* CShaderMan::s_ShaderStereo = NULL;
 CShader* CShaderMan::s_ShaderClouds = NULL;
-CShader* CShaderMan::s_shaderComputeSkinning = NULL;
 CCryNameTSCRC CShaderMan::s_cNameHEAD;
 
 TArray<CShaderResources*> CShader::s_ShaderResources_known(0, 2600);  // Based on BatteryPark
@@ -1378,6 +1377,7 @@ static bool sLoadShader(const char* szName, CShader*& pStorage)
 
 void CShaderMan::mfReleaseSystemShaders()
 {
+	CCryDeviceWrapper::GetObjectFactory().ReleaseResources();
 
 	SAFE_RELEASE_FORCE(s_DefaultShader);
 	SAFE_RELEASE_FORCE(s_shPostEffects);
@@ -1412,7 +1412,6 @@ void CShaderMan::mfReleaseSystemShaders()
 	SAFE_RELEASE_FORCE(s_ShaderDXTCompress);
 	SAFE_RELEASE_FORCE(s_ShaderStereo);
 	SAFE_RELEASE_FORCE(s_ShaderClouds);
-	SAFE_RELEASE_FORCE(s_shaderComputeSkinning);
 	m_bLoadedSystem = false;
 
 }
@@ -1456,7 +1455,6 @@ void CShaderMan::mfLoadDefaultSystemShaders()
 		sLoadShader("FixedPipelineEmu", s_ShaderFPEmu);
 		sLoadShader("Scaleform", s_ShaderScaleForm);
 		sLoadShader("Light", s_ShaderLightStyles);
-		sLoadShader("ComputeSkinning", s_shaderComputeSkinning);
 
 		sLoadShader("ShadowMaskGen", s_ShaderShadowMaskGen);
 		sLoadShader("HDRPostProcess", s_shHDRPostProcess);

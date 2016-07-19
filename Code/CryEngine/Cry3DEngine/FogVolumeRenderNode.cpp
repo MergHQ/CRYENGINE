@@ -91,7 +91,7 @@ CFogVolumeRenderNode::CFogVolumeRenderNode()
 	: m_matNodeWS()
 	, m_matWS()
 	, m_matWSInv()
-	, m_volumeType(0)
+	, m_volumeType(IFogVolumeRenderNode::eFogVolumeType_Ellipsoid)
 	, m_pos(0, 0, 0)
 	, m_x(1, 0, 0)
 	, m_y(0, 1, 0)
@@ -199,8 +199,9 @@ void CFogVolumeRenderNode::SetFogVolumeProperties(const SFogVolumeProperties& pr
 		UpdateWorldSpaceBBox();
 	}
 
-	m_volumeType = properties.m_volumeType;
-	assert(m_volumeType >= 0 && m_volumeType <= 1);
+	m_volumeType = clamp_tpl<int32>(properties.m_volumeType,
+	                                IFogVolumeRenderNode::eFogVolumeType_Ellipsoid,
+	                                IFogVolumeRenderNode::eFogVolumeType_Box);
 	m_color = properties.m_color;
 	assert(properties.m_globalDensity >= 0);
 	m_useGlobalFogColor = properties.m_useGlobalFogColor;
@@ -426,7 +427,7 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 	m_pFogVolumeRenderElement[fillThreadID]->m_viewerInsideVolume = IsViewerInsideVolume(passInfo) ? 1 : 0;
 	m_pFogVolumeRenderElement[fillThreadID]->m_affectsThisAreaOnly = m_affectsThisAreaOnly ? 1 : 0;
 	m_pFogVolumeRenderElement[fillThreadID]->m_stencilRef = rParam.nClipVolumeStencilRef;
-	m_pFogVolumeRenderElement[fillThreadID]->m_volumeType = (m_volumeType != 0) ? 1 : 0;
+	m_pFogVolumeRenderElement[fillThreadID]->m_volumeType = m_volumeType;
 	m_pFogVolumeRenderElement[fillThreadID]->m_localAABB = m_localBounds;
 	m_pFogVolumeRenderElement[fillThreadID]->m_matWSInv = m_matWSInv;
 	m_pFogVolumeRenderElement[fillThreadID]->m_fogColor = m_cachedFogColor;
@@ -448,8 +449,8 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 
 	if (bVolFog)
 	{
-		// add FogVolume to volumetric fog renderer
-		GetRenderer()->PushFogVolume(m_pFogVolumeRenderElement[fillThreadID], passInfo);
+		IRenderView* pRenderView = passInfo.GetIRenderView();
+		pRenderView->AddFogVolume(m_pFogVolumeRenderElement[fillThreadID]);
 	}
 	else
 	{
@@ -470,8 +471,12 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 		pRenderObject->m_fSort = WATER_LEVEL_SORTID_OFFSET * 0.5f;
 
 		// get shader item
-		SShaderItem& shaderItem(0 != rParam.pMaterial ? rParam.pMaterial->GetShaderItem(0) :
-		                        1 == m_volumeType ? m_pMatFogVolBox->GetShaderItem(0) : m_pMatFogVolEllipsoid->GetShaderItem(0));
+		IMaterial* pMaterial =
+		  (m_volumeType == IFogVolumeRenderNode::eFogVolumeType_Box)
+		  ? m_pMatFogVolBox
+		  : m_pMatFogVolEllipsoid;
+		pMaterial = (rParam.pMaterial != nullptr) ? rParam.pMaterial : pMaterial;
+		SShaderItem& shaderItem = pMaterial->GetShaderItem(0);
 
 		// add to renderer
 		GetRenderer()->EF_AddEf(m_pFogVolumeRenderElement[fillThreadID], shaderItem, pRenderObject, passInfo, EFSLIST_TRANSP, nAfterWater);

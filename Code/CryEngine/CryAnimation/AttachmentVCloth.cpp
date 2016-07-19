@@ -22,24 +22,24 @@ void CAttachmentVCLOTH::ReleaseSoftwareRenderMeshes()
 	m_pRenderMeshsSW[1] = NULL;
 }
 
-uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentObject, ISkin* pISkinRender, uint32 nLoadingFlags)
+uint32 CAttachmentVCLOTH::Immediate_AddBinding( IAttachmentObject* pIAttachmentObject,ISkin* pISkinRender,uint32 nLoadingFlags ) 
 {
-	if (pIAttachmentObject == 0)
-		return 0;                                                             //no attachment objects
+	if (pIAttachmentObject==0) 
+		return 0; //no attachment objects 
 
-	if (pISkinRender == 0)
+	if (pISkinRender==0)
 		CryFatalError("CryAnimation: if you create the binding for a Skin-Attachment, then you have to pass the pointer to an ISkin as well");
 
-	uint32 nLogWarnings = (nLoadingFlags & CA_DisableLogWarnings) == 0;
+	uint32 nLogWarnings = (nLoadingFlags&CA_DisableLogWarnings)==0;
 	CSkin* pCSkinRenderModel = (CSkin*)pISkinRender;
 
-	//only the SKIN-Instance is allowed to keep a smart-ptr CSkin object
+	//only the SKIN-Instance is allowed to keep a smart-ptr CSkin object 
 	//this should prevent ptr-hijacking in the future
-	if (m_pRenderSkin != pCSkinRenderModel)
+	if (m_pRenderSkin!=pCSkinRenderModel)
 	{
 		ReleaseRenderSkin();
-		g_pCharacterManager->RegisterInstanceVCloth(pCSkinRenderModel, this);  //register this CAttachmentVCLOTH instance in CSkin.
-		m_pRenderSkin = pCSkinRenderModel;                                     //increase the Ref-Counter
+		g_pCharacterManager->RegisterInstanceVCloth(pCSkinRenderModel,this); //register this CAttachmentVCLOTH instance in CSkin. 
+		m_pRenderSkin=pCSkinRenderModel;            //increase the Ref-Counter 		
 	}
 
 	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
@@ -51,37 +51,37 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 	uint32 numJointsSkel = pDefaultSkeleton->m_arrModelJoints.size();
 	uint32 numJointsSkin = m_pRenderSkin->m_arrModelJoints.size();
 
-	uint32 NotMatchingNames = 0;
+	uint32 NotMatchingNames=0;
 	m_arrRemapTable.resize(numJointsSkin, 0);
-	for (uint32 js = 0; js < numJointsSkin; js++)
+	for(uint32 js=0; js<numJointsSkin; js++) 
 	{
 		const int32 nID = pDefaultSkeleton->GetJointIDByCRC32(m_pRenderSkin->m_arrModelJoints[js].m_nJointCRC32Lower);
-		if (nID >= 0)
-			m_arrRemapTable[js] = nID;
+		if (nID>=0)
+			m_arrRemapTable[js]=nID;
 #ifdef EDITOR_PCDEBUGCODE
 		else
-			NotMatchingNames++, g_pILog->LogError("The joint-name (%s) of SKIN (%s) was not found in SKEL:  %s", m_pRenderSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(), pSkinFilePath, pSkelFilePath);
+			NotMatchingNames++,g_pILog->LogError ("The joint-name (%s) of SKIN (%s) was not found in SKEL:  %s",m_pRenderSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(),pSkinFilePath,pSkelFilePath);
 #endif
-	}                                                                       //for loop
+	} //for loop
 
 	if (NotMatchingNames)
 	{
 		if (pInstanceSkel->m_CharEditMode)
 		{
 			//for now limited to CharEdit
-			RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags);
+			RecreateDefaultSkeleton(pInstanceSkel,nLoadingFlags); 
 		}
 		else
 		{
 			if (nLogWarnings)
 			{
-				CryLogAlways("SKEL: %s", pDefaultSkeleton->GetModelFilePath());
-				CryLogAlways("SKIN: %s", m_pRenderSkin->GetModelFilePath());
+				CryLogAlways("SKEL: %s",pDefaultSkeleton->GetModelFilePath() );
+				CryLogAlways("SKIN: %s",m_pRenderSkin->GetModelFilePath() );
 				uint32 numJointCount = pDefaultSkeleton->GetJointCount();
-				for (uint32 i = 0; i < numJointCount; i++)
+				for (uint32 i=0; i<numJointCount; i++)
 				{
 					const char* pJointName = pDefaultSkeleton->GetJointNameByID(i);
-					CryLogAlways("%03d JointName: %s", i, pJointName);
+					CryLogAlways("%03d JointName: %s",i,pJointName );
 				}
 			}
 
@@ -91,19 +91,19 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 		}
 	}
 
-	// Patch the remapping
-	for (size_t i = 0; i < m_pRenderSkin->GetNumLODs(); i++)
+	// Patch the remapping 
+	for (size_t i=0; i<m_pRenderSkin->GetNumLODs(); i++)
 	{
 		CModelMesh* pModelMesh = m_pRenderSkin->GetModelMesh(i);
 		IRenderMesh* pRenderMesh = pModelMesh->m_pIRenderMesh;
 		if (!pRenderMesh)
-			continue;
+			continue; 
 		pRenderMesh->CreateRemappedBoneIndicesPair(m_arrRemapTable, pDefaultSkeleton->GetGuid(), this);
 	}
 
 	SAFE_RELEASE(m_pIAttachmentObject);
-	m_pIAttachmentObject = pIAttachmentObject;
-	return 1;
+	m_pIAttachmentObject=pIAttachmentObject;
+	return 1; 
 }
 
 void CAttachmentVCLOTH::ComputeClothCacheKey()
@@ -128,18 +128,18 @@ const SVClothParams& CAttachmentVCLOTH::GetClothParams()
 	return m_clothPiece.GetClothParams();
 }
 
-uint32 CAttachmentVCLOTH::AddSimBinding(const ISkin& pISkinRender, uint32 nLoadingFlags)
+uint32 CAttachmentVCLOTH::AddSimBinding( const ISkin& pISkinRender,uint32 nLoadingFlags ) 
 {
-	uint32 nLogWarnings = (nLoadingFlags & CA_DisableLogWarnings) == 0;
+	uint32 nLogWarnings = (nLoadingFlags&CA_DisableLogWarnings)==0;
 	CSkin* pCSkinRenderModel = (CSkin*)&pISkinRender;
 
-	//only the VCLOTH-Instance is allowed to keep a smart-ptr CSkin object
+	//only the VCLOTH-Instance is allowed to keep a smart-ptr CSkin object 
 	//this should prevent ptr-hijacking in the future
-	if (m_pSimSkin != pCSkinRenderModel)
+	if (m_pSimSkin!=pCSkinRenderModel)
 	{
 		ReleaseSimSkin();
-		g_pCharacterManager->RegisterInstanceVCloth(pCSkinRenderModel, this);  //register this CAttachmentVCLOTH instance in CSkin.
-		m_pSimSkin = pCSkinRenderModel;                                        //increase the Ref-Counter
+		g_pCharacterManager->RegisterInstanceVCloth(pCSkinRenderModel,this); //register this CAttachmentVCLOTH instance in CSkin. 
+		m_pSimSkin=pCSkinRenderModel;            //increase the Ref-Counter 		
 	}
 
 	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
@@ -151,30 +151,30 @@ uint32 CAttachmentVCLOTH::AddSimBinding(const ISkin& pISkinRender, uint32 nLoadi
 	uint32 numJointsSkel = pDefaultSkeleton->m_arrModelJoints.size();
 	uint32 numJointsSkin = m_pSimSkin->m_arrModelJoints.size();
 
-	uint32 NotMatchingNames = 0;
+	uint32 NotMatchingNames=0;
 	m_arrSimRemapTable.resize(numJointsSkin, 0);
-	for (uint32 js = 0; js < numJointsSkin; js++)
+	for(uint32 js=0; js<numJointsSkin; js++) 
 	{
 		const int32 nID = pDefaultSkeleton->GetJointIDByCRC32(m_pSimSkin->m_arrModelJoints[js].m_nJointCRC32Lower);
-		if (nID >= 0)
-			m_arrSimRemapTable[js] = nID;
+		if (nID>=0)
+			m_arrSimRemapTable[js]=nID;
 #ifdef EDITOR_PCDEBUGCODE
 		else
-			NotMatchingNames++, g_pILog->LogError("The joint-name (%s) of SKIN (%s) was not found in SKEL:  %s", m_pSimSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(), pSkinFilePath, pSkelFilePath);
+			NotMatchingNames++,g_pILog->LogError ("The joint-name (%s) of SKIN (%s) was not found in SKEL:  %s",m_pSimSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(),pSkinFilePath,pSkelFilePath);
 #endif
-	}                                                                       //for loop
+	} //for loop
 
 	if (NotMatchingNames)
 	{
 		CryFatalError("CryAnimation: the simulation-attachment is supposed to have the same skeleton as the render-attachment");
-		return 0;                                                             //critical! incompatible skeletons. cant create skin-attachment
+		return 0; //critical! incompatible skeletons. cant create skin-attachment
 	}
 
-	return 1;
+	return 1; 
 }
 
-void CAttachmentVCLOTH::Immediate_ClearBinding(uint32 nLoadingFlags)
-{
+void CAttachmentVCLOTH::Immediate_ClearBinding(uint32 nLoadingFlags) 
+{ 
 	if (m_pIAttachmentObject)
 	{
 		m_pIAttachmentObject->Release();
@@ -183,26 +183,26 @@ void CAttachmentVCLOTH::Immediate_ClearBinding(uint32 nLoadingFlags)
 		ReleaseRenderSkin();
 		ReleaseSimSkin();
 
-		if (nLoadingFlags & CA_SkipSkelRecreation)
+		if (nLoadingFlags&CA_SkipSkelRecreation)
 			return;
 		//for now limited to CharEdit
-		//		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
-		//		if (pInstanceSkel->GetCharEditMode())
-		//			RecreateDefaultSkeleton(pInstanceSkel,CA_CharEditModel|nLoadingFlags);
+//		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
+//		if (pInstanceSkel->GetCharEditMode())
+//			RecreateDefaultSkeleton(pInstanceSkel,CA_CharEditModel|nLoadingFlags); 
 	}
-};
+}; 
 
-void CAttachmentVCLOTH::RecreateDefaultSkeleton(CCharInstance* pInstanceSkel, uint32 nLoadingFlags)
+void CAttachmentVCLOTH::RecreateDefaultSkeleton(CCharInstance* pInstanceSkel, uint32 nLoadingFlags) 
 {
 	CDefaultSkeleton* const pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
 
 	const char* pOriginalFilePath = pDefaultSkeleton->GetModelFilePath();
-	if (pDefaultSkeleton->GetModelFilePathCRC64() && pOriginalFilePath[0] == '_')
+	if (pDefaultSkeleton->GetModelFilePathCRC64() && pOriginalFilePath[0]=='_')
 	{
 		pOriginalFilePath++; // All extended skeletons have an '_' in front of the filepath to not confuse them with regular skeletons.
 	}
 
-	CDefaultSkeleton* pOrigDefaultSkeleton = g_pCharacterManager->CheckIfModelSKELLoaded(pOriginalFilePath, nLoadingFlags);
+	CDefaultSkeleton* pOrigDefaultSkeleton = g_pCharacterManager->CheckIfModelSKELLoaded(pOriginalFilePath,nLoadingFlags);
 	if (!pOrigDefaultSkeleton)
 	{
 		return;
@@ -221,7 +221,7 @@ void CAttachmentVCLOTH::RecreateDefaultSkeleton(CCharInstance* pInstanceSkel, ui
 
 		const CSkin* const pSkin = static_cast<CAttachmentVCLOTH*>(pAttachment.get())->m_pRenderSkin;
 		if (!pSkin)
-		{
+	{
 			continue;
 		}
 
@@ -239,9 +239,9 @@ void CAttachmentVCLOTH::RecreateDefaultSkeleton(CCharInstance* pInstanceSkel, ui
 	}
 }
 
-void CAttachmentVCLOTH::UpdateRemapTable()
+void CAttachmentVCLOTH::UpdateRemapTable() 
 {
-	if (m_pRenderSkin == 0)
+	if (m_pRenderSkin==0)
 		return;
 
 	ReleaseRenderRemapTablePair();
@@ -256,22 +256,22 @@ void CAttachmentVCLOTH::UpdateRemapTable()
 	uint32 numJointsSkin = m_pRenderSkin->m_arrModelJoints.size();
 
 	m_arrRemapTable.resize(numJointsSkin, 0);
-	for (uint32 js = 0; js < numJointsSkin; js++)
+	for(uint32 js=0; js<numJointsSkin; js++) 
 	{
 		const int32 nID = pDefaultSkeleton->GetJointIDByCRC32(m_pRenderSkin->m_arrModelJoints[js].m_nJointCRC32Lower);
-		if (nID >= 0)
-			m_arrRemapTable[js] = nID;
+		if (nID>=0)
+			m_arrRemapTable[js]=nID;
 		else
-			CryFatalError("ModelError: data-corruption when executing UpdateRemapTable for SKEL (%s) and SKIN (%s) ", pSkelFilePath, pSkinFilePath);   //a fail in this case is virtually impossible, because the SKINs are alread attached
+			CryFatalError("ModelError: data-corruption when executing UpdateRemapTable for SKEL (%s) and SKIN (%s) ",pSkelFilePath,pSkinFilePath); //a fail in this case is virtually impossible, because the SKINs are alread attached 
 	}
 
-	// Patch the remapping
-	for (size_t i = 0; i < m_pRenderSkin->GetNumLODs(); i++)
+	// Patch the remapping 
+	for (size_t i=0; i<m_pRenderSkin->GetNumLODs(); i++)
 	{
 		CModelMesh* pModelMesh = m_pRenderSkin->GetModelMesh(i);
 		IRenderMesh* pRenderMesh = pModelMesh->m_pIRenderMesh;
 		if (!pRenderMesh)
-			continue;
+			continue; 
 		pRenderMesh->CreateRemappedBoneIndicesPair(m_arrRemapTable, pDefaultSkeleton->GetGuid(), this);
 	}
 
@@ -304,12 +304,12 @@ void CAttachmentVCLOTH::ReleaseRenderRemapTablePair()
 	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
 	CDefaultSkeleton* pModelSkel = pInstanceSkel->m_pDefaultSkeleton;
 	const uint skeletonGuid = pModelSkel->GetGuid();
-	for (size_t i = 0; i < m_pRenderSkin->GetNumLODs(); i++)
+	for (size_t i=0; i<m_pRenderSkin->GetNumLODs(); i++)
 	{
 		CModelMesh* pModelMesh = m_pRenderSkin->GetModelMesh(i);
 		IRenderMesh* pRenderMesh = pModelMesh->m_pIRenderMesh;
 		if (!pRenderMesh)
-			continue;
+			continue; 
 		pRenderMesh->ReleaseRemappedBoneIndicesPair(skeletonGuid);
 	}
 }
@@ -340,8 +340,8 @@ void CAttachmentVCLOTH::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eFor
 	int nFrameID = gEnv->pRenderer->EF_GetSkinningPoolID();
 	for (int n = 0; n < 3; n++)
 	{
-		int nList = (nFrameID - n) % 3;
-		if (m_arrSkinningRendererData[nList].nFrameID == nFrameID - n)
+		int nList = (nFrameID-n) % 3;
+		if (m_arrSkinningRendererData[nList].nFrameID == nFrameID-n)
 		{
 			pSkinningData = m_arrSkinningRendererData[nList].pSkinningData;
 			break;
@@ -351,8 +351,8 @@ void CAttachmentVCLOTH::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eFor
 	pMesh->GetRandomPos(ran, seed, eForm, pSkinningData);
 }
 
-const QuatTS CAttachmentVCLOTH::GetAttWorldAbsolute() const
-{
+const QuatTS CAttachmentVCLOTH::GetAttWorldAbsolute() const 
+{ 
 	QuatTS rPhysLocation = m_pAttachmentManager->m_pSkelInstance->m_location;
 	return rPhysLocation;
 };
@@ -370,7 +370,7 @@ void CAttachmentVCLOTH::ReleaseRenderSkin()
 {
 	if (m_pRenderSkin)
 	{
-		g_pCharacterManager->UnregisterInstanceVCloth(m_pRenderSkin, this);
+		g_pCharacterManager->UnregisterInstanceVCloth(m_pRenderSkin,this);
 		ReleaseRenderRemapTablePair();
 		m_pRenderSkin = 0;
 	}
@@ -380,20 +380,20 @@ void CAttachmentVCLOTH::ReleaseSimSkin()
 {
 	if (m_pSimSkin)
 	{
-		g_pCharacterManager->UnregisterInstanceVCloth(m_pSimSkin, this);
+		g_pCharacterManager->UnregisterInstanceVCloth(m_pSimSkin,this);
 		ReleaseSimRemapTablePair();
 		m_pSimSkin = 0;
 	}
 }
 
-CAttachmentVCLOTH::~CAttachmentVCLOTH()
+CAttachmentVCLOTH::~CAttachmentVCLOTH() 
 {
 	const int nFrameID = gEnv->pRenderer ? gEnv->pRenderer->EF_GetSkinningPoolID() : 0;
 	const int nList = nFrameID % 3;
-	if (m_arrSkinningRendererData[nList].nFrameID == nFrameID && m_arrSkinningRendererData[nList].pSkinningData)
-	{
-		if (m_arrSkinningRendererData[nList].pSkinningData->pAsyncJobs)
-			gEnv->pJobManager->WaitForJob(*m_arrSkinningRendererData[nList].pSkinningData->pAsyncJobs);
+	if(m_arrSkinningRendererData[nList].nFrameID == nFrameID && m_arrSkinningRendererData[nList].pSkinningData)
+	{                              
+		if(m_arrSkinningRendererData[nList].pSkinningData->pAsyncJobs)
+			gEnv->pJobManager->WaitForJob( *m_arrSkinningRendererData[nList].pSkinningData->pAsyncJobs );
 	}
 
 	m_vertexAnimation.SetClothData(NULL);
@@ -401,10 +401,8 @@ CAttachmentVCLOTH::~CAttachmentVCLOTH()
 	ReleaseSimSkin();
 
 	CVertexAnimation::RemoveSoftwareRenderMesh(this);
-	for (uint32 j = 0; j < 2; ++j)
-	{
+	for (uint32 j=0; j<2; ++j)
 		m_pRenderMeshsSW[j] = NULL;
-	}
 }
 
 void CAttachmentVCLOTH::Serialize(TSerialize ser)
@@ -438,19 +436,19 @@ size_t CAttachmentVCLOTH::SizeOfThis() const
 	return nSize;
 }
 
-void CAttachmentVCLOTH::GetMemoryUsage(ICrySizer* pSizer) const
+void CAttachmentVCLOTH::GetMemoryUsage( ICrySizer *pSizer ) const
 {
 	pSizer->AddObject(this, sizeof(*this));
-	pSizer->AddObject(m_strSocketName);
-	pSizer->AddObject(m_arrRemapTable);
+	pSizer->AddObject( m_strSocketName );
+	pSizer->AddObject( m_arrRemapTable );	
 }
 
 namespace VClothUtils
 {
 ILINE void DrawVertexDebug(
-  IRenderMesh* pRenderMesh, const QuatT& location,
-  const SVertexAnimationJob* pVertexAnimation,
-  const SVertexSkinData& vertexSkinData)
+	IRenderMesh* pRenderMesh, const QuatT& location,
+	const SVertexAnimationJob* pVertexAnimation,
+	const SVertexSkinData& vertexSkinData)
 {
 	static const ColorB SKINNING_COLORS[8] =
 	{
@@ -466,46 +464,42 @@ ILINE void DrawVertexDebug(
 	};
 
 	// wait till the SW-Skinning jobs have finished
-	while (*pVertexAnimation->pRenderMeshSyncVariable)
-		CrySleep(1);
+	while(*pVertexAnimation->pRenderMeshSyncVariable)				
+		CrySleep(1);				
 
 	IRenderMesh* pIRenderMesh = pRenderMesh;
 	strided_pointer<Vec3> parrDstPositions = pVertexAnimation->vertexData.pPositions;
 	strided_pointer<SPipTangents> parrDstTangents;
-	parrDstTangents.data = (SPipTangents*)pVertexAnimation->vertexData.pTangents.data;
+	parrDstTangents.data = (SPipTangents*)pVertexAnimation->vertexData.pTangents.data; 
 	parrDstTangents.iStride = sizeof(SPipTangents);
 
 	uint32 numExtVertices = pIRenderMesh->GetVerticesCount();
 	if (parrDstPositions && parrDstTangents)
 	{
-		static DynArray<Vec3> arrDstPositions;
-		static DynArray<ColorB> arrDstColors;
-		uint32 numDstPositions = arrDstPositions.size();
-		if (numDstPositions < numExtVertices)
+		static DynArray<Vec3>		arrDstPositions;
+		static DynArray<ColorB>	arrDstColors;
+		uint32 numDstPositions=arrDstPositions.size();
+		if (numDstPositions<numExtVertices)
 		{
 			arrDstPositions.resize(numExtVertices);
 			arrDstColors.resize(numExtVertices);
 		}
 
 		//transform vertices by world-matrix
-		for (uint32 i = 0; i < numExtVertices; ++i)
-		{
-			arrDstPositions[i] = location * parrDstPositions[i];
-		}
+		for (uint32 i=0; i<numExtVertices; ++i)
+			arrDstPositions[i]	= location*parrDstPositions[i];
 
 		//render faces as wireframe
 		if (Console::GetInst().ca_DebugSWSkinning == 1)
 		{
-			for (uint i = 0; i < CRY_ARRAY_COUNT(SKINNING_COLORS); ++i)
-			{
-				g_pAuxGeom->Draw2dLabel(32.0f + float(i * 16), 32.0f, 2.0f, ColorF(SKINNING_COLORS[i].r / 255.0f, SKINNING_COLORS[i].g / 255.0f, SKINNING_COLORS[i].b / 255.0f, 1.0f), false, "%d", i + 1);
-			}
+			for (uint i=0; i<CRY_ARRAY_COUNT(SKINNING_COLORS); ++i)
+				g_pAuxGeom->Draw2dLabel(32.0f+float(i*16), 32.0f, 2.0f, ColorF(SKINNING_COLORS[i].r/255.0f, SKINNING_COLORS[i].g/255.0f, SKINNING_COLORS[i].b/255.0f, 1.0f), false, "%d", i+1);
 
-			for (uint32 e = 0; e < numExtVertices; e++)
+			for (uint32 e=0; e<numExtVertices; e++)
 			{
-				uint32 w = 0;
+				uint32 w=0;
 				const SoftwareVertexBlendWeight* pBlendWeights = &vertexSkinData.pVertexTransformWeights[e];
-				for (uint c = 0; c < vertexSkinData.vertexTransformCount; ++c)
+				for (uint c=0; c<vertexSkinData.vertexTransformCount; ++c)
 				{
 					if (pBlendWeights[c] > 0.0f)
 						w++;
@@ -516,56 +510,56 @@ ILINE void DrawVertexDebug(
 			}
 
 			pIRenderMesh->LockForThreadAccess();
-			uint32 numIndices = pIRenderMesh->GetIndicesCount();
+			uint32	numIndices = pIRenderMesh->GetIndicesCount();
 			vtx_idx* pIndices = pIRenderMesh->GetIndexPtr(FSL_READ);
 
-			IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
-			SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
-			renderFlags.SetFillMode(e_FillModeWireframe);
+			IRenderAuxGeom*	pAuxGeom =	gEnv->pRenderer->GetIRenderAuxGeom();
+			SAuxGeomRenderFlags renderFlags( e_Def3DPublicRenderflags );
+			renderFlags.SetFillMode( e_FillModeWireframe );
 			//		renderFlags.SetAlphaBlendMode(e_AlphaAdditive);
-			renderFlags.SetDrawInFrontMode(e_DrawInFrontOn);
-			pAuxGeom->SetRenderFlags(renderFlags);
-			//	pAuxGeom->DrawTriangles(&arrDstPositions[0],numExtVertices, pIndices,numIndices,RGBA8(0x00,0x17,0x00,0x00));
-			pAuxGeom->DrawTriangles(&arrDstPositions[0], numExtVertices, pIndices, numIndices, &arrDstColors[0]);
+			renderFlags.SetDrawInFrontMode( e_DrawInFrontOn );
+			pAuxGeom->SetRenderFlags( renderFlags );
+			//	pAuxGeom->DrawTriangles(&arrDstPositions[0],numExtVertices, pIndices,numIndices,RGBA8(0x00,0x17,0x00,0x00));		
+			pAuxGeom->DrawTriangles(&arrDstPositions[0],numExtVertices, pIndices,numIndices,&arrDstColors[0]);		
 
 			pIRenderMesh->UnLockForThreadAccess();
-		}
+		}	
 
 		//render the Normals
 		if (Console::GetInst().ca_DebugSWSkinning == 2)
 		{
-			IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+			IRenderAuxGeom*	pAuxGeom =	gEnv->pRenderer->GetIRenderAuxGeom();
 			static std::vector<ColorB> arrExtVColors;
 			uint32 csize = arrExtVColors.size();
-			if (csize < (numExtVertices * 2)) arrExtVColors.resize(numExtVertices * 2);
-			for (uint32 i = 0; i < numExtVertices * 2; i = i + 2)
+			if (csize<(numExtVertices*2)) arrExtVColors.resize( numExtVertices*2 );	
+			for(uint32 i=0; i<numExtVertices*2; i=i+2)	
 			{
-				arrExtVColors[i + 0] = RGBA8(0x00, 0x00, 0x3f, 0x1f);
-				arrExtVColors[i + 1] = RGBA8(0x7f, 0x7f, 0xff, 0xff);
+				arrExtVColors[i+0] = RGBA8(0x00,0x00,0x3f,0x1f);
+				arrExtVColors[i+1] = RGBA8(0x7f,0x7f,0xff,0xff);
 			}
 
 			Matrix33 WMat33 = Matrix33(location.q);
 			static std::vector<Vec3> arrExtSkinnedStream;
 			uint32 numExtSkinnedStream = arrExtSkinnedStream.size();
-			if (numExtSkinnedStream < (numExtVertices * 2)) arrExtSkinnedStream.resize(numExtVertices * 2);
-			for (uint32 i = 0, t = 0; i < numExtVertices; i++)
+			if (numExtSkinnedStream<(numExtVertices*2)) arrExtSkinnedStream.resize( numExtVertices*2 );	
+			for(uint32 i=0,t=0; i<numExtVertices; i++)	
 			{
 				Vec3 vNormal = parrDstTangents[i].GetN().GetNormalized() * 0.03f;
 
-				arrExtSkinnedStream[t + 0] = arrDstPositions[i];
-				arrExtSkinnedStream[t + 1] = WMat33 * vNormal + arrExtSkinnedStream[t];
-				t = t + 2;
+				arrExtSkinnedStream[t+0] = arrDstPositions[i]; 
+				arrExtSkinnedStream[t+1] = WMat33*vNormal + arrExtSkinnedStream[t];
+				t=t+2;
 			}
-			SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
-			pAuxGeom->SetRenderFlags(renderFlags);
-			pAuxGeom->DrawLines(&arrExtSkinnedStream[0], numExtVertices * 2, &arrExtVColors[0]);
+			SAuxGeomRenderFlags renderFlags( e_Def3DPublicRenderflags );
+			pAuxGeom->SetRenderFlags( renderFlags );
+			pAuxGeom->DrawLines( &arrExtSkinnedStream[0],numExtVertices*2, &arrExtVColors[0]);		
 		}
 	}
 }
 }
 _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint lod, uint id)
 {
-	m_pRenderMeshsSW[id] = NULL;   // smart pointer release
+	m_pRenderMeshsSW[id] = NULL; // smart pointer release
 
 	if (m_pRenderSkin == 0)
 		return _smart_ptr<IRenderMesh>(NULL);
@@ -575,13 +569,13 @@ _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint 
 		return _smart_ptr<IRenderMesh>(NULL);
 
 	_smart_ptr<IRenderMesh> pIStaticRenderMesh = m_pRenderSkin->m_arrModelMeshes[lod].m_pIRenderMesh;
-	if (pIStaticRenderMesh == 0)
+	if (pIStaticRenderMesh==0)
 		return _smart_ptr<IRenderMesh>(NULL);
 	;
 
 	CModelMesh* pModelMesh = m_pRenderSkin->GetModelMesh(lod);
-	uint32 success = pModelMesh->InitSWSkinBuffer();
-	if (success == 0)
+	uint32 success = pModelMesh->InitSWSkinBuffer(); 
+	if (success==0)
 		return _smart_ptr<IRenderMesh>(NULL);
 	;
 
@@ -593,22 +587,22 @@ _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint 
 	}
 
 	m_pRenderMeshsSW[id] = g_pIRenderer->CreateRenderMeshInitialized(
-	  NULL
-	  , pIStaticRenderMesh->GetVerticesCount()
-	  , eVF_P3F_C4B_T2F
-	  , NULL
-	  , pIStaticRenderMesh->GetIndicesCount()
-	  , prtTriangleList
-	  , "Character"
-	  , m_sSoftwareMeshName.c_str()
-	  , eRMT_Transient);
+		NULL
+		, pIStaticRenderMesh->GetVerticesCount()
+		, eVF_P3F_C4B_T2F
+		, NULL
+		, pIStaticRenderMesh->GetIndicesCount()
+		, prtTriangleList
+		, "Character"
+		, m_sSoftwareMeshName.c_str()
+		, eRMT_Transient);
 
 	m_pRenderMeshsSW[id]->SetMeshLod(lod);
 
 	TRenderChunkArray& chunks = pIStaticRenderMesh->GetChunks();
-	TRenderChunkArray nchunks;
+	TRenderChunkArray  nchunks;
 	nchunks.resize(chunks.size());
-	for (size_t i = 0; i < size_t(chunks.size()); ++i)
+	for (size_t i=0; i<size_t(chunks.size()); ++i)
 	{
 		nchunks[i].m_texelAreaDensity = chunks[i].m_texelAreaDensity;
 		nchunks[i].nFirstIndexId = chunks[i].nFirstIndexId;
@@ -624,32 +618,32 @@ _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint 
 		nchunks[i].m_nMatID = chunks[i].m_nMatID;
 		nchunks[i].nSubObjectIndex = chunks[i].nSubObjectIndex;
 	}
-	m_pRenderMeshsSW[id]->SetRenderChunks(&nchunks[0], nchunks.size(), false);
+	m_pRenderMeshsSW[id]->SetRenderChunks(&nchunks[0], nchunks.size(), false); 
 
 #ifndef _RELEASE
 	m_vertexAnimation.m_vertexAnimationStats.sCharInstanceName = m_pAttachmentManager->m_pSkelInstance->GetFilePath();
-	m_vertexAnimation.m_vertexAnimationStats.sAttachmentName = "";                               //m_Name; TODO fix
+	m_vertexAnimation.m_vertexAnimationStats.sAttachmentName = "";//m_Name; TODO fix
 	m_vertexAnimation.m_vertexAnimationStats.pCharInstance = m_pAttachmentManager->m_pSkelInstance;
 #endif
 	return m_pRenderMeshsSW[id];
 }
 
-void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRenderingPassInfo& passInfo, const Matrix34& rWorldMat34, f32 fZoomFactor)
+void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo, const Matrix34& rWorldMat34, f32 fZoomFactor)
 {
 	//-----------------------------------------------------------------------------
 	//---              map logical LOD to render LOD                            ---
 	//-----------------------------------------------------------------------------
 	int32 numLODs = m_pRenderSkin->m_arrModelMeshes.size();
-	if (numLODs == 0)
+	if (numLODs==0)
 		return;
 	int nDesiredRenderLOD = RendParams.lodValue.LodA();
-	if (nDesiredRenderLOD >= numLODs)
+	if(nDesiredRenderLOD>=numLODs)
 	{
-		if (m_AttFlags & FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD)
-			return;                                                                                  //early exit, if LOD-file doesn't exist
-		nDesiredRenderLOD = numLODs - 1;                                                           //render the last existing LOD-file
+		if (m_AttFlags&FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD)
+			return;  //early exit, if LOD-file doesn't exist
+		nDesiredRenderLOD = numLODs-1; //render the last existing LOD-file
 	}
-	int nRenderLOD = m_pRenderSkin->SelectNearestLoadedLOD(nDesiredRenderLOD);                     //we can render only loaded LODs
+	int nRenderLOD = m_pRenderSkin->SelectNearestLoadedLOD(nDesiredRenderLOD);  //we can render only loaded LODs
 
 	m_pRenderSkin->m_arrModelMeshes[nRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
 	m_pSimSkin->m_arrModelMeshes[nRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
@@ -661,9 +655,9 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	Matrix34 FinalMat34 = rWorldMat34;
 	RendParams.pMatrix = &FinalMat34;
 	RendParams.pInstance = this;
-	RendParams.pMaterial = (IMaterial*)m_pIAttachmentObject->GetReplacementMaterial(nRenderLOD);   //the Replacement-Material has priority
-	if (RendParams.pMaterial == 0)
-		RendParams.pMaterial = (IMaterial*)m_pRenderSkin->GetIMaterial(nRenderLOD);                  //as a fall back take the Base-Material from the model
+	RendParams.pMaterial = (IMaterial*)m_pIAttachmentObject->GetReplacementMaterial(nRenderLOD); //the Replacement-Material has priority
+	if (RendParams.pMaterial==0)
+		RendParams.pMaterial = (IMaterial*)m_pRenderSkin->GetIMaterial(nRenderLOD); //as a fall back take the Base-Material from the model
 
 	bool bNewFrame = false;
 	if (m_vertexAnimation.m_skinningPoolID != gEnv->pRenderer->EF_GetSkinningPoolID())
@@ -675,8 +669,8 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 
 	if (bNewFrame && nRenderLOD < m_clothPiece.GetNumLods())
 	{
-		bool visible = m_clothPiece.IsAlwaysVisible();                                               //||
-		//        g_pCharacterManager->GetClothManager()->QueryVisibility((uint64)m_pAttachmentManager, center, passInfo.IsGeneralPass());
+		bool visible = m_clothPiece.IsAlwaysVisible(); //|| 
+		//  			g_pCharacterManager->GetClothManager()->QueryVisibility((uint64)m_pAttachmentManager, center, passInfo.IsGeneralPass());
 		if (m_clothPiece.PrepareCloth(m_pAttachmentManager->m_pSkelInstance->m_SkeletonPose, rWorldMat34, visible, nRenderLOD))
 		{
 			m_AttFlags |= FLAGS_ATTACH_SW_SKINNING;
@@ -699,13 +693,13 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 		return;
 
 	pObj->m_pRenderNode = RendParams.pRenderNode;
-	pObj->m_fSort = RendParams.fCustomSortOffset;
+	pObj->m_fSort	= RendParams.fCustomSortOffset;
 	uint64 uLocalObjFlags = pObj->m_ObjFlags;
 
 	//check if it should be drawn close to the player
-	CCharInstance* pMaster = m_pAttachmentManager->m_pSkelInstance;
+	CCharInstance* pMaster	=	m_pAttachmentManager->m_pSkelInstance;
 	if (pMaster->m_rpFlags & CS_FLAG_DRAW_NEAR)
-	{
+	{ 
 		uLocalObjFlags |= FOB_NEAREST;
 	}
 	else
@@ -714,7 +708,7 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	}
 
 	pObj->m_fAlpha = RendParams.fAlpha;
-	pObj->m_fDistance = RendParams.fDistance;
+	pObj->m_fDistance =	RendParams.fDistance;
 	pObj->m_II.m_AmbColor = RendParams.AmbientColor;
 
 	uLocalObjFlags |= RendParams.dwFObjFlags;
@@ -746,14 +740,14 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 
 	pD->m_nCustomData = RendParams.nCustomData;
 	pD->m_nCustomFlags = RendParams.nCustomFlags;
-	if (RendParams.nCustomFlags & COB_CLOAK_HIGHLIGHT)
+	if(RendParams.nCustomFlags & COB_CLOAK_HIGHLIGHT)
 	{
 		pD->m_fTempVars[5] = RendParams.fCustomData[0];
 	}
-	else if (RendParams.nCustomFlags & COB_POST_3D_RENDER)
+	else if(RendParams.nCustomFlags & COB_POST_3D_RENDER)
 	{
-		memcpy(&pD->m_fTempVars[5], &RendParams.fCustomData[0], sizeof(float) * 4);
-		pObj->m_fAlpha = 1.0f;     // Use the alpha in the post effect instead of here
+		memcpy(&pD->m_fTempVars[5],&RendParams.fCustomData[0],sizeof(float)*4);
+		pObj->m_fAlpha = 1.0f; // Use the alpha in the post effect instead of here
 		pD->m_fTempVars[9] = RendParams.fAlpha;
 	}
 	pObj->m_DissolveRef = RendParams.nDissolveRef;
@@ -769,16 +763,16 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	pObj->m_nSort = fastround_positive(RendParams.fDistance * 2.0f);
 
 	const float SORT_BIAS_AMOUNT = 1.f;
-	if (pMaster->m_rpFlags & CS_FLAG_BIAS_SKIN_SORT_DIST)
+	if(pMaster->m_rpFlags & CS_FLAG_BIAS_SKIN_SORT_DIST)
 	{
 		pObj->m_fSort = SORT_BIAS_AMOUNT;
 	}
 
-	// get skinning data
+	// get skinning data		
 	const int numClothLods = m_clothPiece.GetNumLods();
 	const bool swSkin = (nRenderLOD == 0) && (Console::GetInst().ca_vaEnable != 0) && (nRenderLOD < numClothLods);
 
-	IF (!swSkin, 1)
+	IF (!swSkin, 1) 
 		pObj->m_ObjFlags |= FOB_SKINNED;
 
 	pD->m_pSkinningData = GetVertexTransformationData(swSkin, nRenderLOD);
@@ -790,10 +784,10 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	pD->m_pSkinningData->vecPrecisionOffset[1] = skinOffset.y;
 	pD->m_pSkinningData->vecPrecisionOffset[2] = skinOffset.z;
 
-	SVertexAnimationJob* pVertexAnimation = static_cast<SVertexAnimationJob*>(pD->m_pSkinningData->pCustomData);
+	SVertexAnimationJob *pVertexAnimation = static_cast<SVertexAnimationJob*>(pD->m_pSkinningData->pCustomData);
 
-	IRenderMesh* pRenderMesh = m_pRenderSkin->GetIRenderMesh(nRenderLOD);
-	if (swSkin && pRenderMesh)
+	IRenderMesh* pRenderMesh = m_pRenderSkin->GetIRenderMesh(nRenderLOD);		
+	if(swSkin && pRenderMesh) 
 	{
 		uint iCurrentRenderMeshID = m_vertexAnimation.m_RenderMeshId & 1;
 
@@ -834,7 +828,7 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 
 #if CRY_PLATFORM_DURANGO
 			const uint fslCreate = FSL_VIDEO_CREATE;
-			const uint fslRead = FSL_READ | FSL_VIDEO;
+			const uint fslRead = FSL_READ|FSL_VIDEO;
 #else
 			const uint fslCreate = FSL_SYSTEM_CREATE;
 			const uint fslRead = FSL_READ;
@@ -851,7 +845,7 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 				if (pPrevPositions)
 				{
 					vertexSkinData.pVertexPositionsPrevious.data = pPrevPositions;
-					pVertexAnimation->m_previousRenderMesh = pRenderMeshPrevious;
+					pVertexAnimation->m_previousRenderMesh = pRenderMeshPrevious; 
 				}
 				else
 				{
@@ -861,51 +855,51 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 			}
 			m_vertexAnimation.SetSkinData(vertexSkinData);
 
-			pVertexAnimation->vertexData.m_vertexCount = pRenderMesh->GetVerticesCount();
+			pVertexAnimation->vertexData.m_vertexCount = pRenderMesh->GetVerticesCount(); 
 
 			pRenderMesh->LockForThreadAccess();
 
-			SVF_P3F_C4B_T2F* pGeneral = (SVF_P3F_C4B_T2F*)pRenderMesh->GetPosPtrNoCache(pVertexAnimation->vertexData.pPositions.iStride, fslCreate);
+			SVF_P3F_C4B_T2F *pGeneral = (SVF_P3F_C4B_T2F*)pRenderMesh->GetPosPtrNoCache(pVertexAnimation->vertexData.pPositions.iStride, fslCreate);
 
-			pVertexAnimation->vertexData.pPositions.data = (Vec3*)(&pGeneral[0].xyz);
+			pVertexAnimation->vertexData.pPositions.data    = (Vec3*)(&pGeneral[0].xyz);
 			pVertexAnimation->vertexData.pPositions.iStride = sizeof(pGeneral[0]);
-			pVertexAnimation->vertexData.pColors.data = (uint32*)(&pGeneral[0].color);
-			pVertexAnimation->vertexData.pColors.iStride = sizeof(pGeneral[0]);
-			pVertexAnimation->vertexData.pCoords.data = (Vec2*)(&pGeneral[0].st);
-			pVertexAnimation->vertexData.pCoords.iStride = sizeof(pGeneral[0]);
+			pVertexAnimation->vertexData.pColors.data       = (uint32*)(&pGeneral[0].color);
+			pVertexAnimation->vertexData.pColors.iStride    = sizeof(pGeneral[0]);
+			pVertexAnimation->vertexData.pCoords.data       = (Vec2*)(&pGeneral[0].st);
+			pVertexAnimation->vertexData.pCoords.iStride    = sizeof(pGeneral[0]);
 			pVertexAnimation->vertexData.pVelocities.data = (Vec3*)pRenderMesh->GetVelocityPtr(pVertexAnimation->vertexData.pVelocities.iStride, fslCreate);
 			pVertexAnimation->vertexData.pTangents.data = (SPipTangents*)pRenderMesh->GetTangentPtr(pVertexAnimation->vertexData.pTangents.iStride, fslCreate);
 			pVertexAnimation->vertexData.pIndices = pRenderMesh->GetIndexPtr(fslCreate);
 			pVertexAnimation->vertexData.m_indexCount = geometry.GetIndexCount();
 
 			if (!pVertexAnimation->vertexData.pPositions ||
-			    !pVertexAnimation->vertexData.pVelocities ||
-			    !pVertexAnimation->vertexData.pTangents)
+				!pVertexAnimation->vertexData.pVelocities ||
+				!pVertexAnimation->vertexData.pTangents)
 			{
-				pRenderMesh->UnlockStream(VSF_GENERAL);
+				pRenderMesh->UnlockStream(VSF_GENERAL); 
 				pRenderMesh->UnlockStream(VSF_TANGENTS);
 				pRenderMesh->UnlockStream(VSF_VERTEX_VELOCITY);
 #if ENABLE_NORMALSTREAM_SUPPORT
 				pRenderMesh->UnlockStream(VSF_NORMALS);
 #endif
 				pRenderMesh->UnLockForThreadAccess();
-				return;
+				return; 
 			}
 
 			// If memory was pre-allocated for the command buffer, recompile into it.
 			if (pVertexAnimation->commandBufferLength)
 			{
 				CVertexCommandBufferAllocatorStatic commandBufferAllocator(
-				  (uint8*)pD->m_pSkinningData->pCustomData + sizeof(SVertexAnimationJob),
-				  pVertexAnimation->commandBufferLength);
+					(uint8*)pD->m_pSkinningData->pCustomData + sizeof(SVertexAnimationJob),
+					pVertexAnimation->commandBufferLength);
 				pVertexAnimation->commandBuffer.Initialize(commandBufferAllocator);
 				m_vertexAnimation.CompileCommands(pVertexAnimation->commandBuffer);
 			}
 
 			pVertexAnimation->pRenderMeshSyncVariable = pRenderMesh->SetAsyncUpdateState();
 
-			SSkinningData* pCurrentJobSkinningData = *pD->m_pSkinningData->pMasterSkinningDataList;
-			if (pCurrentJobSkinningData == NULL)
+			SSkinningData *pCurrentJobSkinningData = *pD->m_pSkinningData->pMasterSkinningDataList;
+			if(pCurrentJobSkinningData == NULL)
 			{
 				pVertexAnimation->Begin(pD->m_pSkinningData->pAsyncJobs);
 			}
@@ -913,10 +907,10 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 			{
 				// try to append to list
 				pD->m_pSkinningData->pNextSkinningData = pCurrentJobSkinningData;
-				void* pUpdatedJobSkinningData = CryInterlockedCompareExchangePointer(alias_cast<void* volatile*>(pD->m_pSkinningData->pMasterSkinningDataList), pD->m_pSkinningData, pCurrentJobSkinningData);
+				void *pUpdatedJobSkinningData = CryInterlockedCompareExchangePointer( alias_cast<void *volatile *>(pD->m_pSkinningData->pMasterSkinningDataList), pD->m_pSkinningData, pCurrentJobSkinningData );
 
 				// in case we failed (job has finished in the meantime), we need to start the job from the main thread
-				if (pUpdatedJobSkinningData == NULL)
+				if(pUpdatedJobSkinningData == NULL )
 				{
 					pVertexAnimation->Begin(pD->m_pSkinningData->pAsyncJobs);
 				}
@@ -933,20 +927,20 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 		}
 	}
 
-	//	CryFatalError("CryAnimation: pMaster is zero");
-	if (pRenderMesh)
+//	CryFatalError("CryAnimation: pMaster is zero");
+	if(pRenderMesh) 
 	{
 		//g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.3f, ColorF(0,1,0,1), false,"VCloth name: %s",GetName()),g_YLine+=16.0f;
 
 		IMaterial* pMaterial = RendParams.pMaterial;
-		if (pMaterial == 0)
+		if(pMaterial==0)
 			pMaterial = m_pRenderSkin->GetIMaterial(0);
 		pObj->m_pCurrMaterial = pMaterial;
 #ifndef _RELEASE
 		CModelMesh* pModelMesh = m_pRenderSkin->GetModelMesh(nRenderLOD);
-		static ICVar* p_e_debug_draw = gEnv->pConsole->GetCVar("e_DebugDraw");
-		if (p_e_debug_draw && p_e_debug_draw->GetIVal() > 0)
-			pModelMesh->DrawDebugInfo(pMaster->m_pDefaultSkeleton, nRenderLOD, RenderMat34, p_e_debug_draw->GetIVal(), pMaterial, pObj, RendParams, passInfo.IsGeneralPass(), (IRenderNode*)RendParams.pRenderNode, m_pAttachmentManager->m_pSkelInstance->m_SkeletonPose.GetAABB());
+		static ICVar *p_e_debug_draw = gEnv->pConsole->GetCVar("e_DebugDraw");
+		if(p_e_debug_draw && p_e_debug_draw->GetIVal() > 0)
+			pModelMesh->DrawDebugInfo(pMaster->m_pDefaultSkeleton, nRenderLOD, RenderMat34, p_e_debug_draw->GetIVal(), pMaterial, pObj, RendParams, passInfo.IsGeneralPass(), (IRenderNode*)RendParams.pRenderNode, m_pAttachmentManager->m_pSkelInstance->m_SkeletonPose.GetAABB() );
 #endif
 		pRenderMesh->Render(pObj, passInfo);
 
@@ -954,20 +948,20 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 		//---       render debug-output (only PC in CharEdit mode)       ---
 		//------------------------------------------------------------------
 #if EDITOR_PCDEBUGCODE
-		if (pMaster->m_CharEditMode & CA_CharacterTool)
+		if (pMaster->m_CharEditMode&CA_CharacterTool) 
 		{
 			const Console& rConsole = Console::GetInst();
 
 			uint32 tang = rConsole.ca_DrawTangents;
 			uint32 bitang = rConsole.ca_DrawBinormals;
 			uint32 norm = rConsole.ca_DrawNormals;
-			uint32 wire = rConsole.ca_DrawWireframe;
-			if (tang || bitang || norm || wire)
+			uint32 wire = rConsole.ca_DrawWireframe; 
+			if (tang || bitang || norm || wire) 
 			{
 				CModelMesh* pModelMesh = m_pRenderSkin->GetModelMesh(nRenderLOD);
-				gEnv->pJobManager->WaitForJob(*pD->m_pSkinningData->pAsyncJobs);
+				gEnv->pJobManager->WaitForJob( *pD->m_pSkinningData->pAsyncJobs );
 				//SoftwareSkinningDQ(pModelMesh, pObj->m_II.m_Matrix,   tang,bitang,norm,wire, pD->m_pSkinningData->pBoneQuatsS);
-				SoftwareSkinningDQ_VS_Emulator(pModelMesh, pObj->m_II.m_Matrix, tang, bitang, norm, wire, pD->m_pSkinningData->pBoneQuatsS);
+				SoftwareSkinningDQ_VS_Emulator(pModelMesh, pObj->m_II.m_Matrix,   tang,bitang,norm,wire, pD->m_pSkinningData->pBoneQuatsS);
 			}
 		}
 #endif
@@ -978,21 +972,21 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 //-----------------------------------------------------------------------------
 //---     trigger streaming of desired LODs (only need in CharEdit)         ---
 //-----------------------------------------------------------------------------
-void CAttachmentVCLOTH::TriggerMeshStreaming(uint32 nDesiredRenderLOD, const SRenderingPassInfo& passInfo)
+void CAttachmentVCLOTH::TriggerMeshStreaming(uint32 nDesiredRenderLOD, const SRenderingPassInfo &passInfo)
 {
 	if (!m_pRenderSkin)
 		return;
 
 	uint32 numLODs = m_pRenderSkin->m_arrModelMeshes.size();
-	if (numLODs == 0)
+	if (numLODs==0)
 		return;
-	if (m_AttFlags & FLAGS_ATTACH_HIDE_ATTACHMENT)
-		return;                          //mesh not visible
-	if (nDesiredRenderLOD >= numLODs)
+	if (m_AttFlags&FLAGS_ATTACH_HIDE_ATTACHMENT)
+		return;  //mesh not visible
+	if(nDesiredRenderLOD>=numLODs)
 	{
-		if (m_AttFlags & FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD)
-			return;                        //early exit, if LOD-file doesn't exist
-		nDesiredRenderLOD = numLODs - 1; //render the last existing LOD-file
+		if (m_AttFlags&FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD)
+			return;  //early exit, if LOD-file doesn't exist
+		nDesiredRenderLOD = numLODs-1; //render the last existing LOD-file
 	}
 	m_pRenderSkin->m_arrModelMeshes[nDesiredRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
 	m_pSimSkin->m_arrModelMeshes[nDesiredRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
@@ -1002,7 +996,7 @@ SSkinningData* CAttachmentVCLOTH::GetVertexTransformationData(bool bVertexAnimat
 {
 	DEFINE_PROFILER_FUNCTION();
 	CCharInstance* pMaster = m_pAttachmentManager->m_pSkelInstance;
-	if (pMaster == 0)
+	if (pMaster==0)
 	{
 		CryFatalError("CryAnimation: pMaster is zero");
 		return NULL;
@@ -1010,19 +1004,19 @@ SSkinningData* CAttachmentVCLOTH::GetVertexTransformationData(bool bVertexAnimat
 
 	uint32 skinningQuatCount = m_arrRemapTable.size();
 	uint32 skinningQuatCountMax = pMaster->GetSkinningTransformationCount();
-	uint32 nNumBones = min(skinningQuatCount, skinningQuatCountMax);
+	uint32 nNumBones = min(skinningQuatCount, skinningQuatCountMax);	
 
 	// get data to fill
 	int nFrameID = gEnv->pRenderer->EF_GetSkinningPoolID();
 	int nList = nFrameID % 3;
-	int nPrevList = (nFrameID - 1) % 3;
+	int nPrevList = (nFrameID - 1 ) % 3;
 	// before allocating new skinning date, check if we already have for this frame
-	if (m_arrSkinningRendererData[nList].nFrameID == nFrameID && m_arrSkinningRendererData[nList].pSkinningData)
+	if(m_arrSkinningRendererData[nList].nFrameID == nFrameID && m_arrSkinningRendererData[nList].pSkinningData)
 	{
 		return m_arrSkinningRendererData[nList].pSkinningData;
 	}
 
-	if (pMaster->arrSkinningRendererData[nList].nFrameID != nFrameID)
+	if(pMaster->arrSkinningRendererData[nList].nFrameID != nFrameID )
 	{
 		pMaster->GetSkinningData(); // force master to compute skinning data if not available
 	}
@@ -1049,25 +1043,25 @@ SSkinningData* CAttachmentVCLOTH::GetVertexTransformationData(bool bVertexAnimat
 		nCustomDataSize = sizeof(SVertexAnimationJob) + commandBufferLength;
 	}
 
-	SSkinningData* pSkinningData = gEnv->pRenderer->EF_CreateRemappedSkinningData(nNumBones, pMaster->arrSkinningRendererData[nList].pSkinningData, nCustomDataSize, pMaster->m_pDefaultSkeleton->GetGuid());
+	SSkinningData *pSkinningData = gEnv->pRenderer->EF_CreateRemappedSkinningData(nNumBones, pMaster->arrSkinningRendererData[nList].pSkinningData, nCustomDataSize, pMaster->m_pDefaultSkeleton->GetGuid());	
 	pSkinningData->pCustomTag = this;
 	if (nCustomDataSize)
 	{
-		SVertexAnimationJob* pVertexAnimation = new(pSkinningData->pCustomData)SVertexAnimationJob();
+		SVertexAnimationJob *pVertexAnimation = new (pSkinningData->pCustomData) SVertexAnimationJob();
 		pVertexAnimation->commandBufferLength = commandBufferLength;
 	}
 	m_arrSkinningRendererData[nList].pSkinningData = pSkinningData;
 	m_arrSkinningRendererData[nList].nFrameID = nFrameID;
 	PREFAST_ASSUME(pSkinningData);
 
-	// set data for motion blur
-	if (m_arrSkinningRendererData[nPrevList].nFrameID == (nFrameID - 1) && m_arrSkinningRendererData[nPrevList].pSkinningData)
-	{
+	// set data for motion blur	
+	if(m_arrSkinningRendererData[nPrevList].nFrameID == (nFrameID - 1) && m_arrSkinningRendererData[nPrevList].pSkinningData)
+	{		
 		pSkinningData->nHWSkinningFlags |= eHWS_MotionBlured;
 		pSkinningData->pPreviousSkinningRenderData = m_arrSkinningRendererData[nPrevList].pSkinningData;
-		if (pSkinningData->pPreviousSkinningRenderData->pAsyncJobs)
-			gEnv->pJobManager->WaitForJob(*pSkinningData->pPreviousSkinningRenderData->pAsyncJobs);
-	}
+		if(pSkinningData->pPreviousSkinningRenderData->pAsyncJobs)
+			gEnv->pJobManager->WaitForJob( *pSkinningData->pPreviousSkinningRenderData->pAsyncJobs );
+	}	
 	else
 	{
 		// if we don't have motion blur data, use the some as for the current frame
@@ -1092,92 +1086,92 @@ void CAttachmentVCLOTH::ComputeGeometricMean(SMeshLodInfo& lodInfo) const
 #ifdef EDITOR_PCDEBUGCODE
 //These functions are need only for the Editor on PC
 
-void CAttachmentVCLOTH::DrawWireframeStatic(const Matrix34& m34, int nLOD, uint32 color)
+void CAttachmentVCLOTH::DrawWireframeStatic( const Matrix34& m34, int nLOD, uint32 color) 
 {
 	CModelMesh* pModelMesh = m_pRenderSkin->GetModelMesh(nLOD);
 	if (pModelMesh)
-		pModelMesh->DrawWireframeStatic(m34, color);
+		pModelMesh->DrawWireframeStatic(m34,color);
 }
 
 //////////////////////////////////////////////////////////////////////////
-// skinning of external Vertices and QTangents
+// skinning of external Vertices and QTangents 
 //////////////////////////////////////////////////////////////////////////
-void CAttachmentVCLOTH::SoftwareSkinningDQ_VS_Emulator(CModelMesh* pModelMesh, Matrix34 rRenderMat34, uint8 tang, uint8 binorm, uint8 norm, uint8 wire, const DualQuat* const pSkinningTransformations)
+void CAttachmentVCLOTH::SoftwareSkinningDQ_VS_Emulator( CModelMesh* pModelMesh, Matrix34 rRenderMat34, uint8 tang,uint8 binorm,uint8 norm,uint8 wire, const DualQuat* const pSkinningTransformations)
 {
-	#ifdef DEFINE_PROFILER_FUNCTION
+#ifdef DEFINE_PROFILER_FUNCTION
 	DEFINE_PROFILER_FUNCTION();
-	#endif
+#endif
 
 	CRenderAuxGeomRenderFlagsRestore _renderFlagsRestore(g_pAuxGeom);
 
-	if (pModelMesh->m_pIRenderMesh == 0)
+	if (pModelMesh->m_pIRenderMesh==0)
 		return;
 
 	static DynArray<Vec3> g_arrExtSkinnedStream;
 	static DynArray<Quat> g_arrQTangents;
 	static DynArray<uint8> arrSkinned;
 
-	uint32 numExtIndices = pModelMesh->m_pIRenderMesh->GetIndicesCount();
-	uint32 numExtVertices = pModelMesh->m_pIRenderMesh->GetVerticesCount();
+	uint32 numExtIndices	= pModelMesh->m_pIRenderMesh->GetIndicesCount();
+	uint32 numExtVertices	= pModelMesh->m_pIRenderMesh->GetVerticesCount();
 	assert(numExtVertices && numExtIndices);
 
-	uint32 ssize = g_arrExtSkinnedStream.size();
-	if (ssize < numExtVertices)
+	uint32 ssize=g_arrExtSkinnedStream.size();
+	if (ssize<numExtVertices)
 	{
 		g_arrExtSkinnedStream.resize(numExtVertices);
 		g_arrQTangents.resize(numExtVertices);
 		arrSkinned.resize(numExtVertices);
 	}
-	memset(&arrSkinned[0], 0, numExtVertices);
+	memset(&arrSkinned[0],0,numExtVertices);
 
 	pModelMesh->m_pIRenderMesh->LockForThreadAccess();
 	++pModelMesh->m_iThreadMeshAccessCounter;
 
-	vtx_idx* pIndices = pModelMesh->m_pIRenderMesh->GetIndexPtr(FSL_READ);
-	if (pIndices == 0)
+	vtx_idx* pIndices				= pModelMesh->m_pIRenderMesh->GetIndexPtr(FSL_READ);
+	if (pIndices==0)
 		return;
-	int32 nPositionStride;
-	uint8* pPositions = pModelMesh->m_pIRenderMesh->GetPosPtr(nPositionStride, FSL_READ);
-	if (pPositions == 0)
+	int32		nPositionStride;
+	uint8*	pPositions			= pModelMesh->m_pIRenderMesh->GetPosPtr(nPositionStride, FSL_READ);
+	if (pPositions==0)
 		return;
-	int32 nQTangentStride;
-	uint8* pQTangents = pModelMesh->m_pIRenderMesh->GetQTangentPtr(nQTangentStride, FSL_READ);
-	if (pQTangents == 0)
+	int32		nQTangentStride;
+	uint8*	pQTangents			= pModelMesh->m_pIRenderMesh->GetQTangentPtr(nQTangentStride, FSL_READ);
+	if (pQTangents==0)
 		return;
-	int32 nSkinningStride;
-	uint8* pSkinningInfo = pModelMesh->m_pIRenderMesh->GetHWSkinPtr(nSkinningStride, FSL_READ);     //pointer to weights and bone-id
-	if (pSkinningInfo == 0)
-		return;
+	int32		nSkinningStride;
+	uint8 * pSkinningInfo				= pModelMesh->m_pIRenderMesh->GetHWSkinPtr(nSkinningStride, FSL_READ); //pointer to weights and bone-id
+	if (pSkinningInfo==0)
+		return;	
 
-	DualQuat arrRemapSkinQuat[MAX_JOINT_AMOUNT];                                                //dual quaternions for skinning
+	DualQuat arrRemapSkinQuat[MAX_JOINT_AMOUNT];	//dual quaternions for skinning
 	for (size_t b = 0; b < m_arrRemapTable.size(); ++b)
 	{
-		const uint16 sidx = m_arrRemapTable[b];                                                     //is array can be different for every skin-attachment
+		const uint16 sidx = m_arrRemapTable[b]; //is array can be different for every skin-attachment 
 		arrRemapSkinQuat[b] = pSkinningTransformations[sidx];
 	}
 
 	const uint32 numSubsets = pModelMesh->m_arrRenderChunks.size();
-	for (uint32 s = 0; s < numSubsets; s++)
+	for (uint32 s=0; s<numSubsets; s++)
 	{
-		float fColor[4] = { 1, 0, 1, 1 };
+		float fColor[4] = {1,0,1,1};
 		extern f32 g_YLine;
 		//	g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.3f, fColor, false,"MODEL: %s",pDefaultSkeleton->GetFilePath()); g_YLine+=0x10;
-		uint32 startIndex = pModelMesh->m_arrRenderChunks[s].m_nFirstIndexId;
-		uint32 endIndex = pModelMesh->m_arrRenderChunks[s].m_nFirstIndexId + pModelMesh->m_arrRenderChunks[s].m_nNumIndices;
+		uint32 startIndex		= pModelMesh->m_arrRenderChunks[s].m_nFirstIndexId;
+		uint32 endIndex			= pModelMesh->m_arrRenderChunks[s].m_nFirstIndexId+pModelMesh->m_arrRenderChunks[s].m_nNumIndices;
 		g_pAuxGeom->Draw2dLabel(1, g_YLine, 1.3f, fColor, false, "subset: %d  startIndex: %d  endIndex: %d", s, startIndex, endIndex);
 		g_YLine += 0x10;
 
-		for (uint32 idx = startIndex; idx < endIndex; ++idx)
+		for (uint32 idx=startIndex; idx<endIndex; ++idx)
 		{
 			uint32 e = pIndices[idx];
 			if (arrSkinned[e])
 				continue;
 
-			arrSkinned[e] = 1;
-			Vec3 hwPosition = *(Vec3*)(pPositions + e * nPositionStride) + pModelMesh->m_vRenderMeshOffset;
-			SPipQTangents hwQTangent = *(SPipQTangents*)(pQTangents + e * nQTangentStride);
-			uint16* hwIndices = ((SVF_W4B_I4S*)(pSkinningInfo + e * nSkinningStride))->indices;
-			ColorB hwWeights = *(ColorB*)&((SVF_W4B_I4S*)(pSkinningInfo + e * nSkinningStride))->weights;
+			arrSkinned[e]=1;
+			Vec3		hwPosition	= *(Vec3*)(pPositions + e * nPositionStride) + pModelMesh->m_vRenderMeshOffset;
+			SPipQTangents	hwQTangent	= *(SPipQTangents*)(pQTangents + e * nQTangentStride);
+			uint16*	hwIndices   = ((SVF_W4B_I4S*)(pSkinningInfo + e*nSkinningStride))->indices;
+			ColorB	hwWeights		= *(ColorB*)&((SVF_W4B_I4S*)(pSkinningInfo + e*nSkinningStride))->weights;
 
 			//---------------------------------------------------------------------
 			//---     this is CPU emulation of Dual-Quat skinning              ---
@@ -1193,39 +1187,39 @@ void CAttachmentVCLOTH::SoftwareSkinningDQ_VS_Emulator(CModelMesh* pModelMesh, M
 			assert(id3 < m_arrRemapTable.size());
 
 			//get weights for vertices (always 4 weights per vertex)
-			f32 w0 = hwWeights[0] / 255.0f;
-			f32 w1 = hwWeights[1] / 255.0f;
-			f32 w2 = hwWeights[2] / 255.0f;
-			f32 w3 = hwWeights[3] / 255.0f;
-			assert(fabsf((w0 + w1 + w2 + w3) - 1.0f) < 0.0001f);
+			f32 w0 = hwWeights[0]/255.0f;
+			f32 w1 = hwWeights[1]/255.0f;
+			f32 w2 = hwWeights[2]/255.0f;
+			f32 w3 = hwWeights[3]/255.0f;
+			assert(fabsf((w0+w1+w2+w3)-1.0f)<0.0001f);
 
-			const DualQuat& q0 = arrRemapSkinQuat[id0];
-			const DualQuat& q1 = arrRemapSkinQuat[id1];
-			const DualQuat& q2 = arrRemapSkinQuat[id2];
-			const DualQuat& q3 = arrRemapSkinQuat[id3];
-			DualQuat wquat = q0 * w0 + q1 * w1 + q2 * w2 + q3 * w3;
+			const DualQuat& q0=arrRemapSkinQuat[id0];
+			const DualQuat& q1=arrRemapSkinQuat[id1];
+			const DualQuat& q2=arrRemapSkinQuat[id2];
+			const DualQuat& q3=arrRemapSkinQuat[id3];
+			DualQuat wquat		=	q0*w0 +  q1*w1 + q2*w2 +	q3*w3;
 
-			f32 l = 1.0f / wquat.nq.GetLength();
-			wquat.nq *= l;
-			wquat.dq *= l;
-			g_arrExtSkinnedStream[e] = rRenderMat34 * (wquat * hwPosition);       //transform position by dual-quaternion
+			f32 l=1.0f/wquat.nq.GetLength();
+			wquat.nq*=l;
+			wquat.dq*=l;
+			g_arrExtSkinnedStream[e] = rRenderMat34*(wquat*hwPosition);  //transform position by dual-quaternion
 
 			Quat QTangent = hwQTangent.GetQ();
-			assert(QTangent.IsUnit());
+			assert( QTangent.IsUnit() );
 
-			g_arrQTangents[e] = wquat.nq * QTangent;
-			if (g_arrQTangents[e].w < 0.0f)
-				g_arrQTangents[e] = -g_arrQTangents[e];                         //make it positive
-			f32 flip = QTangent.w < 0 ? -1.0f : 1.0f;
-			if (flip < 0)
-				g_arrQTangents[e] = -g_arrQTangents[e];                         //make it negative
+			g_arrQTangents[e] = wquat.nq*QTangent;
+			if (g_arrQTangents[e].w<0.0f)
+				g_arrQTangents[e]=-g_arrQTangents[e]; //make it positive
+			f32 flip = QTangent.w<0 ? -1.0f : 1.0f; 
+			if (flip<0)
+				g_arrQTangents[e]=-g_arrQTangents[e]; //make it negative
 		}
 	}
-	g_YLine += 0x10;
+	g_YLine+=0x10;
 
 	pModelMesh->m_pIRenderMesh->UnLockForThreadAccess();
 	--pModelMesh->m_iThreadMeshAccessCounter;
-	if (pModelMesh->m_iThreadMeshAccessCounter == 0)
+	if (pModelMesh->m_iThreadMeshAccessCounter==0)
 	{
 		pModelMesh->m_pIRenderMesh->UnlockStream(VSF_GENERAL);
 		pModelMesh->m_pIRenderMesh->UnlockStream(VSF_TANGENTS);
@@ -1236,133 +1230,133 @@ void CAttachmentVCLOTH::SoftwareSkinningDQ_VS_Emulator(CModelMesh* pModelMesh, M
 	//---------------------------------------------------------------------------
 	//---------------------------------------------------------------------------
 
-	uint32 numBuffer = g_arrExtSkinnedStream.size();
-	if (numBuffer < numExtVertices)
+	uint32 numBuffer	=	g_arrExtSkinnedStream.size();
+	if (numBuffer<numExtVertices)
 		return;
-	const f32 VLENGTH = 0.03f;
+	const f32 VLENGTH=0.03f;
 
-	if (tang)
+	if (tang) 
 	{
 		static std::vector<ColorB> arrExtVColors;
 		uint32 csize = arrExtVColors.size();
-		if (csize < (numExtVertices * 2)) arrExtVColors.resize(numExtVertices * 2);
-		for (uint32 i = 0; i < numExtVertices * 2; i = i + 2)
+		if (csize<(numExtVertices*2)) arrExtVColors.resize( numExtVertices*2 );	
+		for(uint32 i=0; i<numExtVertices*2; i=i+2)	
 		{
-			arrExtVColors[i + 0] = RGBA8(0x3f, 0x00, 0x00, 0x00);
-			arrExtVColors[i + 1] = RGBA8(0xff, 0x7f, 0x7f, 0x00);
+			arrExtVColors[i+0] = RGBA8(0x3f,0x00,0x00,0x00);
+			arrExtVColors[i+1] = RGBA8(0xff,0x7f,0x7f,0x00);
 		}
 
 		Matrix33 WMat33 = Matrix33(rRenderMat34);
 		static std::vector<Vec3> arrExtSkinnedStream;
 		uint32 vsize = arrExtSkinnedStream.size();
-		if (vsize < (numExtVertices * 2)) arrExtSkinnedStream.resize(numExtVertices * 2);
-		for (uint32 i = 0, t = 0; i < numExtVertices; i++)
+		if (vsize<(numExtVertices*2)) arrExtSkinnedStream.resize( numExtVertices*2 );	
+		for(uint32 i=0,t=0; i<numExtVertices; i++)	
 		{
-			Vec3 vTangent = g_arrQTangents[i].GetColumn0() * VLENGTH;
-			arrExtSkinnedStream[t + 0] = g_arrExtSkinnedStream[i];
-			arrExtSkinnedStream[t + 1] = WMat33 * vTangent + arrExtSkinnedStream[t];
-			t = t + 2;
+			Vec3 vTangent  = g_arrQTangents[i].GetColumn0()*VLENGTH;
+			arrExtSkinnedStream[t+0] = g_arrExtSkinnedStream[i]; 
+			arrExtSkinnedStream[t+1] = WMat33*vTangent+arrExtSkinnedStream[t];
+			t=t+2;
 		}
 
-		SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
-		g_pAuxGeom->SetRenderFlags(renderFlags);
-		g_pAuxGeom->DrawLines(&arrExtSkinnedStream[0], numExtVertices * 2, &arrExtVColors[0]);
+		SAuxGeomRenderFlags renderFlags( e_Def3DPublicRenderflags );
+		g_pAuxGeom->SetRenderFlags( renderFlags );
+		g_pAuxGeom->DrawLines( &arrExtSkinnedStream[0],numExtVertices*2, &arrExtVColors[0]);		
 	}
 
-	if (binorm)
+	if (binorm) 
 	{
 		static std::vector<ColorB> arrExtVColors;
 		uint32 csize = arrExtVColors.size();
-		if (csize < (numExtVertices * 2)) arrExtVColors.resize(numExtVertices * 2);
-		for (uint32 i = 0; i < numExtVertices * 2; i = i + 2)
+		if (csize<(numExtVertices*2)) arrExtVColors.resize( numExtVertices*2 );	
+		for(uint32 i=0; i<numExtVertices*2; i=i+2)	
 		{
-			arrExtVColors[i + 0] = RGBA8(0x00, 0x3f, 0x00, 0x00);
-			arrExtVColors[i + 1] = RGBA8(0x7f, 0xff, 0x7f, 0x00);
+			arrExtVColors[i+0] = RGBA8(0x00,0x3f,0x00,0x00);
+			arrExtVColors[i+1] = RGBA8(0x7f,0xff,0x7f,0x00);
 		}
 
 		Matrix33 WMat33 = Matrix33(rRenderMat34);
 		static std::vector<Vec3> arrExtSkinnedStream;
 		uint32 vsize = arrExtSkinnedStream.size();
-		if (vsize < (numExtVertices * 2)) arrExtSkinnedStream.resize(numExtVertices * 2);
-		for (uint32 i = 0, t = 0; i < numExtVertices; i++)
+		if (vsize<(numExtVertices*2)) arrExtSkinnedStream.resize( numExtVertices*2 );	
+		for(uint32 i=0,t=0; i<numExtVertices; i++)	
 		{
-			Vec3 vBitangent = g_arrQTangents[i].GetColumn1() * VLENGTH;
-			arrExtSkinnedStream[t + 0] = g_arrExtSkinnedStream[i];
-			arrExtSkinnedStream[t + 1] = WMat33 * vBitangent + arrExtSkinnedStream[t];
-			t = t + 2;
+			Vec3 vBitangent = g_arrQTangents[i].GetColumn1()*VLENGTH;
+			arrExtSkinnedStream[t+0] = g_arrExtSkinnedStream[i]; 
+			arrExtSkinnedStream[t+1] = WMat33*vBitangent+arrExtSkinnedStream[t];
+			t=t+2;
 		}
 
-		SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
-		g_pAuxGeom->SetRenderFlags(renderFlags);
-		g_pAuxGeom->DrawLines(&arrExtSkinnedStream[0], numExtVertices * 2, &arrExtVColors[0]);
+		SAuxGeomRenderFlags renderFlags( e_Def3DPublicRenderflags );
+		g_pAuxGeom->SetRenderFlags( renderFlags );
+		g_pAuxGeom->DrawLines( &arrExtSkinnedStream[0],numExtVertices*2, &arrExtVColors[0]);		
 	}
 
-	if (norm)
+	if (norm) 
 	{
 		static std::vector<ColorB> arrExtVColors;
 		uint32 csize = arrExtVColors.size();
-		if (csize < (numExtVertices * 2)) arrExtVColors.resize(numExtVertices * 2);
-		for (uint32 i = 0; i < numExtVertices * 2; i = i + 2)
+		if (csize<(numExtVertices*2)) arrExtVColors.resize( numExtVertices*2 );	
+		for(uint32 i=0; i<numExtVertices*2; i=i+2)	
 		{
-			arrExtVColors[i + 0] = RGBA8(0x00, 0x00, 0x3f, 0x00);
-			arrExtVColors[i + 1] = RGBA8(0x7f, 0x7f, 0xff, 0x00);
+			arrExtVColors[i+0] = RGBA8(0x00,0x00,0x3f,0x00);
+			arrExtVColors[i+1] = RGBA8(0x7f,0x7f,0xff,0x00);
 		}
 
 		Matrix33 WMat33 = Matrix33(rRenderMat34);
 		static std::vector<Vec3> arrExtSkinnedStream;
 		uint32 vsize = arrExtSkinnedStream.size();
-		if (vsize < (numExtVertices * 2)) arrExtSkinnedStream.resize(numExtVertices * 2);
-		for (uint32 i = 0, t = 0; i < numExtVertices; i++)
+		if (vsize<(numExtVertices*2)) arrExtSkinnedStream.resize( numExtVertices*2 );	
+		for(uint32 i=0,t=0; i<numExtVertices; i++)	
 		{
-			f32 flip = (g_arrQTangents[i].w < 0) ? -VLENGTH : VLENGTH;
-			Vec3 vNormal = g_arrQTangents[i].GetColumn2() * flip;
-			arrExtSkinnedStream[t + 0] = g_arrExtSkinnedStream[i];
-			arrExtSkinnedStream[t + 1] = WMat33 * vNormal + arrExtSkinnedStream[t];
-			t = t + 2;
+			f32 flip = (g_arrQTangents[i].w<0) ? -VLENGTH : VLENGTH; 
+			Vec3 vNormal = g_arrQTangents[i].GetColumn2()*flip;
+			arrExtSkinnedStream[t+0] = g_arrExtSkinnedStream[i]; 
+			arrExtSkinnedStream[t+1] = WMat33*vNormal + arrExtSkinnedStream[t];
+			t=t+2;
 		}
-		SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
-		g_pAuxGeom->SetRenderFlags(renderFlags);
-		g_pAuxGeom->DrawLines(&arrExtSkinnedStream[0], numExtVertices * 2, &arrExtVColors[0]);
+		SAuxGeomRenderFlags renderFlags( e_Def3DPublicRenderflags );
+		g_pAuxGeom->SetRenderFlags( renderFlags );
+		g_pAuxGeom->DrawLines( &arrExtSkinnedStream[0],numExtVertices*2, &arrExtVColors[0]);		
 	}
 
-	if (wire)
+	if (wire) 
 	{
-		uint32 color = RGBA8(0x00, 0xff, 0x00, 0x00);
-		SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
-		renderFlags.SetFillMode(e_FillModeWireframe);
-		renderFlags.SetDrawInFrontMode(e_DrawInFrontOn);
+		uint32 color = RGBA8(0x00,0xff,0x00,0x00);
+		SAuxGeomRenderFlags renderFlags( e_Def3DPublicRenderflags );
+		renderFlags.SetFillMode( e_FillModeWireframe );
+		renderFlags.SetDrawInFrontMode( e_DrawInFrontOn );
 		renderFlags.SetAlphaBlendMode(e_AlphaAdditive);
-		g_pAuxGeom->SetRenderFlags(renderFlags);
-		g_pAuxGeom->DrawTriangles(&g_arrExtSkinnedStream[0], numExtVertices, pIndices, numExtIndices, color);
+		g_pAuxGeom->SetRenderFlags( renderFlags );
+		g_pAuxGeom->DrawTriangles(&g_arrExtSkinnedStream[0],numExtVertices, pIndices,numExtIndices,color);		
 	}
 }
 #endif
 
-void CAttachmentVCLOTH::HideAttachment(uint32 x)
+void CAttachmentVCLOTH::HideAttachment( uint32 x )
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_MAIN_PASS | FLAGS_ATTACH_HIDE_SHADOW_PASS | FLAGS_ATTACH_HIDE_RECURSION, x != 0);
+	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_MAIN_PASS | FLAGS_ATTACH_HIDE_SHADOW_PASS | FLAGS_ATTACH_HIDE_RECURSION, x!=0);
 
-	if (x)
-		m_AttFlags |= (FLAGS_ATTACH_HIDE_MAIN_PASS | FLAGS_ATTACH_HIDE_SHADOW_PASS | FLAGS_ATTACH_HIDE_RECURSION);
+	if(x)
+		m_AttFlags |=  (FLAGS_ATTACH_HIDE_MAIN_PASS | FLAGS_ATTACH_HIDE_SHADOW_PASS | FLAGS_ATTACH_HIDE_RECURSION);
 	else
 		m_AttFlags &= ~(FLAGS_ATTACH_HIDE_MAIN_PASS | FLAGS_ATTACH_HIDE_SHADOW_PASS | FLAGS_ATTACH_HIDE_RECURSION);
 }
 
-void CAttachmentVCLOTH::HideInRecursion(uint32 x)
+void CAttachmentVCLOTH::HideInRecursion( uint32 x ) 
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_RECURSION, x != 0);
+	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_RECURSION, x!=0);
 
-	if (x)
+	if(x)
 		m_AttFlags |= FLAGS_ATTACH_HIDE_RECURSION;
 	else
 		m_AttFlags &= ~FLAGS_ATTACH_HIDE_RECURSION;
 }
 
-void CAttachmentVCLOTH::HideInShadow(uint32 x)
+void CAttachmentVCLOTH::HideInShadow( uint32 x )
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_SHADOW_PASS, x != 0);
+	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_SHADOW_PASS, x!=0);
 
-	if (x)
+	if(x)
 		m_AttFlags |= FLAGS_ATTACH_HIDE_SHADOW_PASS;
 	else
 		m_AttFlags &= ~FLAGS_ATTACH_HIDE_SHADOW_PASS;
@@ -1372,27 +1366,27 @@ extern f32 g_YLine;
 
 struct SEdgeInfo
 {
-	int   m_iEdge;
+	int m_iEdge;
 	float m_cost;
-	bool  m_skip;
+	bool m_skip;
 
-	SEdgeInfo() : m_iEdge(-1), m_cost(1e38f), m_skip(false) {}
+	SEdgeInfo() : m_iEdge(-1), m_cost(1e38f), m_skip(false) { }
 };
 
-bool CClothSimulator::AddGeometry(phys_geometry* pgeom)
+bool CClothSimulator::AddGeometry(phys_geometry *pgeom)
 {
 	if (!pgeom || pgeom->pGeom->GetType() != GEOM_TRIMESH)
 		return false;
 
-	mesh_data* pMesh = (mesh_data*)pgeom->pGeom->GetData();
+	mesh_data *pMesh = (mesh_data*)pgeom->pGeom->GetData();
 
 	m_nVtx = pMesh->nVertices;
 	m_particlesHot = new SParticleHot[m_nVtx];
 	m_particlesCold = new SParticleCold[m_nVtx];
-	for (int i = 0; i < m_nVtx; i++)
+	for(int i = 0; i < m_nVtx; i++) 
 	{
 		m_particlesHot[i].pos = Vector4(pMesh->pVertices[i]);
-		m_particlesCold[i].prevPos = m_particlesHot[i].pos;   // vel = 0
+		m_particlesCold[i].prevPos = m_particlesHot[i].pos; // vel = 0
 	}
 
 	return true;
@@ -1403,25 +1397,19 @@ int CClothSimulator::SetParams(const SVClothParams& params, float* weights)
 	m_config = params;
 	m_config.weights = weights;
 
-	for (int i = 0; i < m_nVtx && m_config.weights; i++)
-	{
+	for (int i = 0; i < m_nVtx && m_config.weights; i++)	
+	{	
 		m_particlesHot[i].alpha = AttachmentVClothPreProcess::IsAttached(m_config.weights[i]) ? 1.0f : m_config.weights[i];
 		m_particlesHot[i].factorAttached = 1.0f - m_config.weights[i];
 		m_particlesCold[i].bAttached = AttachmentVClothPreProcess::IsAttached(m_particlesHot[i].alpha);
 	}
 	// refresh the edges for newly attached vertices
 	for (int i = 0; i < m_nEdges; i++)
-	{
 		PrepareEdge(m_links[i]);
-	}
 	for (size_t i = 0; i < m_shearLinks.size(); i++)
-	{
 		PrepareEdge(m_shearLinks[i]);
-	}
 	for (size_t i = 0; i < m_bendLinks.size(); i++)
-	{
 		PrepareEdge(m_bendLinks[i]);
-	}
 	return 1;
 }
 
@@ -1498,22 +1486,22 @@ void CClothSimulator::StartStep(float time_interval, const QuatT& location)
 	if (m_dtPrev < 0) m_dtPrev = m_config.timeStep;
 
 	uint32 numClothProxie = 0;
-	uint32 numProxies = m_pAttachmentManager->GetProxyCount();
-	for (uint32 i = 0; i < numProxies; i++)
+	uint32 numProxies =  m_pAttachmentManager->GetProxyCount();
+	for (uint32 i=0; i<numProxies; i++)
 	{
 		if (m_pAttachmentManager->m_arrProxies[i].m_nPurpose == 1) // ==1: cloth
 			numClothProxie++;
 	}
-	// g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.3f, ColorF(0,1,0,1), false,"numProxies: %d",numClothProxie),g_YLine+=16.0f;
-
+//	g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.3f, ColorF(0,1,0,1), false,"numProxies: %d",numClothProxie),g_YLine+=16.0f;
+	
 	uint32 numCollidables = m_permCollidables.size();
 	if (numClothProxie != numCollidables)
 		m_permCollidables.resize(numClothProxie);
 
 	Quat rotf = location.q;
 	Quaternion ssequat(location.q);
-	uint32 c = 0;
-	for (uint32 i = 0; i < numProxies; i++)
+	uint32 c=0;
+	for (uint32 i=0; i<numProxies; i++) 
 	{
 		if (m_pAttachmentManager->m_arrProxies[i].m_nPurpose != 1) // ==1: cloth
 			continue;
@@ -1522,7 +1510,7 @@ void CClothSimulator::StartStep(float time_interval, const QuatT& location)
 
 		const CProxy* pProxy = &m_pAttachmentManager->m_arrProxies[i];
 		m_permCollidables[c].offset = ssequat * Vector4(pProxy->m_ProxyModelRelative.t);
-		m_permCollidables[c].R = Matrix3(rotf * pProxy->m_ProxyModelRelative.q);
+		m_permCollidables[c].R  = Matrix3(rotf * pProxy->m_ProxyModelRelative.q);
 		m_permCollidables[c].cr = pProxy->m_params.w;
 		m_permCollidables[c].cx = pProxy->m_params.x;
 		m_permCollidables[c].cy = pProxy->m_params.y;
@@ -1547,14 +1535,14 @@ void CClothSimulator::StartStep(float time_interval, const QuatT& location)
 		if (m_externalDeltaTranslation.len2() > thresh * thresh) m_externalDeltaTranslation = Vec3(ZERO);
 	}
 
-	for (int i = 0; i < m_nVtx; i++)
+	for (int i = 0; i < m_nVtx; i++) 
 	{
 		m_particlesCold[i].oldPos = m_particlesHot[i].pos;
 	}
 
 	// blend world space with local space movement
-	const float rotationBlend = m_config.rotationBlend;   //max(m_angModulator, m_config.rotationBlend);
-	if ((m_config.rotationBlend > 0.f || m_config.translationBlend > 0.f) && !m_permCollidables.empty())
+	const float rotationBlend = m_config.rotationBlend; //max(m_angModulator, m_config.rotationBlend);
+	if ((m_config.rotationBlend > 0.f || m_config.translationBlend > 0.f)  && !m_permCollidables.empty()) 
 	{
 		Quaternion dq(IDENTITY);
 		if (m_config.rotationBlend > 0.f)
@@ -1571,9 +1559,9 @@ void CClothSimulator::StartStep(float time_interval, const QuatT& location)
 			delta = m_config.translationBlend * (m_permCollidables[0].offset - m_permCollidables[0].oldOffset);
 			delta += m_permCollidables[0].oldOffset - dq * m_permCollidables[0].oldOffset;
 		}
-		for (int i = 0; i < m_nVtx; i++)
+		for(int i = 0; i < m_nVtx; i++) 
 		{
-			if (!m_particlesCold[i].bAttached)
+			if (!m_particlesCold[i].bAttached) 
 			{
 				m_particlesHot[i].pos = dq * m_particlesHot[i].pos + delta;
 				m_particlesCold[i].prevPos = dq * m_particlesCold[i].prevPos + delta;
@@ -1596,36 +1584,36 @@ struct Quotient
 {
 	float x, y;
 
-	Quotient(float ax, float ay) : x(ax), y(ay) {}
-	float     val()                { return y != 0 ? x / y : 0; }
-	Quotient& operator+=(float op) { x += op * y; return *this; }
+	Quotient(float ax, float ay) : x(ax), y(ay) { }
+	float val() { return y != 0 ? x / y : 0; }
+	Quotient& operator +=(float op) { x += op * y; return *this; }
 };
 
 namespace VClothUtils
 {
 inline float      GetMin(float) { return 1E-20f; }
-static ILINE bool operator<(const Quotient& op1, const Quotient& op2)
-{
+static ILINE bool operator<(const Quotient&op1, const Quotient&op2) 
+{ 
 	return op1.x * op2.y - op2.x * op1.y + GetMin(op1.x) * (op1.x - op2.x) < 0;
 }
 
 static ILINE bool PrimitiveRayCast(const f32 cr, const f32 ca, const SRay& ray, SIntersection& inters)
 {
-
+			
 	if (ca == 0)
 	{
 		Vector4 delta = ray.origin;
-		float a = ray.dir.len2();
-		float b = ray.dir * delta;
+		float a = ray.dir.len2(); 
+		float b = ray.dir * delta; 
 		float c = delta.len2() - sqr(cr);
 		float d = b * b - a * c;
-		if (d >= 0)
+		if (d >= 0) 
 		{
 			d = sqrt_tpl(d);
 			Quotient t(-b - d, a);
 			int bHit = isneg(fabs_tpl(t.x * 2 - t.y) - t.y);
 			t.x += d * (bHit ^ 1) * 2;
-			bHit = isneg(fabs_tpl(t.x * 2 - t.y) - t.y);
+			bHit = isneg(fabs_tpl(t.x *2 - t.y) - t.y);
 			if (!bHit)
 				return 0;
 
@@ -1642,69 +1630,69 @@ static ILINE bool PrimitiveRayCast(const f32 cr, const f32 ca, const SRay& ray, 
 		//lozenges
 		Vector4 axis;
 #ifdef CLOTH_SSE
-		axis.x = 1, axis.y = 0, axis.z = 0, axis.w = 0;
+		axis.x=1,axis.y=0,axis.z=0,axis.w=0;
 #else
-		axis.x = 1, axis.y = 0, axis.z = 0;
+		axis.x=1,axis.y=0,axis.z=0;
 #endif
 
 		Quotient tmin(1, 1);
-		int iFeature = -1;     // TODO: remove or change
+		int iFeature = -1; // TODO: remove or change
 		float a = ray.dir.len2();
-		for (int icap = 0; icap < 2; icap++)
+		for (int icap = 0; icap < 2; icap++) 
 		{
 			Vector4 vec0 = axis * (ca * (icap * 2 - 1));
 			Vector4 delta = ray.origin - vec0;
-			float b = ray.dir * delta;
+			float b = ray.dir * delta; 
 			float c = delta.len2() - sqr(cr);
 			float axcdiff = (ray.origin) * axis;
 			float axdir = ray.dir * axis;
 			float d = b * b - a * c;
-			if (d >= 0)
+			if (d >= 0) 
 			{
 				d = sqrt_tpl(d);
 				Quotient t(-b - d, a);
 				int bHit = inrange(t.x * tmin.y, 0.f, t.y * tmin.x) & isneg(ca * t.y - fabs_tpl(axcdiff * t.y + axdir * t.x));
-				tmin.x += (t.x - tmin.x) * bHit;
+				tmin.x += (t.x - tmin.x) * bHit; 
 				tmin.y += (t.y - tmin.y) * bHit;
-				iFeature = 0x41 + icap & - bHit | iFeature & ~-bHit;
+				iFeature = 0x41 + icap & -bHit | iFeature & ~-bHit;
 				t.x += d * 2;
 				bHit = inrange(t.x * tmin.y, 0.f, t.y * tmin.x) & isneg(ca * t.y - fabs_tpl(axcdiff * t.y + axdir * t.x));
-				tmin.x += (t.x - tmin.x) * bHit;
+				tmin.x += (t.x - tmin.x) * bHit; 
 				tmin.y += (t.y - tmin.y) * bHit;
-				iFeature = 0x41 + icap & - bHit | iFeature & ~-bHit;
+				iFeature = 0x41 + icap & -bHit | iFeature & ~-bHit;
 			}
 		}
 
-		Vector4 vec0 = ray.origin;
+		Vector4 vec0 = ray.origin; 
 		Vector4 vec1 = ray.dir ^ axis;
-		a = vec1 * vec1;
-		float b = vec0 * vec1;
-		float c = vec0 * vec0 - sqr(cr);
+		a = vec1 * vec1; 
+		float b = vec0 * vec1; 
+		float c = vec0 * vec0 - sqr(cr); 
 		float d = b * b - a * c;
-		if (d >= 0)
+		if (d >= 0) 
 		{
-			d = sqrt_tpl(d);
+			d = sqrt_tpl(d); 
 			Quotient t(-b - d, a);
 			int bHit = inrange(t.x * tmin.y, 0.f, t.y * tmin.x) & isneg(fabs_tpl(((ray.origin) * t.y + ray.dir * t.x) * axis) - ca * t.y);
-			tmin.x += (t.x - tmin.x) * bHit;
+			tmin.x += (t.x - tmin.x) * bHit; 
 			tmin.y += (t.y - tmin.y) * bHit;
-			iFeature = 0x40 & - bHit | iFeature & ~-bHit;
+			iFeature = 0x40 & -bHit | iFeature & ~-bHit;
 			t.x += d * 2;
 			bHit = inrange(t.x * tmin.y, 0.f, t.y * tmin.x) & isneg(fabs_tpl(((ray.origin) * t.y + ray.dir * t.x) * axis) - ca * t.y);
-			tmin.x += (t.x - tmin.x) * bHit;
+			tmin.x += (t.x - tmin.x) * bHit; 
 			tmin.y += (t.y - tmin.y) * bHit;
-			iFeature = 0x40 & - bHit | iFeature & ~-bHit;
+			iFeature = 0x40 & -bHit | iFeature & ~-bHit;
 		}
 
-		if (iFeature < 0)
+		if (iFeature<0)
 			return 0;
 
 		inters.pt = ray.origin + ray.dir * tmin.val();
-		if (iFeature == 0x40)
+		if (iFeature == 0x40) 
 		{
 			inters.n = inters.pt;
 			inters.n -= axis * (axis * inters.n);
-		}
+		} 
 		else
 		{
 			inters.n = inters.pt - axis * (ca * ((iFeature - 0x41) * 2 - 1));
@@ -1734,7 +1722,6 @@ void CClothSimulator::LongRangeAttachmentsSolve()
 			const int i = *it;
 			const int& idx = m_particlesHot[i].lraIdx;
 			if (idx < 0) continue; // no lra found in initialization
-
 			// determine distance to LRA
 			Vector4 lraDistV = m_particlesHot[i].pos - m_particlesHot[idx].pos;
 			float lraDistSqr = lraDistV.dot(lraDistV);
@@ -1767,10 +1754,10 @@ void CClothSimulator::LongRangeAttachmentsSolve()
 		}
 	}
 	else
-	{
+{
 		// Euclidean distance in local space
-		for (int i = 0; i < m_nVtx; i++)
-		{
+	for (int i = 0; i < m_nVtx; i++) 
+	{
 			const int& idx = m_particlesHot[i].lraIdx;
 			if (idx < 0) continue; // no LRA for attached vtx
 
@@ -1781,7 +1768,7 @@ void CClothSimulator::LongRangeAttachmentsSolve()
 			float distSqr = d.dot(d);
 
 			if (distSqr > m_particlesHot[i].lraDist * m_particlesHot[i].lraDist)
-			{
+		{
 				// force LRA constraint
 				d = d.GetNormalizedFast();
 				m_particlesHot[i].pos = m_particlesHot[idx].pos + m_particlesHot[i].lraDist * d * m_dt;
@@ -1791,18 +1778,18 @@ void CClothSimulator::LongRangeAttachmentsSolve()
 }
 
 void CClothSimulator::BendByTriangleAngleDetermineNormals()
-{
+			{
 	const SParticleHot* p = m_particlesHot;
 
 	for (auto it = m_listBendTriangles.begin(); it != m_listBendTriangles.end(); it++)
 	{
 		SBendTriangle& t = *it;
 		t.normal = ((p[t.p1].pos - p[t.p0].pos).cross(p[t.p2].pos - p[t.p0].pos)).GetNormalizedFast();
-	}
-}
+			}
+		}		
 
 void CClothSimulator::BendByTriangleAngleSolve(float kBend)
-{
+		{
 	BendByTriangleAngleDetermineNormals();
 
 	const float k = kBend;
@@ -1810,7 +1797,7 @@ void CClothSimulator::BendByTriangleAngleSolve(float kBend)
 	SParticleCold* pO = m_particlesCold;
 
 	for (auto it = m_listBendTrianglePairs.begin(); it != m_listBendTrianglePairs.end(); it++)
-	{
+			{
 		Vec3& n0 = m_listBendTriangles[(*it).idxNormal0].normal;
 		Vec3& n1 = m_listBendTriangles[(*it).idxNormal1].normal;
 
@@ -1827,16 +1814,16 @@ void CClothSimulator::BendByTriangleAngleSolve(float kBend)
 		Vec3 nHalf = (n0 + n1).GetNormalizedFast();
 		p[it->p0].pos -= nHalf * factor * p[it->p0].factorAttached * m_dt;
 		p[it->p1].pos -= nHalf * factor * p[it->p1].factorAttached * m_dt;
-	}
+			}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace VClothUtils
-{
+			{
 
 static ILINE f32 BoxGetSignedDistance(const Vec3& box, const Vec3& pos)     // signed distance of box
-{
+				{
 	Vec3 d(abs(pos.x), abs(pos.y), abs(pos.z));
 	d -= box;
 
@@ -1847,7 +1834,7 @@ static ILINE f32 BoxGetSignedDistance(const Vec3& box, const Vec3& pos)     // s
 	d.z = max(d.z, 0.0f);
 
 	return minMax + d.len();
-}
+				}
 
 static ILINE f32 ColliderDistance(const SCollidable& coll, const Vec3& pos)     // signed distance of lozenge
 {
@@ -1857,7 +1844,7 @@ static ILINE f32 ColliderDistance(const SCollidable& coll, const Vec3& pos)     
 	f32 boxDist = BoxGetSignedDistance(box, pos);
 
 	return boxDist - cr;
-}
+			}
 
 static ILINE bool ColliderDistanceOutsideBoxCheck(const SCollidable& coll, const Vec3& pos)     // quick check, if outside lozenge bounding box
 {
@@ -1866,7 +1853,7 @@ static ILINE bool ColliderDistanceOutsideBoxCheck(const SCollidable& coll, const
 	if (fabs(pos.x) > coll.cx + r) return true;
 	if (fabs(pos.y) > coll.cy + r) return true;
 	return false;
-}
+		}
 
 static ILINE Vec3 ColliderDistanceDirectionNorm(const SCollidable& coll, const Vector4& pos, f32 distance)     // determine normalized direction to surface of lozenge, distance is distance to lozenge-surface at pos
 {
@@ -1881,7 +1868,7 @@ static ILINE Vec3 ColliderDistanceDirectionNorm(const SCollidable& coll, const V
 	  ColliderDistance(coll, pos + epsY) - distance,
 	  ColliderDistance(coll, pos + epsZ) - distance);
 	return n.GetNormalizedFast();
-}
+	}
 
 static ILINE bool ColliderProjectToSurface(const SCollidable& coll, Vector4& pos, Vector4* normal = nullptr, float factor = 1.0f)     // project pos on surface of lozenge; returns true, if pos is inside coll and has been projected; false otherwise
 {
@@ -1895,7 +1882,7 @@ static ILINE bool ColliderProjectToSurface(const SCollidable& coll, Vector4& pos
 	{
 		*normal = ColliderDistanceDirectionNorm(coll, pos, distance);
 		pos -= eps * (*normal) * distance * factor;     // determine surface position
-	}
+}
 	else
 	{
 		pos -= eps * ColliderDistanceDirectionNorm(coll, pos, distance) * distance * factor;     // determine surface position
@@ -1959,22 +1946,22 @@ void CClothSimulator::PositionsProjectToProxySurface(f32 t01)
 					nCollisionsDetected++;
 					ipos = M * ipos + coll.qLerp.t;   // transform back to WS
 					collisionResolvePosition += ipos; // set particles new position
-				}
+	}
 			}
 			else
-			{
+	{
 				// slow approaching of final collision-resolve-position
 				if (VClothUtils::ColliderProjectToSurface(coll, ipos, nullptr, 0.5f)) // approaching with factor 0.5
 				{
 					ipos = M * ipos + coll.qLerp.t;                           // transform back to WS
 					collisionResolvePosition += ipos - m_particlesHot[i].pos; // store sum of delta
 					nCollisionsDetected++;
-				}
+	}
 			}
 		}
 
 		if (instantResolve)
-		{
+	{
 			switch (nCollisionsDetected)
 			{
 			case 0:
@@ -1990,13 +1977,13 @@ void CClothSimulator::PositionsProjectToProxySurface(f32 t01)
 				{
 					m_particlesHot[i].collisionExist = true;
 					m_particlesHot[i].collisionNormal = collisionNormal;
-				}
+	}
 
 				break;
 			case 2:
 				// 2 collisions at the same time: explicitly resolve by half distance into average direction
 				if (m_config.collisionMultipleShiftFactor)
-				{
+	{
 					Vector4 collisionResolvePosition(ZERO);
 					for (int j = 0; j < nCollisionsDetected; j++)
 					{
@@ -2008,14 +1995,14 @@ void CClothSimulator::PositionsProjectToProxySurface(f32 t01)
 						{
 							ipos = M * ipos + coll.qLerp.t; // transform back to WS
 							collisionResolvePosition += ipos - m_particlesHot[i].pos;
-						}
+	}
 					}
 					m_particlesHot[i].pos += collisionResolvePosition / 2.0f; // 2 collisions, thus '/ 2.0'f
 				}
 
 				// 2 collisions at the same time: collide with union of both colliders / disabled at the moment
 				if (false)
-				{
+	{
 					const int id0 = colliderId[0];
 					const Quaternion& m0 = collidables[id0].qLerp.q;                        // transformation matrix
 					Vector4 ipos0 = (m_particlesHot[i].pos - collidables[id0].offset) * m0; // particles position in collider space
@@ -2051,9 +2038,9 @@ void CClothSimulator::PositionsProjectToProxySurface(f32 t01)
 		{
 			// slow approaching of final collision-resolve-position
 			m_particlesHot[i].pos += collisionResolvePosition / (float)nCollisionsDetected;
-		}
-
 	}
+
+}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2077,7 +2064,7 @@ void CClothSimulator::HandleCameraDistance()
 		if (IsSimulationEnabled() && !IsFadingOut())
 		{
 			EnableFadeOutPhysics();
-		}
+	}
 	}
 }
 
@@ -2095,7 +2082,7 @@ void CClothSimulator::InitFadeInOutPhysics()
 		m_fadeTimeActual = m_config.disableSimulationTimeRange;
 	}
 }
-
+	
 void CClothSimulator::EnableFadeOutPhysics()
 {
 	InitFadeInOutPhysics();
@@ -2190,12 +2177,12 @@ void CClothSimulator::DoAnimationRewind()
 	m_doSkinningForNSteps = 3; // fix poor animations with character default pose in 1st frame, which result in strong jump for 2nd frame
 	//ProjectToProxySurface(); // deactivated for now, since normal/artist defined skinning should do fine
 	m_dtPrev = m_dt / m_dtNormalize;
-	for (int i = 0; i < m_nVtx; i++)
+	for (int i = 0; i < m_nVtx; i++) 
 		m_particlesHot[i].timer = 0; // reset timer -> start resetDamping
 }
 
 void CClothSimulator::DampTangential()
-{
+	{
 	float k = m_config.collisionDampingTangential;
 	for (int i = 0; i < m_nVtx; i++)
 	{
@@ -2238,34 +2225,34 @@ void CClothSimulator::PositionsIntegrate()
 }
 
 void CClothSimulator::PositionsPullToSkinnedPositions()
-{
-	const float minDist = m_config.maxAnimDistance;
-	const float domain = 2 * minDist;
-	const Vector4 up(0, 0, 1);
-	for (int i = 0; i < m_nVtx; i++)
 	{
+		const float minDist = m_config.maxAnimDistance;
+		const float domain = 2 * minDist;
+		const Vector4 up(0, 0, 1);
+		for (int i = 0; i < m_nVtx; i++)
+		{
 		if ((m_particlesHot[i].alpha == 0.f && m_config.maxAnimDistance == 0.f) || m_particlesCold[i].bAttached)
-			continue;
-		Vector4 target = m_particlesCold[i].skinnedPos;
-		Vector4 delta = target - m_particlesHot[i].pos;
-		float len = delta.len();
+				continue;
+			Vector4 target = m_particlesCold[i].skinnedPos;
+			Vector4 delta = target - m_particlesHot[i].pos;
+			float len = delta.len();
 		float alpha = 0.0f;
 		if (minDist && len > minDist && delta * up < 0.f)
 		{
 			alpha = min(1.f, max(0.0f, (len - minDist) / domain)); // interpolate in range minDist to 3*minDist from 0..1
 		}
-		float stiffness = max(alpha, m_config.pullStiffness * m_particlesHot[i].alpha);
+			float stiffness = max(alpha, m_config.pullStiffness * m_particlesHot[i].alpha);
 		m_particlesHot[i].pos += stiffness * delta * m_dt;
+		}
 	}
-}
 
 void CClothSimulator::PositionsSetToSkinned(bool projectToProxySurface, bool setPosOld)
-{
+	{
 	// set positions by skinned positions
 	for (int n = 0; n < m_nVtx; ++n)
-	{
+		{
 		m_particlesHot[n].pos = m_particlesCold[n].skinnedPos;
-	}
+		}
 	// one single collision step to move particles outside of collision object
 	if (projectToProxySurface)
 	{
@@ -2284,24 +2271,24 @@ void CClothSimulator::PositionsSetToSkinned(bool projectToProxySurface, bool set
 }
 
 void CClothSimulator::PositionsSetAttachedToSkinnedInterpolated(float t01)
-{
-	for (int i = 0; i < m_nVtx; i++)
 	{
-		if (m_particlesCold[i].bAttached)
+	for (int i = 0; i < m_nVtx; i++)
 		{
+		if (m_particlesCold[i].bAttached)
+			{
 			m_particlesHot[i].pos = m_particlesCold[i].oldPos + t01 * (m_particlesCold[i].skinnedPos - m_particlesCold[i].oldPos); // interpolate substeps for smoother movements
 		}
-	}
-}
+			}
+		}
 
 int CClothSimulator::Step()
-{
+		{
 	// determine dt
 	m_dt = m_config.timeStep;
 	// m_time starts for substeps with m_timeInterval-m_config.timeStep (might be negative), and ends with 0, split last two timesteps to avoid very small timesteps
 	if (m_timeInterval < m_config.timeStep) { m_dt = fmod(m_timeInterval, m_config.timeStep); } // SPF faster than substeps
 	else if (m_time < m_config.timeStep)
-	{
+			{
 		m_dt = (fmod(m_timeInterval, m_config.timeStep) + m_config.timeStep) / 2.0f;
 		if (m_time > 0) m_time = m_dt;
 	}   // split last two substeps into half
@@ -2319,7 +2306,7 @@ int CClothSimulator::Step()
 	{
 		CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, "[Cloth] No of vertices <= 0");
 		return 1;
-	}
+			}
 
 	// detect animation rewind
 	if (m_config.checkAnimationRewind && CheckAnimationRewind()) { DoAnimationRewind(); return 1; }
@@ -2367,7 +2354,7 @@ int CClothSimulator::Step()
 		{
 			for (int i = 0; i < m_nVtx; i++)
 				m_particlesHot[i].collisionExist = false;
-		}
+	}
 
 		// solver collisions/stiffness
 		float stretchStiffness = m_config.stretchStiffness;
@@ -2407,12 +2394,11 @@ int CClothSimulator::Step()
 				}
 			}
 			if (bendStiffnessByTrianglesAngle) { BendByTriangleAngleSolve(bendStiffnessByTrianglesAngle); }
-
 			if (m_config.springDampingPerSubstep && springDamping)
 			{
 				// only damp  stretch links here, in the collision/stiffness loop
 				for (int i = 0; i < m_nEdges; i++)
-				{
+	{
 					DampEdge(m_links[i], springDamping);
 				}                                                                           // stretch edges
 				//for (auto it = m_bendLinks.begin(); it != m_bendLinks.end(); ++it) { DampEdge(*it, springDamping); } // bend edges
@@ -2421,11 +2407,11 @@ int CClothSimulator::Step()
 
 			// collision handling - project particles lying inside collision proxies onto collision proxies surfaces
 			if (m_config.collideEveryNthStep)   // ==0 means no collision
-			{
+		{ 
 				if ((iter % m_config.collideEveryNthStep == 0) || (iter == m_config.numIterations - 1)) { PositionsProjectToProxySurface(stepTime01); }
-			}
 		}
-
+	}
+	
 		// tangential damping in case of collisions
 		if (m_config.collisionDampingTangential) DampTangential();
 
@@ -2446,7 +2432,7 @@ int CClothSimulator::Step()
 }
 
 void CClothSimulator::LaplaceFilterPositions(Vector4* positions, float intensity)
-{
+	{
 	Vector4*& pos = positions;
 
 	m_listLaplacePosSum.clear();
@@ -2456,9 +2442,9 @@ void CClothSimulator::LaplaceFilterPositions(Vector4* positions, float intensity
 
 	// clear laplace-offset posSum & N
 	for (auto it = m_listLaplacePosSum.begin(); it != m_listLaplacePosSum.end(); ++it)
-	{
+		{
 		it->zero();
-	}
+		}
 	for (auto it = m_listLaplaceN.begin(); it != m_listLaplaceN.end(); ++it)
 	{
 		*it = 0.0f;
@@ -2473,17 +2459,17 @@ void CClothSimulator::LaplaceFilterPositions(Vector4* positions, float intensity
 		m_listLaplaceN[idx0] += 1.0f;                                         // add neighbor position
 		m_listLaplacePosSum[idx1] += pos[idx0];
 		m_listLaplaceN[idx1] += 1.0f;                                         // add neighbor position
-	}
+}
 
 	// add laplace-offset dx
 	for (int i = 0; i < m_nVtx; i++)
-	{
+{
 		if (!m_particlesCold[i].bAttached) // don't smooth attached positions
 		{
 			Vec3 dxPos = intensity * (m_listLaplacePosSum[i] / m_listLaplaceN[i] - pos[i]);
 			pos[i] += dxPos;
 		}
-	}
+}
 
 	// UpdateCollidablesLerp(); ProjectToProxySurface(); // one step of collision projection
 }
@@ -2526,8 +2512,8 @@ void CClothSimulator::DrawHelperInformation()
 	// debug draw: vertices
 	if (sphereRadius > 0.0f)
 	{
-		for (int i = 0; i < m_nVtx; i++)
-		{
+	for (int i = 0; i < m_nVtx; i++) 
+	{
 			//ColorB colorDynamic((int)(255 * m_particlesHot[i].alpha), (int)(128 * m_particlesHot[i].alpha), (int)(255 - 128 * m_particlesHot[i].alpha));
 			float t = m_particlesHot[i].alpha;
 			ColorF c = colorBlue * t + colorGreen * (1.0f - t);
@@ -2593,12 +2579,12 @@ void CClothSimulator::DrawHelperInformation()
 		break;
 	default:
 	case 1: // draw stretch links
-		for (int i = 0; i < m_nEdges; i++)
+	for (int i = 0; i < m_nEdges; i++)
 			pRendererAux->DrawLine(SseToVec3(m_particlesHot[m_links[i].i1].pos) + offs, colorGreen, SseToVec3(m_particlesHot[m_links[i].i2].pos) + offs, colorGreen);
 		break;
 	case 2: // draw shear links
 		for (int i = 0; i < m_shearLinks.size(); i++)
-		{
+	{
 			pRendererAux->DrawLine(SseToVec3(m_particlesHot[m_shearLinks[i].i1].pos) + offs, colorGreen, SseToVec3(m_particlesHot[m_shearLinks[i].i2].pos) + offs, colorGreen);
 		}
 		break;
@@ -2606,7 +2592,7 @@ void CClothSimulator::DrawHelperInformation()
 		for (int i = 0; i < m_bendLinks.size(); i++)
 		{
 			pRendererAux->DrawLine(SseToVec3(m_particlesHot[m_bendLinks[i].i1].pos) + offs, colorGreen, SseToVec3(m_particlesHot[m_bendLinks[i].i2].pos) + offs, colorGreen);
-		}
+	}
 		break;
 	case 4: // draw all links
 		for (int i = 0; i < m_nEdges; i++)
@@ -2629,7 +2615,7 @@ void CClothSimulator::DrawHelperInformation()
 			pRendererAux->DrawSphere(SseToVec3(m_particlesCold[i].prevPos) + offs, sphereRadius, colorGreen);
 			pRendererAux->DrawSphere(SseToVec3(m_particlesCold[i].oldPos) + offs, sphereRadius, colorBlue);
 			pRendererAux->DrawSphere(SseToVec3(m_particlesCold[i].skinnedPos) + offs, sphereRadius, colorRed);
-		}
+}
 		break;
 	case 10:
 		scale *= 0.5;
@@ -2789,7 +2775,7 @@ void CClothSimulator::DampPositionBasedDynamics()
 	}
 }
 
-struct VertexCommandClothSkin : public VertexCommand
+struct VertexCommandClothSkin :	public VertexCommand
 {
 public:
 	VertexCommandClothSkin()
@@ -2816,9 +2802,9 @@ public:
 	}
 
 public:
-	const DualQuat*             pTransformations;
-	uint                        transformationCount;
-	CClothPiece*                pClothPiece;
+	const DualQuat* pTransformations;
+	uint transformationCount;
+	CClothPiece* pClothPiece;
 	strided_pointer<const Vec3> pVertexPositionsPrevious;
 };
 
@@ -2963,7 +2949,7 @@ bool CClothPiece::Initialize(const CAttachmentVCLOTH* pVClothAttachment)
 	if (m_initialized)
 		return true;
 
-	if (pVClothAttachment == 0)
+	if (pVClothAttachment==0)
 		return false;
 
 	if (pVClothAttachment->GetType() != CA_VCLOTH)
@@ -2981,10 +2967,10 @@ bool CClothPiece::Initialize(const CAttachmentVCLOTH* pVClothAttachment)
 	CSkin* pSimSkin = m_pVClothAttachment->m_pSimSkin;
 	CSkin* pRenderSkin = m_pVClothAttachment->m_pRenderSkin;
 
-	if (pSimSkin == 0 || pSimSkin->GetIRenderMesh(0) == 0 || pSimSkin->GetIRenderMesh(0)->GetVerticesCount() == 0)
+	if (pSimSkin==0 || pSimSkin->GetIRenderMesh(0)==0 || pSimSkin->GetIRenderMesh(0)->GetVerticesCount()==0)
 		return false;
 
-	if (pRenderSkin == 0 || pRenderSkin->GetIRenderMesh(0) == 0 || pRenderSkin->GetIRenderMesh(0)->GetVerticesCount() == 0)
+	if (pRenderSkin==0 || pRenderSkin->GetIRenderMesh(0)==0 || pRenderSkin->GetIRenderMesh(0)->GetVerticesCount()==0)
 		return false;
 
 	m_numLods = 0;
@@ -3047,7 +3033,7 @@ void CClothPiece::Dettach()
 	flags &= ~FLAGS_ATTACH_SW_SKINNING;
 	m_pVClothAttachment->SetFlags(flags);
 	m_pVClothAttachment->m_vertexAnimation.SetClothData(NULL);
-	m_pVClothAttachment = NULL;
+	m_pVClothAttachment = NULL;	
 }
 
 void CClothPiece::WaitForJob(bool bPrev)
@@ -3058,10 +3044,10 @@ void CClothPiece::WaitForJob(bool bPrev)
 		nFrameID--;
 	int nList = nFrameID % 3;
 	if (m_pVClothAttachment->m_arrSkinningRendererData[nList].nFrameID == nFrameID && m_pVClothAttachment->m_arrSkinningRendererData[nList].pSkinningData)
-	{
-		if (m_pVClothAttachment->m_arrSkinningRendererData[nList].pSkinningData->pAsyncDataJobs)
+	{                   
+		if(m_pVClothAttachment->m_arrSkinningRendererData[nList].pSkinningData->pAsyncDataJobs)
 		{
-			gEnv->pJobManager->WaitForJob(*m_pVClothAttachment->m_arrSkinningRendererData[nList].pSkinningData->pAsyncDataJobs);
+			gEnv->pJobManager->WaitForJob( *m_pVClothAttachment->m_arrSkinningRendererData[nList].pSkinningData->pAsyncDataJobs );
 		}
 	}
 }
@@ -3076,7 +3062,7 @@ bool CClothPiece::PrepareCloth(CSkeletonPose& skeletonPose, const Matrix34& worl
 	if (!visible) // no need to do the rest if falling back to GPU skinning
 	{
 		return false;
-	}
+	}	
 
 	WaitForJob(true);
 
@@ -3093,29 +3079,29 @@ bool CClothPiece::PrepareCloth(CSkeletonPose& skeletonPose, const Matrix34& worl
 		if (m_poolIdx < 0)
 		{
 			return false;
-		}
+	}
 	}
 
 	m_currentLod = min(lod, m_numLods - 1);
-	m_charLocation = QuatT(worldMat);    // TODO: direct conversion
+	m_charLocation = QuatT(worldMat); // TODO: direct conversion
 
-	//  if (m_bSingleThreaded)
-	//  {
-	//    // software skin the sim mesh
-	//    SSkinningData* pSkinningData = m_pSimAttachment->GetVertexTransformationData(true,lod);
-	//    gEnv->pJobManager->WaitForJob( *pSkinningData->pAsyncJobs ); // stall still the skinning related jobs have finished
-	//    UpdateSimulation(pSkinningData->pBoneQuatsS, pSkinningData->nNumBones);
-	//  }
-	//	m_pRenderAttachment->m_vertexAnimation.SetClothData(this);
+	// 	if (m_bSingleThreaded)
+	// 	{
+	// 		// software skin the sim mesh
+	// 		SSkinningData* pSkinningData = m_pSimAttachment->GetVertexTransformationData(true,lod);
+	// 		gEnv->pJobManager->WaitForJob( *pSkinningData->pAsyncJobs ); // stall still the skinning related jobs have finished
+	// 		UpdateSimulation(pSkinningData->pBoneQuatsS, pSkinningData->nNumBones);		
+	// 	}
+//	m_pRenderAttachment->m_vertexAnimation.SetClothData(this);
 
 	return true;
 }
 
 void CClothPiece::DrawDebug(const SVertexAnimationJob* pVertexAnimation)
-{
+{	
 	// wait till the SW-Skinning jobs have finished
-	while (*pVertexAnimation->pRenderMeshSyncVariable)
-		CrySleep(1);
+	while(*pVertexAnimation->pRenderMeshSyncVariable)				
+		CrySleep(1);				
 	m_simulator.DrawHelperInformation();
 }
 
@@ -3142,14 +3128,14 @@ bool CClothPiece::CompileCommand(SVertexSkinData& skinData, CVertexCommandBuffer
 	return true;
 }
 
-struct CRY_ALIGN(16) SMemVec
+struct CRY_ALIGN (16)SMemVec
 {
 	Vec3 v;
 	float w;
 };
 
 void CClothPiece::UpdateSimulation(const DualQuat* pTransformations, const uint transformationCount)
-{
+{	
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ANIMATION);
 
 	if (m_clothGeom->weldMap == NULL)
@@ -3163,7 +3149,7 @@ void CClothPiece::UpdateSimulation(const DualQuat* pTransformations, const uint 
 	DynArray<Vector4>& tmpClothVtx = m_buffers->m_tmpClothVtx;
 
 	CVertexData vertexData;
-	vertexData.m_vertexCount = m_clothGeom->nVtx;
+	vertexData.m_vertexCount = m_clothGeom->nVtx; 
 	vertexData.pPositions.data = &arrDstPositions[0];
 	vertexData.pPositions.iStride = sizeof(Vec3);
 	vertexData.pTangents.data = &m_buffers->m_arrDstTangents[0];
@@ -3171,7 +3157,7 @@ void CClothPiece::UpdateSimulation(const DualQuat* pTransformations, const uint 
 
 	uint8 commandBufferData[256];
 	CVertexCommandBufferAllocatorStatic commandBufferAllocator(
-	  commandBufferData, sizeof(commandBufferData));
+		commandBufferData, sizeof(commandBufferData));
 	CVertexCommandBuffer commandBuffer;
 	commandBuffer.Initialize(commandBufferAllocator);
 
@@ -3212,7 +3198,7 @@ void CClothPiece::UpdateSimulation(const DualQuat* pTransformations, const uint 
 		m_simulator.SetSkinnedPositions(&tmpClothVtx[0]);
 
 		// step the cloth
-		float dt = m_pCharInstance ? g_AverageFrameTime* m_pCharInstance->GetPlaybackScale() : g_AverageFrameTime;
+		float dt = m_pCharInstance ? g_AverageFrameTime * m_pCharInstance->GetPlaybackScale() : g_AverageFrameTime;
 		dt = dt ? dt : g_AverageFrameTime;
 
 		// don't handle camera distance in character tool
@@ -3233,20 +3219,20 @@ void CClothPiece::UpdateSimulation(const DualQuat* pTransformations, const uint 
 		}
 		else
 		{
-			m_simulator.StartStep(dt, m_charLocation);
+		m_simulator.StartStep(dt, m_charLocation);
 			while (!m_simulator.Step())
 			{
 			}
 			;
 
-			// get the result back
+		// get the result back
 			if (m_simulator.IsFading())
 			{
 				m_simulator.GetVerticesFaded(&tmpClothVtx[0]);
 			}
 			else
 			{
-				m_simulator.GetVertices(&tmpClothVtx[0]);
+		m_simulator.GetVertices(&tmpClothVtx[0]);
 			}
 
 			// filtering of positions, if requested
@@ -3255,11 +3241,11 @@ void CClothPiece::UpdateSimulation(const DualQuat* pTransformations, const uint 
 				m_simulator.LaplaceFilterPositions(&tmpClothVtx[0], m_simulator.GetParams().filterLaplace);
 			}
 
-			for (int i = 0; i < m_clothGeom->nUniqueVtx; i++)
-			{
-				Quaternion ssequat(m_charLocation.q);
+		for (int i = 0; i < m_clothGeom->nUniqueVtx; i++)
+		{
+			Quaternion ssequat(m_charLocation.q);
 				tmpClothVtx[i] = tmpClothVtx[i] * ssequat - m_charLocation.t * m_simulator.GetParams().translationBlend;// see also above; not used at the moment, since translationBlend, externalBlend default to zero
-			}
+		}
 		}
 	}
 	else
@@ -3297,10 +3283,8 @@ void CClothPiece::SkinSimulationToRenderMesh(int lod, CVertexData& vertexData, c
 	// compute sim normals
 	mesh_data* md = (mesh_data*)m_clothGeom->pPhysGeom->pGeom->GetData();
 	for (int i = 0; i < md->nVertices; i++)
-	{
 		normals[i].zero();
-	}
-	for (int i = 0; i < md->nTris; i++)
+	for (int i = 0; i < md->nTris; i++) 
 	{
 		int base = i * 3;
 		const int idx1 = md->pIndices[base++];
@@ -3315,13 +3299,11 @@ void CClothPiece::SkinSimulationToRenderMesh(int lod, CVertexData& vertexData, c
 		normals[idx3] += n;
 	}
 	for (int i = 0; i < md->nVertices; i++)
-	{
 		normals[i].normalize();
-	}
 
 	// set the positions
 	SMemVec newPos;
-	for (int i = 0; i < nVtx; i++)
+	for (int i = 0; i < nVtx; i++) 
 	{
 		tangents[i].n.zero();
 		tangents[i].t.zero();
@@ -3348,10 +3330,10 @@ void CClothPiece::SkinSimulationToRenderMesh(int lod, CVertexData& vertexData, c
 
 	strided_pointer<SPipTangents> pTangents = vertexData.GetTangents();
 
-	// rebuild tangent frame
+	// rebuild tangent frame 
 	int nTris = m_clothGeom->numIndices[lod] / 3;
 	vtx_idx* pIndices = m_clothGeom->pIndices[lod];
-	for (int i = 0; i < nTris; i++)
+	for (int i = 0; i < nTris; i++) 
 	{
 		int base = i * 3;
 		int i1 = pIndices[base++];
@@ -3395,7 +3377,7 @@ void CClothPiece::SkinSimulationToRenderMesh(int lod, CVertexData& vertexData, c
 	Vector4 maxShort(32767.f);
 	CRY_ALIGN(16) Vec4sf tangentBitangent[2];
 #endif
-	for (int i = 0; i < nVtx; i++)
+	for (int i = 0; i < nVtx; i++) 
 	{
 		// Gram-Schmidt ortho-normalization
 		const Vector4& t = tangents[i].t;
@@ -3436,7 +3418,7 @@ void SClothGeometry::AllocateBuffer()
 		buff->m_arrDstPositions.resize(nVtx);
 		buff->m_arrDstTangents.resize(nVtx);
 
-		buff->m_tmpClothVtx.resize(nUniqueVtx + 1);   // leave room for unaligned store
+		buff->m_tmpClothVtx.resize(nUniqueVtx + 1); // leave room for unaligned store
 		buff->m_normals.resize(nUniqueVtx);
 
 		buff->m_tangents.resize(maxVertices);
@@ -3448,7 +3430,7 @@ SBuffers* SClothGeometry::GetBufferPtr(int idx)
 	uint32 numSize = pool.size();
 	if (idx >= numSize)
 		return NULL;
-	std::list<SBuffers>::iterator it = pool.begin();
+	std::list<SBuffers>::iterator it=pool.begin();
 	std::advance(it, idx);
 
 	return &(*it);

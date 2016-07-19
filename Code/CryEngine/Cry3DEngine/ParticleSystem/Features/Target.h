@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "ParticleCommon.h"
-#include "ParticleAttributes.h"
-#include "ParticleEmitter.h"
-#include "ParticleComponentRuntime.h"
+#include "ParticleSystem/ParticleCommon.h"
+#include "ParticleSystem/ParticleAttributes.h"
+#include "ParticleSystem/ParticleEmitter.h"
+#include "ParticleSystem/ParticleComponentRuntime.h"
 #include "ParamMod.h"
 
 namespace pfx2

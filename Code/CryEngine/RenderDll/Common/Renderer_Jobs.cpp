@@ -220,32 +220,18 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 	const uint32 nRenderlistsFlags = (FB_PREPROCESS | FB_MULTILAYERS | FB_TRANSPARENT);
 	if (nBatchFlags & nRenderlistsFlags || nCloakLayerMask)
 	{
-		if (nBatchFlags & FB_PREPROCESS)
-		{
-			EShaderType eSHType = pSH->GetShaderType();
+		// branchless version of:
+		//if      (pSH->m_Flags & FB_REFRACTIVE || nCloakLayerMask)           nList = EFSLIST_TRANSP, nBatchFlags &= ~FB_Z;
+		//else if((nBatchFlags & FB_TRANSPARENT) && nList == EFSLIST_GENERAL) nList = EFSLIST_TRANSP;
 
-			// Prevent water usage on non-water specific meshes (it causes reflections updates). Todo: this should be checked in editor side and not allow such usage
-			if (eSHType != eST_Water || (eSHType == eST_Water && nList == EFSLIST_WATER))
-			{
-				passInfo.GetRenderView()->AddRenderItem(re, obj, SH, EFSLIST_PREPROCESS, nBatchFlags, passInfo.GetRendItemSorter(), false, false);
-			}
-		}
+		// Refractive objects go into same list as transparent objects - partial resolves support
+		// arbitrary ordering between transparent and refractive correctly.
 
-		{
-			// branchless version of:
-			//if      (pSH->m_Flags & FB_REFRACTIVE || nCloakLayerMask)           nList = EFSLIST_TRANSP, nBatchFlags &= ~FB_Z;
-			//else if((nBatchFlags & FB_TRANSPARENT) && nList == EFSLIST_GENERAL) nList = EFSLIST_TRANSP;
+		uint32 mx1 = (nShaderFlags & EF_REFRACTIVE) | nCloakLayerMask;
+		uint32 mx2 = mask_nz_zr(nBatchFlags & FB_TRANSPARENT, (nList ^ EFSLIST_GENERAL) | mx1);
 
-			// Refractive objects go into same list as transparent objects - partial resolves support
-			// arbitrary ordering between transparent and refractive correctly.
-
-			uint32 mx1 = (nShaderFlags & EF_REFRACTIVE) | nCloakLayerMask;
-			uint32 mx2 = mask_nz_zr(nBatchFlags & FB_TRANSPARENT, (nList ^ EFSLIST_GENERAL) | mx1);
-
-			nBatchFlags &= iselmask(mx1 = nz2mask(mx1), ~FB_Z, nBatchFlags);
-			nList = iselmask(mx1 | mx2, (mx1 & EFSLIST_TRANSP) | (mx2 & EFSLIST_TRANSP), nList);
-
-		}
+		nBatchFlags &= iselmask(mx1 = nz2mask(mx1), ~FB_Z, nBatchFlags);
+		nList = iselmask(mx1 | mx2, (mx1 & EFSLIST_TRANSP) | (mx2 & EFSLIST_TRANSP), nList);
 	}
 
 	// FogVolume contribution for transparencies isn't needed when volumetric fog is turned on.
@@ -377,8 +363,6 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 
 	passInfo.GetRenderView()->AddRenderItem(re, obj, SH, nList, nBatchFlags, passInfo.GetRendItemSorter(), false, passInfo.IsAuxWindow());
 
-	if (nBatchFlags & FB_DEBUG)
-		passInfo.GetRenderView()->AddRenderItem(re, obj, SH, EFSLIST_FORWARD_OPAQUE, nBatchFlags, passInfo.GetRendItemSorter(), false, passInfo.IsAuxWindow());
 
 }
 
@@ -519,6 +503,9 @@ uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRendEleme
 			if ((!pOD || !pOD->m_pLayerEffectParams) && !CV_r_DebugLayerEffect)
 				nFlags &= ~FB_LAYER_EFFECT;
 		}
+
+		if (pR && pR->IsAlphaTested())
+			pObj->m_ObjFlags |= FOB_ALPHATEST;
 	}
 	else if (passInfo.IsRecursivePass() && pTech && m_RP.m_TI[passInfo.ThreadID()].m_PersFlags & RBPF_MIRRORCAMERA)
 	{

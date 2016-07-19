@@ -77,79 +77,43 @@ bool CRESky::mfDraw(CShader* ef, SShaderPass* sfm)
 		CTexture::s_ptexBlack->Apply(0, texStateID);
 		{
 			// top
-			SVF_P3F_C4B_T2F data[] =
-			{
-				{ Vec3(+fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(+fSkyBoxSize, +fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(-fSkyBoxSize, +fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) }
-			};
+			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 4, data, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
+			data[0] = { Vec3(+fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[1] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[2] = { Vec3(+fSkyBoxSize, +fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[3] = { Vec3(-fSkyBoxSize, +fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			
 			CVertexBuffer vertexBuffer(data, eVF_P3F_C4B_T2F);
 			rd->DrawPrimitivesInternal(&vertexBuffer, 4, eptTriangleStrip);
 		}
 		{
 			// nesw
-			SVF_P3F_C4B_T2F data[] =
-			{
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, +fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, -fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(+fSkyBoxSize, -fSkyBoxSize, +fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(+fSkyBoxSize, -fSkyBoxSize, -fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(+fSkyBoxSize, +fSkyBoxSize, +fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(+fSkyBoxSize, +fSkyBoxSize, -fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(-fSkyBoxSize, +fSkyBoxSize, +fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(-fSkyBoxSize, +fSkyBoxSize, -fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, +fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, -fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-			};
+			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 10, data, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
+			data[0] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, +fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[1] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, -fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[2] = { Vec3(+fSkyBoxSize, -fSkyBoxSize, +fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[3] = { Vec3(+fSkyBoxSize, -fSkyBoxSize, -fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[4] = { Vec3(+fSkyBoxSize, +fSkyBoxSize, +fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[5] = { Vec3(+fSkyBoxSize, +fSkyBoxSize, -fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[6] = { Vec3(-fSkyBoxSize, +fSkyBoxSize, +fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[7] = { Vec3(-fSkyBoxSize, +fSkyBoxSize, -fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[8] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, +fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[9] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, -fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			
 			CVertexBuffer vertexBuffer(data, eVF_P3F_C4B_T2F);
 			rd->DrawPrimitivesInternal(&vertexBuffer, 10, eptTriangleStrip);
 		}
 		{
 			// b
-			SVF_P3F_C4B_T2F data[] =
-			{
-				{ Vec3(+fSkyBoxSize, -fSkyBoxSize, -fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, -fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(+fSkyBoxSize, +fSkyBoxSize, -fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) },
-				{ Vec3(-fSkyBoxSize, +fSkyBoxSize, -fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 0) }
-			};
+			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 4, data, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
+			data[0] = { Vec3(+fSkyBoxSize, -fSkyBoxSize, -fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[1] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, -fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[2] = { Vec3(+fSkyBoxSize, +fSkyBoxSize, -fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			data[3] = { Vec3(-fSkyBoxSize, +fSkyBoxSize, -fSkyBoxSize), { { 0 } }, Vec2(0, 0) };
+			
 			CVertexBuffer vertexBuffer(data, eVF_P3F_C4B_T2F);
 			rd->DrawPrimitivesInternal(&vertexBuffer, 4, eptTriangleStrip);
 		}
@@ -158,21 +122,12 @@ bool CRESky::mfDraw(CShader* ef, SShaderPass* sfm)
 	{
 		{
 			// top
-			SVF_P3F_C4B_T2F data[] =
-			{
-				{ Vec3(fSkyBoxSize,  -fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(1, 1.f - 1) },
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 1.f - 1) },
-				{ Vec3(fSkyBoxSize,  fSkyBoxSize,  fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(1, 1.f - 0) },
-				{ Vec3(-fSkyBoxSize, fSkyBoxSize,  fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0, 1.f - 0) }
-			};
+			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 4, data, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
+			data[0] = { Vec3(fSkyBoxSize,  -fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(1, 1.f - 1) };
+			data[1] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(0, 1.f - 1) };
+			data[2] = { Vec3(fSkyBoxSize,  fSkyBoxSize,  fSkyBoxSize), { { 0 } }, Vec2(1, 1.f - 0) };
+			data[3] = { Vec3(-fSkyBoxSize, fSkyBoxSize,  fSkyBoxSize), { { 0 } }, Vec2(0, 1.f - 0) };
 
 			((CTexture*)(pSky->m_SkyBox[2]))->Apply(0, texStateID);
 			CVertexBuffer vertexBuffer(data, eVF_P3F_C4B_T2F);
@@ -203,27 +158,14 @@ bool CRESky::mfDraw(CShader* ef, SShaderPass* sfm)
 		fTexOffset = 1.0f / max(pSky->m_SkyBox[1]->GetHeight(), 1);
 		{
 			// s
-			SVF_P3F_C4B_T2F data[] =
-			{
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 1.0) },
-				{ Vec3(fSkyBoxSize,  -fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 1.0) },
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, -P),          {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 0.5 - fTexOffset) },
-				{ Vec3(fSkyBoxSize,  -fSkyBoxSize, -P),          {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 0.5 - fTexOffset) },
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, -D),          {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 0.5 - fTexOffset) },
-				{ Vec3(fSkyBoxSize,  -fSkyBoxSize, -D),          {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 0.5 - fTexOffset) }
-			};
+			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 6, data, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
+			data[0] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(1.0, 1.f - 1.0) };
+			data[1] = { Vec3(fSkyBoxSize,  -fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(0.0, 1.f - 1.0) };
+			data[2] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, -P),          { { 0 } }, Vec2(1.0, 1.f - 0.5 - fTexOffset) };
+			data[3] = { Vec3(fSkyBoxSize,  -fSkyBoxSize, -P),          { { 0 } }, Vec2(0.0, 1.f - 0.5 - fTexOffset) };
+			data[4] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, -D),          { { 0 } }, Vec2(1.0, 1.f - 0.5 - fTexOffset) };
+			data[5] = { Vec3(fSkyBoxSize,  -fSkyBoxSize, -D),          { { 0 } }, Vec2(0.0, 1.f - 0.5 - fTexOffset) };
 
 			((CTexture*)(pSky->m_SkyBox[1]))->Apply(0, texStateID);
 			CVertexBuffer vertexBuffer(data, eVF_P3F_C4B_T2F);
@@ -231,27 +173,14 @@ bool CRESky::mfDraw(CShader* ef, SShaderPass* sfm)
 		}
 		{
 			// e
-			SVF_P3F_C4B_T2F data[] =
-			{
-				{ Vec3(-fSkyBoxSize, fSkyBoxSize,  fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 0.0) },
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 0.0) },
-				{ Vec3(-fSkyBoxSize, fSkyBoxSize,  -P),          {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 0.5f + fTexOffset) },
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, -P),          {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 0.5f + fTexOffset) },
-				{ Vec3(-fSkyBoxSize, fSkyBoxSize,  -D),          {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 0.5f + fTexOffset) },
-				{ Vec3(-fSkyBoxSize, -fSkyBoxSize, -D),          {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 0.5f + fTexOffset) }
-			};
+			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 6, data, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
+			data[0] = { Vec3(-fSkyBoxSize, fSkyBoxSize,  fSkyBoxSize), { { 0 } }, Vec2(1.0, 1.f - 0.0) };
+			data[1] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(0.0, 1.f - 0.0) };
+			data[2] = { Vec3(-fSkyBoxSize, fSkyBoxSize,  -P),          { { 0 } }, Vec2(1.0, 1.f - 0.5f + fTexOffset) };
+			data[3] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, -P),          { { 0 } }, Vec2(0.0, 1.f - 0.5f + fTexOffset) };
+			data[4] = { Vec3(-fSkyBoxSize, fSkyBoxSize,  -D),          { { 0 } }, Vec2(1.0, 1.f - 0.5f + fTexOffset) };
+			data[5] = { Vec3(-fSkyBoxSize, -fSkyBoxSize, -D),          { { 0 } }, Vec2(0.0, 1.f - 0.5f + fTexOffset) };
 
 			CVertexBuffer vertexBuffer(data, eVF_P3F_C4B_T2F);
 			rd->DrawPrimitivesInternal(&vertexBuffer, 6, eptTriangleStrip);
@@ -260,27 +189,14 @@ bool CRESky::mfDraw(CShader* ef, SShaderPass* sfm)
 		fTexOffset = 1.0f / max(pSky->m_SkyBox[0]->GetHeight(), 1);
 		{
 			// n
-			SVF_P3F_C4B_T2F data[] =
-			{
-				{ Vec3(fSkyBoxSize,  fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 1.0) },
-				{ Vec3(-fSkyBoxSize, fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 1.0) },
-				{ Vec3(fSkyBoxSize,  fSkyBoxSize, -P),          {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 0.5 - fTexOffset) },
-				{ Vec3(-fSkyBoxSize, fSkyBoxSize, -P),          {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 0.5 - fTexOffset) },
-				{ Vec3(fSkyBoxSize,  fSkyBoxSize, -D),          {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 0.5 - fTexOffset) },
-				{ Vec3(-fSkyBoxSize, fSkyBoxSize, -D),          {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 0.5 - fTexOffset) }
-			};
+			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 6, data, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
+			data[0] = { Vec3(fSkyBoxSize,  fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(1.0, 1.f - 1.0) };
+			data[1] = { Vec3(-fSkyBoxSize, fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(0.0, 1.f - 1.0) };
+			data[2] = { Vec3(fSkyBoxSize,  fSkyBoxSize, -P),          { { 0 } }, Vec2(1.0, 1.f - 0.5 - fTexOffset) };
+			data[3] = { Vec3(-fSkyBoxSize, fSkyBoxSize, -P),          { { 0 } }, Vec2(0.0, 1.f - 0.5 - fTexOffset) };
+			data[4] = { Vec3(fSkyBoxSize,  fSkyBoxSize, -D),          { { 0 } }, Vec2(1.0, 1.f - 0.5 - fTexOffset) };
+			data[5] = { Vec3(-fSkyBoxSize, fSkyBoxSize, -D),          { { 0 } }, Vec2(0.0, 1.f - 0.5 - fTexOffset) };
 
 			((CTexture*)(pSky->m_SkyBox[0]))->Apply(0, texStateID);
 			CVertexBuffer vertexBuffer(data, eVF_P3F_C4B_T2F);
@@ -288,27 +204,15 @@ bool CRESky::mfDraw(CShader* ef, SShaderPass* sfm)
 		}
 		{
 			// w
-			SVF_P3F_C4B_T2F data[] =
-			{
-				{ Vec3(fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 0.0) },
-				{ Vec3(fSkyBoxSize, fSkyBoxSize,  fSkyBoxSize), {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 0.0) },
-				{ Vec3(fSkyBoxSize, -fSkyBoxSize, -P),          {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 0.5f + fTexOffset) },
-				{ Vec3(fSkyBoxSize, fSkyBoxSize,  -P),          {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 0.5f + fTexOffset) },
-				{ Vec3(fSkyBoxSize, -fSkyBoxSize, -D),          {
-								{ 0 }
-					    }, Vec2(1.0, 1.f - 0.5f + fTexOffset) },
-				{ Vec3(fSkyBoxSize, fSkyBoxSize,  -D),          {
-								{ 0 }
-					    }, Vec2(0.0, 1.f - 0.5f + fTexOffset) }
-			};
+			CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 6, data, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
+			data[0] = { Vec3(fSkyBoxSize, -fSkyBoxSize, fSkyBoxSize), { { 0 } }, Vec2(1.0, 1.f - 0.0) };
+			data[1] = { Vec3(fSkyBoxSize, fSkyBoxSize,  fSkyBoxSize), { { 0 } }, Vec2(0.0, 1.f - 0.0) };
+			data[2] = { Vec3(fSkyBoxSize, -fSkyBoxSize, -P),          { { 0 } }, Vec2(1.0, 1.f - 0.5f + fTexOffset) };
+			data[3] = { Vec3(fSkyBoxSize, fSkyBoxSize,  -P),          { { 0 } }, Vec2(0.0, 1.f - 0.5f + fTexOffset) };
+			data[4] = { Vec3(fSkyBoxSize, -fSkyBoxSize, -D),          { { 0 } }, Vec2(1.0, 1.f - 0.5f + fTexOffset) };
+			data[5] = { Vec3(fSkyBoxSize, fSkyBoxSize,  -D),          { { 0 } }, Vec2(0.0, 1.f - 0.5f + fTexOffset) };
+			
 			CVertexBuffer vertexBuffer(data, eVF_P3F_C4B_T2F);
 			rd->DrawPrimitivesInternal(&vertexBuffer, 6, eptTriangleStrip);
 		}
@@ -846,21 +750,12 @@ bool CREPrismObject::mfDraw(CShader* ef, SShaderPass* sfm)
 	// commit all render changes
 	//	rd->FX_Commit();
 
-	static SVF_P3F_C4B_T2F pScreenQuad[] =
-	{
-		{ Vec3(0, 0, 0), {
-						{ 0 }
-			    }, Vec2(0, 0) },
-		{ Vec3(0, 1, 0), {
-						{ 0 }
-			    }, Vec2(0, 1) },
-		{ Vec3(1, 0, 0), {
-						{ 0 }
-			    }, Vec2(1, 0) },
-		{ Vec3(1, 1, 0), {
-						{ 0 }
-			    }, Vec2(1, 1) },
-	};
+	CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 4, pScreenQuad, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
+	pScreenQuad[0] = { Vec3(0, 0, 0), { { 0 } }, Vec2(0, 0) };
+	pScreenQuad[1] = { Vec3(0, 1, 0), { { 0 } }, Vec2(0, 1) };
+	pScreenQuad[2] = { Vec3(1, 0, 0), { { 0 } }, Vec2(1, 0) };
+	pScreenQuad[3] = { Vec3(1, 1, 0), { { 0 } }, Vec2(1, 1) };
 
 	pScreenQuad[0].xyz = Vec3(0, 0, 0);
 	pScreenQuad[1].xyz = Vec3(0, 1, 0);
@@ -1131,10 +1026,8 @@ bool CREWaterVolume::mfDraw(CShader* ef, SShaderPass* sfm)
 	}
 	else
 	{
-		// copy vertices into dynamic VB
-		TempDynVB<SVF_P3F_T3F> vb;
-		vb.Allocate(4);
-		SVF_P3F_T3F* pVB = vb.Lock();
+		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+		CryStackAllocWithSizeVector(SVF_P3F_T3F, 4, pVB, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 		Vec3 coords[8];
 		rd->GetRCamera().CalcVerts(coords);
@@ -1159,9 +1052,7 @@ bool CREWaterVolume::mfDraw(CShader* ef, SShaderPass* sfm)
 		pVB[3].p.z = 0.5f;
 		pVB[3].st = coords[7] - coords[3];
 
-		vb.Unlock();
-		vb.Bind(0);
-		vb.Release();
+		TempDynVB<SVF_P3F_T3F>::CreateFillAndBind(pVB, 4, 0);
 
 		// set vertex declaration
 		if (!FAILED(rd->FX_SetVertexDeclaration(0, eVF_P3F_T3F)))

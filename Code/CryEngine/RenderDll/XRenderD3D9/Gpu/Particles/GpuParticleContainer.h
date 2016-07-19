@@ -22,19 +22,18 @@ class CParticleContainer
 {
 public:
 	CParticleContainer(int maxParticles) : m_defaultData(maxParticles), m_counter(4) {}
-	void                       Initialize(bool isDoubleBuffered);
-	size_t                     GetMaxParticles() const  { return m_defaultData.Get().GetSize(); }
-	bool                       HasDefaultParticleData() { return m_defaultData.Get().IsDeviceBufferAllocated(); }
+	void        Initialize(bool isDoubleBuffered);
+	size_t      GetMaxParticles() const  { return m_defaultData.Get().GetSize(); }
+	bool        HasDefaultParticleData() { return m_defaultData.Get().IsDeviceBufferAllocated(); }
 
-	void                       Clear()                  { m_defaultData.Reset(); }
-	void                       Swap()                   { m_defaultData.Swap(); }
+	void        Clear()                  { m_defaultData.Reset(); }
+	void        Swap()                   { m_defaultData.Swap(); }
 
-	void                       ReadbackCounter();
-	int                        RetrieveCounter();
+	void ReadbackCounter(uint32 readLength);
+	int RetrieveCounter(uint32 readLength);
 
-	ID3D11ShaderResourceView*  GetDefaultParticleDataSRV()           { return m_defaultData.Get().GetSRV(); };
-	ID3D11UnorderedAccessView* GetDefaultParticleDataUAV()           { return m_defaultData.Get().GetUAV(); };
-	ID3D11UnorderedAccessView* GetDefaultParticleDataBackbufferUAV() { return m_defaultData.GetBackBuffer().GetUAV(); };
+	CGpuBuffer& GetDefaultParticleDataBuffer()     { return m_defaultData.Get().GetBuffer(); };
+	CGpuBuffer& GetDefaultParticleDataBackBuffer() { return m_defaultData.GetBackBuffer().GetBuffer(); }
 
 private:
 	// this will only be double buffered when needed (i.e. when the particles get sorted)

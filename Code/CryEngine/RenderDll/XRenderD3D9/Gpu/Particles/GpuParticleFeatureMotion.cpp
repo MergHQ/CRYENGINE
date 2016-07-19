@@ -13,7 +13,7 @@
 namespace gpu_pfx2
 {
 
-void CFeatureMotion::Update(const gpu_pfx2::SUpdateContext& context)
+void CFeatureMotion::Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	CParticleComponentRuntime* pRuntime = static_cast<CParticleComponentRuntime*>(context.pRuntime);
 	if (m_integrator == EI_Linear)
@@ -26,7 +26,7 @@ void CFeatureMotion::Update(const gpu_pfx2::SUpdateContext& context)
 			pEff->Initialize();
 
 	m_parameters.CopyToDevice();
-	m_parameters.Bind();
+	pRuntime->SetUpdateConstantBuffer(eConstantBufferSlot_Motion, m_parameters.GetDeviceConstantBuffer());
 
 	for (const auto& pEff : m_pEffectors)
 		if (pEff)

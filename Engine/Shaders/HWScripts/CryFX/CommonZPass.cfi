@@ -59,10 +59,6 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
     float3 worldTangentT = mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[1]);
     float3 worldTangentN = mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[2]);
 	
-#if ORBIS // TEMP workaround for register issue (geom instancing)
-	worldTangentN *= g_VS_WorldViewPos.w * g_VS_WorldViewPos.w;
-#endif
-
     float4 baseTC = vertPassPos.baseTC;  
 
     ////////////////////////////////////////////////////////////////////////////////////////////////

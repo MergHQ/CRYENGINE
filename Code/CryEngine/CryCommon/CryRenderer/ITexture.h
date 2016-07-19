@@ -226,6 +226,8 @@ public:
 	virtual const bool        IsStreamable() const = 0;
 	virtual bool              IsStreamedIn(const int nMinPrecacheRoundIds[2]) const = 0;
 	virtual const int         GetAccessFrameId() const = 0;
+	virtual const int         GetCustomID() const = 0;
+	virtual void              SetCustomID(int nID) = 0;
 
 	virtual void              SetHighQualityFiltering(bool bState = true) = 0;
 

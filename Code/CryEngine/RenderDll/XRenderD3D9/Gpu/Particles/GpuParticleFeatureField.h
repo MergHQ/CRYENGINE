@@ -24,7 +24,7 @@ struct CFeatureFieldOpacity : public CFeature
 	CFeatureFieldOpacity() : m_opacityTable(kNumModifierSamples) {}
 	virtual void Initialize() override;
 	virtual void InitParticles(const SUpdateContext& context) override;
-	virtual void Update(const gpu_pfx2::SUpdateContext& context) override;
+	virtual void Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList) override;
 	virtual void InternalSetParameters(const EParameterType type, const SFeatureParametersBase& p) override;
 
 private:
@@ -38,7 +38,7 @@ struct CFeatureFieldSize : public CFeature
 	CFeatureFieldSize() : m_sizeTable(kNumModifierSamples) {}
 	virtual void Initialize() override;
 	virtual void InitParticles(const SUpdateContext& context) override;
-	virtual void Update(const gpu_pfx2::SUpdateContext& context) override;
+	virtual void Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList) override;
 	virtual void InternalSetParameters(const EParameterType type, const SFeatureParametersBase& p) override;
 
 private:
@@ -62,8 +62,8 @@ struct CFeatureFieldPixelSize : public CFeatureWithParameterStruct<SFeatureParam
 	CFeatureFieldPixelSize()  {}
 	virtual void Initialize() override;
 	virtual void InitParticles(const SUpdateContext& context) override;
-	virtual void Update(const gpu_pfx2::SUpdateContext& context) override;
+	virtual void Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList) override;
 private:
-	gpu::CTypedConstantBuffer<SFeatureInternalParametersPixelSize, eConstantBufferSlot_PixelSize> m_internalParameters;
+	gpu::CTypedConstantBuffer<SFeatureInternalParametersPixelSize> m_internalParameters;
 };
 }

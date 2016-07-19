@@ -5261,13 +5261,6 @@ void CSystem::CreateSystemVars()
 
 	REGISTER_CVAR2("sys_error_debugbreak", &g_cvars.sys_error_debugbreak, 0, VF_CHEAT, "__debugbreak() if a VALIDATOR_ERROR_DBGBREAK message is hit");
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-	if (gEnv->pScaleformHelper)
-	{
-		gEnv->pScaleformHelper->InitCVars();
-	}
-#endif
-
 	// [VR]
 	if (m_pHmdManager)
 	{

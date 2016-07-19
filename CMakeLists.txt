@@ -231,7 +231,6 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/Boost.cmake)
 
 # CryEngine
 add_subdirectory(Code/CryEngine/Cry3DEngine)
-add_subdirectory(Code/CryEngine/Cry3DEngine/ParticleSystem)
 add_subdirectory(Code/CryEngine/CryAction)
 add_subdirectory(Code/CryEngine/CryAISystem)
 add_subdirectory(Code/CryEngine/CryAnimation)

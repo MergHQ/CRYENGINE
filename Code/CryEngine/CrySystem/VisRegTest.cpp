@@ -76,8 +76,6 @@ void CVisRegTest::Init(IConsoleCmdArgs* pParams)
 	gEnv->pTimer->SetTimeScale(0);
 	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RANDOM_SEED, 0, 0);
 	srand(0);
-
-	gEnv->pRenderer->EnableGPUTimers2(true);
 }
 
 void CVisRegTest::AfterRender()
@@ -304,8 +302,6 @@ void CVisRegTest::Finish()
 
 	gEnv->pConsole->ExecuteString("t_FixedStep 0");
 	gEnv->pTimer->SetTimeScale(1);
-
-	gEnv->pRenderer->EnableGPUTimers2(false);
 
 	CryLog("VisRegTest: Finished tests");
 

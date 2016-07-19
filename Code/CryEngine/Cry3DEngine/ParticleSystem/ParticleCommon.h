@@ -63,7 +63,6 @@ const uint gMinimumVersion = 1;
 const uint gCurrentVersion = 8;
 
 class CParticleSystem;
-
 class CParticleEffect;
 class CParticleComponent;
 class CParticleFeature;

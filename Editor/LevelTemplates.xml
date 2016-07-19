@@ -67,11 +67,6 @@
 			<AdditionalNoiseIntensity type="Float" value="0.2"/>
 		</VolumetricCloud>
 
-		<ParticleLighting>
-			<AmbientMul type="Float" value="1.0"/>
-			<LightsMul type="Float" value="1.0"/>
-		</ParticleLighting>
-
 		<SkyBox>
 			<Material type="Material" value="EngineAssets/Materials/Sky/Sky"/>
 			<MaterialLowSpec type="Material" value="EngineAssets/Materials/Sky/Sky"/>

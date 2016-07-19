@@ -33,6 +33,7 @@ typedef void (* ShaderCacheMissCallback)(const char* acShaderRequest);
 struct ICaptureFrameListener
 {
 	virtual ~ICaptureFrameListener(){}
+
 	virtual bool OnNeedFrameData(unsigned char*& pConvertedTextureBuf) = 0;
 	virtual void OnFrameCaptured(void) = 0;
 	virtual int  OnGetFrameWidth(void) = 0;
@@ -99,6 +100,12 @@ struct IClipVolume;
 struct SClipVolumeBlendInfo;
 class IImageFile;
 
+//////////////////////////////////////////////////////////////////////
+struct IScaleformPlayback;
+struct GRendererCommandBufferReadOnly;
+struct IFlashLoadMovieImage;
+
+//////////////////////////////////////////////////////////////////////
 namespace CryOVR
 {
 struct RenderInitParams;
@@ -994,21 +1001,21 @@ const float VIRTUAL_SCREEN_HEIGHT = 600.0f;
 #define OS_ANIM_BLEND          0x20
 #define OS_ENVIRONMENT_CUBEMAP 0x40
 
-// Render State flags
-#define GS_BLSRC_MASK              0xf
-#define GS_BLSRC_ZERO              0x1
-#define GS_BLSRC_ONE               0x2
-#define GS_BLSRC_DSTCOL            0x3
-#define GS_BLSRC_ONEMINUSDSTCOL    0x4
-#define GS_BLSRC_SRCALPHA          0x5
-#define GS_BLSRC_ONEMINUSSRCALPHA  0x6
-#define GS_BLSRC_DSTALPHA          0x7
-#define GS_BLSRC_ONEMINUSDSTALPHA  0x8
-#define GS_BLSRC_ALPHASATURATE     0x9
-#define GS_BLSRC_SRCALPHA_A_ZERO   0xa // separate alpha blend state
-#define GS_BLSRC_SRC1ALPHA         0xb // dual source blending
+// Render State flags (uint32)
+#define GS_BLSRC_ZERO              0x01
+#define GS_BLSRC_ONE               0x02
+#define GS_BLSRC_DSTCOL            0x03
+#define GS_BLSRC_ONEMINUSDSTCOL    0x04
+#define GS_BLSRC_SRCALPHA          0x05
+#define GS_BLSRC_ONEMINUSSRCALPHA  0x06
+#define GS_BLSRC_DSTALPHA          0x07
+#define GS_BLSRC_ONEMINUSDSTALPHA  0x08
+#define GS_BLSRC_ALPHASATURATE     0x09
+#define GS_BLSRC_SRCALPHA_A_ZERO   0x0A  // separate alpha blend state
+#define GS_BLSRC_SRC1ALPHA         0x0B  // dual source blending
+#define GS_BLSRC_MASK              0x0F
+#define GS_BLSRC_SHIFT             0
 
-#define GS_BLDST_MASK              0xf0
 #define GS_BLDST_ZERO              0x10
 #define GS_BLDST_ONE               0x20
 #define GS_BLDST_SRCCOL            0x30
@@ -1018,13 +1025,14 @@ const float VIRTUAL_SCREEN_HEIGHT = 600.0f;
 #define GS_BLDST_DSTALPHA          0x70
 #define GS_BLDST_ONEMINUSDSTALPHA  0x80
 #define GS_BLDST_ONE_A_ZERO        0x90 // separate alpha blend state
-#define GS_BLDST_ONEMINUSSRC1ALPHA 0xa0 // dual source blending
+#define GS_BLDST_ONEMINUSSRC1ALPHA 0xA0 // dual source blending
+#define GS_BLDST_MASK              0xF0
+#define GS_BLDST_SHIFT             4
 
 #define GS_DEPTHWRITE              0x00000100
-
-#define GS_COLMASK_RT1             0x00000200
-#define GS_COLMASK_RT2             0x00000400
-#define GS_COLMASK_RT3             0x00000800
+#define GS_NODEPTHTEST             0x00000200
+#define GS_STENCIL                 0x00000400
+#define GS_ALPHATEST               0x00000800
 
 #define GS_NOCOLMASK_R             0x00001000
 #define GS_NOCOLMASK_G             0x00002000
@@ -1038,35 +1046,32 @@ const float VIRTUAL_SCREEN_HEIGHT = 600.0f;
 
 #define GS_WIREFRAME               0x00010000
 #define GS_POINTRENDERING          0x00020000
-#define GS_NODEPTHTEST             0x00040000
-
-#define GS_BLEND_MASK              0x0f0000ff
 
 #define GS_DEPTHFUNC_LEQUAL        0x00000000
-#define GS_DEPTHFUNC_EQUAL         0x00100000
-#define GS_DEPTHFUNC_GREAT         0x00200000
-#define GS_DEPTHFUNC_LESS          0x00300000
-#define GS_DEPTHFUNC_GEQUAL        0x00400000
-#define GS_DEPTHFUNC_NOTEQUAL      0x00500000
-#define GS_DEPTHFUNC_HIZEQUAL      0x00600000 // keep hi-z test, always pass fine depth. Useful for debug display
-#define GS_DEPTHFUNC_MASK          0x00700000
+#define GS_DEPTHFUNC_EQUAL         0x00040000
+#define GS_DEPTHFUNC_GREAT         0x00080000
+#define GS_DEPTHFUNC_LESS          0x000C0000
+#define GS_DEPTHFUNC_GEQUAL        0x00100000
+#define GS_DEPTHFUNC_NOTEQUAL      0x00140000
+#define GS_DEPTHFUNC_MASK          0x001C0000 // enum
+#define GS_DEPTHFUNC_SHIFT         18
 
-#define GS_STENCIL                 0x00800000
-
-#define GS_BLEND_OP_MASK           0x03000000
-#define GS_BLOP_MAX                0x01000000
-#define GS_BLOP_MIN                0x02000000
+#define GS_BLEND_OP_ADD            0x00000000
+#define GS_BLEND_OP_MAX            0x00200000
+#define GS_BLEND_OP_MIN            0x00400000
+#define GS_BLEND_OP_SUB            0x00600000
+#define GS_BLEND_OP_SUBREV         0x00800000
+#define GS_BLEND_OP_MASK           0x00E00000 // enum
+#define GS_BLEND_OP_SHIFT          21
 
 // Separate alpha blend mode
-#define GS_BLALPHA_MASK      0x0c000000
-// GS_BLALPHA_MAX                  0x04000000
-#define GS_BLALPHA_MIN       0x08000000
+#define GS_BLALPHA_NONSEP          0x00000000 // same alpha blend op as color blend op (non-separate)
+#define GS_BLALPHA_MAX             0x02000000
+#define GS_BLALPHA_MIN             0x04000000
+#define GS_BLALPHA_MASK            0x0E000000 // enum
+#define GS_BLALPHA_SHIFT           25
 
-#define GS_ALPHATEST_MASK    0xf0000000
-#define GS_ALPHATEST_GREATER 0x10000000
-#define GS_ALPHATEST_LESS    0x20000000
-#define GS_ALPHATEST_GEQUAL  0x40000000
-#define GS_ALPHATEST_LEQUAL  0x80000000
+#define GS_BLEND_MASK              (GS_BLSRC_MASK | GS_BLDST_MASK | GS_BLEND_OP_MASK | GS_BLALPHA_MASK)
 
 #define FORMAT_8_BIT         8
 #define FORMAT_24_BIT        24
@@ -1281,210 +1286,6 @@ const f32 DRAW_NEAREST_MAX = 40.0f;
 
 //===================================================================
 
-//////////////////////////////////////////////////////////////////////////
-struct SSF_GlobalDrawParams
-{
-	enum EFillType
-	{
-		None,
-
-		SolidColor,
-		Texture,
-
-		GlyphTexture,
-		GlyphAlphaTexture,
-
-		GlyphTextureYUV,
-		GlyphTextureYUVA,
-
-		GColor,
-		G1Texture,
-		G1TextureColor,
-		G2Texture,
-		G2TextureColor,
-		G3Texture,
-
-		GlyphTextureMat,
-		GlyphTextureMatMul,
-	};
-	EFillType fillType;
-
-	enum EVertexFmt
-	{
-		Vertex_None,
-
-		Vertex_XY16i,
-		Vertex_XY16iC32,
-		Vertex_XY16iCF32,
-		Vertex_Glyph,
-	};
-	EVertexFmt  vertexFmt;
-	const void* pVertexPtr;
-	uint32      numVertices;
-
-	enum EIndexFmt
-	{
-		Index_None,
-
-		Index_16
-	};
-	EIndexFmt       indexFmt;
-	const void*     pIndexPtr;
-	uint32          numIndices;
-
-	const Matrix44* pTransMat;
-
-	enum ETexState
-	{
-		TS_Clamp        = 0x01,
-
-		TS_FilterLin    = 0x02,
-		TS_FilterTriLin = 0x04
-	};
-
-	struct STextureInfo
-	{
-		int      texID;
-		uint32   texState;
-		Matrix34 texGenMat;
-	};
-	STextureInfo texture[2];
-
-	int          texID_YUVA[4];
-	Vec2         texGenYUVAStereo;
-
-	ColorF       colTransform1st;
-	ColorF       colTransform2nd;
-	ColorF       colTransformMat[4];
-
-	uint32       blendModeStates;
-	uint32       renderMaskedStates;
-
-	bool         isMultiplyDarkBlendMode;
-	bool         premultipliedAlpha;
-
-	enum EAlphaBlendOp
-	{
-		Add,
-		Substract,
-		RevSubstract,
-		Min,
-		Max
-	};
-	EAlphaBlendOp blendOp;
-
-	enum EBlurType
-	{
-		BlurNone        = 0,
-		start_shadows,
-		Box2InnerShadow = 1,
-		Box2InnerShadowHighlight,
-		Box2InnerShadowMul,
-		Box2InnerShadowMulHighlight,
-		Box2InnerShadowKnockout,
-		Box2InnerShadowHighlightKnockout,
-		Box2InnerShadowMulKnockout,
-		Box2InnerShadowMulHighlightKnockout,
-		Box2Shadow,
-		Box2ShadowHighlight,
-		Box2ShadowMul,
-		Box2ShadowMulHighlight,
-		Box2ShadowKnockout,
-		Box2ShadowHighlightKnockout,
-		Box2ShadowMulKnockout,
-		Box2ShadowMulHighlightKnockout,
-		Box2Shadowonly,
-		Box2ShadowonlyHighlight,
-		Box2ShadowonlyMul,
-		Box2ShadowonlyMulHighlight,
-		end_shadows = 20,
-		start_blurs,
-		Box1Blur    = 21,
-		Box2Blur,
-		Box1BlurMul,
-		Box2BlurMul,
-		end_blurs = 24,
-		//    start_cmatrix,
-		//    CMatrix = 25,
-		//    CMatrixMul,
-		//    end_cmatrix = 26,
-		BlurCount,
-
-		shadows_Highlight = 0x00000001,
-		shadows_Mul       = 0x00000002,
-		shadows_Knockout  = 0x00000004,
-		blurs_Box2        = 0x00000001,
-		blurs_Mul         = 0x00000002,
-		//    cmatrix_Mul                  = 0x00000001,
-	};
-
-	struct BlurFilterParams
-	{
-		EBlurType blurType;
-		Vec4      blurFilterSize;
-		Vec2      blurFilterScale;
-		Vec2      blurFilterOffset;
-		ColorF    blurFilterColor1;
-		ColorF    blurFilterColor2;
-	};
-
-	BlurFilterParams blurParams;
-
-	//////////////////////////////////////////////////////////////////////////
-	SSF_GlobalDrawParams()
-	{
-		Reset();
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	void Reset()
-	{
-		fillType = None;
-
-		vertexFmt = Vertex_None;
-		pVertexPtr = 0;
-		numVertices = 0;
-
-		indexFmt = Index_None;
-		pIndexPtr = 0;
-		numIndices = 0;
-
-		pTransMat = 0;
-
-		texture[0].texID = -1;
-		texture[0].texState = 0;
-		texture[0].texGenMat.SetIdentity();
-		texture[1].texID = -1;
-		texture[1].texGenMat.SetIdentity();
-		texture[1].texState = 0;
-
-		texID_YUVA[0] = texID_YUVA[1] = texID_YUVA[2] = texID_YUVA[3] = -1;
-
-		colTransform1st = ColorF(0, 0, 0, 0);
-		colTransform2nd = ColorF(0, 0, 0, 0);
-
-		colTransformMat[0] = ColorF(0, 0, 0, 0);
-		colTransformMat[1] = ColorF(0, 0, 0, 0);
-		colTransformMat[2] = ColorF(0, 0, 0, 0);
-		colTransformMat[3] = ColorF(0, 0, 0, 0);
-
-		blendModeStates = 0;
-		renderMaskedStates = 0;
-
-		isMultiplyDarkBlendMode = false;
-		premultipliedAlpha = false;
-
-		blendOp = Add;
-
-		blurParams.blurType = BlurNone;
-		blurParams.blurFilterSize = Vec4(0.f, 0.f, 0.f, 0.f);
-		blurParams.blurFilterScale = Vec2(0.f, 0.f);
-		blurParams.blurFilterOffset = Vec2(0.f, 0.f);
-		blurParams.blurFilterColor1 = ColorF(0.f, 0.f, 0.f, 0.f);
-		blurParams.blurFilterColor2 = ColorF(0.f, 0.f, 0.f, 0.f);
-	}
-};
-
 //////////////////////////////////////////////////////////////////////
 struct IRendererEventListener
 {
@@ -1690,6 +1491,8 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual void   SetShaderRenderingFlags(uint32 nFlags) = 0;
 	virtual uint32 GetShaderRenderingFlags() const = 0;
 
+	virtual void   SetCameras(const CCamera* pCameras, int cameraCount) = 0;
+
 	virtual void   SwitchUsageMode(EUsageMode mode) = 0;
 
 	// All jobs that write items to render view should share and use this synchronization mutex.
@@ -1717,6 +1520,16 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual void  SetClipVolumeBlendInfo(const IClipVolume* pClipVolume, int blendInfoCount, IClipVolume** blendVolumes, Plane* blendPlanes) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
+	// Fog Volumes
+	virtual void AddFogVolume(const class CREFogVolume* pFogVolume) = 0;
+
+	//////////////////////////////////////////////////////////////////////////
+	// Cloud blockers
+	virtual void AddCloudBlocker(const Vec3& pos, const Vec3& param, int32 flags) = 0;
+
+	//////////////////////////////////////////////////////////////////////////
+	// Water ripples
+	virtual void AddWaterRipple(const SWaterRippleInfo& waterRippleInfo) = 0;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -1760,7 +1573,7 @@ struct IRenderer//: public IRendererCallbackServer
 	// Render-context management
 	/////////////////////////////////////////////////////////////////////////////////
 	virtual bool     DeleteContext(WIN_HWND hWnd) = 0;
-	virtual bool     CreateContext(WIN_HWND hWnd, bool bAllowMSAA = false, int SSX = 1, int SSY = 1) = 0;
+	virtual bool     CreateContext(WIN_HWND hWnd, bool bMainViewport, int SSX = 1, int SSY = 1) = 0;
 	virtual bool     SetCurrentContext(WIN_HWND hWnd) = 0;
 	virtual void     MakeMainContextActive() = 0;
 	virtual WIN_HWND GetCurrentContextHWND() = 0;
@@ -1846,7 +1659,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool ChangeDisplay(unsigned int width, unsigned int height, unsigned int cbpp) = 0;
 
 	//! Changes viewport size.
-	virtual void ChangeViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height, bool bMainViewport = false) = 0;
+	virtual void ChangeViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height) = 0;
 
 	// Should not be here.
 	//! Saves source data to a Tga file.
@@ -2164,11 +1977,6 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual void  EF_DisableTemporalEffects() = 0;
 
-	//////////////////////////////////////////////////////////////////////////
-
-	virtual void EF_AddWaterSimHit(const Vec3& vPos, const float scale, const float strength) = 0;
-	virtual void EF_DrawWaterSimHits() = 0;
-
 	/////////////////////////////////////////////////////////////////////////////////
 	// 2D interface for the shaders.
 	/////////////////////////////////////////////////////////////////////////////////
@@ -2404,30 +2212,17 @@ struct IRenderer//: public IRendererCallbackServer
 			height = h;
 		}
 	};
-	virtual bool SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) = 0;
-	virtual bool SF_MapTexture(int texID, int level, void*& pBits, uint32& pitch) = 0;
-	virtual bool SF_UnmapTexture(int texID, int level) = 0;
+
+	virtual IScaleformPlayback*    SF_CreatePlayback() const = 0;
+	virtual int                    SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eTF, int flags) = 0;
+	virtual bool                   SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) = 0;
+	virtual bool                   SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData) = 0;
+	virtual void                   SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const = 0;
+	virtual void                   SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const = 0;
 	virtual void SF_GetMeshMaxSize(int& numVertices, int& numIndices) const = 0;
-	enum ESFMaskOp
-	{
-		BeginSubmitMask_Clear,
-		BeginSubmitMask_Inc,
-		BeginSubmitMask_Dec,
-		EndSubmitMask,
-		DisableMask
-	};
-	virtual void                   SF_ConfigMask(ESFMaskOp maskOp, unsigned int stencilRef) = 0;
-	virtual void                   SF_DrawIndexedTriList(int baseVertexIndex, int minVertexIndex, int numVertices, int startIndex, int triangleCount, const SSF_GlobalDrawParams& params) = 0;
-	virtual void                   SF_DrawLineStrip(int baseVertexIndex, int lineCount, const SSF_GlobalDrawParams& params) = 0;
-	virtual void                   SF_DrawGlyphClear(const SSF_GlobalDrawParams& params) = 0;
-	virtual void                   SF_DrawBlurRect(const SSF_GlobalDrawParams* pParams) = 0;
-	virtual void                   SF_Flush() = 0;
-	virtual int                    SF_CreateTexture(int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) = 0;
 
 	virtual ITexture*              CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) = 0;
 
-	virtual void                   EnableGPUTimers2(bool bEnabled) = 0;
-	virtual void                   AllowGPUTimers2(bool bAllow) = 0;
 	virtual const RPProfilerStats* GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) = 0;
 	virtual const RPProfilerStats* GetRPPStatsArray(bool bCalledFromMainThread = true) = 0;
 
@@ -2438,9 +2233,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual void                   SetCloudShadowsParams(int nTexID, const Vec3& speed, float tiling, bool invert, float brightness) = 0;
 	virtual void                   SetVolumetricCloudParams(int nTexID) = 0;
-	virtual void                   PushVolumetricCloudBlocker(const Vec3& pos, const Vec3& param, int flag) = 0;
 	virtual uint16                 PushFogVolumeContribution(const ColorF& fogVolumeContrib, const SRenderingPassInfo& passInfo) = 0;
-	virtual void                                      PushFogVolume(class CREFogVolume* pFogVolume, const SRenderingPassInfo& passInfo) = 0;
 
 	virtual int                                       GetMaxTextureSize() = 0;
 

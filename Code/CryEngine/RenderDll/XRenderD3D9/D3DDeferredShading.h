@@ -21,9 +21,7 @@ enum EDecalType
 	DTYP_NUM,
 };
 
-#define MAX_DEFERRED_CLIP_VOLUMES        64
-// Note: 2 stencil values reserved for stencil+outdoor fragments
-#define VIS_AREAS_OUTDOOR_STENCIL_OFFSET 2
+#define MAX_DEFERRED_CLIP_VOLUMES 64
 
 class CTexPoolAtlas;
 
@@ -334,6 +332,7 @@ private:
 
 	friend class CTiledShading;
 	friend class CShadowMapStage;
+	friend class CVolumetricFogStage; // for access to m_nCurrentShadowPoolLight and m_nFirstCandidateShadowPoolLight.
 
 	CPowerOf2BlockPacker     m_blockPack;
 	TArray<SShadowAllocData> m_shadowPoolAlloc;

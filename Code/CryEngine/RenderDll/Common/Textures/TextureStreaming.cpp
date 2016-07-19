@@ -1992,3 +1992,13 @@ void CTexture::StreamState_ReleaseInfo(CTexture* pOwnerTex, STexStreamingInfo* p
 	pInfo->~STexStreamingInfo();
 	CryModuleFree(pInfo);
 }
+
+void CTexture::Relink()
+{
+	gRenDev->m_pRT->RC_RelinkTexture(this);
+}
+
+void CTexture::Unlink()
+{
+	gRenDev->m_pRT->RC_UnlinkTexture(this);
+}

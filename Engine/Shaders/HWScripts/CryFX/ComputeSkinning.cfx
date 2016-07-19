@@ -215,10 +215,6 @@ float3 applyActiveMorphs(uint vidx, float3 pos, uint morphDeltaOffset)
 	return pos;
 }
 
-// usually morphs are applied in a corrective fashion which means they should be applied pre-skinning.
-// in case they were author post skinning, use PRE_MORPHS 0
-#define PRE_MORPH 1
-
 // this is needed in case TangentsTechnique is not executed, so a value should be passed the same way 
 // as with g_DeformDispatchParams to control that
 // #define SKIN_TANGENTS
@@ -287,12 +283,16 @@ void DeformCS(
 	GDSkinVertexIn vertexIn = g_vertexIn[vidx];
 	float3 pos = vertexIn.pos;
 
-#if PRE_MORPH
-	pos = applyActiveMorphs(vidx, pos, vertexIn.morphDeltaOffset);
+#if %COMPUTE_SKINNING_WITH_MORPHS_POST_SKINNING
 	pos = applySkinning(dualQuat, pos);
-#elif
-	pos = applySkinning(dualQuat, pos);
+#if %COMPUTE_SKINNING_WITH_MORPHS
 	pos = applyActiveMorphs(vidx, pos, vertexIn.morphDeltaOffset);
+#endif
+#else
+#if %COMPUTE_SKINNING_WITH_MORPHS
+	pos = applyActiveMorphs(vidx, pos, vertexIn.morphDeltaOffset);
+#endif
+	pos = applySkinning(dualQuat, pos);
 #endif
 
 	// output
@@ -301,7 +301,7 @@ void DeformCS(
 	g_vertexOut[vidx].uv = vertexIn.uv;
 }
 
-technique DeformTechnique
+technique Deform
 {
 	pass p0
 	{
@@ -309,15 +309,18 @@ technique DeformTechnique
 	}
 };
 
-technique TangentsTechnique
+technique TriangleTangents
 {
 	pass p0
 	{
 		ComputeShader = TriangleTangentsCS();
 	}
+};
 
-	pass p1
+technique VertexTangents
+{
+	pass p0
 	{
 		ComputeShader = VertexTangentsCS();
 	}
-};
+}

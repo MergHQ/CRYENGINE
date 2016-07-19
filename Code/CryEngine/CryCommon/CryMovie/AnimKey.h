@@ -6,12 +6,13 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#pragma once
+	#pragma once
 
 #include <CrySystem/IConsole.h>     // <> required for Interfuscator
 #include <CrySystem/File/ICryPak.h> // <> required for Interfuscator
 #include <CrySystem/ILocalizationManager.h>
 #include <CryMath/Bezier.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CryMovie/AnimTime.h>
 
@@ -329,11 +330,11 @@ struct SAudioFileKey : public STrackDurationKey
 			{
 				const char* szLanguage = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
 				m_audioFile = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + szLanguage + CRY_NATIVE_PATH_SEPSTR;
-			}
+		}
 			else
-			{
+		{
 				m_audioFile = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR;
-			}
+		}
 		}
 	}
 
@@ -380,7 +381,7 @@ struct SAudioSwitchKey : public STrackKey
 };
 
 struct SDynamicResponseSignalKey : public STrackKey
-{
+		{
 	SDynamicResponseSignalKey()
 	: STrackKey()
 	, m_bNoTriggerInScrubbing(false)

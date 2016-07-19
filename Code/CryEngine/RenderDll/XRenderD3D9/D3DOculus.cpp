@@ -134,8 +134,6 @@ CD3DOculusRenderer::CD3DOculusRenderer(CryVR::Oculus::IOculusDevice* oculusDevic
 	, m_pStereoRenderer(stereoRenderer)
 	, m_uEyeWidth(~0L)
 	, m_uEyeHeight(~0L)
-	, m_pBackbufferResource(nullptr)
-	, m_pBackbufferTexture(nullptr)
 {
 }
 
@@ -169,8 +167,6 @@ bool CD3DOculusRenderer::Initialize()
 		Shutdown();
 		return false;
 	}
-
-	UpdateTargetBuffer();
 
 	return true;
 }
@@ -302,16 +298,10 @@ void CD3DOculusRenderer::OnResolutionChanged()
 		Shutdown();
 		Initialize();
 	}
-	else
-	{
-		UpdateTargetBuffer();
-	}
 }
 
 void CD3DOculusRenderer::ReleaseBuffers()
 {
-	SAFE_RELEASE(m_pBackbufferTexture);
-	SAFE_RELEASE(m_pBackbufferResource);
 }
 
 void CD3DOculusRenderer::PrepareFrame()
@@ -395,6 +385,8 @@ void CD3DOculusRenderer::SubmitFrame()
 
 void CD3DOculusRenderer::RenderSocialScreen()
 {
+	CTexture* pBackbufferTexture = gcpRendD3D->GetBackBufferTexture();
+	
 	if (const IHmdManager* pHmdManager = gEnv->pSystem->GetHmdManager())
 	{
 		if (const IHmdDevice* pDev = pHmdManager->GetHmdDevice())
@@ -429,10 +421,10 @@ void CD3DOculusRenderer::RenderSocialScreen()
 
 					if (bKeepAspect)
 					{
-						gcpRendD3D->FX_ClearTarget(m_pBackbufferTexture, Clr_Empty);
+						gcpRendD3D->FX_ClearTarget(pBackbufferTexture, Clr_Empty);
 					}
 
-					gcpRendD3D->FX_PushRenderTarget(0, m_pBackbufferTexture, NULL);
+					gcpRendD3D->FX_PushRenderTarget(0, pBackbufferTexture, NULL);
 					gcpRendD3D->FX_SetActiveRenderTargets();
 
 					for (int i = 0; i < CRY_ARRAY_COUNT(eyesToRender); ++i)
@@ -443,8 +435,8 @@ void CD3DOculusRenderer::RenderSocialScreen()
 						const auto pSawpChainInfo = eyesToRender[i] == LEFT_EYE ? frameData.pLeftEyeScene3D : frameData.pRightEyeScene3D;
 
 						Vec2 targetSize;
-						targetSize.x = m_pBackbufferTexture->GetWidth() * (bRenderBothEyes ? 0.5f : 1.0f);
-						targetSize.y = float(m_pBackbufferTexture->GetHeight());
+						targetSize.x = pBackbufferTexture->GetWidth() * (bRenderBothEyes ? 0.5f : 1.0f);
+						targetSize.y = float(pBackbufferTexture->GetHeight());
 
 						Vec2 srcToTargetScale;
 						srcToTargetScale.x = targetSize.x / pSawpChainInfo->viewportSize.x;
@@ -534,9 +526,9 @@ void CD3DOculusRenderer::RenderSocialScreen()
 			case EHmdSocialScreen::eHmdSocialScreen_DistortedDualImage:
 			default:
 				{
-					if (m_pBackbufferResource != nullptr)
+					if (pBackbufferTexture->GetDevTexture()->Get2DTexture() != nullptr)
 					{
-						m_pRenderer->GetDeviceContext().CopyResource(m_pBackbufferResource, m_mirrorData.pMirrorTexture->GetDevTexture()->GetBaseTexture());
+						m_pRenderer->GetDeviceContext().CopyResource(pBackbufferTexture->GetDevTexture()->Get2DTexture(), m_mirrorData.pMirrorTexture->GetDevTexture()->GetBaseTexture());
 					}
 				}
 				break;
@@ -625,7 +617,7 @@ CTexture* CD3DOculusRenderer::WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32
 
 	if (shaderResourceView)
 	{
-		void* default_srv = texture->GetResourceView(SResourceView::ShaderResourceView(format, 0, -1, 0, 1, false, false)).m_pDeviceResourceView;
+		void* default_srv = texture->GetResourceView(SResourceView::ShaderResourceView(format, 0, -1, 0, 1, false, false));
 		if (default_srv == nullptr)
 		{
 			gEnv->pLog->Log("[HMD][Oculus] Unable to create default shader resource view!");
@@ -636,26 +628,6 @@ CTexture* CD3DOculusRenderer::WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32
 	}
 
 	return texture;
-}
-
-void CD3DOculusRenderer::UpdateTargetBuffer()
-{
-	SAFE_RELEASE(m_pBackbufferResource);
-	SAFE_RELEASE(m_pBackbufferTexture);
-	DeviceInfo& devinfo = m_pRenderer->DevInfo();
-	devinfo.BackbufferRTV()->GetResource(&m_pBackbufferResource);
-	if (m_pBackbufferResource == nullptr)
-	{
-		gEnv->pLog->Log("[HMD][Oculus] Could not retrieve the backbuffer!");
-		return;
-	}
-
-	const DXGI_MODE_DESC& backbufferDesc(devinfo.SwapChainDesc().BufferDesc);
-	uint32 backbufferWidth = backbufferDesc.Width;
-	uint32 backbufferHeight = backbufferDesc.Height;
-	ETEX_Format backbufferFormat = CTexture::TexFormatFromDeviceFormat(backbufferDesc.Format);
-
-	m_pBackbufferTexture = WrapD3DRenderTarget((ID3D11Texture2D*)m_pBackbufferResource, backbufferWidth, backbufferHeight, backbufferFormat, "$StereoMirrorBackbuffer", false);
 }
 
 RenderLayer::EQuadLayers CD3DOculusRenderer::CalculateQuadLayerId(ESwapChainArray swapChainIndex)

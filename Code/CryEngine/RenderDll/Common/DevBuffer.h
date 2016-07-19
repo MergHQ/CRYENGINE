@@ -42,10 +42,11 @@ typedef uintptr_t buffer_handle_t;
 typedef uint32    item_handle_t;
 
 ////////////////////////////////////////////////////////////////////////////////////////
-struct SDescriptorBlock
+struct SDescriptorBlock : SUsageTrackedItem
 {
 	SDescriptorBlock(uint32 id)
-		: blockID(id)
+		: SUsageTrackedItem(0)
+		, blockID(id)
 		, pBuffer(NULL)
 		, size(0)
 		, offset(~0u)
@@ -91,16 +92,25 @@ public:
 	CConstantBuffer(uint32 handle);
 	~CConstantBuffer();
 
-	void       AddRef();
-	void       Release();
-	D3DBuffer* GetD3D(size_t* offset, size_t* size) const
+	inline void AddRef()
+	{
+		CryInterlockedIncrement(&m_nRefCount);
+	}
+
+	inline void Release()
+	{
+		if (CryInterlockedDecrement(&m_nRefCount) == 0)
+			ReturnToPool();
+	}
+
+	inline D3DBuffer* GetD3D(size_t* offset, size_t* size) const
 	{
 		*offset = m_offset;
 		*size = m_size;
 		return m_buffer;
 	}
 
-	uint64 GetCode() const
+	inline uint64 GetCode() const
 	{
 #if CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS || defined(OPENGL)
 		uint64 code = reinterpret_cast<uintptr_t>(m_buffer) | ((uint64)m_offset << 40);//|(((uint64)m_size>>4)<<60); Size will follow buffer address, so we just need offset
@@ -112,7 +122,10 @@ public:
 
 	void* BeginWrite();
 	void  EndWrite(bool requires_flush = false);
-	void UpdateBuffer(const void*, size_t);
+	void  UpdateBuffer(const void*, size_t, uint32 numDataBlocks = 1); // See CDeviceManager::UploadContents for details on numDataBlocks
+
+private:
+	void  ReturnToPool();
 };
 typedef _smart_ptr<CConstantBuffer> CConstantBufferPtr;
 
@@ -131,10 +144,10 @@ protected:
 	virtual void DeleteThis() override { delete this; }
 
 private:
-	size_t                    m_size;
-	std::vector<uint8>        m_data;
-	CConstantBufferPtr        m_pConstantBuffer;
-	bool                      m_bDirty;
+	size_t                                             m_size;
+	stl::aligned_vector<uint8, CRY_PLATFORM_ALIGNMENT> m_data;
+	CConstantBufferPtr                                 m_pConstantBuffer;
+	bool                                               m_bDirty;
 
 	static CryCriticalSection s_accessLock;
 };
@@ -185,15 +198,40 @@ class CDeviceBufferManager
 	void            UnpinItem_Locked(buffer_handle_t);
 	buffer_handle_t Create_Locked(BUFFER_BIND_TYPE, BUFFER_USAGE, size_t);
 	void            Destroy_Locked(buffer_handle_t);
-	void* BeginRead_Locked(buffer_handle_t handle);
-	void* BeginWrite_Locked(buffer_handle_t handle);
-	void  EndReadWrite_Locked(buffer_handle_t handle);
-	bool   UpdateBuffer_Locked(buffer_handle_t handle, const void*, size_t);
-	size_t Size_Locked(buffer_handle_t);
+	void*           BeginRead_Locked(buffer_handle_t handle);
+	void*           BeginWrite_Locked(buffer_handle_t handle);
+	void            EndReadWrite_Locked(buffer_handle_t handle);
+	bool            UpdateBuffer_Locked(buffer_handle_t handle, const void*, size_t);
+	size_t          Size_Locked(buffer_handle_t);
 
 public:
 	CDeviceBufferManager();
 	~CDeviceBufferManager();
+
+	// PPOL_ALIGNMENT is 128 in general, which is a bit much, we use the smallest alignment necessary for fast mem-copies
+#if 0
+	static        size_t GetBufferAlignmentForStreaming();
+#else
+	static inline size_t GetBufferAlignmentForStreaming()
+	{
+		return CRY_PLATFORM_ALIGNMENT;
+	}
+#endif
+
+	static inline size_t AlignBufferSizeForStreaming(size_t size)
+	{
+		// Align the allocation size up to the configured allocation alignment
+		size_t alignment = GetBufferAlignmentForStreaming();
+		return (size + (alignment - 1)) & ~(alignment - 1);
+	}
+
+	static inline size_t AlignElementCountForStreaming(size_t numElements, size_t sizeOfElement)
+	{
+		const size_t missing = AlignBufferSizeForStreaming(sizeOfElement * numElements) - (sizeOfElement * numElements);
+		if (missing)
+			numElements += (missing + (sizeOfElement - 1)) / sizeOfElement;
+		return numElements;
+	}
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Initialization and destruction and high level update funcationality
@@ -246,6 +284,12 @@ public:
 	void  EndReadWrite(buffer_handle_t handle);
 	bool UpdateBuffer(buffer_handle_t handle, const void*, size_t);
 
+	template<class T>
+	bool UpdateBuffer(buffer_handle_t handle, stl::aligned_vector<T, CRY_PLATFORM_ALIGNMENT>& vData)
+	{
+		return UpdateBuffer(handle, &vData[0], AlignBufferSizeForStreaming(vData.size() * sizeof(T)));
+	}
+
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Get Stats back from the devbuffer
 	bool GetStats(BUFFER_BIND_TYPE, BUFFER_USAGE, SDeviceBufferPoolStats &);
@@ -286,6 +330,10 @@ public:
 
 	~CGuardedDeviceBufferManager() { m_pDevMan->UnlockDevMan(); }
 
+	static inline size_t   GetBufferAlignForStreaming() { return CDeviceBufferManager::GetBufferAlignmentForStreaming(); }
+	static inline size_t   AlignBufferSizeForStreaming(size_t size) { return CDeviceBufferManager::AlignBufferSizeForStreaming(size); }
+	static inline size_t   AlignElementCountForStreaming(size_t numElements, size_t sizeOfElement) { return CDeviceBufferManager::AlignElementCountForStreaming(numElements, sizeOfElement); }
+
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Pin/Unpin items for async access outside of the renderthread
 	void PinItem(buffer_handle_t handle)   { m_pDevMan->PinItem_Locked(handle); }
@@ -294,8 +342,7 @@ public:
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Buffer Resource creation methods
 	//
-	buffer_handle_t Create(BUFFER_BIND_TYPE type, BUFFER_USAGE usage, size_t size)
-	{ return m_pDevMan->Create_Locked(type, usage, size); }
+	buffer_handle_t Create(BUFFER_BIND_TYPE type, BUFFER_USAGE usage, size_t size) { return m_pDevMan->Create_Locked(type, usage, size); }
 	void            Destroy(buffer_handle_t handle) { return m_pDevMan->Destroy_Locked(handle); }
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -310,15 +357,11 @@ public:
 	void* BeginRead(buffer_handle_t handle)    { return m_pDevMan->BeginRead_Locked(handle); }
 	void* BeginWrite(buffer_handle_t handle)   { return m_pDevMan->BeginWrite_Locked(handle); }
 	void  EndReadWrite(buffer_handle_t handle) { m_pDevMan->EndReadWrite_Locked(handle); }
-	bool  UpdateBuffer(buffer_handle_t handle, const void* src, size_t size)
-	{ return m_pDevMan->UpdateBuffer_Locked(handle, src, size); }
+	bool  UpdateBuffer(buffer_handle_t handle, const void* src, size_t size) { return m_pDevMan->UpdateBuffer_Locked(handle, src, size); }
 
-	D3DBuffer*       GetD3D(buffer_handle_t handle, size_t* offset) { return m_pDevMan->GetD3D(handle, offset); }
-	D3DVertexBuffer* GetD3DVB(buffer_handle_t handle, size_t* offset)
-	{ return static_cast<D3DVertexBuffer*>(m_pDevMan->GetD3D(handle, offset)); }
-	D3DIndexBuffer*  GetD3DIB(buffer_handle_t handle, size_t* offset)
-	{ return static_cast<D3DIndexBuffer*>(m_pDevMan->GetD3D(handle, offset)); }
-
+	D3DBuffer*       GetD3D  (buffer_handle_t handle, size_t* offset) { return                               m_pDevMan->GetD3D(handle, offset) ; }
+	D3DVertexBuffer* GetD3DVB(buffer_handle_t handle, size_t* offset) { return static_cast<D3DVertexBuffer*>(m_pDevMan->GetD3D(handle, offset)); }
+	D3DIndexBuffer*  GetD3DIB(buffer_handle_t handle, size_t* offset) { return static_cast<D3DIndexBuffer *>(m_pDevMan->GetD3D(handle, offset)); }
 };
 
 class SRecursiveSpinLock
@@ -442,17 +485,17 @@ public:
 #define DX11BUF_UAV_COUNTER        BIT(7)
 #define DX11BUF_DRAWINDIRECT       BIT(8)
 #define DX11BUF_NULL_RESOURCE      BIT(9)   // The buffer shall be created with DeviceManager::AllocateNullResource, as such it cannot be accessed on the CPU, and all reads on the GPU shall return zero.
+#define DX11BUF_UAV_OVERLAP        BIT(10)
 
 struct CGpuBuffer
 {
 private:
-	struct STrackedBuffer
+	struct STrackedGpuBuffer : public SUsageTrackedItem
 	{
-		STrackedBuffer() : m_nLastWriteFrame(0), m_nLastReadFrame(0), m_BufferPersistentMapMode(D3D11_MAP(0)) {}
-		STrackedBuffer(const STrackedBuffer& other);
-		STrackedBuffer(STrackedBuffer&& other);
+		STrackedGpuBuffer() : SUsageTrackedItem(0), m_BufferPersistentMapMode(D3D11_MAP(0)) {}
+		STrackedGpuBuffer(CGpuBuffer* pGpuBuffer, const void* pInitialData);
 
-		~STrackedBuffer();
+		~STrackedGpuBuffer();
 
 		void EnablePersistentMap(bool bEnable);
 
@@ -460,13 +503,16 @@ private:
 		_smart_ptr<ID3D11ShaderResourceView>  m_pSRV;
 		_smart_ptr<ID3D11UnorderedAccessView> m_pUAV;
 
-		uint32                                m_nLastWriteFrame;
-		mutable uint32                        m_nLastReadFrame;
-
 		D3D11_MAP                             m_BufferPersistentMapMode;
 	};
 
-	typedef std::queue<STrackedBuffer> BufferQueue;
+	struct STrackedGpuBufferSet
+	{
+		STrackedGpuBufferSet() : pCurrentBuffer(nullptr) {}
+
+		CTrackedItemAllocator<STrackedGpuBuffer> allocator;
+		STrackedGpuBuffer*                       pCurrentBuffer;
+	};
 
 public:
 	CGpuBuffer(int maxBufferCopies = MAX_FRAMES_IN_FLIGHT)
@@ -490,21 +536,20 @@ public:
 
 	void                       UpdateBufferContent(const void* pData, size_t nSize);
 	void*                      Lock();
-	void                       Unlock();
+	void                       Unlock(size_t nSize);
 
 	ID3D11Buffer*              GetBuffer() const;
 	ID3D11ShaderResourceView*  GetSRV() const;
-	ID3D11UnorderedAccessView* GetUAV() const;
+	ID3D11UnorderedAccessView* GetDeviceUAV() const;
 
 	int                        m_numElements;
 	int                        m_flags;
 
 private:
-	void                  PrepareFreeBuffer(const void* pInitialData = nullptr);
-	STrackedBuffer&       GetCurrentBuffer();
-	const STrackedBuffer& GetCurrentBuffer() const;
+	void               PrepareFreeBuffer();
+	STrackedGpuBuffer* GetCurrentBuffer() const { return m_pBufferSet ? m_pBufferSet->pCurrentBuffer : nullptr; }
 
-	std::shared_ptr<BufferQueue>     m_pBuffersInUse;
+	std::shared_ptr<STrackedGpuBufferSet> m_pBufferSet;
 
 	bool                             m_bLocked;
 	int                              m_MaxBufferCopies;
@@ -515,5 +560,135 @@ private:
 	D3D11_UNORDERED_ACCESS_VIEW_DESC m_uavDesc;
 
 };
+
+////////////////////////////////////////////////////////////////////////////////////////
+static inline bool StreamBufferData(void* dst, const void* src, size_t sze)
+{
+	bool requires_flush = true;
+
+#if 0
+	assert(!(size_t(src) & (CRY_PLATFORM_ALIGNMENT - 1U)));
+	assert(!(size_t(dst) & (CRY_PLATFORM_ALIGNMENT - 1U)));
+	assert(!(size_t(sze) & (CRY_PLATFORM_ALIGNMENT - 1U)));
+//	assert(!(size_t(sze) & (SPoolConfig::POOL_ALIGNMENT - 1U)));
+#endif
+
+#if CRY_PLATFORM_SSE2
+	if ((((uintptr_t)dst | (uintptr_t)src | sze) & 0xf) == 0u)
+	{
+		__m128* d = (__m128*)dst;
+		const __m128* s = (const __m128*)src;
+
+		size_t regs = sze / sizeof(__m128);
+		size_t offs = 0;
+
+		while (regs & (~7))
+		{
+			__m128 r0 = _mm_load_ps((const float*)(s + offs + 0));
+			__m128 r1 = _mm_load_ps((const float*)(s + offs + 1));
+			__m128 r2 = _mm_load_ps((const float*)(s + offs + 2));
+			__m128 r3 = _mm_load_ps((const float*)(s + offs + 3));
+			__m128 r4 = _mm_load_ps((const float*)(s + offs + 4));
+			__m128 r5 = _mm_load_ps((const float*)(s + offs + 5));
+			__m128 r6 = _mm_load_ps((const float*)(s + offs + 6));
+			__m128 r7 = _mm_load_ps((const float*)(s + offs + 7));
+			_mm_stream_ps((float*)(d + offs + 0), r0);
+			_mm_stream_ps((float*)(d + offs + 1), r1);
+			_mm_stream_ps((float*)(d + offs + 2), r2);
+			_mm_stream_ps((float*)(d + offs + 3), r3);
+			_mm_stream_ps((float*)(d + offs + 4), r4);
+			_mm_stream_ps((float*)(d + offs + 5), r5);
+			_mm_stream_ps((float*)(d + offs + 6), r6);
+			_mm_stream_ps((float*)(d + offs + 7), r7);
+
+			regs -= 8;
+			offs += 8;
+		}
+
+		while (regs)
+		{
+			__m128 r0 = _mm_load_ps((const float*)(s + offs + 0));
+			_mm_stream_ps((float*)(d + offs + 0), r0);
+
+			regs -= 1;
+			offs += 1;
+		}
+
+#if !CRY_PLATFORM_ORBIS // Defer SFENCE until submit
+		_mm_sfence();
+#endif
+		requires_flush = false;
+	}
+	else
+#endif
+	{
+		cryMemcpy(dst, src, sze, MC_CPU_TO_GPU);
+	}
+
+	return requires_flush;
+}
+
+static inline bool FetchBufferData(void* dst, const void* src, size_t sze)
+{
+	bool requires_flush = true;
+
+#if 0
+	assert(!(size_t(src) & (CRY_PLATFORM_ALIGNMENT - 1U)));
+	assert(!(size_t(dst) & (CRY_PLATFORM_ALIGNMENT - 1U)));
+	assert(!(size_t(sze) & (CRY_PLATFORM_ALIGNMENT - 1U)));
+//	assert(!(size_t(sze) & (SPoolConfig::POOL_ALIGNMENT - 1U)));
+#endif
+
+#if CRY_PLATFORM_SSE2
+	if ((((uintptr_t)dst | (uintptr_t)src | sze) & 0xf) == 0u)
+	{
+		__m128* d = (__m128*)dst;
+		const __m128* s = (const __m128*)src;
+
+		size_t regs = sze / sizeof(__m128);
+		size_t offs = 0;
+
+		while (regs & (~7))
+		{
+			__m128 r0 = _mm_load_ps((const float*)(s + offs + 0));
+			__m128 r1 = _mm_load_ps((const float*)(s + offs + 1));
+			__m128 r2 = _mm_load_ps((const float*)(s + offs + 2));
+			__m128 r3 = _mm_load_ps((const float*)(s + offs + 3));
+			__m128 r4 = _mm_load_ps((const float*)(s + offs + 4));
+			__m128 r5 = _mm_load_ps((const float*)(s + offs + 5));
+			__m128 r6 = _mm_load_ps((const float*)(s + offs + 6));
+			__m128 r7 = _mm_load_ps((const float*)(s + offs + 7));
+			_mm_store_ps((float*)(d + offs + 0), r0);
+			_mm_store_ps((float*)(d + offs + 1), r1);
+			_mm_store_ps((float*)(d + offs + 2), r2);
+			_mm_store_ps((float*)(d + offs + 3), r3);
+			_mm_store_ps((float*)(d + offs + 4), r4);
+			_mm_store_ps((float*)(d + offs + 5), r5);
+			_mm_store_ps((float*)(d + offs + 6), r6);
+			_mm_store_ps((float*)(d + offs + 7), r7);
+
+			regs -= 8;
+			offs += 8;
+		}
+
+		while (regs)
+		{
+			__m128 r0 = _mm_load_ps((const float*)(s + offs + 0));
+			_mm_store_ps((float*)(d + offs + 0), r0);
+
+			regs -= 1;
+			offs += 1;
+		}
+
+		requires_flush = false;
+	}
+	else
+#endif
+	{
+		cryMemcpy(dst, src, sze, MC_GPU_TO_CPU);
+	}
+
+	return requires_flush;
+}
 
 #endif // _D3DBuffer_H

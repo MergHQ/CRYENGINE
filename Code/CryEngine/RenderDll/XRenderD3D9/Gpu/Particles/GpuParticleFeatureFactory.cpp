@@ -26,6 +26,7 @@ struct CFeatureDummy : public CFeature
 
 CGpuInterfaceFactory::CGpuInterfaceFactory()
 {
+	memset(m_functions, 0, sizeof(m_functions));
 #define X(name) RegisterClass<CFeature ## name>();
 	LIST_OF_FEATURE_TYPES
 #undef X

@@ -5,6 +5,7 @@
 #include <CryMemory/CryPool/PoolAlloc.h>
 #include "TextMessages.h"                             // CTextMessages
 #include "RenderAuxGeom.h"
+#include "../Scaleform/ScaleformRender.h"
 
 typedef void (PROCRENDEF)(SShaderPass* l, int nPrimType);
 
@@ -80,9 +81,7 @@ class IOpticsManager;
 struct SDynTexture2;
 class CDeviceResourceSet;
 
-namespace compute_skinning {
-class CStorage;
-}
+namespace compute_skinning { struct IComputeSkinningStorage; }
 
 typedef int (* pDrawModelFunc)(void);
 
@@ -605,7 +604,6 @@ public:
 	virtual void RT_SelectGPU(int nGPU) = 0;
 	virtual void RT_RenderScene(CRenderView* pRenderView, int nFlags, SThreadInfo& TI, RenderFunc pRenderFunc) = 0;
 	virtual void RT_PrepareStereo(int mode, int output) = 0;
-	virtual void RT_CopyToStereoTex(int channel) = 0;
 	virtual void RT_SetCameraInfo() = 0;
 	virtual void RT_CreateResource(SResourceAsync* pRes) = 0;
 	virtual void RT_ReleaseResource(SResourceAsync* pRes) = 0;
@@ -749,7 +747,7 @@ public:
 	virtual void               PopMatrix() override = 0;
 
 	virtual bool               ChangeDisplay(unsigned int width, unsigned int height, unsigned int cbpp) override = 0;
-	virtual void               ChangeViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height, bool bMainViewport = false) override = 0;
+	virtual void               ChangeViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height) override = 0;
 
 	virtual bool               SaveTga(unsigned char* sourcedata, int sourceformat, int w, int h, const char* filename, bool flip) const override;
 
@@ -807,13 +805,13 @@ public:
 	void                 SetWidth(int nW)                              { m_width = nW; }
 	void                 SetHeight(int nH)                             { m_height = nH; }
 	void                 SetPixelAspectRatio(float fPAR)               { m_pixelAspectRatio = fPAR; }
+	
 	virtual int          GetWidth() override                           { return (m_width); }
-
 	virtual int          GetHeight() override                          { return (m_height); }
 	virtual float        GetPixelAspectRatio() const override          { return (m_pixelAspectRatio); }
 
-	virtual int          GetOverlayWidth() override                    { return m_nativeWidth; }
-	virtual int          GetOverlayHeight() override                   { return m_nativeHeight; }
+	virtual int GetOverlayWidth() override { return IsStereoEnabled() ? m_width : m_nativeWidth; }
+	virtual int GetOverlayHeight() override { return IsStereoEnabled() ? m_height : m_nativeHeight; }
 
 	int                  GetBackbufferWidth()                          { return m_backbufferWidth; }
 	int                  GetBackbufferHeight()                         { return m_backbufferHeight; }
@@ -1028,10 +1026,6 @@ public:
 	virtual bool                   EF_UpdateDLight(SRenderLight* pDL) override;
 	void                           EF_CheckLightMaterial(CDLight* pLight, uint16 nRenderLightID, const SRenderingPassInfo& passInfo);
 
-	// Water sim hits
-	virtual void EF_AddWaterSimHit(const Vec3& vPos, const float scale, const float strength) override;
-	virtual void EF_DrawWaterSimHits() override;
-
 	virtual void EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nInOutSize0, void* pInOut1, uint32 nInOutSize1) override;
 	virtual void FX_SetState(int st, int AlphaRef = -1, int RestoreState = 0) = 0;
 	void         FX_SetStencilState(int st, uint32 nStencRef, uint32 nStencMask, uint32 nStencWriteMask, bool bForceFullReadMask = 0);
@@ -1100,14 +1094,21 @@ public:
 	virtual void                 GetThreadIDs(threadID& mainThreadID, threadID& renderThreadID) const override;
 
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-	virtual void                SF_ConfigMask(ESFMaskOp maskOp, unsigned int stencilCount) override;
-	const SSF_GlobalDrawParams* SF_GetGlobalDrawParams() const { return m_pSFDrawParams; }
-	virtual int                 SF_CreateTexture(int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) override;
-	virtual void                SF_GetMeshMaxSize(int& numVertices, int& numIndices) const override;
+	void SF_ConfigMask(int st, uint32 ref);
+	virtual int SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eTF, int flags) override;
+	virtual void SF_GetMeshMaxSize(int& numVertices, int& numIndices) const override;
+
+	virtual IScaleformPlayback* SF_CreatePlayback() const override;
+	virtual void SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const override;
+	virtual void SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const override;
 #else
-	virtual void                SF_ConfigMask(ESFMaskOp maskOp, unsigned int stencilCount) override                                             {}
-	virtual int                 SF_CreateTexture(int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) override { return -1; }
-	virtual void                SF_GetMeshMaxSize(int& numVertices, int& numIndices) const override                                             {}
+	void SF_ConfigMask(int st, uint32 ref) {}
+	virtual int SF_CreateTexture(int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) override { return -1; }
+	virtual void SF_GetMeshMaxSize(int& numVertices, int& numIndices) const {}
+
+	virtual IScaleformPlayback* SF_CreatePlayback() const override {}
+	virtual void SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const override {}
+	virtual void SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const override {}
 #endif // #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 
 	virtual ITexture* CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) override;
@@ -1115,17 +1116,14 @@ public:
 	enum ESPM {ESPM_PUSH = 0, ESPM_POP = 1};
 	virtual void   SetProfileMarker(const char* label, ESPM mode) const                              {};
 
-	virtual void   PushVolumetricCloudBlocker(const Vec3& pos, const Vec3& param, int flag) override { assert(false); }
-
 	virtual uint16 PushFogVolumeContribution(const ColorF& fogVolumeContrib, const SRenderingPassInfo& passInfo) override;
 	void           GetFogVolumeContribution(uint16 idx, ColorF& rColor) const;
-
-	virtual void   PushFogVolume(class CREFogVolume* pFogVolume, const SRenderingPassInfo& passInfo) override { assert(false); }
 
 	virtual int    GetMaxTextureSize() override                                                               { return m_MaxTextureSize; }
 
 	virtual void   SetCloudShadowsParams(int nTexID, const Vec3& speed, float tiling, bool invert, float brightness) override;
 	int            GetCloudShadowTextureId() const { return m_cloudShadowTexId; }
+	bool GetCloudShadowsEnabled() const;
 
 	virtual void   SetVolumetricCloudParams(int nTexID) override
 	{
@@ -1195,7 +1193,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	void   SyncMainWithRender();
 
-	void   UpdateConstParamsPF();
+	void   UpdateConstParamsPF(const SRenderingPassInfo& passInfo);
 
 	void*  EF_GetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags);
 	uint32 GetActiveGPUCount() const override { return CV_r_multigpu > 0 ? m_nGPUs : 1; }
@@ -1260,9 +1258,6 @@ public:
 protected:
 	void EF_AddParticle(CREParticle* pParticle, SShaderItem& shaderItem, CRenderObject* pRO, const SRenderingPassInfo& passInfo);
 	void EF_RemoveParticlesFromScene();
-	void EF_CleanupParticles();
-	void SafeReleaseParticleREs();
-	void GetMemoryUsageParticleREs(ICrySizer* pSizer) override;
 	void PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob> aJobs, int nREStart, SRenderingPassInfo passInfo);
 	bool EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList, SShaderItem& shaderItem, CRenderObject* pRO, const SRenderingPassInfo& passInfo);
 
@@ -1293,9 +1288,6 @@ public:
 
 	virtual void                   SetTexturePrecaching(bool stat) override;
 
-	virtual void                   EnableGPUTimers2(bool bEnabled) override                                                                          {}
-	virtual void                   AllowGPUTimers2(bool bAllow) override                                                                             {}
-
 	virtual const RPProfilerStats* GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) override                       { return NULL; }
 	virtual const RPProfilerStats* GetRPPStatsArray(bool bCalledFromMainThread = true) override                                                      { return NULL; }
 
@@ -1317,7 +1309,8 @@ public:
 	//Routine to perform an emergency flush of a particular render node from the stats, as not all render node holders are delay-deleted
 	virtual void ForceRemoveNodeFromDrawCallsMap(IRenderNode* pNode) override;
 
-	void         ClearDrawCallsInfo();
+	void ClearDrawCallsInfo();
+	void         AddRecordedProfilingStats(const struct SProfilingStats& stats, ERenderListID renderList);
 #endif
 
 	virtual void                CollectDrawCallsInfo(bool status) override;
@@ -1327,7 +1320,7 @@ public:
 	virtual bool                IsStereoModeChangePending() override { return false; }
 	virtual void                SetShouldCopyScreenToBackBuffer(bool bEnable) override;
 
-	compute_skinning::CStorage* GetComputeSkinningStorage() const;
+	virtual compute_skinning::IComputeSkinningStorage* GetComputeSkinningStorage() = 0;
 public:
 	Matrix44A m_IdentityMatrix;
 	Matrix44A m_ViewMatrix;
@@ -1439,6 +1432,7 @@ public:
 	uint32    m_bVolFogCloudShadowsEnabled     : 1;
 #endif
 	uint32    m_bVolumetricFogEnabled          : 1;
+	uint32    m_bVolumetricCloudsEnabled       : 1;
 
 	uint8     m_nDisableTemporalEffects;
 	bool      m_bUseGPUFriendlyBatching[2];
@@ -1532,10 +1526,6 @@ public:
 	bool  m_bCollectDrawCallsInfo;
 	bool  m_bCollectDrawCallsInfoPerNode;
 
-	// HDR rendering stuff
-	int             m_dwHDRCropWidth;
-	int             m_dwHDRCropHeight;
-
 	S3DEngineCommon m_p3DEngineCommon;
 
 	typedef std::map<uint64, PodArray<uint16>*> ShadowFrustumListsCache;
@@ -1565,7 +1555,6 @@ public:
 	// Limit for local sorting array
 	static const int          nMaxParticleContainer = 8 * 1024;
 
-	std::vector<CREParticle*> m_arrCREParticle[RT_COMMAND_BUF_COUNT];
 	int                       m_nCREParticleCount[RT_COMMAND_BUF_COUNT];
 	JobManager::SJobState     m_ComputeVerticesJobState;
 
@@ -1601,7 +1590,6 @@ protected:
 
 	CSkinningDataPool                          m_SkinningDataPool[3];        // Tripple Buffered for motion blur
 	std::array<std::vector<SSkinningData*>, 3> m_computeSkinningData;
-	compute_skinning::CStorage*                m_pComputeSkinningStorage;
 	uint32                                     m_nShadowGenId[RT_COMMAND_BUF_COUNT];
 
 	int                                        m_cloudShadowTexId;
@@ -1610,10 +1598,6 @@ protected:
 	bool                                       m_cloudShadowInvert;
 	float                                      m_cloudShadowBrightness;
 	int                                        m_volumetricCloudTexId;
-
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-	const SSF_GlobalDrawParams* m_pSFDrawParams;
-#endif
 
 	// Shaders/Shaders support
 	// RE - RenderElement

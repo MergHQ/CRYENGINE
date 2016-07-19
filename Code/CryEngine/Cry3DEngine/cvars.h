@@ -130,6 +130,7 @@ struct CVars : public Cry3DEngineBase
 	int   e_ParticlesVertexPoolSize;
 	int   e_ParticlesIndexPoolSize;
 	int   e_ParticlesProfile;
+	int   e_ParticlesForceSeed;
 	float e_VegetationSpritesDistanceRatio;
 	int   e_Decals;
 	int   e_DecalsAllowGameDecals;
@@ -217,6 +218,7 @@ struct CVars : public Cry3DEngineBase
 	int e_StreamCgfPoolSize;
 	DeclareConstIntCVar(e_StatObjPreload, 1);
 	DeclareConstIntCVar(e_ShadowsDebug, 0);
+	DeclareConstIntCVar(e_ShadowsCascadesCentered, 0);
 	DeclareConstIntCVar(e_ShadowsCascadesDebug, 0);
 	DeclareConstFloatCVar(e_StreamPredictionDistanceNear);
 	DeclareConstIntCVar(e_TerrainDrawThisSectorOnly, 0);

@@ -79,10 +79,10 @@ void CScreenSpaceObscuranceStage::Execute(ShadowMapFrustum* pHeightMapFrustum, C
 
 		Vec4 param1(radius * 0.5f * rd->m_ProjMatrix.m00, radius * 0.5f * rd->m_ProjMatrix.m11,
 		            CRenderer::CV_r_ssdoRadiusMin, CRenderer::CV_r_ssdoRadiusMax);
-		pShader->FXSetPSFloat(ssdoParamsName, &param1, 1);
+		m_passObscurance.SetConstant(eHWSC_Pixel, ssdoParamsName, param1);
 
 		Vec4 viewSpaceParam(2.0f / rd->m_ProjMatrix.m00, 2.0f / rd->m_ProjMatrix.m11, -1.0f / rd->m_ProjMatrix.m00, -1.0f / rd->m_ProjMatrix.m11);
-		pShader->FXSetPSFloat(viewspaceParamName, &viewSpaceParam, 1);
+		m_passObscurance.SetConstant(eHWSC_Pixel, viewspaceParamName, viewSpaceParam);
 
 		Matrix44A matView = rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
 		// Adjust the camera matrix so that the camera space will be: +y = down, +z - towards, +x - right
@@ -92,15 +92,15 @@ void CScreenSpaceObscuranceStage::Execute(ShadowMapFrustum* pHeightMapFrustum, C
 		float z = matView.m13;
 		matView.m13 = -matView.m23;
 		matView.m23 = z;
-		pShader->FXSetPSFloat(camMatrixName, (Vec4*)matView.GetData(), 3);
+		m_passObscurance.SetConstantArray(eHWSC_Pixel, camMatrixName, (Vec4*)matView.GetData(), 3);
 
 		matView.Invert();
-		pShader->FXSetPSFloat(camMatrixInvName, (Vec4*)matView.GetData(), 3);
+		m_passObscurance.SetConstantArray(eHWSC_Pixel, camMatrixInvName, (Vec4*)matView.GetData(), 3);
 
 		if (pHeightMapFrustum)  // Heightmap AO
 		{
 			Vec4 paramsHMAO(CRenderer::CV_r_HeightMapAOAmount, 1.0f / pHeightMapFrustum->nTexSize, 0, 0);
-			pShader->FXSetPSFloat(paramsHMAOName, &paramsHMAO, 1);
+			m_passObscurance.SetConstant(eHWSC_Pixel, paramsHMAOName, paramsHMAO);
 		}
 
 		m_passObscurance.Execute();
@@ -132,11 +132,11 @@ void CScreenSpaceObscuranceStage::Execute(ShadowMapFrustum* pHeightMapFrustum, C
 		m_passFilter.BeginConstantUpdate();
 
 		Vec4 v(0, 0, (float)srcSizeX, (float)srcSizeY);
-		pShader->FXSetVSFloat(pixelOffsetName, &v, 1);
+		m_passFilter.SetConstant(eHWSC_Vertex, pixelOffsetName, v);
 		v = Vec4(0.5f / (float)sizeX, 0.5f / (float)sizeY, 1.0f / (float)srcSizeX, 1.0f / (float)srcSizeY);
-		pShader->FXSetPSFloat(blurOffsetName, &v, 1);
+		m_passFilter.SetConstant(eHWSC_Pixel, blurOffsetName, v);
 		v = Vec4(2.0f / srcSizeX, 0, 2.0f / srcSizeY, 10.0f); // w: weight coef
-		pShader->FXSetPSFloat(blurKernelName, &v, 1);
+		m_passFilter.SetConstant(eHWSC_Pixel, blurKernelName, v);
 
 		m_passFilter.Execute();
 	}
@@ -151,6 +151,6 @@ void CScreenSpaceObscuranceStage::Execute(ShadowMapFrustum* pHeightMapFrustum, C
 		m_passAlbedoDownsample0.Execute(CTexture::s_ptexSceneDiffuse, CTexture::s_ptexBackBufferScaled[0]);
 		m_passAlbedoDownsample1.Execute(CTexture::s_ptexBackBufferScaled[0], CTexture::s_ptexBackBufferScaled[1]);
 		m_passAlbedoDownsample2.Execute(CTexture::s_ptexBackBufferScaled[1], CTexture::s_ptexAOColorBleed);
-		m_passAlbedoBlur.Execute(CTexture::s_ptexAOColorBleed, CTexture::s_ptexBackBufferScaled[0], 1.0f, 4.0f);
+		m_passAlbedoBlur.Execute(CTexture::s_ptexAOColorBleed, CTexture::s_ptexBackBufferScaled[2], 1.0f, 4.0f);
 	}
 }

@@ -305,19 +305,6 @@ static SParamDB sParams[] =
 	SParamDB(PARAM(PF_NearestScaled,                         ECGP_PF_NearestScaled),                         0),
 	SParamDB(PARAM(PF_DepthFactor,                           ECGP_PF_DepthFactor),                           0),
 
-	SParamDB(PARAM(PB_SFCompMat,                             ECGP_Matr_PB_SFCompMat),                        0),
-	SParamDB(PARAM(PB_SFTexGenMat0,                          ECGP_Matr_PB_SFTexGenMat0),                     0),
-	SParamDB(PARAM(PB_SFTexGenMat1,                          ECGP_Matr_PB_SFTexGenMat1),                     0),
-	SParamDB(PARAM(PB_SFBitmapColorTransform,                ECGP_PB_SFBitmapColorTransform),                0),
-	SParamDB(PARAM(PB_SFColorTransformMatrix,                ECGP_PB_SFColorTransformMatrix),                0),
-	SParamDB(PARAM(PB_SFStereoVideoFrameSelect,              ECGP_PB_SFStereoVideoFrameSelect),              0),
-	SParamDB(PARAM(PB_SFPremultipliedAlpha,                  ECGP_PB_SFPremultipliedAlpha),                  0),
-	SParamDB(PARAM(PB_SFBlurFilterSize,                      ECGP_PB_SFBlurFilterSize),                      0),
-	SParamDB(PARAM(PB_SFBlurFilterScale,                     ECGP_PB_SFBlurFilterScale),                     0),
-	SParamDB(PARAM(PB_SFBlurFilterOffset,                    ECGP_PB_SFBlurFilterOffset),                    0),
-	SParamDB(PARAM(PB_SFBlurFilterColor1,                    ECGP_PB_SFBlurFilterColor1),                    0),
-	SParamDB(PARAM(PB_SFBlurFilterColor2,                    ECGP_PB_SFBlurFilterColor2),                    0),
-
 	SParamDB(PARAM(PI_OceanMat,                              ECGP_Matr_PI_OceanMat),                         0),
 
 	SParamDB(PARAM(PI_WrinklesMask0,                         ECGP_PI_WrinklesMask0),                         0),
@@ -707,8 +694,9 @@ bool CShaderMan::mfParseFXSampler(SShaderFXParams& FXParams, SFXSampler* pr, con
 	return true;
 }
 
-// TM_ - material slots
-// TR_ - global engine RT's
+// TM_  - material slots
+// TSF_ - scaleform slots
+// TS_  - global engine RT's
 static STextureDB sTextures[] =
 {
 	STextureDB(PARAM(TM_Diffuse,                      ECGT_MatSlot_Diffuse),              0),
@@ -726,12 +714,13 @@ static STextureDB sTextures[] =
 	STextureDB(PARAM(TM_Smoothness,                   ECGT_MatSlot_Smoothness),           0),
 	STextureDB(PARAM(TM_Emittance,                    ECGT_MatSlot_Emittance),            0),
 
-	STextureDB(PARAM(TSF_Slot0,                       ECGT_SF_Slot0),                     0),
-	STextureDB(PARAM(TSF_Slot1,                       ECGT_SF_Slot1),                     0),
-	STextureDB(PARAM(TSF_SlotY,                       ECGT_SF_SlotY),                     0),
-	STextureDB(PARAM(TSF_SlotU,                       ECGT_SF_SlotU),                     0),
-	STextureDB(PARAM(TSF_SlotV,                       ECGT_SF_SlotV),                     0),
-	STextureDB(PARAM(TSF_SlotA,                       ECGT_SF_SlotA),                     0),
+	STextureDB(PARAM(TSF_ScaleformInput0,             ECGT_ScaleformInput0),              0),
+	STextureDB(PARAM(TSF_ScaleformInput1,             ECGT_ScaleformInput1),              0),
+	STextureDB(PARAM(TSF_ScaleformInput2,             ECGT_ScaleformInput2),              0),
+	STextureDB(PARAM(TSF_ScaleformInputY,             ECGT_ScaleformInputY),              0),
+	STextureDB(PARAM(TSF_ScaleformInputU,             ECGT_ScaleformInputU),              0),
+	STextureDB(PARAM(TSF_ScaleformInputV,             ECGT_ScaleformInputV),              0),
+	STextureDB(PARAM(TSF_ScaleformInputA,             ECGT_ScaleformInputA),              0),
 
 	STextureDB(PARAM(TS_Shadow0,                      ECGT_Shadow0),                      0),
 	STextureDB(PARAM(TS_Shadow1,                      ECGT_Shadow1),                      0),
@@ -785,8 +774,10 @@ static STextureDB sTextures[] =
 	STextureDB(PARAM(TS_RainOcclusion,                ECGT_RainOcclusion),                0),
 	STextureDB(PARAM(TS_TerrainNormMap,               ECGT_TerrainNormMap),               0),
 	STextureDB(PARAM(TS_TerrainBaseMap,               ECGT_TerrainBaseMap),               0),
-	STextureDB(PARAM(TS_TerrainElevMap,								ECGT_TerrainElevMap),								0),
+	STextureDB(PARAM(TS_TerrainElevMap,               ECGT_TerrainElevMap),               0),
 	STextureDB(PARAM(TS_WindGrid,                     ECGT_WindGrid),                     0),
+	STextureDB(PARAM(TS_CloudShadow,                  ECGT_CloudShadow),                  0),
+	STextureDB(PARAM(TS_VolCloudShadow,               ECGT_VolCloudShadow),               0),
 
 	STextureDB()
 };

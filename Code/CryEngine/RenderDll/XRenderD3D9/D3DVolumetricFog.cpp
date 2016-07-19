@@ -23,8 +23,6 @@ namespace vfInternal
 {
 static const uint32 MaxNumTileLights = 255;
 
-static const uint32 MaxNumFogVolumes = 64;
-
 static const float ThresholdLengthGlobalProbe = 1.732f * (1000.0f * 0.5f);
 
 enum EVolumeVolumeTypes
@@ -70,10 +68,9 @@ struct SVolumeLightShadeInfo
 	Vec2     attenuationParams;
 	Vec2     shadowParams;
 	Vec4     color;
-	Vec4     shadowChannelIndex;
 	Matrix44 projectorMatrix;
 	Matrix44 shadowMatrix;
-};    // 208 bytes
+};    // 192 bytes
 
 struct SFogVolumeCullInfo
 {
@@ -157,6 +154,8 @@ CVolumetricFog::CVolumetricFog()
 	for (int i = 0; i < MaxFrameNum; ++i)
 		m_viewProj[i].SetIdentity();
 
+	m_volFogBufDensityColor = NULL;
+	m_volFogBufDensity = NULL;
 	m_volFogBufEmissive = NULL;
 	m_InscatteringVolume = NULL;
 	m_fogInscatteringVolume[0] = NULL;
@@ -187,17 +186,6 @@ CVolumetricFog::CVolumetricFog()
 	m_raymarchDistance = 0.0f;
 	m_globalEnvProbeParam0 = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
 	m_globalEnvProbeParam1 = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-
-	for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
-	{
-		for (int j = 0; j < MAX_REND_RECURSION_LEVELS; ++j)
-		{
-			for (int k = 0; k < MaxNumFogVolumeType; ++k)
-			{
-				m_fogVolumeInfoArray[i][j][k].Reserve(vfInternal::MaxNumFogVolumes);
-			}
-		}
-	}
 }
 
 CVolumetricFog::~CVolumetricFog()
@@ -260,8 +248,8 @@ void CVolumetricFog::CreateResources()
 	                          && (m_InscatteringVolume->GetHeight() == height)
 	                          && (m_InscatteringVolume->GetDepth() == depth)
 	                          && (m_InscatteringVolume->GetDstFormat() == fmt)
-	                          && CTexture::s_ptexVolumetricFogDensityColor
-	                          && (CTexture::s_ptexVolumetricFogDensityColor->GetDstFormat() == fmtDensityColor);
+	                          && m_volFogBufDensityColor
+	                          && (m_volFogBufDensityColor->GetDstFormat() == fmtDensityColor);
 
 	bool validDownscaledShadowMaps = (CRenderer::CV_r_VolumetricFogDownscaledSunShadow == 0 && !m_downscaledShadow[0])
 	                                 || (CRenderer::CV_r_VolumetricFogDownscaledSunShadow != 0
@@ -426,8 +414,7 @@ void CVolumetricFog::CreateResources()
 			m_ClipVolumeDSVArray[i] = CTexture::s_ptexVolumetricClipVolumeStencil->GetDeviceDepthStencilView(i, 1);
 	}
 
-	assert(CTexture::s_ptexVolumetricFogDensityColor);
-	if (CTexture::s_ptexVolumetricFogDensityColor)
+	if(!m_volFogBufDensityColor)
 	{
 		const int32 w = width;
 		const int32 h = height;
@@ -435,16 +422,15 @@ void CVolumetricFog::CreateResources()
 		ETEX_Format format = fmtDensityColor;
 		uint32 flags = commonFlags | FT_USAGE_UNORDERED_ACCESS | FT_USAGE_RENDERTARGET;
 
-		CTexture::s_ptexVolumetricFogDensityColor->Invalidate(w, h, format);
+		m_volFogBufDensityColor = CTexture::Create3DTexture("$DensityColorVolume", w, h, d, 1, flags, NULL, format, format);
 
-		if (!CTexture::s_ptexVolumetricFogDensityColor->Create3DTexture(w, h, d, 1, flags, NULL, format, format))
+		if(!m_volFogBufDensityColor || m_volFogBufDensityColor->GetFlags() & FT_FAILED)
 		{
 			CryFatalError("Couldn't allocate texture.");
 		}
 	}
 
-	assert(CTexture::s_ptexVolumetricFogDensity);
-	if (CTexture::s_ptexVolumetricFogDensity)
+	if(!m_volFogBufDensity)
 	{
 		const int32 w = width;
 		const int32 h = height;
@@ -452,9 +438,9 @@ void CVolumetricFog::CreateResources()
 		ETEX_Format format = fmtDensity;
 		uint32 flags = commonFlags | FT_USAGE_UNORDERED_ACCESS | FT_USAGE_RENDERTARGET;
 
-		CTexture::s_ptexVolumetricFogDensity->Invalidate(w, h, format);
+		m_volFogBufDensity = CTexture::Create3DTexture("$DensityVolume", w, h, d, 1, flags, NULL, format, format);
 
-		if (!CTexture::s_ptexVolumetricFogDensity->Create3DTexture(w, h, d, 1, flags, NULL, format, format))
+		if(!m_volFogBufDensity || m_volFogBufDensity->GetFlags() & FT_FAILED)
 		{
 			CryFatalError("Couldn't allocate texture.");
 		}
@@ -594,26 +580,28 @@ void CVolumetricFog::CreateResources()
 	{
 		DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
 		uint32 stride = sizeof(vfInternal::SFogVolumeCullInfo);
-		m_fogVolumeCullInfoBuf.Create(vfInternal::MaxNumFogVolumes, stride, format, DX11BUF_DYNAMIC | DX11BUF_STRUCTURED | DX11BUF_BIND_SRV, NULL);
+		m_fogVolumeCullInfoBuf.Create(CRenderView::MaxFogVolumeNum, stride, format, DX11BUF_DYNAMIC | DX11BUF_STRUCTURED | DX11BUF_BIND_SRV, NULL);
 	}
 
 	if (!m_fogVolumeInjectInfoBuf.GetBuffer())
 	{
 		DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
 		uint32 stride = sizeof(vfInternal::SFogVolumeInjectInfo);
-		m_fogVolumeInjectInfoBuf.Create(vfInternal::MaxNumFogVolumes, stride, format, DX11BUF_DYNAMIC | DX11BUF_STRUCTURED | DX11BUF_BIND_SRV, NULL);
+		m_fogVolumeInjectInfoBuf.Create(CRenderView::MaxFogVolumeNum, stride, format, DX11BUF_DYNAMIC | DX11BUF_STRUCTURED | DX11BUF_BIND_SRV, NULL);
 	}
 }
 
 void CVolumetricFog::DestroyResources(bool destroyResolutionIndependentResources)
 {
 	assert((m_ClipVolumeDSVArray && m_InscatteringVolume) || !(m_ClipVolumeDSVArray || m_InscatteringVolume));
-	if (m_ClipVolumeDSVArray && m_InscatteringVolume)
+	if (m_ClipVolumeDSVArray)
 	{
 		delete[] m_ClipVolumeDSVArray;
 		m_ClipVolumeDSVArray = NULL;
 	}
 
+	SAFE_RELEASE_FORCE(m_volFogBufDensityColor);
+	SAFE_RELEASE_FORCE(m_volFogBufDensity);
 	SAFE_RELEASE_FORCE(m_volFogBufEmissive);
 	SAFE_RELEASE_FORCE(m_InscatteringVolume);
 	SAFE_RELEASE_FORCE(m_fogInscatteringVolume[0]);
@@ -646,25 +634,11 @@ void CVolumetricFog::DestroyResources(bool destroyResolutionIndependentResources
 		{
 			CTexture::s_ptexVolumetricClipVolumeStencil->ReleaseDeviceTexture(false);
 		}
-		if (CTexture::s_ptexVolumetricFogDensityColor)
-		{
-			CTexture::s_ptexVolumetricFogDensityColor->ReleaseDeviceTexture(false);
-		}
-		if (CTexture::s_ptexVolumetricFogDensity)
-		{
-			CTexture::s_ptexVolumetricFogDensity->ReleaseDeviceTexture(false);
-		}
 	}
 
 	m_Cleared = MaxFrameNum;
 	m_Destroyed = MaxFrameNum;
 	m_ReverseDepthMode = CRenderer::CV_r_ReverseDepth;
-}
-
-// This function is called from main thread.
-void CVolumetricFog::Clear()
-{
-	ClearFogVolumes();
 }
 
 void CVolumetricFog::ClearAll()
@@ -678,11 +652,10 @@ void CVolumetricFog::ClearAll()
 	m_numTileLights = 0;
 	m_numFogVolumes = 0;
 
-	ClearAllFogVolumes();
 	m_Cleared = MaxFrameNum;
 }
 
-void CVolumetricFog::PrepareLightList(CRenderView* pRenderView, RenderLightsArray* envProbes, RenderLightsArray* ambientLights, RenderLightsArray* defLights, uint32 firstShadowLight, uint32 curShadowPoolLight)
+void CVolumetricFog::PrepareLightList(CRenderView* pRenderView, const RenderLightsArray* envProbes, const RenderLightsArray* ambientLights, const RenderLightsArray* defLights, uint32 firstShadowLight, uint32 curShadowPoolLight)
 {
 	m_globalEnvProveTex0 = NULL;
 	m_globalEnvProveTex1 = NULL;
@@ -718,14 +691,11 @@ void CVolumetricFog::PrepareLightList(CRenderView* pRenderView, RenderLightsArra
 	float maxSizeGlobalEnvProbe0 = 0.0f;
 	float maxSizeGlobalEnvProbe1 = 0.0f;
 
-	vfInternal::SVolumeLightCullInfo tileLightsCull[vfInternal::MaxNumTileLights];
-	vfInternal::SVolumeLightShadeInfo tileLightsShade[vfInternal::MaxNumTileLights];
+	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+	CryStackAllocWithSizeVectorCleared(vfInternal::SVolumeLightCullInfo, vfInternal::MaxNumTileLights, tileLightsCull, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	CryStackAllocWithSizeVectorCleared(vfInternal::SVolumeLightShadeInfo, vfInternal::MaxNumTileLights, tileLightsShade, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-	// Reset lights
-	ZeroMemory(tileLightsCull, sizeof(vfInternal::SVolumeLightCullInfo) * vfInternal::MaxNumTileLights);
-	ZeroMemory(tileLightsShade, sizeof(vfInternal::SVolumeLightShadeInfo) * vfInternal::MaxNumTileLights);
-
-	RenderLightsArray* lightLists[3] = {
+	const RenderLightsArray* lightLists[3] = {
 		CRenderer::CV_r_DeferredShadingEnvProbes ? envProbes : NULL,
 		CRenderer::CV_r_DeferredShadingAmbientLights ? ambientLights : NULL,
 		CRenderer::CV_r_DeferredShadingLights ? defLights : NULL,
@@ -741,7 +711,7 @@ void CVolumetricFog::PrepareLightList(CRenderView* pRenderView, RenderLightsArra
 
 		for (uint32 lightIdx = 0, lightListSize = lightLists[lightListIdx]->size(); lightIdx < lightListSize; ++lightIdx)
 		{
-			SRenderLight& renderLight = (*lightLists[lightListIdx])[lightIdx];
+			const SRenderLight& renderLight = (*lightLists[lightListIdx])[lightIdx];
 			vfInternal::SVolumeLightCullInfo& lightCullInfo = tileLightsCull[numTileLights];
 			vfInternal::SVolumeLightShadeInfo& lightShadeInfo = tileLightsShade[numTileLights];
 
@@ -1041,12 +1011,6 @@ void CVolumetricFog::PrepareLightList(CRenderView* pRenderView, RenderLightsArra
 							{
 								lightShadeInfo.shadowParams = sideShadowParams;
 								lightShadeInfo.shadowMatrix = shadowMat;
-								lightShadeInfo.shadowChannelIndex = Vec4(
-								  renderLight.m_ShadowChanMask % 4 == 0,
-								  renderLight.m_ShadowChanMask % 4 == 1,
-								  renderLight.m_ShadowChanMask % 4 == 2,
-								  renderLight.m_ShadowChanMask % 4 == 3
-								  );
 								lightShadeInfo.shadowMaskIndex = renderLight.m_ShadowMaskIndex;
 
 								if (numSides > 1)
@@ -1089,9 +1053,12 @@ void CVolumetricFog::PrepareLightList(CRenderView* pRenderView, RenderLightsArra
 		ZeroMemory(&tileLightsShade[numTileLights], sizeof(vfInternal::SVolumeLightShadeInfo));
 	}
 
-	// Update light buffer
-	m_lightCullInfoBuf.UpdateBufferContent(tileLightsCull, sizeof(vfInternal::SVolumeLightCullInfo) * vfInternal::MaxNumTileLights);
-	m_LightShadeInfoBuf.UpdateBufferContent(tileLightsShade, sizeof(vfInternal::SVolumeLightShadeInfo) * vfInternal::MaxNumTileLights);
+	// NOTE: Update full light buffer, because there are "num-threads" checks for Zero-struct size needs to be aligned to that (0,64,128,192,255 are the only possible ones for 64 threat-group size)
+	const size_t tileLightsCullUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(vfInternal::SVolumeLightCullInfo) * std::min(vfInternal::MaxNumTileLights, Align(numTileLights, 64) + 64));
+	const size_t tileLightsShadeUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(vfInternal::SVolumeLightShadeInfo) * std::min(vfInternal::MaxNumTileLights, Align(numTileLights, 64) + 64));
+
+	m_lightCullInfoBuf.UpdateBufferContent(tileLightsCull, tileLightsCullUploadSize);
+	m_LightShadeInfoBuf.UpdateBufferContent(tileLightsShade, tileLightsShadeUploadSize);
 
 	m_numTileLights = numTileLights;
 
@@ -1141,14 +1108,14 @@ void CVolumetricFog::RenderVolumetricsToVolume(void (* RenderFunc)())
 		rd->GetViewport(&oldX, &oldY, &oldWidth, &oldHeight);
 		const uint64 prevShaderRtFlags = rp.m_FlagsShader_RT;
 
-		rd->FX_PushRenderTarget(0, CTexture::s_ptexVolumetricFogDensityColor, NULL);
-		rd->FX_PushRenderTarget(1, CTexture::s_ptexVolumetricFogDensity, NULL);
+		rd->FX_PushRenderTarget(0, m_volFogBufDensityColor, NULL);
+		rd->FX_PushRenderTarget(1, m_volFogBufDensity, NULL);
 		rd->FX_PushRenderTarget(2, m_volFogBufEmissive, NULL);
 		rd->FX_SetActiveRenderTargets();
 
 		// Set the viewport.
-		int targetWidth = CTexture::s_ptexVolumetricFogDensity->GetWidth();
-		int targetHeight = CTexture::s_ptexVolumetricFogDensity->GetHeight();
+		int targetWidth = m_volFogBufDensity->GetWidth();
+		int targetHeight = m_volFogBufDensity->GetHeight();
 		rd->RT_SetViewport(0, 0, targetWidth, targetHeight);
 
 		// overwrite pipeline state.
@@ -1221,83 +1188,13 @@ float CVolumetricFog::GetDepthIndex(float linearDepth) const
 bool CVolumetricFog::IsEnableInFrame() const
 {
 	bool v = CRenderer::CV_r_DeferredShadingTiled > 0
-	         && CRenderer::CV_r_DeferredShadingTiled < 4
+	         && CRenderer::CV_r_DeferredShadingTiledDebug != 2
 	         && CRenderer::CV_r_usezpass != 0
 	         && CRenderer::CV_r_Unlit == 0
 	         && CRenderer::CV_r_DeferredShadingDebug != 2
 	         && CRenderer::CV_r_measureoverdraw == 0;
 
 	return v;
-}
-
-void CVolumetricFog::PushFogVolume(CREFogVolume* pFogVolume, const SRenderingPassInfo& passInfo)
-{
-	assert(pFogVolume != NULL);
-	if (pFogVolume == NULL)
-	{
-		return;
-	}
-
-	const uint32 nThreadID = gcpRendD3D->m_RP.m_nFillThreadID;
-
-	const uint32 nVolumeType = pFogVolume->m_volumeType;
-
-	TArray<SFogVolumeInfo>& array = m_fogVolumeInfoArray[nThreadID][0][nVolumeType];
-
-	if (array.size() >= vfInternal::MaxNumFogVolumes)
-	{
-		// TODO: show skipped FogVolume number on the screen.
-		return;
-	}
-
-	SFogVolumeInfo temp;
-	temp.m_center = pFogVolume->m_center;
-	temp.m_viewerInsideVolume = pFogVolume->m_viewerInsideVolume;
-	temp.m_affectsThisAreaOnly = pFogVolume->m_affectsThisAreaOnly;
-	temp.m_stencilRef = pFogVolume->m_stencilRef;
-	temp.m_volumeType = pFogVolume->m_volumeType;
-	temp.m_localAABB = pFogVolume->m_localAABB;
-	temp.m_matWSInv = pFogVolume->m_matWSInv;
-	temp.m_fogColor = pFogVolume->m_fogColor;
-	temp.m_globalDensity = pFogVolume->m_globalDensity;
-	temp.m_densityOffset = pFogVolume->m_densityOffset;
-	temp.m_softEdgesLerp = pFogVolume->m_softEdgesLerp;
-	temp.m_heightFallOffDirScaled = pFogVolume->m_heightFallOffDirScaled;
-	temp.m_heightFallOffBasePoint = pFogVolume->m_heightFallOffBasePoint;
-	temp.m_eyePosInOS = pFogVolume->m_eyePosInOS;
-	temp.m_rampParams = pFogVolume->m_rampParams;
-	temp.m_windOffset = pFogVolume->m_windOffset;
-	temp.m_noiseScale = pFogVolume->m_noiseScale;
-	temp.m_noiseFreq = pFogVolume->m_noiseFreq;
-	temp.m_noiseOffset = pFogVolume->m_noiseOffset;
-	temp.m_noiseElapsedTime = pFogVolume->m_noiseElapsedTime;
-	temp.m_emission = pFogVolume->m_emission;
-
-	array.Add(temp);
-}
-
-void CVolumetricFog::ClearFogVolumes()
-{
-	const uint32 nThreadID = gcpRendD3D->m_RP.m_nFillThreadID;
-
-	for (uint32 i = 0; i < MaxNumFogVolumeType; ++i)
-	{
-		m_fogVolumeInfoArray[nThreadID][0][i].SetUse(0);
-	}
-}
-
-void CVolumetricFog::ClearAllFogVolumes()
-{
-	for (int32 i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
-	{
-		for (int32 j = 0; j < MAX_REND_RECURSION_LEVELS; ++j)
-		{
-			for (uint32 k = 0; k < MaxNumFogVolumeType; ++k)
-			{
-				m_fogVolumeInfoArray[i][j][k].Free();
-			}
-		}
-	}
 }
 
 void CVolumetricFog::UpdateFrame()
@@ -1459,7 +1356,8 @@ void CVolumetricFog::InjectInscatteringLight(CRenderView* pRenderView)
 			m_downscaledShadow[2] ? m_downscaledShadow[2]->GetShaderResourceView() : NULL,
 		};
 		int count = (CRenderer::CV_r_VolumetricFogDownscaledSunShadow == 1) ? 2 : 3;
-		rd->m_DevMan.BindSRV(CDeviceManager::TYPE_CS, pDSMs, 5, count);
+		CRY_ASSERT((count == 3 && m_downscaledShadow[2] != nullptr) || (count == 2 && m_downscaledShadow[2] == nullptr));
+		rd->m_DevMan.BindSRV(CDeviceManager::TYPE_CS, pDSMs, 0, count);
 	}
 
 #ifdef ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
@@ -1469,8 +1367,8 @@ void CVolumetricFog::InjectInscatteringLight(CRenderView* pRenderView)
 		m_MaxDepth->GetShaderResourceView(),
 		CTexture::s_ptexVolumetricClipVolumeStencil->GetShaderResourceView(),
 		m_LightShadeInfoBuf.GetSRV(),
-		CTexture::s_ptexVolumetricFogDensityColor->GetShaderResourceView(),
-		CTexture::s_ptexVolumetricFogDensity->GetShaderResourceView(),
+		m_volFogBufDensityColor->GetShaderResourceView(),
+		m_volFogBufDensity->GetShaderResourceView(),
 		m_volFogBufEmissive->GetShaderResourceView(),
 	};
 	rd->m_DevMan.BindSRV(CDeviceManager::TYPE_CS, pSRVs, 8, 8);
@@ -1481,7 +1379,7 @@ void CVolumetricFog::InjectInscatteringLight(CRenderView* pRenderView)
 		m_MaxDepth->GetShaderResourceView(),
 		CTexture::s_ptexVolumetricClipVolumeStencil->GetShaderResourceView(),
 		m_LightShadeInfoBuf.GetSRV(),
-		CTexture::s_ptexVolumetricFogDensityColor->GetShaderResourceView(),
+		m_volFogBufDensityColor->GetShaderResourceView(),
 		nullptr,
 		m_volFogBufEmissive->GetShaderResourceView(),
 	};
@@ -1512,7 +1410,7 @@ void CVolumetricFog::InjectInscatteringLight(CRenderView* pRenderView)
 	CShaderMan::s_shDeferredShading->FXSetCSFloat(paramFrustumBL, &vParamFrustumBL, 1);
 
 	Vec3 sunDir = gEnv->p3DEngine->GetSunDirNormalized();
-	static CCryNameR paramSunDir("SunDir");
+	static CCryNameR paramSunDir("vfSunDir");
 	Vec4 vParamSunDir(sunDir.x, sunDir.y, sunDir.z, 0.0f);
 	CShaderMan::s_shDeferredShading->FXSetCSFloat(paramSunDir, &vParamSunDir, 1);
 
@@ -1616,8 +1514,8 @@ void CVolumetricFog::BuildLightListGrid()
 	SD3DPostEffectsUtils::ShBeginPass(CShaderMan::s_shDeferredShading, shaderName, FEF_DONTSETSTATES);
 
 	D3DUAV* pUAVs[2] = {
-		m_lightGridBuf.GetUAV(),
-		m_lightCountBuf.GetUAV(),
+		m_lightGridBuf.GetDeviceUAV(),
+		m_lightCountBuf.GetDeviceUAV(),
 	};
 	rd->m_DevMan.BindUAV(CDeviceManager::TYPE_CS, pUAVs, NULL, 0, 2);
 
@@ -1699,9 +1597,9 @@ void CVolumetricFog::RaymarchVolumetricFog()
 	SRenderPipeline& rp(rd->m_RP);
 	const uint64 prevShaderRtFlags = rp.m_FlagsShader_RT;
 
-	const uint32 nScreenWidth = CTexture::s_ptexVolumetricFogDensity->GetWidth();
-	const uint32 nScreenHeight = CTexture::s_ptexVolumetricFogDensity->GetHeight();
-	const uint32 volumeDepth = CTexture::s_ptexVolumetricFogDensity->GetDepth();
+	const uint32 nScreenWidth = m_volFogBufDensity->GetWidth();
+	const uint32 nScreenHeight = m_volFogBufDensity->GetHeight();
+	const uint32 volumeDepth = m_volFogBufDensity->GetDepth();
 
 	//PROFILE_LABEL_SCOPE( "RAYMARCH_VOLUMETRIC_FOG" );
 
@@ -1914,9 +1812,9 @@ void CVolumetricFog::BlurDensityVolume()
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-	const uint32 nScreenWidth = CTexture::s_ptexVolumetricFogDensity->GetWidth();
-	const uint32 nScreenHeight = CTexture::s_ptexVolumetricFogDensity->GetHeight();
-	const uint32 volumeDepth = CTexture::s_ptexVolumetricFogDensity->GetDepth();
+	const uint32 nScreenWidth = m_volFogBufDensity->GetWidth();
+	const uint32 nScreenHeight = m_volFogBufDensity->GetHeight();
+	const uint32 volumeDepth = m_volFogBufDensity->GetDepth();
 
 	// blur density volume texture for removing jitter noise.
 	//PROFILE_LABEL_SCOPE( "VOLUMETRIC_FOG_BLUR_DENSITY" );
@@ -1942,7 +1840,7 @@ void CVolumetricFog::BlurDensityVolume()
 		rd->m_DevMan.BindUAV(CDeviceManager::TYPE_CS, pUAVs, NULL, 0, 1);
 
 		D3DShaderResource* pSRVs[2] = {
-			CTexture::s_ptexVolumetricFogDensity->GetShaderResourceView(),
+			m_volFogBufDensity->GetShaderResourceView(),
 			m_MaxDepth->GetShaderResourceView(),
 		};
 		rd->m_DevMan.BindSRV(CDeviceManager::TYPE_CS, pSRVs, 0, 2);
@@ -1994,7 +1892,7 @@ void CVolumetricFog::BlurDensityVolume()
 		SD3DPostEffectsUtils::ShBeginPass(CShaderMan::s_shDeferredShading, shaderNameVertical, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
 
 		D3DUAV* pUAVs[1] = {
-			CTexture::s_ptexVolumetricFogDensity->GetDeviceUAV(),
+			m_volFogBufDensity->GetDeviceUAV(),
 		};
 		rd->m_DevMan.BindUAV(CDeviceManager::TYPE_CS, pUAVs, NULL, 0, 1);
 
@@ -2072,7 +1970,7 @@ void CVolumetricFog::ReprojectVolume()
 		rd->GetDeviceContext().CopyResource(GetPrevInscatterTex()->GetDevTexture()->GetVolumeTexture(),
 		                                    m_InscatteringVolume->GetDevTexture()->GetVolumeTexture());
 		rd->GetDeviceContext().CopyResource(GetPrevDensityTex()->GetDevTexture()->GetVolumeTexture(),
-		                                    CTexture::s_ptexVolumetricFogDensity->GetDevTexture()->GetVolumeTexture());
+		                                    m_volFogBufDensity->GetDevTexture()->GetVolumeTexture());
 #endif
 	}
 
@@ -2109,7 +2007,7 @@ void CVolumetricFog::ReprojectVolume()
 		D3DShaderResource* pSRVs[5] = {
 			m_InscatteringVolume->GetShaderResourceView(),
 			(GetPrevInscatterTex()->GetShaderResourceView()),
-			CTexture::s_ptexVolumetricFogDensity->GetShaderResourceView(),
+			m_volFogBufDensity->GetShaderResourceView(),
 			(GetPrevDensityTex()->GetShaderResourceView()),
 			m_MaxDepth->GetShaderResourceView(),
 		};
@@ -2149,7 +2047,7 @@ void CVolumetricFog::ReprojectVolume()
 		CShaderMan::s_shDeferredShading->FXSetCSFloat(paramNameScreenInfo, &screenInfo, 1);
 
 		static CCryNameR param1("PrevViewProjMatrix");
-		Vec4* temp = (Vec4*)m_viewProj[max(m_tick - (int32)rd->GetActiveGPUCount(), 0) % MaxFrameNum].GetData();
+		Vec4* temp = (Vec4*)m_viewProj[max((m_tick - (int32)rd->GetActiveGPUCount()) % MaxFrameNum, 0)].GetData();
 		CShaderMan::s_shDeferredShading->FXSetCSFloat(param1, temp, 4);
 
 		rd->FX_Commit();
@@ -2449,8 +2347,9 @@ void CVolumetricFog::RenderClipVolumeToVolumeStencil(int nClipAreaReservedStenci
 void CVolumetricFog::PrepareFogVolumeList()
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
-	int nThreadID = rd->m_RP.m_nProcessThreadID;
+	SRenderPipeline& rp(rd->m_RP);
+	CRenderView* pRenderView = rp.RenderView();
+	CRY_ASSERT(pRenderView);
 
 	// Prepare view matrix with flipped z-axis
 	Matrix44A matView = rd->m_ViewMatrix;
@@ -2459,8 +2358,10 @@ void CVolumetricFog::PrepareFogVolumeList()
 	matView.m22 *= -1;
 	matView.m32 *= -1;
 
-	vfInternal::SFogVolumeCullInfo cullInfoArray[vfInternal::MaxNumFogVolumes];
-	vfInternal::SFogVolumeInjectInfo injectInfoArray[vfInternal::MaxNumFogVolumes];
+	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+	CryStackAllocWithSizeVector(vfInternal::SFogVolumeCullInfo, CRenderView::MaxFogVolumeNum, cullInfoArray, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	CryStackAllocWithSizeVector(vfInternal::SFogVolumeInjectInfo, CRenderView::MaxFogVolumeNum, injectInfoArray, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
 	uint32 numFogVol = 0;
 
 	Vec3 volumetricFogRaymarchEnd(0.0f, 0.0f, 0.0f);
@@ -2471,13 +2372,15 @@ void CVolumetricFog::PrepareFogVolumeList()
 	Vec3 worldViewPos = rd->GetRCamera().vOrigin;
 	AABB aabbInObj(1.0f);
 
-	for (uint32 type = 0; type < MaxNumFogVolumeType; ++type)
+	for (uint32 type = 0; type < IFogVolumeRenderNode::eFogVolumeType_Count; ++type)
 	{
-		TArray<SFogVolumeInfo>& srcArray = m_fogVolumeInfoArray[nThreadID][0][type];
-		uint num = srcArray.Num();
-		for (uint32 i = 0; i < num; ++i)
+		const auto& srcArray = pRenderView->GetFogVolumes(IFogVolumeRenderNode::eFogVolumeType(type));
+		for (auto& fvol : srcArray)
 		{
-			SFogVolumeInfo& fvol = srcArray[i];
+			if (numFogVol >= CRenderView::MaxFogVolumeNum)
+			{
+				break;
+			}
 
 			// calculate depth bounds of FogVolume.
 			// reusing light depth bounds code from CDeferredShading::GetLightDepthBounds().
@@ -2562,8 +2465,12 @@ void CVolumetricFog::PrepareFogVolumeList()
 
 	m_numFogVolumes = numFogVol;
 
-	m_fogVolumeCullInfoBuf.UpdateBufferContent(cullInfoArray, sizeof(vfInternal::SFogVolumeCullInfo) * vfInternal::MaxNumFogVolumes);
-	m_fogVolumeInjectInfoBuf.UpdateBufferContent(injectInfoArray, sizeof(vfInternal::SFogVolumeInjectInfo) * vfInternal::MaxNumFogVolumes);
+	// Minimize transfer size
+	const size_t cullInfoArrayUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(vfInternal::SFogVolumeCullInfo) * m_numFogVolumes);
+	const size_t injectInfoArrayUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(vfInternal::SFogVolumeInjectInfo) * m_numFogVolumes);
+
+	m_fogVolumeCullInfoBuf.UpdateBufferContent(cullInfoArray, cullInfoArrayUploadSize);
+	m_fogVolumeInjectInfoBuf.UpdateBufferContent(injectInfoArray, injectInfoArrayUploadSize);
 }
 
 void CVolumetricFog::InjectFogDensity()
@@ -2595,9 +2502,9 @@ void CVolumetricFog::InjectFogDensity()
 	{
 		rd->GetTiledShading().BindForwardShadingResources(NULL, CDeviceManager::TYPE_CS);
 
-		const uint32 nScreenWidth = CTexture::s_ptexVolumetricFogDensity->GetWidth();
-		const uint32 nScreenHeight = CTexture::s_ptexVolumetricFogDensity->GetHeight();
-		const uint32 volumeDepth = CTexture::s_ptexVolumetricFogDensity->GetDepth();
+		const uint32 nScreenWidth = m_volFogBufDensity->GetWidth();
+		const uint32 nScreenHeight = m_volFogBufDensity->GetHeight();
+		const uint32 volumeDepth = m_volFogBufDensity->GetDepth();
 
 		//PROFILE_LABEL_SCOPE( "INJECT_FOG_DENSITY" );
 
@@ -2605,8 +2512,8 @@ void CVolumetricFog::InjectFogDensity()
 		SD3DPostEffectsUtils::ShBeginPass(CShaderMan::s_shDeferredShading, shaderName, FEF_DONTSETSTATES);
 
 		D3DUAV* pUAVs[3] = {
-			CTexture::s_ptexVolumetricFogDensity->GetDeviceUAV(),
-			CTexture::s_ptexVolumetricFogDensityColor->GetDeviceUAV(),
+			m_volFogBufDensity->GetDeviceUAV(),
+			m_volFogBufDensityColor->GetDeviceUAV(),
 			m_volFogBufEmissive->GetDeviceUAV(),
 		};
 		rd->m_DevMan.BindUAV(CDeviceManager::TYPE_CS, pUAVs, NULL, 0, 3);

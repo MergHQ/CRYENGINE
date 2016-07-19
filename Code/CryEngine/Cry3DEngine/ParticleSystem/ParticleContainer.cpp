@@ -36,13 +36,11 @@ namespace pfx2
 
 CParticleContainer::CParticleContainer()
 {
-	memset(m_pData, 0, sizeof(m_pData));
 	Clear();
 }
 
 CParticleContainer::CParticleContainer(const CParticleContainer& copy)
 {
-	memset(m_pData, 0, sizeof(m_pData));
 	Clear();
 }
 
@@ -60,27 +58,26 @@ void CParticleContainer::Resize(size_t newSize)
 
 	const size_t newMaxParticles = CRY_PFX2_PARTICLESGROUP_UPPER(newSize + (newSize >> 1)) + 1;
 
-	void* prevBuffers[EPDT_Count];
-	for (size_t type = 0; type < EPDT_Count; ++type)
+	auto prevBuffers = m_pData;
+	for (auto type : EParticleDataType::indices())
 	{
-		const size_t stride = gParticleDataStrides[type];
-		prevBuffers[type] = m_pData[type];
+		const size_t stride = type.info().typeSize();
 		m_pData[type] = 0;
 		if (m_useData[type] && newMaxParticles > 0)
 			m_pData[type] = ParticleAlloc(newMaxParticles * stride);
 	}
 
-	for (size_t type = 0; type < EPDT_Count; ++type)
+	for (auto type : EParticleDataType::indices())
 	{
 		if (!m_useData[type] && newMaxParticles > 0)
 			continue;
-		const size_t stride = gParticleDataStrides[type];
+		const size_t stride = type.info().typeSize();
 		const byte* pSource = reinterpret_cast<byte*>(prevBuffers[type]);
 		byte* pDest = reinterpret_cast<byte*>(m_pData[type]);
 		memcpy(pDest, pSource, m_lastId * stride);
 	}
 
-	for (size_t type = 0; type < EPDT_Count; ++type)
+	for (auto type : EParticleDataType::indices())
 	{
 		if (prevBuffers[type])
 			ParticleFree(prevBuffers[type]);
@@ -91,44 +88,26 @@ void CParticleContainer::Resize(size_t newSize)
 
 void CParticleContainer::ResetUsedData()
 {
-	for (size_t type = 0; type < EPDT_Count; ++type)
-		m_useData[type] = false;
+	m_useData.fill(false);
 }
 
 void CParticleContainer::AddParticleData(EParticleDataType type)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	m_useData[type] = true;
-	if (m_pData[type] == 0)
-		m_pData[type] = ParticleAlloc(m_maxParticles * gParticleDataStrides[type]);
-}
-
-void CParticleContainer::AddParticleData(EParticleVec3Field type)
-{
-	EParticleDataType xType = EParticleDataType(type);
-	EParticleDataType yType = EParticleDataType(type + 1);
-	EParticleDataType zType = EParticleDataType(type + 2);
-	AddParticleData(xType);
-	AddParticleData(yType);
-	AddParticleData(zType);
-}
-
-void CParticleContainer::AddParticleData(EParticleQuatField type)
-{
-	EParticleDataType xType = EParticleDataType(type);
-	EParticleDataType yType = EParticleDataType(type + 1);
-	EParticleDataType zType = EParticleDataType(type + 2);
-	EParticleDataType wType = EParticleDataType(type + 3);
-	AddParticleData(xType);
-	AddParticleData(yType);
-	AddParticleData(zType);
-	AddParticleData(wType);
+	const size_t allocSize = m_maxParticles * type.info().typeSize();
+	uint dim = type.info().dimension;
+	for (uint i = 0; i < dim; ++i)
+	{
+		m_useData[type + i] = true;
+		if (!m_pData[type + i])
+			m_pData[type + i] = ParticleAlloc(allocSize);
+	}
 }
 
 void CParticleContainer::Trim()
 {
-	for (size_t type = 0; type < EPDT_Count; ++type)
+	for (auto type : EParticleDataType::indices())
 	{
 		if (!m_useData[type] && m_pData[type] != 0)
 		{
@@ -142,7 +121,7 @@ void CParticleContainer::Clear()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	for (size_t i = 0; i < EPDT_Count; ++i)
+	for (auto i : EParticleDataType::indices())
 	{
 		if (m_pData[i] != 0)
 			ParticleFree(m_pData[i]);
@@ -221,6 +200,7 @@ void CParticleContainer::AddParticle()
 	AddRemoveParticles(&entry, 1, 0, 0);
 }
 
+
 void CParticleContainer::AddRemoveParticles(const SSpawnEntry* pSpawnEntries, size_t numSpawnEntries, const TParticleIdArray* pToRemove, TParticleIdArray* pSwapIds)
 {
 	CRY_PFX2_PROFILE_DETAIL;
@@ -250,9 +230,9 @@ void CParticleContainer::AddRemoveParticles(const SSpawnEntry* pSpawnEntries, si
 		const size_t toRemoveCount = toRemove.size();
 		const uint finalSize = lastParticleId - toRemoveCount;
 
-		for (size_t dataTypeId = 0; dataTypeId < EPDT_Count; ++dataTypeId)
+		for (auto dataTypeId : EParticleDataType::indices())
 		{
-			const size_t stride = gParticleDataStrides[dataTypeId];
+			const size_t stride = dataTypeId.info().typeSize();
 			void* pData = m_pData[dataTypeId];
 			if (!m_useData[dataTypeId])
 				continue;
@@ -308,23 +288,27 @@ void CParticleContainer::AddRemoveParticles(const SSpawnEntry* pSpawnEntries, si
 
 			if (HasData(EPDT_ParentId))
 			{
-				TParticleId* pParentIds = reinterpret_cast<TParticleId*>(m_pData[EPDT_ParentId]);
+				TParticleId* pParentIds = GetData<TParticleId>(EPDT_ParentId);
 				for (uint32 i = currentId; i < currentId + toAddCount; ++i)
 					pParentIds[i] = spawnEntry.m_parentId;
 			}
 
 			if (HasData(EPDT_SpawnId))
 			{
-				uint32* pSpawnIds = reinterpret_cast<TParticleId*>(m_pData[EPDT_SpawnId]);
+				uint32* pSpawnIds = GetData<TParticleId>(EPDT_SpawnId);
 				for (uint32 i = currentId; i < currentId + toAddCount; ++i)
 					pSpawnIds[i] = m_nextSpawnId++;
+			}
+			else
+			{
+				m_nextSpawnId += toAddCount;
 			}
 
 			if (HasData(EPDT_NormalAge))
 			{
 				// Store newborn ages
 				float age = spawnEntry.m_ageBegin;
-				float* pNormalAges = reinterpret_cast<float*>(m_pData[EPDT_NormalAge]);
+				float* pNormalAges = GetData<float>(EPDT_NormalAge);
 				for (uint32 i = currentId; i < currentId + toAddCount; ++i, age += spawnEntry.m_ageIncrement)
 					pNormalAges[i] = age;
 			}
@@ -332,7 +316,7 @@ void CParticleContainer::AddRemoveParticles(const SSpawnEntry* pSpawnEntries, si
 			if (HasData(EPDT_SpawnFraction))
 			{
 				float fraction = spawnEntry.m_fractionBegin;
-				float* pSpawnFractions = reinterpret_cast<float*>(m_pData[EPDT_SpawnFraction]);
+				float* pSpawnFractions = GetData<float>(EPDT_SpawnFraction);
 				for (uint32 i = currentId; i < currentId + toAddCount; ++i, fraction += spawnEntry.m_fractionCounter)
 					pSpawnFractions[i] = fraction - uint(fraction);
 			}
@@ -390,9 +374,9 @@ void CParticleContainer::ResetSpawnedParticles()
 	const uint movingId = m_lastSpawnId - min(gapSize, numSpawn);
 	if (gapSize != 0)
 	{
-		for (size_t dataTypeId = 0; dataTypeId < EPDT_Count; ++dataTypeId)
+		for (auto dataTypeId : EParticleDataType::indices())
 		{
-			const size_t stride = gParticleDataStrides[dataTypeId];
+			const size_t stride = dataTypeId.info().typeSize();
 			byte* pBytes = reinterpret_cast<byte*>(m_pData[dataTypeId]);
 			if (!pBytes)
 				continue;

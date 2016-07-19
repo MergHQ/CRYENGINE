@@ -10,6 +10,8 @@
 #include "ShadowUtils.h"
 
 #include "Common/RenderView.h"
+#include "DriverD3D.h"
+#include "GraphicsPipeline/Common/FullscreenPass.h"
 
 std::vector<CPoissonDiskGen> CPoissonDiskGen::s_kernelSizeGens;
 
@@ -653,6 +655,284 @@ bool CShadowUtils::GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum
 
 	result = pFullFrustum->mLightViewMatrix * cropMatrix;
 	return abs(crop.x) <= 1.0f && abs(crop.x + crop.z) <= 1.0f && abs(crop.y) <= 1.0f && abs(crop.y + crop.w) <= 1.0f;
+}
+
+bool CShadowUtils::SetupShadowsForFog(uint64& rtMask, SShadowCascades& shadowCascades, CRenderView* pRenderView)
+{
+	CRY_ASSERT(pRenderView != nullptr);
+
+	rtMask |= (g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE] | g_HWSR_MaskBit[HWSR_PARTICLE_SHADOW]);
+
+	auto& shadowFrustumArray = pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic);
+
+	// fill shadow cascades with default shadow map texture.
+	std::fill(std::begin(shadowCascades.pShadowMap), std::end(shadowCascades.pShadowMap), CTexture::s_ptexFarPlane);
+
+	// check all shadow map textures are valid and set them to array.
+	bool valid = true;
+	const int32 size = static_cast<int32>(shadowFrustumArray.size());
+	const int32 count = (size < MaxCascadesNum) ? size : MaxCascadesNum;
+	for (int32 i = 0; i < count; ++i)
+	{
+		auto pFrustm = shadowFrustumArray[i];
+		if (pFrustm && pFrustm->pFrustum && pFrustm->pFrustum->pDepthTex)
+		{
+			if (pFrustm->pFrustum->pDepthTex == CTexture::s_ptexFarPlane)
+			{
+				valid = false;
+			}
+
+			shadowCascades.pShadowMap[i] = pFrustm->pFrustum->pDepthTex;
+		}
+	}
+
+	// cloud shadow map
+	shadowCascades.pCloudShadowMap =
+	  (gcpRendD3D->GetCloudShadowTextureId() > 0)
+	  ? CTexture::GetByID(gcpRendD3D->GetCloudShadowTextureId())
+	  : CTexture::s_ptexWhite;
+
+	gcpRendD3D->FX_SetupForwardShadows(pRenderView, false);
+
+	return valid;
+}
+
+template<class RenderPassType>
+void CShadowUtils::SetShadowSamplingContextToRenderPass(
+  RenderPassType& pass,
+  int32 linearClampComparisonSamplerSlot,
+  int32 pointWrapSamplerSlot,
+  int32 pointClampSamplerSlot,
+  int32 bilinearWrapSamplerSlot,
+  int32 shadowNoiseTextureSlot)
+{
+	if (pointWrapSamplerSlot >= 0)
+	{
+		pass.SetSampler(pointWrapSamplerSlot, gcpRendD3D->m_nPointWrapSampler);
+	}
+	if (pointClampSamplerSlot >= 0)
+	{
+		pass.SetSampler(pointClampSamplerSlot, gcpRendD3D->m_nPointClampSampler);
+	}
+	if (linearClampComparisonSamplerSlot >= 0)
+	{
+		pass.SetSampler(linearClampComparisonSamplerSlot, gcpRendD3D->m_nLinearClampComparisonSampler);
+	}
+	if (bilinearWrapSamplerSlot >= 0)
+	{
+		pass.SetSampler(bilinearWrapSamplerSlot, gcpRendD3D->m_nBilinearWrapSampler);
+	}
+
+	if (shadowNoiseTextureSlot >= 0)
+	{
+		pass.SetTexture(shadowNoiseTextureSlot, CTexture::s_ptexShadowJitterMap);
+	}
+}
+
+// explicit instantiation
+template void CShadowUtils::SetShadowSamplingContextToRenderPass(
+  CFullscreenPass& pass,
+  int32 linearClampComparisonSamplerSlot,
+  int32 pointWrapSamplerSlot,
+  int32 pointClampSamplerSlot,
+  int32 bilinearWrapSamplerSlot,
+  int32 shadowNoiseTextureSlot);
+template void CShadowUtils::SetShadowSamplingContextToRenderPass(
+  CComputeRenderPass& pass,
+  int32 linearClampComparisonSamplerSlot,
+  int32 pointWrapSamplerSlot,
+  int32 pointClampSamplerSlot,
+  int32 bilinearWrapSamplerSlot,
+  int32 shadowNoiseTextureSlot);
+
+template<class RenderPassType>
+void CShadowUtils::SetShadowCascadesToRenderPass(
+  RenderPassType& pass,
+  int32 startShadowMapsTexSlot,
+  int32 cloudShadowTexSlot,
+  const SShadowCascades& shadowCascades)
+{
+	if (startShadowMapsTexSlot >= 0)
+	{
+		for (auto tex : shadowCascades.pShadowMap)
+		{
+			if (tex)
+			{
+				pass.SetTexture(startShadowMapsTexSlot++, tex);
+			}
+		}
+	}
+	if (cloudShadowTexSlot >= 0 && shadowCascades.pCloudShadowMap)
+	{
+		pass.SetTexture(cloudShadowTexSlot, shadowCascades.pCloudShadowMap);
+	}
+}
+
+// explicit instantiation
+template void CShadowUtils::SetShadowCascadesToRenderPass(
+  CFullscreenPass& pass,
+  int32 startShadowMapsTexSlot,
+  int32 cloudShadowTexSlot,
+  const SShadowCascades& shadowCascades);
+template void CShadowUtils::SetShadowCascadesToRenderPass(
+  CComputeRenderPass& pass,
+  int32 startShadowMapsTexSlot,
+  int32 cloudShadowTexSlot,
+  const SShadowCascades& shadowCascades);
+
+
+Matrix44 CShadowUtils::GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum, int nSide)
+{
+	//TODO: check if half texel offset is still needed
+	float fOffsetX = 0.5f;
+	float fOffsetY = 0.5f;
+
+	Matrix44 mClipToTexSpace(
+		0.5f,     0.0f,     0.0f,     0.0f,
+		0.0f,    -0.5f,     0.0f,     0.0f,
+		0.0f,     0.0f,     1.0f,     0.0f,
+		fOffsetX, fOffsetY, 0.0f,     1.0f);
+
+	if (pFrustum->bUseShadowsPool)
+	{
+		float arrOffs[2];
+		float arrScale[2];
+		pFrustum->GetTexOffset(nSide, arrOffs, arrScale, gcpRendD3D->m_nShadowPoolWidth, gcpRendD3D->m_nShadowPoolHeight);
+
+		//calculate crop matrix for  frustum
+		//TD: investigate proper half-texel offset with mCropView
+		Matrix44 mCropView(
+			arrScale[0],      0.0f,             0.0f,       0.0f,
+			0.0f,             arrScale[1],      0.0f,       0.0f,
+			0.0f,             0.0f,             1.0f,       0.0f,
+			arrOffs[0],       arrOffs[1],       0.0f,       1.0f);
+
+		mClipToTexSpace = mClipToTexSpace * mCropView;
+	}
+	else if(pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance)
+	{
+		const int texWidth = max(pFrustum->pDepthTex->GetWidth(), 1);
+		const int texHeight = max(pFrustum->pDepthTex->GetHeight(), 1);
+
+		Matrix44 mCropView(IDENTITY);
+		mCropView.m00 = pFrustum->packWidth[0]  / float(texWidth);
+		mCropView.m11 = pFrustum->packHeight[0] / float(texHeight);
+		mCropView.m30 = pFrustum->packX[0]      / float(texWidth);
+		mCropView.m31 = pFrustum->packY[0]      / float(texHeight);
+
+		mClipToTexSpace = mClipToTexSpace * mCropView;
+	}
+
+	return mClipToTexSpace;
+}
+
+
+CShadowUtils::SShadowSamplingInfo CShadowUtils::GetShadowSamplingInfo(ShadowMapFrustum* pFr, int nSide, const CCamera& cam, const SViewport& viewport, const Vec2& subpixelOffset)
+{
+	// shadowTexGen: world -> shadow tex space
+	Matrix44 lightViewProj = pFr->mLightViewMatrix;
+	if (pFr->bOmniDirectionalShadow)
+	{
+		Matrix44 lightView, lightProj;
+		CShadowUtils::GetCubemapFrustum(FTYP_SHADOWOMNIPROJECTION, pFr, nSide, &lightProj, &lightView);
+
+		lightViewProj = lightView * lightProj;
+	}
+
+	Matrix44 clipToTex    = CShadowUtils::GetClipToTexSpaceMatrix(pFr, nSide);
+	Matrix44 shadowTexGen = (lightViewProj * clipToTex).GetTransposed();
+
+	// screenToWorldBasis: screen -> world space
+	Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPosShadowSpace, vWBasisMagnitues;
+	CShadowUtils::ProjectScreenToWorldExpansionBasis(shadowTexGen, cam, subpixelOffset, float(viewport.nWidth), float(viewport.nHeight), vWBasisX, vWBasisY, vWBasisZ, vCamPosShadowSpace, true, nullptr);
+	Vec4r vWBasisMagnitudes = Vec4r(vWBasisX.GetLength(), vWBasisY.GetLength(), vWBasisZ.GetLength(), 1.0f);
+
+	// noise projection
+	Matrix33 mRotMatrix(lightViewProj);
+	mRotMatrix.orthonormalizeFastLH();
+	Matrix44 noiseProjection = Matrix44r(mRotMatrix).GetTransposed() * Matrix44r(shadowTexGen).GetInverted();
+
+	// filter kernel size
+	float kernelSize;
+	if (pFr->m_Flags & DLF_DIRECTIONAL)
+	{
+		float fFilteredArea = gcpRendD3D->GetShadowJittering() * (pFr->fWidthS + pFr->fBlurS);
+		if (pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest)
+			fFilteredArea *= 0.1;
+
+		kernelSize = fFilteredArea;
+	}
+	else
+	{
+		kernelSize = 2.0f; //constant penumbra for now
+		if (pFr->bOmniDirectionalShadow)
+			kernelSize *= 1.0f / 3.0f;
+	}
+
+	// cascade blending related
+	Matrix44 blendTexGen(ZERO);
+	Vec4 blendInfo(ZERO);
+	Vec4 blendTcNormalize(1.f, 1.f, 0.f, 0.f);
+
+	if (pFr->bBlendFrustum)
+	{
+		const float fBlendVal = pFr->fBlendVal;
+		blendInfo.x = fBlendVal;
+		blendInfo.y = 1.0f / (1.0f - fBlendVal);
+
+		if (pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance)
+		{
+			blendTcNormalize.x =  pFr->pDepthTex->GetWidth() / float(pFr->packWidth[0]);
+			blendTcNormalize.y =  pFr->pDepthTex->GetHeight() / float(pFr->packHeight[0]);
+			blendTcNormalize.z = -pFr->packX[0] / float(pFr->packWidth[0]);
+			blendTcNormalize.w = -pFr->packY[0] / float(pFr->packHeight[0]);
+		}
+
+		if (const ShadowMapFrustum* pPrevFr = pFr->pPrevFrustum)
+		{
+			//TODO: check if half texel offset is still needed
+			float fOffsetX = 0.5f;
+			float fOffsetY = 0.5f;
+
+			Matrix44 clipToTexSpace(
+				0.5f,     0.0f,     0.0f,     0.0f,
+				0.0f,    -0.5f,     0.0f,     0.0f,
+				0.0f,     0.0f,     1.0f,     0.0f,
+				fOffsetX, fOffsetY, 0.0f,     1.0f);
+
+			Matrix44A shadowMatPrev = pPrevFr->mLightViewMatrix * clipToTexSpace;  // NOTE: no sub-rect here as blending code assumes full [0-1] UV range;
+			Vec4r vWBasisPrevX, vWBasisPrevY, vWBasisPrevZ, vCamPosShadowSpacePrev;
+			CShadowUtils::ProjectScreenToWorldExpansionBasis(shadowMatPrev.GetTransposed(), cam, subpixelOffset, float(viewport.nWidth), float(viewport.nHeight), vWBasisPrevX, vWBasisPrevY, vWBasisPrevZ, vCamPosShadowSpacePrev, true, nullptr);
+
+			blendTexGen.SetRow4(0, vWBasisPrevX);
+			blendTexGen.SetRow4(1, vWBasisPrevY);
+			blendTexGen.SetRow4(2, vWBasisPrevZ);
+			blendTexGen.SetRow4(3, vCamPosShadowSpacePrev);
+			
+			float fBlendValPrev = pPrevFr->fBlendVal;
+			blendInfo.z = fBlendValPrev;
+			blendInfo.w = 1.0f / (1.0f - fBlendValPrev);
+		}
+	}
+
+	CShadowUtils::SShadowSamplingInfo result;
+	result.shadowTexGen = shadowTexGen;
+	result.screenToShadowBasis.SetRow4(0, vWBasisX / vWBasisMagnitudes.x);
+	result.screenToShadowBasis.SetRow4(1, vWBasisY / vWBasisMagnitudes.y);
+	result.screenToShadowBasis.SetRow4(2, vWBasisZ / vWBasisMagnitudes.z);
+	result.screenToShadowBasis.SetRow4(3, vWBasisMagnitudes);
+	result.noiseProjection = noiseProjection;
+	result.blendTexGen = blendTexGen;
+	result.camPosShadowSpace = vCamPosShadowSpace;
+	result.blendInfo = blendInfo;
+	result.blendTcNormalize = blendTcNormalize;
+	result.oneDivFarDist = 1.0f / pFr->fFarDist;
+	result.depthTestBias = pFr->fDepthConstBias * ((pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest) ? 3.0f : 1.0f);
+	result.kernelRadius = kernelSize;
+	result.invShadowMapSize = 1.0f / pFr->nTexSize;
+	result.shadowFadingDist = pFr->fShadowFadingDist;
+
+	return result;
 }
 
 CShadowUtils::CShadowUtils()

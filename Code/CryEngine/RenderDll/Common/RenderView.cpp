@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "RenderView.h"
@@ -6,6 +6,7 @@
 #include "DriverD3D.h"
 
 #include "GraphicsPipeline/ShadowMap.h"
+#include "GraphicsPipeline/ClipVolumes.h"
 #include "CompiledRenderObject.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -67,6 +68,18 @@ void CRenderView::Clear()
 	m_bDeferrredNormalDecals = false;
 	m_clipVolumes.clear();
 
+	for (int32 i = 0; i < IFogVolumeRenderNode::eFogVolumeType_Count; ++i)
+	{
+		m_fogVolumes[i].clear();
+	}
+
+	for (int32 i = 0; i < CloudBlockerTypeNum; ++i)
+	{
+		m_cloudBlockers[i].clear();
+	}
+
+	m_waterRipples.clear();
+
 	m_shadows.Clear();
 
 	ClearTemporaryCompiledObjects();
@@ -119,6 +132,39 @@ std::vector<SDeferredDecal>& CRenderView::GetDeferredDecals()
 void CRenderView::SetFrameId(uint64 frameId)
 {
 	m_frameId = frameId;
+}
+
+void CRenderView::SetCameras(const CCamera* pCameras, int cameraCount)
+{
+	CRY_ASSERT(cameraCount == 1 || cameraCount == 2);
+
+	for (int i = 0; i < cameraCount; ++i)
+	{
+		CRY_ASSERT(pCameras[i].GetEye() == CCamera::eEye_Left || pCameras[i].GetEye() == CCamera::eEye_Right);
+
+		const CCamera& cam = pCameras[i];
+		m_camera[cam.GetEye()] = cam;
+
+		CRenderCamera rcam;
+
+		// Ortho-normalize camera matrix in double precision to minimize numerical errors and improve precision when inverting matrix
+		Matrix34_tpl<f64> mCam34 = cam.GetMatrix();
+		mCam34.OrthonormalizeFast();
+
+		// Asymmetric frustum
+		float Near = cam.GetNearPlane(), Far = cam.GetFarPlane();
+
+		float wT = tanf(cam.GetFov() * 0.5f) * Near, wB = -wT;
+		float wR = wT * cam.GetProjRatio(), wL = -wR;
+		rcam.Frustum(wL + cam.GetAsymL(), wR + cam.GetAsymR(), wB + cam.GetAsymB(), wT + cam.GetAsymT(), Near, Far);
+
+		Vec3 vEye = cam.GetPosition();
+		Vec3 vAt = vEye + Vec3((f32)mCam34(0, 1), (f32)mCam34(1, 1), (f32)mCam34(2, 1));
+		Vec3 vUp = Vec3((f32)mCam34(0, 2), (f32)mCam34(1, 2), (f32)mCam34(2, 2));
+		rcam.LookAt(vEye, vAt, vUp);
+
+		m_renderCamera[cam.GetEye()] = rcam;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -289,12 +335,12 @@ RenderLightsArray& CRenderView::GetLightsArray(eDeferredLightType lightType)
 //////////////////////////////////////////////////////////////////////////
 uint8 CRenderView::AddClipVolume(const IClipVolume* pClipVolume)
 {
-	if (m_clipVolumes.size() < MAX_DEFERRED_CLIP_VOLUMES)
+	if (m_clipVolumes.size() < CClipVolumesStage::MaxDeferredClipVolumes)
 	{
 		m_clipVolumes.push_back(SDeferredClipVolume());
 
 		auto& volume = m_clipVolumes.back();
-		volume.nStencilRef = uint8(m_clipVolumes.size() + 1); // the first clip volume ID is reserved for outdoors
+		volume.nStencilRef = uint8(m_clipVolumes.size()); // the first clip volume ID is reserved for outdoors
 		volume.nFlags = pClipVolume->GetClipVolumeFlags();
 		volume.mAABB = pClipVolume->GetClipVolumeBBox();
 		pClipVolume->GetClipVolumeMesh(volume.m_pRenderMesh, volume.mWorldTM);
@@ -308,7 +354,7 @@ uint8 CRenderView::AddClipVolume(const IClipVolume* pClipVolume)
 void CRenderView::SetClipVolumeBlendInfo(const IClipVolume* pClipVolume, int blendInfoCount, IClipVolume** blendVolumes, Plane* blendPlanes)
 {
 	size_t nClipVolumeIndex = pClipVolume->GetStencilRef() - 1; // 0 is reserved for outdoor
-	CRY_ASSERT(blendInfoCount < SDeferredClipVolume::MaxBlendInfoCount);
+	CRY_ASSERT(blendInfoCount <= SDeferredClipVolume::MaxBlendInfoCount);
 	CRY_ASSERT(nClipVolumeIndex >= 0 && nClipVolumeIndex < m_clipVolumes.size() && m_clipVolumes[nClipVolumeIndex].nStencilRef == pClipVolume->GetStencilRef());
 
 	if (nClipVolumeIndex >= m_clipVolumes.size())
@@ -328,6 +374,96 @@ void CRenderView::SetClipVolumeBlendInfo(const IClipVolume* pClipVolume, int ble
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+void CRenderView::AddFogVolume(const CREFogVolume* pFogVolume)
+{
+	if (pFogVolume == nullptr
+	    || pFogVolume->m_volumeType >= IFogVolumeRenderNode::eFogVolumeType_Count)
+	{
+		return;
+	}
+
+	auto& array = m_fogVolumes[pFogVolume->m_volumeType];
+	array.push_back(SFogVolumeInfo());
+	auto& volume = array.back();
+
+	volume.m_center = pFogVolume->m_center;
+	volume.m_viewerInsideVolume = pFogVolume->m_viewerInsideVolume;
+	volume.m_affectsThisAreaOnly = pFogVolume->m_affectsThisAreaOnly;
+	volume.m_stencilRef = pFogVolume->m_stencilRef;
+	volume.m_volumeType = pFogVolume->m_volumeType;
+	volume.m_localAABB = pFogVolume->m_localAABB;
+	volume.m_matWSInv = pFogVolume->m_matWSInv;
+	volume.m_fogColor = pFogVolume->m_fogColor;
+	volume.m_globalDensity = pFogVolume->m_globalDensity;
+	volume.m_densityOffset = pFogVolume->m_densityOffset;
+	volume.m_softEdgesLerp = pFogVolume->m_softEdgesLerp;
+	volume.m_heightFallOffDirScaled = pFogVolume->m_heightFallOffDirScaled;
+	volume.m_heightFallOffBasePoint = pFogVolume->m_heightFallOffBasePoint;
+	volume.m_eyePosInOS = pFogVolume->m_eyePosInOS;
+	volume.m_rampParams = pFogVolume->m_rampParams;
+	volume.m_windOffset = pFogVolume->m_windOffset;
+	volume.m_noiseScale = pFogVolume->m_noiseScale;
+	volume.m_noiseFreq = pFogVolume->m_noiseFreq;
+	volume.m_noiseOffset = pFogVolume->m_noiseOffset;
+	volume.m_noiseElapsedTime = pFogVolume->m_noiseElapsedTime;
+	volume.m_emission = pFogVolume->m_emission;
+}
+
+const std::vector<SFogVolumeInfo>& CRenderView::GetFogVolumes(IFogVolumeRenderNode::eFogVolumeType volumeType) const
+{
+	CRY_ASSERT(volumeType < IFogVolumeRenderNode::eFogVolumeType_Count);
+	return m_fogVolumes[volumeType];
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void CRenderView::AddCloudBlocker(const Vec3& pos, const Vec3& param, int32 flags)
+{
+	if (flags == 0)
+	{
+		if (m_cloudBlockers[0].size() < MaxCloudBlockerWorldSpaceNum)
+		{
+			SCloudBlocker blocker;
+			blocker.position = pos;
+			blocker.param = param;
+			blocker.flags = flags;
+			m_cloudBlockers[0].push_back(blocker);
+		}
+	}
+	else
+	{
+		if (m_cloudBlockers[1].size() < MaxCloudBlockerScreenSpaceNum)
+		{
+			SCloudBlocker blocker;
+			blocker.position = pos;
+			blocker.param = param;
+			blocker.flags = flags;
+			m_cloudBlockers[1].push_back(blocker);
+		}
+	}
+}
+
+const std::vector<SCloudBlocker>& CRenderView::GetCloudBlockers(uint32 blockerType) const
+{
+	CRY_ASSERT(blockerType < CloudBlockerTypeNum);
+	return m_cloudBlockers[blockerType];
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void CRenderView::AddWaterRipple(const SWaterRippleInfo& waterRippleInfo)
+{
+	if (m_waterRipples.size() < SWaterRippleInfo::MaxWaterRipplesInScene)
+	{
+		m_waterRipples.emplace_back(waterRippleInfo);
+	}
+}
+
+const std::vector<SWaterRippleInfo>& CRenderView::GetWaterRipples() const
+{
+	return m_waterRipples;
+}
 
 //////////////////////////////////////////////////////////////////////////
 CREClientPoly* CRenderView::AddClientPoly()
@@ -417,9 +553,6 @@ void CRenderView::AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT
 	if ((pObj->m_ObjFlags & FOB_NEAREST) && (bShadowPass || (nList == EFSLIST_GENERAL && CRenderer::CV_r_GraphicsPipeline > 0)))
 		nList = EFSLIST_NEAREST_OBJECTS;
 
-	// add flags atomically, if this one is not set already
-	CryInterlockedExchangeOr((volatile LONG*)&m_BatchFlags[nList], nBatchFlags);
-
 	//////////////////////////////////////////////////////////////////////////
 	// Permanent objects support.
 	//////////////////////////////////////////////////////////////////////////
@@ -456,23 +589,10 @@ void CRenderView::AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////
-	m_renderItems[nList].push_back(ri);
+	if (CRenderer::CV_r_SkipAlphaTested && (ri.pObj->m_ObjFlags & FOB_ALPHATEST))
+		return;
 
-	//////////////////////////////////////////////////////////////////////////
-	// Handle additional passes
-	if (!bShadowPass)
-	{
-		if (nBatchFlags & FB_ZPREPASS)
-		{
-			m_renderItems[EFSLIST_ZPREPASS].push_back(ri);
-			CryInterlockedExchangeOr((volatile LONG*)&m_BatchFlags[EFSLIST_ZPREPASS], nBatchFlags);
-		}
-		if (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive())
-		{
-			m_renderItems[EFSLIST_FORWARD_OPAQUE].push_back(ri);
-			CryInterlockedExchangeOr((volatile LONG*)&m_BatchFlags[EFSLIST_FORWARD_OPAQUE], nBatchFlags);
-		}
-	}
+	AddRenderItemToRenderLists<true>(ri, nList, nBatchFlags, shaderItem);
 
 	////////////////////////////////////////////////////////////////////////
 	// Check if shader item needs update
@@ -480,6 +600,51 @@ void CRenderView::AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT
 }
 
 //////////////////////////////////////////////////////////////////////////
+template<bool bConcurrent>
+inline void UpdateRenderListBatchFlags(volatile uint32& listFlags, int newFlags)
+{
+	if (bConcurrent)
+	{
+		CryInterlockedExchangeOr((volatile LONG*)&listFlags, newFlags);
+	}
+	else
+	{
+		listFlags |= newFlags;
+	}
+}
+
+template<bool bConcurrent>
+inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, int nBatchFlags, const SShaderItem& shaderItem)
+{
+	m_renderItems[nRenderList].push_back(ri);
+	UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[nRenderList], nBatchFlags);
+
+	if (!IsShadowGenView())
+	{
+		if (nBatchFlags & FB_ZPREPASS)
+		{
+			m_renderItems[EFSLIST_ZPREPASS].push_back(ri);
+			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_ZPREPASS], nBatchFlags);
+		}
+		if ((nBatchFlags & FB_DEBUG) || (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive()))
+		{
+			m_renderItems[EFSLIST_FORWARD_OPAQUE].push_back(ri);
+			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_FORWARD_OPAQUE], nBatchFlags);
+		}
+
+		if (nBatchFlags & FB_PREPROCESS)
+		{
+			// Prevent water usage on non-water specific meshes (it causes reflections updates). Todo: this should be checked in editor side and not allow such usage
+			EShaderType shaderType = reinterpret_cast<CShader*>(shaderItem.m_pShader)->m_eShaderType;
+			if (shaderType != eST_Water || (shaderType == eST_Water && nRenderList == EFSLIST_WATER))
+			{
+				m_renderItems[EFSLIST_PREPROCESS].push_back(ri);
+				UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_PREPROCESS], nBatchFlags);
+			}
+		}
+	}
+}
+
 void CRenderView::ExpandPermanentRenderObjects()
 {
 	PROFILE_FRAME(ExpandPermanentRenderObjects);
@@ -509,6 +674,12 @@ void CRenderView::ExpandPermanentRenderObjects()
 		while (pRenderObject)
 		{
 			ReadLock lock(pRenderObject->m_accessLock); // Block on read access to the render object
+
+			if (CRenderer::CV_r_SkipAlphaTested && (pRenderObject->m_ObjFlags & FOB_ALPHATEST))
+			{
+				pRenderObject = pRenderObject->m_pNextPermanent;
+				continue;
+			}
 
 			bool bRecompile = (pRenderObject->m_passReadyMask != pRenderObject->m_compiledReadyMask) && (pRenderObject->m_passReadyMask & passMask);
 
@@ -559,19 +730,17 @@ void CRenderView::ExpandPermanentRenderObjects()
 					}
 				}
 
+				SShaderItem shaderItem;
+				SRendItem::ExtractShaderItem(pri.m_sortValue, shaderItem);
+				if (!shaderItem.m_pShader || !shaderItem.m_pShaderResources || !shaderItem.m_pShaderResources->IsValid())
 				{
-					SShaderItem shaderItem;
-					SRendItem::ExtractShaderItem(pri.m_sortValue, shaderItem);
-					if (!shaderItem.m_pShader || !shaderItem.m_pShaderResources || !shaderItem.m_pShaderResources->IsValid())
-					{
-						if (pRenderObject->m_pRenderNode)
-							pRenderObject->m_pRenderNode->InvalidatePermanentRenderObject();
+					if (pRenderObject->m_pRenderNode)
+						pRenderObject->m_pRenderNode->InvalidatePermanentRenderObject();
 
-						continue;
-					}
-
-					CheckAndScheduleForUpdate(shaderItem);
+					continue;
 				}
+
+				CheckAndScheduleForUpdate(shaderItem);
 
 				SRendItem ri;
 				ri.SortVal = pri.m_sortValue;
@@ -583,36 +752,15 @@ void CRenderView::ExpandPermanentRenderObjects()
 				//ri.nStencRef = pRenderObject->m_nClipVolumeStencilRef + 1; // + 1, we start at 1. 0 is reserved for MSAAed areas.
 				ri.rendItemSorter = SRendItemSorter(record.itemSorter);
 
-				int rendeList = pri.m_nRenderList;
-
+				int renderList;
 				if (renderPassType == CPermanentRenderObject::eRenderPass_Shadows)
-				{
-					// Shadow pass
-					m_renderItems[record.shadowFrustumSide].push_back(ri);
-				}
+					renderList = record.shadowFrustumSide;
+				else if (pRenderObject->m_ObjFlags & FOB_NEAREST)
+					renderList = EFSLIST_NEAREST_OBJECTS;
 				else
-				{
-					// General pass
-					m_renderItems[pri.m_nRenderList].push_back(ri);
-					// Doesn't need interlocked or, this function is called only from one thread
-					m_BatchFlags[rendeList] |= pri.m_nBatchFlags;
+					renderList = pri.m_nRenderList;
 
-					//////////////////////////////////////////////////////////////////////////
-					// Handle Z-Prepass
-					if (pri.m_nBatchFlags & FB_ZPREPASS)
-					{
-						// Add one more item to the ZPrepass list
-						m_renderItems[EFSLIST_ZPREPASS].push_back(ri);
-						m_BatchFlags[EFSLIST_ZPREPASS] |= pri.m_nBatchFlags;
-					}
-
-					if (pRenderObject->m_ObjFlags & FOB_NEAREST)
-					{
-						// Add one more item to the nearest objects list
-						m_renderItems[EFSLIST_NEAREST_OBJECTS].push_back(ri);
-						m_BatchFlags[EFSLIST_NEAREST_OBJECTS] |= pri.m_nBatchFlags;
-					}
-				}
+				AddRenderItemToRenderLists<false>(ri, renderList, pri.m_nBatchFlags, shaderItem);
 
 				if (pri.m_pRenderElement && pri.m_pRenderElement->m_Flags & (FCEF_DIRTY | FCEF_SKINNED | FCEF_UPDATEALWAYS))
 				{
@@ -942,10 +1090,13 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 	case EFSLIST_GENERAL:
 	case EFSLIST_SKIN:
 		{
-			{
-				PROFILE_FRAME(State_SortingGBuffer);
+			PROFILE_FRAME(State_SortingGBuffer);
+			if (CRenderer::CV_r_ZPassDepthSorting == 0)
 				SRendItem::mfSortByLight(&renderItems[nStart], n, true, false, false);
-			}
+			else if (CRenderer::CV_r_ZPassDepthSorting == 1)
+				SRendItem::mfSortForZPass(&renderItems[nStart], n);
+			else if (CRenderer::CV_r_ZPassDepthSorting == 2)
+				SRendItem::mfSortByDist(&renderItems[nStart], n, false, true);
 		}
 		break;
 
@@ -1117,23 +1268,6 @@ void CRenderView::PostWriteShadowViews()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderView::AddCustomShadowFrustum(const ShadowMapFrustumPtr& pFrustum, const ShadowMapFrustumPtr& pOriginalFrustum)
-{
-	// Add fake ShadowsToRender item, for with the original frustum render view
-	for (auto& fr : m_shadows.m_renderFrustums)
-	{
-		if (fr.pFrustum == pOriginalFrustum)
-		{
-			SShadowFrustumToRender copyFr(fr);
-			copyFr.nLightID = -1;
-			copyFr.pFrustum = pFrustum;
-			m_shadows.m_renderFrustums.push_back(copyFr);
-			break;
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CRenderView::PrepareShadowViews()
 {
 	FUNCTION_PROFILER_RENDERER
@@ -1230,7 +1364,10 @@ void CRenderView::SShadows::CreateFrustumGroups()
 			break;
 		case ShadowMapFrustum::e_Nearest:
 		case ShadowMapFrustum::e_PerObject:
-			m_frustumsByType[eShadowFrustumRenderType_Custom].push_back(&fr);
+			if (fr.pFrustum->nShadowGenMask)
+			{
+				m_frustumsByType[eShadowFrustumRenderType_Custom].push_back(&fr);
+			}
 			break;
 		}
 	}
@@ -1274,6 +1411,7 @@ void CRenderView::SShadows::PrepareNearestShadows()
 		RenderItems& nearestRenderItems = pNearestShadowsView->m_renderItems[0]; // NOTE: rend items go in list 0
 
 		pNearestFrustum->pFrustum->aabbCasters.Reset();
+		pNearestFrustum->pFrustum->nShadowGenMask = 0;
 
 		for (auto& fr : m_renderFrustums)
 		{

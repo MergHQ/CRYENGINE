@@ -103,40 +103,42 @@ union UPipelineState // Pipeline state relevant for shader instantiation
 {
 	struct
 	{
-		// GNM VS: Value must be 10000XXXb, where X determines the hardware stage to compile for (0: VS, 1: LS, 2: ES (ring), 3: ES (LDS), 4: CS/VS (DD), 5: CS/VS (DDI)).
+		// GNM VS: Value must be 1TT00XXXb, where X determines the hardware stage to compile for (0: VS, 1: LS, 2: ES (ring), 3: ES (LDS), 4: CS/VS (DD), 5: CS/VS (DDI)). TT is the ISA selector.
 		uint8 targetStage;
 	} VS;
 	struct
 	{
-		// GNM HS: Value must be 10000000b
-		uint8 dummy;
+		// GNM HS: Value must be 1TT00000b. TT is the ISA selector.
+		uint8 targetStage;
 	} HS;
 	struct
 	{
-		// GNM DS: Value must be 1X000000b, where X determines the hardware stage to compile for (0: VS, 1: ES)
+		// GNM DS: Value must be 1TT0000Xb, where X determines the hardware stage to compile for (0: VS, 1: ES). TT is the ISA selector.
 		uint8 targetStage;
 	} DS;
 	struct
 	{
-		// GNM GS: Value must be 1X000000b, where X determines the hardware stage to compile for (0: GS (ring), 1: GS (LDS))
+		// GNM GS: Value must be 1TT0000Xb, where X determines the hardware stage to compile for (0: GS (ring), 1: GS (LDS)). TT is the ISA selector
 		uint8 targetStage;
 	} GS;
 	struct
 	{
-		// GNM PS: depthStencilInfo value must be 100..00DDSb, for D (0: not present, 1: 16-bit unorm, 2: 32-bit float), and for S (0: not present, 1: 8-bit uint)
+		// GNM PS: depthStencilInfo value must be 1TT00..00DDSb, for D (0: not present, 1: 16-bit unorm, 2: 32-bit float), and for S (0: not present, 1: 8-bit uint). TT is the ISA selector.
 		// targetFormats contains sce::Gnm::PsTargetOutputMode value (4-bits for each MRT), with MRT0 in the LSBs and MRT7 in the MSBs.
 		uint32 targetFormats;
 		uint32 depthStencilInfo;
 	} PS;
 	struct
 	{
-		// GNM CS: Value must be 100000XX, where X determines the hardware stage to compile for (0: CS, 1: CS (DD), 2: CS (DD instanced))
+		// GNM CS: Value must be 1TT000XX, where X determines the hardware stage to compile for (0: CS, 1: CS (DD), 2: CS (DD instanced))
 		uint8 targetStage;
-	}      CS;
-	uint64 opaque;
+	} CS;
+
 	UPipelineState() : opaque(0)
 	{
 	}
+
+	uint64 opaque;
 };
 static_assert(sizeof(UPipelineState) == sizeof(uint64), "UPipelineState needs to be 64 bit");
 

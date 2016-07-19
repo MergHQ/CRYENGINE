@@ -353,6 +353,9 @@ Property
 	Precache = TiledShadingCS
 	Precache = FogPostProcessPS
 	Precache = VolumeLightInjectionCS
+	Precache = VolumetricCloudsPS
+	Precache = ReprojectCloudsPS
+	Precache = CloudShadowGenCS
 }
 
 Property
@@ -1027,6 +1030,8 @@ Property
   Precache = CustomRenderPS
   Precache = SkinPS
   Precache = GlassPS
+  Precache = DebugPassVS
+  Precache = DebugPassPS
 
   Precache = FogPostProcessPS
   Precache = HDRPostProcessPS
@@ -1057,20 +1062,19 @@ Property
   Precache = EffectLayerPS
   Precache = ResolveVS
   Precache = ResolvePS
-  
-  Precache = WaterSurfaceVS
-  Precache = WaterSurfacePS
-  Precache = WaterSurfaceHS
-  Precache = WaterSurfaceDS
+
   Precache = WaterFogVolume_PS
 
-	Precache = BeamPS
-	Precache = LensOpticsVS
+  Precache = BeamPS
+  Precache = LensOpticsVS
 
-	Precache = TiledShadingCS
-	Precache = VolumeLightInjectionCS
-	Precache = VolumetricCloudsPS
-	Precache = ReprojectCloudsPS
+  Precache = TiledShadingCS
+  Precache = VolumeLightInjectionCS
+  Precache = VolumetricCloudsPS
+  Precache = ReprojectCloudsPS
+	
+  Precache = ShadowMaskGenVS
+  Precache = ShadowMaskGenPS 
 }
 
 // Reserved for post processes/deferred - do not use for light/common shaders

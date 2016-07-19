@@ -90,7 +90,8 @@ public:
 
 	SAttachmentVClothPreProcessData const& GetVClothData() const { return m_VClothData; }
 	bool HasVCloth() const { return (m_VClothData.m_listBendTrianglePairs.size()>0) || (m_VClothData.m_listBendTriangles.size()>0) || (m_VClothData.m_lra.size()>0) || (m_VClothData.m_lraNotAttachedOrderedIdx.size()>0); }
-
+	void SetNeedsComputeSkinningBuffers() { m_needsComputeSkinningBuffers = true;  }
+	bool NeedsComputeSkinningBuffers() const { return m_needsComputeSkinningBuffers; }
 public:
 	// this struct contains the minimal information to attach a SKIN to a base-SKEL
 	struct SJointInfo
@@ -112,5 +113,6 @@ private:
 	int    m_nRefCounter, m_nInstanceCounter;
 	string m_strFilePath;
 
+	bool m_needsComputeSkinningBuffers;
 	SAttachmentVClothPreProcessData m_VClothData;
 };

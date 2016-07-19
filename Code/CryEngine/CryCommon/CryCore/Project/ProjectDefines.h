@@ -215,6 +215,10 @@ extern void SliceAndSleep(const char* pFunc, int line);
 	#define ENABLE_ART_RT_TIME_ESTIMATE
 #endif
 
+#if !defined(_RELEASE) || defined(ENABLE_STATOSCOPE_RELEASE)
+#define ENABLE_FLASH_INFO
+#endif
+
 #if !defined(ENABLE_LW_PROFILERS)
 	#ifndef USE_NULLFONT
 		#define USE_NULLFONT      1

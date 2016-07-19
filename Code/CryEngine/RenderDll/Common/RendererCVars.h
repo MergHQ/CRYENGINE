@@ -56,6 +56,7 @@ public:
 	static int CV_r_GraphicsPipeline;
 
 	static int CV_r_DeferredShadingTiled;
+	static int CV_r_DeferredShadingTiledDebug;
 	static int CV_r_DeferredShadingTiledHairQuality;
 	static int CV_r_DeferredShadingSSS;
 	static int CV_r_DeferredShadingFilterGBuffer;
@@ -179,6 +180,10 @@ public:
 	static int CV_r_durango_async_dips_sync;
 	static int CV_r_D3D12SubmissionThread;
 	static int CV_r_D3D12WaitableSwapChain;
+	static int CV_r_D3D12EarlyResourceBarriers;
+	static int CV_r_D3D12AsynchronousCompute;
+	static int CV_r_D3D12HardwareComputeQueue;
+	static int CV_r_D3D12HardwareCopyQueue;
 	static int CV_r_ReverseDepth;
 
 	// DX12 related cvars
@@ -207,7 +212,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_useESRAM, 1);
 	DeclareStaticConstIntCVar(CV_r_multithreaded, MULTITHREADED_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_multithreadedDrawing, -1);
-	DeclareStaticConstIntCVar(CV_r_multithreadedDrawingCoalesceMode, 1);
 	DeclareStaticConstIntCVar(CV_r_multithreadedDrawingMinJobSize, 100);
 	DeclareStaticConstIntCVar(CV_r_deferredshadingLightVolumes, 1);
 	DeclareStaticConstIntCVar(CV_r_deferredDecals, 1);
@@ -240,6 +244,7 @@ public:
 	DeclareStaticConstIntCVar(CV_r_ShadowsMaskDownScale, 0);
 	DeclareStaticConstIntCVar(CV_r_CBufferUseNativeDepth, CBUFFER_NATIVE_DEPTH_DEAFULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_ShadowsStencilPrePass, 1);
+	DeclareStaticConstIntCVar(CV_r_ShadowMaskStencilPrepass, 0);
 	DeclareStaticConstIntCVar(CV_r_ShadowsGridAligned, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowPass, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowGen, 1);
@@ -349,6 +354,7 @@ public:
 	DeclareStaticConstIntCVar(CV_r_flareHqShafts, FLARES_HQSHAFTS_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_ZPassDepthSorting, ZPASS_DEPTH_SORT_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_TransparentPasses, 1);
+	DeclareStaticConstIntCVar(CV_r_SkipAlphaTested, 0);
 	DeclareStaticConstIntCVar(CV_r_TranspDepthFixup, 1);
 	DeclareStaticConstIntCVar(CV_r_SoftAlphaTest, 1);
 	DeclareStaticConstIntCVar(CV_r_usehwskinning, 1);

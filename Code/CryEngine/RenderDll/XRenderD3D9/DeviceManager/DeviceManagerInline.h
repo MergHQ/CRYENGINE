@@ -10,11 +10,11 @@
 #ifdef CRY_USE_DX12
 #else
 	#if CRY_PLATFORM_DURANGO
-		#include "DeviceManager_D3D11_Durango.h"
+		#include "D3D11/DeviceManager_D3D11_Durango.h"
 	#endif
 
 	#if defined(USE_NV_API)
-		#include "DeviceManager_D3D11_NVAPI.h"
+		#include "D3D11/DeviceManager_D3D11_NVAPI.h"
 	#endif
 #endif
 

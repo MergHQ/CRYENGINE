@@ -23,10 +23,9 @@ public:
 
 	void        CreateResources();
 	void        DestroyResources(bool destroyResolutionIndependentResources);
-	void        Clear();
 	void        ClearAll();
 
-	void        PrepareLightList(CRenderView* pRenderView, RenderLightsArray* envProbes, RenderLightsArray* ambientLights, RenderLightsArray* defLights, uint32 firstShadowLight, uint32 curShadowPoolLight);
+	void        PrepareLightList(CRenderView* pRenderView, const RenderLightsArray* envProbes, const RenderLightsArray* ambientLights, const RenderLightsArray* defLights, uint32 firstShadowLight, uint32 curShadowPoolLight);
 
 	void        RenderVolumetricsToVolume(void (* RenderFunc)());
 	void        RenderVolumetricFog(CRenderView* pRenderView);
@@ -41,40 +40,9 @@ public:
 	CTexture*   GetGlobalEnvProbeTex0() const         { return m_globalEnvProveTex0; }
 	CTexture*   GetGlobalEnvProbeTex1() const         { return m_globalEnvProveTex1; }
 
-	void PushFogVolume(class CREFogVolume* pFogVolume, const SRenderingPassInfo& passInfo);
-
 private:
-	static const uint32 MaxFrameNum = 4;
-	static const uint32 MaxNumFogVolumeType = 2;
+	static const int32 MaxFrameNum = 4;
 
-	struct SFogVolumeInfo
-	{
-		Vec3     m_center;
-		uint32   m_viewerInsideVolume  : 1;
-		uint32   m_affectsThisAreaOnly : 1;
-		uint32   m_stencilRef          : 8;
-		uint32   m_volumeType          : 1;
-		uint32   m_reserved            : 21;
-		AABB     m_localAABB;
-		Matrix34 m_matWSInv;
-		float    m_globalDensity;
-		float    m_densityOffset;
-		Vec2     m_softEdgesLerp;
-		ColorF   m_fogColor;
-		Vec3     m_heightFallOffDirScaled;
-		Vec3     m_heightFallOffBasePoint;
-		Vec3     m_eyePosInOS;
-		Vec3     m_rampParams;
-		Vec3     m_windOffset;
-		float    m_noiseScale;
-		Vec3     m_noiseFreq;
-		float    m_noiseOffset;
-		float    m_noiseElapsedTime;
-		Vec3     m_emission;
-	};
-
-	void      ClearFogVolumes();
-	void      ClearAllFogVolumes();
 	void      UpdateFrame();
 	bool      IsViable() const;
 	void      InjectInscatteringLight(CRenderView* pRenderView);
@@ -95,6 +63,8 @@ private:
 
 private:
 	Matrix44A              m_viewProj[MaxFrameNum];
+	CTexture*              m_volFogBufDensityColor;
+	CTexture*              m_volFogBufDensity;
 	CTexture*              m_volFogBufEmissive;
 	CTexture*              m_InscatteringVolume;
 	CTexture*              m_fogInscatteringVolume[2];
@@ -127,8 +97,6 @@ private:
 	CGpuBuffer             m_lightCountBuf;
 	CGpuBuffer             m_fogVolumeCullInfoBuf;
 	CGpuBuffer             m_fogVolumeInjectInfoBuf;
-
-	TArray<SFogVolumeInfo> m_fogVolumeInfoArray[RT_COMMAND_BUF_COUNT][MAX_REND_RECURSION_LEVELS][MaxNumFogVolumeType];
 };
 
 #endif

@@ -14,6 +14,7 @@
 
 #include <CryMath/FinalizingSpline.h>
 #include <CrySerialization/Enum.h>
+#include <CryCore/DynamicEnum.h>
 #include "ParticleCommon.h"
 #include "ParticleMath.h"
 
@@ -23,9 +24,7 @@ namespace pfx2
 struct SChaosKey
 {
 public:
-	SChaosKey() : m_key(cry_random_uint32()) {}
 	explicit SChaosKey(uint32 key) : m_key(key) {}
-	explicit SChaosKey(float key) : m_key((uint32)(key * float(0xFFFFFFFF))) {}
 	SChaosKey(const SChaosKey& key) : m_key(key.m_key) {}
 	SChaosKey(SChaosKey key1, SChaosKey key2);
 	SChaosKey(SChaosKey key1, SChaosKey key2, SChaosKey key3);
@@ -54,9 +53,9 @@ private:
 
 struct SChaosKeyV
 {
-	SChaosKeyV();
+	explicit SChaosKeyV(SChaosKey key);
+	explicit SChaosKeyV(uint32 key);
 	explicit SChaosKeyV(uint32v keys) : m_keys(keys) {}
-	explicit SChaosKeyV(floatv keys) : m_keys(ToUint32v(Mul(keys, ToFloatv(0xFFFFFFFF)))) {}
 	uint32v Rand();
 	uint32v Rand(uint32 range);
 	floatv  RandUNorm();
@@ -93,86 +92,85 @@ enum EState
 	ES_NewBorn  = ESB_Update | ESB_NewBorn | ESB_Alive, // particle appeared this frame
 };
 
-#define PFX2_DATA_TYPES(f)                                                                                \
-  f(ParentId, TParticleId)                                                                                \
-  f(SpawnId, uint32) f(SpawnFraction, float)                                                              \
-  f(State, uint8)                                                                                         \
-  f(LifeTime, float)                                                                                      \
-  f(InvLifeTime, float)                                                                                   \
-  f(NormalAge, float)                                                                                     \
-  f(PositionX, float)        f(PositionY, float)        f(PositionZ, float)                               \
-  f(AuxPositionX, float)     f(AuxPositionY, float)     f(AuxPositionZ, float)                            \
-  f(VelocityX, float)        f(VelocityY, float)        f(VelocityZ, float)                               \
-  f(AngularVelocityX, float) f(AngularVelocityY, float) f(AngularVelocityZ, float)                        \
-  f(VelocityFieldX, float)   f(VelocityFieldY, float)   f(VelocityFieldZ, float)                          \
-  f(AccelerationX, float)    f(AccelerationY, float)    f(AccelerationZ, float)                           \
-  f(OrientationX, float)     f(OrientationY, float)     f(OrientationZ, float)     f(OrientationW, float) \
-  f(Tile, uint8)                                                                                          \
-  f(Color, UCol)  f(ColorInit, UCol)                                                                      \
-  f(Size, float) f(SizeInit, float)                                                                       \
-  f(Alpha, float) f(AlphaInit, float)                                                                     \
-  f(Gravity, float) f(GravityInit, float)                                                                 \
-  f(Drag, float) f(DragInit, float)                                                                       \
-  f(Angle2D, float) f(Spin2D, float)                                                                      \
-  f(UNormRand, float)                                                                                     \
-  f(RibbonId, uint32)                                                                                     \
-  f(PhysicalEntity, IPhysicalEntity*)                                                                     \
-  f(MeshGeometry, IMeshObj*)                                                                              \
-  f(AudioProxy, IAudioProxy*)
+///////////////////////////////////////////////////////////////////////////////
+// Implement EParticleDataTypes (size, position, etc) with DynamicEnum.
+// Data type entries can be declared in multiple source files, with info about the data type (float, Vec3, etc)
 
-#define PFX2_FLOAT_FIELDS(f) \
-  f(Size)                    \
-  f(Alpha)                   \
-  f(Gravity)                 \
-  f(Drag)
+enum BHasInit {}; // boolean argument indicating data type has an extra init field
 
-enum EParticleDataType
+//! Info associated with each EParticleDataType
+struct SParticleDataInfo
 {
-#define PFX2_DATA_ENUM(NAME, TYPE) EPDT_ ## NAME,
-	PFX2_DATA_TYPES(PFX2_DATA_ENUM)
-	EPDT_Count,
+	typedef yasli::TypeID TypeID;
+
+	TypeID   type;
+	size_t   sizeOf;
+	uint     dimension;
+	BHasInit hasInit;
+
+	SParticleDataInfo()
+		: dimension(0), hasInit(BHasInit(false)) {}
+
+	template<typename T>
+	SParticleDataInfo(T*, uint dim = 1, BHasInit init = BHasInit(false))
+		: type(TypeID::get<T>()), sizeOf(sizeof(T)), dimension(dim), hasInit(init) {}
+
+	template<typename T>
+	bool isType() const { return type == TypeID::get<T>(); }
+
+	template<typename T>
+	bool   isType(uint dim) const { return type == TypeID::get<T>() && dimension == dim; }
+
+	uint   step() const           { return dimension * (1 + hasInit); }
+	size_t typeSize() const       { return sizeOf; }
 };
 
-enum EParticleFloatField
+template<typename T = float, uint dim = 1, BHasInit init = BHasInit(false)>
+struct TParticleDataInfo : SParticleDataInfo
 {
-#define PFX2_FLOAT_FIELD_ENUM(NAME) EPFF_ ## NAME,
-	PFX2_FLOAT_FIELDS(PFX2_FLOAT_FIELD_ENUM)
-	EPFF_Count
+	TParticleDataInfo()
+		: SParticleDataInfo((T*)0, dim, init) {}
 };
 
-enum EParticleVec3Field
-{
-	EPVF_Position        = EPDT_PositionX,
-	EPVF_AuxPosition     = EPDT_AuxPositionX,
-	EPVF_Velocity        = EPDT_VelocityX,
-	EPVF_AngularVelocity = EPDT_AngularVelocityX,
-	EPVF_VelocityField   = EPDT_VelocityFieldX, // PFX2_TODO : remove velocity field and acceleration, they are not supposed to be persistent
-	EPVF_Acceleration    = EPDT_AccelerationX,
-};
+//! EParticleDataType implemented as a DynamicEnum, with SParticleDataInfo
+typedef DynamicEnum<SParticleDataInfo, uint, SParticleDataInfo>
+  EParticleDataType;
 
-enum EParticleQuatField
+ILINE EParticleDataType InitType(EParticleDataType type)
 {
-	EPQF_Orientation = EPDT_OrientationX,
-};
+	return type + type.info().dimension;
+}
 
-const size_t gParticleDataStrides[EPDT_Count] =
-{
-#define PFX2_DATA_STRIDE(NAME, TYPE) sizeof(TYPE),
-	PFX2_DATA_TYPES(PFX2_DATA_STRIDE)
-};
+// Convenient initialization of EParticleDataType
+//  EParticleDataType PDT(EPDT_SpawnID, TParticleID, 1)
+//  EParticleDataType PDT(EPVF_Velocity, float, 3)
 
-struct SFieldToData
-{
-	EParticleDataType m_data;
-	EParticleDataType m_init;
-};
+#define PDT(Name, ...) \
+  Name(SkipPrefix( # Name), 0, TParticleDataInfo<__VA_ARGS__>())
 
-const SFieldToData gFieldToData[EPFF_Count] =
+inline cstr SkipPrefix(cstr name)
 {
-#define PFX2_FLOAT_FIELD_TO_DATA(NAME) { EPDT_ ## NAME, EPDT_ ## NAME ## Init \
-  },
-	PFX2_FLOAT_FIELDS(PFX2_FLOAT_FIELD_TO_DATA)
-};
+	for (int i = 0; name[i]; ++i)
+		if (name[i] == '_')
+			return name + i + 1;
+	return name;
+}
+
+// Standard data types
+extern EParticleDataType
+  EPDT_SpawnId,
+  EPDT_ParentId,
+  EPDT_State,
+  EPDT_NormalAge,
+  EPDT_LifeTime,
+  EPDT_InvLifeTime,
+  EPDT_SpawnFraction,
+  EPDT_Random,
+  EPVF_Position,
+  EPVF_Velocity,
+  EPQF_Orientation,
+  EPVF_AngularVelocity,
+  EPDT_Size;
 
 }
 

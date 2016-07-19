@@ -140,15 +140,20 @@ struct SerializeNames<Color3F>
 	static cstr curve() { return "ColorCurve"; }
 };
 
+XmlNodeRef AddPtrElement(XmlNodeRef container, cstr typeName)
+{
+	XmlNodeRef elem = container->newChild("Element");
+	AddValue(elem, "type", typeName);
+	return elem->newChild("data");
+}
+
 // Convert pfx1 variant parameters, with randomness and time curves
 template<typename T>
 void AddParamMods(XmlNodeRef mods, TVarParam<T>& param)
 {
 	if (param.GetRandomRange())
 	{
-		XmlNodeRef elem = mods->newChild("Element");
-		AddValue(elem, "type", "Random");
-		XmlNodeRef data = elem->newChild("data");
+		XmlNodeRef data = AddPtrElement(mods, "Random");
 		AddValue(data, "Amount", param.GetRandomRange());
 	}
 }
@@ -158,9 +163,7 @@ void AddParamMods(XmlNodeRef mods, TVarParam<Color3F>& param)
 {
 	if (param.GetRandomRange())
 	{
-		XmlNodeRef elem = mods->newChild("Element");
-		AddValue(elem, "type", "ColorRandom");
-		XmlNodeRef data = elem->newChild("data");
+		XmlNodeRef data = AddPtrElement(mods, "ColorRandom");
 		if (param.GetRandomRange().HasRandomHue())
 			AddValue(data, "RGB", param.GetRandomRange());
 		else
@@ -212,9 +215,7 @@ void AddParamMods(XmlNodeRef mods, TVarEParam<T>& param)
 	AddParamMods(mods, static_cast<TVarParam<T>&>(param));
 	if (param.GetStrengthCurve()(VMIN) != T(1.f))
 	{
-		XmlNodeRef elem = mods->newChild("Element");
-		AddValue(elem, "type", SerializeNames<T>::curve());
-		XmlNodeRef data = elem->newChild("data");
+		XmlNodeRef data = AddPtrElement(mods, SerializeNames<T>::curve());
 		AddValue(data, "TimeSource", "ParentTime");
 		AddValue(data, "SpawnOnly", "true");
 		AddCurve(data, param.GetStrengthCurve());
@@ -227,9 +228,7 @@ void AddParamMods(XmlNodeRef mods, TVarEPParam<T>& param)
 	AddParamMods(mods, static_cast<TVarEParam<T>&>(param));
 	if (param.GetAgeCurve()(VMIN) != T(1.f))
 	{
-		XmlNodeRef elem = mods->newChild("Element");
-		AddValue(elem, "type", SerializeNames<T>::curve());
-		XmlNodeRef data = elem->newChild("data");
+		XmlNodeRef data = AddPtrElement(mods, SerializeNames<T>::curve());
 		AddValue(data, "TimeSource", "SelfTime");
 		AddCurve(data, param.GetAgeCurve());
 	}
@@ -505,7 +504,7 @@ void ConvertGeometry(IParticleComponent& component, ParticleParams& params)
 
 		AddValue(mesh, "SizeMode", "Scale");
 		AddValue(mesh, "OriginMode", params.bNoOffset ? "Origin" : "Center");
-		AddValue(mesh, "PiecePlacement", ResetValue(params.bNoOffset) ? "SubPlacement" : "Standad");
+		AddValue(mesh, "PiecePlacement", ResetValue(params.bNoOffset) ? "SubPlacement" : "Standard");
 
 		ConvertValueString(mesh, "PiecesMode", params.eGeometryPieces);
 
@@ -698,6 +697,14 @@ void ConvertMotion(IParticleComponent& component, ParticleParams& params)
 	ConvertParam(phys, "drag", static_cast<TVarEPParam<::UFloat>&>(params.fAirResistance));
 	ConvertValue(phys, "UniformAcceleration", params.vAcceleration);
 	ConvertValue(phys, "WindMultiplier", params.fAirResistance.fWindScale, 1.f);
+
+	if (params.fTurbulence3DSpeed)
+	{
+		XmlNodeRef effectors = phys->newChild("localEffectors");
+		XmlNodeRef data = AddPtrElement(effectors, "Turbulence");
+		AddValue(data, "mode", "Brownian");
+		ConvertParamBase(data, "speed", params.fTurbulence3DSpeed);
+	}
 	AddFeature(component, phys);
 }
 

@@ -82,6 +82,27 @@ bool CryCHRLoader::BeginLoadSkinRenderMesh(CSkin* pSkin, int nRenderLod, EStream
 
 	m_pModelSkin = pSkin;
 
+	// figure out if compute skinning buffers are needed for this skin by iterating through the skin attachments
+	{
+		CDefaultSkinningReferences* pSkinRef = g_pCharacterManager->GetDefaultSkinningReferences(m_pModelSkin);
+		uint32 nSkinInstances = pSkinRef->m_RefByInstances.size();
+
+		bool computeSkinning = false;
+		for (int i = 0; i < nSkinInstances; i++)
+		{
+			CAttachmentSKIN* pAttachmentSkin = pSkinRef->m_RefByInstances[i];
+			if (pAttachmentSkin->GetFlags() & FLAGS_ATTACH_COMPUTE_SKINNING)
+				computeSkinning = true;
+		}
+		// since we dont have a facility to trigger an asset reload explicitly,
+		// we need to allocate the compute skinning buffers always, because
+		// the skinning method could be changed any time in the editor
+		if (computeSkinning || gEnv->IsEditor())
+		{
+			m_pModelSkin->SetNeedsComputeSkinningBuffers();
+		}
+	}
+
 	StreamReadParams params;
 	params.nFlags = 0;//IStreamEngine::FLAGS_NO_SYNC_CALLBACK;
 	params.dwUserData = nRenderLod;
@@ -116,7 +137,7 @@ void CryCHRLoader::EndStreamSkinAsync(IReadStream* pStream)
 		return;
 
 	CModelMesh& modelMesh = pModelSkin->m_arrModelMeshes[nRenderLod];
-	m_pNewRenderMesh = modelMesh.InitRenderMeshAsync(pMesh, m_pModelSkin->GetModelFilePath(), nRenderLod, m_arrNewRenderChunks);
+	m_pNewRenderMesh = modelMesh.InitRenderMeshAsync(pMesh, m_pModelSkin->GetModelFilePath(), nRenderLod, m_arrNewRenderChunks, m_pModelSkin->NeedsComputeSkinningBuffers());
 }
 
 void CryCHRLoader::EndStreamSkinSync(IReadStream* pStream)

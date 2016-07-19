@@ -342,7 +342,6 @@ public:
 	static CShader*              s_ShaderDXTCompress;
 	static CShader*              s_ShaderStereo;
 	static CShader*              s_ShaderClouds;
-	static CShader*              s_shaderComputeSkinning;
 
 	const SInputShaderResources* m_pCurInputResources;
 	SShaderGen*                  m_pGlobalExt;

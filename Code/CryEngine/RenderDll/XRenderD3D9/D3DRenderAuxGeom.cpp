@@ -31,7 +31,7 @@ struct SAuxObjVertex
 };
 
 typedef std::vector<SAuxObjVertex> AuxObjVertexBuffer;
-typedef std::vector<uint16>        AuxObjIndexBuffer;
+typedef std::vector<vtx_idx>       AuxObjIndexBuffer;
 
 CRenderAuxGeomD3D::CRenderAuxGeomD3D(CD3D9Renderer& renderer)
 	: m_renderer(renderer)
@@ -405,8 +405,8 @@ template<typename TMeshFunc>
 HRESULT CRenderAuxGeomD3D::CreateMesh(SDrawObjMesh& mesh, TMeshFunc meshFunc)
 {
 	// create mesh
-	std::vector<SAuxObjVertex> vb;
-	std::vector<uint16> ib;
+	AuxObjVertexBuffer vb;
+	AuxObjIndexBuffer  ib;
 	meshFunc.CreateMesh(vb, ib);
 
 	// create vertex buffer and copy data
@@ -483,7 +483,7 @@ HRESULT CRenderAuxGeomD3D::RestoreDeviceObjects()
 	SAFE_RELEASE(m_pAuxGeomIB);
 	D3D11_BUFFER_DESC BufDescI;
 	ZeroStruct(BufDescI);
-	BufDescI.ByteWidth = e_auxGeomIBSize * sizeof(uint16);
+	BufDescI.ByteWidth = e_auxGeomIBSize * sizeof(vtx_idx);
 	BufDescI.Usage = D3D11_USAGE_DYNAMIC;
 	BufDescI.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	BufDescI.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -572,32 +572,16 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const
 				// compute amount of vertices to move in this batch
 				uint32 toCopy(verticesToCopy > maxVerticesInThisBatch ? maxVerticesInThisBatch : verticesToCopy);
 
-				// get pointer to vertex buffer
-				SAuxVertex* pVertices(0);
 				// determine lock flags
-				D3D11_MAP mapFlags(D3D11_MAP_WRITE_NO_OVERWRITE);
+				D3D11_MAP mapFlags(D3D11_MAP_WRITE_NO_OVERWRITE_VB);
 				if (false != m_auxGeomSBM.m_discardVB)
 				{
 					m_auxGeomSBM.m_discardVB = false;
 					mapFlags = D3D11_MAP_WRITE_DISCARD_VB;
 				}
 
-				D3D11_MAPPED_SUBRESOURCE mappedResource;
-				if (FAILED(hr = m_renderer.GetDeviceContext().Map(m_pAuxGeomVB, 0, mapFlags, 0, &mappedResource)))
-				{
-					assert(0);
-					iLog->Log("ERROR: CD3DRenderAuxGeom::DrawAuxPrimitives() - Vertex buffer could not be locked!");
-					return;
-				}
-				pVertices = (SAuxVertex*)mappedResource.pData;
-				pVertices += m_auxGeomSBM.m_curVBIndex;
-
-				// move vertex data
-				// cppcheck-suppress nullPointer
-				memcpy(pVertices, &auxVertexBuffer[curPBEntry->m_vertexOffs + verticesCopied], toCopy * sizeof(SAuxVertex));
-
-				// unlock vb
-				m_renderer.GetDeviceContext().Unmap(m_pAuxGeomVB, 0);
+				CDeviceManager::UploadContents<false>(m_pAuxGeomVB, 0, m_auxGeomSBM.m_curVBIndex * sizeof(SAuxVertex), toCopy * sizeof(SAuxVertex), mapFlags, &auxVertexBuffer[curPBEntry->m_vertexOffs + verticesCopied]);
+				
 				// update accumulators and buffer indices
 				verticesCopied += toCopy;
 				verticesToCopy -= toCopy;
@@ -646,6 +630,7 @@ void CRenderAuxGeomD3D::DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer
 	// get aux vertex and index buffer
 	const CAuxGeomCB::AuxVertexBuffer& auxVertexBuffer(GetAuxVertexBuffer());
 	const CAuxGeomCB::AuxIndexBuffer& auxIndexBuffer(GetAuxIndexBuffer());
+	CAuxGeomCB::AuxIndexBuffer auxIndexBufferJoined(auxIndexBuffer.size());
 
 	// determine flags for prim type
 	uint32 d3dNumPrimDivider;
@@ -672,62 +657,32 @@ void CRenderAuxGeomD3D::DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer
 			// check if push buffer still fits into current buffer
 			if (e_auxGeomVBSize >= m_auxGeomSBM.m_curVBIndex + curPBEntry->m_numVertices && e_auxGeomIBSize >= m_auxGeomSBM.m_curIBIndex + curPBEntry->m_numIndices)
 			{
-				// determine lock vb flags
-
-				// get pointer to vertex buffer
-				SAuxVertex* pVertices(0);
-				D3D11_MAP mp(D3D11_MAP_WRITE_NO_OVERWRITE);
-				if (false != m_auxGeomSBM.m_discardVB)
-				{
-					m_auxGeomSBM.m_discardVB = false;
-					mp = D3D11_MAP_WRITE_DISCARD_VB;
-				}
-				D3D11_MAPPED_SUBRESOURCE mappedResource;
-				if (FAILED(hr = m_renderer.GetDeviceContext().Map(m_pAuxGeomVB, 0, mp, 0, &mappedResource)))
-				{
-					assert(0);
-					iLog->Log("ERROR: CD3DRenderAuxGeom::DrawAuxIndexedPrimitives() - Vertex buffer could not be locked!");
-					return;
-				}
-				pVertices = (SAuxVertex*)mappedResource.pData;
-				pVertices += m_auxGeomSBM.m_curVBIndex;
-
-				// move vertex data of this entry
-				// cppcheck-suppress nullPointer
-				memcpy(pVertices, &auxVertexBuffer[curPBEntry->m_vertexOffs], curPBEntry->m_numVertices * sizeof(SAuxVertex));
-
-				// unlock vb
-				m_renderer.GetDeviceContext().Unmap(m_pAuxGeomVB, 0);
-
-				// get pointer to index buffer
-				uint16* pIndices(0);
-				mp = D3D11_MAP_WRITE_NO_OVERWRITE;
-				if (false != m_auxGeomSBM.m_discardIB)
-				{
-					m_auxGeomSBM.m_discardIB = false;
-					mp = D3D11_MAP_WRITE_DISCARD_VB;
-				}
-
-				if (FAILED(hr = m_renderer.GetDeviceContext().Map(m_pAuxGeomIB, 0, mp, 0, &mappedResource)))
-				{
-					assert(0);
-					iLog->Log("ERROR: CD3DRenderAuxGeom::DrawAuxIndexedPrimitives() - Index buffer could not be locked!");
-
-					m_renderer.GetDeviceContext().Unmap(m_pAuxGeomVB, 0);
-					return;
-				}
-				pIndices = (uint16*)mappedResource.pData;
-				pIndices += m_auxGeomSBM.m_curIBIndex;
-
 				// move index data of this entry (modify indices to match VB insert location)
 				for (uint32 i(0); i < curPBEntry->m_numIndices; ++i)
 				{
 					// cppcheck-suppress nullPointer
-					pIndices[i] = numVerticesWrittenToVB + auxIndexBuffer[curPBEntry->m_indexOffs + i];
+					auxIndexBufferJoined[curPBEntry->m_indexOffs + i] = numVerticesWrittenToVB + auxIndexBuffer[curPBEntry->m_indexOffs + i];
 				}
 
-				// unlock ib
-				m_renderer.GetDeviceContext().Unmap(m_pAuxGeomIB, 0);
+				// determine lock vb flags
+				D3D11_MAP mapFlags(D3D11_MAP_WRITE_NO_OVERWRITE_VB);
+				if (false != m_auxGeomSBM.m_discardVB)
+				{
+					m_auxGeomSBM.m_discardVB = false;
+					mapFlags = D3D11_MAP_WRITE_DISCARD_VB;
+				}
+
+				CDeviceManager::UploadContents<false>(m_pAuxGeomVB, 0, m_auxGeomSBM.m_curVBIndex * sizeof(SAuxVertex), curPBEntry->m_numVertices * sizeof(SAuxVertex), mapFlags, &auxVertexBuffer[curPBEntry->m_vertexOffs]);
+
+				// determine lock ib flags
+				mapFlags = D3D11_MAP_WRITE_NO_OVERWRITE_IB;
+				if (false != m_auxGeomSBM.m_discardIB)
+				{
+					m_auxGeomSBM.m_discardIB = false;
+					mapFlags = D3D11_MAP_WRITE_DISCARD_IB;
+				}
+
+				CDeviceManager::UploadContents<false>(m_pAuxGeomIB, 0, m_auxGeomSBM.m_curIBIndex * sizeof(vtx_idx), curPBEntry->m_numIndices * sizeof(vtx_idx), mapFlags, &auxIndexBufferJoined[curPBEntry->m_indexOffs]);
 
 				// update buffer indices
 				m_auxGeomSBM.m_curVBIndex += curPBEntry->m_numVertices;
@@ -1232,6 +1187,14 @@ void CRenderAuxGeomD3D::PrepareRendering()
 	m_curPrimType = CAuxGeomCB::e_PrimTypeInvalid;
 }
 
+
+#include<climits>
+
+template<class T = vtx_idx, int size = sizeof(T)*CHAR_BIT> struct indexbuffer_type;
+
+template<class T> struct indexbuffer_type<T, 16> { static const RenderIndexType type = Index16; };
+template<class T> struct indexbuffer_type<T, 32> { static const RenderIndexType type = Index32; };
+
 bool CRenderAuxGeomD3D::BindStreams(EVertexFormat newVertexFormat, D3DVertexBuffer* pNewVB, D3DIndexBuffer* pNewIB)
 {
 	// set vertex declaration
@@ -1247,7 +1210,7 @@ bool CRenderAuxGeomD3D::BindStreams(EVertexFormat newVertexFormat, D3DVertexBuff
 	}
 	if (m_pCurIB != pNewIB)
 	{
-		hr = m_renderer.FX_SetIStream(pNewIB, 0, Index16);
+		hr = m_renderer.FX_SetIStream(pNewIB, 0, indexbuffer_type<>::type);
 		m_pCurIB = pNewIB;
 	}
 

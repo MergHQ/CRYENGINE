@@ -46,6 +46,22 @@ CParticleFluidSimulation::CParticleFluidSimulation(const int maxBodies)
 	m_params->cohesion = 2.0f;
 	m_params->baroclinity = 0.25f;
 
+	CShader* pShader = gcpRendD3D.m_cEF.mfForName("GpuPhysicsParticleFluid", EF_SYSTEM, 0, 0);
+
+	m_passCalcLambda.SetTechnique(pShader, CCryNameTSCRC("CalcLambda"), 0);
+	m_passPredictDensity.SetTechnique(pShader, CCryNameTSCRC("PredictDensity"), 0);
+	m_passCorrectDensityError.SetTechnique(pShader, CCryNameTSCRC("CorrectDensityError"), 0);
+	m_passCorrectDivergenceError.SetTechnique(pShader, CCryNameTSCRC("CorrectDivergenceError"), 0);
+	m_passPositionUpdate.SetTechnique(pShader, CCryNameTSCRC("PositionUpdate"), 0);
+	m_passBodiesInject.SetTechnique(pShader, CCryNameTSCRC("BodiesInject"), 0);
+	m_passClearGrid.SetTechnique(pShader, CCryNameTSCRC("ClearGrid"), 0);
+	m_passAssignAndCount.SetTechnique(pShader, CCryNameTSCRC("AssignAndCount"), 0);
+	m_passPrefixSumBlocks.SetTechnique(pShader, CCryNameTSCRC("PrefixSumBlocks"), 0);
+	m_passBuildGridIndices.SetTechnique(pShader, CCryNameTSCRC("BuildGridIndices"), 0);
+	m_passRearrangeParticles.SetTechnique(pShader, CCryNameTSCRC("RearrangeParticles"), 0);
+	m_passEvolveExternalParticles.SetTechnique(pShader, CCryNameTSCRC("EvolveExternalParticles"), 0);
+	m_passCollisionsScreenSpace.SetTechnique(pShader, CCryNameTSCRC("CollisionsScreenSpace"), 0);
+
 	CreateResources();
 }
 
@@ -92,19 +108,6 @@ void CParticleFluidSimulation::CreateResources()
 	m_pData->adjacencyList.UpdateBufferContent(adjacency, 27);
 }
 
-void CParticleFluidSimulation::SetUAVsAndConstants(gpu::CComputeBackend& backend)
-{
-	ID3D11UnorderedAccessView* pUAV[] =
-	{
-		m_pData->bodies.GetUAV(),
-		m_pData->bodiesTemp.GetUAV(),
-		m_pData->bodiesOffsets.GetUAV(),
-		m_pData->grid.GetUAV()
-	};
-	backend.SetUAVs(0, 4, pUAV);
-	m_params.Bind();
-}
-
 void CParticleFluidSimulation::UpdateDynamicBuffers()
 {
 	if (m_bodiesInject.size() > 0)
@@ -121,21 +124,27 @@ void CParticleFluidSimulation::RetrieveCounter()
 	m_params->numberOfBodies = counter;
 }
 
-void CParticleFluidSimulation::UpdateSimulationBuffers(gpu::CComputeBackend& backend, const int cellBlock)
+void CParticleFluidSimulation::UpdateSimulationBuffers(
+  CDeviceCommandListRef RESTRICT_REFERENCE commandList,
+  const int cellBlock)
 {
 	PROFILE_LABEL_SCOPE("INJECT BODIES");
 
 	m_params.CopyToDevice();
 
-	ID3D11ShaderResourceView* srv[] = { m_pData->bodiesInject.GetSRV() };
-	backend.SetSRVs(0u, 1u, srv);
-	SetUAVsAndConstants(backend);
+	m_passBodiesInject.SetBuffer(0, &m_pData->bodiesInject.GetBuffer());
+	m_passBodiesInject.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+	m_passBodiesInject.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+	m_passBodiesInject.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+	m_passBodiesInject.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+	m_passBodiesInject.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
 
 	if (m_params->numberBodiesInject > 0)
 	{
-		if (!backend.RunTechnique("BodiesInject",
-		                          (int)ceil((float)m_params->numberBodiesInject / cellBlock), 1, 1))
-			return;
+		m_passBodiesInject.SetDispatchSize((int)ceil((float)m_params->numberBodiesInject / cellBlock), 1, 1);
+		m_passBodiesInject.PrepareResourcesForUse(commandList);
+		m_passBodiesInject.Execute(commandList);
+
 		m_params->numberOfBodies += m_params->numberBodiesInject;
 		m_params->numberBodiesInject = 0;
 		m_params.CopyToDevice();
@@ -143,7 +152,7 @@ void CParticleFluidSimulation::UpdateSimulationBuffers(gpu::CComputeBackend& bac
 }
 
 void CParticleFluidSimulation::SortSimulationBodies(
-  gpu::CComputeBackend& backend,
+  CDeviceCommandListRef RESTRICT_REFERENCE commandList,
   const int gridCells,
   const int cellBlock,
   const int blocks)
@@ -151,55 +160,91 @@ void CParticleFluidSimulation::SortSimulationBodies(
 	PROFILE_LABEL_SCOPE("SORT");
 
 	{
-		SetUAVsAndConstants(backend);
-		if (!backend.RunTechnique("ClearGrid", gridCells / cellBlock, 1, 1))
-			return;
+		m_passClearGrid.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+		m_passClearGrid.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+		m_passClearGrid.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+		m_passClearGrid.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+		m_passClearGrid.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
+		m_passClearGrid.SetDispatchSize(gridCells / cellBlock, 1, 1);
+		m_passClearGrid.PrepareResourcesForUse(commandList);
+		m_passClearGrid.Execute(commandList);
 	}
 	{
-		SetUAVsAndConstants(backend);
-		if (!backend.RunTechnique("AssignAndCount", blocks, 1, 1))
-			return;
+		m_passAssignAndCount.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+		m_passAssignAndCount.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+		m_passAssignAndCount.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+		m_passAssignAndCount.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+		m_passAssignAndCount.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
+		m_passAssignAndCount.SetDispatchSize(blocks, 1, 1);
+		m_passAssignAndCount.PrepareResourcesForUse(commandList);
+		m_passAssignAndCount.Execute(commandList);
 	}
 	{
-		SetUAVsAndConstants(backend);
-		if (!backend.RunTechnique("PrefixSumBlocks", gridCells / (2 * 512), 1, 1))
-			return;
+		m_passPrefixSumBlocks.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+		m_passPrefixSumBlocks.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+		m_passPrefixSumBlocks.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+		m_passPrefixSumBlocks.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+		m_passPrefixSumBlocks.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
+		m_passPrefixSumBlocks.SetDispatchSize(gridCells / (2 * 512), 1, 1);
+		m_passPrefixSumBlocks.PrepareResourcesForUse(commandList);
+		m_passPrefixSumBlocks.Execute(commandList);
 	}
 	{
-		SetUAVsAndConstants(backend);
-		if (!backend.RunTechnique("BuildGridIndices", gridCells / cellBlock, 1, 1))
-			return;
+		m_passBuildGridIndices.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+		m_passBuildGridIndices.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+		m_passBuildGridIndices.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+		m_passBuildGridIndices.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+		m_passBuildGridIndices.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
+		m_passBuildGridIndices.SetDispatchSize(gridCells / cellBlock, 1, 1);
+		m_passBuildGridIndices.PrepareResourcesForUse(commandList);
+		m_passBuildGridIndices.Execute(commandList);
 	}
 	{
-		SetUAVsAndConstants(backend);
-		if (!backend.RunTechnique("RearrangeParticles", blocks, 1, 1))
-			return;
+		m_passRearrangeParticles.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+		m_passRearrangeParticles.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+		m_passRearrangeParticles.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+		m_passRearrangeParticles.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+		m_passRearrangeParticles.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
+		m_passRearrangeParticles.SetDispatchSize(blocks, 1, 1);
+		m_passRearrangeParticles.PrepareResourcesForUse(commandList);
+		m_passRearrangeParticles.Execute(commandList);
 	}
 }
 
-void CParticleFluidSimulation::EvolveParticles(gpu::CComputeBackend& backend, int numParticles)
+void CParticleFluidSimulation::EvolveParticles(CDeviceCommandListRef RESTRICT_REFERENCE commandList, CGpuBuffer& defaultParticleBuffer, int numParticles)
 {
-	ID3D11ShaderResourceView* pSRV[] = { m_pData->adjacencyList.GetSRV() };
-	backend.SetSRVs(0u, 1u, pSRV);
 	const int blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(numParticles, kThreadsInBlock);
-	SetUAVsAndConstants(backend);
-	if (!backend.RunTechnique("EvolveExternalParticles",
-	                          blocks, 1, 1))
-		return;
+	m_passEvolveExternalParticles.SetBuffer(0, &m_pData->adjacencyList.GetBuffer());
+	m_passEvolveExternalParticles.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+	m_passEvolveExternalParticles.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+	m_passEvolveExternalParticles.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+	m_passEvolveExternalParticles.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+	m_passEvolveExternalParticles.SetOutputUAV(4, &defaultParticleBuffer);
+	m_passEvolveExternalParticles.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
+	m_passEvolveExternalParticles.SetDispatchSize(blocks, 1, 1);
+	m_passEvolveExternalParticles.PrepareResourcesForUse(commandList);
+	m_passEvolveExternalParticles.Execute(commandList);
 }
 
-void CParticleFluidSimulation::FluidCollisions(gpu::CComputeBackend& backend)
+void CParticleFluidSimulation::FluidCollisions(CDeviceCommandListRef RESTRICT_REFERENCE commandList, CConstantBufferPtr parameterBuffer, int constantBufferSlot, int texSampler, int texPointSampler)
 {
-	ID3D11ShaderResourceView* pSRV[] = { m_pData->adjacencyList.GetSRV() };
-	backend.SetSRVs(0u, 1u, pSRV);
 	const uint blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(m_params->numberOfBodies, kThreadsInBlock);
-	SetUAVsAndConstants(backend);
-	if (!backend.RunTechnique("CollisionScreenSpace",
-	                          blocks, 1, 1))
-		return;
+	m_passCollisionsScreenSpace.SetBuffer(0, &m_pData->adjacencyList.GetBuffer());
+	m_passCollisionsScreenSpace.SetTexture(1, CTexture::s_ptexZTarget);
+	m_passCollisionsScreenSpace.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+	m_passCollisionsScreenSpace.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+	m_passCollisionsScreenSpace.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+	m_passCollisionsScreenSpace.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+	m_passCollisionsScreenSpace.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
+	m_passCollisionsScreenSpace.SetInlineConstantBuffer(constantBufferSlot, parameterBuffer);
+	m_passCollisionsScreenSpace.SetSampler(0, texSampler);
+	m_passCollisionsScreenSpace.SetSampler(1, texPointSampler);
+	m_passCollisionsScreenSpace.SetDispatchSize(blocks, 1, 1);
+	m_passCollisionsScreenSpace.PrepareResourcesForUse(commandList);
+	m_passCollisionsScreenSpace.Execute(commandList);
 }
 
-void CParticleFluidSimulation::IntegrateBodies(gpu::CComputeBackend& backend, const int blocks)
+void CParticleFluidSimulation::IntegrateBodies(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const int blocks)
 {
 	PROFILE_LABEL_SCOPE("INTEGRATE");
 
@@ -234,44 +279,62 @@ void CParticleFluidSimulation::IntegrateBodies(gpu::CComputeBackend& backend, co
 		{
 			PROFILE_LABEL_SCOPE("Predict Density");
 			{
-				ID3D11ShaderResourceView* srv[] = { m_pData->adjacencyList.GetSRV() };
-				backend.SetSRVs(0u, 1u, srv);
-				SetUAVsAndConstants(backend);
+				m_passPredictDensity.SetBuffer(0, &m_pData->adjacencyList.GetBuffer());
+				m_passPredictDensity.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+				m_passPredictDensity.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+				m_passPredictDensity.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+				m_passPredictDensity.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+				m_passPredictDensity.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
+				m_passPredictDensity.SetDispatchSize(blocks, 1, 1);
+				m_passPredictDensity.PrepareResourcesForUse(commandList);
+				m_passPredictDensity.Execute(commandList);
 			}
-			if (!backend.RunTechnique("PredictDensity", blocks, 1, 1))
-				return;
 		}
 		{
 			PROFILE_LABEL_SCOPE("CorrectDensityError");
 			{
-				ID3D11ShaderResourceView* srv[] = { m_pData->adjacencyList.GetSRV() };
-				backend.SetSRVs(0u, 1u, srv);
-				SetUAVsAndConstants(backend);
+				m_passCorrectDensityError.SetBuffer(0, &m_pData->adjacencyList.GetBuffer());
+				m_passCorrectDensityError.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+				m_passCorrectDensityError.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+				m_passCorrectDensityError.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+				m_passCorrectDensityError.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+				m_passCorrectDensityError.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
+				m_passCorrectDensityError.SetDispatchSize(blocks, 1, 1);
+				m_passCorrectDensityError.PrepareResourcesForUse(commandList);
+				m_passCorrectDensityError.Execute(commandList);
 			}
-			if (!backend.RunTechnique("CorrectDensityError", blocks, 1, 1))
-				return;
 		}
 		{
 			PROFILE_LABEL_SCOPE("CorrectDivergenceError");
 			{
-				ID3D11ShaderResourceView* srv[] = { m_pData->adjacencyList.GetSRV() };
-				backend.SetSRVs(0u, 1u, srv);
-				SetUAVsAndConstants(backend);
+				m_passCorrectDivergenceError.SetBuffer(0, &m_pData->adjacencyList.GetBuffer());
+				m_passCorrectDivergenceError.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+				m_passCorrectDivergenceError.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+				m_passCorrectDivergenceError.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+				m_passCorrectDivergenceError.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+				m_passCorrectDivergenceError.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
+				m_passCorrectDivergenceError.SetDispatchSize(blocks, 1, 1);
+				m_passCorrectDivergenceError.PrepareResourcesForUse(commandList);
+				m_passCorrectDivergenceError.Execute(commandList);
 			}
-			if (!backend.RunTechnique("CorrectDivergenceError", blocks, 1, 1))
-				return;
 		}
 	}
 #endif
 	{
 		PROFILE_LABEL_SCOPE("POSITION UPDATE");
-		SetUAVsAndConstants(backend);
-		if (!backend.RunTechnique("PositionUpdate", blocks, 1, 1))
-			return;
+
+		m_passPositionUpdate.SetOutputUAV(0, &m_pData->bodies.GetBuffer());
+		m_passPositionUpdate.SetOutputUAV(1, &m_pData->bodiesTemp.GetBuffer());
+		m_passPositionUpdate.SetOutputUAV(2, &m_pData->bodiesOffsets.GetBuffer());
+		m_passPositionUpdate.SetOutputUAV(3, &m_pData->grid.GetBuffer());
+		m_passPositionUpdate.SetInlineConstantBuffer(3, m_params.GetDeviceConstantBuffer());
+		m_passPositionUpdate.SetDispatchSize(blocks, 1, 1);
+		m_passPositionUpdate.PrepareResourcesForUse(commandList);
+		m_passPositionUpdate.Execute(commandList);
 	}
 }
 
-void CParticleFluidSimulation::RenderThreadUpdate()
+void CParticleFluidSimulation::RenderThreadUpdate(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	const uint gridCells = m_params->gridSizeX * m_params->gridSizeY * m_params->gridSizeZ;
 	const uint blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(m_params->numberOfBodies, kThreadsInBlock);
@@ -283,13 +346,9 @@ void CParticleFluidSimulation::RenderThreadUpdate()
 		RetrieveCounter();
 
 	UpdateDynamicBuffers();
-
-	gpu::CComputeBackend backend("GpuPhysicsParticleFluid");
-
-	UpdateSimulationBuffers(backend, kThreadsInBlock);
-	SortSimulationBodies(backend, gridCells, kThreadsInBlock, blocks);
-	SetUAVsAndConstants(backend);
-	IntegrateBodies(backend, blocks);
+	UpdateSimulationBuffers(commandList, kThreadsInBlock);
+	SortSimulationBodies(commandList, gridCells, kThreadsInBlock, blocks);
+	IntegrateBodies(commandList, blocks);
 
 	{
 		PROFILE_LABEL_SCOPE("READBACK COUNTER");
@@ -313,8 +372,8 @@ void CParticleFluidSimulation::DebugDraw()
 {
 	if (CRenderer::CV_r_GpuPhysicsFluidDynamicsDebug)
 	{
-		m_pData->bodiesTemp.Readback();
-		const SFluidBody* parts = m_pData->bodiesTemp.Map();
+		m_pData->bodiesTemp.Readback(m_params->numberOfBodies);
+		const SFluidBody* parts = m_pData->bodiesTemp.Map(m_params->numberOfBodies);
 
 		gcpRendD3D.GetIRenderAuxGeom()->SetRenderFlags(e_Def3DPublicRenderflags);
 		m_points.resize(m_params->numberOfBodies);

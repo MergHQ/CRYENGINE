@@ -473,7 +473,7 @@ bool CREImposter::UpdateImposter()
 			int nFL = rd->m_RP.m_PersFlags2;
 			rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_PersFlags |= RBPF_IMPOSTERGEN;
 			rd->m_RP.m_PersFlags2 |= RBPF2_NOALPHABLEND | RBPF2_NOALPHATEST;
-			rd->m_RP.m_StateAnd &= ~(GS_BLEND_MASK | GS_ALPHATEST_MASK);
+			rd->m_RP.m_StateAnd &= ~(GS_BLEND_MASK | GS_ALPHATEST);
 
 			assert(!"GetI3DEngine()->RenderImposterContent() does not exist");
 			//gEnv->p3DEngine->RenderImposterContent(this, EngCam);

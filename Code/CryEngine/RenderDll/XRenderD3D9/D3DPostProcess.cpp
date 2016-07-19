@@ -1127,7 +1127,7 @@ void CPostEffectsMgr::End()
 bool CREPostProcess::mfDraw(CShader* ef, SShaderPass* sfm)
 {
 	CPostEffectsMgr* pPostMgr = PostEffectMgr();
-	IF (!gcpRendD3D || !CRenderer::CV_r_PostProcess || pPostMgr->GetEffects().empty() || gcpRendD3D->GetWireframeMode() > R_SOLID_MODE, 0)
+	IF (!gcpRendD3D || !CRenderer::CV_r_PostProcess || pPostMgr->GetEffects().empty() || (gcpRendD3D->GetWireframeMode() > R_SOLID_MODE && gcpRendD3D->m_nGraphicsPipeline == 0), 0)
 		return 0;
 
 	// Skip hdr/post processing when rendering different camera views

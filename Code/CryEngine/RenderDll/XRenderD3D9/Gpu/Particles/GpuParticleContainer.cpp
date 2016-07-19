@@ -11,15 +11,15 @@ void CParticleContainer::Initialize(bool isDoubleBuffered)
 	m_counter.CreateDeviceBuffer();
 }
 
-void CParticleContainer::ReadbackCounter()
+void CParticleContainer::ReadbackCounter(uint32 readLength)
 {
-	m_counter.Readback();
+	m_counter.Readback(readLength);
 }
 
-int CParticleContainer::RetrieveCounter()
+int CParticleContainer::RetrieveCounter(uint32 readLength)
 {
 	int result = 0;
-	if (const uint* counter = m_counter.Map())
+	if (const uint* counter = m_counter.Map(readLength))
 	{
 		result = counter[0];
 		m_counter.Unmap();

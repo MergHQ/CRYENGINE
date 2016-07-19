@@ -597,7 +597,10 @@ void CTerrainNode::UpdateRenderMesh(CStripsInfo* pArrayInfo, bool bUpdateVertice
 				lstTangents[i] = lstTangents[0];
 		}
 
-		ERenderMeshType eRMType = eRMT_Dynamic;
+		ERenderMeshType eRMType = eRMT_Static;
+
+		bool bMultiGPU; 
+		gEnv->pRenderer->EF_Query(EFQ_MultiGPUEnabled, bMultiGPU);
 
 		pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
 		  m_pUpdateTerrainTempData->m_lstTmpVertArray.GetElements(), m_pUpdateTerrainTempData->m_lstTmpVertArray.Count(), eVF_P2S_N4B_C4B_T1F,
@@ -1332,17 +1335,19 @@ void CTerrainNode::UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcR
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	ERenderMeshType eRMType = eRMT_Dynamic;
-
-#if CRY_PLATFORM_WINDOWS
-	eRMType = eRMT_Dynamic;
-#endif
-
 	// force new rendermesh if vertex container has changed. Vertex containers aren't thread
 	// safe, but seems like maybe something relies on this behaviour since fixing it on RM side
 	// causes flickering.
 	if (!pMatRM || (pMatRM && pMatRM->GetVertexContainer() != pSrcRM))
 	{
+		ERenderMeshType eRMType = eRMT_Static;
+
+		bool bMultiGPU;
+		gEnv->pRenderer->EF_Query(EFQ_MultiGPUEnabled, bMultiGPU);
+
+		if (bMultiGPU && gEnv->pRenderer->GetRenderType() != eRT_DX12)
+			eRMType = eRMT_Dynamic;
+
 		pMatRM = GetRenderer()->CreateRenderMeshInitialized(
 		  NULL, 0, eVF_P2S_N4B_C4B_T1F, NULL, 0,
 		  prtTriangleList, szComment, szComment, eRMType, 1, 0, NULL, NULL, false, false);

@@ -132,9 +132,7 @@ bool CREGeomCache::Update(const int flags, const bool bTessellation)
 			bool bSucceed = pRenderMesh->RT_CheckUpdate(pVertexContainer, pRenderMesh->GetVertexFormat(), flags | VSM_MASK, bTessellation);
 			if (bSucceed)
 			{
-				// Modified data arrived, mark all corresponding REs dirty to trigger necessary recompiles
 				pRenderMesh->m_Modified[threadId].erase();
-				pRenderMesh->MarkRenderElementsDirty();
 			}
 
 			if (!bSucceed || !pVertexContainer->_HasVBStream(VSF_GENERAL))
@@ -194,7 +192,7 @@ DynArray<CREGeomCache::SMeshRenderData>* CREGeomCache::GetMeshFillDataPtr()
 {
 	FUNCTION_PROFILER_RENDER_FLAT
 
-	  assert(gEnv->IsEditor() || !gRenDev->m_pRT->IsRenderThread(true));
+	  assert(gRenDev->m_pRT->IsMainThread(true));
 	const int threadId = gRenDev->m_RP.m_nFillThreadID;
 	return &m_meshFillData[threadId];
 }
@@ -203,7 +201,7 @@ DynArray<CREGeomCache::SMeshRenderData>* CREGeomCache::GetRenderDataPtr()
 {
 	FUNCTION_PROFILER_RENDER_FLAT
 
-	  assert(gEnv->IsEditor() || !gRenDev->m_pRT->IsRenderThread(true));
+	  assert(gRenDev->m_pRT->IsMainThread(true));
 	return &m_meshRenderData;
 }
 
@@ -230,7 +228,6 @@ bool CREGeomCache::GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessella
 	streams.nFirstVertex = 0;
 	streams.nNumIndices = 0;
 	streams.primitiveType = eptTriangleList;
-	streams.streamMask = 0;
 	return true;
 }
 

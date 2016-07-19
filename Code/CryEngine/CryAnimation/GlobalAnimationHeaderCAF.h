@@ -18,33 +18,33 @@ class IControllerRelocatableChain;
 
 #define CAF_MAX_SEGMENTS (5) //> Number of animation segment separators (including lower and upper bound).
 
-struct GlobalAnimationHeaderCAFStreamContent : public IStreamCallback
+struct GlobalAnimationHeaderCAFStreamContent:public IStreamCallback
 {
-	int                           m_id;
-	const char*                   m_pPath;
+	int m_id;
+	const char* m_pPath;
 
-	uint32                        m_nFlags;
-	uint32                        m_FilePathDBACRC32;
+	uint32 m_nFlags;
+	uint32 m_FilePathDBACRC32;
 
-	f32                           m_fStartSec;
-	f32                           m_fEndSec;
-	f32                           m_fTotalDuration;
+	f32 m_fStartSec;
+	f32 m_fEndSec;
+	f32 m_fTotalDuration;
 
-	QuatT                         m_StartLocation;
+	QuatT m_StartLocation;
 
 	DynArray<IController_AutoPtr> m_arrController;
-	CControllerDefragHdl          m_hControllerData;
+	CControllerDefragHdl m_hControllerData;
 
 	GlobalAnimationHeaderCAFStreamContent();
 	~GlobalAnimationHeaderCAFStreamContent();
 
-	void*  StreamOnNeedStorage(IReadStream* pStream, unsigned nSize, bool& bAbortOnFailToAlloc);
-	void   StreamAsyncOnComplete(IReadStream* pStream, unsigned nError);
-	void   StreamOnComplete(IReadStream* pStream, unsigned nError);
+	void* StreamOnNeedStorage(IReadStream* pStream, unsigned nSize, bool& bAbortOnFailToAlloc);
+	void  StreamAsyncOnComplete (IReadStream* pStream, unsigned nError);
+	void  StreamOnComplete (IReadStream* pStream, unsigned nError);
 
 	uint32 ParseChunkHeaders(IChunkFile* pChunkFile, bool& bLoadOldChunksOut, bool& bLoadInPlaceOut, size_t& nUsefulSizeOut);
 	bool   ParseChunkRange(IChunkFile* pChunkFile, uint32 min, uint32 max, bool bLoadOldChunks, char*& pStorage, IControllerRelocatableChain*& pRelocateHead);
-	bool   ReadMotionParameters(IChunkFile::ChunkDesc* pChunkDesc);
+	bool   ReadMotionParameters (IChunkFile::ChunkDesc* pChunkDesc);
 	bool   ReadController(IChunkFile::ChunkDesc* pChunkDesc, bool bLoadUncompressedChunks, char*& pStorage, IControllerRelocatableChain*& pRelocateHead);
 	bool   ReadTiming(IChunkFile::ChunkDesc* pChunkDesc);
 	uint32 FlagsSanityFilter(uint32 flags);
@@ -52,14 +52,14 @@ struct GlobalAnimationHeaderCAFStreamContent : public IStreamCallback
 private:
 	// Prevent copy construction
 	GlobalAnimationHeaderCAFStreamContent(const GlobalAnimationHeaderCAFStreamContent&);
-	GlobalAnimationHeaderCAFStreamContent& operator=(const GlobalAnimationHeaderCAFStreamContent&);
+	GlobalAnimationHeaderCAFStreamContent& operator = (const GlobalAnimationHeaderCAFStreamContent&);
 };
 
 //////////////////////////////////////////////////////////////////////////
 // this is the animation information on the module level (not on the per-model level)
 // it doesn't know the name of the animation (which is model-specific), but does know the file name
 // Implements some services for bone binding and ref counting
-struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
+struct CRY_ALIGN (16)GlobalAnimationHeaderCAF:public GlobalAnimationHeader
 {
 	friend class CAnimationManager;
 	friend class CAnimationSet;
@@ -80,7 +80,7 @@ struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
 
 		const f32 t0 = m_SegmentsTime[segmentIndex + 0];
 		const f32 t1 = m_SegmentsTime[segmentIndex + 1];
-		const f32 t = t1 - t0;
+		const f32 t  = t1 - t0;
 		return GetTotalDuration() * t;
 	}
 
@@ -93,9 +93,9 @@ struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
 		assert(segmentIndex < m_Segments);
 		assert((0.f <= normalizedSegmentTime) && (normalizedSegmentTime <= 1.f));
 
-		const f32 totalDuration = GetTotalDuration();
-		const f32 segmentDuration = GetSegmentDuration(segmentIndex);
-		const f32 normalizedSegmentOffset = m_SegmentsTime[segmentIndex];
+		const f32 totalDuration             = GetTotalDuration();
+		const f32 segmentDuration           = GetSegmentDuration(segmentIndex);
+		const f32 normalizedSegmentOffset   = m_SegmentsTime[segmentIndex];
 		const f32 normalizedSegmentDuration = segmentDuration / totalDuration;
 		return (normalizedSegmentTime * normalizedSegmentDuration) + normalizedSegmentOffset;
 	}
@@ -119,8 +119,8 @@ struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
 		ntime = min(ntime, 1.0f);
 		assert(ntime >= 0 && ntime <= 1);
 		f32 duration = m_fEndSec - m_fStartSec;
-		f32 start = m_fStartSec;
-		f32 key = (ntime * ANIMATION_30Hz * duration + start * ANIMATION_30Hz); ///40.0f;
+		f32 start    = m_fStartSec;
+		f32 key      = (ntime * ANIMATION_30Hz * duration + start * ANIMATION_30Hz); ///40.0f;
 		return key;
 	}
 
@@ -157,16 +157,16 @@ struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
 	uint32 GetTotalRotKeys() const;
 
 	size_t SizeOfCAF(const bool bForceControllerCalcu = false) const;
-	void LoadControllersCAF();
-	void LoadDBA();
+	void   LoadControllersCAF();
+	void   LoadDBA();
 
-	void GetMemoryUsage(ICrySizer * pSizer) const;
+	void GetMemoryUsage(ICrySizer* pSizer) const;
 
 	uint32 IsAssetLoaded() const
 	{
 		if (m_nControllers2)
 			return m_nControllers;
-		return m_FilePathDBACRC32 != -1; //return 0 in case of an ANM-file
+		return m_FilePathDBACRC32 != -1;   //return 0 in case of an ANM-file
 	}
 
 	ILINE uint32 IsAssetOnDemand() const
@@ -177,9 +177,9 @@ struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
 	}
 
 #ifdef EDITOR_PCDEBUGCODE
-	bool Export2HTR(const char* szAnimationName, const char* saveDirectory, const CDefaultSkeleton * pDefaultSkeleton);
-	static bool SaveHTR(const char* szAnimationName, const char* saveDirectory, const std::vector<string> &jointNameArray, const std::vector<string> &jointParentArray, const std::vector<DynArray<QuatT>> &arrAnimation, const QuatT * parrDefJoints);
-	static bool SaveICAF(const char* szAnimationName, const char* saveDirectory, const std::vector<string> &arrJointNames, const std::vector<DynArray<QuatT>> &arrAnimation);
+	bool        Export2HTR(const char* szAnimationName, const char* saveDirectory, const CDefaultSkeleton* pDefaultSkeleton);
+	static bool SaveHTR(const char* szAnimationName, const char* saveDirectory, const std::vector<string>& jointNameArray, const std::vector<string>& jointParentArray, const std::vector< DynArray<QuatT> >& arrAnimation, const QuatT* parrDefJoints);
+	static bool SaveICAF(const char* szAnimationName, const char* saveDirectory, const std::vector<string>& arrJointNames, const std::vector< DynArray<QuatT> >& arrAnimation);
 #endif
 
 	//---------------------------------------------------------------
@@ -187,7 +187,7 @@ struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
 	{
 		uint32 IsCreated = IsAssetCreated();
 		if (IsCreated == 0)
-			return NULL;  //doesn't exist at all. there is nothing we can do
+			return NULL;                   //doesn't exist at all. there is nothing we can do
 		if (IsAssetLoaded() == 0)
 			return NULL;
 
@@ -203,7 +203,7 @@ struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
 			return NULL;
 
 		const uint32* arrControllerLookup = &m_arrControllerLookupVector[0];
-		int32 low = 0;
+		int32 low  = 0;
 		int32 high = nSize - 1;
 		while (low <= high)
 		{
@@ -219,7 +219,7 @@ struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
 				return pController;
 			}
 		}
-		return NULL; // not found
+		return NULL;                     // not found
 	}
 
 	size_t GetControllersCount() const
@@ -227,12 +227,12 @@ struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
 		return m_nControllers;
 	}
 
-	void ClearControllers();
-	void ClearControllerData();
-	uint32 LoadCAF();
+	void   ClearControllers();
+	void   ClearControllerData();
+	uint32 LoadCAF( );
 	uint32 DoesExistCAF();
-	void StartStreamingCAF();
-	void ControllerInit();
+	void   StartStreamingCAF();
+	void   ControllerInit();
 
 	void ConnectCAFandDBA();
 
@@ -249,58 +249,58 @@ struct CRY_ALIGN(16) GlobalAnimationHeaderCAF: public GlobalAnimationHeader
 		}
 	}
 
-	GlobalAnimationHeaderCAF()
+	GlobalAnimationHeaderCAF ()
 	{
 		m_FilePathDBACRC32 = -1;
-		m_nRef_by_Model = 0;
-		m_nRef_at_Runtime = 0;
-		m_nTouchedCounter = 0;
-		m_bEmpty = 0;
+		m_nRef_by_Model    = 0;
+		m_nRef_at_Runtime  = 0;
+		m_nTouchedCounter  = 0;
+		m_bEmpty           = 0;
 
-		m_fStartSec = -1;              // Start time in seconds.
-		m_fEndSec = -1;                // End time in seconds.
-		m_fTotalDuration = -1.0f;      //asset-features
-		m_StartLocation.SetIdentity(); //asset-features
+		m_fStartSec      = -1;                                   // Start time in seconds.
+		m_fEndSec        = -1;                                   // End time in seconds.
+		m_fTotalDuration = -1.0f;                                  //asset-features
+		m_StartLocation.SetIdentity();                           //asset-features
 
-		m_Segments = 1;                   //asset-features
-		m_SegmentsTime[0] = 0.0f;         //asset-features
-		m_SegmentsTime[1] = 1.0f;         //asset-features
-		m_SegmentsTime[2] = 1.0f;         //asset-features
-		m_SegmentsTime[3] = 1.0f;         //asset-features
-		m_SegmentsTime[4] = 1.0f;         //asset-features
+		m_Segments        = 1;                                   //asset-features
+		m_SegmentsTime[0] = 0.0f;                                  //asset-features
+		m_SegmentsTime[1] = 1.0f;                                  //asset-features
+		m_SegmentsTime[2] = 1.0f;                                  //asset-features
+		m_SegmentsTime[3] = 1.0f;                                  //asset-features
+		m_SegmentsTime[4] = 1.0f;                                  //asset-features
 
-		m_nControllers = 0;
+		m_nControllers  = 0;
 		m_nControllers2 = 0;
 	}
 
 public:
-	uint32 m_FilePathDBACRC32;        //hash value (if the file is comming from a DBA)
+	uint32 m_FilePathDBACRC32;                                 //hash value (if the file is comming from a DBA)
 	IReadStreamPtr m_pStream;
 
-	f32 m_fStartSec;                  //asset-feature: Start time in seconds.
-	f32 m_fEndSec;                    //asset-feature: End time in seconds.
-	f32 m_fTotalDuration;             //asset-feature: asset-feature: total duration in seconds.
+	f32 m_fStartSec;                                           //asset-feature: Start time in seconds.
+	f32 m_fEndSec;                                             //asset-feature: End time in seconds.
+	f32 m_fTotalDuration;                                      //asset-feature: asset-feature: total duration in seconds.
 
 	uint16 m_nControllers;
 	uint16 m_nControllers2;
 
 	DynArray<IController_AutoPtr> m_arrController;
-	DynArray<uint32> m_arrControllerLookupVector; // used to speed up controller lookup (binary search on the CRC32 only, load controller from a associative array)
-	CControllerDefragHdl m_hControllerData;
+	DynArray<uint32>              m_arrControllerLookupVector; // used to speed up controller lookup (binary search on the CRC32 only, load controller from a associative array)
+	CControllerDefragHdl          m_hControllerData;
 
 	CAnimEventList m_AnimEventsCAF;
 
-	uint16 m_nRef_by_Model;               //counter how many models are referencing this animation
-	uint16 m_nRef_at_Runtime;             //counter how many times we use this animation at run-time at the same time (needed for streaming)
-	uint16 m_nTouchedCounter;             //for statistics: did we use this asset at all?
-	uint8 m_bEmpty;                       //Loaded from database
-	uint8 m_Segments;                     //asset-feature: amount of segments
-	f32 m_SegmentsTime[CAF_MAX_SEGMENTS]; //asset-feature: normalized-time for each segment
+	uint16 m_nRef_by_Model;                                    //counter how many models are referencing this animation
+	uint16 m_nRef_at_Runtime;                                  //counter how many times we use this animation at run-time at the same time (needed for streaming)
+	uint16 m_nTouchedCounter;                                  //for statistics: did we use this asset at all?
+	uint8  m_bEmpty;                                           //Loaded from database
+	uint8  m_Segments;                                         //asset-feature: amount of segments
+	f32 m_SegmentsTime[CAF_MAX_SEGMENTS];                      //asset-feature: normalized-time for each segment
 
-	QuatT m_StartLocation;            //asset-feature: the original location of the animation in world-space
+	QuatT m_StartLocation;                                     //asset-feature: the original location of the animation in world-space
 
 private:
-	void CommitContent(GlobalAnimationHeaderCAFStreamContent & content);
+	void CommitContent(GlobalAnimationHeaderCAFStreamContent& content);
 	void FinishLoading(unsigned nError);
 
 };

@@ -6164,9 +6164,9 @@ void CPlayer::ExecuteFootStep(ICharacterInstance* pCharacter, const float frameT
 				
 				// Plug water hits directly into water sim
 				// todo: move out of foot-step for more continous ripple gen (currently skips during sprint, looks weird).
-				if (gEnv->pRenderer)
+				if (gEnv->p3DEngine)
 				{
-					gEnv->pRenderer->EF_AddWaterSimHit(GetEntity()->GetWorldPos(), 1.0f, relativeSpeed * 2);
+					gEnv->p3DEngine->AddWaterRipple(GetEntity()->GetWorldPos(), 1.0f, relativeSpeed * 2);
 				}
 
 
@@ -7732,7 +7732,7 @@ void CPlayer::OnSwimmingStrokeAnimEvent(ICharacterInstance* pCharacter)
 		if (depth <= 0.2f)
 		{
 			const float relativeSpeed = max(0.2f, GetLastRequestedVelocity().GetLength() * 0.5f);
-			gEnv->pRenderer->EF_AddWaterSimHit(GetEntity()->GetWorldPos(), 1.0f, relativeSpeed);
+			gEnv->p3DEngine->AddWaterRipple(GetEntity()->GetWorldPos(), 1.0f, relativeSpeed);
 		}
 	}
 }

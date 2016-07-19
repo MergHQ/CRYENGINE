@@ -14,14 +14,24 @@ class CHeightMapAOStage;
 class CScreenSpaceObscuranceStage;
 class CScreenSpaceReflectionsStage;
 class CScreenSpaceSSSStage;
+class CVolumetricFogStage;
+class CFogStage;
+class CVolumetricCloudsStage;
+class CWaterRipplesStage;
 class CMotionBlurStage;
 class CDepthOfFieldStage;
 class CToneMappingStage;
 class CSunShaftsStage;
 class CPostAAStage;
+class CClipVolumesStage;
+class CShadowMaskStage;
+class CComputeSkinningStage;
+class CGpuParticlesStage;
+class CTiledShadingStage;
+class CColorGradingStage;
+class CSceneCustomStage;
 class CRenderCamera;
 class CCamera;
-class CComputeSkinningStage;
 
 enum EStandardGraphicsPipelineStage
 {
@@ -29,11 +39,23 @@ enum EStandardGraphicsPipelineStage
 	eStage_ShadowMap,
 	eStage_SceneGBuffer,
 	eStage_SceneForward,
+	eStage_SceneCustom,
+	
+	// Regular stages supporting async compute
+	eStage_FIRST_ASYNC_COMPUTE,
+	eStage_ComputeSkinning = eStage_FIRST_ASYNC_COMPUTE,
+	eStage_GpuParticles,
+	eStage_TiledShading,
+	eStage_VolumetricClouds,
+	
 	// Regular stages
 	eStage_HeightMapAO,
 	eStage_ScreenSpaceObscurance,
 	eStage_ScreenSpaceReflections,
 	eStage_ScreenSpaceSSS,
+	eStage_VolumetricFog,
+	eStage_Fog,
+	eStage_WaterRipples,
 	eStage_MotionBlur,
 	eStage_DepthOfField,
 	eStage_AutoExposure,
@@ -41,7 +63,9 @@ enum EStandardGraphicsPipelineStage
 	eStage_ToneMapping,
 	eStage_Sunshafts,
 	eStage_PostAA,
-	eStage_ComputeSkinning,
+	eStage_ClipVolumes,
+	eStage_ShadowMask,
+	eStage_ColorGrading
 };
 
 class CStandardGraphicsPipeline : public CGraphicsPipeline
@@ -49,104 +73,124 @@ class CStandardGraphicsPipeline : public CGraphicsPipeline
 public:
 	struct SViewInfo
 	{
-		SViewInfo(const CRenderCamera& renderCam, const CCamera& ccamera)
-			: renderCamera(renderCam)
-			, camera(ccamera)
-			, m_CameraProjZeroMatrix(IDENTITY)
-			, m_CameraProjMatrix(IDENTITY)
-			, m_CameraProjNearestMatrix(IDENTITY)
-			, m_ProjMatrix(IDENTITY)
-			, m_InvCameraProjMatrix(IDENTITY)
-			, m_PrevCameraProjMatrix(IDENTITY)
-			, m_PrevCameraProjNearestMatrix(IDENTITY)
-		{}
+		enum eFlags
+		{
+			eFlags_ReverseDepth           = BIT(0),
+			eFlags_MirrorCull             = BIT(1),
+			eFlags_SubpixelShift          = BIT(2),
+			eFlags_MirrorCamera           = BIT(3),
+			eFlags_ObliqueFrustumClipping = BIT(4),
 
-		const CRenderCamera& renderCamera;
-		const CCamera&       camera;
+			eFlags_None                   = 0
+		};
+
+		const CRenderCamera* pRenderCamera;
+		const CCamera*       pCamera;
 		const Plane*         pFrustumPlanes;
 
-		Matrix44A            m_CameraProjZeroMatrix;
-		Matrix44A            m_CameraProjMatrix;
-		Matrix44A            m_CameraProjNearestMatrix;
-		Matrix44A            m_ProjMatrix;
-		Matrix44A            m_InvCameraProjMatrix;
-		Matrix44A            m_PrevCameraProjMatrix;
-		Matrix44A            m_PrevCameraProjNearestMatrix;
+		Matrix44A            cameraProjZeroMatrix;
+		Matrix44A            cameraProjMatrix;
+		Matrix44A            cameraProjNearestMatrix;
+		Matrix44A            projMatrix;
+		Matrix44A            viewMatrix;
+		Matrix44A            invCameraProjMatrix;
+		Matrix44A            prevCameraProjMatrix;
+		Matrix44A            prevCameraProjNearestMatrix;
 
-		D3D11_VIEWPORT       viewport;
+		SViewport            viewport;
 		Vec4                 downscaleFactor;
 
-		bool                 bReverseDepth : 1;
-		bool                 bMirrorCull   : 1;
+		eFlags               flags;
+
+		SViewInfo();
+		void SetCamera(const CRenderCamera& renderCam, const CCamera& ccamera, const Matrix44& previousFrameCameraMatrix, Vec2 subpixelShift, float drawNearestFov, float drawNearestFarPlane, Plane obliqueClippingPlane = Plane());
+		void SetLegacyCamera(CD3D9Renderer* pRenderer, const Matrix44& previousFrameCameraMatrix);
+
+		Matrix44 GetNearestProjection(float nearestFOV, float farPlane, Vec2 subpixelShift);
 	};
 
-	CStandardGraphicsPipeline()
-		: m_bInitialized(false)
-		, m_bUtilityPassesInitialized(false)
-		, m_numInvalidDrawcalls(0)
-	{}
-
 	virtual void Init() override;
-	virtual void ReleaseBuffers() override;
-	virtual void Prepare(CRenderView* pRenderView) override;
+	virtual void Prepare(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags) override;
 	virtual void Execute() override;
 
 	bool         CreatePipelineStates(DevicePipelineStatesArray* pStateArray,
 	                                  SGraphicsPipelineStateDescription stateDesc,
 	                                  CGraphicsPipelineStateLocalCache* pStateCache);
-	void UpdatePerViewConstantBuffer(const RECT* pCustomViewport = NULL);
-	void UpdatePerViewConstantBuffer(const SViewInfo& viewInfo, CConstantBufferPtr& pPerViewBuffer);
+	void         UpdatePerViewConstantBuffer(const RECT* pCustomViewport = NULL);
+	void         UpdatePerViewConstantBuffer(const SViewInfo* pViewInfo, int viewInfoCount, CConstantBufferPtr& pPerViewBuffer);
+	bool         FillCommonScenePassStates(const SGraphicsPipelineStateDescription& inputDesc, CDeviceGraphicsPSODesc& psoDesc);
 
 	// Partial pipeline functions, will be removed once the entire pipeline is implemented in Execute()
+	void                      RenderTiledShading();
 	void                      RenderScreenSpaceSSS(CTexture* pIrradianceTex);
 	void                      RenderPostAA();
 
 	void                      SwitchToLegacyPipeline();
 	void                      SwitchFromLegacyPipeline();
 
-	uint32                    IncrementNumInvalidDrawcalls()           { return ++m_numInvalidDrawcalls; }
+	uint32                    IncrementNumInvalidDrawcalls(int count)  { return CryInterlockedAdd((volatile int*)&m_numInvalidDrawcalls, count); }
 	uint32                    GetNumInvalidDrawcalls() const           { return m_numInvalidDrawcalls;   }
+
+	int                       GetViewInfo(SViewInfo viewInfo[2], const RECT* pCustomViewport = NULL);
 
 	CConstantBufferPtr        GetPerViewConstantBuffer()         const { return m_pPerViewConstantBuffer; }
 	CDeviceResourceSetPtr     GetDefaultMaterialResources()      const { return m_pDefaultMaterialResources; }
 	std::array<int, EFSS_MAX> GetDefaultMaterialSamplers()       const;
 	CDeviceResourceSetPtr     GetDefaultInstanceExtraResources() const { return m_pDefaultInstanceExtraResources; }
 
-	CRenderView*              GetCurrentRenderView() const             { return m_pCurrentRenderView; };
-	CShadowMapStage*          GetShadowStage() const                   { return m_pShadowMapStage; }
-	CComputeSkinningStage*    GetComputeSkinningStage() const          { return m_pComputeSkinningStage;  }
+	CRenderView*              GetCurrentRenderView()             const { return m_pCurrentRenderView; };
+	CShadowMapStage*          GetShadowStage()                   const { return m_pShadowMapStage; }
+	CComputeSkinningStage*    GetComputeSkinningStage()          const { return m_pComputeSkinningStage; }
+	CGpuParticlesStage*       GetGpuParticlesStage()             const { return m_pGpuParticlesStage; }
+	CClipVolumesStage*        GetClipVolumesStage()              const { return m_pClipVolumesStage; }
+	CShadowMaskStage*         GetShadowMaskStage()               const { return m_pShadowMaskStage; }
+	CVolumetricFogStage*      GetVolumetricFogStage()            const { return m_pVolumetricFogStage; }
+	CWaterRipplesStage*       GetWaterRipplesStage()             const { return m_pWaterRipplesStage; }
 
 public:
 	static void ApplyShaderQuality(CDeviceGraphicsPSODesc& psoDesc, const SShaderProfile& shaderProfile);
 
 private:
-	CShadowMapStage*              m_pShadowMapStage;
-	CSceneGBufferStage*           m_pSceneGBufferStage;
-	CSceneForwardStage*           m_pSceneForwardStage;
-	CAutoExposureStage*           m_pAutoExposureStage;
-	CBloomStage*                  m_pBloomStage;
-	CHeightMapAOStage*            m_pHeightMapAOStage;
-	CScreenSpaceObscuranceStage*  m_pScreenSpaceObscuranceStage;
-	CScreenSpaceReflectionsStage* m_pScreenSpaceReflectionsStage;
-	CScreenSpaceSSSStage*         m_pScreenSpaceSSSStage;
-	CMotionBlurStage*             m_pMotionBlurStage;
-	CDepthOfFieldStage*           m_pDepthOfFieldStage;
-	CSunShaftsStage*              m_pSunShaftsStage;
-	CToneMappingStage*            m_pToneMappingStage;
-	CPostAAStage*                 m_pPostAAStage;
-	CComputeSkinningStage*        m_pComputeSkinningStage;
+	CShadowMapStage*              m_pShadowMapStage = nullptr;
+	CSceneGBufferStage*           m_pSceneGBufferStage = nullptr;
+	CSceneForwardStage*           m_pSceneForwardStage = nullptr;
+	CAutoExposureStage*           m_pAutoExposureStage = nullptr;
+	CBloomStage*                  m_pBloomStage = nullptr;
+	CHeightMapAOStage*            m_pHeightMapAOStage = nullptr;
+	CScreenSpaceObscuranceStage*  m_pScreenSpaceObscuranceStage = nullptr;
+	CScreenSpaceReflectionsStage* m_pScreenSpaceReflectionsStage = nullptr;
+	CScreenSpaceSSSStage*         m_pScreenSpaceSSSStage = nullptr;
+	CVolumetricFogStage*          m_pVolumetricFogStage = nullptr;
+	CFogStage*                    m_pFogStage = nullptr;
+	CVolumetricCloudsStage*       m_pVolumetricCloudsStage = nullptr;
+	CWaterRipplesStage*           m_pWaterRipplesStage;
+	CMotionBlurStage*             m_pMotionBlurStage = nullptr;
+	CDepthOfFieldStage*           m_pDepthOfFieldStage = nullptr;
+	CSunShaftsStage*              m_pSunShaftsStage = nullptr;
+	CToneMappingStage*            m_pToneMappingStage = nullptr;
+	CPostAAStage*                 m_pPostAAStage = nullptr;
+	CComputeSkinningStage*        m_pComputeSkinningStage = nullptr;
+	CGpuParticlesStage*           m_pGpuParticlesStage = nullptr;
+	CClipVolumesStage*            m_pClipVolumesStage = nullptr;
+	CShadowMaskStage*             m_pShadowMaskStage = nullptr;
+	CTiledShadingStage*           m_pTiledShadingStage = nullptr;
+	CColorGradingStage*           m_pColorGradingStage = nullptr;
+	CSceneCustomStage*            m_pSceneCustomStage = nullptr;
 
-	CConstantBufferPtr            m_pPerViewConstantBuffer;
-	CDeviceResourceSetPtr         m_pDefaultMaterialResources;
-	CDeviceResourceSetPtr         m_pDefaultInstanceExtraResources;
+	CConstantBufferPtr            m_pPerViewConstantBuffer = nullptr;
+	CDeviceResourceSetPtr         m_pDefaultMaterialResources = nullptr;
+	CDeviceResourceSetPtr         m_pDefaultInstanceExtraResources = nullptr;
 
-	CRenderView*                  m_pCurrentRenderView;
+	CRenderView*                  m_pCurrentRenderView = nullptr;
+	EShaderRenderingFlags         m_renderingFlags = EShaderRenderingFlags(0);
 
-	bool                          m_bInitialized;
-	bool                          m_bUtilityPassesInitialized;
+	bool                          m_bInitialized = false;
+	bool                          m_bUtilityPassesInitialized = false;
 
 private:
 	void ExecuteHDRPostProcessing();
 
-	uint32 m_numInvalidDrawcalls;
+	int m_numInvalidDrawcalls = 0;
 };
+
+DEFINE_ENUM_FLAG_OPERATORS(CStandardGraphicsPipeline::SViewInfo::eFlags);

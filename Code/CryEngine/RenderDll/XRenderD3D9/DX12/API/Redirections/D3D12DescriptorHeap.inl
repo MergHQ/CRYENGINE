@@ -25,12 +25,20 @@ public:
 		D3D12_GPU_DELTA_ADDRESS deltaGPUAddresses = { 0ULL, 0ULL };
 		D3D12_DESCRIPTOR_HEAP_DESC DescriptorHeapDesc = *pDescriptorHeapDesc;
 
+		DX12_ASSERT(m_Handle < DX12_MULTIGPU_NUM_DESCRIPTORHEAPS, "Too many descriptor heaps allocated, adjust the vector-size!");
 		DX12_ASSERT(pDescriptorHeapDesc->NodeMask != 0, "0 is not allowed in the broadcaster!");
 		for (int i = 0; i < numTargets; ++i)
 		{
 			m_Targets[i] = nullptr;
+
 			if (DescriptorHeapDesc.NodeMask = (pDescriptorHeapDesc->NodeMask & (1 << i)))
 			{
+#if CRY_USE_DX12_MULTIADAPTER_SIMULATION
+				// Always create on the first GPU, if running simulation
+				if (CRenderer::CV_r_StereoEnableMgpu < 0)
+					DescriptorHeapDesc.NodeMask = 1;
+#endif
+
 				HRESULT ret = pDevice->CreateDescriptorHeap(
 				  &DescriptorHeapDesc, riid, (void**)&m_Targets[i]);
 				DX12_ASSERT(ret == S_OK, "Failed to create descriptor heap!");
@@ -173,8 +181,8 @@ public:
 static const Handable<BroadcastableD3D12DescriptorHeap<2>*, 2>::D3D12_CPU_DELTA_ADDRESS emptyCPUDeltaDH = { 0ULL, 0ULL };
 static const Handable<BroadcastableD3D12DescriptorHeap<2>*, 2>::D3D12_GPU_DELTA_ADDRESS emptyGPUDeltaDH = { 0ULL, 0ULL };
 UINT32 Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_HighHandle = 0UL;
-std::vector<BroadcastableD3D12DescriptorHeap<2>*> Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_AddressTableLookUp(DX12_MULTIGPU_NUM_DESCRIPTORHEAPS, 0ULL);
+std::vector<BroadcastableD3D12DescriptorHeap<2>*>                                       Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_AddressTableLookUp(DX12_MULTIGPU_NUM_DESCRIPTORHEAPS, 0ULL);
 std::vector<Handable<BroadcastableD3D12DescriptorHeap<2>*, 2>::D3D12_CPU_DELTA_ADDRESS> Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_DeltaCPUAddressTableLookUp(DX12_MULTIGPU_NUM_DESCRIPTORHEAPS, emptyCPUDeltaDH);
 std::vector<Handable<BroadcastableD3D12DescriptorHeap<2>*, 2>::D3D12_GPU_DELTA_ADDRESS> Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_DeltaGPUAddressTableLookUp(DX12_MULTIGPU_NUM_DESCRIPTORHEAPS, emptyGPUDeltaDH);
-ConcQueue<BoundMPMC, UINT32> Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_FreeHandles;
+ConcQueue<BoundMPMC, UINT32>                                                            Handable<BroadcastableD3D12DescriptorHeap<2>*, 2 >::m_FreeHandles;
 #endif

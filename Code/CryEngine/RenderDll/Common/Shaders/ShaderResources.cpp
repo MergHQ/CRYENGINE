@@ -731,7 +731,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		std::sort(Params.begin(), Params.end(), CompareItem());
 	}
 
-	std::vector<Vec4>* pConstants = &m_Constants;
+	auto* __restrict pConstants = &m_Constants;
 	SFXParam* pPR;
 	int nFirstConst = FIRST_REG_PM;
 	int nLastConst = -1;
@@ -765,8 +765,11 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 
 	if (m_Constants.size())
 	{
-		*ppBuf = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(m_Constants.size() * sizeof(Vec4), false);
-		(*ppBuf)->UpdateBuffer(&m_Constants[0], m_Constants.size() * sizeof(Vec4));
+		// NOTE: The pointers and the size is 16 byte aligned
+		size_t nSize = m_Constants.size() * sizeof(Vec4);
+
+		*ppBuf = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(nSize, false);
+		(*ppBuf)->UpdateBuffer(&m_Constants[0], nSize);
 
 #if !defined(_RELEASE) && CRY_PLATFORM_WINDOWS
 		if (*ppBuf)
@@ -783,8 +786,9 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 #endif
 	}
 
-	if (!m_pCompiledResourceSet)
+	if (!m_pCompiledResourceSet || (m_flags & eFlagRecreateResourceSet))
 	{
+		m_flags = m_flags & (~eFlagRecreateResourceSet);
 		m_pCompiledResourceSet = CCryDeviceWrapper::GetObjectFactory().CreateResourceSet();
 	}
 
@@ -827,7 +831,8 @@ void CShaderResources::CloneConstants(const IRenderShaderResources* pISrc)
 			pCB0Dst = pCB0Src;
 		}
 
-		m_pCompiledResourceSet = pSrc->m_pCompiledResourceSet ? CCryDeviceWrapper::GetObjectFactory().CloneResourceSet(pSrc->m_pCompiledResourceSet) : nullptr;
+		m_pCompiledResourceSet = pSrc->m_pCompiledResourceSet;
+		m_flags |= eFlagRecreateResourceSet;
 	}
 }
 

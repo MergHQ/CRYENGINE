@@ -23,12 +23,13 @@ public:
 	~CAsyncCommandQueue();
 
 	template<typename TaskType>
-	static bool IsSynchronous()
+	bool IsSynchronous()
 	{
-		return CRenderer::CV_r_D3D12SubmissionThread == 0;
+		return !(CRenderer::CV_r_D3D12SubmissionThread & BIT(m_pCmdListPool->GetD3D12QueueType()));
 	}
 
 	void Init(CCommandListPool* pCommandListPool);
+	void Clear();
 	void Flush(UINT64 lowerBoundFenceValue = ~0ULL);
 	void FlushNextPresent();
 	void SignalStop() { m_bStopRequested = true; }
@@ -37,12 +38,17 @@ public:
 	int    GetQueuedFramesCount() const   { return m_QueuedFramesCounter; }
 	UINT64 GetSignalledFenceValue() const { return m_SignalledFenceValue; }
 
-	void   Present(IDXGISwapChain3* pSwapChain, HRESULT* pPresentResult, UINT SyncInterval, UINT Flags, UINT bufferIndex);
+	void   Present(IDXGISwapChain3* pSwapChain, HRESULT* pPresentResult, UINT SyncInterval, UINT Flags, UINT DescFlags, UINT bufferIndex);
 	void   ResetCommandList(CCommandList* pCommandList);
 	void   ExecuteCommandLists(UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists);
 	void   Signal(ID3D12Fence* pFence, const UINT64 Value);
 	void   Wait(ID3D12Fence* pFence, const UINT64 Value);
 	void   Wait(ID3D12Fence** pFences, const UINT64 (&Values)[CMDQUEUE_NUM]);
+
+#ifdef CRY_USE_DX12_MULTIADAPTER
+	void   SyncAdapters(ID3D12Fence* pFence, const UINT64 Value);
+#endif
+
 private:
 
 	enum eTaskType
@@ -52,7 +58,8 @@ private:
 		eTT_PresentBackbuffer,
 		eTT_SignalFence,
 		eTT_WaitForFence,
-		eTT_WaitForFences
+		eTT_WaitForFences,
+		eTT_SyncAdapters
 	};
 
 	struct STaskArgs
@@ -100,12 +107,23 @@ private:
 		void          Process(const STaskArgs& args);
 	};
 
+#ifdef CRY_USE_DX12_MULTIADAPTER
+	struct SSyncAdapters
+	{
+		ID3D12Fence* pFence;
+		UINT64       FenceValue;
+
+		void         Process(const STaskArgs& args);
+	};
+#endif
+
 	struct SPresentBackbuffer
 	{
 		IDXGISwapChain3* pSwapChain;
 		HRESULT*         pPresentResult;
 		UINT             SyncInterval;
 		UINT             Flags;
+		UINT             DescFlags;
 
 		void             Process(const STaskArgs& args);
 	};
@@ -116,11 +134,16 @@ private:
 
 		union
 		{
+			SExecuteCommandlist ExecuteCommandList;
+			SResetCommandlist   ResetCommandList;
 			SSignalFence        SignalFence;
 			SWaitForFence       WaitForFence;
 			SWaitForFences      WaitForFences;
-			SExecuteCommandlist ExecuteCommandList;
-			SResetCommandlist   ResetCommandList;
+
+#ifdef CRY_USE_DX12_MULTIADAPTER
+			SSyncAdapters       SyncAdapters;
+#endif
+
 			SPresentBackbuffer  PresentBackbuffer;
 		} Data;
 
@@ -135,7 +158,7 @@ private:
 	template<typename TaskType>
 	void AddTask(SSubmissionTask& task)
 	{
-		if (CRenderer::CV_r_D3D12SubmissionThread)
+		if (CRenderer::CV_r_D3D12SubmissionThread & BIT(m_pCmdListPool->GetD3D12QueueType()))
 		{
 			m_TaskQueue.enqueue(task);
 			m_TaskEvent.Release();

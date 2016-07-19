@@ -146,25 +146,13 @@ struct pixout_shadow
 pixout_shadow Common_SG_PS(v2f_sh IN)
 {
 	pixout_shadow OUT = (pixout_shadow)0;
-
-#if !%_RT_HW_PCF_COMPARE
-	OUT.Color.rgba = IN.Depth; //FIX: depth output should be here for precision
-#else
-	#if %_RT_SAMPLE0
-		float fSlopeScale = CP_ShadowGen_FrustumInfo.z;
-		float fSlopeClamp = 0.001;
-		OUT.Depth = IN.Depth + min( fSlopeScale * max( abs(ddx(IN.Depth)), abs(ddy(IN.Depth)) ), fSlopeClamp);
-	#elif %_RT_CUBEMAP0
-		//output linear depth
-		OUT.Depth = IN.Depth;
-	#endif
-#endif
-
-
-#if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4
-	OUT.Depth2 = IN.Depth2.x / IN.Depth2.y;
-	OUT.Normal.xyz = normalize(half3(IN.Normal.xyz))*.5h+.5h;
-	OUT.Normal.w = 1;
+	
+#if %_RT_SAMPLE0 // Sun shadows with emulated slope bias
+	float fSlopeScale = CP_ShadowGen_FrustumInfo.z;
+	float fSlopeClamp = 0.001;
+	OUT.Depth = IN.Depth + min( fSlopeScale * max( abs(ddx(IN.Depth)), abs(ddy(IN.Depth)) ), fSlopeClamp);
+#elif %_RT_CUBEMAP0 // Local light shadows: linear depth
+	OUT.Depth = IN.Depth;
 #endif
 
 #if %_RT_ALPHATEST || %_RT_ALPHABLEND || %_RT_SAMPLE4
@@ -173,25 +161,29 @@ pixout_shadow Common_SG_PS(v2f_sh IN)
 	#else
 		half4 baseColor = GetTerrainTex(terrainBaseTex, IN.baseTC.xy);	
 	#endif
-
+#endif
+	
+#if %_RT_ALPHATEST || %_RT_ALPHABLEND
 	clip(baseColor.a - Get_SPI_AlphaTest(0).w);
+#endif
 
-	#if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4
-		// output RSM color component
-		#if !%TEMP_TERRAIN
-			half3 vFinalIndirectColor = MatDifColor.rgb; 
-			OUT.Color.rgb = baseColor.rgb * vFinalIndirectColor;
-		#else
-			OUT.Color.rgb = baseColor.rgb;
-		#endif
-
-		#if	%TEMP_VEGETATION
-			OUT.Color.a = CP_ShadowGen_VegetationAlphaClamp.x;
-		#else
-			OUT.Color.a = 1.f;
-		#endif
-
+#if %_RT_SAMPLE4
+	// output RSM color component
+	#if !%TEMP_TERRAIN
+		OUT.Color.rgb = baseColor.rgb * MatDifColor.rgb;
+	#else
+		OUT.Color.rgb = baseColor.rgb;
 	#endif
+
+	#if	%TEMP_VEGETATION
+		OUT.Color.a = CP_ShadowGen_VegetationAlphaClamp.x;
+	#else
+		OUT.Color.a = 1.f;
+	#endif
+		
+	OUT.Depth2 = IN.Depth2.x / IN.Depth2.y;
+	OUT.Normal.xyz = normalize(half3(IN.Normal.xyz))*.5h+.5h;
+	OUT.Normal.w = 1;
 #endif
 
 #if %_RT_DISSOLVE

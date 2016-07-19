@@ -417,7 +417,8 @@ void COctreeNode::CompileObjects()
 				    eRType != eERType_FogVolume &&
 				    eRType != eERType_Decal &&
 				    eRType != eERType_Road &&
-				    eRType != eERType_DistanceCloud)
+				    eRType != eERType_DistanceCloud &&
+				    eRType != eERType_CloudBlocker)
 				{
 					if (eRType == eERType_ParticleEmitter)
 						pObj->m_nInternalFlags |= IRenderNode::REQUIRES_FORWARD_RENDERING | IRenderNode::REQUIRES_NEAREST_CUBEMAP;
@@ -3164,7 +3165,7 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 	const float fNewMaxViewDist = pObj->GetMaxViewDist();
 	pObj->m_fWSMaxViewDist = fNewMaxViewDist;
 
-	if (eRType != eERType_Light && eRType != eERType_Cloud && eRType != eERType_FogVolume && eRType != eERType_Decal && eRType != eERType_Road && eRType != eERType_DistanceCloud)
+	if (eRType != eERType_Light && eRType != eERType_Cloud && eRType != eERType_FogVolume && eRType != eERType_Decal && eRType != eERType_Road && eRType != eERType_DistanceCloud && eRType != eERType_CloudBlocker)
 	{
 		if (eRType == eERType_ParticleEmitter)
 		{

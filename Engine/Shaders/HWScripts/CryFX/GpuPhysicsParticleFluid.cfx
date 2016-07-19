@@ -772,7 +772,7 @@ void BodiesInjectCS(uint3 DTid : SV_DispatchThreadID)
 	}
 }
 
-RWStructuredBuffer<SDefaultParticleData> externalParticleData : register(u5);
+RWStructuredBuffer<SDefaultParticleData> externalParticleData : register(u4);
 
 [numthreads(1024, 1, 1)] 
 void EvolveExternalParticlesCS(uint3 DTid : SV_DispatchThreadID)

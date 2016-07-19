@@ -7,10 +7,10 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureRenderSprites = false;
-
 namespace pfx2
 {
+
+extern EParticleDataType EPDT_Alpha, EPDT_Color, EPDT_Angle2D, EPDT_Tile;
 
 SERIALIZATION_DECLARE_ENUM(ESortMode,
                            None,
@@ -196,33 +196,14 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 	const SUpdateContext& context = pSpritesContext->m_context;
 	const SVisibilityParams& visibility = context.m_params.m_visibility;
 	const CParticleEmitter& emitter = *context.m_runtime.GetEmitter();
-
-	// size and distance culling
 	const CCamera& camera = *pSpritesContext->m_camInfo.pCamera;
-	const float camAng = tan_tpl(camera.GetFov() * 0.5f) * 2.0f;
-	const float angularRes = camera.GetViewSurfaceZ() / camAng;
-	const float nearDist = pSpritesContext->m_bounds.GetDistance(camera.GetPosition());
-	const float farDist = pSpritesContext->m_bounds.GetFarDistance(camera.GetPosition());
-	const float maxScreen = min(+visibility.m_maxScreenSize, GetCVars()->e_ParticlesMaxDrawScreen);
-
-	const float minCamDist = max(+visibility.m_minCameraDistance, camera.GetNearPlane());
-	const float maxCamDist = ZeroIsHuge(visibility.m_maxCameraDistance);
-	const float invMaxAng = 1.0f / (maxScreen * camAng * 0.5f);
-	const float invMinAng = angularRes * emitter.GetViewDistRatio() * visibility.m_viewDistanceMultiple / max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f);
-
-	const bool cullFrustum = camera.IsAABBVisible_FH(pSpritesContext->m_bounds) != CULL_INCLUSION;
-	const bool cullNear = nearDist < visibility.m_minCameraDistance * 2.0f
-	                      || maxScreen < 2 && nearDist < context.m_params.m_maxParticleSize * invMaxAng * 2.0f
-	                      || m_facingMode != EFacingMode::Screen && nearDist < camera.GetNearPlane() * 2.0f;
-	const bool cullFar = farDist > maxCamDist * 0.75f
-	                     || GetCVars()->e_ParticlesMinDrawPixels > 0.0f;
-	const bool culling = cullFrustum || cullNear || cullFar;
 
 	// frustum culling
 	Matrix34 invViewTM = pSpritesContext->m_camInfo.pCamera->GetViewMatrix();
 	float projectH;
 	float projectV;
 
+	const bool cullFrustum = camera.IsAABBVisible_FH(pSpritesContext->m_bounds) != CULL_INCLUSION;
 	if (cullFrustum)
 	{
 		Vec3 frustum = camera.GetEdgeP();
@@ -232,9 +213,28 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 		non_const(invViewTM.GetRow4(0)) *= frustum.y * invX;
 		non_const(invViewTM.GetRow4(2)) *= frustum.y * invZ;
 
-		projectH = sqrt(sqr(frustum.x) + sqr(frustum.y)) * invX;
-		projectV = sqrt(sqr(frustum.z) + sqr(frustum.y)) * invZ;
+		projectH = sqrt_tpl(sqr(frustum.x) + sqr(frustum.y)) * invX;
+		projectV = sqrt_tpl(sqr(frustum.z) + sqr(frustum.y)) * invZ;
 	}
+
+	// size and distance culling
+	const float camAng = camera.GetFov();
+	const float camNearClip = m_facingMode == EFacingMode::Screen ? 0.0f : camera.GetEdgeN().GetLength();
+	const float nearDist = pSpritesContext->m_bounds.GetDistance(camera.GetPosition());
+	const float farDist = pSpritesContext->m_bounds.GetFarDistance(camera.GetPosition());
+	const float maxScreen = min(+visibility.m_maxScreenSize, GetCVars()->e_ParticlesMaxDrawScreen);
+
+	const float minCamDist = max(+visibility.m_minCameraDistance, camNearClip);
+	const float maxCamDist = ZeroIsHuge(visibility.m_maxCameraDistance);
+	const float invMaxAng = 1.0f / (maxScreen * camAng * 0.5f);
+	const float invMinAng = pSpritesContext->m_context.m_pSystem->GetMaxAngularDensity(camera) * emitter.GetViewDistRatio() * visibility.m_viewDistanceMultiple;
+
+	const bool cullNear = nearDist < minCamDist * 2.0f
+	                      || maxScreen < 2 && nearDist < context.m_params.m_maxParticleSize * invMaxAng * 2.0f;
+	const bool cullFar = farDist > maxCamDist * 0.75f
+	                     || GetCVars()->e_ParticlesMinDrawPixels > 0.0f;
+
+	const bool culling = cullFrustum || cullNear || cullFar;
 
 	CParticleContainer& container = pSpritesContext->m_context.m_container;
 	TIOStream<uint8> states = container.GetTIOStream<uint8>(EPDT_State);
@@ -244,6 +244,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 	auto& particleIds = pSpritesContext->m_particleIds;
 	auto& spriteAlphas = pSpritesContext->m_spriteAlphas;
 
+	// camera culling
 	CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
 	{
 		const uint8 state = states.Load(particleId);
@@ -258,24 +259,17 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 		if (culling)
 		{
 			const Vec3 position = positions.Load(particleId);
-			Vec3 posCam;
+			Vec3 posCam = invViewTM * position;
 
 			if (cullFrustum)
 			{
-				// compute camera-relative position
-				posCam = invViewTM * position;
 				if (max(abs(posCam.x) - size * projectH, abs(posCam.z) - size * projectV) >= posCam.y)
 					continue;
-			}
-			else
-			{
-				// just compute depth
-				posCam.y = invViewTM.m10 * position.x + invViewTM.m11 * position.y + invViewTM.m12 * position.z + invViewTM.m13;
 			}
 
 			if (cullNear + cullFar)
 			{
-				const float invDist = 1.0f / posCam.y;
+				const float invDist = isqrt_fast_tpl(posCam.GetLengthSquared());
 				if (cullNear)
 				{
 					const float ratio = max(size * invMaxAng, minCamDist) * invDist;
@@ -688,6 +682,12 @@ void CFeatureRenderSprites::WriteColorSTs(const SSpritesContext& spritesContext,
 
 	const uint spritesPerChunk = vertexChunckSize / sizeof(SParticleColorST);
 	const uint numChunks = (numSprites / spritesPerChunk) + 1;
+
+	SParticleColorST colorSTDefault;
+	colorSTDefault.st.dcolor = 0;
+	colorSTDefault.st.z = uint8(params.m_shaderData.m_firstTile);
+	colorSTDefault.color.dcolor = ~0;
+
 	for (uint chunk = 0, spriteIdx = 0; chunk < numChunks; ++chunk)
 	{
 		const uint chunkSprites = min(spritesPerChunk, numSprites - chunk * spritesPerChunk);
@@ -698,11 +698,10 @@ void CFeatureRenderSprites::WriteColorSTs(const SSpritesContext& spritesContext,
 		{
 			const TParticleId particleId = particleIds[spriteIdx];
 
-			SParticleColorST colorST;
+			SParticleColorST colorST = colorSTDefault;
 
-			colorST.st.dcolor = 0;
 			if (hasTiling)
-				colorST.st.z = tiles.Load(particleId);
+				colorST.st.z += tiles.Load(particleId);
 
 			if (hasAnimation)
 			{
@@ -715,7 +714,6 @@ void CFeatureRenderSprites::WriteColorSTs(const SSpritesContext& spritesContext,
 				colorST.st.w = FloatToUFrac8Saturate(animPos - int(animPos));
 			}
 
-			colorST.color.dcolor = ~0;
 			if (hasColors)
 				colorST.color = colors.Load(particleId);
 			colorST.color.a = FloatToUFrac8Saturate(spriteAlphas[particleId]);

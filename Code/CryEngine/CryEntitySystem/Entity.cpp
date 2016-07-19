@@ -2491,6 +2491,14 @@ int CEntity::SetCloudMovementProperties(int nSlot, const SCloudMovementPropertie
 }
 
 //////////////////////////////////////////////////////////////////////////
+int CEntity::LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& properties)
+{
+	if (!GetRenderProxy())
+		CreateProxy(ENTITY_PROXY_RENDER);
+	return GetRenderProxy()->LoadCloudBlocker(nSlot, properties);
+}
+
+//////////////////////////////////////////////////////////////////////////
 int CEntity::LoadFogVolume(int nSlot, const SFogVolumeProperties& properties)
 {
 	if (!GetRenderProxy())

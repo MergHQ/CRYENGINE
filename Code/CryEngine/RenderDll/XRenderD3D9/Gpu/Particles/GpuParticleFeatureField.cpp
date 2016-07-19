@@ -28,13 +28,13 @@ void CFeatureFieldOpacity::InitParticles(const SUpdateContext& context)
 	params.opacity = m_opacityTable[0];
 }
 
-void CFeatureFieldOpacity::Update(const gpu_pfx2::SUpdateContext& context)
+void CFeatureFieldOpacity::Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	CParticleComponentRuntime* runtime = (CParticleComponentRuntime*) context.pRuntime;
 
 	m_opacityTable.UploadHostData();
 
-	runtime->SetUpdateSRV(eFeatureUpdateSrvSlot_opacityTable, m_opacityTable.GetSRV());
+	runtime->SetUpdateBuffer(eFeatureUpdateSrvSlot_opacityTable, &m_opacityTable.GetBuffer());
 	runtime->SetUpdateFlags(eFeatureUpdateFlags_Opacity);
 }
 
@@ -61,13 +61,13 @@ void CFeatureFieldSize::InitParticles(const SUpdateContext& context)
 	params.size = m_sizeTable[0];
 }
 
-void CFeatureFieldSize::Update(const gpu_pfx2::SUpdateContext& context)
+void CFeatureFieldSize::Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	CParticleComponentRuntime* pRuntime = (CParticleComponentRuntime*) context.pRuntime;
 
 	m_sizeTable.UploadHostData();
 
-	pRuntime->SetUpdateSRV(eFeatureUpdateSrvSlot_sizeTable, m_sizeTable.GetSRV());
+	pRuntime->SetUpdateBuffer(eFeatureUpdateSrvSlot_sizeTable, &m_sizeTable.GetBuffer());
 	pRuntime->SetUpdateFlags(eFeatureUpdateFlags_Size);
 }
 
@@ -92,7 +92,7 @@ void CFeatureFieldPixelSize::InitParticles(const SUpdateContext& context)
 
 }
 
-void CFeatureFieldPixelSize::Update(const gpu_pfx2::SUpdateContext& context)
+void CFeatureFieldPixelSize::Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
 	m_internalParameters->projectionPlane = Vec4(camera.GetViewdir(), -camera.GetPosition().dot(camera.GetViewdir()));
@@ -106,9 +106,10 @@ void CFeatureFieldPixelSize::Update(const gpu_pfx2::SUpdateContext& context)
 	m_internalParameters->minDrawPixels = fov / height * 0.5f;
 	m_internalParameters->affectOpacity = GetParameters().affectOpacity;
 	m_internalParameters.CopyToDevice();
-	m_internalParameters.Bind();
 
 	CParticleComponentRuntime* pRuntime = (CParticleComponentRuntime*)context.pRuntime;
+
+	pRuntime->SetUpdateConstantBuffer(eConstantBufferSlot_PixelSize, m_internalParameters.GetDeviceConstantBuffer());
 	pRuntime->SetUpdateFlags(EFeatureUpdateFlags_PixelSize);
 }
 

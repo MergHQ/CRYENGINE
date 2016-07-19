@@ -779,7 +779,7 @@ struct subref {
 
 // spinlocks
 /*ILINE void SpinLock(volatile int *pLock,int checkVal,int setVal) { 
-#ifdef _CPU_X86
+#if CRY_PLATFORM_X86
 	__asm {
 	mov edx, setVal
 	mov ecx, pLock
@@ -793,7 +793,7 @@ struct subref {
 }
 
 ILINE void AtomicAdd(volatile int *pVal, int iAdd) {
-#ifdef _CPU_X86
+#if CRY_PLATFORM_X86
 	__asm {
 		mov edx, pVal
 		mov eax, iAdd

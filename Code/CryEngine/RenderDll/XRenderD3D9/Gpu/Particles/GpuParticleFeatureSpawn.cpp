@@ -76,7 +76,7 @@ void CFeatureSpawnRate::SpawnParticles(const gpu_pfx2::SUpdateContext& context)
 		SSpawnData& spawn = pRuntime->GetSpawnData(i);
 		const float amount = spawn.amount;
 		const int spawnedBefore = int(spawn.spawned);
-		const float endTime = spawn.delay + HasDuration() ? spawn.duration : fHUGE;
+		const float endTime = spawn.delay + (HasDuration() ? spawn.duration : fHUGE);
 		const float spawning = spawn.timer >= spawn.delay && spawn.timer < endTime ? 1.0f : 0.0f;
 		const float rate = (m_mode == ESpawnRateMode::ParticlesPerSecond ? amount : __fres(amount)) * spawning;
 		spawn.spawned += rate * context.deltaTime;

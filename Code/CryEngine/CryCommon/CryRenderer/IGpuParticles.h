@@ -192,6 +192,10 @@ enum EVortexDirection
     int gridSizeY;              \
     int gridSizeZ;              \
     int numSpawnParticles; )    \
+  X(Collision,                  \
+    float offset;               \
+    float radius;               \
+    float restitution; )        \
   X(VelocityCone,               \
     float angle;                \
     float velocity; )           \

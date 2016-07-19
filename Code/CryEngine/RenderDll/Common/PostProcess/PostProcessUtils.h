@@ -39,7 +39,7 @@ struct SPostEffectsUtils
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// Begins render pass utility - for post process stuff only pass 0 assumed to be used
-	static bool ShBeginPass(CShader* pShader, const CCryNameTSCRC& TechName, uint32 nFlags = 0, const uint32 pass = 0);
+	static bool ShBeginPass(CShader* pShader, const CCryNameTSCRC& TechName, uint32 nFlags = 0);
 
 	// Ends render pass utility
 	static void ShEndPass();
@@ -82,6 +82,8 @@ struct SPostEffectsUtils
 
 	// Clear active render target region
 	static void ClearScreen(float r, float g, float b, float a);
+
+	static void GetFrustumCorners(Vec3& vRT, Vec3& vLT, Vec3& vLB, Vec3& vRB, const CRenderCamera& rc, bool bMirrorCull);
 
 	static void UpdateFrustumCorners();
 	static void UpdateOverscanBorderAspectRatio();

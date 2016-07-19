@@ -62,6 +62,8 @@
 #include "GeomCacheManager.h"
 #include "ClipVolumeManager.h"
 #include <CryNetwork/IRemoteCommand.h>
+#include "CloudBlockerRenderNode.h"
+#include "WaterRippleManager.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "SVO/SceneTreeManager.h"
@@ -92,7 +94,6 @@ CVars* Cry3DEngineBase::m_pCVars = 0;
 ICryPak* Cry3DEngineBase::m_pCryPak = 0;
 IParticleManager* Cry3DEngineBase::m_pPartManager = 0;
 std::shared_ptr<pfx2::IParticleSystem> Cry3DEngineBase::m_pParticleSystem;
-extern volatile bool gParticleSystem; // HACK : check ParticleSystem.cpp for the reasoning behind this
 IOpticsManager* Cry3DEngineBase::m_pOpticsManager = 0;
 CDecalManager* Cry3DEngineBase::m_pDecalManager = 0;
 CSkyLightManager* Cry3DEngineBase::m_pSkyLightManager = 0;
@@ -211,12 +212,12 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_pDecalManager = 0;    //new CDecalManager   (m_pSystem, this);
 	m_pCloudsManager = new CCloudsManager;
 	m_pPartManager = 0;
-	gParticleSystem = true;
 	m_pOpticsManager = 0;
 	m_pVisAreaManager = 0;
 	m_pClipVolumeManager = new CClipVolumeManager();
 	m_pSkyLightManager = CryAlignedNew<CSkyLightManager>();
 	m_pWaterWaveManager = 0;
+	m_pWaterRippleManager.reset(new CWaterRippleManager());
 
 	// create REs
 	m_pRESky = 0;
@@ -523,6 +524,9 @@ bool C3DEngine::Init()
 	m_pOpticsManager = new COpticsManager;
 	m_pSystem->SetIOpticsManager(m_pOpticsManager);
 
+	CRY_ASSERT(m_pWaterRippleManager);
+	m_pWaterRippleManager->Initialize();
+
 	for (int i = 0; i < eERType_TypesNum; i++)
 	{
 		m_bRenderTypeEnabled[i] = true;
@@ -599,6 +603,7 @@ void C3DEngine::OnFrameStart()
 		m_pPartManager->OnFrameStart();
 	if (m_pParticleSystem)
 		m_pParticleSystem->OnFrameStart();
+
 	m_nRenderWorldUSecs = 0;
 	m_pDeferredPhysicsEventManager->Update();
 
@@ -610,6 +615,11 @@ void C3DEngine::OnFrameStart()
 #endif
 
 	UpdateWindAreas();
+
+	if(m_pWaterRippleManager)
+	{
+		m_pWaterRippleManager->OnFrameStart();
+	}
 }
 
 float g_oceanLevel, g_oceanStep;
@@ -896,6 +906,10 @@ void C3DEngine::ShutDown()
 		m_pOpticsManager = 0;
 		m_pSystem->SetIOpticsManager(m_pOpticsManager);
 	}
+
+	CRY_ASSERT(m_pWaterRippleManager);
+	m_pWaterRippleManager->Finalize();
+	m_pWaterRippleManager.reset();
 
 	CryAlignedDelete(m_pObjManager);
 	m_pObjManager = 0;
@@ -1218,6 +1232,10 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 		if (GetRenderer())
 		{
 			GetRenderer()->SetCamera(gEnv->pSystem->GetViewCamera());
+
+			if (auto pRenderView = passInfo.GetIRenderView())
+				pRenderView->SetCameras(&gEnv->pSystem->GetViewCamera(), 1);
+
 		}
 	}
 	else
@@ -1227,6 +1245,10 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 		if (GetRenderer())
 		{
 			GetRenderer()->SetCamera(newCam);
+
+			if (auto pRenderView = passInfo.GetIRenderView())
+				pRenderView->SetCameras(&newCam, 1);
+
 		}
 	}
 
@@ -1271,7 +1293,6 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 			PrintMessage("C3DEngine::RegisterEntity__GetObjManager()->UpdateRenderNodeStreamingPriority %s", pRenderNode->GetName());
 	}
 	m_deferredRenderProxyStreamingPriorityUpdates.resize(0);
-
 }
 
 void C3DEngine::PrepareOcclusion(const CCamera& rCamera)
@@ -2293,6 +2314,11 @@ void C3DEngine::GetMemoryUsage(class ICrySizer* pSizer) const
 		SIZER_COMPONENT_NAME(pSizer, "LayersBaseTextureData");
 		pSizer->AddObject(m_arrBaseTextureData);
 	}
+
+	{
+		SIZER_COMPONENT_NAME(pSizer, "WaterRipples");
+		pSizer->AddObject(m_pWaterRippleManager.get());
+	}
 }
 
 void C3DEngine::GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB)
@@ -2345,6 +2371,14 @@ void C3DEngine::GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB)
 		{
 			poTerrainNode->GetResourceMemoryUsage(pSizer, cstAABB);
 		}
+	}
+}
+
+void C3DEngine::AddWaterRipple(const Vec3& vPos, float scale, float strength)
+{
+	if(m_pWaterRippleManager)
+	{
+		m_pWaterRippleManager->AddWaterRipple(vPos, scale, strength);
 	}
 }
 
@@ -2921,6 +2955,12 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 			return pRenderNode;
 		}
 
+	case eERType_CloudBlocker:
+		{
+			IRenderNode* pRenderNode = new CCloudBlockerRenderNode();
+			return pRenderNode;
+		}
+
 	case eERType_MergedMesh:
 		{
 			IRenderNode* pRenderNode = new CMergedMeshRenderNode();
@@ -3135,20 +3175,27 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 	// 2 Step: Initialize the rest of the field by global wind value
 	const int nSize = rWindGrid.m_nWidth * rWindGrid.m_nHeight;
 	Vec2 vWindCur = Vec2(vGlobalWind.x, vGlobalWind.y) * GetCVars()->e_WindBendingStrength;
+
+	CryHalf2* pData = &rWindGrid.m_pData[0];
+	int* pFrames = &m_pWindAreaFrames[0];
+	Vec2* pField = &m_pWindField[0];
+
 	for (x = 0; x < nSize; x++)
 	{
-		if (m_pWindAreaFrames[x] == nFrame)
+		if (pFrames[x] == nFrame)
 			continue;
-		m_pWindAreaFrames[x] = nFrame;
+		pFrames[x] = nFrame;
 
 		// Interpolate
-		Vec2 vWindInt = m_pWindField[x];
-		vWindInt += (vWindCur - vWindInt) * fInterp;
-		m_pWindField[x] = vWindInt;
+		{
+			Vec2 vWindInt = pField[x];
+			vWindInt += (vWindCur - vWindInt) * fInterp;
+			pField[x] = vWindInt;
 
-		Vec2 vBend = vWindInt * fBEND_RESPONSE;
-		vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
-		rWindGrid.m_pData[x] = CryHalf2(vBend.x, vBend.y);
+			Vec2 vBend = vWindInt * fBEND_RESPONSE;
+			vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
+			pData[x] = CryHalf2(vBend.x, vBend.y);
+		}
 	}
 }
 
@@ -3205,11 +3252,6 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 	assert(nYGrid >= 0 && nYGrid + (nY2 - nY1) <= rWindGrid.m_nHeight);
 	for (y = nY1; y < nY2; y++)
 	{
-		/*if (nYGrid >= rWindGrid.m_nHeight)
-		   {
-		   g_nWindError++;
-		   continue;
-		   }*/
 		// Setup scanline gradients
 		float fLerpY = ((float)y - areaBox.min.y) * fInvAreaY;      // 0..1
 		Vec3 windStart, windEnd;
@@ -3220,28 +3262,28 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 		int* pFrames = &m_pWindAreaFrames[nYGrid * rWindGrid.m_nWidth];
 		Vec2* pField = &m_pWindField[nYGrid * rWindGrid.m_nWidth];
 		int nX = nXGrid;
+
+		windStart *= fAreaStrength;
+		windDelta *= fAreaStrength;
+
+		Vec2 vWindCur = Vec2(windStart.x, windStart.y) + Vec2(vGlobalWind.x, vGlobalWind.y);
 		for (x = nX1; x < nX2; x++)
 		{
-			/*if (nX >= rWindGrid.m_nWidth)
-			   {
-			   g_nWindError++;
-			   continue;
-			   }*/
-			Vec2 vWindCur = Vec2(windStart.x, windStart.y) * fAreaStrength + Vec2(vGlobalWind.x, vGlobalWind.y);
-
 			// Interpolate
-			Vec2 vWindInt = pField[nX];
-			vWindInt += (vWindCur - vWindInt) * fInterp;
-			pField[nX] = vWindInt;
+			{
+				Vec2 vWindInt = pField[nX];
+				vWindInt += (vWindCur - vWindInt) * fInterp;
+				pField[nX] = vWindInt;
 
-			Vec2 vBend = vWindInt * fBEND_RESPONSE;
-			vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
-			pData[nX] = CryHalf2(vBend.x, vBend.y);
+				Vec2 vBend = vWindInt * fBEND_RESPONSE;
+				vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
+				pData[nX] = CryHalf2(vBend.x, vBend.y);
+			}
+
+			vWindCur += Vec2(windDelta.x, windDelta.y);
 
 			pFrames[nX] = nFrame;
 			nX++;
-
-			windStart += windDelta;
 		}
 		nYGrid++;
 	}
@@ -3259,18 +3301,18 @@ void C3DEngine::StartWindGridJob(const Vec3& vPos)
 	SWindGrid& rWindGrid = m_WindGrid[m_nCurWind];
 	if (!rWindGrid.m_pData)
 	{
+		rWindGrid.m_fCellSize = 1.0f;
 		rWindGrid.m_nWidth = 256;
 		rWindGrid.m_nHeight = 256;
-		rWindGrid.m_pData = new CryHalf2[rWindGrid.m_nWidth * rWindGrid.m_nHeight];
+		rWindGrid.m_pData = reinterpret_cast<CryHalf2*>(CryModuleMemalign(rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(CryHalf2), CRY_PLATFORM_ALIGNMENT));
 		memset(rWindGrid.m_pData, 0, rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(CryHalf2));
-		rWindGrid.m_fCellSize = 1.0f;
 
 		if (!m_pWindField)
 		{
-			m_pWindField = new Vec2[rWindGrid.m_nWidth * rWindGrid.m_nHeight];
+			m_pWindField = reinterpret_cast<Vec2*>(CryModuleMemalign(rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(Vec2), CRY_PLATFORM_ALIGNMENT));
 			memset(m_pWindField, 0, rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(Vec2));
 
-			m_pWindAreaFrames = new int[rWindGrid.m_nWidth * rWindGrid.m_nHeight];
+			m_pWindAreaFrames = reinterpret_cast<int*>(CryModuleMemalign(rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(int), CRY_PLATFORM_ALIGNMENT));
 			memset(m_pWindAreaFrames, 0, rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(int));
 		}
 	}

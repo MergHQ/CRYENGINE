@@ -6,57 +6,35 @@ struct CGpuBuffer;
 
 namespace compute_skinning
 {
-struct SResourceHandle
+
+#pragma pack(push)
+#pragma pack(1)
+
+struct SSkinning
 {
-	SResourceHandle() : key(0), refcount(0), buffer(NULL), type(eType_Invalid) {};
-	uint64      key;
-	EType       type;
-	uint32      refcount;
-	CGpuBuffer* buffer;
+	// packed as 8:24
+	uint weightIndex;
 };
 
-class CStorage
+struct SSkinningMap
 {
-public:
-	CStorage();
-	virtual ~CStorage();
-
-	virtual SResourceHandle CreateResource(const void* tag, const char* name, const EType gdType, const uint32 numElements, const void* data);
-	virtual CGpuBuffer*     GetResource(const SResourceHandle& handle);
-	virtual void            ReleaseResource(const EType gdType, SResourceHandle& handle);
-
-	// debug
-#ifndef _RELEASE
-	virtual void DebugDraw();
-#endif
-
-private:
-
-	typedef std::unordered_map<uint64, SResourceHandle> ResourceMapType;
-
-	// resources streams
-	ResourceMapType m_vertexInMap;
-	ResourceMapType m_indicesMap;
-	ResourceMapType m_triangleAdjacencyMap;
-	ResourceMapType m_morphsDeltasMap;
-	ResourceMapType m_morphsBitfieldMap;
-	ResourceMapType m_skinningMap;
-	ResourceMapType m_skinningMapMap;
-	ResourceMapType m_vertexOutMap;
-	ResourceMapType m_tangentsNTMap;
-
-	uint32          m_cacheCapacity;
-	uint32          m_cacheSize;
-
-	// resource management
-	void            RemoveResource(SResourceHandle& resource, ResourceMapType& container);
-	void            Release(ResourceMapType& container);
-	SResourceHandle GetOrCreateResource(ResourceMapType& container, const void* tag, const char* name, const EType type, const uint32 numElements, const uint32 elementSize, const void* data);
-	uint32          GetSizeBytes(ResourceMapType& container, const uint32 elementSize);
-	CGpuBuffer*     GetResourceType(const SResourceHandle& handle, const ResourceMapType& container);
-
-	// hasher
-	uint64 GetHash(const char* name, const void* tag, const uint32 numElements, const uint32 elementSize);
-	void   HashCombine(uint64& seed, const uint64 val);
+	uint offset;
+	uint count;
 };
+
+#pragma pack(pop)
+
+struct IPerMeshDataSupply
+{
+	virtual void PushMorphs(const int numMorphs, const int numMorphsBitField, const Vec4* morphsDeltas, const uint64* morphsBitField) = 0;
+	virtual void PushBindPoseBuffers(const int numVertices, const int numIndices, const int numAdjTriangles, const compute_skinning::SSkinVertexIn* vertices, const vtx_idx* indices, const uint32* adjTriangles) = 0;
+	virtual void PushWeights(const int numWeights, const int numWeightsMap, const compute_skinning::SSkinning* weights, const compute_skinning::SSkinningMap* weightsMap) = 0;
+};
+
+struct IComputeSkinningStorage
+{
+	virtual std::shared_ptr<compute_skinning::IPerMeshDataSupply> GetOrCreateComputeSkinningPerMeshData(const CRenderMesh* pMesh) = 0;
+	virtual CGpuBuffer*                                           GetOutputVertices(const void* pCustomTag) = 0;
+};
+
 }

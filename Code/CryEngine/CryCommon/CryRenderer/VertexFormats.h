@@ -22,7 +22,7 @@
 
 enum EVertexFormat
 {
-	eVF_Unknown = 0,
+	eVF_Unknown          = 0,
 
 	// Base stream
 	eVF_P3F_C4B_T2F      = 1,
@@ -36,24 +36,25 @@ enum EVertexFormat
 	eVF_P3F_T2F_T3F      = 8,    //!< Miscellaneus.
 
 	// Additional streams
-	eVF_T2F         = 9,         //!< Light maps TC (8 bytes).
-	eVF_W4B_I4B     = 10,        //!< Skinned weights/indices stream.
-	eVF_C4B_C4B     = 11,        //!< SH coefficients.
-	eVF_P3F_P3F_I4B = 12,        //!< Shape deformation stream.
-	eVF_P3F         = 13,        //!< Velocity stream.
-
-	eVF_C4B_T2S     = 14,        //!< General (Position is merged with Tangent stream)
+	eVF_T2F              = 9,    //!< Light maps TC (8 bytes).
+	eVF_W4B_I4B          = 10,   //!< Skinned weights/indices stream.
+	eVF_C4B_C4B          = 11,   //!< SH coefficients.
+	eVF_P3F_P3F_I4B      = 12,   //!< Shape deformation stream.
+	eVF_P3F              = 13,   //!< Velocity stream.
+					     
+	eVF_C4B_T2S          = 14,   //!< General (Position is merged with Tangent stream)
 
 	//! Lens effects simulation
-	eVF_P2F_T4F_C4F     = 15,    //!< primary
-	eVF_P2F_T4F_T4F_C4F = 16,
+	eVF_P2F_T4F_C4F      = 15,   //!< primary
+	eVF_P2F_T4F_T4F_C4F  = 16,
+						 
+	eVF_P2S_N4B_C4B_T1F  = 17,
+	eVF_P3F_C4B_T2S      = 18,
+						 
+	eVF_PI               = 19,   // Int indexes.
 
-	eVF_P2S_N4B_C4B_T1F = 17,
-	eVF_P3F_C4B_T2S     = 18,
-
-	eVF_PI              = 19, // Int indexes.
-
-	eVF_Max,
+	eVF_PreAllocated,            // numbers larger than this are dynamically allocated input layouts
+	eVF_MaxRenderMesh = eVF_PreAllocated
 };
 
 typedef Vec4_tpl<int16> Vec4sf;   //!< Used for tangents only.

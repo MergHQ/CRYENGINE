@@ -220,10 +220,14 @@ struct SOnDemandD3DVertexDeclaration
 	TArray<D3D11_INPUT_ELEMENT_DESC> m_Declaration;
 };
 
+typedef TArray<SOnDemandD3DVertexDeclaration> SOnDemandD3DVertexDeclarations;
+
 struct SOnDemandD3DVertexDeclarationCache
 {
 	ID3D11InputLayout* m_pDeclaration;
 };
+
+typedef TArray<SOnDemandD3DVertexDeclarationCache> SOnDemandD3DVertexDeclarationCaches;
 
 struct SVertexDeclaration
 {
@@ -770,12 +774,13 @@ struct SRenderPipeline
 	CLightVolumeBuffer m_lightVolumeBuffer;
 
 	// particle data for writing directly to VMEM
-	ParticleBufferSet                  m_particleBuffer;
+	CParticleBufferSet                  m_particleBuffer;
 
 	int                                m_nStreamOffset[3]; // deprecated!
-	SOnDemandD3DVertexDeclaration      m_D3DVertexDeclaration[eVF_Max];
-	SOnDemandD3DVertexDeclarationCache m_D3DVertexDeclarationCache[1 << VSF_NUM][eVF_Max][2]; // [StreamMask][VertexFmt][Morph]
-	SOnDemandD3DStreamProperties       m_D3DStreamProperties[VSF_NUM];
+
+	SOnDemandD3DVertexDeclarations      m_D3DVertexDeclaration;
+	SOnDemandD3DVertexDeclarationCaches m_D3DVertexDeclarationCache[1 << VSF_NUM][2]; // [StreamMask][Morph][VertexFmt]
+	SOnDemandD3DStreamProperties        m_D3DStreamProperties[VSF_NUM];
 
 	TArray<SVertexDeclaration*>        m_CustomVD;
 
@@ -861,6 +866,15 @@ public:
 			return m_pShader->mfGetStartTechnique(m_nShaderTechnique);
 		return NULL;
 	}
+
+	void InitWaveTables();
+
+	// Arguments
+	//   vertexformat - 0..VERTEX_FORMAT_NUMS-1
+	void OnDemandVertexDeclaration(SOnDemandD3DVertexDeclaration& out, const int nStreamMask, const int vertexformat, const bool bMorph, const bool bInstanced);
+	void InitD3DVertexDeclarations();
+	EVertexFormat AddD3DVertexDeclaration(size_t numDescs, const D3D11_INPUT_ELEMENT_DESC* inputLayout);
+	EVertexFormat MaxD3DVertexDeclaration() { return EVertexFormat(m_D3DVertexDeclaration.size()); }
 };
 
 extern CryCriticalSection m_sREResLock;
@@ -886,11 +900,15 @@ struct SCompareRendItem
 {
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
-		/// Nearest objects should be rendered first
-		int nNearA = (a.ObjSort & FOB_HAS_PREVMATRIX);
-		int nNearB = (b.ObjSort & FOB_HAS_PREVMATRIX);
-		if (nNearA != nNearB)               // Sort by nearest flag
-			return nNearA > nNearB;
+		int nMotionVectorsA = (a.ObjSort & FOB_HAS_PREVMATRIX);
+		int nMotionVectorsB = (b.ObjSort & FOB_HAS_PREVMATRIX);
+		if (nMotionVectorsA != nMotionVectorsB)
+			return nMotionVectorsA > nMotionVectorsB;
+
+		int nAlphaTestA = (a.ObjSort & FOB_ALPHATEST);
+		int nAlphaTestB = (b.ObjSort & FOB_ALPHATEST);
+		if (nAlphaTestA != nAlphaTestB)
+			return nAlphaTestA < nAlphaTestB;
 
 		if (a.SortVal != b.SortVal)         // Sort by shaders
 			return a.SortVal < b.SortVal;
@@ -909,11 +927,15 @@ struct SCompareRendItemZPass
 	{
 		const int layerSize = 50;  // Note: ObjSort contains round(entityDist * 2) for meshes
 
-		// Sort by nearest flag
-		int nNearA = (a.ObjSort & FOB_HAS_PREVMATRIX);
-		int nNearB = (b.ObjSort & FOB_HAS_PREVMATRIX);
-		if (nNearA != nNearB)
-			return nNearA > nNearB;
+		int nMotionVectorsA = (a.ObjSort & FOB_HAS_PREVMATRIX);
+		int nMotionVectorsB = (b.ObjSort & FOB_HAS_PREVMATRIX);
+		if (nMotionVectorsA != nMotionVectorsB)
+			return nMotionVectorsA > nMotionVectorsB;
+
+		int nAlphaTestA = (a.ObjSort & FOB_ALPHATEST);
+		int nAlphaTestB = (b.ObjSort & FOB_ALPHATEST);
+		if (nAlphaTestA != nAlphaTestB)
+			return nAlphaTestA < nAlphaTestB;
 
 		// Sort by depth/distance layers
 		int depthLayerA = (a.ObjSort & 0xFFFF) / layerSize;

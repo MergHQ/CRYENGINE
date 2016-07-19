@@ -11,12 +11,12 @@
 
 	#include <CryString/CryPath.h>
 
-	#include "GImageInfoXRender.h"
-	#include "GTextureXRender.h"
 	#include "GAllocatorCryMem.h"
 	#include "SharedStates.h"
 	#include "GFxVideoWrapper.h"
 	#include "GFxVideoSoundCrySound.h"
+	#include "GImageInfo_Impl.h"
+	#include "GTexture_Impl.h"
 
 	#if defined(GFX_AMP_SERVER)
 		#include "GFxAmpServer.h"
@@ -899,7 +899,7 @@ private:
 class CCaptureDrawStats
 {
 public:
-	CCaptureDrawStats(GRendererXRender* pRenderer, SFlashProfilerData* pProfilerData, bool capture)
+	CCaptureDrawStats(IScaleformRecording* pRenderer, SFlashProfilerData* pProfilerData, bool capture)
 		: m_pRenderer(pRenderer)
 		, m_pProfilerData(pProfilerData)
 		, m_drawCallsPrev(0)
@@ -907,9 +907,9 @@ public:
 		, m_capture(capture)
 	{
 		assert(m_pRenderer);
-		IF (m_capture, 0)
+		IF(m_capture, 0)
 		{
-			GRendererXRender::Stats stats;
+			GRenderer::Stats stats;
 			m_pRenderer->GetRenderStats(&stats, false);
 			m_drawCallsPrev = stats.Primitives;
 			m_triCountPrev = stats.Triangles;
@@ -918,19 +918,19 @@ public:
 
 	~CCaptureDrawStats()
 	{
-		IF (m_capture, 0)
+		IF(m_capture, 0)
 		{
-			GRendererXRender::Stats stats;
+			GRenderer::Stats stats;
 			m_pRenderer->GetRenderStats(&stats, false);
 			threadID idx = 0;
-			m_pRenderer->GetXRender()->EF_Query(EFQ_RenderThreadList, idx);
+			gEnv->pRenderer->EF_Query(EFQ_RenderThreadList, idx);
 			m_pProfilerData->AddDrawCalls(stats.Primitives - m_drawCallsPrev, idx);
 			m_pProfilerData->AddTriCount(stats.Triangles - m_triCountPrev, idx);
 		}
 	}
 
 private:
-	GRendererXRender*   m_pRenderer;
+	IScaleformRecording* m_pRenderer;
 	SFlashProfilerData* m_pProfilerData;
 	uint32              m_drawCallsPrev;
 	uint32              m_triCountPrev;
@@ -944,20 +944,20 @@ private:
 		#define CAPTURE_DRAW_STATS_END \
 		  }
 
-		#define FREEZE_VAROBJ(defRet)                                      \
-		  IF (ms_sys_flash_info && SFlashProfilerData::DisplayFrozen(), 0) \
-		    return defRet;
+		#define FREEZE_VAROBJ(defRet)                                     \
+		  IF(ms_sys_flash_info && SFlashProfilerData::DisplayFrozen(), 0) \
+		  return defRet;
 
-		#define FLASH_PROFILE_FUNC_PRECOND(defRet, funcID)                                                                       \
-		  IF ((funcID != eFncDisplay) && !IsFlashEnabled() || ms_sys_flash_info && m_pProfilerData &&                            \
-		      (m_pProfilerData->PreventFunctionExectution() || funcID != eFncDisplay && SFlashProfilerData::DisplayFrozen()), 0) \
-		    return defRet;
+		#define FLASH_PROFILE_FUNC_PRECOND(defRet, funcID)                                                                      \
+		  IF((funcID != eFncDisplay) && !IsFlashEnabled() || ms_sys_flash_info && m_pProfilerData &&                            \
+		     (m_pProfilerData->PreventFunctionExectution() || funcID != eFncDisplay && SFlashProfilerData::DisplayFrozen()), 0) \
+		  return defRet;
 
 		#define FLASH_PROFILE_FUNC_BUILDPROFILER_BEGIN(numArgs)                \
 		  CFlashFunctionProfiler * pProfiler(0);                               \
 		  char memFlashProfiler[sizeof(CFlashFunctionProfiler)];               \
 		  char memFuncArgs[(numArgs > 0 ? numArgs : 1) * sizeof(SPODVariant)]; \
-		  IF (ms_sys_flash_info, 0)                                            \
+		  IF(ms_sys_flash_info, 0)                                             \
 		  {                                                                    \
 		    int numArgsInit(0);                                                \
 		    SPODVariant* pArg((SPODVariant*)memFuncArgs);
@@ -1088,8 +1088,8 @@ public:
 		while (true)
 		{
 			const uint32 curAccum = ms_deltaTicksAccum;
-			IF (curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), (LONG) (curAccum + delta), (LONG) curAccum), 1)
-				break;
+			IF(curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), (LONG) (curAccum + delta), (LONG) curAccum), 1)
+			break;
 		}
 		#else
 		ms_deltaTicksAccum += delta;
@@ -1107,8 +1107,8 @@ public:
 		while (true)
 		{
 			const uint32 curAccum = ms_deltaTicksAccum;
-			IF (curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), 0, (LONG) curAccum), 1)
-				break;
+			IF(curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), 0, (LONG) curAccum), 1)
+			break;
 		}
 		#else
 		ms_deltaTicksAccum = 0;
@@ -1190,8 +1190,8 @@ private:
 
 static CryCriticalSection s_displaySync;
 
-	#define SYNC_DISPLAY_BEGIN        \
-	  IF (s_displaySync.TryLock(), 1) \
+	#define SYNC_DISPLAY_BEGIN       \
+	  IF(s_displaySync.TryLock(), 1) \
 	  {
 
 	#define SYNC_DISPLAY_END  \
@@ -2547,12 +2547,12 @@ void CFlashPlayer::Release()
 
 	LONG refCount(CryInterlockedDecrement(&m_refCount));
 	assert(refCount >= 0);
-	IF (refCount == 0, 0)
+	IF(refCount == 0, 0)
 	{
 	#if !defined(_RELEASE)
 		{
 			const int curRelaseGuardCount = m_releaseGuardCount;
-			IF (0 != CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&m_releaseGuardCount), (LONG) curRelaseGuardCount, (LONG) curRelaseGuardCount), 0)
+			IF(0 != CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&m_releaseGuardCount), (LONG) curRelaseGuardCount, (LONG) curRelaseGuardCount), 0)
 			{
 				SET_LOG_CONTEXT(m_filePath);
 				CryGFxLog::GetAccess().LogError("Releasing flash player object while in a guarded section (AS callbacks into C++ code, etc)! Enforce breaking into the debugger...");
@@ -2657,7 +2657,7 @@ void CFlashPlayer::InitCVars()
 	               "Cached resources with same filepath but different file modification time are treated as unique entities.");
 	#endif
 
-	GRendererXRender::InitCVars();
+//	CScaleformRecording::InitCVars();
 	#if defined(USE_GFX_VIDEO)
 	GFxVideoWrapper::InitCVars();
 	#endif
@@ -3192,11 +3192,8 @@ void CFlashPlayer::Render(bool stereo)
 	if (!IsFlashEnabled())
 		return;
 
-	IRenderer* pXRender = m_pRenderer->GetXRender();
-	assert(pXRender);
-
 	AddRef();
-	pXRender->RT_FlashRender(this, stereo);
+	gEnv->pRenderer->RT_FlashRender(this, stereo);
 }
 
 void CFlashPlayer::RenderCallback(EFrameType ft, bool releaseOnExit)
@@ -3208,8 +3205,6 @@ void CFlashPlayer::RenderCallback(EFrameType ft, bool releaseOnExit)
 	RELEASE_ON_EXIT(releaseOnExit);
 	{
 		SYNC_THREADS;
-		IRenderer* pXRender = m_pRenderer->GetXRender();
-		assert(pXRender);
 		//#if defined(ENABLE_FLASH_INFO)
 		//		if (ms_sys_flash_info)
 		//			pXRender->SF_Flush();
@@ -3219,7 +3214,7 @@ void CFlashPlayer::RenderCallback(EFrameType ft, bool releaseOnExit)
 			FLASH_PROFILE_FUNC(eFncDisplay, VOID_RETURN, "Display");
 			SET_LOG_CONTEXT(m_filePath);
 			bool devLost = false;
-			pXRender->EF_Query(EFQ_DeviceLost, devLost);
+			gEnv->pRenderer->EF_Query(EFQ_DeviceLost, devLost);
 			if (m_pMovieView && !devLost)
 			{
 				UpdateRenderFlags();
@@ -3252,8 +3247,6 @@ void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool
 
 	RELEASE_ON_EXIT(releaseOnExit);
 	{
-		IRenderer* pXRender = m_pRenderer->GetXRender();
-		assert(pXRender);
 		//#if defined(ENABLE_FLASH_INFO)
 		//		if (ms_sys_flash_info)
 		//			pXRender->SF_Flush();
@@ -3266,7 +3259,7 @@ void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool
 			GRendererCommandBuffer& cmdBuf = m_cmdBuf[cbIdx];
 
 			bool devLost = false;
-			pXRender->EF_Query(EFQ_DeviceLost, devLost);
+			gEnv->pRenderer->EF_Query(EFQ_DeviceLost, devLost);
 			if (!devLost)
 			{
 				// UpdateRenderFlags(); // not needed as we only play back the pre-recorded commands
@@ -3278,14 +3271,14 @@ void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool
 				m_pRenderer->EnableMaskedRendering(m_maskedRendering);
 				m_pRenderer->ExtendCanvasToViewport(m_extendCanvasToVP);
 				CAPTURE_DRAW_STATS_BEGIN
-				cmdBuf.Render(m_pRenderer, finalPlayback);
+				cmdBuf.Render(m_pRenderer->GetPlayback());
 				CAPTURE_DRAW_STATS_END
 			}
 
 			if (finalPlayback)
 			{
-				IF (devLost, 0)
-					cmdBuf.DropResourceRefs();
+				IF(devLost, 0)
+				cmdBuf.DropResourceRefs();
 				cmdBuf.Reset(0);
 			}
 
@@ -3605,7 +3598,9 @@ bool CFlashPlayer::SetOverrideTexture(const char* pResourceName, ITexture* pText
 		if (pimageRes)
 		{
 			GImageInfoBase* pPrev = pimageRes->GetImageInfo();
-			GImageInfoBase* pimageInfo = resize ? new GImageInfoTextureXRender(pTexture, pPrev->GetWidth(), pPrev->GetHeight()) : new GImageInfoTextureXRender(pTexture);
+			GImageInfoBase* pimageInfo = resize
+				? new GImageInfoTextureXRender(pTexture, pPrev->GetWidth(), pPrev->GetHeight())
+				: new GImageInfoTextureXRender(pTexture);	
 			pimageRes->SetImageInfo(pimageInfo);
 			return true;
 		}
@@ -4521,7 +4516,7 @@ void CFlashPlayer::RenderFlashInfo()
 	const int curFrameID = pRenderer->GetFrameID(false);
 	CFlashFunctionProfilerLog::GetAccess().Enable(ms_sys_flash_info != 0 && (ms_sys_flash_log_options & LO_PEAKS) != 0, curFrameID);
 
-	GRendererXRender* pFlashRenderer = CSharedFlashPlayerResources::GetAccess().GetRenderer(true);
+	IScaleformRecording* pFlashRenderer = CSharedFlashPlayerResources::GetAccess().GetRenderer(true);
 	GFxLoader2* pLoader = CSharedFlashPlayerResources::GetAccess().GetLoader(true);
 	GMemoryHeap* pGFxHeap = GMemory::GetGlobalHeap();
 
@@ -4529,7 +4524,7 @@ void CFlashPlayer::RenderFlashInfo()
 
 	if (ms_sys_flash_info)
 	{
-		IF (ms_sys_flash_info == 3, 0)
+		IF(ms_sys_flash_info == 3, 0)
 		{
 			int fontCacheTexId = GTextureXRenderBase::GetFontCacheTextureID();
 			if (pRenderer->EF_GetTextureByID(fontCacheTexId))
@@ -4566,7 +4561,7 @@ void CFlashPlayer::RenderFlashInfo()
 		float xAdj = 0.0f;
 		float yAdj = 0.0f;
 
-		IF (ms_sys_flash_info == 4 || ms_sys_flash_info == 5, 0)
+		IF(ms_sys_flash_info == 4 || ms_sys_flash_info == 5, 0)
 		{
 			struct PrintHeapInfo : public GMemoryHeap::HeapVisitor
 			{
@@ -5054,7 +5049,7 @@ void CFlashPlayer::RenderFlashInfo()
 		// Temp render target info
 		if (pFlashRenderer)
 		{
-			const std::vector<GTextureXRender*, GMemorySTLAlloc<GTextureXRender*>>& tempRenderTargets = pFlashRenderer->GetTempRenderTargets();
+			const std::vector<ITexture*>& tempRenderTargets = pFlashRenderer->GetTempRenderTargets();
 			int nTempRenderTargets = tempRenderTargets.size();
 
 			if (nTempRenderTargets > 0)
@@ -5066,7 +5061,7 @@ void CFlashPlayer::RenderFlashInfo()
 
 				for (int i = 0; i < nTempRenderTargets; i++)
 				{
-					ITexture* pTex = pRenderer->EF_GetTextureByID(tempRenderTargets[i]->GetID());
+					ITexture* pTex = tempRenderTargets[i];
 
 					UInt rtWidth = pTex->GetWidth();
 					UInt rtHeight = pTex->GetHeight();

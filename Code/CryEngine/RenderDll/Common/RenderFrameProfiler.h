@@ -27,9 +27,15 @@
 		#define PROFILE_LABEL_PUSH_GPU(_NAME) DXGLProfileLabelPush(_NAME);
 		#define PROFILE_LABEL_POP_GPU(_NAME)  DXGLProfileLabelPop(_NAME);
 	#elif defined(CRY_USE_DX12)
-		#define PROFILE_LABEL_GPU(_NAME)      do {} while (0)
-		#define PROFILE_LABEL_PUSH_GPU(_NAME) do {} while (0)
-		#define PROFILE_LABEL_POP_GPU(_NAME)  do {} while (0)
+		#define PROFILE_LABEL_GPU(_NAME)      do { CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetGraphicsInterface()->SetProfilerMarker(_NAME); } while (0)
+		#define PROFILE_LABEL_PUSH_GPU(_NAME)                                                                                 \
+			do { CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetGraphicsInterface()->BeginProfilerEvent(_NAME); \
+				auto pContext = reinterpret_cast<CCryDX12DeviceContext*>(gcpRendD3D->GetDeviceContext().GetRealDeviceContext());  \
+				pContext->PushProfilerEvent(_NAME); } while (0)
+		#define PROFILE_LABEL_POP_GPU(_NAME)                                                                                  \
+			do { CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetGraphicsInterface()->EndProfilerEvent();        \
+				auto pContext = reinterpret_cast<CCryDX12DeviceContext*>(gcpRendD3D->GetDeviceContext().GetRealDeviceContext());  \
+				pContext->PopProfilerEvent(); } while (0)
 
 	#elif  CRY_PLATFORM_DURANGO
 		#ifdef USE_PIX_DURANGO

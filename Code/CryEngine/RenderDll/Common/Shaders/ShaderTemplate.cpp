@@ -154,7 +154,7 @@ uint32 SShaderItem::PostLoad()
 				nPreprocessFlags |= FSPR_SCANTEX;
 		}
 	}
-	if (pTech && pTech->m_Passes.Num() && (pTech->m_Passes[0].m_RenderState & GS_ALPHATEST_MASK))
+	if (pTech && pTech->m_Passes.Num() && (pTech->m_Passes[0].m_RenderState & GS_ALPHATEST))
 	{
 		if (pR && !pR->m_AlphaRef)
 			pR->m_AlphaRef = 0.5f;
@@ -307,10 +307,6 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 		TexPic = CTexture::s_ptexFromRE[6];
 	else if (!stricmp(mapname, "$FromRE7"))
 		TexPic = CTexture::s_ptexFromRE[7];
-	else if (!stricmp(mapname, "$FromSF0"))
-		TexPic = CTexture::s_ptexText_FromSF[0];
-	else if (!stricmp(mapname, "$FromSF1"))
-		TexPic = CTexture::s_ptexText_FromSF[1];
 	else if (!stricmp(mapname, "$VolObj_Density"))
 		TexPic = CTexture::s_ptexVolObj_Density;
 	else if (!stricmp(mapname, "$VolObj_Shadow"))

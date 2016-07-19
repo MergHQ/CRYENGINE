@@ -72,7 +72,7 @@ public:
 	void                    AbortStream();
 
 	uint32                  InitMesh(CMesh* pMesh, CNodeCGF* pGFXNode, _smart_ptr<IMaterial> pMaterial, CSkinningInfo* pSkinningInfo, const char* szFilePath, uint32 nLOD);
-	_smart_ptr<IRenderMesh> InitRenderMeshAsync(CMesh* pMesh, const char* szFilePath, int nLod, DynArray<RChunk>& arrNewRenderChunks);
+	_smart_ptr<IRenderMesh> InitRenderMeshAsync(CMesh* pMesh, const char* szFilePath, int nLod, DynArray<RChunk>& arrNewRenderChunksbool, bool useComputeSkinningBuffers = false);
 	uint32                  InitRenderMeshSync(DynArray<RChunk>& arrNewRenderChunks, _smart_ptr<IRenderMesh> pNewRenderMesh);
 
 	uint32                  IsVBufferValid();
@@ -92,7 +92,7 @@ public:
 private:
 	void                    PrepareMesh(CMesh* pMesh);
 	void                    PrepareRenderChunks(CMesh& mesh, DynArray<RChunk>& renderChunks);
-	_smart_ptr<IRenderMesh> CreateRenderMesh(CMesh* pMesh, const char* szFilePath, int nLod, bool bCreateDeviceMesh);
+	_smart_ptr<IRenderMesh> CreateRenderMesh(CMesh* pMesh, const char* szFilePath, int nLod, bool bCreateDeviceMesh, bool needsComputeSkinningBuffers = false);
 	void                    CreateMorphsBuffer(CMesh* pMesh);
 
 public:

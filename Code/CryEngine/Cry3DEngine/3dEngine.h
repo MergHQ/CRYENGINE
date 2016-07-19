@@ -26,6 +26,11 @@
 	#undef DrawText
 #endif //DrawText
 
+// forward declaration
+struct SNodeInfo;
+class CStitchedImage;
+class CWaterRippleManager;
+
 struct SEntInFoliage
 {
 	int   id;
@@ -130,8 +135,6 @@ struct SOptimizedOutdoorWindArea
 	IPhysicalEntity* pArea;// Physical area
 };
 
-struct SNodeInfo;
-class CStitchedImage;
 struct DLightAmount
 {
 	CDLight* pLight;
@@ -385,6 +388,8 @@ public:
 
 	virtual void   UnRegisterEntityDirect(IRenderNode* pEnt);
 	virtual void   UnRegisterEntityAsJob(IRenderNode* pEnt);
+
+	virtual void   AddWaterRipple(const Vec3& vPos, float scale, float strength);
 
 	virtual bool   IsUnderWater(const Vec3& vPos) const;
 	virtual void   SetOceanRenderFlags(uint8 nFlags);
@@ -1319,6 +1324,8 @@ private:
 	std::vector<SOptimizedOutdoorWindArea> m_indoorWindAreas[2];
 
 	CLightVolumesMgr                       m_LightVolumesMgr;
+
+	std::unique_ptr<CWaterRippleManager>   m_pWaterRippleManager;
 
 	friend struct SRenderNodeTempData;
 };

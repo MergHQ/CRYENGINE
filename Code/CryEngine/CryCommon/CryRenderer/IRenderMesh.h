@@ -36,13 +36,13 @@ enum ERenderMeshType
 	eRMT_Transient  = 3,
 };
 
-#define FSM_VERTEX_VELOCITY             1
-#define FSM_NO_TANGENTS                 2
-#define FSM_CREATE_DEVICE_MESH          4
-#define FSM_SETMESH_ASYNC               8
-#define FSM_ENABLE_NORMALSTREAM         16
-#define FSM_IGNORE_TEXELDENSITY         32
-#define FSM_USE_DEFORMGEOMETRY_PIPELINE 64
+#define FSM_VERTEX_VELOCITY      1
+#define FSM_NO_TANGENTS          2
+#define FSM_CREATE_DEVICE_MESH   4
+#define FSM_SETMESH_ASYNC        8
+#define FSM_ENABLE_NORMALSTREAM  16
+#define FSM_IGNORE_TEXELDENSITY  32
+#define FSM_USE_COMPUTE_SKINNING 64
 
 // Invalidate video buffer flags
 #define FMINV_STREAM      1
@@ -240,7 +240,6 @@ struct IRenderMesh
 	virtual volatile int* SetAsyncUpdateState(void) = 0;
 	virtual void          CreateRemappedBoneIndicesPair(const DynArray<JointIdType>& arrRemapTable, const uint pairGuid, const void* tag) = 0;
 	virtual void          ReleaseRemappedBoneIndicesPair(const uint pairGuid) = 0;
-	virtual void          CreateSkinnedOutput(const void* tag) = 0;
 
 	virtual void          OffsetPosition(const Vec3& delta) = 0;
 

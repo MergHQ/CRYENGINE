@@ -177,7 +177,7 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 			const uint8 validMask = ES_Alive;
 			const uint8 overrunMask = 0xff;
 			pContainer->Resize(bufferSize);
-			uint8* pData = static_cast<uint8*>(pContainer->GetData(EPDT_State));
+			uint8* pData = pContainer->GetData<uint8>(EPDT_State);
 
 			AddParticles(numParticles);
 			pContainer->ResetSpawnedParticles();

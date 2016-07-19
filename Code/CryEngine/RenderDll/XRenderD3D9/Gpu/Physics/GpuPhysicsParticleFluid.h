@@ -5,6 +5,7 @@
 
 #include <CryRenderer/IGpuPhysics.h>
 #include "Gpu/GpuComputeBackend.h"
+#include "GraphicsPipeline/Common/ComputeRenderPass.h"
 
 namespace gpu_physics
 {
@@ -58,32 +59,46 @@ public:
 	~CParticleFluidSimulation();
 
 	// most of the simulation runs in the render thread
-	void RenderThreadUpdate();
+	void RenderThreadUpdate(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 
 	void CreateResources();
-	void EvolveParticles(gpu::CComputeBackend& backend, int numParticles);
-	void FluidCollisions(gpu::CComputeBackend& backend);
+	void EvolveParticles(CDeviceCommandListRef RESTRICT_REFERENCE commandList, CGpuBuffer& defaultParticleBuffer, int numParticles);
+	void FluidCollisions(CDeviceCommandListRef RESTRICT_REFERENCE commandList, CConstantBufferPtr parameterBuffer, int constantBufferSlot, int texSampler, int texPointSampler);
 protected:
 	void InternalInjectBodies(const EBodyType type, const SBodyBase* b, const int numBodies);
 	void InternalSetParameters(const EParameterType type, const SParameterBase* p);
-	void SetUAVsAndConstants(gpu::CComputeBackend& backend);
+	void SetUAVsAndConstants();
 
 	void RetrieveCounter();
 	void UpdateDynamicBuffers();
-	void UpdateSimulationBuffers(gpu::CComputeBackend& backend, const int cellBlock);
-	void SortSimulationBodies(gpu::CComputeBackend& backend, const int gridCells, const int cellBlock, const int blocks);
+	void UpdateSimulationBuffers(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const int cellBlock);
+	void SortSimulationBodies(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const int gridCells, const int cellBlock, const int blocks);
 
-	void IntegrateBodies(gpu::CComputeBackend& backend, const int blocks);
+	void IntegrateBodies(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const int blocks);
 
 	void DebugDraw();
 
 	const int m_maxBodies;
 
-	gpu::CTypedConstantBuffer<SParticleFluidParametersInternal, 3> m_params;
+	gpu::CTypedConstantBuffer<SParticleFluidParametersInternal> m_params;
 
 	// resources
 	std::unique_ptr<SSimulationData> m_pData;
 	std::vector<SFluidBody>          m_bodiesInject;
+
+	CComputeRenderPass               m_passCalcLambda;
+	CComputeRenderPass               m_passPredictDensity;
+	CComputeRenderPass               m_passCorrectDensityError;
+	CComputeRenderPass               m_passCorrectDivergenceError;
+	CComputeRenderPass               m_passPositionUpdate;
+	CComputeRenderPass               m_passBodiesInject;
+	CComputeRenderPass               m_passClearGrid;
+	CComputeRenderPass               m_passAssignAndCount;
+	CComputeRenderPass               m_passPrefixSumBlocks;
+	CComputeRenderPass               m_passBuildGridIndices;
+	CComputeRenderPass               m_passRearrangeParticles;
+	CComputeRenderPass               m_passEvolveExternalParticles;
+	CComputeRenderPass               m_passCollisionsScreenSpace;
 
 	// only for debug
 	std::vector<Vec3> m_points;

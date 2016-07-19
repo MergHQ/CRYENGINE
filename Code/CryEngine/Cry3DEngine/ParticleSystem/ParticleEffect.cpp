@@ -26,6 +26,7 @@ namespace pfx2
 CParticleEffect::CParticleEffect()
 	: m_editVersion(0)
 	, m_dirty(true)
+	, m_numRenderObjects(0)
 {
 }
 
@@ -41,6 +42,7 @@ void CParticleEffect::Compile()
 	if (!m_dirty)
 		return;
 
+	m_numRenderObjects = 0;
 	m_attributeInstance.Reset(&m_attributes, EAttributeScope::PerEffect);
 	for (size_t i = 0; i < m_components.size(); ++i)
 	{
@@ -90,6 +92,16 @@ string CParticleEffect::MakeUniqueName(TComponentId forComponentId, const char* 
 		newName.append("01");
 	}
 	return MakeUniqueName(forComponentId, newName);
+}
+
+uint CParticleEffect::AddRenderObjectId()
+{
+	return m_numRenderObjects++;
+}
+
+uint CParticleEffect::GetNumRenderObjectIds() const
+{
+	return m_numRenderObjects;
 }
 
 void CParticleEffect::SetName(cstr name)

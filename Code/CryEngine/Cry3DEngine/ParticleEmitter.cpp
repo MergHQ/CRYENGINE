@@ -109,8 +109,7 @@ IMaterial* CParticleEmitter::GetMaterial(Vec3*) const
 float CParticleEmitter::GetMaxViewDist()
 {
 	// Max particles/radian, modified by emitter settings.
-	return gEnv->pSystem->GetViewCamera().GetAngularResolution()
-	       * max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f)
+	return CParticleManager::Instance()->GetMaxAngularDensity(gEnv->pSystem->GetViewCamera())
 	       * m_fMaxParticleSize
 	       * GetParticleScale()
 	       * m_fViewDistRatio;
@@ -979,7 +978,7 @@ void CParticleEmitter::Render(SRendParams const& RenParams, const SRenderingPass
 		PartParams.m_fCamDistance = GetNearestDistance(passInfo.GetCamera().GetPosition(), PartParams.m_fMainBoundsScale);
 
 	// Compute max allowed res.
-	PartParams.m_fMaxAngularDensity = passInfo.GetCamera().GetAngularResolution() * max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f);
+	PartParams.m_fMaxAngularDensity = CParticleManager::Instance()->GetMaxAngularDensity(passInfo.GetCamera()) * GetParticleScale() * m_fViewDistRatio;
 	bool bHDRModeEnabled = false;
 	GetRenderer()->EF_Query(EFQ_HDRModeEnabled, bHDRModeEnabled);
 	PartParams.m_fHDRDynamicMultiplier = bHDRModeEnabled ? HDRDynamicMultiplier : 1.f;

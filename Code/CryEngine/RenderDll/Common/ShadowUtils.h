@@ -44,12 +44,39 @@ enum EFrustum_Type
 };
 
 struct SRenderTileInfo;
+struct SViewport;
+
+class CRenderView;
 
 class CShadowUtils
 {
 public:
 	typedef uint16                    ShadowFrustumID;
 	typedef PodArray<ShadowFrustumID> ShadowFrustumIDs;
+
+	static const int32 MaxCascadesNum = 4;
+
+	struct SShadowCascades
+	{
+		CTexture* pShadowMap[MaxCascadesNum];
+		CTexture* pCloudShadowMap;
+	};
+
+	struct SShadowSamplingInfo
+	{
+		Matrix44 shadowTexGen;
+		Matrix44 screenToShadowBasis; // normalized basis vectors in rows 0-2, basis vector scales in row 3
+		Matrix44 noiseProjection;
+		Matrix44 blendTexGen;
+		Vec4     camPosShadowSpace;
+		Vec4     blendInfo;
+		Vec4     blendTcNormalize;
+		float    oneDivFarDist;
+		float    depthTestBias;
+		float    kernelRadius;
+		float    invShadowMapSize;
+		float    shadowFadingDist;
+	};
 
 public:
 	static void              CalcDifferentials(const CCamera& cam, float fViewWidth, float fViewHeight, float& fFragSizeX);
@@ -88,6 +115,31 @@ public:
 	}
 
 	static bool GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum* pFullFrustum, const ShadowMapFrustum* pSubFrustum);
+
+	static Matrix44 GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum, int nSide);
+
+	// setup shader constants, return the validity of the textures for forward sun shadow, and return the textures and the shader runtime flags.
+	static bool SetupShadowsForFog(uint64& rtMask, SShadowCascades& shadowCascades, CRenderView* pRenderView);
+
+	// set the sampler-states and textures for forward sun shadow to RenderPass.
+	template<class RenderPassType>
+	static void SetShadowSamplingContextToRenderPass(
+	  RenderPassType& pass,
+	  int32 linearClampComparisonSamplerSlot,
+	  int32 pointWrapSamplerSlot,
+	  int32 pointClampSamplerSlot,
+	  int32 bilinearWrapSamplerSlot,
+	  int32 shadowNoiseTextureSlot);
+
+	// set the textures for forward sun shadow to RenderPass.
+	template<class RenderPassType>
+	static void SetShadowCascadesToRenderPass(
+	  RenderPassType& pass,
+	  int32 startShadowMapsTexSlot,
+	  int32 cloudShadowTexSlot,
+	  const SShadowCascades& shadowCascades);
+
+	static SShadowSamplingInfo GetShadowSamplingInfo(ShadowMapFrustum* pFr, int nSide, const CCamera& cam, const SViewport& viewport, const Vec2& subpixelOffset);
 
 	CShadowUtils();
 	~CShadowUtils();

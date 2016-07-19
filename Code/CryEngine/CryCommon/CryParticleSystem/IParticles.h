@@ -38,6 +38,7 @@ struct SpawnParams
 	float               fTimeScale;      //!< Multiple for emitter time evolution.
 	float               fPulsePeriod;    //!< How often to restart emitter.
 	float               fStrength;       //!< Controls parameter strength curves.
+	int                 nSeed;           //!< Initial seed. Default is -1 which means random seed.
 
 	bool                bEnableAudio;  //!< Used by particle effect instances to indicate whether audio should be updated or not.
 	EAudioOcclusionType occlusionType; //!< Audio obstruction/occlusion calculation type.
@@ -57,6 +58,7 @@ struct SpawnParams
 		fTimeScale = 1;
 		fPulsePeriod = 0;
 		fStrength = -1;
+		nSeed = -1;
 		bEnableAudio = true;
 		occlusionType = eAudioOcclusionType_Ignore;
 	}

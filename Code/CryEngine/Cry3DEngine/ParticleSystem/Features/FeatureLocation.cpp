@@ -18,8 +18,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureLocation = false;
-
 namespace pfx2
 {
 
@@ -151,7 +149,6 @@ public:
 		IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
-		SChaosKey chaosKey;
 		STempModBuffer scales(context, m_scale);
 		scales.ModifyInit(context, m_scale, container.GetSpawnedRange());
 
@@ -162,9 +159,9 @@ public:
 			const Vec3 wPosition0 = positions.Load(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
 			const Vec3 oOffset = Vec3(
-			  chaosKey.RandSNorm() * m_box.x,
-			  chaosKey.RandSNorm() * m_box.y,
-			  chaosKey.RandSNorm() * m_box.z);
+			  context.m_spawnRng.RandSNorm() * m_box.x,
+			  context.m_spawnRng.RandSNorm() * m_box.y,
+			  context.m_spawnRng.RandSNorm() * m_box.z);
 			const Vec3 wOffset = wQuat * oOffset;
 			const Vec3 wPosition1 = wPosition0 + wOffset * scale;
 			positions.Store(particleId, wPosition1);
@@ -257,7 +254,6 @@ private:
 		CParticleContainer& container = context.m_container;
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
-		SChaosKey chaosKey;
 		const float baseRadius = m_radius.GetBaseValue();
 		const float invBaseRadius = __fres(baseRadius);
 
@@ -268,7 +264,7 @@ private:
 
 		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
 		{
-			const Vec3 sphere = chaosKey.RandSphere();
+			const Vec3 sphere = context.m_spawnRng.RandSphere();
 			const Vec3 sphereDist = sphere.CompMul(m_axisScale);
 			const float radiusMult = abs(radii.m_stream.SafeLoad(particleId));
 			const float velocityMult = velocityMults.m_stream.SafeLoad(particleId);
@@ -381,7 +377,6 @@ private:
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 		const float baseRadius = m_radius.GetBaseValue();
 		const float invBaseRadius = __fres(baseRadius);
-		SChaosKey chaosKey;
 
 		STempModBuffer radii(context, m_radius);
 		STempModBuffer velocityMults(context, m_velocity);
@@ -395,7 +390,7 @@ private:
 			const float velocityMult = velocityMults.m_stream.SafeLoad(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
 
-			const Vec2 dist2 = chaosKey.RandCircle();
+			const Vec2 dist2 = context.m_spawnRng.RandCircle();
 			const Vec3 dist3 = Vec3(dist2.x * m_axisScale.x, dist2.y * m_axisScale.y, 0.0f);
 
 			if (UseRadius)
@@ -425,7 +420,9 @@ private:
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationCircle, "Location", "Circle", defaultIcon, defaultColor);
 
 //////////////////////////////////////////////////////////////////////////
-// CFeatureLocationDisc
+// CFeatureLocationGeometry
+
+extern EParticleDataType EPDT_MeshGeometry, EPDT_PhysicalEntity;
 
 SERIALIZATION_DECLARE_ENUM(EGeometrySource,
                            Render = GeomType_Render,
@@ -600,11 +597,18 @@ private:
 				}
 			}
 
+			CRndGen rng(context.m_spawnRng.Rand());
 			PosNorm randPositionNormal;
-			emitterGeometry.GetRandomPos(randPositionNormal, cry_random_next(), geomType, geomForm, geomLocation, geometryCentered);
+			emitterGeometry.GetRandomPos(
+				randPositionNormal, rng, geomType, geomForm,
+				geomLocation, geometryCentered);
 
 			const float offset = offsets.m_stream.SafeLoad(particleId);
-			const Vec3 wPosition = randPositionNormal.vPos + randPositionNormal.vNorm * offset;
+			// PFX2_TODO : HACK : Figure out what's going on with the mesh's normal stream
+			// const Vec3 wPosition = randPositionNormal.vPos + randPositionNormal.vNorm * offset;
+			Vec3 wPosition = randPositionNormal.vPos;
+			if (offset > FLT_EPSILON)
+				wPosition += randPositionNormal.vNorm * offset;
 			positions.Store(particleId, wPosition);
 
 			if (UseVelocity)
@@ -901,7 +905,7 @@ void WrapUnitZSector(Vec3& pos, const Vec3& posPrev, Vec2 scrWidth)
 
 CRY_UNIT_TEST(WrapSectorTest)
 {
-	SChaosKey chaosKey;
+	SChaosKey chaosKey(0u);
 	for (int i = 0; i < 100; ++i)
 	{
 		Vec2 scrWidth(chaosKey.Rand(SChaosKey::Range(0.1f, 3.0f)), chaosKey.Rand(SChaosKey::Range(0.1f, 3.0f)));
@@ -952,7 +956,7 @@ ILINE int WrapRotation(Vec3& pos, Vec3& posPrev, const Matrix33& camRot, Vec2 sc
 
 CRY_UNIT_TEST(WrapRotationTest)
 {
-	SChaosKey chaosKey;
+	SChaosKey chaosKey(0u);
 	for (int i = 0; i < 100; ++i)
 	{
 		Vec2 scrWidth(chaosKey.Rand(SChaosKey::Range(0.1f, 3.0f)), chaosKey.Rand(SChaosKey::Range(0.1f, 3.0f)));
@@ -973,6 +977,8 @@ CRY_UNIT_TEST(WrapRotationTest)
 		}
 	}
 };
+
+EParticleDataType PDT(EPVF_AuxPosition, float, 3);
 
 class CFeatureLocationOmni : public CParticleFeature
 {
@@ -1029,19 +1035,18 @@ public:
 
 		UpdateCameraData(context);
 
-		SChaosKey chaosKey;
 		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
 		{
 			// Overwrite position
 			Vec3 pos;
 			if (m_wrapSector)
 			{
-				pos = RandomUnitZSector(chaosKey, m_camData.scrWidth);
+				pos = RandomUnitZSector(context.m_spawnRng, m_camData.scrWidth);
 				auxPositions.Store(particleId, pos);   // in unit-camera space
 			}
 			else
 			{
-				pos = RandomPosZBox(chaosKey);
+				pos = RandomPosZBox(context.m_spawnRng);
 			}
 			pos = m_camData.toWorld * pos;
 			positions.Store(particleId, pos);

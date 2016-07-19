@@ -112,7 +112,7 @@ void CSceneRenderPass::ExtractRenderTargetFormats(CDeviceGraphicsPSODesc& psoDes
 }
 
 // Forward declaration
-void UpdateNearestState(const CSceneRenderPass& pass, CDeviceGraphicsCommandListRef commandList, bool bNearestRenderingRequired, bool& bRenderNearestState);
+void UpdateNearestState(const CSceneRenderPass& pass, CDeviceCommandListRef commandList, bool bNearestRenderingRequired, bool& bRenderNearestState);
 
 void CSceneRenderPass::DrawRenderItems_GP2(SGraphicsPipelinePassContext& passContext)
 {
@@ -129,7 +129,8 @@ void CSceneRenderPass::DrawRenderItems_GP2(SGraphicsPipelinePassContext& passCon
 	CD3D9Renderer* rd = gcpRendD3D;
 	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
 
-	CDeviceGraphicsCommandListPtr pCommandList = CCryDeviceWrapper::GetObjectFactory().GetCoreGraphicsCommandList();
+	CDeviceCommandListPtr pCommandList = CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
+	CDeviceGraphicsCommandInterface* pCommandInterface = pCommandList->GetGraphicsInterface();
 
 	PrepareRenderPassForUse(*pCommandList);
 	BeginRenderPass(*pCommandList);
@@ -144,7 +145,6 @@ void CSceneRenderPass::DrawRenderItems_GP2(SGraphicsPipelinePassContext& passCon
 	int nTech;
 
 	CCompiledRenderObject compiledObject;
-
 	for (int i = listStart; i < listEnd; i++)
 	{
 		SRendItem& ri = renderItems[i];
@@ -179,14 +179,14 @@ void CSceneRenderPass::DrawRenderItems_GP2(SGraphicsPipelinePassContext& passCon
 			if (!compiledObject.DrawVerification(passContext))
 				continue;
 
-			compiledObject.DrawToCommandList(*pCommandList, compiledObject.m_pso[passContext.stageID][passContext.passID], drawParamsIndex);
+			compiledObject.DrawToCommandList(*pCommandInterface, compiledObject.m_pso[passContext.stageID][passContext.passID], drawParamsIndex);
 		}
 	}
 
 	EndRenderPass(*pCommandList);
 }
 
-void CSceneRenderPass::PrepareRenderPassForUse(CDeviceGraphicsCommandListRef RESTRICT_REFERENCE commandList)
+void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	uint32 targetCount;
 	for (targetCount = 0; targetCount < CRY_ARRAY_COUNT(m_pColorTargets); ++targetCount)
@@ -194,16 +194,22 @@ void CSceneRenderPass::PrepareRenderPassForUse(CDeviceGraphicsCommandListRef RES
 		if (!m_pColorTargets[targetCount])
 			break;
 	}
+	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
+	pCommandInterface->PrepareRenderTargetsForUse(targetCount, m_pColorTargets, m_pDepthTarget);
+	pCommandInterface->PrepareResourcesForUse(EResourceLayoutSlot_PerPassRS, m_pPerPassResources.get(), EShaderStage_AllWithoutCompute);
 
-	commandList.PrepareRenderTargetsForUse(targetCount, m_pColorTargets, m_pDepthTarget);
-	commandList.PrepareResourcesForUse(EResourceLayoutSlot_PerPassRS, m_pPerPassResources.get());
+	m_profilingStats.Reset();
 }
 
-void CSceneRenderPass::BeginRenderPass(CDeviceGraphicsCommandListRef RESTRICT_REFERENCE commandList)
+void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 	// Todo: Enable merging of different label of the same group, eg. ZPREPASS[0] + ZPREPASS[1] => ZPREPASS
 	// if (m_szLabel) { PROFILE_LABEL_PUSH(m_szLabel); }
+
+#if defined(ENABLE_PROFILING_CODE)
+	commandList.BeginProfilingSection();
+#endif
 
 	uint32 targetCount;
 	for (targetCount = 0; targetCount < CRY_ARRAY_COUNT(m_pColorTargets); ++targetCount)
@@ -213,18 +219,24 @@ void CSceneRenderPass::BeginRenderPass(CDeviceGraphicsCommandListRef RESTRICT_RE
 	}
 
 	commandList.Reset();
-	commandList.SetRenderTargets(targetCount, m_pColorTargets, m_pDepthTarget);
-	commandList.SetViewports(1, &GetViewport(m_bNearestViewport));
-	commandList.SetScissorRects(1, &m_scissorRect);
-	commandList.SetResourceLayout(m_pResourceLayout);
-	commandList.SetResources(EResourceLayoutSlot_PerPassRS, m_pPerPassResources.get());
+
+	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
+	pCommandInterface->SetRenderTargets(targetCount, m_pColorTargets, m_pDepthTarget);
+	pCommandInterface->SetViewports(1, &GetViewport(m_bNearestViewport));
+	pCommandInterface->SetScissorRects(1, &m_scissorRect);
+	pCommandInterface->SetResourceLayout(m_pResourceLayout.get());
+	pCommandInterface->SetResources(EResourceLayoutSlot_PerPassRS, m_pPerPassResources.get(), EShaderStage_AllWithoutCompute);
 }
 
-void CSceneRenderPass::EndRenderPass(CDeviceGraphicsCommandListRef RESTRICT_REFERENCE commandList)
+void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 	// Todo: Enable merging of different label of the same group, eg. ZPREPASS[0] + ZPREPASS[1] => ZPREPASS
 	// if (m_szLabel) { PROFILE_LABEL_POP(m_szLabel); }
+
+#if defined(ENABLE_PROFILING_CODE)
+	m_profilingStats.Merge(commandList.EndProfilingSection());
+#endif
 
 	// Nothing to cleanup at the moment
 }
@@ -243,7 +255,6 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 
 	passContext.nProcessThreadID = rp.m_nProcessThreadID;
 	passContext.nFrameID = rp.m_TI[rp.m_nProcessThreadID].m_nFrameID;
-	passContext.pPipelineStats = &rp.m_PS[passContext.nProcessThreadID];
 	passContext.stageID = m_stageID;
 	passContext.passID = m_passID;
 
@@ -252,8 +263,8 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 	passContext.rendItems.start = listStart < 0 ? 0 : listStart;
 	passContext.rendItems.end = listEnd < 0 ? pRenderView->GetRenderItems(list).size() : listEnd;
 
-	rp.m_nPassGroupID = profilingListID < 0 ? list : profilingListID;
-	rp.m_nPassGroupDIP = profilingListID < 0 ? list : profilingListID;
+	rp.m_nPassGroupID = profilingListID < 0 ? list : profilingListID;;
+	rp.m_nPassGroupDIP = profilingListID < 0 ? list : profilingListID;;
 
 	CHWShader_D3D::mfCommitParamsGlobal();
 
@@ -265,4 +276,9 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 	{
 		DrawRenderItems_GP2(passContext);
 	}
+
+	// Transfer to legacy renderer stats. TODO: fix for r_multithreadedDrawing>0 and recording to multiple command lists
+#ifdef ENABLE_PROFILING_CODE
+	gcpRendD3D->AddRecordedProfilingStats(m_profilingStats, ERenderListID(rp.m_nPassGroupID));
+#endif
 }

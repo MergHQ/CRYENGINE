@@ -65,8 +65,6 @@ Texture2D glowTex: register(t4)
   > = 0.1;
 #endif
 
-float4  AnimGenParams = { PB_time 1.0, PB_time 0.5, PB_time 0.25, PB_time 0.125};
-
 #if %SCREEN_SPACE_DEFORMATION 
 
 float AnimSpeed

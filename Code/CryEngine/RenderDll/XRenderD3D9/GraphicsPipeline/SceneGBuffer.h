@@ -34,7 +34,6 @@ class CSceneGBufferStage : public CGraphicsPipelineStage
 
 public:
 	virtual void Init() override;
-	virtual void ReleaseBuffers() override;
 	virtual void Prepare(CRenderView* pRenderView) override;
 	void         Execute();
 	void         ExecuteLinearizeDepth();
@@ -44,7 +43,7 @@ public:
 private:
 	bool CreatePipelineState(const SGraphicsPipelineStateDescription& desc, EPass passID, CDeviceGraphicsPSOPtr& outPSO);
 
-	bool PreparePerPassResources();
+	bool PreparePerPassResources(bool bOnInit);
 	bool PrepareResourceLayout();
 
 	void OnResolutionChanged();

@@ -15,8 +15,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureVelocity = false;
-
 namespace pfx2
 {
 
@@ -79,8 +77,8 @@ public:
 			const float angleMult = angles.m_stream.SafeLoad(particleId);
 			const float velocity = velocityMults.m_stream.SafeLoad(particleId);
 
-			const Vec2 disc = SChaosKey().RandCircle();
-			const float angle = sqrt(angleMult * invBaseAngle) * baseAngle;
+			const Vec2 disc = context.m_spawnRng.RandCircle();
+			const float angle = sqrtf(angleMult * invBaseAngle) * baseAngle;
 
 			float as, ac;
 			sincos(angle, &as, &ac);
@@ -211,7 +209,7 @@ public:
 		{
 			const Vec3 wVelocity0 = velocities.Load(particleId);
 			const float velocity = velocityMults.m_stream.SafeLoad(particleId);
-			const Vec3 oVelocity = SChaosKey().RandSphere() * velocity;
+			const Vec3 oVelocity = context.m_spawnRng.RandSphere() * velocity;
 			const Vec3 wVelocity1 = wVelocity0 + oVelocity;
 			velocities.Store(particleId, wVelocity1);
 		}
@@ -258,7 +256,7 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		if (context.m_parentContainer.HasData(EPDT_AngularVelocityX))
+		if (context.m_parentContainer.HasData(EPVF_AngularVelocity))
 			InheritVelocity<true>(context);
 		else
 			InheritVelocity<false>(context);
@@ -336,8 +334,8 @@ public:
 
 		if (abs(m_positionInherit) > FLT_EPSILON)
 		{
-			const bool parentsHaveAngles3D = context.m_parentContainer.HasData(EPDT_OrientationX);
-			const bool childrenHaveAngles3D = context.m_container.HasData(EPDT_OrientationX);
+			const bool parentsHaveAngles3D = context.m_parentContainer.HasData(EPQF_Orientation);
+			const bool childrenHaveAngles3D = context.m_container.HasData(EPQF_Orientation);
 			if (parentsHaveAngles3D && childrenHaveAngles3D)
 				MoveRelativeToEmitter<true>(context);
 			else

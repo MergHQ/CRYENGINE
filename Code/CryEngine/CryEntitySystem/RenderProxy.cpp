@@ -1746,6 +1746,36 @@ int CRenderProxy::SetCloudMovementProperties(int nSlot, const SCloudMovementProp
 }
 
 //////////////////////////////////////////////////////////////////////////
+int CRenderProxy::LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& properties)
+{
+	CEntityObject* pSlot = GetOrMakeSlot(nSlot);
+	auto* pRenderNode = pSlot->pChildRenderNode;
+	if (!pRenderNode || (pRenderNode && pRenderNode->GetRenderNodeType() != eERType_CloudBlocker))
+	{
+		pSlot->ReleaseObjects();
+		CRY_ASSERT(pSlot->pChildRenderNode == nullptr);
+
+		pRenderNode = GetI3DEngine()->CreateRenderNode(eERType_CloudBlocker);
+		pSlot->pChildRenderNode = pRenderNode;
+	}
+
+	CRY_ASSERT(pRenderNode && pRenderNode->GetRenderNodeType() == eERType_CloudBlocker);
+	ICloudBlockerRenderNode* pCloudBlocker = static_cast<ICloudBlockerRenderNode*>(pRenderNode);
+
+	pCloudBlocker->SetProperties(properties);
+
+	// Update slot position
+	pSlot->OnXForm(m_pEntity);
+
+	m_nFlags |= FLAG_HAS_CHILDRENDERNODES;
+
+	pSlot->bUpdate = false;
+	InvalidateBounds(true, true);
+
+	return nSlot;
+}
+
+//////////////////////////////////////////////////////////////////////////
 int CRenderProxy::LoadFogVolume( int nSlot, const SFogVolumeProperties& properties )
 {
 	CEntityObject *pSlot = GetOrMakeSlot( nSlot );

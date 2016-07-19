@@ -41,11 +41,11 @@ uint32 CModelMesh::InitMesh(CMesh* pMesh, CNodeCGF* pMeshNode, _smart_ptr<IMater
 	return 1;
 }
 
-_smart_ptr<IRenderMesh> CModelMesh::InitRenderMeshAsync(CMesh* pMesh, const char* szFilePath, int nLod, DynArray<RChunk>& arrNewRenderChunks)
+_smart_ptr<IRenderMesh> CModelMesh::InitRenderMeshAsync(CMesh* pMesh, const char* szFilePath, int nLod, DynArray<RChunk>& arrNewRenderChunks, bool useComputeSkinningBuffers /* = false */)
 {
 	PrepareMesh(pMesh);
 
-	_smart_ptr<IRenderMesh> pNewRenderMesh = CreateRenderMesh(pMesh, szFilePath, nLod, false);
+	_smart_ptr<IRenderMesh> pNewRenderMesh = CreateRenderMesh(pMesh, szFilePath, nLod, false, useComputeSkinningBuffers);
 	PrepareRenderChunks(*pMesh, arrNewRenderChunks);
 
 	return pNewRenderMesh;
@@ -245,16 +245,18 @@ void CModelMesh::PrepareRenderChunks(CMesh& mesh, DynArray<RChunk>& renderChunks
 	m_softwareMesh.Create(mesh, renderChunks, m_vRenderMeshOffset);
 }
 
-_smart_ptr<IRenderMesh> CModelMesh::CreateRenderMesh(CMesh* pMesh, const char* szFilePath, int nLod, bool bCreateDeviceMesh)
+_smart_ptr<IRenderMesh> CModelMesh::CreateRenderMesh(CMesh* pMesh, const char* szFilePath, int nLod, bool bCreateDeviceMesh, bool needsComputeSkinningBuffers)
 {
 	//////////////////////////////////////////////////////////////////////////
 	// Create the RenderMesh
 	//////////////////////////////////////////////////////////////////////////
 	ERenderMeshType eRMType = eRMT_Static;
 
-#if CRY_PLATFORM_WINDOWS
+	bool bMultiGPU;
+	gEnv->pRenderer->EF_Query(EFQ_MultiGPUEnabled, bMultiGPU);
+
+	if (bMultiGPU && gEnv->pRenderer->GetRenderType() != eRT_DX12)
 	eRMType = eRMT_Dynamic;
-#endif
 
 	_smart_ptr<IRenderMesh> pRenderMesh = g_pIRenderer->CreateRenderMesh("Character", szFilePath, NULL, eRMType);
 	assert(pRenderMesh != 0);
@@ -271,9 +273,14 @@ _smart_ptr<IRenderMesh> CModelMesh::CreateRenderMesh(CMesh* pMesh, const char* s
 	nFlags |= FSM_ENABLE_NORMALSTREAM;
 #endif
 
-	ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
-	if ((nLod == 0) && cvar_gd && cvar_gd->GetIVal())
-		nFlags |= FSM_USE_DEFORMGEOMETRY_PIPELINE;
+	
+	if (needsComputeSkinningBuffers)
+	{
+		static ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
+		if ((nLod == 0) && cvar_gd && cvar_gd->GetIVal())
+			nFlags |= FSM_USE_COMPUTE_SKINNING;
+	}
+
 	pRenderMesh->SetMesh(*pMesh, 0, nFlags, 0, true);
 
 	return pRenderMesh;

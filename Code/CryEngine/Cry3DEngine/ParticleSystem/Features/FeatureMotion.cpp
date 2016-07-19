@@ -19,8 +19,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureMotion = false;
-
 namespace pfx2
 {
 
@@ -42,6 +40,11 @@ void ILocalEffectors::Serialize(Serialization::IArchive& ar)
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+EParticleDataType PDT(EPDT_Gravity, float, 1, BHasInit(true));
+EParticleDataType PDT(EPDT_Drag, float, 1, BHasInit(true));
+EParticleDataType PDT(EPVF_Acceleration, float, 3);
+EParticleDataType PDT(EPVF_VelocityField, float, 3);
 
 enum EIntegrator
 {
@@ -69,8 +72,8 @@ public:
 	{
 		pComponent->AddToUpdateList(EUL_Update, this);
 
-		m_gravity.AddToComponent(pComponent, this, EPDT_Gravity, EPDT_GravityInit);
-		m_drag.AddToComponent(pComponent, this, EPDT_Drag, EPDT_DragInit);
+		m_gravity.AddToComponent(pComponent, this, EPDT_Gravity);
+		m_drag.AddToComponent(pComponent, this, EPDT_Drag);
 
 		for (auto& effector : m_localEffectors)
 			effector->AddToComponent(pComponent, pParams);
@@ -115,8 +118,8 @@ public:
 
 	virtual void InitParticles(const SUpdateContext& context) override
 	{
-		m_gravity.InitParticles(context, EPDT_Gravity, EPDT_GravityInit);
-		m_drag.InitParticles(context, EPDT_Drag, EPDT_DragInit);
+		m_gravity.InitParticles(context, EPDT_Gravity);
+		m_drag.InitParticles(context, EPDT_Drag);
 	}
 
 	virtual void Update(const SUpdateContext& context) override
@@ -241,6 +244,8 @@ void CFeatureMotionPhysics::DragFastIntegral(const SUpdateContext& context)
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+EParticleDataType PDT(EPDT_PhysicalEntity, IPhysicalEntity*);
 
 class CFeatureMotionCryPhysics : public CParticleFeature
 {
@@ -508,15 +513,14 @@ private:
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const float time = max(1.0f / 1024.0f, context.m_deltaTime);
 		const floatv speed = ToFloatv(m_speed * rsqrt(time));
-		SChaosKeyV chaosKey;
 
 		CRY_PFX2_FOR_ACTIVE_PARTICLESGROUP(context)
 		{
 			const Vec3v position = positions.Load(particleGroupId);
 			const Vec3v accel0 = localAccelerations.Load(particleGroupId);
-			const floatv keyX = chaosKey.RandSNorm();
-			const floatv keyY = chaosKey.RandSNorm();
-			const floatv keyZ = chaosKey.RandSNorm();
+			const floatv keyX = context.m_updateRngv.RandSNorm();
+			const floatv keyY = context.m_updateRngv.RandSNorm();
+			const floatv keyZ = context.m_updateRngv.RandSNorm();
 			const Vec3v accel1 = MAdd(Vec3v(keyX, keyY, keyZ), speed, accel0);
 			localAccelerations.Store(particleGroupId, accel1);
 		}
@@ -532,8 +536,8 @@ private:
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		const float maxSize = (float)(1 << 12);
 		const float minSize = rcp_fast(maxSize); // small enough and prevents SIMD exceptions
-		const floatv time = ToFloatv(mod(gEnv->pTimer->GetCurrTime() * m_rate * minSize, 1.0f) * maxSize);
-		const floatv invSize = ToFloatv(rcp_fast(max(minSize, float(m_size))));
+		const floatv time = ToFloatv(fmodf(context.m_time * m_rate * minSize, 1.0f) * maxSize);
+		const floatv invSize = ToFloatv(rcp_fast(MAX(minSize, float(m_size))));
 		const floatv speed = ToFloatv(m_speed);
 		const uint octaves = m_octaves;
 		const floatv scalex = ToFloatv(m_scale.x);

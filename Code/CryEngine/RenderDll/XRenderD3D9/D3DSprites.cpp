@@ -263,11 +263,11 @@ static void sRT_EndEf(const SRenderingPassInfo& passInfo)
 	CD3D9Renderer* rd = gcpRendD3D;
 	int nThreadID = rd->m_RP.m_nProcessThreadID;
 
-	rd->m_RP.m_ForceStateAnd |= GS_ALPHATEST_MASK;
+	rd->m_RP.m_ForceStateAnd |= GS_ALPHATEST;
 
 	rd->m_pRT->RC_RenderScene(passInfo.GetRenderView(), SHDF_ALLOWHDR, CD3D9Renderer::FX_FlushShader_General);
 
-	rd->m_RP.m_ForceStateAnd &= ~GS_ALPHATEST_MASK;
+	rd->m_RP.m_ForceStateAnd &= ~GS_ALPHATEST;
 }
 
 static void sCreateFT(bool bHDR)
@@ -377,7 +377,7 @@ void CD3D9Renderer::MakeSprites(TArray<SSpriteGenInfo>& SGI, const SRenderingPas
 	uint32 saveFlags2 = m_RP.m_PersFlags2;
 	m_RP.m_TI[nThreadID].m_PersFlags |= RBPF_MAKESPRITE;
 	m_RP.m_PersFlags2 &= ~(RBPF2_NOALPHABLEND | RBPF2_NOALPHATEST);
-	m_RP.m_StateAnd |= (GS_BLEND_MASK | GS_ALPHATEST_MASK);
+	m_RP.m_StateAnd |= (GS_BLEND_MASK | GS_ALPHATEST);
 
 	EF_PushFog();
 	EF_PushMatrix();

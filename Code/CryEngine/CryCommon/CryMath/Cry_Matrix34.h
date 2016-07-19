@@ -839,7 +839,8 @@ template<typename F> struct Matrix34_tpl
 	ILINE F                  operator()(uint32 i, uint32 j) const   { CRY_MATH_ASSERT((i < 3) && (j < 4)); F* p_data = (F*)(&m00);   return p_data[i * 4 + j]; }
 	ILINE F&                 operator()(uint32 i, uint32 j)         { CRY_MATH_ASSERT((i < 3) && (j < 4)); F* p_data = (F*)(&m00);   return p_data[i * 4 + j]; }
 
-	ILINE void               SetRow(int i, const Vec3_tpl<F>& v)    { CRY_MATH_ASSERT(i < 3); F* p = (F*)(&m00);  p[0 + 4 * i] = v.x; p[1 + 4 * i] = v.y; p[2 + 4 * i] = v.z;   }
+	ILINE void               SetRow(int i, const Vec3_tpl<F>& v)    { CRY_MATH_ASSERT(i < 3); F* p = (F*)(&m00);  p[0 + 4 * i] = v.x; p[1 + 4 * i] = v.y; p[2 + 4 * i] = v.z; }
+	ILINE void               SetRow4(int i, const Vec4_tpl<F>& v)   { CRY_MATH_ASSERT(i < 3); F* p = (F*)(&m00);  p[0 + 4 * i] = v.x; p[1 + 4 * i] = v.y; p[2 + 4 * i] = v.z; p[3 + 4 * i] = v.w; }
 
 	ILINE const Vec3_tpl<F>& GetRow(int i) const                    { CRY_MATH_ASSERT(i < 3); return *(const Vec3_tpl<F>*)(&m00 + 4 * i); }
 	ILINE const Vec4_tpl<F>& GetRow4(int i) const                   { CRY_MATH_ASSERT(i < 3); return *(const Vec4_tpl<F>*)(&m00 + 4 * i); }

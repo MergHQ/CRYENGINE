@@ -130,6 +130,12 @@ protected:
 	//!		<param name="table">Table property for the cloud movement.</param>
 	int SetCloudMovementProperties(IFunctionHandler* pH, int nSlot, SmartScriptTable table);
 
+	//! <code>Entity.LoadCloudBlocker( nSlot, table )</code>
+	//! <description>Loads the properties of cloud blocker into the entity slot.</description>
+	//!		<param name="nSlot">Slot identifier.</param>
+	//!		<param name="table">Table with cloud blocker properties.</param>
+	int LoadCloudBlocker(IFunctionHandler* pH, int nSlot, SmartScriptTable table);
+
 	//! <code>Entity.LoadFogVolume( nSlot, table )</code>
 	//! <description>Loads the fog volume XML file into the entity slot.</description>
 	//!		<param name="nSlot">Slot identifier.</param>

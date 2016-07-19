@@ -236,7 +236,7 @@ public:
 		}
 	}
 
-	void GetTexOffset(int nSide, float* pOffset, float* pScale, int nShadowsPoolSizeX, int nShadowsPoolSizeY)
+	void GetTexOffset(int nSide, float* pOffset, float* pScale, int nShadowsPoolSizeX, int nShadowsPoolSizeY) const
 	{
 		if (bUseShadowsPool)
 		{

@@ -953,6 +953,23 @@ template<typename F> struct Matrix33_tpl
 		m22 = z.z;
 	}
 
+	//! make a left-handed orthonormal matrix.
+	ILINE void orthonormalizeFastLH()
+	{
+		Vec3 x = Vec3(m00, m10, m20).GetNormalized();
+		Vec3 y = (x % Vec3(m02, m12, m22)).GetNormalized();
+		Vec3 z = (y % x);
+		m00 = x.x;
+		m01 = y.x;
+		m02 = z.x;
+		m10 = x.y;
+		m11 = y.y;
+		m12 = z.y;
+		m20 = x.z;
+		m21 = y.z;
+		m22 = z.z;
+	}
+
 	ILINE F Determinant() const
 	{
 		return (m00 * m11 * m22) + (m01 * m12 * m20) + (m02 * m10 * m21) - (m02 * m11 * m20) - (m00 * m12 * m21) - (m01 * m10 * m22);

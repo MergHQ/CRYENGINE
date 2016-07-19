@@ -197,7 +197,8 @@ public:
 	/////////////////////////////////////////////////////////////////////////////
 	// Packed parameters
 	uint32 m_StencilRef           : 8; //!< Stencil ref value
-	uint32 m_nVertexStreamSetSize : 8; //!< Highest vertex stream index
+	uint32 m_nNumVertexStreams  : 8; //!< Number of vertex streams specified
+	uint32 m_nLastVertexStreamSlot  : 8; //!< Highest vertex stream slot
 	uint32 m_bOwnPerInstanceCB    : 1; //!< True if object owns its own per instance constant buffer, and is not sharing it with other compiled object
 	uint32 m_bRenderNearest       : 1; //!< True if object needs to be rendered with nearest camera
 	uint32 m_bIncomplete          : 1; //!< True if compilation failed
@@ -225,8 +226,8 @@ public:
 	CGpuBuffer*           m_pExtraSkinWeights; // eight weight skinning
 
 	// Streams data.
-	CDeviceInputStream*          m_vertexStreamSet;
-	CDeviceInputStream*          m_indexStreamSet;
+	CDeviceInputStream*   m_vertexStreamSet;
+	CDeviceInputStream*   m_indexStreamSet;
 
 	std::vector<SInstancingData> m_InstancingCBs;
 
@@ -247,7 +248,8 @@ private:
 public:
 	CCompiledRenderObject()
 		: m_StencilRef(0)
-		, m_nVertexStreamSetSize(0)
+		, m_nNumVertexStreams(0)
+		, m_nLastVertexStreamSlot(0)
 		, m_bOwnPerInstanceCB(false)
 		, m_bIncomplete(true)
 		, m_bHasTessellation(false)
@@ -265,10 +267,10 @@ public:
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
 	bool Compile(CRenderObject* pRenderObject, float realTime);
-	void PrepareForUse(CDeviceGraphicsCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
+	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
 	bool DrawVerification(const SGraphicsPipelinePassContext& passContext) const;
-	void DrawToCommandList(CDeviceGraphicsCommandListRef RESTRICT_REFERENCE commandList, const CDeviceGraphicsPSOPtr& pPso, uint32 drawParamsIndex) const;
+	void DrawToCommandList(CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandList, const CDeviceGraphicsPSOPtr& pPso, uint32 drawParamsIndex) const;
 
 	void Init(const SShaderItem& shaderItem, CRendElementBase* pRE);
 

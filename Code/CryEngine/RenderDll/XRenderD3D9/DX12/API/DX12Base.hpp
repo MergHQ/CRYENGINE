@@ -47,15 +47,22 @@ extern int g_nPrintDX12;
 	#endif
 
 	#if     CRY_PLATFORM_64BIT
-		#define CRY_USE_DX12_MULTIADAPTER true
+		#define CRY_USE_DX12_MULTIADAPTER            true
+		#define CRY_USE_DX12_MULTIADAPTER_SIMULATION 0
 	#endif
 
 	#define DX12_PRECISE_DEDUPLICATION
-	#define DX12_MAP_DISCARD_MARKER       8
+	#define	DX12_MAP_STAGE_MULTIGPU       1
+	#define DX12_MAP_DISCARD_MARKER       BIT(3)
+	#define DX12_COPY_REVERTSTATE_MARKER  BIT(2)
+	#define DX12_COPY_PIXELSTATE_MARKER   BIT(3)
+	#define DX12_RESOURCE_FLAG_OVERLAP    BIT(1)
 	#define DX12_GPU_VIRTUAL_ADDRESS_NULL 0ULL
 	#define INVALID_CPU_DESCRIPTOR_HANDLE CD3DX12_CPU_DESCRIPTOR_HANDLE(D3D12_DEFAULT)
 	#define INVALID_GPU_DESCRIPTOR_HANDLE CD3DX12_GPU_DESCRIPTOR_HANDLE(D3D12_DEFAULT)
 	#define DX12_CONCURRENCY_ANALYZER     false
+	#define DX12_FENCE_ANALYZER           false
+	#define DX12_BARRIER_ANALYZER         false
 
 // Extract lowest set isolated bit "intrinsic" -> _blsi_u32 (Jaguar == PS4|XO, PileDriver+, Haswell+)
 	#define blsi(field) (field & (-static_cast<INT>(field)))

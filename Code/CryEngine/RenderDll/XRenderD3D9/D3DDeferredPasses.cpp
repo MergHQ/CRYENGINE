@@ -497,7 +497,7 @@ bool CD3D9Renderer::FX_DeferredRainGBuffer()
 		pShader->FXSetPSFloat(windParamName, &pWindParams, 1);
 	}
 
-	SPostEffectsUtils::SetTexture(CTexture::s_ptexStereoL, 9, FILTER_POINT, 0);
+	SPostEffectsUtils::SetTexture(CTexture::s_ptexStereoL, 8, FILTER_POINT, 0);
 	SPostEffectsUtils::SetTexture(CTexture::s_ptexStereoR, 10, FILTER_POINT, 0);
 	SPostEffectsUtils::SetTexture(CTexture::s_ptexSceneNormalsBent, 11, FILTER_POINT, 0);
 

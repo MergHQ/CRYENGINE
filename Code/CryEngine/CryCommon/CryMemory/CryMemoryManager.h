@@ -16,6 +16,7 @@
 #ifndef __CryMemoryManager_h__
 #define __CryMemoryManager_h__
 #pragma once
+#include "../CryCore/Assert/CryAssert.h"
 
 #if !defined(_RELEASE)
 //! Enable this to check for heap corruption on windows systems by walking the crt.
@@ -54,6 +55,237 @@ struct _HeapChecker
 #if !defined(MEMORY_SCOPE_CHECK_HEAP)
 	#define MEMORY_SCOPE_CHECK_HEAP() void(NULL)
 #endif
+
+//////////////////////////////////////////////////////////////////////////
+// Type to allow users of the allocation-defines to specialize on these
+// types of memory allocation.
+// Additionally it prevents the pointer from being manipulated or accessed
+// in a unintended fashion: ++,--,any manipulation of the pointer value etc.
+// Members are public, and intended hacking is still possible.
+
+template<class T>
+struct SHeapAllocation
+{
+	size_t size;
+	T*     address;
+	operator T*() const { return address; }
+	T* operator->() const { return address; }
+};
+
+// Workaround for: "template<class T> using stackmemory_t = memory_t<T>;"
+template<class T>
+struct SStackAllocation
+{
+	size_t size;
+	T*     address;
+	operator T*() const { return address; }
+	T* operator->() const { return address; }
+
+	operator SHeapAllocation<T> &() const { return *reinterpret_cast<SHeapAllocation<T>*>(this); }
+};
+
+//////////////////////////////////////////////////////////////////////////
+// _alloca is required to be 16-byte aligned (C11)
+// Needs to be a define, because _alloca() frees it's memory when going out of scope.
+#define CryStackAllocVector(Type, Count, Alignment) \
+  (Type*)(((uintptr_t)alloca(((Count) * sizeof(Type) + (Alignment - 1)) & ~(Alignment - 1))))
+
+// Fire an assert when the allocation is large enough to risk a stack overflow
+#define ALLOCA_LIMIT (128 * 1024)
+
+#define CryStackAllocWithSize(Type, Name, AlignmentFunc)             \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type));           \
+  assert(Name ## Size <= ALLOCA_LIMIT);                              \
+  Type* Name ## Mem = reinterpret_cast<Type*>(alloca(Name ## Size)); \
+  const SStackAllocation<Type> Name = { Name ## Size, Name ## Mem };
+
+#define CryStackAllocWithSizeCleared(Type, Name, AlignmentFunc)      \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type));           \
+  assert(Name ## Size <= ALLOCA_LIMIT);                              \
+  Type* Name ## Mem = reinterpret_cast<Type*>(alloca(Name ## Size)); \
+  const SStackAllocation<Type> Name = { Name ## Size, Name ## Mem }; \
+  ZeroMemory(Name ## Mem, Name ## Size);
+
+#define CryStackAllocWithSizeVector(Type, Count, Name, AlignmentFunc) \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));  \
+  assert(Name ## Size <= ALLOCA_LIMIT);                               \
+  Type* Name ## Mem = reinterpret_cast<Type*>(alloca(Name ## Size));  \
+  const SStackAllocation<Type> Name = { Name ## Size, Name ## Mem };
+
+#define CryStackAllocWithSizeVectorCleared(Type, Count, Name, AlignmentFunc) \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));         \
+  assert(Name ## Size <= ALLOCA_LIMIT);                                      \
+  Type* Name ## Mem = reinterpret_cast<Type*>(alloca(Name ## Size));         \
+  const SStackAllocation<Type> Name = { Name ## Size, Name ## Mem };         \
+  ZeroMemory(Name ## Mem, Name ## Size);
+
+#include <memory>
+
+namespace CryStack
+{
+
+// A stl compliant stack allocator that uses the stack frame.
+// It can only allocate a single time the full memory footprint
+// of the stl container it's used for.
+template<class T>
+class CSingleBlockAllocator
+{
+public:
+	typedef T                 value_type;
+	typedef value_type*       pointer;
+	typedef const value_type* const_pointer;
+	typedef value_type&       reference;
+	typedef const value_type& const_reference;
+	typedef size_t            size_type;
+	typedef ptrdiff_t         difference_type;
+	typedef std::allocator<T> fallback_allocator_type;
+
+	template<class value_type1> struct rebind
+	{
+		typedef CSingleBlockAllocator<value_type1> other;
+	};
+
+	CSingleBlockAllocator(const SStackAllocation<T>& stack_allocation)
+	{
+		assert(stack_allocation.address != nullptr);
+		this->stack_capacity = stack_allocation.size;
+		this->stack_memory = stack_allocation.address;
+	}
+
+	CSingleBlockAllocator(size_t stack_capacity, void* stack_memory)
+	{
+		assert(stack_memory != nullptr);
+		this->stack_capacity = stack_capacity;
+		this->stack_memory = reinterpret_cast<value_type*>(stack_memory);
+	}
+
+	CSingleBlockAllocator(const CSingleBlockAllocator<value_type>& other)
+	{
+		stack_capacity = other.stack_capacity;
+		stack_memory = other.stack_memory;
+	}
+
+	CSingleBlockAllocator(const CSingleBlockAllocator<value_type>&& other)
+	{
+		stack_capacity = other.stack_capacity;
+		stack_memory = other.stack_memory;
+	}
+
+	~CSingleBlockAllocator()
+	{
+	}
+
+	// in visual studio when in debug configuration,
+	// stl containers create a proxy allocator and call allocate(1) once during construction
+	// this copy constructor is needed to cope with that behavior, and will use a standard
+	// allocator in case this occurs
+	template<class value_type1> CSingleBlockAllocator(const CSingleBlockAllocator<value_type1>& other)
+	{
+		stack_capacity = 0;
+		stack_memory = nullptr;
+	}
+
+	pointer       address(reference x) const       { return &x; }
+	const_pointer address(const_reference x) const { return &x; }
+
+	value_type*   allocate(size_type n, const void* hint = 0)
+	{
+		if (stack_memory == nullptr)
+		{
+			// allocating something else than the main block
+			return fallback_allocator_type().allocate(n, hint);
+		}
+		if (n != max_size())
+		{
+			// main block allocation is of the wrong size, this is a performance hazard, but not fatal
+			assert(0 && "Only a reserve of the correct size is possible on the stack, falling back to heap memory.");
+			return fallback_allocator_type().allocate(n, hint);
+		}
+		return stack_memory;
+	}
+
+	void deallocate(pointer p, size_type n)
+	{
+		if (stack_memory != p)
+			return fallback_allocator_type().deallocate(p, n);
+	}
+
+	size_type max_size() const           { return stack_capacity / sizeof(value_type); }
+
+	void      destroy(pointer p)         { p->~value_type(); }
+
+	void      cleanup()                  {}
+
+	size_t    get_heap_size()            { return 0; }
+
+	size_t    get_wasted_in_allocation() { return 0; }
+
+	size_t    get_wasted_in_blocks()     { return 0; }
+
+private:
+	// in case a standard allocator is used (which should only occur in debug configurations)
+	// stack_memory is set to nullptr
+	size_t      stack_capacity;
+	value_type* stack_memory;
+};
+
+// template<template<typename, class> class C, typename T> using CSingleBlockContainer = C<T, CSingleBlockAllocator<T>>;
+// template<typename T> using CSingleBlockVector = CSingleBlockContainer<std::vector, T>;
+}
+
+#define CryStackAllocatorWithSize(Type, Name, AlignmentFunc) \
+  CryStackAllocWithSize(Type, Name ## T, AlignmentFunc);     \
+  CryStack::CSingleBlockAllocator<Type> Name(Name ## T);
+
+#define CryStackAllocatorWithSizeCleared(Type, Name, AlignmentFunc) \
+  CryStackAllocWithSizeCleared(Type, Name ## T, AlignmentFunc);     \
+  CryStack::CSingleBlockAllocator<Type> Name(Name ## T);
+
+#define CryStackAllocatorWithSizeVector(Type, Count, Name, AlignmentFunc) \
+  CryStackAllocWithSizeVector(Type, Count, Name ## T, AlignmentFunc);     \
+  CryStack::CSingleBlockAllocator<Type> Name(Name ## T);
+
+#define CryStackAllocatorWithSizeVectorCleared(Type, Count, Name, AlignmentFunc) \
+  CryStackAllocWithSizeVectorCleared(Type, Count, Name ## T, AlignmentFunc);     \
+  CryStack::CSingleBlockAllocator<Type> Name(Name ## T);
+
+//////////////////////////////////////////////////////////////////////////
+// variation of CryStackAlloc behaving identical, except memory is taken from heap instead of stack
+#define CryScopedMem(Type, Size, Name)                                                \
+  struct Name ## SMemScoped {                                                         \
+    Name ## SMemScoped(size_t S) {                                                    \
+      Name = reinterpret_cast<Type*>(CryModuleMemalign(S, CRY_PLATFORM_ALIGNMENT)); } \
+    ~Name ## SMemScoped() {                                                           \
+      if (Name != nullptr) CryModuleMemalignFree(Name); }                             \
+    Type* Name;                                                                       \
+  };                                                                                  \
+  Name ## SMemScoped Name ## MemScoped(Size);                                         \
+
+#define CryScopedAllocWithSize(Type, Name, AlignmentFunc)  \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type)); \
+  CryScopedMem(Type, Name ## Size, Name);                  \
+  Type* Name ## Mem = Name ## MemScoped.Name;              \
+  const SHeapAllocation<Type> Name = { Name ## Size, Name ## Mem };
+
+#define CryScopedAllocWithSizeCleared(Type, Name, AlignmentFunc)    \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type));          \
+  CryScopedMem(Type, Name ## Size, Name);                           \
+  Type* Name ## Mem = Name ## MemScoped.Name;                       \
+  const SHeapAllocation<Type> Name = { Name ## Size, Name ## Mem }; \
+  ZeroMemory(Name ## Mem, Name ## Size);
+
+#define CryScopedAllocWithSizeVector(Type, Count, Name, AlignmentFunc) \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));   \
+  CryScopedMem(Type, Name ## Size, Name);                              \
+  Type* Name ## Mem = Name ## MemScoped.Name;                          \
+  const SHeapAllocation<Type> Name = { Name ## Size, Name ## Mem };
+
+#define CryScopedAllocWithSizeVectorCleared(Type, Count, Name, AlignmentFunc) \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));          \
+  CryScopedMem(Type, Name ## Size, Name);                                     \
+  Type* Name ## Mem = Name ## MemScoped.Name;                                 \
+  const SHeapAllocation<Type> Name = { Name ## Size, Name ## Mem };           \
+  ZeroMemory(Name ## Mem, Name ## Size);
 
 //////////////////////////////////////////////////////////////////////////
 // Define this if you want to use slow debug memory manager in any config.
@@ -309,7 +541,11 @@ CRYMM_INLINE void CryModuleFree(void* memblock)
 CRYMM_INLINE void CryModuleMemalignFree(void* memblock)
 {
 	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	#if defined(__GNUC__) && !CRY_PLATFORM_APPLE
 	free(memblock);
+	#else
+	_aligned_free(memblock);
+	#endif
 	MEMREPLAY_SCOPE_FREE(memblock);
 }
 
@@ -347,7 +583,7 @@ CRYMM_INLINE void* CryModuleReallocAlign(void* memblock, size_t size, size_t ali
 			#error "Not implemented"
 		#endif    // __GNUC__
 	#else
-	void* ret = realloc(memblock, size);
+	void* ret = _aligned_realloc(memblock, size, alignment);
 	#endif
 	MEMREPLAY_SCOPE_REALLOC(memblock, ret, size, alignment);
 	return ret;
@@ -359,7 +595,7 @@ CRYMM_INLINE void* CryModuleMemalign(size_t size, size_t alignment)
 	#if defined(__GNUC__) && !CRY_PLATFORM_APPLE
 	void* ret = memalign(alignment, size);
 	#else
-	void* ret = malloc(size);
+	void* ret = _aligned_malloc(size, alignment);
 	#endif
 	MEMREPLAY_SCOPE_ALLOC(ret, size, alignment);
 	return ret;

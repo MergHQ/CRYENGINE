@@ -7,13 +7,14 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureAudio = false;
-
 namespace pfx2
 {
 
 static const ColorB audioColor = ColorB(172, 196, 138);
 typedef TIOStream<IAudioProxy*> TIOAudioProxies;
+
+EParticleDataType PDT(EPDT_AudioProxy, IAudioProxy*);
+
 
 SERIALIZATION_DECLARE_ENUM(ETriggerType,
                            OnSpawn,

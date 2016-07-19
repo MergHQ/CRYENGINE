@@ -878,7 +878,7 @@ void SRenderThread::RC_ReleaseSurfaceResource(SDepthTexture* pRes)
 	{
 		if (pRes)
 		{
-			pRes->Release();
+			pRes->Release(true);
 		}
 		return;
 	}
@@ -1901,20 +1901,6 @@ void SRenderThread::RC_PrepareStereo(int mode, int output)
 	EndCommand(p);
 }
 
-void SRenderThread::RC_CopyToStereoTex(int channel)
-{
-	if (IsRenderThread())
-	{
-		gRenDev->RT_CopyToStereoTex(channel);
-		return;
-	}
-
-	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_CopyToStereoTex, 4);
-	AddDWORD(p, channel);
-	EndCommand(p);
-}
-
 void SRenderThread::RC_SetStereoEye(int eye)
 {
 	if (IsRenderThread())
@@ -2586,7 +2572,7 @@ void SRenderThread::ProcessCommands()
 				SDepthTexture* pRes = ReadCommand<SDepthTexture*>(n);
 				if (pRes)
 				{
-					pRes->Release();
+					pRes->Release(true);
 				}
 			}
 			break;
@@ -2850,12 +2836,6 @@ void SRenderThread::ProcessCommands()
 				int output = ReadCommand<int>(n);
 				if (m_eVideoThreadMode == eVTM_Disabled)
 					gRenDev->RT_PrepareStereo(mode, output);
-			}
-			break;
-		case eRC_CopyToStereoTex:
-			{
-				int channel = ReadCommand<int>(n);
-				gRenDev->RT_CopyToStereoTex(channel);
 			}
 			break;
 		case eRC_SetStereoEye:

@@ -56,7 +56,7 @@ private:
 	public:
 		CShadowMapPass(CShadowMapStage* pStage);
 
-		void                    PrepareResources();
+		void                    PrepareResources(CRenderView* pMainView);
 		void                    PreRender();
 
 		CDeviceResourceSetPtr   GetResources() { return m_pPerPassResources; }
@@ -112,7 +112,7 @@ private:
 	bool CreatePipelineState(const SGraphicsPipelineStateDescription& description, EPass passID, CDeviceGraphicsPSOPtr& outPSO);
 
 	void PrepareShadowPool(CRenderView* pMainView);
-	void PrepareShadowPasses(SShadowFrustumToRender& frustumToRender, CRenderView::eShadowFrustumRenderType frustumRenderType);
+	void PrepareShadowPasses(SShadowFrustumToRender& frustumToRender, CRenderView::eShadowFrustumRenderType frustumRenderType, CRenderView* pMainView);
 
 	void PreparePassIDForFrustum(const SShadowFrustumToRender& frustumToRender, CRenderView::eShadowFrustumRenderType frustumRenderType, EPass& passID, ProfileLabel& profileLabel) const;
 	void PrepareShadowPassForFrustum(const SShadowFrustumToRender& frustumToRender, int nSide, CShadowMapPass& targetPass) const;

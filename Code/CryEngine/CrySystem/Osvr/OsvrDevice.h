@@ -102,7 +102,6 @@ private:
 	std::string                            m_vendor;
 
 	OSVR_ClientContext                     m_context;
-	OSVR_ClientContext                     m_renderContext;
 	OSVR_ClientInterface                   m_headInterface;
 	OSVR_DisplayConfig                     m_displayConfig;
 	OSVR_RenderManager                     m_renderManager;

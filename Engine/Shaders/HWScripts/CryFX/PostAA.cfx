@@ -656,7 +656,7 @@ pixout PostAA_PS(vtxOutAA IN)
 
 #define SCALE_PIXELSIZE 2
 
-pixout LumaEdgeDetectionSMAA_PS(vtxOutAA IN)
+pixout LumaEdgeDetectionSMAA_PS(vtxOut IN)
 {
   pixout OUT = (pixout) 0;
 
@@ -947,7 +947,7 @@ void SMAADetectVerticalCornerPattern(sampler2D edgesTex, inout float2 weights, f
 }
 
 // Second pass: Blending Weight Calculation
-pixout BlendWeightSMAA_PS(vtxOutAA IN)
+pixout BlendWeightSMAA_PS(vtxOut IN)
 {
 	pixout OUT = (pixout) 0;
 	// tex0 = edgesTex
@@ -1073,7 +1073,7 @@ pixout BlendWeightSMAA_PS(vtxOutAA IN)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pixout NeighborhoodBlendingSMAA_PS(vtxOutAA IN)
+pixout NeighborhoodBlendingSMAA_PS(vtxOut IN)
 {
 	pixout OUT = (pixout) 0;
 
@@ -1147,7 +1147,7 @@ technique LumaEdgeDetectionSMAA
 {
   pass p0
   {
-    VertexShader = PostAA_VS() PostAA_VS;
+    VertexShader = FullscreenTriVS();
     PixelShader = LumaEdgeDetectionSMAA_PS() PostAA_PS;
     CullMode = None;        
   }
@@ -1157,7 +1157,7 @@ technique BlendWeightSMAA
 {
   pass p0
   {
-    VertexShader = PostAA_VS() PostAA_VS;
+    VertexShader = FullscreenTriVS();
     PixelShader = BlendWeightSMAA_PS() PostAA_PS;
     CullMode = None;        
   }
@@ -1167,7 +1167,7 @@ technique NeighborhoodBlendingSMAA
 {
   pass p0
   {
-    VertexShader = PostAA_VS() PostAA_VS;
+    VertexShader = FullscreenTriVS() PostAA_VS;
     PixelShader = NeighborhoodBlendingSMAA_PS() PostAA_PS;
     CullMode = None;        
   }
@@ -1223,7 +1223,7 @@ void ApplyFilmGrain(inout half4 cScene, in half3 cColor, float4 baseTC)
 	cScene.xyz = lerp((cColor.xyz * fFilmGrain * 2.h), (1.h - (2.h * (1.h - cColor.xyz) * (1.h - fFilmGrain))), cScene.xyz);
 }
 
-pixout PostAAComposites_PS(vtxOutAA IN)
+pixout PostAAComposites_PS(vtxOut IN)
 {
   pixout OUT = (pixout) 0;
 
@@ -1263,7 +1263,7 @@ technique PostAAComposites
 {
   pass p0
   {
-    VertexShader = PostAA_VS() PostAA_VS;
+    VertexShader = FullscreenTriVS();
     PixelShader = PostAAComposites_PS() PostAA_PS;
     CullMode = None;        
   }

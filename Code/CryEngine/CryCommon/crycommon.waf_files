@@ -28,6 +28,7 @@
       "CryCore/CryFlags.h",
       "CryCore/CryTypeInfo.h",
       "CryCore/CryTypeInfo.inl",
+      "CryCore/DynamicEnum.h",
       "CryCore/Common_TypeInfo2.h",
       "CryCore/Common_TypeInfo.h",
       "CryCore/TypeInfo_decl.h",
@@ -482,6 +483,7 @@
       "CryRenderer/IGpuParticles.h",
       "CryRenderer/IGpuPhysics.h",
       "CryRenderer/IComputeSkinning.h",
+	  "CryRenderer/IScaleform.h",
       {
         "RenderElements":[
           "CryRenderer/RenderElements/CREBreakableGlass.h",

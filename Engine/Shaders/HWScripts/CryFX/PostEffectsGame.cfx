@@ -1148,12 +1148,13 @@ technique WaterVolumesNormalGen
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // color charts merging
 
-sampler2D layer0Sampler : register (s0);
-sampler2D layer1Sampler : register (s1);
-sampler2D layer2Sampler : register (s2);
-sampler2D layer3Sampler : register (s3);
+Texture2D layer0Tex : register (t0);
+Texture2D layer1Tex : register (t1);
+Texture2D layer2Tex : register (t2);
+Texture2D layer3Tex : register (t3);
 
 float4 LayerBlendAmount;
+float2 LayerSize;
 
 struct a2v_cch
 {
@@ -1184,18 +1185,19 @@ pixout MergeColorChartsPS(v2f_cch IN)
 {
 	pixout OUT;
 
-	half3 col = half3(tex2D(layer0Sampler, IN.baseTC.xy).xyz) * half(LayerBlendAmount.x);
+	uint3 tc  = uint3(IN.baseTC.xy * LayerSize, 0);
+	half3 col = half3(layer0Tex.Load(tc).xyz) * half(LayerBlendAmount.x);
 	
 	#if %_RT_SAMPLE1 || %_RT_SAMPLE0
-		col += half3(tex2D(layer1Sampler, IN.baseTC.xy).xyz) * half(LayerBlendAmount.y);
+		col += half3(layer1Tex.Load(tc).xyz) * half(LayerBlendAmount.y);
 	#endif
 	
 	#if %_RT_SAMPLE1
-		col += half3(tex2D(layer2Sampler, IN.baseTC.xy).xyz) * half(LayerBlendAmount.z);
+		col += half3(layer2Tex.Load(tc).xyz) * half(LayerBlendAmount.z);
 	#endif
 	
 	#if %_RT_SAMPLE1 && %_RT_SAMPLE0
-		col += half3(tex2D(layer3Sampler, IN.baseTC.xy).xyz) * half(LayerBlendAmount.w);
+		col += half3(layer3Tex.Load(tc).xyz) * half(LayerBlendAmount.w);
 	#endif
  
   OUT.Color = half4(col, 1);
@@ -1216,7 +1218,9 @@ technique MergeColorCharts
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // combine color matrix with color chart
 
-sampler2D mergedChartSampler : register (s0);
+Texture2D    mergedChartTex     : register (t0);
+SamplerState mergedChartSampler : register (s0);
+
 sampler3D mergedChartSampler3D : register (s0);
 
 float4 ColorMatrixRow0;
@@ -1276,7 +1280,7 @@ pixout CombineColorGradingWithColorChartPS(v2f_cch IN)
 #endif
 
 
-	TexColorChart2D(mergedChartSampler, col.xyz);
+  TexColorChart2D(mergedChartTex, mergedChartSampler, col.xyz);
   OUT.Color = col;
 
 	return OUT;

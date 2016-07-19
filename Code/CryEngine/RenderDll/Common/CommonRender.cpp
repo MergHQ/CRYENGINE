@@ -150,26 +150,11 @@ bool CBaseResource::UnRegister()
 	return false;
 }
 
-int32 CBaseResource::Release()
+void CBaseResource::UnregisterAndDelete()
 {
-	IF (m_nRefCount > 0, 1)
-	{
-		int32 nRef = CryInterlockedDecrement(&m_nRefCount);
-		if (nRef < 0)
-		{
-			CryFatalError("CBaseResource::Release() called more than once!");
-		}
-
-		if (nRef == 0)
-		{
-			UnRegister();
-			if (gRenDev && gRenDev->m_pRT)
-				gRenDev->m_pRT->RC_ReleaseBaseResource(this);
-			return 0;
-		}
-		return nRef;
-	}
-	return 0;
+	UnRegister();
+	if (gRenDev && gRenDev->m_pRT)
+		gRenDev->m_pRT->RC_ReleaseBaseResource(this);
 }
 
 //=================================================================

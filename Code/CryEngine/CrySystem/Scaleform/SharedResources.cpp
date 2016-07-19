@@ -7,12 +7,15 @@
 	#include "SharedResources.h"
 	#include "SharedStates.h"
 	#include "GFxVideoWrapper.h"
-	#include "GImageInfoXRender.h"
 	#include "FlashPlayerInstance.h"
 	#include <CryMemory/CrySizer.h>
-	#include <CrySystem/ISystem.h>
 	#include "GImeHelper.h"
 	#include "GConfig.h"
+
+	#include <CrySystem/Scaleform/ConfigScaleform_impl.h>
+	#include <CryRenderer/IScaleform.h>
+	#include "ScaleformRecording.h"
+	#include "GImageInfo_Impl.h"
 
 	#ifdef GHEAP_TRACE_ALL
 
@@ -162,7 +165,7 @@ CSharedFlashPlayerResources& CSharedFlashPlayerResources::GetAccess()
 CSharedFlashPlayerResources::CSharedFlashPlayerResources()
 	: m_pGSystemInit(0)
 	, m_pLoader(0)
-	, m_pRenderer(0)
+	, m_pRecorder(0)
 	, m_pMeshCacheResetThread(0)
 	#if defined(USE_GFX_IME)
 	, m_pImeHelper(0)
@@ -174,7 +177,7 @@ CSharedFlashPlayerResources::CSharedFlashPlayerResources()
 	m_pGSystemInit = new GSystemInitWrapper();
 	assert(m_pGSystemInit);
 	m_pLoader = new GFxLoader2();
-	m_pRenderer = new GRendererXRender();
+	m_pRecorder = new CScaleformRecording();
 	m_pMeshCacheResetThread = new MeshCacheResetThread();
 
 	#if defined(USE_GFX_IME)
@@ -197,9 +200,9 @@ CSharedFlashPlayerResources::~CSharedFlashPlayerResources()
 	SAFE_DELETE(m_pMeshCacheResetThread);
 	assert(!m_pLoader || m_pLoader->GetRefCount() == 1);
 	SAFE_RELEASE(m_pLoader);
-	m_pRenderer->ReleaseResources();
-	assert(!m_pRenderer || m_pRenderer->GetRefCount() == 1);
-	SAFE_RELEASE(m_pRenderer);
+	m_pRecorder->ReleaseResources();
+	assert(!m_pRecorder || m_pRecorder->GetRefCount() == 1);
+	SAFE_RELEASE(m_pRecorder);
 	SAFE_DELETE(m_pGSystemInit);
 }
 
@@ -230,12 +233,12 @@ GFxLoader2* CSharedFlashPlayerResources::GetLoader(bool getRawInterface)
 	return m_pLoader;
 }
 
-GRendererXRender* CSharedFlashPlayerResources::GetRenderer(bool getRawInterface)
+IScaleformRecording* CSharedFlashPlayerResources::GetRenderer(bool getRawInterface /*= false*/)
 {
-	assert(m_pRenderer);
+	assert(m_pRecorder);
 	if (!getRawInterface)
-		m_pRenderer->AddRef();
-	return m_pRenderer;
+		m_pRecorder->AddRef();
+	return m_pRecorder;
 }
 
 CryGFxMemInterface::Stats CSharedFlashPlayerResources::GetSysAllocStats() const
@@ -255,7 +258,7 @@ void CSharedFlashPlayerResources::GetMemoryUsage(ICrySizer* pSizer) const
 	assert(pSizer);
 	pSizer->AddObject(m_pGSystemInit);
 	pSizer->AddObject(m_pLoader);
-	pSizer->AddObject(m_pRenderer);
+	pSizer->AddObject(m_pRecorder);
 }
 
 int CSharedFlashPlayerResources::CreateMemoryArena(unsigned int arenaID, bool resetCache) const

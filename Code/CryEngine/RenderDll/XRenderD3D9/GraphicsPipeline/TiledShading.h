@@ -1,0 +1,55 @@
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+#pragma once
+
+#include "Common/GraphicsPipelineStage.h"
+#include "Common/ComputeRenderPass.h"
+#include "Common/FullscreenPass.h"
+
+class CTiledShadingStage : public CGraphicsPipelineStage
+{
+public:
+	CTiledShadingStage();
+	~CTiledShadingStage();
+
+	void Init();
+	void Execute();
+	void PrepareResources();
+
+private:
+	void PrepareLightVolumeInfo();
+	bool ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispatchSizeY);
+
+private:
+	enum EVolumeTypes
+	{
+		eVolumeType_Box,
+		eVolumeType_Sphere,
+		eVolumeType_Cone,
+
+		eVolumeType_Count
+	};
+	
+	struct SVolumeGeometry
+	{
+		CGpuBuffer       vertexDataBuf;
+		buffer_handle_t  vertexBuffer;
+		buffer_handle_t  indexBuffer;
+		uint32           numVertices;
+		uint32           numIndices;
+	};
+
+private:
+	int                   m_samplerTrilinearClamp;
+	int                   m_samplerCompare;
+	
+	CComputeRenderPass    m_passCullingShading;
+	
+	CFullscreenPass       m_passCopyDepth;
+	CPrimitiveRenderPass  m_passLightVolumes;
+	CRenderPrimitive      m_volumePasses[eVolumeType_Count * 2];  // Inside and outside of volume for each type
+	uint32                m_numVolumesPerPass[eVolumeType_Count * 2];
+
+	CGpuBuffer            m_lightVolumeInfoBuf;
+	SVolumeGeometry       m_volumeMeshes[eVolumeType_Count];
+};

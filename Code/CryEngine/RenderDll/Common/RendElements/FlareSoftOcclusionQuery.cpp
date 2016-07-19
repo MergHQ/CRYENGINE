@@ -215,9 +215,8 @@ void CSoftOcclusionManager::ComputeVisibility()
 
 	const uint32 vertexCount = GetSize() * 4;
 
-	TempDynVB<SVF_P3F_C4B_T2F> vb;
-	vb.Allocate(vertexCount);
-	SVF_P3F_C4B_T2F* pDeviceVBAddr = vb.Lock();
+	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+	CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, vertexCount, pDeviceVBAddr, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 	for (int i(0), iSoftOcclusionListSize(GetSize()); i < iSoftOcclusionListSize; ++i)
 	{
@@ -243,11 +242,9 @@ void CSoftOcclusionManager::ComputeVisibility()
 		pDeviceVBAddr[offset + 3].xyz = Vec3(sInfo.x0, sInfo.y0, sInfo.lineardepth);
 	}
 
-	vb.Unlock();
-	vb.Bind(0);
-	vb.Release();
+	TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(pDeviceVBAddr, vertexCount, 0);
 
-	if (pDeviceVBAddr && m_bSuccessGenerateIB)
+	if (m_bSuccessGenerateIB)
 	{
 		CTexture::s_ptexZTargetScaled->Apply(0, CTexture::GetTexState(ShadowTexState));
 
@@ -268,9 +265,8 @@ bool CSoftOcclusionManager::GenerateIndexBuffer()
 	if (m_IndexBufferCount <= 0)
 		return false;
 
-	TempDynIB16 ib;
-	ib.Allocate(m_IndexBufferCount);
-	uint16* pDeviceIBAddr = ib.Lock();
+	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+	CryStackAllocWithSizeVector(uint16, m_IndexBufferCount, pDeviceIBAddr, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 	for (int i(0), iSoftOcclusionListSize(GetSize()); i < iSoftOcclusionListSize; ++i)
 	{
@@ -287,10 +283,7 @@ bool CSoftOcclusionManager::GenerateIndexBuffer()
 		pDeviceIBAddr[offset0 + 5] = offset1 + 0;
 	}
 
-	ib.Unlock();
-	m_IndexBufferOffset = 0;
-	ib.Bind();
-	ib.Release();
+	TempDynIB16::CreateFillAndBind(pDeviceIBAddr, m_IndexBufferCount);
 
 	return true;
 }
@@ -308,15 +301,15 @@ void CSoftOcclusionManager::GatherOcclusions()
 
 	const uint32 vertexCount = GetSize() * 4;
 
-	TempDynVB<SVF_P3F_C4B_T2F> vb;
-	vb.Allocate(vertexCount);
-	SVF_P3F_C4B_T2F* pDeviceVBAddr = vb.Lock();
+	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+	CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, vertexCount, pDeviceVBAddr, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 	for (int i = 0, iSoftOcclusionListSize(GetSize()); i < iSoftOcclusionListSize; ++i)
 	{
 		CFlareSoftOcclusionQuery* pSoftOcclusion = GetSoftOcclusionQuery(i);
 		if (pSoftOcclusion == NULL)
 			continue;
+
 		int offset = i * 4;
 		pSoftOcclusion->GetDomainInTexture(x0, y0, x1, y1);
 		for (int k = 0; k < 4; ++k)
@@ -324,21 +317,21 @@ void CSoftOcclusionManager::GatherOcclusions()
 			pDeviceVBAddr[offset + k].st = Vec2((x0 + x1) * 0.5f * gcpRendD3D->m_CurViewportScale.x, (y0 + y1) * 0.5f * gcpRendD3D->m_CurViewportScale.y);
 			pDeviceVBAddr[offset + k].color.dcolor = 0xFFFFFFFF;
 		}
-		x0 = x0 * 2.0f - 1.0f;
+
+		x0 =  (x0 * 2.0f - 1.0f);
 		y0 = -(y0 * 2.0f - 1.0f);
-		x1 = x1 * 2.0f - 1.0f;
+		x1 =  (x1 * 2.0f - 1.0f);
 		y1 = -(y1 * 2.0f - 1.0f);
+
 		pDeviceVBAddr[offset + 0].xyz = Vec3(x0, y1, 1);
 		pDeviceVBAddr[offset + 1].xyz = Vec3(x1, y1, 1);
 		pDeviceVBAddr[offset + 2].xyz = Vec3(x1, y0, 1);
 		pDeviceVBAddr[offset + 3].xyz = Vec3(x0, y0, 1);
 	}
 
-	vb.Unlock();
-	vb.Bind(0);
-	vb.Release();
+	TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(pDeviceVBAddr, vertexCount, 0);
 
-	if (pDeviceVBAddr && m_bSuccessGenerateIB)
+	if (m_bSuccessGenerateIB)
 	{
 		static CCryNameR occlusionNormalizedSizeName("occlusionNormalizedSize");
 		const Vec4 occlusionSizeParam(CFlareSoftOcclusionQuery::s_fSectorWidth, CFlareSoftOcclusionQuery::s_fSectorHeight, 0, 0);

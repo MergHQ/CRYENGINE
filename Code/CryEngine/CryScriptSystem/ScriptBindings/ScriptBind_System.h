@@ -687,20 +687,6 @@ public:
 	//! <seealso cref="SetSkyHighlight">
 	int GetSkyHighlight(IFunctionHandler* pH, SmartScriptTable params);
 
-	//! <code>System.PushCloudBlocker( params )</code>
-	//! <description>Push cloud blocker in this frame.</description>
-	//! <seealso cref="GetCloudBlocker">
-	//!		<param name="params">Table with cloud blocker parameters.
-	//!			<para>
-	//!				Cloud blocker Params     Meaning
-	//!				--------------------     -----------
-	//!				position                 the center position of blocker.
-	//!				decayStart               the distance from the center of blocker to cloud density decay start.
-	//!				decayEnd                 the distance from the center of blocker to cloud density decay end.
-	//!				decayInfluence           the influence of cloud density decay.
-	//!			 </para></param>
-	int PushCloudBlocker(IFunctionHandler* pH, SmartScriptTable params);
-
 	//! <code>System.LoadLocalizationXml( filename )</code>
 	//! <description>Loads Excel exported xml file with text and dialog localization data.</description>
 	int LoadLocalizationXml(IFunctionHandler* pH, const char* filename);

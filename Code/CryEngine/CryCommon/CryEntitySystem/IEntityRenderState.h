@@ -37,7 +37,7 @@ enum EERType
 	eERType_RenderProxy,
 	eERType_GameEffect,
 	eERType_BreakableGlass,
-	eERType_Dummy_3, //!< Used to be eERType_LightShape, preserve order for compatibility.
+	eERType_CloudBlocker,
 	eERType_MergedMesh,
 	eERType_GeomCache,
 	eERType_TypesNum, //!< Must be at the end - gives the total number of ER types.
@@ -595,6 +595,22 @@ struct ICloudRenderNode : public IRenderNode
 	// </interfuscator:shuffle>
 };
 
+struct SCloudBlockerProperties
+{
+	f32   decayStart;
+	f32   decayEnd;
+	f32   decayInfluence;
+	bool  bScreenspace;
+};
+
+//! Interface to the Cloud Blocker Render Node object.
+struct ICloudBlockerRenderNode : public IRenderNode
+{
+	// <interfuscator:shuffle>
+	virtual void SetProperties(const SCloudBlockerProperties& properties) = 0;
+	// </interfuscator:shuffle>
+};
+
 //! Interface to the Road Render Node object.
 struct IRoadRenderNode : public IRenderNode
 {
@@ -687,6 +703,14 @@ struct SFogVolumeProperties
 
 struct IFogVolumeRenderNode : public IRenderNode
 {
+	enum eFogVolumeType
+	{
+		eFogVolumeType_Ellipsoid = 0,
+		eFogVolumeType_Box = 1,
+
+		eFogVolumeType_Count,
+	};
+
 	// <interfuscator:shuffle>
 	virtual void            SetFogVolumeProperties(const SFogVolumeProperties& properties) = 0;
 	virtual const Matrix34& GetMatrix() const = 0;

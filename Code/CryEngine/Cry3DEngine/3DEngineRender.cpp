@@ -47,6 +47,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryAISystem/IAISystem.h>
 #include <CryCore/Platform/IPlatformOS.h>
+#include "WaterRippleManager.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "SVO/SceneTreeManager.h"
@@ -1589,16 +1590,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 #endif
 
 	////////////////////////////////////////////////////////////////////////////////////////
-	// Define indoor visibility
-	////////////////////////////////////////////////////////////////////////////////////////
-
-	if (m_pVisAreaManager)
-	{
-		m_pVisAreaManager->DrawOcclusionAreasIntoCBuffer(passInfo);
-		m_pVisAreaManager->CheckVis(passInfo);
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////////
 	// Draw potential occluders into z-buffer
 	////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1618,6 +1609,16 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	GetRenderer()->EF_StartEf(passInfo);
+
+	////////////////////////////////////////////////////////////////////////////////////////
+	// Define indoor visibility
+	////////////////////////////////////////////////////////////////////////////////////////
+
+	if (m_pVisAreaManager)
+	{
+		m_pVisAreaManager->DrawOcclusionAreasIntoCBuffer(passInfo);
+		m_pVisAreaManager->CheckVis(passInfo);
+	}
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Add clip volumes to renderer
@@ -1768,6 +1769,11 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	passInfo.GetRendItemSorter().IncreaseGroupCounter();
 
 	ProcessOcean(passInfo);
+
+	if (m_pWaterRippleManager)
+	{
+		m_pWaterRippleManager->Render(passInfo);
+	}
 
 	if (m_pDecalManager && passInfo.RenderDecals())
 		m_pDecalManager->Render(passInfo);
@@ -1941,9 +1947,6 @@ void C3DEngine::ProcessOcean(const SRenderingPassInfo& passInfo)
 			}
 		}
 	}
-
-	if (GetCVars()->e_WaterRipplesDebug > 0)
-		GetRenderer()->EF_DrawWaterSimHits();
 }
 
 void C3DEngine::RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo)
@@ -3352,6 +3355,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		DRAW_OBJ_STATS(eERType_RenderProxy);
 		DRAW_OBJ_STATS(eERType_GameEffect);
 		DRAW_OBJ_STATS(eERType_BreakableGlass);
+		DRAW_OBJ_STATS(eERType_CloudBlocker);
 		DRAW_OBJ_STATS(eERType_MergedMesh);
 		DRAW_OBJ_STATS(eERType_GeomCache);
 

@@ -124,7 +124,7 @@ public:
 
 		if (m_LastCompletedValue < currentCompletedValue)
 		{
-			DX12_LOG(g_nPrintDX12, "Completed fence(s): %d to %d", m_LastCompletedValue + 1, currentCompletedValue);
+			DX12_LOG(DX12_FENCE_ANALYZER, "Completed fence(s): %lld to %lld", m_LastCompletedValue + 1, currentCompletedValue);
 		}
 
 	#ifdef DX12_IN_ORDER_TERMINATION
@@ -259,7 +259,7 @@ public:
 
 		if (m_LastCompletedValues[id] < currentCompletedValue)
 		{
-			DX12_LOG(g_nPrintDX12, "Completed GPU fence %s: %d to %d", id == CMDQUEUE_GRAPHICS ? "gfx" : id == CMDQUEUE_COMPUTE ? "cmp" : "cpy", m_LastCompletedValues[id] + 1, currentCompletedValue);
+			DX12_LOG(DX12_FENCE_ANALYZER, "Completed GPU fence %s: %lld to %lld", id == CMDQUEUE_GRAPHICS ? "gfx" : id == CMDQUEUE_COMPUTE ? "cmp" : "cpy", m_LastCompletedValues[id] + 1, currentCompletedValue);
 		}
 
 	#ifdef DX12_IN_ORDER_TERMINATION

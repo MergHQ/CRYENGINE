@@ -130,10 +130,7 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const QuatTS& O
 		if (pCharPhys && pCharPhys->GetType() == PE_ARTICULATED && pCharPhys->GetParams(&pf) && pf.flags & aef_recorded_physics)
 			RenderMat34 = RenderMat34 * Matrix34(Offset);
 
-		ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
-		bool bRenderCHR = (cvar_gd && cvar_gd->GetIVal() == 0);
-		if (bRenderCHR)
-			RenderCHR(RendParams, RenderMat34, passInfo);
+		RenderCHR(RendParams, RenderMat34, passInfo);
 	}
 
 	// draw weapon and binded objects

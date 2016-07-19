@@ -899,29 +899,28 @@ ICharacterInstance* CAttachmentManager::GetSkelInstance() const
 float CAttachmentManager::GetExtent(EGeomForm eForm)
 {
 	CGeomExtent& extent = m_Extents.Make(eForm);
-	if (!extent)
-	{
-		// Add attachments.
-		extent.ReserveParts(m_arrAttachments.size());
 
-		// Add attachments.
-		for (const auto& pa : m_arrAttachments)
+	// Add attachments.
+	extent.Clear();
+	extent.ReserveParts(m_arrAttachments.size());
+
+	// Add attachments.
+	for (const auto& pa : m_arrAttachments)
+	{
+		float fExt = 0.f;
+		if (pa)
 		{
-			float fExt = 0.f;
-			if (pa)
+			if (IAttachmentObject* pAttachmentObject = pa->GetIAttachmentObject())
 			{
-				if (IAttachmentObject* pAttachmentObject = pa->GetIAttachmentObject())
-				{
-					if (ICharacterInstance* pSkinInstance = pAttachmentObject->GetICharacterInstance())
-						fExt = pSkinInstance->GetExtent(eForm);
-					else if (IStatObj* pStatObj = pAttachmentObject->GetIStatObj())
-						fExt = pStatObj->GetExtent(eForm);
-					else if (IAttachmentSkin* pSkin = pAttachmentObject->GetIAttachmentSkin())
-						fExt = pSkin->GetExtent(eForm);
-				}
+				if (ICharacterInstance* pSkinInstance = pAttachmentObject->GetICharacterInstance())
+					fExt = pSkinInstance->GetExtent(eForm);
+				else if (IStatObj* pStatObj = pAttachmentObject->GetIStatObj())
+					fExt = pStatObj->GetExtent(eForm);
+				else if (IAttachmentSkin* pSkin = pAttachmentObject->GetIAttachmentSkin())
+					fExt = pSkin->GetExtent(eForm);
 			}
-			extent.AddPart(fExt);
 		}
+		extent.AddPart(fExt);
 	}
 
 	return extent.TotalExtent();

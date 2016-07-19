@@ -7,8 +7,8 @@ sources_platform(DURANGO)
 add_sources("NoUberFile"
 	PROJECTS CryRenderD3D11
 	SOURCE_GROUP "DeviceManager"
-		"DeviceManager/DeviceManager_D3D11_Durango.h"
-		"DeviceManager/DeviceManager_D3D11_Durango.inl"
+		"DeviceManager/D3D11/DeviceManager_D3D11_Durango.h"
+		"DeviceManager/D3D11/DeviceManager_D3D11_Durango.inl"
 )
 
 # -- opengl_loader_wgl.waf_files --
@@ -329,7 +329,7 @@ add_sources("CryRenderer_dx_orbis_uber_0.cpp"
 		"DXOrbis/Device/Resource/States/CCryDXOrbisDepthStencilState.hpp"
 		"DXOrbis/Device/Resource/States/CCryDXOrbisRasterizerState.hpp"
 	SOURCE_GROUP "DeviceManager"
-		"DeviceManager/DeviceManager_GNM.inl"
+		"DeviceManager/GNM/DeviceManager_GNM.inl"
 )
 
 add_sources("CryRenderer_dx_orbis_uber_1.cpp"
@@ -388,7 +388,7 @@ sources_platform(ALL)
 add_sources("NoUberFile"
 	PROJECTS GnmShaderCompiler
 	SOURCE_GROUP "GnmShaderCompiler"
-		"../../../Tools/DXOrbisShaderCompiler/DXOrbisShaderCompiler/DXOrbisShaderCompiler.cpp"
+		"GNM/GnmShaderCompiler.cpp"
 )
 
 # -- GNM/GnmRenderer.waf_files --
@@ -482,20 +482,21 @@ add_sources("CryRenderer_dxorbis_uber_1.cpp"
 
 add_sources("NoUberFile"
 	PROJECTS CryRenderGNM
-	SOURCE_GROUP "DeviceManager"
-		"DeviceManager/DeviceManager_GNM.inl"
-		"DeviceManager/DeviceWrapper12_GNM.cpp"
 	SOURCE_GROUP "GNM"
 		"GNM/GnmBase.hpp"
+		"GNM/GnmCache.hpp"
+		"GNM/GnmCache.cpp"
+		"GNM/GnmCommandList.hpp"
+		"GNM/GnmCommandList.cpp"
 		"GNM/GnmCommon.hpp"
 		"GNM/GnmCommon.cpp"
 		"GNM/GnmDebugHelpers.natvis"
 		"GNM/GnmDevice.hpp"
 		"GNM/GnmDevice.cpp"
-		"GNM/GnmCommandList.hpp"
-		"GNM/GnmCommandList.cpp"
 		"GNM/GnmGpuState.hpp"
 		"GNM/GnmGpuState.cpp"
+		"GNM/GnmLegacy.hpp"
+		"GNM/GnmLegacy.cpp"
 		"GNM/GnmPipelineState.hpp"
 		"GNM/GnmPipelineState.cpp"
 		"GNM/GnmResourceLayout.hpp"
@@ -507,6 +508,12 @@ add_sources("NoUberFile"
 		"GNM/GnmShaderLoader.cpp"
 		"GNM/GnmShaderRuntime.cpp"
 		"GNM/GnmShaderTools.hpp"
+	SOURCE_GROUP "GNM\\\\DeviceManager"
+		"DeviceManager/GNM/DeviceCommandList_GNM.h"
+		"DeviceManager/GNM/DeviceCommandList_GNM.inl"
+		"DeviceManager/GNM/DeviceManager_GNM.inl"
+		"DeviceManager/GNM/DeviceObjects_GNM.inl"
+		"DeviceManager/GNM/DeviceObjects_GNM.cpp"
 )
 
 # -- mesh_baker.waf_files --
@@ -565,6 +572,17 @@ add_sources("CryGpuParticles_uber.cpp"
 		"Gpu/Particles/CREGpuParticle.cpp"
 	SOURCE_GROUP "Source Files\\\\Gpu\\\\Physics"
 		"Gpu/Physics/GpuPhysicsParticleFluid.cpp"
+)
+
+add_sources("CryRender_resfile_uber.cpp"
+	PROJECTS CryRenderGNM CryRenderD3D11 CryRenderD3D12 CryRenderOpenGL
+	SOURCE_GROUP "Common"
+		"../Common/ResFile.cpp"
+		"../Common/ResFileLookupDataMan.cpp"
+	SOURCE_GROUP "Common_h"
+		"../Common/ResFile.h"
+		"../Common/ResFile_info.h"
+		"../Common/ResFileLookupDataMan.h"
 )
 
 add_sources("CryRenderer_render_elements_uber_0.cpp"
@@ -684,6 +702,7 @@ add_sources("CryRenderer_textures_uber.cpp"
 add_sources("CryRenderer_uber_0.cpp"
 	PROJECTS CryRenderGNM CryRenderD3D11 CryRenderD3D12 CryRenderOpenGL
 	SOURCE_GROUP "Header Files"
+		"D3DREBreakableGlassBuffer.h"
 		"D3D_SVO.h"
 	SOURCE_GROUP "Source Files"
 		"D3DAmbientOcclusion.cpp"
@@ -740,15 +759,14 @@ add_sources("CryRenderer_uber_1.cpp"
 
 add_sources("CryRenderer_uber_2.cpp"
 	PROJECTS CryRenderGNM CryRenderD3D11 CryRenderD3D12 CryRenderOpenGL
+	SOURCE_GROUP "Header Files"
+		"SmartGlassManager.h"
 	SOURCE_GROUP "Source Files"
 		"DriverD3D.cpp"
-		"GPUTimer.cpp"
 		"PipelineProfiler.cpp"
 		"SmartGlassContext.cpp"
 		"SmartGlassManager.cpp"
 		"StatoscopeRenderStats.cpp"
-		"D3DREBreakableGlassBuffer.h"
-		"SmartGlassManager.h"
 	SOURCE_GROUP "Source Files\\\\D3DPostProcess"
 		"D3DPostProcess.cpp"
 		"PostProcessDOF.cpp"
@@ -771,7 +789,6 @@ add_sources("CryRenderer_uber_3.cpp"
 		"../Common/CommonRender.cpp"
 		"../Common/DeferredRenderUtils.cpp"
 		"../Common/IntroMovieRenderer.cpp"
-		"../Common/FencedBuffer.cpp"
 		"../Common/MatrixStack.cpp"
 		"../Common/LightVolumeBuffer.cpp"
 		"../Common/ParticleBuffer.cpp"
@@ -780,14 +797,11 @@ add_sources("CryRenderer_uber_3.cpp"
 		"../Common/RendererCVars.cpp"
 		"../Common/RenderPipeline.cpp"
 		"../Common/RenderThread.cpp"
-		"../Common/ResFile.cpp"
-		"../Common/ResFileLookupDataMan.cpp"
 		"../Common/ShadowUtils.cpp"
 		"../Common/TextMessages.cpp"
 		"../Common/WaterUtils.cpp"
 		"../Common/SmartGlassContext.h"
 		"../Common/IntroMovieRenderer.h"
-		"../Common/ResFileLookupDataMan.h"
 		"../Common/TextMessages.h"
 		"../Common/Include_HLSL_CPP_Shared.h"
 		"../Common/RenderView.cpp"
@@ -804,8 +818,6 @@ add_sources("CryRenderer_uber_3.cpp"
 		"../Common/Renderer.h"
 		"../Common/RendererCVars.h"
 		"../Common/RenderThread.h"
-		"../Common/ResFile.h"
-		"../Common/ResFile_info.h"
 		"../Common/Shadow_Renderer.h"
 		"../Common/ShadowUtils.h"
 		"../Common/WaterUtils.h"
@@ -822,7 +834,6 @@ add_sources("CryRenderer_uber_3.cpp"
 		"../Common/Shaders/ShaderAllocator.h"
 		"../Common/CryNameR.h"
 		"../Common/CryDeviceWrapper.h"
-		"../Common/FencedBuffer.h"
 		"../Common/ISmartGlassContext.h"
 		"../Common/LightVolumeBuffer.h"
 		"../Common/ParticleBuffer.h"
@@ -838,7 +849,6 @@ add_sources("CryRenderer_uber_3.cpp"
 		"../Common/Defs.h"
 		"DeviceInfo.h"
 		"DriverD3D.h"
-		"GPUTimer.h"
 		"NullD3D11Device.h"
 		"PipelineProfiler.h"
 		"resource.h"
@@ -846,6 +856,13 @@ add_sources("CryRenderer_uber_3.cpp"
 		"DeviceInfo.inl"
 		"D3DOsvr.h"
 		"CompiledRenderObject.h"
+	SOURCE_GROUP "Scaleform"
+		"../Scaleform/Scaleform.cpp"
+		"../Scaleform/ScaleformRender.cpp"
+		"../Scaleform/ScaleformPlayback.cpp"
+	SOURCE_GROUP "Scaleform_h"
+		"../Scaleform/ScaleformRender.h"
+		"../Scaleform/ScaleformPlayback.h"
 )
 
 add_sources("CryRenderer_uber_4.cpp"
@@ -862,7 +879,6 @@ add_sources("CryRenderer_uber_4.cpp"
 		"../Common/RenderMesh_SetMesh.cpp"
 		"../Common/RenderMesh.cpp"
 		"../Common/RenderMesh.h"
-		"../Common/ComputeSkinningStorage.cpp"
 		"../Common/ComputeSkinningStorage.h"
 	SOURCE_GROUP "Common\\\\Shaders"
 		"../Common/Shaders/Parser.cpp"
@@ -896,16 +912,22 @@ add_sources("CryRenderer_uber_5.cpp"
 		"../Common/DevBuffer.h"
 		"DeviceManager/DeviceManager.cpp"
 		"DeviceManager/DeviceManager.h"
-		"DeviceManager/DeviceManager_D3D11.inl"
-		"DeviceManager/DeviceManager_D3D11_NVAPI.h"
-		"DeviceManager/DeviceManager_D3D11_NVAPI.inl"
-		"DeviceManager/DeviceManager_D3D12.inl"
+		"DeviceManager/D3D11/DeviceManager_D3D11.inl"
+		"DeviceManager/D3D11/DeviceManager_D3D11_NVAPI.h"
+		"DeviceManager/D3D11/DeviceManager_D3D11_NVAPI.inl"
+		"DeviceManager/D3D12/DeviceManager_D3D12.inl"
 		"DeviceManager/DeviceManagerInline.h"
 		"DeviceManager/TempDynBuffer.h"
-		"DeviceManager/DeviceWrapper12.h"
-		"DeviceManager/DeviceWrapper12.cpp"
-		"DeviceManager/DeviceWrapper12_D3D11.cpp"
-		"DeviceManager/DeviceWrapper12_D3D12.cpp"
+		"DeviceManager/DeviceObjects.h"
+		"DeviceManager/DeviceObjects.inl"
+		"DeviceManager/DeviceObjects.cpp"
+		"DeviceManager/D3D11/DeviceObjects_D3D11.inl"
+		"DeviceManager/D3D12/DeviceObjects_D3D12.inl"
+		"DeviceManager/D3D11/DeviceObjects_D3D11.cpp"
+		"DeviceManager/D3D12/DeviceObjects_D3D12.cpp"
+		"DeviceManager/DeviceCommandList.inl"
+		"DeviceManager/D3D11/DeviceCommandList_D3D11.h"
+		"DeviceManager/D3D12/DeviceCommandList_D3D12.h"
 )
 
 add_sources("CryRenderer_uber_6.cpp"
@@ -915,8 +937,16 @@ add_sources("CryRenderer_uber_6.cpp"
 		"GraphicsPipeline/AutoExposure.cpp"
 		"GraphicsPipeline/Bloom.h"
 		"GraphicsPipeline/Bloom.cpp"
+		"GraphicsPipeline/ClipVolumes.h"
+		"GraphicsPipeline/ClipVolumes.cpp"
+		"GraphicsPipeline/ComputeSkinning.h"
+		"GraphicsPipeline/ComputeSkinning.cpp"
+		"GraphicsPipeline/GpuParticles.h"
+		"GraphicsPipeline/GpuParticles.cpp"
 		"GraphicsPipeline/DepthOfField.h"
 		"GraphicsPipeline/DepthOfField.cpp"
+		"GraphicsPipeline/Fog.h"
+		"GraphicsPipeline/Fog.cpp"
 		"GraphicsPipeline/MotionBlur.h"
 		"GraphicsPipeline/MotionBlur.cpp"
 		"GraphicsPipeline/HeightMapAO.h"
@@ -935,15 +965,23 @@ add_sources("CryRenderer_uber_6.cpp"
 		"GraphicsPipeline/ScreenSpaceSSS.cpp"
 		"GraphicsPipeline/ShadowMap.h"
 		"GraphicsPipeline/ShadowMap.cpp"
+		"GraphicsPipeline/ShadowMask.h"
+		"GraphicsPipeline/ShadowMask.cpp"
 		"GraphicsPipeline/StandardGraphicsPipeline.h"
 		"GraphicsPipeline/StandardGraphicsPipeline.cpp"
 		"GraphicsPipeline/SunShafts.h"
 		"GraphicsPipeline/SunShafts.cpp"
+		"GraphicsPipeline/TiledShading.h"
+		"GraphicsPipeline/TiledShading.cpp"
 		"GraphicsPipeline/ToneMapping.h"
 		"GraphicsPipeline/ToneMapping.cpp"
-		"GraphicsPipeline/ComputeSkinning.h"
-		"GraphicsPipeline/ComputeSkinning.cpp"
+		"GraphicsPipeline/VolumetricClouds.h"
+		"GraphicsPipeline/VolumetricClouds.cpp"
+		"GraphicsPipeline/VolumetricFog.h"
+		"GraphicsPipeline/VolumetricFog.cpp"
 	SOURCE_GROUP "GraphicsPipeline\\\\Common"
+		"GraphicsPipeline/Common/ComputeRenderPass.h"
+		"GraphicsPipeline/Common/ComputeRenderPass.cpp"
 		"GraphicsPipeline/Common/FullscreenPass.h"
 		"GraphicsPipeline/Common/FullscreenPass.cpp"
 		"GraphicsPipeline/Common/GraphicsPipeline.h"
@@ -985,7 +1023,7 @@ endif()
 
 target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR}/squish-ccr)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
-target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4)
+target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
 
 if (WIN32 OR WIN64)
 	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
@@ -1006,7 +1044,7 @@ if (NOT (DURANGO OR ORBIS))
 	CryEngineModule(CryRenderOpenGL PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 	target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR}/squish-ccr)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DOPENGL -DDO_RENDERSTATS -D_RENDERER)
-	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4)
+	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
 else()
 	CryFileContainer(CryRenderOpenGL SOLUTION_FOLDER "CryEngine")
 endif()
@@ -1049,7 +1087,7 @@ if ((WIN32 OR WIN64) AND MSVC_VERSION EQUAL 1900)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DDIRECT3D10 -DCRY_USE_DX12 -DXRENDERD3D10_EXPORTS -DDO_RENDERSTATS -D_RENDERER)
 	target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR} ${SDK_DIR}/squish-ccr ${CMAKE_SOURCE_DIR}/Code/Tools/LibTIFF ${CMAKE_SOURCE_DIR}/Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes)
 	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
-	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32 oculus)	
+	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32 oculus)	
 else()
 	message(WARNING "MSVC 14.0 is not being used - CryRenderD3D12 cannot be built.")
 	CryFileContainer(CryRenderD3D12 SOLUTION_FOLDER "CryEngine")
@@ -1062,7 +1100,7 @@ if (EXISTS ${SDK_DIR}/Orbis AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/GNM)
 		target_include_directories(${THIS_PROJECT} PRIVATE ..)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE -D_RENDERER -DDO_RENDERSTATS -DCRY_USE_GNM -DCRY_USE_GNM_RENDERER -DCRY_GNM_SHADER_COMPILER_VERSION=${compiler_version})
 		target_compile_options(${THIS_PROJECT} PRIVATE $<$<CONFIG:Release>:-flto>)
-		target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 SceSystemService_stub_weak SceGnmDriver_stub_weak $<$<NOT:$<CONFIG:Release>>:SceGnm SceGnmx SceDbg_stub_weak>$<$<CONFIG:Release>:SceGnm_lto SceGnmx_lto>)
+		target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib SceSystemService_stub_weak SceGnmDriver_stub_weak $<$<NOT:$<CONFIG:Release>>:SceGnm SceGnmx SceDbg_stub_weak>$<$<CONFIG:Release>:SceGnm_lto SceGnmx_lto>)
 	else()
 		CryFileContainer(CryRenderGNM SOLUTION_FOLDER "CryEngine")
 	endif()

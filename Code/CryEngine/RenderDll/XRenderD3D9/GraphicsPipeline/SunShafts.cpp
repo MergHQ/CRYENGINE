@@ -78,8 +78,8 @@ void CSunShaftsStage::Execute()
 		Vec4 params0 = Vec4(s1 * 0.95f, t1 * 0.25f, -s1 * 0.25f, t1 * 0.96f);
 		Vec4 params1 = Vec4(-s1 * 0.96f, -t1 * 0.25f, s1 * 0.25f, -t1 * 0.96f);
 
-		pShader->FXSetPSFloat(nameParams0, &params0, 1);
-		pShader->FXSetPSFloat(nameParams1, &params1, 1);
+		m_passShaftsMask.SetConstant(eHWSC_Pixel, nameParams0, params0);
+		m_passShaftsMask.SetConstant(eHWSC_Pixel, nameParams1, params1);
 
 		m_passShaftsMask.Execute();
 	}
@@ -111,10 +111,9 @@ void CSunShaftsStage::Execute()
 
 			m_passShaftsGen0.BeginConstantUpdate();
 
-			Vec4 shaftParams(0.1f, rayAttenuation, 0, 0);
-			pShader->FXSetPSFloat(nameShaftParams, &shaftParams, 1);
-			pShader->FXSetVSFloat(nameViewProj, (Vec4*)PostProcessUtils().m_pViewProj.GetData(), 4);
-			pShader->FXSetPSFloat(nameSunPos, &sunPosScreen, 1);
+			m_passShaftsGen0.SetConstant(eHWSC_Pixel, nameShaftParams, Vec4(0.1f, rayAttenuation, 0, 0));
+			m_passShaftsGen0.SetConstantArray(eHWSC_Vertex, nameViewProj, (Vec4*)PostProcessUtils().m_pViewProj.GetData(), 4);
+			m_passShaftsGen0.SetConstant(eHWSC_Pixel, nameSunPos, sunPosScreen);
 
 			m_passShaftsGen0.Execute();
 		}
@@ -134,10 +133,9 @@ void CSunShaftsStage::Execute()
 
 			m_passShaftsGen1.BeginConstantUpdate();
 
-			Vec4 shaftParams(0.025f, rayAttenuation, 0, 0);
-			pShader->FXSetPSFloat(nameShaftParams, &shaftParams, 1);
-			pShader->FXSetVSFloat(nameViewProj, (Vec4*)PostProcessUtils().m_pViewProj.GetData(), 4);
-			pShader->FXSetPSFloat(nameSunPos, &sunPosScreen, 1);
+			m_passShaftsGen1.SetConstant(eHWSC_Pixel, nameShaftParams, Vec4(0.025f, rayAttenuation, 0, 0));
+			m_passShaftsGen1.SetConstantArray(eHWSC_Vertex, nameViewProj, (Vec4*)PostProcessUtils().m_pViewProj.GetData(), 4);
+			m_passShaftsGen1.SetConstant(eHWSC_Pixel, nameSunPos, sunPosScreen);
 
 			m_passShaftsGen1.Execute();
 		}

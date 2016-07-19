@@ -124,7 +124,8 @@ typedef uintptr_t stream_handle_t;
 struct SStreamInfo
 {
 	stream_handle_t hStream;
-	uint32          nStride;
+	uint32          nStride; // NOTE: for index buffers this needs to contain the index format
+	uint32          nSlot;
 };
 
 class CRendElementBase : public CRendElement
@@ -145,7 +146,6 @@ public:
 
 		int           primitiveType; //!< \see eRenderPrimitiveType
 		EVertexFormat eVertFormat;
-		uint32        streamMask;
 
 		int32         nFirstIndex;
 		int32         nNumIndices;
@@ -155,11 +155,29 @@ public:
 		uint32        nNumVertexStreams;
 
 		SStreamInfo   indexStream;
-		SStreamInfo   vertexStream[VSF_NUM];
+		SStreamInfo   vertexStreams[VSF_NUM]; // contains only nNumVertexStreams elements
 
 		void*         pTessellationAdjacencyBuffer;
 		void*         pSkinningExtraBonesBuffer;
 		uint32        nTessellationPatchIDOffset;
+
+		inline uint32 CalcStreamMask()
+		{
+			uint32 streamMask = 0;
+			for (uint32 s = 0; s < nNumVertexStreams; ++s)
+				streamMask |= 1U << vertexStreams[s].nSlot;
+
+			return streamMask;
+		}
+
+		inline uint32 CalcLastStreamSlot()
+		{
+			uint32 lastStreamSlot = 0;
+			for (uint32 s = 0; s < nNumVertexStreams; ++s)
+				lastStreamSlot = std::max(lastStreamSlot, vertexStreams[s].nSlot);
+
+			return lastStreamSlot;
+		}
 	};
 
 public:

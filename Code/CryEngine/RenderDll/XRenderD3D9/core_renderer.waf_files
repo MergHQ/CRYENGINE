@@ -27,6 +27,7 @@
 		],
 		"Header Files":
 		[
+			"D3DREBreakableGlassBuffer.h",
 			"D3D_SVO.h"
 		]
 	},
@@ -70,12 +71,13 @@
 		"Source Files":
 		[
 			"DriverD3D.cpp",
-			"GPUTimer.cpp",
 			"PipelineProfiler.cpp",
 			"SmartGlassContext.cpp",
 			"SmartGlassManager.cpp",
-			"StatoscopeRenderStats.cpp",
-			"D3DREBreakableGlassBuffer.h",
+			"StatoscopeRenderStats.cpp"
+		],
+		"Header Files":
+		[
 			"SmartGlassManager.h"
 		],
 		"Source Files/D3DPostProcess":
@@ -106,7 +108,6 @@
 			"../Common/Shaders/ShaderAllocator.h",
 			"../Common/CryNameR.h",
 			"../Common/CryDeviceWrapper.h",
-			"../Common/FencedBuffer.h",
 			"../Common/ISmartGlassContext.h",
 			"../Common/LightVolumeBuffer.h",
 			"../Common/ParticleBuffer.h",
@@ -122,7 +123,6 @@
 			"../Common/Defs.h",
 			"DeviceInfo.h",
 			"DriverD3D.h",
-			"GPUTimer.h",
 			"NullD3D11Device.h",
 			"PipelineProfiler.h",
 			"resource.h",
@@ -137,7 +137,6 @@
 			"../Common/CommonRender.cpp",
 			"../Common/DeferredRenderUtils.cpp",
 			"../Common/IntroMovieRenderer.cpp",
-			"../Common/FencedBuffer.cpp",
 			"../Common/MatrixStack.cpp",
 			"../Common/LightVolumeBuffer.cpp",
 			"../Common/ParticleBuffer.cpp",
@@ -146,14 +145,11 @@
 			"../Common/RendererCVars.cpp",
 			"../Common/RenderPipeline.cpp",
 			"../Common/RenderThread.cpp",
-			"../Common/ResFile.cpp",
-			"../Common/ResFileLookupDataMan.cpp",
 			"../Common/ShadowUtils.cpp",
 			"../Common/TextMessages.cpp",
 			"../Common/WaterUtils.cpp",
 			"../Common/SmartGlassContext.h",
 			"../Common/IntroMovieRenderer.h",
-			"../Common/ResFileLookupDataMan.h",
 			"../Common/TextMessages.h",
 			"../Common/Include_HLSL_CPP_Shared.h",
 			"../Common/RenderView.cpp",
@@ -172,8 +168,6 @@
 			"../Common/Renderer.h",
 			"../Common/RendererCVars.h",
 			"../Common/RenderThread.h",
-			"../Common/ResFile.h",
-			"../Common/ResFile_info.h",
 			"../Common/Shadow_Renderer.h",
 			"../Common/ShadowUtils.h",
 			"../Common/WaterUtils.h",
@@ -181,6 +175,30 @@
 			"../Common/RenderView.h",
 			"../Common/RenderItemDrawer.h",
 			"../Common/LockFreeAddVector.h"
+		],
+		"Scaleform":
+		[
+			"../Scaleform/Scaleform.cpp",
+			"../Scaleform/ScaleformRender.cpp",
+			"../Scaleform/ScaleformPlayback.cpp"
+		],
+		"Scaleform_h":
+		[
+			"../Scaleform/ScaleformRender.h",
+			"../Scaleform/ScaleformPlayback.h"
+		]
+	},
+	"CryRender_resfile_uber.cpp": {
+		"Common_h" :
+		[
+			"../Common/ResFile.h",
+			"../Common/ResFile_info.h",
+			"../Common/ResFileLookupDataMan.h"
+		],
+		"Common":
+		[
+			"../Common/ResFile.cpp",
+			"../Common/ResFileLookupDataMan.cpp"
 		]
 	},
   "CryRenderer_render_elements_uber_0.cpp": {
@@ -316,7 +334,6 @@
 			"../Common/RenderMesh_SetMesh.cpp",
 			"../Common/RenderMesh.cpp",
 			"../Common/RenderMesh.h",
-			"../Common/ComputeSkinningStorage.cpp",
 			"../Common/ComputeSkinningStorage.h"
 		],
 		"Common/Shaders":
@@ -362,16 +379,22 @@
 			"../Common/DevBuffer.h",
 			"DeviceManager/DeviceManager.cpp",
 			"DeviceManager/DeviceManager.h",
-			"DeviceManager/DeviceManager_D3D11.inl",
-			"DeviceManager/DeviceManager_D3D11_NVAPI.h",
-			"DeviceManager/DeviceManager_D3D11_NVAPI.inl",
-			"DeviceManager/DeviceManager_D3D12.inl",
+			"DeviceManager/D3D11/DeviceManager_D3D11.inl",
+			"DeviceManager/D3D11/DeviceManager_D3D11_NVAPI.h",
+			"DeviceManager/D3D11/DeviceManager_D3D11_NVAPI.inl",
+			"DeviceManager/D3D12/DeviceManager_D3D12.inl",
 			"DeviceManager/DeviceManagerInline.h",
 			"DeviceManager/TempDynBuffer.h",
-			"DeviceManager/DeviceWrapper12.h",
-			"DeviceManager/DeviceWrapper12.cpp",
-			"DeviceManager/DeviceWrapper12_D3D11.cpp",
-			"DeviceManager/DeviceWrapper12_D3D12.cpp"
+			"DeviceManager/DeviceObjects.h",
+			"DeviceManager/DeviceObjects.inl",
+			"DeviceManager/DeviceObjects.cpp",
+			"DeviceManager/D3D11/DeviceObjects_D3D11.inl",
+			"DeviceManager/D3D12/DeviceObjects_D3D12.inl",
+			"DeviceManager/D3D11/DeviceObjects_D3D11.cpp",
+			"DeviceManager/D3D12/DeviceObjects_D3D12.cpp",
+			"DeviceManager/DeviceCommandList.inl",
+			"DeviceManager/D3D11/DeviceCommandList_D3D11.h",
+			"DeviceManager/D3D12/DeviceCommandList_D3D12.h"
 		]
 	},
 	"CryGpuParticles_uber.cpp":
@@ -437,19 +460,21 @@
 	{
 		"GraphicsPipeline/Common":
 		[
+			"GraphicsPipeline/Common/ComputeRenderPass.h",
+			"GraphicsPipeline/Common/ComputeRenderPass.cpp",
 			"GraphicsPipeline/Common/FullscreenPass.h",
 			"GraphicsPipeline/Common/FullscreenPass.cpp",
-      "GraphicsPipeline/Common/GraphicsPipeline.h",
+			"GraphicsPipeline/Common/GraphicsPipeline.h",
 			"GraphicsPipeline/Common/GraphicsPipelineStage.h",
 			"GraphicsPipeline/Common/GraphicsPipelineStateSet.h",
-      "GraphicsPipeline/Common/GraphicsPipelineStateSet.cpp",
-      "GraphicsPipeline/Common/PrimitiveRenderPass.h",
+			"GraphicsPipeline/Common/GraphicsPipelineStateSet.cpp",
+			"GraphicsPipeline/Common/PrimitiveRenderPass.h",
 			"GraphicsPipeline/Common/PrimitiveRenderPass.cpp",
 			"GraphicsPipeline/Common/SceneRenderPass.h",
 			"GraphicsPipeline/Common/SceneRenderPass.cpp",
 			"GraphicsPipeline/Common/UtilityPasses.h",
-      "GraphicsPipeline/Common/UtilityPasses.cpp",
-      "GraphicsPipeline/Common/VolumeRenderPass.h"
+			"GraphicsPipeline/Common/UtilityPasses.cpp",
+			"GraphicsPipeline/Common/VolumeRenderPass.h"
 		],
 		"GraphicsPipeline":
 		[
@@ -457,14 +482,26 @@
 			"GraphicsPipeline/AutoExposure.cpp",
 			"GraphicsPipeline/Bloom.h",
 			"GraphicsPipeline/Bloom.cpp",
+			"GraphicsPipeline/ClipVolumes.h",
+			"GraphicsPipeline/ClipVolumes.cpp",
+			"GraphicsPipeline/ColorGrading.h",
+			"GraphicsPipeline/ColorGrading.cpp",
+			"GraphicsPipeline/ComputeSkinning.h",
+			"GraphicsPipeline/ComputeSkinning.cpp",
+			"GraphicsPipeline/GpuParticles.h",
+			"GraphicsPipeline/GpuParticles.cpp",
 			"GraphicsPipeline/DepthOfField.h",
 			"GraphicsPipeline/DepthOfField.cpp",
+			"GraphicsPipeline/Fog.h",
+			"GraphicsPipeline/Fog.cpp",
 			"GraphicsPipeline/MotionBlur.h",
 			"GraphicsPipeline/MotionBlur.cpp",
 			"GraphicsPipeline/HeightMapAO.h",
 			"GraphicsPipeline/HeightMapAO.cpp",
 			"GraphicsPipeline/PostAA.h",
 			"GraphicsPipeline/PostAA.cpp",
+			"GraphicsPipeline/SceneCustom.h",
+			"GraphicsPipeline/SceneCustom.cpp",
 			"GraphicsPipeline/SceneForward.h",
 			"GraphicsPipeline/SceneForward.cpp",
 			"GraphicsPipeline/SceneGBuffer.h",
@@ -474,17 +511,25 @@
 			"GraphicsPipeline/ScreenSpaceReflections.h",
 			"GraphicsPipeline/ScreenSpaceReflections.cpp",
 			"GraphicsPipeline/ScreenSpaceSSS.h",
-      "GraphicsPipeline/ScreenSpaceSSS.cpp",
-      "GraphicsPipeline/ShadowMap.h",
+			"GraphicsPipeline/ScreenSpaceSSS.cpp",
+			"GraphicsPipeline/ShadowMap.h",
 			"GraphicsPipeline/ShadowMap.cpp",
+			"GraphicsPipeline/ShadowMask.h",
+			"GraphicsPipeline/ShadowMask.cpp",
 			"GraphicsPipeline/StandardGraphicsPipeline.h",
-      "GraphicsPipeline/StandardGraphicsPipeline.cpp",
-      "GraphicsPipeline/SunShafts.h",
+			"GraphicsPipeline/StandardGraphicsPipeline.cpp",
+			"GraphicsPipeline/SunShafts.h",
 			"GraphicsPipeline/SunShafts.cpp",
+			"GraphicsPipeline/TiledShading.h",
+			"GraphicsPipeline/TiledShading.cpp",
 			"GraphicsPipeline/ToneMapping.h",
 			"GraphicsPipeline/ToneMapping.cpp",
-			"GraphicsPipeline/ComputeSkinning.h",
-			"GraphicsPipeline/ComputeSkinning.cpp"
+			"GraphicsPipeline/VolumetricClouds.h",
+			"GraphicsPipeline/VolumetricClouds.cpp",
+			"GraphicsPipeline/VolumetricFog.h",
+			"GraphicsPipeline/VolumetricFog.cpp",
+			"GraphicsPipeline/WaterRipples.h",
+			"GraphicsPipeline/WaterRipples.cpp"
 		]
 	},
 	"NoUberFile":

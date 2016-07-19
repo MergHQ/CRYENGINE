@@ -107,39 +107,49 @@ ILINE Vec3 SChaosKey::RandSphere()
 
 #ifdef CRY_PFX2_USE_SSE
 
-ILINE SChaosKeyV::SChaosKeyV()
+ILINE SChaosKeyV::SChaosKeyV(SChaosKey key)
 {
-	m_keys = _mm_set_epi32(cry_random_uint32(), cry_random_uint32(), cry_random_uint32(), cry_random_uint32());
+	m_keys = _mm_set_epi32(key.Rand(), key.Rand(), key.Rand(), key.Rand());
+}
+
+ILINE SChaosKeyV::SChaosKeyV(uint32 key)
+{
+	SChaosKey chaosKey(key);
+	m_keys = _mm_set_epi32(key, chaosKey.Rand(), chaosKey.Rand(), chaosKey.Rand());
 }
 
 ILINE uint32v SChaosKeyV::Rand()
 {
 	m_keys = m_keys + ToUint32v(1);
 	return Jumble(m_keys);
-
 }
+
 ILINE uint32v SChaosKeyV::Rand(uint32 range)
 {
 	return Rand() % ToUint32v(range);
 }
+
 ILINE floatv SChaosKeyV::RandUNorm()
 {
 	uint32v iv = Rand();
 	floatv fv = ToFloatv(iv);
 	return MAdd(fv, ToFloatv(1.0f / 4294967296.0f), ToFloatv(0.5f));
 }
+
 ILINE floatv SChaosKeyV::RandSNorm()
 {
 	int32v iv = Rand();
 	floatv fv = ToFloatv(iv);
 	return Mul(fv, ToFloatv(1.0f / 2147483648.0f));
 }
+
 ILINE floatv SChaosKeyV::Rand(Range range)
 {
 	uint32v iv = Rand();
 	floatv fv = ToFloatv(iv);
 	return MAdd(fv, range.scale, range.bias);
 }
+
 ILINE SChaosKeyV::Range::Range(float lo, float hi)
 {
 	scale = ToFloatv((hi - lo) * (1.0f / 4294967296.0f));

@@ -186,6 +186,18 @@ private:
 		return s;
 	}
 };
+
+template<typename Enum>
+cstr getEnumName(Enum val)
+{
+	return getEnumDescription<Enum>().name((int)val);
+}
+template<typename Enum>
+cstr getEnumLabel(Enum val)
+{
+	return getEnumDescription<Enum>().label((int)val);
+}
+
 }
 
 ///////////////////////////////////////////////////////////////////////

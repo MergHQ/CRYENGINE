@@ -17,10 +17,10 @@ namespace pfx2
 
 ILINE float CParticleSpline::Interpolate(float time) const
 {
-	time = std::min(std::max(time, m_keys[0].time), m_keys[m_numKeys - 1].time);
+	time = std::min(std::max(time, m_keys[0].time), m_keys.back().time);
 
-	const SplineKey* pKey = m_keys;
-	const SplineKey* pKeyEnd = m_keys + m_numKeys - 2;
+	const SplineKey* pKey = &*m_keys.begin();
+	const SplineKey* pKeyEnd = &*m_keys.end() - 2;
 	while (pKey < pKeyEnd && pKey[1].time < time)
 		++pKey;
 
@@ -41,8 +41,8 @@ ILINE float CParticleSpline::Interpolate(float time) const
 #ifdef CRY_PFX2_USE_SSE
 ILINE floatv CParticleSpline::Interpolate(const floatv time) const
 {
-	const SplineKey* __restrict pKey = m_keys;
-	const SplineKey* __restrict pEndKey = m_keys + m_numKeys - 1;
+	const SplineKey* __restrict pKey = &*m_keys.begin();
+	const SplineKey* __restrict pEndKey = &*m_keys.end() - 1;
 
 	// clamp time to curve bounds
 	const floatv minTime = _mm_load1_ps(&pKey->time);

@@ -19,11 +19,11 @@
 #ifdef CRY_USE_DX12
 #else
 	#if CRY_PLATFORM_DURANGO
-		#include "DeviceManager_D3D11_Durango.h"
+		#include "D3D11/DeviceManager_D3D11_Durango.h"
 	#endif
 
 	#if defined(USE_NV_API)
-		#include "DeviceManager_D3D11_NVAPI.h"
+		#include "D3D11/DeviceManager_D3D11_NVAPI.h"
 	#endif
 #endif
 
@@ -35,7 +35,6 @@ class CConstantBuffer;
 
 typedef CDeviceTexture* LPDEVICETEXTURE;
 typedef UINT_PTR        DeviceFenceHandle;
-typedef UINT_PTR        DeviceTimestampHandle;
 
 struct STextureInfoData
 {
@@ -279,6 +278,17 @@ public:
 		USAGE_CUSTOM                     = (USAGE_DEPTH_STENCIL | USAGE_RENDER_TARGET | USAGE_DYNAMIC | USAGE_AUTOGENMIPS)
 	};
 
+	// Resource Usage	| Default	| Dynamic	| Immutable	| Staging
+	// -----------------+-----------+-----------+-----------+--------
+	// GPU - Read       | yes       | yes1      | yes       | yes1, 2
+	// GPU - Write      | yes1      |           |           | yes1, 2
+	// CPU - Read       |           |           |           | yes1, 2
+	// CPU - Write      |           | yes       |           | yes1, 2
+	//
+	// 1 - This is restricted to ID3D11DeviceContext::CopySubresourceRegion, ID3D11DeviceContext::CopyResource,
+	//     ID3D11DeviceContext::UpdateSubresource, and ID3D11DeviceContext::CopyStructureCount.
+	// 2 - Cannot be a depth - stencil buffer or a multi-sampled render target.
+
 	enum
 	{
 		BIND_VERTEX_BUFFER    = BIT(0),
@@ -314,23 +324,10 @@ public:
 	HRESULT        IssueFence(DeviceFenceHandle query);
 	HRESULT        SyncFence(DeviceFenceHandle query, bool block, bool flush = true);
 
-	HRESULT        GetTimestampFrequency(void* pFrequency);
-	HRESULT        CreateTimestamp(DeviceTimestampHandle& query, bool bDisjointTest);
-	HRESULT        ReleaseTimestamp(DeviceTimestampHandle query);
-	HRESULT        IssueTimestamp(DeviceTimestampHandle query, bool begin);
-	HRESULT        ResolveTimestamps(bool block, bool flush);
-	HRESULT        SyncTimestamp(DeviceTimestampHandle query, void* pData, bool flush);
-	HRESULT        SyncTimestamps(INT offs, INT num, DeviceTimestampHandle* query, void* pData, bool flush);
-
 	static HRESULT InvalidateGpuCache(D3DBuffer* buffer, void* base_ptr, size_t size, size_t offset);
 	static HRESULT InvalidateCpuCache(void* base_ptr, size_t size, size_t offset);
 	HRESULT        InvalidateResourceGpuCache(D3DBuffer* buffer);
 	void           InvalidateBuffer(D3DBuffer* buffer, void* base_ptr, size_t offset, size_t size, uint32 id);
-
-	HRESULT        CreateDirectAccessBuffer(uint32 nSize, uint32 elemSize, int32 nBindFlags, D3DBuffer** ppBuff);
-	HRESULT        DestroyDirectAccessBuffer(D3DBuffer* ppBuff);
-	HRESULT        LockDirectAccessBuffer(D3DBuffer* pBuff, int32 nBindFlags, void** ppBuffer);
-	void           UnlockDirectAccessBuffer(D3DBuffer* ppBuff, int32 nBindFlags);
 
 	inline void    BindConstantBuffer(SHADER_TYPE type, const CConstantBuffer* Buffer, uint32 slot);
 	inline void    BindConstantBuffer(SHADER_TYPE type, const CConstantBuffer* Buffer, uint32 slot, uint32 offset, uint32 size);
@@ -357,11 +354,11 @@ public:
 	void           CommitDeviceStates();
 	void           Draw(uint32 nVerticesCount, uint32 nStartVertex);
 	void           DrawInstanced(uint32 nInstanceVerts, uint32 nInsts, uint32 nStartVertex, uint32 nStartInstance);
-	void DrawIndexed(uint32, uint32, uint32);
+	void           DrawIndexed(uint32, uint32, uint32);
 	void           DrawIndexedInstanced(uint32 numIndices, uint32 nInsts, uint32 startIndex, uint32 v0, uint32 v1);
-	void DrawIndexedInstancedIndirect(ID3D11Buffer*, uint32);
-	void Dispatch(uint32, uint32, uint32);
-	void DispatchIndirect(ID3D11Buffer*, uint32);
+	void           DrawIndexedInstancedIndirect(ID3D11Buffer*, uint32);
+	void           Dispatch(uint32, uint32, uint32);
+	void           DispatchIndirect(ID3D11Buffer*, uint32);
 
 #if CRY_PLATFORM_DURANGO
 	IDefragAllocatorStats GetTexturePoolStats();
@@ -373,9 +370,20 @@ public:
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	static uint8* Map(D3DBuffer* buffer, uint32 subresource, size_t offset, size_t size, D3D11_MAP mode);
+	static void Unmap(D3DBuffer* buffer, uint32 subresource, size_t offset, size_t size, D3D11_MAP mode);
+
+	// NOTE: Standard behaviour in the presence of multiple GPUs is to make the same data available to all
+	// GPUs. If data should diverge per GPU, it can be uploaded by concatenating multiple divergent data-blocks
+	// and passing the appropriate "numDataBlocks". Each GPU will then receive it's own version of the data.
+	template<const bool bDirectAccess = false>
+	static void UploadContents(D3DBuffer* buffer, uint32 subresource, size_t offset, size_t size, D3D11_MAP mode, const void* pInDataCPU, void* pOutDataGPU = nullptr, UINT numDataBlocks = 1);
+	template<const bool bDirectAccess = false>
+	static void DownloadContents(D3DBuffer* buffer, uint32 subresource, size_t offset, size_t size, D3D11_MAP mode, void* pOutDataCPU, const void* pInDataGPU = nullptr, UINT numDataBlocks = 1);
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// On UMA system, return the pointer to the start of the buffer
-	template<size_t BIND_FLAGS>
-	static inline void ExtractBasePointer(D3DBuffer* buffer, uint8*& base_ptr)
+	static inline void ExtractBasePointer(D3DBuffer* buffer, D3D11_MAP mode, uint8*& base_ptr)
 	{
 #if BUFFER_ENABLE_DIRECT_ACCESS
 	#if CRY_PLATFORM_ORBIS
@@ -391,14 +399,40 @@ public:
 		base_ptr = reinterpret_cast<uint8*>(data);
 	#endif
 	#if defined(CRY_USE_DX12)
-		D3D11_MAPPED_SUBRESOURCE mappedResource;
-		HRESULT hr = gcpRendD3D->GetDeviceContext().Map(buffer, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mappedResource);
-		CHECK_HRESULT(hr);
-		base_ptr = (uint8*)mappedResource.pData;
+		base_ptr = CDeviceManager::Map(buffer, 0, 0, 0, mode /* MAP_DISCARD could affect the ptr */);
 	#endif
 #else
 		base_ptr = NULL;
 #endif
+	}
+
+	static inline void ReleaseBasePointer(D3DBuffer* buffer)
+	{
+#if BUFFER_ENABLE_DIRECT_ACCESS
+#if defined(CRY_USE_DX12)
+		CDeviceManager::Unmap(buffer, 0, 0, 0, D3D11_MAP(0));
+#endif
+#endif
+	}
+
+	static inline uint8 MarkReadRange(D3DBuffer* buffer, size_t offset, size_t size, D3D11_MAP mode)
+	{
+#if defined(CRY_USE_DX12)
+		DX12_ASSERT(mode == D3D11_MAP_READ || mode == D3D11_MAP_WRITE, "No other access specifier than READ/WRITE allowed for marking!");
+		CDeviceManager::Map(buffer, 0, offset, (mode & D3D11_MAP_READ ? size : 0), D3D11_MAP(0));
+#endif
+
+		return uint8(mode);
+	}
+
+	static inline uint8 MarkWriteRange(D3DBuffer* buffer, size_t offset, size_t size, uint8 marker)
+	{
+#if defined(CRY_USE_DX12)
+		DX12_ASSERT(marker == D3D11_MAP_READ || marker == D3D11_MAP_WRITE, "No other access specifier than READ/WRITE allowed for marking!");
+		CDeviceManager::Unmap(buffer, 0, offset, (marker & D3D11_MAP_WRITE ? size : 0), D3D11_MAP(0));
+#endif
+
+		return uint8(marker);
 	}
 
 #if CRY_PLATFORM_DURANGO
@@ -719,4 +753,172 @@ class CDeviceIndexBuffer
 
 };
 
+////////////////////////////////////////////////////////////////////////////////////////
+class SUsageTrackedItem
+{
+public:
+	SUsageTrackedItem() { MarkUsed(); }
+	SUsageTrackedItem(uint32 lastUseFrame) : m_lastUseFrame(lastUseFrame) {}
+
+	void MarkUsed();
+	bool IsInUse() const;
+
+protected:
+	uint32 m_lastUseFrame;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////
+// NOTE: this container is expected to hold very few (<3) items usually, so a linear search during allocate should be fine here
+template<typename T>
+class CTrackedItemAllocatorBase
+{
+public:
+	CTrackedItemAllocatorBase()
+	{}
+
+	T* FindUnusedItem()
+	{
+		for (auto& item : m_items)
+		{
+			if (item.bAvailable && !item.pItem->IsInUse())
+			{
+				item.bAvailable = false;
+				return item.pItem;
+			}
+		}
+		return nullptr;
+	}
+
+	void Release(T*& pItem)
+	{
+		for (auto& storedItem : m_items)
+		{
+			if (storedItem.pItem == pItem)
+			{
+				CRY_ASSERT(!storedItem.bAvailable); // check for double release
+				storedItem.bAvailable = true;
+
+				break;
+			}
+		}
+
+		pItem = nullptr;
+	}
+
+	size_t GetItemCount() const
+	{
+		return m_items.size();
+	}
+
+protected:
+	T* AddItem(T* pItem)
+	{
+		m_items.emplace_back(pItem);
+		return pItem;
+	}
+
+	void ResetBase(std::function<void(T*&)> deleteItem)
+	{
+		for (auto& storedItem : m_items)
+			deleteItem(storedItem.pItem);
+
+		m_items.clear();
+	}
+
+	struct SItem
+	{
+		SItem(T* pItem)
+			: bAvailable(false)
+			, pItem(pItem)
+		{}
+
+		bool bAvailable;
+		T*   pItem;
+	};
+
+	std::vector<SItem>   m_items;
+
+private:
+	CTrackedItemAllocatorBase(const CTrackedItemAllocatorBase<T>&);
+	CTrackedItemAllocatorBase<T>& operator=(const CTrackedItemAllocatorBase<T>&);
+};
+
+template<typename T>
+class CTrackedItemAllocator : public CTrackedItemAllocatorBase<T>
+{
+public:
+	CTrackedItemAllocator() {}
+	~CTrackedItemAllocator() { Reset(); }
+
+	void Reset()
+	{
+		auto deleteLambda = [](T*& pItem) { delete pItem; };
+		this->ResetBase(deleteLambda);
+	}
+
+	// workaround for the lack of variadic templates in visual studio 2012
+#define TRY_RETURN_UNUSED_BUFFER            \
+  if (auto* pItem = this->FindUnusedItem()) \
+  {                                         \
+    if (pNewAlloc) * pNewAlloc = false;     \
+    return pItem;                           \
+  }                                         \
+
+#define RETURN_NEW_BUFFER(item)      \
+  if (pNewAlloc) * pNewAlloc = true; \
+  return this->AddItem((item));      \
+
+	T*                                    Allocate(bool* pNewAlloc = nullptr)                   { TRY_RETURN_UNUSED_BUFFER; RETURN_NEW_BUFFER(new T()); }
+	template<typename A0> T*              Allocate(A0&& a0, bool* pNewAlloc = nullptr)          { TRY_RETURN_UNUSED_BUFFER; RETURN_NEW_BUFFER(new T(std::forward<A0>(a0))); }
+	template<typename A0, typename A1> T* Allocate(A0&& a0, A1&& a1, bool* pNewAlloc = nullptr) { TRY_RETURN_UNUSED_BUFFER; RETURN_NEW_BUFFER(new T(std::forward<A0>(a0), std::forward<A1>(a1))); }
+
+#undef TRY_RETURN_UNUSED_BUFFER
+#undef RETURN_NEW_BUFFER
+
+};
+
+template<typename T>
+class CTrackedItemCustomAllocator : public CTrackedItemAllocatorBase<T>
+{
+public:
+	typedef std::function<T*()>      CustomAllocFunction;
+	typedef std::function<void(T*&)> CustomDeleteFunction;
+
+	CTrackedItemCustomAllocator(CustomAllocFunction customAlloc, CustomDeleteFunction customDelete)
+		: m_customAllocate(customAlloc)
+		, m_customDelete(customDelete)
+	{}
+
+	~CTrackedItemCustomAllocator()
+	{
+		Reset();
+	}
+	
+	void Reset()
+	{
+		ResetBase(m_customDelete);
+	}
+
+	T* Allocate(bool* pNewAlloc = nullptr)
+	{
+		if (auto* pItem = this->FindUnusedItem())
+		{
+			if (pNewAlloc) *pNewAlloc = false;
+			return pItem;
+		}
+
+		if (pNewAlloc) *pNewAlloc = true;
+		T* pItem = m_customAllocate();
+		return AddItem(pItem);
+	}
+
+	void SetAllocFunctions(CustomAllocFunction customAllocate, CustomDeleteFunction customDelete)
+	{
+		m_customAllocate = customAllocate;
+		m_customDelete = customDelete;
+	}
+protected:
+	CustomAllocFunction  m_customAllocate;
+	CustomDeleteFunction m_customDelete;
+};
 #endif  // _DeviceManager_H_

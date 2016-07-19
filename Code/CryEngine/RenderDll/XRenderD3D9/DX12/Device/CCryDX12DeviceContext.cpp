@@ -23,6 +23,8 @@
 
 #include "DX12/API/DX12Device.hpp"
 
+#include <pix_win.h>
+
 #define DX12_SUBMISSION_UNBOUND 3 // never commit, only when the heaps overflow, or on present
 #define DX12_SUBMISSION_PERPSO  2 // commit whenever the PSO changes
 #define DX12_SUBMISSION_PERDRAW 1 // commit whenever a new draw is requested
@@ -46,19 +48,15 @@ CCryDX12DeviceContext::CCryDX12DeviceContext(CCryDX12Device* pDevice, UINT nodeM
 	, m_pDX12Device(pDevice->GetDX12Device())
 	, m_CmdFenceSet(pDevice->GetDX12Device())
 	, m_TimestampHeap(pDevice->GetDX12Device())
-	, m_PipelineHeap(pDevice->GetDX12Device())
 	, m_OcclusionHeap(pDevice->GetDX12Device())
-	, m_bBatchComputeTasks(false)
 #if defined(_ALLOW_INITIALIZER_LISTS)
+	// *INDENT-OFF*
 	, m_CmdListPools{
-	                 { pDevice->GetDX12Device(), m_CmdFenceSet, CMDQUEUE_GRAPHICS },
-	{
-		pDevice->GetDX12Device(), m_CmdFenceSet, CMDQUEUE_COMPUTE
-	},
-	{
-		pDevice->GetDX12Device(), m_CmdFenceSet, CMDQUEUE_COPY
+		{ pDevice->GetDX12Device(), m_CmdFenceSet, CMDQUEUE_GRAPHICS },
+		{ pDevice->GetDX12Device(), m_CmdFenceSet, CMDQUEUE_COMPUTE	},
+		{ pDevice->GetDX12Device(), m_CmdFenceSet, CMDQUEUE_COPY }
 	}
-	                 }
+	// *INDENT-ON*
 #endif
 {
 	DX12_FUNC_LOG
@@ -76,7 +74,7 @@ CCryDX12DeviceContext::CCryDX12DeviceContext(CCryDX12Device* pDevice, UINT nodeM
 
 	// Timer query heap
 	{
-		D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_TIMESTAMP, 1024, m_nodeMask };
+		D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_TIMESTAMP, 4096, m_nodeMask };
 		m_TimestampHeap.Init(m_pDX12Device, desc);
 	}
 
@@ -84,12 +82,6 @@ CCryDX12DeviceContext::CCryDX12DeviceContext(CCryDX12Device* pDevice, UINT nodeM
 	{
 		D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_OCCLUSION, 64, m_nodeMask };
 		m_OcclusionHeap.Init(m_pDX12Device, desc);
-	}
-
-	// Pipeline query heap
-	{
-		D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_PIPELINE_STATISTICS, 16, m_nodeMask };
-		m_PipelineHeap.Init(m_pDX12Device, desc);
 	}
 
 	if (S_OK != m_pDX12Device->CreateOrReuseCommittedResource(
@@ -170,6 +162,19 @@ CCryDX12DeviceContext::~CCryDX12DeviceContext()
 	m_OcclusionDownloadBuffer->Release();
 }
 
+bool CCryDX12DeviceContext::RecreateCommandListPool(int nPoolId)
+{
+	CeaseCommandQueue(nPoolId, true);
+
+	m_CmdListPools[nPoolId].Clear();
+	m_CmdListPools[nPoolId].Configure();
+	m_CmdListPools[nPoolId].Init(NCryDX12::CCommandListPool::m_MapQueueType[nPoolId], m_nodeMask);
+
+	ResumeCommandQueue(nPoolId);
+
+	return true;
+}
+
 bool CCryDX12DeviceContext::PrepareGraphicsPSO()
 {
 	const UINT& stateFlags = m_GraphicsState.m_StateFlags;
@@ -226,7 +231,7 @@ bool CCryDX12DeviceContext::PrepareGraphicsPSO()
 	                                                       /*   1, */ m_GraphicsState.OutputMerger.DepthStencilView ? 1 : 0
 	                                                       ) || ((DX12_SUBMISSION_MODE == DX12_SUBMISSION_PERPSO) && (stateFlags & EPSPB_PipelineState))))
 	{
-		SubmitGraphicsCommands(false);
+		SubmitCommands(CMDQUEUE_GRAPHICS, false);
 
 #ifdef DX12_STATS
 		m_NumCommandListOverflows++;
@@ -344,7 +349,7 @@ bool CCryDX12DeviceContext::PrepareComputePSO()
 	                                              /*   0, */ 0
 	                                              ) || ((DX12_SUBMISSION_MODE == DX12_SUBMISSION_PERPSO) && (stateFlags & EPSPB_PipelineState))))
 	{
-		SubmitComputeCommands(false);
+		SubmitCommands(CMDQUEUE_COMPUTE, false);
 
 #ifdef DX12_STATS
 		m_NumCommandListOverflows++;
@@ -772,147 +777,97 @@ void CCryDX12DeviceContext::DebugPrintResources(bool bGfx)
 	}
 }
 
-void CCryDX12DeviceContext::CeaseGraphicsCommandQueue(bool wait)
+void CCryDX12DeviceContext::CeaseCommandQueue(int nPoolId, bool wait)
 {
-	DX12_ASSERT(m_pCmdLists[CMDQUEUE_GRAPHICS] != nullptr, "CommandList hasn't been allocated!");
-	m_GraphicsState.m_StateFlagsEncountered |= m_GraphicsState.m_StateFlags;
+	DX12_ASSERT(m_pCmdLists[nPoolId] != nullptr, "CommandList hasn't been allocated!");
 
-	m_pCmdLists[CMDQUEUE_GRAPHICS]->End();
-	m_CmdListPools[CMDQUEUE_GRAPHICS].ForfeitCommandList(m_pCmdLists[CMDQUEUE_GRAPHICS], wait);
+	if (nPoolId == CMDQUEUE_GRAPHICS)
+		m_GraphicsState.m_StateFlagsEncountered |= m_GraphicsState.m_StateFlags;
+	//	m_GraphicsState.m_StateFlags = 0;
+	if (nPoolId == CMDQUEUE_COMPUTE)
+		m_ComputeState.m_StateFlagsEncountered |= m_ComputeState.m_StateFlags;
+	//	m_ComputeState.m_StateFlags = 0;
+
+	m_pCmdLists[nPoolId]->End();
+	m_CmdListPools[nPoolId].ForfeitCommandList(m_pCmdLists[nPoolId], wait);
 }
 
-void CCryDX12DeviceContext::ResumeGraphicsCommandQueue()
+void CCryDX12DeviceContext::ResumeCommandQueue(int nPoolId)
 {
-	DX12_ASSERT(m_pCmdLists[CMDQUEUE_GRAPHICS] == nullptr, "CommandList hasn't been submitted!");
-	m_CmdListPools[CMDQUEUE_GRAPHICS].AcquireCommandList(m_pCmdLists[CMDQUEUE_GRAPHICS]);
+	DX12_ASSERT(m_pCmdLists[nPoolId] == nullptr, "CommandList hasn't been submitted!");
+	m_CmdListPools[nPoolId].AcquireCommandList(m_pCmdLists[nPoolId]);
 
-	m_pCmdLists[CMDQUEUE_GRAPHICS]->Begin();
-	m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceAndSamplerStateHeaps();
-	m_bCmdListBegins[CMDQUEUE_GRAPHICS] = true;
+	m_pCmdLists[nPoolId]->Begin();
+	m_bCmdListBegins[nPoolId] = true;
+	if (nPoolId != CMDQUEUE_COPY)
+		m_pCmdLists[nPoolId]->SetResourceAndSamplerStateHeaps();
 
-	m_GraphicsState.m_StateFlags = m_GraphicsState.m_StateFlagsEncountered;
+	if (nPoolId == CMDQUEUE_GRAPHICS)
+		m_GraphicsState.m_StateFlags = m_GraphicsState.m_StateFlagsEncountered;
 	//	m_GraphicsState.m_StateFlagsEncountered = 0;
-}
-
-void CCryDX12DeviceContext::CeaseComputeCommandQueue(bool wait)
-{
-	DX12_ASSERT(m_pCmdLists[CMDQUEUE_COMPUTE] != nullptr, "CommandList hasn't been allocated!");
-	m_ComputeState.m_StateFlagsEncountered |= m_ComputeState.m_StateFlags;
-
-	m_pCmdLists[CMDQUEUE_COMPUTE]->End();
-	m_CmdListPools[CMDQUEUE_COMPUTE].ForfeitCommandList(m_pCmdLists[CMDQUEUE_COMPUTE], wait);
-}
-
-void CCryDX12DeviceContext::ResumeComputeCommandQueue()
-{
-	DX12_ASSERT(m_pCmdLists[CMDQUEUE_COMPUTE] == nullptr, "CommandList hasn't been submitted!");
-	m_CmdListPools[CMDQUEUE_COMPUTE].AcquireCommandList(m_pCmdLists[CMDQUEUE_COMPUTE]);
-
-	m_pCmdLists[CMDQUEUE_COMPUTE]->Begin();
-	m_pCmdLists[CMDQUEUE_COMPUTE]->SetResourceAndSamplerStateHeaps();
-	m_bCmdListBegins[CMDQUEUE_COMPUTE] = true;
-
-	m_ComputeState.m_StateFlags = m_ComputeState.m_StateFlagsEncountered;
+	if (nPoolId == CMDQUEUE_COMPUTE)
+		m_ComputeState.m_StateFlags = m_ComputeState.m_StateFlagsEncountered;
 	//	m_ComputeState.m_StateFlagsEncountered = 0;
-}
-
-void CCryDX12DeviceContext::CeaseCopyCommandQueue(bool wait)
-{
-	DX12_ASSERT(m_pCmdLists[CMDQUEUE_COPY] != nullptr, "CommandList hasn't been allocated!");
-
-	m_pCmdLists[CMDQUEUE_COPY]->End();
-	m_CmdListPools[CMDQUEUE_COPY].ForfeitCommandList(m_pCmdLists[CMDQUEUE_COPY], wait);
-}
-
-void CCryDX12DeviceContext::ResumeCopyCommandQueue()
-{
-	DX12_ASSERT(m_pCmdLists[CMDQUEUE_COPY] == nullptr, "CommandList hasn't been submitted!");
-	m_CmdListPools[CMDQUEUE_COPY].AcquireCommandList(m_pCmdLists[CMDQUEUE_COPY]);
-
-	m_pCmdLists[CMDQUEUE_COPY]->Begin();
-	m_bCmdListBegins[CMDQUEUE_COPY] = true;
 }
 
 void CCryDX12DeviceContext::CeaseAllCommandQueues(bool wait)
 {
-	CeaseGraphicsCommandQueue(wait);
-	CeaseComputeCommandQueue(wait);
-	CeaseCopyCommandQueue(wait);
+	CeaseCommandQueue(CMDQUEUE_GRAPHICS, wait);
+	CeaseCommandQueue(CMDQUEUE_COMPUTE, wait);
+	CeaseCommandQueue(CMDQUEUE_COPY, wait);
 }
 
 void CCryDX12DeviceContext::ResumeAllCommandQueues()
 {
-	ResumeGraphicsCommandQueue();
-	ResumeComputeCommandQueue();
-	ResumeCopyCommandQueue();
+	ResumeCommandQueue(CMDQUEUE_GRAPHICS);
+	ResumeCommandQueue(CMDQUEUE_COMPUTE);
+	ResumeCommandQueue(CMDQUEUE_COPY);
 }
 
-void CCryDX12DeviceContext::SubmitGraphicsCommands(bool wait)
+void CCryDX12DeviceContext::SubmitCommands(int nPoolId, bool wait)
 {
-	CeaseGraphicsCommandQueue(wait);
-	ResumeGraphicsCommandQueue();
-}
-
-void CCryDX12DeviceContext::SubmitComputeCommands(bool wait)
-{
-	CeaseComputeCommandQueue(wait);
-	ResumeComputeCommandQueue();
-}
-
-void CCryDX12DeviceContext::SubmitCopyCommands(bool wait)
-{
-	CeaseCopyCommandQueue(wait);
-	ResumeCopyCommandQueue();
-}
-
-void CCryDX12DeviceContext::SubmitGraphicsCommands(bool wait, const UINT64 fenceValue)
-{
-	if (m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUtilized() && (m_CmdFenceSet.GetCurrentValue(CMDQUEUE_GRAPHICS) == fenceValue))
+#if defined(ENABLE_FRAME_PROFILER_LABELS)
+	for (auto pEventLabel : m_profilerEventStack)
 	{
-#ifdef DX12_STATS
-		m_NumCommandListSplits++;
-#endif // DX12_STATS
-
-		SubmitGraphicsCommands(wait);
+		PIXEndEvent(m_pCmdLists[nPoolId]->GetD3D12CommandList());
 	}
-}
+#endif
 
-void CCryDX12DeviceContext::SubmitComputeCommands(bool wait, const UINT64 fenceValue)
-{
-	if (m_pCmdLists[CMDQUEUE_COMPUTE]->IsUtilized() && (m_CmdFenceSet.GetCurrentValue(CMDQUEUE_COMPUTE) == fenceValue))
+	CeaseCommandQueue(nPoolId, wait);
+	ResumeCommandQueue(nPoolId);
+
+#if defined(ENABLE_FRAME_PROFILER_LABELS)	
+	for (auto pEventLabel : m_profilerEventStack)
 	{
-#ifdef DX12_STATS
-		m_NumCommandListSplits++;
-#endif // DX12_STATS
-
-		SubmitComputeCommands(wait);
+		PIXBeginEvent(m_pCmdLists[nPoolId]->GetD3D12CommandList(), 0, pEventLabel);
 	}
+#endif
 }
 
-void CCryDX12DeviceContext::SubmitCopyCommands(bool wait, const UINT64 fenceValue)
+void CCryDX12DeviceContext::SubmitCommands(int nPoolId, bool wait, const UINT64 fenceValue)
 {
-	if (m_pCmdLists[CMDQUEUE_COPY]->IsUtilized() && (m_CmdFenceSet.GetCurrentValue(CMDQUEUE_COPY) == fenceValue))
+	if (m_pCmdLists[nPoolId]->IsUtilized() && (m_CmdFenceSet.GetCurrentValue(nPoolId) == fenceValue))
 	{
 #ifdef DX12_STATS
 		m_NumCommandListSplits++;
 #endif // DX12_STATS
 
-		SubmitCopyCommands(wait);
+		SubmitCommands(nPoolId, wait);
 	}
 }
 
 void CCryDX12DeviceContext::SubmitAllCommands(bool wait, const UINT64 (&fenceValues)[CMDQUEUE_NUM])
 {
-	SubmitGraphicsCommands(wait, fenceValues[CMDQUEUE_GRAPHICS]);
-	SubmitComputeCommands(wait, fenceValues[CMDQUEUE_COMPUTE]);
-	SubmitCopyCommands(wait, fenceValues[CMDQUEUE_COPY]);
+	SubmitCommands(CMDQUEUE_GRAPHICS, wait, fenceValues[CMDQUEUE_GRAPHICS]);
+	SubmitCommands(CMDQUEUE_COMPUTE, wait, fenceValues[CMDQUEUE_COMPUTE]);
+	SubmitCommands(CMDQUEUE_COPY, wait, fenceValues[CMDQUEUE_COPY]);
 }
 
 void CCryDX12DeviceContext::SubmitAllCommands(bool wait, const NCryDX12::FVAL64 (&fenceValues)[CMDQUEUE_NUM])
 {
-	SubmitGraphicsCommands(wait, fenceValues[CMDQUEUE_GRAPHICS]);
-	SubmitComputeCommands(wait, fenceValues[CMDQUEUE_COMPUTE]);
-	SubmitCopyCommands(wait, fenceValues[CMDQUEUE_COPY]);
+	SubmitCommands(CMDQUEUE_GRAPHICS, wait, fenceValues[CMDQUEUE_GRAPHICS]);
+	SubmitCommands(CMDQUEUE_COMPUTE, wait, fenceValues[CMDQUEUE_COMPUTE]);
+	SubmitCommands(CMDQUEUE_COPY, wait, fenceValues[CMDQUEUE_COPY]);
 }
 
 void CCryDX12DeviceContext::Finish(NCryDX12::CSwapChain* pDX12SwapChain)
@@ -1043,7 +998,7 @@ void CCryDX12DeviceContext::ResolveOcclusion(NCryDX12::CCommandList* pCmdList, U
 			m_OcclusionDownloadBuffer->Map(0, &sFullRead, &m_OcclusionMemory);
 		}
 
-		memcpy(mem, (char*)m_OcclusionMemory + index * 8, 8);
+		memcpy(mem, (char*)m_OcclusionMemory + index * sizeof(UINT64), sizeof(UINT64));
 
 		if (m_OcclusionMemory)
 		{
@@ -1052,6 +1007,16 @@ void CCryDX12DeviceContext::ResolveOcclusion(NCryDX12::CCommandList* pCmdList, U
 			m_OcclusionMemory = nullptr;
 		}
 	}
+}
+
+void CCryDX12DeviceContext::PushProfilerEvent(const char* label)
+{
+	m_profilerEventStack.push_back(label);
+}
+
+void CCryDX12DeviceContext::PopProfilerEvent()
+{
+	m_profilerEventStack.pop_back();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1164,7 +1129,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::DrawIndexed(
 		m_pCmdLists[CMDQUEUE_GRAPHICS]->DrawIndexedInstanced(IndexCount, 1, StartIndexLocation, BaseVertexLocation, 0);
 		m_GraphicsState.DebugPrint();
 		if (DX12_SUBMISSION_MODE <= DX12_SUBMISSION_PERDRAW)
-			SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+			SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 	}
 }
 
@@ -1179,7 +1144,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::Draw(
 		m_pCmdLists[CMDQUEUE_GRAPHICS]->DrawInstanced(VertexCount, 1, StartVertexLocation, 0);
 		m_GraphicsState.DebugPrint();
 		if (DX12_SUBMISSION_MODE <= DX12_SUBMISSION_PERDRAW)
-			SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+			SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 	}
 }
 
@@ -1190,11 +1155,38 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::Map(
   _In_ UINT MapFlags,
   _Out_ D3D11_MAPPED_SUBRESOURCE* pMappedResource)
 {
+	static D3D12_RANGE sRg[] =
+	{
+		{ 0, 0 }, // It is valid to specify the CPU won't read any data by passing a range where End is less than or equal to Begin
+		{ 0, 0 }  // It is valid to specify the CPU didn't write any data by passing a range where End is less than or equal to Begin.
+	};
+
+	static D3D12_RANGE* pRanges[] =
+	{
+		nullptr, // 0
+		nullptr, // D3D11_MAP_READ = 1,
+		&sRg[0], // D3D11_MAP_WRITE = 2,
+		nullptr, // D3D11_MAP_READ_WRITE = 3,
+		&sRg[0], // D3D11_MAP_WRITE_DISCARD = 4,
+		&sRg[0], // D3D11_MAP_WRITE_NO_OVERWRITE = 5
+	};
+
+	return Map(pResource, Subresource, reinterpret_cast<SIZE_T*>(pRanges[MapType]), MapType, MapFlags, pMappedResource);
+}
+
+HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::Map(
+  _In_ ID3D11Resource* pResource,
+  _In_ UINT Subresource,
+  _In_ SIZE_T* BeginEnd,
+  _In_ D3D11_MAP MapType,
+  _In_ UINT MapFlags,
+  _Out_ D3D11_MAPPED_SUBRESOURCE* pMappedResource)
+{
 	DX12_FUNC_LOG
-
-	  ZeroMemory(pMappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
 	DX12_LOG(g_nPrintDX12, "  Mapping resource: %p (%d)", pResource, Subresource);
+
+	ZeroMemory(pMappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
 	ICryDX12Resource* dx12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pResource);
 	NCryDX12::CResource& resource = dx12Resource->GetDX12Resource();
 
@@ -1202,7 +1194,10 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::Map(
 	{
 	case D3D11_MAP_READ:
 		// Ensure the command-list using the resource is executed
-		SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, resource.GetFenceValues(CMDTYPE_WRITE));
+		{
+			CryCriticalSectionNonRecursive safe;
+			SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, resource.GetFenceValues(CMDTYPE_WRITE));
+		}
 
 		// Block the CPU-thread until the resource is safe to map
 		resource.WaitForUnused<true>(m_CmdListPools[CMDQUEUE_GRAPHICS], CMDTYPE_WRITE);
@@ -1210,7 +1205,10 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::Map(
 	case D3D11_MAP_WRITE:
 	case D3D11_MAP_READ_WRITE:
 		// Ensure the command-list using the resource is executed
-		SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, resource.GetFenceValues(CMDTYPE_ANY));
+		{
+			CryCriticalSectionNonRecursive safe;
+			SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, resource.GetFenceValues(CMDTYPE_ANY));
+		}
 
 		// Block the CPU-thread until the resource is safe to map
 		resource.WaitForUnused<true>(m_CmdListPools[CMDQUEUE_GRAPHICS], CMDTYPE_ANY);
@@ -1244,24 +1242,8 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::Map(
 		break;
 	}
 
-	static D3D12_RANGE sRg[] =
-	{
-		{ 0, 0 }, // It is valid to specify the CPU won't read any data by passing a range where End is less than or equal to Begin
-		{ 0, 0 }  // It is valid to specify the CPU didn't write any data by passing a range where End is less than or equal to Begin.
-	};
-
-	static D3D12_RANGE* pRanges[] =
-	{
-		nullptr, // 0
-		nullptr, // D3D11_MAP_READ = 1,
-		&sRg[0], // D3D11_MAP_WRITE = 2,
-		nullptr, // D3D11_MAP_READ_WRITE = 3,
-		&sRg[0], // D3D11_MAP_WRITE_DISCARD = 4,
-		&sRg[0], // D3D11_MAP_WRITE_NO_OVERWRITE = 5
-	};
-
 	DX12_ASSERT(!D3D12IsLayoutOpaque(resource.GetDesc().Layout), "Opaque layouts are unmappable until 12.2!");
-	HRESULT hr = dx12Resource->GetD3D12Resource()->Map(Subresource, pRanges[MapType], &(pMappedResource->pData));
+	HRESULT hr = dx12Resource->GetD3D12Resource()->Map(Subresource, reinterpret_cast<D3D12_RANGE*>(BeginEnd), &(pMappedResource->pData));
 
 	if (S_OK != hr)
 	{
@@ -1276,16 +1258,23 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::Unmap(
   _In_ ID3D11Resource* pResource,
   _In_ UINT Subresource)
 {
-	DX12_FUNC_LOG
+	// NOTE: Don't know MapType, can't optimize writeRange!
+	Unmap(pResource, Subresource, nullptr);
+}
 
-	  DX12_LOG(g_nPrintDX12, "Unmapping resource: %p (%d)", pResource, Subresource);
+void STDMETHODCALLTYPE CCryDX12DeviceContext::Unmap(
+  _In_ ID3D11Resource* pResource,
+  _In_ UINT Subresource,
+  _In_ SIZE_T* BeginEnd)
+{
+	DX12_FUNC_LOG
+	DX12_LOG(g_nPrintDX12, "Unmapping resource: %p (%d)", pResource, Subresource);
+
 	ICryDX12Resource* dx12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pResource);
 	NCryDX12::CResource& resource = dx12Resource->GetDX12Resource();
 
-	// NOTE: Don't know MapType, can't optimize writeRange!
-
 	DX12_ASSERT(!D3D12IsLayoutOpaque(resource.GetDesc().Layout), "Opaque layouts are unmappable until 12.2!");
-	dx12Resource->GetD3D12Resource()->Unmap(Subresource, NULL);
+	dx12Resource->GetD3D12Resource()->Unmap(Subresource, reinterpret_cast<D3D12_RANGE*>(BeginEnd));
 }
 
 void STDMETHODCALLTYPE CCryDX12DeviceContext::PSSetConstantBuffers(
@@ -1368,7 +1357,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::DrawIndexedInstanced(
 		m_pCmdLists[CMDQUEUE_GRAPHICS]->DrawIndexedInstanced(IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation);
 		m_GraphicsState.DebugPrint();
 		if (DX12_SUBMISSION_MODE <= DX12_SUBMISSION_PERDRAW)
-			SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+			SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 	}
 }
 
@@ -1385,7 +1374,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::DrawInstanced(
 		m_pCmdLists[CMDQUEUE_GRAPHICS]->DrawInstanced(VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);
 		m_GraphicsState.DebugPrint();
 		if (DX12_SUBMISSION_MODE <= DX12_SUBMISSION_PERDRAW)
-			SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+			SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 	}
 }
 
@@ -1457,7 +1446,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::Begin(
 	else if (desc.Query == D3D11_QUERY_OCCLUSION || desc.Query == D3D11_QUERY_OCCLUSION_PREDICATE)
 	{
 #ifdef DX12_SUBMISSION_LOWLATENCY
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, m_CmdFenceSet.GetCurrentValue(CMDQUEUE_GRAPHICS));
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, m_CmdFenceSet.GetCurrentValue(CMDQUEUE_GRAPHICS));
 #endif
 
 		auto pOcclusionQuery = reinterpret_cast<CCryDX12ResourceQuery*>(pAsync);
@@ -1484,7 +1473,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::End(
 	if (desc.Query == D3D11_QUERY_EVENT)
 	{
 #ifdef DX12_SUBMISSION_LOWLATENCY
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, m_CmdFenceSet.GetCurrentValue(CMDQUEUE_GRAPHICS));
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, m_CmdFenceSet.GetCurrentValue(CMDQUEUE_GRAPHICS));
 #endif
 
 		// Record fence of commands prior to this point
@@ -1501,7 +1490,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::End(
 
 #ifdef DX12_SUBMISSION_LOWLATENCY
 		// TODO: group time-stamp queries
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 #endif
 	}
 	else // || desc.Query == D3D11_QUERY_OCCLUSION_PREDICATE)
@@ -1532,7 +1521,7 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::GetData(
 		if (!bComplete && !(GetDataFlags & D3D11_ASYNC_GETDATA_DONOTFLUSH))
 		{
 			// Ensure the command-list issuing the query is executed
-			SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, pEventQuery->GetFenceValue());
+			SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, pEventQuery->GetFenceValue());
 			FlushToFence(pEventQuery->GetFenceValue());
 		}
 
@@ -1548,7 +1537,7 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::GetData(
 		if (!bComplete && !(GetDataFlags & D3D11_ASYNC_GETDATA_DONOTFLUSH))
 		{
 			// Ensure the command-list issuing the query is executed
-			SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, pOcclusionQuery->GetFenceValue());
+			SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, pOcclusionQuery->GetFenceValue());
 			FlushToFence(pOcclusionQuery->GetFenceValue());
 		}
 
@@ -1734,7 +1723,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::DrawIndexedInstancedIndirect(
 	//	m_pGraphicsCmdList->ExecuteIndirect(???, ???, pBufferForArgs, AlignedByteOffsetForArgs, nullptr, nullptr);
 	//	m_GraphicsState.DebugPrint();
 	//	if (DX12_SUBMISSION_MODE <= DX12_SUBMISSION_PERDRAW)
-	//		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+	//		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 }
 
 void STDMETHODCALLTYPE CCryDX12DeviceContext::DrawInstancedIndirect(
@@ -1747,7 +1736,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::DrawInstancedIndirect(
 	//	m_pGraphicsCmdList->ExecuteIndirect(???, ???, pBufferForArgs, AlignedByteOffsetForArgs, nullptr, nullptr);
 	//	m_GraphicsState.DebugPrint();
 	//	if (DX12_SUBMISSION_MODE <= DX12_SUBMISSION_PERDRAW)
-	//		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+	//		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 }
 
 void STDMETHODCALLTYPE CCryDX12DeviceContext::Dispatch(
@@ -1758,16 +1747,14 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::Dispatch(
 	DX12_FUNC_LOG
 
 	// Ensure the command-list using the resource is executed (TODO: get largest fence of all used resources)
-	if (!m_bBatchComputeTasks)
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+	SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 
 	if (PrepareComputeState())
 	{
 		m_pCmdLists[CMDQUEUE_COMPUTE]->Dispatch(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
 		m_ComputeState.DebugPrint();
 
-		if (!m_bBatchComputeTasks)
-			SubmitComputeCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+		SubmitCommands(CMDQUEUE_COMPUTE, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 	}
 }
 
@@ -1780,7 +1767,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::DispatchIndirect(
 	//	PrepareState();
 	//	m_pComputeCmdList->ExecuteIndirect(???, ???, pBufferForArgs, AlignedByteOffsetForArgs, nullptr, nullptr);
 	//	m_ComputeState.DebugPrint();
-	//	SubmitComputeCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+	//	SubmitCommands(CMDQUEUE_COMPUTE, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 }
 
 void STDMETHODCALLTYPE CCryDX12DeviceContext::RSSetState(
@@ -1840,9 +1827,8 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CopySubresourceRegion(
   _In_opt_ const D3D11_BOX* pSrcBox)
 {
 	DX12_FUNC_LOG
-	  CRY_ASSERT(!m_bBatchComputeTasks);
 
-	CopySubresourceRegion1(
+	CopySubresourcesRegion1(
 	  pDstResource,
 	  DstSubresource,
 	  DstX,
@@ -1851,7 +1837,34 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CopySubresourceRegion(
 	  pSrcResource,
 	  SrcSubresource,
 	  pSrcBox,
-	  0);
+	  0,
+	  1);
+}
+
+void STDMETHODCALLTYPE CCryDX12DeviceContext::CopySubresourcesRegion(
+  _In_ ID3D11Resource* pDstResource,
+  _In_ UINT DstSubresource,
+  _In_ UINT DstX,
+  _In_ UINT DstY,
+  _In_ UINT DstZ,
+  _In_ ID3D11Resource* pSrcResource,
+  _In_ UINT SrcSubresource,
+  _In_opt_ const D3D11_BOX* pSrcBox,
+  _In_ UINT NumSubresources)
+{
+	DX12_FUNC_LOG
+
+	CopySubresourcesRegion1(
+	  pDstResource,
+	  DstSubresource,
+	  DstX,
+	  DstY,
+	  DstZ,
+	  pSrcResource,
+	  SrcSubresource,
+	  pSrcBox,
+	  0,
+	  NumSubresources);
 }
 
 void STDMETHODCALLTYPE CCryDX12DeviceContext::CopyResource(
@@ -1860,7 +1873,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CopyResource(
 {
 	DX12_FUNC_LOG
 
-	  CopyResource1(
+	CopyResource1(
 	  pDstResource,
 	  pSrcResource,
 	  0);
@@ -1909,7 +1922,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::UploadResource(
 			__debugbreak();
 		}
 
-		initialData.pData = new uint8_t[size_t(curSize)];
+		initialData.pData = CryModuleMemalign(size_t(curSize), CRY_PLATFORM_ALIGNMENT);
 		memset((char*)(initialData.pData) + cpySize, 0, size_t(curSize - cpySize));
 		memcpy(const_cast<void*>(initialData.pData), pInitialData[i].pSysMem, size_t(cpySize));
 		id->m_SubResourceData[i] = initialData;
@@ -1937,7 +1950,6 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::UpdateSubresource(
   _In_ UINT SrcDepthPitch)
 {
 	DX12_FUNC_LOG
-	  CRY_ASSERT(!m_bBatchComputeTasks);
 
 	UpdateSubresource1(
 	  pDstResource,
@@ -1968,7 +1980,6 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::ClearRenderTargetView(
 	CCryDX12RenderTargetView* rtv = reinterpret_cast<CCryDX12RenderTargetView*>(pRenderTargetView);
 	DX12_LOG(g_nPrintDX12, "Clearing render target view: %p %s", pRenderTargetView, rtv->GetResourceName().c_str());
 
-	// TODO: see if they are also doable with the copy queue
 	m_pCmdLists[CMDQUEUE_GRAPHICS]->ClearRenderTargetView(*view, ColorRGBA);
 }
 
@@ -1982,9 +1993,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::ClearUnorderedAccessViewUint(
 	CCryDX12UnorderedAccessView* uav = reinterpret_cast<CCryDX12UnorderedAccessView*>(pUnorderedAccessView);
 	DX12_LOG(g_nPrintDX12, "Clearing unordered access view [int]: %p %s", pUnorderedAccessView, uav->GetResourceName().c_str());
 
-	// TODO: see if they are also doable with the copy queue
-	auto pCmdList = m_bBatchComputeTasks ? m_pCmdLists[CMDQUEUE_COMPUTE] : m_pCmdLists[CMDQUEUE_GRAPHICS];
-	pCmdList->ClearUnorderedAccessView(*view, Values);
+	m_pCmdLists[CMDQUEUE_GRAPHICS]->ClearUnorderedAccessView(*view, Values);
 }
 
 void STDMETHODCALLTYPE CCryDX12DeviceContext::ClearUnorderedAccessViewFloat(
@@ -1997,9 +2006,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::ClearUnorderedAccessViewFloat(
 	CCryDX12UnorderedAccessView* uav = reinterpret_cast<CCryDX12UnorderedAccessView*>(pUnorderedAccessView);
 	DX12_LOG(g_nPrintDX12, "Clearing unordered access view [float]: %p %s", pUnorderedAccessView, uav->GetResourceName().c_str());
 
-	// TODO: see if they are also doable with the copy queue
-	auto pCmdList = m_bBatchComputeTasks ? m_pCmdLists[CMDQUEUE_COMPUTE] : m_pCmdLists[CMDQUEUE_GRAPHICS];
-	pCmdList->ClearUnorderedAccessView(*view, Values);
+	m_pCmdLists[CMDQUEUE_GRAPHICS]->ClearUnorderedAccessView(*view, Values);
 }
 
 void STDMETHODCALLTYPE CCryDX12DeviceContext::ClearDepthStencilView(
@@ -2014,7 +2021,6 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::ClearDepthStencilView(
 	CCryDX12DepthStencilView* dsv = reinterpret_cast<CCryDX12DepthStencilView*>(pDepthStencilView);
 	DX12_LOG(g_nPrintDX12, "Clearing depth stencil view: %p %s", pDepthStencilView, dsv->GetResourceName().c_str());
 
-	// TODO: see if they are also doable with the copy queue
 	m_pCmdLists[CMDQUEUE_GRAPHICS]->ClearDepthStencilView(*view, D3D12_CLEAR_FLAGS(ClearFlags), Depth, Stencil);
 }
 
@@ -2150,10 +2156,9 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CSSetShaderResources(
 		if (m_ComputeState.Stages[NCryDX12::ESS_Compute].ShaderResourceViews.Set(i, srv) && srv)
 		{
 			NCryDX12::CResource& resource = srv->GetDX12Resource();
-#if (CMDLIST_COMPUTE != CMDLIST_TYPE_DIRECT)
-			/*const*/ bool bGfx = (resource.IsBackBuffer() || resource.IsTarget() || resource.IsGraphics());
 
-			if (bGfx)
+			const bool bGfx = (resource.IsBackBuffer() || resource.IsTarget() || resource.IsGraphics());
+			if (bGfx && (CMDLIST_COMPUTE != CMDLIST_TYPE_DIRECT))
 			{
 				if (resource.NeedsTransitionBarrier(m_pCmdLists[CMDQUEUE_COMPUTE], srv->GetDX12View(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
 				{
@@ -2163,7 +2168,6 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CSSetShaderResources(
 				}
 			}
 			else
-#endif
 			{
 				resource.BeginTransitionBarrier(m_pCmdLists[CMDQUEUE_COMPUTE], srv->GetDX12View(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 			}
@@ -2184,10 +2188,9 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CSSetUnorderedAccessViews(
 		if (m_ComputeState.Stages[NCryDX12::ESS_Compute].UnorderedAccessViews.Set(i, uav) && uav)
 		{
 			NCryDX12::CResource& resource = uav->GetDX12Resource();
-#if (CMDLIST_COMPUTE != CMDLIST_TYPE_DIRECT)
-			/*const*/ bool bGfx = (resource.IsBackBuffer() || resource.IsTarget() || resource.IsGraphics());
 
-			if (bGfx)
+			const bool bGfx = (resource.IsBackBuffer() || resource.IsTarget() || resource.IsGraphics());
+			if (bGfx && (CMDLIST_COMPUTE != CMDLIST_TYPE_DIRECT))
 			{
 				if (resource.NeedsTransitionBarrier(m_pCmdLists[CMDQUEUE_COMPUTE], uav->GetDX12View(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
 				{
@@ -2197,7 +2200,6 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CSSetUnorderedAccessViews(
 				}
 			}
 			else
-#endif
 			{
 				resource.BeginTransitionBarrier(m_pCmdLists[CMDQUEUE_COMPUTE], uav->GetDX12View(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			}
@@ -2628,6 +2630,32 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::FinishCommandList(
 #pragma region /* D3D 11.1 specific functions */
 
 void STDMETHODCALLTYPE CCryDX12DeviceContext::CopySubresourceRegion1(
+	_In_ ID3D11Resource* pDstResource,
+	_In_ UINT DstSubresource,
+	_In_ UINT DstX,
+	_In_ UINT DstY,
+	_In_ UINT DstZ,
+	_In_ ID3D11Resource* pSrcResource,
+	_In_ UINT SrcSubresource,
+	_In_opt_ const D3D11_BOX* pSrcBox,
+	_In_ UINT CopyFlags)
+{
+	DX12_FUNC_LOG
+
+	CopySubresourcesRegion1(
+		pDstResource,
+		DstSubresource,
+		DstX,
+		DstY,
+		DstZ,
+		pSrcResource,
+		SrcSubresource,
+		pSrcBox,
+		CopyFlags,
+		1);
+}
+
+void STDMETHODCALLTYPE CCryDX12DeviceContext::CopySubresourcesRegion1(
   _In_ ID3D11Resource* pDstResource,
   _In_ UINT DstSubresource,
   _In_ UINT DstX,
@@ -2636,7 +2664,8 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CopySubresourceRegion1(
   _In_ ID3D11Resource* pSrcResource,
   _In_ UINT SrcSubresource,
   _In_opt_ const D3D11_BOX* pSrcBox,
-  _In_ UINT CopyFlags)
+  _In_ UINT CopyFlags,
+  _In_ UINT NumSubresources)
 {
 	DX12_FUNC_LOG
 
@@ -2645,53 +2674,71 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CopySubresourceRegion1(
 	NCryDX12::CResource& dstResource = m_pCmdLists[CMDQUEUE_GRAPHICS]->PatchRenderTarget(dstDX12Resource->GetDX12Resource());
 	NCryDX12::CResource& srcResource = m_pCmdLists[CMDQUEUE_GRAPHICS]->PatchRenderTarget(srcDX12Resource->GetDX12Resource());
 
-	// TODO: copy command on the swap chain are special (can't execute on any other queue), make an API for that
-	/*const*/ bool bGfx = !(srcResource.IsOffCard() || dstResource.IsOffCard());
-
-#if (CMDLIST_COPY != CMDLIST_TYPE_DIRECT)
-	if (!bGfx)
+	// TODO: copy from active render-target should be more elegant
+	if (m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(srcResource) ||
+		m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(dstResource))
 	{
-		if (srcResource.NeedsTransitionBarrier(m_pCmdLists[CMDQUEUE_COPY], D3D12_RESOURCE_STATE_COPY_SOURCE) ||
-		    dstResource.NeedsTransitionBarrier(m_pCmdLists[CMDQUEUE_COPY], D3D12_RESOURCE_STATE_COPY_DEST))
+		// Make the render-targets rebind, so the resource-barrier is closed
+		m_GraphicsState.m_StateFlags |= EPSPB_OutputResources;
+	}
+
+	D3D12_RESOURCE_STATES prevSrcState = srcResource.GetTargetState();
+	D3D12_RESOURCE_STATES prevDstState = dstResource.GetTargetState();
+
+	if (CopyFlags & DX12_COPY_PIXELSTATE_MARKER)
+		prevDstState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+
+	// TODO: copy command on the swap chain are special (can't execute on any other queue), make an API for that
+	const bool bGfx = !(srcResource.IsOffCard() || dstResource.IsOffCard()); // TODO: (srcResource.IsBackBuffer() || dstResource.IsBackBuffer()); is underperforming
+	const bool bCpy = (srcResource.IsOffCard() || dstResource.IsOffCard());
+	const int copyQueue = bCpy ? CMDQUEUE_COPY : CMDQUEUE_COMPUTE;
+	int activeQueue = CMDQUEUE_GRAPHICS;
+
+	if (!bGfx && ((bCpy && (CMDLIST_COPY != CMDLIST_TYPE_DIRECT)) || (!bCpy && (CMDLIST_COMPUTE != CMDLIST_TYPE_DIRECT))))
+	{
+		activeQueue = srcResource.SelectQueueForTransitionBarrier(CMDQUEUE_GRAPHICS,   copyQueue, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		activeQueue = dstResource.SelectQueueForTransitionBarrier(CMDQUEUE_GRAPHICS, activeQueue, D3D12_RESOURCE_STATE_COPY_DEST);
+
+		if (srcResource.NeedsTransitionBarrier(m_pCmdLists[copyQueue], D3D12_RESOURCE_STATE_COPY_SOURCE))
 		{
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(srcResource, CMDTYPE_WRITE);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceState(srcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceState(dstResource, D3D12_RESOURCE_STATE_COPY_DEST);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(srcResource, CMDTYPE_READ);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
+			m_pCmdLists[activeQueue]->MaxResourceFenceValue(srcResource, CMDTYPE_ANY);
+			m_pCmdLists[activeQueue]->SetResourceState(srcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			m_pCmdLists[activeQueue]->SetResourceFenceValue(srcResource, CMDTYPE_WRITE);
 		}
 
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, std::max(
+		if (dstResource.NeedsTransitionBarrier(m_pCmdLists[copyQueue], D3D12_RESOURCE_STATE_COPY_DEST))
+		{
+			m_pCmdLists[activeQueue]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
+			m_pCmdLists[activeQueue]->SetResourceState(dstResource, D3D12_RESOURCE_STATE_COPY_DEST);
+			m_pCmdLists[activeQueue]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
+		}
+
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, std::max(
 		                         srcResource.GetFenceValue(CMDQUEUE_GRAPHICS, CMDTYPE_WRITE),
 		                         dstResource.GetFenceValue(CMDQUEUE_GRAPHICS, CMDTYPE_ANY)));
 
-		SubmitComputeCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, std::max(
+		SubmitCommands(CMDQUEUE_COMPUTE, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, std::max(
 		                        srcResource.GetFenceValue(CMDQUEUE_COMPUTE, CMDTYPE_WRITE),
 		                        dstResource.GetFenceValue(CMDQUEUE_COMPUTE, CMDTYPE_ANY)));
 
-		// TODO: copy from active render-target should be more elegant
-		if (m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(srcResource) ||
-		    m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(dstResource))
-		{
-			// Make the render-targets rebind, so the resource-barrier is closed
-			m_GraphicsState.m_StateFlags |= EPSPB_OutputResources;
-		}
-
 		if (srcResource.GetDesc().Dimension == D3D12_RESOURCE_DIMENSION_BUFFER && dstResource.GetDesc().Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
 		{
-			UINT64 length = (pSrcBox ? pSrcBox->right - pSrcBox->left : srcResource.GetDesc().Width);
+			UINT64 offset = (pSrcBox ? pSrcBox->left : 0);
+			UINT64 length = (pSrcBox ? pSrcBox->right : srcResource.GetDesc().Width) - offset;
 
-			m_pCmdLists[CMDQUEUE_COPY]->GetD3D12CommandList()->CopyBufferRegion(dstResource.GetD3D12Resource(), DstX, srcResource.GetD3D12Resource(), 0, length);
-			m_pCmdLists[CMDQUEUE_COPY]->m_nCommands += CLCOUNT_COPY;
+			m_pCmdLists[copyQueue]->GetD3D12CommandList()->CopyBufferRegion(dstResource.GetD3D12Resource(), DstX, srcResource.GetD3D12Resource(), offset, length);
+			m_pCmdLists[copyQueue]->m_nCommands += CLCOUNT_COPY;
 		}
 		else if (srcResource.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER && dstResource.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
 		{
-			CD3DX12_TEXTURE_COPY_LOCATION src(srcResource.GetD3D12Resource(), SrcSubresource);
-			CD3DX12_TEXTURE_COPY_LOCATION dst(dstResource.GetD3D12Resource(), DstSubresource);
+			for (UINT n = 0; n < NumSubresources; ++n)
+			{
+				CD3DX12_TEXTURE_COPY_LOCATION src(srcResource.GetD3D12Resource(), SrcSubresource + n);
+				CD3DX12_TEXTURE_COPY_LOCATION dst(dstResource.GetD3D12Resource(), DstSubresource + n);
 
-			m_pCmdLists[CMDQUEUE_COPY]->GetD3D12CommandList()->CopyTextureRegion(&dst, DstX, DstY, DstZ, &src, reinterpret_cast<const D3D12_BOX*>(pSrcBox));
-			m_pCmdLists[CMDQUEUE_COPY]->m_nCommands += CLCOUNT_COPY;
+				m_pCmdLists[copyQueue]->GetD3D12CommandList()->CopyTextureRegion(&dst, DstX, DstY, DstZ, &src, reinterpret_cast<const D3D12_BOX*>(pSrcBox));
+				m_pCmdLists[copyQueue]->m_nCommands += CLCOUNT_COPY;
+			}
 		}
 		else if (dstResource.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
 		{
@@ -2701,8 +2748,8 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CopySubresourceRegion1(
 			CD3DX12_TEXTURE_COPY_LOCATION src(srcResource.GetD3D12Resource(), Layouts[0]);
 			CD3DX12_TEXTURE_COPY_LOCATION dst(dstResource.GetD3D12Resource(), DstSubresource);
 
-			m_pCmdLists[CMDQUEUE_COPY]->GetD3D12CommandList()->CopyTextureRegion(&dst, DstX, DstY, DstZ, &src, reinterpret_cast<const D3D12_BOX*>(pSrcBox));
-			m_pCmdLists[CMDQUEUE_COPY]->m_nCommands += CLCOUNT_COPY;
+			m_pCmdLists[copyQueue]->GetD3D12CommandList()->CopyTextureRegion(&dst, DstX, DstY, DstZ, &src, reinterpret_cast<const D3D12_BOX*>(pSrcBox));
+			m_pCmdLists[copyQueue]->m_nCommands += CLCOUNT_COPY;
 		}
 		else if (srcResource.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
 		{
@@ -2712,84 +2759,73 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CopySubresourceRegion1(
 			CD3DX12_TEXTURE_COPY_LOCATION src(srcResource.GetD3D12Resource(), SrcSubresource);
 			CD3DX12_TEXTURE_COPY_LOCATION dst(dstResource.GetD3D12Resource(), Layouts[0]);
 
-			m_pCmdLists[CMDQUEUE_COPY]->GetD3D12CommandList()->CopyTextureRegion(&dst, DstX, DstY, DstZ, &src, reinterpret_cast<const D3D12_BOX*>(pSrcBox));
-			m_pCmdLists[CMDQUEUE_COPY]->m_nCommands += CLCOUNT_COPY;
+			m_pCmdLists[copyQueue]->GetD3D12CommandList()->CopyTextureRegion(&dst, DstX, DstY, DstZ, &src, reinterpret_cast<const D3D12_BOX*>(pSrcBox));
+			m_pCmdLists[copyQueue]->m_nCommands += CLCOUNT_COPY;
 		}
 
-		m_pCmdLists[CMDQUEUE_COPY]->MaxResourceFenceValue(srcResource, CMDTYPE_WRITE);
-		m_pCmdLists[CMDQUEUE_COPY]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
-		m_pCmdLists[CMDQUEUE_COPY]->SetResourceFenceValue(srcResource, CMDTYPE_READ);
-		m_pCmdLists[CMDQUEUE_COPY]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
+		m_pCmdLists[copyQueue]->MaxResourceFenceValue(srcResource, CMDTYPE_WRITE);
+		m_pCmdLists[copyQueue]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
+		m_pCmdLists[copyQueue]->SetResourceFenceValue(srcResource, CMDTYPE_READ);
+		m_pCmdLists[copyQueue]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
 
-		SubmitCopyCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+		SubmitCommands(copyQueue, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+
+		if (CopyFlags & DX12_COPY_REVERTSTATE_MARKER)
+		{
+			if (srcResource.NeedsTransitionBarrier(m_pCmdLists[copyQueue], prevSrcState))
+			{
+				m_pCmdLists[activeQueue]->MaxResourceFenceValue(srcResource, CMDTYPE_ANY);
+				m_pCmdLists[activeQueue]->SetResourceState(srcResource, prevSrcState);
+				m_pCmdLists[activeQueue]->SetResourceFenceValue(srcResource, CMDTYPE_WRITE);
+			}
+
+			if (dstResource.NeedsTransitionBarrier(m_pCmdLists[copyQueue], prevDstState))
+			{
+				m_pCmdLists[activeQueue]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
+				m_pCmdLists[activeQueue]->SetResourceState(dstResource, prevDstState);
+				m_pCmdLists[activeQueue]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
+			}
+		}
+
 		return;
 	}
 
-	bGfx = true;
-#endif
-
-	NCryDX12::CCommandListPool& rCmdListPool = bGfx ? m_CmdListPools[CMDQUEUE_GRAPHICS] : m_CmdListPools[CMDQUEUE_COPY];
-	NCryDX12::CCommandList* pCmdList = bGfx ? m_pCmdLists[CMDQUEUE_GRAPHICS] : m_pCmdLists[CMDQUEUE_COPY];
-
 	// TODO: move into the command-list function
-	UINT64 maxFenceValues[CMDQUEUE_NUM];
 	switch (CopyFlags)
 	{
 	case D3D11_COPY_DISCARD:
 		DX12_LOG(g_nPrintDX12, "Using D3D11_COPY_DISCARD on old ID3D12Resource: %p", DX12_EXTRACT_D3D12RESOURCE(pDstResource));
 
 #ifdef DX12_STATS
-		m_NumCopyDiscardSkips += !resource.IsUsed(rCmdListPool);
+		m_NumCopyDiscardSkips += !resource.IsUsed(m_CmdListPools[activeQueue]);
 		m_NumCopyDiscards++;
 #endif // DX12_STATS
 
 		// If the resource is not currently used, we do not need to discard the memory
-		if (dstResource.IsUsed<PERSP_CPU>(rCmdListPool))
+		if (dstResource.IsUsed<PERSP_CPU>(m_CmdListPools[activeQueue]))
 		{
 			dstDX12Resource->CopyDiscard();
 		}
 
 		DX12_LOG(g_nPrintDX12, "New ID3D12Resource: %p", DX12_EXTRACT_D3D12RESOURCE(pDstResource));
-
-		// Ensure the command-list using the source resource is executed (for example filling source etc.)
-		if (!bGfx)
-			SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
-			                  srcResource.GetFenceValues(CMDTYPE_WRITE)
-			                  );
 		break;
 	case D3D11_COPY_NO_OVERWRITE:
-		// Ensure the command-list using the source resource is executed (for example filling source etc.)
-		if (!bGfx)
-			SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
-			                  srcResource.GetFenceValues(CMDTYPE_WRITE)
-			                  );
 		break;
 	default:
-		// Ensure the command-list using either of the resources is executed
-		if (!bGfx)
-			SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, NCryDX12::MaxFenceValues(
-			                    maxFenceValues,
-			                    srcResource.GetFenceValues(CMDTYPE_WRITE),
-			                    dstResource.GetFenceValues(CMDTYPE_ANY)
-			                    ));
-
 		// Block the GPU-thread until the resource is safe to be updated (unlike Map() we stage the copy and don't need to block the CPU)
 		break;
 	}
 
-	// TODO: copy from active render-target should be more elegant
-	if (m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(srcResource) ||
-	    m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(dstResource))
+	m_pCmdLists[activeQueue]->CopySubresources(dstResource, DstSubresource, DstX, DstY, DstZ, srcResource, SrcSubresource, reinterpret_cast<const D3D12_BOX*>(pSrcBox), NumSubresources);
+
+	if (CopyFlags & DX12_COPY_REVERTSTATE_MARKER)
 	{
-		// Make the render-targets rebind, so the resource-barrier is closed
-		m_GraphicsState.m_StateFlags |= EPSPB_OutputResources;
+		m_pCmdLists[activeQueue]->SetResourceState(srcResource, prevSrcState);
+		m_pCmdLists[activeQueue]->SetResourceState(dstResource, prevDstState);
 	}
 
-	pCmdList->CopySubresource(dstResource, DstSubresource, DstX, DstY, DstZ, srcResource, SrcSubresource, reinterpret_cast<const D3D12_BOX*>(pSrcBox));
-	if (!bGfx)
-		SubmitCopyCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
-	else if (DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC)
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+	if (DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC)
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 }
 
 void STDMETHODCALLTYPE CCryDX12DeviceContext::CopyResource1(
@@ -2804,117 +2840,120 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CopyResource1(
 	NCryDX12::CResource& dstResource = m_pCmdLists[CMDQUEUE_GRAPHICS]->PatchRenderTarget(dstDX12Resource->GetDX12Resource());
 	NCryDX12::CResource& srcResource = m_pCmdLists[CMDQUEUE_GRAPHICS]->PatchRenderTarget(srcDX12Resource->GetDX12Resource());
 
-	// TODO: copy command on the swap chain are special (can't execute on any other queue), make an API for that
-	/*const*/ bool bGfx = !(srcResource.IsOffCard() || dstResource.IsOffCard());
-
-#if (CMDLIST_COPY != CMDLIST_TYPE_DIRECT)
-	if (!bGfx)
+	// TODO: copy from active render-target should be more elegant
+	if (m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(srcResource) ||
+		m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(dstResource))
 	{
-		if (srcResource.NeedsTransitionBarrier(m_pCmdLists[CMDQUEUE_COPY], D3D12_RESOURCE_STATE_COPY_SOURCE) ||
-		    dstResource.NeedsTransitionBarrier(m_pCmdLists[CMDQUEUE_COPY], D3D12_RESOURCE_STATE_COPY_DEST))
+		// Make the render-targets rebind, so the resource-barrier is closed
+		m_GraphicsState.m_StateFlags |= EPSPB_OutputResources;
+	}
+
+	D3D12_RESOURCE_STATES prevSrcState = srcResource.GetTargetState();
+	D3D12_RESOURCE_STATES prevDstState = dstResource.GetTargetState();
+
+	if (CopyFlags & DX12_COPY_PIXELSTATE_MARKER)
+		prevDstState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+
+	// TODO: copy command on the swap chain are special (can't execute on any other queue), make an API for that
+	const bool bGfx = !(srcResource.IsOffCard() || dstResource.IsOffCard()); // TODO: (srcResource.IsBackBuffer() || dstResource.IsBackBuffer()); is sstill buggy
+	const bool bCpy = (srcResource.IsOffCard() || dstResource.IsOffCard());
+	const int copyQueue = bCpy ? CMDQUEUE_COPY : CMDQUEUE_COMPUTE;
+	int activeQueue = CMDQUEUE_GRAPHICS;
+
+	if (!bGfx && ((bCpy && (CMDLIST_COPY != CMDLIST_TYPE_DIRECT)) || (!bCpy && (CMDLIST_COMPUTE != CMDLIST_TYPE_DIRECT))))
+	{
+		activeQueue = srcResource.SelectQueueForTransitionBarrier(CMDQUEUE_GRAPHICS,   copyQueue, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		activeQueue = dstResource.SelectQueueForTransitionBarrier(CMDQUEUE_GRAPHICS, activeQueue, D3D12_RESOURCE_STATE_COPY_DEST);
+
+		if (srcResource.NeedsTransitionBarrier(m_pCmdLists[copyQueue], D3D12_RESOURCE_STATE_COPY_SOURCE))
 		{
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(srcResource, CMDTYPE_WRITE);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceState(srcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceState(dstResource, D3D12_RESOURCE_STATE_COPY_DEST);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(srcResource, CMDTYPE_READ);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
+			m_pCmdLists[activeQueue]->MaxResourceFenceValue(srcResource, CMDTYPE_ANY);
+			m_pCmdLists[activeQueue]->SetResourceState(srcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			m_pCmdLists[activeQueue]->SetResourceFenceValue(srcResource, CMDTYPE_WRITE);
 		}
 
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, std::max(
+		if (dstResource.NeedsTransitionBarrier(m_pCmdLists[copyQueue], D3D12_RESOURCE_STATE_COPY_DEST))
+		{
+			m_pCmdLists[activeQueue]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
+			m_pCmdLists[activeQueue]->SetResourceState(dstResource, D3D12_RESOURCE_STATE_COPY_DEST);
+			m_pCmdLists[activeQueue]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
+		}
+
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, std::max(
 		                         srcResource.GetFenceValue(CMDQUEUE_GRAPHICS, CMDTYPE_WRITE),
 		                         dstResource.GetFenceValue(CMDQUEUE_GRAPHICS, CMDTYPE_ANY)));
 
-		SubmitComputeCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, std::max(
+		SubmitCommands(CMDQUEUE_COMPUTE, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, std::max(
 		                        srcResource.GetFenceValue(CMDQUEUE_COMPUTE, CMDTYPE_WRITE),
 		                        dstResource.GetFenceValue(CMDQUEUE_COMPUTE, CMDTYPE_ANY)));
 
-		// TODO: copy from active render-target should be more elegant
-		if (m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(srcResource) ||
-		    m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(dstResource))
+		DX12_ASSERT(srcResource.GetDesc().Dimension == dstResource.GetDesc().Dimension, "Can't copy resources of different dimension");
+		m_pCmdLists[copyQueue]->GetD3D12CommandList()->CopyResource(dstResource.GetD3D12Resource(), srcResource.GetD3D12Resource());
+		m_pCmdLists[copyQueue]->m_nCommands += CLCOUNT_COPY;
+
+		m_pCmdLists[copyQueue]->MaxResourceFenceValue(srcResource, CMDTYPE_WRITE);
+		m_pCmdLists[copyQueue]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
+		m_pCmdLists[copyQueue]->SetResourceFenceValue(srcResource, CMDTYPE_READ);
+		m_pCmdLists[copyQueue]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
+
+		SubmitCommands(copyQueue, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+
+		if (CopyFlags & DX12_COPY_REVERTSTATE_MARKER)
 		{
-			// Make the render-targets rebind, so the resource-barrier is closed
-			m_GraphicsState.m_StateFlags |= EPSPB_OutputResources;
+			if (srcResource.NeedsTransitionBarrier(m_pCmdLists[copyQueue], prevSrcState))
+			{
+				m_pCmdLists[activeQueue]->MaxResourceFenceValue(srcResource, CMDTYPE_ANY);
+				m_pCmdLists[activeQueue]->SetResourceState(srcResource, prevSrcState);
+				m_pCmdLists[activeQueue]->SetResourceFenceValue(srcResource, CMDTYPE_WRITE);
+			}
+
+			if (dstResource.NeedsTransitionBarrier(m_pCmdLists[copyQueue], prevDstState))
+			{
+				m_pCmdLists[activeQueue]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
+				m_pCmdLists[activeQueue]->SetResourceState(dstResource, prevDstState);
+				m_pCmdLists[activeQueue]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
+			}
 		}
 
-		DX12_ASSERT(srcResource.GetDesc().Dimension == dstResource.GetDesc().Dimension, "Can't copy resources of different dimension");
-		m_pCmdLists[CMDQUEUE_COPY]->GetD3D12CommandList()->CopyResource(dstResource.GetD3D12Resource(), srcResource.GetD3D12Resource());
-		m_pCmdLists[CMDQUEUE_COPY]->m_nCommands += CLCOUNT_COPY;
-
-		m_pCmdLists[CMDQUEUE_COPY]->MaxResourceFenceValue(srcResource, CMDTYPE_WRITE);
-		m_pCmdLists[CMDQUEUE_COPY]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
-		m_pCmdLists[CMDQUEUE_COPY]->SetResourceFenceValue(srcResource, CMDTYPE_READ);
-		m_pCmdLists[CMDQUEUE_COPY]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
-
-		SubmitCopyCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 		return;
 	}
 
-	bGfx = true;
-#endif
-
-	NCryDX12::CCommandListPool& rCmdListPool = bGfx ? m_CmdListPools[CMDQUEUE_GRAPHICS] : m_CmdListPools[CMDQUEUE_COPY];
-	NCryDX12::CCommandList* pCmdList = bGfx ? m_pCmdLists[CMDQUEUE_GRAPHICS] : m_pCmdLists[CMDQUEUE_COPY];
-
 	// TODO: move into the command-list function
-	UINT64 maxFenceValues[CMDQUEUE_NUM];
 	switch (CopyFlags)
 	{
 	case D3D11_COPY_DISCARD:
 		DX12_LOG(g_nPrintDX12, "Using D3D11_COPY_DISCARD on old ID3D12Resource: %p", DX12_EXTRACT_D3D12RESOURCE(pDstResource));
 
 #ifdef DX12_STATS
-		m_NumCopyDiscardSkips += !resource.IsUsed(rCmdListPool);
+		m_NumCopyDiscardSkips += !resource.IsUsed(m_CmdListPools[activeQueue]);
 		m_NumCopyDiscards++;
 #endif // DX12_STATS
 
 		// If the resource is not currently used, we do not need to discard the memory
-		if (dstResource.IsUsed<PERSP_CPU>(rCmdListPool))
+		if (dstResource.IsUsed<PERSP_CPU>(m_CmdListPools[activeQueue]))
 		{
 			dstDX12Resource->CopyDiscard();
 		}
 
 		DX12_LOG(g_nPrintDX12, "New ID3D12Resource: %p", DX12_EXTRACT_D3D12RESOURCE(pDstResource));
-
-		// Ensure the command-list using the source resource is executed (for example filling source etc.)
-		if (!bGfx)
-			SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
-			                  srcResource.GetFenceValues(CMDTYPE_WRITE)
-			                  );
 		break;
 	case D3D11_COPY_NO_OVERWRITE:
-		// Ensure the command-list using the source resource is executed (for example filling source etc.)
-		if (!bGfx)
-			SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
-			                  srcResource.GetFenceValues(CMDTYPE_WRITE)
-			                  );
 		break;
 	default:
-		// Ensure the command-list using the resource is executed
-		if (!bGfx)
-			SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, NCryDX12::MaxFenceValues(
-			                    maxFenceValues,
-			                    srcResource.GetFenceValues(CMDTYPE_WRITE),
-			                    dstResource.GetFenceValues(CMDTYPE_ANY)
-			                    ));
-
 		// Block the GPU-thread until the resource is safe to be updated (unlike Map() we stage the update and don't need to block the CPU)
 		break;
 	}
 
-	// TODO: copy from active render-target should be more elegant
-	if (m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(srcResource) ||
-	    m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(dstResource))
+	m_pCmdLists[activeQueue]->CopyResource(dstResource, srcResource);
+
+	if (CopyFlags & DX12_COPY_REVERTSTATE_MARKER)
 	{
-		// Make the render-targets rebind, so the resource-barrier is closed
-		m_GraphicsState.m_StateFlags |= EPSPB_OutputResources;
+		m_pCmdLists[activeQueue]->SetResourceState(srcResource, prevSrcState);
+		m_pCmdLists[activeQueue]->SetResourceState(dstResource, prevDstState);
 	}
 
-	pCmdList->CopyResource(dstResource, srcResource);
-	if (!bGfx)
-		SubmitCopyCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
-	else if (DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC)
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+	if (DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC)
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 }
 
 void STDMETHODCALLTYPE CCryDX12DeviceContext::UpdateSubresource1(
@@ -2931,33 +2970,45 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::UpdateSubresource1(
 	ICryDX12Resource* dx12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pDstResource);
 	NCryDX12::CResource& resource = m_pCmdLists[CMDQUEUE_GRAPHICS]->PatchRenderTarget(dx12Resource->GetDX12Resource());
 
-	// TODO: copy command on the swap chain are special (can't execute on any other queue), make an API for that
-	/*const*/ bool bGfx = (resource.IsBackBuffer());
-
-#if (CMDLIST_COPY != CMDLIST_TYPE_DIRECT)
-	if (!bGfx)
+	// TODO: copy from active render-target should be more elegant
+	if (m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(resource))
 	{
-		if (resource.NeedsTransitionBarrier(m_pCmdLists[CMDQUEUE_COPY], D3D12_RESOURCE_STATE_COPY_DEST))
+		// Make the render-targets rebind, so the resource-barrier is closed
+		m_GraphicsState.m_StateFlags |= EPSPB_OutputResources;
+	}
+
+	D3D12_RESOURCE_STATES prevState = resource.GetTargetState();
+
+	if (CopyFlags & DX12_COPY_PIXELSTATE_MARKER)
+		prevState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+
+	// TODO: copy command on the swap chain are special (can't execute on any other queue), make an API for that
+	const bool bGfx = (resource.IsBackBuffer());
+	int copyQueue = CMDQUEUE_COPY;
+	int activeQueue = CMDQUEUE_GRAPHICS;
+
+	// NOTE: this works around a AMD copy-queue bug (resources with "non-multiple of 4" strides)
+	if ((CRenderer::CV_r_D3D12HardwareCopyQueue != 5) && (resource.GetDesc().Format == DXGI_FORMAT_A8_UNORM))
+		copyQueue = CMDQUEUE_COMPUTE;
+
+	if (!bGfx && (CMDLIST_COPY != CMDLIST_TYPE_DIRECT))
+	{
+		activeQueue = resource.SelectQueueForTransitionBarrier(CMDQUEUE_GRAPHICS, copyQueue, D3D12_RESOURCE_STATE_COPY_DEST);
+
+		if (resource.NeedsTransitionBarrier(m_pCmdLists[copyQueue], D3D12_RESOURCE_STATE_COPY_DEST))
 		{
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(resource, CMDTYPE_ANY);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceState(resource, D3D12_RESOURCE_STATE_COPY_DEST);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(resource, CMDTYPE_WRITE);
+			m_pCmdLists[activeQueue]->MaxResourceFenceValue(resource, CMDTYPE_ANY);
+			m_pCmdLists[activeQueue]->SetResourceState(resource, D3D12_RESOURCE_STATE_COPY_DEST);
+			m_pCmdLists[activeQueue]->SetResourceFenceValue(resource, CMDTYPE_WRITE);
 		}
 
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
 		                       resource.GetFenceValue(CMDQUEUE_GRAPHICS, CMDTYPE_ANY)
 		                       );
 
-		SubmitComputeCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
+		SubmitCommands(CMDQUEUE_COMPUTE, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
 		                      resource.GetFenceValue(CMDQUEUE_COMPUTE, CMDTYPE_ANY)
 		                      );
-
-		// TODO: copy from active render-target should be more elegant
-		if (m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(resource))
-		{
-			// Make the render-targets rebind, so the resource-barrier is closed
-			m_GraphicsState.m_StateFlags |= EPSPB_OutputResources;
-		}
 
 		ID3D12Resource* res12 = resource.GetD3D12Resource();
 		const D3D12_RESOURCE_DESC& desc = resource.GetDesc();
@@ -2998,24 +3049,29 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::UpdateSubresource1(
 			return;
 		}
 
-		::UpdateSubresources<1>(GetD3D12Device(), m_pCmdLists[CMDQUEUE_COPY]->GetD3D12CommandList(), res12, uploadBuffer, 0, DstSubresource, 1, &subData, reinterpret_cast<const D3D12_BOX*>(pDstBox));
-		m_pCmdLists[CMDQUEUE_COPY]->m_nCommands += CLCOUNT_COPY;
+		::UpdateSubresources<1>(GetD3D12Device(), m_pCmdLists[copyQueue]->GetD3D12CommandList(), res12, uploadBuffer, 0, DstSubresource, 1, &subData, reinterpret_cast<const D3D12_BOX*>(pDstBox));
+		m_pCmdLists[copyQueue]->m_nCommands += CLCOUNT_COPY;
 
-		m_pCmdLists[CMDQUEUE_COPY]->MaxResourceFenceValue(resource, CMDTYPE_ANY);
-		m_pCmdLists[CMDQUEUE_COPY]->SetResourceFenceValue(resource, CMDTYPE_WRITE);
+		m_pCmdLists[copyQueue]->MaxResourceFenceValue(resource, CMDTYPE_ANY);
+		m_pCmdLists[copyQueue]->SetResourceFenceValue(resource, CMDTYPE_WRITE);
 
 		GetDevice()->GetDX12Device()->ReleaseLater(resource.GetFenceValues(CMDTYPE_WRITE), uploadBuffer);
 		uploadBuffer->Release();
 
-		SubmitCopyCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+		SubmitCommands(copyQueue, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+
+		if (CopyFlags & DX12_COPY_REVERTSTATE_MARKER)
+		{
+			if (resource.NeedsTransitionBarrier(m_pCmdLists[copyQueue], prevState))
+			{
+				m_pCmdLists[activeQueue]->MaxResourceFenceValue(resource, CMDTYPE_ANY);
+				m_pCmdLists[activeQueue]->SetResourceState(resource, prevState);
+				m_pCmdLists[activeQueue]->SetResourceFenceValue(resource, CMDTYPE_WRITE);
+			}
+		}
+
 		return;
 	}
-
-	bGfx = true;
-#endif
-
-	NCryDX12::CCommandListPool& rCmdListPool = bGfx ? m_CmdListPools[CMDQUEUE_GRAPHICS] : m_CmdListPools[CMDQUEUE_COPY];
-	NCryDX12::CCommandList* pCmdList = bGfx ? m_pCmdLists[CMDQUEUE_GRAPHICS] : m_pCmdLists[CMDQUEUE_COPY];
 
 	// TODO: move into the command-list function
 	switch (CopyFlags)
@@ -3029,7 +3085,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::UpdateSubresource1(
 #endif // DX12_STATS
 
 		// If the resource is not currently used, we do not need to discard the memory
-		if (resource.IsUsed<PERSP_CPU>(rCmdListPool))
+		if (resource.IsUsed<PERSP_CPU>(m_CmdListPools[activeQueue]))
 		{
 			dx12Resource->CopyDiscard();
 		}
@@ -3039,28 +3095,19 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::UpdateSubresource1(
 	case D3D11_COPY_NO_OVERWRITE:
 		break;
 	default:
-		// Ensure the command-list using the resource is executed
-		if (!bGfx)
-			SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
-			                  resource.GetFenceValues(CMDTYPE_ANY)
-			                  );
-
 		// Block the GPU-thread until the resource is safe to be updated (unlike Map() we stage the update and don't need to block the CPU)
 		break;
 	}
 
-	// TODO: copy from active render-target should be more elegant
-	if (m_pCmdLists[CMDQUEUE_GRAPHICS]->IsUsedByOutputViews(resource))
+	m_pCmdLists[activeQueue]->UpdateSubresourceRegion(resource, DstSubresource, reinterpret_cast<const D3D12_BOX*>(pDstBox), pSrcData, SrcRowPitch, SrcDepthPitch);
+
+	if (CopyFlags & DX12_COPY_REVERTSTATE_MARKER)
 	{
-		// Make the render-targets rebind, so the resource-barrier is closed
-		m_GraphicsState.m_StateFlags |= EPSPB_OutputResources;
+		m_pCmdLists[activeQueue]->SetResourceState(resource, prevState);
 	}
 
-	pCmdList->UpdateSubresourceRegion(resource, DstSubresource, reinterpret_cast<const D3D12_BOX*>(pDstBox), pSrcData, SrcRowPitch, SrcDepthPitch);
-	if (!bGfx)
-		SubmitCopyCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
-	else if (DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC)
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+	if (DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC)
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 }
 
 void CCryDX12DeviceContext::UpdateSubresources(
@@ -3093,10 +3140,11 @@ void CCryDX12DeviceContext::UpdateSubresources(
 	}
 
 	pCmdList->UpdateSubresources(resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, UploadBufferSize, NumInitialData, pSrcData);
+
 	if (!bGfx)
-		SubmitCopyCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+		SubmitCommands(CMDQUEUE_COPY, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 	else if (DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC)
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 }
 
 void CCryDX12DeviceContext::DiscardResource(ID3D11Resource* pResource)
@@ -3107,12 +3155,12 @@ void CCryDX12DeviceContext::DiscardResource(ID3D11Resource* pResource)
 	NCryDX12::CResource& resource = m_pCmdLists[CMDQUEUE_GRAPHICS]->PatchRenderTarget(dx12Resource->GetDX12Resource());
 
 	// Ensure the command-list using the resource is executed
-	SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
+	SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
 	                       resource.GetFenceValue(CMDQUEUE_GRAPHICS, CMDTYPE_ANY)
 	                       );
 
 	m_pCmdLists[CMDQUEUE_COPY]->DiscardResource(resource, nullptr);
-	SubmitCopyCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+	SubmitCommands(CMDQUEUE_COPY, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
 }
 
 void CCryDX12DeviceContext::DiscardView(ID3D11View* pResourceView)
@@ -3312,20 +3360,106 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::ClearRectsDepthStencilView(
 	m_pCmdLists[CMDQUEUE_GRAPHICS]->ClearDepthStencilView(*view, D3D12_CLEAR_FLAGS(ClearFlags), Depth, Stencil, NumRects, pRects);
 }
 
+#ifdef CRY_USE_DX12_MULTIADAPTER
+#include "../API/Redirections/D3D12Device.inl"
+#endif
+
+void STDMETHODCALLTYPE CCryDX12DeviceContext::CopyResourceOvercross(
+	_In_ ID3D11Resource* pDstResource,
+	_In_ ID3D11Resource* pSrcResource)
+{
+	CopyResourceOvercross1(
+		pDstResource, 
+		pSrcResource, 
+		0);
+}
+
+void STDMETHODCALLTYPE CCryDX12DeviceContext::CopyResourceOvercross1(
+	_In_ ID3D11Resource* pDstResource,
+	_In_ ID3D11Resource* pSrcResource,
+	_In_ UINT CopyFlags)
+{
+#ifdef CRY_USE_DX12_MULTIADAPTER
+	if (m_pDevice->GetDX12Device()->IsMultiAdapter())
+	{
+		ICryDX12Resource* srcDX12ResourceL = DX12_EXTRACT_ICRYDX12RESOURCE(pSrcResource);
+		ICryDX12Resource* srcDX12ResourceR = DX12_EXTRACT_ICRYDX12RESOURCE(pDstResource);
+		NCryDX12::CResource& srcResourceL = m_pCmdLists[CMDQUEUE_GRAPHICS]->PatchRenderTarget(srcDX12ResourceL->GetDX12Resource());
+		NCryDX12::CResource& srcResourceR = m_pCmdLists[CMDQUEUE_GRAPHICS]->PatchRenderTarget(srcDX12ResourceR->GetDX12Resource());
+
+		if (srcResourceL.NeedsTransitionBarrier(m_pCmdLists[CMDQUEUE_COPY], D3D12_RESOURCE_STATE_COPY_SOURCE))
+		{
+			m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(srcResourceL, CMDTYPE_ANY);
+			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceState(srcResourceL, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(srcResourceL, CMDTYPE_WRITE);
+		}
+
+		if (srcResourceR.NeedsTransitionBarrier(m_pCmdLists[CMDQUEUE_COPY], D3D12_RESOURCE_STATE_COPY_DEST))
+		{
+			m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(srcResourceR, CMDTYPE_ANY);
+			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceState(srcResourceR, D3D12_RESOURCE_STATE_COPY_DEST);
+			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(srcResourceR, CMDTYPE_WRITE);
+		}
+
+		// Create a point for which each GPU can wait for the fences of every other GPU
+		// The resource transitions also need to occur before this intersection point
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+
+		m_CmdListPools[CMDQUEUE_GRAPHICS].GetAsyncCommandQueue().SyncAdapters
+		(
+			m_pCmdLists[CMDQUEUE_GRAPHICS]->GetCommandListPool().GetFences().GetD3D12Fence(CMDQUEUE_GRAPHICS),
+			m_pCmdLists[CMDQUEUE_GRAPHICS]->GetCommandListPool().GetFences().GetSubmittedValue(CMDQUEUE_GRAPHICS)
+		);
+
+		DX12_ASSERT(srcResourceL.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER, "");
+		DX12_ASSERT(srcResourceR.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER, "");
+
+		BroadcastableD3D12GraphicsCommandList<2>* broadcastCL = (BroadcastableD3D12GraphicsCommandList<2>*)(m_pCmdLists[CMDQUEUE_GRAPHICS]->GetD3D12CommandList());
+
+		broadcastCL->CopyResourceOvercross
+		(
+			srcResourceR.GetD3D12Resource(),
+			srcResourceL.GetD3D12Resource()
+		);
+
+		m_pCmdLists[CMDQUEUE_GRAPHICS]->m_nCommands += CLCOUNT_COPY;
+
+		m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(srcResourceL, CMDTYPE_WRITE);
+		m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(srcResourceR, CMDTYPE_ANY);
+		m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(srcResourceL, CMDTYPE_READ);
+		m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(srcResourceR, CMDTYPE_WRITE);
+
+		// Create a point for which each GPU can wait for the fences of every other GPU
+		// The resource transitions also need to occur before this intersection point
+		SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
+
+		m_CmdListPools[CMDQUEUE_GRAPHICS].GetAsyncCommandQueue().SyncAdapters
+		(
+			m_pCmdLists[CMDQUEUE_GRAPHICS]->GetCommandListPool().GetFences().GetD3D12Fence(CMDQUEUE_GRAPHICS),
+			m_pCmdLists[CMDQUEUE_GRAPHICS]->GetCommandListPool().GetFences().GetSubmittedValue(CMDQUEUE_GRAPHICS)
+		);
+
+		return;
+	}
+#endif
+
+	CopyResource(pDstResource, pSrcResource);
+}
+
 void STDMETHODCALLTYPE CCryDX12DeviceContext::JoinSubresourceRegion(
-  ID3D11Resource* pDstResource,
-  UINT DstSubresource,
-  UINT DstX,
-  UINT DstY,
-  UINT DstZ,
-  ID3D11Resource* pSrcResourceL,
-  ID3D11Resource* pSrcResourceR,
-  UINT SrcSubresource,
-  const D3D11_BOX* pSrcBox)
+	_In_ ID3D11Resource* pDstResource,
+	_In_ UINT DstSubresource,
+	_In_ UINT DstX,
+	_In_ UINT DstY,
+	_In_ UINT DstZ,
+	_In_ ID3D11Resource* pSrcResourceL,
+	_In_ ID3D11Resource* pSrcResourceR,
+	_In_ UINT SrcSubresource,
+	_In_opt_ const D3D11_BOX* pSrcBox)
 {
 	DX12_FUNC_LOG
 
-	  JoinSubresourceRegion1(
+	JoinSubresourceRegion1(
 	  pDstResource,
 	  DstSubresource,
 	  DstX,
@@ -3338,85 +3472,26 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::JoinSubresourceRegion(
 	  0);
 }
 
-#ifdef CRY_USE_DX12_MULTIADAPTER
-	#include "../API/Redirections/D3D12Device.inl"
-#endif
-
 void STDMETHODCALLTYPE CCryDX12DeviceContext::JoinSubresourceRegion1(
-  ID3D11Resource* pDstResource,
-  UINT DstSubresource,
-  UINT DstX,
-  UINT DstY,
-  UINT DstZ,
-  ID3D11Resource* pSrcResourceL,
-  ID3D11Resource* pSrcResourceR,
-  UINT SrcSubresource,
-  const D3D11_BOX* pSrcBox,
-  UINT CopyFlags)
+	_In_ ID3D11Resource* pDstResource,
+	_In_ UINT DstSubresource,
+	_In_ UINT DstX,
+	_In_ UINT DstY,
+	_In_ UINT DstZ,
+	_In_ ID3D11Resource* pSrcResourceL,
+	_In_ ID3D11Resource* pSrcResourceR,
+	_In_ UINT SrcSubresource,
+	_In_opt_ const D3D11_BOX* pSrcBox,
+	_In_ UINT CopyFlags)
 {
 	DX12_FUNC_LOG
-	  CRY_ASSERT(!m_bBatchComputeTasks);
 
 	// TODO: make this type-safe!
 	D3D11_TEXTURE2D_DESC desc;
 	((ID3D11Texture2D*)pDstResource)->GetDesc(&desc);
 
 #ifdef CRY_USE_DX12_MULTIADAPTER
-	if (m_pDevice->GetDX12Device()->IsMultiAdapter())
-	{
-		ICryDX12Resource* dstDX12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pDstResource);
-		ICryDX12Resource* srcDX12ResourceL = DX12_EXTRACT_ICRYDX12RESOURCE(pSrcResourceL);
-		ICryDX12Resource* srcDX12ResourceR = DX12_EXTRACT_ICRYDX12RESOURCE(pSrcResourceR);
-		NCryDX12::CResource& dstResource = m_pCmdLists[CMDQUEUE_GRAPHICS]->PatchRenderTarget(dstDX12Resource->GetDX12Resource());
-		NCryDX12::CResource& srcResourceL = m_pCmdLists[CMDQUEUE_GRAPHICS]->PatchRenderTarget(srcDX12ResourceL->GetDX12Resource());
-		NCryDX12::CResource& srcResourceR = m_pCmdLists[CMDQUEUE_GRAPHICS]->PatchRenderTarget(srcDX12ResourceR->GetDX12Resource());
-
-		if (srcResourceL.NeedsTransitionBarrier(m_pCmdLists[CMDQUEUE_COPY], D3D12_RESOURCE_STATE_COPY_SOURCE) ||
-		    dstResource.NeedsTransitionBarrier(m_pCmdLists[CMDQUEUE_COPY], D3D12_RESOURCE_STATE_COPY_DEST))
-		{
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(srcResourceL, CMDTYPE_WRITE);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceState(srcResourceL, D3D12_RESOURCE_STATE_COPY_SOURCE);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceState(dstResource, D3D12_RESOURCE_STATE_COPY_DEST);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(srcResourceL, CMDTYPE_READ);
-			m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
-		}
-
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
-		                       srcResourceL.GetFenceValue(CMDQUEUE_GRAPHICS, CMDTYPE_ANY)
-		                       );
-
-		SubmitComputeCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
-		                      srcResourceL.GetFenceValue(CMDQUEUE_COMPUTE, CMDTYPE_ANY)
-		                      );
-
-		BroadcastableD3D12CommandQueue<2>* broadcastCQ = (BroadcastableD3D12CommandQueue<2>*)(m_pCmdLists[CMDQUEUE_GRAPHICS]->GetD3D12CommandQueue());
-
-		DX12_ASSERT(dstResource.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER, "");
-		DX12_ASSERT(srcResourceL.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER, "");
-		DX12_ASSERT(srcResourceR.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER, "");
-
-		broadcastCQ->JoinTextureRegion
-		(
-		  m_pCmdLists[CMDQUEUE_GRAPHICS]->GetCommandListPool().GetFences().GetSubmittedValue(CMDQUEUE_GRAPHICS),
-		  m_pCmdLists[CMDQUEUE_GRAPHICS]->GetCommandListPool().GetFences().GetCurrentValue(CMDQUEUE_GRAPHICS),
-		  m_pCmdLists[CMDQUEUE_GRAPHICS]->GetCommandListPool().GetFences().GetD3D12Fence(CMDQUEUE_GRAPHICS),
-		  m_pCmdLists[CMDQUEUE_GRAPHICS]->GetD3D12CommandList(),
-		  dstResource.GetD3D12Resource(),
-		  srcResourceL.GetD3D12Resource()
-		);
-
-		m_pCmdLists[CMDQUEUE_GRAPHICS]->m_nCommands += CLCOUNT_COPY;
-
-		m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(srcResourceL, CMDTYPE_WRITE);
-		m_pCmdLists[CMDQUEUE_GRAPHICS]->MaxResourceFenceValue(dstResource, CMDTYPE_ANY);
-		m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(srcResourceL, CMDTYPE_READ);
-		m_pCmdLists[CMDQUEUE_GRAPHICS]->SetResourceFenceValue(dstResource, CMDTYPE_WRITE);
-
-		// Might not be necessary, for example if CL[1] is not used between here and the next Present()
-		SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
-		return;
-	}
+	CopyResourceOvercross(pSrcResourceR, pSrcResourceL);
 #endif
 
 	CopySubresourceRegion1(
@@ -3522,32 +3597,128 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::WaitStagingResource(
 	return S_OK;
 }
 
+HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::MappedWriteToSubresource(
+	_In_ ID3D11Resource* pResource,
+	_In_ UINT Subresource,
+	_In_ SIZE_T Offset,
+	_In_ SIZE_T Size,
+	_In_ D3D11_MAP MapType,
+	_In_reads_bytes_(Size) const void* pInData,
+	_In_ const UINT numDataBlocks)
+{
+	ICryDX12Resource* dx12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pResource);
+	NCryDX12::CResource& resource = dx12Resource->GetDX12Resource();
+
+	switch (MapType & (DX12_MAP_DISCARD_MARKER - 1))
+	{
+	case D3D11_MAP_READ:
+	case D3D11_MAP_READ_WRITE:
+		return E_FAIL;
+	case D3D11_MAP_WRITE:
+		// Ensure the command-list using the resource is executed
+		{
+			CryCriticalSectionNonRecursive safe;
+			SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, resource.GetFenceValues(CMDTYPE_ANY));
+		}
+
+		// Block the CPU-thread until the resource is safe to map
+		resource.WaitForUnused<true>(m_CmdListPools[CMDQUEUE_GRAPHICS], CMDTYPE_ANY);
+		break;
+	case D3D11_MAP_WRITE_DISCARD:
+		DX12_LOG(g_nPrintDX12, "Using D3D11_MAP_WRITE_DISCARD on old ID3D12Resource: %p", DX12_EXTRACT_D3D12RESOURCE(pResource));
+
+#ifdef DX12_STATS
+		m_NumMapDiscardSkips += !resource.IsUsed(m_CmdListPools[CMDQUEUE_GRAPHICS]);
+		m_NumMapDiscards++;
+#endif // DX12_STATS
+
+		// If the resource is not currently used, we do not need to discard the memory
+		if (resource.IsUsed<PERSP_CPU>(m_CmdListPools[CMDQUEUE_GRAPHICS]))
+		{
+			// ConstantBuffer/ShaderResource/UnorderedAccess marker
+			if (MapType & DX12_MAP_DISCARD_MARKER)
+			{
+				DX12_ASSERT(false, "MAP_DISCARD does not work under DX12 when there is a view on the discardable buffer! Please rewrite the algorithm to use NO_OVERWRITE");
+				abort();
+			}
+
+			dx12Resource->MapDiscard();
+		}
+
+		DX12_LOG(g_nPrintDX12, "New ID3D12Resource: %p", DX12_EXTRACT_D3D12RESOURCE(pResource));
+		break;
+	case D3D11_MAP_WRITE_NO_OVERWRITE:
+		break;
+	default:
+		break;
+	}
+
+	const D3D12_RANGE sRangeWrite = { Offset, Offset + Size };
+
+#ifdef CRY_USE_DX12_MULTIADAPTER
+	if (m_pDevice->GetDX12Device()->IsMultiAdapter())
+	{
+		BroadcastableD3D12Resource<2>* broadcastR = (BroadcastableD3D12Resource<2>*)(resource.GetD3D12Resource());
+		return broadcastR->MappedWriteToSubresource(Subresource, &sRangeWrite, pInData, numDataBlocks);
+	}
+#endif
+
+	return resource.MappedWriteToSubresource(Subresource, &sRangeWrite, pInData);
+}
+
+HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::MappedReadFromSubresource(
+	_In_ ID3D11Resource* pResource,
+	_In_ UINT Subresource,
+	_In_ SIZE_T Offset,
+	_In_ SIZE_T Size,
+	_In_ D3D11_MAP MapType,
+	_Out_writes_bytes_(Size) void* pOutData,
+	_In_ const UINT numDataBlocks)
+{
+	ICryDX12Resource* dx12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pResource);
+	NCryDX12::CResource& resource = dx12Resource->GetDX12Resource();
+	
+	switch (MapType & (DX12_MAP_DISCARD_MARKER - 1))
+	{
+	case D3D11_MAP_READ:
+		// Ensure the command-list using the resource is executed
+		{
+			CryCriticalSectionNonRecursive safe;
+			SubmitAllCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC, resource.GetFenceValues(CMDTYPE_WRITE));
+		}
+
+		// Block the CPU-thread until the resource is safe to map
+		resource.WaitForUnused<true>(m_CmdListPools[CMDQUEUE_GRAPHICS], CMDTYPE_WRITE);
+		break;
+	case D3D11_MAP_READ_WRITE:
+	case D3D11_MAP_WRITE:
+	case D3D11_MAP_WRITE_DISCARD:
+	case D3D11_MAP_WRITE_NO_OVERWRITE:
+		return E_FAIL;
+	default:
+		break;
+	}
+
+	const D3D12_RANGE sRangeRead = { Offset, Offset + Size };
+
+#ifdef CRY_USE_DX12_MULTIADAPTER
+	if (m_pDevice->GetDX12Device()->IsMultiAdapter())
+	{
+		BroadcastableD3D12Resource<2>* broadcastR = (BroadcastableD3D12Resource<2>*)(resource.GetD3D12Resource());
+		return broadcastR->MappedReadFromSubresource(Subresource, &sRangeRead, pOutData, numDataBlocks);
+	}
+#endif
+
+	return resource.MappedReadFromSubresource(Subresource, &sRangeRead, pOutData);
+}
+
 void CCryDX12DeviceContext::ResetCachedState(bool bGraphics, bool bCompute)
 {
 	if (bGraphics) m_GraphicsState.Invalidate();
 	if (bCompute)  m_ComputeState.Invalidate();
-}
 
-void CCryDX12DeviceContext::BeginBatchingComputeTasks()
-{
-	CRY_ASSERT(!m_bBatchComputeTasks);
-
-	SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
-	SubmitComputeCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
-	SubmitCopyCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
-
-	m_bBatchComputeTasks = true;
-
-}
-void CCryDX12DeviceContext::EndBatchingComputeTasks()
-{
-	CRY_ASSERT(m_bBatchComputeTasks);
-
-	SubmitCopyCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
-	SubmitComputeCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
-	SubmitGraphicsCommands(DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC);
-
-	m_bBatchComputeTasks = false;
+	m_pCurrentRootSignature.reset();
+	m_pCurrentPSO.reset();
 }
 
 #pragma endregion

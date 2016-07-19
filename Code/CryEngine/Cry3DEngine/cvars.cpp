@@ -213,7 +213,7 @@ void CVars::Init()
 	              "Multiplier to particle count");
 	REGISTER_CVAR(e_ParticlesMinDrawAlpha, 0.004f, VF_NULL,
 	              "Alpha cutoff for rendering particles");
-	REGISTER_CVAR(e_ParticlesMinDrawPixels, 1, VF_NULL,
+	REGISTER_CVAR(e_ParticlesMinDrawPixels, 0.5, VF_NULL,
 	              "Pixel size min per particle -- fade out earlier");
 	REGISTER_CVAR(e_ParticlesMaxDrawScreen, 2, VF_NULL,
 	              "Screen size max per particle -- fade out earlier");
@@ -242,6 +242,10 @@ void CVars::Init()
 
 	DefineConstFloatCVar(e_ParticlesLightMinColorThreshold, VF_NULL,
 	                     "Threshold for minumum particle light color");
+
+	REGISTER_CVAR(e_ParticlesForceSeed, 0, VF_NULL,
+		"0 - every emitter is random unless a seed is specified\n"
+		"n - uses this value as seed for all emitters without specified seed");
 
 	DefineConstIntCVar(e_Roads, 1, VF_CHEAT | VF_CHEAT_ALWAYS_CHECK,
 	                   "Activates drawing of road objects");
@@ -374,6 +378,8 @@ void CVars::Init()
 	                 "Render characters into the shadow cache. 0=disabled, 1=enabled", OnDynamicDistanceShadowsVarChange);
 	REGISTER_CVAR_CB(e_DynamicDistanceShadows, 1, VF_NULL,
 	                 "Enable dynamic distance shadows, 0=disable, 1=enable, -1=don't render dynamic distance shadows", OnDynamicDistanceShadowsVarChange);
+	DefineConstIntCVar(e_ShadowsCascadesCentered, 0, VF_NULL,
+		               "Force shadow cascades to be centered 0=disable 1=enable ");
 	DefineConstIntCVar(e_ShadowsCascadesDebug, 0, VF_CHEAT,
 	                   "0=off, 1=visualize sun shadow cascades on screen");
 	REGISTER_CVAR_CB(e_ShadowsPerObject, 1, VF_NULL,

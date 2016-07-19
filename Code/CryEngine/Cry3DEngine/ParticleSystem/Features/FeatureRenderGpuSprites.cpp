@@ -6,8 +6,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureRenderGpuSprites = false;
-
 namespace pfx2
 {
 

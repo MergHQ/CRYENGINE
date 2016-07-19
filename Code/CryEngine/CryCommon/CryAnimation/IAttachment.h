@@ -41,9 +41,9 @@ enum AttachmentFlags
 	FLAGS_ATTACH_PHYSICALIZED             = FLAGS_ATTACH_PHYSICALIZED_RAYS | FLAGS_ATTACH_PHYSICALIZED_COLLISIONS,
 
 	// Geometry deformation using direct compute
-	FLAGS_ATTACH_DC_DEFORMATION_SKINNING  = BIT(6),  //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_DC_DEFORMATION_PREMORPHS = BIT(7),  //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_DC_DEFORMATION_TANGENTS  = BIT(8),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_COMPUTE_SKINNING           = BIT(6),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_COMPUTE_SKINNING_PREMORPHS = BIT(7),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_COMPUTE_SKINNING_TANGENTS  = BIT(8),  //!< Already stored in CDF, so don't change this.
 
 	// Dynamic Flags.
 	FLAGS_ATTACH_VISIBLE            = BIT(13),    //!< We set this flag if we can render the object.

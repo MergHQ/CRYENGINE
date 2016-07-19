@@ -107,7 +107,7 @@ public:
 	}
 	virtual ~ISimulationInstance() {}
 
-	virtual void RenderThreadUpdate() = 0;
+	virtual void RenderThreadUpdate(CDeviceCommandListRef RESTRICT_REFERENCE commandList) = 0;
 
 	template<typename Body>
 	void InjectBodies(const Body* b, const int numBodies)

@@ -28,6 +28,12 @@ public:
 			m_Targets[i] = nullptr;
 			if (Desc.NodeMask = (pDesc->NodeMask & (1 << i)))
 			{
+#if CRY_USE_DX12_MULTIADAPTER_SIMULATION
+				// Always create on the first GPU, if running simulation
+				if (CRenderer::CV_r_StereoEnableMgpu < 0)
+					Desc.NodeMask = 1;
+#endif
+
 				HRESULT ret = pDevice->CreateCommandQueue(
 				  &Desc, riid, (void**)&m_Targets[i]);
 				DX12_ASSERT(ret == S_OK, "Failed to create command queue!");
@@ -35,20 +41,20 @@ public:
 		}
 	}
 
-#define Pick(i, func) \
+#define Pick(i, func)                           \
   m_Targets[i]->func;
 
-#define Broadcast(func)                  \
-  if (numTargets > 2)                    \
-  {                                      \
-    for (int i = 0; i < numTargets; ++i) \
-      if (m_Targets[i])                  \
-        m_Targets[i]->func;              \
-  }                                      \
-  else                                   \
-  {                                      \
-    m_Targets[0]->func;                  \
-    m_Targets[1]->func;                  \
+#define Broadcast(func)                         \
+  if (numTargets > 2)                           \
+  {                                             \
+    for (int i = 0; i < numTargets; ++i)        \
+      if (m_Targets[i])                         \
+        m_Targets[i]->func;                     \
+  }                                             \
+  else                                          \
+  {                                             \
+    m_Targets[0]->func;                         \
+    m_Targets[1]->func;                         \
   }
 
 #define BroadcastWithFail(func)                 \
@@ -60,7 +66,6 @@ public:
     {                                           \
       if (m_Targets[i])                         \
       {                                         \
-        HRESULT ret;                            \
         if ((ret = m_Targets[i]->func) != S_OK) \
           return ret;                           \
       }                                         \
@@ -92,10 +97,10 @@ public:
   else                                          \
   {                                             \
     { int i = 0; HRESULT ret;                   \
-      if ((ret = m_Targets[0]->func) != S_OK)   \
+      if ((ret = m_Targets[i]->func) != S_OK)   \
         return ret; }                           \
     { int i = 1; HRESULT ret;                   \
-      if ((ret = m_Targets[1]->func) != S_OK)   \
+      if ((ret = m_Targets[i]->func) != S_OK)   \
         return ret; }                           \
   }                                             \
                                                 \
@@ -203,6 +208,8 @@ public:
 	  _In_reads_opt_(NumRanges)  const UINT* pRangeTileCounts,
 	  D3D12_TILE_MAPPING_FLAGS Flags) final
 	{
+		// TODO: IsShared() possible?
+
 		Broadcast(UpdateTileMappings(pResource, NumResourceRegions, pResourceRegionStartCoordinates, pResourceRegionSizes, pHeap, NumRanges, pRangeFlags, pHeapRangeStartOffsets, pRangeTileCounts, Flags));
 	}
 
@@ -214,6 +221,8 @@ public:
 	  _In_ const D3D12_TILE_REGION_SIZE* pRegionSize,
 	  D3D12_TILE_MAPPING_FLAGS Flags) final
 	{
+		// TODO: IsShared() possible?
+
 		Broadcast(CopyTileMappings(pDstResource, pDstRegionStartCoordinate, pSrcResource, pSrcRegionStartCoordinate, pRegionSize, Flags));
 	}
 
@@ -300,44 +309,16 @@ public:
 
 	#pragma endregion
 
-	void JoinTextureRegion(
-	  UINT64 lastFencevalue,
-	  UINT64 currFencevalue,
-	  ID3D12Fence* pFence,
-	  ID3D12CommandList* pCommandList,
-	  ID3D12Resource* pDstResource,
-	  ID3D12Resource* pSrcResource
-	  )
+	inline void SyncAdapters(
+		ID3D12Fence* pFence,
+		UINT64 fencevalue
+	)
 	{
 		BroadcastableD3D12Fence<numTargets>* pFences = (BroadcastableD3D12Fence<numTargets>*)pFence;
-		BroadcastableD3D12GraphicsCommandList<numTargets>* pCommandLists = (BroadcastableD3D12GraphicsCommandList<numTargets>*)pCommandList;
-		BroadcastableD3D12Resource<numTargets>* pDstResources = (BroadcastableD3D12Resource<numTargets>*)pDstResource;
-		BroadcastableD3D12Resource<numTargets>* pSrcResources = (BroadcastableD3D12Resource<numTargets>*)pSrcResource;
 
-		D3D12_RESOURCE_DESC Desc = (*(*pDstResources)[0])->GetDesc();
-
-		ID3D12GraphicsCommandList* CommandList0 = (ID3D12GraphicsCommandList*)*(*pCommandLists)[0];
-
-		//		m_Targets[1]->Wait(*(*pFences)[1], lastFencevalue);
-		//		m_Targets[0]->Wait(*(*pFences)[0], currFencevalue);
-
-		// Let CL0 wait for all other command-lists to finish
-		for (int i = 1; i < numTargets; ++i)
-		{
-			m_Targets[0]->Wait(*(*pFences)[i], lastFencevalue);
-		}
-
-		// Make CL0 copy all of the resources into the shared back-buffer
-		CD3DX12_TEXTURE_COPY_LOCATION dst(*(*pDstResources)[0], 0);
-		for (int i = 0; i < numTargets; ++i)
-		{
-			CD3DX12_TEXTURE_COPY_LOCATION src(*(*pSrcResources)[i], 0);
-
-			CommandList0->CopyTextureRegion(&dst, UINT((i * Desc.Width) / numTargets), 0, 0, &src, nullptr);
-		}
-
-		//		m_Targets[1]->Signal(*(*pFences)[1], currFencevalue);
-		//		m_Targets[0]->Signal(*(*pFences)[0], currFencevalue);
+		// Let every CL wait for every other command-lists to finish
+		m_Targets[0]->Wait(*(*pFences)[1], fencevalue);
+		m_Targets[1]->Wait(*(*pFences)[0], fencevalue);
 	}
 
 };

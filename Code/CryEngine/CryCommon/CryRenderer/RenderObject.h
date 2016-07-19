@@ -22,7 +22,7 @@ enum ERenderObjectFlags : uint64
 	FOB_MESH_SUBSET_INDICES         = BIT64(5),
 	FOB_SELECTED                    = BIT64(6),
 	FOB_RENDERER_IDENDITY_OBJECT    = BIT64(7),
-	// UNUSED												= BIT64(8),
+	FOB_IN_DOORS							      = BIT64(8),
 	FOB_NO_FOG                      = BIT64(9),
 	FOB_DECAL                       = BIT64(10),
 	FOB_OCTAGONAL                   = BIT64(11),
@@ -43,8 +43,8 @@ enum ERenderObjectFlags : uint64
 	FOB_DYNAMIC_OBJECT              = BIT64(26),
 	FOB_ALLOW_TESSELLATION          = BIT64(27),
 	FOB_DECAL_TEXGEN_2D             = BIT64(28),
-	FOB_IN_DOORS                    = BIT64(29),
-	FOB_HAS_PREVMATRIX              = BIT64(30),
+	FOB_ALPHATEST                   = BIT64(29),  // Careful when moving (used in ObjSort)
+	FOB_HAS_PREVMATRIX              = BIT64(30),  // Careful when moving (used in ObjSort)
 	FOB_LIGHTVOLUME                 = BIT64(31),
 
 	FOB_TERRAIN_LAYER               = BIT64(32),
@@ -286,7 +286,7 @@ public:
 	SRenderObjData m_data;
 
 	// Array of instances
-	DynArray<SInstanceData> m_Instances;
+	stl::aligned_vector<SInstanceData, CRY_PLATFORM_ALIGNMENT> m_Instances;
 
 public:
 	//////////////////////////////////////////////////////////////////////////

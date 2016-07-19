@@ -70,18 +70,19 @@ bool CSunShafts::IsVisible()
 	else
 		m_bShaftsEnabled &= false;
 
+	COcclusionQuery* pOcclQuery = m_pOcclQuery[gcpRendD3D->m_CurRenderEye]; // In Stereo, multiple occlusion queries can be in flight at the same time
 	// Check if shafts occluded - if so skip them - todo: fade in/out shafts amount
 	if (CRenderer::CV_r_sunshafts > 1 && m_bShaftsEnabled)
 	{
-		if (!m_pOcclQuery)
+		if (!pOcclQuery)
 			Initialize();
 
-		//bool bReady = m_pOcclQuery->IsReady();
+		//bool bReady = pOcclQuery->IsReady();
 		bool bSunShaftsVisible = ((int)m_nVisSampleCount > (CTexture::s_ptexBackBuffer->GetWidth() * CTexture::s_ptexBackBuffer->GetHeight() / 100));   // || !bReady;
 		m_bShaftsEnabled &= bSunShaftsVisible;
 
-		m_nVisSampleCount = m_pOcclQuery->GetVisibleSamples(CRenderer::CV_r_sunshafts == 2);
-		if (!m_pOcclQuery->GetDrawFrame() || m_pOcclQuery->IsReady())
+		m_nVisSampleCount = pOcclQuery->GetVisibleSamples(CRenderer::CV_r_sunshafts == 2);
+		if (!pOcclQuery->GetDrawFrame() || pOcclQuery->IsReady())
 		{
 			gRenDev->m_cEF.mfRefreshSystemShader("Sunshafts", CShaderMan::s_shPostSunShafts);
 
@@ -94,9 +95,9 @@ bool CSunShafts::IsVisible()
 			gcpRendD3D->SetCullMode(R_CULL_NONE);
 			gcpRendD3D->FX_SetState(GS_DEPTHFUNC_LEQUAL | GS_COLMASK_NONE);
 
-			m_pOcclQuery->BeginQuery();
+			pOcclQuery->BeginQuery();
 			SD3DPostEffectsUtils::DrawFullScreenTriWPOS(CTexture::s_ptexBackBuffer->GetWidth(), CTexture::s_ptexBackBuffer->GetHeight(), 1.0f);
-			m_pOcclQuery->EndQuery();
+			pOcclQuery->EndQuery();
 			PostProcessUtils().ShEndPass();
 		}
 	}

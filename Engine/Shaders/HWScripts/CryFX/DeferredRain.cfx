@@ -135,7 +135,7 @@ pixoutRainGBuffer DeferredRainGBufferPS( vtxOutWPOS IN )
 	const half fDepth = GetLinearDepth(sceneDepthMapSampler, IN.baseTC.xy);
 	const float3 vPosition = GetWorldPos(fDepth, IN.CamVec);
 	
-	MaterialAttribsCommon attribs = DecodeGBuffer( tex2D( _tex9, IN.baseTC.xy ), tex2D( _texB, IN.baseTC.xy ), tex2D( _texA, IN.baseTC.xy ) );
+	MaterialAttribsCommon attribs = DecodeGBuffer( tex2D( _tex8, IN.baseTC.xy ), tex2D( _texB, IN.baseTC.xy ), tex2D( _texA, IN.baseTC.xy ) );
 		
 	///////////////////////////////////////////////////////////////////////////////////////////////////////
 	// World-space masking

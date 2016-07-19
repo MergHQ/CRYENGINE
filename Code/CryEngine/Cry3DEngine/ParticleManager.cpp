@@ -450,7 +450,7 @@ IParticleEffect* CParticleManager::FindEffect(cstr sEffectName, cstr sSource, bo
 
 		if (GetCVars()->e_ParticlesConvertPfx1)
 		{
-			m_pParticleSystem->ConvertEffect(pEffect);
+			m_pParticleSystem->ConvertEffect(pEffect, GetCVars()->e_ParticlesConvertPfx1 > 1);
 		}
 		return pEffect;
 	}

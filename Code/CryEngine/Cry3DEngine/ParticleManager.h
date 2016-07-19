@@ -256,6 +256,10 @@ public:
 	{
 		return m_RenderFlags;
 	}
+	static float GetMaxAngularDensity(const CCamera& camera)
+	{
+		return camera.GetAngularResolution() / max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f) * 2.0f;
+	}
 	bool CanAccessFiles(cstr sObject, cstr sSource = "") const;
 
 	// light profiler functions

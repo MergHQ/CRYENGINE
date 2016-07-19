@@ -20,11 +20,6 @@
 #if TARGET_IPHONE_SIMULATOR
 	#define IOS_SIMULATOR
 	#include <xmmintrin.h>
-	#define _CPU_AMD64
-	#define _CPU_SSE
-#else
-	#define _CPU_ARM
-	#define _CPU_NEON
 #endif
 
 // stubs for virtual keys, isn't used on iOS

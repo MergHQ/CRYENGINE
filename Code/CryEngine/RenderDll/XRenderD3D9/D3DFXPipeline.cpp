@@ -17,14 +17,14 @@
 #include "../Common/ComputeSkinningStorage.h"
 
 #if defined(FEATURE_SVO_GI)
-	#include "D3D_SVO.h"
+#include "D3D_SVO.h"
 #endif
 
 //====================================================================================
 
 union UVector4
 {
-	float  f[4];
+	float f[4];
 #if CRY_PLATFORM_SSE2
 	__m128 m128;
 #endif
@@ -37,7 +37,7 @@ HRESULT CD3D9Renderer::FX_SetVertexDeclaration(int StreamMask, EVertexFormat eVF
 	FUNCTION_PROFILER_RENDER_FLAT
 	HRESULT hr;
 
-	assert(eVF >= 0 && eVF < eVF_Max);
+  assert (eVF>=0 && eVF<m_RP.MaxD3DVertexDeclaration());
 
 	if (eVF == eVF_Unknown)
 	{
@@ -53,7 +53,7 @@ HRESULT CD3D9Renderer::FX_SetVertexDeclaration(int StreamMask, EVertexFormat eVF
 		return S_OK;
 	}
 
-	bool bMorph = (StreamMask & VSM_MORPHBUDDY) != 0;
+	bool bMorph     = (StreamMask & VSM_MORPHBUDDY) != 0;
 	bool bInstanced = (StreamMask & VSM_INSTANCED) != 0;
 
 #if defined(FEATURE_PER_SHADER_INPUT_LAYOUT_CACHE)
@@ -67,30 +67,30 @@ HRESULT CD3D9Renderer::FX_SetVertexDeclaration(int StreamMask, EVertexFormat eVF
 	}
 #else
 	int nInst = (bMorph || bInstanced) ? 1 : 0;
-	SOnDemandD3DVertexDeclarationCache* pDeclCache = &m_RP.m_D3DVertexDeclarationCache[(StreamMask & 0xff) >> 1][eVF][nInst];
+	SOnDemandD3DVertexDeclarationCache *pDeclCache = &m_RP.m_D3DVertexDeclarationCache[(StreamMask&0xff)>>1][nInst][eVF];
 
-	#if CRY_PLATFORM_ORBIS && !defined(CUSTOM_FETCH_SHADERS)
+#if CRY_PLATFORM_ORBIS && !defined(CUSTOM_FETCH_SHADERS)
 	// Orbis shader compiler strips out unused declarations so keep creating until we find a shader that's fully bound
 	if (pDeclCache->m_pDeclaration && !pDeclCache->m_pDeclaration->IsFullyBound())
 	{
 		SAFE_RELEASE(pDeclCache->m_pDeclaration);
 		m_pLastVDeclaration = NULL;
 	}
-	#endif
+#endif
 #endif
 
 	if (!pDeclCache->m_pDeclaration)
 	{
 		SOnDemandD3DVertexDeclaration Decl;
 
-		EF_OnDemandVertexDeclaration(Decl, (StreamMask & 0xff) >> 1, eVF, bMorph, bInstanced);
+		m_RP.OnDemandVertexDeclaration(Decl, (StreamMask&0xff)>>1, eVF, bMorph, bInstanced);
 		if (!Decl.m_Declaration.size())
 			return S_FALSE;
 
 		if (!CHWShader_D3D::s_pCurInstVS || !CHWShader_D3D::s_pCurInstVS->m_pShaderData || CHWShader_D3D::s_pCurInstVS->m_bFallback)
 			return (HRESULT)-1;
 
-		int nSize = CHWShader_D3D::s_pCurInstVS->m_nDataSize;
+		int nSize     = CHWShader_D3D::s_pCurInstVS->m_nDataSize;
 		void* pVSData = CHWShader_D3D::s_pCurInstVS->m_pShaderData;
 		if (FAILED(hr = GetDevice().CreateInputLayout(&Decl.m_Declaration[0], Decl.m_Declaration.Num(), pVSData, nSize, &pDeclCache->m_pDeclaration)))
 		{
@@ -303,10 +303,10 @@ void CD3D9Renderer::FX_ClearTargetRegion(const uint32 nAdditionalStates /* = 0*/
 {
 	assert(m_pRT->IsRenderThread());
 
-	CRenderObject* pObj = m_RP.m_pCurObject;
-	CShader* pSHSave = m_RP.m_pShader;
-	SShaderTechnique* pSHT = m_RP.m_pCurTechnique;
-	SShaderPass* pPass = m_RP.m_pCurPass;
+	CRenderObject* pObj      = m_RP.m_pCurObject;
+	CShader* pSHSave         = m_RP.m_pShader;
+	SShaderTechnique* pSHT   = m_RP.m_pCurTechnique;
+	SShaderPass* pPass       = m_RP.m_pCurPass;
 	CShaderResources* pShRes = m_RP.m_pShaderResources;
 
 	gRenDev->m_cEF.mfRefreshSystemShader("Common", CShaderMan::s_ShaderCommon);
@@ -314,8 +314,8 @@ void CD3D9Renderer::FX_ClearTargetRegion(const uint32 nAdditionalStates /* = 0*/
 	FX_SetMSAAFlagsRT();
 
 	m_RP.m_PersFlags1 |= RBPF1_IN_CLEAR;
-	CShader* pSH = CShaderMan::s_ShaderCommon;
-	uint32 nPasses = 0;
+	CShader* pSH     = CShaderMan::s_ShaderCommon;
+	uint32   nPasses = 0;
 	pSH->FXSetTechnique("Clear");
 	pSH->FXBegin(&nPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
 	pSH->FXBeginPass(0);
@@ -341,10 +341,10 @@ void CD3D9Renderer::FX_ClearTargetRegion(const uint32 nAdditionalStates /* = 0*/
 	DrawQuad(-0.5f, -0.5f, fX - 0.5f, fY - 0.5f, m_pNewTarget[0]->m_ReqColor, 1.0f, fX, fY, fX, fY);
 	m_RP.m_PersFlags1 &= ~RBPF1_IN_CLEAR;
 
-	m_RP.m_pCurObject = pObj;
-	m_RP.m_pShader = pSHSave;
-	m_RP.m_pCurTechnique = pSHT;
-	m_RP.m_pCurPass = pPass;
+	m_RP.m_pCurObject       = pObj;
+	m_RP.m_pShader          = pSHSave;
+	m_RP.m_pCurTechnique    = pSHT;
+	m_RP.m_pCurPass         = pPass;
 	m_RP.m_pShaderResources = pShRes;
 }
 
@@ -354,7 +354,7 @@ void CD3D9Renderer::FX_SetActiveRenderTargets()
 	if (m_RP.m_PersFlags1 & RBPF1_IN_CLEAR)
 		return;
 	FUNCTION_PROFILER_RENDER_FLAT
-	HRESULT hr = S_OK;
+	HRESULT hr  = S_OK;
 	bool bDirty = false;
 	if (m_nMaxRT2Commit >= 0)
 	{
@@ -366,7 +366,7 @@ void CD3D9Renderer::FX_SetActiveRenderTargets()
 				if (m_pNewTarget[i]->m_pTex)
 					m_pNewTarget[i]->m_pTex->SetResolved(false);
 				m_pCurTarget[i] = m_pNewTarget[i]->m_pTex;
-				bDirty = true;
+				bDirty          = true;
 #ifndef _RELEASE
 				if (m_LogFile)
 				{
@@ -418,13 +418,13 @@ void CD3D9Renderer::FX_SetActiveRenderTargets()
 		const uint32 nMaxRT2Commit = max(m_nMaxRT2Commit + 1, 0);
 
 		D3DSurface* pRTV[RT_STACK_WIDTH] = { NULL };
-		uint32 nNumViews = 0;
+		uint32 nNumViews                 = 0;
 
 		for (uint32 v = 0; v < nMaxRT2Commit; ++v)
 		{
 			if (m_pNewTarget[v] && m_pNewTarget[v]->m_pTarget)
 			{
-				pRTV[v] = m_pNewTarget[v]->m_pTarget;
+				pRTV[v]   = m_pNewTarget[v]->m_pTarget;
 				nNumViews = v + 1;
 			}
 		}
@@ -449,8 +449,8 @@ void CD3D9Renderer::FX_SetViewport()
 		{
 			m_CurViewport = m_NewViewport;
 			D3DViewPort Port;
-			Port.Width = (FLOAT)m_CurViewport.nWidth;
-			Port.Height = (FLOAT)m_CurViewport.nHeight;
+			Port.Width    = (FLOAT)m_CurViewport.nWidth;
+			Port.Height   = (FLOAT)m_CurViewport.nHeight;
 			Port.TopLeftX = (FLOAT)m_CurViewport.nX;
 			Port.TopLeftY = (FLOAT)m_CurViewport.nY;
 			Port.MinDepth = m_CurViewport.fMinZ;
@@ -471,30 +471,30 @@ void CD3D9Renderer::FX_ClearTarget(D3DSurface* pView, const ColorF& cClear, cons
 #if !defined(EXCLUDE_RARELY_USED_R_STATS) && defined(ENABLE_PROFILING_CODE)
 	{
 		m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared++;
-	#ifndef CRY_PLATFORM_DURANGO
+#ifndef CRY_PLATFORM_DURANGO
 		m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize += CDeviceTexture::TextureDataSize(pView, numRects, pRects);
-	#endif
+#endif
 	}
 #endif
 
 #if CRY_USE_DX12
 	GetDeviceContext().ClearRectsRenderTargetView(
-	  pView,
-	  (const FLOAT*)&cClear,
-	  numRects,
-	  pRects);
+		pView,
+		(const FLOAT*)&cClear,
+		numRects,
+		pRects);
 #elif defined(DEVICE_SUPPORTS_D3D11_1) && !CRY_PLATFORM_ORBIS
 	GetDeviceContext().ClearView(
-	  pView,
-	  (const FLOAT*)&cClear,
-	  numRects,
-	  pRects);
+		pView,
+		(const FLOAT*)&cClear,
+		numRects,
+		pRects);
 #else
 	if (!numRects)
 	{
 		GetDeviceContext().ClearRenderTargetView(
-		  pView,
-		  (const FLOAT*)&cClear);
+			pView,
+			(const FLOAT*)&cClear);
 
 		return;
 	}
@@ -507,7 +507,7 @@ void CD3D9Renderer::FX_ClearTarget(D3DSurface* pView, const ColorF& cClear, cons
 
 void CD3D9Renderer::FX_ClearTarget(CTexture* pTex, const ColorF& cClear, const uint numRects, const RECT* pRects, const bool bOptionalRects)
 {
-#if !defined(RELEASE) && defined(_DEBUG) && 0 // will break a lot currently, won't really be coherent in the future
+#if !defined(RELEASE) && defined(_DEBUG) && 0     // will break a lot currently, won't really be coherent in the future
 	if (pTex->GetClearColor() != cClear)
 	{
 		const char* szName = pTex->GetName();
@@ -523,18 +523,18 @@ void CD3D9Renderer::FX_ClearTarget(CTexture* pTex, const ColorF& cClear, const u
 
 #if CRY_USE_DX12
 	FX_ClearTarget(
-	  (D3DSurface*)pTex->GetDeviceRT(),
-	  cClear,
-	  numRects,
-	  pRects);
+		(D3DSurface*)pTex->GetDeviceRT(),
+		cClear,
+		numRects,
+		pRects);
 #else
 	if (bOptionalRects || !numRects)
 	{
 		FX_ClearTarget(
-		  (D3DSurface*)pTex->GetDeviceRT(),
-		  cClear,
-		  0U,
-		  nullptr);
+			(D3DSurface*)pTex->GetDeviceRT(),
+			cClear,
+			0U,
+			nullptr);
 
 		return;
 	}
@@ -557,18 +557,18 @@ void CD3D9Renderer::FX_ClearTarget(CTexture* pTex, const ColorF& cClear)
 	//	RECT rect = { 0, 0, pTex->GetWidth(), pTex->GetHeight() };
 
 	FX_ClearTarget(
-	  pTex,
-	  cClear,
-	  0U,
-	  nullptr,
-	  true);
+		pTex,
+		cClear,
+		0U,
+		nullptr,
+		true);
 }
 
 void CD3D9Renderer::FX_ClearTarget(CTexture* pTex)
 {
 	FX_ClearTarget(
-	  pTex,
-	  pTex->GetClearColor());
+		pTex,
+		pTex->GetClearColor());
 }
 
 //====================================================================================
@@ -579,33 +579,33 @@ void CD3D9Renderer::FX_ClearTarget(D3DDepthSurface* pView, const int nFlags, con
 	if (nFlags)
 	{
 		m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared++;
-	#ifndef CRY_PLATFORM_DURANGO // TODO: XBOX One hack - remove when fixed
+#ifndef CRY_PLATFORM_DURANGO   // TODO: XBOX One hack - remove when fixed
 		m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize += CDeviceTexture::TextureDataSize(pView, numRects, pRects);
-	#endif
+#endif
 	}
 #endif
 
 	assert((
-	         (nFlags & CLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0) |
-	         (nFlags & CLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0)
-	         ) == nFlags);
+		  (nFlags & CLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0) |
+		  (nFlags & CLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0)
+		  ) == nFlags);
 
 #if CRY_USE_DX12
 	GetDeviceContext().ClearRectsDepthStencilView(
-	  pView,
-	  nFlags,
-	  cDepth,
-	  cStencil,
-	  numRects,
-	  pRects);
+		pView,
+		nFlags,
+		cDepth,
+		cStencil,
+		numRects,
+		pRects);
 #else
 	if (!numRects)
 	{
 		GetDeviceContext().ClearDepthStencilView(
-		  pView,
-		  nFlags,
-		  cDepth,
-		  cStencil);
+			pView,
+			nFlags,
+			cDepth,
+			cStencil);
 
 		return;
 	}
@@ -619,32 +619,32 @@ void CD3D9Renderer::FX_ClearTarget(D3DDepthSurface* pView, const int nFlags, con
 void CD3D9Renderer::FX_ClearTarget(SDepthTexture* pTex, const int nFlags, const float cDepth, const uint8 cStencil, const uint numRects, const RECT* pRects, const bool bOptionalRects)
 {
 	assert((
-	         (nFlags & CLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0) |
-	         (nFlags & CLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0)
-	         ) == nFlags);
+		  (nFlags & CLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0) |
+		  (nFlags & CLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0)
+		  ) == nFlags);
 	assert((
-	         (nFlags & CLEAR_ZBUFFER ? FRT_CLEAR_DEPTH : 0) |
-	         (nFlags & CLEAR_STENCIL ? FRT_CLEAR_STENCIL : 0)
-	         ) == nFlags);
+		  (nFlags & CLEAR_ZBUFFER ? FRT_CLEAR_DEPTH : 0) |
+		  (nFlags & CLEAR_STENCIL ? FRT_CLEAR_STENCIL : 0)
+		  ) == nFlags);
 
 #if CRY_USE_DX12
 	FX_ClearTarget(
 	  pTex->pSurface,
-	  nFlags,
-	  cDepth,
-	  cStencil,
-	  numRects,
-	  pRects);
+		nFlags,
+		cDepth,
+		cStencil,
+		numRects,
+		pRects);
 #else
 	if (bOptionalRects || !numRects)
 	{
 		FX_ClearTarget(
 		  pTex->pSurface,
-		  nFlags,
-		  cDepth,
-		  cStencil,
-		  0U,
-		  nullptr);
+			nFlags,
+			cDepth,
+			cStencil,
+			0U,
+			nullptr);
 
 		return;
 	}
@@ -665,30 +665,30 @@ void CD3D9Renderer::FX_ClearTarget(SDepthTexture* pTex, const int nFlags, const 
 void CD3D9Renderer::FX_ClearTarget(SDepthTexture* pTex, const int nFlags, const float cDepth, const uint8 cStencil)
 {
 	FX_ClearTarget(
-	  pTex,
-	  nFlags,
-	  cDepth,
-	  cStencil,
-	  0U,
-	  nullptr,
-	  true);
+		pTex,
+		nFlags,
+		cDepth,
+		cStencil,
+		0U,
+		nullptr,
+		true);
 }
 
 void CD3D9Renderer::FX_ClearTarget(SDepthTexture* pTex, const int nFlags)
 {
 	FX_ClearTarget(
-	  pTex,
-	  nFlags,
-	  (gRenDev->m_RP.m_TI[gRenDev->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) ? 0.f : 1.f,
-	  0U);
+		pTex,
+		nFlags,
+		(gRenDev->m_RP.m_TI[gRenDev->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) ? 0.f : 1.f,
+		0U);
 }
 
 void CD3D9Renderer::FX_ClearTarget(SDepthTexture* pTex)
 {
 	FX_ClearTarget(
-	  pTex,
-	  CLEAR_ZBUFFER |
-	  CLEAR_STENCIL);
+		pTex,
+		CLEAR_ZBUFFER |
+		CLEAR_STENCIL);
 }
 
 //====================================================================================
@@ -698,9 +698,9 @@ void CD3D9Renderer::FX_ClearTargets()
 	if (m_pNewTarget[0]->m_ClearFlags)
 	{
 		{
-			const float fClearDepth = (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) ? 1.0f - m_pNewTarget[0]->m_fReqDepth : m_pNewTarget[0]->m_fReqDepth;
+			const float fClearDepth   = (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) ? 1.0f - m_pNewTarget[0]->m_fReqDepth : m_pNewTarget[0]->m_fReqDepth;
 			const uint8 nClearStencil = m_pNewTarget[0]->m_nReqStencil;
-			const int nFlags = m_pNewTarget[0]->m_ClearFlags & ~CLEAR_RTARGET;
+			const int nFlags          = m_pNewTarget[0]->m_ClearFlags & ~CLEAR_RTARGET;
 
 			// TODO: ClearFlags per render-target
 			if ((m_pNewTarget[0]->m_pTarget != NULL) && (m_pNewTarget[0]->m_ClearFlags & CLEAR_RTARGET))
@@ -716,9 +716,9 @@ void CD3D9Renderer::FX_ClearTargets()
 			}
 
 			assert((
-			         (nFlags & CLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0) |
-			         (nFlags & CLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0)
-			         ) == nFlags);
+				  (nFlags & CLEAR_ZBUFFER ? D3D11_CLEAR_DEPTH : 0) |
+				  (nFlags & CLEAR_STENCIL ? D3D11_CLEAR_STENCIL : 0)
+				  ) == nFlags);
 
 			if (nFlags)
 			{
@@ -742,9 +742,9 @@ void CD3D9Renderer::FX_ClearTargets()
 					if (m_pNewTarget[i]->m_pTarget)
 					{
 						m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared++;
-	#ifndef CRY_PLATFORM_DURANGO
+#ifndef CRY_PLATFORM_DURANGO
 						m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize += CDeviceTexture::TextureDataSize(m_pNewTarget[i]->m_pTarget);
-	#endif
+#endif
 					}
 				}
 			}
@@ -752,9 +752,9 @@ void CD3D9Renderer::FX_ClearTargets()
 			if (m_pNewTarget[0]->m_ClearFlags & (~CLEAR_RTARGET))
 			{
 				m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared++;
-	#ifndef CRY_PLATFORM_DURANGO
+#ifndef CRY_PLATFORM_DURANGO
 				m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize += CDeviceTexture::TextureDataSize(m_pNewTarget[0]->m_pSurfDepth->pSurface);
-	#endif
+#endif
 			}
 		}
 #endif
@@ -872,7 +872,7 @@ void CRenderer::FX_SetStencilState(int st, uint32 nStencRef, uint32 nStencMask, 
 	nStencRef |= m_RP.m_CurStencilRefAndMask;
 
 	SStateDepth DS = gcpRendD3D->m_StatesDP[gcpRendD3D->m_nCurStateDP];
-	DS.Desc.StencilReadMask = nStencMask;
+	DS.Desc.StencilReadMask  = nStencMask;
 	DS.Desc.StencilWriteMask = nStencWriteMask;
 
 	int nCurFunc = st & FSS_STENCFUNC_MASK;
@@ -906,8 +906,8 @@ void CRenderer::FX_SetStencilState(int st, uint32 nStencRef, uint32 nStencMask, 
 		DS.Desc.BackFace.StencilPassOp = (D3D11_STENCIL_OP)g_StencilOpLookup[nCurOp];
 	}
 
-	m_RP.m_CurStencRef = nStencRef;
-	m_RP.m_CurStencMask = nStencMask;
+	m_RP.m_CurStencRef       = nStencRef;
+	m_RP.m_CurStencMask      = nStencMask;
 	m_RP.m_CurStencWriteMask = nStencWriteMask;
 
 	gcpRendD3D->SetDepthState(&DS, nStencRef);
@@ -930,14 +930,14 @@ void CD3D9Renderer::RT_SetScissor(bool bEnable, int sX, int sY, int sWdt, int sH
 	{
 		if (sX != m_scissorPrevX || sY != m_scissorPrevY || sWdt != m_scissorPrevWidth || sHgt != m_scissorPrevHeight)
 		{
-			m_scissorPrevX = sX;
-			m_scissorPrevY = sY;
-			m_scissorPrevWidth = sWdt;
+			m_scissorPrevX      = sX;
+			m_scissorPrevY      = sY;
+			m_scissorPrevWidth  = sWdt;
 			m_scissorPrevHeight = sHgt;
-			scRect.left = sX;
-			scRect.top = sY;
-			scRect.right = sX + sWdt;
-			scRect.bottom = sY + sHgt;
+			scRect.left         = sX;
+			scRect.top          = sY;
+			scRect.right        = sX + sWdt;
+			scRect.bottom       = sY + sHgt;
 
 			GetDeviceContext().RSSetScissorRects(1, &scRect);
 		}
@@ -953,8 +953,8 @@ void CD3D9Renderer::RT_SetScissor(bool bEnable, int sX, int sY, int sWdt, int sH
 	{
 		if (bEnable != m_bScissorPrev)
 		{
-			m_bScissorPrev = bEnable;
-			m_scissorPrevWidth = 0;
+			m_bScissorPrev      = bEnable;
+			m_scissorPrevWidth  = 0;
 			m_scissorPrevHeight = 0;
 			SStateRaster RS = m_StatesRS[m_nCurStateRS];
 			RS.Desc.ScissorEnable = bEnable;
@@ -968,8 +968,8 @@ bool CD3D9Renderer::EF_GetScissorState(int& sX, int& sY, int& sWdt, int& sHgt)
 	if (!CV_r_scissor || (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
 		return false;
 
-	sX = m_scissorPrevX;
-	sY = m_scissorPrevY;
+	sX   = m_scissorPrevX;
+	sY   = m_scissorPrevY;
 	sWdt = m_scissorPrevWidth;
 	sHgt = m_scissorPrevHeight;
 	return m_bScissorPrev;
@@ -989,11 +989,11 @@ void CD3D9Renderer::FX_FogCorrection()
 			EF_SetFogColor(Col_Black);
 			break;
 		case GS_BLSRC_DSTCOL | GS_BLDST_SRCCOL:
-			{
-				static ColorF pColGrey = ColorF(0.5f, 0.5f, 0.5f, 1.0f);
-				EF_SetFogColor(pColGrey);
-				break;
-			}
+		{
+			static ColorF pColGrey = ColorF(0.5f, 0.5f, 0.5f, 1.0f);
+			EF_SetFogColor(pColGrey);
+			break;
+		}
 		case GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA:
 			EF_SetFogColor(Col_Black);
 			break;
@@ -1029,14 +1029,9 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
 	int Changed;
-	if (CV_r_measureoverdraw == 4 && (st & GS_DEPTHFUNC_MASK) == GS_DEPTHFUNC_HIZEQUAL)
-	{
-		// disable fine depth test
-		st |= GS_NODEPTHTEST;
-	}
-	st |= m_RP.m_StateOr;
-	st &= m_RP.m_StateAnd;
-	Changed = st ^ m_RP.m_CurState;
+	st      |= m_RP.m_StateOr;
+	st      &= m_RP.m_StateAnd;
+	Changed  = st ^ m_RP.m_CurState;
 	Changed |= RestoreState;
 
 	if (!Changed && (AlphaRef == -1 || AlphaRef == m_RP.m_CurAlphaRef))
@@ -1049,12 +1044,12 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 #endif
 	if (m_StatesBL.size() == 0 || m_StatesDP.size() == 0 || m_StatesRS.size() == 0)
 		ResetToDefault();
-	SStateDepth DS = m_StatesDP[m_nCurStateDP];
-	SStateBlend BS = m_StatesBL[m_nCurStateBL];
+	SStateDepth  DS = m_StatesDP[m_nCurStateDP];
+	SStateBlend  BS = m_StatesBL[m_nCurStateBL];
 	SStateRaster RS = m_StatesRS[m_nCurStateRS];
-	bool bDirtyDS = false;
-	bool bDirtyBS = false;
-	bool bDirtyRS = false;
+	bool bDirtyDS   = false;
+	bool bDirtyBS   = false;
+	bool bDirtyRS   = false;
 
 	if (Changed & GS_DEPTHFUNC_MASK)
 	{
@@ -1066,7 +1061,6 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 
 		switch (nDepthState & GS_DEPTHFUNC_MASK)
 		{
-		case GS_DEPTHFUNC_HIZEQUAL:
 		case GS_DEPTHFUNC_EQUAL:
 			DS.Desc.DepthFunc = D3D11_COMPARISON_EQUAL;
 			break;
@@ -1103,7 +1097,7 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 		nMask = (~nMask) & 0xf;
 		for (size_t i = 0; i < RT_STACK_WIDTH; ++i)
 			BS.Desc.RenderTarget[i].RenderTargetWriteMask = nMask;
-	}
+		}
 
 	if (Changed & GS_BLEND_MASK)
 	{
@@ -1112,8 +1106,8 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 		{
 			if (CV_r_measureoverdraw && (m_RP.m_nRendFlags & SHDF_ALLOWHDR))
 			{
-				st = (st & ~GS_BLEND_MASK) | (GS_BLSRC_ONE | GS_BLDST_ONE);
-				st &= ~GS_ALPHATEST_MASK;
+				st  = (st & ~GS_BLEND_MASK) | (GS_BLSRC_ONE | GS_BLDST_ONE);
+        		st &= ~GS_ALPHATEST;
 			}
 
 			// todo: add separate alpha blend support for mrt
@@ -1124,47 +1118,47 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 			switch (st & GS_BLSRC_MASK)
 			{
 			case GS_BLSRC_ZERO:
-				BS.Desc.RenderTarget[0].SrcBlend = D3D11_BLEND_ZERO;
+				BS.Desc.RenderTarget[0].SrcBlend      = D3D11_BLEND_ZERO;
 				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
 				break;
 			case GS_BLSRC_ONE:
-				BS.Desc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+				BS.Desc.RenderTarget[0].SrcBlend      = D3D11_BLEND_ONE;
 				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
 				break;
 			case GS_BLSRC_DSTCOL:
-				BS.Desc.RenderTarget[0].SrcBlend = D3D11_BLEND_DEST_COLOR;
+				BS.Desc.RenderTarget[0].SrcBlend      = D3D11_BLEND_DEST_COLOR;
 				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_DEST_ALPHA;
 				break;
 			case GS_BLSRC_ONEMINUSDSTCOL:
-				BS.Desc.RenderTarget[0].SrcBlend = D3D11_BLEND_INV_DEST_COLOR;
+				BS.Desc.RenderTarget[0].SrcBlend      = D3D11_BLEND_INV_DEST_COLOR;
 				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_INV_DEST_ALPHA;
 				break;
 			case GS_BLSRC_SRCALPHA:
-				BS.Desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+				BS.Desc.RenderTarget[0].SrcBlend      = D3D11_BLEND_SRC_ALPHA;
 				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
 				break;
 			case GS_BLSRC_ONEMINUSSRCALPHA:
-				BS.Desc.RenderTarget[0].SrcBlend = D3D11_BLEND_INV_SRC_ALPHA;
+				BS.Desc.RenderTarget[0].SrcBlend      = D3D11_BLEND_INV_SRC_ALPHA;
 				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
 				break;
 			case GS_BLSRC_DSTALPHA:
-				BS.Desc.RenderTarget[0].SrcBlend = D3D11_BLEND_DEST_ALPHA;
+				BS.Desc.RenderTarget[0].SrcBlend      = D3D11_BLEND_DEST_ALPHA;
 				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_DEST_ALPHA;
 				break;
 			case GS_BLSRC_ONEMINUSDSTALPHA:
-				BS.Desc.RenderTarget[0].SrcBlend = D3D11_BLEND_INV_DEST_ALPHA;
+				BS.Desc.RenderTarget[0].SrcBlend      = D3D11_BLEND_INV_DEST_ALPHA;
 				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_INV_DEST_ALPHA;
 				break;
 			case GS_BLSRC_ALPHASATURATE:
-				BS.Desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA_SAT;
+				BS.Desc.RenderTarget[0].SrcBlend      = D3D11_BLEND_SRC_ALPHA_SAT;
 				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA_SAT;
 				break;
 			case GS_BLSRC_SRCALPHA_A_ZERO:
-				BS.Desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+				BS.Desc.RenderTarget[0].SrcBlend      = D3D11_BLEND_SRC_ALPHA;
 				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
 				break;
 			case GS_BLSRC_SRC1ALPHA:
-				BS.Desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC1_ALPHA;
+				BS.Desc.RenderTarget[0].SrcBlend      = D3D11_BLEND_SRC1_ALPHA;
 				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC1_ALPHA;
 				break;
 			default:
@@ -1176,51 +1170,51 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 			switch (st & GS_BLDST_MASK)
 			{
 			case GS_BLDST_ZERO:
-				BS.Desc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
+				BS.Desc.RenderTarget[0].DestBlend      = D3D11_BLEND_ZERO;
 				BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
 				break;
 			case GS_BLDST_ONE:
-				BS.Desc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+				BS.Desc.RenderTarget[0].DestBlend      = D3D11_BLEND_ONE;
 				BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
 				break;
 			case GS_BLDST_SRCCOL:
-				BS.Desc.RenderTarget[0].DestBlend = D3D11_BLEND_SRC_COLOR;
+				BS.Desc.RenderTarget[0].DestBlend      = D3D11_BLEND_SRC_COLOR;
 				BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_SRC_ALPHA;
 				break;
 			case GS_BLDST_ONEMINUSSRCCOL:
 				if (m_nHDRType == 1 && (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_HDR))
 				{
-					BS.Desc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+					BS.Desc.RenderTarget[0].DestBlend      = D3D11_BLEND_ONE;
 					BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
 				}
 				else
 				{
-					BS.Desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_COLOR;
+					BS.Desc.RenderTarget[0].DestBlend      = D3D11_BLEND_INV_SRC_COLOR;
 					BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
 				}
 				break;
 			case GS_BLDST_SRCALPHA:
-				BS.Desc.RenderTarget[0].DestBlend = D3D11_BLEND_SRC_ALPHA;
+				BS.Desc.RenderTarget[0].DestBlend      = D3D11_BLEND_SRC_ALPHA;
 				BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_SRC_ALPHA;
 				break;
 			case GS_BLDST_ONEMINUSSRCALPHA:
-				BS.Desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+				BS.Desc.RenderTarget[0].DestBlend      = D3D11_BLEND_INV_SRC_ALPHA;
 				BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
 				break;
 			case GS_BLDST_DSTALPHA:
-				BS.Desc.RenderTarget[0].DestBlend = D3D11_BLEND_DEST_ALPHA;
+				BS.Desc.RenderTarget[0].DestBlend      = D3D11_BLEND_DEST_ALPHA;
 				BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_DEST_ALPHA;
 				break;
 			case GS_BLDST_ONEMINUSDSTALPHA:
-				BS.Desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_DEST_ALPHA;
+				BS.Desc.RenderTarget[0].DestBlend      = D3D11_BLEND_INV_DEST_ALPHA;
 				BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_DEST_ALPHA;
 				break;
 			case GS_BLDST_ONE_A_ZERO:
-				BS.Desc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+				BS.Desc.RenderTarget[0].DestBlend      = D3D11_BLEND_ONE;
 				BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
 				break;
 			case GS_BLDST_ONEMINUSSRC1ALPHA:
-				BS.Desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC1_ALPHA;
+				BS.Desc.RenderTarget[0].DestBlend      = D3D11_BLEND_INV_SRC1_ALPHA;
 				BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC1_ALPHA;
 				break;
 			default:
@@ -1230,25 +1224,34 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 
 			//Blending operation
 			D3D11_BLEND_OP blendOperation = D3D11_BLEND_OP_ADD;
-			D3D11_BLEND_OP blendOperationAlpha = D3D11_BLEND_OP_ADD;
 			switch (st & GS_BLEND_OP_MASK)
 			{
-			case GS_BLOP_MAX:
+			case GS_BLEND_OP_MAX:
 				blendOperation = D3D11_BLEND_OP_MAX;
-				blendOperationAlpha = D3D11_BLEND_OP_MAX;
 				break;
-			case GS_BLOP_MIN:
+			case GS_BLEND_OP_MIN:
 				blendOperation = D3D11_BLEND_OP_MIN;
-				blendOperationAlpha = D3D11_BLEND_OP_MIN;
+				break;
+			case GS_BLEND_OP_SUB:
+				blendOperation = D3D11_BLEND_OP_SUBTRACT;
+				break;
+			case GS_BLEND_OP_SUBREV:
+				blendOperation = D3D11_BLEND_OP_REV_SUBTRACT;
 				break;
 			}
 
 			//Separate blend modes for alpha
+			D3D11_BLEND_OP blendOperationAlpha = blendOperation;
 			switch (st & GS_BLALPHA_MASK)
 			{
+			case GS_BLALPHA_MAX:
+				BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+				BS.Desc.RenderTarget[0].SrcBlendAlpha  = D3D11_BLEND_ONE;
+				blendOperationAlpha = D3D11_BLEND_OP_MAX;
+				break;
 			case GS_BLALPHA_MIN:
 				BS.Desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
-				BS.Desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+				BS.Desc.RenderTarget[0].SrcBlendAlpha  = D3D11_BLEND_ONE;
 				blendOperationAlpha = D3D11_BLEND_OP_MIN;
 				break;
 			}
@@ -1256,7 +1259,7 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 			// todo: add separate alpha blend support for mrt
 			for (size_t i = 0; i < RT_STACK_WIDTH; ++i)
 			{
-				BS.Desc.RenderTarget[i].BlendOp = blendOperation;
+				BS.Desc.RenderTarget[i].BlendOp      = blendOperation;
 				BS.Desc.RenderTarget[i].BlendOpAlpha = blendOperationAlpha;
 			}
 		}
@@ -1280,7 +1283,7 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 				for (size_t i = 1; i < RT_STACK_WIDTH; ++i)
 				{
 					BS.Desc.RenderTarget[i].RenderTargetWriteMask = 0;
-					BS.Desc.RenderTarget[i].BlendEnable = FALSE;
+					BS.Desc.RenderTarget[i].BlendEnable           = FALSE;
 				}
 			}
 			else
@@ -1289,7 +1292,7 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 				for (size_t i = 1; i < RT_STACK_WIDTH; ++i)
 				{
 					BS.Desc.RenderTarget[i].RenderTargetWriteMask = nMask;
-					BS.Desc.RenderTarget[i].BlendEnable = TRUE;
+					BS.Desc.RenderTarget[i].BlendEnable           = TRUE;
 				}
 			}
 		}
@@ -1324,9 +1327,9 @@ void CD3D9Renderer::FX_SetState(int st, int AlphaRef, int RestoreState)
 
 	{
 		// Alpha test must be handled in shader in D3D10 API
-		if (((st ^ m_RP.m_CurState) & GS_ALPHATEST_MASK) || ((st & GS_ALPHATEST_MASK) && (m_RP.m_CurAlphaRef != AlphaRef && AlphaRef != -1)))
+		if (((st ^ m_RP.m_CurState) & GS_ALPHATEST) || ((st & GS_ALPHATEST) && (m_RP.m_CurAlphaRef != AlphaRef && AlphaRef != -1)))
 		{
-			if (st & GS_ALPHATEST_MASK)
+			if (st & GS_ALPHATEST)
 				m_RP.m_CurAlphaRef = AlphaRef;
 		}
 	}
@@ -1347,25 +1350,17 @@ void CD3D9Renderer::FX_ZState(uint32& nState)
 	assert(m_RP.m_pRootTechnique);    // cannot be 0 here
 
 	if ((m_RP.m_pRootTechnique->m_Flags & (FHF_WASZWRITE | FHF_POSITION_INVARIANT))
-	    && m_RP.m_nPassGroupID == EFSLIST_GENERAL
-	    && (!IsRecursiveRenderView())
-	    && CV_r_usezpass)
+	  && m_RP.m_nPassGroupID == EFSLIST_GENERAL
+	  && (!IsRecursiveRenderView())
+	  && CV_r_usezpass)
 	{
 		if ((m_RP.m_nBatchFilter & (FB_GENERAL | FB_MULTILAYERS)) && (m_RP.m_nRendFlags & (SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS)))
 		{
 			if (!(m_RP.m_pRootTechnique->m_Flags & FHF_POSITION_INVARIANT))
 			{
-				if (CRenderer::CV_r_measureoverdraw == 4)
-				{
-					// Hi-Z test only, fine depth test is disabled at the top of FX_SetState()
-					nNewState |= GS_DEPTHFUNC_HIZEQUAL;
-				}
-				else
-				{
 					nNewState |= GS_DEPTHFUNC_EQUAL;
 				}
-			}
-			nNewState &= ~(GS_DEPTHWRITE | GS_ALPHATEST_MASK);
+			nNewState &= ~(GS_DEPTHWRITE | GS_ALPHATEST);
 		}
 
 		nState = nNewState;
@@ -1375,7 +1370,7 @@ void CD3D9Renderer::FX_ZState(uint32& nState)
 void CD3D9Renderer::FX_HairState(uint32& nState, const SShaderPass* pPass)
 {
 	if ((m_RP.m_nPassGroupID == EFSLIST_GENERAL || m_RP.m_nPassGroupID == EFSLIST_TRANSP) && !(m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & (RBPF_SHADOWGEN | RBPF_ZPASS))
-	    && !(m_RP.m_PersFlags2 & (RBPF2_MOTIONBLURPASS)))
+	  && !(m_RP.m_PersFlags2 & (RBPF2_MOTIONBLURPASS)))
 	{
 		// reset quality settings. BEWARE: these are used by shadows as well
 		m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_TILED_SHADING] | g_HWSR_MaskBit[HWSR_QUALITY1]);
@@ -1394,7 +1389,7 @@ void CD3D9Renderer::FX_HairState(uint32& nState, const SShaderPass* pPass)
 
 		if ((pPass->m_RenderState & GS_DEPTHFUNC_MASK) == GS_DEPTHFUNC_LESS)
 		{
-			nState = (nState & ~(GS_BLEND_MASK | GS_DEPTHFUNC_MASK));
+			nState  = (nState & ~(GS_BLEND_MASK | GS_DEPTHFUNC_MASK));
 			nState |= GS_DEPTHFUNC_LESS;
 
 			if ((m_RP.m_nPassGroupID == EFSLIST_TRANSP) && (m_RP.m_pShader->m_Flags2 & EF2_DEPTH_FIXUP))
@@ -1409,7 +1404,7 @@ void CD3D9Renderer::FX_HairState(uint32& nState, const SShaderPass* pPass)
 		}
 		else
 		{
-			nState = (nState & ~(GS_BLEND_MASK | GS_DEPTHFUNC_MASK));
+			nState  = (nState & ~(GS_BLEND_MASK | GS_DEPTHFUNC_MASK));
 			nState |= GS_DEPTHFUNC_EQUAL /*| GS_DEPTHWRITE*/;
 		}
 	}
@@ -1421,7 +1416,7 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 	uint32 State = 0;
 	int AlphaRef = pPass->m_AlphaRef == 0xff ? -1 : pPass->m_AlphaRef;
 	SRenderPipeline& RESTRICT_REFERENCE rRP = m_RP;
-	SThreadInfo& RESTRICT_REFERENCE rTI = rRP.m_TI[rRP.m_nProcessThreadID];
+	SThreadInfo& RESTRICT_REFERENCE rTI     = rRP.m_TI[rRP.m_nProcessThreadID];
 
 	if (rRP.m_pCurObject->m_RState)
 	{
@@ -1450,7 +1445,7 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 
 	if (bUseMaterialState && rRP.m_MaterialStateOr != 0)
 	{
-		if (rRP.m_MaterialStateOr & GS_ALPHATEST_MASK)
+		if (rRP.m_MaterialStateOr & GS_ALPHATEST)
 			AlphaRef = rRP.m_MaterialAlphaRef;
 		State &= ~rRP.m_MaterialStateAnd;
 		State |= rRP.m_MaterialStateOr;
@@ -1479,15 +1474,15 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 	if (rRP.m_pShader->m_Flags2 & EF2_HAIR)
 		FX_HairState(State, pPass);
 	else if ((m_RP.m_nPassGroupID == EFSLIST_TRANSP) &&
-	         !(rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS) && !(m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & (RBPF_SHADOWGEN | RBPF_ZPASS)))
+	  !(rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS) && !(m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & (RBPF_SHADOWGEN | RBPF_ZPASS)))
 	{
 		// Depth fixup for transparent geometry
 		if (m_RP.m_pShader->m_Flags2 & EF2_DEPTH_FIXUP)
 		{
 			if (rRP.m_pCurObject->m_RState & OS_ALPHA_BLEND)
 			{
-				State &= ~(GS_NOCOLMASK_A | GS_BLSRC_MASK | GS_BLDST_MASK);
-				State |= GS_BLSRC_SRC1ALPHA | GS_BLDST_ONEMINUSSRC1ALPHA;
+				State                &= ~(GS_NOCOLMASK_A | GS_BLSRC_MASK | GS_BLDST_MASK);
+				State                |= GS_BLSRC_SRC1ALPHA | GS_BLDST_ONEMINUSSRC1ALPHA;
 				rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_ALPHABLEND];
 			}
 			else if ((rRP.m_pCurObject->m_RState & OS_TRANSPARENT) == 0)
@@ -1508,8 +1503,8 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 		{
 			if ((rRP.m_pShader->m_Flags & EF_DECAL) || rRP.m_nPassGroupID == EFSLIST_TERRAINLAYER)
 			{
-				State = (State & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK));
-				State |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
+				State                 = (State & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK));
+				State                |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
 				rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_ALPHABLEND];
 			}
 
@@ -1520,8 +1515,8 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 			// Disable alpha testing/depth writes if geometry had a z-prepass
 			if (!(rRP.m_PersFlags2 & RBPF2_ZPREPASS) && (rRP.m_RIs[0][0]->nBatchFlags & FB_ZPREPASS))
 			{
-				State &= ~(GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_ALPHATEST_MASK);
-				State |= GS_DEPTHFUNC_EQUAL;
+			State &= ~(GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_ALPHATEST);
+				State                |= GS_DEPTHFUNC_EQUAL;
 				rRP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_ALPHATEST];
 			}
 
@@ -1529,7 +1524,7 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 	}
 
 	if ((rRP.m_ObjFlags & FOB_MOTION_BLUR) != 0 && (rRP.m_ObjFlags & FOB_HAS_PREVMATRIX) != 0
-	    && (rRP.m_ObjFlags & FOB_SKINNED) == 0 && (rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS) != 0)
+	  && (rRP.m_ObjFlags & FOB_SKINNED) == 0 && (rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS) != 0)
 	{
 		rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_VERTEX_VELOCITY];
 	}
@@ -1540,7 +1535,7 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 		if (CRenderer::CV_r_customvisions == 2)
 		{
 			rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE0];
-			State |= GS_BLSRC_ONE | GS_BLDST_ONE;
+			State                |= GS_BLSRC_ONE | GS_BLDST_ONE;
 		}
 		else if (CRenderer::CV_r_customvisions == 3)
 		{
@@ -1572,7 +1567,7 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 
 	FX_SetState(State, AlphaRef);
 
-	if (State & GS_ALPHATEST_MASK)
+	if (State & GS_ALPHATEST)
 		rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_ALPHATEST];
 
 	int nBlend;
@@ -1580,9 +1575,9 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 	{
 		//set alpha blend shader flag when the blend mode for color is set to alpha blend.
 		if (nBlend == (GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA)
-		    || nBlend == (GS_BLSRC_SRCALPHA | GS_BLDST_ONE)
-		    || nBlend == (GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA)
-		    || nBlend == (GS_BLSRC_SRCALPHA_A_ZERO | GS_BLDST_ONEMINUSSRCALPHA))
+		  || nBlend == (GS_BLSRC_SRCALPHA | GS_BLDST_ONE)
+		  || nBlend == (GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA)
+		  || nBlend == (GS_BLSRC_SRCALPHA_A_ZERO | GS_BLDST_ONEMINUSSRCALPHA))
 			rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_ALPHABLEND];
 	}
 }
@@ -1617,30 +1612,31 @@ bool CD3D9Renderer::FX_SetRenderTarget(int nTarget, D3DSurface* pTargetSurf, SDe
 {
 	if (nTarget >= RT_STACK_WIDTH || m_nRTStackLevel[nTarget] >= MAX_RT_STACK)
 		return false;
-	HRESULT hr = 0;
+	HRESULT hr               = 0;
 	SRenderTargetStack* pCur = &m_RTStack[nTarget][m_nRTStackLevel[nTarget]];
-	pCur->m_pTarget = pTargetSurf;
+
+	pCur->m_pTarget    = pTargetSurf;
+	pCur->m_pTex       = nullptr;
 	pCur->m_pSurfDepth = pDepthTarget;
-	pCur->m_pDepth = pDepthTarget ? pDepthTarget->pSurface : NULL;
-	pCur->m_pTex = NULL;
+	pCur->m_pDepth     = pDepthTarget ? pDepthTarget->pSurface : nullptr;
 
 #ifdef _DEBUG
 	if (m_nRTStackLevel[nTarget] == 0 && nTarget == 0)
 	{
-		assert(pCur->m_pTarget == m_pBackBuffer && (pDepthTarget == nullptr || pCur->m_pDepth == m_pNativeZSurface));
+		assert(pCur->m_pTarget == m_pBackBuffer && (pDepthTarget == nullptr || pCur->m_pDepth == m_DepthBufferNative.pSurface));
 	}
 #endif
 
 	pCur->m_bNeedReleaseRT = false;
-	pCur->m_bWasSetRT = false;
-	pCur->m_bWasSetD = false;
-	pCur->m_ClearFlags = 0;
-	m_pNewTarget[nTarget] = pCur;
+	pCur->m_bWasSetRT      = false;
+	pCur->m_bWasSetD       = false;
+	pCur->m_ClearFlags     = 0;
+	m_pNewTarget[nTarget]  = pCur;
 	if (nTarget == 0)
 	{
 		m_RP.m_StateOr &= ~GS_COLMASK_NONE;
 	}
-	m_nMaxRT2Commit = max(m_nMaxRT2Commit, nTarget);
+	m_nMaxRT2Commit      = max(m_nMaxRT2Commit, nTarget);
 	m_RP.m_nCommitFlags |= FC_TARGETS;
 	return (hr == S_OK);
 }
@@ -1686,7 +1682,7 @@ bool CD3D9Renderer::FX_SetRenderTarget(int nTarget, CTexture* pTarget, SDepthTex
 			pCur->m_bNeedReleaseRT = false;
 		}
 		m_pNewTarget[0]->m_bWasSetRT = false;
-		m_pNewTarget[0]->m_pTarget = NULL;
+		m_pNewTarget[0]->m_pTarget   = NULL;
 
 		pCur->m_pTex->Unlock();
 	}
@@ -1715,18 +1711,22 @@ bool CD3D9Renderer::FX_SetRenderTarget(int nTarget, CTexture* pTarget, SDepthTex
 		if (pCur->m_pSurfDepth)
 			pCur->m_pSurfDepth->bBusy = false;
 	}
-	pCur->m_pDepth = pDepthTarget ? pDepthTarget->pSurface : NULL;
-	pCur->m_ClearFlags = 0;
-	pCur->m_pTarget = pTargSurf;
+
+	pCur->m_pTarget        = pTargSurf;
+	pCur->m_pTex           = nullptr;
+	pCur->m_pSurfDepth     = pDepthTarget;
+	pCur->m_pDepth         = pDepthTarget ? pDepthTarget->pSurface : NULL;
+
+	pCur->m_ClearFlags     = 0;
 	pCur->m_bNeedReleaseRT = true;
-	pCur->m_bWasSetRT = false;
-	pCur->m_bWasSetD = false;
-	pCur->m_bScreenVP = bScreenVP;
+	pCur->m_bWasSetRT      = false;
+	pCur->m_bWasSetD       = false;
+	pCur->m_bScreenVP      = bScreenVP;
 	if (pTarget)
 		pTarget->Lock();
 	if (pDepthTarget)
 	{
-		pDepthTarget->bBusy = true;
+		pDepthTarget->bBusy        = true;
 		pDepthTarget->nFrameAccess = m_RP.m_TI[m_RP.m_nProcessThreadID].m_nFrameUpdateID;
 	}
 
@@ -1735,18 +1735,16 @@ bool CD3D9Renderer::FX_SetRenderTarget(int nTarget, CTexture* pTarget, SDepthTex
 	else if (pDepthTarget)
 		pCur->m_pTex = pDepthTarget->pTexture;
 	else
-		pCur->m_pTex = NULL;
-
-	pCur->m_pSurfDepth = pDepthTarget;
+		pCur->m_pTex = nullptr;
 
 	if (pTarget)
 	{
-		pCur->m_Width = pTarget->GetWidth();
+		pCur->m_Width  = pTarget->GetWidth();
 		pCur->m_Height = pTarget->GetHeight();
 	}
 	else if (pDepthTarget)
 	{
-		pCur->m_Width = pDepthTarget->nWidth;
+		pCur->m_Width  = pDepthTarget->nWidth;
 		pCur->m_Height = pDepthTarget->nHeight;
 	}
 	if (!nTarget)
@@ -1757,8 +1755,8 @@ bool CD3D9Renderer::FX_SetRenderTarget(int nTarget, CTexture* pTarget, SDepthTex
 			RT_SetViewport(0, 0, pCur->m_Width, pCur->m_Height);
 	}
 	m_pNewTarget[nTarget] = pCur;
-	m_nMaxRT2Commit = max(m_nMaxRT2Commit, nTarget);
-	m_RP.m_nCommitFlags |= FC_TARGETS;
+	m_nMaxRT2Commit       = max(m_nMaxRT2Commit, nTarget);
+	m_RP.m_nCommitFlags  |= FC_TARGETS;
 	return true;
 }
 bool CD3D9Renderer::FX_PushRenderTarget(int nTarget, CTexture* pTarget, SDepthTexture* pDepthTarget, int nCMSide, bool bScreenVP, uint32 nTileCount)
@@ -1783,7 +1781,21 @@ bool CD3D9Renderer::FX_RestoreRenderTarget(int nTarget)
 #ifdef _DEBUG
 	if (m_nRTStackLevel[nTarget] == 0 && nTarget == 0)
 	{
-		assert(pCur->m_pTarget == m_pBackBuffer && (pCur->m_pDepth == nullptr || pCur->m_pDepth == m_pNativeZSurface));
+		if (GetS3DRend().IsStereoEnabled() && (m_RP.m_nRendFlags & (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE)))
+		{
+			if (m_RP.m_nRendFlags & SHDF_STEREO_LEFT_EYE)
+			{
+				assert(pCur->m_pTarget == GetS3DRend().GetEyeTarget(LEFT_EYE)->GetSurface(0, 0) && (pCur->m_pDepth == nullptr || pCur->m_pDepth == m_DepthBufferNative.pSurface));
+			}
+			else if (m_RP.m_nRendFlags & SHDF_STEREO_RIGHT_EYE)
+			{
+				assert(pCur->m_pTarget == GetS3DRend().GetEyeTarget(RIGHT_EYE)->GetSurface(0, 0) && (pCur->m_pDepth == nullptr || pCur->m_pDepth == m_DepthBufferNative.pSurface));
+			}
+		}
+		else
+		{
+			assert(pCur->m_pTarget == m_pBackBuffer && (pCur->m_pDepth == nullptr || pCur->m_pDepth == m_DepthBufferNative.pSurface));
+		}
 	}
 #endif
 
@@ -1795,7 +1807,7 @@ bool CD3D9Renderer::FX_RestoreRenderTarget(int nTarget)
 		{
 			m_pNewTarget[nTarget]->m_bWasSetRT = false;
 
-			pPrev->m_pTarget = NULL;
+			pPrev->m_pTarget                 = NULL;
 			m_pNewTarget[nTarget]->m_pTarget = NULL;
 		}
 	}
@@ -1805,7 +1817,7 @@ bool CD3D9Renderer::FX_RestoreRenderTarget(int nTarget)
 		if (pPrev->m_pSurfDepth)
 		{
 			pPrev->m_pSurfDepth->bBusy = false;
-			pPrev->m_pSurfDepth = NULL;
+			pPrev->m_pSurfDepth        = NULL;
 		}
 	}
 	if (pPrev->m_pTex)
@@ -1822,10 +1834,10 @@ bool CD3D9Renderer::FX_RestoreRenderTarget(int nTarget)
 		else
 			RT_SetViewport(0, 0, pCur->m_Width, pCur->m_Height);
 	}
-	pCur->m_bWasSetD = false;
-	pCur->m_bWasSetRT = false;
+	pCur->m_bWasSetD      = false;
+	pCur->m_bWasSetRT     = false;
 	m_pNewTarget[nTarget] = pCur;
-	m_nMaxRT2Commit = max(m_nMaxRT2Commit, nTarget);
+	m_nMaxRT2Commit       = max(m_nMaxRT2Commit, nTarget);
 
 	m_RP.m_nCommitFlags |= FC_TARGETS;
 	return true;
@@ -1922,20 +1934,20 @@ SDepthTexture* CD3D9Renderer::FX_CreateDepthSurface(int nWidth, int nHeight, boo
 
 	D3D11_TEXTURE2D_DESC descDepth;
 	ZeroStruct(descDepth);
-	descDepth.Width = nWidth;
-	descDepth.Height = nHeight;
-	descDepth.MipLevels = 1;
-	descDepth.ArraySize = 1;
-	descDepth.Format = CTexture::ConvertToDepthStencilFmt(m_ZFormat);
-	descDepth.SampleDesc.Count = 1;
+	descDepth.Width              = nWidth;
+	descDepth.Height             = nHeight;
+	descDepth.MipLevels          = 1;
+	descDepth.ArraySize          = 1;
+	descDepth.Format             = CTexture::ConvertToDepthStencilFmt(m_ZFormat);
+	descDepth.SampleDesc.Count   = 1;
 	descDepth.SampleDesc.Quality = 0;
-	descDepth.Usage = D3D11_USAGE_DEFAULT;
-	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	descDepth.CPUAccessFlags = 0;
-	descDepth.MiscFlags = 0;
+	descDepth.Usage              = D3D11_USAGE_DEFAULT;
+	descDepth.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
+	descDepth.CPUAccessFlags     = 0;
+	descDepth.MiscFlags          = 0;
 
-	const float clearDepth = (gRenDev->m_RP.m_TI[gRenDev->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) ? 0.f : 1.f;
-	const uint clearStencil = 0;
+	const float clearDepth     = (gRenDev->m_RP.m_TI[gRenDev->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) ? 0.f : 1.f;
+	const uint  clearStencil   = 0;
 	const ColorF clearValues = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
 
 	hr = m_DevMan.Create2DTexture(descDepth, clearValues, &pZTexture);
@@ -1966,7 +1978,7 @@ bool CD3D9Renderer::FX_CommitStreams(SShaderPass* sl, bool bSetVertexDecl)
 	if (CHWShader_D3D::s_pCurInstHS)
 	{
 		rp.m_FlagsStreams_Stream |= (1 << VSF_NORMALS);
-		rp.m_FlagsStreams_Decl |= (1 << VSF_NORMALS);
+		rp.m_FlagsStreams_Decl   |= (1 << VSF_NORMALS);
 	}
 #endif
 
@@ -1976,7 +1988,7 @@ bool CD3D9Renderer::FX_CommitStreams(SShaderPass* sl, bool bSetVertexDecl)
 		if ((m_RP.m_ObjFlags & FOB_POINT_SPRITE) && !CHWShader_D3D::s_pCurInstHS)
 		{
 			rp.m_FlagsStreams_Stream |= VSM_INSTANCED;
-			rp.m_FlagsStreams_Decl |= VSM_INSTANCED;
+			rp.m_FlagsStreams_Decl   |= VSM_INSTANCED;
 		}
 		hr = FX_SetVertexDeclaration(rp.m_FlagsStreams_Decl, rp.m_CurVFormat);
 		if (FAILED(hr))
@@ -2027,7 +2039,7 @@ bool CD3D9Renderer::FX_DebugCheckConsistency(int FirstVertex, int FirstIndex, in
 	HRESULT hr = S_OK;
 	assert(m_RP.m_VertexStreams[0].pStream);
 	D3DVertexBuffer* pVB = m_RP.m_VertexStreams[0].pStream;
-	D3DIndexBuffer* pIB = m_RP.m_pIndexStream;
+	D3DIndexBuffer*  pIB = m_RP.m_pIndexStream;
 	assert(pIB && pVB);
 	if (!pIB || !pVB)
 		return false;
@@ -2035,10 +2047,10 @@ bool CD3D9Renderer::FX_DebugCheckConsistency(int FirstVertex, int FirstIndex, in
 	int nVBOffset = m_RP.m_VertexStreams[0].nOffset;
 
 	EVertexFormat eVBFormat = m_RP.m_CurVFormat;
-	int nVBStride = CRenderMesh::m_cSizeVF[eVBFormat];
-	uint16* pIBData = (uint16*)m_DevBufMan.BeginReadDirectIB(pIB, RendNumIndices * sizeof(uint16), FirstIndex * sizeof(uint16));
-	byte* pVBData = (byte*)m_DevBufMan.BeginReadDirectVB(pVB, RendNumIndices * nVBStride, nVBOffset);
-	SOnDemandD3DVertexDeclarationCache* pDecl = &m_RP.m_D3DVertexDeclarationCache[(m_RP.m_FlagsStreams_Decl & 0xff) >> 1][eVBFormat][0];
+	int nVBStride           = CRenderMesh::m_cSizeVF[eVBFormat];
+	uint16* pIBData         = (uint16*)m_DevBufMan.BeginReadDirectIB(pIB, RendNumIndices * sizeof(uint16), FirstIndex * sizeof(uint16));
+	byte* pVBData           = (byte*)m_DevBufMan.BeginReadDirectVB(pVB, RendNumIndices * nVBStride, nVBOffset);
+	SOnDemandD3DVertexDeclarationCache *pDecl = &m_RP.m_D3DVertexDeclarationCache[(m_RP.m_FlagsStreams_Decl&0xff)>>1][0][eVBFormat];
 	assert(pDecl->m_pDeclaration);
 
 	Vec3 vMax, vMin;
@@ -2050,7 +2062,7 @@ bool CD3D9Renderer::FX_DebugCheckConsistency(int FirstVertex, int FirstIndex, in
 		int nInd = pIBData[i];
 		assert(nInd >= FirstVertex && nInd < FirstVertex + RendNumVerts);
 		byte* pV = &pVBData[nInd * nVBStride];
-		Vec3 VV = ((Vec3f16*)pV)->ToVec3();
+		Vec3  VV = ((Vec3f16*)pV)->ToVec3();
 		vMin.CheckMin(VV);
 		vMax.CheckMax(VV);
 		Vec3 vAbs = VV.abs();
@@ -2074,7 +2086,7 @@ bool CD3D9Renderer::FX_DebugCheckConsistency(int FirstVertex, int FirstIndex, in
 #endif
 
 // Draw current indexed mesh
-void CD3D9Renderer::FX_DrawIndexedMesh(const ERenderPrimitiveType nPrimType)
+void CD3D9Renderer::FX_DrawIndexedMesh (const ERenderPrimitiveType nPrimType)
 {
 	DETAILED_PROFILE_MARKER("FX_DrawIndexedMesh");
 	FX_Commit();
@@ -2091,7 +2103,7 @@ void CD3D9Renderer::FX_DrawIndexedMesh(const ERenderPrimitiveType nPrimType)
 	{
 		FX_DebugCheckConsistency(m_RP.m_FirstVertex, m_RP.m_FirstIndex, m_RP.m_RendNumVerts, m_RP.m_RendNumIndices);
 		ERenderPrimitiveType eType = nPrimType;
-		int nFirstI = m_RP.m_FirstIndex;
+		int nFirstI                = m_RP.m_FirstIndex;
 		int nNumI = m_RP.m_RendNumIndices;
 #ifdef TESSELLATION_RENDERER
 		if (CHWShader_D3D::s_pCurInstHS)
@@ -2103,11 +2115,11 @@ void CD3D9Renderer::FX_DrawIndexedMesh(const ERenderPrimitiveType nPrimType)
 		FX_DrawIndexedPrimitive(eType, 0, 0, m_RP.m_RendNumVerts, nFirstI, nNumI);
 
 #if defined(ENABLE_PROFILING_CODE)
-	#ifdef TESSELLATION_RENDERER
+#ifdef TESSELLATION_RENDERER
 		m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygonsByTypes[m_RP.m_nPassGroupDIP][EVCT_STATIC][m_RP.m_nBatchFilter == FB_Z] += (nPrimType == eptTriangleList || nPrimType == ept3ControlPointPatchList ? nNumI / 3 : nNumI - 2);
-	#else
+#else
 		m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygonsByTypes[m_RP.m_nPassGroupDIP][EVCT_STATIC][m_RP.m_nBatchFilter == FB_Z] += (nPrimType == eptTriangleList ? nNumI / 3 : nNumI - 2);
-	#endif
+#endif
 #endif
 	}
 	else
@@ -2118,7 +2130,7 @@ void CD3D9Renderer::FX_DrawIndexedMesh(const ERenderPrimitiveType nPrimType)
 			int nNumVerts = pChunk->nNumVerts;
 
 			int nFirstIndexId = pChunk->nFirstIndexId;
-			int nNumIndices = pChunk->nNumIndices;
+			int nNumIndices   = pChunk->nNumIndices;
 
 			if (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & (RBPF_SHADOWGEN) && (gRenDev->m_RP.m_PersFlags2 & RBPF2_DISABLECOLORWRITES))
 			{
@@ -2149,7 +2161,7 @@ void CD3D9Renderer::FX_DrawIndexedMesh(const ERenderPrimitiveType nPrimType)
 //====================================================================================
 
 TArray<CRenderObject*> CD3D9Renderer::s_tempObjects[2];
-TArray<SRendItem*> CD3D9Renderer::s_tempRIs;
+TArray<SRendItem*>     CD3D9Renderer::s_tempRIs;
 
 // Actual drawing of instances
 void CD3D9Renderer::FX_DrawInstances(CShader* ef, SShaderPass* slw, int nRE, uint32 nStartInst, uint32 nLastInst, uint32 nUsedAttr, byte* InstanceData, int nInstAttrMask, byte Attributes[], short dwCBufSlot)
@@ -2174,7 +2186,7 @@ void CD3D9Renderer::FX_DrawInstances(CShader* ef, SShaderPass* slw, int nRE, uin
 		int nCompared = 0;
 		if (!FX_CommitStreams(slw, false))
 			return;
-		int StreamMask = rRP.m_FlagsStreams_Decl >> 1;
+		int StreamMask         = rRP.m_FlagsStreams_Decl >> 1;
 		SVertexDeclaration* vd = 0;
 		for (i = 0; i < rRP.m_CustomVD.Num(); i++)
 		{
@@ -2186,13 +2198,13 @@ void CD3D9Renderer::FX_DrawInstances(CShader* ef, SShaderPass* slw, int nRE, uin
 		{
 			vd = new SVertexDeclaration;
 			rRP.m_CustomVD.AddElem(vd);
-			vd->StreamMask = StreamMask;
-			vd->VertFormat = rRP.m_CurVFormat;
-			vd->InstAttrMask = nInstAttrMask;
+			vd->StreamMask     = StreamMask;
+			vd->VertFormat     = rRP.m_CurVFormat;
+			vd->InstAttrMask   = nInstAttrMask;
 			vd->m_pDeclaration = NULL;
 
 			SOnDemandD3DVertexDeclaration Decl;
-			EF_OnDemandVertexDeclaration(Decl, StreamMask, rRP.m_CurVFormat, false, false);
+			m_RP.OnDemandVertexDeclaration(Decl,StreamMask,rRP.m_CurVFormat,false,false);
 
 			int nElementsToCopy = Decl.m_Declaration.Num();
 			for (i = 0; i < (uint32)nElementsToCopy; i++)
@@ -2200,18 +2212,18 @@ void CD3D9Renderer::FX_DrawInstances(CShader* ef, SShaderPass* slw, int nRE, uin
 				vd->m_Declaration.AddElem(Decl.m_Declaration[i]);
 			}
 			int nInstOffs = 1;
-			D3D11_INPUT_ELEMENT_DESC elemTC = { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 3, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 };      // texture
+			D3D11_INPUT_ELEMENT_DESC elemTC = {"TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 3, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1};              // texture
 			for (i = 0; i < nUsedAttr; i++)
 			{
 				elemTC.AlignedByteOffset = i * INST_PARAM_SIZE;
-				elemTC.SemanticIndex = Attributes[i] + nInstOffs;
+				elemTC.SemanticIndex     = Attributes[i] + nInstOffs;
 				vd->m_Declaration.AddElem(elemTC);
 			}
 		}
 		if (!vd->m_pDeclaration)
 		{
 			HRESULT hr = S_OK;
-			assert(CHWShader_D3D::s_pCurInstVS && CHWShader_D3D::s_pCurInstVS->m_pShaderData);
+			assert (CHWShader_D3D::s_pCurInstVS && CHWShader_D3D::s_pCurInstVS->m_pShaderData);
 			if (FAILED(hr = GetDevice().CreateInputLayout(&vd->m_Declaration[0], vd->m_Declaration.Num(), CHWShader_D3D::s_pCurInstVS->m_pShaderData, CHWShader_D3D::s_pCurInstVS->m_nDataSize, &vd->m_pDeclaration)))
 			{
 				assert(SUCCEEDED(hr));
@@ -2238,7 +2250,7 @@ void CD3D9Renderer::FX_DrawInstances(CShader* ef, SShaderPass* slw, int nRE, uin
 		}
 #endif
 
-		assert(rRP.m_pRE && rRP.m_pRE->mfGetType() == eDATA_Mesh);
+		assert (rRP.m_pRE && rRP.m_pRE->mfGetType() == eDATA_Mesh);
 		FX_Commit();
 		D3D11_PRIMITIVE_TOPOLOGY eTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 #ifdef TESSELLATION_RENDERER
@@ -2261,16 +2273,16 @@ void CD3D9Renderer::FX_DrawInstances(CShader* ef, SShaderPass* slw, int nRE, uin
 #if defined(ENABLE_PROFILING_CODE)
 		int nPolysAll = nPolysPerInst * nInsts;
 		rRP.m_PS[rRP.m_nProcessThreadID].m_nPolygons[rRP.m_nPassGroupDIP] += rRP.m_RendNumIndices / 3;
-		rRP.m_PS[rRP.m_nProcessThreadID].m_nDIPs[rRP.m_nPassGroupDIP] += nInsts;
+		rRP.m_PS[rRP.m_nProcessThreadID].m_nDIPs[rRP.m_nPassGroupDIP]     += nInsts;
 		rRP.m_PS[rRP.m_nProcessThreadID].m_nPolygons[rRP.m_nPassGroupDIP] += nPolysAll;
 		rRP.m_PS[rRP.m_nProcessThreadID].m_nInsts += nInsts;
 		rRP.m_PS[rRP.m_nProcessThreadID].m_nInstCalls++;
-	#if defined(ENABLE_STATOSCOPE_RELEASE)
+#if defined(ENABLE_STATOSCOPE_RELEASE)
 		rRP.m_PS[rRP.m_nProcessThreadID].m_RendHWInstancesPolysOne += nPolysPerInst;
 		rRP.m_PS[rRP.m_nProcessThreadID].m_RendHWInstancesPolysAll += nPolysAll;
-		rRP.m_PS[rRP.m_nProcessThreadID].m_NumRendHWInstances += nInsts;
+		rRP.m_PS[rRP.m_nProcessThreadID].m_NumRendHWInstances      += nInsts;
 		rRP.m_PS[rRP.m_nProcessThreadID].m_RendHWInstancesDIPs++;
-	#endif
+#endif
 #endif
 	}
 }
@@ -2284,7 +2296,7 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 	PROFILE_FRAME(DrawShader_Instanced);
 
 	SRenderPipeline& RESTRICT_REFERENCE rRP = m_RP;
-	SThreadInfo& RESTRICT_REFERENCE rTI = rRP.m_TI[rRP.m_nProcessThreadID];
+	SThreadInfo& RESTRICT_REFERENCE rTI     = rRP.m_TI[rRP.m_nProcessThreadID];
 
 	// Set culling mode
 	if (!(rRP.m_FlagsPerFlush & RBSI_LOCKCULL))
@@ -2300,7 +2312,7 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 	CHWShader_D3D* ps = (CHWShader_D3D*)slw->m_PShader;
 
 	Matrix44 m;
-	SCGBind bind;
+	SCGBind  bind;
 	byte Attributes[32];
 
 	rRP.m_FlagsPerFlush |= RBSI_INSTANCED;
@@ -2308,11 +2320,11 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 	TempDynInstVB vb;
 
 	uint32 nCurInst;
-	byte* data = NULL;
-	CShaderResources* pCurRes = rRP.m_pShaderResources;
+	byte*  data                = NULL;
+	CShaderResources* pCurRes  = rRP.m_pShaderResources;
 	CShaderResources* pSaveRes = pCurRes;
 
-	uint64 nRTFlags = rRP.m_FlagsShader_RT;
+	uint64 nRTFlags     = rRP.m_FlagsShader_RT;
 	uint64 nSaveRTFlags = nRTFlags;
 
 	// batch further and send everything as if it's rotated (full 3x4 matrix), even if we could
@@ -2339,7 +2351,7 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 		rRP.m_FlagsShader_RT = nSaveRTFlags;
 
 		rRP.m_pShaderResources = pSaveRes;
-		rRP.m_PersFlags1 |= RBPF1_USESTREAM << 3;
+		rRP.m_PersFlags1      |= RBPF1_USESTREAM << 3;
 		return;
 	}
 
@@ -2349,7 +2361,7 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 		rRP.m_FlagsShader_RT = nSaveRTFlags;
 
 		rRP.m_pShaderResources = pSaveRes;
-		rRP.m_PersFlags1 |= RBPF1_USESTREAM << 3;
+		rRP.m_PersFlags1      |= RBPF1_USESTREAM << 3;
 		return;
 	}
 
@@ -2380,12 +2392,12 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 	if (curGS)
 		curGS->mfSetParametersPI(NULL, NULL);
 
-	#ifdef TESSELLATION_RENDERER
+#ifdef TESSELLATION_RENDERER
 	if (pCurDS)
 		pCurDS->mfSetParametersPI(NULL, NULL);
 	if (pCurHS)
 		pCurHS->mfSetParametersPI(NULL, NULL);
-	#endif
+#endif
 
 	if (curCS)
 		curCS->mfSetParametersPI(NULL, NULL);
@@ -2393,13 +2405,13 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 	int32 nUsedAttr = 3, nInstAttrMask = 0;
 	pVPInst->GetInstancingAttribInfo(Attributes, nUsedAttr, nInstAttrMask);
 
-	CRendElementBase* pRE = NULL;
+	CRendElementBase* pRE    = NULL;
 	CRenderMesh* pRenderMesh = NULL;
 
 	const int nLastRE = rRP.m_nLastRE;
 	for (int nRE = 0; nRE <= nLastRE; nRE++)
 	{
-		uint32 nRIs = rRP.m_RIs[nRE].size();
+		uint32 nRIs      = rRP.m_RIs[nRE].size();
 		SRendItem** rRIs = &(rRP.m_RIs[nRE][0]);
 
 		// don't process REs that don't make the cut for instancing.
@@ -2411,10 +2423,10 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 		}
 
 		CShaderResources* pRes = SRendItem::mfGetRes(rRIs[0]->SortVal);
-		pRE = rRP.m_pRE = rRIs[0]->pElem;
+		pRE              = rRP.m_pRE = rRIs[0]->pElem;
 		rRP.m_pCurObject = rRIs[0]->pObj;
 
-		EVertexFormat curVFormat = eVF_Unknown;
+		EVertexFormat curVFormat      = eVF_Unknown;
 		CREMeshImpl* __restrict pMesh = (CREMeshImpl*) pRE;
 
 		pRE->mfPrepare(false);
@@ -2429,12 +2441,12 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 				ps->mfSetParametersPB();
 				if (ps->m_pCurInst)
 					ps->mfSetSamplers(ps->m_pCurInst->m_pSamplers, eHWSC_Pixel);
-	#ifdef TESSELLATION_RENDERER
+#ifdef TESSELLATION_RENDERER
 				if (pCurDS && pCurDS->m_pCurInst)
 					pCurDS->mfSetSamplers(pCurDS->m_pCurInst->m_pSamplers, eHWSC_Domain);
-	#endif
+#endif
 				rRP.m_nCommitFlags |= FC_PER_BATCH_PARAMS | FC_MATERIAL_PARAMS;
-				pCurRes = pRes;
+				pCurRes             = pRes;
 			}
 
 			if (pMesh->m_pRenderMesh != pRenderMesh)
@@ -2445,7 +2457,7 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 					rRP.m_FlagsShader_RT = nSaveRTFlags;
 
 					rRP.m_pShaderResources = pSaveRes;
-					rRP.m_PersFlags1 |= RBPF1_USESTREAM << 3;
+					rRP.m_PersFlags1      |= RBPF1_USESTREAM << 3;
 					return;
 				}
 
@@ -2457,11 +2469,11 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 
 				// Detects possibility of using attributes based instancing
 				// If number of used attributes exceed 16 we can't use attributes based instancing (switch to constant based)
-				int nStreamMask = rRP.m_FlagsStreams_Stream >> 1;
-				int nVFormat = rRP.m_CurVFormat;
-				uint32 nCO = 0;
-				int nCI = 0;
-				uint32 dwDeclarationSize = 0; // todo: later m_RP.m_D3DVertexDeclaration[nStreamMask][nVFormat].m_Declaration.Num();
+				int nStreamMask          = rRP.m_FlagsStreams_Stream >> 1;
+				int nVFormat             = rRP.m_CurVFormat;
+				uint32 nCO               = 0;
+				int nCI                  = 0;
+				uint32 dwDeclarationSize = 0;   // todo: later m_RP.m_D3DVertexDeclaration[nStreamMask][nVFormat].m_Declaration.Num();
 				if (dwDeclarationSize + nUsedAttr - 1 > 16)
 					iLog->LogWarning("WARNING: Attributes based instancing cannot exceed 16 attributes (%s uses %d attr. + %d vertex decl.attr.)[VF: %d, SM: 0x%x]", vp->GetName(), nUsedAttr, dwDeclarationSize - 1, nVFormat, nStreamMask);
 				else
@@ -2493,17 +2505,17 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 							UFloat4* __restrict vMatrix = (UFloat4*)pWalkData;
 
 							{
-								pRO = rRIs[nCO++]->pObj;
+								pRO              = rRIs[nCO++]->pObj;
 								rRP.m_pCurObject = pRO;
-								pI = &pRO->m_II;
+								pI               = &pRO->m_II;
 							}
 							const float* fSrc = pI->m_Matrix.GetData();
 
-	#if CRY_PLATFORM_SSE2 && !defined(_DEBUG)
+#if CRY_PLATFORM_SSE2 && !defined(_DEBUG)
 							vMatrix[0].m128 = _mm_load_ps(&fSrc[0]);
 							vMatrix[1].m128 = _mm_load_ps(&fSrc[4]);
 							vMatrix[2].m128 = _mm_load_ps(&fSrc[8]);
-	#else
+#else
 							vMatrix[0].f[0] = fSrc[0];
 							vMatrix[0].f[1] = fSrc[1];
 							vMatrix[0].f[2] = fSrc[2];
@@ -2516,15 +2528,15 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 							vMatrix[2].f[1] = fSrc[9];
 							vMatrix[2].f[2] = fSrc[10];
 							vMatrix[2].f[3] = fSrc[11];
-	#endif
+#endif
 
 							float* __restrict fParm = (float*)&pWalkData[3 * sizeof(float[4])];
 							pWalkData += nStride;
 
-	#ifdef DO_RENDERLOG
+#ifdef DO_RENDERLOG
 							if (CRenderer::CV_r_log >= 3)
 								Logv("Inst Pos: (%.3f, %.3f, %.3f, %.3f)\n", fSrc[3], fSrc[7], fSrc[11], fSrc[0]);
-	#endif
+#endif
 
 							if (pVPInst->m_nParams_Inst >= 0)
 							{
@@ -2549,18 +2561,18 @@ void CD3D9Renderer::FX_DrawShader_InstancedHW(CShader* ef, SShaderPass* slw)
 			}
 		}
 	}
-	#ifdef TESSELLATION_RENDERER
+#ifdef TESSELLATION_RENDERER
 	if (bTessEnabled)
 	{
 		CHWShader_D3D::mfBindDS(NULL, NULL);
 		CHWShader_D3D::mfBindHS(NULL, NULL);
 	}
-	#endif
+#endif
 
-	rRP.m_PersFlags1 |= RBPF1_USESTREAM << 3;
+	rRP.m_PersFlags1      |= RBPF1_USESTREAM << 3;
 	rRP.m_pShaderResources = pSaveRes;
-	rRP.m_nCommitFlags = FC_ALL;
-	rRP.m_FlagsShader_RT = nSaveRTFlags;
+	rRP.m_nCommitFlags     = FC_ALL;
+	rRP.m_FlagsShader_RT   = nSaveRTFlags;
 	rRP.m_nNumRendPasses++;
 	if (!bProcessedAll)
 	{
@@ -2597,26 +2609,26 @@ void CD3D9Renderer::FX_DrawBatchSkinned(CShader* pSh, SShaderPass* pPass, SSkinn
 	PROFILE_FRAME(DrawShader_BatchSkinned);
 
 	SRenderPipeline& RESTRICT_REFERENCE rRP = m_RP;
-	SThreadInfo& RESTRICT_REFERENCE rTI = rRP.m_TI[rRP.m_nProcessThreadID];
+	SThreadInfo& RESTRICT_REFERENCE rTI     = rRP.m_TI[rRP.m_nProcessThreadID];
 
 	CHWShader_D3D* pCurVS = (CHWShader_D3D*)pPass->m_VShader;
 	CHWShader_D3D* pCurPS = (CHWShader_D3D*)pPass->m_PShader;
 
-	const int nThreadID = m_RP.m_nProcessThreadID;
-	const int bRenderLog = CRenderer::CV_r_log;
-	CREMeshImpl* pRE = (CREMeshImpl*) rRP.m_pRE;
+	const int nThreadID           = m_RP.m_nProcessThreadID;
+	const int bRenderLog          = CRenderer::CV_r_log;
+	CREMeshImpl* pRE              = (CREMeshImpl*) rRP.m_pRE;
 	CRenderObject* const pSaveObj = rRP.m_pCurObject;
 
-	size_t size = 0, offset = 0;
+	size_t size           = 0, offset = 0;
 	CHWShader_D3D* pCurGS = (CHWShader_D3D*)pPass->m_GShader;
 
 	CRenderMesh* pRenderMesh = pRE->m_pRenderMesh;
 
 	rRP.m_nNumRendPasses++;
-	rRP.m_RendNumGroup = 0;
+	rRP.m_RendNumGroup    = 0;
 	rRP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_VERTEX_VELOCITY];
 
-	ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
+	static ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
 	bool bDoComputeDeformation = (cvar_gd && cvar_gd->GetIVal()) && (pSkinningData->nHWSkinningFlags & eHWS_DC_deformation_Skinning);
 
 	// here we decide if we go compute or vertex skinning
@@ -2625,24 +2637,24 @@ void CD3D9Renderer::FX_DrawBatchSkinned(CShader* pSh, SShaderPass* pPass, SSkinn
 	if (bDoComputeDeformation)
 	{
 		rRP.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_COMPUTE_SKINNING]);
-		if (pSkinningData->nHWSkinningFlags & eHWS_SkinnedLinear)
+	if (pSkinningData->nHWSkinningFlags & eHWS_SkinnedLinear)
 			rRP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SKELETON_SSD_LINEAR]);
 		else
 			rRP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SKELETON_SSD]);
 	}
 	else
-	{
-		if (pSkinningData->nHWSkinningFlags & eHWS_SkinnedLinear)
-			rRP.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_SKELETON_SSD_LINEAR]);
-		else
-			rRP.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_SKELETON_SSD]);
-	}
+  {
+	  if (pSkinningData->nHWSkinningFlags & eHWS_SkinnedLinear)
+		rRP.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_SKELETON_SSD_LINEAR]);
+	else
+		rRP.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_SKELETON_SSD]);
+  }
 
 	CHWShader_D3D* pCurHS, * pCurDS;
 	bool bTessEnabled = FX_SetTessellationShaders(pCurHS, pCurDS, pPass);
 
 	bool bRes = pCurPS->mfSetPS(HWSF_SETTEXTURES);
-	bRes &= pCurVS->mfSetVS(0);
+  bRes &= pCurVS->mfSetVS(HWSF_SETTEXTURES);
 
 	if (pCurGS)
 		bRes &= pCurGS->mfSetGS(0);
@@ -2705,7 +2717,7 @@ void CD3D9Renderer::FX_DrawBatchSkinned(CShader* pSh, SShaderPass* pPass, SSkinn
 #endif
 
 		CConstantBuffer* pBuffer[2] = { NULL };
-		SRenderObjData* pOD = pObject->GetObjData();
+		SRenderObjData*  pOD        = pObject->GetObjData();
 		assert(pOD);
 		if (pOD)
 		{
@@ -2717,15 +2729,11 @@ void CD3D9Renderer::FX_DrawBatchSkinned(CShader* pSh, SShaderPass* pPass, SSkinn
 				if (bDoComputeDeformation)
 				{
 					// at this point rRP.m_FlagsShader_RT has the vertex skinning reset so if the UAV is not available
-					// the mesh will be skipped. This has to be done in a different way and also changed the way streams
+					// the mesh will be skipped. This has to be done in a different way and also changed the way streams 
 					// are binded for compute vs vertex
-					auto it = pRE->m_pRenderMesh->m_outVerticesUAV.find(pSkinningData->pCustomTag);
-					if (it != pRE->m_pRenderMesh->m_outVerticesUAV.end())
-					{
-						skinnedUAVBuffer = gRenDev->GetComputeSkinningStorage()->GetResource((*it).second.skinnedUAVHandle);
-						if (skinnedUAVBuffer)
-							bUseOldPipeline = false;
-					}
+					skinnedUAVBuffer = gcpRendD3D->GetComputeSkinningStorage()->GetOutputVertices(pSkinningData->pCustomTag);
+					if (skinnedUAVBuffer)
+						bUseOldPipeline = false;
 				}
 
 				if (!bUseOldPipeline)
@@ -2740,33 +2748,33 @@ void CD3D9Renderer::FX_DrawBatchSkinned(CShader* pSh, SShaderPass* pPass, SSkinn
 				}
 				else
 				{
-					if (!pRE->BindRemappedSkinningData(pSkinningData->remapGUID))
-					{
-						continue;
-					}
+			if (!pRE->BindRemappedSkinningData(pSkinningData->remapGUID))
+			{
+				continue;
+			}
 
 					pBuffer[0] = alias_cast<SCharacterInstanceCB*>(pSkinningData->pCharInstCB)->boneTransformsBuffer;
 
-					// get previous data for motion blur if available
-					if (pSkinningData->pPreviousSkinningRenderData)
-					{
+			// get previous data for motion blur if available
+			if (pSkinningData->pPreviousSkinningRenderData)
+			{
 						pBuffer[1] = alias_cast<SCharacterInstanceCB*>(pSkinningData->pPreviousSkinningRenderData->pCharInstCB)->boneTransformsBuffer;
-					}
+		}
 
 #ifndef _RELEASE
-					rRP.m_PS[nThreadID].m_NumRendSkinnedObjects++;
+		rRP.m_PS[nThreadID].m_NumRendSkinnedObjects++;
 #endif
 
-					m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, pBuffer[0], 9);
-					m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, pBuffer[1], 10);
-					{
-						DETAILED_PROFILE_MARKER("DrawSkinned");
-						if (rRP.m_pRE)
-							rRP.m_pRE->mfDraw(pSh, pPass);
-						else
-							FX_DrawIndexedMesh(eptTriangleList);
-					}
-				}
+		m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, pBuffer[0], 9);
+		m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, pBuffer[1], 10);
+		{
+			DETAILED_PROFILE_MARKER("DrawSkinned");
+			if (rRP.m_pRE)
+				rRP.m_pRE->mfDraw(pSh, pPass);
+			else
+				FX_DrawIndexedMesh(eptTriangleList);
+		}
+	}
 			}
 		}
 		else
@@ -2781,7 +2789,7 @@ done:
 	m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, static_cast<CConstantBuffer*>(NULL), 10);
 
 	rRP.m_FlagsShader_MD &= ~HWMD_TEXCOORD_FLAG_MASK;
-	rRP.m_pCurObject = pSaveObj;
+	rRP.m_pCurObject      = pSaveObj;
 
 #ifdef TESSELLATION_RENDERER
 	if (bTessEnabled)
@@ -2797,7 +2805,7 @@ done:
 void CD3D9Renderer::FX_TrackStats(CRenderObject* pObj, IRenderMesh* pRenderMesh)
 {
 	SRenderPipeline& RESTRICT_REFERENCE rRP = m_RP;
-	#if !defined(_RELEASE)
+#if !defined(_RELEASE)
 
 	if (pObj)
 	{
@@ -2845,7 +2853,7 @@ void CD3D9Renderer::FX_TrackStats(CRenderObject* pObj, IRenderMesh* pRenderMesh)
 			}
 		}
 	}
-	#endif
+#endif
 }
 #endif
 
@@ -2859,11 +2867,11 @@ bool CD3D9Renderer::FX_SetTessellationShaders(CHWShader_D3D*& pCurHS, CHWShader_
 
 	bool bTessEnabled = (pCurHS != NULL) && (pCurDS != NULL) && !(rRP.m_pCurObject->m_ObjFlags & FOB_NEAREST) && (rRP.m_pCurObject->m_ObjFlags & FOB_ALLOW_TESSELLATION);
 
-	#ifndef MOTIONBLUR_TESSELLATION
+#ifndef MOTIONBLUR_TESSELLATION
 	bTessEnabled &= !(rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS);
-	#endif
+#endif
 
-	if (bTessEnabled && pCurHS->mfSetHS(0) && pCurDS->mfSetDS(HWSF_SETTEXTURES))
+	if(  bTessEnabled && pCurHS->mfSetHS(HWSF_SETTEXTURES) && pCurDS->mfSetDS(HWSF_SETTEXTURES) )
 	{
 		if (CV_r_tessellationdebug == 1)
 		{
@@ -2889,7 +2897,7 @@ bool CD3D9Renderer::FX_SetTessellationShaders(CHWShader_D3D*& pCurHS, CHWShader_
 
 void CD3D9Renderer::FX_SetAdjacencyOffsetBuffer()
 {
-	#ifdef MESH_TESSELLATION_RENDERER
+#ifdef MESH_TESSELLATION_RENDERER
 	if (m_RP.m_pRE && m_RP.m_pRE->mfGetType() == eDATA_Mesh)
 	{
 		CREMeshImpl* pMesh = (CREMeshImpl*) m_RP.m_pRE;
@@ -2902,7 +2910,7 @@ void CD3D9Renderer::FX_SetAdjacencyOffsetBuffer()
 	{
 		m_DevMan.BindSRV(CDeviceManager::TYPE_HS, NULL, 15);
 	}
-	#endif
+#endif
 }
 
 #endif //#ifdef TESSELLATION_RENDERER
@@ -2919,7 +2927,7 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 
 	FUNCTION_PROFILER_RENDER_FLAT
 	SRenderPipeline& RESTRICT_REFERENCE rRP = m_RP;
-	SThreadInfo& RESTRICT_REFERENCE rTI = rRP.m_TI[rRP.m_nProcessThreadID];
+	SThreadInfo& RESTRICT_REFERENCE rTI     = rRP.m_TI[rRP.m_nProcessThreadID];
 
 	// Set culling mode
 	if (!((rRP.m_FlagsPerFlush & RBSI_LOCKCULL) || (m_RP.m_PersFlags2 & RBPF2_LIGHTSHAFTS)))
@@ -2928,7 +2936,7 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 			D3DSetCull((ECull)pPass->m_eCull);
 	}
 
-	bool bHWSkinning = FX_SetStreamFlags(pPass);
+	bool bHWSkinning             = FX_SetStreamFlags(pPass);
 	SSkinningData* pSkinningData = NULL;
 	if (bHWSkinning)
 	{
@@ -2936,7 +2944,7 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 		if (!pOD || !(pSkinningData = pOD->m_pSkinningData))
 		{
 			bHWSkinning = false;
-			Warning("Warning: Skinned geometry used without character instance");
+			Warning ("Warning: Skinned geometry used without character instance");
 		}
 	}
 	IF (bHWSkinning && (rRP.m_pCurObject->m_ObjFlags & FOB_SKINNED) && !CV_r_character_nodeform, 0)
@@ -2948,9 +2956,9 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 		DETAILED_PROFILE_MARKER("FX_DrawBatchStatic");
 
 		// Set shaders
-		bool bRes = true;
+		bool bRes        = true;
 		const int rStats = CV_r_stats;
-		const int rLog = CV_r_log;
+		const int rLog   = CV_r_log;
 
 		CHWShader_D3D* pCurGS = (CHWShader_D3D*)pPass->m_GShader;
 
@@ -2973,10 +2981,10 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 				FX_FogCorrection();
 
 			assert(rRP.m_pRE || !rRP.m_nLastRE);
-			CRendElementBase* pRE = rRP.m_pRE;
-			CRendElementBase* pRESave = pRE;
-			CRenderObject* pSaveObj = rRP.m_pCurObject;
-			CShaderResources* pCurRes = rRP.m_pShaderResources;
+			CRendElementBase* pRE      = rRP.m_pRE;
+			CRendElementBase* pRESave  = pRE;
+			CRenderObject* pSaveObj    = rRP.m_pCurObject;
+			CShaderResources* pCurRes  = rRP.m_pShaderResources;
 			CShaderResources* pSaveRes = pCurRes;
 			for (int nRE = 0; nRE <= rRP.m_nLastRE; nRE++)
 			{
@@ -2985,12 +2993,12 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 				{
 					if (pRE)
 					{
-						pRE = rRP.m_pRE = rRIs[0]->pElem;
+						pRE              = rRP.m_pRE = rRIs[0]->pElem;
 						rRP.m_pCurObject = rRIs[0]->pObj;
 						//rRIs[0]->nOcclQuery = 1000;  // Mark this batch list that it cannot be instantiated in subsequent passes
 						//assert(nRE || pRE == rRP.m_pRE);
 						CShaderResources* pRes = (rRP.m_PersFlags2 & RBPF2_MATERIALLAYERPASS) ? rRP.m_pShaderResources : SRendItem::mfGetRes(rRIs[0]->SortVal);
-						uint32 nFrameID = rTI.m_nFrameUpdateID;
+						uint32 nFrameID        = rTI.m_nFrameUpdateID;
 						if (!pRE->mfCheckUpdate(rRP.m_CurVFormat, rRP.m_FlagsStreams_Stream | 0x80000000, nFrameID, bTessEnabled))
 							continue;
 						if (nRE || rRP.m_nNumRendPasses || pCurRes != pRes) // Only static meshes (CREMeshImpl) can use geom batching
@@ -3000,7 +3008,6 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 							CREMeshImpl* pM = (CREMeshImpl*) pRE;
 							if (pM->m_CustomData || pCurRes != pRes) // Custom data can indicate some shader parameters are from mesh
 							{
-
 								pCurVS->mfSetParametersPB();
 								pCurPS->mfSetParametersPB();
 								if (pCurPS->m_pCurInst)
@@ -3012,7 +3019,7 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 									pCurDS->mfSetSamplers(pCurDS->m_pCurInst->m_pSamplers, eHWSC_Domain);
 #endif
 								rRP.m_nCommitFlags |= FC_PER_BATCH_PARAMS | FC_MATERIAL_PARAMS;
-								pCurRes = pRes;
+								pCurRes             = pRes;
 							}
 						}
 					}
@@ -3038,7 +3045,7 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 
 								if (pElemBase->mfGetType() == eDATA_Mesh)
 								{
-									CREMeshImpl* pMesh = (CREMeshImpl*) pElemBase;
+									CREMeshImpl* pMesh       = (CREMeshImpl*) pElemBase;
 									IRenderMesh* pRenderMesh = pMesh ? pMesh->m_pRenderMesh : NULL;
 
 									FX_TrackStats(pObj, pRenderMesh);
@@ -3049,9 +3056,9 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 
 						for (nO = 0; nO < nNumRI; ++nO)
 						{
-							pObj = rRIs[nO]->pObj;
+							pObj             = rRIs[nO]->pObj;
 							rRP.m_pCurObject = pObj;
-							pI = &pObj->m_II;
+							pI               = &pObj->m_II;
 
 #ifdef DO_RENDERLOG
 							if (rLog >= 3)
@@ -3090,8 +3097,8 @@ void CD3D9Renderer::FX_DrawBatch(CShader* pSh, SShaderPass* pPass)
 							pRE->m_Flags &= ~FCEF_PRE_DRAW_DONE;
 						}
 					}
-					rRP.m_pCurObject = pSaveObj;
-					rRP.m_pRE = pRESave;
+					rRP.m_pCurObject       = pSaveObj;
+					rRP.m_pRE              = pRESave;
 					rRP.m_pShaderResources = pSaveRes;
 				}
 			}
@@ -3123,14 +3130,14 @@ void CD3D9Renderer::FX_DrawShader_General(CShader* ef, SShaderTechnique* pTech)
 	if (pTech->m_Passes.Num())
 	{
 		slw = &pTech->m_Passes[0];
-		const int nCount = pTech->m_Passes.Num();
+		const int nCount  = pTech->m_Passes.Num();
 		uint32 curPassBit = 1;
 		for (i = 0; i < nCount; i++, slw++, (curPassBit <<= 1))
 		{
 			m_RP.m_pCurPass = slw;
 
 			// Set all textures and HW TexGen modes for the current pass (ShadeLayer)
-			assert(slw->m_VShader && slw->m_PShader);
+			assert (slw->m_VShader && slw->m_PShader);
 			if (!slw->m_VShader || !slw->m_PShader || (curPassBit & m_RP.m_CurPassBitMask))
 				continue;
 
@@ -3164,23 +3171,23 @@ void CD3D9Renderer::FX_DrawEffectLayerPasses()
 	if (!m_RP.m_pRootTechnique || m_RP.m_pRootTechnique->m_nTechnique[TTYPE_EFFECTLAYER] < 0)
 		return;
 
-	CShader* sh = m_RP.m_pShader;
+	CShader* sh             = m_RP.m_pShader;
 	SShaderTechnique* pTech = m_RP.m_pShader->m_HWTechniques[m_RP.m_pRootTechnique->m_nTechnique[TTYPE_EFFECTLAYER]];
 
 	PROFILE_FRAME(DrawShader_EffectLayerPasses);
 
 	PROFILE_LABEL_SCOPE("EFFECT_LAYER_PASS");
 
-	CRendElementBase* pRE = m_RP.m_pRE;
-	uint64 nSaveRT = m_RP.m_FlagsShader_RT;
-	uint32 nSaveMD = m_RP.m_FlagsShader_MD;
-	uint32 nSavePersFlags = m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags;
+	CRendElementBase* pRE  = m_RP.m_pRE;
+	uint64 nSaveRT         = m_RP.m_FlagsShader_RT;
+	uint32 nSaveMD         = m_RP.m_FlagsShader_MD;
+	uint32 nSavePersFlags  = m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags;
 	uint32 nSavePersFlags2 = m_RP.m_PersFlags2;
-	uint32 nSaveStates = m_RP.m_StateAnd;
-	void* pCustomData = m_RP.m_pRE->m_CustomData;
+	uint32 nSaveStates     = m_RP.m_StateAnd;
+	void*  pCustomData     = m_RP.m_pRE->m_CustomData;
 
 	float fDistToCam = 500.0f;
-	float fDist = CV_r_detaildistance;
+	float fDist      = CV_r_detaildistance;
 	for (int nRE = 0; nRE <= m_RP.m_nLastRE; nRE++)
 	{
 		s_tempRIs.SetUse(0);
@@ -3213,7 +3220,7 @@ void CD3D9Renderer::FX_DrawEffectLayerPasses()
 		saveArr.Assign(m_RP.m_RIs[0]);
 		m_RP.m_RIs[0].Assign(s_tempRIs);
 		CRenderObject* pSaveObject = m_RP.m_pCurObject;
-		m_RP.m_pCurObject = m_RP.m_RIs[0][0]->pObj;
+		m_RP.m_pCurObject      = m_RP.m_RIs[0][0]->pObj;
 		m_RP.m_FlagsShader_MD &= ~HWMD_TEXCOORD_FLAG_MASK;
 
 		Vec4 data[4];
@@ -3222,8 +3229,8 @@ void CD3D9Renderer::FX_DrawEffectLayerPasses()
 		SEfResTexture* rt = m_RP.m_pShaderResources->m_Textures[EFTT_CUSTOM];
 
 		const float fDefaultUVTilling = 20;
-		float fUScale = rt->GetTiling(0);
-		float fVScale = rt->GetTiling(1);
+		float fUScale                 = rt->GetTiling(0);
+		float fVScale                 = rt->GetTiling(1);
 		if (!fUScale) fUScale = fDefaultUVTilling;
 		if (!fVScale) fVScale = fDefaultUVTilling;
 
@@ -3237,15 +3244,15 @@ void CD3D9Renderer::FX_DrawEffectLayerPasses()
 
 		// Flicker timming for sparks/plasma
 		float fTime = m_RP.m_TI[m_RP.m_nProcessThreadID].m_RealTime;
-		data[0].w = (fTime * 20.0f + fTime * 4.0f);
+		data[0].w  = (fTime * 20.0f + fTime * 4.0f);
 		data[0].w -= floorf(data[0].w);
-		data[0].w = fabs(data[0].w * 2.0f - 1.0f);
+		data[0].w  = fabs(data[0].w * 2.0f - 1.0f);
 		data[0].w *= data[0].w;
 
-		int32 nMaterialStatePrevOr = m_RP.m_MaterialStateOr;
+		int32 nMaterialStatePrevOr  = m_RP.m_MaterialStateOr;
 		int32 nMaterialStatePrevAnd = m_RP.m_MaterialStateAnd;
 		m_RP.m_MaterialStateAnd = GS_BLEND_MASK;
-		m_RP.m_MaterialStateOr = GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA;
+		m_RP.m_MaterialStateOr  = GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA;
 
 		m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE0] | g_HWSR_MaskBit[HWSR_SAMPLE1] | g_HWSR_MaskBit[HWSR_SAMPLE2] | g_HWSR_MaskBit[HWSR_SAMPLE3] | g_HWSR_MaskBit[HWSR_SAMPLE4]);
 
@@ -3259,7 +3266,7 @@ void CD3D9Renderer::FX_DrawEffectLayerPasses()
 			if (((layerEffectParams & 0xff000000) >> 24) > 0)
 			{
 				m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE0];
-				data[0].z *= CRenderer::CV_r_maxSuitPulseSpeedMultiplier;
+				data[0].z             *= CRenderer::CV_r_maxSuitPulseSpeedMultiplier;
 			}
 
 			// m_pLayerEffectParams "y" channel
@@ -3267,7 +3274,7 @@ void CD3D9Renderer::FX_DrawEffectLayerPasses()
 			    (((layerEffectParams & 0x0000ff00) >> 8) > 0)) // Z channel used for "hit effect"
 			{
 				m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE1];
-				data[0].z *= CRenderer::CV_r_armourPulseSpeedMultiplier;
+				data[0].z             *= CRenderer::CV_r_armourPulseSpeedMultiplier;
 			}
 
 			// m_pLayerEffectParams "w" channel
@@ -3282,20 +3289,20 @@ void CD3D9Renderer::FX_DrawEffectLayerPasses()
 		m_RP.m_RIs[0].Assign(saveArr);
 		saveArr.ClearArr();
 
-		m_RP.m_nLastRE = nSaveLastRE;
-		m_RP.m_pCurObject = pSaveObject;
-		m_RP.m_pPrevObject = NULL;
+		m_RP.m_nLastRE          = nSaveLastRE;
+		m_RP.m_pCurObject       = pSaveObject;
+		m_RP.m_pPrevObject      = NULL;
 		m_RP.m_MaterialStateAnd = nMaterialStatePrevAnd;
-		m_RP.m_MaterialStateOr = nMaterialStatePrevOr;
+		m_RP.m_MaterialStateOr  = nMaterialStatePrevOr;
 	}
 
 	m_RP.m_pRE = pRE;
 
 	m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags = nSavePersFlags;
-	m_RP.m_PersFlags2 = nSavePersFlags2;
-	m_RP.m_StateAnd = nSaveStates;
-	m_RP.m_FlagsShader_RT = nSaveRT;
-	m_RP.m_FlagsShader_MD = nSaveMD;
+	m_RP.m_PersFlags2        = nSavePersFlags2;
+	m_RP.m_StateAnd          = nSaveStates;
+	m_RP.m_FlagsShader_RT    = nSaveRT;
+	m_RP.m_FlagsShader_MD    = nSaveMD;
 	m_RP.m_pRE->m_CustomData = pCustomData;
 }
 
@@ -3304,7 +3311,7 @@ void CD3D9Renderer::FX_DrawDebugPasses()
 	if (!m_RP.m_pRootTechnique || m_RP.m_pRootTechnique->m_nTechnique[TTYPE_DEBUG] < 0)
 		return;
 
-	CShader* sh = m_RP.m_pShader;
+	CShader* sh             = m_RP.m_pShader;
 	SShaderTechnique* pTech = m_RP.m_pShader->m_HWTechniques[m_RP.m_pRootTechnique->m_nTechnique[TTYPE_DEBUG]];
 
 	PROFILE_FRAME(DrawShader_DebugPasses);
@@ -3336,22 +3343,22 @@ void CD3D9Renderer::FX_DrawDebugPasses()
 		m_RP.m_RIs[0].Assign(s_tempRIs);
 
 		CRenderObject* pSaveObject = m_RP.m_pCurObject;
-		m_RP.m_pCurObject = m_RP.m_RIs[0][0]->pObj;
+		m_RP.m_pCurObject      = m_RP.m_RIs[0][0]->pObj;
 		m_RP.m_FlagsShader_MD &= ~HWMD_TEXCOORD_FLAG_MASK;
-		int32 nMaterialStatePrevOr = m_RP.m_MaterialStateOr;
+		int32 nMaterialStatePrevOr  = m_RP.m_MaterialStateOr;
 		int32 nMaterialStatePrevAnd = m_RP.m_MaterialStateAnd;
 		m_RP.m_MaterialStateAnd = GS_BLEND_MASK;
-		m_RP.m_MaterialStateOr = GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
+		m_RP.m_MaterialStateOr  = GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
 
 		FX_DrawTechnique(sh, pTech);
 
 		m_RP.m_RIs[0].Assign(saveArr);
 		saveArr.ClearArr();
 
-		m_RP.m_pCurObject = pSaveObject;
-		m_RP.m_pPrevObject = NULL;
-		m_RP.m_FlagsShader_MD = nSaveMD;
-		m_RP.m_MaterialStateOr = nMaterialStatePrevOr;
+		m_RP.m_pCurObject       = pSaveObject;
+		m_RP.m_pPrevObject      = NULL;
+		m_RP.m_FlagsShader_MD   = nSaveMD;
+		m_RP.m_MaterialStateOr  = nMaterialStatePrevOr;
 		m_RP.m_MaterialStateAnd = nMaterialStatePrevAnd;
 	}
 	m_RP.m_nLastRE = nLastRE;
@@ -3381,7 +3388,7 @@ void CD3D9Renderer::FX_DrawMultiLayers()
 
 	// Check if chunk material has layers at all
 	IMaterial* pDefaultMtl = gEnv->p3DEngine->GetMaterialManager()->GetDefaultLayersMaterial();
-	IMaterial* pCurrMtl = pObjMat->GetSubMtlCount() ? pObjMat->GetSubMtl(pChunk->m_nMatID) : pObjMat;
+	IMaterial* pCurrMtl    = pObjMat->GetSubMtlCount() ? pObjMat->GetSubMtl(pChunk->m_nMatID) : pObjMat;
 	if (!pCurrMtl || !pDefaultMtl || (pCurrMtl->GetFlags() & MTL_FLAG_NODRAW))
 		return;
 
@@ -3402,13 +3409,13 @@ void CD3D9Renderer::FX_DrawMultiLayers()
 		// Render all layers
 		for (uint32 nCurrLayer(0); nCurrLayer < nLayerCount; ++nCurrLayer)
 		{
-			IMaterialLayer* pLayer = const_cast<IMaterialLayer*>(pCurrMtl->GetLayer(nCurrLayer));
-			IMaterialLayer* pDefaultLayer = const_cast<IMaterialLayer*>(pDefaultMtl->GetLayer(nCurrLayer));
-			bool bDefaultLayer = false;
+			IMaterialLayer* pLayer        = const_cast< IMaterialLayer* >(pCurrMtl->GetLayer(nCurrLayer));
+			IMaterialLayer* pDefaultLayer = const_cast< IMaterialLayer* >(pDefaultMtl->GetLayer(nCurrLayer));
+			bool bDefaultLayer            = false;
 			if (!pLayer)
 			{
 				// Replace with default layer
-				pLayer = pDefaultLayer;
+				pLayer        = pDefaultLayer;
 				bDefaultLayer = true;
 
 				if (!pLayer)
@@ -3420,7 +3427,7 @@ void CD3D9Renderer::FX_DrawMultiLayers()
 
 			// Set/verify layer shader technique
 			SShaderItem& pCurrShaderItem = pLayer->GetShaderItem();
-			CShader* pSH = static_cast<CShader*>(pCurrShaderItem.m_pShader);
+			CShader* pSH                 = static_cast<CShader*>(pCurrShaderItem.m_pShader);
 			if (!pSH || pSH->m_HWTechniques.empty())
 				continue;
 
@@ -3434,10 +3441,10 @@ void CD3D9Renderer::FX_DrawMultiLayers()
 			{
 				s_tempRIs.SetUse(0);
 
-				float fDistToCam = 500.0f;
-				float fDist = CV_r_detaildistance;
+				float fDistToCam    = 500.0f;
+				float fDist         = CV_r_detaildistance;
 				CRenderObject* pObj = m_RP.m_pCurObject;
-				uint32 nObj = 0;
+				uint32 nObj         = 0;
 
 				for (nObj = 0; nObj < m_RP.m_RIs[nRE].Num(); nObj++)
 				{
@@ -3466,11 +3473,11 @@ void CD3D9Renderer::FX_DrawMultiLayers()
 			}
 
 			SShaderItem& pMtlShaderItem = pCurrMtl->GetShaderItem();
-			int nSaveLastRE = m_RP.m_nLastRE;
+			int nSaveLastRE             = m_RP.m_nLastRE;
 			m_RP.m_nLastRE = 0;
 
 			SEfResTexture** pResourceTexs = ((CShaderResources*)pCurrShaderItem.m_pShaderResources)->m_Textures;
-			SEfResTexture* pPrevLayerResourceTexs[EFTT_MAX];
+			SEfResTexture*  pPrevLayerResourceTexs[EFTT_MAX];
 
 			if (bDefaultLayer)
 			{
@@ -3487,39 +3494,39 @@ void CD3D9Renderer::FX_DrawMultiLayers()
 			// Store current rendering data
 			TArray<SRendItem*> pPrevRenderObjLst;
 			pPrevRenderObjLst.Assign(m_RP.m_RIs[0]);
-			CRenderObject* pPrevObject = m_RP.m_pCurObject;
+			CRenderObject* pPrevObject             = m_RP.m_pCurObject;
 			CShaderResources* pPrevShaderResources = m_RP.m_pShaderResources;
-			CShader* pPrevSH = m_RP.m_pShader;
-			uint32 nPrevNumRendPasses = m_RP.m_nNumRendPasses;
-			uint64 nFlagsShaderRTprev = m_RP.m_FlagsShader_RT;
+			CShader* pPrevSH                       = m_RP.m_pShader;
+			uint32   nPrevNumRendPasses            = m_RP.m_nNumRendPasses;
+			uint64   nFlagsShaderRTprev            = m_RP.m_FlagsShader_RT;
 
 			SShaderTechnique* pPrevRootTech = m_RP.m_pRootTechnique;
 			m_RP.m_pRootTechnique = pTech;
 
-			int nMaterialStatePrevOr = m_RP.m_MaterialStateOr;
+			int nMaterialStatePrevOr  = m_RP.m_MaterialStateOr;
 			int nMaterialStatePrevAnd = m_RP.m_MaterialStateAnd;
 			uint32 nFlagsShaderLTprev = m_RP.m_FlagsShader_LT;
 
-			int nPersFlagsPrev = m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags;
-			int nPersFlags2Prev = m_RP.m_PersFlags2;
-			int nMaterialAlphaRefPrev = m_RP.m_MaterialAlphaRef;
-			bool bIgnoreObjectAlpha = m_RP.m_bIgnoreObjectAlpha;
+			int  nPersFlagsPrev        = m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags;
+			int  nPersFlags2Prev       = m_RP.m_PersFlags2;
+			int  nMaterialAlphaRefPrev = m_RP.m_MaterialAlphaRef;
+			bool bIgnoreObjectAlpha    = m_RP.m_bIgnoreObjectAlpha;
 			m_RP.m_bIgnoreObjectAlpha = true;
 
 			m_RP.m_pShader = pSH;
 			m_RP.m_RIs[0].Assign(s_tempRIs);
-			m_RP.m_pCurObject = m_RP.m_RIs[0][0]->pObj;
-			m_RP.m_pPrevObject = NULL;
+			m_RP.m_pCurObject       = m_RP.m_RIs[0][0]->pObj;
+			m_RP.m_pPrevObject      = NULL;
 			m_RP.m_pShaderResources = (CShaderResources*)pCurrShaderItem.m_pShaderResources;
 
 			// Reset light passes (need ambient)
 			m_RP.m_nNumRendPasses = 0;
-			m_RP.m_PersFlags2 |= RBPF2_MATERIALLAYERPASS;
+			m_RP.m_PersFlags2    |= RBPF2_MATERIALLAYERPASS;
 
 			if ((1 << nCurrLayer) & MTL_LAYER_FROZEN)
 			{
-				m_RP.m_MaterialStateAnd = GS_BLEND_MASK | GS_ALPHATEST_MASK;
-				m_RP.m_MaterialStateOr = GS_BLSRC_ONE | GS_BLDST_ONE;
+				m_RP.m_MaterialStateAnd = GS_BLEND_MASK | GS_ALPHATEST;
+				m_RP.m_MaterialStateOr  = GS_BLSRC_ONE | GS_BLDST_ONE;
 				m_RP.m_MaterialAlphaRef = 0xff;
 			}
 
@@ -3530,12 +3537,12 @@ void CD3D9Renderer::FX_DrawMultiLayers()
 			// Restore previous rendering data
 			m_RP.m_RIs[0].Assign(pPrevRenderObjLst);
 			pPrevRenderObjLst.ClearArr();
-			m_RP.m_pShader = pPrevSH;
+			m_RP.m_pShader          = pPrevSH;
 			m_RP.m_pShaderResources = pPrevShaderResources;
-			m_RP.m_pCurObject = pPrevObject;
-			m_RP.m_pPrevObject = NULL;
-			m_RP.m_PersFlags2 = nPersFlags2Prev;
-			m_RP.m_nLastRE = nSaveLastRE;
+			m_RP.m_pCurObject       = pPrevObject;
+			m_RP.m_pPrevObject      = NULL;
+			m_RP.m_PersFlags2       = nPersFlags2Prev;
+			m_RP.m_nLastRE          = nSaveLastRE;
 
 			m_RP.m_nNumRendPasses = nPrevNumRendPasses;
 
@@ -3545,11 +3552,11 @@ void CD3D9Renderer::FX_DrawMultiLayers()
 
 			m_RP.m_nNumRendPasses = 0;
 
-			m_RP.m_pRootTechnique = pPrevRootTech;
+			m_RP.m_pRootTechnique     = pPrevRootTech;
 			m_RP.m_bIgnoreObjectAlpha = bIgnoreObjectAlpha;
-			m_RP.m_MaterialStateOr = nMaterialStatePrevOr;
-			m_RP.m_MaterialStateAnd = nMaterialStatePrevAnd;
-			m_RP.m_MaterialAlphaRef = nMaterialAlphaRefPrev;
+			m_RP.m_MaterialStateOr    = nMaterialStatePrevOr;
+			m_RP.m_MaterialStateAnd   = nMaterialStatePrevAnd;
+			m_RP.m_MaterialAlphaRef   = nMaterialAlphaRefPrev;
 
 			if (bDefaultLayer)
 			{
@@ -3573,15 +3580,15 @@ void CD3D9Renderer::FX_DrawMultiLayers()
 void CD3D9Renderer::FX_SelectTechnique(CShader* pShader, SShaderTechnique* pTech)
 {
 	SShaderTechniqueStat Stat;
-	Stat.pTech = pTech;
+	Stat.pTech   = pTech;
 	Stat.pShader = pShader;
 	if (pTech->m_Passes.Num())
 	{
 		SShaderPass* pPass = &pTech->m_Passes[0];
 		if (pPass->m_PShader && pPass->m_VShader)
 		{
-			Stat.pVS = (CHWShader_D3D*)pPass->m_VShader;
-			Stat.pPS = (CHWShader_D3D*)pPass->m_PShader;
+			Stat.pVS     = (CHWShader_D3D*)pPass->m_VShader;
+			Stat.pPS     = (CHWShader_D3D*)pPass->m_PShader;
 			Stat.pVSInst = Stat.pVS->m_pCurInst;
 			Stat.pPSInst = Stat.pPS->m_pCurInst;
 			g_SelectedTechs.push_back(Stat);
@@ -3627,11 +3634,11 @@ static void sDetectInstancing(CShader* pShader, CRenderObject* pObj)
 	CRenderer* rd = gRenDev;
 	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
 	if (!CRenderer::CV_r_geominstancing || rd->m_bUseGPUFriendlyBatching[rRP.m_nProcessThreadID] || !(pShader->m_Flags & EF_SUPPORTSINSTANCING) || CRenderer::CV_r_measureoverdraw ||
-	                                                      // don't instance in motion blur pass or post 3d render
-	    rRP.m_PersFlags2 & RBPF2_POST_3D_RENDERER_PASS || //rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS ||
-	                                                      // only instance meshes
-	    !rRP.m_pRE || rRP.m_pRE->mfGetType() != eDATA_Mesh
-	    )
+	  // don't instance in motion blur pass or post 3d render
+	  rRP.m_PersFlags2 & RBPF2_POST_3D_RENDERER_PASS ||        //rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS ||
+	                                                           // only instance meshes
+	  !rRP.m_pRE || rRP.m_pRE->mfGetType() != eDATA_Mesh
+	  )
 	{
 		rRP.m_FlagsPerFlush &= ~RBSI_INSTANCED;
 		return;
@@ -3660,13 +3667,13 @@ bool CD3D9Renderer::FX_SetResourcesState()
 	FUNCTION_PROFILER_RENDER_FLAT
 	if (!m_RP.m_pShader)
 		return false;
-	m_RP.m_MaterialStateOr = 0;
+	m_RP.m_MaterialStateOr  = 0;
 	m_RP.m_MaterialStateAnd = 0;
 	if (!m_RP.m_pShaderResources)
 		return true;
 
-	PrefetchLine(m_RP.m_pShaderResources, 0);   //Shader Resources fit in a cache line, but they're not 128-byte aligned! We are likely going
-	PrefetchLine(m_RP.m_pShaderResources, 124); //	to cache miss on access to m_ResFlags but will hopefully avoid later ones
+	PrefetchLine(m_RP.m_pShaderResources, 0);    //Shader Resources fit in a cache line, but they're not 128-byte aligned! We are likely going
+	PrefetchLine(m_RP.m_pShaderResources, 124);  //	to cache miss on access to m_ResFlags but will hopefully avoid later ones
 
 	if (m_RP.m_pShader->m_Flags2 & EF2_IGNORERESOURCESTATES)
 		return true;
@@ -3674,7 +3681,7 @@ bool CD3D9Renderer::FX_SetResourcesState()
 	m_RP.m_ShaderTexResources[EFTT_DECAL_OVERLAY] = NULL;
 
 	const CShaderResources* pRes = m_RP.m_pShaderResources;
-	const uint32 uResFlags = pRes->m_ResFlags;
+	const uint32 uResFlags       = pRes->m_ResFlags;
 	if (uResFlags & MTL_FLAG_NOTINSTANCED)
 		m_RP.m_FlagsPerFlush &= ~RBSI_INSTANCED;
 
@@ -3692,8 +3699,8 @@ bool CD3D9Renderer::FX_SetResourcesState()
 			const int nAlphaRef = int(pRes->GetAlphaRef() * 255.0f);
 
 			m_RP.m_MaterialAlphaRef = nAlphaRef;
-			m_RP.m_MaterialStateOr = GS_ALPHATEST_GEQUAL | GS_DEPTHWRITE;
-			m_RP.m_MaterialStateAnd = GS_ALPHATEST_MASK;
+			m_RP.m_MaterialStateOr = GS_ALPHATEST | GS_DEPTHWRITE;
+			m_RP.m_MaterialStateAnd = GS_ALPHATEST;
 		}
 		else
 			m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_ALPHATEST];
@@ -3706,17 +3713,17 @@ bool CD3D9Renderer::FX_SetResourcesState()
 			const float fOpacity = pRes->GetStrengthValue(EFTT_OPACITY);
 
 			m_RP.m_MaterialStateAnd |= GS_DEPTHWRITE | GS_BLEND_MASK;
-			m_RP.m_MaterialStateOr &= ~GS_DEPTHWRITE;
+			m_RP.m_MaterialStateOr  &= ~GS_DEPTHWRITE;
 			if (uResFlags & MTL_FLAG_ADDITIVE)
 			{
-				m_RP.m_MaterialStateOr |= GS_BLSRC_ONE | GS_BLDST_ONE;
+				m_RP.m_MaterialStateOr  |= GS_BLSRC_ONE | GS_BLDST_ONE;
 				m_RP.m_CurGlobalColor[0] = fOpacity;
 				m_RP.m_CurGlobalColor[1] = fOpacity;
 				m_RP.m_CurGlobalColor[2] = fOpacity;
 			}
 			else
 			{
-				m_RP.m_MaterialStateOr |= GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
+				m_RP.m_MaterialStateOr  |= GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
 				m_RP.m_CurGlobalColor[3] = fOpacity;
 			}
 			m_RP.m_fCurOpacity = fOpacity;
@@ -3732,8 +3739,8 @@ bool CD3D9Renderer::FX_SetResourcesState()
 			if ((((m_RP.m_pCurObject->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) >> 8) / 255.0f) > fCloakMinThreshold)
 			{
 				m_RP.m_MaterialStateAnd |= GS_BLEND_MASK;
-				m_RP.m_MaterialStateOr |= GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
-				m_RP.m_MaterialStateOr |= (!IsCustomRenderModeEnabled(eRMF_NIGHTVISION) ? GS_DEPTHWRITE : 0);
+				m_RP.m_MaterialStateOr  |= GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA;
+				m_RP.m_MaterialStateOr  |= (!IsCustomRenderModeEnabled(eRMF_NIGHTVISION) ? GS_DEPTHWRITE : 0);
 			}
 		}
 	}
@@ -3782,7 +3789,7 @@ static void sLogFlush(const char* str, CShader* pSH, SShaderTechnique* pTech)
 		rd->Logv("%s: '%s.%s', Id:%d, ResId:%d, Obj:%d, VF:%d\n", str, pSH->GetName(), pTech ? pTech->m_NameStr.c_str() : "Unknown", pSH->GetID(), rRP.m_pShaderResources ? rRP.m_pShaderResources->m_Id : -1, rRP.m_pCurObject->m_Id, pSH->m_eVertexFormat);
 		if (rRP.m_ObjFlags & FOB_SELECTED)
 		{
-			if (rRP.m_MaterialStateOr & GS_ALPHATEST_MASK)
+      if (rRP.m_MaterialStateOr & GS_ALPHATEST)
 				rd->Logv("  %.3f, %.3f, %.3f (0x%llx), (AT) (Selected)\n", rRP.m_pCurObject->m_II.m_Matrix(0, 3), rRP.m_pCurObject->m_II.m_Matrix(1, 3), rRP.m_pCurObject->m_II.m_Matrix(2, 3), rRP.m_pCurObject->m_ObjFlags);
 			else if (rRP.m_MaterialStateOr & GS_BLEND_MASK)
 				rd->Logv("  %.3f, %.3f, %.3f (0x%llx) (AB) (Dist: %.3f) (Selected)\n", rRP.m_pCurObject->m_II.m_Matrix(0, 3), rRP.m_pCurObject->m_II.m_Matrix(1, 3), rRP.m_pCurObject->m_II.m_Matrix(2, 3), rRP.m_pCurObject->m_ObjFlags, rRP.m_pCurObject->m_fDistance);
@@ -3791,7 +3798,7 @@ static void sLogFlush(const char* str, CShader* pSH, SShaderTechnique* pTech)
 		}
 		else
 		{
-			if (rRP.m_MaterialStateOr & GS_ALPHATEST_MASK)
+      if (rRP.m_MaterialStateOr & GS_ALPHATEST)
 				rd->Logv("  %.3f, %.3f, %.3f (0x%llx) (AT), Inst: %d, RE: 0x%x (Dist: %.3f)\n", rRP.m_pCurObject->m_II.m_Matrix(0, 3), rRP.m_pCurObject->m_II.m_Matrix(1, 3), rRP.m_pCurObject->m_II.m_Matrix(2, 3), rRP.m_pCurObject->m_ObjFlags, rRP.m_RIs[0].Num(), rRP.m_pRE, rRP.m_pCurObject->m_fDistance);
 			else if (rRP.m_MaterialStateOr & GS_BLEND_MASK)
 				rd->Logv("  %.3f, %.3f, %.3f (0x%llx) (AB), Inst: %d, RE: 0x%x (Dist: %.3f)\n", rRP.m_pCurObject->m_II.m_Matrix(0, 3), rRP.m_pCurObject->m_II.m_Matrix(1, 3), rRP.m_pCurObject->m_II.m_Matrix(2, 3), rRP.m_pCurObject->m_ObjFlags, rRP.m_RIs[0].Num(), rRP.m_pRE, rRP.m_pCurObject->m_fDistance);
@@ -3822,11 +3829,11 @@ static void sLogFlush(const char* str, CShader* pSH, SShaderTechnique* pTech)
 
 void CD3D9Renderer::FX_RefractionPartialResolve()
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	CD3D9Renderer* const __restrict rd      = gcpRendD3D;
 	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
 
 	{
-		int nThreadID = rRP.m_nProcessThreadID;
+		int nThreadID           = rRP.m_nProcessThreadID;
 		SRenderObjData* ObjData = rRP.m_pCurObject->GetObjData();
 
 		if (ObjData)
@@ -3840,14 +3847,14 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 
 			float boundsI2F[] = {
 				(float)(screenBounds[0] << 4),    (float)(screenBounds[1] << 4),
-				(float)(min(screenBounds[2] << 4, GetWidth())),                 (float)(min(screenBounds[3] << 4, GetHeight()))
+				(float)(min(screenBounds[2] << 4, GetWidth())),                    (float)(min(screenBounds[3] << 4, GetHeight()))
 			};
 
 			if (((screenBounds[2] - screenBounds[0]) && (screenBounds[3] - screenBounds[1])) &&
-			    !((rRP.m_nCurrResolveBounds[0] == screenBounds[0])
-			      && (rRP.m_nCurrResolveBounds[1] == screenBounds[1])
-			      && (rRP.m_nCurrResolveBounds[2] == screenBounds[2])
-			      && (rRP.m_nCurrResolveBounds[3] == screenBounds[3])))
+			  !((rRP.m_nCurrResolveBounds[0] == screenBounds[0])
+			  && (rRP.m_nCurrResolveBounds[1] == screenBounds[1])
+			  && (rRP.m_nCurrResolveBounds[2] == screenBounds[2])
+			  && (rRP.m_nCurrResolveBounds[3] == screenBounds[3])))
 			{
 
 				rRP.m_nCurrResolveBounds[0] = screenBounds[0];
@@ -3866,15 +3873,15 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 				CTexture* pTarget = CTexture::s_ptexCurrSceneTarget;
 
 				//cache RP states  - Probably a bit excessive, but want to be safe
-				CShaderResources* currRes = rd->m_RP.m_pShaderResources;
-				CShader* currShader = rd->m_RP.m_pShader;
-				int currShaderTechnique = rd->m_RP.m_nShaderTechnique;
+				CShaderResources* currRes       = rd->m_RP.m_pShaderResources;
+				CShader* currShader             = rd->m_RP.m_pShader;
+				int currShaderTechnique         = rd->m_RP.m_nShaderTechnique;
 				SShaderTechnique* currTechnique = rd->m_RP.m_pCurTechnique;
-				uint32 currCommitFlags = rd->m_RP.m_nCommitFlags;
-				uint32 currFlagsShaderBegin = rd->m_RP.m_nFlagsShaderBegin;
-				ECull currCull = m_RP.m_eCull;
+				uint32 currCommitFlags          = rd->m_RP.m_nCommitFlags;
+				uint32 currFlagsShaderBegin     = rd->m_RP.m_nFlagsShaderBegin;
+				ECull  currCull                 = m_RP.m_eCull;
 
-				float currVPMinZ = rd->m_NewViewport.fMinZ; // Todo: Add to GetViewport / SetViewport
+				float currVPMinZ = rd->m_NewViewport.fMinZ;   // Todo: Add to GetViewport / SetViewport
 				float currVPMaxZ = rd->m_NewViewport.fMaxZ;
 
 				D3DSetCull(eCULL_None);
@@ -3895,14 +3902,14 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 				D3DSetCull(currCull);
 
 				//restore RP states
-				rd->m_RP.m_pShaderResources = currRes;
-				rd->m_RP.m_pShader = currShader;
-				rd->m_RP.m_nShaderTechnique = currShaderTechnique;
-				rd->m_RP.m_pCurTechnique = currTechnique;
-				rd->m_RP.m_nCommitFlags = currCommitFlags | FC_MATERIAL_PARAMS;
+				rd->m_RP.m_pShaderResources  = currRes;
+				rd->m_RP.m_pShader           = currShader;
+				rd->m_RP.m_nShaderTechnique  = currShaderTechnique;
+				rd->m_RP.m_pCurTechnique     = currTechnique;
+				rd->m_RP.m_nCommitFlags      = currCommitFlags | FC_MATERIAL_PARAMS;
 				rd->m_RP.m_nFlagsShaderBegin = currFlagsShaderBegin;
-				rd->m_NewViewport.fMaxZ = currVPMinZ;
-				rd->m_NewViewport.fMaxZ = currVPMaxZ;
+				rd->m_NewViewport.fMaxZ      = currVPMinZ;
+				rd->m_NewViewport.fMaxZ      = currVPMaxZ;
 
 #if REFRACTION_PARTIAL_RESOLVE_STATS
 				{
@@ -3911,8 +3918,8 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 					const int x2 = (screenBounds[2] << 4);
 					const int y2 = (screenBounds[3] << 4);
 
-					const int resolveWidth = x2 - x1;
-					const int resolveHeight = y2 - y1;
+					const int resolveWidth      = x2 - x1;
+					const int resolveHeight     = y2 - y1;
 					const int resolvePixelCount = resolveWidth * resolveHeight;
 
 					// Update stats
@@ -3924,7 +3931,7 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 
 					pipeStat.m_fRefractionPartialResolveEstimatedCost += ((float)resolvePixelCount / resolveCostConversion);
 
-	#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
+#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
 					if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_2D_AREA || CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_2D_AREA_OVERLAY)
 					{
 						// Render 2d areas additively on screen
@@ -3939,13 +3946,13 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 							newRenderFlags.SetMode2D3DFlag(e_Mode2D);
 							pAuxRenderer->SetRenderFlags(newRenderFlags);
 
-							const float screenWidth = (float)GetWidth();
+							const float screenWidth  = (float)GetWidth();
 							const float screenHeight = (float)GetHeight();
 
 							// Calc resolve area
-							const float left = x1 / screenWidth;
-							const float top = y1 / screenHeight;
-							const float right = x2 / screenWidth;
+							const float left   = x1 / screenWidth;
+							const float top    = y1 / screenHeight;
+							const float right  = x2 / screenWidth;
 							const float bottom = y2 / screenHeight;
 
 							// Render resolve area
@@ -3954,17 +3961,17 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 							if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_2D_AREA_OVERLAY)
 							{
 								int val = (pipeStat.m_refractionPartialResolveCount) % 3;
-								areaColor = ColorB((val == 0) ? 0 : 128, (val == 1) ? 0 : 128, (val == 2) ? 0 : 128, 255);
+								areaColor = ColorB((val == 0) ? 0 : 128, (val == 1)  ? 0 : 128, (val == 2)  ? 0 : 128, 255);
 							}
 
-							const uint vertexCount = 6;
+							const uint vertexCount       = 6;
 							const Vec3 vert[vertexCount] = {
-								Vec3(left,  top,    0.0f),
-								Vec3(left,  bottom, 0.0f),
-								Vec3(right, top,    0.0f),
-								Vec3(left,  bottom, 0.0f),
-								Vec3(right, bottom, 0.0f),
-								Vec3(right, top,    0.0f)
+								Vec3(left,  top,     0.0f),
+								Vec3(left,  bottom,  0.0f),
+								Vec3(right, top,     0.0f),
+								Vec3(left,  bottom,  0.0f),
+								Vec3(right, bottom,  0.0f),
+								Vec3(right, top,     0.0f)
 							};
 							pAuxRenderer->DrawTriangles(vert, vertexCount, areaColor);
 
@@ -3972,9 +3979,9 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 							pAuxRenderer->SetRenderFlags(oldRenderFlags);
 						}
 					}
-	#endif  // REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
+#endif              // REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
 				}
-#endif  // REFRACTION_PARTIAL_RESOLVE_STATS
+#endif          // REFRACTION_PARTIAL_RESOLVE_STATS
 			}
 		}
 	}
@@ -4000,23 +4007,23 @@ bool CD3D9Renderer::FX_UpdateDynamicShaderResources(const CShaderResources* shad
 					if (batchFilter & (FB_GENERAL | FB_TRANSPARENT))
 					{
 						// save pipeline state
-						SRenderPipeline& rp = gcpRendD3D->m_RP; // !!! don't use rRP as it's taken from rd (__restrict); the compiler will optimize the save/restore instructions !!!
+						SRenderPipeline& rp        = gcpRendD3D->m_RP;                   // !!! don't use rRP as it's taken from rd (__restrict); the compiler will optimize the save/restore instructions !!!
 						CShader* const pPrevShader = rp.m_pShader;
-						const int prevShaderTechnique = rp.m_nShaderTechnique;
+						const int prevShaderTechnique               = rp.m_nShaderTechnique;
 						CShaderResources* const prevShaderResources = rp.m_pShaderResources;
-						SShaderTechnique* const prevCurTechnique = rp.m_pCurTechnique;
-						const uint32 prevCommitFlags = rp.m_nCommitFlags;
-						const uint32 prevFlagsShaderBegin = rp.m_nFlagsShaderBegin;
+						SShaderTechnique* const prevCurTechnique    = rp.m_pCurTechnique;
+						const uint32 prevCommitFlags                = rp.m_nCommitFlags;
+						const uint32 prevFlagsShaderBegin           = rp.m_nFlagsShaderBegin;
 
 						pDynTexSrc->Update();
 
 						// restore pipeline state
 						rp.m_pShader = pPrevShader;
-						rp.m_nShaderTechnique = prevShaderTechnique;
-						rp.m_pShaderResources = prevShaderResources;
-						rp.m_pCurTechnique = prevCurTechnique;
-						rp.m_nCommitFlags = prevCommitFlags;
-						rp.m_nFlagsShaderBegin = prevFlagsShaderBegin;
+						rp.m_nShaderTechnique           = prevShaderTechnique;
+						rp.m_pShaderResources           = prevShaderResources;
+						rp.m_pCurTechnique              = prevCurTechnique;
+						rp.m_nCommitFlags               = prevCommitFlags;
+						rp.m_nFlagsShaderBegin          = prevFlagsShaderBegin;
 						gcpRendD3D->m_CurViewport.fMaxZ = -1;
 					}
 				}
@@ -4050,8 +4057,8 @@ void CD3D9Renderer::FX_FlushShader_General()
 	// don't do motion vector generation or reflections on refractive objects.
 	// Need to check here since refractive and transparent lists are combined for sorting.
 	if (rRP.m_nPassGroupID == EFSLIST_TRANSP
-	    && rRP.m_pCurObject->m_ObjFlags & FOB_REQUIRES_RESOLVE
-	    && (rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS || (IsRecursiveRenderView())))
+	  && rRP.m_pCurObject->m_ObjFlags & FOB_REQUIRES_RESOLVE
+	  && (rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS || (IsRecursiveRenderView())))
 	{
 		return;
 	}
@@ -4059,8 +4066,8 @@ void CD3D9Renderer::FX_FlushShader_General()
 	// Don't render nearest transparent objects in motion blur pass, otherwise camera motion blur
 	// will not be applied within the scope
 	if ((rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS) &&
-	    (rRP.m_nPassGroupID == EFSLIST_TRANSP) &&
-	    (rRP.m_pCurObject->m_ObjFlags & FOB_NEAREST))
+	  (rRP.m_nPassGroupID == EFSLIST_TRANSP) &&
+	  (rRP.m_pCurObject->m_ObjFlags & FOB_NEAREST))
 	{
 		return;
 	}
@@ -4171,7 +4178,7 @@ void CD3D9Renderer::FX_FlushShader_General()
 		if (pCurRes && pCurRes->IsEmissive() && !pCurRes->IsTransparent() && (rRP.m_PersFlags2 & RBPF2_HDR_FP16))
 		{
 			rRP.m_MaterialStateAnd |= GS_BLEND_MASK;
-			rRP.m_MaterialStateOr = (rRP.m_MaterialStateOr & ~GS_BLEND_MASK) | (GS_BLSRC_ONE | GS_BLDST_ONE);
+			rRP.m_MaterialStateOr   = (rRP.m_MaterialStateOr & ~GS_BLEND_MASK) | (GS_BLSRC_ONE | GS_BLDST_ONE);
 		}
 
 		if (rTI.m_PersFlags & RBPF_MAKESPRITE)
@@ -4188,7 +4195,7 @@ void CD3D9Renderer::FX_FlushShader_General()
 		if (!(rRP.m_PersFlags2 & RBPF2_NOSHADERFOG) && rTI.m_FS.m_bEnable && !(rRP.m_ObjFlags & FOB_NO_FOG) || !(rRP.m_PersFlags2 & RBPF2_ALLOW_DEFERREDSHADING))
 		{
 			rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_FOG];
-			if (rd->m_bVolumetricFogEnabled && !IsRecursiveRenderView()) // volumetric fog doesn't support recursive pass currently.
+			if (rd->m_bVolumetricFogEnabled)
 			{
 				rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG];
 			}
@@ -4263,7 +4270,7 @@ void CD3D9Renderer::FX_FlushShader_General()
 
 void CD3D9Renderer::FX_FlushShader_ShadowGen()
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	CD3D9Renderer* const __restrict rd      = gcpRendD3D;
 	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
 	if (!rRP.m_pRE && !rRP.m_RendNumVerts)
 		return;
@@ -4408,7 +4415,7 @@ void CD3D9Renderer::FX_FlushShader_ShadowGen()
 	// check if MTL_LAYER_BIT_CLOAK_DISSOLVE and some bits in MTL_LAYER_BLEND_CLOAK are set.
 	if ((rRP.m_pCurObject->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) && (rRP.m_pCurObject->m_nMaterialLayers & MTL_LAYER_BIT_CLOAK_DISSOLVE))
 	{
-		if ((rRP.m_pCurObject->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) == MTL_LAYER_BLEND_CLOAK) //fully blended, dont render
+		if ((rRP.m_pCurObject->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) == MTL_LAYER_BLEND_CLOAK)      //fully blended, dont render
 			return;
 		rd->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_DISSOLVE];
 	}
@@ -4433,7 +4440,7 @@ void CD3D9Renderer::FX_FlushShader_ShadowGen()
 
 void CD3D9Renderer::FX_FlushShader_ZPass()
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	CD3D9Renderer* const __restrict rd      = gcpRendD3D;
 	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
 	if (!rRP.m_pRE && !rRP.m_RendNumVerts)
 		return;
@@ -4479,7 +4486,7 @@ void CD3D9Renderer::FX_FlushShader_ZPass()
 
 	// Techniques draw cycle...
 	SShaderTechnique* __restrict pTech = ef->mfGetStartTechnique(rRP.m_nShaderTechnique);
-	const uint32 nTechniqueID = (rRP.m_nBatchFilter & FB_Z) ? TTYPE_Z : TTYPE_ZPREPASS;
+	const uint32 nTechniqueID          = (rRP.m_nBatchFilter & FB_Z) ? TTYPE_Z : TTYPE_ZPREPASS;
 	if (!pTech || pTech->m_nTechnique[nTechniqueID] < 0)
 		return;
 	rRP.m_nShaderTechniqueType = nTechniqueID;
@@ -4514,7 +4521,7 @@ void CD3D9Renderer::FX_FlushShader_ZPass()
 		else if (rRP.m_PersFlags2 & RBPF2_MOTIONBLURPASS)
 		{
 			rRP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_MOTION_BLUR];
-			rRP.m_PersFlags2 &= ~RBPF2_MOTIONBLURPASS;
+			rRP.m_PersFlags2     &= ~RBPF2_MOTIONBLURPASS;
 			rd->FX_PopRenderTarget(3);
 		}
 	}
@@ -4732,19 +4739,19 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 	}
 
 	CRenderObject* pPrevIgn = m_RP.m_TI[nThreadList].m_pIgnoreObject;
-	CTexture* Tex = pRT->m_pTarget[0];
-	SEnvTexture* pEnvTex = NULL;
+	CTexture* Tex           = pRT->m_pTarget[0];
+	SEnvTexture* pEnvTex    = NULL;
 
 	if (nPreprType == SPRID_SCANTEX)
 	{
-		nPrFlags |= FRT_CAMERA_REFLECTED_PLANE;
+		nPrFlags     |= FRT_CAMERA_REFLECTED_PLANE;
 		pRT->m_nFlags = nPrFlags;
 	}
 
 	if (nPrFlags & FRT_RENDTYPE_CURSCENE)
 		return false;
 
-	uint32 nWidth = pRT->m_nWidth;
+	uint32 nWidth  = pRT->m_nWidth;
 	uint32 nHeight = pRT->m_nHeight;
 
 	if (pRT->m_nIDInPool >= 0)
@@ -4761,7 +4768,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 
 		// Very hi specs render reflections at half res - lower specs (and consoles) at quarter res
 		float fSizeScale = (CV_r_waterreflections_quality == 5) ? 0.5f : 0.25f;
-		nWidth = sTexLimitRes(nWidth, uint32(GetWidth() * fSizeScale));
+		nWidth  = sTexLimitRes(nWidth, uint32(GetWidth() * fSizeScale));
 		nHeight = sTexLimitRes(nHeight, uint32(GetHeight() * fSizeScale));
 
 		ETEX_Format eTF = pRT->m_eTF;
@@ -4787,9 +4794,9 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 			if (nPrFlags & (FRT_CAMERA_REFLECTED_PLANE | FRT_CAMERA_REFLECTED_WATERPLANE))
 				bReflect = true;
 			Matrix33 orientation = Matrix33(GetCamera().GetMatrix());
-			Ang3 Angs = CCamera::CreateAnglesYPR(orientation);
-			Vec3 Pos = GetCamera().GetPosition();
-			bool bNeedUpdate = false;
+			Ang3 Angs            = CCamera::CreateAnglesYPR(orientation);
+			Vec3 Pos             = GetCamera().GetPosition();
+			bool bNeedUpdate     = false;
 			pEnvTex = CTexture::FindSuitableEnvTex(Pos, Angs, false, -1, false, pShader, pRes, pObj, bReflect, pRE, &bNeedUpdate);
 
 			if (!bNeedUpdate)
@@ -4855,105 +4862,105 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 	switch (pRT->m_eUpdateType)
 	{
 	case eRTUpdate_WaterReflect:
+	{
+		bool bSkip = false;
+		if (m_RP.m_nLastWaterFrameID < 100)
 		{
-			bool bSkip = false;
-			if (m_RP.m_nLastWaterFrameID < 100)
-			{
-				m_RP.m_nLastWaterFrameID++;
-				bSkip = true;
-			}
-			if (bSkip || !CRenderer::CV_r_waterreflections)
-			{
-				assert(pEnvTex != NULL);
-				if (pEnvTex && pEnvTex->m_pTex && pEnvTex->m_pTex->m_pTexture)
-					m_pRT->RC_ClearTarget(pEnvTex->m_pTex->m_pTexture, Clr_Empty);
+			m_RP.m_nLastWaterFrameID++;
+			bSkip = true;
+		}
+		if (bSkip || !CRenderer::CV_r_waterreflections)
+		{
+			assert(pEnvTex != NULL);
+			if (pEnvTex && pEnvTex->m_pTex && pEnvTex->m_pTex->m_pTexture)
+				m_pRT->RC_ClearTarget(pEnvTex->m_pTex->m_pTexture, Clr_Empty);
 
-				return true;
-			}
+			return true;
+		}
 
-			if (m_RP.m_nLastWaterFrameID == GetFrameID())
-				// water reflection already created this frame, share it
-				return true;
+		if (m_RP.m_nLastWaterFrameID == GetFrameID())
+			// water reflection already created this frame, share it
+			return true;
 
-			I3DEngine* eng = (I3DEngine*)gEnv->p3DEngine;
-			int nVisibleWaterPixelsCount = eng->GetOceanVisiblePixelsCount() / 2; // bug in occlusion query returns 2x more
-			int nPixRatioThreshold = (int)(GetWidth() * GetHeight() * CRenderer::CV_r_waterreflections_min_visible_pixels_update);
+		I3DEngine* eng               = (I3DEngine*)gEnv->p3DEngine;
+		int nVisibleWaterPixelsCount = eng->GetOceanVisiblePixelsCount() / 2;            // bug in occlusion query returns 2x more
+		int nPixRatioThreshold       = (int)(GetWidth() * GetHeight() * CRenderer::CV_r_waterreflections_min_visible_pixels_update);
 
-			static int nVisWaterPixCountPrev = nVisibleWaterPixelsCount;
-			if (CRenderer::CV_r_waterreflections_mgpu)
-			{
-				nVisWaterPixCountPrev = bMGPUAllowNextUpdate ? nVisibleWaterPixelsCount : nVisWaterPixCountPrev;
-			}
-			else
-				nVisWaterPixCountPrev = nVisibleWaterPixelsCount;
+		static int nVisWaterPixCountPrev = nVisibleWaterPixelsCount;
+		if (CRenderer::CV_r_waterreflections_mgpu)
+		{
+			nVisWaterPixCountPrev = bMGPUAllowNextUpdate ? nVisibleWaterPixelsCount : nVisWaterPixCountPrev;
+		}
+		else
+			nVisWaterPixCountPrev = nVisibleWaterPixelsCount;
 
-			float fUpdateFactorMul = 1.0f;
-			float fUpdateDistanceMul = 1.0f;
-			if (nVisWaterPixCountPrev < nPixRatioThreshold / 4)
-			{
-				bEnableAnisotropicBlur = false;
-				fUpdateFactorMul = CV_r_waterreflections_minvis_updatefactormul * 10.0f;
-				fUpdateDistanceMul = CV_r_waterreflections_minvis_updatedistancemul * 5.0f;
-			}
-			else if (nVisWaterPixCountPrev < nPixRatioThreshold)
-			{
-				fUpdateFactorMul = CV_r_waterreflections_minvis_updatefactormul;
-				fUpdateDistanceMul = CV_r_waterreflections_minvis_updatedistancemul;
-			}
+		float fUpdateFactorMul   = 1.0f;
+		float fUpdateDistanceMul = 1.0f;
+		if (nVisWaterPixCountPrev < nPixRatioThreshold / 4)
+		{
+			bEnableAnisotropicBlur = false;
+			fUpdateFactorMul       = CV_r_waterreflections_minvis_updatefactormul * 10.0f;
+			fUpdateDistanceMul     = CV_r_waterreflections_minvis_updatedistancemul * 5.0f;
+		}
+		else if (nVisWaterPixCountPrev < nPixRatioThreshold)
+		{
+			fUpdateFactorMul   = CV_r_waterreflections_minvis_updatefactormul;
+			fUpdateDistanceMul = CV_r_waterreflections_minvis_updatedistancemul;
+		}
 
-			float fMGPUScale = CRenderer::CV_r_waterreflections_mgpu ? (1.0f / (float) gRenDev->GetActiveGPUCount()) : 1.0f;
-			float fWaterUpdateFactor = CV_r_waterupdateFactor * fUpdateFactorMul * fMGPUScale;
-			float fWaterUpdateDistance = CV_r_waterupdateDistance * fUpdateDistanceMul * fMGPUScale;
+		float fMGPUScale           = CRenderer::CV_r_waterreflections_mgpu ? (1.0f / (float) gRenDev->GetActiveGPUCount()) : 1.0f;
+		float fWaterUpdateFactor   = CV_r_waterupdateFactor * fUpdateFactorMul * fMGPUScale;
+		float fWaterUpdateDistance = CV_r_waterupdateDistance * fUpdateDistanceMul * fMGPUScale;
 
-			float fTimeUpd = min(0.3f, eng->GetDistanceToSectorWithWater());
-			fTimeUpd *= fWaterUpdateFactor;
-			//if (fTimeUpd > 1.0f)
-			//fTimeUpd = 1.0f;
-			Vec3 camView = m_RP.m_TI[nThreadList].m_rcam.ViewDir();
-			Vec3 camUp = m_RP.m_TI[nThreadList].m_rcam.vY;
+		float fTimeUpd = min(0.3f, eng->GetDistanceToSectorWithWater());
+		fTimeUpd *= fWaterUpdateFactor;
+		//if (fTimeUpd > 1.0f)
+		//fTimeUpd = 1.0f;
+		Vec3 camView = m_RP.m_TI[nThreadList].m_rcam.ViewDir();
+		Vec3 camUp   = m_RP.m_TI[nThreadList].m_rcam.vY;
 
-			m_RP.m_nLastWaterFrameID = GetFrameID();
+		m_RP.m_nLastWaterFrameID = GetFrameID();
 
-			Vec3 camPos = GetCamera().GetPosition();
-			float fDistCam = (camPos - m_RP.m_LastWaterPosUpdate).GetLength();
-			float fDotView = camView * m_RP.m_LastWaterViewdirUpdate;
-			float fDotUp = camUp * m_RP.m_LastWaterUpdirUpdate;
-			float fFOV = GetCamera().GetFov();
-			if (m_RP.m_fLastWaterUpdate - 1.0f > m_RP.m_TI[nThreadList].m_RealTime)
-				m_RP.m_fLastWaterUpdate = m_RP.m_TI[nThreadList].m_RealTime;
+		Vec3  camPos   = GetCamera().GetPosition();
+		float fDistCam = (camPos - m_RP.m_LastWaterPosUpdate).GetLength();
+		float fDotView = camView * m_RP.m_LastWaterViewdirUpdate;
+		float fDotUp   = camUp * m_RP.m_LastWaterUpdirUpdate;
+		float fFOV     = GetCamera().GetFov();
+		if (m_RP.m_fLastWaterUpdate - 1.0f > m_RP.m_TI[nThreadList].m_RealTime)
+			m_RP.m_fLastWaterUpdate = m_RP.m_TI[nThreadList].m_RealTime;
 
-			const float fMaxFovDiff = 0.1f;   // no exact test to prevent slowly changing fov causing per frame water reflection updates
+		const float fMaxFovDiff = 0.1f;       // no exact test to prevent slowly changing fov causing per frame water reflection updates
 
-			static bool bUpdateReflection = true;
-			if (bMGPUAllowNextUpdate)
-			{
-				bUpdateReflection = m_RP.m_TI[nThreadList].m_RealTime - m_RP.m_fLastWaterUpdate >= fTimeUpd || fDistCam > fWaterUpdateDistance;
-				bUpdateReflection = bUpdateReflection || fDotView<0.9f || fabs(fFOV - m_RP.m_fLastWaterFOVUpdate)> fMaxFovDiff;
-			}
+		static bool bUpdateReflection = true;
+		if (bMGPUAllowNextUpdate)
+		{
+			bUpdateReflection = m_RP.m_TI[nThreadList].m_RealTime - m_RP.m_fLastWaterUpdate >= fTimeUpd || fDistCam > fWaterUpdateDistance;
+			bUpdateReflection = bUpdateReflection || fDotView<0.9f || fabs(fFOV - m_RP.m_fLastWaterFOVUpdate)>fMaxFovDiff;
+		}
 
-			if (bUpdateReflection && bMGPUAllowNextUpdate)
-			{
-				m_RP.m_fLastWaterUpdate = m_RP.m_TI[nThreadList].m_RealTime;
-				m_RP.m_LastWaterViewdirUpdate = camView;
-				m_RP.m_LastWaterUpdirUpdate = camUp;
-				m_RP.m_fLastWaterFOVUpdate = fFOV;
-				m_RP.m_LastWaterPosUpdate = camPos;
-				assert(pEnvTex != NULL);
-				pEnvTex->m_pTex->ResetUpdateMask();
-			}
-			else if (!bUpdateReflection)
-			{
-				assert(pEnvTex != NULL);
-				PREFAST_ASSUME(pEnvTex != NULL);
-				if (pEnvTex && pEnvTex->m_pTex && pEnvTex->m_pTex->IsValid())
-					return true;
-			}
-
+		if (bUpdateReflection && bMGPUAllowNextUpdate)
+		{
+			m_RP.m_fLastWaterUpdate       = m_RP.m_TI[nThreadList].m_RealTime;
+			m_RP.m_LastWaterViewdirUpdate = camView;
+			m_RP.m_LastWaterUpdirUpdate   = camUp;
+			m_RP.m_fLastWaterFOVUpdate    = fFOV;
+			m_RP.m_LastWaterPosUpdate     = camPos;
+			assert(pEnvTex != NULL);
+			pEnvTex->m_pTex->ResetUpdateMask();
+		}
+		else if (!bUpdateReflection)
+		{
 			assert(pEnvTex != NULL);
 			PREFAST_ASSUME(pEnvTex != NULL);
-			pEnvTex->m_pTex->SetUpdateMask();
+			if (pEnvTex && pEnvTex->m_pTex && pEnvTex->m_pTex->IsValid())
+				return true;
 		}
-		break;
+
+		assert(pEnvTex != NULL);
+		PREFAST_ASSUME(pEnvTex != NULL);
+		pEnvTex->m_pTex->SetUpdateMask();
+	}
+	break;
 	}
 
 	// Just copy current BB to the render target and exit
@@ -4961,7 +4968,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 	{
 		// Get current render target from the RT stack
 		if (!CRenderer::CV_r_debugrefraction)
-			FX_ScreenStretchRect(Tex);   // should encode hdr format
+			FX_ScreenStretchRect(Tex); // should encode hdr format
 		else
 			FX_ClearTarget(Tex, Clr_Debug);
 
@@ -4969,20 +4976,20 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 	}
 
 	I3DEngine* eng = (I3DEngine*)gEnv->p3DEngine;
-	Matrix44A matProj, matView;
+	Matrix44A  matProj, matView;
 
 	float plane[4];
-	bool bUseClipPlane = false;
-	bool bChangedCamera = false;
+	bool  bUseClipPlane  = false;
+	bool  bChangedCamera = false;
 
 	int nPersFlags = m_RP.m_TI[nThreadList].m_PersFlags;
 	//int nPersFlags2 = m_RP.m_TI[nThreadList].m_PersFlags2;
 
 	static CCamera tmp_cam_mgpu = GetCamera();
-	CCamera tmp_cam = GetCamera();
-	CCamera prevCamera = tmp_cam;
-	bool bMirror = false;
-	bool bOceanRefl = false;
+	CCamera tmp_cam             = GetCamera();
+	CCamera prevCamera          = tmp_cam;
+	bool bMirror                = false;
+	bool bOceanRefl             = false;
 
 	// Set the camera
 	if (nPrFlags & FRT_CAMERA_REFLECTED_WATERPLANE)
@@ -4990,7 +4997,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 		bOceanRefl = true;
 
 		m_RP.m_TI[nThreadList].m_pIgnoreObject = pObj;
-		float fMinDist = min(SKY_BOX_SIZE * 0.5f, eng->GetDistanceToSectorWithWater()); // 16 is half of skybox size
+		float fMinDist = min(SKY_BOX_SIZE * 0.5f, eng->GetDistanceToSectorWithWater());      // 16 is half of skybox size
 		float fMaxDist = eng->GetMaxViewDistance();
 
 		Vec3 vPrevPos = tmp_cam.GetPosition();
@@ -4999,7 +5006,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 
 		Plane Pl;
 		Pl.n = Vec3(0, 0, 1);
-		Pl.d = eng->GetWaterLevel(); // + CRenderer::CV_r_waterreflections_offset;// - pOceanParams1.x;
+		Pl.d = eng->GetWaterLevel();                                                      // + CRenderer::CV_r_waterreflections_offset;// - pOceanParams1.x;
 		if ((vPrevPos | Pl.n) - Pl.d < 0)
 		{
 			Pl.d = -Pl.d;
@@ -5013,13 +5020,13 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 
 		Matrix44 camMat;
 		GetModelViewMatrix(camMat.GetData());
-		Vec3 vPrevDir = Vec3(-camMat(0, 2), -camMat(1, 2), -camMat(2, 2));
-		Vec3 vPrevUp = Vec3(camMat(0, 1), camMat(1, 1), camMat(2, 1));
-		Vec3 vNewDir = Pl.MirrorVector(vPrevDir);
-		Vec3 vNewUp = Pl.MirrorVector(vPrevUp);
-		float fDot = vPrevPos.Dot(Pl.n) - Pl.d;
-		Vec3 vNewPos = vPrevPos - Pl.n * 2.0f * fDot;
-		Matrix34 m = sMatrixLookAt(vNewDir, vNewUp, tmp_cam.GetAngles()[2]);
+		Vec3  vPrevDir = Vec3(-camMat(0, 2), -camMat(1, 2), -camMat(2, 2));
+		Vec3  vPrevUp  = Vec3(camMat(0, 1), camMat(1, 1), camMat(2, 1));
+		Vec3  vNewDir  = Pl.MirrorVector(vPrevDir);
+		Vec3  vNewUp   = Pl.MirrorVector(vPrevUp);
+		float fDot     = vPrevPos.Dot(Pl.n) - Pl.d;
+		Vec3  vNewPos  = vPrevPos - Pl.n * 2.0f * fDot;
+		Matrix34 m     = sMatrixLookAt(vNewDir, vNewUp, tmp_cam.GetAngles()[2]);
 
 		// New position + offset along view direction - minimizes projection artefacts
 		m.SetTranslation(vNewPos + Vec3(vNewDir.x, vNewDir.y, 0));
@@ -5030,13 +5037,13 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 		if (CV_r_waterreflections_use_min_offset)
 		{
 			fDistOffset = max(fMinDist, 2.0f * gEnv->p3DEngine->GetDistanceToSectorWithWater());
-			if (fDistOffset >= fMaxDist)    // engine returning bad value
+			if (fDistOffset >= fMaxDist)                                                                                                                             // engine returning bad value
 				fDistOffset = fMinDist;
 		}
 
 		assert(pEnvTex);
 		PREFAST_ASSUME(pEnvTex);
-		tmp_cam.SetFrustum((int)(pEnvTex->m_pTex->GetWidth() * tmp_cam.GetProjRatio()), pEnvTex->m_pTex->GetHeight(), tmp_cam.GetFov(), fDistOffset, fMaxDist); //tmp_cam.GetFarPlane());
+		tmp_cam.SetFrustum((int)(pEnvTex->m_pTex->GetWidth() * tmp_cam.GetProjRatio()), pEnvTex->m_pTex->GetHeight(), tmp_cam.GetFov(), fDistOffset, fMaxDist);       //tmp_cam.GetFarPlane());
 
 		// Allow camera update
 		if (bMGPUAllowNextUpdate)
@@ -5044,8 +5051,8 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 
 		SetCamera(tmp_cam_mgpu);
 		bChangedCamera = true;
-		bUseClipPlane = true;
-		bMirror = true;
+		bUseClipPlane  = true;
+		bMirror        = true;
 		//m_RP.m_TI[nThreadList].m_PersFlags |= RBPF_MIRRORCULL;
 	}
 	else if (nPrFlags & FRT_CAMERA_REFLECTED_PLANE)
@@ -5058,14 +5065,14 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 
 		if (pRes && pRes->m_pCamera)
 		{
-			tmp_cam = *pRes->m_pCamera; // Portal case
+			tmp_cam = *pRes->m_pCamera;                                                                                                                             // Portal case
 			//tmp_cam.SetPosition(Vec3(310, 150, 30));
 			//tmp_cam.SetAngles(Vec3(-90,0,0));
 			//tmp_cam.SetFrustum((int)(Tex->GetWidth()*tmp_cam.GetProjRatio()), Tex->GetHeight(), tmp_cam.GetFov(), fMinDist, tmp_cam.GetFarPlane());
 
 			SetCamera(tmp_cam);
 			bUseClipPlane = false;
-			bMirror = false;
+			bMirror       = false;
 		}
 		else
 		{
@@ -5093,13 +5100,13 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 
 			Matrix44A camMat;
 			GetModelViewMatrix(camMat.GetData());
-			Vec3 vPrevDir = Vec3(-camMat(0, 2), -camMat(1, 2), -camMat(2, 2));
-			Vec3 vPrevUp = Vec3(camMat(0, 1), camMat(1, 1), camMat(2, 1));
-			Vec3 vNewDir = Pl.MirrorVector(vPrevDir);
-			Vec3 vNewUp = Pl.MirrorVector(vPrevUp);
-			float fDot = vPrevPos.Dot(Pl.n) - Pl.d;
-			Vec3 vNewPos = vPrevPos - Pl.n * 2.0f * fDot;
-			Matrix34A m = sMatrixLookAt(vNewDir, vNewUp, tmp_cam.GetAngles()[2]);
+			Vec3  vPrevDir = Vec3(-camMat(0, 2), -camMat(1, 2), -camMat(2, 2));
+			Vec3  vPrevUp  = Vec3(camMat(0, 1), camMat(1, 1), camMat(2, 1));
+			Vec3  vNewDir  = Pl.MirrorVector(vPrevDir);
+			Vec3  vNewUp   = Pl.MirrorVector(vPrevUp);
+			float fDot     = vPrevPos.Dot(Pl.n) - Pl.d;
+			Vec3  vNewPos  = vPrevPos - Pl.n * 2.0f * fDot;
+			Matrix34A m    = sMatrixLookAt(vNewDir, vNewUp, tmp_cam.GetAngles()[2]);
 			m.SetTranslation(vNewPos);
 			tmp_cam.SetMatrix(m);
 
@@ -5107,8 +5114,8 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 			//Matrix34 matMir=RefMatrix34*tmp_cam.GetMatrix();
 			//tmp_cam.SetMatrix(matMir);
 			assert(Tex);
-			tmp_cam.SetFrustum((int)(Tex->GetWidth() * tmp_cam.GetProjRatio()), Tex->GetHeight(), tmp_cam.GetFov(), fMinDist, fMaxDist); //tmp_cam.GetFarPlane());
-			bMirror = true;
+			tmp_cam.SetFrustum((int)(Tex->GetWidth() * tmp_cam.GetProjRatio()), Tex->GetHeight(), tmp_cam.GetFov(), fMinDist, fMaxDist);       //tmp_cam.GetFarPlane());
+			bMirror       = true;
 			bUseClipPlane = true;
 		}
 		SetCamera(tmp_cam);
@@ -5122,7 +5129,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 		// get texture surface
 		// Get current render target from the RT stack
 		if (!CRenderer::CV_r_debugrefraction)
-			FX_ScreenStretchRect(Tex);   // should encode hdr format
+			FX_ScreenStretchRect(Tex);                                                                                                   // should encode hdr format
 		else
 			FX_ClearTarget(Tex, Clr_Debug);
 
@@ -5183,13 +5190,13 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 				SetCamera(tmp_cam_mgpu);
 		}
 
-		m_RP.m_TI[nThreadList].m_PersFlags |= RBPF_OBLIQUE_FRUSTUM_CLIPPING | RBPF_MIRRORCAMERA;  // | RBPF_MIRRORCULL; ??
+		m_RP.m_TI[nThreadList].m_PersFlags |= RBPF_OBLIQUE_FRUSTUM_CLIPPING | RBPF_MIRRORCAMERA;     // | RBPF_MIRRORCULL; ??
 
 		Plane p;
-		p.n[0] = plane[0];
-		p.n[1] = plane[1];
-		p.n[2] = plane[2];
-		p.d = plane[3]; // +0.25f;
+		p.n[0]      = plane[0];
+		p.n[1]      = plane[1];
+		p.n[2]      = plane[2];
+		p.d         = plane[3];                                                                  // +0.25f;
 		fAnisoScale = plane[3];
 		fAnisoScale = fabs(fabs(fAnisoScale) - GetCamera().GetPosition().z);
 		m_RP.m_TI[nThreadList].m_bObliqueClipPlane = true;
@@ -5198,7 +5205,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 		Matrix44A mView, mProj, mCamProj, mInvCamProj;
 		GetModelViewMatrix(&mView(0, 0));
 		GetProjectionMatrix(&mProj(0, 0));
-		mCamProj = mView * mProj;
+		mCamProj    = mView * mProj;
 		mInvCamProj = mCamProj.GetInverted();
 		m_RP.m_TI[nThreadList].m_pObliqueClipPlane = TransformPlane2(mInvCamProj, p);
 
@@ -5233,7 +5240,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pR
 		eng->RenderWorld(nRFlags, SRenderingPassInfo::CreateRecursivePassRenderingInfo(bOceanRefl ? tmp_cam_mgpu : tmp_cam, nRenderPassFlags), __FUNCTION__);
 
 		m_RP.m_TI[nThreadList].m_bObliqueClipPlane = false;
-		m_RP.m_TI[nThreadList].m_PersFlags &= ~RBPF_OBLIQUE_FRUSTUM_CLIPPING;
+		m_RP.m_TI[nThreadList].m_PersFlags        &= ~RBPF_OBLIQUE_FRUSTUM_CLIPPING;
 	}
 	m_pRT->RC_PopRT(0);
 

@@ -565,6 +565,9 @@ void CD3D9Renderer::DrawAllShadowsOnTheScreen()
 				{
 					int nSavedAccessFrameID = pTX->m_pTexture->m_nAccessFrameID;
 
+					// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+					CryStackAllocWithSizeVector(SVF_P3F_T3F, 4, vQuad, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
 					SetState(/*GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | */ GS_NODEPTHTEST);
 					if (tp->GetTextureType() == eTT_2D)
 					{
@@ -592,10 +595,6 @@ void CD3D9Renderer::DrawAllShadowsOnTheScreen()
 						tp->Apply(0, CTexture::GetTexState(ts));
 						D3DSetCull(eCULL_None);
 
-						TempDynVB<SVF_P3F_T3F> vb;
-						vb.Allocate(4);
-						SVF_P3F_T3F* vQuad = vb.Lock();
-
 						vQuad[0].p = Vec3(x, y, 1);
 						vQuad[0].st = Vec3(0, 1, 1);
 						//vQuad[0].color.dcolor = (uint32)-1;
@@ -609,9 +608,7 @@ void CD3D9Renderer::DrawAllShadowsOnTheScreen()
 						vQuad[2].st = Vec3(0, 0, 1);
 						//vQuad[2].color.dcolor = (uint32)-1;
 
-						vb.Unlock();
-						vb.Bind(0);
-						vb.Release();
+						TempDynVB<SVF_P3F_T3F>::CreateFillAndBind(vQuad, 4, 0);
 
 						if (!FAILED(FX_SetVertexDeclaration(0, eVF_P3F_T3F)))
 						{
@@ -666,10 +663,6 @@ void CD3D9Renderer::DrawAllShadowsOnTheScreen()
 
 						for (int i = 0; i < 6; i++)
 						{
-							TempDynVB<SVF_P3F_T3F> vb;
-							vb.Allocate(4);
-							SVF_P3F_T3F* vQuad = vb.Lock();
-
 							vQuad[0].p = Vec3(fOffsX[i], fOffsY[i], 1);
 							vQuad[0].st = vTC0[i];
 							//vQuad[0].color.dcolor = (uint32)-1;
@@ -683,9 +676,7 @@ void CD3D9Renderer::DrawAllShadowsOnTheScreen()
 							vQuad[2].st = vTC3[i];
 							//vQuad[2].color.dcolor = (uint32)-1;
 
-							vb.Unlock();
-							vb.Bind(0);
-							vb.Release();
+							TempDynVB<SVF_P3F_T3F>::CreateFillAndBind(vQuad, 4, 0);
 
 							if (!FAILED(FX_SetVertexDeclaration(0, eVF_P3F_T3F)))
 							{
@@ -887,7 +878,7 @@ bool CD3D9Renderer::PrepareDepthMap(CRenderView* pRenderView, ShadowMapFrustum* 
 		if (pShadowFrustum->m_eReqTF == eTF_R32F || pShadowFrustum->m_eReqTF == eTF_R16G16F || pShadowFrustum->m_eReqTF == eTF_R16F || pShadowFrustum->m_eReqTF == eTF_R16G16B16A16F)
 		{
 			m_RP.m_PersFlags2 |= RBPF2_NOALPHATEST;
-			m_RP.m_StateAnd &= ~GS_ALPHATEST_MASK;
+			m_RP.m_StateAnd &= ~GS_ALPHATEST;
 		}
 		CCamera saveCam = GetCamera();
 		Vec3 vPos = pShadowFrustum->vLightSrcRelPos + pShadowFrustum->vProjTranslation;
@@ -1283,7 +1274,7 @@ void CD3D9Renderer::ConfigShadowTexgen(int Num, ShadowMapFrustum* pFr, int nFrus
 	Matrix44 mScreenToShadow;
 	int vpX, vpY, vpWidth, vpHeight;
 	GetViewport(&vpX, &vpY, &vpWidth, &vpHeight);
-	FX_DeferredShadowPassSetup(/*shadowMat*/ gRenDev->m_TempMatrices[Num][0], pFr, (float)vpWidth, (float)vpHeight,
+	FX_DeferredShadowPassSetup(/*shadowMat*/ gRenDev->m_TempMatrices[Num][0], GetCamera(), pFr, (float)vpWidth, (float)vpHeight,
 	                                         mScreenToShadow, pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest);
 
 #if defined(VOLUMETRIC_FOG_SHADOWS)
@@ -1325,7 +1316,7 @@ void CD3D9Renderer::ConfigShadowTexgen(int Num, ShadowMapFrustum* pFr, int nFrus
 			Matrix44A mLightViewPrev = pPrevFr->mLightViewMatrix;
 			Matrix44A shadowMatPrev = mLightViewPrev * mClipToTexSpace;  // NOTE: no sub-rect here as blending code assumes full [0-1] UV range;
 
-			FX_DeferredShadowPassSetupBlend(shadowMatPrev.GetTransposed(), Num, (float)vpWidth, (float)vpHeight);
+			FX_DeferredShadowPassSetupBlend(shadowMatPrev.GetTransposed(), GetCamera(), Num, (float)vpWidth, (float)vpHeight);
 
 			m_cEF.m_TempVecs[2][2] = 1.f / (pPrevFr->fFarDist);
 
@@ -1337,11 +1328,10 @@ void CD3D9Renderer::ConfigShadowTexgen(int Num, ShadowMapFrustum* pFr, int nFrus
 	}
 	//////////////////////////////////////////////////////////////////////////
 
-	//rotation matrix for far terrain projection
-	//Fix: Generate separate matrix for frustum
+	// Noise projection for shadow mask
 	Matrix33 mRotMatrix(mLightView);
-	mRotMatrix.OrthonormalizeFast();
-	gRenDev->m_TempMatrices[0][1] = Matrix44(mRotMatrix).GetTransposed();
+	mRotMatrix.orthonormalizeFastLH();
+	gRenDev->m_TempMatrices[0][1] = Matrix44r(mRotMatrix).GetTransposed() * Matrix44r(gRenDev->m_TempMatrices[Num][0]).GetInverted();
 
 	// enable combined shadow maps
 	static ICVar* p_e_gsm_combined = 0; //iConsole->GetCVar("e_GsmCombined");		assert(p_e_gsm_combined);
@@ -1474,6 +1464,11 @@ void CD3D9Renderer::FX_SetupForwardShadows(CRenderView* pRenderView, bool bUseSh
 	{
 		m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE0] | g_HWSR_MaskBit[HWSR_SAMPLE1] | g_HWSR_MaskBit[HWSR_SAMPLE2] | g_HWSR_MaskBit[HWSR_SAMPLE3] |
 		                           g_HWSR_MaskBit[HWSR_LIGHT_TEX_PROJ]);
+	}
+	else
+	{
+		for (int i = SMFrustums.size() * 2; i < CRY_ARRAY_COUNT(m_RP.m_ShadowCustomTexBind); ++i)
+			m_RP.m_ShadowCustomTexBind[i] = CTexture::s_ptexFarPlane->GetID();
 	}
 
 	uint32 nCascadeMask = 0;

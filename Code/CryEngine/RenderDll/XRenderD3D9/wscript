@@ -25,14 +25,15 @@ def build(bld):
 		additional_defines += ['EXCLUDE_AMD_API']
 
 	bld.CryEngineModule(
-		target       = 'CryRenderD3D11',
-		vs_filter    = 'CryEngine',
+		target      = 'CryRenderD3D11',
+		vs_filter   = 'CryEngine',
 
-		file_list    = 'core_renderer.waf_files',
-		pch          = '../StdAfx.cpp',
-		includes     = [ '..', Path('Code/SDKs/squish-ccr') ],
-		defines      = [ 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
-		use_module   = [ 'lzma', 'lzss', 'lz4' ],
+		file_list   = 'core_renderer.waf_files',
+		pch         = '../StdAfx.cpp',
+		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
+		defines     = [ 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
+		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
+		features    = [ 'copy_d3d_compiler' ],
 
 		win_features    = [ 'copy_d3d_compiler' ],
 		win_file_list   = 'mesh_baker.waf_files',
@@ -65,7 +66,7 @@ def build(bld):
 		pch         = '../StdAfx.cpp',
 		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
 		defines     = [ 'OPENGL', 'DO_RENDERSTATS', '_RENDERER' ],
-		use_module  = [ 'lzma', 'lzss', 'lz4' ],
+		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
 
 		win_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_wgl.waf_files'],
 		win_includes     = [ Path('Code/SDKs/squish-ccr'), Path('Code/Tools/LibTIFF'), Path('Code/Tools/HLSLCrossCompiler/include') ],
@@ -109,7 +110,7 @@ def build(bld):
 			pch        = '../StdAfx.cpp',
 			includes    = [ '..', Path('Code/SDKs'), Path('Code/SDKs/squish-ccr') ],
 			defines     = [ 'DIRECT3D10', 'CRY_USE_DX12', 'XRENDERD3D10_EXPORTS', 'DO_RENDERSTATS', '_RENDERER' ],
-			use_module  = [ 'lzma', 'lzss', 'lz4' ],
+			use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
 
 			# , 'd3d11'
 			win_features     = [ 'copy_d3d_compiler' ],
@@ -125,9 +126,9 @@ def build(bld):
 		Logs.warn('MSVC 14.0 is not being used - CryRenderD3D12 cannot be built.')
 
 	# GNM backend may not be available, so check here
-	if os.path.isdir(Path('Code/SDKs/Orbis')) and os.path.isdir(Path('Code/CryEngine/RenderDll/XRenderD3D9/GNM')) and ('orbis' in bld.get_supported_platforms()):
+	if os.path.isdir(Path('Code/SDKs/Orbis')) and os.path.isdir(Path('Code/CryEngine/RenderDll/XRenderD3D9/GNM')):
 		rsc_output_folder = 'Tools/RemoteShaderCompiler'
-		compiler_version = '"ORBIS/V028"' # Must be quoted
+		compiler_version = '"ORBIS/V029"' # Must be quoted
 
 		# GNM render backend
 		bld.CryEngineModule(
@@ -138,7 +139,7 @@ def build(bld):
 			defines     = [ '_RENDERER', 'DO_RENDERSTATS', 'CRY_USE_GNM', 'CRY_USE_GNM_RENDERER', 'CRY_GNM_SHADER_COMPILER_VERSION=' + compiler_version ],
 			lib         = [ 'SceSystemService_stub_weak', 'SceGnmDriver_stub_weak' ],
 			includes    = [ '..' ],
-			use_module  = [ 'lzma', 'lzss', 'lz4' ],
+			use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
 
 			performance_cxxflags = '-flto',
 			release_cxxflags     = '-flto',
@@ -160,7 +161,7 @@ def build(bld):
 			lib        = 'libSceShaderWavePsslc',
 			features   = 'copy_psslc',
 
-			output_sub_folder = Path(os.path.join(rsc_output_folder, 'Compiler', compiler_version)),
+			output_sub_folder = Path(os.path.join(rsc_output_folder, 'Compiler', compiler_version[1:-1])),
 			force_static_crt  = True,
 		)
 

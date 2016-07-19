@@ -12,6 +12,7 @@ CSkin::CSkin(const string& strFileName, uint32 nLoadingFlags)
 	m_nRefCounter = 0;
 	m_nInstanceCounter = 0;
 	m_nLoadingFlags = nLoadingFlags;
+	m_needsComputeSkinningBuffers = false;
 }
 
 CSkin::~CSkin()

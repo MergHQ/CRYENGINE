@@ -17,10 +17,10 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureField = false;
-
 namespace pfx2
 {
+
+EParticleDataType PDT(EPDT_Alpha, float, 1, BHasInit(true));
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureFieldOpacity
@@ -40,7 +40,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		m_opacity.AddToComponent(pComponent, this, EPDT_Alpha, EPDT_AlphaInit);
+		m_opacity.AddToComponent(pComponent, this, EPDT_Alpha);
 
 		pParams->m_shaderData.m_alphaTest[0][0] = m_alphaScale.x;
 		pParams->m_shaderData.m_alphaTest[1][0] = m_alphaScale.y - m_alphaScale.x;
@@ -77,7 +77,7 @@ public:
 	virtual void InitParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		m_opacity.InitParticles(context, EPDT_Alpha, EPDT_AlphaInit);
+		m_opacity.InitParticles(context, EPDT_Alpha);
 	}
 
 	virtual void Update(const SUpdateContext& context) override
@@ -97,6 +97,8 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldOpacity, "Field", "Opa
 //////////////////////////////////////////////////////////////////////////
 // CFeatureFieldSize
 
+EParticleDataType PDT(EPDT_Size, float, 1, BHasInit(true));
+
 class CFeatureFieldSize : public CParticleFeature
 {
 public:
@@ -106,7 +108,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		m_size.AddToComponent(pComponent, this, EPDT_Size, EPDT_SizeInit);
+		m_size.AddToComponent(pComponent, this, EPDT_Size);
 		pParams->m_maxParticleSize = max(pParams->m_maxParticleSize, m_size.GetBaseValue());
 
 		if (auto gpuInt = GetGpuInterface())
@@ -135,7 +137,7 @@ public:
 	virtual void InitParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		m_size.InitParticles(context, EPDT_Size, EPDT_SizeInit);
+		m_size.InitParticles(context, EPDT_Size);
 	}
 
 	virtual void Update(const SUpdateContext& context) override
@@ -169,12 +171,10 @@ public:
 	{
 		pComponent->AddParticleData(EPVF_Position);
 		pComponent->AddParticleData(EPDT_Size);
-		pComponent->AddParticleData(EPDT_SizeInit);
 		if (m_affectOpacity)
 		{
 			m_initAlphas = !pComponent->UseParticleData(EPDT_Alpha);
 			pComponent->AddParticleData(EPDT_Alpha);
-			pComponent->AddParticleData(EPDT_AlphaInit);
 		}
 		pComponent->AddToUpdateList(EUL_Update, this);
 

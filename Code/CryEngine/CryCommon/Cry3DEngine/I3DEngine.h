@@ -1469,6 +1469,9 @@ struct I3DEngine : public IProcess
 	virtual void UnRegisterEntityDirect(IRenderNode* pEntity) = 0;
 	virtual void UnRegisterEntityAsJob(IRenderNode* pEnt) = 0;
 
+	//! Add a water ripple to the scene.
+	virtual void AddWaterRipple(const Vec3& vPos, float scale, float strength) = 0;
+
 	//! \return whether a world pos is under water.
 	virtual bool IsUnderWater(const Vec3& vPos) const = 0;
 

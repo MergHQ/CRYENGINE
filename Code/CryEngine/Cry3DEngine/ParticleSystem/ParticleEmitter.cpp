@@ -35,7 +35,10 @@ CParticleEmitter::CParticleEmitter()
 	, m_entityId(0)
 	, m_entitySlot(-1)
 	, m_emitterGeometrySlot(-1)
+	, m_time(0.0f)
+	, m_initialSeed(0)
 {
+	m_currentSeed = m_initialSeed;
 	m_nInternalFlags |= IRenderNode::REQUIRES_FORWARD_RENDERING;
 	m_nInternalFlags |= IRenderNode::REQUIRES_NEAREST_CUBEMAP;
 }
@@ -44,6 +47,7 @@ CParticleEmitter::~CParticleEmitter()
 {
 	SetCEffect(0);
 	gEnv->p3DEngine->FreeRenderNodeState(this);
+	ResetRenderObjects();
 }
 
 EERType CParticleEmitter::GetRenderNodeType()
@@ -92,13 +96,16 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 
 	for (auto& pComponentRuntime : m_componentRuntimes)
 	{
-		pComponentRuntime.pComponent->Render(pComponentRuntime.pRuntime, renderContext, this);
+		pComponentRuntime.pComponent->Render(this, pComponentRuntime.pRuntime, renderContext);
 	}
 }
 
 void CParticleEmitter::Update()
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+
+	m_time += gEnv->pTimer->GetFrameTime();
+	++m_currentSeed;
 
 	m_pEffect->Compile();
 	if (m_editVersion != m_pEffect->GetEditVersion())
@@ -173,7 +180,8 @@ float CParticleEmitter::GetMaxViewDist()
 		const auto& params = m_pEffect->GetCComponent(i)->GetComponentParams();
 		maxParticleSize = max(maxParticleSize, params.m_maxParticleSize * params.m_visibility.m_viewDistanceMultiple);
 	}
-	float maxAngularDensity = GetPSystem()->GetMaxAngularDensity();
+	IRenderer* pRenderer = GetRenderer();
+	float maxAngularDensity = pRenderer ? GetPSystem()->GetMaxAngularDensity(pRenderer->GetCamera()) : 1080.0f;
 	float maxDistance = maxAngularDensity * maxParticleSize * m_viewDistRatio;
 	return maxDistance;
 }
@@ -252,6 +260,20 @@ void CParticleEmitter::Activate(bool activate)
 
 void CParticleEmitter::Kill()
 {
+	for (auto& componentRef : m_componentRuntimes)
+	{
+		auto pCpuComponent = componentRef.pRuntime->GetCpuRuntime();
+		if (pCpuComponent)
+		{
+			pCpuComponent->RemoveAllSubInstances();
+			pCpuComponent->Reset();
+		}
+		auto pGpuComponent = componentRef.pRuntime->GetGpuRuntime();
+		if (pGpuComponent)
+		{
+			pGpuComponent->RemoveAllSubInstances();
+		}
+	}
 }
 
 bool CParticleEmitter::IsActive() const
@@ -365,8 +387,31 @@ bool CParticleEmitter::UpdateStreamableComponents(float fImportance, const Matri
 	return true;
 }
 
+void CParticleEmitter::SetSpawnParams(const SpawnParams& spawnParams)
+{
+	const int forcedSeed = GetCVars()->e_ParticlesForceSeed;
+	if (spawnParams.nSeed != -1)
+	{
+		m_initialSeed = uint32(spawnParams.nSeed);
+		m_time = 0.0f;
+	}
+	else if (forcedSeed != 0)
+	{
+		m_initialSeed = forcedSeed;
+		m_time = 0.0f;
+	}
+	else
+	{
+		m_initialSeed = cry_random_uint32();
+		m_time = gEnv->pTimer->GetCurrTime();
+	}
+	m_currentSeed = m_initialSeed;
+}
+
 void CParticleEmitter::UpdateRuntimeRefs()
 {
+	ResetRenderObjects();
+
 	TComponentRuntimes newRuntimes;
 
 	TComponentId lastComponentId = m_pEffect->GetNumComponents();
@@ -421,13 +466,14 @@ void CParticleEmitter::UpdateRuntimeRefs()
 			thisComponentId = params.m_parentId;
 		}
 
-		const CParticleComponent* component = m_pEffect->GetCComponent(componentId);
+		CParticleComponent* component = m_pEffect->GetCComponent(componentId);
+		ICommonParticleComponentRuntime* pCommonRuntime = m_componentRuntimes[componentId].pRuntime;
 		if (!component->GetRuntimeInitializationParameters().usesGpuImplementation)
 		{
-			CParticleComponentRuntime* pRuntime = m_componentRuntimes[componentId].pRuntime->GetCpuRuntime();
-			const SComponentParams& params = pRuntime->GetComponentParams();
-			const bool wasActive = pRuntime->IsActive();
-			const bool isSecondGen = params.IsSecondGen();
+			CParticleComponentRuntime* pRuntime    = pCommonRuntime->GetCpuRuntime();
+			const SComponentParams&    params      = pRuntime->GetComponentParams();
+			const bool                 wasActive   = pRuntime->IsActive();
+			const bool                 isSecondGen = params.IsSecondGen();
 			pRuntime->RemoveAllSubInstances();
 			pRuntime->SetActive(isActive);
 			if (isActive)
@@ -444,7 +490,7 @@ void CParticleEmitter::UpdateRuntimeRefs()
 		else
 		{
 			gpu_pfx2::IParticleComponentRuntime* pRuntime =
-			  m_componentRuntimes[componentId].pRuntime->GetGpuRuntime();
+				pCommonRuntime->GetGpuRuntime();
 			pRuntime->RemoveAllSubInstances();
 			pRuntime->SetActive(isActive);
 			const bool isSecondGen = pRuntime->IsSecondGen();
@@ -455,9 +501,28 @@ void CParticleEmitter::UpdateRuntimeRefs()
 				pRuntime->AddSubInstances(&instance, 1);
 			}
 		}
+		component->PrepareRenderObjects(this);
 	}
 
 	m_editVersion = m_pEffect->GetEditVersion();
+}
+
+void CParticleEmitter::ResetRenderObjects()
+{
+	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
+	{
+		for (uint i = 0; i < m_pRenderObjects[threadId].size(); ++i)
+		{
+			if (m_pRenderObjects[threadId][i] == nullptr)
+				continue;
+			if (m_pRenderObjects[threadId][i]->m_pRE != nullptr)
+				m_pRenderObjects[threadId][i]->m_pRE->Release();
+			gEnv->pRenderer->EF_FreeObject(m_pRenderObjects[threadId][i]);
+			m_pRenderObjects[threadId][i] = nullptr;
+		}
+		if (m_pEffect)
+			m_pRenderObjects[threadId].resize(m_pEffect->GetNumRenderObjectIds(), nullptr);
+	}
 }
 
 void CParticleEmitter::AddInstance()
@@ -540,6 +605,19 @@ QuatTS CParticleEmitter::GetEmitterGeometryLocation() const
 
 	}
 	return m_location;
+}
+
+CRenderObject* CParticleEmitter::GetRenderObject(uint threadId, uint renderObjectIdx)
+{
+	CRY_PFX2_ASSERT(threadId < RT_COMMAND_BUF_COUNT);
+	return m_pRenderObjects[threadId][renderObjectIdx];
+}
+
+void CParticleEmitter::SetRenderObject(CRenderObject* pRenderObject, uint threadId, uint renderObjectIdx)
+{
+	CRY_PFX2_ASSERT(threadId < RT_COMMAND_BUF_COUNT);
+	CRY_PFX2_ASSERT(m_pRenderObjects[threadId][renderObjectIdx] == nullptr);
+	m_pRenderObjects[threadId][renderObjectIdx] = pRenderObject;
 }
 
 void CParticleEmitter::UpdateTargetFromEntity(IEntity* pEntity)

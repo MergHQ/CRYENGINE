@@ -18,8 +18,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureFluidDynamics = false;
-
 namespace pfx2
 {
 

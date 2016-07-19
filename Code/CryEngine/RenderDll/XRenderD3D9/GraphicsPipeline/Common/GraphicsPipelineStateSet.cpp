@@ -8,6 +8,7 @@
 
 SGraphicsPipelineStateDescription::SGraphicsPipelineStateDescription(
   CRenderObject* pObj,
+  CRendElementBase* pRE,
   const SShaderItem& _shaderItem,
   EShaderTechniqueID _technique,
   EVertexFormat _vertexFormat,
@@ -24,13 +25,13 @@ SGraphicsPipelineStateDescription::SGraphicsPipelineStateDescription(
 	streamMask = _streamMask;
 	primitiveType = _primitiveType;
 
-	if ((pObj->m_ObjFlags & FOB_SKINNED) && CRenderer::CV_r_usehwskinning && !CRenderer::CV_r_character_nodeform)
+	if ((pObj->m_ObjFlags & FOB_SKINNED) && (pRE->m_Flags & FCEF_SKINNED) && CRenderer::CV_r_usehwskinning && !CRenderer::CV_r_character_nodeform)
 	{
 		SSkinningData* pSkinningData = NULL;
 		SRenderObjData* pOD = pObj->GetObjData();
 		if (pOD && (pSkinningData = pOD->m_pSkinningData))
 		{
-			ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
+			static ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
 			bool bDoComputeDeformation = (cvar_gd && cvar_gd->GetIVal()) && (pSkinningData->nHWSkinningFlags & eHWS_DC_deformation_Skinning);
 
 			// here we decide if we go compute or vertex skinning

@@ -123,10 +123,10 @@ DXGL_DEFINE_TYPE_GUID(struct, IDXGIFactory,                         7b7166ec, 21
 DXGL_DEFINE_TYPE_GUID(struct, IDXGIFactory1,                        770AAE78, F26F, 4DBA, A8, 29, 25, 3C, 83, D1, B3, 87)
 DXGL_DEFINE_TYPE_GUID(struct, IDXGIDevice,                          54EC77FA, 1377, 44E6, 8C, 32, 88, FD, 5F, 44, C8, 4C)
 DXGL_DEFINE_TYPE_GUID(struct, IDXGISwapChain,                       310d36a0, d2e7, 4c0a, aa, 04, 6a, 9d, 23, b8, 88, 6a)
+
 DXGL_DEFINE_GUID(WKPDID_D3DDebugObjectName, 429B8C22, 9188, 4B0C, 87, 42, AC, B0, BF, 85, C2, 00)
 
 #else
-
 DXGL_DEFINE_TYPE_GUID(class, CCryDXGLTexture1D,         637BD3A1, 3507, 4ECA, B0, 24, F4, 5E, 72, 1A, 93, CA)
 DXGL_DEFINE_TYPE_GUID(class, CCryDXGLTexture2D,         810C3ECB, 11EA, 48C6, 92, EE, FE, 1F, 56, CC, A1, FB)
 DXGL_DEFINE_TYPE_GUID(class, CCryDXGLTexture3D,         AD18E34A, 1879, 4329, 8A, 38, 47, 3E, 98, 92, 11, F6)
@@ -143,6 +143,7 @@ DXGL_DEFINE_TYPE_GUID(class, CCryDXGLGIFactory,         408D1CF0, 64A9, 4B2D, 99
 DXGL_DEFINE_TYPE_GUID(class, CCryDXGLGIAdapter,         BA6BC4F4, 7419, 4CDA, A4, 76, 0C, 89, 35, 6B, 48, 6F)
 DXGL_DEFINE_TYPE_GUID(class, CCryDXGLGIDevice,          ED665E26, B530, 432F, 83, 19, BB, 2D, 87, FA, 71, C2)
 DXGL_DEFINE_TYPE_GUID(class, CCryDXGLGIObject,          CB223673, 742A, 458F, 90, ED, AC, 1E, 25, 94, 83, 46)
+DXGL_DEFINE_TYPE_GUID(class, CCryDXGLSwapChain,         06cef291, a887, 4f9f, 95, 9c, 0a, ed, 53, 2c, 4c, 7b)
 #if DXGL_VIRTUAL_DEVICE_AND_CONTEXT
 DXGL_DEFINE_TYPE_GUID(struct, ID3D11Device,             2203D7E1, 1491, 4D0A, BA, E1, 28, F3, AD, 1A, 24, 56)
 DXGL_DEFINE_TYPE_GUID(struct, ID3D11DeviceContext,      649E1339, C585, 4F31, 8B, F6, E2, 6C, D4, 20, EA, 82)

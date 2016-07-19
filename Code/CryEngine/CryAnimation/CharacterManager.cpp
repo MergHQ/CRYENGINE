@@ -1810,25 +1810,6 @@ void CharacterManager::UpdateStreaming(int nFullUpdateRoundId, int nFastUpdateRo
 
 void CharacterManager::UpdateStreaming_SKEL(std::vector<CDefaultSkeletonReferences>& skels, uint32 nRenderFrameId, const uint32* nRoundIds)
 {
-	// Since CHR is not meant to be rendered, geom deformation stops the loading and the pollution of the render pipeline
-
-	/* In case this will change in the future, one has to request a skinning output once the render mesh gets streamed.
-	   The following code does that and should be placed inside CryCHRLoader::EndStreamSkel() after the render mesh is created
-
-	   ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
-	   bool bDoSkinnedOutput = cvar_gd && cvar_gd->GetIVal();
-	   if (bDoSkinnedOutput && m_pNewRenderMesh)
-	   {
-	    for (size_t i=0; i<m_RefByInstances.size(); ++i)
-	    {
-	      m_pNewRenderMesh->CreateSkinnedOutput(m_RefByInstances[i]);
-	    }
-	   }
-	 */
-	ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
-	if (cvar_gd && cvar_gd->GetIVal())
-		return;
-
 	for (std::vector<CDefaultSkeletonReferences>::iterator it = skels.begin(), itEnd = skels.end(); it != itEnd; ++it)
 	{
 		CDefaultSkeleton* pSkel = it->m_pDefaultSkeleton;

@@ -15,7 +15,9 @@
 #if defined(FEATURE_SVO_GI)
 	#include "D3D_SVO.h"
 #endif
-#include "D3DVolumetricClouds.h"
+#include "GraphicsPipeline/VolumetricClouds.h"
+#include "GraphicsPipeline/VolumetricFog.h"
+#include "GraphicsPipeline/WaterRipples.h"
 
 #include "Common/RenderView.h"
 
@@ -2770,199 +2772,16 @@ NO_INLINE void sRTRect(UFloat4* sData, CD3D9Renderer* r)
 	sData[0].f[3] = r->m_cEF.m_RTRect.w;
 }
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-NO_INLINE void sSFCompMat(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* pParams(r->SF_GetGlobalDrawParams());
-	assert(pParams);
-	if (pParams)
-	{
-		Matrix44A& matComposite((Matrix44A&)sData[0].f[0]);
-		matComposite = *pParams->pTransMat;
-		sAppendClipSpaceAdaptation(&matComposite);
-	}
-}
-NO_INLINE void sSFTexGenMat0(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* p(r->SF_GetGlobalDrawParams());
-	assert(p);
-	if (p)
-	{
-		const Matrix34A& mat(p->texture[0].texGenMat);
-		sData[0].f[0] = mat.m00;
-		sData[0].f[1] = mat.m01;
-		sData[0].f[2] = mat.m02;
-		sData[0].f[3] = mat.m03;
-
-		sData[1].f[0] = mat.m10;
-		sData[1].f[1] = mat.m11;
-		sData[1].f[2] = mat.m12;
-		sData[1].f[3] = mat.m13;
-	}
-}
-NO_INLINE void sSFTexGenMat1(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* p(r->SF_GetGlobalDrawParams());
-	assert(p);
-	if (p)
-	{
-		const Matrix34A& mat(p->texture[1].texGenMat);
-		sData[0].f[0] = mat.m00;
-		sData[0].f[1] = mat.m01;
-		sData[0].f[2] = mat.m02;
-		sData[0].f[3] = mat.m03;
-
-		sData[1].f[0] = mat.m10;
-		sData[1].f[1] = mat.m11;
-		sData[1].f[2] = mat.m12;
-		sData[1].f[3] = mat.m13;
-	}
-}
-NO_INLINE void sSFBitmapColorTransform(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* p(r->SF_GetGlobalDrawParams());
-	assert(p);
-	if (p)
-	{
-		const ColorF& col1st(p->colTransform1st);
-		const ColorF& col2nd(p->colTransform2nd);
-
-		sData[0].f[0] = col1st.r;
-		sData[0].f[1] = col1st.g;
-		sData[0].f[2] = col1st.b;
-		sData[0].f[3] = col1st.a;
-
-		sData[1].f[0] = col2nd.r;
-		sData[1].f[1] = col2nd.g;
-		sData[1].f[2] = col2nd.b;
-		sData[1].f[3] = col2nd.a;
-	}
-}
-NO_INLINE void sSFColorTransformMatrix(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* p(r->SF_GetGlobalDrawParams());
-	assert(p);
-	if (p)
-	{
-		const ColorF* colMat(p->colTransformMat);
-		sData[0].f[0] = colMat[0].r;
-		sData[0].f[1] = colMat[1].r;
-		sData[0].f[2] = colMat[2].r;
-		sData[0].f[3] = colMat[3].r;
-
-		sData[1].f[0] = colMat[0].g;
-		sData[1].f[1] = colMat[1].g;
-		sData[1].f[2] = colMat[2].g;
-		sData[1].f[3] = colMat[3].g;
-
-		sData[2].f[0] = colMat[0].b;
-		sData[2].f[1] = colMat[1].b;
-		sData[2].f[2] = colMat[2].b;
-		sData[2].f[3] = colMat[3].b;
-
-		sData[3].f[0] = colMat[0].a;
-		sData[3].f[1] = colMat[1].a;
-		sData[3].f[2] = colMat[2].a;
-		sData[3].f[3] = colMat[3].a;
-	}
-}
-NO_INLINE void sSFStereoVideoFrameSelect(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* p(r->SF_GetGlobalDrawParams());
-	assert(p);
-	if (p)
-	{
-		const ColorF& col1st(p->colTransform1st);
-		sData[0].f[0] = p->texGenYUVAStereo.x;
-		sData[0].f[1] = p->texGenYUVAStereo.y;
-		sData[0].f[2] = 0;
-		sData[0].f[3] = 0;
-	}
-}
-NO_INLINE void sSFPremultipliedAlpha(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* p(r->SF_GetGlobalDrawParams());
-	assert(p);
-	if (p)
-	{
-		sData[0].f[0] = p->premultipliedAlpha ? 1.f : 0.f;
-		sData[0].f[1] = 0;
-		sData[0].f[2] = 0;
-		sData[0].f[3] = 0;
-	}
-}
-NO_INLINE void sSFBlurFilterSize(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* p(r->SF_GetGlobalDrawParams());
-	assert(p);
-	if (p)
-	{
-		sData[0].f[0] = p->blurParams.blurFilterSize.x;
-		sData[0].f[1] = p->blurParams.blurFilterSize.y;
-		sData[0].f[2] = p->blurParams.blurFilterSize.z;
-		sData[0].f[3] = p->blurParams.blurFilterSize.w;
-	}
-}
-NO_INLINE void sSFBlurFilerScale(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* p(r->SF_GetGlobalDrawParams());
-	assert(p);
-	if (p)
-	{
-		sData[0].f[0] = p->blurParams.blurFilterScale.x;
-		sData[0].f[1] = p->blurParams.blurFilterScale.y;
-		sData[0].f[2] = 0;
-		sData[0].f[3] = 0;
-	}
-}
-NO_INLINE void sSFBlurFilerOffset(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* p(r->SF_GetGlobalDrawParams());
-	assert(p);
-	if (p)
-	{
-		sData[0].f[0] = p->blurParams.blurFilterOffset.x;
-		sData[0].f[1] = p->blurParams.blurFilterOffset.y;
-		sData[0].f[2] = 0;
-		sData[0].f[3] = 0;
-	}
-}
-NO_INLINE void sSFBlurFilerColor1(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* p(r->SF_GetGlobalDrawParams());
-	assert(p);
-	if (p)
-	{
-		sData[0].f[0] = p->blurParams.blurFilterColor1.r;
-		sData[0].f[1] = p->blurParams.blurFilterColor1.g;
-		sData[0].f[2] = p->blurParams.blurFilterColor1.b;
-		sData[0].f[3] = p->blurParams.blurFilterColor1.a;
-	}
-}
-NO_INLINE void sSFBlurFilerColor2(UFloat4* sData, CD3D9Renderer* r)
-{
-	const SSF_GlobalDrawParams* p(r->SF_GetGlobalDrawParams());
-	assert(p);
-	if (p)
-	{
-		sData[0].f[0] = p->blurParams.blurFilterColor2.r;
-		sData[0].f[1] = p->blurParams.blurFilterColor2.g;
-		sData[0].f[2] = p->blurParams.blurFilterColor2.b;
-		sData[0].f[3] = p->blurParams.blurFilterColor2.a;
-	}
-}
-#endif
-
 }
 
-void CRenderer::UpdateConstParamsPF()
+void CRenderer::UpdateConstParamsPF(const SRenderingPassInfo& passInfo)
 {
 	// Per frame - hardcoded/fast - update of commonly used data - feel free to improve this
 	int nThreadID = m_RP.m_nFillThreadID;
 
 	SCGParamsPF& PF = gRenDev->m_cEF.m_PF[nThreadID];
 	uint32 nFrameID = gRenDev->m_RP.m_TI[nThreadID].m_nFrameUpdateID;
-	if (PF.nFrameID == nFrameID || IsRecursiveRenderView())
+	if (PF.nFrameID == nFrameID || passInfo.GetRenderView()->IsRecursive())
 		return;
 
 	PF.nFrameID = nFrameID;
@@ -3020,8 +2839,7 @@ void CRenderer::UpdateConstParamsPF()
 	cloudShadowOffset.x -= (int) cloudShadowOffset.x;
 	cloudShadowOffset.y -= (int) cloudShadowOffset.y;
 
-	CD3D9Renderer* const __restrict r = gcpRendD3D;
-	if (r->GetVolumetricCloud().IsRenderable())
+	if (CVolumetricCloudsStage::IsRenderable())
 	{
 		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_TILING_OFFSET, PF.pVolCloudTilingOffset);
 		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_TILING_SIZE, PF.pVolCloudTilingSize);
@@ -3049,7 +2867,7 @@ void CRenderer::UpdateConstParamsPF()
 		// ECGP_PB_CloudShadowAnimParams
 		const Vec2 cloudOffset(PF.pVolCloudTilingOffset.x, PF.pVolCloudTilingOffset.y);
 		const Vec2 vTiling(cloudShadowTilingSize.z, cloudShadowTilingSize.z);
-		PF.pCloudShadowAnimParams = r->GetVolumetricCloud().GetVolumetricCloudShadowParam(gcpRendD3D, cloudOffset, vTiling);
+		PF.pCloudShadowAnimParams = CVolumetricCloudsStage::GetVolumetricCloudShadowParams(gRenDev->GetRCamera(), cloudOffset, vTiling);
 	}
 	else
 	{
@@ -3963,7 +3781,17 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 
 			case ECGP_PB_VolumetricFogGlobalEnvProbe0:
 				{
-					const Vec4& param = r->GetVolumetricFog().GetGlobalEnvProbeShaderParam0();
+					Vec4 param(0.0f);
+					if ((r->m_nGraphicsPipeline) > 0)
+					{
+						auto pStage = r->GetGraphicsPipeline().GetVolumetricFogStage();
+						CRY_ASSERT(pStage);
+						param = pStage->GetGlobalEnvProbeShaderParam0();
+					}
+					else
+					{
+						param = r->GetVolumetricFog().GetGlobalEnvProbeShaderParam0();
+					}
 					sData[0].f[0] = param.x;
 					sData[0].f[1] = param.y;
 					sData[0].f[2] = param.z;
@@ -3973,7 +3801,17 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 
 			case ECGP_PB_VolumetricFogGlobalEnvProbe1:
 				{
-					const Vec4& param = r->GetVolumetricFog().GetGlobalEnvProbeShaderParam1();
+					Vec4 param(0.0f);
+					if ((r->m_nGraphicsPipeline) > 0)
+					{
+						auto pStage = r->GetGraphicsPipeline().GetVolumetricFogStage();
+						CRY_ASSERT(pStage);
+						param = pStage->GetGlobalEnvProbeShaderParam1();
+					}
+					else
+					{
+						param = r->GetVolumetricFog().GetGlobalEnvProbeShaderParam1();
+					}
 					sData[0].f[0] = param.x;
 					sData[0].f[1] = param.y;
 					sData[0].f[2] = param.z;
@@ -4300,44 +4138,6 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 			case ECGP_PF_NearFarDist:
 				sNearFarDist(sData, r);
 				break;
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-			case ECGP_Matr_PB_SFCompMat:
-				sSFCompMat(sData, r);
-				break;
-			case ECGP_Matr_PB_SFTexGenMat0:
-				sSFTexGenMat0(sData, r);
-				break;
-			case ECGP_Matr_PB_SFTexGenMat1:
-				sSFTexGenMat1(sData, r);
-				break;
-			case ECGP_PB_SFBitmapColorTransform:
-				sSFBitmapColorTransform(sData, r);
-				break;
-			case ECGP_PB_SFColorTransformMatrix:
-				sSFColorTransformMatrix(sData, r);
-				break;
-			case ECGP_PB_SFStereoVideoFrameSelect:
-				sSFStereoVideoFrameSelect(sData, r);
-				break;
-			case ECGP_PB_SFPremultipliedAlpha:
-				sSFPremultipliedAlpha(sData, r);
-				break;
-			case ECGP_PB_SFBlurFilterSize:
-				sSFBlurFilterSize(sData, r);
-				break;
-			case ECGP_PB_SFBlurFilterScale:
-				sSFBlurFilerScale(sData, r);
-				break;
-			case ECGP_PB_SFBlurFilterOffset:
-				sSFBlurFilerOffset(sData, r);
-				break;
-			case ECGP_PB_SFBlurFilterColor1:
-				sSFBlurFilerColor1(sData, r);
-				break;
-			case ECGP_PB_SFBlurFilterColor2:
-				sSFBlurFilerColor2(sData, r);
-				break;
-#endif
 			case ECGP_PB_CloudShadingColorSun:
 				sData[0].f[0] = PF.pCloudShadingColorSun.x;
 				sData[0].f[1] = PF.pCloudShadingColorSun.y;
@@ -4434,7 +4234,17 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 				}
 
 			case ECGP_PB_WaterRipplesLookupParams:
-				if (CPostEffectsMgr* pPostEffectsMgr = PostEffectMgr())
+				if ((r->m_nGraphicsPipeline) > 0)
+				{
+					auto pStage = r->GetGraphicsPipeline().GetWaterRipplesStage();
+					CRY_ASSERT(pStage);
+					auto param = pStage->GetWaterRippleLookupParam();
+					sData[0].f[0] = param.x;
+					sData[0].f[1] = param.y;
+					sData[0].f[2] = param.z;
+					sData[0].f[3] = param.w;
+				}
+				else if (CPostEffectsMgr* pPostEffectsMgr = PostEffectMgr())
 				{
 					if (CWaterRipples* pWaterRipplesTech = (CWaterRipples*)pPostEffectsMgr->GetEffect(ePFX_WaterRipples))
 					{
@@ -4807,6 +4617,7 @@ bool CHWShader_D3D::mfSetSamplers(const std::vector<SCGSampler>& Samplers, EHWSh
 				CTexture::SetSamplerState(gcpRendD3D->m_nPointWrapSampler, nSUnit, eSHClass);
 			}
 			break;
+
 		default:
 			assert(0);
 			break;
@@ -4900,53 +4711,6 @@ bool CHWShader_D3D::mfSetTextures(const std::vector<SCGTexture>& Textures, EHWSh
 				}
 			}
 			break;
-
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-		case ECGT_SF_Slot0:
-		case ECGT_SF_Slot1:
-		case ECGT_SF_SlotY:
-		case ECGT_SF_SlotU:
-		case ECGT_SF_SlotV:
-		case ECGT_SF_SlotA:
-			{
-				const SSF_GlobalDrawParams* pParams = rd->SF_GetGlobalDrawParams();
-				assert(pParams);
-				if (pParams)
-				{
-					int texIdx = pTexBind->m_eCGTextureType - ECGT_SF_Slot0;
-					int texID = -1;
-
-					if (texIdx < 2)
-					{
-						texID = pParams->texture[texIdx].texID;
-					}
-					else
-					{
-						assert(texIdx < 6);
-						texID = pParams->texID_YUVA[texIdx - 2];
-						texIdx = 0;
-					}
-
-					if (texID > 0)
-					{
-						const static int texStateID[8] =
-						{
-							CTexture::GetTexState(STexState(FILTER_POINT,     false)), CTexture::GetTexState(STexState(FILTER_POINT,     true)),
-							CTexture::GetTexState(STexState(FILTER_LINEAR,    false)), CTexture::GetTexState(STexState(FILTER_LINEAR,    true)),
-							CTexture::GetTexState(STexState(FILTER_TRILINEAR, false)), CTexture::GetTexState(STexState(FILTER_TRILINEAR, true)),
-							-1,                                               -1
-						};
-
-						CTexture* pTex = CTexture::GetByID(texID);
-						int textStateID = texStateID[pParams->texture[texIdx].texState];
-						pTex->Apply(nTUnit, textStateID);
-						break;
-					}
-				}
-				CTexture::s_ptexWhite->Apply(nTUnit);
-				break;
-			}
-#endif
 
 		case ECGT_Shadow0:
 		case ECGT_Shadow1:
@@ -5133,16 +4897,36 @@ bool CHWShader_D3D::mfSetTextures(const std::vector<SCGTexture>& Textures, EHWSh
 			break;
 		case ECGT_VolumetricFogGlobalEnvProbe0:
 			{
-				CTexture* tex = rd->GetVolumetricFog().GetGlobalEnvProbeTex0();
-				tex = (tex != NULL) ? tex : CTexture::s_ptexBlackCM;
-				tex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
+				CTexture* pTex = nullptr;
+				if ((rd->m_nGraphicsPipeline) > 0)
+				{
+					auto pStage = rd->GetGraphicsPipeline().GetVolumetricFogStage();
+					CRY_ASSERT(pStage);
+					pTex = pStage->GetGlobalEnvProbeTex0();
+				}
+				else
+				{
+					pTex = rd->GetVolumetricFog().GetGlobalEnvProbeTex0();
+				}
+				pTex = (pTex != nullptr) ? pTex : CTexture::s_ptexBlackCM;
+				pTex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
 			}
 			break;
 		case ECGT_VolumetricFogGlobalEnvProbe1:
 			{
-				CTexture* tex = rd->GetVolumetricFog().GetGlobalEnvProbeTex1();
-				tex = (tex != NULL) ? tex : CTexture::s_ptexBlackCM;
-				tex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
+				CTexture* pTex = nullptr;
+				if ((rd->m_nGraphicsPipeline) > 0)
+				{
+					auto pStage = rd->GetGraphicsPipeline().GetVolumetricFogStage();
+					CRY_ASSERT(pStage);
+					pTex = pStage->GetGlobalEnvProbeTex1();
+				}
+				else
+				{
+					pTex = rd->GetVolumetricFog().GetGlobalEnvProbeTex1();
+				}
+				pTex = (pTex != nullptr) ? pTex : CTexture::s_ptexBlackCM;
+				pTex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
 			}
 			break;
 #if defined(VOLUMETRIC_FOG_SHADOWS)
@@ -5258,6 +5042,27 @@ bool CHWShader_D3D::mfSetTextures(const std::vector<SCGTexture>& Textures, EHWSh
 				tex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
 			}
 			break;
+		case ECGT_CloudShadow:
+			{
+				const bool setupCloudShadows = rd->m_bShadowsEnabled && rd->m_bCloudShadowsEnabled;
+				CTexture* pCloudShadowTex = CTexture::s_ptexWhite;
+				if (setupCloudShadows)
+				{
+					// cloud shadow map
+					pCloudShadowTex =
+					  (rd->GetCloudShadowTextureId() > 0)
+					  ? CTexture::GetByID(rd->GetCloudShadowTextureId())
+					  : pCloudShadowTex;
+				}
+				pCloudShadowTex->ApplyTexture(nTUnit, eSHClass, SResourceView::DefaultView);
+			}
+			break;
+		case ECGT_VolCloudShadow:
+			{
+				CTexture* tex = CTexture::s_ptexVolCloudShadow;
+				tex->ApplyTexture(nTUnit, eSHClass, nResViewKey);
+			}
+			break;
 		default:
 			assert(0);
 			break;
@@ -5329,14 +5134,14 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 			}
 		}
 
-		IF(pSM && pSM->m_pAnimInfo, 0)
+		IF (pSM && pSM->m_pAnimInfo, 0)
 		{
 			STexSamplerRT* pRT = (STexSamplerRT*)pSM;
 			pRT->Update();
 			tx = pRT->m_pTex;
 		}
 
-		IF(!tx || tx->GetCustomID() <= 0 && smpTexType != tx->GetTexType(), 0)
+		IF (!tx || tx->GetCustomID() <= 0 && smpTexType != tx->GetTexType(), 0)
 		{
 #if !defined(_RELEASE)
 			string matName = "unknown";
@@ -5552,8 +5357,8 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 							else if ((rd->m_RP.m_ObjFlags & FOB_BLEND_WITH_TERRAIN_COLOR) && (nCustomID < 0))
 							{
 								// terrain atlas texture id
-							int nTexID0, nTexID1, nTexID2;
-							gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTexID0, nTexID1, nTexID2);
+								int nTexID0, nTexID1, nTexID2;
+								gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTexID0, nTexID1, nTexID2);
 								pTex = CTexture::GetByID(nTexID0);
 							}
 						}
@@ -5641,15 +5446,6 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 					}
 					break;
 
-				case TO_WATERRIPPLESMAP:
-					{
-						if (CTexture::s_ptexWaterRipplesDDN)
-							CTexture::s_ptexWaterRipplesDDN->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit, SResourceView::DefaultView, eSHClass);
-						else
-							CTexture::s_ptexWhite->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit, SResourceView::DefaultView, eSHClass);
-					}
-					break;
-
 				case TO_TERRAIN_LM:
 					{
 						const bool setupTerrainShadows = rd->m_bShadowsEnabled;
@@ -5722,52 +5518,6 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 							pBackBufferTex->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit);
 					}
 					break;
-
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-				case TO_FROMSF0:
-				case TO_FROMSF1:
-				case TO_FROMSFY:
-				case TO_FROMSFU:
-				case TO_FROMSFV:
-				case TO_FROMSFA:
-					{
-						const SSF_GlobalDrawParams* pParams = rd->SF_GetGlobalDrawParams();
-						assert(pParams);
-						if (pParams)
-						{
-							int texIdx = nCustomID - TO_FROMSF0;
-							int texID = -1;
-
-							if (texIdx < 2)
-							{
-								texID = pParams->texture[texIdx].texID;
-							}
-							else
-							{
-								assert(texIdx < 6);
-								texID = pParams->texID_YUVA[texIdx - 2];
-								texIdx = 0;
-							}
-
-							if (texID > 0)
-							{
-								const static int texStateID[8] =
-								{
-									CTexture::GetTexState(STexState(FILTER_POINT,     false)), CTexture::GetTexState(STexState(FILTER_POINT,     true)),
-									CTexture::GetTexState(STexState(FILTER_LINEAR,    false)), CTexture::GetTexState(STexState(FILTER_LINEAR,    true)),
-									CTexture::GetTexState(STexState(FILTER_TRILINEAR, false)), CTexture::GetTexState(STexState(FILTER_TRILINEAR, true)),
-									-1,                                               -1
-								};
-								CTexture* pTex = CTexture::GetByID(texID);
-								int textStateID = texStateID[pParams->texture[texIdx].texState];
-								pTex->Apply(nTUnit, textStateID);
-								break;
-							}
-						}
-						CTexture::s_ptexWhite->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit);
-						break;
-					}
-#endif
 
 				case TO_HDR_MEASURED_LUMINANCE:
 					{
@@ -5872,7 +5622,7 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 						const bool enabled = gRenDev->m_bVolFogShadowsEnabled;
 						assert(enabled);
 						CTexture* pTex = enabled ? CTexture::s_ptexVolFogShadowBuf[0] : CTexture::s_ptexWhite;
-						pTex->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit);
+						pTex->Apply(nTUnit, nTState, nTexMaterialSlot, nSUnit, SResourceView::DefaultView, eSHClass);
 						break;
 #else
 						assert(0);
@@ -6218,7 +5968,7 @@ struct InstContainerByHash
 	}
 };
 
-CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetHashInst(InstContainer *pInstCont, uint32 identHash, SShaderCombIdent& Ident, InstContainerIt& it)
+CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetHashInst(InstContainer* pInstCont, uint32 identHash, SShaderCombIdent& Ident, InstContainerIt& it)
 {
 	SHWSInstance* pInst = NULL;
 	it = std::lower_bound(pInstCont->begin(), pInstCont->end(), identHash, InstContainerByHash());
@@ -6260,7 +6010,7 @@ CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(CShader* pSH, int nHas
 	InstContainer* pInstCont = &m_Insts;
 
 	InstContainerIt it;
-	SHWSInstance *pInst = mfGetHashInst(pInstCont, nHashInstance, Ident, it);
+	SHWSInstance* pInst = mfGetHashInst(pInstCont, nHashInstance, Ident, it);
 
 	return pInst;
 }
@@ -6648,6 +6398,9 @@ bool CHWShader_D3D::mfSetHS(int nFlags)
 		mfBindHS(pInst->m_Handle.m_pShader, pInst->m_Handle.m_pShader->m_pHandle);
 		mfSetParametersPB();
 	}
+
+	if (nFlags & HWSF_SETTEXTURES)
+		mfSetSamplers(pInst->m_pSamplers, m_eSHClass);
 
 	s_nActivationFailMask &= ~(1 << eHWSC_Hull);
 

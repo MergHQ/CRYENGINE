@@ -13,32 +13,42 @@
 namespace gpu
 {
 
-CMergeSort::CMergeSort(int maxElements) : m_data(maxElements), m_pResultSRV(nullptr), m_maxElements(maxElements), m_backend("GpuMergeSort")
+CMergeSort::CMergeSort(uint32 maxElements) : m_data(maxElements), m_maxElements(maxElements)
 {
 	m_params.CreateDeviceBuffer();
 	m_data.Initialize(true);
+	CShader* pShader = gcpRendD3D.m_cEF.mfForName("GpuMergeSort", EF_SYSTEM, 0, 0);
+
+	m_passesMergeSort[0].SetTechnique(pShader, CCryNameTSCRC("MergeSort"), 0);
+	m_passesMergeSort[0].SetInlineConstantBuffer(8, m_params.GetDeviceConstantBuffer());
+	m_passesMergeSort[0].SetOutputUAV(0, &m_data.Get().GetBuffer());
+	m_passesMergeSort[0].SetOutputUAV(1, &m_data.GetBackBuffer().GetBuffer());
+
+	m_passesMergeSort[1].SetTechnique(pShader, CCryNameTSCRC("MergeSort"), 0);
+	m_passesMergeSort[1].SetInlineConstantBuffer(8, m_params.GetDeviceConstantBuffer());
+	m_passesMergeSort[1].SetOutputUAV(0, &m_data.GetBackBuffer().GetBuffer());
+	m_passesMergeSort[1].SetOutputUAV(1, &m_data.Get().GetBuffer());
 }
 
-void CMergeSort::Sort(size_t numElements)
+void CMergeSort::Sort(uint32 numElements, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	PROFILE_LABEL_SCOPE("GPU MERGE SORT");
 
 	CRY_ASSERT(numElements <= m_maxElements);
 
-	int block = 1;
 	const int blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(numElements, 1024);
 
+	uint32 block = 1;
 	while (block < numElements)
 	{
-		ID3D11UnorderedAccessView* pUAVs[] = { m_data.Get().GetUAV(), m_data.GetBackBuffer().GetUAV() };
 		SyncParams(block);
-		m_backend.SetUAVs(0, 2, pUAVs);
-		m_params.Bind();
-		m_backend.RunTechnique("MergeSort", blocks, 1, 1);
+		int currentPass = m_data.GetCurrentBufferId();
+		m_passesMergeSort[currentPass].PrepareResourcesForUse(commandList);
+		m_passesMergeSort[currentPass].SetDispatchSize(blocks, 1, 1);
+		m_passesMergeSort[currentPass].Execute(commandList);
 		m_data.Swap();
 		block *= 2;
 	}
-	m_pResultSRV = m_data.Get().GetSRV();
 }
 
 void CMergeSort::SyncParams(uint inputBlockSize)

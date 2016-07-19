@@ -72,7 +72,7 @@ void CVehiclePartWaterRipplesGenerator::Update(const float frameTime)
 				return;
 		}
 
-		gEnv->pRenderer->EF_AddWaterSimHit(vehicleWorldTM.TransformPoint(m_localOffset), m_waterRipplesScale, m_waterRipplesStrength);
+		gEnv->p3DEngine->AddWaterRipple(vehicleWorldTM.TransformPoint(m_localOffset), m_waterRipplesScale, m_waterRipplesStrength);
 	}
 }
 

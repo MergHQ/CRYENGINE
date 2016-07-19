@@ -21,7 +21,18 @@ CRY_PFX2_DBG
 namespace pfx2
 {
 
-SERIALIZATION_ENUM_IMPLEMENT(EAnimationCycle)
+EParticleDataType PDT(EPDT_SpawnId, TParticleId);
+EParticleDataType PDT(EPDT_ParentId, TParticleId);
+EParticleDataType PDT(EPDT_State, uint8);
+EParticleDataType PDT(EPDT_SpawnFraction, float);
+EParticleDataType PDT(EPDT_NormalAge, float);
+EParticleDataType PDT(EPDT_LifeTime, float);
+EParticleDataType PDT(EPDT_InvLifeTime, float);
+EParticleDataType PDT(EPDT_Random, float);
+EParticleDataType PDT(EPVF_Position, float, 3);
+EParticleDataType PDT(EPVF_Velocity, float, 3);
+
+
 
 void STextureAnimation::Serialize(Serialization::IArchive& ar)
 {
@@ -51,12 +62,6 @@ void STextureAnimation::Update()
 //////////////////////////////////////////////////////////////////////////
 // SModuleParams
 
-const char* gParticleDataNames[EPDT_Count] =
-{
-#define PFX2_PARTICLE_DATA_NAME(NAME, TYPE) # NAME,
-	PFX2_DATA_TYPES(PFX2_PARTICLE_DATA_NAME)
-};
-
 SComponentParams::SComponentParams()
 	: m_pComponent(0)
 {
@@ -78,16 +83,16 @@ void SComponentParams::Serialize(Serialization::IArchive& ar)
 	bool first = true;
 	buffer[0] = 0;
 	uint32 bytesPerParticle = 0;
-	for (size_t type = 0; type < EPDT_Count; ++type)
+	for (auto type : EParticleDataType::values())
 	{
-		if (m_pComponent->UseParticleData(EParticleDataType(type)))
+		if (m_pComponent->UseParticleData(type))
 		{
 			if (first)
-				cry_sprintf(buffer, "%s", gParticleDataNames[type]);
+				cry_sprintf(buffer, "%s", type.name());
 			else
-				cry_sprintf(buffer, "%s, %s", buffer, gParticleDataNames[type]);
+				cry_sprintf(buffer, "%s, %s", buffer, type.name());
 			first = false;
-			bytesPerParticle += gParticleDataStrides[type];
+			bytesPerParticle += type.info().typeSize() * type.info().step();
 		}
 	}
 	ar(string(buffer), "", "!Fields used:");
@@ -188,7 +193,7 @@ CParticleComponent::CParticleComponent()
 	, m_componentParams(*this)
 	, m_nodePosition(-1.0f, -1.0f)
 {
-	memset(m_useParticleData, 0, sizeof(m_useParticleData));
+	m_useParticleData.fill(false);
 }
 
 void CParticleComponent::SetChanged()
@@ -273,31 +278,9 @@ TInstanceDataOffset CParticleComponent::AddInstanceData(size_t size)
 void CParticleComponent::AddParticleData(EParticleDataType type)
 {
 	SetChanged();
-	m_useParticleData[type] = true;
-}
-
-void CParticleComponent::AddParticleData(EParticleVec3Field type)
-{
-	EParticleDataType xType = EParticleDataType(type);
-	EParticleDataType yType = EParticleDataType(type + 1);
-	EParticleDataType zType = EParticleDataType(type + 2);
-	SetChanged();
-	m_useParticleData[xType] = true;
-	m_useParticleData[yType] = true;
-	m_useParticleData[zType] = true;
-}
-
-void CParticleComponent::AddParticleData(EParticleQuatField type)
-{
-	EParticleDataType xType = EParticleDataType(type);
-	EParticleDataType yType = EParticleDataType(type + 1);
-	EParticleDataType zType = EParticleDataType(type + 2);
-	EParticleDataType wType = EParticleDataType(type + 3);
-	SetChanged();
-	m_useParticleData[xType] = true;
-	m_useParticleData[yType] = true;
-	m_useParticleData[zType] = true;
-	m_useParticleData[wType] = true;
+	uint dim = type.info().dimension;
+	for (uint i = type; i < type + dim; ++i)
+		m_useParticleData[i] = true;
 }
 
 bool CParticleComponent::SetSecondGeneration(CParticleComponent* pParentComponent)
@@ -321,14 +304,22 @@ CParticleComponent* CParticleComponent::GetParentComponent() const
 	return 0;
 }
 
-void CParticleComponent::Render(ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext, IRenderNode* pNode)
+void CParticleComponent::PrepareRenderObjects(CParticleEmitter* pEmitter)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+	for (auto& it : GetUpdateList(EUL_Render))
+		it->PrepareRenderObjects(pEmitter, this);
+}
+
+void CParticleComponent::Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
 {
 	if (IsVisible())
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 		for (auto& it : GetUpdateList(EUL_Render))
-			it->Render(pRuntime, this, pNode, renderContext);
+			it->Render(pEmitter, pRuntime, this, renderContext);
 	}
 }
 
@@ -350,8 +341,6 @@ void CParticleComponent::PreCompile()
 		m_updateLists[i].clear();
 	for (size_t i = 0; i < EUL_Count; ++i)
 		m_gpuUpdateLists[i].clear();
-	for (size_t i = 0; i < EPDT_Count; ++i)
-		m_useParticleData[i] = false;
 
 	// eliminates features that point to null
 	auto it = std::remove_if(
@@ -363,7 +352,7 @@ void CParticleComponent::PreCompile()
 	m_features.erase(it, m_features.end());
 
 	// add default particle data
-	memset(m_useParticleData, 0, sizeof(m_useParticleData));
+	m_useParticleData.fill(false);
 	AddParticleData(EPDT_ParentId);
 	AddParticleData(EPVF_Position);
 	AddParticleData(EPVF_Velocity);
@@ -395,7 +384,10 @@ void CParticleComponent::Compile()
 	for (auto& it : m_features)
 	{
 		if (it->IsEnabled())
+		{
+			it->SetGpuInterfaceNeeded(m_runtimeInitializationParameters.usesGpuImplementation);
 			it->AddToComponent(this, &m_componentParams);
+		}
 	}
 }
 

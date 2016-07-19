@@ -1484,27 +1484,43 @@ inline UINT64 UpdateSubresources(
 		return 0;
 	}
 
+	// NOTE: Buffers have 256 byte alignment requirement and Textures 64k, we only need SSE alignment for uploads
+	// TODO: For buffers we can skew the buffer-size to be aligned, for multi-dimensional textures this is not possible
+	// RequiredSize = (RequiredSize + (16ULL - 1ULL)) & ~(16ULL - 1ULL);
+
 	BYTE* pData;
-	HRESULT hr = pIntermediate->Map(0, NULL, reinterpret_cast<void**>(&pData));
-	if (FAILED(hr))
+	const D3D12_RANGE NoRead = { 0U, 0U };
+	const D3D12_RANGE FullWrite = { 0U, SIZE_T(RequiredSize) };
+
+	HRESULT hr = pIntermediate->Map(0, &NoRead, reinterpret_cast<void**>(&pData));
+
+	if (DestinationDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
 	{
-		return 0;
+		// 64bit overflow on 32bit platform check
+		assert(pRowSizesInBytes[0] <= (SIZE_T)-1);
+		// Alignment check
+		assert(!(RequiredSize & (16ULL - 1ULL)));
+
+		memcpy(pData + pLayouts[0].Offset, pSrcData[0].pData, SIZE_T(pRowSizesInBytes[0]));
+	}
+	else
+	{
+		for (UINT i = 0; i < NumSubresources; ++i)
+		{
+			// 64bit overflow on 32bit platform check
+			assert(pRowSizesInBytes[i] <= (SIZE_T) -1);
+
+			D3D12_MEMCPY_DEST DestData = { pData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch, pLayouts[i].Footprint.RowPitch * pNumRows[i] };
+			MemcpySubresource(&DestData, &pSrcData[i], SIZE_T(pRowSizesInBytes[i]), pNumRows[i], pLayouts[i].Footprint.Depth);
+		}
 	}
 
-	for (UINT i = 0; i < NumSubresources; ++i)
-	{
-		if (pRowSizesInBytes[i] > (SIZE_T) -1)
-		{
-			return 0;
-		}
-		D3D12_MEMCPY_DEST DestData = { pData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch, pLayouts[i].Footprint.RowPitch * pNumRows[i] };
-		MemcpySubresource(&DestData, &pSrcData[i], (SIZE_T)pRowSizesInBytes[i], pNumRows[i], pLayouts[i].Footprint.Depth);
-	}
-	pIntermediate->Unmap(0, NULL);
+	pIntermediate->Unmap(0, &FullWrite);
 
 	if (DestinationDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
 	{
 		CD3DX12_BOX SrcBox(UINT(pLayouts[0].Offset), UINT(pLayouts[0].Offset + pLayouts[0].Footprint.Width));
+
 		pCmdList->CopyBufferRegion(pDestinationResource, 0, pIntermediate, pLayouts[0].Offset, pLayouts[0].Footprint.Width);
 	}
 	else if (pDstBox)
@@ -1525,12 +1541,15 @@ inline UINT64 UpdateSubresources(
 		pCmdList->CopyTextureRegion(&Dst, pDstBox->left, pDstBox->top, pDstBox->front, &Src, nullptr);
 	}
 	else
+	{
 		for (UINT i = 0; i < NumSubresources; ++i)
 		{
 			CD3DX12_TEXTURE_COPY_LOCATION Dst(pDestinationResource, i + FirstSubresource);
 			CD3DX12_TEXTURE_COPY_LOCATION Src(pIntermediate, pLayouts[i]);
 			pCmdList->CopyTextureRegion(&Dst, 0, 0, 0, &Src, nullptr);
 		}
+	}
+
 	return RequiredSize;
 }
 
@@ -1565,6 +1584,7 @@ inline UINT64 UpdateSubresources(
 	D3D12_RESOURCE_DESC Desc = pDestinationResource->GetDesc();
 	pDevice->GetCopyableFootprints(&Desc, FirstSubresource, NumSubresources, IntermediateOffset, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
 	UINT64 Result = UpdateSubresources(pCmdList, pDestinationResource, pIntermediate, FirstSubresource, NumSubresources, RequiredSize, pLayouts, pNumRows, pRowSizesInBytes, pSrcData, pDstBox);
+
 	HeapFree(GetProcessHeap(), 0, pMem);
 	return Result;
 }

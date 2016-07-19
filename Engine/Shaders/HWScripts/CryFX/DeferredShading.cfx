@@ -95,11 +95,17 @@ float4 DebugViewMode;
 // DX11 requires explicitly bind depth then stencil to have access to both depth and stencil read from shader. 
 // Typeless resources, require explicit type/fmt usage
 // Stencil is stored on green component on D24S8 formats
-Texture2D<float4> DepthTex : register(t3);
-Texture2D<uint2>  StencilTex : register(t4);
+Texture2D<float4> DepthTex       : register(t3);
+Texture2D<uint2>  StencilTex     : register(t4);
 
-Texture2DMS<float4> DepthTexMS : register(t3);
+Texture2DMS<float4> DepthTexMS   : register(t3);
 Texture2DMS<uint2>  StencilTexMS : register(t4);
+
+Texture2D shadowNoiseTex         : register(t7) = "EngineAssets/Textures/rotrandom.dds"; 
+
+SamplerComparisonState ssShadowComparison     : register(s3) = SS_Shadow2;
+SamplerState           ssShadowPointWrap      : register(s7) = SS_PointWrap;
+
 
 #define CLIPVOLUME_CONNECTED_TO_OUTDOOR	(1<<0)
 #define CLIPVOLUME_IGNORE_GI 						(1<<1)
@@ -267,13 +273,7 @@ poDecalsMRT DecalPassPS(fragInWPOS IN)
 #endif
 
   float fDepth = GetLinearDepthPrecise( _tex0, ScreenTC.xy );
-
-
-#if %_RT_CUBEMAP0
-  float3 vPosition = CalcHomogeneousPos(fDepth, IN.WPos.xy);
-#else
-  float3 vPosition = GetWorldPos( fDepth, IN.CamVec );
-#endif
+  float3 vPosition = ReconstructViewPos(IN.WPos.xy, fDepth);
 
   float4 vProjTC = mul(g_mLightProj, float4(vPosition.xyz + g_WorldViewPos.xyz ,1.0));
   vProjTC.xyz/=vProjTC.w;
@@ -444,11 +444,7 @@ pixoutMRT LightPassPS( fragInWPOS IN )
   return OUT;
 #endif
 
-#if %_RT_CUBEMAP0
-  float3 vPosition = CalcHomogeneousPos(fDepth, IN.WPos.xy);
-#else
-  float3 vPosition = GetWorldPos( fDepth, IN.CamVec );
-#endif
+  float3 vPosition = ReconstructViewPos(IN.WPos.xy, fDepth);
 
   half fAttenuation = 1.h;
   half cFilter = 1;
@@ -502,7 +498,13 @@ pixoutMRT LightPassPS( fragInWPOS IN )
 	//P0 = CalcShadowSpace(P0);
 	P0.xy /= P0.w;
 	P0.z -= g_GeneralParams.w;//0.003f;
-	irregular_filter_smpl(_tex3_D3D11, _tex7, float4(P0.xyz, 1.f), P0.xy, g_GeneralParams.x, fInShadow);
+	
+	ShadowSamplingContext samplingContext;
+	samplingContext.comparisonSampler = ssShadowComparison;
+	samplingContext.pointSamplerWrap  = ssShadowPointWrap;
+	samplingContext.noiseTex          = shadowNoiseTex;
+
+	irregular_filter_smpl(_tex3_D3D11, samplingContext, float4(P0.xyz, 1.f), P0.xy, g_GeneralParams.x, fInShadow);
 #endif
 
     half NdotL = saturate(dot( vLight.xyz, attribs.NormalWorld ));
@@ -693,14 +695,9 @@ pixoutMRTCubemap CubemapPassPS( fragInWPOS IN )
     float fDepth = GetLinearDepth( _tex0, ScreenTC );
   #endif
 
-#if %_RT_CUBEMAP0
-	float3 HPos = vWBasisZ.xyz + (vWBasisX.xyz*IN.WPos.x)+(vWBasisY.xyz*IN.WPos.y);
-	float3 vPosition = HPos.xyz * fDepth.xxx;
-	float3 vCamVec   = normalize(HPos.xyz);
-#else
-	float3 vPosition = GetWorldPos( fDepth, IN.CamVec);
-	float3 vCamVec   = normalize(IN.CamVec.xyz);
-#endif
+	float3 HPos = mul(CV_ScreenToWorldBasis, float3(IN.WPos.xy, 1.0));
+	float3 vPosition = HPos * fDepth;
+	float3 vCamVec = normalize(HPos);
 
 	float3 vLightWS = g_LightPos.xyz - vPosition.xyz;
 	
@@ -1659,7 +1656,7 @@ pixoutSSS DeferredShadingPassPS(vtxOutWPOS IN)
 	attribs = DecodeGBuffer( tex2D( _tex4, IN.baseTC.xy ), tex2D( _tex2, IN.baseTC.xy ), tex2D( _tex3, IN.baseTC.xy ) );
 #endif
 
-  float3 vPosition = GetWorldPos( fDepth, IN.CamVec );
+  float3 vPosition = ReconstructViewPos(IN.WPos.xy, fDepth);
 	
 	half3 albedo = attribs.Albedo;
 	// Simple energy conservation between specular and diffuse
@@ -2053,8 +2050,8 @@ struct vtxOutMSAA
 
 float4 ResolveStencilPS(vtxOutMSAA IN) : COLOR0 
 {
-	const int BIT_STENCIL_STATIC 					= 0x0000007F;
-	const int BIT_STENCIL_INSIDE_VOLUME 	= 0x00000040;
+	const int BIT_STENCIL_STATIC            = 0x0000007F;
+	const int BIT_STENCIL_INSIDE_VOLUME     = 0x00000040;
 	
 	const float fMaxStencilRefRcp = 1.0f / 255.0f;
 	
@@ -2082,7 +2079,7 @@ float4 ResolveStencilPS(vtxOutMSAA IN) : COLOR0
 #endif
 }
 
-technique ResolveStencil
+technique ResolveStencilLegacy
 {
   pass p0
   {
@@ -2092,7 +2089,85 @@ technique ResolveStencil
   }
 }
 
-Texture2D<float> ztarget : register(t4);
+technique ResolveStencil
+{
+  pass p0
+  {
+    VertexShader = FullscreenTriVS() DeferredLightPassVS;
+    PixelShader = ResolveStencilPS() DeferredLightPassPS;
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////// Clip Volumes ///////////////////////////////////////////
+struct vtxOutClipVolume  { float4 HPosition   : POSITION; };
+struct pixOutClipVolume {};
+
+cbuffer CBClipVolume : register(b0)
+{
+	float4x4 cv_mClipVolume;
+	float4   cv_projRatioScreenScale;
+	float4   cv_BlendPlane0;
+	float4   cv_BlendPlane1;
+};
+
+vtxOutClipVolume ClipVolumeVS(vtxInLightPrePass IN)
+{
+	vtxOutClipVolume OUT = (vtxOutClipVolume)0; 
+
+	float4 vPos = IN.Position;
+	OUT.HPosition = mul(vPos, cv_mClipVolume);
+
+	return OUT;
+}
+
+pixOutClipVolume ClipVolumePS(vtxOutClipVolume IN)
+{
+	pixOutClipVolume OUT = (pixOutClipVolume)1;
+	return OUT;
+}
+
+pixout ClipVolumeBlendValuePS(float4 WPos : SV_POSITION)
+{
+	pixout OUT = (pixout) 1;
+
+	float fDepthPixel = DepthTex.Load(int3(WPos.xy, 0)).x;
+	float fDevDepth = cv_projRatioScreenScale.y / fDepthPixel + cv_projRatioScreenScale.x;
+	
+	float2 vTC = WPos * cv_projRatioScreenScale.zw;
+	float4 vClipPos = float4(vTC.x * 2 - 1, 1 - vTC.y * 2, fDevDepth, 1.0f);
+
+	float planeDist0 = max(dot(cv_BlendPlane0, vClipPos), 0);
+	float planeDist1 = max(dot(cv_BlendPlane1, vClipPos), 0);
+	
+	OUT.Color = planeDist0 / max(planeDist0 + planeDist1, 1e-5);
+
+	return OUT;
+}
+
+technique ClipVolumeStencil
+{
+  pass p0
+  {
+    VertexShader = ClipVolumeVS();
+    PixelShader  = ClipVolumePS();
+    CullMode = None;        
+  }
+}
+
+technique ClipVolumeBlendValue
+{
+  pass p0
+  {
+    VertexShader = ClipVolumeVS();
+    PixelShader  = ClipVolumeBlendValuePS();
+    CullMode = None;        
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// TODO: remove once legacy deferred lighting pipeline has been completely refactored
 
 float4 BlendPlane0;
 float4 BlendPlane1;
@@ -2127,36 +2202,78 @@ technique PortalBlendVal
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Texture2D<float4> ShadowMap : register(t1);
+Texture2D         sceneDepthTex : register(t0);
+Texture2D<float4> ShadowMap     : register(t1);
 
-float4x4 CompMatrix : PI_Composite < vsregister = c0; >;    // View*Projection
-float4 g_vLightPos;
+cbuffer CBShadowMask : register(b0)
+{
+	struct 
+	{
+		float4x4 unitMeshTransform;
+		float4   lightVolumeSphereAdjust;
+		
+		float4x4 lightShadowProj;
+		float4   params;
+		
+		float4   irreg_kernel_2d[8];
+		float4   vLightPos;
+
+	} c_ShadowMaskConstants;
+};
+
+float4 ShadowMaskVolumeVS(vtxInLightPrePass IN) : SV_Position
+{
+	float4 vPos = IN.Position;
+	vPos = mul(vPos, c_ShadowMaskConstants.unitMeshTransform);
+
+	//normalization
+	vPos /= vPos.w;
+	vPos.w = 1.0f;
+	
+	//sphere adjusting
+	if (c_ShadowMaskConstants.lightVolumeSphereAdjust.w > 0)
+	{
+		float3 vLightDir = normalize(vPos.xyz - c_ShadowMaskConstants.lightVolumeSphereAdjust.xyz);
+		vLightDir *= c_ShadowMaskConstants.lightVolumeSphereAdjust.w; //radius multiplication;
+
+		// select proper vector: baseTC.x is 0 for the pyramid tip only, 1 otherwise
+		vPos.xyz = IN.baseTC.x > 0 ? (c_ShadowMaskConstants.lightVolumeSphereAdjust.xyz + vLightDir) : c_ShadowMaskConstants.lightVolumeSphereAdjust.xyz; 
+	}
+	
+	//final ViewProj transformation
+	return mul(CV_ViewProjMatr, vPos);
+
+}
 
 [earlydepthstencil]
-pixout ShadowMaskGenPS( fragInWPOS IN )
+pixout ShadowMaskGenPS(float4 WPos : SV_POSITION)
 {
   pixout OUT = (pixout) 0;
 
-#if %_RT_CUBEMAP0
-  float2 ScreenTC = IN.WPos.xy * g_ScreenScale.xy +  g_ScreenScale.zw;
-	float fDepth = GetLinearDepth( _tex0, ScreenTC );
-	float3 vPosition = CalcHomogeneousPos(fDepth, IN.WPos.xy);
-#else
-  float2 ScreenTC = IN.baseTC.xy;
-	float fDepth = GetLinearDepth( _tex0, ScreenTC );
-	float3 vPosition = GetWorldPos( fDepth, IN.CamVec );
-#endif
-
-	float4 P0 = mul(g_mLightShadowProj, float4(vPosition, 1.f));
+	float fDepth = sceneDepthTex.Load(int3(WPos.xy, 0)).x;
+	float3 vPosition = ReconstructViewPos(WPos.xy, fDepth);
+	
+	float4 P0 = mul(c_ShadowMaskConstants.lightShadowProj, float4(vPosition, 1.f));
 	P0.xy /= P0.w;
-	P0.z -= g_GeneralParams.w;
+	P0.z -= c_ShadowMaskConstants.params.w;
+	
+	ShadowSamplingContext samplingContext;
+	samplingContext.comparisonSampler = ssShadowComparison;
+	samplingContext.pointSamplerWrap  = ssShadowPointWrap;
+	samplingContext.noiseTex          = shadowNoiseTex;
+	
+	IrregularFilterKernel filterKernel;
+	filterKernel.taps           = c_ShadowMaskConstants.irreg_kernel_2d;
+	filterKernel.scale          = c_ShadowMaskConstants.params.x;
+	filterKernel.noiseLookupPos = P0.xy * filterKernel.scale * 1000.0f;
 	
 	float fInShadow;
-	irregular_filter_smpl(ShadowMap, _tex7, float4(P0.xyz, 1.f), P0.xy, g_GeneralParams.x, fInShadow);
-	
+	float2 invShadowMapSize = float2(1/512.0f, 1/512.0f);
+	irregular_filter(ShadowMap, invShadowMapSize, samplingContext, filterKernel, P0, fInShadow);
+
 #if %_RT_SAMPLE2
 	// Apply point light SS shadows
-	CalculateDetailSSShadow(fDepth, vPosition + g_WorldViewPos.xyz, g_vLightPos.xyz, CompMatrix, fInShadow);
+	CalculateDetailSSShadow(sceneDepthTex, fDepth, vPosition + GetWorldViewPos(), c_ShadowMaskConstants.vLightPos.xyz, CV_ViewProjMatr, fInShadow);
 #endif
 
 	OUT.Color = 1-fInShadow;
@@ -2168,8 +2285,8 @@ technique ShadowMaskGen
 {
   pass p0
   {
-    VertexShader = LightPassVS() DeferredLightPassVS;            
-    PixelShader = ShadowMaskGenPS() DeferredLightPassPS;
+    VertexShader = LightPassVS()     DeferredLightPassVS;            
+    PixelShader  = ShadowMaskGenPS() DeferredLightPassPS;
 
     CullMode = None;        
   }
@@ -2179,10 +2296,17 @@ technique ShadowMaskGenVolume
 {
   pass p0
   {
-    VertexShader = LightVolumeVS() DeferredLightPassVS;            
-    PixelShader = ShadowMaskGenPS() DeferredLightPassPS;
+    VertexShader = ShadowMaskVolumeVS()   DeferredLightPassVS;            
+    PixelShader  = ShadowMaskGenPS() DeferredLightPassPS;
+  }
+}
 
-    CullMode = None;        
+technique LightVolumeStencil
+{
+  pass p0
+  {
+    VertexShader = ShadowMaskVolumeVS();
+    PixelShader  = ClipVolumePS();  
   }
 }
 

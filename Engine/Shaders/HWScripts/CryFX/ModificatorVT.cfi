@@ -1457,8 +1457,8 @@ ISOLATE
 		}
 #endif
 
-  return HPosition;
-}
+		return HPosition;
+	}
 }
 
 float4 Pos_VS_Terrain(float fOffsetZ, float4x4 VPMatrix, inout streamPos IN, bool bSG = false)

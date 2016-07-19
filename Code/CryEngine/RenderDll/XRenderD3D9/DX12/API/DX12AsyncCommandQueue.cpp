@@ -5,6 +5,10 @@
 #include "DX12CommandList.hpp"
 #include "DriverD3D.h"
 
+#ifdef CRY_USE_DX12_MULTIADAPTER
+#include "Redirections/D3D12Device.inl"
+#endif
+
 extern CD3D9Renderer gcpRendD3D;
 
 namespace NCryDX12
@@ -37,11 +41,19 @@ void CAsyncCommandQueue::SWaitForFences::Process(const STaskArgs& args)
 	if (FenceValues[CMDQUEUE_COPY]) args.pCommandQueue->Wait(pFences[CMDQUEUE_COPY], FenceValues[CMDQUEUE_COPY]);
 }
 
+#ifdef CRY_USE_DX12_MULTIADAPTER
+void CAsyncCommandQueue::SSyncAdapters::Process(const STaskArgs& args)
+{
+	BroadcastableD3D12CommandQueue<2>* broadcastCQ = (BroadcastableD3D12CommandQueue<2>*)(args.pCommandQueue);
+	broadcastCQ->SyncAdapters(pFence, FenceValue);
+}
+#endif
+
 void CAsyncCommandQueue::SPresentBackbuffer::Process(const STaskArgs& args)
 {
 	DWORD result = S_OK;
 
-	if (CRenderer::CV_r_D3D12WaitableSwapChain)
+	if (DescFlags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)
 	{
 		// Check if the swapchain is ready to accept another frame
 		HANDLE frameLatencyWaitableObject = pSwapChain->GetFrameLatencyWaitableObject();
@@ -57,7 +69,7 @@ void CAsyncCommandQueue::SPresentBackbuffer::Process(const STaskArgs& args)
 }
 
 CAsyncCommandQueue::CAsyncCommandQueue()
-	: m_pCmdListPool(NULL)
+	: m_pCmdListPool(nullptr)
 	, m_QueuedFramesCounter(0)
 	, m_bStopRequested(false)
 	, m_TaskEvent(INT_MAX, 0)
@@ -66,10 +78,7 @@ CAsyncCommandQueue::CAsyncCommandQueue()
 
 CAsyncCommandQueue::~CAsyncCommandQueue()
 {
-	SignalStop();
-	Flush();
-
-	GetISystem()->GetIThreadManager()->JoinThread(this, eJM_Join);
+	Clear();
 }
 
 void CAsyncCommandQueue::Init(CCommandListPool* pCommandListPool)
@@ -80,6 +89,17 @@ void CAsyncCommandQueue::Init(CCommandListPool* pCommandListPool)
 	m_bSleeping = true;
 
 	GetISystem()->GetIThreadManager()->SpawnThread(this, "DX12 AsyncCommandQueue");
+}
+
+void CAsyncCommandQueue::Clear()
+{
+	SignalStop();
+	Flush();
+	m_TaskEvent.Release();
+
+	GetISystem()->GetIThreadManager()->JoinThread(this, eJM_Join);
+
+	m_pCmdListPool = nullptr;
 }
 
 void CAsyncCommandQueue::ExecuteCommandLists(UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
@@ -145,7 +165,21 @@ void CAsyncCommandQueue::Wait(ID3D12Fence** pFences, const UINT64 (&FenceValues)
 	AddTask<SWaitForFences>(task);
 }
 
-void CAsyncCommandQueue::Present(IDXGISwapChain3* pSwapChain, HRESULT* pPresentResult, UINT SyncInterval, UINT Flags, UINT bufferIndex)
+#ifdef CRY_USE_DX12_MULTIADAPTER
+void CAsyncCommandQueue::SyncAdapters(ID3D12Fence* pFence, const UINT64 FenceValue)
+{
+	SSubmissionTask task;
+	ZeroStruct(task);
+
+	task.type = eTT_SyncAdapters;
+	task.Data.SyncAdapters.pFence = pFence;
+	task.Data.SyncAdapters.FenceValue = FenceValue;
+
+	AddTask<SSyncAdapters>(task);
+}
+#endif
+
+void CAsyncCommandQueue::Present(IDXGISwapChain3* pSwapChain, HRESULT* pPresentResult, UINT SyncInterval, UINT Flags, UINT DescFlags, UINT bufferIndex)
 {
 	CryInterlockedIncrement(&m_QueuedFramesCounter);
 
@@ -156,6 +190,7 @@ void CAsyncCommandQueue::Present(IDXGISwapChain3* pSwapChain, HRESULT* pPresentR
 	task.Data.PresentBackbuffer.pSwapChain = pSwapChain;
 	task.Data.PresentBackbuffer.pPresentResult = pPresentResult;
 	task.Data.PresentBackbuffer.Flags = Flags;
+	task.Data.PresentBackbuffer.DescFlags = DescFlags;
 	task.Data.PresentBackbuffer.SyncInterval = SyncInterval;
 
 	AddTask<SPresentBackbuffer>(task);
@@ -163,7 +198,7 @@ void CAsyncCommandQueue::Present(IDXGISwapChain3* pSwapChain, HRESULT* pPresentR
 	{
 		while (m_QueuedFramesCounter > MAX_FRAMES_GPU_LAG)
 		{
-			Sleep(0);
+			CryYieldThread();
 		}
 	}
 }
@@ -174,14 +209,14 @@ void CAsyncCommandQueue::Flush(UINT64 lowerBoundFenceValue)
 	{
 		while (lowerBoundFenceValue > m_SignalledFenceValue)
 		{
-			Sleep(0);
+			CryYieldThread();
 		}
 	}
 	else
 	{
 		while (!m_bSleeping)
 		{
-			Sleep(0);
+			CryYieldThread();
 		}
 	}
 }
@@ -193,7 +228,7 @@ void CAsyncCommandQueue::FlushNextPresent()
 	{
 		while (numQueuedFrames == m_QueuedFramesCounter)
 		{
-			Sleep(0);
+			CryYieldThread();
 		}
 	}
 }
@@ -226,6 +261,11 @@ void CAsyncCommandQueue::ThreadEntry()
 			case eTT_WaitForFences:
 				task.Process<SWaitForFences>(taskArgs);
 				break;
+#ifdef CRY_USE_DX12_MULTIADAPTER
+			case eTT_SyncAdapters:
+				task.Process<SSyncAdapters>(taskArgs);
+				break;
+#endif
 			case eTT_PresentBackbuffer:
 				task.Process<SPresentBackbuffer>(taskArgs);
 				break;

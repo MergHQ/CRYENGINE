@@ -7,10 +7,13 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureRenderMeshes = false;
-
 namespace pfx2
 {
+
+EParticleDataType PDT(EPDT_MeshGeometry, IMeshObj*);
+
+extern EParticleDataType EPDT_Alpha, EPDT_Color;
+
 
 SERIALIZATION_ENUM_DEFINE(ESizeMode, : uint8,
                           Size,
@@ -114,8 +117,7 @@ public:
 			uint piece;
 			if (m_piecesMode == EPiecesMode::RandomPiece)
 			{
-				SChaosKey key;
-				piece = key.Rand();
+				piece = context.m_spawnRng.Rand();
 			}
 			else if (m_piecesMode == EPiecesMode::AllPieces)
 			{
@@ -156,7 +158,7 @@ public:
 		CRY_PFX2_FOR_END;
 	}
 
-	virtual void Render(ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, IRenderNode* pNode, const SRenderContext& renderContext) override
+	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 

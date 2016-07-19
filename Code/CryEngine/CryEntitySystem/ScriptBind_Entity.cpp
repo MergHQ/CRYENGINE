@@ -99,6 +99,7 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 	SCRIPT_REG_TEMPLFUNC(SetSelfAsLightCasterException, "nLightSlot");
 	SCRIPT_REG_TEMPLFUNC(LoadCloud, "nSlot,sCloudFilename");
 	SCRIPT_REG_TEMPLFUNC(SetCloudMovementProperties, "nSlot,tCloudMovementProperties");
+	SCRIPT_REG_TEMPLFUNC(LoadCloudBlocker, "nSlot,tCloudBlockerProperties");
 	SCRIPT_REG_TEMPLFUNC(LoadFogVolume, "nSlot,tFogVolumeDescription");
 	SCRIPT_REG_TEMPLFUNC(FadeGlobalDensity, "nSlot,fFadeTime,fNewGlobalDensity");
 
@@ -1316,6 +1317,32 @@ int CScriptBind_Entity::SetCloudMovementProperties(IFunctionHandler* pH, int nSl
 }
 
 //////////////////////////////////////////////////////////////////////////
+int CScriptBind_Entity::LoadCloudBlocker(IFunctionHandler* pH, int nSlot, SmartScriptTable table)
+{
+	GET_ENTITY;
+
+	SCloudBlockerProperties properties;
+	properties.decayStart = 0.0f;
+	properties.decayEnd = 0.0f;
+	properties.decayInfluence = 0.0f;
+	int screenSpace = 0;
+
+	table->GetValue("DecayStart", properties.decayStart);
+	table->GetValue("DecayEnd", properties.decayEnd);
+	table->GetValue("fDecayInfluence", properties.decayInfluence);
+	table->GetValue("bScreenSpace", screenSpace);
+
+	properties.decayStart = max(0.0f, properties.decayStart);
+	properties.decayEnd = max(0.0f, properties.decayEnd);
+	properties.decayInfluence = clamp_tpl<float>(properties.decayInfluence, 0.0f, 1.0f);
+	properties.bScreenspace = (screenSpace != 0) ? true : false;
+
+	pEntity->LoadCloudBlocker(nSlot, properties);
+
+	return pH->EndFunction(nSlot);
+}
+
+//////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::LoadFogVolume(IFunctionHandler* pH, int nSlot, SmartScriptTable table)
 {
 	GET_ENTITY;
@@ -1403,6 +1430,7 @@ int CScriptBind_Entity::LoadParticleEffect(IFunctionHandler* pH, int nSlot, cons
 		chain.GetValue("bCountPerUnit", params.bCountPerUnit);
 		chain.GetValue("bPrime", params.bPrime);
 		chain.GetValue("bRegisterByBBox", params.bRegisterByBBox);
+		chain.GetValue("iSeed", params.nSeed);
 
 		SmartScriptTable audio;
 

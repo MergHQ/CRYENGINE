@@ -206,8 +206,8 @@ v2f DistanceCloudsVS(a2v IN)
 	v2f OUT = (v2f)0;
 
 	// Position in screen space
-	float4 vPos = IN.Position;
-	OUT.Position = mul(vpMatrix, vPos);
+	float3 worldPos = mul(ObjWorldMatrix, IN.Position);
+	OUT.Position = mul(CV_ViewProjMatr, float4(worldPos,1));
 	
 #ifndef %_RT_REVERSE_DEPTH
 	OUT.Position.z = OUT.Position.w;
@@ -347,8 +347,8 @@ v2f_simple DistanceCloudsSimpleVS(a2v IN)
 	v2f_simple OUT = (v2f_simple)0;
 
 	// Position in screen space
-	float4 vPos = IN.Position;
-	OUT.Position = mul(vpMatrix, vPos);
+	float3 worldPos = mul(ObjWorldMatrix, IN.Position);
+	OUT.Position = mul(CV_ViewProjMatr, float4(worldPos,1));
 	OUT.Position.z = OUT.Position.w;
 	
 #if %_RT_REVERSE_DEPTH
