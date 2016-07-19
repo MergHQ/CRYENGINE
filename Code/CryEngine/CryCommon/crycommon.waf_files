@@ -281,8 +281,6 @@
       "CryMath/Cry_Matrix44.h",
       "CryMath/Cry_MatrixDiag.h",
       "CryMath/Cry_Vector4.h",
-      "CryMath/Cry_HWMatrix.h",
-      "CryMath/Cry_HWVector3.h",
       "CryMath/AABBSV.h",
       "CryMath/Cry_Camera.h",
       "CryMath/Cry_Color.h",

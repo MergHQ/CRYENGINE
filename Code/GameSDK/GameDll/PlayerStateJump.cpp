@@ -1,14 +1,14 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
--------------------------------------------------------------------------
-$Id$
-$DateTime$
-Description: Implements the Player ledge state
+   -------------------------------------------------------------------------
+   $Id$
+   $DateTime$
+   Description: Implements the Player ledge state
 
--------------------------------------------------------------------------
-History:
-- 10.9.10: Created by Stephen M. North
+   -------------------------------------------------------------------------
+   History:
+   - 10.9.10: Created by Stephen M. North
 
 *************************************************************************/
 #include "StdAfx.h"
@@ -38,8 +38,7 @@ History:
 #include "MovementAction.h"
 #include "PersistantStats.h"
 
-#include <CryMath/Cry_HWVector3.h>
-#include <CryMath/Cry_HWMatrix.h>
+using namespace crymath;
 
 CPlayerStateJump::CPlayerStateJump()
 	: m_jumpState(JState_None)
@@ -56,7 +55,7 @@ CPlayerStateJump::~CPlayerStateJump()
 {
 }
 
-void CPlayerStateJump::OnEnter( CPlayer& player )
+void CPlayerStateJump::OnEnter(CPlayer& player)
 {
 	m_startFallingHeight = FLT_MIN;
 	m_jumpState = JState_None;
@@ -65,22 +64,22 @@ void CPlayerStateJump::OnEnter( CPlayer& player )
 	m_firstPrePhysicsUpdate = true;
 }
 
-void CPlayerStateJump::OnJump( CPlayer& player, const bool isHeavyWeapon, const float fVerticalSpeedModifier )
+void CPlayerStateJump::OnJump(CPlayer& player, const bool isHeavyWeapon, const float fVerticalSpeedModifier)
 {
-	player.GetMoveRequest().type    = eCMT_JumpInstant;
+	player.GetMoveRequest().type = eCMT_JumpInstant;
 	player.GetMoveRequest().jumping = true;
 
-	StartJump( player, isHeavyWeapon, fVerticalSpeedModifier );
+	StartJump(player, isHeavyWeapon, fVerticalSpeedModifier);
 
-	NETINPUT_TRACE( player.GetEntityId(), (m_jumpState == JState_Jump) );
+	NETINPUT_TRACE(player.GetEntityId(), (m_jumpState == JState_Jump));
 }
 
-void CPlayerStateJump::OnFall( CPlayer& player )
+void CPlayerStateJump::OnFall(CPlayer& player)
 {
-	SetJumpState( player, JState_Falling );
+	SetJumpState(player, JState_Falling);
 }
 
-void CPlayerStateJump::StartJump( CPlayer& player, const bool isHeavyWeapon, const float fVerticalSpeedModifier )
+void CPlayerStateJump::StartJump(CPlayer& player, const bool isHeavyWeapon, const float fVerticalSpeedModifier)
 {
 	const SActorPhysics& actorPhysics = player.GetActorPhysics();
 	const SPlayerStats& stats = *player.GetActorStats();
@@ -95,7 +94,7 @@ void CPlayerStateJump::StartJump( CPlayer& player, const bool isHeavyWeapon, con
 	float expectedJumpEndHeight = playerZ + jumpHeight;
 
 	pe_player_dimensions dimensions;
-	IPhysicalEntity *pPhysics = player.GetEntity()->GetPhysics();
+	IPhysicalEntity* pPhysics = player.GetEntity()->GetPhysics();
 	if (pPhysics && pPhysics->GetParams(&dimensions))
 	{
 		float physicsBottom = dimensions.heightCollider - dimensions.sizeCollider.z;
@@ -108,11 +107,11 @@ void CPlayerStateJump::StartJump( CPlayer& player, const bool isHeavyWeapon, con
 
 	float jumpSpeed = 0.0f;
 
- 	if (g > 0.0f)
+	if (g > 0.0f)
 	{
-		jumpSpeed = sqrt_tpl(2.0f*jumpHeight*(1.0f/g)) * g;
+		jumpSpeed = sqrt_tpl(2.0f * jumpHeight * (1.0f / g)) * g;
 
-		if( isHeavyWeapon )
+		if (isHeavyWeapon)
 		{
 			jumpSpeed *= g_pGameCVars->pl_movement.nonCombat_heavy_weapon_speed_scale;
 		}
@@ -126,12 +125,12 @@ void CPlayerStateJump::StartJump( CPlayer& player, const bool isHeavyWeapon, con
 	Vec3 jumpVec(ZERO);
 
 	bool bNormalJump = true;
-	
+
 	player.PlaySound(CPlayer::ESound_Jump);
 
 	OnSpecialMove(player, IPlayerEventListener::eSM_Jump);
 
-	CCCPOINT_IF( player.IsClient(),   PlayerMovement_LocalPlayerNormalJump);
+	CCCPOINT_IF(player.IsClient(), PlayerMovement_LocalPlayerNormalJump);
 	CCCPOINT_IF(!player.IsClient(), PlayerMovement_NonLocalPlayerNormalJump);
 
 	{
@@ -148,11 +147,11 @@ void CPlayerStateJump::StartJump( CPlayer& player, const bool isHeavyWeapon, con
 			CryWatch("Jumping: vec from player BaseQuat only = (%f, %f, %f)", jumpVec.x, jumpVec.y, jumpVec.z);
 		}
 #endif
-		
+
 		if (g_pGameCVars->pl_adjustJumpAngleWithFloorNormal && actorPhysics.groundNormal.len2() > 0.0f)
 		{
 			float vertical = clamp_tpl((actorPhysics.groundNormal.z - 0.25f) / 0.5f, 0.0f, 1.0f);
-			Vec3 modifiedJumpDirection = LERP(actorPhysics.groundNormal, Vec3(0,0,1), vertical);
+			Vec3 modifiedJumpDirection = LERP(actorPhysics.groundNormal, Vec3(0, 0, 1), vertical);
 			jumpVec = modifiedJumpDirection * jumpVec.len();
 		}
 
@@ -166,7 +165,7 @@ void CPlayerStateJump::StartJump( CPlayer& player, const bool isHeavyWeapon, con
 
 	NETINPUT_TRACE(player.GetEntityId(), jumpVec);
 
-	FinalizeVelocity( player, jumpVec );
+	FinalizeVelocity(player, jumpVec);
 
 	if (!player.IsRemote())
 	{
@@ -178,12 +177,12 @@ void CPlayerStateJump::StartJump( CPlayer& player, const bool isHeavyWeapon, con
 	{
 		SAnimatedCharacterParams params = player.m_pAnimatedCharacter->GetParams();
 		pe_player_dynamics pd;
-		pd.kAirControl = player.GetAirControl()* g_pGameCVars->pl_jump_control.air_control_scale;
+		pd.kAirControl = player.GetAirControl() * g_pGameCVars->pl_jump_control.air_control_scale;
 		pd.kAirResistance = player.GetAirResistance() * g_pGameCVars->pl_jump_control.air_resistance_scale;
 
 		params.inertia = player.GetInertia() * g_pGameCVars->pl_jump_control.air_inertia_scale;
 
-		if(player.IsRemote() && (g_pGameCVars->pl_velocityInterpAirControlScale > 0))
+		if (player.IsRemote() && (g_pGameCVars->pl_velocityInterpAirControlScale > 0))
 		{
 			pd.kAirControl = g_pGameCVars->pl_velocityInterpAirControlScale;
 		}
@@ -198,10 +197,10 @@ void CPlayerStateJump::StartJump( CPlayer& player, const bool isHeavyWeapon, con
 	if (debugJumping)
 	{
 		Vec3 entityPos = m_player.GetEntity()->GetWorldPos();
-		gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(entityPos, ColorB(255,255,255,255), entityPos, ColorB(255,255,0,255), 2.0f);
-		gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(entityPos+Vec3(0,0,2), ColorB(255,255,255,255), entityPos+Vec3(0,0,2) + desiredVel, ColorB(0,255,0,255), 2.0f);
-		gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(entityPos, ColorB(255,255,255,255), entityPos + jumpVec, ColorB(0,255,255,255), 2.0f);
-		gEnv->pRenderer->DrawLabel(entityPos - entityRight * 1.0f + Vec3(0,0,3.0f), 1.5f, "Velo[%2.3f = %2.3f, %2.3f, %2.3f]", m_request.velocity.len(), m_request.velocity.x, m_request.velocity.y, m_request.velocity.z);
+		gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(entityPos, ColorB(255, 255, 255, 255), entityPos, ColorB(255, 255, 0, 255), 2.0f);
+		gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(entityPos + Vec3(0, 0, 2), ColorB(255, 255, 255, 255), entityPos + Vec3(0, 0, 2) + desiredVel, ColorB(0, 255, 0, 255), 2.0f);
+		gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(entityPos, ColorB(255, 255, 255, 255), entityPos + jumpVec, ColorB(0, 255, 255, 255), 2.0f);
+		gEnv->pRenderer->DrawLabel(entityPos - entityRight * 1.0f + Vec3(0, 0, 3.0f), 1.5f, "Velo[%2.3f = %2.3f, %2.3f, %2.3f]", m_request.velocity.len(), m_request.velocity.x, m_request.velocity.y, m_request.velocity.z);
 	}
 #endif
 
@@ -209,40 +208,40 @@ void CPlayerStateJump::StartJump( CPlayer& player, const bool isHeavyWeapon, con
 	m_bSprintJump = player.IsSprinting();
 }
 
-bool CPlayerStateJump::OnPrePhysicsUpdate( CPlayer& player, const bool isHeavyWeapon, const SActorFrameMovementParams &movement, float frameTime )
+bool CPlayerStateJump::OnPrePhysicsUpdate(CPlayer& player, const bool isHeavyWeapon, const SActorFrameMovementParams& movement, float frameTime)
 {
-	if( !m_firstPrePhysicsUpdate )
+	if (!m_firstPrePhysicsUpdate)
 	{
 		// if actor just got linked to a vehicle, abort jump/fall
 		if (player.GetLinkedVehicle())
 		{
 			SetJumpState(player, JState_None);
 
-			if(player.m_stats.fallSpeed)
+			if (player.m_stats.fallSpeed)
 			{
 				player.m_stats.fallSpeed = 0.f;
 			}
 		}
 
-		switch( m_jumpState	)
+		switch (m_jumpState)
 		{
 		case JState_Jump:
-			UpdateJumping( player, isHeavyWeapon, movement, frameTime );
+			UpdateJumping(player, isHeavyWeapon, movement, frameTime);
 			break;
 		case JState_Falling:
-			UpdateFalling( player, isHeavyWeapon, movement, frameTime );
+			UpdateFalling(player, isHeavyWeapon, movement, frameTime);
 			break;
 		}
 	}
 
 	m_firstPrePhysicsUpdate = false;
 
-	NETINPUT_TRACE(player.GetEntityId(), (m_jumpState == JState_Jump) );
+	NETINPUT_TRACE(player.GetEntityId(), (m_jumpState == JState_Jump));
 
-	return( m_jumpState == JState_None );
+	return(m_jumpState == JState_None);
 }
 
-void CPlayerStateJump::OnExit( CPlayer& player, const bool isHeavyWeapon )
+void CPlayerStateJump::OnExit(CPlayer& player, const bool isHeavyWeapon)
 {
 	if (m_jumpAction)
 	{
@@ -256,11 +255,11 @@ void CPlayerStateJump::OnExit( CPlayer& player, const bool isHeavyWeapon )
 	{
 		SAnimatedCharacterParams params = player.m_pAnimatedCharacter->GetParams();
 		pe_player_dynamics pd;
-		pd.kAirControl		= player.GetAirControl();
-		pd.kAirResistance	= player.GetAirResistance();
-		params.inertia		= player.GetInertia();
+		pd.kAirControl = player.GetAirControl();
+		pd.kAirResistance = player.GetAirResistance();
+		params.inertia = player.GetInertia();
 
-		if(player.IsRemote() && (g_pGameCVars->pl_velocityInterpAirControlScale > 0))
+		if (player.IsRemote() && (g_pGameCVars->pl_velocityInterpAirControlScale > 0))
 		{
 			pd.kAirControl = g_pGameCVars->pl_velocityInterpAirControlScale;
 		}
@@ -271,10 +270,10 @@ void CPlayerStateJump::OnExit( CPlayer& player, const bool isHeavyWeapon )
 		player.SetAnimatedCharacterParams(params);
 	}
 
-	SetJumpState( player, JState_None );
+	SetJumpState(player, JState_None);
 }
 
-void CPlayerStateJump::OnSpecialMove( CPlayer &player, IPlayerEventListener::ESpecialMove specialMove )
+void CPlayerStateJump::OnSpecialMove(CPlayer& player, IPlayerEventListener::ESpecialMove specialMove)
 {
 	if (player.m_playerEventListeners.empty() == false)
 	{
@@ -289,19 +288,19 @@ void CPlayerStateJump::OnSpecialMove( CPlayer &player, IPlayerEventListener::ESp
 	}
 }
 
-void CPlayerStateJump::OnFullSerialize( TSerialize ser, CPlayer& player )
+void CPlayerStateJump::OnFullSerialize(TSerialize ser, CPlayer& player)
 {
-	ser.BeginGroup( "StateJump" );
-	ser.Value( "JumpLock", m_jumpLock );
-	if( ser.IsReading() )
+	ser.BeginGroup("StateJump");
+	ser.Value("JumpLock", m_jumpLock);
+	if (ser.IsReading())
 	{
 		EJumpState state = JState_None;
-		ser.EnumValue( "jumpState", state, JState_None, JState_Total );
-		SetJumpState( player, state );
+		ser.EnumValue("jumpState", state, JState_None, JState_Total);
+		SetJumpState(player, state);
 	}
 	else
 	{
-		ser.EnumValue( "jumpState", m_jumpState, JState_None, JState_Total );
+		ser.EnumValue("jumpState", m_jumpState, JState_None, JState_Total);
 	}
 	ser.EndGroup();
 }
@@ -310,12 +309,12 @@ void CPlayerStateJump::SetJumpState(CPlayer& player, EJumpState jumpState)
 {
 	if (jumpState != m_jumpState)
 	{
-		CRY_ASSERT( m_jumpState >= JState_None && m_jumpState < JState_Total );
+		CRY_ASSERT(m_jumpState >= JState_None && m_jumpState < JState_Total);
 		const EJumpState previousJumpState = m_jumpState;
 
 		m_jumpState = jumpState;
 
-		if (IActionController *actionController =	player.GetAnimatedCharacter()->GetActionController())
+		if (IActionController* actionController = player.GetAnimatedCharacter()->GetActionController())
 		{
 			if (!m_jumpAction && !player.IsAIControlled())
 			{
@@ -350,35 +349,35 @@ void CPlayerStateJump::Landed(CPlayer& player, const bool isHeavyWeapon, float f
 #ifdef STATE_DEBUG
 	bool remoteControlled = false;
 	IVehicle* pVehicle = player.GetLinkedVehicle();
-	if(pVehicle)
+	if (pVehicle)
 	{
 		IVehicleSeat* pVehicleSeat = pVehicle->GetSeatForPassenger(player.GetEntityId());
-		if(pVehicleSeat && pVehicleSeat->IsRemoteControlled())
+		if (pVehicleSeat && pVehicleSeat->IsRemoteControlled())
 		{
 			remoteControlled = true;
 		}
 	}
-	CRY_ASSERT_MESSAGE( player.GetLinkedEntity()==NULL || remoteControlled, "Cannot 'land' when you're linked to another entity!" );
+	CRY_ASSERT_MESSAGE(player.GetLinkedEntity() == NULL || remoteControlled, "Cannot 'land' when you're linked to another entity!");
 #endif
 
 	const SPlayerStats& stats = player.m_stats;
 
 	Vec3 playerPosition = player.GetEntity()->GetWorldPos();
-	IPhysicalEntity *phys = player.GetEntity()->GetPhysics();
-	IMaterialEffects *mfx = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+	IPhysicalEntity* phys = player.GetEntity()->GetPhysics();
+	IMaterialEffects* mfx = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
 
 	const SActorPhysics& actorPhysics = player.GetActorPhysics();
 	int matID = actorPhysics.groundMaterialIdx != -1 ? actorPhysics.groundMaterialIdx : mfx->GetDefaultSurfaceIndex();
 
 	const float fHeightofEntity = playerPosition.z;
 	const float worldWaterLevel = player.m_playerStateSwim_WaterTestProxy.GetWaterLevel();
-	
+
 	TMFXEffectId effectId = mfx->GetEffectId("bodyfall", matID);
 	if (effectId != InvalidEffectId)
 	{
 		SMFXRunTimeEffectParams params;
 		params.pos = playerPosition;
-		float landFallParamVal = (float)__fsel( -(fallSpeed - 7.5f), 0.25f, 0.75f);
+		float landFallParamVal = (float)__fsel(-(fallSpeed - 7.5f), 0.25f, 0.75f);
 		params.AddAudioRtpc("landfall", landFallParamVal);
 
 		const float speedParamVal = min(fabsf((actorPhysics.velocity.z * 0.1f)), 1.0f);
@@ -394,13 +393,13 @@ void CPlayerStateJump::Landed(CPlayer& player, const bool isHeavyWeapon, float f
 
 	if (fallSpeed > 0.0f && player.IsPlayer())
 	{
-		if(!gEnv->bMultiplayer)
+		if (!gEnv->bMultiplayer)
 		{
 			const float verticalSpeed = fabs(fallSpeed);
 			const float speedForHeavyLand = g_pGameCVars->pl_health.fallSpeed_HeavyLand;
 			if ((verticalSpeed >= speedForHeavyLand) && (player.GetPickAndThrowEntity() == 0) && !player.IsDead())
 			{
-				if ( !isHeavyWeapon )
+				if (!isHeavyWeapon)
 				{
 					if (pCurrentWeapon)
 					{
@@ -415,7 +414,7 @@ void CPlayerStateJump::Landed(CPlayer& player, const bool isHeavyWeapon, float f
 		}
 	}
 
-	if(player.m_isClient)
+	if (player.m_isClient)
 	{
 		if (fallSpeed > 0.0f)
 		{
@@ -425,13 +424,13 @@ void CPlayerStateJump::Landed(CPlayer& player, const bool isHeavyWeapon, float f
 			const float fallTimeMax = g_pGameCVars->pl_fall_time_max;
 			const float zoomMultiplayer = (pCurrentWeapon && pCurrentWeapon->IsZoomed()) ? 0.2f : 1.0f;
 			const float direction = (cry_random(0, 1) == 0) ? -1.0f : 1.0f;
-			const float intensity = clamp_tpl(fallIntensityMultiplier*fallSpeed*zoomMultiplayer, 0.0f, fallIntensityMax);
-			const float shakeTime = clamp_tpl(fallTimeMultiplier*fallSpeed*zoomMultiplayer, 0.0f, fallTimeMax);
-			const Vec3 rotation = Vec3(-0.5f, 0.15f*direction, 0.05f*direction);
+			const float intensity = clamp_tpl(fallIntensityMultiplier * fallSpeed * zoomMultiplayer, 0.0f, fallIntensityMax);
+			const float shakeTime = clamp_tpl(fallTimeMultiplier * fallSpeed * zoomMultiplayer, 0.0f, fallTimeMax);
+			const Vec3 rotation = Vec3(-0.5f, 0.15f * direction, 0.05f * direction);
 
 			if (CScreenEffects* pGameScreenEffects = g_pGame->GetScreenEffects())
 			{
-				pGameScreenEffects->CamShake(rotation*intensity, Vec3(0, 0, 0), shakeTime, shakeTime, 0.05f, CScreenEffects::eCS_GID_Player);
+				pGameScreenEffects->CamShake(rotation * intensity, Vec3(0, 0, 0), shakeTime, shakeTime, 0.05f, CScreenEffects::eCS_GID_Player);
 			}
 
 			IForceFeedbackSystem* pForceFeedback = g_pGame->GetIGameFramework()->GetIForceFeedbackSystem();
@@ -440,7 +439,7 @@ void CPlayerStateJump::Landed(CPlayer& player, const bool isHeavyWeapon, float f
 			ForceFeedbackFxId fxId = pForceFeedback->GetEffectIdByName("landFF");
 			pForceFeedback->PlayForceFeedbackEffect(fxId, SForceFeedbackRuntimeParams(intensity, 0.0f));
 
-			if(fallSpeed > 7.0f)
+			if (fallSpeed > 7.0f)
 			{
 				player.PlaySound(CPlayer::ESound_Fall_Drop);
 			}
@@ -450,15 +449,15 @@ void CPlayerStateJump::Landed(CPlayer& player, const bool isHeavyWeapon, float f
 		}
 		CCCPOINT(PlayerMovement_LocalPlayerLanded);
 	}
-	
-	if( gEnv->pAISystem )
+
+	if (gEnv->pAISystem)
 	{
 		// Notify AI
 		//If silent feet active, ignore here
 		const float noiseSupression = 0.0f;
 		const float fAISoundRadius = (g_pGameCVars->ai_perception.landed_baseRadius + (g_pGameCVars->ai_perception.landed_speedMultiplier * fallSpeed)) * (1.0f - noiseSupression);
 		SAIStimulus stim(AISTIM_SOUND, AISOUND_MOVEMENT_LOUD, player.GetEntityId(), 0,
-			player.GetEntity()->GetWorldPos() + player.GetEyeOffset(), ZERO, fAISoundRadius);
+		                 player.GetEntity()->GetWorldPos() + player.GetEyeOffset(), ZERO, fAISoundRadius);
 		gEnv->pAISystem->RegisterStimulus(stim);
 	}
 
@@ -468,11 +467,11 @@ void CPlayerStateJump::Landed(CPlayer& player, const bool isHeavyWeapon, float f
 
 	if (fallSpeed > 0.0f)
 	{
-		player.CreateScriptEvent( heavyLanded ? "heavylanded" : "landed",stats.fallSpeed);
+		player.CreateScriptEvent(heavyLanded ? "heavylanded" : "landed", stats.fallSpeed);
 	}
 }
 
-const Vec3 CPlayerStateJump::CalculateInAirJumpExtraVelocity( const CPlayer& player, const Vec3& desiredVelocity ) const
+const Vec3 CPlayerStateJump::CalculateInAirJumpExtraVelocity(const CPlayer& player, const Vec3& desiredVelocity) const
 {
 	const SPlayerStats& stats = player.m_stats;
 	const float speedUpFactor = 0.175f;
@@ -488,18 +487,18 @@ const Vec3 CPlayerStateJump::CalculateInAirJumpExtraVelocity( const CPlayer& pla
 	else
 	{
 		//Note: this makes the jump feel less 'floaty', by accelerating the player slightly down
-		//      and compensates the extra traveled distance when going up 
+		//      and compensates the extra traveled distance when going up
 		const float g = actorPhysics.gravity.len();
 		if (g > 0.0f)
 		{
 			const float jumpHeightScale = 1.0f;
 			const float jumpHeight = player.m_params.jumpHeight * jumpHeightScale;
 
-			const float estimatedLandTime = sqrt_tpl(2.0f*jumpHeight*(1.0f/g)) * (1.0f - speedUpFactor);
+			const float estimatedLandTime = sqrt_tpl(2.0f * jumpHeight * (1.0f / g)) * (1.0f - speedUpFactor);
 			assert(estimatedLandTime > 0.0f);
 			if (estimatedLandTime > 0.0f)
 			{
-				const float requiredGravity = (2.0f*jumpHeight)/(estimatedLandTime * estimatedLandTime);
+				const float requiredGravity = (2.0f * jumpHeight) / (estimatedLandTime * estimatedLandTime);
 				const float initialAccelerationScale = clamp_tpl((-actorPhysics.velocity.z * 0.6f), 0.0f, 1.0f);
 				jumpExtraVelocity = (requiredGravity - g) * actorPhysics.gravity.GetNormalized() * initialAccelerationScale;
 			}
@@ -509,38 +508,38 @@ const Vec3 CPlayerStateJump::CalculateInAirJumpExtraVelocity( const CPlayer& pla
 	return jumpExtraVelocity;
 }
 
-void CPlayerStateJump::UpdateJumping( CPlayer& player, const bool isHeavyWeapon, const SActorFrameMovementParams& movement, float frameTime )
+void CPlayerStateJump::UpdateJumping(CPlayer& player, const bool isHeavyWeapon, const SActorFrameMovementParams& movement, float frameTime)
 {
 	Vec3 desiredVel(ZERO);
-	if( UpdateCommon( player, isHeavyWeapon, movement, frameTime, &desiredVel ) )
+	if (UpdateCommon(player, isHeavyWeapon, movement, frameTime, &desiredVel))
 	{
-		Vec3 jumpExtraForce(0,0,0);
-		switch( GetJumpState() )
+		Vec3 jumpExtraForce(0, 0, 0);
+		switch (GetJumpState())
 		{
 		case JState_Jump:
-			jumpExtraForce = CalculateInAirJumpExtraVelocity( player, desiredVel );
+			jumpExtraForce = CalculateInAirJumpExtraVelocity(player, desiredVel);
 			break;
 		}
 		desiredVel += jumpExtraForce;
 
-		FinalizeVelocity( player, desiredVel );
+		FinalizeVelocity(player, desiredVel);
 
-		if( CPlayerStateUtil::IsOnGround( player ) )
+		if (CPlayerStateUtil::IsOnGround(player))
 		{
 			Land(player, isHeavyWeapon, frameTime);
 		}
 	}
 }
 
-void CPlayerStateJump::UpdateFalling( CPlayer& player, const bool isHeavyWeapon, const SActorFrameMovementParams& movement, float frameTime )
+void CPlayerStateJump::UpdateFalling(CPlayer& player, const bool isHeavyWeapon, const SActorFrameMovementParams& movement, float frameTime)
 {
 	Vec3 desiredVel(ZERO);
 
-	if( !CPlayerStateUtil::IsOnGround( player ) )
+	if (!CPlayerStateUtil::IsOnGround(player))
 	{
-		if( UpdateCommon( player, isHeavyWeapon, movement, frameTime, &desiredVel ) )
+		if (UpdateCommon(player, isHeavyWeapon, movement, frameTime, &desiredVel))
 		{
-			FinalizeVelocity( player, desiredVel );
+			FinalizeVelocity(player, desiredVel);
 		}
 	}
 	else
@@ -550,26 +549,26 @@ void CPlayerStateJump::UpdateFalling( CPlayer& player, const bool isHeavyWeapon,
 	}
 }
 
-bool CPlayerStateJump::UpdateCommon( CPlayer& player, const bool isHeavyWeapon, const SActorFrameMovementParams& movement, float frameTime, Vec3* pDesiredVel )
+bool CPlayerStateJump::UpdateCommon(CPlayer& player, const bool isHeavyWeapon, const SActorFrameMovementParams& movement, float frameTime, Vec3* pDesiredVel)
 {
 	Vec3 move(ZERO);
-	const bool  bigWeaponRestrict = isHeavyWeapon;
-	CPlayerStateUtil::CalculateGroundOrJumpMovement( player, movement, bigWeaponRestrict, move );
+	const bool bigWeaponRestrict = isHeavyWeapon;
+	CPlayerStateUtil::CalculateGroundOrJumpMovement(player, movement, bigWeaponRestrict, move);
 
-	return UpdateCommon( player, isHeavyWeapon, move, frameTime, pDesiredVel );
+	return UpdateCommon(player, isHeavyWeapon, move, frameTime, pDesiredVel);
 }
 
-bool CPlayerStateJump::UpdateCommon( CPlayer& player, const bool isHeavyWeapon, const Vec3 &move, float frameTime, Vec3* pDesiredVel )
+bool CPlayerStateJump::UpdateCommon(CPlayer& player, const bool isHeavyWeapon, const Vec3& move, float frameTime, Vec3* pDesiredVel)
 {
 	GetDesiredVelocity(move, player, pDesiredVel);
 
 	const SActorPhysics& actorPhysics = player.GetActorPhysics();
 
 	// generate stats.
-	if (actorPhysics.velocity*actorPhysics.gravity>0.0f)
+	if (actorPhysics.velocity * actorPhysics.gravity > 0.0f)
 	{
 		const float fHeightofEntity = player.GetEntity()->GetWorldTM().GetTranslation().z;
-		m_startFallingHeight= (float)__fsel(-player.m_stats.fallSpeed, fHeightofEntity, max(m_startFallingHeight, fHeightofEntity));
+		m_startFallingHeight = (float)__fsel(-player.m_stats.fallSpeed, fHeightofEntity, max(m_startFallingHeight, fHeightofEntity));
 		player.m_stats.fallSpeed = -actorPhysics.velocity.z;
 	}
 
@@ -582,19 +581,19 @@ bool CPlayerStateJump::UpdateCommon( CPlayer& player, const bool isHeavyWeapon, 
 	return true;
 }
 
-void CPlayerStateJump::FinalizeVelocity( CPlayer& player, const Vec3& newVelocity )
+void CPlayerStateJump::FinalizeVelocity(CPlayer& player, const Vec3& newVelocity)
 {
 	const float fNewSpeed = newVelocity.len();
 
-	const float fVelocityMultiplier = (float)__fsel(fNewSpeed - 22.0f, __fres(fNewSpeed+FLT_EPSILON) * 22.0f, 1.0f);
+	const float fVelocityMultiplier = (float)__fsel(fNewSpeed - 22.0f, __fres(fNewSpeed + FLT_EPSILON) * 22.0f, 1.0f);
 
 	// TODO: Maybe we should tell physics about this new velocity ? Or maybe SPlayerStats::velocity ? (stephenn).
 	player.GetMoveRequest().velocity = newVelocity * fVelocityMultiplier;
 }
 
-void CPlayerStateJump::Land( CPlayer &player, const bool isHeavyWeapon, float frameTime )
+void CPlayerStateJump::Land(CPlayer& player, const bool isHeavyWeapon, float frameTime)
 {
-	if(gEnv->bMultiplayer && IsJumping())
+	if (gEnv->bMultiplayer && IsJumping())
 	{
 		m_jumpLock = min(g_pGameCVars->pl_jump_baseTimeAddedPerJump + (m_jumpLock * g_pGameCVars->pl_jump_currentTimeMultiplierOnJump), g_pGameCVars->pl_jump_maxTimerValue);
 	}
@@ -603,7 +602,7 @@ void CPlayerStateJump::Land( CPlayer &player, const bool isHeavyWeapon, float fr
 
 	if (player.IsClient())
 	{
-		CPlayerStateUtil::ApplyFallDamage( player, m_startFallingHeight, fHeightofEntity );
+		CPlayerStateUtil::ApplyFallDamage(player, m_startFallingHeight, fHeightofEntity);
 	}
 
 	// TODO: Physics sync.
@@ -613,81 +612,74 @@ void CPlayerStateJump::Land( CPlayer &player, const bool isHeavyWeapon, float fr
 	player.m_stats.wasHit = false;
 
 	SetJumpState(player, JState_None);
-	
-	if(player.m_stats.fallSpeed)
+
+	if (player.m_stats.fallSpeed)
 	{
 		player.m_stats.fallSpeed = 0.0f;
 
 		const float worldWaterLevel = player.m_playerStateSwim_WaterTestProxy.GetWaterLevel();
-		if(fHeightofEntity < worldWaterLevel)
+		if (fHeightofEntity < worldWaterLevel)
 		{
-			player.CreateScriptEvent("jump_splash", worldWaterLevel-fHeightofEntity);
+			player.CreateScriptEvent("jump_splash", worldWaterLevel - fHeightofEntity);
 		}
 
 	}
 }
 
-void CPlayerStateJump::GetDesiredVelocity( const Vec3 & move, const CPlayer &player, Vec3* pDesiredVel ) const
+void CPlayerStateJump::GetDesiredVelocity(const Vec3& move, const CPlayer& player, Vec3* pDesiredVel) const
 {
 	// Generate jump velocity.
-	SIMDFConstant(xmfMaxMove, 1.0f);
+	const float fMaxMove = 1.0f;
 
-	simdf fGroundNormalZ = xmfMaxMove;
+	float fGroundNormalZ = fMaxMove;
 
-	hwvec3 xmMove  = HWVLoadVecUnaligned(&move);	
-	if( move.len2() > 0.01f )
+	if (move.len2() > 0.01f)
 	{
 		const Matrix34A baseMtx = Matrix34A(player.GetBaseQuat());
-		Matrix34A baseMtxZ(baseMtx * Matrix33::CreateScale(Vec3(0,0,1)));
+		Matrix34A baseMtxZ(baseMtx * Matrix33::CreateScale(Vec3(0, 0, 1)));
 		baseMtxZ.SetTranslation(Vec3(0,0,0));
 
-		hwmtx33 xmBaseMtxZ;
-		HWMtx33LoadAligned(xmBaseMtxZ, baseMtxZ);
-		hwmtx33 xmBaseMtxZOpt = HWMtx33GetOptimized(xmBaseMtxZ);
-
-		hwvec3 xmDesiredVel = HWV3Zero();
+		Vec3 vDesiredVel(ZERO);
 		if (player.IsRemote())
 		{
-			xmDesiredVel = xmMove;
+			vDesiredVel = move;
 		}
 		else
 		{
-			hwvec3 xmVelocity = HWVLoadVecUnaligned(&player.GetActorPhysics().velocity);
+			Vec3 vVelocity = player.GetActorPhysics().velocity;
 
-			SIMDFConstant(xmfZero, 0.0f);
-			SIMDFConstant(xmfDiffMultiplier, 0.3f);
-			SIMDFConstant(xmfMaxDiff, 0.1f);
-			SIMDFConstant(xmfMinMove, 0.5f);
-			SIMDFConstant(xmfOnePointFive, 1.5f);
+			const float fDiffMultiplier = 0.3f;
+			const float fMaxDiff = 0.1f;
+			const float fMinMove = 0.5f;
 
-			hwvec3 xmMoveFlat		= HWVSub(xmMove, 		HWMtx33RotateVecOpt(xmBaseMtxZOpt, xmMove));
-			hwvec3 xmCurrVelFlat	= HWVSub(xmVelocity,	HWMtx33RotateVecOpt(xmBaseMtxZOpt, xmVelocity));
+			Vec3 vMoveFlat = move - baseMtxZ * move;
+			Vec3 vCurrVelFlat = vVelocity - baseMtxZ * vVelocity;
 
-			simdf xmfCurrVelSizeSq	= HWV3LengthSq(xmCurrVelFlat);
+			float fCurrVelSizeSq = vCurrVelFlat.GetLengthSquared();
 
-			hwvec3 xmMoveFlatNormalized		= HWV3Normalize(xmMoveFlat);
-			hwvec3 xmCurDirFlatTemp			= HWV3Normalize(xmCurrVelFlat);
+			Vec3 vMoveFlatNormalized = vMoveFlat.GetNormalized();
+			Vec3 vCurDirFlatTemp = vCurrVelFlat.GetNormalized();
 
-			hwvec3 xmCurVelFlatNormalized	= HWVSelectSIMDF(xmCurDirFlatTemp, HWV3Zero(), SIMDFLessThanEqual(xmfCurrVelSizeSq, xmfZero));
+			Vec3 vCurVelFlatNormalized = fCurrVelSizeSq <= 0.0f ? Vec3(ZERO) : vCurDirFlatTemp;
 
-			simdf fDot = HWV3Dot(xmMoveFlatNormalized, xmCurVelFlatNormalized);
+			float fDot = vMoveFlatNormalized | vCurVelFlatNormalized;
 
-			hwvec3 xmScaledMoveFlat = HWVMultiplySIMDF(xmMoveFlat, SIMDFClamp(fDot, xmfMinMove, xmfMaxMove));
-			simdf fMoveMult = SIMDFMax(SIMDFMult(SIMDFAbs(fDot), xmfDiffMultiplier), xmfMaxDiff);
+			Vec3 vScaledMoveFlat = vMoveFlat * clamp(fDot, fMinMove, fMaxMove);
+			float fMoveMult = max(abs(fDot) * fDiffMultiplier, fMaxDiff);
 
-			hwvec3 xmReducedMove = HWVMultiplySIMDF(HWVSub(xmMoveFlat, xmCurrVelFlat), fMoveMult);
+			Vec3 vReducedMove = (vMoveFlat - vCurrVelFlat) * fMoveMult;
 
-			xmDesiredVel = HWVSelectSIMDF( xmScaledMoveFlat, xmReducedMove, SIMDFLessThan( fDot, xmfZero ));
+			vDesiredVel = fDot < 0.0f ? vReducedMove : vScaledMoveFlat;
 
-			simdf xmfDesiredVelSizeSq = HWV3LengthSq(xmDesiredVel);
+			float fDesiredVelSizeSq = vDesiredVel.GetLengthSquared();
 
-			hwvec3 xmDesiredVelNorm = HWV3Normalize(xmDesiredVel);
+			Vec3 vDesiredVelNorm = vDesiredVel.GetNormalized();
 
-			hwvec3 xmClampedVel = HWVMultiplySIMDF(xmDesiredVelNorm, SIMDFMax( xmfOnePointFive, SIMDFSqrt(xmfCurrVelSizeSq)));
+			Vec3 vClampedVel = vDesiredVelNorm * max(1.5f, sqrt(fCurrVelSizeSq));
 
-			xmDesiredVel = HWVSelectSIMDF( xmClampedVel, xmDesiredVel, SIMDFLessThan( xmfDesiredVelSizeSq, xmfCurrVelSizeSq));
+			vDesiredVel = fDesiredVelSizeSq < fCurrVelSizeSq ? vDesiredVel : vClampedVel;
 		}
 
-		HWVSaveVecUnaligned(pDesiredVel, xmDesiredVel);
+		*pDesiredVel = vDesiredVel;
 	}
 }

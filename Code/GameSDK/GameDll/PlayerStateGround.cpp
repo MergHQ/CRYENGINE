@@ -24,8 +24,6 @@ History:
 
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CrySystem/VR/IHMDManager.h>
-#include <CryMath/Cry_HWVector3.h>
-#include <CryMath/Cry_HWMatrix.h>
 
 #ifdef STATE_DEBUG
 static AUTOENUM_BUILDNAMEARRAY(s_ledgeTransitionNames, LedgeTransitionList);
@@ -89,14 +87,7 @@ void CPlayerStateGround::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameM
 		Vec3 entityPos = player.GetEntity()->GetWorldPos();
 		Vec3 entityRight(player.GetBaseQuat().GetColumn0());
 
-		hwvec3 xmDesiredVel = HWV3Zero();
-
-		hwmtx33 xmBaseMtxZ;
-		HWMtx33LoadAligned(xmBaseMtxZ, baseMtxZ);
-		hwmtx33 xmBaseMtxZOpt = HWMtx33GetOptimized(xmBaseMtxZ);
-
-		hwvec3 xmMove					= HWVLoadVecUnaligned(&move);	
-		simdf fGroundNormalZ;
+		float fGroundNormalZ;
 
 #ifdef STATE_DEBUG
 		bool debugJumping = (g_pGameCVars->pl_debug_jumping != 0);
@@ -105,16 +96,16 @@ void CPlayerStateGround::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameM
 		const SPlayerStats& stats = *player.GetActorStats();
 
 		{
-			xmDesiredVel = xmMove;
+			desiredVel = move;
 			
 			Vec3 groundNormal = player.GetActorPhysics().groundNormal;
 
 			if(!gEnv->bMultiplayer)
 			{
 				if (player.IsAIControlled())
-					fGroundNormalZ = SIMDFLoadFloat(square(groundNormal.z));
+					fGroundNormalZ = square(groundNormal.z);
 				else
-					fGroundNormalZ = SIMDFLoadFloat(groundNormal.z);
+					fGroundNormalZ = groundNormal.z;
 			}
 			else
 			{
@@ -132,11 +123,11 @@ void CPlayerStateGround::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameM
 					float normalDotMove = groundNormal.Dot(moveDir);
 					//Apply speed multiplier based on moving up/down hill and hill steepness
 					float multiplier = normalDotMove < 0.f ? g_pGameCVars->pl_movement.mp_slope_speed_multiplier_uphill : g_pGameCVars->pl_movement.mp_slope_speed_multiplier_downhill;
-					fGroundNormalZ = SIMDFLoadFloat(1.f - (1.f - player.GetActorPhysics().groundNormal.z) * multiplier);
+					fGroundNormalZ = 1.f - (1.f - player.GetActorPhysics().groundNormal.z) * multiplier;
 				}
 				else
 				{
-					fGroundNormalZ = SIMDFLoadFloat(1.0f);
+					fGroundNormalZ = 1.0f;
 				}
 			}
 
@@ -164,9 +155,7 @@ void CPlayerStateGround::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameM
 				//avoid branch if m_stats.relativeBottomDepth <= 0.0f;
 				shallowWaterMultiplier = (float)__fsel(-relativeBottomDepth, 1.0f, shallowWaterMultiplier);
 
-				simdf vfShallowWaterMultiplier = SIMDFLoadFloat(shallowWaterMultiplier);
-
-				xmDesiredVel = HWVMultiplySIMDF(xmDesiredVel, vfShallowWaterMultiplier);
+				desiredVel *= shallowWaterMultiplier;
 			}
 		}
 
@@ -175,14 +164,12 @@ void CPlayerStateGround::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameM
 #endif
 
 		// Slow down on sloped terrain, simply proportional to the slope. 
-		xmDesiredVel = HWVMultiplySIMDF(xmDesiredVel, fGroundNormalZ);
+		desiredVel *= fGroundNormalZ;
 
 		//be sure desired velocity is flat to the ground
-		hwvec3 vDesiredVelVert = HWMtx33RotateVecOpt(xmBaseMtxZOpt, xmDesiredVel);
+		Vec3 desiredVelVert = baseMtxZ * desiredVel;
 
-		xmDesiredVel = HWVSub(xmDesiredVel, vDesiredVelVert);
-
-		HWVSaveVecUnaligned(&desiredVel, xmDesiredVel);
+		desiredVel -= desiredVelVert;
 
 		if (isPlayer)
 		{

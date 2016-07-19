@@ -224,8 +224,6 @@ public:
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_Quat.h"
 %template(Quat) Quat_tpl<f32>;
 %template(QuatTS) QuatTS_tpl<f32>;
-%import "../../../../CryEngine/CryCommon/CryMath/Cry_HWVector3.h"
-%import "../../../../CryEngine/CryCommon/CryMath/Cry_HWMatrix.h"
 %import "../../../../CryEngine/CryCommon/CryMath/Cry_XOptimise.h" //<-- throwing errors, because of undefined _MSC_VER!
 %ignore Color_tpl<uint8>::set; // <-- until RnD fixes the method defintion
 %ignore Color_tpl<float>::set; // <-- until RnD fixes the method definition
