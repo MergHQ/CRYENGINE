@@ -382,6 +382,10 @@ struct IConsole
 	//! \param szLine Must not be 0.
 	virtual void SetInputLine(const char* szLine) = 0;
 
+	//! Set Console Editable
+	virtual void SetReadOnly(bool readonly) = 0;
+	virtual bool IsReadOnly() = 0;
+
 	//! Dump all key bindings to a callback-interface.
 	//! \param Callback callback-interface which needs to be called for each element.
 	virtual void        DumpKeyBinds(IKeyBindDumpSink* pCallback) = 0;

@@ -301,6 +301,7 @@ CXConsole::CXConsole()
 	m_blockCounter = 0;
 
 	m_currentLoadConfigType = eLoadConfigInit;
+	m_readOnly = false;
 
 	CNotificationNetworkConsole::Initialize();
 
@@ -1391,7 +1392,7 @@ bool CXConsole::OnInputEvent(const SInputEvent& event)
 bool CXConsole::OnInputEventUI(const SUnicodeEvent& event)
 {
 #ifdef PROCESS_XCONSOLE_INPUT
-	if (m_bConsoleActive && event.inputChar >= 32 && event.inputChar != 96) // 32: Space // 96: Console toggle
+	if (m_bConsoleActive && !m_readOnly && event.inputChar >= 32 && event.inputChar != 96) // 32: Space // 96: Console toggle
 	{
 		AddInputChar(event.inputChar);
 	}
@@ -1404,7 +1405,7 @@ bool CXConsole::ProcessInput(const SInputEvent& event)
 {
 #ifdef PROCESS_XCONSOLE_INPUT
 
-	if (!m_bConsoleActive)
+	if (!m_bConsoleActive || m_readOnly)
 		return false;
 
 	// this is not so super-nice as the XKEY's ... but a small price to pay
