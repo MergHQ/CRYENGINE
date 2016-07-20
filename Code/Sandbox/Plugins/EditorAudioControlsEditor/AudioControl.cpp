@@ -18,18 +18,16 @@
 
 namespace ACE
 {
-
 CATLControl::CATLControl()
 	: m_id(ACE_INVALID_ID)
 	, m_type(eACEControlType_RTPC)
-	, m_name("")
 	, m_scope(0)
 	, m_pParent(nullptr)
+	, m_radius(0.0f)
+	, m_occlusionFadeOutDistance(0.0f)
 	, m_bAutoLoad(true)
 	, m_bModified(false)
 	, m_pModel(nullptr)
-	, m_radius(0.0f)
-	, m_occlusionFadeOutDistance(0.0f)
 	, m_modifiedSignalEnabled(true)
 {
 }
@@ -37,15 +35,12 @@ CATLControl::CATLControl()
 CATLControl::CATLControl(const string& controlName, CID id, EACEControlType eType, CATLControlsModel* pModel)
 	: m_id(id)
 	, m_type(eType)
-	, m_name("")
-	, m_scope(0)
 	, m_pParent(nullptr)
+	, m_radius(0.0f)
+	, m_occlusionFadeOutDistance(0.0f)
 	, m_bAutoLoad(true)
 	, m_bModified(false)
 	, m_pModel(pModel)
-	, m_radius(0.0f)
-	, m_occlusionFadeOutDistance(0.0f)
-	, m_modifiedSignalEnabled(true)
 {
 	m_modifiedSignalEnabled = false;
 	SetName(controlName);
