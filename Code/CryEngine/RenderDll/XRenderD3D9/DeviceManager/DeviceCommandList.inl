@@ -277,7 +277,9 @@ inline void CDeviceGraphicsCommandInterface::Draw(uint32 VertexCountPerInstance,
 	}
 	else
 	{
+#if defined(ENABLE_PROFILING_CODE)
 		m_profilingStats.numInvalidDIPs++;
+#endif
 	}
 }
 
@@ -324,7 +326,9 @@ inline void CDeviceGraphicsCommandInterface::DrawIndexed(uint32 IndexCountPerIns
 	}
 	else
 	{
+#if defined(ENABLE_PROFILING_CODE)
 		m_profilingStats.numInvalidDIPs++;
+#endif
 	}
 }
 
