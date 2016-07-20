@@ -342,15 +342,18 @@ namespace UriEncoding
 		stack_string decodedQuery;
 
 		char ch = -1;
+		char result = 0;
+
 		for (size_t i = 0; i < length; ++i) 
 		{
 			switch (ch = szBuffer[i]) 
 			{
 			case '%':
 				ch = szBuffer[++i];
-				decodedQuery.append((isdigit(ch) ? ch - '0' : 10 + CryStringUtils::toLowerAscii(ch) - 'a') & 0xF, 1);
+				result = ((isdigit(ch) ? ch - '0' : 10 + CryStringUtils::toLowerAscii(ch) - 'a') & 0xF) << 4;
 				ch = szBuffer[++i];
-				decodedQuery.append((isdigit(ch) ? ch - '0' : 10 + CryStringUtils::toLowerAscii(ch) - 'a') & 0xF, 1);
+				result += ((isdigit(ch) ? ch - '0' : 10 + CryStringUtils::toLowerAscii(ch) - 'a') & 0xF);
+				decodedQuery.append(&result, 1);
 				break ;
 			case '+':
 				decodedQuery.append(" ", 1);

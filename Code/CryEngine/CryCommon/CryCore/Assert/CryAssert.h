@@ -35,10 +35,13 @@ void CryDebugBreak();
 		  do                                                                       \
 		  {                                                                        \
 		    static bool s_bIgnoreAssert = false;                                   \
+		    static bool s_bLogAssert = true;                                       \
 		    if (!(condition))                                                      \
 		    {                                                                      \
 		      CryAssertTrace parenthese_message;                                   \
-		      CryLogAssert( # condition, __FILE__, __LINE__, &s_bIgnoreAssert);    \
+		      if (s_bLogAssert) /* Just log assert the first time */               \
+		        CryLogAssert( # condition, __FILE__, __LINE__, &s_bIgnoreAssert);  \
+		      s_bLogAssert = false;                                                \
 		                                                                           \
 		      if (!s_bIgnoreAssert && CryAssertIsEnabled())                        \
 		      {                                                                    \
