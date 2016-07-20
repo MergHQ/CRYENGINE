@@ -494,9 +494,7 @@
          "Environment/DangerousRigidBody.h"
       ],
       "Game Files/Environment/Tornado":[
-         "Environment/FlowTornado.cpp",
          "Environment/Tornado.cpp",
-         "Environment/FlowTornado.h",
          "Environment/Tornado.h"
       ]
 		},
@@ -1108,10 +1106,8 @@
          "Nodes/FlowActorNodes.cpp",
          "Nodes/FlowActorSensor.cpp",
          "Nodes/FlowCheckAreaNode.cpp",
-         "Nodes/FlowConvoyNode.cpp",
          "Nodes/FlowHitInfoNode.cpp",
 		 "Nodes/FlowLockPlayerNode.cpp",
-		 "Nodes/FlowLockPlayerRotationNode.cpp",
          "Nodes/FlowNodesInput.cpp",
          "Nodes/FlowPlayerStagingNode.cpp",
          "Nodes/FlowPlayerStumble.cpp",
@@ -1119,7 +1115,6 @@
          "FlowVehicleNodes.cpp",
          "Nodes/G2FlowEntityElectricConnector.cpp",
          "Nodes/G2FlowEntityVelocity.cpp",
-         "Nodes/G2FlowYesNoGestureNode.cpp",
          "Nodes/GameNodes.cpp",
          "Nodes/MPNodes.cpp",
          "Nodes/PressureWaveNode.cpp",
@@ -1136,7 +1131,6 @@
          "Nodes/AINodes.h",
          "Nodes/ColorGradientNode.h",
          "Nodes/FeatureTestNode.h",
-         "Nodes/FlowConvoyNode.h",
          "Nodes/G2FlowBaseNode.h",
          "Nodes/AIAssignmentNodes.h",
          "FlowWeaponCustomizationNodes.h",

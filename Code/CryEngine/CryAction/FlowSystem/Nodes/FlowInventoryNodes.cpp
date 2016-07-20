@@ -809,14 +809,14 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Inventory:AddItem", CFlowNode_InventoryAddItem);
-REGISTER_FLOW_NODE("Inventory:RemoveItem", CFlowNode_InventoryRemoveItem);
-REGISTER_FLOW_NODE("Inventory:RemoveAllItems", CFlowNode_InventoryRemoveAllItems);
-REGISTER_FLOW_NODE("Inventory:HasItem", CFlowNode_InventoryHasItem);
+REGISTER_FLOW_NODE("Inventory:ItemAdd", CFlowNode_InventoryAddItem);
+REGISTER_FLOW_NODE("Inventory:ItemRemove", CFlowNode_InventoryRemoveItem);
+REGISTER_FLOW_NODE("Inventory:ItemRemoveAll", CFlowNode_InventoryRemoveAllItems);
+REGISTER_FLOW_NODE("Inventory:ItemCheck", CFlowNode_InventoryHasItem);
 REGISTER_FLOW_NODE("Inventory:HolsterItem", CFlowNode_InventoryHolsterItem);
-REGISTER_FLOW_NODE("Inventory:SelectItem", CFlowNode_InventorySelectItem);
+REGISTER_FLOW_NODE("Inventory:ItemSelect", CFlowNode_InventorySelectItem);
 REGISTER_FLOW_NODE("Inventory:ItemSelected", CFlowNode_InventoryItemSelected);
-REGISTER_FLOW_NODE("Inventory:RemoveAllAmmo", CFlowNode_InventoryRemoveAllAmmo);
-REGISTER_FLOW_NODE("Inventory:AddEquipPack", CFlowNode_AddEquipmentPack);
-REGISTER_FLOW_NODE("Inventory:StorePlayerInventory", CFlowNode_StorePlayerInventory);
-REGISTER_FLOW_NODE("Inventory:RestorePlayerInventory", CFlowNode_RestorePlayerInventory);
+REGISTER_FLOW_NODE("Inventory:AmmoRemoveAll", CFlowNode_InventoryRemoveAllAmmo);
+REGISTER_FLOW_NODE("Inventory:EquipPackAdd", CFlowNode_AddEquipmentPack);
+REGISTER_FLOW_NODE("Inventory:PlayerInventoryStore", CFlowNode_StorePlayerInventory);
+REGISTER_FLOW_NODE("Inventory:PlayerInventoryRestore", CFlowNode_RestorePlayerInventory);

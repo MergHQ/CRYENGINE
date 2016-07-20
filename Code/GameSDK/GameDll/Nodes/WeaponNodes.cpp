@@ -482,7 +482,7 @@ public:
 };
 
 
-REGISTER_FLOW_NODE("Weapon:CheckAccessory",		CFlowNode_WeaponCheckAccessory);
-REGISTER_FLOW_NODE("Weapon:CheckZoom",		CFlowNode_WeaponCheckZoom);
+REGISTER_FLOW_NODE("Weapon:AccessoryCheck",		CFlowNode_WeaponCheckAccessory);
+REGISTER_FLOW_NODE("Weapon:ZoomCheck",		CFlowNode_WeaponCheckZoom);
 REGISTER_FLOW_NODE("Weapon:Accessory",		CFlowNode_WeaponAccessory);
 REGISTER_FLOW_NODE("Weapon:Explosion",CFlowNode_Explosion);

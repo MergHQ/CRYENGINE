@@ -853,6 +853,6 @@ public:
 
 REGISTER_FLOW_NODE("Weapon:AutoSightWeapon", CFlowNode_AutoSightWeapon);
 REGISTER_FLOW_NODE("Weapon:FireWeapon", CFlowNode_FireWeapon);
-REGISTER_FLOW_NODE("Weapon:WeaponListener", CFlowNode_WeaponListener);
+REGISTER_FLOW_NODE("Weapon:Listener", CFlowNode_WeaponListener);
 REGISTER_FLOW_NODE("Weapon:Ammo", CFlowNode_WeaponAmmo);
 REGISTER_FLOW_NODE("Weapon:ChangeFireMode", CFlowNode_ChangeFireMode);

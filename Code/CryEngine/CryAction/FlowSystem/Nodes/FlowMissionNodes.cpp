@@ -41,4 +41,4 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Mission:EndLevelNew", CFlowNode_EndLevel);
+REGISTER_FLOW_NODE("Mission:LoadNextLevel", CFlowNode_EndLevel);

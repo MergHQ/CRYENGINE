@@ -1784,7 +1784,7 @@ private:
 };
 
 
-REGISTER_FLOW_NODE("Game:ActorSensor",	CFlowNode_ActorSensor);
+REGISTER_FLOW_NODE("Actor:Sensor",	CFlowNode_ActorSensor);
 REGISTER_FLOW_NODE("Game:WeaponSensor",	CFlowNode_WeaponSensor);
 REGISTER_FLOW_NODE("Game:DifficultyLevel",	CFlowNode_DifficultyLevel);
 REGISTER_FLOW_NODE("Camera:OverrideFOV",	CFlowNode_OverrideFOV);

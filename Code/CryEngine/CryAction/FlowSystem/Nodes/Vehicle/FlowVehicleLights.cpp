@@ -89,4 +89,4 @@ void CFlowVehicleLights::ProcessEvent(EFlowEvent flowEvent, SActivationInfo* pAc
 	}
 }
 
-REGISTER_FLOW_NODE("Vehicle:VehicleLights", CFlowVehicleLights);
+REGISTER_FLOW_NODE("Vehicle:Lights", CFlowVehicleLights);

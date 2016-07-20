@@ -450,5 +450,5 @@ public:
 	SActivationInfo m_actInfo;
 };
 
-REGISTER_FLOW_NODE("Crysis:HitInfo", CFlowHitInfoNode);
-REGISTER_FLOW_NODE("Crysis:ExplosionInfo", CFlowExplosionInfoNode);
+REGISTER_FLOW_NODE("Weapon:HitInfo", CFlowHitInfoNode);
+REGISTER_FLOW_NODE("Weapon:ExplosionInfo", CFlowExplosionInfoNode);

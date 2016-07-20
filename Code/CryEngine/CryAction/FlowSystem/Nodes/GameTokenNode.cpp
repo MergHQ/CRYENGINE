@@ -917,10 +917,10 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Mission:ModifyToken", CModifyGameTokenFlowNode);
-REGISTER_FLOW_NODE("Mission:SetGameToken", CSetGameTokenFlowNode);
-REGISTER_FLOW_NODE("Mission:GetGameToken", CGetGameTokenFlowNode);
-REGISTER_FLOW_NODE("Mission:CheckGameToken", CCheckGameTokenFlowNode);
+REGISTER_FLOW_NODE("Mission:GameTokenModify", CModifyGameTokenFlowNode);
+REGISTER_FLOW_NODE("Mission:GameTokenSet", CSetGameTokenFlowNode);
+REGISTER_FLOW_NODE("Mission:GameTokenGet", CGetGameTokenFlowNode);
+REGISTER_FLOW_NODE("Mission:GameTokenCheck", CCheckGameTokenFlowNode);
 REGISTER_FLOW_NODE("Mission:GameTokenCheckMulti", CGameTokenCheckMultiFlowNode);
 REGISTER_FLOW_NODE("Mission:GameToken", CGameTokenFlowNode);
 REGISTER_FLOW_NODE("Mission:GameTokensLevelToLevelStore", CFlowNodeGameTokensLevelToLevelStore);

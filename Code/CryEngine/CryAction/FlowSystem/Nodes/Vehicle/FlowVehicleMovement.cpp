@@ -234,5 +234,5 @@ void CFlowVehicleMovementParams::ProcessEvent(EFlowEvent flowEvent, SActivationI
 	}
 }
 
-REGISTER_FLOW_NODE("Vehicle:VehicleMovement", CFlowVehicleMovement);
+REGISTER_FLOW_NODE("Vehicle:Movement", CFlowVehicleMovement);
 REGISTER_FLOW_NODE("Vehicle:MovementParams", CFlowVehicleMovementParams);

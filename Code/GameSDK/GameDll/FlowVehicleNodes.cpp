@@ -197,53 +197,6 @@ CVehicleActionEntityAttachment* CFlowVehicleEntityAttachment::GetVehicleAction()
 }
 
 //------------------------------------------------------------------------
-class CFlowVehicleSetAltitudeLimit
-	: public CFlowBaseNode<eNCT_Singleton>
-{
-public:
-
-	CFlowVehicleSetAltitudeLimit(SActivationInfo* pActivationInfo) {};
-	~CFlowVehicleSetAltitudeLimit() {}
-
-	virtual void GetMemoryUsage(ICrySizer * s) const
-	{
-		s->Add(*this);
-	}
-
-	enum Inputs
-	{
-		EIP_SetLimit,
-		EIP_Limit
-	};
-
-	virtual void GetConfiguration(SFlowNodeConfig& nodeConfig)
-	{
-		static const SInputPortConfig pInConfig[] = 
-		{
-			InputPortConfig_Void  ("SetLimit", _HELP("Trigger to set limit")),
-			InputPortConfig<float>("Limit", _HELP("Altitude limit in meters")),
-			{0}
-		};
-
-		nodeConfig.sDescription = _HELP("Set Vehicle's Maximum Altitude");
-		nodeConfig.pInputPorts = pInConfig;
-		nodeConfig.pOutputPorts = 0;
-		nodeConfig.SetCategory(EFLN_ADVANCED);
-	}
-
-	virtual void ProcessEvent(EFlowEvent flowEvent, SActivationInfo* pActivationInfo)
-	{
-		if (flowEvent == eFE_Activate && IsPortActive(pActivationInfo, EIP_SetLimit))
-		{
-			const float fVal = GetPortFloat(pActivationInfo, EIP_Limit);
-			char buf[64];
-			cry_sprintf(buf, "%g", fVal);
-			g_pGameCVars->pAltitudeLimitCVar->ForceSet(buf);
-		}
-	}
-};
-
-//------------------------------------------------------------------------
 class CFlowVehicleDriveForward : public CFlowBaseNode<eNCT_Instanced>, IVehicleEventListener
 {
 private:
@@ -781,6 +734,5 @@ public:
 };
 
 REGISTER_FLOW_NODE("Vehicle:EntityAttachment", CFlowVehicleEntityAttachment);
-REGISTER_FLOW_NODE("Game:SetVehicleAltitudeLimit", CFlowVehicleSetAltitudeLimit);
 REGISTER_FLOW_NODE("Vehicle:DriveForward", CFlowVehicleDriveForward);
 REGISTER_FLOW_NODE("Vehicle:DebugDraw", CFlowNode_VehicleDebugDraw);

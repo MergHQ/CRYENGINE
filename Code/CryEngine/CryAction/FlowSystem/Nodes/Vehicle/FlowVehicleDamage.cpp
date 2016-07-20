@@ -231,5 +231,5 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Vehicle:VehicleDamage", CFlowVehicleDamage);
+REGISTER_FLOW_NODE("Vehicle:Damage", CFlowVehicleDamage);
 REGISTER_FLOW_NODE("Vehicle:Destroy", CFlowVehicleDestroy);

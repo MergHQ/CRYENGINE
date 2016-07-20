@@ -138,50 +138,6 @@ public:
 	int m_enemyDeaths;
 };
 
-
-//////////////////////////////////////////////////////////////////////////
-// Global AI enemies awareness of player.
-// this supposed to represent how much player is exposed to the AI enemies
-// currently
-//////////////////////////////////////////////////////////////////////////
-class CFlowNode_AIAwareness : public CFlowBaseNode<eNCT_Singleton>
-{
-public:
-	CFlowNode_AIAwareness( SActivationInfo * pActInfo )
-	{
-	}
-	virtual void GetConfiguration( SFlowNodeConfig &config )
-	{
-		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig<float>( "awareness", _HELP("Global AI enemies awareness of the player\n0 - Minimum (Green)\n100 - Maximum (Red)") ),
-			{0}
-		};
-		config.sDescription = _HELP( "Global AI enemies awareness of the player" );
-		config.pInputPorts = 0;
-		config.pOutputPorts = out_config;
-		config.SetCategory(EFLN_APPROVED);
-	}
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo )
-	{
-		if ( event == eFE_Update )
-		{
-			const float awareness = g_pGame->GetGameAISystem()->GetAIAwarenessToPlayerHelper().GetFloatAwareness();
-			ActivateOutput( pActInfo, 0, awareness );
-		}
-		else if ( event == eFE_Initialize )
-		{
-			pActInfo->pGraph->SetRegularlyUpdated( pActInfo->myID, true );
-			ActivateOutput( pActInfo, 0, 0 );
-		}
-	}
-
-	virtual void GetMemoryUsage(ICrySizer * s) const
-	{
-		s->Add(*this);
-	}
-};
-
-
 class CFlowActorAliveCheck : public CFlowBaseNode<eNCT_Instanced>
 {
 	bool m_errorLogSent;
@@ -1660,7 +1616,6 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 REGISTER_FLOW_NODE( "AI:BodyCount",		CFlowNode_AIBodyCount );
-REGISTER_FLOW_NODE( "AI:AIAwareness", CFlowNode_AIAwareness );
 REGISTER_FLOW_NODE( "Actor:FacialAnim",		CFlowActorFacialAnim );
 REGISTER_FLOW_NODE( "Actor:FacialExpression",		CFlowActorFacialExpression );
 REGISTER_FLOW_NODE( "Actor:PlayerKnockDown",		CFlowNode_PlayerKnockDown );

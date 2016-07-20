@@ -159,4 +159,4 @@ protected:
 	float m_timeout;
 };
 
-REGISTER_FLOW_NODE("Vehicle:VehicleHonk", CFlowVehicleHonk);
+REGISTER_FLOW_NODE("Vehicle:Honk", CFlowVehicleHonk);

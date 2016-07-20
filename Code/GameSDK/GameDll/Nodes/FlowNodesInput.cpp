@@ -760,8 +760,8 @@ public:
 //////////////////////////////////////////////////////////////////////////
 // Register nodes
 
-REGISTER_FLOW_NODE("Input:XBoxKey", CG4FlowNode_XBoxKey);
-REGISTER_FLOW_NODE("Input:XBoxAnalog", CG4FlowNode_XBoxAnalog);
+REGISTER_FLOW_NODE("Debug:InputXboxKey", CG4FlowNode_XBoxKey);
+REGISTER_FLOW_NODE("Debug:InputXboxAnalog", CG4FlowNode_XBoxAnalog);
 REGISTER_FLOW_NODE("Input:MoveOverlay", CFlowNode_MoveOverlay);
 REGISTER_FLOW_NODE("Input:ControlScheme", CG4FlowNode_InputControlScheme);
 REGISTER_FLOW_NODE("Input:ControlSchemeListener", CG4FlowNode_InputControlSchemeListener);

@@ -90,4 +90,4 @@ void CFlowVehicleTurret::Serialize(SActivationInfo* pActivationInfo, TSerialize 
 	CFlowVehicleBase::Serialize(pActivationInfo, ser);
 }
 
-REGISTER_FLOW_NODE("Vehicle:VehicleTurret", CFlowVehicleTurret);
+REGISTER_FLOW_NODE("Vehicle:Turret", CFlowVehicleTurret);

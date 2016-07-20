@@ -555,4 +555,4 @@ REGISTER_FLOW_NODE( "Game:FireSystemEvent", CFlowNode_FireSystemEvent);
 REGISTER_FLOW_NODE( "Game:SetPostEffectParam", CFlowNode_SetPostEffectParam);
 REGISTER_FLOW_NODE( "Game:IsDemo", CFlowIsDemo);
 REGISTER_FLOW_NODE( "Game:IsZoomToggling", CFlowIsZoomToggling);
-REGISTER_FLOW_NODE( "System:SaveGame", CFlowSaveGameNode );
+REGISTER_FLOW_NODE( "Game:SaveGame", CFlowSaveGameNode );

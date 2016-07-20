@@ -1,41 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowConditionNode.h"
-
-void CFlowNode_Condition::GetConfiguration(SFlowNodeConfig& config)
-{
-	static const SInputPortConfig in_config[] = {
-		InputPortConfig<bool>("condition", _HELP("Setting this input to TRUE sends the value [value] to the [true] port, otherwise to [false]")),
-		InputPortConfig_AnyType("value",   _HELP("Value to direct to a true or false port")),
-		{ 0 }
-	};
-	static const SOutputPortConfig out_config[] = {
-		OutputPortConfig_AnyType("true",  _HELP("Activated when the condition is true (passes the value through)")),
-		OutputPortConfig_AnyType("false", _HELP("Activated when the condition is false (passes the value through)")),
-		{ 0 }
-	};
-	config.sDescription = _HELP("LEGACY! Node to route data flow based on a boolean condition. Both inputs trigger the output.\nLegacy. Use Logic:Condition instead!");
-	config.pInputPorts = in_config;
-	config.pOutputPorts = out_config;
-	config.SetCategory(EFLN_APPROVED);
-}
-
-void CFlowNode_Condition::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
-{
-	switch (event)
-	{
-	case eFE_Activate:
-	case eFE_Initialize:
-		bool bCondition = GetPortBool(pActInfo, 0);
-
-		if (bCondition)
-			ActivateOutput(pActInfo, 0, GetPortAny(pActInfo, 1));
-		else
-			ActivateOutput(pActInfo, 1, GetPortAny(pActInfo, 1));
-	}
-	;
-};
+#include "FlowBaseNode.h"
 
 class CFlowNode_LogicCondition : public CFlowBaseNode<eNCT_Instanced>
 {
@@ -210,6 +176,5 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Condition", CFlowNode_Condition)
 REGISTER_FLOW_NODE("Logic:Condition", CFlowNode_LogicCondition)
 REGISTER_FLOW_NODE("Logic:ConditionInverse", CFlowNode_LogicConditionInverse)

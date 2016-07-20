@@ -110,4 +110,4 @@ void CFlowVehicleMoveActionMult::OnProcessActions(SVehicleMovementAction& moveme
 		movementAction.power = max(0.0f, movementAction.power);
 }
 
-REGISTER_FLOW_NODE("Vehicle:VehicleMoveActionMult", CFlowVehicleMoveActionMult);
+REGISTER_FLOW_NODE("Vehicle:MoveActionMult", CFlowVehicleMoveActionMult);

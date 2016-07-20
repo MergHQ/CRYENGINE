@@ -76,4 +76,4 @@ void CFlowNode_ColorGradient::GetMemoryUsage(ICrySizer* sizer) const
 	sizer->Add(*this);
 }
 
-REGISTER_FLOW_NODE("CrysisFX:ColorGradient", CFlowNode_ColorGradient);
+REGISTER_FLOW_NODE("Image:ColorGradient", CFlowNode_ColorGradient);

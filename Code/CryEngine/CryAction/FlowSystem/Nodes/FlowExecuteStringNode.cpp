@@ -53,4 +53,4 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("System:ExecuteString", CFlowNode_ExecuteString);
+REGISTER_FLOW_NODE("Debug:ExecuteString", CFlowNode_ExecuteString);

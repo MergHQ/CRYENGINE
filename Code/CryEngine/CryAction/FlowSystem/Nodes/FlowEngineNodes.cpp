@@ -735,9 +735,9 @@ public:
 //////////////////////////////////////////////////////////////////////////////////////
 
 REGISTER_FLOW_NODE("Engine:PortalSwitch", CFlowNode_PortalSwitch);
-REGISTER_FLOW_NODE("Engine:OceanSwitch", CFlowNode_OceanSwitch);
-REGISTER_FLOW_NODE("Engine:SkyboxSwitch", CFlowNode_SkyboxSwitch);
+REGISTER_FLOW_NODE("Environment:OceanSwitch", CFlowNode_OceanSwitch);
+REGISTER_FLOW_NODE("Environment:SkyboxSwitch", CFlowNode_SkyboxSwitch);
 REGISTER_FLOW_NODE("Engine:LayerSwitch", CFlowNode_LayerSwitch);
-REGISTER_FLOW_NODE("Engine:SetObjectMaterial", CFlowNode_SetObjectMaterial);
+REGISTER_FLOW_NODE("Material:SetObjectMaterial", CFlowNode_SetObjectMaterial);
 REGISTER_FLOW_NODE("Engine:PrecacheArea", CFlowNode_PrecacheArea);
 REGISTER_FLOW_NODE("Engine:Viewport", CFlowNode_Viewport);

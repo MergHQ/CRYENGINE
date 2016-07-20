@@ -81,4 +81,4 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("System:ConsoleVariable", CFlowNode_CVar);
+REGISTER_FLOW_NODE("Debug:ConsoleVariable", CFlowNode_CVar);

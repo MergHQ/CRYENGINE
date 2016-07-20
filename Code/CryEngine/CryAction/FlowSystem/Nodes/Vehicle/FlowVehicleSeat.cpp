@@ -270,6 +270,6 @@ public:
 
 };
 
-REGISTER_FLOW_NODE("Vehicle:VehicleSeat", CFlowVehicleSeat);
+REGISTER_FLOW_NODE("Vehicle:Seat", CFlowVehicleSeat);
 REGISTER_FLOW_NODE("Vehicle:ChangeSeat", CFlowVehicleChangeSeat)
 REGISTER_FLOW_NODE("Vehicle:Lock", CFlowVehicleLock)

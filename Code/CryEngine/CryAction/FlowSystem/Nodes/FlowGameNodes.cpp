@@ -79,118 +79,6 @@ public:
 	}
 };
 
-class CFlowAllPlayers : public CFlowBaseNode<eNCT_Singleton>
-{
-public:
-	CFlowAllPlayers(SActivationInfo* pActInfo)
-	{
-	}
-
-	virtual void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SInputPortConfig inputs[] = {
-			InputPortConfig_Void("update", _HELP("Retriggers the entity id. Required for multiplayer")),
-			{ 0 }
-		};
-		static const SOutputPortConfig outputs[] = {
-			OutputPortConfig<EntityId>("entityId1", _HELP("Player 1")),
-			OutputPortConfig<EntityId>("entityId2", _HELP("Player 2")),
-			OutputPortConfig<EntityId>("entityId3", _HELP("Player 3")),
-			OutputPortConfig<EntityId>("entityId4", _HELP("Player 4")),
-			{ 0 }
-		};
-		config.pInputPorts = inputs;
-		config.pOutputPorts = outputs;
-		config.sDescription = _HELP("Outputs the players entity id..");
-		config.SetCategory(EFLN_APPROVED);
-	}
-
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
-	{
-		switch (event)
-		{
-		case eFE_Initialize:
-		case eFE_Activate:
-			{
-				IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
-				IActorIteratorPtr actorIt = pActorSystem->CreateActorIterator();
-				int iNumPlayers = 0;
-				IActor* pActor = actorIt->Next();
-				while (iNumPlayers < 4 && pActor)
-				{
-					if (pActor->GetChannelId())
-					{
-						ActivateOutput(pActInfo, iNumPlayers, pActor->GetEntityId());
-						++iNumPlayers;
-					}
-
-					pActor = actorIt->Next();
-				}
-			}
-			break;
-		}
-	}
-
-	virtual void GetMemoryUsage(ICrySizer* s) const
-	{
-		s->Add(*this);
-	}
-};
-
-class CFlowIsPlayer : public CFlowBaseNode<eNCT_Singleton>
-{
-public:
-	CFlowIsPlayer(SActivationInfo* pActInfo)
-	{
-	}
-
-	virtual void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SInputPortConfig inputs[] = {
-			InputPortConfig_Void("update", _HELP("Retriggers the output.")),
-			{ 0 }
-		};
-		static const SOutputPortConfig outputs[] = {
-			OutputPortConfig<bool>("isPlayer", _HELP("Entity is a player (local or multiplayer client).")),
-			{ 0 }
-		};
-		config.pInputPorts = inputs;
-		config.pOutputPorts = outputs;
-		config.nFlags |= EFLN_TARGET_ENTITY;
-		config.sDescription = _HELP("Outputs whether an entity is a player.");
-		config.SetCategory(EFLN_OBSOLETE);
-	}
-
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
-	{
-		switch (event)
-		{
-		case eFE_Initialize:
-		case eFE_Activate:
-			{
-				if (!pActInfo->pEntity)
-					ActivateOutput(pActInfo, 0, false);
-				else
-				{
-					CRY_ASSERT(gEnv->pGame);
-					IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pActInfo->pEntity->GetId());
-					if (pActor && pActor->GetChannelId() != 0) //is this a client ?
-						ActivateOutput(pActInfo, 0, true);
-					else
-						ActivateOutput(pActInfo, 0, false);
-				}
-
-			}
-			break;
-		}
-	}
-
-	virtual void GetMemoryUsage(ICrySizer* s) const
-	{
-		s->Add(*this);
-	}
-};
-
 //////////////////////////////////////////////////////////////////////////
 
 void SendFlowHitToEntity(EntityId targetId, EntityId shooterId, int damage, const Vec3& pos)
@@ -841,16 +729,14 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Game:LocalPlayer", CFlowPlayer);
-REGISTER_FLOW_NODE("Game:AllPlayers", CFlowAllPlayers);
-REGISTER_FLOW_NODE("Game:IsPlayer", CFlowIsPlayer);
-REGISTER_FLOW_NODE("Game:DamageActor", CFlowDamageActor);
+REGISTER_FLOW_NODE("Actor:LocalPlayer", CFlowPlayer);
+REGISTER_FLOW_NODE("Actor:Damage", CFlowDamageActor);
 REGISTER_FLOW_NODE("Entity:Damage", CFlowDamageEntity)
-REGISTER_FLOW_NODE("Game:ActorGrabObject", CFlowActorGrabObject);
-REGISTER_FLOW_NODE("Game:ActorGetHealth", CFlowActorGetHealth);
-REGISTER_FLOW_NODE("Game:ActorSetHealth", CFlowActorSetHealth);
-REGISTER_FLOW_NODE("Game:ActorCheckHealth", CFlowActorCheckHealth);
-REGISTER_FLOW_NODE("Game:GameObjectEvent", CFlowGameObjectEvent);
+REGISTER_FLOW_NODE("Actor:GrabObject", CFlowActorGrabObject);
+REGISTER_FLOW_NODE("Actor:HealthGet", CFlowActorGetHealth);
+REGISTER_FLOW_NODE("Actor:HealthSet", CFlowActorSetHealth);
+REGISTER_FLOW_NODE("Actor:HealthCheck", CFlowActorCheckHealth);
+REGISTER_FLOW_NODE("Game:ObjectEvent", CFlowGameObjectEvent);
 REGISTER_FLOW_NODE("Game:GetSupportedGameRulesForMap", CFlowGetSupportedGameRulesForMap);
 REGISTER_FLOW_NODE("Game:GetEntityState", CFlowGetStateOfEntity);
 REGISTER_FLOW_NODE("Game:IsLevelOfType", CFlowIsLevelOfType);

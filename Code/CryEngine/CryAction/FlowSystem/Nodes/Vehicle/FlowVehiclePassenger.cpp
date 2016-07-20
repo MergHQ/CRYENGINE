@@ -132,4 +132,4 @@ void CFlowVehiclePassenger::OnVehicleEvent(EVehicleEvent event, const SVehicleEv
 	}
 }
 
-REGISTER_FLOW_NODE("Vehicle:VehiclePassenger", CFlowVehiclePassenger);
+REGISTER_FLOW_NODE("Vehicle:Passenger", CFlowVehiclePassenger);

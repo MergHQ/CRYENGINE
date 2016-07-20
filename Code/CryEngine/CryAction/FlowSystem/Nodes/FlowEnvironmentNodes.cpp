@@ -6,68 +6,6 @@
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CrySystem/IStreamEngine.h>
 
-class CFlowNode_EnvLighting : public CFlowBaseNode<eNCT_Singleton>
-{
-public:
-	CFlowNode_EnvLighting(SActivationInfo* pActInfo)
-	{
-	}
-
-	enum EInputPorts
-	{
-		eIP_TimeOfDay = 0,
-	};
-
-	enum EOutputPorts
-	{
-		eOP_SunDirection = 0,
-	};
-
-	void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SInputPortConfig in_config[] = {
-			InputPortConfig<float>("TimeOfDay"),
-			{ 0 }
-		};
-		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig<Vec3>("SunDirection"),
-			{ 0 }
-		};
-		config.pInputPorts = in_config;
-		config.pOutputPorts = out_config;
-		config.SetCategory(EFLN_OBSOLETE);
-	}
-
-	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
-	{
-		switch (event)
-		{
-		case eFE_Activate:
-			if (IsPortActive(pActInfo, eIP_TimeOfDay))
-				Update(pActInfo);
-		}
-	}
-
-	virtual void GetMemoryUsage(ICrySizer* s) const
-	{
-		s->Add(*this);
-	}
-
-private:
-
-	void Update(SActivationInfo* pActInfo)
-	{
-		float timeOfDay = GetPortFloat(pActInfo, eIP_TimeOfDay);
-		float longitude = timeOfDay / 24.0f * gf_PI * 2.0f;
-		float latitude = -45.0f * gf_PI / 180.0f;
-		Vec3 sunDir(sinf(longitude) * cosf(latitude), sinf(longitude) * sinf(latitude), cosf(longitude));
-
-		CRY_ASSERT(!"Direct call of I3DEngine::SetSunDir() is not supported anymore. Use Time of day featue instead.");
-		//		gEnv->p3DEngine->SetSunDir(sunDir);
-		ActivateOutput(pActInfo, eOP_SunDirection, sunDir);
-	}
-};
-
 class CFlowNode_EnvMoonDirection : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
@@ -880,7 +818,6 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Environment:Lighting", CFlowNode_EnvLighting);
 REGISTER_FLOW_NODE("Environment:MoonDirection", CFlowNode_EnvMoonDirection);
 REGISTER_FLOW_NODE("Environment:Sun", CFlowNode_EnvSun);
 REGISTER_FLOW_NODE("Time:TimeOfDayTransitionTrigger", CFlowNode_TimeOfDayTransitionTrigger)

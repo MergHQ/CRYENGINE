@@ -12,7 +12,6 @@
 #include "Nodes/FlowStartNode.h"
 #include "Nodes/FlowTrackEventNode.h"
 #include "Nodes/FlowDelayNode.h"
-#include "Nodes/FlowConditionNode.h"
 
 #include "Nodes/FlowScriptedNode.h"
 #include "Nodes/FlowCompositeNode.h"
@@ -233,8 +232,8 @@ void CFlowSystem::RegisterAllNodeTypes()
 	// register all types
 	TFlowNodeTypeId typeId = RegisterType("InvalidType", 0);
 	assert(typeId == InvalidFlowNodeTypeId);
-	RegisterType("Log", new CSingletonFlowFactory<CFlowLogNode>());
-	RegisterType("Start", new CAutoFlowFactory<CFlowStartNode>());
+	RegisterType("Debug:Log", new CSingletonFlowFactory<CFlowLogNode>());
+	RegisterType("Game:Start", new CAutoFlowFactory<CFlowStartNode>());
 	RegisterType("TrackEvent", new CAutoFlowFactory<CFlowTrackEventNode>());
 
 	RegisterAutoTypes();
