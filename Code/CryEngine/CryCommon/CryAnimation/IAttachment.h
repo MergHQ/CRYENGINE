@@ -146,14 +146,14 @@ public:
 
 		// Stiffness and Elasticity
 		, stretchStiffness(1)
-		, shearStiffness(0)
-		, bendStiffness(0)
+		, shearStiffness(0.3)
+		, bendStiffness(0.3)
 		, bendStiffnessByTrianglesAngle(0)
 		, pullStiffness(0)
 
 		// Friction and Damping
-		, friction(0)
-		, rigidDamping(0)
+		, friction(0.01)
+		, rigidDamping(0.01)
 		, springDamping(0)
 		, springDampingPerSubstep(true)
 		, collisionDampingTangential(0)
@@ -162,7 +162,7 @@ public:
 		, longRangeAttachments(false)
 		, longRangeAttachmentsAllowedExtension(0.0)     // allowed extension, e.g. 0.1 = 10%
 		, longRangeAttachmentsMaximumShiftFactor(0.25)  // scales maximum shift per iteration to closest neighbor, e.g. 0.5 -> half way to closest neighbor
-		, longRangeAttachmentsShiftCollisionFactor(0.5) // scales in case of shift the velocity, 0.0=no shift, 1.0=no velocity change, -1=increase velocity by change
+		, longRangeAttachmentsShiftCollisionFactor(1.0) // scales in case of shift the velocity, 0.0=no shift, 1.0=no velocity change, -1=increase velocity by change
 
 		// Test Reset Damping
 		, resetDampingRange(3)
