@@ -1,0 +1,18 @@
+#############################################################################
+## Crytek Source File
+## Copyright (C) 2015, Crytek Studios
+##
+## Creator: Dominique Mader
+## Date: September 29, 2015
+## Description: WAF  based build system
+#############################################################################
+
+SUBFOLDERS =	[
+	'Module',
+	'EditorPlugin'
+	]
+	
+def build(bld):
+	# Recursive into all sub projects
+	bld.recurse(SUBFOLDERS)
+	

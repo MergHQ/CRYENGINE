@@ -197,7 +197,7 @@ QResizableMenu > QWidget#InsetBorder QTreeView::item
 	height: 23px;
 }
 
-CNotificationCenterWidget
+CNotificationCenterTrayWidget
 {
 	icon-size: 24px;
 	qproperty-animationDuration: 250;
