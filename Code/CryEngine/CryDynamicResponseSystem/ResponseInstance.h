@@ -33,14 +33,14 @@ public:
 	virtual CResponseActor*                   GetCurrentActor() const override                             { return m_pActiveActor; }
 	virtual void                              SetCurrentActor(DRS::IResponseActor* pNewResponder) override { m_pActiveActor = static_cast<CResponseActor*>(pNewResponder); }
 	virtual CResponseActor* const             GetOriginalSender() const override                           { return m_pSender; }
+	virtual const CHashedString&              GetSignalName() const override                               { return m_signalName; }
+	virtual const DRS::SignalInstanceId       GetSignalInstanceId() const override                         { return m_id; }
 	virtual DRS::IVariableCollectionSharedPtr GetContextVariables() const override                         { return std::static_pointer_cast<DRS::IVariableCollection>(m_pSignalContext); }
-	virtual const CHashedString& GetSignalName() const override                               { return m_signalName; }
-	virtual const DRS::SignalInstanceId GetSignalInstanceId() const override                                 { return m_id; }
 	//////////////////////////////////////////////////////////
 
 	void                        SetCurrentActor(CResponseActor* pNewResponder) { m_pActiveActor = pNewResponder; }
-	VariableCollectionSharedPtr GetContextVariablesImpl() const                { return m_pSignalContext; }
 	CResponse*                  GetResponse()                                  { return m_pResponse; }
+	VariableCollectionSharedPtr GetContextVariablesImpl() const                { return m_pSignalContext; }
 
 private:
 	void ExecuteSegment(CResponseSegment* pSegment);

@@ -284,8 +284,6 @@ CResponseInstance* CResponseManager::CreateInstance(SSignal& signal, CResponse* 
 //--------------------------------------------------------------------------------------------------
 void CResponseManager::ReleaseInstance(CResponseInstance* pInstance, bool removeFromRunningInstances /* = true */)
 {
-	DRS_DEBUG_DATA_ACTION(AddResponseInstanceFinished(CResponseSystemDebugDataProvider::eER_Finished));
-
 	if (removeFromRunningInstances)
 	{
 		for (ResponseInstanceList::iterator it = m_runningResponses.begin(); it != m_runningResponses.end(); ++it)
@@ -303,6 +301,8 @@ void CResponseManager::ReleaseInstance(CResponseInstance* pInstance, bool remove
 	{
 		delete pInstance;
 	}
+
+	DRS_DEBUG_DATA_ACTION(AddResponseInstanceFinished(CResponseSystemDebugDataProvider::eER_Finished));
 }
 
 //--------------------------------------------------------------------------------------------------

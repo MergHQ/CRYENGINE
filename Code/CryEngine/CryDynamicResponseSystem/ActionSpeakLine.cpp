@@ -64,7 +64,7 @@ DRS::IResponseActionInstance::eCurrentState CActionSpeakLineInstance::Update()
 {
 	if (!m_pSpeaker)
 	{
-		return DRS::IResponseActionInstance::CS_CANCELED;
+		return CS_CANCELED;
 	}
 
 	const CSpeakerManager* pSpeakerMgr = CResponseSystem::GetInstance()->GetSpeakerManager();
@@ -72,16 +72,16 @@ DRS::IResponseActionInstance::eCurrentState CActionSpeakLineInstance::Update()
 	{
 		if (pSpeakerMgr->IsSpeaking(m_pSpeaker, m_lineID))
 		{
-			return DRS::IResponseActionInstance::CS_RUNNING;
+			return CS_RUNNING;
 		}
 		else
 		{
-			return DRS::IResponseActionInstance::CS_CANCELED;  //so he is still speaking, but not our line, so it seems like someone canceled our talk
+			return CS_CANCELED;  //so he is still speaking, but not our line, so it seems like someone canceled our talk
 		}
 	}
 	else
 	{
-		return DRS::IResponseActionInstance::CS_FINISHED;  //not speaking? so he is done
+		return CS_FINISHED;  //not speaking? so he is done
 	}
 }
 
@@ -111,6 +111,7 @@ DRS::IResponseActionInstanceUniquePtr CActionCancelSpeaking::Execute(DRS::IRespo
 	{
 		pSpeaker = static_cast<CResponseInstance*>(pResponseInstance)->GetCurrentActor();
 	}
+
 	if (!pSpeaker && m_speakerOverrideName != "all")
 	{
 		CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "Triggered an CancelSpeaking Action, without a valid Speaker! Speaker override was '%s'", m_speakerOverrideName.GetText().c_str());
@@ -141,9 +142,9 @@ DRS::IResponseActionInstance::eCurrentState CActionCancelSpeakingInstance::Updat
 
 	if (!pDrs->GetSpeakerManager()->IsSpeaking(m_pSpeaker) || !m_pSpeaker)
 	{
-		return IResponseActionInstance::CS_FINISHED;
+		return CS_FINISHED;
 	}
-	return IResponseActionInstance::CS_RUNNING;
+	return CS_RUNNING;
 }
 
 //--------------------------------------------------------------------------------------------------

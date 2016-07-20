@@ -193,7 +193,6 @@ bool CResponseSystemDebugDataProvider::AddResponseInstanceFinished(EStatus reaso
 
 //--------------------------------------------------------------------------------------------------
 SERIALIZATION_ENUM_BEGIN_NESTED(CResponseSystemDebugDataProvider, EStatus, "EndReason")
-SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_ExecuteOnlyOnce, "ExecuteOnlyOnce", "NotStarted - ExecuteOnlyOnce")
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_NoValidSegment, "NoValidSegment", "NotStarted - No Valid Responses")
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_Canceled, "Canceled", "Canceled")
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_Finished, "Finished", "Finished")
