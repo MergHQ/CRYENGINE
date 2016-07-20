@@ -579,7 +579,6 @@
       "CryInput/IHardwareMouse.h"
     ],
     "CryPhysics":[
-      "CryPhysics/CryPhysics.h",
       "CryPhysics/IPhysics.h",
       "CryPhysics/IPhysicsDebugRenderer.h",
       "CryPhysics/physinterface.h",

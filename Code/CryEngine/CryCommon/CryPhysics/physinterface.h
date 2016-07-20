@@ -4,7 +4,7 @@
 #define physinterface_h
 
 #include <CryNetwork/SerializeFwd.h>
-
+#include <CryMemory/CrySizer.h>
 #include <CryMath/Cry_Geo.h>
 #include <CryCore/stridedptr.h>
 #include "primitives.h"

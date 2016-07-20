@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 //#include <float.h>
-#include "IPhysics.h"
+#include <CryPhysics/IPhysics.h>
 #include "geoman.h"
 #include "bvtree.h"
 #include "geometry.h"
