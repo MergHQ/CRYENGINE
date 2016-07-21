@@ -146,29 +146,29 @@ static void CreateSphere(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float ra
 	{
 		for (uint32 i(0); i < sections; ++i)
 		{
-			ib.push_back((uint16) (1 + a * (sections + 1) + i + 1));
-			ib.push_back((uint16) (1 + a * (sections + 1) + i));
-			ib.push_back((uint16) (1 + (a + 1) * (sections + 1) + i + 1));
+			ib.push_back((vtx_idx) (1 + a * (sections + 1) + i + 1));
+			ib.push_back((vtx_idx) (1 + a * (sections + 1) + i));
+			ib.push_back((vtx_idx) (1 + (a + 1) * (sections + 1) + i + 1));
 
-			ib.push_back((uint16) (1 + (a + 1) * (sections + 1) + i));
-			ib.push_back((uint16) (1 + (a + 1) * (sections + 1) + i + 1));
-			ib.push_back((uint16) (1 + a * (sections + 1) + i));
+			ib.push_back((vtx_idx) (1 + (a + 1) * (sections + 1) + i));
+			ib.push_back((vtx_idx) (1 + (a + 1) * (sections + 1) + i + 1));
+			ib.push_back((vtx_idx) (1 + a * (sections + 1) + i));
 		}
 	}
 
 	// build faces for end caps (to connect "inner" vertices with poles)
 	for (uint32 i(0); i < sections; ++i)
 	{
-		ib.push_back((uint16) (1 + (0) * (sections + 1) + i));
-		ib.push_back((uint16) (1 + (0) * (sections + 1) + i + 1));
-		ib.push_back((uint16) 0);
+		ib.push_back((vtx_idx) (1 + (0) * (sections + 1) + i));
+		ib.push_back((vtx_idx) (1 + (0) * (sections + 1) + i + 1));
+		ib.push_back((vtx_idx) 0);
 	}
 
 	for (uint32 i(0); i < sections; ++i)
 	{
-		ib.push_back((uint16) (1 + (rings - 2) * (sections + 1) + i + 1));
-		ib.push_back((uint16) (1 + (rings - 2) * (sections + 1) + i));
-		ib.push_back((uint16) ((rings - 1) * (sections + 1) + 1));
+		ib.push_back((vtx_idx) (1 + (rings - 2) * (sections + 1) + i + 1));
+		ib.push_back((vtx_idx) (1 + (rings - 2) * (sections + 1) + i));
+		ib.push_back((vtx_idx) ((rings - 1) * (sections + 1) + 1));
 	}
 }
 
@@ -204,9 +204,9 @@ static void CreateCone(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float radi
 	// build faces for end cap
 	for (uint16 i(0); i < sections; ++i)
 	{
-		ib.push_back(0);
-		ib.push_back(1 + i);
-		ib.push_back(1 + i + 1);
+		ib.push_back((vtx_idx)(0));
+		ib.push_back((vtx_idx)(1 + i));
+		ib.push_back((vtx_idx)(1 + i + 1));
 	}
 
 	// top
@@ -234,9 +234,9 @@ static void CreateCone(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float radi
 	// build faces
 	for (uint16 i(0); i < sections; ++i)
 	{
-		ib.push_back(sections + 2);
-		ib.push_back(sections + 3 + i + 1);
-		ib.push_back(sections + 3 + i);
+		ib.push_back((vtx_idx)(sections + 2));
+		ib.push_back((vtx_idx)(sections + 3 + i + 1));
+		ib.push_back((vtx_idx)(sections + 3 + i));
 	}
 }
 
@@ -275,9 +275,9 @@ static void CreateCylinder(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float 
 		// build faces
 		for (uint16 i(0); i < sections; ++i)
 		{
-			ib.push_back(0);
-			ib.push_back(1 + i);
-			ib.push_back(1 + i + 1);
+			ib.push_back((vtx_idx)(0));
+			ib.push_back((vtx_idx)(1 + i));
+			ib.push_back((vtx_idx)(1 + i + 1));
 		}
 	}
 
@@ -300,13 +300,13 @@ static void CreateCylinder(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float 
 		// build faces
 		for (uint16 i(0); i < sections; ++i, vIdx += 2)
 		{
-			ib.push_back(vIdx);
-			ib.push_back(vIdx + 1);
-			ib.push_back(vIdx + 2);
+			ib.push_back((vtx_idx)(vIdx));
+			ib.push_back((vtx_idx)(vIdx + 1));
+			ib.push_back((vtx_idx)(vIdx + 2));
 
-			ib.push_back(vIdx + 1);
-			ib.push_back(vIdx + 3);
-			ib.push_back(vIdx + 2);
+			ib.push_back((vtx_idx)(vIdx + 1));
+			ib.push_back((vtx_idx)(vIdx + 3));
+			ib.push_back((vtx_idx)(vIdx + 2));
 
 		}
 	}
@@ -431,7 +431,7 @@ HRESULT CRenderAuxGeomD3D::CreateMesh(SDrawObjMesh& mesh, TMeshFunc meshFunc)
 
 	D3D11_BUFFER_DESC BufDescI;
 	ZeroStruct(BufDescI);
-	BufDescI.ByteWidth = ib.size() * sizeof(uint16);
+	BufDescI.ByteWidth = ib.size() * sizeof(vtx_idx);
 	BufDescI.Usage = D3D11_USAGE_DEFAULT;
 	BufDescI.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	BufDescI.CPUAccessFlags = 0;
@@ -666,7 +666,7 @@ void CRenderAuxGeomD3D::DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer
 
 				// determine lock vb flags
 				D3D11_MAP mapFlags(D3D11_MAP_WRITE_NO_OVERWRITE_VB);
-				if (false != m_auxGeomSBM.m_discardVB)
+				if (m_auxGeomSBM.m_discardVB)
 				{
 					m_auxGeomSBM.m_discardVB = false;
 					mapFlags = D3D11_MAP_WRITE_DISCARD_VB;
@@ -676,7 +676,7 @@ void CRenderAuxGeomD3D::DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer
 
 				// determine lock ib flags
 				mapFlags = D3D11_MAP_WRITE_NO_OVERWRITE_IB;
-				if (false != m_auxGeomSBM.m_discardIB)
+				if (m_auxGeomSBM.m_discardIB)
 				{
 					m_auxGeomSBM.m_discardIB = false;
 					mapFlags = D3D11_MAP_WRITE_DISCARD_IB;
