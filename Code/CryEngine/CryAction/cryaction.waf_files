@@ -30,8 +30,10 @@
     ]
   },
   "CryAction_flowsystem_nodes_uber.cpp":{
-    "Flow System/Nodes":[
+    "Flow System/Nodes": [
       "FlowSystem/Nodes/FlowVRNodes.cpp",
+      "FlowSystem/Nodes/ColorGradientNode.cpp",
+      "FlowSystem/Nodes/ColorGradientNode.h",
       "FlowSystem/Nodes/ComputeLightingNode.cpp",
       "FlowSystem/Nodes/EntitiesInRangeNode.cpp",
       "FlowSystem/Nodes/FlowCVarsNode.cpp",
@@ -834,10 +836,14 @@
       "ViewSystem/View.h",
       "ViewSystem/ViewSystem.h"
     ],
-    "Debug Helpers":[
+    "Debug Helpers": [
       "EntityTags.cpp",
       "PersistantDebug.cpp",
       "PersistantDebug.h"
+    ],
+    "Graphics": [
+      "ColorGradientManager.cpp",
+      "ColorGradientManager.h"
     ],
     "Level Files":[
       "LevelSystem.cpp",
@@ -846,7 +852,7 @@
     "MetadataRecorder":[
       "MetadataRecorder/MetadataRecorder.cpp"
     ],
-    "Player Profiles":[
+    "Player Profiles": [
       "PlayerProfiles/BMPHelper.cpp",
       "PlayerProfiles/PlayerProfile.cpp",
       "PlayerProfiles/PlayerProfileImplConsole.cpp",

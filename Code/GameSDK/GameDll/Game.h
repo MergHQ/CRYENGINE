@@ -571,8 +571,6 @@ public:
 
   ILINE SCVars *GetCVars() {return m_pCVars;}
 	static void DumpMemInfo(const char* format, ...) PRINTF_PARAMS(1, 2);
-	
-	Graphics::CColorGradientManager& GetColorGradientManager();
 
 	CEquipmentLoadout * GetEquipmentLoadout() const { return m_pEquipmentLoadout; }
 	CGameAISystem* GetGameAISystem() { return m_pGameAISystem; }
@@ -941,8 +939,6 @@ private:
 	// Manager the ledges in the level (markup) that the player can grab onto
 	CLedgeManager*	m_pLedgeManager;
 	CWaterPuddleManager* m_pWaterPuddleManager;
-
-	Graphics::CColorGradientManager* m_colorGradientManager;
 
 	// Game side browser - searching for games
 	CGameBrowser* m_pGameBrowser;

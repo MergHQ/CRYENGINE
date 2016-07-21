@@ -107,6 +107,7 @@
 #include "VehicleSystem.h"
 #include "SharedParams/SharedParamsManager.h"
 #include "ActionMapManager.h"
+#include "ColorGradientManager.h"
 
 #include "Statistics/GameStatistics.h"
 #include "UIDraw/UIDraw.h"
@@ -330,6 +331,7 @@ CCryAction::CCryAction()
 	m_pScriptBindMFX(0),
 	m_pScriptBindUIAction(0),
 	m_pPersistantDebug(0),
+	m_pColorGradientManager(nullptr),
 	m_pMaterialEffectsCVars(0),
 	m_pEnableLoadingScreen(0),
 	m_pShowLanBrowserCVAR(0),
@@ -2042,6 +2044,11 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 
 	m_pNetMsgDispatcher = new CNetMessageDistpatcher();
 
+	if (gEnv->pRenderer)
+	{
+		m_pColorGradientManager = new CColorGradientManager();
+	}
+
 	InlineInitializationProcessing("CCryAction::Init End");
 	return true;
 }
@@ -2372,6 +2379,8 @@ void CCryAction::Shutdown()
 	ReleaseScriptBinds();
 	ReleaseCVars();
 
+	SAFE_DELETE(m_pColorGradientManager);
+
 	SAFE_DELETE(m_pDevMode);
 	SAFE_DELETE(m_pCallbackTimer);
 	SAFE_DELETE(m_pSegmentedWorld);
@@ -2574,6 +2583,11 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 
 		if (m_pCooperativeAnimationManager)
 			m_pCooperativeAnimationManager->Update(frameTime);
+	}
+
+	if (gEnv->pRenderer)
+	{
+		m_pColorGradientManager->UpdateForThisFrame(gEnv->pTimer->GetFrameTime());
 	}
 
 	CRConServerListener::GetSingleton().Update();
@@ -4672,6 +4686,16 @@ void CCryAction::OnActionEvent(const SActionEvent& ev)
 				m_pTimeDemoRecorder->Reset();
 		}
 		break;
+
+	case eAE_unloadLevel:
+		{
+			if (gEnv->pRenderer)
+			{
+				m_pColorGradientManager->Reset();
+			}
+		}
+		break;
+
 	default:
 		break;
 	}

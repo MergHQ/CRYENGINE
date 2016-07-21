@@ -102,7 +102,6 @@
 #include "Environment/LedgeManager.h"
 #include "Environment/WaterPuddle.h"
 
-#include "Graphics/ColorGradientManager.h"
 #include "VehicleClient.h"
 #include "AI/TacticalPointLanguageExtender.h"
 #include "AI/GameAISystem.h"
@@ -449,7 +448,6 @@ CGame::CGame()
 #endif
 	m_pLedgeManager(0),
 	m_pWaterPuddleManager(0),
-	m_colorGradientManager(0),
 	m_pRecordingSystem(0),
 	m_pEquipmentLoadout(0),
 	m_pPlayerProgression(0),
@@ -662,7 +660,6 @@ CGame::~CGame()
 	SAFE_DELETE(m_memoryTrackingBuffer);
 	SAFE_DELETE(m_soundTrackingBuffer);
 #endif
-	SAFE_DELETE(m_colorGradientManager);
 	SAFE_DELETE(m_pGameBrowser);
 	SAFE_DELETE(m_pGameLobbyManager);
 #if IMPLEMENT_PC_BLADES
@@ -1145,11 +1142,6 @@ bool CGame::Init(IGameFramework *pFramework)
 	}
 
 	InlineInitializationProcessing("CGame::Init LedgeManager");
-
-	if (gEnv->pRenderer)
-	{
-		m_colorGradientManager = new Graphics::CColorGradientManager();
-	}
 
 	m_pFramework->RegisterListener(this, "Game", FRAMEWORKLISTENERPRIORITY_GAME);
 
@@ -2488,11 +2480,6 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 	if (m_pMovingPlatformMgr)
 		m_pMovingPlatformMgr->Update(frameTime);
 
-	if (gEnv->pRenderer)
-	{
-		m_colorGradientManager->UpdateForThisFrame(frameTime);
-	}
-
 	{
 		if (m_pRayCaster)
 		{
@@ -3582,11 +3569,6 @@ void CGame::OnActionEvent(const SActionEvent& event)
 			CSpectacularKill::CleanUp();
 			m_pMovementTransitionsSystem->Flush();
 			CSmokeManager::GetSmokeManager()->ReleaseObstructionObjects();
-			
-			if (gEnv->pRenderer)
-			{
-				m_colorGradientManager->Reset();
-			}
 
 			if( m_pGameAISystem )
 			{
@@ -4038,11 +4020,6 @@ IGameStateRecorder* CGame::CreateGameStateRecorder(IGameplayListener* pL)
 
 	return (IGameStateRecorder*)pGSP;
 
-}
-
-Graphics::CColorGradientManager& CGame::GetColorGradientManager()
-{
-	return *m_colorGradientManager;
 }
 
 CInteractiveObjectRegistry& CGame::GetInteractiveObjectsRegistry() const
@@ -5669,9 +5646,6 @@ void CGame::FullSerialize( TSerialize serializer )
 
 	if(m_statsRecorder)
 		m_statsRecorder->Serialize(serializer);
-
-	if(m_colorGradientManager)
-		m_colorGradientManager->Serialize(serializer);
 
 	if(m_pTacticalManager)
 	{

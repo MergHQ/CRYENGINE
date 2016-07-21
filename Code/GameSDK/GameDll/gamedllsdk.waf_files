@@ -985,9 +985,7 @@
       ],
       "Multiplayer/Graphics":[
          "Graphics/2DRenderUtils.cpp",
-         "Graphics/ColorGradientManager.cpp",
-         "Graphics/2DRenderUtils.h",
-         "Graphics/ColorGradientManager.h"
+         "Graphics/2DRenderUtils.h"
       ],
       "Multiplayer/Item Files/Weapon Files/Projectiles":[
          "Chaff.cpp",
@@ -1101,7 +1099,6 @@
       "Nodes":[
          "Nodes/AchievementNode.cpp",
          "Nodes/AINodes.cpp",
-         "Nodes/ColorGradientNode.cpp",
          "Nodes/FeatureTestNode.cpp",
          "Nodes/FlowActorNodes.cpp",
          "Nodes/FlowActorSensor.cpp",
@@ -1129,7 +1126,6 @@
          "Nodes/FlowHudEventsNodes.cpp",
          "Nodes/FlowNodesAIActionSequence.cpp",
          "Nodes/AINodes.h",
-         "Nodes/ColorGradientNode.h",
          "Nodes/FeatureTestNode.h",
          "Nodes/G2FlowBaseNode.h",
          "Nodes/AIAssignmentNodes.h",
