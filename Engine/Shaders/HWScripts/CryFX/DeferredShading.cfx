@@ -1429,7 +1429,7 @@ float calcHMAO(float3 vReceiverPos, float2x2 mSampleRotMat, int sampleCount, sam
 
 Texture2D<float4> sceneDepth : register(t1);
 
-pixout HeightMapAOPS( vtxOutWPOS IN, float4 screenPos : POSITION )
+pixout HeightMapAOPS( vtxOutWPOS IN )
 {
 	pixout OUT = (pixout) 0;
 	
@@ -1437,11 +1437,11 @@ pixout HeightMapAOPS( vtxOutWPOS IN, float4 screenPos : POSITION )
 	const float distThreshold = 30;     // mip map selection (in meters)
 	const float maxKernelRadius = 7.5;  // sampling radius (in meters)
 	
-	float2 tileDepths = sceneDepth.Load(int3(screenPos.xy,0)).xy;
+	float2 tileDepths = sceneDepth.Load(int3(IN.WPos.xy,0)).xy;
 	float depth0 = tileDepths.x;
 	float depth1 = tileDepths.y;	
 	
-	float2 jitterTC = (screenPos.xy-0.5) / 5.0f;
+	float2 jitterTC = (IN.WPos.xy - 0.5) / 5.0f;
 	half jitterIndex = dot( frac( jitterTC ), half2( 1.0, 0.2 ) );	
 	float sampleRadius = maxKernelRadius * HMAO_Params.y;
 

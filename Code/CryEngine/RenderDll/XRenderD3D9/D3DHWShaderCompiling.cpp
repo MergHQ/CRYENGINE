@@ -3104,9 +3104,12 @@ void SShaderAsyncInfo::FlushPendingShaders()
 			Ident.m_MDMask = pAI->m_MDMask;
 			Ident.m_MDVMask = pAI->m_MDVMask;
 			CHWShader_D3D::SHWSInstance* pInst = pSH->mfGetInstance(pAI->m_pFXShader, pAI->m_nHashInstance, Ident);
-			if (pInst->m_pAsync != pAI)
-				CryFatalError("Shader instance async info doesn't match queued async info.");
-			pSH->mfAsyncCompileReady(pInst);
+			if (pInst)
+			{
+				if (pInst->m_pAsync != pAI)
+					CryFatalError("Shader instance async info doesn't match queued async info.");
+				pSH->mfAsyncCompileReady(pInst);
+			}
 		}
 	}
 }
@@ -3833,7 +3836,7 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 				return (pInst->m_Handle.m_pShader != NULL);
 			pCacheItem = NULL;
 		}
-		else if (pCacheItem && pCacheItem->m_Class == 255)
+		else if (pCacheItem && pCacheItem->m_Class == 255 && (nFlags & HWSF_PRECACHE) == 0)
 		{
 			byte* pData = (byte*)pCacheItem;
 			SAFE_DELETE_ARRAY(pData);

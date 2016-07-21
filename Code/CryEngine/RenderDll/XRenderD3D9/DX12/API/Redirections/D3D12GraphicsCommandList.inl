@@ -8,6 +8,7 @@ class BroadcastableD3D12GraphicsCommandList : public ID3D12GraphicsCommandList
 {
 	template<const int numTargets> friend class BroadcastableD3D12CommandQueue;
 
+public:
 	int m_RefCount;
 	std::array<ID3D12GraphicsCommandList*, numTargets> m_Targets;
 	ID3D12GraphicsCommandList* const* operator[](int i) const { return &m_Targets[i]; }

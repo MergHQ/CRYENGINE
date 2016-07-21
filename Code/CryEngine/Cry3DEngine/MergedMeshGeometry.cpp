@@ -256,30 +256,22 @@ static inline Quat mat33_to_quat(const Matrix33& m)
 	#if CRY_PLATFORM_F16C
 	static inline void CvtToHalf(Vec3f16& v, __m128 value)
 	{
-		__m128i result = _mm_cvtps_ph(value, 0);
-		// TODO: _mm_cvtsi128_si64
-		v.x = (reinterpret_cast<int*>(&result))[0];
-		v.y = (reinterpret_cast<int*>(&result))[1];
-		v.z = (reinterpret_cast<int*>(&result))[2];
+		static_assert(sizeof(Vec3f16) == sizeof(uint64_t), "64-bit store intended here for performance");
+		const __m128i result = _mm_cvtps_ph(value, 0);
+		_mm_storel_epi64(reinterpret_cast<__m128i*>(&v), result); // Store X, Y, Z, W(!)
 	}
 
 	static inline void CvtToHalf(Vec3f16& v, const Vec3& value)
 	{
-		__m128 val128 = _mm_set_ps(0.f, value.z, value.y, value.x);
-		__m128i result = _mm_cvtps_ph(val128, 0);
-		// TODO: _mm_cvtsi128_si64
-		v.x = (reinterpret_cast<int*>(&result))[0];
-		v.y = (reinterpret_cast<int*>(&result))[1];
-		v.z = (reinterpret_cast<int*>(&result))[2];
+		CvtToHalf(v, _mm_set_ps(0.0f, value.z, value.y, value.x));
 	}
 
 	static inline void CvtToHalf(Vec2f16& v, const Vec2& value)
 	{
-		__m128 val128 = _mm_set_ps(0.f, 0.f, value.y, value.x);
-		__m128i result = _mm_cvtps_ph(val128, 0);
-		// TODO: _mm_cvtsi128_si64
-		v.x = (reinterpret_cast<int*>(&result))[0];
-		v.y = (reinterpret_cast<int*>(&result))[1];
+		static_assert(sizeof(Vec2f16) == sizeof(uint32_t), "32-bit store intended here for performance");
+		const __m128 halfreg = _mm_castsi128_ps(_mm_loadl_epi64(reinterpret_cast<const __m128i*>(&value))); // Load X, Y, 0, 0
+		const __m128i result = _mm_cvtps_ph(halfreg, 0);
+		*reinterpret_cast<int*>(&v) = _mm_cvtsi128_si32(result); // _mm_storeu_si32 not supported on all compilers, this should (hopefully) be MOVD m32, xmm
 	}
 	#else
 	static inline __m128i float_to_half_SSE2(__m128 f)

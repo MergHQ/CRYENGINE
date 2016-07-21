@@ -286,6 +286,8 @@ void CD3DStereoRenderer::CreateIntermediateBuffers()
 {
 	SAFE_RELEASE(CTexture::s_ptexStereoL);
 	SAFE_RELEASE(CTexture::s_ptexStereoR);
+	for (uint32 i = 0; i < RenderLayer::eQuadLayers_Total; ++i)
+		SAFE_RELEASE(CTexture::s_ptexQuadLayers[i]);
 
 	int nWidth = m_renderer.GetWidth();
 	int nHeight = m_renderer.GetHeight();
@@ -300,6 +302,20 @@ void CD3DStereoRenderer::CreateIntermediateBuffers()
 
 	CTexture::s_ptexStereoL = CTexture::CreateRenderTarget("$StereoL", nWidth, nHeight, Clr_Empty, eTT_2D, nFlags, eTF_R8G8B8A8);
 	CTexture::s_ptexStereoR = CTexture::CreateRenderTarget("$StereoR", nWidth, nHeight, Clr_Empty, eTT_2D, nFlags, eTF_R8G8B8A8);
+
+	#if defined(CRY_USE_DX12) && CRY_USE_DX12_MULTIADAPTER
+	// NOTE: Workaround for missing MultiGPU-support in the HMD libraries
+	if (m_renderer->GetDevice().GetNodeCount() > 1)
+	{
+		for (uint32 i = 0; i < RenderLayer::eQuadLayers_Total; ++i)
+		{
+			char textureName[16];
+			cry_sprintf(textureName, "$QuadLayer0_%d", i);
+
+			CTexture::s_ptexQuadLayers[i] = CTexture::CreateRenderTarget(textureName, nWidth, nHeight, Clr_Empty, eTT_2D, nFlags, eTF_R8G8B8A8);
+		}
+	}
+	#endif
 
 	if (m_submission > STEREO_SUBMISSION_SEQUENTIAL)
 	{
@@ -748,6 +764,21 @@ void CD3DStereoRenderer::DisplayStereo()
 	assert(m_renderer.m_nRTStackLevel[0] == 0);
 	m_renderer.FX_SetRenderTarget(0, m_renderer.m_pBackBuffer, NULL, 0);
 
+	// NOTE: Needs to be executed unconditionally if missing MultiGPU-support in the HMD libraries
+	// Otherwise it could possibly be skipped by "m_pHmdRenderer != nullptr"
+	if (m_submission > STEREO_SUBMISSION_SEQUENTIAL)
+	{
+		// NOTE: Magic number to allow MultiGPU driver debugging
+		if (CRenderer::CV_r_StereoEnableMgpu != 111)
+		{
+			// Left eye contains both eye views, copy the content crossed into right eye
+			// Left eye contains now L+R and right eye contains R+L
+			m_renderer->GetDeviceContext().CopyResourceOvercross(
+				GetEyeTarget(RIGHT_EYE)->GetDevTexture()->GetBaseTexture(),
+				GetEyeTarget(LEFT_EYE)->GetDevTexture()->GetBaseTexture());
+		}
+	}
+
 	if (m_pHmdRenderer != nullptr)
 	{
 		return;
@@ -766,18 +797,6 @@ void CD3DStereoRenderer::DisplayStereo()
 
 	int width = m_renderer.GetWidth();
 	int height = m_renderer.GetHeight();
-
-	if (m_submission > STEREO_SUBMISSION_SEQUENTIAL)
-	{
-		if (CRenderer::CV_r_StereoEnableMgpu != 111)
-		{
-			// Left eye contains both eye views, copy the content crossed into right eye
-			// Left eye contains now L+R and right eye contains R+L
-			m_renderer->GetDeviceContext().CopyResourceOvercross(
-				GetEyeTarget(RIGHT_EYE)->GetDevTexture()->GetBaseTexture(),
-				GetEyeTarget(LEFT_EYE)->GetDevTexture()->GetBaseTexture());
-		}
-	}
 
 	if ((m_device == STEREO_DEVICE_FRAMECOMP) && (m_output == STEREO_OUTPUT_SIDE_BY_SIDE))
 	{

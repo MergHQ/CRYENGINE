@@ -574,10 +574,10 @@ protected:
 
 		UsedBindSlotSet                            requiredResourceBindings;
 		UsedBindSlotSet                            validResourceBindings;
-};
+	};
 
 	struct SCachedGraphicsState : SCachedResourceState
-{
+	{
 		SCachedValue<const CDeviceGraphicsPSO*> pPipelineState;
 		SCachedValue<const CDeviceInputStream*> vertexStreams;
 		SCachedValue<const CDeviceInputStream*> indexStream;
@@ -618,28 +618,28 @@ class CDeviceGraphicsCommandInterface : public CDeviceGraphicsCommandInterfaceIm
 public:
 	void PrepareUAVsForUse(uint32 viewCount, CGpuBuffer** pViews) const;
 	void PrepareRenderTargetsForUse(uint32 targetCount, CTexture** pTargets, SDepthTexture* pDepthTarget, const SResourceView::KeyType* pRenderTargetViews = nullptr) const;
-	void         PrepareResourcesForUse(uint32 bindSlot, CDeviceResourceSet* pResources, ::EShaderStage srvUsage) const;
-	void         PrepareInlineConstantBufferForUse(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass) const;
+	void PrepareResourcesForUse(uint32 bindSlot, CDeviceResourceSet* pResources, ::EShaderStage srvUsage) const;
+	void PrepareInlineConstantBufferForUse(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass) const;
 	void PrepareInlineConstantBufferForUse(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages) const;
 	void PrepareVertexBuffersForUse(uint32 numStreams, uint32 lastStreamSlot, const CDeviceInputStream* vertexStreams) const;
-	void         PrepareIndexBufferForUse(const CDeviceInputStream* indexStream) const;
+	void PrepareIndexBufferForUse(const CDeviceInputStream* indexStream) const;
 	void BeginResourceTransitions(uint32 numTextures, CTexture** pTextures, EResourceTransitionType type);
 
 	void SetRenderTargets(uint32 targetCount, CTexture* const* pTargets, const SDepthTexture* pDepthTarget, const SResourceView::KeyType* pRenderTargetViews = nullptr);
-	void         SetViewports(uint32 vpCount, const D3DViewPort* pViewports);
-	void         SetScissorRects(uint32 rcCount, const D3DRectangle* pRects);
+	void SetViewports(uint32 vpCount, const D3DViewPort* pViewports);
+	void SetScissorRects(uint32 rcCount, const D3DRectangle* pRects);
 	void SetPipelineState(const CDeviceGraphicsPSO* devicePSO);
 	void SetResourceLayout(const CDeviceResourceLayout* resourceLayout);
 	void SetResources(uint32 bindSlot, const CDeviceResourceSet* pResources, ::EShaderStage srvUsage);
-	void         SetInlineConstantBuffer(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass);
+	void SetInlineConstantBuffer(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass);
 	void SetInlineConstantBuffer(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages);
 	void SetVertexBuffers(uint32 numStreams, uint32 lastStreamSlot, const CDeviceInputStream* vertexStreams);
-	void         SetIndexBuffer(const CDeviceInputStream* indexStream); // NOTE: Take care with PSO strip cut/restart value and 32/16 bit indices
-	void         SetInlineConstants(uint32 bindSlot, uint32 constantCount, float* pConstants);
-	void         SetStencilRef(uint8 stencilRefValue);
+	void SetIndexBuffer(const CDeviceInputStream* indexStream); // NOTE: Take care with PSO strip cut/restart value and 32/16 bit indices
+	void SetInlineConstants(uint32 bindSlot, uint32 constantCount, float* pConstants);
+	void SetStencilRef(uint8 stencilRefValue);
 
-	void         Draw(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation);
-	void         DrawIndexed(uint32 IndexCountPerInstance, uint32 InstanceCount, uint32 StartIndexLocation, int BaseVertexLocation, uint32 StartInstanceLocation);
+	void Draw(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation);
+	void DrawIndexed(uint32 IndexCountPerInstance, uint32 InstanceCount, uint32 StartIndexLocation, int BaseVertexLocation, uint32 StartInstanceLocation);
 
 	void ClearSurface(D3DSurface* pView, const float color[4], uint32 numRects, const D3D11_RECT* pRects);
 };
@@ -657,9 +657,9 @@ public:
 	void SetResourceLayout(const CDeviceResourceLayout* pResourceLayout);
 	void SetResources(uint32 bindSlot, const CDeviceResourceSet* pResources, ::EShaderStage srvUsage);
 	void SetInlineConstantBuffer(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot);
-	void         SetInlineConstants(uint32 bindSlot, uint32 constantCount, float* pConstants);
+	void SetInlineConstants(uint32 bindSlot, uint32 constantCount, float* pConstants);
 
-	void         Dispatch(uint32 X, uint32 Y, uint32 Z);
+	void Dispatch(uint32 X, uint32 Y, uint32 Z);
 
 	void ClearUAV(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects);
 	void ClearUAV(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects);
@@ -737,6 +737,11 @@ public:
 	void ReloadPipelineStates();
 
 	void UpdatePipelineStates();
+
+#ifdef CRY_USE_DX12
+	// Helper functions for DX12 MultiGPU
+	ID3D12CommandQueue* GetNativeCoreCommandQueue();
+#endif
 
 private:
 	CDeviceGraphicsPSOPtr    CreateGraphicsPSOImpl(const CDeviceGraphicsPSODesc& psoDesc) const;

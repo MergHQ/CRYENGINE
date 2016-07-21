@@ -34,6 +34,9 @@ public:
 	void BeginProfilerEvent(const char* label);
 	void EndProfilerEvent();
 
+	// Helper functions for DX12
+	NCryDX12::CCommandList* GetDX12CommandList() { return m_sharedState.pCommandList; }
+
 protected:
 	void ResetImpl();
 	void LockToThreadImpl();

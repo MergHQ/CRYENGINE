@@ -2313,6 +2313,7 @@ public:
 
 	static CTexture*           s_ptexStereoL;
 	static CTexture*           s_ptexStereoR;
+	static CTexture*           s_ptexQuadLayers[2];
 
 	static CTexture*           s_ptexFlaresOcclusionRing[MAX_OCCLUSION_READBACK_TEXTURES];
 	static CTexture*           s_ptexFlaresGather;

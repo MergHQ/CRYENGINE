@@ -39,6 +39,7 @@ private:
 		Vec2i                            viewportPosition;
 		Vec2i                            viewportSize;
 		TArray<CTexture*>                textures;
+		TArray<IUnknown*>                texturesNative;
 	};
 
 	// Structure used for rendering the social screen provided by Oculus (dual distorted) into a texture
@@ -47,9 +48,10 @@ private:
 		SMirrorTextureRenderData() : pMirrorTexture(nullptr) {}
 		CryVR::Oculus::STexture vrMirrorTexture; // device texture
 		CTexture*               pMirrorTexture;  // CryEngine's texture used as render target for Oculus to write their mirror texture
+		IUnknown*               pMirrorTextureNative;
 	};
 
-	bool InitializeTextureSwapSet(ID3D11Device* d3dDevice, STextureSwapChainRenderData& eyeRenderData, CryVR::Oculus::TextureDesc desc, const char* nameFormat);
+	bool InitializeTextureSwapSet(ID3D11Device* d3dDevice, int eye, STextureSwapChainRenderData& eyeRenderData, CryVR::Oculus::TextureDesc desc, const char* nameFormat);
 	bool InitializeTextureSwapSet(ID3D11Device* d3dDevice, uint32 eye, CryVR::Oculus::TextureDesc desc, const char* nameFormat);
 	bool InitializeQuadTextureSwapSet(ID3D11Device* d3dDevice, RenderLayer::EQuadLayers id, CryVR::Oculus::TextureDesc desc, const char* nameFormat);
 	bool InitializeMirrorTexture(ID3D11Device* d3dDevice, CryVR::Oculus::TextureDesc desc, const char* name);
@@ -71,6 +73,11 @@ private:
 
 	static CTexture*                WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, ETEX_Format format, const char* name, bool shaderResourceView);
 	static RenderLayer::EQuadLayers CalculateQuadLayerId(ESwapChainArray swapChainIndex);
+
+	#if defined(CRY_USE_DX12) && defined(CRY_USE_DX12_MULTIADAPTER)
+	void                            CopyMultiGPUFrameData();
+	void CopyMultiGPUMirrorData(CTexture* pBackbufferTexture);
+	#endif
 
 private:
 

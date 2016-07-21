@@ -12,6 +12,7 @@
 #endif
 
 #if defined(CRY_USE_DX12_NATIVE)
+#include "DX12/API/Redirections/D3D12Device.inl"
 
 using namespace NCryDX12;
 D3D12_SHADER_BYTECODE g_EmptyShader;
@@ -1917,6 +1918,23 @@ CDeviceCommandListPtr CDeviceObjectFactory::GetCoreCommandList() const
 	m_pCoreCommandList->m_sharedState.pCommandList = pContext->GetCoreGraphicsCommandList();
 
 	return m_pCoreCommandList;
+}
+
+// Helper functions for DX12 MultiGPU
+ID3D12CommandQueue* CDeviceObjectFactory::GetNativeCoreCommandQueue()
+{
+	auto pContext = reinterpret_cast<CCryDX12DeviceContext*>(gcpRendD3D->GetDeviceContext().GetRealDeviceContext());
+	ID3D12CommandQueue* pD3d12Queue = pContext->GetCoreCommandListPool(CMDQUEUE_GRAPHICS).GetD3D12CommandQueue();
+
+#ifdef CRY_USE_DX12_MULTIADAPTER
+	if (pContext->GetDevice()->GetDX12Device()->IsMultiAdapter())
+	{
+		BroadcastableD3D12CommandQueue<2>* pBroadcastQueue = reinterpret_cast<BroadcastableD3D12CommandQueue<2>*>(pD3d12Queue);
+		pD3d12Queue = *(*pBroadcastQueue)[0];
+	}
+#endif
+
+	return pD3d12Queue;
 }
 
 // Acquire one or more command-lists which are independent of the core command-list

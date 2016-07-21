@@ -11,6 +11,7 @@ class BroadcastableD3D12Resource : public ID3D12Resource, public Handable<Broadc
 	template<const int numTargets> friend class BroadcastableD3D12GraphicsCommandList;
 	friend Handable;
 
+public:
 	int m_RefCount;
 	std::array<ID3D12Resource*, numTargets> m_Targets;
 	ID3D12Resource* const* operator[](int i) const { return &m_Targets[i]; }

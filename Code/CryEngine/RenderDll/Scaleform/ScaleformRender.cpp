@@ -36,6 +36,55 @@ static const D3D11_INPUT_ELEMENT_DESC VertexDeclGlyph[] =
 	{ "COLOR",    0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 };
 
+//////////////////////////////////////////////////////////////////////////
+
+inline CRenderPrimitive* SSF_ResourcesD3D::CRenderPrimitiveHeap::GetUsablePrimitive(int key)
+{
+	CryCriticalSectionNonRecursive threadSafe;
+
+	if (m_freeList.begin() == m_freeList.end())
+		m_useList[key].emplace_front();
+	else
+		m_useList[key].splice_after(m_useList[key].before_begin(), m_freeList, m_freeList.before_begin());
+
+	return &*m_useList[key].begin();
+}
+
+inline void SSF_ResourcesD3D::CRenderPrimitiveHeap::FreeUsedPrimitives(int key)
+{
+	CryCriticalSectionNonRecursive threadSafe;
+
+	for (auto& prim : m_useList[key])
+	{
+		prim.Reset();
+	}
+
+	m_freeList.splice_after(m_freeList.before_begin(), m_useList[key]);
+}
+
+inline CConstantBuffer* SSF_ResourcesD3D::STransientConstantBufferHeap::GetUsableConstantBuffer()
+{
+	CryCriticalSectionNonRecursive threadSafe;
+
+	if (m_freeList.begin() == m_freeList.end())
+		m_useList.emplace_front(gRenDev->m_DevBufMan.CreateConstantBuffer(std::max(
+			sizeof(SSF_GlobalDrawParams::SScaleformMeshAttributes),
+			sizeof(SSF_GlobalDrawParams::SScaleformRenderParameters)
+		)));
+	else
+		m_useList.splice_after(m_useList.before_begin(), m_freeList, m_freeList.before_begin());
+
+	return *m_useList.begin();
+}
+
+inline void SSF_ResourcesD3D::STransientConstantBufferHeap::FreeUsedConstantBuffers()
+{
+	CryCriticalSectionNonRecursive threadSafe;
+
+	m_freeList.splice_after(m_freeList.before_begin(), m_useList);
+}
+
+//////////////////////////////////////////////////////////////////////////
 SSF_ResourcesD3D::SSF_ResourcesD3D(CD3D9Renderer* pRenderer)
 	: m_shTech_SolidColor("SolidColor")
 	, m_shTech_GlyphMultiplyTexture("GlyphMultiplyTexture")
@@ -534,9 +583,11 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 
 	// Update constant buffer. NOTE: buffer is assigned to preallocated primitives
 	if (params.m_bScaleformMeshAttributesDirty)
+		params.m_vsBuffer = sfRes.m_CBHeap.GetUsableConstantBuffer(),
 		params.m_vsBuffer->UpdateBuffer(params.m_pScaleformMeshAttributes, params.m_ScaleformMeshAttributesSize),
 		params.m_bScaleformMeshAttributesDirty = false;
 	if (params.m_bScaleformRenderParametersDirty)
+		params.m_psBuffer = sfRes.m_CBHeap.GetUsableConstantBuffer(),
 		params.m_psBuffer->UpdateBuffer(params.m_pScaleformRenderParameters, params.m_ScaleformRenderParametersSize),
 		params.m_bScaleformRenderParametersDirty = false;
 
@@ -548,23 +599,20 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 	const CCryNameTSCRC techName = *sfRes.m_FillTechnique[fillType][params.isMultiplyDarkBlendMode];
 
 	SF_HandleClear(params);
-#if (CRY_PLATFORM_CONSOLE || defined(CRY_USE_DX12))
 	if (CRenderer::CV_r_GraphicsPipeline > 0)
 	{
 		CPrimitiveRenderPass& __restrict primPass = params.pRenderOutput->renderPass;
 
 		// Initial markup
 		CRenderPrimitive* primInit = sfRes.m_PrimitiveHeap.GetUsablePrimitive(params.pRenderOutput->key);
-		CConstantBuffer* vsBuffer = sfRes.TransferConstantBufferPos(sfRes.m_CBHeap.GetUsableConstantBuffer(), params.m_vsBuffer);
-		CConstantBuffer* psBuffer = sfRes.TransferConstantBufferPos(sfRes.m_CBHeap.GetUsableConstantBuffer(), params.m_psBuffer);
 
 		primInit->SetTechnique(m_cEF.s_ShaderScaleForm, techName, 0);
 		primInit->SetRenderState(SF_AdjustBlendStateForMeasureOverdraw(params.blendModeStates) | GS_NODEPTHTEST | params.renderMaskedStates);
 		primInit->SetStencilState(params.m_stencil.func, params.m_stencil.ref, uint8(~0U), uint8(~0U));
 		primInit->SetCullMode(eCULL_None);
 
-		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformMeshAttributes, vsBuffer, EShaderStage_Vertex);
-		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformRenderParameters, psBuffer, EShaderStage_Pixel);
+		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformMeshAttributes, params.m_vsBuffer, EShaderStage_Vertex);
+		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformRenderParameters, params.m_psBuffer, EShaderStage_Pixel);
 		primInit->SetSampler(0, sfRes.texStateID[params.texture[0].texState], EShaderStage_Pixel);
 		primInit->SetSampler(1, sfRes.texStateID[params.texture[1].texState], EShaderStage_Pixel);
 		primInit->SetTexture(0, params.texture[0].pTex, SResourceView::DefaultView, EShaderStage_Pixel);
@@ -579,7 +627,6 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 
 		return;
 	}
-#endif
 
 	CShader* pSFShader = SF_SetTechnique(techName);
 	if (!pSFShader)
@@ -704,9 +751,11 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 
 	// Update constant buffer. NOTE: buffer is assigned to preallocated primitives
 	if (params.m_bScaleformMeshAttributesDirty)
+		params.m_vsBuffer = sfRes.m_CBHeap.GetUsableConstantBuffer(),
 		params.m_vsBuffer->UpdateBuffer(params.m_pScaleformMeshAttributes, params.m_ScaleformMeshAttributesSize),
 		params.m_bScaleformMeshAttributesDirty = false;
 	if (params.m_bScaleformRenderParametersDirty)
+		params.m_psBuffer = sfRes.m_CBHeap.GetUsableConstantBuffer(),
 		params.m_psBuffer->UpdateBuffer(params.m_pScaleformRenderParameters, params.m_ScaleformRenderParametersSize),
 		params.m_bScaleformRenderParametersDirty = false;
 
@@ -714,23 +763,20 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 	const CCryNameTSCRC techName = *sfRes.m_FillTechnique[params.fillType][false];
 
 	SF_HandleClear(params);
-#if (CRY_PLATFORM_CONSOLE || defined(CRY_USE_DX12))
 	if (CRenderer::CV_r_GraphicsPipeline > 0)
 	{
 		CPrimitiveRenderPass& __restrict primPass = params.pRenderOutput->renderPass;
 
 		// Initial markup
 		CRenderPrimitive* primInit = sfRes.m_PrimitiveHeap.GetUsablePrimitive(params.pRenderOutput->key);
-		CConstantBuffer* vsBuffer = sfRes.TransferConstantBufferPos(sfRes.m_CBHeap.GetUsableConstantBuffer(), params.m_vsBuffer);
-		CConstantBuffer* psBuffer = sfRes.TransferConstantBufferPos(sfRes.m_CBHeap.GetUsableConstantBuffer(), params.m_psBuffer);
 
 		primInit->SetTechnique(m_cEF.s_ShaderScaleForm, techName, 0);
 		primInit->SetRenderState(SF_AdjustBlendStateForMeasureOverdraw(params.blendModeStates) | GS_NODEPTHTEST | params.renderMaskedStates);
 		primInit->SetStencilState(params.m_stencil.func, params.m_stencil.ref, uint8(~0U), uint8(~0U));
 		primInit->SetCullMode(eCULL_None);
 
-		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformMeshAttributes, vsBuffer, EShaderStage_Vertex);
-		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformRenderParameters, psBuffer, EShaderStage_Pixel);
+		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformMeshAttributes, params.m_vsBuffer, EShaderStage_Vertex);
+		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformRenderParameters, params.m_psBuffer, EShaderStage_Pixel);
 		primInit->SetSampler(0, sfRes.texStateID[params.texture[0].texState], EShaderStage_Pixel);
 		primInit->SetSampler(1, sfRes.texStateID[params.texture[1].texState], EShaderStage_Pixel);
 		primInit->SetTexture(0, params.texture[0].pTex, SResourceView::DefaultView, EShaderStage_Pixel);
@@ -745,7 +791,6 @@ void CD3D9Renderer::SF_DrawLineStrip(int baseVertexIndex, int lineCount, const S
 
 		return;
 	}
-#endif
 
 	CShader* pSFShader = SF_SetTechnique(techName);
 	if (!pSFShader)
@@ -855,9 +900,11 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 
 	// Update constant buffer. NOTE: buffer is assigned to preallocated primitives
 	if (params.m_bScaleformMeshAttributesDirty)
+		params.m_vsBuffer = sfRes.m_CBHeap.GetUsableConstantBuffer(),
 		params.m_vsBuffer->UpdateBuffer(params.m_pScaleformMeshAttributes, params.m_ScaleformMeshAttributesSize),
 		params.m_bScaleformMeshAttributesDirty = false;
 	if (params.m_bScaleformRenderParametersDirty)
+		params.m_psBuffer = sfRes.m_CBHeap.GetUsableConstantBuffer(),
 		params.m_psBuffer->UpdateBuffer(params.m_pScaleformRenderParameters, params.m_ScaleformRenderParametersSize),
 		params.m_bScaleformRenderParametersDirty = false;
 
@@ -865,23 +912,20 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 	const CCryNameTSCRC techName = *sfRes.m_FillTechnique[params.fillType][params.isMultiplyDarkBlendMode];
 
 	SF_HandleClear(params);
-#if (CRY_PLATFORM_CONSOLE || defined(CRY_USE_DX12))
 	if (CRenderer::CV_r_GraphicsPipeline > 0)
 	{
 		CPrimitiveRenderPass& __restrict primPass = params.pRenderOutput->renderPass;
 
 		// Initial markup
 		CRenderPrimitive* primInit = sfRes.m_PrimitiveHeap.GetUsablePrimitive(params.pRenderOutput->key);
-		CConstantBuffer* vsBuffer = sfRes.TransferConstantBufferPos(sfRes.m_CBHeap.GetUsableConstantBuffer(), params.m_vsBuffer);
-		CConstantBuffer* psBuffer = sfRes.TransferConstantBufferPos(sfRes.m_CBHeap.GetUsableConstantBuffer(), params.m_psBuffer);
 
 		primInit->SetTechnique(m_cEF.s_ShaderScaleForm, techName, 0);
 		primInit->SetRenderState(SF_AdjustBlendStateForMeasureOverdraw(params.blendModeStates) | GS_NODEPTHTEST | params.renderMaskedStates);
 		primInit->SetStencilState(params.m_stencil.func, params.m_stencil.ref, uint8(~0U), uint8(~0U));
 		primInit->SetCullMode(eCULL_None);
 
-		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformMeshAttributes, vsBuffer, EShaderStage_Vertex);
-		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformRenderParameters, psBuffer, EShaderStage_Pixel);
+		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformMeshAttributes, params.m_vsBuffer, EShaderStage_Vertex);
+		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformRenderParameters, params.m_psBuffer, EShaderStage_Pixel);
 		primInit->SetSampler(0, sfRes.texStateID[params.texture[0].texState], EShaderStage_Pixel);
 		primInit->SetTexture(0, params.texture[0].pTex, SResourceView::DefaultView, EShaderStage_Pixel);
 		if (params.fillType >= SSF_GlobalDrawParams::GlyphTextureYUV)
@@ -903,7 +947,6 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 
 		return;
 	}
-#endif
 
 	CShader* pSFShader = SF_SetTechnique(techName);
 	if (!pSFShader)
@@ -1021,9 +1064,11 @@ void CD3D9Renderer::SF_DrawBlurRect(const IScaleformPlayback::DeviceData* vtxDat
 
 	// Update constant buffer. NOTE: buffer is assigned to preallocated primitives
 	if (params.m_bScaleformMeshAttributesDirty)
+		params.m_vsBuffer = sfRes.m_CBHeap.GetUsableConstantBuffer(),
 		params.m_vsBuffer->UpdateBuffer(params.m_pScaleformMeshAttributes, params.m_ScaleformMeshAttributesSize),
 		params.m_bScaleformMeshAttributesDirty = false;
 	if (params.m_bScaleformRenderParametersDirty)
+		params.m_psBuffer = sfRes.m_CBHeap.GetUsableConstantBuffer(),
 		params.m_psBuffer->UpdateBuffer(params.m_pScaleformRenderParameters, params.m_ScaleformRenderParametersSize),
 		params.m_bScaleformRenderParametersDirty = false;
 
@@ -1031,23 +1076,20 @@ void CD3D9Renderer::SF_DrawBlurRect(const IScaleformPlayback::DeviceData* vtxDat
 	const CCryNameTSCRC techName = *sfRes.m_FilterTechnique[params.blurType];
 
 	SF_HandleClear(params);
-#if (CRY_PLATFORM_CONSOLE || defined(CRY_USE_DX12))
 	if (CRenderer::CV_r_GraphicsPipeline > 0)
 	{
 		CPrimitiveRenderPass& __restrict primPass = params.pRenderOutput->renderPass;
 
 		// Initial markup
 		CRenderPrimitive* primInit = sfRes.m_PrimitiveHeap.GetUsablePrimitive(params.pRenderOutput->key);
-		CConstantBuffer* vsBuffer = sfRes.TransferConstantBufferPos(sfRes.m_CBHeap.GetUsableConstantBuffer(), params.m_vsBuffer);
-		CConstantBuffer* psBuffer = sfRes.TransferConstantBufferPos(sfRes.m_CBHeap.GetUsableConstantBuffer(), params.m_psBuffer);
 
 		primInit->SetTechnique(m_cEF.s_ShaderScaleForm, techName, 0);
 		primInit->SetRenderState(SF_AdjustBlendStateForMeasureOverdraw(params.blendModeStates) | GS_NODEPTHTEST | params.renderMaskedStates);
 		primInit->SetStencilState(params.m_stencil.func, params.m_stencil.ref, uint8(~0U), uint8(~0U));
 		primInit->SetCullMode(eCULL_None);
 
-		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformMeshAttributes, vsBuffer, EShaderStage_Vertex);
-		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformRenderParameters, psBuffer, EShaderStage_Pixel);
+		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformMeshAttributes, params.m_vsBuffer, EShaderStage_Vertex);
+		primInit->SetInlineConstantBuffer(eConstantBufferShaderSlot_ScaleformRenderParameters, params.m_psBuffer, EShaderStage_Pixel);
 		primInit->SetSampler(0, sfRes.texStateID[params.texture[0].texState], EShaderStage_Pixel);
 		primInit->SetSampler(1, sfRes.texStateID[params.texture[1].texState], EShaderStage_Pixel);
 		primInit->SetTexture(0, params.texture[0].pTex, SResourceView::DefaultView, EShaderStage_Pixel);
@@ -1062,7 +1104,6 @@ void CD3D9Renderer::SF_DrawBlurRect(const IScaleformPlayback::DeviceData* vtxDat
 
 		return;
 	}
-#endif
 
 	CShader* pSFShader = SF_SetTechnique(techName);
 	if (!pSFShader)

@@ -86,71 +86,22 @@ struct SSF_ResourcesD3D
 		CompiledRPList m_freeList;
 		std::unordered_map<int, CompiledRPList> m_useList;
 
-		CRenderPrimitive* GetUsablePrimitive(int key)
-		{
-			CryCriticalSectionNonRecursive threadSafe;
-
-			if (m_freeList.begin() == m_freeList.end())
-				m_useList[key].emplace_front();
-			else
-				m_useList[key].splice_after(m_useList[key].before_begin(), m_freeList, m_freeList.before_begin());
-
-			return &*m_useList[key].begin();
-		}
-
-		void FreeUsedPrimitives(int key)
-		{
-			CryCriticalSectionNonRecursive threadSafe;
-
-			for (auto& prim : m_useList[key])
-			{
-				prim.Reset();
-			}
-
-			m_freeList.splice_after(m_freeList.before_begin(), m_useList[key]);
-		}
+		CRenderPrimitive* GetUsablePrimitive(int key);
+		void FreeUsedPrimitives(int key);
 	}
 	m_PrimitiveHeap;
 
 	struct STransientConstantBufferHeap
 	{
-		typedef std::forward_list<CConstantBuffer> TransientCBList;
+		typedef std::forward_list<CConstantBuffer*> TransientCBList;
 
 		TransientCBList m_freeList;
 		TransientCBList m_useList;
 
-		CConstantBuffer* GetUsableConstantBuffer()
-		{
-			CryCriticalSectionNonRecursive threadSafe;
-
-			if (m_freeList.begin() == m_freeList.end())
-				m_useList.emplace_front(0), m_useList.begin()->AddRef();
-			else
-				m_useList.splice_after(m_useList.before_begin(), m_freeList, m_freeList.before_begin());
-
-			return &*m_useList.begin();
-		}
-
-		void FreeUsedConstantBuffers()
-		{
-			CryCriticalSectionNonRecursive threadSafe;
-
-			m_freeList.splice_after(m_freeList.before_begin(), m_useList);
-		}
+		CConstantBuffer* GetUsableConstantBuffer();
+		void FreeUsedConstantBuffers();
 	}
 	m_CBHeap;
-
-	CConstantBuffer* TransferConstantBufferPos(CConstantBuffer* pOut, const CConstantBuffer* pIn) const
-	{
-		pOut->m_buffer     = pIn->m_buffer    ;
-		pOut->m_base_ptr   = pIn->m_base_ptr  ;
-		pOut->m_handle     = pIn->m_handle    ;
-		pOut->m_offset     = pIn->m_offset    ;
-		pOut->m_size       = pIn->m_size      ;
-		pOut->m_clearFlags = pIn->m_clearFlags;
-
-		return pOut;
-	}
 };
 
 #endif

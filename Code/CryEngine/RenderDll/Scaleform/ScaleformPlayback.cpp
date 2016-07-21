@@ -807,7 +807,6 @@ void CScaleformPlayback::PopExternalRenderTarget()
 	SSF_GlobalDrawParams& __restrict params = m_drawParams;
 	SSF_GlobalDrawParams::OutputParams* __restrict pCurOutput = params.pRenderOutput;
 
-#if (CRY_PLATFORM_CONSOLE || defined(CRY_USE_DX12))
 	// Graphics pipeline >= 1
 	if (CRenderer::CV_r_GraphicsPipeline > 0)
 	{
@@ -822,7 +821,6 @@ void CScaleformPlayback::PopExternalRenderTarget()
 
 		CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 	}
-#endif
 
 	pCurOutput->pRenderTarget->Release();
 	if (pCurOutput->pStencilTarget)
@@ -872,6 +870,10 @@ void CScaleformPlayback::PushExternalRenderTarget()
 
 	// Graphics pipeline >= 1
 	{
+		int x, y, width, height;
+		m_pRenderer->GetViewport(&x, &y, &width, &height);
+		params.viewport = SSF_GlobalDrawParams::_D3DViewPort(float(x), float(y), float(width), float(height));
+
 		sNewOutput.bRenderTargetClear = sNewOutput.pRenderTarget && false;
 		sNewOutput.bStencilTargetClear = sNewOutput.pStencilTarget && false;
 
@@ -894,7 +896,6 @@ void CScaleformPlayback::PopRenderTarget()
 	if (m_renderTargetStack.size() <= 1)
 		CryFatalError("PopRenderTarget called incorrectly");
 
-#if (CRY_PLATFORM_CONSOLE || defined(CRY_USE_DX12))
 	// Graphics pipeline >= 1
 	if (CRenderer::CV_r_GraphicsPipeline > 0)
 	{
@@ -909,7 +910,6 @@ void CScaleformPlayback::PopRenderTarget()
 
 		CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 	}
-#endif
 
 	pCurOutput->pRenderTarget->Release();
 	if (pCurOutput->pStencilTarget)
@@ -1043,12 +1043,10 @@ void CScaleformPlayback::BeginDisplay(ColorF backgroundColor, const Viewport& vi
 	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
 	SSF_GlobalDrawParams& __restrict params = m_drawParams;
 
-#if (CRY_PLATFORM_CONSOLE || defined(CRY_USE_DX12))
 	if (CRenderer::CV_r_GraphicsPipeline > 0)
 	{
 		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
 	}
-#endif
 
 	UpdateStereoSettings();
 
@@ -1182,12 +1180,10 @@ void CScaleformPlayback::EndDisplay()
 		m_pRenderer->SetScissor();
 	}
 
-#if (CRY_PLATFORM_CONSOLE || defined(CRY_USE_DX12))
 	if (CRenderer::CV_r_GraphicsPipeline > 0)
 	{
 		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
 	}
-#endif
 }
 
 void CScaleformPlayback::SetMatrix(const Matrix23& m)

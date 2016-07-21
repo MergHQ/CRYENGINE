@@ -16,6 +16,10 @@
 
 	#ifdef CRY_USE_DX12
 		#include "DX12/Resource/Texture/CCryDX12Texture2D.hpp"
+		#if defined(CRY_USE_DX12_MULTIADAPTER)
+			#include "DX12/API/Redirections/D3D12Device.inl"
+			#include "DX12/API/Workarounds/OculusMultiGPU.inl"
+		#endif
 	#endif // CRY_USE_DX12
 
 CD3DOculusRenderer::SLayersManager::SLayersManager()
@@ -171,10 +175,12 @@ bool CD3DOculusRenderer::Initialize()
 	return true;
 }
 
-bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, STextureSwapChainRenderData& eyeRenderData, CryVR::Oculus::TextureDesc desc, const char* szNameFormat)
+bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, int eye, STextureSwapChainRenderData& eyeRenderData, CryVR::Oculus::TextureDesc desc, const char* szNameFormat)
 {
 	#ifdef CRY_USE_DX12
-	if (!m_pOculusDevice->CreateSwapTextureSetD3D12(((CCryDX12Device*)pD3d11Device)->GetDeviceContext()->GetCoreCommandListPool(CMDQUEUE_GRAPHICS).GetD3D12CommandQueue(), desc, &eyeRenderData.vrTextureSet))
+	ID3D12CommandQueue* pD3d12Queue = CCryDeviceWrapper::GetObjectFactory().GetNativeCoreCommandQueue();
+
+	if (!m_pOculusDevice->CreateSwapTextureSetD3D12(pD3d12Queue, desc, &eyeRenderData.vrTextureSet))
 		return false;
 	#else
 	if (!m_pOculusDevice->CreateSwapTextureSetD3D11(pD3d11Device, desc, &eyeRenderData.vrTextureSet))
@@ -191,24 +197,33 @@ bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, ST
 	eyeRenderData.textures.reserve(numTextures);
 	for (uint32 t = 0; t < numTextures; ++t)
 	{
-		char textureName[16];
-		cry_sprintf(textureName, szNameFormat, t);
-
-	#ifdef CRY_USE_DX12
-		D3DTexture* pTex = CCryDX12Texture2D::Create((CCryDX12Device*)pD3d11Device, nullptr, static_cast<ID3D12Resource*>(eyeRenderData.vrTextureSet.pTextures[t]));
-	#else
-		D3DTexture* pTex = static_cast<D3DTexture*>(eyeRenderData.vrTextureSet.pTextures[t]);
-	#endif // CRY_USE_DX12
-
-		ETEX_Format format = CTexture::TexFormatFromDeviceFormat((DXGI_FORMAT)desc.format);
-		CTexture* eyeTexture = WrapD3DRenderTarget(pTex, desc.width, desc.height, format, textureName, true);
-
-		if (eyeTexture == nullptr)
-			return false;
-
-		eyeRenderData.textures.push_back(eyeTexture);
+		eyeRenderData.texturesNative.push_back(eyeRenderData.vrTextureSet.pTextures[t]);
 		eyeRenderData.viewportPosition = Vec2i(0, 0);
 		eyeRenderData.viewportSize = Vec2i(desc.width, desc.height);
+
+		// NOTE: Workaround for missing MultiGPU-support in the Oculus library
+		if (m_pRenderer->GetDevice().GetNodeCount() == 1)
+		{
+			char textureName[16];
+			cry_sprintf(textureName, szNameFormat, t);
+
+			#ifdef CRY_USE_DX12
+			D3DTexture* pTex = CCryDX12Texture2D::Create((CCryDX12Device*)pD3d11Device, nullptr, static_cast<ID3D12Resource*>(eyeRenderData.vrTextureSet.pTextures[t]));
+			#else
+			D3DTexture* pTex = static_cast<D3DTexture*>(eyeRenderData.vrTextureSet.pTextures[t]);
+			#endif // CRY_USE_DX12
+
+			ETEX_Format format = CTexture::TexFormatFromDeviceFormat((DXGI_FORMAT)desc.format);
+			CTexture* eyeTexture = WrapD3DRenderTarget(pTex, desc.width, desc.height, format, textureName, true);
+
+			if (eyeTexture == nullptr)
+				return false;
+
+			eyeRenderData.textures.push_back(eyeTexture);
+		}
+
+		if (eyeRenderData.vrTextureSet.pTextures[t] == nullptr)
+			return false;
 	}
 
 	return true;
@@ -216,34 +231,44 @@ bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, ST
 
 bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, uint32 eye, CryVR::Oculus::TextureDesc desc, const char* szNameFormat)
 {
-	return InitializeTextureSwapSet(pD3d11Device, m_scene3DRenderData[eye], desc, szNameFormat);
+	return InitializeTextureSwapSet(pD3d11Device, eye, m_scene3DRenderData[eye], desc, szNameFormat);
 }
 
 bool CD3DOculusRenderer::InitializeQuadTextureSwapSet(ID3D11Device* d3dDevice, RenderLayer::EQuadLayers id, CryVR::Oculus::TextureDesc desc, const char* szNameFormat)
 {
-	return InitializeTextureSwapSet(d3dDevice, m_quadLayerRenderData[id], desc, szNameFormat);
+	return InitializeTextureSwapSet(d3dDevice, -1, m_quadLayerRenderData[id], desc, szNameFormat);
 }
 
 bool CD3DOculusRenderer::InitializeMirrorTexture(ID3D11Device* pD3d11Device, CryVR::Oculus::TextureDesc desc, const char* szName)
 {
 	#ifdef CRY_USE_DX12
-	if (!m_pOculusDevice->CreateMirrorTextureD3D12(((CCryDX12Device*)pD3d11Device)->GetDeviceContext()->GetCoreCommandListPool(CMDQUEUE_GRAPHICS).GetD3D12CommandQueue(), desc, &m_mirrorData.vrMirrorTexture))
+	ID3D12CommandQueue* pD3d12Queue = CCryDeviceWrapper::GetObjectFactory().GetNativeCoreCommandQueue();
+
+	if (!m_pOculusDevice->CreateMirrorTextureD3D12(pD3d12Queue, desc, &m_mirrorData.vrMirrorTexture))
 		return false;
 	#else
 	if (!m_pOculusDevice->CreateMirrorTextureD3D11(pD3d11Device, desc, &m_mirrorData.vrMirrorTexture))
 		return false;
 	#endif // CRY_USE_DX12
 
-	#ifdef CRY_USE_DX12
-	D3DTexture* pTex = CCryDX12Texture2D::Create((CCryDX12Device*)pD3d11Device, nullptr, static_cast<ID3D12Resource*>(m_mirrorData.vrMirrorTexture.pTexture));
-	#else
-	D3DTexture* pTex = static_cast<D3DTexture*>(m_mirrorData.vrMirrorTexture.pTexture);
-	#endif // CRY_USE_DX12
+	m_mirrorData.pMirrorTextureNative = m_mirrorData.vrMirrorTexture.pTexture;
 
-	ETEX_Format format = CTexture::TexFormatFromDeviceFormat((DXGI_FORMAT)desc.format);
-	m_mirrorData.pMirrorTexture = WrapD3DRenderTarget(pTex, desc.width, desc.height, format, szName, true);
+	// NOTE: Workaround for missing MultiGPU-support in the Oculus library
+	if (m_pRenderer->GetDevice().GetNodeCount() == 1)
+	{
+		#ifdef CRY_USE_DX12
+		D3DTexture* pTex = CCryDX12Texture2D::Create((CCryDX12Device*)pD3d11Device, nullptr, static_cast<ID3D12Resource*>(m_mirrorData.vrMirrorTexture.pTexture));
+		#else
+		D3DTexture* pTex = static_cast<D3DTexture*>(m_mirrorData.vrMirrorTexture.pTexture);
+		#endif // CRY_USE_DX12
 
-	return m_mirrorData.pMirrorTexture != nullptr;
+		ETEX_Format format = CTexture::TexFormatFromDeviceFormat((DXGI_FORMAT)desc.format);
+		m_mirrorData.pMirrorTexture = WrapD3DRenderTarget(pTex, desc.width, desc.height, format, szName, true);
+
+		return m_mirrorData.pMirrorTexture != nullptr;
+	}
+
+	return m_mirrorData.pMirrorTextureNative != nullptr;
 }
 
 void CD3DOculusRenderer::Shutdown()
@@ -313,13 +338,36 @@ void CD3DOculusRenderer::PrepareFrame()
 	{
 		index[eye] = m_pOculusDevice->GetCurrentSwapChainIndex(m_scene3DRenderData[eye].vrTextureSet.pDeviceTextureSwapChain);
 	}
-	m_pStereoRenderer->SetEyeTextures(m_scene3DRenderData[0].textures[index[0]], m_scene3DRenderData[1].textures[index[1]]);
 
-	// Quad layers
-	for (uint32 i = 0; i < RenderLayer::eQuadLayers_Total; ++i)
+	// Assign L/R instead of backbuffers for MultiGPU as Oculus doesn't support it
+	if (m_pRenderer->GetDevice().GetNodeCount() > 1)
 	{
-		const int idx = m_pOculusDevice->GetCurrentSwapChainIndex(m_quadLayerRenderData[i].vrTextureSet.pDeviceTextureSwapChain);
-		m_pStereoRenderer->SetVrQuadLayerTexture(static_cast<RenderLayer::EQuadLayers>(i), m_quadLayerRenderData[i].textures[idx]);
+		m_pStereoRenderer->SetEyeTextures
+		(
+			CTexture::s_ptexStereoL,
+			CTexture::s_ptexStereoR
+		);
+
+		// Quad layers
+		for (uint32 i = 0; i < RenderLayer::eQuadLayers_Total; ++i)
+		{
+			m_pStereoRenderer->SetVrQuadLayerTexture(static_cast<RenderLayer::EQuadLayers>(i), CTexture::s_ptexQuadLayers[i]);
+		}
+	}
+	else
+	{
+		m_pStereoRenderer->SetEyeTextures
+		(
+			m_scene3DRenderData[0].textures[index[0]],
+			m_scene3DRenderData[1].textures[index[1]]
+		);
+
+		// Quad layers
+		for (uint32 i = 0; i < RenderLayer::eQuadLayers_Total; ++i)
+		{
+			const int idx = m_pOculusDevice->GetCurrentSwapChainIndex(m_quadLayerRenderData[i].vrTextureSet.pDeviceTextureSwapChain);
+			m_pStereoRenderer->SetVrQuadLayerTexture(static_cast<RenderLayer::EQuadLayers>(i), m_quadLayerRenderData[i].textures[idx]);
+		}
 	}
 
 	// DARIO (TODO): could we disable scene3d layer ? (Quad layers are activated on-demand)
@@ -341,33 +389,43 @@ void CD3DOculusRenderer::SubmitFrame()
 	ID3D11Device* pD3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
 	NCryDX12::CCommandList* pCL = ((CCryDX12Device*)pD3d11Device)->GetDeviceContext()->GetCoreGraphicsCommandList();
 
-	// Scene3D layer
-	CCryDX12RenderTargetView* lRV = (CCryDX12RenderTargetView*)m_pStereoRenderer->GetEyeTarget(LEFT_EYE)->GetDeviceRT();
-	CCryDX12RenderTargetView* rRV = (CCryDX12RenderTargetView*)m_pStereoRenderer->GetEyeTarget(RIGHT_EYE)->GetDeviceRT();
-
-	NCryDX12::CView& lV = lRV->GetDX12View();
-	NCryDX12::CView& rV = rRV->GetDX12View();
-
-	lV.GetDX12Resource().TransitionBarrier(pCL, lV, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	rV.GetDX12Resource().TransitionBarrier(pCL, rV, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-	// Quad layers
-	for (uint32 i = 0; i < RenderLayer::eQuadLayers_Total; ++i)
+	#if CRY_USE_DX12_MULTIADAPTER
+	// NOTE: Workaround for missing MultiGPU-support in the Oculus library
+	if (m_pRenderer->GetDevice().GetNodeCount() > 1)
 	{
-		const int idx = m_pOculusDevice->GetCurrentSwapChainIndex(m_quadLayerRenderData[i].vrTextureSet.pDeviceTextureSwapChain);
-		if (m_quadLayerRenderData[i].textures[idx])
-		{
-			CCryDX12RenderTargetView* qRV = (CCryDX12RenderTargetView*)m_quadLayerRenderData[i].textures[idx]->GetDeviceRT();
-			if (qRV)
-			{
-				NCryDX12::CView& qV = qRV->GetDX12View();
+		CopyMultiGPUFrameData();
+	}
+	else
+	#endif
+	{
+		// Scene3D layer
+		CCryDX12RenderTargetView* lRV = (CCryDX12RenderTargetView*)m_pStereoRenderer->GetEyeTarget(LEFT_EYE)->GetDeviceRT();
+		CCryDX12RenderTargetView* rRV = (CCryDX12RenderTargetView*)m_pStereoRenderer->GetEyeTarget(RIGHT_EYE)->GetDeviceRT();
 
-				qV.GetDX12Resource().TransitionBarrier(pCL, qV, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		NCryDX12::CView& lV = lRV->GetDX12View();
+		NCryDX12::CView& rV = rRV->GetDX12View();
+
+		lV.GetDX12Resource().TransitionBarrier(pCL, lV, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		rV.GetDX12Resource().TransitionBarrier(pCL, rV, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+		// Quad layers
+		for (uint32 i = 0; i < RenderLayer::eQuadLayers_Total; ++i)
+		{
+			const int idx = m_pOculusDevice->GetCurrentSwapChainIndex(m_quadLayerRenderData[i].vrTextureSet.pDeviceTextureSwapChain);
+			if (m_quadLayerRenderData[i].textures[idx])
+			{
+				CCryDX12RenderTargetView* qRV = (CCryDX12RenderTargetView*)m_quadLayerRenderData[i].textures[idx]->GetDeviceRT();
+				if (qRV)
+				{
+					NCryDX12::CView& qV = qRV->GetDX12View();
+
+					qV.GetDX12Resource().TransitionBarrier(pCL, qV, D3D12_RESOURCE_STATE_RENDER_TARGET);
+				}
 			}
 		}
-	}
 
-	((CCryDX12Device*)pD3d11Device)->GetDeviceContext()->Finish();
+		((CCryDX12Device*)pD3d11Device)->GetDeviceContext()->Finish();
+	}
 	#endif
 
 	// Pass the final images and layer configuration to the Oculus device
@@ -528,7 +586,17 @@ void CD3DOculusRenderer::RenderSocialScreen()
 				{
 					if (pBackbufferTexture->GetDevTexture()->Get2DTexture() != nullptr)
 					{
-						m_pRenderer->GetDeviceContext().CopyResource(pBackbufferTexture->GetDevTexture()->Get2DTexture(), m_mirrorData.pMirrorTexture->GetDevTexture()->GetBaseTexture());
+						#if defined(CRY_USE_DX12) && CRY_USE_DX12_MULTIADAPTER
+						// NOTE: Workaround for missing MultiGPU-support in the Oculus library
+						if (m_pRenderer->GetDevice().GetNodeCount() > 1)
+						{
+							CopyMultiGPUMirrorData(pBackbufferTexture);
+						}
+						else
+						#endif
+						{
+							m_pRenderer->GetDeviceContext().CopyResource(pBackbufferTexture->GetDevTexture()->Get2DTexture(), m_mirrorData.pMirrorTexture->GetDevTexture()->GetBaseTexture());
+						}
 					}
 				}
 				break;

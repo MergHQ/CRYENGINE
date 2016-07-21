@@ -197,6 +197,7 @@ CTexture* CTexture::s_ptexSceneTargetScaled;
 CTexture* CTexture::s_ptexSceneTargetScaledBlurred;
 CTexture* CTexture::s_ptexStereoL = NULL;
 CTexture* CTexture::s_ptexStereoR = NULL;
+CTexture* CTexture::s_ptexQuadLayers[2] = { NULL };
 
 CTexture* CTexture::s_ptexFlaresOcclusionRing[MAX_OCCLUSION_READBACK_TEXTURES] = { NULL };
 CTexture* CTexture::s_ptexFlaresGather = NULL;
@@ -2550,6 +2551,8 @@ void CTexture::ShutDown()
 		CTexture::s_ptexHDRTarget = NULL;
 		CTexture::s_ptexStereoL = NULL;
 		CTexture::s_ptexStereoR = NULL;
+		for (uint32 i = 0; i < 2; ++i)
+			CTexture::s_ptexQuadLayers[i] = NULL;
 	}
 
 	if (s_ShaderTemplatesInitialized)
