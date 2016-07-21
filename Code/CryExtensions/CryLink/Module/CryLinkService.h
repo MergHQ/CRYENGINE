@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryLink/IFramework.h>
+#include <CrySystem/IConsole.h>
 
 namespace CryLinkService 
 {
