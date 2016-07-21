@@ -478,7 +478,7 @@ public:
 					{
 						Zero(key.dd);
 						// key.flags.outTangentType = ETangentType::Auto;
-						key.flags.inTangentType = ETangentType::Smooth;
+						key.flags.outTangentType = ETangentType::Smooth;
 					}
 					else
 						switch (key.flags.outTangentType)
