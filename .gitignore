@@ -1,27 +1,38 @@
+# Asset files.
 *.pak
+*.caf
 
+# Config files
 /user.cfg
 /system.cfg
 /editor.cfg
 /.bootstrap*.*
 
-/[Bb]in*/
-/[Ll]og[Bb]ackups
-/[Uu]ser*/
-_WAF_/user_settings.options
-
-
-/Solutions/*
-
-# Temp files
+# Temporary files.
 *.log
 *.dmp
-/TestResults/*
 *.pyo
 *.pyc
+*.bak
+*.bak2
+_WAF_/user_settings.options
 
+# Binary directories.
+/[Bb]in*/
+/Tools/rc/*
+
+# Temporary directories.
+/TestResults/*
+/Solutions/*
 /.depproj/*
 /project.sln
+/[Ll]og[Bb]ackups
+/[Uu]ser*/
+__pycache__/*
 
 # Might contain a license key, so don't add it to a repo.
 /Code/Tools/waf-1.7.13/recode.lic
+/recode.lic
+
+# These are handled elsewhere.
+/Code/SDKs/*
