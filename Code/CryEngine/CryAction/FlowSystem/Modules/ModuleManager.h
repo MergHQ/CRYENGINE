@@ -1,23 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/********************************************************************
-   -------------------------------------------------------------------------
-   File name:   ModuleManager.h
-   $Id$
-   Description: Manages module loading and application
-
-   -------------------------------------------------------------------------
-   History:
-   - 03/04/11   : Sascha Hoba - Kevin Kirst
-
- *********************************************************************/
-
-#ifndef _MODULEMANAGER_H_
-#define _MODULEMANAGER_H_
+#pragma once
 
 #include <CryFlowGraph/IFlowGraphModuleManager.h>
-#include <CryGame/IGameFramework.h>
 #include <CryCore/Containers/CryListenerSet.h>
+#include <CryGame/IGameFramework.h>
 
 struct SActivationInfo;
 class CFlowGraphModule;
@@ -143,5 +130,3 @@ private:
 
 	std::vector<CModuleIterator*> m_iteratorPool;
 };
-
-#endif //_MODULEMANAGER_H_

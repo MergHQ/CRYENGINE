@@ -4,7 +4,7 @@
 //  File name:   UIDialogs.cpp
 //  Version:     v1.00
 //  Created:     22/6/2012 by Paul Reindell.
-//  Description: 
+//  Description:
 // -------------------------------------------------------------------------
 //  History:
 //
@@ -12,8 +12,8 @@
 #include "StdAfx.h"
 #include "UIDialogs.h"
 #include "UIManager.h"
-#include "Nodes/G2FlowBaseNode.h"
 
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 ////////////////////////////////////////////////////////////////////////////
 CUIDialogs::CUIDialogs()
@@ -114,7 +114,6 @@ void CUIDialogs::InitEventSystem()
 		m_eventSender.RegisterEvent<eUIE_RemoveDialog>(eventDesc);
 	}
 
-
 	// events that can be sent from UI flowgraphs to this class
 	m_pUIEvents = gEnv->pFlashUI->CreateEventSystem("Dialogs", IUIEventSystem::eEST_UI_TO_SYSTEM);
 	m_eventDispatcher.Init(m_pUIEvents, this, "UIDialogs");
@@ -146,31 +145,31 @@ uint32 CUIDialogs::DisplayDialog(EDialogType type, const char* title, const char
 	string param2;
 	params.GetArg(0, param1);
 	params.GetArg(1, param2);
-	switch(type)
+	switch (type)
 	{
-		case eDT_DialogWait:
-			m_eventSender.SendEvent<eUIE_AddDialogWait>((int)id, title, message);
-			break;
-		case eDT_Warning:
-			m_eventSender.SendEvent<eUIE_AddDialogWarning>((int)id, title, message, param1, param2);
-			break;
-		case eDT_Error:
-			m_eventSender.SendEvent<eUIE_AddDialogError>((int)id, title, message, param1, param2);
-			break;
-		case eDT_AcceptDecline:
-			m_eventSender.SendEvent<eUIE_AddDialogAcceptDecline>((int)id, title, message, param1, param2);
-			break;
-		case eDT_Confirm:
-			m_eventSender.SendEvent<eUIE_AddDialogConfirm>((int)id, title, message, param1, param2);
-			break;
-		case eDT_Okay:
-			m_eventSender.SendEvent<eUIE_AddDialogOkay>((int)id, title, message, param1, param2);
-			break;
-		case eDT_Input:
-			m_eventSender.SendEvent<eUIE_AddDialogInput>((int)id, title, message, paramMessage);
-			break;
-		default:
-			assert(false);
+	case eDT_DialogWait:
+		m_eventSender.SendEvent<eUIE_AddDialogWait>((int)id, title, message);
+		break;
+	case eDT_Warning:
+		m_eventSender.SendEvent<eUIE_AddDialogWarning>((int)id, title, message, param1, param2);
+		break;
+	case eDT_Error:
+		m_eventSender.SendEvent<eUIE_AddDialogError>((int)id, title, message, param1, param2);
+		break;
+	case eDT_AcceptDecline:
+		m_eventSender.SendEvent<eUIE_AddDialogAcceptDecline>((int)id, title, message, param1, param2);
+		break;
+	case eDT_Confirm:
+		m_eventSender.SendEvent<eUIE_AddDialogConfirm>((int)id, title, message, param1, param2);
+		break;
+	case eDT_Okay:
+		m_eventSender.SendEvent<eUIE_AddDialogOkay>((int)id, title, message, param1, param2);
+		break;
+	case eDT_Input:
+		m_eventSender.SendEvent<eUIE_AddDialogInput>((int)id, title, message, paramMessage);
+		break;
+	default:
+		assert(false);
 	}
 	return id;
 }
@@ -191,13 +190,13 @@ void CUIDialogs::CancelDialogs()
 ////////////////////////////////////////////////////////////////////////////
 // ui events
 ////////////////////////////////////////////////////////////////////////////
-void CUIDialogs::OnDialogResult( int dialogid, int result, const char* message )
+void CUIDialogs::OnDialogResult(int dialogid, int result, const char* message)
 {
 	TDialogs::iterator it = m_dialogs.find(dialogid);
 	assert(it != m_dialogs.end());
 	if (it != m_dialogs.end())
 	{
-		if (it->second) 
+		if (it->second)
 			it->second->DialogCallback(it->first, EDialogResponse(result), message);
 
 		m_eventSender.SendEvent<eUIE_RemoveDialog>(it->first);
@@ -209,15 +208,15 @@ void CUIDialogs::OnDialogResult( int dialogid, int result, const char* message )
 }
 
 ////////////////////////////////////////////////////////////////////////////
-REGISTER_UI_EVENTSYSTEM( CUIDialogs );
+REGISTER_UI_EVENTSYSTEM(CUIDialogs);
 
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
-class CDialogDisplayNode 
+class CDialogDisplayNode
 	: public CFlowBaseNode<eNCT_Instanced>
-	, public IDialogCallback
+	  , public IDialogCallback
 {
 public:
 	CDialogDisplayNode(SActivationInfo* pActInfo)
@@ -230,20 +229,20 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig inputs[] = {
-			InputPortConfig_AnyType("DisplayDialog",_HELP("Displays a dialog")),
-			InputPortConfig_AnyType("CancelDialog",_HELP("Cancels the current dialog")),
-			InputPortConfig<int>( "Type", 0, _HELP("Dialog Type"), 0, _UICONFIG( "enum_int:WaitDialog=0,WarningDialog=1,ErrorDialog=2,AcceptDeclineDialog=3,ConfirmDialog=4,OkayDialog=5,InputDialog=5" ) ),
-			InputPortConfig<string>("Title", _HELP("Dialog title")),
-			InputPortConfig<string>("Message", _HELP("Dialog message")),
-			InputPortConfig<string>("Param", _HELP("Special param (e.g. for input dialog)")),
-			{0}
+			InputPortConfig_AnyType("DisplayDialog", _HELP("Displays a dialog")),
+			InputPortConfig_AnyType("CancelDialog",  _HELP("Cancels the current dialog")),
+			InputPortConfig<int>("Type",             0,                                              _HELP("Dialog Type"),0, _UICONFIG("enum_int:WaitDialog=0,WarningDialog=1,ErrorDialog=2,AcceptDeclineDialog=3,ConfirmDialog=4,OkayDialog=5,InputDialog=5")),
+			InputPortConfig<string>("Title",         _HELP("Dialog title")),
+			InputPortConfig<string>("Message",       _HELP("Dialog message")),
+			InputPortConfig<string>("Param",         _HELP("Special param (e.g. for input dialog)")),
+			{ 0 }
 		};
 
 		static const SOutputPortConfig outputs[] = {
 			OutputPortConfig_AnyType("OnShow", _HELP("Triggers on Show")),
-			OutputPortConfig<int>("OnResult", _HELP("Returns once the dialog returns: 0=Yes/Ok/Confirm, 1=No/Cancel/Decline, 2=Canceled by system")),
-			OutputPortConfig<string>("Param", _HELP("Special param (e.g. for input dialog)")),
-			{0}
+			OutputPortConfig<int>("OnResult",  _HELP("Returns once the dialog returns: 0=Yes/Ok/Confirm, 1=No/Cancel/Decline, 2=Canceled by system")),
+			OutputPortConfig<string>("Param",  _HELP("Special param (e.g. for input dialog)")),
+			{ 0 }
 		};
 
 		config.sDescription = _HELP("This node displays a dialog");
@@ -252,7 +251,7 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo* pActInfo)
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		if (!m_pDialogMan)
 			return;
@@ -304,8 +303,8 @@ public:
 		m_bDisplayed = false;
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const { s->Add(*this); }
-	virtual IFlowNodePtr Clone( SActivationInfo *pActInfo ) { return new CDialogDisplayNode(pActInfo); }
+	virtual void         GetMemoryUsage(ICrySizer* s) const { s->Add(*this); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)   { return new CDialogDisplayNode(pActInfo); }
 
 private:
 	enum EInputs
@@ -324,10 +323,10 @@ private:
 		eO_Param,
 	};
 
-	CUIDialogs* m_pDialogMan;
+	CUIDialogs*     m_pDialogMan;
 	SActivationInfo m_ActInfo;
-	bool m_bDisplayed;
-	uint32 m_id;
+	bool            m_bDisplayed;
+	uint32          m_id;
 };
 ////////////////////////////////////////////////////////////////////////////
-REGISTER_FLOW_NODE( "UI:Functions:Dialogs:DisplayDialog", CDialogDisplayNode );
+REGISTER_FLOW_NODE("UI:Functions:Dialogs:DisplayDialog", CDialogDisplayNode);

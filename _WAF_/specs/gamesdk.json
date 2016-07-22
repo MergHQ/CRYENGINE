@@ -7,7 +7,7 @@
 	"game_projects"                         : "GameSDK",
 
 	"module_extensions"                     : ["scaleform"],
-	"win_module_extensions"                 : ["audio_fmod", "brofiler", "openvr", "osvr", "eyex"],
+	"win_module_extensions"                 : ["audio_fmod", "brofiler", "openvr", "osvr", "eyex", "mono"],
 
 	"modules" :
 	[
@@ -67,7 +67,7 @@
 		"CryScaleformHelper"
 	],
 
-	"win_modules"                           : ["WindowsLauncher",  "CryRenderD3D11", "CryRenderD3D12", "CryRenderOpenGL", "CryAudioImplSDLMixer", "CryAudioImplFmod", "CryAudioImplPortAudio", "oculus"],
+	"win_modules"                           : ["WindowsLauncher",  "CryRenderD3D11", "CryRenderD3D12", "CryRenderOpenGL", "CryAudioImplSDLMixer", "CryAudioImplFmod", "CryAudioImplPortAudio", "oculus", "CryMonoBridge"],
 	"win_debug_modules"                     : ["DedicatedLauncher", "CryLiveCreate", "GameStream"],
 	"win_profile_modules"                   : ["DedicatedLauncher", "CryLiveCreate", "GameStream"],
 

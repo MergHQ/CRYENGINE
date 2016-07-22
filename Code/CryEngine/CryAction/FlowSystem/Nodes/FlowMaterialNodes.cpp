@@ -11,7 +11,8 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNodeEntityMaterial : public CFlowBaseNode<eNCT_Instanced>
 {

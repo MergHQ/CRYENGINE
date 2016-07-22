@@ -2,11 +2,15 @@
  "NoUberFile":{
 		"Header Files":
 		[
-			"StdAfx.h"
+			"StdAfx.h",
+			"../../SDKs/jsmn/jsmn.h",
+			"../../Libs/jsmn/jsmnutil.h"
 		],			
 		"Source Files":
 		[
-			"Main.cpp"
+			"Main.cpp",
+			"../../SDKs/jsmn/jsmn.c",
+			"../../Libs/jsmn/jsmnutil.c"
 		],
 		"Resource Files":
 		[

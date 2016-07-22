@@ -14,9 +14,8 @@
 #include "StdAfx.h"
 #include "CryAction.h"
 #include "IVehicleSystem.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
 #include "FlowVehicleMovement.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //------------------------------------------------------------------------
 IFlowNodePtr CFlowVehicleMovement::Clone(SActivationInfo* pActivationInfo)

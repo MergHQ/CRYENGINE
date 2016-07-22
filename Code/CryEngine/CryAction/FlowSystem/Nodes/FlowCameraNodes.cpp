@@ -1,18 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description: Camera Nodes
-
-   -------------------------------------------------------------------------
-   History:
-   - 30:6:2005   15:53 : Created by Márcio Martins
-
-*************************************************************************/
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+#include "FlowFrameworkBaseNode.h"
 
 //////////////////////////////////////////////////////////////////////////
 static const int FLOWGRAPH_SHAKE_ID = 24;

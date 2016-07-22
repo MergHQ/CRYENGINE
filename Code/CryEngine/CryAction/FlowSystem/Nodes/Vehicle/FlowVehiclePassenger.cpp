@@ -16,9 +16,9 @@
 #include "IVehicleSystem.h"
 #include "VehicleSystem/Vehicle.h"
 #include "VehicleSystem/VehicleSeat.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
 #include "FlowVehiclePassenger.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //------------------------------------------------------------------------
 CFlowVehiclePassenger::CFlowVehiclePassenger(SActivationInfo* pActivationInfo)

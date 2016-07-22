@@ -1,12 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FLOWCOMPOSITENODE_H__
-#define __FLOWCOMPOSITENODE_H__
-
 #pragma once
 
-#include <CryFlowGraph/IFlowSystem.h>
 #include "../FlowGraph.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
+
 class CFlowSystem;
 
 class CFlowCompositeNodeFactory;
@@ -156,5 +154,3 @@ private:
 	std::vector<SInputPortConfig>  m_inputsExt;
 	std::vector<SOutputPortConfig> m_outputsExt;
 };
-
-#endif

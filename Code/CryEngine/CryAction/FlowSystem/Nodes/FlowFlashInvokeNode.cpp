@@ -12,9 +12,10 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
 #include <CrySystem/Scaleform/IFlashPlayer.h>
 #include <CrySystem/ILocalizationManager.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // Flow node for invoking a flash method of a DTS_I_FLASHPLAYER dyntexture stored in an entity's material

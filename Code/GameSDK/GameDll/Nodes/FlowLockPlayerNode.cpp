@@ -2,7 +2,8 @@
 
 #include "StdAfx.h"
 #include "Player.h"
-#include "Nodes/G2FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowLockPlayerNode : public CFlowBaseNode<eNCT_Singleton>
 {
@@ -33,17 +34,17 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config) override
 	{
 		static const SInputPortConfig inputs[] = {
-			InputPortConfig_Void("Enable", _HELP("Enable")),
-			InputPortConfig_Void("Disable", _HELP("Disable")),
-			InputPortConfig<float>("ViewLimitYaw", _HELP("ViewLimitYaw, in degrees. 180 for no restriction.")),
-			InputPortConfig<float>("ViewLimitPitch", _HELP("ViewLimitPitch, in degrees. 90 for no restriction.")),
+			InputPortConfig_Void("Enable",                       _HELP("Enable")),
+			InputPortConfig_Void("Disable",                      _HELP("Disable")),
+			InputPortConfig<float>("ViewLimitYaw",               _HELP("ViewLimitYaw, in degrees. 180 for no restriction.")),
+			InputPortConfig<float>("ViewLimitPitch",             _HELP("ViewLimitPitch, in degrees. 90 for no restriction.")),
 			InputPortConfig<string>("actionFilter_ActionFilter", _HELP("Select Action Filter")),
-			{0}
+			{ 0 }
 		};
 		static const SOutputPortConfig outputs[] = {
-			OutputPortConfig_Void("Enabled", _HELP("Triggered when enabled.")),
+			OutputPortConfig_Void("Enabled",  _HELP("Triggered when enabled.")),
 			OutputPortConfig_Void("Disabled", _HELP("Triggered when disabled.")),
-			{0}
+			{ 0 }
 		};
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
@@ -104,4 +105,3 @@ public:
 };
 
 REGISTER_FLOW_NODE("Game:LockPlayer", CFlowLockPlayerNode);
-

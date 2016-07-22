@@ -1,23 +1,13 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   FlowTimeNode.h
-//  Version:     v1.00
-//  Created:     9/5/2005 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
-#include "FlowTimeNode.h"
 #include "TimeOfDayScheduler.h"
+
 #include <time.h>
+#include <ILevelSystem.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ITimeOfDay.h>
-#include <ILevelSystem.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 class CFlowTimeNode : public CFlowBaseNode<eNCT_Singleton>

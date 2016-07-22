@@ -1,13 +1,9 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FLOWDELAYNODE_H__
-#define __FLOWDELAYNODE_H__
-
 #pragma once
 
-#include "FlowBaseNode.h"
 #include <queue>
-#include "FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowDelayNode : public CFlowBaseNode<eNCT_Instanced>
 {
@@ -70,5 +66,3 @@ private:
 	Activations m_activations;
 	static void OnTimer(void* pUserData, IGameFramework::TimerID ref);
 };
-
-#endif

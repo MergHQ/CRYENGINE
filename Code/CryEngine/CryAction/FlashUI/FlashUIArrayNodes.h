@@ -9,10 +9,10 @@
 //  History:
 //
 ////////////////////////////////////////////////////////////////////////////
-#ifndef __FlashUIArrayNodes_H__
-#define __FlashUIArrayNodes_H__
 
-#include "FlowSystem/Nodes/FlowBaseNode.h"
+#pragma once
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlashUIToArrayNode : public CFlowBaseNode<eNCT_Singleton>
 {
@@ -117,5 +117,3 @@ private:
 		eO_ArgList,
 	};
 };
-
-#endif

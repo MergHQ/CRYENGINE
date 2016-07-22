@@ -225,7 +225,7 @@ namespace CryEngine.EntitySystem
 				return;
 			
 			Log.Info ("[EntityFramework] Spawn entity: {0} ({1})", arg1.sName, managedClass.ProtoType.Name);
-			s_managedEntities.Add (pEntity.GetId (), managedClass.CreateInstance (pEntity, arg1.HasEntityNode () ? arg1.entityNode : null));
+			s_managedEntities.Add (pEntity.GetId (), managedClass.CreateInstance (pEntity, arg1.entityNode ));
 		}
 
 		/// <summary>

@@ -132,7 +132,7 @@ namespace CryEngine.Sydewinder
 			GamePool.Clear();
 
 			// Store highscore.
-			Highscore.CurrentScore.StoreToFile();
+			//Highscore.CurrentScore.StoreToFile();
 		}
 
 		public virtual void OnUpdate()

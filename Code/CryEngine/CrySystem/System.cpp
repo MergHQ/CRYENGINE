@@ -90,6 +90,8 @@
 #include <CryString/StringUtils.h>
 #include <CrySystem/Scaleform/IFlashUI.h>
 #include "CryWaterMark.h"
+
+#include "ExtensionSystem/CryPluginManager.h"
 WATERMARKDATA(_m);
 
 #if USE_STEAM
@@ -336,6 +338,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_sys_firstlaunch = NULL;
 	m_sys_enable_budgetmonitoring = NULL;
 	m_sys_preload = NULL;
+	m_sys_use_Mono = nullptr;
 
 	//	m_sys_filecache = NULL;
 	m_gpu_particle_physics = NULL;
@@ -430,6 +433,8 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	m_pImeManager = NULL;
 	RegisterWindowMessageHandler(this);
+
+	m_pPluginManager = new CCryPluginManager(startupParams);
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -641,6 +646,8 @@ void CSystem::ShutDown()
 		m_env.pPhysicalWorld->SetPhysicsStreamer(0);
 		m_env.pPhysicalWorld->SetPhysicsEventClient(0);
 	}
+
+	SAFE_DELETE(m_pPluginManager);
 
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	if (m_env.pRenderer)
@@ -2101,6 +2108,8 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 
 	if (!gEnv->IsEditing() && m_eRuntimeState == ESYSTEM_EVENT_LEVEL_GAMEPLAY_START)
 		gEnv->pCryPak->DisableRuntimeFileAccess(true);
+
+	m_pPluginManager->Update(updateFlags, nPauseMode);
 
 	return !m_bQuit;
 

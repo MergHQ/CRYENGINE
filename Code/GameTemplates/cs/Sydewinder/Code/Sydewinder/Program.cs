@@ -12,7 +12,7 @@ namespace CryEngine.Sydewinder
 	/// <summary>
 	/// Plugin Entry point will be re-instantiated in runtime, whenever the assembly is updated (e.g. Re-compiled).
 	/// </summary>
-	public class Program : CryEngineAddIn
+	public class Program : ICryEnginePlugin
 	{
 		private const string HIGHSCORE_URL = "highscore.json";
 
@@ -21,7 +21,12 @@ namespace CryEngine.Sydewinder
 		/// <summary>
 		/// Add-In Entry point.
 		/// </summary>
-		public override void StartGame()
+		public Program()
+		{
+  			Env.Initialize (null);
+		}
+
+		public void Initialize()
 		{
 			if (!Env.IsSandbox) 
 				Env.Console.ExecuteString ("map Canyon");
@@ -62,7 +67,7 @@ namespace CryEngine.Sydewinder
 			{
 				Mouse.HideCursor ();
 				if (!Env.IsSandbox)
-					GameApp.Shutdown ();
+					Shutdown ();
 
 				AudioManager.PlayTrigger("game_stop");
 				mainMenu.Destroy ();
@@ -75,13 +80,14 @@ namespace CryEngine.Sydewinder
 		/// <summary>
 		/// Called when engine is being shut down or if application is reloaded.
 		/// </summary>
-		public override void EndGame()
+		public void Shutdown()
 		{
 			UI.MainMenu.DestroyMenu ();
 			
 			GameApp.Shutdown(false);
 			GameApp.Destroy ();
 			GameApp = null;
+			Env.Shutdown (null);
 		}
 	}
 }

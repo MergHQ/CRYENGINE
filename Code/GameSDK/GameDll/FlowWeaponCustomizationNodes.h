@@ -4,25 +4,26 @@
 //  File name:   FlowWeaponCustomizationNodes.h
 //  Version:     v1.00
 //  Created:     03/05/2012 by Michiel Meesters.
-//  Description: 
+//  Description:
 // -------------------------------------------------------------------------
 //  History:
 //
 ////////////////////////////////////////////////////////////////////////////
-#ifndef __FlowWeaponCustomizationNodes_H__
-#define __FlowWeaponCustomizationNodes_H__
-#include "Nodes/G2FlowBaseNode.h"
+
+#pragma once
+
+#include "Nodes/FlowGameSDKBaseNode.h"
 
 //--------------------------------------------------------------------------------------------
-class CFlashUIInventoryNode : public CFlowBaseNode<eNCT_Instanced>
+class CFlashUIInventoryNode : public CFlowGameSDKBaseNode<eNCT_Instanced>
 {
 public:
-	CFlashUIInventoryNode( SActivationInfo * pActInfo );
+	CFlashUIInventoryNode(SActivationInfo* pActInfo);
 	~CFlashUIInventoryNode();
 
-	virtual void GetConfiguration( SFlowNodeConfig &config );
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo );
-	virtual void GetMemoryUsage(ICrySizer * s) const { s->Add(*this); }
+	virtual void GetConfiguration(SFlowNodeConfig& config);
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void GetMemoryUsage(ICrySizer* s) const { s->Add(*this); }
 
 	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
@@ -43,15 +44,15 @@ private:
 };
 
 //--------------------------------------------------------------------------------------------
-class CFlashUIGetEquippedAccessoriesNode : public CFlowBaseNode<eNCT_Instanced>
+class CFlashUIGetEquippedAccessoriesNode : public CFlowGameSDKBaseNode<eNCT_Instanced>
 {
 public:
-	CFlashUIGetEquippedAccessoriesNode( SActivationInfo * pActInfo ) {};
+	CFlashUIGetEquippedAccessoriesNode(SActivationInfo* pActInfo) {};
 	~CFlashUIGetEquippedAccessoriesNode();
 
-	virtual void GetConfiguration( SFlowNodeConfig &config );
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo );
-	virtual void GetMemoryUsage(ICrySizer * s) const { s->Add(*this); }
+	virtual void GetConfiguration(SFlowNodeConfig& config);
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void GetMemoryUsage(ICrySizer* s) const { s->Add(*this); }
 
 	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
@@ -73,16 +74,16 @@ private:
 };
 
 //--------------------------------------------------------------------------------------------
-class CFlashUIGetCompatibleAccessoriesNode : public CFlowBaseNode<eNCT_Instanced>
+class CFlashUIGetCompatibleAccessoriesNode : public CFlowGameSDKBaseNode<eNCT_Instanced>
 {
 public:
-	CFlashUIGetCompatibleAccessoriesNode ( SActivationInfo * pActInfo ) {};
-	~CFlashUIGetCompatibleAccessoriesNode ();
+	CFlashUIGetCompatibleAccessoriesNode(SActivationInfo* pActInfo) {};
+	~CFlashUIGetCompatibleAccessoriesNode();
 
-	virtual void GetConfiguration( SFlowNodeConfig &config );
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo );
-	virtual void GetMemoryUsage(ICrySizer * s) const { s->Add(*this); }
-	
+	virtual void GetConfiguration(SFlowNodeConfig& config);
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void GetMemoryUsage(ICrySizer* s) const { s->Add(*this); }
+
 	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
 		return new CFlashUIGetCompatibleAccessoriesNode(pActInfo);
@@ -102,15 +103,15 @@ private:
 };
 
 //--------------------------------------------------------------------------------------------
-class CFlashUICheckAccessoryState: public CFlowBaseNode<eNCT_Instanced>
+class CFlashUICheckAccessoryState : public CFlowGameSDKBaseNode<eNCT_Instanced>
 {
 public:
-	CFlashUICheckAccessoryState ( SActivationInfo * pActInfo ) {};
-	~CFlashUICheckAccessoryState ();
+	CFlashUICheckAccessoryState(SActivationInfo* pActInfo) {};
+	~CFlashUICheckAccessoryState();
 
-	virtual void GetConfiguration( SFlowNodeConfig &config );
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo );
-	virtual void GetMemoryUsage(ICrySizer * s) const { s->Add(*this); }
+	virtual void GetConfiguration(SFlowNodeConfig& config);
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void GetMemoryUsage(ICrySizer* s) const { s->Add(*this); }
 
 	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
@@ -133,15 +134,15 @@ private:
 };
 
 //--------------------------------------------------------------------------------------------
-class CSetEquipmentLoadoutNode: public CFlowBaseNode<eNCT_Instanced>
+class CSetEquipmentLoadoutNode : public CFlowGameSDKBaseNode<eNCT_Instanced>
 {
 public:
-	CSetEquipmentLoadoutNode ( SActivationInfo * pActInfo ) {};
-	~CSetEquipmentLoadoutNode () {};
+	CSetEquipmentLoadoutNode(SActivationInfo* pActInfo) {};
+	~CSetEquipmentLoadoutNode() {};
 
-	virtual void GetConfiguration( SFlowNodeConfig &config );
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo );
-	virtual void GetMemoryUsage(ICrySizer * s) const { s->Add(*this); }
+	virtual void GetConfiguration(SFlowNodeConfig& config);
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void GetMemoryUsage(ICrySizer* s) const { s->Add(*this); }
 
 	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
@@ -158,6 +159,3 @@ private:
 	{
 	};
 };
-
-
-#endif

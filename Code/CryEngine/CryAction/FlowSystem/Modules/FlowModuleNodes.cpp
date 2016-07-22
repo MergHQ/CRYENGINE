@@ -14,7 +14,6 @@
 
 #include "StdAfx.h"
 #include "FlowModuleNodes.h"
-#include <CryFlowGraph/IFlowSystem.h>
 #include "ModuleManager.h"
 #include "ILevelSystem.h"
 
@@ -324,7 +323,7 @@ void CFlowModuleReturnNode::OnActivate(bool success)
 {
 	if (MODULEID_INVALID != m_ownerId)
 	{
-		CFlowGraphModuleManager* pModuleManager = static_cast<CFlowSystem*>(gEnv->pFlowSystem)->GetModuleManager();
+		CFlowGraphModuleManager* pModuleManager = static_cast<CFlowGraphModuleManager*>(gEnv->pFlowSystem->GetIModuleManager());
 		assert(pModuleManager);
 
 		// Construct params from ports
@@ -532,7 +531,7 @@ void CFlowModuleCallNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActIn
 				params.push_back(GetPortAny(pActInfo, i));
 			}
 
-			CFlowGraphModuleManager* pModuleManager = static_cast<CFlowSystem*>(gEnv->pFlowSystem)->GetModuleManager();
+			CFlowGraphModuleManager* pModuleManager = static_cast<CFlowGraphModuleManager*>(gEnv->pFlowSystem->GetIModuleManager());
 			assert(pModuleManager);
 
 			// If no existing module instance, create one
@@ -550,7 +549,7 @@ void CFlowModuleCallNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActIn
 		}
 		else if (IsPortActive(pActInfo, eIP_Cancel))
 		{
-			CFlowGraphModuleManager* pModuleManager = static_cast<CFlowSystem*>(gEnv->pFlowSystem)->GetModuleManager();
+			CFlowGraphModuleManager* pModuleManager = static_cast<CFlowGraphModuleManager*>(gEnv->pFlowSystem->GetIModuleManager());
 			assert(pModuleManager);
 
 			if (m_instanceId != MODULEINSTANCE_INVALID)

@@ -1,21 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   GameTokenNode.cpp
-//  Version:     v1.00
-//  Created:     03-11-2005 by AlexL
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
-#include <FlowSystem/Nodes/FlowBaseNode.h>
-#include <CryGame/IGameTokens.h>
-
 #include "CryAction.h"
+
+#include <CryGame/IGameTokens.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 namespace
 {

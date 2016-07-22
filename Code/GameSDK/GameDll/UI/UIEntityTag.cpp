@@ -4,7 +4,7 @@
 //  File name:   UIEntityTag.cpp
 //  Version:     v1.00
 //  Created:     30/4/2011 by Paul Reindell.
-//  Description: 
+//  Description:
 // -------------------------------------------------------------------------
 //  History:
 //
@@ -12,11 +12,12 @@
 
 #include "StdAfx.h"
 #include "UIEntityTag.h"
+#include "UIManager.h"
+
 #include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <IViewSystem.h>
-#include "Nodes/G2FlowBaseNode.h"
-#include "UIManager.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 ////////////////////////////////////////////////////////////////////////////
 void CUIEntityTag::InitEventSystem()
@@ -25,11 +26,11 @@ void CUIEntityTag::InitEventSystem()
 		return;
 
 	// event system to receive events from UI
-	m_pUIOFct = gEnv->pFlashUI->CreateEventSystem( "UIEntityTag", IUIEventSystem::eEST_UI_TO_SYSTEM );
+	m_pUIOFct = gEnv->pFlashUI->CreateEventSystem("UIEntityTag", IUIEventSystem::eEST_UI_TO_SYSTEM);
 	s_EventDispatcher.Init(m_pUIOFct, this, "UIEntityTag");
 
 	{
-		SUIEventDesc evtDesc( "AddEntityTag", "Adds a 3D entity Tag" );
+		SUIEventDesc evtDesc("AddEntityTag", "Adds a 3D entity Tag");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_Int>("EntityID", "Entity ID of tagged entity");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_String>("uiTemplates_Template", "Movieclip Template");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_Int>("InstanceID", "UIElement instance id");
@@ -38,30 +39,30 @@ void CUIEntityTag::InitEventSystem()
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_Bool>("ScaleMC", "If set to true it will scale the MC according to 3D pos");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_Bool>("AttachedToCam", "If the pos will be \"Offset\" from camera otherwise offset from entity");
 		evtDesc.OutputParams.AddParam<SUIParameterDesc::eUIPT_String>("MCInstanceName", "Name of the Movieclip instance for the tag");
-		s_EventDispatcher.RegisterEvent( evtDesc, &CUIEntityTag::OnAddTaggedEntity );
+		s_EventDispatcher.RegisterEvent(evtDesc, &CUIEntityTag::OnAddTaggedEntity);
 	}
 
 	{
-		SUIEventDesc evtDesc( "UpdateEntityTag", "Updates a 3D entity Tag" );
+		SUIEventDesc evtDesc("UpdateEntityTag", "Updates a 3D entity Tag");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_Int>("EntityID", "Entity ID of tagged entity");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_String>("TagIDX", "Custom IDX to identify entity tag.");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_Vec3>("Offset", "Offset in camera space relative to entity pos");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_Bool>("AttachedToCam", "If the pos will be \"Offset\" from camera otherwise offset from entity");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_Float>("LerpSpeed", "Define speed of lerp between old and new pos, 0=instant");
-		s_EventDispatcher.RegisterEvent( evtDesc, &CUIEntityTag::OnUpdateTaggedEntity );
+		s_EventDispatcher.RegisterEvent(evtDesc, &CUIEntityTag::OnUpdateTaggedEntity);
 	}
 
 	{
-		SUIEventDesc evtDesc( "RemoveEntityTag", "Removes a 3D entity Tag" );
+		SUIEventDesc evtDesc("RemoveEntityTag", "Removes a 3D entity Tag");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_Int>("EntityID", "Entity ID of tagged entity");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_String>("TagIDX", "Custom IDX to identify entity tag.");
-		s_EventDispatcher.RegisterEvent( evtDesc, &CUIEntityTag::OnRemoveTaggedEntity );
+		s_EventDispatcher.RegisterEvent(evtDesc, &CUIEntityTag::OnRemoveTaggedEntity);
 	}
 
 	{
-		SUIEventDesc evtDesc( "RemoveAllEntityTag", "Removes all 3D entity Tags for given entity" );
+		SUIEventDesc evtDesc("RemoveAllEntityTag", "Removes all 3D entity Tags for given entity");
 		evtDesc.AddParam<SUIParameterDesc::eUIPT_Int>("EntityID", "Entity ID of tagged entity");
-		s_EventDispatcher.RegisterEvent( evtDesc, &CUIEntityTag::OnRemoveAllTaggedEntity );
+		s_EventDispatcher.RegisterEvent(evtDesc, &CUIEntityTag::OnRemoveAllTaggedEntity);
 	}
 
 	gEnv->pFlashUI->RegisterModule(this, "CUIEntityDynTexTag");
@@ -77,19 +78,20 @@ void CUIEntityTag::UnloadEventSystem()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-void CUIEntityTag::OnUpdate( float fDelta )
+void CUIEntityTag::OnUpdate(float fDelta)
 {
 	const CCamera& cam = GetISystem()->GetViewCamera();
 	const Matrix34& camMat = cam.GetMatrix();
 
 	std::multimap<float, STagInfo*> sortMap;
- 	for (TTags::iterator it = m_Tags.begin(); it != m_Tags.end(); ++it)
- 	{
- 		IEntity* pOwner = gEnv->pEntitySystem->GetEntity(it->OwnerId);
+	for (TTags::iterator it = m_Tags.begin(); it != m_Tags.end(); ++it)
+	{
+		IEntity* pOwner = gEnv->pEntitySystem->GetEntity(it->OwnerId);
 		assert(pOwner);
- 		if (pOwner)
- 		{
-			Vec3 vPos = AddOffset(camMat, it->bAttachedToCam ? camMat.GetTranslation() : pOwner->GetWorldPos(), it->vOffset, it->bAttachedToCam);;
+		if (pOwner)
+		{
+			Vec3 vPos = AddOffset(camMat, it->bAttachedToCam ? camMat.GetTranslation() : pOwner->GetWorldPos(), it->vOffset, it->bAttachedToCam);
+			;
 
 			if (it->fLerp < 1)
 			{
@@ -115,7 +117,7 @@ void CUIEntityTag::OnUpdate( float fDelta )
 			it->pVarObj->SetDisplayInfo(info);
 			sortMap.insert(std::make_pair(vFlashPos.z, &(*it)));
 		}
- 	}
+	}
 	int depth = 100;
 	for (std::multimap<float, STagInfo*>::reverse_iterator it = sortMap.rbegin(); it != sortMap.rend(); ++it)
 	{
@@ -139,9 +141,9 @@ void CUIEntityTag::Reload()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-void CUIEntityTag::OnInstanceDestroyed( IUIElement* pSender, IUIElement* pDeletedInstance )
+void CUIEntityTag::OnInstanceDestroyed(IUIElement* pSender, IUIElement* pDeletedInstance)
 {
-	for (TTags::iterator it = m_Tags.begin(); it != m_Tags.end();)
+	for (TTags::iterator it = m_Tags.begin(); it != m_Tags.end(); )
 	{
 		if (it->pUIElement == pDeletedInstance)
 			it = m_Tags.erase(it);
@@ -162,14 +164,14 @@ const CUIEntityTag::STagInfo* CUIEntityTag::GetTagInfo(EntityId entityId, const 
 }
 
 ////////////////////////////////////////////////////////////////////////////
-void CUIEntityTag::OnEntityEvent( IEntity *pEntity,SEntityEvent &event )
+void CUIEntityTag::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
 {
 	assert(event.event == ENTITY_EVENT_DONE);
-	RemoveAllEntityTags( pEntity->GetId(), false );
+	RemoveAllEntityTags(pEntity->GetId(), false);
 }
 
 ////////////////////////////////////////////////////////////////////////////
-SUIArgumentsRet CUIEntityTag::OnAddTaggedEntity( EntityId entityId, const char* uiTemplate, int instanceId, const Vec3& offset, const char* idx, bool scale, bool bCamAttached)
+SUIArgumentsRet CUIEntityTag::OnAddTaggedEntity(EntityId entityId, const char* uiTemplate, int instanceId, const Vec3& offset, const char* idx, bool scale, bool bCamAttached)
 {
 	OnRemoveTaggedEntity(entityId, idx);
 	SUIArguments args;
@@ -195,7 +197,7 @@ SUIArgumentsRet CUIEntityTag::OnAddTaggedEntity( EntityId entityId, const char* 
 			const CCamera& cam = GetISystem()->GetViewCamera();
 			const Matrix34& camMat = cam.GetMatrix();
 			Vec3 currPos = AddOffset(camMat, bCamAttached ? camMat.GetTranslation() : pOwner->GetWorldPos(), offset, bCamAttached);
-			m_Tags.push_back( STagInfo(entityId, idx, offset, pVarDesc, pElement, pNewMC, scale, currPos, bCamAttached) );
+			m_Tags.push_back(STagInfo(entityId, idx, offset, pVarDesc, pElement, pNewMC, scale, currPos, bCamAttached));
 			pNewMC->SetVisible(false);
 			SUIArguments res;
 			res.AddArgument(pVarDesc->sDisplayName);
@@ -209,7 +211,7 @@ SUIArgumentsRet CUIEntityTag::OnAddTaggedEntity( EntityId entityId, const char* 
 }
 
 ////////////////////////////////////////////////////////////////////////////
-void CUIEntityTag::OnUpdateTaggedEntity( EntityId entityId, const string& idx, const Vec3& offset, bool bCamAttached, float speed )
+void CUIEntityTag::OnUpdateTaggedEntity(EntityId entityId, const string& idx, const Vec3& offset, bool bCamAttached, float speed)
 {
 	for (TTags::iterator it = m_Tags.begin(); it != m_Tags.end(); ++it)
 	{
@@ -232,7 +234,7 @@ void CUIEntityTag::OnUpdateTaggedEntity( EntityId entityId, const string& idx, c
 }
 
 ////////////////////////////////////////////////////////////////////////////
-void CUIEntityTag::OnRemoveTaggedEntity( EntityId entityId, const string& idx )
+void CUIEntityTag::OnRemoveTaggedEntity(EntityId entityId, const string& idx)
 {
 	for (TTags::iterator it = m_Tags.begin(); it != m_Tags.end(); ++it)
 	{
@@ -248,15 +250,15 @@ void CUIEntityTag::OnRemoveTaggedEntity( EntityId entityId, const string& idx )
 }
 
 ////////////////////////////////////////////////////////////////////////////
-void CUIEntityTag::OnRemoveAllTaggedEntity( EntityId entityId )
+void CUIEntityTag::OnRemoveAllTaggedEntity(EntityId entityId)
 {
 	RemoveAllEntityTags(entityId);
 }
 
 ////////////////////////////////////////////////////////////////////////////
-void CUIEntityTag::RemoveAllEntityTags( EntityId entityId, bool bUnregisterListener )
+void CUIEntityTag::RemoveAllEntityTags(EntityId entityId, bool bUnregisterListener)
 {
-	for (TTags::iterator it = m_Tags.begin(); it != m_Tags.end();)
+	for (TTags::iterator it = m_Tags.begin(); it != m_Tags.end(); )
 	{
 		if (it->OwnerId == entityId)
 		{
@@ -284,7 +286,7 @@ void CUIEntityTag::ClearAllTags()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-bool CUIEntityTag::HasEntityTag( EntityId entityId ) const
+bool CUIEntityTag::HasEntityTag(EntityId entityId) const
 {
 	for (TTags::const_iterator it = m_Tags.begin(); it != m_Tags.end(); ++it)
 	{
@@ -296,18 +298,18 @@ bool CUIEntityTag::HasEntityTag( EntityId entityId ) const
 	return false;
 }
 
-Vec3 CUIEntityTag::AddOffset( const Matrix34& camMat, const Vec3& vPos, const Vec3 &offset, bool bRelToCam )
+Vec3 CUIEntityTag::AddOffset(const Matrix34& camMat, const Vec3& vPos, const Vec3& offset, bool bRelToCam)
 {
 	const Vec3 vViewDir = camMat.GetColumn1();
 	const Vec3 vFaceingPos = camMat.GetColumn3() - vViewDir * 1000.f;
 	const Vec3 vDir = (vPos - vFaceingPos).GetNormalizedSafe(vViewDir);
 	const Vec3 vOffsetX = vDir.Cross(Vec3Constants<float>::fVec3_OneZ).GetNormalizedFast() * offset.x;
 	const Vec3 vOffsetY = vDir * offset.y;
-	const Vec3 vOffsetZ = bRelToCam ? camMat.GetColumn2().GetNormalizedFast() * offset.z :  Vec3(0, 0, offset.z);
+	const Vec3 vOffsetZ = bRelToCam ? camMat.GetColumn2().GetNormalizedFast() * offset.z : Vec3(0, 0, offset.z);
 	return vPos + vOffsetX + vOffsetY + vOffsetZ;
 }
 ////////////////////////////////////////////////////////////////////////////
-REGISTER_UI_EVENTSYSTEM( CUIEntityTag );
+REGISTER_UI_EVENTSYSTEM(CUIEntityTag);
 
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
@@ -320,14 +322,14 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig inputs[] = {
-			InputPortConfig_AnyType("Get",_HELP("Trigger the nodes to get tag instance name")),
-			InputPortConfig<string>("TagIdx",_HELP("The tag idx")),
-			{0}
+			InputPortConfig_AnyType("Get",    _HELP("Trigger the nodes to get tag instance name")),
+			InputPortConfig<string>("TagIdx", _HELP("The tag idx")),
+			{ 0 }
 		};
 
 		static const SOutputPortConfig outputs[] = {
 			OutputPortConfig<string>("MCInstanceName", _HELP("Name of the movieclip instance name")),
-			{0}
+			{ 0 }
 		};
 
 		config.nFlags |= EFLN_TARGET_ENTITY;
@@ -337,12 +339,12 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo* pActInfo)
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		if (event == eFE_Activate && IsPortActive(pActInfo, eI_Get))
 		{
 			string tagIdx = GetPortString(pActInfo, eI_TagIdx);
-			EntityId id =  pActInfo->pEntity != 0 ? pActInfo->pEntity->GetId() : 0;
+			EntityId id = pActInfo->pEntity != 0 ? pActInfo->pEntity->GetId() : 0;
 			CUIEntityTag* pEntityTagSystem = UIEvents::Get<CUIEntityTag>();
 			assert(pEntityTagSystem);
 			const CUIEntityTag::STagInfo* pInfo = pEntityTagSystem ? pEntityTagSystem->GetTagInfo(id, tagIdx) : NULL;
@@ -350,7 +352,7 @@ public:
 		}
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const { s->Add(*this); }
+	virtual void GetMemoryUsage(ICrySizer* s) const { s->Add(*this); }
 
 private:
 	enum EInputs
@@ -364,4 +366,4 @@ private:
 	};
 };
 ////////////////////////////////////////////////////////////////////////////
-REGISTER_FLOW_NODE( "UI:Functions:UIEntityTag:GetEntityTag", CGetEntityTagNode );
+REGISTER_FLOW_NODE("UI:Functions:UIEntityTag:GetEntityTag", CGetEntityTagNode);

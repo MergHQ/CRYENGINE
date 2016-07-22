@@ -7,6 +7,14 @@ def build(bld):
 		vs_filter	= 'Launcher',
 		win_file_list   = 'launcher.waf_files', 
 		features    = [ 'copy_dbghelp' ],
+		
+		#use_module fails when compiling multiple launchers (eg. trybuild spec)
+		#use_module = ['jsmn'],
+		includes = [
+				Path('Code/SDKs/jsmn'),
+				Path('Code/Libs/jsmn')
+		],
+		defines = ['JSMN_STRICT', 'JSMN_PARENT_LINKS'],
 
 		lib                  = 'Shell32', 
 		additional_manifests = 'DPIAware.xml', 		

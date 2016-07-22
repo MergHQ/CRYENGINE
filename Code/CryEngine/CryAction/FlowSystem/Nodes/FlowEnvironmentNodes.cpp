@@ -1,7 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CrySystem/IStreamEngine.h>
@@ -751,11 +752,11 @@ public:
 class CFlowNode_PresetSwitch : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_PresetSwitch( SActivationInfo * pActInfo )
+	CFlowNode_PresetSwitch(SActivationInfo* pActInfo)
 	{
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -772,19 +773,19 @@ public:
 		eOP_Failed,
 	};
 
-	void GetConfiguration( SFlowNodeConfig& config )
+	void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void("Activate", _HELP("Input for switching time of day to this preset")),
+			InputPortConfig_Void("Activate",  _HELP("Input for switching time of day to this preset")),
 			InputPortConfig<string>("Preset", _HELP("Preset name")),
 			//blend time might be here
-			{0}
+			{ 0 }
 		};
 
 		static const SOutputPortConfig out_config[] = {
 			OutputPortConfig_Void("Success", _HELP("Triggered when successfully finished")),
-			OutputPortConfig_Void("Failed", _HELP("Triggered when something went wrong")),
-			{0}
+			OutputPortConfig_Void("Failed",  _HELP("Triggered when something went wrong")),
+			{ 0 }
 		};
 
 		config.pInputPorts = in_config;
@@ -793,7 +794,7 @@ public:
 		config.SetCategory(EFLN_ADVANCED);
 	}
 
-	void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo )
+	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
 		{
@@ -805,7 +806,7 @@ public:
 					ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
 					bool bResult = false;
 
-					if(pTOD)
+					if (pTOD)
 					{
 						bResult = pTOD->SetCurrentPreset(sPresetName.c_str());
 					}

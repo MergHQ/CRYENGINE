@@ -41,7 +41,8 @@ def build(bld):
 			'lz4',
 			'md5',
 			'yasli',
-			'tomcrypt'
+			'tomcrypt',
+			'jsmn'
 		],
 		win_use_module = oculus_dependency,
 

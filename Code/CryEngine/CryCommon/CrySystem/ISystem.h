@@ -103,6 +103,7 @@ struct IRemoteCommandManager;
 struct IWindowMessageHandler;
 struct SFunctor;
 struct IScaleformHelper;
+struct ICryPluginManager;
 
 class CBootProfilerRecord;
 
@@ -1222,6 +1223,7 @@ struct ISystem
 	virtual IScriptSystem*         GetIScriptSystem() = 0;
 	virtual IConsole*              GetIConsole() = 0;
 	virtual IRemoteConsole*        GetIRemoteConsole() = 0;
+	virtual ICryPluginManager*     GetIPluginManager() = 0;
 
 	//! \return Can be NULL, because it only exists when running through the editor, not in pure game mode.
 	virtual IResourceManager*                  GetIResourceManager() = 0;

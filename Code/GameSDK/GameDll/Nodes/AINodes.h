@@ -2,11 +2,9 @@
 
 #pragma once
 
-#ifndef AINodes_H
-#define AINodes_H
-
-#include "G2FlowBaseNode.h"
 #include "AI/Assignment.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_BattleFrontControl : public CFlowBaseNode<eNCT_Instanced>
 {
@@ -21,15 +19,15 @@ public:
 
 	static const SInputPortConfig inputPorts[];
 
-	CFlowNode_BattleFrontControl(SActivationInfo * activationInformation)
+	CFlowNode_BattleFrontControl(SActivationInfo* activationInformation)
 		: m_enabled(false)
 	{
 	}
 
-	virtual void GetConfiguration(SFlowNodeConfig& config);
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo *activationInformation);
-	virtual void GetMemoryUsage(ICrySizer * sizer) const;
-	virtual IFlowNodePtr Clone(SActivationInfo *pActInfo) { return new CFlowNode_BattleFrontControl(pActInfo); }
+	virtual void         GetConfiguration(SFlowNodeConfig& config);
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* activationInformation);
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const;
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_BattleFrontControl(pActInfo); }
 
 private:
 	bool m_enabled;
@@ -50,13 +48,12 @@ public:
 
 	virtual void GetConfiguration(SFlowNodeConfig& config);
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void GetMemoryUsage(ICrySizer * sizer) const { sizer->Add(*this); }
+	virtual void GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
 
 private:
-	void SetFaction(SActivationInfo* pActInfo);
+	void              SetFaction(SActivationInfo* pActInfo);
 	class CGunTurret* GetTurret(IEntity& entity) const;
 };
-
 
 class CFlowNode_AICorpses : public CFlowBaseNode<eNCT_Singleton>
 {
@@ -73,9 +70,6 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config);
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
 
-	virtual void GetMemoryUsage(ICrySizer * sizer) const;
+	virtual void GetMemoryUsage(ICrySizer* sizer) const;
 
 };
-
-
-#endif // AINodes_H

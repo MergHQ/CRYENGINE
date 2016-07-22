@@ -19,16 +19,17 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+#include "ActionMap.h"
+#include "FlowFrameworkBaseNode.h"
+#include "ForceFeedbackSystem/ForceFeedbackSystem.h"
+
 #include <CryAction.h>
 #include <CryActionCVars.h>
+#include <CryInput/IInput.h>
 #include <IGameObjectSystem.h>
 #include <CryString/StringUtils.h>
-#include <CryInput/IInput.h>
-#include "ForceFeedbackSystem/ForceFeedbackSystem.h"
-#include "ActionMap.h"
 
-class CFlowNode_InputKey : public CFlowBaseNode<eNCT_Instanced>, public IInputEventListener
+class CFlowNode_InputKey : public CFlowFrameworkBaseNode<eNCT_Instanced>, public IInputEventListener
 {
 	enum INPUTS
 	{
@@ -175,7 +176,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-class CFlowNode_ForceFeedback : public CFlowBaseNode<eNCT_Singleton>
+class CFlowNode_ForceFeedback : public CFlowFrameworkBaseNode<eNCT_Singleton>
 {
 	enum INPUTS
 	{

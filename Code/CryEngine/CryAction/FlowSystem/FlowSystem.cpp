@@ -5,9 +5,9 @@
 #include "FlowSystem.h"
 
 #include <CryAction.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 #include "FlowGraph.h"
-#include "Nodes/FlowBaseNode.h"
 #include "Nodes/FlowLogNode.h"
 #include "Nodes/FlowStartNode.h"
 #include "Nodes/FlowTrackEventNode.h"
@@ -15,7 +15,6 @@
 
 #include "Nodes/FlowScriptedNode.h"
 #include "Nodes/FlowCompositeNode.h"
-#include "Nodes/FlowTimeNode.h"
 #include "Nodes/FlowEntityNode.h"
 
 #include "Inspectors/FlowInspectorDefault.h"
@@ -43,8 +42,8 @@ CFlowSystem::TSFGProfile CFlowSystem::FGProfile;
 //////////////////////////////////////////////////////////////////////////
 // CAutoFlowNodeFactoryBase
 //////////////////////////////////////////////////////////////////////////
-CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pFirst = 0;
-CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = 0;
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pFirst = nullptr;
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = nullptr;
 //////////////////////////////////////////////////////////////////////////
 
 template<class T>

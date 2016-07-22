@@ -2,7 +2,8 @@
 
 #include "StdAfx.h"
 #include "FlowLogNode.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 CFlowLogNode::CFlowLogNode()
 {

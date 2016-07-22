@@ -18,6 +18,8 @@
 #include "PakVars.h"
 #include "MemoryFragmentationProfiler.h"  // CMemoryFragmentationProfiler
 
+#include "ExtensionSystem/CryPluginManager.h"
+
 struct IConsoleCmdArgs;
 class CServerThrottle;
 struct ICryFactoryRegistryImpl;
@@ -353,6 +355,8 @@ public:
 	IHardwareMouse*              GetIHardwareMouse() override         { return m_env.pHardwareMouse; }
 	ISystemEventDispatcher*      GetISystemEventDispatcher() override { return m_pSystemEventDispatcher; }
 	ITestSystem*                 GetITestSystem() override            { return m_pTestSystem; }
+	ICryPluginManager*           GetIPluginManager() override         { return m_pPluginManager; }
+
 	IResourceManager*            GetIResourceManager() override;
 	ITextModeConsole*            GetITextModeConsole() override;
 	IFileChangeMonitor*          GetIFileChangeMonitor() override   { return m_env.pFileChangeMonitor; }
@@ -475,6 +479,8 @@ public:
 	virtual ESystemConfigSpec GetConfigSpec(bool bClient = true) override;
 	virtual void              SetConfigSpec(ESystemConfigSpec spec, bool bClient) override;
 	virtual ESystemConfigSpec GetMaxConfigSpec() const override;
+
+	void                      LoadProjectConfiguration();
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual int        SetThreadState(ESubsystem subsys, bool bActive) override;
@@ -731,6 +737,7 @@ private: // ------------------------------------------------------
 	SDllHandles                        m_dll;
 
 	std::map<CCryNameCRC, WIN_HMODULE> m_moduleDLLHandles;
+	std::map<CCryNameCRC, WIN_HMODULE> m_extensionDLLHandles;
 
 	//! THe streaming engine
 	CStreamEngine* m_pStreamEngine;
@@ -792,6 +799,7 @@ private: // ------------------------------------------------------
 	ICVar* m_sys_dll_game;
 	ICVar* m_sys_game_folder;
 	ICVar* m_sys_user_folder;
+
 #if !defined(_RELEASE)
 	ICVar* m_sys_resource_cache_folder;
 #endif
@@ -857,6 +865,7 @@ private: // ------------------------------------------------------
 	ICVar* m_sys_enable_budgetmonitoring;
 	ICVar* m_sys_memory_debug;
 	ICVar* m_sys_preload;
+	ICVar* m_sys_use_Mono;
 
 	//	ICVar *m_sys_filecache;
 	ICVar* m_gpu_particle_physics;
@@ -1028,6 +1037,7 @@ protected: // -------------------------------------------------------------
 	CResourceManager*                         m_pResourceManager;
 	ITextModeConsole*                         m_pTextModeConsole;
 	INotificationNetwork*                     m_pNotificationNetwork;
+	CCryPluginManager*                        m_pPluginManager;
 
 	string                                    m_binariesDir;
 	string                                    m_currentLanguageAudio;

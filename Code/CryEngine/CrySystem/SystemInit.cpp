@@ -15,7 +15,11 @@
 #include "MemoryManager.h"
 #include "ImeManager.h"
 #include <CrySystem/IEngineModule.h>
+#include <CrySystem/ICryPlugin.h>
 #include <CryExtension/CryCreateClassInstance.h>
+
+#include <jsmn.h>
+#include <jsmnutil.h>
 
 #if (CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID) && !defined(DEDICATED_SERVER)
 	#include <dlfcn.h>
@@ -73,6 +77,7 @@
 #include "MTSafeAllocator.h"
 #include "NotificationNetwork.h"
 #include "HotUpdate.h"
+#include "ExtensionSystem/CryPluginManager.h"
 #include "ExtensionSystem/CryFactoryRegistryImpl.h"
 #include "ExtensionSystem/TestCases/TestExtensions.h"
 #include "ProfileLogSystem.h"
@@ -1086,6 +1091,10 @@ bool CSystem::InitMonoBridge()
 	{
 		gEnv->pLog->LogWarning("MonoRuntime not created.");
 	}
+	else
+	{
+		m_env.pMonoRuntime->Initialize(eMLL_NULL);
+	}
 
 	return true;
 }
@@ -1795,7 +1804,7 @@ bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 	// Avoids fixing paths for all Sandbox resources.
 	// Causes the undesired behavior that %ENGINEROOT% files are preferred to game project resources
 	// Avoid game folder being located twice by FileUtil::ScanDirectory() if not using Game Project Creation.
-	if (m_pCmdLine->FindArg(eCLAT_Pre, "projectroot"))
+	if (m_pCmdLine->FindArg(eCLAT_Pre, "project"))
 		pCryPak->AddMod("%ENGINEROOT%");
 
 	// Create Engine folder mod mapping only for Engine assets
@@ -1837,6 +1846,85 @@ void CSystem::LoadPatchPaks()
 #endif // #if CRY_PLATFORM_DURANGO
 }
 /////////////////////////////////////////////////////////////////////////////////
+
+static string file_get_contents(const string& sProjectFile)
+{
+#if CRY_PLATFORM_WINDOWS
+	FILE* file = _wfopen(CryStringUtils::UTF8ToWStr(sProjectFile), L"rb");
+#else
+	FILE* file = fopen(sProjectFile.c_str(), "rb");
+#endif
+
+	string buffer;
+	if (file != NULL)
+	{
+		fseek(file, 0, SEEK_END);
+		size_t size = ftell(file);
+
+		buffer.resize(size);
+
+		fseek(file, 0, SEEK_SET);
+		fread((void*)&buffer[0], size, 1, file);
+		fclose(file);
+	}
+
+	return buffer;
+}
+
+static std::vector<jsmntok_t> json_decode(const string& buffer)
+{
+	std::vector<jsmntok_t> tokens;
+	tokens.resize(64);
+
+	jsmn_parser parser;
+	jsmn_init(&parser);
+	int ntokens = jsmn_parse(&parser, buffer.data(), buffer.size(), tokens.data(), tokens.size());
+	while (ntokens == JSMN_ERROR_NOMEM)
+	{
+		tokens.resize(tokens.size() * 2);
+		ntokens = jsmn_parse(&parser, buffer.data(), buffer.size(), tokens.data(), tokens.size());
+	}
+
+	if (0 <= ntokens)
+		tokens.resize(ntokens);
+	else
+		tokens.clear();
+
+	return tokens;
+}
+
+void CSystem::LoadProjectConfiguration()
+{
+	const ICmdLineArg* arg = m_pCmdLine->FindArg(eCLAT_Pre, "project");
+	if (arg == nullptr)
+		return;
+
+	string sProjectFile = PathUtil::GetFile(arg->GetValue());
+
+	string js = file_get_contents(sProjectFile);
+	std::vector<jsmntok_t> tokens = json_decode(js);
+
+	const jsmntok_t* assets = jsmnutil_xpath(js.data(), tokens.data(), "content", "assets", "0", NULL);
+	if (assets != NULL && assets->type == JSMN_STRING)
+	{
+		string sSysGameFolder(js.data() + assets->start, assets->end - assets->start);
+		m_sys_game_folder->Set(sSysGameFolder.c_str());
+	}
+
+#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT)
+	const jsmntok_t* shared = jsmnutil_xpath(js.data(), tokens.data(), "content", "libs", "0", "shared", "win_x64", nullptr);
+#elif (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT)
+	const jsmntok_t* shared = jsmnutil_xpath(js.data(), tokens.data(), "content", "libs", "0", "shared", "win_x86", nullptr);
+#else
+	const jsmntok_t* shared = nullptr;
+#endif
+	if (shared && shared->type == JSMN_STRING)
+	{
+		string sSysDllGame(js.data() + shared->start, shared->end - shared->start);
+		m_sys_dll_game->Set(PathUtil::GetFile(sSysDllGame.c_str()));
+	}
+}
+
 bool CSystem::InitFileSystem_LoadEngineFolders()
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -1896,7 +1984,7 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 #else
 		LoadConfiguration("system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit);
 #endif
-		LoadConfiguration("project.cfg", pCVarsWhiteListConfigSink);
+		LoadProjectConfiguration();
 	}
 
 	// We set now the correct "game" folder to use in Pak File
@@ -2790,7 +2878,6 @@ L_done:;
 		{
 			ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
 			LoadConfiguration("system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit); // We have to load this file again since first time we did it without devmode
-			LoadConfiguration("project.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit);
 			LoadConfiguration("user.cfg", pCVarsWhiteListConfigSink);
 
 #if defined(ENABLE_STATS_AGENT)
@@ -3419,7 +3506,11 @@ L_done:;
 				m_pUserCallback->OnInitProgress("Initializing MonoBridge...");
 			}
 
-			InitMonoBridge();
+			ICVar* pCVar = m_env.pConsole->GetCVar("sys_use_mono");
+			if (pCVar && pCVar->GetIVal())
+			{
+				InitMonoBridge();
+			}
 		}
 
 		InlineInitializationProcessing("CSystem::Init InitInterface");
@@ -4701,6 +4792,7 @@ void CSystem::CreateSystemVars()
 	m_sys_dll_ai = REGISTER_STRING("sys_dll_ai", DLL_AI, dllFlags, "Specifies the DLL to load for the AI system");
 	m_sys_dll_game = REGISTER_STRING("sys_dll_game", DLL_GAME, dllFlags, "Specifies the game DLL to load");
 	m_sys_game_folder = REGISTER_STRING("sys_game_folder", "GameZero", 0, "Specifies the game folder to read all data from. Can be fully pathed for external folders or relative path for folders inside the root.");
+
 	m_sys_dll_response_system = REGISTER_STRING("sys_dll_response_system", "CryDynamicResponseSystem", dllFlags, "Specifies the DLL to load for the dynamic response system");
 
 	g_cvars.sys_build_folder = REGISTER_STRING("sys_build_folder", "", 0, "Optionally specifies external full path to the build folder to read pak files from. Can be a full path to an external folder or a relative path to a folder inside of the local build.");
@@ -5106,6 +5198,7 @@ void CSystem::CreateSystemVars()
 	REGISTER_CVAR2("sys_force_installtohdd_mode", &g_cvars.sys_force_installtohdd_mode, 0, VF_NULL, "Forces install to HDD mode even when doing DVD emulation");
 
 	m_sys_preload = REGISTER_INT("sys_preload", 0, 0, "Preload Game Resources");
+	m_sys_use_Mono = REGISTER_INT("sys_use_mono", 1, 0, "Use Mono Framework");
 
 #define CRASH_CMD_HELP                      \
   " 0=off\n"                                \

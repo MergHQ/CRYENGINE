@@ -2,10 +2,10 @@
 
 #include "StdAfx.h"
 
-#include "FlowBaseNode.h"
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CrySystem/VR/IHMDManager.h>
 #include <CryRenderer/IStereoRenderer.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CVRTools : public CFlowBaseNode<eNCT_Singleton>
 {

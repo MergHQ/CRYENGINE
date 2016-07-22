@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CLogicNode : public CFlowBaseNode<eNCT_Instanced>
 {

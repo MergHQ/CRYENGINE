@@ -95,17 +95,15 @@
       "FlowSystem/Nodes/FlowNodeAIHelicopter.cpp",
       "FlowSystem/Nodes/FlowCustomActionNodes.h",
       "FlowSystem/Nodes/FlowPrefabNodes.h",
-      "FlowSystem/Nodes/FlowBaseNode.h",
+      "FlowSystem/Nodes/FlowFrameworkBaseNode.h",
       "FlowSystem/Nodes/FlowCompositeNode.h",
       "FlowSystem/Nodes/FlowDelayNode.h",
       "FlowSystem/Nodes/FlowEntityNode.h",
       "FlowSystem/Nodes/FlowLogNode.h",
       "FlowSystem/Nodes/FlowNodeAIAction.h",
-      "FlowSystem/Nodes/FlowNodeStereoparameters.h",
       "FlowSystem/Nodes/FlowNoiseNodes.h",
       "FlowSystem/Nodes/FlowScriptedNode.h",
       "FlowSystem/Nodes/FlowStartNode.h",
-      "FlowSystem/Nodes/FlowTimeNode.h",
       "FlowSystem/Nodes/FlowTrackEventNode.h",
       "FlowSystem/Nodes/FlowMannequinNodes.cpp",
       "FlowSystem/Nodes/FlowMaterialNodes.cpp",
@@ -1026,10 +1024,6 @@
       "IViewSystem.h",
       "IWeapon.h",
       "IWorldQuery.h"
-    ],
-    "Player Profiles/jsmn":[
-      "PlayerProfiles/jsmn/jsmn.h",
-      "PlayerProfiles/jsmn/jsmn.c"
     ]
   }
 }

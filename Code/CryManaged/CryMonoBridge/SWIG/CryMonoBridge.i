@@ -7,5 +7,6 @@
 #include <CryMono/IMonoRuntime.h>
 %}
 %feature("director") IMonoListener;
+%feature("director") ICryEnginePlugin;
 %feature("director") IMonoEntityPropertyHandler;
 %include "../../../../CryEngine/CryCommon/CryMono/IMonoRuntime.h"

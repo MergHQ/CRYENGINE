@@ -13,13 +13,12 @@
  *********************************************************************/
 
 #include "StdAfx.h"
-#include <CryAISystem/IAIAction.h>
-#include <CryAISystem/IAISystem.h>
-#include <CryAISystem/IAgent.h>
-#include "FlowBaseNode.h"
 #include "FlowEntityNode.h"
 #include "AIProxy.h"
 
+#include <CryAISystem/IAIAction.h>
+#include <CryAISystem/IAISystem.h>
+#include <CryAISystem/IAgent.h>
 #include <CryAISystem/IInterestSystem.h>
 #include <CryAISystem/INavigation.h>
 #include <CryAISystem/IAIObjectManager.h>

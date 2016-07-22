@@ -7,8 +7,8 @@
 #include "IVehicleSystem.h"
 #include "VehicleSystem/Vehicle.h"
 #include "VehicleSystem/VehicleSeat.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 IFlowNodePtr CFlowVehicleSeat::Clone(SActivationInfo* pActivationInfo)
 {

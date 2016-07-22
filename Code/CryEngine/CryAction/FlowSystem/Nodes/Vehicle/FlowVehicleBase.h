@@ -1,20 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description: Implements a flow node to vehicle seats
+#pragma once
 
-   -------------------------------------------------------------------------
-   History:
-   - 12:12:2005: Created by Mathieu Pinard
-
-*************************************************************************/
-#ifndef __FLOWVEHICLEBASE_H__
-#define __FLOWVEHICLEBASE_H__
-
-#include "../FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowVehicleBase
 	: public CFlowBaseNode<eNCT_Instanced>,
@@ -44,5 +32,3 @@ protected:
 
 	EntityId    m_vehicleId;
 };
-
-#endif

@@ -1,12 +1,12 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
 
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryAISystem/IAISystem.h>
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/IAIObject.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_Dynamics : public CFlowBaseNode<eNCT_Singleton>
 {
@@ -765,28 +765,28 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig<SFlowSystemVoid>("Create", SFlowSystemVoid(), _HELP("Creates the constraint")),
-			InputPortConfig<SFlowSystemVoid>("Break",  SFlowSystemVoid(), _HELP("Breaks a constraint Id from EntityA if EntityA is activated, or a previously created one")),
-			InputPortConfig<int>("Id",                 1000,              _HELP("Requested constraint Id; -1 to auto-generate, -2 to auto-generate and remember")),
-			InputPortConfig<EntityId>("EntityA",       0,                 _HELP("Constraint owner entity (can't be an actor; should be lighter than EntityB for best results)")),
-			InputPortConfig<int>("PartIdA",            -1,                _HELP("Part id to attach to; -1 to use default")),
-			InputPortConfig<EntityId>("EntityB",       0,                 _HELP("Constrained entity (can be an actor)")),
-			InputPortConfig<int>("PartIdB",            -1,                _HELP("Part id to attach to; -1 to use default")),
-			InputPortConfig<int>("Type",				_HELP("Constraint type"), _HELP("Type"), _UICONFIG("enum_int:Point=0,RotOnly=1,Line=2,Plane=3") ),
-			InputPortConfig<Vec3>("Point",             Vec3(ZERO),        _HELP("Connection point in world space")),
-			InputPortConfig<Vec3>("PointB",            Vec3(ZERO),        _HELP("Connection point on entity B in world space (if not set, assumed same as Point)")),
-			InputPortConfig<bool>("IgnoreCollisions",  true,              _HELP("Disables collisions between constrained entities")),
-			InputPortConfig<bool>("Breakable",         false,             _HELP("Break if force limit is reached")),
-			InputPortConfig<bool>("ForceAwake",        false,             _HELP("Make EntityB always awake; restore previous sleep params on Break")),
-			InputPortConfig<bool>("MoveEnforcement",   true,              _HELP("Teleport one enity if the other has its position updated from outside the physics")),
-			InputPortConfig<float>("MaxForce",         0.0f,              _HELP("Force limit")),
-			InputPortConfig<float>("MaxTorque",        0.0f,              _HELP("Rotational force (torque) limit")),
-			InputPortConfig<bool>("MaxForceRelative",  true,              _HELP("Make limits relative to EntityB's mass")),
-			InputPortConfig<Vec3>("TwistAxis",         Vec3(0,            0,                                                                                                     1),_HELP("Main rotation axis in world space")),
-			InputPortConfig<float>("MinTwist",         0.0f,              _HELP("Lower rotation limit around TwistAxis. Linear limit for line constraints")),
-			InputPortConfig<float>("MaxTwist",         0.0f,              _HELP("Upper rotation limit around TwistAxis. Linear limit for line constraints")),
-			InputPortConfig<float>("MaxBend",          0.0f,              _HELP("Maximum bend of the TwistAxis")),
-			InputPortConfig<EntityId>("Area",          0,                 _HELP("Optional physical area entity to define the constraint surface")),
+			InputPortConfig<SFlowSystemVoid>("Create", SFlowSystemVoid(),        _HELP("Creates the constraint")),
+			InputPortConfig<SFlowSystemVoid>("Break",  SFlowSystemVoid(),        _HELP("Breaks a constraint Id from EntityA if EntityA is activated, or a previously created one")),
+			InputPortConfig<int>("Id",                 1000,                     _HELP("Requested constraint Id; -1 to auto-generate, -2 to auto-generate and remember")),
+			InputPortConfig<EntityId>("EntityA",       0,                        _HELP("Constraint owner entity (can't be an actor; should be lighter than EntityB for best results)")),
+			InputPortConfig<int>("PartIdA",            -1,                       _HELP("Part id to attach to; -1 to use default")),
+			InputPortConfig<EntityId>("EntityB",       0,                        _HELP("Constrained entity (can be an actor)")),
+			InputPortConfig<int>("PartIdB",            -1,                       _HELP("Part id to attach to; -1 to use default")),
+			InputPortConfig<int>("Type",               _HELP("Constraint type"), _HELP("Type"),                                                                                         _UICONFIG("enum_int:Point=0,RotOnly=1,Line=2,Plane=3")),
+			InputPortConfig<Vec3>("Point",             Vec3(ZERO),               _HELP("Connection point in world space")),
+			InputPortConfig<Vec3>("PointB",            Vec3(ZERO),               _HELP("Connection point on entity B in world space (if not set, assumed same as Point)")),
+			InputPortConfig<bool>("IgnoreCollisions",  true,                     _HELP("Disables collisions between constrained entities")),
+			InputPortConfig<bool>("Breakable",         false,                    _HELP("Break if force limit is reached")),
+			InputPortConfig<bool>("ForceAwake",        false,                    _HELP("Make EntityB always awake; restore previous sleep params on Break")),
+			InputPortConfig<bool>("MoveEnforcement",   true,                     _HELP("Teleport one enity if the other has its position updated from outside the physics")),
+			InputPortConfig<float>("MaxForce",         0.0f,                     _HELP("Force limit")),
+			InputPortConfig<float>("MaxTorque",        0.0f,                     _HELP("Rotational force (torque) limit")),
+			InputPortConfig<bool>("MaxForceRelative",  true,                     _HELP("Make limits relative to EntityB's mass")),
+			InputPortConfig<Vec3>("TwistAxis",         Vec3(0,                   0,                                                                                                     1), _HELP("Main rotation axis in world space")),
+			InputPortConfig<float>("MinTwist",         0.0f,                     _HELP("Lower rotation limit around TwistAxis. Linear limit for line constraints")),
+			InputPortConfig<float>("MaxTwist",         0.0f,                     _HELP("Upper rotation limit around TwistAxis. Linear limit for line constraints")),
+			InputPortConfig<float>("MaxBend",          0.0f,                     _HELP("Maximum bend of the TwistAxis")),
+			InputPortConfig<EntityId>("Area",          0,                        _HELP("Optional physical area entity to define the constraint surface")),
 
 			{ 0 }
 		};
@@ -826,8 +826,10 @@ public:
 				m_id = GetPortInt(pActInfo, IN_ID);
 			if (IsPortActive(pActInfo, IN_CREATE))
 			{
-				IEntity *pent[3] = { gEnv->pEntitySystem->GetEntity(GetPortEntityId(pActInfo,IN_ENTITY0)), gEnv->pEntitySystem->GetEntity(GetPortEntityId(pActInfo,IN_ENTITY1)),
-					gEnv->pEntitySystem->GetEntity(GetPortEntityId(pActInfo,IN_AREA)) };
+				IEntity* pent[3] = {
+					gEnv->pEntitySystem->GetEntity(GetPortEntityId(pActInfo, IN_ENTITY0)), gEnv->pEntitySystem->GetEntity(GetPortEntityId(pActInfo, IN_ENTITY1)),
+					gEnv->pEntitySystem->GetEntity(GetPortEntityId(pActInfo, IN_AREA))
+				};
 				if (!pent[0] || !pent[0]->GetPhysics())
 					return;
 				IPhysicalEntity* pentPhys = pent[0]->GetPhysics();
@@ -847,7 +849,7 @@ public:
 				if (ptB.len2())
 					aac.pt[1] = ptB;
 				aac.flags = world_frames | (GetPortBool(pActInfo, IN_IGNORE_COLLISIONS) ? constraint_ignore_buddy : 0) | (GetPortBool(pActInfo, IN_BREAKABLE) ? 0 : constraint_no_tears);
-				aac.flags |= GetPortBool(pActInfo,IN_FORCE_MOVE) ? 0:constraint_no_enforcement;
+				aac.flags |= GetPortBool(pActInfo, IN_FORCE_MOVE) ? 0 : constraint_no_enforcement;
 				const int cflags[] = { 0, constraint_free_position, constraint_line, constraint_plane };
 				aac.flags |= cflags[i = GetPortInt(pActInfo, IN_TYPE)];
 				pe_status_dynamics sd;
@@ -858,9 +860,9 @@ public:
 					aac.maxPullForce = f * sd.mass;
 				if ((f = GetPortFloat(pActInfo, IN_MAX_TORQUE)) > 0)
 					aac.maxBendTorque = f * sd.mass;
-				float conv = i==2 ? 1.0f : gf_PI/180.0f;
+				float conv = i == 2 ? 1.0f : gf_PI / 180.0f;
 				for (int iop = 0; iop < 2; iop++)
-					aac.xlimits[iop] = GetPortFloat(pActInfo, IN_MIN_ROT+iop)*conv;
+					aac.xlimits[iop] = GetPortFloat(pActInfo, IN_MIN_ROT + iop) * conv;
 				aac.yzlimits[0] = 0;
 				aac.yzlimits[1] = DEG2RAD(GetPortFloat(pActInfo, IN_MAX_BEND));
 				if (aac.xlimits[1] <= aac.xlimits[0] && aac.yzlimits[1] <= aac.yzlimits[0])
@@ -1006,7 +1008,7 @@ public:
 			InputPortConfig<bool>("IgnoreSameNode",       false,             _HELP("Suppress events if both colliders are registered via the same node")),
 			InputPortConfig<bool>("OnlySameNode",         false,             _HELP("Only send events if both colliders are registered via the same node")),
 			InputPortConfig<EntityId>("RemoveListener",   0,                 _HELP("Unregister entity id from collision listeners")),
-			InputPortConfig<SFlowSystemVoid>("RemoveAll", SFlowSystemVoid(), _HELP("Remove all registered listeners") ),
+			InputPortConfig<SFlowSystemVoid>("RemoveAll", SFlowSystemVoid(), _HELP("Remove all registered listeners")),
 			{ 0 }
 		};
 
@@ -1098,9 +1100,9 @@ public:
 
 			if (IsPortActive(pActInfo, IN_REMOVE_ALL))
 			{
-				for(auto iter : g_listeners) delete iter.second;
+				for (auto iter : g_listeners) delete iter.second;
 				g_listeners.clear();
-				gEnv->pPhysicalWorld->RemoveEventClient(EventPhysCollision::id, (int(*)(const EventPhys*))OnCollision, 1);
+				gEnv->pPhysicalWorld->RemoveEventClient(EventPhysCollision::id, (int (*)(const EventPhys*))OnCollision, 1);
 			}
 		}
 	}

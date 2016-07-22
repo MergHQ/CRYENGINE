@@ -1,9 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
-#include <CrySystem/IStreamEngine.h>
 #include "ILevelSystem.h"
+
+#include <CrySystem/IStreamEngine.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryEntitySystem/IEntityLayer.h>
 
 class CFlowNode_PortalSwitch : public CFlowBaseNode<eNCT_Instanced>

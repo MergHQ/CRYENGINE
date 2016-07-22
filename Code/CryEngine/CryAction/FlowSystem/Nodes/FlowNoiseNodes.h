@@ -11,13 +11,11 @@
    - 21:06:2005   16:00 : Created by Marco Koegler
 
 *************************************************************************/
-#ifndef __FLOWNOISENODES_H__
-#define __FLOWNOISENODES_H__
 
 #pragma once
 
-#include "FlowBaseNode.h"
 #include <CryMath/PNoise3.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 class CFlowNode_Noise1D : public CFlowBaseNode<eNCT_Singleton>
@@ -112,5 +110,3 @@ public:
 
 private:
 };
-
-#endif

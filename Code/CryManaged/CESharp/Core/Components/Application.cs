@@ -20,22 +20,10 @@ namespace CryEngine.Components
 	{
 		bool _requestedShutdown = false;
 		bool _activeShutdown = true;
-		bool _isShutdown = false;
-
-		public static string ExecutionPath
-		{
-			get 
-			{
-				string dllDir = Global.gEnv.pMonoRuntime.GetProjectDllDir();
-				if(String.IsNullOrEmpty(dllDir))
-				{
-					StringBuilder sb = new StringBuilder(1024);
-					CryEngine.Common.Global.CryGetExecutableFolder (1024, sb);
-					return sb.ToString ();
-				}
-				return System.IO.Path.Combine (Environment.CurrentDirectory, dllDir);
-			}
-		}
+		bool _isShutdown = false;	
+	
+		public string AssetPath { get; set; }
+		public string BinaryPath { get; set; }
 
 		public static string DataPath
 		{
@@ -95,8 +83,6 @@ namespace CryEngine.Components
 				{
 					if (Env.IsSandbox)
 						AddIn.InterDomainHandler.RaiseRequestQuit();
-					else 
-						Global.gEnv.pSystem.Quit ();
 				}
 				_isShutdown = true;
 			}

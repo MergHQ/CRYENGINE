@@ -1,17 +1,18 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
--------------------------------------------------------------------------
-History:
-- 23:04:2010   Created by Ian Masters
+   -------------------------------------------------------------------------
+   History:
+   - 23:04:2010   Created by Ian Masters
 *************************************************************************/
 
 #include "StdAfx.h"
+#include "UI/HUD/HUDEventDispatcher.h"
+
 #include <CrySystem/ISystem.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <IViewSystem.h>
-#include "UI/HUD/HUDEventDispatcher.h"
-#include "Nodes/G2FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CTacticalScanNode : public CFlowBaseNode<eNCT_Instanced>, IHUDEventListener
 {
@@ -27,14 +28,14 @@ class CTacticalScanNode : public CFlowBaseNode<eNCT_Instanced>, IHUDEventListene
 	};
 
 public:
-	CTacticalScanNode( SActivationInfo * pActInfo )
+	CTacticalScanNode(SActivationInfo* pActInfo)
 		: m_entityId(0)
 		, m_enabled(false)
 	{
 		CHUDEventDispatcher::AddHUDEventListener(this, "OnEntityScanned");
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -44,22 +45,22 @@ public:
 		CHUDEventDispatcher::RemoveHUDEventListener(this);
 	}
 
-	IFlowNodePtr Clone( SActivationInfo * pActInfo )
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
 		return new CTacticalScanNode(pActInfo);
 	}
 
-	virtual void Serialize(SActivationInfo *pActInfo, TSerialize ser)
+	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
 	{
 		ser.BeginGroup("Local");
 
 		ser.Value("m_entityId", m_entityId);
 		ser.Value("m_enabled", m_enabled);
 
-		if (ser.IsReading()) 
+		if (ser.IsReading())
 		{
 			CHUDEventDispatcher::AddHUDEventListener(this, "OnEntityScanned"); // can't hurt to do this on load as the listener uses stl::push_back_unique
-			if(m_enabled)
+			if (m_enabled)
 			{
 				m_actInfo = *pActInfo;
 				ActivateOutput(&m_actInfo, EOP_EntityID, m_entityId);
@@ -69,24 +70,24 @@ public:
 		ser.EndGroup();
 	}
 
-	virtual void GetConfiguration( SFlowNodeConfig &config )
+	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void( "Enable",_HELP("Trigger to enable the node") ),
-			InputPortConfig_Void( "Disable",_HELP("Trigger to disable the node") ),
-			{0}
+			InputPortConfig_Void("Enable",  _HELP("Trigger to enable the node")),
+			InputPortConfig_Void("Disable", _HELP("Trigger to disable the node")),
+			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig<EntityId>("EntityId", _HELP("ID of the entity being scanned") ),
-			{0}
+			OutputPortConfig<EntityId>("EntityId", _HELP("ID of the entity being scanned")),
+			{ 0 }
 		};
-		config.sDescription = _HELP( "Gets the Id of the entity currently being tactical scanned" );
+		config.sDescription = _HELP("Gets the Id of the entity currently being tactical scanned");
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo *pActInfo)
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
 		{
@@ -98,8 +99,8 @@ public:
 
 		case eFE_Activate:
 			{
-				if(IsPortActive(pActInfo, EIP_Enable)) m_enabled = true;
-				else if(IsPortActive(pActInfo, EIP_Disable)) m_enabled = false;
+				if (IsPortActive(pActInfo, EIP_Enable)) m_enabled = true;
+				else if (IsPortActive(pActInfo, EIP_Disable)) m_enabled = false;
 				break;
 			}
 		}
@@ -109,33 +110,30 @@ protected:
 
 	void OnHUDEvent(const SHUDEvent& event)
 	{
-		switch(event.eventType)
+		switch (event.eventType)
 		{
 		case eHUDEvent_OnEntityScanned:
 			{
 				EntityId id = static_cast<EntityId>(event.GetData(0).m_int);
 				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
-				if(!pEntity)
+				if (!pEntity)
 					break;
 
 				m_entityId = id;
 
-				if(m_enabled)
+				if (m_enabled)
 					ActivateOutput(&m_actInfo, EOP_EntityID, m_entityId);
 				break;
 			}
 		}
 	}
 
+private:
 
-
-	private:
-
-		SActivationInfo m_actInfo;
-		EntityId m_entityId;
-		bool m_enabled;
+	SActivationInfo m_actInfo;
+	EntityId        m_entityId;
+	bool            m_enabled;
 };
-
 
 class CTacticalScanStartNode : public CFlowBaseNode<eNCT_Instanced>, IHUDEventListener
 {
@@ -153,14 +151,14 @@ class CTacticalScanStartNode : public CFlowBaseNode<eNCT_Instanced>, IHUDEventLi
 	};
 
 public:
-	CTacticalScanStartNode( SActivationInfo * pActInfo )
+	CTacticalScanStartNode(SActivationInfo* pActInfo)
 		: m_entityId(0)
 		, m_enabled(false)
 		, m_delayResult(false)
 	{
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -170,12 +168,12 @@ public:
 		SetEnabled(false);
 	}
 
-	IFlowNodePtr Clone( SActivationInfo * pActInfo )
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
 		return new CTacticalScanStartNode(pActInfo);
 	}
 
-	virtual void Serialize(SActivationInfo *pActInfo, TSerialize ser)
+	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
 	{
 		ser.BeginGroup("Local");
 
@@ -184,7 +182,7 @@ public:
 		bool bEnabled = m_enabled;
 		ser.Value("m_enabled", bEnabled);
 
-		if (ser.IsReading()) 
+		if (ser.IsReading())
 		{
 			if (bEnabled)
 			{
@@ -196,45 +194,45 @@ public:
 		ser.EndGroup();
 	}
 
-	virtual void GetConfiguration( SFlowNodeConfig &config )
+	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void	(	"Enable",_HELP("Trigger to enable the node") ),
-			InputPortConfig<bool> ( "DelayResult", false, _HELP("Prevents scan from completing normally (Must use Entity:TacticalScanCurrentControl)" )),
-			InputPortConfig_Void	( "Disable",_HELP("Trigger to disable the node") ),
-			{0}
+			InputPortConfig_Void("Enable",       _HELP("Trigger to enable the node")),
+			InputPortConfig<bool>("DelayResult", false,                                _HELP("Prevents scan from completing normally (Must use Entity:TacticalScanCurrentControl)")),
+			InputPortConfig_Void("Disable",      _HELP("Trigger to disable the node")),
+			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig_Void			( "OnEvent", _HELP("Triggered when event with specified entity occurs")),
-			OutputPortConfig<EntityId>("EntityId", _HELP("ID of the entity that started being scanned") ),
-			{0}
+			OutputPortConfig_Void("OnEvent",       _HELP("Triggered when event with specified entity occurs")),
+			OutputPortConfig<EntityId>("EntityId", _HELP("ID of the entity that started being scanned")),
+			{ 0 }
 		};
 		config.nFlags |= EFLN_TARGET_ENTITY;
-		config.sDescription = _HELP( "Gets the Id of the entity that just started being tactical scanned" );
+		config.sDescription = _HELP("Gets the Id of the entity that just started being tactical scanned");
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo *pActInfo)
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
 		{
 		case eFE_Activate:
 			{
 				IEntity* pEntity = pActInfo->pEntity;
-				if(!pEntity)
+				if (!pEntity)
 					return;
 
 				m_delayResult = GetPortBool(pActInfo, EIP_DelayResult);
 
-				if(IsPortActive(pActInfo, EIP_Enable))
+				if (IsPortActive(pActInfo, EIP_Enable))
 				{
 					m_actInfo = *pActInfo;
 					m_entityId = pEntity->GetId();
 					SetEnabled(true);
 				}
-				else if(IsPortActive(pActInfo, EIP_Disable))
+				else if (IsPortActive(pActInfo, EIP_Disable))
 				{
 					SetEnabled(false);
 				}
@@ -262,11 +260,11 @@ protected:
 
 	void OnHUDEvent(const SHUDEvent& event)
 	{
-		switch(event.eventType)
+		switch (event.eventType)
 		{
 		case eHUDEvent_OnScanningStart:
 			{
-				if(m_enabled)
+				if (m_enabled)
 				{
 					EntityId scannedEntityId = static_cast<EntityId>(event.GetData(0).m_int);
 
@@ -274,7 +272,7 @@ protected:
 						break;
 
 					IEntity* pScannedEntity = gEnv->pEntitySystem->GetEntity(scannedEntityId);
-					if(!pScannedEntity)
+					if (!pScannedEntity)
 					{
 						SetEnabled(false);
 						break;
@@ -295,17 +293,13 @@ protected:
 		}
 	}
 
-
-
 private:
 
 	SActivationInfo m_actInfo;
-	EntityId m_entityId;
-	bool m_enabled;
-	bool m_delayResult;
+	EntityId        m_entityId;
+	bool            m_enabled;
+	bool            m_delayResult;
 };
-
-
 
 class CTacticalScanCompleteNode : public CFlowBaseNode<eNCT_Instanced>, IHUDEventListener
 {
@@ -323,14 +317,14 @@ class CTacticalScanCompleteNode : public CFlowBaseNode<eNCT_Instanced>, IHUDEven
 	};
 
 public:
-	CTacticalScanCompleteNode( SActivationInfo * pActInfo )
+	CTacticalScanCompleteNode(SActivationInfo* pActInfo)
 		: m_entityId(0)
 		, m_enabled(false)
 		, m_delayResult(false)
 	{
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -340,29 +334,29 @@ public:
 		SetEnabled(false);
 	}
 
-	IFlowNodePtr Clone( SActivationInfo * pActInfo )
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
 		return new CTacticalScanCompleteNode(pActInfo);
 	}
 
-	virtual void Serialize(SActivationInfo *pActInfo, TSerialize ser)
+	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
 	{
 		ser.BeginGroup("Local");
 
 		ser.Value("m_entityId", m_entityId);
 		ser.Value("m_delayResult", m_delayResult);
 
-		if (ser.IsReading()) 
+		if (ser.IsReading())
 		{
 			bool bEnabled = false;
 			ser.Value("m_enabled", bEnabled);
 
-			if(bEnabled)
+			if (bEnabled)
 			{
 				m_actInfo = *pActInfo;
 			}
 
-			SetEnabled(bEnabled);	// can't hurt to do this on load as the listener uses stl::push_back_unique
+			SetEnabled(bEnabled); // can't hurt to do this on load as the listener uses stl::push_back_unique
 		}
 		else
 		{
@@ -372,45 +366,45 @@ public:
 		ser.EndGroup();
 	}
 
-	virtual void GetConfiguration( SFlowNodeConfig &config )
+	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void	( "Enable",_HELP("Trigger to enable the node") ),
-			InputPortConfig<bool> ( "DelayResult", false, _HELP("Prevents scan from completing normally (Must use Entity:TacticalScanCurrentControl)" )),
-			InputPortConfig_Void	( "Disable",_HELP("Trigger to disable the node") ),
-			{0}
+			InputPortConfig_Void("Enable",       _HELP("Trigger to enable the node")),
+			InputPortConfig<bool>("DelayResult", false,                                _HELP("Prevents scan from completing normally (Must use Entity:TacticalScanCurrentControl)")),
+			InputPortConfig_Void("Disable",      _HELP("Trigger to disable the node")),
+			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig_Void			( "OnEvent", _HELP("Triggered when event with specified entity occurs")),
-			OutputPortConfig<EntityId>("EntityId", _HELP("ID of the entity that just completed being scanned") ),
-			{0}
+			OutputPortConfig_Void("OnEvent",       _HELP("Triggered when event with specified entity occurs")),
+			OutputPortConfig<EntityId>("EntityId", _HELP("ID of the entity that just completed being scanned")),
+			{ 0 }
 		};
 		config.nFlags |= EFLN_TARGET_ENTITY;
-		config.sDescription = _HELP( "Gets the Id of the entity that just completed (But before success or failure) being tactical scanned" );
+		config.sDescription = _HELP("Gets the Id of the entity that just completed (But before success or failure) being tactical scanned");
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo *pActInfo)
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
 		{
 		case eFE_Activate:
 			{
 				IEntity* pEntity = pActInfo->pEntity;
-				if(!pEntity)
+				if (!pEntity)
 					return;
 
 				m_delayResult = GetPortBool(pActInfo, EIP_DelayResult);
 
-				if(IsPortActive(pActInfo, EIP_Enable))
+				if (IsPortActive(pActInfo, EIP_Enable))
 				{
 					m_actInfo = *pActInfo;
 					m_entityId = pEntity->GetId();
 					SetEnabled(true);
 				}
-				else if(IsPortActive(pActInfo, EIP_Disable))
+				else if (IsPortActive(pActInfo, EIP_Disable))
 				{
 					SetEnabled(false);
 				}
@@ -438,11 +432,11 @@ protected:
 
 	void OnHUDEvent(const SHUDEvent& event)
 	{
-		switch(event.eventType)
+		switch (event.eventType)
 		{
 		case eHUDEvent_OnScanningComplete:
 			{
-				if(m_enabled)
+				if (m_enabled)
 				{
 					EntityId scannedEntityId = static_cast<EntityId>(event.GetData(0).m_int);
 
@@ -450,12 +444,12 @@ protected:
 						break;
 
 					IEntity* pScannedEntity = gEnv->pEntitySystem->GetEntity(scannedEntityId);
-					if(!pScannedEntity)
+					if (!pScannedEntity)
 					{
 						SetEnabled(false);
 						break;
 					}
-						
+
 					if (m_delayResult)
 					{
 						SHUDEvent _event(eHUDEvent_OnControlCurrentTacticalScan);
@@ -471,14 +465,12 @@ protected:
 		}
 	}
 
-
-
 private:
 
 	SActivationInfo m_actInfo;
-	EntityId m_entityId;
-	bool m_enabled;
-	bool m_delayResult;
+	EntityId        m_entityId;
+	bool            m_enabled;
+	bool            m_delayResult;
 };
 
 class CTacticalScanCurrentControlNode : public CFlowBaseNode<eNCT_Singleton>
@@ -496,11 +488,11 @@ class CTacticalScanCurrentControlNode : public CFlowBaseNode<eNCT_Singleton>
 	};
 
 public:
-	CTacticalScanCurrentControlNode( SActivationInfo * pActInfo )
+	CTacticalScanCurrentControlNode(SActivationInfo* pActInfo)
 	{
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -509,31 +501,31 @@ public:
 	{
 	}
 
-	virtual void GetConfiguration( SFlowNodeConfig &config )
+	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void( "FailCurrentScan",_HELP("Trigger to fail current scan") ),
-			InputPortConfig_Void( "SucceedCurrentScan",_HELP("Trigger to succeed current scan") ),
-			{0}
+			InputPortConfig_Void("FailCurrentScan",    _HELP("Trigger to fail current scan")),
+			InputPortConfig_Void("SucceedCurrentScan", _HELP("Trigger to succeed current scan")),
+			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig_Void( "Failed", _HELP("Triggered when fail input is triggered") ),
-			OutputPortConfig_Void( "Succeeded", _HELP("Triggered when succeed input is triggered") ),
-			{0}
+			OutputPortConfig_Void("Failed",    _HELP("Triggered when fail input is triggered")),
+			OutputPortConfig_Void("Succeeded", _HELP("Triggered when succeed input is triggered")),
+			{ 0 }
 		};
-		config.sDescription = _HELP( "Can control the tactical scan that is currently in progress" );
+		config.sDescription = _HELP("Can control the tactical scan that is currently in progress");
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo *pActInfo)
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
 		{
 		case eFE_Activate:
 			{
-				if(IsPortActive(pActInfo, EIP_FailCurrentScan))
+				if (IsPortActive(pActInfo, EIP_FailCurrentScan))
 				{
 					SHUDEvent _event(eHUDEvent_OnControlCurrentTacticalScan);
 					_event.AddData(SHUDEventData(false)); // Delay result
@@ -542,7 +534,7 @@ public:
 
 					ActivateOutput(pActInfo, EOP_Failed, true);
 				}
-				else if(IsPortActive(pActInfo, EIP_SucceedCurrentScan))
+				else if (IsPortActive(pActInfo, EIP_SucceedCurrentScan))
 				{
 					SHUDEvent _event(eHUDEvent_OnControlCurrentTacticalScan);
 					_event.AddData(SHUDEventData(false)); // Delay result
@@ -557,8 +549,7 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE( "Entity:TacticalScan", CTacticalScanNode );
-REGISTER_FLOW_NODE( "Entity:TacticalScanStart", CTacticalScanStartNode );
-REGISTER_FLOW_NODE( "Entity:TacticalScanComplete", CTacticalScanCompleteNode );
-REGISTER_FLOW_NODE( "Entity:TacticalScanCurrentControl", CTacticalScanCurrentControlNode );
-
+REGISTER_FLOW_NODE("Entity:TacticalScan", CTacticalScanNode);
+REGISTER_FLOW_NODE("Entity:TacticalScanStart", CTacticalScanStartNode);
+REGISTER_FLOW_NODE("Entity:TacticalScanComplete", CTacticalScanCompleteNode);
+REGISTER_FLOW_NODE("Entity:TacticalScanCurrentControl", CTacticalScanCurrentControlNode);

@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoLauncher", "MonoLauncher\MonoLauncher.csproj", "{7BD337C0-36D4-4048-93D2-08D613023978}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,15 +19,6 @@ Global
 		{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FB}.Release|x64.Build.0 = Release|x64
 		{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FB}.Release|x86.ActiveCfg = Release|x86
 		{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FB}.Release|x86.Build.0 = Release|x86
-		{7BD337C0-36D4-4048-93D2-08D613023978}.Debug|x64.ActiveCfg = Debug|x64
-		{7BD337C0-36D4-4048-93D2-08D613023978}.Debug|x64.Build.0 = Debug|x64
-		{7BD337C0-36D4-4048-93D2-08D613023978}.Debug|x86.ActiveCfg = Debug|x86
-		{7BD337C0-36D4-4048-93D2-08D613023978}.Debug|x86.Build.0 = Debug|x86
-		{7BD337C0-36D4-4048-93D2-08D613023978}.Release|x64.ActiveCfg = Release|x64
-		{7BD337C0-36D4-4048-93D2-08D613023978}.Release|x64.Build.0 = Release|x64
-		{7BD337C0-36D4-4048-93D2-08D613023978}.Release|x86.ActiveCfg = Release|x86
-		{7BD337C0-36D4-4048-93D2-08D613023978}.Release|x86.Build.0 = Release|x86
-		
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

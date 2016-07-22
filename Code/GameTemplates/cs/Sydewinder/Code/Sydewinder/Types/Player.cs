@@ -98,12 +98,16 @@ namespace CryEngine.Sydewinder
 		{
 			// Roll - to Right side.
 			_rollAngle = _rollAngle * 0.8f + (_maxRollAngle * (_upSpeed / _maxSpeed)) * 0.2f;
-			Rotation = Quat.CreateRotationXYZ(new Ang3(Utils.Deg2Rad(_pitchAngle), Utils.Deg2Rad(_rollAngle), _yawDeg));
+			Ang3 newRotation = new Ang3();
+			newRotation.x = Utils.Deg2Rad (_pitchAngle);
+			newRotation.y = Utils.Deg2Rad (_rollAngle);
+			newRotation.z = _yawDeg;
+			Rotation = Quat.CreateRotationXYZ(newRotation);
 		}
 
 		public void UpdateSpeed()
-		{			
-			float acceleration = _acceleration * FrameTime.Delta;
+		{
+			float acceleration = FrameTime.Delta * _acceleration;
 
 			// xVal = Controls left/right direction with control values between -1 and 1.
 			float xVal = Input.GetInputValue(EKeyId.eKI_XI_ThumbLX);
@@ -155,8 +159,13 @@ namespace CryEngine.Sydewinder
 
 			// Usded to ensure the player does not move outside of the visible window.
 			// ProjectToScreen returns a Vec3. Each value between 0 and 100 means it is visible on screen in this dimension.
+			Vec3 temp = new Vec3(0, _forwardSpeed, _upSpeed);
+			Vec3 nextPos = Position + temp.op_Multiply(FrameTime.Delta);
+			Vec3 screenPosition = Env.Renderer.ProjectToScreen(nextPos.x, nextPos.y, nextPos.z);
+
 			Vec3 nextPos = Position + new Vec3(0, _forwardSpeed, _upSpeed) * FrameTime.Delta;
 			var screenPosition = Env.Renderer.ProjectToScreen(nextPos);
+			
 			// In case new position on screen is outside of bounds
 			if (screenPosition.x <=0.05f || screenPosition.x >= 0.95f)
 				_forwardSpeed = 0.001f;

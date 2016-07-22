@@ -12,12 +12,13 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
 #include "CryAction.h"
 #include "IItemSystem.h"
-#include <CryEntitySystem/IEntitySystem.h>
 #include "IWeapon.h"
 #include "IActorSystem.h"
+#include "FlowFrameworkBaseNode.h"
+
+#include <CryEntitySystem/IEntitySystem.h>
 
 namespace
 {
@@ -367,7 +368,7 @@ private:
 	bool            m_active;
 };
 
-class CFlowNode_WeaponAmmo : public CFlowBaseNode<eNCT_Singleton>
+class CFlowNode_WeaponAmmo : public CFlowFrameworkBaseNode<eNCT_Singleton>
 {
 	enum EInputs
 	{

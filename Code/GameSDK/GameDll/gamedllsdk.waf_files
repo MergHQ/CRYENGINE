@@ -1127,7 +1127,7 @@
          "Nodes/FlowNodesAIActionSequence.cpp",
          "Nodes/AINodes.h",
          "Nodes/FeatureTestNode.h",
-         "Nodes/G2FlowBaseNode.h",
+         "Nodes/FlowGameSDKBaseNode.h",
          "Nodes/AIAssignmentNodes.h",
          "FlowWeaponCustomizationNodes.h",
          "Nodes/ModelToHudFlowNodes.h",

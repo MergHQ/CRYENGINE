@@ -1,23 +1,11 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/********************************************************************
-   -------------------------------------------------------------------------
-   File name:   ModuleManager.cpp
-   $Id$
-   Description: Manages module loading and application
-
-   -------------------------------------------------------------------------
-   History:
-   - 03/04/11   : Sascha Hoba - Kevin Kirst
-
- *********************************************************************/
-
 #include "StdAfx.h"
 #include "ModuleManager.h"
 #include "Module.h"
-#include "../Nodes/FlowBaseNode.h"
 #include "FlowModuleNodes.h"
 #include "ILevelSystem.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 #define MODULE_FOLDER_NAME ("\\FlowgraphModules\\")
 

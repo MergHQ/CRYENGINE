@@ -15,7 +15,8 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_EntitiesInRange : public CFlowBaseNode<eNCT_Instanced>
 {

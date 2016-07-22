@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <ProjectTypeGuids>{E7562513-36BA-4D11-A927-975E5375ED10};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <ProjectGuid>{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>CryEngine</RootNamespace>
@@ -12,7 +13,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\..\..\..\bin\win_x64\mono\AddIns</OutputPath>
+    <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
     <DefineConstants>DEBUG;TRACE;WIN64</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
@@ -21,14 +22,10 @@
     <Prefer32Bit>true</Prefer32Bit>
     <WarningLevel>4</WarningLevel>
     <Optimize>false</Optimize>
-    <CustomCommands>
-      <CustomCommands>
-        <Command type="AfterBuild" command="xcopy.EXE /H/Y/R/D &quot;${TargetDir}\${TargetName}*&quot; &quot;${TargetDir}\..\..&quot;" workingdir="${ProjectDir}" externalConsole="True" />
-      </CustomCommands>
-    </CustomCommands>
+    <AssemblyName>CryEngine.Core</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>..\..\..\..\bin\win_x64\mono\AddIns</OutputPath>
+    <OutputPath>..\..\..\..\bin\win_x64_release</OutputPath>
     <DefineConstants>TRACE;WIN64</DefineConstants>
     <Optimize>true</Optimize>
     <PlatformTarget>x64</PlatformTarget>
@@ -36,10 +33,11 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
     <WarningLevel>4</WarningLevel>
+    <AssemblyName>CryEngine.Core</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\..\..\..\bin\win_x86\</OutputPath>
+    <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
     <DefineConstants>DEBUG;TRACE;WIN86</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -51,7 +49,7 @@
     <Optimize>false</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>..\..\..\..\bin\win_x86\</OutputPath>
+    <OutputPath>..\..\..\..\bin\win_x64_release</OutputPath>
     <DefineConstants>TRACE;WIN86</DefineConstants>
     <Optimize>true</Optimize>
     <PlatformTarget>x86</PlatformTarget>
@@ -118,6 +116,7 @@
     <Compile Include="EntitySystem\EntityPropertyConverter.cs" />
     <Compile Include="EntitySystem\BaseEntity.cs" />
     <Compile Include="EntitySystem\EntityPropertyHandler.cs" />
+    <Compile Include="Resources\ReflectionHelper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -128,4 +127,11 @@
     <Folder Include="EntitySystem\" />
     <Folder Include="FlowSystem\" />
   </ItemGroup>
+  <ProjectExtensions>
+    <MonoDevelop>
+      <Properties>
+        <CryEngineParameters BuildLocation="" Launcher="GameSDK" />
+      </Properties>
+    </MonoDevelop>
+  </ProjectExtensions>
 </Project>

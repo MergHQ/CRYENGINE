@@ -5,22 +5,21 @@ using System.Reflection;
 using CryEngine.Resources;
 using CryEngine.Components;
 using CryEngine.FlowSystem;
+using CryEngine.Common;
 
 namespace CryEngine.SampleApp
 {
 	/// <summary>
 	/// Add-in entry point will be re-instantiated in runtime, whenever the assembly is updated (e.g. Re-compiled)
 	/// </summary>
-	public class Program : ICryEngineAddIn
+	public class MyPlugin : ICryEnginePlugin
 	{
-		Application _app;
+		static Application _app;
 
-		public void Initialize(InterDomainHandler handler)
+		public void Initialize()
 		{
-		}
+			Env.Initialize (null);
 
-		public void StartGame()
-		{
 			_app = Application.Instantiate<SampleApp>();
 		}
 
@@ -33,15 +32,12 @@ namespace CryEngine.SampleApp
 		}
 
 		public void Shutdown()
-		{
-		}
-
-		/// <summary>
-		/// Called when engine is being shut down or if application is reloaded.
-		/// </summary>
-		public void EndGame()
-		{
+		{			
 			_app.Shutdown(false);
+			_app.Destroy ();
+			_app = null;
+
+			Env.Shutdown (null);
 		}
 	}
 }

@@ -13,7 +13,7 @@ namespace CryEngine.Sydewinder.Types
 	/// </summary>
 	public class LevelGeometry
 	{
-		public static Vec3 GlobalGeomSpeed { get; private set; } = new Vec3(0, -10f, 0); 
+		public static Vec3 GlobalGeomSpeed { get; private set; }
 
 		/// <summary>
 		/// Currently spawned tunnel elements (with doors + lights within).
@@ -35,6 +35,7 @@ namespace CryEngine.Sydewinder.Types
 
 		public LevelGeometry()
 		{
+			GlobalGeomSpeed = new Vec3 (0, -10f, 0);
 			_tunnelElementsQueue = new Queue<Tunnel>();
 
 			// Get position.

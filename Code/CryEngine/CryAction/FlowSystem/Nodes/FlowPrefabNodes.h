@@ -11,12 +11,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef __FlowPrefabNodes_H__
-#define __FlowPrefabNodes_H__
 #pragma once
 
-#include "FlowBaseNode.h"
 #include <CryAction/ICustomEvents.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Prefab:EventSource node
@@ -116,5 +114,3 @@ private:
 	CryFixedArray<TCustomEventId, CUSTOMEVENTS_PREFABS_MAXNPERINSTANCE> m_eventIds;
 	SActivationInfo m_actInfo;
 };
-
-#endif // __FlowPrefabNodes_H__

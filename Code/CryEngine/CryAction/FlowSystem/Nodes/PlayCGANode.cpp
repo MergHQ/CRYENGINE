@@ -1,17 +1,16 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <CrySystem/ISystem.h>
-#include <CryAnimation/ICryAnimation.h>
+#include "CryAction.h"
+#include "IAnimatedCharacter.h"
+#include "IMovementController.h"
+
 #include <IActorSystem.h>
 #include <IAnimatedCharacter.h>
 #include <GameObjects/GameObject.h>
-#include "IAnimatedCharacter.h"
-
-#include "FlowBaseNode.h"
-#include "CryAction.h"
-#include "IMovementController.h"
+#include <CryAnimation/ICryAnimation.h>
 #include <ICooperativeAnimationManager.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CPlayCGA_Node : public CFlowBaseNode<eNCT_Instanced>
 {

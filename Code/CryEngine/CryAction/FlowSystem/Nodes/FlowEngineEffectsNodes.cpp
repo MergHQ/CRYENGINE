@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+#include "FlowFrameworkBaseNode.h"
 
 // Note: why is there a Enable + Disable ? Quite redundant
 
@@ -9,7 +9,7 @@
 // Get custom value helper functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef CFlowBaseNode<eNCT_Singleton> TBaseNodeClass;
+typedef CFlowFrameworkBaseNode<eNCT_Singleton> TBaseNodeClass;
 
 static float GetCustomValue(const SFlowNodeConfig& config, TBaseNodeClass* pFlowBaseNode, bool bIsEnabled, IFlowNode::SActivationInfo* pActInfo, int portIndex, bool& isOk)
 {

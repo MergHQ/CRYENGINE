@@ -12,15 +12,12 @@
 
  *********************************************************************/
 
-#ifndef __FlowNodeAIAction_H__
-#define __FlowNodeAIAction_H__
 #pragma once
 
-#include "FlowBaseNode.h"
-#include "Vehicle/FlowVehicleBase.h"
 #include "IAnimationGraph.h"
-
 #include "Vehicle/FlowVehicleBase.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 // base AI Flow node
@@ -606,5 +603,3 @@ public:
 		s->Add(*this);
 	}
 };
-
-#endif // __FlowNodeAIAction_H__

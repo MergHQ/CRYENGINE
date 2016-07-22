@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_LogicCondition : public CFlowBaseNode<eNCT_Instanced>
 {

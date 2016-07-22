@@ -1,22 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description: Implements a base class for vehicle flow node
-
-   -------------------------------------------------------------------------
-   History:
-   - 12:12:2005: Created by Mathieu Pinard
-
-*************************************************************************/
 #include "StdAfx.h"
 #include "CryAction.h"
 #include "IVehicleSystem.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
 #include "FlowVehicleBase.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //------------------------------------------------------------------------
 void CFlowVehicleBase::Init(SActivationInfo* pActivationInfo)

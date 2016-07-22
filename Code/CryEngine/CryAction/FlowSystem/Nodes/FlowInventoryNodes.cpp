@@ -12,15 +12,15 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
 #include "CryAction.h"
 #include "IActorSystem.h"
 #include "ItemSystem.h"
 #include "GameObjects/GameObject.h"
 #include "Inventory.h"
 #include "IGameRulesSystem.h"
+#include "FlowFrameworkBaseNode.h"
 
-class CFlowNode_InventoryAddItem : public CFlowBaseNode<eNCT_Singleton>
+class CFlowNode_InventoryAddItem : public CFlowFrameworkBaseNode<eNCT_Singleton>
 {
 public:
 	CFlowNode_InventoryAddItem(SActivationInfo* pActInfo)
@@ -111,7 +111,7 @@ public:
 	}
 };
 
-class CFlowNode_InventoryRemoveItem : public CFlowBaseNode<eNCT_Singleton>
+class CFlowNode_InventoryRemoveItem : public CFlowFrameworkBaseNode<eNCT_Singleton>
 {
 public:
 	CFlowNode_InventoryRemoveItem(SActivationInfo* pActInfo)
@@ -191,7 +191,7 @@ public:
 	}
 };
 
-class CFlowNode_InventoryRemoveAllItems : public CFlowBaseNode<eNCT_Singleton>
+class CFlowNode_InventoryRemoveAllItems : public CFlowFrameworkBaseNode<eNCT_Singleton>
 {
 public:
 	CFlowNode_InventoryRemoveAllItems(SActivationInfo* pActInfo)
@@ -245,7 +245,7 @@ public:
 	}
 };
 
-class CFlowNode_InventoryHasItem : public CFlowBaseNode<eNCT_Singleton>
+class CFlowNode_InventoryHasItem : public CFlowFrameworkBaseNode<eNCT_Singleton>
 {
 public:
 	CFlowNode_InventoryHasItem(SActivationInfo* pActInfo)
@@ -305,7 +305,7 @@ public:
 	}
 };
 
-class CFlowNode_InventorySelectItem : public CFlowBaseNode<eNCT_Singleton>
+class CFlowNode_InventorySelectItem : public CFlowFrameworkBaseNode<eNCT_Singleton>
 {
 public:
 	CFlowNode_InventorySelectItem(SActivationInfo* pActInfo)
@@ -417,7 +417,7 @@ public:
 	}
 };
 
-class CFlowNode_InventoryItemSelected : public CFlowBaseNode<eNCT_Instanced>, public IItemSystemListener
+class CFlowNode_InventoryItemSelected : public CFlowFrameworkBaseNode<eNCT_Instanced>, public IItemSystemListener
 {
 
 	enum
@@ -546,7 +546,7 @@ protected:
 	IGameFramework* m_pGF;
 };
 
-class CFlowNode_InventoryRemoveAllAmmo : public CFlowBaseNode<eNCT_Singleton>
+class CFlowNode_InventoryRemoveAllAmmo : public CFlowFrameworkBaseNode<eNCT_Singleton>
 {
 public:
 	CFlowNode_InventoryRemoveAllAmmo(SActivationInfo* pActInfo)
@@ -629,7 +629,7 @@ public:
 	}
 };
 
-class CFlowNode_AddEquipmentPack : public CFlowBaseNode<eNCT_Singleton>
+class CFlowNode_AddEquipmentPack : public CFlowFrameworkBaseNode<eNCT_Singleton>
 {
 public:
 	enum EInputs

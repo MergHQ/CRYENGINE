@@ -18,13 +18,13 @@
 #include <CryAISystem/IAIActorProxy.h>
 #include "IActorSystem.h"
 #include "IVehicleSystem.h"
-#include "FlowBaseNode.h"
 #include "FlowNodeAIAction.h"
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IGoalPipe.h>
 #include "VehicleSystem/Vehicle.h"
 #include "VehicleSystem/VehicleSeat.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
@@ -2340,7 +2340,7 @@ void CFlowNode_AIEnterVehicle::GetConfiguration(SFlowNodeConfig& config)
 		{ 0 }
 	};
 	static const SOutputPortConfig out_config[] = {
-		OutputPortConfig<EntityId>("Done", _HELP("Activated when the action finished")),
+		OutputPortConfig<EntityId>("Done",    _HELP("Activated when the action finished")),
 		OutputPortConfig<EntityId>("Success", _HELP("Activated when Vehicle:Enter action succeeded")),
 		OutputPortConfig<EntityId>("Fail",    _HELP("Activated when Vehicle:Enter action failed")),
 		{ 0 }

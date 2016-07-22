@@ -31,6 +31,8 @@ enum ECryModule
 	eCryM_MonoBridge,
 	eCryM_ScaleformHelper,
 
+	eCryM_EnginePlugin,
+
 	eCryM_Num,
 };
 

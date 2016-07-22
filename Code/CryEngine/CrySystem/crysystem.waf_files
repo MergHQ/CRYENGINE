@@ -259,6 +259,8 @@
       "NullImplementation/NULLRenderAuxGeom.cpp"
     ],
     "ExtensionSystem":[
+      "ExtensionSystem/CryPluginManager.cpp",
+      "ExtensionSystem/CryPluginManager.h",
       "ExtensionSystem/CryFactoryRegistryImpl.cpp",
       "ExtensionSystem/CryFactoryRegistryImpl.h"
     ],

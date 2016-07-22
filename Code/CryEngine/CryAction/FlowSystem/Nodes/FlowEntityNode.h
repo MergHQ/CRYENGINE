@@ -1,21 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   FlowEntityNode.h
-//  Version:     v1.00
-//  Created:     23/5/2005 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __FlowEntityNode_h__
-#define __FlowEntityNode_h__
 #pragma once
 
-#include "FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 class CFlowEntityClass : public IFlowNodeFactory
@@ -171,5 +158,3 @@ protected:
 	_smart_ptr<CFlowEntityClass> m_pClass;
 	int                          m_lastInitializeFrameId;
 };
-
-#endif // __FlowEntityNode_h__

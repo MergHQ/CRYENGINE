@@ -12,16 +12,18 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+#include "CryActionCVars.h"
+#include "../FlowSystemCVars.h"
+#include "FlowFrameworkBaseNode.h"
+
 #include <CryAction.h>
 #include <IGameObjectSystem.h>
 #include <CryString/StringUtils.h>
 #include <IActorSystem.h>
 #include <PersistantDebug.h>
-#include "CryActionCVars.h"
 
 // display a debug message in the HUD
-class CFlowNode_DisplayDebugMessage : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_DisplayDebugMessage : public CFlowFrameworkBaseNode<eNCT_Instanced>
 {
 	enum
 	{

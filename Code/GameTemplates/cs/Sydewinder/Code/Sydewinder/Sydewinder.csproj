@@ -10,7 +10,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\..\bin\win_x64\mono\AddIns</OutputPath>
+    <OutputPath>..\..\bin\win_x64\debug</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
@@ -21,7 +21,7 @@
     <Optimize>false</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>..\..\bin\win_x64\mono\AddIns</OutputPath>
+    <OutputPath>..\..\bin\win_x64\release</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -33,7 +33,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\win_x86\Debug\</OutputPath>
+    <OutputPath>..\..\bin\win_x86\debug</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -45,7 +45,7 @@
     <Optimize>false</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>bin\win_x86\Release\</OutputPath>
+    <OutputPath>..\..\bin\win_x86\release</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <PlatformTarget>x86</PlatformTarget>
@@ -59,7 +59,7 @@
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
     <Reference Include="CryEngine.Common">
-      <HintPath>..\..\bin\win_x64\CryEngine.Common.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\bin\win_x64\CryEngine.Common.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Runtime.Serialization" />
@@ -81,7 +81,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <ProjectReference Include="..\CryManaged\CESharp\Core\Core.csproj">
+    <ProjectReference Include="..\..\..\..\..\CryManaged\CESharp\Core\Core.csproj">
       <Project>{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FB}</Project>
       <Name>Core</Name>
       <Private>False</Private>

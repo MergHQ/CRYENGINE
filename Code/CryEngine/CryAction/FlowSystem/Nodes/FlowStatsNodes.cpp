@@ -12,7 +12,8 @@
 
 *************************************************************************/
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_MemoryStats : public CFlowBaseNode<eNCT_Singleton>
 {
