@@ -5,7 +5,10 @@
 #include "ChunkData.h"
 #include "../../CryCommon/Cry3DEngine/CGF/CGFContent.h"
 
-CSaverVCloth::CSaverVCloth(CChunkData& chunkData, const SVClothInfoCGF* pVClothInfo, bool swapEndian) : m_pChunkData(&chunkData), m_pVClothInfo(pVClothInfo)
+CSaverVCloth::CSaverVCloth(CChunkData& chunkData, const SVClothInfoCGF* pVClothInfo, bool swapEndian)
+	: m_pChunkData(&chunkData),
+	m_pVClothInfo(pVClothInfo),
+	m_bSwapEndian(swapEndian)
 {
 
 }
