@@ -256,7 +256,11 @@ CATLControl* CAudioControlsLoader::LoadControl(XmlNodeRef pNode, QStandardItem* 
 						pNode->getAttr("atl_occlusion_fadeout_distance", occlusionFadeOutDistance);
 						pControl->SetOcclusionFadeOutDistance(occlusionFadeOutDistance);
 
-						LoadConnections(pNode, pControl);
+						bool bMatchRadiusToAttenuation = true;
+						pNode->getAttr("atl_match_radius_attenuation", bMatchRadiusToAttenuation);
+						pControl->SetMatchRadiusToAttenuationEnabled(bMatchRadiusToAttenuation);
+
+						LoadConnections(pNode, pControl, pItem);
 					}
 					break;
 				case eACEControlType_Switch:
@@ -277,7 +281,7 @@ CATLControl* CAudioControlsLoader::LoadControl(XmlNodeRef pNode, QStandardItem* 
 					LoadPreloadConnections(pNode, pControl, pItem, version);
 					break;
 				default:
-					LoadConnections(pNode, pControl);
+					LoadConnections(pNode, pControl, pItem);
 				}
 				pControl->SetScope(scope);
 			}
@@ -462,15 +466,25 @@ void CAudioControlsLoader::CreateDefaultSwitch(QStandardItem* pFolder, const cha
 	}
 }
 
-void CAudioControlsLoader::LoadConnections(XmlNodeRef pRoot, CATLControl* pControl)
+void CAudioControlsLoader::LoadConnections(XmlNodeRef pRoot, CATLControl* pControl, QStandardItem* pItem)
 {
 	if (pControl)
 	{
+		// The radius might change because of the attenuation matching option
+		// so we check here to inform the user if their data is outdated.
+		float radius = pControl->GetRadius();
+
 		const int nSize = pRoot->getChildCount();
 		for (int i = 0; i < nSize; ++i)
 		{
 			XmlNodeRef pNode = pRoot->getChild(i);
 			pControl->LoadConnectionFromXML(pNode);
+		}
+
+		if (radius != pControl->GetRadius())
+		{
+			m_errorCodeMask |= eErrorCode_NonMatchedActivityRadius;
+			pItem->setData(true, eDataRole_Modified);
 		}
 	}
 }

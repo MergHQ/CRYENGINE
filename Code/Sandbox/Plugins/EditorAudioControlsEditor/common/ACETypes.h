@@ -45,4 +45,11 @@ struct SScopeInfo
 typedef uint32                  Scope;
 typedef std::vector<SScopeInfo> ScopeInfoList;
 
+enum EErrorCode
+{
+	eErrorCode_NoError                  = 0,
+	eErrorCode_UnkownPlatform           = BIT(0),
+	eErrorCode_NonMatchedActivityRadius = BIT(1),
+};
+
 }

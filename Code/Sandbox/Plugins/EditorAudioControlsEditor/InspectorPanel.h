@@ -35,6 +35,8 @@ private:
 	// IAudioSystemEditor implementation
 	/////////////////////////////////////////////////////////
 	virtual void OnControlModified(ACE::CATLControl* pControl) override;
+	virtual void OnConnectionAdded(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl) override;
+	virtual void OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl) override;
 	//////////////////////////////////////////////////////////
 
 	CATLControlsModel*  m_pATLModel;

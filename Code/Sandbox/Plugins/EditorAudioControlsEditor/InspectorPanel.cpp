@@ -112,4 +112,20 @@ void CInspectorPanel::OnControlModified(ACE::CATLControl* pControl)
 	}
 }
 
+void CInspectorPanel::OnConnectionAdded(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl)
+{
+	if (!m_bSupressUpdates)
+	{
+		m_pPropertyTree->revert();
+	}
+}
+
+void CInspectorPanel::OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl)
+{
+	if (!m_bSupressUpdates)
+	{
+		m_pPropertyTree->revert();
+	}
+}
+
 }

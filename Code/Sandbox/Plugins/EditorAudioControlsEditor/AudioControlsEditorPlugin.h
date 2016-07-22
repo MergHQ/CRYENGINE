@@ -14,15 +14,6 @@
 struct IAudioProxy;
 class CImplementationManager;
 
-namespace ACE
-{
-enum EErrorCode
-{
-	eErrorCode_NoError        = 0,
-	eErrorCode_UnkownPlatform = BIT(0),
-};
-}
-
 //------------------------------------------------------------------
 class CAudioControlsEditorPlugin : public IPlugin, public ISystemEventListener
 {
@@ -38,7 +29,7 @@ public:
 	void                            OnEditorNotify(EEditorNotifyEvent aEventId) override {}
 
 	static void                     SaveModels();
-	static void                     ReloadModels();
+	static void                     ReloadModels(bool bReloadImplementation);
 	static void                     ReloadScopes();
 	static ACE::CATLControlsModel*  GetATLModel();
 	static ACE::QATLTreeModel*      GetControlsTree();

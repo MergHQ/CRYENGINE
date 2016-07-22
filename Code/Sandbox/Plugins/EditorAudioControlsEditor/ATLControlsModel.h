@@ -19,6 +19,8 @@ struct IATLControlModelListener
 	virtual void OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl) {}
 };
 
+typedef std::vector<std::shared_ptr<CATLControl>> AudioControlList;
+
 class CATLControlsModel
 {
 	friend class IUndoControlOperation;
@@ -36,6 +38,7 @@ public:
 
 	CATLControl* GetControlByID(CID id) const;
 	CATLControl* FindControl(const string& sControlName, EACEControlType eType, Scope scope, CATLControl* pParent = nullptr) const;
+	void         GetControlList(AudioControlList& controlList) const;
 
 	// Scope
 	void       ClearScopes();
@@ -61,6 +64,7 @@ public:
 
 private:
 	void                         OnControlAdded(CATLControl* pControl);
+	void                         OnControlAboutToBeModified(CATLControl* pControl);
 	void                         OnControlModified(CATLControl* pControl);
 	void                         OnConnectionAdded(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl);
 	void                         OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl);
@@ -71,11 +75,11 @@ private:
 	std::shared_ptr<CATLControl> TakeControl(CID nID);
 	void                         InsertControl(std::shared_ptr<CATLControl> pControl);
 
-	static CID m_nextId;
-	std::vector<std::shared_ptr<CATLControl>> m_controls;
-	std::map<Scope, SScopeInfo>               m_scopeMap;
+	static CID                             m_nextId;
+	AudioControlList                       m_controls;
+	std::map<Scope, SScopeInfo>            m_scopeMap;
 
-	std::vector<IATLControlModelListener*>    m_listeners;
+	std::vector<IATLControlModelListener*> m_listeners;
 	bool m_bSuppressMessages;
 	bool m_bControlTypeModified[eACEControlType_NumTypes];
 };

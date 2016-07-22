@@ -34,7 +34,7 @@ private:
 	CATLControl*   LoadControl(XmlNodeRef pNode, QStandardItem* pFolder, Scope scope, uint version);
 
 	void           LoadPreloadConnections(XmlNodeRef pNode, CATLControl* pControl, QStandardItem* pItem, uint version);
-	void           LoadConnections(XmlNodeRef root, CATLControl* pControl);
+	void           LoadConnections(XmlNodeRef root, CATLControl* pControl, QStandardItem* pItem);
 
 	void           CreateDefaultControls();
 	void           CreateDefaultSwitch(QStandardItem* pFolder, const char* szExternalName, const char* szInternalName, const SwitchStates& states);

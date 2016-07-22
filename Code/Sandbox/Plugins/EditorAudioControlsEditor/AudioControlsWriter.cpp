@@ -252,6 +252,11 @@ void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CATLControl* pCon
 				pChildNode->setAttr("atl_occlusion_fadeout_distance", fadeOutDistance);
 			}
 		}
+		if (!pControl->IsMatchRadiusToAttenuationEnabled())
+		{
+			pChildNode->setAttr("atl_match_radius_attenuation", "0");
+		}
+
 	}
 
 	if (type == eACEControlType_Switch)

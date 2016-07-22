@@ -112,32 +112,25 @@ public:
 	//////////////////////////////////////////////////////////
 
 private:
-	IAudioSystemItem* GetControlByName(const string& sName, bool bIsLocalised = false, IAudioSystemItem* pParent = nullptr) const;
-	IAudioSystemItem* CreateControl(const SControlDef& controlDefinition);
-
-	// Gets the ID of the control given its name. As controls can have the same name
-	// if they're under different parents, the name of the parent is also needed (if there is one)
-	CID  GetID(const string& sName) const;
+	void Clear();
+	void CreateControlCache(IAudioSystemItem* pParent);
 	void UpdateConnectedStatus();
 
-	void LoadEventsMetadata();
+	// Generates the ID of the control given its full path name.
+	CID GenerateID(const string& controlName, bool bIsLocalised, IAudioSystemItem* pParent) const;
+	// Convenience function to form the full path name.
+	// Controls can have the same name if they're under different parents so knowledge of the parent name is needed.
+	// Localized controls live in different areas of disk so we also need to know if its localized.
+	CID GenerateID(const string& fullPathName) const;
 
 	IAudioSystemItem m_rootControl;
 
-	typedef std::shared_ptr<IAudioSystemItem> TControlPtr;
-	typedef std::map<CID, TControlPtr>        TControlMap;
-	TControlMap m_controls;
+	typedef std::map<CID, IAudioSystemItem*> ControlMap;
+	ControlMap m_controlsCache;       // cache of the controls stored by id for faster access
 
 	typedef std::map<CID, int> TConnectionsMap;
 	TConnectionsMap               m_connectionsByID;
 	CImplementationSettings_wwise m_settings;
-
-	struct SEventInfo
-	{
-		float maxRadius;
-	};
-	typedef std::map<uint32, SEventInfo> EventsInfoMap;
-	EventsInfoMap m_eventsInfoMap;
 
 };
 }

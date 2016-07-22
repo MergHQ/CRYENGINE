@@ -76,6 +76,10 @@ public:
 	void            ReloadConnections();
 	void            LoadConnectionFromXML(XmlNodeRef xmlNode, int platformIndex = -1);
 
+	void            MatchRadiusToAttenuation();
+	bool            IsMatchRadiusToAttenuationEnabled() const         { return m_bMatchRadiusAndAttenuation; }
+	void            SetMatchRadiusToAttenuationEnabled(bool bEnabled) { m_bMatchRadiusAndAttenuation = bEnabled; }
+
 	void            SignalControlAboutToBeModified();
 	void            SignalControlModified();
 	void            SignalConnectionAdded(IAudioSystemItem* pMiddlewareControl);
@@ -95,6 +99,7 @@ private:
 	float                      m_occlusionFadeOutDistance;
 	bool                       m_bAutoLoad;
 	bool                       m_bModified;
+	bool                       m_bMatchRadiusAndAttenuation;
 
 	CATLControlsModel*         m_pModel;
 
@@ -104,6 +109,7 @@ private:
 	std::map<int, XMLNodeList> m_connectionNodes;
 
 	bool                       m_modifiedSignalEnabled;
+
 };
 
 typedef std::shared_ptr<CATLControl> ATLControlPtr;

@@ -7,12 +7,17 @@
 
 namespace ACE
 {
-class CAudioSystemEditor_sdlmixer;
+class IAudioSystemItem;
 
 class CSdlMixerProjectLoader
 {
 public:
-	CSdlMixerProjectLoader(const string& sAssetsPath, CAudioSystemEditor_sdlmixer* pAudioSystemImpl);
-	CAudioSystemEditor_sdlmixer* m_pAudioSystemImpl;
+	CSdlMixerProjectLoader(const string& sAssetsPath, IAudioSystemItem& rootItem);
+
+private:
+	IAudioSystemItem* CreateItem(const string& name, const string& path, ItemType type, IAudioSystemItem& rootItem);
+	void              LoadFolder(const string& folderPath, IAudioSystemItem& parent);
+
+	string m_assetsPath;
 };
 }

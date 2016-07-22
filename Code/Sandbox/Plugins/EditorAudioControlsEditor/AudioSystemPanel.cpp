@@ -91,6 +91,8 @@ CAudioSystemPanel::CAudioSystemPanel()
 	pTreeView->setDragEnabled(true);
 	pTreeView->setDragDropMode(QAbstractItemView::DragOnly);
 	pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	pTreeView->setSortingEnabled(true);
+	pTreeView->sortByColumn(0, Qt::AscendingOrder);
 
 	m_pModelProxy->setSourceModel(m_pModel);
 	pTreeView->setModel(m_pModelProxy);

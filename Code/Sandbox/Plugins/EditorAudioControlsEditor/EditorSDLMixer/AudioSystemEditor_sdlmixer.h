@@ -144,9 +144,6 @@ public:
 	CAudioSystemEditor_sdlmixer();
 	virtual ~CAudioSystemEditor_sdlmixer();
 
-	CID               GetId(const string& sName) const;
-	IAudioSystemItem* CreateControl(const SControlDef& controlDefinition);
-
 	//////////////////////////////////////////////////////////
 	// IAudioSystemEditor implementation
 	/////////////////////////////////////////////////////////
@@ -165,7 +162,11 @@ public:
 
 private:
 
-	static const string              s_controlNameTag;
+	CID  GetId(const string& sName) const;
+	void CreateControlCache(IAudioSystemItem* pParent);
+	
+	static const string              s_itemNameTag;
+	static const string              s_pathNameTag;
 	static const string              s_eventConnectionTag;
 	static const string              s_sampleConnectionTag;
 	static const string              s_connectionTypeTag;
@@ -179,7 +180,7 @@ private:
 	IAudioSystemItem                 m_root;
 	typedef std::map<CID, std::vector<SdlConnectionPtr>> SdlMixerConnections;
 	SdlMixerConnections              m_connectionsByID;
-	std::vector<IAudioSystemItem*>   m_controls;
+	std::vector<IAudioSystemItem*>   m_controlsCache;
 	CImplementationSettings_sdlmixer m_settings;
 };
 }

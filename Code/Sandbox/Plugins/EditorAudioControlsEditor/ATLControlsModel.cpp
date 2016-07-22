@@ -214,6 +214,15 @@ void CATLControlsModel::OnControlAdded(CATLControl* pControl)
 	}
 }
 
+void CATLControlsModel::OnControlAboutToBeModified(CATLControl* pControl)
+{
+	if (!m_bSuppressMessages && !CUndo::IsSuspended())
+	{
+		CUndo undo("ATL Control Modified");
+		CUndo::Record(new CUndoControlModified(pControl->GetId()));
+	}
+}
+
 void CATLControlsModel::OnControlRemoved(CATLControl* pControl)
 {
 	if (!m_bSuppressMessages)
@@ -329,6 +338,15 @@ CATLControl* CATLControlsModel::FindControl(const string& sControlName, EACECont
 	return nullptr;
 }
 
+void CATLControlsModel::GetControlList(AudioControlList& controlList) const
+{
+	controlList.reserve(m_controls.size());
+	for (auto pControl : m_controls)
+	{
+		controlList.push_back(pControl);
+	}
+}
+
 std::shared_ptr<CATLControl> CATLControlsModel::TakeControl(CID nID)
 {
 	const size_t size = m_controls.size();
@@ -375,6 +393,7 @@ void CATLControlsModel::ClearAllConnections()
 
 void CATLControlsModel::ReloadAllConnections()
 {
+	ClearAllConnections();
 	const size_t size = m_controls.size();
 	for (size_t i = 0; i < size; ++i)
 	{

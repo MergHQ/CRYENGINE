@@ -299,4 +299,26 @@ void QAudioSystemModelProxyFilter::SetHideConnected(bool bHideConnected)
 	m_bHideConnected = bHideConnected;
 	invalidate();
 }
+
+bool QAudioSystemModelProxyFilter::lessThan(const QModelIndex& left, const QModelIndex& right) const
+{
+	if (left.column() == right.column())
+	{
+		const bool bLeftHasChildren = (sourceModel()->rowCount(left) > 0);
+		const bool bRightHasChildren = (sourceModel()->rowCount(right) > 0);
+
+		if (bLeftHasChildren == bRightHasChildren)
+		{
+			QVariant valueLeft = sourceModel()->data(left, Qt::DisplayRole);
+			QVariant valueRight = sourceModel()->data(right, Qt::DisplayRole);
+			return valueLeft < valueRight;
+		}
+		else
+		{
+			return !bRightHasChildren; //high priority to the one that has children
+		}
+	}
+	return QSortFilterProxyModel::lessThan(left, right);
+}
+
 }

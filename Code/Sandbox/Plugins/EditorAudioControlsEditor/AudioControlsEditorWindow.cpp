@@ -117,6 +117,15 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	{
 		QMessageBox::warning(this, tr("Audio Controls Editor"), tr("Audio Preloads reference an unknown platform.\nSaving will permanently erase this data."));
 	}
+	else if (errorCodeMask & EErrorCode::eErrorCode_NonMatchedActivityRadius)
+	{
+		IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+		if (pAudioSystemImpl)
+		{
+			QString middlewareName = pAudioSystemImpl->GetName();
+			QMessageBox::warning(this, tr("Audio Controls Editor"), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nTriggers with their activity radius linked to the attenuation will be updated next time you save."));
+		}
+	}
 }
 
 CAudioControlsEditorWindow::~CAudioControlsEditorWindow()
@@ -203,7 +212,7 @@ void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 				{
 					pAudioSystemEditorImpl->Reload(false);
 				}
-				CAudioControlsEditorPlugin::ReloadModels();
+				CAudioControlsEditorPlugin::ReloadModels(false);
 
 				pEvent->accept();
 			}
@@ -235,7 +244,7 @@ void CAudioControlsEditorWindow::Reload()
 
 	if (bReload)
 	{
-		CAudioControlsEditorPlugin::ReloadModels();
+		CAudioControlsEditorPlugin::ReloadModels(true);
 		Update();
 	}
 }

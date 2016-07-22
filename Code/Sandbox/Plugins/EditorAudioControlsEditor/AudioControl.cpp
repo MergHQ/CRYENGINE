@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "AudioControl.h"
 #include "ATLControlsModel.h"
-#include "AudioControlsEditorUndo.h"
 #include "IEditor.h"
 #include <IAudioSystemItem.h>
 #include <ACETypes.h>
@@ -12,6 +11,7 @@
 #include <CrySerialization/StringList.h>
 #include <CrySerialization/Decorators/Range.h>
 #include <Serialization/Decorators/EditorActionButton.h>
+#include <Serialization/Decorators/ToggleButton.h>
 #include <CryMath/Cry_Geo.h>
 #include <Util/Math.h>
 #include <ConfigurationManager.h>
@@ -29,6 +29,7 @@ CATLControl::CATLControl()
 	, m_bModified(false)
 	, m_pModel(nullptr)
 	, m_modifiedSignalEnabled(true)
+	, m_bMatchRadiusAndAttenuation(true)
 {
 }
 
@@ -41,6 +42,7 @@ CATLControl::CATLControl(const string& controlName, CID id, EACEControlType eTyp
 	, m_bAutoLoad(true)
 	, m_bModified(false)
 	, m_pModel(pModel)
+	, m_bMatchRadiusAndAttenuation(true)
 {
 	m_modifiedSignalEnabled = false;
 	SetName(controlName);
@@ -153,6 +155,11 @@ void CATLControl::AddConnection(ConnectionPtr pConnection)
 	{
 		m_connectedControls.push_back(pConnection);
 
+		if (m_bMatchRadiusAndAttenuation)
+		{
+			MatchRadiusToAttenuation();
+		}
+
 		pConnection->signalConnectionChanged.Connect(this, &CATLControl::SignalControlModified);
 
 		IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
@@ -165,6 +172,8 @@ void CATLControl::AddConnection(ConnectionPtr pConnection)
 				SignalConnectionAdded(pAudioSystemControl);
 			}
 		}
+
+		SignalControlModified();
 	}
 }
 
@@ -181,9 +190,18 @@ void CATLControl::RemoveConnection(ConnectionPtr pConnection)
 				IAudioSystemItem* pAudioSystemControl = pAudioSystemImpl->GetControl(pConnection->GetID());
 				if (pAudioSystemControl)
 				{
+
 					pAudioSystemImpl->DisableConnection(pConnection);
 					m_connectedControls.erase(it);
+
+					if (m_bMatchRadiusAndAttenuation)
+					{
+						MatchRadiusToAttenuation();
+					}
+
 					SignalConnectionRemoved(pAudioSystemControl);
+					SignalControlModified();
+
 				}
 			}
 		}
@@ -192,32 +210,41 @@ void CATLControl::RemoveConnection(ConnectionPtr pConnection)
 
 void CATLControl::ClearConnections()
 {
-	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-	if (pAudioSystemImpl)
+	if (!m_connectedControls.empty())
 	{
-		for (ConnectionPtr& c : m_connectedControls)
+		IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+		if (pAudioSystemImpl)
 		{
-			pAudioSystemImpl->DisableConnection(c);
-			IAudioSystemItem* pAudioSystemControl = pAudioSystemImpl->GetControl(c->GetID());
-			if (pAudioSystemControl)
+			for (ConnectionPtr& connection : m_connectedControls)
 			{
-				SignalConnectionRemoved(pAudioSystemControl);
+				pAudioSystemImpl->DisableConnection(connection);
+				IAudioSystemItem* pAudioSystemControl = pAudioSystemImpl->GetControl(connection->GetID());
+				if (pAudioSystemControl)
+				{
+					SignalConnectionRemoved(pAudioSystemControl);
+				}
 			}
 		}
+		m_connectedControls.clear();
+
+		if (m_bMatchRadiusAndAttenuation)
+		{
+			MatchRadiusToAttenuation();
+		}
+		SignalControlModified();
 	}
-	m_connectedControls.clear();
 }
 
 void CATLControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
 {
 	if (pAudioSystemControl)
 	{
-		const CID nID = pAudioSystemControl->GetId();
+		const CID id = pAudioSystemControl->GetId();
 		auto it = m_connectedControls.begin();
 		auto end = m_connectedControls.end();
 		for (; it != end; ++it)
 		{
-			if ((*it)->GetID() == nID)
+			if ((*it)->GetID() == id)
 			{
 				IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 				if (pAudioSystemImpl)
@@ -226,7 +253,14 @@ void CATLControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
 				}
 				m_connectedControls.erase(it);
 
+				if (m_bMatchRadiusAndAttenuation)
+				{
+					MatchRadiusToAttenuation();
+				}
+
 				SignalConnectionRemoved(pAudioSystemControl);
+				SignalControlModified();
+
 				return;
 			}
 		}
@@ -243,10 +277,9 @@ void CATLControl::SignalControlModified()
 
 void CATLControl::SignalControlAboutToBeModified()
 {
-	if (m_modifiedSignalEnabled && !CUndo::IsSuspended())
+	if (m_modifiedSignalEnabled && m_pModel)
 	{
-		CUndo undo("ATL Control Modified");
-		CUndo::Record(new CUndoControlModified(GetId()));
+		m_pModel->OnControlAboutToBeModified(this);
 	}
 }
 
@@ -370,10 +403,10 @@ void CATLControl::Serialize(Serialization::IArchive& ar)
 		float fadeOutDistance = m_occlusionFadeOutDistance;
 		if (m_type == eACEControlType_Trigger)
 		{
-			if (ar.openBlock("radius", "Activity Radius"))
-			{
-				ar(Serialization::Range<float>(maxRadius, 0.0f, std::numeric_limits<float>::max()), "max_radius", "^");
 
+			if (ar.openBlock("activity_radius", "Activity Radius"))
+			{
+				bool hasPlaceholderConnections = false;
 				float attenuationRadius = 0.0f;
 				IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 				if (pAudioSystemImpl)
@@ -382,37 +415,44 @@ void CATLControl::Serialize(Serialization::IArchive& ar)
 					for (auto pConnection : m_connectedControls)
 					{
 						IAudioSystemItem* pItem = pAudioSystemImpl->GetControl(pConnection->GetID());
-						if (pItem)
+						if (pItem && !pItem->IsPlaceholder())
 						{
 							attenuationRadius = std::max(attenuationRadius, pItem->GetRadius());
+						}
+						else
+						{
+							// If control has placeholder connection we cannot enforce the link between activity radius
+							// and attenuation as the user could be missing the middleware project
+							hasPlaceholderConnections = true;
 						}
 					}
 				}
 
-				if (fabs(attenuationRadius - maxRadius) > FLOAT_EPSILON)
+				if (m_bMatchRadiusAndAttenuation && !hasPlaceholderConnections)
 				{
-					ar(Serialization::ActionButton([&] {
-
-							IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-							if (pAudioSystemImpl)
-							{
-							  float radius = 0.0f;
-							  for (auto pConnection : m_connectedControls)
-							  {
-							    IAudioSystemItem* pItem = pAudioSystemImpl->GetControl(pConnection->GetID());
-							    if (pItem)
-							    {
-							      radius = std::max(radius, pItem->GetRadius());
-							    }
-							  }
-							  SetRadius(radius);
-							}
-					  }, "icons:General/Arrow_Left.ico"), "match_attenuation", "^Match");
-					ar.doc("Match the activity radius to the attenuation hinted by the middleware.");
+					ar(Serialization::Range<float>(maxRadius, 0.0f, std::numeric_limits<float>::max()), "max_radius", "!^");
 				}
-			}
+				else
+				{
+					ar(Serialization::Range<float>(maxRadius, 0.0f, std::numeric_limits<float>::max()), "max_radius", "^");
+				}
 
-			ar(Serialization::Range<float>(fadeOutDistance, 0.0f, maxRadius), "fadeOutDistance", "Occlusion Fade-Out Distance");
+				if (!hasPlaceholderConnections)
+				{
+					if (ar.openBlock("attenuation", "Attenuation"))
+					{
+						ar(attenuationRadius, "attenuation", "!^");
+						ar(Serialization::ToggleButton(m_bMatchRadiusAndAttenuation, "icons:Navigation/Tools_Link.ico", "icons:Navigation/Tools_Link_Unlink.ico"), "link", "^");
+						if (m_bMatchRadiusAndAttenuation)
+						{
+							maxRadius = attenuationRadius;
+						}
+
+						ar.closeBlock();
+					}
+				}
+				ar(Serialization::Range<float>(fadeOutDistance, 0.0f, maxRadius), "fadeOutDistance", "Occlusion Fade-Out Distance");
+			}
 		}
 
 		if (ar.isInput())
@@ -428,6 +468,7 @@ void CATLControl::Serialize(Serialization::IArchive& ar)
 			SignalControlModified();
 		}
 	}
+
 }
 
 void CATLControl::SetParent(CATLControl* pParent)
@@ -438,7 +479,6 @@ void CATLControl::SetParent(CATLControl* pParent)
 		SetScope(pParent->GetScope());
 	}
 }
-
 void CATLControl::SetRadius(float radius)
 {
 	if (radius != m_radius)
@@ -468,4 +508,33 @@ XMLNodeList& CATLControl::GetRawXMLConnections(int platformIndex /*= -1*/)
 {
 	return m_connectionNodes[platformIndex];
 }
+
+void CATLControl::MatchRadiusToAttenuation()
+{
+	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+	if (pAudioSystemImpl)
+	{
+		float radius = 0.0f;
+		for (auto pConnection : m_connectedControls)
+		{
+			IAudioSystemItem* pItem = pAudioSystemImpl->GetControl(pConnection->GetID());
+			if (pItem)
+			{
+				if (pItem->IsPlaceholder())
+				{
+					// We don't match controls that have placeholder
+					// connections as we don't know what the real values should be
+					return;
+				}
+				else
+				{
+					radius = std::max(radius, pItem->GetRadius());
+				}
+			}
+		}
+
+		SetRadius(radius);
+	}
+}
+
 }
