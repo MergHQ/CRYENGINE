@@ -15,18 +15,40 @@ import pywintypes
 
 import cryproject, cryregistry
 
+def command_title (args):
+	return {
+	'upgrade': 'Upgrade project',
+	'projgen': 'Generate solution',
+	'build': 'Build Solution',
+	'edit': 'Edit game',
+	'open': 'Run game',
+	'monodev': 'Edit C# code'
+	}.get (args.command, '')
+
 #--- errors
 
-def error_project_not_found (path, title):
-	win32ui.MessageBox ("'%s' not found.\n" % path, title, win32con.MB_OK | win32con.MB_ICONERROR)
+def error_project_not_found (args):
+	message= "'%s' not found.\n" % args.project_file
+	if args.silent:
+		sys.stderr.write (message)
+	else:
+		win32ui.MessageBox (message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
 	sys.exit (404)
 
-def error_project_json_decode (path, title):
-	win32ui.MessageBox ("Unable to parse '%s'.\n" % path, title, win32con.MB_OK | win32con.MB_ICONERROR)
+def error_project_json_decode (args):
+	message= "Unable to parse '%s'.\n" % args.project_file
+	if args.silent:
+		sys.stderr.write (message)
+	else:
+		win32ui.MessageBox (message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
 	sys.exit (1)
 
-def error_engine_path_not_found (engine_version, title):
-	win32ui.MessageBox ("CryEngine '%s' has not been registered locally.\n" % engine_version, title, win32con.MB_OK | win32con.MB_ICONERROR)
+def error_engine_path_not_found (args, engine_version):
+	message= "CryEngine '%s' has not been registered locally.\n" % engine_version
+	if args.silent:
+		sys.stderr.write (message)
+	else:
+		win32ui.MessageBox (message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
 	sys.exit (1)
 
 def print_subprocess (cmd):
@@ -88,7 +110,8 @@ def cmd_install (args):
 
 		project_commands= (
 			('edit', 'Edit game', '"%s" edit "%%1"' % ScriptPath),
-			('open', 'Run game', '"%s" open "%%1"' % ScriptPath),		
+			('open', 'Run game', '"%s" open "%%1"' % ScriptPath),
+			('monodev', 'Edit C# code', '"%s" monodev "%%1"' % ScriptPath),
 			('_build', 'Build solution', '"%s" build "%%1"' % ScriptPath),
 			('_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),			
 			('_switch', 'Switch engine version', '"%s" switch "%%1"' % ScriptPath),
@@ -102,7 +125,8 @@ def cmd_install (args):
 		
 		project_commands= (
 			('edit', 'Edit game', '"%s" "%s" edit "%%1"' % (PythonPath, ScriptPath)),
-			('open', 'Run game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),		
+			('open', 'Run game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),
+			('monodev', 'Edit C# code', '"%s" monodev "%%1"' % ScriptPath),
 			('_build', 'Build solution', '"%s" "%s" build "%%1"' % (PythonPath, ScriptPath)),
 			('_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),			
 			('_switch', 'Switch engine version', '"%s" "%s" switch "%%1"' % (PythonPath, ScriptPath)),
@@ -253,23 +277,6 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 
-def cryswitch_getengines():
-	engine_list= []
-	
-	engines= cryregistry.load_engines()
-	for (engine_id, engine_data) in engines.items():
-		engine_file= engine_data['uri']
-		
-		info= engine_data.get ('info', {})
-		version= info.get ('version', 0)
-		name= info.get ('name', os.path.dirname (engine_file))
-				
-		engine_list.append ((version, name, engine_id))
-		
-	engine_list.sort()
-	engine_list.reverse()
-	return list (map (lambda a: (a[2], a[1]), engine_list))
-
 def cryswitch_enginenames (engines):
 	return list (map (lambda a: (a[1]), engines))
 
@@ -289,7 +296,7 @@ class CrySwitch(tk.Frame):
 		self.open = tk.Button(top, text="...", width=3, command=self.command_browse)
 		self.open.pack(side='right', padx= 2)
 
-		self.combo = ttk.Combobox(top, values= cryswitch_enginenames (self.values), state='readonly')
+		self.combo = ttk.Combobox(top, values= cryswitch_enginenames (self.engine_list), state='readonly')
 		self.combo.pack(fill='x', expand= True, side='right', padx= 2)
 
 		#---
@@ -306,31 +313,21 @@ class CrySwitch(tk.Frame):
 	def close (self):
 		self.root.destroy()
 		
-	def __init__(self, project_file, root):
+	def __init__(self, project_file, engine_list, found):
+		root= tk.Tk()
 		super().__init__(root)
-		
-		project= cryproject.load (project_file)
-		engine_id= cryproject.engine_id (project)
-		
+				
 		self.root= root
 		self.project_file= project_file
-		self.values= cryswitch_getengines()
-
-		found= 0
-		for i in range (len (self.values)):
-			(id_, name)= self.values[i]
-			if id_ == engine_id:
-				found= i
-				break
+		self.engine_list= engine_list
 				
-		self.layout (root)		
-		if self.values:
-			self.combo.current (found)
-		
+		self.layout (self.root)
+		if self.engine_list:
+			self.combo.current (found)		
 		
 	def command_ok(self):
 		i= self.combo.current()
-		(engine_id, name)= self.values[i]
+		(engine_id, name)= self.engine_list[i]
 		if engine_id is None:
 			engine_dirname= name
 			
@@ -363,12 +360,51 @@ class CrySwitch(tk.Frame):
 		#http://tkinter.unpythonic.net/wiki/tkFileDialog
 		file= filedialog.askdirectory(mustexist=True)
 		if file:
-			self.values.append ((None, file))
-			self.combo['values']= cryswitch_enginenames (self.values)
+			self.engine_list.append ((None, os.path.abspath (file)))
+			self.combo['values']= cryswitch_enginenames (self.engine_list)
 			self.combo.current (len (self.values) - 1)		
 
 def cmd_switch (args):
-	app = CrySwitch (args.project_file, tk.Tk())
+	title= 'Switch CRYENGINE version'
+	if not os.path.isfile (args.project_file):
+		error_project_not_found(args)
+			
+	project= cryproject.load (args.project_file)
+	if project is None:
+		error_project_json_decode (args)
+
+	#---
+	
+	engine_list= []
+	
+	engines= cryregistry.load_engines()
+	for (engine_id, engine_data) in engines.items():
+		engine_file= engine_data['uri']
+		
+		info= engine_data.get ('info', {})
+		version= info.get ('version', 0)
+		name= info.get ('name', os.path.dirname (engine_file))
+				
+		engine_list.append ((version, name, engine_id))
+		
+	engine_list.sort()
+	engine_list.reverse()
+	engine_list= list (map (lambda a: (a[2], a[1]), engine_list))
+	
+	#---
+	
+	engine_id= cryproject.engine_id (project)
+
+	found= 0
+	for i in range (len (engine_list)):
+		(id_, name)= engine_list[i]
+		if id_ == engine_id:
+			found= i
+			break
+
+	#---
+	
+	app = CrySwitch (args.project_file, engine_list, found)
 	app.mainloop()
 
 #--- UPGRADE ---
@@ -377,7 +413,7 @@ def cmd_upgrade (args):
 	registry= cryregistry.load_engines()
 	engine_path= cryregistry.engine_path (registry, args.engine_version)
 	if engine_path is None:
-		error_engine_path_not_found (args.engine_version, 'Upgrade project')
+		error_engine_path_not_found (args, args.engine_version)
 	
 	if getattr( sys, 'frozen', False ):
 		subcmd= [
@@ -395,19 +431,19 @@ def cmd_upgrade (args):
 
 #--- RUN ----
 
-def cmd_run (args, title):
+def cmd_run (args):
 	if not os.path.isfile (args.project_file):
-		error_project_not_found (args.project_file, title)
+		error_project_not_found (args)
 	
 	project= cryproject.load (args.project_file)
 	if project is None:
-		error_project_json_decode (args.project_file, title)
+		error_project_json_decode (args)
 	
 	engine_id= cryproject.engine_id(project)	
 	engine_registry= cryregistry.load_engines()
 	engine_path= cryregistry.engine_path (engine_registry, engine_id)
 	if engine_path is None:
-		error_engine_path_not_found (engine_id, title)
+		error_engine_path_not_found (args, engine_id)
 		
 	#---
 
@@ -435,18 +471,20 @@ def cmd_run (args, title):
 	returncode= p.wait()
 	temp_file.close()
 	
-	if returncode != 0:
+	if not args.silent and returncode != 0:
 		result= win32ui.MessageBox (p.stderr.read(), title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
 		if result == win32con.IDOK:
 			subprocess.call(('notepad.exe', temp_path))
 				
 	os.remove (temp_path)
+	sys.exit (returncode)
 
 #--- MAIN ---
 
 if __name__ == '__main__':
 	parser= argparse.ArgumentParser()
 	parser.add_argument ('--pause', action='store_true')
+	parser.add_argument ('--silent', action='store_true')
 	
 	subparsers= parser.add_subparsers(dest='command')
 	subparsers.required= True
@@ -476,27 +514,32 @@ if __name__ == '__main__':
 	#parser_upgrade.add_argument ('remainder', nargs=argparse.REMAINDER)
 	parser_upgrade.set_defaults(func=cmd_upgrade)
 	
-	parser_edit= subparsers.add_parser ('projgen')
-	parser_edit.add_argument ('project_file')
-	parser_edit.add_argument ('remainder', nargs=argparse.REMAINDER)
-	parser_edit.set_defaults(func=lambda args: cmd_run (args, 'Generate solution'))
+	parser_projgen= subparsers.add_parser ('projgen')
+	parser_projgen.add_argument ('project_file')
+	parser_projgen.add_argument ('remainder', nargs=argparse.REMAINDER)
+	parser_projgen.set_defaults(func=cmd_run)
 
 	parser_build= subparsers.add_parser ('build')
 	parser_build.add_argument ('project_file')
 	parser_build.add_argument ('remainder', nargs=argparse.REMAINDER)
-	parser_build.set_defaults(func=lambda args: cmd_run (args, 'Build Solution'))
+	parser_build.set_defaults(func=cmd_run)
 
 	parser_edit= subparsers.add_parser ('edit')
 	parser_edit.add_argument ('project_file')
 	parser_edit.add_argument ('remainder', nargs=argparse.REMAINDER)
-	parser_edit.set_defaults(func=lambda args: cmd_run (args, 'Edit game'))
+	parser_edit.set_defaults(func=cmd_run)
 
 	parser_open= subparsers.add_parser ('open')
 	parser_open.add_argument ('project_file')
 	parser_open.add_argument ('remainder', nargs=argparse.REMAINDER)
-	parser_open.set_defaults(func=lambda args: cmd_run (args, 'Run game'))
+	parser_open.set_defaults(func=cmd_run)
 
-	#---	
+	parser_monodev= subparsers.add_parser ('monodev')
+	parser_monodev.add_argument ('project_file')
+	parser_monodev.add_argument ('remainder', nargs=argparse.REMAINDER)
+	parser_monodev.set_defaults(func=cmd_run)
+
+	#---
 		
 	args= parser.parse_args()
 	args.func (args)
