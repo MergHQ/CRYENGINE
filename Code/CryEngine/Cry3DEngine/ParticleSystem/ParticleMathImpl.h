@@ -224,13 +224,6 @@ ILINE void TIOStream<T >::Store(TParticleId pId, T value)
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Functions
-
-ILINE floatv Frac(floatv f)
-{
-	return f - floor(f);
-}
-
 // Vector functions
 
 ILINE Vec3 HMin(const Vec3v& v0)

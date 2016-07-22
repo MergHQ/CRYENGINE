@@ -230,8 +230,6 @@ template<typename T, typename U> T ILINE MAdd(const T& a, const U& b, const T& c
 ///////////////////////////////////////////////////////////////////////////
 // Vectorized functions
 
-floatv Frac(floatv t);
-
 float  HMin(floatv v0);
 float  HMax(floatv v0);
 

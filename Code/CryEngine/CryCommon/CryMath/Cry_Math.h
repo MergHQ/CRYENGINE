@@ -221,6 +221,11 @@ template<typename T> ILINE T mod(T a, T b)
 	return a - trunc(a / b) * b;
 }
 
+template<typename T> ILINE T frac(T val)
+{
+	return val - floor(val);
+}
+
 template<typename T> ILINE T wrap(T f, T lo, T hi)
 {
 	const T range = hi - lo;

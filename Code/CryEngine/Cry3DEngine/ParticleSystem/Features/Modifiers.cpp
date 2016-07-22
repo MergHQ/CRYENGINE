@@ -507,8 +507,8 @@ private:
 		const floatv ipi = ToFloatv(1.0f / gf_PI);
 		const floatv ipi2 = ToFloatv(1.0f / gf_PI2);
 
-		const floatv x1 = MAdd(Frac(Mul(x, ipi)), pi, negHalfPi);
-		const floatv m = sign(Frac(Mul(x, ipi2)) - half);
+		const floatv x1 = MAdd(frac(Mul(x, ipi)), pi, negHalfPi);
+		const floatv m = sign(frac(Mul(x, ipi2)) - half);
 
 		const floatv p0 = ToFloatv(-0.4964738f);
 		const floatv p1 = ToFloatv(0.036957536f);
@@ -535,20 +535,19 @@ private:
 
 	ILINE static floatv Sin(floatv time)
 	{
-		return -CosApproax(Mul(time, ToFloatv(gf_PI2)));
+		return -CosApproax(time * ToFloatv(gf_PI2));
 	}
 
 	ILINE static floatv Saw(floatv time)
 	{
-		const floatv minusOne = ToFloatv(-1.0f);
-		const floatv two = ToFloatv(2.0f);
-		return MAdd(Frac(time), two, minusOne);
+		const floatv f = frac(time);
+		return f + f - ToFloatv(1.0f);
 	}
 
 	ILINE static floatv Pulse(floatv time)
 	{
 		const floatv half = ToFloatv(0.5f);
-		return sign(half - Frac(time));
+		return sign(half - frac(time));
 	}
 
 	EWaveType m_waveType;
