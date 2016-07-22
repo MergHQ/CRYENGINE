@@ -102,10 +102,6 @@ void CGameTokenCondition::Serialize(Serialization::IArchive& ar)
 		{
 			ar.warning(m_tokenName, "You need to specify a GameToken Name");
 		}
-		else if (!m_pCachedToken)
-		{
-			ar.warning(m_tokenName, "No GameToken with the name found");
-		}
 		else if (m_maxValue == CVariableValue::POS_INFINITE && m_minValue == CVariableValue::NEG_INFINITE)
 		{
 			ar.warning(m_tokenName, "This Condition will always be true!");

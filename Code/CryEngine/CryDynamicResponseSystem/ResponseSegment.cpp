@@ -199,6 +199,7 @@ void CResponseSegment::ActionsInfo::Serialize(Serialization::IArchive& ar)
 #if !defined(_RELEASE)
 static int s_CurrentChildDepth = 0;
 static int s_CurrentChildWidth[64] = { 0 };
+static int s_DepthMaxWidth[64] = { 0 };
 #endif
 
 //--------------------------------------------------------------------------------------------------
@@ -214,18 +215,18 @@ void CResponseSegment::Serialize(Serialization::IArchive& ar)
 			for (int i = 1; i <= s_CurrentChildDepth; i++)
 			{
 				if (hierarchyName.empty())
-					hierarchyName = "[Response";
+					hierarchyName = "{Child";
 				else
 					hierarchyName += '.';
 				hierarchyName += CryStringUtils::toString(s_CurrentChildWidth[i]);
 			}
-			hierarchyName += ']';
+			hierarchyName += "}";
 		}
 		else
 		{
-			hierarchyName = "[ResponseBase]";
+			hierarchyName = "{Base}";
 		}
-		//ar(hierarchyName, "hierarchyName", "^!>105>");
+		ar(hierarchyName, "hierarchyName", "^!>80>");
 
 		if (ar.isOutput())
 		{
@@ -255,10 +256,16 @@ void CResponseSegment::Serialize(Serialization::IArchive& ar)
 #if !defined(_RELEASE)
 	s_CurrentChildDepth++;
 	s_CurrentChildWidth[s_CurrentChildDepth] = 0;
+	s_DepthMaxWidth[s_CurrentChildDepth] = m_pChildSegments->size();
 #endif
-	ar(*m_pChildSegments, "ChildSegments", "+<Follow up Response");
+	ar(*m_pChildSegments, "ChildSegments", "+<Follow up Responses");
 #if !defined(_RELEASE)
 	s_CurrentChildDepth--;
+	if (ar.isEdit() && s_CurrentChildDepth > 0 && s_DepthMaxWidth[s_CurrentChildDepth] > s_CurrentChildWidth[s_CurrentChildDepth])
+	{
+		static string seperator = "______________________________________________________________________________________________________________________________________________________________________________________";
+		ar(seperator, "seperator", "!<");
+	}
 #endif
 
 	if (m_pChildSegments->empty())

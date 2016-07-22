@@ -19,15 +19,6 @@ void CActionSetGameToken::Serialize(Serialization::IArchive& ar)
 	ar(m_tokenName, "tokenname", "^TokenName");
 	ar(m_valueToSet, "stringValue", "^ Value");
 	ar(m_bCreateTokenIfNotExisting, "create", "^ Create");
-
-	if (ar.isEdit() && !m_bCreateTokenIfNotExisting)
-	{
-		IGameTokenSystem* pTokenSystem = gEnv->pGame->GetIGameFramework()->GetIGameTokenSystem();
-		if (!pTokenSystem->FindToken(m_tokenName.c_str()))
-		{
-			ar.warning(m_tokenName, "Token not existing");
-		}
-	}
 }
 
 //--------------------------------------------------------------------------------------------------
