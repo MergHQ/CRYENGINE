@@ -5,7 +5,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/Tools/CMake/modules")
 enable_language(C)
 enable_language(CXX)
 
-
 set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS Debug Profile)
 
 if (DURANGO OR ORBIS OR ANDROID)
@@ -19,7 +18,7 @@ if(WIN32)
 endif()
 
 if(NOT MSVC)
-	set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -std=c++11)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
 if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
@@ -37,7 +36,7 @@ include(${CMAKE_SOURCE_DIR}/Tools/CMake/CopyFilesToBin.cmake)
 if(ANDROID)
 	unset(WIN32)
 	unset(WIN64)
-	set(OPTION_STATIC_LINKING TRUE)
+	set(OPTION_STATIC_LINKING FALSE)
 	SET(CMAKE_SYSTEM_NAME Android)
 	include(${CMAKE_SOURCE_DIR}/Tools/CMake/Android.cmake)	
 
@@ -46,8 +45,6 @@ endif(ANDROID)
 project(CryEngine_CMake_${BUILD_PLATFORM} CXX C)
 
 set(MODULES CACHE INTERNAL "Modules for monolithic builds" FORCE)
-
-set(INTERMEDIATE_DIRECTORY "${CMAKE_SOURCE_DIR}/BinTemp")
 
 if (DURANGO OR ORBIS OR ANDROID)
 	# WIN32 Should be unset  again after project( line to work correctly
@@ -89,19 +86,17 @@ if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Tools/RC")
 	option(OPTION_RC "Enable Resource Compiler" OFF)
 endif()
 
-option(OPTION_SOUND_WWISE "Enable WWise Sound System" ON)
 option(OPTION_PCH "Enable Precompiled Headers" OFF)
 option(OPTION_CRY_EXTENSIONS "Enable CryExtensions" ON)
 
 # Print current project settings
-MESSAGE("OPTION_GAME_PROJECT = ${OPTION_GAME_PROJECT}")
-MESSAGE("CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
-MESSAGE("CMAKE_GENERATOR = ${CMAKE_GENERATOR}")
-MESSAGE("CMAKE_CONFIGURATION_TYPES = ${CMAKE_CONFIGURATION_TYPES}")
-MESSAGE("BUILD_PLATFORM = ${BUILD_PLATFORM}")
-MESSAGE("OPTION_PROFILE = ${OPTION_PROFILE}")
-MESSAGE("OPTION_SOUND_WWISE = ${OPTION_SOUND_WWISE}")
-MESSAGE("OPTION_PCH = ${OPTION_PCH}")
+MESSAGE(STATUS "OPTION_GAME_PROJECT = ${OPTION_GAME_PROJECT}")
+MESSAGE(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
+MESSAGE(STATUS "CMAKE_GENERATOR = ${CMAKE_GENERATOR}")
+MESSAGE(STATUS "CMAKE_CONFIGURATION_TYPES = ${CMAKE_CONFIGURATION_TYPES}")
+MESSAGE(STATUS "BUILD_PLATFORM = ${BUILD_PLATFORM}")
+MESSAGE(STATUS "OPTION_PROFILE = ${OPTION_PROFILE}")
+MESSAGE(STATUS "OPTION_PCH = ${OPTION_PCH}")
 
 if (OPTION_PROFILE)
 	set_property( DIRECTORY PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:Release>:_PROFILE> )
@@ -110,20 +105,13 @@ else()
 endif()
 
 if(OPTION_UNITY_BUILD)
-	message("UNITY BUILD Enabled")
+	message(STATUS "UNITY BUILD Enabled")
 endif()
 
-if(ORBIS)
+if(ORBIS OR ANDROID)
 	set(OPTION_STATIC_LINKING TRUE)
 else()
 	option(OPTION_STATIC_LINKING "Link all CryEngine modules as static libs to single exe" OFF)
-endif()
-
-if (MSVC_VERSION EQUAL 1800 OR MSVC_VERSION EQUAL 1900)       # Visual Studio 2013/2015
-	#message( "Visual Studio 2013/2015 uses v110 toolset (Visual Studio 2012 compiler)" )
-	# For Visual Studio 2013 we use Visual Studio 2012 compiler
-	#set(CMAKE_VS_PLATFORM_TOOLSET "v110" CACHE STRING "Visual Studio Platform Toolset" FORCE)
-	#set(CMAKE_GENERATOR_TOOLSET "v110" CACHE STRING "Visual Studio Platform Toolset" FORCE)
 endif()
 
 if (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
@@ -155,11 +143,11 @@ set(global_defines "CRYENGINE_DEFINE")
 
 if(OPTION_STATIC_LINKING)
 	# Enable static libraries
-	MESSAGE( "Use Static Linking (.lib)" )
+	MESSAGE(STATUS "Use Static Linking (.lib)" )
 	set(BUILD_SHARED_LIBS FALSE)
 else()
 	# Enable dynamic libraries
-	MESSAGE( "Use Dynamic Linking (.dll)" )
+	MESSAGE(STATUS "Use Dynamic Linking (.dll)" )
 	set(BUILD_SHARED_LIBS TRUE)
 endif()
 
@@ -226,8 +214,57 @@ if (OPTION_GAME_PROJECT STREQUAL "BenchmarkVR")
 	set_solution_folder("Projects" CryGameSkyharbor)
 endif()
 
+#Audio modules
+if (NOT (WIN32 OR WIN64 OR LINUX))
+	# WWise is only supported audio on these platforms
+	set(AUDIO_WWISE ON)
+else()
+	if (EXISTS ${SDK_DIR}/Audio/fmod)
+		option(AUDIO_FMOD "FMod sound system support" ON)
+	endif()
+	if (EXISTS ${SDK_DIR}/Audio/portaudio AND EXISTS ${SDK_DIR}/Audio/libsndfile AND (WIN32 OR WIN64))
+		option(AUDIO_PORTAUDIO "PortAudio sound system support" ON)
+	endif()
+	option(AUDIO_SDL_MIXER "SDLMixer sound system support" ON)
+	option(AUDIO_WWISE "WWise Sound System support" ON)
+endif()
+
+#Renderer modules
+if(NOT (ORBIS OR ANDROID))
+	OPTION(RENDERER_DX11 "Renderer for DirectX 11" ON)
+endif()
+
+if (WIN32 OR WIN64)
+	if (NOT MSVC_VERSION EQUAL 1900)
+		message(STATUS "MSVC 14.0 is not being used - CryRenderD3D12 cannot be built.")
+	else()
+		OPTION(RENDERER_DX12 "Renderer for DirectX 12" ON)
+	endif()
+endif()
+
+if(LINUX OR ANDROID)
+	set(RENDERER_OPENGL ON)
+elseif (NOT (DURANGO OR ORBIS))
+	OPTION(RENDERER_OPENGL "Renderer for OpenGL" ON)
+endif()
+
+if (EXISTS ${SDK_DIR}/Orbis AND EXISTS ${CMAKE_SOURCE_DIR/}Code/CryEngine/RenderDll/XRenderD3D9/GNM)
+	if(ORBIS)
+		#Force DX11 renderer
+		#option(RENDERER_GNM "GNM renderer" ON)
+	endif()
+	if(WIN64)
+		option(RENDERER_GNM_SHADER_COMPILER "Shader compiler for Orbis" ON)
+	endif()
+endif()
+
+if(ORBIS AND NOT RENDERER_GNM)
+	SET(RENDERER_DX11 ON)
+endif()
+
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/SDL2.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/PortAudio.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake/modules/Boost.cmake)
 
 # CryEngine
@@ -247,10 +284,9 @@ add_subdirectory(Code/CryEngine/CryScriptSystem)
 add_subdirectory(Code/CryEngine/CryAudioSystem)
 add_subdirectory(Code/CryEngine/CryAudioSystem/Common)
 add_subdirectory(Code/CryEngine/CryAudioSystem/implementations/CryAudioImplFmod)
+add_subdirectory(Code/CryEngine/CryAudioSystem/implementations/CryAudioImplPortAudio)
 add_subdirectory(Code/CryEngine/CryAudioSystem/implementations/CryAudioImplSDLMixer)
-if (OPTION_SOUND_WWISE)
-	add_subdirectory(Code/CryEngine/CryAudioSystem/implementations/CryAudioImplWwise)
-endif()
+add_subdirectory(Code/CryEngine/CryAudioSystem/implementations/CryAudioImplWwise)
 add_subdirectory(Code/CryEngine/CrySystem)
 
 # CryCommon headers only project
@@ -271,6 +307,7 @@ if (OPTION_CRY_EXTENSIONS)
 	#add_subdirectory(Code/CryExtensions/CryDrsCommonElements/Module)
 	add_subdirectory(Code/CryExtensions/CryLobby/Module)
 	#add_subdirectory(Code/CryExtensions/CrySchematyc)
+	#add_subdirectory(Code/CryExtensions/CryLink/Module)
 endif()
 
 add_custom_target(CE DEPENDS CryPhysics CrySystem CryAction CryRenderD3D11
@@ -303,10 +340,11 @@ endif()
 
 # Launchers
 if (DURANGO)
-	MESSAGE( "DURANGO LAUNCHER" )
 	add_subdirectory(Code/Launcher/DurangoLauncher)
 elseif (ORBIS)
 	add_subdirectory(Code/Launcher/OrbisLauncher)
+elseif (ANDROID)
+	add_subdirectory(Code/Launcher/AndroidLauncher)
 elseif (WIN32)
 	add_subdirectory(Code/Launcher/DedicatedLauncher)
 	add_subdirectory(Code/Launcher/WindowsLauncher)
@@ -328,6 +366,8 @@ add_subdirectory(Code/Libs/yasli)
 add_subdirectory(Code/Libs/tomcrypt)
 add_subdirectory(Code/Libs/prt)
 add_subdirectory(Code/Libs/python)
+add_subdirectory(Code/Libs/jsmn)
+add_subdirectory(Code/Libs/vco)
 
 if (OPTION_ENABLE_SDK_OCULUS)
 	add_subdirectory(Code/Libs/oculus)
@@ -337,7 +377,7 @@ endif()
 
 # Sandbox Editor
 if (OPTION_SANDBOX AND WIN64)
-	MESSAGE("Include Sandbox Editor")
+	MESSAGE(STATUS "Include ${OPTION_SANDBOX} Sandbox Editor")
 	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}")
 	set(CMAKE_INCLUDE_CURRENT_DIR ON)
 	set(CMAKE_AUTOMOC_RELAXED_MODE TRUE)
@@ -351,6 +391,7 @@ if (OPTION_SANDBOX AND WIN64)
 		add_subdirectory(Code/Sandbox/EditorQt)
 		add_subdirectory(Code/Sandbox/Plugins/3DConnexionPlugin)	
 		add_subdirectory(Code/Sandbox/Plugins/EditorConsole)
+		add_subdirectory(Code/CryExtensions/CryLink/EditorPlugin)
 		
 		add_custom_target(GameAndTools DEPENDS ${GAME_TARGET} Sandbox)
 	elseif(OPTION_SANDBOX STREQUAL "Legacy")
@@ -365,9 +406,13 @@ if (OPTION_SANDBOX AND WIN64)
 	add_subdirectory(Code/Sandbox/Plugins/CryDesigner)	
 	add_subdirectory(Code/Sandbox/Plugins/EditorAudioControlsEditor)
 	add_subdirectory(Code/Sandbox/Plugins/EditorAudioControlsEditor/common)
-	add_subdirectory(Code/Sandbox/Plugins/EditorAudioControlsEditor/EditorFmod)
-	add_subdirectory(Code/Sandbox/Plugins/EditorAudioControlsEditor/EditorSDLMixer)
-	if (OPTION_SOUND_WWISE)
+	if(AUDIO_FMOD)
+		add_subdirectory(Code/Sandbox/Plugins/EditorAudioControlsEditor/EditorFmod)
+	endif()
+	if(AUDIO_SDL_MIXER)
+		add_subdirectory(Code/Sandbox/Plugins/EditorAudioControlsEditor/EditorSDLMixer)
+	endif()
+	if (AUDIO_WWISE)
 		add_subdirectory(Code/Sandbox/Plugins/EditorAudioControlsEditor/EditorWwise)
 	endif()	
 	add_subdirectory(Code/Sandbox/Plugins/EditorAnimation)
@@ -382,7 +427,7 @@ endif()
 
 # Resource Compiler
 if (OPTION_RC AND WIN64)
-	MESSAGE("Include Resource Compiler")
+	MESSAGE(STATUS "Include Resource Compiler")
 	add_subdirectory(Code/Libs/alembic)
 	add_subdirectory(Code/Libs/ilmbase)
 	add_subdirectory(Code/Libs/hdf5)
