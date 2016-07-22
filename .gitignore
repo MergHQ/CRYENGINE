@@ -15,6 +15,7 @@
 *.pyc
 *.bak
 *.bak2
+error.jpg
 _WAF_/user_settings.options
 
 # Binary directories.
