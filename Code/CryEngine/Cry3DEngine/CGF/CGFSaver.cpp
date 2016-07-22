@@ -274,7 +274,7 @@ int CSaverCGF::SaveBoneInitialMatrices(bool bSwapEndian, SBoneInitPosMatrix* mat
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CSaverCGF::SaveBoneMesh(bool bSwapEndian, PhysicalProxy& proxy)
+int CSaverCGF::SaveBoneMesh(bool bSwapEndian, const PhysicalProxy& proxy)
 {
 	// uncompiled mesh chunk
 	MESH_CHUNK_DESC_0745 chunk;
@@ -1644,7 +1644,7 @@ int CSaverCGF::SaveTCBQTrack(CInternalSkinningInfo* pSkinningInfo, int trackInde
 
 int CSaverCGF::SaveTiming(CInternalSkinningInfo* pSkinningInfo)
 {
-	return CSaverAnim::SaveTiming(m_pChunkFile, pSkinningInfo);
+	return CSaverAnim::SaveTiming(m_pChunkFile, pSkinningInfo->m_nStart, pSkinningInfo->m_nEnd);
 }
 
 	#endif
