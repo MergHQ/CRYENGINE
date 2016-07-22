@@ -70,3 +70,10 @@
 %feature("director") IAreaManagerEventListener;
 %include "../../../../CryEngine/CryCommon/CryEntitySystem/IEntitySystem.h"
 %include "../../../../CryEngine/CryCommon/CryEntitySystem/IBreakableManager.h"
+%extend SEntitySpawnParams {
+	bool HasEntityNode()
+	{
+		IXmlNode* ptr = $self->entityNode;
+		return ptr != nullptr;
+	}
+}

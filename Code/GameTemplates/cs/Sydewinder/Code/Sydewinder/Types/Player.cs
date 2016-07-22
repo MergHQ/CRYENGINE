@@ -159,10 +159,6 @@ namespace CryEngine.Sydewinder
 
 			// Usded to ensure the player does not move outside of the visible window.
 			// ProjectToScreen returns a Vec3. Each value between 0 and 100 means it is visible on screen in this dimension.
-			Vec3 temp = new Vec3(0, _forwardSpeed, _upSpeed);
-			Vec3 nextPos = Position + temp.op_Multiply(FrameTime.Delta);
-			Vec3 screenPosition = Env.Renderer.ProjectToScreen(nextPos.x, nextPos.y, nextPos.z);
-
 			Vec3 nextPos = Position + new Vec3(0, _forwardSpeed, _upSpeed) * FrameTime.Delta;
 			var screenPosition = Env.Renderer.ProjectToScreen(nextPos);
 			

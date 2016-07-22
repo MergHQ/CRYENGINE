@@ -106,7 +106,7 @@ namespace CryEngine.EntitySystem
 				if (entityNode != null)
 					_propertyHandler.SetXMLProperties (managedInstance, entityNode);
 			}
-			managedInstance.OnInitialize ();
+			managedInstance.Initialize ();
 			return managedInstance;
 		}
 		#endregion
@@ -163,6 +163,11 @@ namespace CryEngine.EntitySystem
 				Log.Warning<EntityClassRegistry>("Managed entity class with name '{0}' already registered!", entry.Description.sName);
 				return false;
 			}
+
+            if (entityType.IsAbstract) {
+                Log.Info<EntityClassRegistry>("Managed entity class with name '{0}' is abstract and will not be registered.", entry.Description.sName);
+                return false;
+            }
 
 			IEntityClass native = Global.gEnv.pEntitySystem.GetClassRegistry ().FindClass (entry.Description.sName);
 			if(native != null)

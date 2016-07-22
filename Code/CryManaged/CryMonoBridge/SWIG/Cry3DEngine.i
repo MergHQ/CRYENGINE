@@ -24,6 +24,12 @@
 %template(IStatObjPtr) _smart_ptr<IStatObj>;
 %template(IReadStreamPtr) _smart_ptr<IReadStream>;
 %template(IRenderMeshPtr) _smart_ptr<IRenderMesh>;
+
+%typemap(cscode) IParticleEffect
+%{
+	public string Name { get { return GetName (); } }
+%}
+
 %include "../../../../CryEngine/CryCommon/Cry3DEngine/ITimeOfDay.h"
 %import "../../../../CryEngine/CryCommon/Cry3DEngine/CGF/CryHeaders.h"
 %include "../../../../CryEngine/CryCommon/Cry3DEngine/IMaterial.h"

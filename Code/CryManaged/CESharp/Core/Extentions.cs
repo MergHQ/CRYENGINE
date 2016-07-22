@@ -134,4 +134,34 @@ namespace CryEngine
 			e.Spawn (new ParticleLoc (pos));
 		}
 	}
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public static class MathExtensions
+    {
+        /// <summary>
+        /// Clamps the value between min and max. Works with int, float, and any other type that implements IComparable.
+        /// </summary>
+        /// <param name="value">Value to be clamped</param>
+        /// <param name="min">Minimum value</param>
+        /// <param name="max">Maximum value</param>
+        public static T Clamp<T>(T value, T min, T max) where T : IComparable
+        {
+            if (value.CompareTo(min) < 0)
+                return min;
+            if (value.CompareTo(max) > 0)
+                return max;
+            return value;
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public static class EntityExtensions
+    {
+        public static void SetMaterial(this IEntity entity, string path)
+        {
+            var material = Global.gEnv.p3DEngine.GetMaterialManager().LoadMaterial(path);
+            if (material != null)
+                entity.SetMaterial(material);
+        }
+    }
 }

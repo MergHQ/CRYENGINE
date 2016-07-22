@@ -3,7 +3,6 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
-    <ProjectTypeGuids>{E7562513-36BA-4D11-A927-975E5375ED10};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <ProjectGuid>{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>CryEngine</RootNamespace>
@@ -69,6 +68,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EntitySystem\EntityEventListener.cs" />
+    <Compile Include="EntitySystem\EntityComponent.cs" />
+    <Compile Include="EntitySystem\EntityPhysics.cs" />
+    <Compile Include="Logger.cs" />
     <Compile Include="SceneObject.cs" />
     <Compile Include="System.cs" />
     <Compile Include="UI\Canvas.cs" />
@@ -117,6 +120,13 @@
     <Compile Include="EntitySystem\BaseEntity.cs" />
     <Compile Include="EntitySystem\EntityPropertyHandler.cs" />
     <Compile Include="Resources\ReflectionHelper.cs" />
+    <Compile Include="Timer.cs" />
+    <Compile Include="UI\HorizontalLayoutGroup.cs" />
+    <Compile Include="UI\LayoutGroup.cs" />
+    <Compile Include="UI\VerticalLayoutGroup.cs" />
+    <Compile Include="UI\TextElement.cs" />
+    <Compile Include="EntitySystem\EntityCollisionListener.cs" />
+	<Compile Include="RaycastHelper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

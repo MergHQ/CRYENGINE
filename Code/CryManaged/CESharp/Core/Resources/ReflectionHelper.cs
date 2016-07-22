@@ -9,7 +9,7 @@ namespace CryEngine
 	{
 		public static string FindPluginInstance(string assemblyName)
 		{
-			Type pluginType = typeof(ICryEngineBasePlugin);
+			Type pluginType = typeof(ICryEnginePlugin);
 			
 			foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
 			{

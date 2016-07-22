@@ -45,6 +45,10 @@ namespace CryEngine.EntitySystem
 		/// References to the active manager for CESharp entity classes.
 		/// </summary>
 		public static EntityClassRegistry ClassRegistry { get { return s_entityClassRegistry; } }
+        /// <summary>
+        /// Returns the number of spawned CESharp entities.
+        /// </summary>
+        public static int Count { get { return s_managedEntities.Count; } }
 		#endregion
 
 		#region Methods
@@ -128,6 +132,9 @@ namespace CryEngine.EntitySystem
 		/// </summary>
 		private static void StoreEntity(this InterDomainHandler handler, BaseEntity entity)
 		{
+			if (entity.EntityClass.PropertyHandler == null)
+                return;
+			
 			handler.EntityCache.Add (entity.Id, 
 				new Tuple<string, Dictionary<string, string>> (
 					entity.EntityClass.Description.sName, 
@@ -147,6 +154,16 @@ namespace CryEngine.EntitySystem
 
 			return s_managedEntities [id];
 		}
+
+        /// <summary>
+        /// Get managed CESharp entity instance with the specified name. Returns the first entity that matches the name. Returns null if no entity matches the name.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public static BaseEntity GetEntity(string name)
+        {
+            return s_managedEntities.Values.FirstOrDefault(x => x.NativeEntity.GetName() == name);
+        }
 
         /// <summary>
         /// Get managed CESharp entity instance for a given Type. Returns null if no entity of the specified Type exists.
@@ -179,6 +196,11 @@ namespace CryEngine.EntitySystem
 				Log.Warning ("[EntityFramework] Could not find managed CESharp entity class for {0}", typeof(T).Name);
 				return null;
 			}
+
+            if (typeof(T).IsAbstract) {
+                Log.Warning("[EntityFramework] Cannot instantiate {0} as it is an abstract class.", typeof(T).Name);
+                return null;
+            }
 			
 			int i = 1;
 			while (String.IsNullOrEmpty (name)) {
@@ -265,7 +287,7 @@ namespace CryEngine.EntitySystem
 			float frameTime = Global.gEnv.pTimer.GetFrameTime ();
 			PauseMode ePauseMode = (PauseMode)pauseMode;
 
-			foreach (BaseEntity entity in s_managedEntities.Values)
+            foreach (BaseEntity entity in s_managedEntities.Values.ToList())
 				entity.OnUpdate (frameTime, ePauseMode);
 		}
 		#endregion

@@ -68,6 +68,18 @@ namespace CryEngine.Components
 			}
 		} ///< Sets rotation of assigned HostEntity
 
+        public Quat Rotation
+        {
+            set
+            {
+                ForwardDirection = value * Vec3.Forward;
+            }
+            get
+            {
+                return HostEntity != null ? HostEntity.Rotation : Quat.Identity;
+            }
+        }
+
 		/// <summary>
 		/// Gets or sets the field of view by CVar.
 		/// </summary>
@@ -100,8 +112,9 @@ namespace CryEngine.Components
 			{
 				if ((HostEntity = Entity.ByName ("Player")) != null) 
 				{
-					Position = _position;
-					ForwardDirection = _forwardDir;
+                    // Automatically assume the position and rotation of the current native camera.
+                    Position = Env.Renderer.GetCamera().GetPosition();
+                    Rotation = new Quat(Env.Renderer.GetCamera().GetAngles());
 					if (OnPlayerEntityAssigned != null)
 						OnPlayerEntityAssigned (this);
 				}

@@ -7,6 +7,8 @@ if not exist "%projectcfg%" (
     exit /b 1
 )
 
+echo CRYENGINE Version: %engine_version%
+
 for /F "tokens=*" %%I in (%projectcfg%) do set %%I
 
 if not defined engine_version (
@@ -31,7 +33,12 @@ if defined engine_root (
 		pause
 		exit /b 1
 	)
-	set "CRYENGINEROOT=%engine_root%"
+	
+	echo CRYENGINE Root: %engine_root%
+
+	:: Set Root Directory for this Version.
+	set "CRYENGINEROOT=%engine_root%" >NUL
+	
 	start "" "Code\Game\Solutions\Game.sln"
 	exit
 ) else (

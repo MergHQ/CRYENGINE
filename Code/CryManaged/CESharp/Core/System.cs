@@ -591,7 +591,9 @@ namespace CryEngine
 		public static IGame Game { get { return Global.gEnv.pGame; } }
 		public static ITimer Timer { get { return Global.gEnv.pTimer; }}
 		public static IAudioSystem AudioSystem { get { return Global.gEnv.pAudioSystem; } }
-		public static bool IsSandbox { get { return Global.gEnv.IsEditor(); } } ///< Indicates whether CryEngine is run in Editor mode.
+        public static IRenderAuxGeom AuxRenderer {  get { return Global.gEnv.pRenderer.GetIRenderAuxGeom(); } }
+        public static IPhysicalWorld PhysicalWorld { get { return Global.gEnv.pPhysicalWorld; } }
+        public static bool IsSandbox { get { return Global.gEnv.IsEditor(); } } ///< Indicates whether CryEngine is run in Editor mode.
 
 		/// <summary>
 		/// Called by framework. Do not call directly.
@@ -842,6 +844,13 @@ namespace CryEngine
 				return Entity.ById (HitEntityId);
 			}
 		}
+        public static EntitySystem.BaseEntity HitBaseEntity
+        {
+            get
+            {
+                return EntityFramework.GetEntity(HitEntityId);
+            }
+        }
 
 		public static void ShowCursor()
 		{
