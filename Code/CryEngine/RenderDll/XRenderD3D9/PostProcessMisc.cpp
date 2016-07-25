@@ -231,7 +231,7 @@ void CPost3DRenderer::RenderMeshes(uint8 groupId, float screenRect[4], ERenderMe
 		if (CTexture::s_eTFZ == eTF_R32F || CTexture::s_eTFZ == eTF_R16G16F || CTexture::s_eTFZ == eTF_R16G16B16A16F || CTexture::s_eTFZ == eTF_D24S8 || CTexture::s_eTFZ == eTF_D32FS8)
 		{
 			gcpRendD3D->m_RP.m_PersFlags2 |= (RBPF2_NOALPHABLEND | RBPF2_NOALPHATEST);
-			gcpRendD3D->m_RP.m_StateAnd &= ~(GS_BLEND_MASK | GS_ALPHATEST_MASK);
+			gcpRendD3D->m_RP.m_StateAnd &= ~(GS_BLEND_MASK | GS_ALPHATEST);
 		}
 	}
 
@@ -316,7 +316,7 @@ void CPost3DRenderer::RenderMeshes(uint8 groupId, float screenRect[4], ERenderMe
 		if (CTexture::s_eTFZ == eTF_R16G16F || CTexture::s_eTFZ == eTF_R32F || CTexture::s_eTFZ == eTF_R16G16B16A16F || CTexture::s_eTFZ == eTF_D24S8 || CTexture::s_eTFZ == eTF_D32FS8)
 		{
 			gcpRendD3D->m_RP.m_PersFlags2 &= ~(RBPF2_NOALPHABLEND | RBPF2_NOALPHATEST);
-			gcpRendD3D->m_RP.m_StateAnd |= (GS_BLEND_MASK | GS_ALPHATEST_MASK);
+			gcpRendD3D->m_RP.m_StateAnd |= (GS_BLEND_MASK | GS_ALPHATEST);
 		}
 
 		gcpRendD3D->FX_PopRenderTarget(0);

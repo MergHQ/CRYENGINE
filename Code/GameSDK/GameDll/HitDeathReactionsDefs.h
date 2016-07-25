@@ -24,13 +24,13 @@ enum ECardinalDirection
 {
 	eCD_Invalid = -1,
 
-	// "90บ" directions
+	// "90ยบ" directions
 	eCD_Forward,
 	eCD_Back,
 	eCD_Left,
 	eCD_Right,
 
-	// "180บ" direction
+	// "180ยบ" direction
 	eCD_Ahead,
 	eCD_Behind,
 	eCD_LeftSide,

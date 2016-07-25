@@ -1,19 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   IEntity.h
-//  Version:     v1.00
-//  Created:     18/5/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
-#include <CryEntitySystem/IComponent.h>
+#include "IComponent.h"
 
 // Forward declarations.
 struct IPhysicalEntity;
@@ -98,7 +87,7 @@ typedef uint32 tAIObjectID;
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-#include <CryEntitySystem/IEntityProxy.h>
+#include "IEntityProxy.h"
 #include <CryNetwork/SerializeFwd.h>
 //////////////////////////////////////////////////////////////////////////
 
@@ -135,7 +124,6 @@ struct SEntitySpawnParams
 	//! More EntityIDs and save game might conflict with dynamic ones).
 	bool  bStaticEntityId;
 
-	bool  bCreatedThroughPool;        //!< Entity Pool useage.
 	Vec3  vPosition;                  //!< Initial entity position (Local space).
 	Quat  qRotation;                  //!< Initial entity rotation (Local space).
 	Vec3  vScale;                     //!< Initial entity scale (Local space).
@@ -157,7 +145,6 @@ struct SEntitySpawnParams
 		, nFlagsExtended(0)
 		, bIgnoreLock(false)
 		, bStaticEntityId(false)
-		, bCreatedThroughPool(false)
 		, pClass(NULL)
 		, sName("")
 		, sLayerName("")
@@ -226,9 +213,6 @@ enum EEntityEvent
 
 	//! Sent before entity is removed.
 	ENTITY_EVENT_DONE,
-
-	//! Sent before pool entities are returned to the pool.
-	ENTITY_EVENT_RETURNING_TO_POOL,
 
 	//! Sent when the entity becomes visible or invisible.
 	//! nParam[0] is 1 if the entity becomes visible or 0 if the entity becomes invisible.
@@ -446,7 +430,7 @@ struct SEntityEvent
 		fParam[0] = fParam[1] = fParam[2] = 0.0f;
 	}
 
-	SEntityEvent(EEntityEvent _event)
+	explicit SEntityEvent(EEntityEvent const _event)
 		: event(_event)
 		, vec(ZERO)
 	{
@@ -618,7 +602,7 @@ struct IEntity
 	//! Retrieves the entity archetype.
 	//! Entity archetype contain definition for entity script properties.
 	//! \return Pointer to the entity archetype interface.
-	virtual IEntityArchetype* GetArchetype() = 0;
+	virtual IEntityArchetype* GetArchetype() const = 0;
 
 	//! Sets entity flags, completely replaces all flags which are already set in the entity.
 	//! \param flags Flag values which are defined in EEntityFlags.
@@ -662,7 +646,7 @@ struct IEntity
 	virtual const char* GetName() const = 0;
 
 	//! Returns textual description of entity for logging.
-	virtual const char* GetEntityTextDescription() const = 0;
+	virtual string GetEntityTextDescription() const = 0;
 
 	//! Serializes entity parameters to/from XML.
 	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading) = 0;
@@ -774,9 +758,6 @@ struct IEntity
 
 	//! Check if the entity is active now.
 	virtual bool IsActive() const = 0;
-
-	//! Returns if the entity is from an entity pool.
-	virtual bool IsFromPool() const = 0;
 
 	//! Activates entity, if entity is active it will be updated every frame.
 	virtual void PrePhysicsActivate(bool bActive) = 0;

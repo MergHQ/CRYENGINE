@@ -20,10 +20,11 @@ struct SColorGradingMergeParams
 
 class CColorGradingControllerD3D : public IColorGradingControllerInt
 {
+	friend class CColorGradingStage;
+
 public:
 	// IColorGradingController interface
 	virtual int  LoadColorChart(const char* pChartFilePath) const;
-	virtual int  LoadDefaultColorChart() const;
 	virtual void UnloadColorChart(int texID) const;
 
 	virtual void SetLayers(const SColorChartLayer* pLayers, uint32 numLayers);
@@ -43,8 +44,9 @@ public:
 	bool            LoadStaticColorChart(const char* pChartFilePath);
 	const CTexture* GetStaticColorChart() const;
 
-	void            ReleaseTextures();
 	void            FreeMemory();
+
+	int             GetColorChartSize() const;
 
 private:
 	typedef std::vector<SColorChartLayer> Layers;
@@ -58,8 +60,8 @@ private:
 private:
 	Layers                       m_layers;
 	CD3D9Renderer*               m_pRenderer;
-	CVertexBuffer*               m_pSlicesVB;
-	std::vector<SVF_P3F_C4B_T2F> m_vecSlicesData;
+
+	// TODO: remove once we don't need r_graphicspipeline=0 anymore
 	CTexture*                    m_pChartIdentity;
 	CTexture*                    m_pChartStatic;
 	CTexture*                    m_pChartToUse;

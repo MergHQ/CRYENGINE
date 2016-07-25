@@ -8,7 +8,7 @@
 //  Description: Manage particle effects and emitters
 // -------------------------------------------------------------------------
 //  History:
-//	- 03:2006				 : Modified by Jan Müller (Serialization)
+//	- 03:2006				 : Modified by Jan MÃ¼ller (Serialization)
 //
 ////////////////////////////////////////////////////////////////////////////
 
@@ -450,7 +450,7 @@ IParticleEffect* CParticleManager::FindEffect(cstr sEffectName, cstr sSource, bo
 
 		if (GetCVars()->e_ParticlesConvertPfx1)
 		{
-			m_pParticleSystem->ConvertEffect(pEffect);
+			m_pParticleSystem->ConvertEffect(pEffect, GetCVars()->e_ParticlesConvertPfx1 > 1);
 		}
 		return pEffect;
 	}
@@ -846,7 +846,6 @@ void CParticleManager::UpdateEngineData()
 	m_RenderFlags.SetState(GetCVars()->e_ParticlesAnimBlend - 1, OS_ANIM_BLEND);
 	m_RenderFlags.SetState(GetCVars()->e_ParticlesMotionBlur - 1, FOB_MOTION_BLUR);
 	m_RenderFlags.SetState(GetCVars()->e_ParticlesShadows - 1, FOB_INSHADOW);
-	m_RenderFlags.SetState(GetCVars()->e_ParticlesGI - 1, FOB_GLOBAL_ILLUMINATION);
 	m_RenderFlags.SetState(GetCVars()->e_ParticlesSoftIntersect - 1, FOB_SOFT_PARTICLE);
 
 	if (GetRenderer())

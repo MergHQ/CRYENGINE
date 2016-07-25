@@ -8,7 +8,7 @@ Description: HomingMissile
 
 -------------------------------------------------------------------------
 History:
-- 12:10:2005   11:15 : Created by Márcio Martins
+- 12:10:2005   11:15 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #ifndef __HomingMissile_H__

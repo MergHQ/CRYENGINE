@@ -170,9 +170,9 @@ void CTexture::GenerateHDRMaps()
 	CD3D9Renderer* r = gcpRendD3D;
 	CHDRPostProcess* pHDRPostProcess = CHDRPostProcess::GetInstance();
 
-	r->m_dwHDRCropWidth = r->GetWidth();
-	r->m_dwHDRCropHeight = r->GetHeight();
-
+	const int width  = r->GetWidth(),  width_r2  = (width  + 1) / 2, width_r4  = (width_r2  + 1) / 2, width_r8  = (width_r4  + 1) / 2, width_r16  = (width_r8  + 1) / 2;
+	const int height = r->GetHeight(), height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2, height_r8 = (height_r4 + 1) / 2, height_r16 = (height_r8 + 1) / 2;
+	
 	pHDRPostProcess->ClearRenderTargetList();
 
 	ETEX_Format nHDRFormat = eTF_R16G16B16A16F; // note: for main rendertarget R11G11B10 precision/range (even with rescaling) not enough for darks vs good blooming quality
@@ -183,31 +183,24 @@ void CTexture::GenerateHDRMaps()
 	pHDRPostProcess->AddRenderTarget(r->GetWidth(), r->GetHeight(), Clr_Unknown, eTF_R11G11B10F, 1.0f, "$HDRTargetPrev", &s_ptexHDRTargetPrev);
 
 	// Scaled versions of the HDR scene texture
-	uint32 nWeight = (r->m_dwHDRCropWidth >> 1);
-	uint32 nHeight = (r->m_dwHDRCropHeight >> 1);
+	pHDRPostProcess->AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaled0", &s_ptexHDRTargetScaled[0], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTmp0", &s_ptexHDRTargetScaledTmp[0], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTempRT0", &s_ptexHDRTargetScaledTempRT[0], FT_DONT_RELEASE);
 
-	pHDRPostProcess->AddRenderTarget(nWeight, nHeight, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaled0", &s_ptexHDRTargetScaled[0], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r4, height_r4, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaled1", &s_ptexHDRTargetScaled[1], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r4, height_r4, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTmp1", &s_ptexHDRTargetScaledTmp[1], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r4, height_r4, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTempRT1", &s_ptexHDRTargetScaledTempRT[1], 0);
 
-	pHDRPostProcess->AddRenderTarget(nWeight, nHeight, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTmp0", &s_ptexHDRTargetScaledTmp[0], FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget(nWeight, nHeight, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTempRT0", &s_ptexHDRTargetScaledTempRT[0], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r4, height_r4, Clr_Unknown, eTF_R11G11B10F, 0.9f, "$HDRTempBloom0", &s_ptexHDRTempBloom[0], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r4, height_r4, Clr_Unknown, eTF_R11G11B10F, 0.9f, "$HDRTempBloom1", &s_ptexHDRTempBloom[1], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r4, height_r4, Clr_Unknown, eTF_R11G11B10F, 0.9f, "$HDRFinalBloom", &s_ptexHDRFinalBloom, FT_DONT_RELEASE);
 
-	nWeight = (r->m_dwHDRCropWidth >> 2);
-	nHeight = (r->m_dwHDRCropHeight >> 2);
-	pHDRPostProcess->AddRenderTarget(nWeight, nHeight, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaled1", &s_ptexHDRTargetScaled[1], FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget(nWeight, nHeight, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTmp1", &s_ptexHDRTargetScaledTmp[1], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r8, height_r8, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaled2", &s_ptexHDRTargetScaled[2], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r8, height_r8, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTempRT2", &s_ptexHDRTargetScaledTempRT[2], FT_DONT_RELEASE);
 
-	pHDRPostProcess->AddRenderTarget(nWeight, nHeight, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTempRT1", &s_ptexHDRTargetScaledTempRT[1], 0);
-
-	pHDRPostProcess->AddRenderTarget(nWeight, nHeight, Clr_Unknown, eTF_R11G11B10F, 0.9f, "$HDRTempBloom0", &s_ptexHDRTempBloom[0], FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget(nWeight, nHeight, Clr_Unknown, eTF_R11G11B10F, 0.9f, "$HDRTempBloom1", &s_ptexHDRTempBloom[1], FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget(nWeight, nHeight, Clr_Unknown, eTF_R11G11B10F, 0.9f, "$HDRFinalBloom", &s_ptexHDRFinalBloom, FT_DONT_RELEASE);
-
-	pHDRPostProcess->AddRenderTarget((r->m_dwHDRCropWidth >> 3), (r->m_dwHDRCropHeight >> 3), Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaled2", &s_ptexHDRTargetScaled[2], FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget((r->m_dwHDRCropWidth >> 3), (r->m_dwHDRCropHeight >> 3), Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTempRT2", &s_ptexHDRTargetScaledTempRT[2], FT_DONT_RELEASE);
-
-	pHDRPostProcess->AddRenderTarget((r->m_dwHDRCropWidth >> 4), (r->m_dwHDRCropHeight >> 4), Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaled3", &s_ptexHDRTargetScaled[3], FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget((r->m_dwHDRCropWidth >> 4), (r->m_dwHDRCropHeight >> 4), Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTmp3", &s_ptexHDRTargetScaledTmp[3], FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget((r->m_dwHDRCropWidth >> 4), (r->m_dwHDRCropHeight >> 4), Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTempRT3", &s_ptexHDRTargetScaledTempRT[3], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r16, height_r16, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaled3", &s_ptexHDRTargetScaled[3], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r16, height_r16, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTmp3", &s_ptexHDRTargetScaledTmp[3], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r16, height_r16, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTempRT3", &s_ptexHDRTargetScaledTempRT[3], FT_DONT_RELEASE);
 
 	for (i = 0; i < 8; i++)
 	{
@@ -215,21 +208,21 @@ void CTexture::GenerateHDRMaps()
 		pHDRPostProcess->AddRenderTarget(1, 1, Clr_Unknown, eTF_R16G16F, 0.1f, szName, &s_ptexHDRAdaptedLuminanceCur[i], FT_DONT_RELEASE);
 	}
 
-	pHDRPostProcess->AddRenderTarget(r->GetWidth(), r->GetHeight(), Clr_Unknown, eTF_R11G11B10F, 1.0f, "$SceneTargetR11G11B10F_0", &s_ptexSceneTargetR11G11B10F[0], nHDRTargetFlagsUAV);
-	pHDRPostProcess->AddRenderTarget(r->GetWidth(), r->GetHeight(), Clr_Unknown, eTF_R11G11B10F, 1.0f, "$SceneTargetR11G11B10F_1", &s_ptexSceneTargetR11G11B10F[1], nHDRTargetFlags);
+	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, eTF_R11G11B10F, 1.0f, "$SceneTargetR11G11B10F_0", &s_ptexSceneTargetR11G11B10F[0], nHDRTargetFlagsUAV);
+	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, eTF_R11G11B10F, 1.0f, "$SceneTargetR11G11B10F_1", &s_ptexSceneTargetR11G11B10F[1], nHDRTargetFlags);
 
-	pHDRPostProcess->AddRenderTarget(r->m_dwHDRCropWidth, r->m_dwHDRCropHeight, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$Velocity", &s_ptexVelocity, FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget(20, r->m_dwHDRCropHeight, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$VelocityTilesTmp0", &s_ptexVelocityTiles[0], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$Velocity", &s_ptexVelocity, FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(20, height, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$VelocityTilesTmp0", &s_ptexVelocityTiles[0], FT_DONT_RELEASE);
 	pHDRPostProcess->AddRenderTarget(20, 20, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$VelocityTilesTmp1", &s_ptexVelocityTiles[1], FT_DONT_RELEASE);
 	pHDRPostProcess->AddRenderTarget(20, 20, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$VelocityTiles", &s_ptexVelocityTiles[2], FT_DONT_RELEASE);
 
-	pHDRPostProcess->AddRenderTarget(r->GetWidth() >> 1, r->GetHeight() >> 1, Clr_Unknown, nHDRFormat, 0.9f, "$HDRDofLayerNear", &s_ptexHDRDofLayers[0], FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget(r->GetWidth() >> 1, r->GetHeight() >> 1, Clr_Unknown, nHDRFormat, 0.9f, "$HDRDofLayerFar", &s_ptexHDRDofLayers[1], FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget(r->GetWidth() >> 1, r->GetHeight() >> 1, Clr_Unknown, eTF_R16G16F, 1.0f, "$MinCoC_0_Temp", &s_ptexSceneCoCTemp, FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRFormat, 0.9f, "$HDRDofLayerNear", &s_ptexHDRDofLayers[0], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRFormat, 0.9f, "$HDRDofLayerFar", &s_ptexHDRDofLayers[1], FT_DONT_RELEASE);
+	pHDRPostProcess->AddRenderTarget(width_r2, height_r2, Clr_Unknown, eTF_R16G16F, 1.0f, "$MinCoC_0_Temp", &s_ptexSceneCoCTemp, FT_DONT_RELEASE);
 	for (i = 0; i < MIN_DOF_COC_K; i++)
 	{
 		cry_sprintf(szName, "$MinCoC_%d", i);
-		pHDRPostProcess->AddRenderTarget((r->m_dwHDRCropWidth >> 1) / (i + 1), (r->m_dwHDRCropHeight >> 1) / (i + 1), Clr_Unknown, eTF_R16G16F, 0.1f, szName, &s_ptexSceneCoC[i], FT_DONT_RELEASE, -1, true);
+		pHDRPostProcess->AddRenderTarget(width_r2 / (i + 1), height_r2 / (i + 1), Clr_Unknown, eTF_R16G16F, 0.1f, szName, &s_ptexSceneCoC[i], FT_DONT_RELEASE, -1, true);
 	}
 
 	// TODO: make it a MIP-mapped resource and/or use compute
@@ -336,9 +329,8 @@ void DrawQuad3D(float s0, float t0, float s1, float t1)
 // deprecated
 void DrawFullScreenQuadTR(float xpos, float ypos, float w, float h)
 {
-	TempDynVB<SVF_P3F_C4B_T2F> vb;
-	vb.Allocate(4);
-	SVF_P3F_C4B_T2F* vQuad = vb.Lock();
+	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+	CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 4, vQuad, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 	const DWORD col = ~0;
 	const float s0 = 0;
@@ -363,9 +355,7 @@ void DrawFullScreenQuadTR(float xpos, float ypos, float w, float h)
 	vQuad[2].color.dcolor = col;
 	vQuad[2].st = Vec2(s0, 1.0f - t1);
 
-	vb.Unlock();
-	vb.Bind(0);
-	vb.Release();
+	TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(vQuad, 4, 0);
 
 	gcpRendD3D->FX_Commit();
 
@@ -403,10 +393,10 @@ bool DrawFullScreenQuad(float fLeftU, float fTopV, float fRightU, float fBottomV
 	fHeight5 = fHeight5 - 0.5f;
 
 	// Draw the quad
-	TempDynVB<SVF_TP3F_C4B_T2F> vb;
-	vb.Allocate(4);
-	SVF_TP3F_C4B_T2F* Verts = vb.Lock();
 	{
+		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+		CryStackAllocWithSizeVector(SVF_TP3F_C4B_T2F, 4, Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
 		fTopV = 1 - fTopV;
 		fBottomV = 1 - fBottomV;
 		Verts[0].pos = Vec4(-0.5f, -0.5f, 0.0f, 1.0f);
@@ -425,9 +415,7 @@ bool DrawFullScreenQuad(float fLeftU, float fTopV, float fRightU, float fBottomV
 		Verts[3].color.dcolor = ~0;
 		Verts[3].st = Vec2(fRightU, fBottomV);
 
-		vb.Unlock();
-		vb.Bind(0);
-		vb.Release();
+		TempDynVB<SVF_TP3F_C4B_T2F>::CreateFillAndBind(Verts, 4, 0);
 
 		rd->FX_SetState(GS_NODEPTHTEST);
 		if (!FAILED(rd->FX_SetVertexDeclaration(0, eVF_TP3F_C4B_T2F)))

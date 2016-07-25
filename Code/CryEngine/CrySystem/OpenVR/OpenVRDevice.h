@@ -43,7 +43,6 @@ public:
 	virtual int                     GetControllerCount() const override { __debugbreak(); return 2; /* OPENVR_TODO */ }
 	virtual void                    GetPreferredRenderResolution(unsigned int& width, unsigned int& height) override;
 	virtual void                    DisableHMDTracking(bool disable) override;
-
 	// ~IHmdDevice
 
 	// IOpenVRDevice
@@ -53,6 +52,7 @@ public:
 	virtual void OnSetupOverlay(int id, ERenderAPI api, ERenderColorSpace colorSpace, void* overlayTextureHandle);
 	virtual void OnDeleteOverlay(int id);
 	virtual void GetRenderTargetSize(uint& w, uint& h);
+	virtual void GetMirrorImageView(EEyeType eye, void* resource, void** mirrorTextureView) override;
 	// ~IOpenVRDevice
 
 	// ISystemEventListener

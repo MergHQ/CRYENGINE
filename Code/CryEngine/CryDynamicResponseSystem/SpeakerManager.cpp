@@ -24,7 +24,7 @@ static const int s_characterSlot = 0;  //todo: make this a property of the drs a
 using namespace CryDRS;
 
 //--------------------------------------------------------------------------------------------------
-CSpeakerManager::CSpeakerManager() : m_pActiveSpeakerVariable(nullptr)
+CSpeakerManager::CSpeakerManager()
 {
 	//the audio callbacks we are interested in, all related to audio-asset (trigger or standaloneFile) finished or failed to start
 	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance | eAudioCallbackManagerRequestType_ReportStoppedFile | eAudioCallbackManagerRequestType_ReportStartedFile);
@@ -71,10 +71,6 @@ CSpeakerManager::~CSpeakerManager()
 //--------------------------------------------------------------------------------------------------
 void CSpeakerManager::Init()
 {
-	CVariableCollection* pGlobalVariableCollection = CResponseSystem::GetInstance()->GetCollection("Global");
-	CRY_ASSERT(pGlobalVariableCollection);
-	m_pActiveSpeakerVariable = pGlobalVariableCollection->CreateVariable("ActiveSpeakers", 0);
-
 	if (!m_pLipsyncProvider)
 	{
 		m_pDefaultLipsyncProvider = new CDefaultLipsyncProvider;
@@ -101,7 +97,7 @@ void CSpeakerManager::Update()
 		return;
 	}
 
-	const float currentTime = GetISystem()->GetITimer()->GetCurrTime();
+	const float currentTime = CResponseSystem::GetInstance()->GetCurrentDrsTime();
 	const float fColorBlue[4] = { 0.4f, 0.4f, 1.0f, 1.0f };
 	float currentPos2Y = 10.0f;
 
@@ -125,7 +121,7 @@ void CSpeakerManager::Update()
 			CResponseActor* pActor = it->pActor;
 			if (pActor)
 			{
-				IEntity* pEntity = pActor->GetLinkedEntity();
+				IEntity* pEntity = it->pEntity;
 				if (pEntity)
 				{
 					if (it->speechAuxProxy != DEFAULT_AUDIO_PROXY_ID)
@@ -163,6 +159,22 @@ void CSpeakerManager::Update()
 	{
 		if (it->endingConditions == eEC_Done)
 		{
+			if (m_pLipsyncProvider)
+			{
+				m_pLipsyncProvider->OnLineEnded(it->lipsyncId, it->pActor, it->pPickedLine);
+			}
+			InformListener(it->pActor, it->lineID, DRS::ISpeakerManager::IListener::eLineEvent_Finished, it->pPickedLine);
+
+			CDialogLineDatabase* pLineDatabase = static_cast<CDialogLineDatabase*>(CResponseSystem::GetInstance()->GetDialogLineDatabase());
+			CDialogLineSet* pLineSet = pLineDatabase->GetLineSetById(it->lineID);
+			const CDialogLine* pFollowUpLine = (pLineSet) ? pLineSet->GetFollowUpLine(it->pPickedLine) : nullptr;
+			if (pFollowUpLine) //so we are NOT done, because there is a follow-up-line for our just finished line
+			{
+				it->pPickedLine = pFollowUpLine;
+				StartSpeaking(&*it);
+				continue;
+			}
+
 			//one line has finished, lets see if someone was waiting for this
 			for (QueuedSpeakerList::iterator itQueued = m_queuedSpeakers.begin(); itQueued != m_queuedSpeakers.end(); ++itQueued)
 			{
@@ -173,13 +185,6 @@ void CSpeakerManager::Update()
 			}
 			ReleaseSpeakerAudioProxy(*it, true);
 			it->pActor->GetLocalVariables()->SetVariableValue(s_isTalkingVariableName, false);
-
-			if (m_pLipsyncProvider)
-			{
-				m_pLipsyncProvider->OnLineEnded(it->lipsyncId, it->pActor, it->pPickedLine);
-			}
-
-			InformListener(it->pActor, it->lineID, DRS::ISpeakerManager::IListener::eLineEvent_Finished, it->pPickedLine);
 			it = m_activeSpeakers.erase(it);
 		}
 		else
@@ -233,6 +238,11 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 		return false;
 	}
 
+	CDialogLineDatabase* pLineDatabase = static_cast<CDialogLineDatabase*>(CResponseSystem::GetInstance()->GetDialogLineDatabase());
+	CDialogLineSet* pLineSet = pLineDatabase->GetLineSetById(lineID);
+	int priority = (pLineSet) ? pLineSet->GetPriority() : 50; // 50 = default priority
+	const CDialogLine* pLine = nullptr;                       //we will check the priority first, before picking a line
+
 	CResponseActor* pActor = static_cast<CResponseActor*>(pIActor);
 	IEntity* pEntity = pActor->GetLinkedEntity();
 	if (!pEntity)
@@ -242,37 +252,7 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 		return false;
 	}
 
-	int priority = 50; //default priority
-	CDialogLineDatabase* pLineDatabase = static_cast<CDialogLineDatabase*>(CResponseSystem::GetInstance()->GetDialogLineDatabase());
-	const CDialogLine* pDialogLine = pLineDatabase->GetLineByID(lineID, &priority);
-
-	string textToShow;
-	AudioControlId audioStartTriggerID = INVALID_AUDIO_CONTROL_ID;
-	AudioControlId audioStopTriggerID = INVALID_AUDIO_CONTROL_ID;
-	if (pDialogLine)
-	{
-		textToShow = pDialogLine->GetText();
-		string audioTrigger = pDialogLine->GetStartAudioTrigger();
-		if (!audioTrigger.empty())
-		{
-			gEnv->pAudioSystem->GetAudioTriggerId(audioTrigger.c_str(), audioStartTriggerID);
-		}
-		audioTrigger = pDialogLine->GetEndAudioTrigger();
-		if (!audioTrigger.empty())
-		{
-			gEnv->pAudioSystem->GetAudioTriggerId(audioTrigger.c_str(), audioStopTriggerID);
-		}
-	}
-	else
-	{
-		CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "Triggered an SpeakLineAction, with a line that did not exist in the database! LineID was: '%s'", lineID.GetText().c_str());
-		textToShow.Format("Missing: %s", lineID.GetText().c_str());
-	}
-
-	const IEntityAudioProxyPtr pEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-
 	SSpeakInfo* pSpeakerInfoToUse = nullptr;
-	bool bReusedSpeaker = false;
 
 	//check if the actor is already talking
 	for (SSpeakInfo& activateSpeaker : m_activeSpeakers)
@@ -281,6 +261,8 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 		{
 			if (priority > activateSpeaker.priority || (m_samePrioCancelsLinesCVar != 0 && priority >= activateSpeaker.priority && lineID != activateSpeaker.lineID))  //if the new line is not less important, stop the old one
 			{
+				const IEntityAudioProxyPtr pEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+
 				//if someone is waiting for this line to finish, and now we are replacing that line, we have to remove the queued line as well
 				for (QueuedSpeakerList::iterator itQueued = m_queuedSpeakers.begin(); itQueued != m_queuedSpeakers.end(); )
 				{
@@ -298,10 +280,11 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 				if (activateSpeaker.stopTriggerID != INVALID_AUDIO_CONTROL_ID && m_playAudioCVar != 0)
 				{
 					//soft interruption: we execute the stop trigger on the old line. That trigger should cause the old line to end after a while. And only then, do we start the playback of the next line
-					SAudioCallBackInfo callbackInfo(this, (void* const)(pDialogLine), (void* const)(activateSpeaker.pActor), eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
+					pLine = (pLineSet) ? pLineSet->PickLine() : nullptr;
+					SAudioCallBackInfo callbackInfo(this, (void* const)(pLine), (void* const)(activateSpeaker.pActor), eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
 					if (!pEntityAudioProxy->ExecuteTrigger(activateSpeaker.stopTriggerID, activateSpeaker.speechAuxProxy, callbackInfo))
 					{
-						//failed to start the stop trigger, therefore we fallback to hard-interruption
+						//failed to start the stop trigger, therefore we fallback to hard-interruption by stopping the start trigger
 						pEntityAudioProxy->StopTrigger(activateSpeaker.startTriggerID, activateSpeaker.speechAuxProxy);
 					}
 					else
@@ -323,11 +306,17 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 				}
 				else
 				{
-					pEntityAudioProxy->StopTrigger(activateSpeaker.startTriggerID, activateSpeaker.speechAuxProxy);
+					if (activateSpeaker.startTriggerID != INVALID_AUDIO_CONTROL_ID)
+					{
+						pEntityAudioProxy->StopTrigger(activateSpeaker.startTriggerID, activateSpeaker.speechAuxProxy);
+					}
+					if (!activateSpeaker.standaloneFile.empty())
+					{
+						pEntityAudioProxy->StopFile(activateSpeaker.standaloneFile.c_str(), activateSpeaker.speechAuxProxy);
+					}
 					InformListener(pActor, activateSpeaker.lineID, DRS::ISpeakerManager::IListener::eLineEvent_Canceled, activateSpeaker.pPickedLine);
 				}
 				pSpeakerInfoToUse = &activateSpeaker;
-				bReusedSpeaker = true;
 				break;
 			}
 			else
@@ -338,14 +327,7 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 		}
 	}
 
-#if !defined(_RELEASE)
-	if (m_displaySubtitlesCVar == 0)
-	{
-		CryLog("SPEAKING: %s: %s \n", (pActor) ? pActor->GetName().GetText().c_str() : "Unnamed", textToShow.c_str());
-	}
-#endif
-
-	if (!pSpeakerInfoToUse)
+	if (!pSpeakerInfoToUse)  //are we reusing an exsting speaker
 	{
 		m_activeSpeakers.push_back(SSpeakInfo());
 		pSpeakerInfoToUse = &m_activeSpeakers.back();
@@ -353,101 +335,20 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 		pSpeakerInfoToUse->voiceAttachmentIndex = -1;  // -1 means invalid ID;
 	}
 
-	pSpeakerInfoToUse->pPickedLine = pDialogLine;
+	if (pLine)
+	{
+		pSpeakerInfoToUse->pPickedLine = pLine;
+	}
+	else
+	{
+		pSpeakerInfoToUse->pPickedLine = (pLineSet) ? pLineSet->PickLine() : nullptr;
+	}
 	pSpeakerInfoToUse->pActor = pActor;
-	pSpeakerInfoToUse->text = textToShow;
+	pSpeakerInfoToUse->pEntity = pEntity;
 	pSpeakerInfoToUse->lineID = lineID;
 	pSpeakerInfoToUse->priority = priority;
 
-	pSpeakerInfoToUse->startTriggerID = audioStartTriggerID;
-	pSpeakerInfoToUse->stopTriggerID = audioStopTriggerID;
-	pSpeakerInfoToUse->endingConditions = eEC_Done;
-	pSpeakerInfoToUse->lipsyncId = DRS::s_InvalidLipSyncId;
-	pSpeakerInfoToUse->standaloneFile = (pDialogLine) ? pDialogLine->GetStandaloneFile() : string();
-
-	bool bHasAudioAsset = (audioStartTriggerID != INVALID_AUDIO_CONTROL_ID || !pSpeakerInfoToUse->standaloneFile.empty()) && m_playAudioCVar != 0;
-
-	if (bHasAudioAsset)
-	{
-		if (m_audioRtpcIdLocal != INVALID_AUDIO_CONTROL_ID)
-		{
-			pEntityAudioProxy->SetRtpcValue(m_audioRtpcIdLocal, 1.0f, INVALID_AUDIO_PROXY_ID);
-		}
-
-		if (pSpeakerInfoToUse->speechAuxProxy == DEFAULT_AUDIO_PROXY_ID)
-		{
-			const ICharacterInstance* pCharacter = pEntity->GetCharacter(s_characterSlot);
-			if (pCharacter)
-			{
-				const IAttachmentManager* pAttachmentManager = pCharacter->GetIAttachmentManager();
-				if (pAttachmentManager)
-				{
-					pSpeakerInfoToUse->voiceAttachmentIndex = pAttachmentManager->GetIndexByName("voice");
-					if (pSpeakerInfoToUse->voiceAttachmentIndex == -1)
-						pSpeakerInfoToUse->voiceAttachmentIndex = pAttachmentManager->GetIndexByName("eye_left");
-					if (pSpeakerInfoToUse->voiceAttachmentIndex != -1)
-					{
-						pSpeakerInfoToUse->speechAuxProxy = pEntityAudioProxy->CreateAuxAudioProxy();
-						UpdateAudioProxyPosition(pEntity, *pSpeakerInfoToUse);
-					}
-				}
-			}
-		}
-
-		SAudioCallBackInfo callbackInfo(this, (void* const)(pDialogLine), (void* const)(pActor), eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
-
-		bool bAudioPlaybackStarted = true;
-
-		if (pSpeakerInfoToUse->startTriggerID)
-		{
-			bAudioPlaybackStarted = pEntityAudioProxy->ExecuteTrigger(pSpeakerInfoToUse->startTriggerID, pSpeakerInfoToUse->speechAuxProxy, callbackInfo);
-		}
-		else
-		{
-			bAudioPlaybackStarted = pEntityAudioProxy->PlayFile(pSpeakerInfoToUse->standaloneFile.c_str(), pSpeakerInfoToUse->speechAuxProxy, callbackInfo);
-		}
-
-		if (bAudioPlaybackStarted)
-		{
-			pSpeakerInfoToUse->finishTime = GetISystem()->GetITimer()->GetCurrTime() + 100;
-			pSpeakerInfoToUse->endingConditions = eEC_WaitingForStartTrigger;
-		}
-		else
-		{
-			ReleaseSpeakerAudioProxy(*pSpeakerInfoToUse, false);
-			pSpeakerInfoToUse->startTriggerID = INVALID_AUDIO_CONTROL_ID;
-			pSpeakerInfoToUse->stopTriggerID = INVALID_AUDIO_CONTROL_ID;
-			pSpeakerInfoToUse->speechAuxProxy = DEFAULT_AUDIO_PROXY_ID;
-			pSpeakerInfoToUse->standaloneFile.clear();
-		}
-	}
-
-	if (m_pLipsyncProvider)
-	{
-		pSpeakerInfoToUse->lipsyncId = m_pLipsyncProvider->OnLineStarted(pActor, pSpeakerInfoToUse->pPickedLine);
-		if (pSpeakerInfoToUse->lipsyncId != DRS::s_InvalidLipSyncId)
-		{
-			pSpeakerInfoToUse->endingConditions |= eEC_WaitingForLipsync;
-			pSpeakerInfoToUse->finishTime = GetISystem()->GetITimer()->GetCurrTime() + 100;
-		}
-	}
-
-	if (pSpeakerInfoToUse->endingConditions == eEC_Done)  //fallback, if no other ending conditions were applied, display subtitles for some time
-	{
-		pSpeakerInfoToUse->finishTime = GetISystem()->GetITimer()->GetCurrTime();
-		pSpeakerInfoToUse->finishTime += (2 + textToShow.length() / 16);
-		pSpeakerInfoToUse->endingConditions = eEC_WaitingForTimer;
-	}
-
-	InformListener(pActor, lineID, DRS::ISpeakerManager::IListener::eLineEvent_Started, pDialogLine);
-
-	SET_DRS_USER_SCOPED("SpeakerManager Start Speaking");
-	if (!bReusedSpeaker)
-	{
-		pActor->GetLocalVariables()->SetVariableValue(s_isTalkingVariableName, true);
-		pActor->GetLocalVariables()->SetVariableValue(s_lastLineId, lineID);
-	}
-	SetNumActiveSpeaker((int)m_activeSpeakers.size());
+	StartSpeaking(pSpeakerInfoToUse);  //now we have all data we need in order to actual start speaking
 
 	return true;
 }
@@ -479,14 +380,15 @@ void CSpeakerManager::UpdateAudioProxyPosition(IEntity* pEntity, const SSpeakInf
 bool CSpeakerManager::CancelSpeaking(const DRS::IResponseActor* pActor, int maxPrioToCancel)
 {
 	bool bSomethingWasCanceled = false;
-	for (SpeakerList::iterator it = m_activeSpeakers.begin(); it != m_activeSpeakers.end(); ++it)
+
+	for (SSpeakInfo& speakerInfo : m_activeSpeakers)
 	{
-		if ((it->pActor == pActor || pActor == nullptr) && (it->priority <= maxPrioToCancel || maxPrioToCancel < 0))
+		if ((speakerInfo.pActor == pActor || pActor == nullptr) && (speakerInfo.priority <= maxPrioToCancel || maxPrioToCancel < 0))
 		{
 			//to-check: currently cancel speaking will not execute the stop trigger
-			InformListener(static_cast<const CResponseActor*>(pActor), it->lineID, DRS::ISpeakerManager::IListener::eLineEvent_Canceled, it->pPickedLine);
-			it->endingConditions = eEC_Done;
-			it->finishTime = 0.0f;  //trigger finished, will be removed in the next update then
+			InformListener(speakerInfo.pActor, speakerInfo.lineID, DRS::ISpeakerManager::IListener::eLineEvent_Canceled, speakerInfo.pPickedLine);
+			speakerInfo.endingConditions = eEC_Done;
+			speakerInfo.finishTime = 0.0f;  //trigger finished, will be removed in the next update then
 			bSomethingWasCanceled = true;
 		}
 	}
@@ -498,11 +400,12 @@ void CSpeakerManager::Reset()
 {
 	m_queuedSpeakers.clear();
 
-	for (SpeakerList::iterator it = m_activeSpeakers.begin(), itEnd = m_activeSpeakers.end(); it != itEnd; ++it)
+	for (SSpeakInfo& speakerInfo : m_activeSpeakers)
 	{
 		SET_DRS_USER_SCOPED("SpeakerManager Reset");
-		it->pActor->GetLocalVariables()->SetVariableValue(s_isTalkingVariableName, false);
-		ReleaseSpeakerAudioProxy(*it, true);
+		InformListener(speakerInfo.pActor, speakerInfo.lineID, DRS::ISpeakerManager::IListener::eLineEvent_Canceled, speakerInfo.pPickedLine);
+		speakerInfo.pActor->GetLocalVariables()->SetVariableValue(s_isTalkingVariableName, false);
+		ReleaseSpeakerAudioProxy(speakerInfo, true);
 	}
 	m_activeSpeakers.clear();
 }
@@ -547,26 +450,25 @@ void CSpeakerManager::OnAudioCallback(const SAudioRequestInfo* const pAudioReque
 	const CResponseActor* pActor = reinterpret_cast<const CResponseActor*>(pAudioRequestInfo->pUserDataOwner);
 
 	if (pAudioRequestInfo->requestResult == eAudioRequestResult_Failure &&
-		(pAudioRequestInfo->audioRequestType == eAudioRequestType_AudioObjectRequest && (pAudioRequestInfo->specificAudioRequest == eAudioObjectRequestType_ExecuteTrigger || pAudioRequestInfo->specificAudioRequest == eAudioObjectRequestType_PlayFile)
-		|| pAudioRequestInfo->audioRequestType == eAudioRequestType_AudioCallbackManagerRequest && pAudioRequestInfo->specificAudioRequest == eAudioCallbackManagerRequestType_ReportStartedFile))
+	    (pAudioRequestInfo->audioRequestType == eAudioRequestType_AudioObjectRequest && (pAudioRequestInfo->specificAudioRequest == eAudioObjectRequestType_ExecuteTrigger || pAudioRequestInfo->specificAudioRequest == eAudioObjectRequestType_PlayFile)
+	     || pAudioRequestInfo->audioRequestType == eAudioRequestType_AudioCallbackManagerRequest && pAudioRequestInfo->specificAudioRequest == eAudioCallbackManagerRequestType_ReportStartedFile))
 	{
 		//handling of failure executing the start / stop trigger or the standalone file
-		for (SpeakerList::iterator it = pSpeakerManager->m_activeSpeakers.begin(), itEnd = pSpeakerManager->m_activeSpeakers.end(); it != itEnd; ++it)
+		for (SSpeakInfo& speakerInfo : pSpeakerManager->m_activeSpeakers)
 		{
-			if (it->pActor == pActor && pDialogLine == it->pPickedLine)
+			if (speakerInfo.pActor == pActor && pDialogLine == speakerInfo.pPickedLine)
 			{
-				if (pAudioRequestInfo->audioControlId == it->startTriggerID)  //if the start trigger fails, we still want to display the subtitle for some time, //will also be met for StandaloneFiles, because startTriggerID == 0
+				if (pAudioRequestInfo->audioControlId == speakerInfo.startTriggerID)  //if the start trigger fails, we still want to display the subtitle for some time, //will also be met for StandaloneFiles, because startTriggerID == 0
 				{
 					int textLength = (pDialogLine) ? strlen(pDialogLine->GetText()) : 16;
-					it->finishTime = GetISystem()->GetITimer()->GetCurrTime() + (2 + (textLength / 16));
-					it->endingConditions |= eEC_WaitingForTimer;
-					it->endingConditions &= ~eEC_WaitingForStartTrigger;
+					speakerInfo.finishTime = CResponseSystem::GetInstance()->GetCurrentDrsTime() + (2.0f + (textLength / 16.0f)) + speakerInfo.pPickedLine->GetPauseLength();
+					speakerInfo.endingConditions |= eEC_WaitingForTimer;
+					speakerInfo.endingConditions &= ~eEC_WaitingForStartTrigger;
 				}
-				else if (pAudioRequestInfo->audioControlId == it->stopTriggerID) //if the stop trigger fails, we simply stop the start-trigger directly (in the next update)
+				else if (pAudioRequestInfo->audioControlId == speakerInfo.stopTriggerID) //if the stop trigger fails, we simply stop the start-trigger directly (in the next update)
 				{
-					it->finishTime = 0.0f;
-					it->endingConditions = eEC_Done;
-					it->endingConditions &= ~eEC_WaitingForStopTrigger;
+					speakerInfo.finishTime = 0.0f;
+					speakerInfo.endingConditions = eEC_Done;
 				}
 				return;
 			}
@@ -576,17 +478,23 @@ void CSpeakerManager::OnAudioCallback(const SAudioRequestInfo* const pAudioReque
 	         && (pAudioRequestInfo->specificAudioRequest == eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance
 	             || pAudioRequestInfo->specificAudioRequest == eAudioCallbackManagerRequestType_ReportStoppedFile))
 	{
-		for (SpeakerList::iterator it = pSpeakerManager->m_activeSpeakers.begin(), itEnd = pSpeakerManager->m_activeSpeakers.end(); it != itEnd; ++it)
+		for (SSpeakInfo& speakerInfo : pSpeakerManager->m_activeSpeakers)
 		{
-			if (it->pActor == pActor && pDialogLine == it->pPickedLine)
+			if (speakerInfo.pActor == pActor && pDialogLine == speakerInfo.pPickedLine)
 			{
-				if (pAudioRequestInfo->audioControlId == it->startTriggerID)  //will also be met for StandaloneFiles, because startTriggerID == 0
+				if (pAudioRequestInfo->audioControlId == speakerInfo.startTriggerID)  //will also be met for StandaloneFiles, because startTriggerID == 0
 				{
-					it->endingConditions &= ~eEC_WaitingForStartTrigger;
+					speakerInfo.endingConditions &= ~eEC_WaitingForStartTrigger;
+					if (speakerInfo.pPickedLine->GetPauseLength() > 0.0f && (speakerInfo.endingConditions & eEC_WaitingForTimer) == 0)
+					{
+						//audio playback is dont, time for the artifical pause, specified by the 'pause' property of the line
+						speakerInfo.finishTime = CResponseSystem::GetInstance()->GetCurrentDrsTime() + speakerInfo.pPickedLine->GetPauseLength();
+						speakerInfo.endingConditions |= eEC_WaitingForTimer;
+					}
 				}
-				if (pAudioRequestInfo->audioControlId == it->stopTriggerID)
+				if (pAudioRequestInfo->audioControlId == speakerInfo.stopTriggerID)
 				{
-					it->endingConditions &= ~eEC_WaitingForStopTrigger;
+					speakerInfo.endingConditions &= ~eEC_WaitingForStopTrigger;
 				}
 			}
 		}
@@ -677,7 +585,9 @@ void CSpeakerManager::SetNumActiveSpeaker(int newAmountOfSpeaker)
 	if (m_numActiveSpeaker != newAmountOfSpeaker)
 	{
 		m_numActiveSpeaker = newAmountOfSpeaker;
-		m_pActiveSpeakerVariable->SetValue(newAmountOfSpeaker);
+		CVariableCollection* pGlobalVariableCollection = CResponseSystem::GetInstance()->GetCollection("Global");
+		CVariable* pActiveSpeakerVariable = pGlobalVariableCollection->CreateOrGetVariable("ActiveSpeakers");
+		pActiveSpeakerVariable->SetValue(newAmountOfSpeaker);
 
 		if (m_audioRtpcIdGlobal != INVALID_AUDIO_CONTROL_ID)
 		{
@@ -688,6 +598,122 @@ void CSpeakerManager::SetNumActiveSpeaker(int newAmountOfSpeaker)
 			gEnv->pAudioSystem->PushRequest(request);
 		}
 	}
+}
+
+//--------------------------------------------------------------------------------------------------
+void CryDRS::CSpeakerManager::StartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
+{
+	pSpeakerInfoToUse->startTriggerID = INVALID_AUDIO_CONTROL_ID;
+	pSpeakerInfoToUse->stopTriggerID = INVALID_AUDIO_CONTROL_ID;
+	pSpeakerInfoToUse->endingConditions = eEC_Done;
+	pSpeakerInfoToUse->lipsyncId = DRS::s_InvalidLipSyncId;
+	pSpeakerInfoToUse->standaloneFile.clear();
+
+	if (pSpeakerInfoToUse->pPickedLine)
+	{
+		pSpeakerInfoToUse->text = pSpeakerInfoToUse->pPickedLine->GetText();
+		if (!pSpeakerInfoToUse->pPickedLine->GetStartAudioTrigger().empty())
+		{
+			gEnv->pAudioSystem->GetAudioTriggerId(pSpeakerInfoToUse->pPickedLine->GetStartAudioTrigger().c_str(), pSpeakerInfoToUse->startTriggerID);
+		}
+
+		pSpeakerInfoToUse->standaloneFile = pSpeakerInfoToUse->pPickedLine->GetStandaloneFile();
+		if (!pSpeakerInfoToUse->pPickedLine->GetEndAudioTrigger().empty())
+		{
+			gEnv->pAudioSystem->GetAudioTriggerId(pSpeakerInfoToUse->pPickedLine->GetEndAudioTrigger().c_str(), pSpeakerInfoToUse->stopTriggerID);
+		}
+	}
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "Triggered an SpeakLineAction, with a line that did not exist in the database! LineID was: '%s'", pSpeakerInfoToUse->lineID.GetText().c_str());
+		pSpeakerInfoToUse->text.Format("Missing: %s", pSpeakerInfoToUse->lineID.GetText().c_str());
+	}
+
+	bool bHasAudioAsset = (pSpeakerInfoToUse->startTriggerID != INVALID_AUDIO_CONTROL_ID || !pSpeakerInfoToUse->standaloneFile.empty()) && m_playAudioCVar != 0;
+
+	if (bHasAudioAsset)
+	{
+		const IEntityAudioProxyPtr pEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pSpeakerInfoToUse->pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+
+		if (m_audioRtpcIdLocal != INVALID_AUDIO_CONTROL_ID)
+		{
+			pEntityAudioProxy->SetRtpcValue(m_audioRtpcIdLocal, 1.0f, INVALID_AUDIO_PROXY_ID);
+		}
+
+		if (pSpeakerInfoToUse->speechAuxProxy == DEFAULT_AUDIO_PROXY_ID)
+		{
+			const ICharacterInstance* pCharacter = pSpeakerInfoToUse->pEntity->GetCharacter(s_characterSlot);
+			if (pCharacter)
+			{
+				const IAttachmentManager* pAttachmentManager = pCharacter->GetIAttachmentManager();
+				if (pAttachmentManager)
+				{
+					pSpeakerInfoToUse->voiceAttachmentIndex = pAttachmentManager->GetIndexByName("voice");
+					if (pSpeakerInfoToUse->voiceAttachmentIndex == -1)
+						pSpeakerInfoToUse->voiceAttachmentIndex = pAttachmentManager->GetIndexByName("eye_left");
+					if (pSpeakerInfoToUse->voiceAttachmentIndex != -1)
+					{
+						pSpeakerInfoToUse->speechAuxProxy = pEntityAudioProxy->CreateAuxAudioProxy();
+						UpdateAudioProxyPosition(pSpeakerInfoToUse->pEntity, *pSpeakerInfoToUse);
+					}
+				}
+			}
+		}
+
+		SAudioCallBackInfo callbackInfo(this, (void* const)(pSpeakerInfoToUse->pPickedLine), (void* const)(pSpeakerInfoToUse->pActor), eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
+
+		bool bAudioPlaybackStarted = true;
+
+		if (pSpeakerInfoToUse->startTriggerID)
+		{
+			bAudioPlaybackStarted = pEntityAudioProxy->ExecuteTrigger(pSpeakerInfoToUse->startTriggerID, pSpeakerInfoToUse->speechAuxProxy, callbackInfo);
+		}
+		else
+		{
+			bAudioPlaybackStarted = pEntityAudioProxy->PlayFile(pSpeakerInfoToUse->standaloneFile.c_str(), pSpeakerInfoToUse->speechAuxProxy, callbackInfo);
+		}
+		if (bAudioPlaybackStarted)
+		{
+			pSpeakerInfoToUse->finishTime = CResponseSystem::GetInstance()->GetCurrentDrsTime() + 100.0f;
+			pSpeakerInfoToUse->endingConditions = eEC_WaitingForStartTrigger;
+		}
+		else
+		{
+			ReleaseSpeakerAudioProxy(*pSpeakerInfoToUse, false);
+			pSpeakerInfoToUse->startTriggerID = INVALID_AUDIO_CONTROL_ID;
+			pSpeakerInfoToUse->stopTriggerID = INVALID_AUDIO_CONTROL_ID;
+			pSpeakerInfoToUse->speechAuxProxy = DEFAULT_AUDIO_PROXY_ID;
+			pSpeakerInfoToUse->standaloneFile.clear();
+		}
+	}
+
+	if (m_pLipsyncProvider)
+	{
+		pSpeakerInfoToUse->lipsyncId = m_pLipsyncProvider->OnLineStarted(pSpeakerInfoToUse->pActor, pSpeakerInfoToUse->pPickedLine);
+		if (pSpeakerInfoToUse->lipsyncId != DRS::s_InvalidLipSyncId)
+		{
+			pSpeakerInfoToUse->endingConditions |= eEC_WaitingForLipsync;
+			pSpeakerInfoToUse->finishTime = CResponseSystem::GetInstance()->GetCurrentDrsTime() + 100.0f;
+		}
+	}
+
+	if (pSpeakerInfoToUse->endingConditions == eEC_Done)  //fallback, if no other ending conditions were applied, display subtitles for some time
+	{
+		pSpeakerInfoToUse->finishTime = CResponseSystem::GetInstance()->GetCurrentDrsTime();
+		pSpeakerInfoToUse->finishTime += (2.0f + pSpeakerInfoToUse->text.length() / 16.0f);
+		if (pSpeakerInfoToUse->pPickedLine)
+		{
+			pSpeakerInfoToUse->finishTime += pSpeakerInfoToUse->pPickedLine->GetPauseLength();
+		}
+		pSpeakerInfoToUse->endingConditions = eEC_WaitingForTimer;
+	}
+
+	InformListener(pSpeakerInfoToUse->pActor, pSpeakerInfoToUse->lineID, DRS::ISpeakerManager::IListener::eLineEvent_Started, pSpeakerInfoToUse->pPickedLine);
+
+	SET_DRS_USER_SCOPED("SpeakerManager Start Speaking");
+	pSpeakerInfoToUse->pActor->GetLocalVariables()->SetVariableValue(s_isTalkingVariableName, true);
+	pSpeakerInfoToUse->pActor->GetLocalVariables()->SetVariableValue(s_lastLineId, pSpeakerInfoToUse->lineID);
+	SetNumActiveSpeaker((int)m_activeSpeakers.size());
 }
 
 //--------------------------------------------------------------------------------------------------

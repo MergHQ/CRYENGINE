@@ -74,7 +74,7 @@ template<typename F> struct Matrix44_tpl
 #endif
 
 	//! Initialize with zeros.
-	ILINE Matrix44_tpl(type_zero)
+	ILINE void SetZero()
 	{
 		m00 = 0;
 		m01 = 0;
@@ -93,6 +93,7 @@ template<typename F> struct Matrix44_tpl
 		m32 = 0;
 		m33 = 0;
 	}
+	ILINE Matrix44_tpl(type_zero) { SetZero(); }
 
 	//! ASSIGNMENT OPERATOR of identical Matrix44 types.
 	//! The assignment operator has precedence over assignment constructor.
@@ -283,7 +284,7 @@ template<typename F> struct Matrix44_tpl
 	//---------------------------------------------------------------------
 
 	//! multiply all m1 matrix's values by f and return the matrix
-	friend  ILINE Matrix44_tpl<F> operator*(const Matrix44_tpl<F>& m, const f32 f)
+	friend  ILINE Matrix44_tpl<F> operator*(const Matrix44_tpl<F>& m, const F f)
 	{
 		CRY_MATH_ASSERT(m.IsValid());
 		Matrix44_tpl<F> r;
@@ -500,7 +501,7 @@ template<typename F> struct Matrix44_tpl
 		return dst;
 	}
 
-	ILINE f32 Determinant() const
+	ILINE F Determinant() const
 	{
 		//determinant is ambiguous: only the upper-left-submatrix's determinant is calculated
 		return (m00 * m11 * m22) + (m01 * m12 * m20) + (m02 * m10 * m21) - (m02 * m11 * m20) - (m00 * m12 * m21) - (m01 * m10 * m22);
@@ -528,22 +529,24 @@ template<typename F> struct Matrix44_tpl
 	}
 
 	// helper functions to access matrix-members
-	ILINE F*                 GetData()                              { return &m00; }
-	ILINE const F*           GetData() const                        { return &m00; }
+	ILINE F*                 GetData()                               { return &m00; }
+	ILINE const F*           GetData() const                         { return &m00; }
 
-	ILINE F                  operator()(uint32 i, uint32 j) const   { CRY_MATH_ASSERT((i < 4) && (j < 4)); F* p_data = (F*)(&m00); return p_data[i * 4 + j]; }
-	ILINE F&                 operator()(uint32 i, uint32 j)         { CRY_MATH_ASSERT((i < 4) && (j < 4)); F* p_data = (F*)(&m00); return p_data[i * 4 + j]; }
+	ILINE F                  operator()(uint32 i, uint32 j) const    { CRY_MATH_ASSERT((i < 4) && (j < 4)); F* p_data = (F*)(&m00); return p_data[i * 4 + j]; }
+	ILINE F&                 operator()(uint32 i, uint32 j)          { CRY_MATH_ASSERT((i < 4) && (j < 4)); F* p_data = (F*)(&m00); return p_data[i * 4 + j]; }
 
-	ILINE void               SetRow(int i, const Vec3_tpl<F>& v)    { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); p[0 + 4 * i] = v.x; p[1 + 4 * i] = v.y; p[2 + 4 * i] = v.z; }
-	ILINE void               SetRow4(int i, const Vec4_tpl<F>& v)   { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); p[0 + 4 * i] = v.x; p[1 + 4 * i] = v.y; p[2 + 4 * i] = v.z; p[3 + 4 * i] = v.w; }
-	ILINE const Vec3_tpl<F>& GetRow(int i) const                    { CRY_MATH_ASSERT(i < 4); return *(const Vec3_tpl<F>*)(&m00 + 4 * i); }
+	ILINE void               SetRow(int i, const Vec3_tpl<F>& v)     { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); p[0 + 4 * i] = v.x; p[1 + 4 * i] = v.y; p[2 + 4 * i] = v.z; }
+	ILINE void               SetRow4(int i, const Vec4_tpl<F>& v)    { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); p[0 + 4 * i] = v.x; p[1 + 4 * i] = v.y; p[2 + 4 * i] = v.z; p[3 + 4 * i] = v.w; }
+	ILINE const Vec3_tpl<F>& GetRow(int i) const                     { CRY_MATH_ASSERT(i < 4); return *(const Vec3_tpl<F>*)(&m00 + 4 * i); }
+	ILINE const Vec4_tpl<F>& GetRow4(int i) const                    { CRY_MATH_ASSERT(i < 4); return *(const Vec4_tpl<F>*)(&m00 + 4 * i); }
 
-	ILINE void               SetColumn(int i, const Vec3_tpl<F>& v) { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); p[i + 4 * 0] = v.x; p[i + 4 * 1] = v.y; p[i + 4 * 2] = v.z; }
-	ILINE Vec3_tpl<F>        GetColumn(int i) const                 { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); return Vec3(p[i + 4 * 0], p[i + 4 * 1], p[i + 4 * 2]); }
-	ILINE Vec4_tpl<F>        GetColumn4(int i) const                { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); return Vec4(p[i + 4 * 0], p[i + 4 * 1], p[i + 4 * 2], p[i + 4 * 3]); }
+	ILINE void               SetColumn(int i, const Vec3_tpl<F>& v)  { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); p[i + 4 * 0] = v.x; p[i + 4 * 1] = v.y; p[i + 4 * 2] = v.z; }
+	ILINE void               SetColumn4(int i, const Vec4_tpl<F>& v) { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); p[i + 4 * 0] = v.x; p[i + 4 * 1] = v.y; p[i + 4 * 2] = v.z; p[i + 4 * 3] = v.w; }
+	ILINE Vec3_tpl<F>        GetColumn(int i) const                  { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); return Vec3(p[i + 4 * 0], p[i + 4 * 1], p[i + 4 * 2]); }
+	ILINE Vec4_tpl<F>        GetColumn4(int i) const                 { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); return Vec4(p[i + 4 * 0], p[i + 4 * 1], p[i + 4 * 2], p[i + 4 * 3]); }
 
-	ILINE Vec3               GetTranslation() const                 { return Vec3(m03, m13, m23); }
-	ILINE void               SetTranslation(const Vec3& t)          { m03 = t.x; m13 = t.y; m23 = t.z; }
+	ILINE Vec3               GetTranslation() const                  { return Vec3(m03, m13, m23); }
+	ILINE void               SetTranslation(const Vec3& t)           { m03 = t.x; m13 = t.y; m23 = t.z; }
 
 	bool                     IsValid() const
 	{
@@ -553,7 +556,7 @@ template<typename F> struct Matrix44_tpl
 		if (!NumberValid(m30)) return false;  if (!NumberValid(m31)) return false;  if (!NumberValid(m32)) return false;  if (!NumberValid(m33)) return false;
 		return true;
 	}
-	static bool IsEquivalent(const Matrix44_tpl<F>& m0, const Matrix44_tpl<F>& m1, F e = VEC_EPSILON)
+	static bool IsEquivalent(const Matrix44_tpl<F>& m0, const Matrix44_tpl<F>& m1, f32 e = VEC_EPSILON)
 	{
 		return  (
 		  (fabs_tpl(m0.m00 - m1.m00) <= e) && (fabs_tpl(m0.m01 - m1.m01) <= e) && (fabs_tpl(m0.m02 - m1.m02) <= e) && (fabs_tpl(m0.m03 - m1.m03) <= e) &&
@@ -759,4 +762,9 @@ ILINE Vec4_tpl<F1> operator*(const Vec4_tpl<F1>& v, const Matrix44_tpl<F2>& m)
 	                    v.x * m.m03 + v.y * m.m13 + v.z * m.m23 + v.w * m.m33);
 }
 
+template<class F>
+bool IsEquivalent(const Matrix44_tpl<F>& m0, const Matrix44_tpl<F>& m1, f32 e = VEC_EPSILON)
+{
+	return Matrix44_tpl<F>::IsEquivalent(m0, m1, e);
+}
 #endif //MATRIX_H

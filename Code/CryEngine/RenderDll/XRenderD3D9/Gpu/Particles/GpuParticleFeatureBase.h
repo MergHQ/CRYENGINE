@@ -25,7 +25,7 @@ public:
 	virtual void InitSubInstance(IParticleComponentRuntime* pRuntime, SSpawnData* pInstances, size_t count) {}
 	virtual void KillParticles(const gpu_pfx2::SUpdateContext& context,
 	                           uint32* pParticles, size_t count) {}
-	virtual void Update(const gpu_pfx2::SUpdateContext& context) {}
+	virtual void Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList) {}
 };
 
 // handy base class for features

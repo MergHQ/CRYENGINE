@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include "ConfigScaleform.h"
+#include <CrySystem/Scaleform/ConfigScaleform.h>
 #if defined(INCLUDE_SCALEFORM_SDK) && defined(USE_GFX_IME)
 	#include "GFxIMEManager.h"
 	#include <CrySystem/IWindowMessageHandler.h>

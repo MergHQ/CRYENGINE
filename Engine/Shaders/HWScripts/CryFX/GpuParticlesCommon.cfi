@@ -118,6 +118,13 @@ cbuffer g_pixelSizeParameters : register(b12)
 	int   c_pixelsize_affectOpacity;
 };
 
+cbuffer g_collisionParameters : register(b13)
+{
+	float c_collision_offset;
+	float c_collision_radius;
+	float c_collision_restitution;
+};
+
 RWStructuredBuffer<SDefaultParticleData> defaultParticleData : register(u0);
 
 // Packs float4 in [0,1] range into [0-255] uint

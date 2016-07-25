@@ -48,7 +48,6 @@ public:
 
 	CResponseSegment* GetNextResponseSegment(CResponseInstance* pResponseInstance);
 	const char*       GetName() const;
-	void              Reset();
 
 	void              Serialize(Serialization::IArchive& ar);
 	bool              operator<(const CResponseSegment& other) const; //Remark: we sort (child)segments by their amount of conditions, this makes it easier for us to find the 'best' one

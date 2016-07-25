@@ -1,0 +1,11 @@
+#Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld) :
+
+	bld.CryEngineModule(
+	  target = 'CryFramesPerSecond',
+	  vs_filter = 'CryExtensions',
+	  file_list = 'cryframespersecond.waf_files',
+
+	  pch = 'StdAfx.cpp'
+	  )

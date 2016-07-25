@@ -262,8 +262,7 @@ void CEntityLayer::EnableEntities(bool isEnable)
 				gEnv->pRenderer->ActivateLayer(m_name.c_str(), isEnable); // Want flash instances on materials deactivated after entities
 			}
 		}
-		else
-			m_wasReEnabled = true;
+		m_wasReEnabled = isEnable;
 	}
 
 	ReEvalNeedForHeap();

@@ -8,7 +8,7 @@
 
    -------------------------------------------------------------------------
    History:
-   - 4:3:2009   11:38 : Created by Márcio Martins
+   - 4:3:2009   11:38 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #ifndef __VisionMap_h__
@@ -193,6 +193,7 @@ private:
 	bool                     ShouldObserve(const ObserverInfo& observerInfo, const ObservableInfo& observableInfo) const;
 	bool                     IsInSightRange(const ObserverInfo& observerInfo, const ObservableInfo& observableInfo) const;
 	bool                     IsInFoV(const ObserverInfo& observerInfo, const ObservableInfo& observableInfo) const;
+	bool                     IsUserConditionSatisfied(const ObserverInfo& observerInfo, const ObservableInfo& observableInfo) const;
 
 	void                     QueueRay(const ObserverInfo& observerInfo, PVSEntry& pvsEntry);
 	bool                     RayCastSubmit(const QueuedRayID& queuedRayID, RayCastRequest& request);

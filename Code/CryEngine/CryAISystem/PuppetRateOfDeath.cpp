@@ -643,7 +643,7 @@ void CPuppet::HandleBurstFireInit()
 	if (m_targetZone == AIZONE_WARN)
 		m_targetSeenTime = std::max(0.0f, m_targetSeenTime - (cry_random(1, 3)) / 10.0f);
 
-	/* Márcio: does not work for Burst fire weapons - does not seem to have any benefits anyways
+	/* MÃ¡rcio: does not work for Burst fire weapons - does not seem to have any benefits anyways
 	   IAIActorProxy *pProxy = GetProxy();
 	   if (pProxy)
 	    pProxy->GetAndResetShotBulletCount();

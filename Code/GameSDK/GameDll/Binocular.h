@@ -8,7 +8,7 @@ Description: Binocular Implementation
 
 -------------------------------------------------------------------------
 History:
-- 18:12:2005   14:00 : Created by Márcio Martins
+- 18:12:2005   14:00 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #ifndef __BINOCULAR_H__

@@ -19,11 +19,11 @@ BOOL InflateRect(LPRECT lprc, int dx, int dy);
 	#pragma warning(pop)
 #endif
 
-bool CD3D9Renderer::FX_DeferredShadowPassSetupBlend(const Matrix44& mShadowTexGen, int nFrustumNum, float maskRTWidth, float maskRTHeight)
+bool CD3D9Renderer::FX_DeferredShadowPassSetupBlend(const Matrix44& mShadowTexGen, const CCamera& cam, int nFrustumNum, float maskRTWidth, float maskRTHeight)
 {
 	//set ScreenToWorld Expansion Basis
 	Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPos;
-	CShadowUtils::ProjectScreenToWorldExpansionBasis(mShadowTexGen, GetCamera(), m_vProjMatrixSubPixoffset, maskRTWidth, maskRTHeight, vWBasisX, vWBasisY, vWBasisZ, vCamPos, true, &m_RenderTileInfo);
+	CShadowUtils::ProjectScreenToWorldExpansionBasis(mShadowTexGen, cam, m_vProjMatrixSubPixoffset, maskRTWidth, maskRTHeight, vWBasisX, vWBasisY, vWBasisZ, vCamPos, true, &m_RenderTileInfo);
 
 	Matrix44A* mat = &gRenDev->m_TempMatrices[nFrustumNum][2];
 	mat->SetRow4(0, vWBasisX);
@@ -34,13 +34,13 @@ bool CD3D9Renderer::FX_DeferredShadowPassSetupBlend(const Matrix44& mShadowTexGe
 	return true;
 }
 
-bool CD3D9Renderer::FX_DeferredShadowPassSetup(const Matrix44& mShadowTexGen, ShadowMapFrustum* pShadowFrustum, float maskRTWidth, float maskRTHeight, Matrix44& mScreenToShadow, bool bNearest)
+bool CD3D9Renderer::FX_DeferredShadowPassSetup(const Matrix44& mShadowTexGen, const CCamera& cam, ShadowMapFrustum* pShadowFrustum, float maskRTWidth, float maskRTHeight, Matrix44& mScreenToShadow, bool bNearest)
 {
 	//set ScreenToWorld Expansion Basis
 	Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPos;
 	bool bVPosSM30 = (GetFeatures() & (RFT_HW_SM30 | RFT_HW_SM40)) != 0;
 
-	CCamera Cam = GetCamera();
+	CCamera Cam = cam;
 	if (bNearest && m_drawNearFov > 1.0f && m_drawNearFov < 179.0f)
 		Cam.SetFrustum(Cam.GetViewSurfaceX(), Cam.GetViewSurfaceZ(), DEG2RAD(m_drawNearFov), Cam.GetNearPlane(), Cam.GetFarPlane(), Cam.GetPixelAspectRatio());
 
@@ -97,6 +97,15 @@ bool CD3D9Renderer::FX_DeferredShadowPassSetup(const Matrix44& mShadowTexGen, Sh
 	m_cEF.m_TempVecs[0].y = vCamPos.y;
 	m_cEF.m_TempVecs[0].z = vCamPos.z;
 	m_cEF.m_TempVecs[0].w = vCamPos.w;
+
+	if (CV_r_ShadowsScreenSpace)
+	{
+		CShadowUtils::ProjectScreenToWorldExpansionBasis(Matrix44(IDENTITY), Cam, m_vProjMatrixSubPixoffset, maskRTWidth, maskRTHeight, vWBasisX, vWBasisY, vWBasisZ, vCamPos, bVPosSM30, &m_RenderTileInfo);
+		gRenDev->m_TempMatrices[0][3].SetRow4(0, vWBasisX);
+		gRenDev->m_TempMatrices[0][3].SetRow4(1, vWBasisY);
+		gRenDev->m_TempMatrices[0][3].SetRow4(2, vWBasisZ);
+		gRenDev->m_TempMatrices[0][3].SetRow4(3, Vec4(0, 0, 0, 1));
+	}
 
 	return true;
 }
@@ -209,21 +218,12 @@ void CD3D9Renderer::FX_ShadowBlur(float fShadowBluriness, SDynTexture* tpSrcTemp
 	Set2DMode(true, 1, 1);
 
 	// setup screen aligned quad
-	SVF_P3F_C4B_T2F pScreenBlur[] =
-	{
-		{ Vec3(0, 0, fVertDepth), {
-						{ ~0U }
-			    }, Vec2(0, 0) },
-		{ Vec3(0, 1, fVertDepth), {
-						{ ~0U }
-			    }, Vec2(0, m_RP.m_CurDownscaleFactor.y) },
-		{ Vec3(1, 0, fVertDepth), {
-						{ ~0U }
-			    }, Vec2(m_RP.m_CurDownscaleFactor.x, 0) },
-		{ Vec3(1, 1, fVertDepth), {
-						{ ~0U }
-			    }, Vec2(m_RP.m_CurDownscaleFactor.x, m_RP.m_CurDownscaleFactor.y) },
-	};
+	CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, 4, pScreenBlur, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
+	pScreenBlur[0] = { Vec3(0, 0, fVertDepth), { { ~0U } }, Vec2(0, 0) };
+	pScreenBlur[1] = { Vec3(0, 1, fVertDepth), { { ~0U } }, Vec2(0, m_RP.m_CurDownscaleFactor.y) };
+	pScreenBlur[2] = { Vec3(1, 0, fVertDepth), { { ~0U } }, Vec2(m_RP.m_CurDownscaleFactor.x, 0) };
+	pScreenBlur[3] = { Vec3(1, 1, fVertDepth), { { ~0U } }, Vec2(m_RP.m_CurDownscaleFactor.x, m_RP.m_CurDownscaleFactor.y) };
 
 	CShader* pSH = m_cEF.s_ShaderShadowBlur;
 	if (!pSH)
@@ -576,7 +576,7 @@ void CD3D9Renderer::FX_DeferredShadowPass(const SRenderLight* pLight, ShadowMapF
 
 	if (bCloudShadowPass || (CV_r_ShadowsScreenSpace && bShadowPass && pShadowFrustum->nShadowMapLod == 0))
 	{
-		if (bCloudShadowPass && GetVolumetricCloud().IsEnabledVolumetricCloudsShadow())
+		if (bCloudShadowPass && m_bVolumetricCloudsEnabled)
 		{
 			m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2] | g_HWSR_MaskBit[HWSR_SAMPLE3];
 		}
@@ -594,7 +594,7 @@ void CD3D9Renderer::FX_DeferredShadowPass(const SRenderLight* pLight, ShadowMapF
 	}
 
 	int newState = m_RP.m_CurState;
-	newState &= ~(GS_DEPTHWRITE | GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLOP_MAX);
+	newState &= ~(GS_DEPTHWRITE | GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLEND_OP_MAX);
 	newState |= GS_NODEPTHTEST;
 
 	if (pShadowFrustum->m_eFrustumType == ShadowMapFrustum::e_Nearest)
@@ -605,7 +605,7 @@ void CD3D9Renderer::FX_DeferredShadowPass(const SRenderLight* pLight, ShadowMapF
 
 	if (pShadowFrustum->bUseAdditiveBlending)
 	{
-		newState |= GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLOP_MAX;
+		newState |= GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLEND_OP_MAX;
 	}
 	else if (bShadowPass && pShadowFrustum->bBlendFrustum)
 	{
@@ -691,7 +691,6 @@ void CD3D9Renderer::FX_DeferredShadowPass(const SRenderLight* pLight, ShadowMapF
 	if (bShadowPass)
 	{
 		newState &= ~(GS_COLMASK_NONE | GS_STENCIL);
-		newState |= GS_NOCOLMASK_G | GS_NOCOLMASK_B | GS_NOCOLMASK_A;
 
 		if (nLod != 0 && !bCloudShadowPass)
 		{
@@ -1204,16 +1203,13 @@ void CD3D9Renderer::FX_StencilRefreshCustomVolume(int StencilFunc, uint32 nStenc
 	// Use the backfaces of a specified volume to refresh hi-stencil
 	if (!m_bDeviceSupports_NVDBT) return;  // For DBT capable hw only
 
-	TempDynVB<SVF_P3F_C4B_T2F> vb;
-	vb.Allocate(nNumVerts);
-	SVF_P3F_C4B_T2F* Verts = vb.Lock();
+	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+	CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, nNumVerts, Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 	for (uint32 i = 0; i < nNumVerts; ++i)
 		Verts[i].xyz = pVerts[i];
 
-	vb.Unlock();
-	vb.Bind(0);
-	vb.Release();
+	TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(Verts, nNumVerts, 0);
 
 	TempDynIB16::CreateFillAndBind(pInds, nNumInds);
 
@@ -1327,10 +1323,6 @@ void CD3D9Renderer::FX_CreateDeferredQuad(const SRenderLight* pLight, float mask
 	// Create FS quad
 	//////////////////////////////////////////////////////////////////////////
 
-	TempDynVB<SVF_P3F_T2F_T3F> vb;
-	vb.Allocate(4);
-	SVF_P3F_T2F_T3F* vQuad = vb.Lock();
-
 	Vec2 vBoundRectMin(0.0f, 0.0f), vBoundRectMax(1.0f, 1.0f);
 	Vec3 vCoords[8];
 	Vec3 vRT, vLT, vLB, vRB;
@@ -1397,6 +1389,9 @@ void CD3D9Renderer::FX_CreateDeferredQuad(const SRenderLight* pLight, float mask
 
 	}
 
+	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+	CryStackAllocWithSizeVector(SVF_P3F_T2F_T3F, 4, vQuad, CDeviceBufferManager::AlignBufferSizeForStreaming);
+
 	vQuad[0].p.x = vBoundRectMin.x;
 	vQuad[0].p.y = vBoundRectMin.y;
 	vQuad[0].p.z = fCustomZ;
@@ -1425,9 +1420,7 @@ void CD3D9Renderer::FX_CreateDeferredQuad(const SRenderLight* pLight, float mask
 	vQuad[2].st0[1] = 1 - vBoundRectMax.y;
 	vQuad[2].st1 = vLT;
 
-	vb.Unlock();
-	vb.Bind(0);
-	vb.Release();
+	TempDynVB<SVF_P3F_T2F_T3F>::CreateFillAndBind(vQuad, 4, 0);
 }
 
 void CD3D9Renderer::FX_DeferredShadowMaskGen(CRenderView* pRenderView, const TArray<uint32>& shadowPoolLights)
@@ -1458,12 +1451,12 @@ void CD3D9Renderer::FX_DeferredShadowMaskGen(CRenderView* pRenderView, const TAr
 
 	CTexture* pShadowMask = CTexture::s_ptexShadowMask;
 	SResourceView curSliceRVDesc = SResourceView::RenderTargetView(pShadowMask->GetTextureDstFormat(), 0, 1);
-	SResourceView& firstSliceRV = pShadowMask->GetResourceView(curSliceRVDesc);
+	D3DSurface* firstSliceRV = static_cast<D3DSurface*>(pShadowMask->GetResourceView(curSliceRVDesc));
 
 	// set shadow mask RT and clear stencil
-	FX_ClearTarget(static_cast<D3DSurface*>(firstSliceRV.m_pDeviceResourceView), Clr_Transparent, 0, nullptr);
+	FX_ClearTarget(firstSliceRV, Clr_Transparent, 0, nullptr);
 	FX_ClearTarget(&m_DepthBufferOrig, CLEAR_STENCIL, Clr_Unused.r, 0);
-	FX_PushRenderTarget(0, static_cast<D3DSurface*>(firstSliceRV.m_pDeviceResourceView), &m_DepthBufferOrig);
+	FX_PushRenderTarget(0, firstSliceRV, &m_DepthBufferOrig);
 	RT_SetViewport(0, 0, nMaskWidth, nMaskHeight);
 
 	int nFirstChannel = 0;
@@ -1483,7 +1476,7 @@ void CD3D9Renderer::FX_DeferredShadowMaskGen(CRenderView* pRenderView, const TAr
 	{
 		PROFILE_LABEL_SCOPE("SHADOWMASK_DEFERRED_LIGHTS");
 
-		const int nMaxChannelCount = pShadowMask->StreamGetNumSlices() * 4;
+		const int nMaxChannelCount = pShadowMask->StreamGetNumSlices();
 		std::vector<std::vector<std::pair<int, Vec4>>> lightsPerChannel;
 		lightsPerChannel.resize(nMaxChannelCount);
 
@@ -1546,16 +1539,13 @@ void CD3D9Renderer::FX_DeferredShadowMaskGen(CRenderView* pRenderView, const TAr
 		// now render each layer
 		for (int nChannel = nFirstChannel; nChannel < min(nChannelsInUse, nMaxChannelCount); ++nChannel)
 		{
-			const int nMaskIndex = nChannel / 4;
-			const int nMaskChannel = nChannel % 4;
-
-			if (nChannel > 0 && nMaskChannel == 0)
+			if (nChannel > 0)
 			{
-				curSliceRVDesc.m_Desc.nFirstSlice = nMaskIndex;
-				SResourceView& curSliceRV = pShadowMask->GetResourceView(curSliceRVDesc);
+				curSliceRVDesc.m_Desc.nFirstSlice = nChannel;
+				D3DSurface* curSliceRV = static_cast<D3DSurface*>(pShadowMask->GetResourceView(curSliceRVDesc));
 
 				FX_PopRenderTarget(0);
-				FX_PushRenderTarget(0, static_cast<D3DSurface*>(curSliceRV.m_pDeviceResourceView), &m_DepthBufferOrig);
+				FX_PushRenderTarget(0, curSliceRV, &m_DepthBufferOrig);
 			}
 
 			for (int i = 0; i < lightsPerChannel[nChannel].size(); ++i)
@@ -1645,7 +1635,7 @@ void CD3D9Renderer::FX_DeferredShadowMaskGen(CRenderView* pRenderView, const TAr
 						TS.SetComparisonFilter(true);
 
 						CTexture* pShadowMap = firstFrustum.bUseShadowsPool ? CTexture::s_ptexRT_ShadowPool : firstFrustum.pDepthTex;
-						pShadowMap->Apply(1, CTexture::GetTexState(TS));
+						pShadowMap->Apply(1, CTexture::GetTexState(TS), EFTT_UNKNOWN, 3);
 
 						SD3DPostEffectsUtils::SetTexture(CTexture::s_ptexShadowJitterMap, 7, FILTER_POINT, 0);
 
@@ -1674,19 +1664,14 @@ void CD3D9Renderer::FX_DeferredShadowMaskGen(CRenderView* pRenderView, const TAr
 						//camera matrix
 						pShader->FXSetPSFloat(lightProjParamName, alias_cast<Vec4*>(&shadowMat), 4);
 
-						Vec4 vScreenScale(1.0f / nMaskWidth, 1.0f / nMaskHeight, 0.0f, 0.0f);
-						static CCryNameR screenScaleParamName("g_ScreenScale");
-						pShader->FXSetPSFloat(screenScaleParamName, &vScreenScale, 1);
-
 						Vec4 vLightPos(pLight->m_Origin, 0.0f);
 						static CCryNameR vLightPosName("g_vLightPos");
 						pShader->FXSetPSFloat(vLightPosName, &vLightPos, 1);
 
-						CTexture::s_ptexZTarget->Apply(0, CTexture::GetTexState(STexState(FILTER_POINT, true)));
+						CTexture::s_ptexZTarget->Apply(0, -1);
 
 						// color mask
 						uint32 newState = m_RP.m_CurState & ~(GS_COLMASK_NONE | GS_BLEND_MASK);
-						newState |= ~((1 << nMaskChannel % 4) << GS_COLMASK_SHIFT) & GS_COLMASK_MASK;
 
 						if (bUseLightVolumes)
 						{
@@ -1744,8 +1729,7 @@ void CD3D9Renderer::FX_DeferredShadowMaskGen(CRenderView* pRenderView, const TAr
 
 				} // for each side
 
-				pLight->m_ShadowChanMask = nMaskChannel;
-				pLight->m_ShadowMaskIndex = nMaskIndex;
+				pLight->m_ShadowMaskIndex = nChannel;
 
 				EF_Scissor(false, 0, 0, 0, 0);
 
@@ -1757,7 +1741,7 @@ void CD3D9Renderer::FX_DeferredShadowMaskGen(CRenderView* pRenderView, const TAr
 	}
 
 #ifndef _RELEASE
-	m_RP.m_PS[nThreadID].m_NumShadowMaskChannels = (pShadowMask->StreamGetNumSlices() * 4 << 16) | (nChannelsInUse & 0xFFFF);
+	m_RP.m_PS[nThreadID].m_NumShadowMaskChannels = (pShadowMask->StreamGetNumSlices() << 16) | (nChannelsInUse & 0xFFFF);
 #endif
 
 	gcpRendD3D->D3DSetCull(eCULL_Back, true);
@@ -1770,7 +1754,7 @@ void CD3D9Renderer::FX_DeferredShadowMaskGen(CRenderView* pRenderView, const TAr
 
 bool CD3D9Renderer::FX_DeferredShadows(CRenderView* pRenderView, SRenderLight* pLight, int maskRTWidth, int maskRTHeight)
 {
-	if (!pLight || (pLight->m_Flags & DLF_CASTSHADOW_MAPS) == 0 || (pLight->m_Flags & DLF_REFLECTIVE_SHADOWMAP) != 0)
+	if (!pLight || (pLight->m_Flags & DLF_CASTSHADOW_MAPS) == 0)
 		return false;
 
 	const int nThreadID = m_RP.m_nProcessThreadID;
@@ -1782,7 +1766,7 @@ bool CD3D9Renderer::FX_DeferredShadows(CRenderView* pRenderView, SRenderLight* p
 	m_cEF.m_TempVecs[11] = Vec4(vWBasisY, 1.0f);
 	m_cEF.m_TempVecs[12] = Vec4(vWBasisZ, 1.0f);
 
-	const bool bCloudShadows = m_bCloudShadowsEnabled && (m_cloudShadowTexId > 0 || GetVolumetricCloud().IsEnabledVolumetricCloudsShadow());
+	const bool bCloudShadows = m_bCloudShadowsEnabled && (m_cloudShadowTexId > 0 || m_bVolumetricCloudsEnabled);
 	const bool bCustomShadows = !pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_Custom).empty();
 
 	//////////////////////////////////////////////////////////////////////////

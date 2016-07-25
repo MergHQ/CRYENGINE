@@ -73,10 +73,17 @@ struct app2vertToneMap
   float3 CamVec       : TEXCOORD1;
 };
 
-struct app2vertFog
+struct app2vertFogLegacy
 {
   IN_P
   float3 CamVec    : TEXCOORD0;
+};
+
+struct app2vertFog
+{
+  IN_P
+  float2 baseTC    : TEXCOORD0;
+  float3 CamVec    : TEXCOORD1;
 };
 
 struct vert2frag
@@ -123,7 +130,7 @@ vert2frag TransformedVS(app2vertToneMap IN)
   return OUT;
 }
 
-vert2fragFog PreTransformedFogVS(app2vertFog IN)
+vert2fragFog PreTransformedFogLegacyVS(app2vertFogLegacy IN)
 {
 	vert2fragFog OUT = (vert2fragFog)0;
 
@@ -131,6 +138,18 @@ vert2fragFog PreTransformedFogVS(app2vertFog IN)
 	OUT.CamVec.xyz = IN.CamVec.xyz;
 
 	OUT.HPosition = IN.Position;
+
+	return OUT;
+}
+
+vert2fragFog PreTransformedFogVS(app2vertFog IN)
+{
+	vert2fragFog OUT = (vert2fragFog)0;
+
+	OUT.HPosition = Get2dHPos(IN.Position);
+
+	OUT.baseTC.xy = IN.baseTC.xy;
+	OUT.CamVec.xyz = IN.CamVec.xyz;
 
 	return OUT;
 }
@@ -441,15 +460,21 @@ struct fragInShadowFog
 	MSAA_SAMPLE_INDEX_PS
 };
 
-sampler2D interleaveSampler : register(s5) = sampler_state
-{
-	Texture = EngineAssets/Textures/FogVolShadowJitter.dds;
-	MinFilter = POINT;
-	MagFilter = POINT;
-	MipFilter = POINT;
-	AddressU = Wrap;
-	AddressV = Wrap;
-};
+Texture2D fogShadowDepthTex : register(t0) = TS_ZTarget;
+Texture2D fogShadowInterleaveTex : register(t1) = "EngineAssets/Textures/FogVolShadowJitter.dds";
+Texture2D fogShadowRotTex : register(t2) = "EngineAssets/Textures/rotrandom.dds";
+Texture2D fogCloudShadowTex : register(t3) = TS_CloudShadow;
+Texture2D fogShadowMap0Tex : register(t4) = TS_Shadow0;
+Texture2D fogShadowMap1Tex : register(t5) = TS_Shadow2;
+Texture2D fogShadowMap2Tex : register(t6) = TS_Shadow4;
+Texture2D fogShadowMap3Tex : register(t7) = TS_Shadow6;
+Texture3D fogShadowVolCloudTex : register(t8) = TS_VolCloudShadow;
+
+SamplerComparisonState fogShadowLinearClampCompSS : register(s0) = SS_Shadow2;
+SamplerState fogShadowPointWrapSS : register(s1) = SS_PointWrap;
+SamplerState fogShadowPointClampSS : register(s2) = SS_PointClamp;
+SamplerState fogShadowBilinearWrapSS : register(s3) = SS_MaterialBilinearWrap;
+SamplerState fogShadowBilinearClampSS : register(s4) = SS_MaterialTrilinearBorder;
 
 float4 volFogShadowRange;
 
@@ -568,20 +593,19 @@ bool ClipLine(float4 v0, float4 v1, inout float4 newvert0, inout float4 newvert1
 }
 
 #define CLIP_OFFSET 0.00001f
-float SingleGSMShadowedFog(Texture2D depthMap, float4x4 mTexGen, float2 WPos, inout float StartDepth, float EndDepth, float RayStep)
+float SingleGSMShadowedFog(Texture2D depthMap, SamplerComparisonState comparisonSampler, float4x4 mTexGen, float2 WPos, inout float StartDepth, float EndDepth, float RayStep)
 {
-
 	float2 clipMin = float2(CLIP_OFFSET, CLIP_OFFSET);
 	float2 clipMax = float2(1.0f-CLIP_OFFSET,1.0f-CLIP_OFFSET);
 
 	//TD some temp variables can be shared for CalcHomogeneousPos math
-  float4 P0 = 0.0f;
-  float4 P1 = 0.0f;
-  P0 = CalcHomogeneousPos(WPos.xy, StartDepth, mTexGen);
-  P0 = CalcShadowSpace(P0);
+	float4 P0 = 0.0f;
+	float4 P1 = 0.0f;
+	P0 = CalcHomogeneousPos(WPos.xy, StartDepth, mTexGen);
+	P0 = CalcShadowSpace(P0);
 
-  P1 = CalcHomogeneousPos(WPos.xy, EndDepth, mTexGen);
-  P1 = CalcShadowSpace(P1);
+	P1 = CalcHomogeneousPos(WPos.xy, EndDepth, mTexGen);
+	P1 = CalcShadowSpace(P1);
 
 	float4 clP0, clP1;
 	float t0, t1;
@@ -605,7 +629,7 @@ float SingleGSMShadowedFog(Texture2D depthMap, float4x4 mTexGen, float2 WPos, in
 	[loop]
 	for (; curDepth<=EndDepthFr; curDepth+=RayStep)
 	{
-		shadow_sample(depthMap, rayCur, fSample);
+		shadow_sample(depthMap, comparisonSampler, rayCur, fSample);
 
 		fFogShadow += fSample;
 
@@ -627,17 +651,16 @@ float SingleGSMShadowedFog(Texture2D depthMap, float4x4 mTexGen, float2 WPos, in
 
 pixout MultiGSMShadowedFogPS(fragInShadowFog IN)
 {
-
-  pixout OUT;
+	pixout OUT;
 	OUT.Color = 0.0f;
 
 	//jitter
-	const float2 oj = tex2D(interleaveSampler, IN.WPos.xy / 64.0).xw;
+	const float2 oj = fogShadowInterleaveTex.Sample(fogShadowPointWrapSS, IN.WPos.xy / 64.0f).xw;
 	const float offset = oj.x;
 	const float jitter = oj.y;
 
 	// Todo: bilateral upscale pass. Measure performance vs rendering shadows to multisampled target+sample freq passes
-  float SceneDepth = GetLinearDepth( sceneDepthSampler, IN.ScreenTC.xy );
+	float SceneDepth = fogShadowDepthTex.SampleLevel(fogShadowPointWrapSS, IN.ScreenTC.xy, 0.0f);
 	SceneDepth = min( SceneDepth, volFogShadowRange.x );
 	//SceneDepth = min( SceneDepth, 0.3 );
 	//SceneDepth = max( SceneDepth, 0.000001 );
@@ -655,7 +678,7 @@ pixout MultiGSMShadowedFogPS(fragInShadowFog IN)
 
 	float sampleCount = 0.0;
 	float fogOccl = 0.0;
-	float fFogGsm = SingleGSMShadowedFog(depthMapSampler0, TexGen0, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
+	float fFogGsm = SingleGSMShadowedFog(fogShadowMap0Tex, fogShadowLinearClampCompSS, TexGen0, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
 	fogOccl += fFogGsm;
 
 	const uint nCascadeMask = GetForwardShadowsCascadeMask();
@@ -663,21 +686,21 @@ pixout MultiGSMShadowedFogPS(fragInShadowFog IN)
 	////		second cascade
 	if(nCascadeMask & FORWARD_SHADOWS_CASCADE_1)
 	{
-		fFogGsm = SingleGSMShadowedFog(depthMapSampler1, TexGen1, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
+		fFogGsm = SingleGSMShadowedFog(fogShadowMap1Tex, fogShadowLinearClampCompSS, TexGen1, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
 		fogOccl += fFogGsm;
 	}
 
 	//////		3d cascade
 	if(nCascadeMask & FORWARD_SHADOWS_CASCADE_2)
 	{
-		fFogGsm = SingleGSMShadowedFog(depthMapSampler2, TexGen2, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
+		fFogGsm = SingleGSMShadowedFog(fogShadowMap2Tex, fogShadowLinearClampCompSS, TexGen2, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
 		fogOccl += fFogGsm;
 	}
 
 	//////		4th cascade
 	if(nCascadeMask & FORWARD_SHADOWS_CASCADE_3)
 	{
-		fFogGsm = SingleGSMShadowedFog(depthMapSampler3, TexGen3, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
+		fFogGsm = SingleGSMShadowedFog(fogShadowMap3Tex, fogShadowLinearClampCompSS, TexGen3, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
 		fogOccl += fFogGsm;
 	}
 
@@ -702,9 +725,9 @@ pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN)
 {
 	pixout OUT = (pixout) 0;
 
-	const float sceneDepth = min(GetLinearDepth(sceneDepthSampler, IN.baseTC.xy), volFogShadowRange.x);
+	const float sceneDepth = min(fogShadowDepthTex.SampleLevel(fogShadowPointWrapSS, IN.baseTC.xy, 0.0f), volFogShadowRange.x);
 
-	const float2 oj = tex2D(interleaveSampler, IN.WPos.xy / 64.0).xw;
+	const float2 oj = fogShadowInterleaveTex.Sample(fogShadowPointWrapSS, IN.WPos.xy / 64.0f).xw;
 	const float offset = oj.x;
 	const float jitter = oj.y;
 
@@ -718,15 +741,29 @@ pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN)
 #else
 	const bool bSampleCloudShadows = false;
 #endif
+
+	ShadowCascades cascades;
+	cascades.shadowMap0 = fogShadowMap0Tex;
+	cascades.shadowMap1 = fogShadowMap1Tex;
+	cascades.shadowMap2 = fogShadowMap2Tex;
+	cascades.shadowMap3 = fogShadowMap3Tex;
+	cascades.cloudShadowTex = fogCloudShadowTex;
+
+	ShadowSamplingContext shadowContext;
+	shadowContext.comparisonSampler = fogShadowLinearClampCompSS;
+	shadowContext.pointSamplerWrap = fogShadowPointWrapSS;
+	shadowContext.pointSamplerClamp = fogShadowPointClampSS;
+	shadowContext.bilinearSamplerWrap = fogShadowBilinearWrapSS;
+	shadowContext.noiseTex = fogShadowRotTex;
 	
 	half shadowOccl = 0;
 	for (int i=0; i<numShadowSamples; i++)
 	{
 		const float4 worldPos = float4(sceneDepth * (((float)i + offset) / (float)numShadowSamples + jitter / (float)numTotalShadowSamples) * IN.CamVec.xyz + vfViewPos.xyz, 1);
-		float shadowSample = ShadowDepthTest(worldPos, bSampleCloudShadows).r;
+		float shadowSample = ShadowDepthTest(cascades, shadowContext, worldPos, bSampleCloudShadows, true).r;
 
 #if %_RT_SAMPLE4
-		shadowSample = min(shadowSample, GetVolumetricCloudShadow(worldPos.xyz));
+		shadowSample = min(shadowSample, GetVolumetricCloudShadow(fogShadowVolCloudTex, fogShadowBilinearClampSS, worldPos.xyz, CV_SunLightDir.xyz, CloudShadowParams, CloudShadowAnimParams));
 #endif
 
 		shadowOccl += shadowSample;
@@ -741,7 +778,7 @@ pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN)
 
 float4 volFogShadowBufSampleOffsets[8];
 
-float VolFogShadowBilateralFilter(in sampler2D tex, in const int numSamples, in const float2 baseTC, in const float refDepth, in const float similarity)
+float VolFogShadowBilateralFilter(in Texture2D tex, in SamplerState pointClampSS, in const int numSamples, in const float2 baseTC, in const float refDepth, in const float similarity)
 {
 	float accumVal = 0.0;
 	float accumWeight = 0.0;
@@ -749,7 +786,7 @@ float VolFogShadowBilateralFilter(in sampler2D tex, in const int numSamples, in 
 	for(int i=0; i<numSamples; i++)
 	{
 		const float2 coord = baseTC.xy + volFogShadowBufSampleOffsets[i].xy;
-		const float4 sampleXYZW = tex2D(tex, coord);
+		const float4 sampleXYZW = tex.Sample(pointClampSS, coord);
 
 		const float sampleVal = sampleXYZW.w;
 		const float sampleDepth = sampleXYZW.x;
@@ -762,20 +799,23 @@ float VolFogShadowBilateralFilter(in sampler2D tex, in const int numSamples, in 
 	return accumVal / accumWeight;
 }
 
-sampler2D volFogShadowGatherSampler : register(s0);
+Texture2D volFogShadowGatherTex : register(t0);
+SamplerState volFogShadowGatherSState : register(s0);
 
 pixout FogPassVolShadowsGatherPassPS(vert2fragFog IN)
 {
 	pixout OUT = (pixout) 0;
 
-	const float refDepth = tex2D(volFogShadowGatherSampler, IN.baseTC.xy + volFogShadowBufSampleOffsets[4].xy).x;
-	const float value = VolFogShadowBilateralFilter(volFogShadowGatherSampler, 8, IN.baseTC.xy, refDepth, 50.0);
+	const float refDepth = volFogShadowGatherTex.Sample(volFogShadowGatherSState, IN.baseTC.xy + volFogShadowBufSampleOffsets[4].xy).x;
+	const float value = VolFogShadowBilateralFilter(volFogShadowGatherTex, volFogShadowGatherSState, 8, IN.baseTC.xy, refDepth, 50.0);
 	OUT.Color = float4(refDepth, 1, 1, value);
 
 	return OUT;
 }
 
-sampler2D volFogShadowBufSampler : register(s2);
+Texture2D volFogShadowTex : register(t1);
+SamplerState volFogShadowSState : register(s1);
+
 float4 volFogShadowDarkening;
 float4 volFogShadowDarkeningSunAmb;
 
@@ -796,7 +836,7 @@ void FogPassCommon(in vert2fragFog IN, out float sceneDepth, out float4 localFog
 
 #if %_RT_SAMPLE0
 	const float refDepth = min(sceneDepth, volFogShadowRange.x) * volFogShadowRange.y;
-	const float volFogShadowContrib = VolFogShadowBilateralFilter(volFogShadowBufSampler, 5, IN.baseTC.xy, refDepth, 100.0);
+	const float volFogShadowContrib = VolFogShadowBilateralFilter(volFogShadowTex, volFogShadowSState, 5, IN.baseTC.xy, refDepth, 100.0);
 
 	const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * volFogShadowDarkeningSunAmb.xz + volFogShadowDarkeningSunAmb.yw);
 	localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
@@ -810,7 +850,6 @@ float4 SVO_AirTextureScale;
 
 pixout GetSvoGiFog(vert2fragFog IN, pixout OUT)
 {
-	sampler2D smpDepth = _tex0;
 	sampler2D smp_Air_RGBA_Min = _texC;
 	sampler2D smp_Air_Depths = _texD;
 	sampler2D smp_Air_RGBA_Max = _texE;
@@ -819,7 +858,7 @@ pixout GetSvoGiFog(vert2fragFog IN, pixout OUT)
 	int nRange = 1;
 
 	float fDepthRange = 0.2f;
-	float fDepth0 = GetLinearDepth( smpDepth, IN.baseTC.xy );
+	float fDepth0 = GetLinearDepth( zMap, IN.baseTC.xy );
 
 	float2 vSrcPixSize = 1.f/PS_ScreenSize.xy*SVO_AirTextureScale.xy;
 
@@ -856,6 +895,11 @@ pixout GetSvoGiFog(vert2fragFog IN, pixout OUT)
 	return OUT;
 }
 
+Texture3D<float4> volFogSamplingTex : register(t1) = TS_VolumetricFog;
+TextureCube<float4> volFogGlobalEnvProbeTex0 : register(t2) = TS_VolumetricFogGlobalEnvProbe0;
+TextureCube<float4> volFogGlobalEnvProbeTex1 : register(t3) = TS_VolumetricFogGlobalEnvProbe1;
+SamplerState volFogTrilinearClampSState : register(s0) = SS_TrilinearClamp;
+
 float4 GetVolumetricFog(in vert2fragFog IN)
 {
 	float sceneDepth;
@@ -873,11 +917,17 @@ float4 GetVolumetricFog(in vert2fragFog IN)
 	float linearDepth = sceneDepth * PS_NearFarClipDist.y;
 	float3 cameraToWorldPos = sceneDepth * IN.CamVec.xyz;
 
+	VolumetricFogSampling vfs;
+	vfs.volumetricFogTex = volFogSamplingTex;
+	vfs.globalEnvProbeTex0 = volFogGlobalEnvProbeTex0;
+	vfs.globalEnvProbeTex1 = volFogGlobalEnvProbeTex1;
+	vfs.trilinearClampSState = volFogTrilinearClampSState;
+
 	// blend volumetric fog with global fog.
 	float len = length(cameraToWorldPos);
 	VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(IN.baseTC.xy, linearDepth, false, len);
-	float4 vf = GetVolumetricFogValueJittered(vtc);
-	float4 localFogColor = GetVolumetricFogAnalyticalColor(cameraToWorldPos, len);
+	float4 vf = GetVolumetricFogValueJittered(vfs, vtc);
+	float4 localFogColor = GetVolumetricFogAnalyticalColor(vfs, cameraToWorldPos, len);
 	localFogColor = BlendVolumetricFogWithGlobalFog(vf, localFogColor, vtc);
 	localFogColor = ClampFinalFogDensity(localFogColor);
 
@@ -886,7 +936,7 @@ float4 GetVolumetricFog(in vert2fragFog IN)
 
 pixout FogPassPS(vert2fragFog IN)
 {
-  pixout OUT;
+	pixout OUT;
 
 #if FEATURE_SVO_GI
 #if %_RT_SAMPLE2
@@ -913,15 +963,15 @@ pixout FogPassPS(vert2fragFog IN)
 
 	localFogColor.a = saturate(1.0 - localFogColor.a);
 
-  // Premultiply alpha
-  localFogColor.xyz *= localFogColor.a;
+	// Premultiply alpha
+	localFogColor.xyz *= localFogColor.a;
 
 	localFogColor.a = saturate(1.0 - localFogColor.a);
 #endif
 
-  HDROutput(OUT, localFogColor, 1);
+	HDROutput(OUT, localFogColor, 1);
 
-  return OUT;
+	return OUT;
 }
 
 float4 LightningPos;
@@ -1027,16 +1077,79 @@ technique HDRFinalDebugPass
 
 //======================================================================
 
+technique MultiGSMShadowedFogLegacy
+{
+  pass p0
+  {
+    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
+    PixelShader = MultiGSMShadowedFogPS() FogPassVolShadowsInterleavePassPS;
+
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}
+
+technique FogPassLegacy
+{
+  pass p0
+  {
+    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
+    PixelShader = FogPassPS() FogPostProcessPS;
+
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}
+
+technique FogPassWithLightningLegacy
+{
+  pass p0
+  {    
+    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
+    PixelShader = FogPassWithLightningPS() FogPostProcessPS;
+
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}
+
+technique FogPassVolShadowsInterleavePassLegacy
+{
+  pass p0
+  {
+    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
+    PixelShader = FogPassVolShadowsInterleavePassPS() FogPassVolShadowsInterleavePassPS;
+
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}
+
+technique FogPassVolShadowsGatherPassLegacy
+{
+  pass p0
+  {
+    VertexShader = PreTransformedFogLegacyVS() FogPostProcessVS;
+    PixelShader = FogPassVolShadowsGatherPassPS() FogPassVolShadowsGatherPass;
+
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = None;
+  }
+}
+
+//======================================================================
+
 technique MultiGSMShadowedFog
 {
   pass p0
   {
     VertexShader = PreTransformedFogVS() FogPostProcessVS;
     PixelShader = MultiGSMShadowedFogPS() FogPassVolShadowsInterleavePassPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
   }
 }
 
@@ -1046,10 +1159,6 @@ technique FogPass
   {
     VertexShader = PreTransformedFogVS() FogPostProcessVS;
     PixelShader = FogPassPS() FogPostProcessPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
   }
 }
 
@@ -1059,10 +1168,6 @@ technique FogPassWithLightning
   {    
     VertexShader = PreTransformedFogVS() FogPostProcessVS;
     PixelShader = FogPassWithLightningPS() FogPostProcessPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
   }
 }
 
@@ -1072,10 +1177,6 @@ technique FogPassVolShadowsInterleavePass
   {
     VertexShader = PreTransformedFogVS() FogPostProcessVS;
     PixelShader = FogPassVolShadowsInterleavePassPS() FogPassVolShadowsInterleavePassPS;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
   }
 }
 
@@ -1085,9 +1186,5 @@ technique FogPassVolShadowsGatherPass
   {
     VertexShader = PreTransformedFogVS() FogPostProcessVS;
     PixelShader = FogPassVolShadowsGatherPassPS() FogPassVolShadowsGatherPass;
-
-    ZEnable = false;
-    ZWriteEnable = false;
-    CullMode = None;
   }
 }

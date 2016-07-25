@@ -19,6 +19,7 @@ namespace CryEngine.Sydewinder.UI
 		public event EventHandler StartClicked;
 		public event EventHandler ExitClicked;
 
+		private static Window _mainMenuWindow;
 		private static Canvas _mainMenuPage;
 		private static Button _startButton;
 		private static Button _highscoreButton;
@@ -71,6 +72,18 @@ namespace CryEngine.Sydewinder.UI
 
 			// Apply common properties (style) to main menu and highscore menu.
 			ApplyMenuStyle();
+
+			Input.OnKey += OnKey;
+		}
+
+		private void OnKey (SInputEvent arg)
+		{
+			if (_highscorePage.Active) {
+				if (arg.deviceType == EInputDeviceType.eIDT_Gamepad && arg.state == EInputState.eIS_Pressed && arg.keyId == EKeyId.eKI_XI_B) {
+					SetInactive ();
+					SetupMainMenuPerspective (true);
+				}
+			}
 		}
 
 		private void CreateMainMenu()
@@ -78,11 +91,12 @@ namespace CryEngine.Sydewinder.UI
 			_mainMenuPage = SceneObject.Instantiate<Canvas>(Root);
 
 			// Get Entity placed in level.
-			_mainMenuPage.SetupTargetEntity (Entity.ByName("UIPlane"), TEXTURE_RESOLUTION);
+			Entity ent = Entity.ByName("UIPlane");
+			_mainMenuPage.SetupTargetEntity (ent, TEXTURE_RESOLUTION);
 
-			Window mainMenuWindow = SceneObject.Instantiate<Window>(_mainMenuPage);
+			_mainMenuWindow = SceneObject.Instantiate<Window>(_mainMenuPage);
 
-			_startButton = SceneObject.Instantiate<Button>(mainMenuWindow);
+			_startButton = SceneObject.Instantiate<Button>(_mainMenuWindow);
 			_startButton.RectTransform.Padding = new Padding(0, -140);
 			_startButton.Ctrl.Text.Content = "Start";
 			_startButton.Ctrl.OnPressed += () => 
@@ -92,7 +106,7 @@ namespace CryEngine.Sydewinder.UI
 					StartClicked();				
 			};
 
-			_highscoreButton = SceneObject.Instantiate<Button>(mainMenuWindow);
+			_highscoreButton = SceneObject.Instantiate<Button>(_mainMenuWindow);
 			_highscoreButton.RectTransform.Padding = new Padding(0, 10);
 			_highscoreButton.Ctrl.Text.Content = "Highscore";
 			_highscoreButton.Ctrl.OnPressed += () => 
@@ -101,7 +115,7 @@ namespace CryEngine.Sydewinder.UI
 				SetupHighscoreMenuPerspective(true);
 			};
 
-			_exitButton = SceneObject.Instantiate<Button>(mainMenuWindow);
+			_exitButton = SceneObject.Instantiate<Button>(_mainMenuWindow);
 			_exitButton.RectTransform.Padding = new Padding(0, 160);
 			_exitButton.Ctrl.Text.Content = "Exit";
 			_exitButton.Ctrl.OnPressed += () => 
@@ -111,7 +125,7 @@ namespace CryEngine.Sydewinder.UI
 					ExitClicked();
 			};
 
-			mainMenuWindow.ForEach<Button>(x => x.RectTransform.Alignment = Alignment.Center);
+			_mainMenuWindow.ForEach<Button>(x => x.RectTransform.Alignment = Alignment.Center);
 		}
 
 		private void CreateHighscoreMenu()
@@ -218,7 +232,7 @@ namespace CryEngine.Sydewinder.UI
 		private static void StartCameraMove(int seconds, Vec3 finalPosition, Vec3 finalFordwardDirection)
 		{
 			// Calculate number of frames until 2 seconds are elapsed based on the last frame time.
-			_numberOfRemainingFrames = (int)((float)seconds / FrameTime.Current); 
+			_numberOfRemainingFrames = (int)((float)seconds / FrameTime.Delta); 
 
 			// Set values to be updated on each frame.
 			var cam = Camera.Current;
@@ -231,10 +245,32 @@ namespace CryEngine.Sydewinder.UI
 			if (_numberOfRemainingFrames > 0)
 			{
 				var cam = Camera.Current;
-				cam.Position = cam.Position + _positionChangeOnEachUpdate;
-				cam.ForwardDirection = cam.ForwardDirection + _fwdDirectionChangeOnEachUpdate;
+				cam.Position += _positionChangeOnEachUpdate;
+				cam.ForwardDirection += _fwdDirectionChangeOnEachUpdate;
 				_numberOfRemainingFrames--;
 			}
+		}
+
+		public void OnDestroy()
+		{
+			Input.OnKey -= OnKey;
+			
+			_mainMenuPage.Destroy();
+			_startButton.Destroy();
+			_highscoreButton.Destroy();
+			_exitButton.Destroy();
+
+			_highscorePage.Destroy();
+			_highscoreTable.Destroy();
+
+			_mainMenuWindow.Destroy ();
+			_menuPages.Clear ();
+		}
+
+		public static void DestroyMenu()
+		{
+			_instance.Destroy ();
+			_instance = null;
 		}
 	}
 }

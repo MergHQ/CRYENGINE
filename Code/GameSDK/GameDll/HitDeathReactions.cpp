@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+﻿// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 
@@ -2281,7 +2281,7 @@ void CHitDeathReactions::StartCollisionReaction(const Vec3& vNormal, const Vec3&
 }
 
 //////////////////////////////////////////////////////////////////////////
-/// GetRelativeCardinalDirection returns which 90� cone (for forward, back,
+/// GetRelativeCardinalDirection returns which 90° cone (for forward, back,
 /// left and right) the direction vector vDir2 is pointing to compared to
 /// direction vector vDir1
 //////////////////////////////////////////////////////////////////////////

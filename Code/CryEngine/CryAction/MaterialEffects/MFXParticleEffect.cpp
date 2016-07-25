@@ -36,6 +36,9 @@ void CMFXParticleEffect::Execute(const SMFXRunTimeEffectParams& params)
 	case SMFXParticleParams::eDT_Ricochet:
 		dir = reverso.GetRotated(params.normal, gf_PI).normalize();
 		break;
+	case SMFXParticleParams::eDT_ProjectileDir:
+		dir = -inDir;
+		break;
 	default:
 		dir = params.normal;
 		break;
@@ -255,6 +258,10 @@ void CMFXParticleEffect::LoadParamsFromXml(const XmlNodeRef& paramsNode)
 		else if (!strcmp(val, "Ricochet"))
 		{
 			directionType = SMFXParticleParams::eDT_Ricochet;
+		}
+		else if (!strcmp(val, "ProjectileDir"))
+		{
+			directionType = SMFXParticleParams::eDT_ProjectileDir;
 		}
 	}
 	m_particleParams.directionType = directionType;

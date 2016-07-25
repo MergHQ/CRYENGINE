@@ -19,6 +19,7 @@
 #include "../Common/PostProcess/PostProcessUtils.h"
 #include "D3DPostProcess.h"
 #include "../Common/Textures/TextureHelpers.h"
+#include "GraphicsPipeline/Common/UtilityPasses.h"
 
 #undef min
 #undef max
@@ -200,7 +201,7 @@ D3DSurface* CTexture::GetSurface(int nCMSide, int nLevel)
 			nSlice = nCMSide;
 			nSliceCount = 1;
 		}
-		pTargSurf = (D3DSurface*)GetResourceView(SResourceView::RenderTargetView(m_eTFDst, nSlice, nSliceCount, nMipLevel, bUseMultisampledRTV)).m_pDeviceResourceView;
+		pTargSurf = (D3DSurface*)GetResourceView(SResourceView::RenderTargetView(m_eTFDst, nSlice, nSliceCount, nMipLevel, bUseMultisampledRTV));
 
 		if (bUseMultisampledRTV)
 			m_pDeviceRTVMS = pTargSurf;
@@ -1796,12 +1797,12 @@ bool CTexture::RT_CreateDeviceTexture(byte* pData[6])
 			D3DFmt = nFormatOrig;
 
 		//////////////////////////////////////////////////////////////////////////
-		m_pDeviceShaderResource = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, m_bIsSRGB, false)).m_pDeviceResourceView;
+		m_pDeviceShaderResource = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, m_bIsSRGB, false));
 		m_nMinMipVidActive = 0;
 
 		if (m_nFlags & FT_USAGE_ALLOWREADSRGB)
 		{
-			m_pDeviceShaderResourceSRGB = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, true, false)).m_pDeviceResourceView;
+			m_pDeviceShaderResourceSRGB = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, true, false));
 		}
 	}
 	else if (m_eTT == eTT_Cube)
@@ -1928,12 +1929,12 @@ bool CTexture::RT_CreateDeviceTexture(byte* pData[6])
 			D3DFmt = nFormatOrig;
 
 		//////////////////////////////////////////////////////////////////////////
-		m_pDeviceShaderResource = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, m_bIsSRGB, false)).m_pDeviceResourceView;
+		m_pDeviceShaderResource = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, m_bIsSRGB, false));
 		m_nMinMipVidActive = 0;
 
 		if (m_nFlags & FT_USAGE_ALLOWREADSRGB)
 		{
-			m_pDeviceShaderResourceSRGB = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, true, false)).m_pDeviceResourceView;
+			m_pDeviceShaderResourceSRGB = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, true, false));
 		}
 	}
 	else if (m_eTT == eTT_3D)
@@ -2030,12 +2031,12 @@ bool CTexture::RT_CreateDeviceTexture(byte* pData[6])
 		}
 
 		//////////////////////////////////////////////////////////////////////////
-		m_pDeviceShaderResource = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, m_bIsSRGB, false)).m_pDeviceResourceView;
+		m_pDeviceShaderResource = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, m_bIsSRGB, false));
 		m_nMinMipVidActive = 0;
 
 		if (m_nFlags & FT_USAGE_ALLOWREADSRGB)
 		{
-			m_pDeviceShaderResourceSRGB = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, true, false)).m_pDeviceResourceView;
+			m_pDeviceShaderResourceSRGB = (D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(m_eTFDst, 0, -1, 0, nMips, true, false));
 		}
 	}
 	else
@@ -2194,7 +2195,7 @@ void* CTexture::CreateDeviceResourceView(const SResourceView& rv)
 	void* pResult = NULL;
 
 	// DX expects -1 for selecting all mip maps/slices. max count throws an exception
-	const uint nMipCount = rv.m_Desc.nMipCount == SResourceView().m_Desc.nMipCount ? (uint) - 1 : (uint)rv.m_Desc.nMipCount;
+	const uint nMipCount   = rv.m_Desc.nMipCount   == SResourceView().m_Desc.nMipCount   ? (uint) - 1 : (uint)rv.m_Desc.nMipCount;
 	const uint nSliceCount = rv.m_Desc.nSliceCount == SResourceView().m_Desc.nSliceCount ? (uint) - 1 : (uint)rv.m_Desc.nSliceCount;
 
 	if (rv.m_Desc.eViewType == SResourceView::eShaderResourceView)
@@ -2229,11 +2230,13 @@ void* CTexture::CreateDeviceResourceView(const SResourceView& rv)
 		}
 		else
 		{
+			// *INDENT-OFF*
 			srvDesc.ViewDimension =
-			  m_eTT == eTT_1D ? (m_nArraySize > 1 ? D3D11_SRV_DIMENSION_TEXTURE1DARRAY : D3D11_SRV_DIMENSION_TEXTURE1D)
-			  : (m_eTT == eTT_2D ? (m_nArraySize > 1 ? D3D11_SRV_DIMENSION_TEXTURE2DARRAY : D3D11_SRV_DIMENSION_TEXTURE2D)
-			     : (m_eTT == eTT_Cube ? (m_nArraySize > 1 ? D3D11_SRV_DIMENSION_TEXTURECUBEARRAY : D3D11_SRV_DIMENSION_TEXTURECUBE)
-			        : (m_eTT == eTT_3D && m_nArraySize <= 1 ? D3D11_SRV_DIMENSION_TEXTURE3D : D3D11_SRV_DIMENSION_UNKNOWN)));
+			     m_eTT == eTT_1D   ? (m_nArraySize  > 1 ? D3D11_SRV_DIMENSION_TEXTURE1DARRAY   : D3D11_SRV_DIMENSION_TEXTURE1D)
+			  : (m_eTT == eTT_2D   ? (m_nArraySize  > 1 ? D3D11_SRV_DIMENSION_TEXTURE2DARRAY   : D3D11_SRV_DIMENSION_TEXTURE2D)
+			  : (m_eTT == eTT_Cube ? (m_nArraySize  > 1 ? D3D11_SRV_DIMENSION_TEXTURECUBEARRAY : D3D11_SRV_DIMENSION_TEXTURECUBE)
+			  : (m_eTT == eTT_3D  &&  m_nArraySize <= 1 ? D3D11_SRV_DIMENSION_TEXTURE3D        : D3D11_SRV_DIMENSION_UNKNOWN)));
+			// *INDENT-ON*
 
 			// D3D11_TEX1D_SRV, D3D11_TEX2D_SRV, D3D11_TEX3D_SRV, D3D11_TEXCUBE_SRV and array versions can be aliased here
 			srvDesc.Texture1D.MostDetailedMip = rv.m_Desc.nMostDetailedMip;
@@ -2271,11 +2274,13 @@ void* CTexture::CreateDeviceResourceView(const SResourceView& rv)
 		}
 		else
 		{
+			// *INDENT-OFF*
 			rtvDesc.ViewDimension =
-			  m_eTT == eTT_1D ? (m_nArraySize > 1 ? D3D11_RTV_DIMENSION_TEXTURE1DARRAY : D3D11_RTV_DIMENSION_TEXTURE1D)
-			  : (m_eTT == eTT_2D ? (m_nArraySize > 1 ? D3D11_RTV_DIMENSION_TEXTURE2DARRAY : D3D11_RTV_DIMENSION_TEXTURE2D)
-			     : (m_eTT == eTT_Cube ? (m_nArraySize > 1 ? D3D11_RTV_DIMENSION_TEXTURE2DARRAY : D3D11_RTV_DIMENSION_TEXTURE2DARRAY)
-			        : (m_eTT == eTT_3D && m_nArraySize <= 1 ? D3D11_RTV_DIMENSION_TEXTURE3D : D3D11_RTV_DIMENSION_UNKNOWN)));
+			     m_eTT == eTT_1D   ? (m_nArraySize  > 1 ? D3D11_RTV_DIMENSION_TEXTURE1DARRAY : D3D11_RTV_DIMENSION_TEXTURE1D)
+			  : (m_eTT == eTT_2D   ? (m_nArraySize  > 1 ? D3D11_RTV_DIMENSION_TEXTURE2DARRAY : D3D11_RTV_DIMENSION_TEXTURE2D)
+			  : (m_eTT == eTT_Cube ?                      D3D11_RTV_DIMENSION_TEXTURE2DARRAY
+			  : (m_eTT == eTT_3D  &&  m_nArraySize <= 1 ? D3D11_RTV_DIMENSION_TEXTURE3D      : D3D11_RTV_DIMENSION_UNKNOWN)));
+			// *INDENT-ON*
 
 			rtvDesc.Texture1D.MipSlice = rv.m_Desc.nMostDetailedMip;
 
@@ -2616,6 +2621,8 @@ void CTexture::SetSamplerState(int nTS, int nSUnit, EHWShaderClass eHWSC)
 				gcpRendD3D->m_DevMan.BindSampler(CDeviceManager::TYPE_PS, &pSamp, nSUnit, 1);
 			else if (eHWSC == eHWSC_Domain)
 				gcpRendD3D->m_DevMan.BindSampler(CDeviceManager::TYPE_DS, &pSamp, nSUnit, 1);
+			else if (eHWSC == eHWSC_Hull)
+				gcpRendD3D->m_DevMan.BindSampler(CDeviceManager::TYPE_HS, &pSamp, nSUnit, 1);
 			else if (eHWSC == eHWSC_Vertex)
 				gcpRendD3D->m_DevMan.BindSampler(CDeviceManager::TYPE_VS, &pSamp, nSUnit, 1);
 			else if (eHWSC == eHWSC_Compute)
@@ -2994,6 +3001,8 @@ void CTexture::ApplyTexture(int nTUnit, EHWShaderClass eHWSC, SResourceView::Key
 				rd->m_DevMan.BindSRV(CDeviceManager::TYPE_VS, pResView, nTUnit);
 			else if (eHWSC == eHWSC_Domain)
 				rd->m_DevMan.BindSRV(CDeviceManager::TYPE_DS, pResView, nTUnit);
+			else if (eHWSC == eHWSC_Hull)
+				rd->m_DevMan.BindSRV(CDeviceManager::TYPE_HS, pResView, nTUnit);
 			else if (eHWSC == eHWSC_Compute)
 				rd->m_DevMan.BindSRV(CDeviceManager::TYPE_CS, pResView, nTUnit);
 			else
@@ -3172,6 +3181,8 @@ void CTexture::Apply(int nTUnit, int nState, int nTexMatSlot, int nSUnit, SResou
 				rd->m_DevMan.BindSRV(CDeviceManager::TYPE_VS, pResView, nTUnit);
 			else if (eHWSC == eHWSC_Domain)
 				rd->m_DevMan.BindSRV(CDeviceManager::TYPE_DS, pResView, nTUnit);
+			else if (eHWSC == eHWSC_Hull)
+				rd->m_DevMan.BindSRV(CDeviceManager::TYPE_HS, pResView, nTUnit);
 			else if (eHWSC == eHWSC_Compute)
 				rd->m_DevMan.BindSRV(CDeviceManager::TYPE_CS, pResView, nTUnit);
 			else
@@ -3245,7 +3256,7 @@ void CTexture::RT_UpdateTextureRegion(byte* data, int nX, int nY, int nZ, int US
 					uint32 nLockFlags = D3D11_MAP_WRITE_DISCARD_SR;
 					uint32 nSubRes = D3D11CalcSubresource(0, cZ, 1);
 
-					hr = gcpRendD3D->GetDeviceContext().Map(pDT, nSubRes, (D3D11_MAP)nLockFlags, 0, &lrct);
+					hr = gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(pDT, nSubRes, (D3D11_MAP)nLockFlags, 0, &lrct);
 					assert(hr == S_OK);
 
 					byte* pDst = ((byte*)lrct.pData) + nX * 4 + nY * lrct.RowPitch;
@@ -3255,7 +3266,7 @@ void CTexture::RT_UpdateTextureRegion(byte* data, int nX, int nY, int nZ, int US
 						data += USize * 4;
 						pDst += lrct.RowPitch;
 					}
-					gcpRendD3D->GetDeviceContext().Unmap(pDT, nSubRes);
+					gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Unmap(pDT, nSubRes);
 				}
 			}
 			else
@@ -3599,7 +3610,13 @@ bool CTexture::GenerateMipMaps(bool bSetOrthoProj, bool bUseHW, bool bNormalMap)
 
 	// all d3d11 devices support autogenmipmaps
 	if (m_pRenderTargetData)
-		gcpRendD3D->GetDeviceContext().GenerateMips(m_pDeviceShaderResource);
+	{
+		//	gcpRendD3D->GetDeviceContext().GenerateMips(m_pDeviceShaderResource);
+
+		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+		CMipmapGenPass().Execute(this);
+		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
+	}
 
 	return true;
 
@@ -4137,17 +4154,48 @@ bool CFlashTextureSourceBase::Update()
 	m_lastVisible = gEnv->pTimer->GetAsyncTime();
 	m_lastVisibleFrameID = gRenDev->GetFrameID(false);
 
-	// calculate mip-maps after update, if mip-maps have been allocated
-	CTexture* pTex = (CTexture*)pDynTexture->GetTexture();
-	if (pTex->GetNumMips() > 1)
-		pTex->GenerateMipMaps();
-
 	return true;
+}
+
+bool CFlashTextureSource::Update()
+{
+	if (CFlashTextureSourceBase::Update())
+	{
+		if (!m_pMipMapper)
+			m_pMipMapper = new CMipmapGenPass();
+
+		// calculate mip-maps after update, if mip-maps have been allocated
+		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+		m_pMipMapper->Execute((CTexture*)m_pDynTexture->GetTexture());
+		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
+
+		return true;
+	}
+
+	return false;
 }
 
 void CFlashTextureSourceSharedRT::ProbeDepthStencilSurfaceCreation(int width, int height)
 {
 	gcpRendD3D->FX_GetDepthSurface(width, height, false);
+}
+
+bool CFlashTextureSourceSharedRT::Update()
+{
+	if (CFlashTextureSourceBase::Update())
+	{
+		if (!ms_pMipMapper)
+			ms_pMipMapper = new CMipmapGenPass();
+
+		// calculate mip-maps after update, if mip-maps have been allocated
+		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+		ms_pMipMapper->Execute((CTexture*)ms_pDynTexture->GetTexture());
+		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
+
+		return true;
+	}
+
+	return false;
 }
 
 void CTexture::ReleaseSystemTargets()
@@ -4183,22 +4231,17 @@ void CTexture::ReleaseSystemTargets()
 	SAFE_RELEASE_FORCE(s_ptexSceneTarget);
 	SAFE_RELEASE_FORCE(s_ptexZTargetScaled);
 	SAFE_RELEASE_FORCE(s_ptexZTargetScaled2);
+	SAFE_RELEASE_FORCE(s_ptexZTargetScaled3);
+	SAFE_RELEASE_FORCE(s_ptexDepthBufferQuarter);
+	SAFE_RELEASE_FORCE(s_ptexDepthBufferHalfQuarter);
 
 	gcpRendD3D->m_bSystemTargetsInit = 0;
-}
-
-void CTexture::ReleaseMiscTargets()
-{
-	if (gcpRendD3D->m_pColorGradingControllerD3D)
-		gcpRendD3D->m_pColorGradingControllerD3D->ReleaseTextures();
 }
 
 void CTexture::CreateSystemTargets()
 {
 	if (!gcpRendD3D->m_bSystemTargetsInit)
 	{
-		ScopedSwitchToGlobalHeap useGlobalHeap;
-
 		gcpRendD3D->m_bSystemTargetsInit = 1;
 
 		ETEX_Format eTF = (gcpRendD3D->m_RP.m_bUseHDR && gcpRendD3D->m_nHDRType == 1) ? eTF_R16G16B16A16F : eTF_R8G8B8A8;
@@ -4224,7 +4267,8 @@ void CTexture::CreateSystemTargets()
 
 		gcpRendD3D->GetGraphicsPipeline().Init();
 		gcpRendD3D->GetTiledShading().CreateResources();
-		gcpRendD3D->GetVolumetricFog().CreateResources();
+		if ((CRenderer::CV_r_GraphicsPipeline == 0) && (gcpRendD3D->m_nGraphicsPipeline == 0))
+			gcpRendD3D->GetVolumetricFog().CreateResources();
 
 		// Create post effects targets
 		SPostEffectsUtils::Create();
@@ -4277,6 +4321,7 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDevTexture, int ownerMips, 
 	#else
 		UINT64 fence = pDMA->InsertFence();
 	#endif
+
 		pDMA->Submit();
 		while (gcpRendD3D->GetPerformanceDevice().IsFencePending(fence))
 			CrySleep(1);
@@ -4285,27 +4330,26 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDevTexture, int ownerMips, 
 	else
 	{
 		assert(nSrcMip >= 0 && nDstMip >= 0);
-		for (int i = 0; i < nNumMips; ++i)
-		{
-#if defined(DEVICE_SUPPORTS_D3D11_1)
-			gcpRendD3D->GetDeviceContext().CopySubresourceRegion1(
-			  pDstResource,
-			  D3D11CalcSubresource(nDstMip + i, nDstSlice, ownerMips),
-			  0, 0, 0,
-			  pSrcResource,
-			  D3D11CalcSubresource(nSrcMip + i, nSrcSlice, nSrcMips),
-			  NULL,
-			  D3D11_COPY_NO_OVERWRITE);
+#if defined(DEVICE_SUPPORTS_D3D11_1) || defined(CRY_USE_DX12)
+		gcpRendD3D->GetDeviceContext().CopySubresourcesRegion1(
+		  pDstResource,
+		  D3D11CalcSubresource(nDstMip, nDstSlice, ownerMips),
+		  0, 0, 0,
+		  pSrcResource,
+		  D3D11CalcSubresource(nSrcMip, nSrcSlice, nSrcMips),
+		  NULL,
+		  D3D11_COPY_NO_OVERWRITE_REVERT | D3D11_COPY_NO_OVERWRITE_PXLSRV,
+		  nNumMips);
 #else
-			gcpRendD3D->GetDeviceContext().CopySubresourceRegion(
-			  pDstResource,
-			  D3D11CalcSubresource(nDstMip + i, nDstSlice, ownerMips),
-			  0, 0, 0,
-			  pSrcResource,
-			  D3D11CalcSubresource(nSrcMip + i, nSrcSlice, nSrcMips),
-			  NULL);
+		gcpRendD3D->GetDeviceContext().CopySubresourcesRegion(
+		  pDstResource,
+		  D3D11CalcSubresource(nDstMip, nDstSlice, ownerMips),
+		  0, 0, 0,
+		  pSrcResource,
+		  D3D11CalcSubresource(nSrcMip, nSrcSlice, nSrcMips),
+		  NULL,
+		  nNumMips);
 #endif
-		}
 	}
 }
 

@@ -7,7 +7,7 @@
    These should move into GameDLL when interfaces allow!
    -------------------------------------------------------------------------
    History:
-   - 18:11:2009 - Created by Márcio Martins
+   - 18:11:2009 - Created by MÃ¡rcio Martins
  *********************************************************************/
 
 #include "StdAfx.h"

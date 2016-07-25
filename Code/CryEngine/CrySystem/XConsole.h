@@ -205,6 +205,10 @@ public:
 	virtual bool OnInputEvent(const SInputEvent& event);
 	virtual bool OnInputEventUI(const SUnicodeEvent& event);
 
+	virtual void SetReadOnly(bool readonly) { m_readOnly = readonly; }
+	virtual bool IsReadOnly() { return m_readOnly; }
+
+
 	// interface IRemoteConsoleListener ------------------------------------------------------------------
 
 	virtual void OnConsoleCommand(const char* cmd);
@@ -384,6 +388,8 @@ private: // ----------------------------------------------------------
 	ICVar*                         m_pSysDeactivateConsole;
 
 	ELoadConfigurationType         m_currentLoadConfigType;
+
+	bool m_readOnly;
 
 	static int                     con_display_last_messages;
 	static int                     con_line_buffer_size;

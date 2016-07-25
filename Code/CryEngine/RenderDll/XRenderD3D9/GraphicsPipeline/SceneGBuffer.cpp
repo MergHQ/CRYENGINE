@@ -18,7 +18,7 @@ void CSceneGBufferStage::Init()
 {
 	m_pPerPassResources = CCryDeviceWrapper::GetObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 
-	bool bSuccess0 = PreparePerPassResources();
+	bool bSuccess0 = PreparePerPassResources(true);
 	bool bSuccess1 = PrepareResourceLayout();
 	assert(bSuccess0 && bSuccess1);
 
@@ -86,11 +86,6 @@ void CSceneGBufferStage::Init()
 	  );
 }
 
-void CSceneGBufferStage::ReleaseBuffers()
-{
-	m_passDepthLinearization.SetTexture(16, nullptr);  // TODO: Change slot
-}
-
 void CSceneGBufferStage::OnResolutionChanged()
 {
 	CD3D9Renderer* rd = gcpRendD3D;
@@ -112,89 +107,18 @@ void CSceneGBufferStage::OnResolutionChanged()
 
 bool CSceneGBufferStage::CreatePipelineState(const SGraphicsPipelineStateDescription& desc, EPass passID, CDeviceGraphicsPSOPtr& outPSO)
 {
-	CD3D9Renderer* rd = gcpRendD3D;
+	CD3D9Renderer* pRenderer = gcpRendD3D;
 
 	// TODO: Handle MSAA flags if required
 	// TODO: Handle Hair flags!
 
 	outPSO = NULL;
 
-	CShader* pShader = static_cast<CShader*>(desc.shaderItem.m_pShader);
-	SShaderTechnique* pTechnique = pShader->GetTechnique(desc.shaderItem.m_nTechnique, desc.technique, true);
-	if (!pTechnique)
-		return true;
-
 	CDeviceGraphicsPSODesc psoDesc(m_pResourceLayout.get(), desc);
-	CShaderResources* pRes = static_cast<CShaderResources*>(desc.shaderItem.m_pShaderResources);
+	if (!pRenderer->GetGraphicsPipeline().FillCommonScenePassStates(desc, psoDesc))
+		return true;
+	
 	const uint64 objectFlags = desc.objectFlags;
-	SShaderPass* pShaderPass = &pTechnique->m_Passes[0];
-
-	// Handle quality flags
-	CStandardGraphicsPipeline::ApplyShaderQuality(psoDesc, gcpRendD3D->GetShaderProfile(pShader->m_eShaderType));
-
-	SThreadInfo* const pShaderThreadInfo = &(gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID]);
-	if (pShaderThreadInfo->m_PersFlags & RBPF_REVERSE_DEPTH)
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_REVERSE_DEPTH];
-
-	// Set resource states
-	bool bTwoSided = false;
-	{
-		if (pRes->m_ResFlags & MTL_FLAG_2SIDED)
-		{
-			bTwoSided = true;
-		}
-
-		if (pRes->IsAlphaTested())
-		{
-			psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHATEST];
-		}
-
-		if (pRes->m_Textures[EFTT_DIFFUSE] && pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_pTexModifier)
-		{
-			psoDesc.m_ShaderFlags_MD |= pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_nUpdateFlags;
-		}
-
-		if (pRes->m_pDeformInfo)
-			psoDesc.m_ShaderFlags_MDV |= pRes->m_pDeformInfo->m_eType;
-	}
-
-	psoDesc.m_ShaderFlags_MDV |= psoDesc.m_pShader->m_nMDV;
-
-	if (objectFlags & FOB_OWNER_GEOMETRY)
-		psoDesc.m_ShaderFlags_MDV &= ~MDV_DEPTH_OFFSET;
-
-	if (objectFlags & FOB_BENDED)
-		psoDesc.m_ShaderFlags_MDV |= MDV_BENDING;
-
-	if (!(objectFlags & FOB_TRANS_MASK))
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_OBJ_IDENTITY];
-
-	if (objectFlags & FOB_BLEND_WITH_TERRAIN_COLOR)
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_BLEND_WITH_TERRAIN_COLOR];
-
-	psoDesc.m_bAllowTesselation = false;
-	psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_NO_TESSELLATION];
-
-	if (objectFlags & FOB_NEAREST)
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_NEAREST];
-
-	if (objectFlags & FOB_DISSOLVE)
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_DISSOLVE];
-
-	if (psoDesc.m_RenderState & GS_ALPHATEST_MASK)
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHATEST];
-
-#ifdef TESSELLATION_RENDERER
-	const bool bHasTesselationShaders = pShaderPass && pShaderPass->m_HShader && pShaderPass->m_DShader;
-	if (bHasTesselationShaders && (!(objectFlags & FOB_NEAREST) && (objectFlags & FOB_ALLOW_TESSELLATION)))
-	{
-		psoDesc.m_ShaderFlags_RT &= ~g_HWSR_MaskBit[HWSR_NO_TESSELLATION];
-		psoDesc.m_bAllowTesselation = true;
-	}
-#endif
-
-	psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_PER_INSTANCE_CB_TEMP];
-
 	CSceneRenderPass* pSceneRenderPass = (passID == ePass_DepthPrepass) ? &m_depthPrepass : &m_opaquePass;
 
 	if (passID != ePass_DepthPrepass)
@@ -211,12 +135,12 @@ bool CSceneGBufferStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 		}
 
 		/*// Disable alpha testing/depth writes if object renders using a z-prepass and requested technique is not z pre pass
-		   if (objectFlags & FOB_ZPREPASS)
-		   {
-		   psoDesc.m_RenderState &= ~(GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_ALPHATEST_MASK);
-		   psoDesc.m_RenderState |= GS_DEPTHFUNC_EQUAL;
-		   psoDesc.m_ShaderFlags_RT &= ~g_HWSR_MaskBit[HWSR_ALPHATEST];
-		   }*/
+		if (objectFlags & FOB_ZPREPASS)
+		{
+			psoDesc.m_RenderState &= ~(GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_ALPHATEST_MASK);
+			psoDesc.m_RenderState |= GS_DEPTHFUNC_EQUAL;
+			psoDesc.m_ShaderFlags_RT &= ~g_HWSR_MaskBit[HWSR_ALPHATEST];
+		}*/
 
 		// Enable stencil for vis area and dynamic object markup
 		psoDesc.m_RenderState |= GS_STENCIL;
@@ -242,18 +166,9 @@ bool CSceneGBufferStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 		}
 	}
 
-	if (gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH)
+	if (pRenderer->m_RP.m_TI[pRenderer->m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH)
 	{
 		psoDesc.m_RenderState = ReverseDepthHelper::ConvertDepthFunc(psoDesc.m_RenderState);
-	}
-
-	psoDesc.m_CullMode = bTwoSided ? eCULL_None : (pShaderPass->m_eCull != -1 ? (ECull)pShaderPass->m_eCull : eCULL_Back);
-	psoDesc.m_PrimitiveType = ERenderPrimitiveType(desc.primitiveType);
-
-	if (psoDesc.m_bAllowTesselation)
-	{
-		psoDesc.m_PrimitiveType = ept3ControlPointPatchList;
-		psoDesc.m_ObjectStreamMask |= VSM_NORMALS;
 	}
 
 	pSceneRenderPass->ExtractRenderTargetFormats(psoDesc);
@@ -287,7 +202,7 @@ bool CSceneGBufferStage::CreatePipelineStates(DevicePipelineStatesArray* pStateA
 	return bFullyCompiled;
 }
 
-bool CSceneGBufferStage::PreparePerPassResources()
+bool CSceneGBufferStage::PreparePerPassResources(bool bOnInit)
 {
 	CD3D9Renderer* rd = gcpRendD3D;
 
@@ -307,11 +222,12 @@ bool CSceneGBufferStage::PreparePerPassResources()
 
 	// textures
 	{
-		int nTerrainTex0 = 0, nTerrainTex1 = 0;
+		int nTerrainTex0 = 0, nTerrainTex1 = 0, nTerrainTex2 = 0;
 		if (gEnv->p3DEngine && gEnv->p3DEngine->GetITerrain())
-			gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTerrainTex0, nTerrainTex1);
+			gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTerrainTex0, nTerrainTex1, nTerrainTex2);
 
 		m_pPerPassResources->SetTexture(ePerPassTexture_WindGrid, CTexture::s_ptexWindGrid, SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
+		m_pPerPassResources->SetTexture(ePerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
 		m_pPerPassResources->SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
 		m_pPerPassResources->SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), SResourceView::DefaultViewSRGB, EShaderStage_AllWithoutCompute);
 		m_pPerPassResources->SetTexture(ePerPassTexture_NormalsFitting, CTexture::s_ptexNormalsFitting, SResourceView::DefaultView, EShaderStage_AllWithoutCompute);
@@ -321,12 +237,19 @@ bool CSceneGBufferStage::PreparePerPassResources()
 	// constant buffers
 	{
 		rd->GetGraphicsPipeline().UpdatePerViewConstantBuffer();
-		CConstantBufferPtr pPerViewCB = rd->GetGraphicsPipeline().GetPerViewConstantBuffer();
-		m_pPerPassResources->SetConstantBuffer(eConstantBufferShaderSlot_PerView, pPerViewCB, EShaderStage_AllWithoutCompute);
-		if (!pPerViewCB)
+		CConstantBufferPtr pPerViewCB;
+
+		// Handle case when no view is available in the initialization of the gbuffer-stage
+		if (bOnInit)
+			pPerViewCB = CDeviceBufferManager::CreateNullConstantBuffer();
+		else
 		{
-			return true; // During startup, this may be null
+			pPerViewCB = rd->GetGraphicsPipeline().GetPerViewConstantBuffer();
 		}
+
+		m_pPerPassResources->SetConstantBuffer(eConstantBufferShaderSlot_PerView, pPerViewCB, EShaderStage_AllWithoutCompute);
+		if (bOnInit)
+			return true;
 	}
 
 	m_pPerPassResources->Build();
@@ -349,7 +272,13 @@ bool CSceneGBufferStage::PrepareResourceLayout() // threadsafe
 void CSceneGBufferStage::Prepare(CRenderView* pRenderView)
 {
 	OnResolutionChanged();
-	PreparePerPassResources();
+	PreparePerPassResources(false);
+
+	auto& RESTRICT_REFERENCE commandList = *CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
+	m_depthPrepass.PrepareRenderPassForUse(commandList);
+	m_opaquePass.PrepareRenderPassForUse(commandList);
+	m_opaqueVelocityPass.PrepareRenderPassForUse(commandList);
+	m_overlayPass.PrepareRenderPassForUse(commandList);
 }
 
 void CSceneGBufferStage::RenderDepthPrepass()
@@ -443,7 +372,7 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 	nearProjParams.y = bReverseDepth ? zn / (zf - zn) * nearZRange * camScale : zn / (zn - zf) * nearZRange * camScale;
 	nearProjParams.z = bReverseDepth ? 1.0f - (nearZRange - 0.001f) : nearZRange - 0.001f;
 	nearProjParams.w = 1.0f;
-	pShader->FXSetPSFloat(paramName, &nearProjParams, 1);
+	m_passDepthLinearization.SetConstant(eHWSC_Pixel, paramName, nearProjParams);
 
 	m_passDepthLinearization.Execute();
 }

@@ -1,0 +1,36 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+import os
+
+def build(bld):
+	# This library is optional, if the SDK is not present a stub library will be generated instead
+	orbis_sdk_dir =  bld.env.env['SCE_ORBIS_SDK_DIR'] if 'SCE_ORBIS_SDK_DIR' in bld.env.env else ''
+	orbis_vco_include = os.path.join(orbis_sdk_dir, 'host_tools', 'graphics', 'include', 'vertex-cache-optimizer')
+	has_vco = os.path.isdir(orbis_vco_include) and os.path.isfile(Path('Code/Libs/vco/vco_orbis.inl'))
+
+	if has_vco:
+		# Build real library
+		bld.CryEngineStaticModule( 
+			target    = 'vco', 
+			vs_filter = 'Libs',
+			file_list = 'vco.waf_files',
+			exclude_from_static_code_analyzer = True,
+
+			includes         = [ orbis_vco_include ], 
+			defines          = [ 'HAS_VCO' ],
+			
+			module_provides  = dict(
+				includes = [ Path('Code/Libs/vco') ]
+			)
+		)
+	else:
+		# Build stub library
+		bld.CryEngineStaticModule( 
+			target    = 'vco', 
+			vs_filter = 'Libs',
+			file_list = 'vco.waf_files',
+			exclude_from_static_code_analyzer = True,
+
+			module_provides = dict(
+				includes = [ Path('Code/Libs/vco') ]
+			)
+		)

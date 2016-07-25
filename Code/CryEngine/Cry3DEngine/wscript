@@ -6,7 +6,6 @@ def build(bld):
 		target     = 'Cry3DEngine',
 		vs_filter  = 'CryEngine',		
 		file_list  = 'cry3dengine.waf_files',
-		use_module = ['CryParticleSystem', 'lz4'],
+		use_module = ['lz4'],
 		pch        = 'StdAfx.cpp',		
 	)	
-	bld.recurse('ParticleSystem', name='build')

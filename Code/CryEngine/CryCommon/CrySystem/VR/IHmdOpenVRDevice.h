@@ -29,6 +29,7 @@ public:
 	virtual void SubmitOverlay(int id) = 0;
 	virtual void SubmitFrame() = 0;
 	virtual void GetRenderTargetSize(uint& w, uint& h) = 0;
+	virtual void GetMirrorImageView(EEyeType eye, void* resource, void** mirrorTextureView) = 0;
 protected:
 	virtual ~IOpenVRDevice() {}
 };

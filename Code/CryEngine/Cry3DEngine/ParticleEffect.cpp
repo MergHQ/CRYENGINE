@@ -310,7 +310,7 @@ Vec3 GetExtremeEmitVec(Vec3 const& vRefDir, SEmitParams const& emit)
 
 		float fCos = clamp_tpl(fEmitCos, emit.fCosMin, emit.fCosMax);
 		Vec3 vEmitMax = emit.vAxis * fCos + vEmitPerpX * sqrt_fast_tpl((1.f - fCos * fCos) / (fPerpLenSq + FLT_MIN));
-		vEmitMax *= if_pos_else(vEmitMax * vRefDir, emit.fSpeedMin, emit.fSpeedMax);
+		vEmitMax *= if_else(vEmitMax * vRefDir >= 0.0f, emit.fSpeedMin, emit.fSpeedMax);
 		return vEmitMax;
 	}
 }
@@ -678,7 +678,7 @@ void ResourceParticleParams::ComputeEnvironmentFlags()
 	                      + (TextureTiling.nAnimFramesCount <= 1) * OS_ANIM_BLEND
 	                      + (bDrawNear || bDrawOnTop) * FOB_SOFT_PARTICLE
 	                      + bDrawNear * FOB_ALLOW_TESSELLATION
-	                      + !fDiffuseLighting * (OS_ENVIRONMENT_CUBEMAP | FOB_GLOBAL_ILLUMINATION | FOB_INSHADOW)
+	                      + !fDiffuseLighting * (OS_ENVIRONMENT_CUBEMAP | FOB_INSHADOW)
 	                      + HasVariableVertexCount() * (FOB_MOTION_BLUR | FOB_OCTAGONAL | FOB_POINT_SPRITE)
 	                      );
 

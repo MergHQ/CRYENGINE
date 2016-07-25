@@ -1,18 +1,18 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
--------------------------------------------------------------------------
-History:
-- 12:05:2010   Created by Steve Humphreys
+   -------------------------------------------------------------------------
+   History:
+   - 12:05:2010   Created by Steve Humphreys
 *************************************************************************/
 
 #include "StdAfx.h"
-
-#include "Nodes/G2FlowBaseNode.h"
 #include "Player.h"
 #include "ILevelSystem.h"
+
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IAgent.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 class CFlowNode_FireSystemEvent : public CFlowBaseNode<eNCT_Singleton>
@@ -30,21 +30,21 @@ class CFlowNode_FireSystemEvent : public CFlowBaseNode<eNCT_Singleton>
 
 public:
 
-	CFlowNode_FireSystemEvent( SActivationInfo * pActInfo ) { }
+	CFlowNode_FireSystemEvent(SActivationInfo* pActInfo) {}
 
-	void GetConfiguration( SFlowNodeConfig& config )
+	void GetConfiguration(SFlowNodeConfig& config)
 	{
-		static const SInputPortConfig in_ports[] = 
+		static const SInputPortConfig in_ports[] =
 		{
 			InputPortConfig_Void("FireEvent", _HELP("Fire system event")),
-			InputPortConfig<int> ("EventType", 0, _HELP("Type of event"), 0, _UICONFIG("enum_int:LEVELGAMEPLAYSTART=0")),
-			{0}
+			InputPortConfig<int>("EventType", 0,                          _HELP("Type of event"),0, _UICONFIG("enum_int:LEVELGAMEPLAYSTART=0")),
+			{ 0 }
 		};
 
 		static const SOutputPortConfig out_ports[] =
 		{
-			OutputPortConfig_Void( "FiredEvent", _HELP("Triggers when event is fired")),
-			{0}
+			OutputPortConfig_Void("FiredEvent", _HELP("Triggers when event is fired")),
+			{ 0 }
 		};
 
 		config.pInputPorts = in_ports;
@@ -53,9 +53,9 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	void ProcessEvent( EFlowEvent flowEvent, SActivationInfo *pActInfo )
+	void ProcessEvent(EFlowEvent flowEvent, SActivationInfo* pActInfo)
 	{
-		switch(flowEvent)
+		switch (flowEvent)
 		{
 		case eFE_Activate:
 			{
@@ -68,7 +68,7 @@ public:
 					if (iEventType != 0)
 						return;
 
-					gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_GAMEPLAY_START, 0,0);
+					gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_GAMEPLAY_START, 0, 0);
 
 					ActivateOutput(pActInfo, EOP_FiredEvent, true);
 				}
@@ -77,7 +77,7 @@ public:
 		}
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -99,35 +99,35 @@ class CFlowNode_SetPostEffectParam : public CFlowBaseNode<eNCT_Singleton>
 	};
 
 public:
-  CFlowNode_SetPostEffectParam( SActivationInfo * pActInfo )
-  {
-  }
+	CFlowNode_SetPostEffectParam(SActivationInfo* pActInfo)
+	{
+	}
 
-  ~CFlowNode_SetPostEffectParam()
-  {
-  }
+	~CFlowNode_SetPostEffectParam()
+	{
+	}
 
 	/*
-  IFlowNodePtr Clone( SActivationInfo * pActInfo )
-  {
-    return this;
-  }
-	*/
+	   IFlowNodePtr Clone( SActivationInfo * pActInfo )
+	   {
+	   return this;
+	   }
+	 */
 
-	void GetConfiguration( SFlowNodeConfig& config )
+	void GetConfiguration(SFlowNodeConfig& config)
 	{
-		static const SInputPortConfig in_ports[] = 
+		static const SInputPortConfig in_ports[] =
 		{
-			InputPortConfig_Void("Set", _HELP("Sets the param")),
+			InputPortConfig_Void("Set",          _HELP("Sets the param")),
 			InputPortConfig<string>("ParamName", _HELP("Parameter name")),
-			InputPortConfig<float> ("ParamFloat", 0, _HELP("Parameter type in float")),
-			{0}
+			InputPortConfig<float>("ParamFloat", 0,                       _HELP("Parameter type in float")),
+			{ 0 }
 		};
 
 		static const SOutputPortConfig out_ports[] =
 		{
-			OutputPortConfig_Void( "Set", _HELP("Triggers when param set")),
-			{0}
+			OutputPortConfig_Void("Set", _HELP("Triggers when param set")),
+			{ 0 }
 		};
 
 		config.pInputPorts = in_ports;
@@ -136,10 +136,10 @@ public:
 		config.SetCategory(EFLN_DEBUG);
 	}
 
-  virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo )
-  {
-    if (event != eFE_Activate)
-      return;
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	{
+		if (event != eFE_Activate)
+			return;
 
 		I3DEngine* pEngine = gEnv->p3DEngine;
 
@@ -147,9 +147,9 @@ public:
 		const float& fParamFloat = GetPortFloat(pActInfo, EIP_ParamFloat);
 
 		pEngine->SetPostEffectParam(message, fParamFloat);
-  }
+	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -158,35 +158,34 @@ public:
 //////////////////////////////////////////////////////////////////////////
 class CFlowIsDemo : public CFlowBaseNode<eNCT_Singleton>
 {
-	enum 
+	enum
 	{
 		OUT_DEMO1 = 0,
 		OUT_DEMO2,
 		OUT_DEMO3
 	};
 
-	enum 
+	enum
 	{
 		INP_CHECK = 0
 	};
 
-
 public:
-	CFlowIsDemo( SActivationInfo * pActInfo )
+	CFlowIsDemo(SActivationInfo* pActInfo)
 	{
 	}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig inputs[] = {
-			InputPortConfig_Void   ("check", _HELP("ReTriggers the output")),
-			{0}
+			InputPortConfig_Void("check", _HELP("ReTriggers the output")),
+			{ 0 }
 		};
 		static const SOutputPortConfig outputs[] = {
-			OutputPortConfig<bool>("isDemo", _HELP("True if the game is playing in demo mode")),
+			OutputPortConfig<bool>("isDemo",  _HELP("True if the game is playing in demo mode")),
 			OutputPortConfig<bool>("isDemo2", _HELP("True if the game is playing in demo mode v2")),
 			OutputPortConfig<bool>("isDemo3", _HELP("True if the game is playing in demo mode v3")),
-			{0}
+			{ 0 }
 		};
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
@@ -194,24 +193,30 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo )
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
 		{
-			case eFE_Activate:
+		case eFE_Activate:
 			{
 				switch (g_pGame->GetCVars()->g_devDemo)
 				{
-					case 1:	ActivateOutput( pActInfo, OUT_DEMO1, true); break;
-					case 2:	ActivateOutput( pActInfo, OUT_DEMO2, true); break;
-					case 3:	ActivateOutput( pActInfo, OUT_DEMO3, true); break;
+				case 1:
+					ActivateOutput(pActInfo, OUT_DEMO1, true);
+					break;
+				case 2:
+					ActivateOutput(pActInfo, OUT_DEMO2, true);
+					break;
+				case 3:
+					ActivateOutput(pActInfo, OUT_DEMO3, true);
+					break;
 				}
 			}
 			break;
 		}
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -236,21 +241,21 @@ class CFlowIsZoomToggling : public CFlowBaseNode<eNCT_Singleton>
 
 public:
 
-	CFlowIsZoomToggling( SActivationInfo * pActInfo ) { }
+	CFlowIsZoomToggling(SActivationInfo* pActInfo) {}
 
-	void GetConfiguration( SFlowNodeConfig& config )
+	void GetConfiguration(SFlowNodeConfig& config)
 	{
-		static const SInputPortConfig in_ports[] = 
+		static const SInputPortConfig in_ports[] =
 		{
 			InputPortConfig_Void("Check", _HELP("Checks if zoom toggling is enabled.")),
-			{0}
+			{ 0 }
 		};
 
 		static const SOutputPortConfig out_ports[] =
 		{
-			OutputPortConfig<bool>( "Enabled", _HELP("True if zoom toggling enabled.")),
-			OutputPortConfig<bool>( "Disabled", _HELP("True if zoom toggling disabled.")),
-			{0}
+			OutputPortConfig<bool>("Enabled",  _HELP("True if zoom toggling enabled.")),
+			OutputPortConfig<bool>("Disabled", _HELP("True if zoom toggling disabled.")),
+			{ 0 }
 		};
 
 		config.pInputPorts = in_ports;
@@ -259,9 +264,9 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	void ProcessEvent( EFlowEvent flowEvent, SActivationInfo *pActInfo )
+	void ProcessEvent(EFlowEvent flowEvent, SActivationInfo* pActInfo)
 	{
-		switch(flowEvent)
+		switch (flowEvent)
 		{
 		case eFE_Activate:
 			{
@@ -281,7 +286,7 @@ public:
 		}
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -293,7 +298,7 @@ class CFlowSaveGameNode : public CFlowBaseNode<eNCT_Instanced>, public IGameFram
 {
 public:
 
-	enum 
+	enum
 	{
 		EIP_Save = 0,
 		EIP_Load,
@@ -304,12 +309,10 @@ public:
 		EIP_DelaySaveIfPlayerInAir,
 	};
 
-
-	enum 
+	enum
 	{
 		EOP_SaveOrLoadDone = 0,
 	};
-
 
 	enum EState
 	{
@@ -319,78 +322,77 @@ public:
 		ES_WaitForPlayerNotInAir
 	};
 
-	CFlowSaveGameNode(SActivationInfo *pActInfo) : m_state(ES_Idle)
+	CFlowSaveGameNode(SActivationInfo* pActInfo) : m_state(ES_Idle)
 	{
 	}
 
 	~CFlowSaveGameNode()
 	{
-		if(gEnv->pGame)
+		if (gEnv->pGame)
 		{
 			gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
 		}
 	}
 
-	virtual IFlowNodePtr Clone( SActivationInfo *pActInfo ) { return new CFlowSaveGameNode(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowSaveGameNode(pActInfo); }
 
-	virtual void Serialize(SActivationInfo *pActInfo, TSerialize ser)
+	virtual void         Serialize(SActivationInfo* pActInfo, TSerialize ser)
 	{
 		uint32 val = m_state;
-		ser.Value("m_state", val );
+		ser.Value("m_state", val);
 		m_state = EState(val);
-		if (ser.IsReading() && m_state==ES_WaitForSaveDone)
+		if (ser.IsReading() && m_state == ES_WaitForSaveDone)
 		{
 			m_state = ES_Notify;  // because we are not going to receive any event notification from CryAction, and we still want to notify the Done output.
 		}
-		if (m_state==ES_WaitForPlayerNotInAir) // even just in saving mode, we dont want this to keep running if there was already another save triggered. 
+		if (m_state == ES_WaitForPlayerNotInAir) // even just in saving mode, we dont want this to keep running if there was already another save triggered.
 		{
 			m_state = ES_Idle;
 			pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, false);
 		}
 	}
 
-	virtual void GetMemoryUsage(ICrySizer *pSizer) const
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const
 	{
 		pSizer->Add(*this);
 	}
 
-	void GetConfiguration(SFlowNodeConfig &config)
+	void GetConfiguration(SFlowNodeConfig& config)
 	{
-		ScopedSwitchToGlobalHeap useGlobalHeap;
 		static const SInputPortConfig in_config[] =
 		{
-			InputPortConfig_Void		("Save", _HELP("Trigger to save game")),
-			InputPortConfig_Void		("Load", _HELP("Trigger to load game")),
-			InputPortConfig<string>	("Name", string("quicksave"), _HELP("Name of SaveGame to save/load. Use $LAST to load last savegame")),
-			InputPortConfig<string>	("Desc", string(), _HELP("Description [Currently ignored]"), _HELP("Description")),
-			InputPortConfig_Void		("EnableSave", _HELP("Trigger to globally allow quick-saving")),
-			InputPortConfig_Void		("DisableSave", _HELP("Trigger to globally disallow quick-saving")),
-			InputPortConfig<bool>		("DelaySaveIfPlayerInAir", false, _HELP("if true, the savegame will be delayed until the the player is no longuer in air (jumping, falling, etc). /nUse only in case there is a real danger of problem with the checkpoint (player dying after fall, for example)")),
-			{0}
+			InputPortConfig_Void("Save",                    _HELP("Trigger to save game")),
+			InputPortConfig_Void("Load",                    _HELP("Trigger to load game")),
+			InputPortConfig<string>("Name",                 string("quicksave"),                                _HELP("Name of SaveGame to save/load. Use $LAST to load last savegame")),
+			InputPortConfig<string>("Desc",                 string(),                                           _HELP("Description [Currently ignored]"),                                                                                                                                                                                           _HELP("Description")),
+			InputPortConfig_Void("EnableSave",              _HELP("Trigger to globally allow quick-saving")),
+			InputPortConfig_Void("DisableSave",             _HELP("Trigger to globally disallow quick-saving")),
+			InputPortConfig<bool>("DelaySaveIfPlayerInAir", false,                                              _HELP("if true, the savegame will be delayed until the the player is no longuer in air (jumping, falling, etc). /nUse only in case there is a real danger of problem with the checkpoint (player dying after fall, for example)")),
+			{ 0 }
 		};
 
 		static const SOutputPortConfig out_config[] =
 		{
-			OutputPortConfig_Void	("SaveOrLoadDone", _HELP("Triggered after the savegame is created and also after the savegame is loaded./n"
-			"When saving, the trigger hapens after the 'snapshot' of the game state is taken. The actual physical writing of the data into the HD or memory card could take longer./n"
-			"this output will also be triggered if there was any critical error and the savegame could not be created"
-			)),
-			{0}
+			OutputPortConfig_Void("SaveOrLoadDone", _HELP("Triggered after the savegame is created and also after the savegame is loaded./n"
+			                                              "When saving, the trigger hapens after the 'snapshot' of the game state is taken. The actual physical writing of the data into the HD or memory card could take longer./n"
+			                                              "this output will also be triggered if there was any critical error and the savegame could not be created"
+			                                              )),
+			{ 0 }
 		};
 
-		config.sDescription	= _HELP("SaveGame for Autosave");
-		config.pInputPorts	= in_config;
-		config.pOutputPorts	= out_config;
+		config.sDescription = _HELP("SaveGame for Autosave");
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
 
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	void ProcessEvent(EFlowEvent event, SActivationInfo *pActInfo)
+	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
-		switch(event)
+		switch (event)
 		{
 		case eFE_Initialize:
-			m_state = ES_Idle;  
+			m_state = ES_Idle;
 			break;
 
 		case eFE_Update:
@@ -401,11 +403,11 @@ public:
 					{
 						ActivateOutput(pActInfo, EOP_SaveOrLoadDone, true);
 
-						if(gEnv->pGame)
+						if (gEnv->pGame)
 							gEnv->pGame->GetIGameFramework()->UnregisterListener(this);
 
 						pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, false);
-						m_state	= ES_Idle;
+						m_state = ES_Idle;
 						break;
 					}
 
@@ -414,8 +416,8 @@ public:
 						if (!PlayerIsInAir() && gEnv->pGame->GetIGameFramework()->CanSave())
 						{
 							m_extraCheckDeadTimerCounter--;
-							if (m_extraCheckDeadTimerCounter<=0)
-								Save( pActInfo );
+							if (m_extraCheckDeadTimerCounter <= 0)
+								Save(pActInfo);
 						}
 						break;
 					}
@@ -426,33 +428,33 @@ public:
 
 		case eFE_Activate:
 			{
-				if(IsPortActive(pActInfo, EIP_DisableSave))
+				if (IsPortActive(pActInfo, EIP_DisableSave))
 				{
 					gEnv->pGame->GetIGameFramework()->AllowSave(false);
 				}
 
-				if(IsPortActive(pActInfo, EIP_EnableSave))
+				if (IsPortActive(pActInfo, EIP_EnableSave))
 				{
 					gEnv->pGame->GetIGameFramework()->AllowSave(true);
 				}
 
-				if(IsPortActive(pActInfo, EIP_Save))
+				if (IsPortActive(pActInfo, EIP_Save))
 				{
-					if (GetPortBool( pActInfo, EIP_DelaySaveIfPlayerInAir )==true && PlayerIsInAir())
+					if (GetPortBool(pActInfo, EIP_DelaySaveIfPlayerInAir) == true && PlayerIsInAir())
 					{
 						pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
-						m_state	= ES_WaitForPlayerNotInAir;
+						m_state = ES_WaitForPlayerNotInAir;
 						m_extraCheckDeadTimerCounter = EXTRA_CHECK_DEAD_NUMFRAMES;
 					}
-					else 
-						Save( pActInfo );
+					else
+						Save(pActInfo);
 				}
 
-				if(IsPortActive(pActInfo, EIP_Load))
+				if (IsPortActive(pActInfo, EIP_Load))
 				{
 					string name = GetPortString(pActInfo, EIP_Name);
 
-					if(name == "$LAST")
+					if (name == "$LAST")
 					{
 						gEnv->pGame->GetIGameFramework()->ExecuteCommandNextFrame("loadLastSave");
 					}
@@ -484,14 +486,14 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void Save( SActivationInfo *pActInfo )
+	void Save(SActivationInfo* pActInfo)
 	{
-		m_name = GetPortString( pActInfo, EIP_Name );
+		m_name = GetPortString(pActInfo, EIP_Name);
 		PathUtil::RemoveExtension(m_name);
 
-		if(gEnv->IsEditor())
+		if (gEnv->IsEditor())
 		{
-			m_state	= ES_Idle;
+			m_state = ES_Idle;
 			pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, false);
 
 			IActor* pClientActor = g_pGame->GetIGameFramework()->GetClientActor();
@@ -500,15 +502,15 @@ public:
 		}
 		else
 		{
-			if(IGame *pGame = gEnv->pGame)
+			if (IGame* pGame = gEnv->pGame)
 			{
 				pGame->GetIGameFramework()->RegisterListener(this, "CFlowSaveGameNode", FRAMEWORKLISTENERPRIORITY_DEFAULT);
 			}
 			pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
-			m_state	= ES_WaitForSaveDone;
+			m_state = ES_WaitForSaveDone;
 		}
 
-		if(gEnv->pGame)
+		if (gEnv->pGame)
 		{
 			gEnv->pGame->GetIGameFramework()->SaveGame(gEnv->pGame->CreateSaveGameName().c_str(), true, false, eSGR_FlowGraph, false, m_name.c_str());
 		}
@@ -520,21 +522,21 @@ public:
 	{
 	}
 
-	virtual void OnSaveGame(ISaveGame *pSaveGame)
+	virtual void OnSaveGame(ISaveGame* pSaveGame)
 	{
 	}
 
-	virtual void OnLoadGame(ILoadGame *pLoadGame)
+	virtual void OnLoadGame(ILoadGame* pLoadGame)
 	{
 	}
 
-	virtual void OnLevelEnd(const char *pNextLevel)
+	virtual void OnLevelEnd(const char* pNextLevel)
 	{
 	}
 
-	virtual void OnActionEvent(const SActionEvent &event)
+	virtual void OnActionEvent(const SActionEvent& event)
 	{
-		if(m_state == ES_WaitForSaveDone && event.m_event == eAE_postSaveGame && event.m_description && !strcmp(event.m_description, m_name.c_str()))
+		if (m_state == ES_WaitForSaveDone && event.m_event == eAE_postSaveGame && event.m_description && !strcmp(event.m_description, m_name.c_str()))
 		{
 			m_state = ES_Notify;
 		}
@@ -544,10 +546,10 @@ public:
 
 private:
 
-	EState	m_state;
-	string	m_name;
-	int32		m_extraCheckDeadTimerCounter; 
-	enum { EXTRA_CHECK_DEAD_NUMFRAMES = 5 }; // in case we had to wait for the player to not be inAir before saving, we add this time to the wait to avoid any possible edge case 
+	EState m_state;
+	string m_name;
+	int32  m_extraCheckDeadTimerCounter;
+	enum { EXTRA_CHECK_DEAD_NUMFRAMES = 5 }; // in case we had to wait for the player to not be inAir before saving, we add this time to the wait to avoid any possible edge case
 	                                         // with the player dying right after or something similar. (which does not happens, is just an extra sanity precaution)
 };
 
@@ -556,4 +558,4 @@ REGISTER_FLOW_NODE( "Game:FireSystemEvent", CFlowNode_FireSystemEvent);
 REGISTER_FLOW_NODE( "Game:SetPostEffectParam", CFlowNode_SetPostEffectParam);
 REGISTER_FLOW_NODE( "Game:IsDemo", CFlowIsDemo);
 REGISTER_FLOW_NODE( "Game:IsZoomToggling", CFlowIsZoomToggling);
-REGISTER_FLOW_NODE( "System:SaveGame", CFlowSaveGameNode );
+REGISTER_FLOW_NODE( "Game:SaveGame", CFlowSaveGameNode );

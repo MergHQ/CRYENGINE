@@ -22,7 +22,6 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryInput/IInput.h>
 #include <CryEntitySystem/IEntitySystem.h>
-#include <CryEntitySystem/IEntityPoolManager.h>
 #include <CrySystem/ITimer.h>
 #include <CrySystem/IConsole.h>
 #include <CryAISystem/IAISystem.h>
@@ -167,9 +166,6 @@ CScriptBind_System::CScriptBind_System(IScriptSystem* pScriptSystem, ISystem* pS
 	SCRIPT_REG_FUNC(DrawLabel);
 	SCRIPT_REG_FUNC(GetEntity);//<<FIXME>> move to server
 	SCRIPT_REG_FUNC(GetEntityClass);//<<FIXME>> move to server
-	SCRIPT_REG_FUNC(PrepareEntityFromPool);
-	SCRIPT_REG_FUNC(ReturnEntityToPool);
-	SCRIPT_REG_FUNC(ResetPoolEntity);
 	SCRIPT_REG_FUNC(GetEntities);//<<FIXME>> move to server
 	SCRIPT_REG_TEMPLFUNC(GetEntitiesInSphere, "center, radius");//<<FIXME>> move to server
 	SCRIPT_REG_TEMPLFUNC(GetEntitiesInSphereByClass, "center, radius, className");//<<FIXME>> move to server
@@ -187,6 +183,9 @@ CScriptBind_System::CScriptBind_System(IScriptSystem* pScriptSystem, ISystem* pS
 	SCRIPT_REG_FUNC(DrawLine);
 	SCRIPT_REG_FUNC(Draw2DLine);
 	SCRIPT_REG_FUNC(DrawText);
+	SCRIPT_REG_TEMPLFUNC(DrawSphere, "x, y, z, radius, r, g, b, a");
+	SCRIPT_REG_TEMPLFUNC(DrawAABB, "x, y, z, x2, y2, z2, r, g, b, a");
+	SCRIPT_REG_TEMPLFUNC(DrawOBB, "x, y, z, w, h, d, rx, ry, rz");
 	SCRIPT_REG_FUNC(SetGammaDelta);
 
 	SCRIPT_REG_FUNC(ShowConsole);
@@ -224,7 +223,6 @@ CScriptBind_System::CScriptBind_System(IScriptSystem* pScriptSystem, ISystem* pS
 	SCRIPT_REG_TEMPLFUNC(RemoveEntity, "entityId");
 	SCRIPT_REG_TEMPLFUNC(SpawnEntity, "params");
 	SCRIPT_REG_FUNC(ActivateLight);
-	//	SCRIPT_REG_FUNC(ActivateMainLight);
 	SCRIPT_REG_FUNC(SetWaterVolumeOffset);
 	SCRIPT_REG_FUNC(IsValidMapPos);
 	SCRIPT_REG_FUNC(EnableMainView);
@@ -237,7 +235,6 @@ CScriptBind_System::CScriptBind_System(IScriptSystem* pScriptSystem, ISystem* pS
 	SCRIPT_REG_FUNC(GetOutdoorAmbientColor);
 	SCRIPT_REG_FUNC(SetOutdoorAmbientColor);
 	SCRIPT_REG_FUNC(GetTerrainElevation);
-	//	SCRIPT_REG_FUNC(SetIndoorColor);
 	SCRIPT_REG_FUNC(ActivatePortal);
 	SCRIPT_REG_FUNC(DumpMMStats);
 	SCRIPT_REG_FUNC(EnumDisplayFormats);
@@ -247,7 +244,6 @@ CScriptBind_System::CScriptBind_System(IScriptSystem* pScriptSystem, ISystem* pS
 	SCRIPT_REG_TEMPLFUNC(ProjectToScreen, "point");
 	SCRIPT_REG_FUNC(EnableHeatVision);
 	SCRIPT_REG_FUNC(ShowDebugger);
-	//SCRIPT_REG_FUNC(IndoorSoundAllowed);
 	SCRIPT_REG_FUNC(DumpMemStats);
 	SCRIPT_REG_FUNC(DumpMemoryCoverage);
 	SCRIPT_REG_FUNC(ApplicationTest);
@@ -276,8 +272,6 @@ CScriptBind_System::CScriptBind_System(IScriptSystem* pScriptSystem, ISystem* pS
 
 	SCRIPT_REG_TEMPLFUNC(SetSkyHighlight, "tableSkyHighlightParams");
 	SCRIPT_REG_TEMPLFUNC(GetSkyHighlight, "");
-
-	SCRIPT_REG_TEMPLFUNC(PushCloudBlocker, "tableCloudBlockerParams");
 
 	SCRIPT_REG_TEMPLFUNC(LoadLocalizationXml, "filename");
 
@@ -720,95 +714,6 @@ int CScriptBind_System::GetEntityClass(IFunctionHandler* pH)
 
 	if (pEntity)
 		return pH->EndFunction(pEntity->GetClass()->GetName());
-
-	return pH->EndFunction();
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-/*!Entity pool management
-   @param nID the entity id
-   @param bPrepareNow (optional) whether the entity shall get prepared immediately, rather than enqueuing a request if another entity is already being prepared
- */
-int CScriptBind_System::PrepareEntityFromPool(IFunctionHandler* pH)
-{
-	bool bResult = false;
-
-	//support also number type
-	EntityId eID(0);
-	if (pH->GetParamType(1) == svtNumber)
-	{
-		pH->GetParam(1, eID);
-	}
-	else
-	{
-		ScriptHandle sh;
-		pH->GetParam(1, sh);
-		eID = (EntityId)sh.n;
-	}
-
-	bool bPrepareNow = false;
-	if (pH->GetParamType(2) == svtBool)
-	{
-		pH->GetParam(2, bPrepareNow);
-	}
-
-	IEntityPoolManager* pPoolManager = gEnv->pEntitySystem->GetIEntityPoolManager();
-	if (pPoolManager)
-	{
-		bResult = pPoolManager->PrepareFromPool(eID, bPrepareNow);
-	}
-
-	return pH->EndFunction(bResult);
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-int CScriptBind_System::ReturnEntityToPool(IFunctionHandler* pH)
-{
-	bool bResult = false;
-
-	//support also number type
-	EntityId eID(0);
-	if (pH->GetParamType(1) == svtNumber)
-	{
-		pH->GetParam(1, eID);
-	}
-	else
-	{
-		ScriptHandle sh;
-		pH->GetParam(1, sh);
-		eID = (EntityId)sh.n;
-	}
-
-	IEntityPoolManager* pPoolManager = gEnv->pEntitySystem->GetIEntityPoolManager();
-	if (pPoolManager)
-	{
-		bResult = pPoolManager->ReturnToPool(eID);
-	}
-
-	return pH->EndFunction(bResult);
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-int CScriptBind_System::ResetPoolEntity(IFunctionHandler* pH)
-{
-	//support also number type
-	EntityId eID(0);
-	if (pH->GetParamType(1) == svtNumber)
-	{
-		pH->GetParam(1, eID);
-	}
-	else
-	{
-		ScriptHandle sh;
-		pH->GetParam(1, sh);
-		eID = (EntityId)sh.n;
-	}
-
-	IEntityPoolManager* pPoolManager = gEnv->pEntitySystem->GetIEntityPoolManager();
-	if (pPoolManager)
-	{
-		pPoolManager->ResetBookmark(eID);
-	}
 
 	return pH->EndFunction();
 }
@@ -1386,6 +1291,70 @@ int CScriptBind_System::DrawText(IFunctionHandler* pH)
 }
 
 /////////////////////////////////////////////////////////////////////////////////
+int CScriptBind_System::DrawSphere(IFunctionHandler* pH, float x, float y, float z, float radius, int r, int g, int b, int a)
+{
+	IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+	if (pRenderAuxGeom)
+	{
+		SAuxGeomRenderFlags oldFlags = pRenderAuxGeom->GetRenderFlags();
+		SAuxGeomRenderFlags newFlags = oldFlags;
+
+		newFlags.SetCullMode(e_CullModeNone);
+		newFlags.SetFillMode(e_FillModeWireframe);
+		newFlags.SetAlphaBlendMode(e_AlphaBlended);
+		pRenderAuxGeom->SetRenderFlags(newFlags);
+
+		pRenderAuxGeom->DrawSphere(Vec3(x, y, z), radius, ColorB(r, g, b, a), false);
+
+		pRenderAuxGeom->SetRenderFlags(oldFlags);
+	}
+	return pH->EndFunction();
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+int CScriptBind_System::DrawAABB(IFunctionHandler* pH, float x, float y, float z, float x2, float y2, float z2, int r, int g, int b, int a)
+{
+	IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+	if (pRenderAuxGeom)
+	{
+		SAuxGeomRenderFlags oldFlags = pRenderAuxGeom->GetRenderFlags();
+		SAuxGeomRenderFlags newFlags = oldFlags;
+
+		newFlags.SetCullMode(e_CullModeNone);
+		newFlags.SetAlphaBlendMode(e_AlphaBlended);
+		pRenderAuxGeom->SetRenderFlags(newFlags);
+
+		AABB bbox(Vec3(x, y, z), Vec3(x2, y2, z2));
+		pRenderAuxGeom->DrawAABB(bbox, true, ColorB(r, g, b, a), eBBD_Faceted);
+
+		pRenderAuxGeom->SetRenderFlags(oldFlags);
+	}
+	return pH->EndFunction();
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+int CScriptBind_System::DrawOBB(IFunctionHandler* pH, float x, float y, float z, float w, float h, float d, float rx, float ry, float rz)
+{
+	IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+	if (pRenderAuxGeom)
+	{
+		SAuxGeomRenderFlags oldFlags = pRenderAuxGeom->GetRenderFlags();
+		SAuxGeomRenderFlags newFlags = oldFlags;
+
+		newFlags.SetCullMode(e_CullModeNone);
+		newFlags.SetAlphaBlendMode(e_AlphaBlended);
+		pRenderAuxGeom->SetRenderFlags(newFlags);
+
+		AABB bbox(Vec3(-w * 0.5f, -h * 0.5f, -d * 0.5f), Vec3(w * 0.5f, h * 0.5f, d * 0.5f));
+		OBB obb = OBB::CreateOBBfromAABB(Matrix33::CreateRotationXYZ(Ang3(rx, ry, rz)), bbox);
+		pRenderAuxGeom->DrawOBB(obb, Vec3(x, y, z), true, ColorB(255, 128, 128, 128), eBBD_Faceted);
+
+		pRenderAuxGeom->SetRenderFlags(oldFlags);
+	}
+	return pH->EndFunction();
+}
+
+/////////////////////////////////////////////////////////////////////////////////
 // <<NOTE>> check 3dScreenEffects for a list of effects names and respective parameters
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1590,36 +1559,6 @@ int CScriptBind_System::ActivateLight(IFunctionHandler* pH)
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/*
-   int CScriptBind_System::ActivateMainLight(IFunctionHandler *pH)
-   {
-   SCRIPT_CHECK_PARAMETERS(2);
-   bool bActive;
-   CScriptVector oVec(m_pSS);
-   if (pH->GetParam(1, *oVec))
-   {
-    pH->GetParam(2, bActive);
-    m_p3DEngine->GetBuildingManager()->ActivateMainLight(oVec.Get(), bActive);
-   }
-   return pH->EndFunction();
-   }	*/
-
-/////////////////////////////////////////////////////////////////////////////////
-/*
-   int CScriptBind_System::SetSkyBox(IFunctionHandler *pH)
-   {
-   SCRIPT_CHECK_PARAMETERS(3);
-   const char* pszShaderName;
-   float fBlendTime;
-   bool bUseWorldBrAndColor;
-   pH->GetParam(1, pszShaderName);
-   pH->GetParam(2, fBlendTime);
-   pH->GetParam(3, bUseWorldBrAndColor);
-   m_p3DEngine->SetSkyBox(pszShaderName);// not supported now: fBlendTime, bUseWorldBrAndColor);
-   return pH->EndFunction();
-   }*/
-
-/////////////////////////////////////////////////////////////////////////////////
 int CScriptBind_System::IsValidMapPos(IFunctionHandler* pH)
 {
 	SCRIPT_CHECK_PARAMETERS(1);
@@ -1753,27 +1692,6 @@ int CScriptBind_System::GetSkyHighlight(IFunctionHandler* pH, SmartScriptTable p
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-int CScriptBind_System::PushCloudBlocker(IFunctionHandler* pH, SmartScriptTable tbl)
-{
-	Vec3 vPos(0, 0, 0);
-	float decayStart = 0.0f;
-	float decayEnd = 0.0f;
-	float decayInfluence = 0.0f;
-	int screenSpace = 0;
-	tbl->GetValue("position", vPos);
-	tbl->GetValue("decayStart", decayStart);
-	tbl->GetValue("decayEnd", decayEnd);
-	tbl->GetValue("decayInfluence", decayInfluence);
-	tbl->GetValue("screenSpace", screenSpace);
-	decayStart = max(0.0f, decayStart);
-	decayEnd = max(0.0f, decayEnd);
-	decayInfluence = clamp_tpl<float>(decayInfluence, 0.0f, 1.0f);
-	m_pRenderer->PushVolumetricCloudBlocker(vPos, Vec3(decayStart, decayEnd, decayInfluence), screenSpace);
-
-	return pH->EndFunction();
-}
-
-/////////////////////////////////////////////////////////////////////////////////
 int CScriptBind_System::ApplyForceToEnvironment(IFunctionHandler* pH)
 {
 	SCRIPT_CHECK_PARAMETERS(3);
@@ -1806,7 +1724,6 @@ int CScriptBind_System::SetOutdoorAmbientColor(IFunctionHandler* pH)
 	pH->GetParam(1, v3Color);
 
 	assert(!"Direct call of I3DEngine::SetSkyColor() is not supported anymore. Use Time of day featue instead.");
-	//m_p3DEngine->SetSkyColor(v3Color);
 	return pH->EndFunction();
 }
 
@@ -1821,18 +1738,6 @@ int CScriptBind_System::GetTerrainElevation(IFunctionHandler* pH)
 	elevation = m_p3DEngine->GetTerrainElevation(v3Pos.x, v3Pos.y);
 	return pH->EndFunction(elevation);
 }
-
-/////////////////////////////////////////////////////////////////////////////////
-/*int CScriptBind_System::SetIndoorColor(IFunctionHandler *pH)
-   {
-   SCRIPT_CHECK_PARAMETERS(1);
-   CScriptObjectColor oColor(m_pSS,true);
-   Vec3 v3Color;
-   pH->GetParam(1,*oColor);
-   v3Color=oColor.Get();
-   m_p3DEngine->GetBuildingManager()->SetIndoorAmbientColor(v3Color);
-   return pH->EndFunction();
-   }	*/
 
 /////////////////////////////////////////////////////////////////////////////////
 int CScriptBind_System::ActivatePortal(IFunctionHandler* pH)
@@ -2034,57 +1939,6 @@ int CScriptBind_System::EnableHeatVision(IFunctionHandler* pH)
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/*
-   int CScriptBind_System::IndoorSoundAllowed(IFunctionHandler * pH)
-   {
-   SCRIPT_CHECK_PARAMETERS(2);
-   CScriptVector pVecOrigin(m_pSS,false);
-   CScriptVector pVecDestination(m_pSS,false);
-
-   IGraph *pGraph = gEnv->pAISystem->GetNodeGraph();
-
-   Vec3 start = pVecOrigin.Get();
-   Vec3 end = pVecDestination.Get();
-
-   if ((start.x<0)||(start.x>2000.f)||(start.y<0)||(start.y>2000.f))
-   {
-    m_pLog->LogError("[CRASHWARNING] Unnaturally high value placed for sound detection");
-    return pH->EndFunction(true); // there is no sound occlusion in outdoor
-   }
-
-   if ((end.x<0)||(end.x>2000.f)||(end.y<0)||(end.y>2000.f))
-   {
-    m_pLog->LogError("[CRASHWARNING] Unnaturally high value placed for sound detection");
-    return pH->EndFunction(true); // there is no sound occlusion in outdoor
-   }
-
-   GraphNode *pStart = pGraph->GetEnclosing(pVecOrigin.Get());
-
-
-   if (pStart->nBuildingID<0)
-    return pH->EndFunction(true); // there is no sound occlusion in outdoor
-
-   GraphNode *pEnd = pGraph->GetEnclosing(pVecDestination.Get());
-
-   if (pStart->nBuildingID!=pEnd->nBuildingID)
-    return pH->EndFunction(false); // if in 2 different buildings we cannot hear the sound for sure
-
-   // make the real indoor sound occlusion check (doors, sectors etc.)
-   return gEnv->p3DEngine->IsVisAreasConnected(pStart->pArea,pEnd->pArea,1,false);
-
-
-   //IIndoorBase *pIndoor = m_p3DEngine->GetBuildingManager();
-   //if (pIndoor)
-   {
-    // make the real indoor sound occlusion check (doors, sectors etc.)
-    return pH->EndFunction(pIndoor->IsSoundPotentiallyHearable(pStart->nBuildingID,pStart->nSector,pEnd->nSector));
-   //}
-
-   return pH->EndFunction(true);
-   }
- */
-
-/////////////////////////////////////////////////////////////////////////////////
 int CScriptBind_System::EnableOceanRendering(IFunctionHandler* pH)
 {
 	bool bOcean = true;
@@ -2109,28 +1963,6 @@ int CScriptBind_System::SetWaterVolumeOffset(IFunctionHandler* pH)
 {
 	SCRIPT_CHECK_PARAMETERS(4);
 	assert(!"SetWaterLevel is not supported by 3dengine for now");
-
-	/*
-	   const char* pszWaterVolumeName = 0;
-	   float fWaterOffsetX = 0;
-	   float fWaterOffsetY = 0;
-	   float fWaterOffsetZ = 0;
-
-	   pH->GetParam(1, pszWaterVolumeName);
-	   pH->GetParam(2, fWaterOffsetX);
-	   pH->GetParam(3, fWaterOffsetY);
-	   pH->GetParam(4, fWaterOffsetZ);
-
-	   IWaterVolume* pWaterVolume = pszWaterVolumeName ? m_p3DEngine->FindWaterVolumeByName(pszWaterVolumeName) : 0;
-	   if (!pWaterVolume)
-	   {
-	    m_pSystem->Warning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, 0, 0,
-	      "CScriptBind_System::SetWaterVolumeOffset: Water volume not found: %s", pszWaterVolumeName ? pszWaterVolumeName : "Name is not set");
-	    return pH->EndFunction(false);
-	   }
-
-	   pWaterVolume->SetPositionOffset(Vec3(fWaterOffsetX, fWaterOffsetY, fWaterOffsetZ));
-	 */
 	return pH->EndFunction();
 }
 
@@ -2191,10 +2023,8 @@ int CScriptBind_System::GetViewCameraAngles(IFunctionHandler* pH)
 int CScriptBind_System::RayWorldIntersection(IFunctionHandler* pH)
 {
 	assert(pH->GetParamCount() >= 3 && pH->GetParamCount() <= 6);
-
 	Vec3 vPos(0, 0, 0);
 	Vec3 vDir(0, 0, 0);
-
 	int nMaxHits, iEntTypes = ent_all;
 
 	pH->GetParam(1, vPos);

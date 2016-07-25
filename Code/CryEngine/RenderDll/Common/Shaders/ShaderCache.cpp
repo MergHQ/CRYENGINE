@@ -1112,9 +1112,9 @@ void CShaderMan::mfInsertNewCombination(SShaderCombIdent& Ident, EHWShaderClass 
 string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState pipelineState) const
 {
 	// NOTE: when updating remote compiler folders, please ensure folders path is matching
-	const char* pCompilerOrbis = "ORBIS/V028/DXOrbisShaderCompiler.exe %s %s %s %s";
+	const char* pCompilerOrbis = "ORBIS/V029/DXOrbisShaderCompiler.exe %s %s %s %s";
 
-	const char* pCompilerDurango = "Durango/March2016/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo %s %s";
+	const char* pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo %s %s";
 
 	const char* pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo %s %s";
 
@@ -1125,13 +1125,13 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	{
 		// Set debug information
 		pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /Od /Fo %s %s";
-		pCompilerDurango = "Durango/March2016/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /Od /Fo %s %s";
+		pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /Od /Fo %s %s";
 	}
 	else if (CRenderer::CV_r_shadersdebug == 4)
 	{
 		// Set debug information, optimized shaders
 		pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /O3 /Fo %s %s";
-		pCompilerDurango = "Durango/March2016/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /O3 /Fo %s %s";
+		pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /O3 /Fo %s %s";
 	}
 
 	if (pipelineState.opaque != 0)
@@ -1158,26 +1158,33 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 			32,
 			0,
 		};
+		static const char kISA[] =
+		{
+			'B',
+			'C',
+			'N',
+			'R',
+		};
 
 		switch (eClass)
 		{
 		case eHWSC_Vertex:
-			result.Format("%s -HwStage=%s", pCompilerGnm, kVsStages[pipelineState.VS.targetStage & 7]);
+			result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, kVsStages[pipelineState.VS.targetStage & 7], kISA[(pipelineState.VS.targetStage >> 5) & 3]);
 			break;
 		case eHWSC_Hull:
-			result.Format("%s -HwStage=%s", pCompilerGnm, "HS");
+			result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "HS", kISA[(pipelineState.HS.targetStage >> 5) & 3]);
 			break;
 		case eHWSC_Domain:
-			result.Format("%s -HwStage=%s", pCompilerGnm, ((pipelineState.DS.targetStage >> 6) & 1) ? "ES" : "VS");
+			result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.DS.targetStage & 1) ? "ES" : "VS", kISA[(pipelineState.DS.targetStage >> 5) & 3]);
 			break;
 		case eHWSC_Geometry:
-			result.Format("%s -HwStage=%s", pCompilerGnm, ((pipelineState.GS.targetStage >> 6) & 1) ? "GS" : "GS_LDS");
+			result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.GS.targetStage & 1) ? "GS" : "GS_LDS", kISA[(pipelineState.GS.targetStage >> 5) & 3]);
 			break;
 		case eHWSC_Pixel:
-			result.Format("%s -HwStage=%s -PsColor=0x%x -PsDepth=%d -PsStencil=%d", pCompilerGnm, "PS", pipelineState.PS.targetFormats, kPsDepthBits[(pipelineState.PS.depthStencilInfo >> 1) & 3], pipelineState.PS.depthStencilInfo & 1 ? 8 : 0);
+			result.Format("%s -HwStage=%s -HwISA=%c -PsColor=0x%x -PsDepth=%d -PsStencil=%d", pCompilerGnm, "PS", kISA[(pipelineState.PS.depthStencilInfo >> 29) & 3], pipelineState.PS.targetFormats, kPsDepthBits[(pipelineState.PS.depthStencilInfo >> 1) & 3], pipelineState.PS.depthStencilInfo & 1 ? 8 : 0);
 			break;
 		case eHWSC_Compute:
-			result.Format("%s -HwStage=%s", pCompilerGnm, "CS");
+			result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "CS", kISA[(pipelineState.CS.targetStage >> 5) & 3]);
 			break;
 		default:
 			CRY_ASSERT(false && "Unknown stage");

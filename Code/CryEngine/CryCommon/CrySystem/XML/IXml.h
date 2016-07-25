@@ -20,7 +20,7 @@
 class ICrySizer;
 
 #if defined(_AFX) && !defined(RESOURCE_COMPILER)
-	#include "Util/GuidUtil.h"
+#include <CryCore/ToolsHelpers/GuidUtil.h>
 #endif
 
 class IXMLBinarySerializer;

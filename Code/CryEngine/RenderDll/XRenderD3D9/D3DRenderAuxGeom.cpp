@@ -31,7 +31,7 @@ struct SAuxObjVertex
 };
 
 typedef std::vector<SAuxObjVertex> AuxObjVertexBuffer;
-typedef std::vector<uint16>        AuxObjIndexBuffer;
+typedef std::vector<vtx_idx>       AuxObjIndexBuffer;
 
 CRenderAuxGeomD3D::CRenderAuxGeomD3D(CD3D9Renderer& renderer)
 	: m_renderer(renderer)
@@ -48,6 +48,7 @@ CRenderAuxGeomD3D::CRenderAuxGeomD3D(CD3D9Renderer& renderer)
 	, m_curPrimType(CAuxGeomCB::e_PrimTypeInvalid)
 	, m_curPointSize(1)
 	, m_curTransMatrixIdx(-1)
+	, m_curWorldMatrixIdx(-1)
 	, m_pAuxGeomShader(0)
 	, m_curDrawInFrontMode(e_DrawInFrontOff)
 	, m_auxSortedPushBuffer()
@@ -145,29 +146,29 @@ static void CreateSphere(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float ra
 	{
 		for (uint32 i(0); i < sections; ++i)
 		{
-			ib.push_back((uint16) (1 + a * (sections + 1) + i + 1));
-			ib.push_back((uint16) (1 + a * (sections + 1) + i));
-			ib.push_back((uint16) (1 + (a + 1) * (sections + 1) + i + 1));
+			ib.push_back((vtx_idx) (1 + a * (sections + 1) + i + 1));
+			ib.push_back((vtx_idx) (1 + a * (sections + 1) + i));
+			ib.push_back((vtx_idx) (1 + (a + 1) * (sections + 1) + i + 1));
 
-			ib.push_back((uint16) (1 + (a + 1) * (sections + 1) + i));
-			ib.push_back((uint16) (1 + (a + 1) * (sections + 1) + i + 1));
-			ib.push_back((uint16) (1 + a * (sections + 1) + i));
+			ib.push_back((vtx_idx) (1 + (a + 1) * (sections + 1) + i));
+			ib.push_back((vtx_idx) (1 + (a + 1) * (sections + 1) + i + 1));
+			ib.push_back((vtx_idx) (1 + a * (sections + 1) + i));
 		}
 	}
 
 	// build faces for end caps (to connect "inner" vertices with poles)
 	for (uint32 i(0); i < sections; ++i)
 	{
-		ib.push_back((uint16) (1 + (0) * (sections + 1) + i));
-		ib.push_back((uint16) (1 + (0) * (sections + 1) + i + 1));
-		ib.push_back((uint16) 0);
+		ib.push_back((vtx_idx) (1 + (0) * (sections + 1) + i));
+		ib.push_back((vtx_idx) (1 + (0) * (sections + 1) + i + 1));
+		ib.push_back((vtx_idx) 0);
 	}
 
 	for (uint32 i(0); i < sections; ++i)
 	{
-		ib.push_back((uint16) (1 + (rings - 2) * (sections + 1) + i + 1));
-		ib.push_back((uint16) (1 + (rings - 2) * (sections + 1) + i));
-		ib.push_back((uint16) ((rings - 1) * (sections + 1) + 1));
+		ib.push_back((vtx_idx) (1 + (rings - 2) * (sections + 1) + i + 1));
+		ib.push_back((vtx_idx) (1 + (rings - 2) * (sections + 1) + i));
+		ib.push_back((vtx_idx) ((rings - 1) * (sections + 1) + 1));
 	}
 }
 
@@ -203,9 +204,9 @@ static void CreateCone(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float radi
 	// build faces for end cap
 	for (uint16 i(0); i < sections; ++i)
 	{
-		ib.push_back(0);
-		ib.push_back(1 + i);
-		ib.push_back(1 + i + 1);
+		ib.push_back((vtx_idx)(0));
+		ib.push_back((vtx_idx)(1 + i));
+		ib.push_back((vtx_idx)(1 + i + 1));
 	}
 
 	// top
@@ -233,9 +234,9 @@ static void CreateCone(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float radi
 	// build faces
 	for (uint16 i(0); i < sections; ++i)
 	{
-		ib.push_back(sections + 2);
-		ib.push_back(sections + 3 + i + 1);
-		ib.push_back(sections + 3 + i);
+		ib.push_back((vtx_idx)(sections + 2));
+		ib.push_back((vtx_idx)(sections + 3 + i + 1));
+		ib.push_back((vtx_idx)(sections + 3 + i));
 	}
 }
 
@@ -274,9 +275,9 @@ static void CreateCylinder(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float 
 		// build faces
 		for (uint16 i(0); i < sections; ++i)
 		{
-			ib.push_back(0);
-			ib.push_back(1 + i);
-			ib.push_back(1 + i + 1);
+			ib.push_back((vtx_idx)(0));
+			ib.push_back((vtx_idx)(1 + i));
+			ib.push_back((vtx_idx)(1 + i + 1));
 		}
 	}
 
@@ -299,13 +300,13 @@ static void CreateCylinder(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float 
 		// build faces
 		for (uint16 i(0); i < sections; ++i, vIdx += 2)
 		{
-			ib.push_back(vIdx);
-			ib.push_back(vIdx + 1);
-			ib.push_back(vIdx + 2);
+			ib.push_back((vtx_idx)(vIdx));
+			ib.push_back((vtx_idx)(vIdx + 1));
+			ib.push_back((vtx_idx)(vIdx + 2));
 
-			ib.push_back(vIdx + 1);
-			ib.push_back(vIdx + 3);
-			ib.push_back(vIdx + 2);
+			ib.push_back((vtx_idx)(vIdx + 1));
+			ib.push_back((vtx_idx)(vIdx + 3));
+			ib.push_back((vtx_idx)(vIdx + 2));
 
 		}
 	}
@@ -404,8 +405,8 @@ template<typename TMeshFunc>
 HRESULT CRenderAuxGeomD3D::CreateMesh(SDrawObjMesh& mesh, TMeshFunc meshFunc)
 {
 	// create mesh
-	std::vector<SAuxObjVertex> vb;
-	std::vector<uint16> ib;
+	AuxObjVertexBuffer vb;
+	AuxObjIndexBuffer  ib;
 	meshFunc.CreateMesh(vb, ib);
 
 	// create vertex buffer and copy data
@@ -430,7 +431,7 @@ HRESULT CRenderAuxGeomD3D::CreateMesh(SDrawObjMesh& mesh, TMeshFunc meshFunc)
 
 	D3D11_BUFFER_DESC BufDescI;
 	ZeroStruct(BufDescI);
-	BufDescI.ByteWidth = ib.size() * sizeof(uint16);
+	BufDescI.ByteWidth = ib.size() * sizeof(vtx_idx);
 	BufDescI.Usage = D3D11_USAGE_DEFAULT;
 	BufDescI.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	BufDescI.CPUAccessFlags = 0;
@@ -482,7 +483,7 @@ HRESULT CRenderAuxGeomD3D::RestoreDeviceObjects()
 	SAFE_RELEASE(m_pAuxGeomIB);
 	D3D11_BUFFER_DESC BufDescI;
 	ZeroStruct(BufDescI);
-	BufDescI.ByteWidth = e_auxGeomIBSize * sizeof(uint16);
+	BufDescI.ByteWidth = e_auxGeomIBSize * sizeof(vtx_idx);
 	BufDescI.Usage = D3D11_USAGE_DYNAMIC;
 	BufDescI.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	BufDescI.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -571,32 +572,16 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const
 				// compute amount of vertices to move in this batch
 				uint32 toCopy(verticesToCopy > maxVerticesInThisBatch ? maxVerticesInThisBatch : verticesToCopy);
 
-				// get pointer to vertex buffer
-				SAuxVertex* pVertices(0);
 				// determine lock flags
-				D3D11_MAP mapFlags(D3D11_MAP_WRITE_NO_OVERWRITE);
+				D3D11_MAP mapFlags(D3D11_MAP_WRITE_NO_OVERWRITE_VB);
 				if (false != m_auxGeomSBM.m_discardVB)
 				{
 					m_auxGeomSBM.m_discardVB = false;
 					mapFlags = D3D11_MAP_WRITE_DISCARD_VB;
 				}
 
-				D3D11_MAPPED_SUBRESOURCE mappedResource;
-				if (FAILED(hr = m_renderer.GetDeviceContext().Map(m_pAuxGeomVB, 0, mapFlags, 0, &mappedResource)))
-				{
-					assert(0);
-					iLog->Log("ERROR: CD3DRenderAuxGeom::DrawAuxPrimitives() - Vertex buffer could not be locked!");
-					return;
-				}
-				pVertices = (SAuxVertex*)mappedResource.pData;
-				pVertices += m_auxGeomSBM.m_curVBIndex;
-
-				// move vertex data
-				// cppcheck-suppress nullPointer
-				memcpy(pVertices, &auxVertexBuffer[curPBEntry->m_vertexOffs + verticesCopied], toCopy * sizeof(SAuxVertex));
-
-				// unlock vb
-				m_renderer.GetDeviceContext().Unmap(m_pAuxGeomVB, 0);
+				CDeviceManager::UploadContents<false>(m_pAuxGeomVB, 0, m_auxGeomSBM.m_curVBIndex * sizeof(SAuxVertex), toCopy * sizeof(SAuxVertex), mapFlags, &auxVertexBuffer[curPBEntry->m_vertexOffs + verticesCopied]);
+				
 				// update accumulators and buffer indices
 				verticesCopied += toCopy;
 				verticesToCopy -= toCopy;
@@ -645,6 +630,7 @@ void CRenderAuxGeomD3D::DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer
 	// get aux vertex and index buffer
 	const CAuxGeomCB::AuxVertexBuffer& auxVertexBuffer(GetAuxVertexBuffer());
 	const CAuxGeomCB::AuxIndexBuffer& auxIndexBuffer(GetAuxIndexBuffer());
+	CAuxGeomCB::AuxIndexBuffer auxIndexBufferJoined(auxIndexBuffer.size());
 
 	// determine flags for prim type
 	uint32 d3dNumPrimDivider;
@@ -671,62 +657,32 @@ void CRenderAuxGeomD3D::DrawAuxIndexedPrimitives(CAuxGeomCB::AuxSortedPushBuffer
 			// check if push buffer still fits into current buffer
 			if (e_auxGeomVBSize >= m_auxGeomSBM.m_curVBIndex + curPBEntry->m_numVertices && e_auxGeomIBSize >= m_auxGeomSBM.m_curIBIndex + curPBEntry->m_numIndices)
 			{
-				// determine lock vb flags
-
-				// get pointer to vertex buffer
-				SAuxVertex* pVertices(0);
-				D3D11_MAP mp(D3D11_MAP_WRITE_NO_OVERWRITE);
-				if (false != m_auxGeomSBM.m_discardVB)
-				{
-					m_auxGeomSBM.m_discardVB = false;
-					mp = D3D11_MAP_WRITE_DISCARD_VB;
-				}
-				D3D11_MAPPED_SUBRESOURCE mappedResource;
-				if (FAILED(hr = m_renderer.GetDeviceContext().Map(m_pAuxGeomVB, 0, mp, 0, &mappedResource)))
-				{
-					assert(0);
-					iLog->Log("ERROR: CD3DRenderAuxGeom::DrawAuxIndexedPrimitives() - Vertex buffer could not be locked!");
-					return;
-				}
-				pVertices = (SAuxVertex*)mappedResource.pData;
-				pVertices += m_auxGeomSBM.m_curVBIndex;
-
-				// move vertex data of this entry
-				// cppcheck-suppress nullPointer
-				memcpy(pVertices, &auxVertexBuffer[curPBEntry->m_vertexOffs], curPBEntry->m_numVertices * sizeof(SAuxVertex));
-
-				// unlock vb
-				m_renderer.GetDeviceContext().Unmap(m_pAuxGeomVB, 0);
-
-				// get pointer to index buffer
-				uint16* pIndices(0);
-				mp = D3D11_MAP_WRITE_NO_OVERWRITE;
-				if (false != m_auxGeomSBM.m_discardIB)
-				{
-					m_auxGeomSBM.m_discardIB = false;
-					mp = D3D11_MAP_WRITE_DISCARD_VB;
-				}
-
-				if (FAILED(hr = m_renderer.GetDeviceContext().Map(m_pAuxGeomIB, 0, mp, 0, &mappedResource)))
-				{
-					assert(0);
-					iLog->Log("ERROR: CD3DRenderAuxGeom::DrawAuxIndexedPrimitives() - Index buffer could not be locked!");
-
-					m_renderer.GetDeviceContext().Unmap(m_pAuxGeomVB, 0);
-					return;
-				}
-				pIndices = (uint16*)mappedResource.pData;
-				pIndices += m_auxGeomSBM.m_curIBIndex;
-
 				// move index data of this entry (modify indices to match VB insert location)
 				for (uint32 i(0); i < curPBEntry->m_numIndices; ++i)
 				{
 					// cppcheck-suppress nullPointer
-					pIndices[i] = numVerticesWrittenToVB + auxIndexBuffer[curPBEntry->m_indexOffs + i];
+					auxIndexBufferJoined[curPBEntry->m_indexOffs + i] = numVerticesWrittenToVB + auxIndexBuffer[curPBEntry->m_indexOffs + i];
 				}
 
-				// unlock ib
-				m_renderer.GetDeviceContext().Unmap(m_pAuxGeomIB, 0);
+				// determine lock vb flags
+				D3D11_MAP mapFlags(D3D11_MAP_WRITE_NO_OVERWRITE_VB);
+				if (m_auxGeomSBM.m_discardVB)
+				{
+					m_auxGeomSBM.m_discardVB = false;
+					mapFlags = D3D11_MAP_WRITE_DISCARD_VB;
+				}
+
+				CDeviceManager::UploadContents<false>(m_pAuxGeomVB, 0, m_auxGeomSBM.m_curVBIndex * sizeof(SAuxVertex), curPBEntry->m_numVertices * sizeof(SAuxVertex), mapFlags, &auxVertexBuffer[curPBEntry->m_vertexOffs]);
+
+				// determine lock ib flags
+				mapFlags = D3D11_MAP_WRITE_NO_OVERWRITE_IB;
+				if (m_auxGeomSBM.m_discardIB)
+				{
+					m_auxGeomSBM.m_discardIB = false;
+					mapFlags = D3D11_MAP_WRITE_DISCARD_IB;
+				}
+
+				CDeviceManager::UploadContents<false>(m_pAuxGeomIB, 0, m_auxGeomSBM.m_curIBIndex * sizeof(vtx_idx), curPBEntry->m_numIndices * sizeof(vtx_idx), mapFlags, &auxIndexBufferJoined[curPBEntry->m_indexOffs]);
 
 				// update buffer indices
 				m_auxGeomSBM.m_curVBIndex += curPBEntry->m_numVertices;
@@ -810,7 +766,7 @@ void CRenderAuxGeomD3D::DrawAuxObjects(CAuxGeomCB::AuxSortedPushBuffer::const_it
 			static CCryNameR matWorldViewProjName("matWorldViewProj");
 			if (m_curDrawInFrontMode == e_DrawInFrontOn)
 			{
-				Matrix44A matScale(Matrix44A(Matrix34::CreateScale(Vec3(0.999f, 0.999f, 0.999f))));
+				Matrix44A matScale(Matrix34::CreateScale(Vec3(0.999f, 0.999f, 0.999f)));
 
 				Matrix44A matWorldViewScaleProjT;
 				matWorldViewScaleProjT = (GetCurrentView() * matScale);
@@ -1231,6 +1187,14 @@ void CRenderAuxGeomD3D::PrepareRendering()
 	m_curPrimType = CAuxGeomCB::e_PrimTypeInvalid;
 }
 
+
+#include<climits>
+
+template<class T = vtx_idx, int size = sizeof(T)*CHAR_BIT> struct indexbuffer_type;
+
+template<class T> struct indexbuffer_type<T, 16> { static const RenderIndexType type = Index16; };
+template<class T> struct indexbuffer_type<T, 32> { static const RenderIndexType type = Index32; };
+
 bool CRenderAuxGeomD3D::BindStreams(EVertexFormat newVertexFormat, D3DVertexBuffer* pNewVB, D3DIndexBuffer* pNewIB)
 {
 	// set vertex declaration
@@ -1246,7 +1210,7 @@ bool CRenderAuxGeomD3D::BindStreams(EVertexFormat newVertexFormat, D3DVertexBuff
 	}
 	if (m_pCurIB != pNewIB)
 	{
-		hr = m_renderer.FX_SetIStream(pNewIB, 0, Index16);
+		hr = m_renderer.FX_SetIStream(pNewIB, 0, indexbuffer_type<>::type);
 		m_pCurIB = pNewIB;
 	}
 
@@ -1291,10 +1255,17 @@ void CRenderAuxGeomD3D::SetShader(const SAuxGeomRenderFlags& renderFlags)
 				static CCryNameR matViewProjName("matViewProj");
 				if (e_DrawInFrontOn == renderFlags.GetDrawInFrontMode() && e_Mode3D == renderFlags.GetMode2D3DFlag())
 				{
-					Matrix44A matScale(Matrix44(Matrix34::CreateScale(Vec3(0.999f, 0.999f, 0.999f))));
+					Matrix44A matScale(Matrix34::CreateScale(Vec3(0.999f, 0.999f, 0.999f)));
 
 					Matrix44A matViewScaleProjT;
-					matViewScaleProjT = GetCurrentView() * matScale;
+					if (HasWorldMatrix())
+					{
+						matViewScaleProjT = Matrix44A(GetAuxWorldMatrix(m_curWorldMatrixIdx)).GetTransposed() * GetCurrentView() * matScale;
+					}
+					else
+					{
+						matViewScaleProjT = GetCurrentView() * matScale;
+					}
 					matViewScaleProjT = matViewScaleProjT * GetCurrentProj();
 					matViewScaleProjT = matViewScaleProjT.GetTransposed();
 					m_pAuxGeomShader->FXSetVSFloat(matViewProjName, alias_cast<Vec4*>(&matViewScaleProjT), 4);
@@ -1302,7 +1273,16 @@ void CRenderAuxGeomD3D::SetShader(const SAuxGeomRenderFlags& renderFlags)
 				}
 				else
 				{
-					Matrix44A matViewProjT = m_matrices.m_pCurTransMat->GetTransposed();
+					Matrix44A matViewProjT;
+					if (HasWorldMatrix())
+					{
+						matViewProjT = Matrix44(GetAuxWorldMatrix(m_curWorldMatrixIdx)).GetTransposed() *  *m_matrices.m_pCurTransMat;
+						matViewProjT = matViewProjT.GetTransposed();
+					}
+					else
+					{
+						matViewProjT = m_matrices.m_pCurTransMat->GetTransposed();
+					}
 					m_pAuxGeomShader->FXSetVSFloat(matViewProjName, alias_cast<Vec4*>(&matViewProjT), 4);
 					m_curDrawInFrontMode = e_DrawInFrontOff;
 				}
@@ -1500,6 +1480,7 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 				// get current render flags
 				const SAuxGeomRenderFlags& curRenderFlags((*itCur)->m_renderFlags);
 				m_curTransMatrixIdx = (*itCur)->m_transMatrixIdx;
+				m_curWorldMatrixIdx = (*itCur)->m_worldMatrixIdx;
 
 				// get prim type
 				CAuxGeomCB::EPrimType primType(CAuxGeomCB::GetPrimType(curRenderFlags));
@@ -1508,7 +1489,8 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 				while (true)
 				{
 					++it;
-					if ((it == itEnd) || ((*it)->m_renderFlags != curRenderFlags) || ((*it)->m_transMatrixIdx != m_curTransMatrixIdx))
+					if ((it == itEnd) || ((*it)->m_renderFlags != curRenderFlags) || ((*it)->m_transMatrixIdx != m_curTransMatrixIdx) || 
+						((*it)->m_worldMatrixIdx != m_curWorldMatrixIdx))
 					{
 						break;
 					}
@@ -1616,7 +1598,8 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 		m_renderer.EF_DirtyMatrix();
 
 		m_pCurCBRawData = 0;
-		m_curTransMatrixIdx = 0;
+		m_curTransMatrixIdx = -1;
+		m_curWorldMatrixIdx = -1;
 	}
 
 	if (reset)
@@ -1671,6 +1654,11 @@ bool CRenderAuxGeomD3D::IsOrthoMode() const
 	return m_curTransMatrixIdx != -1;
 }
 
+bool CRenderAuxGeomD3D::HasWorldMatrix() const
+{
+	return m_curWorldMatrixIdx != -1;
+}
+
 void CRenderAuxGeomD3D::SMatrices::UpdateMatrices(CD3D9Renderer& renderer)
 {
 	renderer.GetModelViewMatrix(&m_matView.m00);
@@ -1721,6 +1709,12 @@ inline const Matrix44A& CRenderAuxGeomD3D::GetAuxOrthoMatrix(int idx) const
 {
 	assert(m_pCurCBRawData && idx >= 0 && idx < (int)m_pCurCBRawData->m_auxOrthoMatrices.size());
 	return m_pCurCBRawData->m_auxOrthoMatrices[idx];
+}
+
+inline const Matrix34A& CRenderAuxGeomD3D::GetAuxWorldMatrix(int idx) const
+{
+	assert(m_pCurCBRawData && idx >= 0 && idx < (int)m_pCurCBRawData->m_auxWorldMatrices.size());
+	return m_pCurCBRawData->m_auxWorldMatrices[idx];
 }
 
 #endif // #if defined(ENABLE_RENDER_AUX_GEOM)

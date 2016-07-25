@@ -138,6 +138,7 @@ public:
 	  CByteInputStream* pCurState,
 	  CByteOutputStream* pNewState,
 	  uint32 mementoAge,
+	  uint32 mementoTime,
 	  bool isOwner)
 	{
 		NET_ASSERT(mementoAge < 20000000);
@@ -145,6 +146,7 @@ public:
 		m_pNewState = pNewState;
 		m_mementoAge = mementoAge;
 		m_isOwner = isOwner;
+		m_mementoTime = mementoTime;
 	}
 
 	ILINE CArithModel* GetArithModel()
@@ -173,6 +175,11 @@ protected:
 		return m_mementoAge;
 	}
 
+	ILINE uint32 GetMementoTime() const
+	{
+		return m_mementoTime;
+	}
+
 	ILINE bool IsOwner() const
 	{
 		return m_isOwner;
@@ -193,6 +200,7 @@ private:
 	CByteInputStream*  m_pCurState;
 	CByteOutputStream* m_pNewState;
 	uint32             m_mementoAge;
+	uint32             m_mementoTime;
 	bool               m_isOwner;
 };
 
@@ -251,6 +259,8 @@ public:
 	#if DEEP_BANDWIDTH_ANALYSIS
 		float oldSize = m_output.GetBitSize();
 	#endif
+
+		pPolicy->SetTimeValue(GetMementoTime());
 		if (!pPolicy->WriteValue(m_output, value, GetArithModel(), GetMementoAge(), IsOwner(), GetCurrentState(), GetNewState()))
 		{
 			NetWarning("Failed to compress %s", name);
@@ -265,7 +275,7 @@ public:
 	#endif // ENABLE_SERIALIZATION_LOGGING
 	#if DEEP_BANDWIDTH_ANALYSIS
 		float newSize = m_output.GetBitSize();
-		g_DBASmallProfileBuffer.Format("{%s,%s : %d(%d)}", name, KeyToString(pPolicy->key).c_str(), (uint32)(newSize - oldSize), pPolicy->GetBitCount(value));
+		g_DBASmallProfileBuffer.Format("{%s,%s : %0.2f(%d)}", name, KeyToString(pPolicy->key).c_str(), newSize - oldSize, pPolicy->GetBitCount(value));
 		g_DBAMainProfileBuffer += g_DBASmallProfileBuffer;
 	#endif
 		ConditionalPostlude(name);
@@ -372,6 +382,8 @@ public:
 	template<class T_Value>
 	ILINE void ValueImpl(const char* name, T_Value& value, ICompressionPolicy* pPolicy)
 	{
+		pPolicy->SetTimeValue(GetMementoTime());
+
 		if (!Ok())
 			return;
 		ConditionalPrelude(name);
@@ -490,12 +502,13 @@ public:
 		m_isOwner = false;
 	}
 
-	void SetMementoStreams(CByteInputStream* pCurState, CByteOutputStream* pNewState, uint32 mementoAge, bool isOwner)
+	void SetMementoStreams(CByteInputStream* pCurState, CByteOutputStream* pNewState, uint32 mementoAge, uint32 mementoTime32, bool isOwner)
 	{
 		NET_ASSERT(mementoAge < 20000000);
 		m_pCurState = pCurState;
 		m_pNewState = pNewState;
 		m_mementoAge = mementoAge;
+		m_mementoTime = mementoTime32;
 		m_isOwner = isOwner;
 	}
 
@@ -526,6 +539,7 @@ private:
 	CByteInputStream*  m_pCurState;
 	CByteOutputStream* m_pNewState;
 	uint32             m_mementoAge;
+	uint32             m_mementoTime;
 	bool               m_isOwner;
 };
 

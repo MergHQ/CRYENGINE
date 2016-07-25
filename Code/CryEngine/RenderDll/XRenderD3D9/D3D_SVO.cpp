@@ -18,7 +18,7 @@
 	#include "D3DTiledShading.h"
 	#include "Common/RenderView.h"
 
-// #pragma optimize("",off)
+//#pragma optimize("",off)
 
 CSvoRenderer* CSvoRenderer::s_pInstance = 0;
 
@@ -347,6 +347,12 @@ void CSvoRenderer::ExecuteComputeShader(CShader* pSH, const char* szTechFinalNam
 		SetShaderFloat(eHWSC_Compute, nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
 		static CCryNameR nameSVO_PortalsDir("SVO_PortalsDir");
 		SetShaderFloat(eHWSC_Compute, nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
+	}
+
+	if (e_svoTI_AnalyticalGI)
+	{
+		static CCryNameR nameAnalyticalOccluders("SVO_AnalyticalOccluders");
+		SetShaderFloat(eHWSC_Compute, nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
 	}
 
 	// setup SVO textures
@@ -798,6 +804,13 @@ void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 				m_pShader->FXSetPSFloat(parameterName3, (Vec4*)&ttt3, 1);
 			}
 
+			if (e_svoTI_AnalyticalGI)
+			{
+				static CCryNameR nameAnalyticalOccluders("SVO_AnalyticalOccluders");
+				SetShaderFloat(eHWSC_Pixel, nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
+			}
+
+			if (m_texInfo.arrPortalsPos[0].z)
 			{
 				static CCryNameR nameSVO_PortalsPos("SVO_PortalsPos");
 				SetShaderFloat(eHWSC_Pixel, nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
@@ -805,7 +818,7 @@ void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 				SetShaderFloat(eHWSC_Pixel, nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
 			}
 
-			if (pTS->pRT_ALD_1 && pTS->pRT_ALD_1)
+			if (pTS->pRT_ALD_1)
 			{
 				static int nPrevWidth = 0;
 				if (nPrevWidth != (pTS->pRT_ALD_1->GetWidth() + e_svoTI_Diffuse_Cache))
@@ -997,7 +1010,7 @@ void CSvoRenderer::DemosaicPass(SSvoTargetsSet* pTS)
 	if (e_svoTI_Apply)
 	{
 		// SVO
-		if (!pTS->pRT_ALD_0 || !pTS->pRT_ALD_0)
+		if (!pTS->pRT_ALD_0)
 			return;
 
 		CD3D9Renderer* const __restrict rd = gcpRendD3D;
@@ -1009,13 +1022,13 @@ void CSvoRenderer::DemosaicPass(SSvoTargetsSet* pTS)
 
 		if (m_texInfo.pTexTree)
 		{
-			SetShaderFlags(pTS == &m_tsDiff);
+			SetShaderFlags(pTS == &m_tsDiff, true, true);
 
 			SD3DPostEffectsUtils::ShBeginPass(m_pShader, szTechFinalName, FEF_DONTSETTEXTURES /*| FEF_DONTSETSTATES*/);
 
 			rd->FX_SetState(GS_NODEPTHTEST);
 
-			//SetupSvoTexturesForRead(m_texInfo, eHWSC_Pixel, e_svoTI_NumberOfBounces);
+			SetupSvoTexturesForRead(m_texInfo, eHWSC_Pixel, (e_svoTI_Active ? e_svoTI_NumberOfBounces : 0), 0, 0);
 
 			CTexture::s_ptexZTarget->Apply(4, m_nTexStatePoint);
 			GetGBuffer(0)->Apply(14, m_nTexStatePoint);
@@ -1077,19 +1090,33 @@ void CSvoRenderer::DemosaicPass(SSvoTargetsSet* pTS)
 				m_pShader->FXSetPSFloat(paramName2, (Vec4*)matView.GetData(), 3);
 			}
 
-			if (e_svoTI_AnalyticalOccluders && m_texInfo.arrAnalyticalOccluders[0].radius)
+			if (e_svoTI_AnalyticalGI)
 			{
 				static CCryNameR nameAnalyticalOccluders("SVO_AnalyticalOccluders");
-				SetShaderFloat(eHWSC_Pixel, nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0], sizeof(m_texInfo.arrAnalyticalOccluders) / sizeof(Vec4));
+				SetShaderFloat(eHWSC_Pixel, nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
+			}
+
+			if (e_svoTI_AnalyticalOccluders && m_texInfo.arrAnalyticalOccluders[1][0].radius)
+			{
+				static CCryNameR nameAnalyticalOccluders("SVO_PostOccluders");
+				SetShaderFloat(eHWSC_Pixel, nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[1][0], sizeof(m_texInfo.arrAnalyticalOccluders[1]) / sizeof(Vec4));
+			}
+
+			if (m_texInfo.arrPortalsPos[0].z)
+			{
+				static CCryNameR nameSVO_PortalsPos("SVO_PortalsPos");
+				SetShaderFloat(eHWSC_Pixel, nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
+				static CCryNameR nameSVO_PortalsDir("SVO_PortalsDir");
+				SetShaderFloat(eHWSC_Pixel, nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
 			}
 
 			pTS->pRT_ALD_0->Apply(10, m_nTexStateLinear);
 			pTS->pRT_RGB_0->Apply(11, m_nTexStateLinear);
 
-			pTS->pRT_RGB_DEM_MIN_1->Apply(0, m_nTexStateLinear);
-			pTS->pRT_ALD_DEM_MIN_1->Apply(1, m_nTexStateLinear);
-			pTS->pRT_RGB_DEM_MAX_1->Apply(2, m_nTexStateLinear);
-			pTS->pRT_ALD_DEM_MAX_1->Apply(3, m_nTexStateLinear);
+			pTS->pRT_RGB_DEM_MIN_1->Apply(6, m_nTexStateLinear);
+			pTS->pRT_ALD_DEM_MIN_1->Apply(9, m_nTexStateLinear);
+			pTS->pRT_RGB_DEM_MAX_1->Apply(12, m_nTexStateLinear);
+			pTS->pRT_ALD_DEM_MAX_1->Apply(13, m_nTexStateLinear);
 
 			//CTexture::s_ptexSceneSpecularAccMap->Apply(15, m_nTexStateLinear);
 
@@ -1199,6 +1226,9 @@ void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<
 
 void CSvoRenderer::SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, EHWShaderClass eShaderClass, int nStage, int nStageOpa, int nStageNorm)
 {
+	if (e_svoTI_AnalyticalGI)
+		return;
+
 	((CTexture*)texInfo.pTexTree)->Apply(0, m_nTexStatePoint, -1, -1, -1, eShaderClass);
 
 	CTexture::s_ptexBlack->Apply(1, m_nTexStateLinear, -1, -1, -1, eShaderClass);
@@ -1545,7 +1575,7 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 			}
 
 			sData[0].f[1] = pSR->IsActive() ? fModeFin : -1.f;
-			sData[0].f[2] = (float)pSR->e_svoDVR;
+			sData[0].f[2] = pSR->e_svoDVR ? (float)pSR->e_svoDVR : ((pSR->m_texInfo.bSvoReady && pSR->e_svoTI_NumberOfBounces) ? pSR->e_svoTI_SpecularAmplifier : 0);
 			sData[0].f[3] = pSR->e_svoTI_SkyColorMultiplier;
 			break;
 		}
@@ -1615,7 +1645,7 @@ void CSvoRenderer::DebugDrawStats(const RPProfilerStats* pBasicStats, float& ypo
 	SVO_Draw2dLabel(eRPPSTATS_TI_UPSCALE_SPEC);
 }
 
-void CSvoRenderer::SetShaderFlags(bool bDiffuseMode, bool bPixelShader)
+void CSvoRenderer::SetShaderFlags(bool bDiffuseMode, bool bPixelShader, bool bDemosaic)
 {
 	if (e_svoTI_LowSpecMode > 0) // simplify shaders
 		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE0];
@@ -1649,7 +1679,7 @@ void CSvoRenderer::SetShaderFlags(bool bDiffuseMode, bool bPixelShader)
 	else
 		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE5];
 
-	if (e_svoTI_HalfresKernel) // smaller kernel - less de-mosaic work
+	if ((bPixelShader && e_svoTI_HalfresKernelPrimary) || (!bPixelShader && e_svoTI_HalfresKernelSecondary)) // smaller kernel - less de-mosaic work and faster compute update
 		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
 	else
 		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
@@ -1674,7 +1704,17 @@ void CSvoRenderer::SetShaderFlags(bool bDiffuseMode, bool bPixelShader)
 	else
 		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_MOTION_BLUR];
 
-	if (bPixelShader && e_svoTI_AnalyticalOccluders && m_texInfo.arrAnalyticalOccluders[0].radius)
+	if (e_svoTI_AnalyticalGI)
+		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_LIGHTVOLUME1];
+	else
+		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_LIGHTVOLUME1];
+
+	if (m_texInfo.arrPortalsPos[0].z)
+		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_LIGHTVOLUME0];
+	else
+		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_LIGHTVOLUME0];
+
+	if (bPixelShader && e_svoTI_AnalyticalOccluders && m_texInfo.arrAnalyticalOccluders[1][0].radius)
 		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SPRITE];
 	else
 		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SPRITE];
@@ -1786,7 +1826,7 @@ bool CSvoRenderer::SetSamplers(int nCustomID, EHWShaderClass eSHClass, int nTUni
 CTexture* CSvoRenderer::GetTroposphereMinRT()
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	if (m_pRT_AIR_MIN && m_pRT_AIR_MIN && ((m_pRT_AIR_MIN)->m_nUpdateFrameID > (gRenDev->GetFrameID(false) - 4)))
+	if (m_pRT_AIR_MIN && ((m_pRT_AIR_MIN)->m_nUpdateFrameID > (gRenDev->GetFrameID(false) - 4)))
 		return m_pRT_AIR_MIN;
 	#endif
 	return NULL;
@@ -1795,7 +1835,7 @@ CTexture* CSvoRenderer::GetTroposphereMinRT()
 CTexture* CSvoRenderer::GetTroposphereMaxRT()
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	if (m_pRT_AIR_MAX && m_pRT_AIR_MAX && ((m_pRT_AIR_MAX)->m_nUpdateFrameID > (gRenDev->GetFrameID(false) - 4)))
+	if (m_pRT_AIR_MAX && ((m_pRT_AIR_MAX)->m_nUpdateFrameID > (gRenDev->GetFrameID(false) - 4)))
 		return m_pRT_AIR_MAX;
 	#endif
 	return NULL;
@@ -1804,7 +1844,7 @@ CTexture* CSvoRenderer::GetTroposphereMaxRT()
 CTexture* CSvoRenderer::GetTroposphereShadRT()
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	if (m_pRT_AIR_SHAD && m_pRT_AIR_SHAD && ((m_pRT_AIR_SHAD)->m_nUpdateFrameID > (gRenDev->GetFrameID(false) - 4)))
+	if (m_pRT_AIR_SHAD && ((m_pRT_AIR_SHAD)->m_nUpdateFrameID > (gRenDev->GetFrameID(false) - 4)))
 		return m_pRT_AIR_SHAD;
 	#endif
 	return NULL;
@@ -1906,6 +1946,20 @@ void CSvoRenderer::UpScalePass(SSvoTargetsSet* pTS)
 
 void CSvoRenderer::SetupRsmSun(const EHWShaderClass eShClass)
 {
+	int t0, t1, t2;
+	if (e_svoTI_AnalyticalGI)
+	{
+		t0 = 0;
+		t1 = 1;
+		t2 = 2;
+	}
+	else
+	{
+		t0 = 12;
+		t1 = 13;
+		t2 = 9;
+	}
+
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	int nLightID = 0;
@@ -1940,13 +1994,13 @@ void CSvoRenderer::SetupRsmSun(const EHWShaderClass eShClass)
 			TS.SetFilterMode(FILTER_POINT);
 			TS.SetClampMode(TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP);
 			TS.m_bSRGBLookup = false;
-			CTexture::s_ptexRT_ShadowPool->Apply(12, CTexture::GetTexState(TS), EFTT_UNKNOWN, -1, -1, eShClass);
+			CTexture::s_ptexRT_ShadowPool->Apply(t0, CTexture::GetTexState(TS), EFTT_UNKNOWN, -1, -1, eShClass);
 		}
 		else
 		{
-			firstFrustum.pDepthTex->Apply(12, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
-			GetRsmColorMap(firstFrustum)->Apply(13, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
-			GetRsmNormlMap(firstFrustum)->Apply(9, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
+			firstFrustum.pDepthTex->Apply(t0, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
+			GetRsmColorMap(firstFrustum)->Apply(t1, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
+			GetRsmNormlMap(firstFrustum)->Apply(t2, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
 		}
 
 		// set up shadow matrix
@@ -1967,9 +2021,9 @@ void CSvoRenderer::SetupRsmSun(const EHWShaderClass eShClass)
 	}
 	else
 	{
-		CTexture::s_ptexBlack->Apply(12, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
-		CTexture::s_ptexBlack->Apply(13, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
-		CTexture::s_ptexBlack->Apply(9, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
+		CTexture::s_ptexBlack->Apply(t0, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
+		CTexture::s_ptexBlack->Apply(t1, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
+		CTexture::s_ptexBlack->Apply(t2, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
 		SetShaderFloat(eShClass, lightProjParamName, alias_cast<Vec4*>(&shadowMat), 4);
 
 		Vec4 ttt(0, 0, 0, 0);

@@ -14,6 +14,10 @@ namespace CryEngine.Editor
 
 		public void Initialize(InterDomainHandler handler)
 		{
+		}
+
+		public void StartGame()
+		{
 			_app = Application.Instantiate<Editor> ();
 		}
 
@@ -22,6 +26,10 @@ namespace CryEngine.Editor
 		}
 
 		public void Shutdown()
+		{
+		}
+
+		public void EndGame()
 		{
 			_app.Shutdown (false);
 		}

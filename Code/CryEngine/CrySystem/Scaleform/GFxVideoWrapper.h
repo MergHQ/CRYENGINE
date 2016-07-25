@@ -7,16 +7,16 @@
 
 #ifdef INCLUDE_SCALEFORM_SDK
 
-	#include "ConfigScaleform.h"
+#include <CrySystem/Scaleform/ConfigScaleform.h>
 
-	#if defined(USE_GFX_VIDEO)
+#if defined(USE_GFX_VIDEO)
 
-		#pragma warning(push)
-		#pragma warning(disable : 6326)// Potential comparison of a constant with another constant
-		#pragma warning(disable : 6011)// Dereferencing NULL pointer
-		#include <CryCore/Platform/CryWindows.h>
-		#include <GFxVideo.h> // includes <windows.h>
-		#pragma warning(pop)
+#pragma warning(push)
+#pragma warning(disable : 6326)     // Potential comparison of a constant with another constant
+#pragma warning(disable : 6011)     // Dereferencing NULL pointer
+#include <CryCore/Platform/CryWindows.h>
+#include <GFxVideo.h>               // includes <windows.h>
+#pragma warning(pop)
 
 class GFxLoader;
 
@@ -77,8 +77,8 @@ const unsigned char fxvideoplayer_swf[] =
 	0
 };
 
-	#endif // #if defined(USE_GFX_VIDEO)
+#endif   // #if defined(USE_GFX_VIDEO)
 
 #endif   // #ifdef INCLUDE_SCALEFORM_SDK
 
-#endif // #ifndef _GFXVIDEOWRAPPER_H_
+#endif   // #ifndef _GFXVIDEOWRAPPER_H_

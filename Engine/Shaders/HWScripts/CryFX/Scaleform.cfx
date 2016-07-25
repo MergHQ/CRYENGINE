@@ -7,42 +7,48 @@
 //////////////////////////////////////////////////
 // shader constants
 
-// VS
-float4x4 cCompositeMat : PB_SFCompMat;
-float2x4 cTexGenMat0 : PB_SFTexGenMat0;
-float2x4 cTexGenMat1 : PB_SFTexGenMat1;
+cbuffer ScaleformMeshAttributes : register(b0)
+{
+	// VS
+	float4x4 cCompositeMat;
+	float2x4 cTexGenMat0;
+	float2x4 cTexGenMat1;
+	float2   cStereoVideoFrameSelect;
+	float2   cPad;
+};
 
-// PS
-float2x4 cBitmapColorTransform : PB_SFBitmapColorTransform;
-float4x4 cColorTransformMat : PB_SFColorTransformMatrix;
-float2 cStereoVideoFrameSelect : PB_SFStereoVideoFrameSelect;
-float cPremultiplyAlpha : PB_SFPremultipliedAlpha;
-float4 cBlurFilterSize : PB_SFBlurFilterSize;
-float2 cBlurFilterScale : PB_SFBlurFilterScale;
-float2 cBlurFilterOffset : PB_SFBlurFilterOffset;
-float4 cBlurFilterColor1 : PB_SFBlurFilterColor1;
-float4 cBlurFilterColor2 : PB_SFBlurFilterColor2;
+cbuffer ScaleformRenderParameters : register(b0)
+{
+	// PS
+	float2x4 cBitmapColorTransform;
+	float4x4 cColorTransformMat;
+	float  bPremultiplyAlpha;
+	float3 cBlurFilterSize;
+	float2 cBlurFilterScale;
+	float2 cBlurFilterBias;
+	float4 cBlurFilterColor1;
+	float4 cBlurFilterColor2;
+};
 
 //////////////////////////////////////////////////
 // samplers
 
-sampler2D texMap0 = sampler_state
-{ Texture = $FromSF0; };
+// Either compositing
+SamplerState ssScaleformInput0 : register(s0);
+SamplerState ssScaleformInput1 : register(s1);
+//mplerState ssScaleformInput2 : register(s2);
 
-sampler2D texMap1 = sampler_state
-{ Texture = $FromSF1; };
+Texture2D   texScaleformInput0 : register(t0);
+Texture2D   texScaleformInput1 : register(t1);
+//xture2D   texScaleformInput2 : register(t2);
 
-sampler2D texMapY = sampler_state
-{ Texture = $FromSFY; };
+// Or video display
+SamplerState ssScaleformInputM : register(s0);
 
-sampler2D texMapU = sampler_state
-{ Texture = $FromSFU; };
-
-sampler2D texMapV = sampler_state
-{ Texture = $FromSFV; };
-
-sampler2D texMapA = sampler_state
-{ Texture = $FromSFA; };
+Texture2D   texScaleformInputY : register(t0);
+Texture2D   texScaleformInputU : register(t1);
+Texture2D   texScaleformInputV : register(t2);
+Texture2D   texScaleformInputA : register(t3);
 
 //////////////////////////////////////////////////
 // input signatures
@@ -57,7 +63,7 @@ struct a2v_XY
 
 struct a2v_Glyph
 {
-	float4 pos : POSITION;
+	float4 pos  : POSITION;
 	float2 tex0 : TEXCOORD0;
 	float4 col0 : COLOR0;
 };
@@ -78,31 +84,31 @@ struct a2v_XY_C_F
 // PS
 struct v2f_XY
 {
-	float4 pos : POSITION;
+	float4 pos  : POSITION;
 	float2 tex0 : TEXCOORD0;
 };
 
 struct v2f_XY_noTex
 {
-	float4 pos : POSITION;
+	float4 pos  : POSITION;
 };
 
 struct v2f_Glyph
 {
-	float4 pos : POSITION;
+	float4 pos  : POSITION;
 	float2 tex0 : TEXCOORD0;
 	float4 col0 : COLOR0;
 };
 
 struct v2f_XY_C
 {
-	float4 pos : POSITION;
+	float4 pos  : POSITION;
 	float4 diff : COLOR;
 };
 
 struct v2f_XY_C_F
 {
-	float4 pos : POSITION;
+	float4 pos  : POSITION;
 	float2 tex0 : TEXCOORD0;
 	float4 diff : COLOR0;
 	float4 spec : COLOR1;
@@ -110,14 +116,14 @@ struct v2f_XY_C_F
 
 struct v2f_XY_C_F_noTex
 {
-	float4 pos : POSITION;
+	float4 pos  : POSITION;
 	float4 diff : COLOR0;
 	float4 spec : COLOR1;
 };
 
 struct v2f_XY_C_F_T2
 {
-	float4 pos : POSITION;
+	float4 pos  : POSITION;
 	float2 tex0 : TEXCOORD0;
 	float2 tex1 : TEXCOORD1;
 	float4 diff : COLOR0;
@@ -223,7 +229,7 @@ half4 AdjustForMultiply( half4 col )
 
 half4 PremultiplyAlpha( half4 col )
 {
-	return cPremultiplyAlpha ? col * col.a : col;
+	return bPremultiplyAlpha ? col * col.a : col;
 }
 
 
@@ -256,7 +262,7 @@ technique SolidColor
 
 half4 CxformTexture( v2f_XY IN )
 {
-	half4 tex = tex2D( texMap0, IN.tex0 );
+	half4 tex = texScaleformInput0.Sample(ssScaleformInput0, IN.tex0);
 	half4 res = tex * cBitmapColorTransform[0] + cBitmapColorTransform[1];
 	return res;
 }
@@ -307,7 +313,7 @@ technique CxformMultiplyTexture
 
 half4 GlyphTexture( v2f_Glyph IN )
 {
-	half4 tex = tex2D( texMap0, IN.tex0 );
+	half4 tex = texScaleformInput0.Sample(ssScaleformInput0, IN.tex0);
 	half4 res = tex * cBitmapColorTransform[0] + cBitmapColorTransform[1];
 	return res;
 }
@@ -364,7 +370,7 @@ half4 PS_GlyphAlphaTexture( v2f_Glyph IN ) : COLOR
    return ret;
  #endif
 
-	half4 res = half4(IN.col0.rgb, IN.col0.a * tex2D( texMap0, IN.tex0 ).a);
+	half4 res = half4(IN.col0.rgb, IN.col0.a * texScaleformInput0.Sample(ssScaleformInput0, IN.tex0).a);
 	return PremultiplyAlpha( res * cBitmapColorTransform[0] + cBitmapColorTransform[1] );
 }
 
@@ -383,9 +389,9 @@ technique GlyphAlphaTexture
 
 half3 YUV2RGB( float2 tex )
 {
-	half Y = (half) tex2D(texMapY, tex).a;
-	half U = (half) tex2D(texMapU, tex).a - 128.0h / 255.0h;
-	half V = (half) tex2D(texMapV, tex).a - 128.0h / 255.0h;
+	half Y = (half)texScaleformInputY.Sample(ssScaleformInputM, tex).a;
+	half U = (half)texScaleformInputU.Sample(ssScaleformInputM, tex).a - 128.0h / 255.0h;
+	half V = (half)texScaleformInputV.Sample(ssScaleformInputM, tex).a - 128.0h / 255.0h;
 
 	half3 rgb = (Y - 16.0h / 255.0h) * 1.164h;
 	rgb.r +=  V * 1.596h;
@@ -447,7 +453,7 @@ technique GlyphMultiplyTextureYUV
 
 half4 GlyphTextureYUVA( v2f_Glyph IN )
 {
-	half4 res = half4(YUV2RGB(IN.tex0), tex2D(texMapA, IN.tex0).a) * cBitmapColorTransform[0] + cBitmapColorTransform[1];
+	half4 res = half4(YUV2RGB(IN.tex0), texScaleformInputA.Sample(ssScaleformInputM, IN.tex0).a) * cBitmapColorTransform[0] + cBitmapColorTransform[1];
 	return res;
 }
 
@@ -596,7 +602,7 @@ technique CxformGouraudMultiplyNoAddAlpha
 
 half4 CxformGouraudTexture( v2f_XY_C_F IN )
 {
-	half4 tex = tex2D( texMap0, IN.tex0 );
+	half4 tex = texScaleformInput0.Sample(ssScaleformInput0, IN.tex0);
 	half4 res = lerp( IN.diff, tex, IN.spec.b );
 	res = res * cBitmapColorTransform[0] + cBitmapColorTransform[1];
 	return half4( res.rgb, res.a * IN.spec.a );
@@ -648,8 +654,8 @@ technique CxformGouraudMultiplyTexture
 
 half4 Cxform2Texture( v2f_XY_C_F_T2 IN )
 {
-	half4 tex0 = tex2D( texMap0, IN.tex0 );
-	half4 tex1 = tex2D( texMap1, IN.tex1 );
+	half4 tex0 = texScaleformInput0.Sample(ssScaleformInput0, IN.tex0);
+	half4 tex1 = texScaleformInput1.Sample(ssScaleformInput1, IN.tex1);
 	half4 res = lerp( tex1, tex0, IN.spec.b );
 	return res * cBitmapColorTransform[0] + cBitmapColorTransform[1];
 }
@@ -704,11 +710,11 @@ float4 PS_InnerShadow_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f);
 	}
-	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = lerp(cBlurFilterColor1, base, fcolor.a) * base.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	return fcolor;
@@ -721,12 +727,12 @@ float4 PS_InnerShadowHighlight_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color.a += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
-		color.r += tex2Dlod(texMap0,float4( IN.tex0 - (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
+		color.a += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
+		color.r += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 - (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor.ar = saturate((1.0 - fcolor.ar) - (1.0 - fcolor.ra) * 0.5f);
 	fcolor = (cBlurFilterColor1 * fcolor.a + cBlurFilterColor2 * fcolor.r + base * (1.0 - fcolor.a - fcolor.r)) * base.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
@@ -740,12 +746,12 @@ float4 PS_InnerShadowHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color.a += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
-		color.r += tex2Dlod(texMap0,float4( IN.tex0 - (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
+		color.a += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
+		color.r += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 - (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor.ar = saturate((1.0 - fcolor.ar) - (1.0 - fcolor.ra) * 0.5f);
 	fcolor = (cBlurFilterColor1 * fcolor.a + cBlurFilterColor2 * fcolor.r + base * (1.0 - fcolor.a - fcolor.r)) * base.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
@@ -759,11 +765,11 @@ float4 PS_InnerShadowKnockout_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f);
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = cBlurFilterColor1 * (1.0 - fcolor.a) * base.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	return fcolor;
@@ -776,11 +782,11 @@ float4 PS_InnerShadowMul_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f);
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = lerp(cBlurFilterColor1, base, fcolor.a) * base.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	fcolor = lerp(1, fcolor, fcolor.a);
@@ -794,12 +800,12 @@ float4 PS_InnerShadowMulHighlight_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color.a += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
-		color.r += tex2Dlod(texMap0,float4( IN.tex0 - (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
+		color.a += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
+		color.r += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 - (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor.ar = saturate((1.0 - fcolor.ar) - (1.0 - fcolor.ra) * 0.5f);
 	fcolor = (cBlurFilterColor1 * fcolor.a + cBlurFilterColor2 * fcolor.r + base * (1.0 - fcolor.a - fcolor.r)) * base.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
@@ -814,12 +820,12 @@ float4 PS_InnerShadowMulHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color.a += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
-		color.r += tex2Dlod(texMap0,float4( IN.tex0 - (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
+		color.a += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
+		color.r += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 - (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor.ar = saturate((1.0 - fcolor.ar) - (1.0 - fcolor.ra) * 0.5f);
 	fcolor = (cBlurFilterColor1 * fcolor.a + cBlurFilterColor2 * fcolor.r + base * (1.0 - fcolor.a - fcolor.r)) * base.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
@@ -834,11 +840,11 @@ float4 PS_InnerShadowMulKnockout_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f);
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = cBlurFilterColor1 * (1.0 - fcolor.a) * base.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	fcolor = lerp(1, fcolor, fcolor.a);
@@ -852,11 +858,11 @@ float4 PS_Shadow_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f);
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = cBlurFilterColor1 * fcolor.a * (1.0-base.a) + base;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	return fcolor;
@@ -869,12 +875,12 @@ float4 PS_ShadowHighlight_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color.a += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
-		color.r += tex2Dlod(texMap0,float4( IN.tex0 - (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
+		color.a += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
+		color.r += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 - (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = (cBlurFilterColor1 * fcolor.a + cBlurFilterColor2 * fcolor.r) * (1.0-base.a) + base;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	return fcolor;
@@ -887,12 +893,12 @@ float4 PS_ShadowHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color.a += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
-		color.r += tex2Dlod(texMap0,float4( IN.tex0 - (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
+		color.a += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
+		color.r += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 - (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = (cBlurFilterColor1 * fcolor.a + cBlurFilterColor2 * fcolor.r) * (1.0-base.a) + base;
 	fcolor *= (1.0 - base.a);
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
@@ -906,11 +912,11 @@ float4 PS_ShadowKnockout_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f);
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = cBlurFilterColor1 * fcolor.a * (1.0-base.a) + base;
 	fcolor *= (1.0 - base.a);
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
@@ -924,11 +930,11 @@ float4 PS_ShadowMul_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f);
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = cBlurFilterColor1 * fcolor.a * (1.0-base.a) + base;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	fcolor = lerp(1, fcolor, fcolor.a);
@@ -942,12 +948,12 @@ float4 PS_ShadowMulHighlight_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color.a += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
-		color.r += tex2Dlod(texMap0,float4( IN.tex0 - (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
+		color.a += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
+		color.r += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 - (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;	
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;	
 	fcolor = (cBlurFilterColor1 * fcolor.a + cBlurFilterColor2 * fcolor.r) * (1.0-base.a) + base;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	fcolor = lerp(1, fcolor, fcolor.a);
@@ -961,12 +967,12 @@ float4 PS_ShadowMulHighlightKnockout_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color.a += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
-		color.r += tex2Dlod(texMap0,float4( IN.tex0 - (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
+		color.a += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
+		color.r += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 - (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = (cBlurFilterColor1 * fcolor.a + cBlurFilterColor2 * fcolor.r) * (1.0-base.a) + base;
 	fcolor *= (1.0 - base.a);
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
@@ -981,11 +987,11 @@ float4 PS_ShadowMulKnockout_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f);
 	}
 	
-	float4 base = tex2Dlod(texMap1,float4( IN.tex0, 0.f, 0.f));
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 base = texScaleformInput1.SampleLevel(ssScaleformInput1, IN.tex0, 0.f);
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = cBlurFilterColor1 * fcolor.a * (1.0-base.a) + base;
 	fcolor *= (1.0 - base.a);
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
@@ -1001,10 +1007,10 @@ float4 PS_Shadowonly_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f);
 	}
 	
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = cBlurFilterColor1 * fcolor.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	return fcolor;
@@ -1017,11 +1023,11 @@ float4 PS_ShadowonlyHighlight_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color.a += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
-		color.r += tex2Dlod(texMap0,float4( IN.tex0 - (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
+		color.a += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
+		color.r += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 - (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
 	}
 	
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = cBlurFilterColor1 * fcolor.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	return fcolor;
@@ -1034,10 +1040,10 @@ float4 PS_ShadowonlyMul_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f);
 	}
 	
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = cBlurFilterColor1 * fcolor.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	fcolor = lerp(1, fcolor, fcolor.a);
@@ -1051,11 +1057,11 @@ float4 PS_ShadowonlyMulHighlight_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color.a += tex2Dlod(texMap0,float4( IN.tex0 + (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
-		color.r += tex2Dlod(texMap0,float4( IN.tex0 - (cBlurFilterOffset + i) * cBlurFilterScale, 0.f, 0.f)).a;
+		color.a += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
+		color.r += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 - (cBlurFilterBias + i) * cBlurFilterScale, 0.f).a;
 	}
 	
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = cBlurFilterColor1 * fcolor.a;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	fcolor = lerp(1, fcolor, fcolor.a);
@@ -1068,10 +1074,10 @@ float4 PS_BlurFilter_Box1( v2f_Glyph IN ) : COLOR
 	float  i = 0.0f;
 	for (i = -cBlurFilterSize.x; i <= cBlurFilterSize.x; i++)
 	{	
-		color += tex2Dlod(texMap0,float4( IN.tex0 + i * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + i * cBlurFilterScale, 0.f);
 	}
 	
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	return fcolor;
 }
@@ -1080,12 +1086,13 @@ float4 PS_BlurFilterMul_Box1( v2f_Glyph IN ) : COLOR
 {
 	float4 color = 0.0f;
 	float2 i = 0.0f;
-	for (i = -cBlurFilterSize.x; i <= cBlurFilterSize.x; i++)
+	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
+	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{	
-		color += tex2Dlod(texMap0,float4( IN.tex0 + i * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + i * cBlurFilterScale, 0.f);
 	}
 	
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	fcolor = lerp(1, fcolor, fcolor.a);
 	return fcolor;
@@ -1098,10 +1105,10 @@ float4 PS_BlurFilter_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)	
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + i * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + i * cBlurFilterScale, 0.f);
 	}
 	
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	return fcolor;
 }
@@ -1113,10 +1120,10 @@ float4 PS_BlurFilterMul_Box2( v2f_Glyph IN ) : COLOR
 	for (i.x = -cBlurFilterSize.x; i.x <= cBlurFilterSize.x; i.x++)
 	for (i.y = -cBlurFilterSize.y; i.y <= cBlurFilterSize.y; i.y++)
 	{
-		color += tex2Dlod(texMap0,float4( IN.tex0 + i * cBlurFilterScale, 0.f, 0.f));
+		color += texScaleformInput0.SampleLevel(ssScaleformInput0, IN.tex0 + i * cBlurFilterScale, 0.f);
 	}
 	
-	float4 fcolor = color * cBlurFilterSize.w;
+	float4 fcolor = color * cBlurFilterSize.z;
 	fcolor = fcolor * cBitmapColorTransform[0] + cBitmapColorTransform[1] * fcolor.a;
 	fcolor = lerp(1, fcolor, fcolor.a);
 	return fcolor;
@@ -1124,14 +1131,14 @@ float4 PS_BlurFilterMul_Box2( v2f_Glyph IN ) : COLOR
 
 float4 PS_GlyphTextureMat( v2f_Glyph IN ) : COLOR
 {
-	float4 c = tex2D(texMap0, IN.tex0);
+	float4 c = texScaleformInput0.Sample(ssScaleformInput0, IN.tex0);
 	float4 fcolor = mul(c, cColorTransformMat) + cBitmapColorTransform[1] * (c.a + cBitmapColorTransform[1].a);
 	return fcolor;
 }
 
 float4 PS_GlyphTextureMatMul( v2f_Glyph IN ) : COLOR
 {
-	float4 c = tex2D(texMap0, IN.tex0);
+	float4 c = texScaleformInput0.Sample(ssScaleformInput0, IN.tex0);
 	float4 fcolor = mul(c, cColorTransformMat) + cBitmapColorTransform[1] * (c.a + cBitmapColorTransform[1].a);
 	fcolor = lerp(1, fcolor, fcolor.a);
 	return fcolor;

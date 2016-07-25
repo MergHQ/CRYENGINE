@@ -17,8 +17,6 @@
 	#pragma once
 #endif
 
-#include <CryCore/Platform/platform.h>
-
 inline float AngleMod(float a)
 {
 	a = (float)((360.0 / 65536) * ((int)(a * (65536 / 360.0)) & 65535));
@@ -38,16 +36,6 @@ inline float Word2Degr(unsigned short s)
 {
 	return (float)s / 65536.0f * 360.0f;
 }
-
-#if CRY_PLATFORM_X86
-ILINE float __fastcall Ffabs(float f)
-{
-	*((unsigned*) &f) &= ~0x80000000;
-	return (f);
-}
-#else
-inline float Ffabs(float x) { return fabsf(x); }
-#endif
 
 #define mathMatrixRotationZ(pOut, angle)     (*(Matrix44*)pOut) = GetTransposed44(Matrix44(Matrix34::CreateRotationZ(angle)))
 #define mathMatrixRotationY(pOut, angle)     (*(Matrix44*)pOut) = GetTransposed44(Matrix44(Matrix34::CreateRotationY(angle)))
@@ -460,77 +448,5 @@ inline Vec3* mathVec3UnprojectArray(Vec3* pOut, uint32 OutStride, const Vec3* pV
 
 	return pOut;
 }
-
-/*****************************************************
-   MISC FUNCTIONS
-*****************************************************/
-
-#if CRY_PLATFORM_X86
-inline int fastftol_positive(float f)
-{
-	int i;
-
-	f -= 0.5f;
-	#if defined(_MSC_VER)
-	__asm fld[f]
-	__asm fistp[i]
-	#elif defined(__GNUC__)
-	__asm__("fld %[f]\n fistpl %[i]" :[i] "+m" (i) :[f] "m" (f));
-	#else
-		#error
-	#endif
-	return i;
-}
-#else
-inline int fastftol_positive(float f)
-{
-	CRY_MATH_ASSERT(f >= 0.f);
-	return (int)floorf(f);
-}
-#endif
-
-#if CRY_PLATFORM_X86
-inline int fastround_positive(float f)
-{
-	int i;
-	CRY_MATH_ASSERT(f >= 0.f);
-	#if defined(_MSC_VER)
-	__asm fld[f]
-	__asm fistp[i]
-	#elif defined(__GNUC__)
-	__asm__("fld %[f]\n fistpl %[i]" :[i] "+m" (i) :[f] "m" (f));
-	#else
-		#error
-	#endif
-	return i;
-}
-#else
-inline int fastround_positive(float f)
-{
-	CRY_MATH_ASSERT(f >= 0.f);
-	return (int) (f + 0.5f);
-}
-#endif
-
-#if CRY_PLATFORM_X86
-ILINE int __fastcall FtoI(float x)
-{
-	int t;
-	#if defined(_MSC_VER)
-	__asm
-	{
-		fld x
-		fistp t
-	}
-	#elif defined(__GNUC__)
-	__asm__("fld %[x]\n fistpl %[t]" :[t] "+m" (t) :[x] "m" (x));
-	#else
-		#error
-	#endif
-	return t;
-}
-#else
-inline int FtoI(float x) { return (int)x; }
-#endif
 
 #endif //math

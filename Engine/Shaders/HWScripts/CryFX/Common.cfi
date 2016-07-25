@@ -185,6 +185,11 @@ half3 GetTerrainNormal(Texture2D tex, float2 terrainTC)
 	terrainNor.z = sqrt(saturate(1.h - (terrainNor.x * terrainNor.x + terrainNor.y * terrainNor.y))); 
 	return terrainNor; 
 }
+float GetTerrainElevation(Texture2D tex, float2 terrainTC)
+{
+	half4 terrainElev = GetTexture2D(tex, ssMaterialBilinearClamp, terrainTC);
+	return terrainElev.x;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Gradient maps
@@ -375,6 +380,33 @@ float4 HPosToScreenTC(float4 HPos, bool scaled = true)
   }
 
   return ScrTC;
+}
+
+float3 ReconstructWorldPos(int2 WPos, float linearDepth)
+{
+	return mul(CV_ScreenToWorldBasis, float4(WPos * linearDepth, linearDepth, 1.0));
+}
+
+float3 ReconstructWorldPos(int2 WPos, Texture2D sceneDepthTex)
+{
+	float linearDepth = sceneDepthTex.Load(int3(WPos, 0)).x;
+	return ReconstructWorldPos(WPos, linearDepth);
+}
+
+float3 ReconstructViewPos(int2 WPos, float linearDepth)
+{
+	return mul(CV_ScreenToWorldBasis, float3(WPos * linearDepth, linearDepth));
+}
+
+float3 ReconstructViewPos(int2 WPos, Texture2D sceneDepthTex)
+{
+	float linearDepth = sceneDepthTex.Load(int3(WPos, 0)).x;
+	return ReconstructViewPos(WPos, linearDepth);
+}
+
+float3 GetWorldViewPos()
+{
+	return CV_ScreenToWorldBasis._m03_m13_m23;
 }
 
 float2 ClampScreenTC(float2 TC, float2 maxTC)
@@ -668,6 +700,12 @@ half3 GetTerrainNormal(sampler2D s, float2 terrainTC)
 	return terrainNor;
 }
 
+half3 GetTerrainElevation(sampler2D s, float2 terrainTC)
+{
+	half4 terrainElev = tex2D(s, terrainTC);
+	return terrainElev.x;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 float4 GetInputColor(in float4 Color)
@@ -782,6 +820,12 @@ half GetLuminance( half3 color )
 }
 
 // Checks normalized sun light direction from level and applies it to the UV for the Cloud Shadows.
+float2 ComputeCloudShadowMapUV(in float3 worldPos, in float3 sunDirNormalized)
+{
+	const float t = -worldPos.z / sunDirNormalized.z;
+	return worldPos.xy + t * sunDirNormalized.xy;
+}
+
 float2 ComputeCloudShadowMapUV(in float3 worldPos)
 {
 #if %_PS
@@ -793,6 +837,5 @@ float2 ComputeCloudShadowMapUV(in float3 worldPos)
 #else
 	const float3 sunDir = normalize(float3(0.1, 0.1, 1.0));
 #endif
-	const float t = -worldPos.z / sunDir.z;
-	return worldPos.xy + t * sunDir.xy;
+	return ComputeCloudShadowMapUV(worldPos, sunDir);
 }

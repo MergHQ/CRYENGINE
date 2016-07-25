@@ -259,6 +259,25 @@ public:
 		}
 	}
 
+	template<typename T, int AlignSize>
+	void AddObject(const stl::aligned_vector<T, AlignSize>& rVector)
+	{
+		// Not really correct as not taking alignment into the account
+		if (rVector.empty())
+		{
+			this->AddObject(&rVector, rVector.capacity() * sizeof(T));
+			return;
+		}
+
+		if (!this->AddObject(&rVector[0], rVector.capacity() * sizeof(T)))
+			return;
+
+		for (typename stl::aligned_vector<T, AlignSize>::const_iterator it = rVector.begin(); it != rVector.end(); ++it)
+		{
+			this->AddObject(*it);
+		}
+	}
+
 	template<typename T, typename Alloc>
 	void AddObject(const std::deque<T, Alloc>& rVector)
 	{

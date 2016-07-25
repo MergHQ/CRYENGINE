@@ -4,13 +4,14 @@
 #include "Game.h"
 #include "Item.h"
 #include "GameRules.h"
-#include "Nodes/G2FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryAnimation/ICryAnimation.h>
 
 class CFlowHitInfoNode : public CFlowBaseNode<eNCT_Instanced>, public IHitListener
 {
 public:
-	CFlowHitInfoNode( SActivationInfo * pActInfo )
+	CFlowHitInfoNode(SActivationInfo* pActInfo)
 	{
 	}
 
@@ -22,7 +23,7 @@ public:
 			pGR->RemoveHitListener(this);
 	}
 
-	IFlowNodePtr Clone( SActivationInfo * pActInfo )
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
 		return new CFlowHitInfoNode(pActInfo);
 	}
@@ -62,26 +63,26 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig inputs[] = {
-			InputPortConfig<bool>("Enable", false, _HELP("Enable/Disable HitInfo")),
+			InputPortConfig<bool>("Enable",        false,                                                   _HELP("Enable/Disable HitInfo")),
 			InputPortConfig<EntityId>("ShooterId", _HELP("When connected, limit HitInfo to this shooter")),
 			InputPortConfig<EntityId>("TargetId",  _HELP("When connected, limit HitInfo to this target")),
-			InputPortConfig<string> ("Weapon", _HELP("When set, limit HitInfo to this weapon"), 0, _UICONFIG("enum_global:weapon")),
-			InputPortConfig<string> ("Ammo", _HELP("When set, limit HitInfo to this ammo"), 0, _UICONFIG("enum_global:ammos")),
-			{0}
+			InputPortConfig<string>("Weapon",      _HELP("When set, limit HitInfo to this weapon"),         0,                               _UICONFIG("enum_global:weapon")),
+			InputPortConfig<string>("Ammo",        _HELP("When set, limit HitInfo to this ammo"),           0,                               _UICONFIG("enum_global:ammos")),
+			{ 0 }
 		};
 		static const SOutputPortConfig outputs[] = {
-			OutputPortConfig<EntityId>("ShooterId", _HELP("EntityID of the Shooter")),
-			OutputPortConfig<EntityId>("TargetId",  _HELP("EntityID of the Target")),
-			OutputPortConfig<EntityId>("WeaponId",  _HELP("EntityID of the Weapon")),
-			OutputPortConfig<EntityId>("ProjectileId",  _HELP("EntityID of the Projectile if it was a bullet hit")),
-			OutputPortConfig<Vec3>    ("HitPos", _HELP("Position of the Hit")),
-			OutputPortConfig<Vec3>    ("HitDir", _HELP("Direction of the Hit")),
-			OutputPortConfig<Vec3>    ("HitNormal", _HELP("Normal of the Hit Impact")),
-			OutputPortConfig<string>  ("HitType",  _HELP("Name of the HitType")),
-			OutputPortConfig<float>   ("Damage",    _HELP("Damage amout which was caused")),
-			OutputPortConfig<string>  ("Material",  _HELP("Name of the Material")),
-			OutputPortConfig<string>  ("Attachment",  _HELP("Name of the Attachment")),
-			{0}
+			OutputPortConfig<EntityId>("ShooterId",    _HELP("EntityID of the Shooter")),
+			OutputPortConfig<EntityId>("TargetId",     _HELP("EntityID of the Target")),
+			OutputPortConfig<EntityId>("WeaponId",     _HELP("EntityID of the Weapon")),
+			OutputPortConfig<EntityId>("ProjectileId", _HELP("EntityID of the Projectile if it was a bullet hit")),
+			OutputPortConfig<Vec3>("HitPos",           _HELP("Position of the Hit")),
+			OutputPortConfig<Vec3>("HitDir",           _HELP("Direction of the Hit")),
+			OutputPortConfig<Vec3>("HitNormal",        _HELP("Normal of the Hit Impact")),
+			OutputPortConfig<string>("HitType",        _HELP("Name of the HitType")),
+			OutputPortConfig<float>("Damage",          _HELP("Damage amout which was caused")),
+			OutputPortConfig<string>("Material",       _HELP("Name of the Material")),
+			OutputPortConfig<string>("Attachment",     _HELP("Name of the Attachment")),
+			{ 0 }
 		};
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
@@ -89,7 +90,7 @@ public:
 		config.SetCategory(EFLN_ADVANCED);
 	}
 
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo )
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
 		{
@@ -118,17 +119,17 @@ public:
 
 	const char* GetHitAttachmentName(const HitInfo& hit) const
 	{
-		IEntity *pEntity = gEnv->pEntitySystem->GetEntity(hit.targetId);
-		if(!pEntity)
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(hit.targetId);
+		if (!pEntity)
 			return 0;
 
-		ICharacterInstance *pCharacter = pEntity->GetCharacter(0);
-		if(!pCharacter)
+		ICharacterInstance* pCharacter = pEntity->GetCharacter(0);
+		if (!pCharacter)
 			return 0;
 
-		IPhysicalEntity *pPE = pCharacter->GetISkeletonPose()->GetCharacterPhysics();
-		IAttachmentManager *pAttchmentManager = pCharacter->GetIAttachmentManager();
-		if(!pPE || !pAttchmentManager)
+		IPhysicalEntity* pPE = pCharacter->GetISkeletonPose()->GetCharacterPhysics();
+		IAttachmentManager* pAttchmentManager = pCharacter->GetIAttachmentManager();
+		if (!pPE || !pAttchmentManager)
 			return 0;
 
 		pe_status_pos posStatus;
@@ -145,12 +146,12 @@ public:
 			for (int i = 0; i < attachmentCount; ++i)
 			{
 				IAttachment* pAttachment = pAttchmentManager->GetInterfaceByIndex(i);
-				IAttachmentObject *pAttachmentObj = pAttachment->GetIAttachmentObject();
+				IAttachmentObject* pAttachmentObj = pAttachment->GetIAttachmentObject();
 
-				if (pAttachmentObj/* && (pAttachmentObj->GetAttachmentType() == IAttachmentObject::eAttachment_StatObj)*/)
+				if (pAttachmentObj /* && (pAttachmentObj->GetAttachmentType() == IAttachmentObject::eAttachment_StatObj)*/)
 				{
 					/*IStatObj* pStatObj = pAttachmentObj->GetIStatObj();
-					phys_geometry* pPhysGeom = pStatObj->GetPhysGeom();*/
+					   phys_geometry* pPhysGeom = pStatObj->GetPhysGeom();*/
 
 					const QuatTS attachmentLoc = pAttachment->GetAttWorldAbsolute();
 					if (pos.IsEquivalent(attachmentLoc.t, 0.005f))
@@ -200,7 +201,7 @@ public:
 			if (ISurfaceType* pSurface = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceType(hitInfo.material))
 				surfaceType = pSurface->GetName();
 		}
-		
+
 		ActivateOutput(&m_actInfo, EOP_ShooterId, hitInfo.shooterId);
 		ActivateOutput(&m_actInfo, EOP_TargetId, hitInfo.targetId);
 		ActivateOutput(&m_actInfo, EOP_WeaponId, hitInfo.weaponId);
@@ -266,7 +267,7 @@ public:
 	}
 	//~CGameRules::IHitInfo
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -277,7 +278,7 @@ public:
 class CFlowExplosionInfoNode : public CFlowBaseNode<eNCT_Instanced>, public IHitListener
 {
 public:
-	CFlowExplosionInfoNode( SActivationInfo * pActInfo )
+	CFlowExplosionInfoNode(SActivationInfo* pActInfo)
 	{
 	}
 
@@ -289,7 +290,7 @@ public:
 			pGR->RemoveHitListener(this);
 	}
 
-	IFlowNodePtr Clone( SActivationInfo * pActInfo )
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
 		return new CFlowExplosionInfoNode(pActInfo);
 	}
@@ -328,27 +329,27 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig inputs[] = {
-			InputPortConfig<bool>("Enable", false, _HELP("Enable/Disable ExplosionInfo")),
-			InputPortConfig<EntityId>("ShooterId", _HELP("When connected, limit ExplosionInfo to this shooter")),
-			InputPortConfig<string> ("Weapon", _HELP("!DONT USE! -> Use Ammo!"), _HELP("!DONT USE! -> Use Ammo!"), _UICONFIG("enum_global:ammos")),
-			InputPortConfig<string> ("Ammo", _HELP("When set, limit ExplosionInfo to this ammo"), 0, _UICONFIG("enum_global:ammos")),
-			InputPortConfig<EntityId>("ImpactTargetId",  _HELP("When connected, limit ExplosionInfo to this Impact target (e.g. for Rockets)")),
-			{0}
+			InputPortConfig<bool>("Enable",             false,                                                                                  _HELP("Enable/Disable ExplosionInfo")),
+			InputPortConfig<EntityId>("ShooterId",      _HELP("When connected, limit ExplosionInfo to this shooter")),
+			InputPortConfig<string>("Weapon",           _HELP("!DONT USE! -> Use Ammo!"),                                                       _HELP("!DONT USE! -> Use Ammo!"),      _UICONFIG("enum_global:ammos")),
+			InputPortConfig<string>("Ammo",             _HELP("When set, limit ExplosionInfo to this ammo"),                                    0,                                     _UICONFIG("enum_global:ammos")),
+			InputPortConfig<EntityId>("ImpactTargetId", _HELP("When connected, limit ExplosionInfo to this Impact target (e.g. for Rockets)")),
+			{ 0 }
 		};
 		static const SOutputPortConfig outputs[] = {
-			OutputPortConfig<EntityId>("ShooterId", _HELP("EntityID of the Shooter")),
-			OutputPortConfig<string>  ("Ammo",  _HELP("Ammo Class")),
-			OutputPortConfig<Vec3>    ("Pos", _HELP("Position of the Explosion")),
-			OutputPortConfig<Vec3>    ("Dir", _HELP("Direction of the Explosion")),
-			OutputPortConfig<float>   ("Radius",   _HELP("Radius of Explosion")),
-			OutputPortConfig<float>   ("Damage",    _HELP("Damage amout which was caused")),
-			OutputPortConfig<float>   ("Pressure",    _HELP("Pressure amout which was caused")),
-			OutputPortConfig<float>   ("HoleSize",    _HELP("Hole size which was caused")),
-			OutputPortConfig<string>  ("Type",  _HELP("Name of the Explosion type")),
-			OutputPortConfig<EntityId>("ImpactTargetId",  _HELP("EntityID of the Impact Target (e.g. for Rockets)")),
-			OutputPortConfig<Vec3>    ("ImpactNormal",  _HELP("Impact Normal (e.g. for Rockets)")),
-			OutputPortConfig<float>   ("ImpactVelocity",  _HELP("Impact Normal (e.g. for Rockets)")),
-			{0}
+			OutputPortConfig<EntityId>("ShooterId",      _HELP("EntityID of the Shooter")),
+			OutputPortConfig<string>("Ammo",             _HELP("Ammo Class")),
+			OutputPortConfig<Vec3>("Pos",                _HELP("Position of the Explosion")),
+			OutputPortConfig<Vec3>("Dir",                _HELP("Direction of the Explosion")),
+			OutputPortConfig<float>("Radius",            _HELP("Radius of Explosion")),
+			OutputPortConfig<float>("Damage",            _HELP("Damage amout which was caused")),
+			OutputPortConfig<float>("Pressure",          _HELP("Pressure amout which was caused")),
+			OutputPortConfig<float>("HoleSize",          _HELP("Hole size which was caused")),
+			OutputPortConfig<string>("Type",             _HELP("Name of the Explosion type")),
+			OutputPortConfig<EntityId>("ImpactTargetId", _HELP("EntityID of the Impact Target (e.g. for Rockets)")),
+			OutputPortConfig<Vec3>("ImpactNormal",       _HELP("Impact Normal (e.g. for Rockets)")),
+			OutputPortConfig<float>("ImpactVelocity",    _HELP("Impact Normal (e.g. for Rockets)")),
+			{ 0 }
 		};
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
@@ -356,7 +357,7 @@ public:
 		config.SetCategory(EFLN_ADVANCED);
 	}
 
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo )
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
 		{
@@ -442,7 +443,7 @@ public:
 	}
 	//~CGameRules::IHitInfo
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
@@ -450,5 +451,5 @@ public:
 	SActivationInfo m_actInfo;
 };
 
-REGISTER_FLOW_NODE("Crysis:HitInfo", CFlowHitInfoNode);
-REGISTER_FLOW_NODE("Crysis:ExplosionInfo", CFlowExplosionInfoNode);
+REGISTER_FLOW_NODE("Weapon:HitInfo", CFlowHitInfoNode);
+REGISTER_FLOW_NODE("Weapon:ExplosionInfo", CFlowExplosionInfoNode);

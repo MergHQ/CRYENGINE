@@ -22,7 +22,7 @@ struct CFeatureColor : public CFeature
 	CFeatureColor() : m_colorTable(kNumModifierSamples) {}
 	virtual void Initialize() override;
 	virtual void InitParticles(const SUpdateContext& context) override;
-	virtual void Update(const gpu_pfx2::SUpdateContext& context) override;
+	virtual void Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList) override;
 	virtual void InternalSetParameters(const EParameterType type, const SFeatureParametersBase& p) override;
 private:
 	gpu::CTypedResource<Vec3, gpu::BufferFlagsDynamic> m_colorTable;

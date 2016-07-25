@@ -411,23 +411,22 @@ float CCharInstance::GetExtent(EGeomForm eForm)
 {
 	// Sum extents from base mesh, CGA joints, and attachments.
 	CGeomExtent& extent = m_Extents.Make(eForm);
-	if (!extent || !m_SkeletonPose.m_Extents || !m_AttachmentManager.m_Extents)
+
+	extent.Clear();
+	extent.ReserveParts(3);
+
+	// Add base model as first part.
+	float fModelExt = 0.f;
+	if (m_pDefaultSkeleton)
 	{
-		extent.Clear();
-		extent.ReserveParts(3);
-
-		// Add base model as first part.
-		float fModelExt = 0.f;
-		if (m_pDefaultSkeleton)
-		{
-			if (IRenderMesh* pMesh = m_pDefaultSkeleton->GetIRenderMesh())
-				fModelExt = pMesh->GetExtent(eForm);
-		}
-		extent.AddPart(fModelExt);
-
-		extent.AddPart(m_SkeletonPose.GetExtent(eForm));
-		extent.AddPart(m_AttachmentManager.GetExtent(eForm));
+		if (IRenderMesh* pMesh = m_pDefaultSkeleton->GetIRenderMesh())
+			fModelExt = pMesh->GetExtent(eForm);
 	}
+	extent.AddPart(fModelExt);
+
+	extent.AddPart(m_SkeletonPose.GetExtent(eForm));
+	extent.AddPart(m_AttachmentManager.GetExtent(eForm));
+
 	return extent.TotalExtent();
 }
 

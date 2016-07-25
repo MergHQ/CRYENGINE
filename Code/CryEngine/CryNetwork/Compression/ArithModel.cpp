@@ -46,6 +46,7 @@ CArithModel::CArithModel()
 	, m_entityIDAlphabet(2)
 	, m_pNetContext(nullptr)
 {
+	m_timeFraction32 = 0;
 	ZeroMemory(&m_vTimeAdaption, sizeof(m_vTimeAdaption));
 }
 
@@ -130,8 +131,24 @@ void CArithModel::STimeAdaption::STimeDelta::Update(uint16 encodedDelta, bool hi
 	//	NetLog( "in - rate:%.4x error:%.4x encodedDelta:%.4x [%s]",
 	//		rate, error, encodedDelta, hit? "hit" : "miss" );
 
-	rate = (7 * rate + encodedDelta) / 8;
-	error = min((7 * error + 3 * abs(rate - encodedDelta)) / 8, 32767);
+	uint32 newRate = (7 * rate + encodedDelta) / 8;
+
+	if (newRate == rate)
+	{
+		if (encodedDelta > newRate)
+			newRate++;
+		else if (encodedDelta < newRate)
+			newRate--;
+	}
+
+	int32 e = abs((int32)rate - (int32)encodedDelta);
+	rate = newRate;
+
+	if (e < 5 && error > 50) //after Reset() when calculated error is low again we don't want to wait very long until error decays with 7/8 interpolation
+		error /= 2;
+	else
+		error = min((7 * error + e * 2) / 8, 32767u);
+
 	//	NetLog("%.4x -> %.4x %.4x %s", encodedDelta, rate, error, hit?"hit":"miss");
 }
 
@@ -141,7 +158,14 @@ void CArithModel::STimeAdaption::STimeDelta::Reset()
 	rate = 32768;
 }
 
-void CArithModel::WriteTime(CCommOutputStream& stm, ETimeStream time, CTimeValue value)
+bool CArithModel::IsTimeInFrame(ETimeStream time) const
+{
+	const STimeAdaption& adapt = m_vTimeAdaption[time];
+
+	return adapt.isInFrame;
+}
+
+int64 CArithModel::WriteGetTimeDelta(ETimeStream time, const CTimeValue& value, STimeAdaption::STimeDelta** pOutDeltaInfo)
 {
 	STimeAdaption& adapt = m_vTimeAdaption[time];
 
@@ -159,11 +183,34 @@ void CArithModel::WriteTime(CCommOutputStream& stm, ETimeStream time, CTimeValue
 		pDeltaInfo = &adapt.frameDelta;
 	}
 
-	#if DEBUG_TIME_COMPRESSION
-	stm.WriteBitsLarge(oldTime.GetMilliSecondsAsInt64(), 64);
-	#endif
+	if (pOutDeltaInfo)
+		*pOutDeltaInfo = pDeltaInfo;
 
-	int64 delta = value.GetMilliSecondsAsInt64() - oldTime.GetMilliSecondsAsInt64();
+#if DEBUG_TIME_COMPRESSION
+	stm.WriteBitsLarge(oldTime.GetMilliSecondsAsInt64(), 64);
+#endif
+
+	int32 dt = 0;
+	if (adapt.timeFraction32 != 0)
+		dt = (m_timeFraction32 - adapt.timeFraction32) * 1000 / (int32)REPLICATION_TIME_PRECISION;
+
+	adapt.timeFraction32 = m_timeFraction32;
+
+	int64 delta = value.GetMilliSecondsAsInt64() - (oldTime.GetMilliSecondsAsInt64() + (int64)dt);
+
+	if (delta < -32768 || delta > 32767)
+		pDeltaInfo->Reset();
+
+	adapt.isInFrame = true;
+	adapt.lastTime = value;
+
+	return delta;
+}
+
+void CArithModel::WriteTime(CCommOutputStream& stm, ETimeStream time, CTimeValue value)
+{
+	STimeAdaption::STimeDelta* pDeltaInfo;
+	int64 delta = WriteGetTimeDelta(time, value, &pDeltaInfo);
 	uint16 encodedDelta;
 	bool isLarge = false;
 	if (delta < -32768)
@@ -177,7 +224,6 @@ void CArithModel::WriteTime(CCommOutputStream& stm, ETimeStream time, CTimeValue
 	{
 		stm.EncodeShift(16, 65535, 1);
 		stm.WriteBitsLarge(value.GetMilliSecondsAsInt64(), 64);
-		pDeltaInfo->Reset();
 	}
 	else
 	{
@@ -196,6 +242,7 @@ void CArithModel::WriteTime(CCommOutputStream& stm, ETimeStream time, CTimeValue
 		                                    encodedDelta, pDeltaInfo->Left(), pDeltaInfo->Right(), 102400, 65535, 99, 16, &hit);
 		//		NetLog( "WRITE: encodedDelta:%.4x rate:%.4x error:%.4x [%s]",
 		//			encodedDelta, pDeltaInfo->rate, pDeltaInfo->error, hit? "hit" : "miss" );
+		
 		pDeltaInfo->Update(encodedDelta, hit);
 	}
 
@@ -204,9 +251,53 @@ void CArithModel::WriteTime(CCommOutputStream& stm, ETimeStream time, CTimeValue
 	#endif
 
 	//	NetLog( "WRITE %.16I64x goesto %.16I64x", oldTime.GetMilliSecondsAsInt64(), value.GetMilliSecondsAsInt64() );
+}
 
+CTimeValue CArithModel::ReadTimeWithDelta(CCommInputStream& stm, ETimeStream time, int64 delta)
+{
+	STimeAdaption& adapt = m_vTimeAdaption[time];
+
+	CTimeValue oldTime;
+	STimeAdaption::STimeDelta* pDeltaInfo;
+	if (!adapt.isInFrame)
+	{
+		oldTime = adapt.startTime;
+		pDeltaInfo = &adapt.startDelta;
+	}
+	else
+	{
+		oldTime = adapt.lastTime;
+		pDeltaInfo = &adapt.frameDelta;
+	}
+
+#if DEBUG_TIME_COMPRESSION
+	int64 remoteOldTime = stm.ReadBitsLarge(64);
+	NET_ASSERT(oldTime.GetMilliSecondsAsInt64() == remoteOldTime);
+	uint16 reallyEncoded, left, right;
+#endif
+
+	int32 dt = 0;
+	if (adapt.timeFraction32 != 0)
+		dt = (m_timeFraction32 - adapt.timeFraction32) * 1000 / (int32)REPLICATION_TIME_PRECISION;
+
+	adapt.timeFraction32 = m_timeFraction32;
+
+	int64 millis = (oldTime.GetMilliSecondsAsInt64() + (int64)dt) + delta;
+
+	if (!adapt.isInFrame)
+		adapt.startTime.SetMilliSeconds(millis);
 	adapt.isInFrame = true;
-	adapt.lastTime = value;
+	adapt.lastTime.SetMilliSeconds(millis);
+
+	CTimeValue out;
+	out.SetMilliSeconds(millis);
+
+#if DEBUG_TIME_COMPRESSION
+	int64 checkMillis = stm.ReadBitsLarge(64);
+	NET_ASSERT(out.GetMilliSecondsAsInt64() == checkMillis);
+#endif
+
+	return out;
 }
 
 CTimeValue CArithModel::ReadTime(CCommInputStream& stm, ETimeStream time)
@@ -231,6 +322,12 @@ CTimeValue CArithModel::ReadTime(CCommInputStream& stm, ETimeStream time)
 	NET_ASSERT(oldTime.GetMilliSecondsAsInt64() == remoteOldTime);
 	uint16 reallyEncoded, left, right;
 	#endif
+
+	int32 dt = 0;
+	if (adapt.timeFraction32 != 0)
+		dt = (m_timeFraction32 - adapt.timeFraction32) * 1000 / (int32)REPLICATION_TIME_PRECISION;
+
+	adapt.timeFraction32 = m_timeFraction32;
 
 	bool isLarge = stm.DecodeShift(16) == 65535;
 	int64 millis;
@@ -262,7 +359,7 @@ CTimeValue CArithModel::ReadTime(CCommInputStream& stm, ETimeStream time)
 			encodedDelta = value;
 		//		NetLog( "READ: encodedDelta:%.4x rate:%.4x error:%.4x [%s]",
 		//			encodedDelta, pDeltaInfo->rate, pDeltaInfo->error, hit? "hit" : "miss" );
-		millis = oldTime.GetMilliSecondsAsInt64() + encodedDelta - 32768;
+		millis = (oldTime.GetMilliSecondsAsInt64() + (int64)dt) + encodedDelta - 32768;
 		pDeltaInfo->Update(encodedDelta, hit);
 
 	#if DEBUG_TIME_COMPRESSION
@@ -377,6 +474,16 @@ SNetObjectID CArithModel::ReadNetId(CCommInputStream& stm)
 size_t CArithModel::GetSize()
 {
 	return sizeof(*this) /*+ m_alphabet.GetMemorySize() + m_entityIDAlphabet.GetMemorySize()*/;
+}
+
+void CArithModel::SetTimeFraction(uint32 timeFraction32)
+{
+	m_timeFraction32 = timeFraction32;
+}
+
+uint32 CArithModel::GetTimeFraction() const
+{
+	return m_timeFraction32;
 }
 
 #endif

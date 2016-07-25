@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GpuComputeBackend.h"
+#include "GraphicsPipeline/Common/ComputeRenderPass.h"
 
 namespace gpu
 {
@@ -28,14 +29,14 @@ public:
 		uint32 iHeight;
 	};
 	CBitonicSort();
-	void                       Sort(size_t numElements);
-	ID3D11UnorderedAccessView* GetUAV() { return m_data.GetUAV(); }
-	ID3D11ShaderResourceView*  GetSRV() { return m_data.GetSRV(); }
+	void Sort(uint32 numElements, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	CGpuBuffer& GetBuffer() { return m_data.GetBuffer(); }
 private:
-	void                       SyncParams(uint32 iLevel, uint32 iLevelMask, uint32 iWidth, uint32 iHeight);
-	CTypedConstantBuffer<CParams, 8>                       m_params;
+	void        SyncParams(uint32 iLevel, uint32 iLevelMask, uint32 iWidth, uint32 iHeight);
+	CTypedConstantBuffer<CParams>                          m_params;
 	CTypedResource<SBitonicSortItem, BufferFlagsReadWrite> m_data;
 	CTypedResource<SBitonicSortItem, BufferFlagsReadWrite> m_transposeData;
-	CComputeBackend m_backend;
+	CComputeRenderPass m_computePassBitonicSort;
+	CComputeRenderPass m_computePassBitonicTranspose;
 };
 }

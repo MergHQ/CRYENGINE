@@ -8,7 +8,7 @@
    -------------------------------------------------------------------------
    History:
    - 20:9:2004     : Created by Filippo De Luca
-   - September 2010: Jens Schöbel created a smooth extended camera shake
+   - September 2010: Jens SchÃ¶bel created a smooth extended camera shake
 
 *************************************************************************/
 #include "StdAfx.h"
@@ -859,7 +859,7 @@ void CView::SetActive(bool const bActive)
 	}
 	else if (m_pAudioListener != nullptr && (m_pAudioListener->GetFlags() & ENTITY_FLAG_TRIGGER_AREAS) != 0)
 	{
-		gEnv->pEntitySystem->GetAreaManager()->ExitAllAreas(m_pAudioListener);
+		gEnv->pEntitySystem->GetAreaManager()->ExitAllAreas(m_pAudioListener->GetId());
 		m_pAudioListener->SetFlagsExtended(m_pAudioListener->GetFlagsExtended() & ~ENTITY_FLAG_EXTENDED_AUDIO_LISTENER);
 	}
 }

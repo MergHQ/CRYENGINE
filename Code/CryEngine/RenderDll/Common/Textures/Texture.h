@@ -32,6 +32,7 @@ struct IUIElement;
 struct IUILayout;
 class CTextureStreamPoolMgr;
 class CReactiveTextureStreamer;
+class CMipmapGenPass;
 
 #define TEXPOOL_LOADSIZE 6 * 1024 * 1024
 
@@ -79,13 +80,6 @@ enum
 	TO_MIPCOLORS_DIFFUSE,
 	TO_MIPCOLORS_BUMP,
 
-	TO_FROMSF0,
-	TO_FROMSF1,
-	TO_FROMSFY,
-	TO_FROMSFU,
-	TO_FROMSFV,
-	TO_FROMSFA,
-
 	TO_DOWNSCALED_ZTARGET_FOR_AO,
 	TO_QUARTER_ZTARGET_FOR_AO,
 	TO_WATEROCEANMAP,
@@ -96,8 +90,6 @@ enum
 	TO_WATERVOLUMECAUSTICSMAP,
 	TO_WATERVOLUMECAUSTICSMAPTEMP,
 
-	TO_WATERRIPPLESMAP,
-
 	TO_VOLOBJ_DENSITY,
 	TO_VOLOBJ_SHADOW,
 
@@ -107,13 +99,6 @@ enum
 
 	TO_SCENE_NORMALMAP,
 	TO_SCENE_NORMALMAP_MS,
-
-	TO_LPV_R,
-	TO_LPV_G,
-	TO_LPV_B,
-	TO_RSM_NORMAL,
-	TO_RSM_COLOR,
-	TO_RSM_DEPTH,
 
 	TO_SCENE_DIFFUSE_ACC,
 	TO_SCENE_SPECULAR_ACC,
@@ -138,7 +123,6 @@ enum
 
 #define NUM_HDR_TONEMAP_TEXTURES 4
 #define NUM_HDR_BLOOM_TEXTURES   3
-#define NUM_SCALEFORM_TEXTURES   6
 #define MIN_DOF_COC_K            6
 
 #if defined(OPENGL_ES)
@@ -571,7 +555,6 @@ struct SDynTexture_Shadow : public SDynTexture
 
 	inline void UnlinkShadow()
 	{
-		//assert(gRenDev->m_pRT->IsRenderThread());
 		if (!m_NextShadow || !m_PrevShadow)
 			return;
 		m_NextShadow->m_PrevShadow = m_PrevShadow;
@@ -580,7 +563,6 @@ struct SDynTexture_Shadow : public SDynTexture
 	}
 	inline void LinkShadow(SDynTexture_Shadow* Before)
 	{
-		assert(gRenDev->m_pRT->IsRenderThread());
 		if (m_NextShadow || m_PrevShadow)
 			return;
 		m_NextShadow = Before->m_NextShadow;
@@ -591,7 +573,6 @@ struct SDynTexture_Shadow : public SDynTexture
 
 	SDynTexture_Shadow* GetByID(int nID)
 	{
-		assert(gRenDev->m_pRT->IsRenderThread());
 		SDynTexture_Shadow* pTX = SDynTexture_Shadow::s_RootShadow.m_NextShadow;
 		for (pTX = SDynTexture_Shadow::s_RootShadow.m_NextShadow; pTX != &SDynTexture_Shadow::s_RootShadow; pTX = pTX->m_NextShadow)
 		{
@@ -604,13 +585,11 @@ struct SDynTexture_Shadow : public SDynTexture
 
 	virtual void Unlink()
 	{
-		assert(gRenDev->m_pRT->IsRenderThread());
 		UnlinkGlobal();
 		UnlinkShadow();
 	}
 	virtual void Link()
 	{
-		assert(gRenDev->m_pRT->IsRenderThread());
 		LinkGlobal(&s_Root);
 		LinkShadow(&s_RootShadow);
 	}
@@ -1217,7 +1196,7 @@ struct SDepthTexture
 
 	~SDepthTexture();
 
-	void Release();
+	void Release(bool bReleaseTexture);
 };
 
 struct DirtyRECT
@@ -1234,7 +1213,9 @@ struct SResourceView
 	static const KeyType DefaultView = (KeyType) - 1LL;
 	static const KeyType DefaultViewMS = (KeyType) - 2LL;
 	static const KeyType DefaultViewSRGB = (KeyType) - 3LL;
-	static const KeyType DefaultRendertargtView = (KeyType) - 4LL;
+	static const KeyType DefaultRendertargetView = (KeyType) - 4LL;
+	static const KeyType DefaultDepthStencilView = (KeyType) - 5LL;
+	static const KeyType DefaultUnordererdAccessView = (KeyType) - 6LL;
 
 	enum ResourceViewType
 	{
@@ -1290,6 +1271,12 @@ struct SResourceView
 	static SResourceView RenderTargetView(ETEX_Format nFormat, int nFirstSlice = 0, int nSliceCount = -1, int nMipLevel = 0, bool bMultisample = false);
 	static SResourceView DepthStencilView(ETEX_Format nFormat, int nFirstSlice = 0, int nSliceCount = -1, int nMipLevel = 0, bool bMultisample = false, int nFlags = 0);
 	static SResourceView UnorderedAccessView(ETEX_Format nFormat, int nFirstSlice = 0, int nSliceCount = -1, int nMipLevel = 0, int nFlags = 0);
+
+	static bool          IsDefaultView(KeyType key)         { return key < 0LL; }
+	static bool          IsShaderResourceView(KeyType key)  { return key == DefaultView || key == DefaultViewMS || key == DefaultViewSRGB || SResourceView(key).m_Desc.eViewType == eShaderResourceView; }
+	static bool          IsRenderTargetView(KeyType key)    { return key == DefaultRendertargetView || SResourceView(key).m_Desc.eViewType == eRenderTargetView; }
+	static bool          IsDepthStencilView(KeyType key)    { return key == DefaultDepthStencilView || SResourceView(key).m_Desc.eViewType == eDepthStencilView; }
+	static bool          IsUnorderedAccessView(KeyType key) { return key == DefaultUnordererdAccessView || SResourceView(key).m_Desc.eViewType == eUnorderedAccessView; }
 
 	bool                 operator==(const SResourceView& other) const
 	{
@@ -1539,90 +1526,11 @@ public:
 	};
 
 public:
-	CTexture(const uint32 nFlags, const ColorF& clearColor = ColorF(Clr_Empty), CDeviceTexture* devTexToOwn = nullptr)
-	{
-		m_nFlags = nFlags;
-		m_eTFDst = eTF_Unknown;
-		m_eTFSrc = eTF_Unknown;
-		m_nMips = 1;
-		m_nWidth = 0;
-		m_nHeight = 0;
-		m_eTT = eTT_2D;
-		m_nDepth = 1;
-		m_nArraySize = 1;
-		m_nActualSize = 0;
-		m_fAvgBrightness = 1.0f;
-		m_cMinColor = 0.0f;
-		m_cMaxColor = 1.0f;
-		m_cClearColor = clearColor;
-		m_nPersistentSize = 0;
-		m_fAvgBrightness = 0.0f;
-
-		m_nUpdateFrameID = -1;
-		m_nAccessFrameID = -1;
-		m_nCustomID = -1;
-		m_pPixelFormat = NULL;
-		m_pDevTexture = NULL;
-		m_pDeviceRTV = NULL;
-		m_pDeviceRTVMS = NULL;
-		m_pDeviceShaderResource = NULL;
-		m_pDeviceShaderResourceSRGB = NULL;
-		m_pRenderTargetData = NULL;
-		m_pResourceViewData = NULL;
-
-		m_bAsyncDevTexCreation = false;
-
-		m_bIsLocked = false;
-		m_bNeedRestoring = false;
-		m_bNoTexture = false;
-		m_bResolved = true;
-		m_bUseMultisampledRTV = true;
-		m_bHighQualityFiltering = false;
-		m_bCustomFormat = false;
-		m_eSrcTileMode = eTM_None;
-
-		m_bPostponed = false;
-		m_bForceStreamHighRes = false;
-		m_bWasUnloaded = false;
-		m_bStreamed = false;
-		m_bStreamPrepared = false;
-		m_bStreamRequested = false;
-		m_bVertexTexture = false;
-		m_bUseDecalBorderCol = false;
-		m_bIsSRGB = false;
-		m_bNoDevTexture = false;
-		m_bInDistanceSortedList = false;
-		m_bCreatedInLevel = gRenDev->m_bInLevel;
-		m_bUsedRecently = 0;
-		m_bStatTracked = 0;
-		m_bStreamHighPriority = 0;
-		m_nStreamingPriority = 0;
-		m_nMinMipVidUploaded = MAX_MIP_LEVELS;
-		m_nMinMipVidActive = MAX_MIP_LEVELS;
-		m_nStreamSlot = InvalidStreamSlot;
-		m_fpMinMipCur = MAX_MIP_LEVELS << 8;
-		m_nStreamFormatCode = 0;
-
-		m_nDefState = 0;
-		m_pFileTexMips = NULL;
-		m_fCurrentMipBias = 0.f;
-
-		COMPILE_TIME_ASSERT(MaxStreamTasks < 32767);
-
-		if (devTexToOwn)
-		{
-			OwnDevTexture(nFlags, devTexToOwn);
-		}
-		else
-		{
-			m_pRenderTargetData = (nFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL)) ? new RenderTargetData : NULL;
-			m_pResourceViewData = new ResourceViewData;
-		}
-	}
+	CTexture(const uint32 nFlags, const ColorF& clearColor = ColorF(Clr_Empty), CDeviceTexture* devTexToOwn = nullptr);
 
 	// ITexture interface
-	virtual int AddRef() { return CBaseResource::AddRef(); }
-	virtual int Release()
+	virtual int AddRef() final { return CBaseResource::AddRef(); }
+	virtual int Release() final
 	{
 		if (!(m_nFlags & FT_DONT_RELEASE) || IsLocked())
 		{
@@ -1775,8 +1683,8 @@ public:
 	virtual const int                GetAccessFrameId() const                    { return m_nAccessFrameID; }
 	ILINE const int                  GetAccessFrameIdNonVirtual() const          { return m_nAccessFrameID; }
 	void                             SetResolved(bool bResolved)                 { m_bResolved = bResolved; }
-	const int                        GetCustomID() const                         { return m_nCustomID; }
-	void                             SetCustomID(int nID)                        { m_nCustomID = nID; }
+	virtual const int                GetCustomID() const final                   { return m_nCustomID; }
+	virtual void                     SetCustomID(int nID) final                  { m_nCustomID = nID; }
 	const bool                       UseDecalBorderCol() const                   { return m_bUseDecalBorderCol; }
 	const bool                       IsSRGB() const                              { return m_bIsSRGB; }
 	void                             SRGBRead(bool bEnable = false)              { m_bIsSRGB = bEnable; }
@@ -1844,27 +1752,24 @@ public:
 	bool               GenerateMipMaps(bool bSetOrthoProj = false, bool bUseHW = true, bool bNormalMap = false);
 
 	D3DShaderResource* GetShaderResourceView(SResourceView::KeyType resourceViewID = SResourceView::DefaultView, bool bLegacySrgbLookup = false);
+	D3DShaderResource* GetShaderResourceView(SResourceView::KeyType resourceViewID = SResourceView::DefaultView, bool bLegacySrgbLookup = false) const;
+
 	void               SetShaderResourceView(D3DShaderResource* pDeviceShaderResource, bool bMultisampled = false);
 
 	CDeviceTexture*    GetDevTextureMSAA() const
 	{
 		return m_pRenderTargetData->m_pDeviceTextureMSAA;
 	}
-	void SetDevTextureMSAA(SMSAA* pMSAA)
-	{
-		SAFE_RELEASE(m_pRenderTargetData->m_pDeviceTextureMSAA);
-
-		m_pRenderTargetData->m_pDeviceTextureMSAA = pMSAA->m_pZTexture->GetDevTexture();
-		m_pRenderTargetData->m_pDeviceTextureMSAA->GetBaseTexture()->AddRef();
-		m_pRenderTargetData->m_nMSAAQuality = pMSAA->Quality;
-		m_pRenderTargetData->m_nMSAASamples = pMSAA->Type;
-	}
 
 	D3DUAV*            GetDeviceUAV();
+	D3DUAV*            GetDeviceUAV() const;
 
-	SResourceView&     GetResourceView(const SResourceView& rvDesc);
+	void*              GetResourceView(const SResourceView& rvDesc);
+	void*              GetResourceView(const SResourceView& rvDesc) const;
+
+	void               SetResourceView(const SResourceView& rvDesc, void* pView);
+
 	void*              CreateDeviceResourceView(const SResourceView& rvDesc);
-
 	D3DDepthSurface*   GetDeviceDepthStencilView(int nFirstSlice = 0, int nSliceCount = -1, bool bMultisampled = false, bool readOnly = false);
 	D3DShaderResource* GetDeviceDepthReadOnlySRV(int nFirstSlice = 0, int nSliceCount = -1, bool bMultisampled = false);
 	D3DShaderResource* GetDeviceStencilReadOnlySRV(int nFirstSlice = 0, int nSliceCount = -1, bool bMultisampled = false);
@@ -2074,15 +1979,8 @@ public:
 	static STexStreamingInfo*  StreamState_AllocateInfo(int nMips);
 	static void                StreamState_ReleaseInfo(CTexture* pOwnerTex, STexStreamingInfo* pInfo);
 
-	ILINE void                 Relink()
-	{
-		gRenDev->m_pRT->RC_RelinkTexture(this);
-	}
-
-	ILINE void Unlink()
-	{
-		gRenDev->m_pRT->RC_UnlinkTexture(this);
-	}
+	void                       Relink();
+	void                       Unlink();
 
 	inline void RT_Relink()
 	{
@@ -2091,11 +1989,13 @@ public:
 
 		s_pTextureStreamer->Relink(this);
 	}
+
 	inline void RT_Unlink()
 	{
 		if (IsInDistanceSortedList())
 			s_pTextureStreamer->Unlink(this);
 	}
+
 	//=======================================================
 
 	static void ApplyForID(int nTUnit, int nID, int nState, int nSUnit)
@@ -2105,6 +2005,7 @@ public:
 		if (pTex)
 			pTex->Apply(nTUnit, nState, -1, nSUnit);
 	}
+
 	static const CCryNameTSCRC& mfGetClassName();
 	static CTexture*            GetByID(int nID);
 	static CTexture*            GetByName(const char* szName, uint32 flags = 0);
@@ -2123,7 +2024,6 @@ public:
 
 	static void                 CreateSystemTargets();
 	static void                 ReleaseSystemTargets();
-	static void                 ReleaseMiscTargets();
 	static void                 ReleaseSystemTextures(bool bFinalRelease = false);
 	static void                 LoadDefaultSystemTextures();
 	static void                 LoadScaleformSystemTextures();
@@ -2241,7 +2141,6 @@ public:
 
 		if (i == nTexStatesSize)
 		{
-			ScopedSwitchToGlobalHeap useGlobalHeap;
 			s_TexStates.push_back(TS);
 			s_TexStates[i].PostCreate();
 		}
@@ -2329,14 +2228,6 @@ public:
 	static CTexture* s_ptexHeightMapAO[2];
 	static CTexture* s_ptexHeightMapAODepth[2];
 
-	// Render targets for Light Propagation Volumes
-	static CTexture* s_ptexLPV_RTs[3];                // Currently bound LPV during rendering (used for auto-binding in shaders)
-
-	// Render targets for Reflective Shadow Maps (used for auto-binding in shaders)
-	static CTexture*           s_ptexRSMFlux;
-	static CTexture*           s_ptexRSMNormals;
-	static CTexture*           s_ptexRSMDepth;
-
 	static CTexture*           s_ptexBackBuffer;              // back buffer copy
 	static CTexture*           s_ptexModelHudBuffer;          // used by Menu3DModelRenderer to postprocess render models
 	static CTexture*           s_ptexPrevBackBuffer[2][2];    // previous frame back buffer copies (for left and right eye)
@@ -2347,7 +2238,8 @@ public:
 
 	static CTexture*           s_ptexPrevFrameScaled; // 2x
 
-	static CTexture*           s_ptexDepthBufferQuarter; //Quater res depth buffer
+	static CTexture*           s_ptexDepthBufferQuarter;     // Quater res depth buffer
+	static CTexture*           s_ptexDepthBufferHalfQuarter; // Eighth res depth buffer
 
 	static CTexture*           s_ptexWaterOcean;         // water ocean vertex texture
 	static CTexture*           s_ptexWaterVolumeDDN;     // water volume heightmap
@@ -2357,6 +2249,10 @@ public:
 	static CTexture*           s_ptexWaterCaustics[2];   // caustics buffers
 	static CTexture*           s_ptexRainOcclusion;      // top-down rain occlusion
 	static CTexture*           s_ptexRainSSOcclusion[2]; // screen-space rain occlusion accumulation
+
+	static CMipmapGenPass*     s_pMipperWaterVolumeDDN;
+	static CMipmapGenPass*     s_pMipperWaterVolumeRefl[2];
+	static CMipmapGenPass*     s_pMipperWaterRipplesDDN;
 
 	static CTexture*           s_ptexRainDropsRT[2];
 
@@ -2382,6 +2278,7 @@ public:
 	static CTexture*           s_ptexZTargetDownSample[4];
 	static CTexture*           s_ptexZTargetScaled;
 	static CTexture*           s_ptexZTargetScaled2;
+	static CTexture*           s_ptexZTargetScaled3;
 
 	static CTexture*           s_ptexHDRTarget;
 	static CTexture*           s_ptexVelocityObjects[2]; // Dynamic object velocity (for left and right eye)
@@ -2405,7 +2302,6 @@ public:
 	static CTexture*           s_ptexSkyDomeMie;
 	static CTexture*           s_ptexSkyDomeRayleigh;
 	static CTexture*           s_ptexSkyDomeMoon;
-	static CTexture*           s_ptexText_FromSF[NUM_SCALEFORM_TEXTURES];
 
 	static CTexture*           s_ptexSceneTargetScaled;
 	static CTexture*           s_ptexSceneTargetScaledBlurred;
@@ -2417,6 +2313,7 @@ public:
 
 	static CTexture*           s_ptexStereoL;
 	static CTexture*           s_ptexStereoR;
+	static CTexture*           s_ptexQuadLayers[2];
 
 	static CTexture*           s_ptexFlaresOcclusionRing[MAX_OCCLUSION_READBACK_TEXTURES];
 	static CTexture*           s_ptexFlaresGather;
@@ -2433,8 +2330,6 @@ public:
 	static CTexture*           s_FrontBufferTextures[2];
 
 	static CTexture*           s_ptexVolumetricFog;
-	static CTexture*           s_ptexVolumetricFogDensityColor;
-	static CTexture*           s_ptexVolumetricFogDensity;
 	static CTexture*           s_ptexVolumetricClipVolumeStencil;
 
 	static CTexture*           s_ptexVolCloudShadow;
@@ -2491,7 +2386,6 @@ protected:
 	virtual void CalcSize(uint32& width, uint32& height, float distToCamera = -1) const;
 
 	void         InitDynTexture(ETexPool eTexPool);
-
 protected:
 	volatile int  m_refCount;
 	uint32        m_width;
@@ -2818,20 +2712,23 @@ class CFlashTextureSource
 public:
 	CFlashTextureSource(const char* pFlashFileName, const IRenderer::SLoadShaderItemArgs* pArgs);
 
-	virtual EDynTextureRTType GetRTType() const  { return DTS_RT_UNIQUE; }
-	virtual ITexture*         GetTexture() const { return m_pDynTexture->GetTexture(); }
+	virtual EDynTextureRTType GetRTType() const override  { return DTS_RT_UNIQUE; }
+	virtual ITexture*         GetTexture() const override { return m_pDynTexture->GetTexture(); }
 
 protected:
 	virtual ~CFlashTextureSource();
 
-	virtual int          GetWidth() const;
-	virtual int          GetHeight() const;
+	virtual int          GetWidth() const override;
+	virtual int          GetHeight() const override;
 
-	virtual SDynTexture* GetDynTexture() const { return m_pDynTexture; }
-	virtual bool         UpdateDynTex(int rtWidth, int rtHeight);
+	virtual SDynTexture* GetDynTexture() const override { return m_pDynTexture; }
+	virtual bool         UpdateDynTex(int rtWidth, int rtHeight) override;
+
+	virtual bool         Update() override;
 
 private:
-	SDynTexture* m_pDynTexture;
+	SDynTexture*    m_pDynTexture;
+	CMipmapGenPass* m_pMipMapper;
 };
 
 class CFlashTextureSourceSharedRT
@@ -2840,8 +2737,8 @@ class CFlashTextureSourceSharedRT
 public:
 	CFlashTextureSourceSharedRT(const char* pFlashFileName, const IRenderer::SLoadShaderItemArgs* pArgs);
 
-	virtual EDynTextureRTType GetRTType() const  { return DTS_RT_SHARED; }
-	virtual ITexture*         GetTexture() const { return ms_pDynTexture->GetTexture(); }
+	virtual EDynTextureRTType GetRTType() const override  { return DTS_RT_SHARED; }
+	virtual ITexture*         GetTexture() const override { return ms_pDynTexture->GetTexture(); }
 
 	static void               SetSharedRTDim(int width, int height);
 	static void               SetupSharedRenderTargetRT();
@@ -2849,23 +2746,27 @@ public:
 protected:
 	virtual ~CFlashTextureSourceSharedRT();
 
-	virtual int          GetWidth() const                        { return GetSharedRTWidth(); }
-	virtual int          GetHeight() const                       { return GetSharedRTHeight(); }
+	virtual int          GetWidth() const override                        { return GetSharedRTWidth(); }
+	virtual int          GetHeight() const override                       { return GetSharedRTHeight(); }
 
-	virtual SDynTexture* GetDynTexture() const                   { return ms_pDynTexture; }
-	virtual bool         UpdateDynTex(int rtWidth, int rtHeight) { return ms_pDynTexture->IsValid(); };
+	virtual SDynTexture* GetDynTexture() const override                   { return ms_pDynTexture; }
+	virtual bool         UpdateDynTex(int rtWidth, int rtHeight) override { return ms_pDynTexture->IsValid(); };
+
+	virtual bool         Update() override;
 
 private:
-	static int  GetSharedRTWidth()  { return CRenderer::CV_r_DynTexSourceSharedRTWidth > 0 ? Align8(max(CRenderer::CV_r_DynTexSourceSharedRTWidth, 16)) : ms_sharedRTWidth; }
-	static int  GetSharedRTHeight() { return CRenderer::CV_r_DynTexSourceSharedRTHeight > 0 ? Align8(max(CRenderer::CV_r_DynTexSourceSharedRTHeight, 16)) : ms_sharedRTHeight; }
+	static int  GetSharedRTWidth();
+	static int  GetSharedRTHeight();
 	static int  NearestPowerOfTwo(int n);
 	static void ProbeDepthStencilSurfaceCreation(int width, int height);
 
 private:
-	static SDynTexture* ms_pDynTexture;
-	static int          ms_sharedRTWidth;
-	static int          ms_sharedRTHeight;
-	static int          ms_instCount;
+	static SDynTexture*    ms_pDynTexture;
+	static CMipmapGenPass* ms_pMipMapper;
+
+	static int             ms_sharedRTWidth;
+	static int             ms_sharedRTHeight;
+	static int             ms_instCount;
 };
 
 class CDynTextureSourceLayerActivator

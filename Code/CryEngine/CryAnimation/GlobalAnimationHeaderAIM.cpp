@@ -36,7 +36,7 @@ uint32 GlobalAnimationHeaderAIM::LoadAIM()
 	OnAssetNotFound();
 
 	stack_string strPath = m_FilePath.c_str();
-	CryStringUtils::UnifyFilePath(strPath);
+	PathUtil::UnifyFilePath(strPath);
 
 	if (!pChunkFile->Read(m_FilePath))
 	{
@@ -320,7 +320,7 @@ bool GlobalAnimationHeaderAIM::ReadController(IChunkFile::ChunkDesc* pChunkDesc,
 
 			const uint32 trackAlignment = pCtrlChunk->TracksAligned ? 4 : 1;
 
-			RotationControllerPtr pRotation = nullptr;
+			IRotationController* pRotation = nullptr;
 			if (pCtrlChunk->numRotationKeys > 0)
 			{
 				ITrackRotationStorage* pStorage = ControllerHelper::GetRotationControllerPtr(pCtrlChunk->RotationFormat);
@@ -345,12 +345,12 @@ bool GlobalAnimationHeaderAIM::ReadController(IChunkFile::ChunkDesc* pChunkDesc,
 				}
 #endif         //_RELEASE
 
-				pRotation = RotationControllerPtr(new RotationTrackInformation);
+				pRotation = new RotationTrackInformation;
 				pRotation->SetRotationStorage(pStorage);
 				pRotation->SetKeyTimesInformation(pRotTimeKeys);
 			}
 
-			PositionControllerPtr pPosition = nullptr;
+			IPositionController* pPosition = nullptr;
 			if (pCtrlChunk->numPositionKeys > 0)
 			{
 				ITrackPositionStorage* pStorage = ControllerHelper::GetPositionControllerPtr(pCtrlChunk->PositionFormat);
@@ -383,7 +383,7 @@ bool GlobalAnimationHeaderAIM::ReadController(IChunkFile::ChunkDesc* pChunkDesc,
 #endif           //_RELEASE
 				}
 
-				pPosition = PositionControllerPtr(new PositionTrackInformation);
+				pPosition = new PositionTrackInformation;
 				pPosition->SetPositionStorage(pStorage);
 				pPosition->SetKeyTimesInformation(pPosTimeKeys);
 			}
@@ -1802,7 +1802,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 		if (i > 0.999) t = 1.0;
 		NLerp2AimPose(rRot, rPos, m_arrRelPose0, m_arrRelPose1, t, m_arrAbsPose);
 		Quatd qt = mid * m_arrAbsPose[nWBone].q;
-		polar[c] = Vec2(PolarCoordinate(qt));
+		polar[c] = Vec2d(PolarCoordinate(qt));
 		weight[c].SetLerp(w0, w1, t);
 		;
 		if (t == 1.0) break;

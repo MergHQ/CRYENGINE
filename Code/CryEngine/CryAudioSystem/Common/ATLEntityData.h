@@ -41,11 +41,6 @@ struct IAudioTrigger
 	virtual ~IAudioTrigger() {}
 };
 
-struct SAudioTriggerInfo
-{
-	float maxRadius;
-};
-
 /**
  * An AudioImpl may use this interface to define a class for storing implementation-specific
  * data needed for identifying and using the corresponding IAudioRtpc

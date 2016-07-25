@@ -21,7 +21,6 @@
 #include "ILevelSystem.h"
 #include "IMovementController.h"
 #include "IItemSystem.h"
-#include <CryEntitySystem/IEntityPoolManager.h>
 #include <CryMovie/IMovieSystem.h>
 #include "IVehicleSystem.h"
 #include "EquipmentSystemInterface.h"
@@ -33,10 +32,10 @@
 #include <CryAISystem/ICommunicationManager.h>
 #include "Turret/Turret/Turret.h"
 #include "Environment/DoorPanel.h"
+#include "UI/HUD/HUDEventDispatcher.h"
+#include "Environment/LedgeManager.h"
 
 #include <IForceFeedbackSystem.h>
-
-#include "Environment/LedgeManager.h"
 
 #define EDITOR_SERVER_PORT 0xed17
 
@@ -451,6 +450,7 @@ void CEditorGame::InitUIEnums(IGameToEditorInterface* pGTE)
 	InitEntityArchetypeEnums(pGTE);
 	InitForceFeedbackEnums(pGTE);
 	InitActionInputEnums(pGTE);
+	InitHUDEventEnums(pGTE);
 	InitReadabilityEnums(pGTE);
 	InitLedgeTypeEnums(pGTE);
 	InitSmartMineTypeEnums(pGTE);
@@ -816,6 +816,19 @@ void CEditorGame::InitActionInputEnums( IGameToEditorInterface* pGTE )
 	}
 }
 
+void CEditorGame::InitHUDEventEnums(IGameToEditorInterface* pGTE)
+{
+	const char** szNameValueStrings = new const char*[eHUDEvent_LAST];
+	int curEntryIndex = 0;
+	for (int i = 0; i < eHUDEvent_LAST; ++i)
+	{
+		const char* szEventName = CHUDEventDispatcher::GetEventName((EHUDEventType)i);
+		szNameValueStrings[curEntryIndex++] = szEventName;
+	}
+	pGTE->SetUIEnums("hud_events", szNameValueStrings, eHUDEvent_LAST);
+	delete[] szNameValueStrings;
+}
+
 void CEditorGame::InitReadabilityEnums( IGameToEditorInterface* pGTE )
 {
 	CRY_ASSERT(pGTE);
@@ -1123,7 +1136,7 @@ void MarkEntityForSerialize(TSerializationData& data, IEntity* pEntity, int reas
 	}
 
 	// skip if no-save flag is set on the entity itself, or if the entity is due to be pooled
-	if(!gEnv->pEntitySystem->ShouldSerializedEntity(pEntity) || gEnv->pEntitySystem->GetIEntityPoolManager()->IsEntityBookmarked(pEntity->GetId()))
+	if(!gEnv->pEntitySystem->ShouldSerializedEntity(pEntity))
 	{
 		return;
 	}

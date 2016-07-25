@@ -58,6 +58,11 @@ void CSimpleHttpServer::Quit()
 	m_internal.Stop(); // Not queued, only called on shutdown
 }
 
+void CSimpleHttpServer::Tick()
+{
+	m_internal.UpdateClosedConnections();
+}
+
 void CSimpleHttpServer::SendResponse(int connectionID, EStatusCode statusCode, EContentType contentType, const string& content, bool closeConnection)
 {
 	FROM_GAME(&CSimpleHttpServerInternal::SendResponse, &m_internal, connectionID, statusCode, contentType, content, closeConnection);
@@ -431,6 +436,15 @@ CSimpleHttpServerInternal::HttpConnection* CSimpleHttpServerInternal::GetConnect
 	return NULL;
 }
 
+void CSimpleHttpServerInternal::UpdateClosedConnections()
+{
+	CryAutoLock<CryMutex> lock(m_mutex);
+	if (m_closedConnections.empty())
+		return;
+
+	m_closedConnections.clear();
+}
+
 void CSimpleHttpServerInternal::CloseHttpConnection(int connectionID, bool bGraceful)
 {
 	for (size_t i = 0; i < m_connections.size(); i++)
@@ -442,7 +456,6 @@ void CSimpleHttpServerInternal::CloseHttpConnection(int connectionID, bool bGrac
 			if (pConnection->m_pSocketSession)
 			{
 				pConnection->m_pSocketSession->Close();
-				pConnection->m_pSocketSession = NULL;
 			}
 
 #if defined(HTTP_WEBSOCKETS)
@@ -463,6 +476,11 @@ void CSimpleHttpServerInternal::CloseHttpConnection(int connectionID, bool bGrac
 			pConnection->m_remoteAddr = TNetAddress(SIPv4Addr());
 			pConnection->m_sessionState = eSS_Unsessioned;
 			pConnection->m_receivingState = eRS_Ignoring;
+
+			{
+				CryAutoLock<CryMutex> lock(m_mutex);
+				m_closedConnections.push_back(pConnection->m_pSocketSession);
+			}
 
 			m_connections.erase(m_connections.begin() + i);
 			break;
@@ -664,8 +682,6 @@ void CSimpleHttpServerInternal::OnConnectionAccepted(IStreamSocketPtr pStreamSoc
 	}
 	else
 	{
-		ScopedSwitchToGlobalHeap globalHeap;
-
 		// allocate new connection
 		m_connections.push_back(HttpConnection(GetNewConnectionID()));
 

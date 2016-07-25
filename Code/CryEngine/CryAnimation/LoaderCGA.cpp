@@ -6,7 +6,6 @@
 #include "Model.h"
 #include "LoaderTCB.h"
 #include "AnimEventLoader.h"
-#include <CryString/StringUtils.h>
 
 #define ANIMATION_EXT  "anm"
 #define CONT_EXTENSION (0x10)
@@ -146,7 +145,7 @@ void CryCGALoader::LoadAnimations(const char* cgaFile, CDefaultSkeleton* pCGAMod
 				{
 					filename = fullpath;
 					filename.append(fd.name);
-					filename = PathUtil::ToLower(filename);
+					filename.MakeLower();
 
 					if (CryStringUtils::stristr(filename.c_str(), ".anm") != NULL)
 					{
@@ -190,8 +189,8 @@ bool CryCGALoader::LoadAnimationANM(const char* animFile, CDefaultSkeleton* pCGA
 	assert(strlen(animFile) < _MAX_PATH);
 	char fname[_MAX_PATH];
 	cry_strcpy(fname, animFile);
-	CryStringUtils::StripFileExtension(fname);
-	const char* sAnimName = CryStringUtils::FindFileNameInPath(fname);
+	PathUtil::RemoveExtension(fname);
+	const char* sAnimName = PathUtil::GetFile(fname);
 
 	const char* sName = strchr(sAnimName, '_');
 	if (sName)

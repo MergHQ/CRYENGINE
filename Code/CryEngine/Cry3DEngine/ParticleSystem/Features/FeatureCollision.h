@@ -20,10 +20,19 @@ class CFeatureCollision : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureCollision() : CParticleFeature(gpu_pfx2::eGpuFeatureType_Collision) {}
+	CFeatureCollision()
+		: CParticleFeature(gpu_pfx2::eGpuFeatureType_Collision)
+		, m_offset(0.5f)
+		, m_radius(0.5f)
+		, m_restitution(0.5f)
+	{}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
+private:
+	float m_offset;
+	float m_radius;
+	float m_restitution;
 };
 
 }

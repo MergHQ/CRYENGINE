@@ -4,6 +4,7 @@
 #include "ToneMapping.h"
 
 #include "SunShafts.h"
+#include "ColorGrading.h"
 #include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
@@ -35,26 +36,17 @@ void CToneMappingStage::Execute()
 	bSunShafts = pSunShaftsStage->IsActive();
 	pSunShaftsTex = pSunShaftsStage->GetFinalOutputRT();
 
-	pRenderer->GetGraphicsPipeline().SwitchToLegacyPipeline();
-
-	// Color grading
-	if (CRenderer::CV_r_colorgrading && CRenderer::CV_r_colorgrading_charts)
+	CColorGradingStage* pColorGradingStage = (CColorGradingStage*)pRenderer->GetGraphicsPipeline().GetStage(eStage_ColorGrading);
+	if (CTexture* pColorChartTexTentative = pColorGradingStage->GetColorChart())
 	{
-		CColorGrading* pColorGrading = (CColorGrading*)PostEffectMgr()->GetEffect(ePFX_ColorGrading);
-
-		SColorGradingMergeParams pMergeParams;
-		if (pColorGrading && pColorGrading->UpdateParams(pMergeParams))
-		{
-			bColorGrading = true;
-			pColorChartTex = pRenderer->m_pColorGradingControllerD3D->GetColorChart();
-		}
+		bColorGrading = true;
+		pColorChartTex = pColorChartTexTentative;
 	}
 
-	pRenderer->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+	int featureMask = ((int)bSunShafts << 1) | ((int)bColorGrading << 2) | ((int)bBloomEnabled << 3) | ((int)bFXAAEnabled << 4) |
+	                  ((CRenderer::CV_r_HDREyeAdaptationMode & 0xF) << 5) | ((CRenderer::CV_r_HDRDebug & 0xF) << 9);
 
-	int featureMask = ((int)bSunShafts << 1) | ((int)bColorGrading << 2) | ((int)bBloomEnabled << 3) | ((int)bFXAAEnabled << 4);
-
-	if (m_passToneMapping.InputChanged(featureMask, pSunShaftsTex->GetTextureID(), CRenderer::CV_r_HDREyeAdaptationMode, CRenderer::CV_r_HDRDebug))
+	if (m_passToneMapping.InputChanged(featureMask, pSunShaftsTex->GetTextureID(), CTexture::s_ptexCurLumTexture->GetTextureID()))
 	{
 		uint64 rtMask = 0;
 		if (CRenderer::CV_r_HDREyeAdaptationMode == 2)
@@ -81,6 +73,7 @@ void CToneMappingStage::Execute()
 		m_passToneMapping.SetTextureSamplerPair(8, pColorChartTex, m_samplerLinear);
 		m_passToneMapping.SetTextureSamplerPair(9, pSunShaftsTex, m_samplerLinear);
 		m_passToneMapping.SetRequireWorldPos(true);
+		m_passToneMapping.SetRequirePerViewConstantBuffer(true);
 	}
 
 	static CCryNameR eyeAdaptationName("HDREyeAdaptation");
@@ -94,11 +87,10 @@ void CToneMappingStage::Execute()
 	Vec4 hdrSetupParams[5];
 	gEnv->p3DEngine->GetHDRSetupParams(hdrSetupParams);
 
-	pShader->FXSetPSFloat(eyeAdaptationName, CRenderer::CV_r_HDREyeAdaptationMode == 2 ? &hdrSetupParams[4] : &hdrSetupParams[3], 1);
-	pShader->FXSetPSFloat(filmCurveName, &hdrSetupParams[0], 1);
-	pShader->FXSetPSFloat(colorBalanceName, &hdrSetupParams[2], 1);
-	const Vec4 bloomColor = hdrSetupParams[1] * Vec4(Vec3(1.0f / 8.0f), 1.0f); // Division by 8.0f was done in shader before, remove this at some point
-	pShader->FXSetPSFloat(bloomColorName, &bloomColor, 1);
+	m_passToneMapping.SetConstant(eHWSC_Pixel, eyeAdaptationName, CRenderer::CV_r_HDREyeAdaptationMode == 2 ? hdrSetupParams[4] : hdrSetupParams[3]);
+	m_passToneMapping.SetConstant(eHWSC_Pixel, filmCurveName, hdrSetupParams[0]);
+	m_passToneMapping.SetConstant(eHWSC_Pixel, colorBalanceName, hdrSetupParams[2]);
+	m_passToneMapping.SetConstant(eHWSC_Pixel, bloomColorName, hdrSetupParams[1] * Vec4(Vec3(1.0f / 8.0f), 1.0f)); // Division by 8.0f was done in shader before, remove this at some point
 
 	Vec4 shaftsSunCol(0, 0, 0, 0);
 	if (bSunShafts)
@@ -110,7 +102,7 @@ void CToneMappingStage::Execute()
 		sunColor.SetLerp(Vec3(sunShaftParams[0].x, sunShaftParams[0].y, sunShaftParams[0].z), sunColor, sunShaftParams[1].w);
 		shaftsSunCol = Vec4(sunColor * sunShaftParams[1].z, 1);
 	}
-	pShader->FXSetPSFloat(shaftsSunColName, &shaftsSunCol, 1);
+	m_passToneMapping.SetConstant(eHWSC_Pixel, shaftsSunColName, shaftsSunCol);
 
 	m_passToneMapping.Execute();
 }

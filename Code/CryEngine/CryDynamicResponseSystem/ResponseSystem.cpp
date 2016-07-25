@@ -115,7 +115,8 @@ bool CResponseSystem::Init(const char* szFilesFolder)
 	m_pDialogLineDatabase->InitFromFiles(m_filesFolder + "/DialogLines");
 
 	m_CurrentTime.SetSeconds(0.0f);
-	m_pCurrentTimeVariable = m_pVariableCollectionManager->GetCollection("Global")->CreateVariable("CurrentTime", m_CurrentTime.GetSeconds());
+
+	m_pVariableCollectionManager->GetCollection("Global")->CreateVariable("CurrentTime", 0.0f);
 
 	return m_pResponseManager->LoadFromFiles(m_filesFolder + "/Responses");
 }
@@ -138,7 +139,8 @@ void CResponseSystem::Update()
 	}
 
 	m_CurrentTime += gEnv->pTimer->GetFrameTime();
-	m_pCurrentTimeVariable->SetValue(m_CurrentTime.GetSeconds());
+	
+	m_pVariableCollectionManager->GetCollection("Global")->SetVariableValue("CurrentTime", m_CurrentTime.GetSeconds());
 
 	m_bIsCurrentlyUpdating = true;
 	m_pVariableCollectionManager->Update();
@@ -196,7 +198,7 @@ CDataImportHelper* CResponseSystem::GetCustomDataformatHelper()
 }
 
 //--------------------------------------------------------------------------------------------------
-CResponseActor* CResponseSystem::CreateResponseActor(const CHashedString& pActorName, const uint userData)
+CResponseActor* CResponseSystem::CreateResponseActor(const CHashedString& pActorName, const EntityId userData)
 {
 	CResponseActor* newActor = new CResponseActor(pActorName, userData);
 	m_CreatedActors.push_back(newActor);
@@ -269,8 +271,8 @@ void CResponseSystem::Serialize(Serialization::IArchive& ar)
 	m_pVariableCollectionManager->Serialize(ar);
 
 	m_pResponseManager->SerializeResponseStates(ar);
-
-	m_CurrentTime.SetSeconds(m_pCurrentTimeVariable->GetValueAsFloat());  //we serialize our DRS time manually via the time variable
+	
+	m_CurrentTime.SetSeconds(m_pVariableCollectionManager->GetCollection("Global")->GetVariableValue("CurrentTime").GetValueAsFloat());  //we serialize our DRS time manually via the time variable
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -304,7 +306,7 @@ void CResponseSystem::SetCurrentDrsUserName(const char* szNewDrsUserName)
 //--------------------------------------------------------------------------------------------------
 void CResponseSystem::_Reset(uint32 resetFlags)
 {
-	if (resetFlags & DRS::IDynamicResponseSystem::eResetHint_StopRunningResponses | DRS::IDynamicResponseSystem::eResetHint_ResetAllResponses)
+	if (resetFlags & (DRS::IDynamicResponseSystem::eResetHint_StopRunningResponses | DRS::IDynamicResponseSystem::eResetHint_ResetAllResponses))
 	{
 		m_pResponseManager->Reset((resetFlags& DRS::IDynamicResponseSystem::eResetHint_ResetAllResponses) > 0);
 	}
@@ -312,11 +314,12 @@ void CResponseSystem::_Reset(uint32 resetFlags)
 	{
 		m_pVariableCollectionManager->Reset();
 		m_CurrentTime.SetSeconds(0.0f);
-		m_pCurrentTimeVariable->SetValue(m_CurrentTime.GetSeconds());
+		m_pVariableCollectionManager->GetCollection("Global")->SetVariableValue("CurrentTime", m_CurrentTime.GetSeconds());
 	}
 	if (resetFlags & DRS::IDynamicResponseSystem::eResetHint_Speaker)
 	{
 		m_pSpeakerManager->Reset();
+		m_pDialogLineDatabase->Reset();
 	}
 	if (resetFlags & DRS::IDynamicResponseSystem::eResetHint_DebugInfos)
 	{
@@ -325,30 +328,54 @@ void CResponseSystem::_Reset(uint32 resetFlags)
 }
 
 //--------------------------------------------------------------------------------------------------
+void CResponseSystem::GetCurrentState(DRS::VariableValuesList* pOutCollectionsList, uint32 saveHints) const
+{
+	if (saveHints & SaveHints_Variables)
+	{
+		m_pVariableCollectionManager->GetAllVariableCollections(pOutCollectionsList);
+	}
+
+	if (saveHints & SaveHints_ResponseData)
+	{
+		m_pResponseManager->GetAllResponseData(pOutCollectionsList);
+	}
+}
+
+//--------------------------------------------------------------------------------------------------
+void CResponseSystem::SetCurrentState(const DRS::VariableValuesList& collectionsList)
+{
+	m_pVariableCollectionManager->SetAllVariableCollections(collectionsList);
+
+	m_CurrentTime.SetSeconds(m_pVariableCollectionManager->GetCollection("Global")->GetVariableValue("CurrentTime").GetValueAsFloat());  //we serialize our DRS time manually via the time variable
+
+	m_pResponseManager->SetAllResponseData(collectionsList);
+}
+
+//--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 
-CResponseActor::CResponseActor(const CHashedString name, EntityId usedEntityID)
+CResponseActor::CResponseActor(const CHashedString& name, EntityId usedEntityID)
 	: m_linkedEntityID(usedEntityID)
+	, m_localVariablesCollectionName(name)
 {
-	m_pLocalVariables = CResponseSystem::GetInstance()->GetCollection(name);  //the collection might already be created by conditions or actions.
-	if (!m_pLocalVariables)
-	{
-		m_pLocalVariables = CResponseSystem::GetInstance()->CreateVariableCollection(name);
-	}
 }
 
 //--------------------------------------------------------------------------------------------------
 CResponseActor::~CResponseActor()
 {
 	CResponseSystem::GetInstance()->GetSpeakerManager()->OnActorRemoved(this);
-	CResponseSystem::GetInstance()->ReleaseVariableCollection(m_pLocalVariables);
+	CVariableCollection* pLocalVariables = CResponseSystem::GetInstance()->GetCollection(m_localVariablesCollectionName);
+	if (pLocalVariables)
+	{
+		CResponseSystem::GetInstance()->ReleaseVariableCollection(pLocalVariables);
+	}
 }
 
 //--------------------------------------------------------------------------------------------------
 const CHashedString& CResponseActor::GetName() const
 {
-	return m_pLocalVariables->GetName();
+	return m_localVariablesCollectionName;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -367,7 +394,7 @@ IEntity* CResponseActor::GetLinkedEntity() const
 }
 
 //--------------------------------------------------------------------------------------------------
-DRS::SignalId CResponseActor::QueueSignal(const CHashedString& signalName, DRS::IVariableCollectionSharedPtr pSignalContext /*= nullptr*/, DRS::IResponseManager::IListener* pSignalListener /*= nullptr*/)
+DRS::SignalInstanceId CResponseActor::QueueSignal(const CHashedString& signalName, DRS::IVariableCollectionSharedPtr pSignalContext /*= nullptr*/, DRS::IResponseManager::IListener* pSignalListener /*= nullptr*/)
 {
 	CResponseManager* pResponseMgr = CResponseSystem::GetInstance()->GetResponseManager();
 	SSignal signal(signalName, this, std::static_pointer_cast<CVariableCollection>(pSignalContext));
@@ -375,8 +402,30 @@ DRS::SignalId CResponseActor::QueueSignal(const CHashedString& signalName, DRS::
 	{
 		pResponseMgr->AddListener(pSignalListener, signal.m_id);
 	}
-	CResponseSystem::GetInstance()->GetResponseManager()->QueueSignal(signal);
+	pResponseMgr->QueueSignal(signal);
 	return signal.m_id;
+}
+
+//--------------------------------------------------------------------------------------------------
+CVariableCollection* CResponseActor::GetLocalVariables()
+{
+	CVariableCollection* pLocalVariables = CResponseSystem::GetInstance()->GetCollection(m_localVariablesCollectionName);
+	if (!pLocalVariables)
+	{
+		pLocalVariables = CResponseSystem::GetInstance()->CreateVariableCollection(m_localVariablesCollectionName);
+	}
+	return pLocalVariables;
+}
+
+//--------------------------------------------------------------------------------------------------
+const CVariableCollection* CResponseActor::GetLocalVariables() const
+{
+	const CVariableCollection* pLocalVariables = CResponseSystem::GetInstance()->GetCollection(m_localVariablesCollectionName);  //the collection might already be created by conditions or actions.
+	if (!pLocalVariables)
+	{
+		pLocalVariables = CResponseSystem::GetInstance()->CreateVariableCollection(m_localVariablesCollectionName);
+	}
+	return pLocalVariables;
 }
 
 namespace DRS

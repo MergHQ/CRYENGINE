@@ -167,10 +167,9 @@ public:
 	void DetectMovement_StatLights();
 	void CollectLights();
 	void CollectAnalyticalOccluders();
-	void InitOccluderBoneNames();
 
 	PodArray<I3DEngine::SLightTI>            m_lightsTI_S, m_lightsTI_D;
-	PodArray<I3DEngine::SAnalyticalOccluder> m_AnalyticalOccluders;
+	PodArray<I3DEngine::SAnalyticalOccluder> m_AnalyticalOccluders[2];
 	AABB m_aabbLightsTI_D;
 	ITexture*                                m_pGlobalSpecCM;
 	float m_fGlobalSpecCM_Mult;
@@ -221,9 +220,6 @@ public:
 	PodArrayRT<Vec4>   m_arrRTPoolTris;
 	PodArrayRT<ColorB> m_arrRTPoolInds;
 	#endif
-
-	static const int MAX_BONES = 13;
-	char             m_arrOccluderBoneNames[MAX_BONES][64];
 };
 
 	#pragma pack(pop)

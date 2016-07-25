@@ -1,21 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   GameTokenNode.cpp
-//  Version:     v1.00
-//  Created:     03-11-2005 by AlexL
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
-#include <FlowSystem/Nodes/FlowBaseNode.h>
-#include <CryGame/IGameTokens.h>
-
 #include "CryAction.h"
+
+#include <CryGame/IGameTokens.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 namespace
 {
@@ -917,10 +906,10 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Mission:ModifyToken", CModifyGameTokenFlowNode);
-REGISTER_FLOW_NODE("Mission:SetGameToken", CSetGameTokenFlowNode);
-REGISTER_FLOW_NODE("Mission:GetGameToken", CGetGameTokenFlowNode);
-REGISTER_FLOW_NODE("Mission:CheckGameToken", CCheckGameTokenFlowNode);
+REGISTER_FLOW_NODE("Mission:GameTokenModify", CModifyGameTokenFlowNode);
+REGISTER_FLOW_NODE("Mission:GameTokenSet", CSetGameTokenFlowNode);
+REGISTER_FLOW_NODE("Mission:GameTokenGet", CGetGameTokenFlowNode);
+REGISTER_FLOW_NODE("Mission:GameTokenCheck", CCheckGameTokenFlowNode);
 REGISTER_FLOW_NODE("Mission:GameTokenCheckMulti", CGameTokenCheckMultiFlowNode);
 REGISTER_FLOW_NODE("Mission:GameToken", CGameTokenFlowNode);
 REGISTER_FLOW_NODE("Mission:GameTokensLevelToLevelStore", CFlowNodeGameTokensLevelToLevelStore);

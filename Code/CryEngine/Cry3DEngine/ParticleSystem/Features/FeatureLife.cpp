@@ -14,8 +14,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureLife = false;
-
 namespace pfx2
 {
 
@@ -57,7 +55,7 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		m_lifeTime.InitParticles(context, EPDT_LifeTime, EPDT_LifeTime);
+		m_lifeTime.InitParticles(context, EPDT_LifeTime);
 	}
 
 private:

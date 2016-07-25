@@ -1,17 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   TestExtensions.h
-//  Version:     v1.00
-//  Created:     02/25/2009 by CarstenW
-//  Description: Part of CryEngine's extension framework.
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _TESTEXTENSIONS_H_
-#define _TESTEXTENSIONS_H_
-
 #pragma once
 
 //#define EXTENSION_SYSTEM_INCLUDE_TESTCASES
@@ -104,5 +92,3 @@ public:
 DECLARE_SHARED_POINTERS(IDontLikeMacros);
 
 #endif // #ifdef EXTENSION_SYSTEM_INCLUDE_TESTCASES
-
-#endif // #ifndef _TESTEXTENSIONS_H_

@@ -7,7 +7,7 @@
 
    -------------------------------------------------------------------------
    History:
-   - 4:3:2009   11:38 : Created by Márcio Martins
+   - 4:3:2009   11:38 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #include "StdAfx.h"
@@ -113,6 +113,16 @@ void CVisionMap::UnregisterObserver(const ObserverID& observerID)
 	if (observerInfo.queuedForVisibilityUpdate)
 		stl::find_and_erase(m_observerVisibilityUpdateQueue, observerInfo.observerID);
 
+	for (const auto& pvsIdEntryPair : observerInfo.pvs)
+	{
+		const PVSEntry& pvsEntry = pvsIdEntryPair.second;
+		if (pvsEntry.visible)
+		{
+			TriggerObserverCallback(observerInfo, pvsEntry.observableInfo, false);
+			TriggerObservableCallback(observerInfo, pvsEntry.observableInfo, false);
+		}
+	}
+
 	m_observers.erase(observerIt);
 }
 
@@ -169,7 +179,10 @@ void CVisionMap::UnregisterObservable(const ObservableID& observableID)
 		PVSEntry& pvsEntry = pvsIt->second;
 
 		if (pvsEntry.visible)
+		{
 			TriggerObserverCallback(observerInfo, pvsEntry.observableInfo, false);
+			TriggerObservableCallback(observerInfo, pvsEntry.observableInfo, false);
+		}
 
 		DeletePendingRay(pvsEntry);
 
@@ -289,6 +302,17 @@ void CVisionMap::ObserverChanged(const ObserverID& observerID, const ObserverPar
 		currentObserverParams.entityId = newObserverParams.entityId;
 	}
 
+	if (hint & eChangedUserCondition)
+	{
+		needsUpdate = true;
+	}
+
+	if (hint & eChangedUserConditionCallback)
+	{
+		currentObserverParams.userConditionCallback = newObserverParams.userConditionCallback;
+		needsUpdate = true;
+	}
+
 	if (needsUpdate)
 	{
 		observerInfo.needsPVSUpdate = true;
@@ -386,6 +410,11 @@ void CVisionMap::ObservableChanged(const ObservableID& observableID, const Obser
 	if (hint & eChangedEntityId)
 	{
 		currentObservableParams.entityId = newObservableParams.entityId;
+	}
+
+	if (hint & eChangedUserCondition)
+	{
+		observableVisibilityPotentiallyChanged = true;
 	}
 
 	if (observableVisibilityPotentiallyChanged)
@@ -517,6 +546,14 @@ bool CVisionMap::IsInFoV(const ObserverInfo& observerInfo, const ObservableInfo&
 	return false;
 }
 
+bool CVisionMap::IsUserConditionSatisfied(const ObserverInfo& observerInfo, const ObservableInfo& observableInfo) const
+{
+	if (!observerInfo.observerParams.userConditionCallback)
+		return true;
+
+	return observerInfo.observerParams.userConditionCallback(observerInfo.observerID, observerInfo.observerParams, observableInfo.observableID, observableInfo.observableParams);
+}
+
 bool CVisionMap::ShouldObserve(const ObserverInfo& observerInfo, const ObservableInfo& observableInfo) const
 {
 	const bool matchesType = ((observerInfo.observerParams.typesToObserveMask & observableInfo.observableParams.typeMask) != 0);
@@ -535,6 +572,9 @@ bool CVisionMap::ShouldObserve(const ObserverInfo& observerInfo, const Observabl
 		return false;
 
 	if (!IsInFoV(observerInfo, observableInfo))
+		return false;
+
+	if (!IsUserConditionSatisfied(observerInfo, observableInfo))
 		return false;
 
 	return true;

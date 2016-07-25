@@ -1,5 +1,0 @@
-<DamageTable>
-	<!-- kill speed: anything above this will instantly kill the player -->
-	<VehicleDamage collisionKillSpeed="10.0" />
-</DamageTable>
-

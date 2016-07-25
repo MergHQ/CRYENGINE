@@ -3,10 +3,10 @@
 #include "StdAfx.h"
 #include "CryAction.h"
 #include "IVehicleSystem.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
 #include "FlowVehicleAttachment.h"
 #include "VehicleSystem/VehiclePartAttachment.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //------------------------------------------------------------------------
 void CFlowVehicleAttachment::Init(SActivationInfo* pActivationInfo)

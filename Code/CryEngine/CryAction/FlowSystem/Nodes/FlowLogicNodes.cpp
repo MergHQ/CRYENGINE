@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CLogicNode : public CFlowBaseNode<eNCT_Instanced>
 {
@@ -1032,10 +1032,11 @@ public:
 
 	CFlowNode_Sequentializer(SActivationInfo* pActInfo)
 		: m_needToCheckConnectedPorts(true)
+		, m_closed(false)
 		, m_lastTriggeredPort(PORT_NONE)
 		, m_numConnectedPorts(0)
-		, m_closed(false)
 	{
+		ZeroArray(m_connectedPorts);
 	}
 
 	enum INPUTS

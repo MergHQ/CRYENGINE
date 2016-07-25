@@ -9,7 +9,7 @@ Description: Stores all item parameters that don't mutate in instances...
 
 -------------------------------------------------------------------------
 History:
-- 3:4:2007   10:54 : Created by Márcio Martins
+- 3:4:2007   10:54 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 

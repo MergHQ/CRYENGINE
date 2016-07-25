@@ -3,10 +3,13 @@
 #include "StdAfx.h"
 #include "Game.h"
 #include "GameFactory.h"
-#include "flownodes/FlowBaseNode.h"
 
-CAutoRegFlowNodeBaseZero* CAutoRegFlowNodeBaseZero::m_pFirst = nullptr;
-CAutoRegFlowNodeBaseZero* CAutoRegFlowNodeBaseZero::m_pLast = nullptr;
+#include <CryFlowGraph/IFlowBaseNode.h>
+
+#ifndef _LIB
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pFirst = nullptr;
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = nullptr;
+#endif
 
 CGame::CGame()
 	: m_pGameFramework(nullptr)
@@ -38,7 +41,7 @@ void CGame::RegisterGameFlowNodes()
 	IFlowSystem* pFlowSystem = m_pGameFramework->GetIFlowSystem();
 	if (pFlowSystem)
 	{
-		CAutoRegFlowNodeBaseZero* pFactory = CAutoRegFlowNodeBaseZero::m_pFirst;
+		CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;
 
 		while (pFactory)
 		{

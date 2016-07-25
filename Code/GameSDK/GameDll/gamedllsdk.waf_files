@@ -494,9 +494,7 @@
          "Environment/DangerousRigidBody.h"
       ],
       "Game Files/Environment/Tornado":[
-         "Environment/FlowTornado.cpp",
          "Environment/Tornado.cpp",
-         "Environment/FlowTornado.h",
          "Environment/Tornado.h"
       ]
 		},
@@ -987,9 +985,7 @@
       ],
       "Multiplayer/Graphics":[
          "Graphics/2DRenderUtils.cpp",
-         "Graphics/ColorGradientManager.cpp",
-         "Graphics/2DRenderUtils.h",
-         "Graphics/ColorGradientManager.h"
+         "Graphics/2DRenderUtils.h"
       ],
       "Multiplayer/Item Files/Weapon Files/Projectiles":[
          "Chaff.cpp",
@@ -999,11 +995,9 @@
       ],
       "Multiplayer/Network":[
          "Network/GameNetworkUtils.cpp",
-         "Network/MatchMakingUtils.cpp",
          "Network/GameNetworkDefines.h",
          "Network/GameNetworkUtils.h",
-         "Network/LobbyTaskQueue.h",
-         "Network/MatchMakingUtils.h"
+         "Network/LobbyTaskQueue.h"
       ],
       "Multiplayer/Network/DownloadMgr":[
          "DownloadMgr.cpp",
@@ -1105,15 +1099,12 @@
       "Nodes":[
          "Nodes/AchievementNode.cpp",
          "Nodes/AINodes.cpp",
-         "Nodes/ColorGradientNode.cpp",
          "Nodes/FeatureTestNode.cpp",
          "Nodes/FlowActorNodes.cpp",
          "Nodes/FlowActorSensor.cpp",
          "Nodes/FlowCheckAreaNode.cpp",
-         "Nodes/FlowConvoyNode.cpp",
          "Nodes/FlowHitInfoNode.cpp",
 		 "Nodes/FlowLockPlayerNode.cpp",
-		 "Nodes/FlowLockPlayerRotationNode.cpp",
          "Nodes/FlowNodesInput.cpp",
          "Nodes/FlowPlayerStagingNode.cpp",
          "Nodes/FlowPlayerStumble.cpp",
@@ -1121,7 +1112,6 @@
          "FlowVehicleNodes.cpp",
          "Nodes/G2FlowEntityElectricConnector.cpp",
          "Nodes/G2FlowEntityVelocity.cpp",
-         "Nodes/G2FlowYesNoGestureNode.cpp",
          "Nodes/GameNodes.cpp",
          "Nodes/MPNodes.cpp",
          "Nodes/PressureWaveNode.cpp",
@@ -1134,13 +1124,10 @@
          "FlowWeaponCustomizationNodes.cpp",
          "Nodes/ModelToHudFlowNodes.cpp",
          "Nodes/FlowHudEventsNodes.cpp",
-         "Nodes/XboxOneLiveTestNodes.cpp",
          "Nodes/FlowNodesAIActionSequence.cpp",
          "Nodes/AINodes.h",
-         "Nodes/ColorGradientNode.h",
          "Nodes/FeatureTestNode.h",
-         "Nodes/FlowConvoyNode.h",
-         "Nodes/G2FlowBaseNode.h",
+         "Nodes/FlowGameSDKBaseNode.h",
          "Nodes/AIAssignmentNodes.h",
          "FlowWeaponCustomizationNodes.h",
          "Nodes/ModelToHudFlowNodes.h",

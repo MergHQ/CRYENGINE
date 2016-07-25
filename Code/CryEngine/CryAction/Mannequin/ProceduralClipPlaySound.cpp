@@ -22,8 +22,10 @@
 
 SERIALIZATION_ENUM_BEGIN(EAudioOcclusionType, "SoundObstructionType");
 SERIALIZATION_ENUM(eAudioOcclusionType_Ignore, "Ignore", "Ignore");
-SERIALIZATION_ENUM(eAudioOcclusionType_SingleRay, "SingleRay", "Single Ray");
-SERIALIZATION_ENUM(eAudioOcclusionType_MultiRay, "MultiRay", "Multi Ray");
+SERIALIZATION_ENUM(eAudioOcclusionType_Adaptive, "Adaptive", "Adaptive");
+SERIALIZATION_ENUM(eAudioOcclusionType_Low, "Low", "Low");
+SERIALIZATION_ENUM(eAudioOcclusionType_Medium, "Medium", "Medium");
+SERIALIZATION_ENUM(eAudioOcclusionType_High, "High", "High");
 SERIALIZATION_ENUM_END();
 
 class CAudioContext : public IProceduralContext

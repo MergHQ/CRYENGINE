@@ -7,17 +7,17 @@
 
 #ifdef INCLUDE_SCALEFORM_SDK
 
-	#pragma warning(push)
-	#pragma warning(disable : 6326) // Potential comparison of a constant with another constant
-	#pragma warning(disable : 6011) // Dereferencing NULL pointer
-	#include <CryCore/Platform/CryWindows.h>
-	#include <GFxLoader.h>          // includes <windows.h>
-	#pragma warning(pop)
-	#include "ConfigScaleform.h"
-	#include "GAllocatorCryMem.h"
-	#include "GRendererXRender.h"
-	#include <CryMemory/CrySizer.h>
-	#include <CryThreading/IThreadManager.h>
+#pragma warning(push)
+#pragma warning(disable : 6326)   // Potential comparison of a constant with another constant
+#pragma warning(disable : 6011)   // Dereferencing NULL pointer
+#include <CryCore/Platform/CryWindows.h>
+#include <GFxLoader.h>            // includes <windows.h>
+#include <CryRenderer/IScaleform.h>
+#pragma warning(pop)
+#include <CrySystem/Scaleform/ConfigScaleform.h>
+#include "GAllocatorCryMem.h"
+#include <CryMemory/CrySizer.h>
+#include <CryThreading/IThreadManager.h>
 
 class GFxLoader2;
 class ICrySizer;
@@ -30,25 +30,25 @@ class CSharedFlashPlayerResources
 public:
 	static CSharedFlashPlayerResources& GetAccess();
 
-	static void                         Init();
-	static void                         Shutdown();
+	static void Init();
+	static void Shutdown();
 
 public:
-	GFxLoader2*               GetLoader(bool getRawInterface = false);
-	GRendererXRender*         GetRenderer(bool getRawInterface = false);
+	GFxLoader2*       GetLoader(bool getRawInterface = false);
+	IScaleformRecording* GetRenderer(bool getRawInterface = false);
 
 	CryGFxMemInterface::Stats GetSysAllocStats() const;
 	void                      GetMemoryUsage(ICrySizer* pSizer) const;
 
-	int                       CreateMemoryArena(unsigned int arenaID, bool resetCache) const;
-	void                      DestoryMemoryArena(unsigned int arenaID) const;
-	bool                      AreCustomMemoryArenasActive() const;
+	int  CreateMemoryArena(unsigned int arenaID, bool resetCache) const;
+	void DestoryMemoryArena(unsigned int arenaID) const;
+	bool AreCustomMemoryArenasActive() const;
 
-	void                      ResetMeshCache() const;
-	bool                      IsFlashVideoIOStarving() const;
+	void ResetMeshCache() const;
+	bool IsFlashVideoIOStarving() const;
 
-	float                     GetFlashHeapFragmentation() const;
-	void                      SetImeFocus(GFxMovieView* pMovie, bool bSet);
+	float GetFlashHeapFragmentation() const;
+	void  SetImeFocus(GFxMovieView* pMovie, bool bSet);
 
 private:
 	CSharedFlashPlayerResources();
@@ -58,16 +58,16 @@ private:
 	static CSharedFlashPlayerResources* ms_pSharedFlashPlayerResources;
 
 private:
-	GSystemInitWrapper*   m_pGSystemInit;
-	GFxLoader2*           m_pLoader;
-	GRendererXRender*     m_pRenderer;
+	GSystemInitWrapper* m_pGSystemInit;
+	GFxLoader2* m_pLoader;
+	IScaleformRecording* m_pRecorder;
 	MeshCacheResetThread* m_pMeshCacheResetThread;
-	#if defined(USE_GFX_IME)
-	GImeHelper*           m_pImeHelper;
-	#endif
+#if defined(USE_GFX_IME)
+	GImeHelper* m_pImeHelper;
+#endif
 };
 
-class GFxLoader2 : public GFxLoader
+class GFxLoader2:public GFxLoader
 {
 	friend class CSharedFlashPlayerResources;
 
@@ -81,7 +81,7 @@ public:
 
 	void GetMemoryUsage(ICrySizer* pSizer) const
 	{
-		pSizer->Add(this, sizeof(*this)); // just add object, internals are counted implicitly by provided GFxCryMemInterface / GSysAlloc
+		pSizer->Add(this, sizeof(*this));  // just add object, internals are counted implicitly by provided GFxCryMemInterface / GSysAlloc
 	}
 
 private:
@@ -90,11 +90,11 @@ private:
 	void SetupDynamicFontCache();
 
 private:
-	volatile int    m_refCount;
+	volatile int m_refCount;
 	GFxParseControl m_parserVerbosity;
 };
 
-class MeshCacheResetThread : public IThread
+class MeshCacheResetThread:public IThread
 {
 public:
 	// IThread
@@ -115,7 +115,7 @@ private:
 
 private:
 	volatile bool m_cancelRequestSent;
-	CryEvent      m_awakeThread;
+	CryEvent m_awakeThread;
 };
 
 #endif // #ifdef INCLUDE_SCALEFORM_SDK

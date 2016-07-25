@@ -10,7 +10,7 @@
    -------------------------------------------------------------------------
    History:
    -    : Created by Craig Tiller
-   - 13/01/2006   : Continued by Jan Müller
+   - 13/01/2006   : Continued by Jan MÃ¼ller
 *************************************************************************/
 
 #ifndef __LANQUERYLISTENER_H__

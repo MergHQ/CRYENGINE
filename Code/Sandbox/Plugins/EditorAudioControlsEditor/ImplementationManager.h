@@ -2,6 +2,7 @@
 
 #pragma once
 #include <QObject>
+#include <CrySandbox/CrySignal.h>
 
 namespace ACE
 {
@@ -20,8 +21,8 @@ public:
 	void                     Release();
 	ACE::IAudioSystemEditor* GetImplementation();
 
-signals:
-	void ImplementationChanged();
+	CCrySignal<void()> signalImplementationAboutToChange;
+	CCrySignal<void()> signalImplementationChanged;
 
 private:
 	ACE::IAudioSystemEditor* ms_pAudioSystemImpl;

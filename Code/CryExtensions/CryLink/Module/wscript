@@ -1,0 +1,25 @@
+#############################################################################
+## Crytek Source File
+## Copyright (C) 2015, Crytek Studios
+##
+## Creator: Dominique Mader
+## Date: September 29, 2015
+## Description: WAF  based build system
+#############################################################################
+
+def build(bld):
+	
+	bld.CryEngineStaticModule (
+		target = 'CryLink',
+		vs_filter = 'CryExtensions',
+		file_list   = 'crylink.waf_files',
+		
+		pch = 'StdAfx.cpp',
+		includes = [ '.', '../Interface', Path('Code/CryEngine/CryCommon') ],
+		export_includes = 'Interface',
+		module_provides = dict(
+			includes = [ Path('Code/CryExtensions/CryLink/Interface') ],
+		),
+				
+		linux_cxxflags = '-fPIC'
+	)	

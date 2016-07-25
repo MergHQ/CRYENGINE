@@ -18,33 +18,6 @@
 
 CRY_PFX2_DBG
 
-// HACK : this hack allows this translation unit to be linked against Cry3DEngine module, otherwise, the linker will throw this entire code away
-volatile bool gParticleSystem = false;
-
-// HACK : this forces all feature cpp files to be static linked otherwise the linker will link features away
-extern volatile bool gFeatureAngles;
-extern volatile bool gFeatureAppearance;
-extern volatile bool gFeatureAudio;
-extern volatile bool gFeatureColor;
-extern volatile bool gFeatureField;
-extern volatile bool gFeatureLife;
-extern volatile bool gFeatureLightSource;
-extern volatile bool gFeatureLocation;
-extern volatile bool gFeatureMotion;
-extern volatile bool gFeatureRenderRibbon;
-extern volatile bool gFeatureRenderSprites;
-extern volatile bool gFeatureSecondGen;
-extern volatile bool gFeatureSpawn;
-extern volatile bool gFeatureVelocity;
-extern volatile bool gFeatureModifiers;
-extern volatile bool gPfx2Target;
-extern volatile bool gPfx2TimeSource;
-extern volatile bool gFeatureCollision;
-extern volatile bool gFeatureFluidDynamics;
-extern volatile bool gFeatureKill;
-extern volatile bool gFeatureRenderGpuSprites;
-extern volatile bool gFeatureRenderMeshes;
-
 namespace pfx2
 {
 
@@ -66,29 +39,6 @@ CParticleSystem* GetPSystem()
 CParticleSystem::CParticleSystem()
 	: m_memHeap(gEnv->pJobManager->GetNumWorkerThreads() + 1)
 {
-	gFeatureAngles = true;
-	gFeatureAppearance = true;
-	gFeatureAudio = true;
-	gFeatureColor = true;
-	gFeatureField = true;
-	gFeatureLife = true;
-	gFeatureLightSource = true;
-	gFeatureLocation = true;
-	gFeatureMotion = true;
-	gFeatureRenderRibbon = true;
-	gFeatureRenderSprites = true;
-	gFeatureSecondGen = true;
-	gFeatureSpawn = true;
-	gFeatureVelocity = true;
-	gFeatureModifiers = true;
-	gPfx2Target = true;
-	gPfx2TimeSource = true;
-	gFeatureCollision = true;
-	gFeatureFluidDynamics = true;
-	gFeatureKill = true;
-	gFeatureRenderGpuSprites = true;
-	gFeatureRenderMeshes = true;
-	UpdateEngineData();
 }
 
 CParticleSystem::~CParticleSystem()
@@ -179,8 +129,6 @@ void CParticleSystem::Update()
 		for (auto& it : m_memHeap)
 			CRY_PFX2_ASSERT(it.GetTotalMemory().nUsed == 0);  // some emitter leaked memory on mem stack
 
-		UpdateEngineData();
-
 		m_counts = SParticleCounts();
 		for (auto& pEmitter : m_emitters)
 			pEmitter->AccumCounts(m_counts);
@@ -269,21 +217,6 @@ void CParticleSystem::UpdateGpuRuntimesForEmitter(CParticleEmitter* pEmitter)
 				pGpuRuntime->SetEmitterData(pEmitter);
 			}
 		}
-	}
-}
-
-void CParticleSystem::UpdateEngineData()
-{
-	m_maxAngularDensity = 720.f / DEFAULT_FOV;
-
-	CVars* pCVars = GetCVars();
-	IRenderer* pRenderer = GetRenderer();
-	if (pCVars && pRenderer)
-	{
-		float height = float(pRenderer->GetHeight());
-		float minDrawPixels = pCVars->e_ParticlesMinDrawPixels;
-		float fov = pRenderer->GetCamera().GetFov();
-		m_maxAngularDensity = height / (fov * max(minDrawPixels, 1.0f / 8.0f));
 	}
 }
 

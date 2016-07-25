@@ -72,7 +72,7 @@ static inline void AddEf_HandleOldRTMask(CRenderObject* obj)
 {
 	const uint64 objFlags = obj->m_ObjFlags;
 	obj->m_nRTMask = 0;
-	if (objFlags & (FOB_NEAREST | FOB_DECAL_TEXGEN_2D | FOB_DISSOLVE | FOB_GLOBAL_ILLUMINATION | FOB_SOFT_PARTICLE))
+	if (objFlags & (FOB_NEAREST | FOB_DECAL_TEXGEN_2D | FOB_DISSOLVE | FOB_SOFT_PARTICLE))
 	{
 		if (objFlags & FOB_DECAL_TEXGEN_2D)
 			obj->m_nRTMask |= g_HWSR_MaskBit[HWSR_DECAL_TEXGEN_2D];
@@ -82,9 +82,6 @@ static inline void AddEf_HandleOldRTMask(CRenderObject* obj)
 
 		if (objFlags & FOB_DISSOLVE)
 			obj->m_nRTMask |= g_HWSR_MaskBit[HWSR_DISSOLVE];
-
-		if (objFlags & FOB_GLOBAL_ILLUMINATION)
-			obj->m_nRTMask |= g_HWSR_MaskBit[HWSR_GLOBAL_ILLUMINATION];
 
 		if (CRenderer::CV_r_ParticlesSoftIsec && (objFlags & FOB_SOFT_PARTICLE))
 			obj->m_nRTMask |= g_HWSR_MaskBit[HWSR_SOFT_PARTICLE];
@@ -185,7 +182,7 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 	uint32 nCloakLayerMask = nz2mask(nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
 
 	// Discard 0 alpha blended geometry - this should be discarded earlier on 3dengine side preferably
-	if (fzero(obj->m_fAlpha))
+	if (!obj->m_fAlpha)
 		return;
 	if (pShaderResources && pShaderResources->::CShaderResources::IsInvisible())
 		return;
@@ -223,32 +220,18 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 	const uint32 nRenderlistsFlags = (FB_PREPROCESS | FB_MULTILAYERS | FB_TRANSPARENT);
 	if (nBatchFlags & nRenderlistsFlags || nCloakLayerMask)
 	{
-		if (nBatchFlags & FB_PREPROCESS)
-		{
-			EShaderType eSHType = pSH->GetShaderType();
+		// branchless version of:
+		//if      (pSH->m_Flags & FB_REFRACTIVE || nCloakLayerMask)           nList = EFSLIST_TRANSP, nBatchFlags &= ~FB_Z;
+		//else if((nBatchFlags & FB_TRANSPARENT) && nList == EFSLIST_GENERAL) nList = EFSLIST_TRANSP;
 
-			// Prevent water usage on non-water specific meshes (it causes reflections updates). Todo: this should be checked in editor side and not allow such usage
-			if (eSHType != eST_Water || (eSHType == eST_Water && nList == EFSLIST_WATER))
-			{
-				passInfo.GetRenderView()->AddRenderItem(re, obj, SH, EFSLIST_PREPROCESS, nBatchFlags, passInfo.GetRendItemSorter(), false, false);
-			}
-		}
+		// Refractive objects go into same list as transparent objects - partial resolves support
+		// arbitrary ordering between transparent and refractive correctly.
 
-		{
-			// branchless version of:
-			//if      (pSH->m_Flags & FB_REFRACTIVE || nCloakLayerMask)           nList = EFSLIST_TRANSP, nBatchFlags &= ~FB_Z;
-			//else if((nBatchFlags & FB_TRANSPARENT) && nList == EFSLIST_GENERAL) nList = EFSLIST_TRANSP;
+		uint32 mx1 = (nShaderFlags & EF_REFRACTIVE) | nCloakLayerMask;
+		uint32 mx2 = mask_nz_zr(nBatchFlags & FB_TRANSPARENT, (nList ^ EFSLIST_GENERAL) | mx1);
 
-			// Refractive objects go into same list as transparent objects - partial resolves support
-			// arbitrary ordering between transparent and refractive correctly.
-
-			uint32 mx1 = (nShaderFlags & EF_REFRACTIVE) | nCloakLayerMask;
-			uint32 mx2 = mask_nz_zr(nBatchFlags & FB_TRANSPARENT, (nList ^ EFSLIST_GENERAL) | mx1);
-
-			nBatchFlags &= iselmask(mx1 = nz2mask(mx1), ~FB_Z, nBatchFlags);
-			nList = iselmask(mx1 | mx2, (mx1 & EFSLIST_TRANSP) | (mx2 & EFSLIST_TRANSP), nList);
-
-		}
+		nBatchFlags &= iselmask(mx1 = nz2mask(mx1), ~FB_Z, nBatchFlags);
+		nList = iselmask(mx1 | mx2, (mx1 & EFSLIST_TRANSP) | (mx2 & EFSLIST_TRANSP), nList);
 	}
 
 	// FogVolume contribution for transparencies isn't needed when volumetric fog is turned on.
@@ -279,9 +262,6 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 	// TODO: specify correct render list and additional flags directly in the engine once non-material decal rendering support is removed!
 	if ((ObjDecalFlag || (nShaderFlags & EF_DECAL)))
 	{
-		//if (passInfo.IsShadowPass() && (!m_RP.m_pCurShadowFrustumFillThread || !m_RP.m_pCurShadowFrustumFillThread->bReflectiveShadowMap))
-		//	return;
-
 		// BK: Drop decals that are refractive (and cloaked!). They look bad if forced into refractive pass,
 		// and break if they're in the decal pass
 		if (nShaderFlags & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE) || nCloakRenderedMask)
@@ -383,8 +363,6 @@ void CRenderer::EF_AddEf_NotVirtual(CRendElementBase* re, SShaderItem& SH, CRend
 
 	passInfo.GetRenderView()->AddRenderItem(re, obj, SH, nList, nBatchFlags, passInfo.GetRendItemSorter(), false, passInfo.IsAuxWindow());
 
-	if (nBatchFlags & FB_DEBUG)
-		passInfo.GetRenderView()->AddRenderItem(re, obj, SH, EFSLIST_FORWARD_OPAQUE, nBatchFlags, passInfo.GetRendItemSorter(), false, passInfo.IsAuxWindow());
 
 }
 
@@ -525,6 +503,9 @@ uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRendEleme
 			if ((!pOD || !pOD->m_pLayerEffectParams) && !CV_r_DebugLayerEffect)
 				nFlags &= ~FB_LAYER_EFFECT;
 		}
+
+		if (pR && pR->IsAlphaTested())
+			pObj->m_ObjFlags |= FOB_ALPHATEST;
 	}
 	else if (passInfo.IsRecursivePass() && pTech && m_RP.m_TI[passInfo.ThreadID()].m_PersFlags & RBPF_MIRRORCAMERA)
 	{
@@ -913,12 +894,6 @@ void SRendItem::mfSortByLight(SRendItem* First, int Num, bool bSort, const bool 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SRendItem::mfSortForReflectiveShadowMap(SRendItem* pFirst, int Num)
-{
-	std::sort(pFirst, pFirst + Num, SCompareItem_ReflectiveShadowMap());
-}
-
-//////////////////////////////////////////////////////////////////////////
 void SRendItem::mfSortByDist(SRendItem* First, int Num, bool bDecals, bool InvertedOrder)
 {
 	//Note: Temporary use stable sort for flickering hair (meshes within the same skin attachment don't have a deterministic sort order)
@@ -968,7 +943,7 @@ int16 CTexture::StreamCalculateMipsSignedFP(float fMipFactor) const
 	assert(IsStreamed());
 	const uint32 nMaxExtent = max(m_nWidth, m_nHeight);
 	float currentMipFactor = fMipFactor * nMaxExtent * nMaxExtent * gRenDev->GetMipDistFactor();
-	float fMip = (0.5f * logf(max(currentMipFactor, 0.1f)) / LN2 + (CRenderer::CV_r_TexturesStreamingMipBias + gRenDev->m_fTexturesStreamingGlobalMipFactor));
+	float fMip = (0.5f * logf(max(currentMipFactor, 0.1f)) / gf_ln2 + (CRenderer::CV_r_TexturesStreamingMipBias + gRenDev->m_fTexturesStreamingGlobalMipFactor));
 	int nMip = static_cast<int>(floorf(fMip * 256.0f));
 	const int nNewMip = min(nMip, (m_nMips - m_CacheFileHeader.m_nMipsPersistent) << 8);
 	return (int16)nNewMip;
@@ -977,7 +952,7 @@ int16 CTexture::StreamCalculateMipsSignedFP(float fMipFactor) const
 float CTexture::StreamCalculateMipFactor(int16 nMipsSigned) const
 {
 	float fMip = nMipsSigned / 256.0f;
-	float currentMipFactor = expf((fMip - (CRenderer::CV_r_TexturesStreamingMipBias + gRenDev->m_fTexturesStreamingGlobalMipFactor)) * 2.0f * LN2);
+	float currentMipFactor = expf((fMip - (CRenderer::CV_r_TexturesStreamingMipBias + gRenDev->m_fTexturesStreamingGlobalMipFactor)) * 2.0f * gf_ln2);
 
 	const uint32 nMaxExtent = max(m_nWidth, m_nHeight);
 	float fMipFactor = currentMipFactor / (nMaxExtent * nMaxExtent * gRenDev->GetMipDistFactor());

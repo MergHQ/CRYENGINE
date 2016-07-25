@@ -19,8 +19,8 @@
 #include "IVehicleSystem.h"
 #include "VehicleSystem/Vehicle.h"
 #include "VehicleSystem/VehicleComponent.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //------------------------------------------------------------------------
 IFlowNodePtr CFlowVehicleDamage::Clone(SActivationInfo* pActivationInfo)
@@ -231,5 +231,5 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Vehicle:VehicleDamage", CFlowVehicleDamage);
+REGISTER_FLOW_NODE("Vehicle:Damage", CFlowVehicleDamage);
 REGISTER_FLOW_NODE("Vehicle:Destroy", CFlowVehicleDestroy);

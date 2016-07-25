@@ -186,13 +186,13 @@ const char* CAIHandler::GetInitialCharacterName()
 
 	if (!m_pScriptObject->GetValue("Properties", pEntityProperties))
 	{
-		AIWarningID("<CAIHandler> ", "can't find Properties. Entity %s", m_pEntity->GetEntityTextDescription());
+		AIWarningID("<CAIHandler> ", "can't find Properties. Entity %s", m_pEntity->GetEntityTextDescription().c_str());
 		return 0;
 	}
 
 	if (!pEntityProperties->GetValue("aicharacter_character", szAICharacterName))
 	{
-		AIWarningID("<CAIHandler> ", "can't find aicharacter_character. Entity %s", m_pEntity->GetEntityTextDescription());
+		AIWarningID("<CAIHandler> ", "can't find aicharacter_character. Entity %s", m_pEntity->GetEntityTextDescription().c_str());
 		return 0;
 	}
 
@@ -349,7 +349,7 @@ void CAIHandler::SetInitialBehaviorAndCharacter()
 		m_sFirstCharacterName = szDefaultCharacter;
 		if (!SetCharacter(szDefaultCharacter, SET_DELAYED) && !m_sFirstCharacterName.empty())
 			AIWarningID("<CAIHandler> ", "Could not set initial character: %s on Entity: %s",
-			            szDefaultCharacter, m_pEntity->GetEntityTextDescription());
+			            szDefaultCharacter, m_pEntity->GetEntityTextDescription().c_str());
 #endif
 
 		const char* szDefaultBehavior = GetInitialBehaviorName();
@@ -1092,7 +1092,7 @@ void CAIHandler::SetBehavior(const char* szNextBehaviorName, const IAISignalExtr
 		{
 			if (IAIActor* actor = aiObject->CastToIAIActor())
 			{
-				// TODO(márcio): Save a ref here instead of going around the world to get to the other side
+				// TODO(mÃ¡rcio): Save a ref here instead of going around the world to get to the other side
 				const char* currentName = proxy->GetCurrentBehaviorName();
 				const char* previousName = proxy->GetPreviousBehaviorName();
 
@@ -1145,7 +1145,7 @@ void CAIHandler::FindOrLoadBehavior(const char* szBehaviorName, SmartScriptTable
 			//fixme - problem with reloading!!!!
 			gEnv->pScriptSystem->ExecuteFile(szAIBehaviorFileName, true, true);
 
-			// Márcio: We need to load base behaviors here too!
+			// MÃ¡rcio: We need to load base behaviors here too!
 		}
 
 		if (!m_pBehaviorTable->GetValue(szBehaviorName, pBehaviorTable))

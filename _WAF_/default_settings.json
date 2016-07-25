@@ -29,7 +29,7 @@
 		{
 			"long_form"      : "--incredibuild-max-cores",
 			"attribute"      : "incredibuild_max_cores",
-			"default_value"  : "128",
+			"default_value"  : "200",
 			"description"    : "Control number of processes spawned by Incredibuild"
 		},
 		{

@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "SoundCVars.h"
+#include "AudioCVars.h"
 #include "AudioSystem.h"
 #include <CryAudio/IAudioSystem.h>
 #include <CryCore/Platform/platform_impl.inl>
@@ -11,7 +11,7 @@
 #include <CryExtension/ClassWeaver.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	#include <IViewSystem.h>
+	#include <../CryAction/IViewSystem.h>
 	#include <CryGame/IGameFramework.h>
 	#include <CryEntitySystem/IEntitySystem.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -217,11 +217,11 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 			{
 				CryFatalError("<Audio>: AudioSystem failed to allocate APU heap! (%d byte)", g_audioCVars.m_fileCacheManagerSize << 10);
 			}
-#endif // CRY_PLATFORM_DURANGO
+#endif      // CRY_PLATFORM_DURANGO
 
 			s_currentModuleName = m_pAudioImplNameCVar->GetString();
 
-			if (env.pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), initParams, false))
+			if (env.pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), false))
 			{
 				PrepareAudioSystem(env.pAudioSystem);
 			}
@@ -261,7 +261,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 
 		// First try to load and initialize the new engine module.
 		// This will release the currently running implementation but only if the library loaded successfully.
-		if (gEnv->pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), systemInitParams, false))
+		if (gEnv->pSystem->InitializeEngineModule(s_currentModuleName.c_str(), s_currentModuleName.c_str(), false))
 		{
 			SAudioRequest request;
 			request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
@@ -360,7 +360,7 @@ class CEngineModule_CryAudioSystem : public IEngineModule
 
 		// In any case send the event as we always loaded some implementation (either the proper or the NULL one).
 		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_IMPLEMENTATION_LOADED, 0, 0);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 
 private:

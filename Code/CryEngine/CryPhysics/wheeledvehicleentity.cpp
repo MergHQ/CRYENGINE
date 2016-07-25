@@ -51,6 +51,7 @@ CWheeledVehicleEntity::CWheeledVehicleEntity(CPhysicalWorld *pworld, IGeneralMem
 	, m_pullTilt(0.0f)
 	, m_drivingTorque(0.0f)
 	, m_maxTilt(0.866f)
+	, m_wheelMassScale(0.0f)
 {
 	ZeroArray(m_susp);
 
@@ -141,6 +142,7 @@ int CWheeledVehicleEntity::SetParams(pe_params *_params, int bThreadSafe)
     if (!is_unused(params->pullTilt)) m_pullTilt = params->pullTilt; 
 		if (!is_unused(params->maxTilt)) m_maxTilt = params->maxTilt;
 		if (!is_unused(params->bKeepTractionWhenTilted)) m_bKeepTractionWhenTilted = params->bKeepTractionWhenTilted;
+		if (!is_unused(params->wheelMassScale)) m_wheelMassScale = params->wheelMassScale;
 		return 1;
 	}
 
@@ -214,6 +216,7 @@ int CWheeledVehicleEntity::GetParams(pe_params *_params) const
 		params->nWheels = m_nParts-m_nHullParts;
 		params->maxTilt = m_maxTilt;
 		params->bKeepTractionWhenTilted = m_bKeepTractionWhenTilted;
+		params->wheelMassScale = m_wheelMassScale;
 		return 1;
 	}
 
@@ -297,9 +300,17 @@ int CWheeledVehicleEntity::Action(pe_action *_action, int bThreadSafe)
 					if (maxY>0.01f) {
 						float tanSteer = tanf(fabsf(m_steer));  // NB: turningRadius = maxY / tanf(fabsf(m_steer));
 						for (int j=0;j<numWheels;j++) if (m_susp[j].iAxle>=0 && m_susp[j].bCanSteer) {
-							float y = m_susp[j].pt.y-ackermanOffset;
+							float y = m_susp[j].pt.y-ackermanOffset, steer0=m_susp[j].steer;
 							m_susp[j].steer = dir*atanf( y*tanSteer / (maxY + tanSteer*(maxX - m_susp[j].pt.x*dir)));
+							if (m_wheelMassScale && max(fabs_tpl(steer0),fabs_tpl(m_susp[j].steer))>0.01f) {
+								Vec3 axis0(ZERO),axis1(ZERO); 
+								sincos_tpl(-steer0, &axis0.y,&axis0.x);
+								sincos_tpl(-m_susp[j].steer, &axis1.y,&axis1.x);
+								m_body.L -= m_qrot*(axis1-axis0)*(-m_susp[j].w*m_wheelMassScale/m_susp[j].Iinv);
+							}
 						}
+						if (m_wheelMassScale)
+							m_body.w = m_body.Iinv*m_body.L;
 					}
 				} else for(i=0;i<m_nParts-m_nHullParts;i++) m_susp[i].steer=0;
 
@@ -551,7 +562,7 @@ int CWheeledVehicleEntity::AddGeometry(phys_geometry *pgeom, pe_geomparams *_par
 		}
 		params->flags |= geom_car_wheel;//geom_colltype_player|geom_colltype_ray;
 		params->flagsCollider = 0;
-		params->density = params->mass = 0;
+		params->density*=m_wheelMassScale; params->mass*=m_wheelMassScale;
 	}
 
 	int nPartsOld=m_nParts,i;
@@ -1285,6 +1296,13 @@ void CWheeledVehicleEntity::AddAdditionalImpulses(float time_interval)
 		m_susp[i].bSlipPull = m_susp[iDriver[iside]].bSlipPull;
 	}
 
+	if (m_wheelMassScale) for(i=0;i<m_nParts-m_nHullParts;i++) {
+		axis = ortx;
+		if (fabs_tpl(m_susp[i].steer)>0.01f)
+			sincos_tpl(-m_susp[i].steer, &axis.y,&axis.x);
+		Lexp -= (m_qNew*axis-m_prevq*axis)*(-m_susp[i].w*m_wheelMassScale/m_susp[i].Iinv);
+	}
+
 	m_body.v = (m_body.P+=Pexp)*m_body.Minv; 
 	m_body.w = m_body.Iinv*(m_body.L+=Lexp);
 	// m_Ffriction.zero(); m_Tfriction.zero();
@@ -1664,22 +1682,12 @@ void SWheeledVehicleEntityNetSerialize::Serialize( TSerialize ser, int nSusp )
 {
 	assert(nSusp <= NMAXWHEELS);
 	
-#if 0
-	// There is little reason to serialise the wheel speeds,
-	// which saves a large amount of bandwidth
-
-	ser.BeginGroup("wheels");
-	for (int i=0; i<nSusp; i++)
-	{
-		ser.Value( numbered_tag("suspension",i), pSusp[i].w, 'pSus');
+	if (ser.GetSerializationTarget()!=eST_Network) {
+		ser.BeginGroup("wheels");
+		for (int i=0; i<nSusp; i++)
+			ser.Value(numbered_tag("suspension",i), pSusp[i].curlen);
+		ser.EndGroup();
 	}
-	for (int i=nSusp; i<NMAXWHEELS; i++)
-	{
-		float virtualSuspW = 0;
-		ser.Value(numbered_tag("suspension",i), virtualSuspW, 'pSus');
-	}
-	ser.EndGroup();
-#endif
 
 	ser.Value("pedal", pedal, 'pPed');
 	ser.Value("steer", steer, 'pStr');
@@ -1725,11 +1733,9 @@ int CWheeledVehicleEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 		m_wengine = helper.wengine;
 		m_iCurGear = helper.curGear;
 #if USE_IMPROVED_RIGID_ENTITY_SYNCHRONISATION
-		if (!m_hasAuthority)
+		if (!m_hasAuthority || ser.GetSerializationTarget()!=eST_Network)
 #endif
-		{
 			Action( &ad, 0 );
-		}
 	}
 
 	return CRigidEntity::SetStateFromSnapshot( ser, flags );

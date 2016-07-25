@@ -13,9 +13,7 @@
 #include "PostEffects.h"
 #include "PostProcessUtils.h"
 
-std::vector<CWaterRipples::SWaterHit> CWaterRipples::s_pWaterHits[RT_COMMAND_BUF_COUNT];
 std::vector<CWaterRipples::SWaterHit> CWaterRipples::s_pWaterHitsMGPU;
-std::vector<CWaterRipples::SWaterHitRecord> CWaterRipples::m_DebugWaterHits;
 Vec3 CWaterRipples::s_CameraPos = Vec3(ZERO);
 Vec2 CWaterRipples::s_SimOrigin = Vec2(ZERO);
 int CWaterRipples::s_nUpdateMask;
@@ -129,15 +127,18 @@ int CSunShafts::Initialize()
 {
 	Release();
 
-	m_pOcclQuery = new COcclusionQuery;
-	m_pOcclQuery->Create();
+	m_pOcclQuery[0] = new COcclusionQuery;
+	m_pOcclQuery[0]->Create();
+	m_pOcclQuery[1] = new COcclusionQuery;
+	m_pOcclQuery[1]->Create();
 
 	return true;
 }
 
 void CSunShafts::Release()
 {
-	SAFE_DELETE(m_pOcclQuery);
+	SAFE_DELETE(m_pOcclQuery[0]);
+	SAFE_DELETE(m_pOcclQuery[1]);
 }
 
 void CSunShafts::Reset(bool bOnSpecChange)

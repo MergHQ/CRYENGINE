@@ -15,9 +15,9 @@
 #include "StdAfx.h"
 #include "CryAction.h"
 #include "IVehicleSystem.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
 #include "FlowVehicleMoveActionMult.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //------------------------------------------------------------------------
 CFlowVehicleMoveActionMult::CFlowVehicleMoveActionMult(SActivationInfo* pActivationInfo)
@@ -110,4 +110,4 @@ void CFlowVehicleMoveActionMult::OnProcessActions(SVehicleMovementAction& moveme
 		movementAction.power = max(0.0f, movementAction.power);
 }
 
-REGISTER_FLOW_NODE("Vehicle:VehicleMoveActionMult", CFlowVehicleMoveActionMult);
+REGISTER_FLOW_NODE("Vehicle:MoveActionMult", CFlowVehicleMoveActionMult);

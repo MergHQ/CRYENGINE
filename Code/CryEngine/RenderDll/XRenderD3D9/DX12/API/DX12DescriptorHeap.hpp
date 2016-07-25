@@ -23,6 +23,8 @@ namespace NCryDX12
 struct SCursorHost
 {
 	SCursorHost() : m_Cursor(0) {}
+	SCursorHost(SCursorHost&& other) : m_Cursor(std::move(other.m_Cursor)) {}
+	SCursorHost& operator=(SCursorHost&& other) { m_Cursor = std::move(other.m_Cursor); return *this; }
 
 	ILINE void SetCursor(UINT value)          { m_Cursor = value; }
 	ILINE UINT GetCursor() const              { return m_Cursor; }
@@ -95,12 +97,19 @@ private:
 	UINT                        m_DescSize;
 };
 
-class CDescriptorBlock : public SCursorHost
+class CDescriptorBlock : public SCursorHost, private NoCopy
 {
 public:
 	CDescriptorBlock()
 		: m_BlockStart(0)
 		, m_Capacity(0)
+	{}
+
+	CDescriptorBlock(CDescriptorBlock&& other)
+		: SCursorHost(std::move(other))
+		, m_pDescriptorHeap(std::move(other.m_pDescriptorHeap))
+		, m_BlockStart(std::move(other.m_BlockStart))
+		, m_Capacity(std::move(other.m_Capacity))
 	{}
 
 	CDescriptorBlock(CDescriptorHeap* pHeap, UINT cursor, UINT capacity)
@@ -112,6 +121,18 @@ public:
 	}
 
 	CDescriptorBlock(const SDescriptorBlock& block);
+
+	CDescriptorBlock& operator=(CDescriptorBlock&& other)
+	{
+		SCursorHost::operator=(std::move(other));
+		m_pDescriptorHeap = std::move(other.m_pDescriptorHeap);
+		m_BlockStart = std::move(other.m_BlockStart);
+		m_Capacity = std::move(other.m_Capacity);
+
+		return *this;
+	}
+
+	CDescriptorBlock& operator=(const SDescriptorBlock& block);
 
 	ILINE CDescriptorHeap* GetDescriptorHeap() const
 	{

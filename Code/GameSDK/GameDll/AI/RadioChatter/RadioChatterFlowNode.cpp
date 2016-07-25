@@ -1,12 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
-#include "../../Nodes/G2FlowBaseNode.h"
 #include "../GameAIEnv.h"
 #include "RadioChatterModule.h"
 
-
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class RadioChatterFlowNode : public CFlowBaseNode<eNCT_Instanced>
 {
@@ -28,29 +26,29 @@ public:
 		OUT_Disabled,
 	};
 
-	RadioChatterFlowNode( SActivationInfo * pActInfo )
+	RadioChatterFlowNode(SActivationInfo* pActInfo)
 	{
 	}
 
-	virtual IFlowNodePtr Clone( SActivationInfo *pActInfo ) { return new RadioChatterFlowNode(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new RadioChatterFlowNode(pActInfo); }
 
-	void GetConfiguration( SFlowNodeConfig& config )
+	void                 GetConfiguration(SFlowNodeConfig& config)
 	{
-		static const SInputPortConfig in_ports[] = 
+		static const SInputPortConfig in_ports[] =
 		{
-			InputPortConfig_Void("Set", _HELP("Triggering this will apply your sound name and duration to the radio chatter system. (Note that this is automatically done if you trigger Enable.)")),
-			InputPortConfig_Void("Enable", _HELP("Enable Radio Chatter and apply the sound name and duration.")),
-			InputPortConfig_Void("Disable", _HELP("Disable Radio Chatter.")),
-			InputPortConfig<string>("sound_Sound", _HELP("The chatter sound to be used. (Leave empty for default.)")),
-			InputPortConfig<float>("SilenceDurationMin", -1.0f, _HELP("The silence duration used between chatter will be randomly picked within the interval of the specific minimum and the maximum duration. (Set either one of them to -1.0 to use default properties in the system.)" )),
-			InputPortConfig<float>("SilenceDurationMax", -1.0f, _HELP("The silence duration used between chatter will be randomly picked within the interval of the specific minimum and the maximum duration. (Set either one of them to -1.0 to use default properties in the system.)" )),
-			{0}
+			InputPortConfig_Void("Set",                  _HELP("Triggering this will apply your sound name and duration to the radio chatter system. (Note that this is automatically done if you trigger Enable.)")),
+			InputPortConfig_Void("Enable",               _HELP("Enable Radio Chatter and apply the sound name and duration.")),
+			InputPortConfig_Void("Disable",              _HELP("Disable Radio Chatter.")),
+			InputPortConfig<string>("sound_Sound",       _HELP("The chatter sound to be used. (Leave empty for default.)")),
+			InputPortConfig<float>("SilenceDurationMin", -1.0f,                                                                                                                                                       _HELP("The silence duration used between chatter will be randomly picked within the interval of the specific minimum and the maximum duration. (Set either one of them to -1.0 to use default properties in the system.)")),
+			InputPortConfig<float>("SilenceDurationMax", -1.0f,                                                                                                                                                       _HELP("The silence duration used between chatter will be randomly picked within the interval of the specific minimum and the maximum duration. (Set either one of them to -1.0 to use default properties in the system.)")),
+			{ 0 }
 		};
 		static const SOutputPortConfig out_ports[] = {
-			OutputPortConfig_AnyType("Set", _HELP("The properties have been applied.")),
-			OutputPortConfig_AnyType("Enabled", _HELP("Radio Chatter was enabled and the properties were applied.")),
+			OutputPortConfig_AnyType("Set",      _HELP("The properties have been applied.")),
+			OutputPortConfig_AnyType("Enabled",  _HELP("Radio Chatter was enabled and the properties were applied.")),
 			OutputPortConfig_AnyType("Disabled", _HELP("Radio Chatter was disabled.")),
-			{0}
+			{ 0 }
 		};
 		config.nFlags |= EFLN_AISEQUENCE_SUPPORTED;
 		config.pInputPorts = in_ports;
@@ -59,7 +57,7 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	void ProcessEvent(EFlowEvent event, SActivationInfo *pActInfo)
+	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		if (event == eFE_Activate)
 		{
@@ -98,7 +96,7 @@ public:
 		}
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}

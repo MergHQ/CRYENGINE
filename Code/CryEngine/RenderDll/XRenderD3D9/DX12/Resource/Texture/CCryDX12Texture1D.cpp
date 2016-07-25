@@ -54,6 +54,11 @@ CCryDX12Texture1D* CCryDX12Texture1D::Create(CCryDX12Device* pDevice, CCryDX12Sw
 		desc11.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
 	}
 
+	if (!(desc12.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
+	{
+		desc11.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+	}
+
 	CCryDX12Texture1D* result = DX12_NEW_RAW(CCryDX12Texture1D(pDevice, desc11, pResource, D3D12_RESOURCE_STATE_PRESENT, CD3DX12_RESOURCE_DESC(desc12), NULL));
 	result->GetDX12Resource().SetDX12SwapChain(pSwapChain->GetDX12SwapChain());
 
@@ -121,6 +126,7 @@ CCryDX12Texture1D* CCryDX12Texture1D::Create(CCryDX12Device* pDevice, const FLOA
 	DX12_ASSERT(pDesc->Usage == D3D11_USAGE_DEFAULT && !pDesc->CPUAccessFlags, "Unsupported Texture access requested!");
 #endif
 
+	allowClearValue = !!(pDesc->BindFlags & (D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_RENDER_TARGET));
 	if (cClearValue)
 	{
 		if (pDesc->BindFlags & D3D11_BIND_DEPTH_STENCIL)
@@ -140,22 +146,48 @@ CCryDX12Texture1D* CCryDX12Texture1D::Create(CCryDX12Device* pDevice, const FLOA
 	if (pDesc->BindFlags & D3D11_BIND_UNORDERED_ACCESS)
 	{
 		desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-		//	allowClearValue = true;
 		resourceUsage = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 	}
 
 	if (pDesc->BindFlags & D3D11_BIND_DEPTH_STENCIL)
 	{
 		desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-		allowClearValue = true;
 		resourceUsage = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 	}
 
 	if (pDesc->BindFlags & D3D11_BIND_RENDER_TARGET)
 	{
 		desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-		allowClearValue = true;
 		resourceUsage = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	}
+
+	if (!(pDesc->BindFlags & D3D11_BIND_SHADER_RESOURCE))
+	{
+		desc12.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+	}
+
+	// Any of these flags require a view with a GPUVirtualAddress, in which case the resource needs to be duplicated for all GPUs
+	if (pDesc->BindFlags & (
+		D3D11_BIND_VERTEX_BUFFER   | // vertex buffer    view
+		D3D11_BIND_INDEX_BUFFER    | // index buffer     view
+		D3D11_BIND_CONSTANT_BUFFER | // constant buffer  view
+		D3D11_BIND_SHADER_RESOURCE | // shader resource  view
+		D3D11_BIND_RENDER_TARGET   | // render target    view
+		D3D11_BIND_DEPTH_STENCIL   | // depth stencil    view
+		D3D11_BIND_UNORDERED_ACCESS  // unordered access view
+	))
+	{
+		heapProperties.CreationNodeMask = pDevice->GetCreationMask(false) | pDevice->GetVisibilityMask(false);
+		heapProperties.VisibleNodeMask = pDevice->GetVisibilityMask(false);
+
+#if CRY_USE_DX12_MULTIADAPTER_SIMULATION
+		// Always allow getting GPUAddress (CreationMask == VisibilityMask), if running simulation
+		if (CRenderer::CV_r_StereoEnableMgpu < 0 && (heapProperties.Type == D3D12_HEAP_TYPE_UPLOAD || heapProperties.Type == D3D12_HEAP_TYPE_READBACK))
+		{
+			heapProperties.CreationNodeMask = 1U;
+			heapProperties.VisibleNodeMask = pDevice->GetCreationMask(false) | pDevice->GetVisibilityMask(false);
+		}
+#endif
 	}
 
 	ID3D12Resource* resource = NULL;
@@ -189,7 +221,7 @@ CCryDX12Texture1D::CCryDX12Texture1D(CCryDX12Device* pDevice, const D3D11_TEXTUR
 	: Super(pDevice, pResource, eInitialState, desc12, pInitialData, numInitialData)
 	, m_Desc11(desc11)
 {
-
+	m_DX12Resource.MakeConcurrentWritable(m_Desc11.MiscFlags & D3D11_RESOURCE_MISC_UAV_OVERLAP ? true : false);
 }
 
 CCryDX12Texture1D::~CCryDX12Texture1D()

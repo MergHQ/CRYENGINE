@@ -12,7 +12,8 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 // String nodes.
@@ -109,24 +110,6 @@ public:
 	}
 };
 
-class CFlowNode_MathSetString : public CFlowNode_SetString
-{
-public:
-	CFlowNode_MathSetString(SActivationInfo* pActInfo) : CFlowNode_SetString(pActInfo) {}
-
-	virtual void GetConfiguration(SFlowNodeConfig& config)
-	{
-		CFlowNode_SetString::GetConfiguration(config);
-		config.sDescription = _HELP("Deprecated. Use String:SetString instead");
-		config.SetCategory(EFLN_OBSOLETE);
-	}
-
-	virtual void GetMemoryUsage(ICrySizer* s) const
-	{
-		s->Add(*this);
-	}
-};
-
 //////////////////////////////////////////////////////////////////////////
 class CFlowNode_StringConcat : public CFlowBaseNode<eNCT_Singleton>
 {
@@ -172,7 +155,6 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Math:SetString", CFlowNode_MathSetString);    // Legacy
 REGISTER_FLOW_NODE("String:SetString", CFlowNode_SetString);
 REGISTER_FLOW_NODE("String:Compare", CFlowNode_CompareStrings);
 REGISTER_FLOW_NODE("String:Concat", CFlowNode_StringConcat);

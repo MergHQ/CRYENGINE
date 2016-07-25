@@ -17,10 +17,10 @@ namespace pfx2
 
 ILINE float CParticleSpline::Interpolate(float time) const
 {
-	time = std::min(std::max(time, m_keys[0].time), m_keys[m_numKeys - 1].time);
+	time = std::min(std::max(time, m_keys[0].time), m_keys.back().time);
 
-	const SplineKey* pKey = m_keys;
-	const SplineKey* pKeyEnd = m_keys + m_numKeys - 2;
+	const SplineKey* pKey = &*m_keys.begin();
+	const SplineKey* pKeyEnd = &*m_keys.end() - 2;
 	while (pKey < pKeyEnd && pKey[1].time < time)
 		++pKey;
 
@@ -41,46 +41,42 @@ ILINE float CParticleSpline::Interpolate(float time) const
 #ifdef CRY_PFX2_USE_SSE
 ILINE floatv CParticleSpline::Interpolate(const floatv time) const
 {
-	const SplineKey* __restrict pKey = m_keys;
-	const SplineKey* __restrict pEndKey = m_keys + m_numKeys - 1;
+	const SplineKey* __restrict pKey = &*m_keys.begin();
+	const SplineKey* __restrict pEndKey = &*m_keys.end() - 1;
 
 	// clamp time to curve bounds
-	const __m128 minTime = _mm_load1_ps(&pKey->time);
-	const __m128 maxTime = _mm_load1_ps(&pEndKey->time);
-	const __m128 tk = _mm_min_ps(_mm_max_ps(time, minTime), maxTime);
+	const floatv minTime = _mm_load1_ps(&pKey->time);
+	const floatv maxTime = _mm_load1_ps(&pEndKey->time);
+	const floatv tk = clamp(time, minTime, maxTime);
 
 	// search key
-	__m128 t0 = _mm_load1_ps(&pKey->time);
-	__m128 tm = _mm_load1_ps(&pKey->timeMult);
-	__m128 v0 = _mm_load1_ps(&pKey->value);
-	__m128 c0 = _mm_load1_ps(&pKey->coeff0);
-	__m128 c1 = _mm_load1_ps(&pKey->coeff1);
-	__m128 v1 = _mm_load1_ps(&pKey[1].value);
+	floatv t0 = _mm_load1_ps(&pKey->time);
+	floatv tm = _mm_load1_ps(&pKey->timeMult);
+	floatv v0 = _mm_load1_ps(&pKey->value);
+	floatv c0 = _mm_load1_ps(&pKey->coeff0);
+	floatv c1 = _mm_load1_ps(&pKey->coeff1);
+	floatv v1 = _mm_load1_ps(&pKey[1].value);
 
 	for (pKey++; pKey < pEndKey; pKey++)
 	{
-		const __m128 t = _mm_load1_ps(&pKey->time);
-		const __m128 condMask = _mm_cmplt_ps(t, tk);
-		const int intMask = _mm_movemask_ps(condMask);
-		if (intMask == 0)
+		const floatv t = _mm_load1_ps(&pKey->time);
+		const f32mask4 condMask = t < tk;
+		if (!Any(condMask))
 			break;
-		t0 = CMov(condMask, t, t0);
-		tm = CMov(condMask, _mm_load1_ps(&pKey->timeMult), tm);
-		v0 = CMov(condMask, _mm_load1_ps(&pKey->value), v0);
-		c0 = CMov(condMask, _mm_load1_ps(&pKey->coeff0), c0);
-		c1 = CMov(condMask, _mm_load1_ps(&pKey->coeff1), c1);
-		v1 = CMov(condMask, _mm_load1_ps(&pKey[1].value), v1);
+		t0 = if_else(condMask, t, t0);
+		tm = if_else(condMask, _mm_load1_ps(&pKey->timeMult), tm);
+		v0 = if_else(condMask, _mm_load1_ps(&pKey->value), v0);
+		c0 = if_else(condMask, _mm_load1_ps(&pKey->coeff0), c0);
+		c1 = if_else(condMask, _mm_load1_ps(&pKey->coeff1), c1);
+		v1 = if_else(condMask, _mm_load1_ps(&pKey[1].value), v1);
 	}
 
 	// calculate curve
-	const __m128 one = _mm_set1_ps(1.0f);
-	const __m128 t = _mm_mul_ps(_mm_sub_ps(tk, t0), tm);
-	const __m128 u = _mm_sub_ps(one, t);
-	const __m128 tu = _mm_mul_ps(t, u);
-	const __m128 v =
-	  _mm_add_ps(
-	    _mm_add_ps(_mm_mul_ps(v0, u), _mm_mul_ps(v1, t)),
-	    _mm_mul_ps(_mm_add_ps(_mm_mul_ps(c0, u), _mm_mul_ps(c1, t)), tu));
+	const floatv one = _mm_set1_ps(1.0f);
+	const floatv t = (tk - t0) * tm;
+	const floatv u = one - t;
+	const floatv tu = t * u;
+	const floatv v = Lerp(v0, v1, t) + Lerp(c0, c1, t) * tu;
 
 	return v;
 }
@@ -100,7 +96,7 @@ ILINE float CParticleDoubleSpline::Interpolate(float time, float unormRand) cons
 {
 	const float low = m_splines[0].Interpolate(time);
 	const float high = m_splines[1].Interpolate(time);
-	const float result = ::Lerp(low, high, unormRand);
+	const float result = Lerp(low, high, unormRand);
 	return result;
 }
 

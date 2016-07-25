@@ -100,6 +100,7 @@ CVertexAnimation::CVertexAnimation()
 
 	m_RenderMeshId = 0;
 	m_skinningPoolID = 0;
+	m_overridenWeights = false;
 }
 
 CVertexAnimation::~CVertexAnimation()
@@ -108,20 +109,15 @@ CVertexAnimation::~CVertexAnimation()
 
 //
 
-void CVertexAnimation::SetFrameWeight(const SSoftwareVertexFrame& frame, float weight)
+void CVertexAnimation::OverrideFrameWeight(const SSoftwareVertexFrame& frame, float weight)
 {
-	SVertexFrameState* pFrameState = NULL;
-
-	if (m_frameStates.size() < (int)(frame.index + 1))
-		m_frameStates.resize(frame.index + 1);
-
 	SVertexFrameState& frameState = m_frameStates[frame.index];
-	frameState.pFrame = &frame;
+
 	frameState.weight = weight;
 	frameState.flags = 0;
 }
 
-void CVertexAnimation::SetFrameWeightByIndex(const CSkin* pSkin, uint index, float weight)
+void CVertexAnimation::OverrideFrameWeightByIndex(const CSkin* pSkin, uint index, float weight)
 {
 	const CSoftwareMesh& softwareMesh = pSkin->GetModelMesh(0)->m_softwareMesh;
 	const uint frameCount = softwareMesh.GetVertexFrames().GetCount();
@@ -129,10 +125,10 @@ void CVertexAnimation::SetFrameWeightByIndex(const CSkin* pSkin, uint index, flo
 		return;
 
 	const SSoftwareVertexFrame& frame = softwareMesh.GetVertexFrames().GetFrames()[index];
-	SetFrameWeight(frame, weight);
+	OverrideFrameWeight(frame, weight);
 }
 
-void CVertexAnimation::SetFrameWeightByName(const ISkin* pISkin, const char* name, float weight)
+void CVertexAnimation::OverrideFrameWeightByName(const ISkin* pISkin, const char* name, float weight)
 {
 	CSkin* pSkin = (CSkin*)pISkin;
 	const CSoftwareVertexFrames& vertexFrames = pSkin->GetModelMesh(0)->m_softwareMesh.GetVertexFrames();
@@ -140,12 +136,17 @@ void CVertexAnimation::SetFrameWeightByName(const ISkin* pISkin, const char* nam
 	if (index == -1)
 		return;
 
-	SetFrameWeightByIndex(pSkin, index, weight);
+	OverrideFrameWeightByIndex(pSkin, index, weight);
 }
 
 void CVertexAnimation::ClearAllFramesWeight()
 {
-	m_frameStates.clear();
+	const uint stateCount = uint(m_frameStates.size());
+	for (uint i = 0; i < stateCount; ++i)
+	{
+		m_frameStates[i].weight = 0.0f;
+		m_frameStates[i].flags = 0;
+	}
 }
 
 //
@@ -168,7 +169,7 @@ bool CVertexAnimation::CompileAdds(CVertexCommandBuffer& commandBuffer)
 		const SVertexFrameState& frameState = m_frameStates[i];
 		const SSoftwareVertexFrame* const pVertexFrame = frameState.pFrame;
 		const bool bCullFrame = bAllowCulling && (frameState.flags & VA_FRAME_CULLED);
-		const bool bUseFrame = frameState.weight > 0.0f && !bCullFrame;
+		const bool bUseFrame = std::abs(frameState.weight) > 0.0f && !bCullFrame;
 
 		if (pVertexFrame && (bUseFrame || bDebugCulling))
 		{
@@ -277,63 +278,39 @@ uint FindVertexFrameIndex(const CSoftwareVertexFrames& vertexFrames, const char*
 	return -1;
 }
 
-bool CVertexAnimation::CreateFrameStates(const CSoftwareVertexFrames& vertexFrames, const CDefaultSkeleton& skeleton)
+void CVertexAnimation::CreateFrameStates(const CSoftwareVertexFrames& vertexFrames, const CDefaultSkeleton& skeleton)
 {
-	static const char* BLEND_VERTEX_NAME = "_blendWeightVertex";
-	static const uint BLEND_VERTEX_NAME_LENGTH = strlen(BLEND_VERTEX_NAME);
+	static const char MORPH_TARGET_CONTROLLER_SUFFIX[] = "_blendWeightVertex";
 
-	if (!vertexFrames.GetCount())
-		return false;
+	m_frameStates.reserve(vertexFrames.GetCount());
 
-	const SSoftwareVertexFrame* pVertexFrames = vertexFrames.GetFrames();
-	const uint jointCount = skeleton.GetJointCount();
-	const CDefaultSkeleton::SJoint* pModelJoints = &skeleton.m_arrModelJoints[0];
-
-	char name[256];
-	for (uint i = 0; i < jointCount; ++i)
+	for (uint32 i = 0, limit = vertexFrames.GetCount(); i < limit; ++i)
 	{
-		const char* jointName = pModelJoints[i].m_strJointName.c_str();
-		const char* jointNameEnd = strstr(jointName, BLEND_VERTEX_NAME);
-		if (!jointNameEnd)
-			continue;
-		if (strlen(jointNameEnd) != BLEND_VERTEX_NAME_LENGTH)
-			continue;
+		const auto& vertexFrame = vertexFrames.GetFrames()[i];
+		const auto& expectedControllerName = stack_string(vertexFrame.name) + MORPH_TARGET_CONTROLLER_SUFFIX;
 
-		uint length = uint(jointNameEnd - jointName);
-		if (length > sizeof(name) - 1)
-			length = 0;
-		if (!length)
-			continue;
-
-		memcpy(name, jointName, length);
-		name[length] = '\0';
-
-		uint frameIndex = FindVertexFrameIndex(vertexFrames, name);
-		if (frameIndex != -1)
-		{
-			m_frameStates.push_back();
-			m_frameStates.back().pFrame = &pVertexFrames[frameIndex];
-			m_frameStates.back().sourceIndex = i;
-		}
+		m_frameStates.push_back();
+		m_frameStates.back().pFrame = &vertexFrame;
+		m_frameStates.back().jointIndex = skeleton.GetJointIDByName(expectedControllerName);
+		m_frameStates.back().frameIndex = i;
+		m_frameStates.back().flags = 0;
 	}
-
-	// TODO: Sort by jointIndex order
-
-	return true;
-
 }
 
 void CVertexAnimation::UpdateFrameWeightsFromPose(const Skeleton::CPoseData& pose)
 {
-	const uint weightCount = pose.GetJointCount();
+	if (m_overridenWeights)
+		return;
+
+	const uint numJoints = pose.GetJointCount();
 	const QuatT* pWeights = pose.GetJointsRelative();
 	const uint frameCount = uint(m_frameStates.size());
 	SVertexFrameState* pFrames = m_frameStates.begin();
 	for (uint i = 0; i < frameCount; ++i)
 	{
-		if (pFrames[i].sourceIndex < weightCount)
+		if (pFrames[i].jointIndex < numJoints)
 		{
-			pFrames[i].weight = pWeights[pFrames[i].sourceIndex].t.x;
+			pFrames[i].weight = pWeights[pFrames[i].jointIndex].t.x;
 			pFrames[i].flags = 0;
 		}
 	}

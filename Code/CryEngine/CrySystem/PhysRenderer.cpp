@@ -517,7 +517,6 @@ void CPhysRenderer::DrawGeometry(int itype, const void* pGeomData, geom_world_da
 
 	case GEOM_CYLINDER:
 		{
-			assert(pgwd);
 			primitives::cylinder* pcyl = (primitives::cylinder*)pGeomData;
 			const float cos15 = 0.96592582f, sin15 = 0.25881904f, cos7 = 0.99144486f, sin7 = 0.13052619f;
 			float x, y;
@@ -549,6 +548,7 @@ void CPhysRenderer::DrawGeometry(int itype, const void* pGeomData, geom_world_da
 			}
 			if (sweepDir.len2() > 0)
 			{
+				assert(pgwd);
 				int sg0, sg1, sgax = isneg(axes[2] * sweepDir);
 				pt[0] = pt[2] = center + axes[0] * (pcyl->r * scale);
 				n = axes[0] * cos7 + axes[1] * sin7;

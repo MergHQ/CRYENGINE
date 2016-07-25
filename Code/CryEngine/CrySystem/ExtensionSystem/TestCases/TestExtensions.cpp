@@ -1,14 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   TestExtensions.cpp
-//  Version:     v1.00
-//  Created:     02/25/2009 by CarstenW
-//  Description: Part of CryEngine's extension framework.
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "TestExtensions.h"
 
@@ -300,21 +291,21 @@ static void TestComposition()
 	{
 		ITestExt1Ptr p1 = cryinterface_cast<ITestExt1>(crycomposite_query(p, "Ext1"));
 		if (p1)
-			p1->Call1();   // calls CTestExt1::Call1()
+			p1->Call1();     // calls CTestExt1::Call1()
 		ITestExt2Ptr p2 = cryinterface_cast<ITestExt2>(crycomposite_query(p, "Ext2"));
 		if (p2)
-			p2->Call2();   // calls CTestExt2::Call2()
+			p2->Call2();     // calls CTestExt2::Call2()
 		ITestExt3Ptr p3 = cryinterface_cast<ITestExt3>(crycomposite_query(p, "Ext3"));
 		if (p3)
-			p3->Call3();   // calls CTestExt3::Call3()
+			p3->Call3();     // calls CTestExt3::Call3()
 		p3 = cryinterface_cast<ITestExt3>(crycomposite_query(p, "Ext4"));
 		if (p3)
-			p3->Call3();   // calls CTestExt4::Call3()
+			p3->Call3();     // calls CTestExt4::Call3()
 
 		p1 = cryinterface_cast<ITestExt1>(crycomposite_query(p.get(), "Ext4"));
 		p2 = cryinterface_cast<ITestExt2>(crycomposite_query(p.get(), "Ext4"));
 
-		bool b = CryIsSameClassInstance(p1, p2);   // true
+		bool b = CryIsSameClassInstance(p1, p2);     // true
 	}
 
 	{
@@ -372,7 +363,7 @@ static void TestFoobar()
 	}
 
 	{
-		IAPtr sp_ = cryinterface_cast<IA>(p);   // sp_ == NULL
+		IAPtr sp_ = cryinterface_cast<IA>(p);     // sp_ == NULL
 
 		ICryUnknownPtr sp1 = cryinterface_cast<ICryUnknown>(p);
 		IFoobarPtr sp = cryinterface_cast<IFoobar>(sp1);
@@ -710,7 +701,7 @@ static void TestComplex()
 		pCconst = cryinterface_cast<const IC>(pBconst);
 
 		IC* pC = static_cast<IC*>(static_cast<void*>(pABC1.get()));
-		pC->C();   // calls IB::B()
+		pC->C();     // calls IB::B()
 
 		int t = 0;
 	}
@@ -773,9 +764,9 @@ protected:
 	virtual void* QueryInterface(const CryInterfaceID& iid) const
 	{
 		if (iid == cryiidof<ICryUnknown>())
-			return (void*) (ICryUnknown*) this;
+			return (void*)(ICryUnknown*) this;
 		else if (iid == cryiidof<IDontLikeMacros>())
-			return (void*) (IDontLikeMacros*) this;
+			return (void*)(IDontLikeMacros*) this;
 		else
 			return 0;
 	}
@@ -871,7 +862,7 @@ void TestExtensions(ICryFactoryRegistryImpl* pReg)
 	pReg->IterateFactories(cryiidof<IA>(), pF, numFactories);
 	pReg->IterateFactories(MAKE_CRYGUID(-1, -1), pF, numFactories);
 
-	numFactories = (size_t) -1;
+	numFactories = (size_t)-1;
 	pReg->IterateFactories(cryiidof<ICryUnknown>(), 0, numFactories);
 
 	MyCallback callback1;

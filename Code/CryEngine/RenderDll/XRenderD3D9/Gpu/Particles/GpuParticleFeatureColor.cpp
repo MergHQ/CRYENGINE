@@ -27,13 +27,13 @@ void CFeatureColor::InitParticles(const SUpdateContext& context)
 	params.color = m_colorTable[0];
 }
 
-void CFeatureColor::Update(const gpu_pfx2::SUpdateContext& context)
+void CFeatureColor::Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	CParticleComponentRuntime* pRuntime = (CParticleComponentRuntime*) context.pRuntime;
 
 	m_colorTable.UploadHostData();
 
-	pRuntime->SetUpdateSRV(eFeatureUpdateSrvSlot_colorTable, m_colorTable.GetSRV());
+	pRuntime->SetUpdateBuffer(eFeatureUpdateSrvSlot_colorTable, &m_colorTable.GetBuffer());
 	pRuntime->SetUpdateFlags(eFeatureUpdateFlags_Color);
 }
 

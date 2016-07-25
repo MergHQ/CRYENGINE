@@ -15,6 +15,8 @@ uint32 CModelMesh::InitMesh(CMesh* pMesh, CNodeCGF* pMeshNode, _smart_ptr<IMater
 	else
 		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szFilePath, "No material in lod %d", nLOD);
 
+	m_softwareMesh.GetVertexFrames().Create(*pSkinningInfo, -m_vRenderMeshOffset);
+
 	if (pMesh)
 	{
 		m_geometricMeanFaceArea = pMesh->m_geometricMeanFaceArea;
@@ -30,8 +32,6 @@ uint32 CModelMesh::InitMesh(CMesh* pMesh, CNodeCGF* pMeshNode, _smart_ptr<IMater
 		PrepareMesh(pMesh);
 	}
 
-	m_softwareMesh.GetVertexFrames().Create(*pSkinningInfo, -m_vRenderMeshOffset);
-
 	if (!Console::GetInst().ca_StreamCHR && pMesh)
 	{
 		m_pIRenderMesh = CreateRenderMesh(pMesh, szFilePath, nLOD, true);
@@ -41,11 +41,11 @@ uint32 CModelMesh::InitMesh(CMesh* pMesh, CNodeCGF* pMeshNode, _smart_ptr<IMater
 	return 1;
 }
 
-_smart_ptr<IRenderMesh> CModelMesh::InitRenderMeshAsync(CMesh* pMesh, const char* szFilePath, int nLod, DynArray<RChunk>& arrNewRenderChunks)
+_smart_ptr<IRenderMesh> CModelMesh::InitRenderMeshAsync(CMesh* pMesh, const char* szFilePath, int nLod, DynArray<RChunk>& arrNewRenderChunks, bool useComputeSkinningBuffers /* = false */)
 {
 	PrepareMesh(pMesh);
 
-	_smart_ptr<IRenderMesh> pNewRenderMesh = CreateRenderMesh(pMesh, szFilePath, nLod, false);
+	_smart_ptr<IRenderMesh> pNewRenderMesh = CreateRenderMesh(pMesh, szFilePath, nLod, false, useComputeSkinningBuffers);
 	PrepareRenderChunks(*pMesh, arrNewRenderChunks);
 
 	return pNewRenderMesh;
@@ -74,7 +74,7 @@ uint32 CModelMesh::IsVBufferValid()
 	if (pPositions == 0)
 		return 0;
 	int32 nSkinningStride;
-	uint8* pSkinningInfo = m_pIRenderMesh->GetHWSkinPtr(nSkinningStride, FSL_READ);    //pointer to weights and bone-id
+	uint8* pSkinningInfo = m_pIRenderMesh->GetHWSkinPtr(nSkinningStride, FSL_READ);        //pointer to weights and bone-id
 	if (pSkinningInfo == 0)
 		return 0;
 	++m_iThreadMeshAccessCounter;
@@ -112,7 +112,7 @@ ClosestTri CModelMesh::GetAttachmentTriangle(const Vec3& RMWPosition, const Join
 	if (pPositions == 0)
 		return cf;
 	int32 nSkinningStride;
-	uint8* pSkinningInfo = m_pIRenderMesh->GetHWSkinPtr(nSkinningStride, FSL_READ, 0, false);    //pointer to weights and bone-id
+	uint8* pSkinningInfo = m_pIRenderMesh->GetHWSkinPtr(nSkinningStride, FSL_READ, 0, false);          //pointer to weights and bone-id
 	if (pSkinningInfo == 0)
 		return cf;
 	++m_iThreadMeshAccessCounter;
@@ -222,6 +222,8 @@ void CModelMesh::PrepareMesh(CMesh* pMesh)
 		  pMesh->m_pTangents, sizeof(pMesh->m_pTangents[0]), pMesh->GetVertexCount(),
 		  pMesh->m_pQTangents, sizeof(pMesh->m_pQTangents[0]));
 	}
+
+	CreateMorphsBuffer(pMesh);
 }
 
 void CModelMesh::PrepareRenderChunks(CMesh& mesh, DynArray<RChunk>& renderChunks)
@@ -243,17 +245,18 @@ void CModelMesh::PrepareRenderChunks(CMesh& mesh, DynArray<RChunk>& renderChunks
 	m_softwareMesh.Create(mesh, renderChunks, m_vRenderMeshOffset);
 }
 
-_smart_ptr<IRenderMesh> CModelMesh::CreateRenderMesh(CMesh* pMesh, const char* szFilePath, int nLod, bool bCreateDeviceMesh)
+_smart_ptr<IRenderMesh> CModelMesh::CreateRenderMesh(CMesh* pMesh, const char* szFilePath, int nLod, bool bCreateDeviceMesh, bool needsComputeSkinningBuffers)
 {
 	//////////////////////////////////////////////////////////////////////////
 	// Create the RenderMesh
 	//////////////////////////////////////////////////////////////////////////
-
 	ERenderMeshType eRMType = eRMT_Static;
 
-#if CRY_PLATFORM_WINDOWS
+	bool bMultiGPU;
+	gEnv->pRenderer->EF_Query(EFQ_MultiGPUEnabled, bMultiGPU);
+
+	if (bMultiGPU && gEnv->pRenderer->GetRenderType() != eRT_DX12)
 	eRMType = eRMT_Dynamic;
-#endif
 
 	_smart_ptr<IRenderMesh> pRenderMesh = g_pIRenderer->CreateRenderMesh("Character", szFilePath, NULL, eRMType);
 	assert(pRenderMesh != 0);
@@ -269,7 +272,89 @@ _smart_ptr<IRenderMesh> CModelMesh::CreateRenderMesh(CMesh* pMesh, const char* s
 #ifdef MESH_TESSELLATION_ENGINE
 	nFlags |= FSM_ENABLE_NORMALSTREAM;
 #endif
+
+	
+	if (needsComputeSkinningBuffers)
+	{
+		static ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
+		if ((nLod == 0) && cvar_gd && cvar_gd->GetIVal())
+			nFlags |= FSM_USE_COMPUTE_SKINNING;
+	}
+
 	pRenderMesh->SetMesh(*pMesh, 0, nFlags, 0, true);
 
 	return pRenderMesh;
+}
+
+void CModelMesh::CreateMorphsBuffer(CMesh* pMesh)
+{
+	assert(pMesh);
+
+	uint32 numMorphs = m_softwareMesh.GetVertexFrames().GetCount();
+	uint32 numVertexDeltas = m_softwareMesh.GetVertexFrames().GetVertexDeltasCount();
+	uint32 numVertices = pMesh->GetVertexCount();
+	if (!numMorphs || !numVertices || !numVertexDeltas)
+	{
+		return;
+	}
+
+	pMesh->m_numMorphs = numMorphs;
+
+	uint32 numMorphMaskBits = Align(numMorphs, (1U << 5));
+	uint32 numMorphMasks = numMorphMaskBits >> 5;
+
+	pMesh->m_vertexDeltas.resize(numVertexDeltas);
+	pMesh->m_vertexMorphsBitfield.resize(numVertices * numMorphMasks, 0);
+
+	std::vector<uint32> vertexIndices;
+	vertexIndices.resize(numVertices, 0);
+
+	std::vector<uint32> vertexBuckets;
+	vertexBuckets.resize(numVertices, 0);
+
+	for (uint32 i = 0; i < numMorphs; ++i)
+	{
+		const SSoftwareVertexFrame& frame = m_softwareMesh.GetVertexFrames().GetFrames()[i];
+		uint32 numMorphVerts = (uint32)frame.vertices.size();
+		for (uint32 j = 0; j < numMorphVerts; ++j)
+		{
+			const Vec3& deltaPos = frame.vertices[j].position;
+			uint32 vertexIndex = (uint32)frame.vertices[j].index;
+			++vertexBuckets[vertexIndex];
+		}
+	}
+
+	pMesh->m_verticesDeltaOffsets.resize(numVertices, 0);
+	for (uint32 i = 1; i < numVertices; ++i)
+	{
+		pMesh->m_verticesDeltaOffsets[i] = pMesh->m_verticesDeltaOffsets[i - 1] + vertexBuckets[i - 1];
+	}
+
+	for (uint32 i = 0; i < numMorphs; ++i)
+	{
+		const SSoftwareVertexFrame& frame = m_softwareMesh.GetVertexFrames().GetFrames()[i];
+		uint32 numMorphVerts = (uint32)frame.vertices.size();
+		for (uint32 j = 0; j < numMorphVerts; ++j)
+		{
+			const Vec3& deltaPos = frame.vertices[j].position;
+			uint32 vertexIndex = (uint32)frame.vertices[j].index;
+			pMesh->m_vertexDeltas[pMesh->m_verticesDeltaOffsets[vertexIndex] + vertexIndices[vertexIndex]] = Vec4(deltaPos, 0.0f);
+			++vertexIndices[vertexIndex];
+
+			uint32 bidx = i >> 5;
+			uint32 bset = i & 31;
+			pMesh->m_vertexMorphsBitfield[vertexIndex + (bidx * numVertices)] |= uint64(1ull << bset);
+		}
+	}
+
+	for (uint32 i = 0; i < numVertices; ++i)
+	{
+		uint32 numBits = 0;
+		for (uint32 j = 0; j < numMorphMasks; ++j)
+		{
+			uint64 mask = pMesh->m_vertexMorphsBitfield[i + (numVertices * j)];
+			pMesh->m_vertexMorphsBitfield[i + (numVertices * j)] = (uint64(numBits) << 32) | mask;
+			numBits += CountBits(uint32(mask));
+		}
+	}
 }

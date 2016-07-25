@@ -14,12 +14,18 @@ float Script : STANDARDSGLOBAL
            "ShaderType = PostProcess;"
 >; 
 
-Texture2D  <float4> sceneDepthTexture   : TS_ZTarget  ;
-Texture2DMS<float4> sceneDepthTextureMS : TS_ZTargetMS;
+Texture2D shadowDepthTex                : register(t0) = TS_Shadow0;
+Texture2D noiseTex                      : register(t1) = "EngineAssets/Textures/rotrandom.dds"; 
+Texture2D           sceneDepthTexture   : register(t2) = TS_ZTarget ;
+Texture2DMS<float4> sceneDepthTextureMS : register(t3) = TS_ZTargetMS;
 
-Texture2D  <float4> sceneGBufferA   : TS_SceneNormals;
-Texture2D  <float4> sceneGBufferB   : TS_SceneDiffuse;
-Texture2D  <float4> sceneGBufferC   : TS_SceneSpecular;
+Texture2D  <float4> sceneGBufferA       : register(t4) = TS_SceneNormals;
+Texture2D  <float4> sceneGBufferB       : register(t5) = TS_SceneDiffuse;
+Texture2D  <float4> sceneGBufferC       : register(t6) = TS_SceneSpecular;
+
+SamplerComparisonState ssShadowComparison     : register(s0) = SS_Shadow2;
+SamplerState           ssShadowPointClamp     : register(s1) = SS_Shadow0;
+SamplerState           ssShadowPointWrap      : register(s2) = SS_PointWrap;
 
 sampler2D maskMSAASampler = sampler_state
 {
@@ -41,11 +47,7 @@ sampler2D globalScatterSampler = sampler_state
  AddressV = Wrap;  
 };
 
-//force using hw_pcf_compare sampler's states
-//#define HW_PCF_COMPARE 1
 #include "ShadowCommon.cfi"
-
-
 
 //===========================================================================
 // Basic shadow maps support
@@ -56,9 +58,10 @@ float4x4 CompMatrix  			: PI_Composite < vsregister = c0; >;    // View*Projecti
 float4 vProjRatios		: PB_TempData[0];
 
 //rotation to light space
-float4x4 RotMatrix        : PB_TempMatr0[1];
-float4x4 BlendTexGen      : PB_TempMatr0[2];
-float4   BlendTcNormalize : PB_TempData[6];	
+float4x4 NoiseProjection    : PB_TempMatr0[1];
+float4x4 BlendTexGen        : PB_TempMatr0[2];
+float4x4 ScreenToWorldBasis : PB_TempMatr0[3];
+float4   BlendTcNormalize   : PB_TempData[6];
 
 //FIX: reserve params for common shaders
 float4 vWBasisX		: PB_TempData[10];
@@ -73,6 +76,37 @@ float4 BlendInfo 							: PB_TempData[15];
 
 // debug shadow cascade color
 float4  DebugCascadeColor;
+
+cbuffer CBShadowMask : register(b0)
+{
+	struct 
+	{
+		float4x4 unitMeshTransform;
+		float4   vCamPos;
+		float4x4 ScreenToShadowBasis;
+		float4x4 NoiseProjection;
+		float4   BlendTcNormalize;
+		float4   fOneDivFarDist;
+		float4   fDepthTestBias;
+		float4   irreg_kernel_2d[8];
+		float4   fKernelRadius;
+		float4   vAdaption;
+		float4   vInvShadowMapSize;
+		float4   fShadowFadingDist;
+		float4x4 BlendTexGen;
+		float4   BlendInfo;
+	} c_ShadowMaskConstants;
+};
+
+cbuffer CBCloudShadows : register(b0)
+{
+	struct 
+	{
+		float4   params;
+		float4   animParams;
+	} c_CloudShadowConstants;
+};
+
 
 /////////////////////////////
 // structs
@@ -98,7 +132,7 @@ struct pixout_cl_void_depth
 	float  Depth : SV_Depth;
 #else
 	//HLSLcc compiler crash issue
-	float Depth    : COLOR0; 
+	float Depth    : COLOR3; 
 #endif
 };
 
@@ -143,10 +177,9 @@ struct vert2fragShadowDeferredProj
 struct vert2fragShadowDeferred
 {
 	float4 HPosition	:	POSITION;
-	float4 ViewPosLS_ViewVectLS	:	TEXCOORD0;
-	float4 ScreenTC		:	TEXCOORD1;
+	float4 ScreenTC		:	TEXCOORD0;
 #if %_RT_SAMPLE2 || %_RT_SAMPLE3
-	float3 WS_ViewVect	:	TEXCOORD4;
+	float3 WS_ViewVect	:	TEXCOORD1;
 #endif
 };
 
@@ -155,10 +188,9 @@ struct fragInShadowDeferred
 {
 //order should be the  same as ouyput from vert2frag for dx10 
 	float4 WPos	:	SV_POSITION;
-	float4 ViewPosLS_ViewVectLS	:	TEXCOORD0;
-	float4 ScreenTC		:	TEXCOORD1;
+	float4 ScreenTC		:	TEXCOORD0;
 #if %_RT_SAMPLE2 || %_RT_SAMPLE3
-	float3 WS_ViewVect	:	TEXCOORD4;
+	float3 WS_ViewVect	:	TEXCOORD1;
 #endif
 };
 
@@ -180,20 +212,18 @@ struct v2fShadowSimple
 float4 CalcHomogeneousPos(float SceneDepth, float2 WPos)
 {
 	//separate scale to make sure we don't lost the precision during "mad"'s of WBasis vectors
-	float4 vWBasisScale = vBasisMagnitudes * SceneDepth; 
-  vWBasisScale.xy *= WPos.xy;
+	float3 vWBasisScale = c_ShadowMaskConstants.ScreenToShadowBasis._m30_m31_m32 * SceneDepth; 
+	vWBasisScale.xy *= WPos.xy;
+	
+	float4 HPos = c_ShadowMaskConstants.vCamPos + mul(vWBasisScale, (float3x4)c_ShadowMaskConstants.ScreenToShadowBasis);
 
-	float4 HPos = vWBasisZ.xyzw*vWBasisScale.z+(vWBasisX.xyzw*vWBasisScale.x)+(vWBasisY.xyzw*vWBasisScale.y);
-	HPos = vCamPos.xyzw + HPos.xyzw;
-
-
-  return HPos;
+	return HPos;
 }
 
 float4 CalcHomogeneousBlendPos(float SceneDepth, float2 WPos)
 {
 	float4 pPos = float4(float3(WPos.xy,1) * SceneDepth , 1);
-	float4 HPos = mul(pPos,BlendTexGen);
+	float4 HPos = mul(pPos, c_ShadowMaskConstants.BlendTexGen);
 
 	HPos.xy /= HPos.w;
 
@@ -203,7 +233,7 @@ float4 CalcHomogeneousBlendPos(float SceneDepth, float2 WPos)
 float BlendVP(float3 vp, bool blendOut)
 {
 	float3 vBlend;
-	float2 BlendVal = (blendOut) ? BlendInfo.xy : BlendInfo.zw;
+	float2 BlendVal = (blendOut) ? c_ShadowMaskConstants.BlendInfo.xy : c_ShadowMaskConstants.BlendInfo.zw;
 
 #if ORBIS
 	// shader compiler workaround
@@ -217,7 +247,7 @@ float BlendVP(float3 vp, bool blendOut)
 
 	float fBlendValZ = 0.975;  // Magic number
 
-	vBlend.z = vp.z * fOneDivFarDist.x;
+	vBlend.z = vp.z * c_ShadowMaskConstants.fOneDivFarDist.x;
 	vBlend.z -= fBlendValZ;
 	vBlend.z *=  1.0f / (1.0f - fBlendValZ);
 
@@ -331,11 +361,6 @@ vert2fragShadowDeferred DeferredShadowVS(app2vertShadow IN)
 	OUT.WS_ViewVect = IN.viewDir.xyz;
 #endif
 
-	//noise projection
-	float3 ViewPosLS = mul(g_vViewPos.xyz, (float3x3)RotMatrix);
-	OUT.ViewPosLS_ViewVectLS.xy = ViewPosLS.xy;
-	OUT.ViewPosLS_ViewVectLS.zw = ( mul((g_vViewPos.xyz + IN.viewDir.xyz), (float3x3)RotMatrix) - ViewPosLS.xyz ).xy;
-
 	return OUT;
 }
 
@@ -383,12 +408,12 @@ float4 CalcShadowSpace(float4 HPos)
 
 	#if !%_RT_NEAREST
 		//TOFIX: concatenate this operations to the projection matrix
-		P0.z *= fOneDivFarDist.x;
+		P0.z *= c_ShadowMaskConstants.fOneDivFarDist.x;
 	#endif
 
 	//we do slope scale bias during shadowgen only
 	//make constant bias for sun
-	P0.z -= fDepthTestBias.x; 
+	P0.z -= c_ShadowMaskConstants.fDepthTestBias.x; 
 
   return P0;
 }
@@ -413,12 +438,24 @@ half CalcShadow(float4 vShPos, float2 vNoisePos, const bool bContactHardening)
 
 	half fInShadow = 1;
 
+	ShadowSamplingContext samplingContext;
+	samplingContext.comparisonSampler = ssShadowComparison;
+	samplingContext.pointSamplerClamp = ssShadowPointClamp;
+	samplingContext.pointSamplerWrap  = ssShadowPointWrap;
+	samplingContext.noiseTex          = noiseTex;
+
+	IrregularFilterKernel filterKernel;
+	filterKernel.taps           = c_ShadowMaskConstants.irreg_kernel_2d;
+	filterKernel.scale          = GetShadowQuality() == QUALITY_LOW ? float2(1.1f,1.1f) : c_ShadowMaskConstants.fKernelRadius;
+	filterKernel.noiseLookupPos = NoiseP.xy * (filterKernel.scale.y * 15.h);
+	filterKernel.adaption       = c_ShadowMaskConstants.vAdaption;
+
 #if %_RT_SHADOW_JITTERING
-      //uniform_pcf_fast(depthMapSampler0, P0, fInShadow);
-      irregular_filter(depthMapSampler0, sRotSampler, P0, NoiseP.xy, GetKernelSize(), fInShadow, bContactHardening);
+      irregular_filter(shadowDepthTex, c_ShadowMaskConstants.vInvShadowMapSize.xx, samplingContext, filterKernel, P0, fInShadow, bContactHardening);
+	  fInShadow = pow(fInShadow,2);
 #else 
 	//debug one-tap sampling
-	shadow_sample(depthMapSampler0, P0, fInShadow);
+	shadow_sample(shadowDepthTex, samplingContext.comparisonSampler, P0, fInShadow);
 #endif
 
   return fInShadow;
@@ -526,24 +563,44 @@ pixout_cl_void FrustumClipPS(fragInFrustClip IN)
 	return OUT;
 }
 
+////////////////////////////////////////////////////////////
 
+float4 ShadowMaskVolumeVS(float3 inPosition  : POSITION) : SV_Position
+{
+	return mul(float4(inPosition, 1.0), c_ShadowMaskConstants.unitMeshTransform);
+}
 
 ///////////////// shadows pixel shader //////////////////
 
 [earlydepthstencil]
-pixout_cl DeferredShadowPS(fragInShadowDeferred IN)
+pixout_cl DeferredShadowPS(float4 WPos : SV_POSITION)
 {
+
+#if !%_RT_SAMPLE0
+	c_ShadowMaskConstants.irreg_kernel_2d     = irreg_kernel_2d;
+	c_ShadowMaskConstants.vCamPos             = vCamPos;
+	c_ShadowMaskConstants.fDepthTestBias      = fDepthTestBias;
+	c_ShadowMaskConstants.fOneDivFarDist      = fOneDivFarDist;
+	c_ShadowMaskConstants.fKernelRadius       = fKernelRadius;
+	c_ShadowMaskConstants.fShadowFadingDist   = fShadowFadingDist;
+	c_ShadowMaskConstants.vInvShadowMapSize   = vInvShadowMapSize;
+	c_ShadowMaskConstants.ScreenToShadowBasis = float4x4(vWBasisX, vWBasisY, vWBasisZ, vBasisMagnitudes);
+	c_ShadowMaskConstants.vAdaption           = vAdaption;
+	c_ShadowMaskConstants.NoiseProjection     = NoiseProjection;
+	c_ShadowMaskConstants.BlendInfo           = BlendInfo;
+	c_ShadowMaskConstants.BlendTexGen         = BlendTexGen;
+	c_ShadowMaskConstants.BlendTcNormalize    = BlendTcNormalize;
+#endif
+
   pixout_cl OUT;
 
-  float4 P0 = 0.0f;
-
-	// Todo: bilateral upscale pass. Measure performance vs rendering shadows to multisampled target+sample freq passes
-  float SceneDepth = GetLinearDepth( sceneDepthTexture, IN.ScreenTC.xy );
-
-  P0 = CalcHomogeneousPos(SceneDepth, IN.WPos.xy);
-
+  float SceneDepth = sceneDepthTexture.Load(int3(WPos.xy, 0)).x;
+  float4 P0 = CalcHomogeneousPos(SceneDepth, WPos.xy);
+  
+  float2 NoiseP = mul(c_ShadowMaskConstants.NoiseProjection, P0).xy;
+  
   float4 pOutBlend = float4(P0.xy / P0.w, P0.zw);
-  pOutBlend.xy = pOutBlend.xy * BlendTcNormalize.xy + BlendTcNormalize.zw;
+  pOutBlend.xy = pOutBlend.xy * c_ShadowMaskConstants.BlendTcNormalize.xy + c_ShadowMaskConstants.BlendTcNormalize.zw;
   
   P0 = CalcShadowSpace(P0);
 
@@ -553,28 +610,27 @@ pixout_cl DeferredShadowPS(fragInShadowDeferred IN)
 	const bool bContactHardening = false;
 #endif
 
-  float2 NoiseP = IN.ViewPosLS_ViewVectLS.xy + IN.ViewPosLS_ViewVectLS.zw * SceneDepth;
   half fInShadow = CalcShadow(P0, NoiseP, bContactHardening);
 
   //gsm fading
 	half2 fDist = 2.0*abs(P0.xy-half2(0.5,0.5));
-  half fFadeF = 1.0 - (fShadowFadingDist.x * pow(max(fDist.x,fDist.y),8));
+  half fFadeF = 1.0 - (c_ShadowMaskConstants.fShadowFadingDist.x * pow(max(fDist.x,fDist.y),8));
 
 #if %_RT_SAMPLE2
 	// Apply sun SS shadows
-	float3 WorldP = g_vViewPos.xyz + IN.WS_ViewVect * SceneDepth;
-	CalculateDetailSSShadow( SceneDepth, WorldP, WorldP + g_PS_SunLightDir.xyz, CompMatrix, fInShadow, true );
+	float3 WorldP = ReconstructWorldPos(WPos.xy, SceneDepth);
+	CalculateDetailSSShadow(sceneDepthTexture, SceneDepth, WorldP, WorldP + CV_SunLightDir.xyz, CV_ViewProjMatr, fInShadow, true );
 #endif
 
 	// Apply POM self-shadowing
-	uint2 pixelCoord = int2(IN.ScreenTC.xy * PS_ScreenSize.xy);
+	uint2 pixelCoord = int2(WPos.xy);
 	OUT.Color = 1 - fInShadow * (1 - DecodeSunSelfShadowing(sceneGBufferA[pixelCoord], sceneGBufferB[pixelCoord], sceneGBufferC[pixelCoord]));
 	
 	OUT.Color *= saturate(fFadeF);
 
-	if(BlendTexGen[3][3] != 0)// blend inwards
+	if(c_ShadowMaskConstants.BlendTexGen[3][3] != 0)// blend inwards
 	{
-		float4 pBlendVP = CalcHomogeneousBlendPos(SceneDepth, IN.WPos.xy);
+		float4 pBlendVP = CalcHomogeneousBlendPos(SceneDepth, WPos.xy);
 		OUT.Color *= BlendVP(pBlendVP.xyz, false);
 	}
 
@@ -587,20 +643,23 @@ pixout_cl DeferredShadowPS(fragInShadowDeferred IN)
 	return OUT;
 }
 
-pixout_cl CloudsShadowPS(fragInShadowDeferred IN)
+///////////////// cloud shadows  //////////////////
+Texture2D cloudShadowTex          : register(t0) = TS_CloudShadow;
+Texture3D volCloudShadowTex       : register(t0) = TS_VolCloudShadow;
+SamplerState ssCloudShadow        : register(s0) = SS_MaterialBilinearWrap;
+SamplerState ssVolCloudShadow     : register(s0) = SS_MaterialTrilinearBorder;
+
+pixout_cl CloudsShadowPS(float4 WPos : SV_POSITION)
 {
 	pixout_cl OUT = (pixout_cl) 1;
 	float visibility = 1;
 
-#if %_RT_SAMPLE2 || %_RT_SAMPLE3
-	float SceneDepth = GetLinearDepth( sceneDepthTexture, IN.ScreenTC.xy );
-	float3 WorldP = g_vViewPos.xyz + IN.WS_ViewVect * SceneDepth;
-#endif
+	float3 WorldP = ReconstructWorldPos(WPos.xy, sceneDepthTexture);
 
 #if %_RT_SAMPLE3
-	visibility = 1 - GetVolumetricCloudShadow(WorldP.xyz);
+	visibility = 1 - GetVolumetricCloudShadow(volCloudShadowTex, ssVolCloudShadow, WorldP.xyz, CV_SunLightDir.xyz, c_CloudShadowConstants.params, c_CloudShadowConstants.animParams);
 #elif %_RT_SAMPLE2
-	visibility = 1 - GetCloudShadow(WorldP);
+	visibility = 1 - GetCloudShadowCommon(WorldP, cloudShadowTex, ssCloudShadow, c_CloudShadowConstants.animParams, c_CloudShadowConstants.params);
 #endif
 
 	OUT.Color = visibility;
@@ -876,5 +935,32 @@ technique ReprojectShadowMap
     CullMode = None;
 
     PixelShader = ReprojectShadowMap();
+  }
+}
+
+technique ShadowMask
+{
+  pass p0
+  {
+    VertexShader = FullscreenTriVS()  ShadowMaskGenVS;
+    PixelShader  = DeferredShadowPS() ShadowMaskGenPS;
+  }
+}
+
+technique ShadowMaskVolume
+{
+  pass p0
+  {
+    VertexShader = ShadowMaskVolumeVS() ShadowMaskGenVS;
+    PixelShader  = DeferredShadowPS()   ShadowMaskGenPS;
+  }
+}
+
+technique CloudShadow
+{
+  pass p0
+  {
+    VertexShader = FullscreenTriVS() ShadowMaskGenVS;
+    PixelShader  = CloudsShadowPS()  ShadowMaskGenPS;
   }
 }

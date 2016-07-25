@@ -30,7 +30,7 @@ void GetMemoryUsage(ICrySizer* pSizer);
 void CTerrain::AddVisSector(CTerrainNode* newsec)
 {
 	assert(newsec->m_cNewGeomMML < m_nUnitsToSectorBitShift);
-	m_lstVisSectors.Add((CTerrainNode*)newsec);
+	m_lstVisSectors.Add(newsec);
 }
 
 void CTerrain::CheckVis(const SRenderingPassInfo& passInfo)
@@ -212,6 +212,7 @@ void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 	if (m_lstActiveTextureNodes.Count() && m_texCache[0].Update())
 	{
 		m_texCache[1].Update();
+		m_texCache[2].Update();
 
 		for (int i = 0; i < m_lstActiveTextureNodes.Count(); i++)
 			m_lstActiveTextureNodes[i]->UpdateDistance(passInfo);
@@ -260,10 +261,22 @@ void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 	// process procedural objects
 	if (m_lstActiveProcObjNodes.Count())
 	{
-		if (!CTerrainNode::GetProcObjChunkPool())
+		static int paramsCheckSumm = 0;
+		if (!CTerrainNode::GetProcObjChunkPool() || paramsCheckSumm != (MAX_PROC_OBJ_CHUNKS_NUM + MAX_PROC_SECTORS_NUM + GetCVars()->e_ProcVegetationMaxObjectsInChunk))
 		{
+			while (m_lstActiveProcObjNodes.Count() > 0)
+			{
+				m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
+				m_lstActiveProcObjNodes.DeleteLast();
+			}
+
+			delete CTerrainNode::GetProcObjChunkPool();
 			CTerrainNode::SetProcObjChunkPool(new SProcObjChunkPool(MAX_PROC_OBJ_CHUNKS_NUM));
+
+			delete CTerrainNode::GetProcObjPoolMan();
 			CTerrainNode::SetProcObjPoolMan(new CProcVegetPoolMan(MAX_PROC_SECTORS_NUM));
+			
+			paramsCheckSumm = (MAX_PROC_OBJ_CHUNKS_NUM + MAX_PROC_SECTORS_NUM + GetCVars()->e_ProcVegetationMaxObjectsInChunk);
 		}
 
 		// make sure distances are correct
@@ -493,28 +506,7 @@ void CTerrain::GetVisibleSectorsInAABB(PodArray<struct CTerrainNode*>& lstBoxSec
 	}
 }
 
-void CTerrain::RegisterLightMaskInSectors(CDLight* pLight, int nSID, const SRenderingPassInfo& passInfo)
-{
-	if (!GetParentNode(nSID))
-		return;
-
-	FUNCTION_PROFILER_3DENGINE;
-
-	assert(pLight->m_Id >= 0 || 1);
-	//assert(!pLight->m_Shader.m_pShader || !(pLight->m_Shader.m_pShader->GetLFlags() & LMF_DISABLE));
-
-	// get intersected outdoor sectors
-	m_lstSectors.Clear();
-	AABB aabbBox(pLight->m_Origin - Vec3(pLight->m_fRadius, pLight->m_fRadius, pLight->m_fRadius),
-	             pLight->m_Origin + Vec3(pLight->m_fRadius, pLight->m_fRadius, pLight->m_fRadius));
-	GetParentNode(nSID)->IntersectTerrainAABB(aabbBox, m_lstSectors);
-
-	// set lmask in all affected sectors
-	for (int s = 0; s < m_lstSectors.Count(); s++)
-		m_lstSectors[s]->AddLightSource(pLight, passInfo);
-}
-
-void CTerrain::IntersectWithShadowFrustum(PodArray<CTerrainNode*>* plstResult, ShadowMapFrustum* pFrustum, int nSID, const SRenderingPassInfo& passInfo)
+void CTerrain::IntersectWithShadowFrustum(PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, int nSID, const SRenderingPassInfo& passInfo)
 {
 #ifdef SEG_WORLD
 	if (nSID < 0)
@@ -529,7 +521,20 @@ void CTerrain::IntersectWithShadowFrustum(PodArray<CTerrainNode*>* plstResult, S
 	{
 		float fHalfGSMBoxSize = 0.5f / (pFrustum->fFrustrumSize * Get3DEngine()->m_fGsmRange);
 
-		GetParentNode(nSID)->IntersectWithShadowFrustum(false, plstResult, pFrustum, fHalfGSMBoxSize, passInfo);
+		if (pFrustum->pLightOwner == Get3DEngine()->GetSunEntity())
+		{
+			// move near plane closer to the light source, this will include all casters located between player and sun, shadow-gen shader is also modified to render casters outside of near plane
+			ShadowMapFrustum tmpFrustum = *pFrustum;
+			CCamera & cam0 = tmpFrustum.FrustumPlanes[0];
+			cam0.SetFrustum(cam0.GetViewSurfaceX(), cam0.GetViewSurfaceZ(), cam0.GetFov(), 1.f, cam0.GetFarPlane());
+			CCamera & cam1 = tmpFrustum.FrustumPlanes[1];
+			cam1.SetFrustum(cam1.GetViewSurfaceX(), cam1.GetViewSurfaceZ(), cam1.GetFov(), 1.f, cam1.GetFarPlane());
+			GetParentNode(nSID)->IntersectWithShadowFrustum(false, plstResult, &tmpFrustum, fHalfGSMBoxSize, passInfo);
+		}
+		else
+		{
+			GetParentNode(nSID)->IntersectWithShadowFrustum(false, plstResult, pFrustum, fHalfGSMBoxSize, passInfo);
+		}
 	}
 }
 
@@ -616,10 +621,11 @@ int CTerrain::GetTerrainLightmapTexId(Vec4& vTexGenInfo, int nSID)
 	return (pNode && pNode->m_nNodeTexSet.nTex1 > 0) ? pNode->m_nNodeTexSet.nTex1 : 0;
 }
 
-void CTerrain::GetAtlasTexId(int& nTex0, int& nTex1, int nSID = 0)
+void CTerrain::GetAtlasTexId(int& nTex0, int& nTex1, int& nTex2, int nSID = 0)
 {
-	nTex0 = m_texCache[0].m_nPoolTexId;
-	nTex1 = m_texCache[1].m_nPoolTexId;
+	nTex0 = m_texCache[0].m_nPoolTexId; // RGB
+	nTex1 = m_texCache[1].m_nPoolTexId; // Normal
+	nTex2 = m_texCache[2].m_nPoolTexId; // Height
 }
 
 void CTerrain::GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& crstAABB, int nSID)
@@ -976,4 +982,28 @@ void CTerrain::SplitWorldRectToSegments(const Rectf& worldRect, PodArray<TSegmen
 
 		segmentRects.Add(sr);
 	}
+}
+
+Vec3 CTerrain::GetTerrainSurfaceNormal(Vec3 vPos, float fRange, int nSID)
+{
+	FUNCTION_PROFILER_3DENGINE;
+
+#ifdef SEG_WORLD
+	if (nSID < 0)
+	{
+		nSID = FindSegment((int)vPos.x, (int)vPos.y);
+		Vec3 vSegOrigin = GetSegmentOrigin(nSID);
+		vPos.x -= vSegOrigin.x;
+		vPos.y -= vSegOrigin.y;
+	}
+#else
+	nSID = GetDefSID();
+#endif
+
+	fRange += 0.05f;
+	Vec3 v1 = Vec3(vPos.x - fRange, vPos.y - fRange, GetZApr(vPos.x - fRange, vPos.y - fRange, nSID));
+	Vec3 v2 = Vec3(vPos.x - fRange, vPos.y + fRange, GetZApr(vPos.x - fRange, vPos.y + fRange, nSID));
+	Vec3 v3 = Vec3(vPos.x + fRange, vPos.y - fRange, GetZApr(vPos.x + fRange, vPos.y - fRange, nSID));
+	Vec3 v4 = Vec3(vPos.x + fRange, vPos.y + fRange, GetZApr(vPos.x + fRange, vPos.y + fRange, nSID));
+	return (v3 - v2).Cross(v4 - v1).GetNormalized();
 }

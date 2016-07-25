@@ -15,6 +15,8 @@ namespace CryEngine.UI.Components
 	/// </summary>
 	public class ButtonCtrl : Component
 	{
+        public event EventHandler OnEnterMouse;
+        public event EventHandler OnLeaveMouse;
 		public event EventHandler OnFocusEnter; ///< Raised if Focus was entered by Canvas.
 		public event EventHandler OnFocusLost; ///< Raised if Focus was left by Canvas.
 		public event EventHandler OnPressed; ///< Raised if button was pressed.
@@ -29,6 +31,18 @@ namespace CryEngine.UI.Components
 			Text = (Owner as Button).AddComponent<Text> ();
 			Text.Alignment = Alignment.Center;
 		}
+
+        public void OnMouseEnter(int x, int y)
+        {
+            if (OnEnterMouse != null)
+                OnEnterMouse();
+        }
+
+        public void OnMouseLeave(int x, int y)
+        {
+            if (OnLeaveMouse != null)
+                OnLeaveMouse();
+        }
 
 		/// <summary>
 		/// Invoked by parent Canvas.

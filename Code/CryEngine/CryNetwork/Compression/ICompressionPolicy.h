@@ -25,7 +25,16 @@ struct ICompressionPolicy : public CMultiThreadRefCount
 		--g_objcnt.compressionPolicy;
 	}
 
+	virtual void Init(CCompressionManager* pManager) {}
 	virtual bool Load(XmlNodeRef node, const string& filename) = 0;
+
+	virtual void SetTimeValue(uint32 timeFraction32){}
+
+	// when policy needs to process some data from time to time
+	// if it return false, this method will never be called again
+	// this method is called from different thread than replication and should be thread safe
+	virtual bool Manage(CCompressionManager* pManager) { return false; }
+
 
 #if USE_ARITHSTREAM
 	#define SERIALIZATION_TYPE(T)                                                                                                                                                  \
@@ -238,6 +247,7 @@ private:
 	}
 #endif
 
+protected:
 	T m_impl;
 };
 
@@ -253,7 +263,6 @@ struct CompressionPolicyFactory : public CompressionPolicyFactoryBase
 
 	static ICompressionPolicyPtr Create(uint32 key)
 	{
-		ScopedSwitchToGlobalHeap useGlobalHeap;
 		return new CCompressionPolicy<T>(key);
 	}
 };

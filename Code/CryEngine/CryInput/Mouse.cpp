@@ -193,7 +193,7 @@ void CMouse::Update(bool bFocus)
 
 	SmoothDeltas(g_pInputCVars->i_mouse_smooth);
 
-	const bool hasDeltaChanged = !(fcmp(m_deltas.x, m_oldDeltas.x) && fcmp(m_deltas.y, m_oldDeltas.y));
+	const bool hasDeltaChanged = !IsEquivalent(m_deltas, m_oldDeltas, FLT_EPSILON);
 	m_oldDeltas = m_deltas; //this needs to happen always. We want to keep the attribute always valid
 
 	//mouse wheel - use custom code instead of PostOnlyWhenChanged because we want the mouseWheel value

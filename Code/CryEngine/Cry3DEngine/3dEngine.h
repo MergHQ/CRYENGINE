@@ -26,6 +26,11 @@
 	#undef DrawText
 #endif //DrawText
 
+// forward declaration
+struct SNodeInfo;
+class CStitchedImage;
+class CWaterRippleManager;
+
 struct SEntInFoliage
 {
 	int   id;
@@ -130,8 +135,6 @@ struct SOptimizedOutdoorWindArea
 	IPhysicalEntity* pArea;// Physical area
 };
 
-struct SNodeInfo;
-class CStitchedImage;
 struct DLightAmount
 {
 	CDLight* pLight;
@@ -385,6 +388,8 @@ public:
 
 	virtual void   UnRegisterEntityDirect(IRenderNode* pEnt);
 	virtual void   UnRegisterEntityAsJob(IRenderNode* pEnt);
+
+	virtual void   AddWaterRipple(const Vec3& vPos, float scale, float strength);
 
 	virtual bool   IsUnderWater(const Vec3& vPos) const;
 	virtual void   SetOceanRenderFlags(uint8 nFlags);
@@ -703,8 +708,6 @@ public:
 	virtual void RenderScene(const int nRenderFlags, const SRenderingPassInfo& passInfo);
 	virtual void DebugDraw_UpdateDebugNode();
 
-	uint32       BuildLightMask(const AABB& objBox, const SRenderingPassInfo& passInfo);
-	uint32       BuildLightMask(const AABB& objBox, PodArray<CDLight*>* pAffectingLights, CVisArea* pObjArea, bool bObjOutdoorOnly, const SRenderingPassInfo& passInfo, SRestLightingInfo* pRestLightingInfo = NULL);
 	void         DebugDraw_Draw();
 	bool         IsOutdoorVisible();
 	void         RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo);
@@ -831,6 +834,7 @@ public:
 	float                 m_fSunClipPlaneRange;
 	float                 m_fSunClipPlaneRangeShift;
 	bool                  m_bSunShadows;
+	bool                  m_bSunShadowsFromTerrain;
 
 	int                   m_nCloudShadowTexId;
 
@@ -916,7 +920,6 @@ public:
 	// Fog Materials
 	_smart_ptr<IMaterial> m_pMatFogVolEllipsoid;
 	_smart_ptr<IMaterial> m_pMatFogVolBox;
-	_smart_ptr<IMaterial> m_pMatLPV;
 
 	_smart_ptr<IShader>   m_pFarTreeSprites;
 
@@ -930,7 +933,6 @@ public:
 
 		m_pMatFogVolEllipsoid = 0;
 		m_pMatFogVolBox = 0;
-		m_pMatLPV = 0;
 	}
 
 	// Render elements
@@ -1282,7 +1284,6 @@ private:
 	class CTimeOfDay*                 m_pTimeOfDay;
 
 	ICVar*                            m_pLightQuality;
-	class CGlobalIlluminationManager* m_pGlobalIlluminationManager;
 
 	// FPS for savelevelstats
 
@@ -1323,6 +1324,8 @@ private:
 	std::vector<SOptimizedOutdoorWindArea> m_indoorWindAreas[2];
 
 	CLightVolumesMgr                       m_LightVolumesMgr;
+
+	std::unique_ptr<CWaterRippleManager>   m_pWaterRippleManager;
 
 	friend struct SRenderNodeTempData;
 };

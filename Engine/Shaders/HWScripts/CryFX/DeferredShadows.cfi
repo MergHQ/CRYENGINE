@@ -6,57 +6,7 @@
 // Common Deferred shadows functions
 //--------------------------------------------------------------------------------------------------
 
-float4 poisson_kernel_2d[MAX_SHADOW_SAMPLES_NUM/2];
-
-float4 CalcShadowSpace(float4 HPos)
-{
-  float4 P0 = HPos;
-	P0.xy /= P0.w;
-	P0.z *= fOneDivFarDist.x;
-
-#if !%_RT_POINT_LIGHT
-	//we do slope scale bias during shadowgen only
-	//make constant bias for sun
-	P0.z -= fDepthTestBias.x; 
-#endif
-
-	return P0;
-}
-
-half CalcShadow(float4 vShPos, float2 vNoisePos, int nChunk)
-{
-  float4 P0 = vShPos;
-
-//clamp depth in shadows space for all FP shadowmaps
-//comparison sampler doesn't do clamping internally for FP formats
-	P0.z = clamp(P0.z, 0.0f, 0.999999f);
-
-//scale for noise projecton should be computed based on the size of shadow frustums(increase if it's bigger) 
-//and distance to viewer((decrease if it's father)) 
-#if %_RT_POINT_LIGHT 
-	//TOFIX: compute proper scale range for point LS noise
-	float2 NoiseP = P0.xy*20;
-#else
-	//reconstruct noise projection
-	float2 NoiseP = vNoisePos.xy;
-#endif
-
-	half fInShadow = 1;
-
-#if %_RT_SHADOW_JITTERING
-  if (GetShadowQuality()!=QUALITY_LOW)
-  {
-    irregular_filter(depthMapSampler0, sRotSampler, P0, NoiseP.xy, GetKernelSize(), fInShadow, nChunk);
-  }
-#else 
-	//debug one-tap sampling
-	shadow_sample(depthMapSampler0, P0, fInShadow);
-#endif
-
-  return fInShadow;
-}
-
-void irregular_filter_smpl(Texture2D depthMap, sampler2D sRotations, float4 p, float2 randDirTC, float2 kernelRadius, out float shadowTest, int nChunk = 0) //, float2 InvShadowMapWH
+void irregular_filter_smpl(Texture2D depthMap, ShadowSamplingContext samplingContext, float4 p, float2 randDirTC, float2 kernelRadius, out float shadowTest) //, float2 InvShadowMapWH
 {
 	#define SHADOW_SAMPLES_NUM GetShadowSamplesNum()
 
@@ -74,7 +24,7 @@ void irregular_filter_smpl(Texture2D depthMap, sampler2D sRotations, float4 p, f
 	#define KERNEL_STEP_SIZE 2
 
 	//hints the compiler to use the _bx2 modifier
-	half2 rotSample = GetTexture2D(sRotations, randDirTC.xy * rotScale.xy).xy;
+	half2 rotSample = GetTexture2D(samplingContext.noiseTex, samplingContext.pointSamplerWrap, randDirTC.xy * rotScale.xy).xy;
 
   rotSample.xy *= (kernelRadius.xy * float2(1/512.0f, 1/512.0f));
 
@@ -90,8 +40,8 @@ void irregular_filter_smpl(Texture2D depthMap, sampler2D sRotations, float4 p, f
 	{
 		half4 sampleDepth;
 
-		DoubleSampleRotated(depthMap, p0, rot, irreg_kernel_2d[i+0], sampleDepth.xy);
-		DoubleSampleRotated(depthMap, p0, rot, irreg_kernel_2d[i+1], sampleDepth.zw);
+		DoubleSampleRotated(depthMap, samplingContext.comparisonSampler, p0, rot, irreg_kernel_2d[i+0], sampleDepth.xy);
+		DoubleSampleRotated(depthMap, samplingContext.comparisonSampler, p0, rot, irreg_kernel_2d[i+1], sampleDepth.zw);
 
 	//was for _RT_HW_PCF_COMPARE
 		//FIX: flag to simulate InShadow

@@ -31,7 +31,7 @@ namespace CryEngine.Components
 				if (value == null)
 					return;
 				_position = _hostEntity.Position;
-				_forwardDir = _hostEntity.Rotation.ForwardDirection;
+				_forwardDir = _hostEntity.Rotation.Forward;
 			}
 		} ///< Represents IEntity which Camera uses to control CryEngine sided view.
 
@@ -68,6 +68,18 @@ namespace CryEngine.Components
 			}
 		} ///< Sets rotation of assigned HostEntity
 
+        public Quat Rotation
+        {
+            set
+            {
+                ForwardDirection = value * Vec3.Forward;
+            }
+            get
+            {
+                return HostEntity != null ? HostEntity.Rotation : Quat.Identity;
+            }
+        }
+
 		/// <summary>
 		/// Gets or sets the field of view by CVar.
 		/// </summary>
@@ -78,13 +90,16 @@ namespace CryEngine.Components
 			{ 
 				if (_fovCVar == null)
 					_fovCVar = Env.Console.GetCVar ("gamezero_cam_fov");
-				return _fovCVar.GetFVal();
+				
+				return _fovCVar != null ? _fovCVar.GetFVal() : 60.0f;
 			}
 			set
 			{
 				if (_fovCVar == null)
 					_fovCVar = Env.Console.GetCVar ("gamezero_cam_fov");
-				_fovCVar.Set (value);
+
+				if (_fovCVar != null)
+					_fovCVar.Set (value);
 			}
 		}
 
@@ -97,8 +112,9 @@ namespace CryEngine.Components
 			{
 				if ((HostEntity = Entity.ByName ("Player")) != null) 
 				{
-					Position = _position;
-					ForwardDirection = _forwardDir;
+                    // Automatically assume the position and rotation of the current native camera.
+                    Position = Env.Renderer.GetCamera().GetPosition();
+                    Rotation = new Quat(Env.Renderer.GetCamera().GetAngles());
 					if (OnPlayerEntityAssigned != null)
 						OnPlayerEntityAssigned (this);
 				}

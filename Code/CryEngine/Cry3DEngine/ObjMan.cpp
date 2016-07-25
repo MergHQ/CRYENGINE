@@ -379,7 +379,7 @@ CStatObj* CObjManager::LoadStatObj(const char* __szFileName
 		m_pDefaultCGF->m_bDefaultObject = true;
 	}
 
-	LOADING_TIME_PROFILE_SECTION;
+	LOADING_TIME_PROFILE_SECTION_ARGS(__szFileName);
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Static Geometry");
 
 	if (ppSubObject)
@@ -726,6 +726,71 @@ CObjManager::~CObjManager()
 #endif
 }
 
+int CObjManager::ComputeDissolve(const CLodValue &lodValueIn, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2])
+{
+	int nLodMain = CLAMP(0, lodValueIn.LodA(), MAX_STATOBJ_LODS_NUM - 1);
+	int nLodMin = max(nLodMain - 1, 0);
+	int nLodMax = min(nLodMain + 1, MAX_STATOBJ_LODS_NUM - 1);
+
+	float prevLodLastTimeUsed = 0;
+	float * arrLodLastTimeUsed = pEnt->m_pTempData->userData.arrLodLastTimeUsed;
+
+	// Find when previous lod was used as primary lod last time and update last time used for current primary lod
+	for (int nLO = nLodMin; nLO <= nLodMax; nLO++)
+	{
+		if (nLodMain != nLO)
+		{
+			if (arrLodLastTimeUsed[nLO] > prevLodLastTimeUsed)
+			{
+				prevLodLastTimeUsed = arrLodLastTimeUsed[nLO];
+			}
+		}
+
+		if (nLodMain == nLO)
+			arrLodLastTimeUsed[nLO] = GetCurTimeSec();
+	}
+
+	float fDissolveRef = 1.f - SATURATE((GetCurTimeSec() - prevLodLastTimeUsed) / GetCVars()->e_LodTransitionTime);
+
+	prevLodLastTimeUsed = max(prevLodLastTimeUsed, GetCurTimeSec() - GetCVars()->e_LodTransitionTime);
+
+	// Compute also max view distance fading
+	float fDistFadeRef = SATURATE(min(fEntDistance / pEnt->m_fWSMaxViewDist * 5.f - 4.f, fEntDistance - (pEnt->m_fWSMaxViewDist - 1.f)));
+
+	int nLodsNum = 0;
+
+	// Render current lod and (if needed) previous lod
+	for (int nLO = nLodMin; nLO <= nLodMax && nLodsNum<2; nLO++)
+	{
+		if (arrLodLastTimeUsed[nLO] < prevLodLastTimeUsed)
+			continue;
+
+		CLodValue lodSubValue;
+
+		if (nLodMain == nLO)
+		{
+			// Incoming LOD
+
+			float fDissolveMaxDistRef = max(fDissolveRef, fDistFadeRef);
+
+			lodSubValue = CLodValue(nLO, int(fDissolveMaxDistRef*255.f), -1);
+		}
+		else
+		{
+			// Out-coming LOD
+
+			float fDissolveMaxDistRef = min(fDissolveRef, 1.f - fDistFadeRef);
+
+			lodSubValue = CLodValue(-1, int(fDissolveMaxDistRef*255.f), nLO);
+		}
+
+		arrlodValuesOut[nLodsNum] = lodSubValue;
+		nLodsNum++;
+	}
+
+	return nLodsNum;
+}
+
 // mostly xy size
 float CObjManager::GetXYRadius(int type, int nSID)
 {
@@ -757,7 +822,6 @@ bool CObjManager::GetStaticObjectBBox(int nType, Vec3& vBoxMin, Vec3& vBoxMax, i
 
 void CObjManager::AddDecalToRenderer(float fDistance,
                                      IMaterial* pMat,
-                                     const int nDynLMask,
                                      const uint8 sortPrio,
                                      Vec3 right,
                                      Vec3 up,
@@ -1200,7 +1264,7 @@ void CObjManager::UnregisterForGarbage(CStatObj* pObject)
 //////////////////////////////////////////////////////////////////////////
 bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const SRenderingPassInfo& passInfo) const
 {
-	if (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0)
+	if (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0 && (!pLodValue || !pLodValue->DissolveRefA()))
 	{
 		if (passInfo.IsRecursivePass() || (pTempData && (pTempData->userData.m_pFoliage || (pTempData->userData.pOwnerNode && (pTempData->userData.pOwnerNode->GetRndFlags() & ERF_SELECTED)))))
 		{
@@ -1237,7 +1301,7 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 			if (previousMask & passMask) // Object drawn once and can be used to fast add it.
 			{
 				if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
-					GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, 0, passInfo);
+					GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, passInfo);
 
 				return true;
 			}
@@ -1263,7 +1327,7 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 					if (previousMask & passMask) // Object drawn once and can be used to fast add it.
 					{
 						if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
-							GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, 0, passInfo);
+							GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, passInfo);
 
 						return true;
 					}

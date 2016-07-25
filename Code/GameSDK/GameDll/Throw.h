@@ -8,7 +8,7 @@ Description: Throw Fire Mode Implementation
 
 -------------------------------------------------------------------------
 History:
-- 261:10:2005   15:45 : Created by Márcio Martins
+- 261:10:2005   15:45 : Created by MÃ¡rcio Martins
 -  18:07:2008		Slightly Refactored (cleaned-up): Benito G.R.
 
 *************************************************************************/

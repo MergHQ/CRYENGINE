@@ -3689,23 +3689,8 @@ bool CShaderManBin::ParseBinFX_Technique_Pass(CParserBin& Parser, SParserFrame& 
 
 	if (AlphaFunc)
 	{
-		switch (AlphaFunc)
-		{
-		case eCF_Greater:
-			State |= GS_ALPHATEST_GREATER;
-			break;
-		case eCF_GEqual:
-			State |= GS_ALPHATEST_GEQUAL;
-			break;
-		case eCF_Less:
-			State |= GS_ALPHATEST_LESS;
-			break;
-		case eCF_LEqual:
-			State |= GS_ALPHATEST_LEQUAL;
-			break;
-		default:
-			assert(0);
-		}
+		// Alpha-Test is done in shader code (with a explicit function)
+		State |= GS_ALPHATEST;
 	}
 
 	switch (ZFunc)
@@ -4357,7 +4342,8 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 				// Texture2D something = TS_identifiersearch;
 				if (!strnicmp(Pr.m_Values.c_str(), "TM_", 3) ||
 				    !strnicmp(Pr.m_Values.c_str(), "TS_", 3) ||
-				    !strnicmp(Pr.m_Values.c_str(), "TP_", 3))
+				    !strnicmp(Pr.m_Values.c_str(), "TP_", 3) ||
+				    !strnicmp(Pr.m_Values.c_str(), "TSF_", 4))
 				{
 					Pr.m_Semantic = Pr.m_Values;
 					Pr.m_szTexture = "";

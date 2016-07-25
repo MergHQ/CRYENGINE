@@ -23,6 +23,12 @@ CResponseInstance::CResponseInstance(SSignal& signal, CResponse* pResponse)
 //--------------------------------------------------------------------------------------------------
 CResponseInstance::~CResponseInstance()
 {
+#if defined(DRS_COLLECT_DEBUG_DATA)
+	for (auto& currentActionInstance : m_activeActions)
+	{
+		DRS_DEBUG_DATA_ACTION(AddActionFinished(currentActionInstance.get()));
+	}
+#endif
 	m_activeActions.clear();
 }
 
@@ -31,23 +37,43 @@ bool CResponseInstance::Update()
 {
 	DRS_DEBUG_DATA_ACTION(SetCurrentResponseInstance(this));
 
+	int blockingActions = 0;
+
 	for (ActionInstanceList::iterator it = m_activeActions.begin(); it != m_activeActions.end(); )
 	{
-		if ((*it)->Update() != DRS::IResponseActionInstance::CS_RUNNING)
+		const DRS::IResponseActionInstance::eCurrentState state = (*it)->Update();
+		if (state != DRS::IResponseActionInstance::CS_RUNNING)
 		{
-			DRS_DEBUG_DATA_ACTION(AddActionFinished(it->get()));
-			it = m_activeActions.erase(it);  //delete finished actions
+			if (state != DRS::IResponseActionInstance::CS_RUNNING_NON_BLOCKING)
+			{
+				DRS_DEBUG_DATA_ACTION(AddActionFinished(it->get()));
+				it = m_activeActions.erase(it);  //delete finished action instance
+			}
+			else
+			{
+				++it;
+			}
 		}
 		else
 		{
+			blockingActions++;
 			++it;
 		}
 	}
 
-	while (m_activeActions.empty() && m_pCurrentlyExecutedSegment)
+	if (blockingActions == 0 && m_pCurrentlyExecutedSegment)
 	{
 		DRS_DEBUG_DATA_ACTION(IncrementSegmentHierarchyLevel());
 		ExecuteSegment(m_pCurrentlyExecutedSegment->GetNextResponseSegment(this));
+
+		if (m_pCurrentlyExecutedSegment == nullptr && !m_activeActions.empty())  //if the response instance is done we cancel all still running actions
+		{
+			for (auto& currentActionInstance : m_activeActions)
+			{
+				currentActionInstance->Cancel();
+			}
+			return true;
+		}
 	}
 
 	if (m_pCurrentlyExecutedSegment == nullptr) //canceled or finished

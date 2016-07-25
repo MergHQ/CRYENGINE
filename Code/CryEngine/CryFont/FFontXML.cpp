@@ -152,7 +152,7 @@ private:
 					if (SUCCEEDED(SHGetFolderPath(0, CSIDL_FONTS, 0, SHGFP_TYPE_DEFAULT, sysFontPath)))
 					{
 						const char* pFontPath = m_strFontPath.c_str();
-						const char* pFontName = CryStringUtils::FindFileNameInPath(pFontPath);
+						const char* pFontName = PathUtil::GetFile(pFontPath);
 
 						string newFontPath(sysFontPath);
 						newFontPath += "/";

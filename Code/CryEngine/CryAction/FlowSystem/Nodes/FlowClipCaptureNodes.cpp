@@ -13,7 +13,7 @@
 
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryString/UnicodeFunctions.h>
-#include "FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 // ------------------------------------------------------------------------
 class CClipCaptureManagement : public CFlowBaseNode<eNCT_Singleton>

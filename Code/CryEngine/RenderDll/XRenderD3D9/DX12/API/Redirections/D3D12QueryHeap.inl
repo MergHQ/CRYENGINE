@@ -28,6 +28,12 @@ public:
 			m_Targets[i] = nullptr;
 			if (Desc.NodeMask = (pDesc->NodeMask & (1 << i)))
 			{
+#if CRY_USE_DX12_MULTIADAPTER_SIMULATION
+				// Always create on the first GPU, if running simulation
+				if (CRenderer::CV_r_StereoEnableMgpu < 0)
+					Desc.NodeMask = 1;
+#endif
+
 				HRESULT ret = pDevice->CreateQueryHeap(
 				  &Desc, riid, (void**)&m_Targets[i]);
 				DX12_ASSERT(ret == S_OK, "Failed to create query heap!");

@@ -6,6 +6,7 @@
 #include "Communication/CommunicationTestManager.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 #include "BehaviorTree/BehaviorTreeManager.h"
+#include <CryAISystem/IAIBubblesSystem.h>
 
 void AIConsoleVars::Init()
 {
@@ -184,9 +185,11 @@ void AIConsoleVars::Init()
 	DefineConstIntCVarName("ai_BubblesSystemUseDepthTest", BubblesSystemUseDepthTest, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Specifies if the BubblesSystem should use the depth test to show the messages"
 	                       " inside the 3D world.");
-	DefineConstIntCVarName("ai_BubbleSystemAllowPrototypeDialogBubbles", BubbleSystemAllowPrototypeDialogBubbles, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
+	DefineConstIntCVarName("ai_BubblesSystemAllowPrototypeDialogBubbles", BubblesSystemAllowPrototypeDialogBubbles, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                       "Enabling the visualization of the bubbles created to prototype AI dialogs");
 	REGISTER_CVAR2("ai_BubblesSystemFontSize", &BubblesSystemFontSize, 45.0f, VF_CHEAT | VF_CHEAT_NOCHECK, "Font size for the BubblesSystem.");
+	REGISTER_CVAR2_CB("ai_BubblesSystemNameFilter", &BubblesSystemNameFilter, "", VF_CHEAT | VF_CHEAT_NOCHECK,
+	                  "Filter BubblesSystem messages by name. Do not filter, if empty.", &AIBubblesNameFilterCallback);
 	// Bubble System cvars
 
 	// Pathfinding dangers
@@ -963,6 +966,10 @@ void AIConsoleVars::Init()
 	REGISTER_COMMAND("ai_MNMComputeConnectedIslands", MNMComputeConnectedIslands, VF_DEV_ONLY,
 	                 "Computes connected islands on the mnm mesh.\n");
 
+	REGISTER_COMMAND("ai_NavigationReloadConfig", NavigationReloadConfig, VF_DEV_ONLY,
+	                 "Usage: ai_NavigationReloadConfig\n"
+	                 "Reloads navigation config file. May lead to broken subsystems and weird bugs. For DEBUG purposes ONLY!\n");
+
 	REGISTER_COMMAND("ai_DebugAgent", DebugAgent, VF_NULL,
 	                 "Start debugging an agent more in-depth. Pick by name, closest or in center of view.\n"
 	                 "Example: ai_DebugAgent closest\n"
@@ -1083,7 +1090,7 @@ struct PotentialDebugAgent
 {
 	Vec3        entityPosition;
 	EntityId    entityId;
-	const char* name;   // Pointer directly to the entity name
+	const char* name;     // Pointer directly to the entity name
 
 	PotentialDebugAgent()
 		: entityPosition(ZERO)
@@ -1136,6 +1143,24 @@ void GatherPotentialDebugAgents(PotentialDebugAgents& agents)
 void AIConsoleVars::MNMComputeConnectedIslands(IConsoleCmdArgs* args)
 {
 	gAIEnv.pNavigationSystem->ComputeIslands();
+}
+
+void AIConsoleVars::NavigationReloadConfig(IConsoleCmdArgs* args)
+{
+	if (INavigationSystem* pNavigationSystem = gAIEnv.pNavigationSystem)
+	{
+		// TODO pavloi 2016.03.09: hack implementation. See comments in ReloadConfig.
+		if (pNavigationSystem->ReloadConfig())
+		{
+			pNavigationSystem->ClearAndNotify();
+		}
+		else
+		{
+			AIWarning("Errors during config reloading");
+		}
+		return;
+	}
+	AIWarning("Unable to obtain navigation system to reload config.");
 }
 
 void AIConsoleVars::DebugAgent(IConsoleCmdArgs* args)
@@ -1256,4 +1281,12 @@ void AIConsoleVars::DebugAgent(IConsoleCmdArgs* args)
 	}
 #endif
 
+}
+
+void AIConsoleVars::AIBubblesNameFilterCallback(ICVar* pCvar)
+{
+	if (IAIBubblesSystem* pBubblesSystem = GetAISystem()->GetAIBubblesSystem())
+	{
+		pBubblesSystem->SetNameFilter(pCvar->GetString());
+	}
 }

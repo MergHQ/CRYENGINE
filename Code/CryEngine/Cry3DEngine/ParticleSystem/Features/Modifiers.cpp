@@ -10,12 +10,10 @@
 #include "StdAfx.h"
 #include <CryMath/PNoise3.h>
 #include "ParamMod.h"
-#include "ParticleComponentRuntime.h"
+#include "ParticleSystem/ParticleComponentRuntime.h"
 #include "TimeSource.h"
 
 CRY_PFX2_DBG
-
-volatile bool gFeatureModifiers = false;
 
 namespace pfx2
 {
@@ -52,7 +50,8 @@ public:
 	{
 		IModifier::Serialize(ar);
 		CTimeSource::SerializeInplace(ar);
-		Serialization::SContext _splineContext(ar, Serialization::getEnumDescription<ETimeSource>().label(int(CTimeSource::GetTimeSource())));
+		string desc = ar.isEdit() ? GetSourceDescription() : "";
+		Serialization::SContext _splineContext(ar, desc.data());
 		ar(m_spline, "Curve", "Curve");
 	}
 
@@ -77,13 +76,13 @@ public:
 	template<typename TTimeKernel>
 	void DoModify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, const TTimeKernel& timeKernel) const
 	{
-		const CParticleComponentRuntime& runtime = context.m_runtime;
-		const CParticleContainer& container = context.m_container;
+		const floatv rate = ToFloatv(m_timeScale);
+		const floatv offset = ToFloatv(m_timeBias);
 
 		CRY_PFX2_FOR_RANGE_PARTICLESGROUP(range)
 		{
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv time = timeKernel.Sample(particleGroupId);
+			const floatv time = MAdd(timeKernel.Sample(particleGroupId), rate, offset);
 			const floatv value = m_spline.Interpolate(time);
 			const floatv outvalue = Mul(inValue, value);
 			stream.Store(particleGroupId, outvalue);
@@ -120,7 +119,7 @@ public:
 		if (m_spline.HasKeys())
 		{
 			CTimeSource::AddToParam(pComponent, pParam, this);
-			pComponent->AddParticleData(EPDT_UNormRand);
+			pComponent->AddParticleData(EPDT_Random);
 		}
 	}
 
@@ -128,7 +127,8 @@ public:
 	{
 		IModifier::Serialize(ar);
 		CTimeSource::SerializeInplace(ar);
-		Serialization::SContext _splineContext(ar, Serialization::getEnumDescription<ETimeSource>().label(int(CTimeSource::GetTimeSource())));
+		string desc = ar.isEdit() ? GetSourceDescription() : "";
+		Serialization::SContext _splineContext(ar, desc.data());
 		ar(m_spline, "DoubleCurve", "Double Curve");
 	}
 
@@ -143,15 +143,16 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		const CParticleComponentRuntime& runtime = context.m_runtime;
 		const CParticleContainer& container = context.m_container;
-		const IFStream unormRands = container.GetIFStream(EPDT_UNormRand);
+		const IFStream unormRands = container.GetIFStream(EPDT_Random);
+		const floatv rate = ToFloatv(m_timeScale);
+		const floatv offset = ToFloatv(m_timeBias);
 
 		CRY_PFX2_FOR_RANGE_PARTICLESGROUP(range)
 		{
 			const floatv unormRand = unormRands.Load(particleGroupId);
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv time = timeKernel.Sample(particleGroupId);
+			const floatv time = MAdd(timeKernel.Sample(particleGroupId), rate, offset);
 			const floatv value = m_spline.Interpolate(time, unormRand);
 			const floatv outvalue = Mul(inValue, value);
 			stream.Store(particleGroupId, outvalue);
@@ -205,13 +206,12 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		SChaosKeyV chaos;
 		SChaosKeyV::Range randRange(1.0f - m_amount, 1.0f);
 
 		CRY_PFX2_FOR_RANGE_PARTICLESGROUP(range)
 		{
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv value = chaos.Rand(randRange);
+			const floatv value = context.m_spawnRngv.Rand(randRange);
 			const floatv outvalue = Mul(inValue, value);
 			stream.Store(particleGroupId, outvalue);
 		}
@@ -236,7 +236,8 @@ SERIALIZATION_CLASS_NAME(IModifier, CModRandom, "Random", "Random");
 SERIALIZATION_DECLARE_ENUM(EParamNoiseMode,
                            Smooth,
                            Fractal,
-                           Pulse
+                           Pulse,
+                           _Random
                            )
 
 class CModNoise : public CFTimeSource
@@ -244,7 +245,6 @@ class CModNoise : public CFTimeSource
 public:
 	CModNoise()
 		: m_amount(0.0f)
-		, m_rate(1.0f)
 		, m_pulseWidth(0.5f)
 		, m_mode(EParamNoiseMode::Smooth) {}
 
@@ -261,18 +261,19 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar)
 	{
 		IModifier::Serialize(ar);
-		if (!VersionFix(ar))
-			ar(m_mode, "Mode", "Mode");
-		ar(m_amount, "Amount", "Amount");
 		CTimeSource::SerializeInplace(ar);
-		ar(m_rate, "Rate", "Rate");
+		ar(m_mode, "Mode", "Mode");
+		ar(m_amount, "Amount", "Amount");
 		if (m_mode == EParamNoiseMode::Pulse)
 			ar(m_pulseWidth, "PulseWidth", "Pulse Width");
+
+		if (ar.isInput())
+			VersionFix(ar);
 	}
 
 	virtual IModifier* VersionFixReplace() const
 	{
-		if (m_mode == EParamNoiseMode(-1))
+		if (m_mode == EParamNoiseMode::_Random)
 			return new CModRandom(m_amount);
 		return nullptr;
 	}
@@ -316,13 +317,14 @@ private:
 	{
 		const floatv one = ToFloatv(1.0f);
 		const floatv amount = ToFloatv(m_amount);
-		const floatv rate = ToFloatv(m_rate);
+		const floatv rate = ToFloatv(m_timeScale);
+		const floatv offset = ToFloatv(m_timeBias);
 
 		CRY_PFX2_FOR_RANGE_PARTICLESGROUP(range)
 		{
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv time = timeKernel.Sample(particleGroupId);
-			const floatv value = modeFn(Mul(time, rate));
+			const floatv time = MAdd(timeKernel.Sample(particleGroupId), rate, offset);
+			const floatv value = modeFn(time);
 			const floatv outvalue = Mul(inValue, Sub(one, Mul(value, amount)));
 			stream.Store(particleGroupId, outvalue);
 		}
@@ -368,30 +370,22 @@ private:
 
 	ILINE floatv Pulse(floatv time) const
 	{
-		const floatv zero = ToFloatv(0.0f);
 		const floatv one = ToFloatv(1.0f);
 		const floatv pulseWidth = ToFloatv(m_pulseWidth);
-		return FSel(Sub(UPNoise(time), pulseWidth), zero, one);
+		return if_else_zero(UPNoise(time) < pulseWidth, one);
 	}
 
-	bool VersionFix(Serialization::IArchive& ar)
+	void VersionFix(Serialization::IArchive& ar)
 	{
-		if (ar.isInput() && GetVersion(ar) < 5)
+		if (GetVersion(ar) <= 8)
 		{
-			// Read deprecated Random mode
-			string mode;
-			ar(mode, "Mode");
-			if (mode == "Random")
-			{
-				m_mode = EParamNoiseMode(-1);
-				return true;
-			}
+			float rate;
+			if (ar(rate, "Rate", "Rate"))
+				m_timeScale *= rate;
 		}
-		return false;
 	}
 
 	SFloat          m_amount;
-	UFloat10        m_rate;
 	UUnitFloat      m_pulseWidth;
 	EParamNoiseMode m_mode;
 };
@@ -412,9 +406,7 @@ class CModWave : public CFTimeSource
 public:
 	CModWave()
 		: m_waveType(EWaveType::Sin)
-		, m_rate(1.0f)
 		, m_amplitude(1.0f)
-		, m_phase(0.0f)
 		, m_bias(0.5f)
 		, m_inverse(false) {}
 
@@ -433,11 +425,23 @@ public:
 		IModifier::Serialize(ar);
 		CTimeSource::SerializeInplace(ar);
 		ar(m_waveType, "Wave", "Wave");
-		ar(m_rate, "Rate", "Rate");
 		ar(m_amplitude, "Amplitude", "Amplitude");
-		ar(m_phase, "Phase", "Phase");
 		ar(m_bias, "Bias", "Bias");
 		ar(m_inverse, "Inverse", "Inverse");
+		if (ar.isInput())
+			VersionFix(ar);
+	}
+
+	void VersionFix(Serialization::IArchive& ar)
+	{
+		if (GetVersion(ar) <= 8)
+		{
+			float rate, phase;
+			if (ar(rate, "Rate"))
+				m_timeScale *= rate;
+			if (ar(phase, "Phase"))
+				m_timeBias -= phase * m_timeScale;
+		}
 	}
 
 	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const
@@ -453,15 +457,15 @@ public:
 		{
 		case EWaveType::Sin:
 			Modify(context, range, stream, timeKernel,
-			       [](floatv time){ return Sin(time); });
+			       [](floatv time) { return Sin(time); });
 			break;
 		case EWaveType::Saw:
 			Modify(context, range, stream, timeKernel,
-			       [](floatv time){ return Saw(time); });
+			       [](floatv time) { return Saw(time); });
 			break;
 		case EWaveType::Pulse:
 			Modify(context, range, stream, timeKernel,
-			       [](floatv time){ return Pulse(time); });
+			       [](floatv time) { return Pulse(time); });
 			break;
 		}
 	}
@@ -477,14 +481,14 @@ private:
 	{
 		const floatv mult = ToFloatv(m_amplitude * (m_inverse ? -1.0f : 1.0f) * 0.5f);
 		const floatv bias = ToFloatv(m_bias);
-		const floatv phase = ToFloatv(m_phase);
-		const floatv rate = ToFloatv(m_rate);
+		const floatv rate = ToFloatv(m_timeScale);
+		const floatv offset = ToFloatv(m_timeBias);
 
 		CRY_PFX2_FOR_RANGE_PARTICLESGROUP(range);
 		{
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv time = timeKernel.Sample(particleGroupId);
-			const floatv sample = waveFn(Mul(Sub(time, phase), rate));
+			const floatv time = MAdd(timeKernel.Sample(particleGroupId), rate, offset);
+			const floatv sample = waveFn(time);
 			const floatv value = MAdd(sample, mult, bias);
 			const floatv outvalue = Mul(inValue, value);
 			stream.Store(particleGroupId, outvalue);
@@ -494,32 +498,17 @@ private:
 
 	// PFX2_TODO : improve functions and place them in a common library
 #ifdef CRY_PFX2_USE_SSE
-	ILINE static __m128 floorf(const __m128 v)
-	{
-		const __m128 zero = _mm_set1_ps(0.0f);
-		const __m128i trunc = _mm_cvttps_epi32(v);
-		const __m128i isNeg = _mm_castps_si128(_mm_cmplt_ps(v, zero));
-		const __m128i oneIfNeg = _mm_and_si128(isNeg, _mm_set1_epi32(0x1));
-		return _mm_cvtepi32_ps(_mm_sub_epi32(trunc, oneIfNeg));
-	}
-
-	ILINE static floatv Frac(floatv x)
-	{
-		return Sub(x, floorf(x));
-	}
-
 	ILINE static floatv SinApproax(floatv x)
 	{
 		const floatv one = ToFloatv(1.0f);
-		const floatv negOne = ToFloatv(-1.0f);
 		const floatv half = ToFloatv(0.5f);
 		const floatv negHalfPi = ToFloatv(-gf_PI * 0.5f);
 		const floatv pi = ToFloatv(gf_PI);
 		const floatv ipi = ToFloatv(1.0f / gf_PI);
 		const floatv ipi2 = ToFloatv(1.0f / gf_PI2);
 
-		const floatv x1 = MAdd(Frac(Mul(x, ipi)), pi, negHalfPi);
-		const floatv m = FSel(Sub(Frac(Mul(x, ipi2)), half), one, negOne);
+		const floatv x1 = MAdd(frac(Mul(x, ipi)), pi, negHalfPi);
+		const floatv m = sign(frac(Mul(x, ipi2)) - half);
 
 		const floatv p0 = ToFloatv(-0.4964738f);
 		const floatv p1 = ToFloatv(0.036957536f);
@@ -537,11 +526,6 @@ private:
 	}
 #else
 
-	ILINE static floatv Frac(floatv x)
-	{
-		return x - floorf(x);
-	}
-
 	ILINE static floatv CosApproax(floatv x)
 	{
 		return cosf(x);
@@ -551,22 +535,19 @@ private:
 
 	ILINE static floatv Sin(floatv time)
 	{
-		return -CosApproax(Mul(time, ToFloatv(gf_PI2)));
+		return -CosApproax(time * ToFloatv(gf_PI2));
 	}
 
 	ILINE static floatv Saw(floatv time)
 	{
-		const floatv minusOne = ToFloatv(-1.0f);
-		const floatv two = ToFloatv(2.0f);
-		return MAdd(Frac(time), two, minusOne);
+		const floatv f = frac(time);
+		return f + f - ToFloatv(1.0f);
 	}
 
 	ILINE static floatv Pulse(floatv time)
 	{
-		const floatv minusOne = ToFloatv(-1.0f);
-		const floatv one = ToFloatv(1.0f);
 		const floatv half = ToFloatv(0.5f);
-		return FSel(Sub(Frac(time), half), minusOne, one);
+		return sign(half - frac(time));
 	}
 
 	EWaveType m_waveType;
@@ -636,7 +617,7 @@ public:
 
 	virtual Range GetMinMax() const
 	{
-		// To do: Wrong! Depends on inherited value
+		// PFX2_TODO: Wrong! Depends on inherited value
 		return Range(0.0f, 1.0f);
 	}
 private:
@@ -678,14 +659,14 @@ public:
 	template<typename TimeKernel>
 	void DoModify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel) const
 	{
-		const CParticleComponentRuntime& runtime = context.m_runtime;
-		const CParticleContainer& container = context.m_container;
+		const floatv rate = ToFloatv(m_timeScale);
+		const floatv offset = ToFloatv(m_timeBias);
 
 		CRY_PFX2_FOR_RANGE_PARTICLESGROUP(range)
 		{
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv sample = timeKernel.Sample(particleGroupId);
-			const floatv outvalue = Mul(inValue, sample);
+			const floatv time = MAdd(timeKernel.Sample(particleGroupId), rate, offset);
+			const floatv outvalue = Mul(inValue, time);
 			stream.Store(particleGroupId, outvalue);
 		}
 		CRY_PFX2_FOR_END;
@@ -693,8 +674,8 @@ public:
 
 	virtual Range GetMinMax() const
 	{
-		// To do: Wrong! Depends on TimeSource range
-		return Range(Adjust(0.0f), Adjust(1.0f));
+		// PFX2_TODO: Wrong! Depends on TimeSource range
+		return Range(Adjust(0.0f)) | Adjust(1.0f);
 	}
 };
 

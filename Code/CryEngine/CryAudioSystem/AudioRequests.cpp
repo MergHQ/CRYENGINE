@@ -81,7 +81,6 @@ SAudioRequestDataInternal* ConvertToInternal(SAudioRequestDataBase const* const 
 				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance)
 				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportStartedFile)
 				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportStoppedFile)
-				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportProcessedObstructionRay)
 				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportVirtualizedEvent)
 				ACM_REQUEST_BLOCK(eAudioCallbackManagerRequestType_ReportPhysicalizedEvent)
 			default:
@@ -115,6 +114,7 @@ SAudioRequestDataInternal* ConvertToInternal(SAudioRequestDataBase const* const 
 				AO_REQUEST_BLOCK(eAudioObjectRequestType_SetEnvironmentAmount)
 				AO_REQUEST_BLOCK(eAudioObjectRequestType_ResetEnvironments)
 				AO_REQUEST_BLOCK(eAudioObjectRequestType_ReleaseObject)
+				AO_REQUEST_BLOCK(eAudioObjectRequestType_ProcessPhysicsRay)
 			default:
 				{
 					g_audioLogger.Log(eAudioLogType_Error, "Unknown audio object request type (%u)", pBase->type);

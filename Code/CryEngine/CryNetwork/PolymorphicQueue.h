@@ -125,6 +125,7 @@ template<class B>
 CPolymorphicQueue<B>::CPolymorphicQueue()
 {
 	m_pCurBlock = 0;
+	m_flushBlock = 0;
 #if CHECKING_POLYMORPHIC_QUEUE
 	m_user = 0;
 #endif
@@ -249,7 +250,6 @@ ILINE T* CPolymorphicQueue<B >::Check(T* p)
 template<class B>
 void* CPolymorphicQueue<B >::Grab(size_t sz, void* retaddr)
 {
-	ScopedSwitchToGlobalHeap useGlobalHeap;
 	POLY_HEADER;
 	if (sz & (WORD_SIZE - 1))
 		sz += WORD_SIZE;

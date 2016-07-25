@@ -5,7 +5,7 @@
 
 #include "AIActor.h" // Big one, but needed for timestamp collection
 #include "Puppet.h"  // Big one, but needed for the posture manager
-#include "AIBubblesSystem/IAIBubblesSystem.h"
+#include "AIBubblesSystem/AIBubblesSystem.h"
 #include "AIGroup.h"
 #include "Group/GroupManager.h"
 #include <CryAISystem/BehaviorTree/Action.h>
@@ -24,9 +24,10 @@
 #include "TargetSelection/TargetTrackManager.h"
 #include "BehaviorTree/BehaviorTreeNodes_Helicopter.h"
 #include <CryString/CryName.h>
-#include "ICryMannequin.h"
 #include <CryGame/IGameFramework.h>
 #include "BehaviorTreeManager.h"
+
+#include <../CryAction/ICryMannequin.h>
 
 namespace
 {

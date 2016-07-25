@@ -18,11 +18,8 @@
 	#define VEC4_SSE4
 #endif
 
-//#include <math.h>
 #include <CryMath/Cry_Math.h>
 
-namespace NVMath
-{
 #if CRY_PLATFORM_NEON
 	#include "VMath_NEON.hpp"
 #elif (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_MAC || defined(IOS_SIMULATOR)) && (defined(VEC4_SSE) || defined(VEC4_SSE4))
@@ -30,6 +27,5 @@ namespace NVMath
 #else
 	#include "VMath_C.hpp"
 #endif
-}
 
 #endif

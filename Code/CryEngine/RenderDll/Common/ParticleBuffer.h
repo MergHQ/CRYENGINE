@@ -2,27 +2,47 @@
 
 #pragma once
 
-#ifndef DynamicBuffer_H
-	#define DynamicBuffer_H
+#include <array>
+#include <CryRenderer/RenderElements/CREParticle.h>
 
-	#include <array>
-	#include "FencedBuffer.h"
-	#include <CryRenderer/RenderElements/CREParticle.h>
+class CParticleSubBuffer
+{
+public:
+	CParticleSubBuffer();
+	~CParticleSubBuffer();
 
-class ParticleBufferSet
+	void    Create(uint elemsCount, uint stride, DXGI_FORMAT format, uint32 flags);
+	void    Release();
+	byte*   Lock();
+	void    Unlock(uint32 size);
+
+	HRESULT BindVB(uint streamNumber = 0, int bytesOffset = 0, int stride = 0);
+	HRESULT BindIB(uint offset);
+	void    BindSRV(CDeviceManager::SHADER_TYPE shaderType, uint slot);
+
+	uint    GetStride() const { return m_stride; }
+
+private:
+	CGpuBuffer m_buffer;
+	byte*      m_pLockedData;
+	uint       m_elemCount;
+	uint       m_stride;
+	uint       m_flags;
+};
+
+class CParticleBufferSet
 {
 private:
-	enum {nBuffers = 3};
-
-	typedef std::array<std::unique_ptr<FencedBuffer>, nBuffers> TDynBuffer;
+	typedef std::array<CParticleSubBuffer, CREParticle::numBuffers> TDynBuffer;
+	typedef std::array<DeviceFenceHandle, CREParticle::numBuffers>  TDeviceFences;
 
 	struct SubBuffer
 	{
 		TDynBuffer m_buffers;
 		// During writing, we only expose the base Video Memory pointer
 		// and the offsets to the next free memory in this buffer
-		byte*  m_pMemoryBase[nBuffers];
-		uint32 m_offset[nBuffers];
+		byte*  m_pMemoryBase[CREParticle::numBuffers];
+		uint32 m_offset[CREParticle::numBuffers];
 		uint32 m_availableMemory;
 	};
 
@@ -54,7 +74,8 @@ public:
 	};
 
 public:
-	ParticleBufferSet();
+	CParticleBufferSet();
+	~CParticleBufferSet();
 
 	void Create(uint poolSize);
 	void Release();
@@ -67,6 +88,7 @@ public:
 	bool IsValid() const;
 
 	uint GetAllocId() const;
+	uint GetBindId() const;
 	void Alloc(uint index, EBufferTypes type, uint numElems, SAlloc* pAllocOut);
 	void Alloc(uint index, uint numElems, SAllocStreams* pAllocOut);
 
@@ -80,10 +102,9 @@ private:
 	void CreateSpriteBuffer(uint poolSize);
 
 	std::array<SubBuffer, EBT_Total> m_subBuffers;
+	TDeviceFences                    m_fences;
 	CGpuBuffer                       m_spriteIndexBuffer;
 	uint                             m_maxSpriteCount;
 	uint                             m_ids[RT_COMMAND_BUF_COUNT];
 	bool                             m_valid;
 };
-
-#endif

@@ -116,16 +116,38 @@ public:
 		eDeviceResourceViewDirty = BIT(1),
 	};
 
+private:
+	void UnregisterAndDelete();
+
 public:
 	// CCryUnknown interface
 	inline void   SetRefCounter(int nRefCounter) { m_nRefCount = nRefCounter; }
+	virtual int   GetRefCounter() const { return m_nRefCount; }
 	virtual int32 AddRef()
 	{
 		int32 nRef = CryInterlockedIncrement(&m_nRefCount);
 		return nRef;
 	}
-	virtual int32 Release();
-	virtual int   GetRefCounter() const { return m_nRefCount; }
+	virtual int32 Release()
+	{
+		// TODO: simplify, it's making ref-counting on CTexture much more expensive than it needs to be
+		IF(m_nRefCount > 0, 1)
+		{
+			int32 nRef = CryInterlockedDecrement(&m_nRefCount);
+			if (nRef < 0)
+			{
+				CryFatalError("CBaseResource::Release() called more than once!");
+			}
+
+			if (nRef == 0)
+			{
+				UnregisterAndDelete();
+				return 0;
+			}
+			return nRef;
+		}
+		return 0;
+	}
 
 	// Increment ref count, if not already scheduled for destruction.
 	int32 TryAddRef()

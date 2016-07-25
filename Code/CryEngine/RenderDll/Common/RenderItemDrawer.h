@@ -19,32 +19,31 @@ public:
 	// Multi-threaded draw-command recording /////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
 
-	// CV_r_multithreadedDrawingCoalesceMode = 1
 	struct SRenderListCollection
 	{
 		void Init()
 		{
-			rendEnd = rendStart;
+			pEnd = pStart;
 		}
 
 		void Reserve(size_t numAdditionalItems)
 		{
 			size_t numItems =
-			  (rendEnd - rendStart);
+			  (pEnd - pStart);
 			size_t numItemsAfter = numItems +
 			                       numAdditionalItems;
 
 			if (rendList.size() < numItemsAfter)
 			{
 				rendList.resize(numItemsAfter);
-				rendStart = &rendList[0];
-				rendEnd = rendStart + numItems;
+				pStart = &rendList[0];
+				pEnd = pStart + numItems;
 			}
 		}
 
 		void Expand(const SGraphicsPipelinePassContext& rendList)
 		{
-			* rendEnd++ = rendList;
+			* pEnd++ = rendList;
 		}
 
 		void WaitForJobs()
@@ -52,7 +51,7 @@ public:
 			if (pCommandLists.size())
 			{
 				gEnv->pJobManager->WaitForJob(jobState);
-				CCryDeviceWrapper::GetObjectFactory().ForfeitGraphicsCommandLists(std::move(pCommandLists));
+				CCryDeviceWrapper::GetObjectFactory().ForfeitCommandLists(std::move(pCommandLists));
 			}
 		}
 
@@ -60,88 +59,23 @@ public:
 		{
 			WaitForJobs();
 
-			pCommandLists = CCryDeviceWrapper::GetObjectFactory().AcquireGraphicsCommandLists(numTasks);
+			pCommandLists = CCryDeviceWrapper::GetObjectFactory().AcquireCommandLists(numTasks);
 		}
 
-		std::vector<SGraphicsPipelinePassContext>   rendList;
+		std::vector<SGraphicsPipelinePassContext> rendList;
 
-		SGraphicsPipelinePassContext*               rendStart, * rendEnd;
+		SGraphicsPipelinePassContext*             pStart;
+		SGraphicsPipelinePassContext*             pEnd;
 
-		std::vector<CDeviceGraphicsCommandListUPtr> pCommandLists;
-		JobManager::SJobState                       jobState;
+		std::vector<CDeviceCommandListUPtr>       pCommandLists;
+		JobManager::SJobState                     jobState;
 	};
 
-	// CV_r_multithreadedDrawingCoalesceMode = 2
-	struct SCompiledObjectCollection
-	{
-		void Init()
-		{
-			passEnd = passStart;
-			rendEnd = rendStart;
-		}
-
-		void Reserve(size_t numAdditionalItems)
-		{
-			size_t numItems =
-			  (rendEnd - rendStart);
-			size_t numItemsAfter = numItems +
-			                       numAdditionalItems;
-
-			if (rendList.size() < numItemsAfter)
-			{
-				rendList.resize(numItemsAfter);
-				rendStart = &rendList[0];
-				rendEnd = rendStart + numItems;
-			}
-
-			if (passList.size() < numItemsAfter)
-			{
-				passList.resize(numItemsAfter);
-				passStart = &passList[0];
-				passEnd = passStart + numItems;
-			}
-		}
-
-		void Expand(CCompiledRenderObject** rendEndNew)
-		{
-			passEnd += rendEndNew - rendEnd;
-			rendEnd = rendEndNew;
-		}
-
-		void WaitForJobs()
-		{
-			if (pCommandLists.size())
-			{
-				gEnv->pJobManager->WaitForJob(jobState);
-				CCryDeviceWrapper::GetObjectFactory().ForfeitGraphicsCommandLists(std::move(pCommandLists));
-			}
-		}
-
-		void PrepareJobs(uint32 numTasks)
-		{
-			WaitForJobs();
-
-			pCommandLists = CCryDeviceWrapper::GetObjectFactory().AcquireGraphicsCommandLists(numTasks);
-		}
-
-		std::vector<CCompiledRenderObject*>         rendList;
-		std::vector<CSceneRenderPass*>              passList;
-
-		CCompiledRenderObject**                     rendStart, ** rendEnd;
-		CSceneRenderPass**                          passStart, ** passEnd;
-
-		std::vector<CDeviceGraphicsCommandListUPtr> pCommandLists;
-		JobManager::SJobState                       jobState;
-	};
-
-	// CV_r_multithreadedDrawingCoalesceMode = 1
-	SRenderListCollection     m_CoalesceListsMT;
-	// CV_r_multithreadedDrawingCoalesceMode = 2
-	SCompiledObjectCollection m_CoalesceObjectsMT;
+	SRenderListCollection m_CoalescedContexts;
 
 	void DrawCompiledRenderItems(const SGraphicsPipelinePassContext& passContext) const;
 
 	void InitDrawSubmission();
-	void JobifyDrawSubmission();
+	void JobifyDrawSubmission(bool bForceImmediateExecution = false);
 	void WaitForDrawSubmission();
 };

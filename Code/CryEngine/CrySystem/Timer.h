@@ -23,6 +23,7 @@ public:
 	virtual void       UpdateOnFrameStart();
 	virtual float      GetCurrTime(ETimer which = ETIMER_GAME) const;
 	virtual CTimeValue GetAsyncTime() const;
+	virtual float      GetReplicationTime() const;	
 	virtual float      GetAsyncCurTime();
 	virtual float      GetFrameTime(ETimer which = ETIMER_GAME) const;
 	virtual float      GetRealFrameTime() const;
@@ -106,6 +107,7 @@ private: // --------------------------------------------------------------------
 	int64      m_lBaseTime;   // Ticks elapsed since system boot, all other tick-unit variables are relative to this.
 	int64      m_lLastTime;   // Ticks since last Reset(). This is the base for UI time. UI time is monotonic, it always moves forward at a constant rate until the timer is Reset()).
 	int64      m_lOffsetTime; // Additional ticks for Game time (relative to UI time). Game time can be affected by loading, pausing, time smoothing and time clamping, as well as SetTimer().
+	float      m_replicationTime; // In seconds, sum of all frame times used in replication
 
 	float      m_fFrameTime;     // In seconds since the last Update(), clamped/smoothed etc.
 	float      m_fRealFrameTime; // In real seconds since the last Update(), non-clamped/un-smoothed etc.

@@ -33,9 +33,6 @@ def load_cryengine_common_settings(conf):
 	# To allow pragma comment (lib, 'SDKs/...) uniformly, pass Code to the libpath
 	v['LIBPATH'] += [ conf.CreateRootRelativePath('Code') ]
 	
-	# !! CryAction needs fixing, has interdependecies with other system which is bad and forbidden !!
-	v['INCLUDES'] += [ conf.CreateRootRelativePath('Code/CryEngine/CryAction') ]
-	
 @conf	
 def load_debug_cryengine_settings(conf):
 	"""

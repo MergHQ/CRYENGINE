@@ -50,12 +50,19 @@ public:
 
 	virtual EFeatureType GetFeatureType();
 	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams);
-	virtual void         Render(ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, IRenderNode* pNode, const SRenderContext& renderContext);
+	virtual void         PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent);
+	virtual void         Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext);
 
 protected:
 	virtual bool     SupportsWaterCulling() const { return false; }
-	void             AddRenderObject(ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, IRenderNode* pNode, uint64 objFlags);
+	void             PrepareRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId, uint64 objFlags);
+	void             AddRenderObject(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags);
 	ILINE C3DEngine* Get3DEngine() const          { return static_cast<C3DEngine*>(gEnv->p3DEngine); }
+
+private:
+	uint m_renderObjectBeforeWaterId;
+	uint m_renderObjectAfterWaterId;
+	bool m_waterCulling;
 };
 
 }

@@ -173,7 +173,6 @@ class CRMIAllocator
 public:
 	static ILINE void* Allocate()
 	{
-		ScopedSwitchToGlobalHeap useGlobalHeap;
 		if (!m_pAllocator)
 			m_pAllocator = new stl::PoolAllocator<N>;
 		return m_pAllocator->Allocate();
@@ -429,7 +428,7 @@ public:
 
 		if (IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(m_id))
 		{
-			INDENT_LOG_DURING_SCOPE(true, "During game object sync: %s %s", pGameObject->GetEntity()->GetEntityTextDescription(), m_pRMI->pMsgDef->description);
+			INDENT_LOG_DURING_SCOPE(true, "During game object sync: %s %s", pGameObject->GetEntity()->GetEntityTextDescription().c_str(), m_pRMI->pMsgDef->description);
 
 			if (Obj* pGameObjectExtension = (Obj*)pGameObject->GetExtensionWithRMIBase(m_pRMI->pBase))
 			{

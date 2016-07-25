@@ -478,7 +478,7 @@ public:
 					{
 						Zero(key.dd);
 						// key.flags.outTangentType = ETangentType::Auto;
-						key.flags.inTangentType = ETangentType::Smooth;
+						key.flags.outTangentType = ETangentType::Smooth;
 					}
 					else
 						switch (key.flags.outTangentType)
@@ -486,10 +486,8 @@ public:
 						case ETangentType::Step:
 						case ETangentType::Zero:
 							Zero(key.dd);
-							break;
-						case ETangentType::Linear:
-							key.dd = next->value - key.value;
-							break;
+							// key.flags.outTangentType = ETangentType::Auto;
+							key.flags.outTangentType = ETangentType::Smooth;
 						}
 				}
 

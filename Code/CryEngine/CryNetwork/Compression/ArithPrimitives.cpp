@@ -8,7 +8,7 @@
    -------------------------------------------------------------------------
    History:
    - 02/09/2004   12:34 : Created by Craig Tiller
-   - 14/11/2005		10:45 : 32 Bit probability implementation by Jan Müller
+   - 14/11/2005		10:45 : 32 Bit probability implementation by Jan MÃ¼ller
 *************************************************************************/
 #include "StdAfx.h"
 #include "ArithPrimitives.h"

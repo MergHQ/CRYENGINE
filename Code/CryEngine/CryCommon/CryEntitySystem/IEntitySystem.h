@@ -118,8 +118,6 @@ struct IBreakableManager;
 struct SComponentRegisteredEvents;
 class CEntity;
 
-struct IEntityPoolManager;
-
 //! SpecType for entity layers.
 //! Add new bits to update. Do not just rename, cause values are used for saving levels.
 enum ESpecType
@@ -136,7 +134,7 @@ struct IArea
 	// <interfuscator:shuffle>
 	virtual ~IArea(){}
 	virtual size_t         GetEntityAmount() const = 0;
-	virtual const EntityId GetEntityByIdx(int index) const = 0;
+	virtual const EntityId GetEntityByIdx(size_t const index) const = 0;
 	virtual void           GetMinMax(Vec3** min, Vec3** max) const = 0;
 	virtual int            GetGroup() const = 0;
 	virtual int            GetPriority() const = 0;
@@ -179,14 +177,20 @@ public:
 struct SAudioAreaInfo
 {
 	SAudioAreaInfo()
-		: pArea(nullptr)
-		, amount(0.0f)
+		: amount(0.0f)
 		, audioEnvironmentId(INVALID_AUDIO_ENVIRONMENT_ID)
 		, envProvidingEntityId(INVALID_ENTITYID)
-	{
-	}
+	{}
 
-	IArea*             pArea;
+	explicit SAudioAreaInfo(
+	  float const _amount,
+	  AudioEnvironmentId const _audioEnvironmentId,
+	  EntityId const _envProvidingEntityId)
+		: amount(_amount)
+		, audioEnvironmentId(_audioEnvironmentId)
+		, envProvidingEntityId(_envProvidingEntityId)
+	{}
+
 	float              amount;
 	AudioEnvironmentId audioEnvironmentId;
 	EntityId           envProvidingEntityId;
@@ -237,10 +241,10 @@ struct IAreaManager
 	virtual void SetAreaDirty(IArea* pArea) = 0;
 
 	//! Passed in entity exits all areas. Intended for when players are killed.
-	virtual void ExitAllAreas(IEntity const* const pEntity) = 0;
+	virtual void ExitAllAreas(EntityId const entityId) = 0;
 
 	//! Puts the passed entity ID into the update list for the next update.
-	virtual void MarkEntityForUpdate(EntityId const nEntityID) = 0;
+	virtual void MarkEntityForUpdate(EntityId const entityId) = 0;
 
 	//! Forces an audio listener update against the passed area.
 	virtual void TriggerAudioListenerUpdate(IArea const* const _pArea) = 0;
@@ -578,9 +582,6 @@ struct IEntitySystem
 
 	//! \return The breakable manager interface.
 	virtual IBreakableManager* GetBreakableManager() const = 0;
-
-	//! \return The entity pool manager interface.
-	virtual IEntityPoolManager* GetIEntityPoolManager() const = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Entity archetypes.

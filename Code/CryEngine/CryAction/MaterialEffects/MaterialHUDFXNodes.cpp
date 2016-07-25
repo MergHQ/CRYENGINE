@@ -13,7 +13,7 @@
 
 #include "StdAfx.h"
 #include "MaterialEffects.h"
-#include <FlowSystem/Nodes/FlowBaseNode.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <CrySystem/Scaleform/IFlashPlayer.h>
 
 //CHUDStartFXNode

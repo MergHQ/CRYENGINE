@@ -15,10 +15,10 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureAppearance = false;
-
 namespace pfx2
 {
+
+EParticleDataType PDT(EPDT_Tile, uint8);
 
 SERIALIZATION_ENUM_DEFINE(EVariantMode, ,
                           Random,
@@ -101,8 +101,7 @@ private:
 		uint32 tile;
 		if (mode == EVariantMode::Random)
 		{
-			SChaosKey key;
-			tile = key.Rand();
+			tile = context.m_spawnRng.Rand();
 		}
 		else if (mode == EVariantMode::Ordered)
 		{

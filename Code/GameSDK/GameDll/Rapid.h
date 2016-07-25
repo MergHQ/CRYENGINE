@@ -8,7 +8,7 @@ Description: Rapid Fire Mode Implementation
 
 -------------------------------------------------------------------------
 History:
-- 26:10:2005   14:15 : Created by Márcio Martins
+- 26:10:2005   14:15 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #ifndef __RAPID_H__

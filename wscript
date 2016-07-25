@@ -118,6 +118,29 @@ def configure(conf):
 	# Load base configuration function		
 	conf.load('c_config')	
 	
+	sys_platform = Utils.unversioned_sys_platform()
+	if sys_platform == 'linux':
+		host = 'linux_x64'
+	elif sys_platform== 'win32':
+		host = 'win_x64'
+	elif sys_platform== 'darwin':
+		host = 'darwin_x64'		
+	
+	#Download SDKs for first time git users
+	if not conf.is_bootstrap_available():
+		if not os.path.isdir(os.path.join(conf.path.abspath(), 'Code/SDKs')):
+			download_sdk_exe = os.path.join(conf.path.abspath(), 'download_sdks.exe')
+			if  host == 'win_x64':
+				if os.path.isfile(download_sdk_exe):
+					subprocess.call(download_sdk_exe)				
+				else:
+					conf.fatal('[ERROR] Missing 3rd party SDK folder "<root>/Code/SDKs". \nAuto download failed: "<root>/download_sdks.exe" could not be located.\nPlease follow the ReadMe instructions on GitHub to download the SDKs manually.' )
+			else:
+				try:
+					subprocess.call(["python3","download_sdks.py"])
+				except:
+					conf.fatal('[ERROR] Missing 3rd party SDK folder "<root>/Code/SDKs". \nAuto download failed: "<root>/download_sdks.py" could not be located or Python3 is not available.\nPlease follow the ReadMe instructions on GitHub to download the SDKs manually.' )
+
 	###########################################
 	# Check for changes in user settings file
 	conf.check_user_settings_files()
@@ -153,7 +176,7 @@ def configure(conf):
 				conf.get_supported_platforms().remove(platform)
 			except:
 				pass
-			Logs.debug('[DEBUG] - Compiler settings not found. (%s) ' % file_name )
+			Logs.warn('[WARNING] - Compiler settings not found. (%s) ' % file_name )
 
 	# Load CppCheck since it is a 'global' platform
 	conf.load('cppcheck', tooldir=CRY_WAF_TOOL_DIR)
@@ -165,14 +188,7 @@ def configure(conf):
 	# Load support for c# and swig
 	conf.load('swig', tooldir=CRY_WAF_TOOL_DIR)
 	conf.load('cs', tooldir=CRY_WAF_TOOL_DIR)
-	
-	if Utils.unversioned_sys_platform() == 'linux':
-		host = 'linux_x64'
-	elif Utils.unversioned_sys_platform() == 'win32':
-		host = 'win_x64'
-	elif Utils.unversioned_sys_platform() == 'darwin':
-		host = 'darwin_x64'		
-	
+		
 	#Get user defined active specs
 	specs_platforms = set()	
 	if  conf.options.specs_to_include_in_project_generation: 
@@ -219,7 +235,7 @@ def configure(conf):
 					Logs.warn('[WARNING] - Unable to locate platform "%s" on system. Disabling platform support for: %s !!!' % (platform, platform))
 					continue
 			else:
-				Logs.debug('[DEBUG] - Unable to locate compiler rules  "%s". Disabling platform support for: %s !!!. ' % (file_name, platform))
+				Logs.warn('[WARNING] - Unable to locate compiler rules  "%s". Disabling platform support for: %s !!!. ' % (file_name, platform))
 				continue
 		
 		# platform installed

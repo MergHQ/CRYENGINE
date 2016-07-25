@@ -114,3 +114,7 @@ def save_to_json_file(conf, file_node, data):
 		exception_str = str(e)
 		
 		conf.cry_file_error(exception_str, file_node.abspath(), 0)
+		
+@conf
+def ToVersionNumbers(conf, s):
+	return [int(e) for e in s.split('.')]

@@ -18,6 +18,8 @@
 
 #include <CryCore/CryEndian.h>
 
+template<typename F> struct Vec3_tpl;
+
 template<typename T> struct Vec3Constants
 {
 	static const Vec3_tpl<T> fVec3_Zero;
@@ -114,11 +116,7 @@ template<typename F> struct Vec3_tpl
 	ILINE Vec3_tpl<F>(const Vec2_tpl<F> &v) { x = v.x; y = v.y; z = 0;  CRY_MATH_ASSERT(IsValid());   }
 	template<class T> ILINE Vec3_tpl<F>(const Vec2_tpl<T> &v) { x = F(v.x); y = F(v.y); z = 0;  CRY_MATH_ASSERT(IsValid()); }
 
-	explicit ILINE Vec3_tpl<F>(const Ang3_tpl<F> &v) { x = v.x; y = v.y; z = v.z; CRY_MATH_ASSERT(IsValid());  }
-	template<class T> explicit ILINE Vec3_tpl<F>(const Ang3_tpl<T> &v) { x = v.x; y = v.y; z = v.z; CRY_MATH_ASSERT(IsValid());  }
-
-	explicit ILINE Vec3_tpl<F>(const Vec4_tpl<F> &v) { x = F(v.x); y = F(v.y); z = F(v.z); }
-	template<class T> explicit ILINE Vec3_tpl<F>(const Vec4_tpl<T> &v) { x = F(v.x); y = F(v.y); z = F(v.z); }
+	ILINE operator const Vec2_tpl<F> &() const { return reinterpret_cast<const Vec2_tpl<F>&>(*this); }
 
 	//! Overloaded arithmetic operator.
 	//! Example:
@@ -133,7 +131,7 @@ template<typename F> struct Vec3_tpl
 		k = (F)1.0 / k;
 		return Vec3_tpl<F>(x * k, y * k, z * k);
 	}
-	ILINE friend Vec3_tpl<F> operator*(f32 f, const Vec3_tpl& vec)
+	ILINE friend Vec3_tpl<F> operator*(F f, const Vec3_tpl& vec)
 	{
 		return Vec3_tpl((F)(f * vec.x), (F)(f * vec.y), (F)(f * vec.z));
 	}
@@ -195,43 +193,25 @@ template<typename F> struct Vec3_tpl
 
 	ILINE bool IsZero(F e = (F)0.0) const
 	{
-		return (fabs_tpl(x) <= e) && (fabs_tpl(y) <= e) && (fabs_tpl(z) <= e);
+		return GetLengthSquared() <= sqr(e);
 	}
-	//! IsZeroSlow would be a better name.
+	// Deprecated
 	ILINE bool IsZeroFast(F e = (F)0.0003) const
 	{
-		return (fabs_tpl(x) + fabs_tpl(y) + fabs_tpl(z)) <= e;
+		return GetLengthSquared() * F(3) <= sqr(e);
 	}
 
-	//! Chebyshev distance (axis aligned).
-	ILINE bool IsEquivalent(const Vec3_tpl<F>& v1, F epsilon = VEC_EPSILON) const
+	//! Euclidean distance
+	ILINE bool IsEquivalent(const Vec3_tpl<F>& v1, f32 epsilon = VEC_EPSILON) const
 	{
-		CRY_MATH_ASSERT(v1.IsValid());
-		CRY_MATH_ASSERT(this->IsValid());
-		return  ((fabs_tpl(x - v1.x) <= epsilon) && (fabs_tpl(y - v1.y) <= epsilon) && (fabs_tpl(z - v1.z) <= epsilon));
+		return ::IsEquivalent(*this, v1, epsilon);
 	}
-	ILINE static bool IsEquivalent(const Vec3_tpl<F>& v0, const Vec3_tpl<F>& v1, F epsilon = VEC_EPSILON)
+	ILINE static bool IsEquivalent(const Vec3_tpl<F>& v0, const Vec3_tpl<F>& v1, f32 epsilon = VEC_EPSILON)
 	{
-		CRY_MATH_ASSERT(v0.IsValid());
-		CRY_MATH_ASSERT(v1.IsValid());
-		return  ((fabs_tpl(v0.x - v1.x) <= epsilon) && (fabs_tpl(v0.y - v1.y) <= epsilon) && (fabs_tpl(v0.z - v1.z) <= epsilon));
+		return ::IsEquivalent(v0, v1, epsilon);
 	}
 
-	//! Euclidean distance L2.
-	ILINE bool IsEquivalentL2(const Vec3_tpl<F>& v1, F epsilon = VEC_EPSILON) const
-	{
-		CRY_MATH_ASSERT(v1.IsValid());
-		CRY_MATH_ASSERT(this->IsValid());
-		return (*this - v1).GetLengthSquared() <= (epsilon * epsilon);
-	}
-	ILINE static bool IsEquivalentL2(const Vec3_tpl<F>& v0, const Vec3_tpl<F>& v1, F epsilon = VEC_EPSILON)
-	{
-		CRY_MATH_ASSERT(v0.IsValid());
-		CRY_MATH_ASSERT(v1.IsValid());
-		return (v0 - v1).GetLengthSquared() <= (epsilon * epsilon);
-	}
-
-	ILINE bool IsUnit(F epsilon = VEC_EPSILON) const
+	ILINE bool IsUnit(f32 epsilon = VEC_EPSILON) const
 	{
 		return (fabs_tpl(1 - GetLengthSquared()) <= epsilon);
 	}
@@ -274,11 +254,6 @@ template<typename F> struct Vec3_tpl
 		return sqrt_tpl(x * x + y * y + z * z);
 	}
 
-	ILINE F GetLengthFloat() const
-	{
-		return GetLength();
-	}
-
 	ILINE F GetLengthFast() const
 	{
 		return sqrt_fast_tpl(x * x + y * y + z * z);
@@ -288,11 +263,6 @@ template<typename F> struct Vec3_tpl
 	ILINE F GetLengthSquared() const
 	{
 		return x * x + y * y + z * z;
-	}
-
-	ILINE F GetLengthSquaredFloat() const
-	{
-		return GetLengthSquared();
 	}
 
 	//! calculate the length of the vector ignoring the z component
@@ -381,11 +351,6 @@ template<typename F> struct Vec3_tpl
 		}
 	}
 
-	ILINE Vec3_tpl GetNormalizedFloat() const
-	{
-		return GetNormalized();
-	}
-
 	//! return a normalized vector
 	ILINE Vec3_tpl GetNormalized() const
 	{
@@ -413,12 +378,6 @@ template<typename F> struct Vec3_tpl
 		{
 			return safe;
 		}
-	}
-
-	//! return a safely normalized vector - returns safe vector (should be normalised) if original is zero length
-	ILINE Vec3_tpl GetNormalizedSafeFloat(const struct Vec3_tpl<F>& safe = Vec3Constants<F>::fVec3_OneX) const
-	{
-		return GetNormalizedSafe(safe);
 	}
 
 	//! return a normalized and scaled vector
@@ -644,7 +603,7 @@ template<typename F> struct Vec3_tpl
 		return Vec3_tpl<F>(y * vec2.z - z * vec2.y, z * vec2.x - x * vec2.z, x * vec2.y - y * vec2.x);
 	}
 
-	//f32* fptr=vec;
+	//F* fptr = vec;
 	CRY_DEPRECATED(operator F*()) { return (F*)this; }
 	template<class T> explicit CRY_DEPRECATED(Vec3_tpl(const T* src)) { x = src[0]; y = src[1]; z = src[2]; }
 
@@ -778,11 +737,6 @@ template<class F1, class F2> ILINE Vec3_tpl<F1> operator/(const Vec3_tpl<F1>& v0
 	return Vec3_tpl<F1>(v0.x / v1.x, v0.y / v1.y, v0.z / v1.z);
 }
 
-template<class F> ILINE bool IsEquivalent(const Vec3_tpl<F>& v0, const Vec3_tpl<F>& v1, f32 epsilon = VEC_EPSILON)
-{
-	return  ((fabs_tpl(v0.x - v1.x) <= epsilon) && (fabs_tpl(v0.y - v1.y) <= epsilon) && (fabs_tpl(v0.z - v1.z) <= epsilon));
-}
-
 // Typedefs
 typedef Vec3_tpl<f32>  Vec3;   //!< Always 32 bit.
 typedef Vec3_tpl<f64>  Vec3d;  //!< Always 64 bit.
@@ -794,61 +748,28 @@ template<> inline Vec3_tpl<f64>::Vec3_tpl(type_max) { x = y = z = 1.7E308; }
 template<> inline Vec3_tpl<f32>::Vec3_tpl(type_min) { x = y = z = -3.3E38f; }
 template<> inline Vec3_tpl<f32>::Vec3_tpl(type_max) { x = y = z = 3.3E38f; }
 
-template<typename F> struct Ang3_tpl
+template<typename F> struct Quat_tpl;
+template<typename F> struct Matrix33_tpl;
+template<typename F> struct Matrix34_tpl;
+template<typename F> struct Matrix44_tpl;
+
+template<typename F> struct Ang3_tpl : Vec3_tpl<F>
 {
-	F x, y, z;
+	// tedious template redundancy
+	using Vec3_tpl<F>::x;
+	using Vec3_tpl<F>::y;
+	using Vec3_tpl<F>::z;
 
-#if defined(_DEBUG)
-	ILINE Ang3_tpl()
-	{
-		if (sizeof(F) == 4)
-		{
-			uint32* p = alias_cast<uint32*>(&x);
-			p[0] = F32NAN;
-			p[1] = F32NAN;
-			p[2] = F32NAN;
-		}
-		if (sizeof(F) == 8)
-		{
-			uint64* p = alias_cast<uint64*>(&x);
-			p[0] = F64NAN;
-			p[1] = F64NAN;
-			p[2] = F64NAN;
-		}
-	}
-#else
-	ILINE Ang3_tpl()  {};
-#endif
+	// inherit constructors
+	using Vec3_tpl<F>::Vec3_tpl;
 
-	Ang3_tpl(type_zero) { x = y = z = 0; }
+	Ang3_tpl() {}
 
-	void operator()(F vx, F vy, F vz) { x = vx; y = vy; z = vz; };
-	ILINE Ang3_tpl<F>(F vx, F vy, F vz) { x = vx; y = vy; z = vz; }
+	ILINE Ang3_tpl<F> operator*(F k) const { return Ang3_tpl<F>(x * k, y * k, z * k); }
+	ILINE Ang3_tpl<F> operator/(F k) const { k = (F)1.0 / k; return Ang3_tpl<F>(x * k, y * k, z * k); }
+	ILINE Ang3_tpl<F> operator-() const    { return Ang3_tpl<F>(-x, -y, -z); }
 
-	explicit ILINE Ang3_tpl(const Vec3_tpl<F>& v) : x((F)v.x), y((F)v.y), z((F)v.z) { CRY_MATH_ASSERT(this->IsValid()); }
-
-	ILINE bool         operator==(const Ang3_tpl<F>& vec) { return x == vec.x && y == vec.y && z == vec.z; }
-	ILINE bool         operator!=(const Ang3_tpl<F>& vec) { return !(*this == vec); }
-
-	ILINE Ang3_tpl<F>  operator*(F k) const               { return Ang3_tpl<F>(x * k, y * k, z * k); }
-	ILINE Ang3_tpl<F>  operator/(F k) const               { k = (F)1.0 / k; return Ang3_tpl<F>(x * k, y * k, z * k); }
-
-	ILINE Ang3_tpl<F>& operator*=(F k)                    { x *= k; y *= k; z *= k; return *this; }
-	//explicit ILINE Ang3_tpl<F>& operator = (const Vec3_tpl<F>& v)  { x=v.x; y=v.y; z=v.z; return *this;   }
-
-	ILINE Ang3_tpl<F> operator-(void) const { return Ang3_tpl<F>(-x, -y, -z); }
-
-	ILINE friend bool operator==(const Ang3_tpl<F>& v0, const Ang3_tpl<F>& v1)
-	{
-		return ((v0.x == v1.x) && (v0.y == v1.y) && (v0.z == v1.z));
-	}
-	ILINE void Set(F xval, F yval, F zval) { x = xval; y = yval; z = zval; }
-
-	ILINE bool IsEquivalent(const Ang3_tpl<F>& v1, F epsilon = VEC_EPSILON) const
-	{
-		return  ((fabs_tpl(x - v1.x) <= epsilon) && (fabs_tpl(y - v1.y) <= epsilon) && (fabs_tpl(z - v1.z) <= epsilon));
-	}
-	ILINE bool IsInRangePI() const
+	ILINE bool        IsInRangePI() const
 	{
 		F pi = (F)(gf_PI + 0.001); //we need this to fix fp-precision problem
 		return  ((x > -pi) && (x < pi) && (y > -pi) && (y < pi) && (z > -pi) && (z < pi));
@@ -857,14 +778,9 @@ template<typename F> struct Ang3_tpl
 	//! Normalize angle to -pi and +pi range.
 	ILINE void RangePI()
 	{
-		const F modX = fmod(x + gf_PI, gf_PI2);
-		x = if_neg_else(modX, modX + gf_PI, modX - gf_PI);
-
-		const F modY = fmod(y + gf_PI, gf_PI2);
-		y = if_neg_else(modY, modY + gf_PI, modY - gf_PI);
-
-		const F modZ = fmod(z + gf_PI, gf_PI2);
-		z = if_neg_else(modZ, modZ + gf_PI, modZ - gf_PI);
+		x = crymath::wrap(x, -gf_PI, +gf_PI);
+		y = crymath::wrap(y, -gf_PI, +gf_PI);
+		z = crymath::wrap(z, -gf_PI, +gf_PI);
 	}
 
 	//! Convert unit quaternion to angle (xyz).
@@ -957,18 +873,6 @@ template<typename F> struct Ang3_tpl
 
 	template<typename F1> ILINE static Ang3_tpl<F> GetAnglesXYZ(const Matrix34_tpl<F1>& m) { return Ang3_tpl<F>(m); }
 	template<typename F1> ILINE void               SetAnglesXYZ(const Matrix34_tpl<F1>& m) { *this = Ang3_tpl<F>(m); }
-
-	//---------------------------------------------------------------
-	ILINE F& operator[](int index)       { CRY_MATH_ASSERT(index >= 0 && index <= 2); return ((F*)this)[index]; }
-	ILINE F  operator[](int index) const { CRY_MATH_ASSERT(index >= 0 && index <= 2); return ((F*)this)[index]; }
-
-	bool     IsValid() const
-	{
-		if (!NumberValid(x)) return false;
-		if (!NumberValid(y)) return false;
-		if (!NumberValid(z)) return false;
-		return true;
-	}
 
 	AUTO_STRUCT_INFO;
 };
@@ -1135,7 +1039,7 @@ template<typename F> struct Plane_tpl
 	//! Example:
 	//!   Vec3 v(1,2,3);
 	//!   Plane_tpl<F>  plane=CalculatePlane(v0,v1,v2);
-	//!   f32 distance = plane|v;
+	//!   F distance = plane|v;
 	ILINE F            operator|(const Vec3_tpl<F>& point) const      { return (n | point) + d; }
 	ILINE F            DistFromPlane(const Vec3_tpl<F>& vPoint) const { return (n * vPoint + d); }
 
@@ -1174,5 +1078,34 @@ template<typename T> const Vec3_tpl<T> Vec3Constants<T >::fVec3_OneY(0, 1, 0);
 template<typename T> const Vec3_tpl<T> Vec3Constants<T >::fVec3_OneZ(0, 0, 1);
 template<typename T> const Vec3_tpl<T> Vec3Constants<T >::fVec3_One(1, 1, 1);
 #endif
+
+// Specialized functions
+template<typename F> ILINE Vec3_tpl<F> min(const Vec3_tpl<F>& a, const Vec3_tpl<F>& b)
+{
+	return Vec3_tpl<F>(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z));
+}
+
+template<typename F> ILINE Vec3_tpl<F> max(const Vec3_tpl<F>& a, const Vec3_tpl<F>& b)
+{
+	return Vec3_tpl<F>(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z));
+}
+
+template<typename F> ILINE F sqr(const Vec3_tpl<F>& op)
+{
+	return op | op;
+}
+
+template<typename F> ILINE int32 idxmax3(const Vec3_tpl<F>& vec)
+{
+	int32 imax = isneg(vec.x - vec.y);
+	imax |= isneg(vec[imax] - vec.z) << 1;
+	return imax & (2 | (imax >> 1 ^ 1));
+}
+template<typename F> ILINE int32 idxmin3(const Vec3_tpl<F>& vec)
+{
+	int32 imin = isneg(vec.y - vec.x);
+	imin |= isneg(vec.z - vec[imin]) << 1;
+	return imin & (2 | (imin >> 1 ^ 1));
+}
 
 #endif //vector

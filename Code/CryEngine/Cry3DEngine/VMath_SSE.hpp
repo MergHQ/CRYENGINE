@@ -10,11 +10,11 @@
 //							-	integrated into cryengine
 //
 ////////////////////////////////////////////////////////////////////////////
-#ifndef __D_VMATH_SSE__
-#define __D_VMATH_SSE__
 
 #define _DO_NOT_DECLARE_INTERLOCKED_INTRINSICS_IN_MEMORY
-//#include <smmintrin.h>
+
+namespace NVMath
+{
 
 typedef __m128 vec4;
 
@@ -321,4 +321,4 @@ ILINE vec4 SelectStatic(vec4 V0, vec4 V1)
 #endif
 }
 
-#endif
+}

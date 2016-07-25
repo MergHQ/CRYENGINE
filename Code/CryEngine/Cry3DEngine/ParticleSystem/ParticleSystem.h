@@ -55,7 +55,6 @@ public:
 	void                    GetMemoryUsage(ICrySizer* pSizer) const override;
 	// ~IParticleSystem
 
-	float                GetMaxAngularDensity() const     { return m_maxAngularDensity; }
 	PParticleEffect      LoadEffect(cstr effectName);
 	SParticleCounts&     GetCounts()                      { return m_counts; }
 	TParticleHeap&       GetMemHeap(uint32 threadId = ~0) { return m_memHeap[threadId + 1]; }
@@ -65,9 +64,13 @@ public:
 
 	void                 ClearRenderResources();
 
+	static float         GetMaxAngularDensity(const CCamera& camera)
+	{
+		return camera.GetAngularResolution() / max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f) * 2.0f;
+	}
+
 private:
 	void              UpdateGpuRuntimesForEmitter(CParticleEmitter* pEmitter);
-	void              UpdateEngineData();
 	void              TrimEmitters();
 	CParticleEffect*  CastEffect(const PParticleEffect& pEffect) const;
 	CParticleEmitter* CastEmitter(const PParticleEmitter& pEmitter) const;
@@ -83,7 +86,6 @@ private:
 	TEffectNameMap             m_effects;
 	TParticleEmitters          m_emitters;
 	std::vector<TParticleHeap> m_memHeap;
-	float                      m_maxAngularDensity;
 };
 
 std::vector<SParticleFeatureParams>& GetFeatureParams();

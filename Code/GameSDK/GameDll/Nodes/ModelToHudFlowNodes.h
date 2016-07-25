@@ -4,17 +4,17 @@
 //  File name:   FlowWeaponCustomizationNodes.h
 //  Version:     v1.00
 //  Created:     03/05/2012 by Michiel Meesters.
-//  Description: 
+//  Description:
 // -------------------------------------------------------------------------
 //  History:
 //
 ////////////////////////////////////////////////////////////////////////////
-#ifndef __ModelToHudFlowNodes_H__
-#define __ModelToHudFlowNodes_H__
-#include "Nodes/G2FlowBaseNode.h"
-#include "UI/Menu3dModels/MenuRender3DModelMgr.h"
+#pragma once
 
-class CFlowSetupModelPostRender: public CFlowBaseNode<eNCT_Instanced>
+#include "UI/Menu3dModels/MenuRender3DModelMgr.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
+
+class CFlowSetupModelPostRender : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
 	enum EInputs
@@ -30,21 +30,20 @@ public:
 		IN_DEBUGSCALE,
 	};
 
-	CFlowSetupModelPostRender( SActivationInfo * pActInfo );
-	virtual IFlowNodePtr Clone(SActivationInfo *pActInfo);
-	virtual void GetConfiguration(SFlowNodeConfig& config);
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo );
-	virtual void GetMemoryUsage(ICrySizer * s) const;
+	CFlowSetupModelPostRender(SActivationInfo* pActInfo);
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo);
+	virtual void         GetConfiguration(SFlowNodeConfig& config);
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void         GetMemoryUsage(ICrySizer* s) const;
 
 private:
 	CMenuRender3DModelMgr::TAddedModelIndex characterModelIndex;
-	char* playerModelName;
+	char*  playerModelName;
 	string sUIElement;
 	string sMovieClipName;
 };
 
-
-class CFlowAddModelToPostRender: public CFlowBaseNode<eNCT_Instanced>
+class CFlowAddModelToPostRender : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
 	enum EInputs
@@ -61,17 +60,15 @@ public:
 		IN_SCREENU2V2,
 	};
 
-	CFlowAddModelToPostRender( SActivationInfo * pActInfo );
-	virtual IFlowNodePtr Clone(SActivationInfo *pActInfo);
-	virtual void GetConfiguration(SFlowNodeConfig& config);
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo );
-	virtual void GetMemoryUsage(ICrySizer * s) const;
+	CFlowAddModelToPostRender(SActivationInfo* pActInfo);
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo);
+	virtual void         GetConfiguration(SFlowNodeConfig& config);
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void         GetMemoryUsage(ICrySizer* s) const;
 
 private:
 	CMenuRender3DModelMgr::TAddedModelIndex characterModelIndex;
-	char* playerModelName;
+	char*  playerModelName;
 	string sUIElement;
 	string sMovieClipName;
 };
-
-#endif

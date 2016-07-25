@@ -1,49 +1,48 @@
 {
-	"CryMonoBridge_main_uber_1.cpp":
+	"CryMonoBridge_main_uber_1.cpp" :
 	{
-		"Root":
+		"Root" :
 		[
-			"CryMonoBridge.h",
-			"CryMonoBridge.cpp",
-			"MonoRuntime.h",
-			"MonoRuntime.cpp",
-			"MonoLibrary.h",
-			"MonoLibrary.cpp",
-			"MonoLibraryIt.h",
-			"resource.h",
-			"StdAfx.h"
+		  "CryMonoBridge.h",
+		  "CryMonoBridge.cpp",
+		  "MonoRuntime.h",
+		  "MonoRuntime.cpp",
+		  "MonoLibrary.h",
+		  "MonoLibrary.cpp",
+		  "resource.h",
+		  "StdAfx.h"
 		]
 	},
-	"NoUberFile": 
+	"NoUberFile" :
 	{
-		"Root":
+		"Root" :
 		[
-			"StdAfx.cpp"
+		  "StdAfx.cpp"
 		],
-		"SWIG":
+		"SWIG" :
 		[
-			"SWIG/CryEngine.swig",
-			"SWIG/CryAction.i",
-			"SWIG/Cry3DEngine.i",
-			"SWIG/CryAISystem.i",
-			"SWIG/CryAnimation.i",
-			"SWIG/CryAudio.i",
-			"SWIG/CryCommon.i",
-			"SWIG/CryDynamicResponseSystem.i",
-			"SWIG/CryEntitySystem.i",
-			"SWIG/CryFont.i",
-			"SWIG/CryGame.i",
-			"SWIG/CryInput.i",
-			"SWIG/CryMonoBridge.i",
-			"SWIG/CryLiveCreate.i",
-			"SWIG/CryLobby.i",
-			"SWIG/CryMovie.i",
-			"SWIG/CryNetwork.i",
-			"SWIG/CryPhysics.i",
-			"SWIG/CryRender.i",
-			"SWIG/CryScriptSystem.i",
-			"SWIG/CrySystem.i",
-			"SWIG/ForwardDeclarations.i"
+		  "SWIG/CryEngine.swig",
+		  "SWIG/CryAction.i",
+		  "SWIG/Cry3DEngine.i",
+		  "SWIG/CryAISystem.i",
+		  "SWIG/CryAnimation.i",
+		  "SWIG/CryAudio.i",
+		  "SWIG/CryCommon.i",
+		  "SWIG/CryDynamicResponseSystem.i",
+		  "SWIG/CryEntitySystem.i",
+		  "SWIG/CryFont.i",
+		  "SWIG/CryGame.i",
+		  "SWIG/CryInput.i",
+		  "SWIG/CryMonoBridge.i",
+		  "SWIG/CryLiveCreate.i",
+		  "SWIG/CryLobby.i",
+		  "SWIG/CryMovie.i",
+		  "SWIG/CryNetwork.i",
+		  "SWIG/CryPhysics.i",
+		  "SWIG/CryRender.i",
+		  "SWIG/CryScriptSystem.i",
+		  "SWIG/CrySystem.i",
+		  "SWIG/ForwardDeclarations.i"
 		]
 	}
 }

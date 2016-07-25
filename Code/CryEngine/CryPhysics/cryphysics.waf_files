@@ -3,8 +3,7 @@
 	{
 		"Root":
 		[
-			"CryPhysics.cpp", 
-			"IPhysics.h",
+			"CryPhysics.cpp",
 			"resource.h",
 			"StdAfx.cpp",
 			"StdAfx.h"

@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "FlowData.h"
 #include "FlowSerialize.h"
-#include <CryEntitySystem/IEntityPoolManager.h>
 
 // do some magic stuff to be backwards compatible with flowgraphs
 // which don't use the REAL port name but a stripped version
@@ -114,7 +113,6 @@ void CFlowData::DoGetConfiguration(SFlowNodeConfig& config) const
 	m_pImpl->GetConfiguration(config);
 	if (config.nFlags & EFLN_TARGET_ENTITY)
 	{
-		ScopedSwitchToGlobalHeap globalHeap;
 		static SInputPortConfig* inputs = new SInputPortConfig[MAX_INPUT_PORTS];
 
 		SInputPortConfig* pInput = inputs;
@@ -311,11 +309,19 @@ bool CFlowData::SerializeXML(IFlowNode::SActivationInfo* pActInfo, const XmlNode
 			}
 			else
 			{
-				if (node->haveAttr("EntityGUID_64"))
+				if (node->haveAttr("EntityGUID_64") || node->haveAttr("EntityGUID"))
 				{
 					EntityGUID entGuid = 0;
 					node->getAttr("EntityGUID_64", entGuid);
 					entityId = gEnv->pEntitySystem->FindEntityByGuid(entGuid);
+
+					// Is this a runtime prefab?
+					if (!entityId && node->haveAttr("EntityGUID"))
+					{
+						const char* szEntGuid = node->getAttr("EntityGUID");
+						entityId = gEnv->pEntitySystem->FindEntityByEditorGuid(szEntGuid);
+					}
+
 					if (entityId)
 					{
 						if (SetEntityId(entityId))
@@ -501,14 +507,7 @@ bool CFlowData::DoForwardingIfNeed(IFlowNode::SActivationInfo* pActInfo)
 	}
 	else
 	{
-		// if the pEntity does not exist because was bookmarked, we keep forwarding to the last forwarded id
-		EntityId initialId = GetEntityId();
-		if (initialId && gEnv->pEntitySystem->GetIEntityPoolManager()->IsEntityBookmarked(initialId))
-		{
-			forwardingEntityID = m_forwardingEntityID;
-		}
-		else
-			return NoForwarding(pActInfo);
+		return NoForwarding(pActInfo);
 	}
 
 	if (forwardingEntityID)

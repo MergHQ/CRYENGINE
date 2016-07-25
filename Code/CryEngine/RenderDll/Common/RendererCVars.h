@@ -31,6 +31,7 @@ public:
 	//------------------int cvars-------------------------------
 	static ICVar* CV_r_ShowDynTexturesFilter;
 	static ICVar* CV_r_ShaderCompilerServer;
+	static ICVar* CV_r_ShaderCompilerFolderName;
 	static ICVar* CV_r_ShaderCompilerFolderSuffix;
 	static ICVar* CV_r_ShaderEmailTags;
 	static ICVar* CV_r_ShaderEmailCCs;
@@ -55,6 +56,7 @@ public:
 	static int CV_r_GraphicsPipeline;
 
 	static int CV_r_DeferredShadingTiled;
+	static int CV_r_DeferredShadingTiledDebug;
 	static int CV_r_DeferredShadingTiledHairQuality;
 	static int CV_r_DeferredShadingSSS;
 	static int CV_r_DeferredShadingFilterGBuffer;
@@ -178,6 +180,10 @@ public:
 	static int CV_r_durango_async_dips_sync;
 	static int CV_r_D3D12SubmissionThread;
 	static int CV_r_D3D12WaitableSwapChain;
+	static int CV_r_D3D12EarlyResourceBarriers;
+	static int CV_r_D3D12AsynchronousCompute;
+	static int CV_r_D3D12HardwareComputeQueue;
+	static int CV_r_D3D12HardwareCopyQueue;
 	static int CV_r_ReverseDepth;
 
 	// DX12 related cvars
@@ -185,12 +191,17 @@ public:
 	static int CV_r_NoDraw;
 	static int CV_r_UpdateInstances;
 
+	// compute skinning related cvars
+	DeclareConstIntCVar(r_ComputeSkinning, 1);
+	DeclareConstIntCVar(r_ComputeSkinningMorphs, 1);
+	DeclareConstIntCVar(r_ComputeSkinningTangents, 1);
+	DeclareConstIntCVar(r_ComputeSkinningDebugDraw, 0);
+
 	//declare in release mode constant cvars
 	DeclareStaticConstIntCVar(CV_r_stats, 0);
 	DeclareStaticConstIntCVar(CV_r_statsMinDrawcalls, 0);
 	DeclareStaticConstIntCVar(CV_r_profiler, 0);
 	static float CV_r_profilerTargetFPS;
-	DeclareStaticConstIntCVar(CV_r_LightPropagationVolumes, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowPoolMaxFrames, 30);
 	DeclareStaticConstIntCVar(CV_r_log, 0);
 	DeclareStaticConstIntCVar(CV_r_logTexStreaming, 0);
@@ -201,7 +212,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_useESRAM, 1);
 	DeclareStaticConstIntCVar(CV_r_multithreaded, MULTITHREADED_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_multithreadedDrawing, -1);
-	DeclareStaticConstIntCVar(CV_r_multithreadedDrawingCoalesceMode, 1);
 	DeclareStaticConstIntCVar(CV_r_multithreadedDrawingMinJobSize, 100);
 	DeclareStaticConstIntCVar(CV_r_deferredshadingLightVolumes, 1);
 	DeclareStaticConstIntCVar(CV_r_deferredDecals, 1);
@@ -234,6 +244,7 @@ public:
 	DeclareStaticConstIntCVar(CV_r_ShadowsMaskDownScale, 0);
 	DeclareStaticConstIntCVar(CV_r_CBufferUseNativeDepth, CBUFFER_NATIVE_DEPTH_DEAFULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_ShadowsStencilPrePass, 1);
+	DeclareStaticConstIntCVar(CV_r_ShadowMaskStencilPrepass, 0);
 	DeclareStaticConstIntCVar(CV_r_ShadowsGridAligned, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowPass, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowGen, 1);
@@ -343,6 +354,7 @@ public:
 	DeclareStaticConstIntCVar(CV_r_flareHqShafts, FLARES_HQSHAFTS_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_ZPassDepthSorting, ZPASS_DEPTH_SORT_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_TransparentPasses, 1);
+	DeclareStaticConstIntCVar(CV_r_SkipAlphaTested, 0);
 	DeclareStaticConstIntCVar(CV_r_TranspDepthFixup, 1);
 	DeclareStaticConstIntCVar(CV_r_SoftAlphaTest, 1);
 	DeclareStaticConstIntCVar(CV_r_usehwskinning, 1);

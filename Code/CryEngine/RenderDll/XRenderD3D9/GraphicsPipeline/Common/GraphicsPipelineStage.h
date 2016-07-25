@@ -24,7 +24,6 @@ struct SGraphicsPipelinePassContext
 		, renderListId(EFSLIST_INVALID)
 		, stageID(0)
 		, passID(0)
-		, pPipelineStats(0)
 		, pRenderView(renderView)
 		, renderNearest(false)
 	{
@@ -50,9 +49,6 @@ struct SGraphicsPipelinePassContext
 	// Pass ID, in case a stage has several different scene passes
 	uint32 passID;
 
-	// Current pipeline stats.
-	SPipeStat* pPipelineStats;
-
 	// rend items
 	CRenderView* pRenderView;
 	TRange<int>  rendItems;
@@ -67,7 +63,6 @@ public:
 
 	// Allocate resources needed by the graphics pipeline stage
 	virtual void Init()                            {}
-	virtual void ReleaseBuffers()                  {}
 	// Prepare stage before actual rendering starts (called every frame)
 	virtual void Prepare(CRenderView* pRenderView) {}
 

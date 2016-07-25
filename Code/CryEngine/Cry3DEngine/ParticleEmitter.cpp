@@ -109,8 +109,7 @@ IMaterial* CParticleEmitter::GetMaterial(Vec3*) const
 float CParticleEmitter::GetMaxViewDist()
 {
 	// Max particles/radian, modified by emitter settings.
-	return gEnv->pSystem->GetViewCamera().GetAngularResolution()
-	       * max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f)
+	return CParticleManager::Instance()->GetMaxAngularDensity(gEnv->pSystem->GetViewCamera())
 	       * m_fMaxParticleSize
 	       * GetParticleScale()
 	       * m_fViewDistRatio;
@@ -176,7 +175,7 @@ void CParticleEmitter::UpdateState()
 		}
 	}
 
-	bool bUpdateState = bUpdateBounds || m_fAge >= m_fStateChangeAge;
+	bool bUpdateState = (GetRndFlags()&ERF_HIDDEN)==0 && (bUpdateBounds || m_fAge >= m_fStateChangeAge);
 	if (bUpdateState)
 	{
 		m_fStateChangeAge = fHUGE;
@@ -537,7 +536,7 @@ void CParticleEmitter::CreateIndirectEmitters(CParticleSource* pSource, CParticl
 
 void CParticleEmitter::SetLocation(const QuatTS& loc)
 {
-	if (!QuatTS::IsEquivalent(GetLocation(), loc, 0.0045f, 1e-5f))
+	if (!IsEquivalent(GetLocation(), loc, 0.0045f, 1e-5f))
 	{
 		InvalidateStaticBounds();
 		m_VisEnviron.Invalidate();
@@ -979,7 +978,7 @@ void CParticleEmitter::Render(SRendParams const& RenParams, const SRenderingPass
 		PartParams.m_fCamDistance = GetNearestDistance(passInfo.GetCamera().GetPosition(), PartParams.m_fMainBoundsScale);
 
 	// Compute max allowed res.
-	PartParams.m_fMaxAngularDensity = passInfo.GetCamera().GetAngularResolution() * max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f);
+	PartParams.m_fMaxAngularDensity = CParticleManager::Instance()->GetMaxAngularDensity(passInfo.GetCamera()) * GetParticleScale() * m_fViewDistRatio;
 	bool bHDRModeEnabled = false;
 	GetRenderer()->EF_Query(EFQ_HDRModeEnabled, bHDRModeEnabled);
 	PartParams.m_fHDRDynamicMultiplier = bHDRModeEnabled ? HDRDynamicMultiplier : 1.f;
@@ -994,7 +993,7 @@ void CParticleEmitter::Render(SRendParams const& RenParams, const SRenderingPass
 	else
 	{
 		// Emitter in preview window, etc
-		PartParams.m_nRenObjFlags.SetState(-1, FOB_GLOBAL_ILLUMINATION | FOB_INSHADOW | FOB_SOFT_PARTICLE | FOB_MOTION_BLUR);
+		PartParams.m_nRenObjFlags.SetState(-1, FOB_INSHADOW | FOB_SOFT_PARTICLE | FOB_MOTION_BLUR);
 	}
 
 	if (!PartParams.m_nDeferredLightVolumeId)
@@ -1003,9 +1002,6 @@ void CParticleEmitter::Render(SRendParams const& RenParams, const SRenderingPass
 		PartParams.m_nRenObjFlags.SetState(-1, FOB_IN_DOORS | FOB_INSHADOW);
 	if (RenParams.dwFObjFlags & FOB_NEAREST)
 		PartParams.m_nRenObjFlags.SetState(-1, FOB_SOFT_PARTICLE);
-
-	if (RenParams.m_pVisArea) //&& RenParams.m_pVisArea->IsIgnoringGI()) - ignore GI not used in most vis areas unfortunately, disable GI for any particle inside a vis area
-		PartParams.m_nRenObjFlags.SetState(-1, FOB_GLOBAL_ILLUMINATION);
 
 	if (passInfo.IsAuxWindow())
 	{

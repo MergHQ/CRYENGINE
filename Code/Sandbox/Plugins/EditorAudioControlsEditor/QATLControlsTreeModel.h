@@ -43,9 +43,11 @@ private:
 	// -------------------------------------------------------
 
 	// ------------- IATLControlModelListener ----------------
-	virtual void OnControlAdded(CATLControl* pControl) override   {}
+	virtual void OnControlAdded(CATLControl* pControl) override;
 	virtual void OnControlModified(CATLControl* pControl) override;
-	virtual void OnControlRemoved(CATLControl* pControl) override {}
+	virtual void OnControlRemoved(CATLControl* pControl) override;
+	virtual void OnConnectionAdded(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl) override;
+	virtual void OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl) override;
 	// -------------------------------------------------------
 
 	CATLControlsModel* m_pControlsModel;

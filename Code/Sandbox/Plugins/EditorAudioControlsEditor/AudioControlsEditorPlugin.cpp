@@ -25,6 +25,7 @@ std::set<string> CAudioControlsEditorPlugin::ms_currentFilenames;
 IAudioProxy* CAudioControlsEditorPlugin::ms_pIAudioProxy;
 AudioControlId CAudioControlsEditorPlugin::ms_nAudioTriggerID;
 CImplementationManager CAudioControlsEditorPlugin::ms_implementationManager;
+uint CAudioControlsEditorPlugin::ms_loadingErrorMask;
 
 REGISTER_VIEWPANE_FACTORY(CAudioControlsEditorWindow, "Audio Controls Editor", "Tools", true)
 
@@ -41,8 +42,9 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin(IEditor* editor)
 	}
 
 	ms_implementationManager.LoadImplementation();
-	ReloadModels();
+	ReloadModels(false);
 	ms_layoutModel.Initialize(&ms_ATLModel);
+	ms_ATLModel.Initialize();
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
 }
 
@@ -65,9 +67,10 @@ void CAudioControlsEditorPlugin::SaveModels()
 	{
 		CAudioControlsWriter writer(&ms_ATLModel, &ms_layoutModel, pImpl, ms_currentFilenames);
 	}
+	ms_loadingErrorMask = static_cast<uint>(EErrorCode::eErrorCode_NoError);
 }
 
-void CAudioControlsEditorPlugin::ReloadModels()
+void CAudioControlsEditorPlugin::ReloadModels(bool bReloadImplementation)
 {
 	GetIEditor()->SuspendUndo();
 	ms_ATLModel.SetSuppressMessages(true);
@@ -77,10 +80,14 @@ void CAudioControlsEditorPlugin::ReloadModels()
 	{
 		ms_layoutModel.clear();
 		ms_ATLModel.Clear();
-		pImpl->Reload();
-		CAudioControlsLoader ATLLoader(&ms_ATLModel, &ms_layoutModel, pImpl);
-		ATLLoader.LoadAll();
-		ms_currentFilenames = ATLLoader.GetLoadedFilenamesList();
+		if (bReloadImplementation)
+		{
+			pImpl->Reload();
+		}
+		CAudioControlsLoader loader(&ms_ATLModel, &ms_layoutModel, pImpl);
+		loader.LoadAll();
+		ms_currentFilenames = loader.GetLoadedFilenamesList();
+		ms_loadingErrorMask = loader.GetErrorCodeMask();
 	}
 
 	ms_ATLModel.SetSuppressMessages(false);
@@ -93,8 +100,8 @@ void CAudioControlsEditorPlugin::ReloadScopes()
 	if (pImpl)
 	{
 		ms_ATLModel.ClearScopes();
-		CAudioControlsLoader ATLLoader(&ms_ATLModel, &ms_layoutModel, pImpl);
-		ATLLoader.LoadScopes();
+		CAudioControlsLoader loader(&ms_ATLModel, &ms_layoutModel, pImpl);
+		loader.LoadScopes();
 	}
 }
 

@@ -101,6 +101,23 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const QuatTS& O
 
 	//------------------------------------------------------------------------
 
+	SRendParams attachmentRendParams(RendParams);
+	{
+		uint64 uAdditionalObjFlags = 0;
+		if (m_rpFlags & CS_FLAG_DRAW_NEAR)
+			uAdditionalObjFlags |= FOB_NEAREST;
+
+		attachmentRendParams.pMaterial = NULL;    // this is required to avoid the attachments using the parent character material (this is the material that overrides the default material in the attachment)
+		attachmentRendParams.dwFObjFlags |= uAdditionalObjFlags;
+	}
+
+	const f32 fFOV = g_pIRenderer->GetCamera().GetFov();
+	const f32 fZoomFactor = 0.0f + 1.0f * (RAD2DEG(fFOV) / 60.f);
+	const f32 attachmentCullingRation = (gEnv->bMultiplayer) ? Console::GetInst().ca_AttachmentCullingRationMP : Console::GetInst().ca_AttachmentCullingRation;
+	const f32 fZoomDistanceSq = sqr(RendParams.fDistance * fZoomFactor / attachmentCullingRation);
+
+	m_AttachmentManager.DrawMergedAttachments(attachmentRendParams, RenderMat34, passInfo, fZoomFactor, fZoomDistanceSq);
+	
 	if (m_pDefaultSkeleton->m_ObjectType == CGA)
 	{
 		Matrix34 mRendMat34 = RenderMat34 * Matrix34(Offset);
@@ -112,11 +129,12 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const QuatTS& O
 		IPhysicalEntity* pCharPhys = m_SkeletonPose.GetCharacterPhysics();
 		if (pCharPhys && pCharPhys->GetType() == PE_ARTICULATED && pCharPhys->GetParams(&pf) && pf.flags & aef_recorded_physics)
 			RenderMat34 = RenderMat34 * Matrix34(Offset);
+
 		RenderCHR(RendParams, RenderMat34, passInfo);
 	}
 
 	// draw weapon and binded objects
-	m_AttachmentManager.DrawAttachments(RendParams, RenderMat34, passInfo);
+	m_AttachmentManager.DrawAttachments(attachmentRendParams, RenderMat34, passInfo, fZoomFactor, fZoomDistanceSq);
 
 }
 
@@ -244,7 +262,7 @@ void CCharInstance::RenderCHR(const SRendParams& RendParams, const Matrix34& rRe
 	else if (RendParams.nCustomFlags & COB_POST_3D_RENDER)
 	{
 		memcpy(&pD->m_fTempVars[5], &RendParams.fCustomData[0], sizeof(float) * 4);
-		pObj->m_fAlpha = 1.0f; // Use the alpha in the post effect instead of here
+		pObj->m_fAlpha = 1.0f;     // Use the alpha in the post effect instead of here
 		pD->m_fTempVars[9] = RendParams.fAlpha;
 	}
 	pObj->m_DissolveRef = RendParams.nDissolveRef;
@@ -332,8 +350,7 @@ SSkinningData* CCharInstance::GetSkinningData()
 	DEFINE_PROFILER_FUNCTION();
 
 	CAttachmentManager* pAttachmentManager = static_cast<CAttachmentManager*>(GetIAttachmentManager());
-	uint32 skinningQuatCount = GetSkinningTransformationCount();
-	uint32 nNumBones = skinningQuatCount + pAttachmentManager->GetExtraBonesCount();
+	uint32 numSkinningBones = GetSkinningTransformationCount() + pAttachmentManager->GetExtraBonesCount();
 
 	bool bNeedJobSyncVar = true;
 
@@ -348,7 +365,8 @@ SSkinningData* CCharInstance::GetSkinningData()
 		return arrSkinningRendererData[nList].pSkinningData;
 	}
 
-	SSkinningData* pSkinningData = gEnv->pRenderer->EF_CreateSkinningData(nNumBones, bNeedJobSyncVar);
+	SSkinningData* pSkinningData = gEnv->pRenderer->EF_CreateSkinningData(numSkinningBones, bNeedJobSyncVar);
+	pSkinningData->pCustomTag = this;
 	arrSkinningRendererData[nList].pSkinningData = pSkinningData;
 	arrSkinningRendererData[nList].nFrameID = nFrameID;
 
@@ -365,10 +383,11 @@ SSkinningData* CCharInstance::GetSkinningData()
 	}
 	else
 	{
-		// if we don't have motion blur data, use the some as for the current frame
+		// if we don't have motion blur data, use the same as for the current frame
 		pSkinningData->pPreviousSkinningRenderData = pSkinningData;
 	}
 
 	BeginSkinningTransformationsComputation(pSkinningData);
+	pSkinningData->pRenderMesh = GetRenderMesh();
 	return pSkinningData;
 }

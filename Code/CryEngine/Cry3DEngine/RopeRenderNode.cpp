@@ -1279,11 +1279,20 @@ void CRopeRenderNode::LinkEndPoints()
 			m_pPhysicalEntity->SetParams(&par_flags); // To prevent rope from awakining objects on linking.
 		}
 
-		pe_params_rope pr;
+		pe_params_rope pr, pr1;
+		Vec3 ptend[2] = { m_worldTM* m_points[0], m_worldTM * m_points[m_points.size() - 1] };
+		pr1.nSegments = 1;
+		pr1.pPoints.data = ptend;
+		if (m_pPhysicalEntity->GetParams(&pr1) && pr1.nSegments)
+		{
+			pr.nSegments = pr1.nSegments;
+			pr.pPoints = pr1.pPoints;
+		}
 
 		pr.pEntTiedTo[0] = 0;
 		pr.pEntTiedTo[1] = 0;
 		AnchorEndPoints(pr);
+		MARK_UNUSED pr.nSegments, pr.pPoints;
 		m_pPhysicalEntity->SetParams(&pr);
 
 		if (m_params.mass > 0 && !(m_params.nFlags & eRope_Disabled))
@@ -1386,12 +1395,12 @@ void CRopeRenderNode::AnchorEndPoints(pe_params_rope& pr)
 	//pr.pEntTiedTo[0] = WORLD_ENTITY;
 	//pr.pEntTiedTo[1] = WORLD_ENTITY;
 	bool bEndsAdjusted = false, bAdjustEnds = m_params.fAnchorRadius > 0.05001f;
-	Vec3 ptend[2] = { m_worldTM* m_points[0], m_worldTM * m_points[m_points.size() - 1] };
+	Vec3 ptend[2] = { pr.pPoints[0], pr.pPoints[pr.nSegments] };
 
 	primitives::sphere sphPrim;
 
 	geom_contact* pContacts = 0;
-	sphPrim.center = m_worldTM.TransformPoint(m_points[0]);
+	sphPrim.center = ptend[0];
 	sphPrim.r = m_params.fAnchorRadius;
 
 	int collisionEntityTypes = ent_static | ent_sleeping_rigid | ent_rigid | ent_ignore_noncolliding;
@@ -1419,7 +1428,7 @@ void CRopeRenderNode::AnchorEndPoints(pe_params_rope& pr)
 		pr.pEntTiedTo[1] = WORLD_ENTITY;
 	else
 	{
-		sphPrim.center = m_worldTM.TransformPoint(m_points[m_points.size() - 1]);
+		sphPrim.center = ptend[1];
 		d = gEnv->pPhysicalWorld->PrimitiveWorldIntersection(sphPrim.type, &sphPrim, Vec3(0, 0, 0), collisionEntityTypes, &pContacts, 0, geom_colltype0, 0);
 		if (d > 0 && pContacts)
 		{
@@ -1901,6 +1910,7 @@ void CRopeRenderNode::ResetRopeSound()
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
 void CRopeRenderNode::OffsetPosition(const Vec3& delta)
 {
 	if (m_pTempData) m_pTempData->OffsetPosition(delta);
@@ -1919,4 +1929,37 @@ void CRopeRenderNode::OffsetPosition(const Vec3& delta)
 		par_pos.bRecalcBounds = 3;
 		m_pPhysicalEntity->SetParams(&par_pos);
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void CRopeRenderNode::FillBBox(AABB& aabb)
+{
+	aabb = CRopeRenderNode::GetBBox();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+EERType CRopeRenderNode::GetRenderNodeType()
+{
+	return eERType_Rope;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+float CRopeRenderNode::GetMaxViewDist()
+{
+	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
+		return max(GetCVars()->e_ViewDistMin, CRopeRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());
+
+	return(max(GetCVars()->e_ViewDistMin, CRopeRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatio * GetViewDistRatioNormilized()));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+Vec3 CRopeRenderNode::GetPos(bool bWorldOnly) const
+{
+	return m_pos;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+IMaterial* CRopeRenderNode::GetMaterial(Vec3* pHitPos) const
+{
+	return m_pMaterial;
 }

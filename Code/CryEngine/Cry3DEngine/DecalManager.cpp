@@ -13,10 +13,10 @@
 
 #include "StdAfx.h"
 #include <CryAnimation/ICryAnimation.h>
+#include <Cry3DEngine/IStatObj.h>
 
 #include "DecalManager.h"
 #include "3dEngine.h"
-#include <Cry3DEngine/IStatObj.h>
 #include "ObjMan.h"
 #include "MatMan.h"
 #include "terrain.h"
@@ -851,19 +851,8 @@ void CDecalManager::Render(const SRenderingPassInfo& passInfo)
 						Vec3 vSize(pDecal->m_fWSSize, pDecal->m_fWSSize, pDecal->m_fWSSize);
 						AABB aabb(pDecal->m_vWSPos - vSize, pDecal->m_vWSPos + vSize);
 
-						uint32 nDLMask = 0;
-
-						if (!pDecal->m_bDeferred)
-						{
-							IRenderNode* pRN = pDecal->m_ownerInfo.pRenderNode;
-							if (COctreeNode* pNode = (COctreeNode*)(pRN ? pRN->m_pOcNode : NULL))
-								nDLMask = Get3DEngine()->BuildLightMask(aabb, pNode->GetAffectingLights(passInfo), (CVisArea*)pRN->GetEntityVisArea(), (pRN->GetRndFlags() & ERF_OUTDOORONLY) != 0, passInfo);
-							else
-								nDLMask = Get3DEngine()->BuildLightMask(aabb, passInfo);
-						}
-
 						float fDistFading = SATURATE((1.f - fDist / fMaxViewDist) * DIST_FADING_FACTOR);
-						pDecal->Render(fCurrTime, bAfterWater, nDLMask, fDistFading, fDist, passInfo);
+						pDecal->Render(fCurrTime, bAfterWater, fDistFading, fDist, passInfo);
 
 						if (GetCVars()->e_Decals > 1)
 						{
@@ -965,8 +954,8 @@ void CDecalManager::MoveToEdge(IRenderMesh* pRM, const float fRadius, Vec3& vOut
 
 	AABB boxRM;
 	pRM->GetBBox(boxRM.min, boxRM.max);
-	Sphere sp(vOutPos, fRadius);
-	if (!Overlap::Sphere_AABB(sp, boxRM))
+	Sphere sphere(vOutPos, fRadius);
+	if (!Overlap::Sphere_AABB(sphere, boxRM))
 		return;
 
 	// get position offset and stride
@@ -1067,12 +1056,11 @@ void CDecalManager::FillBigDecalIndices(IRenderMesh* pRM, Vec3 vPos, float fRadi
 	AABB boxRM;
 	pRM->GetBBox(boxRM.min, boxRM.max);
 
-	Sphere sp(vPos, fRadius);
-	if (!Overlap::Sphere_AABB(sp, boxRM))
+	Sphere sphere(vPos, fRadius);
+	if (!Overlap::Sphere_AABB(sphere, boxRM))
 		return;
 
 	IRenderMesh::ThreadAccessLock lockrm(pRM);
-	HWVSphere hwSphere(sp);
 
 	// get position offset and stride
 	int nInds = pRM->GetIndicesCount();
@@ -1104,24 +1092,22 @@ void CDecalManager::FillBigDecalIndices(IRenderMesh* pRM, Vec3 vPos, float fRadi
 
 	plstIndices->PreAllocate(16);
 
-	hwvec3 vProjDir = HWVLoadVecUnaligned(&vProjDirIn);
+	Vec3 vProjDir = vProjDirIn;
 
 	int usedTrianglesTotal = 0;
 
 	TRenderChunkArray& Chunks = pRM->GetChunks();
 
 	{
-		hwvec3 meshBBoxMin = HWVLoadVecUnaligned(&meshBBox.min);
-		hwvec3 meshBBoxMax = HWVLoadVecUnaligned(&meshBBox.max);
+		Vec3 meshBBoxMin = meshBBox.min;
+		Vec3 meshBBoxMax = meshBBox.max;
 
-		SIMDFConstant(fEpsilon, 0.001f);
+		const float fEpsilon = 0.001f;
 
 		const int kNumChunks = Chunks.size();
 
 		if (bPointProj)
 		{
-			hwvec3 hwvPos = HWVLoadVecUnaligned(&vPos);
-
 			for (int nChunkId = 0; nChunkId < kNumChunks; nChunkId++)
 			{
 				CRenderChunk* pChunk = &Chunks[nChunkId];
@@ -1178,33 +1164,33 @@ void CDecalManager::FillBigDecalIndices(IRenderMesh* pRM, Vec3 vPos, float fRadi
 					}
 
 					// get tri vertices
-					const hwvec3 v0 = HWVLoadVecUnaligned(reinterpret_cast<Vec3*>(&pPos[iPosIndex0]));
-					const hwvec3 v1 = HWVLoadVecUnaligned(reinterpret_cast<Vec3*>(&pPos[iPosIndex1]));
-					const hwvec3 v2 = HWVLoadVecUnaligned(reinterpret_cast<Vec3*>(&pPos[iPosIndex2]));
+					const Vec3 v0 = *reinterpret_cast<Vec3*>(&pPos[iPosIndex0]);
+					const Vec3 v1 = *reinterpret_cast<Vec3*>(&pPos[iPosIndex1]);
+					const Vec3 v2 = *reinterpret_cast<Vec3*>(&pPos[iPosIndex2]);
 
 					// test the face
-					hwvec3 v0v1Diff = HWVSub(v0, v1);
-					hwvec3 v2v1Diff = HWVSub(v2, v1);
-					hwvec3 vPosv0Diff = HWVSub(hwvPos, v0);
+					Vec3 v0v1Diff = v0 - v1;
+					Vec3 v2v1Diff = v2 - v1;
+					Vec3 vPosv0Diff = vPos - v0;
 
-					hwvec3 vCrossResult = HWVCross(v0v1Diff, v2v1Diff);
+					Vec3 vCrossResult = v0v1Diff ^ v2v1Diff;
 
-					simdf fDot = HWV3Dot(vPosv0Diff, vCrossResult);
+					float fDot = vPosv0Diff | vCrossResult;
 
-					if (SIMDFGreaterThan(fDot, fEpsilon))
+					if (fDot > fEpsilon)
 					{
-						if (Overlap::HWVSphere_TriangleFromPoints(hwSphere, v0, v1, v2))
+						if (Overlap::Sphere_Triangle(sphere, Triangle(v0, v1, v2)))
 						{
 							plstIndices->AddList(&pInds[i], 3);
 
-							hwvec3 triBBoxMax1 = HWVMax(v1, v0);
-							hwvec3 triBBoxMax2 = HWVMax(meshBBoxMax, v2);
+							Vec3 triBBoxMax1 = max(v1, v0);
+							Vec3 triBBoxMax2 = max(meshBBoxMax, v2);
 
-							hwvec3 triBBoxMin1 = HWVMin(v1, v0);
-							hwvec3 triBBoxMin2 = HWVMin(meshBBoxMin, v2);
+							Vec3 triBBoxMin1 = min(v1, v0);
+							Vec3 triBBoxMin2 = min(meshBBoxMin, v2);
 
-							meshBBoxMax = HWVMax(triBBoxMax1, triBBoxMax2);
-							meshBBoxMin = HWVMin(triBBoxMin1, triBBoxMin2);
+							meshBBoxMax = max(triBBoxMax1, triBBoxMax2);
+							meshBBoxMin = min(triBBoxMin1, triBBoxMin2);
 
 							usedTriangles++;
 						}
@@ -1266,9 +1252,9 @@ void CDecalManager::FillBigDecalIndices(IRenderMesh* pRM, Vec3 vPos, float fRadi
 					PrefetchLine(&pPos[iNextPosIndex2], 0);
 				}
 
-				hwvec3 v0Next = HWVLoadVecUnaligned(reinterpret_cast<Vec3*>(&pPos[nPosStride * pInds[i + 0]]));
-				hwvec3 v1Next = HWVLoadVecUnaligned(reinterpret_cast<Vec3*>(&pPos[nPosStride * pInds[i + 1]]));
-				hwvec3 v2Next = HWVLoadVecUnaligned(reinterpret_cast<Vec3*>(&pPos[nPosStride * pInds[i + 2]]));
+				Vec3 v0Next = *reinterpret_cast<Vec3*>(&pPos[nPosStride * pInds[i + 0]]);
+				Vec3 v1Next = *reinterpret_cast<Vec3*>(&pPos[nPosStride * pInds[i + 1]]);
+				Vec3 v2Next = *reinterpret_cast<Vec3*>(&pPos[nPosStride * pInds[i + 2]]);
 
 				const int nLastIndexToUse = nLastIndexId - 3;
 
@@ -1285,42 +1271,42 @@ void CDecalManager::FillBigDecalIndices(IRenderMesh* pRM, Vec3 vPos, float fRadi
 					const int iPrefetchIndex2 = nPosStride * pInds[iLookaheadIdx];
 
 					// get tri vertices
-					const hwvec3 v0 = v0Next;
-					const hwvec3 v1 = v1Next;
-					const hwvec3 v2 = v2Next;
+					const Vec3 v0 = v0Next;
+					const Vec3 v1 = v1Next;
+					const Vec3 v2 = v2Next;
 
 					//Need to prefetch further ahead
 					byte* pPrefetch = &pPos[iPrefetchIndex2];
 					PrefetchLine(pPrefetch, 0);
 
-					v0Next = HWVLoadVecUnaligned(reinterpret_cast<Vec3*>(&pPos[iNextPosIndex0]));
+					v0Next = *reinterpret_cast<Vec3*>(&pPos[iNextPosIndex0]);
 
 					// get triangle normal
-					hwvec3 v1v0Diff = HWVSub(v1, v0);
-					hwvec3 v2v0Diff = HWVSub(v2, v0);
+					Vec3 v1v0Diff = v1 - v0;
+					Vec3 v2v0Diff = v2 - v0;
 
-					v1Next = HWVLoadVecUnaligned(reinterpret_cast<Vec3*>(&pPos[iNextPosIndex1]));
+					v1Next = *reinterpret_cast<Vec3*>(&pPos[iNextPosIndex1]);
 
-					hwvec3 vNormal = HWVCross(v1v0Diff, v2v0Diff);
-					simdf fDot = HWV3Dot(vNormal, vProjDir);
+					Vec3 vNormal = v1v0Diff ^ v2v0Diff;
+					float fDot = vNormal | vProjDir;
 
-					v2Next = HWVLoadVecUnaligned(reinterpret_cast<Vec3*>(&pPos[iNextPosIndex2]));
+					v2Next = *reinterpret_cast<Vec3*>(&pPos[iNextPosIndex2]);
 
 					// test the face
-					if (SIMDFGreaterThan(fDot, fEpsilon))
+					if (fDot > fEpsilon)
 					{
-						if (Overlap::HWVSphere_TriangleFromPoints(hwSphere, v0, v1, v2))
+						if (Overlap::Sphere_Triangle(sphere, Triangle(v0, v1, v2)))
 						{
 							plstIndices->AddList(&pInds[i], 3);
 
-							hwvec3 triBBoxMax1 = HWVMax(v1, v0);
-							hwvec3 triBBoxMax2 = HWVMax(meshBBoxMax, v2);
+							Vec3 triBBoxMax1 = max(v1, v0);
+							Vec3 triBBoxMax2 = max(meshBBoxMax, v2);
 
-							hwvec3 triBBoxMin1 = HWVMin(v1, v0);
-							hwvec3 triBBoxMin2 = HWVMin(meshBBoxMin, v2);
+							Vec3 triBBoxMin1 = min(v1, v0);
+							Vec3 triBBoxMin2 = min(meshBBoxMin, v2);
 
-							meshBBoxMax = HWVMax(triBBoxMax1, triBBoxMax2);
-							meshBBoxMin = HWVMin(triBBoxMin1, triBBoxMin2);
+							meshBBoxMax = max(triBBoxMax1, triBBoxMax2);
+							meshBBoxMin = min(triBBoxMin1, triBBoxMin2);
 
 							usedTriangles++;
 						}
@@ -1331,37 +1317,31 @@ void CDecalManager::FillBigDecalIndices(IRenderMesh* pRM, Vec3 vPos, float fRadi
 					iNextPosIndex2 = iPrefetchIndex2;
 				}
 
-				const hwvec3 v0 = v0Next;
-				const hwvec3 v1 = v1Next;
-				const hwvec3 v2 = v2Next;
+				const Vec3 v0 = v0Next;
+				const Vec3 v1 = v1Next;
+				const Vec3 v2 = v2Next;
 
 				// get triangle normal
-				hwvec3 v1v0Diff = HWVSub(v1, v0);
-				hwvec3 v2v0Diff = HWVSub(v2, v0);
-				hwvec3 vNormal = HWVCross(v1v0Diff, v2v0Diff);
-				simdf fDot = HWV3Dot(vNormal, vProjDir);
+				Vec3 v1v0Diff = v1 - v0;
+				Vec3 v2v0Diff = v2 - v0;
+				Vec3 vNormal = v1v0Diff ^ v2v0Diff;
+				float fDot = vNormal | vProjDir;
 
 				// test the face
-				if (SIMDFGreaterThan(fDot, fEpsilon))
+				if (fDot > fEpsilon)
 				{
-					if (Overlap::HWVSphere_TriangleFromPoints(hwSphere, v0, v1, v2))
+					if (Overlap::Sphere_Triangle(sphere, Triangle(v0, v1, v2)))
 					{
 						plstIndices->AddList(&pInds[i], 3);
 
-						hwvec3 triBBoxMax1 = HWVMax(v1, v0);
-						hwvec3 triBBoxMax2 = HWVMax(meshBBoxMax, v2);
+						Vec3 triBBoxMax1 = max(v1, v0);
+						Vec3 triBBoxMax2 = max(meshBBoxMax, v2);
 
-						hwvec3 triBBoxMin1 = HWVMin(v1, v0);
-						hwvec3 triBBoxMin2 = HWVMin(meshBBoxMin, v2);
+						Vec3 triBBoxMin1 = min(v1, v0);
+						Vec3 triBBoxMin2 = min(meshBBoxMin, v2);
 
-						meshBBoxMax = HWVMax(triBBoxMax1, triBBoxMax2);
-						meshBBoxMin = HWVMin(triBBoxMin1, triBBoxMin2);
-
-						//            triBBoxMax = HWVMax(triBBoxMax, v2);
-						//            triBBoxMin = HWVMin(triBBoxMin, v2);
-						//
-						//            meshBBoxMax = HWVMax(triBBoxMax, meshBBoxMax);
-						//            meshBBoxMin = HWVMin(triBBoxMin, meshBBoxMin);
+						meshBBoxMax = max(triBBoxMax1, triBBoxMax2);
+						meshBBoxMin = min(triBBoxMin1, triBBoxMin2);
 
 						usedTriangles++;
 					}
@@ -1375,8 +1355,8 @@ void CDecalManager::FillBigDecalIndices(IRenderMesh* pRM, Vec3 vPos, float fRadi
 			}
 		}
 
-		HWVSaveVecUnaligned(&meshBBox.max, meshBBoxMax);
-		HWVSaveVecUnaligned(&meshBBox.min, meshBBoxMin);
+		meshBBox.max = meshBBoxMax;
+		meshBBox.min = meshBBoxMin;
 	}
 
 	if (usedTrianglesTotal != 0)

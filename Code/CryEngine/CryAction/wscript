@@ -18,6 +18,8 @@ def build(bld):
 
 		use_module = [
 			'md5'
+		],
+		durango_use_module= [
+			'jsmn'
 		]
-
 	)

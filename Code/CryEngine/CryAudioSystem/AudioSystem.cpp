@@ -2,9 +2,11 @@
 
 #include "stdafx.h"
 #include "AudioSystem.h"
-#include "SoundCVars.h"
+#include "AudioCVars.h"
 #include "AudioProxy.h"
+#include "PropagationProcessor.h"
 #include <CrySystem/ITimer.h>
+#include <CryString/CryPath.h>
 
 ///////////////////////////////////////////////////////////////////////////
 CAudioThread::CAudioThread()
@@ -253,7 +255,7 @@ void CAudioSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 	case ESYSTEM_EVENT_LEVEL_UNLOAD:
 		{
 			// This event is issued in Editor and Game mode.
-			CATLAudioObject::CPropagationProcessor::s_bCanIssueRWIs = false;
+			CPropagationProcessor::s_bCanIssueRWIs = false;
 
 			SAudioManagerRequestDataInternal<eAudioManagerRequestType_ReleasePendingRays> requestData;
 			CAudioRequestInternal request(&requestData);
@@ -265,7 +267,7 @@ void CAudioSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 	case ESYSTEM_EVENT_LEVEL_LOAD_END:
 		{
 			// This event is issued in Editor and Game mode.
-			CATLAudioObject::CPropagationProcessor::s_bCanIssueRWIs = true;
+			CPropagationProcessor::s_bCanIssueRWIs = true;
 
 			break;
 		}
@@ -624,6 +626,14 @@ void CAudioSystem::GetAudioFileData(char const* const szFilename, SAudioFileData
 	CAudioRequestInternal request(&requestData);
 	request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking;
 	PushRequestInternal(request);
+#endif
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioSystem::GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioTriggerData)
+{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	m_atl.GetAudioTriggerData(audioTriggerId, audioTriggerData);
 #endif
 }
 

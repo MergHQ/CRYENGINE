@@ -9,10 +9,8 @@
 //    - 09/06/2011: Added to SDK - Sascha Hoba
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef _FLOWBASEXMLNODE_H_
-#define _FLOWBASEXMLNODE_H_
-
-#include "FlowBaseNode.h"
+#pragma once
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 #define ADD_BASE_INPUTS() \
   InputPortConfig_Void("Execute", _HELP("Execute Xml instruction"))
@@ -84,5 +82,3 @@ private:
 	GraphDocMap m_GraphDocMap;
 };
 extern CGraphDocManager* GDM;
-
-#endif //_FLOWBASEXMLNODE_H_

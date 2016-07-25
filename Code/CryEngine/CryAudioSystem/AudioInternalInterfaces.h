@@ -3,7 +3,7 @@
 #pragma once
 
 #include <CryAudio/IAudioSystem.h>
-#include <IAudioSystemImplementation.h>
+#include <IAudioImpl.h>
 #include <CryString/CryName.h>
 
 enum EAudioRequestInfoFlags : AudioEnumFlagsType
@@ -72,7 +72,7 @@ struct SAudioManagerRequestDataInternalBase : public SAudioRequestDataInternal
 
 //////////////////////////////////////////////////////////////////////////
 template<EAudioManagerRequestType T>
-struct SAudioManagerRequestDataInternal : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal final : public SAudioManagerRequestDataInternalBase
 {
 	SAudioManagerRequestDataInternal()
 		: SAudioManagerRequestDataInternalBase(T)
@@ -93,7 +93,7 @@ struct SAudioManagerRequestDataInternal : public SAudioManagerRequestDataInterna
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_SetAudioImpl> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_SetAudioImpl> final : public SAudioManagerRequestDataInternalBase
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestData<eAudioManagerRequestType_SetAudioImpl> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_SetAudioImpl)
@@ -110,7 +110,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_SetAudioImpl> :
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ReserveAudioObjectId> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ReserveAudioObjectId> final : public SAudioManagerRequestDataInternalBase
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestData<eAudioManagerRequestType_ReserveAudioObjectId> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_ReserveAudioObjectId)
@@ -134,7 +134,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ReserveAudioObj
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_AddRequestListener> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_AddRequestListener> final : public SAudioManagerRequestDataInternalBase
 {
 	// Used when constructed internally.
 	explicit SAudioManagerRequestDataInternal(
@@ -180,7 +180,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_AddRequestListe
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_RemoveRequestListener> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_RemoveRequestListener> final : public SAudioManagerRequestDataInternalBase
 {
 	// Used when constructed internally.
 	explicit SAudioManagerRequestDataInternal(void const* const _pObjectToListenTo, void(*_func)(SAudioRequestInfo const* const))
@@ -214,7 +214,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_RemoveRequestLi
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ParseControlsData> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ParseControlsData> final : public SAudioManagerRequestDataInternalBase
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestData<eAudioManagerRequestType_ParseControlsData> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_ParseControlsData)
@@ -233,7 +233,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ParseControlsDa
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ParsePreloadsData> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ParsePreloadsData> final : public SAudioManagerRequestDataInternalBase
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestData<eAudioManagerRequestType_ParsePreloadsData> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_ParsePreloadsData)
@@ -252,7 +252,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ParsePreloadsDa
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ClearControlsData> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ClearControlsData> final : public SAudioManagerRequestDataInternalBase
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestData<eAudioManagerRequestType_ClearControlsData> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_ClearControlsData)
@@ -269,7 +269,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ClearControlsDa
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ClearPreloadsData> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ClearPreloadsData> final : public SAudioManagerRequestDataInternalBase
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestData<eAudioManagerRequestType_ClearPreloadsData> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_ClearPreloadsData)
@@ -286,7 +286,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ClearPreloadsDa
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_PreloadSingleRequest> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_PreloadSingleRequest> final : public SAudioManagerRequestDataInternalBase
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestData<eAudioManagerRequestType_PreloadSingleRequest> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_PreloadSingleRequest)
@@ -305,7 +305,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_PreloadSingleRe
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_UnloadSingleRequest> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_UnloadSingleRequest> final : public SAudioManagerRequestDataInternalBase
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestData<eAudioManagerRequestType_UnloadSingleRequest> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_UnloadSingleRequest)
@@ -322,7 +322,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_UnloadSingleReq
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_UnloadAFCMDataByScope> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_UnloadAFCMDataByScope> final : public SAudioManagerRequestDataInternalBase
 {
 	// Used when constructed internally.
 	explicit SAudioManagerRequestDataInternal(EAudioDataScope const _dataScope)
@@ -352,7 +352,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_UnloadAFCMDataB
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_RefreshAudioSystem> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_RefreshAudioSystem> final : public SAudioManagerRequestDataInternalBase
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestData<eAudioManagerRequestType_RefreshAudioSystem> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_RefreshAudioSystem)
@@ -369,7 +369,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_RefreshAudioSys
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ReloadControlsData> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ReloadControlsData> final : public SAudioManagerRequestDataInternalBase
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestData<eAudioManagerRequestType_ReloadControlsData> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_ReloadControlsData)
@@ -388,7 +388,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ReloadControlsD
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_GetAudioFileData> : public SAudioManagerRequestDataInternalBase
+struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_GetAudioFileData> final : public SAudioManagerRequestDataInternalBase
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestDataInternal<eAudioManagerRequestType_GetAudioFileData> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_GetAudioFileData)
@@ -429,7 +429,7 @@ struct SAudioCallbackManagerRequestDataInternalBase : public SAudioRequestDataIn
 
 //////////////////////////////////////////////////////////////////////////
 template<EAudioCallbackManagerRequestType T>
-struct SAudioCallbackManagerRequestDataInternal : public SAudioCallbackManagerRequestDataInternalBase
+struct SAudioCallbackManagerRequestDataInternal final : public SAudioCallbackManagerRequestDataInternalBase
 {
 	SAudioCallbackManagerRequestDataInternal()
 		: SAudioCallbackManagerRequestDataInternalBase(T)
@@ -446,7 +446,7 @@ struct SAudioCallbackManagerRequestDataInternal : public SAudioCallbackManagerRe
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportStartedEvent> : public SAudioCallbackManagerRequestDataInternalBase
+struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportStartedEvent> final : public SAudioCallbackManagerRequestDataInternalBase
 {
 	explicit SAudioCallbackManagerRequestDataInternal(SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportStartedEvent> const* const pACMRData)
 		: SAudioCallbackManagerRequestDataInternalBase(eAudioCallbackManagerRequestType_ReportStartedEvent)
@@ -463,7 +463,7 @@ struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportFinishedEvent> : public SAudioCallbackManagerRequestDataInternalBase
+struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportFinishedEvent> final : public SAudioCallbackManagerRequestDataInternalBase
 {
 	explicit SAudioCallbackManagerRequestDataInternal(SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportFinishedEvent> const* const pACMRData)
 		: SAudioCallbackManagerRequestDataInternalBase(eAudioCallbackManagerRequestType_ReportFinishedEvent)
@@ -482,7 +482,7 @@ struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportVirtualizedEvent> : public SAudioCallbackManagerRequestDataInternalBase
+struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportVirtualizedEvent> final : public SAudioCallbackManagerRequestDataInternalBase
 {
 	explicit SAudioCallbackManagerRequestDataInternal(SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportVirtualizedEvent> const* const pACMRData)
 		: SAudioCallbackManagerRequestDataInternalBase(eAudioCallbackManagerRequestType_ReportVirtualizedEvent)
@@ -499,7 +499,7 @@ struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportPhysicalizedEvent> : public SAudioCallbackManagerRequestDataInternalBase
+struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportPhysicalizedEvent> final : public SAudioCallbackManagerRequestDataInternalBase
 {
 	explicit SAudioCallbackManagerRequestDataInternal(SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportPhysicalizedEvent> const* const pACMRData)
 		: SAudioCallbackManagerRequestDataInternalBase(eAudioCallbackManagerRequestType_ReportPhysicalizedEvent)
@@ -516,7 +516,7 @@ struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance> : public SAudioCallbackManagerRequestDataInternalBase
+struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance> final : public SAudioCallbackManagerRequestDataInternalBase
 {
 	explicit SAudioCallbackManagerRequestDataInternal(SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance> const* const pACMRData)
 		: SAudioCallbackManagerRequestDataInternalBase(eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance)
@@ -533,7 +533,7 @@ struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportStartedFile> : public SAudioCallbackManagerRequestDataInternalBase
+struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportStartedFile> final : public SAudioCallbackManagerRequestDataInternalBase
 {
 	explicit SAudioCallbackManagerRequestDataInternal(SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportStartedFile> const* const pACMRData)
 		: SAudioCallbackManagerRequestDataInternalBase(eAudioCallbackManagerRequestType_ReportStartedFile)
@@ -554,7 +554,7 @@ struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportStoppedFile> : public SAudioCallbackManagerRequestDataInternalBase
+struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportStoppedFile> final : public SAudioCallbackManagerRequestDataInternalBase
 {
 	explicit SAudioCallbackManagerRequestDataInternal(SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportStoppedFile> const* const pACMRData)
 		: SAudioCallbackManagerRequestDataInternalBase(eAudioCallbackManagerRequestType_ReportStoppedFile)
@@ -566,25 +566,6 @@ struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType
 
 	AudioStandaloneFileId const                       audioStandaloneFileInstanceId;
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> const file;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestDataInternal);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestDataInternal);
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportProcessedObstructionRay> : public SAudioCallbackManagerRequestDataInternalBase
-{
-	explicit SAudioCallbackManagerRequestDataInternal(SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportProcessedObstructionRay> const* const pACMRData)
-		: SAudioCallbackManagerRequestDataInternalBase(eAudioCallbackManagerRequestType_ReportProcessedObstructionRay)
-		, rayId(pACMRData->rayId)
-		, audioObjectId(pACMRData->audioObjectId)
-	{}
-
-	virtual ~SAudioCallbackManagerRequestDataInternal() {}
-
-	AudioObjectId const audioObjectId;
-	size_t const        rayId;
 
 	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestDataInternal);
 	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestDataInternal);
@@ -608,7 +589,7 @@ struct SAudioObjectRequestDataInternalBase : public SAudioRequestDataInternal
 
 //////////////////////////////////////////////////////////////////////////
 template<EAudioObjectRequestType T>
-struct SAudioObjectRequestDataInternal : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal final : public SAudioObjectRequestDataInternalBase
 {
 	SAudioObjectRequestDataInternal()
 		: SAudioObjectRequestDataInternalBase(T)
@@ -625,7 +606,7 @@ struct SAudioObjectRequestDataInternal : public SAudioObjectRequestDataInternalB
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_PrepareTrigger> : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_PrepareTrigger> final : public SAudioObjectRequestDataInternalBase
 {
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_PrepareTrigger> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_PrepareTrigger)
@@ -642,7 +623,7 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_PrepareTrigger> :
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_UnprepareTrigger> : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_UnprepareTrigger> final : public SAudioObjectRequestDataInternalBase
 {
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_UnprepareTrigger> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_UnprepareTrigger)
@@ -659,7 +640,7 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_UnprepareTrigger>
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_PlayFile> : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_PlayFile> final : public SAudioObjectRequestDataInternalBase
 {
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_PlayFile> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_PlayFile)
@@ -680,7 +661,7 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_PlayFile> : publi
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_StopFile> : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_StopFile> final : public SAudioObjectRequestDataInternalBase
 {
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_StopFile> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_StopFile)
@@ -697,7 +678,7 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_StopFile> : publi
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_ExecuteTrigger> : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_ExecuteTrigger> final : public SAudioObjectRequestDataInternalBase
 {
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTrigger> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_ExecuteTrigger)
@@ -716,7 +697,7 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_ExecuteTrigger> :
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_StopTrigger> : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_StopTrigger> final : public SAudioObjectRequestDataInternalBase
 {
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_StopTrigger> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_StopTrigger)
@@ -733,7 +714,7 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_StopTrigger> : pu
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetTransformation> : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetTransformation> final : public SAudioObjectRequestDataInternalBase
 {
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_SetTransformation> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_SetTransformation)
@@ -750,7 +731,7 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetTransformation
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetRtpcValue> : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetRtpcValue> final : public SAudioObjectRequestDataInternalBase
 {
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_SetRtpcValue)
@@ -769,7 +750,7 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetRtpcValue> : p
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetSwitchState> : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetSwitchState> final : public SAudioObjectRequestDataInternalBase
 {
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_SetSwitchState> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_SetSwitchState)
@@ -788,7 +769,7 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetSwitchState> :
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetVolume> : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetVolume> final : public SAudioObjectRequestDataInternalBase
 {
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_SetVolume> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_SetVolume)
@@ -805,7 +786,7 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetVolume> : publ
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetEnvironmentAmount> : public SAudioObjectRequestDataInternalBase
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetEnvironmentAmount> final : public SAudioObjectRequestDataInternalBase
 {
 	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironmentAmount> const* const pAORData)
 		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_SetEnvironmentAmount)
@@ -817,6 +798,23 @@ struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetEnvironmentAmo
 
 	AudioEnvironmentId const audioEnvironmentId;
 	float const              amount;
+
+	DELETE_DEFAULT_CONSTRUCTOR(SAudioObjectRequestDataInternal);
+	PREVENT_OBJECT_COPY(SAudioObjectRequestDataInternal);
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioObjectRequestDataInternal<eAudioObjectRequestType_ProcessPhysicsRay> final : public SAudioObjectRequestDataInternalBase
+{
+	explicit SAudioObjectRequestDataInternal(SAudioObjectRequestData<eAudioObjectRequestType_ProcessPhysicsRay> const* const pACMRData)
+		: SAudioObjectRequestDataInternalBase(eAudioObjectRequestType_ProcessPhysicsRay)
+		, pAudioRayInfo(pACMRData->pAudioRayInfo)
+	{}
+
+	virtual ~SAudioObjectRequestDataInternal() {}
+
+	CAudioRayInfo* const pAudioRayInfo;
 
 	DELETE_DEFAULT_CONSTRUCTOR(SAudioObjectRequestDataInternal);
 	PREVENT_OBJECT_COPY(SAudioObjectRequestDataInternal);
@@ -840,7 +838,7 @@ struct SAudioListenerRequestDataInternalBase : public SAudioRequestDataInternal
 
 //////////////////////////////////////////////////////////////////////////
 template<EAudioListenerRequestType T>
-struct SAudioListenerRequestDataInternal : public SAudioListenerRequestDataInternalBase
+struct SAudioListenerRequestDataInternal final : public SAudioListenerRequestDataInternalBase
 {
 	SAudioListenerRequestDataInternal()
 		: SAudioListenerRequestDataInternalBase(T)
@@ -857,7 +855,7 @@ struct SAudioListenerRequestDataInternal : public SAudioListenerRequestDataInter
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioListenerRequestDataInternal<eAudioListenerRequestType_SetTransformation> : public SAudioListenerRequestDataInternalBase
+struct SAudioListenerRequestDataInternal<eAudioListenerRequestType_SetTransformation> final : public SAudioListenerRequestDataInternalBase
 {
 	explicit SAudioListenerRequestDataInternal(SAudioListenerRequestData<eAudioListenerRequestType_SetTransformation> const* const pALRData)
 		: SAudioListenerRequestDataInternalBase(eAudioListenerRequestType_SetTransformation)

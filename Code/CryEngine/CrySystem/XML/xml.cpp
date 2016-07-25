@@ -889,24 +889,8 @@ static void AddTabsToString(XmlString& xml, int level)
 //////////////////////////////////////////////////////////////////////////
 bool CXmlNode::IsValidXmlString(const char* str) const
 {
-	int len = strlen(str);
-
-	{
-		// Prevents invalid characters not from standard ASCII set to propagate to xml.
-		// A bit of hack for efficiency, fixes input string in place.
-		char* s = const_cast<char*>(str);
-		for (int i = 0; i < len; i++)
-		{
-			if ((unsigned char)s[i] > 0x7F)
-				s[i] = ' ';
-		}
-	}
-
-	if (strcspn(str, "\"\'&><\n") == len)
-	{
-		return true;
-	}
-	return false;
+	const size_t len = strlen(str);
+	return strcspn(str, "\"\'&><\n") == len;
 }
 
 //////////////////////////////////////////////////////////////////////////

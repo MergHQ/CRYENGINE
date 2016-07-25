@@ -33,11 +33,11 @@ enum EERType
 	eERType_Rope,
 	eERType_PrismObject,
 	eERType_TerrainSector,
-	eERType_LightPropagationVolume,
+	eERType_Dummy_2, //!< Used to be eERType_LightPropagationVolume, preserve order for compatibility.
 	eERType_RenderProxy,
 	eERType_GameEffect,
 	eERType_BreakableGlass,
-	eERType_Dummy_3, //!< Used to be eERType_LightShape, preserve order for compatibility.
+	eERType_CloudBlocker,
 	eERType_MergedMesh,
 	eERType_GeomCache,
 	eERType_TypesNum, //!< Must be at the end - gives the total number of ER types.
@@ -595,6 +595,22 @@ struct ICloudRenderNode : public IRenderNode
 	// </interfuscator:shuffle>
 };
 
+struct SCloudBlockerProperties
+{
+	f32   decayStart;
+	f32   decayEnd;
+	f32   decayInfluence;
+	bool  bScreenspace;
+};
+
+//! Interface to the Cloud Blocker Render Node object.
+struct ICloudBlockerRenderNode : public IRenderNode
+{
+	// <interfuscator:shuffle>
+	virtual void SetProperties(const SCloudBlockerProperties& properties) = 0;
+	// </interfuscator:shuffle>
+};
+
 //! Interface to the Road Render Node object.
 struct IRoadRenderNode : public IRenderNode
 {
@@ -687,6 +703,14 @@ struct SFogVolumeProperties
 
 struct IFogVolumeRenderNode : public IRenderNode
 {
+	enum eFogVolumeType
+	{
+		eFogVolumeType_Ellipsoid = 0,
+		eFogVolumeType_Box = 1,
+
+		eFogVolumeType_Count,
+	};
+
 	// <interfuscator:shuffle>
 	virtual void            SetFogVolumeProperties(const SFogVolumeProperties& properties) = 0;
 	virtual const Matrix34& GetMatrix() const = 0;
@@ -954,21 +978,6 @@ struct IRopeRenderNode : public IRenderNode
 	virtual void SetRopeSound(char const* const pcSoundName, int unsigned const nSegmentToAttachTo, float const fOffset) = 0;
 	virtual void StopRopeSound() = 0;
 	virtual void ResetRopeSound() = 0;
-	// </interfuscator:shuffle>
-};
-
-//! Interface to the Light Propagation Volume Render Node object.
-struct ILPVRenderNode : public IRenderNode
-{
-	// <interfuscator:shuffle>
-	virtual bool  TryInsertLight(const CDLight& light) = 0;
-	virtual void  UpdateMetrics(const Matrix34& mx, const bool recursive = false) = 0;
-	virtual void  SetDensity(const float fDensity) = 0;
-	virtual float GetDensity() const = 0;
-	virtual void  EnableSpecular(const bool bEnabled) = 0;
-	virtual bool  IsSpecularEnabled() const = 0;
-	virtual void  GetMatrix(Matrix34& mxGrid) const = 0;
-	virtual bool  AutoFit(const DynArray<CDLight>& lightsToFit) = 0;
 	// </interfuscator:shuffle>
 };
 

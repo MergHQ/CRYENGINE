@@ -68,18 +68,13 @@ void CMFXFlowGraphEffect::Execute(const SMFXRunTimeEffectParams& params)
 	if (CMaterialEffectsCVars::Get().mfx_EnableFGEffects == 0)
 		return;
 
-	float distToPlayerSq = 0.f;
-	IActor* pAct = gEnv->pGame->GetIGameFramework()->GetClientActor();
-	if (pAct)
-	{
-		distToPlayerSq = (pAct->GetEntity()->GetWorldPos() - params.pos).GetLengthSquared();
-	}
+	const float distToCameraSq = (gEnv->pSystem->GetViewCamera().GetPosition() - params.pos).GetLengthSquared();
 
 	//Check max distance
-	if (m_flowGraphParams.maxdistSq == 0.f || distToPlayerSq <= m_flowGraphParams.maxdistSq)
+	if (m_flowGraphParams.maxdistSq == 0.f || distToCameraSq <= m_flowGraphParams.maxdistSq)
 	{
 		CMaterialFGManager* pMFXFGMgr = GetFGManager();
-		pMFXFGMgr->StartFGEffect(m_flowGraphParams, sqrt_tpl(distToPlayerSq));
+		pMFXFGMgr->StartFGEffect(m_flowGraphParams, sqrt_tpl(distToCameraSq));
 		//if(pMFXFGMgr->StartFGEffect(m_flowGraphParams.fgName))
 		//	CryLogAlways("Starting FG HUD effect %s (player distance %f)", m_flowGraphParams.fgName.c_str(),distToPlayer);
 	}

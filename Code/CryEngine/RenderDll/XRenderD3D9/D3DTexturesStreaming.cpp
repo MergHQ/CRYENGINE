@@ -831,7 +831,7 @@ void CTexture::StreamAssignPoolItem(STexPoolItem* pItem, int nMinMip)
 
 	m_pResourceViewData = new ResourceViewData();
 	m_pDevTexture = pItem->m_pDevTexture;
-	SetShaderResourceView((D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(GetDstFormat(), 0, m_nArraySize, 0, -1, m_bIsSRGB, false)).m_pDeviceResourceView, false);
+	SetShaderResourceView((D3DShaderResource*)GetResourceView(SResourceView::ShaderResourceView(GetDstFormat(), 0, m_nArraySize, 0, -1, m_bIsSRGB, false)), false);
 
 	SetMinLoadedMip(m_nMips - pItemOwner->m_nMips);
 	StreamActivateLod(nMinMip);

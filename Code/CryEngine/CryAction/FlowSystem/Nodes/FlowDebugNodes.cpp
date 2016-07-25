@@ -1,8 +1,9 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+
 #include <CryGame/IGameFramework.h>
-#include "FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_DrawSphere : public CFlowBaseNode<eNCT_Singleton>
 {

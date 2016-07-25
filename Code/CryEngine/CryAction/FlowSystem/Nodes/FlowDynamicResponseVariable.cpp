@@ -1,8 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
-#include <CrySystem/ISystem.h>
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryEntitySystem/IEntityProxy.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 

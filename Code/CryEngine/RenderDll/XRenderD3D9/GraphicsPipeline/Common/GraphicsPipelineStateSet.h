@@ -27,7 +27,7 @@ struct SGraphicsPipelineStateDescription
 		, primitiveType(0)
 		, _dummy(0)
 	{};
-	SGraphicsPipelineStateDescription(CRenderObject* pObj, const SShaderItem& shaderItem, EShaderTechniqueID technique, EVertexFormat vertexFormat, uint32 streamMask, int primitiveType);
+	SGraphicsPipelineStateDescription(CRenderObject* pObj, CRendElementBase* pRE, const SShaderItem& shaderItem, EShaderTechniqueID technique, EVertexFormat vertexFormat, uint32 streamMask, int primitiveType);
 
 	bool operator==(const SGraphicsPipelineStateDescription& other) const
 	{

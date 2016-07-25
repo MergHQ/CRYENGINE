@@ -112,16 +112,8 @@ extern "C" DLL_EXPORT void ModuleInitISystem(ISystem* pSystem, const char* modul
 	// Register All unit tests of this module.
 	if (pSystem)
 	{
-		CryUnitTest::Test* pTest = CryUnitTest::Test::m_pFirst;
-		for (; pTest != 0; pTest = pTest->m_pNext)
-		{
-			CryUnitTest::IUnitTestManager* pTestManager = pSystem->GetITestSystem()->GetIUnitTestManager();
-			if (pTestManager)
-			{
-				pTest->m_unitTestInfo.module = moduleName;
-				pTestManager->CreateTest(pTest->m_unitTestInfo);
-			}
-		}
+		if (CryUnitTest::IUnitTestManager* pTestManager = pSystem->GetITestSystem()->GetIUnitTestManager())
+			pTestManager->CreateTests(CryUnitTest::Test::m_pFirst, moduleName);
 	}
 	#endif //CRY_UNIT_TESTING
 }

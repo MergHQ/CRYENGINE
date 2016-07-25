@@ -29,11 +29,15 @@ void CParticleFeature::AddNoPropertiesLabel(Serialization::IArchive& ar)
 
 gpu_pfx2::IParticleFeatureGpuInterface* pfx2::CParticleFeature::GetGpuInterface()
 {
-
 	if (m_gpuInterfaceRef.feature == gpu_pfx2::eGpuFeatureType_None)
 		return nullptr;
-	if (!m_gpuInterfaceRef.gpuInterface)
-		m_gpuInterfaceRef.gpuInterface = gEnv->pRenderer->GetGpuParticleManager()->CreateParticleFeatureGpuInterface(m_gpuInterfaceRef.feature);
+	if (!m_gpuInterfaceNeeded)
+		m_gpuInterfaceRef.gpuInterface.reset();
+	else
+	{
+		if (!m_gpuInterfaceRef.gpuInterface)
+			m_gpuInterfaceRef.gpuInterface = gEnv->pRenderer->GetGpuParticleManager()->CreateParticleFeatureGpuInterface(m_gpuInterfaceRef.feature);
+	}
 	return m_gpuInterfaceRef.gpuInterface.get();
 }
 

@@ -574,66 +574,18 @@ private:
 	Self*        m_prev_intrusive;
 };
 
-template<class T>
-inline void reconstruct(T& t)
+//will clear the container and force the capacity to 0
+template<typename T, typename... Args>
+inline void free_container(T& container, Args&&... args)
 {
-	t.~T();
-	new(&t)T;
+	container.~T();
+	new(&container)T(std::forward<Args>(args) ...);
 }
 
-template<typename T, typename A1>
-inline void reconstruct(T& t, const A1& a1)
+template<typename T, typename... Args>
+inline void reconstruct(T& container, Args&&... args)
 {
-	t.~T();
-	new(&t)T(a1);
-}
-
-template<typename T, typename A1, typename A2>
-inline void reconstruct(T& t, const A1& a1, const A2& a2)
-{
-	t.~T();
-	new(&t)T(a1, a2);
-}
-
-template<typename T, typename A1, typename A2, typename A3>
-inline void reconstruct(T& t, const A1& a1, const A2& a2, const A3& a3)
-{
-	t.~T();
-	new(&t)T(a1, a2, a3);
-}
-
-template<typename T, typename A1, typename A2, typename A3, typename A4>
-inline void reconstruct(T& t, const A1& a1, const A2& a2, const A3& a3, const A4& a4)
-{
-	t.~T();
-	new(&t)T(a1, a2, a3, a4);
-}
-
-template<typename T, typename A1, typename A2, typename A3, typename A4, typename A5>
-inline void reconstruct(T& t, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5)
-{
-	t.~T();
-	new(&t)T(a1, a2, a3, a4, a5);
-}
-
-template<class T>
-inline void free_container(T& t)
-{
-	reconstruct(t);
-}
-
-template<class T, class A>
-inline void free_container(std::deque<T, A>& t)
-{
-	ScopedSwitchToGlobalHeap GlobalHeap;
-	reconstruct(t);
-}
-
-template<class K, class D, class H, class P, class A>
-inline void free_container(std::unordered_map<K, D, H, P, A>& t)
-{
-	ScopedSwitchToGlobalHeap GlobalHeap;
-	reconstruct(t);
+	free_container(container, std::forward<Args>(args) ...);
 }
 
 struct container_freer

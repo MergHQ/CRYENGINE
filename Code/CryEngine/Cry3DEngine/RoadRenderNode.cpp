@@ -479,8 +479,8 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 		pOD->m_fTempVars[0] = RendParams.pTerrainTexInfo->fTexOffsetX;
 		pOD->m_fTempVars[1] = RendParams.pTerrainTexInfo->fTexOffsetY;
 		pOD->m_fTempVars[2] = RendParams.pTerrainTexInfo->fTexScale;
-		pOD->m_fTempVars[3] = RendParams.pTerrainTexInfo->fTerrainMinZ;
-		pOD->m_fTempVars[4] = RendParams.pTerrainTexInfo->fTerrainMaxZ;
+		pOD->m_fTempVars[3] = 0;
+		pOD->m_fTempVars[4] = 0;
 	}
 
 	if (m_pRenderMesh)
@@ -623,4 +623,33 @@ void CRoadRenderNode::OffsetPosition(const Vec3& delta)
 {
 	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_WSBBox.Move(delta);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void CRoadRenderNode::FillBBox(AABB& aabb)
+{
+	aabb = CRoadRenderNode::GetBBox();
+}
+
+EERType CRoadRenderNode::GetRenderNodeType()
+{
+	return eERType_Road;
+}
+
+float CRoadRenderNode::GetMaxViewDist()
+{
+	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
+		return max(GetCVars()->e_ViewDistMin, CRoadRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());
+
+	return max(GetCVars()->e_ViewDistMin, CRoadRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatio * GetViewDistRatioNormilized());
+}
+
+Vec3 CRoadRenderNode::GetPos(bool) const
+{
+	return m_WSBBox.GetCenter();
+}
+
+IMaterial* CRoadRenderNode::GetMaterial(Vec3* pHitPos) const
+{
+	return m_pMaterial;
 }

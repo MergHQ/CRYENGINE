@@ -77,6 +77,15 @@ enum cull
 class CCamera
 {
 public:
+	enum EEye
+	{
+		eEye_Left  = 0,
+		eEye_Right,
+
+		eEye_eCount
+	};
+
+public:
 	ILINE static Matrix33 CreateOrientationYPR(const Ang3& ypr);
 	ILINE static Ang3     CreateAnglesYPR(const Matrix33& m);
 	ILINE static Ang3     CreateAnglesYPR(const Vec3& vdir, f32 r = 0);
@@ -172,7 +181,7 @@ public:
 	uint8 IsOBBVisible_EH(const Vec3& wpos, const OBB& obb, f32 uscale) const;
 
 	// constructor/destructor
-	CCamera() { m_Matrix.SetIdentity(); SetFrustum(640, 480); m_zrangeMin = 0.0f; m_zrangeMax = 1.0f;  m_pMultiCamera = NULL; m_pPortal = NULL; m_JustActivated = 0; m_nPosX = m_nPosY = m_nSizeX = m_nSizeY = 0; m_asymR = 0; m_asymL = 0; m_asymB = 0; m_asymT = 0; }
+	CCamera() { m_Matrix.SetIdentity(); SetFrustum(640, 480); SetEye(eEye_Left); m_zrangeMin = 0.0f; m_zrangeMax = 1.0f;  m_pMultiCamera = NULL; m_pPortal = NULL; m_JustActivated = 0; m_nPosX = m_nPosY = m_nSizeX = m_nSizeY = 0; m_asymR = 0; m_asymL = 0; m_asymB = 0; m_asymT = 0; }
 	~CCamera() {}
 
 	void GetFrustumVertices(Vec3* pVerts) const;
@@ -199,6 +208,10 @@ public:
 
 	void UpdateFrustum();
 	void GetMemoryUsage(ICrySizer* pSizer) const { /*nothing*/ }
+
+	EEye GetEye() const   { return m_eye; }
+	void SetEye(EEye eye) {	m_eye = eye; }
+
 private:
 	bool AdditionalCheck(const AABB& aabb) const;
 	bool AdditionalCheck(const Vec3& wpos, const OBB& obb, f32 uscale) const;
@@ -231,6 +244,7 @@ private:
 
 	int    m_nPosX, m_nPosY, m_nSizeX, m_nSizeY;
 
+	EEye   m_eye;
 	// OLD STUFF
 public:
 
@@ -546,7 +560,7 @@ ILINE void CCamera::CalcScreenBounds(int* vOut, const AABB* pAABB, int nWidth, i
 
 		fIntersect = (float)__fsel(-projected.w, 0.0f, 1.0f);
 
-		if (!fzero(fIntersect) && !fzero(projected.w))
+		if (fIntersect && projected.w)
 		{
 			projected.x /= projected.w;
 			projected.y /= projected.w;

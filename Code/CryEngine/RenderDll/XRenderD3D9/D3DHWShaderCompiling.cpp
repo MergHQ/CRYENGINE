@@ -727,7 +727,7 @@ EVertexFormat CHWShader_D3D::mfVertexFormat(bool& bUseTangents, bool& bUseLM, bo
 	bUseTangents = (nStream & VSM_TANGENTS) != 0;
 	bUseLM = false;
 	bUseHWSkin = (nStream & VSM_HWSKIN) != 0;
-	assert(eVFormat < eVF_Max);
+	assert(eVFormat < eVF_PreAllocated);
 
 	return eVFormat;
 }
@@ -2761,10 +2761,14 @@ bool CHWShader_D3D::mfUploadHW(SHWSInstance* pInst, byte* pBuf, uint32 nSize, CS
 #endif
 
 	// Assign name to Shader for enhanced debugging
-#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
+#if !defined(RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS)
 	char name[1024];
 	sprintf(name, "%s_%s(LT%x)@(RT%llx)(MD%x)(MDV%x)(GL%llx)(PSS%llx)", pSH->GetName(), m_EntryFunc.c_str(), pInst->m_Ident.m_LightMask, pInst->m_Ident.m_RTMask, pInst->m_Ident.m_MDMask, pInst->m_Ident.m_MDVMask, pInst->m_Ident.m_GLMask, pInst->m_Ident.m_pipelineState.opaque);
+	#if CRY_PLATFORM_WINDOWS
 	((ID3D11DeviceChild*)pInst->m_Handle.m_pShader->m_pHandle)->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+	#elif CRY_PLATFORM_ORBIS && !defined(CRY_USE_GNM_RENDERER)
+	((CCryDXOrbisShader*)pInst->m_Handle.m_pShader->m_pHandle)->DebugSetName(name);
+	#endif
 #endif
 
 	return (hr == S_OK);
@@ -3100,9 +3104,12 @@ void SShaderAsyncInfo::FlushPendingShaders()
 			Ident.m_MDMask = pAI->m_MDMask;
 			Ident.m_MDVMask = pAI->m_MDVMask;
 			CHWShader_D3D::SHWSInstance* pInst = pSH->mfGetInstance(pAI->m_pFXShader, pAI->m_nHashInstance, Ident);
-			if (pInst->m_pAsync != pAI)
-				CryFatalError("Shader instance async info doesn't match queued async info.");
-			pSH->mfAsyncCompileReady(pInst);
+			if (pInst)
+			{
+				if (pInst->m_pAsync != pAI)
+					CryFatalError("Shader instance async info doesn't match queued async info.");
+				pSH->mfAsyncCompileReady(pInst);
+			}
 		}
 	}
 }
@@ -3829,7 +3836,7 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 				return (pInst->m_Handle.m_pShader != NULL);
 			pCacheItem = NULL;
 		}
-		else if (pCacheItem && pCacheItem->m_Class == 255)
+		else if (pCacheItem && pCacheItem->m_Class == 255 && (nFlags & HWSF_PRECACHE) == 0)
 		{
 			byte* pData = (byte*)pCacheItem;
 			SAFE_DELETE_ARRAY(pData);

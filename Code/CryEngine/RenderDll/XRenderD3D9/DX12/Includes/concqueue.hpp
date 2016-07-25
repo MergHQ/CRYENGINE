@@ -8,6 +8,9 @@
 #include "concqueue-spsc.hpp"
 #include "concqueue-spsc-bounded.hpp"
 
+// Recover assert macro meaning.
+#include "CryCore/Assert/CryAssert.h"
+
 #define BoundMPMC   concqueue::mpmc_bounded_queue_t
 #define BoundSPSC   concqueue::spsc_bounded_queue_t
 #define UnboundMPSC concqueue::mpsc_queue_t

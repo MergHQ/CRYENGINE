@@ -267,7 +267,8 @@ public:
 	CSunShafts()
 	{
 		m_nID = ePFX_SunShafts;
-		m_pOcclQuery = 0;
+		m_pOcclQuery[0] = nullptr;
+		m_pOcclQuery[1] = nullptr;
 
 		AddParamBool("SunShafts_Active", m_pActive, 0);
 		AddParamInt("SunShafts_Type", m_pShaftsType, 0);                                          // default shafts type - highest quality
@@ -312,7 +313,7 @@ private:
 	// int, float, float, float, vec4
 	CEffectParam*    m_pShaftsType, * m_pShaftsAmount, * m_pRaysAmount, * m_pRaysAttenuation, * m_pRaysSunColInfluence, * m_pRaysCustomCol;
 	CEffectParam*    m_pScratchStrength, * m_pScratchThreshold, * m_pScratchIntensity;
-	COcclusionQuery* m_pOcclQuery;
+	COcclusionQuery* m_pOcclQuery[2];
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -505,7 +506,7 @@ public:
 	virtual bool        Preprocess();
 	virtual void        Render();
 	virtual void        Reset(bool bOnSpecChange = false);
-	bool                UpdateParams(SColorGradingMergeParams& pMergeParams);
+	bool                UpdateParams(SColorGradingMergeParams& pMergeParams, bool bUpdateChart = true);
 
 	virtual const char* GetName() const
 	{
@@ -703,6 +704,7 @@ private:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//! deprecated. this class will be removed in future.
 class CWaterRipples : public CPostEffect
 {
 	struct SWaterHit
@@ -745,21 +747,15 @@ public:
 		m_fSimGridSize = 25.0f;
 		m_fSimGridSnapRange = 5.0f;
 
-		for (uint32 i = 0; i < RT_COMMAND_BUF_COUNT; i++)
-			s_pWaterHits[i].reserve(16);
-
 		s_nUpdateMask = 0;
+
+		m_frameID = -1;
 	}
 
-	static void  CreatePhysCallbacks();
-	static void  ReleasePhysCallbacks();
 	virtual bool Preprocess();
 
 	// Enabled/Disabled if no hits on list to process - call from render thread
 	bool RT_SimulationStatus();
-
-	// Add hits to list - called from main thread
-	static void  AddHit(const Vec3& vPos, const float scale, const float strength);
 
 	virtual void Release()
 	{
@@ -776,12 +772,6 @@ public:
 	}
 
 	Vec4 GetLookupParams() { return s_vLookupParams; }
-
-	void DEBUG_DrawWaterHits();
-
-private:
-
-	static int OnEventPhysCollision(const struct EventPhys* pEvent);
 
 private:
 
@@ -806,9 +796,8 @@ private:
 	float                               m_fSimGridSize;
 	float                               m_fSimGridSnapRange;
 
-	static std::vector<SWaterHit>       s_pWaterHits[RT_COMMAND_BUF_COUNT];
+	std::vector<SWaterRippleInfo>       m_waterRipples;
 	static std::vector<SWaterHit>       s_pWaterHitsMGPU;
-	static std::vector<SWaterHitRecord> m_DebugWaterHits;
 	static Vec3                         s_CameraPos;
 	static Vec2                         s_SimOrigin;
 
@@ -819,6 +808,8 @@ private:
 	static bool                         s_bInitializeSim;
 	bool                                m_bSnapToCenter;
 	bool                                m_bInitializeSim;
+
+	int32                               m_frameID;
 
 };
 

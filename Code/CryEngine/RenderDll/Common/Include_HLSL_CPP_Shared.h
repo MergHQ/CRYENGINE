@@ -84,7 +84,6 @@ hlsl_cbuffer_register(PerInstanceConstantBuffer_Skin, register (b12), 12) // eCo
 
 hlsl_cbuffer_register(PerViewGlobalConstantBuffer, register (b13), 13) //eConstantBufferShaderSlot_PerView
 {
-	hlsl_float4(CV_WorldViewPos);
 	hlsl_matrix44(CV_ViewProjZeroMatr);
 	hlsl_float4(CV_AnimGenParams);
 
@@ -93,8 +92,10 @@ hlsl_cbuffer_register(PerViewGlobalConstantBuffer, register (b13), 13) //eConsta
 	hlsl_matrix44(CV_InvViewProj);
 	hlsl_matrix44(CV_PrevViewProjMatr);
 	hlsl_matrix44(CV_PrevViewProjNearestMatr);
+	hlsl_matrix34(CV_ScreenToWorldBasis);
 	hlsl_float4(CV_TessInfo);
 	hlsl_float4(CV_CamFrontVector);
+	hlsl_float4(CV_CamUpVector);
 
 	hlsl_float4(CV_ScreenSize);
 	hlsl_float4(CV_HPosScale);

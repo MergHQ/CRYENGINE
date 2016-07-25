@@ -50,9 +50,14 @@ CDevice* CDevice::Create(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatureLeve
 	}
 
 	UINT nodeMask = 0;
-	UINT nodeCount = pDevice12->GetNodeCount();
+	UINT nodeCount = 1;
+
 #ifdef CRY_USE_DX12_MULTIADAPTER
-	if ((nodeCount > 1) && CRenderer::CV_r_StereoEnableMgpu)
+	nodeCount = pDevice12->GetNodeCount();
+	if (!CRenderer::CV_r_StereoDevice || !CRenderer::CV_r_StereoEnableMgpu)
+		nodeCount = 1;
+
+	if (CRenderer::CV_r_StereoEnableMgpu && int(nodeCount) > 1)
 	{
 		nodeMask = (1UL << 2) - 1UL;
 		switch (nodeCount)
@@ -88,7 +93,7 @@ CDevice* CDevice::Create(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatureLeve
 #ifdef CRY_USE_DX12_MULTIADAPTER
 bool CDevice::IsMultiAdapter() const
 {
-	return ((m_nodeCount > 1) && CRenderer::CV_r_StereoEnableMgpu);
+	return CRenderer::CV_r_StereoEnableMgpu && (int(m_nodeCount) > 1);
 }
 
 ID3D12CommandQueue* CDevice::GetNativeObject(ID3D12CommandQueue* pQueue, UINT node) const
@@ -101,24 +106,14 @@ ID3D12CommandQueue* CDevice::GetNativeObject(ID3D12CommandQueue* pQueue, UINT no
 	return pQueue;
 }
 
-ID3D12Resource* CDevice::CreateBroadcastObject(ID3D12Resource* pResource) const
+ID3D12Resource* CDevice::CreateBroadcastObject(ID3D12Resource** pResources) const
 {
 	if (IsMultiAdapter())
 	{
-		return new BroadcastableD3D12Resource<2>(GetD3D12Device(), pResource, __uuidof(*pResource));
+		return new BroadcastableD3D12Resource<2>(GetD3D12Device(), pResources, __uuidof(**pResources));
 	}
 
-	return pResource;
-}
-
-ID3D12Resource* CDevice::CreateBroadcastObject(ID3D12Resource* pResource0, ID3D12Resource* pResourceR) const
-{
-	if (IsMultiAdapter())
-	{
-		return new BroadcastableD3D12Resource<2>(GetD3D12Device(), pResource0, pResourceR, __uuidof(*pResource0));
-	}
-
-	return pResource0;
+	return pResources[0];
 }
 
 bool CDevice::WaitForCompletion(ID3D12Fence* pFence, UINT64 fenceValue) const
@@ -140,10 +135,9 @@ HRESULT STDMETHODCALLTYPE CDevice::DuplicateNativeCommittedResource(
   _Out_ ID3D12Resource** ppOutputResource)
 {
 	D3D12_HEAP_PROPERTIES sHeap;
-	D3D12_HEAP_FLAGS eFlags;
 	D3D12_RESOURCE_DESC resourceDesc = pInputResource->GetDesc();
 
-	pInputResource->GetHeapProperties(&sHeap, &eFlags);
+	pInputResource->GetHeapProperties(&sHeap, nullptr);
 
 	D3D12_RESOURCE_STATES initialState =
 	  (sHeap.Type == D3D12_HEAP_TYPE_DEFAULT ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE :
@@ -172,15 +166,16 @@ HRESULT STDMETHODCALLTYPE CDevice::DuplicateNativeCommittedResource(
 	sHeap.CreationNodeMask = creationMask;
 	sHeap.VisibleNodeMask = visibilityMask;
 
+	// Can't use recycle-heap because it's a native resource (the recycle-heap consists of broadcast-resources)
 	ID3D12Device* realDevice = ((BroadcastableD3D12Device<2>*)m_pDevice.get())->m_Target;
-	ID3D12Resource* outputResource = NULL;
+	ID3D12Resource* outputResource = nullptr;
 	HRESULT result = realDevice->CreateCommittedResource(
-	  &sHeap,
-	  D3D12_HEAP_FLAG_NONE,
-	  &resourceDesc,
-	  initialState,
-	  nullptr,
-	  IID_PPV_ARGS(&outputResource));
+		&sHeap,
+		D3D12_HEAP_FLAG_NONE,
+		&resourceDesc,
+		initialState,
+		nullptr,
+		IID_PPV_ARGS(&outputResource));
 
 	if (result == S_OK && outputResource != nullptr)
 	{
@@ -192,6 +187,46 @@ HRESULT STDMETHODCALLTYPE CDevice::DuplicateNativeCommittedResource(
 	return result;
 }
 #endif
+
+//---------------------------------------------------------------------------------------------------------------------
+HRESULT STDMETHODCALLTYPE CDevice::DuplicateCommittedResource(
+  _In_ ID3D12Resource* pInputResource,
+  _In_ D3D12_RESOURCE_STATES OutputState,
+  _Out_ ID3D12Resource** ppOutputResource)
+{
+	D3D12_HEAP_PROPERTIES sHeap;
+	D3D12_RESOURCE_DESC resourceDesc = pInputResource->GetDesc();
+
+	pInputResource->GetHeapProperties(&sHeap, nullptr);
+
+	ID3D12Resource* outputResource = nullptr;
+	HRESULT result = CreateOrReuseCommittedResource(
+		&sHeap,
+		D3D12_HEAP_FLAG_NONE,
+		&resourceDesc,
+		OutputState,
+		nullptr,
+		IID_PPV_ARGS(&outputResource));
+
+	if (result == S_OK && outputResource != nullptr)
+	{
+#ifdef CRY_USE_DX12_MULTIADAPTER
+		if (IsMultiAdapter())
+		{
+			((BroadcastableD3D12Device<2>*)m_pDevice.get())->DuplicateMetaData(
+				pInputResource,
+				outputResource
+			);
+		}
+#endif
+
+		*ppOutputResource = outputResource;
+
+		return S_OK;
+	}
+
+	return result;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -206,6 +241,7 @@ CDevice::CDevice(ID3D12Device* d3d12Device, D3D_FEATURE_LEVEL featureLevel, UINT
 	, m_UnorderedAccessDescriptorCache(this)
 	, m_DepthStencilDescriptorCache(this)
 	, m_RenderTargetDescriptorCache(this)
+	, m_ResourceDescriptorScratchSpace(this)
 #if defined(_ALLOW_INITIALIZER_LISTS)
 	, m_GlobalDescriptorHeaps{{ this }, {
 			this
@@ -262,6 +298,14 @@ CDevice::CDevice(ID3D12Device* d3d12Device, D3D_FEATURE_LEVEL featureLevel, UINT
 		m_RenderTargetDescriptorCache.Init(desc);
 	}
 
+	// init cpu accessible descriptor scratch space
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC desc = { D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, m_nodeMask };
+
+		m_ResourceDescriptorScratchSpace.Init(desc);
+		m_ResourceDescriptorScratchSpace.AddRef(); // Refcount 1 to make sure CDescriptorBlock won't think it's the only owner
+	}
+
 	// init global descriptor heaps
 
 	static uint32 globalHeapSizes[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] =
@@ -303,7 +347,7 @@ void CDevice::RequestUploadHeapMemory(UINT64 size, DX12_PTR(ID3D12Resource)& res
 {
 	ID3D12Resource* resource = NULL;
 
-	if (S_OK != m_pDevice->CreateCommittedResource(
+	if (S_OK != CreateOrReuseCommittedResource(
 	      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 	      D3D12_HEAP_FLAG_NONE,
 	      &CD3DX12_RESOURCE_DESC::Buffer(size),
@@ -617,6 +661,9 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateOrReuseStagingResource(
 	D3D12_HEAP_TYPE heapType = Upload ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_READBACK;
 
 	pInputResource->GetHeapProperties(&sHeap, nullptr);
+
+	// NOTE: this is a staging resource, no flags permitting views are allowed
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
 
 	ID3D12Resource* stagingResource = NULL;
 	HRESULT result = CreateOrReuseCommittedResource(

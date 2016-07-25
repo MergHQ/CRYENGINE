@@ -60,7 +60,7 @@ namespace CryEngine.Sydewinder
 		public override Vec3 Move()
 		{
 			if (CoolDownTime > 0)
-				CoolDownTime -= FrameTime.Current;
+				CoolDownTime -= FrameTime.Delta;
 
 			return base.Move();
 		}
@@ -112,7 +112,7 @@ namespace CryEngine.Sydewinder
 		public override Vec3 Move()
 		{
 			if (CoolDownTime > 0)
-				CoolDownTime -= FrameTime.Current;
+				CoolDownTime -= FrameTime.Delta;
 
 			return base.Move();
 		}
@@ -153,7 +153,7 @@ namespace CryEngine.Sydewinder
 		{			
 			if (LifeTime > 0) 
 			{
-				LifeTime -= FrameTime.Current;			
+				LifeTime -= FrameTime.Delta;			
 			}
 			else				
 				GamePool.FlagForPurge(ID); // Let destroy current projectile.

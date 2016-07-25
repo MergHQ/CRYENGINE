@@ -12,11 +12,10 @@
 
  *********************************************************************/
 
-#ifndef _FLOWMODULENODES_H_
-#define _FLOWMODULENODES_H_
+#pragma once
 
 #include <CryFlowGraph/IFlowGraphModuleManager.h>
-#include "../Nodes/FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 //
@@ -297,4 +296,3 @@ private:
 
 	static std::map<int, TModuleInstanceId> m_ids;
 };
-#endif //_FLOWMODULENODES_H_

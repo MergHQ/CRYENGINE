@@ -4,17 +4,22 @@
 #include "DevBuffer.h"
 #include "DriverD3D.h"
 
-template<typename T>
-class CTypedConstantBuffer
+template<typename T, size_t Alignment = CRY_PLATFORM_ALIGNMENT>
+class CTypedConstantBuffer : private NoCopy
 {
 protected:
-	T                  m_hostBuffer;
+	T&                 m_hostBuffer;
 	CConstantBufferPtr m_constantBuffer;
 
+private:
+	// NOTE: enough memory to hold an aligned struct size + the adjustment of a possible unaligned start
+	uint8              m_hostMemory[((sizeof(T) + (Alignment - 1)) & (~(Alignment - 1))) + (Alignment - 1)];
+	T& AlignHostBuffer() { return *reinterpret_cast<T*>(Align(uintptr_t(m_hostMemory), Alignment)); }
+
 public:
-	CTypedConstantBuffer() { ZeroStruct(m_hostBuffer); }
-	CTypedConstantBuffer(const CTypedConstantBuffer<T>& cb) : m_constantBuffer(nullptr) { m_hostBuffer = cb.m_hostBuffer; }
-	CTypedConstantBuffer(CConstantBufferPtr incb) : m_constantBuffer(incb) {}
+	CTypedConstantBuffer() : m_hostBuffer(AlignHostBuffer()) { ZeroStruct(m_hostBuffer); }
+	CTypedConstantBuffer(const CTypedConstantBuffer<T>& cb) : m_hostBuffer(AlignHostBuffer()), m_constantBuffer(nullptr) { m_hostBuffer = cb.m_hostBuffer; }
+	CTypedConstantBuffer(CConstantBufferPtr incb) : m_hostBuffer(AlignHostBuffer()), m_constantBuffer(incb) {}
 
 	bool               IsDeviceBufferAllocated() { return m_constantBuffer != nullptr; }
 	CConstantBufferPtr GetDeviceConstantBuffer()
@@ -34,7 +39,7 @@ public:
 	}
 	void CopyToDevice()
 	{
-		m_constantBuffer->UpdateBuffer(&m_hostBuffer, sizeof(m_hostBuffer));
+		m_constantBuffer->UpdateBuffer(&m_hostBuffer, Align(sizeof(m_hostBuffer), Alignment));
 	}
 
 	T*       operator->()       { return &m_hostBuffer; }

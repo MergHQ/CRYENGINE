@@ -37,6 +37,7 @@ protected:
 
 private:
 	CBootProfilerSession* m_pCurrentSession;
+	CBootProfilerSession* m_pPreviousSession;
 
 	static int            CV_sys_bp_frames;
 	static float          CV_sys_bp_frames_threshold;

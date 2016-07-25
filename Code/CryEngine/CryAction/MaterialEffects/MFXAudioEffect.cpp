@@ -164,7 +164,7 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 			MaterialEffectsUtils::PrepareForAudioTriggerExecution<IAudioProxy>(pIAudioProxy, m_audioParams, params);
 
 			pIAudioProxy->SetPosition(params.pos);
-			pIAudioProxy->SetOcclusionType(eAudioOcclusionType_SingleRay);
+			pIAudioProxy->SetOcclusionType(eAudioOcclusionType_Low);
 			pIAudioProxy->SetCurrentEnvironments();
 			pIAudioProxy->ExecuteTrigger(m_audioParams.trigger.GetTriggerId());
 		}
@@ -208,9 +208,9 @@ void CMFXAudioEffect::LoadParamsFromXml(const XmlNodeRef& paramsNode)
 {
 	// Xml data format
 	/*
-	   <Audio trigger=”footstep”>
-	   <Switch name=”Switch1” state=”switch1_state” />
-	   <Switch name=”Switch2” state=”swtich2_state” />
+	   <Audio trigger="footstep">
+	   <Switch name="Switch1" state="switch1_state" />
+	   <Switch name="Switch2" state="swtich2_state" />
 	   <Switch ... />
 	   </Audio>
 	 */

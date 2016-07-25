@@ -47,25 +47,6 @@ struct SClassArg<SNullType>
 	typedef SNullType TClassTypePtr;
 };
 
-//! Template compile time function to find out of two types are convert-able.
-template<typename T1, typename T2>
-struct is_convertible
-{
-private:
-	struct True_ { char x[2]; };
-	struct False_ {};
-
-	static True_  helper(T2 const&);
-	static False_ helper(...);
-
-public:
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO // use a compiler intrinsic if available
-	enum { value = __is_convertible_to(T1, T2) };
-#else
-	enum { value = sizeof(True_) == sizeof(is_convertible::helper(*((T1*)(NULL)))) };
-#endif
-};
-
 //! Template helper to find out of a function pointer is a member function pointer or a free function pointer.
 //! The FUNCTION_PTR_TYPE will yield an object of the type FreeFunctionPtrTrait or MemberFunctionPtrTrait which
 //! can be used to select an overloaded function at compile time.
@@ -589,122 +570,122 @@ struct SVerifyParameter11
 template<typename C, typename P0, typename T>
 void VerifyParameter_1(void (C::* func)(P0), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename C, typename P0, typename P1, typename T>
 void VerifyParameter_2(void (C::* func)(P0, P1), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename C, typename P0, typename P1, typename P2, typename T>
 void VerifyParameter_3(void (C::* func)(P0, P1, P2), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename C, typename P0, typename P1, typename P2, typename P3, typename T>
 void VerifyParameter_4(void (C::* func)(P0, P1, P2, P3), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename T>
 void VerifyParameter_5(void (C::* func)(P0, P1, P2, P3, P4), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename T>
 void VerifyParameter_6(void (C::* func)(P0, P1, P2, P3, P4, P5), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename T>
 void VerifyParameter_7(void (C::* func)(P0, P1, P2, P3, P4, P5, P6), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename T>
 void VerifyParameter_8(void (C::* func)(P0, P1, P2, P3, P4, P5, P6, P7), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename T>
 void VerifyParameter_9(void (C::* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9, typename T>
 void VerifyParameter_10(void (C::* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8, P9), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P9, typename T::_t9>::value), ERROR_TENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P9, typename T::_t9>::value), ERROR_TENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9, typename P10, typename T>
 void VerifyParameter_11(void (C::* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P9, typename T::_t9>::value), ERROR_TENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P10, typename T::_t10>::value), ERROR_ELEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P9, typename T::_t9>::value), ERROR_TENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P10, typename T::_t10>::value), ERROR_ELEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -712,121 +693,121 @@ void VerifyParameter_11(void (C::* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8, P9,
 template<typename P0, typename T>
 void VerifyParameter_1(void (* func)(P0), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename P0, typename P1, typename T>
 void VerifyParameter_2(void (* func)(P0, P1), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename P0, typename P1, typename P2, typename T>
 void VerifyParameter_3(void (* func)(P0, P1, P2), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename P0, typename P1, typename P2, typename P3, typename T>
 void VerifyParameter_4(void (* func)(P0, P1, P2, P3), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename P0, typename P1, typename P2, typename P3, typename P4, typename T>
 void VerifyParameter_5(void (* func)(P0, P1, P2, P3, P4), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename T>
 void VerifyParameter_6(void (* func)(P0, P1, P2, P3, P4, P5), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename T>
 void VerifyParameter_7(void (* func)(P0, P1, P2, P3, P4, P5, P6), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename T>
 void VerifyParameter_8(void (* func)(P0, P1, P2, P3, P4, P5, P6, P7), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename T>
 void VerifyParameter_9(void (* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9, typename T>
 void VerifyParameter_10(void (* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8, P9), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P9, typename T::_t9>::value), ERROR_TENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P9, typename T::_t9>::value), ERROR_TENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9, typename P10, typename T>
 void VerifyParameter_11(void (* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10), const T&)
 {
-	STATIC_CHECK((is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P9, typename T::_t9>::value), ERROR_TENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
-	STATIC_CHECK((is_convertible<P10, typename T::_t10>::value), ERROR_ELEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P0, typename T::_t0>::value), ERROR_FIRST_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P1, typename T::_t1>::value), ERROR_SECOND_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P2, typename T::_t2>::value), ERROR_THIRD_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P3, typename T::_t3>::value), ERROR_FORTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P4, typename T::_t4>::value), ERROR_FIFTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P5, typename T::_t5>::value), ERROR_SIXTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P6, typename T::_t6>::value), ERROR_SEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P7, typename T::_t7>::value), ERROR_EIGHT_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P8, typename T::_t8>::value), ERROR_NINETH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P9, typename T::_t9>::value), ERROR_TENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
+	STATIC_CHECK((std::is_convertible<P10, typename T::_t10>::value), ERROR_ELEVENTH_PARAMETER_IS_OF_A_DIFFERENT_TYPE_FOR_JOBMANAGER_FUNCTION);
 }
 
 //! Template-Utility to verify the this pointer is correct.
@@ -836,105 +817,23 @@ struct SVerifyThisPtr
 	typedef T thisT;
 };
 
+// Using c++11 variadic templates
+
 ///////////////////////////////////////////////////////////////////////////////
 // Template-Overload functions to verify the correct this pointer for a member functions pointer
-template<typename C, typename T>
-void VerifyThisPtr(void (C::* func)(), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
-
-template<typename C, typename P0, typename T>
-void VerifyThisPtr(void (C::* func)(P0), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
-
-template<typename C, typename P0, typename P1, typename T>
-void VerifyThisPtr(void (C::* func)(P0, P1), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
-
-template<typename C, typename P0, typename P1, typename P2, typename T>
-void VerifyThisPtr(void (C::* func)(P0, P1, P2), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
-
-template<typename C, typename P0, typename P1, typename P2, typename P3, typename T>
-void VerifyThisPtr(void (C::* func)(P0, P1, P2, P3), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
-
-template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename T>
-void VerifyThisPtr(void (C::* func)(P0, P1, P2, P3, P4), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
-
-template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename T>
-void VerifyThisPtr(void (C::* func)(P0, P1, P2, P3, P4, P5), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
-
-template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename T>
-void VerifyThisPtr(void (C::* func)(P0, P1, P2, P3, P4, P5, P6), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
-
-template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename T>
-void VerifyThisPtr(void (C::* func)(P0, P1, P2, P3, P4, P5, P6, P7), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
-
-template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename T>
-void VerifyThisPtr(void (C::* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
-
-template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9, typename T>
-void VerifyThisPtr(void (C::* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8, P9), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
-
-template<typename C, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9, typename P10, typename T>
-void VerifyThisPtr(void (C::* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10), const T&)
-{ STATIC_CHECK((is_convertible<C, typename T::thisT>::value), THIS_POINTER_IN_JOB_HAS_WRONG_TYPE); }
+template<typename C, typename ... Params, typename T>
+void VerifyThisPtr(void (C::* func)(Params ...), const T&)
+{
+	static_assert(std::is_same<C, typename T::thisT>::value, "THIS_POINTER_IN_JOB_HAS_WRONG_TYPE");
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Template-Overload functions to verify that no this pointer is passed to a free function
-template<typename T>
-void VerifyThisPtr(void (* func)(), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
-
-template<typename P0, typename T>
-void VerifyThisPtr(void (* func)(P0), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
-
-template<typename P0, typename P1, typename T>
-void VerifyThisPtr(void (* func)(P0, P1), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
-
-template<typename P0, typename P1, typename P2, typename T>
-void VerifyThisPtr(void (* func)(P0, P1, P2), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
-
-template<typename P0, typename P1, typename P2, typename P3, typename T>
-void VerifyThisPtr(void (* func)(P0, P1, P2, P3), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
-
-template<typename P0, typename P1, typename P2, typename P3, typename P4, typename T>
-void VerifyThisPtr(void (* func)(P0, P1, P2, P3, P4), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
-
-template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename T>
-void VerifyThisPtr(void (* func)(P0, P1, P2, P3, P4, P5), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
-
-template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename T>
-void VerifyThisPtr(void (* func)(P0, P1, P2, P3, P4, P5, P6), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
-
-template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename T>
-void VerifyThisPtr(void (* func)(P0, P1, P2, P3, P4, P5, P6, P7), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
-
-template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename T>
-void VerifyThisPtr(void (* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
-
-template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9, typename T>
-void VerifyThisPtr(void (* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8, P9), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
-
-template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9, typename P10, typename T>
-void VerifyThisPtr(void (* func)(P0, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10), const T&)
-{ STATIC_CHECK((is_convertible<SNullType, typename T::thisT>::value), PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED); }
+template<typename ... Params, typename T>
+void VerifyThisPtr(void (* func)(Params ...), const T&)
+{
+	static_assert(std::is_same<SNullType, typename T::thisT>::value, "PASSING_A_THIS_POINTER_TO_A_FREE_FUNCTION_IS_NOT_SUPPORTED");
+}
 
 } // namespace Detail
 } // namespace JobManager

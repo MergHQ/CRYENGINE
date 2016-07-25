@@ -8,7 +8,7 @@ Description: VehicleWeapon Implementation
 
 -------------------------------------------------------------------------
 History:
-- 20:04:2006   13:01 : Created by Márcio Martins
+- 20:04:2006   13:01 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #ifndef __VEHICLE_WEAPON_H__

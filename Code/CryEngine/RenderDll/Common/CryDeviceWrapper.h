@@ -267,7 +267,8 @@ public:
 	virtual void RSGetScissorRects_PreCallHook(UINT* pNumRects, D3D11_RECT* pRects)                                                                                                                                                                                                                           {}
 
 	virtual void CopyResource_PreCallHook(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource)                                                                                                                                                                                                         {}
-	virtual void CopySubresourceRegion_PreCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox)                                                                                           {}
+	virtual void CopySubresourceRegion_PreCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox) {}
+	virtual void CopySubresourcesRegion_PreCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT NumSubresources) {}
 	virtual void UpdateSubresource_PreCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, const D3D11_BOX* pDstBox, const void* pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch)                                                                                                                       {}
 
 	virtual void CopyStructureCount_PreCallHook(ID3D11Buffer* pDstBuffer, UINT DstAlignedByteOffset, ID3D11UnorderedAccessView* pSrcView)                                                                                                                                                                     {}
@@ -297,9 +298,10 @@ public:
 
 	#if defined(DEVICE_SUPPORTS_D3D11_1)
 	virtual void CopySubresourceRegion1_PreCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags) {}
-	virtual void UpdateSubresource1_PreCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, const D3D11_BOX* pDstBox, const void* pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch, UINT CopyFlags)                             {}
-	virtual void DiscardResource_PreCallHook(ID3D11Resource* pResource)                                                                                                                                                              {}
-	virtual void DiscardView_PreCallHook(ID3D11View* pResourceView)                                                                                                                                                                  {}
+	virtual void CopySubresourcesRegion1_PreCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags, UINT NumSubresources) {}
+	virtual void UpdateSubresource1_PreCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, const D3D11_BOX* pDstBox, const void* pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch, UINT CopyFlags) {}
+	virtual void DiscardResource_PreCallHook(ID3D11Resource* pResource) {}
+	virtual void DiscardView_PreCallHook(ID3D11View* pResourceView) {}
 	#endif
 
 	#if defined(DEVICE_SUPPORTS_D3D11_1) || defined(CRY_USE_DX12)
@@ -329,8 +331,10 @@ public:
 	virtual void ClearRectsUnorderedAccessViewFloat_PreCallHook(ID3D11UnorderedAccessView* pUnorderedAccessView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects)                                                                                     {}
 	virtual void ClearRectsDepthStencilView_PreCallHook(ID3D11DepthStencilView* pDepthStencilView, UINT ClearFlags, FLOAT Depth, UINT8 Stencil, UINT NumRects, const D3D11_RECT* pRects)                                                                             {}
 
+	virtual void CopyResourceOvercross_PreCallHook(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource) {}
 	virtual void JoinSubresourceRegion_PreCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResourceL, ID3D11Resource* pSrcResourceR, UINT SrcSubresource, const D3D11_BOX* pSrcBox)                  {}
 	#if defined(DEVICE_SUPPORTS_D3D11_1)
+	virtual void CopyResourceOvercross1_PreCallHook(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource, UINT CopyFlags) {}
 	virtual void JoinSubresourceRegion1_PreCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResourceL, ID3D11Resource* pSrcResourceR, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags) {}
 	#endif // DEVICE_SUPPORTS_D3D11_1
 
@@ -340,15 +344,8 @@ public:
 	virtual void MapStagingResource_PreCallHook(ID3D11Resource* pStagingResource, BOOL Upload, void** ppStagingMemory)                             {}
 	virtual void UnmapStagingResource_PreCallHook(ID3D11Resource* pStagingResource, BOOL Upload)                                                   {}
 
-	// All devices implement the most efficient versions, current versions are in DeviceManager
-	inline void GetTimestampFrequency_PreCallHook()                                     {}
-	inline void ResetTimestamps_PreCallHook()                                           {}
-	inline void ReserveTimestamp_PreCallHook()                                          {}
-	inline void InsertTimestamp_PreCallHook(INT index, INT commandQueue)                {}
-	inline void ResolveTimestamps_PreCallHook()                                         {}
-	inline void QueryTimestamp_PreCallHook(INT index, UINT64* mem)                      {}
-	inline void QueryTimestamps_PreCallHook(INT firstIndex, INT lastIndex, UINT64* mem) {}
-	inline void QueryTimestampBuffer_PreCallHook(ID3D11Buffer** ppTimestampBuffer)      {}
+	virtual void MappedWriteToSubresource_PreCallHook(ID3D11Resource* pResource, UINT Subresource, SIZE_T Offset, SIZE_T Size, D3D11_MAP MapType, const void* pData, UINT numDataBlocks) {}
+	virtual void MappedReadFromSubresource_PreCallHook(ID3D11Resource* pResource, UINT Subresource, SIZE_T Offset, SIZE_T Size, D3D11_MAP MapType, void* pData, UINT numDataBlocks) {}
 
 	#ifndef CRY_PLATFORM_DURANGO
 	virtual void InsertFence_PreCallHook()                   {}
@@ -377,8 +374,6 @@ public:
 	virtual void CreatePlacementTexture1D_PreCallHook(const D3D11_TEXTURE1D_DESC* pDesc, UINT TileModeIndex, UINT Pitch, void* pCpuVirtualAddress, ID3D11Texture1D** ppTexture1D) {}
 	virtual void CreatePlacementTexture2D_PreCallHook(const D3D11_TEXTURE2D_DESC* pDesc, UINT TileModeIndex, UINT Pitch, void* pCpuVirtualAddress, ID3D11Texture2D** ppTexture2D) {}
 	virtual void CreatePlacementTexture3D_PreCallHook(const D3D11_TEXTURE3D_DESC* pDesc, UINT TileModeIndex, UINT Pitch, void* pCpuVirtualAddress, ID3D11Texture3D** ppTexture3D) {}
-
-	virtual void GetTimestamps_PreCallHook(UINT64* pGpuTimestamp, UINT64* pCpuRdtscTimestamp)                                                                                     {}
 
 	/********************************************/
 	/*** ID3DPerformanceDeviceContext methods ***/
@@ -669,7 +664,8 @@ public:
 	virtual void RSGetScissorRects_PostCallHook(UINT* pNumRects, D3D11_RECT* pRects)                                                                                                                                                                                                                           {}
 
 	virtual void CopyResource_PostCallHook(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource)                                                                                                                                                                                                         {}
-	virtual void CopySubresourceRegion_PostCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox)                                                                                           {}
+	virtual void CopySubresourceRegion_PostCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox) {}
+	virtual void CopySubresourcesRegion_PostCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT NumSubresources) {}
 	virtual void UpdateSubresource_PostCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, const D3D11_BOX* pDstBox, const void* pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch)                                                                                                                       {}
 
 	virtual void CopyStructureCount_PostCallHook(ID3D11Buffer* pDstBuffer, UINT DstAlignedByteOffset, ID3D11UnorderedAccessView* pSrcView)                                                                                                                                                                     {}
@@ -699,9 +695,10 @@ public:
 
 	#if defined(DEVICE_SUPPORTS_D3D11_1)
 	virtual void CopySubresourceRegion1_PostCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags) {}
-	virtual void UpdateSubresource1_PostCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, const D3D11_BOX* pDstBox, const void* pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch, UINT CopyFlags)                             {}
-	virtual void DiscardResource_PostCallHook(ID3D11Resource* pResource)                                                                                                                                                              {}
-	virtual void DiscardView_PostCallHook(ID3D11View* pResourceView)                                                                                                                                                                  {}
+	virtual void CopySubresourcesRegion1_PostCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags, UINT NumSubresources) {}
+	virtual void UpdateSubresource1_PostCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, const D3D11_BOX* pDstBox, const void* pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch, UINT CopyFlags) {}
+	virtual void DiscardResource_PostCallHook(ID3D11Resource* pResource) {}
+	virtual void DiscardView_PostCallHook(ID3D11View* pResourceView) {}
 	#endif
 
 	#if defined(DEVICE_SUPPORTS_D3D11_1) || defined(CRY_USE_DX12)
@@ -726,33 +723,26 @@ public:
 	virtual void DiscardView1_PostCallHook(ID3D11View* pResourceView, const D3D11_RECT* pRects, UINT NumRects)                                                    {}
 	#endif // DEVICE_SUPPORTS_D3D11_1
 
-	// DX12-specific with DX11-fallback
 	virtual void ClearRectsRenderTargetView_PostCallHook(ID3D11RenderTargetView* pRenderTargetView, const FLOAT ColorRGBA[4], UINT NumRects, const D3D11_RECT* pRects)                                                                                                {}
 	virtual void ClearRectsUnorderedAccessViewUint_PostCallHook(ID3D11UnorderedAccessView* pUnorderedAccessView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects)                                                                                       {}
 	virtual void ClearRectsUnorderedAccessViewFloat_PostCallHook(ID3D11UnorderedAccessView* pUnorderedAccessView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects)                                                                                     {}
 	virtual void ClearRectsDepthStencilView_PostCallHook(ID3D11DepthStencilView* pDepthStencilView, UINT ClearFlags, FLOAT Depth, UINT8 Stencil, UINT NumRects, const D3D11_RECT* pRects)                                                                             {}
 
+	virtual void CopyResourceOvercross_PostCallHook(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource) {}
 	virtual void JoinSubresourceRegion_PostCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResourceL, ID3D11Resource* pSrcResourceR, UINT SrcSubresource, const D3D11_BOX* pSrcBox)                  {}
 	#if defined(DEVICE_SUPPORTS_D3D11_1)
+	virtual void CopyResourceOvercross1_PostCallHook(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource, UINT CopyFlags) {}
 	virtual void JoinSubresourceRegion1_PostCallHook(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResourceL, ID3D11Resource* pSrcResourceR, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags) {}
 	#endif // DEVICE_SUPPORTS_D3D11_1
 
-	// DX12-only
 	virtual void CopyStagingResource_PostCallHook(HRESULT hr, ID3D11Resource* pStagingResource, ID3D11Resource* pSourceResource, UINT SubResource, BOOL Upload) {}
 	virtual void TestStagingResource_PostCallHook(HRESULT hr, ID3D11Resource* pStagingResource)                                                                 {}
 	virtual void WaitStagingResource_PostCallHook(HRESULT hr, ID3D11Resource* pStagingResource)                                                                 {}
 	virtual void MapStagingResource_PostCallHook(HRESULT hr, ID3D11Resource* pStagingResource, BOOL Upload, void** ppStagingMemory)                             {}
 	virtual void UnmapStagingResource_PostCallHook(ID3D11Resource* pStagingResource, BOOL Upload)                                                               {}
 
-	// All devices implement the most efficient versions, current versions are in DeviceManager
-	virtual void GetTimestampFrequency_PostCallHook(UINT64 hr)                            {}
-	virtual void ResetTimestamps_PostCallHook()                                           {}
-	virtual void ReserveTimestamp_PostCallHook(INT hr)                                    {}
-	virtual void InsertTimestamp_PostCallHook(INT index, INT commandQueue)                {}
-	virtual void ResolveTimestamps_PostCallHook()                                         {}
-	virtual void QueryTimestamp_PostCallHook(INT index, UINT64* mem)                      {}
-	virtual void QueryTimestamps_PostCallHook(INT firstIndex, INT lastIndex, UINT64* mem) {}
-	virtual void QueryTimestampBuffer_PostCallHook(ID3D11Buffer** ppTimestampBuffer)      {}
+	virtual void MappedWriteToSubresource_PostCallHook(HRESULT hr, ID3D11Resource* pResource, UINT Subresource, SIZE_T Offset, SIZE_T Size, D3D11_MAP MapType, const void* pData, UINT numDataBlocks) {}
+	virtual void MappedReadFromSubresource_PostCallHook(HRESULT hr, ID3D11Resource* pResource, UINT Subresource, SIZE_T Offset, SIZE_T Size, D3D11_MAP MapType, void* pData, UINT numDataBlocks) {}
 
 	virtual void InsertFence_PostCallHook()                                               {}
 	virtual void TestForFence_PostCallHook(UINT64 fenceValue)                             {}
@@ -779,8 +769,6 @@ public:
 	virtual void CreatePlacementTexture1D_PostCallHook(HRESULT hr, const D3D11_TEXTURE1D_DESC* pDesc, UINT TileModeIndex, UINT Pitch, void* pCpuVirtualAddress, ID3D11Texture1D** ppTexture1D) {}
 	virtual void CreatePlacementTexture2D_PostCallHook(HRESULT hr, const D3D11_TEXTURE2D_DESC* pDesc, UINT TileModeIndex, UINT Pitch, void* pCpuVirtualAddress, ID3D11Texture2D** ppTexture2D) {}
 	virtual void CreatePlacementTexture3D_PostCallHook(HRESULT hr, const D3D11_TEXTURE3D_DESC* pDesc, UINT TileModeIndex, UINT Pitch, void* pCpuVirtualAddress, ID3D11Texture3D** ppTexture3D) {}
-
-	virtual void GetTimestamps_PostCallHook(UINT64* pGpuTimestamp, UINT64* pCpuRdtscTimestamp)                                                                                                 {}
 
 	/********************************************/
 	/*** ID3DPerformanceDeviceContext methods ***/
@@ -1087,7 +1075,9 @@ public:
 	void    DrawIndexedInstancedIndirect(ID3D11Buffer* pBufferForArgs, UINT AlignedByteOffsetForArgs);
 
 	HRESULT Map(ID3D11Resource* pResource, UINT Subresource, D3D11_MAP MapType, UINT MapFlags, D3D11_MAPPED_SUBRESOURCE* pMappedResource);
+	HRESULT Map(ID3D11Resource* pResource, UINT Subresource, SIZE_T* BeginEnd, D3D11_MAP MapType, UINT MapFlags, D3D11_MAPPED_SUBRESOURCE* pMappedResource);
 	void    Unmap(ID3D11Resource* pResource, UINT Subresource);
+	void    Unmap(ID3D11Resource* pResource, UINT Subresource, SIZE_T* BeginEnd);
 
 	void    IASetInputLayout(ID3D11InputLayout* pInputLayout);
 	void    IAGetInputLayout(ID3D11InputLayout** ppInputLayout);
@@ -1110,7 +1100,7 @@ public:
 	void    OMSetRenderTargetsAndUnorderedAccessViews(UINT NumRTVs, ID3D11RenderTargetView* const* ppRenderTargetViews, ID3D11DepthStencilView* pDepthStencilView, UINT UAVStartSlot, UINT NumUAVs, ID3D11UnorderedAccessView* const* ppUnorderedAccessViews, const UINT* pUAVInitialCounts);
 	void    OMGetRenderTargetsAndUnorderedAccessViews(UINT NumRTVs, ID3D11RenderTargetView** ppRenderTargetViews, ID3D11DepthStencilView** ppDepthStencilView, UINT UAVStartSlot, UINT NumUAVs, ID3D11UnorderedAccessView** ppUnorderedAccessViews);
 	void    OMSetBlendState(ID3D11BlendState* pBlendState, const FLOAT BlendFactor[4], UINT SampleMask);
-	void    OMGetBlendState(ID3D11BlendState** ppBlendState, FLOAT BlendFactor[4], UINT* pSampleMask);
+	void    OMGetBlendState(ID3D11BlendState * *ppBlendState, FLOAT BlendFactor[4], UINT * pSampleMask);
 	void    OMSetDepthStencilState(ID3D11DepthStencilState* pDepthStencilState, UINT StencilRef);
 	void    OMGetDepthStencilState(ID3D11DepthStencilState** ppDepthStencilState, UINT* pStencilRef);
 
@@ -1129,6 +1119,7 @@ public:
 
 	void    CopyResource(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource);
 	void    CopySubresourceRegion(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox);
+	void    CopySubresourcesRegion(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT NumSubresources);
 	void    UpdateSubresource(ID3D11Resource* pDstResource, UINT DstSubresource, const D3D11_BOX* pDstBox, const void* pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch);
 
 	void    CopyStructureCount(ID3D11Buffer* pDstBuffer, UINT DstAlignedByteOffset, ID3D11UnorderedAccessView* pSrcView);
@@ -1158,6 +1149,7 @@ public:
 
 	#if defined(DEVICE_SUPPORTS_D3D11_1)
 	void CopySubresourceRegion1(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags);
+	void CopySubresourcesRegion1(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags, UINT NumSubresources);
 	void UpdateSubresource1(ID3D11Resource* pDstResource, UINT DstSubresource, const D3D11_BOX* pDstBox, const void* pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch, UINT CopyFlags);
 	void DiscardResource(ID3D11Resource* pResource);
 	void DiscardView(ID3D11View* pResourceView);
@@ -1188,8 +1180,10 @@ public:
 	void ClearRectsDepthStencilView(ID3D11DepthStencilView* pDepthStencilView, UINT ClearFlags, FLOAT Depth, UINT8 Stencil, UINT NumRects, const D3D11_RECT* pRects);
 
 	// DX12-specific with DX11-fallback (for Multi-GPU)
+	void CopyResourceOvercross(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource);
 	void JoinSubresourceRegion(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResourceL, ID3D11Resource* pSrcResourceR, UINT SrcSubresource, const D3D11_BOX* pSrcBox);
 	#if defined(DEVICE_SUPPORTS_D3D11_1)
+	void CopyResourceOvercross1(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource, UINT CopyFlags);
 	void JoinSubresourceRegion1(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResourceL, ID3D11Resource* pSrcResourceR, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags);
 	#endif // DEVICE_SUPPORTS_D3D11_1
 
@@ -1201,15 +1195,8 @@ public:
 	HRESULT MapStagingResource(ID3D11Resource* pStagingResource, BOOL Upload, void** ppStagingMemory);
 	void    UnmapStagingResource(ID3D11Resource* pStagingResource, BOOL Upload);
 
-	// All devices implement the most efficient versions, current versions are in DeviceManager
-	UINT64  GetTimestampFrequency();
-	void    ResetTimestamps();
-	INT     ReserveTimestamp();
-	void    InsertTimestamp(INT index, INT commandQueue);
-	void    ResolveTimestamps();
-	void    QueryTimestamp(INT index, UINT64* mem);
-	void    QueryTimestamps(INT firstIndex, INT lastIndex, UINT64* mem);
-	void    QueryTimestampBuffer(ID3D11Buffer** ppTimestampBuffer);
+	HRESULT MappedWriteToSubresource(ID3D11Resource* pResource, UINT Subresource, SIZE_T Offset, SIZE_T Size, D3D11_MAP MapType, const void* pData, UINT numDataBlocks);
+	HRESULT MappedReadFromSubresource(ID3D11Resource* pResource, UINT Subresource, SIZE_T Offset, SIZE_T Size, D3D11_MAP MapType, void* pData, UINT numDataBlocks);
 
 	UINT64  InsertFence();
 	HRESULT TestForFence(UINT64 fenceValue);
@@ -1266,8 +1253,6 @@ public:
 	HRESULT CreatePlacementTexture1D(const D3D11_TEXTURE1D_DESC* pDesc, UINT TileModeIndex, UINT Pitch, void* pCpuVirtualAddress, ID3D11Texture1D** ppTexture1D);
 	HRESULT CreatePlacementTexture2D(const D3D11_TEXTURE2D_DESC* pDesc, UINT TileModeIndex, UINT Pitch, void* pCpuVirtualAddress, ID3D11Texture2D** ppTexture2D);
 	HRESULT CreatePlacementTexture3D(const D3D11_TEXTURE3D_DESC* pDesc, UINT TileModeIndex, UINT Pitch, void* pCpuVirtualAddress, ID3D11Texture3D** ppTexture3D);
-
-	void    GetTimestamps(UINT64* pGpuTimestamp, UINT64* pCpuRdtscTimestamp);
 
 private:
 	ID3DXboxPerformanceDevice*        m_pPerformanceDevice;   // the wrapped performance device
@@ -2900,15 +2885,11 @@ inline void CCryDeviceContextWrapper::DrawInstanced(UINT VertexCountPerInstance,
 ///////////////////////////////////////////////////////////////////////////////
 inline void CCryDeviceContextWrapper::DrawInstancedIndirect(ID3D11Buffer* pBufferForArgs, UINT AlignedByteOffsetForArgs)
 {
-	#if CRY_PLATFORM_ORBIS
-	CryFatalError("CreateClassLinkage not implemented right now on Orbis");
-	#else
 	assert(m_pDeviceContext != NULL);
 	CRY_DEVICE_WRAPPER_PROFILE();
 	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(DrawInstancedIndirect, pBufferForArgs, AlignedByteOffsetForArgs);
 	m_pDeviceContext->DrawInstancedIndirect(pBufferForArgs, AlignedByteOffsetForArgs);
 	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(DrawInstancedIndirect, pBufferForArgs, AlignedByteOffsetForArgs);
-	#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2953,12 +2934,41 @@ inline HRESULT CCryDeviceContextWrapper::Map(ID3D11Resource* pResource, UINT Sub
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+inline HRESULT CCryDeviceContextWrapper::Map(ID3D11Resource* pResource, UINT Subresource, SIZE_T* BeginEnd, D3D11_MAP MapType, UINT MapFlags, D3D11_MAPPED_SUBRESOURCE* pMappedResource)
+{
+	assert(m_pDeviceContext != NULL);
+	CRY_DEVICE_WRAPPER_PROFILE();
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(Map, pResource, Subresource, MapType, MapFlags, pMappedResource);
+#if CRY_USE_DX12
+	HRESULT hr = m_pDeviceContext->Map(pResource, Subresource, BeginEnd, MapType, MapFlags, pMappedResource);
+#else
+	HRESULT hr = m_pDeviceContext->Map(pResource, Subresource, MapType, MapFlags, pMappedResource);
+#endif
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(Map, hr, pResource, Subresource, MapType, MapFlags, pMappedResource);
+	return hr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 inline void CCryDeviceContextWrapper::Unmap(ID3D11Resource* pResource, UINT Subresource)
 {
 	assert(m_pDeviceContext != NULL);
 	CRY_DEVICE_WRAPPER_PROFILE();
 	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(Unmap, pResource, Subresource);
 	m_pDeviceContext->Unmap(pResource, Subresource);
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(Unmap, pResource, Subresource);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+inline void CCryDeviceContextWrapper::Unmap(ID3D11Resource* pResource, UINT Subresource, SIZE_T* BeginEnd)
+{
+	assert(m_pDeviceContext != NULL);
+	CRY_DEVICE_WRAPPER_PROFILE();
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(Unmap, pResource, Subresource);
+#if CRY_USE_DX12
+	m_pDeviceContext->Unmap(pResource, Subresource, BeginEnd);
+#else
+	m_pDeviceContext->Unmap(pResource, Subresource);
+#endif
 	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(Unmap, pResource, Subresource);
 }
 
@@ -3307,6 +3317,28 @@ inline void CCryDeviceContextWrapper::CopySubresourceRegion(ID3D11Resource* pDst
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+inline void CCryDeviceContextWrapper::CopySubresourcesRegion(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT NumSubresources)
+{
+	assert(m_pDeviceContext != NULL);
+	CRY_DEVICE_WRAPPER_PROFILE();
+
+#if CRY_USE_DX12
+	{
+		_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(CopySubresourcesRegion, pDstResource, DstSubresource, DstX, DstY, DstZ, pSrcResource, SrcSubresource, pSrcBox, NumSubresources);
+		m_pDeviceContext->CopySubresourcesRegion(pDstResource, DstSubresource, DstX, DstY, DstZ, pSrcResource, SrcSubresource, pSrcBox, NumSubresources);
+		_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(CopySubresourcesRegion, pDstResource, DstSubresource , DstX, DstY, DstZ, pSrcResource, SrcSubresource, pSrcBox, NumSubresources);
+	}
+#else
+	for (UINT n = 0; n < NumSubresources; ++n)
+	{
+		_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(CopySubresourceRegion, pDstResource, DstSubresource + n, DstX, DstY, DstZ, pSrcResource, SrcSubresource + n, pSrcBox);
+		m_pDeviceContext->CopySubresourceRegion(pDstResource, DstSubresource + n, DstX, DstY, DstZ, pSrcResource, SrcSubresource + n, pSrcBox);
+		_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(CopySubresourceRegion, pDstResource, DstSubresource + n, DstX, DstY, DstZ, pSrcResource, SrcSubresource + n, pSrcBox);
+	}
+#endif
+}
+
+///////////////////////////////////////////////////////////////////////////////
 inline void CCryDeviceContextWrapper::UpdateSubresource(ID3D11Resource* pDstResource, UINT DstSubresource, const D3D11_BOX* pDstBox, const void* pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch)
 {
 	assert(m_pDeviceContext != NULL);
@@ -3493,7 +3525,7 @@ inline UINT CCryDeviceContextWrapper::GetContextFlags()
 	#endif
 }
 
-	#if defined(DEVICE_SUPPORTS_D3D11_1)
+#if defined(DEVICE_SUPPORTS_D3D11_1)
 ///////////////////////////////////////////////////////////////////////////////
 // below are functions which are only avilable on D3D11.1 and later
 ///////////////////////////////////////////////////////////////////////////////
@@ -3504,6 +3536,28 @@ inline void CCryDeviceContextWrapper::CopySubresourceRegion1(ID3D11Resource* pDs
 	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(CopySubresourceRegion1, pDstResource, DstSubresource, DstX, DstY, DstZ, pSrcResource, SrcSubresource, pSrcBox, CopyFlags);
 	m_pDeviceContext->CopySubresourceRegion1(pDstResource, DstSubresource, DstX, DstY, DstZ, pSrcResource, SrcSubresource, pSrcBox, CopyFlags);
 	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(CopySubresourceRegion1, pDstResource, DstSubresource, DstX, DstY, DstZ, pSrcResource, SrcSubresource, pSrcBox, CopyFlags);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+inline void CCryDeviceContextWrapper::CopySubresourcesRegion1(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags, UINT NumSubresources)
+{
+	assert(m_pDeviceContext != NULL);
+	CRY_DEVICE_WRAPPER_PROFILE();
+
+#if CRY_USE_DX12
+	{
+		_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(CopySubresourcesRegion1, pDstResource, DstSubresource, DstX, DstY, DstZ, pSrcResource, SrcSubresource, pSrcBox, CopyFlags, NumSubresources);
+		m_pDeviceContext->CopySubresourcesRegion1(pDstResource, DstSubresource, DstX, DstY, DstZ, pSrcResource, SrcSubresource, pSrcBox, CopyFlags, NumSubresources);
+		_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(CopySubresourcesRegion1, pDstResource, DstSubresource, DstX, DstY, DstZ, pSrcResource, SrcSubresource, pSrcBox, CopyFlags, NumSubresources);
+	}
+#else
+	for (UINT n = 0; n < NumSubresources; ++n)
+	{
+		_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(CopySubresourceRegion1, pDstResource, DstSubresource + n, DstX, DstY, DstZ, pSrcResource, SrcSubresource + n, pSrcBox, CopyFlags);
+		m_pDeviceContext->CopySubresourceRegion1(pDstResource, DstSubresource + n, DstX, DstY, DstZ, pSrcResource, SrcSubresource + n, pSrcBox, CopyFlags);
+		_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(CopySubresourceRegion1, pDstResource, DstSubresource + n, DstX, DstY, DstZ, pSrcResource, SrcSubresource + n, pSrcBox, CopyFlags);
+	}
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3746,124 +3800,6 @@ inline void CCryDeviceContextWrapper::DiscardView1(ID3D11View* pResourceView, UI
 	#endif // DEVICE_SUPPORTS_D3D11_1
 
 ///////////////////////////////////////////////////////////////////////////////
-inline UINT64 CCryDeviceContextWrapper::GetTimestampFrequency()
-{
-	#if CRY_USE_DX12
-	assert(m_pDeviceContext != NULL);
-	CRY_DEVICE_WRAPPER_PROFILE();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(GetTimestampFrequency);
-	UINT64 result = m_pDeviceContext->GetTimestampFrequency();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(GetTimestampFrequency, result);
-	#else
-	UINT64 result = 0;
-	CryFatalError("ResetTimestamps not implemented right now any other than DX12");
-	#endif
-
-	return result;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline void CCryDeviceContextWrapper::ResetTimestamps()
-{
-	#if CRY_USE_DX12
-	assert(m_pDeviceContext != NULL);
-	CRY_DEVICE_WRAPPER_PROFILE();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(ResetTimestamps);
-	m_pDeviceContext->ResetTimestamps();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(ResetTimestamps);
-	#else
-	CryFatalError("ResetTimestamps not implemented right now any other than DX12");
-	#endif
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline INT CCryDeviceContextWrapper::ReserveTimestamp()
-{
-	#if CRY_USE_DX12
-	assert(m_pDeviceContext != NULL);
-	CRY_DEVICE_WRAPPER_PROFILE();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(ReserveTimestamp);
-	INT result = m_pDeviceContext->ReserveTimestamp();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(ReserveTimestamp, result);
-	#else
-	INT result = 0;
-	CryFatalError("ReserveTimestamp not implemented right now any other than DX12");
-	#endif
-
-	return result;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline void CCryDeviceContextWrapper::InsertTimestamp(INT index, INT commandQueue)
-{
-	#if CRY_USE_DX12
-	assert(m_pDeviceContext != NULL);
-	CRY_DEVICE_WRAPPER_PROFILE();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(InsertTimestamp, index, commandQueue);
-	m_pDeviceContext->InsertTimestamp(index, commandQueue);
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(InsertTimestamp, index, commandQueue);
-	#else
-	CryFatalError("InsertTimestamp not implemented right now any other than DX12");
-	#endif
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline void CCryDeviceContextWrapper::ResolveTimestamps()
-{
-	#if CRY_USE_DX12
-	assert(m_pDeviceContext != NULL);
-	CRY_DEVICE_WRAPPER_PROFILE();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(ResolveTimestamps);
-	m_pDeviceContext->ResolveTimestamps();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(ResolveTimestamps);
-	#else
-	CryFatalError("ResolveTimestamps not implemented right now any other than DX12");
-	#endif
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline void CCryDeviceContextWrapper::QueryTimestamp(INT index, UINT64* mem)
-{
-	#if CRY_USE_DX12
-	assert(m_pDeviceContext != NULL);
-	CRY_DEVICE_WRAPPER_PROFILE();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(QueryTimestamp, index, mem);
-	m_pDeviceContext->InsertTimestamp(index, mem);
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(QueryTimestamp, index, mem);
-	#else
-	CryFatalError("QueryTimestamp not implemented right now any other than DX12");
-	#endif
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline void CCryDeviceContextWrapper::QueryTimestamps(INT firstIndex, INT lastIndex, UINT64* mem)
-{
-	#if CRY_USE_DX12
-	assert(m_pDeviceContext != NULL);
-	CRY_DEVICE_WRAPPER_PROFILE();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(QueryTimestamps, firstIndex, lastIndex, mem);
-	m_pDeviceContext->QueryTimestamps(firstIndex, lastIndex, mem);
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(QueryTimestamps, firstIndex, lastIndex, mem);
-	#else
-	CryFatalError("QueryTimestamps not implemented right now any other than DX12");
-	#endif
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline void CCryDeviceContextWrapper::QueryTimestampBuffer(ID3D11Buffer** ppTimestampBuffer)
-{
-	#if CRY_USE_DX12
-	assert(m_pDeviceContext != NULL);
-	CRY_DEVICE_WRAPPER_PROFILE();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(QueryTimestampBuffer, ppTimestampBuffer);
-	m_pDeviceContext->QueryTimestampBuffer(ppTimestampBuffer);
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(QueryTimestampBuffer, ppTimestampBuffer);
-	#else
-	CryFatalError("QueryTimestampBuffer not implemented right now any other than DX12");
-	#endif
-}
-
-///////////////////////////////////////////////////////////////////////////////
 inline UINT64 CCryDeviceContextWrapper::InsertFence()
 {
 	#if CRY_USE_DX12
@@ -3988,6 +3924,18 @@ inline void CCryDeviceContextWrapper::ClearRectsDepthStencilView(ID3D11DepthSten
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+inline void CCryDeviceContextWrapper::CopyResourceOvercross(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource)
+{
+	#if CRY_USE_DX12
+	assert(m_pDeviceContext != NULL);
+	CRY_DEVICE_WRAPPER_PROFILE();
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(CopyResourceOvercross, pDstResource, pSrcResource);
+	m_pDeviceContext->CopyResourceOvercross(pDstResource, pSrcResource);
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(CopyResourceOvercross, pDstResource, pSrcResource);
+	#else
+	#endif
+}
+
 inline void CCryDeviceContextWrapper::JoinSubresourceRegion(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResourceL, ID3D11Resource* pSrcResourceR, UINT SrcSubresource, const D3D11_BOX* pSrcBox)
 {
 	#if CRY_USE_DX12
@@ -4025,6 +3973,18 @@ inline void CCryDeviceContextWrapper::JoinSubresourceRegion(ID3D11Resource* pDst
 
 ///////////////////////////////////////////////////////////////////////////////
 	#if defined(DEVICE_SUPPORTS_D3D11_1)
+inline void CCryDeviceContextWrapper::CopyResourceOvercross1(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource, UINT CopyFlags)
+{
+		#if CRY_USE_DX12
+	assert(m_pDeviceContext != NULL);
+	CRY_DEVICE_WRAPPER_PROFILE();
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(CopyResourceOvercross1, pDstResource, pSrcResource, CopyFlags);
+	m_pDeviceContext->CopyResourceOvercross1(pDstResource, pSrcResource, CopyFlags);
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(CopyResourceOvercross1, pDstResource, pSrcResource, CopyFlags);
+		#else
+		#endif
+}
+
 inline void CCryDeviceContextWrapper::JoinSubresourceRegion1(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResourceL, ID3D11Resource* pSrcResourceR, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags)
 {
 		#if CRY_USE_DX12
@@ -4142,6 +4102,39 @@ inline void CCryDeviceContextWrapper::UnmapStagingResource(ID3D11Resource* pStag
 	#else
 	CryFatalError("UnmapStagingResource not implemented right now any other than DX12");
 	#endif
+}
+
+///////////////////////////////////////////////////////////////////////////////
+inline HRESULT CCryDeviceContextWrapper::MappedWriteToSubresource(ID3D11Resource* pResource, UINT Subresource, SIZE_T Offset, SIZE_T Size, D3D11_MAP MapType, const void* pData, UINT numDataBlocks)
+{
+#if CRY_USE_DX12
+	assert(m_pDeviceContext != NULL);
+	CRY_DEVICE_WRAPPER_PROFILE();
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(MappedWriteToSubresource, pResource, Subresource, Offset, Size, MapType, pData, numDataBlocks);
+	HRESULT result = m_pDeviceContext->MappedWriteToSubresource(pResource, Subresource, Offset, Size, MapType, pData, numDataBlocks);
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(MappedWriteToSubresource, result, pResource, Subresource, Offset, Size, MapType, pData, numDataBlocks);
+#else
+	HRESULT result = E_FAIL;
+	CryFatalError("MappedWriteToSubresource not implemented right now any other than DX12");
+#endif
+
+	return result;
+}
+
+inline HRESULT CCryDeviceContextWrapper::MappedReadFromSubresource(ID3D11Resource* pResource, UINT Subresource, SIZE_T Offset, SIZE_T Size, D3D11_MAP MapType, void* pData, UINT numDataBlocks)
+{
+#if CRY_USE_DX12
+	assert(m_pDeviceContext != NULL);
+	CRY_DEVICE_WRAPPER_PROFILE();
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(MappedReadFromSubresource, pResource, Subresource, Offset, Size, MapType, pData, numDataBlocks);
+	HRESULT result = m_pDeviceContext->MappedReadFromSubresource(pResource, Subresource, Offset, Size, MapType, pData, numDataBlocks);
+	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(MappedReadFromSubresource, result, pResource, Subresource, Offset, Size, MapType, pData, numDataBlocks);
+#else
+	HRESULT result = E_FAIL;
+	CryFatalError("MappedReadFromSubresource not implemented right now any other than DX12");
+#endif
+
+	return result;
 }
 
 	#if defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
@@ -4331,16 +4324,6 @@ inline HRESULT CCryPerformanceDeviceWrapper::CreatePlacementTexture3D(const D3D1
 	HRESULT hr = m_pPerformanceDevice->CreatePlacementTexture3D(pDesc, TileModeIndex, Pitch, pCpuVirtualAddress, ppTexture3D);
 	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(CreatePlacementTexture3D, hr, pDesc, TileModeIndex, Pitch, pCpuVirtualAddress, ppTexture3D);
 	return hr;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline void CCryPerformanceDeviceWrapper::GetTimestamps(UINT64* pGpuTimestamp, UINT64* pCpuRdtscTimestamp)
-{
-	assert(m_pPerformanceDevice != NULL);
-	CRY_DEVICE_WRAPPER_PROFILE();
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_PRE_FUNCTION_HOOK_(GetTimestamps, pGpuTimestamp, pCpuRdtscTimestamp);
-	m_pPerformanceDevice->GetTimestamps(pGpuTimestamp, pCpuRdtscTimestamp);
-	_CRY_DEVICE_WRAPPER_DETAIL_INVOKE_POST_FUNCTION_HOOK_(GetTimestamps, pGpuTimestamp, pCpuRdtscTimestamp);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,8 @@ enum
 
 static void InitSwapChain(DXGI_SWAP_CHAIN_DESC& desc, UINT width, UINT height, HWND hWnd, BOOL windowed)
 {
+	const bool bWaitable = (CRenderer::CV_r_D3D12WaitableSwapChain && windowed);
+
 	desc.BufferDesc.Width = width;
 	desc.BufferDesc.Height = height;
 	desc.BufferDesc.RefreshRate.Numerator = 0;
@@ -29,15 +31,19 @@ static void InitSwapChain(DXGI_SWAP_CHAIN_DESC& desc, UINT width, UINT height, H
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
 	desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	desc.BufferCount = (CRenderer::CV_r_minimizeLatency > 0 || CRenderer::CV_r_D3D12WaitableSwapChain > 0) ? 2 : DefaultBufferCount;
+	desc.BufferCount = (CRenderer::CV_r_minimizeLatency > 0 || bWaitable) ? MAX_FRAMES_IN_FLIGHT : DefaultBufferCount;
 	desc.OutputWindow = hWnd;
 	desc.Windowed = windowed ? 1 : 0;
 	desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
 #if defined(CRY_USE_DX12)
-	if (CRenderer::CV_r_D3D12WaitableSwapChain)
+	if (bWaitable)
 	{
-		desc.BufferCount = 3;
+		// Set this flag to create a waitable object you can use to ensure rendering does not begin while a
+		// frame is still being presented. When this flag is used, the swapchain's latency must be set with
+		// the IDXGISwapChain2::SetMaximumFrameLatency API instead of IDXGIDevice1::SetMaximumFrameLatency.
+		desc.BufferCount = MAX_FRAMES_IN_FLIGHT + 1;
 		desc.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 	}
 #endif
@@ -50,6 +56,7 @@ DeviceInfo::DeviceInfo()
 	, m_pDevice(0)
 	, m_pContext(0)
 	, m_pSwapChain(0)
+	, m_pBackbufferTex2D(0)
 	, m_pBackbufferRTV(0)
 	, m_driverType(D3D_DRIVER_TYPE_NULL)
 	, m_creationFlags(0)
@@ -473,6 +480,13 @@ bool DeviceInfo::CreateDevice(bool windowed, int width, int height, int backbuff
 
 		// Decrement Create() increment
 		SAFE_RELEASE(pSwapChain);
+
+#if defined(CRY_USE_DX12)
+		if (m_swapChainDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)
+		{
+			m_pSwapChain->SetMaximumFrameLatency(MAX_FRAME_LATENCY);
+		}
+#endif
 	}
 
 	{
@@ -525,6 +539,13 @@ bool DeviceInfo::CreateViews()
 
 	m_pCurrentBackBufferRTVIndex = CD3D9Renderer::GetCurrentBackBufferIndex(m_pSwapChain);
 	m_pBackbufferRTV = m_pBackbufferRTVs[m_pCurrentBackBufferRTVIndex];
+
+	if (!gEnv->IsEditor())
+	{
+		ID3D11Resource* pBackbufferResource;
+		m_pBackbufferRTV->GetResource(&pBackbufferResource);
+		m_pBackbufferTex2D = (D3DTexture*)pBackbufferResource;
+	}
 
 	return m_pBackbufferRTV != NULL;
 }
@@ -639,7 +660,6 @@ void DeviceInfo::ProcessSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PT
 					D3DSurface* pRTVs[8] = { 0 };
 					gcpRendD3D->GetDeviceContext().OMSetRenderTargets(8, pRTVs, pDSV);
 
-					gcpRendD3D->GetGraphicsPipeline().ReleaseBuffers();
 					gcpRendD3D->GetS3DRend().ReleaseBuffers();
 					gcpRendD3D->ReleaseBackBuffers();
 

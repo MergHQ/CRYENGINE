@@ -10,11 +10,11 @@
 #ifdef CRY_USE_DX12
 #else
 	#if CRY_PLATFORM_DURANGO
-		#include "DeviceManager_D3D11_Durango.h"
+		#include "D3D11/DeviceManager_D3D11_Durango.h"
 	#endif
 
 	#if defined(USE_NV_API)
-		#include "DeviceManager_D3D11_NVAPI.h"
+		#include "D3D11/DeviceManager_D3D11_NVAPI.h"
 	#endif
 #endif
 
@@ -114,8 +114,8 @@ inline void CDeviceManager::BindConstantBuffer(SHADER_TYPE type, const CConstant
 	BindConstantBuffer(type, pBuffer, slot);
 #elif DEVICE_MANAGER_IMMEDIATE_STATE_WRITE
 	CCryDeviceContextWrapper& rDeviceContext = gcpRendD3D->GetDeviceContext_Unsynchronized();
-	uint32 offsetArray[1] = { uint32(_offset) };
-	uint32 sizeArray[1] = { uint32(_size) };
+	uint32 offsetArray[1] = { offset / sizeof(Vec4) };
+	uint32 sizeArray[1] = { size / sizeof(Vec4) };
 	switch (type)
 	{
 	case TYPE_VS:
@@ -198,6 +198,8 @@ inline void CDeviceManager::BindConstantBuffer(SHADER_TYPE type, D3DBuffer* pBuf
 	assert(offset == 0);
 	BindConstantBuffer(type, pBuffer, slot);
 #elif DEVICE_MANAGER_IMMEDIATE_STATE_WRITE
+	offset /= sizeof(Vec4);
+	size /= sizeof(Vec4);
 	CCryDeviceContextWrapper& rDeviceContext = gcpRendD3D->GetDeviceContext_Unsynchronized();
 	switch (type)
 	{

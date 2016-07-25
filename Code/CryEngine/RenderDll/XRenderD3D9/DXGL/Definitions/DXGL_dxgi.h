@@ -25,13 +25,13 @@
 #define DXGI_PRESENT_DO_NOT_SEQUENCE    0x00000002UL
 #define DXGI_PRESENT_RESTART            0x00000004UL
 
-#define DXGI_USAGE_SHADER_INPUT         (1L << (0 + 4))
-#define DXGI_USAGE_RENDER_TARGET_OUTPUT (1L << (1 + 4))
-#define DXGI_USAGE_BACK_BUFFER          (1L << (2 + 4))
-#define DXGI_USAGE_SHARED               (1L << (3 + 4))
-#define DXGI_USAGE_READ_ONLY            (1L << (4 + 4))
-#define DXGI_USAGE_DISCARD_ON_PRESENT   (1L << (5 + 4))
-#define DXGI_USAGE_UNORDERED_ACCESS     (1L << (6 + 4))
+#define DXGI_USAGE_SHADER_INPUT         (1UL << (0 + 4))
+#define DXGI_USAGE_RENDER_TARGET_OUTPUT (1UL << (1 + 4))
+#define DXGI_USAGE_BACK_BUFFER          (1UL << (2 + 4))
+#define DXGI_USAGE_SHARED               (1UL << (3 + 4))
+#define DXGI_USAGE_READ_ONLY            (1UL << (4 + 4))
+#define DXGI_USAGE_DISCARD_ON_PRESENT   (1UL << (5 + 4))
+#define DXGI_USAGE_UNORDERED_ACCESS     (1UL << (6 + 4))
 
 #define DXGI_ENUM_MODES_INTERLACED      (1UL)
 

@@ -24,12 +24,16 @@ template<CryLockType Type> class CryLockT
 };
 
 //////////////////////////////////////////////////////////////////////////
+
+void CryYieldThread();
+
+//////////////////////////////////////////////////////////////////////////
 // Typedefs.
 //////////////////////////////////////////////////////////////////////////
 typedef CryLockT<CRYLOCK_RECURSIVE> CryCriticalSection;
 typedef CryLockT<CRYLOCK_FAST>      CryCriticalSectionNonRecursive;
-//////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////
 //! CryAutoCriticalSection implements a helper class to automatically.
 //! lock critical section in constructor and release on destructor.
 template<class LockClass> class CryAutoLock
@@ -112,6 +116,51 @@ typedef CryAutoLock<CryCriticalSectionNonRecursive> CryAutoCriticalSectionNoRecu
 #define AUTO_LOCK_T(Type, lock) PREFAST_SUPPRESS_WARNING(6246); CryAutoLock<Type> __AutoLock(lock)
 #define AUTO_LOCK(lock)         AUTO_LOCK_T(CryCriticalSection, lock)
 #define AUTO_LOCK_CS(csLock)    CryAutoCriticalSection __AL__ ## csLock(csLock)
+
+///////////////////////////////////////////////////////////////////////////////
+//! Base class for lockless Producer/Consumer queue, due platforms specific they are implemented in CryThead_platform.h.
+namespace CryMT {
+namespace detail {
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+class SingleProducerSingleConsumerQueueBase
+{
+public:
+	SingleProducerSingleConsumerQueueBase()
+	{}
+
+	void Push(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, uint32 nBufferSize, void* arrBuffer, uint32 nObjectSize);
+	void Pop(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, uint32 nBufferSize, void* arrBuffer, uint32 nObjectSize);
+};
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+class N_ProducerSingleConsumerQueueBase
+{
+public:
+	N_ProducerSingleConsumerQueueBase()
+	{
+		CryInitializeSListHead(fallbackList);
+	}
+
+	void Push(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates);
+	bool Pop(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates);
+
+private:
+	SLockFreeSingleLinkedListHeader fallbackList;
+	struct SFallbackList
+	{
+		SLockFreeSingleLinkedListEntry nextEntry;
+		char                           alignment_padding[128 - sizeof(SLockFreeSingleLinkedListEntry)];
+		char                           object[1];         //!< Struct will be overallocated with enough memory for the object
+	};
+};
+
+void CryMemoryBarrier();
+
+} // namespace detail
+} // namespace CryMT
 
 // Include architecture specific code.
 #if CRY_PLATFORM_WINAPI
@@ -380,6 +429,145 @@ public:
 	#define DEBUG_READLOCK(p)
 	#define DEBUG_MODIFYLOCK(p)
 #endif
+
+///////////////////////////////////////////////////////////////////////////////
+//! Base class for lockless Producer/Consumer queue, due platforms specific they are implemented in CryThead_platform.h.
+namespace CryMT {
+namespace detail {
+
+///////////////////////////////////////////////////////////////////////////////
+inline void SingleProducerSingleConsumerQueueBase::Push(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, uint32 nBufferSize, void* arrBuffer, uint32 nObjectSize)
+{
+	// spin if queue is full
+	CSimpleThreadBackOff backoff;
+	while (rProducerIndex - rConsumerIndex == nBufferSize)
+	{
+		backoff.backoff();
+	}
+
+	CryMemoryBarrier();
+	char* pBuffer = alias_cast<char*>(arrBuffer);
+	uint32 nIndex = rProducerIndex % nBufferSize;
+
+	memcpy(pBuffer + (nIndex * nObjectSize), pObj, nObjectSize);
+	CryMemoryBarrier();
+	rProducerIndex += 1;
+	CryMemoryBarrier();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+inline  void SingleProducerSingleConsumerQueueBase::Pop(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, uint32 nBufferSize, void* arrBuffer, uint32 nObjectSize)
+{
+	CryMemoryBarrier();
+	// busy-loop if queue is empty
+	CSimpleThreadBackOff backoff;
+	while (rProducerIndex - rConsumerIndex == 0)
+	{
+		backoff.backoff();
+	}
+
+	char* pBuffer = alias_cast<char*>(arrBuffer);
+	uint32 nIndex = rConsumerIndex % nBufferSize;
+
+	memcpy(pObj, pBuffer + (nIndex * nObjectSize), nObjectSize);
+	CryMemoryBarrier();
+	rConsumerIndex += 1;
+	CryMemoryBarrier();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+inline  void N_ProducerSingleConsumerQueueBase::Push(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates)
+{
+	CryMemoryBarrier();
+	uint32 nProducerIndex;
+	uint32 nConsumerIndex;
+
+	int iter = 0;
+	CSimpleThreadBackOff backoff;
+	do
+	{
+		nProducerIndex = rProducerIndex;
+		nConsumerIndex = rConsumerIndex;
+
+		if (nProducerIndex - nConsumerIndex == nBufferSize)
+		{
+			if (iter++ > CSimpleThreadBackOff::kHardYieldInterval)
+			{
+				uint32 nSizeToAlloc = sizeof(SFallbackList) + nObjectSize - 1;
+				SFallbackList* pFallbackEntry = (SFallbackList*)CryModuleMemalign(nSizeToAlloc, 128);
+				memcpy(pFallbackEntry->object, pObj, nObjectSize);
+				CryMemoryBarrier();
+				CryInterlockedPushEntrySList(fallbackList, pFallbackEntry->nextEntry);
+				return;
+			}
+			backoff.backoff();
+			continue;
+		}
+
+		if (CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&rProducerIndex), nProducerIndex + 1, nProducerIndex) == nProducerIndex)
+			break;
+	}
+	while (true);
+
+	CryMemoryBarrier();
+	char* pBuffer = alias_cast<char*>(arrBuffer);
+	uint32 nIndex = nProducerIndex % nBufferSize;
+
+	memcpy(pBuffer + (nIndex * nObjectSize), pObj, nObjectSize);
+	CryMemoryBarrier();
+	arrStates[nIndex] = 1;
+	CryMemoryBarrier();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+inline  bool N_ProducerSingleConsumerQueueBase::Pop(void* pObj, volatile uint32& rProducerIndex, volatile uint32& rConsumerIndex, volatile uint32& rRunning, void* arrBuffer, uint32 nBufferSize, uint32 nObjectSize, volatile uint32* arrStates)
+{
+	CryMemoryBarrier();
+
+	// busy-loop if queue is empty
+	CSimpleThreadBackOff backoff;
+	if (rRunning && rProducerIndex - rConsumerIndex == 0)
+	{
+		while (rRunning && rProducerIndex - rConsumerIndex == 0)
+		{
+			backoff.backoff();
+		}
+	}
+
+	if (rRunning == 0 && rProducerIndex - rConsumerIndex == 0)
+	{
+		SFallbackList* pFallback = (SFallbackList*)CryInterlockedPopEntrySList(fallbackList);
+		IF (pFallback, 0)
+		{
+			memcpy(pObj, pFallback->object, nObjectSize);
+			CryModuleMemalignFree(pFallback);
+			return true;
+		}
+		// if the queue was empty, make sure we really are empty
+		return false;
+	}
+
+	backoff.reset();
+	while (arrStates[rConsumerIndex % nBufferSize] == 0)
+	{
+		backoff.backoff();
+	}
+
+	char* pBuffer = alias_cast<char*>(arrBuffer);
+	uint32 nIndex = rConsumerIndex % nBufferSize;
+
+	memcpy(pObj, pBuffer + (nIndex * nObjectSize), nObjectSize);
+	CryMemoryBarrier();
+	arrStates[nIndex] = 0;
+	CryMemoryBarrier();
+	rConsumerIndex += 1;
+	CryMemoryBarrier();
+
+	return true;
+}
+
+} // namespace detail
+} // namespace CryMT
 
 // Include all multithreading containers.
 #include "MultiThread_Containers.h"

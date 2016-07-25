@@ -577,7 +577,7 @@ class CHWShader_D3D : public CHWShader
 		}
 #endif
 		void Release(SShaderDevCache* pCache = NULL, bool bReleaseData = true);
-		void GetInstancingAttribInfo(uint8 Attributes[32], int32& nUsedAttr, int& nInstAttrMask);
+		void GetInstancingAttribInfo(uint8 Attributes[32], int32 & nUsedAttr, int& nInstAttrMask);
 
 		int  Size()
 		{
@@ -984,7 +984,7 @@ public:
 		if ((TRUNCATE_PTR)s_pDataCB[eSHData][nCBufSlot] != 1)
 		{
 #ifdef USE_PER_FRAME_CONSTANT_BUFFER_UPDATES
-			gcpRendD3D->GetDeviceContext().Unmap(s_pCurReqCB[eSHData][nCBufSlot], 0);
+			CDeviceManager::Unmap(s_pCurReqCB[eSHData][nCBufSlot], 0, 0, nMaxVecs * sizeof(Vec4), D3D11_MAP_WRITE_PER_FRAME);
 #else
 			s_pCurReqCB[eSHData][nCBufSlot]->EndWrite();
 #endif
@@ -1003,7 +1003,7 @@ public:
 		if ((INT_PTR)s_pDataCB[eSHData][nCBufSlot] != 1)
 		{
 #ifdef USE_PER_FRAME_CONSTANT_BUFFER_UPDATES
-			gcpRendD3D->GetDeviceContext().Unmap(s_pCurReqCB[eSHData][nCBufSlot], 0);
+			CDeviceManager::Unmap(s_pCurReqCB[eSHData][nCBufSlot], 0, 0, nMaxVecs * sizeof(Vec4), D3D11_MAP_WRITE_PER_FRAME);
 #else
 			s_pCurReqCB[eSHData][nCBufSlot]->EndWrite();
 #endif
@@ -1059,9 +1059,7 @@ public:
 					s_pCurReqCB[eSH][nCBufSlot] = s_pCB[eSH][nCBufSlot][nMaxVecs];
 					STALL_PROFILER("set const_buffer");
 #ifdef USE_PER_FRAME_CONSTANT_BUFFER_UPDATES
-					D3D11_MAPPED_SUBRESOURCE mappedResource;
-					gcpRendD3D->GetDeviceContext().Map(s_pCurReqCB[eSH][nCBufSlot], 0, D3D11_MAP_WRITE_PER_FRAME, 0, &mappedResource);
-					s_pDataCB[eSH][nCBufSlot] = (Vec4*)mappedResource.pData;
+					s_pDataCB[eSH][nCBufSlot] = (Vec4*)CDeviceManager::Map(s_pCurReqCB[eSH][nCBufSlot], 0, 0, 0, D3D11_MAP_WRITE_PER_FRAME);
 #else
 					s_pDataCB[eSH][nCBufSlot] = (Vec4*)s_pCurReqCB[eSH][nCBufSlot]->BeginWrite();
 #endif
@@ -1131,7 +1129,9 @@ public:
 			__m128* const __restrict vDst = (__m128*)&s_pDataCB[eSH][nCBufSlot][nReg];
 			const __m128* const __restrict vSrc = (const __m128*)vData;
 			for (int i = 0; i < nVecs; i++) _mm_stream_ps((float*)&vDst[i], vSrc[i]);
+#if !CRY_PLATFORM_ORBIS // SFENCE implied on command-buffer submit
 			_mm_sfence();
+#endif
 		}
 		else
 #endif
@@ -1147,7 +1147,9 @@ public:
 				__m128* const __restrict vDst = (__m128*)&s_CurVSParams[nReg];
 				const __m128* const __restrict vSrc = (const __m128*)vData;
 				for (int i = 0; i < nVecs; i++) _mm_stream_ps((float*)&vDst[i], vSrc[i]);
+#if !CRY_PLATFORM_ORBIS // SFENCE implied on command-buffer submit
 				_mm_sfence();
+#endif
 			}
 			else
 #endif
@@ -1415,7 +1417,7 @@ public:
 
 	static void mfCreateBinds(SHWSInstance* pInst, void* pConstantTable, byte* pShader, int nSize);
 	bool        mfUpdateSamplers(CShader* pSH);
-	static void mfPostVertexFormat(SHWSInstance* pInst, CHWShader_D3D* pHWSH, bool bCol, byte bNormal, bool bTC0, bool bTC1[2], bool bPSize, bool bTangent[2], bool bBitangent[2], bool bHWSkin, bool bSH[2], bool bMorphTarget, bool bMorph);
+	static void mfPostVertexFormat(SHWSInstance * pInst, CHWShader_D3D * pHWSH, bool bCol, byte bNormal, bool bTC0, bool bTC1[2], bool bPSize, bool bTangent[2], bool bBitangent[2], bool bHWSkin, bool bSH[2], bool bMorphTarget, bool bMorph);
 	void        mfUpdateFXVertexFormat(SHWSInstance* pInst, CShader* pSH);
 
 	/*EHWSProfile mfGetCurrentProfile()

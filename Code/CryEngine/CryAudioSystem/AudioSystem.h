@@ -69,6 +69,7 @@ public:
 	virtual char const*  GetAudioControlName(EAudioControlType const audioControlType, AudioIdType const audioControlId1, AudioIdType const audioControlId2) override;
 	virtual void         GetAudioDebugData(SAudioDebugData& audioDebugData) const override;
 	virtual void         GetAudioFileData(char const* const szFilename, SAudioFileData& audioFileData) override;
+	virtual void         GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioTriggerData) override;
 	// ~IAudioSystem
 
 	// ISystemEventListener

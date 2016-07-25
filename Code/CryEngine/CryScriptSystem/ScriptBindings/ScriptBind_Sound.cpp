@@ -19,6 +19,8 @@ CScriptBind_Sound::CScriptBind_Sound(IScriptSystem* pScriptSystem, ISystem* pSys
 	SCRIPT_REG_TEMPLFUNC(GetAudioRtpcID, "sRtpcName");
 	SCRIPT_REG_TEMPLFUNC(GetAudioEnvironmentID, "sEnvironmentName");
 	SCRIPT_REG_TEMPLFUNC(SetAudioRtpcValue, "hRtpcID, fValue");
+	SCRIPT_REG_TEMPLFUNC(GetAudioTriggerRadius, "triggerId");
+	SCRIPT_REG_TEMPLFUNC(GetAudioTriggerOcclusionFadeOutDistance, "triggerId");
 
 }
 
@@ -140,4 +142,20 @@ int CScriptBind_Sound::SetAudioRtpcValue(IFunctionHandler* pH, ScriptHandle cons
 	gEnv->pAudioSystem->PushRequest(request);
 
 	return pH->EndFunction();
+}
+
+//////////////////////////////////////////////////////////////////////////
+int CScriptBind_Sound::GetAudioTriggerRadius(IFunctionHandler* pH, ScriptHandle const hTriggerID)
+{
+	SAudioTriggerData data;
+	gEnv->pAudioSystem->GetAudioTriggerData(HandleToInt<AudioControlId>(hTriggerID), data);
+	return pH->EndFunction(data.radius);
+}
+
+//////////////////////////////////////////////////////////////////////////
+int CScriptBind_Sound::GetAudioTriggerOcclusionFadeOutDistance(IFunctionHandler* pH, ScriptHandle const hTriggerID)
+{
+	SAudioTriggerData data;
+	gEnv->pAudioSystem->GetAudioTriggerData(HandleToInt<AudioControlId>(hTriggerID), data);
+	return pH->EndFunction(data.occlusionFadeOutDistance);
 }

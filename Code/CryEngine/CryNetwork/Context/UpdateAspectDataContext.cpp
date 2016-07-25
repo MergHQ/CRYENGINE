@@ -27,7 +27,7 @@ void CUpdateAspectDataContext::RequestFetchAspects(const NetworkAspectType fetch
 	m_fetchAspects = fetchAspects & m_allowedAspects;
 
 #if ENABLE_ASPECT_HASHING
-	m_hashAspects = fetchAspects & objx.nAspectsEnabled;
+	m_hashAspects = fetchAspects & m_objx.nAspectsEnabled;
 #endif
 
 	const NetworkAspectType nAspectsEnabled = m_objx.nAspectsEnabled;

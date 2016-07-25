@@ -42,6 +42,8 @@ public:
 	virtual bool                 GetValueAsBool() const override                  { return m_value.GetValueAsBool(); };
 	//////////////////////////////////////////////////////////
 
+	void SetValueFromString(const string& valueAsString);
+
 	bool operator<=(const VariableValueData& value) const { return m_value <= value; }
 	bool operator>=(const VariableValueData& value) const { return m_value >= value; }
 

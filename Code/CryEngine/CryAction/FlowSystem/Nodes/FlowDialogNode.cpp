@@ -12,13 +12,14 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
 #include "CryActionCVars.h"
 #include "CryAction.h"
 
 #include "../../DialogSystem/DialogQueuesManager.h"
 #include "../../DialogSystem/DialogSystem.h"
 #include "../../DialogSystem/DialogSession.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //HD-Remark: This is the Flow node for the legacy dialog system
 

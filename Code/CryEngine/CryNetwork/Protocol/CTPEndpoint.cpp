@@ -1424,7 +1424,7 @@ static uint8 QuickHashBytes(const uint8* pSrc, uint32 len)
 class CCTPEndpoint::CParsePacketContext
 {
 public:
-	CParsePacketContext(const uint8* normBytes, uint32 pktLen, CInputState& state, CNetInputSerializeImpl& stmImpl, bool inSync, const CSequenceNumberParser& seq)
+	CParsePacketContext(const uint8* normBytes, uint32 pktLen, CInputState& state, CNetInputSerializeImpl& stmImpl, bool inSync, const CSequenceNumberParser& seq, uint32 timeFraction32)
 		: m_bCompleted(false)
 		, m_numMessages(0)
 		, m_state(state)
@@ -1434,6 +1434,7 @@ public:
 		, m_inSync(inSync)
 		, m_stm(stmImpl)
 		, m_seq(seq)
+		, m_timeFraction32(timeFraction32)
 	{
 	}
 	void Complete() { m_bCompleted = true; }
@@ -1498,12 +1499,18 @@ public:
 		return m_seq.nBasis;
 	}
 
+	ILINE uint32 GetTimeFraction32() const
+	{
+		return m_timeFraction32;
+	}
+
 private:
 	// it is possible for an infinite loop to occur here; a malicious packet could
 	// be encoded in such a way that eIM_EndOfStream can never be found.
 	// we prevent this by enforcing a maximum number of iterations through the loop;
 	bool                                     m_bCompleted;
 	uint32                                   m_numMessages;
+	uint32                                   m_timeFraction32;
 
 	const uint8* const                       m_normBytes;
 	const uint32                             m_pktLen;
@@ -1769,11 +1776,17 @@ void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQ
 		return;
 	}
 
+	uint32 sendTime = stmImpl.GetInput().ReadBits(32);
+
+#if USE_ARITHSTREAM
+	state.GetArithModel()->SetTimeFraction(sendTime);
+#endif
+
 	//
 	// read message stream
 	//
 	NetLogPacketDebug("Start read message stream (%f)", stmImpl.GetInput().GetBitSize());
-	CParsePacketContext ppctx(normBytes, pktLen, state, stmImpl, inSync, seq);
+	CParsePacketContext ppctx(normBytes, pktLen, state, stmImpl, inSync, seq, sendTime);
 	while (ppctx.NextMessage())
 	{
 		if (m_emptyMode || m_pParent->IsDead())
@@ -1803,7 +1816,7 @@ void CCTPEndpoint::ProcessPacket_OneMessage(CParsePacketContext& ppctx)
 
 	// we must ensure that the memento streams are NULL at this point
 	// (maybe we need only do this in debug?)
-	ppctx.GetStreamImpl().SetMementoStreams(NULL, NULL, 0, false);
+	ppctx.GetStreamImpl().SetMementoStreams(NULL, NULL, 0, 0, false);
 
 	if (msg != eIM_EndOfStream)
 		ProcessPacket_NormalMessage(msg, ppctx);
@@ -1860,8 +1873,7 @@ void CCTPEndpoint::ProcessPacket_NormalMessage(uint32 msg, CParsePacketContext& 
 		INetMessageSink* pSink = m_MessageSinks[nSink].pSink;
 
 		EntityId entityId = m_entityId; // make sure internal structures don't get broken, entityId is passed by reference!
-		TNetMessageCallbackResult r = pDef->handler(pDef->nUser, pSink, ppctx.GetSerializer(), ppctx.GetCurrentSeq(), ppctx.GetBasisSeq(), &entityId, m_pParent);
-
+		TNetMessageCallbackResult r = pDef->handler(pDef->nUser, pSink, ppctx.GetSerializer(), ppctx.GetCurrentSeq(), ppctx.GetBasisSeq(), ppctx.GetTimeFraction32(), &entityId, m_pParent);
 		if (!CRCCheck(ppctx.GetCommStream()))
 		{
 			m_pParent->Disconnect(eDC_ProtocolError, "Malformed packet");
@@ -1914,8 +1926,8 @@ class CCTPEndpoint::CMessageSender : /*public INetMessageSender,*/ public IMessa
 public:
 	ILINE CMessageSender(CCTPEndpoint* pEndpoint, COutputState& State,
 	                     size_t nSize, int& nMessages, CStatsCollector* pStats,
-	                     INetChannel* pChannel, CTimeValue now) :
-		INetSender(TSerialize(&pEndpoint->m_outputStream), pEndpoint->m_nOutputSeq, pEndpoint->m_nInputAck, pEndpoint->m_pParent->IsServer()),
+	                     INetChannel* pChannel, CTimeValue now, uint32 timeFraction32) :
+		INetSender(TSerialize(&pEndpoint->m_outputStream), pEndpoint->m_nOutputSeq, pEndpoint->m_nInputAck, timeFraction32, pEndpoint->m_pParent->IsServer()),
 		m_State(State),
 		m_nSize(nSize),
 		m_nMessages(nMessages),
@@ -2026,7 +2038,7 @@ public:
 		m_pEndpoint->m_previouslySentMessages.Put(pDef);
 		m_nMessages++;
 		m_nMessagesInBlock++;
-		m_pEndpoint->m_outputStreamImpl.SetMementoStreams(NULL, NULL, 0, false);
+		m_pEndpoint->m_outputStreamImpl.SetMementoStreams(NULL, NULL, 0, 0, false);
 
 		if (pDef->CheckParallelFlag(eMPF_DecodeInSync))
 			m_bWritingPacketNeedsInSyncProcessing = true;
@@ -2407,8 +2419,16 @@ uint32 CCTPEndpoint::SendPacket(CTimeValue nTime, const SSendPacketParams& param
 	// send message stream
 	//
 
+	uint32 timeToSend = (uint32)(gEnv->pTimer->GetReplicationTime() * REPLICATION_TIME_PRECISION);
+
+	m_outputStreamImpl.GetOutput().WriteBits(timeToSend, 32);
+
+#if USE_ARITHSTREAM
+	state.GetArithModel()->SetTimeFraction(timeToSend);
+#endif
+
 	schedParams.nSeq = m_nOutputSeq;
-	CMessageSender sender(this, state, schedParams.targetBytes, nMessages, &STATS, m_pParent, nTime);
+	CMessageSender sender(this, state, schedParams.targetBytes, nMessages, &STATS, m_pParent, nTime, timeToSend);
 	bool actuallySend = m_queue.BuildPacket(&sender, schedParams);
 	actuallySend &= !sender.IsCorrupt();
 

@@ -133,6 +133,7 @@ StackSizeKB:
 		<!-- [AUDIO] -->		
 		<Thread name ="MainAudioThread" Affinity="2,3,4,5" Priority="below_normal" StackSize="ignore"/>
 		
+		<Thread name ="AuxWwiseAudioThread" Affinity="2,3,4,5" StackSize="ignore"/>
 		<Thread name ="Wwise_Device" Affinity="2,3,4,5" Priority="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_BankManager" Affinity="5" Priority="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_LEngine" Affinity="5" Priority="ignore" StackSize="ignore"/>
@@ -230,6 +231,7 @@ StackSizeKB:
 		<!-- [AUDIO] -->		
 		<Thread name ="MainAudioThread" Priority="below_normal" StackSize="ignore"/>
 		
+		<Thread name ="AuxWwiseAudioThread" StackSize="ignore"/>
 		<Thread name ="Wwise_Device" Affinity="5" Priority="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_BankManager" Affinity="5" Priority="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_LEngine" Affinity="5" Priority="ignore" StackSize="ignore"/>
@@ -315,6 +317,7 @@ StackSizeKB:
 		<!-- [AUDIO] -->		
 		<Thread name ="MainAudioThread" Affinity="ignore" Priority="below_normal" StackSize="ignore"/>
 		
+		<Thread name ="AuxWwiseAudioThread" Affinity="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_Device" Affinity="ignore" Priority="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_BankManager" Affinity="ignore" Priority="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_LEngine" Affinity="ignore" Priority="ignore" StackSize="ignore"/>
@@ -340,8 +343,10 @@ StackSizeKB:
 		<!-- [SCALEFORM][3rd Party] -->
 		<Thread name ="GFxVideo_SoundUpdate" Affinity="ignore" Priority="highest" DisablePriorityBoost="ignore" StackSizeKB="16"/>	
 		
-			<!-- Special case, to add additional decoder threads add a threads with an increase incremental number. "GFxVideo_Decoder_0" sets thread priority for all other decoder threads-->
-		<Thread name ="GFxVideo_Decoder_*" Affinity="ignore" Priority="normal" DisablePriorityBoost="ignore" StackSizeKB="ignore"/>	
+		<!-- Special case to add additional decoder threads with an increase incremental number. "GFxVideo_Decoder_0" sets thread priority for all other decoder threads-->
+		<!-- Wildcards such as GFxVideo_Decoder_* is not allowed for video threads -->
+		<Thread name ="GFxVideo_Decoder_0" Affinity="ignore" Priority="normal" DisablePriorityBoost="ignore" StackSizeKB="ignore"/>	
+		<Thread name ="GFxVideo_Decoder_1" Affinity="ignore" Priority="normal" DisablePriorityBoost="ignore" StackSizeKB="ignore"/>	
 	</Platform>
 	
 	<!-- ============ -->
@@ -417,6 +422,7 @@ StackSizeKB:
 		<!-- [AUDIO] -->
 		<Thread name ="MainAudioThread" Affinity="ignore" Priority="below_normal" StackSize="ignore"/>
 
+		<Thread name ="AuxWwiseAudioThread" Affinity="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_Device" Affinity="ignore" Priority="99" StackSize="ignore"/>
 		<Thread name ="Wwise_BankManager" Affinity="ignore" Priority="50" StackSize="ignore"/>
 		<Thread name ="Wwise_LEngine" Affinity="ignore" Priority="99" StackSize="ignore"/>
@@ -473,6 +479,7 @@ StackSizeKB:
 		<!-- [AUDIO] -->
 		<Thread name ="MainAudioThread" Affinity="ignore" Priority="below_normal" StackSize="ignore"/>
 
+		<Thread name ="AuxWwiseAudioThread" Affinity="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_Device" Affinity="ignore" Priority="99" StackSize="ignore"/>
 		<Thread name ="Wwise_BankManager" Affinity="ignore" Priority="50" StackSize="ignore"/>
 		<Thread name ="Wwise_LEngine" Affinity="ignore" Priority="99" StackSize="ignore"/>

@@ -162,7 +162,7 @@ namespace CryEngine.SandboxInteraction
 
 			if ((cam.Position - _targetPos).GetLength () < 0.03f) 
 			{
-				Debug.Log ("CameraGoToScene Done");
+				Log.Info("CameraGoToScene Done");
 
 				cam.Position = _targetPos;
 				cam.ForwardDirection = _targetForwardDir;

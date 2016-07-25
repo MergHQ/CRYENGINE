@@ -257,7 +257,7 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lodValue, SSectorTextureSet* pTerrainTexInfo, uint32 nDynLMMask) const
+void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lodValue, SSectorTextureSet* pTerrainTexInfo) const
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -299,8 +299,8 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	const Vec3 vObjCenter = GetBBox().GetCenter();
 	const Vec3 vObjPos = GetPos();
 
-	float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
-	float fEntDistance2D = sqrt_tpl(vCamPos.GetSquaredDistance2D(m_vPos)) * passInfo.GetZoomFactor();
+	float fEntDistance = pRenderObject->m_bPermanent ? 0 : sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
+	float fEntDistance2D = pRenderObject->m_bPermanent ? 0 : sqrt_tpl(vCamPos.GetSquaredDistance2D(m_vPos)) * passInfo.GetZoomFactor();
 	bool bUseTerrainColor((vegetGroup.bUseTerrainColor && GetCVars()->e_VegetationUseTerrainColor) || GetCVars()->e_VegetationUseTerrainColor == 2);
 
 	SRenderNodeTempData::SUserData& userData = m_pTempData->userData;
@@ -353,6 +353,11 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 
 	pRenderObject->m_data.m_fMaxViewDistance = m_fWSMaxViewDist;
 
+	if (!pTerrainTexInfo && (pRenderObject->m_ObjFlags & FOB_BLEND_WITH_TERRAIN_COLOR) && passInfo.IsShadowPass() && pRenderObject->m_bPermanent && GetCVars()->e_VegetationUseTerrainColor)
+	{
+		GetObjManager()->FillTerrainTexInfo(m_pOcNode, fEntDistance, pTerrainTexInfo, GetBBox());
+	}
+
 	if (pTerrainTexInfo)
 		if (pRenderObject->m_ObjFlags & (FOB_BLEND_WITH_TERRAIN_COLOR))
 		{
@@ -363,7 +368,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 				float fBlendDistance = GetCVars()->e_VegetationUseTerrainColorDistance;
 
 				if (!fBlendDistance && m_dwRndFlags & ERF_PROCEDURAL)
-					fBlendDistance = -0.3333f;
+					fBlendDistance = -1.f;
 
 				if (fBlendDistance == 0)
 				{
@@ -454,7 +459,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	if (m_pDeformable) m_pDeformable->RenderInternalDeform(pRenderObject, lodValue.LodA(), GetBBox(), passInfo);
 
 	if (GetCVars()->e_BBoxes)
-		GetObjManager()->RenderObjectDebugInfo((IRenderNode*)this, pRenderObject->m_fDistance, 0, passInfo);
+		GetObjManager()->RenderObjectDebugInfo((IRenderNode*)this, pRenderObject->m_fDistance, passInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -967,4 +972,91 @@ bool CVegetation::GetLodDistances(const SFrameLodInfo& frameLodInfo, float* dist
 	}
 
 	return true;
+}
+
+const AABB CVegetation::GetBBox() const
+{
+	AABB aabb;
+	FillBBoxFromExtends(aabb, m_boxExtends, m_vPos);
+	return aabb;
+}
+
+void CVegetation::UpdateRndFlags()
+{
+	StatInstGroup& vegetGroup = GetStatObjGroup();
+
+	const uint32 dwFlagsToUpdate =
+		ERF_CASTSHADOWMAPS | ERF_DYNAMIC_DISTANCESHADOWS | ERF_HIDABLE | ERF_PICKABLE
+		| ERF_SPEC_BITS_MASK | ERF_OUTDOORONLY | ERF_ACTIVE_LAYER;
+	m_dwRndFlags &= ~dwFlagsToUpdate;
+	m_dwRndFlags |= vegetGroup.m_dwRndFlags & (dwFlagsToUpdate | ERF_HAS_CASTSHADOWMAPS);
+
+	IRenderNode::SetLodRatio((int)(vegetGroup.fLodDistRatio * 100.f));
+	IRenderNode::SetViewDistRatio((int)(vegetGroup.fMaxViewDistRatio * 100.f));
+}
+
+void CVegetation::FillBBox(AABB& aabb)
+{
+	FillBBoxFromExtends(aabb, m_boxExtends, m_vPos);
+}
+
+EERType CVegetation::GetRenderNodeType()
+{
+	return eERType_Vegetation;
+}
+
+float CVegetation::GetMaxViewDist()
+{
+	StatInstGroup& group = GetStatObjGroup();
+	CStatObj* pStatObj = (CStatObj*)(IStatObj*)group.pStatObj;
+	if (pStatObj)
+	{
+		if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
+			return max(GetCVars()->e_ViewDistMin, group.fVegRadius * CVegetation::GetScale() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());
+
+		return max(GetCVars()->e_ViewDistMin, group.fVegRadius * CVegetation::GetScale() * GetCVars()->e_ViewDistRatioVegetation * GetViewDistRatioNormilized());
+	}
+
+	return 0;
+}
+
+IStatObj* CVegetation::GetEntityStatObj(unsigned int nPartId, unsigned int nSubPartId, Matrix34A* pMatrix, bool bReturnOnlyVisible)
+{
+	if (nPartId != 0)
+		return 0;
+
+	if (pMatrix)
+	{
+		if (m_pTempData)
+		{
+			*pMatrix = m_pTempData->userData.objMat;
+		}
+		else
+		{
+			Matrix34A tm;
+			CalcMatrix(tm);
+			*pMatrix = tm;
+		}
+	}
+
+	return GetStatObj();
+}
+
+Vec3 CVegetation::GetPos(bool bWorldOnly) const
+{
+	assert(bWorldOnly);
+	return m_vPos;
+}
+
+IMaterial* CVegetation::GetMaterial(Vec3* pHitPos) const
+{
+	StatInstGroup& vegetGroup = GetStatObjGroup();
+
+	if (vegetGroup.pMaterial)
+		return vegetGroup.pMaterial;
+
+	if (CStatObj* pBody = vegetGroup.GetStatObj())
+		return pBody->GetMaterial();
+
+	return NULL;
 }

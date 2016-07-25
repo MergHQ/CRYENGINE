@@ -426,12 +426,13 @@ FILE* netProfileOpenLogFile(const char* name, int* firstTime)
 
 	if (*firstTime)
 	{
-		fout = fopen(name, "w+");
-		*firstTime = 0;
+		fout = gEnv->pCryPak->FOpen(name, "w+");
+		*firstTime=0;
 	}
 	else
 	{
-		fout = fopen(name, "a+");
+		fout = gEnv->pCryPak->FOpen(name, "a+");
+//		fout = fopen(name, "a+");
 	}
 
 	return fout;
@@ -541,7 +542,7 @@ void netProfileWriteLogFiles()
 	if (pLogging->GetIVal() != 0)
 	{
 		static ICVar* pName = gEnv->pConsole->GetCVar("net_profile_logname");
-		fout = netProfileOpenLogFile(pName->GetString(), &firstTimeLogging);
+		fout = netProfileOpenLogFile((string("%USER%/") + pName->GetString()).c_str(), &firstTimeLogging);
 
 		if (fout)
 		{

@@ -12,7 +12,8 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Math nodes.
@@ -1780,53 +1781,6 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////
-class CFlowNode_Select2 : public CFlowBaseNode<eNCT_Singleton>
-{
-public:
-	CFlowNode_Select2(SActivationInfo* pActInfo) {};
-
-	virtual void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SInputPortConfig in_config[] = {
-			InputPortConfig<int>("in", _HELP("Number that will select index of output that generates event")),
-			{ 0 }
-		};
-		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig_Void("one"),
-			OutputPortConfig_Void("two"),
-			{ 0 }
-		};
-		config.sDescription = _HELP("Modulo of 2 from [in] port decides which out port sends true event");
-		config.pInputPorts = in_config;
-		config.pOutputPorts = out_config;
-		config.SetCategory(EFLN_OBSOLETE);
-	}
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
-	{
-		switch (event)
-		{
-		case eFE_Activate:
-		case eFE_Initialize:
-			int nIndex = GetPortInt(pActInfo, 0) % 2;
-			if (nIndex == 0)
-			{
-				ActivateOutput(pActInfo, 0, (bool)true);
-			}
-			else
-			{
-				ActivateOutput(pActInfo, 1, (bool)true);
-			}
-			break;
-		}
-	};
-
-	virtual void GetMemoryUsage(ICrySizer* s) const
-	{
-		s->Add(*this);
-	}
-};
-
-//////////////////////////////////////////////////////////////////////////
 class CFlowNode_ToVec3 : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
@@ -2975,7 +2929,6 @@ REGISTER_FLOW_NODE("Math:LessCheck", CFlowNode_LessCheck)
 REGISTER_FLOW_NODE("Math:Counter", CFlowNode_Counter)
 REGISTER_FLOW_NODE("Math:PortCounter", CFlowNode_PortCounter);
 REGISTER_FLOW_NODE("Math:Remainder", CFlowNode_Remainder)
-REGISTER_FLOW_NODE("Math:Select2", CFlowNode_Select2)
 REGISTER_FLOW_NODE("Math:Reciprocal", CFlowNode_Reciprocal);
 REGISTER_FLOW_NODE("Math:Random", CFlowNode_Random);
 REGISTER_FLOW_NODE("Math:Power", CFlowNode_Power);
@@ -2986,8 +2939,8 @@ REGISTER_FLOW_NODE("Math:SinCos", CFlowNode_SinCos);
 REGISTER_FLOW_NODE("Math:AnglesToDir", CFlowNode_AnglesToDir);
 REGISTER_FLOW_NODE("Math:DirToAngles", CFlowNode_DirToAngles);
 REGISTER_FLOW_NODE("Math:SetNumber", CFlowNode_SetNumber);
-REGISTER_FLOW_NODE("Math:ToBoolean", CFlowNode_ToBoolean);
-REGISTER_FLOW_NODE("Math:FromBoolean", CFlowNode_FromBoolean);
+REGISTER_FLOW_NODE("Math:BooleanTo", CFlowNode_ToBoolean);
+REGISTER_FLOW_NODE("Math:BooleanFrom", CFlowNode_FromBoolean);
 REGISTER_FLOW_NODE("Math:UpDownCounter", CFlowNode_UpDownCounter);
 REGISTER_FLOW_NODE("Math:SetColor", CFlowNode_SetColor);
 REGISTER_FLOW_NODE("Math:Sinus", CFlowNode_Sin);

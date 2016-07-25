@@ -3,13 +3,15 @@
 setlocal ENABLEEXTENSIONS
 set projectcfg=project.cfg
 set binpath=bin\win_x64
-set executable=%binpath%\GameSDK.exe
+set executable=%binpath%\GameMono.exe
 
 if not exist "%projectcfg%" (
     1>&2 echo "Error: %projectcfg% not found!"
 	pause
     exit /b 1
 )
+
+echo CRYENGINE Version: %engine_version%
 
 for /F "tokens=*" %%I in (%projectcfg%) do set %%I
 
@@ -35,6 +37,8 @@ if defined engine_root (
 		pause
 		exit /b 1
 	)
+	
+	echo CRYENGINE Root: %engine_root%
 	
 	start "" "%engine_root%\%executable%" -projectroot "." -projectdlldir %binpath%
 	exit

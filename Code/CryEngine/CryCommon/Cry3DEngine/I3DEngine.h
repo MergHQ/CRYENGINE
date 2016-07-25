@@ -777,7 +777,7 @@ struct ITerrain
 	virtual int GetTerrainLightmapTexId(Vec4& vTexGenInfo, int nSID = 0) = 0;
 
 	//! Return terrain texture atlas texture id's.
-	virtual void GetAtlasTexId(int& nTex0, int& nTex1, int nSID = 0) = 0;
+	virtual void GetAtlasTexId(int& nTex0, int& nTex1, int& nTex2, int nSID = 0) = 0;
 
 	//! \return object and material table for Exporting.
 	virtual void GetStatObjAndMatTables(DynArray<IStatObj*>* pStatObjTable, DynArray<IMaterial*>* pMatTable, DynArray<IStatInstGroup*>* pStatInstGroupTable, uint32 nObjTypeMask, int nSID) = 0;
@@ -1468,6 +1468,9 @@ struct I3DEngine : public IProcess
 	//! \param pEntity - The entity to stop render
 	virtual void UnRegisterEntityDirect(IRenderNode* pEntity) = 0;
 	virtual void UnRegisterEntityAsJob(IRenderNode* pEnt) = 0;
+
+	//! Add a water ripple to the scene.
+	virtual void AddWaterRipple(const Vec3& vPos, float scale, float strength) = 0;
 
 	//! \return whether a world pos is under water.
 	virtual bool IsUnderWater(const Vec3& vPos) const = 0;
@@ -2242,7 +2245,9 @@ struct I3DEngine : public IProcess
 		{
 			eCapsule = 0,
 			eOBB,
-			eCylinder
+			eCylinder,
+			eOBB_Hard,
+			eCylinder_Hard
 		};
 
 		Vec3  v0;
@@ -2303,7 +2308,7 @@ struct I3DEngine : public IProcess
 		Vec4 arrPortalsDir[SVO_MAX_PORTALS];
 
 	#define SVO_MAX_ANALYTICAL_OCCLUDERS 64
-		SAnalyticalOccluder arrAnalyticalOccluders[SVO_MAX_ANALYTICAL_OCCLUDERS];
+		SAnalyticalOccluder arrAnalyticalOccluders[2][SVO_MAX_ANALYTICAL_OCCLUDERS];
 
 		Vec3                vSkyColorTop;
 		Vec3                vSkyColorBottom;
@@ -2424,7 +2429,6 @@ struct SRendItemSorter
 	//! to ensure the deferred shading pass is after all LPV objects.
 	enum EDeferredPreprocess
 	{
-		eLPVPass             = 0,
 		eDeferredShadingPass = BIT(30)
 	};
 	void   IncreaseOctreeCounter()   { nValue += eOctreeNodeCounter; }
@@ -2484,7 +2488,6 @@ struct SRenderingPassInfo
 		SHADOW_MAP_NONE = 0,
 		SHADOW_MAP_GSM,
 		SHADOW_MAP_LOCAL,
-		SHADOW_MAP_REFLECTIVE,
 		SHADOW_MAP_CACHED,
 		SHADOW_MAP_CACHED_MGPU_COPY
 	};
@@ -3041,8 +3044,6 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(CRen
 		else
 			passInfo.m_eShadowMapRendering = SHADOW_MAP_GSM;
 	}
-	else if (nLightFlags & DLF_REFLECTIVE_SHADOWMAP)
-		passInfo.m_eShadowMapRendering = static_cast<uint8>(SHADOW_MAP_REFLECTIVE);
 	else if (nLightFlags & (DLF_POINT | DLF_PROJECT | DLF_AREA_LIGHT))
 		passInfo.m_eShadowMapRendering = static_cast<uint8>(SHADOW_MAP_LOCAL);
 	else

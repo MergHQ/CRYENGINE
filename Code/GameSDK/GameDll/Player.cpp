@@ -917,7 +917,7 @@ bool CPlayer::Init(IGameObject * pGameObject)
 		uint16 channelId = GetChannelId();
 
 		CGameLobby *pGameLobby = g_pGame->GetGameLobby();
-		if(channelId)
+		if(pGameLobby && channelId)
 		{
 			pGameLobby->OnPlayerSpawned(channelId);
 		}
@@ -1414,16 +1414,6 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 			if (m_pLocalPlayerInteractionPlugin)
 			{
 				m_pLocalPlayerInteractionPlugin->Reset();
-			}
-		}
-		break;
-	case ENTITY_EVENT_RETURNING_TO_POOL:
-		{
-			IVehicle *pVehicle = GetLinkedVehicle();
-			if (pVehicle)
-			{
-				pVehicle->ClientEvictPassenger(this);
-				GetEntity()->Hide(true);
 			}
 		}
 		break;
@@ -2123,7 +2113,7 @@ void CPlayer::PrePhysicsUpdate()
 			// NOTE: outputting this info here is 'was happened last frame' not 'what was decided this frame' as it occurs before the prePhysicsEvent is dispatched
 			// also IsOnGround and IsInAir can possibly both be false e.g. - if you're swimming
 			// May be able to remove this log now the new HSM debugging is in if it offers the same/improved functionality
-			CryWatch ("%s stance=%s flyMode=%d %s %s%s%s%s", GetEntity()->GetEntityTextDescription(), GetStanceName(GetStance()), m_stats.flyMode, IsOnGround() ? "ON-GROUND" : "IN-AIR", IsThirdPerson() ? "THIRD-PERSON" : "FIRST-PERSON", IsDead() ? "DEAD" : "ALIVE", m_stats.isScoped ? " SCOPED" : "", m_stats.isInBlendRagdoll ? " FALLNPLAY" : "");
+			CryWatch ("%s stance=%s flyMode=%d %s %s%s%s%s", GetEntity()->GetEntityTextDescription().c_str(), GetStanceName(GetStance()), m_stats.flyMode, IsOnGround() ? "ON-GROUND" : "IN-AIR", IsThirdPerson() ? "THIRD-PERSON" : "FIRST-PERSON", IsDead() ? "DEAD" : "ALIVE", m_stats.isScoped ? " SCOPED" : "", m_stats.isInBlendRagdoll ? " FALLNPLAY" : "");
 		}
 #endif
 
@@ -6174,9 +6164,9 @@ void CPlayer::ExecuteFootStep(ICharacterInstance* pCharacter, const float frameT
 				
 				// Plug water hits directly into water sim
 				// todo: move out of foot-step for more continous ripple gen (currently skips during sprint, looks weird).
-				if (gEnv->pRenderer)
+				if (gEnv->p3DEngine)
 				{
-					gEnv->pRenderer->EF_AddWaterSimHit(GetEntity()->GetWorldPos(), 1.0f, relativeSpeed * 2);
+					gEnv->p3DEngine->AddWaterRipple(GetEntity()->GetWorldPos(), 1.0f, relativeSpeed * 2);
 				}
 
 
@@ -7742,7 +7732,7 @@ void CPlayer::OnSwimmingStrokeAnimEvent(ICharacterInstance* pCharacter)
 		if (depth <= 0.2f)
 		{
 			const float relativeSpeed = max(0.2f, GetLastRequestedVelocity().GetLength() * 0.5f);
-			gEnv->pRenderer->EF_AddWaterSimHit(GetEntity()->GetWorldPos(), 1.0f, relativeSpeed);
+			gEnv->p3DEngine->AddWaterRipple(GetEntity()->GetWorldPos(), 1.0f, relativeSpeed);
 		}
 	}
 }

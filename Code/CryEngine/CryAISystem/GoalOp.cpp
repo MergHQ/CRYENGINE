@@ -2695,7 +2695,7 @@ EGoalOpResult COPScript::Execute(CPipeUser* pPipeUser)
 		return eGOR_FAILED;
 	}
 
-	// TODO(Márcio): Set the function environment here, instead of setting globals
+	// TODO(MÃ¡rcio): Set the function environment here, instead of setting globals
 	if (IEntity* entity = pPipeUser->GetEntity())
 	{
 		scriptSystem->SetGlobalValue("entity", entity->GetScriptTable());

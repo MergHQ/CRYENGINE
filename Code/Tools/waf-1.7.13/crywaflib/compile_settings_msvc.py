@@ -63,6 +63,9 @@ def load_msvc_common_settings(conf):
 	v['cstlib_PATTERN']      = '%s.lib'
 	v['cxxstlib_PATTERN']    = '%s.lib'
 	
+	v['STATIC_CODE_ANALYZE_cflags'] = ['/analyze']
+	v['STATIC_CODE_ANALYZE_cxxflags'] = ['/analyze']
+	
 	# Set common compiler flags	
 	COMMON_COMPILER_FLAGS = [
 		'/nologo',		# Suppress Copyright and version number message
@@ -76,7 +79,9 @@ def load_msvc_common_settings(conf):
 		'/Zc:wchar_t',	# Use compiler native wchar_t				
 		'/Zc:forScope',	# Force Conformance in for Loop Scope
 		'/GR-',			# Disable RTTI		
-		'/Gd',			# Use _cdecl calling convention for all functions	
+		'/Gd',			# Use _cdecl calling convention for all functions
+		'/utf-8',		# Set source and execution character sets to UTF-8.
+		'/Wv:18'		# Disable warnings until SDK depedencies switch to UTF-8/ASCII.
 		]
 		
 	# Copy common flags to prevent modifing references

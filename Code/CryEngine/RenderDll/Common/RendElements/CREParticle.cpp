@@ -10,6 +10,7 @@
 #include <CryParticleSystem/IParticles.h>
 #include <CryThreading/IJobManager_JobDelegator.h>
 #include "Common/RenderView.h"
+#include "CompiledRenderObject.h"
 
 DECLARE_JOB("ComputeVertices", TComputeVerticesJob, CREParticle::ComputeVertices);
 
@@ -80,6 +81,7 @@ CREParticle::CREParticle()
 	: m_pVertexCreator(0)
 	, m_nFirstVertex(0)
 	, m_nFirstIndex(0)
+	, m_addedToView(0)
 {
 	mfSetType(eDATA_Particle);
 }
@@ -98,14 +100,14 @@ SRenderVertices* CREParticle::AllocVertices(int nAllocVerts, int nAllocInds)
 {
 	SRenderPipeline& rp = gRenDev->m_RP;
 
-	ParticleBufferSet::SAlloc alloc;
+	CParticleBufferSet::SAlloc alloc;
 
-	rp.m_particleBuffer.Alloc(m_allocId, ParticleBufferSet::EBT_Vertices, nAllocVerts, &alloc);
+	rp.m_particleBuffer.Alloc(m_allocId, CParticleBufferSet::EBT_Vertices, nAllocVerts, &alloc);
 	SVF_Particle* pVertexBuffer = alias_cast<SVF_Particle*>(alloc.m_pBase) + alloc.m_firstElem;
 	m_RenderVerts.aVertices.set(ArrayT(pVertexBuffer, int(alloc.m_numElemns)));
 	m_nFirstVertex = alloc.m_firstElem;
 
-	rp.m_particleBuffer.Alloc(m_allocId, ParticleBufferSet::EBT_Indices, nAllocInds, &alloc);
+	rp.m_particleBuffer.Alloc(m_allocId, CParticleBufferSet::EBT_Indices, nAllocInds, &alloc);
 	uint16* pIndexBuffer = alias_cast<uint16*>(alloc.m_pBase) + alloc.m_firstElem;
 	m_RenderVerts.aIndices.set(ArrayT(pIndexBuffer, int(alloc.m_numElemns)));
 	m_nFirstIndex = alloc.m_firstElem;
@@ -119,7 +121,7 @@ SRenderVertices* CREParticle::AllocPullVertices(int nPulledVerts)
 {
 	SRenderPipeline& rp = gRenDev->m_RP;
 
-	ParticleBufferSet::SAllocStreams streams;
+	CParticleBufferSet::SAllocStreams streams;
 	rp.m_particleBuffer.Alloc(m_allocId, nPulledVerts, &streams);
 	m_RenderVerts.aPositions.set(ArrayT(streams.m_pPositions, int(streams.m_numElemns)));
 	m_RenderVerts.aAxes.set(ArrayT(streams.m_pAxes, int(streams.m_numElemns)));
@@ -172,7 +174,7 @@ void CREParticle::mfPrepare(bool bCheckOverflow)
 	}
 #endif
 
-	if (CRenderer::CV_r_wireframe && rRP.m_pCurObject)
+	if (CRenderer::CV_r_wireframe && rd->m_nGraphicsPipeline == 0 && rRP.m_pCurObject)
 		rRP.m_pCurObject->m_RState &= ~OS_TRANSPARENT;
 
 	assert(rRP.m_pCurObject);
@@ -224,38 +226,9 @@ CRenderer::EF_RemoveParticlesFromScene()
 }
 
 void
-CRenderer::EF_CleanupParticles()
-{
-	gEnv->pJobManager->WaitForJob(m_ComputeVerticesJobState);
-	for (int t = 0; t < RT_COMMAND_BUF_COUNT; ++t)
-	{
-		for (int i = m_arrCREParticle[t].size() - 1; i >= 0; i--)
-			delete m_arrCREParticle[t][i];
-		m_arrCREParticle[t].clear();
-	}
-}
-
-void
 CRenderer::SyncComputeVerticesJobs()
 {
 	gEnv->pJobManager->WaitForJob(m_ComputeVerticesJobState);
-	m_nCREParticleCount[m_pRT->m_nCurThreadFill] = 0;
-}
-
-void
-CRenderer::SafeReleaseParticleREs()
-{
-	EF_CleanupParticles();
-}
-
-void
-CRenderer::GetMemoryUsageParticleREs(ICrySizer* pSizer)
-{
-	for (int t = 0; t < RT_COMMAND_BUF_COUNT; ++t)
-	{
-		size_t nSize = m_arrCREParticle[t].size() * sizeof(CREParticle) + m_arrCREParticle[t].capacity() * sizeof(CREParticle*);
-		pSizer->AddObject(&m_arrCREParticle[t], nSize);
-	}
 }
 
 void CRenderer::EF_AddMultipleParticlesToScene(const SAddParticlesToSceneJob* jobs, size_t numJobs, const SRenderingPassInfo& passInfo) PREFAST_SUPPRESS_WARNING(6262)
@@ -271,25 +244,10 @@ void CRenderer::EF_AddMultipleParticlesToScene(const SAddParticlesToSceneJob* jo
 	if (!m_RP.m_particleBuffer.IsValid())
 		return;
 
-	// cap num Jobs to prevent a possible crash
-	if (numJobs > nMaxParticleContainer)
-	{
-		gEnv->p3DEngine->GetParticleManager()->MarkAsOutOfMemory();
-		numJobs = nMaxParticleContainer;
-	}
-
 	// if we have jobs, set our sync variables to running before starting the jobs
 	if (numJobs)
 	{
-		// preallocate enough objects for particle rendering
-		int nREStart = m_nCREParticleCount[threadList];
-		m_nCREParticleCount[threadList] += numJobs;
-
-		m_arrCREParticle[threadList].reserve(m_nCREParticleCount[threadList]);
-		for (int i = m_arrCREParticle[threadList].size(); i < m_nCREParticleCount[threadList]; i++)
-			m_arrCREParticle[threadList].push_back(new CREParticle);
-
-		PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob>(jobs, numJobs), nREStart, passInfo);
+		PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob>(jobs, numJobs), 0, passInfo);
 	}
 }
 
@@ -308,7 +266,8 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 	WaitForParticleBuffer();
 
 	// == now create the render elements and start processing those == //
-	if (passInfo.IsGeneralPass())
+	const bool useComputeVerticesJob = passInfo.IsGeneralPass();
+	if (useComputeVerticesJob)
 	{
 		m_ComputeVerticesJobState.SetRunning();
 	}
@@ -323,12 +282,30 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 		SShaderItem shaderItem = *job.pShaderItem;
 		CRenderObject* pRenderObject = job.pRenderObject;
 
-		if (!EF_GetParticleListAndBatchFlags(nBatchFlags, nList, shaderItem, pRenderObject, passInfo))
+		const bool isRefractive = shaderItem.m_pShader && (((CShader*)shaderItem.m_pShader)->m_Flags & EF_REFRACTIVE);
+		const bool refractionEnabled = CV_r_Refraction && CV_r_ParticlesRefraction;
+		if (isRefractive && !refractionEnabled)
 			continue;
 
 		size_t ij = &job - aJobs.data();
-		CREParticle* pRE = m_arrCREParticle[threadList][nREStart + ij];
-		assert(pRE);
+		CREParticle* pRE = static_cast<CREParticle*>(pRenderObject->m_pRE);
+
+		// generate the RenderItem entries for this Particle Element
+		assert(pRenderObject->m_bPermanent);
+		if (!pRE->AddedToView())
+		{
+			EF_GetParticleListAndBatchFlags(
+				nBatchFlags, nList, shaderItem,
+				pRenderObject, passInfo);
+
+			passInfo.GetRenderView()->AddRenderItem(
+				pRE, pRenderObject, shaderItem, nList, nBatchFlags,
+				passInfo.GetRendItemSorter(), passInfo.IsShadowPass(),
+				passInfo.IsAuxWindow());
+
+			pRE->SetAddedToView();
+		}
+
 		pRE->Reset(job.pPVC, threadList, allocId);
 		if (job.nCustomTexId > 0)
 		{
@@ -342,7 +319,7 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 				pRE->m_CustomTexBind[0] = CTexture::s_ptexBlackCM->GetID();
 		}
 
-		if (passInfo.IsGeneralPass())
+		if (useComputeVerticesJob)
 		{
 			// Start new job to compute the vertices
 			TComputeVerticesJob cvjob(camInfo, pRenderObject->m_ObjFlags);
@@ -357,13 +334,10 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 			pRE->ComputeVertices(camInfo, pRenderObject->m_ObjFlags);
 		}
 
-		// generate the RenderItem entries for this Particle Element
-		passInfo.GetRenderView()->AddRenderItem(pRE, pRenderObject, shaderItem, nList, nBatchFlags, passInfo.GetRendItemSorter(), passInfo.IsShadowPass(), passInfo.IsAuxWindow());
-
 		passInfo.GetRendItemSorter().IncreaseParticleCounter();
 	}
 
-	if (passInfo.IsGeneralPass())
+	if (useComputeVerticesJob)
 	{
 		m_ComputeVerticesJobState.SetStopped();
 	}
@@ -426,14 +400,9 @@ bool CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList,
 
 	if (shaderItem.m_pShader && (((CShader*)shaderItem.m_pShader)->m_Flags & EF_REFRACTIVE))
 	{
-		if (CV_r_Refraction && CV_r_ParticlesRefraction)
-		{
-			nBatchFlags |= FB_TRANSPARENT;
-			if (CRenderer::CV_r_RefractionPartialResolves)
-				pRO->m_ObjFlags |= FOB_REQUIRES_RESOLVE;
-		}
-		else
-			return false;  // skip adding refractive particle
+		nBatchFlags |= FB_TRANSPARENT;
+		if (CRenderer::CV_r_RefractionPartialResolves)
+			pRO->m_ObjFlags |= FOB_REQUIRES_RESOLVE;
 
 		bHalfRes = false;
 	}

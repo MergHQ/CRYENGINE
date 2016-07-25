@@ -8,7 +8,7 @@
 //  Description:
 // -------------------------------------------------------------------------
 //  History:
-//	- 03:2006				 : Modified by Jan Müller (Serialization)
+//	- 03:2006				 : Modified by Jan MÃ¼ller (Serialization)
 //
 ////////////////////////////////////////////////////////////////////////////
 
@@ -255,6 +255,10 @@ public:
 	ILINE TrinaryFlags<uint64> const& GetRenderFlags() const
 	{
 		return m_RenderFlags;
+	}
+	static float GetMaxAngularDensity(const CCamera& camera)
+	{
+		return camera.GetAngularResolution() / max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f) * 2.0f;
 	}
 	bool CanAccessFiles(cstr sObject, cstr sSource = "") const;
 

@@ -83,6 +83,8 @@ struct SPostEffectsUtils
 	// Clear active render target region
 	static void ClearScreen(float r, float g, float b, float a);
 
+	static void GetFrustumCorners(Vec3& vRT, Vec3& vLT, Vec3& vLB, Vec3& vRB, const CRenderCamera& rc, bool bMirrorCull);
+
 	static void UpdateFrustumCorners();
 	static void UpdateOverscanBorderAspectRatio();
 

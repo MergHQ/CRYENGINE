@@ -1,21 +1,18 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+#pragma once
 
-#ifndef cryphysics_h
-#define cryphysics_h
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
-
-#ifdef PHYSICS_EXPORTS
-	#define CRYPHYSICS_API DLL_EXPORT
+#if defined (_LIB)
+#define CRYPHYSICS_API
+#elif defined (PHYSICS_EXPORTS)
+#define CRYPHYSICS_API DLL_EXPORT
 #else
-	#define CRYPHYSICS_API DLL_IMPORT
+#define CRYPHYSICS_API DLL_IMPORT
 #endif
 
-#define vector_class Vec3_tpl
-
-#include <CryMemory/CrySizer.h>
+#if !defined (_LIB)
+extern "C" 
+#endif
+CRYPHYSICS_API IPhysicalWorld * CreatePhysicalWorld(struct ISystem* pLog);
 
 //! IDs that can be used for foreign id.
 enum EPhysicsForeignIds
@@ -38,11 +35,5 @@ enum EPhysicsForeignIds
 	PHYS_FOREIGN_ID_USER                     = 100, //!< All user defined foreign ids should start from this enum.
 };
 
-//#include "utils.h"
-#include <CryMath/Cry_Math.h>
-#include "primitives.h"
-#include <CryPhysics/physinterface.h> // <> required for Interfuscator
-
-extern "C" CRYPHYSICS_API IPhysicalWorld * CreatePhysicalWorld(struct ISystem* pLog);
-
-#endif
+#include <CryMemory/CrySizer.h>
+#include <CryPhysics/physinterface.h>

@@ -19,14 +19,28 @@ namespace ACE
 
 const string g_userSettingsFile = "%USER%/audiocontrolseditor_wwise.user";
 
+class CStringAndHash
+{
+	//a small helper class to make comparison of the stored c-string faster, by checking a hash-representation first.
+public:
+	CStringAndHash(const char* pText) : szText(pText), hash(CCrc32::Compute(pText)) {}
+	operator string() const { return szText; }
+	operator const char*() const { return szText; }
+	bool operator==(const CStringAndHash& other) { return (hash == other.hash && strcmp(szText, other.szText) == 0); }
+
+private:
+	const char*  szText;
+	const uint32 hash;
+};
+
 // XML tags
-const string g_switchTag = "WwiseSwitch";
-const string g_stateTag = "WwiseState";
-const string g_fileTag = "WwiseFile";
-const string g_rtpcTag = "WwiseRtpc";
-const string g_eventTag = "WwiseEvent";
-const string g_auxBusTag = "WwiseAuxBus";
-const string g_valueTag = "WwiseValue";
+const CStringAndHash g_switchTag = "WwiseSwitch";
+const CStringAndHash g_stateTag = "WwiseState";
+const CStringAndHash g_fileTag = "WwiseFile";
+const CStringAndHash g_rtpcTag = "WwiseRtpc";
+const CStringAndHash g_eventTag = "WwiseEvent";
+const CStringAndHash g_auxBusTag = "WwiseAuxBus";
+const CStringAndHash g_valueTag = "WwiseValue";
 
 // XML attributes
 const string g_nameAttribute = "wwise_name";
@@ -36,29 +50,30 @@ const string g_valueAttribute = "wwise_value";
 const string g_localizedAttribute = "wwise_localised";
 const string g_trueAttribute = "true";
 
-ItemType TagToType(const string& tag)
+ItemType TagToType(const char* szTag)
 {
-	if (tag == g_switchTag)
-	{
-		return eWwiseItemTypes_SwitchGroup;
-	}
-	else if (tag == g_stateTag)
-	{
-		return eWwiseItemTypes_StateGroup;
-	}
-	else if (tag == g_fileTag)
-	{
-		return eWwiseItemTypes_SoundBank;
-	}
-	else if (tag == g_rtpcTag)
-	{
-		return eWwiseItemTypes_Rtpc;
-	}
-	else if (tag == g_eventTag)
+	CStringAndHash hashedTag(szTag);
+	if (hashedTag == g_eventTag)
 	{
 		return eWwiseItemTypes_Event;
 	}
-	else if (tag == g_auxBusTag)
+	if (hashedTag == g_fileTag)
+	{
+		return eWwiseItemTypes_SoundBank;
+	}
+	if (hashedTag == g_rtpcTag)
+	{
+		return eWwiseItemTypes_Rtpc;
+	}
+	if (hashedTag == g_switchTag)
+	{
+		return eWwiseItemTypes_SwitchGroup;
+	}
+	if (hashedTag == g_stateTag)
+	{
+		return eWwiseItemTypes_StateGroup;
+	}
+	if (hashedTag == g_auxBusTag)
 	{
 		return eWwiseItemTypes_AuxBus;
 	}
@@ -92,32 +107,22 @@ string TypeToTag(const ItemType type)
 CAudioSystemEditor_wwise::CAudioSystemEditor_wwise()
 {
 	Serialization::LoadJsonFile(m_settings, g_userSettingsFile.c_str());
-	Reload();
 }
 
 CAudioSystemEditor_wwise::~CAudioSystemEditor_wwise()
 {
+	Clear();
 }
 
 void CAudioSystemEditor_wwise::Reload(bool bPreserveConnectionStatus)
 {
-	// set all the controls as placeholder as we don't know if
-	// any of them have been removed but still have connections to them
-	TControlMap::const_iterator it = m_controls.begin();
-	TControlMap::const_iterator end = m_controls.end();
-	for (; it != end; ++it)
-	{
-		TControlPtr pControl = it->second;
-		if (pControl)
-		{
-			pControl->SetPlaceholder(true);
-			pControl->SetConnected(false);
-		}
-	}
+
+	Clear();
 
 	// reload data
-	CAudioWwiseLoader loader;
-	loader.Load(this);
+	CAudioWwiseLoader loader(GetSettings()->GetProjectPath(), GetSettings()->GetSoundBanksPath(), m_rootControl);
+
+	CreateControlCache(&m_rootControl);
 
 	if (bPreserveConnectionStatus)
 	{
@@ -129,72 +134,13 @@ void CAudioSystemEditor_wwise::Reload(bool bPreserveConnectionStatus)
 	}
 }
 
-IAudioSystemItem* CAudioSystemEditor_wwise::CreateControl(const SControlDef& controlDefinition)
-{
-	string sFullname = controlDefinition.name;
-	IAudioSystemItem* pParent = controlDefinition.pParent;
-	if (pParent)
-	{
-		sFullname = controlDefinition.pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + sFullname;
-	}
-
-	if (controlDefinition.bLocalised)
-	{
-		sFullname = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + sFullname;
-	}
-
-	CID nID = GetID(sFullname);
-
-	IAudioSystemItem* pControl = GetControl(nID);
-	if (pControl)
-	{
-		if (pControl->IsPlaceholder())
-		{
-			pControl->SetPlaceholder(false);
-			if (pParent && pParent->IsPlaceholder())
-			{
-				pParent->SetPlaceholder(false);
-			}
-		}
-		return pControl;
-	}
-	else
-	{
-		TControlPtr pNewControl = std::make_shared<IAudioSystemControl_wwise>(controlDefinition.name, nID, controlDefinition.type);
-		if (pParent == nullptr)
-		{
-			pParent = &m_rootControl;
-		}
-
-		pParent->AddChild(pNewControl.get());
-		pNewControl->SetParent(pParent);
-		pNewControl->SetLocalised(controlDefinition.bLocalised);
-		m_controls[nID] = pNewControl;
-		return pNewControl.get();
-	}
-}
-
 IAudioSystemItem* CAudioSystemEditor_wwise::GetControl(CID id) const
 {
 	if (id >= 0)
 	{
-		return stl::find_in_map(m_controls, id, TControlPtr()).get();
+		return stl::find_in_map(m_controlsCache, id, nullptr);
 	}
 	return nullptr;
-}
-
-IAudioSystemItem* CAudioSystemEditor_wwise::GetControlByName(const string& sName, bool bIsLocalised, IAudioSystemItem* pParent) const
-{
-	string sFullName = sName;
-	if (pParent)
-	{
-		sFullName = pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + sFullName;
-	}
-	if (bIsLocalised)
-	{
-		sFullName = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + sFullName;
-	}
-	return GetControl(GetID(sFullName));
 }
 
 ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionToControl(EACEControlType eATLControlType, IAudioSystemItem* pMiddlewareControl)
@@ -221,30 +167,55 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionToControl(EACEControlTyp
 	return nullptr;
 }
 
+IAudioSystemItem* SearchForControl(IAudioSystemItem* pItem, const string& name, ItemType type)
+{
+	if (pItem->GetName() == name && (pItem->GetType() == type))
+	{
+		return pItem;
+	}
+
+	const int count = pItem->ChildCount();
+	for (int i = 0; i < count; ++i)
+	{
+		IAudioSystemItem* pFound = SearchForControl(pItem->GetChildAt(i), name, type);
+		if (pFound)
+		{
+			return pFound;
+		}
+	}
+	return nullptr;
+}
+
 ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef pNode, EACEControlType eATLControlType)
 {
 	if (pNode)
 	{
-		const string sTag = pNode->getTag();
-		ItemType type = TagToType(sTag);
+		const char* szTag = pNode->getTag();
+		ItemType type = TagToType(szTag);
 		if (type != AUDIO_SYSTEM_INVALID_TYPE)
 		{
 			string name = pNode->getAttr(g_nameAttribute);
-			string localisedAttribute = pNode->getAttr(g_localizedAttribute);
-			bool bLocalised = (localisedAttribute.compareNoCase(g_trueAttribute) == 0);
+			const string localisedAttribute = pNode->getAttr(g_localizedAttribute);
+			const bool bLocalised = (localisedAttribute.compareNoCase(g_trueAttribute) == 0);
+
+			IAudioSystemItem* pControl = SearchForControl(&m_rootControl, name, type);
 
 			// If control not found, create a placeholder.
 			// We want to keep that connection even if it's not in the middleware.
 			// The user could be using the engine without the wwise project
-			IAudioSystemItem* pControl = GetControlByName(name, bLocalised);
 			if (pControl == nullptr)
 			{
-				pControl = CreateControl(SControlDef(name, type));
-				if (pControl)
+				if (bLocalised)
 				{
-					pControl->SetPlaceholder(true);
-					pControl->SetLocalised(bLocalised);
+					name = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + name;
 				}
+
+				CID id = GenerateID(name);
+				pControl = new IAudioSystemControl_wwise(name, id, type);
+				pControl->SetLocalised(bLocalised);
+				pControl->SetPlaceholder(true);
+
+				m_controlsCache[id] = pControl;
 			}
 
 			// If it's a switch we actually connect to one of the states within the switch
@@ -257,17 +228,28 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef p
 					{
 						string childName = pNode->getAttr(g_nameAttribute);
 
-						IAudioSystemItem* pChildControl = GetControlByName(childName, false, pControl);
-						if (pChildControl == nullptr)
+						IAudioSystemItem* pStateControl = nullptr;
+						const size_t count = pControl->ChildCount();
+						for (size_t i = 0; i < count; ++i)
 						{
-							pChildControl = CreateControl(SControlDef(childName, type == eWwiseItemTypes_SwitchGroup ? eWwiseItemTypes_Switch : eWwiseItemTypes_State, false, pControl));
-							if (pChildControl)
+							IAudioSystemItem* pChild = pControl->GetChildAt(i);
+							if (pChild && pChild->GetName() == childName)
 							{
-								pChildControl->SetPlaceholder(true);
-								pChildControl->SetLocalised(bLocalised);
+								pStateControl = pChild;
 							}
 						}
-						pControl = pChildControl;
+						if (pStateControl == nullptr)
+						{
+							CID id = GenerateID(childName);
+							pStateControl = new IAudioSystemControl_wwise(childName, id, type == eWwiseItemTypes_SwitchGroup ? eWwiseItemTypes_Switch : eWwiseItemTypes_State);
+							pStateControl->SetLocalised(false);
+							pStateControl->SetPlaceholder(true);
+							pControl->AddChild(pStateControl);
+							pStateControl->SetParent(pControl);
+
+							m_controlsCache[id] = pStateControl;
+						}
+						pControl = pStateControl;
 					}
 				}
 				else
@@ -286,33 +268,14 @@ ConnectionPtr CAudioSystemEditor_wwise::CreateConnectionFromXMLNode(XmlNodeRef p
 						{
 							RtpcConnectionPtr pConnection = std::make_shared<CRtpcConnection>(pControl->GetId());
 
-							float mult = 1.0f;
-							float shift = 0.0f;
-							if (pNode->haveAttr(g_multAttribute))
-							{
-								const string value = pNode->getAttr(g_multAttribute);
-								mult = (float)std::atof(value.c_str());
-							}
-							if (pNode->haveAttr(g_shiftAttribute))
-							{
-								const string value = pNode->getAttr(g_shiftAttribute);
-								shift = (float)std::atof(value.c_str());
-							}
-							pConnection->mult = mult;
-							pConnection->shift = shift;
+							pNode->getAttr(g_multAttribute, pConnection->mult);
+							pNode->getAttr(g_shiftAttribute, pConnection->shift);
 							return pConnection;
 						}
 					case EACEControlType::eACEControlType_State:
 						{
 							StateConnectionPtr pConnection = std::make_shared<CStateToRtpcConnection>(pControl->GetId());
-
-							float value = 0.0f;
-							if (pNode->haveAttr(g_valueAttribute))
-							{
-								const string valueStr = pNode->getAttr(g_valueAttribute);
-								value = (float)std::atof(valueStr.c_str());
-							}
-							pConnection->value = value;
+							pNode->getAttr(g_valueAttribute, pConnection->value);
 							return pConnection;
 						}
 					}
@@ -441,6 +404,15 @@ const char* CAudioSystemEditor_wwise::GetTypeIcon(ItemType type) const
 	case eWwiseItemTypes_StateGroup:
 		return "Editor/Icons/audio/wwise/stategroup_nor.png";
 		break;
+	case eWwiseItemTypes_WorkUnit:
+		return "Editor/Icons/audio/wwise/workunit_nor.png";
+		break;
+	case eWwiseItemTypes_VirtualFolder:
+		return "Editor/Icons/audio/wwise/folder_nor.png";
+		break;
+	case eWwiseItemTypes_PhysicalFolder:
+		return "Editor/Icons/audio/wwise/physical_folder_nor.png";
+		break;
 	}
 	return "Editor/Icons/audio/wwise/switchgroup_nor.png";
 }
@@ -473,9 +445,9 @@ ACE::EACEControlType CAudioSystemEditor_wwise::ImplTypeToATLType(ItemType type) 
 	return eACEControlType_NumTypes;
 }
 
-ACE::TImplControlTypeMask CAudioSystemEditor_wwise::GetCompatibleTypes(EACEControlType eATLControlType) const
+ACE::TImplControlTypeMask CAudioSystemEditor_wwise::GetCompatibleTypes(EACEControlType atlControlType) const
 {
-	switch (eATLControlType)
+	switch (atlControlType)
 	{
 	case eACEControlType_Trigger:
 		return eWwiseItemTypes_Event;
@@ -499,9 +471,19 @@ ACE::TImplControlTypeMask CAudioSystemEditor_wwise::GetCompatibleTypes(EACEContr
 	return AUDIO_SYSTEM_INVALID_TYPE;
 }
 
-ACE::CID CAudioSystemEditor_wwise::GetID(const string& sName) const
+ACE::CID CAudioSystemEditor_wwise::GenerateID(const string& fullPathName) const
 {
-	return CCrc32::Compute(sName);
+	return CCrc32::ComputeLowercase(fullPathName);
+}
+
+ACE::CID CAudioSystemEditor_wwise::GenerateID(const string& controlName, bool bIsLocalised, IAudioSystemItem* pParent) const
+{
+	string pathName = (pParent) ? pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + controlName : controlName;
+	if (bIsLocalised)
+	{
+		pathName = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + pathName;
+	}
+	return GenerateID(pathName);
 }
 
 string CAudioSystemEditor_wwise::GetName() const
@@ -531,13 +513,13 @@ void CAudioSystemEditor_wwise::DisableConnection(ConnectionPtr pConnection)
 	IAudioSystemItem* pControl = GetControl(pConnection->GetID());
 	if (pControl)
 	{
-		int nConnectionCount = m_connectionsByID[pControl->GetId()] - 1;
-		if (nConnectionCount <= 0)
+		int connectionCount = m_connectionsByID[pControl->GetId()] - 1;
+		if (connectionCount <= 0)
 		{
-			nConnectionCount = 0;
+			connectionCount = 0;
 			pControl->SetConnected(false);
 		}
-		m_connectionsByID[pControl->GetId()] = nConnectionCount;
+		m_connectionsByID[pControl->GetId()] = connectionCount;
 	}
 }
 
@@ -548,6 +530,40 @@ void CAudioSystemEditor_wwise::EnableConnection(ConnectionPtr pConnection)
 	{
 		++m_connectionsByID[pControl->GetId()];
 		pControl->SetConnected(true);
+	}
+}
+
+void CAudioSystemEditor_wwise::Clear()
+{
+	// Delete all the controls
+	for (auto controlPair : m_controlsCache)
+	{
+		IAudioSystemItem* pControl = controlPair.second;
+		if (pControl)
+		{
+			delete pControl;
+		}
+	}
+	m_controlsCache.clear();
+
+	// Clean up the root control
+	m_rootControl = IAudioSystemItem();
+}
+
+void CAudioSystemEditor_wwise::CreateControlCache(IAudioSystemItem* pParent)
+{
+	if (pParent)
+	{
+		const size_t count = pParent->ChildCount();
+		for (size_t i = 0; i < count; ++i)
+		{
+			IAudioSystemItem* pChild = pParent->GetChildAt(i);
+			if (pChild)
+			{
+				m_controlsCache[pChild->GetId()] = pChild;
+				CreateControlCache(pChild);
+			}
+		}
 	}
 }
 

@@ -137,6 +137,7 @@ class CWheeledVehicleEntity : public CRigidEntity {
   float m_pullTilt;
   float m_drivingTorque;
 	float m_maxTilt;
+	float m_wheelMassScale;
 };
 
 #endif

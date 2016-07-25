@@ -539,6 +539,18 @@ public:
 		return sizeof(*this);
 	}
 
+	// Adding this to fix the compilation. The whole hashing is legacy and
+	// will be removed subsequently.
+	virtual SMessageTag GetMessageTag(INetSender* pSender, IMessageMapper* mapper)
+	{
+		SMessageTag mTag;
+		mTag.messageId = mapper->GetMsgId(m_pDef);
+		mTag.varying1 = 0;    // Assuming a 1-1 correspondence with data rates for now
+		mTag.varying2 = 0;    // Assuming a 1-1 correspondence with data rates for now
+
+		return mTag;
+	}
+
 private:
 	const SNetMessageDef* m_pDef;
 	CContextViewPtr       m_pView;
@@ -983,8 +995,6 @@ void CContextView::GC_GetEstablishmentOrder()
 	ASSERT_PRIMARY_THREAD;
 	ASSERT_GLOBAL_LOCK;
 
-	ScopedSwitchToGlobalHeap globalHeap;
-
 	CContextEstablisherPtr pEstablisher = new CContextEstablisher();
 	pEstablisher->OnFailDisconnect(Parent());
 
@@ -1036,26 +1046,7 @@ bool CContextView::EnterState(EContextViewState state)
 	{
 		NET_ASSERT(!m_establishmentLock.IsLocking());
 
-		if (!IsMigrating())
-		{
-			m_establishmentLock = CChangeStateLock(this, GetWaitStateName(state));
-		}
-		else
-		{
-			//-- Host migration only locks the state on eCVS_Begin and eCVS_InGame, because the other states will be skipped.
-			switch (state)
-			{
-			case eCVS_Begin:
-			case eCVS_InGame:
-				m_establishmentLock = CChangeStateLock(this, GetWaitStateName(state));
-				break;
-
-			default:
-				m_establishmentLock = CChangeStateLock();
-				break;
-			}
-		}
-
+		m_establishmentLock = CChangeStateLock(this, GetWaitStateName(state));
 		ContextState()->SetEstablisherState(this, state);
 		ContextState()->ChangeSubscription(this, FilterEventMask(ContextViewEvents[state], state) & m_eventMask);
 	}
@@ -1098,23 +1089,7 @@ void CContextView::ExitState(EContextViewState state)
 	}
 	else
 	{
-		if (!IsMigrating())
-		{
-			state = EContextViewState(int(state) + 1);
-		}
-		else
-		{
-			//-- Host migration skips some states.
-			if (state == eCVS_Begin)
-			{
-				//-- skip 4 states completely on host migration.
-				state = eCVS_InGame;
-			}
-			else
-			{
-				state = EContextViewState(int(state) + 1);
-			}
-		}
+		state = EContextViewState(int(state) + 1);
 	}
 	SetLocalState(state);
 }
@@ -1135,18 +1110,6 @@ void CContextView::OnViewStateDisconnect(const char* message)
 		Parent()->Disconnect(eDC_ProtocolError, message);
 }
 
-bool CContextView::IsMigrating() const
-{
-	CNetChannel* pParent = Parent();
-
-	if (pParent)
-	{
-		return pParent->IsMigratingChannel();
-	}
-
-	return false;
-}
-
 void CContextView::Init(
   CNetChannel* pParent,
   CNetContext* pContext,
@@ -1161,11 +1124,6 @@ void CContextView::Init(
 	m_pParent = pParent;
 	m_pContext = pContext;
 
-	if (IsMigrating())
-	{
-		RestoreStateDuringMigration();
-	}
-
 	m_config = *pConfig;
 	m_eventMask = ~unsigned(0);
 
@@ -1173,12 +1131,6 @@ void CContextView::Init(
 		m_eventMask &= ~eNOE_ReconfiguredObject;
 	if (!m_config.pUpdateMsg)
 		m_eventMask &= ~eNOE_ObjectAspectChange;
-
-	if (IsPeer())
-	{
-		// Don't care about these events on rebroadcaster channels
-		m_eventMask &= ~(eNOE_BindObject | eNOE_UnbindObject | eNOE_UnboundObject | eNOE_BindAspects | eNOE_UnbindAspects | eNOE_SetAuthority | eNOE_RemoveStaticEntity);
-	}
 
 	m_bLocal = false;
 
@@ -1270,12 +1222,12 @@ void CContextView::CompleteInitialization()
 
 void CContextView::OnNoBlockingMessages()
 {
-	if (!Parent() || IsPeer())
+	if (!Parent())
 	{
 		return;
 	}
 
-	if ((!(gEnv->bHostMigrating && gEnv->bMultiplayer)) && (!Parent()->IsTimeReady()))
+	if (!Parent()->IsTimeReady())
 	{
 		return;
 	}
@@ -1484,9 +1436,6 @@ bool CContextView::ScheduleAttachment(bool fromChannel, IRMIMessageBodyPtr pMess
 #endif // ENABLE_URGENT_RMIS || ENABLE_INDEPENDENT_RMIS
 			cantSend |= 4 * !IsContextCurrent();
 			SNetObjectID id = ContextState()->GetNetID(pMessage->objId);
-			SSendableHandle hostMigrationHandle;
-			hostMigrationHandle.id = SContextViewObject::eC_HOSTMIGRATION_ID;
-			hostMigrationHandle.salt = SContextViewObject::eC_HOSTMIGRATION_SALT;
 			if (id.id < m_objects.size())
 			{
 				// Treat all messages as ordered until in game state achieved otherwise
@@ -1519,14 +1468,6 @@ bool CContextView::ScheduleAttachment(bool fromChannel, IRMIMessageBodyPtr pMess
 							NetLog("[RMI]: Ordered [%s] invoked to [%s] when entity [%s] (id %d) is not bound (bind handle is 0)", (pMessage->pMessageDef != NULL) ? pMessage->pMessageDef->description : "<unknown>", Parent()->GetName(), pEntity ? pEntity->GetName() : "<unknown>", pMessage->objId);
 #endif        // ENABLE_DEFERRED_RMI_QUEUE
 						}
-
-						if (m_objects[id.id].orderedRMIHandle == hostMigrationHandle)
-						{
-							// This handle was reset during host migration to avoid the 'not bound' warning above - do a genuine reset here
-							IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pMessage->objId);
-							NetLog("[RMI]: Ordered [%s] invoked to [%s] for entity [%s] first time after host migration event", (pMessage->pMessageDef != NULL) ? pMessage->pMessageDef->description : "<unknown>", Parent()->GetName(), pEntity ? pEntity->GetName() : "<unknown>");
-							m_objects[id.id].orderedRMIHandle = SSendableHandle();
-						}
 					}
 					depHdl[1] = *(myHdl = &m_objects[id.id].orderedRMIHandle);
 				}
@@ -1550,14 +1491,6 @@ bool CContextView::ScheduleAttachment(bool fromChannel, IRMIMessageBodyPtr pMess
 							{
 								IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pMessage->objId);
 								NetLog("[RMI]: Unordered [%s] invoked to [%s] when entity [%s] (id %d) is not bound (bind handle is 0)", (pMessage->pMessageDef != NULL) ? pMessage->pMessageDef->description : "<unknown>", Parent()->GetName(), pEntity ? pEntity->GetName() : "<unknown>", pMessage->objId);
-							}
-
-							if (m_objects[id.id].bindHandle == hostMigrationHandle)
-							{
-								// This handle was reset during host migration to avoid the 'not bound' warning above - do a genuine reset here
-								IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pMessage->objId);
-								NetLog("[RMI]: Unordered [%s] invoked to [%s] for entity [%s] first time after host migration event", (pMessage->pMessageDef != NULL) ? pMessage->pMessageDef->description : "<unknown>", Parent()->GetName(), pEntity ? pEntity->GetName() : "<unknown>");
-								m_objects[id.id].bindHandle = SSendableHandle();
 							}
 							depHdl[1] = m_objects[id.id].bindHandle;
 						}
@@ -1772,12 +1705,9 @@ void CContextView::ClearAllState()
 	m_ignoringCurObject = false;
 	m_witness = SNetObjectID();
 
-	if (!(gEnv->bHostMigrating && gEnv->bMultiplayer))
-	{
-		m_objectLocks.resize(0);
-		m_objects.resize(0);
-		m_objectsEx.resize(0);
-	}
+	m_objectLocks.resize(0);
+	m_objects.resize(0);
+	m_objectsEx.resize(0);
 
 	m_pSendables->clear();
 	m_flushUpdates = false;
@@ -1918,7 +1848,7 @@ void CContextView::UpdateSchedulerState(SNetObjectID id)
 	SContextViewObjectEx* pVwObjEx = &m_objectsEx[id.id];
 
 #if ENABLE_ASPECT_HASHING
-	NetworkAspectType hashedAspects = (~GetSentAspects(id, true, NULL)) & Context()->HashedAspects();
+	NetworkAspectType hashedAspects = (~GetSentAspects(id, true, eGSAA_DefaultAuthority)) & Context()->HashedAspects();
 	hashedAspects &= ContextState()->GetContextObject(id).xtra->nAspectsEnabled;
 	if (IsLocal())
 		hashedAspects = 0;
@@ -2296,12 +2226,12 @@ void CContextView::ReconfiguredObject(SNetObjectID netID)
 }
 
 #if ENABLE_ASPECT_HASHING
-void CContextView::HashAspect(NetworkAspectID aspectIdx, TSerialize ser)
+bool CContextView::HashAspect(NetworkAspectID aspectIdx, TSerialize ser, uint32, uint32, uint32)
 {
 	if (!Context()->IsMultiplayer())
 	{
 		NET_ASSERT(false);
-		return; // TODO: make sure the logic here is correct - Lin
+		return true; // TODO: make sure the logic here is correct - Lin
 	}
 
 	SNetObjectID id;
@@ -2317,11 +2247,11 @@ void CContextView::HashAspect(NetworkAspectID aspectIdx, TSerialize ser)
 	{
 		if (CVARS.LogLevel >= 3)
 			NetWarning("CContextView::HashAspect: unknown object %s on %s (trying to hash %s)", id.GetText(), m_pParent->GetName(), Context()->GetAspectName(aspectIdx));
-		return;
+		return true;
 	}
 	SContextObjectRef obj = ContextState()->GetContextObject(id);
 	if (!obj.main)
-		return;
+		return true;
 	NET_ASSERT(m_objects.size() > id.id);
 	NET_ASSERT(m_objects[id.id].salt = id.salt);
 	uint32& hashReceived = m_objectsEx[id.id].hashReceived[aspectIdx];
@@ -2330,12 +2260,13 @@ void CContextView::HashAspect(NetworkAspectID aspectIdx, TSerialize ser)
 	else
 		hash = hashReceived;
 	if ((obj.xtra->nAspectsEnabled & (1 << aspectIdx)) == 0)
-		return;
+		return true;
 
 	if (obj.xtra->hash[aspectIdx] && hash && hash != obj.xtra->hash[aspectIdx])
 	{
 		PolluteObjectAspect(id, aspectIdx);
 	}
+	return true;
 }
 #endif
 
@@ -2419,7 +2350,6 @@ void CContextView::ChangedObject(SNetObjectID id, uint32 flags, NetworkAspectTyp
 			SContextObjectRef obj = ContextState()->GetContextObject(id);
 			if (obj.xtra == NULL)
 			{
-				gEnv->pNetwork->TerminateHostMigration(Parent()->GetSession());
 				return;
 			}
 
@@ -2443,7 +2373,7 @@ bool CContextView::HaveAuthorityOfObject(SNetObjectID id) const
 		return false;
 }
 
-bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSeq, uint32 nOldSeq)
+bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSeq, uint32 nOldSeq, uint32 timeFraction32)
 {
 	if (IsLocal())
 	{
@@ -2460,6 +2390,7 @@ bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSe
 		return false;
 	}
 
+	
 #if ENABLE_DEBUG_KIT
 	if (CurrentObjectID() != m_acceptedForUpdateObject)
 	{
@@ -2477,7 +2408,7 @@ bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSe
 	// do we have control of this aspect?
 	bool haveControl = (GetSentAspects(CurrentObjectID(), false, eGSAA_DefaultAuthority) & (1 << i)) != 0;
 	bool ok = false;
-	SReceiveContext ctx = CreateReceiveContext(ser, i, nCurSeq, nOldSeq, &ok);
+	SReceiveContext ctx = CreateReceiveContext(ser, i, nCurSeq, nOldSeq, timeFraction32, &ok);
 	if (!ok)
 	{
 		char msg[256];
@@ -2498,12 +2429,13 @@ bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSe
 	return ok;
 }
 
-SReceiveContext CContextView::CreateReceiveContext(TSerialize ser, NetworkAspectID index, uint32 nCurSeq, uint32 nOldSeq, bool* ok)
+SReceiveContext CContextView::CreateReceiveContext(TSerialize ser, NetworkAspectID index, uint32 nCurSeq, uint32 nOldSeq, uint32 timeFraction32, bool* ok)
 {
 	SReceiveContext ctx(ser);
 	*ok = true;
 	ctx.basisSeq = nOldSeq;
 	ctx.currentSeq = nCurSeq;
+	ctx.timeValue = timeFraction32;
 	ctx.flags = 0;
 	ctx.index = index;
 	ctx.objId = CurrentObjectID();
@@ -2558,12 +2490,9 @@ bool CContextView::GetWitnessDirection(Vec3& dir)
 
 EMessageSendResult CContextView::WriteHeader(INetSender* pSender)
 {
-	if (!IsPeer())
-	{
-		pSender->BeginMessage(m_config.pUpdatePhysicsTime);
-		SPhysicsTime tm(ContextState()->GetLocalPhysicsTime());
-		tm.SerializeWith(pSender->ser);
-	}
+	pSender->BeginMessage(m_config.pUpdatePhysicsTime);
+	SPhysicsTime tm(ContextState()->GetLocalPhysicsTime());
+	tm.SerializeWith(pSender->ser);
 	return eMSR_SentOk;
 }
 
@@ -2710,18 +2639,17 @@ void CContextView::NotifyPartialUpdate(SNetObjectID id, NetworkAspectID aspectId
 	Parent()->NetSubstituteSendable(&*pMsg, 0, NULL, &objex.notifyPartialUpdateHandle[aspectIdx]);
 }
 
-void CContextView::PartialAspect(NetworkAspectID aspectIdx, TSerialize ser)
+bool CContextView::PartialAspect(NetworkAspectID aspectIdx, TSerialize ser, uint32, uint32, uint32)
 {
 	SNetObjectID id;
 	NetLogPacketDebug("PartialAspect %d", aspectIdx);
 	ser.Value("obj", id, 'eid');
-	if (!Context()->IsMultiplayer())
-		return;
-	if (!IsObjectEnabled(id))
-		return;
+	if (!Context()->IsMultiplayer() || !IsObjectEnabled(id))
+		return true; // original behavior
 	m_objectsEx[id.id].partialUpdateReceived[aspectIdx] = g_time;
 	m_objectsEx[id.id].partialUpdatesRemaining[aspectIdx] = 5;
 	ChangedObject(id, 0, 1 << aspectIdx);
+	return true;
 }
 
 void CContextView::NetDump(ENetDumpType type, INetDumpLogger& logger)
@@ -2750,105 +2678,4 @@ void CContextView::UnbindAspects(SNetObjectID obj, NetworkAspectType aspects)
 			BroadcastHistoricalEvent(evt);
 		}
 	}
-}
-
-_smart_ptr<CNetContextState> CContextView::m_BackupContextStateDuringMigration;
-
-CContextView::SObjects CContextView::m_HostMigrationObjects;
-
-uint32 g_haveTakenContext = 0;
-uint32 g_haveClearedContext = 0;
-
-void CContextView::BackupStateDuringMigration()
-{
-	SCOPED_GLOBAL_LOCK;
-	if (!m_HostMigrationObjects.empty())
-		return;
-
-	if ((Context() == NULL) || (Context()->GetCurrentState() == NULL))
-	{
-		m_BackupContextStateDuringMigration = NULL;
-		return;
-	}
-
-	m_HostMigrationObjects.resize(m_objects.size());
-
-	m_BackupContextStateDuringMigration = Context()->GetCurrentState();
-	g_haveTakenContext++;
-
-	int objsSize = m_HostMigrationObjects.size();
-	int a;
-
-	CryLog("[MIGRATION] Duplicating %s(%p) ContextView Objects: %d", GetName().c_str(), this, objsSize);
-
-	for (a = 0; a < objsSize; a++)
-	{
-		m_HostMigrationObjects[a] = m_objects[a];
-	}
-}
-
-bool CContextView::ChangeBindLocksDuringMigration()
-{
-	if (m_objectLocks.size() != m_HostMigrationObjects.size())
-	{
-		CryLogAlways("[Host Migration] state inconsistent - aborting migration for user.");
-		return false;
-	}
-	else
-	{
-		for (size_t a = 0; a < m_objectLocks.size(); a++)
-		{
-			m_objectLocks[a].ChangeContextState(Context()->GetCurrentState());
-		}
-	}
-	return true;
-}
-
-void CContextView::RestoreStateDuringMigration()
-{
-	SCOPED_GLOBAL_LOCK;
-	m_objects.resize(m_HostMigrationObjects.size());
-	m_objectLocks.resize(m_HostMigrationObjects.size());
-	m_objectsEx.resize(m_HostMigrationObjects.size());
-
-	int objsSize = m_objects.size();
-	int objsExSize = m_objectsEx.size();
-	int objsLocksSize = m_objectLocks.size();
-	int a;
-
-	CryLog("[MIGRATION] Restoring %s(%p) ContextView Objects: %d,%d,%d", GetName().c_str(), this, objsSize, objsExSize, objsLocksSize);
-
-	for (a = 0; a < objsSize; a++)
-	{
-		SNetObjectID netID(a, m_HostMigrationObjects[a].salt);
-
-		if (m_BackupContextStateDuringMigration->GetContextObject(netID).main)
-		{
-			m_objects[a] = m_HostMigrationObjects[a];
-			ESpawnState ss = m_objects[a].spawnState;
-			m_objects[a].Reset(); // contains SSendableHandles and authority which is no longer valid
-			SSendableHandle hostMigrationHandle;
-			hostMigrationHandle.id = SContextViewObject::eC_HOSTMIGRATION_ID;
-			hostMigrationHandle.salt = SContextViewObject::eC_HOSTMIGRATION_SALT;
-			m_objects[a].bindHandle = m_objects[a].orderedRMIHandle = hostMigrationHandle;
-			m_objects[a].spawnState = ss;
-			m_objectLocks[a] = m_BackupContextStateDuringMigration->LockObject(netID, "CTX");
-		}
-		else
-		{
-			m_objects[a].Reset();
-			m_objectLocks[a] = CNetObjectBindLock();
-		}
-	}
-	for (a = 0; a < objsExSize; a++)
-	{
-		m_objectsEx[a].Reset();   // Contains history which is no longer valid
-	}
-}
-
-void CContextView::ClearStateDuringMigration()
-{
-	m_HostMigrationObjects.resize(0);
-	m_BackupContextStateDuringMigration = NULL;
-	g_haveClearedContext++;
 }

@@ -75,7 +75,6 @@ CRopeEntity::CRopeEntity(CPhysicalWorld *pWorld, IGeneralMemoryHeap* pHeap)
 	, m_idConstraint(0)
 	, m_iConstraintClient(0)
 	, m_dir0dst(ZERO)
-	, m_jobE(-1.0f)
 	, m_vtx(nullptr)
 	, m_vtx1(nullptr)
 	, m_vtxSolver(nullptr)
@@ -123,7 +122,7 @@ CRopeEntity::CRopeEntity(CPhysicalWorld *pWorld, IGeneralMemoryHeap* pHeap)
 
 CRopeEntity::~CRopeEntity()
 {
-	if (m_segs)	delete[] m_segs;
+	if (m_segs)	delete[] m_segs; // cppcheck-suppress autovarInvalidDeallocation
 	if (m_vtx) delete[] m_vtx;
 	if (m_vtx1) delete[] m_vtx1;
 	if (m_vtxSolver) delete[] m_vtxSolver;
@@ -324,6 +323,7 @@ int CRopeEntity::SetParams(pe_params *_params, int bThreadSafe)
 					memset(m_vtx1 = new rope_vtx[m_nVtxAlloc], 0, m_nVtxAlloc*sizeof(rope_vtx));
 					for(i=0;i<=params->nSegments;i++)	{
 						m_vtx[i].pt=m_vtx[i].pt0 = m_segs[i].pt;
+						MARK_UNUSED m_vtx[i].ncontact;
 						m_segs[i].iVtx0 = i;
 					}
 					m_nVtx=m_nVtx0 = params->nSegments+1;
@@ -354,8 +354,7 @@ int CRopeEntity::SetParams(pe_params *_params, int bThreadSafe)
 			m_pTiedTo[i] = params->pEntTiedTo[i]==WORLD_ENTITY ? &g_StaticPhysicalEntity : 
 										 (params->pEntTiedTo[i] ? ((CPhysicalPlaceholder*)params->pEntTiedTo[i])->GetEntity() : 0);
 			if (m_pTiedTo[i]!=pPrevTied && pPrevTied)	{
-				if (pPrevTied->GetType()==PE_ROPE)
-					pPrevTied->RemoveCollider(this);
+				pPrevTied->RemoveCollider(this);
 				if (!(m_flags & pef_disabled)) {
 					if ((unsigned int)pPrevTied->m_iSimClass<7u)
 						pPrevTied->Awake();
@@ -778,9 +777,9 @@ int CRopeEntity::Action(pe_action *_action, int bThreadSafe)
 			}
 			if (m_bTargetPoseActive==1)	for(i=0;i<2;i++) if (m_pTiedTo[i]) {
 				Vec3 pos; quaternionf q(IDENTITY); float scale;
-				if (m_flags & (rope_target_vtx_rel0|rope_target_vtx_rel1))
+				if (m_flags & rope_target_vtx_rel0<<i)
 					m_ptTiedLoc[i] = action->points[m_nSegs*i];
-				else {
+				else if (!(m_flags & (rope_target_vtx_rel0|rope_target_vtx_rel1))) {
 					m_pTiedTo[i]->GetLocTransform(m_iTiedPart[i], pos,q,scale);
 					m_ptTiedLoc[i] = (action->points[m_nSegs*i]-pos)*q;
 				}
@@ -1024,7 +1023,7 @@ void CRopeEntity::AllocSubVtx()
 	}
 	if (m_nVtx==m_nVtxAlloc) {
 		rope_vtx *pVtx = m_vtx;
-		NO_BUFFER_OVERRUN
+		NO_BUFFER_OVERRUN	// cppcheck-suppress autovarInvalidDeallocation
 		memcpy(m_vtx=new rope_vtx[m_nVtxAlloc+=16], pVtx, m_nVtx*sizeof(rope_vtx));	delete[] pVtx;
 		pVtx = m_vtx1;
 		memcpy(m_vtx1=new rope_vtx[m_nVtxAlloc], pVtx, m_nVtx*sizeof(rope_vtx)); delete[] pVtx;
@@ -1138,6 +1137,7 @@ void CRopeEntity::StepSubdivided(float time_interval, SRopeCheckPart *checkParts
 			}	else { MARK_UNUSED m_segs[i].ncontact; m_segs[i].pContactEnt=0; }
 		}	else { MARK_UNUSED m_segs[i].ncontact; m_segs[i].pContactEnt=0; }
 
+		// cppcheck-suppress nullPointer
 		for(j=0;j<nCheckParts;j++) if (!checkParts[j].pGeom->IsAPrimitive()) {//checkParts[j].pent->m_iSimClass!=3) {
 			center = (checkParts[j].pent->m_qrot*!checkParts[j].q0)*(m_segs[i].pt0-checkParts[j].pos0) + checkParts[j].pent->m_pos;
 			aray.m_ray.origin = (center-checkParts[j].offset)*checkParts[j].R;
@@ -1782,7 +1782,6 @@ void CRopeEntity::CheckCollisions(int iDir, SRopeCheckPart *checkParts,int nChec
 	contact cnt;
 	CRayGeom aray; aray.m_iCollPriority = 10;
 	CPhysicalEntity *pent;
-	INT_PTR mask = -isneg(m_jobE);
 	intersection_params ip;
 	ip.bStopAtFirstTri = true;
 	ip.iUnprojectionMode = 1;
@@ -1906,7 +1905,7 @@ void CRopeEntity::CheckCollisions(int iDir, SRopeCheckPart *checkParts,int nChec
 		if (m_segs[iseg].pContactEnt && fabs_tpl(m_segs[iseg].ncontact.len2()-1.0f)>0.01f)
 			m_segs[iseg].ncontact.normalize();
 
-		if (((INT_PTR)pent & mask)!=((INT_PTR)m_segs[iseg].pContactEnt & mask)) {
+		if (pent!=m_segs[iseg].pContactEnt) {
 			if (pent) pent->Release();
 			if (m_segs[iseg].pContactEnt) m_segs[iseg].pContactEnt->AddRef();
 		}
@@ -1934,15 +1933,6 @@ int CRopeEntity::Step(float time_interval)
 	pe_params_buoyancy pb[4];
 	SRopeCheckPart checkParts[6+eBigEndian*26];
 	EventPhysPostStep event;
-
-	if (m_jobE>=0) {
-		E=m_jobE; m_jobE=-1.0f; 
-		for(i=1,BBox[0]=BBox[1]=m_segs[0].pt;i<=m_nSegs;i++) {
-			BBox[0] = min(BBox[0], m_segs[i].pt);
-			BBox[1] = max(BBox[1], m_segs[i].pt);
-		}
-		goto StepDone;
-	}
 
 	if (m_collTypes & ent_all)
 		for(i=0;i<=m_nSegs;i++)	if (m_segs[i].pContactEnt && (m_segs[i].pContactEnt->m_iSimClass==7 ||
@@ -2357,7 +2347,6 @@ int CRopeEntity::Step(float time_interval)
 	else
 		for(i=0,E=0;i<=m_nSegs;i++) E += m_segs[i].vel.len2();
 
-StepDone:
 	int bAwake;
 	i = -isneg(E-m_Emin*(m_nSegs+1));
 	int nSlowFrames = m_nSlowFrames;
@@ -2884,7 +2873,7 @@ int CRopeEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 		ser.Value("nvtx", m_nVtx);
 		m_nVtx0 = m_nVtx;
 		if (m_nVtx>0) {
-			if (m_nVtx > m_nVtxAlloc) {
+			if (m_nVtx > m_nVtxAlloc) {	// cppcheck-suppress autovarInvalidDeallocation
 				delete[] m_vtx; delete[] m_vtx1; m_nVtxAlloc = m_nVtx;
 				memset(m_vtx =new rope_vtx[m_nVtxAlloc], 0, m_nVtxAlloc*sizeof(rope_vtx));
 				memset(m_vtx1=new rope_vtx[m_nVtxAlloc], 0, m_nVtxAlloc*sizeof(rope_vtx));

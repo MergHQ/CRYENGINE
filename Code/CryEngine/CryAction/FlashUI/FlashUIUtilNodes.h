@@ -9,10 +9,10 @@
 //  History:
 //
 ////////////////////////////////////////////////////////////////////////////
-#ifndef __FlashUIUtilNodes_H__
-#define __FlashUIUtilNodes_H__
 
-#include "FlowSystem/Nodes/FlowBaseNode.h"
+#pragma once
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 // --------------------------------------------------------------
 class CFlashUIPlatformNode : public CFlowBaseNode<eNCT_Singleton>
@@ -70,5 +70,3 @@ private:
 
 	float m_fTime;
 };
-
-#endif

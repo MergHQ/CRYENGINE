@@ -125,3 +125,9 @@ void IVariableUsingBase::_Serialize(Serialization::IArchive& ar, const char* szV
 	}
 #endif
 }
+
+//--------------------------------------------------------------------------------------------------
+void CryDRS::CVariable::SetValueFromString(const string& valueAsString)
+{
+	CConditionParserHelper::GetResponseVariableValueFromString(valueAsString.c_str(), &m_value);
+}

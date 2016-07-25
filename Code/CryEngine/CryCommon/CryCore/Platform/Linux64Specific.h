@@ -13,10 +13,6 @@
 
 #pragma once
 
-//#define _CPU_X86
-#define _CPU_AMD64
-#define _CPU_SSE
-
 #define __debugbreak() raise(SIGTRAP)
 #define RC_EXECUTABLE "rc"
 #define USE_CRT       1

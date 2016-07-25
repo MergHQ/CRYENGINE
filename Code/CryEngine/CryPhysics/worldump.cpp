@@ -172,7 +172,7 @@ struct Serializer {
 				if (!strcmp(list[i]->name,"end"))
 					continue;
 				ptr0 = str+sprintf(str, "%.*s%s ", ctx.iStackPos+1,g_strTabs, list[i]->name);
-				void *pdata = (char*)ctx.pobj+(int)list[i]->data.ptr;
+				void *pdata = (char*)ctx.pobj+(INT_PTR)list[i]->data.ptr;
 				switch (list[i]->itype) {
 					case ft_int: sprintf(ptr0, g_strFormats[0][list[i]->itype], *(int*)pdata); break;
 					case ft_uint: sprintf(ptr0, g_strFormats[0][list[i]->itype], *(unsigned int*)pdata); break;
@@ -193,7 +193,7 @@ struct Serializer {
 					case ft_matrix33: {	Matrix33 &R = *(Matrix33*)pdata;
 						sprintf(ptr0, g_strFormats[0][list[i]->itype], R.m00,R.m01,R.m02,R.m10,R.m11,R.m12,R.m20,R.m21,R.m22);
 					}	break;
-					case ft_entityptr: ppc = *(CPhysicalPlaceholder**)((char*)ctx.pobj+(int)list[i]->data.ptr);
+					case ft_entityptr: ppc = *(CPhysicalPlaceholder**)((char*)ctx.pobj+(INT_PTR)list[i]->data.ptr);
 														 ppc ? ltoa(ppc->m_id,ptr0,10) : strcpy(ptr0,"NULL"); break;
 					case ft_proc: 
 						if ((this->*list[i]->data.func)(ctx,ptr0))
@@ -218,7 +218,7 @@ struct Serializer {
 				itor = ctx.pSerializer->map.find(ptr0);
 				if (itor!=ctx.pSerializer->map.end()) {
 					pitem = itor->second;
-					void *pdata = (char*)ctx.pobj+(int)pitem->data.ptr;
+					void *pdata = (char*)ctx.pobj+(INT_PTR)pitem->data.ptr;
 					switch (pitem->itype) {
 						case ft_int: case ft_uint: case ft_short: case ft_ushort: case ft_uint64: case ft_float: 
 							sscanf(ptr1, g_strFormats[1][pitem->itype], pdata); break;
@@ -567,7 +567,7 @@ struct CTetrLatticeSerializer : Serializer {
 				fprintf(ctx.f,"%.*svtx %d (%.8g %.8g %.8g) %X\n", ctx.iStackPos+1,g_strTabs, i, pLattice->m_pVtx[i].x,pLattice->m_pVtx[i].y,
 					pLattice->m_pVtx[i].z,pLattice->m_pVtxFlags[i]);
 		} else {
-			Vec3 v; int flags;
+			Vec3 v; unsigned int flags;
 			if (!pLattice->m_pVtx) pLattice->m_pVtx = new Vec3[pLattice->m_nVtx];
 			if (!pLattice->m_pVtxFlags) pLattice->m_pVtxFlags = new int[pLattice->m_nVtx];
 			sscanf(str,"%d (%g %g %g) %X", &i, &v.x,&v.y,&v.z, &flags);
@@ -1473,7 +1473,7 @@ struct CArticulatedEntitySerializer : CRigidEntitySerializer {
 		DECLARE_PROC("Host", &CArticulatedEntitySerializer::SerializeHost)
 		DECLARE_MEMBER("HostPivot", ft_vector, m_posHostPivot)
 		DECLARE_MEMBER("CheckCollisions", ft_int, m_bCheckCollisions)
-		DECLARE_MEMBER("CollisionResponse", ft_int, m_bCollisionResp)
+		DECLARE_MEMBER("Featherstone", ft_int, m_bFeatherstone)
 		DECLARE_MEMBER("ExertImpulse", ft_int, m_bExertImpulse)
 		DECLARE_MEMBER("SimType", ft_int, m_iSimType)
 		DECLARE_MEMBER("LyingSymType", ft_int, m_iSimTypeLyingMode)
@@ -1611,8 +1611,9 @@ struct CRopeVtxSerializer : Serializer {
 		DECLARE_MEMBER("ncontact", ft_vector, ncontact)
 		DECLARE_MEMBER("vcontact", ft_vector, vcontact)
 		DECLARE_MEMBER("ContactEnt", ft_entityptr, pContactEnt)
-		DECLARE_MEMBER("ContactPart", ft_int, iContactPart)
+		DECLARE_PROC("ContactPart", &CRopeVtxSerializer::SerializeContactPart)
 	}
+	DEFINE_MEMBER_PROC(rope_vtx, SerializeContactPart, iContactPart)
 };
 
 struct CRopeSegSerializer : Serializer {
@@ -1624,12 +1625,13 @@ struct CRopeSegSerializer : Serializer {
 		DECLARE_MEMBER("ncontact", ft_vector, ncontact)
 		DECLARE_MEMBER("vcontact", ft_vector, vcontact)
 		DECLARE_MEMBER("ContactEnt", ft_entityptr, pContactEnt)
-		DECLARE_MEMBER("ContactPart", ft_int, iContactPart)
+		DECLARE_PROC("ContactPart", &CRopeVtxSerializer::SerializeContactPart)
 		DECLARE_MEMBER("ptdst", ft_vector, ptdst)
 		DECLARE_MEMBER("tcontact", ft_float, tcontact)
 		DECLARE_MEMBER("iVtx0", ft_int, iVtx0)
 		DECLARE_PROC("end", &CRopeSegSerializer::Finalize)
 	}
+	DEFINE_MEMBER_PROC(rope_segment, SerializeContactPart, iContactPart)
 	int Finalize(parse_context &ctx, char *str) {
 		rope_segment *pseg = (rope_segment*)ctx.pobj;
 		if (!ctx.bSaving)
@@ -1907,9 +1909,10 @@ struct CAreaSerializer : CPhysicalPlaceholderSerializer {
 		DECLARE_MEMBER("sleepVel", ft_float, m_sleepVel)
 		DECLARE_MEMBER("borderPad", ft_float, m_borderPad)
 		DECLARE_MEMBER("szCell", ft_float, m_szCell)
-		DECLARE_MEMBER("waveSpeed", ft_float, m_waveSpeed)
-		DECLARE_MEMBER("waveTimeStep", ft_float, m_waveTimeStep)
-		DECLARE_MEMBER("waveDamping", ft_float, m_waveDamping)
+		DECLARE_MEMBER("waveSpeed", ft_float, m_waveSim.waveSpeed)
+		DECLARE_MEMBER("waveTimeStep", ft_float, m_waveSim.timeStep)
+		DECLARE_MEMBER("waveDampingCenter", ft_float, m_waveSim.dampingCenter)
+		DECLARE_MEMBER("waveDampingRim", ft_float, m_waveSim.dampingRim)
 		DECLARE_MEMBER("sizeReserve", ft_float, m_sizeReserve)
 		DECLARE_MEMBER("minObjV", ft_float, m_minObjV)
 		DECLARE_MEMBER("waterDensity", ft_float, m_pb.waterDensity)
@@ -1929,7 +1932,9 @@ struct CAreaSerializer : CPhysicalPlaceholderSerializer {
 	}
 	CPhysGeometrySerializer *pGeomSerializer;
 
-	int SerializeGeometry(parse_context &ctx, char *str) { return pGeomSerializer->SerializeGeometryPtr(ctx,str,((CPhysArea*)ctx.pobj)->m_pGeom); }
+	int SerializeGeometry(parse_context &ctx, char *str) { 
+		return ((CPhysArea*)ctx.pobj)->m_pGeom->GetType()!=GEOM_HEIGHTFIELD ? pGeomSerializer->SerializeGeometryPtr(ctx,str,((CPhysArea*)ctx.pobj)->m_pGeom) : 0; 
+	}
 	int SerializePoints(parse_context &ctx, char *str) {
 		CPhysArea *pArea = (CPhysArea*)ctx.pobj;
 		if (ctx.bSaving) {
@@ -2267,6 +2272,7 @@ void SerializeGeometries(CPhysicalWorld *pWorld, const char *fname,int bSave)
 	ctx.pobj = pWorld;
 	(ctx.pSerializer = &gms)->Serialize(ctx);
 	fclose(ctx.f);
+	g_StaticPhysicalEntity.m_pWorld = pWorld;
 }
 
 
@@ -2320,6 +2326,7 @@ void SerializeWorld(CPhysicalWorld *pWorld, const char *fname,int bSave)
 	ctx.pobj = pWorld;
 	(ctx.pSerializer = &pws)->Serialize(ctx);
 	fclose(ctx.f);
+	g_StaticPhysicalEntity.m_pWorld = pWorld;
 }
 
 #endif

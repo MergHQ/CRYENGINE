@@ -10,12 +10,13 @@
 //  Description:
 // -------------------------------------------------------------------------
 //  History:
-//    - Sept. 2010      Jens Schöbel added Output for square dist and vector
+//    - Sept. 2010      Jens SchÃ¶bel added Output for square dist and vector
 //
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_EntitiesInRange : public CFlowBaseNode<eNCT_Instanced>
 {

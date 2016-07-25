@@ -631,6 +631,13 @@ void CDefaultSkeleton::CopyAndAdjustSkeletonParams(const CDefaultSkeleton* pCDef
 
 	m_usePhysProxyBBox = pCDefaultSkeletonSrc->m_usePhysProxyBBox;
 
+	//remap capsule shadow list
+	m_ShadowCapsulesList = pCDefaultSkeletonSrc->m_ShadowCapsulesList;
+	uint32 numShadowCapsulesList = m_ShadowCapsulesList.size();
+	for (uint32 i = 0; i < numShadowCapsulesList; i++)
+		for (uint32 n = 0; n < 2; n++)
+			m_ShadowCapsulesList[i].arrJoints[n] = RemapIdx(pCDefaultSkeletonSrc, pCDefaultSkeletonSrc->m_ShadowCapsulesList[i].arrJoints[n]);
+
 	//remap limb IK
 	m_IKLimbTypes = pCDefaultSkeletonSrc->m_IKLimbTypes;
 	uint32 numLimbTypes = m_IKLimbTypes.size();

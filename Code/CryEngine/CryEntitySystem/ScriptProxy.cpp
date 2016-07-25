@@ -64,7 +64,7 @@ void CScriptProxy::Initialize(const SComponentInitializer& init)
 {
 	assert(init.m_pEntity);
 
-	if (m_pEntity == NULL)
+	if (m_pEntity == nullptr)
 	{
 		m_pEntity = (CEntity*)init.m_pEntity;
 		m_pScript = static_cast<const SComponentInitializerScriptProxy&>(init).m_pScript;
@@ -92,8 +92,8 @@ void CScriptProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 
-	IEntityClass* pClass = (pEntity ? pEntity->GetClass() : NULL);
-	CEntityScript* pEntityScript = (pClass ? (CEntityScript*)pClass->GetIEntityScript() : NULL);
+	IEntityClass* pClass = (pEntity ? pEntity->GetClass() : nullptr);
+	CEntityScript* pEntityScript = (pClass ? (CEntityScript*)pClass->GetIEntityScript() : nullptr);
 	if (pEntityScript && pEntityScript->LoadScript())
 	{
 		// Release current
@@ -318,18 +318,18 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
-				if (pEntity != NULL)
+				if (pIEntity != nullptr)
 				{
 					IEntity const* const pTriggerEntity = g_pIEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[2]));
-					IScriptTable* const pTriggerEntityScript = (pTriggerEntity ? pTriggerEntity->GetScriptTable() : NULL);
+					IScriptTable* const pTriggerEntityScript = (pTriggerEntity ? pTriggerEntity->GetScriptTable() : nullptr);
 
-					IScriptTable* const pTrgEntityThis = pEntity->GetScriptTable();
+					IScriptTable* const pTrgEntityThis = pIEntity->GetScriptTable();
 
-					if (pTrgEntityThis != NULL)
+					if (pTrgEntityThis != nullptr)
 					{
-						if (pTriggerEntityScript != NULL)
+						if (pTriggerEntityScript != nullptr)
 						{
 							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnEnterArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
 						}
@@ -340,9 +340,9 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 					}
 
 					// allow local player/camera source entities to trigger callback even without that entity having a scripttable
-					if ((pEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) != 0)
+					if ((pIEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) > 0)
 					{
-						if (pTriggerEntityScript != NULL)
+						if (pTriggerEntityScript != nullptr)
 						{
 							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientEnterArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
 						}
@@ -352,9 +352,9 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 						}
 					}
 
-					if ((pEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) != 0)
+					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerEnterArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerEnterArea, pTrgEntityThis);
 					}
 				}
 			}
@@ -365,26 +365,26 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
-				if (pEntity != NULL)
+				if (pIEntity != nullptr)
 				{
-					IScriptTable* const pTrgEntityThis = pEntity->GetScriptTable();
+					IScriptTable* const pTrgEntityThis = pIEntity->GetScriptTable();
 
-					if (pTrgEntityThis != NULL)
+					if (pTrgEntityThis != nullptr)
 					{
 						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnProceedFadeArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
 					// allow local player/camera source entities to trigger callback even without that entity having a scripttable
-					if ((pEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) != 0)
+					if ((pIEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) > 0)
 					{
 						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientProceedFadeArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
-					if ((pEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) != 0)
+					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerProceedFadeArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerProceedFadeArea, pTrgEntityThis, event.fParam[0]);
 					}
 				}
 			}
@@ -395,18 +395,18 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
-				if (pEntity != NULL)
+				if (pIEntity != nullptr)
 				{
 					IEntity const* const pTriggerEntity = g_pIEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[2]));
-					IScriptTable* const pTriggerEntityScript = (pTriggerEntity ? pTriggerEntity->GetScriptTable() : NULL);
+					IScriptTable* const pTriggerEntityScript = (pTriggerEntity ? pTriggerEntity->GetScriptTable() : nullptr);
 
-					IScriptTable* const pTrgEntityThis = pEntity->GetScriptTable();
+					IScriptTable* const pTrgEntityThis = pIEntity->GetScriptTable();
 
-					if (pTrgEntityThis != NULL)
+					if (pTrgEntityThis != nullptr)
 					{
-						if (pTriggerEntityScript != NULL)
+						if (pTriggerEntityScript != nullptr)
 						{
 							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
 						}
@@ -417,9 +417,9 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 					}
 
 					// allow local player/camera source entities to trigger callback even without that entity having a scripttable
-					if ((pEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) != 0)
+					if ((pIEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) > 0)
 					{
-						if (pTriggerEntityScript != NULL)
+						if (pTriggerEntityScript != nullptr)
 						{
 							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
 						}
@@ -429,7 +429,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 						}
 					}
 
-					if ((pEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) != 0)
+					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
 						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
 					}
@@ -442,26 +442,26 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
-				if (pEntity != NULL)
+				if (pIEntity != nullptr)
 				{
-					IScriptTable* const pTrgEntityThis = pEntity->GetScriptTable();
+					IScriptTable* const pTrgEntityThis = pIEntity->GetScriptTable();
 
-					if (pTrgEntityThis != NULL)
+					if (pTrgEntityThis != nullptr)
 					{
 						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnEnterNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
 					// allow local player/camera source entities to trigger callback even without that entity having a scripttable
-					if ((pEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) != 0)
+					if ((pIEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) > 0)
 					{
 						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientEnterNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
-					if ((pEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) != 0)
+					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerEnterNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerEnterNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 				}
 			}
@@ -472,24 +472,24 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
-				if (pEntity != NULL)
+				if (pIEntity != nullptr)
 				{
-					IScriptTable* const pTrgEntityThis = pEntity->GetScriptTable();
+					IScriptTable* const pTrgEntityThis = pIEntity->GetScriptTable();
 
-					if (pTrgEntityThis != NULL)
+					if (pTrgEntityThis != nullptr)
 					{
 						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLeaveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
 					// allow local player/camera source entities to trigger callback even without that entity having a scripttable
-					if ((pEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) != 0)
+					if ((pIEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) > 0)
 					{
 						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientLeaveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
-					if ((pEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) != 0)
+					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
 						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerLeaveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
 					}
@@ -502,26 +502,26 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
-				if (pEntity != NULL)
+				if (pIEntity != nullptr)
 				{
-					IScriptTable* const pTrgEntityThis = pEntity->GetScriptTable();
+					IScriptTable* const pTrgEntityThis = pIEntity->GetScriptTable();
 
-					if (pTrgEntityThis != NULL)
+					if (pTrgEntityThis != nullptr)
 					{
 						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnMoveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
 					}
 
 					// allow local player/camera source entities to trigger callback even without that entity having a scripttable
-					if ((pEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) != 0)
+					if ((pIEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) > 0)
 					{
 						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientMoveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
 					}
 
-					if ((pEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) != 0)
+					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerMoveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerMoveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 				}
 			}
@@ -604,7 +604,7 @@ bool CScriptProxy::GotoState(const char* sStateName)
 	}
 	else
 	{
-		EntityWarning("GotoState called with unknown state %s, in entity %s", sStateName, m_pEntity->GetEntityTextDescription());
+		EntityWarning("GotoState called with unknown state %s, in entity %s", sStateName, m_pEntity->GetEntityTextDescription().c_str());
 		return false;
 	}
 	return true;
@@ -963,10 +963,14 @@ void CScriptProxy::CallEvent(const char* sEvent, const char* sValue)
 //////////////////////////////////////////////////////////////////////////
 void CScriptProxy::CallEvent(const char* sEvent, EntityId nEntityId)
 {
-	IScriptTable* pTable = 0;
-	IEntity* pEntity = m_pEntity->GetCEntitySystem()->GetEntity(nEntityId);
-	if (pEntity)
-		pTable = pEntity->GetScriptTable();
+	IScriptTable* pTable = nullptr;
+	IEntity* const pIEntity = m_pEntity->GetCEntitySystem()->GetEntity(nEntityId);
+	
+	if (pIEntity != nullptr)
+	{
+		pTable = pIEntity->GetScriptTable();
+	}
+
 	m_pScript->CallEvent(m_pThis, sEvent, pTable);
 }
 

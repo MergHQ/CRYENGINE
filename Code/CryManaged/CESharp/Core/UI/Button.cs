@@ -64,10 +64,36 @@ namespace CryEngine.UI
 			}
 		}
 
+        private string _frameImageUrl = Application.UIPath + "frame.png";
+        public string FrameImageUrl
+        {
+            get { return _frameImageUrl; }
+            set
+            {
+                _frameImageUrl = value;
+                _frame.Background.Source = ResourceManager.ImageFromFile(_frameImageUrl, false);
+            }
+        }
+
+        /// <summary>
+        /// If true, shows a frame around the button when it is pressed.
+        /// </summary>
+        private bool _showPressedFrame = true;
+        public bool ShowPressedFrame
+        {
+            get { return _showPressedFrame; }
+            set
+            {
+                _showPressedFrame = value;
+                if (_showPressedFrame == false)
+                    _frame.Active = false;
+            }
+        }
+
 		/// <summary>
 		/// Puts the button on Pressed State.
 		/// </summary>
-		public void SetDown()
+		public virtual void SetDown()
 		{
 			Background.Source = ResourceManager.ImageFromFile(_backgroundImageInvertedUrl, false);
 			if (_image != null)
@@ -78,13 +104,29 @@ namespace CryEngine.UI
 		/// <summary>
 		/// Puts the button in unpressed state.
 		/// </summary>
-		public void SetUp()
+		public virtual void SetUp()
 		{
 			Background.Source = ResourceManager.ImageFromFile(_backgroundImageUrl, false);
 			if (_image != null)
 				_image.RectTransform.Padding = new Padding (1, 1);
 			Ctrl.Text.Offset = new Point (0, 0);
 		}
+
+        /// <summary>
+        /// Puts the button in a hover state. Called when the mouse is over the button.
+        /// </summary>
+        public virtual void SetOver()
+        {
+
+        }
+
+        /// <summary>
+        /// Puts the button in a normal state. Called when the mouse leaves the button.
+        /// </summary>
+        public virtual void SetNormal()
+        {
+
+        }
 
 		/// <summary>
 		/// Called by framework. Do not call directly.
@@ -98,7 +140,7 @@ namespace CryEngine.UI
 			Ctrl = AddComponent<ButtonCtrl> ();
 
 			_frame = SceneObject.Instantiate<Panel>(this);
-			_frame.Background.Source = ResourceManager.ImageFromFile(Application.UIPath + "frame.png", false);
+			_frame.Background.Source = ResourceManager.ImageFromFile(_frameImageUrl, false);
 			_frame.Background.SliceType = SliceType.Nine;
 			_frame.Background.Color = Color.SkyBlue;
 			_frame.RectTransform.Alignment = Alignment.Stretch;
@@ -108,7 +150,8 @@ namespace CryEngine.UI
 
 			Ctrl.OnFocusEnter += () => 
 			{
-				_frame.Active = true;
+                if (ShowPressedFrame)
+				    _frame.Active = true;
 				SetDown();
 			};
 			Ctrl.OnFocusLost += () => 
@@ -116,6 +159,14 @@ namespace CryEngine.UI
 				_frame.Active = false;
 				SetUp();
 			};
+            Ctrl.OnEnterMouse += () =>
+            {
+                SetOver();
+            };
+            Ctrl.OnLeaveMouse += () =>
+            {
+                SetNormal();
+            };
 		}
 	}
 }

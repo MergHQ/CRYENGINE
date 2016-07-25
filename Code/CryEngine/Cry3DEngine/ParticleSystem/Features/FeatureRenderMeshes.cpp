@@ -7,10 +7,13 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureRenderMeshes = false;
-
 namespace pfx2
 {
+
+EParticleDataType PDT(EPDT_MeshGeometry, IMeshObj*);
+
+extern EParticleDataType EPDT_Alpha, EPDT_Color;
+
 
 SERIALIZATION_ENUM_DEFINE(ESizeMode, : uint8,
                           Size,
@@ -41,7 +44,7 @@ public:
 
 	CFeatureRenderMeshes()
 		: m_scale(1.0f, 1.0f, 1.0f)
-		, m_sizeMode(ESizeMode::Size)
+		, m_sizeMode(ESizeMode::Scale)
 		, m_originMode(EOriginMode::Origin)
 		, m_piecesMode(EPiecesMode::RandomPiece)
 		, m_piecePlacement(EPiecePlacement::Standard)
@@ -114,8 +117,7 @@ public:
 			uint piece;
 			if (m_piecesMode == EPiecesMode::RandomPiece)
 			{
-				SChaosKey key;
-				piece = key.Rand();
+				piece = context.m_spawnRng.Rand();
 			}
 			else if (m_piecesMode == EPiecesMode::AllPieces)
 			{
@@ -156,7 +158,7 @@ public:
 		CRY_PFX2_FOR_END;
 	}
 
-	virtual void Render(ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, IRenderNode* pNode, const SRenderContext& renderContext) override
+	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
@@ -182,7 +184,7 @@ public:
 		IMeshObj* pMeshObj = m_pStaticObject;
 
 		const AABB bBox = m_pStaticObject->GetAABB();
-		const float invObjectSize = (m_sizeMode == ESizeMode::Size) ? __fres(bBox.GetRadius()) : 1.0f;
+		const float invObjectSize = (m_sizeMode == ESizeMode::Size) ? rsqrt_fast(bBox.GetRadiusSqr()) : 1.0f;
 		Vec3 offset = (m_originMode == EOriginMode::Center) ? -bBox.GetCenter() : Vec3(ZERO);
 
 		renderParams.dwFObjFlags |= FOB_TRANS_MASK;

@@ -16,6 +16,7 @@
 #include <CryString/CryPath.h>
 #include "ImplementationManager.h"
 #include "QtUtil.h"
+#include <CryIcon.h>
 
 // File watching
 #include <FileSystem/FileSystem_Snapshot.h>
@@ -71,13 +72,13 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 	pMenuBar->addAction(pFileMenu->menuAction());
 
 	QAction* pSaveAction = new QAction(this);
-	pSaveAction->setIcon(QIcon(":/Icons/Save_Icon.png"));
+	pSaveAction->setIcon(CryIcon("icons:General/File_Save.ico"));
 	pSaveAction->setText(tr("Save All"));
 	connect(pSaveAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Save);
 	pFileMenu->addAction(pSaveAction);
 
 	QAction* pReloadAction = new QAction(this);
-	pReloadAction->setIcon(QIcon(":/Icons/Load_Icon.png"));
+	pReloadAction->setIcon(CryIcon("icons:General/Reload.ico"));
 	pReloadAction->setText(tr("Reload"));
 	connect(pReloadAction, &QAction::triggered, this, &CAudioControlsEditorWindow::Reload);
 	pFileMenu->addAction(pReloadAction);
@@ -98,7 +99,7 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 		  });
 		connect(m_pATLControlsPanel, &CATLControlsPanel::SelectedControlChanged, this, &CAudioControlsEditorWindow::UpdateFilterFromSelection);
 		connect(m_pATLControlsPanel, &CATLControlsPanel::ControlTypeFiltered, this, &CAudioControlsEditorWindow::FilterControlType);
-		connect(CAudioControlsEditorPlugin::GetImplementationManger(), &CImplementationManager::ImplementationChanged, this, &CAudioControlsEditorWindow::Update);
+		CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(this, &CAudioControlsEditorWindow::Update);
 		connect(m_pAudioSystemPanel, &CAudioSystemPanel::ImplementationSettingsChanged, this, &CAudioControlsEditorWindow::Update);
 
 		GetIEditor()->RegisterNotifyListener(this);
@@ -109,6 +110,21 @@ CAudioControlsEditorWindow::CAudioControlsEditorWindow()
 		pSplitter->addWidget(m_pInspectorPanel);
 		pSplitter->addWidget(m_pAudioSystemPanel);
 		setCentralWidget(pSplitter);
+	}
+
+	const uint errorCodeMask = CAudioControlsEditorPlugin::GetLoadingErrorMask();
+	if (errorCodeMask & EErrorCode::eErrorCode_UnkownPlatform)
+	{
+		QMessageBox::warning(this, tr("Audio Controls Editor"), tr("Audio Preloads reference an unknown platform.\nSaving will permanently erase this data."));
+	}
+	else if (errorCodeMask & EErrorCode::eErrorCode_NonMatchedActivityRadius)
+	{
+		IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+		if (pAudioSystemImpl)
+		{
+			QString middlewareName = pAudioSystemImpl->GetName();
+			QMessageBox::warning(this, tr("Audio Controls Editor"), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nTriggers with their activity radius linked to the attenuation will be updated next time you save."));
+		}
 	}
 }
 
@@ -196,7 +212,7 @@ void CAudioControlsEditorWindow::closeEvent(QCloseEvent* pEvent)
 				{
 					pAudioSystemEditorImpl->Reload(false);
 				}
-				CAudioControlsEditorPlugin::ReloadModels();
+				CAudioControlsEditorPlugin::ReloadModels(false);
 
 				pEvent->accept();
 			}
@@ -228,7 +244,7 @@ void CAudioControlsEditorWindow::Reload()
 
 	if (bReload)
 	{
-		CAudioControlsEditorPlugin::ReloadModels();
+		CAudioControlsEditorPlugin::ReloadModels(true);
 		Update();
 	}
 }

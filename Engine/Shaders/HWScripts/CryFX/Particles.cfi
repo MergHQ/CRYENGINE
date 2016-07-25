@@ -89,7 +89,7 @@ void ParticlesDebug( inout SParticleVertex OUT, in float3 vCenter, in float3 vVe
 	float fRadius =   length( vVertexPos.xyz - vCenter.xyz );
 
 	float4 vCenterScreenTC = HPosToScreenTC( mul(CV_ViewProjMatr, float4(vCenter.xyz, 1)) );
-	float4 vUpScreenTC = HPosToScreenTC( mul(CV_ViewProjMatr, float4(vCenter.xyz + CameraUpVector.xyz * fRadius, 1)) );
+	float4 vUpScreenTC = HPosToScreenTC( mul(CV_ViewProjMatr, float4(vCenter.xyz + CV_CameraUpVector.xyz * fRadius, 1)) );
 
 	vCenterScreenTC /= vCenterScreenTC.w;
 	vUpScreenTC /= vUpScreenTC.w;
@@ -668,7 +668,7 @@ void ApplyTexCoordsDeformation( inout OutputVS IN, float4 WPos )
 		PerturbationScale *= WPos.w* 0.05;
 
 		float2 tcProj = WPos.xy;
-		float2 tcAnim = float2(0.5, AnimGenParams.z * AnimSpeed + 0.5);
+		float2 tcAnim = float2(0.5, CV_AnimGenParams.y * AnimSpeed + 0.5);
 		PerturbationScale *= (tcProj-0.5);
 
 		vBump.xy  = GetXYNormalMap(customTex, PerturbationScale + tcAnim);
@@ -679,7 +679,7 @@ void ApplyTexCoordsDeformation( inout OutputVS IN, float4 WPos )
 	#elif %DEFORMATION
 
 		float2 tcDeform = IN.baseTC.zw;
-		float4 tcAnim = AnimGenParams.z * DeformAnimSpeed * float4(0.9, 0.9, 2, 2) + float4(0.5, 0.5, 0.75, 1.0);
+		float4 tcAnim = CV_AnimGenParams.y * DeformAnimSpeed * float4(0.9, 0.9, 2, 2) + float4(0.5, 0.5, 0.75, 1.0);
 		float4 tcBump = (tcDeform.xyxy - 0.5)* DeformTile * float4(1,1,2,2) + tcAnim.xyzw;
 
 		half2 vBump = GetXYNormalMap(customTex, tcBump.xy);

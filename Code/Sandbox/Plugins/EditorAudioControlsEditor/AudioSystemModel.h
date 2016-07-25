@@ -58,10 +58,11 @@ private:
 class QAudioSystemModelProxyFilter : public QDeepFilterProxyModel
 {
 public:
-	QAudioSystemModelProxyFilter::QAudioSystemModelProxyFilter(QObject* parent);
+	QAudioSystemModelProxyFilter(QObject* parent);
 	virtual bool rowMatchesFilter(int source_row, const QModelIndex& source_parent) const override;
 	void         SetAllowedControlsMask(uint allowedControlsMask);
 	void         SetHideConnected(bool bHideConnected);
+	virtual bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;
 
 private:
 	uint m_allowedControlsMask;

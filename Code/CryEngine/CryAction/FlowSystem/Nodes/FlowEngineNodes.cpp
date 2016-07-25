@@ -1,9 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
-#include <CrySystem/IStreamEngine.h>
 #include "ILevelSystem.h"
+
+#include <CrySystem/IStreamEngine.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryEntitySystem/IEntityLayer.h>
 
 class CFlowNode_PortalSwitch : public CFlowBaseNode<eNCT_Instanced>
@@ -498,11 +499,11 @@ public:
 	void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig<string>("mat_Material",                                                                                                                                                                                                                                                                                                                    _HELP("Material name")),
-			InputPortConfig<int>("ObjectType",                                                                                                                                                                                                                                                                                                                         0,                                    _HELP("Object type (render node type)"),
-			                     NULL,                                                                                                                                                                                                                                                                                                                                 _UICONFIG("enum_int:<choose>=0,Brush=1,Vegetation=2,Light=3,Cloud=4,VoxelObject=5,FogVolume=6,Decal=7,ParticleEmitter=8,WaterVolume=9,WaterWave=10,Road=11,DistanceCloud=12,VolumeObject=13,Rope=15,PrismObject=16,IsoMesh=17,IrradianceVolume=18,RenderProxy=19,GameEffect=20,BreakableGlass=23,MergedMesh=24,GeomCache=25")),
-			InputPortConfig<Vec3>("Position",                                                                                                                                                                                                                                                                                                                          _HELP("Position")),
-			InputPortConfig_Void("Activate",                                                                                                                                                                                                                                                                                                                           _HELP("Activate set material event")),
+			InputPortConfig<string>("mat_Material", _HELP("Material name")),
+			InputPortConfig<int>("ObjectType", 0, _HELP("Object type (render node type)"), NULL,
+				_UICONFIG("enum_int:<choose>=0,Brush=1,Vegetation=2,Light=3,Cloud=4,FogVolume=6,Decal=7,ParticleEmitter=8,WaterVolume=9,WaterWave=10,Road=11,DistanceCloud=12,VolumeObject=13,Rope=15,PrismObject=16,RenderProxy=19,GameEffect=20,BreakableGlass=21,MergedMesh=23,GeomCache=24")),
+			InputPortConfig<Vec3>("Position", _HELP("Position")),
+			InputPortConfig_Void("Activate", _HELP("Activate set material event")),
 			{ 0 }
 		};
 
@@ -735,9 +736,9 @@ public:
 //////////////////////////////////////////////////////////////////////////////////////
 
 REGISTER_FLOW_NODE("Engine:PortalSwitch", CFlowNode_PortalSwitch);
-REGISTER_FLOW_NODE("Engine:OceanSwitch", CFlowNode_OceanSwitch);
-REGISTER_FLOW_NODE("Engine:SkyboxSwitch", CFlowNode_SkyboxSwitch);
+REGISTER_FLOW_NODE("Environment:OceanSwitch", CFlowNode_OceanSwitch);
+REGISTER_FLOW_NODE("Environment:SkyboxSwitch", CFlowNode_SkyboxSwitch);
 REGISTER_FLOW_NODE("Engine:LayerSwitch", CFlowNode_LayerSwitch);
-REGISTER_FLOW_NODE("Engine:SetObjectMaterial", CFlowNode_SetObjectMaterial);
+REGISTER_FLOW_NODE("Material:SetObjectMaterial", CFlowNode_SetObjectMaterial);
 REGISTER_FLOW_NODE("Engine:PrecacheArea", CFlowNode_PrecacheArea);
 REGISTER_FLOW_NODE("Engine:Viewport", CFlowNode_Viewport);

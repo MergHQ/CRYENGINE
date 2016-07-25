@@ -162,7 +162,7 @@ void CD3D9Renderer::FontSetBlending(int blendSrc, int blendDest)
 	if (eTF_R16G16F == CTexture::s_eTFZ || CTexture::s_eTFZ == eTF_R32F)
 		FX_SetState(m_fontBlendMode | GS_DEPTHFUNC_LEQUAL);
 	else
-		FX_SetState(m_fontBlendMode | GS_DEPTHFUNC_LEQUAL | GS_ALPHATEST_GREATER, 0);
+		FX_SetState(m_fontBlendMode | GS_DEPTHFUNC_LEQUAL | GS_ALPHATEST, 0);
 }
 
 void CD3D9Renderer::FontSetState(bool bRestore)
@@ -198,7 +198,7 @@ void CD3D9Renderer::FontSetState(bool bRestore)
 		if (eTF_R16G16F == CTexture::s_eTFZ || CTexture::s_eTFZ == eTF_R32F)
 			FX_SetState(m_fontBlendMode | GS_DEPTHFUNC_LEQUAL);
 		else
-			FX_SetState(m_fontBlendMode | GS_DEPTHFUNC_LEQUAL | GS_ALPHATEST_GREATER, 0);
+			FX_SetState(m_fontBlendMode | GS_DEPTHFUNC_LEQUAL | GS_ALPHATEST, 0);
 
 		EF_SetColorOp(eCO_REPLACE, eCO_MODULATE, eCA_Diffuse | (eCA_Diffuse << 3), DEF_TEXARG0);
 		//GetDevice().SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);

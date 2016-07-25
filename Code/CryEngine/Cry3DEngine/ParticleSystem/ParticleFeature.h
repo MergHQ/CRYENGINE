@@ -47,6 +47,7 @@ public:
 	const char*                             GetConnectorName(uint connectorId) const override { return nullptr; }
 	void                                    ConnectTo(const char* pOtherName) override        {}
 	void                                    DisconnectFrom(const char* pOtherName) override   {}
+	void                                    SetGpuInterfaceNeeded(bool gpuInterface)          { m_gpuInterfaceNeeded = gpuInterface; }
 	gpu_pfx2::IParticleFeatureGpuInterface* GetGpuInterface() override;
 	// ~IParticleFeature
 
@@ -80,8 +81,9 @@ public:
 	virtual void PostUpdate(const SUpdateContext& context) {}
 
 	// EUL_Render
-	virtual void Render(ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, IRenderNode* pNode, const SRenderContext& renderContext) {}
-	virtual void ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)  {}
+	virtual void PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)                                                                            {}
+	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
+	virtual void ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)          {}
 
 	// EUL_GetExtents
 	virtual void GetSpatialExtents(const SUpdateContext& context, Array<const float, uint> scales, Array<float, uint> extents) {}
@@ -92,6 +94,7 @@ protected:
 private:
 	SGpuInterfaceRef m_gpuInterfaceRef;
 	SEnable          m_enabled;
+	bool             m_gpuInterfaceNeeded;
 };
 
 static const ColorB defaultColor = ColorB(128, 146, 165);

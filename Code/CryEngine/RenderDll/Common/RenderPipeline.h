@@ -138,8 +138,6 @@ struct SRendItem
 	static void mfSortByLight(SRendItem* First, int Num, bool bSort, const bool bIgnoreRePtr, bool bSortDecals);
 	// Special sorting for ZPass (compromise between depth and batching)
 	static void mfSortForZPass(SRendItem* First, int Num);
-	// Special sorting for reflective shadow maps
-	static void mfSortForReflectiveShadowMap(SRendItem* First, int Num);
 };
 
 // Helper function to be used in logging
@@ -222,10 +220,14 @@ struct SOnDemandD3DVertexDeclaration
 	TArray<D3D11_INPUT_ELEMENT_DESC> m_Declaration;
 };
 
+typedef TArray<SOnDemandD3DVertexDeclaration> SOnDemandD3DVertexDeclarations;
+
 struct SOnDemandD3DVertexDeclarationCache
 {
 	ID3D11InputLayout* m_pDeclaration;
 };
+
+typedef TArray<SOnDemandD3DVertexDeclarationCache> SOnDemandD3DVertexDeclarationCaches;
 
 struct SVertexDeclaration
 {
@@ -539,10 +541,11 @@ enum EShapeMeshType
 
 struct SThreadInfo
 {
-	uint32              m_PersFlags; // Never reset
+	uint32              m_PersFlags;                             // Never reset
 	float               m_RealTime;
 	class CMatrixStack* m_matView;
 	class CMatrixStack* m_matProj;
+	Matrix44            m_matCameraZero;
 	CCamera             m_cam;                                   // current camera
 	CRenderCamera       m_rcam;                                  // current camera
 	int                 m_nFrameID;                              // with recursive calls, access through GetFrameID(true)
@@ -771,12 +774,13 @@ struct SRenderPipeline
 	CLightVolumeBuffer m_lightVolumeBuffer;
 
 	// particle data for writing directly to VMEM
-	ParticleBufferSet                  m_particleBuffer;
+	CParticleBufferSet                  m_particleBuffer;
 
 	int                                m_nStreamOffset[3]; // deprecated!
-	SOnDemandD3DVertexDeclaration      m_D3DVertexDeclaration[eVF_Max];
-	SOnDemandD3DVertexDeclarationCache m_D3DVertexDeclarationCache[1 << VSF_NUM][eVF_Max][2]; // [StreamMask][VertexFmt][Morph]
-	SOnDemandD3DStreamProperties       m_D3DStreamProperties[VSF_NUM];
+
+	SOnDemandD3DVertexDeclarations      m_D3DVertexDeclaration;
+	SOnDemandD3DVertexDeclarationCaches m_D3DVertexDeclarationCache[1 << VSF_NUM][2]; // [StreamMask][Morph][VertexFmt]
+	SOnDemandD3DStreamProperties        m_D3DStreamProperties[VSF_NUM];
 
 	TArray<SVertexDeclaration*>        m_CustomVD;
 
@@ -862,6 +866,15 @@ public:
 			return m_pShader->mfGetStartTechnique(m_nShaderTechnique);
 		return NULL;
 	}
+
+	void InitWaveTables();
+
+	// Arguments
+	//   vertexformat - 0..VERTEX_FORMAT_NUMS-1
+	void OnDemandVertexDeclaration(SOnDemandD3DVertexDeclaration& out, const int nStreamMask, const int vertexformat, const bool bMorph, const bool bInstanced);
+	void InitD3DVertexDeclarations();
+	EVertexFormat AddD3DVertexDeclaration(size_t numDescs, const D3D11_INPUT_ELEMENT_DESC* inputLayout);
+	EVertexFormat MaxD3DVertexDeclaration() { return EVertexFormat(m_D3DVertexDeclaration.size()); }
 };
 
 extern CryCriticalSection m_sREResLock;
@@ -887,11 +900,15 @@ struct SCompareRendItem
 {
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
-		/// Nearest objects should be rendered first
-		int nNearA = (a.ObjSort & FOB_HAS_PREVMATRIX);
-		int nNearB = (b.ObjSort & FOB_HAS_PREVMATRIX);
-		if (nNearA != nNearB)               // Sort by nearest flag
-			return nNearA > nNearB;
+		int nMotionVectorsA = (a.ObjSort & FOB_HAS_PREVMATRIX);
+		int nMotionVectorsB = (b.ObjSort & FOB_HAS_PREVMATRIX);
+		if (nMotionVectorsA != nMotionVectorsB)
+			return nMotionVectorsA > nMotionVectorsB;
+
+		int nAlphaTestA = (a.ObjSort & FOB_ALPHATEST);
+		int nAlphaTestB = (b.ObjSort & FOB_ALPHATEST);
+		if (nAlphaTestA != nAlphaTestB)
+			return nAlphaTestA < nAlphaTestB;
 
 		if (a.SortVal != b.SortVal)         // Sort by shaders
 			return a.SortVal < b.SortVal;
@@ -910,11 +927,15 @@ struct SCompareRendItemZPass
 	{
 		const int layerSize = 50;  // Note: ObjSort contains round(entityDist * 2) for meshes
 
-		// Sort by nearest flag
-		int nNearA = (a.ObjSort & FOB_HAS_PREVMATRIX);
-		int nNearB = (b.ObjSort & FOB_HAS_PREVMATRIX);
-		if (nNearA != nNearB)
-			return nNearA > nNearB;
+		int nMotionVectorsA = (a.ObjSort & FOB_HAS_PREVMATRIX);
+		int nMotionVectorsB = (b.ObjSort & FOB_HAS_PREVMATRIX);
+		if (nMotionVectorsA != nMotionVectorsB)
+			return nMotionVectorsA > nMotionVectorsB;
+
+		int nAlphaTestA = (a.ObjSort & FOB_ALPHATEST);
+		int nAlphaTestB = (b.ObjSort & FOB_ALPHATEST);
+		if (nAlphaTestA != nAlphaTestB)
+			return nAlphaTestA < nAlphaTestB;
 
 		// Sort by depth/distance layers
 		int depthLayerA = (a.ObjSort & 0xFFFF) / layerSize;
@@ -954,47 +975,6 @@ struct SCompareItem_Decal
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-struct SCompareItem_ReflectiveShadowMap
-{
-	bool operator()(const SRendItem& a, const SRendItem& b) const
-	{
-		// Decal objects should be rendered last
-		int nDecalA = (a.ObjSort & FOB_DECAL_MASK);
-		int nDecalB = (b.ObjSort & FOB_DECAL_MASK);
-		if ((nDecalA == 0) != (nDecalB == 0))         // Sort by decal flag
-			return nDecalA < nDecalB;
-
-		if (nDecalA && nDecalB)
-		{
-			// decal sorting
-			uint32 objSortA_Low(a.ObjSort & 0xFFFF);
-			uint32 objSortA_High(a.ObjSort & ~0xFFFF);
-			uint32 objSortB_Low(b.ObjSort & 0xFFFF);
-			uint32 objSortB_High(b.ObjSort & ~0xFFFF);
-
-			if (objSortA_Low != objSortB_Low)
-				return objSortA_Low < objSortB_Low;
-
-			if (a.SortVal != b.SortVal)
-				return a.SortVal < b.SortVal;
-
-			return objSortA_High < objSortB_High;
-		}
-		else
-		{
-			// usual sorting
-			if (a.SortVal != b.SortVal)         // Sort by shaders
-				return a.SortVal < b.SortVal;
-
-			if (a.pElem != b.pElem)               // Sort by geometry
-				return a.pElem < b.pElem;
-
-			return a.ObjSort < b.ObjSort;
-		}
-	}
-};
-
-///////////////////////////////////////////////////////////////////////////////
 struct SCompareItem_NoPtrCompare
 {
 	bool operator()(const SRendItem& a, const SRendItem& b) const
@@ -1023,7 +1003,7 @@ struct SCompareDist
 {
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
-		if (fcmp(a.fDist, b.fDist))
+		if (a.fDist == b.fDist)
 			return a.rendItemSorter.ParticleCounter() < b.rendItemSorter.ParticleCounter();
 
 		return (a.fDist > b.fDist);
@@ -1035,7 +1015,7 @@ struct SCompareDistInverted
 {
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
-		if (fcmp(a.fDist, b.fDist))
+		if (a.fDist == b.fDist)
 			return a.rendItemSorter.ParticleCounter() > b.rendItemSorter.ParticleCounter();
 
 		return (a.fDist < b.fDist);

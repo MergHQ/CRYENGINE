@@ -66,8 +66,10 @@ ENUM_INFO_END(EGeomForm)
 
 ENUM_INFO_BEGIN(EAudioOcclusionType)
 	ENUM_ELEM_INFO(, eAudioOcclusionType_Ignore)
-	ENUM_ELEM_INFO(, eAudioOcclusionType_SingleRay)
-	ENUM_ELEM_INFO(, eAudioOcclusionType_MultiRay)
+	ENUM_ELEM_INFO(, eAudioOcclusionType_Adaptive)
+	ENUM_ELEM_INFO(, eAudioOcclusionType_Low)
+	ENUM_ELEM_INFO(, eAudioOcclusionType_Medium)
+	ENUM_ELEM_INFO(, eAudioOcclusionType_High)
 ENUM_INFO_END(EAudioOcclusionType)
 
 STRUCT_INFO_BEGIN(ParticleParams)

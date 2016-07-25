@@ -45,9 +45,12 @@ char const* const SATLXMLTags::szATLPreloadRequestTag = "ATLPreloadRequest";
 char const* const SATLXMLTags::szATLEnvironmentRequestTag = "ATLEnvironmentRequest";
 
 char const* const SATLXMLTags::szATLNameAttribute = "atl_name";
+char const* const SATLXMLTags::szATLVersionAttribute = "atl_version";
 char const* const SATLXMLTags::szATLInternalNameAttribute = "atl_internal_name";
 char const* const SATLXMLTags::szATLTypeAttribute = "atl_type";
 char const* const SATLXMLTags::szATLConfigGroupAttribute = "atl_config_group_name";
+char const* const SATLXMLTags::szATLRadiusAttribute = "atl_radius";
+char const* const SATLXMLTags::szATLOcclusionFadeOutDistanceAttribute = "atl_occlusion_fadeout_distance";
 
 char const* const SATLXMLTags::szATLDataLoadType = "AutoLoad";
 
@@ -61,8 +64,10 @@ AudioControlId SATLInternalControlIDs::unmuteAllTriggerId = INVALID_AUDIO_CONTRO
 AudioControlId SATLInternalControlIDs::objectDopplerRtpcId = INVALID_AUDIO_CONTROL_ID;
 AudioControlId SATLInternalControlIDs::objectVelocityRtpcId = INVALID_AUDIO_CONTROL_ID;
 AudioSwitchStateId SATLInternalControlIDs::ignoreStateId = INVALID_AUDIO_SWITCH_STATE_ID;
-AudioSwitchStateId SATLInternalControlIDs::singleRayStateId = INVALID_AUDIO_SWITCH_STATE_ID;
-AudioSwitchStateId SATLInternalControlIDs::multiRayStateId = INVALID_AUDIO_SWITCH_STATE_ID;
+AudioSwitchStateId SATLInternalControlIDs::adaptiveStateId = INVALID_AUDIO_SWITCH_STATE_ID;
+AudioSwitchStateId SATLInternalControlIDs::lowStateId = INVALID_AUDIO_SWITCH_STATE_ID;
+AudioSwitchStateId SATLInternalControlIDs::mediumStateId = INVALID_AUDIO_SWITCH_STATE_ID;
+AudioSwitchStateId SATLInternalControlIDs::highStateId = INVALID_AUDIO_SWITCH_STATE_ID;
 AudioSwitchStateId SATLInternalControlIDs::onStateId = INVALID_AUDIO_SWITCH_STATE_ID;
 AudioSwitchStateId SATLInternalControlIDs::offStateId = INVALID_AUDIO_SWITCH_STATE_ID;
 AudioPreloadRequestId SATLInternalControlIDs::globalPreloadRequestId = INVALID_AUDIO_PRELOAD_REQUEST_ID;
@@ -81,8 +86,10 @@ void InitATLControlIDs()
 	SATLInternalControlIDs::objectVelocityRtpcId = AudioStringToId("object_speed");
 	SATLInternalControlIDs::obstructionOcclusionCalcSwitchId = AudioStringToId("ObstructionOcclusionCalculationType");
 	SATLInternalControlIDs::ignoreStateId = AudioStringToId("ignore");
-	SATLInternalControlIDs::singleRayStateId = AudioStringToId("single_ray");
-	SATLInternalControlIDs::multiRayStateId = AudioStringToId("multi_ray");
+	SATLInternalControlIDs::adaptiveStateId = AudioStringToId("adaptive");
+	SATLInternalControlIDs::lowStateId = AudioStringToId("low");
+	SATLInternalControlIDs::mediumStateId = AudioStringToId("medium");
+	SATLInternalControlIDs::highStateId = AudioStringToId("high");
 	SATLInternalControlIDs::objectDopplerTrackingSwitchId = AudioStringToId("object_doppler_tracking");
 	SATLInternalControlIDs::objectVelocityTrackingSwitchId = AudioStringToId("object_velocity_tracking");
 	SATLInternalControlIDs::onStateId = AudioStringToId("on");

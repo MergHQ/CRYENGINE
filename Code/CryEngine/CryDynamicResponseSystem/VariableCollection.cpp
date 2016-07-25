@@ -319,9 +319,9 @@ string CVariableCollection::GetVariablesAsString() const
 //--------------------------------------------------------------------------------------------------
 CVariableCollectionManager::~CVariableCollectionManager()
 {
-	for (CollectionList::iterator it = m_variableCollections.begin(); it != m_variableCollections.end(); ++it)
+	for (CVariableCollection* const pCollection : m_variableCollections)
 	{
-		delete *it;
+		delete pCollection;
 	}
 }
 
@@ -364,11 +364,11 @@ void CVariableCollectionManager::ReleaseVariableCollection(CVariableCollection* 
 //--------------------------------------------------------------------------------------------------
 CVariableCollection* CVariableCollectionManager::GetCollection(const CHashedString& collectionName) const
 {
-	for (CVariableCollection* collection : m_variableCollections)
+	for (CVariableCollection* pCollection : m_variableCollections)
 	{
-		if (collection->GetName() == collectionName)
+		if (pCollection->GetName() == collectionName)
 		{
-			return collection;
+			return pCollection;
 		}
 	}
 	return nullptr;
@@ -377,18 +377,18 @@ CVariableCollection* CVariableCollectionManager::GetCollection(const CHashedStri
 //--------------------------------------------------------------------------------------------------
 void CVariableCollectionManager::Update()
 {
-	for (CVariableCollection* const collection : m_variableCollections)
+	for (CVariableCollection* const pCollection : m_variableCollections)
 	{
-		collection->Update();
+		pCollection->Update();
 	}
 }
 
 //--------------------------------------------------------------------------------------------------
 void CVariableCollectionManager::Reset()
 {
-	for (CVariableCollection* const collection : m_variableCollections)
+	for (CVariableCollection* const pCollection : m_variableCollections)
 	{
-		collection->Reset();
+		pCollection->Reset();
 	}
 }
 
@@ -405,4 +405,53 @@ void CVariableCollectionManager::Serialize(Serialization::IArchive& ar)
 #else
 	DrsLogError("Not implemented");
 #endif
+}
+
+//--------------------------------------------------------------------------------------------------
+void CVariableCollectionManager::GetAllVariableCollections(DRS::VariableValuesList* pOutCollectionsList)
+{
+	CRY_ASSERT(pOutCollectionsList);
+
+	pOutCollectionsList->reserve(m_variableCollections.size());
+
+	std::pair<string, string> temp;
+	for (CVariableCollection* const pCollection : m_variableCollections)
+	{
+		const string collectionName = pCollection->GetName().GetText() + ".";
+		CVariableCollection::VariableList& variables = pCollection->GetAllVariables();
+		for (CryDRS::CVariable* const pVariable : variables)
+		{
+			temp.first = collectionName + pVariable->GetName().GetText();
+			temp.second = pVariable->m_value.GetValueAsString();
+			pOutCollectionsList->push_back(temp);
+		}
+	}
+}
+
+//--------------------------------------------------------------------------------------------------
+void CVariableCollectionManager::SetAllVariableCollections(const DRS::VariableValuesList& collectionsList)
+{
+	string collectionAndVariable;
+	string variableName;
+	string collectionName;
+	m_variableCollections.clear();
+	m_variableCollections.reserve(collectionsList.size());
+	for (std::pair<string, string> variableValuePair : collectionsList)
+	{
+		collectionAndVariable = variableValuePair.first;
+		const int pos = collectionAndVariable.find('.');
+		variableName = collectionAndVariable.substr(pos + 1);
+		collectionName = collectionAndVariable.substr(0, pos);
+		
+		CVariableCollection* pCollection = GetCollection(collectionName);
+		if (!pCollection)
+		{
+			pCollection = CreateVariableCollection(collectionName);
+		}
+		CryDRS::CVariable* pVariable = pCollection->CreateOrGetVariable(variableName);
+		pVariable->SetValueFromString(variableValuePair.second);
+	}
+
+	//Todo: Special case, Response Execution Infos (counter, timer...)
+	//Todo: DRS Time variable
 }

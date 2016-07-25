@@ -14,9 +14,8 @@
 #include "StdAfx.h"
 #include "CryAction.h"
 #include "IVehicleSystem.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
 #include "FlowVehicleMovement.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //------------------------------------------------------------------------
 IFlowNodePtr CFlowVehicleMovement::Clone(SActivationInfo* pActivationInfo)
@@ -234,5 +233,5 @@ void CFlowVehicleMovementParams::ProcessEvent(EFlowEvent flowEvent, SActivationI
 	}
 }
 
-REGISTER_FLOW_NODE("Vehicle:VehicleMovement", CFlowVehicleMovement);
+REGISTER_FLOW_NODE("Vehicle:Movement", CFlowVehicleMovement);
 REGISTER_FLOW_NODE("Vehicle:MovementParams", CFlowVehicleMovementParams);

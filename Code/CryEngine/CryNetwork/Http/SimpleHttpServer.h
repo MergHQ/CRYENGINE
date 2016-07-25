@@ -153,6 +153,7 @@ private:
 	int             GetNewConnectionID() { return m_connectionID++; }
 	HttpConnection* GetConnection(int connectionID);
 
+	void            UpdateClosedConnections();
 	void            CloseHttpConnection(int connectionID, bool bGraceful);
 
 	void            BuildNormalResponse(int connectionID, string& response, ISimpleHttpServer::EStatusCode statusCode, ISimpleHttpServer::EContentType contentType, const string& content);
@@ -177,6 +178,9 @@ private:
 	string                      m_nonce;
 	string                      m_opaque;
 
+	CryMutex                    m_mutex;
+
+	std::vector<IStreamSocketPtr> m_closedConnections;
 	std::vector<HttpConnection> m_connections;
 	int                         m_connectionID;
 
@@ -202,6 +206,7 @@ public:
 	void Start(uint16 port, const string& password, IHttpServerListener* pListener);
 	void Stop();
 	void Quit();
+	void Tick();
 	void SendResponse(int connectionID, EStatusCode statusCode, EContentType contentType, const string& content, bool closeConnection);
 	void SendWebpage(int connectionID, const string& webpage);
 

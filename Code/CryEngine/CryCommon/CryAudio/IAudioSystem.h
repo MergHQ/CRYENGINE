@@ -27,6 +27,7 @@ typedef unsigned int EntityId;
 // Forward declarations.
 struct IVisArea;
 struct ICVar;
+class CAudioRayInfo;
 
 namespace CryAudio
 {
@@ -70,7 +71,7 @@ enum EAudioManagerRequestType : AudioEnumFlagsType
 	eAudioManagerRequestType_RetriggerAudioControls = BIT(20),
 	eAudioManagerRequestType_ReleasePendingRays     = BIT(21), //!< Only used internally!
 	eAudioManagerRequestType_ReloadControlsData     = BIT(22),
-	eAudioManagerRequestType_GetAudioFileData       = BIT(23),               //!< Only used internally!
+	eAudioManagerRequestType_GetAudioFileData       = BIT(23), //!< Only used internally!
 };
 
 enum EAudioCallbackManagerRequestType : AudioEnumFlagsType
@@ -81,9 +82,8 @@ enum EAudioCallbackManagerRequestType : AudioEnumFlagsType
 	eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance = BIT(2), //!< Only used internally!
 	eAudioCallbackManagerRequestType_ReportStartedFile             = BIT(3), //!< Only used internally!
 	eAudioCallbackManagerRequestType_ReportStoppedFile             = BIT(4), //!< Only used internally!
-	eAudioCallbackManagerRequestType_ReportProcessedObstructionRay = BIT(5), //!< Only used internally!
-	eAudioCallbackManagerRequestType_ReportVirtualizedEvent        = BIT(6), //!< Only used internally!
-	eAudioCallbackManagerRequestType_ReportPhysicalizedEvent       = BIT(7), //!< Only used internally!
+	eAudioCallbackManagerRequestType_ReportVirtualizedEvent        = BIT(5), //!< Only used internally!
+	eAudioCallbackManagerRequestType_ReportPhysicalizedEvent       = BIT(6), //!< Only used internally!
 };
 
 enum EAudioListenerRequestType : AudioEnumFlagsType
@@ -109,14 +109,17 @@ enum EAudioObjectRequestType : AudioEnumFlagsType
 	eAudioObjectRequestType_SetEnvironmentAmount = BIT(11),
 	eAudioObjectRequestType_ResetEnvironments    = BIT(12),
 	eAudioObjectRequestType_ReleaseObject        = BIT(13),
+	eAudioObjectRequestType_ProcessPhysicsRay    = BIT(14), //!< Only used internally!
 };
 
 enum EAudioOcclusionType : AudioEnumFlagsType
 {
 	eAudioOcclusionType_None,
 	eAudioOcclusionType_Ignore,
-	eAudioOcclusionType_SingleRay,
-	eAudioOcclusionType_MultiRay,
+	eAudioOcclusionType_Adaptive,
+	eAudioOcclusionType_Low,
+	eAudioOcclusionType_Medium,
+	eAudioOcclusionType_High,
 
 	eAudioOcclusionType_Count,
 };
@@ -567,25 +570,6 @@ struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportS
 };
 
 //////////////////////////////////////////////////////////////////////////
-template<>
-struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportProcessedObstructionRay> : public SAudioCallbackManagerRequestDataBase
-{
-	explicit SAudioCallbackManagerRequestData(AudioObjectId const _audioObjectId, size_t const _rayId = (size_t)-1)
-		: SAudioCallbackManagerRequestDataBase(eAudioCallbackManagerRequestType_ReportProcessedObstructionRay)
-		, audioObjectId(_audioObjectId)
-		, rayId(_rayId)
-	{}
-
-	virtual ~SAudioCallbackManagerRequestData() {}
-
-	AudioObjectId const audioObjectId;
-	size_t const        rayId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestData);
-};
-
-//////////////////////////////////////////////////////////////////////////
 struct SAudioObjectRequestDataBase : public SAudioRequestDataBase
 {
 	explicit SAudioObjectRequestDataBase(EAudioObjectRequestType const _type)
@@ -835,7 +819,7 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_SetVolume> : public SAudi
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironmentAmount> : public SAudioObjectRequestDataBase
+struct SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironmentAmount>  : public SAudioObjectRequestDataBase
 {
 	SAudioObjectRequestData()
 		: SAudioObjectRequestDataBase(eAudioObjectRequestType_SetEnvironmentAmount)
@@ -854,6 +838,23 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironmentAmount> : p
 	AudioEnvironmentId audioEnvironmentId;
 	float              amount;
 
+	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioObjectRequestData<eAudioObjectRequestType_ProcessPhysicsRay> : public SAudioObjectRequestDataBase
+{
+	explicit SAudioObjectRequestData(CAudioRayInfo* const _pAudioRayInfo)
+		: SAudioObjectRequestDataBase(eAudioObjectRequestType_ProcessPhysicsRay)
+		, pAudioRayInfo(_pAudioRayInfo)
+	{}
+
+	virtual ~SAudioObjectRequestData() {}
+
+	CAudioRayInfo* const pAudioRayInfo;
+
+	DELETE_DEFAULT_CONSTRUCTOR(SAudioObjectRequestData);
 	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
@@ -909,14 +910,14 @@ struct IAudioProxy
 	// <interfuscator:shuffle>
 	virtual ~IAudioProxy() {}
 
-	virtual void          Initialize(char const* const szObjectName, bool const bInitAsync = true) = 0;
+	virtual void          Initialize(char const* const szAudioObjectName, bool const bInitAsync = true) = 0;
 	virtual void          Release() = 0;
 	virtual void          Reset() = 0;
 	virtual void          PlayFile(SAudioPlayFileInfo const& _playbackInfo, SAudioCallBackInfo const& _callBackInfo = SAudioCallBackInfo::GetEmptyObject()) = 0;
 	virtual void          StopFile(char const* const szFile) = 0;
 	virtual void          ExecuteTrigger(AudioControlId const audioTriggerId, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject()) = 0;
 	virtual void          StopTrigger(AudioControlId const audioTriggerId) = 0;
-	virtual void          SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioStateId) = 0;
+	virtual void          SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId) = 0;
 	virtual void          SetRtpcValue(AudioControlId const audioRtpcId, float const value) = 0;
 	virtual void          SetOcclusionType(EAudioOcclusionType const occlusionType) = 0;
 	virtual void          SetTransformation(Matrix34 const& transformation) = 0;
@@ -954,5 +955,6 @@ struct IAudioSystem
 	virtual char const*  GetAudioControlName(EAudioControlType const audioControlType, AudioIdType const audioControlId1, AudioIdType const audioControlId2) = 0;
 	virtual void         GetAudioDebugData(SAudioDebugData& audioDebugData) const = 0;
 	virtual void         GetAudioFileData(char const* const szFilename, SAudioFileData& audioFileData) = 0;
+	virtual void         GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioFileData) = 0;
 	// </interfuscator:shuffle>
 };

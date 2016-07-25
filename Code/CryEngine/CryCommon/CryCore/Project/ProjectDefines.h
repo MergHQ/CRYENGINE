@@ -151,18 +151,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 	#define PHYSICS_STACK_SIZE (128U << 10)
 #endif
 
-#if !defined(USE_LEVEL_HEAP)
-	#define USE_LEVEL_HEAP 0
-#endif
-
-#if USE_LEVEL_HEAP && !defined(_RELEASE)
-	#define TRACK_LEVEL_HEAP_USAGE 1
-#endif
-
-#ifndef TRACK_LEVEL_HEAP_USAGE
-	#define TRACK_LEVEL_HEAP_USAGE 0
-#endif
-
 #if (!defined(_RELEASE) || defined(PERFORMANCE_BUILD)) && !defined(RESOURCE_COMPILER)
 	#ifndef ENABLE_PROFILING_CODE
 		#define ENABLE_PROFILING_CODE
@@ -225,6 +213,10 @@ extern void SliceAndSleep(const char* pFunc, int line);
 
 #if defined(ENABLE_PROFILING_CODE)
 	#define ENABLE_ART_RT_TIME_ESTIMATE
+#endif
+
+#if !defined(_RELEASE) || defined(ENABLE_STATOSCOPE_RELEASE)
+#define ENABLE_FLASH_INFO
 #endif
 
 #if !defined(ENABLE_LW_PROFILERS)
@@ -381,7 +373,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 
 #if CRY_PLATFORM_DURANGO
 //#define SUPPORT_SMARTGLASS // Disabled - needs fixing with April XDK
-//#define SUPPORT_DURANGO_LEGACY_MULTIPLAYER // March 2016 XDK dropped Party concept
 #endif
 
 #if defined(SUPPORT_RSA_AND_STREAMCIPHER_PAK_ENCRYPTION) || defined(SUPPORT_RSA_PAK_SIGNING)

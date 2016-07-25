@@ -40,13 +40,20 @@ private:
 	VectorMap<string, CompressionPolicyCreator> m_policyFactories;
 };
 
-class CCompressionManager
+class CCompressionManager :
+	public IThread
 {
 public:
 	CCompressionManager();
 	~CCompressionManager();
 
 	void                  Reset(bool useCompression, bool unloading);
+
+	virtual void ThreadEntry() override;
+	void TerminateThread();
+	void RequestTerminate();
+	void StartManageThread();
+	void ManagePolicies();
 
 	ICompressionPolicyPtr GetCompressionPolicy(uint32 key);
 
@@ -81,6 +88,9 @@ public:
 
 	void GetMemoryStatistics(ICrySizer* pSizer);
 
+	const string& GetAccDirectory() const;
+	const string& GetUseDirectory() const;
+
 private:
 #if USE_SYSTEM_ALLOCATOR
 	typedef std::unordered_map<uint32, _smart_ptr<ICompressionPolicy>, stl::hash_uint32>                                                                                                                  TCompressionPoliciesMap;
@@ -88,8 +98,17 @@ private:
 	typedef std::unordered_map<uint32, _smart_ptr<ICompressionPolicy>, stl::hash_uint32, std::equal_to<uint32>, stl::STLPoolAllocator_ManyElems<std::pair<const uint32, _smart_ptr<ICompressionPolicy>>>> TCompressionPoliciesMap;
 #endif
 	TCompressionPoliciesMap        m_compressionPolicies;
+	std::deque<uint32>              m_policiesManageList;
 	_smart_ptr<ICompressionPolicy> m_pDefaultPolicy;
 	CSerializationChunkPtr         m_pTemporaryChunk;
+
+	volatile bool                  m_threadRunning;
+	volatile bool                  m_threadRequestQuit;
+
+	string                         m_accumulateDirectory;
+	string                         m_useDirectory;
+	uint32                         m_manageIntervalSeconds;
+	CTimeValue                     m_timeValue;
 
 	class CCompareChunks
 	{

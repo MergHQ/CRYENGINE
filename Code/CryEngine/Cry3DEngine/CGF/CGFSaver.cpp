@@ -8,6 +8,7 @@
 	#include "ChunkData.h"
 	#include "ChunkFile.h"
 	#include <CryMath/QTangent.h>
+	#include "VClothSaver.h"
 
 	#if defined(RESOURCE_COMPILER)
 
@@ -273,7 +274,7 @@ int CSaverCGF::SaveBoneInitialMatrices(bool bSwapEndian, SBoneInitPosMatrix* mat
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CSaverCGF::SaveBoneMesh(bool bSwapEndian, PhysicalProxy& proxy)
+int CSaverCGF::SaveBoneMesh(bool bSwapEndian, const PhysicalProxy& proxy)
 {
 	// uncompiled mesh chunk
 	MESH_CHUNK_DESC_0745 chunk;
@@ -339,6 +340,7 @@ void CSaverCGF::SaveNodes(
 	{
 		CNodeCGF* pNode = m_pCGF->GetNode(i);
 		const char* pNodeName = pNode->name;
+
 		// Check if not yet saved.
 		uint32 numSavedNodes = m_savedNodes.size();
 		//	if (m_savedNodes.find(pNode) == m_savedNodes.end())
@@ -625,13 +627,13 @@ void CSaverCGF::SaveUncompiledMorphTargets()
 	CSkinningInfo* const skinningInfo = m_pCGF->GetSkinningInfo();
 	for (int morphIndex = 0, morphCount = skinningInfo ? int(skinningInfo->m_arrMorphTargets.size()) : 0; morphIndex < morphCount; ++morphIndex)
 	{
-		assert(skinningInfo); // Loop invariant prevents skinningInfo from being nullptr here
+		assert(skinningInfo);        // Loop invariant prevents skinningInfo from being nullptr here
 		MorphTargets* morph = skinningInfo->m_arrMorphTargets[morphIndex];
 		assert(morph);
 
 		MESHMORPHTARGET_CHUNK_DESC_0001 chunk;
 		ZeroStruct(chunk);
-		chunk.nChunkIdMesh = -1; // TODO: Save this properly!
+		chunk.nChunkIdMesh = -1;     // TODO: Save this properly!
 		chunk.numMorphVertices = int(morph->m_arrIntMorph.size());
 
 		CChunkData chunkData;
@@ -830,8 +832,9 @@ int CSaverCGF::SaveNodeMesh(
 			}
 			else if (bStoreIndicesAsU16)
 			{
-				if (vertexCount > 0xffff)   // 0xffff is used instead of 0x10000 to reserve index 0xffff for special cases
+				if (vertexCount > 0xffff)
 				{
+					// 0xffff is used instead of 0x10000 to reserve index 0xffff for special cases
 	#if defined(RESOURCE_COMPILER)
 					RCLogError("Saving mesh with 16-bit vertex indices is impossible - 16-bit indices cannot address %i vertices", vertexCount);
 	#endif
@@ -968,7 +971,7 @@ int CSaverCGF::SaveUncompiledNodeMesh(CNodeCGF* pNode)
 	chunk.nFaces = numFaces;
 	chunk.nTVerts = numUVs;
 	chunk.nVerts = numVertices;
-	chunk.VertAnimID = -1;       // nVertexAnimChunkID;
+	chunk.VertAnimID = -1;         // nVertexAnimChunkID;
 
 	// add chunk members
 	CChunkData chunkData;
@@ -1142,15 +1145,11 @@ int CSaverCGF::SaveUncompiledNodeMesh(CNodeCGF* pNode)
 		}
 	}
 
-	if (0)    // save morph targets - the loader load this?
-	{
+	if (0)     // save morph targets - the loader load this?
+	{}
 
-	}
-
-	if (0)    // save bone initial pose - the loader load this?
-	{
-
-	}
+	if (0)     // save bone initial pose - the loader load this?
+	{}
 
 	int nMeshChunkId = m_pChunkFile->AddChunk(
 	  ChunkType_Mesh,
@@ -1384,6 +1383,10 @@ int CSaverCGF::SaveExportFlags(bool bSwapEndian)
 	{
 		chunk.flags |= EXPORT_FLAGS_CHUNK_DESC::EIGHT_WEIGHTS_PER_VERTEX;
 	}
+	if (pExpInfo->bMakeVCloth)
+	{
+		chunk.flags |= EXPORT_FLAGS_CHUNK_DESC::MAKE_VCLOTH;
+	}
 
 	if (pExpInfo->bFromColladaXSI)
 	{
@@ -1560,8 +1563,10 @@ int CSaverCGF::SaveFoliage()
 		chunk.nBoneIds = fi.chunkBoneIds.size();
 		chunk.nSpineVtx = 0;
 
-		for (i = 0; i < fi.nSpines; chunk.nSpineVtx += fi.pSpines[i++].nVtx)
-			;
+		for (i = 0; i < fi.nSpines; i++)
+		{
+			chunk.nSpineVtx += fi.pSpines[i].nVtx;
+		}
 
 		FOLIAGE_SPINE_SUB_CHUNK* const pSpineBuf = new FOLIAGE_SPINE_SUB_CHUNK[fi.nSpines];
 		Vec3* const pSpineVtx = new Vec3[chunk.nSpineVtx];
@@ -1604,6 +1609,27 @@ int CSaverCGF::SaveFoliage()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+int CSaverCGF::SaveVCloth(bool bSwapEndian)
+{
+	const SVClothInfoCGF* const pVClothInfo = m_pCGF->GetVClothInfo();
+	CChunkData chunkData;
+
+	CSaverVCloth saver(chunkData, pVClothInfo, bSwapEndian);
+	saver.WriteChunkHeader();
+	saver.WriteChunkVertices();
+	saver.WriteTriangleData();
+	saver.WriteLraNotAttachedOrdered();
+	saver.WriteLinks();
+
+	return m_pChunkFile->AddChunk(
+	  ChunkType_VCloth,
+	  VCLOTH_CHUNK::VERSION,
+	  (bSwapEndian ? eEndianness_NonNative : eEndianness_Native),
+	  chunkData.GetData(), chunkData.GetSize());
+}
+
 	#if defined(RESOURCE_COMPILER)
 
 int CSaverCGF::SaveTCB3Track(CInternalSkinningInfo* pSkinningInfo, int trackIndex)
@@ -1618,7 +1644,7 @@ int CSaverCGF::SaveTCBQTrack(CInternalSkinningInfo* pSkinningInfo, int trackInde
 
 int CSaverCGF::SaveTiming(CInternalSkinningInfo* pSkinningInfo)
 {
-	return CSaverAnim::SaveTiming(m_pChunkFile, pSkinningInfo);
+	return CSaverAnim::SaveTiming(m_pChunkFile, pSkinningInfo->m_nStart, pSkinningInfo->m_nEnd);
 }
 
 	#endif

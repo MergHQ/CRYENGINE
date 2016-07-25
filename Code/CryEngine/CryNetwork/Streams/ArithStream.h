@@ -71,14 +71,16 @@ public:
 	typedef uint64 InternalStateType;
 	typedef uint32 ProbabilityType;
 
+public:
+	static const InternalStateType One = 1;
+	static const InternalStateType MaxProbabilityValue = One << (8 * sizeof(ProbabilityType));
+
 protected:
 	static const InternalStateType BottomValue = 0x0080000000000000ull;
 	static const InternalStateType TopValue = 0x8000000000000000ull;
 	static const int               ShiftBits = 55;
 	static const int               ExtraBits = 7;
 	static const InternalStateType ByteAllOnes = 0xff;
-	static const InternalStateType One = 1;
-	static const InternalStateType MaxProbabilityValue = One << (8 * sizeof(ProbabilityType));
 
 public:
 	typedef CCommOutputStreamBackup Backup;
@@ -351,6 +353,7 @@ inline void CCommOutputStream::Reset(uint8 bonus)
 	m_range = TopValue;
 	m_buffer = bonus;
 	m_help = 0;
+
 	m_nOutputSize = 0;
 	ResetCRC();
 #if ENABLE_ACCURATE_BANDWIDTH_PROFILING

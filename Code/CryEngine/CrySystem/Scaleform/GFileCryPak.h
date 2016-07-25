@@ -13,9 +13,9 @@
 	#include <CryCore/Platform/CryWindows.h>
 	#include <GFile.h> // includes <windows.h>
 	#pragma warning(pop)
+	#include <CrySystem/IStreamEngineDefs.h>
 
 struct ICryPak;
-enum EStreamTaskType;
 
 class GFileCryPak : public GFile
 {

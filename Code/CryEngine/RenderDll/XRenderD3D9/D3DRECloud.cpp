@@ -61,7 +61,7 @@ void CRECloud::IlluminateCloud(Vec3 vLightPos, Vec3 vObjPos, ColorF cLightColor,
 	rd->EF_DirtyMatrix();
 
 	rd->SetColorOp(eCO_MODULATE, eCO_MODULATE, DEF_TEXARG0, DEF_TEXARG0);
-	rd->FX_SetState(GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST | GS_ALPHATEST_GREATER, 0);
+	rd->FX_SetState(GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST | GS_ALPHATEST, 0);
 	rd->D3DSetCull(eCULL_None);
 
 	CRenderObject* pObj = rd->m_RP.m_pCurObject;
@@ -286,8 +286,8 @@ void CRECloud::DisplayWithoutImpostor(const CRenderCamera& camera)
 	    CTexture::s_ptexZTarget->Apply( 1, CTexture::GetTexState(depthTextState) );
 	   }
 	 */
-	rd->FX_SetState(GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST | GS_ALPHATEST_GREATER, 0);
-	//rd->FX_SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST | GS_ALPHATEST_GREATER, 0);
+	rd->FX_SetState(GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST | GS_ALPHATEST, 0);
+	//rd->FX_SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST | GS_ALPHATEST, 0);
 	rd->D3DSetCull(eCULL_None);
 
 	if (IsRecursiveRenderView())
@@ -639,7 +639,7 @@ bool CRECloud::mfDisplay(bool bDisplayFrontOfSplit)
 		CTexture::s_ptexZTarget->Apply(1, CTexture::GetTexState(depthTextState));
 	}
 
-	int State = GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA | GS_ALPHATEST_GREATER;
+	int State = GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA | GS_ALPHATEST;
 
 	if (pRE->m_bSplit)
 	{

@@ -55,7 +55,7 @@ public:
 	virtual const DRS::IVariableCollection* GetLocalVariables() const override { return static_cast<const DRS::IVariableCollection*>(&m_pLocalVariables); }
 	virtual EntityId                        GetLinkedEntityID() const override { return INVALID_ENTITYID; }
 	virtual IEntity*                        GetLinkedEntity() const override   { return nullptr; }
-	virtual DRS::SignalId                   QueueSignal(const CHashedString& signalName, DRS::IVariableCollectionSharedPtr pSignalContext = nullptr, DRS::IResponseManager::IListener* pSignalListener = nullptr) override
+	virtual DRS::SignalInstanceId           QueueSignal(const CHashedString& signalName, DRS::IVariableCollectionSharedPtr pSignalContext = nullptr, DRS::IResponseManager::IListener* pSignalListener = nullptr) override
 	{ return DRS::s_InvalidSignalId; }
 	//////////////////////////////////////////////////////////
 
@@ -75,27 +75,28 @@ public:
 
 	//////////////////////////////////////////////////////////
 	// DRS::IDynamicResponseSystem implementation
-	virtual bool                                     Init(const char* pFilesFolder) override                                                             { return true; }
-	virtual bool                                     ReInit() override                                                                                   { return true; }
-	virtual void                                     Update() override                                                                                   {}
-
-	virtual DRS::IVariableCollection*                CreateVariableCollection(const CHashedString& name) override                                        { return &m_nullVariableCollection; }
-	virtual void                                     ReleaseVariableCollection(DRS::IVariableCollection* pToBeReleased) override                         {}
-	virtual DRS::IVariableCollection*                GetCollection(const CHashedString& name) override                                                   { return &m_nullVariableCollection; }
-	virtual DRS::IVariableCollection*                GetCollection(const CHashedString& name, DRS::IResponseInstance* pResponseInstance) override        { return &m_nullVariableCollection; }
-	virtual DRS::IVariableCollectionSharedPtr        CreateContextCollection() override                                                                  { return m_nullVariableCollectionSharedPtr; }
-	virtual void                                     CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender) override      {}
-	virtual DRS::IResponseActor*                     CreateResponseActor(const CHashedString& pActorName, EntityId entityID = INVALID_ENTITYID) override { return &m_nullActor; }
-	virtual bool                                     ReleaseResponseActor(DRS::IResponseActor* pActorToFree) override                                    { return true; }
-	virtual DRS::IResponseActor*                     GetResponseActor(const CHashedString& pActorName) override                                          { return nullptr; }
-	virtual void                                     Reset(uint32 resetHint = -1) override                                                               {}
-	virtual DRS::IDataImportHelper*                  GetCustomDataformatHelper() override                                                                { return nullptr; }
-	virtual void                                     Serialize(Serialization::IArchive& ar) override                                                     { static string dummy = "NullResponseSystem"; ar(dummy, "name", "Name"); }
-	virtual DRS::ActionSerializationClassFactory&    GetActionSerializationFactory() override                                                            { return Serialization::ClassFactory<DRS::IResponseAction>::the(); }
-	virtual DRS::ConditionSerializationClassFactory& GetConditionSerializationFactory() override                                                         { return Serialization::ClassFactory<DRS::IResponseCondition>::the(); }
-	virtual DRS::ISpeakerManager*                    GetSpeakerManager() const override                                                                  { return nullptr; }
-	virtual DRS::IDialogLineDatabase*                GetDialogLineDatabase() const override                                                              { return nullptr; }
-	virtual DRS::IResponseManager*                   GetResponseManager() const override                                                                 { return nullptr; }
+	virtual bool                                     Init(const char* pFilesFolder) override                                                                                                      { return true; }
+	virtual bool                                     ReInit() override                                                                                                                            { return true; }
+	virtual void                                     Update() override                                                                                                                            {}
+	virtual DRS::IVariableCollection*                CreateVariableCollection(const CHashedString& name) override                                                                                 { return &m_nullVariableCollection; }
+	virtual void                                     ReleaseVariableCollection(DRS::IVariableCollection* pToBeReleased) override                                                                  {}
+	virtual DRS::IVariableCollection*                GetCollection(const CHashedString& name) override                                                                                            { return &m_nullVariableCollection; }
+	virtual DRS::IVariableCollection*                GetCollection(const CHashedString& name, DRS::IResponseInstance* pResponseInstance) override                                                 { return &m_nullVariableCollection; }
+	virtual DRS::IVariableCollectionSharedPtr        CreateContextCollection() override                                                                                                           { return m_nullVariableCollectionSharedPtr; }
+	virtual void                                     CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender) override                                               {}
+	virtual DRS::IResponseActor*                     CreateResponseActor(const CHashedString& pActorName, EntityId entityID = INVALID_ENTITYID) override                                          { return &m_nullActor; }
+	virtual bool                                     ReleaseResponseActor(DRS::IResponseActor* pActorToFree) override                                                                             { return true; }
+	virtual DRS::IResponseActor*                     GetResponseActor(const CHashedString& pActorName) override                                                                                   { return nullptr; }
+	virtual void                                     Reset(uint32 resetHint = -1) override                                                                                                        {}
+	virtual DRS::IDataImportHelper*                  GetCustomDataformatHelper() override                                                                                                         { return nullptr; }
+	virtual void                                     Serialize(Serialization::IArchive& ar) override                                                                                              { static string dummy = "NullResponseSystem"; ar(dummy, "name", "Name"); }
+	virtual DRS::ActionSerializationClassFactory&    GetActionSerializationFactory() override                                                                                                     { return Serialization::ClassFactory<DRS::IResponseAction>::the(); }
+	virtual DRS::ConditionSerializationClassFactory& GetConditionSerializationFactory() override                                                                                                  { return Serialization::ClassFactory<DRS::IResponseCondition>::the(); }
+	virtual DRS::ISpeakerManager*                    GetSpeakerManager() const override                                                                                                           { return nullptr; }
+	virtual DRS::IDialogLineDatabase*                GetDialogLineDatabase() const override                                                                                                       { return nullptr; }
+	virtual DRS::IResponseManager*                   GetResponseManager() const override                                                                                                          { return nullptr; }
+	virtual void                                     GetCurrentState(DRS::VariableValuesList* pOutCollectionsList, uint32 saveHints = IDynamicResponseSystem::SaveHints_Variables) const override {}
+	virtual void                                     SetCurrentState(const DRS::VariableValuesList& outCollectionsList) override                                                                  {}
 	//////////////////////////////////////////////////////////
 
 private:

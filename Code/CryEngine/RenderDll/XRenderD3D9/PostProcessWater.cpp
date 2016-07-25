@@ -148,7 +148,11 @@ void CWaterFlow::Render()
 // Enabled/Disabled if no hits on list to process - call from render thread
 bool CWaterRipples::RT_SimulationStatus()
 {
-	return !s_pWaterHits[gcpRendD3D->m_RP.m_nProcessThreadID].empty();
+	CRenderView* pRenderView = gRenDev->m_RP.RenderView();
+	auto& waterRipples = pRenderView->GetWaterRipples();
+	const bool bEmpty = waterRipples.empty() && m_waterRipples.empty();
+	const bool bAlreadyUpdated = (m_frameID == gRenDev->GetFrameID());
+	return !(bEmpty || bAlreadyUpdated);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,59 +169,6 @@ bool CWaterRipples::Preprocess()
 	m_pAmount->ResetParam(0.0f);
 
 	return false;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CWaterRipples::CreatePhysCallbacks()
-{
-	if (gEnv->pPhysicalWorld)
-		gEnv->pPhysicalWorld->AddEventClient(EventPhysCollision::id, &OnEventPhysCollision, 1);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CWaterRipples::ReleasePhysCallbacks()
-{
-	if (gEnv->pPhysicalWorld)
-		gEnv->pPhysicalWorld->RemoveEventClient(EventPhysCollision::id, &OnEventPhysCollision, 1);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CWaterRipples::AddHit(const Vec3& vPos, const float scale, const float strength)
-{
-	const uint32 nThreadID = gcpRendD3D->m_RP.m_nFillThreadID;
-	if (s_pWaterHits[nThreadID].size() < MAX_HITS)
-	{
-		s_pWaterHits[nThreadID].push_back(SWaterHit(vPos, scale, strength));
-
-#if !defined(_RELEASE)
-		const int nDisplayFrames = 60;
-
-		SWaterHitRecord hit;
-		hit.mHit = s_pWaterHits[nThreadID].back();
-		hit.fHeight = vPos.z;
-		hit.nCounter = nDisplayFrames;
-
-		std::vector<SWaterHitRecord>::iterator itHits = m_DebugWaterHits.begin();
-		for (; itHits != m_DebugWaterHits.end(); ++itHits)
-		{
-			if (itHits->nCounter <= 0)
-			{
-				*itHits = hit;
-				break;
-			}
-		}
-
-		if (itHits == m_DebugWaterHits.end())
-			m_DebugWaterHits.push_back(hit);
-#endif
-
-	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -240,30 +191,7 @@ void CWaterRipples::Reset(bool bOnSpecChange)
 	m_bInitializeSim = true;
 	s_SimOrigin = Vec2(ZERO);
 
-	for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
-		stl::free_container(s_pWaterHits[i]);
 	stl::free_container(s_pWaterHitsMGPU);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int CWaterRipples::OnEventPhysCollision(const EventPhys* pEvent)
-{
-	EventPhysCollision* pEventPhysArea = (EventPhysCollision*)pEvent;
-	if (!pEventPhysArea)
-		return 1;
-
-	// only add nearby hits
-	if (pEventPhysArea->idmat[1] == gEnv->pPhysicalWorld->GetWaterMat())
-	{
-		// Compute the momentum of the object.
-		// Clamp the mass so that particles and other "massless" objects still cause ripples.
-		float fMomentum = pEventPhysArea->vloc->GetLength() * max(pEventPhysArea->mass[0], 0.025f);
-		AddHit(pEventPhysArea->pt, 1.0f, fMomentum);
-	}
-
-	return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -334,8 +262,26 @@ void CWaterRipples::Render()
 	if (!CTexture::s_ptexWaterRipplesDDN || !CTexture::IsTextureExist(CTexture::s_ptexBackBufferScaled[0]))
 		return;
 
+	const bool bAlreadyUpdated = (m_frameID == gRenDev->GetFrameID());
+	if (bAlreadyUpdated)
+	{
+		return;
+	}
+	m_frameID = gRenDev->GetFrameID();
+
 	const uint32 nThreadID = gRenDev->m_RP.m_nProcessThreadID;
 	int32 nGpuID = 0;//gRenDev->RT_GetCurrGpuID();
+
+	// add to internal ripple array.
+	CRenderView* pRenderView = gRenDev->m_RP.RenderView();
+	const auto& waterRipples = pRenderView->GetWaterRipples();
+	for(auto& ripple : waterRipples)
+	{
+		if(m_waterRipples.size() < SWaterRippleInfo::MaxWaterRipplesInScene)
+		{
+			m_waterRipples.emplace_back(ripple);
+		}
+	}
 
 	gRenDev->m_cEF.mfRefreshSystemShader("PostEffectsGame", CShaderMan::s_shPostEffectsGame);
 
@@ -364,9 +310,9 @@ void CWaterRipples::Render()
 	}
 
 	Vec4 vParams = Vec4(0, 0, 0, 0);
-	if (!s_pWaterHits[nThreadID].empty())
+	if (!m_waterRipples.empty())
 	{
-		vParams = Vec4(s_pWaterHits[nThreadID][0].worldPos.x, s_pWaterHits[nThreadID][0].worldPos.y, 0, 1.0f);
+		vParams = Vec4(m_waterRipples[0].position.x, m_waterRipples[0].position.y, 0, 1.0f);
 		m_fLastSpawnTime = fTime;
 	}
 
@@ -388,7 +334,17 @@ void CWaterRipples::Render()
 
 		s_bInitializeSim = m_bInitializeSim;
 		s_vParams = vParams;
-		s_pWaterHitsMGPU = s_pWaterHits[nThreadID];
+		s_pWaterHitsMGPU.resize(m_waterRipples.size());
+		for (uint32 i = 0; i < m_waterRipples.size(); ++i)
+		{
+			auto& dest = s_pWaterHitsMGPU[i];
+			auto& src = m_waterRipples[i];
+			dest.worldPos.x = src.position.x;
+			dest.worldPos.y = src.position.y;
+			dest.scale = src.scale;
+			dest.strength = src.strength;
+		}
+		m_waterRipples.clear();
 
 		// update world space -> sim space transform
 		s_vLookupParams.x = 1.f / (2.f * m_fSimGridSize);
@@ -456,7 +412,15 @@ void CWaterRipples::Render()
 	CTexture::s_ptexBackBufferScaled[0]->SetResolved(true);
 	gcpRendD3D->FX_PopRenderTarget(0);
 
-	CTexture::s_ptexWaterRipplesDDN->GenerateMipMaps();
+	// Generate mipmaps
+	{
+		if (!CTexture::s_pMipperWaterRipplesDDN)
+			CTexture::s_pMipperWaterRipplesDDN = new CMipmapGenPass();
+
+		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+		CTexture::s_pMipperWaterRipplesDDN->Execute(CTexture::s_ptexWaterRipplesDDN);
+		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
+	}
 
 	gcpRendD3D->RT_SetViewport(0, 0, iWidth, iHeight);
 
@@ -465,26 +429,6 @@ void CWaterRipples::Render()
 	gRenDev->m_RP.m_FlagsShader_RT = nSaveFlagsShader_RT;
 
 	s_nUpdateMask &= ~(1 << gRenDev->RT_GetCurrGpuID());
-	s_pWaterHits[nThreadID].clear();
-}
-
-void CWaterRipples::DEBUG_DrawWaterHits()
-{
-	gRenDev->GetIRenderAuxGeom()->SetRenderFlags(SAuxGeomRenderFlags());
-	for (std::vector<SWaterHitRecord>::iterator itHits = m_DebugWaterHits.begin();
-	     itHits != m_DebugWaterHits.end(); ++itHits)
-	{
-		if (itHits->nCounter > 0)
-		{
-			--itHits->nCounter;
-
-			Vec3 vHitPos(itHits->mHit.worldPos.x, itHits->mHit.worldPos.y, itHits->fHeight);
-			gRenDev->GetIRenderAuxGeom()->DrawSphere(vHitPos, 0.15f, ColorB(255, 0, 0, 255));
-		}
-	}
-
-	Vec3 simCenter = Vec3(s_SimOrigin.x, s_SimOrigin.y, gRenDev->GetRCamera().vOrigin.z - 1.5f);
-	gRenDev->GetIRenderAuxGeom()->DrawSphere(simCenter, 0.15f, ColorB(0, 255, 0, 255));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -536,7 +480,6 @@ void CWaterVolume::Render()
 			// Create texture if required
 			if (!CTexture::IsTextureExist(CTexture::s_ptexWaterVolumeTemp[frameID]))
 			{
-				ScopedSwitchToGlobalHeap globalHeap;
 				if (!CTexture::s_ptexWaterVolumeTemp[frameID]->Create2DTexture(64, 64, 1,
 				                                                               FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD,
 				                                                               0, eTF_R32G32B32A32F, eTF_R32G32B32A32F))
@@ -599,7 +542,15 @@ void CWaterVolume::Render()
 	gcpRendD3D->FX_PopRenderTarget(0);
 	gcpRendD3D->RT_SetViewport(0, 0, iWidth, iHeight);
 
-	CTexture::s_ptexWaterVolumeDDN->GenerateMipMaps();
+	// Generate mipmaps
+	{
+		if (!CTexture::s_pMipperWaterVolumeDDN)
+			CTexture::s_pMipperWaterVolumeDDN = new CMipmapGenPass();
+
+		gcpRendD3D->GetGraphicsPipeline().SwitchFromLegacyPipeline();
+		CTexture::s_pMipperWaterVolumeDDN->Execute(CTexture::s_ptexWaterVolumeDDN);
+		gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
+	}
 
 	// HACK (re-set back-buffer): due to lazy RT updates/setting there's strong possibility we run into problems on x360 when we try to resolve from edram with no RT set
 	gcpRendD3D->FX_SetActiveRenderTargets();

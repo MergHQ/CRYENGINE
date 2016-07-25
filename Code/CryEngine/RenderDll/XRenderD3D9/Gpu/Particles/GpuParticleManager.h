@@ -41,9 +41,8 @@ public:
 	  pfx2::IParticleComponent* pComponent,
 	  const pfx2::SRuntimeInitializationParameters& params) override;
 
-	// needs to be called before RT_UpdateGpuForAll, applies the changes made from the main
-	// thread up until SyncronizeUpdateKernels
-	void RT_GpuKernelUpdateAll();
+	void RenderThreadUpdate();
+	void RenderThreadPostUpdate();
 
 	// gets initialized the first time it is called and will allocate buffers
 	// (so make sure its only called from the render thread)
@@ -55,7 +54,7 @@ public:
 	// this needs to be called from the render thread when the renderer
 	// is teared down to make sure the runtimes are not still persistent when the
 	// render thread is gone
-	void                                                RT_CleanupResources();
+	void CleanupResources();
 private:
 	std::vector<_smart_ptr<CParticleComponentRuntime>>& GetWriteRuntimes()
 	{
@@ -78,7 +77,10 @@ private:
 	std::vector<_smart_ptr<CFeature>>                                     m_particleFeatureGpuInterfacesInitialization;
 
 	gpu::CTypedResource<uint, gpu::BufferFlagsReadWriteReadback>          m_counter;
+	gpu::CTypedResource<uint, gpu::BufferFlagsReadWriteReadback>          m_scratch;
 	gpu::CTypedResource<SReadbackData, gpu::BufferFlagsReadWriteReadback> m_readback;
+
+	int m_numRuntimesReadback;
 
 	CryCriticalSection                 m_cs;
 

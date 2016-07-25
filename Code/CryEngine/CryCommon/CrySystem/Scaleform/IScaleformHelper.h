@@ -11,9 +11,6 @@ public:
 	//! Initialize helper object
 	virtual bool Init() = 0;
 
-	//! Register CVars for Scaleform
-	virtual void InitCVars() = 0;
-
 	//! Destroy helper object
 	virtual void Destroy() = 0;
 

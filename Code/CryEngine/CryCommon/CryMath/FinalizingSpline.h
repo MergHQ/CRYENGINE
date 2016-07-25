@@ -19,10 +19,6 @@
 
 namespace spline
 {
-inline bool IsEquivalent(float a, float b, float eps)
-{
-	return abs(a - b) <= eps;
-}
 
 // Returns |a-b| - |a-c|
 inline float diff_diff(float a, float b, float c)

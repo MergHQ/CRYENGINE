@@ -11,6 +11,8 @@ if not exist "%projectcfg%" (
     exit /b 1
 )
 
+echo CRYENGINE Version: %engine_version%
+
 for /F "tokens=*" %%I in (%projectcfg%) do set %%I
 
 if not defined engine_version (
@@ -35,6 +37,9 @@ if defined engine_root (
 		pause
 		exit /b 1
 	)
+	
+	echo CRYENGINE Root: %engine_root%
+	
 	start "" "%engine_root%\%executable%" -projectroot "%cd%" -projectdlldir %binpath%
 	exit
 ) else (

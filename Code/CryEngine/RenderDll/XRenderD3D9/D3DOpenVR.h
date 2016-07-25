@@ -42,8 +42,7 @@ protected:
 
 	bool             InitializeEyeTarget(D3DDevice* d3dDevice, EEyeType eye, TextureDesc desc, const char* name);
 	bool             InitializeQuadLayer(D3DDevice* d3dDevice, int quadLayer, TextureDesc desc, const char* name);
-	bool             InitializeMirrorTexture(D3DDevice* d3dDevice, TextureDesc desc, const char* name);
-	void             UpdateTargetBuffer();
+	bool             InitializeMirrorTexture(D3DDevice* d3dDevice, EEyeType eye, TextureDesc desc, const char* name);
 
 protected:
 	struct Eye
@@ -60,7 +59,7 @@ protected:
 	uint32                        m_numFrames;
 	uint32                        m_currentFrame;
 
-	CTexture*                     m_mirrorTexture;
+	CTexture*                     m_mirrorTextures[EEyeType::eEyeType_NumEyes];
 
 	uint32                        m_uEyeWidth;
 	uint32                        m_uEyeHeight;
@@ -68,9 +67,6 @@ protected:
 	CryVR::OpenVR::IOpenVRDevice* m_openVRDevice;
 	CD3D9Renderer*                m_renderer;
 	CD3DStereoRenderer*           m_stereoRenderer;
-
-	CTexture*                     m_backbufferTexture;
-	D3DResource*                  m_backbuffer;
 
 	CCryNameR                     m_Param0Name;
 	CCryNameR                     m_Param1Name;

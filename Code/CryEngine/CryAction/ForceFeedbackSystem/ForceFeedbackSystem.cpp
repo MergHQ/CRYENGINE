@@ -228,9 +228,13 @@ void CForceFeedBackSystem::PlayForceFeedbackEffect(ForceFeedbackFxId id, const S
 
 			const SPattern& effectPatternA = FindPattern(effect.patternA);
 			const SPattern& effectPatternB = (effect.patternA == effect.patternB) ? effectPatternA : FindPattern(effect.patternB);
+			const SPattern& effectPatternLT = FindPattern(effect.patternLT);
+			const SPattern& effectPatternRT = (effect.patternLT == effect.patternRT) ? effectPatternLT : FindPattern(effect.patternRT);
 
 			const SEnvelope& effectEnvelopeA = FindEnvelope(effect.envelopeA);
 			const SEnvelope& effectEnvelopeB = (effect.envelopeA == effect.envelopeB) ? effectEnvelopeA : FindEnvelope(effect.envelopeB);
+			const SEnvelope& effectEnvelopeLT = FindEnvelope(effect.envelopeLT);
+			const SEnvelope& effectEnvelopeRT = (effect.envelopeLT == effect.envelopeRT) ? effectEnvelopeLT : FindEnvelope(effect.envelopeRT);
 
 			SActiveEffect newActiveEffect;
 			m_activeEffects.push_back(newActiveEffect);
@@ -241,6 +245,8 @@ void CForceFeedBackSystem::PlayForceFeedbackEffect(ForceFeedbackFxId id, const S
 			justAddedEffect.runningTime = 0.0f;
 			justAddedEffect.frequencyA = effect.frequencyA;
 			justAddedEffect.frequencyB = effect.frequencyB;
+			justAddedEffect.frequencyLT = effect.frequencyLT;
+			justAddedEffect.frequencyRT = effect.frequencyRT;
 			justAddedEffect.runtimeParams = runtimeParams;
 
 			//Patters are copied, for faster access when loop-processing, instead of being a pointer
@@ -249,6 +255,10 @@ void CForceFeedBackSystem::PlayForceFeedbackEffect(ForceFeedbackFxId id, const S
 			justAddedEffect.m_envelopeA = effectEnvelopeA;
 			justAddedEffect.m_patternB = effectPatternB;
 			justAddedEffect.m_envelopeB = effectEnvelopeB;
+			justAddedEffect.m_patternLT = effectPatternLT;
+			justAddedEffect.m_envelopeLT = effectEnvelopeLT;
+			justAddedEffect.m_patternRT = effectPatternRT;
+			justAddedEffect.m_envelopeRT = effectEnvelopeRT;
 		}
 		else
 		{
@@ -317,10 +327,12 @@ void CForceFeedBackSystem::StopAllEffects()
 	UpdateInputSystem(0.0f, 0.0f, SFFTriggerOutputData(SFFTriggerOutputData::Initial::ZeroIt));
 }
 
-void CForceFeedBackSystem::AddFrameCustomForceFeedback(const float amplifierA, const float amplifierB)
+void CForceFeedBackSystem::AddFrameCustomForceFeedback(const float amplifierA, const float amplifierB, const float amplifierLT /*= 0.0f*/, const float amplifierRT /*= 0.0f*/)
 {
 	m_frameCustomForceFeedback.forceFeedbackA += amplifierA;
 	m_frameCustomForceFeedback.forceFeedbackB += amplifierB;
+	m_frameCustomForceFeedback.forceFeedbackLT += amplifierLT;
+	m_frameCustomForceFeedback.forceFeedbackRT += amplifierRT;
 }
 
 void CForceFeedBackSystem::AddCustomTriggerForceFeedback(const SFFTriggerOutputData& triggersData)
@@ -343,7 +355,10 @@ void CForceFeedBackSystem::Update(float frameTime)
 		{
 			SActiveEffect& currentEffect = *activeEffectIt;
 
-			forceFeedback += currentEffect.Update(frameTime);
+			SFFOutput current = currentEffect.Update(frameTime);
+			forceFeedback += current;
+			triggerForceFeedback.leftStrength += current.forceFeedbackLT;
+			triggerForceFeedback.rightStrength += current.forceFeedbackRT;
 
 			if (!currentEffect.HasFinished())
 			{
@@ -583,10 +598,33 @@ void CForceFeedBackSystem::LoadEffects(XmlNodeRef& effectsNode)
 					newEffect.envelopeB.Set(motorNode->haveAttr("envelope") ? motorNode->getAttr("envelope") : "");
 					motorNode->getAttr("frequency", newEffect.frequencyB);
 				}
+				else if (strcmp(motorTag, "MotorLTRT") == 0)
+				{
+					newEffect.patternLT.Set(motorNode->haveAttr("pattern") ? motorNode->getAttr("pattern") : "");
+					newEffect.patternRT = newEffect.patternLT;
+					newEffect.envelopeLT.Set(motorNode->haveAttr("envelope") ? motorNode->getAttr("envelope") : "");
+					newEffect.envelopeRT = newEffect.envelopeLT;
+					motorNode->getAttr("frequency", newEffect.frequencyLT);
+					newEffect.frequencyRT = newEffect.frequencyLT;
+				}
+				else if (strcmp(motorTag, "MotorLT") == 0)
+				{
+					newEffect.patternLT.Set(motorNode->haveAttr("pattern") ? motorNode->getAttr("pattern") : "");
+					newEffect.envelopeLT.Set(motorNode->haveAttr("envelope") ? motorNode->getAttr("envelope") : "");
+					motorNode->getAttr("frequency", newEffect.frequencyLT);
+				}
+				else if (strcmp(motorTag, "MotorRT") == 0)
+				{
+					newEffect.patternRT.Set(motorNode->haveAttr("pattern") ? motorNode->getAttr("pattern") : "");
+					newEffect.envelopeRT.Set(motorNode->haveAttr("envelope") ? motorNode->getAttr("envelope") : "");
+					motorNode->getAttr("frequency", newEffect.frequencyRT);
+				}
 			}
 
 			newEffect.frequencyA = (float)__fsel(-newEffect.frequencyA, 1.0f, newEffect.frequencyA);
 			newEffect.frequencyB = (float)__fsel(-newEffect.frequencyB, 1.0f, newEffect.frequencyB);
+			newEffect.frequencyLT = (float)__fsel(-newEffect.frequencyLT, 1.0f, newEffect.frequencyLT);
+			newEffect.frequencyRT = (float)__fsel(-newEffect.frequencyRT, 1.0f, newEffect.frequencyRT);
 
 			m_effects.push_back(newEffect);
 			m_effectNames.push_back(effectName);
@@ -806,8 +844,16 @@ CForceFeedBackSystem::SFFOutput CForceFeedBackSystem::SActiveEffect::Update(floa
 		const float sampleTimeBAtFreq = sampleTime * frequencyB;
 		const float sampleTimeBAtFreqNorm = clamp_tpl(sampleTimeBAtFreq - floor_tpl(sampleTimeBAtFreq), 0.0f, 1.0f);
 
+		const float sampleTimeLTAtFreq = sampleTime * frequencyLT;
+		const float sampleTimeLTAtFreqNorm = clamp_tpl(sampleTimeLTAtFreq - floor_tpl(sampleTimeLTAtFreq), 0.0f, 1.0f);
+
+		const float sampleTimeRTAtFreq = sampleTime * frequencyRT;
+		const float sampleTimeRTAtFreqNorm = clamp_tpl(sampleTimeRTAtFreq - floor_tpl(sampleTimeRTAtFreq), 0.0f, 1.0f);
+
 		effectFF.forceFeedbackA = m_patternA.SamplePattern(sampleTimeAAtFreqNorm) * m_envelopeA.SampleEnvelope(sampleTime) * runtimeParams.intensity;
 		effectFF.forceFeedbackB = m_patternB.SamplePattern(sampleTimeBAtFreqNorm) * m_envelopeB.SampleEnvelope(sampleTime) * runtimeParams.intensity;
+		effectFF.forceFeedbackLT = m_patternLT.SamplePattern(sampleTimeLTAtFreqNorm) * m_envelopeLT.SampleEnvelope(sampleTime) * runtimeParams.intensity;
+		effectFF.forceFeedbackRT = m_patternRT.SamplePattern(sampleTimeRTAtFreqNorm) * m_envelopeRT.SampleEnvelope(sampleTime) * runtimeParams.intensity;
 		runningTime += frameTime;
 
 		//Re-start the loop

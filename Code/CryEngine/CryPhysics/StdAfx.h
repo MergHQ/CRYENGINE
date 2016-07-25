@@ -24,6 +24,7 @@
 // Entity profiling only possible in non-release builds
 #if !defined(_RELEASE)
 # define ENTITY_PROFILER_ENABLED
+# define PHYSWORLD_SERIALIZATION
 #endif
 
 #if CRY_COMPILER_MSVC

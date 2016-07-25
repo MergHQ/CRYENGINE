@@ -90,12 +90,6 @@ bool CRELensOptics::mfDraw(CShader* pShader, SShaderPass* pass)
 	if (!pOcc)
 		return false;
 
-#if !defined(_RELEASE)
-	char buffer[256];
-	cry_sprintf(buffer, "%s-%s", pLight->m_sName, pRootElem->GetName().c_str());
-	PROFILE_LABEL_SCOPE(buffer);
-#endif
-
 	pRootElem->SetOcclusionQuery(pOcc);
 	pOcc->SetOccPlaneSizeRatio(pRootElem->GetOccSize());
 

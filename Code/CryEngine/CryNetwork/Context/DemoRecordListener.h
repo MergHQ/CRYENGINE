@@ -8,7 +8,7 @@
    -------------------------------------------------------------------------
    History:
    - ??/2005 : Created by Craig Tiller
-   - 04/2006 : Taken over by Jan Müller
+   - 04/2006 : Taken over by Jan MÃ¼ller
 *************************************************************************/
 
 #ifndef __DEMORECORDLISTENER_H__

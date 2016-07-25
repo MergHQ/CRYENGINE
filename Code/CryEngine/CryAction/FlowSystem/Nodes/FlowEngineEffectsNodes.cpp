@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+#include "FlowFrameworkBaseNode.h"
 
 // Note: why is there a Enable + Disable ? Quite redundant
 
@@ -9,7 +9,7 @@
 // Get custom value helper functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef CFlowBaseNode<eNCT_Singleton> TBaseNodeClass;
+typedef CFlowFrameworkBaseNode<eNCT_Singleton> TBaseNodeClass;
 
 static float GetCustomValue(const SFlowNodeConfig& config, TBaseNodeClass* pFlowBaseNode, bool bIsEnabled, IFlowNode::SActivationInfo* pActInfo, int portIndex, bool& isOk)
 {
@@ -98,48 +98,6 @@ struct SColorCorrection
 	static bool CustomSetData(const SFlowNodeConfig& config, TBaseNodeClass* pFlowBaseNode, bool bIsEnabled, IFlowNode::SActivationInfo* pActInfo) { return false; }
 
 	static void Serialize(IFlowNode::SActivationInfo* actInfo, TSerialize ser)                                                                     {}
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Glow post process settings
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-struct SGlow
-{
-	static void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SInputPortConfig inputs[] =
-		{
-			InputPortConfig<bool>("Enabled",               false,     "Enables node",                                    "Enabled"),
-			InputPortConfig<bool>("Disabled",              true,      "Disables node",                                   "Disabled"),
-			InputPortConfig<float>("Glow_Scale",           0.5f,      "Sets overall glow multiplier",                    "Final glow multiplier"),
-			InputPortConfig<float>("Glow_ScreenThreshold", 0.5f,      "Sets fullscreen glow threshold",                  "Screen glow threshold"),
-			InputPortConfig<float>("Glow_ScreenMul",       0.2f,      "Sets fullscreen glow multiplier",                 "Screen glow multiplier"),
-			InputPortConfig<Vec3>("clr_Glow_StreaksColor", Vec3(0.8f, 0.7f,                                              1.5f),                    0,"Streaks color"),
-			InputPortConfig<float>("Glow_StreaksMul",      3.0f,      "Sets glow streaks color multiplier",              "Streaks multiplier"),
-			InputPortConfig<float>("Glow_StreaksStretch",  1.0f,      "Sets glow streaks stretch amount",                "Streaks stretch"),
-			InputPortConfig<float>("Glow_FlaresMul",       0.25f,     "Sets glow lens-flares (ghost-flares) multiplier", "Lens-flares multiplier"),
-			{ 0 }
-		};
-
-		static const SOutputPortConfig outputs[] =
-		{
-			{ 0 }
-		};
-
-		config.nFlags |= EFLN_TARGET_ENTITY;
-		config.pInputPorts = inputs;
-		config.pOutputPorts = outputs;
-		config.sDescription = _HELP("Misc post process setup");
-	}
-
-	static void Disable()
-	{
-		gEnv->p3DEngine->SetPostEffectParam("Glow_Scale", 0.5f);
-	}
-
-	static bool CustomSetData(const SFlowNodeConfig& config, TBaseNodeClass* pFlowBaseNode, bool bIsEnabled, IFlowNode::SActivationInfo* pActInfo) { return false; }
-	static void Serialize(IFlowNode::SActivationInfo* pActInfo, TSerialize ser)                                                                    {}
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -413,40 +371,6 @@ struct SEffectFrost
 	static void Serialize(IFlowNode::SActivationInfo* pActInfo, TSerialize ser)                                                                    {}
 };
 
-struct SEffectCondensation
-{
-	static void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SInputPortConfig inputs[] =
-		{
-			InputPortConfig<bool>("Enabled",                          false, "Enables node",                               "Enabled"),
-			InputPortConfig<bool>("Disabled",                         true,  "Disables node",                              "Disabled"),
-			InputPortConfig<float>("ScreenCondensation_Amount",       0.0f,  "Amount of condensation ",                    "Amount"),
-			InputPortConfig<float>("ScreenCondensation_CenterAmount", 1.0f,  "Amount of condensation at center of screen", "CenterAmount"),
-			{ 0 }
-		};
-
-		static const SOutputPortConfig outputs[] =
-		{
-			{ 0 }
-		};
-
-		config.nFlags |= EFLN_TARGET_ENTITY;
-		config.pInputPorts = inputs;
-		config.pOutputPorts = outputs;
-		config.sDescription = _HELP("Condensation effect");
-		config.SetCategory(EFLN_OBSOLETE);
-	}
-
-	static void Disable()
-	{
-		gEnv->p3DEngine->SetPostEffectParam("ScreenCondensation_Amount", 0);
-	}
-
-	static bool CustomSetData(const SFlowNodeConfig& config, TBaseNodeClass* pFlowBaseNode, bool bIsEnabled, IFlowNode::SActivationInfo* pActInfo) { return false; }
-	static void Serialize(IFlowNode::SActivationInfo* pActInfo, TSerialize ser)                                                                    {}
-};
-
 struct SEffectWaterDroplets
 {
 	static void GetConfiguration(SFlowNodeConfig& config)
@@ -539,41 +463,6 @@ struct SEffectBloodSplats
 	static void Disable()
 	{
 		gEnv->p3DEngine->SetPostEffectParam("BloodSplats_Amount", 0);
-	}
-
-	static bool CustomSetData(const SFlowNodeConfig& config, TBaseNodeClass* pFlowBaseNode, bool bIsEnabled, IFlowNode::SActivationInfo* pActInfo) { return false; }
-	static void Serialize(IFlowNode::SActivationInfo* pActInfo, TSerialize ser)                                                                    {}
-};
-
-struct SEffectDistantRain
-{
-	static void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SInputPortConfig inputs[] =
-		{
-			InputPortConfig<bool>("Enabled",                    false,     "Enables node",                   "Enabled"),
-			InputPortConfig<bool>("Disabled",                   true,      "Disables node",                  "Disabled"),
-			InputPortConfig<float>("DistantRain_Amount",        0.0f,      "Amount of visible distant rain", "Amount"),
-			InputPortConfig<float>("DistantRain_Speed",         1.0f,      "Distant rain speed multiplier",  "Speed"),
-			InputPortConfig<float>("DistantRain_DistanceScale", 1.0f,      "Distant rain distance scale",    "DistanceScale"),
-			InputPortConfig<Vec3>("clr_DistantRain_Color",      Vec3(1.0f, 1.0f,                             1.0f),           "Sets distance rain color","Color"),
-			{ 0 }
-		};
-
-		static const SOutputPortConfig outputs[] =
-		{
-			{ 0 }
-		};
-
-		config.nFlags |= EFLN_TARGET_ENTITY;
-		config.pInputPorts = inputs;
-		config.pOutputPorts = outputs;
-		config.sDescription = _HELP("Distant rain effect");
-	}
-
-	static void Disable()
-	{
-		gEnv->p3DEngine->SetPostEffectParam("DistantRain_Amount", 0);
 	}
 
 	static bool CustomSetData(const SFlowNodeConfig& config, TBaseNodeClass* pFlowBaseNode, bool bIsEnabled, IFlowNode::SActivationInfo* pActInfo) { return false; }
@@ -916,98 +805,6 @@ struct SEffect3DHudInterference
 	}
 };
 
-struct SEffectHUDScratches
-{
-	static void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SInputPortConfig inputs[] =
-		{
-			InputPortConfig<bool>("Enabled",              false, "Enables node",             "Enabled"),
-			InputPortConfig<bool>("Disabled",             true,  "Disables node",            "Disabled"),
-			InputPortConfig<float>("Scratches_Strength",  0.0f,  "Sets scratches strength",  "Strength"),
-			InputPortConfig<float>("Scratches_Threshold", 0.0f,  "Sets scratches threshold", "Threshold"),
-			InputPortConfig<float>("Scratches_Intensity", 0.7f,  "Sets scratches intensity", "Intensity"),
-			{ 0 }
-		};
-
-		static const SOutputPortConfig outputs[] =
-		{
-			{ 0 }
-		};
-
-		config.nFlags |= EFLN_TARGET_ENTITY;
-		config.pInputPorts = inputs;
-		config.pOutputPorts = outputs;
-		config.sDescription = _HELP("Scratches on HUD");
-	}
-
-	static void Disable()
-	{
-		gEnv->p3DEngine->SetPostEffectParam("Scratches_Strength", 0);
-	}
-
-	static bool CustomSetData(const SFlowNodeConfig& config, TBaseNodeClass* pFlowBaseNode, bool bIsEnabled, IFlowNode::SActivationInfo* pActInfo) { return false; }
-	static void Serialize(IFlowNode::SActivationInfo* pActInfo, TSerialize ser)                                                                    {}
-};
-
-struct SHUDHitEffect
-{
-	static void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SInputPortConfig inputs[] =
-		{
-			InputPortConfig<bool>("Enabled",                          false, "Enables node",                                                "Enabled"),
-			InputPortConfig<bool>("Disabled",                         true,  "Disables node",                                               "Disabled"),
-
-			InputPortConfig<float>("HUDHitEffect_Amount",             1.0f,  "used to control effect activation",                           "Amount"),
-
-			InputPortConfig<float>("HUDHitEffect_DisplayTime",        3.0f,  "Sets hit effect display time",                                "DisplayTime"),
-			InputPortConfig<float>("HUDHitEffect_AnimSpeed",          0.01f, "Sets UV animation (scroll down) speed",                       "AnimSpeed"),
-
-			InputPortConfig<float>("HUDHitEffect_HealthLevel",        1.0f,  "Sets player health level [0..1]",                             "HealthLevel"),
-			InputPortConfig<float>("HUDHitEffect_HealthNanoOffset",   0.9f,  "Sets player health level where nano pattern becomes visible", "HealthNanoOffset"),
-			InputPortConfig<float>("HUDHitEffect_HealthVeinsOffset",  0.6f,  "Sets player health level where veins become visible",         "HealthVeinsOffset"),
-			InputPortConfig<float>("HUDHitEffect_ColorFadeOffset",    0.4f,  "Sets player health level where color fade out",               "ColodeFadeOffset"),
-			InputPortConfig<float>("HUDHitEffect_NanoPatternTiling",  48.0f, "Sets UV tiling for nano pattern",                             "NanoPatternTiling"),
-
-			InputPortConfig<float>("HUDHitEffect_HitAttenuation",     0.1f,  "Sets attenuation of hit effect",                              "HitAttenuation"),
-			InputPortConfig<float>("HUDHitEffect_HitAttenuationBlur", 0.6f,  "Sets blurriness of hit effect attenuation",                   "HitAttenuationBlur"),
-			InputPortConfig<float>("HUDHitEffect_HitAreaVisibility",  1.0f,  "Sets visibility of hit effect",                               "HitAreaVisibility"),
-
-			InputPortConfig<float>("HUDHitEffect_CriticalSaturation", 0.2f,  "Sets screen color saturation when in critical state",         "CriticalSaturation"),
-			InputPortConfig<float>("HUDHitEffect_CriticalBrightness", 1.0f,  "Sets screen color brightness when in critical state",         "CriticalBrightness"),
-			InputPortConfig<float>("HUDHitEffect_CriticalContrast",   1.0f,  "Sets screen color contrast when in critical state",           "CriticalContrast"),
-
-			InputPortConfig<float>("HUDHitEffect_NoiseAmount",        1.0f,  "Sets strength of area",                                       "NoiseAmount"),
-
-			InputPortConfig<float>("HUDHitEffect_ScreenBorderLeft",   0.1f,  "Sets screen border on left side",                             "ScreenBorderLeft"),
-			InputPortConfig<float>("HUDHitEffect_ScreenBorderTop",    0.15f, "Sets screen border on top side",                              "ScreenBorderTop"),
-			InputPortConfig<float>("HUDHitEffect_ScreenBorderRight",  0.1f,  "Sets screen border on right side",                            "ScreenBorderRight"),
-			InputPortConfig<float>("HUDHitEffect_ScreenBorderBottom", 0.15f, "Sets screen border on bottom side",                           "ScreenBorderBottom"),
-
-			{ 0 }
-		};
-
-		static const SOutputPortConfig outputs[] =
-		{
-			{ 0 }
-		};
-
-		config.nFlags |= EFLN_TARGET_ENTITY;
-		config.pInputPorts = inputs;
-		config.pOutputPorts = outputs;
-		config.sDescription = _HELP("Hit effect");
-	}
-
-	static void Disable()
-	{
-		//		gEnv->p3DEngine->SetPostEffectParam( "HUDHitEffect_Active",			false );	//error causing
-	}
-
-	static bool CustomSetData(const SFlowNodeConfig& config, TBaseNodeClass* pFlowBaseNode, bool bIsEnabled, IFlowNode::SActivationInfo* pActInfo) { return false; }
-	static void Serialize(IFlowNode::SActivationInfo* pActInfo, TSerialize ser)                                                                    {}
-};
-
 struct SEffectGhosting
 {
 	static void GetConfiguration(SFlowNodeConfig& config)
@@ -1231,24 +1028,19 @@ REGISTER_FLOW_NODE_EX("Image:ColorCorrection", CFlowImageNode<SColorCorrection>,
 REGISTER_FLOW_NODE_EX("Image:FilterBlur", CFlowImageNode<SFilterBlur>, SFilterBlur);
 REGISTER_FLOW_NODE_EX("Image:FilterRadialBlur", CFlowImageNode<SFilterRadialBlur>, SFilterRadialBlur);
 REGISTER_FLOW_NODE_EX("Image:FilterSharpen", CFlowImageNode<SFilterSharpen>, SFilterSharpen);
-REGISTER_FLOW_NODE_EX("Image:ChromaShift", CFlowImageNode<SFilterChromaShift>, SFilterChromaShift);
+REGISTER_FLOW_NODE_EX("Image:FilterChromaShift", CFlowImageNode<SFilterChromaShift>, SFilterChromaShift);
 REGISTER_FLOW_NODE_EX("Image:EffectFrost", CFlowImageNode<SEffectFrost>, SEffectFrost);
 REGISTER_FLOW_NODE_EX("Image:FilterGrain", CFlowImageNode<SFilterGrain>, SFilterGrain);
-REGISTER_FLOW_NODE_EX("Image:EffectCondensation", CFlowImageNode<SEffectCondensation>, SEffectCondensation);
 REGISTER_FLOW_NODE_EX("Image:EffectWaterDroplets", CFlowImageNode<SEffectWaterDroplets>, SEffectWaterDroplets);
 REGISTER_FLOW_NODE_EX("Image:EffectWaterFlow", CFlowImageNode<SEffectWaterFlow>, SEffectWaterFlow);
 REGISTER_FLOW_NODE_EX("Image:EffectBloodSplats", CFlowImageNode<SEffectBloodSplats>, SEffectBloodSplats);
 REGISTER_FLOW_NODE_EX("Image:EffectGhosting", CFlowImageNode<SEffectGhosting>, SEffectGhosting);
 REGISTER_FLOW_NODE_EX("Image:EffectGhostVision", CFlowImageNode<SEffectGhostVision>, SEffectGhostVision);
-REGISTER_FLOW_NODE_EX("Image:DepthOfField", CFlowImageNode<SEffectDof>, SEffectDof);
-REGISTER_FLOW_NODE_EX("Image:VolumetricScattering", CFlowImageNode<SEffectVolumetricScattering>, SEffectVolumetricScattering);
-REGISTER_FLOW_NODE_EX("Image:DirectionalBlur", CFlowImageNode<SEffectDirectionalBlur>, SEffectDirectionalBlur);
-REGISTER_FLOW_NODE_EX("Image:AlienInterference", CFlowImageNode<SEffectAlienInterference>, SEffectAlienInterference);
-REGISTER_FLOW_NODE_EX("Image:RainDrops", CFlowImageNode<SEffectRainDrops>, SEffectRainDrops);
-REGISTER_FLOW_NODE_EX("Image:DistantRain", CFlowImageNode<SEffectDistantRain>, SEffectDistantRain);
-REGISTER_FLOW_NODE_EX("Image:Glow", CFlowImageNode<SGlow>, SGlow);
+REGISTER_FLOW_NODE_EX("Image:EffectDepthOfField", CFlowImageNode<SEffectDof>, SEffectDof);
+REGISTER_FLOW_NODE_EX("Image:EffectVolumetricScattering", CFlowImageNode<SEffectVolumetricScattering>, SEffectVolumetricScattering);
+REGISTER_FLOW_NODE_EX("Image:FilterDirectionalBlur", CFlowImageNode<SEffectDirectionalBlur>, SEffectDirectionalBlur);
+REGISTER_FLOW_NODE_EX("Image:EffectAlienInterference", CFlowImageNode<SEffectAlienInterference>, SEffectAlienInterference);
+REGISTER_FLOW_NODE_EX("Image:EffectRainDrops", CFlowImageNode<SEffectRainDrops>, SEffectRainDrops);
 REGISTER_FLOW_NODE_EX("Image:FilterVisualArtifacts", CFlowImageNode<SFilterVisualArtifacts>, SFilterVisualArtifacts);
 REGISTER_FLOW_NODE_EX("Image:3DHudInterference", CFlowImageNode<SEffect3DHudInterference>, SEffect3DHudInterference);
-REGISTER_FLOW_NODE_EX("Image:Scratches", CFlowImageNode<SEffectHUDScratches>, SEffectHUDScratches);
-REGISTER_FLOW_NODE_EX("Image:HUDHitEffect", CFlowImageNode<SHUDHitEffect>, SHUDHitEffect);
 REGISTER_FLOW_NODE("Image:SetShadowMode", CFlowNode_SetShadowMode);

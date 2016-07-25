@@ -4,7 +4,6 @@
 #include "Tornado.h"
 #include "../Game.h"
 #include "../Actor.h"
-#include "Environment/FlowTornado.h"
 #include <CryAction/IMaterialEffects.h>
 #include <IEffectSystem.h>
 #include <IVehicleSystem.h>
@@ -27,7 +26,6 @@ CTornado::CTornado()
 	, m_radius(300.f)
 	, m_curMatID(0)
 	, m_wanderSpeed(10.0f)
-	, m_pTargetCallback(nullptr)
 	, m_nextEntitiesCheck(0.0f)
 	, m_spinImpulse(9.0f)
 	, m_attractionImpulse(13.0f)
@@ -198,11 +196,8 @@ void CTornado::Update(SEntityUpdateContext &ctx, int updateSlot)
 			bool bValue = true;
 			event.nParam[2] = (INT_PTR)&bValue;
 			GetEntity()->SendEvent( event );
-			if (m_pTargetCallback)
-				m_pTargetCallback->Done();
 
 			m_pTargetEntity = 0;
-			m_pTargetCallback = 0;
 		}
 
 		targetSteer = (target - dir);
@@ -296,10 +291,9 @@ void CTornado::SetAuthority(bool auth)
 {
 }
 
-void CTornado::SetTarget(IEntity *pTargetEntity, CFlowTornadoWander *pCallback)
+void CTornado::SetTarget(IEntity* pTargetEntity)
 {
 	m_pTargetEntity = pTargetEntity;
-	m_pTargetCallback = pCallback;
 }
 
 

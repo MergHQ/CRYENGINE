@@ -12,12 +12,9 @@
 
  *********************************************************************/
 
-#ifndef __FlowCustomActionNodes_H__
-#define __FlowCustomActionNodes_H__
 #pragma once
 
-#include "FlowBaseNode.h"
-#include <CryEntitySystem/IEntityPoolManager.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryAction/ICustomActions.h>
 
 // Forward declarations
@@ -75,5 +72,3 @@ public:
 private:
 	SActivationInfo m_actInfo;
 };
-
-#endif // __FlowCustomActionNodes_H__

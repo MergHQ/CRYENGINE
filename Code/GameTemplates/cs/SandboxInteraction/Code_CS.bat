@@ -40,8 +40,8 @@ if defined engine_root (
 	set "CRYENGINEROOT=%engine_root%"
 	
 	:: Copy CryEngine.Common.dll to local bin folders (May have changed).
-	xcopy /R/Y "%engine_root%\bin\win_x64\CryEngine.Common.dll" "bin\win_x64\" >NUL
-	xcopy /R/Y "%engine_root%\bin\win_x64\CryEngine.Common.dll" "bin\win_x64\mono\AddIns\" >NUL
+	xcopy /Y/R/D "%engine_root%\bin\win_x64\CryEngine.Common.*" "bin\win_x64\" >NUL
+	xcopy /Y/R/D "%engine_root%\bin\win_x64\CryEngine.Common.*" "bin\win_x64\mono\AddIns\" >NUL
 
 	:: Link to C# Core source code.
 	if not exist "%engine_root%\%cesharp_folder%" (

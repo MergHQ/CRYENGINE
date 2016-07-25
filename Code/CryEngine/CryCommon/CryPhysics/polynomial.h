@@ -340,7 +340,6 @@ ILINE int polynomial_tpl<ftype, degree >::nroots(ftype start, ftype end) const
 }
 
 template<class ftype> ILINE ftype cubert_tpl(ftype x)            { return fabs_tpl(x) > (ftype)1E-20 ? exp_tpl(log_tpl(fabs_tpl(x)) * (ftype)(1.0 / 3)) * sgnnz(x) : x; }
-template<class ftype> ILINE ftype pow_tpl(ftype x, ftype pow)    { return fabs_tpl(x) > (ftype)1E-20 ? exp_tpl(log_tpl(fabs_tpl(x)) * pow) * sgnnz(x) : x; }
 template<class ftype> ILINE void  swap(ftype* ptr, int i, int j) { ftype t = ptr[i]; ptr[i] = ptr[j]; ptr[j] = t; }
 
 template<class ftype, int maxdegree>

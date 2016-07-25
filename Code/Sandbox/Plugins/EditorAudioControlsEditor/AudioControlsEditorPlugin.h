@@ -29,7 +29,7 @@ public:
 	void                            OnEditorNotify(EEditorNotifyEvent aEventId) override {}
 
 	static void                     SaveModels();
-	static void                     ReloadModels();
+	static void                     ReloadModels(bool bReloadImplementation);
 	static void                     ReloadScopes();
 	static ACE::CATLControlsModel*  GetATLModel();
 	static ACE::QATLTreeModel*      GetControlsTree();
@@ -37,6 +37,7 @@ public:
 	static ACE::IAudioSystemEditor* GetAudioSystemEditorImpl();
 	static void                     ExecuteTrigger(const string& sTriggerName);
 	static void                     StopTriggerExecution();
+	static uint                     GetLoadingErrorMask() { return ms_loadingErrorMask; }
 
 private:
 	///////////////////////////////////////////////////////////////////////////
@@ -51,4 +52,5 @@ private:
 	static AudioControlId         ms_nAudioTriggerID;
 
 	static CImplementationManager ms_implementationManager;
+	static uint                   ms_loadingErrorMask;
 };

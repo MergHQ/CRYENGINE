@@ -23,8 +23,9 @@
 
 #include <CryNetwork/ISerialize.h> // <> required for Interfuscator
 #include <CrySystem/TimeValue.h>
-#include <CrySystem/ITimer.h>         // <> required for Interfuscator
-#include <CryLobby/ICryMatchMaking.h> // <> required for Interfuscator
+#include <CrySystem/ITimer.h>           // <> required for Interfuscator
+#include <CryLobby/CommonICryLobby.h>       // <> required for Interfuscator
+#include <CryLobby/CommonICryMatchMaking.h> // <> required for Interfuscator
 #include <CryNetwork/INetworkService.h>
 
 #define SERVER_DEFAULT_PORT        64087
@@ -294,8 +295,8 @@ struct SSendableHandle
 	{
 		return id == 0 && salt == 0;
 	}
-	typedef uint32 (SSendableHandle::* unknown_bool_type);
-	ILINE operator unknown_bool_type() const
+	typedef uint32 SSendableHandle::* safe_bool_idiom_type;
+	ILINE operator safe_bool_idiom_type() const
 	{
 		return !!(*this) ? &SSendableHandle::id : NULL;
 	}
@@ -333,6 +334,7 @@ struct SNetMessageDef
 	  TSerialize,
 	  uint32 curSeq,
 	  uint32 oldSeq,
+	  uint32 timeFraction32,
 	  EntityId* pRmiObject,
 	  INetChannel* pChannel
 	  );
@@ -463,36 +465,27 @@ struct SNetGameInfo
 #define HOST_MIGRATION_MAX_PLAYER_NAME_SIZE (32)
 #define HOST_MIGRATION_LISTENER_NAME_SIZE   (64)
 
-typedef uint32 HMStateType;
-
-struct SHostMigrationEventListenerInfo
+enum eHostMigrationState
 {
-	SHostMigrationEventListenerInfo(IHostMigrationEventListener* pListener, const char* pWho)
-		: m_pListener(pListener)
-	{
-		for (uint32 index = 0; index < MAX_MATCHMAKING_SESSIONS; ++index)
-		{
-			Reset(index);
-		}
-#if !defined(_RELEASE)
-		m_pWho = pWho;
-#endif
-	}
+	eHMS_Idle,
+	eHMS_Initiate,
+	eHMS_DisconnectClient,
+	eHMS_WaitForNewServer,
+	eHMS_DemoteToClient,
+	eHMS_PromoteToServer,
+	eHMS_ReconnectClient,
+	eHMS_Finalise,
+	eHMS_StateCheck,
+	eHMS_Terminate,
+	eHMS_Resetting,
+	eHMS_Unknown,
 
-	void Reset(uint32 sessionIndex)
-	{
-		CRY_ASSERT(sessionIndex < MAX_MATCHMAKING_SESSIONS);
-		m_done[sessionIndex] = false;
-		m_state[sessionIndex] = 0;
-	}
-
-	IHostMigrationEventListener*                       m_pListener;
-	bool                                               m_done[MAX_MATCHMAKING_SESSIONS];
-	HMStateType                                        m_state[MAX_MATCHMAKING_SESSIONS];
-#if !defined(_RELEASE)
-	CryFixedStringT<HOST_MIGRATION_LISTENER_NAME_SIZE> m_pWho;
-#endif
+	eHMS_NUM_STATES
 };
+
+#define MAX_MATCHMAKING_SESSIONS 4
+
+typedef uint32 HMStateType;
 
 struct SHostMigrationInfo
 {
@@ -565,6 +558,35 @@ struct IHostMigrationEventListener
 	virtual void                 OnComplete(SHostMigrationInfo& hostMigrationInfo) = 0;
 	virtual EHostMigrationReturn OnReset(SHostMigrationInfo& hostMigrationInfo, HMStateType& state) = 0;
 	// </interfuscator:shuffle>
+};
+
+struct SHostMigrationEventListenerInfo
+{
+	SHostMigrationEventListenerInfo(IHostMigrationEventListener* pListener, const char* pWho)
+		: m_pListener(pListener)
+	{
+		for (uint32 index = 0; index < MAX_MATCHMAKING_SESSIONS; ++index)
+		{
+			Reset(index);
+		}
+#if !defined(_RELEASE)
+		m_pWho = pWho;
+#endif
+	}
+
+	void Reset(uint32 sessionIndex)
+	{
+		CRY_ASSERT(sessionIndex < MAX_MATCHMAKING_SESSIONS);
+		m_done[sessionIndex] = false;
+		m_state[sessionIndex] = 0;
+	}
+
+	IHostMigrationEventListener*                       m_pListener;
+	bool                                               m_done[MAX_MATCHMAKING_SESSIONS];
+	HMStateType                                        m_state[MAX_MATCHMAKING_SESSIONS];
+#if !defined(_RELEASE)
+	CryFixedStringT<HOST_MIGRATION_LISTENER_NAME_SIZE> m_pWho;
+#endif
 };
 
 //! Must be at least the same as CMessageQueue::MAX_ACCOUNTING_GROUPS.
@@ -882,19 +904,6 @@ struct INetwork
 	virtual SNetProfileStackEntry* NpGetNullProfile() = 0;
 
 	/////////////////////////////////////////////////////////////////////////////
-	// Rebroadcaster.
-
-	//! IsRebroadcasterEnabled.
-	//! Informs the caller if the rebroadcaster is enabled or not.
-	virtual bool IsRebroadcasterEnabled(void) const = 0;
-
-	//! Adds a connection to the rebroadcaster mesh.
-	//! \param pChannel   Pointer to the channel being added.
-	//! \param channelID  Game side channel ID associated with pChannel (if known).
-	virtual void AddRebroadcasterConnection(INetChannel* pChannel, TNetChannelID channelID) = 0;
-	/////////////////////////////////////////////////////////////////////////////
-
-	/////////////////////////////////////////////////////////////////////////////
 	// Host Migration.
 	virtual void EnableHostMigration(bool bEnabled) = 0;
 	virtual bool IsHostMigrationEnabled(void) = 0;
@@ -1174,11 +1183,12 @@ struct INetContext
 
 struct INetSender
 {
-	INetSender(TSerialize sr, uint32 nCurrentSeq, uint32 nBasisSeq, bool isServer) : ser(sr)
+	INetSender(TSerialize sr, uint32 nCurrentSeq, uint32 nBasisSeq, uint32 timeFraction32, bool isServer) : ser(sr)
 	{
 		this->nCurrentSeq = nCurrentSeq;
 		this->nBasisSeq = nBasisSeq;
 		this->isServer = isServer;
+		this->timeValue = timeFraction32;
 	}
 	// <interfuscator:shuffle>
 	virtual ~INetSender(){}
@@ -1191,6 +1201,7 @@ struct INetSender
 	bool           isServer;
 	uint32         nCurrentSeq;
 	uint32         nBasisSeq;
+	uint32         timeValue;
 };
 
 struct INetBaseSendable
@@ -1672,7 +1683,6 @@ struct INetChannel : public INetMessageSink
 	virtual void            SetChannelMask(ChannelMaskType newMask) = 0;
 	virtual void            SetClient(INetContext* pNetContext) = 0;
 	virtual void            SetServer(INetContext* pNetContext) = 0;
-	virtual void            SetPeer(INetContext* pNetContext) = 0;
 
 	//! Sets/resets the server password.
 	//! \param password New password string; will be checked at every context change if the length > 0.

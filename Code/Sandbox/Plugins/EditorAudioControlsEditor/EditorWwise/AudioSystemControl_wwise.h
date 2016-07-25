@@ -9,18 +9,21 @@ namespace ACE
 {
 enum EWwiseItemTypes
 {
-	eWwiseItemTypes_Invalid     = 0,
-	eWwiseItemTypes_Event       = BIT(0),
-	eWwiseItemTypes_Rtpc        = BIT(1),
-	eWwiseItemTypes_Switch      = BIT(2),
-	eWwiseItemTypes_AuxBus      = BIT(3),
-	eWwiseItemTypes_SoundBank   = BIT(4),
-	eWwiseItemTypes_State       = BIT(5),
-	eWwiseItemTypes_SwitchGroup = BIT(6),
-	eWwiseItemTypes_StateGroup  = BIT(7),
+	eWwiseItemTypes_Invalid        = 0,
+	eWwiseItemTypes_Event          = BIT(0),
+	eWwiseItemTypes_Rtpc           = BIT(1),
+	eWwiseItemTypes_Switch         = BIT(2),
+	eWwiseItemTypes_AuxBus         = BIT(3),
+	eWwiseItemTypes_SoundBank      = BIT(4),
+	eWwiseItemTypes_State          = BIT(5),
+	eWwiseItemTypes_SwitchGroup    = BIT(6),
+	eWwiseItemTypes_StateGroup     = BIT(7),
+	eWwiseItemTypes_WorkUnit       = BIT(8),
+	eWwiseItemTypes_VirtualFolder  = BIT(9),
+	eWwiseItemTypes_PhysicalFolder = BIT(10),
 };
 
-class IAudioSystemControl_wwise : public IAudioSystemItem
+class IAudioSystemControl_wwise final : public IAudioSystemItem
 {
 public:
 	IAudioSystemControl_wwise() {}

@@ -7,7 +7,7 @@
 namespace gpu_pfx2
 {
 
-void CFeatureMotionFluidDynamics::Update(const gpu_pfx2::SUpdateContext& context)
+void CFeatureMotionFluidDynamics::Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	CParticleComponentRuntime* pRuntime = (CParticleComponentRuntime*)(context.pRuntime);
 	gpu_physics::CParticleFluidSimulation* pFluidSim = pRuntime->GetFluidSimulation();
@@ -57,10 +57,9 @@ void CFeatureMotionFluidDynamics::Update(const gpu_pfx2::SUpdateContext& context
 	params.worldOffsetZ = emitterPos[2] - 0.5f * params.gridSizeZ * params.h;
 	params.particleInfluence = p.particleInfluence;
 	pFluidSim->SetParameters(&params);
-	pRuntime->FluidCollisions();
-	pFluidSim->RenderThreadUpdate();
-
-	pRuntime->EvolveParticles();
+	pRuntime->FluidCollisions(commandList);
+	pFluidSim->RenderThreadUpdate(commandList);
+	pRuntime->EvolveParticles(commandList);
 }
 
 void CFeatureMotionFluidDynamics::Initialize() {}

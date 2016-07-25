@@ -52,7 +52,7 @@ public:
 private:
 	struct D3DDevice*                           m_pDevice;               // Not owned
 	struct D3DDeviceContext*                    m_pDeviceContext;        // Not owned
-	struct IDXGISwapChain*                      m_pSwapChain;            // Owned
+	struct DXGISwapChain*                       m_pSwapChain;            // Owned
 	struct D3DSurface*                          m_pRenderTargetView;     // Owned
 	struct D3DSurface*                          m_pPrevRenderTargetView; // Temporarily owned, borrowed from m_pCryTexture
 	class CDeviceTexture*                       m_pPrevDeviceTexture;    // Temporarily owned, borrowed from m_pCryTexture

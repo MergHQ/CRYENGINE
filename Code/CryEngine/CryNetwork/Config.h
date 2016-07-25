@@ -5,15 +5,6 @@
 
 #pragma once
 
-#define USE_LAN                      1
-#define USE_LOBBY_REMOTE_CONNECTIONS 1
-#define USE_CRY_MATCHMAKING          1
-#define USE_CRY_VOICE                1
-#define USE_CRY_ONLINE_STORAGE       1
-#define USE_CRY_STATS                1
-#define USE_CRY_FRIENDS              1
-#define USE_CRY_TCPSERVICE           1
-
 // enable a good toolkit of debug stuff for when you're developing code
 #define USUAL_DEBUG_STUFF 0
 
@@ -128,7 +119,10 @@
 //to aid finding bugs introduced)
 #define USE_MEMENTO_PREDICTORS (0 || USE_ARITHSTREAM)
 // Turn off to simplify the scheduler to reduce time taken to schedule packets : Currently ignores bang/pulses
-#define FULL_ON_SCHEDULING     0
+#define FULL_ON_SCHEDULING     1
+
+// Used to predict replicated values, unit is Hz.
+#define REPLICATION_TIME_PRECISION 3000.f
 
 // Lock network thread to wake up only once in a game frame
 #define LOCK_NETWORK_FREQUENCY      1
@@ -291,35 +285,11 @@
 //   2 = synchronize files from server *IF* in devmode
 #define SERVER_FILE_SYNC_MODE     0
 
-#define NETWORK_REBROADCASTER     (0)
-#define NETWORK_REBROADCASTER_LOG (0)
-#if NETWORK_REBROADCASTER
-	#error Rebroadcaster unsupported at this time
-#endif
-
-#if PC_CONSOLE_NET_COMPATIBLE
-	#define NETWORK_HOST_MIGRATION (1)
-#else
-	#define NETWORK_HOST_MIGRATION (0)
-#endif
-
-#if NETWORK_HOST_MIGRATION
-	#if defined(PURE_CLIENT)
-		#error Pure clients DO NOT support host migration
-	#endif
-#endif
-
 #ifdef _RELEASE
-	#define ENABLE_CRYLOBBY_DEBUG_TESTS              0
-	#define HOST_MIGRATION_SOAK_TEST_BREAK_DETECTION 0
 	#define ENABLE_CORRUPT_PACKET_DUMP               0
-	#define ENABLE_HOST_MIGRATION_STATE_CHECK        0
 	#define ENABLE_DEBUG_PACKET_DATA_SIZE            0
 #else
-	#define ENABLE_CRYLOBBY_DEBUG_TESTS              1
-	#define HOST_MIGRATION_SOAK_TEST_BREAK_DETECTION (1 && NETWORK_HOST_MIGRATION)
 	#define ENABLE_CORRUPT_PACKET_DUMP               1
-	#define ENABLE_HOST_MIGRATION_STATE_CHECK        NETWORK_HOST_MIGRATION
 // ENABLE_DEBUG_PACKET_DATA_SIZE isn't supported by arithstream
 	#define ENABLE_DEBUG_PACKET_DATA_SIZE            (0 && !USE_ARITHSTREAM)
 #endif
@@ -396,7 +366,6 @@
 	#undef LOG_BREAKABILITY
 	#undef LOG_ENTITYID_ERRORS
 	#undef LOG_MESSAGE_DROPS
-	#undef NETWORK_REBROADCASTER_LOG
 	#undef ENABLE_NETWORK_MEM_INFO
 	#undef ENABLE_SERIALIZATION_LOGGING
 
@@ -461,7 +430,6 @@
 	#define LOG_BREAKABILITY                           0
 	#define LOG_ENTITYID_ERRORS                        0
 	#define LOG_MESSAGE_DROPS                          0
-	#define NETWORK_REBROADCASTER_LOG                  (0)
 	#define ENABLE_SERIALIZATION_LOGGING               0
 
 #endif

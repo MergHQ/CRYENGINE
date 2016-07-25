@@ -570,6 +570,26 @@ technique DownsampleDepth
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+/// CopyToDeviceDepth technique ////////////////////////////////////////////////////////////////////
+
+Texture2D<float4> CopyToDeviceDepth_Tex0 : register(t0);
+
+void CopyToDeviceDepthPS(vtxOut IN, out float Depth : DEPTH, float4 WPos : SV_Position)
+{
+	float linearDepth = CopyToDeviceDepth_Tex0.Load(int3(WPos.xy, 0)).x;
+	Depth = g_PS_ProjRatio.y / linearDepth + g_PS_ProjRatio.x;
+}
+
+technique CopyToDeviceDepth
+{
+  pass p0
+  {
+    VertexShader = FullscreenTriVS();
+    PixelShader  = CopyToDeviceDepthPS();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Transparency Depth Fixup technique /////////////////////////////////////////////////////////////
 
 pixout TranspDepthFixupMergePS(vtxOutTexToTex IN)
@@ -1555,6 +1575,9 @@ technique VolumetricScatteringFinal
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Water ripples simulation technique /////////////////////////////////////////////////////////////
 
+Texture2D WaterRipplesTexture : register(t0);
+SamplerState WaterRipplesSState : register(s0);
+
 float4 WaterRipplesParams;
 
 pixout WaterRippleHitPS(vtxOut IN)
@@ -1574,18 +1597,18 @@ pixout WaterRipplesPS(vtxOut IN)
   
 #if %_RT_SAMPLE0
 	float2 tcRipples = IN.baseTC.xy + WaterRipplesParams.xy;
-	OUT.Color = tex2D(_tex0, tcRipples);
+	OUT.Color = GetTexture2D(WaterRipplesTexture, WaterRipplesSState, tcRipples);
 #else
 
 	// Important note: z: frame T-1, w: frame T-2
 
-	half4 h0  = GetTexture2D(_tex0, IN.baseTC.xy);
+	half4 h0  = GetTexture2D(WaterRipplesTexture, WaterRipplesSState, IN.baseTC.xy);
 
 	half fTexSimSize = 256.0h;	
-	half4 h00 = GetTexture2D(_tex0, IN.baseTC.xy + float2(-1.0/fTexSimSize, 0));
-	half4 h10 = GetTexture2D(_tex0, IN.baseTC.xy + float2( 1.0/fTexSimSize, 0));
-	half4 h01 = GetTexture2D(_tex0, IN.baseTC.xy + float2( 0,-1.0/fTexSimSize));
-	half4 h11 = GetTexture2D(_tex0, IN.baseTC.xy + float2( 0, 1.0/fTexSimSize));	
+	half4 h00 = GetTexture2D(WaterRipplesTexture, WaterRipplesSState, IN.baseTC.xy + float2(-1.0/fTexSimSize, 0));
+	half4 h10 = GetTexture2D(WaterRipplesTexture, WaterRipplesSState, IN.baseTC.xy + float2( 1.0/fTexSimSize, 0));
+	half4 h01 = GetTexture2D(WaterRipplesTexture, WaterRipplesSState, IN.baseTC.xy + float2( 0,-1.0/fTexSimSize));
+	half4 h11 = GetTexture2D(WaterRipplesTexture, WaterRipplesSState, IN.baseTC.xy + float2( 0, 1.0/fTexSimSize));	
 
 	// Compute the acceleration of the point based upon its neighbors
 	half fAcce = (h00.z + h10.z + h01.z + h11.z)*0.25 - h0.z;
@@ -1619,9 +1642,9 @@ pixout WaterRipplesPS(vtxOut IN)
 
 	half4 hOrig = h0;
 
-	h0 =  GetTexture2D(_tex0, IN.baseTC.xy + fHalfTexelOffset );
-	h10 = GetTexture2D(_tex0, IN.baseTC.xy + float2( 1.0h/fTexSimSize, 0) + fHalfTexelOffset);
-	h11 = GetTexture2D(_tex0, IN.baseTC.xy + float2( 0, 1.0h/fTexSimSize) + fHalfTexelOffset);
+	h0 =  GetTexture2D(WaterRipplesTexture, WaterRipplesSState, IN.baseTC.xy + fHalfTexelOffset );
+	h10 = GetTexture2D(WaterRipplesTexture, WaterRipplesSState, IN.baseTC.xy + float2( 1.0h/fTexSimSize, 0) + fHalfTexelOffset);
+	h11 = GetTexture2D(WaterRipplesTexture, WaterRipplesSState, IN.baseTC.xy + float2( 0, 1.0h/fTexSimSize) + fHalfTexelOffset);
 
 	half3 vWeights = half3(h0.w, h10.w, h11.w);
 	half3 vNormal = half3( -(vWeights.x - vWeights.y), -(vWeights.x - vWeights.z), 0.05); 

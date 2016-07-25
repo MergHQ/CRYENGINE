@@ -51,7 +51,7 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 	}
 
 	char simplified[MAX_PATH];
-	const char* const szSimplifiedFile = CryStringUtils::SimplifyFilePath(szFile, simplified, MAX_PATH, CryStringUtils::ePathStyle_Native) ? simplified : szFile;
+	const char* const szSimplifiedFile = PathUtil::SimplifyFilePath(szFile, simplified, MAX_PATH, PathUtil::ePathStyle_Native) ? simplified : szFile;
 	size_t file_len = strlen(szSimplifiedFile);
 	size_t file_display_idx = file_len > 60 ? (file_len - 61) : 0; //60 chars is what visually fits in the ncurses dialog
 

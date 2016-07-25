@@ -8,7 +8,7 @@ Description: Tracer Manager
 
 -------------------------------------------------------------------------
 History:
-- 17:1:2006   11:12 : Created by Márcio Martins
+- 17:1:2006   11:12 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #ifndef __TRACERMANAGER_H__

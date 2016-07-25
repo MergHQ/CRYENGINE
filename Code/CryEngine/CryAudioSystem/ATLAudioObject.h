@@ -3,7 +3,7 @@
 #pragma once
 
 #include "ATLEntities.h"
-#include <CryPhysics/IPhysics.h>
+#include "PropagationProcessor.h"
 #include <CrySystem/TimeValue.h>
 
 struct IRenderAuxGeom;
@@ -110,144 +110,9 @@ typedef std::map<AudioControlId, float, std::less<AudioControlId>,
 typedef std::map<AudioEnvironmentId, float, std::less<AudioEnvironmentId>,
                  STLSoundAllocator<std::pair<AudioEnvironmentId, float>>> ObjectEnvironmentMap;
 
-#define AUDIO_MAX_RAY_HITS static_cast<size_t>(5)
-
 class CATLAudioObject final : public TATLObject
 {
 public:
-
-	class CPropagationProcessor
-	{
-	public:
-
-		static bool s_bCanIssueRWIs;
-
-		struct SRayInfo
-		{
-			static float const s_fSmoothingAlpha;
-
-			SRayInfo(size_t const _rayId, AudioObjectId const _audioObjectId)
-				: rayId(_rayId)
-				, audioObjectId(_audioObjectId)
-				, totalSoundOcclusion(0.0f)
-				, numHits(0)
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				, startPosition(ZERO)
-				, direction(ZERO)
-				, randomOffset(ZERO)
-				, averageHits(0.0f)
-				, distanceToFirstObstacle(FLT_MAX)
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-			{}
-
-			~SRayInfo() {}
-
-			void Reset();
-
-			size_t const        rayId;
-			AudioObjectId const audioObjectId;
-			float               totalSoundOcclusion;
-			int                 numHits;
-			ray_hit             hits[AUDIO_MAX_RAY_HITS];
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			Vec3  startPosition;
-			Vec3  direction;
-			Vec3  randomOffset;
-			float averageHits;
-			float distanceToFirstObstacle;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-		};
-
-		typedef std::vector<SRayInfo, STLSoundAllocator<SRayInfo>> RayInfoVec;
-
-	public:
-
-		CPropagationProcessor(
-		  AudioObjectId const _audioObjectId,
-		  CAudioObjectTransformation const& _position);
-
-		~CPropagationProcessor();
-
-		// PhysicsSystem callback
-		static int    OnObstructionTest(EventPhys const* pEvent);
-		static void   ProcessObstructionRay(int const numHits, SRayInfo* const pRayInfo, bool const bReset = false);
-		static size_t NumRaysFromCalcType(EAudioOcclusionType const occlusionType);
-
-		void          Update(float const deltaTime);
-		void          SetObstructionOcclusionCalcType(EAudioOcclusionType const occlusionType);
-		bool          CanRunObstructionOcclusion() const { return s_bCanIssueRWIs && m_occlusionType != eAudioOcclusionType_Ignore; }
-		void          GetPropagationData(SATLSoundPropagationData& propagationData) const;
-		void          RunObstructionQuery(CAudioObjectTransformation const& listenerPosition, bool const bSyncCall, bool const bReset = false);
-		void          ReportRayProcessed(size_t const rayId);
-		void          ReleasePendingRays();
-		bool          HasPendingRays() const { return m_remainingRays > 0; }
-
-	private:
-
-		void ProcessObstructionOcclusion(bool const bReset = false);
-		void CastObstructionRay(
-		  Vec3 const& origin,
-		  Vec3 const& randomOffset,
-		  Vec3 const& direction,
-		  size_t const rayIndex,
-		  bool const bSyncCall,
-		  bool const bReset = false);
-
-		size_t                            m_remainingRays;
-		size_t                            m_totalRays;
-
-		CSmoothFloat                      m_obstructionValue;
-		CSmoothFloat                      m_occlusionValue;
-		CAudioObjectTransformation const& m_position;
-
-		float                             m_currentListenerDistance;
-		RayInfoVec                        m_rayInfos;
-		EAudioOcclusionType               m_occlusionType;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	public:
-
-		static size_t s_totalSyncPhysRays;
-		static size_t s_totalAsyncPhysRays;
-
-		void   DrawObstructionRays(IRenderAuxGeom& auxGeom) const;
-		size_t GetNumRays() const { return NumRaysFromCalcType(m_occlusionType); }
-		void   ResetRayData();
-
-	private:
-
-		struct SRayDebugInfo
-		{
-			SRayDebugInfo()
-				: begin(ZERO)
-				, end(ZERO)
-				, stableEnd(ZERO)
-				, occlusionValue(0.0f)
-				, distanceToNearestObstacle(FLT_MAX)
-				, numHits(0)
-				, averageHits(0.0f)
-			{}
-
-			~SRayDebugInfo() {}
-
-			Vec3  begin;
-			Vec3  end;
-			Vec3  stableEnd;
-			float occlusionValue;
-			float distanceToNearestObstacle;
-			int   numHits;
-			float averageHits;
-		};
-
-		typedef std::vector<SRayDebugInfo, STLSoundAllocator<SRayDebugInfo>> RayDebugInfoVec;
-
-	private:
-
-		RayDebugInfoVec m_rayDebugInfos;
-		mutable float   m_timeSinceLastUpdateMS;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-	};
 
 	explicit CATLAudioObject(AudioObjectId const audioObjectId, CryAudio::Impl::IAudioObject* const pImplData = nullptr, EAudioDataScope const dataScope = eAudioDataScope_None)
 		: TATLObject(audioObjectId, dataScope)
@@ -255,7 +120,8 @@ public:
 		, m_flags(eAudioObjectFlags_None)
 		, m_maxRadius(0.0f)
 		, m_previousVelocity(0.0f)
-		, m_propagationProcessor(audioObjectId, m_attributes.transformation) {}
+		, m_propagationProcessor(audioObjectId, m_attributes.transformation)
+		, m_occlusionFadeOutDistance(0.0f) {}
 
 	~CATLAudioObject() {}
 
@@ -296,16 +162,17 @@ public:
 	CryAudio::Impl::IAudioObject*                   GetImplDataPtr() const                                        { return m_pImplData; }
 
 	float                                           GetMaxRadius() const                                          { return m_maxRadius; }
+	float                                           GetOcclusionFadeOutDistance() const                           { return m_occlusionFadeOutDistance; }
 
-	void                                            Update(float const deltaTime, CryAudio::Impl::SAudioObject3DAttributes const& listenerAttributes);
+	void                                            Update(float const deltaTime, float const distance, Vec3 const& audioListenerPosition);
 	void                                            Clear();
-	void                                            ReportPhysicsRayProcessed(size_t const rayId);
+	void                                            ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo);
 	CryAudio::Impl::SAudioObject3DAttributes const& Get3DAttributes() const { return m_attributes; }
 	void                                            SetTransformation(CAudioObjectTransformation const& transformation);
-	void                                            SetObstructionOcclusionCalc(EAudioOcclusionType const calcType);
-	void                                            ResetObstructionOcclusion(CAudioObjectTransformation const& listenerTransformation);
+	void                                            SetOcclusionType(EAudioOcclusionType const calcType, Vec3 const& audioListenerPosition);
 	bool                                            CanRunObstructionOcclusion() const { return m_propagationProcessor.CanRunObstructionOcclusion(); }
-	void                                            GetPropagationData(SATLSoundPropagationData& propagationData);
+	bool                                            HasNewOcclusionValues()            { return m_propagationProcessor.HasNewOcclusionValues(); }
+	void                                            GetPropagationData(SATLSoundPropagationData& propagationData) const;
 	void                                            ReleasePendingRays();
 	void                                            SetDopplerTracking(bool const bEnable);
 	void                                            SetVelocityTracking(bool const bEnable);
@@ -335,6 +202,7 @@ private:
 	CryAudio::Impl::SAudioObject3DAttributes m_previousAttributes;
 	CTimeValue                               m_previousTime;
 	CPropagationProcessor                    m_propagationProcessor;
+	float                                    m_occlusionFadeOutDistance;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:

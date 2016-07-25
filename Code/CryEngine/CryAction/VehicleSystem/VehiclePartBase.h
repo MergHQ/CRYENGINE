@@ -34,6 +34,8 @@ class CVehicleSeatActionRotateTurret;
 class CVehiclePartBase
 	: public IVehiclePart
 {
+	// static member m_objectId also available in inherited vehicle classes
+	// cppcheck-suppress duplInheritedMember
 	IMPLEMENT_VEHICLEOBJECT;
 public:
 
@@ -56,7 +58,10 @@ public:
 	float  m_density;
 
 	// animated
+	// cppcheck incorrectly identifies m_filename and m_filenameDestroyed as duplicate in inherited class CVehiclePartStatic due to BEGIN_SHARED_PARAMS macro
+	//cppcheck-suppress duplInheritedMember
 	string m_filename;
+	//cppcheck-suppress duplInheritedMember
 	string m_filenameDestroyed;
 	string m_destroyedSuffix;
 

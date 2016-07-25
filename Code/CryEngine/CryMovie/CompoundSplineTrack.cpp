@@ -310,7 +310,7 @@ void CCompoundSplineTrack::RemoveKey(int num)
 
 void CCompoundSplineTrack::ClearKeys()
 {
-	for (uint i = 0; i < MAX_SUBTRACKS; ++i)
+	for (uint i = 0; i < m_nDimensions; ++i)
 	{
 		m_subTracks[i]->ClearKeys();
 	}
