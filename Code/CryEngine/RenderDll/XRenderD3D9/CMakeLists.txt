@@ -939,6 +939,8 @@ add_sources("CryRenderer_uber_6.cpp"
 		"GraphicsPipeline/Bloom.cpp"
 		"GraphicsPipeline/ClipVolumes.h"
 		"GraphicsPipeline/ClipVolumes.cpp"
+		"GraphicsPipeline/ColorGrading.h"
+		"GraphicsPipeline/ColorGrading.cpp"
 		"GraphicsPipeline/ComputeSkinning.h"
 		"GraphicsPipeline/ComputeSkinning.cpp"
 		"GraphicsPipeline/GpuParticles.h"
@@ -953,6 +955,8 @@ add_sources("CryRenderer_uber_6.cpp"
 		"GraphicsPipeline/HeightMapAO.cpp"
 		"GraphicsPipeline/PostAA.h"
 		"GraphicsPipeline/PostAA.cpp"
+		"GraphicsPipeline/SceneCustom.h"
+		"GraphicsPipeline/SceneCustom.cpp"
 		"GraphicsPipeline/SceneForward.h"
 		"GraphicsPipeline/SceneForward.cpp"
 		"GraphicsPipeline/SceneGBuffer.h"
@@ -979,6 +983,8 @@ add_sources("CryRenderer_uber_6.cpp"
 		"GraphicsPipeline/VolumetricClouds.cpp"
 		"GraphicsPipeline/VolumetricFog.h"
 		"GraphicsPipeline/VolumetricFog.cpp"
+		"GraphicsPipeline/WaterRipples.h"
+		"GraphicsPipeline/WaterRipples.cpp"
 	SOURCE_GROUP "GraphicsPipeline\\\\Common"
 		"GraphicsPipeline/Common/ComputeRenderPass.h"
 		"GraphicsPipeline/Common/ComputeRenderPass.cpp"
@@ -1008,94 +1014,99 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CryRenderD3D11 PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
-
-set(extra_defines)
-if (NOT EXISTS ${SDK_DIR}/NVAPI)
-	message(WARNING "NVAPI SDK not found, excluding from the build.")
-	list(APPEND extra_defines -DEXCLUDE_NV_API)
-endif()
-
-if (NOT EXISTS ${SDK_DIR}/AMD)
-	message(WARNING "AMD AGS SDK not found, excluding from the build.")
-	list(APPEND extra_defines -DEXCLUDE_AMD_API)
-endif()
-
-target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR}/squish-ccr)
-target_compile_definitions(${THIS_PROJECT} PRIVATE -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
-target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
-
-if (WIN32 OR WIN64)
-	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
-	target_link_libraries(${THIS_PROJECT} PRIVATE dxguid d3d11 d3d10 d3dcompiler Ole32 Gdi32 wininet Shell32)
-	if(MSVC_VERSION EQUAL 1900)
-		target_link_libraries(${THIS_PROJECT} PRIVATE oculus)
+if (RENDERER_DX11)
+	CryEngineModule(CryRenderD3D11 PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
+	
+	set(extra_defines)
+	if (NOT EXISTS ${SDK_DIR}/NVAPI)
+		message(STATUS "NVAPI SDK not found, excluding from the build.")
+		list(APPEND extra_defines -DEXCLUDE_NV_API)
 	endif()
-elseif(DURANGO)
-	target_link_libraries(${THIS_PROJECT} PRIVATE ws2_32 SmartGlassInterop d3dcompiler dxguid xg_x uuid kernelx)
-elseif(ORBIS)
-	target_include_directories(${THIS_PROJECT} PRIVATE ../../.. )
-	target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_USE_GNM)
-	target_compile_options(${THIS_PROJECT} PRIVATE $<$<CONFIG:Release>:-flto>)
-	target_link_libraries(${THIS_PROJECT} PRIVATE SceSystemService_stub_weak SceGnmDriver_stub_weak $<$<NOT:$<CONFIG:Release>>:SceGnm SceGnmx>$<$<CONFIG:Release>:SceGnm_lto SceGnmx_lto>)
+	
+	if (NOT EXISTS ${SDK_DIR}/AMD)
+		message(STATUS "AMD AGS SDK not found, excluding from the build.")
+		list(APPEND extra_defines -DEXCLUDE_AMD_API)
+	endif()
+	
+	target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR}/squish-ccr)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
+	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
+
+	if (WIN32 OR WIN64)
+		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
+		target_link_libraries(${THIS_PROJECT} PRIVATE dxguid d3d11 d3d10 d3dcompiler Ole32 Gdi32 wininet Shell32)
+		if(MSVC_VERSION EQUAL 1900)
+			target_link_libraries(${THIS_PROJECT} PRIVATE oculus)
+		endif()
+	elseif(DURANGO)
+		target_link_libraries(${THIS_PROJECT} PRIVATE ws2_32 SmartGlassInterop d3dcompiler dxguid xg_x uuid kernelx)
+	elseif(ORBIS)
+		target_include_directories(${THIS_PROJECT} PRIVATE ../../.. )
+		target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_USE_GNM)
+		target_compile_options(${THIS_PROJECT} PRIVATE $<$<CONFIG:Release>:-flto>)
+		target_link_libraries(${THIS_PROJECT} PRIVATE SceSystemService_stub_weak SceGnmDriver_stub_weak $<$<NOT:$<CONFIG:Release>>:SceGnm SceGnmx>$<$<CONFIG:Release>:SceGnm_lto SceGnmx_lto>)
+	endif()
+else()
+	CryFileContainer(CryRenderD3D11 SOLUTION_FOLDER "CryEngine")
 endif()
 
-if (NOT (DURANGO OR ORBIS))
+if (RENDERER_OPENGL)
 	CryEngineModule(CryRenderOpenGL PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 	target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR}/squish-ccr)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DOPENGL -DDO_RENDERSTATS -D_RENDERER)
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
+
+	if (WIN32 OR WIN64)
+		target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/squish-ccr ${CMAKE_SOURCE_DIR}/Code/Tools/LibTIFF ${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/include)
+		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
+		target_link_libraries(${THIS_PROJECT} PRIVATE opengl32 winmm Ole32 Gdi32 wininet Shell32)
+		if(MSVC_VERSION EQUAL 1900)
+			target_link_libraries(${THIS_PROJECT} PRIVATE oculus)
+		endif()
+		if(WIN64)
+			find_library(LIBHLSLCC libHLSLcc PATHS "${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/lib/win64")
+		elseif(WIN32)
+			find_library(LIBHLSLCC libHLSLcc PATHS "${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/lib/win32")
+		endif()
+		mark_as_advanced(FORCE LIBHLSLCC)
+		target_link_libraries(${THIS_PROJECT} PRIVATE ${LIBHLSLCC})
+	elseif(APPLE)
+		target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/SDL2/include/SDL ${SDK_DIR}/SDL2/include/mac ${CMAKE_SOURCE_DIR}/Code/Tools/LibTIFF ${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/include)
+		find_library(SDL2 SDL2 PATHS "${SDK_DIR}/SDL2/lib/mac")
+		find_library(LIBHLSLCC HLSLcc PATHS "${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/lib/mac")
+		find_library(OPENGL OpenGL)
+		find_library(APPLICATIONSERVICES ApplicationServices)
+		find_library(IOKIT IOKit)
+		target_link_libraries(${THIS_PROJECT} PRIVATE ${SDL2} ${LIBHLSLCC} ${OPENGL} ${APPLICATIONSERVICES} ${IOKIT})
+	elseif(LINUX)
+		target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
+		target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/include)	
+		if(LINUX64)
+			find_library(LIBHLSLCC HLSLcc PATHS "${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/lib/linux")
+			target_link_libraries(${THIS_PROJECT} PRIVATE ${LIBHLSLCC})
+		endif()
+	elseif(ANDROID)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE -DGLEW_MX -DDXGL_ANDROID_GL)
+		target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CrySystem ${SDK_DIR}/SDL2/include/SDL ${SDK_DIR}/SDL2/include/linux ${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/src/include ${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/include)	
+	endif()
 else()
 	CryFileContainer(CryRenderOpenGL SOLUTION_FOLDER "CryEngine")
 endif()
 
-if (WIN32 OR WIN64)
-	target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/squish-ccr ${CMAKE_SOURCE_DIR}/Code/Tools/LibTIFF ${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/include)
-	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
-	target_link_libraries(${THIS_PROJECT} PRIVATE opengl32 winmm Ole32 Gdi32 wininet Shell32)
-	if(MSVC_VERSION EQUAL 1900)
-		target_link_libraries(${THIS_PROJECT} PRIVATE oculus)
-	endif()
-	if(WIN64)
-		find_library(LIBHLSLCC libHLSLcc PATHS "${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/lib/win64")
-	elseif(WIN32)
-		find_library(LIBHLSLCC libHLSLcc PATHS "${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/lib/win32")
-	endif()
-	target_link_libraries(${THIS_PROJECT} PRIVATE ${LIBHLSLCC})
-elseif(APPLE)
-	target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/SDL2/include/SDL ${SDK_DIR}/SDL2/include/mac ${CMAKE_SOURCE_DIR}/Code/Tools/LibTIFF ${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/include)
-	find_library(SDL2 SDL2 PATHS "${SDK_DIR}/SDL2/lib/mac")
-	find_library(LIBHLSLCC HLSLcc PATHS "${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/lib/mac")
-	find_library(OPENGL OpenGL)
-	find_library(APPLICATIONSERVICES ApplicationServices)
-	find_library(IOKIT IOKit)
-	target_link_libraries(${THIS_PROJECT} PRIVATE ${SDL2} ${LIBHLSLCC} ${OPENGL} ${APPLICATIONSERVICES} ${IOKIT})
-elseif(LINUX)
-	target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
-	target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/include)	
-	if(LINUX64)
-		find_library(LIBHLSLCC HLSLcc PATHS "${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/lib/linux")
-		target_link_libraries(${THIS_PROJECT} PRIVATE ${LIBHLSLCC})
-	endif()
-elseif(ANDROID)
-	target_compile_definitions(${THIS_PROJECT} PRIVATE -DGLEW_MX -DDXGL_ANDROID_GL)
-	target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CrySystem ${SDK_DIR}/SDL2/include/SDL ${SDK_DIR}/SDL2/include/linux ${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/src/include ${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/include)	
-endif()
 
-if ((WIN32 OR WIN64) AND MSVC_VERSION EQUAL 1900)
+if (RENDERER_DX12)
 	CryEngineModule(CryRenderD3D12 PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DDIRECT3D10 -DCRY_USE_DX12 -DXRENDERD3D10_EXPORTS -DDO_RENDERSTATS -D_RENDERER)
 	target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR} ${SDK_DIR}/squish-ccr ${CMAKE_SOURCE_DIR}/Code/Tools/LibTIFF ${CMAKE_SOURCE_DIR}/Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes)
 	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32 oculus)	
 else()
-	message(WARNING "MSVC 14.0 is not being used - CryRenderD3D12 cannot be built.")
 	CryFileContainer(CryRenderD3D12 SOLUTION_FOLDER "CryEngine")
 endif()
 
 if (EXISTS ${SDK_DIR}/Orbis AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/GNM)
-	set(compiler_version "ORBIS/V028")
-	if (FALSE AND ORBIS) #Temporarily disabled from building
+	set(compiler_version "ORBIS/V029")
+	if (RENDERER_GNM)
 		CryEngineModule(CryRenderGNM PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 		target_include_directories(${THIS_PROJECT} PRIVATE ..)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE -D_RENDERER -DDO_RENDERSTATS -DCRY_USE_GNM -DCRY_USE_GNM_RENDERER -DCRY_GNM_SHADER_COMPILER_VERSION=${compiler_version})
@@ -1105,7 +1116,7 @@ if (EXISTS ${SDK_DIR}/Orbis AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/GNM)
 		CryFileContainer(CryRenderGNM SOLUTION_FOLDER "CryEngine")
 	endif()
 
-	if(WIN64)
+	if(RENDERER_GNM_SHADER_COMPILER)
 		CryConsoleApplication(GnmShaderCompiler SOLUTION_FOLDER "Tools")
 
 		# Force static CRT
@@ -1115,6 +1126,7 @@ if (EXISTS ${SDK_DIR}/Orbis AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/GNM)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE -D_CRT_SECURE_NO_WARNINGS)
 		target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR)
 		find_library(WAVEPSSLC libSceShaderWavePsslc PATHS ${CMAKE_SOURCE_DIR}/Code/SDKs/Orbis/host_tools/lib)
+		mark_as_advanced(FORCE WAVEPSSLC)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ${WAVEPSSLC})
 		set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Tools/RemoteShaderCompiler/Compiler/${compiler_version})
 	else()

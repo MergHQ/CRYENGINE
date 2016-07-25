@@ -12,7 +12,6 @@ add_sources("CryMonoBridge_main_uber_1.cpp"
 		"MonoRuntime.cpp"
 		"MonoLibrary.h"
 		"MonoLibrary.cpp"
-		"MonoLibraryIt.h"
 		"resource.h"
 		"StdAfx.h"
 )

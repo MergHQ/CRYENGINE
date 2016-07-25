@@ -31,7 +31,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-if(WIN32 OR WIN64 OR LINUX32 OR LINUX64)
+if(AUDIO_SDL_MIXER)
 	CryEngineModule(CryAudioImplSDLMixer PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
 	target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
 	use_sdl_mixer()

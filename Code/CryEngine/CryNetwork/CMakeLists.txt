@@ -360,6 +360,7 @@ if(WIN64)
 elseif(WIN32)
 	find_library(SPEEX libspeex-1.0.5 PATHS ${SDK_DIR}/speex-1.0.5/lib/win32 )
 endif()
+mark_as_advanced(FORCE SPEEX)
 
 target_link_libraries(${THIS_PROJECT} PRIVATE bigdigits)
 

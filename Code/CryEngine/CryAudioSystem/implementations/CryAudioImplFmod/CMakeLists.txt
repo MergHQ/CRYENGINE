@@ -31,7 +31,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-if(EXISTS ${SDK_DIR}/Audio/fmod AND (WIN32 OR WIN64 OR LINUX64 OR LINUX32))
+if(AUDIO_FMOD)
 	CryEngineModule(CryAudioImplFmod PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
 	target_include_directories( ${THIS_PROJECT} PRIVATE ../../Common )
 	if (WIN64)
@@ -52,6 +52,7 @@ if(EXISTS ${SDK_DIR}/Audio/fmod AND (WIN32 OR WIN64 OR LINUX64 OR LINUX32))
 		find_library(FMODSTUDIO fmodstudio PATHS ${SDK_DIR}/Audio/fmod/linux/api/studio/lib/x86)
 	endif()
 	if(FMOD)
+		mark_as_advanced(FORCE FMOD FMODSTUDIO)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ${FMOD} ${FMODSTUDIO})
 	endif()
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DFMOD_FOR_$<UPPER_CASE:$<CONFIG>>)
