@@ -1252,7 +1252,6 @@ void CPlaylistManager::SetModeOptions()
 		}
 
 		IConsole *pConsole = gEnv->pConsole;
-		CRY_ASSERT(pConsole && (m_activeVariantIndex >= 0));
 		if (pConsole && (m_activeVariantIndex >= 0))
 		{
 			SGameVariant &activeVariant = m_variants[m_activeVariantIndex];

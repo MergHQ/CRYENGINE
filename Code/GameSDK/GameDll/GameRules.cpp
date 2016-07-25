@@ -1531,7 +1531,6 @@ void CGameRules::ApplyLoadoutChange()
 	IActor *pClientActor = g_pGame->GetIGameFramework()->GetClientActor();
 	CEquipmentLoadout *pEquipmentLoadout = g_pGame->GetEquipmentLoadout();
 
-	CRY_ASSERT(pClientActor);
 	if (pClientActor != NULL && pEquipmentLoadout != NULL)
 	{
 		uint16 gameChannelId = pClientActor->GetChannelId();

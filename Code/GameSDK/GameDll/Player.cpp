@@ -5123,7 +5123,11 @@ void CPlayer::NetSerialize_InputClient( TSerialize ser, bool bReading )
 	
 	NET_PROFILE_BEGIN("SerializedInput::Serialize", ser.IsReading());
 	serializedInput.Serialize(ser, (EEntityAspects)ASPECT_INPUT_CLIENT);
-	assert(/*serializedInput.stance > STANCE_NULL &&*/ serializedInput.stance < STANCE_LAST);	// asserting here catches both read and write
+
+	// STANCE_NULL is set initially for AI players.
+	assert(serializedInput.stance == static_cast<uint8>(STANCE_NULL) ||
+		serializedInput.stance < STANCE_LAST);	// asserting here catches both read and write
+
 	NET_PROFILE_END();
 
 	if (bReading)
