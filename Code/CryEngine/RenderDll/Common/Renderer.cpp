@@ -4948,7 +4948,9 @@ void CRenderer::ClearDrawCallsInfo()
 		m_RP.m_pRNDrawCallsInfoPerNode[i].clear();
 	}
 }
+#endif
 
+#ifdef ENABLE_PROFILING_CODE
 void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderListID renderList)
 {
 	SPipeStat& pipelineStats = m_RP.m_PS[m_RP.m_nProcessThreadID];
@@ -4960,7 +4962,6 @@ void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderL
 	pipelineStats.m_nPolygons[renderList] += stats.numPolygons;
 	pipelineStats.m_nDIPs[renderList] += stats.numDIPs;
 }
-
 #endif
 
 void CRenderer::CollectDrawCallsInfo(bool status)

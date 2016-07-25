@@ -100,6 +100,8 @@ struct SSF_ResourcesD3D
 
 		CConstantBuffer* GetUsableConstantBuffer();
 		void FreeUsedConstantBuffers();
+
+		~STransientConstantBufferHeap();
 	}
 	m_CBHeap;
 };

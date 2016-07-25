@@ -25,9 +25,6 @@ SSF_GlobalDrawParams::SSF_GlobalDrawParams()
 	m_pScaleformMeshAttributes = reinterpret_cast<SScaleformMeshAttributes*>(CryModuleMemalign(m_ScaleformMeshAttributesSize, CRY_PLATFORM_ALIGNMENT));
 	m_pScaleformRenderParameters = reinterpret_cast<SScaleformRenderParameters*>(CryModuleMemalign(m_ScaleformRenderParametersSize, CRY_PLATFORM_ALIGNMENT));
 
-	m_vsBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(m_ScaleformMeshAttributesSize);
-	m_psBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(m_ScaleformRenderParametersSize);
-
 	m_bScaleformMeshAttributesDirty = true;
 	m_bScaleformRenderParametersDirty = true;
 
@@ -38,9 +35,6 @@ SSF_GlobalDrawParams::~SSF_GlobalDrawParams()
 {
 	CryModuleMemalignFree(m_pScaleformMeshAttributes);
 	CryModuleMemalignFree(m_pScaleformRenderParameters);
-
-	delete m_vsBuffer;
-	delete m_psBuffer;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -324,6 +324,9 @@ private:
 	threadID m_rsIdx;
 	Stats m_renderStats[2];
 
+	// resource usage tracker
+	_smart_ptr<CCachedDataStore> m_pDataStore[3];
+
 	// lockless rendering
 	threadID m_mainThreadID;
 	threadID m_renderThreadID;

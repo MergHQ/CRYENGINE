@@ -5199,7 +5199,7 @@ void CFlashPlayer::RenderFlashInfo()
 		#if defined(USE_PERFHUD) || defined(ENABLE_STATOSCOPE)
 
 	// Both Statoscope and PerfHUD need the flash render stats reset should ENABLE_FLASH_INFO be disabled
-	GRendererXRender* pFlashRenderer = CSharedFlashPlayerResources::GetAccess().GetRenderer(true);
+	IScaleformRecording* pFlashRenderer = CSharedFlashPlayerResources::GetAccess().GetRenderer(true);
 	if (pFlashRenderer)
 		pFlashRenderer->GetRenderStats(0, true);
 
