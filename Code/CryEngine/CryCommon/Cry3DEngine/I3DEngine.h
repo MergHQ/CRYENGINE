@@ -186,7 +186,7 @@ struct SGeometryDebugDrawInfo
 	//! Optional flags controlling how to render debug draw information.
 	uint32 bNoCull  : 1;
 	uint32 bNoLines : 1;
-	uint32 bExtrude : 1;   //!< Extrude debug draw geometry alittle bit so it is over real geometry.
+	uint32 bDrawInFront : 1;   //!< Draw debug draw geometry on top of real geometry.
 
 	SGeometryDebugDrawInfo() : color(255, 0, 255, 255), lineColor(255, 255, 0, 255), bNoLines(0), bNoCull(0) { tm.SetIdentity(); }
 };

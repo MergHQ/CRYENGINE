@@ -1078,7 +1078,7 @@ IStatObj* CGeomCacheRenderNode::GetStandIn(const EStandInType type) const
 	return NULL;
 }
 
-void CGeomCacheRenderNode::DebugDraw(const SGeometryDebugDrawInfo& info, float fExtrudeScale, uint nodeIndex) const
+void CGeomCacheRenderNode::DebugDraw(const SGeometryDebugDrawInfo& info, uint nodeIndex) const
 {
 	CryAutoLock<CryCriticalSection> fillLock(m_fillCS);
 
@@ -1095,29 +1095,29 @@ void CGeomCacheRenderNode::DebugDraw(const SGeometryDebugDrawInfo& info, float f
 			{
 				const std::vector<SGeomCacheStaticNodeData>& staticNodeData = m_pGeomCache->GetStaticNodeData();
 				nodeIndex = std::min(nodeIndex, (uint)(staticNodeData.size() - 1));
-				DebugDrawRec(info, fExtrudeScale, nodeIndex, staticNodeData);
+				DebugDrawRec(info, nodeIndex, staticNodeData);
 			}
 			break;
 		}
 	case eStandInType_Default:
 		{
-			m_pStandIn->DebugDraw(info, fExtrudeScale);
+			m_pStandIn->DebugDraw(info);
 			break;
 		}
 	case eStandInType_FirstFrame:
 		{
-			m_pFirstFrameStandIn->DebugDraw(info, fExtrudeScale);
+			m_pFirstFrameStandIn->DebugDraw(info);
 			break;
 		}
 	case eStandInType_LastFrame:
 		{
-			m_pLastFrameStandIn->DebugDraw(info, fExtrudeScale);
+			m_pLastFrameStandIn->DebugDraw(info);
 			break;
 		}
 	}
 }
 
-void CGeomCacheRenderNode::DebugDrawRec(const SGeometryDebugDrawInfo& info, float fExtrudeScale,
+void CGeomCacheRenderNode::DebugDrawRec(const SGeometryDebugDrawInfo& info,
                                         uint& currentNodeIndex, const std::vector<SGeomCacheStaticNodeData>& staticNodeData) const
 {
 	const SGeomCacheStaticNodeData& currentNodeData = staticNodeData[currentNodeIndex];
@@ -1141,7 +1141,7 @@ void CGeomCacheRenderNode::DebugDrawRec(const SGeometryDebugDrawInfo& info, floa
 					SGeometryDebugDrawInfo subInfo = info;
 					subInfo.tm = pieceMatrix;
 
-					pRenderMesh->DebugDraw(subInfo, ~0, fExtrudeScale);
+					pRenderMesh->DebugDraw(subInfo, ~0);
 					break;
 				}
 			}
@@ -1153,7 +1153,7 @@ void CGeomCacheRenderNode::DebugDrawRec(const SGeometryDebugDrawInfo& info, floa
 	const uint32 numChildren = currentNodeData.m_numChildren;
 	for (uint32 i = 0; i < numChildren; ++i)
 	{
-		DebugDrawRec(info, fExtrudeScale, currentNodeIndex, staticNodeData);
+		DebugDrawRec(info, currentNodeIndex, staticNodeData);
 	}
 }
 
@@ -1293,7 +1293,7 @@ void CGeomCacheRenderNode::InstancingDebugDrawRec(uint& currentNodeIndex, const 
 
 					SGeometryDebugDrawInfo info;
 					info.bNoLines = true;
-					info.bExtrude = false;
+					info.bDrawInFront = false;
 					info.tm = pieceMatrix;
 
 					const uint64 kMul = 0x9ddfea08eb382d69ULL;

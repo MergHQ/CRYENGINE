@@ -3962,7 +3962,7 @@ void CRenderMesh::FreeSystemBuffers()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderMesh::DebugDraw( const struct SGeometryDebugDrawInfo &info,uint32 nVisibleChunksMask, float fExtrdueScale )
+void CRenderMesh::DebugDraw( const struct SGeometryDebugDrawInfo &info,uint32 nVisibleChunksMask )
 {
   MEMORY_SCOPE_CHECK_HEAP();
 	IRenderAuxGeom *pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
@@ -3972,7 +3972,7 @@ void CRenderMesh::DebugDraw( const struct SGeometryDebugDrawInfo &info,uint32 nV
 
 	const bool bNoCull = info.bNoCull;
 	const bool bNoLines = info.bNoLines;
-	const bool bExtrude = info.bExtrude;
+	const bool bDrawInFront = info.bDrawInFront;
 
 	SAuxGeomRenderFlags prevRenderFlags = pRenderAuxGeom->GetRenderFlags();
 	SAuxGeomRenderFlags renderFlags = prevRenderFlags;
@@ -3983,6 +3983,10 @@ void CRenderMesh::DebugDraw( const struct SGeometryDebugDrawInfo &info,uint32 nV
 	if (bNoCull)
 	{
 		renderFlags.SetCullMode(e_CullModeNone);
+	}
+	if (bDrawInFront)
+	{
+		renderFlags.SetDrawInFrontMode(e_DrawInFrontOn);
 	}
 	pRenderAuxGeom->SetRenderFlags(renderFlags);
 
@@ -4047,16 +4051,6 @@ void CRenderMesh::DebugDraw( const struct SGeometryDebugDrawInfo &info,uint32 nV
 			v0 = *(Vec3*)&pPositions[ posStride * I0 ];
 			v1 = *(Vec3*)&pPositions[ posStride * I1 ];
 			v2 = *(Vec3*)&pPositions[ posStride * I2 ];
-
-			if (bExtrude)
-			{
-				// Extrude vertices along the face normal for some scale
-				Vec3 normal = (v1 - v0).Cross(v2 - v0);
-				normal.NormalizeSafe();
-				v0 += normal * fExtrdueScale;
-				v1 += normal * fExtrdueScale;
-				v2 += normal * fExtrdueScale;
-			}
 
 #if CRY_PLATFORM_WINDOWS
 			s_vertexBuffer.push_back( v0 );
