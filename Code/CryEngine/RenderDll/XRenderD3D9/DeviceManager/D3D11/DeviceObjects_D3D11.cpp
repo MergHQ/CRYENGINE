@@ -269,8 +269,7 @@ const void* const CDeviceResourceSet_DX11::InvalidPointer = (const void* const)0
 
 void CDeviceResourceSet_DX11::Clear()
 {
-	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
-
+	// Releasing resources is allowed to be done by any thread, just not concurrently
 	m_SRVInUse.clear();
 	m_UAVInUse.clear();
 	m_SamplersInUse.clear();

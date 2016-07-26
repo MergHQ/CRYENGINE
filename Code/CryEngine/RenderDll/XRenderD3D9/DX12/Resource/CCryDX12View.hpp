@@ -76,9 +76,10 @@ public:
 		return cres ? cres->GetName() : "-";
 	}
 
-	void SetBarrier(ID3D12Device* pDevice, ID3D12GraphicsCommandList* pCmdList, UINT newState)
+	template<class T>
+	void SetResourceState(T* pCmdList, D3D12_RESOURCE_STATES desiredState)
 	{
-		DX12_EXTRACT_ICRYDX12RESOURCE(m_pResource11.get())->SetBarrier(pDevice, pCmdList, newState);
+		pCmdList->SetResourceState(m_rDX12Resource, m_DX12View, desiredState);
 	}
 
 	#pragma region /* ID3D11View implementation */

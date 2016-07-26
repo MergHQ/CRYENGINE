@@ -292,4 +292,14 @@ void CMipmapGenPass::Execute(CTexture* pScrDestRT, int mipCount)
 
 		curPass.Execute();
 	}
+
+#if CRY_USE_DX12
+	// Revert state of resource to one coherent resource-state after mip-mapping
+	CDeviceCommandListPtr pCommandList = CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
+	CCryDX12Resource<ID3D11Resource>* DX11res = reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>(pScrDestRT->GetDevTexture()->GetBaseTexture());
+	NCryDX12::CResource& DX12res = DX11res->GetDX12Resource();
+	NCryDX12::CCommandList* DX12cmd = pCommandList->GetDX12CommandList();
+
+	DX12cmd->SetResourceState(DX12res, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+#endif
 }
