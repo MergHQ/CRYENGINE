@@ -273,11 +273,9 @@ inline void CDeviceGraphicsCommandInterface::Draw(uint32 VertexCountPerInstance,
 
 		m_profilingStats.numPolygons += nPrimitives * InstanceCount;
 		m_profilingStats.numDIPs++;
-#endif
 	}
 	else
 	{
-#if defined(ENABLE_PROFILING_CODE)
 		m_profilingStats.numInvalidDIPs++;
 #endif
 	}
@@ -322,11 +320,9 @@ inline void CDeviceGraphicsCommandInterface::DrawIndexed(uint32 IndexCountPerIns
 
 		m_profilingStats.numPolygons += nPrimitives * InstanceCount;
 		m_profilingStats.numDIPs++;
-#endif
 	}
 	else
 	{
-#if defined(ENABLE_PROFILING_CODE)
 		m_profilingStats.numInvalidDIPs++;
 #endif
 	}

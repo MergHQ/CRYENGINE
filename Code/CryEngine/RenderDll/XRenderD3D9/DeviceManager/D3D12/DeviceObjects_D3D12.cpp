@@ -1993,8 +1993,10 @@ void CDeviceObjectFactory::ForfeitCommandList(CDeviceCommandListUPtr pCommandLis
 	auto pContext = reinterpret_cast<CCryDX12DeviceContext*>(gcpRendD3D->GetDeviceContext().GetRealDeviceContext());
 	NCryDX12::CCommandListPool& pQueue = pContext->GetCoreCommandListPool(eQueueType);
 
-	DX12_PTR(CCommandList) pCL = pCommandList->m_sharedState.pCommandList;
-	pQueue.ForfeitCommandList(pCL);
+	if (pCommandList)
+	{
+		pQueue.ForfeitCommandList(pCommandList->m_sharedState.pCommandList);
+	}
 }
 
 void CDeviceObjectFactory::ForfeitCommandLists(std::vector<CDeviceCommandListUPtr> pCommandLists, EQueueType eQueueType /*= eQueue_Graphics*/)
@@ -2009,9 +2011,20 @@ void CDeviceObjectFactory::ForfeitCommandLists(std::vector<CDeviceCommandListUPt
 	for (uint32 n = 0; n < listCount; n += 256U)
 	{
 		const uint32 chunkCount = std::min(listCount - n, 256U);
+		uint32 validCount = 0;
+
 		for (uint32 b = 0; b < chunkCount; ++b)
-			pCLs[b] = pCommandLists[b]->m_sharedState.pCommandList;
-		pQueue.ForfeitCommandLists(chunkCount, pCLs);
+		{
+			if (pCommandLists[b])
+			{
+				pCLs[validCount++] = pCommandLists[b]->m_sharedState.pCommandList;
+			}
+		}
+
+		if (validCount)
+		{
+			pQueue.ForfeitCommandLists(validCount, pCLs);
+		}
 	}
 }
 

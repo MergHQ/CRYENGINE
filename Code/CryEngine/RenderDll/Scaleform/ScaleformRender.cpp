@@ -84,6 +84,15 @@ void SSF_ResourcesD3D::STransientConstantBufferHeap::FreeUsedConstantBuffers()
 	m_freeList.splice_after(m_freeList.before_begin(), m_useList);
 }
 
+SSF_ResourcesD3D::STransientConstantBufferHeap::~STransientConstantBufferHeap()
+{
+	CRY_ASSERT(m_useList.empty());
+	for (auto pCB : m_freeList)
+	{
+		pCB->Release();
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 SSF_ResourcesD3D::SSF_ResourcesD3D(CD3D9Renderer* pRenderer)
 	: m_shTech_SolidColor("SolidColor")

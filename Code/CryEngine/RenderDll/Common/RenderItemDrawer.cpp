@@ -50,16 +50,17 @@ void DrawCompiledRenderItemsToCommandList(
 }
 
 // NOTE: Job-System can't handle references (copies) and can't use static member functions or __restrict (doesn't execute)
+// NOTE: Job-System can't handle unique-ptr, we have to pass a pointer to get the std::move
 void ListDrawCommandRecorderJob(
 	SGraphicsPipelinePassContext* passContext,
-	CDeviceCommandList* commandList,
+	CDeviceCommandListUPtr* commandList,
 	int startRenderItem,
 	int endRenderItem
 )
 {
 	FUNCTION_PROFILER_RENDERER
 
-	commandList->LockToThread();
+	(*commandList)->LockToThread();
 
 	int cursor = 0;
 	do
@@ -77,7 +78,7 @@ void ListDrawCommandRecorderJob(
 			DrawCompiledRenderItemsToCommandList(
 				passContext,
 				&renderItems,
-				commandList,
+				(*commandList).get(),
 				passContext->rendItems.start + offset,
 				passContext->rendItems.start + offset + count
 			);
@@ -88,7 +89,8 @@ void ListDrawCommandRecorderJob(
 	}
 	while (cursor < endRenderItem);
 
-	commandList->Close();
+	(*commandList)->Close();
+	CCryDeviceWrapper::GetObjectFactory().ForfeitCommandList(std::move(*commandList));
 }
 
 DECLARE_JOB("ListDrawCommandRecorder", TListDrawCommandRecorder, ListDrawCommandRecorderJob);
@@ -149,6 +151,9 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 		return;
 
 #ifdef CRY_USE_DX12
+	if (!CRenderer::CV_r_multithreadedDrawing)
+		bForceImmediateExecution = true;
+
 	if (!bForceImmediateExecution)
 	{
 		int32 numTasksTentative = CRenderer::CV_r_multithreadedDrawing;
@@ -173,7 +178,7 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 				const uint32 taskRIStart = 0 + ((curTask + 0) * numItemsPerTask);
 				const uint32 taskRIEnd = 0 + ((curTask + 1) * numItemsPerTask);
 
-				TListDrawCommandRecorder job(pStart, m_CoalescedContexts.pCommandLists[curTask].get(), taskRIStart, taskRIEnd < numItems ? taskRIEnd : numItems);
+				TListDrawCommandRecorder job(pStart, &m_CoalescedContexts.pCommandLists[curTask], taskRIStart, taskRIEnd < numItems ? taskRIEnd : numItems);
 
 				job.RegisterJobState(&m_CoalescedContexts.jobState);
 				job.SetPriorityLevel(JobManager::eHighPriority);
@@ -187,7 +192,7 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 				const uint32 taskRIStart = 0;
 				const uint32 taskRIEnd = numItemsPerTask;
 
-				ListDrawCommandRecorderJob(pStart, m_CoalescedContexts.pCommandLists[0].get(), taskRIStart, taskRIEnd < numItems ? taskRIEnd : numItems);
+				ListDrawCommandRecorderJob(pStart, &m_CoalescedContexts.pCommandLists[0], taskRIStart, taskRIEnd < numItems ? taskRIEnd : numItems);
 			}
 		}
 

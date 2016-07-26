@@ -1224,6 +1224,8 @@ bool CREWaterOcean::mfDraw(CShader* ef, SShaderPass* sfm)
 {
 	if (!m_nVerticesCount || !m_nIndicesCount || !m_pVertices || !m_pIndices)
 		return false;
+	if (!CTexture::s_ptexRT_2D->GetDevTexture())
+		return false;
 
 	CD3D9Renderer* rd(gcpRendD3D);
 
@@ -1287,6 +1289,7 @@ bool CREWaterOcean::mfDraw(CShader* ef, SShaderPass* sfm)
 
 	if (CTexture::s_ptexWaterOcean)
 	{
+		// Set on vertex and pixel shader
 		CTexture::s_ptexWaterOcean->SetVertexTexture(true);
 		CTexture::s_ptexWaterOcean->Apply(0, texStateID);
 		CTexture::s_ptexWaterOcean->SetVertexTexture(false);
@@ -1294,6 +1297,7 @@ bool CREWaterOcean::mfDraw(CShader* ef, SShaderPass* sfm)
 
 	if (CTexture::s_ptexWaterRipplesDDN)
 	{
+		// Set on vertex and pixel shader
 		CTexture::s_ptexWaterRipplesDDN->SetVertexTexture(true);
 		CTexture::s_ptexWaterRipplesDDN->Apply(1, texStateID);
 		CTexture::s_ptexWaterRipplesDDN->SetVertexTexture(false);

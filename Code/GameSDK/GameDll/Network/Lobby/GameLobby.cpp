@@ -5579,13 +5579,13 @@ void CGameLobby::ReadPacket(SCryLobbyUserPacketData** ppPacketData)
 
 				SendPacket(eGUPD_SyncExtendedServerDetails, pPacketData->connection);
 
+#if 0 // LEVEL ROTATION DISABLED FOR NOW
 				// Check if we need to sync the playlist
 				if (g_pGame->GetPlaylistManager()->HavePlaylistSet() && (!bHasPlaylist))
 				{
 					SendPacket(eGUPD_SyncPlaylistContents, pPacketData->connection);
 				}
 
-#if 0 // LEVEL ROTATION DISABLED FOR NOW
 				// Send variant info before potentially starting the game
 				SendPacket(eGUPD_SetGameVariant, pPacketData->connection);
 #endif

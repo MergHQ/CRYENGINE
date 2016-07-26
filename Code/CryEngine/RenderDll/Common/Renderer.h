@@ -1310,6 +1310,8 @@ public:
 	virtual void ForceRemoveNodeFromDrawCallsMap(IRenderNode* pNode) override;
 
 	void ClearDrawCallsInfo();
+#endif
+#ifdef ENABLE_PROFILING_CODE
 	void         AddRecordedProfilingStats(const struct SProfilingStats& stats, ERenderListID renderList);
 #endif
 
