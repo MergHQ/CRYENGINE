@@ -1,7 +1,7 @@
 {
-    "content": {
-	    "assets": ["Assets"],
-        "code": ["Code/Game/GameDll"],
+	"content": {
+		"assets": ["Assets"],
+		"code": ["Code/Game/GameDll"],
 		"libs": [{
 			"name": "Game",
 			"shared": {
@@ -9,11 +9,11 @@
 				"win_x86": "bin/win_x86/Game.dll"
 			}
 		}]
-    },
-    "info": {
-        "name": "CRYENGINE SDK Example"
-    },
-    "require": {
-        "engine": "CryEngine-5_2"
-    }
+	},
+	"info": {
+		"name": "CRYENGINE SDK Example"
+	},
+	"require": {
+		"engine": "engine-5.2"
+	}
 }
