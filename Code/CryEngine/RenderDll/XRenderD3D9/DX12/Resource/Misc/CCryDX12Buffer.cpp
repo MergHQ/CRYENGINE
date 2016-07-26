@@ -91,20 +91,11 @@ CCryDX12Buffer* CCryDX12Buffer::Create(CCryDX12Device* pDevice, const D3D11_BUFF
 	}
 
 	if (pDesc->Usage == D3D11_USAGE_IMMUTABLE)
-	{
 		heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, pDevice->GetCreationMask(false), pDevice->GetVisibilityMask(false));
-		resourceUsage = D3D12_RESOURCE_STATE_COMMON;
-	}
 	else if (pDesc->Usage == D3D11_USAGE_STAGING)
-	{
 		heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK, pDevice->GetCreationMask(true), pDevice->GetVisibilityMask(true));
-		resourceUsage = D3D12_RESOURCE_STATE_COPY_DEST;
-	}
 	else if (pDesc->Usage == D3D11_USAGE_DYNAMIC)
-	{
 		heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD, pDevice->GetCreationMask(true), pDevice->GetVisibilityMask(true));
-		resourceUsage = D3D12_RESOURCE_STATE_GENERIC_READ;
-	}
 
 	if (pDesc->CPUAccessFlags != 0)
 	{
@@ -112,15 +103,9 @@ CCryDX12Buffer* CCryDX12Buffer::Create(CCryDX12Device* pDevice, const D3D11_BUFF
 		// and using CopyTextureRegion instead of ReadFromSubresource/WriteToSubresource
 
 		if (pDesc->CPUAccessFlags == D3D11_CPU_ACCESS_WRITE)
-		{
 			heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD, pDevice->GetCreationMask(true), pDevice->GetVisibilityMask(true));
-			resourceUsage = D3D12_RESOURCE_STATE_GENERIC_READ;
-		}
 		else if (pDesc->CPUAccessFlags == D3D11_CPU_ACCESS_READ)
-		{
 			heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK, pDevice->GetCreationMask(true), pDevice->GetVisibilityMask(true));
-			resourceUsage = D3D12_RESOURCE_STATE_COPY_DEST;
-		}
 		else
 		{
 			DX12_NOT_IMPLEMENTED;
@@ -128,28 +113,28 @@ CCryDX12Buffer* CCryDX12Buffer::Create(CCryDX12Device* pDevice, const D3D11_BUFF
 		}
 	}
 
+	if (pDesc->BindFlags & D3D11_BIND_SHADER_RESOURCE)
+		resourceUsage = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+	if (pDesc->BindFlags & (D3D11_BIND_VERTEX_BUFFER | D3D11_BIND_CONSTANT_BUFFER))
+		resourceUsage = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+	if (pDesc->BindFlags & D3D11_BIND_INDEX_BUFFER)
+		resourceUsage = D3D12_RESOURCE_STATE_INDEX_BUFFER;
 	if (pDesc->BindFlags & D3D11_BIND_UNORDERED_ACCESS)
-	{
-		desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-		resourceUsage = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-	}
-
+		resourceUsage = D3D12_RESOURCE_STATE_UNORDERED_ACCESS, desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 	if (pDesc->BindFlags & D3D11_BIND_DEPTH_STENCIL)
-	{
-		desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-		resourceUsage = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-	}
-
+		resourceUsage = D3D12_RESOURCE_STATE_DEPTH_WRITE, desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 	if (pDesc->BindFlags & D3D11_BIND_RENDER_TARGET)
-	{
-		desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-		resourceUsage = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	}
+		resourceUsage = D3D12_RESOURCE_STATE_RENDER_TARGET, desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
 	if (!(pDesc->BindFlags & D3D11_BIND_SHADER_RESOURCE))
-	{
 		desc12.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-	}
+
+	// Certain heaps are restricted to certain D3D12_RESOURCE_STATES states, and cannot be changed.
+	// D3D12_HEAP_TYPE_UPLOAD requires D3D12_RESOURCE_STATE_GENERIC_READ.
+	if (heapProperties.Type == D3D12_HEAP_TYPE_UPLOAD)
+		resourceUsage = D3D12_RESOURCE_STATE_GENERIC_READ;
+	else if (heapProperties.Type == D3D12_HEAP_TYPE_READBACK)
+		resourceUsage = D3D12_RESOURCE_STATE_COPY_DEST;
 
 	// Any of these flags require a view with a GPUVirtualAddress, in which case the resource needs to be duplicated for all GPUs
 	if (pDesc->BindFlags & (
