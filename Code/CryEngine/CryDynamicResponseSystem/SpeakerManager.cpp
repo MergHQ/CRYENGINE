@@ -809,11 +809,6 @@ CDefaultLipsyncProvider::CDefaultLipsyncProvider()
 //--------------------------------------------------------------------------------------------------
 CDefaultLipsyncProvider::~CDefaultLipsyncProvider()
 {
-	if (pDefaultLipsyncAnimationNameVariable)
-	{
-		pDefaultLipsyncAnimationNameVariable->Release();
-		pDefaultLipsyncAnimationNameVariable = nullptr;
-	}
 	gEnv->pConsole->UnregisterVariable("drs_dialogsLipsyncAnimationLayer", true);
 	gEnv->pConsole->UnregisterVariable("drs_dialogsLipsyncTransitionTime", true);
 }

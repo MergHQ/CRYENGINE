@@ -39,7 +39,6 @@ protected:
 	int    m_lipsyncAnimationLayer;
 	float  m_lipsyncTransitionTime;
 	string m_defaultLipsyncAnimationName;
-	ICVar* pDefaultLipsyncAnimationNameVariable;
 };
 
 class CSpeakerManager final : public DRS::ISpeakerManager
