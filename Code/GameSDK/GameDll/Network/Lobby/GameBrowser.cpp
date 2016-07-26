@@ -144,11 +144,11 @@ void CGameBrowser::StartSearchingForServers(CryMatchmakingSessionSearchCallback 
 
 		param.m_numData = curData;
 
-		CRY_ASSERT_MESSAGE(m_searchingTask==CryLobbyInvalidTaskID,"CGameBrowser Trying to search for sessions when you think you are already searching.");
+		//CRY_ASSERT_MESSAGE(m_searchingTask==CryLobbyInvalidTaskID,"CGameBrowser Trying to search for sessions when you think you are already searching.");
 
 		ECryLobbyError error = StartSearchingForServers(&param, cb, this, false);
 
-		CRY_ASSERT_MESSAGE(error==eCLE_Success,"CGameBrowser searching for sessions failed.");
+		//CRY_ASSERT_MESSAGE(error==eCLE_Success,"CGameBrowser searching for sessions failed.");
 
 		if (error == eCLE_Success)
 		{
