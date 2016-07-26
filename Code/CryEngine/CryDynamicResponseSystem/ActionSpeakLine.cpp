@@ -52,9 +52,16 @@ void CActionSpeakLine::Serialize(Serialization::IArchive& ar)
 	ar(m_speakerOverrideName, "speakerOverride", "^ SpeakerOverride");
 
 #if defined(HASHEDSTRING_STORES_SOURCE_STRING)
-	if (ar.isEdit() && !m_lineIDToSpeak.IsValid())
+	if (ar.isEdit())
 	{
-		ar.warning(m_lineIDToSpeak.m_textCopy, "No line specified");
+		if (!m_lineIDToSpeak.IsValid())
+		{
+			ar.warning(m_lineIDToSpeak.m_textCopy, "No line specified");
+		}
+		else if (!gEnv->pDynamicResponseSystem->GetDialogLineDatabase()->GetLineSetById(m_lineIDToSpeak))
+		{
+			ar.warning(m_lineIDToSpeak.m_textCopy, "Specified line not found in the database");
+		}
 	}
 #endif
 }
