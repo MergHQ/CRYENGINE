@@ -9,10 +9,9 @@ namespace ACE
 {
 enum ESdlMixerTypes
 {
-	eSdlMixerTypes_Invalid    = 0,
-	eSdlMixerTypes_Event      = 1,
-	eSdlMixerTypes_SampleFile = 2,
-	eSdlMixerTypes_Folder     = 3,
+	eSdlMixerTypes_Invalid = 0,
+	eSdlMixerTypes_Event   = 1,
+	eSdlMixerTypes_Folder  = 2,
 };
 
 class IAudioSystemControl_sdlmixer final : public IAudioSystemItem

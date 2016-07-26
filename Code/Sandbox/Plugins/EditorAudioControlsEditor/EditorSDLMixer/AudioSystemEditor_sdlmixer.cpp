@@ -37,14 +37,14 @@ CAudioSystemEditor_sdlmixer::CAudioSystemEditor_sdlmixer()
 
 CAudioSystemEditor_sdlmixer::~CAudioSystemEditor_sdlmixer()
 {
+	Clear();
 }
 
 void CAudioSystemEditor_sdlmixer::Reload(bool bPreserveConnectionStatus)
 {
-	m_controlsCache.clear();
-	m_root = IAudioSystemItem();
-	CSdlMixerProjectLoader(m_settings.GetProjectPath(), m_root);
+	Clear();
 
+	CSdlMixerProjectLoader(m_settings.GetProjectPath(), m_root);
 	CreateControlCache(&m_root);
 
 	for (auto controlPair : m_connectionsByID)
@@ -58,6 +58,19 @@ void CAudioSystemEditor_sdlmixer::Reload(bool bPreserveConnectionStatus)
 			}
 		}
 	}
+}
+
+void CAudioSystemEditor_sdlmixer::Clear()
+{
+	// Delete all the controls
+	for (IAudioSystemItem* pControl : m_controlsCache)
+	{
+		delete pControl;
+	}
+	m_controlsCache.clear();
+
+	// Clean up the root control
+	m_root = IAudioSystemItem();
 }
 
 void CAudioSystemEditor_sdlmixer::CreateControlCache(IAudioSystemItem* pParent)

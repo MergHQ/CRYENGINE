@@ -164,7 +164,8 @@ private:
 
 	CID  GetId(const string& sName) const;
 	void CreateControlCache(IAudioSystemItem* pParent);
-	
+	void Clear();
+
 	static const string              s_itemNameTag;
 	static const string              s_pathNameTag;
 	static const string              s_eventConnectionTag;
