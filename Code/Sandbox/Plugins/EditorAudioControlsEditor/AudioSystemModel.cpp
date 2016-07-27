@@ -92,8 +92,9 @@ QVariant QAudioSystemModel::data(const QModelIndex& index, int role) const
 						{
 							return QColor(36, 180, 245);
 						}
-						else if (!pItem->IsConnected())
+						else if (!pItem->IsConnected() && m_pAudioSystem->ImplTypeToATLType(pItem->GetType()) != eACEControlType_NumTypes)
 						{
+							// Tint non connected controls that can actually be connected to something (ie. exclude folders)
 							return QColor(255, 143, 0);
 						}
 						break;

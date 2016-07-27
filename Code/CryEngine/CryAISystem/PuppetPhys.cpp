@@ -202,7 +202,10 @@ bool CPuppet::CheckLineOfFire(const Vec3& vTargetPos, float fDistance, float fSo
 					pTarget = pAssociation;
 
 				if (IEntity* pEntity = pTarget->GetEntity())
-					stl::push_back_unique(skipList, pEntity->GetPhysics());
+				{
+					if (IPhysicalEntity* pPhysicalEntity = pEntity->GetPhysics())
+						stl::push_back_unique(skipList, pPhysicalEntity);
+				}
 			}
 
 			m_lineOfFireState.rayID = gAIEnv.pRayCaster->Queue(RayCastRequest::HighestPriority,

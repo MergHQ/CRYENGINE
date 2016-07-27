@@ -197,17 +197,6 @@ bool CResource::Init(ID3D12Resource* pResource, D3D12_RESOURCE_STATES eInitialSt
 			m_HeapType = sHeap.Type;
 			m_CurrentState = eInitialState;
 
-			// Certain heaps are restricted to certain D3D12_RESOURCE_STATES states, and cannot be changed.
-			// D3D12_HEAP_TYPE_UPLOAD requires D3D12_RESOURCE_STATE_GENERIC_READ.
-			if (m_HeapType == D3D12_HEAP_TYPE_UPLOAD)
-			{
-				m_CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
-			}
-			else if (m_HeapType == D3D12_HEAP_TYPE_READBACK)
-			{
-				m_CurrentState = D3D12_RESOURCE_STATE_COPY_DEST;
-			}
-
 			m_NodeMasks.creationMask = sHeap.CreationNodeMask;
 			m_NodeMasks.visibilityMask = sHeap.VisibleNodeMask;
 		}
@@ -229,7 +218,15 @@ bool CResource::Init(ID3D12Resource* pResource, D3D12_RESOURCE_STATES eInitialSt
 	else
 	{
 		m_HeapType = D3D12_HEAP_TYPE_UPLOAD; // Null resource put on the UPLOAD heap to prevent attempts to transition the resource.
+		m_CurrentState = eInitialState;
 	}
+
+	// Certain heaps are restricted to certain D3D12_RESOURCE_STATES states, and cannot be changed.
+	// D3D12_HEAP_TYPE_UPLOAD requires D3D12_RESOURCE_STATE_GENERIC_READ.
+	if (m_HeapType == D3D12_HEAP_TYPE_UPLOAD)
+		m_CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
+	else if (m_HeapType == D3D12_HEAP_TYPE_READBACK)
+		m_CurrentState = D3D12_RESOURCE_STATE_COPY_DEST;
 
 	m_pSwapChainOwner = NULL;
 	m_bCompressed = IsDXGIFormatCompressed(desc.Format);
