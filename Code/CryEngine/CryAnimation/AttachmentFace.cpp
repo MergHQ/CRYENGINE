@@ -150,15 +150,16 @@ uint32 CAttachmentFACE::ProjectAttachment(const Skeleton::CPoseData* pPoseData)
 				fShortestDistance = fDistance, cf = scf;
 		}
 
-		CModelMesh* pModelMesh = pDefaultSkeleton->GetModelMesh();
-		uint32 IsValid = pModelMesh->IsVBufferValid();
-		if (IsValid)
+		if (CModelMesh* pModelMesh = pDefaultSkeleton->GetModelMesh())
 		{
-			ClosestTri scf = pModelMesh->GetAttachmentTriangle(apos, 0);
-			Vec3 vTriCenter = (scf.v[0].m_attTriPos + scf.v[1].m_attTriPos + scf.v[2].m_attTriPos) / 3;
-			f32 fDistance = (apos - vTriCenter).GetLength();
-			if (fShortestDistance > fDistance)
-				fShortestDistance = fDistance, cf = scf;
+			if (pModelMesh->IsVBufferValid())
+			{
+				ClosestTri scf = pModelMesh->GetAttachmentTriangle(apos, 0);
+				Vec3 vTriCenter = (scf.v[0].m_attTriPos + scf.v[1].m_attTriPos + scf.v[2].m_attTriPos) / 3;
+				f32 fDistance = (apos - vTriCenter).GetLength();
+				if (fShortestDistance > fDistance)
+					fShortestDistance = fDistance, cf = scf;
+			}
 		}
 
 		Vec3 vt0 = cf.v[0].m_attTriPos;

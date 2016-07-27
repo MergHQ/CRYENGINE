@@ -782,12 +782,14 @@ void CharacterManager::StreamKeepCharacterResourcesResident(const char* szFilePa
 	const bool isCGA = stricmp(fileExt, CRY_ANIM_GEOMETRY_FILE_EXT) == 0;
 	if (isSKEL || isCGA)
 	{
-		CDefaultSkeleton* pSkeleton = CheckIfModelSKELLoaded(szFilePath, 0);
-		if (pSkeleton != NULL)
+		if (CDefaultSkeleton* pSkeleton = CheckIfModelSKELLoaded(szFilePath, 0))
 		{
-			MeshStreamInfo& msi = pSkeleton->m_ModelMesh.m_stream;
-			msi.nKeepResidentRefs += nRefAdj;
-			msi.bIsUrgent = msi.bIsUrgent || bUrgent;
+			if (CModelMesh* pModelMesh = pSkeleton->GetModelMesh())
+			{
+				MeshStreamInfo& msi = pModelMesh->m_stream;
+				msi.nKeepResidentRefs += nRefAdj;
+				msi.bIsUrgent = msi.bIsUrgent || bUrgent;
+			}
 		}
 		return;
 	}
@@ -824,10 +826,12 @@ bool CharacterManager::StreamHasCharacterResources(const char* szFilePath, int n
 	const bool isCGA = stricmp(fileExt, CRY_ANIM_GEOMETRY_FILE_EXT) == 0;
 	if (isSKEL || isCGA)
 	{
-		CDefaultSkeleton* pSkeleton = CheckIfModelSKELLoaded(szFilePath, 0);
-		if (pSkeleton != NULL)
+		if (CDefaultSkeleton* pSkeleton = CheckIfModelSKELLoaded(szFilePath, 0))
 		{
-			return pSkeleton->m_ModelMesh.m_pIRenderMesh != NULL;
+			if (CModelMesh* pModelMesh = pSkeleton->GetModelMesh())
+			{
+				return (pModelMesh->m_pIRenderMesh != nullptr);
+			}
 		}
 
 		return false;
@@ -1813,44 +1817,46 @@ void CharacterManager::UpdateStreaming_SKEL(std::vector<CDefaultSkeletonReferenc
 	for (std::vector<CDefaultSkeletonReferences>::iterator it = skels.begin(), itEnd = skels.end(); it != itEnd; ++it)
 	{
 		CDefaultSkeleton* pSkel = it->m_pDefaultSkeleton;
-		if (pSkel->m_ObjectType == CHR)
+		if (pSkel->m_ObjectType != CHR)
+			continue;
+
+		CModelMesh* pSkelMesh = pSkel->GetModelMesh();
+		if (!pSkelMesh)
+			continue;
+
+		MeshStreamInfo& si = pSkelMesh->m_stream;
+		if (!si.pStreamer)
 		{
-			CModelMesh* pSkelMesh = &pSkel->m_ModelMesh;
-			MeshStreamInfo& si = pSkelMesh->m_stream;
+			bool bShouldBeInMemRender = si.nFrameId > nRenderFrameId - 4;
+			bool bShouldBeInMemPrecache = false;
+			for (int j = 0; j < MAX_STREAM_PREDICTION_ZONES; ++j)
+				bShouldBeInMemPrecache = bShouldBeInMemPrecache || (si.nRoundIds[j] >= nRoundIds[j] - 2);
 
-			if (!si.pStreamer)
+			bool bShouldBeInMemRefs = si.nKeepResidentRefs > 0;
+			bool bShouldBeInMem = bShouldBeInMemRefs || bShouldBeInMemRender || bShouldBeInMemPrecache;
+
+			if (bShouldBeInMem)
 			{
-				bool bShouldBeInMemRender = si.nFrameId > nRenderFrameId - 4;
-				bool bShouldBeInMemPrecache = false;
-				for (int j = 0; j < MAX_STREAM_PREDICTION_ZONES; ++j)
-					bShouldBeInMemPrecache = bShouldBeInMemPrecache || (si.nRoundIds[j] >= nRoundIds[j] - 2);
-
-				bool bShouldBeInMemRefs = si.nKeepResidentRefs > 0;
-				bool bShouldBeInMem = bShouldBeInMemRefs || bShouldBeInMemRender || bShouldBeInMemPrecache;
-
-				if (bShouldBeInMem)
+				if (!pSkelMesh->m_pIRenderMesh)
 				{
-					if (!pSkelMesh->m_pIRenderMesh)
-					{
-						EStreamTaskPriority estp;
-						if (si.bIsUrgent)
-							estp = estpUrgent;
-						else if (bShouldBeInMemRefs)
-							estp = estpAboveNormal;
-						else
-							estp = estpNormal;
+					EStreamTaskPriority estp;
+					if (si.bIsUrgent)
+						estp = estpUrgent;
+					else if (bShouldBeInMemRefs)
+						estp = estpAboveNormal;
+					else
+						estp = estpNormal;
 
-						si.pStreamer = new CryCHRLoader;
-						si.pStreamer->BeginLoadCHRRenderMesh(pSkel, it->m_RefByInstances, estp);
-					}
+					si.pStreamer = new CryCHRLoader;
+					si.pStreamer->BeginLoadCHRRenderMesh(pSkel, it->m_RefByInstances, estp);
 				}
-				else if (pSkelMesh->m_pIRenderMesh)
-				{
-					pSkelMesh->m_pIRenderMesh = NULL;
-				}
-
-				si.bIsUrgent = false;
 			}
+			else if (pSkelMesh->m_pIRenderMesh)
+			{
+				pSkelMesh->m_pIRenderMesh = NULL;
+			}
+
+			si.bIsUrgent = false;
 		}
 	}
 }
@@ -3679,13 +3685,15 @@ bool CharacterManager::StreamKeepCDFResident(const char* szFilePath, int nLod, i
 		// First prefetch base model
 		if (isBaseSKEL || isBaseCGA)
 		{
-			CDefaultSkeleton* pSkeleton = CheckIfModelSKELLoaded(pFilepathSKEL, 0);
-			if (pSkeleton)
+			if (CDefaultSkeleton* pSkeleton = CheckIfModelSKELLoaded(pFilepathSKEL, 0))
 			{
-				MeshStreamInfo& msi = pSkeleton->m_ModelMesh.m_stream;
-				msi.nKeepResidentRefs += nRefAdj;
-				msi.bIsUrgent = msi.bIsUrgent || bUrgent;
-				bRet = bRet && (pSkeleton->m_ModelMesh.m_pIRenderMesh != NULL);
+				if (CModelMesh* pModelMesh = pSkeleton->GetModelMesh())
+				{
+					MeshStreamInfo& msi = pModelMesh->m_stream;
+					msi.nKeepResidentRefs += nRefAdj;
+					msi.bIsUrgent = msi.bIsUrgent || bUrgent;
+					bRet = bRet && (pModelMesh->m_pIRenderMesh != NULL);
+				}
 			}
 		}
 
@@ -3706,13 +3714,15 @@ bool CharacterManager::StreamKeepCDFResident(const char* szFilePath, int nLod, i
 
 				if (isSKEL || isCGA)
 				{
-					CDefaultSkeleton* pSkeleton = CheckIfModelSKELLoaded(attachmentInfo.m_strBindingPath.c_str(), 0);
-					if (pSkeleton)
+					if (CDefaultSkeleton* pSkeleton = CheckIfModelSKELLoaded(attachmentInfo.m_strBindingPath.c_str(), 0))
 					{
-						MeshStreamInfo& msi = pSkeleton->m_ModelMesh.m_stream;
-						msi.nKeepResidentRefs += nRefAdj;
-						msi.bIsUrgent = msi.bIsUrgent || bUrgent;
-						bRet = bRet && (pSkeleton->m_ModelMesh.m_pIRenderMesh != NULL);
+						if (CModelMesh* pModelMesh = pSkeleton->GetModelMesh())
+						{
+							MeshStreamInfo& msi = pModelMesh->m_stream;
+							msi.nKeepResidentRefs += nRefAdj;
+							msi.bIsUrgent = msi.bIsUrgent || bUrgent;
+							bRet = bRet && (pModelMesh->m_pIRenderMesh != NULL);
+						}
 					}
 				}
 				else if (isCDF)
@@ -3732,14 +3742,16 @@ bool CharacterManager::StreamKeepCDFResident(const char* szFilePath, int nLod, i
 
 				if (isCHR)
 				{
-					CDefaultSkeleton* pSkeleton = CheckIfModelSKELLoaded(attachmentInfo.m_strBindingPath.c_str(), 0);
-					if (pSkeleton)
+					if (CDefaultSkeleton* pSkeleton = CheckIfModelSKELLoaded(attachmentInfo.m_strBindingPath.c_str(), 0))
 					{
-						MeshStreamInfo& msi = pSkeleton->m_ModelMesh.m_stream;
-						msi.nKeepResidentRefs += nRefAdj;
-						msi.bIsUrgent = msi.bIsUrgent || bUrgent;
+						if (CModelMesh* pModelMesh = pSkeleton->GetModelMesh())
+						{
+							MeshStreamInfo& msi = pModelMesh->m_stream;
+							msi.nKeepResidentRefs += nRefAdj;
+							msi.bIsUrgent = msi.bIsUrgent || bUrgent;
 
-						bRet = bRet && (pSkeleton->m_ModelMesh.m_pIRenderMesh != NULL);
+							bRet = bRet && (pModelMesh->m_pIRenderMesh != NULL);
+						}
 					}
 				}
 				else if (isCDF)

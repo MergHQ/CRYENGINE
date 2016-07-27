@@ -531,7 +531,7 @@ public:
 	PoseBlenderAimDesc               m_poseBlenderAimDesc;
 	uint32                           m_usePhysProxyBBox;
 	DynArray<int32>                  m_BBoxIncludeList;
-	DynArray<SBoneShadowCapsule>m_ShadowCapsulesList;
+	DynArray<SBoneShadowCapsule>     m_ShadowCapsulesList;
 	AABB                             m_AABBExtension;
 	AABB                             m_ModelAABB; //AABB of the model in default pose
 	bool                             m_bHasPhysics2;
@@ -585,13 +585,20 @@ public:
 			return NULL;
 	}
 	uint32               GetModelMeshCount() const   { return 1; }
-	CModelMesh*          GetModelMesh()              { return &m_ModelMesh; }
+	CModelMesh*          GetModelMesh()              { return m_ModelMeshEnabled ? &m_ModelMesh : nullptr; }
 	virtual void         PrecacheMesh(bool bFullUpdate, int nRoundId, int nLod);
 	virtual Vec3         GetRenderMeshOffset() const { return m_ModelMesh.m_vRenderMeshOffset; };
 	virtual IRenderMesh* GetIRenderMesh() const      { return m_ModelMesh.m_pIRenderMesh;  }
 	virtual uint32       GetTextureMemoryUsage2(ICrySizer* pSizer = 0) const;
 	virtual uint32       GetMeshMemoryUsage(ICrySizer* pSizer = 0) const;
-	CModelMesh           m_ModelMesh; //still using one LOD
+
+public:
+
 	uint32               m_ObjectType;
 	_smart_ptr<IStatObj> m_pCGA_Object;
+
+private:
+
+	CModelMesh m_ModelMesh;
+	bool       m_ModelMeshEnabled;
 };

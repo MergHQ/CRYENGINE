@@ -1675,8 +1675,7 @@ bool CLoaderCGF::ProcessSkinning()
 	}
 	if (!pNode)
 	{
-		m_LastError = "No mesh node found";
-		return false;
+		return true;
 	}
 
 	CMesh* const pMesh = pNode->pMesh;
