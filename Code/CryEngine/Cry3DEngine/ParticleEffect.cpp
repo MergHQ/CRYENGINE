@@ -25,7 +25,7 @@
 
 DEFINE_INTRUSIVE_LINKED_LIST(CParticleEffect)
 
-static const int nSERIALIZE_VERSION = 27;
+static const int nSERIALIZE_VERSION = 28;
 static const int nMIN_SERIALIZE_VERSION = 19;
 
 // Write a struct to an XML node.
@@ -569,8 +569,10 @@ void ResourceParticleParams::ComputeShaderData()
 	//	y = back lighting
 	const float y = fDiffuseBacklighting;
 	const float energyNorm = (y < 0.5) ? (1 - y) : (1.0f / (4.0f * y));
+	const float kiloScale = 1000.0f;
+	const float toLightUnitScale = kiloScale / RENDERER_LIGHT_UNIT_SCALE;
 	ShaderData.m_diffuseLighting = fDiffuseLighting * energyNorm;
-	ShaderData.m_emissiveLighting = fEmissiveLighting;
+	ShaderData.m_emissiveLighting = fEmissiveLighting * toLightUnitScale;
 	ShaderData.m_backLighting = fDiffuseBacklighting;
 
 	ShaderData.m_softnessMultiplier = bSoftParticle.fSoftness;
@@ -1061,9 +1063,9 @@ void CompatibilityParticleParams::Correct(CParticleEffect* pEffect)
 		if (bSecondGeneration)
 		{
 			eSpawnIndirection =
-			  bSpawnOnParentCollision ? ESpawn::ParentCollide
-			  : bSpawnOnParentDeath ? ESpawn::ParentDeath
-			  : ESpawn::ParentStart;
+				bSpawnOnParentCollision ? ESpawn::ParentCollide
+				: bSpawnOnParentDeath ? ESpawn::ParentDeath
+				: ESpawn::ParentStart;
 		}
 
 		if (fPosRandomOffset != 0.f)
@@ -1093,16 +1095,16 @@ void CompatibilityParticleParams::Correct(CParticleEffect* pEffect)
 				if (fSpeed)
 				{
 					Warning("Particle Effect '%s' (version %d, %s): Speed corrected by parent scale %g from %g to %g",
-					        pEffect->GetFullName().c_str(), nVersion, sSandboxVersion.c_str(), fParentSize,
-					        +fSpeed, +fSpeed * fParentSize);
+						pEffect->GetFullName().c_str(), nVersion, sSandboxVersion.c_str(), fParentSize,
+						+fSpeed, +fSpeed * fParentSize);
 					fSpeed.Set(fSpeed.GetMaxValue() * fParentSize);
 				}
 				if (!vPositionOffset.IsZero())
 				{
 					Warning("Particle Effect '%s' (version %d, %s): PositionOffset corrected by parent scale %g from (%g,%g,%g) to (%g,%g,%g)",
-					        pEffect->GetFullName().c_str(), nVersion, sSandboxVersion.c_str(), fParentSize,
-					        +vPositionOffset.x, +vPositionOffset.y, +vPositionOffset.z,
-					        +vPositionOffset.x * fParentSize, +vPositionOffset.y * fParentSize, +vPositionOffset.z * fParentSize);
+						pEffect->GetFullName().c_str(), nVersion, sSandboxVersion.c_str(), fParentSize,
+						+vPositionOffset.x, +vPositionOffset.y, +vPositionOffset.z,
+						+vPositionOffset.x * fParentSize, +vPositionOffset.y * fParentSize, +vPositionOffset.z * fParentSize);
 					vPositionOffset.x = vPositionOffset.x * fParentSize;
 					vPositionOffset.y = vPositionOffset.y * fParentSize;
 					vPositionOffset.z = vPositionOffset.z * fParentSize;
@@ -1110,9 +1112,9 @@ void CompatibilityParticleParams::Correct(CParticleEffect* pEffect)
 				if (!vRandomOffset.IsZero())
 				{
 					Warning("Particle Effect '%s' (version %d, %s): RandomOffset corrected by parent scale %g from (%g,%g,%g) to (%g,%g,%g)",
-					        pEffect->GetFullName().c_str(), nVersion, sSandboxVersion.c_str(), fParentSize,
-					        +vRandomOffset.x, +vRandomOffset.y, +vRandomOffset.z,
-					        +vRandomOffset.x * fParentSize, +vRandomOffset.y * fParentSize, +vRandomOffset.z * fParentSize);
+						pEffect->GetFullName().c_str(), nVersion, sSandboxVersion.c_str(), fParentSize,
+						+vRandomOffset.x, +vRandomOffset.y, +vRandomOffset.z,
+						+vRandomOffset.x * fParentSize, +vRandomOffset.y * fParentSize, +vRandomOffset.z * fParentSize);
 					vRandomOffset.x = vRandomOffset.x * fParentSize;
 					vRandomOffset.y = vRandomOffset.y * fParentSize;
 					vRandomOffset.z = vRandomOffset.z * fParentSize;
@@ -1169,6 +1171,9 @@ void CompatibilityParticleParams::Correct(CParticleEffect* pEffect)
 			const float energyDenorm = (y < 0.5f) ? 1.0f / (1 - y) : 4.0f * y;
 			fDiffuseLighting = fDiffuseLighting * energyDenorm;
 		}
+
+	case 27:
+		fEmissiveLighting = fEmissiveLighting * 10.0f;
 	}
 	;
 
