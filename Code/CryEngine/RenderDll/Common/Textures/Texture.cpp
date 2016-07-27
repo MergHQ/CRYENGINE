@@ -4348,7 +4348,7 @@ void CTexture::PrepareLowResSystemCopy(byte* pTexData, bool bTexDataHasAllMips)
 		return;
 
 	// this function handles only compressed textures for now
-	if (m_eTFDst != eTF_BC3 && m_eTFDst != eTF_BC1 && m_eTFDst != eTF_BC2)
+	if (m_eTFDst != eTF_BC3 && m_eTFDst != eTF_BC1 && m_eTFDst != eTF_BC2 && m_eTFDst != eTF_BC7)
 		return;
 
 	// make sure we skip non diffuse textures

@@ -24,6 +24,7 @@ struct CRY_ALIGN(4) pe_gridthunk {
 class CPhysicalEntity;
 const int NO_GRID_REG = -1<<14;
 const int GRID_REG_PENDING = NO_GRID_REG+1;
+const int GRID_REG_LAST = NO_GRID_REG+2;
 
 class CPhysicalPlaceholder : public IPhysicalEntity {
 public:

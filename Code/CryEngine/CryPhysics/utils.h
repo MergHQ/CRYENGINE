@@ -68,7 +68,7 @@ struct ort_gen {
 	ort_gen() {}
 	Vec3 operator[](int i) { return Vec3(iszero(i),i&1,i>>1); }
 };
-#define ort (ort_gen())
+#define ort ort_gen()
 #define ortx (Vec3(1,0,0))
 #define orty (Vec3(0,1,0))
 #define ortz (Vec3(0,0,1))
@@ -244,7 +244,7 @@ ILINE int intersect_lists(F *pSrc0,int nSrc0, F *pSrc1,int nSrc1, F *pDst)
 typedef void* (*qhullmalloc)(size_t);
 int qhull(strided_pointer<Vec3> pts, int npts, index_t*& pTris, qhullmalloc qmalloc = 0);
 
-int qhull2d(ptitem2d *pts,int nVtx, edgeitem *edges);
+int qhull2d(ptitem2d *pts,int nVtx, edgeitem *edges, int nMaxEdges=0);
 
 real ComputeMassProperties(strided_pointer<const Vec3> points, const index_t *faces, int nfaces, Vec3r &center,Matrix33r &I);
 
@@ -977,7 +977,7 @@ public:
 #define VALIDATORS_END
 #define ENTITY_VALIDATE(strSource,pStructure)*/
 #if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
-#define DoBreak {assert(0);}
+#define DoBreak {__debugbreak();}
 #else
 #define DoBreak { __debugbreak(); }
 #endif

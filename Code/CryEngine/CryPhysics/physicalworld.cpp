@@ -2910,6 +2910,7 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 		if (pobj->m_ig[0].x!=NO_GRID_REG) // if m_igx[0] is NO_GRID_REG, the entity should not be registered in grid at all
 			if (igx[0]-pobj->m_ig[0].x | igy[0]-pobj->m_ig[0].y | igx[1]-pobj->m_ig[1].x | igy[1]-pobj->m_ig[1].y | flags&4 | flags>>2&1 ^ pobj->m_bOBBThunks) {
 				CPhysicalPlaceholder *pcurobj = pobj;
+				int moveToEnd = -iszero(pobj->m_ig[0].x-GRID_REG_LAST);
 				if (IsPlaceholder(pobj->m_pEntBuddy))
 					goto skiprepos; //pcurobj = pobj->m_pEntBuddy;
 				SpinLock(&m_lockGrid,0,bGridLocked = WRITE_LOCK_VAL);
@@ -2966,7 +2967,7 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 
 					int ithunkGrid = m_pEntGrid[j];
 
-					if (!ithunkGrid || m_gthunks[ithunkGrid].iSimClass!=5) {
+					if (!ithunkGrid || m_gthunks[ithunkGrid].iSimClass-5 & ~moveToEnd) {
 						int& entGridEntry = m_pEntGrid[(unsigned int)j];
 						pNewGThunk->bFirstInCell = 1;
 						pNewGThunk->iprev = ((iy & m_entgrid.size.y-1)<<10|ix & m_entgrid.size.x-1);
@@ -2975,7 +2976,7 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 						m_gthunks[ithunkGrid].bFirstInCell = 0;
 						entGridEntry = ithunk;
 					}	else {
-						for(ithunk0=ithunkGrid; m_gthunks[m_gthunks[ithunk0].inext].iSimClass==5; ithunk0=m_gthunks[ithunk0].inext);
+						for(ithunk0=ithunkGrid; iszero((int)m_gthunks[m_gthunks[ithunk0].inext].iSimClass-5) | moveToEnd & m_gthunks[ithunk0].inext; ithunk0=m_gthunks[ithunk0].inext);
 						pNewGThunk->bFirstInCell = 0;
 						pNewGThunk->inext = m_gthunks[ithunk0].inext;
 						pNewGThunk->iprev = ithunk0;

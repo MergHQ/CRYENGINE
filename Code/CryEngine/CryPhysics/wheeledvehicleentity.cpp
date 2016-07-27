@@ -859,8 +859,10 @@ void CWheeledVehicleEntity::CheckAdditionalGeometry(float time_interval)
 						// always project contact point to the outer wheel edge
 						m_susp[iwheel].ptcontact = pcontacts[icont].pt + axis*(m_susp[iwheel].width-axis*(pcontacts[icont].pt-ptcw)); 
 						m_susp[iwheel].ncontact = -pcontacts[icont].n;
-						if (bHasMatSubst && m_susp[iwheel].pent->m_id==-1) for(ient1=0;ient1<nents;ient1++) for(int j2=0;j2<pentlist[ient1]->GetUsedPartsCount(iCaller);j2++)
+						int scMask = (2<<m_susp[iwheel].pent->m_iSimClass)-(m_susp[iwheel].pent->m_id>>31);
+						if (bHasMatSubst & scMask) for(ient1=0;ient1<nents;ient1++) for(int j2=0;j2<pentlist[ient1]->GetUsedPartsCount(iCaller);j2++)
 							if (pentlist[ient1]->m_parts[j1=pentlist[ient1]->GetUsedPart(iCaller,j2)].flags & geom_mat_substitutor && 
+									pentlist[ient1]->m_parts[j1].flagsCollider & scMask &&
 									pentlist[ient1]->m_parts[j1].pPhysGeom->pGeom->PointInsideStatus(
 										((m_susp[iwheel].ptcontact-pentlist[ient1]->m_pos)*pentlist[ient1]->m_qrot-pentlist[ient1]->m_parts[j1].pos)*pentlist[ient1]->m_parts[j1].q))
 							m_susp[iwheel].surface_idx[1] = pentlist[ient1]->GetMatId(pentlist[ient1]->m_parts[j1].pPhysGeom->surface_idx,j1);
@@ -872,7 +874,7 @@ void CWheeledVehicleEntity::CheckAdditionalGeometry(float time_interval)
 					tmaxTilted = max_safe(tmaxTilted,tcur);
 			}
 		} else 
-			bHasMatSubst |= pentlist[ient]->m_parts[j].flags & geom_mat_substitutor;
+			bHasMatSubst |= pentlist[ient]->m_parts[j].flagsCollider & -((int)pentlist[ient]->m_parts[j].flags & geom_mat_substitutor)>>31;
 
 		//endwheel:
 		if (tmaxTilted>tmax*1.01f) {

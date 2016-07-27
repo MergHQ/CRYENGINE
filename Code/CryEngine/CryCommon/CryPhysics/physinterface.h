@@ -2558,7 +2558,7 @@ struct IPhysUtils
 	//! outputs data into centers and radii arrays, which use global buffers; returns the number of circles
 	virtual int  CoverPolygonWithCircles(strided_pointer<Vec2> pt, int npt, bool bConsecutive, const Vec2& center, Vec2*& centers, float*& radii, float minCircleRadius) = 0;
 	virtual int  qhull(strided_pointer<Vec3> pts, int npts, index_t*& pTris, qhullmalloc qmalloc = 0) = 0;
-	virtual int  qhull2d(ptitem2d* pts, int nVtx, edgeitem* edges) = 0;
+	virtual int  qhull2d(ptitem2d* pts, int nVtx, edgeitem* edges, int nMaxEdges = 0) = 0;
 	virtual void DeletePointer(void* pdata) = 0; //!< should be used to free data allocated in physics
 	virtual int  TriangulatePoly(Vec2* pVtx, int nVtx, int* pTris, int szTriBuf) = 0;
 	// </interfuscator:shuffle>

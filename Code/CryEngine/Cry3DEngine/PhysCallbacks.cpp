@@ -543,17 +543,20 @@ void CDeferredCollisionEventOnPhysCollision::FinishTestCollisionWithRenderMesh()
 
 	pCollisionEvent->pt = ptnew;
 	pCollisionEvent->n = m_worldRot.TransformVector(m_HitInfo.vHitNormal);
-	if (m_pMatMapping)
+	if (pCollisionEvent->penetration >= 0)
 	{
-		// When using custom material mapping.
-		if (m_HitInfo.nHitMatID < m_nMats)
+		if (m_pMatMapping)
 		{
-			m_HitInfo.nHitSurfaceID = m_pMatMapping[m_HitInfo.nHitMatID];
+			// When using custom material mapping.
+			if (m_HitInfo.nHitMatID < m_nMats)
+			{
+				m_HitInfo.nHitSurfaceID = m_pMatMapping[m_HitInfo.nHitMatID];
+			}
 		}
-	}
-	if (m_HitInfo.nHitSurfaceID)
-	{
-		pCollisionEvent->idmat[1] = m_HitInfo.nHitSurfaceID;
+		if (m_HitInfo.nHitSurfaceID)
+		{
+			pCollisionEvent->idmat[1] = m_HitInfo.nHitSurfaceID;
+		}
 	}
 
 	pCollisionEvent->fDecalPlacementTestMaxSize = m_RayIntersectionData.fDecalPlacementTestMaxSize;

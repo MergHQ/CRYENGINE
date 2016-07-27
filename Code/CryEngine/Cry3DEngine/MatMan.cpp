@@ -318,6 +318,8 @@ IMaterial* CMatMan::LoadMaterial(const char* sMtlName, bool bMakeIfNotFound, boo
 					{
 						((CMatInfo*)pMtl)->SetSketchMode(e_sketch_mode);
 					}
+					if (pMtl->GetFlags() & MTL_FLAG_TRACEABLE_TEXTURE)
+						pMtl->SetKeepLowResSysCopyForDiffTex();
 					return pMtl;
 				}
 			}
@@ -401,6 +403,9 @@ IMaterial* CMatMan::LoadMaterial(const char* sMtlName, bool bMakeIfNotFound, boo
 		pMtl->LoadConsoleMaterial();
 	}
 #endif
+
+	if (pMtl && pMtl->GetFlags() & MTL_FLAG_TRACEABLE_TEXTURE)
+		pMtl->SetKeepLowResSysCopyForDiffTex();
 
 	if (!pMtl && bMakeIfNotFound)
 	{

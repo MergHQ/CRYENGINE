@@ -1538,8 +1538,10 @@ int CRigidEntity::CheckForNewContacts(geom_world_data *pgwd0,intersection_params
 				for(icont=0; icont<ncontacts; icont++) {
 					pcontacts[icont].id[0] = GetMatId(pcontacts[icont].id[0],i);
 					pcontacts[icont].id[1] = pentlist[ient]->GetMatId(pcontacts[icont].id[1],j);
-					if (bHasMatSubst && pentlist[ient]->m_id==-1) for(ient1=0;ient1<nents;ient1++) for(int j3=0;j3<pentlist[ient1]->GetUsedPartsCount(iCaller);j3++)
+					int scMask = (2<<pentlist[ient]->m_iSimClass)-(pentlist[ient]->m_id>>31);
+					if (bHasMatSubst & scMask) for(ient1=0;ient1<nents;ient1++) for(int j3=0;j3<pentlist[ient1]->GetUsedPartsCount(iCaller);j3++)
 						if (pentlist[ient1]->m_parts[j1=pentlist[ient1]->GetUsedPart(iCaller,j3)].flags & geom_mat_substitutor && 
+								pentlist[ient1]->m_parts[j1].flagsCollider & scMask &&
 								pentlist[ient1]->m_parts[j1].pPhysGeom->pGeom->PointInsideStatus(
 									((pcontacts[icont].center-pentlist[ient1]->m_pos)*pentlist[ient1]->m_qrot-pentlist[ient1]->m_parts[j1].pos)*pentlist[ient1]->m_parts[j1].q))
 						pcontacts[icont].id[1] = pentlist[ient1]->GetMatId(pentlist[ient1]->m_parts[j1].pPhysGeom->surface_idx,j1);
@@ -1571,7 +1573,7 @@ int CRigidEntity::CheckForNewContacts(geom_world_data *pgwd0,intersection_params
 			flagsAccum |= m_parts[i].flags|pentlist[ient]->m_parts[j].flags;
 			pip->bKeepPrevContacts = pip->bKeepPrevContacts || ncontacts>0;
 		}	else
-			bHasMatSubst |= pentlist[ient]->m_parts[j].flags & geom_mat_substitutor;
+			bHasMatSubst |= pentlist[ient]->m_parts[j].flagsCollider & -((int)pentlist[ient]->m_parts[j].flags & geom_mat_substitutor)>>31;
 	}
 	CollidersNoMore:
 	pip->bStopAtFirstTri = bStopAtFirstTri;
@@ -4562,33 +4564,16 @@ void CRigidEntity::ApplyBuoyancy(float time_interval,const Vec3& gravity,pe_para
 }
 
 
-static inline void swap(edgeitem *plist, int i1,int i2) {
-	int ti=plist[i1].idx; plist[i1].idx=plist[i2].idx; plist[i2].idx=ti;
-}
-static void qsort(edgeitem *plist, int left,int right)
-{
-	if (left>=right) return;
-	int i,last; 
-	swap(plist, left, left+right>>1);
-	for(last=left,i=left+1; i<=right; i++)
-	if (plist[plist[i].idx].area < plist[plist[left].idx].area)
-		swap(plist, ++last, i);
-	swap(plist, left,last);
-
-	qsort(plist, left,last-1);
-	qsort(plist, last+1,right);
-}
-
 int CRigidEntity::CompactContactBlock(entity_contact *pContact,int endFlags, float maxPlaneDist, int nMaxContacts,int &nContacts,
 																			entity_contact *&pResContact, Vec3 &n,float &maxDist, const Vec3 &ptTest, const Vec3 &dirTest) const
 {
-	int i,j,nEdges;
+	int i,nEdges;
 	Matrix33 C,Ctmp;
 	Vec3 pt,p_avg,center,axes[2];
 	float detabs[3],det;
 	const int NMAXCONTACTS = 256;
 	ptitem2d pts[NMAXCONTACTS];
-	edgeitem edges[NMAXCONTACTS],*pedge,*pminedge,*pnewedge;
+	edgeitem edges[NMAXCONTACTS],*pedge,*pminedge;
 	entity_contact *pContacts[NMAXCONTACTS];
 
 	nContacts=0; p_avg.zero();
@@ -4624,59 +4609,8 @@ int CRigidEntity::CompactContactBlock(entity_contact *pContact,int endFlags, flo
 	if (maxDist>maxPlaneDist)
 		return 0;
 	
-	nEdges = qhull2d(pts,nContacts,edges);
-
-	if (nMaxContacts) { // chop off vertices until we have only the required amount left
-		Vec2 edge[2];
-		for(i=0;i<nEdges;i++)	{
-			edge[0] = edges[i].prev->pvtx->pt-edges[i].pvtx->pt; edge[1] = edges[i].next->pvtx->pt-edges[i].pvtx->pt;
-			edges[i].area = edge[1] ^ edge[0]; edges[i].areanorm2 = len2(edge[0])*len2(edge[1]);
-			edges[i].idx = i;
-		}
-		// sort edges by the area of triangles
-		qsort(edges,0,nEdges-1);
-		// transform sorted array into a linked list
-		pminedge = edges+edges[0].idx;
-		pminedge->next1=pminedge->prev1 = edges+edges[0].idx; 
-		for(pedge=pminedge,i=1; i<nEdges; i++) {
-			edges[edges[i].idx].prev1 = pedge; edges[edges[i].idx].next1 = pedge->next1;
-			pedge->next1->prev1 = edges+edges[i].idx; pedge->next1 = edges+edges[i].idx; pedge = edges+edges[i].idx;
-		}
-		
-		while(nEdges>2 && (nEdges>nMaxContacts || sqr(pminedge->area)<sqr(0.15f)*pminedge->areanorm2)) {
-			LOCAL_NAME_OVERRIDE_OK
-			edgeitem *pedge[2];
-			// delete the ith vertex with the minimum area triangle
-			pminedge->next->prev = pminedge->prev; pminedge->prev->next = pminedge->next;
-			pminedge->next1->prev1 = pminedge->prev1; pminedge->prev1->next1 = pminedge->next1;
-			pedge[0] = pminedge->prev; pedge[1] = pminedge->next; pminedge = pminedge->next1;
-			nEdges--;
-			for(i=0;i<2;i++) {
-				edge[0] = pedge[i]->prev->pvtx->pt-pedge[i]->pvtx->pt; edge[1] = pedge[i]->next->pvtx->pt-pedge[i]->pvtx->pt;
-				pedge[i]->area = edge[1]^edge[0]; pedge[i]->areanorm2 = len2(edge[0])*len2(edge[1]); // update area
-				for(pnewedge=pedge[i]->next1,j=0; pnewedge!=pminedge && pnewedge->area<pedge[i]->area && j<nEdges+1; pnewedge=pnewedge->next1,j++);
-				if (pedge[i]->next1!=pnewedge) { // re-insert pedge[i] before pnewedge
-					if (pedge[i]==pminedge) pminedge = pedge[i]->next1;
-					if (pedge[i]!=pnewedge) {
-						pedge[i]->next1->prev1 = pedge[i]->prev1; pedge[i]->prev1->next1 = pedge[i]->next1;	
-						pedge[i]->prev1 = pnewedge->prev1; pedge[i]->next1 = pnewedge;
-						pnewedge->prev1->next1 = pedge[i]; pnewedge->prev1 = pedge[i];
-					}
-				}	else {
-					for(pnewedge=pedge[i]->prev1,j=0; pnewedge->next1!=pminedge && pnewedge->area>pedge[i]->area && j<nEdges+1; pnewedge=pnewedge->prev1,j++);
-					if (pedge[i]->prev1!=pnewedge) { // re-insert pedge[i] after pnewedge
-						if (pnewedge->next1==pminedge) pminedge = pedge[i];
-						if (pedge[i]!=pnewedge) {
-							pedge[i]->next1->prev1 = pedge[i]->prev1; pedge[i]->prev1->next1 = pedge[i]->next1;	
-							pedge[i]->prev1 = pnewedge; pedge[i]->next1 = pnewedge->next1;
-							pnewedge->next1->prev1 = pedge[i]; pnewedge->next1 = pedge[i];
-						}
-					}
-				}
-			}
-		}
-	} else
-		pminedge = edges;
+	if (nEdges = qhull2d(pts,nContacts,pminedge=edges,nMaxContacts))
+		for(pminedge=edges; !pminedge->next; pminedge++);
 
 	for(i=nContacts=0,pedge=pminedge; i<nEdges; i++,nContacts++,pedge=pedge->next)	{
 		pContacts[pedge->pvtx->iContact]->nextAux = pContacts[pedge->next->pvtx->iContact];
