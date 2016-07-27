@@ -335,6 +335,8 @@ add_sources("CrySystem_uber_5.cpp"
 add_sources("CrySystem_uber_6.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "ExtensionSystem"
+		"ExtensionSystem/CryPluginManager.cpp"
+		"ExtensionSystem/CryPluginManager.h"
 		"ExtensionSystem/CryFactoryRegistryImpl.cpp"
 		"ExtensionSystem/CryFactoryRegistryImpl.h"
 	SOURCE_GROUP "ExtensionSystem\\\\TestCases"
@@ -528,7 +530,7 @@ end_sources()
 
 CryEngineModule(CrySystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 
-target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 yasli tomcrypt )
+target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 yasli tomcrypt jsmn )
 if (WIN32 OR WIN64)
 	if(MSVC_VERSION EQUAL 1900)
 		target_link_libraries(${THIS_PROJECT} PRIVATE oculus)
@@ -548,5 +550,5 @@ elseif(DURANGO)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE uuid acphal )
 elseif(ANDROID)
 	target_include_directories( ${THIS_PROJECT} PRIVATE ${SDK_DIR}/SDL2/include/linux ${SDK_DIR}/SDL2/include/SDL )
-	target_link_libraries( ${THIS_PROJECT} PRIVATE m )
+	target_link_libraries( ${THIS_PROJECT} PRIVATE m CryAnimation)
 endif()
