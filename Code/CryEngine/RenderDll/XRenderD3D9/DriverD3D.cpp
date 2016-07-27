@@ -448,7 +448,6 @@ void CD3D9Renderer::InitRenderer()
 	m_occlusionSourceSizeX = 0;
 	m_occlusionSourceSizeY = 0;
 
-	m_occlusionLastProj.SetIdentity();
 	m_occlusionViewProj.SetIdentity();
 	for (int i = 0; i < 4; i++)
 		m_occlusionViewProjBuffer[i].SetIdentity();
@@ -4041,7 +4040,11 @@ void CD3D9Renderer::RT_EndFrame()
 
 	CTimeValue TimeEndF = iTimer->GetAsyncTime();
 
-	CTexture::Update();
+	const ESystemGlobalState systemState = iSystem->GetSystemGlobalState();
+	if (systemState > ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END)
+	{
+		CTexture::Update();
+	}
 	CFlashTextureSourceSharedRT::TickRT();
 
 	if (m_CVDisplayInfo && m_CVDisplayInfo->GetIVal() && iSystem && iSystem->IsDevMode())
@@ -7345,6 +7348,7 @@ int CD3D9Renderer::GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, u
 
 void CD3D9Renderer::PostLevelLoading()
 {
+	LOADING_TIME_PROFILE_SECTION;
 	CRenderer::PostLevelLoading();
 	if (gRenDev)
 	{
@@ -7552,7 +7556,10 @@ public:
 				{
 					gRenDev->m_cEF.m_bActivated = false;
 					gRenDev->m_bEndLevelLoading = false;
-					gRenDev->m_bStartLevelLoading = true;
+					if (!(iConsole->GetCVar("g_asynclevelload")->GetIVal()))
+					{
+						gRenDev->m_bStartLevelLoading = true;
+					}
 					gRenDev->m_bInLevel = true;
 					if (gRenDev->m_pRT)
 					{
@@ -7562,8 +7569,6 @@ public:
 				}
 				if (CRenderer::CV_r_texpostponeloading)
 					CTexture::s_bPrecachePhase = true;
-
-				CTexture::s_bInLevelPhase = true;
 
 				CResFile::m_nMaxOpenResFiles = MAX_OPEN_RESFILES * 2;
 				SShaderBin::s_nMaxFXBinCache = MAX_FXBIN_CACHE * 2;
@@ -7598,7 +7603,6 @@ public:
 
 		case ESYSTEM_EVENT_LEVEL_UNLOAD:
 			{
-				CTexture::s_bInLevelPhase = false;
 				gRenDev->m_bInLevel = false;
 			}
 			break;

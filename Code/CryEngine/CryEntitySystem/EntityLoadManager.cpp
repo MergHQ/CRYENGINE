@@ -422,6 +422,9 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 
 	bool bResult = true;
 
+	static ICVar* pAsyncLoad = gEnv->pConsole->GetCVar("g_asynclevelload");
+	const bool bAsyncLoad = pAsyncLoad && pAsyncLoad->GetIVal() > 0;
+
 	const int iChildCount = entitiesNode->getChildCount();
 
 	CryLog("Parsing %d entities...", iChildCount);
@@ -484,7 +487,7 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 			}
 		}
 
-		if (0 == (i & 7))
+		if ((!bAsyncLoad) && (0 == (i & 7)))
 		{
 			gEnv->pNetwork->SyncWithGame(eNGS_FrameStart);
 			gEnv->pNetwork->SyncWithGame(eNGS_FrameEnd);
@@ -739,6 +742,10 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 			{
 				pSpawnedEntity->CreateProxy(ENTITY_PROXY_CLIPVOLUME);
 			}
+			if (entityNode->findChild("Attributes"))
+			{
+				pSpawnedEntity->CreateProxy(ENTITY_PROXY_ATTRIBUTES);
+			}
 
 			if (spawnParams.pClass)
 			{
@@ -776,6 +783,11 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 				CScriptProxy* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
 				if (pScriptProxy)
 					pScriptProxy->SerializeXML(entityNode, true);
+
+				if (IEntityProxy* pAttributeProxy = static_cast<IEntityProxy*>(pCSpawnedEntity->GetProxy(ENTITY_PROXY_ATTRIBUTES)))
+				{
+					pAttributeProxy->SerializeXML(entityNode, true);
+				}
 			}
 		}
 

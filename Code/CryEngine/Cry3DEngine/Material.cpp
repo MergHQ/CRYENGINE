@@ -93,7 +93,7 @@ size_t CMaterialLayer::GetResourceMemoryUsage(ICrySizer* pSizer)
 CMatInfo::CMatInfo()
 	: m_bDeleted(false)
 {
-	m_nRefCount = 0;
+	m_nRefCount = 1; // having a pointer to CMatInfo with ref count zero, results in CMatInfo being deleted from render thread
 	m_Flags = 0;
 	m_nModificationId = 0;
 

@@ -2932,13 +2932,13 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_PackParameters(CParserBin& Parser,
 
 //===================================================================================================
 
+template<int N>
 inline bool CompareVars(const SFXParam* a, const SFXParam* b)
 {
 	const uint16 nCB0 = a->m_nCB;
-	const int16 nReg0 = a->m_nRegister[gRenDev->m_RP.m_FlagsShader_LT];
-
 	const uint16 nCB1 = b->m_nCB;
-	const int16 nReg1 = b->m_nRegister[gRenDev->m_RP.m_FlagsShader_LT];
+	const int16 nReg0 = a->m_nRegister[N];
+	const int16 nReg1 = b->m_nRegister[N];
 
 	if (nCB0 != nCB1)
 		return (nCB0 < nCB1);
@@ -3081,7 +3081,7 @@ void CShaderManBin::AddTextureToScript(CParserBin& Parser, SFXTexture* pr, PodAr
 bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Parser, FXMacroBin& Macros, SShaderFXParams& FXParams, uint32 dwSHName, EHWShaderClass eSHClass, uint64& nAffectMask, uint32 dwSHType, PodArray<uint32>& SHData, SShaderTechnique* pShTech)
 {
 	LOADING_TIME_PROFILE_SECTION(iSystem);
-	assert(gRenDev->m_pRT->IsRenderThread());
+	assert(gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsLevelLoadingThread());
 
 	bool bRes = true;
 
@@ -3280,24 +3280,23 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Par
 			int8 nPrevCB = -1;
 			std::vector<SFXParam*> ParamsData;
 
-			byte bMergeMask = (eSHClass == eHWSC_Pixel) ? 1 : 2;
-			bMergeMask <<= 4;
-			for (i = 0; i < AffectedParams.size(); i++)
-			{
-				SFXParam& pr = AffectedParams[i];
-				if (bMerged[i] & bMergeMask)
-					continue;
-				if (pr.m_nCB >= 0)
-					ParamsData.push_back(&pr);
-			}
-			if (eSHClass == eHWSC_Vertex)
-				gRenDev->m_RP.m_FlagsShader_LT = 0;
-			else if (eSHClass == eHWSC_Pixel)
-				gRenDev->m_RP.m_FlagsShader_LT = 1;
-			else
-				gRenDev->m_RP.m_FlagsShader_LT = 2;
+      byte bMergeMask = (eSHClass == eHWSC_Pixel) ? 1 : 2;
+      bMergeMask <<= 4;
+      for (i=0; i<AffectedParams.size(); i++)
+      {
+        SFXParam &pr = AffectedParams[i];
+        if (bMerged[i] & bMergeMask)
+          continue;
+        if (pr.m_nCB >= 0)
+          ParamsData.push_back(&pr);
+      }
 
-			std::sort(ParamsData.begin(), ParamsData.end(), CompareVars);
+		if (eSHClass == eHWSC_Vertex)
+			std::sort(ParamsData.begin(), ParamsData.end(), CompareVars<0>);
+		else if (eSHClass == eHWSC_Pixel)
+			std::sort(ParamsData.begin(), ParamsData.end(), CompareVars<1>);
+		else
+			std::sort(ParamsData.begin(), ParamsData.end(), CompareVars<2>);
 
 			// First we need to declare semantic variables (in CB scopes in case of DX11)
 			for (i = 0; i < ParamsData.size(); i++)
@@ -3414,7 +3413,7 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Par
 
 bool CShaderManBin::ParseBinFX_Technique_Pass_LoadShader(CParserBin& Parser, FXMacroBin& Macros, SParserFrame& SHFrame, SShaderTechnique* pShTech, SShaderPass* pPass, EHWShaderClass eSHClass, SShaderFXParams& FXParams)
 {
-	assert(gRenDev->m_pRT->IsRenderThread());
+	assert(gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsLevelLoadingThread());
 
 	LOADING_TIME_PROFILE_SECTION(iSystem);
 	bool bRes = true;

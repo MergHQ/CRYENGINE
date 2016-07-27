@@ -2194,6 +2194,8 @@ struct IRenderer//: public IRendererCallbackServer
 	//! \return Created IShaderPublicParams interface.
 	virtual IShaderPublicParams* CreateShaderPublicParams() = 0;
 
+	virtual void                 SetLevelLoadingThreadId(threadID threadId) = 0;
+
 	virtual void                 GetThreadIDs(threadID& mainThreadID, threadID& renderThreadID) const = 0;
 
 	struct SUpdateRect

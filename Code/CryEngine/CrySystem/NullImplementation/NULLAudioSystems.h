@@ -63,6 +63,7 @@ public:
 	virtual void         GetAudioFileData(char const* const szFilename, SAudioFileData& audioFileData) override                                                                                                                                                                                    {}
 	virtual void         GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioFileData) override                                                                                                                                                                       {}
 
+	virtual void         SetAllowedThreadId(threadID id) override                                                                                                                                                                                                                                  {}
 private:
 
 	CNULLAudioProxy m_nullAudioProxy;

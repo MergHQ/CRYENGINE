@@ -3296,6 +3296,9 @@ bool CRenderer::FX_TryToMerge(CRenderObject* pObjN, CRenderObject* pObjO, CRendE
 	if (m_RP.m_PersFlags2 & RBPF2_THERMAL_RENDERMODE_PASS)
 		return false;
 
+	if(m_RP.m_PersFlags2 & RBPF2_CUSTOM_RENDER_PASS)
+		return false;  
+
 	if (!bResIdentical || pRE != m_RP.m_pRE)
 	{
 		if (m_RP.m_nLastRE + 1 >= MAX_REND_GEOMS_IN_BATCH)
@@ -4255,17 +4258,9 @@ int CD3D9Renderer::GetOcclusionBuffer(uint16* pOutOcclBuffer, int32 nSizeX, int3
 		if (pData == NULL)
 			return 0;
 		int nPitch = m_occlusionDataPitch;
-		float zn   = m_occlusionZNear[m_RP.m_nFillThreadID];
-		float zf   = m_occlusionZFar[m_RP.m_nFillThreadID];
-		//HACK
-		if (zf < 1000.f)
-		{
-			zn = m_occlusionLastZNear;
-			zf = m_occlusionLastZFar;
-		}
+		const float zn = m_occlusionZNear[m_RP.m_nFillThreadID];
+		const float zf = m_occlusionZFar[m_RP.m_nFillThreadID];
 		int nCameraID = -1;
-		m_occlusionLastZNear = zn;
-		m_occlusionLastZFar  = zf;
 		const float ProjRatioX = zf / (zf - zn);
 		const float ProjRatioY = zn / (zn - zf);
 
@@ -4444,17 +4439,8 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 		{
 			float* pDepths = reinterpret_cast<float*>(pData);
 			const CRenderCamera& rc = GetRCamera();
-			float zn = rc.fNear;
-			float zf = rc.fFar;
-			//HACK
-			if (zf < 1000.f)
-			{
-				mCurProj = m_occlusionLastProj;
-				zn = m_occlusionLastZNear;
-				zf = m_occlusionLastZFar;
-			}
-			m_occlusionLastZNear = zn;
-			m_occlusionLastZFar = zf;
+			const float zn = rc.fNear;
+			const float zf = rc.fFar;
 			const float ProjRatioX = zf / (zf - zn);
 			const float ProjRatioY = zn / (zn - zf);
 
@@ -4485,7 +4471,6 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 			return true;
 		});
 	}
-	m_occlusionLastProj            = mCurProj;
 	m_occlusionViewProjBuffer[Idx] = mCurView * mCurProj;
 
 	if (bUseNativeDepth)
@@ -5184,6 +5169,8 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 		pRenderView->Clear();
 		m_RP.m_pSunLight = nullptr;
+
+		m_RP.m_ShadowInfo.m_pCurShadowFrustum = nullptr; // the line above clears shadow frustums, so this pointers becomes invalid
 
 		// Free render objects that could have been used for this frame
 		FreePermanentRenderObjects(m_RP.m_nProcessThreadID);

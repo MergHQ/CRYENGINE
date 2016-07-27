@@ -608,7 +608,7 @@ void C3DEngine::OnFrameStart()
 	m_pDeferredPhysicsEventManager->Update();
 
 #if defined(USE_GEOM_CACHES)
-	if (m_pGeomCacheManager)
+	if (m_pGeomCacheManager && !m_bLevelLoadingInProgress)
 	{
 		m_pGeomCacheManager->StreamingUpdate();
 	}
@@ -1297,8 +1297,12 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 
 void C3DEngine::PrepareOcclusion(const CCamera& rCamera)
 {
-	if (!gEnv->IsEditor() && GetCVars()->e_StatObjBufferRenderTasks && !gEnv->IsFMVPlaying() && (!IsEquivalent(rCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON)
-	                                                                                             || (GetRenderer() && GetRenderer()->IsPost3DRendererEnabled())))
+	const bool bInEditor = gEnv->IsEditor();
+	const bool bStatObjBufferRenderTasks = GetCVars()->e_StatObjBufferRenderTasks != 0;
+	const bool bIsFMVPlaying = gEnv->IsFMVPlaying();
+	const bool bCameraAtZero = IsEquivalent(rCamera.GetPosition(),Vec3(0,0,0),VEC_EPSILON);
+	const bool bPost3dEnabled = GetRenderer() && GetRenderer()->IsPost3DRendererEnabled();
+	if(!bInEditor && bStatObjBufferRenderTasks && !bIsFMVPlaying && (!bCameraAtZero || bPost3dEnabled))
 		GetObjManager()->PrepareCullbufferAsync(rCamera);
 }
 
@@ -1339,11 +1343,6 @@ IStatObj* C3DEngine::FindStatObjectByFilename(const char* filename)
 void C3DEngine::RegisterEntity(IRenderNode* pEnt, int nSID, int nSIDConsideredSafe)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	if (gEnv->mMainThreadId != CryGetCurrentThreadId())
-	{
-		CryFatalError("C3DEngine::RegisterEntity should only be called on main thread.");
-	}
-
 	uint32 nFrameID = gEnv->nMainFrameID;
 	AsyncOctreeUpdate(pEnt, nSID, nSIDConsideredSafe, nFrameID, false);
 }

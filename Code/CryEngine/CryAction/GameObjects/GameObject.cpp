@@ -116,6 +116,7 @@ static int g_visibilityTimeout = 0;
 static float g_visibilityTimeoutTime = 0.0f;
 
 static std::set<CGameObject*> g_updateSchedulingProfile;
+static CryCriticalSection g_updateSchedulingProfileCritSec;
 
 void CGameObject::CreateCVars()
 {
@@ -577,7 +578,10 @@ bool CGameObject::BindToNetworkWithParent(EBindToNetworkMode mode, EntityId pare
 	}
 
 	m_isBoundToNetwork = true;
-	g_updateSchedulingProfile.insert(this);
+	{
+		AUTO_LOCK(g_updateSchedulingProfileCritSec);
+		g_updateSchedulingProfile.insert(this);
+	}
 	EvaluateUpdateActivation();
 
 	return true;
@@ -817,6 +821,7 @@ void CGameObject::UpdateSchedulingProfile()
 
 void CGameObject::UpdateSchedulingProfiles()
 {
+	AUTO_LOCK(g_updateSchedulingProfileCritSec);
 	for (std::set<CGameObject*>::iterator it = g_updateSchedulingProfile.begin(); it != g_updateSchedulingProfile.end(); )
 	{
 		std::set<CGameObject*>::iterator next = it;
@@ -1316,7 +1321,11 @@ void CGameObject::PostSerialize()
 //------------------------------------------------------------------------
 void CGameObject::SetAuthority(bool auth)
 {
-	g_updateSchedulingProfile.insert(this);
+	{
+		AUTO_LOCK(g_updateSchedulingProfileCritSec);
+		g_updateSchedulingProfile.insert(this);
+	}
+	
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
 		iter->pExtension->SetAuthority(auth);
 }

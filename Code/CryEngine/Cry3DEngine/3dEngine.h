@@ -676,7 +676,6 @@ public:
 		m_fAverageFPS = 0.0f;
 		m_fMinFPS = m_fMinFPSDecay = 999.f;
 		m_fMaxFPS = m_fMaxFPSDecay = 0.0f;
-		ClearPrecacheInfo();
 		if (bUnload)
 			stl::free_container(arrFPSforSaveLevelStats);
 		else

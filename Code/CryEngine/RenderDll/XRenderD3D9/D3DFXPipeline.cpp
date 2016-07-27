@@ -1547,6 +1547,18 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 				rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE5];
 			}
 		}
+
+		SRenderObjData *const __restrict pOD =  rRP.m_pCurObject->GetObjData();
+		if(pOD->m_nHUDSilhouetteParams && !(pOD->m_nCustomFlags & COB_HUD_REQUIRE_DEPTHTEST))
+		{
+			State |= GS_NODEPTHTEST;
+			rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE5]; //Ignore depth threshold in SilhoueteVisionOptimised
+		}
+		else
+		{
+			State &= ~GS_NODEPTHTEST;
+			rRP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE5];
+		}
 	}
 
 	if (m_NewViewport.fMaxZ <= 0.01f)

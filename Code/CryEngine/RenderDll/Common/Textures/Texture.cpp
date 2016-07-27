@@ -3602,13 +3602,6 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdatePlayer
 
 void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElementPlayer(CFlashTextureSourceBase* pSrc)
 {
-	assert(gRenDev->m_pRT->IsMainThread());
-
-#if !defined(_RELEASE) && !defined(STRIP_RENDER_THREAD)
-	if (!gRenDev->m_pRT->IsMainThread(true))
-		__debugbreak();
-#endif
-
 	if (m_pUIElement)
 	{
 		if (m_activated)
@@ -3617,6 +3610,8 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElem
 			IFlashPlayer* pPlayer = isVisible ? m_pUIElement->GetFlashPlayer() : NULL;
 			if (pPlayer != m_pPlayer)
 			{
+				assert(gRenDev->m_pRT->IsMainThread());
+
 				const bool addTex = m_pPlayer == NULL;
 				SAFE_RELEASE(m_pPlayer);
 				if (isVisible)
@@ -3636,6 +3631,8 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElem
 		}
 		else
 		{
+			assert(gRenDev->m_pRT->IsMainThread());
+
 			if (m_pPlayer)
 				m_pUIElement->RemoveTexture(pSrc);
 			SAFE_RELEASE(m_pPlayer);

@@ -31,7 +31,7 @@
 	#define CHK_MAINTH assert(gRenDev->m_pRT->IsMainThread())
 #endif
 #if !defined(CHK_MAINORRENDTH)
-	#define CHK_MAINORRENDTH assert(gRenDev->m_pRT->IsMainThread() || gRenDev->m_pRT->IsRenderThread())
+	#define CHK_MAINORRENDTH assert(gRenDev->m_pRT->IsMainThread() || gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsLevelLoadingThread())
 #endif
 
 bool CTexture::s_bStreamingFromHDD = true;

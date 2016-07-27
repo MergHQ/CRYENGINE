@@ -226,6 +226,7 @@ void CFlashUI::UnregisterListeners()
 //------------------------------------------------------------------------------------
 void CFlashUI::Reload()
 {
+	LOADING_TIME_PROFILE_SECTION;
 	UIACTION_LOG("FlashUI reload start");
 
 	ReloadAllBootStrapper();
@@ -422,7 +423,6 @@ void CFlashUI::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lpara
 				m_pFlashUIActionEvents->OnLoadingStart((ILevelInfo*)wparam);
 				UpdateFG();
 				StartRenderThread();
-				gEnv->pGame->GetIGameFramework()->SetLevelPrecachingDone(false);
 			}
 
 			m_systemState = eSS_Loading;
@@ -486,7 +486,6 @@ void CFlashUI::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lpara
 
 	case ESYSTEM_EVENT_LEVEL_LOAD_END:
 		{
-			gEnv->pGame->GetIGameFramework()->SetLevelPrecachingDone(true);
 			StopRenderThread();
 
 			if (m_systemState == eSS_Loading)
@@ -1505,7 +1504,9 @@ void CFlashUI::StartRenderThread()
 	static ICVar* pMT = gEnv->pConsole->GetCVar("r_MultiThreaded");
 	const bool bMultiThreaded = pMT && pMT->GetIVal() > 0;
 #endif
-	if (CV_gfx_loadtimethread == 1 && !gEnv->IsEditor() && m_bLoadtimeThread == false && bMultiThreaded)
+	static ICVar* pAsyncLoad = gEnv->pConsole->GetCVar("g_asynclevelload");
+	const bool bAsyncLoad = pAsyncLoad && pAsyncLoad->GetIVal() > 0;
+	if (CV_gfx_loadtimethread == 1 && !gEnv->IsEditor() && m_bLoadtimeThread == false && bMultiThreaded && !bAsyncLoad)
 	{
 		const TSortedElementList& activeElements = GetSortedElements();
 		for (TSortedElementList::const_iterator it = activeElements.begin(); it != activeElements.end(); ++it)

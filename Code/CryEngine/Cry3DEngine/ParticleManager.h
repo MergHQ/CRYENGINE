@@ -347,7 +347,7 @@ private:
 	bool IsRuntime() const
 	{
 		ESystemGlobalState eState = gEnv->pSystem->GetSystemGlobalState();
-		return !gEnv->IsEditing() && (eState == ESYSTEM_GLOBAL_STATE_RUNNING || eState >= ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END);
+		return !gEnv->IsEditing() && (eState > ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END);
 	}
 
 	void UpdateEngineData();

@@ -578,8 +578,6 @@ private:
 
 	uint32             m_lastDynPoolSize;
 
-	uint8*             m_clientReserveForMigrate;
-
 	struct SBreakageThrottling
 	{
 		int16 m_numGlassEvents;

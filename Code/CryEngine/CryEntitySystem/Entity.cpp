@@ -154,7 +154,7 @@ struct FEntityProxy_SerializeXML_ExceptScriptProxy
 
 	void operator()(const CEntity::TProxyPair& it) const
 	{
-		if (it.first != ENTITY_PROXY_SCRIPT)
+		if (it.first != ENTITY_PROXY_SCRIPT && it.first != ENTITY_PROXY_ATTRIBUTES)
 			it.second->SerializeXML(m_node, m_bLoading);
 	}
 
@@ -2358,6 +2358,7 @@ int CEntity::LoadGeometry(int nSlot, const char* sFilename, const char* sGeomNam
 //////////////////////////////////////////////////////////////////////////
 int CEntity::LoadCharacter(int nSlot, const char* sFilename, int nLoadFlags)
 {
+	LOADING_TIME_PROFILE_SECTION_ARGS(sFilename);
 	if (!GetRenderProxy())
 		CreateProxy(ENTITY_PROXY_RENDER);
 	ICharacterInstance* pChar;

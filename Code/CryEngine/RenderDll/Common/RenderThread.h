@@ -215,6 +215,7 @@ struct CRY_ALIGN(128) SRenderThread
 #endif
 	threadID m_nRenderThread;
 	threadID m_nRenderThreadLoading;
+	threadID m_nLevelLoadingThread;
 	threadID m_nMainThread;
 #if CRY_PLATFORM_DURANGO
 	volatile uint32 m_suspendWhileLoadingFlag;
@@ -234,8 +235,7 @@ struct CRY_ALIGN(128) SRenderThread
 	// The below loading queue contains all commands that were submitted and require full device access during loading.
 	// Will be blit into the first render frame's command queue after loading and subsequently resized to 0.
 	TArray<byte> m_CommandsLoading;
-
-	static CryCriticalSection s_rcLock;
+	CryCriticalSectionNonRecursive m_CommandsLoadingLock;
 
 	enum EVideoThreadMode
 	{
@@ -345,7 +345,6 @@ struct CRY_ALIGN(128) SRenderThread
 	}
 
 	bool IsFailed();
-	void ValidateThreadAccess(ERenderCommand eRC);
 
 	inline size_t Align4(size_t value)
 	{
@@ -518,6 +517,7 @@ struct CRY_ALIGN(128) SRenderThread
 	int GetThreadList() const;
 	bool IsRenderThread(bool bAlwaysCheck = false) const;
 	bool IsRenderLoadingThread(bool bAlwaysCheck = false);
+	bool IsLevelLoadingThread(bool bAlwaysCheck=false) const;
 	bool IsMainThread(bool bAlwaysCheck = false) const;
 	bool IsMultithreaded();
 	int CurThreadFill() const;
@@ -685,6 +685,18 @@ inline bool SRenderThread::IsRenderLoadingThread(bool bAlwaysCheck)
 #else
 	threadID d = this->GetCurrentThreadId(bAlwaysCheck);
 	if (d == m_nRenderThreadLoading)
+		return true;
+	return false;
+#endif
+}
+
+inline bool SRenderThread::IsLevelLoadingThread(bool bAlwaysCheck) const
+{
+#ifdef STRIP_RENDER_THREAD
+	return false;
+#else
+	threadID d = this->GetCurrentThreadId(bAlwaysCheck);
+	if (d == m_nLevelLoadingThread)
 		return true;
 	return false;
 #endif

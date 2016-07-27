@@ -290,7 +290,7 @@ public:
 
 	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
 	{
-		if (CCryAction::GetCryAction()->IsLevelPrecachingDone() || gEnv->bMultiplayer)
+		if(gEnv->IsEditor() || (gEnv->pSystem->GetSystemGlobalState() >= ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END) || gEnv->bMultiplayer)
 		{
 			*m_pGameStart = true;
 			return eCETR_Ok;

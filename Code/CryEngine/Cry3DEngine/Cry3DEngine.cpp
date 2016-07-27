@@ -43,10 +43,6 @@ public:
 	{
 		switch (event)
 		{
-		case ESYSTEM_EVENT_LEVEL_PRECACHE_START:
-			if (Cry3DEngineBase::Get3DEngine())
-				Cry3DEngineBase::Get3DEngine()->ClearPrecacheInfo();
-			break;
 		case ESYSTEM_EVENT_RANDOM_SEED:
 			cry_random_seed(gEnv->bNoRandomSeed ? 0 : (uint32)wparam);
 			break;

@@ -223,7 +223,6 @@ void CSystem::RenderEnd(bool bRenderStats)
 		if (m_env.pGame)
 			m_env.pGame->RenderGameWarnings();
 
-
 #if !defined(_RELEASE) && !CRY_PLATFORM_DURANGO
 		if (bRenderStats)
 			RenderPhysicsHelpers();
@@ -708,28 +707,13 @@ void CSystem::Render()
 	if (!m_pProcess)
 		return; //should never happen
 
-	if (m_bDedicatedServer)
-	{
-#if !defined(_RELEASE)
-		if (m_env.pAISystem)
-			m_env.pAISystem->DebugDraw();
-#endif
-		return;
-	}
-
-	//check if the game is in pause or
-	//in menu mode
-	//bool bPause=false;
-	//if (m_pProcess->GetFlags() & PROC_MENU)
-	//	bPause=true;
-
 	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
 
 	//////////////////////////////////////////////////////////////////////
 	//draw
 	m_env.p3DEngine->PreWorldStreamUpdate(m_ViewCamera);
 
-	if (m_pProcess)
+	if (m_pProcess && !m_bDedicatedServer)
 	{
 		if (m_pProcess->GetFlags() & PROC_3DENGINE)
 		{
@@ -743,8 +727,8 @@ void CSystem::Render()
 
 				if (m_env.p3DEngine && !m_env.IsFMVPlaying())
 				{
-					if (!IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON) ||       // never pass undefined camera to p3DEngine->RenderWorld()
-					  gEnv->IsDedicated() || (gEnv->pRenderer && gEnv->pRenderer->IsPost3DRendererEnabled()))
+					if ((!IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON) && (!IsLoading())) || // never pass undefined camera to p3DEngine->RenderWorld()
+					    gEnv->IsDedicated() || (gEnv->pRenderer && gEnv->pRenderer->IsPost3DRendererEnabled()))
 					{
 						GetIRenderer()->SetViewport(0, 0, GetIRenderer()->GetWidth(), GetIRenderer()->GetHeight());
 						m_env.p3DEngine->RenderWorld(SHDF_ALLOW_WATER | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_ALLOW_AO, SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_ViewCamera), __FUNCTION__);
@@ -790,8 +774,10 @@ void CSystem::Render()
 #if !defined (_RELEASE) && CRY_PLATFORM_DURANGO
 	RenderPhysicsHelpers();
 #endif
-
-	gEnv->pRenderer->SwitchToNativeResolutionBackbuffer();
+	if (gEnv->pRenderer)
+	{
+		gEnv->pRenderer->SwitchToNativeResolutionBackbuffer();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -859,10 +845,7 @@ void CSystem::RenderStats()
 		ti.xscale = ti.yscale = 1.4f;
 		m_env.pRenderer->DrawTextQueued(Vec3(fTextPosX, fTextPosY += fTextStepY, 1.0f), ti, message.m_Message.c_str());
 
-		if (!IsLoading())
-		{
-			message.m_fTimeToShow -= fFrameTime;
-		}
+		message.m_fTimeToShow -= fFrameTime;
 
 		if (message.m_HardFailure)
 			m_bHasRenderedErrorMessage = true;

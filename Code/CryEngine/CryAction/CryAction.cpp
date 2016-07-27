@@ -179,6 +179,16 @@
 #include "LipSync/LipSync_TransitionQueue.h"
 #include "LipSync/LipSync_FacialInstance.h"
 
+#if defined(USE_SCHEMATYC_CORE)
+	#include "Schematyc/Schematyc_ICompiler.h"
+	#include "Schematyc/Schematyc_IFramework.h"
+	#include "Schematyc/Env/Schematyc_IEnvRegistry.h"
+	#include "Schematyc/Script/Schematyc_IScriptRegistry.h"
+	#if defined(USE_SCHEMATYC_BASE_ENV)
+		#include "Schematyc/BaseEnv_BaseEnv.h"
+	#endif
+#endif
+
 #define DEFAULT_BAN_TIMEOUT     (30.0f)
 
 #define PROFILE_CONSOLE_NO_SAVE (0)     // For console demo's which don't save their player profile
@@ -298,6 +308,9 @@ CCryAction::CCryAction()
 	m_pGameplayAnalyst(0),
 	m_pGameRulesSystem(0),
 	m_pFlowSystem(0),
+#if defined(USE_SCHEMATYC_BASE_ENV)
+	m_pSchematycBaseEnv(0),
+#endif
 	m_pGameObjectSystem(0),
 	m_pScriptRMI(0),
 	m_pUIDraw(0),
@@ -336,6 +349,7 @@ CCryAction::CCryAction()
 	m_pEnableLoadingScreen(0),
 	m_pShowLanBrowserCVAR(0),
 	m_pDebugSignalTimers(0),
+	m_pAsyncLevelLoad(0),
 	m_pDebugRangeSignaling(0),
 	m_bShowLanBrowser(false),
 	m_isEditing(false),
@@ -363,7 +377,6 @@ CCryAction::CCryAction()
 	m_pCustomEventManager(0),
 	m_pPhysicsQueues(0),
 	m_PreUpdateTicks(0),
-	m_levelPrecachingDone(false),
 	m_pGameVolumesManager(NULL),
 	m_pNetMsgDispatcher(0)
 {
@@ -731,6 +744,13 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 	{
 		flags |= eGSF_BlockingClientConnect | /*eGSF_LocalOnly | eGSF_NoQueries |*/ eGSF_BlockingMapLoad;
 		forceNewContext = true;
+	}
+
+	const ICVar* pAsyncLoad = gEnv->pConsole->GetCVar("g_asynclevelload");
+	const bool bAsyncLoad = pAsyncLoad && pAsyncLoad->GetIVal() > 0;
+	if (bAsyncLoad)
+	{
+		flags |= eGSF_NonBlockingConnect;
 	}
 
 	if (::gEnv->IsDedicated())
@@ -1778,7 +1798,9 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 			startupParams.pSystem->ChangeUserPath(startupParams.szUserPath);
 	}
 
-	ModuleInitISystem(m_pSystem, "CryAction"); // Needed by GetISystem();
+	m_pSystem->SetIGameFramework(this);
+
+	ModuleInitISystem(m_pSystem, "CryAction");  // Needed by GetISystem();
 
 	// here we have gEnv and m_pSystem
 	LOADING_TIME_PROFILE_SECTION_NAMED("CCryAction::Init() after system");
@@ -1909,6 +1931,17 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 		m_pGameObjectSystem->RegisterEvent(eGFE_EnableBlendRagdoll, "EnableBlendToRagdoll");
 		m_pGameObjectSystem->RegisterEvent(eGFE_DisableBlendRagdoll, "DisableBlendToRagdoll");
 	}
+
+#if defined(USE_SCHEMATYC_CORE)
+	// Create Schematyc framework
+	if (Schematyc::CreateFramework(static_cast<IGameFramework*>(this)))
+	{
+	#if defined(USE_SCHEMATYC_BASE_ENV)
+		// Create base Schematyc environment
+		m_pSchematycBaseEnv = new SchematycBaseEnv::CBaseEnv();
+	#endif
+	}
+#endif
 
 	m_pAnimationGraphCvars = new CAnimationGraphCVars();
 	m_pMannequin = new CMannequinInterface();
@@ -2229,6 +2262,8 @@ bool CCryAction::CompleteInit()
 		m_pRuntimeAreaManager = new CRuntimeAreaManager();
 	}
 
+	LoadSchematycFiles();
+
 	InlineInitializationProcessing("CCryAction::CompleteInit End");
 	return true;
 }
@@ -2351,6 +2386,9 @@ void CCryAction::Shutdown()
 	SAFE_DELETE(m_pGameObjectSystem);
 	SAFE_DELETE(m_pMannequin);
 	SAFE_DELETE(m_pTimeDemoRecorder);
+#if defined(USE_SCHEMATYC_BASE_ENV)
+	SAFE_DELETE(m_pSchematycBaseEnv);
+#endif
 	SAFE_DELETE(m_pGameSerialize);
 	SAFE_DELETE(m_pPersistantDebug);
 	SAFE_DELETE(m_pPlayerProfileManager);
@@ -2406,6 +2444,8 @@ void CCryAction::Shutdown()
 	if (m_pSystem)
 	{
 		m_pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_action);
+
+		m_pSystem->SetIGameFramework(nullptr);
 	}
 
 	// having a dll handle means we did create the system interface
@@ -2425,6 +2465,15 @@ void CCryAction::Shutdown()
 
 //------------------------------------------------------------------------
 f32 g_fPrintLine = 0.0f;
+
+void CCryAction::PrePhysicsUpdate()
+{
+	gEnv->pGame->PrePhysicsUpdate();  // required if PrePhysicsUpdate() is overriden in game
+
+#if defined(USE_SCHEMATYC_BASE_ENV)
+	m_pSchematycBaseEnv->PrePhysicsUpdate();
+#endif
+}
 
 bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 {
@@ -2586,6 +2635,13 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 		m_pColorGradientManager->UpdateForThisFrame(gEnv->pTimer->GetFrameTime());
 	}
 
+#if defined(USE_SCHEMATYC_BASE_ENV)
+	if (m_pSchematycBaseEnv)
+	{
+		m_pSchematycBaseEnv->Update();
+	}
+#endif
+
 	CRConServerListener::GetSingleton().Update();
 	CSimpleHttpServerListener::GetSingleton().Update();
 
@@ -2622,6 +2678,7 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 		return;
 	}
 
+	const bool bInLevelLoad = IsInLevelLoad();
 	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
 	{
 		float delta = gEnv->pTimer->GetFrameTime();
@@ -2639,7 +2696,8 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 		gEnv->p3DEngine->PrepareOcclusion(m_pSystem->GetViewCamera());
 
 		// synchronize all animations so ensure that their computations have finished
-		gEnv->pCharacterManager->SyncAllAnimations();
+		if (!bInLevelLoad)
+			gEnv->pCharacterManager->SyncAllAnimations();
 
 		m_pSystem->Render();
 
@@ -2691,7 +2749,7 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 	}
 
 	// synchronize all animations so ensure that their computation have finished
-	if (gEnv->pCharacterManager)
+	if (gEnv->pCharacterManager && !bInLevelLoad)
 		gEnv->pCharacterManager->SyncAllAnimations();
 
 	//update view system before p3DEngine->PrepareOcclusion as it might change view camera
@@ -2723,7 +2781,8 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 	if (gEnv->pFlashUI)
 		gEnv->pFlashUI->Update(deltaUI);
 
-	m_pGameObjectSystem->PostUpdate(delta);
+	if (!bInLevelLoad)
+		m_pGameObjectSystem->PostUpdate(delta);
 
 	if (m_pSegmentedWorld)
 		m_pSegmentedWorld->PostUpdate();
@@ -2876,16 +2935,6 @@ bool CCryAction::IsGameStarted()
 	                false;
 
 	return bStarted;
-}
-
-bool CCryAction::IsLevelPrecachingDone() const
-{
-	return m_levelPrecachingDone || gEnv->IsEditor();
-}
-
-void CCryAction::SetLevelPrecachingDone(bool bValue)
-{
-	m_levelPrecachingDone = bValue;
 }
 
 bool CCryAction::StartGameContext(const SGameStartParams* pGameStartParams)
@@ -3210,6 +3259,42 @@ void CCryAction::GetEditorLevel(char** levelName, char** levelFolder)
 	if (levelFolder) *levelFolder = &m_editorLevelFolder[0];
 }
 
+void CCryAction::LoadSchematycFiles()
+{
+#if defined(USE_SCHEMATYC_CORE)
+	// We do loading of Schematyc environments just once. Usually this is called
+	// in CryAction::CompleteInit() after the game has been initialized.
+	// If the game needs to use Schematyc during game initialization, this
+	// function can be called earlier.
+	static bool bLoadSchematycFiles = true;
+	if (bLoadSchematycFiles)
+	{
+		Schematyc::IFramework& schematycFramework = GetSchematycFramework();
+		if (gEnv->IsEditor())
+		{
+			schematycFramework.GetLogRecorder().Begin();
+		}
+
+		CryLogAlways("[Schematyc]: Loading files...");
+		CryLogAlways("[Schematyc]: Loading settings");
+		schematycFramework.GetEnvRegistry().LoadAllSettings();
+		CryLogAlways("[Schematyc]: Loading script files");
+		schematycFramework.GetScriptRegistry().Load();
+		CryLogAlways("[Schematyc]: Compiling script files");
+		schematycFramework.GetCompiler().CompileAll();
+		CryLogAlways("[Schematyc]: Loading complete");
+
+		schematycFramework.RefreshLogFileSettings();
+		if (gEnv->IsEditor())
+		{
+			schematycFramework.GetLogRecorder().End();
+		}
+
+		bLoadSchematycFiles = false;
+	}
+#endif
+}
+
 //------------------------------------------------------------------------
 const char* CCryAction::GetStartLevelSaveGameName()
 {
@@ -3505,6 +3590,7 @@ ELoadGameResult CCryAction::LoadGame(const char* path, bool quick, bool ignoreDe
 //------------------------------------------------------------------------
 void CCryAction::OnEditorSetGameMode(int iMode)
 {
+	LOADING_TIME_PROFILE_SECTION;
 	if (iMode < 2)
 	{
 		/* AlexL: for now don't set time to 0.0
@@ -3606,6 +3692,8 @@ void CCryAction::InitCVars()
 
 	m_pDebugSignalTimers = pC->RegisterInt("ai_DebugSignalTimers", 0, VF_CHEAT, "Enable Signal Timers Debug Screen");
 	m_pDebugRangeSignaling = pC->RegisterInt("ai_DebugRangeSignaling", 0, VF_CHEAT, "Enable Range Signaling Debug Screen");
+
+	m_pAsyncLevelLoad = pC->RegisterInt("g_asynclevelload", 0, VF_CONST_CVAR, "Enable asynchronous level loading");
 
 	REGISTER_INT("cl_packetRate", 30, 0, "Packet rate on client");
 	REGISTER_INT("sv_packetRate", 30, 0, "Packet rate on server");

@@ -145,6 +145,7 @@ StackSizeKB:
 		<!-- [ACTION] -->
 		<Thread name ="NetworkStallTicker"/>
 		<Thread name ="ZLibCompressor" Affinity="3" Priority="Above_Normal" StackSizeKB="32"/>
+		<Thread name ="LevelLoadingThread" Affinity="3" Priority="Above_Normal" StackSizeKB="128"/>
 		
 		<!-- [INPUT] -->
 		<Thread name ="InputWorker"/>
@@ -240,6 +241,7 @@ StackSizeKB:
 		<!-- [ACTION] -->
 		<Thread name ="NetworkStallTicker"/>
 		<Thread name ="ZLibCompressor" Priority="Normal" Affinity="6"/>
+		<Thread name ="LevelLoadingThread" Affinity="1" Priority="Above_Normal" StackSizeKB="128"/>
 		
 		<!-- [INPUT] -->
 		<Thread name ="InputWorker"/>
@@ -329,6 +331,7 @@ StackSizeKB:
 		<!-- [ACTION] -->
 		<Thread name ="NetworkStallTicker"/>
 		<Thread name ="ZLibCompressor" Priority="Normal" StackSizeKB="32"/>
+		<Thread name ="LevelLoadingThread" Affinity="1" Priority="Above_Normal" StackSizeKB="128"/>
 		
 		<!-- [INPUT] -->
 		<Thread name ="InputWorker"/>
@@ -507,6 +510,7 @@ StackSizeKB:
 		<!-- [ACTION] -->
 		<Thread name ="NetworkStallTicker"/>
 		<Thread name ="ZLibCompressor" Affinity="ignore" Priority="Above_Normal" StackSizeKB="32"/>
+		<Thread name ="LevelLoadingThread" Affinity="ignore" Priority="Above_Normal" StackSizeKB="128"/>
 	</Platform>
 
 </ThreadConfig>

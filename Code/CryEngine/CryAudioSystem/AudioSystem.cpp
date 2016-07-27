@@ -70,6 +70,7 @@ CAudioSystem::CAudioSystem()
 	: m_bSystemInitialized(false)
 	, m_lastUpdateTime()
 	, m_deltaTime(0.0f)
+	, m_allowedThreadId(gEnv->mMainThreadId)
 	, m_atl()
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
@@ -106,7 +107,7 @@ void CAudioSystem::AddRequestListener(
   EAudioRequestType const requestType /* = eART_AUDIO_ALL_REQUESTS */,
   AudioEnumFlagsType const specificRequestMask /* = ALL_AUDIO_REQUEST_SPECIFIC_TYPE_FLAGS */)
 {
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+	CRY_ASSERT(m_allowedThreadId == CryGetCurrentThreadId());
 
 	SAudioManagerRequestDataInternal<eAudioManagerRequestType_AddRequestListener> requestData(pObjectToListenTo, func, requestType, specificRequestMask);
 	CAudioRequestInternal request(&requestData);
@@ -118,7 +119,7 @@ void CAudioSystem::AddRequestListener(
 //////////////////////////////////////////////////////////////////////////
 void CAudioSystem::RemoveRequestListener(void (* func)(SAudioRequestInfo const* const), void* const pObjectToListenTo)
 {
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+	CRY_ASSERT(m_allowedThreadId == CryGetCurrentThreadId());
 
 	SAudioManagerRequestDataInternal<eAudioManagerRequestType_RemoveRequestListener> requestData(pObjectToListenTo, func);
 	CAudioRequestInternal request(&requestData);
@@ -184,7 +185,7 @@ void CAudioSystem::PushRequestInternal(CAudioRequestInternal const& request)
 
 	if ((request.flags & eAudioRequestFlags_ThreadSafePush) == 0)
 	{
-		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+		CRY_ASSERT(m_allowedThreadId == CryGetCurrentThreadId());
 
 		bool const bIsAsync = (request.flags & eAudioRequestFlags_SyncCallback) == 0;
 
@@ -252,6 +253,38 @@ void CAudioSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 {
 	switch (event)
 	{
+	case ESYSTEM_EVENT_LEVEL_LOAD_START:
+		{
+			const string levelNameOnly = (const char*)wparam;
+			
+			if (!levelNameOnly.empty() && levelNameOnly.compareNoCase("Untitled") != 0)
+			{
+				CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> audioLevelPath(gEnv->pAudioSystem->GetConfigPath());
+				audioLevelPath += "levels" CRY_NATIVE_PATH_SEPSTR;
+				audioLevelPath += levelNameOnly;
+
+				SAudioManagerRequestData<eAudioManagerRequestType_ParseControlsData> requestData1(audioLevelPath, eAudioDataScope_LevelSpecific);
+				SAudioRequest request;
+				request.flags = (eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking); // Needs to be blocking so data is available for next preloading request!
+				request.pData = &requestData1;
+				PushRequest(request);
+
+				SAudioManagerRequestData<eAudioManagerRequestType_ParsePreloadsData> requestData2(audioLevelPath, eAudioDataScope_LevelSpecific);
+				request.pData = &requestData2;
+				PushRequest(request);
+
+				AudioPreloadRequestId audioPreloadRequestId = INVALID_AUDIO_PRELOAD_REQUEST_ID;
+
+				if (GetAudioPreloadRequestId(levelNameOnly.c_str(), audioPreloadRequestId))
+				{
+					SAudioManagerRequestData<eAudioManagerRequestType_PreloadSingleRequest> requestData3(audioPreloadRequestId, true);
+					request.pData = &requestData3;
+					PushRequest(request);
+				}
+			}
+
+			break;
+		}
 	case ESYSTEM_EVENT_LEVEL_UNLOAD:
 		{
 			// This event is issued in Editor and Game mode.
@@ -361,7 +394,7 @@ void CAudioSystem::InternalUpdate()
 ///////////////////////////////////////////////////////////////////////////
 bool CAudioSystem::Initialize()
 {
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+	CRY_ASSERT(m_allowedThreadId == CryGetCurrentThreadId());
 
 	if (!m_bSystemInitialized)
 	{
@@ -390,7 +423,7 @@ bool CAudioSystem::Initialize()
 ///////////////////////////////////////////////////////////////////////////
 void CAudioSystem::Release()
 {
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+	CRY_ASSERT(m_allowedThreadId == CryGetCurrentThreadId());
 
 	for (auto* const pAudioProxy : m_audioProxies)
 	{
@@ -429,21 +462,21 @@ void CAudioSystem::Release()
 ///////////////////////////////////////////////////////////////////////////
 bool CAudioSystem::GetAudioTriggerId(char const* const szAudioTriggerName, AudioControlId& audioTriggerId) const
 {
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+	CRY_ASSERT(m_allowedThreadId == CryGetCurrentThreadId());
 	return m_atl.GetAudioTriggerId(szAudioTriggerName, audioTriggerId);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 bool CAudioSystem::GetAudioRtpcId(char const* const szAudioRtpcName, AudioControlId& audioRtpcId) const
 {
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+	CRY_ASSERT(m_allowedThreadId == CryGetCurrentThreadId());
 	return m_atl.GetAudioRtpcId(szAudioRtpcName, audioRtpcId);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 bool CAudioSystem::GetAudioSwitchId(char const* const szAudioSwitchName, AudioControlId& audioSwitchId) const
 {
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+	CRY_ASSERT(m_allowedThreadId == CryGetCurrentThreadId());
 	return m_atl.GetAudioSwitchId(szAudioSwitchName, audioSwitchId);
 }
 
@@ -453,7 +486,7 @@ bool CAudioSystem::GetAudioSwitchStateId(
   char const* const szSwitchStateName,
   AudioSwitchStateId& audioSwitchStateId) const
 {
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+	CRY_ASSERT(m_allowedThreadId == CryGetCurrentThreadId());
 	return m_atl.GetAudioSwitchStateId(audioSwitchId, szSwitchStateName, audioSwitchStateId);
 }
 
@@ -467,7 +500,7 @@ bool CAudioSystem::GetAudioPreloadRequestId(char const* const szAudioPreloadRequ
 ///////////////////////////////////////////////////////////////////////////
 bool CAudioSystem::GetAudioEnvironmentId(char const* const szAudioEnvironmentName, AudioEnvironmentId& audioEnvironmentId) const
 {
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+	CRY_ASSERT(m_allowedThreadId == CryGetCurrentThreadId());
 	return m_atl.GetAudioEnvironmentId(szAudioEnvironmentName, audioEnvironmentId);
 }
 
@@ -494,7 +527,7 @@ char const* CAudioSystem::GetConfigPath() const
 //////////////////////////////////////////////////////////////////////////
 IAudioProxy* CAudioSystem::GetFreeAudioProxy()
 {
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
+	CRY_ASSERT(m_allowedThreadId == CryGetCurrentThreadId());
 	CAudioProxy* pAudioProxy = nullptr;
 
 	if (!m_audioProxies.empty())

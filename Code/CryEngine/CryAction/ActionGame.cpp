@@ -94,7 +94,6 @@ int g_waterHitOnly = 0;
 float CActionGame::g_hostMigrationServerDelay = 0.f;
 #endif
 
-#define RESERVE_SPACE_FOR_MIGRATION (10 * 1024 * 1024)
 #define MAX_ADDRESS_SIZE            (256)
 
 void CActionGame::RegisterCVars()
@@ -235,8 +234,6 @@ CActionGame::CActionGame(CScriptRMI* pScriptRMI)
 	m_pGameTokenSystem = CCryAction::GetCryAction()->GetIGameTokenSystem();
 	m_pMaterialEffects = CCryAction::GetCryAction()->GetIMaterialEffects();
 	m_inDeleteEntityCallback = 0;
-
-	m_clientReserveForMigrate = NULL;
 }
 
 CActionGame::~CActionGame()
@@ -251,8 +248,10 @@ CActionGame::~CActionGame()
 	if (m_pGameStats)
 		m_pGameStats->EndSession();
 
-	IGameSessionHandler* pGameSessionHandler = CCryAction::GetCryAction()->GetIGameSessionHandler();
-	pGameSessionHandler->OnGameShutdown();
+	{
+		IGameSessionHandler* pGameSessionHandler = CCryAction::GetCryAction()->GetIGameSessionHandler();
+		pGameSessionHandler->OnGameShutdown();
+	}
 
 	if (m_pNetwork)
 	{
@@ -291,7 +290,6 @@ CActionGame::~CActionGame()
 	SAFE_DELETE(m_pGameClientNub);
 	SAFE_DELETE(m_pGameServerNub);
 
-	SAFE_DELETE_ARRAY(m_clientReserveForMigrate);
 
 	if (m_pNetwork)
 	{
@@ -328,7 +326,10 @@ CActionGame::~CActionGame()
 	UnloadLevel();
 
 	gEnv->bServer = false;
-	gEnv->bMultiplayer = pGameSessionHandler->IsMultiplayer();
+	{
+		const IGameSessionHandler* pGameSessionHandler = CCryAction::GetCryAction()->GetIGameSessionHandler();
+		gEnv->bMultiplayer = pGameSessionHandler ? pGameSessionHandler->IsMultiplayer() : false;
+	}
 #if CRY_PLATFORM_DESKTOP
 	if (!gEnv->IsDedicated()) // Dedi client should remain client
 	{
@@ -517,12 +518,6 @@ bool CActionGame::Init(const SGameStartParams* pGameStartParams)
 	}
 	else
 	{
-
-		if (gEnv->bMultiplayer)
-		{
-			m_clientReserveForMigrate = new uint8[RESERVE_SPACE_FOR_MIGRATION];
-		}
-
 		ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
 		if (pLobby && gEnv->bMultiplayer)
 		{
@@ -768,7 +763,11 @@ void CActionGame::ClientInit(const SGameStartParams* pGameStartParams, bool* io_
 
 void CActionGame::PostInit(const SGameStartParams* pGameStartParams, bool* io_ok, bool* io_requireBlockingConnection)
 {
-	if ((!gEnv->IsEditor()) && (!gEnv->IsDedicated()) && (pGameStartParams->flags & eGSF_NonBlockingConnect))
+	const bool bIsEditor = gEnv->IsEditor();
+	const bool bIsDedicated = gEnv->IsDedicated();
+	const bool bNonBlocking = (pGameStartParams->flags & eGSF_NonBlockingConnect) != 0;
+
+	if (!bIsEditor && !bIsDedicated && bNonBlocking)
 	{
 		m_initState = eIS_WaitForConnection;
 	}
@@ -998,6 +997,7 @@ CActionGame::eInitTaskState CActionGame::NonBlockingConnect(BlockingConditionFun
 
 bool CActionGame::BlockingConnect(BlockingConditionFunction condition, bool requireClientChannel, const char* conditionText)
 {
+	LOADING_TIME_PROFILE_SECTION
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "BlockingConnect");
 
 	bool ok = false;
@@ -1178,29 +1178,32 @@ bool CActionGame::Update()
 			}
 
 		case eIS_WaitForPlayer:
-			if (m_pGameContext->HasContextFlag(eGSF_BlockingClientConnect) && !m_pGameContext->HasContextFlag(eGSF_NoSpawnPlayer) && m_pGameContext->HasContextFlag(eGSF_Client))
 			{
-				eInitTaskState done = NonBlockingConnect(&CActionGame::ConditionHavePlayer, true, "have player");
+				const bool bNoSpawnPlayer = m_pGameContext->HasContextFlag(eGSF_NoSpawnPlayer);
+				const bool bClient = m_pGameContext->HasContextFlag(eGSF_Client);
 
-				if (done == eITS_Error)
+				if (!bNoSpawnPlayer && bClient)
 				{
-					m_initState = eIS_InitError;
-					break;
+					eInitTaskState done = NonBlockingConnect( &CActionGame::ConditionHavePlayer, true, "have player" );
+
+					if (done == eITS_Error)
+					{
+						m_initState = eIS_InitError;
+						break;
+					}
+					else if (done == eITS_Done)
+					{
+						m_initState = eIS_WaitForInGame;
+					}
 				}
-				else if (done == eITS_Done)
+				else
 				{
 					m_initState = eIS_WaitForInGame;
 				}
 			}
-			else
-			{
-				m_initState = eIS_WaitForInGame;
-			}
-
 			break;
 
 		case eIS_WaitForInGame:
-			if (m_pGameContext->HasContextFlag(eGSF_BlockingMapLoad))
 			{
 				eInitTaskState done = NonBlockingConnect(&CActionGame::ConditionInGame, false, "in game");
 
@@ -1214,11 +1217,6 @@ bool CActionGame::Update()
 					m_initState = eIS_InitDone;
 				}
 			}
-			else
-			{
-				m_initState = eIS_InitDone;
-			}
-
 			break;
 
 		default:
@@ -1472,8 +1470,6 @@ IHostMigrationEventListener::EHostMigrationReturn CActionGame::OnPromoteToServer
 	}
 
 	CryLogAlways("[Host Migration]: CActionGame::OnPromoteToServer() started");
-
-	SAFE_DELETE_ARRAY(m_clientReserveForMigrate);
 
 	// Create a server on this machine
 	gEnv->bServer = true;
@@ -4771,6 +4767,7 @@ void CActionGame::FixBrokenObjects(bool bRestoreBroken)
 
 void CActionGame::OnEditorSetGameMode(bool bGameMode)
 {
+	LOADING_TIME_PROFILE_SECTION;
 	FixBrokenObjects(true);
 	ClearBreakHistory();
 

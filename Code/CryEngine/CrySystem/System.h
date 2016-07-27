@@ -317,6 +317,7 @@ public:
 	virtual void                 FillRandomMT(uint32* pOutWords, uint32 numWords) override;
 
 	IGame*                       GetIGame() override            { return m_env.pGame; }
+	IGameFramework*              GetIGameFramework() override   { return m_env.pGameFramework; }
 	INetwork*                    GetINetwork() override         { return m_env.pNetwork; }
 	IRenderer*                   GetIRenderer() override        { return m_env.pRenderer; }
 	IInput*                      GetIInput() override           { return m_env.pInput; }
@@ -384,6 +385,7 @@ public:
 	};
 
 	void         SetIGame(IGame* pGame) override                                                { m_env.pGame = pGame; }
+	void         SetIGameFramework(IGameFramework* pGameFramework) override                     { m_env.pGameFramework = pGameFramework; }
 	void         SetIFlowSystem(IFlowSystem* pFlowSystem) override                              { m_env.pFlowSystem = pFlowSystem; }
 	void         SetIDialogSystem(IDialogSystem* pDialogSystem) override                        { m_env.pDialogSystem = pDialogSystem; }
 	void         SetIDynamicResponseSystem(DRS::IDynamicResponseSystem* pDynamicResponseSystem) { m_env.pDynamicResponseSystem = pDynamicResponseSystem; }
@@ -1009,7 +1011,7 @@ public:
 
 	bool         IsLoading()
 	{
-		return m_eRuntimeState == ESYSTEM_EVENT_LEVEL_LOAD_START_LOADINGSCREEN;
+		return (m_systemGlobalState <= ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END);
 	}
 
 	virtual ESystemGlobalState GetSystemGlobalState(void) override;
@@ -1058,7 +1060,6 @@ protected: // -------------------------------------------------------------
 	bool           m_bHasRenderedErrorMessage;
 	bool           m_bNeedDoWorkDuringOcclusionChecks;
 
-	ESystemEvent   m_eRuntimeState;
 	bool           m_bIsAsserting;
 
 	friend struct SDefaultValidator;

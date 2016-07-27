@@ -108,6 +108,10 @@ class CSegmentedWorld;
 
 class CNetMessageDistpatcher;
 
+#if defined(USE_SCHEMATYC_BASE_ENV)
+namespace SchematycBaseEnv { class CBaseEnv; }
+#endif
+
 class CCryAction :
 	public IGameFramework
 {
@@ -134,6 +138,7 @@ public:
 	virtual void                          InitGameType(bool multiplayer, bool fromInit);
 	virtual bool                          CompleteInit();
 	virtual void                          Shutdown();
+	virtual void                          PrePhysicsUpdate() /*override*/;
 	virtual bool                          PreUpdate(bool haveFocus, unsigned int updateFlags);
 	virtual void                          PostUpdate(bool haveFocus, unsigned int updateFlags);
 	virtual void                          Reset(bool clients);
@@ -148,9 +153,6 @@ public:
 	virtual void                          GetAbsLevelPath(char* pPathBuffer, uint32 pathBufferSize);
 	virtual bool                          IsInTimeDemo();        // Check if time demo is in progress (either playing or recording);
 	virtual bool                          IsTimeDemoRecording(); // Check if time demo is recording;
-
-	virtual bool                          IsLevelPrecachingDone() const;
-	virtual void                          SetLevelPrecachingDone(bool bValue);
 
 	virtual ISystem*                      GetISystem()           { return m_pSystem; };
 	virtual ILanQueryListener*            GetILanQueryListener() { return m_pLanQueryListener; }
@@ -203,6 +205,8 @@ public:
 	virtual void                          InitEditor(IGameToEditorInterface* pGameToEditor);
 	virtual void                          SetEditorLevel(const char* levelName, const char* levelFolder);
 	virtual void                          GetEditorLevel(char** levelName, char** levelFolder);
+
+	virtual void                          LoadSchematycFiles() /*override*/;
 
 	virtual void                          BeginLanQuery();
 	virtual void                          EndCurrentQuery();
@@ -466,8 +470,6 @@ private:
 	bool                          m_paused;
 	bool                          m_forcedpause;
 
-	bool                          m_levelPrecachingDone;
-
 	static CCryAction*            m_pThis;
 
 	ISystem*                      m_pSystem;
@@ -495,6 +497,9 @@ private:
 	CGameplayRecorder*            m_pGameplayRecorder;
 	CGameRulesSystem*             m_pGameRulesSystem;
 	CFlowSystem*                  m_pFlowSystem;
+#if defined(USE_SCHEMATYC_BASE_ENV)
+	SchematycBaseEnv::CBaseEnv*   m_pSchematycBaseEnv;
+#endif
 	CGameObjectSystem*            m_pGameObjectSystem;
 	CUIDraw*                      m_pUIDraw;
 	CScriptRMI*                   m_pScriptRMI;
@@ -579,11 +584,12 @@ private:
 	TFrameworkExtensions m_frameworkExtensions;
 
 	// console variables
-	ICVar* m_pEnableLoadingScreen;
-	ICVar* m_pCheats;
-	ICVar* m_pShowLanBrowserCVAR;
-	ICVar* m_pDebugSignalTimers;
-	ICVar* m_pDebugRangeSignaling;
+	ICVar *m_pEnableLoadingScreen;
+	ICVar *m_pCheats;
+	ICVar *m_pShowLanBrowserCVAR;
+	ICVar *m_pDebugSignalTimers;
+  ICVar *m_pDebugRangeSignaling;
+	ICVar *m_pAsyncLevelLoad;
 
 	bool   m_bShowLanBrowser;
 	//

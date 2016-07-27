@@ -1452,7 +1452,7 @@ const char* CRenderer::EF_GetStringFromShaderGlobalMaskGen(const char* szShaderN
 
 SShaderItem CRenderer::EF_LoadShaderItem (const char* szName, bool bShare, int flags, SInputShaderResources* Res, uint64 nMaskGen, const SLoadShaderItemArgs* pArgs)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	LOADING_TIME_PROFILE_SECTION_ARGS(szName);
 
 	return m_cEF.mfShaderItemForName(szName, bShare, flags, Res, nMaskGen, pArgs);
 }
@@ -1788,12 +1788,9 @@ void CRenderer::RT_PrepareLevelTexStreaming()
 
 void CRenderer::RT_PostLevelLoading()
 {
+	LOADING_TIME_PROFILE_SECTION;
 	int nThreadID = m_pRT->GetThreadList();
 	m_RP.m_fogVolumeContibutions[nThreadID].reserve(2048);
-
-	m_cEF.m_Bin.InvalidateCache();
-	CHWShader::mfCleanupCache();
-	CResFile::m_nMaxOpenResFiles = 4;
 }
 
 void CRenderer::RT_DisableTemporalEffects()
@@ -3801,6 +3798,12 @@ ITexture* CRenderer::CreateTexture(const char* name, int width, int height, int 
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+void CRenderer::SetLevelLoadingThreadId( threadID threadId )
+{
+	m_pRT->m_nLevelLoadingThread = threadId;
+}
+
 void CRenderer::GetThreadIDs(threadID& mainThreadID, threadID& renderThreadID) const
 {
 	if (m_pRT)
@@ -4981,7 +4984,6 @@ void CRenderer::EnableLevelUnloading(bool enable)
 
 void CRenderer::EnableBatchMode(bool enable)
 {
-	RENDER_LOCK_CS(SRenderThread::s_rcLock);
 	if (enable)
 	{
 		gRenDev->m_bEndLevelLoading   = false;

@@ -43,6 +43,7 @@ struct IProcess;
 struct I3DEngine;
 struct ITimer;
 struct IGame;
+struct IGameFramework;
 struct IGameStartup;
 struct IScriptSystem;
 struct IAISystem;
@@ -208,9 +209,7 @@ struct sUpdateTimes
 
 enum ESystemGlobalState
 {
-	ESYSTEM_GLOBAL_STATE_UNKNOWN,
 	ESYSTEM_GLOBAL_STATE_INIT,
-	ESYSTEM_GLOBAL_STATE_RUNNING,
 	ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_PREPARE,
 	ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START,
 	ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_MATERIALS,
@@ -221,7 +220,9 @@ enum ESystemGlobalState
 	ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_PRECACHE,
 	ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_TEXTURES,
 	ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END,
-	ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_COMPLETE
+	ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_ENDING,
+	ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_COMPLETE,
+	ESYSTEM_GLOBAL_STATE_RUNNING,
 };
 
 //! System wide events.
@@ -793,6 +794,7 @@ struct SSystemGlobalEnvironment
 	ITimer*                      pTimer;
 	ICryFont*                    pCryFont;
 	IGame*                       pGame;
+	IGameFramework*              pGameFramework;
 	ILocalMemoryUsage*           pLocalMemoryUsage;
 	IEntitySystem*               pEntitySystem;
 	IConsole*                    pConsole;
@@ -1235,6 +1237,7 @@ struct ISystem
 	virtual WIN_HWND                           GetHWND() = 0;
 
 	virtual IGame*                             GetIGame() = 0;
+	virtual IGameFramework*                    GetIGameFramework() = 0;
 	virtual INetwork*                          GetINetwork() = 0;
 	virtual IRenderer*                         GetIRenderer() = 0;
 	virtual IInput*                            GetIInput() = 0;
@@ -1248,6 +1251,7 @@ struct ISystem
 
 	//! Game is created after System init, so has to be set explicitly.
 	virtual void SetIGame(IGame* pGame) = 0;
+	virtual void SetIGameFramework(IGameFramework* pGameFramework) = 0;
 	virtual void SetIFlowSystem(IFlowSystem* pFlowSystem) = 0;
 	virtual void SetIDialogSystem(IDialogSystem* pDialogSystem) = 0;
 	virtual void SetIMaterialEffects(IMaterialEffects* pMaterialEffects) = 0;
@@ -1650,10 +1654,28 @@ public:
 	}
 };
 
+class CSYSBootProfileAutoSession
+{
+	ISystem*    m_pSystem;
+	const char* m_szSessionName;
+public:
+	CSYSBootProfileAutoSession(ISystem* pSystem, const char* szSessionName)
+		: m_pSystem(pSystem), m_szSessionName(szSessionName)
+	{
+		m_pSystem->StartBootProfilerSession(m_szSessionName);
+	}
+
+	~CSYSBootProfileAutoSession()
+	{
+		m_pSystem->StopBootProfilerSession(m_szSessionName);
+	}
+};
+
 	#define LOADING_TIME_PROFILE_SECTION CSYSBootProfileBlock _profileBlockLine(gEnv->pSystem, __FUNC__);
 	#define LOADING_TIME_PROFILE_SECTION_ARGS(args)                    CSYSBootProfileBlock _profileBlockLine_args(gEnv->pSystem, __FUNC__, args);
 	#define LOADING_TIME_PROFILE_SECTION_NAMED(sectionName)            CSYSBootProfileBlock _profileBlockLine_named(gEnv->pSystem, sectionName);
 	#define LOADING_TIME_PROFILE_SECTION_NAMED_ARGS(sectionName, args) CSYSBootProfileBlock _profileBlockLine_named_args(gEnv->pSystem, sectionName, args);
+	#define LOADING_TIME_PROFILE_AUTO_SESSION(sessionName)             CSYSBootProfileAutoSession _profileAutoSession(gEnv->pSystem, (sessionName));
 
 #else
 
@@ -1661,9 +1683,7 @@ public:
 	#define LOADING_TIME_PROFILE_SECTION_ARGS(args)
 	#define LOADING_TIME_PROFILE_SECTION_NAMED(sectionName)
 	#define LOADING_TIME_PROFILE_SECTION_NAMED_ARGS(sectionName, args)
-	#define LOADING_TIME_PROFILE_SESSION_SECTION(sessionName)
-	#define LOADING_TIME_PROFILE_SESSION_START(sessionName)
-	#define LOADING_TIME_PROFILE_SESSION_STOP(sessionName)
+	#define LOADING_TIME_PROFILE_AUTO_SESSION(sessionName)
 
 #endif
 

@@ -85,8 +85,6 @@ namespace compute_skinning { struct IComputeSkinningStorage; }
 
 typedef int (* pDrawModelFunc)(void);
 
-#define RENDER_LOCK_CS(csLock) CryAutoCriticalSection __AL__ ## __FILE__ ## _LINE(csLock)
-
 //=============================================================
 
 #define D3DRGBA(r, g, b, a)                                \
@@ -1091,6 +1089,7 @@ public:
 	void                         PauseTimer(bool bPause) override { m_bPauseTimer = bPause; }
 	virtual IShaderPublicParams* CreateShaderPublicParams() override;
 
+	virtual void                 SetLevelLoadingThreadId(threadID threadId) override;
 	virtual void                 GetThreadIDs(threadID& mainThreadID, threadID& renderThreadID) const override;
 
 #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)

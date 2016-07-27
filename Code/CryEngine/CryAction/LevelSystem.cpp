@@ -1219,7 +1219,6 @@ ILevelInfo* CLevelSystem::LoadLevel(const char* _levelName)
 
 		m_bLevelLoaded = false;
 
-		const bool bLoadingSameLevel = m_lastLevelName.compareNoCase(levelName) == 0;
 		m_lastLevelName = levelName;
 
 		//////////////////////////////////////////////////////////////////////////
@@ -1330,35 +1329,6 @@ ILevelInfo* CLevelSystem::LoadLevel(const char* _levelName)
 		{
 			gEnv->pDialogSystem->Reset(false);
 			gEnv->pDialogSystem->Init();
-		}
-
-		// Parse level specific config data.
-		string const levelNameOnly = PathUtil::GetFileName(levelName);
-
-		if (!levelNameOnly.empty() && levelNameOnly.compareNoCase("Untitled") != 0)
-		{
-			CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> audioLevelPath(gEnv->pAudioSystem->GetConfigPath());
-			audioLevelPath += "levels" CRY_NATIVE_PATH_SEPSTR;
-			audioLevelPath += levelNameOnly;
-
-			SAudioManagerRequestData<eAudioManagerRequestType_ParseControlsData> requestData1(audioLevelPath, eAudioDataScope_LevelSpecific);
-			SAudioRequest request;
-			request.flags = eAudioRequestFlags_PriorityHigh | eAudioRequestFlags_ExecuteBlocking; // Needs to be blocking so data is available for next preloading request!
-			request.pData = &requestData1;
-			gEnv->pAudioSystem->PushRequest(request);
-
-			SAudioManagerRequestData<eAudioManagerRequestType_ParsePreloadsData> requestData2(audioLevelPath, eAudioDataScope_LevelSpecific);
-			request.pData = &requestData2;
-			gEnv->pAudioSystem->PushRequest(request);
-
-			AudioPreloadRequestId audioPreloadRequestId = INVALID_AUDIO_PRELOAD_REQUEST_ID;
-
-			if (gEnv->pAudioSystem->GetAudioPreloadRequestId(levelNameOnly.c_str(), audioPreloadRequestId))
-			{
-				SAudioManagerRequestData<eAudioManagerRequestType_PreloadSingleRequest> requestData3(audioPreloadRequestId, true);
-				request.pData = &requestData3;
-				gEnv->pAudioSystem->PushRequest(request);
-			}
 		}
 
 		if (gEnv->pAISystem && gEnv->pAISystem->IsEnabled())
@@ -1480,32 +1450,10 @@ ILevelInfo* CLevelSystem::LoadLevel(const char* _levelName)
 		CryGetIMemReplay()->AddLabelFmt("loadEnd%d_%s", s_loadCount++, levelName);
 #endif
 
+		gEnv->pConsole->GetCVar("sv_map")->Set(levelName);
+
 		m_bLevelLoaded = true;
-		gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END);
 	}
-
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_END, 0, 0);
-
-	gEnv->pConsole->GetCVar("sv_map")->Set(levelName);
-
-	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_PRECACHE_START, 0, 0);
-
-	if (!gEnv->pSystem->IsSerializingFile() && gEnv->pEntitySystem)
-	{
-		// activate the default layers
-		gEnv->pEntitySystem->EnableDefaultLayers();
-	}
-
-	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("ENTITY_EVENT_LEVEL_LOADED");
-
-		//////////////////////////////////////////////////////////////////////////
-		SEntityEvent loadingCompleteEvent(ENTITY_EVENT_LEVEL_LOADED);
-		gEnv->pEntitySystem->SendEventToAll(loadingCompleteEvent);
-		//////////////////////////////////////////////////////////////////////////
-	}
-
-	m_pSystem->SetThreadState(ESubsys_Physics, true);
 
 	return m_pCurrentLevelInfo;
 }
@@ -1647,15 +1595,16 @@ void CLevelSystem::OnLevelNotFound(const char* levelName)
 //------------------------------------------------------------------------
 void CLevelSystem::OnLoadingStart(ILevelInfo* pLevelInfo)
 {
+	LOADING_TIME_PROFILE_SECTION;
+
 	if (gEnv->pCryPak->GetRecordFileOpenList() == ICryPak::RFOM_EngineStartup)
 		gEnv->pCryPak->RecordFileOpen(ICryPak::RFOM_Level);
 
 	m_fFilteredProgress = 0.f;
 	m_fLastTime = gEnv->pTimer->GetAsyncCurTime();
 
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_START, 0, 0);
-
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	if(gEnv->IsEditor()) //pure game calls it from CCET_LoadLevel
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent( ESYSTEM_EVENT_LEVEL_LOAD_START,0,0 );
 
 #if CRY_PLATFORM_WINDOWS
 	/*
@@ -2187,7 +2136,7 @@ void CLevelSystem::UnLoadLevel()
 
 	IGameTokenSystem* pGameTokenSystem = CCryAction::GetCryAction()->GetIGameTokenSystem();
 	pGameTokenSystem->RemoveLibrary("Level");
-	pGameTokenSystem->Unload();
+	pGameTokenSystem->Reset();
 
 	if (gEnv->pFlowSystem)
 	{

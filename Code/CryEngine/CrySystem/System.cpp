@@ -204,7 +204,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 #endif
 	m_startupParams(startupParams)
 {
-	m_systemGlobalState = ESYSTEM_GLOBAL_STATE_UNKNOWN;
+	m_systemGlobalState = ESYSTEM_GLOBAL_STATE_INIT;
 	m_iHeight = 0;
 	m_iWidth = 0;
 	m_iColorBits = 0;
@@ -425,8 +425,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_bNeedDoWorkDuringOcclusionChecks = false;
 
 	m_PlatformOSCreateFlags = 0;
-
-	m_eRuntimeState = ESYSTEM_EVENT_LEVEL_UNLOAD;
 
 	m_bHasRenderedErrorMessage = false;
 	m_bIsSteamInitialized = false;
@@ -1187,6 +1185,7 @@ int CSystem::SetThreadState(ESubsystem subsys, bool bActive)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::SleepIfInactive()
 {
+	LOADING_TIME_PROFILE_SECTION;
 #if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
 	// Disable throttling, when various Profilers are in use
 
@@ -1241,48 +1240,67 @@ void CSystem::SleepIfInactive()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::SleepIfNeeded()
 {
-	FUNCTION_PROFILER(this, PROFILE_SYSTEM);
+	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM)
 
-	ITimer* const pTimer = gEnv->pTimer;
-	static bool firstCall = true;
+	static ICVar * pSysMaxFPS = NULL;
+	static ICVar* pVSync = NULL;
 
-	typedef MiniQueue<CTimeValue, 32> PrevNow;
-	static PrevNow prevNow;
-	if (firstCall)
+	if (pSysMaxFPS == NULL && gEnv && gEnv->pConsole)
+		pSysMaxFPS = gEnv->pConsole->GetCVar("sys_MaxFPS");
+	if (pVSync == NULL && gEnv && gEnv->pConsole)
+		pVSync = gEnv->pConsole->GetCVar("r_Vsync");
+
+	int32 maxFPS = 0;
+
+	if (m_bDedicatedServer)
 	{
-		m_lastTickTime = pTimer->GetAsyncTime();
-		prevNow.Push(m_lastTickTime);
-		firstCall = false;
-		return;
+		const float maxRate = m_svDedicatedMaxRate->GetFVal();
+		maxFPS = int32(maxRate);
+	}
+	else
+	{
+		if (pSysMaxFPS && pVSync)
+		{
+			uint32 vSync = pVSync->GetIVal();
+			if (vSync == 0)
+			{
+				maxFPS = pSysMaxFPS->GetIVal();
+				if (maxFPS == 0)
+				{
+					const bool bInLoading = (ESYSTEM_GLOBAL_STATE_RUNNING != m_systemGlobalState);
+					if (bInLoading || IsPaused())
+					{
+						maxFPS = 60;
+					}
+				}
+			}
+		}
 	}
 
-	const float maxRate = m_svDedicatedMaxRate->GetFVal();
-	const float minTime = 1.0f / maxRate;
-	CTimeValue now = pTimer->GetAsyncTime();
-	float elapsed = (now - m_lastTickTime).GetSeconds();
-
-	if (prevNow.Full())
-		prevNow.Pop();
-	prevNow.Push(now);
-
-	static bool allowStallCatchup = true;
-	if (elapsed > minTime && allowStallCatchup)
+	if (maxFPS > 0)
 	{
-		allowStallCatchup = false;
-		m_lastTickTime = pTimer->GetAsyncTime();
-		return;
+		const int64 safeMarginMS = 5; // microseconds
+		const int64 thresholdMs = (1000 * 1000) / (maxFPS);
+
+		ITimer* pTimer = gEnv->pTimer;
+		static int64 sTimeLast = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+		int64 currentTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+		for (;; )
+		{
+			const int64 frameTime = currentTime - sTimeLast;
+			if (frameTime >= thresholdMs)
+				break;
+			if (thresholdMs - frameTime > 10 * 1000)
+				CrySleep(1);
+			else
+				CrySleep(0);
+
+			currentTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+		}
+
+		sTimeLast = pTimer->GetAsyncTime().GetMicroSecondsAsInt64() + safeMarginMS;
 	}
-	allowStallCatchup = true;
-
-	float totalElapsed = (now - prevNow.Front()).GetSeconds();
-	float wantSleepTime = CLAMP(minTime * (prevNow.Size() - 1) - totalElapsed, 0, (minTime - elapsed) * 0.9f);
-	static float sleepTime = 0;
-	sleepTime = (15 * sleepTime + wantSleepTime) / 16;
-	int sleepMS = (int)(1000.0f * sleepTime + 0.5f);
-	if (sleepMS > 0)
-		Sleep(sleepMS);
-
-	m_lastTickTime = pTimer->GetAsyncTime();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1387,6 +1405,7 @@ int prev_sys_float_exceptions = -1;
 //////////////////////////////////////////////////////////////////////
 bool CSystem::Update(int updateFlags, int nPauseMode)
 {
+	LOADING_TIME_PROFILE_SECTION;
 	CRY_PROFILE_REGION(PROFILE_SYSTEM, "System: Update");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("CSystem::Update()");
 
@@ -1396,8 +1415,6 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	{
 	#if defined(MAP_LOADING_SLICING)
 		gEnv->pSystemScheduler->SchedulingSleepIfNeeded();
-	#else
-		SleepIfNeeded();
 	#endif // defined(MAP_LOADING_SLICING)
 	}
 #endif //EXCLUDE_UPDATE_ON_CONSOLE
@@ -1564,8 +1581,20 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	if (m_bIgnoreUpdates)
 		return true;
 #endif //EXCLUDE_UPDATE_ON_CONSOLE
+
+	const bool bNotLoading = !IsLoading();
+
 	if (m_env.pCharacterManager)
-		m_env.pCharacterManager->Update(nPauseMode != 0);
+	{
+		if (bNotLoading)
+		{
+			m_env.pCharacterManager->Update(nPauseMode != 0);
+		}
+		else
+		{
+			m_env.pCharacterManager->DummyUpdate();
+		}
+	}
 
 	//static bool sbPause = false;
 	//bool bPause = false;
@@ -1602,54 +1631,12 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 	}
 #endif
 
-	IGameFramework* pGameFrm = m_env.pGame ? m_env.pGame->GetIGameFramework() : 0;
-	ILevelSystem* pLvlSys = pGameFrm ? pGameFrm->GetILevelSystem() : 0;
-	const bool inLevel = pLvlSys && pLvlSys->GetCurrentLevel() != 0;
-
-	//limit frame rate if vsync is turned off
-	//for consoles this is done inside renderthread to be vsync dependent
-	{
-		FRAME_PROFILER("FRAME_CAP", gEnv->pSystem, PROFILE_SYSTEM);
-		static ICVar* pSysMaxFPS = NULL;
-		static ICVar* pVSync = NULL;
-
-		if (pSysMaxFPS == NULL && gEnv && gEnv->pConsole)
-			pSysMaxFPS = gEnv->pConsole->GetCVar("sys_MaxFPS");
-		if (pVSync == NULL && gEnv && gEnv->pConsole)
-			pVSync = gEnv->pConsole->GetCVar("r_Vsync");
-
-		if (pSysMaxFPS && pVSync)
-		{
-			int32 maxFPS = pSysMaxFPS->GetIVal();
-			uint32 vSync = pVSync->GetIVal();
-
-			if (maxFPS == 0 && vSync == 0)
-			{
-				maxFPS = !inLevel || IsPaused() ? 60 : 0;
-			}
-
-			if (maxFPS > 0 && vSync == 0)
-			{
-				CTimeValue timeFrameMax;
-				const float safeMarginFPS = 0.5f;//save margin to not drop below 30 fps
-				static CTimeValue sTimeLast = gEnv->pTimer->GetAsyncTime();
-				timeFrameMax.SetMilliSeconds((int64)(1000.f / ((float)maxFPS + safeMarginFPS)));
-				const CTimeValue timeLast = timeFrameMax + sTimeLast;
-				while (timeLast.GetValue() > gEnv->pTimer->GetAsyncTime().GetValue())
-				{
-					CrySleep(0);
-				}
-				sTimeLast = gEnv->pTimer->GetAsyncTime();
-			}
-		}
-	}
-
 	//////////////////////////////////////////////////////////////////////
 	//update time subsystem
 	m_Time.UpdateOnFrameStart();
 
 	// Don't do a thing if we're not in a level
-	if (m_env.p3DEngine && inLevel)
+	if (m_env.p3DEngine && bNotLoading)
 		m_env.p3DEngine->OnFrameStart();
 
 	//////////////////////////////////////////////////////////////////////
@@ -1666,7 +1653,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 
 	//////////////////////////////////////////////////////////////////////////
 	// Update script system.
-	if (m_env.pScriptSystem)
+	if (m_env.pScriptSystem && bNotLoading)
 	{
 		m_env.pScriptSystem->Update();
 	}
@@ -1797,7 +1784,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 					//update game
 					if (m_env.pGame)
 					{
-						m_env.pGame->PrePhysicsUpdate();
+						m_env.pGame->GetIGameFramework()->PrePhysicsUpdate();
 					}
 					//////////////////////////////////////////////////////////////////////
 					//update entity system
@@ -1873,6 +1860,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 					m_env.pPhysicalWorld->TimeStep(0); // make sure objects get all notifications; flush deleted ents
 				gEnv->pPhysicalWorld->TracePendingRays(2);
 
+				if (bNotLoading)
 				{
 					FRAME_PROFILER("SysUpdate:PumpLoggedEvents", this, PROFILE_SYSTEM);
 					CRYPROFILE_SCOPE_PROFILE_MARKER("PumpLoggedEvents");
@@ -1902,6 +1890,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 		}
 		else
 		{
+			if (bNotLoading)
 			{
 				FRAME_PROFILER("SysUpdate:PumpLoggedEvents", this, PROFILE_SYSTEM);
 				CRYPROFILE_SCOPE_PROFILE_MARKER("PumpLoggedEvents");
@@ -1918,7 +1907,7 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 					//update game
 					if (m_env.pGame)
 					{
-						m_env.pGame->PrePhysicsUpdate();
+						m_env.pGame->GetIGameFramework()->PrePhysicsUpdate();
 					}
 					//////////////////////////////////////////////////////////////////////
 					//update entity system
@@ -2106,9 +2095,6 @@ bool CSystem::Update(int updateFlags, int nPauseMode)
 
 	m_pSystemEventDispatcher->Update();
 
-	if (!gEnv->IsEditing() && m_eRuntimeState == ESYSTEM_EVENT_LEVEL_GAMEPLAY_START)
-		gEnv->pCryPak->DisableRuntimeFileAccess(true);
-
 	m_pPluginManager->Update(updateFlags, nPauseMode);
 
 	return !m_bQuit;
@@ -2153,7 +2139,7 @@ void CSystem::DoWorkDuringOcclusionChecks()
 
 void CSystem::UpdateAudioSystems()
 {
-	if (m_env.pAudioSystem != nullptr)
+	if (m_env.pAudioSystem != nullptr && !IsLoading()) //do not update pAudioSystem during async level load
 	{
 		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "UpdateAudioSystems");
 		CRYPROFILE_SCOPE_PROFILE_MARKER("UpdateAudioSystems");
@@ -3021,11 +3007,24 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 {
 	switch (event)
 	{
+	case ESYSTEM_EVENT_LEVEL_LOAD_END:
+		{
+			SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END);
+		}
+		break;
 	case ESYSTEM_EVENT_LEVEL_LOAD_START_LOADINGSCREEN:
 	case ESYSTEM_EVENT_LEVEL_UNLOAD:
-		gEnv->pCryPak->DisableRuntimeFileAccess(false);
-	case ESYSTEM_EVENT_LEVEL_GAMEPLAY_START:
-		m_eRuntimeState = event;
+		{
+			gEnv->pCryPak->DisableRuntimeFileAccess(false);
+		}
+		break;
+	case ESYSTEM_EVENT_LEVEL_PRECACHE_END:
+		{
+			if (!gEnv->IsEditing())
+			{
+				gEnv->pCryPak->DisableRuntimeFileAccess(true);
+			}
+		}
 		break;
 	}
 }
@@ -3038,9 +3037,7 @@ ESystemGlobalState CSystem::GetSystemGlobalState(void)
 const char* CSystem::GetSystemGlobalStateName(const ESystemGlobalState systemGlobalState)
 {
 	static const char* const s_systemGlobalStateNames[] = {
-		"UNKNOWN",                 // ESYSTEM_GLOBAL_STATE_UNKNOWN,
 		"INIT",                    // ESYSTEM_GLOBAL_STATE_INIT,
-		"RUNNING",                 // ESYSTEM_GLOBAL_STATE_RUNNING,
 		"LEVEL_LOAD_PREPARE",      // ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_PREPARE,
 		"LEVEL_LOAD_START",        // ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START,
 		"LEVEL_LOAD_MATERIALS",    // ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_MATERIALS,
@@ -3051,7 +3048,9 @@ const char* CSystem::GetSystemGlobalStateName(const ESystemGlobalState systemGlo
 		"LEVEL_LOAD_PRECACHE",     // ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_PRECACHE,
 		"LEVEL_LOAD_TEXTURES",     // ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_TEXTURES,
 		"LEVEL_LOAD_END",          // ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END,
-		"LEVEL_LOAD_COMPLETE"      // ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_COMPLETE
+		"LEVEL_LOAD_ENDING",       // ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_ENDING,
+		"LEVEL_LOAD_COMPLETE",     // ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_COMPLETE
+		"RUNNING",                 // ESYSTEM_GLOBAL_STATE_RUNNING,
 	};
 	const size_t numElements = CRY_ARRAY_COUNT(s_systemGlobalStateNames);
 	const size_t index = (size_t)systemGlobalState;

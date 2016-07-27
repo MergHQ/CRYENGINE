@@ -27,6 +27,23 @@ public:
 			if (g_pIEntitySystem)
 				g_pIEntitySystem->OnLevelLoadStart();
 			break;
+		case ESYSTEM_EVENT_LEVEL_LOAD_END:
+			{
+				if (g_pIEntitySystem )
+				{
+					if (!gEnv->pSystem->IsSerializingFile())
+					{
+						// activate the default layers
+						g_pIEntitySystem->EnableDefaultLayers();
+					}
+					{
+						LOADING_TIME_PROFILE_SECTION_NAMED("ENTITY_EVENT_LEVEL_LOADED");
+						SEntityEvent loadingCompleteEvent(ENTITY_EVENT_LEVEL_LOADED);
+						g_pIEntitySystem->SendEventToAll( loadingCompleteEvent );
+					}
+				}
+			}
+			break;
 		case ESYSTEM_EVENT_3D_POST_RENDERING_END:
 			if (g_pIEntitySystem)
 			{

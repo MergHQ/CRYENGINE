@@ -70,7 +70,10 @@ public:
 	virtual void         GetAudioDebugData(SAudioDebugData& audioDebugData) const override;
 	virtual void         GetAudioFileData(char const* const szFilename, SAudioFileData& audioFileData) override;
 	virtual void         GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioTriggerData) override;
+	virtual void         SetAllowedThreadId(threadID id) override { m_allowedThreadId = id; }
 	// ~IAudioSystem
+
+	
 
 	// ISystemEventListener
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
@@ -98,6 +101,7 @@ private:
 	CTimeValue   m_lastUpdateTime;
 	float        m_deltaTime;
 	CAudioThread m_mainAudioThread;
+	threadID     m_allowedThreadId;
 
 	enum EAudioRequestQueueType : AudioEnumFlagsType
 	{

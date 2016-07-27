@@ -788,7 +788,7 @@ void CTimeOfDay::ResetVariables()
 		return;
 
 	m_pCurrentPreset->ResetVariables();
-
+	
 	for (int i = 0; i < PARAM_TOTAL; ++i)
 	{
 		const CTimeOfDayVariable* presetVar = m_pCurrentPreset->GetVar((ETimeOfDayParamID)i);
@@ -878,7 +878,9 @@ void CTimeOfDay::SetTime(float fHour, bool bForceUpdate)
 	// Inform audio of this change.
 	if (m_timeOfDayRtpcId != INVALID_AUDIO_CONTROL_ID)
 	{
+		const bool isMainThread = (gEnv->mMainThreadId == CryGetCurrentThreadId());
 		SAudioRequest request;
+		request.flags = isMainThread ? eAudioRequestFlags_None : eAudioRequestFlags_ThreadSafePush;
 		SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> requestData;
 		requestData.audioRtpcId = m_timeOfDayRtpcId;
 		requestData.value = m_fTime;
@@ -1380,6 +1382,7 @@ void CTimeOfDay::Serialize(XmlNodeRef& node, bool bLoading)
 					}
 				}
 			}
+
 		}
 		else
 		{

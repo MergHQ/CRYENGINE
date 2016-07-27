@@ -1020,13 +1020,19 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 
 void C3DEngine::PreWorldStreamUpdate(const CCamera& cam)
 {
-	if (m_szLevelFolder[0] != 0)
+	const int nGlobalSystemState = gEnv->pSystem->GetSystemGlobalState();
+	if (nGlobalSystemState == ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END)
+	{
+		ClearPrecacheInfo();
+	}
+
+	if (m_szLevelFolder[0] != 0 && (nGlobalSystemState > ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END))
 	{
 		m_nStreamingFramesSinceLevelStart++;
 	}
 
 	// force preload terrain data if camera was teleported more than 32 meters
-	if (!IsAreaActivationInUse() || m_bLayersActivated)
+	if (GetRenderer() && (!IsAreaActivationInUse() || m_bLayersActivated))
 	{
 		float fDistance = m_vPrevMainFrameCamPos.GetDistance(cam.GetPosition());
 
@@ -1123,9 +1129,18 @@ void C3DEngine::WorldStreamUpdate()
 				break;
 			}
 
-			int nGlobalSystemState = gEnv->pSystem->GetSystemGlobalState();
+			const int nGlobalSystemState = gEnv->pSystem->GetSystemGlobalState();
 
-			if ((nGlobalSystemState != ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_COMPLETE && (!bStarted || fTime >= 10.0f)) && m_nStreamingFramesSinceLevelStart > 16)
+			if (nGlobalSystemState == ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END)
+			{
+				gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_PRECACHE_START, 0, 0);
+
+				m_pSystem->SetThreadState(ESubsys_Physics, true);
+
+				gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_ENDING);
+			}
+
+			if (nGlobalSystemState == ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_ENDING && (!bStarted || fTime >= 10.0f) && m_nStreamingFramesSinceLevelStart > 16)
 			{
 				gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_COMPLETE);
 
@@ -2388,10 +2403,10 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	m_pRenderer->EF_Query(EFQ_AAMode, sAAMode);
 	AppendString(szFlagsEnd, sAAMode);
 
-#if defined(FEATURE_SVO_GI)
+	#if defined(FEATURE_SVO_GI)
 	if (GetCVars()->e_svoTI_Apply)
 		AppendString(szFlagsEnd, "SVOGI");
-#endif
+	#endif
 
 	if (IsAreaActivationInUse())
 		AppendString(szFlagsEnd, "LA");

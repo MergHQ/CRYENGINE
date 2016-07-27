@@ -543,6 +543,9 @@ struct IGameFramework
 	//! Shuts down CryENGINE and any other subsystem created during initialization.
 	virtual void Shutdown() = 0;
 
+	//! Calls Physics update before starting a game frame
+	virtual void PrePhysicsUpdate() = 0;
+
 	//! Updates CRYENGINE before starting a game frame.
 	//! \param[in] haveFocus true if the game has the input focus.
 	//! \param[in] updateFlags - Flags specifying how to update.
@@ -568,12 +571,6 @@ struct IGameFramework
 
 	//! Are we completely into game mode?
 	virtual bool IsGameStarted() = 0;
-
-	//! Check if the game is allowed to start the actual gameplay.
-	virtual bool IsLevelPrecachingDone() const = 0;
-
-	//! Inform game that it is allowed to start the gameplay.
-	virtual void SetLevelPrecachingDone(bool bValue) = 0;
 
 	//! \return Pointer to the ISystem interface.
 	virtual ISystem* GetISystem() = 0;
@@ -731,6 +728,9 @@ struct IGameFramework
 	//! Retrieves the current level loaded by the editor.
 	//! Parameters are pointers to receive the level infos.
 	virtual void GetEditorLevel(char** levelName, char** levelFolder) = 0;
+
+	//! Load all Schematyc files.
+	virtual void LoadSchematycFiles() = 0;
 
 	//! Begin a query on the LAN for games
 	virtual void BeginLanQuery() = 0;
