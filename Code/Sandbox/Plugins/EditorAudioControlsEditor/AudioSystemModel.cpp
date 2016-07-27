@@ -159,7 +159,7 @@ QModelIndex QAudioSystemModel::index(int row, int column, const QModelIndex& par
 			{
 				pParent = m_pAudioSystem->GetRoot();
 			}
-			if (pParent)
+			if (pParent && pParent->ChildCount() > row)
 			{
 				IAudioSystemItem* pItem = pParent->GetChildAt(row);
 				if (pItem)

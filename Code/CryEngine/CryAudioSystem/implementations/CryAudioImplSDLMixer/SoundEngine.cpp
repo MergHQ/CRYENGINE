@@ -189,12 +189,11 @@ void ChannelFinishedPlaying(int nChannel)
 	}
 }
 
-void LoadMetadata(const string& sdlMixerAssetPath)
+void LoadMetadata(const string& path)
 {
-	g_sampleDataRootDir = PathUtil::GetPathWithoutFilename(sdlMixerAssetPath);
 	_finddata_t fd;
 	ICryPak* pCryPak = gEnv->pCryPak;
-	intptr_t handle = pCryPak->FindFirst(sdlMixerAssetPath + "*.*", &fd);
+	intptr_t handle = pCryPak->FindFirst(g_sampleDataRootDir + path + "*.*", &fd);
 	if (handle != -1)
 	{
 		do
@@ -202,12 +201,26 @@ void LoadMetadata(const string& sdlMixerAssetPath)
 			const string name = fd.name;
 			if (name != "." && name != ".." && !name.empty())
 			{
-				if (name.find(".wav") != string::npos ||
-				    name.find(".ogg") != string::npos ||
-				    name.find(".mp3") != string::npos)
+				if (fd.attrib & _A_SUBDIR)
 				{
-					// For now there's a 1 to 1 mapping between sample files and events
-					g_samplePaths[GetIDFromFilePath(name)] = g_sampleDataRootDir + name;
+					LoadMetadata(path + name + CRY_NATIVE_PATH_SEPSTR);
+				}
+				else
+				{
+					if (name.find(".wav") != string::npos ||
+					    name.find(".ogg") != string::npos ||
+					    name.find(".mp3") != string::npos)
+					{
+						if (path.empty())
+						{
+							g_samplePaths[GetIDFromString(name)] = g_sampleDataRootDir + name;
+						}
+						else
+						{
+							string pathName = path + name;
+							g_samplePaths[GetIDFromString(pathName)] = g_sampleDataRootDir + pathName;
+						}
+					}
 				}
 			}
 		}
@@ -248,7 +261,8 @@ bool SoundEngine::Init()
 
 	Mix_ChannelFinished(ChannelFinishedPlaying);
 
-	LoadMetadata(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR SDL_MIXER_PROJECT_PATH);
+	g_sampleDataRootDir = PathUtil::GetPathWithoutFilename(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR SDL_MIXER_PROJECT_PATH);
+	LoadMetadata("");
 	g_bListenerPosChanged = false;
 
 	// need to reinit as the global variable might have been initialized with wrong values
@@ -289,7 +303,7 @@ void SoundEngine::Refresh()
 
 const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, const size_t size, const string& samplePath, const SampleId overrideId)
 {
-	const SampleId id = (overrideId != 0) ? overrideId : GetIDFromFilePath(samplePath);
+	const SampleId id = (overrideId != 0) ? overrideId : GetIDFromString(samplePath);
 	Mix_Chunk* pSample = stl::find_in_map(g_sampleData, id, nullptr);
 	if (pSample != nullptr)
 	{
@@ -361,7 +375,7 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 
 const SampleId SoundEngine::LoadSample(const string& sampleFilePath, bool bOnlyMetadata)
 {
-	const SampleId id = GetIDFromFilePath(sampleFilePath);
+	const SampleId id = GetIDFromString(sampleFilePath);
 	if (stl::find_in_map(g_sampleData, id, nullptr) == nullptr)
 	{
 		if (bOnlyMetadata)
@@ -572,10 +586,10 @@ bool SoundEngine::ExecuteEvent(SAudioObject* const pAudioObject, SAudioTrigger c
 }
 
 bool SoundEngine::PlayFile(
-	SAudioObject* const pAudioObject,
-	CAudioStandaloneFile* const pEventInstance,
-	const SAudioTrigger* const pUsedTrigger,
-	const char* const szFilePath)
+  SAudioObject* const pAudioObject,
+  CAudioStandaloneFile* const pEventInstance,
+  const SAudioTrigger* const pUsedTrigger,
+  const char* const szFilePath)
 {
 	if (!pUsedTrigger)
 	{

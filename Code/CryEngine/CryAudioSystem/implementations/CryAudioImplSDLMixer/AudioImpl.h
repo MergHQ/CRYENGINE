@@ -89,6 +89,7 @@ private:
 	static char const* const s_szSDLFileTag;
 	static char const* const s_szSDLEventTag;
 	static char const* const s_szSDLCommonAttribute;
+	static char const* const s_szSDLPathAttribute;
 	static char const* const s_szSDLSoundLibraryPath;
 	static char const* const s_szSDLEventTypeTag;
 	static char const* const s_szSDLEventPanningEnabledTag;
