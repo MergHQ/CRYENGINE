@@ -33,9 +33,6 @@ enum eAntialiasingType
 	eAT_SMAA_1TX,
 	eAT_SMAA_2TX,
 	eAT_FXAA,
-	eAT_MSAA_2X,
-	eAT_MSAA_4X,
-	eAT_MSAA_8X,
 	eAT_AAMODES_COUNT,
 
 	eAT_DEFAULT_AA                  = eAT_SMAA_1TX,
@@ -45,17 +42,11 @@ enum eAntialiasingType
 	eAT_SMAA_1TX_MASK               = (1 << eAT_SMAA_1TX),
 	eAT_SMAA_2TX_MASK               = (1 << eAT_SMAA_2TX),
 	eAT_FXAA_MASK                   = (1 << eAT_FXAA),
-	eAT_MSAA_2X_MASK                = (1 << eAT_MSAA_2X),
-	eAT_MSAA_4X_MASK                = (1 << eAT_MSAA_4X),
-	eAT_MSAA_8X_MASK                = (1 << eAT_MSAA_8X),
 
 	eAT_SMAA_MASK                   = (eAT_SMAA_1X_MASK | eAT_SMAA_1TX_MASK | eAT_SMAA_2TX_MASK),
-	eAT_MSAA_MASK                   = (eAT_MSAA_2X_MASK | eAT_MSAA_4X_MASK | eAT_MSAA_8X_MASK),
 
 	eAT_REQUIRES_PREVIOUSFRAME_MASK = (eAT_SMAA_1TX_MASK | eAT_SMAA_2TX_MASK),
-	eAT_REQUIRES_SUBPIXELSHIFT_MASK = (eAT_SMAA_2TX_MASK),
-	eAT_REQUIRES_MSAA_2X_MASK       = (eAT_MSAA_2X_MASK),
-	eAT_REQUIRES_MSAA_4X_MASK       = (eAT_MSAA_4X_MASK),
+	eAT_REQUIRES_SUBPIXELSHIFT_MASK = (eAT_SMAA_2TX_MASK)
 };
 
 static const char* s_pszAAModes[eAT_AAMODES_COUNT] =
@@ -64,10 +55,7 @@ static const char* s_pszAAModes[eAT_AAMODES_COUNT] =
 	"SMAA 1X",
 	"SMAA 1TX",
 	"SMAA 2TX",
-	"FXAA 1X",
-	"MSAA 2X (deprecated)",
-	"MSAA 4X (deprecated)",
-	"MSAA 8X (deprecated)"
+	"FXAA 1X"
 };
 
 struct ShadowMapFrustum;

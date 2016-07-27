@@ -434,7 +434,7 @@ void CompressUnsignedNormalToNormalsBuffer(inout half4 vNormal)
 		// get the main axis for cubemap lookup
 		half maxNAbs = max(vNormalUns.z, max(vNormalUns.x, vNormalUns.y));
 		// get texture coordinates in a collapsed cubemap
-		float2 vTexCoord = vNormalUns.z<maxNAbs?(vNormalUns.y<maxNAbs?vNormalUns.yz:vNormalUns.xz):vNormalUns.xy;
+		float2 vTexCoord = vNormalUns.z < maxNAbs ? (vNormalUns.y < maxNAbs?vNormalUns.yz : vNormalUns.xz) : vNormalUns.xy;
 		vTexCoord = vTexCoord.x < vTexCoord.y ? vTexCoord.yx : vTexCoord.xy;
 		vTexCoord.y /= vTexCoord.x;
 		// fit normal into the edge of unit cube
@@ -442,7 +442,7 @@ void CompressUnsignedNormalToNormalsBuffer(inout half4 vNormal)
 
 		// look-up fitting length and scale the normal to get the best fit
 		#if %_RT_QUALITY || %_RT_QUALITY1
-			float fFittingScale = normalsFittingTex.Load(int3(vTexCoord * 512, 0)).a;
+			float fFittingScale = GetTexture2DLod(normalsFittingTex, ssPointClamp, float4(vTexCoord, 0, 0)).a;
 		#else
 			float fFittingScale = GetTexture2D(normalsFittingTex, ssPointClamp, vTexCoord).a;
 		#endif

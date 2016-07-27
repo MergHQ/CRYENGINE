@@ -299,7 +299,7 @@ void CPostAAStage::Execute()
 
 	uint32 aaMode = rd->FX_GetAntialiasingType();
 
-	if (rd->IsHDRModeEnabled() && (aaMode & (eAT_SMAA_MASK | eAT_FXAA_MASK | eAT_MSAA_MASK)) && pCurrRT)
+	if (rd->IsHDRModeEnabled() && (aaMode & (eAT_SMAA_MASK | eAT_FXAA_MASK)) && pCurrRT)
 	{
 		rd->FX_PopRenderTarget(0);
 	}

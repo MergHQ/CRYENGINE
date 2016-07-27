@@ -762,15 +762,23 @@ void CD3D9Renderer::ChangeViewport(unsigned int x, unsigned int y, unsigned int 
 
 	if (m_CurrContext->m_pSwapChain && m_CurrContext->m_pBackBuffer)
 	{
-		if (m_CurrContext->m_bMainViewport && bBackbufferChanged)
+		if (m_CurrContext->m_bMainViewport)
 		{
 			ID3D11Resource* pBackbufferResource;
 			m_CurrContext->m_pBackBuffer->GetResource(&pBackbufferResource);
-			CDeviceTexture* pDeviceTexture = new CDeviceTexture((D3DTexture*)pBackbufferResource);
-			m_pBackBufferTexture->SetDevTexture(pDeviceTexture);
-			m_pBackBufferTexture->SetWidth(width);
-			m_pBackBufferTexture->SetHeight(height);
-			m_pBackBufferTexture->ClosestFormatSupported(m_pBackBufferTexture->GetDstFormat());
+			
+			if (bBackbufferChanged || (m_pBackBufferTexture->GetDevTexture() && m_pBackBufferTexture->GetDevTexture()->GetBaseTexture() != pBackbufferResource))
+			{
+				CDeviceTexture* pDeviceTexture = new CDeviceTexture((D3DTexture*)pBackbufferResource);
+				m_pBackBufferTexture->SetDevTexture(pDeviceTexture);
+				m_pBackBufferTexture->SetWidth(width);
+				m_pBackBufferTexture->SetHeight(height);
+				m_pBackBufferTexture->ClosestFormatSupported(m_pBackBufferTexture->GetDstFormat());
+			}
+			else
+			{
+				SAFE_RELEASE(pBackbufferResource);
+			}
 		}
 
 		assert(m_nRTStackLevel[0] == 0);
