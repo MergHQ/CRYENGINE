@@ -90,7 +90,7 @@ def build(bld):
 	darwin_release_libs         = common_wwise_libs + darwin_wwise_libs
 	darwin_non_release_libs     = comm_central_libs + darwin_release_libs
 
-	android_release_libs        = common_wwise_libs
+	android_release_libs        = common_wwise_libs + [ 'CrankcaseAudioREVModelPlayerFX' ]
 	android_non_release_libs    = comm_central_libs + android_release_libs
 
 	wwise_lib_subfolder = 'vc110'
