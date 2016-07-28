@@ -1224,8 +1224,6 @@ bool CREWaterOcean::mfDraw(CShader* ef, SShaderPass* sfm)
 {
 	if (!m_nVerticesCount || !m_nIndicesCount || !m_pVertices || !m_pIndices)
 		return false;
-	if (!CTexture::s_ptexRT_2D->GetDevTexture())
-		return false;
 
 	CD3D9Renderer* rd(gcpRendD3D);
 

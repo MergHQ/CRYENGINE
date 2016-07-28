@@ -5388,6 +5388,8 @@ bool CHWShader_D3D::mfSetSamplers_Old(const std::vector<STexSamplerRT>& Samplers
 						//assert(pEnvTex->m_pTex);
 						if (pEnvTex && pEnvTex->m_pTex)
 							pEnvTex->m_pTex->Apply(nTUnit, nTState);
+						else
+							CTexture::s_ptexBlack->Apply(nTUnit, nTState);
 					}
 					break;
 
