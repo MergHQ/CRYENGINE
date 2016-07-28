@@ -1030,7 +1030,7 @@ struct IGeomCacheRenderNode : public IRenderNode
 	virtual void SetDrawing(bool bDrawing) = 0;
 
 	//! Debug draw geometry.
-	virtual void DebugDraw(const struct SGeometryDebugDrawInfo& info, float fExtrudeScale = 0.01f, uint nodeIndex = 0) const = 0;
+	virtual void DebugDraw(const struct SGeometryDebugDrawInfo& info, uint nodeIndex = 0) const = 0;
 
 	//! Ray intersection against cache.
 	virtual bool RayIntersection(struct SRayHitInfo& hitInfo, IMaterial* pCustomMtl = NULL, uint* pHitNodeIndex = NULL) const = 0;

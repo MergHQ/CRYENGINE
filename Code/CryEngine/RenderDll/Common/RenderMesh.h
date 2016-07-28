@@ -453,7 +453,7 @@ public:
 	virtual void UpdateBBoxFromMesh() final;
 
   // Debug draw this render mesh.
-	virtual void DebugDraw(const struct SGeometryDebugDrawInfo& info, uint32 nVisibleChunksMask = ~0, float fExtrdueScale = 0.01f) final;
+	virtual void DebugDraw(const struct SGeometryDebugDrawInfo& info, uint32 nVisibleChunksMask = ~0) final;
 	virtual void KeepSysMesh(bool keep) final;
 	virtual void UnKeepSysMesh() final;
 	virtual void LockForThreadAccess() final;

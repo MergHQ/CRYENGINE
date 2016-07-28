@@ -217,7 +217,7 @@ struct IRenderMesh
 	virtual void                                 SetREUserData(float* pfCustomData, float fFogScale = 0, float fAlpha = 1) = 0;
 
 	//! Debug draw this render mesh.
-	virtual void DebugDraw(const struct SGeometryDebugDrawInfo& info, uint32 nVisibleChunksMask = ~0, float fExtrdueScale = 0.01f) = 0;
+	virtual void DebugDraw(const struct SGeometryDebugDrawInfo& info, uint32 nVisibleChunksMask = ~0) = 0;
 
 	//! Returns mesh memory usage and add it to the CrySizer (if not NULL).
 	//! \param pSizer Sizer interface, can be NULL if caller only want to calculate size.

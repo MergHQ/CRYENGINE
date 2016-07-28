@@ -137,7 +137,7 @@ public:
 	// Set distance at which cache will start streaming automatically (0 means no auto streaming)
 	virtual void SetStreamInDistance(const float distance);
 
-	virtual void DebugDraw(const SGeometryDebugDrawInfo& info, float fExtrudeScale, uint nodeIndex) const;
+	virtual void DebugDraw(const SGeometryDebugDrawInfo& info, uint nodeIndex) const;
 	virtual bool RayIntersection(SRayHitInfo& hitInfo, IMaterial* pCustomMtl, uint* pHitNodeIndex) const;
 
 	// Get node information
@@ -175,7 +175,7 @@ private:
 	virtual void OnGeomCacheStaticDataLoaded();
 	virtual void OnGeomCacheStaticDataUnloaded();
 
-	void         DebugDrawRec(const SGeometryDebugDrawInfo& info, float fExtrudeScale,
+	void         DebugDrawRec(const SGeometryDebugDrawInfo& info,
 	                          uint& currentNodeIndex, const std::vector<SGeomCacheStaticNodeData>& staticNodeData) const;
 	bool         RayIntersectionRec(SRayHitInfo& hitInfo, IMaterial* pCustomMtl, uint* pHitNodeIndex,
 	                                uint& currentNodeIndex, const std::vector<SGeomCacheStaticNodeData>& staticNodeData,

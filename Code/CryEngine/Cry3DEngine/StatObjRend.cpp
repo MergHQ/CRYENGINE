@@ -901,7 +901,7 @@ int CStatObj::ComputeLodFromScale(float fScale, float fLodRatioNormalized, float
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CStatObj::DebugDraw(const SGeometryDebugDrawInfo& info, float fExtrdueScale)
+void CStatObj::DebugDraw(const SGeometryDebugDrawInfo& info)
 {
 	if (m_nFlags & STATIC_OBJECT_COMPOUND && !m_bMerged)
 	{
@@ -913,12 +913,12 @@ void CStatObj::DebugDraw(const SGeometryDebugDrawInfo& info, float fExtrdueScale
 
 			SGeometryDebugDrawInfo subInfo = info;
 			subInfo.tm = info.tm * m_subObjects[i].tm;
-			m_subObjects[i].pStatObj->DebugDraw(subInfo, fExtrdueScale);
+			m_subObjects[i].pStatObj->DebugDraw(subInfo);
 		}
 	}
 	else if (m_pRenderMesh)
 	{
-		m_pRenderMesh->DebugDraw(info, ~0, fExtrdueScale);
+		m_pRenderMesh->DebugDraw(info, ~0);
 	}
 	else
 	{
@@ -930,7 +930,7 @@ void CStatObj::DebugDraw(const SGeometryDebugDrawInfo& info, float fExtrdueScale
 			{
 				if (m_pLODs[nLod] && m_pLODs[nLod]->m_pRenderMesh)
 				{
-					m_pLODs[nLod]->m_pRenderMesh->DebugDraw(info, ~0, fExtrdueScale);
+					m_pLODs[nLod]->m_pRenderMesh->DebugDraw(info, ~0);
 					break;
 				}
 			}

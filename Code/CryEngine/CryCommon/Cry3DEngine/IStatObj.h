@@ -549,7 +549,7 @@ struct IStatObj : IMeshObj, IStreamable
 
 	//! Debug Draw this static object.
 	//! \param nFlags - bit0 no culling, bit1 - not draw lines.
-	virtual void DebugDraw(const struct SGeometryDebugDrawInfo& info, float fExtrdueScale = 0.01f) = 0;
+	virtual void DebugDraw(const struct SGeometryDebugDrawInfo& info) = 0;
 
 	//! Fill statistics about the level.
 	virtual void GetStatistics(SStatistics& stats) = 0;

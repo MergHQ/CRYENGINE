@@ -621,7 +621,7 @@ public:
 	virtual bool RayIntersection(SRayHitInfo & hitInfo, IMaterial * pCustomMtl = 0) override;
 	virtual bool LineSegIntersection(const Lineseg &lineSeg, Vec3 & hitPos, int& surfaceTypeId) override;
 
-	virtual void DebugDraw(const SGeometryDebugDrawInfo &info, float fExtrdueScale = 0.01f) override;
+	virtual void DebugDraw(const SGeometryDebugDrawInfo &info) override;
 	virtual void GetStatistics(SStatistics & stats) override;
 	//////////////////////////////////////////////////////////////////////////
 
