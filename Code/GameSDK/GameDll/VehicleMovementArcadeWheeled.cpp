@@ -1764,9 +1764,24 @@ void CVehicleMovementArcadeWheeled::GetCurrentWheelStatus(IPhysicalEntity* pPhys
 		if (pPhysics->GetStatus(&m_wheelStatus[i]) == 0)
 		{
 			new (&m_wheelStatus[i]) pe_status_wheel;
-			m_wheelStatus[i].iWheel = i;
 			m_wheelStatus[i].bContact = 0;
-			m_wheelStatus[i].w = 0.f;
+			m_wheelStatus[i].bSlip = 0;
+			m_wheelStatus[i].contactSurfaceIdx = 0;
+			m_wheelStatus[i].friction = 0.0f;
+			m_wheelStatus[i].iWheel = i;
+			m_wheelStatus[i].normContact = Vec3Constants<float>::fVec3_Zero;
+			m_wheelStatus[i].partid = 0;
+			m_wheelStatus[i].pCollider = nullptr;
+			m_wheelStatus[i].ptContact = Vec3Constants<float>::fVec3_Zero;
+			m_wheelStatus[i].r = 1.0f;
+			m_wheelStatus[i].steer = 0.0f;
+			m_wheelStatus[i].suspLen = 0.0f;
+			m_wheelStatus[i].suspLen0 = 0.0f;
+			m_wheelStatus[i].suspLenFull = 0.0f;
+			m_wheelStatus[i].torque = 0.0f;
+			m_wheelStatus[i].type = EPE_Status::ePE_status_wheel;
+			m_wheelStatus[i].velSlip = Vec3Constants<float>::fVec3_Zero;
+			m_wheelStatus[i].w = 0.0f;
 		}
 	}
 }
