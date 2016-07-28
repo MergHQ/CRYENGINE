@@ -868,6 +868,8 @@ struct SDeviceObjectHelpers
 		CShaderConstantManager(CShaderConstantManager&& other);
 		~CShaderConstantManager() {};
 
+		void Reset();
+
 		////////// Constant update via shader reflection //////////
 		bool InitShaderReflection(::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags);
 		bool IsShaderReflectionValid() const { return m_pShaderReflection && m_pShaderReflection->bValid; }

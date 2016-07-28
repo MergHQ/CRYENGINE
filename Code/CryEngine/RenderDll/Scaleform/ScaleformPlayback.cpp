@@ -25,9 +25,6 @@ SSF_GlobalDrawParams::SSF_GlobalDrawParams()
 	m_pScaleformMeshAttributes = reinterpret_cast<SScaleformMeshAttributes*>(CryModuleMemalign(m_ScaleformMeshAttributesSize, CRY_PLATFORM_ALIGNMENT));
 	m_pScaleformRenderParameters = reinterpret_cast<SScaleformRenderParameters*>(CryModuleMemalign(m_ScaleformRenderParametersSize, CRY_PLATFORM_ALIGNMENT));
 
-	m_bScaleformMeshAttributesDirty = true;
-	m_bScaleformRenderParametersDirty = true;
-
 	Reset();
 }
 
@@ -621,7 +618,7 @@ void CScaleformPlayback::ApplyCxform()
 {
 	SSF_GlobalDrawParams::SScaleformRenderParameters* __restrict rparams = m_drawParams.m_pScaleformRenderParameters;
 
-	m_drawParams.m_bScaleformRenderParametersDirty =
+	m_drawParams.m_bScaleformRenderParametersDirty = m_drawParams.m_bScaleformRenderParametersDirty ||
 		(rparams->cBitmapColorTransform[0] != (m_cxform[0])) ||
 		(rparams->cBitmapColorTransform[1] != (m_cxform[1] * (1.0f / 255.0f)));
 
@@ -813,6 +810,9 @@ void CScaleformPlayback::PopExternalRenderTarget()
 		m_pRenderer->SF_GetResources().m_PrimitiveHeap.FreeUsedPrimitives(pCurOutput->key);
 		m_pRenderer->SF_GetResources().m_CBHeap.FreeUsedConstantBuffers();
 
+		params.m_bScaleformMeshAttributesDirty = params.m_bScaleformMeshAttributesDirty || !(params.m_vsBuffer = nullptr);
+		params.m_bScaleformRenderParametersDirty = params.m_bScaleformRenderParametersDirty || !(params.m_psBuffer = nullptr);
+
 		CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 	}
 
@@ -875,6 +875,9 @@ void CScaleformPlayback::PushExternalRenderTarget()
 		sNewOutput.renderPass.SetDepthTarget(sNewOutput.pStencilTarget);
 		sNewOutput.renderPass.SetScissor(params.scissorEnabled, params.scissor);
 		sNewOutput.renderPass.SetViewport(params.viewport);
+
+		params.m_bScaleformMeshAttributesDirty = params.m_bScaleformMeshAttributesDirty || !(params.m_vsBuffer);
+		params.m_bScaleformRenderParametersDirty = params.m_bScaleformRenderParametersDirty || !(params.m_psBuffer);
 	}
 
 	// Graphics pipeline >= 1
@@ -901,6 +904,9 @@ void CScaleformPlayback::PopRenderTarget()
 
 		m_pRenderer->SF_GetResources().m_PrimitiveHeap.FreeUsedPrimitives(pCurOutput->key);
 		m_pRenderer->SF_GetResources().m_CBHeap.FreeUsedConstantBuffers();
+
+		params.m_bScaleformMeshAttributesDirty = params.m_bScaleformMeshAttributesDirty || !(params.m_vsBuffer = nullptr);
+		params.m_bScaleformRenderParametersDirty = params.m_bScaleformRenderParametersDirty || !(params.m_psBuffer = nullptr);
 
 		CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 	}
@@ -999,6 +1005,9 @@ int32 CScaleformPlayback::PushTempRenderTarget(const RectF& frameRect, uint32 ta
 		sNewOutput.renderPass.SetDepthTarget(sNewOutput.pStencilTarget);
 		sNewOutput.renderPass.SetScissor(params.scissorEnabled, params.scissor);
 		sNewOutput.renderPass.SetViewport(params.viewport);
+
+		params.m_bScaleformMeshAttributesDirty = params.m_bScaleformMeshAttributesDirty || !(params.m_vsBuffer);
+		params.m_bScaleformRenderParametersDirty = params.m_bScaleformRenderParametersDirty || !(params.m_psBuffer);
 	}
 
 	// Graphics pipeline >= 1
