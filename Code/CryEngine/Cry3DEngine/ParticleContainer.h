@@ -296,6 +296,7 @@ private:
 
 	CRenderObject*                     m_pBeforeWaterRO[RT_COMMAND_BUF_COUNT];
 	CRenderObject*                     m_pAfterWaterRO[RT_COMMAND_BUF_COUNT];
+	CRenderObject*                     m_pRecursiveRO[RT_COMMAND_BUF_COUNT];
 
 	// Last time when emitter updated, and static bounds validated.
 	float m_fAgeLastUpdate;

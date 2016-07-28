@@ -15,12 +15,9 @@
 #include "CharacterManager.h"
 #include <CryCore/Platform/IPlatformOS.h>
 
-//////////////////////////////////////////////////////////////////////////
-// temporary solution to access the links for thin and fat models
-//////////////////////////////////////////////////////////////////////////
-
 namespace CryCHRLoader_LoadNewCHR_Helpers
 {
+
 static bool FindFirstMesh(CMesh*& pMesh, CNodeCGF*& pGFXNode, CContentCGF* pContent, const char* filenameNoExt, int lod)
 {
 	uint32 numNodes = pContent->GetNodeCount();
@@ -49,12 +46,11 @@ static bool FindFirstMesh(CMesh*& pMesh, CNodeCGF*& pGFXNode, CContentCGF* pCont
 
 	return true;
 }
-}
+
+} // namespace CryCHRLoader_LoadNewCHR_Helpers
 
 bool CryCHRLoader::BeginLoadCHRRenderMesh(CDefaultSkeleton* pSkel, const DynArray<CCharInstance*>& pCharInstances, EStreamTaskPriority estp)
 {
-	using namespace CryCHRLoader_LoadNewCHR_Helpers;
-
 	const char* szFilePath = pSkel->GetModelFilePath();
 
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
@@ -76,13 +72,11 @@ bool CryCHRLoader::BeginLoadCHRRenderMesh(CDefaultSkeleton* pSkel, const DynArra
 
 	//--------------------------------------------------------------------------------------------
 
-	stack_string filename = stack_string(m_strGeomFileNameNoExt.c_str()) + "." + szExt;
+	CModelMesh* pModelMesh = pSkel->GetModelMesh();
+	assert(pModelMesh);
 
-	CModelMesh& mm = *pSkel->GetModelMesh();
-
-	string lodName = filename;
-	if (mm.m_stream.bHasMeshFile)
-		lodName += 'm';
+	const stack_string filename = stack_string(m_strGeomFileNameNoExt.c_str()) + "." + szExt;
+	const stack_string lodName = (pModelMesh->m_stream.bHasMeshFile) ? (filename + "m") : (filename);
 
 	m_pModelSkel = pSkel;
 	m_RefByInstances = pCharInstances;
@@ -143,6 +137,8 @@ void CryCHRLoader::EndStreamSkel(IReadStream* pStream)
 		return;
 
 	CModelMesh* pModelMesh = m_pModelSkel->GetModelMesh();
+	assert(pModelMesh);
+
 	m_pNewRenderMesh = pModelMesh->InitRenderMeshAsync(pMesh, m_pModelSkel->GetModelFilePath(), 0, m_arrNewRenderChunks);
 }
 
@@ -150,14 +146,14 @@ void CryCHRLoader::StreamOnComplete(IReadStream* pStream, unsigned nError)
 {
 	if (m_pModelSkel)
 	{
-		if (CModelMesh* pModelMesh = m_pModelSkel->GetModelMesh())
-		{
-			pModelMesh->InitRenderMeshSync(m_arrNewRenderChunks, m_pNewRenderMesh);
-			m_pNewRenderMesh = NULL;
-			m_arrNewRenderChunks.clear();
-		}
+		CModelMesh* pModelMesh = m_pModelSkel->GetModelMesh();
+		assert(pModelMesh);
 
-		m_pModelSkel->m_ModelMesh.m_stream.pStreamer = NULL;
+		pModelMesh->InitRenderMeshSync(m_arrNewRenderChunks, m_pNewRenderMesh);
+		m_pNewRenderMesh = nullptr;
+		m_arrNewRenderChunks.clear();
+
+		pModelMesh->m_stream.pStreamer = nullptr;
 	}
 	else if (m_pModelSkin)
 	{
@@ -302,7 +298,7 @@ static bool InitializeBones(CDefaultSkeleton* pDefaultSkeleton, CSkinningInfo* p
 	return true;
 }
 
-static bool FindFirstMesh(CMesh*& pMesh, CNodeCGF*& pGFXNode, CContentCGF* pContent, const char* filenameNoExt, int lod)
+static const char* FindFirstMesh(CMesh*& pMesh, CNodeCGF*& pGFXNode, CContentCGF* pContent)
 {
 	uint32 numNodes = pContent->GetNodeCount();
 	pGFXNode = 0;
@@ -317,57 +313,52 @@ static bool FindFirstMesh(CMesh*& pMesh, CNodeCGF*& pGFXNode, CContentCGF* pCont
 	}
 	if (pGFXNode == 0)
 	{
-		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, filenameNoExt, "Failed to Load Character file. GFXNode not found");
-		return false;
+		return "Failed to Load Character file. GFXNode not found";
 	}
 
 	pMesh = pGFXNode->pMesh;
 	if (pMesh && pMesh->m_pBoneMapping == 0)
 	{
-		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, filenameNoExt, "Failed to Load Character file. Skeleton-Initial-Positions are missing");
-		return false;
+		return "Failed to Load Character file. Skeleton-Initial-Positions are missing";
 	}
 
-	return true;
+	return nullptr;
 }
 
-static bool FindFirstMeshAndMaterial(CMesh*& pMesh, CNodeCGF*& pGFXNode, _smart_ptr<IMaterial>& pMaterial, CContentCGF* pContent, const char* filenameNoExt, int lod)
+static const char* FindFirstMeshAndMaterial(CMesh*& pMesh, CNodeCGF*& pGFXNode, _smart_ptr<IMaterial>& pMaterial, CContentCGF* pContent, const char* filenameNoExt)
 {
-	uint32 numNodes = pContent->GetNodeCount();
 	pGFXNode = 0;
-	for (uint32 n = 0; n < numNodes; n++)
+	for (int i = 0, limit = pContent->GetNodeCount(); i < limit; ++i)
 	{
-		CNodeCGF* pNode = pContent->GetNode(n);
+		CNodeCGF* pNode = pContent->GetNode(i);
 		if (pNode->type == CNodeCGF::NODE_MESH)
 		{
 			pGFXNode = pNode;
 			break;
 		}
 	}
-	if (pGFXNode == 0)
+	if (!pGFXNode)
 	{
-		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, filenameNoExt, "Failed to Load Character file. GFXNode not found");
-		return false;
+		return "Failed to Load Character file. GFXNode not found";
 	}
 
 	pMesh = pGFXNode->pMesh;
-	if (pMesh && pMesh->m_pBoneMapping == 0)
+	if (pMesh && !pMesh->m_pBoneMapping)
 	{
-		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, filenameNoExt, "Failed to Load Character file. Skeleton-Initial-Positions are missing");
-		return false;
+		return "Failed to Load Character file. Skeleton-Initial-Positions are missing";
 	}
 
-	if (lod == 0 || pMaterial == NULL)
+	if (!pMaterial)
 	{
 		if (pGFXNode->pMaterial)
 			pMaterial = g_pI3DEngine->GetMaterialManager()->LoadCGFMaterial(pGFXNode->pMaterial->name, PathUtil::GetPathWithoutFilename(filenameNoExt).c_str());
 		else
 			pMaterial = g_pI3DEngine->GetMaterialManager()->GetDefaultMaterial();
 	}
-	return true;
+	return nullptr;
 }
 
-}
+} // namespace SkelLoader_Helpers
 
 bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 {
@@ -431,10 +422,6 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 	//----------------------------------------------------------------------------------------------------------------------
 	//--- initialize the ModelSkel
 	//----------------------------------------------------------------------------------------------------------------------
-	if (cgfs.m_pContentCGF == 0)
-		CryFatalError("CryAnimation error: initialization of model failed: %s", szFilePath);
-
-	PREFAST_ASSUME(cgfs.m_pContentCGF); //cryfatalerror catches it above
 	CSkinningInfo* pSkinningInfo = cgfs.m_pContentCGF->GetSkinningInfo();
 	if (pSkinningInfo == 0)
 	{
@@ -445,12 +432,12 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 	//--------------------------------------------------------------------------
 	//----   initialize the default animation skeleton
 	//--------------------------------------------------------------------------
-	uint32 isSkeletonValid = InitializeBones(this, pSkinningInfo, szFilePath);
+	const uint32 isSkeletonValid = InitializeBones(this, pSkinningInfo, szFilePath);
 
-	CNodeCGF* pMeshNode = 0;
-	CMesh* pMesh = 0;
-	_smart_ptr<IMaterial> pMaterial;
-	FindFirstMeshAndMaterial(pMesh, pMeshNode, pMaterial, cgfs.m_pContentCGF, strGeomFileNameNoExt.c_str(), 0);
+	CMesh* pMesh = nullptr;
+	CNodeCGF* pMeshNode = nullptr;
+	_smart_ptr<IMaterial> pMaterial = nullptr;
+	FindFirstMeshAndMaterial(pMesh, pMeshNode, pMaterial, cgfs.m_pContentCGF, strGeomFileNameNoExt.c_str());
 
 	//------------------------------------------------------------------------------------
 	//--- initialize Physical Proxies
@@ -482,17 +469,28 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 
 		if (cgfs.m_pContentMeshCGF)
 		{
-			if (!FindFirstMesh(pMesh, pMeshNode, cgfs.m_pContentMeshCGF, strGeomFileNameNoExt.c_str(), 0))
-				return 0;
+			const auto szError = FindFirstMesh(pMesh, pMeshNode, cgfs.m_pContentMeshCGF);
+			if (szError)
+			{
+				g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, strGeomFileNameNoExt.c_str(), szError);
+				return false;
+			}
 		}
 
-		CModelMesh* pModelMesh = GetModelMesh();
-		uint32 success = pModelMesh->InitMesh(pMesh, pMeshNode, pMaterial, pSkinningInfo, m_strFilePath.c_str(), 0);
-		if (success == 0)
-			return 0;
+		if (pMesh)
+		{
+			m_ModelMeshEnabled = true;
 
-		string meshFilename = string(szFilePath) + 'm';
-		pModelMesh->m_stream.bHasMeshFile = gEnv->pCryPak->IsFileExist(meshFilename.c_str());
+			CModelMesh* pModelMesh = GetModelMesh();
+			assert(pModelMesh);
+
+			uint32 success = pModelMesh->InitMesh(pMesh, pMeshNode, pMaterial, pSkinningInfo, m_strFilePath.c_str(), 0);
+			if (success == 0)
+				return 0;
+
+			string meshFilename = string(szFilePath) + 'm';
+			pModelMesh->m_stream.bHasMeshFile = gEnv->pCryPak->IsFileExist(meshFilename.c_str());
+		}
 	}
 
 	//---------------------------------------------------------------------------------------------------------------
@@ -693,7 +691,6 @@ bool CDefaultSkeleton::LoadAnimations(CParamLoader& paramLoader)
 
 	m_pAnimationSet->VerifyLMGs();
 
-	CModelMesh* pModelMesh = GetModelMesh();
 	return m_arrModelJoints.size() != 0;
 }
 

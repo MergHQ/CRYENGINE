@@ -61,8 +61,6 @@ private:
 
 	void                    PrepareMesh(CMesh* pMesh);
 	void                    PrepareRenderChunks(DynArray<RChunk>& arrRenderChunks, CMesh* pMesh);
-	_smart_ptr<IRenderMesh> CreateRenderMesh(CDefaultSkeleton* pSkel, CMesh* pMesh);
-	_smart_ptr<IRenderMesh> CreateRenderMesh(CSkin* pSkin, CMesh* pMesh, int lod);
 
 	void                    ClearModel();
 

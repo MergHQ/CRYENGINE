@@ -287,50 +287,49 @@ void CCharInstance::RenderCHR(const SRendParams& RendParams, const Matrix34& rRe
 
 	if (!m_bHideMaster)
 	{
-		//	AddCurrentRenderData (pObj, RendParams);
-		m_pDefaultSkeleton->m_ModelMesh.m_stream.nFrameId = passInfo.GetMainFrameID();
-
 		if (Console::GetInst().ca_DrawSkeleton)
 			m_SkeletonPose.DrawSkeleton(rRenderMat34);
 		if (Console::GetInst().ca_DrawBBox)
 			m_SkeletonPose.DrawBBox(rRenderMat34);
 
-		IRenderMesh* pIRenderMesh = m_pDefaultSkeleton->m_ModelMesh.m_pIRenderMesh;
-		if (pIRenderMesh)
+		if (CModelMesh* pModelMesh = m_pDefaultSkeleton->GetModelMesh())
 		{
-			// MichaelS - use the instance's material if there is one, and if no override material has
-			// already been specified.
-			IMaterial* pMaterial = RendParams.pMaterial;
-			if (pMaterial == 0)
-				pMaterial = this->GetIMaterial_Instance();
-			if (pMaterial == 0)
-				pMaterial = m_pDefaultSkeleton->GetIMaterial();
-			pObj->m_pCurrMaterial = pMaterial;
-#ifndef _RELEASE
-			CModelMesh* pModelMesh = m_pDefaultSkeleton->GetModelMesh();
-			static ICVar* p_e_debug_draw = gEnv->pConsole->GetCVar("e_DebugDraw");
-			if (p_e_debug_draw && p_e_debug_draw->GetIVal() != 0)
-				pModelMesh->DrawDebugInfo(this->m_pDefaultSkeleton, 0, rRenderMat34, p_e_debug_draw->GetIVal(), pMaterial, pObj, RendParams, passInfo.IsGeneralPass(), (IRenderNode*)RendParams.pRenderNode, m_SkeletonPose.GetAABB());
-#endif
-			//	float fColor[4] = {1,0,1,1};
-			//	extern f32 g_YLine;
-			//	g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.3f, fColor, false,"m_nRenderLOD: %d  %d",RendParams.nLodLevel, pObj->m_nLod  ); g_YLine+=0x10;
-			if (Console::GetInst().ca_DrawBaseMesh)
-			{
-				pIRenderMesh->Render(pObj, passInfo);
-			}
+			pModelMesh->m_stream.nFrameId = passInfo.GetMainFrameID();
 
-			if (Console::GetInst().ca_DrawDecalsBBoxes)
+			if (IRenderMesh* pIRenderMesh = pModelMesh->m_pIRenderMesh)
 			{
-				Matrix34 wsRenderMat34(rRenderMat34);
-				// Convert "Camera Space" to "World Space"
-				if (pObj->m_ObjFlags & FOB_NEAREST)
-					wsRenderMat34.AddTranslation(gEnv->pRenderer->GetCamera().GetPosition());
-				g_pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
+				// MichaelS - use the instance's material if there is one, and if no override material has
+				// already been specified.
+				IMaterial* pMaterial = RendParams.pMaterial;
+				if (pMaterial == 0)
+					pMaterial = this->GetIMaterial_Instance();
+				if (pMaterial == 0)
+					pMaterial = m_pDefaultSkeleton->GetIMaterial();
+				pObj->m_pCurrMaterial = pMaterial;
+#ifndef _RELEASE
+				static ICVar* p_e_debug_draw = gEnv->pConsole->GetCVar("e_DebugDraw");
+				if (p_e_debug_draw && p_e_debug_draw->GetIVal() != 0)
+					pModelMesh->DrawDebugInfo(this->m_pDefaultSkeleton, 0, rRenderMat34, p_e_debug_draw->GetIVal(), pMaterial, pObj, RendParams, passInfo.IsGeneralPass(), (IRenderNode*)RendParams.pRenderNode, m_SkeletonPose.GetAABB());
+#endif
+				//	float fColor[4] = {1,0,1,1};
+				//	extern f32 g_YLine;
+				//	g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.3f, fColor, false,"m_nRenderLOD: %d  %d",RendParams.nLodLevel, pObj->m_nLod  ); g_YLine+=0x10;
+				if (Console::GetInst().ca_DrawBaseMesh)
+				{
+					pIRenderMesh->Render(pObj, passInfo);
+				}
+
+				if (Console::GetInst().ca_DrawDecalsBBoxes)
+				{
+					Matrix34 wsRenderMat34(rRenderMat34);
+					// Convert "Camera Space" to "World Space"
+					if (pObj->m_ObjFlags & FOB_NEAREST)
+						wsRenderMat34.AddTranslation(gEnv->pRenderer->GetCamera().GetPosition());
+					g_pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
+				}
 			}
 		}
 	}
-
 }
 
 //-----------------------------------------------------------------------------------

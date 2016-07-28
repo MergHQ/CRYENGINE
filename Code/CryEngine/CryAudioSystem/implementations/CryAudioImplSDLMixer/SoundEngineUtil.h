@@ -13,14 +13,9 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-inline const SampleId GetIDFromString(const string& sName)
+inline const SampleId GetIDFromString(const string& name)
 {
-	return CCrc32::ComputeLowercase(sName.c_str());
-}
-
-inline const SampleId GetIDFromFilePath(const string& sFilePath)
-{
-	return GetIDFromString(PathUtil::GetFile(sFilePath));
+	return CCrc32::ComputeLowercase(name.c_str());
 }
 
 inline void GetDistanceAngleToObject(const CAudioObjectTransformation& listener, const CAudioObjectTransformation& object, float& out_distance, float& out_angle)

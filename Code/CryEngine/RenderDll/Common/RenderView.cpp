@@ -755,8 +755,6 @@ void CRenderView::ExpandPermanentRenderObjects()
 				int renderList;
 				if (renderPassType == CPermanentRenderObject::eRenderPass_Shadows)
 					renderList = record.shadowFrustumSide;
-				else if (pRenderObject->m_ObjFlags & FOB_NEAREST)
-					renderList = EFSLIST_NEAREST_OBJECTS;
 				else
 					renderList = pri.m_nRenderList;
 

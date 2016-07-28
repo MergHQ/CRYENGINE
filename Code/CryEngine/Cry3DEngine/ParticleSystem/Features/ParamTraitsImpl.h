@@ -17,17 +17,23 @@ namespace pfx2
 
 ILINE bool Serialize(Serialization::IArchive& ar, SEnable& val, const char* name, const char* label)
 {
-	if (ar.isEdit() || ar.isInput() || (ar.isOutput() && val.m_value == false))
+	name = (name && *name != 0) ? name : "Enabled";
+	if (!ar.isEdit())
 	{
-		name = (name && *name != 0) ? name : "Enabled";
-		label = (label && *label != 0) ? label : "^^";
-		if (!ar(val.m_value, name, label))
+		if (ar.isInput() || (ar.isOutput() && val.m_value == false))
 		{
-			if (ar.isInput())
-				val.m_value = true;
-			else
-				return false;
+			if (!ar(val.m_value, name, label))
+			{
+				if (ar.isInput())
+					val.m_value = true;
+				else
+					return false;
+			}
 		}
+	}
+	else
+	{
+		return ar(val.m_value, name, name);
 	}
 	return true;
 }

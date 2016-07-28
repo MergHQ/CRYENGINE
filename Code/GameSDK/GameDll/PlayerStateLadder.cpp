@@ -373,8 +373,9 @@ void CPlayerStateLadder::OnUseLadder(CPlayer& player, IEntity* pLadder)
 
 	if (playerEntityPos.z > m_ladderBottom.z + ladderClimbableHeight - 0.1f)
 	{
-		snapPlayerToPosition.z += height;
+		snapPlayerToPosition.z += (height - heightOffsetBottom);
 		snapPlayerToPosition -= direction * getOnDistanceAwayTop;
+		snapPlayerToRotation *= Quat::CreateRotationZ(gf_PI);
 		m_playGetOnAnim = (m_topRungNumber & 1) ? kLadderAnimType_atTopRightFoot : kLadderAnimType_atTopLeftFoot;
 		m_numRungsFromBottomPosition = m_topRungNumber;
 	}
@@ -799,10 +800,11 @@ bool CPlayerStateLadder::IsUsableLadder(CPlayer& player, IEntity* pLadder, const
 			Vec3 ladderPos = ladderTM.GetTranslation();
 			Vec3 playerPos = player.GetEntity()->GetWorldPos();
 
-			const char* angleVariable = ((playerPos.z + 0.1f) > (ladderPos.z + height)) ? "approachAngleTop" : "approachAngle";
+			const bool bIsOnTop = (playerPos.z + 0.1f) > (ladderPos.z + height);
+			const char* szAngleVariable = bIsOnTop ? "approachAngleTop" : "approachAngle";
 
 			float angleRange = 0.f;
-			ladderProperties->GetValue(angleVariable, angleRange);
+			ladderProperties->GetValue(szAngleVariable, angleRange);
 
 			retVal = true;
 
@@ -821,10 +823,20 @@ bool CPlayerStateLadder::IsUsableLadder(CPlayer& player, IEntity* pLadder, const
 					ladderToPlayer = -ladderToPlayer;
 				}
 
-				if(ladderToPlayer.Dot(ladderDirection) < cos(DEG2RAD(angleRange)))
+				if (bIsOnTop)
 				{
-					retVal = false;
-				}			
+					if (-ladderToPlayer.Dot(ladderDirection) < cos(DEG2RAD(angleRange)))
+					{
+						retVal = false;
+					}
+				}
+				else
+				{
+					if (ladderToPlayer.Dot(ladderDirection) < cos(DEG2RAD(angleRange)))
+					{
+						retVal = false;
+					}
+				}
 			}
 		}
 	}

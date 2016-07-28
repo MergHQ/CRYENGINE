@@ -24,6 +24,8 @@ CDefaultSkeleton::CDefaultSkeleton(const char* pSkeletonFilePath, uint32 type, u
 	m_AABBExtension.max = Vec3(ZERO);
 	m_bHasPhysics2 = 0;
 	m_usePhysProxyBBox = 0;
+
+	m_ModelMeshEnabled = false;
 }
 
 CDefaultSkeleton::~CDefaultSkeleton()
@@ -265,15 +267,20 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 	}
 
 	//link the proxies to the joints
-	if (g_pIPhysicalWorld == 0)
-		return false;
-	IGeomManager* pPhysicalGeometryManager = g_pIPhysicalWorld ? g_pIPhysicalWorld->GetGeomManager() : NULL;
-	if (pPhysicalGeometryManager == 0)
-		return false;
-	if (pIMaterial == 0)
+	if (!g_pIPhysicalWorld)
 	{
-		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, filename, "Physics: No material");
-		assert(pIMaterial);
+		return false;
+	}
+
+	IGeomManager* pPhysicalGeometryManager = g_pIPhysicalWorld->GetGeomManager();
+	if (!pPhysicalGeometryManager)
+	{
+		return false;
+	}
+
+	if (!arrPhyBoneMeshes.empty() && !pIMaterial)
+	{
+		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, filename, "Error loading skeleton: material definition is missing for physical proxies.");
 		return false;
 	}
 
@@ -910,9 +917,11 @@ void CDefaultSkeleton::GetMemoryUsage(ICrySizer* pSizer) const
 //#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 void CDefaultSkeleton::PrecacheMesh(bool bFullUpdate, int nRoundId, int nLod)
 {
-	int nZoneIdx = bFullUpdate ? 0 : 1;
-	MeshStreamInfo& si = m_ModelMesh.m_stream;
-	si.nRoundIds[nZoneIdx] = nRoundId;
+	if (CModelMesh* pModelMesh = GetModelMesh())
+	{
+		const int nZoneIdx = bFullUpdate ? 0 : 1;
+		pModelMesh->m_stream.nRoundIds[nZoneIdx] = nRoundId;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

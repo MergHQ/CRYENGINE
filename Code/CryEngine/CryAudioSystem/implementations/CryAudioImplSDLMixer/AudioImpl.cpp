@@ -17,6 +17,7 @@ using namespace CryAudio::Impl::SDL_mixer;
 
 char const* const CAudioImpl::s_szSDLFileTag = "SDLMixerSample";
 char const* const CAudioImpl::s_szSDLCommonAttribute = "sdl_name";
+char const* const CAudioImpl::s_szSDLPathAttribute = "sdl_path";
 char const* const CAudioImpl::s_szSDLEventIdTag = "event_id";
 char const* const CAudioImpl::s_szSDLEventTag = "SDLMixerEvent";
 char const* const CAudioImpl::s_szSDLSoundLibraryPath = CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "sdlmixer" CRY_NATIVE_PATH_SEPSTR;
@@ -406,13 +407,25 @@ EAudioRequestStatus CAudioImpl::ParseAudioFileEntry(XmlNodeRef const pAudioFileE
 	if ((_stricmp(pAudioFileEntryNode->getTag(), s_szSDLFileTag) == 0) && (pFileEntryInfo != nullptr))
 	{
 		char const* const szFileName = pAudioFileEntryNode->getAttr(s_szSDLCommonAttribute);
+		char const* const szPath = pAudioFileEntryNode->getAttr(s_szSDLPathAttribute);
+		CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> fullFilePath;
+		if (szPath)
+		{
+			fullFilePath = szPath;
+			fullFilePath += CRY_NATIVE_PATH_SEPSTR;
+			fullFilePath += szFileName;
+		}
+		else
+		{
+			fullFilePath = szFileName;
+		}
 
 		// Currently the SDLMixer Implementation does not support localized files.
 		pFileEntryInfo->bLocalized = false;
 
-		if (szFileName != nullptr && szFileName[0] != '\0')
+		if (!fullFilePath.empty())
 		{
-			pFileEntryInfo->szFileName = szFileName;
+			pFileEntryInfo->szFileName = fullFilePath.c_str();
 			pFileEntryInfo->memoryBlockAlignment = m_memoryAlignment;
 			POOL_NEW(SAudioFileEntry, pFileEntryInfo->pImplData);
 			eResult = eAudioRequestStatus_Success;
@@ -450,9 +463,20 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 		if (pNewTriggerImpl)
 		{
 			char const* const szFileName = pAudioTriggerNode->getAttr(s_szSDLCommonAttribute);
-			pNewTriggerImpl->sampleId = GetIDFromString(szFileName);
+			char const* const szPath = pAudioTriggerNode->getAttr(s_szSDLPathAttribute);
+			string fullFilePath;
+			if (szPath)
+			{
+				fullFilePath = szPath;
+				fullFilePath += CRY_NATIVE_PATH_SEPSTR;
+				fullFilePath += szFileName;
+			}
+			else
+			{
+				fullFilePath = szFileName;
+			}
 
-			SoundEngine::LoadSample(szFileName, true);
+			pNewTriggerImpl->sampleId = SoundEngine::LoadSample(fullFilePath, true);
 
 			pNewTriggerImpl->bStartEvent = (_stricmp(pAudioTriggerNode->getAttr(s_szSDLEventTypeTag), "stop") != 0);
 			if (pNewTriggerImpl->bStartEvent)

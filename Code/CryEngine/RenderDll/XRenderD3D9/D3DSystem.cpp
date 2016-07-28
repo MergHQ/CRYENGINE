@@ -1799,6 +1799,13 @@ int CD3D9Renderer::GetAAFormat(TArray<SAAFormat>& Formats)
 
 bool CD3D9Renderer::CheckMSAAChange()
 {
+	if (CV_r_msaa != m_MSAA)
+	{
+		iLog->LogError("MSAA is not supported any longer and will be removed in an upcoming version.");
+		_SetVar("r_MSAA", 0);
+		return false;
+	}
+	
 	bool bChanged = false;
 	if (!CV_r_HDRRendering && CV_r_msaa)
 	{

@@ -47,6 +47,7 @@ CParticleContainer::CParticleContainer(CParticleContainer* pParent, CParticleEmi
 {
 	ZeroStruct(m_pBeforeWaterRO);
 	ZeroStruct(m_pAfterWaterRO);
+	ZeroStruct(m_pRecursiveRO);
 
 	assert(pEffect);
 	assert(pEffect->IsActive() || gEnv->IsEditing());
@@ -767,7 +768,13 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		}
 
 		const uint threadId = passInfo.ThreadID();
-		CRenderObject*& pRenderObject = (nObjFlags & FOB_AFTER_WATER) ? m_pAfterWaterRO[threadId] : m_pBeforeWaterRO[threadId];
+		CRenderObject* pRenderObject = nullptr;
+		if (passInfo.IsRecursivePass())
+			pRenderObject = m_pRecursiveRO[threadId];
+		else if (nObjFlags & FOB_AFTER_WATER)
+			pRenderObject = m_pAfterWaterRO[threadId];
+		else
+			pRenderObject = m_pBeforeWaterRO[threadId];
 		if (!pRenderObject)
 			pRenderObject = CreateRenderObject(nObjFlags);
 
@@ -785,7 +792,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 				nObjFlags &= ~FOB_OCTAGONAL;
 		}
 		
-		job.pRenderObject->m_ObjFlags |= (nObjFlags & ~0xFF) | RenParams.dwFObjFlags;
+		job.pRenderObject->m_ObjFlags = (nObjFlags & ~0xFF) | RenParams.dwFObjFlags;
 
 		pOD->m_FogVolumeContribIdx = PRParams.m_nFogVolumeContribIdx;
 
@@ -862,8 +869,15 @@ void CParticleContainer::ResetRenderObjects()
 				m_pBeforeWaterRO[threadId]->m_pRE->Release();
 			gEnv->pRenderer->EF_FreeObject(m_pBeforeWaterRO[threadId]);
 		}
+		if (m_pRecursiveRO[threadId])
+		{
+			if (m_pRecursiveRO[threadId]->m_pRE)
+				m_pRecursiveRO[threadId]->m_pRE->Release();
+			gEnv->pRenderer->EF_FreeObject(m_pRecursiveRO[threadId]);
+		}
 		m_pAfterWaterRO[threadId] = nullptr;
 		m_pBeforeWaterRO[threadId] = nullptr;
+		m_pRecursiveRO[threadId] = nullptr;
 	}
 }
 

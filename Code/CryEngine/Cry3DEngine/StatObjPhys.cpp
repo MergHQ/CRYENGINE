@@ -1687,8 +1687,9 @@ IStatObj* CStatObj::UpdateVertices(strided_pointer<Vec3> pVtx, strided_pointer<V
 			if (m_hasClothTangentsData && m_pClothTangentsData)
 				mesh->UnlockStream(VSF_TANGENTS);
 			mesh->UnlockStream(VSF_GENERAL);
-			mesh->UnLockForThreadAccess();
 		}
+
+		mesh->UnLockForThreadAccess();
 	}
 	return pObj;
 }

@@ -347,7 +347,7 @@ void CPostAA::Render()
 	static CCryNameTSCRC TechName("PostAA");
 	CShader* pShader = CShaderMan::s_shPostAA;
 
-	if (gcpRendD3D->IsHDRModeEnabled() && (nAAMode & (eAT_SMAA_MASK | eAT_FXAA_MASK | eAT_MSAA_MASK)) && pCurrRT)
+	if (gcpRendD3D->IsHDRModeEnabled() && (nAAMode & (eAT_SMAA_MASK | eAT_FXAA_MASK)) && pCurrRT)
 		gcpRendD3D->FX_PopRenderTarget(0);
 
 	gcpRendD3D->FX_SetActiveRenderTargets();// Avoiding d3d error (due deferred rt setup, ping-pong'ing between RTs we can bump into RTs still bound when binding it as a SRV - on this particular case, we would get a permanent black screen)

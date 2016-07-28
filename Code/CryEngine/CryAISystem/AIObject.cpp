@@ -208,9 +208,18 @@ void CAIObject::Reset(EObjectResetType type)
 
 	m_lastNavNodeIndex = 0;
 
-	// grenades and rockets are always observable
-	if ((m_nObjectType == AIOBJECT_RPG) || (m_nObjectType == AIOBJECT_GRENADE))
-		SetObservable(true);
+	switch (type)
+	{
+	case AIOBJRESET_INIT:
+		// grenades and rockets are always observable
+		if ((m_nObjectType == AIOBJECT_RPG) || (m_nObjectType == AIOBJECT_GRENADE))
+			SetObservable(true);
+		break;
+
+	case AIOBJRESET_SHUTDOWN:
+		SetObservable(false);
+		break;
+	}
 }
 
 size_t CAIObject::GetNavNodeIndex() const

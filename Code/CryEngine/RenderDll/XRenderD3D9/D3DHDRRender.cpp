@@ -1388,7 +1388,7 @@ void CHDRPostProcess::Render()
 
 	const uint32 nAAMode = gcpRendD3D->FX_GetAntialiasingType();
 	CTexture* pDstRT = CTexture::s_ptexSceneDiffuse;
-	if ((nAAMode & (eAT_SMAA_MASK | eAT_FXAA_MASK | eAT_MSAA_MASK)) && gRenDev->CV_r_PostProcess && pDstRT)
+	if ((nAAMode & (eAT_SMAA_MASK | eAT_FXAA_MASK)) && gRenDev->CV_r_PostProcess && pDstRT)
 	{
 		assert(pDstRT);
 		// Render to intermediate target, to avoid redundant imagecopy/stretchrect for post aa

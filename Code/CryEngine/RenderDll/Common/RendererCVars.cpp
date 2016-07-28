@@ -709,29 +709,8 @@ static void OnChange_CV_r_AntialiasingMode(ICVar* pCVar)
 
 	gRenDev->CV_r_AntialiasingMode = pCVar->GetIVal();
 
-	ICVar* pMSAA = gEnv->pConsole->GetCVar("r_MSAA");
-	ICVar* pMSAASamples = gEnv->pConsole->GetCVar("r_MSAA_samples");
-
 	int32 nVal = gRenDev->CV_r_AntialiasingMode;
 	nVal = min(eAT_AAMODES_COUNT - 1, nVal);
-
-	if (nVal >= eAT_MSAA_2X)
-	{
-		int32 nNumSamples = 2;
-		if (nVal == eAT_MSAA_4X)
-			nNumSamples = 4;
-		if (nVal == eAT_MSAA_8X)
-			nNumSamples = 8;
-
-		pMSAA->Set(1);
-		pMSAASamples->Set(nNumSamples);
-	}
-	else
-	{
-		pMSAA->Set(0);
-		pMSAASamples->Set(0);
-	}
-
 	pCVar->Set(nVal);
 	gRenDev->CV_r_AntialiasingMode = nVal;
 }
