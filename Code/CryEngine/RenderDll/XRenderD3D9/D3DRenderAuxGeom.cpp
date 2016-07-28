@@ -61,6 +61,8 @@ CRenderAuxGeomD3D::CRenderAuxGeomD3D(CD3D9Renderer& renderer)
 
 CRenderAuxGeomD3D::~CRenderAuxGeomD3D()
 {
+	ReleaseDeviceObjects();
+	
 	//SAFE_RELEASE(m_pAuxGeomShader);
 	// m_pAuxGeomShader released by CShaderMan ???
 	//delete m_pAuxGeomShader;

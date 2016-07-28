@@ -1001,6 +1001,9 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 	SAFE_DELETE(m_pWaterSimMgr);
 	SAFE_DELETE(m_pStereoRenderer);
 	SAFE_DELETE(m_pPipelineProfiler);
+#if defined(ENABLE_RENDER_AUX_GEOM)
+	SAFE_DELETE(m_pRenderAuxGeomD3D);
+#endif
 
 	for (size_t i = 0; i < 3; ++i)
 		while (m_CharCBActiveList[i].next != &m_CharCBActiveList[i])
@@ -1040,10 +1043,6 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 #if defined(ENABLE_NULL_D3D11DEVICE)
 	if (m_bShaderCacheGen)
 		GetDevice().ReleaseDevice();
-#endif
-
-#if defined(ENABLE_RENDER_AUX_GEOM)
-	SAFE_DELETE(m_pRenderAuxGeomD3D);
 #endif
 }
 
