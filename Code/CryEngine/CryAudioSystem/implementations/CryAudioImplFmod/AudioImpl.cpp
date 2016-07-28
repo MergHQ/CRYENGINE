@@ -158,6 +158,7 @@ void CAudioImpl::Update(float const deltaTime)
 				{
 					pCurrentStandaloneFile->pLowLevelSound->getOpenState(&state, nullptr, nullptr, nullptr);
 				}
+
 				if (state != FMOD_OPENSTATE_LOADING)
 				{
 					bool bStarted = (state == FMOD_OPENSTATE_READY || state == FMOD_OPENSTATE_PLAYING);
@@ -170,6 +171,7 @@ void CAudioImpl::Update(float const deltaTime)
 					pCurrentStandaloneFile->bWaitingForData = false;
 				}
 			}
+
 			if (pCurrentStandaloneFile->bHasFinished)
 			{
 				//send finished request
@@ -1082,13 +1084,23 @@ IAudioTrigger const* CAudioImpl::NewAudioTrigger(XmlNodeRef const pAudioTriggerN
 
 		if (m_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
 		{
+			EFmodEventType eventType = eFmodEventType_Start;
+			char const* const szFmodEventType = pAudioTriggerNode->getAttr(s_szFmodEventTypeAttribute);
+
+			if (szFmodEventType != nullptr &&
+			    szFmodEventType[0] != '\0' &&
+			    _stricmp(szFmodEventType, "stop") == 0)
+			{
+				eventType = eFmodEventType_Stop;
+			}
+
 			FMOD::Studio::EventDescription* pEventDescription = nullptr;
 			m_pSystem->getEventByID(&guid, &pEventDescription);
 
 #if defined (INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-			POOL_NEW(CAudioTrigger, pAudioTrigger)(AudioStringToId(path.c_str()), eFmodEventType_Start, pEventDescription, guid, path.c_str());
+			POOL_NEW(CAudioTrigger, pAudioTrigger)(AudioStringToId(path.c_str()), eventType, pEventDescription, guid, path.c_str());
 #else
-			POOL_NEW(CAudioTrigger, pAudioTrigger)(AudioStringToId(path.c_str()), eFmodEventType_Start, pEventDescription, guid);
+			POOL_NEW(CAudioTrigger, pAudioTrigger)(AudioStringToId(path.c_str()), eventType, pEventDescription, guid);
 #endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 		}
 		else
