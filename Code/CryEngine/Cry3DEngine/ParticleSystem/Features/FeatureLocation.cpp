@@ -551,16 +551,20 @@ private:
 	void SampleGeometry(const SUpdateContext& context)
 	{
 		const CParticleEmitter* pEmitter = context.m_runtime.GetEmitter();
-		if (!pEmitter)
-			return;
+		const CParticleComponent* pParentComponent = context.m_runtime.GetComponent()->GetParentComponent();
+
 		GeomRef emitterGeometry = pEmitter->GetEmitterGeometry();
 		bool geometryCentered = false;
-		if (CParticleComponent* pParentComponent = context.m_runtime.GetComponent()->GetParentComponent())
+		if (pParentComponent)
 		{
-			if (IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh)
+			IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh;
+			if (pMesh)
 				emitterGeometry.Set(pMesh);
 			geometryCentered = pParentComponent->GetComponentParams().m_meshCentered;
 		}
+		if (!emitterGeometry)
+			return;
+
 		const EGeomType geomType = (EGeomType)m_source;
 		const EGeomForm geomForm = (EGeomForm)m_location;
 		QuatTS geomLocation = pEmitter->GetEmitterGeometryLocation();

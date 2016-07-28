@@ -29,10 +29,14 @@ void GeomRef::Release() const
 int GeomRef::Set(IEntity* pEntity, int iSlot)
 {
 	if (!pEntity)
+	{
+		m_pMeshObj = nullptr;
+		m_pPhysEnt = nullptr;
 		return -1;
+	}
 
 	m_pPhysEnt = pEntity->GetPhysics();
-	m_pMeshObj = 0;
+	m_pMeshObj = nullptr;
 	int iStart = iSlot < 0 ? 0 : iSlot;
 	int iEnd = iSlot < 0 ? pEntity->GetSlotCount() : iSlot + 1;
 	iSlot = -1;

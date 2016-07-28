@@ -586,10 +586,8 @@ IEntity* CParticleEmitter::GetEmitGeometryEntity() const
 
 void CParticleEmitter::UpdateEmitGeomFromEntity()
 {
-	if (IEntity* pEntity = GetEmitGeometryEntity())
-	{
-		m_emitterGeometrySlot = m_emitterGeometry.Set(pEntity, m_entitySlot);
-	}
+	IEntity* pEntity = GetEmitGeometryEntity();
+	m_emitterGeometrySlot = m_emitterGeometry.Set(pEntity, m_entitySlot);
 }
 
 QuatTS CParticleEmitter::GetEmitterGeometryLocation() const
