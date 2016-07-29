@@ -439,9 +439,12 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 		cb.CV_ScreenToWorldBasis.SetColumn(2, Vec3r(vWBasisZ));
 		cb.CV_ScreenToWorldBasis.SetColumn(3, viewInfo.pRenderCamera->vOrigin);
 
+		Vec3 sunColor, skyColor;
+		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
+		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKY_COLOR, skyColor);
 		cb.CV_SunLightDir = Vec4(rp.m_pSunLight ? rp.m_pSunLight->GetPosition().normalized() : Vec3(0, 0, 0), 1.0f);
-		cb.CV_SunColor = Vec4(gEnv->p3DEngine->GetSunColor(), 0.0f);
-		cb.CV_SkyColor = Vec4(gEnv->p3DEngine->GetSkyColor(), 1.0f);
+		cb.CV_SunColor = Vec4(sunColor, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
+		cb.CV_SkyColor = Vec4(skyColor, 1.0f);
 		cb.CV_FogColor = Vec4(rp.m_TI[rp.m_nProcessThreadID].m_FS.m_CurColor.toVec3(), perFrameConstants.pVolumetricFogParams.z);
 		cb.CV_TerrainInfo = Vec4(gEnv->p3DEngine->GetTerrainTextureMultiplier(), 0, 0, 0);
 
