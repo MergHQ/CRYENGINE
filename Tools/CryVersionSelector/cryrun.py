@@ -13,6 +13,8 @@ import zipfile
 import stat
 
 from win32com.shell import shell, shellcon
+import win32file, win32api
+import admin
 
 import cryproject, cryregistry
 
@@ -70,6 +72,12 @@ def get_cmake_path():
 		return path
 	
 	path= os.path.join (shell.SHGetFolderPath (0, shellcon.CSIDL_PROGRAM_FILESX86, None, 0), 'CMake', 'bin', program)
+	if os.path.isfile (path):
+		return path
+	
+	#http://stackoverflow.com/questions/445139/how-to-get-program-files-folder-path-not-program-files-x86-from-32bit-wow-pr
+	szNativeProgramFilesFolder= win32api.ExpandEnvironmentStrings("%ProgramW6432%")
+	path= os.path.join (szNativeProgramFilesFolder, 'CMake', 'bin', program)
 	if os.path.isfile (path):
 		return path
 	
@@ -212,7 +220,8 @@ def cmd_monodev (args):
 	if mono_solution is None:
 		error_mono_not_set (args.project_file)
 	
-	mono_solution= os.path.abspath (os.path.join (os.path.dirname (args.project_file), mono_solution))
+	dirname= os.path.dirname (args.project_file)
+	mono_solution= os.path.abspath (os.path.join (dirname, mono_solution))
 	if not os.path.isfile (mono_solution):
 		error_mono_not_found (mono_solution)
 	
@@ -221,7 +230,36 @@ def cmd_monodev (args):
 	if not os.path.isfile (tool_path):
 		error_engine_tool_not_found (tool_path)
 
-	#---
+	#--- create symlinks
+	symlinks= []
+
+	SymlinkFileName= os.path.join (dirname, 'Code', 'CryManaged', 'CESharp')
+	TargetFileName= os.path.join (engine_path, 'Code', 'CryManaged', 'CESharp')
+	symlinks.append ((SymlinkFileName, TargetFileName))
+
+	SymlinkFileName= os.path.join (dirname, 'bin', args.platform, 'CryEngine.Common.dll')
+	TargetFileName= os.path.join (engine_path, 'bin', args.platform, 'CryEngine.Common.dll')
+	symlinks.append ((SymlinkFileName, TargetFileName))
+	
+	symlinks= [(SymlinkFileName, TargetFileName) for (SymlinkFileName, TargetFileName) in symlinks if not (os.path.islink (SymlinkFileName) and os.path.samefile (SymlinkFileName, TargetFileName))]
+	if symlinks and not admin.isUserAdmin():
+		cmdline= getattr( sys, 'frozen', False ) and sys.argv or None
+		rc = admin.runAsAdmin(cmdline)
+		sys.exit(rc)
+
+	for (SymlinkFileName, TargetFileName) in symlinks:
+		if os.path.islink (SymlinkFileName):
+			os.remove (SymlinkFileName)
+		
+		dirname= os.path.dirname (SymlinkFileName)
+		if not os.path.isdir (dirname):
+			os.makedirs (dirname)
+
+		SYMBOLIC_LINK_FLAG_DIRECTORY= 0x1
+		dwFlags= os.path.isdir (TargetFileName) and SYMBOLIC_LINK_FLAG_DIRECTORY or 0x0
+		win32file.CreateSymbolicLink (SymlinkFileName, TargetFileName, dwFlags)
+
+	#--- launch monodev
 
 	subcmd= (
 		tool_path,
