@@ -621,12 +621,17 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 
 	if (!IsShadowGenView())
 	{
+		const bool bHasDebug = (nBatchFlags & FB_DEBUG) != 0;
+		const bool bIsMaterialEmissive = (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive());
+		const bool bIsTransparent = (nRenderList == EFSLIST_TRANSP);
+
 		if (nBatchFlags & FB_ZPREPASS)
 		{
 			m_renderItems[EFSLIST_ZPREPASS].push_back(ri);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_ZPREPASS], nBatchFlags);
 		}
-		if ((nBatchFlags & FB_DEBUG) || (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive()))
+
+		if (bHasDebug || (bIsMaterialEmissive && !bIsTransparent))
 		{
 			m_renderItems[EFSLIST_FORWARD_OPAQUE].push_back(ri);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_FORWARD_OPAQUE], nBatchFlags);

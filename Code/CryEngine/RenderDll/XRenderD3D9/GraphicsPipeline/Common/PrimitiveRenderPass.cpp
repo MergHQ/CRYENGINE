@@ -111,6 +111,8 @@ void CRenderPrimitive::Reset(EPrimitiveFlags flags)
 
 	m_pResources = std::move(pResources);
 	m_instances.resize(1);
+
+	m_constantManager.Reset();
 }
 
 void CRenderPrimitive::AllocateTypedConstantBuffer(EConstantBufferShaderSlot shaderSlot, int size, EShaderStage shaderStages)

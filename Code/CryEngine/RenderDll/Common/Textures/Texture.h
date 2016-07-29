@@ -1690,8 +1690,8 @@ public:
 	void                             SRGBRead(bool bEnable = false)              { m_bIsSRGB = bEnable; }
 	const bool                       IsCustomFormat() const                      { return m_bCustomFormat; }
 	void                             SetCustomFormat()                           { m_bCustomFormat = true; }
-	void                             SetWidth(int16 width)                       { m_nWidth = std::max<int16>(width, 1); }
-	void                             SetHeight(int16 height)                     { m_nHeight = std::max<int16>(height, 1); }
+	void                             SetWidth(int16 width)                       { m_nWidth = std::max<int16>(width, 1); m_nMips = 1; }
+	void                             SetHeight(int16 height)                     { m_nHeight = std::max<int16>(height, 1); m_nMips = 1; }
 	int                              GetUpdateFrameID() const                    { return m_nUpdateFrameID; }
 	ILINE const int32                GetActualSize() const                       { return m_nActualSize; }
 	ILINE const int32                GetPersistentSize() const                   { return m_nPersistentSize; }

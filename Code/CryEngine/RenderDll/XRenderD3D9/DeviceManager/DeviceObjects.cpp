@@ -100,6 +100,11 @@ SDeviceObjectHelpers::CShaderConstantManager::CShaderConstantManager(CShaderCons
 	other.m_pShaderReflection.reset();
 }
 
+void SDeviceObjectHelpers::CShaderConstantManager::Reset()
+{
+	m_constantBuffers.clear();
+}
+
 bool SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags)
 {
 	if (!m_pShaderReflection)

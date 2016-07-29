@@ -2521,7 +2521,11 @@ bool CHWShader::_OpenCacheFile(float fVersion, SShaderCache* pCache, CHWShader* 
 		if (nCache == CACHE_USER && !bReadOnly)
 		{
 			if (!pRF->mfOpen(RA_CREATE | (CParserBin::m_bEndians ? RA_ENDIANS : 0), &gRenDev->m_cEF.m_ResLookupDataMan[nCache]))
+			{
+				pRF->mfClose();
+				SAFE_DELETE(pRF);
 				return false;
+			}
 
 			SResFileLookupData* pLookup = pRF->GetLookupData(true, CRC32, (float)FX_CACHE_VER);
 			if (pSHHW)

@@ -2639,6 +2639,10 @@ bool CTexture::ReloadFile(const char* szFileName)
 void CTexture::ReloadTextures()
 {
 	LOADING_TIME_PROFILE_SECTION;
+
+	// Flush any outstanding texture requests before reloading
+	gEnv->pRenderer->FlushPendingTextureTasks();
+
 	SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
 	if (pRL)
 	{

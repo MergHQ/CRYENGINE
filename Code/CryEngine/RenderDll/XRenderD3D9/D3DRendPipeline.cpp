@@ -675,6 +675,11 @@ void CD3D9Renderer::FX_PipelineShutdown(bool bFastShutdown)
 
 void CD3D9Renderer::RT_GraphicsPipelineShutdown()
 {
+	SAFE_DELETE(CTexture::s_pMipperWaterVolumeDDN);
+	SAFE_DELETE(CTexture::s_pMipperWaterVolumeRefl[0]);
+	SAFE_DELETE(CTexture::s_pMipperWaterVolumeRefl[1]);
+	SAFE_DELETE(CTexture::s_pMipperWaterRipplesDDN);
+	
 	SAFE_DELETE(m_pGraphicsPipeline);
 	CCryDeviceWrapper::GetObjectFactory().ReleaseResources();
 }
