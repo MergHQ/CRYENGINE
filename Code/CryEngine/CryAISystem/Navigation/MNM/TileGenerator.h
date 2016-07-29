@@ -10,16 +10,33 @@
 #include "CompactSpanGrid.h"
 #include "Tile.h"
 #include "BoundingVolume.h"
+#include "HashComputer.h"
+
+#include <CryAISystem/NavigationSystem/MNMTileGenerator.h>
 
 #include <CryMath/SimpleHashLookUp.h>
+
+#include <CryCore/Containers/CryListenerSet.h>
 
 #if DEBUG_MNM_ENABLED
 	#define DEBUG_MNM_GATHER_NONWALKABLE_REASONS       (1)
 	#define DEBUG_MNM_GATHER_EXTRA_CONTOUR_VERTEX_INFO (1)
 #endif // DEBUG_MNM_ENABLED
 
+struct IExternalNavigationMeshProvider;
+
 namespace MNM
 {
+
+struct STileGeneratorExtensionsContainer
+{
+	typedef VectorMap<TileGeneratorExtensionID, MNM::TileGenerator::IExtension*> TileGeneratorExtensionPtrsMap;
+
+	TileGeneratorExtensionPtrsMap extensions;
+	TileGeneratorExtensionID      idCounter;
+	mutable CryReadModifyLock     extensionsLock;
+};
+
 struct SSpanCoord
 {
 	struct Hash
@@ -45,7 +62,7 @@ struct SSpanCoord
 	size_t spanAbsIdx;
 };
 
-class TileGenerator
+class CTileGenerator
 {
 public:
 	enum
@@ -68,10 +85,11 @@ public:
 			, flags(0)
 			, blurAmount(0)
 			, minWalkableArea(16)
-			, boundary(0)
-			, exclusions(0)
+			, boundary(nullptr)
+			, exclusions(nullptr)
 			, exclusionCount(0)
 			, hashValue(0)
+			, pTileGeneratorExtensions(nullptr)
 		{}
 
 		enum Flags
@@ -113,11 +131,14 @@ public:
 			uint32                       maxWaterDepth   : 8;
 
 			NavigationMeshEntityCallback callback;
-		}                     agent;
+		}                                        agent;
 
-		const BoundingVolume* boundary;
-		const BoundingVolume* exclusions;
-		uint32                hashValue;
+		const BoundingVolume*                    boundary;
+		const BoundingVolume*                    exclusions;
+		uint32                                   hashValue;
+
+		const STileGeneratorExtensionsContainer* pTileGeneratorExtensions;
+		NavigationAgentTypeID                    navAgentTypeId;
 	};
 
 	enum ProfilerTimers
@@ -175,7 +196,7 @@ public:
 		LastDrawMode,
 	};
 
-	bool Generate(const Params& params, Tile& tile, uint32* hashValue);
+	bool Generate(const Params& params, STile& tile, uint32* hashValue);
 	void Draw(const EDrawMode mode, const bool bDrawAdditionalInfo) const;
 
 	typedef MNMProfiler<ProfilerMemoryUsers, ProfilerTimers, ProfilerStats> ProfilerType;
@@ -343,6 +364,50 @@ protected:
 		}
 	};
 
+	class CGeneratedMesh : public TileGenerator::IMesh
+	{
+	public:
+		typedef uint64                                               TileVertexKey;
+		typedef simple_hash_lookup<TileVertexKey, Tile::VertexIndex> TileVertexIndexLookUp;
+		typedef std::vector<Tile::STriangle>                         Triangles;
+		typedef std::vector<Tile::Vertex>                            Vertices;
+
+	public:
+		void Clear();
+		void SetTileAabb(const AABB& tileAabbWorld) { m_tileAabb = tileAabbWorld; }
+
+		bool IsEmpty() const                        { return m_triangles.empty(); }
+		void CopyIntoTile(STile& tile) const;
+
+		// Functions for Triangulate()
+		void             Reserve(size_t trianglesCount, size_t verticesCount);
+		size_t           InsertVertex(const Tile::Vertex& vertex);
+		Tile::STriangle& InsertTriangle();
+
+		// TileGenerator::IMesh
+		virtual bool AddTrianglesWorld(const Triangle* pTriangles, const size_t count, const Tile::STriangle::EFlags flags) override;
+		// ~TileGenerator::IMesh
+
+		void                 AddStatsToProfiler(ProfilerType& profiler) const;
+
+		const Triangles&     GetTriangles() const { return m_triangles; }
+		const Vertices&      GetVertices() const  { return m_vertices; }
+
+		void                 ResetHashSeed(uint32 hashSeed);
+		uint32               CompleteAndGetHashValue();
+
+		static TileVertexKey GetKeyFromTileVertex(const Tile::Vertex& vtx);
+
+	private:
+		enum { k_maxTriangleCount = 1024 };
+
+		Triangles             m_triangles;
+		Vertices              m_vertices;
+		TileVertexIndexLookUp m_vertexIndexLookUp;
+		AABB                  m_tileAabb;
+		HashComputer          m_hashComputer;
+	};
+
 	// Call this when reusing an existing TileGenerator for a second job.
 	// Clears all the data but leaves the allocated memory.
 	void                 Clear();
@@ -414,6 +479,8 @@ protected:
 	struct SSpanClearance;
 	struct SNonWalkableNeighbourReason;
 
+	bool        GenerateFromVoxelizedVolume(const AABB& aabb, const bool fullyContained);
+
 	void        FilterWalkable(const AABB& aabb, bool fullyContained = true);
 	static bool FilterWalkable_CheckSpanBackface(const CompactSpanGrid::Span& span);
 	static bool FilterWalkable_CheckSpanWaterDepth(const CompactSpanGrid::Span& span, const Params& params);
@@ -440,7 +507,7 @@ protected:
 			: pos(pos.x, pos.y)
 			, top(pos.z)
 			, index(~0ul)
-			, label(TileGenerator::NoLabel)
+			, label(CTileGenerator::NoLabel)
 			, paint(NoPaint)
 			, isValid(false)
 		{}
@@ -448,7 +515,7 @@ protected:
 			: pos(xy)
 			, top(z)
 			, index(~0ul)
-			, label(TileGenerator::NoLabel)
+			, label(CTileGenerator::NoLabel)
 			, paint(NoPaint)
 			, isValid(false)
 		{}
@@ -505,8 +572,8 @@ protected:
 		int     turns;
 	};
 
-	void   TraceContour(TileGenerator::TracerPath& path, const Tracer& start, size_t erosion, size_t climbableVoxelCount, const NeighbourInfoRequirements& contourReq);
-	int    LabelTracerPath(const TileGenerator::TracerPath& path, size_t climbableVoxelCount, Region& region, Contour& contour, const uint16 internalLabel, const uint16 internalLabelFlags, const uint16 externalLabel);
+	void   TraceContour(CTileGenerator::TracerPath& path, const Tracer& start, size_t erosion, size_t climbableVoxelCount, const NeighbourInfoRequirements& contourReq);
+	int    LabelTracerPath(const CTileGenerator::TracerPath& path, size_t climbableVoxelCount, Region& region, Contour& contour, const uint16 internalLabel, const uint16 internalLabelFlags, const uint16 externalLabel);
 
 	void   TidyUpContourEnd(Contour& contour);
 	size_t ExtractContours();
@@ -524,6 +591,7 @@ protected:
 	                       VertexIndexLookUp& lookUp);
 	size_t     Triangulate();
 	void       BuildBVTree();
+
 	ILINE void CacheTracerPath(const TracerPath& path)
 	{
 #ifndef _RELEASE
@@ -584,16 +652,12 @@ protected:
 	void   DrawSimplifiedContours(const Vec3& origin) const;
 	void   DrawSegmentation(const Vec3& origin, const bool bDrawAdditionalInfo) const;
 
-	Params       m_params;
-	ProfilerType m_profiler;
+	Params         m_params;
+	ProfilerType   m_profiler;
 
-	typedef std::vector<Tile::Triangle> Triangles;
-	Triangles m_triangles;
+	CGeneratedMesh m_mesh;
 
-	typedef std::vector<Tile::Vertex> Vertices;
-	Vertices m_vertices;
-
-	typedef std::vector<Tile::BVNode> BVTree;
+	typedef std::vector<Tile::SBVNode> BVTree;
 	BVTree          m_bvtree;
 
 	CompactSpanGrid m_spanGrid;

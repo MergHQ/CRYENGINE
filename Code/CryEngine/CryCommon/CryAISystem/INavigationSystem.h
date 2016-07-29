@@ -6,6 +6,8 @@
 #pragma once
 
 #include <CryAISystem/IMNM.h>
+#include <CryAISystem/NavigationSystem/NavigationIdTypes.h>
+#include <functional>
 
 struct IAIPathAgent;
 struct IOffMeshNavigationManager;
@@ -15,32 +17,6 @@ typedef uint64 NavigationMeshGUID;
 typedef uint64 NavigationVolumeGUID;
 #endif
 
-enum ENavigationIDTag
-{
-	MeshIDTag = 0,
-	AgentTypeIDTag,
-	VolumeIDTag,
-};
-
-template<ENavigationIDTag T>
-struct TNavigationID
-{
-	explicit TNavigationID(uint32 id = 0) : id(id) {}
-
-	TNavigationID& operator=(const TNavigationID& other)        { id = other.id; return *this; }
-
-	ILINE          operator uint32() const                      { return id; }
-	ILINE bool     operator==(const TNavigationID& other) const { return id == other.id; }
-	ILINE bool     operator!=(const TNavigationID& other) const { return id != other.id; }
-	ILINE bool     operator<(const TNavigationID& other) const  { return id < other.id; }
-
-private:
-	uint32 id;
-};
-
-typedef TNavigationID<MeshIDTag>                                  NavigationMeshID;
-typedef TNavigationID<AgentTypeIDTag>                             NavigationAgentTypeID;
-typedef TNavigationID<VolumeIDTag>                                NavigationVolumeID;
 typedef Functor3<NavigationAgentTypeID, NavigationMeshID, uint32> NavigationMeshChangeCallback;
 typedef Functor2wRet<IPhysicalEntity&, uint32&, bool>             NavigationMeshEntityCallback;
 
@@ -53,6 +29,18 @@ struct INavigationSystemUser
 	virtual void UpdateForSynchronousWritingOperations() = 0;
 	virtual void CompleteRunningTasks() = 0;
 };
+
+namespace MNM
+{
+namespace Tile
+{
+struct ITileGrid;
+} // namespace Tile
+namespace TileGenerator
+{
+struct IExtension;
+} // namespace TileGenerator
+} // namespace MNM
 
 struct INavigationSystem
 {
@@ -227,28 +215,34 @@ struct INavigationSystem
 	//! \param shapeName Name of the Navigation Area shape.
 	//! \param outVolumeId Returns NavigationVolumeID, if there is a volume already loaded from exported data with the same shapeName.
 	//! \return true if the area name is successfully registered.
-	virtual bool                             RegisterArea(const char* shapeName, NavigationVolumeID& outVolumeId) = 0;
-	virtual void                             UnRegisterArea(const char* shapeName) = 0;
-	virtual NavigationVolumeID               GetAreaId(const char* shapeName) const = 0;
-	virtual void                             SetAreaId(const char* shapeName, NavigationVolumeID id) = 0;
-	virtual void                             UpdateAreaNameForId(const NavigationVolumeID id, const char* newShapeName) = 0;
+	virtual bool               RegisterArea(const char* shapeName, NavigationVolumeID& outVolumeId) = 0;
+	virtual void               UnRegisterArea(const char* shapeName) = 0;
+	virtual NavigationVolumeID GetAreaId(const char* shapeName) const = 0;
+	virtual void               SetAreaId(const char* shapeName, NavigationVolumeID id) = 0;
+	virtual void               UpdateAreaNameForId(const NavigationVolumeID id, const char* newShapeName) = 0;
 	//! Remove navigation meshes and volumes which don't have corresponding registered Navigation Areas. This may happen in editor, when the exported level data is older that the saved level.
-	virtual void                             RemoveLoadedMeshesWithoutRegisteredAreas() = 0;
+	virtual void               RemoveLoadedMeshesWithoutRegisteredAreas() = 0;
 
-	virtual void                             StartWorldMonitoring() = 0;
-	virtual void                             StopWorldMonitoring() = 0;
+	virtual void               StartWorldMonitoring() = 0;
+	virtual void               StopWorldMonitoring() = 0;
 
-	virtual bool                             IsInUse() const = 0;
+	virtual bool               IsInUse() const = 0;
 
-	virtual void                             CalculateAccessibility() = 0;
+	virtual void               CalculateAccessibility() = 0;
 
-	virtual uint32                           GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location) = 0;
-	virtual void                             GetTileBoundsForMesh(NavigationMeshID meshID, uint32 tileID, AABB& bounds) const = 0;
+	virtual uint32             GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location) = 0;
+	virtual void               GetTileBoundsForMesh(NavigationMeshID meshID, uint32 tileID, AABB& bounds) const = 0;
 
-	virtual MNM::TriangleID                  GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location) = 0;
+	virtual MNM::TriangleID    GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location) = 0;
+
+	//! Get a MNM NavMesh's ITileGrid, which provides an access to the NavMesh data
+	virtual const MNM::Tile::ITileGrid*      GetMNMTileGrid(NavigationMeshID meshID) const = 0;
 
 	virtual const IOffMeshNavigationManager& GetIOffMeshNavigationManager() const = 0;
 	virtual IOffMeshNavigationManager&       GetIOffMeshNavigationManager() = 0;
+
+	virtual TileGeneratorExtensionID         RegisterTileGeneratorExtension(MNM::TileGenerator::IExtension& extension) = 0;
+	virtual bool                             UnRegisterTileGeneratorExtension(const TileGeneratorExtensionID extensionId) = 0;
 	// </interfuscator:shuffle>
 };
 

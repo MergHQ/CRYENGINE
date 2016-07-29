@@ -656,6 +656,11 @@ void CMNMPathfinder::ConstructPathIfWayWasFound(MNM::PathfinderUtils::Processing
 
 			// Add Exit point
 			pathPoint.vPos = pOffMeshLink->GetEndPosition();
+			CRY_ASSERT_MESSAGE(i > 0, "Path contains offmesh link without exit waypoint");
+			if (i > 0)
+			{
+				pathPoint.iTriId = outputWay[i - 1].triangleID;
+			}
 			outputPath.PushFront(pathPoint);
 
 			// Add Entry point
@@ -675,6 +680,11 @@ void CMNMPathfinder::ConstructPathIfWayWasFound(MNM::PathfinderUtils::Processing
 		INavPathPtr navPath = resultData.pPath;
 		resultData.result = eMNMPR_Success;
 		navPath->Clear("CMNMPathfinder::ProcessPathRequest");
+
+		// Assign triangleID of start and end points (waypoints are in reverse order)
+		navPathEnd.iTriId = outputWay[0].triangleID;
+		navPathStart.iTriId = outputWay[processingContext.queryResult.GetWaySize() - 1].triangleID;
+
 		//Insert start/end locations in the path
 		outputPath.PushBack(navPathEnd);
 		outputPath.PushFront(navPathStart);

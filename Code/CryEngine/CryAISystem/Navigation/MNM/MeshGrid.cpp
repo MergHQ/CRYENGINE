@@ -82,6 +82,8 @@ void MeshGrid::TileContainerArray::Grow(size_t amount)
 	TileContainer* tiles = new TileContainer[m_tileCapacity];
 
 	// careful #1: memcpy'ing is ok as Tile contains only primitive data types and pointers
+	// #MNM_TODO pavloi 2016.07.26: can't use std::is_trivially_copyable - unexpectedly it's not implemented for clang/gcc in our build configurations
+	//COMPILE_TIME_ASSERT(std::is_trivially_copyable<TileContainer>::value);
 	if (oldCapacity)
 		memcpy(tiles, m_tiles, oldCapacity * sizeof(TileContainer));
 
@@ -272,7 +274,7 @@ size_t MeshGrid::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriC
 			{
 				if (const TileID tileID = GetTileID(x, y, z))
 				{
-					const Tile& tile = GetTile(tileID);
+					const STile& tile = GetTile(tileID);
 
 					const vector3_t tileOrigin(
 					  real_t(x * m_params.tileSize.x),
@@ -288,7 +290,7 @@ size_t MeshGrid::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriC
 					{
 						for (size_t i = 0; i < tile.triangleCount; ++i)
 						{
-							const Tile::Triangle& triangle = tile.triangles[i];
+							const Tile::STriangle& triangle = tile.triangles[i];
 
 							const Tile::Vertex& v0 = tile.vertices[triangle.vertex[0]];
 							const Tile::Vertex& v1 = tile.vertices[triangle.vertex[1]];
@@ -317,7 +319,7 @@ size_t MeshGrid::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriC
 
 						while (nodeID < nodeCount)
 						{
-							const Tile::BVNode& node = tile.nodes[nodeID];
+							const Tile::SBVNode& node = tile.nodes[nodeID];
 
 							if (!relative.overlaps(node.aabb))
 								nodeID += node.leaf ? 1 : node.offset;
@@ -525,7 +527,7 @@ bool MeshGrid::GetVertices(TriangleID triangleID, vector3_t& v0, vector3_t& v1, 
 		  real_t(container.y * m_params.tileSize.y),
 		  real_t(container.z * m_params.tileSize.z));
 
-		const Tile::Triangle& triangle = container.tile.triangles[ComputeTriangleIndex(triangleID)];
+		const Tile::STriangle& triangle = container.tile.triangles[ComputeTriangleIndex(triangleID)];
 		v0 = origin + vector3_t(container.tile.vertices[triangle.vertex[0]]);
 		v1 = origin + vector3_t(container.tile.vertices[triangle.vertex[1]]);
 		v2 = origin + vector3_t(container.tile.vertices[triangle.vertex[2]]);
@@ -546,13 +548,13 @@ bool MeshGrid::GetLinkedEdges(TriangleID triangleID, size_t& linkedEdges) const
 	if (const TileID tileID = ComputeTileID(triangleID))
 	{
 		const TileContainer& container = m_tiles[tileID - 1];
-		const Tile::Triangle& triangle = container.tile.triangles[ComputeTriangleIndex(triangleID)];
+		const Tile::STriangle& triangle = container.tile.triangles[ComputeTriangleIndex(triangleID)];
 
 		linkedEdges = 0;
 
 		for (size_t l = 0; l < triangle.linkCount; ++l)
 		{
-			const Tile::Link& link = container.tile.links[triangle.firstLink + l];
+			const Tile::SLink& link = container.tile.links[triangle.firstLink + l];
 			const size_t edge = link.edge;
 			linkedEdges |= static_cast<size_t>(1) << edge;
 		}
@@ -563,7 +565,7 @@ bool MeshGrid::GetLinkedEdges(TriangleID triangleID, size_t& linkedEdges) const
 	return false;
 }
 
-bool MeshGrid::GetTriangle(TriangleID triangleID, Tile::Triangle& triangle) const
+bool MeshGrid::GetTriangle(TriangleID triangleID, Tile::STriangle& triangle) const
 {
 	if (const TileID tileID = ComputeTileID(triangleID))
 	{
@@ -591,7 +593,7 @@ bool MeshGrid::PushPointInsideTriangle(const TriangleID triangleID, vector3_t& l
 		  real_t(container.z * m_params.tileSize.z));
 		const vector3_t locationTileOffsetted = (location - origin);
 
-		const Tile::Triangle& triangle = container.tile.triangles[ComputeTriangleIndex(triangleID)];
+		const Tile::STriangle& triangle = container.tile.triangles[ComputeTriangleIndex(triangleID)];
 		v0 = vector3_t(container.tile.vertices[triangle.vertex[0]]);
 		v1 = vector3_t(container.tile.vertices[triangle.vertex[1]]);
 		v2 = vector3_t(container.tile.vertices[triangle.vertex[2]]);
@@ -621,11 +623,11 @@ void MeshGrid::ResetConnectedIslandsIDs()
 {
 	for (TileMap::iterator tileIt = m_tileMap.begin(); tileIt != m_tileMap.end(); ++tileIt)
 	{
-		Tile& tile = m_tiles[tileIt->second - 1].tile;
+		STile& tile = m_tiles[tileIt->second - 1].tile;
 
 		for (uint16 i = 0; i < tile.triangleCount; ++i)
 		{
-			Tile::Triangle& triangle = tile.triangles[i];
+			Tile::STriangle& triangle = tile.triangles[i];
 			triangle.islandID = MNM::Constants::eStaticIsland_InvalidIslandID;
 		}
 	}
@@ -655,10 +657,10 @@ void MeshGrid::ComputeStaticIslands()
 	for (TileMap::iterator tileIt = m_tileMap.begin(); tileIt != m_tileMap.end(); ++tileIt)
 	{
 		const TileID tileID = tileIt->second;
-		Tile& tile = m_tiles[tileID - 1].tile;
+		STile& tile = m_tiles[tileID - 1].tile;
 		for (uint16 triangleIndex = 0; triangleIndex < tile.triangleCount; ++triangleIndex)
 		{
-			Tile::Triangle& sourceTriangle = tile.triangles[triangleIndex];
+			Tile::STriangle& sourceTriangle = tile.triangles[triangleIndex];
 			if (sourceTriangle.islandID == MNM::Constants::eStaticIsland_InvalidIslandID)
 			{
 				Island& newIsland = GetNewIsland();
@@ -681,18 +683,18 @@ void MeshGrid::ComputeStaticIslands()
 					CRY_ASSERT_MESSAGE(currentTileId > 0, "ComputeStaticIslands is trying to access a triangle ID associated with an invalid tile id.");
 
 					const TileContainer& container = m_tiles[currentTileId - 1];
-					const Tile& currentTile = container.tile;
-					const Tile::Triangle& currentTriangle = currentTile.triangles[ComputeTriangleIndex(currentTriangleID)];
+					const STile& currentTile = container.tile;
+					const Tile::STriangle& currentTriangle = currentTile.triangles[ComputeTriangleIndex(currentTriangleID)];
 
 					// Calc area of this triangle
 					float farea = currentTile.GetTriangleArea(currentTriangleID).as_float();
 
 					for (uint16 l = 0; l < currentTriangle.linkCount; ++l)
 					{
-						const Tile::Link& link = currentTile.links[currentTriangle.firstLink + l];
-						if (link.side == Tile::Link::Internal)
+						const Tile::SLink& link = currentTile.links[currentTriangle.firstLink + l];
+						if (link.side == Tile::SLink::Internal)
 						{
-							Tile::Triangle& nextTriangle = currentTile.triangles[link.triangle];
+							Tile::STriangle& nextTriangle = currentTile.triangles[link.triangle];
 							if (nextTriangle.islandID == MNM::Constants::eGlobalIsland_InvalidIslandID)
 							{
 								++totalTrianglesToVisit;
@@ -701,7 +703,7 @@ void MeshGrid::ComputeStaticIslands()
 								trianglesToVisit.push_back(ComputeTriangleID(currentTileId, link.triangle));
 							}
 						}
-						else if (link.side == Tile::Link::OffMesh)
+						else if (link.side == Tile::SLink::OffMesh)
 						{
 							QueueIslandConnectionSetup(currentTriangle.islandID, currentTriangleID, link.triangle);
 						}
@@ -710,8 +712,8 @@ void MeshGrid::ComputeStaticIslands()
 							const TileID neighbourTileID = GetNeighbourTileID(container.x, container.y, container.z, link.side);
 							CRY_ASSERT_MESSAGE(neighbourTileID > 0, "ComputeStaticIslands is trying to access an invalid neighbour tile.");
 
-							const Tile& neighbourTile = m_tiles[neighbourTileID - 1].tile;
-							Tile::Triangle& nextTriangle = neighbourTile.triangles[link.triangle];
+							const STile& neighbourTile = m_tiles[neighbourTileID - 1].tile;
+							Tile::STriangle& nextTriangle = neighbourTile.triangles[link.triangle];
 							if (nextTriangle.islandID == MNM::Constants::eGlobalIsland_InvalidIslandID)
 							{
 								++totalTrianglesToVisit;
@@ -755,7 +757,7 @@ void MeshGrid::ResolvePendingIslandConnectionRequests(const NavigationMeshID mes
 		OffMeshNavigation::QueryLinksResult links = offMeshNavigation.GetLinksForTriangle(request.startingTriangleID, request.offMeshLinkIndex);
 		while (WayTriangleData nextTri = links.GetNextTriangle())
 		{
-			Tile::Triangle endTriangle;
+			Tile::STriangle endTriangle;
 			if (GetTriangle(nextTri.triangleID, endTriangle))
 			{
 				const OffMeshLink* pLink = offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID);
@@ -770,14 +772,14 @@ void MeshGrid::ResolvePendingIslandConnectionRequests(const NavigationMeshID mes
 
 void MeshGrid::SearchForIslandConnectionsToRefresh(const TileID tileID)
 {
-	Tile& tile = m_tiles[tileID - 1].tile;
+	STile& tile = m_tiles[tileID - 1].tile;
 	for (uint16 triangleIndex = 0; triangleIndex < tile.triangleCount; ++triangleIndex)
 	{
-		Tile::Triangle& triangle = tile.triangles[triangleIndex];
+		Tile::STriangle& triangle = tile.triangles[triangleIndex];
 		for (uint16 l = 0; l < triangle.linkCount; ++l)
 		{
-			const Tile::Link& link = tile.links[triangle.firstLink + l];
-			if (link.side == Tile::Link::OffMesh)
+			const Tile::SLink& link = tile.links[triangle.firstLink + l];
+			if (link.side == Tile::SLink::OffMesh)
 			{
 				QueueIslandConnectionSetup(triangle.islandID, ComputeTriangleID(tileID, triangleIndex), link.triangle);
 			}
@@ -793,7 +795,7 @@ float MeshGrid::GetIslandArea(StaticIslandID islandID) const
 
 float MeshGrid::GetIslandAreaForTriangle(TriangleID triangleID) const
 {
-	Tile::Triangle triangle;
+	Tile::STriangle triangle;
 	if (GetTriangle(triangleID, triangle))
 	{
 		return GetIslandArea(triangle.islandID);
@@ -816,13 +818,13 @@ void MeshGrid::PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangl
 		return;
 	}
 
-	Tile::Triangle triangle;
+	Tile::STriangle triangle;
 	if (GetTriangle(bestNodeTriangleID, triangle))
 	{
 		const TileID bestTriangleTileID = ComputeTileID(bestNodeTriangleID);
 		assert(bestTriangleTileID);
 		const TileContainer& currentContainer = m_tiles[bestTriangleTileID - 1];
-		const Tile& currentTile = currentContainer.tile;
+		const STile& currentTile = currentContainer.tile;
 		const vector3_t tileOrigin(real_t(currentContainer.x * m_params.tileSize.x), real_t(currentContainer.y * m_params.tileSize.y), real_t(currentContainer.z * m_params.tileSize.z));
 
 		assert(edgeIndex < 3);
@@ -920,24 +922,24 @@ MeshGrid::EWayQueryResult MeshGrid::FindWay(WayQueryRequest& inputRequest, WayQu
 				if (tileID)
 				{
 					const TileContainer& container = m_tiles[tileID - 1];
-					const Tile& tile = container.tile;
+					const STile& tile = container.tile;
 					const uint16 triangleIdx = ComputeTriangleIndex(bestNodeID.triangleID);
-					const Tile::Triangle& triangle = tile.triangles[triangleIdx];
+					const Tile::STriangle& triangle = tile.triangles[triangleIdx];
 
 					//Gather all accessible triangles first
 
 					for (size_t l = 0; l < triangle.linkCount; ++l)
 					{
-						const Tile::Link& link = tile.links[triangle.firstLink + l];
+						const Tile::SLink& link = tile.links[triangle.firstLink + l];
 
 						WayTriangleData nextTri(0, 0);
 
-						if (link.side == Tile::Link::Internal)
+						if (link.side == Tile::SLink::Internal)
 						{
 							nextTri.triangleID = ComputeTriangleID(tileID, link.triangle);
 							nextTri.incidentEdge = link.edge;
 						}
-						else if (link.side == Tile::Link::OffMesh)
+						else if (link.side == Tile::SLink::OffMesh)
 						{
 							OffMeshNavigation::QueryLinksResult links = inputRequest.GetOffMeshNavigation().GetLinksForTriangle(bestNodeID.triangleID, link.triangle);
 							while (nextTri = links.GetNextTriangle())
@@ -1116,15 +1118,15 @@ void MeshGrid::PullString(const vector3_t& from, const TriangleID fromTriID, con
 	if (const TileID fromTileID = ComputeTileID(fromTriID))
 	{
 		const TileContainer& startContainer = m_tiles[fromTileID - 1];
-		const Tile& startTile = startContainer.tile;
+		const STile& startTile = startContainer.tile;
 		uint16 fromTriangleIdx = ComputeTriangleIndex(fromTriID);
-		const Tile::Triangle& fromTriangle = startTile.triangles[fromTriangleIdx];
+		const Tile::STriangle& fromTriangle = startTile.triangles[fromTriangleIdx];
 
 		uint16 vi0 = 0, vi1 = 0;
 		for (int l = 0; l < fromTriangle.linkCount; ++l)
 		{
-			const Tile::Link& link = startTile.links[fromTriangle.firstLink + l];
-			if (link.side == Tile::Link::Internal)
+			const Tile::SLink& link = startTile.links[fromTriangle.firstLink + l];
+			if (link.side == Tile::SLink::Internal)
 			{
 				TriangleID newTriangleID = ComputeTriangleID(fromTileID, link.triangle);
 				if (newTriangleID == toTriID)
@@ -1138,7 +1140,7 @@ void MeshGrid::PullString(const vector3_t& from, const TriangleID fromTriID, con
 			}
 			else
 			{
-				if (link.side != Tile::Link::OffMesh)
+				if (link.side != Tile::SLink::OffMesh)
 				{
 					TileID neighbourTileID = GetNeighbourTileID(startContainer.x, startContainer.y, startContainer.z, link.side);
 					TriangleID newTriangleID = ComputeTriangleID(neighbourTileID, link.triangle);
@@ -1167,7 +1169,7 @@ void MeshGrid::PullString(const vector3_t& from, const TriangleID fromTriID, con
 			if (IntersectSegmentSegment(vector2_t(fromVertices[vi0]),
 			                            vector2_t(fromVertices[vi1]), vector2_t(from), vector2_t(to), s, t))
 			{
-				const Tile::Triangle& triangle = startContainer.tile.triangles[ComputeTriangleIndex(fromTriID)];
+				const Tile::STriangle& triangle = startContainer.tile.triangles[ComputeTriangleIndex(fromTriID)];
 
 				s = clamp(s, kMinPullingThreshold, kMaxPullingThreshold);
 				middlePoint = fromVertices[vi0] + dir * s;
@@ -1189,34 +1191,34 @@ void MeshGrid::PullString(const vector3_t& from, const TriangleID fromTriID, con
 
 void MeshGrid::AddOffMeshLinkToTile(const TileID tileID, const TriangleID triangleID, const uint16 offMeshIndex)
 {
-	Tile& tile = GetTile(tileID);
+	STile& tile = GetTile(tileID);
 
-	m_profiler.FreeMemory(LinkMemory, tile.linkCount * sizeof(Tile::Link));
+	m_profiler.FreeMemory(LinkMemory, tile.linkCount * sizeof(Tile::SLink));
 	m_profiler.AddStat(LinkCount, -(int)tile.linkCount);
 
 	tile.AddOffMeshLink(triangleID, offMeshIndex);
 
-	m_profiler.AddMemory(LinkMemory, tile.linkCount * sizeof(Tile::Link));
+	m_profiler.AddMemory(LinkMemory, tile.linkCount * sizeof(Tile::SLink));
 	m_profiler.AddStat(LinkCount, tile.linkCount);
 }
 
 void MeshGrid::UpdateOffMeshLinkForTile(const TileID tileID, const TriangleID triangleID, const uint16 offMeshIndex)
 {
-	Tile& tile = GetTile(tileID);
+	STile& tile = GetTile(tileID);
 
 	tile.UpdateOffMeshLink(triangleID, offMeshIndex);
 }
 
 void MeshGrid::RemoveOffMeshLinkFromTile(const TileID tileID, const TriangleID triangleID)
 {
-	Tile& tile = GetTile(tileID);
+	STile& tile = GetTile(tileID);
 
-	m_profiler.FreeMemory(LinkMemory, tile.linkCount * sizeof(Tile::Link));
+	m_profiler.FreeMemory(LinkMemory, tile.linkCount * sizeof(Tile::SLink));
 	m_profiler.AddStat(LinkCount, -(int)tile.linkCount);
 
 	tile.RemoveOffMeshLink(triangleID);
 
-	m_profiler.AddMemory(LinkMemory, tile.linkCount * sizeof(Tile::Link));
+	m_profiler.AddMemory(LinkMemory, tile.linkCount * sizeof(Tile::SLink));
 	m_profiler.AddStat(LinkCount, tile.linkCount);
 }
 
@@ -1333,14 +1335,14 @@ MeshGrid::ERayCastResult MeshGrid::RayCast_new(const vector3_t& from, TriangleID
 		if (tileID != MNM::Constants::InvalidTileID)
 		{
 			const TileContainer* container = &m_tiles[tileID - 1];
-			const Tile* tile = &container->tile;
+			const STile* tile = &container->tile;
 
 			vector3_t tileOrigin(
 			  real_t(container->x * m_params.tileSize.x),
 			  real_t(container->y * m_params.tileSize.y),
 			  real_t(container->z * m_params.tileSize.z));
 
-			const Tile::Triangle& triangle = tile->triangles[ComputeTriangleIndex(currentNode.triangleID)];
+			const Tile::STriangle& triangle = tile->triangles[ComputeTriangleIndex(currentNode.triangleID)];
 			for (uint16 edgeIndex = 0; edgeIndex < 3; ++edgeIndex)
 			{
 				if (currentNode.incidentEdge == edgeIndex)
@@ -1360,19 +1362,19 @@ MeshGrid::ERayCastResult MeshGrid::RayCast_new(const vector3_t& from, TriangleID
 
 					for (size_t linkIndex = 0; linkIndex < triangle.linkCount; ++linkIndex)
 					{
-						const Tile::Link& link = tile->links[triangle.firstLink + linkIndex];
+						const Tile::SLink& link = tile->links[triangle.firstLink + linkIndex];
 						if (link.edge != edgeIndex)
 							continue;
 
 						const uint16 side = link.side;
 
-						if (side == Tile::Link::Internal)
+						if (side == Tile::SLink::Internal)
 						{
-							const Tile::Triangle& opposite = tile->triangles[link.triangle];
+							const Tile::STriangle& opposite = tile->triangles[link.triangle];
 
 							for (size_t oe = 0; oe < opposite.linkCount; ++oe)
 							{
-								const Tile::Link& reciprocal = tile->links[opposite.firstLink + oe];
+								const Tile::SLink& reciprocal = tile->links[opposite.firstLink + oe];
 								const TriangleID possibleNextID = ComputeTriangleID(tileID, link.triangle);
 
 								if (reciprocal.triangle == ComputeTriangleIndex(currentNode.triangleID))
@@ -1398,19 +1400,19 @@ MeshGrid::ERayCastResult MeshGrid::RayCast_new(const vector3_t& from, TriangleID
 								}
 							}
 						}
-						else if (side != Tile::Link::OffMesh)
+						else if (side != Tile::SLink::OffMesh)
 						{
 							TileID neighbourTileID = GetNeighbourTileID(container->x, container->y, container->z, link.side);
 							const TileContainer& neighbourContainer = m_tiles[neighbourTileID - 1];
 
-							const Tile::Triangle& opposite = neighbourContainer.tile.triangles[link.triangle];
+							const Tile::STriangle& opposite = neighbourContainer.tile.triangles[link.triangle];
 
 							const uint16 currentTriangleIndex = ComputeTriangleIndex(currentNode.triangleID);
 							const uint16 currentOppositeSide = static_cast<uint16>(OppositeSide(side));
 
 							for (size_t reciprocalLinkIndex = 0; reciprocalLinkIndex < opposite.linkCount; ++reciprocalLinkIndex)
 							{
-								const Tile::Link& reciprocal = neighbourContainer.tile.links[opposite.firstLink + reciprocalLinkIndex];
+								const Tile::SLink& reciprocal = neighbourContainer.tile.links[opposite.firstLink + reciprocalLinkIndex];
 								if ((reciprocal.triangle == currentTriangleIndex) && (reciprocal.side == currentOppositeSide))
 								{
 									const TriangleID possibleNextID = ComputeTriangleID(neighbourTileID, link.triangle);
@@ -1521,7 +1523,7 @@ bool MeshGrid::IsLocationInTriangle(const vector3_t& location, const TriangleID 
 		return false;
 
 	const TileContainer* container = &m_tiles[tileID - 1];
-	const Tile* tile = &container->tile;
+	const STile* tile = &container->tile;
 
 	vector3_t tileOrigin(
 	  real_t(container->x * m_params.tileSize.x),
@@ -1530,7 +1532,7 @@ bool MeshGrid::IsLocationInTriangle(const vector3_t& location, const TriangleID 
 
 	if (triangleID)
 	{
-		const Tile::Triangle& triangle = tile->triangles[ComputeTriangleIndex(triangleID)];
+		const Tile::STriangle& triangle = tile->triangles[ComputeTriangleIndex(triangleID)];
 
 		const vector2_t a = vector2_t(tileOrigin) + vector2_t(tile->vertices[triangle.vertex[0]]);
 		const vector2_t b = vector2_t(tileOrigin) + vector2_t(tile->vertices[triangle.vertex[1]]);
@@ -1549,7 +1551,7 @@ MeshGrid::ERayCastResult MeshGrid::RayCast_old(const vector3_t& from, TriangleID
 	if (TileID tileID = ComputeTileID(fromTri))
 	{
 		const TileContainer* container = &m_tiles[tileID - 1];
-		const Tile* tile = &container->tile;
+		const STile* tile = &container->tile;
 
 		vector3_t tileOrigin(
 		  real_t(container->x * m_params.tileSize.x),
@@ -1558,7 +1560,7 @@ MeshGrid::ERayCastResult MeshGrid::RayCast_old(const vector3_t& from, TriangleID
 
 		if (fromTri)
 		{
-			const Tile::Triangle& triangle = tile->triangles[ComputeTriangleIndex(fromTri)];
+			const Tile::STriangle& triangle = tile->triangles[ComputeTriangleIndex(fromTri)];
 
 			const vector2_t a = vector2_t(tileOrigin) + vector2_t(tile->vertices[triangle.vertex[0]]);
 			const vector2_t b = vector2_t(tileOrigin) + vector2_t(tile->vertices[triangle.vertex[1]]);
@@ -1601,12 +1603,12 @@ MeshGrid::ERayCastResult MeshGrid::RayCast_old(const vector3_t& from, TriangleID
 				return eRayCastResult_NoHit;
 			}
 
-			const Tile::Triangle& triangle = tile->triangles[ComputeTriangleIndex(currentID)];
+			const Tile::STriangle& triangle = tile->triangles[ComputeTriangleIndex(currentID)];
 			TriangleID nextID = 0;
 			real_t possibleDistance = distance;
 			size_t possibleIncidentEdge = MNM::Constants::InvalidEdgeIndex;
 			const TileContainer* possibleContainer = NULL;
-			const Tile* possibleTile = NULL;
+			const STile* possibleTile = NULL;
 			vector3_t possibleTileOrigin(tileOrigin);
 			TileID possibleTileID = tileID;
 
@@ -1626,19 +1628,19 @@ MeshGrid::ERayCastResult MeshGrid::RayCast_old(const vector3_t& from, TriangleID
 
 					for (size_t l = 0; l < triangle.linkCount; ++l)
 					{
-						const Tile::Link& link = tile->links[triangle.firstLink + l];
+						const Tile::SLink& link = tile->links[triangle.firstLink + l];
 						if (link.edge != e)
 							continue;
 
 						const size_t side = link.side;
 
-						if (side == Tile::Link::Internal)
+						if (side == Tile::SLink::Internal)
 						{
-							const Tile::Triangle& opposite = tile->triangles[link.triangle];
+							const Tile::STriangle& opposite = tile->triangles[link.triangle];
 
 							for (size_t oe = 0; oe < opposite.linkCount; ++oe)
 							{
-								const Tile::Link& reciprocal = tile->links[opposite.firstLink + oe];
+								const Tile::SLink& reciprocal = tile->links[opposite.firstLink + oe];
 								const TriangleID possibleNextID = ComputeTriangleID(tileID, link.triangle);
 								if (reciprocal.triangle == ComputeTriangleIndex(currentID))
 								{
@@ -1654,19 +1656,19 @@ MeshGrid::ERayCastResult MeshGrid::RayCast_old(const vector3_t& from, TriangleID
 								}
 							}
 						}
-						else if (side != Tile::Link::OffMesh)
+						else if (side != Tile::SLink::OffMesh)
 						{
 							TileID neighbourTileID = GetNeighbourTileID(container->x, container->y, container->z, link.side);
 							const TileContainer& neighbourContainer = m_tiles[neighbourTileID - 1];
 
-							const Tile::Triangle& opposite = neighbourContainer.tile.triangles[link.triangle];
+							const Tile::STriangle& opposite = neighbourContainer.tile.triangles[link.triangle];
 
 							const uint16 currentTriangleIndex = ComputeTriangleIndex(currentID);
 							const uint16 currentOppositeSide = static_cast<uint16>(OppositeSide(side));
 
 							for (size_t rl = 0; rl < opposite.linkCount; ++rl)
 							{
-								const Tile::Link& reciprocal = neighbourContainer.tile.links[opposite.firstLink + rl];
+								const Tile::SLink& reciprocal = neighbourContainer.tile.links[opposite.firstLink + rl];
 								if ((reciprocal.triangle == currentTriangleIndex) && (reciprocal.side == currentOppositeSide))
 								{
 									const vector3_t neighbourTileOrigin = vector3_t(
@@ -1853,11 +1855,13 @@ bool TestEdgeOverlap(size_t side, const real_t& toleranceSq, const vector3_t& a0
 	}
 }
 
-TileID MeshGrid::SetTile(size_t x, size_t y, size_t z, Tile& tile)
+TileID MeshGrid::SetTile(size_t x, size_t y, size_t z, STile& tile)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
 	assert((x <= max_x) && (y <= max_y) && (z <= max_z));
+
+	tile.ValidateTriangles();
 
 	const size_t tileName = ComputeTileName(x, y, z);
 
@@ -1875,7 +1879,7 @@ TileID MeshGrid::SetTile(size_t x, size_t y, size_t z, Tile& tile)
 	{
 		tileID = iresult.first->second;
 
-		Tile& oldTile = m_tiles[tileID - 1].tile;
+		STile& oldTile = m_tiles[tileID - 1].tile;
 		m_triangleCount -= oldTile.triangleCount;
 
 		m_profiler.AddStat(VertexCount, -(int)oldTile.vertexCount);
@@ -1884,9 +1888,9 @@ TileID MeshGrid::SetTile(size_t x, size_t y, size_t z, Tile& tile)
 		m_profiler.AddStat(LinkCount, -(int)oldTile.linkCount);
 
 		m_profiler.FreeMemory(VertexMemory, oldTile.vertexCount * sizeof(Tile::Vertex));
-		m_profiler.FreeMemory(TriangleMemory, oldTile.triangleCount * sizeof(Tile::Triangle));
-		m_profiler.FreeMemory(BVTreeMemory, oldTile.nodeCount * sizeof(Tile::BVNode));
-		m_profiler.FreeMemory(LinkMemory, oldTile.linkCount * sizeof(Tile::Link));
+		m_profiler.FreeMemory(TriangleMemory, oldTile.triangleCount * sizeof(Tile::STriangle));
+		m_profiler.FreeMemory(BVTreeMemory, oldTile.nodeCount * sizeof(Tile::SBVNode));
+		m_profiler.FreeMemory(LinkMemory, oldTile.linkCount * sizeof(Tile::SLink));
 
 		oldTile.Destroy();
 	}
@@ -1897,9 +1901,9 @@ TileID MeshGrid::SetTile(size_t x, size_t y, size_t z, Tile& tile)
 	m_profiler.AddStat(LinkCount, tile.linkCount);
 
 	m_profiler.AddMemory(VertexMemory, tile.vertexCount * sizeof(Tile::Vertex));
-	m_profiler.AddMemory(TriangleMemory, tile.triangleCount * sizeof(Tile::Triangle));
-	m_profiler.AddMemory(BVTreeMemory, tile.nodeCount * sizeof(Tile::BVNode));
-	m_profiler.AddMemory(LinkMemory, tile.linkCount * sizeof(Tile::Link));
+	m_profiler.AddMemory(TriangleMemory, tile.triangleCount * sizeof(Tile::STriangle));
+	m_profiler.AddMemory(BVTreeMemory, tile.nodeCount * sizeof(Tile::SBVNode));
+	m_profiler.AddMemory(LinkMemory, tile.linkCount * sizeof(Tile::SLink));
 
 	m_profiler.FreeMemory(GridMemory, m_profiler[GridMemory].used);
 	m_profiler.AddMemory(GridMemory, m_tileMap.size() * sizeof(TileMap::value_type));
@@ -1930,9 +1934,9 @@ void MeshGrid::ClearTile(TileID tileID, bool clearNetwork)
 		m_profiler.AddStat(LinkCount, -(int)container.tile.linkCount);
 
 		m_profiler.FreeMemory(VertexMemory, container.tile.vertexCount * sizeof(Tile::Vertex));
-		m_profiler.FreeMemory(TriangleMemory, container.tile.triangleCount * sizeof(Tile::Triangle));
-		m_profiler.FreeMemory(BVTreeMemory, container.tile.nodeCount * sizeof(Tile::BVNode));
-		m_profiler.FreeMemory(LinkMemory, container.tile.linkCount * sizeof(Tile::Link));
+		m_profiler.FreeMemory(TriangleMemory, container.tile.triangleCount * sizeof(Tile::STriangle));
+		m_profiler.FreeMemory(BVTreeMemory, container.tile.nodeCount * sizeof(Tile::SBVNode));
+		m_profiler.FreeMemory(LinkMemory, container.tile.linkCount * sizeof(Tile::SLink));
 
 		m_profiler.AddStat(TileCount, -1);
 
@@ -2025,13 +2029,13 @@ TileID MeshGrid::GetTileID(size_t x, size_t y, size_t z) const
 	return 0;
 }
 
-const Tile& MeshGrid::GetTile(TileID tileID) const
+const STile& MeshGrid::GetTile(TileID tileID) const
 {
 	assert(tileID > 0);
 	return m_tiles[tileID - 1].tile;
 }
 
-Tile& MeshGrid::GetTile(TileID tileID)
+STile& MeshGrid::GetTile(TileID tileID)
 {
 	assert(tileID > 0);
 	return m_tiles[tileID - 1].tile;
@@ -2100,7 +2104,7 @@ struct Edge
 	uint16 triangle[2];
 };
 
-void ComputeTileTriangleAdjacency(Tile::Triangle* triangles, size_t triangleCount, size_t vertexCount,
+void ComputeTileTriangleAdjacency(const Tile::STriangle* triangles, const size_t triangleCount, const size_t vertexCount,
                                   Edge* edges, uint16* adjacency)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
@@ -2118,7 +2122,7 @@ void ComputeTileTriangleAdjacency(Tile::Triangle* triangles, size_t triangleCoun
 
 		for (uint16 i = 0; i < triangleCount; ++i)
 		{
-			const Tile::Triangle& triangle = triangles[i];
+			const Tile::STriangle& triangle = triangles[i];
 
 			for (size_t v = 0; v < 3; ++v)
 			{
@@ -2144,7 +2148,7 @@ void ComputeTileTriangleAdjacency(Tile::Triangle* triangles, size_t triangleCoun
 
 		for (uint16 i = 0; i < triangleCount; ++i)
 		{
-			const Tile::Triangle& triangle = triangles[i];
+			const Tile::STriangle& triangle = triangles[i];
 
 			for (size_t v = 0; v < 3; ++v)
 			{
@@ -2193,6 +2197,25 @@ TileID MeshGrid::GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) c
 	return GetTileID(nx, ny, nz);
 }
 
+bool MeshGrid::GetTileData(const TileID tileId, Tile::STileData& outTileData) const
+{
+	if (tileId)
+	{
+		const TileContainer& container = m_tiles[tileId - 1];
+
+		const vector3_t origin(
+		  real_t(container.x * m_params.tileSize.x),
+		  real_t(container.y * m_params.tileSize.y),
+		  real_t(container.z * m_params.tileSize.z));
+
+		container.tile.GetTileData(outTileData);
+		outTileData.tileOriginWorld = origin;
+
+		return true;
+	}
+	return false;
+}
+
 static const size_t MaxTriangleCount = 1024;
 
 struct SideTileInfo
@@ -2202,18 +2225,18 @@ struct SideTileInfo
 	{
 	}
 
-	Tile*     tile;
+	STile*    tile;
 	vector3_t offset;
 };
 
 #pragma warning (push)
 #pragma warning (disable: 6262)
-void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, Tile& tile)
+void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
 	const size_t vertexCount = tile.vertexCount;
-	const Tile::Vertex* vertices = tile.vertices;
+	const Tile::Vertex* vertices = tile.GetVertices();
 
 	const size_t triCount = tile.triangleCount;
 	if (!triCount)
@@ -2225,10 +2248,10 @@ void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 
 	Edge edges[MaxTriangleCount * 3];
 	uint16 adjacency[MaxTriangleCount * 3];
-	ComputeTileTriangleAdjacency(tile.triangles, triCount, vertexCount, edges, adjacency);
+	ComputeTileTriangleAdjacency(tile.GetTriangles(), triCount, vertexCount, edges, adjacency);
 
 	const size_t MaxLinkCount = MaxTriangleCount * 6;
-	Tile::Link links[MaxLinkCount];
+	Tile::SLink links[MaxLinkCount];
 	size_t linkCount = 0;
 
 	SideTileInfo sides[SideCount];
@@ -2260,8 +2283,8 @@ void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 
 			if (edge.triangle[0] != edge.triangle[1])
 			{
-				Tile::Link& link = links[linkCount++];
-				link.side = Tile::Link::Internal;
+				Tile::SLink& link = links[linkCount++];
+				link.side = Tile::SLink::Internal;
 				link.edge = e;
 				link.triangle = (edge.triangle[1] == i) ? edge.triangle[0] : edge.triangle[1];
 
@@ -2271,7 +2294,7 @@ void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 
 		if (triLinkCount == 3)
 		{
-			Tile::Triangle& triangle = tile.triangles[i];
+			Tile::STriangle& triangle = tile.triangles[i];
 			triangle.linkCount = triLinkCount;
 			triangle.firstLink = linkCount - triLinkCount;
 
@@ -2293,17 +2316,17 @@ void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 
 			for (size_t s = 0; s < SideCount; ++s)
 			{
-				if (const Tile* stile = sides[s].tile)
+				if (const STile* stile = sides[s].tile)
 				{
 					const vector3_t& offset = sides[s].offset;
 
 					const size_t striangleCount = stile->triangleCount;
-					const Tile::Triangle* striangles = stile->triangles;
-					const Tile::Vertex* svertices = stile->vertices;
+					const Tile::STriangle* striangles = stile->GetTriangles();
+					const Tile::Vertex* svertices = stile->GetVertices();
 
 					for (size_t k = 0; k < striangleCount; ++k)
 					{
-						const Tile::Triangle& striangle = striangles[k];
+						const Tile::STriangle& striangle = striangles[k];
 
 						for (size_t ne = 0; ne < 3; ++ne)
 						{
@@ -2312,7 +2335,7 @@ void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 
 							if (TestEdgeOverlap(s, toleranceSq, a0, a1, b0, b1))
 							{
-								Tile::Link& link = links[linkCount++];
+								Tile::SLink& link = links[linkCount++];
 								link.side = s;
 								link.edge = e;
 								link.triangle = k;
@@ -2331,28 +2354,28 @@ void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 			}
 		}
 
-		Tile::Triangle& triangle = tile.triangles[i];
+		Tile::STriangle& triangle = tile.triangles[i];
 		triangle.linkCount = triLinkCount;
 		triangle.firstLink = linkCount - triLinkCount;
 	}
 
-	m_profiler.FreeMemory(LinkMemory, tile.linkCount * sizeof(Tile::Link));
+	m_profiler.FreeMemory(LinkMemory, tile.linkCount * sizeof(Tile::SLink));
 	m_profiler.AddStat(LinkCount, -(int)tile.linkCount);
 
 	tile.CopyLinks(links, static_cast<uint16>(linkCount));
 
-	m_profiler.AddMemory(LinkMemory, tile.linkCount * sizeof(Tile::Link));
+	m_profiler.AddMemory(LinkMemory, tile.linkCount * sizeof(Tile::SLink));
 	m_profiler.AddStat(LinkCount, tile.linkCount);
 	m_profiler.StopTimer(NetworkConstruction);
 }
 #pragma warning (pop)
 
-void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, Tile& tile,
+void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile,
                                   size_t side, size_t tx, size_t ty, size_t tz, TileID targetID)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
-	const Tile::Vertex* vertices = tile.vertices;
+	const Tile::Vertex* vertices = tile.GetVertices();
 
 	const size_t originTriangleCount = tile.triangleCount;
 	if (!originTriangleCount)
@@ -2372,34 +2395,34 @@ void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& to
 		assert(originTriangleCount <= MaxTriangleCount);
 
 		const size_t MaxLinkCount = MaxTriangleCount * 6;
-		Tile::Link links[MaxLinkCount];
+		Tile::SLink links[MaxLinkCount];
 		size_t linkCount = 0;
 
-		const Tile* targetTile = targetID ? &m_tiles[targetID - 1].tile : 0;
+		const STile* targetTile = targetID ? &m_tiles[targetID - 1].tile : 0;
 
-		const Tile::Vertex* targetVertices = targetTile ? targetTile->vertices : 0;
+		const Tile::Vertex* targetVertices = targetTile ? targetTile->GetVertices() : 0;
 
 		const size_t targetTriangleCount = targetTile ? targetTile->triangleCount : 0;
-		const Tile::Triangle* targetTriangles = targetTile ? targetTile->triangles : 0;
+		const Tile::STriangle* targetTriangles = targetTile ? targetTile->GetTriangles() : 0;
 
 		for (size_t i = 0; i < originTriangleCount; ++i)
 		{
 			size_t triLinkCount = 0;
 			size_t triLinkCountI = 0;
 
-			Tile::Triangle& originTriangle = tile.triangles[i];
+			Tile::STriangle& originTriangle = tile.triangles[i];
 			const size_t originLinkCount = originTriangle.linkCount;
 			const size_t originFirstLink = originTriangle.firstLink;
 
 			for (size_t l = 0; l < originLinkCount; ++l)
 			{
-				const Tile::Link& originLink = tile.links[originFirstLink + l];
+				const Tile::SLink& originLink = tile.links[originFirstLink + l];
 
-				if ((originLink.side == Tile::Link::Internal) || (originLink.side != side))
+				if ((originLink.side == Tile::SLink::Internal) || (originLink.side != side))
 				{
 					links[linkCount++] = originLink;
 					++triLinkCount;
-					triLinkCountI += (originLink.side == Tile::Link::Internal) ? 1 : 0;
+					triLinkCountI += (originLink.side == Tile::SLink::Internal) ? 1 : 0;
 				}
 			}
 
@@ -2418,7 +2441,7 @@ void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& to
 
 				for (size_t k = 0; k < targetTriangleCount; ++k)
 				{
-					const Tile::Triangle& ttriangle = targetTriangles[k];
+					const Tile::STriangle& ttriangle = targetTriangles[k];
 
 					for (size_t ne = 0; ne < 3; ++ne)
 					{
@@ -2427,7 +2450,7 @@ void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& to
 
 						if (TestEdgeOverlap(side, toleranceSq, a0, a1, b0, b1))
 						{
-							Tile::Link& link = links[linkCount++];
+							Tile::SLink& link = links[linkCount++];
 							link.side = side;
 							link.edge = e;
 							link.triangle = k;
@@ -2453,12 +2476,12 @@ void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& to
 			originTriangle.firstLink = linkCount - triLinkCount;
 		}
 
-		m_profiler.FreeMemory(LinkMemory, tile.linkCount * sizeof(Tile::Link));
+		m_profiler.FreeMemory(LinkMemory, tile.linkCount * sizeof(Tile::SLink));
 		m_profiler.AddStat(LinkCount, -(int)tile.linkCount);
 
 		tile.CopyLinks(links, static_cast<uint16>(linkCount));
 
-		m_profiler.AddMemory(LinkMemory, tile.linkCount * sizeof(Tile::Link));
+		m_profiler.AddMemory(LinkMemory, tile.linkCount * sizeof(Tile::SLink));
 		m_profiler.AddStat(LinkCount, tile.linkCount);
 	}
 
@@ -2473,17 +2496,17 @@ bool MeshGrid::CalculateMidEdge(const TriangleID triangleID1, const TriangleID t
 	if (const TileID tileID = ComputeTileID(triangleID1))
 	{
 		const TileContainer& container = m_tiles[tileID - 1];
-		const Tile& tile = container.tile;
+		const STile& tile = container.tile;
 		const uint16 triangleIdx = ComputeTriangleIndex(triangleID1);
-		const Tile::Triangle& triangle = tile.triangles[triangleIdx];
+		const Tile::STriangle& triangle = tile.triangles[triangleIdx];
 
 		uint16 vi0 = 0, vi1 = 0;
 
 		for (size_t l = 0; l < triangle.linkCount; ++l)
 		{
-			const Tile::Link& link = tile.links[triangle.firstLink + l];
+			const Tile::SLink& link = tile.links[triangle.firstLink + l];
 
-			if (link.side == Tile::Link::Internal)
+			if (link.side == Tile::SLink::Internal)
 			{
 				TriangleID linkedTriID = ComputeTriangleID(tileID, link.triangle);
 				if (linkedTriID == triangleID2)
@@ -2495,7 +2518,7 @@ bool MeshGrid::CalculateMidEdge(const TriangleID triangleID1, const TriangleID t
 					break;
 				}
 			}
-			else if (link.side != Tile::Link::OffMesh)
+			else if (link.side != Tile::SLink::OffMesh)
 			{
 				TileID neighbourTileID = GetNeighbourTileID(container.x, container.y, container.z, link.side);
 				TriangleID linkedTriID = ComputeTriangleID(neighbourTileID, link.triangle);
@@ -2533,7 +2556,7 @@ void MeshGrid::ResetAccessibility(uint8 accessible)
 {
 	for (TileMap::iterator tileIt = m_tileMap.begin(); tileIt != m_tileMap.end(); ++tileIt)
 	{
-		Tile& tile = m_tiles[tileIt->second - 1].tile;
+		STile& tile = m_tiles[tileIt->second - 1].tile;
 
 		tile.ResetConnectivity(accessible);
 	}
@@ -2563,7 +2586,7 @@ void MeshGrid::ComputeAccessibility(const AccessibilityRequest& inputRequest)
 	if (const TileID startTileID = ComputeTileID(inputRequest.fromTriangle))
 	{
 		const uint16 startTriangleIdx = ComputeTriangleIndex(inputRequest.fromTriangle);
-		Tile& startTile = m_tiles[startTileID - 1].tile;
+		STile& startTile = m_tiles[startTileID - 1].tile;
 		startTile.SetTriangleAccessible(startTriangleIdx);
 
 		openNodes.push_back(Node(inputRequest.fromTriangle, 0));
@@ -2578,24 +2601,24 @@ void MeshGrid::ComputeAccessibility(const AccessibilityRequest& inputRequest)
 				const uint16 triangleIdx = ComputeTriangleIndex(currentNode.id);
 
 				TileContainer& container = m_tiles[tileID - 1];
-				Tile& tile = container.tile;
+				STile& tile = container.tile;
 
-				const Tile::Triangle& triangle = tile.triangles[triangleIdx];
+				const Tile::STriangle& triangle = tile.triangles[triangleIdx];
 
 				nextTriangles.clear();
 
 				// Collect all accessible nodes from the current one
 				for (size_t l = 0; l < triangle.linkCount; ++l)
 				{
-					const Tile::Link& link = tile.links[triangle.firstLink + l];
+					const Tile::SLink& link = tile.links[triangle.firstLink + l];
 
 					TriangleID nextTriangleID;
 
-					if (link.side == Tile::Link::Internal)
+					if (link.side == Tile::SLink::Internal)
 					{
 						nextTriangleID = ComputeTriangleID(tileID, link.triangle);
 					}
-					else if (link.side != Tile::Link::OffMesh)
+					else if (link.side != Tile::SLink::OffMesh)
 					{
 						TileID neighbourTileID = GetNeighbourTileID(container.x, container.y, container.z, link.side);
 						nextTriangleID = ComputeTriangleID(neighbourTileID, link.triangle);
@@ -2625,7 +2648,7 @@ void MeshGrid::ComputeAccessibility(const AccessibilityRequest& inputRequest)
 					// Skip if already visited
 					if (const TileID nextTileID = ComputeTileID(nextTriangleID))
 					{
-						Tile& nextTile = m_tiles[nextTileID - 1].tile;
+						STile& nextTile = m_tiles[nextTileID - 1].tile;
 						const uint16 nextTriangleIndex = ComputeTriangleIndex(nextTriangleID);
 						if (nextTile.IsTriangleAccessible(nextTriangleIndex))
 							continue;

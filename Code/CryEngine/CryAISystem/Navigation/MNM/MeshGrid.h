@@ -126,7 +126,7 @@ typedef CryFixedArray<MNM::DangerAreaConstPtr, max_danger_amount> DangerousAreas
 
 ///////////////////////////////////////////////////////////////////////
 
-struct MeshGrid
+struct MeshGrid : public MNM::Tile::ITileGrid
 {
 	enum { x_bits = 11, };   // must add up to a 32 bit - the "tileName"
 	enum { y_bits = 11, };
@@ -291,7 +291,7 @@ struct MeshGrid
 	// Sets a bit in linkedEdges for each edge on this triangle that has a link.
 	// Bit 0: v0->v1, Bit 1: v1->v2, Bit 2: v2->v0
 	bool          GetLinkedEdges(TriangleID triangleID, size_t& linkedEdges) const;
-	bool          GetTriangle(TriangleID triangleID, Tile::Triangle& triangle) const;
+	bool          GetTriangle(TriangleID triangleID, Tile::STriangle& triangle) const;
 
 	bool          PushPointInsideTriangle(const TriangleID triangleID, vector3_t& location, real_t amount) const;
 
@@ -373,7 +373,7 @@ struct MeshGrid
 	ERayCastResult RayCast_new(const vector3_t& from, TriangleID fromTriangleID, const vector3_t& to, TriangleID toTriangleID, RaycastRequestBase& wayRequest) const;
 	ERayCastResult RayCast_old(const vector3_t& from, TriangleID fromTri, const vector3_t& to, TriangleID toTri, RaycastRequestBase& wayRequest) const;
 
-	TileID         SetTile(size_t x, size_t y, size_t z, Tile& tile);
+	TileID         SetTile(size_t x, size_t y, size_t z, STile& tile);
 	void           ClearTile(TileID tileID, bool clearNetwork = true);
 
 	ILINE void     SetTotalIslands(uint32 totalIslands) { m_islands.resize(totalIslands); }
@@ -395,9 +395,9 @@ struct MeshGrid
 	}
 
 	TileID GetTileID(size_t x, size_t y, size_t z) const;
-	const Tile&          GetTile(TileID) const;
-	Tile&                GetTile(TileID);
-	const vector3_t      GetTileContainerCoordinates(TileID) const;
+	const STile&    GetTile(TileID) const;
+	STile&          GetTile(TileID);
+	const vector3_t GetTileContainerCoordinates(TileID) const;
 
 	void                 Swap(MeshGrid& other);
 
@@ -468,6 +468,10 @@ struct MeshGrid
 
 	TileID GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) const;
 
+	// MNM::Tile::ITileGrid
+	virtual bool GetTileData(const TileID tileId, Tile::STileData& outTileData) const override;
+	// ~MNM::Tile::ITileGrid
+
 private:
 
 	struct Island
@@ -491,8 +495,8 @@ private:
 	void    PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangleID, const vector3_t& startPosition, const TriangleID nextTriangleID, const unsigned int vertexIndex, const vector3_t& finalLocation, vector3_t& outPosition) const;
 
 protected:
-	void ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, Tile& tile);
-	void ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, Tile& tile,
+	void ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile);
+	void ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile,
 	                        size_t side, size_t tx, size_t ty, size_t tz, TileID targetID);
 
 	bool           IsLocationInTriangle(const vector3_t& location, const TriangleID triangleID) const;
@@ -512,7 +516,7 @@ protected:
 		uint32 y: y_bits;
 		uint32 z: z_bits;
 
-		Tile   tile;
+		STile  tile;
 	};
 
 	// - manages memory used for TileContainer instances in one big block

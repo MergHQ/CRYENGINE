@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "TileGenerator.h"
 #include "Voxelizer.h"
-#include "HashComputer.h"
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
@@ -125,7 +124,7 @@ static const uint8 s_PinchCornerTable[3][3][3] =
 
 }
 
-/*static */ size_t TileGenerator::BorderSizeH(const Params& params)
+/*static */ size_t CTileGenerator::BorderSizeH(const Params& params)
 {
 	// TODO pavloi 2016.03.16: inclineTestCount = (height + 1) comes from FilterWalkable
 	const size_t inclineTestCount = params.agent.climbableHeight + 1;
@@ -133,7 +132,7 @@ static const uint8 s_PinchCornerTable[3][3][3] =
 	return (params.flags & Params::NoBorder) ? 0 : (params.agent.radius + inclineTestCount + 1);
 }
 
-/*static */ size_t TileGenerator::BorderSizeV(const Params& params)
+/*static */ size_t CTileGenerator::BorderSizeV(const Params& params)
 {
 	// TODO pavloi 2016.03.16: inclineTestCount = (height + 1) comes from FilterWalkable
 	const size_t inclineTestCount = params.agent.climbableHeight + 1;
@@ -145,12 +144,11 @@ static const uint8 s_PinchCornerTable[3][3][3] =
 	return (params.flags & Params::NoBorder) ? 0 : (maxZDiffInWorstCase + 1);
 }
 
-void TileGenerator::Clear()
+void CTileGenerator::Clear()
 {
 	m_profiler = ProfilerType();
 
-	m_triangles.clear();
-	m_vertices.clear();
+	m_mesh.Clear();
 	m_bvtree.clear();
 
 	m_spanGrid.Clear();
@@ -164,7 +162,7 @@ void TileGenerator::Clear()
 	m_spanGridFlagged.Clear();
 }
 
-bool TileGenerator::Generate(const Params& params, Tile& tile, uint32* tileHash)
+bool CTileGenerator::Generate(const Params& params, STile& tile, uint32* tileHash)
 {
 	if ((params.sizeX > MaxTileSizeX) || (params.sizeY > MaxTileSizeY) || (params.sizeZ > MaxTileSizeZ))
 		return false;
@@ -178,7 +176,8 @@ bool TileGenerator::Generate(const Params& params, Tile& tile, uint32* tileHash)
 	m_params = params;
 	m_profiler = ProfilerType();
 
-	AABB aabb(m_params.origin, m_params.origin + Vec3i(m_params.sizeX, m_params.sizeY, m_params.sizeZ));
+	const AABB tileAabbWorld(m_params.origin, m_params.origin + Vec3i(m_params.sizeX, m_params.sizeY, m_params.sizeZ));
+	AABB aabb = tileAabbWorld;
 
 	if (m_params.boundary && !m_params.boundary->Overlaps(aabb))
 		return false;
@@ -222,8 +221,8 @@ bool TileGenerator::Generate(const Params& params, Tile& tile, uint32* tileHash)
 	Regions().swap(m_regions);
 	Polygons().swap(m_polygons);
 
-	Vertices().swap(m_vertices);
-	Triangles().swap(m_triangles);
+	m_mesh.Clear();
+	m_mesh.SetTileAabb(tileAabbWorld);
 	BVTree().swap(m_bvtree);
 
 	CompactSpanGrid().Swap(m_spanGridRaw);
@@ -269,52 +268,68 @@ bool TileGenerator::Generate(const Params& params, Tile& tile, uint32* tileHash)
 		hashSeed = hash.GetValue();
 	}
 
+	m_mesh.ResetHashSeed(hashSeed);
+
+	if (params.pTileGeneratorExtensions)
+	{
+		// #MNM_TODO pavloi 2016.07.20: add profiler statistics
+		MNM::TileGenerator::SExtensionParams extensionParams;
+		extensionParams.tileAabbWorld = tileAabbWorld;
+		extensionParams.extendedTileAabbWorld = aabb;
+		extensionParams.navAgentTypeId = params.navAgentTypeId;
+
+		{
+			AUTO_READLOCK(params.pTileGeneratorExtensions->extensionsLock);
+			for (const auto& idExtensionPair : params.pTileGeneratorExtensions->extensions)
+			{
+				MNM::TileGenerator::IExtension* pExtension = idExtensionPair.second;
+				const bool bContinue = pExtension->Generate(extensionParams, m_mesh);
+				if (!bContinue)
+				{
+					break;
+				}
+			}
+		}
+	}
+
+	hashSeed = m_mesh.CompleteAndGetHashValue();
+
 	uint32 hashValue = 0;
 	size_t triCount = VoxelizeVolume(aabb, hashSeed, &hashValue);
+
+	const uint32 oldHashValueForTest =
+	  m_params.flags & Params::NoHashTest
+	  ? 0
+	  : m_params.hashValue;
 
 	if (tileHash)
 		*tileHash = hashValue;
 
-	if (!triCount)
-		return false;
-
-	tile.hashValue = hashValue;
-
-	if (m_params.flags & Params::DebugInfo)
+	if (!(m_params.flags & Params::NoHashTest) && (oldHashValueForTest == hashValue))
 	{
-		m_spanGridRaw = m_spanGrid;
+		// no changes - see GenerateTileJob() in NavigationSystem.cpp
+		return false;
 	}
 
-	FilterWalkable(aabb, fullyContained);
+	if (triCount)
+	{
+		if (m_params.flags & Params::DebugInfo)
+		{
+			m_spanGridRaw = m_spanGrid;
+		}
 
-	if (!m_spanGrid.GetSpanCount())
-		return false;
-
-	ComputeDistanceTransform();
-	//BlurDistanceTransform();
-
-	if (!ExtractContours())
-		return false;
-
-	FilterBadRegions(m_params.minWalkableArea);
-	SimplifyContours();
-	Triangulate();
+		GenerateFromVoxelizedVolume(aabb, fullyContained);
+	}
 
 	if (m_params.flags & Params::BuildBVTree)
 		BuildBVTree();
 
-	if (m_vertices.empty())
+	if (m_mesh.IsEmpty())
 		return false;
 
-	static const size_t MaxTriangleCount = 1024;
+	tile.SetHashValue(hashValue);
 
-	if (m_triangles.size() > MaxTriangleCount)
-	{
-		AIWarning("[MNM] Too many triangles in one tile. Coords: [%.2f,%.2f,%.2f]", aabb.GetCenter().x, aabb.GetCenter().y, aabb.GetCenter().z);
-	}
-
-	tile.CopyTriangles(&m_triangles.front(), static_cast<uint16>(min(MaxTriangleCount, m_triangles.size())));
-	tile.CopyVertices(&m_vertices.front(), static_cast<uint16>(m_vertices.size()));
+	m_mesh.CopyIntoTile(tile);
 
 	if (m_params.flags & Params::BuildBVTree)
 		tile.CopyNodes(&m_bvtree.front(), static_cast<uint16>(m_bvtree.size()));
@@ -322,12 +337,12 @@ bool TileGenerator::Generate(const Params& params, Tile& tile, uint32* tileHash)
 	return true;
 }
 
-const TileGenerator::ProfilerType& TileGenerator::GetProfiler() const
+const CTileGenerator::ProfilerType& CTileGenerator::GetProfiler() const
 {
 	return m_profiler;
 }
 
-size_t TileGenerator::VoxelizeVolume(const AABB& volume, uint32 hashValueSeed, uint32* hashValue)
+size_t CTileGenerator::VoxelizeVolume(const AABB& volume, uint32 hashValueSeed, uint32* hashValue)
 {
 	m_profiler.StartTimer(Voxelization);
 
@@ -361,9 +376,9 @@ size_t TileGenerator::VoxelizeVolume(const AABB& volume, uint32 hashValueSeed, u
 	return triCount;
 }
 
-struct TileGenerator::SFilterWalkableParams
+struct CTileGenerator::SFilterWalkableParams
 {
-	SFilterWalkableParams(CompactSpanGrid& grid, const AABB& aabb, const bool fullyContained, const TileGenerator::Params& params)
+	SFilterWalkableParams(CompactSpanGrid& grid, const AABB& aabb, const bool fullyContained, const CTileGenerator::Params& params)
 		: spanGrid(grid)
 		, aabb(aabb)
 		, bFullyContained(fullyContained)
@@ -371,14 +386,14 @@ struct TileGenerator::SFilterWalkableParams
 		, gridHeight(spanGrid.GetHeight())
 		, heightVoxelCount(params.agent.height)
 		, climbableVoxelCount(params.agent.climbableHeight)
-		, border(TileGenerator::BorderSizeH(params))
+		, border(CTileGenerator::BorderSizeH(params))
 		, climbableInclineGradient(params.climbableInclineGradient)
 		, climbableStepRatio(params.climbableStepRatio)
 		, inclineTestCount(climbableVoxelCount + 1)
 		, climbableInclineGradientLowerBound((size_t)floor(climbableInclineGradient))
 		, climbableInclineGradientSquared(climbableInclineGradient * climbableInclineGradient)
 		// TODO pavloi 2016.03.10: is this formula correct? Maybe there is a better way to get the number from an actual voxelized volume.
-		, spaceTop((2 * TileGenerator::BorderSizeV(params)) + params.agent.height + TileGenerator::Top(params))
+		, spaceTop((2 * CTileGenerator::BorderSizeV(params)) + params.agent.height + CTileGenerator::Top(params))
 	{}
 
 	CompactSpanGrid& spanGrid;
@@ -400,9 +415,9 @@ struct TileGenerator::SFilterWalkableParams
 	const size_t     spaceTop;
 };
 
-struct TileGenerator::SSpanClearance
+struct CTileGenerator::SSpanClearance
 {
-	SSpanClearance(const SSpanCoord& spanCoord, const CompactSpanGrid::Span& span, const CompactSpanGrid::Cell& cell, const TileGenerator::SFilterWalkableParams& filterParams, const CompactSpanGrid& spanGrid)
+	SSpanClearance(const SSpanCoord& spanCoord, const CompactSpanGrid::Span& span, const CompactSpanGrid::Cell& cell, const CTileGenerator::SFilterWalkableParams& filterParams, const CompactSpanGrid& spanGrid)
 	{
 		top = span.bottom + span.height;
 		nextBottom = filterParams.spaceTop;
@@ -420,7 +435,27 @@ struct TileGenerator::SSpanClearance
 	size_t nextBottom;
 };
 
-void TileGenerator::FilterWalkable(const AABB& aabb, bool fullyContained)
+bool CTileGenerator::GenerateFromVoxelizedVolume(const AABB& aabb, const bool fullyContained)
+{
+	FilterWalkable(aabb, fullyContained);
+
+	if (!m_spanGrid.GetSpanCount())
+		return false;
+
+	ComputeDistanceTransform();
+	//BlurDistanceTransform();
+
+	if (!ExtractContours())
+		return false;
+
+	FilterBadRegions(m_params.minWalkableArea);
+	SimplifyContours();
+	Triangulate();
+
+	return true;
+}
+
+void CTileGenerator::FilterWalkable(const AABB& aabb, bool fullyContained)
 {
 	m_profiler.StartTimer(Filter);
 
@@ -524,17 +559,17 @@ void TileGenerator::FilterWalkable(const AABB& aabb, bool fullyContained)
 		m_profiler.FreeMemory(CompactSpanGridMemory, compact.GetMemoryUsage());
 }
 
-/*static*/ bool TileGenerator::FilterWalkable_CheckSpanBackface(const CompactSpanGrid::Span& span)
+/*static*/ bool CTileGenerator::FilterWalkable_CheckSpanBackface(const CompactSpanGrid::Span& span)
 {
 	return span.backface;
 }
 
-/*static*/ bool TileGenerator::FilterWalkable_CheckSpanWaterDepth(const CompactSpanGrid::Span& span, const Params& params)
+/*static*/ bool CTileGenerator::FilterWalkable_CheckSpanWaterDepth(const CompactSpanGrid::Span& span, const Params& params)
 {
 	return span.depth > params.agent.maxWaterDepth;
 }
 
-/*static*/ bool TileGenerator::FilterWalkable_CheckNeighbours(const SSpanCoord& spanCoord, const SSpanClearance& spanClearance, const SFilterWalkableParams& filterParams, SNonWalkableNeighbourReason* pOutReason)
+/*static*/ bool CTileGenerator::FilterWalkable_CheckNeighbours(const SSpanCoord& spanCoord, const SSpanClearance& spanClearance, const SFilterWalkableParams& filterParams, SNonWalkableNeighbourReason* pOutReason)
 {
 	const size_t axisNeighbourCount = 4;
 
@@ -770,7 +805,7 @@ void TileGenerator::FilterWalkable(const AABB& aabb, bool fullyContained)
 	return !neighbourTest;
 }
 
-void TileGenerator::FilterWalkable_CheckBoundaries(const AABB& aabb, const size_t gridWidth, const size_t gridHeight)
+void CTileGenerator::FilterWalkable_CheckBoundaries(const AABB& aabb, const size_t gridWidth, const size_t gridHeight)
 {
 	const float convX = 1.0f / m_params.voxelSize.x;
 	const float convY = 1.0f / m_params.voxelSize.y;
@@ -882,12 +917,12 @@ void TileGenerator::FilterWalkable_CheckBoundaries(const AABB& aabb, const size_
 
 inline bool IsBorderLabel(uint16 label)
 {
-	return (label & (TileGenerator::BorderLabelH | TileGenerator::BorderLabelV)) != 0;
+	return (label & (CTileGenerator::BorderLabelH | CTileGenerator::BorderLabelV)) != 0;
 }
 
 inline bool IsLabelValid(uint16 label)
 {
-	return (label < TileGenerator::FirstInvalidLabel);
+	return (label < CTileGenerator::FirstInvalidLabel);
 }
 
 /*	inline uint16 ConsolidateLabel(uint16 label)
@@ -897,7 +932,7 @@ inline bool IsLabelValid(uint16 label)
     return TileGenerator::FirstInvalidLabel;
    }*/
 
-void TileGenerator::ComputeDistanceTransform()
+void CTileGenerator::ComputeDistanceTransform()
 {
 	m_profiler.StartTimer(DistanceTransform);
 
@@ -1036,7 +1071,7 @@ void TileGenerator::ComputeDistanceTransform()
 	m_profiler.StopTimer(DistanceTransform);
 }
 
-void TileGenerator::BlurDistanceTransform()
+void CTileGenerator::BlurDistanceTransform()
 {
 	if (!m_params.blurAmount)
 		return;
@@ -1230,10 +1265,10 @@ size_t RunStream(const CompactSpanGrid& spanGrid, size_t climbableVoxelCount, Li
 		}
 	}
 
-	return TileGenerator::NoLabel;
+	return CTileGenerator::NoLabel;
 }
 
-void TileGenerator::PaintBorder(uint16* data, size_t borderH, size_t borderV)
+void CTileGenerator::PaintBorder(uint16* data, size_t borderH, size_t borderV)
 {
 	const size_t width = m_spanGrid.GetWidth();
 	const size_t height = m_spanGrid.GetHeight();
@@ -1355,7 +1390,7 @@ real_t DistVertexToLineSq(int x, int y, int ax, int ay, int bx, int by)
 
 const real_t AddContourVertexThreshold(real_t::fraction(15, 1000));
 
-void TileGenerator::AddContourVertex(const ContourVertex& contourVertex, Region& region, Contour& contour) const
+void CTileGenerator::AddContourVertex(const ContourVertex& contourVertex, Region& region, Contour& contour) const
 {
 	if ((contour.size() < 2) || !ContourVertexRemovable(contour.back()))
 	{
@@ -1389,9 +1424,9 @@ void TileGenerator::AddContourVertex(const ContourVertex& contourVertex, Region&
 		region.flags |= Region::TileBoundaryV;
 }
 
-bool TileGenerator::GatherSurroundingInfo(const Vec2i& vertex, const Vec2i& direction, const uint16 top,
-                                          const uint16 climbableVoxelCount, size_t& height, SurroundingSpanInfo& left, SurroundingSpanInfo& front,
-                                          SurroundingSpanInfo& frontLeft) const
+bool CTileGenerator::GatherSurroundingInfo(const Vec2i& vertex, const Vec2i& direction, const uint16 top,
+                                           const uint16 climbableVoxelCount, size_t& height, SurroundingSpanInfo& left, SurroundingSpanInfo& front,
+                                           SurroundingSpanInfo& frontLeft) const
 {
 	Vec2i external = vertex + direction;
 	bool result = false;
@@ -1438,8 +1473,8 @@ bool TileGenerator::GatherSurroundingInfo(const Vec2i& vertex, const Vec2i& dire
 	return result;
 }
 
-void TileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& direction, const uint16 top,
-                                           const uint16 climbableVoxelCount, ContourVertex& contourVertex, const bool bInternalContour, SContourVertexDebugInfo* pDebugInfo) const
+void CTileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& direction, const uint16 top,
+                                            const uint16 climbableVoxelCount, ContourVertex& contourVertex, const bool bInternalContour, SContourVertexDebugInfo* pDebugInfo) const
 {
 	const size_t xoffs = (direction.x == 1) | (direction.y == -1);
 	const size_t yoffs = (direction.y == 1) | (direction.x == 1);
@@ -1600,7 +1635,7 @@ void TileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& dir
 	contourVertex.flags = static_cast<uint16>(flags);
 }
 
-void TileGenerator::AssessNeighbour(NeighbourInfo& info, size_t erosion, size_t climbableVoxelCount)
+void CTileGenerator::AssessNeighbour(NeighbourInfo& info, size_t erosion, size_t climbableVoxelCount)
 {
 	// TODO pavloi 2016.03.15: erosion is not used.
 	if (info.isValid = m_spanGrid.GetSpanAt(info.pos.x, info.pos.y, info.top, climbableVoxelCount, info.index))
@@ -1612,7 +1647,7 @@ void TileGenerator::AssessNeighbour(NeighbourInfo& info, size_t erosion, size_t 
 	}
 }
 
-void TileGenerator::TraceContour(TileGenerator::TracerPath& path, const Tracer& start, size_t erosion, size_t climbableVoxelCount, const NeighbourInfoRequirements& contourReq)
+void CTileGenerator::TraceContour(CTileGenerator::TracerPath& path, const Tracer& start, size_t erosion, size_t climbableVoxelCount, const NeighbourInfoRequirements& contourReq)
 {
 	// TODO pavloi 2016.03.15: erosion is not used in AssessNeighbour and so is not used here.
 
@@ -1689,7 +1724,7 @@ void TileGenerator::TraceContour(TileGenerator::TracerPath& path, const Tracer& 
 	while (tracer != start);
 }
 
-int TileGenerator::LabelTracerPath(const TileGenerator::TracerPath& path, size_t climbableVoxelCount, Region& region, Contour& contour, const uint16 internalLabel, const uint16 internalLabelFlags, const uint16 externalLabel)
+int CTileGenerator::LabelTracerPath(const CTileGenerator::TracerPath& path, size_t climbableVoxelCount, Region& region, Contour& contour, const uint16 internalLabel, const uint16 internalLabelFlags, const uint16 externalLabel)
 {
 	const int numSteps = path.steps.size();
 	contour.reserve(numSteps);
@@ -1761,7 +1796,7 @@ int TileGenerator::LabelTracerPath(const TileGenerator::TracerPath& path, size_t
 
 inline bool IsWalkable(uint16 label, uint16 distance, size_t erosion)
 {
-	if ((label & (TileGenerator::BorderLabelH | TileGenerator::BorderLabelV)) != 0)
+	if ((label & (CTileGenerator::BorderLabelH | CTileGenerator::BorderLabelV)) != 0)
 		return false;
 
 	if (distance < erosion)
@@ -1777,7 +1812,7 @@ inline bool IsWalkable(const Vec2i& voxel, size_t& index, uint16& label, size_t 
 		return false;
 
 	label = labels[index];
-	if ((label & (TileGenerator::BorderLabelH | TileGenerator::BorderLabelV)) != 0)
+	if ((label & (CTileGenerator::BorderLabelH | CTileGenerator::BorderLabelV)) != 0)
 		return false;
 
 	if (distances[index] < erosion)
@@ -1786,7 +1821,7 @@ inline bool IsWalkable(const Vec2i& voxel, size_t& index, uint16& label, size_t 
 	return true;
 }
 
-void TileGenerator::TidyUpContourEnd(Contour& contour)
+void CTileGenerator::TidyUpContourEnd(Contour& contour)
 {
 	if (contour.size() > 2)
 	{
@@ -1822,7 +1857,7 @@ void TileGenerator::TidyUpContourEnd(Contour& contour)
 	}
 }
 
-uint16 TileGenerator::GetPaintVal(size_t x, size_t y, size_t z, size_t index, size_t borderH, size_t borderV, size_t erosion)
+uint16 CTileGenerator::GetPaintVal(size_t x, size_t y, size_t z, size_t index, size_t borderH, size_t borderV, size_t erosion)
 {
 	// TODO pavloi 2016.03.15: there is already a function bool IsWalkable(uint16 label, uint16 distance, size_t erosion)
 	// which returns false exactly when we apply BadPaint here.
@@ -1832,13 +1867,13 @@ uint16 TileGenerator::GetPaintVal(size_t x, size_t y, size_t z, size_t index, si
 
 	// TODO pavloi 2016.03.15: if we suppose, that caller is properly written and never passes coords in borderH zone,
 	// then this check for BorderLabelH should never happen. But BorderLabelV could for upper border zone.
-	if (m_labels[index] & (TileGenerator::BorderLabelH | TileGenerator::BorderLabelV))
+	if (m_labels[index] & (CTileGenerator::BorderLabelH | CTileGenerator::BorderLabelV))
 		return BadPaint;
 
 	return OkPaintStart;
 }
 
-void TileGenerator::CalcPaintValues()
+void CTileGenerator::CalcPaintValues()
 {
 	// Adds the "paint" values to each voxel.
 	// Different paint values represent different walkable regions that should NOT be merged.
@@ -1878,7 +1913,7 @@ void TileGenerator::CalcPaintValues()
 	}
 }
 
-size_t TileGenerator::ExtractContours()
+size_t CTileGenerator::ExtractContours()
 {
 	m_profiler.StartTimer(ContourExtraction);
 
@@ -2097,8 +2132,11 @@ size_t TileGenerator::ExtractContours()
 	return regionCount;
 }
 
-size_t TileGenerator::InsertUniqueVertex(VertexIndexLookUp& lookUp, size_t x, size_t y, size_t z)
+size_t CTileGenerator::InsertUniqueVertex(VertexIndexLookUp& lookUp, size_t x, size_t y, size_t z)
 {
+	// #MNM_TODO pavloi 2016.07.21: different vertex index lookUp, not the one from m_mesh.
+	// Might lead to some duplicated vertices. It's not a big problem, just an increased memory use.
+
 	enum { zmask = (1 << 11) - 1, };
 	enum { xmask = (1 << 10) - 1, };
 	enum { ymask = (1 << 10) - 1, };
@@ -2110,18 +2148,18 @@ size_t TileGenerator::InsertUniqueVertex(VertexIndexLookUp& lookUp, size_t x, si
 
 	if (inserted)
 	{
-		index = static_cast<uint16>(m_vertices.size());
+		const size_t idx = m_mesh.InsertVertex(Tile::Vertex(
+		                                         Tile::Vertex::value_type(x * m_params.voxelSize.x),
+		                                         Tile::Vertex::value_type(y * m_params.voxelSize.y),
+		                                         Tile::Vertex::value_type(z * m_params.voxelSize.z)));
 
-		m_vertices.push_back(Tile::Vertex(
-		                       Tile::Vertex::value_type(x * m_params.voxelSize.x),
-		                       Tile::Vertex::value_type(y * m_params.voxelSize.y),
-		                       Tile::Vertex::value_type(z * m_params.voxelSize.z)));
+		index = static_cast<uint16>(idx);
 	}
 
 	return index;
 }
 
-void TileGenerator::FilterBadRegions(size_t minSpanCount)
+void CTileGenerator::FilterBadRegions(size_t minSpanCount)
 {
 	for (size_t i = 0; i < m_regions.size(); ++i)
 	{
@@ -2136,7 +2174,7 @@ void TileGenerator::FilterBadRegions(size_t minSpanCount)
 	}
 }
 
-bool TileGenerator::SimplifyContour(const Contour& contour, const real_t& tolerance2DSq, const real_t& tolerance3DSq, PolygonContour& poly)
+bool CTileGenerator::SimplifyContour(const Contour& contour, const real_t& tolerance2DSq, const real_t& tolerance3DSq, PolygonContour& poly)
 {
 	const size_t MaxSimplifiedCount = 2048;
 	uint16 simplified[MaxSimplifiedCount];
@@ -2350,7 +2388,7 @@ bool TileGenerator::SimplifyContour(const Contour& contour, const real_t& tolera
 	return false;
 }
 
-void TileGenerator::SimplifyContours()
+void CTileGenerator::SimplifyContours()
 {
 	m_profiler.StartTimer(Simplification);
 
@@ -2561,8 +2599,8 @@ bool IsEar(size_t vertex, const VertexTy* vertices, size_t vertexCount, uint16* 
 	return true;
 }
 
-size_t TileGenerator::Triangulate(PolygonContour& contour, const size_t agentHeight, const size_t borderH,
-                                  const size_t borderV, VertexIndexLookUp& lookUp)
+size_t CTileGenerator::Triangulate(PolygonContour& contour, const size_t agentHeight, const size_t borderH,
+                                   const size_t borderV, VertexIndexLookUp& lookUp)
 {
 	size_t triCount = 0;
 	size_t vertexCount = contour.size();
@@ -2710,11 +2748,13 @@ size_t TileGenerator::Triangulate(PolygonContour& contour, const size_t agentHei
 				continue;
 			}
 
-			m_triangles.resize(m_triangles.size() + 1);
-			Tile::Triangle& triangle = m_triangles.back();
+			Tile::STriangle& triangle = m_mesh.InsertTriangle();
 
 			triangle.linkCount = 0;
 			triangle.firstLink = 0;
+			triangle.islandID = 0;
+
+			triangle.triangleFlags = Tile::STriangle::eFlags_None;
 
 			triangle.vertex[0] = v0i;
 			triangle.vertex[1] = v1i;
@@ -2779,7 +2819,7 @@ bool Intersects(const Vec2i& a0, const Vec2i& a1, const Vec2i& b0, const Vec2i& 
 	return false;
 }
 
-void TileGenerator::MergeHole(PolygonContour& contour, const size_t contourVertex, const PolygonContour& hole, const size_t holeVertex, const int distSqr) const
+void CTileGenerator::MergeHole(PolygonContour& contour, const size_t contourVertex, const PolygonContour& hole, const size_t holeVertex, const int distSqr) const
 {
 	const size_t holeSize = hole.size();
 	const size_t contourSize = contour.size();
@@ -2812,7 +2852,7 @@ void TileGenerator::MergeHole(PolygonContour& contour, const size_t contourVerte
 	}
 }
 
-size_t TileGenerator::Triangulate()
+size_t CTileGenerator::Triangulate()
 {
 	m_profiler.StartTimer(Triangulation);
 
@@ -2837,11 +2877,7 @@ size_t TileGenerator::Triangulate()
 	VertexIndexLookUp lookUp;
 	lookUp.reset(vertexCount, vertexCount);
 
-	m_triangles.clear();
-	m_triangles.reserve(totalIndexCount);
-
-	m_vertices.clear();
-	m_vertices.reserve(vertexCount);
+	m_mesh.Reserve(totalIndexCount, vertexCount);
 
 	size_t triCount = 0;
 
@@ -3053,11 +3089,7 @@ size_t TileGenerator::Triangulate()
 	m_profiler.AddMemory(TriangulationMemory, lookUp.size() * sizeof(VertexIndexLookUp::value_type));
 	m_profiler.FreeMemory(TriangulationMemory, lookUp.size() * sizeof(VertexIndexLookUp::value_type));
 
-	m_profiler.AddMemory(TriangleMemory, m_triangles.capacity() * sizeof(Triangles::value_type));
-	m_profiler.AddMemory(VertexMemory, m_vertices.capacity() * sizeof(Vertices::value_type));
-
-	m_profiler.AddStat(VertexCount, m_vertices.size());
-	m_profiler.AddStat(TriangleCount, m_triangles.size());
+	m_mesh.AddStatsToProfiler(m_profiler);
 
 	return triCount;
 }
@@ -3129,9 +3161,9 @@ void CalculateVolume(const BVTriangle* triangles, size_t firstTri, size_t triCou
 }
 
 void SplitSAH(const aabb_t& aabb, BVTriangle* triangles, size_t firstTri, size_t triCount,
-              Tile::BVNode* nodes, size_t& nodeCount)
+              Tile::SBVNode* nodes, size_t& nodeCount)
 {
-	Tile::BVNode& node = nodes[nodeCount++];
+	Tile::SBVNode& node = nodes[nodeCount++];
 	node.aabb = aabb;
 
 	assert(!aabb.empty());
@@ -3283,11 +3315,12 @@ void SplitSAH(const aabb_t& aabb, BVTriangle* triangles, size_t firstTri, size_t
 	}
 }
 
-void TileGenerator::BuildBVTree()
+void CTileGenerator::BuildBVTree()
 {
 	m_profiler.StartTimer(BVTreeConstruction);
 
-	const size_t triangleCount = m_triangles.size();
+	const CGeneratedMesh::Triangles& meshTriangles = m_mesh.GetTriangles();
+	const size_t triangleCount = meshTriangles.size();
 
 	if (!triangleCount)
 	{
@@ -3301,16 +3334,18 @@ void TileGenerator::BuildBVTree()
 	std::vector<BVTriangle> bvTriangles;
 	bvTriangles.resize(triangleCount);
 
+	const CGeneratedMesh::Vertices& meshVertices = m_mesh.GetVertices();
+
 	for (size_t i = 0; i < triangleCount; ++i)
 	{
-		const Tile::Triangle& triangle = m_triangles[i];
+		const Tile::STriangle& triangle = meshTriangles[i];
 		BVTriangle& bvTri = bvTriangles[i];
 
 		vector3_t vertices[3];
 
 		for (size_t v = 0; v < 3; ++v)
 		{
-			vertices[v] = vector3_t(m_vertices[triangle.vertex[v]]);
+			vertices[v] = vector3_t(meshVertices[triangle.vertex[v]]);
 		}
 
 		bvTri.aabb = aabb_t(
@@ -3330,7 +3365,7 @@ void TileGenerator::BuildBVTree()
 	assert(aabb.max.y <= m_params.sizeY);
 	assert(aabb.max.z <= m_params.sizeZ);
 
-	std::vector<Tile::BVNode> nodes(2 * triangleCount);
+	std::vector<Tile::SBVNode> nodes(2 * triangleCount);
 	size_t nodeCount = 0;
 
 	SplitSAH(aabb, &bvTriangles.front(), 0, bvTriangles.size(), &nodes.front(), nodeCount);
@@ -3338,12 +3373,173 @@ void TileGenerator::BuildBVTree()
 
 	m_profiler.StopTimer(BVTreeConstruction);
 
-	m_profiler.AddMemory(BVTreeMemory, nodes.size() * sizeof(Tile::BVNode));
+	m_profiler.AddMemory(BVTreeMemory, nodes.size() * sizeof(Tile::SBVNode));
 	m_profiler.AddStat(BVTreeNodeCount, nodes.size());
 
-	m_profiler.AddMemory(BVTreeConstructionMemory, nodes.capacity() * sizeof(Tile::BVNode));
-	m_profiler.FreeMemory(BVTreeConstructionMemory, nodes.capacity() * sizeof(Tile::BVNode));
+	m_profiler.AddMemory(BVTreeConstructionMemory, nodes.capacity() * sizeof(Tile::SBVNode));
+	m_profiler.FreeMemory(BVTreeConstructionMemory, nodes.capacity() * sizeof(Tile::SBVNode));
 
 	m_bvtree = nodes;
 }
+
+//////////////////////////////////////////////////////////////////////////
+// CGeneratedMesh
+//////////////////////////////////////////////////////////////////////////
+
+void CTileGenerator::CGeneratedMesh::Clear()
+{
+	Vertices().swap(m_vertices);
+	Triangles().swap(m_triangles);
+	TileVertexIndexLookUp().swap(m_vertexIndexLookUp);
+
+	const size_t maxVertexCount = k_maxTriangleCount * 3;
+	m_vertexIndexLookUp.reset(maxVertexCount, maxVertexCount);
+}
+
+void CTileGenerator::CGeneratedMesh::CopyIntoTile(STile& tile) const
+{
+	if (m_triangles.size() > k_maxTriangleCount)
+	{
+		const Vec3 center = m_tileAabb.GetCenter();
+		AIWarning("[MNM] Too many triangles in one tile. Coords: [%.2f,%.2f,%.2f]", center.x, center.y, center.z);
+	}
+
+#if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
+	const size_t verticesCount = m_vertices.size();
+	const Tile::VertexIndex verticesMaxIndex = static_cast<Tile::VertexIndex>(verticesCount);
+	if (verticesCount != size_t(verticesMaxIndex))
+	{
+		CRY_ASSERT_MESSAGE(verticesCount == size_t(verticesMaxIndex), "MNM vertex count overflow");
+	}
+#endif // DEBUG_MNM_DATA_CONSISTENCY_ENABLED
+
+	tile.CopyTriangles(&m_triangles.front(), static_cast<uint16>(min<size_t>(k_maxTriangleCount, m_triangles.size())));
+	tile.CopyVertices(&m_vertices.front(), static_cast<uint16>(m_vertices.size()));
+
+	tile.ValidateTriangles();
+}
+
+void CTileGenerator::CGeneratedMesh::Reserve(size_t trianglesCount, size_t verticesCount)
+{
+	m_triangles.reserve(m_triangles.size() + trianglesCount);
+	m_vertices.reserve(m_vertices.size() + verticesCount);
+}
+
+size_t CTileGenerator::CGeneratedMesh::InsertVertex(const Tile::Vertex& vertex)
+{
+	const size_t index = m_vertices.size();
+	m_vertices.push_back(vertex);
+	return index;
+}
+
+Tile::STriangle& CTileGenerator::CGeneratedMesh::InsertTriangle()
+{
+	m_triangles.resize(m_triangles.size() + 1);
+	return m_triangles.back();
+}
+
+CTileGenerator::CGeneratedMesh::TileVertexKey CTileGenerator::CGeneratedMesh::GetKeyFromTileVertex(const Tile::Vertex& vtx)
+{
+	static_assert(std::is_same<uint16, typename Tile::Vertex::value_type::value_type>::value, "Tile::Vertex base type is unexpected");
+	static_assert(sizeof(TileVertexKey) >= 3 * sizeof(Tile::Vertex::value_type), "Tile::Vertex doesn't fit into key");
+
+	const uint64 x = vtx.x.get();
+	const uint64 y = vtx.y.get();
+	const uint64 z = vtx.z.get();
+	return (z << 32) | (y << 16) | (x);
+}
+
+bool CTileGenerator::CGeneratedMesh::AddTrianglesWorld(const Triangle* pTriangles, const size_t count, const Tile::STriangle::EFlags flags)
+{
+	if (!pTriangles || count == 0)
+	{
+		return true;
+	}
+
+	const size_t existingTrianglesCount = m_triangles.size();
+	const size_t amountOfTrianglesLeft =
+	  (k_maxTriangleCount > existingTrianglesCount)
+	  ? k_maxTriangleCount - existingTrianglesCount
+	  : 0;
+	const size_t newTrianglesCount = count;
+	const size_t trianglesToAddCount = std::min(newTrianglesCount, amountOfTrianglesLeft);
+
+	if (newTrianglesCount > trianglesToAddCount)
+	{
+		const Vec3 center = m_tileAabb.GetCenter();
+		AIWarning("[MNM] Too many extra mesh triangle in tile wile merging with generated mesh. Tile center: [%.2f,%.2f,%.2f]", center.x, center.y, center.z);
+	}
+
+	m_triangles.reserve(existingTrianglesCount + trianglesToAddCount);
+
+	Tile::Vertex verticesTile[3];
+
+	for (size_t triIdx = 0; triIdx < trianglesToAddCount; ++triIdx)
+	{
+		const Triangle& tri = pTriangles[triIdx];
+
+		m_hashComputer.Add(tri.v0);
+		m_hashComputer.Add(tri.v1);
+		m_hashComputer.Add(tri.v2);
+
+		verticesTile[0] = Tile::Vertex(tri.v0 - m_tileAabb.min);
+		verticesTile[1] = Tile::Vertex(tri.v1 - m_tileAabb.min);
+		verticesTile[2] = Tile::Vertex(tri.v2 - m_tileAabb.min);
+
+		if ((verticesTile[0] == verticesTile[1]) || (verticesTile[1] == verticesTile[2]) || (verticesTile[0] == verticesTile[2]))
+		{
+			const Vec3 center = m_tileAabb.GetCenter();
+			AIWarning("[MNM] Skipping degenerate extra mesh triangle in tile. Tile center: [%.2f,%.2f,%.2f]", center.x, center.y, center.z);
+			continue;
+		}
+
+		Tile::STriangle& triTile = InsertTriangle();
+
+		triTile.linkCount = 0;
+		triTile.firstLink = 0;
+		triTile.islandID = 0;
+		triTile.triangleFlags = flags;
+
+		for (int i = 0; i < 3; ++i)
+		{
+			const Tile::Vertex& vtxTile = verticesTile[i];
+
+			bool bInserted = false;
+			const uint64 vtxKey = GetKeyFromTileVertex(vtxTile);
+			Tile::VertexIndex& index = *m_vertexIndexLookUp.insert(vtxKey, 0, &bInserted);
+
+			if (bInserted)
+			{
+				index = static_cast<Tile::VertexIndex>(m_vertices.size());
+				m_vertices.push_back(vtxTile);
+			}
+
+			triTile.vertex[i] = index;
+		}
+	} // for triIdx
+
+	return m_triangles.size() < k_maxTriangleCount;
+}
+
+void CTileGenerator::CGeneratedMesh::AddStatsToProfiler(ProfilerType& profiler) const
+{
+	profiler.AddMemory(TriangleMemory, m_triangles.capacity() * sizeof(Triangles::value_type));
+	profiler.AddMemory(VertexMemory, m_vertices.capacity() * sizeof(Vertices::value_type));
+
+	profiler.AddStat(VertexCount, m_vertices.size());
+	profiler.AddStat(TriangleCount, m_triangles.size());
+
+}
+
+void CTileGenerator::CGeneratedMesh::ResetHashSeed(uint32 hashSeed)
+{
+	m_hashComputer = HashComputer(hashSeed);
+}
+
+uint32 CTileGenerator::CGeneratedMesh::CompleteAndGetHashValue()
+{
+	m_hashComputer.Complete();
+	return m_hashComputer.GetValue();
+}
+
 }

@@ -534,12 +534,17 @@ public:
 	virtual void                             GetTileBoundsForMesh(NavigationMeshID meshID, MNM::TileID tileID, AABB& bounds) const override;
 	virtual MNM::TriangleID                  GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location) override;
 
+	virtual const MNM::Tile::ITileGrid*      GetMNMTileGrid(NavigationMeshID meshID) const override;
+
 	virtual const IOffMeshNavigationManager& GetIOffMeshNavigationManager() const override { return m_offMeshNavigationManager; }
 	virtual IOffMeshNavigationManager&       GetIOffMeshNavigationManager() override       { return m_offMeshNavigationManager; }
 
 	bool                                     AgentTypeSupportSmartObjectUserClass(NavigationAgentTypeID agentTypeID, const char* smartObjectUserClass) const;
 	uint16                                   GetAgentRadiusInVoxelUnits(NavigationAgentTypeID agentTypeID) const;
 	uint16                                   GetAgentHeightInVoxelUnits(NavigationAgentTypeID agentTypeID) const;
+
+	virtual TileGeneratorExtensionID         RegisterTileGeneratorExtension(MNM::TileGenerator::IExtension& extension) override;
+	virtual bool                             UnRegisterTileGeneratorExtension(const TileGeneratorExtensionID extensionId) override;
 
 	inline const WorldMonitor*               GetWorldMonitor() const
 	{
@@ -626,7 +631,7 @@ public:
 		};
 
 		JobManager::SJobState jobState;
-		MNM::Tile             tile;
+		MNM::STile            tile;
 		uint32                hashValue;
 
 		NavigationMeshID      meshID;
@@ -645,7 +650,7 @@ private:
 #if NAVIGATION_SYSTEM_PC_ONLY
 	void UpdateMeshes(const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground);
 	void SetupGenerator(NavigationMeshID meshID, const MNM::MeshGrid::Params& paramsGrid,
-	                    uint16 x, uint16 y, uint16 z, MNM::TileGenerator::Params& params,
+	                    uint16 x, uint16 y, uint16 z, MNM::CTileGenerator::Params& params,
 	                    const MNM::BoundingVolume* boundary, const MNM::BoundingVolume* exclusions,
 	                    size_t exclusionCount);
 	bool SpawnJob(TileTaskResult& result, NavigationMeshID meshID, const MNM::MeshGrid::Params& paramsGrid,
@@ -743,10 +748,12 @@ private:
 	NavigationListeners m_listenersList;
 
 	typedef CListenerSet<INavigationSystemUser*> NavigationSystemUsers;
-	NavigationSystemUsers m_users;
+	NavigationSystemUsers                  m_users;
 
-	CVolumesManager       m_volumesManager;
-	bool                  m_isNavigationUpdatePaused;
+	CVolumesManager                        m_volumesManager;
+	bool                                   m_isNavigationUpdatePaused;
+
+	MNM::STileGeneratorExtensionsContainer m_tileGeneratorExtensionsContainer;
 };
 
 namespace NavigationSystemUtils

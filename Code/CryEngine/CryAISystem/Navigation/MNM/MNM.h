@@ -6,10 +6,7 @@
 #pragma once
 
 #include <CryAISystem/IMNM.h>
-#include <CryCore/FixedPoint.h>
-#include "FixedVec2.h"
-#include "FixedVec3.h"
-#include "FixedAABB.h"
+#include <CryAISystem/NavigationSystem/MNMTile.h>
 #include "MNM_Type_info.h"
 #include "OpenList.h"
 
@@ -33,10 +30,6 @@
 
 namespace MNM
 {
-typedef fixed_t<int, 16>   real_t;
-typedef FixedVec2<int, 16> vector2_t;
-typedef FixedVec3<int, 16> vector3_t;
-typedef FixedAABB<int, 16> aabb_t;
 
 struct WayTriangleData
 {
@@ -78,21 +71,6 @@ struct WayTriangleData
 	float         costMultiplier;
 	unsigned int  incidentEdge;
 };
-
-inline TriangleID ComputeTriangleID(TileID tileID, uint16 triangleIdx)
-{
-	return (tileID << 10) | (triangleIdx & ((1 << 10) - 1));
-}
-
-inline TileID ComputeTileID(TriangleID triangleID)
-{
-	return triangleID >> 10;
-}
-
-inline uint16 ComputeTriangleIndex(TriangleID triangleID)
-{
-	return triangleID & ((1 << 10) - 1);
-}
 
 inline bool IsTriangleAlreadyInWay(const TriangleID triangleID, const TriangleID* const way, const size_t wayTriCount)
 {

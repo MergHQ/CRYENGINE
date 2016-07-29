@@ -382,6 +382,7 @@ size_t WorldVoxelizer::ProcessGeometry(uint32 hashValueSeed /* = 0 */, uint32 ha
 	if (hashValue)
 		*hashValue = hash.GetValue();
 
+	// NOTE pavloi 2016.07.13: if external meshes present, this branch will almost always be executes
 	if (hashTest != hash.GetValue())
 	{
 		terrainAABBCount = 0;

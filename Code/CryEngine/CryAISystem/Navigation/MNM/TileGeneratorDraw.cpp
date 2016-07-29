@@ -263,7 +263,7 @@ struct NotWalkableFilter
 	bool operator()(const CompactSpanGrid& grid, size_t i) const
 	{
 		const CompactSpanGrid::Span& span = grid.GetSpan(i);
-		return (span.flags & TileGenerator::NotWalkable) != 0;
+		return (span.flags & CTileGenerator::NotWalkable) != 0;
 	}
 };
 
@@ -272,7 +272,7 @@ struct WalkableFilter
 	bool operator()(const CompactSpanGrid& grid, size_t i) const
 	{
 		const CompactSpanGrid::Span& span = grid.GetSpan(i);
-		return (span.flags & TileGenerator::NotWalkable) == 0;
+		return (span.flags & CTileGenerator::NotWalkable) == 0;
 	}
 };
 
@@ -281,7 +281,7 @@ struct BoundaryFilter
 	bool operator()(const CompactSpanGrid& grid, size_t i) const
 	{
 		const CompactSpanGrid::Span& span = grid.GetSpan(i);
-		return (span.flags & TileGenerator::TileBoundary) != 0;
+		return (span.flags & CTileGenerator::TileBoundary) != 0;
 	}
 };
 
@@ -323,17 +323,17 @@ struct LabelColor
 {
 	ColorB operator()(size_t r) const
 	{
-		if (r < TileGenerator::NoLabel)
+		if (r < CTileGenerator::NoLabel)
 			return ColorFromNumber(r);
-		else if (r == TileGenerator::NoLabel)
+		else if (r == CTileGenerator::NoLabel)
 			return Col_DarkGray;
-		else if ((r& TileGenerator::BorderLabelV) == TileGenerator::BorderLabelV)
+		else if ((r& CTileGenerator::BorderLabelV) == CTileGenerator::BorderLabelV)
 			return Col_DarkSlateBlue;
-		else if ((r& TileGenerator::BorderLabelH) == TileGenerator::BorderLabelH)
+		else if ((r& CTileGenerator::BorderLabelH) == CTileGenerator::BorderLabelH)
 			return Col_DarkOliveGreen;
-		else if (r & TileGenerator::ExternalContour)
+		else if (r & CTileGenerator::ExternalContour)
 			return Col_DarkSlateBlue * 0.5f + Col_DarkOliveGreen * 0.5f;
-		else if (r & TileGenerator::InternalContour)
+		else if (r & CTileGenerator::InternalContour)
 			return Col_DarkSlateBlue * 0.25f + Col_DarkOliveGreen * 0.75f;
 		else
 			return Col_DarkSlateBlue * 0.5f + Col_DarkOliveGreen * 0.5f;
@@ -362,13 +362,13 @@ struct SPaintColor
 	{
 		switch (r)
 		{
-		case TileGenerator::Paint::NoPaint:
+		case CTileGenerator::Paint::NoPaint:
 			return Col_DarkGray;
-		case TileGenerator::Paint::BadPaint:
+		case CTileGenerator::Paint::BadPaint:
 			return Col_DarkSlateBlue;
 		}
-		STATIC_ASSERT(TileGenerator::Paint::OkPaintStart == 2, "There are unknown values before TileGenerator::Paint::OkPaintStart");
-		return ColorFromNumber(r - TileGenerator::Paint::OkPaintStart);
+		STATIC_ASSERT(CTileGenerator::Paint::OkPaintStart == 2, "There are unknown values before TileGenerator::Paint::OkPaintStart");
+		return ColorFromNumber(r - CTileGenerator::Paint::OkPaintStart);
 	}
 };
 
@@ -449,12 +449,12 @@ struct SLabelColorLegendRenderer
 		SLegendRenderer legend;
 		if (legend)
 		{
-			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(TileGenerator::NoLabel), "NoLabel");
-			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(TileGenerator::BorderLabelV), "BorderLabelV");
-			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(TileGenerator::BorderLabelH), "BorderLabelH");
-			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(TileGenerator::ExternalContour), "ExternalContour");
-			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(TileGenerator::InternalContour), "InternalContour");
-			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(TileGenerator::NoLabel | TileGenerator::InternalContour), "Something else");
+			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(CTileGenerator::NoLabel), "NoLabel");
+			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(CTileGenerator::BorderLabelV), "BorderLabelV");
+			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(CTileGenerator::BorderLabelH), "BorderLabelH");
+			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(CTileGenerator::ExternalContour), "ExternalContour");
+			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(CTileGenerator::InternalContour), "InternalContour");
+			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(CTileGenerator::NoLabel | CTileGenerator::InternalContour), "Something else");
 		}
 	}
 };
@@ -468,7 +468,7 @@ struct SPaintColorLegendRenderer
 		const float x = 10.0f;
 		float y = 120.0f;
 
-		uint16 maxPaintValue = TileGenerator::Paint::NoPaint;
+		uint16 maxPaintValue = CTileGenerator::Paint::NoPaint;
 		if (!paints.empty())
 		{
 			auto iter = std::max_element(paints.begin(), paints.end());
@@ -479,10 +479,10 @@ struct SPaintColorLegendRenderer
 		SLegendRenderer legend;
 		if (legend)
 		{
-			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(TileGenerator::Paint::NoPaint), "NoPaint");
-			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(TileGenerator::Paint::BadPaint), "BadPaint");
-			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(TileGenerator::Paint::OkPaintStart), "OkPaintStart");
-			for (uint16 paintVal = TileGenerator::Paint::OkPaintStart, idx = 1; paintVal < maxPaintValue; ++paintVal, ++idx)
+			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(CTileGenerator::Paint::NoPaint), "NoPaint");
+			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(CTileGenerator::Paint::BadPaint), "BadPaint");
+			legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(CTileGenerator::Paint::OkPaintStart), "OkPaintStart");
+			for (uint16 paintVal = CTileGenerator::Paint::OkPaintStart, idx = 1; paintVal < maxPaintValue; ++paintVal, ++idx)
 			{
 				legend.DrawColorLegendLine(Vec2(x, (y += dy)), Vec2(dy, dy), fontSize, colorer(paintVal), stack_string().Format("paint #%u", (uint32)idx).c_str());
 			}
@@ -495,7 +495,7 @@ struct SPaintColorLegendRenderer
 class CNonWalkableInfoPrinter
 {
 public:
-	CNonWalkableInfoPrinter(const TileGenerator::NonWalkableSpanReasonMap& nonWalkabaleSpanInfos)
+	CNonWalkableInfoPrinter(const CTileGenerator::NonWalkableSpanReasonMap& nonWalkabaleSpanInfos)
 		: m_nonWalkabaleSpanInfos(nonWalkabaleSpanInfos)
 	{}
 
@@ -509,7 +509,7 @@ public:
 				return;
 			}
 
-			const TileGenerator::SNonWalkableReason& info = iterCoordInfoPair->second;
+			const CTileGenerator::SNonWalkableReason& info = iterCoordInfoPair->second;
 
 			SDrawTextInfo ti;
 			ti.xscale = ti.yscale = 0.08f;
@@ -529,7 +529,7 @@ public:
 		}
 	}
 private:
-	const TileGenerator::NonWalkableSpanReasonMap& m_nonWalkabaleSpanInfos;
+	const CTileGenerator::NonWalkableSpanReasonMap& m_nonWalkabaleSpanInfos;
 };
 
 #endif // DEBUG_MNM_GATHER_NONWALKABLE_REASONS
@@ -611,13 +611,13 @@ class CContourRenderer
 public:
 	struct SDummyContourVertexPrinter
 	{
-		void operator()(IRenderAuxGeom& /*renderAuxGeom*/, const TileGenerator::ContourVertex& /*vtx*/, const size_t /*vtxIdx*/, const Vec3& /*vtxPosWorld*/) const
+		void operator()(IRenderAuxGeom& /*renderAuxGeom*/, const CTileGenerator::ContourVertex& /*vtx*/, const size_t /*vtxIdx*/, const Vec3& /*vtxPosWorld*/) const
 		{}
 	};
 
 	struct SContourVertexNumberPrinter
 	{
-		void operator()(IRenderAuxGeom& renderAuxGeom, const TileGenerator::ContourVertex& vtx, const size_t vtxIdx, const Vec3& vtxPosWorld) const
+		void operator()(IRenderAuxGeom& renderAuxGeom, const CTileGenerator::ContourVertex& vtx, const size_t vtxIdx, const Vec3& vtxPosWorld) const
 		{
 			Vec2 screenPos;
 			if (IsOnScreen(vtxPosWorld, *&screenPos))
@@ -632,11 +632,11 @@ public:
 #if DEBUG_MNM_GATHER_EXTRA_CONTOUR_VERTEX_INFO
 	struct SContourVertexDebugInfoPrinter
 	{
-		SContourVertexDebugInfoPrinter(const TileGenerator::ContourVertexDebugInfos& infos)
+		SContourVertexDebugInfoPrinter(const CTileGenerator::ContourVertexDebugInfos& infos)
 			: infos(infos)
 		{}
 
-		void operator()(IRenderAuxGeom& renderAuxGeom, const TileGenerator::ContourVertex& vtx, const size_t vtxIdx, const Vec3& vtxPosWorld) const
+		void operator()(IRenderAuxGeom& renderAuxGeom, const CTileGenerator::ContourVertex& vtx, const size_t vtxIdx, const Vec3& vtxPosWorld) const
 		{
 			if (vtx.debugInfoIndex == (~0))
 			{
@@ -646,7 +646,7 @@ public:
 			const char* szText = nullptr;
 			if (vtx.debugInfoIndex < infos.size())
 			{
-				const TileGenerator::SContourVertexDebugInfo& info = infos[vtx.debugInfoIndex];
+				const CTileGenerator::SContourVertexDebugInfo& info = infos[vtx.debugInfoIndex];
 
 				if (IsOnScreen(vtxPosWorld))
 				{
@@ -669,11 +669,11 @@ public:
 
 		}
 
-		const TileGenerator::ContourVertexDebugInfos& infos;
+		const CTileGenerator::ContourVertexDebugInfos& infos;
 	};
 #endif // DEBUG_MNM_GATHER_EXTRA_CONTOUR_VERTEX_INFO
 public:
-	CContourRenderer(const Vec3& origin, const TileGenerator::Params& params)
+	CContourRenderer(const Vec3& origin, const CTileGenerator::Params& params)
 		: m_origin(origin)
 		, m_voxelSize(params.voxelSize)
 		, m_contourBoundaryVertexRadius(ContourBoundaryVertexRadius(m_voxelSize.x))
@@ -693,13 +693,13 @@ public:
 	}
 
 	template<typename TVertexPrinter>
-	void DrawRegions(const TileGenerator::Regions& regions, const ColorB unremovableColor, const TVertexPrinter& vertexPrinter)
+	void DrawRegions(const CTileGenerator::Regions& regions, const ColorB unremovableColor, const TVertexPrinter& vertexPrinter)
 	{
 		if (!regions.empty())
 		{
 			for (size_t i = 0; i < regions.size(); ++i)
 			{
-				const TileGenerator::Region& region = regions[i];
+				const CTileGenerator::Region& region = regions[i];
 
 				if (region.contour.empty())
 					continue;
@@ -710,7 +710,7 @@ public:
 	}
 
 	template<typename TVertexPrinter>
-	void DrawRegion(const TileGenerator::Region& region, const size_t regionIndex, const ColorB unremovableColor, const TVertexPrinter& vertexPrinter)
+	void DrawRegion(const CTileGenerator::Region& region, const size_t regionIndex, const ColorB unremovableColor, const TVertexPrinter& vertexPrinter)
 	{
 		const ColorB vcolor = LabelColor()(regionIndex);
 
@@ -718,7 +718,7 @@ public:
 
 		for (size_t h = 0; h < region.holes.size(); ++h)
 		{
-			const TileGenerator::Contour& hole = region.holes[h];
+			const CTileGenerator::Contour& hole = region.holes[h];
 
 			DrawContour(hole, vcolor, unremovableColor, vertexPrinter);
 		}
@@ -729,7 +729,7 @@ public:
 
 		for (size_t c = 0; c < region.contour.size(); ++c)
 		{
-			const TileGenerator::ContourVertex& cv = region.contour[c];
+			const CTileGenerator::ContourVertex& cv = region.contour[c];
 			xx += cv.x;
 			yy += cv.y;
 			zz = std::max<size_t>(zz, cv.z);
@@ -750,30 +750,30 @@ public:
 	}
 
 	template<typename TVertexPrinter>
-	void DrawContour(const TileGenerator::Contour& contour, const ColorB vcolor, const ColorB unremovableColor, const TVertexPrinter& printer) const
+	void DrawContour(const CTileGenerator::Contour& contour, const ColorB vcolor, const ColorB unremovableColor, const TVertexPrinter& printer) const
 	{
-		const TileGenerator::ContourVertex& v = contour.front();
+		const CTileGenerator::ContourVertex& v = contour.front();
 
 		Vec3 v0 = ContourVertexWorldPos(v);
 
 		for (size_t s = 1; s <= contour.size(); ++s)
 		{
 			const size_t vtxIndex = s % contour.size();
-			const TileGenerator::ContourVertex& nv = contour[vtxIndex];
-			const ColorB pcolor = (nv.flags & TileGenerator::ContourVertex::Unremovable) ? unremovableColor : vcolor;
+			const CTileGenerator::ContourVertex& nv = contour[vtxIndex];
+			const ColorB pcolor = (nv.flags & CTileGenerator::ContourVertex::Unremovable) ? unremovableColor : vcolor;
 
 			const Vec3 v1 = ContourVertexWorldPos(nv);
 
 			m_pRenderAuxGeom->DrawLine(v0, vcolor, v1, vcolor, 7.0f);
 
-			if (nv.flags & TileGenerator::ContourVertex::TileBoundary)
+			if (nv.flags & CTileGenerator::ContourVertex::TileBoundary)
 			{
 				m_pRenderAuxGeom->DrawCone(v1, Vec3(0.0f, 0.0f, 1.0f), m_contourBoundaryVertexRadius, 0.085f, pcolor);
 
-				if (nv.flags & TileGenerator::ContourVertex::TileBoundaryV)
+				if (nv.flags & CTileGenerator::ContourVertex::TileBoundaryV)
 					m_pRenderAuxGeom->DrawAABB(AABB(v1, m_contourBoundaryVertexRadius), IDENTITY, true, pcolor, eBBD_Faceted);
 			}
-			else if (nv.flags & TileGenerator::ContourVertex::TileBoundaryV)
+			else if (nv.flags & CTileGenerator::ContourVertex::TileBoundaryV)
 				m_pRenderAuxGeom->DrawAABB(AABB(v1, m_contourBoundaryVertexRadius), IDENTITY, true, pcolor, eBBD_Faceted);
 			else
 				m_pRenderAuxGeom->DrawSphere(v1, m_contourBoundaryVertexRadius, pcolor);
@@ -784,7 +784,7 @@ public:
 		}
 	}
 
-	Vec3 ContourVertexWorldPos(const TileGenerator::ContourVertex& vtx) const
+	Vec3 ContourVertexWorldPos(const CTileGenerator::ContourVertex& vtx) const
 	{
 		return m_origin + Vec3(
 		  vtx.x * m_voxelSize.x,
@@ -805,11 +805,9 @@ private:
 	SAuxGeomRenderFlags m_oldRenderFlags;
 };
 
-void TileGenerator::Draw(const EDrawMode mode, const bool bDrawAdditionalInfo) const
+void CTileGenerator::Draw(const EDrawMode mode, const bool bDrawAdditionalInfo) const
 {
 #if DEBUG_MNM_ENABLED
-	if (!m_spanGrid.GetSpanCount())
-		return;
 
 	const size_t border = BorderSizeH(m_params);
 	const size_t borderV = BorderSizeV(m_params);
@@ -950,7 +948,7 @@ void TileGenerator::Draw(const EDrawMode mode, const bool bDrawAdditionalInfo) c
 
 			for (size_t i = 0; i < m_bvtree.size(); ++i)
 			{
-				const Tile::BVNode& node = m_bvtree[i];
+				const Tile::SBVNode& node = m_bvtree[i];
 
 				AABB nodeAABB;
 
@@ -966,7 +964,7 @@ void TileGenerator::Draw(const EDrawMode mode, const bool bDrawAdditionalInfo) c
 #endif // DEBUG_MNM_ENABLED
 }
 
-void TileGenerator::DrawSegmentation(const Vec3& origin, const bool bDrawAdditionalInfo) const
+void CTileGenerator::DrawSegmentation(const Vec3& origin, const bool bDrawAdditionalInfo) const
 {
 	if (!m_labels.empty())
 	{
@@ -1012,7 +1010,7 @@ void TileGenerator::DrawSegmentation(const Vec3& origin, const bool bDrawAdditio
 	}
 }
 
-void TileGenerator::DrawTracers(const Vec3& origin) const
+void CTileGenerator::DrawTracers(const Vec3& origin) const
 {
 	if (IRenderAuxGeom* pRender = gEnv->pRenderer->GetIRenderAuxGeom())
 	{
@@ -1053,7 +1051,7 @@ void TileGenerator::DrawTracers(const Vec3& origin) const
 	}
 }
 
-void TileGenerator::DrawSimplifiedContours(const Vec3& origin) const
+void CTileGenerator::DrawSimplifiedContours(const Vec3& origin) const
 {
 	IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 
@@ -1116,10 +1114,14 @@ void TileGenerator::DrawSimplifiedContours(const Vec3& origin) const
 	}
 }
 
-void TileGenerator::DrawNavTriangulation() const
+void CTileGenerator::DrawNavTriangulation() const
 {
 	IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
-	const size_t triCount = m_triangles.size();
+
+	const CGeneratedMesh::Triangles& triangles = m_mesh.GetTriangles();
+	const CGeneratedMesh::Vertices& vertices = m_mesh.GetVertices();
+
+	const size_t triCount = triangles.size();
 
 	const ColorB vcolor(Col_SlateBlue, 0.65f);
 	const ColorB lcolor(Col_White);
@@ -1138,10 +1140,10 @@ void TileGenerator::DrawNavTriangulation() const
 
 	for (size_t i = 0; i < triCount; ++i)
 	{
-		const Tile::Triangle& triangle = m_triangles[i];
-		const Vec3 v0 = m_vertices[triangle.vertex[0]].GetVec3() + m_params.origin + offset;
-		const Vec3 v1 = m_vertices[triangle.vertex[1]].GetVec3() + m_params.origin + offset;
-		const Vec3 v2 = m_vertices[triangle.vertex[2]].GetVec3() + m_params.origin + offset;
+		const Tile::STriangle& triangle = triangles[i];
+		const Vec3 v0 = vertices[triangle.vertex[0]].GetVec3() + m_params.origin + offset;
+		const Vec3 v1 = vertices[triangle.vertex[1]].GetVec3() + m_params.origin + offset;
+		const Vec3 v2 = vertices[triangle.vertex[2]].GetVec3() + m_params.origin + offset;
 
 		renderAuxGeom->DrawTriangle(v0, vcolor, v1, vcolor, v2, vcolor);
 	}
@@ -1151,11 +1153,11 @@ void TileGenerator::DrawNavTriangulation() const
 	{
 		for (size_t i = 0; i < triCount; ++i)
 		{
-			const Tile::Triangle& triangle = m_triangles[i];
+			const Tile::STriangle& triangle = triangles[i];
 
-			const Vec3 v0 = m_vertices[triangle.vertex[0]].GetVec3() + m_params.origin + offset;
-			const Vec3 v1 = m_vertices[triangle.vertex[1]].GetVec3() + m_params.origin + offset;
-			const Vec3 v2 = m_vertices[triangle.vertex[2]].GetVec3() + m_params.origin + offset;
+			const Vec3 v0 = vertices[triangle.vertex[0]].GetVec3() + m_params.origin + offset;
+			const Vec3 v1 = vertices[triangle.vertex[1]].GetVec3() + m_params.origin + offset;
+			const Vec3 v2 = vertices[triangle.vertex[2]].GetVec3() + m_params.origin + offset;
 
 			renderAuxGeom->DrawLine(v0 + loffset, lcolor, v1 + loffset, lcolor);
 			renderAuxGeom->DrawLine(v1 + loffset, lcolor, v2 + loffset, lcolor);

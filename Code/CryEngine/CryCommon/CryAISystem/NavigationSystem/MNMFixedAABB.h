@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "MNMFixedVec3.h"
+
 namespace MNM
 {
 template<typename BaseType, size_t IntegerBitCount>

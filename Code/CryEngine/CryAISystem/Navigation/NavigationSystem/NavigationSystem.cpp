@@ -9,7 +9,11 @@
 #include <CryThreading/IJobManager_JobDelegator.h>
 #include <CryCore/Platform/CryWindows.h>
 
-#define BAI_NAVIGATION_FILE_VERSION 7
+// BAI navigation file version history
+// Changes in version 8
+//  - struct MNM::Tile::STriangle layout is changed - now it has triangle flags
+#define BAI_NAVIGATION_FILE_VERSION 8
+
 #define MAX_NAME_LENGTH             512
 #if defined(SW_NAVMESH_USE_GUID)
 	#define BAI_NAVIGATION_GUID_FLAG  (1 << 31)
@@ -52,15 +56,15 @@ enum { MaxTaskCountPerWorkerThread = 12, };
 enum { MaxVolumeDefCopyCount = 8 }; // volume copies for access in other threads
 
 #if NAVIGATION_SYSTEM_PC_ONLY
-void GenerateTileJob(MNM::TileGenerator::Params params, volatile uint16* state, MNM::Tile* tile, uint32* hashValue)
+void GenerateTileJob(MNM::CTileGenerator::Params params, volatile uint16* state, MNM::STile* tile, uint32* hashValue)
 {
 	if (*state != NavigationSystem::TileTaskResult::Failed)
 	{
-		MNM::TileGenerator generator;
+		MNM::CTileGenerator generator;
 		bool result = generator.Generate(params, *tile, hashValue);
 		if (result)
 			*state = NavigationSystem::TileTaskResult::Completed;
-		else if (((params.flags & MNM::TileGenerator::Params::NoHashTest) == 0) && (*hashValue == params.hashValue))
+		else if (((params.flags & MNM::CTileGenerator::Params::NoHashTest) == 0) && (*hashValue == params.hashValue))
 			*state = NavigationSystem::TileTaskResult::NoChanges;
 		else
 			*state = NavigationSystem::TileTaskResult::Failed;
@@ -142,6 +146,7 @@ NavigationSystem::NavigationSystem(const char* configName)
 	, m_users(10)
 	, m_configurationVersion(0)
 	, m_isNavigationUpdatePaused(false)
+	, m_tileGeneratorExtensionsContainer()
 {
 	SetupTasks();
 
@@ -937,7 +942,7 @@ void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, 
 				++completed;
 				cacheHit += result.state == TileTaskResult::NoChanges;
 
-				MNM::Tile().Swap(result.tile);
+				MNM::STile().Swap(result.tile);
 
 				VolumeDefCopy& def = m_volumeDefCopy[result.volumeCopy];
 				--def.refCount;
@@ -1054,7 +1059,7 @@ void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, 
 }
 
 void NavigationSystem::SetupGenerator(NavigationMeshID meshID, const MNM::MeshGrid::Params& paramsGrid,
-                                      uint16 x, uint16 y, uint16 z, MNM::TileGenerator::Params& params,
+                                      uint16 x, uint16 y, uint16 z, MNM::CTileGenerator::Params& params,
                                       const MNM::BoundingVolume* boundary, const MNM::BoundingVolume* exclusions,
                                       size_t exclusionCount)
 {
@@ -1080,9 +1085,12 @@ void NavigationSystem::SetupGenerator(NavigationMeshID meshID, const MNM::MeshGr
 	params.agent.callback = agentType.meshEntityCallback;
 
 	if (MNM::TileID tileID = mesh.grid.GetTileID(x, y, z))
-		params.hashValue = mesh.grid.GetTile(tileID).hashValue;
+		params.hashValue = mesh.grid.GetTile(tileID).GetHashValue();
 	else
-		params.flags |= MNM::TileGenerator::Params::NoHashTest;
+		params.flags |= MNM::CTileGenerator::Params::NoHashTest;
+
+	params.pTileGeneratorExtensions = &m_tileGeneratorExtensionsContainer;
+	params.navAgentTypeId = mesh.agentTypeID;
 }
 
 bool NavigationSystem::SpawnJob(TileTaskResult& result, NavigationMeshID meshID, const MNM::MeshGrid::Params& paramsGrid,
@@ -1154,7 +1162,7 @@ bool NavigationSystem::SpawnJob(TileTaskResult& result, NavigationMeshID meshID,
 
 	++def->refCount;
 
-	MNM::TileGenerator::Params params;
+	MNM::CTileGenerator::Params params;
 
 	SetupGenerator(meshID, paramsGrid, x, y, z, params, &def->boundary,
 	               def->exclusions.empty() ? 0 : &def->exclusions[0], def->exclusions.size());
@@ -1516,18 +1524,18 @@ void NavigationSystem::AddIslandConnectionsBetweenTriangles(const NavigationMesh
 	if (m_meshes.validate(meshID))
 	{
 		NavigationMesh& mesh = m_meshes[meshID];
-		MNM::Tile::Triangle startingTriangle, endingTriangle;
+		MNM::Tile::STriangle startingTriangle, endingTriangle;
 		if (mesh.grid.GetTriangle(startingTriangleID, startingTriangle))
 		{
 			if (mesh.grid.GetTriangle(endingTriangleID, endingTriangle))
 			{
 				MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
 
-				MNM::Tile& tile = mesh.grid.GetTile(MNM::ComputeTileID(startingTriangleID));
+				MNM::STile& tile = mesh.grid.GetTile(MNM::ComputeTileID(startingTriangleID));
 				for (uint16 l = 0; l < startingTriangle.linkCount; ++l)
 				{
-					const MNM::Tile::Link& link = tile.links[startingTriangle.firstLink + l];
-					if (link.side == MNM::Tile::Link::OffMesh)
+					const MNM::Tile::SLink& link = tile.GetLinks()[startingTriangle.firstLink + l];
+					if (link.side == MNM::Tile::SLink::OffMesh)
 					{
 #if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
 						AILogCommentID("<MNM:OffMeshLink>", "NavigationSystem::AddIslandConnectionsBetweenTriangles link from %u to %u (mesh %u)", startingTriangle.islandID, endingTriangle.islandID, meshID);
@@ -1570,18 +1578,18 @@ void NavigationSystem::RemoveIslandsConnectionBetweenTriangles(const NavigationM
 	if (m_meshes.validate(meshID))
 	{
 		NavigationMesh& mesh = m_meshes[meshID];
-		MNM::Tile::Triangle startingTriangle, endingTriangle;
+		MNM::Tile::STriangle startingTriangle, endingTriangle;
 		if (mesh.grid.GetTriangle(startingTriangleID, startingTriangle))
 		{
 			if (mesh.grid.GetTriangle(endingTriangleID, endingTriangle))
 			{
 				MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
 
-				MNM::Tile& tile = mesh.grid.GetTile(MNM::ComputeTileID(startingTriangleID));
+				MNM::STile& tile = mesh.grid.GetTile(MNM::ComputeTileID(startingTriangleID));
 				for (uint16 l = 0; l < startingTriangle.linkCount; ++l)
 				{
-					const MNM::Tile::Link& link = tile.links[startingTriangle.firstLink + l];
-					if (link.side == MNM::Tile::Link::OffMesh)
+					const MNM::Tile::SLink& link = tile.GetLinks()[startingTriangle.firstLink + l];
+					if (link.side == MNM::Tile::SLink::OffMesh)
 					{
 #if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
 						AILogCommentID("<MNM:OffMeshLink>", "NavigationSystem::RemoveIslandsConnectionBetweenTriangles link from %u to %u (mesh %u)", startingTriangle.islandID, endingTriangle.islandID, meshID);
@@ -1622,17 +1630,17 @@ void NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles(
 		if (m_meshes.validate(meshID))
 		{
 			const NavigationMesh& mesh = m_meshes[meshID];
-			MNM::Tile::Triangle startingTriangle, endingTriangle;
+			MNM::Tile::STriangle startingTriangle, endingTriangle;
 			if (mesh.grid.GetTriangle(startingTriangleID, startingTriangle))
 			{
 				if (mesh.grid.GetTriangle(endingTriangleID, endingTriangle))
 				{
 					const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
-					const MNM::Tile& tile = mesh.grid.GetTile(MNM::ComputeTileID(startingTriangleID));
+					const MNM::STile& tile = mesh.grid.GetTile(MNM::ComputeTileID(startingTriangleID));
 					for (uint16 l = 0; l < startingTriangle.linkCount && !bLinkIsFound; ++l)
 					{
-						const MNM::Tile::Link& link = tile.links[startingTriangle.firstLink + l];
-						if (link.side == MNM::Tile::Link::OffMesh)
+						const MNM::Tile::SLink& link = tile.GetLinks()[startingTriangle.firstLink + l];
+						if (link.side == MNM::Tile::SLink::OffMesh)
 						{
 							const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
 							const MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
@@ -1671,7 +1679,7 @@ void NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles(
 	if (m_meshes.validate(meshID))
 	{
 		NavigationMesh& mesh = m_meshes[meshID];
-		MNM::Tile::Triangle startingTriangle, endingTriangle;
+		MNM::Tile::STriangle startingTriangle, endingTriangle;
 		if (mesh.grid.GetTriangle(startingTriangleID, startingTriangle))
 		{
 			if (mesh.grid.GetTriangle(endingTriangleID, endingTriangle))
@@ -1705,18 +1713,18 @@ void NavigationSystem::RemoveOffMeshLinkIslandsConnectionBetweenTriangles(
 		if (m_meshes.validate(meshID))
 		{
 			const NavigationMesh& mesh = m_meshes[meshID];
-			MNM::Tile::Triangle startingTriangle, endingTriangle;
+			MNM::Tile::STriangle startingTriangle, endingTriangle;
 			if (mesh.grid.GetTriangle(startingTriangleID, startingTriangle))
 			{
 				if (mesh.grid.GetTriangle(endingTriangleID, endingTriangle))
 				{
 					const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
 
-					const MNM::Tile& tile = mesh.grid.GetTile(MNM::ComputeTileID(startingTriangleID));
+					const MNM::STile& tile = mesh.grid.GetTile(MNM::ComputeTileID(startingTriangleID));
 					for (uint16 l = 0; l < startingTriangle.linkCount && !bLinkIsFound; ++l)
 					{
-						const MNM::Tile::Link& link = tile.links[startingTriangle.firstLink + l];
-						if (link.side == MNM::Tile::Link::OffMesh)
+						const MNM::Tile::SLink& link = tile.GetLinks()[startingTriangle.firstLink + l];
+						if (link.side == MNM::Tile::SLink::OffMesh)
 						{
 							const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
 							const MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
@@ -1755,7 +1763,7 @@ void NavigationSystem::RemoveOffMeshLinkIslandsConnectionBetweenTriangles(
 	if (m_meshes.validate(meshID))
 	{
 		NavigationMesh& mesh = m_meshes[meshID];
-		MNM::Tile::Triangle startingTriangle, endingTriangle;
+		MNM::Tile::STriangle startingTriangle, endingTriangle;
 		if (mesh.grid.GetTriangle(startingTriangleID, startingTriangle))
 		{
 			if (mesh.grid.GetTriangle(endingTriangleID, endingTriangle))
@@ -2556,7 +2564,7 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 		const MNM::TriangleID triangleID = GetClosestMeshLocation(startingMeshID, startLocation, verticalRange, horizontalRange, NULL, NULL);
 		const NavigationMesh& mesh = m_meshes[startingMeshID];
 		const MNM::MeshGrid& grid = mesh.grid;
-		MNM::Tile::Triangle triangle;
+		MNM::Tile::STriangle triangle;
 		if (triangleID && grid.GetTriangle(triangleID, triangle) && (triangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID))
 		{
 			startingIslandID = MNM::GlobalIslandID(startingMeshID, triangle.islandID);
@@ -2570,7 +2578,7 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 		const MNM::TriangleID triangleID = GetClosestMeshLocation(endingMeshID, endLocation, verticalRange, horizontalRange, NULL, NULL);
 		const NavigationMesh& mesh = m_meshes[endingMeshID];
 		const MNM::MeshGrid& grid = mesh.grid;
-		MNM::Tile::Triangle triangle;
+		MNM::Tile::STriangle triangle;
 		if (triangleID && grid.GetTriangle(triangleID, triangle) && (triangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID))
 		{
 			endingIslandID = MNM::GlobalIslandID(endingMeshID, triangle.islandID);
@@ -2592,7 +2600,7 @@ MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const Navigati
 		const MNM::TriangleID triangleID = GetClosestMeshLocation(startingMeshID, location, verticalRange, horizontalRange, NULL, NULL);
 		const NavigationMesh& mesh = m_meshes[startingMeshID];
 		const MNM::MeshGrid& grid = mesh.grid;
-		MNM::Tile::Triangle triangle;
+		MNM::Tile::STriangle triangle;
 		if (triangleID && grid.GetTriangle(triangleID, triangle) && (triangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID))
 		{
 			startingIslandID = MNM::GlobalIslandID(startingMeshID, triangle.islandID);
@@ -2646,6 +2654,16 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 	return MNM::TriangleID(0);
 }
 
+const MNM::Tile::ITileGrid* NavigationSystem::GetMNMTileGrid(NavigationMeshID meshID) const
+{
+	if (m_meshes.validate(meshID))
+	{
+		const NavigationMesh& mesh = m_meshes[meshID];
+		return &mesh.grid;
+	}
+	return nullptr;
+}
+
 size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, float minIslandArea) const
 {
 	if (m_meshes.validate(meshID))
@@ -2657,7 +2675,7 @@ size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID
 		const size_t maxTriangleCount = 4096;
 		MNM::TriangleID triangleIDs[maxTriangleCount];
 		const size_t triangleCount = mesh.grid.GetTriangles(aabb, triangleIDs, maxTriangleCount, minIslandArea);
-		MNM::Tile::Triangle triangle;
+		MNM::Tile::STriangle triangle;
 
 		if (triangleCount > 0)
 		{
@@ -2751,7 +2769,7 @@ size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AA
 		const size_t maxTriangleCount = 4096;
 		MNM::TriangleID triangleIDs[maxTriangleCount];
 		const size_t triangleCount = mesh.grid.GetTriangles(aabb, triangleIDs, maxTriangleCount, minIslandArea);
-		MNM::Tile::Triangle triangle;
+		MNM::Tile::STriangle triangle;
 
 		if (triangleCount > 0)
 		{
@@ -3071,54 +3089,51 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 						// Reading triangles
 						uint16 triangleCount = 0;
 						file.ReadType(&triangleCount);
-						MNM::Tile::Triangle* pTriangles = NULL;
+						std::unique_ptr<MNM::Tile::STriangle[]> pTriangles;
 						if (triangleCount)
 						{
-							pTriangles = new MNM::Tile::Triangle[triangleCount];
-							file.ReadType(pTriangles, triangleCount);
+							pTriangles.reset(new MNM::Tile::STriangle[triangleCount]);
+							file.ReadType(pTriangles.get(), triangleCount);
 						}
 
 						// Reading Vertices
 						uint16 vertexCount = 0;
 						file.ReadType(&vertexCount);
-						MNM::Tile::Vertex* pVertices = NULL;
+						std::unique_ptr<MNM::Tile::Vertex[]> pVertices;
 						if (vertexCount)
 						{
-							pVertices = new MNM::Tile::Vertex[vertexCount];
-							file.ReadType(pVertices, vertexCount);
+							pVertices.reset(new MNM::Tile::Vertex[vertexCount]);
+							file.ReadType(pVertices.get(), vertexCount);
 						}
 
 						// Reading Links
 						uint16 linkCount;
 						file.ReadType(&linkCount);
-						MNM::Tile::Link* pLinks = NULL;
+						std::unique_ptr<MNM::Tile::SLink[]> pLinks;
 						if (linkCount)
 						{
-							pLinks = new MNM::Tile::Link[linkCount];
-							file.ReadType(pLinks, linkCount);
+							pLinks.reset(new MNM::Tile::SLink[linkCount]);
+							file.ReadType(pLinks.get(), linkCount);
 						}
 
 						// Reading nodes
 						uint16 nodeCount;
 						file.ReadType(&nodeCount);
-						MNM::Tile::BVNode* pNodes = NULL;
+						std::unique_ptr<MNM::Tile::SBVNode[]> pNodes;
 						if (nodeCount)
 						{
-							pNodes = new MNM::Tile::BVNode[nodeCount];
-							file.ReadType(pNodes, nodeCount);
+							pNodes.reset(new MNM::Tile::SBVNode[nodeCount]);
+							file.ReadType(pNodes.get(), nodeCount);
 						}
 
 						// Creating and swapping the tile
-						MNM::Tile tile = MNM::Tile();
-						tile.triangleCount = triangleCount;
-						tile.triangles = pTriangles;
-						tile.vertexCount = vertexCount;
-						tile.vertices = pVertices;
-						tile.linkCount = linkCount;
-						tile.links = pLinks;
-						tile.nodeCount = nodeCount;
-						tile.nodes = pNodes;
-						tile.hashValue = hashValue;
+						MNM::STile tile = MNM::STile();
+						tile.SetTriangles(std::move(pTriangles), triangleCount);
+						tile.SetVertices(std::move(pVertices), vertexCount);
+						tile.SetLinks(std::move(pLinks), linkCount);
+						tile.SetNodes(std::move(pNodes), nodeCount);
+						tile.SetHashValue(hashValue);
+
 						mesh.grid.SetTile(x, y, z, tile);
 					}
 				}
@@ -3145,27 +3160,32 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 /// Returns the new number of links (triangle count is the same)
 #define DO_FILTERING_CONSISTENCY_CHECK 0
 
-uint16 FilterOffMeshLinksForTile(const MNM::Tile& tile, MNM::Tile::Triangle* pTrianglesBuffer, uint16 trianglesBufferSize, MNM::Tile::Link* pLinksBuffer, uint16 linksBufferSize)
+uint16 FilterOffMeshLinksForTile(const MNM::STile& tile, MNM::Tile::STriangle* pTrianglesBuffer, uint16 trianglesBufferSize, MNM::Tile::SLink* pLinksBuffer, uint16 linksBufferSize)
 {
 	assert(pTrianglesBuffer);
 	assert(pLinksBuffer);
-	assert(tile.triangleCount <= trianglesBufferSize);
-	assert(tile.linkCount <= linksBufferSize);
+	assert(tile.GetTrianglesCount() <= trianglesBufferSize);
+	assert(tile.GetLinksCount() <= linksBufferSize);
 
 	uint16 newLinkCount = 0;
 	uint16 offMeshLinksCount = 0;
 
-	if (tile.links)
+	const uint16 trianglesCount = tile.GetTrianglesCount();
+	const MNM::Tile::STriangle* pTriangles = tile.GetTriangles();
+
+	if (const MNM::Tile::SLink* pLinks = tile.GetLinks())
 	{
+		const uint16 linksCount = tile.GetLinksCount();
+
 		//Re-adjust link indices for triangles
-		for (uint16 t = 0; t < tile.triangleCount; ++t)
+		for (uint16 t = 0; t < trianglesCount; ++t)
 		{
-			const MNM::Tile::Triangle& triangle = tile.triangles[t];
+			const MNM::Tile::STriangle& triangle = pTriangles[t];
 			pTrianglesBuffer[t] = triangle;
 
 			pTrianglesBuffer[t].firstLink = triangle.firstLink - offMeshLinksCount;
 
-			if ((triangle.linkCount > 0) && (tile.links[triangle.firstLink].side == MNM::Tile::Link::OffMesh))
+			if ((triangle.linkCount > 0) && (pLinks[triangle.firstLink].side == MNM::Tile::SLink::OffMesh))
 			{
 				pTrianglesBuffer[t].linkCount--;
 				offMeshLinksCount++;
@@ -3173,11 +3193,11 @@ uint16 FilterOffMeshLinksForTile(const MNM::Tile& tile, MNM::Tile::Triangle* pTr
 		}
 
 		//Now copy links except off-mesh ones
-		for (uint16 l = 0; l < tile.linkCount; ++l)
+		for (uint16 l = 0; l < linksCount; ++l)
 		{
-			const MNM::Tile::Link& link = tile.links[l];
+			const MNM::Tile::SLink& link = pLinks[l];
 
-			if (link.side != MNM::Tile::Link::OffMesh)
+			if (link.side != MNM::Tile::SLink::OffMesh)
 			{
 				pLinksBuffer[newLinkCount] = link;
 				newLinkCount++;
@@ -3187,13 +3207,13 @@ uint16 FilterOffMeshLinksForTile(const MNM::Tile& tile, MNM::Tile::Triangle* pTr
 	else
 	{
 		//Just copy the triangles as they are
-		memcpy(pTrianglesBuffer, tile.triangles, sizeof(MNM::Tile::Triangle) * tile.triangleCount);
+		memcpy(pTrianglesBuffer, pTriangles, sizeof(MNM::Tile::STriangle) * trianglesCount);
 	}
 
 #if DO_FILTERING_CONSISTENCY_CHECK
 	if (newLinkCount > 0)
 	{
-		for (uint16 i = 0; i < tile.triangleCount; ++i)
+		for (uint16 i = 0; i < trianglesCount; ++i)
 		{
 			if ((pTrianglesBuffer[i].firstLink + pTrianglesBuffer[i].linkCount) > newLinkCount)
 			{
@@ -3203,7 +3223,7 @@ uint16 FilterOffMeshLinksForTile(const MNM::Tile& tile, MNM::Tile::Triangle* pTr
 	}
 #endif
 
-	assert(newLinkCount == (tile.linkCount - offMeshLinksCount));
+	assert(newLinkCount == (tile.GetLinksCount() - offMeshLinksCount));
 
 	return newLinkCount;
 }
@@ -3223,8 +3243,8 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 	{
 		const int maxTriangles = 1024;
 		const int maxLinks = maxTriangles * 6;
-		MNM::Tile::Triangle triangleBuffer[maxTriangles];
-		MNM::Tile::Link linkBuffer[maxLinks];
+		MNM::Tile::STriangle triangleBuffer[maxTriangles];
+		MNM::Tile::SLink linkBuffer[maxLinks];
 
 		// Saving file data version
 		uint16 nFileVersion = BAI_NAVIGATION_FILE_VERSION;
@@ -3437,30 +3457,48 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 							file.Write(&x, sizeof(x));
 							file.Write(&y, sizeof(y));
 							file.Write(&z, sizeof(z));
-							const MNM::Tile& tile = grid.GetTile(i);
-							file.Write(&(tile.hashValue), sizeof(tile.hashValue));
+							const MNM::STile& tile = grid.GetTile(i);
+							const uint32 tileHashValue = tile.GetHashValue();
+							file.Write(&tileHashValue, sizeof(tileHashValue));
 
+							// NOTE pavloi 2016.07.22: triangles and links are not saved as is - instead they are filtered and copied into triangleBuffer and linkBuffer
 							const uint16 saveLinkCount = FilterOffMeshLinksForTile(tile, triangleBuffer, maxTriangles, linkBuffer, maxLinks);
 
 							// Saving triangles
-							MNM::Tile::Triangle* pTriangles = tile.triangles;
-							file.Write(&(tile.triangleCount), sizeof(tile.triangleCount));
-							file.Write(triangleBuffer, sizeof(MNM::Tile::Triangle) * tile.triangleCount);
+							const uint16 trianglesCount = tile.GetTrianglesCount();
+							file.Write(&trianglesCount, sizeof(trianglesCount));
+							file.Write(triangleBuffer, sizeof(MNM::Tile::STriangle) * trianglesCount);
 
 							// Saving vertices
-							MNM::Tile::Vertex* pVertices = tile.vertices;
-							file.Write(&(tile.vertexCount), sizeof(tile.vertexCount));
-							file.Write(pVertices, sizeof(MNM::Tile::Vertex) * tile.vertexCount);
+							const MNM::Tile::Vertex* pVertices = tile.GetVertices();
+							const uint16 verticesCount = tile.GetVerticesCount();
+							file.Write(&verticesCount, sizeof(verticesCount));
+							file.Write(pVertices, sizeof(MNM::Tile::Vertex) * verticesCount);
 
 							// Saving links
-							MNM::Tile::Link* pLinks = tile.links;
-							file.Write(&(saveLinkCount), sizeof(tile.linkCount));
-							file.Write(linkBuffer, sizeof(MNM::Tile::Link) * saveLinkCount);
+							file.Write(&saveLinkCount, sizeof(saveLinkCount));
+							file.Write(linkBuffer, sizeof(MNM::Tile::SLink) * saveLinkCount);
 
 							// Saving nodes
-							MNM::Tile::BVNode* pNodes = tile.nodes;
-							file.Write(&(tile.nodeCount), sizeof(tile.nodeCount));
-							file.Write(pNodes, sizeof(MNM::Tile::BVNode) * tile.nodeCount);
+							const MNM::Tile::SBVNode* pNodes = tile.GetBVNodes();
+							const uint16 nodesCount = tile.GetBVNodesCount();
+							file.Write(&nodesCount, sizeof(nodesCount));
+							file.Write(pNodes, sizeof(MNM::Tile::SBVNode) * nodesCount);
+
+							// Compile-time asserts to catch data type changes - don't forget to bump BAI file version number
+							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(tile.GetLinksCount()));
+							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(tile.GetTrianglesCount()));
+							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(tile.GetVerticesCount()));
+							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(tile.GetBVNodesCount()));
+							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(trianglesCount));
+							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(verticesCount));
+							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(saveLinkCount));
+							COMPILE_TIME_ASSERT(sizeof(uint16) == sizeof(nodesCount));
+							COMPILE_TIME_ASSERT(sizeof(MNM::Tile::Vertex) == 6);
+							COMPILE_TIME_ASSERT(sizeof(MNM::Tile::STriangle) == 16);
+							COMPILE_TIME_ASSERT(sizeof(MNM::Tile::SLink) == 2);
+							COMPILE_TIME_ASSERT(sizeof(MNM::Tile::SBVNode) == 14);
+							COMPILE_TIME_ASSERT(sizeof(uint32) == sizeof(tile.GetHashValue()));
 						}
 					}
 
@@ -3600,6 +3638,40 @@ void NavigationSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_P
 	}
 }
 
+TileGeneratorExtensionID NavigationSystem::RegisterTileGeneratorExtension(MNM::TileGenerator::IExtension& extension)
+{
+	const TileGeneratorExtensionID newId = TileGeneratorExtensionID(m_tileGeneratorExtensionsContainer.idCounter + 1);
+
+	if (newId != TileGeneratorExtensionID())
+	{
+		m_tileGeneratorExtensionsContainer.idCounter = newId;
+	}
+	else
+	{
+		CRY_ASSERT_MESSAGE(newId != TileGeneratorExtensionID(), "TileGeneratorExtensionID counter is exausted");
+		return TileGeneratorExtensionID();
+	}
+
+	{
+		AUTO_MODIFYLOCK(m_tileGeneratorExtensionsContainer.extensionsLock);
+
+		m_tileGeneratorExtensionsContainer.extensions[newId] = &extension;
+		return newId;
+	}
+}
+
+bool NavigationSystem::UnRegisterTileGeneratorExtension(const TileGeneratorExtensionID extensionId)
+{
+	AUTO_MODIFYLOCK(m_tileGeneratorExtensionsContainer.extensionsLock);
+	auto iter = m_tileGeneratorExtensionsContainer.extensions.find(extensionId);
+	if (iter != m_tileGeneratorExtensionsContainer.extensions.end())
+	{
+		m_tileGeneratorExtensionsContainer.extensions.erase(extensionId);
+		return true;
+	}
+	return false;
+}
+
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
@@ -3668,10 +3740,10 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 
 	// TODO pavloi 2016.03.09: instead of calling GetAsyncKeyState(), register for events with GetISystem()->GetIInput()->AddEventListener().
 
-	static MNM::TileGenerator debugGenerator;
+	static MNM::CTileGenerator debugGenerator;
 	static MNM::TileID tileID(0);
 	static bool prevKeyState = false;
-	static size_t drawMode = (size_t)MNM::TileGenerator::EDrawMode::DrawNone;
+	static size_t drawMode = (size_t)MNM::CTileGenerator::EDrawMode::DrawNone;
 	static bool bDrawAdditionalInfo = false;
 
 	NavigationMesh& mesh = navigationSystem.m_meshes[settings.meshID];
@@ -3698,10 +3770,10 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 		else
 			++drawMode;
 
-		if (drawMode == (size_t)MNM::TileGenerator::EDrawMode::LastDrawMode)
-			drawMode = (size_t)MNM::TileGenerator::EDrawMode::DrawNone;
-		else if (drawMode > (size_t)MNM::TileGenerator::EDrawMode::LastDrawMode)
-			drawMode = (size_t)MNM::TileGenerator::EDrawMode::LastDrawMode - 1;
+		if (drawMode == (size_t)MNM::CTileGenerator::EDrawMode::LastDrawMode)
+			drawMode = (size_t)MNM::CTileGenerator::EDrawMode::DrawNone;
+		else if (drawMode > (size_t)MNM::CTileGenerator::EDrawMode::LastDrawMode)
+			drawMode = (size_t)MNM::CTileGenerator::EDrawMode::LastDrawMode - 1;
 	}
 
 	prevKeyState = keyState;
@@ -3771,10 +3843,10 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 	if (forceGeneration)
 	{
 		tileID = 0;
-		debugGenerator = MNM::TileGenerator();
+		debugGenerator = MNM::CTileGenerator();
 
-		MNM::Tile tile;
-		MNM::TileGenerator::Params params;
+		MNM::STile tile;
+		MNM::CTileGenerator::Params params;
 
 		std::vector<MNM::BoundingVolume> exclusions;
 		exclusions.resize(mesh.exclusions.size());
@@ -3789,7 +3861,7 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 		                                mesh.boundary ? &navigationSystem.m_volumes[mesh.boundary] : 0,
 		                                exclusions.empty() ? 0 : &exclusions[0], exclusions.size());
 
-		params.flags |= MNM::TileGenerator::Params::DebugInfo | MNM::TileGenerator::Params::NoHashTest;
+		params.flags |= MNM::CTileGenerator::Params::DebugInfo | MNM::CTileGenerator::Params::NoHashTest;
 
 		if (debugGenerator.Generate(params, tile, 0))
 		{
@@ -3801,65 +3873,65 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 			mesh.grid.ClearTile(tileID);
 	}
 
-	debugGenerator.Draw((MNM::TileGenerator::EDrawMode)drawMode, bDrawAdditionalInfo);
+	debugGenerator.Draw((MNM::CTileGenerator::EDrawMode)drawMode, bDrawAdditionalInfo);
 
 	const char* drawModeName = "None";
 
-	switch ((MNM::TileGenerator::EDrawMode)drawMode)
+	switch ((MNM::CTileGenerator::EDrawMode)drawMode)
 	{
-	case MNM::TileGenerator::EDrawMode::DrawNone:
+	case MNM::CTileGenerator::EDrawMode::DrawNone:
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawRawInputGeometry:
+	case MNM::CTileGenerator::EDrawMode::DrawRawInputGeometry:
 		drawModeName = "Raw Input Geometry";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawRawVoxels:
+	case MNM::CTileGenerator::EDrawMode::DrawRawVoxels:
 		drawModeName = "Raw Voxels";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawFilteredVoxels:
+	case MNM::CTileGenerator::EDrawMode::DrawFilteredVoxels:
 		drawModeName = "Filtered Voxels - filtered after walkable test";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawFlaggedVoxels:
+	case MNM::CTileGenerator::EDrawMode::DrawFlaggedVoxels:
 		drawModeName = "Flagged Voxels";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawDistanceTransform:
+	case MNM::CTileGenerator::EDrawMode::DrawDistanceTransform:
 		drawModeName = "Distance Transform";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawPainting:
+	case MNM::CTileGenerator::EDrawMode::DrawPainting:
 		drawModeName = "Painting";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawSegmentation:
+	case MNM::CTileGenerator::EDrawMode::DrawSegmentation:
 		drawModeName = "Segmentation";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawNumberedContourVertices:
-	case MNM::TileGenerator::EDrawMode::DrawContourVertices:
+	case MNM::CTileGenerator::EDrawMode::DrawNumberedContourVertices:
+	case MNM::CTileGenerator::EDrawMode::DrawContourVertices:
 		drawModeName = "Contour Vertices";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawTracers:
+	case MNM::CTileGenerator::EDrawMode::DrawTracers:
 		drawModeName = "Tracers";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawSimplifiedContours:
+	case MNM::CTileGenerator::EDrawMode::DrawSimplifiedContours:
 		drawModeName = "Simplified Contours";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawTriangulation:
+	case MNM::CTileGenerator::EDrawMode::DrawTriangulation:
 		drawModeName = "Triangulation";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::DrawBVTree:
+	case MNM::CTileGenerator::EDrawMode::DrawBVTree:
 		drawModeName = "BV Tree";
 		break;
 
-	case MNM::TileGenerator::EDrawMode::LastDrawMode:
+	case MNM::CTileGenerator::EDrawMode::LastDrawMode:
 	default:
 		drawModeName = "Unknown";
 		break;
@@ -3867,32 +3939,32 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 
 	dc->Draw2dLabel(10.0f, 5.0f, 1.6f, Col_White, false, "TileID %d - Drawing %s", tileID, drawModeName);
 
-	const MNM::TileGenerator::ProfilerType& profilerInfo = debugGenerator.GetProfiler();
+	const MNM::CTileGenerator::ProfilerType& profilerInfo = debugGenerator.GetProfiler();
 
 	dc->Draw2dLabel(10.0f, 28.0f, 1.25f, Col_White, false,
 	                "Total: %.1f - Voxelizer(%.2fK tris): %.1f - Filter: %.1f\n"
 	                "Contour(%d regs): %.1f - Simplify: %.1f\n"
 	                "Triangulate(%d vtx/%d tris): %.1f - BVTree(%d nodes): %.1f",
 	                profilerInfo.GetTotalElapsed().GetMilliSeconds(),
-	                profilerInfo[MNM::TileGenerator::VoxelizationTriCount] / 1000.0f,
-	                profilerInfo[MNM::TileGenerator::Voxelization].elapsed.GetMilliSeconds(),
-	                profilerInfo[MNM::TileGenerator::Filter].elapsed.GetMilliSeconds(),
-	                profilerInfo[MNM::TileGenerator::RegionCount],
-	                profilerInfo[MNM::TileGenerator::ContourExtraction].elapsed.GetMilliSeconds(),
-	                profilerInfo[MNM::TileGenerator::Simplification].elapsed.GetMilliSeconds(),
-	                profilerInfo[MNM::TileGenerator::VertexCount],
-	                profilerInfo[MNM::TileGenerator::TriangleCount],
-	                profilerInfo[MNM::TileGenerator::Triangulation].elapsed.GetMilliSeconds(),
-	                profilerInfo[MNM::TileGenerator::BVTreeNodeCount],
-	                profilerInfo[MNM::TileGenerator::BVTreeConstruction].elapsed.GetMilliSeconds()
+	                profilerInfo[MNM::CTileGenerator::VoxelizationTriCount] / 1000.0f,
+	                profilerInfo[MNM::CTileGenerator::Voxelization].elapsed.GetMilliSeconds(),
+	                profilerInfo[MNM::CTileGenerator::Filter].elapsed.GetMilliSeconds(),
+	                profilerInfo[MNM::CTileGenerator::RegionCount],
+	                profilerInfo[MNM::CTileGenerator::ContourExtraction].elapsed.GetMilliSeconds(),
+	                profilerInfo[MNM::CTileGenerator::Simplification].elapsed.GetMilliSeconds(),
+	                profilerInfo[MNM::CTileGenerator::VertexCount],
+	                profilerInfo[MNM::CTileGenerator::TriangleCount],
+	                profilerInfo[MNM::CTileGenerator::Triangulation].elapsed.GetMilliSeconds(),
+	                profilerInfo[MNM::CTileGenerator::BVTreeNodeCount],
+	                profilerInfo[MNM::CTileGenerator::BVTreeConstruction].elapsed.GetMilliSeconds()
 	                );
 
 	dc->Draw2dLabel(10.0f, 84.0f, 1.4f, Col_White, false,
 	                "Peak Memory: %.2fKB", profilerInfo.GetMemoryPeak() / 1024.0f);
 
-	size_t vertexMemory = profilerInfo[MNM::TileGenerator::VertexMemory].used;
-	size_t triangleMemory = profilerInfo[MNM::TileGenerator::TriangleMemory].used;
-	size_t bvTreeMemory = profilerInfo[MNM::TileGenerator::BVTreeMemory].used;
+	size_t vertexMemory = profilerInfo[MNM::CTileGenerator::VertexMemory].used;
+	size_t triangleMemory = profilerInfo[MNM::CTileGenerator::TriangleMemory].used;
+	size_t bvTreeMemory = profilerInfo[MNM::CTileGenerator::BVTreeMemory].used;
 	size_t tileMemory = vertexMemory + triangleMemory + bvTreeMemory;
 
 	dc->Draw2dLabel(10.0f, 98.0f, 1.4f, Col_White, false,
@@ -3902,7 +3974,7 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 	                triangleMemory,
 	                bvTreeMemory);
 
-	if (drawMode != (size_t)MNM::TileGenerator::EDrawMode::DrawNone)
+	if (drawMode != (size_t)MNM::CTileGenerator::EDrawMode::DrawNone)
 	{
 		debugTileID = mesh.grid.GetTileID(selectedX, selectedY, selectedZ);
 	}
@@ -4102,7 +4174,33 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 			const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x),
 			                                             MNM::real_t(paramsGrid.origin.y),
 			                                             MNM::real_t(paramsGrid.origin.z));
+			const bool bOffsetTriangleUp = false;
 			const MNM::vector3_t originOffset = origin + MNM::vector3_t(0, 0, MNM::real_t::fraction(725, 10000));
+
+			auto drawTriangle = [originOffset, bOffsetTriangleUp](IRenderAuxGeom* renderAuxGeom, const MNM::vector3_t& a, const MNM::vector3_t& b, const MNM::vector3_t& c, const ColorB& color)
+			{
+				Vec3 va, vb, vc;
+				if (bOffsetTriangleUp)
+				{
+					va = (a + originOffset).GetVec3();
+					vb = (b + originOffset).GetVec3();
+					vc = (c + originOffset).GetVec3();
+				}
+				else
+				{
+					const Vec3 vao = a.GetVec3();
+					const Vec3 vbo = b.GetVec3();
+					const Vec3 vco = c.GetVec3();
+
+					Triangle t(vao, vbo, vco);
+					const Vec3 n = t.GetNormal() * 0.07f;
+
+					va = vao + n;
+					vb = vbo + n;
+					vc = vco + n;
+				}
+				renderAuxGeom->DrawTriangle(va, color, vb, color, vc, color);
+			};
 
 			IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 
@@ -4119,10 +4217,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 				MNM::vector3_t a, b, c;
 				grid.GetVertices(triStart, a, b, c);
 
-				renderAuxGeom->DrawTriangle(
-				  (a + originOffset).GetVec3(), ColorB(Col_GreenYellow),
-				  (b + originOffset).GetVec3(), ColorB(Col_GreenYellow),
-				  (c + originOffset).GetVec3(), ColorB(Col_GreenYellow));
+				drawTriangle(renderAuxGeom, a, b, c, ColorB(Col_GreenYellow));
 			}
 
 			MNM::TriangleID triEnd = grid.GetTriangleAt(
@@ -4133,10 +4228,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 				MNM::vector3_t a, b, c;
 				grid.GetVertices(triEnd, a, b, c);
 
-				renderAuxGeom->DrawTriangle(
-				  (a + originOffset).GetVec3(), ColorB(Col_MidnightBlue),
-				  (b + originOffset).GetVec3(), ColorB(Col_MidnightBlue),
-				  (c + originOffset).GetVec3(), ColorB(Col_MidnightBlue));
+				drawTriangle(renderAuxGeom, a, b, c, ColorB(Col_MidnightBlue));
 			}
 
 			CTimeValue timeTotal(0ll);
@@ -4192,10 +4284,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 
 						grid.GetVertices(pOutputWay[i].triangleID, a, b, c);
 
-						renderAuxGeom->DrawTriangle(
-						  (a + originOffset).GetVec3(), ColorB(Col_Maroon),
-						  (b + originOffset).GetVec3(), ColorB(Col_Maroon),
-						  (c + originOffset).GetVec3(), ColorB(Col_Maroon));
+						drawTriangle(renderAuxGeom, a, b, c, ColorB(Col_Maroon));
 					}
 				}
 
@@ -4352,9 +4441,9 @@ void NavigationSystemDebugDraw::DebugDrawNavigationMeshesForSelectedAgent(Naviga
 	{
 		const NavigationMesh& mesh = navigationSystem.GetMesh(it->id);
 
-		size_t drawFlag = MNM::Tile::DrawTriangles | MNM::Tile::DrawMeshBoundaries;
+		size_t drawFlag = MNM::STile::DrawTriangles | MNM::STile::DrawMeshBoundaries;
 		if (gAIEnv.CVars.MNMDebugAccessibility)
-			drawFlag |= MNM::Tile::DrawAccessibility;
+			drawFlag |= MNM::STile::DrawAccessibility;
 
 		switch (gAIEnv.CVars.DebugDrawNavigation)
 		{
@@ -4363,21 +4452,26 @@ void NavigationSystemDebugDraw::DebugDrawNavigationMeshesForSelectedAgent(Naviga
 			mesh.grid.Draw(drawFlag, excludeTileID);
 			break;
 		case 2:
-			mesh.grid.Draw(drawFlag | MNM::Tile::DrawInternalLinks, excludeTileID);
+			mesh.grid.Draw(drawFlag | MNM::STile::DrawInternalLinks, excludeTileID);
 			break;
 		case 3:
-			mesh.grid.Draw(drawFlag | MNM::Tile::DrawInternalLinks |
-			               MNM::Tile::DrawExternalLinks | MNM::Tile::DrawOffMeshLinks, excludeTileID);
+			mesh.grid.Draw(drawFlag | MNM::STile::DrawInternalLinks |
+			               MNM::STile::DrawExternalLinks | MNM::STile::DrawOffMeshLinks, excludeTileID);
 			break;
 		case 4:
-			mesh.grid.Draw(drawFlag | MNM::Tile::DrawInternalLinks |
-			               MNM::Tile::DrawExternalLinks | MNM::Tile::DrawOffMeshLinks |
-			               MNM::Tile::DrawTrianglesId, excludeTileID);
+			mesh.grid.Draw(drawFlag | MNM::STile::DrawInternalLinks |
+			               MNM::STile::DrawExternalLinks | MNM::STile::DrawOffMeshLinks |
+			               MNM::STile::DrawTrianglesId, excludeTileID);
 			break;
 		case 5:
-			mesh.grid.Draw(drawFlag | MNM::Tile::DrawInternalLinks | MNM::Tile::DrawExternalLinks |
-			               MNM::Tile::DrawOffMeshLinks | MNM::Tile::DrawTrianglesId | MNM::Tile::DrawIslandsId, excludeTileID);
+			mesh.grid.Draw(drawFlag | MNM::STile::DrawInternalLinks | MNM::STile::DrawExternalLinks |
+			               MNM::STile::DrawOffMeshLinks | MNM::STile::DrawTrianglesId | MNM::STile::DrawIslandsId, excludeTileID);
 			break;
+		case 6:
+			mesh.grid.Draw(drawFlag | MNM::STile::DrawInternalLinks |
+			               MNM::STile::DrawExternalLinks | MNM::STile::DrawOffMeshLinks | MNM::STile::DrawTriangleBackfaces, excludeTileID);
+			break;
+
 		default:
 			break;
 		}

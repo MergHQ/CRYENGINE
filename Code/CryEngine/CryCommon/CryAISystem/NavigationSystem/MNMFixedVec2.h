@@ -6,7 +6,7 @@
 #pragma once
 
 #include <CryCore/FixedPoint.h>
-#include "FixedVec3.h"
+#include "MNMFixedVec3.h"
 
 namespace MNM
 {

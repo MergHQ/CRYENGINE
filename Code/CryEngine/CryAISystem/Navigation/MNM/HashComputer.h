@@ -13,6 +13,8 @@
 
 namespace MNM
 {
+//! HashComputer is used by MNM to detect changes in the input geometry.
+//! Implements MurmurHash3 32bit.
 struct HashComputer
 {
 	HashComputer(uint32 seed = 0)
