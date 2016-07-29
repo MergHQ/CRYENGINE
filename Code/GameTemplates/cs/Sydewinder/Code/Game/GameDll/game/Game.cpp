@@ -5,7 +5,6 @@
 #include "Game.h"
 #include "GameFactory.h"
 #include "flownodes/FlowBaseNode.h"
-#include <CryMono/IMonoRuntime.h>
 
 
 CAutoRegFlowNodeBaseZero* CAutoRegFlowNodeBaseZero::m_pFirst = nullptr;
@@ -30,11 +29,6 @@ CGame::~CGame()
 
 bool CGame::Init(IGameFramework* pFramework)
 {
-	if (gEnv->pMonoRuntime)
-	{
-		gEnv->pMonoRuntime->Initialize(eMLL_NULL);
-	}
-
 	m_pGameFramework = pFramework;
 	CGameFactory::Init();
 	m_pGameFramework->SetGameGUID(GAME_GUID);
