@@ -64,12 +64,10 @@ public:
 	{
 		if (nSize != m_size)
 		{
-			if (m_size != 0)
-				m_buffer.Release();
-			m_buffer.Create(nSize, sizeof(T), DXGI_FORMAT_UNKNOWN, DX11BUF_STRUCTURED | DX11BUF_BIND_SRV, (const void*)pData);
+			m_buffer.Create(nSize, sizeof(T), DXGI_FORMAT_UNKNOWN, DX11BUF_STRUCTURED | DX11BUF_BIND_SRV, nullptr);
 		}
-		else
-			m_buffer.UpdateBufferContent((const void*)pData, sizeof(T) * nSize);
+		
+		m_buffer.UpdateBufferContent(pData, sizeof(T) * nSize);
 		m_size = nSize;
 	};
 	int GetSize() { return m_size; }
