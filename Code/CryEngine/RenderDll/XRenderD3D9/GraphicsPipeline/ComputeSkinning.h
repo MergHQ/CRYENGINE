@@ -60,16 +60,12 @@ public:
 
 	CGpuBuffer& GetBuffer() { return m_buffer; };
 
-	void        UpdateBufferContent(const T* pData, size_t nSize)
+	void        UpdateBufferContent(const T* pData, size_t nSize) // called from multiple threads: always recreate immutable buffer
 	{
-		if (nSize != m_size)
-		{
-			m_buffer.Create(nSize, sizeof(T), DXGI_FORMAT_UNKNOWN, DX11BUF_STRUCTURED | DX11BUF_BIND_SRV, nullptr);
-		}
-		
-		m_buffer.UpdateBufferContent(pData, sizeof(T) * nSize);
+		m_buffer.Create(nSize, sizeof(T), DXGI_FORMAT_UNKNOWN, DX11BUF_STRUCTURED | DX11BUF_BIND_SRV, (const void*)pData);
 		m_size = nSize;
-	};
+	}
+
 	int GetSize() { return m_size; }
 private:
 	int        m_size;
