@@ -14,7 +14,8 @@
         "name": "CE# Framework - Sydewinder"
     },
 	"monodev": {
-		"solution": "Code/Sydewinder.sln"
+		"solution": "Code/Sydewinder.sln",
+		"user": "Code/Sydewinder/Sydewinder.csproj.user"
 	},
     "require": {
         "engine": "engine-5.2"

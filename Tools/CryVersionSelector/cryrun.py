@@ -100,6 +100,54 @@ def get_solution_dir (args):
 
 #--- PROJGEN ---
 
+def projgen_monodev (args, project):
+	dirname= os.path.dirname (args.project_file)
+	engine_path= get_engine_path()
+
+	#--- create symlinks
+	symlinks= []
+
+	SymlinkFileName= os.path.join (dirname, 'Code', 'CryManaged', 'CESharp')
+	TargetFileName= os.path.join (engine_path, 'Code', 'CryManaged', 'CESharp')
+	symlinks.append ((SymlinkFileName, TargetFileName))
+
+	SymlinkFileName= os.path.join (dirname, 'bin', args.platform, 'CryEngine.Common.dll')
+	TargetFileName= os.path.join (engine_path, 'bin', args.platform, 'CryEngine.Common.dll')
+	symlinks.append ((SymlinkFileName, TargetFileName))
+	
+	symlinks= [(SymlinkFileName, TargetFileName) for (SymlinkFileName, TargetFileName) in symlinks if not (os.path.islink (SymlinkFileName) and os.path.samefile (SymlinkFileName, TargetFileName))]
+	if symlinks and not admin.isUserAdmin():
+		cmdline= getattr( sys, 'frozen', False ) and sys.argv or None
+		rc = admin.runAsAdmin(cmdline)
+		sys.exit(rc)
+
+	for (SymlinkFileName, TargetFileName) in symlinks:
+		if os.path.islink (SymlinkFileName):
+			os.remove (SymlinkFileName)
+		
+		sym_dirname= os.path.dirname (SymlinkFileName)
+		if not os.path.isdir (sym_dirname):
+			os.makedirs (sym_dirname)
+
+		SYMBOLIC_LINK_FLAG_DIRECTORY= 0x1
+		dwFlags= os.path.isdir (TargetFileName) and SYMBOLIC_LINK_FLAG_DIRECTORY or 0x0
+		win32file.CreateSymbolicLink (SymlinkFileName, TargetFileName, dwFlags)
+		
+	#--- debug file
+	user_settings= project.get ("monodev", {}).get ("user")
+	if user_settings:
+		tool_path= os.path.join (engine_path, 'bin', args.platform, 'GameSDK.exe')
+		projectfile_path= os.path.abspath (args.project_file)
+		file= open (os.path.join (dirname, user_settings), 'w')
+		file.write('''<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <LocalDebuggerCommand>%s</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>-project "%s"</LocalDebuggerCommandArguments>
+  </PropertyGroup>
+</Project>''' % (tool_path, projectfile_path))
+		file.close()
+
 def cmd_projgen(args):
 	if not os.path.isfile (args.project_file):
 		error_project_not_found (args.project_file)
@@ -111,7 +159,12 @@ def cmd_projgen(args):
 	cmake_path= get_cmake_path()
 	if cmake_path is None:
 		error_cmake_not_found()
-		
+	
+	#---
+	
+	if project.get ("monodev"):
+		projgen_monodev (args, project)
+	
 	#---
 		
 	project_path= os.path.dirname (args.project_file)
@@ -145,11 +198,34 @@ def cmd_build(args):
 	if not os.path.isfile (args.project_file):
 		error_project_not_found (args.project_file)
 	
+	project= cryproject.load (args.project_file)
+	if project is None:
+		error_project_json_decode (args.project_file)
+	
 	cmake_path= get_cmake_path()
 	if cmake_path is None:
 		error_cmake_not_found()
 	
-	#---
+	#--- mono
+
+	mono_solution= project.get ("monodev", {}).get ("solution")
+	if mono_solution is not None:
+		engine_path= get_engine_path()
+		tool_path= os.path.join (engine_path, 'Tools', 'MonoDevelop', 'bin', 'mdtool.exe')
+		if not os.path.isfile (tool_path):
+			error_engine_tool_not_found (tool_path)
+
+		subcmd= (
+			tool_path,
+			'build', os.path.join (os.path.dirname (args.project_file), mono_solution)
+		)
+	
+		print_subprocess (subcmd)
+		errcode= subprocess.call(subcmd)
+		if errcode != 0:
+			sys.exit (errcode)		
+
+	#--- cmake
 
 	project_path= os.path.dirname (os.path.abspath (args.project_file))
 	solution_dir= get_solution_dir (args)
@@ -229,35 +305,6 @@ def cmd_monodev (args):
 	tool_path= os.path.join (engine_path, 'Tools', 'MonoDevelop', 'bin', 'MonoDevelop.exe')
 	if not os.path.isfile (tool_path):
 		error_engine_tool_not_found (tool_path)
-
-	#--- create symlinks
-	symlinks= []
-
-	SymlinkFileName= os.path.join (dirname, 'Code', 'CryManaged', 'CESharp')
-	TargetFileName= os.path.join (engine_path, 'Code', 'CryManaged', 'CESharp')
-	symlinks.append ((SymlinkFileName, TargetFileName))
-
-	SymlinkFileName= os.path.join (dirname, 'bin', args.platform, 'CryEngine.Common.dll')
-	TargetFileName= os.path.join (engine_path, 'bin', args.platform, 'CryEngine.Common.dll')
-	symlinks.append ((SymlinkFileName, TargetFileName))
-	
-	symlinks= [(SymlinkFileName, TargetFileName) for (SymlinkFileName, TargetFileName) in symlinks if not (os.path.islink (SymlinkFileName) and os.path.samefile (SymlinkFileName, TargetFileName))]
-	if symlinks and not admin.isUserAdmin():
-		cmdline= getattr( sys, 'frozen', False ) and sys.argv or None
-		rc = admin.runAsAdmin(cmdline)
-		sys.exit(rc)
-
-	for (SymlinkFileName, TargetFileName) in symlinks:
-		if os.path.islink (SymlinkFileName):
-			os.remove (SymlinkFileName)
-		
-		dirname= os.path.dirname (SymlinkFileName)
-		if not os.path.isdir (dirname):
-			os.makedirs (dirname)
-
-		SYMBOLIC_LINK_FLAG_DIRECTORY= 0x1
-		dwFlags= os.path.isdir (TargetFileName) and SYMBOLIC_LINK_FLAG_DIRECTORY or 0x0
-		win32file.CreateSymbolicLink (SymlinkFileName, TargetFileName, dwFlags)
 
 	#--- launch monodev
 
