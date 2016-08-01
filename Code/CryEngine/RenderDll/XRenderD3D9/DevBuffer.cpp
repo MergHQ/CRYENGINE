@@ -4447,7 +4447,7 @@ void CGpuBuffer::PrepareFreeBuffer()
 			m_pBufferSet->allocator.Release(pCurrentBuffer);
 			pCurrentBuffer = m_pBufferSet->allocator.Allocate(this, nullptr);
 
-			CRY_ASSERT(m_pBufferSet->allocator.GetItemCount() <= m_MaxBufferCopies);
+			CRY_ASSERT(m_MaxBufferCopies < 0 || m_pBufferSet->allocator.GetItemCount() <= m_MaxBufferCopies);
 		}
 	}
 }

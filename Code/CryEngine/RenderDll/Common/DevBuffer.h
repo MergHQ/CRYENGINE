@@ -515,7 +515,7 @@ private:
 	};
 
 public:
-	CGpuBuffer(int maxBufferCopies = MAX_FRAMES_IN_FLIGHT)
+	CGpuBuffer(int maxBufferCopies = -1)
 		: m_numElements(0)
 		, m_flags(0)
 		, m_MapMode(D3D11_MAP(0))
