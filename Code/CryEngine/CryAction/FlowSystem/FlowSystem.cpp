@@ -239,8 +239,10 @@ void CFlowSystem::RegisterAllNodeTypes()
 
 	LoadExtensions("Libs/FlowNodes");
 
+#ifndef _LIB
 	// register game specific flownodes
 	gEnv->pGame->RegisterGameFlowNodes();
+#endif
 
 	// register entity type flownodes after the game
 	RegisterEntityTypes();
