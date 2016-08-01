@@ -613,8 +613,8 @@ void CRenderMesh::Cleanup()
 		for (size_t i = 0, end = m_CreatedBoneIndices[j].size(); i < end; ++i)
 		{
 			FreeMeshDataUnpooled(m_CreatedBoneIndices[j][i].pStream);
-			if (m_CreatedBoneIndices[j][i].pExtraStream)
-				FreeMeshDataUnpooled(m_CreatedBoneIndices[j][i].pExtraStream);
+		//	if (m_CreatedBoneIndices[j][i].pExtraStream)
+		//		FreeMeshDataUnpooled(m_CreatedBoneIndices[j][i].pExtraStream);
 		}
 	}
 
@@ -625,6 +625,8 @@ void CRenderMesh::Cleanup()
 		if (m_RemappedBoneIndices[i].buffer != ~0u) 
 			gRenDev->m_DevBufMan.Destroy(m_RemappedBoneIndices[i].buffer);
 	}
+
+	FreeMeshDataUnpooled(m_pExtraBoneMapping);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2751,8 +2753,8 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, EVertexFormat eVF, ui
 		}
 
 		FreeMeshDataUnpooled(rBoneIndexStreamRequest.pStream);
-		if (rBoneIndexStreamRequest.pExtraStream)
-			FreeMeshDataUnpooled(rBoneIndexStreamRequest.pExtraStream);
+//		if (rBoneIndexStreamRequest.pExtraStream)
+//			FreeMeshDataUnpooled(rBoneIndexStreamRequest.pExtraStream);
 	}
 	pVContainer->m_CreatedBoneIndices[threadId].clear();
 
@@ -3103,8 +3105,6 @@ template<class VertexFormat, class VecPos, class VecUV> bool CRenderMesh::Update
 
 				// now real adjacency is computed
 				BuildAdjacency<VertexFormat, VecPos, VecUV>(pVertexStream, nVerts, (vtx_idx *)m_IBStream.m_pUpdateData, nTrgs, pTxtAdjBuffer);
-
-				m_adjBuffer.Create(pTxtAdjBuffer.size(), sizeof(Vec2f16), DXGI_FORMAT_R16G16_FLOAT, DX11BUF_BIND_SRV, &pTxtAdjBuffer[0]);
 
 				if (sizeof(VecUV) == sizeof(Vec2f16))
 				{

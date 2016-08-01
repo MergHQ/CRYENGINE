@@ -30,11 +30,6 @@ CGame::~CGame()
 
 bool CGame::Init(IGameFramework* pFramework)
 {
-	if (gEnv->pMonoRuntime)
-	{
-		gEnv->pMonoRuntime->Initialize(eMLL_NULL);
-	}
-
 	m_pGameFramework = pFramework;
 	CGameFactory::Init();
 	m_pGameFramework->SetGameGUID(GAME_GUID);

@@ -54,7 +54,7 @@ namespace CryEngine.SampleApp
 
 		void OnKey(SInputEvent e)
 		{
-			if (e.KeyPressed(EKeyId.eKI_Escape) && ​!Env.IsSandbox)	 	 
+			if (e.KeyPressed(EKeyId.eKI_Escape) && !Env.IsSandbox)
 				Shutdown();
 
 			// Show/Hide FPS Label on F5.

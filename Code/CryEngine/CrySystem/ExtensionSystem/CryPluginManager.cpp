@@ -201,96 +201,90 @@ bool CCryPluginManager::Initialize()
 
 //--- UTF8 parse helper routines
 
-static const char* utf8_nextchar(const char* str)
+static const char* Parser_NextChar(const char* pStart, const char* pEnd)
 {
-	assert(str != NULL);
+	CRY_ASSERT(pStart != nullptr && pEnd != nullptr);
 
-	const char c0 = str[0];
-	if (!(c0 & 0x80))
-		return str + 1;
-
-	switch (c0 & 0xF0)
+	if (pStart < pEnd)
 	{
-	case 0xF0:
-		return str + 4;
-	case 0xE0:
-		return str + 3;
-	default:
-		return str + 2;
-	}
-}
-
-static const char* utf8_nextchar(const char* start, const char* end)
-{
-	assert(start != NULL && end != NULL);
-
-	if (start < end)
-	{
-		start = utf8_nextchar(start);
+		CRY_ASSERT(0 <= *pStart && *pStart <= SCHAR_MAX);
+		pStart++;
 	}
 
-	assert(start <= end);
-	return start;
+	CRY_ASSERT(pStart <= pEnd);
+	return pStart;
 }
 
-static const char* utf8_strchr(const char* start, const char* end, int c)
+static const char* Parser_StrChr(const char* pStart, const char* pEnd, int c)
 {
-	assert(start != NULL && end != NULL);
-	assert(0 <= c && c <= SCHAR_MAX);
-	const char* it = (const char*)memchr(start, c, end - start);
-	return (it != NULL) ? it : end;
+	CRY_ASSERT(pStart != nullptr && pEnd != nullptr);
+	CRY_ASSERT(pStart <= pEnd);
+	CRY_ASSERT(0 <= c && c <= SCHAR_MAX);
+	const char* it = (const char*)memchr(pStart, c, pEnd - pStart);
+	return (it != nullptr) ? it : pEnd;
+}
+
+static bool Parser_StrEquals(const char* pStart, const char* pEnd, const char* szKey)
+{
+	size_t klen = strlen(szKey);
+	return (klen == pEnd - pStart) && memcmp(pStart, szKey, klen) == 0;
 }
 
 //---
 
-bool CCryPluginManager::LoadExtensionFile(const char* filename)
+bool CCryPluginManager::LoadExtensionFile(const char* szFilename)
 {
-	assert(filename != NULL);
-	bool result = true;
+	CRY_ASSERT(szFilename != nullptr);
+	bool bResult = true;
 
 	ICryPak* pCryPak = gEnv->pCryPak;
-	FILE* pFile = pCryPak->FOpen(filename, "rb", ICryPak::FLAGS_PATH_REAL);
-	if (pFile == NULL)
-		return result;
+	FILE* pFile = pCryPak->FOpen(szFilename, "rb", ICryPak::FLAGS_PATH_REAL);
+	if (pFile == nullptr)
+		return bResult;
 
 	size_t iFileSize = pCryPak->FGetSize(pFile);
 	char* pBuffer = new char[iFileSize];
 	pCryPak->FReadRawAll(pBuffer, iFileSize, pFile);
 	pCryPak->FClose(pFile);
 
-	const char* line = pBuffer;
-	const char* end = pBuffer + iFileSize;
-	while (result && line != end)
+	const char* pTokenStart = pBuffer;
+	const char* pBufferEnd = pBuffer + iFileSize;
+	while (bResult && pTokenStart != pBufferEnd)
 	{
+		const char* pNewline = Parser_StrChr(pTokenStart, pBufferEnd, '\n');
+		const char* pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
+
 		SPluginDescriptor desc;
-		const char* newline = utf8_strchr(line, end, '\n');
-		const char* semicolon = utf8_strchr(line, newline, ';');
-		desc.m_pluginName.assign(line, semicolon - line);
+		desc.m_pluginType = ICryPluginManager::EPluginType::EPluginType_CPP;
+		if (Parser_StrEquals(pTokenStart, pSemicolon, "C#"))
+			desc.m_pluginType = ICryPluginManager::EPluginType::EPluginType_CS;
+
+		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
+		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
+		desc.m_pluginName.assign(pTokenStart, pSemicolon - pTokenStart);
 		desc.m_pluginName.Trim();
 
-		line = utf8_nextchar(semicolon, newline);
-		semicolon = utf8_strchr(line, newline, ';');
-		desc.m_pluginClassName.assign(line, semicolon - line);
+		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
+		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
+		desc.m_pluginClassName.assign(pTokenStart, pSemicolon - pTokenStart);
 		desc.m_pluginClassName.Trim();
 
-		line = utf8_nextchar(semicolon, newline);
-		semicolon = utf8_strchr(line, newline, ';');
-		desc.m_pluginBinaryPath.assign(line, semicolon - line);
+		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
+		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
+		desc.m_pluginBinaryPath.assign(pTokenStart, pSemicolon - pTokenStart);
 		desc.m_pluginBinaryPath.Trim();
 
-		line = utf8_nextchar(semicolon, newline);
-		semicolon = utf8_strchr(line, newline, ';');
-		desc.m_pluginAssetDirectory.assign(line, semicolon - line);
+		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
+		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
+		desc.m_pluginAssetDirectory.assign(pTokenStart, pSemicolon - pTokenStart);
 		desc.m_pluginAssetDirectory.Trim();
 
-		line = utf8_nextchar(newline, end);
-
-		desc.m_pluginType = ICryPluginManager::EPluginType::EPluginType_CPP;
-		result = LoadPlugin(desc);
+		pTokenStart = Parser_NextChar(pNewline, pBufferEnd);
+		bResult = LoadPlugin(desc);
 	}
 
 	delete[](pBuffer);
-	return result;
+	return bResult;
 }
 
 bool CCryPluginManager::LoadPlugin(const SPluginDescriptor& pluginDescriptor)

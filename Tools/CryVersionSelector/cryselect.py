@@ -362,7 +362,7 @@ class CrySwitch(tk.Frame):
 		if file:
 			self.engine_list.append ((None, os.path.abspath (file)))
 			self.combo['values']= cryswitch_enginenames (self.engine_list)
-			self.combo.current (len (self.values) - 1)		
+			self.combo.current (len (self.engine_list) - 1)		
 
 def cmd_switch (args):
 	title= 'Switch CRYENGINE version'
@@ -472,6 +472,7 @@ def cmd_run (args):
 	temp_file.close()
 	
 	if not args.silent and returncode != 0:
+		title= command_title (args)
 		result= win32ui.MessageBox (p.stderr.read(), title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
 		if result == win32con.IDOK:
 			subprocess.call(('notepad.exe', temp_path))

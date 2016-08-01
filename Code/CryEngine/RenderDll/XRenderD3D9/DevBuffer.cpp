@@ -4456,6 +4456,7 @@ void CGpuBuffer::UpdateBufferContent(const void* pData, size_t nSize)
 {
 	CRY_ASSERT(GetCurrentBuffer());
 	CRY_ASSERT(!m_bLocked);
+	CRY_ASSERT(m_bufferDesc.Usage == D3D11_USAGE_DYNAMIC || m_bufferDesc.Usage == D3D11_USAGE_DEFAULT);
 
 	PrepareFreeBuffer();
 
