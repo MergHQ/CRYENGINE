@@ -147,12 +147,13 @@ class CFlowNode_EntityTrackedListener : public CFlowBaseNode<eNCT_Instanced>, IH
 {
 private:
 	SActivationInfo m_pActInfo;
+	std::list<std::tuple<EHUDEventType, EntityId, bool>> m_queuedEvents;
 public:
 	//////////////////////////////////////////////////////////////////////////
 	CFlowNode_EntityTrackedListener(SActivationInfo* pActInfo) { m_pActInfo = *pActInfo; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	IFlowNodePtr Clone(SActivationInfo* pActInfo) override
 	{
 		return new CFlowNode_EntityTrackedListener(pActInfo);
 	}
@@ -179,7 +180,7 @@ public:
 	};
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void GetConfiguration(SFlowNodeConfig& config)
+	void GetConfiguration(SFlowNodeConfig& config) override
 	{
 		// declare input ports
 		static const SInputPortConfig in_ports[] =
@@ -224,7 +225,7 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void Serialize(SActivationInfo* pActInfo, TSerialize ser)
+	void Serialize(SActivationInfo* pActInfo, TSerialize ser) override
 	{
 	}
 
@@ -253,14 +254,12 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void OnHUDEvent(const SHUDEvent& event)
+	void OnHUDEvent(const SHUDEvent& event) override
 	{
-		// Only add/remove entity is handled here, so we only care about the int param
-		EntityId entityId = 0;
-
 		if (event.eventType == eHUDEvent_AddEntity || event.eventType == eHUDEvent_RemoveEntity)
 		{
-			for (unsigned int i = 0; i < event.GetDataSize(); i++)
+			EntityId entityId = INVALID_ENTITYID;
+			for (unsigned int i = 0; i < event.GetDataSize(); ++i)
 			{
 				switch (event.GetData(i).m_type)
 				{
@@ -279,51 +278,70 @@ public:
 					break;
 				}
 			}
-			if (entityId != 0)
+			const bool bMissionOnly = GetPortBool(&m_pActInfo, eIP_MissionOnly);
+
+			if (m_queuedEvents.empty())
 			{
-				CHUDMissionObjective* pMO = NULL;
-				pMO = g_pGame->GetMOSystem()->GetMissionObjectiveByEntityId(entityId);
+				m_pActInfo.pGraph->SetRegularlyUpdated(m_pActInfo.myID, true);
+			}
 
-				string entityClassName = gEnv->pEntitySystem->GetEntity(entityId)->GetClass()->GetName();
-				bool bMissionOnly = GetPortBool(&m_pActInfo, eIP_MissionOnly);
-				bool bTrigger = false;
+			m_queuedEvents.push_back(std::make_tuple(event.eventType, entityId, bMissionOnly));
+		}
+	}
 
-				if (bMissionOnly)
-				{
-					bTrigger = IsClassAllowed(entityClassName) && pMO;
-				}
-				else
-				{
-					bTrigger = IsClassAllowed(entityClassName);
-				}
+	//////////////////////////////////////////////////////////////////////////
+	void HandleEvent(const EHUDEventType eventType, const EntityId entityId, const bool bMissionOnly)
+	{
+		if (entityId != INVALID_ENTITYID)
+		{
+			const string entityClassName = gEnv->pEntitySystem->GetEntity(entityId)->GetClass()->GetName();
+			bool bTrigger = IsClassAllowed(entityClassName);
+			if (bMissionOnly)
+			{
+				const CHUDMissionObjective* const pMO = g_pGame->GetMOSystem()->GetMissionObjectiveByEntityId(entityId);
+				bTrigger = bTrigger && pMO != nullptr;
+			}
 
-				if (bTrigger)
-				{
-					// activate outputport
-					if (event.eventType == eHUDEvent_AddEntity)
-						ActivateOutput(&m_pActInfo, eOP_EntityAdded, 1);
-					else
-						ActivateOutput(&m_pActInfo, eOP_EntityRemoved, 1);
-
-					ActivateOutput<EntityId>(&m_pActInfo, eOP_EntityId, entityId);
-				}
+			if (bTrigger)
+			{
+				ActivateOutput(&m_pActInfo, eventType == eHUDEvent_AddEntity ? eOP_EntityAdded : eOP_EntityRemoved, 1);
+				ActivateOutput<EntityId>(&m_pActInfo, eOP_EntityId, entityId);
 			}
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override
 	{
 		if (event == eFE_Initialize)
 		{
 			m_pActInfo = *pActInfo;
 			CHUDEventDispatcher::AddHUDEventListener(this, "AddEntity");
 			CHUDEventDispatcher::AddHUDEventListener(this, "RemoveEntity");
+			m_queuedEvents.clear();
+		}
+		else if (event == eFE_Update)
+		{
+			if (!m_queuedEvents.empty())
+			{
+				EHUDEventType eventType;
+				EntityId entityId;
+				bool bMissionOnly;
+				std::tie(eventType, entityId, bMissionOnly) = m_queuedEvents.front();
+
+				HandleEvent(eventType, entityId, bMissionOnly);
+				m_queuedEvents.pop_front();
+			}
+			
+			if (m_queuedEvents.empty())
+			{
+				m_pActInfo.pGraph->SetRegularlyUpdated(m_pActInfo.myID, false);
+			}
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void GetMemoryUsage(ICrySizer* s) const
+	void GetMemoryUsage(ICrySizer* s) const override
 	{
 		s->Add(*this);
 	}
