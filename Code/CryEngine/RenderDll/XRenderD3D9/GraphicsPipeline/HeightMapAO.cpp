@@ -21,7 +21,7 @@ void CHeightMapAOStage::Execute(ShadowMapFrustum*& pHeightMapFrustum, CTexture*&
 	pHeightMapAOScreenDepthTex = nullptr;
 	pHeightMapAOTex = nullptr;
 
-	if (!CRenderer::CV_r_HeightMapAO || pRenderer->m_RP.m_pSunLight == NULL)
+	if (!CRenderer::CV_r_HeightMapAO)
 		return;
 
 	if (CDeferredShading::Instance().GetResolvedStencilRT() == nullptr)
