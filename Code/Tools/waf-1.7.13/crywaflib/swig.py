@@ -82,6 +82,7 @@ def create_mono_task(self):
 ########################################
 
 class swig(Task.Task):
+	always_run = True
 	run_str = '${SWIG} -c++ ${SWIG_DEFINES_ST:DEFINES} -csharp -outdir ${TGT[2].parent.abspath()} ${SWIG_TGT_F}${TGT[2].abspath()} -namespace ${SWIG_NAMESPACE} -pch-file ${SWIG_PCH} -fno-include-guards -outfile ${TGT[0].name} -dllimport ${SWIG_TARGET} ${SRC[0].abspath()}'
 	color   = 'BLUE'
 	
