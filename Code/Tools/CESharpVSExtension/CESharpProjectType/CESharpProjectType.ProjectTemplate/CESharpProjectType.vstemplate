@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <VSTemplate Version="3.0.0" Type="Project" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" xmlns:sdk="http://schemas.microsoft.com/developer/vstemplate-sdkextension/2010">
   <TemplateData>
-    <Name>CE# Launcher Project</Name>
-    <Description>A template for creating a CE# Launcher project.</Description>
+    <Name>CE# Project</Name>
+    <Description>A template for creating a CE# Project.</Description>
     <Icon>CESharpProjectType.ico</Icon>
     <ProjectType>CESharpProjectType</ProjectType>
     <RequiredFrameworkVersion>4.5.2</RequiredFrameworkVersion>
     <SortOrder>1</SortOrder>
     <TemplateID>{c0cbaebf-6c72-46d1-8516-cab0ec061183}</TemplateID>
     <CreateNewFolder>true</CreateNewFolder>
-    <DefaultName>CESharpLauncher</DefaultName>
+    <DefaultName>CESharpProject</DefaultName>
     <ProvideDefaultName>true</ProvideDefaultName>
   </TemplateData>
   <TemplateContent>

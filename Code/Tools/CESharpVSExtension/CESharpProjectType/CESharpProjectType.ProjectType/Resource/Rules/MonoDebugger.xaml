@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--Copyright, Microsoft Corporation, All rights reserved.-->
-        
+
 <!--TODO: Update the following files with the specified content
 
     *BuildSystem\DeployedBuildSystem\CustomProject.Default.props* - update the value of the existing DebuggerFlavor element to use the new debugger
@@ -10,9 +10,9 @@
 -->
 <Rule
 	Name="MonoDebugger"
-	DisplayName="MonoDebugger Debugger"
+	DisplayName="Run CryENGINE"
 	PageTemplate="debugger"
-	Description="MonoDebugger Debugger options"
+	Description="MonoDebugger options"
 	xmlns="http://schemas.microsoft.com/build/2009/properties">
     <Rule.DataSource>
         <DataSource Persistence="UserFileWithXamlDefaults" />
@@ -48,6 +48,11 @@
                 Default="False"
                 Description="Specifies whether the debugger should attempt to attach to an existing process when debugging starts." />
 
-    <StringProperty Name="CryEngineRootPath" DisplayName="CryEngine Root Path" Description="Path to the CryEngine distribution that this CE# Launcher Project belongs to."/>
+    <StringProperty Name="ProjectFilePath" DisplayName="Project File Path" 
+                    Description="Path to the .cryproject file descriptor for this project."
+                    Subtype="folder" Default="App.cryproject"/>
+    <StringProperty Name="CryEngineRootPath" DisplayName="CRYENGINE Root Path" 
+                    Description="Path to the CryEngine distribution that this CE# Project belongs to."
+                    Subtype="folder"/>
     <BoolProperty Name="RunSandbox" DisplayName="Run Sandbox" Description="If checked, runs Sandbox.exe instead of GameSDK.exe." Default="False"/>
 </Rule>

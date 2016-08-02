@@ -26,7 +26,7 @@
     <DebugType>full</DebugType>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-    <OutputPath>..\..\bin\win_x86_release</OutputPath>
+    <OutputPath>..\..\bin\win_x64_release</OutputPath>
     <WarningLevel>4</WarningLevel>
     <Optimize>false</Optimize>
   </PropertyGroup>
@@ -82,7 +82,7 @@
     </ProjectCapabilities>
     <MonoDevelop>
       <Properties>
-        <CryEngineParameters BuildLocation="..\.." Launcher="GameSDK" />
+        <CryEngineParameters BuildLocation="..\.." Launcher="GameSDK" DebugCommand="G:\wsp\ce\dev_cesharp\bin\win_x64\GameSDK.exe" DebugCommandArguments="-project &quot;G:\wsp\ce\dev_cesharp\Code\GameTemplates\cs\Sydewinder\Sydewinder.cryproject&quot;" DebugWorkingDirectory="" />
       </Properties>
     </MonoDevelop>
   </ProjectExtensions>

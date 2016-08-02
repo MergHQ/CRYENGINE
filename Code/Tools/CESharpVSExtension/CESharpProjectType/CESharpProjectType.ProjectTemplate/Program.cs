@@ -1,17 +1,25 @@
 using System;
-using System.Collections.Generic;
-$if$ ($targetframeworkversion$ >= 3.5)using System.Linq;
-$endif$using System.Text;
+using System.Reflection;
+using CryEngine.Resources;
+using CryEngine.Components;
+using CryEngine.FlowSystem;
+using CryEngine.Common;
 
-namespace $safeprojectname$
+namespace CryEngine.App
 {
-	class Program
+	/// <summary>
+	/// Plugin entry point will be re-instantiated in runtime, whenever the assembly is updated (e.g. Re-compiled)
+	/// </summary>
+	public class MyPlugin : ICryEnginePlugin
 	{
-		static void Main(string[] args)
+		public void Initialize()
 		{
-			Console.WriteLine("Hello World!");
-			Console.WriteLine("Press any key to continue...");
-			Console.ReadKey();
+			Env.Initialize(null);
+		}
+
+		public void Shutdown()
+		{
+			Env.Shutdown(null);
 		}
 	}
 }

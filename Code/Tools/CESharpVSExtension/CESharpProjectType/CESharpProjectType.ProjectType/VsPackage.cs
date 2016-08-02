@@ -29,7 +29,7 @@ namespace CESharpProjectType
 	/// Creating project extensions or project types does not actually require a VSPackage.
 	/// </remarks>
 	[PackageRegistration(UseManagedResourcesOnly = true)]
-	[Description("CE# Extention Package")]
+	[Description("CE# Extension Package")]
 	[Guid(VsPackage.PackageGuid)]
 	[ProvideAutoLoad(UIContextGuids80.SolutionExists)]
 	public sealed class VsPackage : Package
@@ -54,7 +54,7 @@ namespace CESharpProjectType
 		/// The default namespace this project compiles with, so that manifest
 		/// resource names can be calculated for embedded resources.
 		/// </summary>
-		internal const string DefaultNamespace = "CryEngine.Launcher";
+		internal const string DefaultNamespace = "CryEngine.App";
 
 		public static DTE2 DTE { get; private set; }
 
@@ -69,35 +69,7 @@ namespace CESharpProjectType
 			DTE = (DTE2)GetService(typeof(DTE));
 			InstallMetafiles();
 			AttachToEvents();
-			//CreateMenu();
 		}
-
-		/*private void CreateMenu()
-		{
-			var menuBar = ((CommandBars)DTE.CommandBars)["MenuBar"];
-			var toolsControl = menuBar.Controls["Tools"];
-			CommandBar ceSharpBar;
-			try
-			{
-				ceSharpBar = ((CommandBars)DTE.CommandBars)["CE#"];
-			}
-			catch
-			{
-				var ctrl = menuBar.Controls.Add(MsoControlType.msoControlPopup, 4242, "", toolsControl.Index - 1);
-				ctrl.Caption = "CE#";
-				ceSharpBar = ((CommandBars)DTE.CommandBars)["CE#"];
-			}
-
-			var btn = (CommandBarButton)ceSharpBar.Controls.Add(MsoControlType.msoControlButton);
-			btn.Caption = "Attach Mono Debugger";
-			btn.Style = MsoButtonStyle.msoButtonCaption;
-			btn.Click += new _CommandBarButtonEvents_ClickEventHandler(myStandardCommandBarButton_Click);
-		}
-
-		private void myStandardCommandBarButton_Click(CommandBarButton Ctrl, ref bool CancelDefault)
-		{
-			MessageBox.Show("Button with caption '" + Ctrl.Caption + "' clicked");
-		}*/
 
 		public void AttachToEvents()
 		{
