@@ -223,11 +223,45 @@ bool CDialogLineDatabase::ExecuteScript(uint32 index)
 }
 
 //--------------------------------------------------------------------------------------------------
+void CryDRS::CDialogLineDatabase::GetAllLineData(DRS::VariableValuesList* pOutCollectionsList)
+{
+	std::pair<string, string> temp;
+	for (const CDialogLineSet& line : m_lineSets)
+	{
+		if (line.GetLastPickedLine() != 0)
+		{
+			temp.first = line.GetLineId().GetText();
+			temp.second = CryStringUtils::toString(line.GetLastPickedLine());
+			pOutCollectionsList->push_back(temp);
+		}
+	}
+}
+
+//--------------------------------------------------------------------------------------------------
+void CryDRS::CDialogLineDatabase::SetAllLineData(DRS::VariableValuesListIterator start, DRS::VariableValuesListIterator end)
+{
+	for (CDialogLineSet& line : m_lineSets)
+	{
+		line.Reset();
+	}
+
+	for (DRS::VariableValuesListIterator it = start; it != end; ++it)
+	{
+		CDialogLineSet* pLine = GetLineSetById(it->first);
+		if (pLine)
+		{
+			pLine->SetLastPickedLine((int)atoi(it->second));
+		}
+		
+	}
+}
+
+//--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 CDialogLineSet::CDialogLineSet()
 	: m_priority(50)
-	, m_flags((int)IDialogLineSet::EPickModeFlags::RandomVariation)
+	, m_flags((uint32)IDialogLineSet::EPickModeFlags::RandomVariation)
 	, m_lastPickedLine(0)
 {
 	m_lines.push_back(CDialogLine());
@@ -248,12 +282,12 @@ const CDialogLine* CDialogLineSet::PickLine()
 		return nullptr;
 	}
 
-	if ((m_flags & (int)IDialogLineSet::EPickModeFlags::RandomVariation) > 0)
+	if ((m_flags & (uint32)IDialogLineSet::EPickModeFlags::RandomVariation) > 0)
 	{
 		const int randomLineIndex = cry_random(0, numLines - 1);
 		return &m_lines[randomLineIndex];
 	}
-	else if ((m_flags & (int)IDialogLineSet::EPickModeFlags::SequentialVariationRepeat) > 0)
+	else if ((m_flags & (uint32)IDialogLineSet::EPickModeFlags::SequentialVariationRepeat) > 0)
 	{
 		if (m_lastPickedLine >= numLines)
 		{
@@ -261,7 +295,7 @@ const CDialogLine* CDialogLineSet::PickLine()
 		}
 		return &m_lines[m_lastPickedLine++];
 	}
-	else if ((m_flags & (int)IDialogLineSet::EPickModeFlags::SequentialVariationClamp) > 0)
+	else if ((m_flags & (uint32)IDialogLineSet::EPickModeFlags::SequentialVariationClamp) > 0)
 	{
 		if (m_lastPickedLine >= numLines)
 		{
@@ -269,7 +303,15 @@ const CDialogLine* CDialogLineSet::PickLine()
 		}
 		return &m_lines[m_lastPickedLine++];
 	}
-	else if ((m_flags & (int)IDialogLineSet::EPickModeFlags::SequentialAllSuccessively) > 0)
+	else if ((m_flags & (uint32)IDialogLineSet::EPickModeFlags::SequentialVariationOnlyOnce) > 0)
+	{
+		if (m_lastPickedLine >= numLines)
+		{
+			return nullptr;
+		}
+		return &m_lines[m_lastPickedLine++];
+	}
+	else if ((m_flags & (uint32)IDialogLineSet::EPickModeFlags::SequentialAllSuccessively) > 0)
 	{
 		return &m_lines[0];
 	}
@@ -283,7 +325,7 @@ const CDialogLine* CDialogLineSet::PickLine()
 //--------------------------------------------------------------------------------------------------
 const CDialogLine* CDialogLineSet::GetFollowUpLine(const CDialogLine* pCurrentLine)
 {
-	if ((m_flags & (int)IDialogLineSet::EPickModeFlags::SequentialAllSuccessively) > 0)
+	if ((m_flags & (uint32)IDialogLineSet::EPickModeFlags::SequentialAllSuccessively) > 0)
 	{
 		bool bCurrentLineFound = false;
 		for (const CDialogLine& currentLine : m_lines)
@@ -304,7 +346,7 @@ const CDialogLine* CDialogLineSet::GetFollowUpLine(const CDialogLine* pCurrentLi
 //--------------------------------------------------------------------------------------------------
 void CDialogLineSet::Reset()
 {
-	m_lastPickedLine = 0;
+	SetLastPickedLine(0);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -385,12 +427,29 @@ void CDialogLineSet::Serialize(Serialization::IArchive& ar)
 		{
 			ar.error(m_priority, "DialogLineSet without a single concrete line");
 		}
-		if ((m_flags & (uint32)(EPickModeFlags::RandomVariation)) == 0)
+		if ((m_flags & (uint32)EPickModeFlags::RandomVariation) == 0)
 		{
 			ar.error(m_priority, "DialogLineSet without a correct LinePickMode found.");
 		}
 	}
 #endif
+}
+
+bool CryDRS::CDialogLineSet::HasAvailableLines()
+{
+	if (m_flags & (uint32)EPickModeFlags::SequentialVariationOnlyOnce)
+	{
+		return m_lastPickedLine < m_lines.size();
+	}
+	return true;
+}
+
+void CryDRS::CDialogLineSet::OnLineCanceled(const CDialogLine* pCanceledLine)
+{
+	if (m_flags & (uint32)EPickModeFlags::SequentialVariationOnlyOnce)
+	{
+		m_lastPickedLine--; //remark: if a only-once line is canceled, we do allow it to repeat.
+	}
 }
 
 //--------------------------------------------------------------------------------------------------

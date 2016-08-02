@@ -249,9 +249,9 @@ void CInheritConditionsCondition::Serialize(Serialization::IArchive& ar)
 #if defined(HASHEDSTRING_STORES_SOURCE_STRING)
 	if (ar.isEdit())
 	{
-		if (m_responseToReuse.IsValid())
+		if (!m_responseToReuse.IsValid())
 		{
-			ar.warning(m_responseToReuse.m_textCopy, "No response with the specified name found");
+			ar.warning(m_responseToReuse.m_textCopy, "No Response to inherit conditions from specified");
 		}
 		else if (!m_pCachedResponse)
 		{

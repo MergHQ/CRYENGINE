@@ -22,7 +22,7 @@ struct SSignal
 {
 	SSignal(const CHashedString& signalName, CResponseActor* pSender, VariableCollectionSharedPtr pSignalContext);
 
-	DRS::SignalInstanceId       m_id;  //a unique id for this instance of the sent-signal
+	DRS::SignalInstanceId       m_id;  //a unique id for this instance of the signal
 	CHashedString               m_signalName;
 	CResponseActor*             m_pSender;
 	VariableCollectionSharedPtr m_pSignalContext;
@@ -84,10 +84,11 @@ public:
 
 	void               QueueSignal(const SSignal& signal);
 	void               CancelSignalProcessing(const SSignal& signal);
+	bool			   IsSignalProcessed(const SSignal& signal);
 	void               Update();
 
 	void               GetAllResponseData(DRS::VariableValuesList* pOutCollectionsList);
-	void               SetAllResponseData(const DRS::VariableValuesList& collectionsList);
+	void               SetAllResponseData(DRS::VariableValuesListIterator start, DRS::VariableValuesListIterator end);
 
 	CResponseInstance* CreateInstance(SSignal& signal, CResponse* pResponse);
 	void               ReleaseInstance(CResponseInstance* pInstance, bool removeFromRunningInstances = true);
@@ -110,8 +111,8 @@ private:
 
 	ListenerList         m_Listener;
 
-	SignalList           m_currentlyQueuedSignals;              //make this a lockfree list so that queuing signals is thread safe
+	SignalList           m_currentlyQueuedSignals;
 	SignalList           m_currentlyQueuedSignalsDuringUpdate;  //we have a second list where we store signals that gets queued while we are updating the normal list (because we dont want the original list to change, while we use it)
-	SignalList           m_currentlySignalsWaitingToBeCanceled; //make this a lockfree list so that queuing signals is thread safe
+	SignalList           m_currentlyWaitingToBeCanceledSignals;
 };
 } // namespace CryDRS

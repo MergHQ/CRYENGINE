@@ -178,9 +178,19 @@ void CResponseManager::QueueSignal(const SSignal& signal)
 }
 
 //--------------------------------------------------------------------------------------------------
-void CResponseManager::CancelSignalProcessing(const SSignal& signal)
+void CResponseManager::CancelSignalProcessing(const SSignal& signalToCancel)
 {
-	m_currentlySignalsWaitingToBeCanceled.push_back(signal);
+	for (CResponseInstance* runningResponse : m_runningResponses)
+	{
+		if (((runningResponse->GetOriginalSender() == signalToCancel.m_pSender || signalToCancel.m_pSender == nullptr)
+			&& (runningResponse->GetSignalName() == signalToCancel.m_signalName || !signalToCancel.m_signalName.IsValid()))
+			&& runningResponse->GetSignalInstanceId() != signalToCancel.m_id)
+		{
+			runningResponse->Cancel();
+		}
+	}
+
+	m_currentlyWaitingToBeCanceledSignals.push_back(signalToCancel);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -188,7 +198,7 @@ void CResponseManager::Update()
 {
 	float currentTime = CResponseSystem::GetInstance()->GetCurrentDrsTime();
 
-	for (SignalList::iterator itToCancel = m_currentlySignalsWaitingToBeCanceled.begin(); itToCancel != m_currentlySignalsWaitingToBeCanceled.end(); )
+	for (SignalList::iterator itToCancel = m_currentlyWaitingToBeCanceledSignals.begin(); itToCancel != m_currentlyWaitingToBeCanceledSignals.end(); )
 	{
 		SSignal& signalToCancel = *itToCancel;
 		for (SignalList::iterator itQueued = m_currentlyQueuedSignals.begin(); itQueued != m_currentlyQueuedSignals.end(); )
@@ -204,16 +214,7 @@ void CResponseManager::Update()
 				++itQueued;
 			}
 		}
-
-		for (CResponseInstance* runningResponse : m_runningResponses)
-		{
-			if ((runningResponse->GetCurrentActor() == signalToCancel.m_pSender || signalToCancel.m_pSender == nullptr) && runningResponse->GetSignalName() == signalToCancel.m_signalName)
-			{
-				runningResponse->Cancel();
-			}
-		}
-
-		itToCancel = m_currentlySignalsWaitingToBeCanceled.erase(itToCancel);
+		itToCancel = m_currentlyWaitingToBeCanceledSignals.erase(itToCancel);
 	}
 
 	for (ResponseInstanceList::iterator it = m_runningResponses.begin(); it != m_runningResponses.end(); )
@@ -665,7 +666,7 @@ void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-void CryDRS::CResponseManager::GetAllResponseData(DRS::VariableValuesList* pOutCollectionsList)
+void CResponseManager::GetAllResponseData(DRS::VariableValuesList* pOutCollectionsList)
 {
 	std::pair<string, string> temp;
 	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
@@ -683,7 +684,7 @@ void CryDRS::CResponseManager::GetAllResponseData(DRS::VariableValuesList* pOutC
 }
 
 //--------------------------------------------------------------------------------------------------
-void CryDRS::CResponseManager::SetAllResponseData(const DRS::VariableValuesList& collectionsList)
+void CResponseManager::SetAllResponseData(DRS::VariableValuesListIterator start, DRS::VariableValuesListIterator end)
 {
 	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
 	{
@@ -697,9 +698,10 @@ void CryDRS::CResponseManager::SetAllResponseData(const DRS::VariableValuesList&
 	string collectionAndVariable;
 	CHashedString responseName;
 	CHashedString collectionName;
-	for (std::pair<string, string> variableValuePair : collectionsList)
+	
+	for (DRS::VariableValuesListIterator it = start; it != end; ++it)
 	{
-		collectionAndVariable = variableValuePair.first;
+		collectionAndVariable = it->first;
 		const int pos = collectionAndVariable.find('.');
 		collectionName = collectionAndVariable.substr(0, pos);
 
@@ -709,8 +711,7 @@ void CryDRS::CResponseManager::SetAllResponseData(const DRS::VariableValuesList&
 			ResponsePtr pResponse = GetResponse(responseName);
 			if (pResponse)
 			{
-				string responseData = variableValuePair.second;
-				if (sscanf(variableValuePair.second.c_str(), "%u,%f,%f", &executionCounter, &startTime, &endTime) == 3)
+				if (sscanf(it->second.c_str(), "%u,%f,%f", &executionCounter, &startTime, &endTime) == 3)
 				{
 					pResponse->SetExecutionCounter(executionCounter);
 					pResponse->SetLastStartTime(startTime);
@@ -719,6 +720,31 @@ void CryDRS::CResponseManager::SetAllResponseData(const DRS::VariableValuesList&
 			}
 		}
 	}
+}
+
+bool CResponseManager::IsSignalProcessed(const SSignal& signal)
+{
+	for (const SSignal& queuedSignal : m_currentlyQueuedSignals)
+	{
+		if ((queuedSignal.m_signalName == signal.m_signalName || !signal.m_signalName.IsValid())
+			&& (queuedSignal.m_pSender == signal.m_pSender || signal.m_pSender == nullptr)
+			&& queuedSignal.m_id != signal.m_id)
+		{
+			return true;
+		}
+	}
+
+	for (const CResponseInstance* pRunningInstance : m_runningResponses )
+	{
+		if ((pRunningInstance->GetSignalName() == signal.m_signalName || !signal.m_signalName.IsValid())
+			&& (pRunningInstance->GetOriginalSender() == signal.m_pSender || signal.m_pSender == nullptr)
+			&& pRunningInstance->GetSignalInstanceId() != signal.m_id)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 //--------------------------------------------------------------------------------------------------

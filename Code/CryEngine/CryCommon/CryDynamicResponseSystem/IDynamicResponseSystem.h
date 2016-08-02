@@ -29,7 +29,8 @@ typedef std::shared_ptr<IResponseCondition>             IConditionSharedPtr;
 struct IVariableCollection;
 typedef std::shared_ptr<IVariableCollection> IVariableCollectionSharedPtr;
 
-typedef DynArray<std::pair<string, string>> VariableValuesList;
+typedef DynArray<std::pair<string, string>>  VariableValuesList;
+typedef VariableValuesList::const_iterator   VariableValuesListIterator;
 
 typedef int                                  SignalInstanceId;
 static const SignalInstanceId s_InvalidSignalId = -1;
@@ -43,7 +44,7 @@ struct ISpeakerManager
 {
 	struct ILipsyncProvider
 	{
-		virtual LipSyncID OnLineStarted(IResponseActor* pSpeaker, const IDialogLine* pLine) = 0;
+		virtual LipSyncID OnLineStarted(IResponseActor* pSpeaker, const IDialogLine* pLine) = 0;  //Remark: pLine can be a nullptr, if the triggered line does not exist in the database, but still 'started' to display debug text (like: "missing: 'Missing_line_ID'")
 		virtual void      OnLineEnded(LipSyncID lipsyncId, IResponseActor* pSpeaker, const IDialogLine* pLine) = 0;
 		virtual bool      Update(LipSyncID lipsyncId, IResponseActor* pSpeaker, const IDialogLine* pLine) = 0;       //returns if the lip animation has finished
 		//TODO: also pass in the current audio data for 'Update'
@@ -67,7 +68,7 @@ struct ISpeakerManager
 			eLineEvent_WasNotStartedForAnyReason = eLineEvent_CanceledWhileQueued | eLineEvent_CouldNotBeStarted | eLineEvent_SkippedBecauseOfPriority, //useful combination, if you are only interested IF the line has not started and not WHY it did not happen.
 
 		};
-		virtual void OnLineEvent(const IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const IDialogLine* pLine) = 0;
+		virtual void OnLineEvent(const IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const IDialogLine* pLine) = 0;  //Remark: pLine can be a nullptr, if the triggered line does not exist in the database, but still 'started' to display debug text (like: "missing: 'Missing_line_ID'")
 	};
 
 	virtual bool IsSpeaking(const IResponseActor* pActor, const CHashedString& lineID = CHashedString::GetEmpty()) const = 0;
@@ -328,7 +329,7 @@ public:
 	 * @param signalName - Name of the signal for which we want to interrupt the execution of responses
 	 * @param pSender - the Actor for which we want to stop the execution
 	 */
-	virtual void CancelSignalProcessing(const CHashedString& signalName, IResponseActor* pSender = nullptr) = 0;
+	virtual void CancelSignalProcessing(const CHashedString& signalName, IResponseActor* pSender = nullptr, SignalInstanceId instanceToSkip = s_InvalidSignalId) = 0;
 
 	/**
 	 * Will create a new Response Actor. This actor is registered in the DRS.
@@ -426,15 +427,16 @@ public:
 
 	enum eSaveHints
 	{
-		SaveHints_Variables = BIT(0),
+		SaveHints_Variables    = BIT(0),
 		SaveHints_ResponseData = BIT(1),
+		SaveHints_LineData     = BIT(2),
 	};
 
 	//! Saves the current state of the DRS as a list of variables
 	//! the saveHints parameter can be used to include additional data in the list.
 	virtual void GetCurrentState(DRS::VariableValuesList* pOutCollectionsList, uint32 saveHints = IDynamicResponseSystem::SaveHints_Variables) const = 0;
 
-	//! Restores a previously stored state of the DRS. 
+	//! Restores a previously stored state of the DRS.
 	//! Remark: Depending on the implementation you might need to call 'Reset' first, in order to stop all running responses.
 	virtual void SetCurrentState(const DRS::VariableValuesList& outCollectionsList) = 0;
 
@@ -643,14 +645,15 @@ struct IDialogLine
 
 struct IDialogLineSet
 {
-	enum class EPickModeFlags
+	enum class EPickModeFlags : uint32
 	{
-		None                      = 0,
-		RandomVariation           = 1 << 0, //!< Pick one variation at random
-		SequentialVariationRepeat = 1 << 1, //!< Pick the next variation in the order they are specified (start from the beginning after the last one)
-		SequentialVariationClamp  = 1 << 2, //!< Pick the next variation in the order they are specified (repeat the last one)
-		SequentialAllSuccessively = 1 << 3, //!< Pick all, one after another.
-		Any                       = RandomVariation | SequentialVariationRepeat | SequentialVariationClamp | SequentialAllSuccessively
+		None                        = 0,
+		RandomVariation             = 1 << 0, //!< Pick one variation at random
+		SequentialVariationRepeat   = 1 << 1, //!< Pick the next variation in the order they are specified (start from the beginning after the last one)
+		SequentialVariationClamp    = 1 << 2, //!< Pick the next variation in the order they are specified (repeat the last one)
+		SequentialAllSuccessively   = 1 << 3, //!< Pick all, one after another. (so a single SpeakLine action will cause a series of lines to be spoken)
+		SequentialVariationOnlyOnce = 1 << 4, //!< Pick the next variation in the order they are specified (return 0 when all are spoken)
+		Any                         = RandomVariation | SequentialVariationRepeat | SequentialVariationClamp | SequentialAllSuccessively | SequentialVariationOnlyOnce
 	};
 
 	virtual ~IDialogLineSet() {}

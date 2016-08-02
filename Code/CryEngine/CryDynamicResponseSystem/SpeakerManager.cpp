@@ -165,14 +165,17 @@ void CSpeakerManager::Update()
 			}
 			InformListener(it->pActor, it->lineID, DRS::ISpeakerManager::IListener::eLineEvent_Finished, it->pPickedLine);
 
-			CDialogLineDatabase* pLineDatabase = static_cast<CDialogLineDatabase*>(CResponseSystem::GetInstance()->GetDialogLineDatabase());
-			CDialogLineSet* pLineSet = pLineDatabase->GetLineSetById(it->lineID);
-			const CDialogLine* pFollowUpLine = (pLineSet) ? pLineSet->GetFollowUpLine(it->pPickedLine) : nullptr;
-			if (pFollowUpLine) //so we are NOT done, because there is a follow-up-line for our just finished line
+			if (!it->bWasCanceled)  //if the line was canceled we dont start any follow-up-lines
 			{
-				it->pPickedLine = pFollowUpLine;
-				StartSpeaking(&*it);
-				continue;
+				CDialogLineDatabase* pLineDatabase = static_cast<CDialogLineDatabase*>(CResponseSystem::GetInstance()->GetDialogLineDatabase());
+				CDialogLineSet* pLineSet = pLineDatabase->GetLineSetById(it->lineID);
+				const CDialogLine* pFollowUpLine = (pLineSet) ? pLineSet->GetFollowUpLine(it->pPickedLine) : nullptr;
+				if (pFollowUpLine) //so we are NOT done, because there is a follow-up-line for our just finished line
+				{
+					it->pPickedLine = pFollowUpLine;
+					StartSpeaking(&*it);
+					continue;
+				}
 			}
 
 			//one line has finished, lets see if someone was waiting for this
@@ -240,6 +243,10 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 
 	CDialogLineDatabase* pLineDatabase = static_cast<CDialogLineDatabase*>(CResponseSystem::GetInstance()->GetDialogLineDatabase());
 	CDialogLineSet* pLineSet = pLineDatabase->GetLineSetById(lineID);
+	if (pLineSet && !pLineSet->HasAvailableLines())
+	{
+		return false;
+	}
 	int priority = (pLineSet) ? pLineSet->GetPriority() : 50; // 50 = default priority
 	const CDialogLine* pLine = nullptr;                       //we will check the priority first, before picking a line
 
@@ -259,7 +266,9 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 	{
 		if (activateSpeaker.pActor == pActor)
 		{
-			if (priority > activateSpeaker.priority || (m_samePrioCancelsLinesCVar != 0 && priority >= activateSpeaker.priority && lineID != activateSpeaker.lineID))  //if the new line is not less important, stop the old one
+			if (activateSpeaker.bWasCanceled
+				|| priority > activateSpeaker.priority 
+				|| (m_samePrioCancelsLinesCVar != 0 && priority >= activateSpeaker.priority && lineID != activateSpeaker.lineID))  //if the new line is not less important, stop the old one
 			{
 				const IEntityAudioProxyPtr pEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
 
@@ -347,6 +356,7 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 	pSpeakerInfoToUse->pEntity = pEntity;
 	pSpeakerInfoToUse->lineID = lineID;
 	pSpeakerInfoToUse->priority = priority;
+	pSpeakerInfoToUse->bWasCanceled = false;
 
 	StartSpeaking(pSpeakerInfoToUse);  //now we have all data we need in order to actual start speaking
 
@@ -389,7 +399,17 @@ bool CSpeakerManager::CancelSpeaking(const DRS::IResponseActor* pActor, int maxP
 			InformListener(speakerInfo.pActor, speakerInfo.lineID, DRS::ISpeakerManager::IListener::eLineEvent_Canceled, speakerInfo.pPickedLine);
 			speakerInfo.endingConditions = eEC_Done;
 			speakerInfo.finishTime = 0.0f;  //trigger finished, will be removed in the next update then
+			speakerInfo.bWasCanceled = true;
 			bSomethingWasCanceled = true;
+			if (speakerInfo.lineID)
+			{
+				CDialogLineDatabase* pLineDatabase = static_cast<CDialogLineDatabase*>(CResponseSystem::GetInstance()->GetDialogLineDatabase());
+				CDialogLineSet* pLineSet = pLineDatabase->GetLineSetById(speakerInfo.lineID);
+				if (pLineSet)
+				{
+					pLineSet->OnLineCanceled(speakerInfo.pPickedLine);
+				}
+			}
 		}
 	}
 	return bSomethingWasCanceled;

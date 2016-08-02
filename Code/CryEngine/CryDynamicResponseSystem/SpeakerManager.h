@@ -1,12 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/************************************************************************
-
-   A basic speaker manager, which at the moment displays the text ingame
-   and executes a audio trigger, if existing. Can also check if the line has finished
-
-   /************************************************************************/
-
 #pragma once
 
 #include <CryString/HashedString.h>
@@ -28,12 +21,12 @@ public:
 	CDefaultLipsyncProvider();
 	~CDefaultLipsyncProvider();
 
-	//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 	// ISpeakerManager::ILipsyncProvider implementation
 	virtual DRS::LipSyncID OnLineStarted(DRS::IResponseActor* pSpeaker, const DRS::IDialogLine* pLine) override;
 	virtual void           OnLineEnded(DRS::LipSyncID lipsyncId, DRS::IResponseActor* pSpeaker, const DRS::IDialogLine* pLine) override;
 	virtual bool           Update(DRS::LipSyncID lipsyncId, DRS::IResponseActor* pSpeaker, const DRS::IDialogLine* pLine) override;
-	//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 
 protected:
 	int    m_lipsyncAnimationLayer;
@@ -53,7 +46,7 @@ public:
 
 	void OnActorRemoved(const CResponseActor* pActor);
 
-	//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 	// ISpeakerManager implementation
 	virtual bool IsSpeaking(const DRS::IResponseActor* pActor, const CHashedString& lineID = CHashedString::GetEmpty()) const override;
 	virtual bool StartSpeaking(DRS::IResponseActor* pActor, const CHashedString& lineID) override;
@@ -76,7 +69,7 @@ private:
 	struct SSpeakInfo
 	{
 		CResponseActor*    pActor;
-		IEntity*		   pEntity;
+		IEntity*           pEntity;
 		string             text;
 		CHashedString      lineID;
 		const CDialogLine* pPickedLine;
@@ -91,6 +84,7 @@ private:
 
 		uint32             endingConditions; //EEndingConditions
 		DRS::LipSyncID     lipsyncId;
+		bool               bWasCanceled;
 	};
 
 	struct SWaitingInfo
@@ -107,7 +101,7 @@ private:
 	void        InformListener(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID, DRS::ISpeakerManager::IListener::eLineEvent event, const CDialogLine* pLine);
 	void        SetNumActiveSpeaker(int newAmountOfSpeaker);
 
-	void StartSpeaking(SSpeakInfo* pSpeakerInfoToUse);
+	void        StartSpeaking(SSpeakInfo* pSpeakerInfoToUse);
 
 	typedef std::vector<SSpeakInfo> SpeakerList;
 	SpeakerList m_activeSpeakers;

@@ -57,6 +57,11 @@ public:
 	const CDialogLine* PickLine();
 	const CDialogLine* GetFollowUpLine(const CDialogLine* pCurrentLine);
 	void Reset();
+	bool HasAvailableLines();
+	void OnLineCanceled(const CDialogLine* pCanceledLine);
+	
+	void SetLastPickedLine(int value) { m_lastPickedLine = value; }
+	int GetLastPickedLine() const { return m_lastPickedLine; }
 
 	//////////////////////////////////////////////////////////
 	// IDialogLineSet implementation
@@ -104,6 +109,9 @@ public:
 	virtual void                             Serialize(Serialization::IArchive& ar) override;
 	virtual void                             SerializeLinesHistory(Serialization::IArchive& ar) override;
 	//////////////////////////////////////////////////////////
+
+	void GetAllLineData(DRS::VariableValuesList* pOutCollectionsList);  //stores the current state 
+	void SetAllLineData(DRS::VariableValuesListIterator start, DRS::VariableValuesListIterator end);  //restores a state
 
 private:
 	CHashedString GenerateUniqueId(const string& root) const;

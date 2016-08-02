@@ -139,7 +139,7 @@ void CResponseSystem::Update()
 	}
 
 	m_CurrentTime += gEnv->pTimer->GetFrameTime();
-	
+
 	m_pVariableCollectionManager->GetCollection("Global")->SetVariableValue("CurrentTime", m_CurrentTime.GetSeconds());
 
 	m_bIsCurrentlyUpdating = true;
@@ -248,9 +248,11 @@ void CResponseSystem::Reset(uint32 resetHint)
 }
 
 //--------------------------------------------------------------------------------------------------
-void CResponseSystem::CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender)
+void CResponseSystem::CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender /* = nullptr */, DRS::SignalInstanceId instanceToSkip /* = s_InvalidSignalId */)
 {
-	return m_pResponseManager->CancelSignalProcessing(SSignal(signalName, static_cast<CResponseActor*>(pSender), nullptr));
+	SSignal temp(signalName, static_cast<CResponseActor*>(pSender), nullptr);
+	temp.m_id = instanceToSkip;
+	return m_pResponseManager->CancelSignalProcessing(temp);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -271,7 +273,7 @@ void CResponseSystem::Serialize(Serialization::IArchive& ar)
 	m_pVariableCollectionManager->Serialize(ar);
 
 	m_pResponseManager->SerializeResponseStates(ar);
-	
+
 	m_CurrentTime.SetSeconds(m_pVariableCollectionManager->GetCollection("Global")->GetVariableValue("CurrentTime").GetValueAsFloat());  //we serialize our DRS time manually via the time variable
 }
 
@@ -327,28 +329,106 @@ void CResponseSystem::_Reset(uint32 resetFlags)
 	}
 }
 
+constexpr const char* sz_DrsDataTag = "<DRS_DATA>";
+constexpr const char* sz_DrsVariablesStartTag = "VariablesStart";
+constexpr const char* sz_DrsVariablesEndTag = "VariablesEnd";
+constexpr const char* sz_DrsResponsesStartTag = "ResponsesStart";
+constexpr const char* sz_DrsResponsesEndTag = "ResponsesEnd";
+constexpr const char* sz_DrsLinesStartTag = "LinesStart";
+constexpr const char* sz_DrsLinesEndTag = "LinesEnd";
+
 //--------------------------------------------------------------------------------------------------
 void CResponseSystem::GetCurrentState(DRS::VariableValuesList* pOutCollectionsList, uint32 saveHints) const
 {
+	std::pair<string, string> temp;
+	temp.first = sz_DrsDataTag;
 	if (saveHints & SaveHints_Variables)
 	{
+		temp.second = sz_DrsVariablesStartTag;
+		pOutCollectionsList->push_back(temp);
 		m_pVariableCollectionManager->GetAllVariableCollections(pOutCollectionsList);
+		temp.second = sz_DrsVariablesEndTag;
+		pOutCollectionsList->push_back(temp);
 	}
 
 	if (saveHints & SaveHints_ResponseData)
 	{
+		temp.second = sz_DrsResponsesStartTag;
+		pOutCollectionsList->push_back(temp);
 		m_pResponseManager->GetAllResponseData(pOutCollectionsList);
+		temp.second = sz_DrsResponsesEndTag;
+		pOutCollectionsList->push_back(temp);
+	}
+
+	if (saveHints & SaveHints_LineData)
+	{
+		temp.second = sz_DrsLinesStartTag;
+		pOutCollectionsList->push_back(temp);
+		m_pDialogLineDatabase->GetAllLineData(pOutCollectionsList);
+		temp.second = sz_DrsLinesEndTag;
+		pOutCollectionsList->push_back(temp);
 	}
 }
 
 //--------------------------------------------------------------------------------------------------
 void CResponseSystem::SetCurrentState(const DRS::VariableValuesList& collectionsList)
 {
-	m_pVariableCollectionManager->SetAllVariableCollections(collectionsList);
+	DRS::VariableValuesListIterator itStartOfVariables = collectionsList.begin();
+	DRS::VariableValuesListIterator itStartOfResponses = collectionsList.begin();
+	DRS::VariableValuesListIterator itStartOfLines = collectionsList.begin();
+	DRS::VariableValuesListIterator itEndOfVariables = collectionsList.begin();
+	DRS::VariableValuesListIterator itEndOfResponses = collectionsList.begin();
+	DRS::VariableValuesListIterator itEndOfLines = collectionsList.begin();
 
-	m_CurrentTime.SetSeconds(m_pVariableCollectionManager->GetCollection("Global")->GetVariableValue("CurrentTime").GetValueAsFloat());  //we serialize our DRS time manually via the time variable
+	for (DRS::VariableValuesListIterator it = collectionsList.begin(); it != collectionsList.end(); ++it)
+	{
+		if (it->first == sz_DrsDataTag)
+		{
+			if (it->second == sz_DrsVariablesStartTag)
+				itStartOfVariables = it + 1;
+			if (it->second == sz_DrsVariablesEndTag)
+				itEndOfVariables = it;
+		}
+	}
 
-	m_pResponseManager->SetAllResponseData(collectionsList);
+	for (DRS::VariableValuesListIterator it = collectionsList.begin(); it != collectionsList.end(); ++it)
+	{
+		if (it->first == sz_DrsDataTag)
+		{
+			if (it->second == sz_DrsResponsesStartTag)
+				itStartOfResponses = it + 1;
+			if (it->second == sz_DrsResponsesEndTag)
+				itEndOfResponses = it;
+		}
+	}
+
+	for (DRS::VariableValuesListIterator it = collectionsList.begin(); it != collectionsList.end(); ++it)
+	{
+		if (it->first == sz_DrsDataTag)
+		{
+			if (it->second == sz_DrsLinesStartTag)
+				itStartOfLines = it + 1;
+			if (it->second == sz_DrsLinesEndTag)
+				itEndOfLines = it;
+		}
+	}
+
+	if (itStartOfVariables != itEndOfVariables)
+	{
+		m_pVariableCollectionManager->SetAllVariableCollections(itStartOfVariables, itEndOfVariables);
+		//we serialize our DRS time manually via the "CurrentTime" variable
+		m_CurrentTime.SetSeconds(m_pVariableCollectionManager->GetCollection("Global")->GetVariableValue("CurrentTime").GetValueAsFloat());
+	}
+
+	if (itStartOfResponses != itEndOfResponses)
+	{
+		m_pResponseManager->SetAllResponseData(itStartOfResponses, itEndOfResponses);
+	}
+
+	if (itStartOfLines != itEndOfLines)
+	{
+		m_pDialogLineDatabase->SetAllLineData(itStartOfLines, itEndOfLines);
+	}
 }
 
 //--------------------------------------------------------------------------------------------------

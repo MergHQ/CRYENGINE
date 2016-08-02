@@ -40,7 +40,7 @@ DRS::IResponseActionInstanceUniquePtr CActionSpeakLine::Execute(DRS::IResponseIn
 	}
 	else
 	{
-		//drs-todo: queue line
+		//for whatever reason no line was started (maybe because of priority or only-once flag)
 		return nullptr;
 	}
 }
