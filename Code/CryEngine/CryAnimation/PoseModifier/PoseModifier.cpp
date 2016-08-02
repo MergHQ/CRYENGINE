@@ -828,6 +828,9 @@ public:
 
 	CRYGENERATE_CLASS(CIkCCD, "AnimationPoseModifier_IkCcd", 0x6a078d00c19441e2, 0xb8919c52d094076d);
 
+private:
+	void Draw(const QuatT& location, const QuatT& startAbsolute, const QuatT& targetAbsolute, const float weight);
+
 	// IAnimationPoseModifier
 public:
 	virtual bool Prepare(const SAnimationPoseModifierParams& params) override;
@@ -853,6 +856,7 @@ private:
 	DynArray<uint32> m_arrJointChain;
 
 	bool             m_bInitialized;
+	bool             m_bDraw;
 };
 
 CRYREGISTER_CLASS(CIkCCD)
@@ -864,12 +868,35 @@ CIkCCD::CIkCCD() :
 	m_endNodeIndex(-1),
 	m_targetNodeIndex(-1),
 	m_weightNodeIndex(-1),
-	m_bInitialized(false)
+	m_bInitialized(false),
+	m_bDraw(false)
 {
 }
 
 CIkCCD::~CIkCCD()
 {
+}
+
+void CIkCCD::Draw(const QuatT& location, const QuatT& startAbsolute, const QuatT& targetAbsolute, const float weight)
+{
+	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+	if (!pAuxGeom)
+		return;
+
+	SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags | e_DepthTestOff | e_DrawInFrontOn);
+	pAuxGeom->SetRenderFlags(renderFlags);
+
+	OBB obb;
+	obb.m33 = Matrix33(IDENTITY);
+	obb.c = Vec3(0);
+	obb.h = Vec3(0.01f);
+
+	pAuxGeom->DrawOBB(obb, Matrix34(location * startAbsolute), false, ColorB(0x80, 0x80, 0xff, 0x85), eBBD_Faceted);
+	pAuxGeom->DrawOBB(obb, Matrix34(location * targetAbsolute), false, ColorB(0xff, 0x80, 0x80, 0x85), eBBD_Faceted);
+	ColorF pCol(0, 0.7f, 0);
+	Ang3 angles = Ang3(targetAbsolute.q);
+	pAuxGeom->Draw2dLabel(10, g_YLine+=12, 1.2f, pCol, false, "IkCCD %s -> %s:\t%d   Pos: %f  %f  %f   Rot: %f  %f  %f", m_desc.rootNode.name.c_str(), m_desc.endNode.name.c_str(), (uint8)(weight*100.0f), targetAbsolute.t.x, targetAbsolute.t.y, targetAbsolute.t.z, RAD2DEG(angles.x), RAD2DEG(angles.y), RAD2DEG(angles.z));
+	pAuxGeom->Flush();
 }
 
 // IAnimationPoseModifier
@@ -1053,6 +1080,9 @@ bool CIkCCD::Execute(const SAnimationPoseModifierParams& params)
 		}
 	}
 
+	if (m_bDraw)
+		Draw((QuatT)params.location, pAbsPose[m_rootNodeIndex], pAbsPose[m_endNodeIndex], weight);
+
 	return true;
 }
 
@@ -1060,6 +1090,7 @@ bool CIkCCD::Execute(const SAnimationPoseModifierParams& params)
 
 void CIkCCD::Serialize(Serialization::IArchive& ar)
 {
+	ar(m_bDraw, "draw", "^Draw");
 	PoseModifier::Serialize(ar, m_desc);
 
 	if (ar.isInput())
