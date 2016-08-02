@@ -68,7 +68,18 @@ struct SParticleVertex
 	half4 lightData1;
 };
 
-void Particle_Setup_General(inout float4 vPos, float4x4 mViewProj, inout app2vertParticleGeneral IN, inout SParticleVertex OUT)
+float4 TransformPosition(float4 position)
+{
+#if %_RT_NEAREST
+	position.xyz -= GetWorldViewPos();
+	return mul(CV_ViewProjNearestMatr, position);
+#else
+	return mul(CV_ViewProjMatr, position);
+#endif
+}
+
+
+void Particle_Setup_General(inout float4 vPos, inout app2vertParticleGeneral IN, inout SParticleVertex OUT)
 {
 	// ParticleParams.xy: 0 = no expand, -1 = expand position only, 1 = expand position and curved normals.
 
@@ -152,7 +163,7 @@ void Particle_Setup_General(inout float4 vPos, float4x4 mViewProj, inout app2ver
 	#endif
 
 	OUT.vWorldPos.xyz = vPos.xyz;
-	OUT.HPosition = mul(mViewProj, vPos);
+	OUT.HPosition = TransformPosition(vPos);
 }
 
 //========================================================================

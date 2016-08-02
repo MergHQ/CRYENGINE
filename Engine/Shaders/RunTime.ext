@@ -196,6 +196,7 @@ Property
   Precache = EffectLayerVS
   Precache = MethaGenVS
   Precache = DebugPassVS
+	Precache = ParticleVS
 }
 
 Property

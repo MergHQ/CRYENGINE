@@ -191,6 +191,12 @@ void CREParticle::mfPrepare(bool bCheckOverflow)
 #endif
 		rd->RT_SetLightVolumeShaderFlags();
 	}
+
+	const bool bIsNearest = (rRP.m_pCurObject->m_ObjFlags & FOB_NEAREST) != 0;
+	if (bIsNearest)
+	{
+		rRP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_NEAREST];
+	}
 }
 
 void CREParticle::ComputeVertices(SCameraInfo camInfo, uint64 uRenderFlags)
