@@ -771,7 +771,7 @@ def CryEngineModule(ctx, *k, **kw):
 	if not BuildTaskGenerator(ctx, kw):
 		return
 
-	if _is_monolithic_build(ctx, kw['target']) and kw['target'] != 'AndroidLauncher': # For monolithc builds, simply collect all build settings
+	if _is_monolithic_build(ctx, kw['target']) and not kw['target'].startswith('AndroidLauncher'): # For monolithc builds, simply collect all build settings
 		MonolithicBuildModule(ctx, getattr(ctx, 'game_project', None), *k, **kw)
 		return
 	
@@ -1006,47 +1006,61 @@ def CryLauncher(ctx, *k, **kw):
 	"""
 	Wrapper for CryEngine Executables
 	"""
-	# Initialize the Task Generator
-	InitializeTaskGenerator(ctx, kw)	
-				
-	# Setup TaskGenerator specific settings	
-	set_cryengine_flags(ctx, kw)
-	SetupRunTimeLibraries(ctx,kw)	
-	
-	ConfigureTaskGenerator(ctx, kw)
+	if not ctx.env['PLATFORM']:
+		if not BuildTaskGenerator(ctx, kw):
+			# Initialize the Task Generator
+			InitializeTaskGenerator(ctx, kw)	
 		
-	if not BuildTaskGenerator(ctx, kw):
-		return
-				
-	# Copy kw dict and some internal values to prevent overwriting settings in one launcher from another
-	kw_per_launcher = dict(kw)
-	
+			# Setup TaskGenerator specific settings	
+			set_cryengine_flags(ctx, kw)
+			SetupRunTimeLibraries(ctx,kw)
+			kw.setdefault('win_linkflags', []).extend(['/SUBSYSTEM:WINDOWS'])
+			
+			ConfigureTaskGenerator(ctx, kw)
+			return
+		
 	# Create multiple projects for each Launcher, based on the number of active projects in the current spec
 	if ctx.env['PLATFORM'] == 'project_generator': 	# For the project generator, just use the first project (doesnt matter which project)
 		active_projects = [ ctx.game_projects()[0] ]
-	else: 																						# Else only use projects for current spec
+	else: # Only use projects for current spec
 		active_projects = ctx.spec_game_projects()
 		
-	for project in active_projects:
-		kw_per_launcher['idx'] 				= kw['idx'] + (1000 * (ctx.project_idx(project) + 1));		
-				
-		kw_per_launcher['use'] 				= list(kw['use'])
-		kw_per_launcher['lib'] 				= list(kw['lib'])
-		kw_per_launcher['libpath'] 		= list(kw['libpath'])
-		kw_per_launcher['linkflags'] 	= list(kw['linkflags'])
+	orig_target = kw['target']
+	counter = 1
+	num_active_projects = len(active_projects)
+	for project in active_projects:		
+		
+		kw_per_launcher = kw if counter == num_active_projects else copy.deepcopy(kw)
+		kw_per_launcher['target'] = orig_target if num_active_projects == 1 else kw_per_launcher['target'] + '_' + project
+		ctx.set_spec_modules_name_alias(orig_target, kw_per_launcher['target'])
+		
+		# Initialize the Task Generator
+		InitializeTaskGenerator(ctx, kw_per_launcher)	
+					
+		# Setup TaskGenerator specific settings	
+		set_cryengine_flags(ctx, kw_per_launcher)
+		SetupRunTimeLibraries(ctx,kw_per_launcher)	
+		
+		ConfigureTaskGenerator(ctx, kw_per_launcher)
+		
+		if not BuildTaskGenerator(ctx, kw):
+			return
+	
+		kw_per_launcher['idx'] = kw_per_launcher['idx'] + (1000 * (ctx.project_idx(project) + 1));		
 		
 		# Setup values for Launcher Projects
-		kw_per_launcher['features'] 				+= [ 'generate_rc_file' ]	
+		kw_per_launcher['features'] 			+= [ 'generate_rc_file' ]	
 		kw_per_launcher['is_launcher'] 			= True
 		kw_per_launcher['resource_path'] 		= ctx.launch_node().make_node(ctx.game_code_folder(project) + '/Resources')
 		kw_per_launcher['project_name'] 		= project
-		kw_per_launcher['output_file_name'] 	= ctx.get_executable_name( project )
+		kw_per_launcher['output_file_name'] 	= ctx.get_executable_name(project)		
 		
-		if _is_monolithic_build(ctx, kw['target']):	
+		if _is_monolithic_build(ctx, kw_per_launcher['target']):	
 			kw_per_launcher['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]
 			kw_per_launcher['features'] += [ 'apply_monolithic_build_settings' ]
-					
-		ctx.program(*k, **kw_per_launcher)	
+		
+		ctx.program(*k, **kw_per_launcher)
+		counter += 1
 	
 	
 ###############################################################################
@@ -1054,49 +1068,62 @@ def CryLauncher(ctx, *k, **kw):
 def CryDedicatedServer(ctx, *k, **kw):
 	"""	
 	Wrapper for CryEngine Dedicated Servers
-	"""
-	# Initialize the Task Generator
-	InitializeTaskGenerator(ctx, kw)	
-
-	# Setup TaskGenerator specific settings	
-	set_cryengine_flags(ctx, kw)
-	SetupRunTimeLibraries(ctx,kw)
-	kw.setdefault('win_linkflags', []).extend(['/SUBSYSTEM:WINDOWS'])
-	
-	ConfigureTaskGenerator(ctx, kw)
+	"""	
+	if not ctx.env['PLATFORM']:
+		if not BuildTaskGenerator(ctx, kw):
+			# Initialize the Task Generator
+			InitializeTaskGenerator(ctx, kw)	
 		
-	if not BuildTaskGenerator(ctx, kw):
-		return
-					
-	# Copy kw dict and some internal values to prevent overwriting settings in one launcher from another
-	kw_per_launcher = dict(kw)
+			# Setup TaskGenerator specific settings	
+			set_cryengine_flags(ctx, kw)
+			SetupRunTimeLibraries(ctx,kw)
+			kw.setdefault('win_linkflags', []).extend(['/SUBSYSTEM:WINDOWS'])
+			
+			ConfigureTaskGenerator(ctx, kw)
+			return
 	
 	# Create multiple projects for each Launcher, based on the number of active projects in the current spec
 	if ctx.env['PLATFORM'] == 'project_generator': 	# For the project generator, just use the first project (doesnt matter which project)
 		active_projects = [ ctx.game_projects()[0] ]
-	else: 																						# Else only use projects for current spec
+	else: #  Only use projects for current spec
 		active_projects = ctx.spec_game_projects()
-		
-	for project in active_projects:
+
+	orig_target = kw['target']
+	counter = 1
+	num_active_projects = len(active_projects)
+	for project in active_projects:	
 	
-		kw_per_launcher['idx'] 				= kw['idx'] + (1000 * (ctx.project_idx(project) + 1));		
+		kw_per_launcher = kw if counter == num_active_projects else copy.deepcopy(kw)
+		kw_per_launcher['target'] = orig_target if num_active_projects == 1 else kw_per_launcher['target'] + '_' + project
+		ctx.set_spec_modules_name_alias(orig_target, kw_per_launcher['target'])
 		
-		kw_per_launcher['use'] 				= list(kw['use'])
-		kw_per_launcher['lib'] 				= list(kw['lib'])
-		kw_per_launcher['libpath'] 		= list(kw['libpath'])
-		kw_per_launcher['linkflags'] 	= list(kw['linkflags'])
+		# Initialize the Task Generator
+		InitializeTaskGenerator(ctx, kw_per_launcher)	
+	
+		# Setup TaskGenerator specific settings	
+		set_cryengine_flags(ctx, kw_per_launcher)
+		SetupRunTimeLibraries(ctx,kw_per_launcher)
+		kw_per_launcher.setdefault('win_linkflags', []).extend(['/SUBSYSTEM:WINDOWS'])
 		
-		kw_per_launcher['features'] 						+= [ 'generate_rc_file' ]
-		kw_per_launcher['is_dedicated_server']	 = True
+		ConfigureTaskGenerator(ctx, kw_per_launcher)
+		
+		if not BuildTaskGenerator(ctx, kw):
+			return
+		
+		kw_per_launcher['idx'] = kw_per_launcher['idx'] + (1000 * (ctx.project_idx(project) + 1));		
+		
+		kw_per_launcher['features'] 					+= [ 'generate_rc_file' ]
+		kw_per_launcher['is_dedicated_server']			= True
 		kw_per_launcher['resource_path'] 				= ctx.launch_node().make_node(ctx.game_code_folder(project) + '/Resources')
 		kw_per_launcher['project_name'] 				= project
 		kw_per_launcher['output_file_name'] 			= ctx.get_dedicated_server_executable_name( project )
 		
-		if _is_monolithic_build(ctx, kw['target']):
+		if _is_monolithic_build(ctx, kw_per_launcher['target']):
 			kw_per_launcher['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]
 			kw_per_launcher['features'] += [ 'apply_monolithic_build_settings' ]
 
 		ctx.program(*k, **kw_per_launcher)
+		counter += 1
 	
 ###############################################################################
 @conf

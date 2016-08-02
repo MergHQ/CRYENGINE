@@ -120,9 +120,9 @@ def get_dedicated_server_product_name(self, game_project):
 #############################################################################	
 @conf
 def get_product_name(self, target, game_project):		
-	if target == 'WindowsLauncher' or target == 'OrbisLauncher' or target == 'DurangoLauncher':
+	if target.startswith('WindowsLauncher') or target.startswith('OrbisLauncher') or target.startswith('DurangoLauncher'):
 		return self.get_launcher_product_name(game_project)
-	elif target == 'DedicatedLauncher':
+	elif target.startswith('DedicatedLauncher'):
 		return self.get_dedicated_server_product_name(game_project)
 	else:
 		return target

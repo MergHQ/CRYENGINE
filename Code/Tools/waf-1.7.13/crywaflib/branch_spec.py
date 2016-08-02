@@ -192,6 +192,14 @@ def _spec_entry_as_dict(ctx, entry, spec_name = None, platform = None, configura
 	res.setdefault(entry, []).extend(_to_list( spec_dict.get(entry, []) ))
 	res[entry] = _preserved_order_remove_duplicates(res[entry])
 	return res
+	
+# Allow a module to have an alias. This is usefull when building multiple projects at once where e.g. the WindowsLauncher is build for multiple game projects
+spec_modules_name_alias = {}
+@conf
+def set_spec_modules_name_alias(ctx, module_name, module_name_alias):
+	alias_list = spec_modules_name_alias.setdefault(module_name, [])	
+	if module_name_alias not in alias_list and not module_name == module_name_alias:	
+		alias_list.extend([module_name_alias])
 
 @conf	
 def spec_features(ctx, spec_name = None, platform = None, configuration = None):
@@ -201,8 +209,15 @@ def spec_features(ctx, spec_name = None, platform = None, configuration = None):
 @conf	
 def spec_modules(ctx, spec_name = None, platform = None, configuration = None):
 	""" Get all a list of all modules needed for this spec """
-	return _spec_entry_as_single_list(ctx, 'modules', spec_name, platform, configuration)	
-
+	modules = _spec_entry_as_single_list(ctx, 'modules', spec_name, platform, configuration)
+	
+	# Add module alias names to list
+	for module, module_alias in spec_modules_name_alias.iteritems():
+		if module in modules:
+			modules.extend(module_alias)
+	
+	return modules
+	
 @conf	
 def spec_game_projects(ctx, spec_name = None, platform = None, configuration = None):
 	""" get a list of all game projects in this spec """
