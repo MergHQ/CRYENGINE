@@ -2307,7 +2307,7 @@ struct I3DEngine : public IProcess
 		Vec4 arrPortalsPos[SVO_MAX_PORTALS];
 		Vec4 arrPortalsDir[SVO_MAX_PORTALS];
 
-	#define SVO_MAX_ANALYTICAL_OCCLUDERS 64
+	#define SVO_MAX_ANALYTICAL_OCCLUDERS 48
 		SAnalyticalOccluder arrAnalyticalOccluders[2][SVO_MAX_ANALYTICAL_OCCLUDERS];
 
 		Vec3                vSkyColorTop;

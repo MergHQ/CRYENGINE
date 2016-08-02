@@ -755,7 +755,8 @@ int CObjManager::ComputeDissolve(const CLodValue &lodValueIn, IRenderNode* pEnt,
 	prevLodLastTimeUsed = max(prevLodLastTimeUsed, GetCurTimeSec() - GetCVars()->e_LodTransitionTime);
 
 	// Compute also max view distance fading
-	float fDistFadeRef = SATURATE(min(fEntDistance / pEnt->m_fWSMaxViewDist * 5.f - 4.f, fEntDistance - (pEnt->m_fWSMaxViewDist - 1.f)));
+	const float fDistFadeInterval = 2.f;
+	float fDistFadeRef = SATURATE(min(fEntDistance / pEnt->m_fWSMaxViewDist * 5.f - 4.f, ((fEntDistance - pEnt->m_fWSMaxViewDist) / fDistFadeInterval + 1.f)));
 
 	int nLodsNum = 0;
 
