@@ -53,17 +53,9 @@ public:
 		return reinterpret_cast<CDeviceComputeCommandInterfaceImpl*>(this);
 	}
 
-	inline void SetProfilerMarker(const char* label)
-	{
-	}
-
-	inline void BeginProfilerEvent(const char* label)
-	{
-	}
-
-	inline void EndProfilerEvent()
-	{
-	}
+	void SetProfilerMarker(const char* label);
+	void BeginProfilerEvent(const char* label);
+	void EndProfilerEvent(const char* label);
 
 protected:
 	void ResetImpl();

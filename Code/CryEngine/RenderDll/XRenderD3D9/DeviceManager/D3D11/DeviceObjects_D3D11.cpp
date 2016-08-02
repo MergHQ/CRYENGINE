@@ -549,6 +549,21 @@ bool CDeviceTimestampGroup::ResolveTimestamps()
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CDeviceCommandListImpl::SetProfilerMarker(const char* label)
+{
+	PROFILE_LABEL_GPU(label);
+}
+
+void CDeviceCommandListImpl::BeginProfilerEvent(const char* label)
+{
+	PROFILE_LABEL_PUSH_GPU(label);
+}
+
+void CDeviceCommandListImpl::EndProfilerEvent(const char* label)
+{
+	PROFILE_LABEL_POP_GPU(label);
+}
+
 void CDeviceCommandListImpl::ResetImpl()
 {
 	const uint8 InvalidShaderPointer = (uint8)(uint64)CDeviceResourceSet_DX11::InvalidPointer;

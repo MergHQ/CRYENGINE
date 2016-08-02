@@ -23,13 +23,14 @@ CSceneRenderPass::CSceneRenderPass()
 		m_pColorTargets[i] = nullptr;
 }
 
-void CSceneRenderPass::SetupPassContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter)
+void CSceneRenderPass::SetupPassContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter, ERenderListID renderList)
 {
 	assert(stageID < MAX_PIPELINE_SCENE_STAGES);
 	m_stageID = stageID;
 	m_passID = stagePassID;
 	m_technique = technique;
 	m_batchFilter = filter;
+	m_renderList = renderList;
 }
 
 void CSceneRenderPass::SetPassResources(CDeviceResourceLayoutPtr pResourceLayout, CDeviceResourceSetPtr pPerPassResources)
@@ -197,15 +198,11 @@ void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_RE
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
 	pCommandInterface->PrepareRenderTargetsForUse(targetCount, m_pColorTargets, m_pDepthTarget);
 	pCommandInterface->PrepareResourcesForUse(EResourceLayoutSlot_PerPassRS, m_pPerPassResources.get(), EShaderStage_AllWithoutCompute);
-
-	m_profilingStats.Reset();
 }
 
 void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
-	// Todo: Enable merging of different label of the same group, eg. ZPREPASS[0] + ZPREPASS[1] => ZPREPASS
-	// if (m_szLabel) { PROFILE_LABEL_PUSH(m_szLabel); }
 
 #if defined(ENABLE_PROFILING_CODE)
 	commandList.BeginProfilingSection();
@@ -221,6 +218,7 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 	commandList.Reset();
 
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
+	pCommandInterface->BeginProfilerEvent(m_szLabel);
 	pCommandInterface->SetRenderTargets(targetCount, m_pColorTargets, m_pDepthTarget);
 	pCommandInterface->SetViewports(1, &GetViewport(m_bNearestViewport));
 	pCommandInterface->SetScissorRects(1, &m_scissorRect);
@@ -231,14 +229,13 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
-	// Todo: Enable merging of different label of the same group, eg. ZPREPASS[0] + ZPREPASS[1] => ZPREPASS
-	// if (m_szLabel) { PROFILE_LABEL_POP(m_szLabel); }
+
+	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
+	pCommandInterface->EndProfilerEvent(m_szLabel);
 
 #if defined(ENABLE_PROFILING_CODE)
-	m_profilingStats.Merge(commandList.EndProfilingSection());
+	gcpRendD3D->AddRecordedProfilingStats(commandList.EndProfilingSection(), m_renderList);
 #endif
-
-	// Nothing to cleanup at the moment
 }
 
 void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart, int listEnd, int profilingListID)
@@ -276,9 +273,4 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 	{
 		DrawRenderItems_GP2(passContext);
 	}
-
-	// Transfer to legacy renderer stats. TODO: fix for r_multithreadedDrawing>0 and recording to multiple command lists
-#ifdef ENABLE_PROFILING_CODE
-	gcpRendD3D->AddRecordedProfilingStats(m_profilingStats, ERenderListID(rp.m_nPassGroupID));
-#endif
 }
