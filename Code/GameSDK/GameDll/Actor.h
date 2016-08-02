@@ -473,7 +473,7 @@ public:
 
 	virtual void SelectNextItem(int direction, bool keepHistory, int category=0);
 	virtual void SwitchToWeaponWithAccessoryFireMode();
-	virtual void HolsterItem(bool holster, bool playSelect = true, float selectSpeedBias = 1.0f, bool hideLeftHandObject = true);
+	virtual void HolsterItem(bool holster, bool playSelect = true, float selectSpeedBias = 1.0f, bool hideLeftHandObject = true) override;
 	virtual void SelectLastItem(bool keepHistory, bool forceNext = false);
 	virtual void SelectItemByName(const char *name, bool keepHistory, bool forceFastSelect=false);
 	virtual void SelectItem(EntityId itemId, bool keepHistory, bool forceSelect);
@@ -490,7 +490,7 @@ public:
 
 	virtual bool UseItem(EntityId itemId);
 	virtual bool PickUpItem(EntityId itemId, bool sound, bool select);
-	virtual bool DropItem(EntityId itemId, float impulseScale=1.0f, bool selectNext=true, bool byDeath=false);
+	virtual bool DropItem(EntityId itemId, float impulseScale=1.0f, bool selectNext=true, bool byDeath=false) override;
 	virtual void DropAttachedItems();
 	void ExchangeItem(CItem* pCurrentItem, CItem* pNewItem);
 	void ServerExchangeItem(CItem* pCurrentItem, CItem* pNewItem);
@@ -509,8 +509,8 @@ public:
 
 	virtual bool CanRagDollize() const;
 
-	virtual bool IsStillWaitingOnServerUseResponse() const {return m_bAwaitingServerUseResponse;}; 
-	virtual void SetStillWaitingOnServerUseResponse(bool waiting);
+	virtual bool IsStillWaitingOnServerUseResponse() const override {return m_bAwaitingServerUseResponse;}
+	virtual void SetStillWaitingOnServerUseResponse(bool waiting) override;
 	void UpdateServerResponseTimeOut( const float frameTime );
 
 	void OnHostMigrationCompleted(); 
@@ -520,68 +520,68 @@ public:
 	virtual ~CActor();
 
 	// IEntityEvent
-	virtual	void ProcessEvent( SEntityEvent &event );
-	virtual IComponent::ComponentEventPriority GetEventPriority( const int eventID ) const;
+	virtual	void ProcessEvent( SEntityEvent &event ) override;
+	virtual IComponent::ComponentEventPriority GetEventPriority( const int eventID ) const override;
 	// ~IEntityEvent
 
 	// IActor
-	virtual void Release();
-	virtual void ResetAnimationState();
-	virtual bool NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile, int flags );
-	virtual void PostSerialize();
-	virtual void SetChannelId(uint16 id);
-	virtual void  SerializeLevelToLevel( TSerialize &ser );
-	virtual IInventory* GetInventory() const;
-	virtual void NotifyCurrentItemChanged(IItem* newItem) {};
+	virtual void Release() override;
+	virtual void ResetAnimationState() override;
+	virtual bool NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile, int flags ) override;
+	virtual void PostSerialize() override;
+	virtual void SetChannelId(uint16 id) override;
+	virtual void  SerializeLevelToLevel( TSerialize &ser ) override;
+	virtual IInventory* GetInventory() const override;
+	virtual void NotifyCurrentItemChanged(IItem* newItem) override {}
 
-	virtual bool IsPlayer() const;
-	virtual bool IsClient() const;
-	virtual bool IsMigrating() const { return m_isMigrating; }
-	virtual void SetMigrating(bool isMigrating) { m_isMigrating = isMigrating; }
+	virtual bool IsPlayer() const override;
+	virtual bool IsClient() const override;
+	virtual bool IsMigrating() const override { return m_isMigrating; }
+	virtual void SetMigrating(bool isMigrating) override { m_isMigrating = isMigrating; }
 
-	virtual bool Init( IGameObject * pGameObject );
-	virtual void InitClient( int channelId );
-	virtual void PostInit( IGameObject * pGameObject );
-	virtual void PostInitClient(int channelId) {};
-	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params );
-	virtual void PostReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params );
-	virtual bool GetEntityPoolSignature( TSerialize signature );
-	virtual void Update(SEntityUpdateContext& ctx, int updateSlot);
-	virtual void UpdateView(SViewParams &viewParams) {};
-	virtual void PostUpdateView(SViewParams &viewParams) {};
+	virtual bool Init( IGameObject * pGameObject ) override;
+	virtual void InitClient( int channelId ) override;
+	virtual void PostInit( IGameObject * pGameObject ) override;
+	virtual void PostInitClient(int channelId) override {}
+	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
+	virtual void PostReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
+	virtual bool GetEntityPoolSignature( TSerialize signature ) override;
+	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;
+	virtual void UpdateView(SViewParams &viewParams) override {}
+	virtual void PostUpdateView(SViewParams &viewParams) override {}
 	void UpdateBodyDestruction(float frameTime);
 	virtual void ReadDataFromXML(bool isReloading = false);
 
-	virtual void InitLocalPlayer() {};
+	virtual void InitLocalPlayer() override {}
 
-	virtual void SetIKPos(const char *pLimbName, const Vec3& goalPos, int priority);
+	virtual void SetIKPos(const char *pLimbName, const Vec3& goalPos, int priority) override;
 
-	virtual void HandleEvent( const SGameObjectEvent& event );
-	virtual void PostUpdate(float frameTime);
-	virtual void PostRemoteSpawn() {};
+	virtual void HandleEvent( const SGameObjectEvent& event ) override;
+	virtual void PostUpdate(float frameTime) override;
+	virtual void PostRemoteSpawn() override {}
 
-	virtual bool IsThirdPerson() const { return true; };
-	virtual void ToggleThirdPerson(){}
+	virtual bool IsThirdPerson() const override { return true; }
+	virtual void ToggleThirdPerson() override {}
 
 
-	virtual void RequestFacialExpression(const char* pExpressionName /* = NULL */, f32* sequenceLength = NULL);
-	virtual void PrecacheFacialExpression(const char* pExpressionName);
+	virtual void RequestFacialExpression(const char* pExpressionName /* = NULL */, f32* sequenceLength = NULL) override;
+	virtual void PrecacheFacialExpression(const char* pExpressionName) override;
 
 	virtual void NotifyInventoryAmmoChange(IEntityClass* pAmmoClass, int amount);
-	virtual EntityId	GetGrabbedEntityId() const { return 0; }
+	virtual EntityId	GetGrabbedEntityId() const override { return 0; }
 
-	virtual void HideAllAttachments(bool isHiding);
+	virtual void HideAllAttachments(bool isHiding) override;
 
-	virtual void OnAIProxyEnabled(bool enabled);
-	virtual void OnReturnedToPool() {};
-	virtual void OnPreparedFromPool() {};
+	virtual void OnAIProxyEnabled(bool enabled) override;
+	virtual void OnReturnedToPool() override {}
+	virtual void OnPreparedFromPool() override {}
 
-	virtual void OnReused(IEntity *pEntity, SEntitySpawnParams &params);
+	virtual void OnReused(IEntity *pEntity, SEntitySpawnParams &params) override;
 	// ~IActor
 
 	// IGameObjectProfileManager
-	virtual bool SetAspectProfile( EEntityAspects aspect, uint8 profile );
-	virtual uint8 GetDefaultProfile( EEntityAspects aspect ) { return aspect == eEA_Physics? eAP_NotPhysicalized : 0; }
+	virtual bool SetAspectProfile( EEntityAspects aspect, uint8 profile ) override;
+	virtual uint8 GetDefaultProfile( EEntityAspects aspect ) override { return aspect == eEA_Physics? eAP_NotPhysicalized : 0; }
 	// ~IGameObjectProfileManager
 
 	// IActionListener
@@ -599,9 +599,9 @@ public:
 	ILINE float GetInertiaAccel() const { return m_inertiaAccel; }
 	ILINE float GetTimeImpulseRecover() const { return m_timeImpulseRecover; };
 
-	virtual void SetViewRotation( const Quat &rotation ) {};
-	virtual Quat GetViewRotation() const { return GetEntity()->GetRotation(); };
-	virtual void EnableTimeDemo( bool bTimeDemo ) {};
+	virtual void SetViewRotation( const Quat &rotation ) override {}
+	virtual Quat GetViewRotation() const override { return GetEntity()->GetRotation(); }
+	virtual void EnableTimeDemo( bool bTimeDemo ) override {}
 
 	// offset to add to the computed camera angles every frame
 	virtual void AddViewAngleOffsetForFrame(const Ang3 &offset);
@@ -617,7 +617,7 @@ public:
 	virtual void RagDollize( bool fallAndPlay ) {}
 	void ShutDown();
 	//
-  virtual int IsGod(){ return 0; }
+	virtual int IsGod() override { return 0; }
 
 	//reset function clearing state and animations for teleported actor
 	virtual void OnTeleported() {}
@@ -635,11 +635,11 @@ public:
 
 	virtual void SetSpectatorModeAndOtherEntId(const uint8 _mode, const EntityId _othEntId, bool isSpawning=false) {};
 
-	virtual uint8 GetSpectatorMode() const { return 0; };
-	virtual void SetSpectatorTarget(EntityId targetId) {};
-	virtual EntityId GetSpectatorTarget() const { return 0; };
-	virtual void SetSpectatorFixedLocation(EntityId locId) {};
-	virtual EntityId GetSpectatorFixedLocation() const { return 0; };
+	virtual uint8 GetSpectatorMode() const override { return 0; }
+	virtual void SetSpectatorTarget(EntityId targetId) {}
+	virtual EntityId GetSpectatorTarget() const { return INVALID_ENTITYID; }
+	virtual void SetSpectatorFixedLocation(EntityId locId) {}
+	virtual EntityId GetSpectatorFixedLocation() const { return INVALID_ENTITYID; }
 
 	//get actor status
 	virtual SActorStats *GetActorStats() { return 0; };
@@ -661,33 +661,33 @@ public:
 	virtual void SetParamsFromLua(SmartScriptTable &rTable);
 	//
 	virtual void Freeze(bool freeze) {};
-	virtual void Fall(Vec3 hitPos = Vec3(0,0,0));
+	virtual void Fall(Vec3 hitPos = Vec3(0,0,0)) override;
 	void Fall(const HitInfo& hitInfo);
 	virtual void KnockDown(float backwardsImpulse);
 
-  virtual void SetLookAtTargetId(EntityId targetId, float interpolationTime=1.f);
-  virtual void SetForceLookAtTargetId(EntityId targetId, float interpolationTime=1.f);
+	virtual void SetLookAtTargetId(EntityId targetId, float interpolationTime=1.f);
+	virtual void SetForceLookAtTargetId(EntityId targetId, float interpolationTime=1.f);
 
 	virtual void StandUp();
-	virtual bool IsFallen() const;
-	virtual bool IsDead() const;
+	virtual bool IsFallen() const override;
+	virtual bool IsDead() const override;
 
 	//
-	virtual IEntity *LinkToVehicle(EntityId vehicleId);
-	virtual void LinkToMountedWeapon(EntityId weaponId) {};
+	virtual IEntity* LinkToVehicle(EntityId vehicleId) override;
+	virtual void LinkToMountedWeapon(EntityId weaponId) {}
 	virtual IEntity *LinkToEntity(EntityId entityId, bool bKeepTransformOnDetach=true);
 	virtual void StartInteractiveAction(EntityId entityId, int interactionIndex = 0);
 	virtual void StartInteractiveActionByName(const char* interaction, bool bUpdateVisibility, float actionSpeed = 1.0f);
 	virtual void EndInteractiveAction(EntityId entityId);
 	
-	virtual bool	AllowLandingBob() { return true; }
+	virtual bool AllowLandingBob() override { return true; }
 	
-	virtual IEntity *GetLinkedEntity() const
+	virtual IEntity* GetLinkedEntity() const override
 	{
 		return m_linkStats.GetLinked();
 	}
 
-	virtual IVehicle *GetLinkedVehicle() const
+	virtual IVehicle* GetLinkedVehicle() const override
 	{
 		return m_linkStats.GetLinkedVehicle();
 	}
@@ -707,7 +707,7 @@ public:
 		return actorParams.lookIKLayer;
 	}
 
-	virtual void SetViewInVehicle(Quat viewRotation) {};
+	virtual void SetViewInVehicle(Quat viewRotation) override {}
 
 	virtual void SupressViewBlending() {};
 
@@ -723,17 +723,17 @@ public:
 	}
 
 	//for animations
-	virtual void PlayAction(const char *action,const char *extension, bool looping=false) {};
+	virtual void PlayAction(const char *action,const char *extension, bool looping=false) override {}
 	//
 	virtual void SetMovementTarget(const Vec3 &position,const Vec3 &looktarget,const Vec3 &up,float speed) {};
 	//
-	virtual void CreateScriptEvent(const char *event,float value,const char *str = NULL);
+	virtual void CreateScriptEvent(const char *event,float value,const char *str = NULL) override;
 	virtual bool CreateCodeEvent(SmartScriptTable &rTable);
 	virtual void AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInstance &event);
 
 	virtual void SetTurnAnimationParams(const float turnThresholdAngle, const float turnThresholdTime);
 
-	virtual void CameraShake(float angle,float shift,float duration,float frequency,Vec3 pos,int ID,const char* source="") {};
+	virtual void CameraShake(float angle,float shift,float duration,float frequency,Vec3 pos,int ID,const char* source="") override {}
 	//
 	virtual void SetAngles(const Ang3 &angles) {};
 	virtual Ang3 GetAngles() {return Ang3(0,0,0);};
@@ -741,22 +741,22 @@ public:
 	//
 	virtual void SetViewLimits(Vec3 dir,float rangeH,float rangeV) {};
 	virtual void DamageInfo(EntityId shooterID, EntityId weaponID, IEntityClass *pProjectileClass, float damage, int damageType, const Vec3 hitDirection);
-	virtual IAnimatedCharacter * GetAnimatedCharacter() { return m_pAnimatedCharacter; }
-	virtual const IAnimatedCharacter * GetAnimatedCharacter() const { return m_pAnimatedCharacter; }
-	virtual void PlayExactPositioningAnimation( const char* sAnimationName, bool bSignal, const Vec3& vPosition, const Vec3& vDirection, float startWidth, float startArcAngle, float directionTolerance ) {}
-	virtual void CancelExactPositioningAnimation() {}
-	virtual void PlayAnimation( const char* sAnimationName, bool bSignal ) {}
+	virtual IAnimatedCharacter* GetAnimatedCharacter() override { return m_pAnimatedCharacter; }
+	virtual const IAnimatedCharacter* GetAnimatedCharacter() const override { return m_pAnimatedCharacter; }
+	virtual void PlayExactPositioningAnimation( const char* sAnimationName, bool bSignal, const Vec3& vPosition, const Vec3& vDirection, float startWidth, float startArcAngle, float directionTolerance ) override {}
+	virtual void CancelExactPositioningAnimation() override {}
+	virtual void PlayAnimation( const char* sAnimationName, bool bSignal ) override {}
 	virtual EntityId GetCurrentTargetEntityId() const { return 0; }
 	virtual const Vec3 * GetCurrentTargetPos() const { return NULL; }
 
-	virtual void  SetMaxHealth( float maxHealth );
-	virtual float GetMaxHealth() const { return m_health.GetHealthMax(); }
-	virtual void  SetHealth( float health );
-	virtual float GetHealth() const { return m_health.GetHealth(); }
-	virtual int   GetHealthAsRoundedPercentage() const { return m_health.GetHealthAsRoundedPercentage(); }
-	virtual int32 GetArmor() const { return 0; }
-	virtual int32 GetMaxArmor() const { return 0; }
-	virtual int   GetTeamId() const { return m_teamId; }
+	virtual void  SetMaxHealth( float maxHealth ) override;
+	virtual float GetMaxHealth() const override { return m_health.GetHealthMax(); }
+	virtual void  SetHealth( float health ) override;
+	virtual float GetHealth() const override { return m_health.GetHealth(); }
+	virtual int   GetHealthAsRoundedPercentage() const override { return m_health.GetHealthAsRoundedPercentage(); }
+	virtual int32 GetArmor() const override { return 0; }
+	virtual int32 GetMaxArmor() const override { return 0; }
+	virtual int   GetTeamId() const override { return m_teamId; }
 	virtual void Kill();
 
 	void ImmuneToForbiddenZone(const bool immune);
@@ -816,7 +816,7 @@ public:
 		return m_boneTrans[ID];
 	}
 
-	virtual Vec3 GetLocalEyePos() const;
+	virtual Vec3 GetLocalEyePos() const override;
 	QuatT GetCameraTran() const;
 	QuatT GetHUDTran() const;
 
@@ -840,7 +840,7 @@ public:
 	void CreateIKLimb(const SActorIKLimbInfo &limbInfo);
 
 	//
-	virtual IMovementController * GetMovementController() const
+	virtual IMovementController* GetMovementController() const override
 	{
 		return m_pMovementController;
 	}
@@ -868,13 +868,13 @@ public:
 	};
 	virtual void SetCloakLayer(bool set, eFadeRules config = eAllowFades);
 	
-	IAnimationGraphState * GetAnimationGraphState();
-	void SetFacialAlertnessLevel(int alertness);
+	IAnimationGraphState* GetAnimationGraphState() override;
+	void SetFacialAlertnessLevel(int alertness) override;
 
 	//weapons
-	virtual IItem *GetCurrentItem(bool includeVehicle=false) const;
+	virtual IItem* GetCurrentItem(bool includeVehicle=false) const override;
 	EntityId GetCurrentItemId(bool includeVehicle=false) const;
-	virtual IItem *GetHolsteredItem() const;
+	virtual IItem* GetHolsteredItem() const override;
 	EntityId GetHolsteredItemId() const;
 	void ProceduralRecoil( float duration, float kinematicImpact, float kickIn/*=0.8f*/, int arms = 0/*0=both, 1=right, 2=left*/);
 
@@ -885,7 +885,7 @@ public:
 	EntityId NetGetScheduledItem() const;
 	void NetSetScheduledItem(EntityId id);
 
-	virtual void SwitchDemoModeSpectator(bool activate) {};	//this is a player only function
+	virtual void SwitchDemoModeSpectator(bool activate) override {} //this is a player only function
 
 	//Body damage / destruction
 	ILINE TBodyDamageProfileId GetCurrentBodyDamageProfileId() const { return (m_OverrideBodyDamageProfileId != INVALID_BODYDAMAGEPROFILEID) ? m_OverrideBodyDamageProfileId : m_DefaultBodyDamageProfileId; }
@@ -911,13 +911,13 @@ public:
 	void ProcessDestructiblesOnExplosion(const HitInfo& hitInfo, const float previousHealth, const float newHealth);
 
 	//misc
-	virtual const char* GetActorClassName() const { return "CActor"; };
+	virtual const char* GetActorClassName() const override { return "CActor"; }
 	const IItemParamsNode* GetActorParamsNode() const;
 	
 	static  ActorClass GetActorClassType() { return (ActorClass)eActorClass_Actor; }
-	virtual ActorClass GetActorClass() const { return (ActorClass)eActorClass_Actor; };
+	virtual ActorClass GetActorClass() const override { return (ActorClass)eActorClass_Actor; }
 
-	virtual const char* GetEntityClassName() const { return GetEntity()->GetClass()->GetName(); }
+	virtual const char* GetEntityClassName() const override { return GetEntity()->GetClass()->GetName(); }
 	const IItemParamsNode* GetEntityClassParamsNode() const;
 	static const char DEFAULT_ENTITY_CLASS_NAME[];
 
@@ -929,7 +929,7 @@ public:
 
   virtual void DumpActorInfo();
 
-	virtual bool IsFriendlyEntity(EntityId entityId, bool bUsingAIIgnorePlayer = true) const;
+	virtual bool IsFriendlyEntity(EntityId entityId, bool bUsingAIIgnorePlayer = true) const override;
 	virtual float GetReloadSpeedScale() const { return 1.0f; }
 	virtual float GetOverchargeDamageScale() const  { return 1.0f; }
 
@@ -942,11 +942,11 @@ public:
 	bool CanPickupItems() const { return m_enablePickupItems; }
 	
 	virtual void BecomeRemotePlayer();
-	virtual bool BecomeAggressiveToAgent(EntityId entityID);
+	virtual bool BecomeAggressiveToAgent(EntityId entityID) override;
 
 	ILINE uint8 GetNetPhysCounter() { return m_netPhysCounter; }
 
-	virtual void GetMemoryUsage( ICrySizer * pSizer ) const;
+	virtual void GetMemoryUsage( ICrySizer * pSizer ) const override;
 	void GetInternalMemoryUsage( ICrySizer * pSizer ) const;
 	
 	static bool LoadFileModelInfo(SmartScriptTable pEntityTable, SmartScriptTable pProperties, SActorFileModelInfo &outFileModelInfo);
@@ -994,7 +994,7 @@ public:
 	void RequestChangeSpectatorStatus(bool spectate);
 	void OnSpectateModeStatusChanged(bool spectate);
 
-	virtual bool ShouldMuteWeaponSoundStimulus() const { return false; }
+	virtual bool ShouldMuteWeaponSoundStimulus() const override { return false; }
 
 	void OnFall(const HitInfo& hitInfo);
 
