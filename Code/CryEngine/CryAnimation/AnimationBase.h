@@ -75,6 +75,7 @@ extern DynArray<string> g_DataMismatch;
 extern SParametricSamplerInternal* g_parametricPool;
 extern bool* g_usedParametrics;
 extern int32 g_totalParametrics;
+extern uint32 g_DefaultTransitionInterpolationType;
 
 #define g_AnimationManager g_pCharacterManager->GetAnimationManager()
 

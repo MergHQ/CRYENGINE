@@ -665,10 +665,9 @@ void CSkeletonAnim::Commands_LPlayback(const CAnimation& rAnim, uint32 nTargetBu
 	const f32 w0 = rAnim.GetTransitionWeight(); //this is a percentage value between 0-1
 	const f32 w1 = rAnim.GetPlaybackWeight();   //this is a percentage value between 0-1
 	const f32 w2 = weightFactor;
-	const f32 w3 = m_layers[nVLayer].m_transitionQueue.m_fLayerTransitionWeight;
-	const f32 w4 = m_layers[nVLayer].m_transitionQueue.m_fLayerBlendWeight;
-	const f32 combinedWeight = w0 * w1 * w2 * w3 * w4; //this is a percentage value between 0-1
-
+	const f32 w3 = m_layers[nVLayer].m_transitionQueue.m_fLayerBlendWeight;
+	const f32 combinedWeight = w0*w1*w2*w3; //this is a percentage value between 0-1
+	
 	Command::SampleAddAnimPart* ac = buffer.CreateCommand<Command::SampleAddAnimPart>();
 	ac->m_TargetBuffer = nTargetBuffer;
 	ac->m_SourceBuffer = nSourceBuffer;

@@ -69,6 +69,10 @@ bool CSkeletonAnim::StartAnimationById(int32 id, const struct CryCharAnimationPa
 	}
 
 	//----------------------------------------------------------------------------
+	
+	AnimPrams.m_nInterpolationType = CA_Interpolation_Type(g_DefaultTransitionInterpolationType);
+
+	//----------------------------------------------------------------------------
 
 	uint32 nDisableMultilayer = AnimPrams.m_nFlags & CA_DISABLE_MULTILAYER;
 	if (nDisableMultilayer)
@@ -491,7 +495,8 @@ uint32 CSkeletonAnim::AnimationToQueue(const ModelAnimationHeader* pAnim, int nA
 	AnimOnStack.m_fAnimTimePrev[0] = AnimOnStack.m_fStartTime;
 	AnimOnStack.m_fTransitionTime = max(0.0f, AnimParams.m_fTransTime);         //transition time between two animations. Negative values are not allowed
 	AnimOnStack.m_fTransitionPriority = 0.0f;
-	AnimOnStack.m_fTransitionWeight = 0.0f;
+	AnimOnStack.SetTransitionWeight(0.0f);
+	AnimOnStack.m_nInterpolationType = AnimParams.m_nInterpolationType;
 	AnimOnStack.m_fPlaybackScale = max(0.0f, AnimParams.m_fPlaybackSpeed);      // multiplier for animation-update. Negative values are not allowed
 	AnimOnStack.m_fPlaybackWeight = AnimParams.m_fPlaybackWeight;
 #if defined(USE_PROTOTYPE_ABS_BLENDING)

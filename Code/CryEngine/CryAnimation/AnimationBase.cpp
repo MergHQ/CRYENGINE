@@ -149,6 +149,7 @@ DynArray<string> g_DataMismatch;
 SParametricSamplerInternal* g_parametricPool = NULL;
 bool* g_usedParametrics = NULL;
 int32 g_totalParametrics = 0;
+uint32 g_DefaultTransitionInterpolationType = (uint32)CA_Interpolation_Type::QuadraticInOut;
 AABB g_IdentityAABB = AABB(ZERO, ZERO);
 
 CControllerDefragHeap g_controllerHeap;
