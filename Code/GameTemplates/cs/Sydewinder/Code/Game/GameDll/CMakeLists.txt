@@ -55,11 +55,7 @@ set (SourceGroup_Player
 source_group("Player" FILES ${SourceGroup_Player})
 
 set (SourceGroup_PlayerExtensions
-	"player/extensions/InputExtension.cpp"
-	"player/extensions/InputExtension.h"
 	"player/extensions/ISimpleExtension.h"
-	"player/extensions/MovementExtension.cpp"
-	"player/extensions/MovementExtension.h"
 	"player/extensions/ViewExtension.cpp"
 	"player/extensions/ViewExtension.h"
 )

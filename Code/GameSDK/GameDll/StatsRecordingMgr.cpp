@@ -1054,6 +1054,12 @@ void CStatsRecordingMgr::StartTrackingStats(
 
 		CryLog ("[STATS TRACKER] Start tracking stats for %s '%s'%s", pActor->GetEntity()->GetClass()->GetName(), pActor->GetEntity()->GetName(), pActor->m_telemetry.GetStatsTracker() ? " (WARNING: there are already stats for this actor)" : "");
 
+		// CE-9958: Unreproducible. The stats tracker seems not being properly removed for the killed player.
+		if (pActor->m_telemetry.GetStatsTracker())
+		{
+			return;
+		}
+
 		if (inActor->IsPlayer())
 		{
 			CRY_ASSERT_TRACE(!pActor->m_telemetry.GetStatsTracker(),("already tracking stats for player %s\n",inActor->GetEntity()->GetName()));

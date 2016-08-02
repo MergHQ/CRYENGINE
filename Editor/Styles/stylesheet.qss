@@ -1720,3 +1720,112 @@ CEngineFileDialog QMenuComboBox > QLineEdit{
 QNumericBox {
 	qproperty-sliderColor: rgb(95,95,95);
 }
+
+/* ----------------------------------------------------------------------- */
+/* CryGraphEditor -------------------------------------------------------- */
+
+CryGraphEditor--CGlobalStyle {
+	/* Selection color */
+	qproperty-selectionColor: rgb(97, 172, 237);
+	
+	/* Background */
+	qproperty-gridBackgroundColor: rgb(75, 75, 75);
+	
+	/* Background: Lines */
+	qproperty-girdLineColor: rgb(65, 65, 65);
+	qproperty-gridLineWidth: 1.0;
+	
+	/* Background: Segmentation */
+	qproperty-girdSegmentSize: 400.0;
+	qproperty-gridNumSubSegment: 5;
+	
+	/* Background: Sub-lines */
+	qproperty-gridSubLineColor:	rgb(65, 65, 65);
+	qproperty-gridSubLineThickness: 1.0;
+}
+
+CryGraphEditor--CConnectionStyle {
+	qproperty-lineWidth: 3;
+	qproperty-lineDefaultColor: rgb(110, 110, 110);
+	qproperty-bezierSize: 120.0;
+	qproperty-usePinColor: 1;
+}
+
+CryGraphEditor--CNodeName {
+	color: rgb(32, 32, 32);
+	font: bold;
+}
+
+CryGraphEditor--CNodeStyle {
+	/* Content: Background */
+	/*qproperty-backgroundColor: rgb(0, 0, 0);*/
+	
+	/* Content: Margins */
+	qproperty-contentMarginTop: 0;
+	qproperty-contentMarginLeft: 7;
+	qproperty-contentMarginBottom: 6;
+	qproperty-contentMarginRight: 6;
+	
+	/* Content: Rect adjustment for drawing */
+	qproperty-contentRectAdjustmentTop: 0;
+	qproperty-contentRectAdjustmentLeft: 0;
+	qproperty-contentRectAdjustmentBottom: 0;
+	qproperty-contentRectAdjustmentRight: 0;
+
+	/* Icon */
+	qproperty-pinIconSize: 12px 12px;
+	qproperty-pinIconOffsetX: 0;
+	qproperty-pinIconOffsetY: 0;
+	qproperty-pinDefaultColor: rgb(110, 110, 110);
+	
+	/* Border */
+	qproperty-borderColor: rgb(110, 110, 110);
+	qproperty-borderWidth: 1;
+	
+	/* Border: Rect adjustment for drawing */
+	qproperty-borderRectAdjustmentTop: 0;
+	qproperty-borderRectAdjustmentLeft: 0;
+	qproperty-borderRectAdjustmentBottom: 0;
+	qproperty-borderRectAdjustmentRight: 0;
+
+	/* Header */
+	qproperty-headerHeight: 24.0;
+	qproperty-headerIconSize: 24.0;
+	qproperty-headerDefaultColorLeft: rgb(110, 110, 110);
+	qproperty-headerDefaultColorRight: rgb(110, 110, 110);
+	
+	/* Header: Content margins */
+	qproperty-headerContentMarginTop: 0;
+	qproperty-headerContentMarginLeft: 0;
+	qproperty-headerContentMarginBottom: 0;
+	qproperty-headerContentMarginRight: 0;
+	
+	/* Header: Rect adjustment for drawing */
+	qproperty-headerRectAdjustmentTop: 0;
+	qproperty-headerRectAdjustmentLeft: 0;
+	qproperty-headerRectAdjustmentBottom: 0;
+	qproperty-headerRectAdjustmentRight: 0;
+}
+
+CryParticleEditor--CFeatureStyle {
+	qproperty-backgroundColor: rgb(255, 255, 255);
+	qproperty-roundingRadius: 4.0;
+	
+	qproperty-contentMarginTop: 5;
+	qproperty-contentMarginleft: 5;
+	qproperty-contentMarginBottom: 5;
+	qproperty-contentMarginRight: 5;
+	
+	qproperty-rectAdjustmentTop: 0;
+	qproperty-rectAdjustmentLeft: 0;
+	qproperty-rectAdjustmentBottom: 0;
+	qproperty-rectAdjustmentRight: 0;
+}
+
+CryParticleEditor--CFeatureGridStyle {
+	qproperty-parentSpacing: 30;
+	qproperty-featureSpacing: 3;
+}
+
+/* CryGraphEditor -------------------------------------------------------- */
+/* ----------------------------------------------------------------------- */

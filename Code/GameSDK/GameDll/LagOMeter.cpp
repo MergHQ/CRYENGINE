@@ -203,7 +203,7 @@ void CLagOMeter::Update() PREFAST_SUPPRESS_WARNING (6262)
 	if(m_perceivedLagEventRecorded)
 	{
 		CTelemetryCollector* pTelemetryCollector = (CTelemetryCollector*)g_pGame->GetITelemetryCollector();
-		if (pTelemetryCollector)
+		if (pTelemetryCollector && pTelemetryCollector->CanLogEvent())
 		{
 			pTelemetryCollector->LogEvent("Perceived Lag", 1.0f);
 		}

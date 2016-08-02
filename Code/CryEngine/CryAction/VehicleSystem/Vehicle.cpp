@@ -5407,8 +5407,8 @@ IMPLEMENT_RMI(CVehicle, ClProcessLeave)
 	// Set as Request Complete.
 	if (IActor* pUser = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(params.actorId))
 	{
-		CRY_ASSERT(pUser->IsStillWaitingOnServerUseResponse());
-		pUser->SetStillWaitingOnServerUseResponse(false);
+		if (pUser->IsStillWaitingOnServerUseResponse())
+			pUser->SetStillWaitingOnServerUseResponse(false);
 	}
 	return true;
 }

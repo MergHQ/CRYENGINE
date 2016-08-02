@@ -1369,7 +1369,7 @@ uint CVisArea::GetClipVolumeFlags() const
 ///////////////////////////////////////////////////////////////////////////////
 void CVisArea::UpdatePortalBlendInfo(const SRenderingPassInfo& passInfo)
 {
-	if (m_bThisIsPortal && m_lstConnections.Count() > 0 && GetCVars()->e_PortalsBlend > 0 && m_fPortalBlending > 0)
+	if (m_bThisIsPortal && m_lstConnections.Count() > 0 && m_nStencilRef>0 && GetCVars()->e_PortalsBlend > 0 && m_fPortalBlending > 0)
 	{
 		IClipVolume* blendVolumes[SDeferredClipVolume::MaxBlendInfoCount];
 		Plane blendPlanes[SDeferredClipVolume::MaxBlendInfoCount];

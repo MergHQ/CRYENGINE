@@ -5,6 +5,8 @@
 #ifndef SequenceAgent_h
 	#define SequenceAgent_h
 
+	#include "AIBubblesSystem/AIBubblesSystem.h"
+
 namespace AIActionSequence
 {
 
@@ -23,11 +25,16 @@ public:
 			return;
 
 		m_aiActor = aiObject->CastToCAIActor();
+		if (!m_aiActor)
+		{
+			stack_string message;
+			message.Format("AI SequenceAgent: agent '%s' is not of type CAIActor", entity->GetName());
+			AIQueueBubbleMessage("AI SequenceAgent: agent is not of type CAIActor", entityID, message, eBNS_LogWarning | eBNS_Balloon);
+		}
 	}
 
 	bool ValidateAgent() const
 	{
-		assert(m_aiActor);
 		return m_aiActor != NULL;
 	}
 
