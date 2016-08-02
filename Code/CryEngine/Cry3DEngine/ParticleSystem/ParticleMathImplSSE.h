@@ -13,59 +13,27 @@ namespace pfx2
 namespace detail
 {
 
-#ifdef CRY_PFX2_USE_SEE4
-
-template<int i>
-ILINE int ExtractI32(uint32v a)
-{
-	return _mm_extract_epi32(a, i);
-}
-
-template<int i>
-ILINE float ExtractF32(floatv a)
-{
-	float r;
-	_MM_EXTRACT_FLOAT(r, a, i);
-	return r;
-}
-
-#else
-
-template<int i>
-ILINE int ExtractI32(uint32v a)
-{
-	return _mm_cvtsi128_si32(_mm_shuffle_epi32(a, _MM_SHUFFLE(i, i, i, i)));
-}
-
-template<int i>
-ILINE float ExtractF32(floatv a)
-{
-	return _mm_cvtss_f32(_mm_shuffle_ps(a, a, _MM_SHUFFLE(i, i, i, i)));
-}
-
-#endif
-
 ILINE floatv LoadIndexed4(const float* __restrict pStream, const uint32v index, float defaultVal)
 {
-	const i32mask4 mask = index == convert<uint32v>(gInvalidId);
-	const uint32v mIndex = _mm_andnot_si128((__m128i)mask, index);
+	const mask32v4 mask = index == convert<uint32v>(gInvalidId);
+	const uint32v mIndex = _mm_andnot_si128(mask, index);
 	const uint32v mFirst = _mm_shuffle_epi32(mIndex, 0);
 
-	if (All(index == mFirst + _mm_set_epi32(3, 2, 1, 0)))
-		return _mm_loadu_ps(pStream + _mm_cvtsi128_si32(mFirst));
+	if (All(index == mFirst + convert<uint32v>(0, 1, 2, 3)))
+		return _mm_loadu_ps(pStream + get_element<0>(mFirst));
 
-	floatv output = _mm_load1_ps(pStream + _mm_cvtsi128_si32(mFirst));
+	floatv output = _mm_load1_ps(pStream + get_element<0>((mFirst)));
 	if (!All(mFirst == mIndex))
 	{
-		const float f1 = *(pStream + ExtractI32<1>(mIndex));
-		const float f2 = *(pStream + ExtractI32<2>(mIndex));
-		const float f3 = *(pStream + ExtractI32<3>(mIndex));
-		const floatv m = _mm_castsi128_ps(_mm_set_epi32(0, 0, 0, ~0));
-		const floatv v0 = _mm_set_ps(f3, f2, f1, 0.0f);
+		const float f1 = *(pStream + get_element<1>(mIndex));
+		const float f2 = *(pStream + get_element<2>(mIndex));
+		const float f3 = *(pStream + get_element<3>(mIndex));
+		const floatv m = vcast<floatv>(convert<uint32v>(~0, 0, 0, 0));
+		const floatv v0 = convert<floatv>(0.0f, f1, f2, f3);
 		output = _mm_or_ps(v0, _mm_and_ps(output, m));
 	}
 
-	return if_else(mask, _mm_set1_ps(defaultVal), output);
+	return if_else(mask, convert<floatv>(defaultVal), output);
 }
 
 }
@@ -169,39 +137,44 @@ ILINE UColv TIStream<UCol, UColv >::Load(TParticleIdv pIdv, UCol defaultVal) con
 
 ILINE floatv ToFloatv(float v)
 {
-	return _mm_set1_ps(v);
+	return convert<floatv>(v);
 }
 
 ILINE uint32v ToUint32v(uint32 v)
 {
-	return _mm_set1_epi32(v);
+	return convert<uint32v>(v);
 }
 
 ILINE floatv ToFloatv(int32v v)
 {
-	return _mm_cvtepi32_ps(v);
+	return convert<floatv>(v);
+}
+
+ILINE floatv ToFloatv(uint32v v)
+{
+	return convert<floatv>(v);
 }
 
 ILINE uint32v ToUint32v(floatv v)
 {
-	return _mm_cvtps_epi32(v);
+	return convert<uint32v>(v);
 }
 
 ILINE Vec3v ToVec3v(Vec3 v)
 {
 	return Vec3v(
-	  _mm_set1_ps(v.x),
-	  _mm_set1_ps(v.y),
-	  _mm_set1_ps(v.z));
+		convert<floatv>(v.x),
+		convert<floatv>(v.y),
+		convert<floatv>(v.z));
 }
 
 ILINE Vec4v ToVec4v(Vec4 v)
 {
 	return Vec4v(
-	  _mm_set1_ps(v.x),
-	  _mm_set1_ps(v.y),
-	  _mm_set1_ps(v.z),
-	  _mm_set1_ps(v.w));
+		convert<floatv>(v.x),
+		convert<floatv>(v.y),
+		convert<floatv>(v.z),
+		convert<floatv>(v.w));
 }
 
 ILINE Planev ToPlanev(Plane v)

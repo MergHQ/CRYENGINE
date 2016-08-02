@@ -18,7 +18,6 @@
 #elif defined(__i386) || defined(_M_IX86)
 	#define CRY_PLATFORM_X86       1
 	#define CRY_PLATFORM_32BIT     1
-	#define CRY_PLATFORM_SSE2      1
 #elif defined(__arm__)
 	#define CRY_PLATFORM_ARM    1
 	#define CRY_PLATFORM_32BIT  1

@@ -27,10 +27,10 @@ using namespace crymath;
 // 4x vector types of standard types
 #ifdef CRY_PFX2_USE_SSE
 typedef f32v4  floatv;
-typedef i32v4  uint32v;
+typedef u32v4  uint32v;
 typedef i32v4  int32v;
 typedef uint32 uint8v;
-typedef i32v4  UColv;
+typedef u32v4  UColv;
 #else
 typedef float  floatv;
 typedef uint32 uint32v;
@@ -211,6 +211,7 @@ private:
 
 floatv  ToFloatv(float v);
 uint32v ToUint32v(uint32 v);
+floatv  ToFloatv(int32v v);
 floatv  ToFloatv(uint32v v);
 uint32v ToUint32v(floatv v);
 Vec3v   ToVec3v(Vec3 v);

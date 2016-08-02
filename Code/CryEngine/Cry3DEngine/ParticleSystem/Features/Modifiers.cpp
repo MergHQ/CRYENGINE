@@ -338,10 +338,10 @@ private:
 #ifndef CRY_PFX2_USE_SSE
 		return noiseGen.Noise1D(x) * 2.5f;
 #else
-		const float x0 = detail::ExtractF32<0>(x);
-		const float x1 = detail::ExtractF32<1>(x);
-		const float x2 = detail::ExtractF32<2>(x);
-		const float x3 = detail::ExtractF32<3>(x);
+		const float x0 = get_element<0>(x);
+		const float x1 = get_element<1>(x);
+		const float x2 = get_element<2>(x);
+		const float x3 = get_element<3>(x);
 		const float v0 = noiseGen.Noise1D(x0);
 		const float v1 = noiseGen.Noise1D(x1);
 		const float v2 = noiseGen.Noise1D(x2);
@@ -508,7 +508,7 @@ private:
 		const floatv ipi2 = ToFloatv(1.0f / gf_PI2);
 
 		const floatv x1 = MAdd(frac(Mul(x, ipi)), pi, negHalfPi);
-		const floatv m = sign(frac(Mul(x, ipi2)) - half);
+		const floatv m = signnz(frac(Mul(x, ipi2)) - half);
 
 		const floatv p0 = ToFloatv(-0.4964738f);
 		const floatv p1 = ToFloatv(0.036957536f);
@@ -547,7 +547,7 @@ private:
 	ILINE static floatv Pulse(floatv time)
 	{
 		const floatv half = ToFloatv(0.5f);
-		return sign(half - frac(time));
+		return signnz(half - frac(time));
 	}
 
 	EWaveType m_waveType;

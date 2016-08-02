@@ -384,116 +384,192 @@ void CMinimalLogUnitTestReporter::OnTestFinish(IUnitTest* pTest, float fRunTimeI
 
 #if defined(CRY_UNIT_TESTING)
 
-	#if CRY_PLATFORM_SSE2
-
-CRY_UNIT_TEST_SUITE(SIMD)
+CRY_UNIT_TEST_SUITE(Math)
 {
 	using namespace crymath;
 	const float HALF_EPSILON = 0.00025f;
 
-	template<typename Real>
-	bool IsEquiv(Real a, Real b, float epsilon)
+	template<typename Real, typename S>
+	void TestFunction(Real (* func)(Real), S in, S res)
+	{
+		Real out = func(convert<Real>(in));
+		CRY_UNIT_TEST_ASSERT(All(out == convert<Real>(res)));
+	}
+
+	template<typename Real, typename S>
+	void TestFunction(Real (* func)(Real, Real), S a, S b, S res)
+	{
+		Real out = func(convert<Real>(a), convert<Real>(b));
+		CRY_UNIT_TEST_ASSERT(All(out == convert<Real>(res)));
+	}
+
+	template<typename Real, typename S>
+	void TestFunction(Real (* func)(Real, Real, Real), S a, S b, S c, S res)
+	{
+		Real out = func(convert<Real>(a), convert<Real>(b), convert<Real>(c));
+		CRY_UNIT_TEST_ASSERT(All(out == convert<Real>(res)));
+	}
+
+	template<typename Real, typename S>
+	bool IsEquiv(Real a, Real b, S epsilon)
 	{
 		return NumberValid(a) && All(abs(a - b) <= abs(b) * convert<Real>(epsilon));
 	}
 
-	template<typename Real>
-	void FunctionTest(Real (* func)(Real), float in, float res, float epsilon = 0.0f)
+	template<typename Real, typename S>
+	void TestFunction(Real (* func)(Real), S in, S res, S epsilon)
 	{
 		Real out = func(convert<Real>(in));
 		CRY_UNIT_TEST_ASSERT(IsEquiv(out, convert<Real>(res), epsilon));
 	}
 
-	template<typename Real>
-	void FunctionTest(Real (* func)(Real, Real), float a, float b, float res, float epsilon = 0.0f)
+	template<typename Real, typename S>
+	void TestFunction(Real (* func)(Real, Real), S a, S b, S res, S epsilon)
 	{
 		Real out = func(convert<Real>(a), convert<Real>(b));
 		CRY_UNIT_TEST_ASSERT(IsEquiv(out, convert<Real>(res), epsilon));
 	}
 
-	template<typename Real>
-	void FunctionTest(Real (* func)(Real, Real, Real), float a, float b, float c, float res, float epsilon = 0.0f)
+	template<typename Real, typename S>
+	void TestFunction(Real (* func)(Real, Real, Real), S a, S b, S c, S res, S epsilon)
 	{
 		Real out = func(convert<Real>(a), convert<Real>(b), convert<Real>(c));
 		CRY_UNIT_TEST_ASSERT(IsEquiv(out, convert<Real>(res), epsilon));
 	}
 
-	template<typename Real>
-	void FunctionApproxTest(Real (* func)(Real), Real (* func_fast)(Real), float in, float res)
+	template<typename Real, typename S>
+	void FunctionApproxTest(Real (* func)(Real), Real (* func_fast)(Real), S in, S res)
 	{
-		FunctionTest(func, in, res, FLT_EPSILON * 2.0f);
-		FunctionTest(func_fast, in, res, HALF_EPSILON * 2.0f);
+		TestFunction(func, in, res, FLT_EPSILON * 2.0f);
+		TestFunction(func_fast, in, res, HALF_EPSILON * 2.0f);
 	}
 
-	template<typename Real>
-	void MathTest()
+	template<typename Real, typename Int, typename Uint>
+	void FunctionTest()
 	{
-		FunctionTest<Real>(floor, 257.85f, 257.0f);
-		FunctionTest<Real>(floor, 124.35f, 124.0f);
-		FunctionTest<Real>(floor, 73.0f, 73.0f);
-		FunctionTest<Real>(floor, 0.806228399f, 0.0f);
-		FunctionTest<Real>(floor, 0.2537399f, 0.0f);
-		FunctionTest<Real>(floor, -0.123432f, -1.0f);
-		FunctionTest<Real>(floor, -0.986552f, -1.0f);
-		FunctionTest<Real>(floor, -5.0f, -5.0f);
-		FunctionTest<Real>(floor, -63.4f, -64.0f);
-		FunctionTest<Real>(floor, -102.7f, -103.0f);
+		// Check trunc, floor, ceil
+		float fdata[] = { 0.0f, 257.85f, 124.35f, 73.0f, 0.806228399f, 0.2537399f, -0.123432f, -0.986552f, -5.0f, -63.4f, -102.7f, 1e-18f, -4.567e8f };
 
-		FunctionTest<Real>(trunc, 257.85f, 257.0f);
-		FunctionTest<Real>(trunc, 124.35f, 124.0f);
-		FunctionTest<Real>(trunc, 73.0f, 73.0f);
-		FunctionTest<Real>(trunc, 0.806228399f, 0.0f);
-		FunctionTest<Real>(trunc, 0.2537399f, 0.0f);
-		FunctionTest<Real>(trunc, -0.123432f, 0.0f);
-		FunctionTest<Real>(trunc, -0.986552f, 0.0f);
-		FunctionTest<Real>(trunc, -5.0f, -5.0f);
-		FunctionTest<Real>(trunc, -63.4f, -63.0f);
-		FunctionTest<Real>(trunc, -102.7f, -102.0f);
-
-		FunctionTest<Real>(max, 257.35f, 510.0f, 510.0f);
-		FunctionTest<Real>(max, -102.0f, -201.4f, -102.0f);
-
-		FunctionTest<Real>(saturate, 0.75f, 0.75f);
-		FunctionTest<Real>(saturate, -0.35f, 0.0f);
-		FunctionTest<Real>(saturate, 2.05f, 1.0f);
-
-		FunctionTest<Real>(abs, 104.35f, 104.35f);
-		FunctionTest<Real>(abs, -24.75f, 24.75f);
-		FunctionTest<Real>(abs, 0.0f, 0.0f);
-
-		FunctionTest<Real>(sign, 93.2f, 1.0f);
-		FunctionTest<Real>(sign, 0.0f, 1.0f);
-		FunctionTest<Real>(sign, -0.0f, -1.0f);
-		FunctionTest<Real>(sign, -0.003, -1.0f);
-
-		FunctionTest<Real>(mod, 3.0f, 1.0f, 0.0f, FLT_EPSILON * 4);
-		FunctionTest<Real>(mod, 0.75f, 0.5f, 0.25f, FLT_EPSILON * 4);
-		FunctionTest<Real>(mod, -0.6f, 0.5f, -0.1f, FLT_EPSILON * 4);
-		FunctionTest<Real>(mod, -0.2f, -0.3f, -0.2f, FLT_EPSILON * 4);
-
-		FunctionTest<Real>(wrap, -6.0f, -1.0f, 3.0f, 2.0f, FLT_EPSILON * 4);
-		FunctionTest<Real>(wrap, -6.3f, 0.0f, 1.0f, 0.7f, FLT_EPSILON * 4);
-		FunctionTest<Real>(wrap, 4.8f, -1.0f, 1.0f, 0.8f, FLT_EPSILON * 4);
-
-		FunctionApproxTest<Real>(sqrt, sqrt_fast, 0.0f, 0.0f);
-		FunctionApproxTest<Real>(sqrt, sqrt_fast, 1e-36f, 1e-18f);
-
-		for (int i = 0; i < 100; ++i)
+		for (float f : fdata)
 		{
-			float f = cry_random(0.0f, 1.0f);
-			f *= f * f * f;
-			f *= 1e6f;
+			float res;
 
-			FunctionApproxTest<Real>(sqrt, sqrt_fast, f * f, f);
-			FunctionApproxTest<Real>(rsqrt, rsqrt_fast, f * f, 1.0f / f);
+			res = float(int(f));
+			TestFunction<Real>(trunc, f, res);
 
-			f *= cry_random(-1.0f, 1.0f);
-			FunctionApproxTest<Real>(rcp, rcp_fast, f, 1.0f / f);
+			res = std::floor(f);
+			TestFunction<Real>(floor, f, res);
+
+			res = std::ceil(f);
+			TestFunction<Real>(ceil, f, res);
+
+			res = f<0.0f ? 0.0f : f> 1.0f ? 1.0f : f;
+			TestFunction<Real>(saturate, f, res);
+
+			res = f < 0.0f ? -f : f;
+			TestFunction<Real>(abs, f, res);
+
+			res = f < 0.0f ? -1.0f : 1.0f;
+			TestFunction<Real>(signnz, f, res);
+
+			res = f<0.0f ? -1.0f : f> 0.0f ? 1.0f : 0.0f;
+			TestFunction<Real>(sign, f, res);
+
+			FunctionApproxTest<Real>(sqrt, sqrt_fast, f * f, abs(f));
+
+			if (f != 0.0f)
+			{
+				FunctionApproxTest<Real>(rcp, rcp_fast, f, 1.0f / f);
+				FunctionApproxTest<Real>(rsqrt, rsqrt_fast, 1.0f / (f * f), abs(f));
+			}
+		}
+
+		TestFunction<Real>(max, 257.35f, 510.0f, 510.0f);
+		TestFunction<Real>(max, -102.0f, -201.4f, -102.0f);
+
+		TestFunction<Real>(mod, 3.0f, 1.0f, 0.0f, FLT_EPSILON * 4);
+		TestFunction<Real>(mod, 0.75f, 0.5f, 0.25f, FLT_EPSILON * 4);
+		TestFunction<Real>(mod, -0.6f, 0.5f, -0.1f, FLT_EPSILON * 4);
+		TestFunction<Real>(mod, -0.2f, -0.3f, -0.2f, FLT_EPSILON * 4);
+
+		TestFunction<Real>(wrap, -6.0f, -1.0f, 3.0f, 2.0f, FLT_EPSILON * 4);
+		TestFunction<Real>(wrap, -6.3f, 0.0f, 1.0f, 0.7f, FLT_EPSILON * 4);
+		TestFunction<Real>(wrap, 4.8f, -1.0f, 1.0f, 0.8f, FLT_EPSILON * 4);
+
+		TestFunction<Int>(min, -3, 1, -3);
+		TestFunction<Int>(max, -3, 1, 1);
+
+		TestFunction<Uint>(min, 8u, 3u, 3u);
+		TestFunction<Uint>(min, 8u, 0x9FFFFFFFu, 8u);
+		TestFunction<Uint>(max, 8u, 0x9FFFFFFFu, 0x9FFFFFFFu);
+		TestFunction<Uint>(max, 0x90000000u, 0xA0000000u, 0xA0000000u);
+	}
+
+	#if CRY_PLATFORM_SSE2
+
+	template<typename V, typename T>
+	void ConvertTest()
+	{
+		V v = convert<V>(T(0), T(1), T(2), T(3));
+		CRY_UNIT_TEST_ASSERT(NumberValid(v));
+		CRY_UNIT_TEST_ASSERT(get_element<0>(v) == T(0));
+		CRY_UNIT_TEST_ASSERT(get_element<3>(v) == T(3));
+		v = convert<V>(T(1), 0);
+		CRY_UNIT_TEST_ASSERT(All(v == convert<V>(T(1), T(0), T(0), T(0))));
+	}
+
+		#define ELEMENT_OPERATE(V, a, op, b) convert<V>( \
+		  get_element<0>(a) op get_element<0>(b),        \
+		  get_element<1>(a) op get_element<1>(b),        \
+		  get_element<2>(a) op get_element<2>(b),        \
+		  get_element<3>(a) op get_element<3>(b))        \
+
+	template<typename V>
+	void TestIntOperators(V a, V b)
+	{
+		CRY_UNIT_TEST_ASSERT(All((a + b) == ELEMENT_OPERATE(V, a, +, b)));
+		CRY_UNIT_TEST_ASSERT(All((a - b) == ELEMENT_OPERATE(V, a, -, b)));
+		CRY_UNIT_TEST_ASSERT(All((a * b) == ELEMENT_OPERATE(V, a, *, b)));
+		CRY_UNIT_TEST_ASSERT(All((a / b) == ELEMENT_OPERATE(V, a, /, b)));
+		CRY_UNIT_TEST_ASSERT(All((a % b) == ELEMENT_OPERATE(V, a, %, b)));
+		CRY_UNIT_TEST_ASSERT(All((a & b) == ELEMENT_OPERATE(V, a, &, b)));
+		CRY_UNIT_TEST_ASSERT(All((a | b) == ELEMENT_OPERATE(V, a, |, b)));
+		CRY_UNIT_TEST_ASSERT(All((a ^ b) == ELEMENT_OPERATE(V, a, ^, b)));
+		CRY_UNIT_TEST_ASSERT(All((a << Scalar(3)) == ELEMENT_OPERATE(V, a, <<, convert<V>(3))));
+		CRY_UNIT_TEST_ASSERT(All((a >> Scalar(2)) == ELEMENT_OPERATE(V, a, >>, convert<V>(2))));
+	}
+
+	template<typename V>
+	void TestFloatOperators(V a, V b)
+	{
+		CRY_UNIT_TEST_ASSERT(All((a + b) == ELEMENT_OPERATE(V, a, +, b)));
+		CRY_UNIT_TEST_ASSERT(All((a - b) == ELEMENT_OPERATE(V, a, -, b)));
+		CRY_UNIT_TEST_ASSERT(All((a * b) == ELEMENT_OPERATE(V, a, *, b)));
+		CRY_UNIT_TEST_ASSERT(IsEquiv(a / b, ELEMENT_OPERATE(V, a, /, b), FLT_EPSILON));
+	}
+
+	void OperatorTest()
+	{
+		i32v4 idata[6] = {
+			convert<i32v4>(1,    -2,    3,   -4),     convert<i32v4>(-2,    -1,     5,    6),
+			convert<i32v4>(7,    -12,   -13, 24),     convert<i32v4>(-2,    -5,     5,    6),
+			convert<i32v4>(7654, -1234, -13, 249999), convert<i32v4>(-2373, -59999, 5432, 62)
+		};
+
+		for (int i = 0; i < 6; i += 2)
+		{
+			i32v4 a = idata[i];
+			i32v4 b = idata[i + 1];
+
+			TestIntOperators(a, b);
+			TestIntOperators(convert<u32v4>(abs(a)), convert<u32v4>(abs(b)));
+			TestIntOperators(convert<u32v4>(a), convert<u32v4>(b));
+			TestFloatOperators(convert<f32v4>(a), convert<f32v4>(b));
 		}
 	}
 
 	template<typename V>
-	void CompTest()
+	void CompareTest()
 	{
 		CRY_UNIT_TEST_ASSERT(All(convert<V>(-3, -5, 6, 9) == convert<V>(-3, -5, 6, 9)));
 		CRY_UNIT_TEST_ASSERT(Any(convert<V>(-3, -5, 6, 9) != convert<V>(-3, 5, 6, 9)));
@@ -501,6 +577,16 @@ CRY_UNIT_TEST_SUITE(SIMD)
 		CRY_UNIT_TEST_ASSERT(All(convert<V>(-3, -5, 6, 9) <= convert<V>(4, -2, 6, 10)));
 		CRY_UNIT_TEST_ASSERT(All(convert<V>(-3, -5, 6, 9) > convert<V>(-4, -7, -8, 0)));
 		CRY_UNIT_TEST_ASSERT(All(convert<V>(-3, -5, 6, 9) >= convert<V>(-3, -6, 6, 8)));
+	}
+	void UCompareTest()
+	{
+		CRY_UNIT_TEST_ASSERT(All(convert<u32v4>(1, 2, 3, 4) == convert<u32v4>(1, 2, 3, 4)));
+		CRY_UNIT_TEST_ASSERT(!All(convert<u32v4>(1, 2, 3, 4) == convert<u32v4>(0, 2, 3, 4)));
+		CRY_UNIT_TEST_ASSERT(All(convert<u32v4>(1, 2, 3, 4) != convert<u32v4>(4, 3, 2, 1)));
+		CRY_UNIT_TEST_ASSERT(All(convert<u32v4>(0, 2, 3, 4) < convert<u32v4>(2u, 4u, 8u, 0x99999999)));
+		CRY_UNIT_TEST_ASSERT(All(convert<u32v4>(0, 2, 3, 4) <= convert<u32v4>(2u, 2u, 3u, 0x99999999)));
+		CRY_UNIT_TEST_ASSERT(All(convert<u32v4>(1u, 2u, 3u, 0x80000000) > convert<u32v4>(0, 1, 2, 3)));
+		CRY_UNIT_TEST_ASSERT(All(convert<u32v4>(1u, 2u, 3u, 0x80000000) >= convert<u32v4>(1, 2, 3, 4)));
 	}
 
 	void SelectTest()
@@ -524,6 +610,8 @@ CRY_UNIT_TEST_SUITE(SIMD)
 		                           ) == convert<f32v4>(2.0f, -4.0f, -3.0f, 2.5f)));
 	}
 
+	#endif // CRY_PLATFORM_SSE2
+
 	void QuadraticTest()
 	{
 		float r[2];
@@ -541,18 +629,22 @@ CRY_UNIT_TEST_SUITE(SIMD)
 		}
 	}
 
-	CRY_UNIT_TEST(CUT_SIMD)
+	CRY_UNIT_TEST(CUT_Math)
 	{
-		MathTest<float>();
-		MathTest<f32v4>();
-		CompTest<f32v4>();
-		CompTest<i32v4>();
 		QuadraticTest();
+		FunctionTest<float, int, uint>();
+	#if CRY_PLATFORM_SSE2
+		FunctionTest<f32v4, i32v4, u32v4>();
+		ConvertTest<f32v4, float>();
+		ConvertTest<i32v4, int>();
+		OperatorTest();
+		CompareTest<f32v4>();
+		CompareTest<i32v4>();
+		UCompareTest();
 		SelectTest();
+	#endif
 	}
 }
-
-	#endif // CRY_PLATFORM_SSE2
 
 CRY_UNIT_TEST_SUITE(Strings)
 {
@@ -984,7 +1076,6 @@ CRY_UNIT_TEST_SUITE(FixedString)
 		CRY_UNIT_TEST_ASSERT(wstr1.compare(L"aBc") > 0);
 		CRY_UNIT_TEST_ASSERT(wstr1.compare(L"babc") < 0);
 		CRY_UNIT_TEST_ASSERT(wstr1.compareNoCase(L"aBc") == 0);
-
 		str1.Format("This is a %s %ls with %d params", "mixed", L"string", 3);
 		str2.Format("This is a %ls %s with %d params", L"mixed", "string", 3);
 		CRY_UNIT_TEST_CHECK_EQUAL(str1, "This is a mixed string with 3 params");
@@ -1099,7 +1190,7 @@ CRY_UNIT_TEST(CUT_SimplifyFilePath)
 			//                              WINAPI                                   POSIX
 			// input                        success   output                         success   output
 			{ "",                            false, "",                          false, ""                       },
-			{ "c:",                          true,  "c:",                        true,  "c:"                     },           // c: and c:. counts as a regular folder name in posix
+			{ "c:",                          true,  "c:",                        true,  "c:"                     },// c: and c:. counts as a regular folder name in posix
 			{ "c:.",                         true,  "c:",                        true,  "c:."                    },
 			{ "c:..",                        true,  "c:..",                      true,  "c:.."                   },
 			{ "c:abc/.",                     true,  "c:abc",                     true,  "c:abc"                  },
@@ -1141,8 +1232,7 @@ CRY_UNIT_TEST(CUT_SimplifyFilePath)
 			{ "../../abc",                   true,  "..\\..\\abc",               true,  "../../abc"              },
 			{ "bar/../../../abc",            true,  "..\\..\\abc",               true,  "../../abc"              },
 			{ "/abc/foo/bar",                true,  "\\abc\\foo\\bar",           true,  "/abc/foo/bar"           },
-			{ "abc",                         true,  "abc",                       true,  "abc"                    },
-			{ "abc/.",                       true,  "abc",                       true,  "abc"                    },
+			{ "abc",                         true,  "abc",                       true,  "abc"                    },{ "abc/.", true, "abc", true, "abc" },
 			{ "abc/..",                      true,  "",                          true,  ""                       },
 			{ "abc/../..",                   true,  "..",                        true,  ".."                     },
 			{ "abc/foo/bar",                 true,  "abc\\foo\\bar",             true,  "abc/foo/bar"            },

@@ -363,8 +363,8 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 	{
 		using namespace pfx2::detail;
 		CRY_ALIGN(16) float stream[] = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f };
-		__m128i index;
-		__m128 expected, got;
+		uint32v index;
+		floatv expected, got;
 
 		index = _mm_set1_epi32(2);
 		expected = _mm_set_ps(2.0f, 2.0f, 2.0f, 2.0f);
@@ -406,6 +406,8 @@ CRY_UNIT_TEST_SUITE(CryVectorTest)
 
 #if defined(CRY_PFX2_USE_SSE)
 
+	using namespace pfx2;
+
 	template<typename Real>
 	void SnoiseTest()
 	{
@@ -430,12 +432,30 @@ CRY_UNIT_TEST_SUITE(CryVectorTest)
 	CRY_UNIT_TEST(SNoiseTest)
 	{
 		SnoiseTest<float>();
-		SnoiseTest<__m128>();
+		SnoiseTest<floatv>();
+	}
+
+	CRY_UNIT_TEST(ChaosKeyTest)
+	{
+		for (int rep = 0; rep < 8; ++rep)
+		{
+			uint32 key = cry_random(0U, 99999U);
+			SChaosKey ch(key);
+			SChaosKeyV chv(ToUint32v(key));
+
+			uint32 r = ch.Rand();
+			uint32v rv = chv.Rand();
+			CRY_PFX2_UNIT_TEST_ASSERT(All(ToUint32v(r) == rv));
+
+			float ss = ch.RandSNorm();
+			floatv ssv = chv.RandSNorm();
+			CRY_PFX2_UNIT_TEST_ASSERT(All(ToFloatv(ss) == ssv));
+		}
 	}
 
 	CRY_UNIT_TEST(RadixSortTest)
 	{
-		pfx2::TParticleHeap heap;
+		TParticleHeap heap;
 
 		const uint64 data[] = { 15923216, 450445401561561, 5061954, 5491494, 56494109840, 500120, 520025710, 58974, 45842669, 3226, 995422665 };
 		const uint sz = sizeof(data) / sizeof(data[0]);

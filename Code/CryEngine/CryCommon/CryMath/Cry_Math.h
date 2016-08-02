@@ -20,10 +20,7 @@
 
 #include <CryCore/Platform/platform.h>
 #include "Cry_ValidNumber.h"
-#include <CryCore/CryEndian.h>  // eLittleEndian
-#include <CryMath/CryHalf.inl>
-#include <CryCore/MetaUtils.h>
-#include <float.h>
+#include <cfloat>
 #include <cmath>
 
 #if CRY_PLATFORM_SSE2
@@ -95,8 +92,9 @@ template<class T, class U> ILINE T Lerp(const T& a, const T& b, U t) { return a 
 template<typename S, typename T> ILINE T if_else(S test, T a, T b) { return test ? a : b; }
 template<typename S, typename T> ILINE T if_else_zero(S test, T a) { return test ? a : convert<T>(); }
 
-// Deprecated
-template<typename T> ILINE T __fsel(T a, T b, T c) { return if_else(a >= convert<T>(), b, c); }
+// Comparison test functions, can be overloaded for SIMD types
+ILINE bool All(bool b) { return b; }
+ILINE bool Any(bool b) { return b; }
 
 #if CRY_PLATFORM_SSE2
 
@@ -111,6 +109,28 @@ template<> ILINE f32 max(f32 v0, f32 v1)
 }
 
 #endif // CRY_PLATFORM_SSE2
+
+#if CRY_PLATFORM_SSE4
+
+template<> ILINE int32 min(int32 v0, int32 v1)
+{
+	return _mm_cvtsi128_si32(_mm_min_epi32(_mm_set1_epi32(v0), _mm_set1_epi32(v1)));
+}
+template<> ILINE int32 max(int32 v0, int32 v1)
+{
+	return _mm_cvtsi128_si32(_mm_max_epi32(_mm_set1_epi32(v0), _mm_set1_epi32(v1)));
+}
+
+template<> ILINE uint32 min(uint32 v0, uint32 v1)
+{
+	return _mm_cvtsi128_si32(_mm_min_epu32(_mm_set1_epi32(v0), _mm_set1_epi32(v1)));
+}
+template<> ILINE uint32 max(uint32 v0, uint32 v1)
+{
+	return _mm_cvtsi128_si32(_mm_max_epu32(_mm_set1_epi32(v0), _mm_set1_epi32(v1)));
+}
+
+#endif // CRY_PLATFORM_SSE4
 
 //! Create namespace for standard math functions, imported from std, and our extended versions.
 //! SSE versions implemented in Cry_Math_SSE.h
@@ -156,18 +176,10 @@ ILINE f32 rsqrt(f32 op)      { float r = rsqrt_fast(op); return r * (1.5f - op *
 
 ILINE f32 sqrt_fast(f32 op)  { return rsqrt_fast(max(op, FLT_MIN)) * op; }
 
-ILINE f32 sign(f32 op)
-{
-	__m128 v = _mm_load_ss(&op);
-	__m128 s = _mm_or_ps(_mm_and_ps(v, _mm_set_ss(-0.0f)), _mm_set_ss(1.0f));
-	return _mm_cvtss_f32(s);
-}
-
 #else
 
 ILINE f32 rcp(f32 op)      { return 1.0f / op; }
 ILINE f32 rcp_fast(f32 op) { return 1.0f / op; }
-ILINE f32 sign(f32 op)     { return __fsel(op, 1.0f, -1.0f); }
 
 	#if CRY_PLATFORM_NEON
 
@@ -204,6 +216,49 @@ ILINE f64 rcp_safe(f64 op)   { return rcp(max(op, DBL_MIN)); }
 
 ILINE f32 rsqrt_safe(f32 op) { return rsqrt(max(op, FLT_MIN)); }
 ILINE f64 rsqrt_safe(f64 op) { return rsqrt(max(op, DBL_MIN)); }
+
+// signnz returns -1 if negative, 1 if zero or positive
+ILINE int32 signnz(int32 op) { return ((op >> 31) << 1) + 1; }
+ILINE int64 signnz(int64 op) { return ((op >> 63) << 1) + 1; }
+
+ILINE f32   signnz(f32 op)
+{
+#if CRY_PLATFORM_SSE2
+	__m128 v = _mm_set_ss(op);
+	__m128 s = _mm_or_ps(_mm_and_ps(v, _mm_set_ss(-0.0f)), _mm_set_ss(1.0f));
+	return _mm_cvtss_f32(s);
+#else
+	// copy sign bit from op to 1
+	f32 s = 1.0f;
+	reinterpret_cast<int32&>(s) |= reinterpret_cast<const int32&>(op) & (1 << 31);
+	return s;
+#endif
+}
+ILINE f64 signnz(f64 op)
+{
+	// copy sign bit from op to 1
+	f64 s = 1.0;
+	reinterpret_cast<int64&>(s) |= reinterpret_cast<const int64&>(op) & (1LL << 63);
+	return s;
+}
+
+// sign returns -1 if negative, 0 if zero, 1 if positive
+ILINE int32 sign(int32 op) { return (op >> 31) + ((op - 1) >> 31) + 1; }
+ILINE int64 sign(int64 op) { return (op >> 63) + ((op - 1) >> 63) + 1; }
+
+ILINE f32   sign(f32 op)
+{
+#if CRY_PLATFORM_SSE2
+	__m128 v = _mm_set_ss(op);
+	__m128 s = _mm_or_ps(_mm_and_ps(v, _mm_set_ss(-0.0f)), _mm_set_ss(1.0f));
+	__m128 nz = _mm_cmpneq_ps(v, _mm_setzero_ps());
+	__m128 s3 = _mm_and_ps(s, nz);
+	return _mm_cvtss_f32(s3);
+#else
+	return if_else_zero(op, signnz(op));
+#endif
+}
+ILINE f64 sign(f64 op) { return if_else_zero(op, signnz(op)); }
 
 } // namespace crymath
 
@@ -271,26 +326,33 @@ int solve_quadratic(T a, T b, T c, T x[2])
 
 } // namespace crymath
 
-ILINE int32                  int_round(f32 f)                   { return f < 0.f ? int32(f - 0.5f) : int32(f + 0.5f); }
-ILINE int64                  int_round(f64 f)                   { return f < 0.0 ? int64(f - 0.5) : int64(f + 0.5); }
+ILINE int32                  int_round(f32 f)         { return f < 0.f ? int32(f - 0.5f) : int32(f + 0.5f); }
+ILINE int64                  int_round(f64 f)         { return f < 0.0 ? int64(f - 0.5) : int64(f + 0.5); }
 
-ILINE uint32                 pos_round(f32 f)                   { CRY_MATH_ASSERT(f >= 0.0f); return uint32(f + 0.5f); }
-ILINE uint64                 pos_round(f64 f)                   { CRY_MATH_ASSERT(f >= 0.0); return uint64(f + 0.5); }
+ILINE uint32                 pos_round(f32 f)         { CRY_MATH_ASSERT(f >= 0.0f); return uint32(f + 0.5f); }
+ILINE uint64                 pos_round(f64 f)         { CRY_MATH_ASSERT(f >= 0.0); return uint64(f + 0.5); }
 
-ILINE int32                  int_ceil(f32 f)                    { int32 i = int32(f); return (f > f32(i)) ? i + 1 : i; }
-ILINE int64                  int_ceil(f64 f)                    { int64 i = int64(f); return (f > f64(i)) ? i + 1 : i; }
+ILINE int32                  int_ceil(f32 f)          { int32 i = int32(f); return (f > f32(i)) ? i + 1 : i; }
+ILINE int64                  int_ceil(f64 f)          { int64 i = int64(f); return (f > f64(i)) ? i + 1 : i; }
 
-ILINE float                  ufrac8_to_float(float u)           { return u * (1.f / 255.f); }
-ILINE float                  ifrac8_to_float(float i)           { return i * (1.f / 127.f); }
-ILINE uint8                  float_to_ufrac8(float f)           { uint i = pos_round(f * 255.f);  CRY_MATH_ASSERT(i < 256);       return uint8(i); }
-ILINE int8                   float_to_ifrac8(float f)           { int i = int_round(f * 127.f);  CRY_MATH_ASSERT(abs(i) < 128);   return int8(i); }
+ILINE float                  ufrac8_to_float(float u) { return u * (1.f / 255.f); }
+ILINE float                  ifrac8_to_float(float i) { return i * (1.f / 127.f); }
+ILINE uint8                  float_to_ufrac8(float f) { uint i = pos_round(f * 255.f);  CRY_MATH_ASSERT(i < 256);       return uint8(i); }
+ILINE int8                   float_to_ifrac8(float f) { int i = int_round(f * 127.f);  CRY_MATH_ASSERT(abs(i) < 128);   return int8(i); }
 
-template<typename F> ILINE F sqr(const F& op)                   { return op * op; }
-template<typename F> ILINE F square(const F& op)                { return op * op; }                                   // Deprecated
-template<typename F> ILINE F sqr_signed(const F& op)            { return op * crymath::abs(op); }
-template<typename F> ILINE F cube(const F& op)                  { return op * op * op; }
+template<typename F> ILINE F sqr(const F& op)         { return op * op; }
+template<typename F> ILINE F square(const F& op)      { return op * op; }  //!< Deprecated
+template<typename F> ILINE F sqr_signed(const F& op)  { return op * crymath::abs(op); }
+template<typename F> ILINE F cube(const F& op)        { return op * op * op; }
 
-ILINE float                  div_min(float n, float d, float m) { return n * d < m * d * d ? n / d : m; }
+//! Safely divides 2 numbers, with a specified maximum positive result
+ILINE float div_min(float n, float d, float m) { return n * d < m * d * d ? n / d : m; }
+
+//! Deprecated
+template<typename T> ILINE T __fsel(T a, T b, T c)
+{
+	return if_else(a >= convert<T>(), b, c);
+}
 
 // Float extraction functions
 ILINE int32 sgnnz(f64 x)
@@ -312,18 +374,6 @@ ILINE int32 sgnnz(f32 x)
 	} u;
 	u.f = x;
 	return ((u.i >> 31) << 1) + 1;
-}
-ILINE int32 sgnnz(int32 x) { return ((x >> 31) << 1) + 1; }
-ILINE f32   fsgnnz(f32 x)
-{
-	union
-	{
-		f32   f;
-		int32 i;
-	} u;
-	u.f = x;
-	u.i = (u.i & 0x80000000) | 0x3f800000;
-	return u.f;
 }
 
 ILINE int32 isneg(f32 x)
@@ -368,8 +418,6 @@ ILINE int32 sgn(f32 x)
 	u.f = x;
 	return (u.i >> 31) + ((u.i - 1) >> 31) + 1;
 }
-ILINE int32 sgn(int32 x) { return (x >> 31) + ((x - 1) >> 31) + 1; }
-ILINE f32   fsgnf(f32 x) { return f32(sgn(x)); }
 
 ILINE int32 isnonneg(f32 x)
 {
@@ -631,6 +679,15 @@ template<typename F> ILINE bool IsEquivalent(const F& a, const F& b, float epsil
 
 #define __fres         crymath::rcp
 
+ILINE int32 sgnnz(int32 i) { return crymath::signnz(i); }
+ILINE int32 sgn(int32 i)   { return crymath::sign(i); }
+
+ILINE int64 sgnnz(int64 i) { return crymath::signnz(i); }
+ILINE int64 sgn(int64 i)   { return crymath::sign(i); }
+
+ILINE f32   fsgnnz(f32 f)  { return crymath::signnz(f); }
+ILINE f32   fsgnf(f32 f)   { return crymath::sign(f); }
+
 // Previously in Cry_XOptimise.h
 #define FtoI               int
 #define fastftol_positive  int
@@ -650,5 +707,6 @@ enum type_identity { IDENTITY };
 #include "Cry_Matrix34.h"
 #include "Cry_Matrix44.h"
 #include "Cry_Quat.h"
+#include "CryHalf.inl"
 
 #endif //math
