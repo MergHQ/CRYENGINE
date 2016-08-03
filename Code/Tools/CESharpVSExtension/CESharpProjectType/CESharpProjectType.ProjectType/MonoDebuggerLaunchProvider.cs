@@ -49,8 +49,10 @@ namespace CESharpProjectType
 			MonoDebugger debuggerProps = await _instance.DebuggerProperties.GetMonoDebuggerPropertiesAsync();
 			string propertiesPath = await debuggerProps.CryEngineRootPath.GetEvaluatedValueAtEndAsync();
 			CERoot = Path.GetFullPath(propertiesPath);
+			ProjectFilePath = await debuggerProps.ProjectFilePath.GetEvaluatedValueAtEndAsync();
 		}
 		public static string CERoot { get; private set; }
+		public static string ProjectFilePath { get; private set; }
 
 		public override async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(DebugLaunchOptions launchOptions)
 		{
@@ -60,11 +62,10 @@ namespace CESharpProjectType
 			MonoDebugger debuggerProps = await DebuggerProperties.GetMonoDebuggerPropertiesAsync();
 			await LoadCERootAsync();
 			string projWorkingDirectory = await debuggerProps.MonoDebuggerWorkingDirectory.GetEvaluatedValueAtEndAsync();
-			string projRoot = Path.GetFullPath(projWorkingDirectory + "/../../../../");
 			bool launchSandbox = (await debuggerProps.RunSandbox.GetEvaluatedValueAtEndAsync()).ToLower() == "true";
-			settings.CurrentDirectory = projRoot;
+			settings.CurrentDirectory = new FileInfo(ProjectFilePath).Directory.FullName;
 			settings.Executable = Path.GetFullPath(CERoot + "/bin/win_x64/" + (launchSandbox ? "Sandbox" : "GameSDK") + ".exe");
-			settings.Arguments = "-projectroot . -projectdlldir bin\\win_x64";
+			settings.Arguments = "-project " + ProjectFilePath;
 
 			// TODO: Specify the right debugger engine
 			settings.LaunchOperation = DebugLaunchOperation.CreateProcess;

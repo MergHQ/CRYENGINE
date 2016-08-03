@@ -338,7 +338,7 @@ void CShadowMapStage::PrepareShadowPasses(SShadowFrustumToRender& frustumToRende
 
 			if (PrepareOutputsForPass(frustumToRender, nS, curPass))
 			{
-				curPass.SetupPassContext(m_stageID, passID, TTYPE_SHADOWGEN, FB_MASK);
+				curPass.SetupPassContext(m_stageID, passID, TTYPE_SHADOWGEN, FB_MASK, EFSLIST_SHADOW_GEN);
 				curPass.m_pFrustumToRender = &frustumToRender;
 				curPass.m_nShadowFrustumSide = nS;
 

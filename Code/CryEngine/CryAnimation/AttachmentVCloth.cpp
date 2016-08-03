@@ -637,6 +637,8 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 	if (numLODs==0)
 		return;
 	int nDesiredRenderLOD = RendParams.lodValue.LodA();
+	if (nDesiredRenderLOD == -1)
+		nDesiredRenderLOD = RendParams.lodValue.LodB();
 	if(nDesiredRenderLOD>=numLODs)
 	{
 		if (m_AttFlags&FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD)

@@ -1038,9 +1038,15 @@ void CRenderProxy::Render_JobEntry( const SRendParams inRenderParams, const SRen
 	{
 		CEntityObject *pSlot = *it;
 		if (pSlot && (pSlot->flags & ENTITY_SLOT_RENDER))
-		{          
-			if(pSlot->pCharacter)
-			rParams.lodValue = pSlot->ComputeLod(inRenderParams.lodValue.LodA(), passInfo);
+		{      
+			static ICVar *s_pSkipVertexAnimationLOD = gEnv->pConsole->GetCVar("ca_vaSkipVertexAnimationLOD");
+			if (pSlot->pCharacter && pSlot->pCharacter->HasVertexAnimation() && s_pSkipVertexAnimationLOD->GetIVal())
+			{
+				// do not use LOD dissolve in this case, see CCharInstance::ComputeLod()
+				if (inRenderParams.lodValue.LodA() == -1)
+					continue; 
+				rParams.lodValue = pSlot->ComputeLod(inRenderParams.lodValue.LodA(), passInfo);
+			}
 			pSlot->Render( m_pEntity, rParams, m_dwRndFlags,this, passInfo );
 		}
 	}

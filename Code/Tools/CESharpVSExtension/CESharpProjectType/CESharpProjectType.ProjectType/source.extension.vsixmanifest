@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="CESharpProjectType.ProjectType..c08f9a6c-3129-41ac-a273-99227a76bb17" Version="1.0" Language="en-US" Publisher="CESharpProjectType.ProjectType" />
-    <DisplayName>CE# Launcher VSIX</DisplayName>
-    <Description xml:space="preserve">A template for creating a CE# Launcher project.</Description>
+    <Identity Id="CESharpProjectType.ProjectType..c08f9a6c-3129-41ac-a273-99227a76bb17" Version="1.0" Language="en-US" Publisher="Crytek" />
+    <DisplayName>CE# Project Extension</DisplayName>
+    <Description xml:space="preserve">A template for creating a CE# Project.</Description>
   </Metadata>
   <Installation>
     <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="14.0" />

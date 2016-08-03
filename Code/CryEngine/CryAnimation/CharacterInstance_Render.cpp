@@ -72,7 +72,11 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const QuatTS& O
 	g_pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
 
 	if (!passInfo.IsShadowPass())
+	{
 		m_nAnimationLOD = RendParams.lodValue.LodA();
+		if (m_nAnimationLOD == -1)
+			m_nAnimationLOD = RendParams.lodValue.LodB();
+	}
 
 	//	float fColor[4] = {1,0,1,1};
 	//	g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.2f, fColor, false,"fDistance: %f m_nAnimationLOD: %d   m_nRenderLOD: %d   numLODs: %d  m_pDefaultSkeleton->m_nBaseLOD: %d  Model: %s",RendParams.fDistance,m_nAnimationLOD,m_nRenderLOD,numLODs,m_pDefaultSkeleton->m_nBaseLOD,m_pDefaultSkeleton->GetFilePath().c_str() );

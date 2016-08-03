@@ -4957,13 +4957,13 @@ void CRenderer::ClearDrawCallsInfo()
 void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderListID renderList)
 {
 	SPipeStat& pipelineStats = m_RP.m_PS[m_RP.m_nProcessThreadID];
-	pipelineStats.m_nNumPSOSwitches += stats.numPSOSwitches;
-	pipelineStats.m_nNumLayoutSwitches += stats.numLayoutSwitches;
-	pipelineStats.m_nNumResourceSetSwitches += stats.numResourceSetSwitches;
-	pipelineStats.m_nNumInlineSets += stats.numInlineSets;
 
-	pipelineStats.m_nPolygons[renderList] += stats.numPolygons;
-	pipelineStats.m_nDIPs[renderList] += stats.numDIPs;
+	CryInterlockedAdd(&pipelineStats.m_nNumPSOSwitches, stats.numPSOSwitches);
+	CryInterlockedAdd(&pipelineStats.m_nNumLayoutSwitches, stats.numLayoutSwitches);
+	CryInterlockedAdd(&pipelineStats.m_nNumResourceSetSwitches, stats.numResourceSetSwitches);
+	CryInterlockedAdd(&pipelineStats.m_nNumInlineSets, stats.numInlineSets);
+	CryInterlockedAdd(&pipelineStats.m_nPolygons[renderList], stats.numPolygons);
+	CryInterlockedAdd(&pipelineStats.m_nDIPs[renderList], stats.numDIPs);
 }
 #endif
 

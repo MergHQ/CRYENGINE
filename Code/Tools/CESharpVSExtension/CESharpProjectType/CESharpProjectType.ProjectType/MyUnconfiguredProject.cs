@@ -25,7 +25,7 @@ namespace CESharpProjectType
 
 	[Export]
 	[AppliesTo(MyUnconfiguredProject.UniqueCapability)]
-	[ProjectTypeRegistration(VsPackage.ProjectTypeGuid, "CE# Launcher", "#2", ProjectExtension, Language, resourcePackageGuid: VsPackage.PackageGuid, PossibleProjectExtensions = ProjectExtension, ProjectTemplatesDir = @"..\..\Templates\Projects\MyCustomProject")]
+	[ProjectTypeRegistration(VsPackage.ProjectTypeGuid, "CE# Project", "#2", ProjectExtension, Language, resourcePackageGuid: VsPackage.PackageGuid, PossibleProjectExtensions = ProjectExtension, ProjectTemplatesDir = @"..\..\Templates\Projects\MyCustomProject")]
 	[ProvideProjectItem(VsPackage.ProjectTypeGuid, "My Items", @"..\..\Templates\ProjectItems\MyCustomProject", 500)]
 	internal class MyUnconfiguredProject
 	{

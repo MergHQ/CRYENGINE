@@ -88,8 +88,8 @@ void ParticlesDebug( inout SParticleVertex OUT, in float3 vCenter, in float3 vVe
 	// Aproximate quad screen space area
 	float fRadius =   length( vVertexPos.xyz - vCenter.xyz );
 
-	float4 vCenterScreenTC = HPosToScreenTC( mul(CV_ViewProjMatr, float4(vCenter.xyz, 1)) );
-	float4 vUpScreenTC = HPosToScreenTC( mul(CV_ViewProjMatr, float4(vCenter.xyz + CV_CameraUpVector.xyz * fRadius, 1)) );
+	float4 vCenterScreenTC = HPosToScreenTC( TransformPosition(float4(vCenter.xyz, 1)) );
+	float4 vUpScreenTC = HPosToScreenTC( TransformPosition(float4(vCenter.xyz + CV_CameraUpVector.xyz * fRadius, 1)) );
 
 	vCenterScreenTC /= vCenterScreenTC.w;
 	vUpScreenTC /= vUpScreenTC.w;
@@ -164,7 +164,7 @@ SParticleVertex ParticleCommonVertexOutput(in float4 vPos, in app2vertParticleGe
 	vPos.w = 1;
 #endif
 
-	Particle_Setup_General( vPos, CV_ViewProjMatr, IN, OUT);
+	Particle_Setup_General( vPos, IN, OUT);
 	
 
 	//////////////////////////////////////////////////////
@@ -258,7 +258,7 @@ OutputVS UnifyParticleOutputVS(in SParticleVertex pCommon)
 half4 CenterMotion()
 {
 #if %_RT_MOTION_BLUR
-	const half4 vCenterPos = mul(CV_ViewProjMatr, IN.Position);
+	const half4 vCenterPos = TransformPosition(IN.Position);
 	const half4 vCenterPosPrev = mul(ViewProjMatrPrev, IN.Position);
 	// Current screen space position of particle center (xy), screen space camera motion vector (zw)
 	half4 vSSCenterMotion = half4(vCenterPos.xy/vCenterPos.w, vCenterPosPrev.xy/vCenterPosPrev.w);
@@ -613,7 +613,7 @@ OutputVS ParticleDS(float2 QuadUV : SV_DomainLocation, const OutputPatch<Control
 	vWorldPos.xyz += vDP * (utt - uut) + vY0 * uut - vY1 * utt;
 #endif
 
-	OUT.HPosition = mul(CV_ViewProjMatr, float4(vWorldPos.xyz, 1));
+	OUT.HPosition = TransformPosition(float4(vWorldPos.xyz, 1));
 
 	OUT.baseTC = BilinearInterp(QuadUV, ControlPt[0].baseTC, ControlPt[1].baseTC, ControlPt[2].baseTC, ControlPt[3].baseTC);
 #if %_RT_ANIM_BLEND || %_RT_PARTICLE_SHADOW
@@ -1045,7 +1045,7 @@ OutputParticleVolumeFogVS ParticleVolumeFogVS(in float4 Position: POSITION, app2
 	SParticleVertex MID = ParticleCommonVertexOutput(Position, IN, CenterMotion());
 
 	Position.w = 1.0f;
-	float4 hPosition = mul(CV_ViewProjMatr, Position);
+	float4 hPosition = TransformPosition(Position);
 
 	// scale aplha to fog density.
 	MID.alphaClip.x *= 0.25f;

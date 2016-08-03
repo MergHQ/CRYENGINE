@@ -33,7 +33,7 @@
 				auto pContext = reinterpret_cast<CCryDX12DeviceContext*>(gcpRendD3D->GetDeviceContext().GetRealDeviceContext());  \
 				pContext->PushProfilerEvent(_NAME); } while (0)
 		#define PROFILE_LABEL_POP_GPU(_NAME)                                                                                  \
-			do { CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetGraphicsInterface()->EndProfilerEvent();        \
+			do { CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetGraphicsInterface()->EndProfilerEvent(_NAME);   \
 				auto pContext = reinterpret_cast<CCryDX12DeviceContext*>(gcpRendD3D->GetDeviceContext().GetRealDeviceContext());  \
 				pContext->PopProfilerEvent(); } while (0)
 

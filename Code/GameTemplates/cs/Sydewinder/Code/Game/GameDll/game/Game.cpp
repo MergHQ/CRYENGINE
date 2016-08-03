@@ -5,6 +5,7 @@
 #include "Game.h"
 #include "GameFactory.h"
 #include "flownodes/FlowBaseNode.h"
+#include <CryMono/IMonoRuntime.h>
 
 
 CAutoRegFlowNodeBaseZero* CAutoRegFlowNodeBaseZero::m_pFirst = nullptr;

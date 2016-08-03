@@ -32,7 +32,7 @@ public:
 
 	void SetProfilerMarker(const char* label);
 	void BeginProfilerEvent(const char* label);
-	void EndProfilerEvent();
+	void EndProfilerEvent(const char* label);
 
 	// Helper functions for DX12
 	NCryDX12::CCommandList* GetDX12CommandList() { return m_sharedState.pCommandList; }

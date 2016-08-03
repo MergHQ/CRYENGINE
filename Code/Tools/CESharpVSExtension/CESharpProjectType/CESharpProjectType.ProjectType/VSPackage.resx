@@ -118,12 +118,12 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="1" xml:space="preserve">
-    <value>CE# Launcher</value>
+    <value>CE# Project</value>
   </data>
   <data name="2" xml:space="preserve">
-    <value>CE# Launcher Project Files (*.ceproj);*.ceproj</value>
+    <value>CE# Project Files (*.ceproj);*.ceproj</value>
   </data>
   <data name="3" xml:space="preserve">
-    <value>CE# Launcher Items</value>
+    <value>CE# Project Items</value>
   </data>
 </root>

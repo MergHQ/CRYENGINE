@@ -1,72 +1,56 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
     <CustomProjectExtensionsPath>$(LocalAppData)\CustomProjectSystems\CESharpProjectType\</CustomProjectExtensionsPath>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProjectTypeGuids>{E7562513-36BA-4D11-A927-975E5375ED10};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <ProjectGuid>{7B3F1234-1CFE-4CCF-B1CB-12345F86D6F1}</ProjectGuid>
+    <ProjectGuid>{7B3F1234-1CFE-4CCF-B1CB-12345F8606F1}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <OutputName>CryEngine.SampleApp</OutputName>
     <RootNamespace>CryEngine.SampleApp</RootNamespace>
     <AssemblyName>CryEngine.SampleApp</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Name>CryEngine.SampleApp</Name>
+    <OutputPath>bin\win_x64</OutputPath>
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\..\bin\win_x64</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
     <WarningLevel>4</WarningLevel>
     <Optimize>true</Optimize>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>..\..\bin\win_x64</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\..\bin\win_x86</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugType>full</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
-    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <OutputPath>..\..\bin\win_x64_release</OutputPath>
     <WarningLevel>4</WarningLevel>
     <Optimize>false</Optimize>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>..\..\bin\win_x86</OutputPath>
+  <Import Project="$(CustomProjectExtensionsPath)CustomProject.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutputPath>..\..\bin\win_x64_release</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
-    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
-    <PlatformTarget>x86</PlatformTarget>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <Import Project="$(CustomProjectExtensionsPath)CustomProject.props" />
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Xml" />
-    <Reference Include="CryEngine.Common" Condition="'$(Platform)' == 'x64'">
+    <Reference Include="CryEngine.Common">
       <HintPath>..\..\bin\win_x64\CryEngine.Common.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
@@ -80,13 +64,15 @@
       <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
+  <Import Project="$(CustomProjectExtensionsPath)CustomProjectCs.targets" />
+  <!-- This next bit is required unless the macro used to Import your targets is defined in an MSBuild toolset. -->
   <ProjectExtensions>
-	<ProjectCapabilities>
+    <ProjectCapabilities>
       <ProjectConfigurationsDeclaredAsItems />
     </ProjectCapabilities>
     <MonoDevelop>
       <Properties>
-        <CryEngineParameters BuildLocation="..\.." Launcher="GameSDK" DebugCommand="D:\code\ce_main\bin\win_x64\GameSDK.exe" DebugCommandArguments="-project &quot;E:\Temp\GameTemplates\CsBlank\SampleApp.cryproject&quot;" DebugWorkingDirectory="" />
+        <CryEngineParameters BuildLocation="..\.." Launcher="GameSDK" DebugCommand="G:\wsp\ce\dev_cesharp\bin\win_x64\GameSDK.exe" DebugCommandArguments="-project &quot;G:\wsp\ce\dev_cesharp\Code\GameTemplates\cs\Blank\SampleApp.cryproject&quot;" DebugWorkingDirectory="" />
       </Properties>
     </MonoDevelop>
   </ProjectExtensions>

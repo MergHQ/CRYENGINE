@@ -463,7 +463,9 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 	if (numLODs==0)
 		return;
 	int nDesiredRenderLOD = RendParams.lodValue.LodA();
-	if(nDesiredRenderLOD>=numLODs)
+	if (nDesiredRenderLOD == -1)
+		nDesiredRenderLOD = RendParams.lodValue.LodB();
+	if (nDesiredRenderLOD>=numLODs)
 	{
 		if (m_AttFlags&FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD)
 			return;  //early exit, if LOD-file doesn't exist

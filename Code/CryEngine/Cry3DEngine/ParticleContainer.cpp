@@ -768,15 +768,19 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		}
 
 		const uint threadId = passInfo.ThreadID();
-		CRenderObject* pRenderObject = nullptr;
+		CRenderObject** pCachedRO = nullptr;
 		if (passInfo.IsRecursivePass())
-			pRenderObject = m_pRecursiveRO[threadId];
+			pCachedRO = m_pRecursiveRO;
 		else if (nObjFlags & FOB_AFTER_WATER)
-			pRenderObject = m_pAfterWaterRO[threadId];
+			pCachedRO = m_pAfterWaterRO;
 		else
-			pRenderObject = m_pBeforeWaterRO[threadId];
+			pCachedRO = m_pBeforeWaterRO;
+		CRenderObject* pRenderObject = pCachedRO[threadId];
 		if (!pRenderObject)
+		{
 			pRenderObject = CreateRenderObject(nObjFlags);
+			pCachedRO[threadId] = pRenderObject;
+		}
 
 		SAddParticlesToSceneJob& job = CParticleManager::Instance()->GetParticlesToSceneJob(passInfo);
 		job.pPVC = this;

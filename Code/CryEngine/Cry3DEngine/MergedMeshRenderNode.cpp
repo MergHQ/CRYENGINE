@@ -2608,7 +2608,8 @@ void CMergedMeshRenderNode::CreateRenderMesh(RENDERMESH_UPDATE_TYPE type, const 
 				{
 					if (update->chunks[j].matId != chunk.m_nMatID)
 					{
-						rmchunks.push_back(chunk);
+						if (chunk.nNumIndices && chunk.nNumVerts)
+							rmchunks.push_back(chunk);
 						chunk.m_nMatID = update->chunks[j].matId;
 						chunk.nFirstIndexId = ii;
 						chunk.nFirstVertId = iv;
@@ -2617,8 +2618,10 @@ void CMergedMeshRenderNode::CreateRenderMesh(RENDERMESH_UPDATE_TYPE type, const 
 					}
 					update->chunks[j].ioff = ii;
 					update->chunks[j].voff = iv;
-					chunk.nNumIndices = (ii += update->chunks[j].icnt);
-					chunk.nNumVerts = (iv += update->chunks[j].vcnt);
+					chunk.nNumIndices += update->chunks[j].icnt;
+					ii += update->chunks[j].icnt;
+					chunk.nNumVerts += update->chunks[j].vcnt;
+					iv += update->chunks[j].vcnt;
 				}
 			}
 done:

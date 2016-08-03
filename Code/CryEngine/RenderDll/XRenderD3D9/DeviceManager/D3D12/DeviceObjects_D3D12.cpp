@@ -1173,7 +1173,7 @@ void CDeviceCommandListImpl::BeginProfilerEvent(const char* label)
 	PIXBeginEvent(m_sharedState.pCommandList->GetD3D12CommandList(), 0, label);
 }
 
-void CDeviceCommandListImpl::EndProfilerEvent()
+void CDeviceCommandListImpl::EndProfilerEvent(const char* label)
 {
 	PIXEndEvent(m_sharedState.pCommandList->GetD3D12CommandList());
 }
