@@ -119,23 +119,28 @@ void CInteractor::Update(SEntityUpdateContext&, int)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
 
-	EntityId newOverId = 0;
+	EntityId newOverId = INVALID_ENTITYID;
 	int usableIdx = 0;
 
-	if (m_lockedByEntityId)
+	const EntityId myId = GetGameObject()->GetEntityId();
+	const IActor* const pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(myId);
+	if (pActor && !pActor->IsInteracting())
 	{
-		newOverId = m_lockEntityId;
-		usableIdx = m_lockIdx;
-	}
-	else
-	{
-		if ((CCryActionCVars::Get().playerInteractorRadius != m_lastRadius) && m_pQuery)
+		if (m_lockedByEntityId)
 		{
-			m_lastRadius = CCryActionCVars::Get().playerInteractorRadius;
-			m_pQuery->SetProximityRadius(m_lastRadius);
+			newOverId = m_lockEntityId;
+			usableIdx = m_lockIdx;
 		}
+		else
+		{
+			if ((CCryActionCVars::Get().playerInteractorRadius != m_lastRadius) && m_pQuery)
+			{
+				m_lastRadius = CCryActionCVars::Get().playerInteractorRadius;
+				m_pQuery->SetProximityRadius(m_lastRadius);
+			}
 
-		PerformQueries(newOverId, usableIdx);
+			PerformQueries(newOverId, usableIdx);
+		}
 	}
 	UpdateTimers(newOverId, usableIdx);
 }

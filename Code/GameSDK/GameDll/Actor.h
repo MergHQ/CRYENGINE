@@ -577,6 +577,8 @@ public:
 	virtual void OnPreparedFromPool() override {}
 
 	virtual void OnReused(IEntity *pEntity, SEntitySpawnParams &params) override;
+	
+	virtual bool IsInteracting() const override;
 	// ~IActor
 
 	// IGameObjectProfileManager

@@ -5553,6 +5553,12 @@ void CActor::OnReused(IEntity *pEntity, SEntitySpawnParams &params)
 	SetActorModelInternal();
 }
 
+bool CActor::IsInteracting() const
+{
+	return GetActorStats()->mountedWeaponID != INVALID_ENTITYID
+		|| this->GetLinkedVehicle() != nullptr;
+}
+
 void CActor::StartInteractiveAction( EntityId entityId, int interactionIndex )
 {
 	

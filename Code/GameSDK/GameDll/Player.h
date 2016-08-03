@@ -749,6 +749,8 @@ public:
 
 	void SwitchPlayerInput(IPlayerInput* pNewPlayerInput);
 
+	virtual bool IsInteracting() const override;
+
 protected:
 
 	// CanFire helpers

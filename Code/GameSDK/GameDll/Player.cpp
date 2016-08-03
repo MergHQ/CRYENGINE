@@ -2656,8 +2656,12 @@ void CPlayer::SwitchPlayerInput(IPlayerInput* pNewPlayerInput)
 	m_pPlayerInput.reset(pNewPlayerInput);
 }
 
-
-
+bool CPlayer::IsInteracting() const
+{
+	return CActor::IsInteracting()
+		|| IsOnLadder()
+		|| IsOnLedge();
+}
 
 void CPlayer::StartInteractiveActionByName( const char* interaction, bool bUpdateVisibility, float actionSpeed /*= 1.0f*/ )
 {
