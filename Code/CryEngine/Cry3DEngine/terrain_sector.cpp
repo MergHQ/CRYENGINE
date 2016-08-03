@@ -27,6 +27,21 @@ int CTerrainNode::GetMML(int nDist, int mmMin, int mmMax)
 	return mmMax;
 }
 
+void CTerrainNode::FillSectorHeightMapTextureData(Array2d<float> &arrHmData)
+{
+	FUNCTION_PROFILER_3DENGINE;
+
+	int nTexSize = m_pTerrain->m_texCache[2].m_nDim;
+	float fBoxSize = GetBBox().GetSize().x;
+	arrHmData.Allocate(nTexSize);
+	for (int x = 0; x < nTexSize; x++) for (int y = 0; y < nTexSize; y++)
+	{
+		arrHmData[x][y] = m_pTerrain->GetZApr(
+			(float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
+			(float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize), 0);
+	}
+}
+
 void CTerrainNode::SetLOD(const SRenderingPassInfo& passInfo)
 {
 	// Calculate geometry LOD

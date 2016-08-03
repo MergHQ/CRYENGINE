@@ -81,19 +81,8 @@ void CTerrainNode::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
 		return;
 	}
 
-	// fill sector height map data
-	int nTexSize = m_pTerrain->m_texCache[2].m_nDim;
-	float fBoxSize = GetBBox().GetSize().x;
 	Array2d<float> arrHmData;
-	arrHmData.Allocate(nTexSize);
-	for (int x = 0; x < nTexSize; x++) for (int y = 0; y < nTexSize; y++)
-	{
-		arrHmData[x][y] = m_pTerrain->GetZApr(
-			(float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
-			(float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize), 0);
-	}
-
-	STerrainTextureLayerFileHeader* pLayers = GetTerrain()->m_arrBaseTexInfos[m_nSID].m_TerrainTextureLayer;
+	FillSectorHeightMapTextureData(arrHmData);
 
 	memcpy((float*)pStream->GetUserData(), arrHmData.GetData(), arrHmData.GetDataSize());
 }
