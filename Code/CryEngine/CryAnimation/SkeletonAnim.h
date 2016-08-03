@@ -140,8 +140,8 @@ public:
 
 	IAnimationPoseModifierPtr m_transformPinningPoseModifier;
 
-	IAnimationSerializablePtr      GetPoseModifierSetup()       { return m_pPoseModifierSetup; }
-	IAnimationSerializableConstPtr GetPoseModifierSetup() const { return m_pPoseModifierSetup; }
+	IAnimationPoseModifierSetupPtr      GetPoseModifierSetup()       { return m_pPoseModifierSetup; }
+	IAnimationPoseModifierSetupConstPtr GetPoseModifierSetup() const { return m_pPoseModifierSetup; }
 
 	bool PushPoseModifier(uint32 layer, IAnimationPoseModifierPtr poseModifier, const char* name);
 

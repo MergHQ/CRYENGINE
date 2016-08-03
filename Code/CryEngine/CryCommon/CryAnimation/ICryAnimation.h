@@ -692,8 +692,8 @@ struct ISkeletonAnim
 
 	virtual bool                           PushPoseModifier(uint32 layer, IAnimationPoseModifierPtr poseModifier, const char* name = NULL) = 0;
 
-	virtual IAnimationSerializablePtr      GetPoseModifierSetup() = 0;
-	virtual IAnimationSerializableConstPtr GetPoseModifierSetup() const = 0;
+	virtual IAnimationPoseModifierSetupPtr      GetPoseModifierSetup() = 0;
+	virtual IAnimationPoseModifierSetupConstPtr GetPoseModifierSetup() const = 0;
 
 	//! This function will move outside of this interface. Use at your own risk.
 	virtual QuatT CalculateRelativeMovement(const float deltaTime, const bool CurrNext = 0) const = 0;

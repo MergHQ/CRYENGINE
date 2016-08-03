@@ -2092,3 +2092,17 @@ void CPoseModifierSetup::Serialize(Serialization::IArchive& ar)
 	ar.doc("List of modifiers (IK chains, constraints, ...) that can modify the pose after animations & physics are applied.");
 	CreateStack();
 }
+IAnimationPoseModifier* CPoseModifierSetup::GetEntry(int index)
+{
+	if (index >= 0 && index < m_modifiers.size())
+	{
+		return m_modifiers[index].instance.get();
+	}
+	return nullptr;
+}
+
+int CPoseModifierSetup::GetEntryCount()
+{
+	return m_modifiers.size();
+}
+
