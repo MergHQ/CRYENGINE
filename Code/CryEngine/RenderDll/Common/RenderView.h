@@ -68,6 +68,7 @@ public:
 	virtual uint32 GetShaderRenderingFlags() const final           { return m_nShaderRenderingFlags; };
 
 	virtual void   SetCameras(const CCamera* pCameras, int cameraCount) final;
+	virtual void   SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount) final;
 
 	// Begin/End writing items to the view from 3d engine traversal.
 	virtual void         SwitchUsageMode(EUsageMode mode) override;
@@ -80,13 +81,14 @@ public:
 	CRenderView(const char* name, EViewType type, CRenderView* pParentView = nullptr, ShadowMapFrustum* pShadowFrustumOwner = nullptr);
 	~CRenderView();
 
-	EViewType            GetType() const                                               { return m_viewType;  }
+	EViewType            GetType() const                                                 { return m_viewType;  }
 
-	void                 SetParentView(CRenderView* pParentView)                       { m_pParentView = pParentView; };
-	CRenderView*         GetParentView() const                                         { return m_pParentView;  };
+	void                 SetParentView(CRenderView* pParentView)                         { m_pParentView = pParentView; };
+	CRenderView*         GetParentView() const                                           { return m_pParentView;  };
 
-	const CCamera&       GetCamera(CCamera::EEye eye = CCamera::eEye_Left)       const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_camera[eye]; }
-	const CRenderCamera& GetRenderCamera(CCamera::EEye eye = CCamera::eEye_Left) const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_renderCamera[eye]; }
+	const CCamera&       GetCamera(CCamera::EEye eye = CCamera::eEye_Left)         const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_camera[eye]; }
+	const CCamera&       GetPreviousCamera(CCamera::EEye eye = CCamera::eEye_Left) const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_previousCamera[eye]; }
+	const CRenderCamera& GetRenderCamera(CCamera::EEye eye = CCamera::eEye_Left)   const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_renderCamera[eye]; }
 
 	RenderItems&         GetRenderItems(int nRenderList);
 	uint32               GetBatchFlags(int nRenderList) const;
@@ -286,8 +288,9 @@ private:
 	};
 	lockfree_add_vector<SPermanentObjectRecord> m_permanentObjects;
 
-	CCamera       m_camera[CCamera::eEye_eCount];       // Current camera
-	CRenderCamera m_renderCamera[CCamera::eEye_eCount]; // Current render camera
+	CCamera       m_camera[CCamera::eEye_eCount];          // Current camera
+	CCamera       m_previousCamera[CCamera::eEye_eCount];  // Previous frame render camera
+	CRenderCamera m_renderCamera[CCamera::eEye_eCount];    // Current render camera
 
 	// Internal job states to control when view job processing is done.
 	CryJobState                    m_jobstate_Sort;
@@ -303,7 +306,7 @@ private:
 	struct SShadows
 	{
 		// Shadow frustums needed for a view.
-		ShadowMapFrustum*                                             m_pShadowFrustumOwner;
+		ShadowMapFrustum* m_pShadowFrustumOwner;
 		std::vector<SShadowFrustumToRender>                           m_renderFrustums;
 
 		std::map<int, ShadowFrustumsPtr>                              m_frustumsByLight;

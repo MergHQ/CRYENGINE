@@ -102,7 +102,8 @@ public:
 	CCryNameTSCRC GetShaderTechnique()    const { return m_techniqueName; }
 	uint64        GetShaderRtMask()       const { return m_rtMask; }
 
-	ConstantManager& GetConstantManager() { return m_constantManager; };
+	ConstantManager&       GetConstantManager()       { return m_constantManager; }
+	const ConstantManager& GetConstantManager() const { return m_constantManager; }
 
 	static void      AddPrimitiveGeometryCacheUser();
 	static void      RemovePrimitiveGeometryCacheUser();

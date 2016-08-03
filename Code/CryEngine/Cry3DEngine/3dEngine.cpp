@@ -616,7 +616,7 @@ void C3DEngine::OnFrameStart()
 
 	UpdateWindAreas();
 
-	if(m_pWaterRippleManager)
+	if (m_pWaterRippleManager)
 	{
 		m_pWaterRippleManager->OnFrameStart();
 	}
@@ -1231,23 +1231,35 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 		// alwasy set camera to request postion for the renderer, allows debugging with e_camerafreeze
 		if (GetRenderer())
 		{
-			GetRenderer()->SetCamera(gEnv->pSystem->GetViewCamera());
+			const CCamera& currentCamera = gEnv->pSystem->GetViewCamera();
+			static CCamera previousCamera = gEnv->pSystem->GetViewCamera();
+
+			GetRenderer()->SetCamera(currentCamera);
 
 			if (auto pRenderView = passInfo.GetIRenderView())
-				pRenderView->SetCameras(&gEnv->pSystem->GetViewCamera(), 1);
+			{
+				pRenderView->SetCameras(&currentCamera, 1);
+				pRenderView->SetPreviousFrameCameras(&previousCamera, 1);
+			}
 
+			previousCamera = currentCamera;
 		}
 	}
 	else
 	{
+		CCamera previousCam = m_RenderingCamera;
 		m_RenderingCamera = newCam;
+
 		// alwasy set camera to request postion for the renderer, allows debugging with e_camerafreeze
 		if (GetRenderer())
 		{
 			GetRenderer()->SetCamera(newCam);
 
 			if (auto pRenderView = passInfo.GetIRenderView())
+			{
 				pRenderView->SetCameras(&newCam, 1);
+				pRenderView->SetPreviousFrameCameras(&previousCam, 1);
+			}
 
 		}
 	}
@@ -1385,8 +1397,8 @@ void C3DEngine::SelectEntity(IRenderNode* pEntity)
 
 void C3DEngine::CreateDecal(const struct CryEngineDecalInfo& decal)
 {
-	IF (!GetCVars()->e_DecalsAllowGameDecals, 0)
-		return;
+	IF(!GetCVars()->e_DecalsAllowGameDecals, 0)
+	return;
 
 	if (GetCVars()->e_Decals == 2)
 	{
@@ -2376,7 +2388,7 @@ void C3DEngine::GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB)
 
 void C3DEngine::AddWaterRipple(const Vec3& vPos, float scale, float strength)
 {
-	if(m_pWaterRippleManager)
+	if (m_pWaterRippleManager)
 	{
 		m_pWaterRippleManager->AddWaterRipple(vPos, scale, strength);
 	}
@@ -4699,7 +4711,7 @@ void C3DEngine::ObjectsTreeMarkAsUncompiled(const IRenderNode* pRenderNode)
 			curNode->MarkAsUncompiled(pRenderNode);
 	}
 
-	if(GetVisAreaManager())
+	if (GetVisAreaManager())
 		GetVisAreaManager()->MarkAllSectorsAsUncompiled(pRenderNode);
 }
 
@@ -6081,9 +6093,9 @@ bool C3DEngine::IsTessellationAllowed(const CRenderObject* pObj, const SRenderin
 	bool rendererTessellation;
 	GetRenderer()->EF_Query(EFQ_MeshTessellation, rendererTessellation);
 	if (pObj->m_fDistance < GetCVars()->e_TessellationMaxDistance
-		&& GetCVars()->e_Tessellation
-		&& rendererTessellation
-		&& !(pObj->m_ObjFlags & FOB_DISSOLVE)) // dissolve is not working with tessellation for now
+	    && GetCVars()->e_Tessellation
+	    && rendererTessellation
+	    && !(pObj->m_ObjFlags & FOB_DISSOLVE)) // dissolve is not working with tessellation for now
 	{
 		bool bAllowTessellation = true;
 
@@ -6147,30 +6159,30 @@ void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const 
 	switch (pRenderNode->GetRenderNodeType())
 	{
 	case eERType_Vegetation:
-	{
-		CVegetation* pVegetation = static_cast<CVegetation*>(pRenderNode);
-		const CLodValue lodValue = pVegetation->ComputeLod(wantedLod, passInfo);
-		pVegetation->Render(passInfo, lodValue, NULL);
-	}
-	break;
+		{
+			CVegetation* pVegetation = static_cast<CVegetation*>(pRenderNode);
+			const CLodValue lodValue = pVegetation->ComputeLod(wantedLod, passInfo);
+			pVegetation->Render(passInfo, lodValue, NULL);
+		}
+		break;
 	case eERType_Brush:
-	{
-		CBrush* pBrush = static_cast<CBrush*>(pRenderNode);
-		const CLodValue lodValue = pBrush->ComputeLod(wantedLod, passInfo);
-		pBrush->Render(lodValue, passInfo, NULL, NULL);
-	}
-	break;
+		{
+			CBrush* pBrush = static_cast<CBrush*>(pRenderNode);
+			const CLodValue lodValue = pBrush->ComputeLod(wantedLod, passInfo);
+			pBrush->Render(lodValue, passInfo, NULL, NULL);
+		}
+		break;
 	default:
-	{
-		const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
-		const AABB objBox = pRenderNode->GetBBoxVirtual();
-		SRendParams rParams;
-		rParams.fDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
-		rParams.lodValue = pRenderNode->ComputeLod(wantedLod, passInfo);
+		{
+			const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
+			const AABB objBox = pRenderNode->GetBBoxVirtual();
+			SRendParams rParams;
+			rParams.fDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
+			rParams.lodValue = pRenderNode->ComputeLod(wantedLod, passInfo);
 
-		pRenderNode->Render(rParams, passInfo);
-	}
-	break;
+			pRenderNode->Render(rParams, passInfo);
+		}
+		break;
 	}
 }
 
@@ -6211,8 +6223,8 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 	const char* szName = pEnt->GetName();
 	if (!szName[0] && !szClass[0])
 		Warning("I3DEngine::RegisterEntity: Entity undefined"); // do not register undefined objects
-																														//  if(strstr(szName,"Dude"))
-																														//  int y=0;
+	                                                          //  if(strstr(szName,"Dude"))
+	                                                          //  int y=0;
 #endif
 
 	IF(bUnRegisterOnly, 0)
@@ -6288,7 +6300,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 		if (fObjRadiusSqr > sqr(MAX_VALID_OBJECT_VOLUME) || !_finite(fObjRadiusSqr))
 		{
 			Warning("I3DEngine::RegisterEntity: Object has invalid bbox: name: %s, class name: %s, GetRadius() = %.2f",
-				pEnt->GetName(), pEnt->GetEntityClassName(), fObjRadiusSqr);
+			        pEnt->GetName(), pEnt->GetEntityClassName(), fObjRadiusSqr);
 			return; // skip invalid objects - usually only objects with invalid very big scale will reach this point
 		}
 
@@ -6492,11 +6504,11 @@ Vec3 C3DEngine::GetEntityRegisterPoint(IRenderNode* pEnt)
 			if (aabb.GetDistanceSqr(vPoint) > sqr(128.f))
 			{
 				Warning("I3DEngine::RegisterEntity: invalid entity position: Name: %s, Class: %s, Pos=(%.1f,%.1f,%.1f), BoxMin=(%.1f,%.1f,%.1f), BoxMax=(%.1f,%.1f,%.1f)",
-					pEnt->GetName(), pEnt->GetEntityClassName(),
-					pEnt->GetPos().x, pEnt->GetPos().y, pEnt->GetPos().z,
-					pEnt->GetBBox().min.x, pEnt->GetBBox().min.y, pEnt->GetBBox().min.z,
-					pEnt->GetBBox().max.x, pEnt->GetBBox().max.y, pEnt->GetBBox().max.z
-				);
+				        pEnt->GetName(), pEnt->GetEntityClassName(),
+				        pEnt->GetPos().x, pEnt->GetPos().y, pEnt->GetPos().z,
+				        pEnt->GetBBox().min.x, pEnt->GetBBox().min.y, pEnt->GetBBox().min.z,
+				        pEnt->GetBBox().max.x, pEnt->GetBBox().max.y, pEnt->GetBBox().max.z
+				        );
 			}
 			// clamp by bbox
 			vPoint.CheckMin(aabb.max);
@@ -6514,4 +6526,3 @@ Vec3 C3DEngine::GetSunDirNormalized() const
 {
 	return m_vSunDirNormalized;
 }
-

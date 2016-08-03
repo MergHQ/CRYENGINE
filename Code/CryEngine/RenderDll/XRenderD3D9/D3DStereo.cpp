@@ -78,6 +78,7 @@ CD3DStereoRenderer::CD3DStereoRenderer(CD3D9Renderer& renderer, EStereoDevice de
 	, m_pHmdDevice(nullptr)
 	, m_bAsyncCameraMatrixValid(false)
 	, m_asyncCameraMatrix(IDENTITY)
+	, m_bPreviousCameraValid(false)
 {
 	if (device == STEREO_DEVICE_DEFAULT)
 		SelectDefaultDevice();
@@ -303,7 +304,7 @@ void CD3DStereoRenderer::CreateIntermediateBuffers()
 	CTexture::s_ptexStereoL = CTexture::CreateRenderTarget("$StereoL", nWidth, nHeight, Clr_Empty, eTT_2D, nFlags, eTF_R8G8B8A8);
 	CTexture::s_ptexStereoR = CTexture::CreateRenderTarget("$StereoR", nWidth, nHeight, Clr_Empty, eTT_2D, nFlags, eTF_R8G8B8A8);
 
-	#if defined(CRY_USE_DX12) && CRY_USE_DX12_MULTIADAPTER
+#if defined(CRY_USE_DX12) && CRY_USE_DX12_MULTIADAPTER
 	// NOTE: Workaround for missing MultiGPU-support in the HMD libraries
 	if (m_renderer->GetDevice().GetNodeCount() > 1)
 	{
@@ -315,7 +316,7 @@ void CD3DStereoRenderer::CreateIntermediateBuffers()
 			CTexture::s_ptexQuadLayers[i] = CTexture::CreateRenderTarget(textureName, nWidth, nHeight, Clr_Empty, eTT_2D, nFlags, eTF_R8G8B8A8);
 		}
 	}
-	#endif
+#endif
 
 	if (m_submission > STEREO_SUBMISSION_SEQUENTIAL)
 	{
@@ -628,10 +629,21 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 	int nThreadID = passInfo.ThreadID();
 	CRenderView* pRenderView = passInfo.GetRenderView();
 
+	CCamera cameras[] =
+	{
+		PrepareCamera(LEFT_EYE,  m_renderer.m_RP.m_TI[nThreadID].m_cam),
+		PrepareCamera(RIGHT_EYE, m_renderer.m_RP.m_TI[nThreadID].m_cam)
+	};
+
+	if (!m_bPreviousCameraValid)
+	{
+		m_previousCamera[LEFT_EYE] = cameras[LEFT_EYE];
+		m_previousCamera[RIGHT_EYE] = cameras[RIGHT_EYE];
+		m_bPreviousCameraValid = true;
+	}
+
 	if (!RequiresSequentialSubmission() && CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING && !passInfo.IsRecursivePass())
 	{
-		CCamera cam = m_renderer.m_RP.m_TI[nThreadID].m_cam;
-
 		int sceneFlagsDual = SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE;
 
 		// both eyes
@@ -644,14 +656,10 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 			m_renderer.m_pRT->RC_SetStereoEye(LEFT_EYE);
 			m_renderer.PushProfileMarker("DUAL_EYES");
 
-			CCamera cameras[] =
-			{
-				PrepareCamera(LEFT_EYE,  cam),
-				PrepareCamera(RIGHT_EYE, cam)
-			};
-
 			pRenderView->SetCameras(cameras, 2);
+			pRenderView->SetPreviousFrameCameras(m_previousCamera, 2);
 
+			m_renderer.SetCamera(cameras[0]);
 			RenderScene(sceneFlags | sceneFlagsDual, passInfo);
 
 			m_renderer.PopProfileMarker("DUAL_EYES");
@@ -664,8 +672,6 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 	}
 	else if (CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING && !passInfo.IsRecursivePass())   //for recursive rendering (e.g. rendering to ocean reflection texture), stereo is not needed
 	{
-		CCamera cam = m_renderer.m_RP.m_TI[nThreadID].m_cam;
-
 		int sceneFlagsLeft = SHDF_STEREO_LEFT_EYE;
 		int sceneFlagsRight = SHDF_NO_SHADOWGEN | SHDF_STEREO_RIGHT_EYE;
 
@@ -691,9 +697,9 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 			m_renderer.m_pRT->RC_SetStereoEye(LEFT_EYE);
 			m_renderer.PushProfileMarker("LEFT_EYE");
 
-			CCamera camL = PrepareCamera(LEFT_EYE, cam);
-			m_renderer.SetCamera(camL);
-			pRenderView->SetCameras(&camL, 1);
+			m_renderer.SetCamera(cameras[LEFT_EYE]);
+			pRenderView->SetCameras(&cameras[LEFT_EYE], 1);
+			pRenderView->SetPreviousFrameCameras(&m_previousCamera[LEFT_EYE], 1);
 
 			RenderScene(sceneFlags | sceneFlagsLeft, passInfo);
 
@@ -710,9 +716,9 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 			m_renderer.m_pRT->RC_SetStereoEye(RIGHT_EYE);
 			m_renderer.PushProfileMarker("RIGHT_EYE");
 
-			CCamera camR = PrepareCamera(RIGHT_EYE, cam);
-			m_renderer.SetCamera(camR);
-			pRenderView->SetCameras(&camR, 1);
+			m_renderer.SetCamera(cameras[RIGHT_EYE]);
+			pRenderView->SetCameras(&cameras[RIGHT_EYE], 1);
+			pRenderView->SetPreviousFrameCameras(&m_previousCamera[RIGHT_EYE], 1);
 
 			RenderScene(sceneFlags | sceneFlagsRight, passInfo);
 
@@ -733,6 +739,9 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 
 		RenderScene(sceneFlags, passInfo);
 	}
+
+	m_previousCamera[LEFT_EYE] = cameras[LEFT_EYE];
+	m_previousCamera[RIGHT_EYE] = cameras[RIGHT_EYE];
 }
 
 void CD3DStereoRenderer::SubmitFrameToHMD()
@@ -774,8 +783,8 @@ void CD3DStereoRenderer::DisplayStereo()
 			// Left eye contains both eye views, copy the content crossed into right eye
 			// Left eye contains now L+R and right eye contains R+L
 			m_renderer->GetDeviceContext().CopyResourceOvercross(
-				GetEyeTarget(RIGHT_EYE)->GetDevTexture()->GetBaseTexture(),
-				GetEyeTarget(LEFT_EYE)->GetDevTexture()->GetBaseTexture());
+			  GetEyeTarget(RIGHT_EYE)->GetDevTexture()->GetBaseTexture(),
+			  GetEyeTarget(LEFT_EYE)->GetDevTexture()->GetBaseTexture());
 		}
 	}
 
@@ -804,24 +813,24 @@ void CD3DStereoRenderer::DisplayStereo()
 		m_renderer->m_pNewTarget[0]->m_pTarget->GetResource(&pTarget);
 
 		m_renderer->GetDeviceContext().CopySubresourceRegion(
-			pTarget,
-			0,
-			0,
-			0,
-			0,
-			GetEyeTarget(LEFT_EYE)->GetDevTexture()->GetBaseTexture(),
-			0,
-			nullptr);
+		  pTarget,
+		  0,
+		  0,
+		  0,
+		  0,
+		  GetEyeTarget(LEFT_EYE)->GetDevTexture()->GetBaseTexture(),
+		  0,
+		  nullptr);
 
 		m_renderer->GetDeviceContext().CopySubresourceRegion(
-			pTarget,
-			0,
-			widthBB >> 1,
-			0,
-			0,
-			GetEyeTarget(RIGHT_EYE)->GetDevTexture()->GetBaseTexture(),
-			0,
-			nullptr);
+		  pTarget,
+		  0,
+		  widthBB >> 1,
+		  0,
+		  0,
+		  GetEyeTarget(RIGHT_EYE)->GetDevTexture()->GetBaseTexture(),
+		  0,
+		  nullptr);
 
 		SAFE_RELEASE(pTarget);
 		return;

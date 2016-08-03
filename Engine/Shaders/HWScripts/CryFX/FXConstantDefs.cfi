@@ -154,6 +154,9 @@ cbuffer CBPerViewGlobal : register(b13)
 	float4    CV_ShadowViewPos;
 
 	float4    CV_WindGridOffset;
+	
+	float4x4  CV_ViewMatr;
+	float4x4  CV_InvViewMatr;
 };
 
 cbuffer CBPerPassShadowGen : register(b5)
