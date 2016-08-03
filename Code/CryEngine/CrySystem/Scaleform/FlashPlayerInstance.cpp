@@ -3534,6 +3534,16 @@ void CFlashPlayer::SendCharEvent(const SFlashCharEvent& charEvent)
 
 	FUNCTION_PROFILER(GetISystem(), PROFILE_SYSTEM);
 	SET_LOG_CONTEXT(m_filePath);
+
+	if ((gEnv->pInput->GetModifiers() & eMM_Ctrl) != 0)
+	{
+		SFlashKeyEvent::EKeyCode code = static_cast<SFlashKeyEvent::EKeyCode>(SFlashKeyEvent::A + charEvent.m_wCharCode - 1);
+		SFlashKeyEvent keyEvent(SFlashKeyEvent::eKeyDown, code, SFlashKeyEvent::eCtrlPressed, static_cast<unsigned char>(code), code);
+		SendKeyEvent(keyEvent);
+
+		return;
+	}
+
 	if (m_pMovieView)
 	{
 		GFxCharEvent event(charEvent.m_wCharCode, charEvent.m_keyboardIndex);
