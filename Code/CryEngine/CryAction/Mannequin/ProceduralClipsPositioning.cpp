@@ -289,7 +289,7 @@ public:
 
 			for (int i = 0; i < numScopes; i++)
 			{
-				if (installedScopeMask & (1 << i))
+				if (installedScopeMask & BIT64(i))
 				{
 					if (IActionController* pSlaveActionController = m_actionController->GetScope(i)->GetEnslavedActionController())
 					{

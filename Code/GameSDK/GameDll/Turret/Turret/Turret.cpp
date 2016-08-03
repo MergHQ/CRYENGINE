@@ -974,7 +974,7 @@ void CTurret::InitActionController()
 
 	InitMannequinUserParams();
 
-	const ActionScopes scopeTurret = m_pAnimationContext->controllerDef.m_scopeContexts.Find( "TurretCharacter" );
+	const TagID scopeTurret = m_pAnimationContext->controllerDef.m_scopeContexts.Find( "TurretCharacter" );
 	ICharacterInstance* const pCharacterInstance = pEntity->GetCharacter( DEFAULT_TURRET_MODEL_SLOT );
 	if ( pCharacterInstance == NULL )
 	{

@@ -22,15 +22,21 @@ enum EFlushMethod
 	FM_Failure,
 };
 
-ILINE uint32 GetLeastSignificantBit(ActionScopes scopeMask)
+ILINE uint64 GetLeastSignificantBit(ActionScopes scopeMask)
 {
-	const uint32 mask = (uint32)scopeMask;
-	static const uint32 MultiplyDeBruijnBitPosition[32] =
+	const uint64 mask = (uint64)scopeMask;
+	static const uint64 MultiplyDeBruijnBitPosition[64] = 
 	{
-		0,  1,  28, 2,  29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4,  8,
-		31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6,  11, 5,  10, 9
+		0,  1,  2, 53,  3,  7, 54, 27,
+		4, 38, 41,  8, 34, 55, 48, 28,
+		62,  5, 39, 46, 44, 42, 22,  9,
+		24, 35, 59, 56, 49, 18, 29, 11,
+		63, 52,  6, 26, 37, 40, 33, 47,
+		61, 45, 43, 21, 23, 58, 17, 10,
+		51, 25, 36, 32, 60, 20, 57, 16,
+		50, 31, 19, 15, 30, 14, 13, 12,
 	};
-	return MultiplyDeBruijnBitPosition[((uint32)((mask & ~(mask - 1)) * 0x077CB531U)) >> 27];
+	return MultiplyDeBruijnBitPosition[((uint64)((mask & ~(mask-1)) * 0x022fdd63cc95386d)) >> 58];
 }
 
 class CActionController : public IActionController
@@ -61,7 +67,7 @@ public:
 	{
 		CRY_ASSERT_MESSAGE((scopeID < m_scopeCount), "Invalid scope id");
 
-		return ((m_activeScopes & (1 << scopeID)) != 0);
+		return ((m_activeScopes & BIT64(scopeID)) != 0);
 	}
 	virtual ActionScopes GetActiveScopeMask() const override
 	{

@@ -364,7 +364,8 @@ bool CActionController::CanInstall(const IAction& action, TagID subContext, cons
 		fragTagState.globalTags = m_context.controllerDef.m_tags.GetUnion(fragTagState.globalTags, subContextDef.additionalTags);
 	}
 
-	for (uint32 i = 0, scopeFlag = 1; i < m_scopeCount; i++, scopeFlag <<= 1)
+	ActionScopes scopeFlag = 1;
+	for (uint32 i=0; i<m_scopeCount; i++, scopeFlag <<= 1)
 	{
 		if (scopeFlag & expandedScopeMask)
 		{
@@ -444,7 +445,7 @@ bool CActionController::IsDifferent(const FragmentID fragID, const TagState& fra
 	uint32 installedContexts = 0;
 	for (uint32 i = 0; i < numScopes; i++)
 	{
-		if ((1 << i) & mask)
+		if (BIT64(i) & mask)
 		{
 			const CActionScope& scope = m_scopeArray[i];
 			if (scope.NeedsInstall(installedContexts))
@@ -470,7 +471,7 @@ void CActionController::RequestInstall(const IAction& action, const ActionScopes
 	uint32 contextIDs = 0;
 	for (uint32 i = 0; i < m_scopeCount; i++)
 	{
-		if ((1 << i) & expandedScopeMask)
+		if (BIT64(i) & expandedScopeMask)
 		{
 			CActionScope& scope = m_scopeArray[i];
 			if (scope.NeedsInstall(contextIDs))
@@ -515,7 +516,7 @@ void CActionController::Install(IAction& action, float timeRemaining)
 	ActionScopes filteredScope = scopeMask & m_activeScopes;
 	SFragTagState tagState = SFragTagState(m_context.state.GetMask(), action.GetFragTagState());
 
-	uint32 overlappedScopes = ExpandOverlappingScopes(filteredScope);
+	ActionScopes overlappedScopes = ExpandOverlappingScopes(filteredScope);
 	m_scopeFlushMask |= overlappedScopes;
 
 	RecordTagState();
@@ -532,10 +533,11 @@ void CActionController::Install(IAction& action, float timeRemaining)
 	m_scopeFlushMask &= ~filteredScope;
 
 	//--- Now install action into scopes & animations on all other contexts
-	uint32 rootScope = SCOPE_ID_INVALID;
+	ActionScopes rootScope = SCOPE_ID_INVALID;
 	uint32 installedContexts = 0;
 	bool isOneShot = (fragmentID != FRAGMENT_ID_INVALID);
-	for (uint32 i = 0, scopeFlag = 1; i < m_scopeCount; i++, scopeFlag <<= 1)
+	ActionScopes scopeFlag = 1;
+	for (uint32 i=0; i<m_scopeCount; i++, scopeFlag <<= 1)
 	{
 		CActionScope& scope = m_scopeArray[i];
 		IActionPtr pExitingAction = scope.m_pAction;
@@ -699,8 +701,8 @@ bool CActionController::QueryDuration(IAction& action, float& fragmentDuration, 
 		tagState.globalTags = m_context.controllerDef.m_tags.GetUnion(tagState.globalTags, m_context.subStates[subContext].GetMask());
 		tagState.globalTags = m_context.controllerDef.m_tags.GetUnion(tagState.globalTags, subContextDef.additionalTags);
 	}
-
-	for (uint32 i = 0, scopeFlag = 1; i < m_scopeCount; i++, scopeFlag <<= 1)
+	ActionScopes scopeFlag = 1;
+	for (uint32 i=0; i<m_scopeCount; i++, scopeFlag <<= 1)
 	{
 		if (scopeFlag & scopeMask)
 		{
@@ -961,7 +963,8 @@ void CActionController::ValidateActions()
 void CActionController::ResolveActionStates()
 {
 	m_scopeFlushMask &= m_activeScopes;
-	for (uint32 i = 0, scopeFlag = 1; i < m_scopeCount; i++, scopeFlag <<= 1)
+	ActionScopes scopeFlag=1;
+	for (uint32 i=0; i<m_scopeCount; i++, scopeFlag <<= 1)
 	{
 		if (scopeFlag & m_scopeFlushMask)
 		{
@@ -1124,7 +1127,8 @@ bool CActionController::BlendOffActions(float timePassed)
 			if (rootScope.CanInstall(priority, FRAGMENT_ID_INVALID, SFragTagState(), false, timeLeft) && (timePassed >= timeLeft))
 			{
 				const ActionScopes installedScopes = pExitingAction->GetInstalledScopeMask() & m_activeScopes;
-				for (uint32 s = 0, scopeFlag = 1; s < m_scopeCount; s++, scopeFlag <<= 1)
+				ActionScopes scopeFlag = 1;
+				for (uint32 s=0; s<m_scopeCount; s++, scopeFlag<<=1)
 				{
 					if ((scopeFlag & installedScopes) != 0)
 					{
@@ -1281,7 +1285,7 @@ void CActionController::Update(float timePassed)
 		//--- Update scope sequencers
 		for (uint32 i = 0; i < m_scopeCount; i++)
 		{
-			if ((1 << i) & m_activeScopes)
+			if (BIT64(i) & m_activeScopes)
 			{
 				CActionScope& scope = m_scopeArray[i];
 				scope.Update(timePassed);
@@ -1351,7 +1355,8 @@ void CActionController::SetSlaveController(IActionController& target, uint32 tar
 				targetController.RegisterOwner(*this);
 
 				//--- Enable all associated scopes
-				for (size_t i = 0, scopeFlag = 1; i < m_scopeCount; i++, scopeFlag <<= 1)
+				ActionScopes scopeFlag = 1;
+				for (size_t i = 0; i < m_scopeCount; i++, scopeFlag <<= 1)
 				{
 					const CActionScope& scope = m_scopeArray[i];
 					if (scope.GetContextID() == targetContext)
@@ -1376,14 +1381,14 @@ void CActionController::SetSlaveController(IActionController& target, uint32 tar
 			{
 				//--- Hookup all the scopes
 				const ActionScopes targetScopeMask = targetController.GetActiveScopeMask();
-				const uint32 rootScope = GetLeastSignificantBit(targetScopeMask);
+				const ActionScopes rootScope = GetLeastSignificantBit(targetScopeMask);
 				CActionScope& targetScope = targetController.m_scopeArray[rootScope];
 				CRY_ASSERT(piOptionTargetDatabase);
 				SetScopeContext(targetContext, targetScope.GetEntity(), targetScope.GetCharInst(), piOptionTargetDatabase);
 
-				const ActionScopes clearMask = targetController.m_activeScopes & ~BIT(rootScope);
-
-				for (uint32 i = 0, scopeMask = 1; i < targetController.m_scopeCount; i++, scopeMask <<= 1)
+				const ActionScopes clearMask = targetController.m_activeScopes & ~BIT64(rootScope);
+				ActionScopes scopeMask = 1;
+				for (uint32 i=0; i<targetController.m_scopeCount; i++, scopeMask <<= 1)
 				{
 					if (scopeMask & clearMask)
 					{
@@ -1422,7 +1427,8 @@ void CActionController::FlushSlaveController(IActionController& target)
 			scopeContext.pEnslavedController = NULL;
 
 			//--- Disable scopes that use this context
-			for (size_t s = 0, scopeFlag = 1; s < m_scopeCount; s++, scopeFlag <<= 1)
+			ActionScopes scopeFlag = 1;
+			for (size_t s = 0; s < m_scopeCount; s++, scopeFlag <<= 1)
 			{
 				CActionScope& scope = m_scopeArray[s];
 				if (scope.GetContextID() == i)
@@ -1500,8 +1506,8 @@ void CActionController::Flush()
 		CryFatalError("Flushing the action controller in the middle of an update, this is bad!");
 	}
 	UpdateValidity();
-
-	for (uint32 i = 0, scopeFlag = 1; i < m_scopeCount; i++, scopeFlag <<= 1)
+	ActionScopes scopeFlag = 1;
+	for (uint32 i=0; i<m_scopeCount; i++, scopeFlag <<= 1)
 	{
 		CActionScope& scope = m_scopeArray[i];
 		FlushScope(i, scopeFlag);
@@ -1628,7 +1634,8 @@ ActionScopes CActionController::EndActionsOnScope(ActionScopes scopeMask, IActio
 	ActionScopes expandedScopeMask = ExpandOverlappingScopes(scopeMask);
 
 	//--- Clean up scopes
-	for (uint32 i = 0, scopeFlag = 1; i < m_scopeCount; i++, scopeFlag <<= 1)
+	ActionScopes scopeFlag = 1;
+	for (uint32 i=0; i<m_scopeCount; i++, scopeFlag<<=1)
 	{
 		CActionScope& scope = m_scopeArray[i];
 		if (scope.m_pAction && (scope.m_pAction->GetInstalledScopeMask() & expandedScopeMask))
@@ -1980,7 +1987,7 @@ void CActionController::DebugDraw() const
 			}
 		}
 
-		float* colour = (m_activeScopes & (1 << i)) ? FONT_COLOUR : FONT_COLOUR_INACTIVE;
+		float *colour = (m_activeScopes & BIT64(1<<i)) ? FONT_COLOUR : FONT_COLOUR_INACTIVE;
 		gEnv->pRenderer->Draw2dLabel(XPOS_SCOPELIST, ypos, FONT_SIZE, colour, false, "%s:", scope.m_name.c_str());
 
 		CryStackStringT<char, 1024> sExitingAction;
@@ -2102,7 +2109,7 @@ void CActionController::DebugDraw() const
 		bool first = true;
 		for (uint32 k = 0; k < m_scopeCount; k++)
 		{
-			if ((1 << k) & action.GetForcedScopeMask())
+			if (BIT64(k) & action.GetForcedScopeMask())
 			{
 				if (first)
 				{
@@ -2280,7 +2287,8 @@ void CActionController::Resume(uint32 resumeFlags)
 ActionScopes CActionController::FlushScopesByScopeContext(uint32 scopeContextID, EFlushMethod flushMethod)
 {
 	ActionScopes scopesUsingContext = 0;
-	for (size_t i = 0, scopeFlag = 1; i < m_scopeCount; i++, scopeFlag <<= 1)
+	ActionScopes scopeFlag = 1;
+	for (size_t i = 0; i < m_scopeCount; i++, scopeFlag <<= 1)
 	{
 		CActionScope& scope = m_scopeArray[i];
 		if (scope.GetContextID() == scopeContextID)
@@ -2307,7 +2315,7 @@ void CActionController::UpdateValidity()
 		const bool scopeContextIsValid = UpdateScopeContextValidity(scopeContextID);
 		if (!rootEntityIsValid || !scopeContextIsValid)
 		{
-			scopeContextsToFlush |= BIT(scopeContextID);
+			scopeContextsToFlush |= BIT64(scopeContextID);
 		}
 	}
 
@@ -2316,7 +2324,7 @@ void CActionController::UpdateValidity()
 	{
 		for (uint32 scopeContextID = 0; scopeContextID < numScopeContexts; scopeContextID++)
 		{
-			if (scopeContextsToFlush & BIT(scopeContextID))
+			if (scopeContextsToFlush & BIT64(scopeContextID))
 			{
 				ActionScopes flushedScopes = FlushScopesByScopeContext(scopeContextID, FM_Failure);
 				m_activeScopes &= ~flushedScopes;
