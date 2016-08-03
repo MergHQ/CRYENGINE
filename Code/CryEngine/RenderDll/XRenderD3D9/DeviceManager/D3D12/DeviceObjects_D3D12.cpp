@@ -1165,17 +1165,23 @@ bool CDeviceTimestampGroup::ResolveTimestamps()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CDeviceCommandListImpl::SetProfilerMarker(const char* label)
 {
+#if defined(ENABLE_FRAME_PROFILER_LABELS)
 	PIXSetMarker(m_sharedState.pCommandList->GetD3D12CommandList(), 0, label);
+#endif
 }
 
 void CDeviceCommandListImpl::BeginProfilerEvent(const char* label)
 {
+#if defined(ENABLE_FRAME_PROFILER_LABELS)
 	PIXBeginEvent(m_sharedState.pCommandList->GetD3D12CommandList(), 0, label);
+#endif
 }
 
 void CDeviceCommandListImpl::EndProfilerEvent(const char* label)
 {
+#if defined(ENABLE_FRAME_PROFILER_LABELS)
 	PIXEndEvent(m_sharedState.pCommandList->GetD3D12CommandList());
+#endif
 }
 
 void CDeviceCommandListImpl::ResetImpl()
