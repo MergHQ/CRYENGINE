@@ -197,7 +197,7 @@ EAudioRequestStatus CFileCacheManager::TryLoadRequest(AudioPreloadRequestId cons
 	bool bFullFailure = true;
 	CATLPreloadRequest* const pPreloadRequest = stl::find_in_map(m_rPreloadRequests, nPreloadRequestID, nullptr);
 
-	if (pPreloadRequest != nullptr && !pPreloadRequest->m_fileEntryIds.empty() && (!bAutoLoadOnly || (bAutoLoadOnly && pPreloadRequest->m_bAutoLoad)))
+	if (pPreloadRequest != nullptr && (!bAutoLoadOnly || (bAutoLoadOnly && pPreloadRequest->m_bAutoLoad)))
 	{
 		bFullSuccess = true;
 
@@ -224,7 +224,7 @@ EAudioRequestStatus CFileCacheManager::TryUnloadRequest(AudioPreloadRequestId co
 	bool bFullFailure = true;
 	CATLPreloadRequest* const pPreloadRequest = stl::find_in_map(m_rPreloadRequests, nPreloadRequestID, nullptr);
 
-	if (pPreloadRequest != nullptr && !pPreloadRequest->m_fileEntryIds.empty())
+	if (pPreloadRequest != nullptr)
 	{
 		bFullSuccess = true;
 
