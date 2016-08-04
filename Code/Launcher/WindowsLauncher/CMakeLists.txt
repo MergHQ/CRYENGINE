@@ -7,14 +7,10 @@ sources_platform(WIN32)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Header Files"
 		"StdAfx.h"
-		"../../SDKs/jsmn/jsmn.h"
-		"../../Libs/jsmn/jsmnutil.h"
 	SOURCE_GROUP "Resource Files"
 		"resource.h"
 	SOURCE_GROUP "Source Files"
 		"Main.cpp"
-		"../../SDKs/jsmn/jsmn.c"
-		"../../Libs/jsmn/jsmnutil.c"
 )
 
 # -- Manifests --
@@ -32,7 +28,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/DPIAware.xml ${CMAKE_CURRENT_BINARY_D
 add_sources("NoUberFile" SOURCE_GROUP "Manifest" "${CMAKE_CURRENT_BINARY_DIR}/DPIAware.manifest")
 if(WIN32)
 	CryLauncher(WindowsLauncher SOLUTION_FOLDER "Launcher")
-	target_link_libraries( ${THIS_PROJECT} PRIVATE Shell32)
+	target_link_libraries( ${THIS_PROJECT} PRIVATE Shell32 jsmn)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DJSMN_STRICT -DJSMN_PARENT_LINKS)
 	target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/jsmn ${CRY_LIBS_DIR}/jsmn)
 else()
