@@ -92,7 +92,7 @@ private:
 	Vec2 m_clipLow, m_clipRange;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldOpacity, "Field", "Opacity", defaultIcon, fieldColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldOpacity, "Field", "Opacity", colorField);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureFieldSize
@@ -150,7 +150,7 @@ private:
 	CParamMod<SModParticleField, UFloat10> m_size;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldSize, "Field", "Size", defaultIcon, fieldColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldSize, "Field", "Size", colorField);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureFieldPixelSize
@@ -245,6 +245,6 @@ private:
 	bool     m_initAlphas;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldPixelSize, "Field", "PixelSize", defaultIcon, fieldColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldPixelSize, "Field", "PixelSize", colorField);
 
 }

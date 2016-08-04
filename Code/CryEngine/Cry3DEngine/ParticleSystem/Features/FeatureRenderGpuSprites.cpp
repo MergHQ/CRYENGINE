@@ -58,6 +58,6 @@ void CFeatureRenderGpuSprites::ResolveDependency(CParticleComponent* pComponent)
 	pComponent->SetRuntimeInitializationParameters(params);
 }
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderGpuSprites, "Render", "GPU Sprites", "Editor/Icons/Particles/sprites.png", renderFeatureColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderGpuSprites, "Render", "GPU Sprites", colorRender);
 
 }

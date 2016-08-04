@@ -116,7 +116,7 @@ private:
 	UAngle    m_randomSpin;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAnglesRotate2D, "Angles", "Rotate2D", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAnglesRotate2D, "Angles", "Rotate2D", colorAngles);
 
 
 EParticleDataType PDT(EPQF_Orientation, float, 4);
@@ -227,6 +227,6 @@ private:
 	Vec3 m_randomSpin;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAnglesRotate3D, "Angles", "Rotate3D", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAnglesRotate3D, "Angles", "Rotate3D", colorAngles);
 
 }

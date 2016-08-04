@@ -119,6 +119,6 @@ private:
 };
 
 static const ColorB lightColor = ColorB(230, 216, 0);
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLightSource, "Light", "Light", defaultIcon, lightColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLightSource, "Light", "Light", colorLight);
 
 }

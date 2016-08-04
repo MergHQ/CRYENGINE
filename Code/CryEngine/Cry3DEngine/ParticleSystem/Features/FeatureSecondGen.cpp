@@ -242,7 +242,7 @@ public:
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnSpawn, "SecondGen", "OnSpawn", "Editor/Icons/Particles/onspawn.png", secondGenColor);
+CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnSpawn, "SecondGen", "OnSpawn", colorSecondGen);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -264,6 +264,6 @@ public:
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnDeath, "SecondGen", "OnDeath", "Editor/Icons/Particles/ondeath.png", secondGenColor);
+CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnDeath, "SecondGen", "OnDeath", colorSecondGen);
 
 }

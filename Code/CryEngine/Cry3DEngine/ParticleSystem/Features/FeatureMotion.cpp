@@ -153,7 +153,7 @@ private:
 	EIntegrator m_integrator;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionPhysics, "Motion", "Physics", defaultIcon, motionColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionPhysics, "Motion", "Physics", colorMotion);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -398,7 +398,7 @@ private:
 	Vec3   m_uniformAcceleration;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionCryPhysics, "Motion", "CryPhysics", defaultIcon, motionColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionCryPhysics, "Motion", "CryPhysics", colorMotion);
 
 //////////////////////////////////////////////////////////////////////////
 

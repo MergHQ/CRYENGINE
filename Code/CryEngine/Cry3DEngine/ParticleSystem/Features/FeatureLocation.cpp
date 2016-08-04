@@ -88,7 +88,7 @@ private:
 	CParamMod<SModParticleSpawnInit, UFloat10> m_scale;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationOffset, "Location", "Offset", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationOffset, "Location", "Offset", colorLocation);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationBox
@@ -174,7 +174,7 @@ private:
 	CParamMod<SModParticleSpawnInit, UFloat10> m_scale;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBox, "Location", "Box", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBox, "Location", "Box", colorLocation);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationSphere
@@ -292,7 +292,7 @@ private:
 	Vec3 m_axisScale;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationSphere, "Location", "Sphere", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationSphere, "Location", "Sphere", colorLocation);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationDisc
@@ -417,7 +417,7 @@ private:
 	Vec2 m_axisScale;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationCircle, "Location", "Circle", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationCircle, "Location", "Circle", colorLocation);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationGeometry
@@ -641,7 +641,7 @@ private:
 	bool m_orientToNormal;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationGeometry, "Location", "Geometry", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationGeometry, "Location", "Geometry", colorLocation);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationNoise
@@ -744,7 +744,7 @@ private:
 	UIntOctaves m_octaves;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationNoise, "Location", "Noise", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationNoise, "Location", "Noise", colorLocation);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationBeam
@@ -814,7 +814,7 @@ private:
 	CTargetSource m_destination;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBeam, "Location", "Beam", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBeam, "Location", "Beam", colorLocation);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationOmni
@@ -1192,6 +1192,6 @@ private:
 	bool m_useEmitterLocation;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationOmni, "Location", "Omni", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationOmni, "Location", "Omni", colorLocation);
 
 }

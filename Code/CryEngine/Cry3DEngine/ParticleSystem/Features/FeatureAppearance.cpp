@@ -115,7 +115,7 @@ private:
 
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceTextureTiling, "Appearance", "Texture Tiling", defaultIcon, appearenceColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceTextureTiling, "Appearance", "Texture Tiling", colorAppearance);
 
 class CFeatureAppearanceMaterial : public CParticleFeature
 {
@@ -147,7 +147,7 @@ private:
 	string m_textureName;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceMaterial, "Appearance", "Material", defaultIcon, appearenceColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceMaterial, "Appearance", "Material", colorAppearance);
 
 class CFeatureAppearanceLighting : public CParticleFeature
 {
@@ -215,7 +215,7 @@ private:
 	bool       m_receiveShadows;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceLighting, "Appearance", "Lighting", defaultIcon, appearenceColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceLighting, "Appearance", "Lighting", colorAppearance);
 
 SERIALIZATION_DECLARE_ENUM(EBlendMode,
                            Opaque = 0,
@@ -248,7 +248,7 @@ private:
 	EBlendMode m_blendMode;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceBlending, "Appearance", "Blending", defaultIcon, appearenceColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceBlending, "Appearance", "Blending", colorAppearance);
 
 class CFeatureAppearanceSoftIntersect : public CParticleFeature
 {
@@ -278,7 +278,7 @@ private:
 	UFloat m_softNess;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceSoftIntersect, "Appearance", "SoftIntersect", defaultIcon, appearenceColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceSoftIntersect, "Appearance", "SoftIntersect", colorAppearance);
 
 class CFeatureAppearanceVisibility : public CParticleFeature, SVisibilityParams
 {
@@ -315,6 +315,6 @@ private:
 	bool m_drawOnTop;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceVisibility, "Appearance", "Visibility", defaultIcon, appearenceColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceVisibility, "Appearance", "Visibility", colorAppearance);
 
 }

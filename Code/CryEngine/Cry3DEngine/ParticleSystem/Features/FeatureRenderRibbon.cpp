@@ -79,7 +79,7 @@ private:
 	bool                m_connectToOrigin;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderRibbon, "Render", "Ribbon", "Editor/Icons/Particles/ribbons.png", renderFeatureColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderRibbon, "Render", "Ribbon", colorRender);
 
 CFeatureRenderRibbon::CFeatureRenderRibbon()
 	: m_ribbonMode(ERibbonMode::Camera)

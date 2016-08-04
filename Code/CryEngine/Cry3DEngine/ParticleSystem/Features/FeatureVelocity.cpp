@@ -95,7 +95,7 @@ private:
 	CParamMod<SModParticleSpawnInit, UFloat10>  m_velocity;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityCone, "Velocity", "Cone", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityCone, "Velocity", "Cone", colorVelocity);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -162,7 +162,7 @@ private:
 	CParamMod<SModParticleSpawnInit, UFloat10> m_scale;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityDirectional, "Velocity", "Directional", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityDirectional, "Velocity", "Directional", colorVelocity);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -220,7 +220,7 @@ private:
 	CParamMod<SModParticleSpawnInit, UFloat10> m_velocity;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityOmniDirectional, "Velocity", "OmniDirectional", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityOmniDirectional, "Velocity", "OmniDirectional", colorVelocity);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -302,7 +302,7 @@ private:
 	CParamMod<SModParticleSpawnInit, SFloat> m_scale;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityInherit, "Velocity", "Inherit", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityInherit, "Velocity", "Inherit", colorVelocity);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -428,6 +428,6 @@ private:
 	SFloat m_velocityInheritAfterDeath;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMoveRelativeToEmitter, "Velocity", "MoveRelativeToEmitter", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMoveRelativeToEmitter, "Velocity", "MoveRelativeToEmitter", colorVelocity);
 
 }

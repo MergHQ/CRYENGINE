@@ -97,25 +97,37 @@ private:
 	bool             m_gpuInterfaceNeeded;
 };
 
-static const ColorB defaultColor = ColorB(128, 146, 165);
-static const ColorB spawnColor = ColorB(128, 165, 156);
-static const ColorB secondGenColor = ColorB(159, 121, 121);
-static const ColorB renderFeatureColor = ColorB(232, 127, 0);
-static const ColorB motionColor = ColorB(163, 156, 126);
-static const ColorB appearenceColor = ColorB(147, 125, 162);
-static const ColorB fieldColor = ColorB(152, 162, 125);
-static const char* defaultIcon = "Editor/Icons/Particles/generic.png";
+ILINE ColorB HexToColor(uint hex)
+{
+	return ColorB((hex >> 16) & 0xff, (hex >> 8) & 0xff, hex & 0xff);
+}
+
+static const ColorB colorAppearance = HexToColor(0x00ffba);
+static const ColorB colorField      = HexToColor(0x02ba25);
+static const ColorB colorRender     = HexToColor(0xc2fbbe);
+static const ColorB colorLocation   = HexToColor(0x30a8fd);
+static const ColorB colorAngles     = HexToColor(0x84d7fa);
+static const ColorB colorSpawn      = HexToColor(0xfc7070);
+static const ColorB colorLife       = HexToColor(0xd0c0ac);
+static const ColorB colorKill       = HexToColor(0xd0c0ac);
+static const ColorB colorVelocity   = HexToColor(0xcea639);
+static const ColorB colorMotion     = HexToColor(0xfb9563);
+static const ColorB colorLight      = HexToColor(0xfffdd0);
+static const ColorB colorAudio      = HexToColor(0xd671f7);
+static const ColorB colorGeneral    = HexToColor(0xececec);
+static const ColorB colorSecondGen  = HexToColor(0xc0c0c0);
 
 #define CRY_PFX2_DECLARE_FEATURE                                 \
   static const SParticleFeatureParams &GetStaticFeatureParams(); \
   virtual const SParticleFeatureParams& GetFeatureParams() const override;
 
-#define CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, IconName, Color, UseConnector)                \
+#define CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, Color, UseConnector)                \
   static struct SInit ## Type {SInit ## Type() { GetFeatureParams().push_back(Type::GetStaticFeatureParams()); } } gInit ## Type; \
   static IParticleFeature* Create ## Type() { return new Type(); }                                                                \
   const SParticleFeatureParams& Type::GetStaticFeatureParams() {                                                                  \
     static SParticleFeatureParams params;                                                                                         \
-    params.m_groupName = GroupName; params.m_featureName = FeatureName; params.m_iconName = IconName;                             \
+    params.m_groupName = GroupName;                                                                                               \
+    params.m_featureName = FeatureName;                                                                                           \
     params.m_color = Color;                                                                                                       \
     params.m_pFactory = Create ## Type;                                                                                           \
     params.m_hasComponentConnector = UseConnector;                                                                                \
@@ -123,11 +135,11 @@ static const char* defaultIcon = "Editor/Icons/Particles/generic.png";
   const SParticleFeatureParams& Type::GetFeatureParams() const { return GetStaticFeatureParams(); }                               \
   SERIALIZATION_CLASS_NAME(BaseType, Type, GroupName FeatureName, GroupName FeatureName);
 
-#define CRY_PFX2_IMPLEMENT_FEATURE(BaseType, Type, GroupName, FeatureName, IconName, Color) \
-  CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, IconName, Color, false)
+#define CRY_PFX2_IMPLEMENT_FEATURE(BaseType, Type, GroupName, FeatureName, Color) \
+  CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, Color, false)
 
-#define CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(BaseType, Type, GroupName, FeatureName, IconName, Color) \
-  CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, IconName, Color, true)
+#define CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(BaseType, Type, GroupName, FeatureName, Color) \
+  CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, Color, true)
 
 }
 

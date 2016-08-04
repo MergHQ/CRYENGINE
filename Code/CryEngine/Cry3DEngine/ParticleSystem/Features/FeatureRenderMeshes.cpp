@@ -237,6 +237,6 @@ private:
 	std::vector<IStatObj::SSubObject*> m_aSubObjects;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderMeshes, "Render", "Meshes", defaultIcon, renderFeatureColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderMeshes, "Render", "Meshes", colorRender);
 
 }

@@ -181,7 +181,7 @@ private:
 	bool                m_followParticle;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioTrigger, "Audio", "Trigger", defaultIcon, audioColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioTrigger, "Audio", "Trigger", colorAudio);
 
 class CFeatureAudioRtpc : public CParticleFeature
 {
@@ -236,6 +236,6 @@ private:
 	CParamMod<SModParticleField, SFloat> m_value;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioRtpc, "Audio", "Rtpc", defaultIcon, audioColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioRtpc, "Audio", "Rtpc", colorAudio);
 
 }
