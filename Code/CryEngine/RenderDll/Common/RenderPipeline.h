@@ -674,6 +674,7 @@ struct SRenderPipeline
 	uint64                               m_FlagsShader_RT;  // Shader runtime mask
 	uint32                               m_FlagsShader_MD;  // Shader texture modificator mask
 	uint32                               m_FlagsShader_MDV; // Shader vertex modificator mask
+	uint64                               m_FlagsShader_PipelineState;
 	uint32                               m_nShaderQuality;
 
 	void                                 (* m_pRenderFunc)();

@@ -254,6 +254,8 @@ private:
 	bool           CheckAllFilesAreWritable(const char* szDir) const;
 #endif
 
+	static void    FilterShaderCacheGenListForOrbis(FXShaderCacheCombinations& combinations);
+
 public:
 	char*                 m_pCurScript;
 	CShaderManBin         m_Bin;

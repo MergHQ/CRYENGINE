@@ -696,6 +696,7 @@ void CD3D9Renderer::FX_ResetPipe()
 	m_RP.m_FlagsShader_RT      = 0;
 	m_RP.m_FlagsShader_MD      = 0;
 	m_RP.m_FlagsShader_MDV     = 0;
+	m_RP.m_FlagsShader_PipelineState = 0;
 	m_RP.m_FlagsShader_LT      = 0;
 	m_RP.m_nCommitFlags        = FC_ALL;
 	m_RP.m_PersFlags2         |= RBPF2_COMMIT_PF | RBPF2_COMMIT_CM | RBPF2_COMMIT_SG;

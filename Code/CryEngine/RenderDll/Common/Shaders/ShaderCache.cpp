@@ -362,9 +362,11 @@ void CShaderMan::mfInitShadersCacheMissLog()
 	}
 }
 
-static inline bool IsDigit(int ch)
+static inline bool IsHexDigit(int ch)
 {
-	return unsigned(ch - '0') <= 9;
+	const int nDigit = (ch - int('0'));
+	const int bHex = (ch - int('a'));
+	return ((nDigit >= 0) && (nDigit <= 9)) || ((bHex >= 0) && (bHex < 6));
 }
 
 void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* Combinations, const char* pCombinations, int nType)
@@ -554,7 +556,7 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 				sSkipLine(s);
 				goto end;
 			}
-			if (IsDigit(ss[1]))
+			if (IsHexDigit(ss[1]) && (ss[2] != 'S'))
 			{
 				s = ss + 1;
 				cmb.Ident.m_pipelineState.opaque = shGetHex64(s);
@@ -1137,60 +1139,66 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	if (pipelineState.opaque != 0)
 	{
 		string result;
-#if defined(CRY_GNM_SHADER_COMPILER_VERSION)
-		CRY_ASSERT(CParserBin::m_nPlatform == SF_ORBIS && "PipelineState only supported for GNM backend at this time");
-		const char* const pCompilerGnm = CRY_GNM_SHADER_COMPILER_VERSION "/GnmShaderCompiler.exe %s %s %s %s";
-		static const char* kVsStages[] =
+		if (CParserBin::m_nPlatform == SF_ORBIS)
 		{
-			"VS",
-			"LS",
-			"ES",
-			"ES_LDS",
-			"DD",
-			"DDI",
-			nullptr,
-			nullptr
-		};
-		static const int kPsDepthBits[] =
-		{
-			0,
-			16,
-			32,
-			0,
-		};
-		static const char kISA[] =
-		{
-			'B',
-			'C',
-			'N',
-			'R',
-		};
+			const char* const pCompilerGnm = CRY_GNM_SHADER_COMPILER_VERSION "/GnmShaderCompiler.exe %s %s %s %s";
 
-		switch (eClass)
-		{
-		case eHWSC_Vertex:
-			result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, kVsStages[pipelineState.VS.targetStage & 7], kISA[(pipelineState.VS.targetStage >> 5) & 3]);
-			break;
-		case eHWSC_Hull:
-			result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "HS", kISA[(pipelineState.HS.targetStage >> 5) & 3]);
-			break;
-		case eHWSC_Domain:
-			result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.DS.targetStage & 1) ? "ES" : "VS", kISA[(pipelineState.DS.targetStage >> 5) & 3]);
-			break;
-		case eHWSC_Geometry:
-			result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.GS.targetStage & 1) ? "GS" : "GS_LDS", kISA[(pipelineState.GS.targetStage >> 5) & 3]);
-			break;
-		case eHWSC_Pixel:
-			result.Format("%s -HwStage=%s -HwISA=%c -PsColor=0x%x -PsDepth=%d -PsStencil=%d", pCompilerGnm, "PS", kISA[(pipelineState.PS.depthStencilInfo >> 29) & 3], pipelineState.PS.targetFormats, kPsDepthBits[(pipelineState.PS.depthStencilInfo >> 1) & 3], pipelineState.PS.depthStencilInfo & 1 ? 8 : 0);
-			break;
-		case eHWSC_Compute:
-			result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "CS", kISA[(pipelineState.CS.targetStage >> 5) & 3]);
-			break;
-		default:
-			CRY_ASSERT(false && "Unknown stage");
-			break;
+			static const char* kVsStages[] =
+			{
+				"VS",
+				"LS",
+				"ES",
+				"ES_LDS",
+				"DD",
+				"DDI",
+				nullptr,
+				nullptr
+			};
+			static const int kPsDepthBits[] =
+			{
+				0,
+				16,
+				32,
+				0,
+			};
+			static const char kISA[] =
+			{
+				'B',
+				'C',
+				'N',
+				'R',
+			};
+
+			switch (eClass)
+			{
+			case eHWSC_Vertex:
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, kVsStages[pipelineState.VS.targetStage & 7], kISA[(pipelineState.VS.targetStage >> 5) & 3]);
+				break;
+			case eHWSC_Hull:
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "HS", kISA[(pipelineState.HS.targetStage >> 5) & 3]);
+				break;
+			case eHWSC_Domain:
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.DS.targetStage & 1) ? "ES" : "VS", kISA[(pipelineState.DS.targetStage >> 5) & 3]);
+				break;
+			case eHWSC_Geometry:
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.GS.targetStage & 1) ? "GS" : "GS_LDS", kISA[(pipelineState.GS.targetStage >> 5) & 3]);
+				break;
+			case eHWSC_Pixel:
+				result.Format("%s -HwStage=%s -HwISA=%c -PsColor=0x%x -PsDepth=%d -PsStencil=%d", pCompilerGnm, "PS", kISA[(pipelineState.PS.depthStencilInfo >> 29) & 3], pipelineState.PS.targetFormats, kPsDepthBits[(pipelineState.PS.depthStencilInfo >> 1) & 3], pipelineState.PS.depthStencilInfo & 1 ? 8 : 0);
+				break;
+			case eHWSC_Compute:
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "CS", kISA[(pipelineState.CS.targetStage >> 5) & 3]);
+				break;
+			default:
+				CRY_ASSERT(false && "Unknown stage");
+				break;
+			}
 		}
-#endif
+		else
+		{
+			CRY_ASSERT(false && "PipelineState only supported for GNM backend at this time");
+		}
+
 		CRY_ASSERT(!result.empty());
 		return result;
 	}
@@ -1604,6 +1612,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 			gRenDev->m_RP.m_FlagsShader_LT = 0;
 			gRenDev->m_RP.m_FlagsShader_MD = 0;
 			gRenDev->m_RP.m_FlagsShader_MDV = 0;
+			gRenDev->m_RP.m_FlagsShader_PipelineState = 0;
 			CShader* pSH = CShaderMan::mfForName(str1, 0, NULL, cmb->Ident.m_GLMask);
 
 			gRenDev->m_RP.m_pShader = pSH;
@@ -1720,6 +1729,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 						gRenDev->m_RP.m_FlagsShader_LT = cmba->Ident.m_LightMask;
 						gRenDev->m_RP.m_FlagsShader_MD = cmba->Ident.m_MDMask;
 						gRenDev->m_RP.m_FlagsShader_MDV = cmba->Ident.m_MDVMask;
+						gRenDev->m_RP.m_FlagsShader_PipelineState = cmba->Ident.m_pipelineState.opaque;
 						// Adjust some flags for low spec
 						CHWShader* shaders[] = { pPass->m_PShader, pPass->m_VShader };
 						for (int i = 0; i < 2; i++)

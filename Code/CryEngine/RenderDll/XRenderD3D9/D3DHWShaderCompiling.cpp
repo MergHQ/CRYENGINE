@@ -3107,6 +3107,7 @@ void SShaderAsyncInfo::FlushPendingShaders()
 			Ident.m_RTMask = pAI->m_RTMask;
 			Ident.m_MDMask = pAI->m_MDMask;
 			Ident.m_MDVMask = pAI->m_MDVMask;
+			Ident.m_pipelineState.opaque = pAI->m_pipelineState.opaque;
 			CHWShader_D3D::SHWSInstance* pInst = pSH->mfGetInstance(pAI->m_pFXShader, pAI->m_nHashInstance, Ident);
 			if (pInst)
 			{
@@ -3928,7 +3929,8 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 	else if (pSHData)
 		mfGetCacheTokenMap(Table, pSHData, m_nMaskGenShader);
 
-	bool bSuccess = (mfIsValid(pInst, true) == ED3DShError_Ok);
+	ED3DShError shResult = mfIsValid(pInst, true);
+	bool bSuccess = (shResult == ED3DShError_Ok) || (shResult == ED3DShError_Fake);
 
 	return bSuccess;
 }
