@@ -56,9 +56,9 @@ CStandardGraphicsPipeline::SViewInfo::SViewInfo()
 {
 }
 
-void CStandardGraphicsPipeline::SViewInfo::SetCamera(const CRenderCamera& renderCam, const CCamera& ccamera, const Matrix44& previousFrameCameraMatrix, Vec2 subpixelShift, float drawNearestFov, float drawNearestFarPlane, Plane obliqueClippingPlane)
+void CStandardGraphicsPipeline::SViewInfo::SetCamera(const CRenderCamera& renderCam, const CCamera& cam, const CCamera& previousCam, Vec2 subpixelShift, float drawNearestFov, float drawNearestFarPlane, Plane obliqueClippingPlane)
 {
-	pCamera = &ccamera;
+	pCamera = &cam;
 	pRenderCamera = &renderCam;
 
 	Matrix44A proj, nearestProj;
@@ -88,39 +88,22 @@ void CStandardGraphicsPipeline::SViewInfo::SetCamera(const CRenderCamera& render
 		nearestProj = GetNearestProjection(drawNearestFov, drawNearestFarPlane, subpixelShift);
 	}
 
-	Matrix44A view, viewZero;
-	{
-		Matrix34_tpl<f64> mCam34 = ccamera.GetMatrix();
-		mCam34.OrthonormalizeFast();
+	Matrix44 view, viewZero, invView;
+	ExtractViewMatrices(cam, view, viewZero, invView);
 
-		Matrix44_tpl<f64> mCam44T = mCam34.GetTransposed();
-		Matrix44_tpl<f64> mView64;
-		mathMatrixLookAtInverse(&mView64, &mCam44T);
-
-		// Rotate around x-axis by -PI/2
-		view = (Matrix44_tpl<f32> )mView64;
-		Vec4 col1 = view.GetColumn4(1);
-		view.SetColumn4(1, view.GetColumn4(2));
-		view.SetColumn4(2, Vec4(-col1.x, -col1.y, -col1.z, -col1.w));
-
-		if (flags & eFlags_MirrorCamera)
-		{
-			Vec4 _col1 = view.GetColumn4(1);
-			view.SetColumn4(1, Vec4(-_col1.x, -_col1.y, -_col1.z, -_col1.w));
-		}
-
-		viewZero = view;
-		viewZero.SetRow(3, Vec3(ZERO));
-	}
+	Matrix44 prevView, prevViewZero, prevInvView;
+	ExtractViewMatrices(previousCam, prevView, prevViewZero, prevInvView);
 
 	cameraProjMatrix = view * proj;
 	cameraProjZeroMatrix = viewZero * proj;
 	projMatrix = proj;
 	viewMatrix = view;
+	invViewMatrix = invView;
 	cameraProjNearestMatrix = viewZero * nearestProj;
 
-	prevCameraProjMatrix = previousFrameCameraMatrix * proj;
-	prevCameraProjNearestMatrix = previousFrameCameraMatrix;
+	prevCameraMatrix = prevView;
+	prevCameraProjMatrix = prevView * proj;
+	prevCameraProjNearestMatrix = prevView;
 	prevCameraProjNearestMatrix.SetRow(3, Vec3(ZERO));
 	prevCameraProjNearestMatrix = prevCameraProjNearestMatrix * nearestProj;
 
@@ -156,6 +139,35 @@ void CStandardGraphicsPipeline::SViewInfo::SetLegacyCamera(CD3D9Renderer* pRende
 	prevCameraProjNearestMatrix = previousFrameCameraMatrix;
 	prevCameraProjNearestMatrix.SetRow(3, Vec3(ZERO));
 	prevCameraProjNearestMatrix = prevCameraProjNearestMatrix * nearestProj;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void CStandardGraphicsPipeline::SViewInfo::ExtractViewMatrices(const CCamera& cam, Matrix44& view, Matrix44& viewZero, Matrix44& invView) const
+{
+	Matrix34_tpl<f64> mCam34 = cam.GetMatrix();
+	mCam34.OrthonormalizeFast();
+
+	Matrix44_tpl<f64> mCam44T = mCam34.GetTransposed();
+
+	// Rotate around x-axis by -PI/2
+	Vec4_tpl<f64> row1 = mCam44T.GetRow4(1);
+	mCam44T.SetRow4(1, mCam44T.GetRow4(2));
+	mCam44T.SetRow4(2, Vec4_tpl<f64>(-row1.x, -row1.y, -row1.z, -row1.w));
+
+	if (flags & eFlags_MirrorCamera)
+	{
+		Vec4_tpl<f64> _row1 = mCam44T.GetRow4(1);
+		mCam44T.SetRow4(1, Vec4_tpl<f64>(-_row1.x, -_row1.y, -_row1.z, -_row1.w));
+	}
+	invView = (Matrix44_tpl<f32> )mCam44T;
+
+	Matrix44_tpl<f64> mView64;
+	mathMatrixLookAtInverse(&mView64, &mCam44T);
+	view = (Matrix44_tpl<f32> )mView64;
+
+	viewZero = view;
+	viewZero.SetRow(3, Vec3(ZERO));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -347,10 +359,11 @@ int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo 
 			if (renderingFlags & currentEyeFlag)
 			{
 				auto& cam = m_pCurrentRenderView->GetCamera(eye);
+				auto& previousCam = m_pCurrentRenderView->GetPreviousCamera(eye);
 				auto& rcam = m_pCurrentRenderView->GetRenderCamera(eye);
 
 				viewInfo[viewInfoCount].flags = viewFlags;
-				viewInfo[viewInfoCount].SetCamera(rcam, cam, pRenderer->GetPreviousFrameCameraMatrix(), pRenderer->m_vProjMatrixSubPixoffset,
+				viewInfo[viewInfoCount].SetCamera(rcam, cam, previousCam, pRenderer->m_vProjMatrixSubPixoffset,
 				                                  pRenderer->GetDrawNearestFOV(), pRenderer->CV_r_DrawNearFarPlane, rp.m_TI[rp.m_nProcessThreadID].m_pObliqueClipPlane);
 				viewInfo[viewInfoCount].viewport = viewport;
 				viewInfo[viewInfoCount].pFrustumPlanes = cam.GetFrustumPlane(0);
@@ -429,6 +442,8 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 		cb.CV_InvViewProj = viewInfo.invCameraProjMatrix.GetTransposed();
 		cb.CV_PrevViewProjMatr = viewInfo.prevCameraProjMatrix.GetTransposed();
 		cb.CV_PrevViewProjNearestMatr = viewInfo.prevCameraProjNearestMatrix.GetTransposed();
+		cb.CV_ViewMatr = viewInfo.viewMatrix.GetTransposed();
+		cb.CV_InvViewMatr = viewInfo.invViewMatrix.GetTransposed();
 
 		Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPos;
 		CShadowUtils::ProjectScreenToWorldExpansionBasis(Matrix44(IDENTITY), *viewInfo.pCamera, pRenderer->m_vProjMatrixSubPixoffset,
@@ -535,7 +550,7 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelineStateDescription& inputDesc, CDeviceGraphicsPSODesc& psoDesc)
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
-	
+
 	CShader* pShader = static_cast<CShader*>(inputDesc.shaderItem.m_pShader);
 	SShaderTechnique* pTechnique = pShader->GetTechnique(inputDesc.shaderItem.m_nTechnique, inputDesc.technique, true);
 	if (!pTechnique)
@@ -544,7 +559,7 @@ bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelin
 	CShaderResources* pRes = static_cast<CShaderResources*>(inputDesc.shaderItem.m_pShaderResources);
 	const uint64 objectFlags = inputDesc.objectFlags;
 	SShaderPass* pShaderPass = &pTechnique->m_Passes[0];
-	
+
 	// Handle quality flags
 	CStandardGraphicsPipeline::ApplyShaderQuality(psoDesc, pRenderer->GetShaderProfile(pShader->m_eShaderType));
 

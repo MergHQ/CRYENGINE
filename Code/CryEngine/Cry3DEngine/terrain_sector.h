@@ -405,7 +405,7 @@ public:
 	CTerrainNode* GetReadyTexSourceNode(int nTexMML, eTexureType eTexType);
 	int           GetData(byte*& pData, int& nDataSize, EEndian eEndian, SHotUpdateInfo* pExportInfo);
 	void          CalculateTexGen(const CTerrainNode* pTextureSourceNode, float& fTexOffsetX, float& fTexOffsetY, float& fTexScale);
-
+	void          FillSectorHeightMapTextureData(Array2d<float> &arrHmData);
 	void          RescaleToInt();
 
 	template<class T>
@@ -419,12 +419,9 @@ public:
 	float GetSurfaceTypeAmount(Vec3 vPos, int nSurfType);
 	void  GetMemoryUsage(ICrySizer* pSizer) const;
 	void  GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB);
-	//	void GetProcVegetMemoryUsage(ICrySizer*pSizer);
 
 	void  SetLOD(const SRenderingPassInfo& passInfo);
 	uint8 GetTextureLOD(float fDistance, const SRenderingPassInfo& passInfo);
-
-	//	void SetHeightmapAABBAndHoleFlag();
 
 	void                ReleaseHeightMapGeometry(bool bRecursive = false, const AABB* pBox = NULL);
 	void                ResetHeightMapGeometry(bool bRecursive = false, const AABB* pBox = NULL);
@@ -436,8 +433,6 @@ public:
 	void                BuildVertices(int step, bool bSafetyBorder);
 
 	int                 GetMML(int dist, int mmMin, int mmMax);
-
-	//	void GenerateIndicesForQuad(IRenderMesh * pRM, Vec3 vBoxMin, Vec3 vBoxMax, PodArray<uint16> & dstIndices);
 
 	uint32                       GetLastTimeUsed() { return m_nLastTimeUsed; }
 
@@ -486,7 +481,9 @@ public:
 	uint8                m_bNoOcclusion       : 1; // sector has visareas under terrain surface
 	uint8                m_bUpdateOnlyBorders : 1; // remember if only the border were updated
 
-	ETextureEditingState m_eTextureEditingState;
+#ifndef _RELEASE
+	ETextureEditingState m_eTextureEditingState, m_eElevTexEditingState;
+#endif // _RELEASE
 
 	uint8 // LOD's
 	  m_cNewGeomMML, m_cCurrGeomMML,

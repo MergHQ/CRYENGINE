@@ -1065,17 +1065,17 @@ const float VIRTUAL_SCREEN_HEIGHT = 600.0f;
 #define GS_BLEND_OP_SHIFT          21
 
 // Separate alpha blend mode
-#define GS_BLALPHA_NONSEP          0x00000000 // same alpha blend op as color blend op (non-separate)
-#define GS_BLALPHA_MAX             0x02000000
-#define GS_BLALPHA_MIN             0x04000000
-#define GS_BLALPHA_MASK            0x0E000000 // enum
-#define GS_BLALPHA_SHIFT           25
+#define GS_BLALPHA_NONSEP 0x00000000          // same alpha blend op as color blend op (non-separate)
+#define GS_BLALPHA_MAX    0x02000000
+#define GS_BLALPHA_MIN    0x04000000
+#define GS_BLALPHA_MASK   0x0E000000          // enum
+#define GS_BLALPHA_SHIFT  25
 
-#define GS_BLEND_MASK              (GS_BLSRC_MASK | GS_BLDST_MASK | GS_BLEND_OP_MASK | GS_BLALPHA_MASK)
+#define GS_BLEND_MASK     (GS_BLSRC_MASK | GS_BLDST_MASK | GS_BLEND_OP_MASK | GS_BLALPHA_MASK)
 
-#define FORMAT_8_BIT         8
-#define FORMAT_24_BIT        24
-#define FORMAT_32_BIT        32
+#define FORMAT_8_BIT      8
+#define FORMAT_24_BIT     24
+#define FORMAT_32_BIT     32
 
 //! Read FrameBuffer type.
 enum ERB_Type
@@ -1492,6 +1492,7 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual uint32 GetShaderRenderingFlags() const = 0;
 
 	virtual void   SetCameras(const CCamera* pCameras, int cameraCount) = 0;
+	virtual void   SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount) = 0;
 
 	virtual void   SwitchUsageMode(EUsageMode mode) = 0;
 
@@ -2215,27 +2216,27 @@ struct IRenderer//: public IRendererCallbackServer
 		}
 	};
 
-	virtual IScaleformPlayback*    SF_CreatePlayback() const = 0;
-	virtual int                    SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eTF, int flags) = 0;
-	virtual bool                   SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) = 0;
-	virtual bool                   SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData) = 0;
-	virtual void                   SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const = 0;
-	virtual void                   SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const = 0;
-	virtual void SF_GetMeshMaxSize(int& numVertices, int& numIndices) const = 0;
+	virtual IScaleformPlayback*                       SF_CreatePlayback() const = 0;
+	virtual int                                       SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eTF, int flags) = 0;
+	virtual bool                                      SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) = 0;
+	virtual bool                                      SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData) = 0;
+	virtual void                                      SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const = 0;
+	virtual void                                      SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const = 0;
+	virtual void                                      SF_GetMeshMaxSize(int& numVertices, int& numIndices) const = 0;
 
-	virtual ITexture*              CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) = 0;
+	virtual ITexture*                                 CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) = 0;
 
-	virtual const RPProfilerStats* GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) = 0;
-	virtual const RPProfilerStats* GetRPPStatsArray(bool bCalledFromMainThread = true) = 0;
+	virtual const RPProfilerStats*                    GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) = 0;
+	virtual const RPProfilerStats*                    GetRPPStatsArray(bool bCalledFromMainThread = true) = 0;
 
-	virtual int                    GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread = true) = 0;
+	virtual int                                       GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread = true) = 0;
 
-	virtual void                   StartLoadtimeFlashPlayback(ILoadtimeCallback* pCallback) = 0;
-	virtual void                   StopLoadtimeFlashPlayback() = 0;
+	virtual void                                      StartLoadtimeFlashPlayback(ILoadtimeCallback* pCallback) = 0;
+	virtual void                                      StopLoadtimeFlashPlayback() = 0;
 
-	virtual void                   SetCloudShadowsParams(int nTexID, const Vec3& speed, float tiling, bool invert, float brightness) = 0;
-	virtual void                   SetVolumetricCloudParams(int nTexID) = 0;
-	virtual uint16                 PushFogVolumeContribution(const ColorF& fogVolumeContrib, const SRenderingPassInfo& passInfo) = 0;
+	virtual void                                      SetCloudShadowsParams(int nTexID, const Vec3& speed, float tiling, bool invert, float brightness) = 0;
+	virtual void                                      SetVolumetricCloudParams(int nTexID) = 0;
+	virtual uint16                                    PushFogVolumeContribution(const ColorF& fogVolumeContrib, const SRenderingPassInfo& passInfo) = 0;
 
 	virtual int                                       GetMaxTextureSize() = 0;
 

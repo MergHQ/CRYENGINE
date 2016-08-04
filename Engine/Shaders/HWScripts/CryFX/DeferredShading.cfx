@@ -1165,13 +1165,23 @@ technique ApplySSR
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+cbuffer CBSSDO : register(b0)
+{
+	struct SSDOConstants
+	{
+		float4 screenSize;
+		float4 nearFarClipDist;
+		float4 viewSpaceParams;
+		float4 ssdoParams;
+	} cbSSDO;
+};
+
 vtxOut DirOccPassVS(uint VertexID : SV_VertexID)
 {
   vtxOut OUT = (vtxOut)0; 
 
 	OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
   OUT.baseTC.xy = GetBaseTC_FromTriVertexID(VertexID);
-	OUT.baseTC.zw = OUT.baseTC.xy * g_ScreenSize.xy * 0.25;
 
   return OUT;
 }
@@ -1205,19 +1215,19 @@ pixout DirOccPassPS(vtxOut IN)
 		half2( 0.84, -0.32 )
 	};
 	
-	const float4 screenTC = IN.baseTC;	
+	const float4 screenTC = float4(IN.baseTC.xy, IN.baseTC.xy * cbSSDO.screenSize.xy * 0.25);	
 	
 	float fCenterDepth = GetLinearDepth( _tex1, screenTC.xy );
-	float3 vReceiverPos = float3( screenTC.xy * ViewSpaceParams.xyxy + ViewSpaceParams.zwzw, 1 ) * fCenterDepth * PS_NearFarClipDist.y;
+	float3 vReceiverPos = float3( screenTC.xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fCenterDepth * cbSSDO.nearFarClipDist.y;
 	
 	// Vary maximum radius to get a good compromise between small and larger scale occlusion
-	float maxRadius = SSDOParams.w;
-	if (int(IN.baseTC.x * PS_ScreenSize.x) & 1) maxRadius *= 0.5;
-	if (int(IN.baseTC.y * PS_ScreenSize.y) & 1) maxRadius *= 0.5;
+	float maxRadius = cbSSDO.ssdoParams.w;
+	if (int(IN.baseTC.x * cbSSDO.screenSize.x) & 1) maxRadius *= 0.5;
+	if (int(IN.baseTC.y * cbSSDO.screenSize.y) & 1) maxRadius *= 0.5;
 	
 	// Use 2 bands so that occlusion works better for small-scale geometry
-	const half2 radius0 = clamp( SSDOParams.xy * 0.15 / fCenterDepth, SSDOParams.z, maxRadius );
-	const half2 radius1 = clamp( SSDOParams.xy / fCenterDepth, SSDOParams.z, maxRadius );
+	const half2 radius0 = clamp( cbSSDO.ssdoParams.xy * 0.15 / fCenterDepth, cbSSDO.ssdoParams.z, maxRadius );
+	const half2 radius1 = clamp( cbSSDO.ssdoParams.xy / fCenterDepth, cbSSDO.ssdoParams.z, maxRadius );
 
 	// Compute jittering matrix
 	const half jitterIndex = dot( frac( screenTC.zw ), half2( 1, 0.25 ) );
@@ -1238,7 +1248,7 @@ pixout DirOccPassPS(vtxOut IN)
 	
 	// Compute normal in view space
 	half3 vNormal = DecodeGBufferNormal( tex2D( _tex0, screenTC.xy ) );
-	half3 vNormalVS = normalize( mul( SSDO_CameraMatrix, vNormal ) ) ;
+	half3 vNormalVS = normalize( mul( CV_ViewMatr, vNormal ) ) * float3(1, -1, -1);
 	
 	half4 sh2 = 0;
 	[unroll]
@@ -1259,14 +1269,14 @@ pixout DirOccPassPS(vtxOut IN)
 		half4 fLinearDepthTap = SSDOFetchDepths( _tex1, vSampleTC );
 	#endif
 	
-		fLinearDepthTap *= PS_NearFarClipDist.y;
+		fLinearDepthTap *= cbSSDO.nearFarClipDist.y;
 
 		// Compute view space position of emitter pixels
 		float3 vEmitterPos[4];
-		vEmitterPos[0] = float3( vSampleTC[0].xy * ViewSpaceParams.xyxy + ViewSpaceParams.zwzw, 1 ) * fLinearDepthTap.x;
-		vEmitterPos[1] = float3( vSampleTC[0].zw * ViewSpaceParams.xyxy + ViewSpaceParams.zwzw, 1 ) * fLinearDepthTap.y;
-		vEmitterPos[2] = float3( vSampleTC[1].xy * ViewSpaceParams.xyxy + ViewSpaceParams.zwzw, 1 ) * fLinearDepthTap.z;
-		vEmitterPos[3] = float3( vSampleTC[1].zw * ViewSpaceParams.xyxy + ViewSpaceParams.zwzw, 1 ) * fLinearDepthTap.w;
+		vEmitterPos[0] = float3( vSampleTC[0].xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.x;
+		vEmitterPos[1] = float3( vSampleTC[0].zw * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.y;
+		vEmitterPos[2] = float3( vSampleTC[1].xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.z;
+		vEmitterPos[3] = float3( vSampleTC[1].zw * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fLinearDepthTap.w;
 
 		// Compute the vectors from the receiver to the emitters
 		half3 vSample[4];
@@ -1285,7 +1295,7 @@ pixout DirOccPassPS(vtxOut IN)
 		vSample[3] = normalize( vSample[3] );
 
 		// Compute obscurance using form factor of disks
-		const half radiusWS = (radius.x * fCenterDepth) * ViewSpaceParams.x * PS_NearFarClipDist.y;
+		const half radiusWS = (radius.x * fCenterDepth) * cbSSDO.viewSpaceParams.x * cbSSDO.nearFarClipDist.y;
 		const half emitterScale = narrowBand ? 0.5 : 2.5;
 		const half emitterArea = (emitterScale * PI * radiusWS * radiusWS) / (float)(samplesNum / 2);
 		half4 fNdotSamp = half4( dot( vNormalVS, vSample[0] ), dot( vNormalVS, vSample[1] ), dot( vNormalVS, vSample[2] ), dot( vNormalVS, vSample[3] ) );
@@ -1296,7 +1306,7 @@ pixout DirOccPassPS(vtxOut IN)
 		sh2.xyz += fObscurance.x * vSample[0] + fObscurance.y * vSample[1] + fObscurance.z * vSample[2] + fObscurance.w * vSample[3];
 	}
 	
-	sh2.xyz = mul( SSDO_CameraMatrixInv, sh2.xyz );
+	sh2.xyz = mul( CV_InvViewMatr, sh2.xyz ).xyz * float3(1, -1, -1);
 
 	const half fNormFac = 0.15;
 	sh2.xyzw *= fNormFac;

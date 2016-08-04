@@ -551,17 +551,23 @@ bool CDeviceTimestampGroup::ResolveTimestamps()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CDeviceCommandListImpl::SetProfilerMarker(const char* label)
 {
+#if defined(ENABLE_FRAME_PROFILER_LABELS)
 	PROFILE_LABEL_GPU(label);
+#endif
 }
 
 void CDeviceCommandListImpl::BeginProfilerEvent(const char* label)
 {
+#if defined(ENABLE_FRAME_PROFILER_LABELS)
 	PROFILE_LABEL_PUSH_GPU(label);
+#endif
 }
 
 void CDeviceCommandListImpl::EndProfilerEvent(const char* label)
 {
+#if defined(ENABLE_FRAME_PROFILER_LABELS)	
 	PROFILE_LABEL_POP_GPU(label);
+#endif
 }
 
 void CDeviceCommandListImpl::ResetImpl()

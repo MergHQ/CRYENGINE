@@ -117,6 +117,9 @@ hlsl_cbuffer_register(PerViewGlobalConstantBuffer, register (b13), 13) //eConsta
 	hlsl_float4(CV_ShadowViewPos);
 
 	hlsl_float4(CV_WindGridOffset);
+
+	hlsl_matrix44(CV_ViewMatr);
+	hlsl_matrix44(CV_InvViewMatr);
 };
 
 struct SLightVolumeInfo

@@ -542,8 +542,8 @@ template<typename F> struct Matrix44_tpl
 
 	ILINE void               SetColumn(int i, const Vec3_tpl<F>& v)  { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); p[i + 4 * 0] = v.x; p[i + 4 * 1] = v.y; p[i + 4 * 2] = v.z; }
 	ILINE void               SetColumn4(int i, const Vec4_tpl<F>& v) { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); p[i + 4 * 0] = v.x; p[i + 4 * 1] = v.y; p[i + 4 * 2] = v.z; p[i + 4 * 3] = v.w; }
-	ILINE Vec3_tpl<F>        GetColumn(int i) const                  { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); return Vec3(p[i + 4 * 0], p[i + 4 * 1], p[i + 4 * 2]); }
-	ILINE Vec4_tpl<F>        GetColumn4(int i) const                 { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); return Vec4(p[i + 4 * 0], p[i + 4 * 1], p[i + 4 * 2], p[i + 4 * 3]); }
+	ILINE Vec3_tpl<F>        GetColumn(int i) const                  { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); return Vec3_tpl<F>(p[i + 4 * 0], p[i + 4 * 1], p[i + 4 * 2]); }
+	ILINE Vec4_tpl<F>        GetColumn4(int i) const                 { CRY_MATH_ASSERT(i < 4); F* p = (F*)(&m00); return Vec4_tpl<F>(p[i + 4 * 0], p[i + 4 * 1], p[i + 4 * 2], p[i + 4 * 3]); }
 
 	ILINE Vec3               GetTranslation() const                  { return Vec3(m03, m13, m23); }
 	ILINE void               SetTranslation(const Vec3& t)           { m03 = t.x; m13 = t.y; m23 = t.z; }

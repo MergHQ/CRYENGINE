@@ -84,7 +84,26 @@ public:
 		m_primitive.SetInlineConstantBuffer(shaderSlot, pBuffer, shaderStages);
 	}
 
+	template<typename T>
+	void AllocateTypedConstantBuffer(EConstantBufferShaderSlot shaderSlot, EShaderStage shaderStages)
+	{
+		m_primitive.AllocateTypedConstantBuffer(shaderSlot, sizeof(T), shaderStages);
+	}
+
 	void BeginConstantUpdate();
+
+	template<typename T>
+	SDeviceObjectHelpers::STypedConstants<T> BeginTypedConstantUpdate(EConstantBufferShaderSlot shaderSlot, EShaderStage shaderStages = EShaderStage_Pixel) const
+	{
+		return m_primitive.GetConstantManager().BeginTypedConstantUpdate<T>(shaderSlot, shaderStages);
+	}
+
+	template<typename T>
+	void EndTypedConstantUpdate(SDeviceObjectHelpers::STypedConstants<T>& constants) const
+	{
+		return m_primitive.GetConstantManager().EndTypedConstantUpdate<T>(constants);
+	}
+
 	void Execute();
 
 private:

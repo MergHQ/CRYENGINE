@@ -468,7 +468,11 @@ bool CTerrain::OpenTerrainTextureFile(SCommonFileHeader& hdrDiffTexHdr, STerrain
 		for (int x = 0; x < m_arrSecInfoPyramid[nSID][nTreeLevel].GetSize(); x++)
 			for (int y = 0; y < m_arrSecInfoPyramid[nSID][nTreeLevel].GetSize(); y++)
 			{
+#ifndef _RELEASE
 				m_arrSecInfoPyramid[nSID][nTreeLevel][x][y]->m_eTextureEditingState = eTES_SectorIsUnmodified;
+				m_arrSecInfoPyramid[nSID][nTreeLevel][x][y]->m_eElevTexEditingState = eTES_SectorIsUnmodified;
+#endif // _RELEASE
+
 				m_arrSecInfoPyramid[nSID][nTreeLevel][x][y]->m_nNodeTextureOffset = -1;
 				m_arrSecInfoPyramid[nSID][nTreeLevel][x][y]->m_bMergeNotAllowed = false;
 			}

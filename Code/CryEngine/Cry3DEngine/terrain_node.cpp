@@ -123,14 +123,24 @@ void CTerrainNode::SetupTexturing(bool bMakeUncompressedForEditing, const SRende
 	{
 		if (CTerrainNode* pTextureSourceNode = GetReadyTexSourceNode(passInfo.IsShadowPass() ? 0 : m_cNodeNewTexMML, ett_Diffuse))
 		{
+			// update RGB and normal textures
 			if (pTextureSourceNode->m_eTextureEditingState == eTES_SectorIsModified_AtlasIsDirty && C3DEngine::m_pGetLayerIdAtCallback)
 			{
 				pTextureSourceNode->UpdateNodeTextureFromEditorData();
 				pTextureSourceNode->m_eTextureEditingState = eTES_SectorIsModified_AtlasIsUpToDate;
 			}
+
+			// update elevation texture
+			if (pTextureSourceNode->m_eElevTexEditingState == eTES_SectorIsModified_AtlasIsDirty)
+			{
+				static Array2d<float> arrHmData;
+				pTextureSourceNode->FillSectorHeightMapTextureData(arrHmData);
+				m_pTerrain->m_texCache[2].UpdateTexture((byte*)arrHmData.GetData(), pTextureSourceNode->m_nNodeTexSet.nSlot0);
+				pTextureSourceNode->m_eElevTexEditingState = eTES_SectorIsModified_AtlasIsUpToDate;
+			}
 		}
 	}
-#endif
+#endif // _RELEASE
 
 	CheckLeafData();
 
@@ -336,7 +346,9 @@ void CTerrainNode::Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bo
 	m_bMergeNotAllowed = 0;
 	m_bHasHoles = 0;
 
-	m_eTextureEditingState = eTES_SectorIsUnmodified;
+#ifndef _RELEASE
+	m_eTextureEditingState = m_eElevTexEditingState = eTES_SectorIsUnmodified;
+#endif // _RELEASE
 
 	m_nOriginX = m_nOriginY = 0; // sector origin
 	m_nLastTimeUsed = 0;         // basically last time rendered
@@ -499,8 +511,10 @@ void CTerrainNode::EnableTextureEditingMode(unsigned int nEditorDiffuseTex)
 		return;
 #endif
 
+#ifndef _RELEASE
 	if (nEditorDiffuseTex > 0)
 		m_eTextureEditingState = eTES_SectorIsModified_AtlasIsDirty;
+#endif // _RELEASE
 }
 
 void CTerrainNode::UpdateNodeTextureFromEditorData()
@@ -522,9 +536,9 @@ void CTerrainNode::UpdateNodeTextureFromEditorData()
 		for (int y = 0; y < nTexSize; y++)
 		{
 			arrRGB[x][y] = C3DEngine::m_pGetLayerIdAtCallback->GetColorAtPosition(
-			  (float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize),
-			  (float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
-			  true);
+				(float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize),
+				(float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
+				true);
 
 			ColorF colRGB;
 			colRGB.r = 1.f / 255.f * arrRGB[x][y].r;

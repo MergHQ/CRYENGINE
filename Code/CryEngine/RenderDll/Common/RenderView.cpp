@@ -168,6 +168,19 @@ void CRenderView::SetCameras(const CCamera* pCameras, int cameraCount)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CRenderView::SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount)
+{
+	CRY_ASSERT(cameraCount == 1 || cameraCount == 2);
+
+	for (int i = 0; i < cameraCount; ++i)
+	{
+		CRY_ASSERT(pCameras[i].GetEye() == CCamera::eEye_Left || pCameras[i].GetEye() == CCamera::eEye_Right);
+		const CCamera& cam = pCameras[i];
+		m_previousCamera[cam.GetEye()] = cam;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CRenderView::SwitchUsageMode(EUsageMode mode)
 {
 	FUNCTION_PROFILER_RENDERER;

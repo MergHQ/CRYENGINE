@@ -5,6 +5,16 @@
 #include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
+
+struct PostAAConstants
+{
+	Matrix44  matReprojection;
+	Vec4      params;
+	Vec4      screenSize;
+	Vec4      worldViewPos;
+	Vec4      fxaaParams;
+};
+
 void CPostAAStage::Init()
 {
 	m_pTexAreaSMAA.Assign_NoAddRef(CTexture::ForName("EngineAssets/ScreenSpace/AreaTex.dds", FT_DONT_STREAM, eTF_Unknown));
@@ -14,6 +24,8 @@ void CPostAAStage::Init()
 	m_samplerPoint = CTexture::GetTexState(STexState(FILTER_POINT, true));
 	m_samplerPointWrap = CTexture::GetTexState(STexState(FILTER_POINT, false));
 	m_samplerLinear = CTexture::GetTexState(STexState(FILTER_LINEAR, true));
+
+	m_passTemporalAA.AllocateTypedConstantBuffer<PostAAConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
 }
 
 void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
@@ -154,26 +166,20 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 	m_passTemporalAA.BeginConstantUpdate();
 		
 	{
-		static CCryNameR viewProjPrevName("mViewProjPrev");
-		const Matrix44A matViewProjPrev = CMotionBlur::GetPrevView() * GetUtils().m_pProj * GetUtils().m_pScaleBias;
-		m_passTemporalAA.SetConstantArray(eHWSC_Pixel, viewProjPrevName, (Vec4*)matViewProjPrev.GetData(), 4);
-
+		auto constants = m_passTemporalAA.BeginTypedConstantUpdate<PostAAConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
+		
 		const float rcpWidth = 1.0f / (float)pRenderer->GetWidth();
 		const float rcpHeight = 1.0f / (float)pRenderer->GetHeight();
-		const Vec4 rcpFrameOpt(-0.33f * rcpWidth, -0.33f * rcpHeight, 0.33f * rcpWidth, 0.33f * rcpHeight); // (1.0/sz.xy) * -0.33, (1.0/sz.xy) * 0.33. 0.5 -> softer
-		const Vec4 rcpFrameOpt2(-2.0f * rcpWidth, -2.0f * rcpHeight, 2.0f * rcpWidth, 2.0f * rcpHeight);    // (1.0/sz.xy) * -2.0, (1.0/sz.xy) * 2.0
-		static CCryNameR rcpFrameOptName("RcpFrameOpt");
-		m_passTemporalAA.SetConstant(eHWSC_Pixel, rcpFrameOptName, rcpFrameOpt);
-		static CCryNameR rcpFrameOpt2Name("RcpFrameOpt2");
-		m_passTemporalAA.SetConstant(eHWSC_Pixel, rcpFrameOpt2Name, rcpFrameOpt2);
+		constants->screenSize = Vec4((float)pRenderer->GetWidth(), (float)pRenderer->GetHeight(), rcpWidth, rcpHeight);
+		constants->worldViewPos = Vec4(pRenderer->GetRCamera().vOrigin, 0);
 
-		static CCryNameR paramName("vParams");
-		const Vec4 params = Vec4(max(CRenderer::CV_r_AntialiasingTAASharpening + 1.0f, 1.0f), 0.0f, CRenderer::CV_r_AntialiasingTAAFalloffLowFreq + 1e-6f, CRenderer::CV_r_AntialiasingTAAFalloffHiFreq + 1e-6f);
-		m_passTemporalAA.SetConstant(eHWSC_Pixel, paramName, params);
+		constants->fxaaParams = Vec4(0.33f * rcpWidth, 0.33f * rcpHeight, 2.0f * rcpWidth, 2.0f * rcpHeight);
+		constants->params = Vec4(max(CRenderer::CV_r_AntialiasingTAASharpening + 1.0f, 1.0f), 0.0f, CRenderer::CV_r_AntialiasingTAAFalloffLowFreq + 1e-6f, CRenderer::CV_r_AntialiasingTAAFalloffHiFreq + 1e-6f);
 
 		// Compute reprojection matrix with highest possible precision to minimize numeric diffusion
 		// TODO: Make sure NEAREST projection is handled correctly
-		Matrix44_tpl<f64> matReprojection64;
+		Matrix44_tpl<f64> matReprojection64[2];
+		for (uint32 stereoEye = 0; stereoEye < 2; stereoEye++)
 		{
 			Matrix44A matProj = GetUtils().m_pProj;
 			assert(pRenderer->GetS3DRend().GetStereoMode() == STEREO_MODE_DUAL_RENDERING || (matProj.m20 == 0 && matProj.m21 == 0));  // Ensure jittering is removed from projection matrix
@@ -194,13 +200,17 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 				0, 0, 1, 0,
 				-1.0, 1.0, 0, 1);
 
-			matReprojection64 = matProjInv * matViewInv * Matrix44_tpl<f64>(CMotionBlur::GetPrevView()) * Matrix44_tpl<f64>(matProj);
-			matReprojection64 = matScaleBias2 * matReprojection64 * matScaleBias1;
+			Matrix44 mPrevView = pRenderer->m_CameraMatrixPrev[pRenderer->m_CurViewportID][stereoEye];
+			matReprojection64[stereoEye] = matProjInv * matViewInv * Matrix44_tpl<f64>(mPrevView) * Matrix44_tpl<f64>(matProj);
+			matReprojection64[stereoEye] = matScaleBias2 * matReprojection64[stereoEye] * matScaleBias1;
 		}
 
-		static CCryNameR reprojectionName("mReprojection");
-		const Matrix44 matReprojection = matReprojection64;
-		m_passTemporalAA.SetConstantArray(eHWSC_Pixel, reprojectionName, (Vec4*)matReprojection.GetData(), 4);
+		constants->matReprojection = (Matrix44)matReprojection64[0];
+
+		constants.BeginStereoOverride(true);
+		constants->matReprojection = (Matrix44)matReprojection64[1];
+
+		m_passTemporalAA.EndTypedConstantUpdate(constants);
 	}
 
 	m_passTemporalAA.Execute();
