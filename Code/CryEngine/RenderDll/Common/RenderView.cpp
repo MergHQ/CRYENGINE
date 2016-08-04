@@ -506,10 +506,18 @@ void CRenderView::AddPermanentObjectInline(CPermanentRenderObject* pObject, SRen
 {
 	SPermanentObjectRecord rec;
 	rec.pRenderObject = pObject;
-	;
 	rec.itemSorter = sorter.GetValue();
 	rec.shadowFrustumSide = shadowFrustumSide;
 	m_permanentObjects.push_back(rec);
+
+	if (IsShadowGenView())
+	{
+		for (CPermanentRenderObject* pCurObj = pObject; pCurObj; pCurObj = pCurObj->m_pNextPermanent)
+		{
+			if (pCurObj->m_ObjFlags & FOB_NEAREST)
+				m_shadows.AddNearestCaster(pCurObj);
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -562,7 +570,12 @@ void CRenderView::AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT
 
 	// objects with FOB_NEAREST go to EFSLIST_NEAREST in shadow pass and general
 	if ((pObj->m_ObjFlags & FOB_NEAREST) && (bShadowPass || (nList == EFSLIST_GENERAL && CRenderer::CV_r_GraphicsPipeline > 0)))
+	{
 		nList = EFSLIST_NEAREST_OBJECTS;
+
+		if (bShadowPass)
+			m_shadows.AddNearestCaster(pObj);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Permanent objects support.
@@ -1403,6 +1416,24 @@ void CRenderView::SShadows::Clear()
 		frustumList.resize(0);
 
 	m_pShadowFrustumOwner = nullptr;
+	m_nearestCasterBoxes.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CRenderView::SShadows::AddNearestCaster(CRenderObject* pObj)
+{
+	if (pObj->m_pRenderNode)
+	{
+		// CRenderProxy::GetLocalBounds is not thread safe due to lazy evaluation
+		CRY_ASSERT(pObj->m_pRenderNode->GetRenderNodeType() != eERType_RenderProxy || 
+			!gRenDev->m_pRT->IsMultithreaded() || 
+			 gRenDev->m_pRT->IsMainThread()); 
+
+		AABB* pObjectBox = reinterpret_cast<AABB*>(m_nearestCasterBoxes.push_back_new());
+		pObj->m_pRenderNode->GetLocalBounds(*pObjectBox);
+		pObjectBox->min += pObj->GetTranslation();
+		pObjectBox->max += pObj->GetTranslation();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1434,24 +1465,17 @@ void CRenderView::SShadows::PrepareNearestShadows()
 				CRenderView* pShadowsView = reinterpret_cast<CRenderView*>(fr.pShadowsView.get());
 				CRY_ASSERT(pShadowsView->m_usageMode == IRenderView::eUsageModeReading);
 
+				pShadowsView->m_shadows.m_nearestCasterBoxes.CoalesceMemory();
+				for (int i=0; i<pShadowsView->m_shadows.m_nearestCasterBoxes.size(); ++i)
+					pNearestFrustum->pFrustum->aabbCasters.Add(pShadowsView->m_shadows.m_nearestCasterBoxes[i]); 
+
 				for (auto& ri : pShadowsView->GetRenderItems(EFSLIST_NEAREST_OBJECTS))
-				{
-					if (ri.pObj && ri.pObj->m_pRenderNode)
-					{
-						AABB objBox;
-						ri.pObj->m_pRenderNode->GetLocalBounds(objBox);
-						objBox.Move(ri.pObj->GetTranslation());
-
-						nearestRenderItems.lockfree_push_back(ri);
-
-						pNearestFrustum->pFrustum->aabbCasters.Add(objBox);
-						pNearestFrustum->pFrustum->nShadowGenMask = 1;
-					}
-				}
+					nearestRenderItems.lockfree_push_back(ri);
 			}
 		}
 
 		nearestRenderItems.CoalesceMemory();
+		pNearestFrustum->pFrustum->nShadowGenMask = nearestRenderItems.empty() ? 0 : 1;
 		pNearestShadowsView->SwitchUsageMode(CRenderView::eUsageModeReading);
 	}
 }

@@ -312,7 +312,10 @@ private:
 		std::map<int, ShadowFrustumsPtr>                              m_frustumsByLight;
 		std::array<ShadowFrustumsPtr, eShadowFrustumRenderType_Count> m_frustumsByType;
 
+		CThreadSafeRendererContainer<AABB>                            m_nearestCasterBoxes;
+
 		void Clear();
+		void AddNearestCaster(CRenderObject* pObj);
 		void CreateFrustumGroups();
 		void PrepareNearestShadows();
 	};
