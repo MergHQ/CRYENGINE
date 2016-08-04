@@ -128,13 +128,16 @@ class CFlowMiniMapEntityPosInfo
 {
 public:
 	CFlowMiniMapEntityPosInfo(SActivationInfo* pActInfo)
-		: m_entityId(0)
 	{
 	}
 
 	virtual ~CFlowMiniMapEntityPosInfo()
 	{
-		UnRegisterEntity();
+		std::set<EntityId> copyOfEntityIds = m_entityIds;
+		for (EntityId entityId : copyOfEntityIds)
+		{
+			UnRegisterEntity(entityId);
+		}
 	}
 
 	virtual void GetConfiguration(SFlowNodeConfig& config)
@@ -168,20 +171,21 @@ public:
 		case eFE_Initialize:
 			m_actInfo = *pActInfo;
 			CMiniMapInfo::GetInstance()->UpdateLevelInfo();
-			m_entityId = GetEntityId(pActInfo);
 			break;
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, eI_Trigger))
-				TriggerPorts(pActInfo);
+				TriggerPorts();
 
 			if (IsPortActive(pActInfo, eI_Disable))
-				UnRegisterEntity();
+			{
+				const EntityId entityId = GetEntityId(pActInfo);
+				UnRegisterEntity(entityId);
+			}
 
 			if (IsPortActive(pActInfo, eI_Enable))
 			{
-				UnRegisterEntity();
-				m_entityId = GetEntityId(pActInfo);
-				RegisterEntity();
+				const EntityId entityId = GetEntityId(pActInfo);
+				RegisterEntity(entityId);
 			}
 			break;
 		}
@@ -199,7 +203,6 @@ public:
 
 	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
 	{
-		assert(pEntity->GetId() == m_entityId);
 		if (event.event == ENTITY_EVENT_XFORM)
 		{
 			float px, py;
@@ -225,54 +228,43 @@ protected:
 	}
 
 private:
-	void RegisterEntity()
+	void RegisterEntity(EntityId entityId)
 	{
-		if (m_entityId == 0)
-			return;
-		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
-		if (pEntity != 0)
+		auto insertResult = m_entityIds.insert(entityId);
+
+		// ensure to subscribe to given entity only once
+		if (insertResult.second)
 		{
-			gEnv->pEntitySystem->AddEntityEventListener(m_entityId, ENTITY_EVENT_XFORM, this);
-			return;
+			gEnv->pEntitySystem->AddEntityEventListener(entityId, ENTITY_EVENT_XFORM, this);
 		}
-		m_entityId = 0;
 	}
 
-	void UnRegisterEntity()
+	void UnRegisterEntity(EntityId entityId)
 	{
-		if (m_entityId == 0)
-			return;
-
-		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
-		if (pEntity != 0)
-		{
-			gEnv->pEntitySystem->RemoveEntityEventListener(m_entityId, ENTITY_EVENT_XFORM, this);
-			return;
-		}
-		m_entityId = 0;
+		gEnv->pEntitySystem->RemoveEntityEventListener(entityId, ENTITY_EVENT_XFORM, this);
+		m_entityIds.erase(entityId);
 	}
 
-	void TriggerPorts(SActivationInfo* pActInfo)
+	void TriggerPorts()
 	{
-		if (m_entityId == 0)
-			return;
-
-		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
-		if (pEntity)
+		for (EntityId entityId : m_entityIds)
 		{
-			float px, py;
-			int r;
-			CMiniMapInfo::GetInstance()->GetPlayerData(pEntity, px, py, r);
-			ActivateOutput(&m_actInfo, eO_OnPosChange, true);
-			ActivateOutput(&m_actInfo, eO_PosX, px);
-			ActivateOutput(&m_actInfo, eO_PosY, py);
-			ActivateOutput(&m_actInfo, eO_Rotation, r);
+			if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId))
+			{
+				float px, py;
+				int r;
+				CMiniMapInfo::GetInstance()->GetPlayerData(pEntity, px, py, r);
+				ActivateOutput(&m_actInfo, eO_OnPosChange, true);
+				ActivateOutput(&m_actInfo, eO_PosX, px);
+				ActivateOutput(&m_actInfo, eO_PosY, py);
+				ActivateOutput(&m_actInfo, eO_Rotation, r);
+			}
 		}
 	}
 
 private:
-	EntityId        m_entityId;
-	SActivationInfo m_actInfo;
+	std::set<EntityId> m_entityIds;
+	SActivationInfo    m_actInfo;
 
 	enum EInputPorts
 	{
