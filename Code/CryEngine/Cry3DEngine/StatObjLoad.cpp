@@ -42,9 +42,14 @@ void CStatObj::Refresh(int nFlags)
 			GetObjManager()->UnregisterForGarbage(this);
 		}
 
+		const int oldModificationId = m_nModificationId;
+
 		ShutDown();
 		Init();
 		bool bRes = LoadCGF(m_szFileName, false, 0, 0, 0);
+
+		// Shutdown/Init sequence might produce same modification id as before, so we make sure to store a different value.
+		m_nModificationId = oldModificationId + 1;
 
 		LoadLowLODs(false, 0);
 		TryMergeSubObjects(false);
