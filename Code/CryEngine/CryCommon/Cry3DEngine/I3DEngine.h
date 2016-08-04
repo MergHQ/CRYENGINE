@@ -2589,9 +2589,8 @@ struct SRenderingPassInfo
 	void  SetWriteMutex(void* jobState) { m_pJobState = jobState; }
 	void* WriteMutex() const            { return m_pJobState; };
 
-	SRenderingPassInfo(threadID id)
+	SRenderingPassInfo(threadID id) : SRenderingPassInfo()
 	{
-		SRenderingPassInfo();
 		SetThreadID(id);
 	}
 

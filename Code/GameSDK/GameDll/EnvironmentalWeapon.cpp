@@ -971,7 +971,7 @@ void CEnvironmentalWeapon::UpdateDebugOutput() const
 			{
 				attackStateName = "Primary Attack";
 			}
-			else if(m_currentAttackState & EAttackStateType_EnactingPrimaryAttack)
+			else if(m_currentAttackState & EAttackStateType_ChargedThrow)
 			{
 				attackStateName = "Charged Throw";
 			}

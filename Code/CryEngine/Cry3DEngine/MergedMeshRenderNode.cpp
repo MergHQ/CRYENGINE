@@ -997,16 +997,9 @@ static inline void ExtractSphereSet(
 					continue;
 				switch (statusPos.pGeom->GetType())
 				{
-					if (false)
-					{
-					case GEOM_CAPSULE:
-						statusPos.pGeom->GetPrimitive(0, &cylinder);
-					}
-					if (false)
-					{
-					case GEOM_CYLINDER:
-						statusPos.pGeom->GetPrimitive(0, &cylinder);
-					}
+				case GEOM_CAPSULE:
+				case GEOM_CYLINDER:
+					statusPos.pGeom->GetPrimitive(0, &cylinder);
 					for (int i = 0; i < 2 && nColliders < MMRM_MAX_COLLIDERS; ++i)
 					{
 						pColliders[nColliders].center = statusPos.pos + statusPos.q * (cylinder.center + ((float)(i - 1) * cylinder.axis * cylinder.hh * 2.75f));

@@ -1010,7 +1010,8 @@ struct ParticleParams
 		fSphericalApproximation(1.f),
 		fVolumeThickness(1.0f),
 		fSoundFXParam(1.f),
-		eConfigMax(eConfigMax.VeryHigh),
+		eConfigMax(EConfigSpecBrief::VeryHigh),
+		eConfigMin(EConfigSpecBrief::Low),
 		fFadeAtViewCosAngle(0.f)
 	{}
 
