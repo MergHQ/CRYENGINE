@@ -20,6 +20,10 @@ import cryproject, cryregistry
 
 #--- errors
 
+def error_unable_to_replace_file (path):
+	sys.stderr.write ("Unable to replace file '%s'.\n" % path)
+	sys.exit (1)
+	
 def error_project_not_found (path):
 	sys.stderr.write ("'%s' not found.\n" % path)
 	sys.exit (404)
@@ -83,13 +87,16 @@ def get_cmake_path():
 	
 	return None
 
-def get_engine_path():
+def get_tools_path():
 	if getattr( sys, 'frozen', False ):
 		ScriptPath= sys.executable
 	else:
 		ScriptPath= __file__
 		
-	return os.path.abspath (os.path.join (os.path.dirname(ScriptPath), '..', '..'))
+	return os.path.abspath (os.path.dirname (ScriptPath))
+
+def get_engine_path():		
+	return os.path.abspath (os.path.join (get_tools_path(), '..', '..'))
 		
 
 def get_solution_dir (args):
@@ -100,7 +107,7 @@ def get_solution_dir (args):
 
 #--- PROJGEN ---
 
-def projgen_monodev (args, project):
+def projgen_csharp (args, csharp):
 	dirname= os.path.dirname (args.project_file)
 	engine_path= get_engine_path()
 
@@ -134,7 +141,7 @@ def projgen_monodev (args, project):
 		win32file.CreateSymbolicLink (SymlinkFileName, TargetFileName, dwFlags)
 		
 	#--- debug file
-	user_settings= project.get ("monodev", {}).get ("user")
+	user_settings= csharp.get("monodev", {}).get("user")
 	if user_settings:
 		tool_path= os.path.join (engine_path, 'bin', args.platform, 'GameSDK.exe')
 		projectfile_path= os.path.abspath (args.project_file)
@@ -146,6 +153,21 @@ def projgen_monodev (args, project):
     <LocalDebuggerCommandArguments>-project "%s"</LocalDebuggerCommandArguments>
   </PropertyGroup>
 </Project>''' % (tool_path, projectfile_path))
+		file.close()
+
+	user_settings= csharp.get("msdev", {}).get("user")
+	if user_settings:
+		projectfile_path= os.path.abspath (args.project_file)
+		file= open (os.path.join (dirname, user_settings), 'w')
+		file.write('''<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <CryEngineRootPath>%s</CryEngineRootPath>
+    <DebuggerFlavor>MonoDebugger</DebuggerFlavor>
+    <ProjectFilePath>%s</ProjectFilePath>
+    <RunSandbox>true</RunSandbox>
+  </PropertyGroup>
+</Project>''' % (engine_path, projectfile_path))
 		file.close()
 
 def cmd_projgen(args):
@@ -162,12 +184,13 @@ def cmd_projgen(args):
 	
 	#---
 	
-	if project.get ("monodev"):
-		projgen_monodev (args, project)
+	csharp= project.get ("csharp")
+	if csharp:
+		projgen_csharp (args, csharp)
 	
 	#---
 		
-	project_path= os.path.dirname (args.project_file)
+	project_path= os.path.abspath (os.path.dirname (args.project_file))
 	solution_path= os.path.join (project_path, get_solution_dir (args))
 	engine_path= get_engine_path()
 	
@@ -208,7 +231,8 @@ def cmd_build(args):
 	
 	#--- mono
 
-	mono_solution= project.get ("monodev", {}).get ("solution")
+	csharp= project.get ("csharp", {})
+	mono_solution= csharp.get ("monodev", {}).get ("solution")
 	if mono_solution is not None:
 		engine_path= get_engine_path()
 		tool_path= os.path.join (engine_path, 'Tools', 'MonoDevelop', 'bin', 'mdtool.exe')
@@ -291,8 +315,9 @@ def cmd_monodev (args):
 	project= cryproject.load (args.project_file)
 	if project is None:
 		error_project_json_decode (args.project_file)
-			
-	mono_solution= project.get ('monodev', {}).get ('solution')
+
+	csharp= project.get ("csharp", {})
+	mono_solution= csharp.get ('monodev', {}).get ('solution')
 	if mono_solution is None:
 		error_mono_not_set (args.project_file)
 	
@@ -360,7 +385,7 @@ def cmd_upgrade (args):
 	if template_name is None:
 		error_upgrade_template_unknown (arg.project_file)
 	
-	restore_path= os.path.abspath (os.path.join ('upgrade', restore_version, *template_name) + '.zip')
+	restore_path= os.path.abspath (os.path.join (get_tools_path(), 'upgrade', restore_version, *template_name) + '.zip')
 	if not os.path.isfile (restore_path):
 		error_upgrade_template_missing (restore_path)
 		
@@ -517,3 +542,4 @@ if __name__ == '__main__':
 
 	args= parser.parse_args()
 	args.func (args)
+
