@@ -240,11 +240,11 @@ void CPropagationProcessor::SetOcclusionType(EAudioOcclusionType const occlusion
 		// First time run is synchronous and center ray only to get a quick initial value to start from.
 		Vec3 const direction(m_transformation.GetPosition() - audioListenerPosition);
 		m_currentListenerDistance = direction.GetLength();
+		CRY_ASSERT_MESSAGE(m_currentListenerDistance, "distance to listener must never be 0 here");
 
 		if (m_currentListenerDistance < g_audioCVars.m_occlusionMaxDistance)
 		{
-			Vec3 directionNormalized(direction);
-			directionNormalized.Normalize();
+			Vec3 directionNormalized(direction / m_currentListenerDistance);
 			Vec3 const finalDirection(direction - (directionNormalized * g_audioCVars.m_occlusionRayLengthOffset));
 
 			CAudioRayInfo& rayInfo = m_raysInfo[0];

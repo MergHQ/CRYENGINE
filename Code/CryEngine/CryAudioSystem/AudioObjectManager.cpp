@@ -447,6 +447,7 @@ CATLAudioObject* CAudioObjectManager::GetInstance()
 		//have reserved instances
 		pAudioObject = m_audioObjectPool.m_reserved.back();
 		m_audioObjectPool.m_reserved.pop_back();
+		pAudioObject->Init();
 	}
 	else
 	{
@@ -458,9 +459,12 @@ CATLAudioObject* CAudioObjectManager::GetInstance()
 		if (pAudioObject == nullptr)
 		{
 			--m_audioObjectPool.m_idCounter;
-
 			g_audioLogger.Log(eAudioLogType_Warning, "Failed to get a new instance of an AudioObject from the implementation");
 			//failed to get a new instance from the implementation
+		}
+		else
+		{
+			pAudioObject->Init();
 		}
 	}
 
