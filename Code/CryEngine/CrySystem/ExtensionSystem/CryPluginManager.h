@@ -37,7 +37,8 @@ private:
 	bool                    Initialize();
 	bool                    LoadExtensionFile(const char* filename);
 	bool                    LoadPlugin(const SPluginDescriptor& pluginDescriptor);
-	bool                    UnloadPlugin(const SPluginDescriptor& pluginDescriptor);
+	bool                    UnloadPlugin(const SPluginDescriptor& pluginDescriptor, bool bReloadOther = false);
+	bool                    UnloadAllPlugins();
 	void                    NotifyListeners(const char* szPluginName, IPluginEventListener::EPluginEvent event);
 
 	static void             ReloadPluginCmd(IConsoleCmdArgs* pArgs);

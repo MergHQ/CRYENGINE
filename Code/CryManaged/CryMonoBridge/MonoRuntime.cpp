@@ -42,6 +42,7 @@ CMonoRuntime::CMonoRuntime(const char* szProjectDllDir)
 	: m_logLevel(eMLL_NULL)
 	, m_pLibCommon(nullptr)
 	, m_pLibCore(nullptr)
+	, m_pDomainHandler(nullptr)
 	, m_pDomainGlobal(nullptr)
 	, m_pDomainPlugins(nullptr)
 	, m_listeners(5)
@@ -92,7 +93,11 @@ void CMonoRuntime::Initialize(EMonoLogLevel logLevel)
 	m_pDomainGlobal = mono_jit_init_version("CryEngine", "v4.0.30319");
 	if (m_pDomainGlobal)
 	{
-		CryLog("[Mono] Initialization done.");
+		m_pDomainHandler = LoadDomainHandlerLibrary("CryEngine.DomainHandler");
+		if (m_pDomainHandler)
+		{
+			CryLog("[Mono] Initialization done.");
+		}
 	}
 	else
 	{
@@ -114,60 +119,28 @@ bool CMonoRuntime::LoadBinary(const char* szBinaryPath)
 		return false;
 	}
 
-	string binaryFile = PathUtil::GetFile(szBinaryPath);
-	string binaryPath = PathUtil::GetPathWithoutFilename(szBinaryPath);
-	cry_strcpy(m_sProjectDllDir, binaryPath.c_str());
-
-	IMonoLibrary* pLibrary = LoadLibrary(binaryFile.c_str());
+	IMonoLibrary* pLibrary = LoadLibrary(szBinaryPath);
 	if (!pLibrary)
 	{
-		gEnv->pLog->LogError("[Mono] could not load plugin library!");
+		gEnv->pLog->LogError("[Mono] could not initialize plugin '%s'!", szBinaryPath);
 		return false;
 	}
 
 	// Make sure debugger is connected.
 	CrySleep(100);
 
-	ICryEnginePlugin* pPlugin = pLibrary->Initialize(m_pDomainPlugins);
-	if (pPlugin != nullptr)
+	// DBG
+	gEnv->pLog->Log("[Mono] Loaded Libraries:");
+	for (Libraries::const_iterator it = m_loadedLibraries.begin(); it != m_loadedLibraries.end(); ++it)
 	{
-		bool bExist = false;
-		for (ExplicitLibraries::iterator it = m_explicitLibraries.begin(); it != m_explicitLibraries.end(); ++it)
-		{
-			if (!stricmp(it->m_binaryPath.c_str(), szBinaryPath))
-			{
-				it->m_pPlugin = pPlugin;
-				it->m_pLibrary = pLibrary;
-				it->m_bIsExcluded = false;
-				bExist = true;
-			}
-		}
-
-		if (!bExist)
-		{
-			m_explicitLibraries.push_back(SExplicitPluginContainer(pPlugin, pLibrary, false, string(szBinaryPath)));
-		}
-
-		// DBG
-		gEnv->pLog->Log("[Mono] Loaded Libraries:");
-		for (Libraries::const_iterator it = m_loadedLibraries.begin(); it != m_loadedLibraries.end(); ++it)
-		{
-			if ((*it)->IsInMemory())
-				gEnv->pLog->Log("[Mono]   %s (In Memory)", (*it)->GetImageName());
-			else
-				gEnv->pLog->Log("[Mono]   %s", (*it)->GetImageName());
-		}
-		//// ~DBG
-
-		return true;
+		if ((*it)->IsInMemory())
+			gEnv->pLog->Log("[Mono]   %s (In Memory)", (*it)->GetImageName());
+		else
+			gEnv->pLog->Log("[Mono]   %s", (*it)->GetImageName());
 	}
-	else
-	{
-		// TODO: safely unload assembly again
-		gEnv->pLog->LogError("[Mono] could not initialize plugin '%s'!", szBinaryPath);
-	}
+	//// ~DBG
 
-	return false;
+	return true;
 }
 
 bool CMonoRuntime::UnloadBinary(const char* szBinaryPath)
@@ -189,7 +162,7 @@ void CMonoRuntime::Update(int updateFlags, int nPauseMode)
 	}
 }
 
-ICryEnginePlugin* CMonoRuntime::GetPlugin(const char* szBinaryPath) const
+ICryEngineBasePlugin* CMonoRuntime::GetPlugin(const char* szBinaryPath) const
 {
 	for (ExplicitLibraries::const_iterator it = m_explicitLibraries.begin(); it != m_explicitLibraries.end(); ++it)
 	{
@@ -202,7 +175,7 @@ ICryEnginePlugin* CMonoRuntime::GetPlugin(const char* szBinaryPath) const
 	return nullptr;
 }
 
-bool CMonoRuntime::RunMethod(const ICryEnginePlugin* pPlugin, const char* szMethodName) const
+bool CMonoRuntime::RunMethod(const ICryEngineBasePlugin* pPlugin, const char* szMethodName) const
 {
 	for (ExplicitLibraries::const_iterator itExplicit = m_explicitLibraries.begin(); itExplicit != m_explicitLibraries.end(); ++itExplicit)
 	{
@@ -289,8 +262,9 @@ MonoAssembly* CMonoRuntime::MonoSearchHook(MonoAssemblyName* pAssemblyName, void
 
 	//Prefer project dll if available
 	string fProjectName = PathUtil::Make(pRuntime->m_sProjectDllDir, asmName.c_str());
-	if (gEnv->pCryPak->IsFileExist(fProjectName.c_str(), ICryPak::eFileLocation_OnDisk))
+	if (FILE* pHandle = gEnv->pCryPak->FOpen(fProjectName.c_str(), "rb", ICryPak::FLAGS_PATH_REAL))
 	{
+		gEnv->pCryPak->FClose(pHandle);
 		fName = fProjectName;
 	}
 
@@ -338,12 +312,33 @@ MonoAssembly* CMonoRuntime::MonoSearchHook(MonoAssemblyName* pAssemblyName, void
 	return pAsm;
 }
 
-IMonoLibrary* CMonoRuntime::LoadLibrary(const char* szLibraryName)
+SMonoDomainHandlerLibrary* CMonoRuntime::LoadDomainHandlerLibrary(const char* szLibraryName)
 {
-	gEnv->pLog->LogWithType(IMiniLog::eMessage, "[Mono] Load Library: %s", szLibraryName);
+	IMonoLibrary* pLib = LoadLibrary(szLibraryName);
+	if (pLib)
+	{
+		CMonoLibrary* pCLib = static_cast<CMonoLibrary*>(pLib);
+		SMonoDomainHandlerLibrary* pDomainHandler = new SMonoDomainHandlerLibrary(pCLib);
+
+		if (pDomainHandler && pDomainHandler->Initialize())
+		{
+			return pDomainHandler;
+		}
+	}
+
+	return nullptr;
+}
+
+IMonoLibrary* CMonoRuntime::LoadLibrary(const char* szBinaryPath)
+{
+	gEnv->pLog->LogWithType(IMiniLog::eMessage, "[Mono] Load Library: %s", szBinaryPath);
+
+	string binaryFile = PathUtil::GetFile(szBinaryPath);
+	string binaryPath = PathUtil::GetPathWithoutFilename(szBinaryPath);
+	cry_strcpy(m_sProjectDllDir, binaryPath.c_str());
 
 	MonoImageOpenStatus status = MonoImageOpenStatus::MONO_IMAGE_ERROR_ERRNO;
-	MonoAssemblyName* pAsmName = mono_assembly_name_new(szLibraryName);
+	MonoAssemblyName* pAsmName = mono_assembly_name_new(binaryFile.c_str());
 	MonoAssembly* pAsm = mono_assembly_load(pAsmName, m_sProjectDllDir, &status);
 	mono_assembly_name_free(pAsmName);
 
@@ -357,6 +352,30 @@ IMonoLibrary* CMonoRuntime::LoadLibrary(const char* szLibraryName)
 	{
 		pLib = new CMonoLibrary(pAsm);
 		m_loadedLibraries.push_back(pLib);
+	}
+
+	if (mono_domain_get() == m_pDomainPlugins)
+	{
+		ICryEngineBasePlugin* pPlugin = pLib->Initialize(m_pDomainPlugins, m_pDomainHandler);
+		if (pPlugin != nullptr)
+		{
+			bool bExist = false;
+			for (ExplicitLibraries::iterator it = m_explicitLibraries.begin(); it != m_explicitLibraries.end(); ++it)
+			{
+				if (!stricmp(it->m_binaryPath.c_str(), szBinaryPath))
+				{
+					it->m_pPlugin = pPlugin;
+					it->m_pLibrary = pLib;
+					it->m_bIsExcluded = false;
+					bExist = true;
+				}
+			}
+
+			if (!bExist)
+			{
+				m_explicitLibraries.push_back(SExplicitPluginContainer(pPlugin, pLib, false, string(szBinaryPath)));
+			}
+		}
 	}
 
 	return pLib;
@@ -398,7 +417,7 @@ bool CMonoRuntime::LaunchPluginDomain()
 		m_pLibCommon = LoadLibrary("CryEngine.Common");
 		m_pLibCore = LoadLibrary("CryEngine.Core");
 
-		return (m_pLibCommon && m_pLibCore);
+		return (m_pLibCommon && m_pLibCore && m_pLibCore->Initialize(m_pDomainPlugins, m_pDomainHandler));
 	}
 
 	return false;
@@ -425,7 +444,7 @@ bool CMonoRuntime::StopPluginDomain()
 {
 	if (m_pDomainPlugins)
 	{
-		for (Libraries::const_reverse_iterator it = m_loadedLibraries.rbegin(); it != m_loadedLibraries.rend() - 1; ++it)
+		for (Libraries::const_reverse_iterator it = m_loadedLibraries.rbegin(); it != m_loadedLibraries.rend() - 2; ++it)
 		{
 			(*it)->RunMethod("Shutdown");
 		}

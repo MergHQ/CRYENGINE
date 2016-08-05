@@ -493,6 +493,12 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 		return;
 	}
 
+	if (GetCryAction()->StartingGameContext())
+	{
+		GameWarning("Can't process map command while game context is starting!");
+		return;
+	}
+
 	class CParamCheck
 	{
 	public:
@@ -3555,6 +3561,8 @@ void CCryAction::OnEditorSetGameMode(int iMode)
 	{
 		m_pCooperativeAnimationManager->Reset();
 	}
+
+	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(iMode > 0 ? ESYSTEM_EVENT_GAME_MODE_SWITCH_START : ESYSTEM_EVENT_GAME_MODE_SWITCH_END, 0, 0);
 }
 
 //------------------------------------------------------------------------

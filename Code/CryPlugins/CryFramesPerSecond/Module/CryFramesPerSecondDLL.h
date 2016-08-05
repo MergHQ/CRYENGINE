@@ -31,9 +31,9 @@ public:
 	virtual IFramesPerSecond* GetIFramesPerSecond() const override;
 
 protected:
-	virtual void PreUpdate() override  {};
+	virtual void OnGameStart() override {};
 	virtual void Update(int updateFlags, int nPauseMode) override;
-	virtual void PostUpdate() override {}
+	virtual void OnGameStop() override  {}
 
 private:
 	CFramesPerSecond* m_pFramesPerSecond;
