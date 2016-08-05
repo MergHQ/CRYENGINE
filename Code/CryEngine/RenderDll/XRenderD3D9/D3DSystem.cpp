@@ -1735,8 +1735,12 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 	m_bDisplayChanged = false;
 #endif
 
-	m_pPipelineProfiler->Init();
-	
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	if (m_pPipelineProfiler)
+	{
+		m_pPipelineProfiler->Init();
+	}
+#endif
 	m_bInitialized = true;
 
 	//  Cry_memcheck();

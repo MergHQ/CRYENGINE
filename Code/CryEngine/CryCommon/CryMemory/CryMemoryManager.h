@@ -307,9 +307,8 @@ private:
 	#include <malloc.h>
 #endif
 
-#if defined(_LIB)
-	#define CRYMEMORYMANAGER_API
-#elif defined(CRYSYSTEM_EXPORTS)
+// Allow launcher to export functions as e.g. render DLL is still linked dynamically
+#if defined(CRYSYSTEM_EXPORTS) || (defined(_LIB) && defined(_LAUNCHER))
 	#define CRYMEMORYMANAGER_API DLL_EXPORT
 #else
 	#define CRYMEMORYMANAGER_API DLL_IMPORT
