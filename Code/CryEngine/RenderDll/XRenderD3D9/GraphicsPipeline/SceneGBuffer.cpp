@@ -109,13 +109,15 @@ bool CSceneGBufferStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 
-	// TODO: Handle MSAA flags if required
-	// TODO: Handle Hair flags!
-
 	outPSO = NULL;
 
 	CDeviceGraphicsPSODesc psoDesc(m_pResourceLayout.get(), desc);
 	if (!pRenderer->GetGraphicsPipeline().FillCommonScenePassStates(desc, psoDesc))
+		return true;
+
+	CShader* pShader = static_cast<CShader*>(desc.shaderItem.m_pShader);
+	CShaderResources* pRes = static_cast<CShaderResources*>(desc.shaderItem.m_pShaderResources);
+	if (pRes->IsTransparent() && !(pShader->m_Flags2 & EF2_HAIR))
 		return true;
 	
 	const uint64 objectFlags = desc.objectFlags;

@@ -537,8 +537,11 @@ void CRenderView::AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT
 
 	if (!bShadowPass)
 	{
-		// Special case optimization for new pipeline.
-		if (nList == EFSLIST_GENERAL && (!(pShader->m_Flags & EF_SUPPORTSDEFERREDSHADING_FULL) || bForceOpaqueForward))
+		if (nList == EFSLIST_GENERAL && (pShader->m_Flags2 & EF2_HAIR))
+		{
+			nList = EFSLIST_TRANSP;
+		}
+		else if (nList == EFSLIST_GENERAL && (!(pShader->m_Flags & EF_SUPPORTSDEFERREDSHADING_FULL) || bForceOpaqueForward))
 		{
 			// Redirect general list items to the forward opaque list
 			nList = EFSLIST_FORWARD_OPAQUE;
@@ -606,7 +609,7 @@ void CRenderView::AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT
 	else if (m_bTrackUncompiledItems)
 	{
 		// This item will need a temporary compiled object
-		if (pElem && pElem->mfGetType() == eDATA_Mesh && nList != EFSLIST_TRANSP) // temporary disable for these types
+		if (pElem && pElem->mfGetType() == eDATA_Mesh)
 		{
 			// Allocate new CompiledRenderObject.
 			ri.pCompiledObject = AllocCompiledObjectTemporary(pObj, pElem, shaderItem);
@@ -649,6 +652,12 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 		const bool bIsMaterialEmissive = (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive());
 		const bool bIsTransparent = (nRenderList == EFSLIST_TRANSP);
 
+		if (nRenderList != EFSLIST_GENERAL && (nBatchFlags & FB_Z))
+		{
+			m_renderItems[EFSLIST_GENERAL].push_back(ri);
+			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_GENERAL], nBatchFlags);
+		}
+		
 		if (nBatchFlags & FB_ZPREPASS)
 		{
 			m_renderItems[EFSLIST_ZPREPASS].push_back(ri);
@@ -726,7 +735,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 				{
 					bool bRequireCompiledRenderObject = false;
 					// This item will need a temporary compiled object
-					if (pri.m_pRenderElement && pri.m_pRenderElement->mfGetType() == eDATA_Mesh && pri.m_nRenderList != EFSLIST_TRANSP) // temporary disable for these types
+					if (pri.m_pRenderElement && pri.m_pRenderElement->mfGetType() == eDATA_Mesh)
 					{
 						bRequireCompiledRenderObject = true;
 					}
