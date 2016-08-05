@@ -551,8 +551,12 @@ void CAudioImpl::ResetAudioEvent(IAudioEvent* const pAudioEvent)
 	if (pPAAudioEvent != nullptr)
 	{
 		pPAAudioEvent->Reset();
-		pPAAudioEvent->pPAAudioObject->UnregisterAudioEvent(pPAAudioEvent);
-		pPAAudioEvent->pPAAudioObject = nullptr;
+
+		if (pPAAudioEvent->pPAAudioObject != nullptr)
+		{
+			pPAAudioEvent->pPAAudioObject->UnregisterAudioEvent(pPAAudioEvent);
+			pPAAudioEvent->pPAAudioObject = nullptr;
+		}
 	}
 }
 
