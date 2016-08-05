@@ -79,7 +79,7 @@ void CStatObj::RenderStreamingDebugInfo(CRenderObject* pRenderObject)
 #ifndef _RELEASE
 	//	CStatObj * pStreamable = m_pParentObject ? m_pParentObject : this;
 
-	CStatObj* pStreamable = m_pLod0 ? m_pLod0 : this;
+	CStatObj* pStreamable = (m_pLod0 != 0) ? (CStatObj*)m_pLod0 : this;
 
 	int nKB = 0;
 
@@ -372,8 +372,8 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 			}
 		}
 
-		const int nMaxUsableLod = (m_pLod0) ? m_pLod0->m_nMaxUsableLod : m_nMaxUsableLod;
-		const int nRealNumLods = (m_pLod0) ? m_pLod0->m_nLoadedLodsNum : m_nLoadedLodsNum;
+		const int nMaxUsableLod = (m_pLod0 != 0) ? m_pLod0->m_nMaxUsableLod : m_nMaxUsableLod;
+		const int nRealNumLods = (m_pLod0 != 0) ? m_pLod0->m_nLoadedLodsNum : m_nLoadedLodsNum;
 
 		int nNumLods = nRealNumLods;
 		if (nNumLods > nMaxUsableLod + 1)

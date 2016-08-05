@@ -445,7 +445,7 @@ bool CStatObj::LoadStreamRenderMeshes(const char* filename, const void* pData, c
 	// Merge sub-objects for the new lod.
 	if (GetCVars()->e_StatObjMerge)
 	{
-		CStatObj* pLod0 = (m_pLod0) ? m_pLod0 : this;
+		CStatObj* pLod0 = (m_pLod0 != 0) ? (CStatObj*)m_pLod0 : this;
 		pLod0->TryMergeSubObjects(true);
 	}
 	//////////////////////////////////////////////////////////////////////////
