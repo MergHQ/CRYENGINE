@@ -1495,6 +1495,10 @@ void CD3D9Renderer::FX_CommitStates(const SShaderTechnique* pTech, const SShader
 		// min blending on depth values (alpha channel)
 		State &= ~GS_BLALPHA_MASK;
 		State |= GS_BLALPHA_MIN;
+		if ((State & GS_BLSRC_MASK) * (State & GS_BLDST_MASK) == 0)
+		{
+			State |= GS_BLDST_ZERO | GS_BLSRC_ONE;
+		}
 	}
 
 	if ((rRP.m_PersFlags2 & RBPF2_ALLOW_DEFERREDSHADING) && (rRP.m_pShader->m_Flags & EF_SUPPORTSDEFERREDSHADING))
