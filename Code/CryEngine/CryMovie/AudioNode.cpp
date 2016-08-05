@@ -294,15 +294,15 @@ void CAudioNode::ApplyAudioTriggerKey(AudioControlId audioTriggerId, const bool 
 			SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTrigger> executeRequestData;
 			executeRequestData.audioTriggerId = audioTriggerId;
 			audioRequest.pData = &executeRequestData;
+			gEnv->pAudioSystem->PushRequest(audioRequest);
 		}
 		else
 		{
 			SAudioObjectRequestData<eAudioObjectRequestType_StopTrigger> stopRequestData;
 			stopRequestData.audioTriggerId = audioTriggerId;
 			audioRequest.pData = &stopRequestData;
+			gEnv->pAudioSystem->PushRequest(audioRequest);
 		}
-
-		gEnv->pAudioSystem->PushRequest(audioRequest);
 	}
 }
 
