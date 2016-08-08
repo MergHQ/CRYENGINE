@@ -2664,8 +2664,8 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	const uint clearStencil = 1;
 	const ColorF clearValues = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
 
-	int nDepthBufferWidth = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Width : rd->m_width;
-	int nDepthBufferHeight = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Height : rd->m_height;
+	int nDepthBufferWidth = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Width : rd->GetOverlayWidth();
+	int nDepthBufferHeight = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Height : rd->GetOverlayHeight();
 
 	rd->m_pZTexture = CTexture::CreateRenderTarget("$DeviceDepthScene", nDepthBufferWidth, nDepthBufferHeight,
 	                                               clearValues, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_DONT_RELEASE | FT_DONT_STREAM, rd->m_zbpp == 32 ? eTF_D32FS8 : eTF_D24S8);
