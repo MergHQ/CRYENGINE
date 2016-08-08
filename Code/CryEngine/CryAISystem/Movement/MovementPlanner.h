@@ -118,6 +118,7 @@ private:
 	bool CanReplan(const MovementRequest& request) const;
 	void StartWorkingOnRequest_Internal(const MovementRequestID& requestId, const MovementRequest& request, const MovementUpdateContext& context);
 	void OnNavigationMeshChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID);
+	void CheckForNeedToPathReplanningDueToNavMeshChanges(const MovementUpdateContext& context);
 
 private:
 	/// Tiles that were affected by NavMesh changes
@@ -130,9 +131,31 @@ private:
 		bool operator==(const MeshIDAndTileID& rhs) const { return (this->tileID == rhs.tileID) && (this->meshID == rhs.meshID); }
 	};
 
+	// Reasons for potential path-replanning
+	struct SPendingPathReplanning
+	{
+		bool bNavMeshChanged;              // the NavMesh changed and some (or all) of its changes affect the path we're currently moving along
+		bool bSuddenNonInterruptibleBlock; // the pathfinder returned a path after a previously interruptible block suddenly became non-interruptible (can happen when the UseSmartObject transitions from its internal "Prepare" state to "Traverse")
+
+		SPendingPathReplanning()
+		{
+			Clear();
+		}
+
+		void Clear()
+		{
+			bNavMeshChanged = bSuddenNonInterruptibleBlock = false;
+		}
+
+		bool IsPending() const
+		{
+			return bNavMeshChanged || bSuddenNonInterruptibleBlock;
+		}
+	};
+
 	const NavigationAgentTypeID  m_navigationAgentTypeID;
 	std::vector<MeshIDAndTileID> m_queuedNavMeshChanges;
-	bool                         m_pendingPathReplanningDueToPreviousNavMeshChanges;   // dirty-flag to automatically re-path as soon as the possibly existing plan allows for it again
+	SPendingPathReplanning       m_pendingPathReplanning;   // dirty-flag to automatically re-path as soon as the possibly existing plan allows for it again
 	Plan                         m_plan;
 	MovementRequestID            m_requestId;
 	MovementRequest              m_request;
