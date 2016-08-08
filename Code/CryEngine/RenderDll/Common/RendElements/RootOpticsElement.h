@@ -93,7 +93,7 @@ public:
 	void                Load(IXmlNode* pNode);
 
 	void                Render(SLensFlareRenderParam* pParam, const Vec3& vPos);
-	bool                ProcessAll(CShader* shader, SFlareLight& light, bool bForceRender = false, CCamera* pCamera = NULL);
+	bool                ProcessAll(CShader* shader, SFlareLight& light, bool bForceRender = false, CCamera* pCamera = NULL, bool bIgnoreOcclusionQueries = false);
 
 	IOpticsElementBase* GetParent() const                          { return NULL; }
 

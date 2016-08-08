@@ -193,7 +193,7 @@ void IrisShafts::Render(CShader* shader, Vec3 vSrcWorldPos, Vec3 vSrcProjPos, SA
 	ApplySpectrumTexFlag(shader, m_bUseSpectrumTex);
 	shader->FXBeginPass(0);
 
-	if (m_globalOcclusionBokeh)
+	if (m_globalOcclusionBokeh && !aux.bIgnoreOcclusionQueries)
 	{
 		RootOpticsElement* root = GetRoot();
 		CFlareSoftOcclusionQuery* occQuery = root->GetOcclusionQuery();
