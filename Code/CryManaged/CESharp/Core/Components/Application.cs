@@ -82,7 +82,11 @@ namespace CryEngine.Components
 				if (_activeShutdown) 
 				{
 					if (Env.IsSandbox)
-						AddIn.InterDomainHandler.RaiseRequestQuit();
+						AddIn.m_interDomainHandler.RaiseRequestQuit ();
+				} 
+				else 
+				{
+					Env.System.Quit ();
 				}
 				_isShutdown = true;
 			}

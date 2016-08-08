@@ -44,6 +44,11 @@ namespace CryEngine.FlowSystem
 			Env.FlowSystem.RegisterType("Mono:" + typeof(T).Name, new IFlowNodeFactoryPtr (factory));
 		}
 
+		public static void Unregister()
+		{
+			Env.FlowSystem.UnregisterType ("Mono:" + typeof(T).Name);
+		}
+
 		/// <summary>
 		/// Called by CryEngine. Do not call directly.
 		/// </summary>

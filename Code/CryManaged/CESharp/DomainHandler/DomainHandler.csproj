@@ -3,7 +3,6 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
-    <ProjectTypeGuids>{E7562513-36BA-4D11-A927-975E5375ED10};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <ProjectGuid>{7BD337C0-36D4-4048-93D2-08D613023978}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>CryEngine.DomainHandler</RootNamespace>
@@ -81,11 +80,4 @@
       <Name>Core</Name>
     </ProjectReference>
   </ItemGroup>
-  <ProjectExtensions>
-    <MonoDevelop>
-      <Properties>
-        <CryEngineParameters />
-      </Properties>
-    </MonoDevelop>
-  </ProjectExtensions>
 </Project>

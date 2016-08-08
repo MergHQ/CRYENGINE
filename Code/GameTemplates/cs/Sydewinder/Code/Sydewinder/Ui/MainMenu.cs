@@ -101,7 +101,7 @@ public sealed class MainMenu : SceneObject
 		_startButton = SceneObject.Instantiate<Button>(_mainMenuWindow);
 		_startButton.RectTransform.Padding = new Padding(0, -140);
 		_startButton.Ctrl.Text.Content = "Start";
-		_startButton.Ctrl.OnPressed += () = >
+		_startButton.Ctrl.OnPressed += () =>
 		{
 			SetInactive();
 			if (StartClicked != null)
@@ -111,7 +111,7 @@ public sealed class MainMenu : SceneObject
 		_highscoreButton = SceneObject.Instantiate<Button>(_mainMenuWindow);
 		_highscoreButton.RectTransform.Padding = new Padding(0, 10);
 		_highscoreButton.Ctrl.Text.Content = "Highscore";
-		_highscoreButton.Ctrl.OnPressed += () = >
+		_highscoreButton.Ctrl.OnPressed += () =>
 		{
 			SetInactive();
 			SetupHighscoreMenuPerspective(true);
@@ -120,14 +120,14 @@ public sealed class MainMenu : SceneObject
 		_exitButton = SceneObject.Instantiate<Button>(_mainMenuWindow);
 		_exitButton.RectTransform.Padding = new Padding(0, 160);
 		_exitButton.Ctrl.Text.Content = "Exit";
-		_exitButton.Ctrl.OnPressed += () = >
+		_exitButton.Ctrl.OnPressed += () =>
 		{
 			SetInactive();
 			if (ExitClicked != null)
 				ExitClicked();
 		};
 
-		_mainMenuWindow.ForEach<Button>(x = > x.RectTransform.Alignment = Alignment.Center);
+		_mainMenuWindow.ForEach<Button>(x => x.RectTransform.Alignment = Alignment.Center);
 	}
 
 	private void CreateHighscoreMenu()
@@ -148,7 +148,7 @@ public sealed class MainMenu : SceneObject
 		backButton.RectTransform.Padding = new Padding(0, -115);
 		backButton.Ctrl.Text.Content = "Back";
 		backButton.RectTransform.Alignment = Alignment.Bottom;
-		backButton.Ctrl.OnPressed += () = >
+		backButton.Ctrl.OnPressed += () =>
 		{
 			SetInactive();
 			SetupMainMenuPerspective(true);
@@ -161,8 +161,8 @@ public sealed class MainMenu : SceneObject
 		string buttonBackgroundURL = Path.Combine(Application.DataPath, "Textures/ui/Ui_button.png");
 		string buttonHighlightedURL = Path.Combine(Application.DataPath, "Textures/ui/Ui_button_selected.png");
 
-		Root.ForEach<Window>(x = >
-			{
+		Root.ForEach<Window>(x =>
+		{
 				x.Caption = "Sydewinder";
 				x.Background.Source = ResourceManager.ImageFromFile(backgroundImageURL);
 				x.CaptionHeight = 40;
@@ -170,14 +170,14 @@ public sealed class MainMenu : SceneObject
 				x.RectTransform.Alignment = Alignment.Center;
 
 				// Apply common style to all buttons within the window.
-				x.ForEach<Button>(b = >
+				x.ForEach<Button>(b =>
 				{
 					b.RectTransform.Size = new Point(300, 120);
 					b.Ctrl.Text.Height = 48;
 					b.BackgroundImageUrl = buttonBackgroundURL;
 					b.BackgroundImageInvertedUrl = buttonHighlightedURL;
-					b.Ctrl.OnPressed += () = > AudioManager.PlayTrigger("menu_select");
-					b.Ctrl.OnFocusEnter += () = > AudioManager.PlayTrigger("menu_switch");
+					b.Ctrl.OnPressed += () => AudioManager.PlayTrigger("menu_select");
+					b.Ctrl.OnFocusEnter += () => AudioManager.PlayTrigger("menu_switch");
 				});
 		  });
 	}
