@@ -808,12 +808,16 @@ void CScaleformPlayback::PopExternalRenderTarget()
 		}
 
 		m_pRenderer->SF_GetResources().m_PrimitiveHeap.FreeUsedPrimitives(pCurOutput->key);
+
+		CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
+	}
+
+	// Graphics pipeline >= 0
+	{
 		m_pRenderer->SF_GetResources().m_CBHeap.FreeUsedConstantBuffers();
 
 		params.m_bScaleformMeshAttributesDirty = params.m_bScaleformMeshAttributesDirty || !(params.m_vsBuffer = nullptr);
 		params.m_bScaleformRenderParametersDirty = params.m_bScaleformRenderParametersDirty || !(params.m_psBuffer = nullptr);
-
-		CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 	}
 
 	pCurOutput->pRenderTarget->Release();
@@ -903,12 +907,16 @@ void CScaleformPlayback::PopRenderTarget()
 		}
 
 		m_pRenderer->SF_GetResources().m_PrimitiveHeap.FreeUsedPrimitives(pCurOutput->key);
+
+		CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
+	}
+
+	// Graphics pipeline >= 0
+	{
 		m_pRenderer->SF_GetResources().m_CBHeap.FreeUsedConstantBuffers();
 
 		params.m_bScaleformMeshAttributesDirty = params.m_bScaleformMeshAttributesDirty || !(params.m_vsBuffer = nullptr);
 		params.m_bScaleformRenderParametersDirty = params.m_bScaleformRenderParametersDirty || !(params.m_psBuffer = nullptr);
-
-		CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 	}
 
 	pCurOutput->pRenderTarget->Release();
