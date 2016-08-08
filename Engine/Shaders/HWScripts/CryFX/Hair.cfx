@@ -850,8 +850,12 @@ v2f_sh HairSG_VS(app2vertGeneral IN)
 	float4 HPosition = mul(g_VS_ViewProjMatr, vertPassPos.WorldPos);
 
 #if !%_RT_CUBEMAP0 
-	#if %_RT_ALPHABLEND
-		OUT.Depth = HPosition.z;
+	#if !%_RT_NEAREST
+		HPosition.z /= CP_ShadowGen_FrustumInfo.y;
+	#endif
+
+	#if %_RT_SAMPLE0
+		OUT.Depth = HPosition.z + CP_ShadowGen_DepthTestBias.x;
 	#endif
 #else 
 	OUT.Depth = (HPosition.z/CP_ShadowGen_FrustumInfo.y);
