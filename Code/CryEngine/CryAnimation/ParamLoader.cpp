@@ -542,7 +542,7 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 
 		if (0 == stricmp(key, "#filepath"))
 		{
-			strAnimDirName = PathUtil::ToUnixPath(value.c_str());
+			strAnimDirName = PathUtil::ToUnixPath(line.c_str());
 			strAnimDirName.TrimRight('/'); // delete the trailing slashes
 			continue;
 		}
