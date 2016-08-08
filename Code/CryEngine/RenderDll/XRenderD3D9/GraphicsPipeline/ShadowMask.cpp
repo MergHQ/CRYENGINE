@@ -67,7 +67,11 @@ public:
 	CSunShadows(const CShadowMaskStage& stage);
 	~CSunShadows();
 
-	int PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bCloudShadows, bool bScreenSpaceShadows, CPrimitiveRenderPass* pDebugCascadesPass, CRenderView* pRenderView, uint64 qualityFlags);
+	void InitPrimitives();
+	void ResetPrimitives();
+	int  PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bCloudShadows, bool bScreenSpaceShadows, CPrimitiveRenderPass* pDebugCascadesPass, CRenderView* pRenderView, uint64 qualityFlags);
+
+	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater);
 
 private:
 	void PrepareCascadePrimitivesNoBlending(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, const SCascadePrimitiveContext& context);
@@ -116,11 +120,30 @@ class CLocalLightShadows
 		CRenderPrimitive stencilBackfaces;
 		CRenderPrimitive stencilFrontfaces;
 		CRenderPrimitive sampling;
+
+		void Reset()
+		{
+			stencilBackfaces.Reset();
+			stencilFrontfaces.Reset();
+			sampling.Reset();
+		}
+
+		void SetConstantBuffer(EConstantBufferShaderSlot shaderSlot, CConstantBuffer* pBuffer, EShaderStage shaderStages)
+		{
+			stencilBackfaces.SetInlineConstantBuffer(shaderSlot, pBuffer, shaderStages);
+			stencilFrontfaces.SetInlineConstantBuffer(shaderSlot, pBuffer, shaderStages);
+			sampling.SetInlineConstantBuffer(shaderSlot, pBuffer, shaderStages);
+		}
 	};
 
 public:
 	CLocalLightShadows(const CShadowMaskStage& stage);
-	int PreparePrimitives(std::vector<CPrimitiveRenderPass>& maskGenPasses, int& firstUnusedStencilValue, bool bScreenSpaceShadows, CRenderView* pRenderView, uint64 qualityFlags);
+
+	void InitPrimitives();
+	void ResetPrimitives();
+	int  PreparePrimitives(std::vector<CPrimitiveRenderPass>& maskGenPasses, int& firstUnusedStencilValue, bool bScreenSpaceShadows, CRenderView* pRenderView, uint64 qualityFlags);
+	
+	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater);
 
 private:
 	typedef std::pair<SShadowFrustumToRender*, Vec4>      FrustumCoveragePair;
@@ -301,6 +324,12 @@ void CShadowMaskStage::Execute()
 	}
 }
 
+void CShadowMaskStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
+{
+	m_pSunShadows->OnCVarsChanged(cvarUpdater);
+	m_pLocalLightShadows->OnCVarsChanged(cvarUpdater);
+}
+
 ////////////////////////////////////////////// Shadow mask internal stuff /////////////////////////////////////////////////////////
 
 namespace ShadowMaskInternal
@@ -309,23 +338,41 @@ namespace ShadowMaskInternal
 CSunShadows::CSunShadows(const CShadowMaskStage& stage)
 	: shadowMaskStage(stage)
 {
-	for (auto& prim : cachedSamplingPrimitives)
-		prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+	m_nearestFullscreenTri = gcpRendD3D->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_STATIC, 3 * sizeof(SVF_P3F));
+	m_nearestZ = 0;
 
-	for (auto& prim : cachedSamplingPrimitives)
-		prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+	InitPrimitives();
+}
 
-	for (auto& prim : cachedStencilPrimitives)
-		prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
-
-	for (auto& prim : cachedDebugPrimitives)
-		prim.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
+void CSunShadows::InitPrimitives()
+{
+	for (auto& prim : cachedSamplingPrimitives) prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+	for (auto& prim : cachedSamplingPrimitives) prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+	for (auto& prim : cachedStencilPrimitives)  prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+	for (auto& prim : cachedDebugPrimitives)    prim.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
 
 	nearestShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
 	cloudShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SCloudShadowConstants), EShaderStage_Pixel);
+}
 
-	m_nearestFullscreenTri = gcpRendD3D->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_STATIC, 3 * sizeof(SVF_P3F));
-	m_nearestZ = 0;
+void CSunShadows::ResetPrimitives()
+{
+	for (auto& prim : cachedStencilPrimitives)  prim.Reset();
+	for (auto& prim : cachedSamplingPrimitives) prim.Reset();
+	for (auto& prim : cachedDebugPrimitives)    prim.Reset();
+	for (auto& prim : cachedCustomPrimitives)   prim.Reset();
+
+	nearestShadowPrimitive.Reset();
+	cloudShadowPrimitive.Reset();
+}
+
+void CSunShadows::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
+{
+	if (cvarUpdater.GetCVar("e_ShadowsMaxTexRes"))
+	{
+		ResetPrimitives();
+		InitPrimitives();
+	}
 }
 
 CSunShadows::~CSunShadows()
@@ -928,21 +975,37 @@ CLocalLightShadows::CLocalLightShadows(const CShadowMaskStage& stage)
 	, volumePrimitiveCount(0)
 	, quadPrimitiveCount(0)
 {
-	auto allocConstantBuffersForPrimitives = [=](std::array<SLocalLightPrimitives, MAX_SHADOWMAP_FRUSTUMS>& primitives)
+	InitPrimitives();
+}
+
+void CLocalLightShadows::InitPrimitives()
+{
+	for (auto& prim : volumePrimitives)
 	{
-		for (auto& prim : primitives)
-		{
-			CConstantBufferPtr pCB;
-			pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants)));
+		CConstantBufferPtr pCB; pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants)));
+		prim.SetConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
+	}
 
-			prim.sampling.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
-			prim.stencilBackfaces.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
-			prim.stencilFrontfaces.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
-		}
-	};
+	for (auto& prim : quadPrimitives)
+	{
+		CConstantBufferPtr pCB; pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants)));
+		prim.SetConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
+	}
+}
 
-	allocConstantBuffersForPrimitives(volumePrimitives);
-	allocConstantBuffersForPrimitives(quadPrimitives);
+void CLocalLightShadows::ResetPrimitives()
+{
+	for (auto& prim : volumePrimitives) prim.Reset();
+	for (auto& prim : quadPrimitives)   prim.Reset();
+}
+
+void CLocalLightShadows::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
+{
+	if (cvarUpdater.GetCVar("e_ShadowsPoolSize"))
+	{
+		ResetPrimitives();
+		InitPrimitives();
+	}
 }
 
 int CLocalLightShadows::PreparePrimitives(std::vector<CPrimitiveRenderPass>& maskGenPasses, int& firstUnusedStencilValue, bool bScreenSpaceShadows, CRenderView* pRenderView, uint64 qualityFlags)
