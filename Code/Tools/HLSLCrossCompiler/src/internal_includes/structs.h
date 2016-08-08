@@ -129,7 +129,7 @@ typedef struct Declaration_TAG
 		uint32_t ui32GloballyCoherentAccess;
 		uint32_t ui32BufferSize;
 		uint8_t bCounter;
-		RESOURCE_RETURN_TYPE Type;
+		RESOURCE_RETURN_TYPE Type[4];
 	} sUAV;
 
 	struct TGSM_TAG

@@ -1629,11 +1629,13 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
     ShaderVarType* psVarType = NULL;
 	uint32_t ui32DataTypeFlag = TO_FLAG_INTEGER;
 	const char* func = "";
+	const char* ifunc = "";
 	Operand* dest = 0;
 	Operand* previousValue = 0;
 	Operand* destAddr = 0;
 	Operand* src = 0;
 	Operand* compare = 0;
+	char bIsStructured = 0;
 
 	switch(psInst->eOpcode)
 	{
@@ -1644,6 +1646,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//IMM_ATOMIC_IADD\n");
 #endif     
 			func = "atomicAdd";
+			ifunc = "imageAtomicAdd";
 			previousValue = &psInst->asOperands[0];
 			dest = &psInst->asOperands[1];
 			destAddr = &psInst->asOperands[2];
@@ -1657,6 +1660,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//ATOMIC_IADD\n");
 #endif  
 			func = "atomicAdd";
+			ifunc = "imageAtomicAdd";
 			dest = &psInst->asOperands[0];
 			destAddr = &psInst->asOperands[1];
 			src = &psInst->asOperands[2];
@@ -1669,6 +1673,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//IMM_ATOMIC_AND\n");
 #endif     
 			func = "atomicAnd";
+			ifunc = "imageAtomicAnd";
 			previousValue = &psInst->asOperands[0];
 			dest = &psInst->asOperands[1];
 			destAddr = &psInst->asOperands[2];
@@ -1682,6 +1687,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//ATOMIC_AND\n");
 #endif  
 			func = "atomicAnd";
+			ifunc = "imageAtomicAnd";
 			dest = &psInst->asOperands[0];
 			destAddr = &psInst->asOperands[1];
 			src = &psInst->asOperands[2];
@@ -1694,6 +1700,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//IMM_ATOMIC_OR\n");
 #endif     
 			func = "atomicOr";
+			ifunc = "imageAtomicOr";
 			previousValue = &psInst->asOperands[0];
 			dest = &psInst->asOperands[1];
 			destAddr = &psInst->asOperands[2];
@@ -1707,6 +1714,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//ATOMIC_OR\n");
 #endif  
 			func = "atomicOr";
+			ifunc = "imageAtomicOr";
 			dest = &psInst->asOperands[0];
 			destAddr = &psInst->asOperands[1];
 			src = &psInst->asOperands[2];
@@ -1719,6 +1727,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//IMM_ATOMIC_XOR\n");
 #endif     
 			func = "atomicXor";
+			ifunc = "imageAtomicXor";
 			previousValue = &psInst->asOperands[0];
 			dest = &psInst->asOperands[1];
 			destAddr = &psInst->asOperands[2];
@@ -1732,6 +1741,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//ATOMIC_XOR\n");
 #endif  
 			func = "atomicXor";
+			ifunc = "imageAtomicXor";
 			dest = &psInst->asOperands[0];
 			destAddr = &psInst->asOperands[1];
 			src = &psInst->asOperands[2];
@@ -1745,6 +1755,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//IMM_ATOMIC_EXCH\n");
 #endif     
 			func = "atomicExchange";
+			ifunc = "imageAtomicExchange";
 			previousValue = &psInst->asOperands[0];
 			dest = &psInst->asOperands[1];
 			destAddr = &psInst->asOperands[2];
@@ -1758,6 +1769,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//IMM_ATOMIC_CMP_EXC\n");
 #endif     
 			func = "atomicCompSwap";
+			ifunc = "imageAtomicCompSwap";
 			previousValue = &psInst->asOperands[0];
 			dest = &psInst->asOperands[1];
 			destAddr = &psInst->asOperands[2];
@@ -1772,6 +1784,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//ATOMIC_CMP_STORE\n");
 #endif     
 			func = "atomicCompSwap";
+			ifunc = "imageAtomicCompSwap";
 			previousValue = 0;
 			dest = &psInst->asOperands[0];
 			destAddr = &psInst->asOperands[1];
@@ -1786,6 +1799,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//IMM_ATOMIC_UMIN\n");
 #endif     
 			func = "atomicMin";
+			ifunc = "imageAtomicMin";
 			previousValue = &psInst->asOperands[0];
 			dest = &psInst->asOperands[1];
 			destAddr = &psInst->asOperands[2];
@@ -1799,6 +1813,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//ATOMIC_UMIN\n");
 #endif  
 			func = "atomicMin";
+			ifunc = "imageAtomicMin";
 			dest = &psInst->asOperands[0];
 			destAddr = &psInst->asOperands[1];
 			src = &psInst->asOperands[2];
@@ -1811,6 +1826,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//IMM_ATOMIC_IMIN\n");
 #endif     
 			func = "atomicMin";
+			ifunc = "imageAtomicMin";
 			previousValue = &psInst->asOperands[0];
 			dest = &psInst->asOperands[1];
 			destAddr = &psInst->asOperands[2];
@@ -1824,6 +1840,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//ATOMIC_IMIN\n");
 #endif  
 			func = "atomicMin";
+			ifunc = "imageAtomicMin";
 			dest = &psInst->asOperands[0];
 			destAddr = &psInst->asOperands[1];
 			src = &psInst->asOperands[2];
@@ -1836,6 +1853,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//IMM_ATOMIC_UMAX\n");
 #endif     
 			func = "atomicMax";
+			ifunc = "imageAtomicMax";
 			previousValue = &psInst->asOperands[0];
 			dest = &psInst->asOperands[1];
 			destAddr = &psInst->asOperands[2];
@@ -1849,6 +1867,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//ATOMIC_UMAX\n");
 #endif  
 			func = "atomicMax";
+			ifunc = "imageAtomicMax";
 			dest = &psInst->asOperands[0];
 			destAddr = &psInst->asOperands[1];
 			src = &psInst->asOperands[2];
@@ -1861,6 +1880,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//IMM_ATOMIC_IMAX\n");
 #endif     
 			func = "atomicMax";
+			ifunc = "imageAtomicMax";
 			previousValue = &psInst->asOperands[0];
 			dest = &psInst->asOperands[1];
 			destAddr = &psInst->asOperands[2];
@@ -1874,6 +1894,7 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 			bcatcstr(glsl, "//ATOMIC_IMAX\n");
 #endif  
 			func = "atomicMax";
+			ifunc = "imageAtomicMax";
 			dest = &psInst->asOperands[0];
 			destAddr = &psInst->asOperands[1];
 			src = &psInst->asOperands[2];
@@ -1881,17 +1902,42 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 		}
 	}
 
-    AddIndentation(psContext);
+	AddIndentation(psContext);
 
-	psVarType = LookupStructuredVar(psContext, dest, destAddr, 0);
-
-	if(psVarType->Type == SVT_UINT)
+	if (dest->eType == OPERAND_TYPE_THREAD_GROUP_SHARED_MEMORY)
 	{
-		ui32DataTypeFlag = TO_FLAG_INTEGER | TO_FLAG_UNSIGNED_INTEGER;
+		bIsStructured = 1;
 	}
-	else if(psVarType->Type == SVT_INT)
+	else if (dest->eType == OPERAND_TYPE_UNORDERED_ACCESS_VIEW)
 	{
-		ui32DataTypeFlag = TO_FLAG_INTEGER;
+		ResourceType type = UAVType(*psContext->currentGLSLString, psContext->psShader, dest->ui32RegisterNumber);
+
+		if (type == RTYPE_UAV_RWTYPED)
+		{
+			bIsStructured = 0;
+		}
+		else if (type == RTYPE_UAV_RWSTRUCTURED)
+		{
+			bIsStructured = 1;
+		}
+		else if (type == RTYPE_UAV_RWBYTEADDRESS)
+		{
+			bIsStructured = 0;
+		}
+	}
+
+	if (bIsStructured)
+	{
+		psVarType = LookupStructuredVar(psContext, dest, destAddr, 0);
+
+		if (psVarType->Type == SVT_UINT)
+		{
+			ui32DataTypeFlag = TO_FLAG_INTEGER | TO_FLAG_UNSIGNED_INTEGER;
+		}
+		else if (psVarType->Type == SVT_INT)
+		{
+			ui32DataTypeFlag = TO_FLAG_INTEGER;
+		}
 	}
 
 	if(previousValue)
@@ -1904,22 +1950,38 @@ void TranslateAtomicMemOp(HLSLCrossCompilerContext* psContext, Instruction* psIn
 		bcatcstr(glsl, func);
 		bcatcstr(glsl, "(");
 		TranslateOperand(psContext, dest, ui32DataTypeFlag & TO_FLAG_NAME_ONLY);
-		bformata(glsl, "[%d]", 0);
+		bformata(glsl, "[");
+		TranslateOperand(psContext, destAddr, ui32DataTypeFlag);
+		bformata(glsl, "]");
 	}
-	else
+	else if (bIsStructured)
 	{
 		bcatcstr(glsl, func);
 		bcatcstr(glsl, "(");
 		UAVName(*psContext->currentGLSLString, psContext->psShader, dest->ui32RegisterNumber);
-		bformata(glsl, "[%d]", 0);
+		bformata(glsl, "[");
+		TranslateOperand(psContext, destAddr, ui32DataTypeFlag);
+		bformata(glsl, "]");
+	}
+	else
+	{
+		bcatcstr(glsl, ifunc);
+		bcatcstr(glsl, "(");
+		UAVName(*psContext->currentGLSLString, psContext->psShader, dest->ui32RegisterNumber);
+		bformata(glsl, ", ");
+		TranslateOperand(psContext, destAddr, ui32DataTypeFlag);
+		bformata(glsl, ", ");
 	}
 
-	if(strcmp(psVarType->Name, "$Element") != 0)
+	if (bIsStructured)
 	{
-		bcatcstr(glsl, ".");
-		ShaderVarName(glsl, psContext->psShader, psVarType->Name);
+		if (strcmp(psVarType->Name, "$Element") != 0)
+		{
+			bcatcstr(glsl, ".");
+			ShaderVarName(glsl, psContext->psShader, psVarType->Name);
+		}
+		bcatcstr(glsl, ", ");
 	}
-	bcatcstr(glsl, ", ");
 
 	if(compare)
 	{

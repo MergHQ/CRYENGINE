@@ -27,6 +27,7 @@ uint32_t IsSwizzleReplacated(const Operand* psOperand);
 
 void TextureName(bstring output, Shader* psShader, const uint32_t ui32TextureRegister, const uint32_t ui32SamplerRegister, const int bCompare);
 void UAVName(bstring output, Shader* psShader, const uint32_t ui32RegisterNumber);
+OPCODE_TYPE UAVType(bstring output, Shader* psShader, const uint32_t ui32RegisterNumber);
 void UniformBufferName(bstring output, Shader* psShader, const uint32_t ui32RegisterNumber);
 
 void ConvertToTextureName(bstring output, Shader* psShader, const char* szName, const char* szSamplerName, const int bCompare);

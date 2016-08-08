@@ -742,7 +742,9 @@ uint32 WriteShaderDecimal(char* acOutput, uint32 uValue)
 
 void BuildVersionString(SPipelineCompilationBuffer* pBuffer, CDevice* pDevice)
 {
-#if DXGL_REQUIRED_VERSION >= DXGL_VERSION_44
+#if DXGL_REQUIRED_VERSION >= DXGL_VERSION_45
+	const char* szVersion = "#version 450\n";
+#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_44
 	const char* szVersion = "#version 440\n";
 	// Workaround for AMD Catalyst - as of version 15.7.1 using "#version 440" causes std140 uniform buffers
 	// to have random layouts (see https://community.amd.com/thread/185272)
@@ -1312,11 +1314,15 @@ bool InitializeTextureBindings(
 		bool bNormalSample = DecodeNormalSample(uSamplerField);
 		bool bCompareSample = DecodeCompareSample(uSamplerField);
 
-		uint32 uTextureSlot = TextureSlot(eStage, uTextureIndex);
-		uint32 uSamplerSlot = SamplerSlot(eStage, uSamplerIndex);
-		uint32 uTextureUnit = pPartition ? pPartition->m_akStages[eStage](uTextureUnitIndex) : uMapPosition + uElement;
+		const bool bSample(bNormalSample || bCompareSample);
+		const uint32 uTextureSlot = TextureSlot(eStage, uTextureIndex);
+		const uint32 uSamplerSlot = SamplerSlot(eStage, uSamplerIndex);
+		const uint32 uTextureUnit = pPartition ? pPartition->m_akStages[eStage](uTextureUnitIndex) : uMapPosition + uElement;
 
-		bool bSample(bNormalSample || bCompareSample);
+		assert(uTextureSlot < MAX_TEXTURE_SLOTS);
+		assert(uSamplerSlot < MAX_SAMPLER_SLOTS || (uSamplerIndex == MAX_RESOURCE_BINDINGS && !bSample));
+		assert(uTextureUnit < MAX_TEXTURE_UNITS);
+
 		if (bSample)
 			*pMapElementOut = SUnitMap::SElement::TextureWithSampler(uTextureSlot, uSamplerSlot, uTextureUnit);
 		else
@@ -1341,7 +1347,7 @@ bool InitializeTextureBindings(
 	return true;
 }
 
-template<bool pfBindResourceToUnit(GLuint uProgramName, uint32 uUnit, const char* szName), uint32 pfIndexToSlot(EShaderType eStage, uint32 uIndex)>
+template<bool pfBindResourceToUnit(GLuint uProgramName, uint32 uUnit, const char* szName), uint32 pfIndexToSlot(EShaderType eStage, uint32 uIndex), const uint32 slotLimit, const uint32 unitLimit>
 bool InitializeResourceBindings(
   SUnitMap* pMap,
   uint32 uMapPosition,
@@ -1364,6 +1370,9 @@ bool InitializeResourceBindings(
 
 		uint32 uResourceSlot = pfIndexToSlot(eStage, uResourceIndex);
 		uint32 uResourceUnit = pPartition ? pPartition->m_akStages[eStage](uResourceIndex) : uMapPosition + uElement;
+
+		assert(uResourceSlot < slotLimit);
+		assert(uResourceUnit < unitLimit);
 
 		*pMapElementOut = SUnitMap::SElement::Resource(uResourceSlot, uResourceUnit);
 
@@ -1430,7 +1439,7 @@ bool InitializePipelineResources(SPipeline* pPipeline, CContext* pContext)
 			const uint32* pUniformBuffers(reinterpret_cast<const uint32*>(pShader->m_kSource.m_pData + pShader->m_kReflection.m_uUniformBuffersOffset));
 			SUnitMap* pUniformBufferMap = aspUnitMaps[eRUT_UniformBuffer].get();
 
-			bSuccess &= InitializeResourceBindings<BindUniformBufferToUnit, ConstantBufferSlot>(
+			bSuccess &= InitializeResourceBindings<BindUniformBufferToUnit, ConstantBufferSlot, MAX_CONSTANT_BUFFER_SLOTS, MAX_UNIFORM_BUFFER_UNITS>(
 			  pUniformBufferMap, auUnitMapPositions[eRUT_UniformBuffer],
 			  pUniformBuffers, uNumUniformBuffers, (EShaderType)uShader,
 			  szGLSL, uProgramName, apUnitPartitions[eRUT_UniformBuffer]);
@@ -1446,7 +1455,7 @@ bool InitializePipelineResources(SPipeline* pPipeline, CContext* pContext)
 			const uint32* pStorageBuffers(reinterpret_cast<const uint32*>(pShader->m_kSource.m_pData + pShader->m_kReflection.m_uStorageBuffersOffset));
 			SUnitMap* pStorageBufferMap = aspUnitMaps[eRUT_StorageBuffer].get();
 
-			bSuccess &= InitializeResourceBindings<BindStorageBufferToUnit, StorageBufferSlot>(
+			bSuccess &= InitializeResourceBindings<BindStorageBufferToUnit, StorageBufferSlot, MAX_STORAGE_BUFFER_SLOTS, MAX_STORAGE_BUFFER_UNITS>(
 			  pStorageBufferMap, auUnitMapPositions[eRUT_StorageBuffer],
 			  pStorageBuffers, uNumStorageBuffers, (EShaderType)uShader,
 			  szGLSL, uProgramName, apUnitPartitions[eRUT_StorageBuffer]);
@@ -1463,7 +1472,7 @@ bool InitializePipelineResources(SPipeline* pPipeline, CContext* pContext)
 			const uint32* pImages(reinterpret_cast<const uint32*>(pShader->m_kSource.m_pData + pShader->m_kReflection.m_uImagesOffset));
 			SUnitMap* pImageMap = aspUnitMaps[eRUT_Image].get();
 
-			bSuccess &= InitializeResourceBindings<BindUniformToUnit, ImageSlot>(
+			bSuccess &= InitializeResourceBindings<BindUniformToUnit, ImageSlot, MAX_IMAGE_SLOTS, MAX_IMAGE_UNITS>(
 			  pImageMap, auUnitMapPositions[eRUT_Image],
 			  pImages, uNumImages, (EShaderType)uShader,
 			  szGLSL, uProgramName, apUnitPartitions[eRUT_Image]);

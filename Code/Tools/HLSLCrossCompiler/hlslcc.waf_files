@@ -1,0 +1,49 @@
+{
+	"NoUberFile":
+	{
+		"Root":
+		[
+      "include/pstdint.h",
+      "include/hlslcc.h",
+      "include/hlslcc_bin.hpp",
+
+      "src/internal_includes/debug.h",
+      "src/internal_includes/decode.h",
+      "src/internal_includes/languages.h",
+      "src/internal_includes/reflect.h",
+      "src/internal_includes/structs.h",
+      "src/internal_includes/toGLSLDeclaration.h",
+      "src/internal_includes/toGLSLInstruction.h",
+      "src/internal_includes/toGLSLOperand.h",
+      "src/internal_includes/tokens.h",
+      "src/internal_includes/tokensDX9.h",
+      "src/internal_includes/shaderLimits.h",
+      "src/internal_includes/hlslcc_malloc.h",
+      "src/internal_includes/hlslcc_malloc.c",
+
+      "src/cbstring/bsafe.c",
+      "src/cbstring/bsafe.h",
+      "src/cbstring/bstraux.c",
+      "src/cbstring/bstraux.h",
+      "src/cbstring/bstrlib.c",
+      "src/cbstring/bstrlib.h",
+
+      "src/decode.c",
+      "src/decodeDX9.c",
+      "src/reflect.c",
+      "src/toGLSL.c",
+      "src/toGLSLInstruction.c",
+      "src/toGLSLOperand.c",
+      "src/toGLSLDeclaration.c",
+      
+      "offline/toGLSLStandalone.cpp",
+      "offline/timer.h",
+      "offline/timer.cpp",
+      "offline/hash.h",
+      "offline/serializeReflection.cpp",
+      "offline/serializeReflection.h",
+      "offline/cjson/cJSON.c",
+      "offline/cjson/cJSON.h"
+		]
+	}
+}

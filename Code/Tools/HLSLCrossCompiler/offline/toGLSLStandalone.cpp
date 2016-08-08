@@ -2,6 +2,7 @@
 #include "hlslcc.hpp"
 #include "stdlib.h"
 #include "stdio.h"
+#include <algorithm>
 #include <string>
 #include <string.h>
 #include "hash.h"
@@ -17,7 +18,7 @@
 #include "timer.h"
 
 #if defined(_WIN32) && !defined(PORTABLE)
-#define VALIDATE_OUTPUT
+#undef VALIDATE_OUTPUT
 #endif
 
 #if defined(VALIDATE_OUTPUT)
@@ -71,6 +72,8 @@
 
 typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hDC, HGLRC hShareContext, const int* attribList);
 static PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
+
+extern "C" { const char* GetVersionString(GLLang language); }
 
 void InitOpenGL()
 {
@@ -199,6 +202,8 @@ int TryCompileShader(GLenum eGLSLShaderType, const char* inFilename, char* shade
 			//Dump to file
 			errorFile = fopen(filename.c_str(), "w");
 
+			fprintf(errorFile, pszInfoLog);
+
 			fclose(errorFile);
 		}
 		else
@@ -285,7 +290,11 @@ GLLang LanguageFromString(const char* str)
     if(strcmp(str, "440")==0)
     {
         return LANG_440;
-    }
+	}
+	if (strcmp(str, "450") == 0)
+	{
+		return LANG_450;
+	}
     return LANG_DEFAULT;
 }
 
@@ -510,12 +519,31 @@ int Run(const char* srcPath, const char* destPath, GLLang language, int flags, c
         }
 
 #if defined(VALIDATE_OUTPUT)
-        compiledOK = TryCompileShader(result->shaderType, destPath ? destPath : "", result->sourceCode, &glslCompileTime, useStdErr);
-        
-        if(compiledOK)
-        {
-            printf("glsl time: %.2f us\n", glslCompileTime);
-        }
+		{
+			char* sourceCode = result->sourceCode;
+
+			if ((flags & HLSLCC_FLAG_NO_VERSION_STRING))
+			{
+				const char* sourceVersion = GetVersionString(language);
+
+				char* sourceCodeVersioned = (char*)malloc(strlen(sourceVersion) + strlen(sourceCode) + 1);
+				strcpy(sourceCodeVersioned, sourceVersion);
+				strcat(sourceCodeVersioned, sourceCode);
+				sourceCode = sourceCodeVersioned;
+			}
+
+			compiledOK = TryCompileShader(result->shaderType, destPath ? destPath : "", sourceCode, &glslCompileTime, useStdErr);
+
+			if ((flags & HLSLCC_FLAG_NO_VERSION_STRING))
+			{
+				free(sourceCode);
+			}
+
+			if (compiledOK)
+			{
+				printf("glsl time: %.2f us\n", glslCompileTime);
+			}
+		}
 #endif
 
 		if (!shader)
@@ -545,7 +573,7 @@ struct SDXBCFile
 
 	bool SeekRel(int32_t iOffset)
 	{
-		return fseek(m_pFile, iOffset, SEEK_CUR) == 0;
+		return fseek(m_pFile, iOffset, SEEK_CUR) == 0; 
 	}
 
 	bool SeekAbs(uint32_t uPosition)
@@ -663,13 +691,14 @@ int main(int argc, char** argv)
 
 		remove(dxbcFileName);
 		remove(glslFileName);
+
 		return retValue;
 	}
 
     if(options.shaderFile)
     {
         if(!Run(options.shaderFile, options.outputShaderFile, options.language, options.flags, options.reflectPath, NULL, 0))
-        {
+		{
             return 1;
         }
     }
