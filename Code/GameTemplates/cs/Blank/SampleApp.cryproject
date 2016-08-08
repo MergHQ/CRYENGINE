@@ -13,9 +13,16 @@
     "info": {
         "name": "CE# Framework - Sample App"
     },
-	"monodev": {
-		"solution": "Code/SampleApp.sln",
-		"user": "Code/SampleApp/SampleApp.csproj.user"
+	"csharp":
+	{
+		"monodev": {
+			"solution": "Code/SampleApp.sln",
+			"user": "Code/SampleApp/SampleApp.csproj.user"
+		},
+		"msdev": {
+			"solution": "Code/SampleApp_VS.sln",
+			"user": "Code/SampleApp/SampleApp.ceproj.user"
+		}
 	},
     "require": {
         "engine": "engine-5.2"

@@ -62,7 +62,7 @@ private:
 	CParamMod<SModParticleSpawnInit, UFloat10> m_lifeTime;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLifeTime, "Life", "Time", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLifeTime, "Life", "Time", colorLife);
 
 class CFeatureLifeImmortal : public CParticleFeature
 {
@@ -108,6 +108,6 @@ public:
 private:
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLifeImmortal, "Life", "Immortal", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLifeImmortal, "Life", "Immortal", colorLife);
 
 }

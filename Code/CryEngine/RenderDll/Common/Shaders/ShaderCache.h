@@ -138,6 +138,23 @@ union UPipelineState // Pipeline state relevant for shader instantiation
 	{
 	}
 
+	uint8 GetISA(EHWShaderClass type) const // Gets the HwISA field (value [0, 3]) given the type of shader
+	{
+		return (type == eHWSC_Pixel ? PS.depthStencilInfo >> 29 : VS.targetStage >> 5) & 0x3U;
+	}
+
+	void SetISA(EHWShaderClass type, uint8 isa) // Sets the HwISA field (value [0, 3]) given the type of shader
+	{
+		if (type == eHWSC_Pixel)
+		{
+			PS.depthStencilInfo = static_cast<uint32>(isa << 29) | (PS.depthStencilInfo & ~(3U << 29));
+		}
+		else
+		{
+			VS.targetStage = static_cast<uint32>(isa << 5) | (VS.targetStage & ~(3U << 5));
+		}
+	}
+
 	uint64 opaque;
 };
 static_assert(sizeof(UPipelineState) == sizeof(uint64), "UPipelineState needs to be 64 bit");

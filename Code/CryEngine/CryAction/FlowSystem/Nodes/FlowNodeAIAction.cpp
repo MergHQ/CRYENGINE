@@ -2368,7 +2368,7 @@ void CFlowNode_AIEnterVehicle::DoProcessEvent(EFlowEvent event, SActivationInfo*
 {
 	if (!pActInfo->pEntity)
 	{
-		ActivateOutput(pActInfo, eOut_Success, false);
+		ActivateOutput(pActInfo, eOut_Fail, INVALID_ENTITYID);
 		return;
 	}
 
@@ -2381,7 +2381,7 @@ void CFlowNode_AIEnterVehicle::DoProcessEvent(EFlowEvent event, SActivationInfo*
 	if (!pVehicle || pVehicle->IsCrewHostile(pActInfo->pEntity->GetId()))
 	{
 		CryLog("Actor %s failed to enter vehicle (IsCrewHostile returned true)", pActInfo->pEntity->GetName());
-		ActivateOutput(pActInfo, eOut_Success, false);
+		ActivateOutput(pActInfo, eOut_Fail, pActInfo->pEntity->GetId());
 		return;
 	}
 
@@ -2431,7 +2431,7 @@ void CFlowNode_AIEnterVehicle::DoProcessEvent(EFlowEvent event, SActivationInfo*
 
 	// PS - Allow node to fire a second time.
 	m_bNeedsExec = false;
-	ActivateOutput(pActInfo, eOut_Success, bSuccess);
+	ActivateOutput(pActInfo, eOut_Success, pEntity->GetId());
 }
 
 //////////////////////////////////////////////////////////////////////////

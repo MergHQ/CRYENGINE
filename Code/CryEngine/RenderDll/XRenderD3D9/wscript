@@ -7,7 +7,8 @@ import os
 from waflib import Logs
 
 def build(bld):
-	additional_defines = []
+	gnm_compiler_version = '"ORBIS/V029"' # Must be quoted
+	additional_defines = [ 'CRY_GNM_SHADER_COMPILER_VERSION=' + gnm_compiler_version ]
 
 	# Oculus can only be built using VS 2015.
 	# This is a limitation of the Oculus code.
@@ -65,7 +66,7 @@ def build(bld):
 		file_list   = [ 'core_renderer.waf_files', 'opengl_renderer.waf_files' ],
 		pch         = '../StdAfx.cpp',
 		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
-		defines     = [ 'OPENGL', 'DO_RENDERSTATS', '_RENDERER' ],
+		defines     = [ 'OPENGL', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
 		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
 
 		win_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_wgl.waf_files'],
@@ -113,7 +114,7 @@ def build(bld):
 			file_list   = [ 'core_renderer.waf_files' ],
 			pch        = '../StdAfx.cpp',
 			includes    = [ '..', Path('Code/SDKs'), Path('Code/SDKs/squish-ccr') ],
-			defines     = [ 'DIRECT3D10', 'CRY_USE_DX12', 'XRENDERD3D10_EXPORTS', 'DO_RENDERSTATS', '_RENDERER' ],
+			defines     = [ 'DIRECT3D10', 'CRY_USE_DX12', 'XRENDERD3D10_EXPORTS', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
 			use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
 
 			# , 'd3d11'
@@ -136,7 +137,6 @@ def build(bld):
 	# GNM backend may not be available, so check here
 	if os.path.isdir(Path('Code/SDKs/Orbis')) and os.path.isdir(Path('Code/CryEngine/RenderDll/XRenderD3D9/GNM')):
 		rsc_output_folder = 'Tools/RemoteShaderCompiler'
-		compiler_version = '"ORBIS/V029"' # Must be quoted
 
 		# GNM render backend
 		bld.CryEngineModule(
@@ -144,7 +144,7 @@ def build(bld):
 			vs_filter   = 'CryEngine',
 			file_list   = [ 'core_renderer.waf_files', 'GNM/GnmRenderer.waf_files' ],
 			pch        = '../StdAfx.cpp',
-			defines     = [ '_RENDERER', 'DO_RENDERSTATS', 'CRY_USE_GNM', 'CRY_USE_GNM_RENDERER', 'CRY_GNM_SHADER_COMPILER_VERSION=' + compiler_version ],
+			defines     = [ '_RENDERER', 'DO_RENDERSTATS', 'CRY_USE_GNM', 'CRY_USE_GNM_RENDERER' ] + additional_defines,
 			lib         = [ 'SceSystemService_stub_weak', 'SceGnmDriver_stub_weak' ],
 			includes    = [ '..' ],
 			use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
@@ -169,7 +169,7 @@ def build(bld):
 			lib        = 'libSceShaderWavePsslc',
 			features   = 'copy_psslc',
 
-			output_sub_folder = Path(os.path.join(rsc_output_folder, 'Compiler', compiler_version[1:-1])),
+			output_sub_folder = Path(os.path.join(rsc_output_folder, 'Compiler', gnm_compiler_version[1:-1])),
 			force_static_crt  = True,
 		)
 

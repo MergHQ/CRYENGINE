@@ -34,6 +34,6 @@ public:
 private:
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureKillOnParentDeath, "Kill", "OnParentDeath", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureKillOnParentDeath, "Kill", "OnParentDeath", colorKill);
 
 }

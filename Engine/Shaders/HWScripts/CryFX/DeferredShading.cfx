@@ -1248,7 +1248,7 @@ pixout DirOccPassPS(vtxOut IN)
 	
 	// Compute normal in view space
 	half3 vNormal = DecodeGBufferNormal( tex2D( _tex0, screenTC.xy ) );
-	half3 vNormalVS = normalize( mul( CV_ViewMatr, vNormal ) ) * float3(1, -1, -1);
+	half3 vNormalVS = normalize( mul( CV_ViewMatr, half4(vNormal, 0) ).xyz ) * float3(1, -1, -1);
 	
 	half4 sh2 = 0;
 	[unroll]
@@ -1306,7 +1306,7 @@ pixout DirOccPassPS(vtxOut IN)
 		sh2.xyz += fObscurance.x * vSample[0] + fObscurance.y * vSample[1] + fObscurance.z * vSample[2] + fObscurance.w * vSample[3];
 	}
 	
-	sh2.xyz = mul( CV_InvViewMatr, sh2.xyz ).xyz * float3(1, -1, -1);
+	sh2.xyz = mul( CV_InvViewMatr, half4(sh2.xyz, 0) ).xyz * float3(1, -1, -1);
 
 	const half fNormFac = 0.15;
 	sh2.xyzw *= fNormFac;

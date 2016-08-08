@@ -234,7 +234,6 @@ int SSessionStats::GetDerivedStat(EDerivedIntPersistantStats stat) const
 			return num;
 		}
 	default:
-		CRY_ASSERT_MESSAGE(false, string().Format("Failed to find EDerivedIntPersistantStats %d", stat));
 		return 0;
 	} 
 }

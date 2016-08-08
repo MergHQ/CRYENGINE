@@ -1132,7 +1132,7 @@ struct SPerCGFGPUProfilersDG : public IStatoscopeDataGroup
 				drawProfilerCount++;
 		}
 
-		//Flash! aaah aaaaaaaahhh!
+		//Flash!
 		{
 			unsigned int numDPs = 0;
 			unsigned int numTris = 0;
@@ -1942,8 +1942,8 @@ void CStatoscope::SetCurrentProfilerRecords(const std::vector<CFrameProfiler*>* 
 		// we want to avoid reallocation of m_perfStatDumpProfilers
 		// even if numProfilers is quite large (in the thousands), it'll only be tens of KB
 		uint32 numProfilers = profilers->size();
-		m_perfStatDumpProfilers.reserve(MAX(numProfilers, m_perfStatDumpProfilers.size()));
-		m_perfStatDumpProfilers.resize(0);
+		m_perfStatDumpProfilers.clear();
+		m_perfStatDumpProfilers.reserve(MAX(numProfilers, m_perfStatDumpProfilers.size()));		
 
 		float minFuncTime = m_pStatoscopeMinFuncLengthMsCVar->GetFVal();
 

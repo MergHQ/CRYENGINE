@@ -45,7 +45,11 @@ struct SPluginContainer
 				pPlugin_CPP->SetAssetDirectory(m_pluginDescriptor.m_pluginAssetDirectory);
 
 				bSuccess = pPlugin_CPP->Initialize(env, initParams);
-				bSuccess = pPlugin_CPP->RegisterFlowNodes();
+				if (bSuccess)
+				{
+					// TODO: #CryPlugins: Maybe we should return true by default (only chance to fail is a corrupted flownode register method then)
+					pPlugin_CPP->RegisterFlowNodes();
+				}
 			}
 		}
 		else if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
@@ -58,12 +62,47 @@ struct SPluginContainer
 				m_pPlugin_CS->SetAssetDirectory(m_pluginDescriptor.m_pluginAssetDirectory);
 
 				// TODO: #CryPlugins: implement flownode support for mono plugins
-				bSuccess = m_pPlugin_CS->Call_Initialize();
-				//pCSPlugin->RegisterFlowNodes();
+				bSuccess = true;
 			}
 		}
 
 		return bSuccess;
+	}
+
+	void OnGameStart() const
+	{
+		if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CPP)
+		{
+			if (m_pPlugin_CPP)
+			{
+				m_pPlugin_CPP->OnGameStart();
+			}
+		}
+		else if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
+		{
+			if (m_pPlugin_CS)
+			{
+				m_pPlugin_CS->Call_OnGameStart();
+			}
+		}
+	}
+
+	void OnGameStop() const
+	{
+		if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CPP)
+		{
+			if (m_pPlugin_CPP)
+			{
+				m_pPlugin_CPP->OnGameStop();
+			}
+		}
+		else if (m_pluginDescriptor.m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
+		{
+			if (m_pPlugin_CS)
+			{
+				m_pPlugin_CS->Call_OnGameStop();
+			}
+		}
 	}
 
 	bool Shutdown()
@@ -106,7 +145,7 @@ struct SPluginContainer
 		return nullptr;
 	}
 
-	ICryEnginePlugin* GetPluginPtr_CS() const
+	ICryEngineBasePlugin* GetPluginPtr_CS() const
 	{
 		return m_pPlugin_CS;
 	}
@@ -142,15 +181,16 @@ struct SPluginContainer
 		return false;
 	}
 
-	SPluginDescriptor m_pluginDescriptor;
-	ICryPluginPtr     m_pPlugin_CPP;
-	ICryEnginePlugin* m_pPlugin_CS;
+	SPluginDescriptor     m_pluginDescriptor;
+	ICryPluginPtr         m_pPlugin_CPP;
+	ICryEngineBasePlugin* m_pPlugin_CS;
 };
 
 void CCryPluginManager::ReloadPluginCmd(IConsoleCmdArgs* pArgs)
 {
-	// TODO: #CryPlugins: implement reloading
-	CryLogAlways("reload plugin command");
+	m_pThis->UnloadAllPlugins();
+	m_pThis->LoadExtensionFile("cryplugin.csv");
+	m_pThis->OnSystemEvent(ESYSTEM_EVENT_GAME_POST_INIT_DONE, 0, 0);
 }
 
 CCryPluginManager::CCryPluginManager(const SSystemInitParams& initParams)
@@ -167,25 +207,40 @@ CCryPluginManager::~CCryPluginManager()
 
 	m_pluginListeners.Clear();
 
-	TPluginList::const_iterator itEnd = m_pluginContainer.end();
-	for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != itEnd; ++it)
-	{
-		UnloadPlugin(it->GetPluginDescriptor());
-	}
+	UnloadAllPlugins();
 
 	CRY_ASSERT(m_pluginContainer.empty());
 
 	if (gEnv->pConsole)
 	{
+		gEnv->pConsole->RemoveCommand("sys_reload_plugin");
 		gEnv->pConsole->UnregisterVariable("sys_debug_plugin", true);
 	}
 }
 
 void CCryPluginManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 {
-	if (event == ESYSTEM_EVENT_GAME_POST_INIT)
+	switch (event)
 	{
+	case ESYSTEM_EVENT_GAME_POST_INIT:
 		Initialize();
+		break;
+
+	case ESYSTEM_EVENT_GAME_POST_INIT_DONE:
+	case ESYSTEM_EVENT_GAME_MODE_SWITCH_START:
+		for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
+		{
+			it->OnGameStart();
+		}
+		break;
+
+	case ESYSTEM_EVENT_LEVEL_UNLOAD:
+	case ESYSTEM_EVENT_GAME_MODE_SWITCH_END:
+		for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
+		{
+			it->OnGameStop();
+		}
+		break;
 	}
 }
 
@@ -346,7 +401,7 @@ bool CCryPluginManager::LoadPlugin(const SPluginDescriptor& pluginDescriptor)
 	return bSuccess;
 }
 
-bool CCryPluginManager::UnloadPlugin(const SPluginDescriptor& pluginDescriptor)
+bool CCryPluginManager::UnloadPlugin(const SPluginDescriptor& pluginDescriptor, bool bReloadOther)
 {
 	bool bSuccess = false;
 	const SPluginContainer* pPluginContainer = FindPluginContainer(pluginDescriptor.m_pluginName);
@@ -359,22 +414,41 @@ bool CCryPluginManager::UnloadPlugin(const SPluginDescriptor& pluginDescriptor)
 			m_pluginContainer.erase(pluginIt);
 
 			// TODO: #CryPlugins: work-around, this must be improved
-			if (pluginIt->GetPluginDescriptor().m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
+			if (bReloadOther)
 			{
-				for (TPluginList::iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
+				if (pluginIt->GetPluginDescriptor().m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
 				{
-					if (it->GetPluginDescriptor().m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
+					for (TPluginList::iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
 					{
-						it->Initialize(*gEnv, m_systemInitParams);
+						if (it->GetPluginDescriptor().m_pluginType == ICryPluginManager::EPluginType::EPluginType_CS)
+						{
+							it->Initialize(*gEnv, m_systemInitParams);
+						}
 					}
 				}
 			}
+
 			// notification to listeners, that plugin got un-initialized
 			NotifyListeners(pluginDescriptor.m_pluginClassName.c_str(), IPluginEventListener::EPluginEvent::EPlugin_Unloaded);
 		}
 	}
 
 	return bSuccess;
+}
+
+bool CCryPluginManager::UnloadAllPlugins()
+{
+	bool bError = false;
+	TPluginList::const_iterator itEnd = m_pluginContainer.end();
+	for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != itEnd; ++it)
+	{
+		if (!UnloadPlugin(it->GetPluginDescriptor()))
+		{
+			bError = true;
+		}
+	}
+
+	return !bError;
 }
 
 void CCryPluginManager::NotifyListeners(const char* szPluginName, IPluginEventListener::EPluginEvent event)
@@ -429,7 +503,7 @@ const SPluginContainer* CCryPluginManager::FindPluginContainer(const string& plu
 {
 	for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
 	{
-		if (it->GetPluginDescriptor().m_pluginClassName.find(pluginName) != string::npos)
+		if (it->GetPluginDescriptor().m_pluginName.find(pluginName) != string::npos)
 		{
 			return &(*it);
 		}

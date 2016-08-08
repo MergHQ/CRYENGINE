@@ -485,7 +485,6 @@ void CPlayerStateUtil::UpdateRemotePlayersInterpolation( CPlayer& player, const 
 			interVel = desiredVel;
 
 			IPhysicalEntity* pPhysEnt = player.GetEntity()->GetPhysics();
-			CRY_ASSERT_MESSAGE(pPhysEnt, "Entity not physicalized! TomB would like to look at this.");
 
 			const bool isPlayerInAir = player.IsInAir();
 			if (inAir && isPlayerInAir)

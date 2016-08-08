@@ -179,20 +179,20 @@ float3 GetDiffuseKernel(out int GI_DIFFUSE_KERNEL_TILING, int nElemId, const boo
 	{
 #if %_RT_HW_PCF_COMPARE
 
+		const int nGiDiffuseSampleNum = 8;
+		nElemId = nElemId & (nGiDiffuseSampleNum - 1);
+
+		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
+		const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_8;
+		return arrGiDiffuseKernel[nElemId];
+
+#else
+
 		const int nGiDiffuseSampleNum = 32;
 		nElemId = nElemId & (nGiDiffuseSampleNum - 1);
 
 		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
 		const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_32;
-		return arrGiDiffuseKernel[nElemId];
-
-#else
-
-		const int nGiDiffuseSampleNum = 128;
-		nElemId = nElemId & (nGiDiffuseSampleNum - 1);
-
-		GI_DIFFUSE_KERNEL_TILING = sqrt(nGiDiffuseSampleNum / 2);
-		const float3 arrGiDiffuseKernel[nGiDiffuseSampleNum] = kernel_HS_128;
 		return arrGiDiffuseKernel[nElemId];
 
 #endif

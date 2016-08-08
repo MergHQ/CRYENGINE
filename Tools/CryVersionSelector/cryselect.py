@@ -27,6 +27,8 @@ def command_title (args):
 
 #--- errors
 
+SUBPROCESS_NO_STDERR= 'An unexpected error occurred. Press OK to review the output log.'
+
 def error_project_not_found (args):
 	message= "'%s' not found.\n" % args.project_file
 	if args.silent:
@@ -50,6 +52,10 @@ def error_engine_path_not_found (args, engine_version):
 	else:
 		win32ui.MessageBox (message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
 	sys.exit (1)
+
+def error_engine_tool_not_found (path):
+	sys.stderr.write ("'%s' not found. Please re-register CRYENGINE version that includes the required tool.\n" % path)
+	sys.exit (404)
 
 def print_subprocess (cmd):
 	print (' '.join (map (lambda a: '"%s"' % a, cmd)))
@@ -109,8 +115,8 @@ def cmd_install (args):
 		)
 
 		project_commands= (
-			('edit', 'Edit game', '"%s" edit "%%1"' % ScriptPath),
-			('open', 'Run game', '"%s" open "%%1"' % ScriptPath),
+			('edit', 'Launch editor', '"%s" edit "%%1"' % ScriptPath),
+			('open', 'Launch game', '"%s" open "%%1"' % ScriptPath),
 			('monodev', 'Edit C# code', '"%s" monodev "%%1"' % ScriptPath),
 			('_build', 'Build solution', '"%s" build "%%1"' % ScriptPath),
 			('_projgen', 'Generate solution', '"%s" projgen "%%1"' % ScriptPath),			
@@ -124,8 +130,8 @@ def cmd_install (args):
 		)
 		
 		project_commands= (
-			('edit', 'Edit game', '"%s" "%s" edit "%%1"' % (PythonPath, ScriptPath)),
-			('open', 'Run game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),
+			('edit', 'Launch editor', '"%s" "%s" edit "%%1"' % (PythonPath, ScriptPath)),
+			('open', 'Launch game', '"%s" "%s" open "%%1"' % (PythonPath, ScriptPath)),
 			('monodev', 'Edit C# code', '"%s" monodev "%%1"' % ScriptPath),
 			('_build', 'Build solution', '"%s" "%s" build "%%1"' % (PythonPath, ScriptPath)),
 			('_projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (PythonPath, ScriptPath)),			
@@ -424,6 +430,10 @@ def cmd_upgrade (args):
 			python3_path(),
 			os.path.join (engine_path, 'Tools', 'CryVersionSelector', 'cryrun.py')
 		]
+
+	if not os.path.isfile (subcmd[-1]):
+		error_engine_tool_not_found (subcmd[-1])
+		
 	subcmd.extend (sys.argv[1:])
 
 	print_subprocess (subcmd)
@@ -457,6 +467,9 @@ def cmd_run (args):
 			os.path.join (engine_path, 'Tools', 'CryVersionSelector', 'cryrun.py')
 		]
 
+	if not os.path.isfile (subcmd[-1]):
+		error_engine_tool_not_found (subcmd[-1])
+
 	subcmd.extend (sys.argv[1:])
 
 	(temp_fd, temp_path)= tempfile.mkstemp(suffix='.out', prefix=args.command + '_', text=True)
@@ -473,7 +486,10 @@ def cmd_run (args):
 	
 	if not args.silent and returncode != 0:
 		title= command_title (args)
-		result= win32ui.MessageBox (p.stderr.read(), title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
+		text= p.stderr.read().strip()
+		if not text:
+			text= SUBPROCESS_NO_STDERR
+		result= win32ui.MessageBox (text, title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
 		if result == win32con.IDOK:
 			subprocess.call(('notepad.exe', temp_path))
 				

@@ -399,7 +399,6 @@ IMaterial* CMatMan::LoadMaterial(const char* sMtlName, bool bMakeIfNotFound, boo
 #if defined(ENABLE_CONSOLE_MTL_VIZ)
 	if (pMtl && CMatInfo::IsConsoleMatModeEnabled())
 	{
-		assert(!gEnv->IsEditor());
 		pMtl->LoadConsoleMaterial();
 	}
 #endif

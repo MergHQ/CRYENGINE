@@ -23,11 +23,11 @@ struct ICryPlugin : public ICryUnknown
 	//! This is called to initialize the new plugin.
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) = 0;
 
-	virtual void PreUpdate() = 0;
+	virtual void OnGameStart() = 0;
 
 	virtual void Update(int updateFlags, int nPauseMode) = 0;
 
-	virtual void PostUpdate() = 0;
+	virtual void OnGameStop() = 0;
 
 	virtual bool RegisterFlowNodes()                               { return false; }
 
@@ -45,7 +45,7 @@ protected:
 DECLARE_SHARED_POINTERS(ICryPlugin);
 
 #ifndef _LIB
-	#define USE_CRYPLUGIN_FLOWNODES                                 \
+	#define USE_CRYPLUGIN_FLOWNODES                                    \
 	  CAutoRegFlowNodeBase * CAutoRegFlowNodeBase::m_pFirst = nullptr; \
 	  CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = nullptr;
 #else
@@ -57,7 +57,7 @@ DECLARE_SHARED_POINTERS(ICryPlugin);
 	  virtual bool RegisterFlowNodes() override                                             \
 	  {                                                                                     \
 	    m_registeredFlowNodeIds.clear();                                                    \
-                                                                                          \
+	                                                                                        \
 	    CAutoRegFlowNodeBase* pFactory = CAutoRegFlowNodeBase::m_pFirst;                    \
 	    while (pFactory)                                                                    \
 	    {                                                                                   \
@@ -65,14 +65,14 @@ DECLARE_SHARED_POINTERS(ICryPlugin);
 	      cry_strcpy(szNameBuffer, GetName());                                              \
 	      cry_strcat(szNameBuffer, ":");                                                    \
 	      cry_strcat(szNameBuffer, pFactory->m_sClassName);                                 \
-                                                                                          \
+	                                                                                        \
 	      TFlowNodeTypeId nodeId = gEnv->pFlowSystem->RegisterType(szNameBuffer, pFactory); \
 	      m_registeredFlowNodeIds.push_back(nodeId);                                        \
 	      CryLog("Successfully registered flownode '%s'", szNameBuffer);                    \
-                                                                                          \
+	                                                                                        \
 	      pFactory = pFactory->m_pNext;                                                     \
 	    }                                                                                   \
-                                                                                          \
+	                                                                                        \
 	    return (m_registeredFlowNodeIds.size() > 0);                                        \
 	  }
 #else
@@ -80,12 +80,12 @@ DECLARE_SHARED_POINTERS(ICryPlugin);
 #endif
 
 #ifndef _LIB
-	#define PLUGIN_FLOWNODE_UNREGISTER                                                          \
+	#define PLUGIN_FLOWNODE_UNREGISTER                                                             \
 	  virtual bool UnregisterFlowNodes() override                                                  \
 	  {                                                                                            \
 	    bool bSuccess = true;                                                                      \
 	    const size_t numFlownodes = m_registeredFlowNodeIds.size();                                \
-                                                                                                 \
+	                                                                                               \
 	    for (size_t i = 0; i < numFlownodes; ++i)                                                  \
 	    {                                                                                          \
 	      if (gEnv->pFlowSystem)                                                                   \

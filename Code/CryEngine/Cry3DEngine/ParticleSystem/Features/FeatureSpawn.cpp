@@ -220,7 +220,7 @@ public:
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnCount, "Spawn", "Count", defaultIcon, spawnColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnCount, "Spawn", "Count", colorSpawn);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -273,7 +273,7 @@ private:
 	ESpawnRateMode m_mode;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnRate, "Spawn", "Rate", defaultIcon, spawnColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnRate, "Spawn", "Rate", colorSpawn);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -315,7 +315,7 @@ private:
 	ESpawnDistanceMode m_mode;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDistance, "Spawn", "Distance", defaultIcon, spawnColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDistance, "Spawn", "Distance", colorSpawn);
 
 class CFeatureSpawnDensity : public CParticleFeatureSpawnBase<CFeatureSpawnDensity>
 {
@@ -358,6 +358,6 @@ public:
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDensity, "Spawn", "Density", defaultIcon, spawnColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDensity, "Spawn", "Density", colorSpawn);
 
 }

@@ -8,7 +8,7 @@ CRY_PFX2_DBG
 namespace pfx2
 {
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureCollision, "Motion", "Collision", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureCollision, "Motion", "Collision", colorMotion);
 
 void CFeatureCollision::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {

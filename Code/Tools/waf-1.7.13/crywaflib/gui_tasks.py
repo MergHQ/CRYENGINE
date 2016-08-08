@@ -474,6 +474,9 @@ class UiCategory_Base(object):
 	def validate_category(self):
 		return (True, "")
 		
+	def focus(self):
+		self.parent.tab_widget.select(self.outer_frame)		
+		
 ###############################################################################
 class UiCategory(UiCategory_Base):
 	def __init__(self, category_name, parent):
@@ -781,7 +784,11 @@ class GuiTask_ModifyWafConfig(IGuiTask):
 	def read_waf_option_config(self):		
 		# Loop over all sections
 		for section in self.waf_ctx.default_settings:
-			self.categories[section] =  UiCategory(section, self)		
+			self.categories[section] =  UiCategory(section, self)
+			
+			# Force project selection to be tab in focus
+			if(section == "Visual Studio Project Generator"):
+				self.categories[section].focus()
 		
 ################################################################################
 class GuiTask_WafMenu(IGuiTask):

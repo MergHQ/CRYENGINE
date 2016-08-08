@@ -23,55 +23,71 @@ CMonoLibrary::~CMonoLibrary()
 	Close();
 }
 
-ICryEnginePlugin* CMonoLibrary::Initialize(void* pMonoDomain)
+ICryEngineBasePlugin* CMonoLibrary::Initialize(void* pMonoDomain, void* pDomainHandler)
 {
 	MonoDomain* pDomain = static_cast<MonoDomain*>(pMonoDomain);
 	MonoImage* pImage = mono_assembly_get_image(m_pAssembly);
+
 	const char* szType = TryGetPlugin(pDomain);
-
-	const char* szClassName = PathUtil::GetExt(szType);
-	const string nameSpace = PathUtil::RemoveExtension(szType);
-
-	CryLogAlways("class name: %s, name space: %s", szClassName, nameSpace.c_str());
-
-	m_pMonoClass = mono_class_from_name(pImage, nameSpace.c_str(), szClassName);
-
-	if (!m_pMonoClass)
+	if (szType != nullptr)
 	{
-		return false;
-	}
+		const char* szClassName = PathUtil::GetExt(szType);
+		const string nameSpace = PathUtil::RemoveExtension(szType);
 
-	m_pMonoObject = mono_object_new(pDomain, m_pMonoClass);
+		CryLogAlways("class name: %s, name space: %s", szClassName, nameSpace.c_str());
 
-	if (!m_pMonoObject)
-	{
-		return false;
-	}
+		m_pMonoClass = mono_class_from_name(pImage, nameSpace.c_str(), szClassName);
 
-	m_gcHandle = mono_gchandle_new(m_pMonoObject, true);
-
-	mono_runtime_object_init(m_pMonoObject);
-
-	MonoClass* pMonoBaseClass = mono_class_get_parent(m_pMonoClass);
-	if (pMonoBaseClass)
-	{
-		MonoMethod* pMethod = mono_class_get_method_from_name(pMonoBaseClass, "getCPtr", 1);
-		if (pMethod)
+		if (!m_pMonoClass)
 		{
-			void* args[1];
-			args[0] = m_pMonoObject;
-			MonoObject* pResult = mono_runtime_invoke(pMethod, m_pMonoObject, args, nullptr);
-			MonoClass* pResultClass = pResult ? mono_object_get_class(pResult) : nullptr;
-			MonoProperty* pPropertyHandle = pResultClass ? mono_class_get_property_from_name(pResultClass, "Handle") : nullptr;
-			MonoObject* pHandle = pPropertyHandle ? mono_property_get_value(pPropertyHandle, pResult, nullptr, nullptr) : nullptr;
-			MonoClass* pHandleClass = pHandle ? mono_object_get_class(pHandle) : nullptr;
-			MonoClassField* pHandleClassValueField = pHandleClass ? mono_class_get_field_from_name(pHandleClass, "m_value") : nullptr;
-			MonoObject* pValue = pHandleClassValueField ? mono_field_get_value_object(pDomain, pHandleClassValueField, pHandle) : nullptr;
-			if (pValue)
-			{
-				void* pArr3 = mono_array_get((MonoArray*)pValue, void*, 3);
+			return nullptr;
+		}
 
-				return static_cast<ICryEnginePlugin*>(pArr3);
+		m_pMonoObject = mono_object_new(pDomain, m_pMonoClass);
+
+		if (!m_pMonoObject)
+		{
+			return nullptr;
+		}
+
+		m_gcHandle = mono_gchandle_new(m_pMonoObject, true);
+
+		mono_runtime_object_init(m_pMonoObject);
+
+		MonoClass* pMonoBaseClass = mono_class_get_parent(m_pMonoClass);
+		if (pMonoBaseClass)
+		{
+			MonoMethod* pDomainMethod = mono_class_get_method_from_name(pMonoBaseClass, "set_m_interDomainHandler", 1);
+			if (pDomainHandler != nullptr && pDomainMethod)
+			{
+				void* args[1];
+				args[0] = pDomainHandler;
+				mono_runtime_invoke(pDomainMethod, m_pMonoObject, args, nullptr);
+			}
+
+			MonoClass* pPluginBaseClass = mono_class_get_parent(pMonoBaseClass);
+			MonoMethod* pMethod = mono_class_get_method_from_name(pPluginBaseClass, "getCPtr", 1);
+			if (pPluginBaseClass && pMethod)
+			{
+				void* args[1];
+				args[0] = m_pMonoObject;
+				MonoObject* pResult = mono_runtime_invoke(pMethod, m_pMonoObject, args, nullptr);
+				MonoClass* pResultClass = pResult ? mono_object_get_class(pResult) : nullptr;
+				MonoProperty* pPropertyHandle = pResultClass ? mono_class_get_property_from_name(pResultClass, "Handle") : nullptr;
+				MonoObject* pHandle = pPropertyHandle ? mono_property_get_value(pPropertyHandle, pResult, nullptr, nullptr) : nullptr;
+				MonoClass* pHandleClass = pHandle ? mono_object_get_class(pHandle) : nullptr;
+				MonoClassField* pHandleClassValueField = pHandleClass ? mono_class_get_field_from_name(pHandleClass, "m_value") : nullptr;
+				MonoObject* pValue = pHandleClassValueField ? mono_field_get_value_object(pDomain, pHandleClassValueField, pHandle) : nullptr;
+				if (pValue)
+				{
+					void* pArr3 = mono_array_get((MonoArray*)pValue, void*, 3);
+
+					ICryEngineBasePlugin* pCryEngineBasePlugin = static_cast<ICryEngineBasePlugin*>(pArr3);
+					if (pCryEngineBasePlugin && RunMethod("Initialize"))
+					{
+						return pCryEngineBasePlugin;
+					}
+				}
 			}
 		}
 	}
@@ -165,4 +181,14 @@ const char* CMonoLibrary::TryGetPlugin(MonoDomain* pDomain) const
 	}
 
 	return mono_string_to_utf8(pStr);
+}
+
+bool SMonoDomainHandlerLibrary::Initialize()
+{
+	MonoImage* pImage = mono_assembly_get_image(m_pLibrary->GetAssembly());
+	MonoMethodDesc* pMethodDesc = mono_method_desc_new("CryEngine.DomainHandler.DomainHandler:GetDomainHandler()", false);
+	MonoMethod* pMethod = mono_method_desc_search_in_image(pMethodDesc, pImage);
+	m_pDomainHandlerObject = mono_runtime_invoke(pMethod, nullptr, nullptr, nullptr);
+
+	return (m_pDomainHandlerObject != nullptr);
 }

@@ -620,7 +620,6 @@ EntityId CAfterMatchAwards::GetMaximumFloatFromWorking(EAfterMatchAwards inAward
 	ActorAwardsMap::const_iterator end = m_actorAwards.end();
 	for ( ; it!=end; ++it)
 	{
-		CRY_ASSERT_MESSAGE(it->second.m_working[inAward].m_calculated, string().Format("GetMaximumFloatFromWorking() has encountered an working value for player=%s award=%s that hasn't been calculated. This shouldn't happen!", GetEntityName(it->first), GetNameForAward(inAward)));
 		if (!it->second.m_working[inAward].m_calculated)
 		{
 			DbgLog("CAfterMatchAwards::GetMaximumFloatFromWorking() has found award=%s hasn't been calculated for player=%s. This should NOT happen. Skipping", GetNameForAward(inAward), GetEntityName(it->first));

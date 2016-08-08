@@ -1064,7 +1064,7 @@ half4 GetEnvironmentCMap(TextureCube envCubeTex, in half3 envTC, in half fGloss)
 	const half numCMapMips = 6.0;  // TODO: Use real cubemap size
 	
 	half fGlossinessLod = numCMapMips - fGloss * numCMapMips;
-	half4 envColor = DecodeHDRCubemap(envCubeTex.Sample(ssMaterialTrilinearClamp, half4(envTC, fGlossinessLod) ));
+	half4 envColor = DecodeHDRCubemap(envCubeTex.SampleLevel(ssMaterialTrilinearClamp, envTC, fGlossinessLod));
 
 	return envColor;
 }

@@ -87,13 +87,14 @@ struct IAudioImpl;
 
 enum EAudioObjectFlags : AudioEnumFlagsType
 {
-	eAudioObjectFlags_None                = 0,
-	eAudioObjectFlags_TrackDoppler        = BIT(0),
-	eAudioObjectFlags_TrackVelocity       = BIT(1),
-	eAudioObjectFlags_NeedsDopplerUpdate  = BIT(2),
-	eAudioObjectFlags_NeedsVelocityUpdate = BIT(3),
-	eAudioObjectFlags_DoNotRelease        = BIT(4),
-	eAudioObjectFlags_Virtual             = BIT(5),
+	eAudioObjectFlags_None                            = 0,
+	eAudioObjectFlags_TrackDoppler                    = BIT(0),
+	eAudioObjectFlags_TrackVelocity                   = BIT(1),
+	eAudioObjectFlags_NeedsDopplerUpdate              = BIT(2),
+	eAudioObjectFlags_NeedsVelocityUpdate             = BIT(3),
+	eAudioObjectFlags_DoNotRelease                    = BIT(4),
+	eAudioObjectFlags_Virtual                         = BIT(5),
+	eAudioObjectFlags_WaitingForInitialTransformation = BIT(6),
 };
 
 enum EAudioSubsystem : AudioEnumFlagsType
@@ -196,8 +197,7 @@ public:
 	float GetVelocity() const { return m_velocity; }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	CryAudio::Impl::SAudioObject3DAttributes const& Get3DAttributes() const { return m_attributes; }
-	void                                            SetTransformation(CAudioObjectTransformation const& transformation)
+	void SetTransformation(CAudioObjectTransformation const& transformation)
 	{
 		float const deltaTime = (g_lastMainThreadFrameStartTime - m_previousTime).GetSeconds();
 
@@ -209,7 +209,15 @@ public:
 			m_previousAttributes = m_attributes;
 			m_bNeedsFinalSetPosition = m_attributes.velocity.GetLengthSquared() > 0.0f;
 		}
+		else if (deltaTime < 0.0f) //to handle time resets (e.g. loading a savegame might revert the gametime to a previous value)
+		{
+			m_attributes.transformation = transformation;
+			m_previousTime = g_lastMainThreadFrameStartTime;
+			m_previousAttributes = m_attributes;
+			m_bNeedsFinalSetPosition = m_attributes.velocity.GetLengthSquared() > 0.0f;
+		}
 	}
+	CryAudio::Impl::SAudioObject3DAttributes const& Get3DAttributes() const { return m_attributes; }
 
 	CryAudio::Impl::IAudioListener* const m_pImplData;
 
@@ -625,7 +633,7 @@ private:
 	typedef std::map<AudioControlId, std::pair<CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>, AudioSwitchStateMap>, std::less<AudioControlId>, STLSoundAllocator<std::pair<AudioControlId, std::pair<CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>, AudioSwitchStateMap>>>> AudioSwitchMap;
 	typedef std::map<AudioPreloadRequestId, CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>, std::less<AudioPreloadRequestId>, STLSoundAllocator<std::pair<AudioPreloadRequestId, CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>>>>                                            AudioPreloadRequestsMap;
 	typedef std::map<AudioEnvironmentId, CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>, std::less<AudioEnvironmentId>, STLSoundAllocator<std::pair<AudioEnvironmentId, CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH>>>>                                                     AudioEnvironmentMap;
-	typedef std::map<AudioStandaloneFileId, std::pair<CryFixedStringT<MAX_AUDIO_FILE_NAME_LENGTH>, size_t>, std::less<AudioStandaloneFileId>, STLSoundAllocator<std::pair<AudioStandaloneFileId, std::pair<CryFixedStringT<MAX_AUDIO_FILE_NAME_LENGTH>, size_t>>>>      AudioStandaloneFileMap;
+	typedef std::map<AudioStandaloneFileId, std::pair<CryFixedStringT<MAX_AUDIO_FILE_NAME_LENGTH>, size_t>, std::less<AudioStandaloneFileId>, STLSoundAllocator<std::pair<AudioStandaloneFileId, std::pair<CryFixedStringT<MAX_AUDIO_FILE_NAME_LENGTH>, size_t>>>>            AudioStandaloneFileMap;
 
 	AudioObjectMap          m_audioObjectNames;
 	AudioControlMap         m_audioTriggerNames;

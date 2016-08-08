@@ -304,6 +304,13 @@ void CATLAudioObject::ClearEnvironments()
 	m_environments.clear();
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CATLAudioObject::Init()
+{
+	CRY_ASSERT(m_flags == eAudioTriggerStatus_None);
+	m_flags = eAudioObjectFlags_WaitingForInitialTransformation;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::Clear()
 {
@@ -314,6 +321,12 @@ void CATLAudioObject::Clear()
 	m_rtpcs.clear();
 	m_environments.clear();
 	m_attributes = SAudioObject3DAttributes();
+	m_flags = eAudioObjectFlags_None;
+	m_maxRadius = 0.0f;
+	m_occlusionFadeOutDistance = 0.0f;
+	m_previousVelocity = 0.0f;
+	m_previousTime.SetValue(0);
+	m_velocity = ZERO;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -354,7 +367,10 @@ void CATLAudioObject::Update(
   float const distance,
   Vec3 const& audioListenerPosition)
 {
-	m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition);
+	if ((m_flags & eAudioObjectFlags_WaitingForInitialTransformation) == 0)
+	{
+		m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition);
+	}
 
 	if (m_maxRadius > 0.0f)
 	{
@@ -387,13 +403,20 @@ void CATLAudioObject::SetTransformation(CAudioObjectTransformation const& transf
 {
 	float const deltaTime = (g_lastMainThreadFrameStartTime - m_previousTime).GetSeconds();
 
-	if (deltaTime > 0.0f)
+	if (deltaTime > 0.0f || (m_flags & eAudioObjectFlags_WaitingForInitialTransformation) > 0)
 	{
 		m_attributes.transformation = transformation;
-		m_attributes.velocity = (m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition()) / deltaTime;
+		if ((m_flags & eAudioObjectFlags_WaitingForInitialTransformation) == 0)
+		{
+			m_attributes.velocity = (m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition()) / deltaTime;
+			m_flags |= eAudioObjectFlags_NeedsVelocityUpdate;
+		}
+		else
+		{
+			m_flags &= ~eAudioObjectFlags_WaitingForInitialTransformation;
+		}
 		m_previousTime = g_lastMainThreadFrameStartTime;
 		m_previousAttributes = m_attributes;
-		m_flags |= eAudioObjectFlags_NeedsVelocityUpdate;
 	}
 }
 
@@ -834,7 +857,6 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listene
 					if (szRtpcName != nullptr)
 					{
 						float const offsetOnX = (strlen(szRtpcName) + 5.6f) * 5.4f * fontSize;
-
 						rtpcPos.y -= lineHeight;
 						auxGeom.Draw2dLabel(
 						  rtpcPos.x - offsetOnX,

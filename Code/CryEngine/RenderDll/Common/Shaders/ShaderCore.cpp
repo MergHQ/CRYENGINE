@@ -1636,6 +1636,11 @@ int CShaderMan::mfInitShadersList(std::vector<string>* Names)
 		m_ShaderCacheExportCombinations.clear();
 
 		mfInitShadersCache(false, NULL, NULL, 0);
+
+		if (CParserBin::m_nPlatform == SF_ORBIS)
+		{
+			FilterShaderCacheGenListForOrbis(m_ShaderCacheCombinations[0]);
+		}
 	}
 
 	mfGatherShadersList(m_ShadersPath, false, bChanged, Names);
@@ -2926,4 +2931,98 @@ void CLightStyle::mfUpdate(float fTime)
 			}
 		}
 	}
+}
+
+void CShaderMan::FilterShaderCacheGenListForOrbis(FXShaderCacheCombinations& combinations)
+{
+	// This function will perform shader list mutation for Orbis targets based on a target ISA list.
+	// The target list is stored in the CVar r_ShadersOrbisFiltering, with one character per item.
+	// L: Legacy combinations (ie, those without pipeline state), when present, are passed through.
+	// B/C/N/R: ISA combinations (ie, those with pipeline state), for each present character, the combination is generated if not present.
+	enum ECombinationKind
+	{
+		kCombinationB,
+		kCombinationC,
+		kCombinationN,
+		kCombinationR,
+		kCombinationLegacy,
+		kCombinationCount,
+	};
+	bool combinationFilter[kCombinationCount] = { false };
+
+	static const char* const szFilter = gEnv->pConsole->RegisterString("r_ShadersOrbisFiltering", "L", VF_NULL)->GetString();
+	for (const char* szFilterItem = szFilter; szFilterItem && *szFilterItem; ++szFilterItem)
+	{
+		switch (*szFilterItem)
+		{
+		case 'l':
+		case 'L':
+			combinationFilter[kCombinationLegacy] = true;
+			break;
+		case 'b':
+		case 'B':
+			combinationFilter[kCombinationB] = true;
+			break;
+		case 'c':
+		case 'C':
+			combinationFilter[kCombinationC] = true;
+			break;
+		case 'n':
+		case 'N':
+			combinationFilter[kCombinationN] = true;
+			break;
+		case 'r':
+		case 'R':
+			combinationFilter[kCombinationR] = true;
+			break;
+		}
+	}
+
+	FXShaderCacheCombinations result;
+	for (auto& item : combinations)
+	{
+		if (!item.second.Ident.m_pipelineState.opaque)
+		{
+			if (combinationFilter[kCombinationLegacy])
+			{
+				result[item.first] = item.second; // Copy legacy combination unchanged
+			}
+		}
+		else
+		{
+			uint8 isa = item.second.Ident.m_pipelineState.GetISA(item.second.eCL);
+			const auto insertIsa = [&result, &item, isa](uint8 targetIsa)
+			{
+				item.second.Ident.m_pipelineState.SetISA(item.second.eCL, targetIsa);
+
+				string name = item.first.c_str();
+				const string::size_type endPos = name.find_last_of('(', string::npos) - 1;
+				const string::size_type beginPos = name.find_last_of('(', endPos) + 1;
+				const string prefix = name.substr(0, beginPos);
+				const string affix = name.substr(endPos);
+				name.Format("%s%llx%s", prefix.c_str(), item.second.Ident.m_pipelineState.opaque, affix.c_str());
+
+				result[CCryNameR(name.c_str())] = item.second;
+			};
+			
+			// Create ISA mutations
+			if (combinationFilter[kCombinationB])
+			{
+				insertIsa(kCombinationB);
+			}
+			if (combinationFilter[kCombinationC])
+			{
+				insertIsa(kCombinationC);
+			}
+			if (combinationFilter[kCombinationN])
+			{
+				insertIsa(kCombinationN);
+			}
+			if (combinationFilter[kCombinationR])
+			{
+				insertIsa(kCombinationR);
+			}
+		}
+	}
+	result.swap(combinations);
 }

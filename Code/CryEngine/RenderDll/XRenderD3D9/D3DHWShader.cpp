@@ -6100,6 +6100,7 @@ bool CHWShader_D3D::mfSetVS(int nFlags)
 	Ident.m_MDMask = rRP.m_FlagsShader_MD;
 	Ident.m_MDVMask = rRP.m_FlagsShader_MDV | CParserBin::m_nPlatform;
 	Ident.m_GLMask = m_nMaskGenShader;
+	Ident.m_pipelineState.opaque = gRenDev->m_RP.m_FlagsShader_PipelineState;
 	/*if (RTMask == 0x40004 && !stricmp(m_EntryFunc.c_str(), "Common_ZPassVS"))
 	   {
 	   int nnn = 0;
@@ -6198,6 +6199,7 @@ bool CHWShader_D3D::mfSetPS(int nFlags)
 	Ident.m_MDMask = rRP.m_FlagsShader_MD & ~HWMD_TEXCOORD_FLAG_MASK;
 	Ident.m_MDVMask = CParserBin::m_nPlatform;
 	Ident.m_GLMask = m_nMaskGenShader;
+	Ident.m_pipelineState.opaque = gRenDev->m_RP.m_FlagsShader_PipelineState;
 
 	ModifyLTMask(Ident.m_LightMask);
 
@@ -6300,6 +6302,7 @@ bool CHWShader_D3D::mfSetGS(int nFlags)
 	Ident.m_MDMask = rRP.m_FlagsShader_MD;
 	Ident.m_MDVMask = rRP.m_FlagsShader_MDV | CParserBin::m_nPlatform;
 	Ident.m_GLMask = m_nMaskGenShader;
+	Ident.m_pipelineState.opaque = gRenDev->m_RP.m_FlagsShader_PipelineState;
 
 	ModifyLTMask(Ident.m_LightMask);
 
@@ -6355,6 +6358,7 @@ bool CHWShader_D3D::mfSetHS(int nFlags)
 	Ident.m_MDMask = rRP.m_FlagsShader_MD;
 	Ident.m_MDVMask = rRP.m_FlagsShader_MDV | CParserBin::m_nPlatform;
 	Ident.m_GLMask = m_nMaskGenShader;
+	Ident.m_pipelineState.opaque = gRenDev->m_RP.m_FlagsShader_PipelineState;
 
 	ModifyLTMask(Ident.m_LightMask);
 
@@ -6421,6 +6425,7 @@ bool CHWShader_D3D::mfSetDS(int nFlags)
 	Ident.m_MDMask = rRP.m_FlagsShader_MD;
 	Ident.m_MDVMask = rRP.m_FlagsShader_MDV | CParserBin::m_nPlatform;
 	Ident.m_GLMask = m_nMaskGenShader;
+	Ident.m_pipelineState.opaque = gRenDev->m_RP.m_FlagsShader_PipelineState;
 
 	ModifyLTMask(Ident.m_LightMask);
 
@@ -6487,6 +6492,7 @@ bool CHWShader_D3D::mfSetCS(int nFlags)
 	Ident.m_MDMask = rRP.m_FlagsShader_MD;
 	Ident.m_MDVMask = rRP.m_FlagsShader_MDV | CParserBin::m_nPlatform;
 	Ident.m_GLMask = m_nMaskGenShader;
+	Ident.m_pipelineState.opaque = gRenDev->m_RP.m_FlagsShader_PipelineState;
 
 	ModifyLTMask(Ident.m_LightMask);
 

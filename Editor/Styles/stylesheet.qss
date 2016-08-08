@@ -1727,12 +1727,13 @@ QNumericBox {
 CryGraphEditor--CGlobalStyle {
 	/* Selection color */
 	qproperty-selectionColor: rgb(97, 172, 237);
+	qproperty-highlightColor: rgb(120, 120, 120);
 	
 	/* Background */
 	qproperty-gridBackgroundColor: rgb(75, 75, 75);
 	
 	/* Background: Lines */
-	qproperty-girdLineColor: rgb(65, 65, 65);
+	qproperty-girdLineColor: rgb(70,70,70);
 	qproperty-gridLineWidth: 1.0;
 	
 	/* Background: Segmentation */
@@ -1740,15 +1741,20 @@ CryGraphEditor--CGlobalStyle {
 	qproperty-gridNumSubSegment: 5;
 	
 	/* Background: Sub-lines */
-	qproperty-gridSubLineColor:	rgb(65, 65, 65);
+	qproperty-gridSubLineColor:	rgb(70,70,70);
 	qproperty-gridSubLineThickness: 1.0;
 }
 
 CryGraphEditor--CConnectionStyle {
-	qproperty-lineWidth: 3;
+	qproperty-lineWidth: 2;
 	qproperty-lineDefaultColor: rgb(110, 110, 110);
 	qproperty-bezierSize: 120.0;
 	qproperty-usePinColor: 1;
+}
+
+CryGraphEditor--CPinWidget QLabel {
+	color: rgb(94, 94, 94);
+	font: bold;
 }
 
 CryGraphEditor--CNodeName {
@@ -1758,10 +1764,10 @@ CryGraphEditor--CNodeName {
 
 CryGraphEditor--CNodeStyle {
 	/* Content: Background */
-	/*qproperty-backgroundColor: rgb(0, 0, 0);*/
+	qproperty-backgroundColor: rgb(35, 35, 35);
 	
 	/* Content: Margins */
-	qproperty-contentMarginTop: 0;
+	qproperty-contentMarginTop: 3;
 	qproperty-contentMarginLeft: 7;
 	qproperty-contentMarginBottom: 6;
 	qproperty-contentMarginRight: 6;
@@ -1773,13 +1779,13 @@ CryGraphEditor--CNodeStyle {
 	qproperty-contentRectAdjustmentRight: 0;
 
 	/* Icon */
-	qproperty-pinIconSize: 12px 12px;
+	qproperty-pinIconSize: 8px 12px;
 	qproperty-pinIconOffsetX: 0;
 	qproperty-pinIconOffsetY: 0;
 	qproperty-pinDefaultColor: rgb(110, 110, 110);
 	
 	/* Border */
-	qproperty-borderColor: rgb(110, 110, 110);
+	qproperty-borderColor: rgb(84, 84, 84);
 	qproperty-borderWidth: 1;
 	
 	/* Border: Rect adjustment for drawing */
@@ -1790,15 +1796,15 @@ CryGraphEditor--CNodeStyle {
 
 	/* Header */
 	qproperty-headerHeight: 24.0;
-	qproperty-headerIconSize: 24.0;
+	qproperty-headerIconSize: 16px 16px;
 	qproperty-headerDefaultColorLeft: rgb(110, 110, 110);
 	qproperty-headerDefaultColorRight: rgb(110, 110, 110);
 	
 	/* Header: Content margins */
-	qproperty-headerContentMarginTop: 0;
-	qproperty-headerContentMarginLeft: 0;
+	qproperty-headerContentMarginTop: 1;
+	qproperty-headerContentMarginLeft: 7;
 	qproperty-headerContentMarginBottom: 0;
-	qproperty-headerContentMarginRight: 0;
+	qproperty-headerContentMarginRight: -6;
 	
 	/* Header: Rect adjustment for drawing */
 	qproperty-headerRectAdjustmentTop: 0;

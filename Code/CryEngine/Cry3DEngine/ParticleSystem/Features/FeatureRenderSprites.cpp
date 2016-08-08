@@ -99,7 +99,7 @@ private:
 	bool        m_flipU, m_flipV;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderSprites, "Render", "Sprites", "Editor/Icons/Particles/sprites.png", renderFeatureColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderSprites, "Render", "Sprites", colorRender);
 
 //////////////////////////////////////////////////////////////////////////
 

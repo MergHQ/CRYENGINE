@@ -28,7 +28,6 @@ struct SParticleFeatureParams
 {
 	const char*       m_groupName;
 	const char*       m_featureName;
-	const char*       m_iconName;
 	ColorB            m_color;
 	IParticleFeature* (* m_pFactory)();
 	bool              m_hasComponentConnector;

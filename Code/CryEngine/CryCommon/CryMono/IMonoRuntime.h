@@ -13,17 +13,18 @@ enum EMonoLogLevel
 	eMLL_Debug
 };
 
-struct ICryEnginePlugin;
+struct ICryEngineBasePlugin;
+struct SMonoDomainHandlerLibrary;
 
 struct IMonoLibrary
 {
 	virtual ~IMonoLibrary() {}
 
-	virtual ICryEnginePlugin* Initialize(void* pMonoDomain) = 0;
-	virtual bool              RunMethod(const char* szMethodName) const = 0;
-	virtual const char*       GetImageName() const = 0;
-	virtual bool              IsInMemory() const = 0;
-	virtual bool              IsLoaded() const = 0;
+	virtual ICryEngineBasePlugin* Initialize(void* pMonoDomain, void* pDomainHandler = nullptr) = 0;
+	virtual bool                  RunMethod(const char* szMethodName) const = 0;
+	virtual const char*           GetImageName() const = 0;
+	virtual bool                  IsInMemory() const = 0;
+	virtual bool                  IsLoaded() const = 0;
 };
 
 struct IMonoListener
@@ -39,23 +40,25 @@ struct IMonoListener
 struct IMonoRuntime
 {
 	virtual ~IMonoRuntime() {}
-	virtual void              Initialize(EMonoLogLevel logLevel) = 0;
-	virtual bool              LoadBinary(const char* szBinaryPath) = 0;
-	virtual bool              UnloadBinary(const char* szBinaryPath) = 0;
+	virtual void                  Initialize(EMonoLogLevel logLevel) = 0;
+	virtual bool                  LoadBinary(const char* szBinaryPath) = 0;
+	virtual bool                  UnloadBinary(const char* szBinaryPath) = 0;
 
-	virtual void              Update(int updateFlags = 0, int nPauseMode = 0) = 0;
-	virtual ICryEnginePlugin* GetPlugin(const char* szBinaryPath) const = 0;
-	virtual bool              RunMethod(const ICryEnginePlugin* pPlugin, const char* szMethodName) const = 0;
+	virtual void                  Update(int updateFlags = 0, int nPauseMode = 0) = 0;
+	virtual ICryEngineBasePlugin* GetPlugin(const char* szBinaryPath) const = 0;
+	virtual bool                  RunMethod(const ICryEngineBasePlugin* pPlugin, const char* szMethodName) const = 0;
 
-	virtual void              RegisterListener(IMonoListener* pListener) = 0;
-	virtual void              UnregisterListener(IMonoListener* pListener) = 0;
-	virtual EMonoLogLevel     GetLogLevel() = 0;
+	virtual void                  RegisterListener(IMonoListener* pListener) = 0;
+	virtual void                  UnregisterListener(IMonoListener* pListener) = 0;
+	virtual EMonoLogLevel         GetLogLevel() = 0;
 };
 
 // TODO: #CryPlugins: make this an abstract container
-struct ICryEnginePlugin
+struct ICryEngineBasePlugin
 {
 	bool        Call_Initialize() const                           { return gEnv->pMonoRuntime->RunMethod(this, "Initialize"); }
+	bool        Call_OnGameStart() const                          { return gEnv->pMonoRuntime->RunMethod(this, "OnGameStart"); }
+	bool        Call_OnGameStop() const                           { return gEnv->pMonoRuntime->RunMethod(this, "OnGameStop"); }
 	bool        Call_Shutdown() const                             { return gEnv->pMonoRuntime->RunMethod(this, "Shutdown"); }
 
 	void        SetBinaryDirectory(const char* szBinaryDirectory) { cry_strcpy(m_szBinaryDirectory, szBinaryDirectory); }

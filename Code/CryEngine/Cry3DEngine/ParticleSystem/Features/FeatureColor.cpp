@@ -136,7 +136,7 @@ void CFeatureFieldColor::Sample(Vec3* samples, const int numSamples)
 		pModifier->Sample(samples, numSamples);
 }
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldColor, "Field", "Color", defaultIcon, fieldColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldColor, "Field", "Color", colorField);
 
 //////////////////////////////////////////////////////////////////////////
 // CColorRandom
