@@ -731,6 +731,9 @@ void CRenderView::ExpandPermanentRenderObjects()
 			{
 				auto& RESTRICT_REFERENCE pri = permanent_items[i];
 
+				SShaderItem shaderItem;
+				SRendItem::ExtractShaderItem(pri.m_sortValue, shaderItem);
+
 				if (!pri.m_pCompiledObject)
 				{
 					bool bRequireCompiledRenderObject = false;
@@ -757,19 +760,21 @@ void CRenderView::ExpandPermanentRenderObjects()
 							}
 						}
 
-						if (!pri.m_pCompiledObject)
+						if (((volatile CCompiledRenderObject*) pri.m_pCompiledObject) == nullptr)
 						{
-							SShaderItem shaderItem;
-							SRendItem::ExtractShaderItem(pri.m_sortValue, shaderItem);
-							pri.m_pCompiledObject = AllocCompiledObject(pRenderObject, pri.m_pRenderElement, shaderItem); // Allocate new CompiledRenderObject.
-							pRenderObject->m_bInstanceDataDirty = false;                                                  // In this case everything need to be recompiled, not only instance data.
-							bRecompile = true;
+							static CryCriticalSectionNonRecursive allocCS;
+							AUTO_LOCK_T(CryCriticalSectionNonRecursive, allocCS);
+
+							if (((volatile CCompiledRenderObject*)pri.m_pCompiledObject) == nullptr)
+							{
+								pri.m_pCompiledObject = AllocCompiledObject(pRenderObject, pri.m_pRenderElement, shaderItem); // Allocate new CompiledRenderObject.
+								pRenderObject->m_bInstanceDataDirty = false;                                                  // In this case everything need to be recompiled, not only instance data.
+								bRecompile = true;
+							}
 						}
 					}
 				}
 
-				SShaderItem shaderItem;
-				SRendItem::ExtractShaderItem(pri.m_sortValue, shaderItem);
 				if (!shaderItem.m_pShader || !shaderItem.m_pShaderResources || !shaderItem.m_pShaderResources->IsValid())
 				{
 					if (pRenderObject->m_pRenderNode)
