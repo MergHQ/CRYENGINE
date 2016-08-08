@@ -634,7 +634,7 @@ void CEditorGame::InitEntityArchetypeEnums(IGameToEditorInterface* pGTE, const c
 	{
 		string levelPath = string(levelFolder) + "/" + string(levelName) + ".cry";
 
-		if (pCryPak && pCryPak->OpenPack(levelPath))
+		if (pCryPak && pCryPak->IsFileExist(levelPath) && pCryPak->OpenPack(levelPath))
 		{
 			string editorXML = string(levelFolder) + "/Level.editor_xml";
 			XmlNodeRef pRoot = gEnv->pSystem->LoadXmlFromFile(editorXML);
