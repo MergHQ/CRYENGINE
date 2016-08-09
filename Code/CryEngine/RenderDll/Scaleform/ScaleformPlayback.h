@@ -219,12 +219,12 @@ struct SSF_GlobalDrawParams
 		// PS
 		ColorF cBitmapColorTransform[2]; // Float2x4
 		Matrix44 cColorTransformMat;     // Float4x4
-		float bPremultiplyAlpha;         // Float
-		Vec3 cBlurFilterSize;            // Float3
-		Vec2 cBlurFilterScale;           // Vec2
-		Vec2 cBlurFilterBias;            // Vec2
 		ColorF cBlurFilterColor1;        // Float4
 		ColorF cBlurFilterColor2;        // Float4
+		Vec2 cBlurFilterBias;            // Vec2
+		Vec2 cBlurFilterScale;           // Vec2
+		Vec3 cBlurFilterSize;            // Float3
+		float bPremultiplyAlpha;         // Float
 	}
 	*m_pScaleformRenderParameters;
 	size_t m_ScaleformRenderParametersSize;

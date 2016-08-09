@@ -1658,6 +1658,19 @@ void UAVName(bstring output, Shader* psShader, const uint32_t ui32RegisterNumber
 		bformata(output, "UnknownUAV%d", ui32RegisterNumber);
 }
 
+ResourceType UAVType(bstring output, Shader* psShader, const uint32_t ui32RegisterNumber)
+{
+	ResourceBinding* psBinding = 0;
+	int found;
+
+	found = GetResourceFromBindingPoint(RGROUP_UAV, ui32RegisterNumber, &psShader->sInfo, &psBinding);
+
+	if (found)
+		return psBinding->eType;
+	else
+		return RTYPE_COUNT;
+}
+
 void UniformBufferName(bstring output, Shader* psShader, const uint32_t ui32RegisterNumber)
 {
 	ResourceBinding* psBinding = 0;

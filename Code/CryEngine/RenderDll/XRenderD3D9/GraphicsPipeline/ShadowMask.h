@@ -20,9 +20,11 @@ class CShadowMaskStage : public CGraphicsPipelineStage
 public:
 	CShadowMaskStage();
 
-	void Init();
-	void Prepare(CRenderView* pRenderView) final;
+	virtual void Init() final;
+	virtual void Prepare(CRenderView* pRenderView) final;
 	void Execute();
+
+	virtual void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 
 private:
 	std::unique_ptr<ShadowMaskInternal::CSunShadows>        m_pSunShadows;

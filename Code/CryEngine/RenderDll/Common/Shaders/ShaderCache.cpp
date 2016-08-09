@@ -1120,8 +1120,27 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 
 	const char* pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo %s %s";
 
-	const char* pCompilerGL4 = "PCGL/V011/HLSLcc.exe -lang=440 -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo\" -out=%s -in=%s";
-	const char* pCompilerGLES3 = "PCGL/V011/HLSLcc.exe -lang=es310 -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo\" -out=%s -in=%s";
+#define ESSL_VERSION "es310"
+#if DXGL_REQUIRED_VERSION >= DXGL_VERSION_45
+#define GLSL_VERSION "450"
+#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_44
+#define GLSL_VERSION "440"
+#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_43
+#define GLSL_VERSION "430"
+#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_42
+#define GLSL_VERSION "420"
+#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_41
+#define GLSL_VERSION "410"
+#elif DXGLES_REQUIRED_VERSION >= DXGLES_VERSION_31
+#define GLSL_VERSION "310"
+#elif DXGLES_REQUIRED_VERSION >= DXGLES_VERSION_30
+#define GLSL_VERSION "300"
+#else
+#error "Shading language revision not defined for this GL version"
+#endif
+
+	const char* pCompilerGL4 = "PCGL/V012/HLSLcc.exe -lang=" GLSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo\" -out=%s -in=%s";
+	const char* pCompilerGLES3 = "PCGL/V012/HLSLcc.exe -lang=" ESSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo\" -out=%s -in=%s";
 
 	if (CRenderer::CV_r_shadersdebug == 3)
 	{

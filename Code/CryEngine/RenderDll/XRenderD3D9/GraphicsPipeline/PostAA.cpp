@@ -232,7 +232,11 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 	{
 		pOutputRT = pRenderer->GetS3DRend().GetEyeTarget((pRenderer->m_RP.m_nRendFlags & SHDF_STEREO_LEFT_EYE) ? LEFT_EYE : RIGHT_EYE);
 	}
-	
+	else if (pRenderer->IsNativeScalingEnabled())
+	{
+		pOutputRT = CTexture::s_ptexSceneSpecular;
+	}
+
 	static uint64 prevRTMask = 0;
 	uint64 rtMask = 0;
 	if (aaMode & eAT_SMAA_2TX_MASK)

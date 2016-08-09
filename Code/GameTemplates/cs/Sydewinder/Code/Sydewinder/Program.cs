@@ -33,7 +33,7 @@ public class Program : ICryEnginePlugin
 		// Initialize Highscore with file name.
 		Highscore.InitializeFromFile(HIGHSCORE_URL);
 
-		GameApp.GameOver += showHighscore = >
+		GameApp.GameOver += showHighscore =>
 		{
 			// Reset field of view to ehance 3D look.
 			Camera.FieldOfView = 60f;
@@ -54,13 +54,13 @@ public class Program : ICryEnginePlugin
 		UI.MainMenu.SelectedMenuPage(0);
 		Mouse.ShowCursor();
 
-		mainMenu.StartClicked += () = >
+		mainMenu.StartClicked += () =>
 		{
 			Mouse.HideCursor();
 			GameApp.Reset();
 			UI.MainMenu.SetInactive();
 		};
-		mainMenu.ExitClicked += () = >
+		mainMenu.ExitClicked += () =>
 		{
 			Mouse.HideCursor();
 			if (!Env.IsSandbox)

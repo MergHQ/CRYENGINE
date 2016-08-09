@@ -208,6 +208,10 @@ CRenderView* CGraphicsPipelineStage::RenderView()
 	return gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView();
 }
 
+CStandardGraphicsPipeline::CStandardGraphicsPipeline()
+	: m_changedCVars(gEnv->pConsole)
+{}
+
 void CStandardGraphicsPipeline::Init()
 {
 	// default material resources
@@ -273,6 +277,14 @@ void CStandardGraphicsPipeline::Prepare(CRenderView* pRenderView, EShaderRenderi
 	m_pCurrentRenderView = pRenderView;
 	m_renderingFlags = renderingFlags;
 	m_numInvalidDrawcalls = 0;
+
+	if (!m_changedCVars.GetCVars().empty())
+	{
+		for (int i = 0; i < eStage_Count; ++i)
+			m_pipelineStages[i]->OnCVarsChanged(m_changedCVars);
+
+		m_changedCVars.Reset();
+	}
 }
 
 bool CStandardGraphicsPipeline::CreatePipelineStates(DevicePipelineStatesArray* pStateArray, SGraphicsPipelineStateDescription stateDesc, CGraphicsPipelineStateLocalCache* pStateCache)

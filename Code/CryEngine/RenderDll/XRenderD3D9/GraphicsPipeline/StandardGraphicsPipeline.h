@@ -65,7 +65,9 @@ enum EStandardGraphicsPipelineStage
 	eStage_PostAA,
 	eStage_ClipVolumes,
 	eStage_ShadowMask,
-	eStage_ColorGrading
+	eStage_ColorGrading,
+
+	eStage_Count
 };
 
 class CStandardGraphicsPipeline : public CGraphicsPipeline
@@ -111,6 +113,8 @@ public:
 		Matrix44 GetNearestProjection(float nearestFOV, float farPlane, Vec2 subpixelShift);
 		void     ExtractViewMatrices(const CCamera& cam, Matrix44& view, Matrix44& viewZero, Matrix44& invView) const;
 	};
+
+	CStandardGraphicsPipeline();
 
 	virtual void Init() override;
 	virtual void Prepare(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags) override;
@@ -189,6 +193,8 @@ private:
 
 	bool                          m_bInitialized = false;
 	bool                          m_bUtilityPassesInitialized = false;
+
+	CCVarUpdateRecorder           m_changedCVars;
 
 private:
 	void ExecuteHDRPostProcessing();

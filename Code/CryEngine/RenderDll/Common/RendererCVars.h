@@ -7,6 +7,7 @@
 #endif
 
 struct ICVar;
+struct IConsole;
 
 class CRendererCVars
 {
@@ -652,4 +653,43 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	static Vec2 s_overscanBorders;
+};
+
+class CCVarUpdateRecorder : public IConsoleVarSink
+{
+public:
+
+	struct SUpdateRecord
+	{
+		union
+		{
+			int   intValue;
+			float floatValue;
+			char  stringValue[64];
+		};
+
+		const char* name;
+		int type;
+
+		SUpdateRecord(ICVar* pCVar);
+	};
+
+	typedef std::vector<SUpdateRecord> CVarList;
+
+public:
+	CCVarUpdateRecorder(IConsole* pConsole);
+	~CCVarUpdateRecorder();
+
+	// IConsoleVarSink
+	virtual bool OnBeforeVarChange(ICVar* pVar, const char* sNewValue) { return true; }
+	virtual void OnAfterVarChange(ICVar* pVar);
+
+	void Reset(); 
+	const CVarList& GetCVars() const;
+	const SUpdateRecord* GetCVar(const char* cvarName) const;
+
+public:
+	CVarList m_updatedCVars[RT_COMMAND_BUF_COUNT];
+	IConsole* m_pConsole;
+
 };

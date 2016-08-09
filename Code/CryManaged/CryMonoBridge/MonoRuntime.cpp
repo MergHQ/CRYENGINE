@@ -335,7 +335,6 @@ IMonoLibrary* CMonoRuntime::LoadLibrary(const char* szBinaryPath)
 
 	string binaryFile = PathUtil::GetFile(szBinaryPath);
 	string binaryPath = PathUtil::GetPathWithoutFilename(szBinaryPath);
-	cry_strcpy(m_sProjectDllDir, binaryPath.c_str());
 
 	MonoImageOpenStatus status = MonoImageOpenStatus::MONO_IMAGE_ERROR_ERRNO;
 	MonoAssemblyName* pAsmName = mono_assembly_name_new(binaryFile.c_str());
@@ -412,8 +411,6 @@ bool CMonoRuntime::LaunchPluginDomain()
 
 	if (m_pDomainPlugins)
 	{
-		cry_strcpy(m_sProjectDllDir, "");
-
 		m_pLibCommon = LoadLibrary("CryEngine.Common");
 		m_pLibCore = LoadLibrary("CryEngine.Core");
 

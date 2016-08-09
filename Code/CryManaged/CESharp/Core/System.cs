@@ -634,20 +634,28 @@ namespace CryEngine
 		}
 	}
 
-	public class AddIn : CryEngineAddIn
+	public class AddIn : ICryEnginePlugin
 	{
-		public static InterDomainHandler InterDomainHandler { get; private set; }
-
-		public override void Initialize(InterDomainHandler handler)
+		public override void Initialize()
 		{
-			InterDomainHandler = handler;
-			Env.Initialize (handler);
+			if (m_interDomainHandler != null) 
+			{
+				Env.Initialize (m_interDomainHandler);
+			}
 		}
 
 		public override void Shutdown()
 		{
-			Env.Shutdown (InterDomainHandler);
+			Env.Shutdown (m_interDomainHandler);
 		}
+	}
+
+	public class ICryEnginePlugin : ICryEngineBasePlugin
+	{
+		public static InterDomainHandler m_interDomainHandler { get; set; }
+
+		public virtual void Initialize () {}
+		public virtual void Shutdown() {}
 	}
 
 	/// <summary>

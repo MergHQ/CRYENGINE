@@ -21,11 +21,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CryEngine.Common">
-      <HintPath>G:\wsp\ce\dev_cesharp\bin\win_x64\CryEngine.Common.dll</HintPath>
+      <HintPath>..\..\bin\win_x64\CryEngine.Common.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="CryEngine.Core">
-      <HintPath>G:\wsp\ce\dev_cesharp\bin\win_x64\CryEngine.Core.dll</HintPath>
+      <HintPath>..\..\bin\win_x64\CryEngine.Core.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />

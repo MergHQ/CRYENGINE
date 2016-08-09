@@ -42,6 +42,7 @@ public:
 		bool  attachToSun;
 		bool  bMultiplyColor;
 		bool  bForceRender;
+		bool  bIgnoreOcclusionQueries;
 	};
 
 private:

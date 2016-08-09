@@ -1,0 +1,20 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+	base_defines  = [ '_UNICODE', 'UNICODE', '_CRT_SECURE_NO_WARNINGS', '_HAS_EXCEPTIONS=0' ]
+	base_includes = [ Path('Code/CryEngine/CrySystem'), Path('Code/Tools/HLSLCrossCompiler/include'), Path('Code/Tools/HLSLCrossCompiler/src/cbstring'), Path('Code/Tools/HLSLCrossCompiler/offline/cjson') ]
+	base_filelist = 'hlslcc.waf_files'
+	base_folder   = Path('Tools/HLSLCrossCompiler')
+
+	bld.CryConsoleApplication(
+		output_sub_folder = base_folder,
+		target      = 'HLSLcc',
+		vs_filter   = 'Tools',
+		file_list   = base_filelist,
+		includes    = base_includes,
+		cflags      = [ '/W0' ],
+		cxxflags    = [ '/W0' ],
+		win_lib     = [ 'opengl32', 'Gdi32' ],
+		defines     = base_defines
+	)
+	

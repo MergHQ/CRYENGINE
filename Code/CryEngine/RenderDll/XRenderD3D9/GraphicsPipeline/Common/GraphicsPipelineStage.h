@@ -66,6 +66,9 @@ public:
 	// Prepare stage before actual rendering starts (called every frame)
 	virtual void Prepare(CRenderView* pRenderView) {}
 
+	// Reset any cvar dependent states.
+	virtual void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) {}
+
 protected:
 	// Helpers.
 	static CRenderView* RenderView();

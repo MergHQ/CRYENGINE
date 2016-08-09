@@ -23,6 +23,7 @@
 #define DXGL_VERSION_42              420
 #define DXGL_VERSION_43              430 /* DX 11 */
 #define DXGL_VERSION_44              440
+#define DXGL_VERSION_45              450
 
 #define DXGLES_VERSION_30            300
 #define DXGLES_VERSION_31            310

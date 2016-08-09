@@ -362,7 +362,7 @@ HRESULT DXGLMapBufferRange(ID3D11DeviceContext* pDeviceContext, ID3D11Buffer* pB
 {
 	NCryOpenGL::CContext* pGLContext(static_cast<CCryDXGLDeviceContext*>(pDeviceContext)->GetGLContext());
 	NCryOpenGL::SBuffer* pGLBuffer(pBuffer->GetGLBuffer());
-	return (*pGLBuffer->m_pfMapBufferRange)(pGLBuffer, uOffset, uSize, MapType, MapFlags, pMappedResource, pGLContext) ? S_OK : E_FAIL;
+	return (*pGLBuffer->m_pfMapBufferRange)(pGLBuffer, uOffset, uSize ? uSize : pGLBuffer->m_uSize - uOffset, MapType, MapFlags, pMappedResource, pGLContext) ? S_OK : E_FAIL;
 }
 
 void DXGLSetDepthBoundsTest(bool bEnabled, float fMin, float fMax)

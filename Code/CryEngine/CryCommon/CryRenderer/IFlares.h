@@ -12,6 +12,7 @@
 
 struct IShader;
 class CCamera;
+struct SRenderingPassInfo;
 
 class __MFPA
 {
@@ -96,9 +97,10 @@ private:
 
 struct SLensFlareRenderParam
 {
-	SLensFlareRenderParam() :
-		pCamera(NULL),
-		pShader(NULL)
+	SLensFlareRenderParam(CCamera* pCamera, IShader* pShader, const SRenderingPassInfo& passInfo) :
+		pCamera(pCamera),
+		pShader(pShader),
+		passInfo(passInfo)
 	{
 	}
 	~SLensFlareRenderParam(){}
@@ -108,6 +110,7 @@ struct SLensFlareRenderParam
 	}
 	CCamera* pCamera;
 	IShader* pShader;
+	const SRenderingPassInfo& passInfo;
 };
 
 class ISoftOcclusionQuery

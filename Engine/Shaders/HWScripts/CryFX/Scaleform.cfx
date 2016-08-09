@@ -22,12 +22,12 @@ cbuffer ScaleformRenderParameters : register(b0)
 	// PS
 	float2x4 cBitmapColorTransform;
 	float4x4 cColorTransformMat;
-	float  bPremultiplyAlpha;
-	float3 cBlurFilterSize;
-	float2 cBlurFilterScale;
-	float2 cBlurFilterBias;
 	float4 cBlurFilterColor1;
 	float4 cBlurFilterColor2;
+	float2 cBlurFilterBias;
+	float2 cBlurFilterScale;
+	float3 cBlurFilterSize;
+	float  bPremultiplyAlpha;
 };
 
 //////////////////////////////////////////////////

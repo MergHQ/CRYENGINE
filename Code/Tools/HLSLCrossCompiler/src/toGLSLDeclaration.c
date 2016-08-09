@@ -66,7 +66,7 @@ const uint32_t GetTypeElementCount(GLVARTYPE eType)
 	}
 }
 
-void GetSTD140Layout(ShaderVarType* pType, uint32_t* puAlignment, uint32_t* puSize)
+void GetSTD140Layout(ShaderVarType* pType, uint32_t* puAlignment, uint32_t* puSize, uint32_t custom)
 {
 	*puSize = 0;
 	*puAlignment = 1;
@@ -105,6 +105,12 @@ void GetSTD140Layout(ShaderVarType* pType, uint32_t* puAlignment, uint32_t* puSi
 			*puAlignment *= 2;
 			break;
 		case 3:
+			if (custom)
+			{
+				*puSize *= 3;
+				*puAlignment *= 3;
+				break;
+			}
 		case 4:
 			*puSize *= 4;
 			*puAlignment *= 4;
@@ -118,7 +124,7 @@ void GetSTD140Layout(ShaderVarType* pType, uint32_t* puAlignment, uint32_t* puSi
 			{
 				uint32_t uMemberAlignment, uMemberSize;
 				*puSize += pType->Members[uMember].Offset;
-				GetSTD140Layout(pType->Members + uMember, &uMemberAlignment, &uMemberSize);
+				GetSTD140Layout(pType->Members + uMember, &uMemberAlignment, &uMemberSize, custom);
 				*puSize += uMemberAlignment - 1;
 				*puSize -= *puSize % uMemberAlignment;
 				*puAlignment = *puAlignment > uMemberAlignment ? *puAlignment : uMemberAlignment;
@@ -154,13 +160,17 @@ void AddToDx9ImmConstIndexableArray(HLSLCrossCompilerContext* psContext, const O
 	psContext->currentGLSLString = savedStringPtr;
 }
 
-void DeclareConstBufferShaderVariable(HLSLCrossCompilerContext* psContext, const char* Name, const struct ShaderVarType_TAG* psType, int unsizedArray)
+void DeclareConstBufferShaderVariable(HLSLCrossCompilerContext* psContext, const char* Name, const struct ShaderVarType_TAG* psType, uint32_t offsetVar, int unsizedArray)
 {
 	bstring glsl = *psContext->currentGLSLString;
+	const uint32_t enhanced_layout = offsetVar != ~0;
+
+	bcatcstr(glsl, "\t");
+	if (enhanced_layout)
+		bformata(glsl, "layout(offset = %d) ", offsetVar);
 
 	if(psType->Class == SVC_STRUCT)
 	{
-		bcatcstr(glsl, "\t");
 		ShaderVarName(glsl, psContext->psShader, Name);
 		bcatcstr(glsl, "_Type ");
 		ShaderVarName(glsl, psContext->psShader, Name);
@@ -173,7 +183,7 @@ void DeclareConstBufferShaderVariable(HLSLCrossCompilerContext* psContext, const
 		{
 		case SVT_FLOAT:
 			{
-				bformata(glsl, "\tvec%d ", psType->Columns);
+				bformata(glsl, "vec%d ", psType->Columns);
 				ShaderVarName(glsl, psContext->psShader, Name);
 				bformata(glsl, "[%d", psType->Rows);
 				break;
@@ -188,67 +198,66 @@ void DeclareConstBufferShaderVariable(HLSLCrossCompilerContext* psContext, const
 			bformata(glsl, " * %d", psType->Elements);
 		bformata(glsl, "]");
 	}
-	else
-		if(psType->Class == SVC_VECTOR)
+	else if(psType->Class == SVC_VECTOR)
+	{
+		switch(psType->Type)
 		{
-			switch(psType->Type)
-			{
-			default:
-				ASSERT(0);
-			case SVT_FLOAT:
-				bformata(glsl, "\tvec%d ", psType->Columns);
-				break;
-			case SVT_UINT:
-				bformata(glsl, "\tuvec%d ", psType->Columns);
-				break;
-			case SVT_INT:
-				bformata(glsl, "\tivec%d ", psType->Columns);
-				break;
-			case SVT_DOUBLE:
-				bformata(glsl, "\tdvec%d ", psType->Columns);
-				break;
-			}
-
-			ShaderVarName(glsl, psContext->psShader, Name);
-
-			if(psType->Elements > 1)
-				bformata(glsl, "[%d]", psType->Elements);
+		default:
+			ASSERT(0);
+		case SVT_FLOAT:
+			bformata(glsl, "vec%d ", psType->Columns);
+			break;
+		case SVT_UINT:
+			bformata(glsl, "uvec%d ", psType->Columns);
+			break;
+		case SVT_INT:
+			bformata(glsl, "ivec%d ", psType->Columns);
+			break;
+		case SVT_DOUBLE:
+			bformata(glsl, "dvec%d ", psType->Columns);
+			break;
 		}
-		else
-			if(psType->Class == SVC_SCALAR)
-			{
-				switch(psType->Type)
-				{
-				default:
-					ASSERT(0);
-				case SVT_FLOAT:
-					bformata(glsl, "\tfloat ");
-					break;
-				case SVT_UINT:
-					bformata(glsl, "\tuint ");
-					break;
-				case SVT_INT:
-					bformata(glsl, "\tint ");
-					break;
-				case SVT_DOUBLE:
-					bformata(glsl, "\tdouble ");
-					break;
-				case SVT_BOOL:
-					//Use int instead of bool.
-					//Allows implicit conversions to integer and
-					//bool consumes 4-bytes in HLSL and GLSL anyway.
-					bformata(glsl, "\tint ");
-					break;
-				}
 
-				ShaderVarName(glsl, psContext->psShader, Name);
+		ShaderVarName(glsl, psContext->psShader, Name);
 
-				if(psType->Elements > 1)
-					bformata(glsl, "[%d]", psType->Elements);
-			}
-			if(unsizedArray)
-				bformata(glsl, "[]");
-			bformata(glsl, ";\n");
+		if(psType->Elements > 1)
+			bformata(glsl, "[%d]", psType->Elements);
+	}
+	else if(psType->Class == SVC_SCALAR)
+	{
+		switch(psType->Type)
+		{
+		default:
+			ASSERT(0);
+		case SVT_FLOAT:
+			bformata(glsl, "float ");
+			break;
+		case SVT_UINT:
+			bformata(glsl, "uint ");
+			break;
+		case SVT_INT:
+			bformata(glsl, "int ");
+			break;
+		case SVT_DOUBLE:
+			bformata(glsl, "double ");
+			break;
+		case SVT_BOOL:
+			//Use int instead of bool.
+			//Allows implicit conversions to integer and
+			//bool consumes 4-bytes in HLSL and GLSL anyway.
+			bformata(glsl, "int ");
+			break;
+		}
+
+		ShaderVarName(glsl, psContext->psShader, Name);
+
+		if(psType->Elements > 1)
+			bformata(glsl, "[%d]", psType->Elements);
+	}
+
+	if(unsizedArray)
+		bformata(glsl, "[]");
+	bformata(glsl, ";\n");
 }
 
 //In GLSL embedded structure definitions are not supported.
@@ -281,7 +290,7 @@ void PreDeclareStructType(HLSLCrossCompilerContext* psContext, const char* Name,
 		{
 			ASSERT(psType->Members != 0);
 
-			DeclareConstBufferShaderVariable(psContext, psType->Members[i].Name, &psType->Members[i], 0);
+			DeclareConstBufferShaderVariable(psContext, psType->Members[i].Name, &psType->Members[i], ~0, 0);
 		}
 
 		bformata(glsl, "};\n");
@@ -1172,6 +1181,9 @@ void DeclareUBOConstants(HLSLCrossCompilerContext* psContext, const uint32_t ui3
 {
 	bstring glsl = *psContext->currentGLSLString;
 
+	const uint32_t custom = 1;
+	const uint32_t packed = 0;
+	const uint32_t shared = 0;
 	uint32_t i, implicitOffset;
 	const char* Name = psCBuf->Name;
 	uint32_t auiSortedVars[MAX_SHADER_VARS];
@@ -1186,13 +1198,29 @@ void DeclareUBOConstants(HLSLCrossCompilerContext* psContext, const uint32_t ui3
 	}
 
 	/* [layout (location = X)] uniform vec4 HLSLConstantBufferName[numConsts]; */
-	if(HaveUniformBindingsAndLocations(psContext->psShader->eTargetLanguage,psContext->psShader->extensions) && (psContext->flags & HLSLCC_FLAG_AVOID_RESOURCE_BINDINGS_AND_LOCATIONS) == 0)
-		bformata(glsl, "layout(binding = %d) ", ui32BindingPoint);
+	if (packed)
+			if (HaveUniformBindingsAndLocations(psContext->psShader->eTargetLanguage, psContext->psShader->extensions) && (psContext->flags & HLSLCC_FLAG_AVOID_RESOURCE_BINDINGS_AND_LOCATIONS) == 0)
+			bformata(glsl, "layout(packed, binding = %d) ", ui32BindingPoint);
+		else
+			bformata(glsl, "layout(packed) ");
+	else if (shared)
+		if (HaveUniformBindingsAndLocations(psContext->psShader->eTargetLanguage, psContext->psShader->extensions) && (psContext->flags & HLSLCC_FLAG_AVOID_RESOURCE_BINDINGS_AND_LOCATIONS) == 0)
+			bformata(glsl, "layout(shared, binding = %d) ", ui32BindingPoint);
+		else
+			bformata(glsl, "layout(shared) ");
+	else
+		if (HaveUniformBindingsAndLocations(psContext->psShader->eTargetLanguage, psContext->psShader->extensions) && (psContext->flags & HLSLCC_FLAG_AVOID_RESOURCE_BINDINGS_AND_LOCATIONS) == 0)
+			bformata(glsl, "layout(std140, binding = %d) ", ui32BindingPoint);
+		else
+			bformata(glsl, "layout(std140) ");
 
 	bformata(glsl, "uniform ");
 	ConvertToUniformBufferName(glsl, psContext->psShader, psCBuf->Name);
 	bformata(glsl, " {\n ");
 
+	implicitOffset = 0;
+
+	// Sort by offset
 	if (psCBuf->ui32NumVars > 0)
 	{
 		uint32_t bSorted = 1;
@@ -1218,42 +1246,48 @@ void DeclareUBOConstants(HLSLCrossCompilerContext* psContext, const uint32_t ui3
 		}
 	}
 
-	implicitOffset = 0;
 	for(i=0; i < psCBuf->ui32NumVars; ++i)
 	{
-		uint32_t uVarAlignment, uVarSize;
 		ShaderVar* psVar = psCBuf->asVars + auiSortedVars[i];
-		GetSTD140Layout(&psVar->sType, &uVarAlignment, &uVarSize);
 
-		if ((implicitOffset + 16 - 1) / 16 < psVar->ui32StartOffset / 16)
+		if (!packed && !shared)
 		{
-			uint32_t uNumPaddingUvecs = psVar->ui32StartOffset / 16 - (implicitOffset + 16 - 1) / 16;
-			bcatcstr(glsl, "\tuvec4 padding_");
-			ConvertToUniformBufferName(glsl, psContext->psShader, psCBuf->Name);
-			bformata(glsl, "_%d[%d];\n", implicitOffset, uNumPaddingUvecs);
-			implicitOffset = psVar->ui32StartOffset - psVar->ui32StartOffset % 16;
-		}
+			uint32_t uVarAlignment, uVarSize;
+			GetSTD140Layout(&psVar->sType, &uVarAlignment, &uVarSize, custom);
 
-		if ((implicitOffset + 4 - 1) / 4 < psVar->ui32StartOffset / 4)
-		{
-			uint32_t uNumPaddingUints = psVar->ui32StartOffset / 4 - (implicitOffset + 4 - 1) / 4;
-			uint32_t uPaddingUint;
-			for (uPaddingUint = 0; uPaddingUint < uNumPaddingUints; ++uPaddingUint)
+			if (!custom)
 			{
-				bcatcstr(glsl, "\tuint padding_");
-				ConvertToUniformBufferName(glsl, psContext->psShader, psCBuf->Name);
-				bformata(glsl, "_%d_%d;\n", psVar->ui32StartOffset, uPaddingUint);
+				if ((implicitOffset + 16 - 1) / 16 < psVar->ui32StartOffset / 16)
+				{
+					uint32_t uNumPaddingUvecs = psVar->ui32StartOffset / 16 - (implicitOffset + 16 - 1) / 16;
+					bcatcstr(glsl, "\tuvec4 padding_");
+					ConvertToUniformBufferName(glsl, psContext->psShader, psCBuf->Name);
+					bformata(glsl, "_%d[%d];\n", implicitOffset, uNumPaddingUvecs);
+					implicitOffset = psVar->ui32StartOffset - psVar->ui32StartOffset % 16;
+				}
+
+				if ((implicitOffset + 4 - 1) / 4 < psVar->ui32StartOffset / 4)
+				{
+					uint32_t uNumPaddingUints = psVar->ui32StartOffset / 4 - (implicitOffset + 4 - 1) / 4;
+					uint32_t uPaddingUint;
+					for (uPaddingUint = 0; uPaddingUint < uNumPaddingUints; ++uPaddingUint)
+					{
+						bcatcstr(glsl, "\tuint padding_");
+						ConvertToUniformBufferName(glsl, psContext->psShader, psCBuf->Name);
+						bformata(glsl, "_%d_%d;\n", psVar->ui32StartOffset, uPaddingUint);
+					}
+					implicitOffset = psVar->ui32StartOffset - psVar->ui32StartOffset % 4;
+				}
+
+				implicitOffset += uVarAlignment - 1;
+				implicitOffset -= implicitOffset % uVarAlignment;
+
+				ASSERT(implicitOffset == psVar->ui32StartOffset);
+				implicitOffset += uVarSize;
 			}
-			implicitOffset = psVar->ui32StartOffset - psVar->ui32StartOffset % 4;
 		}
 
-		implicitOffset += uVarAlignment - 1;
-		implicitOffset -= implicitOffset % uVarAlignment;
-
-		ASSERT(implicitOffset == psVar->ui32StartOffset);
-
-		DeclareConstBufferShaderVariable(psContext, psVar->sType.Name, &psVar->sType, 0);
-		implicitOffset += uVarSize;
+		DeclareConstBufferShaderVariable(psContext, psVar->sType.Name, &psVar->sType, custom ? psVar->ui32StartOffset : ~0, 0);
 	}
 
 	bcatcstr(glsl, "};\n");
@@ -1308,7 +1342,7 @@ void DeclareBufferVariable(HLSLCrossCompilerContext* psContext, const uint32_t u
 		ConvertToUAVName(glsl, psContext->psShader, Name);
 	bcatcstr(glsl, " {\n ");
 
-	DeclareConstBufferShaderVariable(psContext, bstr2cstr(StructName, '\0'), &psCBuf->asVars[0].sType, 1);
+	DeclareConstBufferShaderVariable(psContext, bstr2cstr(StructName, '\0'), &psCBuf->asVars[0].sType, ~0, 1);
 
 	bcatcstr(glsl, "};\n");
 
@@ -1337,7 +1371,7 @@ void DeclareStructConstants(HLSLCrossCompilerContext* psContext, const uint32_t 
 
 	for(i=0; i < psCBuf->ui32NumVars; ++i)
 	{
-		DeclareConstBufferShaderVariable(psContext, psCBuf->asVars[i].sType.Name, &psCBuf->asVars[i].sType, 0);
+		DeclareConstBufferShaderVariable(psContext, psCBuf->asVars[i].sType.Name, &psCBuf->asVars[i].sType, ~0, 0);
 	}
 
 	bcatcstr(glsl, "} ");
@@ -2300,18 +2334,56 @@ void TranslateDeclaration(HLSLCrossCompilerContext* psContext, const Declaration
 				bcatcstr(glsl, "coherent ");
 			}
 
+			// NOTE: this is really irrelevant, without checking for each declared resource _individually_ instead of for the whole shader
+			int op; for (op = OPCODE_ATOMIC_AND; (op <= OPCODE_IMM_ATOMIC_UMIN) && !psShader->aiOpcodeUsed[op]; ++op);
+
 			if(psShader->aiOpcodeUsed[OPCODE_LD_UAV_TYPED] == 0)
 			{
-				bcatcstr(glsl, "writeonly ");
+				if (op >= OPCODE_IMM_ATOMIC_UMIN)
+					bcatcstr(glsl, "writeonly ");
+				else
+					bcatcstr(glsl, "restrict ");
 			}
-			else
+			else if(psShader->aiOpcodeUsed[OPCODE_STORE_UAV_TYPED] == 0)
 			{
-				if(psShader->aiOpcodeUsed[OPCODE_STORE_UAV_TYPED] == 0)
-				{
+				if (op >= OPCODE_IMM_ATOMIC_UMIN)
 					bcatcstr(glsl, "readonly ");
+				else
+					bcatcstr(glsl, "restrict ");
+			}
+
+			{
+				char* prefix = "";
+				uint32_t elements = 1;
+
+				switch (psDecl->sUAV.Type[0])
+				{
+				case RETURN_TYPE_UINT:
+					prefix = "u";
+					break;
+				case RETURN_TYPE_SINT:
+					prefix = "i";
+					break;
+				default:
+					break;
 				}
 
-				switch(psDecl->sUAV.Type)
+				// NOTE: apparently DirectX does _not_ store the sizeof a typed UAV (RWBuffer<uint> has only one element), so this is not really working
+				if (psDecl->sUAV.Type[1] == psDecl->sUAV.Type[0]) {
+					++elements;
+					if (psDecl->sUAV.Type[2] == psDecl->sUAV.Type[0]) {
+						++elements;
+						if (psDecl->sUAV.Type[3] == psDecl->sUAV.Type[0]) {
+							++elements;
+						}
+					}
+				}
+
+				// NOTE: because we don't know the number of elements, we can not create a correct layout specifier, but have to hack it together
+				//       according to how we use it
+				if (psDecl->value.eResourceDimension == RESOURCE_DIMENSION_BUFFER)
+					bcatcstr(glsl, "layout(r32ui) ");
+				else switch (psDecl->sUAV.Type[0])
 				{
 				case RETURN_TYPE_FLOAT:
 					bcatcstr(glsl, "layout(rgba32f) ");
@@ -2330,21 +2402,6 @@ void TranslateDeclaration(HLSLCrossCompilerContext* psContext, const Declaration
 					break;
 				default:
 					ASSERT(0);
-				}
-			}
-
-			{
-				char* prefix = "";
-				switch(psDecl->sUAV.Type)
-				{
-				case RETURN_TYPE_UINT:
-					prefix = "u";
-					break;
-				case RETURN_TYPE_SINT:
-					prefix = "i";
-					break;
-				default:
-					break;
 				}
 
 				switch(psDecl->value.eResourceDimension)

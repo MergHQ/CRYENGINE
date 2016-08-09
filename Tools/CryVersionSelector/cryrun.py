@@ -161,13 +161,12 @@ def projgen_csharp (args, csharp):
 		file= open (os.path.join (dirname, user_settings), 'w')
 		file.write('''<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <CryEngineRootPath>%s</CryEngineRootPath>
+  <PropertyGroup Condition="'$(Platform)'=='x64'">
+    <MonoDebuggerCommand>%s</MonoDebuggerCommand>
+    <MonoDebuggerCommandArguments>-project "%s"</MonoDebuggerCommandArguments>
     <DebuggerFlavor>MonoDebugger</DebuggerFlavor>
-    <ProjectFilePath>%s</ProjectFilePath>
-    <RunSandbox>true</RunSandbox>
   </PropertyGroup>
-</Project>''' % (engine_path, projectfile_path))
+</Project>''' % (tool_path, projectfile_path))
 		file.close()
 
 def cmd_projgen(args):

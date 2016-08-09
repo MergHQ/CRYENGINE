@@ -3326,3 +3326,55 @@ void CRendererCVars::CacheCaptureCVars()
 		CV_capture_file_prefix = !CV_capture_file_prefix ? pConsole->GetCVar("capture_file_prefix") : CV_capture_file_prefix;
 	}
 }
+
+
+CCVarUpdateRecorder::SUpdateRecord::SUpdateRecord(ICVar* pCVar)
+{
+	type = pCVar->GetType();
+	name = pCVar->GetName();
+
+	switch (type)
+	{
+		case CVAR_INT:    intValue = pCVar->GetIVal();                 break;
+		case CVAR_FLOAT:  floatValue = pCVar->GetFVal();               break;
+		case CVAR_STRING: cry_strcpy(stringValue, pCVar->GetString()); break;
+		default: assert(false);
+	};
+}
+
+CCVarUpdateRecorder::CCVarUpdateRecorder(IConsole* pConsole)
+{
+	m_pConsole = pConsole;
+	m_pConsole->AddConsoleVarSink(this);
+}
+
+CCVarUpdateRecorder::~CCVarUpdateRecorder()
+{
+	m_pConsole->RemoveConsoleVarSink(this);
+}
+
+void CCVarUpdateRecorder::OnAfterVarChange(ICVar* pVar) 
+{ 
+	m_updatedCVars[gcpRendD3D->m_RP.m_nFillThreadID].emplace_back(pVar);
+}
+
+void CCVarUpdateRecorder::Reset() 
+{ 
+	m_updatedCVars[gcpRendD3D->m_RP.m_nProcessThreadID].clear(); 
+}
+
+const CCVarUpdateRecorder::CVarList& CCVarUpdateRecorder::GetCVars() const
+{ 
+	return m_updatedCVars[gcpRendD3D->m_RP.m_nProcessThreadID];
+}
+
+const CCVarUpdateRecorder::SUpdateRecord* CCVarUpdateRecorder::GetCVar(const char* cvarName) const
+{
+	for (auto& cvar : m_updatedCVars[gcpRendD3D->m_RP.m_nProcessThreadID])
+	{
+		if (cry_strcmp(cvar.name, cvarName) == 0)
+			return &cvar;
+	}
+
+	return nullptr;
+}

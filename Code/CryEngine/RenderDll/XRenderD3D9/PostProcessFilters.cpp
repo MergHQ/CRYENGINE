@@ -557,6 +557,8 @@ void CPostAA::UpscaleImage()
 
 	PROFILE_LABEL_SCOPE("NATIVE_UPSCALE");
 
+	gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
+
 	gcpRendD3D->FX_PushWireframeMode(R_SOLID_MODE);
 
 	static CCryNameTSCRC pTechName("UpscaleImage");
