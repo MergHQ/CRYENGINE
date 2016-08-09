@@ -1116,14 +1116,18 @@ void CDeviceComputeCommandInterfaceImpl::DispatchImpl(uint32 X, uint32 Y, uint32
 
 void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects)
 {
+#if !defined(DEVICE_SUPPORTS_D3D11_1)
 	if (NumRects) __debugbreak();
+#endif
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	rd->GetDeviceContext().ClearUnorderedAccessViewFloat(pView, Values);
 }
 
 void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects)
 {
+#if !defined(DEVICE_SUPPORTS_D3D11_1)
 	if (NumRects) __debugbreak();
+#endif
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	rd->GetDeviceContext().ClearUnorderedAccessViewUint(pView, Values);
 }
