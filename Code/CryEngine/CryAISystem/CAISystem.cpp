@@ -1119,28 +1119,34 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 	case SIGNALFILTER_GROUPONLY_EXCEPT:
 		{
 			int groupid = pSender->GetGroupId();
-			AIObjects::iterator ai;
-			if ((ai = m_mapGroups.find(groupid)) != m_mapGroups.end())
-			{
-				for (; ai != m_mapGroups.end(); ++ai)
-				{
-					CAIActor* pReciever = CastToCAIActorSafe(ai->second.GetAIObject());
-					if (ai->first != groupid)
-						break;
-					if ((pReciever != NULL) && !(cFilter == SIGNALFILTER_GROUPONLY_EXCEPT && pReciever == pSender))
-					{
-						pReciever->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
-					}
-				}
-				// don't delete pData!!! - it will be deleted at the end of this function
-			}
 
-			// send message also to player
-			CAIPlayer* pPlayer = CastToCAIPlayerSafe(GetPlayer());
-			if (pPlayer)
+			// only send if non-zero group (there are similar checks in CAIActor::SetGroupId() and CGroupManager::NotifyGroup() to bypass this pseudo group)
+			if (groupid != 0)
 			{
-				if (pSender->GetParameters().m_nGroup == pPlayer->GetParameters().m_nGroup && Distance::Point_PointSq(pPlayer->GetPos(), pos) < fRange && !(cFilter == SIGNALFILTER_GROUPONLY_EXCEPT && pPlayer == pSender))
-					pPlayer->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+
+				AIObjects::iterator ai;
+				if ((ai = m_mapGroups.find(groupid)) != m_mapGroups.end())
+				{
+					for (; ai != m_mapGroups.end(); ++ai)
+					{
+						CAIActor* pReciever = CastToCAIActorSafe(ai->second.GetAIObject());
+						if (ai->first != groupid)
+							break;
+						if ((pReciever != NULL) && !(cFilter == SIGNALFILTER_GROUPONLY_EXCEPT && pReciever == pSender))
+						{
+							pReciever->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+						}
+					}
+					// don't delete pData!!! - it will be deleted at the end of this function
+				}
+
+				// send message also to player
+				CAIPlayer* pPlayer = CastToCAIPlayerSafe(GetPlayer());
+				if (pPlayer)
+				{
+					if (pSender->GetParameters().m_nGroup == pPlayer->GetParameters().m_nGroup && Distance::Point_PointSq(pPlayer->GetPos(), pos) < fRange && !(cFilter == SIGNALFILTER_GROUPONLY_EXCEPT && pPlayer == pSender))
+						pPlayer->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+				}
 			}
 		}
 		break;
