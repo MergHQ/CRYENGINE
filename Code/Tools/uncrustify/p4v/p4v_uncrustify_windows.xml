@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--perforce-xml-version=1.0-->
+<CustomToolDefList varName="customtooldeflist">
+ <CustomToolFolder>
+  <Name>Format Code</Name>
+  <CustomToolDefList>
+   <CustomToolDef>
+    <Definition>
+     <Name>Uncrustify: format files</Name>
+     <Command>py</Command>
+     <Arguments>-3 $r/Code/Tools/uncrustify/p4v/p4v_uncrustify.py --apply --user=$u --client=$c %F</Arguments>
+    </Definition>
+    <Console>
+     <CloseOnExit>false</CloseOnExit>
+    </Console>
+    <AddToContext>true</AddToContext>
+    <Refresh>true</Refresh>
+   </CustomToolDef>
+   <CustomToolDef>
+    <Definition>
+     <Name>Uncrustify: validate files</Name>
+     <Command>py</Command>
+     <Arguments>-3 $r/Code/Tools/uncrustify/p4v/p4v_uncrustify.py --check --user=$u --client=$c %F</Arguments>
+    </Definition>
+    <Console>
+     <CloseOnExit>false</CloseOnExit>
+    </Console>
+    <AddToContext>true</AddToContext>
+    <Refresh>true</Refresh>
+   </CustomToolDef>
+   <CustomToolDef>
+    <Definition>
+     <Name>Uncrustify: format changelist</Name>
+     <Command>py</Command>
+     <Arguments>-3 $r/Code/Tools/uncrustify/p4v/p4v_uncrustify.py --apply --user=$u --client=$c --changelist %P</Arguments>
+    </Definition>
+    <Console>
+     <CloseOnExit>false</CloseOnExit>
+    </Console>
+    <AddToContext>true</AddToContext>
+    <Refresh>true</Refresh>
+   </CustomToolDef>
+   <CustomToolDef>
+    <Definition>
+     <Name>Uncrustify: validate changelist</Name>
+     <Command>py</Command>
+     <Arguments>-3 $r/Code/Tools/uncrustify/p4v/p4v_uncrustify.py --check --user=$u --client=$c --changelist %P</Arguments>
+    </Definition>
+    <Console>
+     <CloseOnExit>false</CloseOnExit>
+    </Console>
+    <AddToContext>true</AddToContext>
+    <Refresh>true</Refresh>
+   </CustomToolDef>
+  </CustomToolDefList>
+ </CustomToolFolder>
+</CustomToolDefList>
