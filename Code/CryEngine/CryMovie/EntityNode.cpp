@@ -726,7 +726,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 	{
 		pEntity->CreateProxy(ENTITY_PROXY_ENTITYNODE);
 	}
-	
+
 	// Here in Animate always get local pos, rot, scale value instead of pEntity->GetScale, to avoid comparing Track View value, to Track View value, which will always be the same.
 	// pEntity->GetPos,pEntity->GetRotation, pEntity->GetScale are updated before this, by delegated mode, from Track View key value
 	// pPosTrack->GetValue == pEntity->GetPos etc
@@ -1055,7 +1055,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 				if (audioParameterId != INVALID_AUDIO_CONTROL_ID)
 				{
 					const float newAudioParameterValue = boost::get<float>(pTrack->GetValue(animContext.time));
-					float& prevAudioParameterValue = m_audioParameterTracks[numAudioParameterTracks-1];
+					float& prevAudioParameterValue = m_audioParameterTracks[numAudioParameterTracks - 1];
 					if (fabs(prevAudioParameterValue - newAudioParameterValue) > FLT_EPSILON)
 					{
 						IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
@@ -3130,8 +3130,10 @@ void CAnimationCacher::AddToCache(uint32 animPathCRC)
 		}
 	}
 
-	gEnv->pCharacterManager->CAF_AddRef(animPathCRC);
-	m_cachedAnims.push_back(animPathCRC);
+	if (gEnv->pCharacterManager->CAF_AddRef(animPathCRC))
+	{
+		m_cachedAnims.push_back(animPathCRC);
+	}
 }
 
 void CAnimationCacher::RemoveFromCache(uint32 animPathCRC)

@@ -2798,7 +2798,7 @@ void CharacterManager::ClearBSPACECache()
 int32 CharacterManager::LoadCDF(const char* pathname)
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(pathname);
-	XmlNodeRef root	= g_pISystem->LoadXmlFromFile(pathname);
+	XmlNodeRef root = g_pISystem->LoadXmlFromFile(pathname);
 	if (root == 0)
 	{
 		g_pILog->LogError("CryAnimation: failed to parse XML file: %s", pathname);
@@ -3597,6 +3597,12 @@ bool CharacterManager::DBA_Unload_All()
 bool CharacterManager::CAF_AddRef(uint32 filePathCRC)
 {
 	int globalID = g_AnimationManager.m_AnimationMapCAF.GetValueCRC(filePathCRC);
+
+	// Either the file path crc is invalid or it links to an asset of type AIM or LMG (which we don't cache)
+	if (globalID == -1)
+	{
+		return false;
+	}
 
 	return CAF_AddRefByGlobalId(globalID);
 }
