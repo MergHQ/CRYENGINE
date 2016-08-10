@@ -88,7 +88,8 @@ namespace CESharpProjectType
 
 			VsOutputPane.LogMessage("Compiling PDB's.");
 
-			var pdb2mdb = Path.GetFullPath(MonoDebuggerLaunchProvider.CERoot + "/Tools/pdb2mdb/pdb2mdb.exe");
+            var ceRoot = new FileInfo(MonoDebuggerLaunchProvider.Command).Directory.FullName;
+            var pdb2mdb = Path.GetFullPath(ceRoot + "/../../Tools/pdb2mdb/pdb2mdb.exe");
 			if (!File.Exists(pdb2mdb))
 			{
 				VsOutputPane.LogError("Cannot find PDB2MDB executable.");

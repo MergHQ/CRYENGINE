@@ -75,14 +75,13 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(CustomProjectExtensionsPath)CustomProjectCs.targets" />
-  <!-- This next bit is required unless the macro used to Import your targets is defined in an MSBuild toolset. -->
   <ProjectExtensions>
     <ProjectCapabilities>
       <ProjectConfigurationsDeclaredAsItems />
     </ProjectCapabilities>
     <MonoDevelop>
       <Properties>
-        <CryEngineParameters BuildLocation="..\.." Launcher="GameSDK" DebugCommand="G:\wsp\ce\dev_cesharp\bin\win_x64\GameSDK.exe" DebugCommandArguments="-project &quot;G:\wsp\ce\dev_cesharp\Code\GameTemplates\cs\Sydewinder\Sydewinder.cryproject&quot;" DebugWorkingDirectory="" />
+        <CryEngineParameters BuildLocation="..\.." />
       </Properties>
     </MonoDevelop>
   </ProjectExtensions>
