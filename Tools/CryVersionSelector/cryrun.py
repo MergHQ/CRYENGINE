@@ -21,7 +21,7 @@ import cryproject, cryregistry
 #--- errors
 
 def error_unable_to_replace_file (path):
-	sys.stderr.write ("Unable to replace file '%s'.\n" % path)
+	sys.stderr.write ("Unable to replace file '%s'. Please remove the file manually.\n" % path)
 	sys.exit (1)
 	
 def error_project_not_found (path):
@@ -107,13 +107,11 @@ def get_solution_dir (args):
 
 #--- PROJGEN ---
 
-def projgen_csharp (args, csharp):
+def csharp_symlinks (args):
 	dirname= os.path.dirname (args.project_file)
 	engine_path= get_engine_path()
-
-	#--- create symlinks
+	
 	symlinks= []
-
 	SymlinkFileName= os.path.join (dirname, 'Code', 'CryManaged', 'CESharp')
 	TargetFileName= os.path.join (engine_path, 'Code', 'CryManaged', 'CESharp')
 	symlinks.append ((SymlinkFileName, TargetFileName))
@@ -122,13 +120,22 @@ def projgen_csharp (args, csharp):
 	TargetFileName= os.path.join (engine_path, 'bin', args.platform, 'CryEngine.Common.dll')
 	symlinks.append ((SymlinkFileName, TargetFileName))
 	
-	symlinks= [(SymlinkFileName, TargetFileName) for (SymlinkFileName, TargetFileName) in symlinks if not (os.path.islink (SymlinkFileName) and os.path.samefile (SymlinkFileName, TargetFileName))]
-	if symlinks and not admin.isUserAdmin():
+	create_symlinks= []
+	for (SymlinkFileName, TargetFileName) in symlinks:
+		if os.path.islink (SymlinkFileName):
+			if os.path.samefile (SymlinkFileName, TargetFileName):
+				continue
+		elif os.path.exists (SymlinkFileName):
+			error_unable_to_replace_file (SymlinkFileName)
+
+		create_symlinks.append ((SymlinkFileName, TargetFileName))
+	
+	if create_symlinks and not admin.isUserAdmin():
 		cmdline= getattr( sys, 'frozen', False ) and sys.argv or None
 		rc = admin.runAsAdmin(cmdline)
 		sys.exit(rc)
 
-	for (SymlinkFileName, TargetFileName) in symlinks:
+	for (SymlinkFileName, TargetFileName) in create_symlinks:
 		if os.path.islink (SymlinkFileName):
 			os.remove (SymlinkFileName)
 		
@@ -139,6 +146,10 @@ def projgen_csharp (args, csharp):
 		SYMBOLIC_LINK_FLAG_DIRECTORY= 0x1
 		dwFlags= os.path.isdir (TargetFileName) and SYMBOLIC_LINK_FLAG_DIRECTORY or 0x0
 		win32file.CreateSymbolicLink (SymlinkFileName, TargetFileName, dwFlags)
+
+def csharp_userfile (args, csharp):
+	dirname= os.path.dirname (args.project_file)
+	engine_path= get_engine_path()
 		
 	#--- debug file
 	user_settings= csharp.get("monodev", {}).get("user")
@@ -185,7 +196,8 @@ def cmd_projgen(args):
 	
 	csharp= project.get ("csharp")
 	if csharp:
-		projgen_csharp (args, csharp)
+		csharp_symlinks (args)
+		csharp_userfile (args, csharp)
 	
 	#---
 		
@@ -269,12 +281,20 @@ def cmd_open (args):
 	if not os.path.isfile (args.project_file):
 		error_project_not_found (args.project_file)
 	
+	project= cryproject.load (args.project_file)
+	if project is None:
+		error_project_json_decode (args.project_file)
+	
 	tool_path= os.path.join (get_engine_path(), 'bin', args.platform, 'GameSDK.exe')
 	if not os.path.isfile (tool_path):
 		error_engine_tool_not_found (tool_path)
 		
 	#---
 	
+	csharp= project.get ("csharp")
+	if csharp:
+		csharp_symlinks (args)
+
 	subcmd= (
 		tool_path,
 		'-project',
@@ -290,11 +310,19 @@ def cmd_edit(argv):
 	if not os.path.isfile (args.project_file):
 		error_project_not_found (args.project_file)
 	
+	project= cryproject.load (args.project_file)
+	if project is None:
+		error_project_json_decode (args.project_file)
+	
 	tool_path= os.path.join (get_engine_path(), 'bin', args.platform, 'Sandbox.exe')
 	if not os.path.isfile (tool_path):
 		error_engine_tool_not_found (tool_path)
 		
 	#---
+
+	csharp= project.get ("csharp")
+	if csharp:
+		csharp_symlinks (args)
 
 	subcmd= (
 		tool_path,
