@@ -135,4 +135,10 @@
     <Folder Include="EntitySystem\" />
     <Folder Include="FlowSystem\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DomainHandler\DomainHandler.csproj">
+      <Project>{7BD337C0-36D4-4048-93D2-08D613023978}</Project>
+      <Name>DomainHandler</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

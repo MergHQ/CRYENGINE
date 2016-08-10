@@ -1,28 +1,32 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-using CryEngine;
+using System;
 using System.Reflection;
-using CryEngine.Resources;
-using CryEngine.Common;
+using System.Collections.Generic;
 
 namespace CryEngine.DomainHandler
 {
-	/// <summary>
-	/// Stores CRYENGINE state for restoration after an application run.
-	/// </summary>
-	class EngineState
+	public class InterDomainHandler : MarshalByRefObject
 	{
-		private float _fov;
+		#region Fields
+		private Dictionary<uint, Tuple<string, Dictionary<string, string>>> _entityCache = new Dictionary<uint, Tuple<string, Dictionary<string, string>>>();
+		#endregion
 
-		public void Save()
-		{
-			_fov = Components.Camera.FieldOfView;
-		}
+		#region Properties
+		public Dictionary<uint, Tuple<string, Dictionary<string, string>>> EntityCache { get { return _entityCache; } }
+		#endregion
 
-		public void Load()
+		#region Events
+		public event EventHandler RequestQuit;
+		#endregion
+
+		#region Methods
+		public void RaiseRequestQuit()
 		{
-			Components.Camera.FieldOfView = _fov;
+			if (RequestQuit != null)
+				RequestQuit (this, EventArgs.Empty);
 		}
+		#endregion
 	}
 
 	/// <summary>
@@ -30,31 +34,11 @@ namespace CryEngine.DomainHandler
 	/// </summary>
     public class DomainHandler
     {
-		private static EngineState m_EngineState = new EngineState();
 		private static InterDomainHandler m_InterDomainHandler = new InterDomainHandler();
 
 		public static InterDomainHandler GetDomainHandler()
 		{
 			return m_InterDomainHandler;
-		}
-
-		public static void Initialize()
-		{
-			Env.Initialize (m_InterDomainHandler);
-		}
-
-		private static void OnGameStart()
-		{
-			m_EngineState.Save ();
-		}
-
-		private static void OnGameStop()
-		{
-			m_EngineState.Load ();
-		}
-
-		public static void Shutdown()
-		{
 		}
     }
 }

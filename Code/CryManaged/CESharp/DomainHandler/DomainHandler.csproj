@@ -74,10 +74,4 @@
     <Compile Include="DomainHandler.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj">
-      <Project>{7B3F4428-1CFE-4CCF-B1CB-DEFA5F86D6FB}</Project>
-      <Name>Core</Name>
-    </ProjectReference>
-  </ItemGroup>
 </Project>
