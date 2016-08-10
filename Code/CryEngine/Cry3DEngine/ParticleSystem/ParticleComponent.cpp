@@ -312,6 +312,14 @@ void CParticleComponent::PrepareRenderObjects(CParticleEmitter* pEmitter)
 		it->PrepareRenderObjects(pEmitter, this);
 }
 
+void CParticleComponent::ResetRenderObjects(CParticleEmitter* pEmitter)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+	for (auto& it : GetUpdateList(EUL_Render))
+		it->ResetRenderObjects(pEmitter, this);
+}
+
 void CParticleComponent::Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
 {
 	if (IsVisible())

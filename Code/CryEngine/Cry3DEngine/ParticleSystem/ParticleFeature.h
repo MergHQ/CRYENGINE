@@ -82,6 +82,7 @@ public:
 
 	// EUL_Render
 	virtual void PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)                                                                            {}
+	virtual void ResetRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)                                                                              {}
 	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
 	virtual void ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)          {}
 
