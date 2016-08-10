@@ -724,12 +724,16 @@ void CDeviceResourceSet::SetDirty(bool bDirty)
 	m_bDirty = true;
 }
 
-void CDeviceResourceSet::Clear(bool bTextures)
+void CDeviceResourceSet::Clear(bool bTextures, bool bConstantBuffers)
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
 
+	bool bInvalidated = (m_Samplers.size() + m_Buffers.size()) != 0;
+
 	if (bTextures)
 	{
+		bInvalidated |= (m_Textures.size()) != 0;
+
 		for (auto& rsTexBind : m_Textures)
 		{
 			if (CTexture* pTex = rsTexBind.second.resource)
@@ -739,12 +743,19 @@ void CDeviceResourceSet::Clear(bool bTextures)
 		m_Textures.clear();
 	}
 
+	if (bConstantBuffers)
+	{
+		bInvalidated |= (m_ConstantBuffers.size()) != 0;
+
+		m_ConstantBuffers.clear();
+	}
+
 	m_Samplers.clear();
-	m_ConstantBuffers.clear();
 	m_Buffers.clear();
-	m_bDirty = true;
-	m_bDirtyLayout = true;
-	m_bEmpty = m_Textures.empty();
+
+	m_bDirty       |= bInvalidated;
+	m_bDirtyLayout |= bInvalidated;
+	m_bEmpty        = m_Textures.empty() & m_ConstantBuffers.empty();
 }
 
 void CDeviceResourceSet::SetTexture(int shaderSlot, CTexture* pTexture, SResourceView::KeyType resourceViewID, ::EShaderStage shaderStages)
@@ -777,7 +788,7 @@ void CDeviceResourceSet::SetTexture(int shaderSlot, CTexture* pTexture, SResourc
 
 		m_bDirty = true;
 		m_bEmpty = false;
-		m_bDirtyLayout = insertResult.second;
+		m_bDirtyLayout |= insertResult.second;
 	}
 }
 
@@ -797,7 +808,7 @@ void CDeviceResourceSet::SetSampler(int shaderSlot, int sampler, ::EShaderStage 
 
 		m_bDirty = true;
 		m_bEmpty = false;
-		m_bDirtyLayout = insertResult.second;
+		m_bDirtyLayout |= insertResult.second;
 	}
 }
 
@@ -818,7 +829,7 @@ void CDeviceResourceSet::SetConstantBuffer(int shaderSlot, CConstantBuffer* pBuf
 
 		m_bDirty = true;
 		m_bEmpty = false;
-		m_bDirtyLayout = insertResult.second;
+		m_bDirtyLayout |= insertResult.second;
 	}
 }
 
@@ -865,7 +876,7 @@ bool CDeviceResourceSet::Fill(::CShader* pShader, CShaderResources* pResources, 
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
 
-	Clear(false);
+	Clear(false, false);
 
 	uint64 bindSlotMask = 0;
 	static_assert(MAX_TMU <= sizeof(bindSlotMask) * 8, "Need a larger type for mask");
@@ -873,13 +884,17 @@ bool CDeviceResourceSet::Fill(::CShader* pShader, CShaderResources* pResources, 
 	for (auto& texture : m_Textures)
 	{
 		const uint32 bindSlot = texture.first.slotNumber;
-		bindSlotMask |= uint64(1) << bindSlot;
+		bindSlotMask |= 1ULL << bindSlot;
 	}
+
+	m_bEmpty = bindSlotMask == 0ULL;
+	m_Flags  = EFlags(m_Flags & ~(EFlags_AnimatedSequence | EFlags_DynamicUpdates | EFlags_PendingAllocation));
 
 	for (EEfResTextures texType = EFTT_DIFFUSE; texType < EFTT_MAX; texType = EEfResTextures(texType + 1))
 	{
 		SResourceView::KeyType view = SResourceView::DefaultView;
 		CTexture* pTex = TextureHelpers::LookupTexDefault(texType);
+
 		if (pResources->m_Textures[texType])
 		{
 			const STexSamplerRT& smp = pResources->m_Textures[texType]->m_Sampler;
@@ -890,15 +905,19 @@ bool CDeviceResourceSet::Fill(::CShader* pShader, CShaderResources* pResources, 
 
 				if (ITexture* pITex = smp.m_pDynTexSource->GetTexture())
 				{
-					int texID = pITex->GetTextureID();
 					m_Flags = EFlags(m_Flags & ~EFlags_PendingAllocation);
-					pTex = CTexture::GetByID(texID);
+					pTex = CTexture::GetByID(pITex->GetTextureID());
 				}
 				else
 				{
 					m_Flags = EFlags(m_Flags | EFlags_PendingAllocation);
 					pTex = CTexture::s_ptexBlackAlpha;
 				}
+			}
+			else if (smp.m_pAnimInfo && (smp.m_pAnimInfo->m_NumAnimTexs > 1))
+			{
+				m_Flags = EFlags(m_Flags | EFlags_AnimatedSequence);
+				pTex = smp.m_pTex;
 			}
 			else
 			{
@@ -909,23 +928,25 @@ bool CDeviceResourceSet::Fill(::CShader* pShader, CShaderResources* pResources, 
 		CRY_ASSERT(pTex);
 		auto bindSlot = IShader::GetTextureSlot(texType);
 		SetTexture(bindSlot, pTex, view, shaderStages);
-		bindSlotMask &= ~(uint64(1) << bindSlot);
+		bindSlotMask &= ~(1ULL << bindSlot);
 	}
 
+	m_bDirty       |= bindSlotMask != 0ULL;
+	m_bDirtyLayout |= bindSlotMask != 0ULL;
+
 	// Any texture that was not set, reset it now.
-	for (uint32 bindSlot = 0; bindSlot < MAX_TMU; ++bindSlot)
+	for (uint32 bindSlot = 0; bindSlotMask && (bindSlot < MAX_TMU); ++bindSlot)
 	{
-		if ((bindSlotMask & (uint64(1) << bindSlot)) != 0)
+		if ((bindSlotMask & (1ULL << bindSlot)) != 0)
 		{
 			DeviceResourceBinding::SShaderSlot slot = { DeviceResourceBinding::eShaderSlotType_TextureAndBuffer, bindSlot };
 			m_Textures.erase(slot);
+
+			bindSlotMask &= ~(1ULL << bindSlot);
 		}
 	}
 
-	DeviceResourceBinding::SShaderSlot slot = { DeviceResourceBinding::eShaderSlotType_ConstantBuffer, eConstantBufferShaderSlot_PerMaterial };
-	m_ConstantBuffers[slot] = SConstantBufferData(pResources->m_pCB, SResourceView::DefaultView, shaderStages);
-	m_bDirty = true;
-	m_bEmpty = false;
+	SetConstantBuffer(eConstantBufferShaderSlot_PerMaterial, pResources->m_pCB, shaderStages);
 
 	return true;
 }

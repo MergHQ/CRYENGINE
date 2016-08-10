@@ -5156,7 +5156,7 @@ void CShaderMan::mfPostLoadFX(CShader* ef, std::vector<SShaderTechParseParams>& 
 
 //===========================================================================================
 
-void STexSamplerRT::Update()
+bool STexSamplerRT::Update()
 {
 	if (m_pAnimInfo && m_pAnimInfo->m_Time && gRenDev->m_bPauseTimer == 0)
 	{
@@ -5170,9 +5170,12 @@ void STexSamplerRT::Update()
 		}
 
 		m_pTex = m_pAnimInfo->m_TexPics[m];
-
 		m_pTex->AddRef();
+
+		return true;
 	}
+
+	return false;
 }
 
 void SFXParam::GetCompName(uint32 nId, CryFixedStringT<128>& name)

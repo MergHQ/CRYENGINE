@@ -937,12 +937,17 @@ void CRenderView::UpdateModifiedShaderItems()
 		auto pShader = item.second;
 		auto pResourceSet = pShaderResources->m_pCompiledResourceSet;
 
-		if (pResourceSet && (pResourceSet->GetFlags() & CDeviceResourceSet::EFlags_DynamicUpdates))
+		if (pResourceSet && (pResourceSet->GetFlags() & (CDeviceResourceSet::EFlags_AnimatedSequence)))
+		{
+			gcpRendD3D->FX_UpdateAnimatedShaderResources(pShaderResources);
+		}
+
+		if (pResourceSet && (pResourceSet->GetFlags() & (CDeviceResourceSet::EFlags_DynamicUpdates)))
 		{
 			gcpRendD3D->FX_UpdateDynamicShaderResources(pShaderResources, FB_GENERAL, 0);
 		}
 
-		if (pResourceSet && (pResourceSet->GetFlags() & CDeviceResourceSet::EFlags_PendingAllocation))
+		if (pResourceSet && (pResourceSet->GetFlags() & (CDeviceResourceSet::EFlags_PendingAllocation | CDeviceResourceSet::EFlags_AnimatedSequence)))
 		{
 			pResourceSet->Fill(pShader, pShaderResources, EShaderStage_AllWithoutCompute);
 		}
@@ -1340,7 +1345,10 @@ void CRenderView::CheckAndScheduleForUpdate(const SShaderItem& shaderItem)
 	{
 		auto& pRS = pSR->m_pCompiledResourceSet;
 
-		if (pSR->HasDynamicTexModifiers() || (pRS.get() && (pRS->IsDirty() || (pRS->GetFlags() & (CDeviceResourceSet::EFlags_DynamicUpdates | CDeviceResourceSet::EFlags_PendingAllocation)))))
+		if (pSR->HasDynamicTexModifiers() || (pRS.get() && (pRS->IsDirty() || (pRS->GetFlags() & (
+			CDeviceResourceSet::EFlags_AnimatedSequence | 
+			CDeviceResourceSet::EFlags_DynamicUpdates | 
+			CDeviceResourceSet::EFlags_PendingAllocation)))))
 		{
 			if (CryInterlockedExchange((volatile LONG*)&pSR->m_nUpdateFrameID, (uint32)m_frameId) != (uint32)m_frameId)
 			{

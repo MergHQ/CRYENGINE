@@ -234,6 +234,7 @@ public:
 		EFlags_DynamicUpdates          = BIT(2), // Internal use only: resource set contains CDynTextureSource
 		EFlags_PendingAllocation       = BIT(3), // Internal use only: resource set contains CDynTextureSource with deferred allocation
 		EFlags_Multibuffered           = BIT(4), // Internal use only: resource set is multibuffered to enable modification while in use by gpu
+		EFlags_AnimatedSequence        = BIT(5), // Internal use only: resource set contains an animated texture sequence
 	};
 
 	CDeviceResourceSet(EFlags flags);
@@ -246,7 +247,7 @@ public:
 	void         SetDirty(bool bDirty);
 	bool         IsLayoutDirty() const { return m_bDirtyLayout; }
 
-	void         Clear(bool bTextures = true);
+	void         Clear(bool bTextures = true, bool bConstantBuffers = true);
 
 	void         SetTexture(int shaderSlot, CTexture* pTexture, SResourceView::KeyType resourceViewID = SResourceView::DefaultView, EShaderStage shaderStages = EShaderStage_Pixel);
 	void         SetSampler(int shaderSlot, int sampler, EShaderStage shaderStages = EShaderStage_Pixel);
