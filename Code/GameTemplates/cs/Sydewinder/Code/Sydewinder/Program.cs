@@ -25,6 +25,8 @@ public class Program : ICryEnginePlugin
 
 	public void OnGameStart()
 	{
+		AudioManager.PlayTrigger ("game_start");
+
 		if (!Env.IsSandbox)
 			Env.Console.ExecuteString("map Canyon");
 
@@ -76,6 +78,8 @@ public class Program : ICryEnginePlugin
 
 	public void OnGameStop()
 	{
+		AudioManager.PlayTrigger ("game_stop");
+
 		UI.MainMenu.DestroyMenu();
 	}
 
