@@ -1509,6 +1509,11 @@ class msvs_generator(BuildContext):
 		Some data that needs to be present
 		"""
 		
+		host = Utils.unversioned_sys_platform()
+		if host == 'linux' or host == 'darwin':
+			Logs.warn('Skipping MSVS project generation as host platform is not Windows')
+			return
+
 		# Remove unsupported MSBUILD platforms from list
 		strip_unsupported_msbuild_platforms(self)		
 
@@ -1569,6 +1574,12 @@ class msvs_generator(BuildContext):
 		"""
 		Entry point
 		"""
+
+		host = Utils.unversioned_sys_platform()
+		if host == 'linux' or host == 'darwin':
+			Logs.warn('Skipping MSVS project generation has host platform is not Windows')
+			return
+
 		self.restore()
 		if not self.all_envs:
 			self.load_envs()
