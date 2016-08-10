@@ -1048,7 +1048,7 @@ int CArticulatedEntity::Action(pe_action *_action, int bThreadSafe)
 				Awake();
 			}
 		}	else if (!is_unused(action->v)) {
-			Vec3 v = action->v, w = is_unused(action->w) ? action->w : Vec3(0);
+			Vec3 v = action->v, w = !is_unused(action->w) ? action->w : Vec3(0);
 			for(int i=0;i<m_nJoints;i++) {
 				m_joints[i].body.P = (m_joints[i].body.v = v+(w^m_joints[i].body.pos-m_joints[0].body.pos))*m_joints[i].body.M;
 				m_joints[i].body.L = m_joints[i].body.q*(m_joints[i].body.Ibody*(!m_joints[i].body.q*(m_joints[i].body.w = w)));
