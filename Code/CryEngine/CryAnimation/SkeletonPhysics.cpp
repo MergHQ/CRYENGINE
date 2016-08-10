@@ -49,6 +49,7 @@ CSkeletonPhysics::CSkeletonPhysics()
 	, m_bLimpRagdoll(false)
 	, m_bSetDefaultPoseExecute(false)
 	, m_bFullSkeletonUpdate(false)
+	, m_bForcePostSynchronization(false)
 	, m_arrCGAJoints(nullptr)
 {
 	ZeroArray(m_iSpineBone);
@@ -117,6 +118,7 @@ bool CSkeletonPhysics::Initialize(CSkeletonPose& skeletonPose)
 	m_bSetDefaultPoseExecute = false;
 
 	m_bFullSkeletonUpdate = true;
+	m_bForcePostSynchronization = false;
 
 	m_arrCGAJoints = NULL;
 
@@ -1987,8 +1989,12 @@ bool CSkeletonPhysics::AddImpact(const int partid, Vec3 point, Vec3 impact)
 // Forces skinning on the next frame
 void CSkeletonPhysics::ForceReskin()
 {
-	//m_uFlags |= nFlagsNeedReskinAllLODs;
 	m_bPhysicsWasAwake = true;
+}
+
+void CSkeletonPhysics::RequestForcedPostSynchronization()
+{
+	m_bForcePostSynchronization = true;
 }
 
 // Process
@@ -2345,9 +2351,15 @@ void CSkeletonPhysics::SynchronizeWithPhysicsPost()
 	if (objectType == CGA || pCharPhys && pCharPhys->GetType() == PE_ARTICULATED && pCharPhys->GetParams(&pf1) && pf1.flags & aef_recorded_physics)
 	{
 
-		if (m_bFullSkeletonUpdate && m_pSkeletonAnim->m_IsAnimPlaying || m_ppBonePhysics)
-			//	if (m_InstanceVisible)
+		if (
+			(m_bFullSkeletonUpdate && m_bForcePostSynchronization) ||
+			(m_bFullSkeletonUpdate && m_pSkeletonAnim->m_IsAnimPlaying) ||
+			(m_ppBonePhysics)
+			)
+		{
 			m_pInstance->UpdatePhysicsCGA(GetPoseDataExplicitWriteable(), 1, m_location);
+			m_bForcePostSynchronization = false;
+		}
 
 		if (m_bFullSkeletonUpdate)
 		{
