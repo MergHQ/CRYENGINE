@@ -81,7 +81,7 @@
     </ProjectCapabilities>
     <MonoDevelop>
       <Properties>
-        <CryEngineParameters BuildLocation="..\.." />
+        <CryEngineParameters BuildLocation="..\.." Launcher="GameSDK" />
       </Properties>
     </MonoDevelop>
   </ProjectExtensions>
