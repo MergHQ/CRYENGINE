@@ -47,12 +47,12 @@ namespace CESharpProjectType
 		private static async Task LoadCERootAsync()
 		{
 			MonoDebugger debuggerProps = await _instance.DebuggerProperties.GetMonoDebuggerPropertiesAsync();
-			string propertiesPath = await debuggerProps.CryEngineRootPath.GetEvaluatedValueAtEndAsync();
-			CERoot = Path.GetFullPath(propertiesPath);
-			ProjectFilePath = await debuggerProps.ProjectFilePath.GetEvaluatedValueAtEndAsync();
+			string command = await debuggerProps.MonoDebuggerCommand.GetEvaluatedValueAtEndAsync();
+            Command = Path.GetFullPath(command);
+            CommandArguments = await debuggerProps.MonoDebuggerCommandArguments.GetEvaluatedValueAtEndAsync();
 		}
-		public static string CERoot { get; private set; }
-		public static string ProjectFilePath { get; private set; }
+		public static string Command { get; private set; }
+		public static string CommandArguments { get; private set; }
 
 		public override async Task<IReadOnlyList<IDebugLaunchSettings>> QueryDebugTargetsAsync(DebugLaunchOptions launchOptions)
 		{
@@ -62,18 +62,17 @@ namespace CESharpProjectType
 			MonoDebugger debuggerProps = await DebuggerProperties.GetMonoDebuggerPropertiesAsync();
 			await LoadCERootAsync();
 			string projWorkingDirectory = await debuggerProps.MonoDebuggerWorkingDirectory.GetEvaluatedValueAtEndAsync();
-			bool launchSandbox = (await debuggerProps.RunSandbox.GetEvaluatedValueAtEndAsync()).ToLower() == "true";
-			settings.CurrentDirectory = new FileInfo(ProjectFilePath).Directory.FullName;
-			settings.Executable = Path.GetFullPath(CERoot + "/bin/win_x64/" + (launchSandbox ? "Sandbox" : "GameSDK") + ".exe");
-			settings.Arguments = "-project " + ProjectFilePath;
+			settings.CurrentDirectory = new FileInfo(Command).Directory.FullName;
+			settings.Executable = Command;
+			settings.Arguments = CommandArguments;
 
 			// TODO: Specify the right debugger engine
 			settings.LaunchOperation = DebugLaunchOperation.CreateProcess;
 			settings.LaunchDebugEngineGuid = DebuggerEngines.ManagedOnlyEngine;
 
 			if (!File.Exists(settings.Executable))
-				MessageBox.Show("CryEngine executable not found. Open \"Project Properties > Configuration Properties > Debugging\" and set \"CryEngine Root Path\" according to your targeted CryEngine runtime.", 
-					"Missing CryEngine Root Path", MessageBoxButton.OK, MessageBoxImage.Error);
+				MessageBox.Show("CryEngine executable not found. Open \"Project Properties > Configuration Properties > Debugging\" and set \"Command/CommandArguments\" according to your targeted CryEngine runtime.", 
+					"Executable not found", MessageBoxButton.OK, MessageBoxImage.Error);
 
 			return new IDebugLaunchSettings[] { settings };
 		}

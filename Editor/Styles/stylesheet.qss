@@ -1779,7 +1779,7 @@ CryGraphEditor--CNodeStyle {
 	qproperty-contentRectAdjustmentRight: 0;
 
 	/* Icon */
-	qproperty-pinIconSize: 8px 12px;
+	qproperty-pinIconSize: 9px 9px;
 	qproperty-pinIconOffsetX: 0;
 	qproperty-pinIconOffsetY: 0;
 	qproperty-pinDefaultColor: rgb(110, 110, 110);

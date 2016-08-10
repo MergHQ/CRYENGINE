@@ -1208,10 +1208,6 @@ void C3DEngine::WorldStreamUpdate()
 #endif
 				// gEnv->pCryPak->GetFileReadSequencer()->EndSection(); // STREAMING
 			}
-			else if (m_szLevelFolder[0])
-			{
-				ProposeContentPrecache();
-			}
 		}
 	}
 	else

@@ -155,16 +155,16 @@ void CManager::RenderThreadPostUpdate()
 
 		{
 			// Minimal clear
-#if (CRY_PLATFORM_CONSOLE || defined(CRY_USE_DX12))
-			const UINT numRanges = 1;
-#else
-			const UINT numRanges = 0;
-#endif
-			const D3D11_RECT uavRange = { 0, 0, numRuntimes, 0 };
 			UINT nulls[4] = { 0 };
-
+#if defined(DEVICE_SUPPORTS_D3D11_1)
+			const UINT numRanges = 1;
+			const D3D11_RECT uavRange = { 0, 0, numRuntimes, 0 };
 			CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetComputeInterface()->ClearUAV(m_counter.GetBuffer().GetDeviceUAV(), nulls, numRanges, &uavRange);
 			CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetComputeInterface()->ClearUAV(m_scratch.GetBuffer().GetDeviceUAV(), nulls, numRanges, &uavRange);
+#else
+			CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetComputeInterface()->ClearUAV(m_counter.GetBuffer().GetDeviceUAV(), nulls, 0, nullptr);
+			CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetComputeInterface()->ClearUAV(m_scratch.GetBuffer().GetDeviceUAV(), nulls, 0, nullptr);
+#endif
 		}
 	}
 }

@@ -47,12 +47,4 @@
     <BoolProperty Name="MonoDebuggerDebuggerAttach" DisplayName="Attach"
                 Default="False"
                 Description="Specifies whether the debugger should attempt to attach to an existing process when debugging starts." />
-
-    <StringProperty Name="ProjectFilePath" DisplayName="Project File Path" 
-                    Description="Path to the .cryproject file descriptor for this project."
-                    Subtype="folder" Default="App.cryproject"/>
-    <StringProperty Name="CryEngineRootPath" DisplayName="CRYENGINE Root Path" 
-                    Description="Path to the CryEngine distribution that this CE# Project belongs to."
-                    Subtype="folder"/>
-    <BoolProperty Name="RunSandbox" DisplayName="Run Sandbox" Description="If checked, runs Sandbox.exe instead of GameSDK.exe." Default="False"/>
 </Rule>
