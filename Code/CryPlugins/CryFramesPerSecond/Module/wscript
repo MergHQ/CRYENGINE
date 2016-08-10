@@ -4,7 +4,7 @@ def build(bld) :
 
 	bld.CryEngineModule(
 	  target = 'CryFramesPerSecond',
-	  vs_filter = 'CryExtensions',
+	  vs_filter = 'CryPlugins',
 	  file_list = 'cryframespersecond.waf_files',
 
 	  pch = 'StdAfx.cpp'
