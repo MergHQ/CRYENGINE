@@ -179,6 +179,7 @@ public:
 	CParticleComponent*     GetParentComponent() const;
 
 	void                    PrepareRenderObjects(CParticleEmitter* pEmitter);
+	void                    ResetRenderObjects(CParticleEmitter* pEmitter);
 	void                    Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
 
 private:

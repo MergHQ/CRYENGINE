@@ -4003,51 +4003,79 @@ void CD3D9Renderer::FX_RefractionPartialResolve()
 	}
 }
 
-bool CD3D9Renderer::FX_UpdateDynamicShaderResources(const CShaderResources* shaderResources, uint32 batchFilter, uint32 flags2)
+bool CD3D9Renderer::FX_UpdateAnimatedShaderResources(const CShaderResources* shaderResources)
 {
+	bool bUpdated = false;
+
 	// update dynamic texture sources based on a shared RT only
 	const CShaderResources* rsr = shaderResources;
 	if (rsr && gRenDev->m_CurRenderEye == LEFT_EYE)
 	{
-		const SEfResTexture* pDiffuse = rsr->GetTexture(EFTT_DIFFUSE);
-		if (pDiffuse)
+		// TODO: optimize search (flagsfield?)
+		for (EEfResTextures texType = EFTT_DIFFUSE; texType < EFTT_MAX; texType = EEfResTextures(texType + 1))
 		{
-			IDynTextureSourceImpl* pDynTexSrc = (IDynTextureSourceImpl*) pDiffuse->m_Sampler.m_pDynTexSource;
-			if (pDynTexSrc)
+			SEfResTexture* pTex = rsr->m_Textures[texType];
+			if (pTex)
 			{
-				if (pDynTexSrc->GetSourceType() == IDynTextureSource::DTS_I_FLASHPLAYER)
+				bUpdated = bUpdated | pTex->m_Sampler.Update();
+			}
+		}
+	}
+
+	return bUpdated;
+}
+
+bool CD3D9Renderer::FX_UpdateDynamicShaderResources(const CShaderResources* shaderResources, uint32 batchFilter, uint32 flags2)
+{
+	bool bUpdated = false;
+
+	// update dynamic texture sources based on a shared RT only
+	const CShaderResources* rsr = shaderResources;
+	if (rsr && gRenDev->m_CurRenderEye == LEFT_EYE)
+	{
+		// TODO: optimize search (flagsfield?)
+		for (EEfResTextures texType = EFTT_DIFFUSE; texType < EFTT_MAX; texType = EEfResTextures(texType + 1))
+		{
+			const SEfResTexture* pTex = rsr->m_Textures[texType];
+			if (pTex)
+			{
+				IDynTextureSourceImpl* pDynTexSrc = (IDynTextureSourceImpl*)pTex->m_Sampler.m_pDynTexSource;
+				if (pDynTexSrc)
 				{
-					if (flags2 & RBPF2_MOTIONBLURPASS)
-						return false; // explicitly disable motion blur pass for flash assets
-
-					if (batchFilter & (FB_GENERAL | FB_TRANSPARENT))
+					if (pDynTexSrc->GetSourceType() == IDynTextureSource::DTS_I_FLASHPLAYER)
 					{
-						// save pipeline state
-						SRenderPipeline& rp        = gcpRendD3D->m_RP;                   // !!! don't use rRP as it's taken from rd (__restrict); the compiler will optimize the save/restore instructions !!!
-						CShader* const pPrevShader = rp.m_pShader;
-						const int prevShaderTechnique               = rp.m_nShaderTechnique;
-						CShaderResources* const prevShaderResources = rp.m_pShaderResources;
-						SShaderTechnique* const prevCurTechnique    = rp.m_pCurTechnique;
-						const uint32 prevCommitFlags                = rp.m_nCommitFlags;
-						const uint32 prevFlagsShaderBegin           = rp.m_nFlagsShaderBegin;
+						if (flags2 & RBPF2_MOTIONBLURPASS)
+							return false; // explicitly disable motion blur pass for flash assets
 
-						pDynTexSrc->Update();
+						if (batchFilter & (FB_GENERAL | FB_TRANSPARENT))
+						{
+							// save pipeline state
+							SRenderPipeline& rp = gcpRendD3D->m_RP;                   // !!! don't use rRP as it's taken from rd (__restrict); the compiler will optimize the save/restore instructions !!!
+							CShader* const pPrevShader = rp.m_pShader;
+							const int prevShaderTechnique = rp.m_nShaderTechnique;
+							CShaderResources* const prevShaderResources = rp.m_pShaderResources;
+							SShaderTechnique* const prevCurTechnique = rp.m_pCurTechnique;
+							const uint32 prevCommitFlags = rp.m_nCommitFlags;
+							const uint32 prevFlagsShaderBegin = rp.m_nFlagsShaderBegin;
 
-						// restore pipeline state
-						rp.m_pShader = pPrevShader;
-						rp.m_nShaderTechnique           = prevShaderTechnique;
-						rp.m_pShaderResources           = prevShaderResources;
-						rp.m_pCurTechnique              = prevCurTechnique;
-						rp.m_nCommitFlags               = prevCommitFlags;
-						rp.m_nFlagsShaderBegin          = prevFlagsShaderBegin;
-						gcpRendD3D->m_CurViewport.fMaxZ = -1;
+							bUpdated = bUpdated | pDynTexSrc->Update();
+
+							// restore pipeline state
+							rp.m_pShader = pPrevShader;
+							rp.m_nShaderTechnique = prevShaderTechnique;
+							rp.m_pShaderResources = prevShaderResources;
+							rp.m_pCurTechnique = prevCurTechnique;
+							rp.m_nCommitFlags = prevCommitFlags;
+							rp.m_nFlagsShaderBegin = prevFlagsShaderBegin;
+							gcpRendD3D->m_CurViewport.fMaxZ = -1;
+						}
 					}
 				}
 			}
 		}
 	}
 
-	return true;
+	return bUpdated | true;
 }
 
 // Flush current render item

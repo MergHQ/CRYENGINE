@@ -137,7 +137,6 @@ namespace CryEngine.EntitySystem
 		public void RegisterAll()
 		{
 			Type tProto = typeof(BaseEntity);
-
 			// Collect all types inheriting from BaseEntity
 			foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies()) {
 				foreach (Type t in asm.GetTypes()) {
@@ -145,6 +144,32 @@ namespace CryEngine.EntitySystem
 						continue;
 
 					Register (t);
+				}
+			}
+		}
+
+		/// <summary>
+		/// Discover all types inside an assembly implementing 'BaseEntity' and registers them.
+		/// </summary>
+		/// <param name="asm">Assembly</param>
+		public void RegisterAll(Assembly asm)
+		{
+			Type tProto = typeof(BaseEntity);
+
+			foreach (Type t in asm.GetTypes()) {
+				if (t == tProto || !tProto.IsAssignableFrom (t))
+					continue;
+
+				Register (t);
+			}
+		}
+
+		public void RegisterAll(string assemblyName)
+		{
+			Log.Info<EntityClassRegistry> ("Registering entities for Assembly: {0}", assemblyName);
+			foreach(Assembly asm in AppDomain.CurrentDomain.GetAssemblies()) {
+				if (asm.GetName ().Name.Equals (assemblyName, StringComparison.InvariantCultureIgnoreCase)) {
+					RegisterAll (asm);
 				}
 			}
 		}

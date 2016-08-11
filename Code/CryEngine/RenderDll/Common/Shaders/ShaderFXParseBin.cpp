@@ -2417,6 +2417,10 @@ bool CShaderManBin::ParseBinFX_Texture(CParserBin& Parser, SParserFrame& Frame, 
 				Tex.m_szUIDesc = Parser.GetString(stringData);
 			}
 			break;
+#else
+        case eT_UIName:
+        case eT_UIDescription:
+            break;
 #endif
 
 		case eT_sRGBLookup:
@@ -5155,7 +5159,7 @@ void CShaderMan::mfPostLoadFX(CShader* ef, std::vector<SShaderTechParseParams>& 
 
 //===========================================================================================
 
-void STexSamplerRT::Update()
+bool STexSamplerRT::Update()
 {
 	if (m_pAnimInfo && m_pAnimInfo->m_Time && gRenDev->m_bPauseTimer == 0)
 	{
@@ -5169,9 +5173,12 @@ void STexSamplerRT::Update()
 		}
 
 		m_pTex = m_pAnimInfo->m_TexPics[m];
-
 		m_pTex->AddRef();
+
+		return true;
 	}
+
+	return false;
 }
 
 void SFXParam::GetCompName(uint32 nId, CryFixedStringT<128>& name)

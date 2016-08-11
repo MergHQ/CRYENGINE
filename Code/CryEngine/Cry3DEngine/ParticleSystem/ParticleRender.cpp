@@ -58,6 +58,19 @@ void CParticleRenderBase::PrepareRenderObjects(CParticleEmitter* pEmitter, CPart
 	}
 }
 
+void CParticleRenderBase::RemoveRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)
+{
+	const bool isGpu = pComponent->GetRuntimeInitializationParameters().usesGpuImplementation;
+	if (isGpu)
+		return;
+
+	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
+	{
+		ResetRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId);
+		ResetRenderObject(pEmitter, pComponent, m_renderObjectAfterWaterId, threadId);
+	}
+}
+
 void CParticleRenderBase::Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
@@ -97,6 +110,22 @@ void CParticleRenderBase::PrepareRenderObject(CParticleEmitter* pEmitter, CParti
 
 	SRenderObjData* pObjData = pRenderObject->GetObjData();
 	pObjData->m_pParticleShaderData = &params.m_shaderData;
+}
+
+void CParticleRenderBase::ResetRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId)
+{
+	const bool isGpu = pComponent->GetRuntimeInitializationParameters().usesGpuImplementation;
+
+	if (renderObjectId == -1)
+		return;
+	CRenderObject* pRenderObject = pEmitter->GetRenderObject(threadId, renderObjectId);
+	if (!pRenderObject)
+		return;
+
+	if (!isGpu && pRenderObject->m_pRE != nullptr)
+		pRenderObject->m_pRE->Release();
+	gEnv->pRenderer->EF_FreeObject(pRenderObject);
+	pEmitter->SetRenderObject(nullptr, threadId, renderObjectId);
 }
 
 void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)

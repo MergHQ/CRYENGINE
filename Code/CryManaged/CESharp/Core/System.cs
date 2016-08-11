@@ -11,6 +11,7 @@ using CryEngine.FlowSystem;
 using CryEngine.Components;
 using CryEngine.Resources;
 using CryEngine.EntitySystem;
+using CryEngine.DomainHandler;
 using CryEngine;
 
 namespace CryEngine

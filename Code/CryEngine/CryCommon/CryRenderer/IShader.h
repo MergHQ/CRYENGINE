@@ -1201,7 +1201,7 @@ struct STexSamplerRT
 	}
 
 	uint32 GetTexFlags() const { return m_nTexFlags; }
-	void   Update();
+	bool   Update();
 	void   PostLoad();
 	NO_INLINE STexSamplerRT (const STexSamplerRT& src)
 	{

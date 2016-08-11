@@ -550,7 +550,8 @@ STexAnim* CShaderMan::mfReadTexSequence(const char* na, int Flags, bool bFindOnl
 	for (i = 0; i < nums; i++)
 	{
 		sprintf(nam, frm, prefix, startn + i, postfix, ext);
-		tp = (CTexture*)gRenDev->EF_LoadTexture(nam, Flags);
+		// TODO: add support for animated sequences to the texture streaming
+		tp = (CTexture*)gRenDev->EF_LoadTexture(nam, Flags | FT_DONT_STREAM);
 		if (!tp || !tp->IsLoaded())
 		{
 			if (tp)
@@ -579,23 +580,19 @@ STexAnim* CShaderMan::mfReadTexSequence(const char* na, int Flags, bool bFindOnl
 
 int CShaderMan::mfReadTexSequence(STexSamplerRT* smp, const char* na, int Flags, bool bFindOnly)
 {
-	if (smp->m_pAnimInfo)
-	{
-		assert(0);
-		return 0;
-	}
+	STexAnim* ta;
 
-	STexAnim* ta = mfReadTexSequence(na, Flags, bFindOnly);
-	if (ta)
+	if ((ta = smp->m_pAnimInfo) ||
+		(ta = mfReadTexSequence(na, Flags, bFindOnly)))
 	{
 		smp->m_pAnimInfo = ta;
 
-		//Don't think this is ever set
+		// Release texture which has been set previously
 		SAFE_RELEASE(smp->m_pTex);
 
-		// this appears to always get overwritten, and so shouldn't be needed
-		//		smp->m_pTex = ta->m_TexPics[0];
-		//		smp->m_pTex->AddRef();
+		// Set initial texture so that subsequent checks understand that it has been loaded
+		smp->m_pTex = ta->m_TexPics[0];
+		smp->m_pTex->AddRef();
 
 		return ta->m_NumAnimTexs;
 	}
@@ -616,12 +613,12 @@ void CShaderMan::mfSetResourceTexState(SEfResTexture* Tex)
 
 CTexture* CShaderMan::mfTryToLoadTexture(const char* nameTex, STexSamplerRT* smp, int Flags, bool bFindOnly)
 {
-	CTexture* tx = NULL;
-
 	if (nameTex && strchr(nameTex, '#')) // test for " #" to skip max material names
 	{
 		int n = mfReadTexSequence(smp, nameTex, Flags, bFindOnly);
 	}
+
+	CTexture* tx = smp->m_pTex;
 
 	if (!tx)
 	{

@@ -8,32 +8,10 @@ using System.Linq;
 using CryEngine.Resources;
 using CryEngine.Components;
 using CryEngine.FlowSystem;
+using CryEngine.DomainHandler;
 
 namespace CryEngine.Resources
 {
-	public class InterDomainHandler : MarshalByRefObject
-	{
-		#region Fields
-		private Dictionary<uint, Tuple<string, Dictionary<string, string>>> _entityCache = new Dictionary<uint, Tuple<string, Dictionary<string, string>>>();
-		#endregion
-
-		#region Properties
-		public Dictionary<uint, Tuple<string, Dictionary<string, string>>> EntityCache { get { return _entityCache; } }
-		#endregion
-
-		#region Events
-		public event EventHandler RequestQuit;
-		#endregion
-
-		#region Methods
-		public void RaiseRequestQuit()
-		{
-			if (RequestQuit != null)
-				RequestQuit ();
-		}
-		#endregion
-	}
-
 	/// <summary>
 	/// Interface which must be implemented to allow for an assembly to be automatically instanciated by the framework on runtime. If an assembly holds a class which implements this interface, ScriptSystem will watch the assembly for modifications. If the file is changed, the plugin will be newly instanciated.
 	/// </summary>

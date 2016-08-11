@@ -244,11 +244,14 @@ void CDedicatedInput::GiveItems()
 
 	//Check item name before giving (it will resolve case sensitive 'issues')
 	const char *itemName = (const char*)(pItemSystem->Query(eISQ_Find_Item_By_Name, itemNames[nameIdx]));
-	CRY_ASSERT_MESSAGE(itemName, string().Format("DummyPlayer : Trying to give DummyPlayer unknown/removed item '%s'", itemNames[nameIdx]).c_str() );
 	if(itemName)
 	{
 		pItemSystem->GiveItem(m_pPlayer, itemName, true, true, true);
 		CryLog( "Giving new weapon item %s", itemName);
+	}
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "DummyPlayer : Trying to give DummyPlayer unknown/removed item '%s'", itemNames[nameIdx]);
 	}
 
 	const char *explosiveItemNames[] =
@@ -277,11 +280,14 @@ void CDedicatedInput::GiveItems()
 	}
 
 	itemName = (const char*)(pItemSystem->Query(eISQ_Find_Item_By_Name, explosiveItemNames[nameIdx]));
-	CRY_ASSERT_MESSAGE(itemName, string().Format("DummyPlayer : Trying to give DummyPlayer unknown/removed explosive item '%s'", explosiveItemNames[nameIdx]).c_str() );
 	if(itemName)
 	{
 		pItemSystem->GiveItem(m_pPlayer, itemName, true, false, true);
 		CryLog( "Giving new explosive item %s", itemName);
+	}
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "DummyPlayer : Trying to give DummyPlayer unknown/removed explosive item '%s'", explosiveItemNames[nameIdx]);
 	}
 }
 

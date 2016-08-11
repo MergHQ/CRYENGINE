@@ -509,20 +509,19 @@ void CParticleEmitter::UpdateRuntimeRefs()
 
 void CParticleEmitter::ResetRenderObjects()
 {
-	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
+	if (!m_pEffect)
+		return;		
+
+	const TComponentId lastComponentId = m_pEffect->GetNumComponents();
+	for (TComponentId componentId = 0; componentId < lastComponentId; ++componentId)
 	{
-		for (uint i = 0; i < m_pRenderObjects[threadId].size(); ++i)
-		{
-			if (m_pRenderObjects[threadId][i] == nullptr)
-				continue;
-			if (m_pRenderObjects[threadId][i]->m_pRE != nullptr)
-				m_pRenderObjects[threadId][i]->m_pRE->Release();
-			gEnv->pRenderer->EF_FreeObject(m_pRenderObjects[threadId][i]);
-			m_pRenderObjects[threadId][i] = nullptr;
-		}
-		if (m_pEffect)
-			m_pRenderObjects[threadId].resize(m_pEffect->GetNumRenderObjectIds(), nullptr);
+		CParticleComponent* pComponent = m_pEffect->GetCComponent(componentId);
+		pComponent->ResetRenderObjects(this);
 	}
+
+	const uint numROs = m_pEffect->GetNumRenderObjectIds();
+	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
+		m_pRenderObjects[threadId].resize(numROs, nullptr);
 }
 
 void CParticleEmitter::AddInstance()
@@ -667,6 +666,8 @@ void CParticleEmitter::SetCEffect(CParticleEffect* pEffect)
 {
 	Unregister();
 	Activate(false);
+	if (!pEffect)
+		ResetRenderObjects();
 	m_pEffect = pEffect;
 	if (m_pEffect)
 		m_attributeInstance.Reset(&m_pEffect->GetAttributeTable(), EAttributeScope::PerEmitter);

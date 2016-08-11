@@ -595,7 +595,6 @@ public:
 
 	const CTagDefinition* GetSubTagDefinition(TagID tagID) const
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (!IsValidTagID(tagID))
 			return NULL;
 

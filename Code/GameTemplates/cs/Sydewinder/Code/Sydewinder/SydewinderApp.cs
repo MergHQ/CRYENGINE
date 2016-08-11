@@ -68,8 +68,6 @@ namespace CryEngine.Sydewinder
 
 		public virtual void OnAwake()
 		{
-			AudioManager.PlayTrigger ("game_start");
-
 			// Initialize highscore functionality.
 			_gameData = new GameData();
 

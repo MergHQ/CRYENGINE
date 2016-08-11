@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Linq;
 using CryEngine.Common;
 using CryEngine.Resources;
+using CryEngine.DomainHandler;
 
 namespace CryEngine.EntitySystem
 {

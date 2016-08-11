@@ -4,6 +4,7 @@
 #include "MonoLibrary.h"
 #include "MonoRuntime.h"
 
+#include <mono/metadata/object.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-helpers.h>
@@ -34,10 +35,7 @@ ICryEngineBasePlugin* CMonoLibrary::Initialize(void* pMonoDomain, void* pDomainH
 		const char* szClassName = PathUtil::GetExt(szType);
 		const string nameSpace = PathUtil::RemoveExtension(szType);
 
-		CryLogAlways("class name: %s, name space: %s", szClassName, nameSpace.c_str());
-
 		m_pMonoClass = mono_class_from_name(pImage, nameSpace.c_str(), szClassName);
-
 		if (!m_pMonoClass)
 		{
 			return nullptr;
@@ -85,6 +83,24 @@ ICryEngineBasePlugin* CMonoLibrary::Initialize(void* pMonoDomain, void* pDomainH
 					ICryEngineBasePlugin* pCryEngineBasePlugin = static_cast<ICryEngineBasePlugin*>(pArr3);
 					if (pCryEngineBasePlugin && RunMethod("Initialize"))
 					{
+						if (CMonoRuntime* pRuntime = static_cast<CMonoRuntime*>(gEnv->pMonoRuntime))
+						{
+							CMonoLibrary* pCoreLibrary = static_cast<CMonoLibrary*>(pRuntime->GetCore());
+							MonoImage* pCoreImage = pCoreLibrary ? mono_assembly_get_image(pCoreLibrary->GetAssembly()) : nullptr;
+							MonoClass* pEntityFrameworkClass = mono_class_from_name(pCoreImage, "CryEngine.EntitySystem", "EntityFramework");
+							MonoMethod* pEntityClassRegistryGetter = pEntityFrameworkClass ? mono_class_get_method_from_name(pEntityFrameworkClass, "get_ClassRegistry", 0) : nullptr;
+							MonoObject* pEntityClassRegistryObject = pEntityClassRegistryGetter ? mono_runtime_invoke(pEntityClassRegistryGetter, nullptr, nullptr, nullptr) : nullptr;
+							MonoClass* pEntityRegistryClass = pCoreImage ? mono_class_from_name(pCoreImage, "CryEngine.EntitySystem", "EntityClassRegistry") : nullptr;
+							MonoMethodDesc* pRegisterAllEntitiesMethodDesc = pEntityRegistryClass ? mono_method_desc_new("CryEngine.EntitySystem.EntityClassRegistry:RegisterAll(string)", true) : nullptr;
+							MonoMethod* pRegisterAllEntitiesMethod = pRegisterAllEntitiesMethodDesc ? mono_method_desc_search_in_image(pRegisterAllEntitiesMethodDesc, pCoreImage) : nullptr;
+							if (pRegisterAllEntitiesMethod)
+							{
+								void* pRegisterArgs[1];
+								pRegisterArgs[0] = mono_string_new(pDomain, mono_assembly_name_get_name(mono_assembly_get_name(m_pAssembly)));
+								mono_runtime_invoke(pRegisterAllEntitiesMethod, pEntityClassRegistryObject, pRegisterArgs, nullptr);
+							}
+						}
+
 						return pCryEngineBasePlugin;
 					}
 				}
