@@ -2417,6 +2417,10 @@ bool CShaderManBin::ParseBinFX_Texture(CParserBin& Parser, SParserFrame& Frame, 
 				Tex.m_szUIDesc = Parser.GetString(stringData);
 			}
 			break;
+#else
+        case eT_UIName:
+        case eT_UIDescription:
+            break;
 #endif
 
 		case eT_sRGBLookup:
