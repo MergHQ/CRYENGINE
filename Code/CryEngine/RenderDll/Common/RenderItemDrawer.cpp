@@ -25,8 +25,7 @@ void DrawCompiledRenderItemsToCommandList(
 {
 	FUNCTION_PROFILER_RENDERER
 
-	passContext->pSceneRenderPass->EnableNearestViewport(passContext->renderNearest);
-	passContext->pSceneRenderPass->BeginRenderPass(*commandList);
+	passContext->pSceneRenderPass->BeginRenderPass(*commandList, passContext->renderNearest);
 
 	// NOTE: doesn't load-balance well when the conditions for the draw mask lots of draws
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList->GetGraphicsInterface();
@@ -46,7 +45,7 @@ void DrawCompiledRenderItemsToCommandList(
 		}
 	}
 
-	passContext->pSceneRenderPass->EndRenderPass(*commandList);
+	passContext->pSceneRenderPass->EndRenderPass(*commandList, passContext->renderNearest);
 }
 
 // NOTE: Job-System can't handle references (copies) and can't use static member functions or __restrict (doesn't execute)

@@ -310,14 +310,8 @@ void CSceneGBufferStage::RenderSceneOpaque()
 
 	if (CRenderer::CV_r_nodrawnear == 0)
 	{
-		m_opaquePass.EnableNearestViewport(true);
-		m_opaqueVelocityPass.EnableNearestViewport(true);
-
 		m_opaquePass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, velocityEnd_Nearest, numItems_Nearest);
 		m_opaqueVelocityPass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, 0, velocityEnd_Nearest);
-
-		m_opaquePass.EnableNearestViewport(false);
-		m_opaqueVelocityPass.EnableNearestViewport(false);
 	}
 
 	m_opaquePass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, velocityEnd_General, numItems_General);

@@ -21,7 +21,6 @@ public:
 	void SetLabel(const char* label) { m_szLabel = label; }
 	void SetFlags(EPassFlags flags)  { m_passFlags = flags; }
 	void SetViewport(const D3DViewPort& viewport);
-	void EnableNearestViewport(bool bNearest);
 
 	void ExtractRenderTargetFormats(CDeviceGraphicsPSODesc& psoDesc);
 
@@ -29,13 +28,12 @@ public:
 
 	// Called from rendering backend (has to be threadsafe)
 	void               PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
-	void               BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
-	void               EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	void               BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
+	void               EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
 
 	uint32             GetStageID()        const { return m_stageID; }
 	uint32             GetPassID()         const { return m_passID; }
 	EPassFlags         GetFlags()          const { return m_passFlags; }
-	const D3DViewPort& GetViewport()       const { return m_viewPort[m_bNearestViewport]; }
 	const D3DViewPort& GetViewport(bool n) const { return m_viewPort[n]; }
 
 protected:
@@ -48,7 +46,6 @@ protected:
 	D3DRectangle             m_scissorRect;
 	CDeviceResourceLayoutPtr m_pResourceLayout;
 	CDeviceResourceSetPtr    m_pPerPassResources;
-	bool                     m_bNearestViewport;
 	const char*              m_szLabel;
 
 	EShaderTechniqueID       m_technique;
