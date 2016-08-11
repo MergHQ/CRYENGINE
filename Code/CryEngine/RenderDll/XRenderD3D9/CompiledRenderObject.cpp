@@ -368,6 +368,12 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, float realTime
 			return true;
 		}
 
+		if (!(geomInfo.CalcStreamMask() & 1))
+		{
+			if (!bMuteWarnings) Warning("[CCompiledRenderObject] General stream missing");
+			return true;
+		}
+
 		m_bHasTessellation = bSupportTessellation;
 		m_TessellationPatchIDOffset = geomInfo.nTessellationPatchIDOffset;
 
