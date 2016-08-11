@@ -368,21 +368,42 @@ def cmd_monodev (args):
 	print_subprocess (subcmd)
 	subprocess.Popen(subcmd, env= dict(os.environ, CRYENGINEROOT=engine_path))
 					 
-def upgrade_identify (project_file):
-	code_path= os.path.join (os.path.dirname (project_file), 'Code')
+def upgrade_identify50 (project_file):
+	dirname= os.path.dirname (project_file)
 	
-	listdir= os.listdir (code_path)	
+	listdir= os.listdir (os.path.join (dirname, 'Code'))	
+	if all ((filename in listdir) for filename in ('CESharp', 'EditorApp', 'Game', 'SandboxInteraction', 'SandboxInteraction.sln')):
+		return ('cs', 'SandboxInteraction')
+
+	if all ((filename in listdir) for filename in ('CESharp', 'Game', 'Sydewinder', 'Sydewinder.sln')):
+		return ('cs', 'Sydewinder')
+
+	if all ((filename in listdir) for filename in ('CESharp', 'Game')):
+		if os.path.isdir (os.path.join (dirname, 'Code', 'CESharp', 'SampleApp')):
+			return ('cs', 'Blank')
+	
+	if all ((filename in listdir) for filename in ('Game', )):
+		if os.path.isdir (os.path.join (dirname, 'Assets', 'levels', 'example')):
+			return ('cpp', 'Blank')
+
+	return None	
+
+def upgrade_identify51 (project_file):
+	dirname= os.path.dirname (project_file)
+	
+	listdir= os.listdir (os.path.join (dirname, 'Code'))	
 	if all ((filename in listdir) for filename in ('Game', 'SampleApp', 'SampleApp.sln')):
 		return ('cs', 'Blank')
 
-	if all ((filename in listdir) for filename in ('Game', 'EditorApp', 'SandboxInteraction.sln')):
+	if all ((filename in listdir) for filename in ('Game', 'EditorApp', 'SandboxInteraction', 'SandboxInteraction.sln')):
 		return ('cs', 'SandboxInteraction')
 
 	if all ((filename in listdir) for filename in ('Game', 'Sydewinder', 'Sydewinder.sln')):
 		return ('cs', 'Sydewinder')
 	
 	if all ((filename in listdir) for filename in ('Game', )):
-		return ('cpp', 'Blank')
+		if os.path.isdir (os.path.join (dirname, 'Assets', 'levels', 'example')):
+			return ('cpp', 'Blank')
 
 	return None	
 	
@@ -408,7 +429,12 @@ def cmd_upgrade (args):
 	if restore_version is None:
 		error_upgrade_engine_version (engine_version)
 	
-	template_name= upgrade_identify (args.project_file)
+	template_name= None
+	if restore_version == '5.0.0':
+		template_name= upgrade_identify50 (args.project_file)
+	elif restore_version == '5.1.0':
+		template_name= upgrade_identify51 (args.project_file)
+		
 	if template_name is None:
 		error_upgrade_template_unknown (arg.project_file)
 	
