@@ -51,7 +51,7 @@ ILINE floatv LoadIndexed4(const float* __restrict pStream, const uint32v index, 
 	const uint32v mIndex = _mm_andnot_si128((__m128i)mask, index);
 	const uint32v mFirst = _mm_shuffle_epi32(mIndex, 0);
 
-	if (All(index == mFirst + _mm_set_epi32(3, 2, 1, 0)))
+	if (All(index == mFirst + convert<uint32v>(0, 1, 2, 3)))
 		return _mm_loadu_ps(pStream + _mm_cvtsi128_si32(mFirst));
 
 	floatv output = _mm_load1_ps(pStream + _mm_cvtsi128_si32(mFirst));

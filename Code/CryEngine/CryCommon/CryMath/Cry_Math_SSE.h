@@ -17,7 +17,7 @@ struct Scalar
 
 // Support for SSE 32x4 types
 
-	#if CRY_COMPILER_CLANG
+	#if CRY_COMPILER_CLANG || CRY_COMPILER_GCC
 // __m128i is defined as __v2di instead of __v4si, so we define the correct vector types here to avoid compile errors.
 typedef __v4sf  f32v4;
 typedef __v4si  i32v4;
@@ -245,8 +245,8 @@ template<> ILINE f32v4 if_else_zero(f32mask4 mask, f32v4 a)
 	return _mm_and_ps((__m128)mask, a);
 }
 
-	#if !CRY_COMPILER_CLANG
-// On clang, f32mask4 == i32mask4. For other compilers, define overloads.
+	#if CRY_COMPILER_MSVC
+// On clang and gcc, f32mask4 == i32mask4. For other compilers, define overloads.
 ILINE bool             All(i32mask4 v)                          { return _mm_movemask_ps(vcast<f32v4>(v)) == 0xF; }
 ILINE bool             Any(i32mask4 v)                          { return _mm_movemask_ps(vcast<f32v4>(v)) != 0; }
 template<> ILINE f32v4 if_else_zero(i32mask4 mask, f32v4 a)     { return if_else_zero(vcast<f32mask4>(mask), a); }
