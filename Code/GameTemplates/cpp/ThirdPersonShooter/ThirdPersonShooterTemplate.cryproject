@@ -1,0 +1,25 @@
+{
+    "content": {
+        "assets": [
+            "Assets"
+        ],
+        "code": [
+            "Code"
+        ],
+        "libs": [
+            {
+                "name": "ThirdPersonShooterTemplate",
+                "shared": {
+                    "win_x64": "bin/win_x64/ThirdPersonShooterTemplate.dll",
+                    "win_x86": "bin/win_x86/ThirdPersonShooterTemplate.dll"
+                }
+            }
+        ]
+    },
+    "info": {
+        "name": "Third Person Game Template"
+    },
+    "require": {
+        "engine": "engine-5.2"
+    }
+}

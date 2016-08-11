@@ -1,0 +1,25 @@
+{
+    "content": {
+        "assets": [
+            "Assets"
+        ],
+        "code": [
+            "Code"
+        ],
+        "libs": [
+            {
+                "name": "IsometricPathfindingTemplate",
+                "shared": {
+                    "win_x64": "bin/win_x64/IsometricPathfindingTemplate.dll",
+                    "win_x86": "bin/win_x86/IsometricPathfindingTemplate.dll"
+                }
+            }
+        ]
+    },
+    "info": {
+        "name": "Isometric Pathfinding Game Template"
+    },
+    "require": {
+        "engine": "engine-5.2"
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "content": {
+        "assets": [
+            "Assets"
+        ],
+        "code": [
+            "Code"
+        ],
+        "libs": [
+            {
+                "name": "TopDownShooterTemplate",
+                "shared": {
+                    "win_x64": "bin/win_x64/TopDownShooterTemplate.dll",
+                    "win_x86": "bin/win_x86/TopDownShooterTemplate.dll"
+                }
+            }
+        ]
+    },
+    "info": {
+        "name": "Top-Down Shooter Game Template"
+    },
+    "require": {
+        "engine": "engine-5.2"
+    }
+}
