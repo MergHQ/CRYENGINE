@@ -36,10 +36,6 @@ include(${CMAKE_SOURCE_DIR}/Tools/CMake/CopyFilesToBin.cmake)
 if(ANDROID)
 	unset(WIN32)
 	unset(WIN64)
-	set(OPTION_STATIC_LINKING FALSE)
-	SET(CMAKE_SYSTEM_NAME Android)
-	include(${CMAKE_SOURCE_DIR}/Tools/CMake/Android.cmake)	
-
 endif(ANDROID)
 
 project(CryEngine_CMake_${BUILD_PLATFORM} CXX C)
@@ -136,6 +132,13 @@ set(CRY_EXTENSIONS_DIR ${CMAKE_SOURCE_DIR}/Code/CryExtensions)
 set(WINSDK_SDK_DIR "${CMAKE_SOURCE_DIR}/Code/SDKs/Microsoft Windows SDK")
 set(WINSDK_SDK_LIB_DIR "${WINSDK_SDK_DIR}/V8.0/Lib/Win8/um")
 set(WINSDK_SDK_INCLUDE_DIR "${WINSDK_SDK_DIR}/V8.0/Include/um")
+
+# Check for availability of c functions
+include(CheckFunctionExists)
+CHECK_FUNCTION_EXISTS(stpcpy STPCPYEXISTS)
+if(STPCPYEXISTS)
+	add_definitions(-DHAS_STPCPY)
+endif()
 
 
 # custom defines

@@ -1031,7 +1031,7 @@ void CXmlNode::AddToXmlString(XmlString& xml, int level, FILE* pFile, IPlatformO
 	xml += ">\n";
 }
 
-#if !CRY_PLATFORM_APPLE && !CRY_PLATFORM_LINUX
+#if !CRY_PLATFORM_APPLE && !CRY_PLATFORM_LINUX && !HAS_STPCPY
 ILINE static char* stpcpy(char* dst, const char* src)
 {
 	while (src[0])
