@@ -942,5 +942,12 @@ void CoverSampler::Simplify()
 		m_aabb.Add(back.position + Vec3(0.0f, 0.0f, back.GetHeight()));
 	}
 
-	assert(m_samples.size() > 1);
+	// workaround for when we end up with no more than 1 sample
+	// (this can happen if all samples lie on a line and the last sample is looping back to the first one)
+	if (m_samples.size() < 1)
+	{
+		// reject all samples
+		m_aabb = AABB(AABB::RESET);
+		m_samples.resize(0);
+	}
 }
