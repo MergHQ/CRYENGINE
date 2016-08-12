@@ -91,9 +91,11 @@ StructuredBuffer<STiledLightCullInfo> TiledLightsCullInfo : register(t22);
 Buffer<uint> TileLightMask : register(t22);
 StructuredBuffer<STiledClipVolumeInfo> TiledClipVolumeInfo : register(t23);
 
+#if FEATURE_SVO_GI
 Texture2D<float4> ForwGiDiffuseRT : register(t24);
 Texture2D<float4> ForwGiSpecularRT : register(t25);
 float4 ForwGiIntegrationMode : PB_SvoParams4;
+#endif
 
 SamplerComparisonState SampStateComp : register(s14);
 
@@ -113,6 +115,7 @@ float GetClipVolumeWeightBinary(uint nClipVolumeID, uint nLightStencilID)
 	return (nLightStencilID0 == AFFECTS_EVERYTHING_STENCILREF || nClipVolumeID == nLightStencilID0 || nClipVolumeID == nLightStencilID1) ? 1.0f : 0.0f;
 }
 
+#if FEATURE_SVO_GI
 void ApplyGI(inout float3 specularAcc, inout float3 diffuseAcc, float3 diffuseForwAcc, float2 pixelUV, float3 surfGloss, float3 surfSpecCol,
              Texture2D<float4> TexGiDiffuse, Texture2D<float4> TexGiSpecular, SamplerState samplerTrilinearClamp, const int nIntegrMode)
 {
@@ -134,6 +137,7 @@ void ApplyGI(inout float3 specularAcc, inout float3 diffuseAcc, float3 diffuseFo
 		specularAcc = TexGiSpecular.SampleLevel( samplerTrilinearClamp, pixelUV, 0 );
 	}
 }
+#endif
 
 int GetNextTileLightIndex(uint lightMask, int startIndex)
 {
