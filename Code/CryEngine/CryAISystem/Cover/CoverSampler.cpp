@@ -944,7 +944,7 @@ void CoverSampler::Simplify()
 
 	// workaround for when we end up with no more than 1 sample
 	// (this can happen if all samples lie on a line and the last sample is looping back to the first one)
-	if (m_samples.size() < 1)
+	if (m_samples.size() < 2)
 	{
 		// reject all samples
 		m_aabb = AABB(AABB::RESET);
