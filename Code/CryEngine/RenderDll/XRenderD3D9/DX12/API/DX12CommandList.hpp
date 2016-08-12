@@ -13,6 +13,7 @@
 #ifndef __DX12COMMANDLIST__
 	#define __DX12COMMANDLIST__
 
+	#include "DX12Base.hpp"
 	#include "DX12CommandListFence.hpp"
 	#include "DX12PSO.hpp"
 	#include "DX12DescriptorHeap.hpp"
@@ -437,34 +438,8 @@ public:
 	}
 
 	//---------------------------------------------------------------------------------------------------------------------
-	ILINE void ResourceBarrier(UINT NumBarriers, const D3D12_RESOURCE_BARRIER* pBarriers)
-	{
-		if (DX12_BARRIER_FUSION)
-		{
-			CRY_ASSERT(m_CurrentNumPendingBarriers + NumBarriers < 256);
-			for (UINT i = 0; i < NumBarriers; ++i)
-			{
-				m_PendingBarrierHeap[m_CurrentNumPendingBarriers + i] = pBarriers[i];
-			}
-
-			m_CurrentNumPendingBarriers += NumBarriers;
-			m_nCommands += CLCOUNT_BARRIER * NumBarriers;
-		}
-		else
-		{
-			m_pCmdList->ResourceBarrier(NumBarriers, pBarriers);
-			m_nCommands += CLCOUNT_BARRIER;
-		}
-	}
-
-	ILINE void PendingResourceBarriers()
-	{
-		if (DX12_BARRIER_FUSION && m_CurrentNumPendingBarriers)
-		{
-			m_pCmdList->ResourceBarrier(m_CurrentNumPendingBarriers, m_PendingBarrierHeap);
-			m_CurrentNumPendingBarriers = 0;
-		}
-	}
+	void ResourceBarrier(UINT NumBarriers, const D3D12_RESOURCE_BARRIER* pBarriers);
+	void PendingResourceBarriers();
 
 	// Transition resource to desired state, returns the previous state
 	template<class T>

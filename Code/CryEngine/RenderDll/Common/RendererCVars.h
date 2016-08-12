@@ -181,6 +181,7 @@ public:
 	static int CV_r_durango_async_dips_sync;
 	static int CV_r_D3D12SubmissionThread;
 	static int CV_r_D3D12WaitableSwapChain;
+	static int CV_r_D3D12BatchResourceBarriers;
 	static int CV_r_D3D12EarlyResourceBarriers;
 	static int CV_r_D3D12AsynchronousCompute;
 	static int CV_r_D3D12HardwareComputeQueue;
