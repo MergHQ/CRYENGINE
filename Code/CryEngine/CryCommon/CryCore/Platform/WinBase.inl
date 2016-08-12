@@ -171,7 +171,7 @@ const char* const ConvertFileName(char* const pBuf, const size_t bufSize, const 
 	return cpName;
 }
 #else
-const bool        GetFilenameNoCase(const char*, char*, const bool);
+const bool        ConvertFilenameNoCase(char*);
 const char* const ConvertFileName(char* const pBuf, const size_t bufSize, const char* const cpName)
 {
 	// This function will not change the length of the string
@@ -182,7 +182,8 @@ const char* const ConvertFileName(char* const pBuf, const size_t bufSize, const 
 		return nullptr;
 	}
 
-	GetFilenameNoCase(cpName, pBuf, false);
+	cry_strcpy(pBuf, bufSize, cpName);
+	ConvertFilenameNoCase(pBuf);
 	return pBuf;
 }
 #endif
@@ -526,7 +527,8 @@ DWORD GetFileAttributes(LPCSTR lpFileName)
 	if (success == -1)
 	{
 		char adjustedFilename[MAX_PATH];
-		GetFilenameNoCase(lpFileName, adjustedFilename);
+		cry_strcpy(adjustedFilename, lpFileName);
+		ConvertFilenameNoCase(adjustedFilename);
 		if (stat(adjustedFilename, &fileStats) == -1)
 			return (DWORD)INVALID_FILE_ATTRIBUTES;
 	}
@@ -535,8 +537,12 @@ DWORD GetFileAttributes(LPCSTR lpFileName)
 	const int acc = (fileStats.st_mode & S_IWRITE);
 
 	if (acc != 0)
+	{
 		if (S_ISDIR(fileStats.st_mode) != 0)
+		{
 			ret |= FILE_ATTRIBUTE_DIRECTORY;
+		}
+	}
 	return (ret == 0) ? FILE_ATTRIBUTE_NORMAL : ret;//return file attribute normal as the default value, must only be set if no other attributes have been found
 }
 
@@ -1179,46 +1185,36 @@ static bool FixOnePathElement(char* path)
 #endif
 
 #if !CRY_PLATFORM_ORBIS
-const bool GetFilenameNoCase
-(
-  const char* file,
-  char* pAdjustedFilename,
-  const bool cCreateNew
-)
+const bool ConvertFilenameNoCase(char* szFilepathToAdj)
 {
-	assert(file);
-	assert(pAdjustedFilename);
-	strcpy(pAdjustedFilename, file);
+	assert(szFilepathToAdj);
 
 	// Fix the dirname case.
-	const int cLen = strlen(file);
+	const int cLen = strlen(szFilepathToAdj);
 	for (int i = 0; i < cLen; ++i)
-		if (pAdjustedFilename[i] == '\\')
-			pAdjustedFilename[i] = '/';
+	{
+		if (szFilepathToAdj[i] == '\\')
+		{
+			szFilepathToAdj[i] = '/';
+		}
+	}
 
 	char* slash;
-	const char* dirname;
 	char* name;
-	FS_ERRNO_TYPE fsErr = 0;
-	FS_DIRENT_TYPE dirent;
-	uint64_t direntSize = 0;
-	FS_DIR_TYPE fd = FS_DIR_NULL;
-
-	if (
-	  (pAdjustedFilename) == (char*)-1)
+	if ((szFilepathToAdj) == (char*)-1)
+	{
 		return false;
+	}
 
-	slash = strrchr(pAdjustedFilename, '/');
+	slash = strrchr(szFilepathToAdj, '/');
 	if (slash)
 	{
-		dirname = pAdjustedFilename;
 		name = slash + 1;
 		*slash = 0;
 	}
 	else
 	{
-		dirname = ".";
-		name = pAdjustedFilename;
+		name = szFilepathToAdj;
 	}
 
 	#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_APPLE // fix the parent path anyhow.
@@ -1231,31 +1227,35 @@ const bool GetFilenameNoCase
 	}
 	#endif
 
-	// Scan for the file.
-	bool found = false;
-	bool skipScan = false;
-
-	if (slash) *slash = '/';
+	if (slash)
+	{
+		*slash = '/';
+	}
 
 	#if FIX_FILENAME_CASE
-	char* path = pAdjustedFilename;
+	char* path = szFilepathToAdj;
 	char* sep;
 	while ((sep = strchr(path, '/')) != NULL)
 	{
 		*sep = '\0';
-		const bool exists = FixOnePathElement(pAdjustedFilename);
+		const bool exists = FixOnePathElement(szFilepathToAdj);
 		*sep = '/';
 		if (!exists)
+		{
 			return false;
+		}
 
 		path = sep + 1;
 	}
-	if (!FixOnePathElement(pAdjustedFilename))    // catch last filename.
+	if (!FixOnePathElement(szFilepathToAdj))    // catch last filename.
+	{
 		return false;
-
+	}
 	#else
-	for (char* c = pAdjustedFilename; *c; ++c)
+	for (char* c = szFilepathToAdj; *c; ++c)
+	{
 		*c = tolower(*c);
+	}
 	#endif
 
 	return true;
@@ -1277,7 +1277,6 @@ HANDLE CreateFile(
 	int flags = 0;
 	int fd = -1;
 	FS_ERRNO_TYPE fserr;
-	bool create = false;
 	HANDLE h;
 
 	if ((dwDesiredAccess & GENERIC_READ) == GENERIC_READ
@@ -1297,15 +1296,12 @@ HANDLE CreateFile(
 		{
 		case CREATE_ALWAYS:
 			flags |= O_CREAT | O_TRUNC;
-			create = true;
 			break;
 		case CREATE_NEW:
 			flags |= O_CREAT | O_EXCL;
-			create = true;
 			break;
 		case OPEN_ALWAYS:
 			flags |= O_CREAT;
-			create = true;
 			break;
 		case OPEN_EXISTING:
 			flags = O_RDONLY;
@@ -1323,12 +1319,11 @@ HANDLE CreateFile(
 	const char* adjustedFilename = ConvertFileName(buf, sizeof(buf), lpFileName);
 #else
 	char adjustedFilename[MAX_PATH];
-	GetFilenameNoCase(lpFileName, adjustedFilename, create);
+	cry_strcpy(adjustedFilename, lpFileName);
+	ConvertFilenameNoCase(adjustedFilename);
 #endif
 
 	bool failOpen = false;
-	(void)create;
-
 	if (failOpen)
 	{
 		fd = -1;
@@ -1343,7 +1338,6 @@ HANDLE CreateFile(
 #endif
 	}
 
-	(void)fserr;
 	if (fd == -1)
 	{
 		h = INVALID_HANDLE_VALUE;
@@ -1377,7 +1371,8 @@ BOOL SetFileTime(const char* lpFileName, const FILETIME* lpLastAccessTime)
 #else
 	// Craig: can someone get a better impl here?
 	char adjustedFilename[MAX_PATH];
-	GetFilenameNoCase(lpFileName, adjustedFilename, false);
+	cry_strcpy(adjustedFilename, lpFileName);
+	ConvertFilenameNoCase(adjustedFilename);
 #endif
 
 #if CRY_PLATFORM_ORBIS

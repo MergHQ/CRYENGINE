@@ -1305,20 +1305,16 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 		}
 	}
 
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS	
+	// Only lower case after the root path
+	uint rootAdj = strncmp(m_szEngineRootDir, szNewSrc, m_szEngineRootDirStrLen) == 0 ? m_szEngineRootDirStrLen : 0;
+	ConvertFilenameNoCase(szNewSrc + rootAdj);
+#endif
+
 	strcpy(dst, szNewSrc);
 	const int dstLen = strlen(dst);
 
 	char* pEnd = dst + dstLen;
-
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS
-	//we got to adjust the filename and fetch the case sensitive one
-	char sourceName[MAX_PATH];
-	cry_strcpy(sourceName, dst);
-	// Note: we'll copy the adjustedFilename even if the filename can not be
-	// matched against an existing file. This is because getFilenameNoCase() will
-	// adjust leading path components (e.g. ".../game/..." => ".../Game/...").
-	GetFilenameNoCase(sourceName, dst, false);
-#endif
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	if ((nFlags & FLAGS_ADD_TRAILING_SLASH) && pEnd > dst && (pEnd[-1] != g_cNativeSlash && pEnd[-1] != g_cNonNativeSlash))
@@ -2597,7 +2593,7 @@ bool CCryPak::ClosePack(const char* pName, unsigned nFlags)
 			//
 			// the pZip (cache) can be referenced from stream engine and pseudo-files.
 			// the archive can be referenced from outside
-			bool bResult = (it->pZip->NumRefs() == 2) && it->pArchive->NumRefs() == 1;
+			bool bResult = (it->pZip->NumRefs() == 2) && it->pArchive->NumRefs();
 			if (bResult)
 			{
 				m_arrZips.erase(it);
@@ -2814,6 +2810,9 @@ bool CCryPak::InitPack(const char* szBasePath, unsigned nFlags)
 		SetAlias("%USER%", buffer, true);
 	}
 #endif
+	CryFindEngineRootFolder(CRY_ARRAY_COUNT(m_szEngineRootDir), m_szEngineRootDir);
+	m_szEngineRootDirStrLen = strlen(m_szEngineRootDir);
+
 	return true;
 }
 

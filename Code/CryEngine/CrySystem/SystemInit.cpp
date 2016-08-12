@@ -1772,19 +1772,10 @@ bool CSystem::InitFileSystem(const IGameStartup* pGameStartup)
 		m_env.pCryPak->RecordFileOpen(ICryPak::RFOM_EngineStartup);
 
 	{
-#ifdef CRY_PLATFORM_ORBIS
-		m_env.pCryPak->SetAlias("%ENGINEROOT%", ".", true);
-#elif CRY_PLATFORM_ANDROID
-		// Hack! Android currently does not support a directory layout, there is an explicit search in main for GameSDK/GameData.pak
-		// and the executable folder is not related to the engine or game folder. - 18/03/2016
-		string engineRootDir = PathUtil::RemoveSlash(androidGetPakPath());
-		m_env.pCryPak->SetAlias("%ENGINEROOT%", engineRootDir, true);
-#else
 		char szEngineRootDir[_MAX_PATH];
 		CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDir), szEngineRootDir);
 		string engineRootDir = PathUtil::RemoveSlash(szEngineRootDir);
 		m_env.pCryPak->SetAlias("%ENGINEROOT%", engineRootDir.c_str(), true);
-#endif
 	}
 
 	bool bRes = m_env.pCryPak->Init("");

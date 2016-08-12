@@ -395,7 +395,7 @@ bool CrySetFileAttributes(const char* lpFileName, uint32 dwFileAttributes)
 
 	#endif // CRY_PLATFORM_WINAPI
 
-	#if CRY_PLATFORM_WINAPI || CRY_PLATFORM_LINUX
+#if CRY_PLATFORM_WINAPI || CRY_PLATFORM_LINUX
 //////////////////////////////////////////////////////////////////////////
 void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRootPath)
 {
@@ -457,10 +457,24 @@ void CryFindRootFolderAndSetAsCurrentWorkingDirectory()
 	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDir), szEngineRootDir);
 	CrySetCurrentWorkingDirectory(szEngineRootDir);
 }
+#elif CRY_PLATFORM_ORBIS
+void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRootPath)
+{
+	cry_strcpy(szEngineRootPath, engineRootPathSize, ".");
+}
+#elif CRY_PLATFORM_ANDROID
 
-	#endif // CRY_PLATFORM_WINAPI || CRY_PLATFORM_POSIX && !CRY_PLATFORM_ORBIS
+extern const char*    androidGetPakPath();
+void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRootPath)
+{
+	// Hack! Android currently does not support a directory layout, there is an explicit search in main for GameSDK/GameData.pak
+	// and the executable folder is not related to the engine or game folder. - 18/03/2016
+	cry_strcpy(szEngineRootPath, engineRootPathSize, androidGetPakPath());
+}
 
-	#if CRY_PLATFORM_DURANGO
+#endif 
+
+#if CRY_PLATFORM_DURANGO
 HMODULE DurangoLoadLibrary(const char* libName)
 {
 	HMODULE h = ::LoadLibraryExA(libName, 0, 0);
