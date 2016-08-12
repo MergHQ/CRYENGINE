@@ -3776,31 +3776,35 @@ void COctreeNode::GetNearestCubeProbe(float& fMinDistance, int& nMaxPriority, CL
 	{
 		if (pObj->GetRenderNodeType() == eERType_Light)
 		{
+			CLightEntity* pLightEnt = (CLightEntity*)pObj;
+			CDLight* pLight = &pLightEnt->m_light;
+
+			if (pLightEnt->GetLayerId() != uint16(~0) && (pObj->m_dwRndFlags & ERF_HIDDEN))
+				continue;
+			if ((pLight->m_Flags & DLF_DISABLED) || (!GetCVars()->e_DynamicLights))
+				continue;
+			if (!(pLight->m_Flags & DLF_DEFERRED_CUBEMAPS))
+				continue;
+
 			AABB box;
 			pObj->FillBBox(box);
 			if (Overlap::AABB_AABB(*pBBox, box))
 			{
-				CLightEntity* pLightEnt = (CLightEntity*)pObj;
-				CDLight* pLight = &pLightEnt->m_light;
+				Vec3 vCenterRel = vCenter - pLight->GetPosition();
+				Vec3 vCenterOBBSpace;
+				vCenterOBBSpace.x = pLightEnt->m_Matrix.GetColumn0().GetNormalized().dot(vCenterRel);
+				vCenterOBBSpace.y = pLightEnt->m_Matrix.GetColumn1().GetNormalized().dot(vCenterRel);
+				vCenterOBBSpace.z = pLightEnt->m_Matrix.GetColumn2().GetNormalized().dot(vCenterRel);
 
-				if (pLight->m_Flags & DLF_DEFERRED_CUBEMAPS)
+				// Check if object center is within probe OBB
+				Vec3 vProbeExtents = pLight->m_ProbeExtents;
+				if (fabs(vCenterOBBSpace.x) < vProbeExtents.x && fabs(vCenterOBBSpace.y) < vProbeExtents.y && fabs(vCenterOBBSpace.z) < vProbeExtents.z)
 				{
-					Vec3 vCenterRel = vCenter - pLight->GetPosition();
-					Vec3 vCenterOBBSpace;
-					vCenterOBBSpace.x = pLightEnt->m_Matrix.GetColumn0().GetNormalized().dot(vCenterRel);
-					vCenterOBBSpace.y = pLightEnt->m_Matrix.GetColumn1().GetNormalized().dot(vCenterRel);
-					vCenterOBBSpace.z = pLightEnt->m_Matrix.GetColumn2().GetNormalized().dot(vCenterRel);
-
-					// Check if object center is within probe OBB
-					Vec3 vProbeExtents = pLight->m_ProbeExtents;
-					if (fabs(vCenterOBBSpace.x) < vProbeExtents.x && fabs(vCenterOBBSpace.y) < vProbeExtents.y && fabs(vCenterOBBSpace.z) < vProbeExtents.z)
+					if (pLight->m_nSortPriority > nMaxPriority)
 					{
-						if (pLight->m_nSortPriority > nMaxPriority)
-						{
-							pNearestLight = (CLightEntity*)pObj;
-							nMaxPriority = pLight->m_nSortPriority;
-							fMinDistance = 0;
-						}
+						pNearestLight = (CLightEntity*)pObj;
+						nMaxPriority = pLight->m_nSortPriority;
+						fMinDistance = 0;
 					}
 				}
 			}
