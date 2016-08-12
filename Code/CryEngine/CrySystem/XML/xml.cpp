@@ -1316,15 +1316,16 @@ protected:
 	}
 	static void characterData(void* userData, const char* s, int len) PREFAST_SUPPRESS_WARNING(6262)
 	{
-		char str[32700];
+		static char str[32768];
+
 		if (len > sizeof(str) - 1)
 		{
-			assert(0);
-			len = sizeof(str) - 1;
+			CryFatalError("XML Parser buffer too small in \'characterData\' function. (%s)", s);
 		}
+
 		// Note that XML buffer userData has no terminating '\0'.
 		memcpy(str, s, len);
-		str[len] = 0;
+		str[len] = '\0';
 		((XmlParserImp*)userData)->onRawData(str);
 	}
 
