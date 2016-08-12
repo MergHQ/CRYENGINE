@@ -673,11 +673,8 @@ void CResponseManager::GetAllResponseData(DRS::VariableValuesList* pOutCollectio
 	{
 		if (it->second->GetExecutionCounter() > 0)
 		{
-			const string collectionName = "_Internal.";
-			temp.first = collectionName + it->first.GetText();
-			char buffer[128];
-			cry_sprintf(buffer, "%u,%f,%f", it->second->GetExecutionCounter(), it->second->GetLastStartTime(), it->second->GetLastEndTime());
-			temp.second = buffer;
+			temp.first.Format("_Internal.%s", it->first.GetText().c_str());
+			temp.second.Format("%u,%f,%f", it->second->GetExecutionCounter(), it->second->GetLastStartTime(), it->second->GetLastEndTime());
 			pOutCollectionsList->push_back(temp);
 		}
 	}
@@ -696,8 +693,8 @@ void CResponseManager::SetAllResponseData(DRS::VariableValuesListIterator start,
 	float endTime;
 
 	string collectionAndVariable;
+	string collectionName;
 	CHashedString responseName;
-	CHashedString collectionName;
 	
 	for (DRS::VariableValuesListIterator it = start; it != end; ++it)
 	{
@@ -716,6 +713,10 @@ void CResponseManager::SetAllResponseData(DRS::VariableValuesListIterator start,
 					pResponse->SetExecutionCounter(executionCounter);
 					pResponse->SetLastStartTime(startTime);
 					pResponse->SetLastEndTime(endTime);
+				}
+				else
+				{
+					DrsLogWarning((string("Could not parse response execution information from given data '") + it->second + "'.").c_str());
 				}
 			}
 		}

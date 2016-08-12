@@ -38,7 +38,7 @@ DRS::IResponseActionInstanceUniquePtr CActionSetGameToken::Execute(DRS::IRespons
 		}
 		else
 		{
-			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Could not find game token with name '%s'", m_tokenName.c_str());
+			CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_ERROR, "Could not find game token with name '%s'", m_tokenName.c_str());
 		}
 
 	}

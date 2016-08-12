@@ -433,6 +433,11 @@ inline int cry_strncmp(const char* string1, const char* string2, size_t count)
 	return strncmp(string1, string2, count);
 }
 
+template<size_t STRING2_CHAR_COUNT> inline int cry_strncmp(const char* string1, const char(&string2)[STRING2_CHAR_COUNT])
+{
+	return strncmp(string1, string2, STRING2_CHAR_COUNT - 1);
+}
+
 inline int cry_strnicmp(const char* string1, const char* string2, size_t count)
 {
 #if CRY_PLATFORM_WINDOWS

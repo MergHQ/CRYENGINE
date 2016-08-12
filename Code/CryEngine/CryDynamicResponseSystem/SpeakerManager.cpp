@@ -237,20 +237,20 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 {
 	if (!pIActor)
 	{
+		InformListener(pIActor, lineID, DRS::ISpeakerManager::IListener::eLineEvent_CouldNotBeStarted, nullptr);
 		CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "StartSpeaking was called without a valid DRS Actor.");
 		return false;
 	}
 
+	CResponseActor* pActor = static_cast<CResponseActor*>(pIActor);
 	CDialogLineDatabase* pLineDatabase = static_cast<CDialogLineDatabase*>(CResponseSystem::GetInstance()->GetDialogLineDatabase());
 	CDialogLineSet* pLineSet = pLineDatabase->GetLineSetById(lineID);
 	if (pLineSet && !pLineSet->HasAvailableLines())
 	{
+		InformListener(pActor, lineID, DRS::ISpeakerManager::IListener::eLineEvent_CouldNotBeStarted, nullptr);
 		return false;
 	}
-	int priority = (pLineSet) ? pLineSet->GetPriority() : 50; // 50 = default priority
-	const CDialogLine* pLine = nullptr;                       //we will check the priority first, before picking a line
 
-	CResponseActor* pActor = static_cast<CResponseActor*>(pIActor);
 	IEntity* pEntity = pActor->GetLinkedEntity();
 	if (!pEntity)
 	{
@@ -259,6 +259,8 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 		return false;
 	}
 
+	const CDialogLine* pLine = nullptr;                       //we will check the priority first, before picking a line
+	const int priority = (pLineSet) ? pLineSet->GetPriority() : 50; // 50 = default priority
 	SSpeakInfo* pSpeakerInfoToUse = nullptr;
 
 	//check if the actor is already talking

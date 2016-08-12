@@ -13,7 +13,7 @@ using namespace CryDRS;
 //--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName, const string& collectionName, const CVariableValue& oldValue, const CVariableValue& newValue, float time)
 {
-	if (strncmp(collectionName.c_str(), "Context", 7) == 0 || strncmp(variableName.c_str(), "CurrentTime", 11) == 0)
+	if (cry_strncmp(collectionName.c_str(), "Context") == 0 || cry_strncmp(variableName.c_str(), "CurrentTime") == 0)
 	{
 		return;  //We dont want our list polluted by these...
 	}

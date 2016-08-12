@@ -492,13 +492,13 @@ struct IResponseManager
 
 	/**
 	 * will register the given class (derived from DRS.IResponseManager.IListener) as a listener to signal-processing. If a signalInstanceId is provided, only callbacks for that specific instance are sent
-	 * @return returns if successful
+	 * @return returns true if successful
 	 * @see DRS.IResponseManager.IListener, CryDRS.CResponseActor.QueueSignal
 	 */
 	virtual bool AddListener(IListener* pNewListener, SignalInstanceId onlySignalWithID = s_InvalidSignalId) = 0;
 	/**
-	 * Will return the listener from the classes to be notified about signal events.
-	 * @return returns if successful
+	 * Will remove the listener
+	 * @return returns true if successful
 	 * @see DRS.IResponseManager.IListener
 	 */
 	virtual bool RemoveListener(IListener* pListenerToRemove) = 0;
@@ -645,15 +645,15 @@ struct IDialogLine
 
 struct IDialogLineSet
 {
-	enum class EPickModeFlags : uint32
+	enum EPickModeFlags : uint32
 	{
-		None                        = 0,
-		RandomVariation             = 1 << 0, //!< Pick one variation at random
-		SequentialVariationRepeat   = 1 << 1, //!< Pick the next variation in the order they are specified (start from the beginning after the last one)
-		SequentialVariationClamp    = 1 << 2, //!< Pick the next variation in the order they are specified (repeat the last one)
-		SequentialAllSuccessively   = 1 << 3, //!< Pick all, one after another. (so a single SpeakLine action will cause a series of lines to be spoken)
-		SequentialVariationOnlyOnce = 1 << 4, //!< Pick the next variation in the order they are specified (return 0 when all are spoken)
-		Any                         = RandomVariation | SequentialVariationRepeat | SequentialVariationClamp | SequentialAllSuccessively | SequentialVariationOnlyOnce
+		EPickModeFlags_None                         = 0,
+		EPickModeFlags_RandomVariation             = BIT(0), //!< Pick one variation at random, but try not to repeat the last picked variation
+		EPickModeFlags_SequentialVariationRepeat   = BIT(1), //!< Pick the next variation in the order they are specified (start from the beginning after the last one)
+		EPickModeFlags_SequentialVariationClamp    = BIT(2), //!< Pick the next variation in the order they are specified (repeat the last one)
+		EPickModeFlags_SequentialAllSuccessively   = BIT(3), //!< Pick all, one after another. (so a single SpeakLine action will cause a series of lines to be spoken)
+		EPickModeFlags_SequentialVariationOnlyOnce = BIT(4), //!< Pick the next variation in the order they are specified (return 0 when all are spoken)
+		Any = EPickModeFlags_RandomVariation | EPickModeFlags_SequentialVariationRepeat | EPickModeFlags_SequentialVariationClamp | EPickModeFlags_SequentialAllSuccessively | EPickModeFlags_SequentialVariationOnlyOnce
 	};
 
 	virtual ~IDialogLineSet() {}
