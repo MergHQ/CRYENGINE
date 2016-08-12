@@ -1428,10 +1428,7 @@ ISOLATE
 
 #if %_RT_NEAREST
 	bRelativeToCam = false;
-
-	#if %_RT_PER_INSTANCE_CB_TEMP
-		VPMatrix = CV_ViewProjNearestMatr;
-	#endif
+	VPMatrix = CV_ViewProjNearestMatr;
 #endif
 
 		// Get instanced matrix

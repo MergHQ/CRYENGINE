@@ -16,7 +16,6 @@ CSceneRenderPass::CSceneRenderPass()
 	m_pDepthTarget = nullptr;
 	m_pResourceLayout = nullptr;
 	m_pPerPassResources = nullptr;
-	m_bNearestViewport = false;
 	m_szLabel = "";
 
 	for (uint32 i = 0; i < CRY_ARRAY_COUNT(m_pColorTargets); ++i)
@@ -69,11 +68,6 @@ void CSceneRenderPass::SetViewport(const D3DViewPort& viewport)
 	};
 
 	m_scissorRect = scissorRect;
-}
-
-void CSceneRenderPass::EnableNearestViewport(bool bNearest)
-{
-	m_bNearestViewport = bNearest && (m_passFlags & CSceneRenderPass::ePassFlags_RenderNearest);
 }
 
 void CSceneRenderPass::ExchangeRenderTarget(uint32 slot, CTexture* pNewColorTarget)
@@ -134,7 +128,7 @@ void CSceneRenderPass::DrawRenderItems_GP2(SGraphicsPipelinePassContext& passCon
 	CDeviceGraphicsCommandInterface* pCommandInterface = pCommandList->GetGraphicsInterface();
 
 	PrepareRenderPassForUse(*pCommandList);
-	BeginRenderPass(*pCommandList);
+	BeginRenderPass(*pCommandList, passContext.renderNearest);
 
 	auto& renderItems = passContext.pRenderView->GetRenderItems(rRP.m_nPassGroupID);
 	const uint32 drawParamsIndex = (passContext.pRenderView->GetType() == CRenderView::eViewType_Shadow) ? 1 : 0;
@@ -184,7 +178,7 @@ void CSceneRenderPass::DrawRenderItems_GP2(SGraphicsPipelinePassContext& passCon
 		}
 	}
 
-	EndRenderPass(*pCommandList);
+	EndRenderPass(*pCommandList, passContext.renderNearest);
 }
 
 void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
@@ -200,7 +194,7 @@ void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_RE
 	pCommandInterface->PrepareResourcesForUse(EResourceLayoutSlot_PerPassRS, m_pPerPassResources.get(), EShaderStage_AllWithoutCompute);
 }
 
-void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
+void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 
@@ -220,13 +214,13 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
 	pCommandInterface->BeginProfilerEvent(m_szLabel);
 	pCommandInterface->SetRenderTargets(targetCount, m_pColorTargets, m_pDepthTarget);
-	pCommandInterface->SetViewports(1, &GetViewport(m_bNearestViewport));
+	pCommandInterface->SetViewports(1, &GetViewport(bNearest));
 	pCommandInterface->SetScissorRects(1, &m_scissorRect);
 	pCommandInterface->SetResourceLayout(m_pResourceLayout.get());
 	pCommandInterface->SetResources(EResourceLayoutSlot_PerPassRS, m_pPerPassResources.get(), EShaderStage_AllWithoutCompute);
 }
 
-void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
+void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 
@@ -255,7 +249,7 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 	passContext.stageID = m_stageID;
 	passContext.passID = m_passID;
 
-	passContext.renderNearest = m_bNearestViewport;
+	passContext.renderNearest = (list == EFSLIST_NEAREST_OBJECTS) && (m_passFlags & CSceneRenderPass::ePassFlags_RenderNearest);
 	passContext.renderListId = list;
 	passContext.rendItems.start = listStart < 0 ? 0 : listStart;
 	passContext.rendItems.end = listEnd < 0 ? pRenderView->GetRenderItems(list).size() : listEnd;

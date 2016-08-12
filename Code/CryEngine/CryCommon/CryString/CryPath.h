@@ -479,11 +479,6 @@ inline bool MatchWildcard(const char* szString, const char* szWildcard)
 	}
 }
 
-inline bool IsDirectory(const char* szPath)
-{
-	return (GetFileAttributes(szPath) & FILE_ATTRIBUTE_DIRECTORY) != 0;
-}
-
 inline std::vector<string> GetDirectoryStructure(const string& path)
 {
 	if (path.empty())

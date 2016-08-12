@@ -1,0 +1,25 @@
+{
+    "content": {
+        "assets": [
+            "Assets"
+        ],
+        "code": [
+            "Code"
+        ],
+        "libs": [
+            {
+                "name": "FirstPersonShooterTemplate",
+                "shared": {
+                    "win_x64": "bin/win_x64/FirstPersonShooterTemplate.dll",
+                    "win_x86": "bin/win_x86/FirstPersonShooterTemplate.dll"
+                }
+            }
+        ]
+    },
+    "info": {
+        "name": "First Person Game Template"
+    },
+    "require": {
+        "engine": "engine-5.2"
+    }
+}

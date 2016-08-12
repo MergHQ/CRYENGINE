@@ -69,9 +69,7 @@ struct SFrameBufferConfiguration
 		MAX_ATTACHMENTS              = FIRST_COLOR_ATTACHMENT_INDEX + MAX_COLOR_ATTACHMENTS
 	};
 
-	SOutputMergerView* m_akAttachments[MAX_ATTACHMENTS];
-
-	SFrameBufferConfiguration();
+	SOutputMergerViewPtr m_akAttachments[MAX_ATTACHMENTS];
 
 	static GLenum AttachmentIndexToID(uint32 uIndex);
 	static uint32 AttachmentIDToIndex(GLenum eID);

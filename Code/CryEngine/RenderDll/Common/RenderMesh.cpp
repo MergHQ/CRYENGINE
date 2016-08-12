@@ -2598,7 +2598,7 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, EVertexFormat eVF, ui
 		if (pMS->m_pUpdateData && pMS->m_nFrameAccess != nFrame)
 		{
 			pMS->m_nFrameAccess = nFrame;
-			if (pMS->m_nFrameRequest > pMS->m_nFrameUpdate)
+			if ((pMS->m_nFrameRequest == -1) || (pMS->m_nFrameRequest > pMS->m_nFrameUpdate))
 			{
 				{
 					PROFILE_FRAME(Mesh_CheckUpdateUpdateGBuf);
@@ -3027,22 +3027,22 @@ bool CRenderMesh::UpdateVidVertices(int nStream, bool stall)
 
   if (pMS->m_nID==~0u)
   {
-    if (!CreateVidVertices(m_nVerts, m_eVF, nStream))
-      return false;
+		if (!CreateVidVertices(m_nVerts, m_eVF, nStream))
+			return false;
   }
 	if (pMS->m_nID!=~0u)
   {
-    UnlockStream(nStream);
+		UnlockStream(nStream);
     if (pMS->m_pUpdateData)
     {
-	  return gRenDev->m_DevBufMan.UpdateBuffer(pMS->m_nID, pMS->m_pUpdateData, AlignedMeshDataSize(GetStreamSize(nStream)));
+			return gRenDev->m_DevBufMan.UpdateBuffer(pMS->m_nID, pMS->m_pUpdateData, AlignedMeshDataSize(GetStreamSize(nStream)));
     }
     else
     {
       assert(0);
     }
-  }
-  return false;
+	}
+	return false;
 }
 
 #ifdef MESH_TESSELLATION_RENDERER

@@ -1,0 +1,25 @@
+{
+    "content": {
+        "assets": [
+            "Assets"
+        ],
+        "code": [
+            "Code"
+        ],
+        "libs": [
+            {
+                "name": "RollingBallTemplate",
+                "shared": {
+                    "win_x64": "bin/win_x64/RollingBallTemplate.dll",
+                    "win_x86": "bin/win_x86/RollingBallTemplate.dll"
+                }
+            }
+        ]
+    },
+    "info": {
+        "name": "Rolling Ball Game Template"
+    },
+    "require": {
+        "engine": "engine-5.2"
+    }
+}
