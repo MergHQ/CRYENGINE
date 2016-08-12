@@ -304,13 +304,6 @@ void CATLAudioObject::ClearEnvironments()
 	m_environments.clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::Init()
-{
-	CRY_ASSERT(m_flags == eAudioTriggerStatus_None);
-	m_flags = eAudioObjectFlags_WaitingForInitialTransformation;
-}
-
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::Clear()
 {
@@ -367,10 +360,7 @@ void CATLAudioObject::Update(
   float const distance,
   Vec3 const& audioListenerPosition)
 {
-	if ((m_flags & eAudioObjectFlags_WaitingForInitialTransformation) == 0)
-	{
-		m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition);
-	}
+	m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition);
 
 	if (m_maxRadius > 0.0f)
 	{
@@ -403,20 +393,18 @@ void CATLAudioObject::SetTransformation(CAudioObjectTransformation const& transf
 {
 	float const deltaTime = (g_lastMainThreadFrameStartTime - m_previousTime).GetSeconds();
 
-	if (deltaTime > 0.0f || (m_flags & eAudioObjectFlags_WaitingForInitialTransformation) > 0)
+	if (deltaTime > 0.0f)
 	{
 		m_attributes.transformation = transformation;
-		if ((m_flags & eAudioObjectFlags_WaitingForInitialTransformation) == 0)
-		{
-			m_attributes.velocity = (m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition()) / deltaTime;
-			m_flags |= eAudioObjectFlags_NeedsVelocityUpdate;
-		}
-		else
-		{
-			m_flags &= ~eAudioObjectFlags_WaitingForInitialTransformation;
-		}
+		m_attributes.velocity = (m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition()) / deltaTime;
+		m_flags |= eAudioObjectFlags_NeedsVelocityUpdate;
 		m_previousTime = g_lastMainThreadFrameStartTime;
 		m_previousAttributes = m_attributes;
+	}
+	else if (deltaTime < 0.0f) // delta time can get negative after loading a savegame...
+	{
+		m_previousTime = 0.0f;  // ...in that case we force an update to the new position
+		SetTransformation(transformation);
 	}
 }
 
