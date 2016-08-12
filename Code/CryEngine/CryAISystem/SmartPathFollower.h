@@ -28,6 +28,8 @@ struct SPathControlPoint2
 class InterpolatedPath
 {
 public:
+	static const float k_defaultClosestFindSegmentToleranceZ;
+
 	InterpolatedPath() : m_totalDistance() {}
 
 	inline float FindNextSegmentIndex(size_t startIndex) const;
@@ -37,7 +39,7 @@ public:
 
 	/// Returns the closest segment found between the two distances
 	/// If toleranceZ is equal to FLT_MAX then the height of the path points is not used a condition in the search
-	inline float FindClosestSegmentIndex(const Vec3& testPoint, const float startDistance = 0.0f, const float endDistance = FLT_MAX, const float toleranceZ = 0.5f) const;
+	inline float FindClosestSegmentIndex(const Vec3& testPoint, const float startDistance = 0.0f, const float endDistance = FLT_MAX, const float toleranceZ = k_defaultClosestFindSegmentToleranceZ, const bool bUse2D = true) const;
 
 	/// True if the path section between the start and endIndex deviates from the line by no more than maxDeviation.
 	inline bool IsParrallelTo(const Lineseg& line, float startIndex, float endIndex, float maxDeviation) const;
@@ -55,7 +57,7 @@ public:
 	inline size_t FindNextNavTypeSectionIndexAfter(size_t index) const;
 
 	/// Returns the next index on the path that deviates from a straight line by the deviation specified.
-	inline float FindNextInflectionIndex(float startIndex, float maxDeviation = 0.1f) const;
+	inline float FindNextInflectionIndex(float startIndex, float maxDeviation = 0.1f, const bool bUse2D = true) const;
 
 	/// Shortens the path to the specified endIndex
 	inline void ShortenToIndex(float endIndex);

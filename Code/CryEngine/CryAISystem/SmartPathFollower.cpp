@@ -30,6 +30,8 @@
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
 
+/*static*/ const float InterpolatedPath::k_defaultClosestFindSegmentToleranceZ = 0.5f;
+
 float InterpolatedPath::FindNextSegmentIndex(size_t startIndex) const
 {
 	float addition = .0f;
@@ -115,7 +117,7 @@ float InterpolatedPath::FindSegmentIndexAtDistance(float requestedDistance, size
 
 // Returns the segment index of the closest point on the path (fractional part provides exact position if required)
 float InterpolatedPath::FindClosestSegmentIndex(const Vec3& testPoint, const float startDistance,
-                                                const float endDistance, const float toleranceZ /* = 0.5f */) const
+                                                const float endDistance, const float toleranceZ /* = 0.5f */, const bool bUse2D /* = true */) const
 {
 	AIAssert(startDistance <= endDistance);
 
@@ -169,7 +171,10 @@ float InterpolatedPath::FindClosestSegmentIndex(const Vec3& testPoint, const flo
 			     (testZ <= max(segment.start.z, segment.end.z) + toleranceZ)))
 			{
 				float segmentDelta;
-				const float distToSegmentSq = Distance::Point_Lineseg2DSq(testPoint, segment, segmentDelta);
+				const float distToSegmentSq =
+				  bUse2D
+				  ? Distance::Point_Lineseg2DSq(testPoint, segment, segmentDelta)
+				  : Distance::Point_LinesegSq(testPoint, segment, segmentDelta);
 
 				// If this is a new best
 				if (distToSegmentSq < bestDistSq)
@@ -292,7 +297,7 @@ size_t InterpolatedPath::FindNextNavTypeSectionIndexAfter(size_t index) const
 }
 
 // Returns the next index on the path that deviates from a straight line by the deviation specified.
-float InterpolatedPath::FindNextInflectionIndex(float startIndex, float maxDeviation) const
+float InterpolatedPath::FindNextInflectionIndex(float startIndex, float maxDeviation /*= 0.1f*/, const bool bUse2D /*= true*/) const
 {
 	// Start at start pos and generate ray based on next segment start point
 	Lineseg testLine;
@@ -321,7 +326,10 @@ float InterpolatedPath::FindNextInflectionIndex(float startIndex, float maxDevia
 		for (size_t subIndex = static_cast<size_t>(searchStartIndex) + 1; subIndex < subIndexEnd; ++subIndex)
 		{
 			float delta;
-			float deviationSq = Distance::Point_Lineseg2DSq(m_points[subIndex].pos, testLine, delta);
+			float deviationSq =
+			  bUse2D
+			  ? Distance::Point_Lineseg2DSq(m_points[subIndex].pos, testLine, delta)
+			  : Distance::Point_LinesegSq(m_points[subIndex].pos, testLine, delta);
 			if (deviationSq > maxDeviationSq)
 			{
 				// This point is no longer safe, use the last safe index
@@ -841,7 +849,10 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 		Lineseg safeLine(m_validatedStartPos, followTargetPos);
 
 		float delta;
-		const float distToSafeLineSq = Distance::Point_Lineseg2DSq(curPos, safeLine, delta);
+		const float distToSafeLineSq =
+		  m_params.use2D
+		  ? Distance::Point_Lineseg2DSq(curPos, safeLine, delta)
+		  : Distance::Point_LinesegSq(curPos, safeLine, delta);
 
 		onSafeLine = distToSafeLineSq < sqr(0.15f);   // TODO: Parameterize & perhaps scale by proximity to target?
 
@@ -896,7 +907,10 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 			else
 			{
 				// we're at the start of the path
-				indexAtCurrentPos = m_path.FindClosestSegmentIndex(curPos, 0.0f, 5.0f, FLT_MAX); // 5m tolerance; using a FLT_MAX z-tolerance in case we're currently traversing a SmartObject that will make us end up at a "much higher" (or "much lower") position than we started at the time of the traveral
+				const float startDist = 0.0f;
+				const float endDist = 5.0f;       // 5m tolerance
+				const float toleranceZ = FLT_MAX; // using a FLT_MAX z-tolerance in case we're currently traversing a SmartObject that will make us end up at a "much higher" (or "much lower") position than we started at the time of the traveral
+				indexAtCurrentPos = m_path.FindClosestSegmentIndex(curPos, startDist, endDist, toleranceZ, m_params.use2D);
 			}
 
 			const float currentDistance = m_path.GetDistanceAtSegmentIndex(indexAtCurrentPos);
@@ -955,8 +969,11 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 		}
 		else
 		{
-			currentIndex = m_path.FindClosestSegmentIndex(curPos, 0.0f, 5.0f, FLT_MAX);  // We're at the start of the path,
-			// so we should be within 5m; using a FLT_MAX z-tolerance in case we're currently traversing a SmartObject that will make us end up at a "much higher" (or "much lower") position than we started at the time of the traveral
+			const float startDist = 0.0f;
+			const float endDist = 5.0f;       // We're at the start of the path, so we should be within 5m
+			const float toleranceZ = FLT_MAX; // using a FLT_MAX z-tolerance in case we're currently traversing a SmartObject that will make us end up at a "much higher" (or "much lower") position than we started at the time of the traveral
+
+			currentIndex = m_path.FindClosestSegmentIndex(curPos, startDist, endDist, toleranceZ, m_params.use2D);
 
 			const float currentDistance = m_path.GetDistanceAtSegmentIndex(currentIndex);
 			lookAheadIndex = m_path.FindSegmentIndexAtDistance(currentDistance + LookAheadDistance);
@@ -1017,7 +1034,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 				followTargetPos = m_path.GetPositionAtSegmentIndex(newTargetIndex);
 
 				// Update inflection point
-				m_inflectionIndex = m_path.FindNextInflectionIndex(newTargetIndex, m_params.pathRadius * 0.5f);   // TODO: Parameterize max deviation
+				m_inflectionIndex = m_path.FindNextInflectionIndex(newTargetIndex, m_params.pathRadius * 0.5f, m_params.use2D);   // TODO: Parameterize max deviation
 				inflectionPoint = m_path.GetPositionAtSegmentIndex(m_inflectionIndex);
 
 				// Update the cached follow target navigation-type
@@ -1034,7 +1051,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 		const float predictionTime = GetPredictionTimeForMovingAlongPath(isInsideObstacles, curVel.GetLengthSquared2D());
 		const float kIncreasedZToleranceForFindingClosestSegment = FLT_MAX; // We basically don't care about the z tolerance
 
-		float currentIndex = m_path.FindClosestSegmentIndex(m_curPos, .0f, m_path.TotalDistance(), kIncreasedZToleranceForFindingClosestSegment);
+		float currentIndex = m_path.FindClosestSegmentIndex(m_curPos, .0f, m_path.TotalDistance(), kIncreasedZToleranceForFindingClosestSegment, m_params.use2D);
 		if (currentIndex < 0.0f)
 		{
 			assert(currentIndex >= 0.0f);
@@ -1315,8 +1332,13 @@ float CSmartPathFollower::GetDistToNavType(IAISystem::ENavigationType navType) c
 		}
 
 		// FIXME: Stupid and expensive (but the original behavior)
-		const float closestIndex = m_path.FindClosestSegmentIndex(m_curPos, 0.0f,
-		                                                          m_path.GetDistanceAtSegmentIndex(m_followTargetIndex));
+		const float closestIndex = m_path.FindClosestSegmentIndex(
+		  m_curPos,
+		  0.0f,
+		  m_path.GetDistanceAtSegmentIndex(m_followTargetIndex),
+		  InterpolatedPath::k_defaultClosestFindSegmentToleranceZ,
+		  m_params.use2D);
+
 		if (closestIndex < 0.0f)
 			return std::numeric_limits<float>::max();
 
@@ -1540,7 +1562,7 @@ bool CSmartPathFollower::IsRemainingPathOverlappingWithNavMeshTileBounds(const N
 	AABB remainingPathAABB;
 
 	// add our current position to the path's AABB (our position is very likely somewhere between 2 path points)
-	const float indexOfCurrentPos = m_path.FindClosestSegmentIndex(m_curPos, 0.0f, FLT_MAX, FLT_MAX);
+	const float indexOfCurrentPos = m_path.FindClosestSegmentIndex(m_curPos, 0.0f, FLT_MAX, FLT_MAX, m_params.use2D);
 	remainingPathAABB.min = remainingPathAABB.max = m_path.GetPositionAtSegmentIndex(indexOfCurrentPos);
 
 	// add all succeeding points to the path's AABB
@@ -1569,7 +1591,7 @@ bool CSmartPathFollower::IsRemainingPathTraversableOnNavMesh() const
 	{
 		const MNM::MeshGrid& gridUsedByPath = gAIEnv.pNavigationSystem->GetMesh(meshIDUsedByPath).grid;
 
-		float index1 = m_path.FindClosestSegmentIndex(m_curPos, 0.0f, FLT_MAX, FLT_MAX);
+		float index1 = m_path.FindClosestSegmentIndex(m_curPos, 0.0f, FLT_MAX, FLT_MAX, m_params.use2D);
 		float index2 = m_path.FindNextSegmentIndex(static_cast<size_t>(index1));
 
 		// - perform raycasts along all segments of the remaining path
