@@ -1088,14 +1088,6 @@ public:
 	virtual IScaleformPlayback* SF_CreatePlayback() const override;
 	virtual void SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const override;
 	virtual void SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const override;
-#else
-	void SF_ConfigMask(int st, uint32 ref) {}
-	virtual int SF_CreateTexture(int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) override { return -1; }
-	virtual void SF_GetMeshMaxSize(int& numVertices, int& numIndices) const {}
-
-	virtual IScaleformPlayback* SF_CreatePlayback() const override {}
-	virtual void SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const override {}
-	virtual void SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const override {}
 #endif // #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 
 	virtual ITexture* CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) override;

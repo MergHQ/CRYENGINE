@@ -55,10 +55,13 @@ struct SGraphicsPipelinePassContext;
 #include "PipelineProfiler.h"
 #include "D3DDebug.h"
 #include "DeviceInfo.h"
-#include "../Scaleform/ScaleformPlayback.h"
 #include <memory>
 #include "Common/RenderView.h"
+
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#include "../Scaleform/ScaleformPlayback.h"
 #include "../Scaleform/ScaleformRender.h"
+#endif
 
 inline DWORD FLOATtoDWORD( float f )
 {
@@ -291,8 +294,10 @@ class CD3D9Renderer final:public CRenderer, public IWindowMessageHandler
   friend class CTexture;
 	friend class CShadowMapStage;
 	friend class CSceneRenderPass;
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	friend struct IScaleformPlayback;
 	friend class CScaleformPlayback;
+#endif
 
 public:
 	enum EDefShadows_Passes
@@ -870,14 +875,6 @@ public:
 	void SF_Flush();
 	virtual bool SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) override;
 	virtual bool SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData) override;
-#else // defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-	void SF_DrawIndexedTriList(int baseVertexIndex, int minVertexIndex, int numVertices, int startIndex, int triangleCount, const SSF_GlobalDrawParams& __restrict params) {}
-	void SF_DrawLineStrip(int baseVertexIndex, int lineCount, const SSF_GlobalDrawParams& __restrict params) {}
-	void SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxData, int baseVertexIndex, const SSF_GlobalDrawParams& __restrict params) {}
-	void SF_DrawBlurRect(const IScaleformPlayback::DeviceData* vtxData, const SSF_GlobalDrawParams& __restrict params) {}
-	void SF_Flush() {}
-	virtual bool SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) override { return false; }
-	virtual bool SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData) override { return false; }
 #endif // defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 
 	virtual void SetProfileMarker(const char* label, ESPM mode) const override;
