@@ -128,7 +128,7 @@ CPatchPakManager::~CPatchPakManager()
 				CRY_ASSERT(patchPakData.m_pPatchPakMemBlock.get());
 
 				// should deconstruct here as refcount == 1
-				CRY_ASSERT_MESSAGE(patchPakData.m_pPatchPakMemBlock->GetRefCount() == 1, "we're trying to release our memblock but something else still holds a ref to it!");
+				CRY_ASSERT_MESSAGE(patchPakData.m_pPatchPakMemBlock->Unique(), "we're trying to release our memblock but something else still holds a ref to it!");
 			}
 
 			// nuke the actual buffer
@@ -695,7 +695,7 @@ void CPatchPakManager::UnloadPatchPakFiles()
 
 			// should deconstruct here as refcount == 1
 			CRY_ASSERT(patchPakData.m_pPatchPakMemBlock.get());
-			CRY_ASSERT_MESSAGE(patchPakData.m_pPatchPakMemBlock->GetRefCount() == 1, "we're trying to release our memblock but something else still holds a ref to it!");
+			CRY_ASSERT_MESSAGE(patchPakData.m_pPatchPakMemBlock->Unique(), "we're trying to release our memblock but something else still holds a ref to it!");
 			patchPakData.m_pPatchPakMemBlock = NULL;
 			patchPakData.m_state = SPatchPakData::es_Downloaded;
 		}

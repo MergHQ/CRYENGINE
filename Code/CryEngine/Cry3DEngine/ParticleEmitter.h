@@ -197,7 +197,7 @@ public:
 	void     UpdateFromEntity();
 	bool     IsIndependent() const
 	{
-		return GetRefCount() == 1;
+		return  Unique();
 	}
 	bool NeedSerialize() const
 	{

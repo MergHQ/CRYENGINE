@@ -840,7 +840,7 @@ public:
 		Log("Enabled", pProxy->IsEnabled(), depth);
 		Log("ForcedExecute", pProxy->IsForcedExecute(), depth);
 		Log("UpdateAlways", pProxy->IsUpdateAlways(), depth);
-		Log("NumRefs", pProxy->NumRefs(), depth);
+		Log("IsUnique", pProxy->Unique(), depth);
 	}
 
 	void Log(const char* name, IEntityArchetype* pArchetype, uint32 depth)

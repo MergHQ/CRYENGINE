@@ -1982,6 +1982,7 @@ void CVisAreaManager::ReleaseInactiveSegments()
 	for (int i = 0; i < m_arrDeletedVisArea.Count(); i++)
 	{
 		int nSlotID = m_arrDeletedVisArea[i];
+
 		SAFE_DELETE(m_visAreas[nSlotID]->m_pObjectsTree);
 	}
 	m_arrDeletedVisArea.Clear();
@@ -2040,22 +2041,14 @@ void CVisAreaManager::DeleteVisAreaSegment(int nSID,
 		int index = visAreasInSegment[i];
 		assert(index >= 0 && index < visAreas.Count());
 		CSWVisArea* pVisArea = (CSWVisArea*)visAreas[index];
-		pVisArea->Release();
-
-		// delete the visarea if it's ref count reaches zero
-		if (!pVisArea->NumRefs())
+		if (pVisArea->Unique())
+		{
+			lstVisAreas.Delete(pVisArea);
 			deletedVisAreas.push_back(index);
+		}
+		pVisArea->Release();		
 	}
 	visAreasInSegment.clear();
-
-	for (int i = 0; i < lstVisAreas.Count(); i++)
-	{
-		CSWVisArea* pVisArea = (CSWVisArea*)lstVisAreas[i];
-		if (!pVisArea->NumRefs())
-		{
-			lstVisAreas.Delete(i);
-		}
-	}
 }
 
 CVisArea* CVisAreaManager::FindVisAreaByGuid(VisAreaGUID guid, PodArray<CVisArea*>& lstVisAreas)

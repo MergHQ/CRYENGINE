@@ -749,7 +749,7 @@ void CParticleManager::EraseEmitter(CParticleEmitter* pEmitter)
 		// Free resources.
 		pEmitter->Reset();
 
-		if (pEmitter->GetRefCount() == 1 && !pEmitter->m_pOcNode)
+		if (pEmitter->Unique() == 1 && !pEmitter->m_pOcNode)
 		{
 			// Free object itself if no other refs.
 			for (auto& pListener : m_ListenersList)
@@ -1205,7 +1205,7 @@ void CParticleManager::ClearCachedLibraries()
 	{
 		// Purge all unused effects.
 		CParticleEffect* pEffect = it->second;
-		bool fxInUse = (pEffect->NumRefs() > 1) || (pEffect->ResourcesLoaded(true));
+		const bool fxInUse = !pEffect->Unique() || pEffect->ResourcesLoaded(true);
 		if (!fxInUse)
 			it = m_Effects.erase(it);
 		else

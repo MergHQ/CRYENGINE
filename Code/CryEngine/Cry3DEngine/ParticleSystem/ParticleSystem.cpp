@@ -164,7 +164,7 @@ void CParticleSystem::ClearRenderResources()
 	m_emitters.clear();
 	for (auto it = m_effects.begin(); it != m_effects.end(); )
 	{
-		if (!it->second || it->second->NumRefs() == 1)
+		if (!it->second || it->second->Unique())
 			it = m_effects.erase(it);
 		else
 			++it;

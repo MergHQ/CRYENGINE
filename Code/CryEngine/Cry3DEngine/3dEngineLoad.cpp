@@ -645,7 +645,7 @@ void C3DEngine::UnloadLevel()
 
 	for (auto& pFr : m_lstCustomShadowFrustums)
 	{
-		CRY_ASSERT(pFr->GetRefCount() == 1);
+		CRY_ASSERT(pFr->Unique());
 		SAFE_RELEASE(pFr);
 	}
 	stl::free_container(m_lstCustomShadowFrustums);

@@ -54,6 +54,9 @@ void HandlerBase::SetAffinity()
 
 uint32 HandlerBase::SyncSetAffinity(uint32 cpuMask)//put -1
 {
+#if  CRY_PLATFORM_ANDROID
+	return 0;
+#else
 	if (cpuMask != 0)
 	{
 		cpu_set_t cpuSet;
@@ -82,6 +85,7 @@ uint32 HandlerBase::SyncSetAffinity(uint32 cpuMask)//put -1
 		}
 	}
 	return 0;
+#endif
 }
 
 	#elif CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO

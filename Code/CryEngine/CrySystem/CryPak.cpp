@@ -2593,7 +2593,7 @@ bool CCryPak::ClosePack(const char* pName, unsigned nFlags)
 			//
 			// the pZip (cache) can be referenced from stream engine and pseudo-files.
 			// the archive can be referenced from outside
-			bool bResult = (it->pZip->NumRefs() == 2) && it->pArchive->NumRefs();
+			bool bResult = (it->pZip->NumRefs() == 2) && it->pArchive->Unique();
 			if (bResult)
 			{
 				m_arrZips.erase(it);

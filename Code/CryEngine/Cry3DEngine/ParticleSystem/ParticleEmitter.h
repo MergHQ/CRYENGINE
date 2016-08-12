@@ -98,7 +98,7 @@ public:
 	CParticleEffect*          GetCEffect()                          { return m_pEffect; }
 	void                      Register();
 	void                      Unregister();
-	bool                      IsIndependent() const { return GetRefCount() == 1; }
+	bool                      IsIndependent() const { return Unique(); }
 	bool                      HasParticles() const;
 	void                      UpdateEmitGeomFromEntity();
 	const SVisEnviron&        GetVisEnv() const                     { return m_visEnviron; }

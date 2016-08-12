@@ -190,7 +190,7 @@ void CManager::ProcessResources()
 	    GetWriteRuntimes().end(),
 	    [](const _smart_ptr<CParticleComponentRuntime>& runtime)
 		{
-			return runtime->NumRefs() <= 2;
+			return runtime->UseCount() <= 2;
 	  }),
 	  GetWriteRuntimes().end());
 
@@ -200,7 +200,7 @@ void CManager::ProcessResources()
 	    m_particleFeatureGpuInterfaces.end(),
 	    [](const _smart_ptr<CFeature>& feature)
 		{
-			return feature->NumRefs() == 1;
+			return feature->Unique();
 	  }),
 	  m_particleFeatureGpuInterfaces.end());
 
