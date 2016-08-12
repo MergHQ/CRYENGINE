@@ -2837,7 +2837,6 @@ bool CD3D9Renderer::FX_HDRScene(bool bEnableHDR, bool bClear)
 	{
 		if (m_LogFile)
 			Logv(" +++ End HDR scene +++ \n");
-		CTexture::DestroyHDRMaps();
 	}
 	return true;
 }
@@ -4795,7 +4794,8 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	m_RP.m_nRendFlags = nFlags;
 	FX_ApplyThreadState(TI, &m_RP.m_OldTI[nRecurse]);
 
-	bool bHDRRendering = (nFlags & SHDF_ALLOWHDR) && IsHDRModeEnabled() && !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE);
+	const bool bHDRRendering = (nFlags & SHDF_ALLOWHDR) && IsHDRModeEnabled() && !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE);
+	const bool bNewGraphicsPipeline = m_nGraphicsPipeline >= 1 && !pRenderView->IsRecursive() && (nFlags & SHDF_ALLOWPOSTPROCESS) && !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE);
 
 	if (!IsHDRModeEnabled())
 	{
@@ -4818,6 +4818,9 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 			m_RP.m_PersFlags2 |= RBPF2_HDR_FP16;
 		else
 			m_RP.m_PersFlags2 &= ~RBPF2_HDR_FP16;
+
+		if (bNewGraphicsPipeline) // new graphics pipeline assumes hdr target is on bottom of stack
+			FX_PushRenderTarget(0, CTexture::s_ptexHDRTarget, &m_DepthBufferOrigMSAA, -1, true);
 	}
 
 	// Prepare post processing
@@ -4963,9 +4966,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 		}
 	}
 
-	const bool bDeferredRendering = !pRenderView->IsRecursive() && (nFlags & SHDF_ALLOWPOSTPROCESS) && !(pShaderThreadInfo->m_PersFlags & RBPF_MAKESPRITE);
-
-	if (m_nGraphicsPipeline >= 1 && bDeferredRendering)
+	if (bNewGraphicsPipeline)
 	{
 		GetGraphicsPipeline().Prepare(pRenderView, EShaderRenderingFlags(nFlags));
 		GetGraphicsPipeline().Execute();
