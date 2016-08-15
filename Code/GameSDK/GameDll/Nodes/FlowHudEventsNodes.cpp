@@ -294,18 +294,21 @@ public:
 	{
 		if (entityId != INVALID_ENTITYID)
 		{
-			const string entityClassName = gEnv->pEntitySystem->GetEntity(entityId)->GetClass()->GetName();
-			bool bTrigger = IsClassAllowed(entityClassName);
-			if (bMissionOnly)
+			if (IEntity* const pEntity = gEnv->pEntitySystem->GetEntity(entityId))
 			{
-				const CHUDMissionObjective* const pMO = g_pGame->GetMOSystem()->GetMissionObjectiveByEntityId(entityId);
-				bTrigger = bTrigger && pMO != nullptr;
-			}
+				const string entityClassName = pEntity->GetClass()->GetName();
+				bool bTrigger = IsClassAllowed(entityClassName);
+				if (bMissionOnly)
+				{
+					const CHUDMissionObjective* const pMO = g_pGame->GetMOSystem()->GetMissionObjectiveByEntityId(entityId);
+					bTrigger = bTrigger && pMO != nullptr;
+				}
 
-			if (bTrigger)
-			{
-				ActivateOutput(&m_pActInfo, eventType == eHUDEvent_AddEntity ? eOP_EntityAdded : eOP_EntityRemoved, 1);
-				ActivateOutput<EntityId>(&m_pActInfo, eOP_EntityId, entityId);
+				if (bTrigger)
+				{
+					ActivateOutput(&m_pActInfo, eventType == eHUDEvent_AddEntity ? eOP_EntityAdded : eOP_EntityRemoved, 1);
+					ActivateOutput<EntityId>(&m_pActInfo, eOP_EntityId, entityId);
+				}
 			}
 		}
 	}
