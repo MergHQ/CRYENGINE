@@ -24,21 +24,21 @@ QConnectionModel::QConnectionModel()
 {
 	CAudioControlsEditorPlugin::GetATLModel()->AddListener(this);
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(std::function<void()>([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
 			beginResetModel();
 			m_pAudioSystem = nullptr;
 			m_connectionsCache.clear();
 			endResetModel();
-	  }));
+	  });
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(std::function<void()>([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 		{
 			m_pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 			beginResetModel();
 			ResetCache();
 			endResetModel();
-	  }));
+	  });
 
 	const std::vector<dll_string>& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
 	for (auto platform : platforms)

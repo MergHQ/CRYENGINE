@@ -26,19 +26,19 @@ QAudioSystemModel::QAudioSystemModel()
 	: m_pAudioSystem(CAudioControlsEditorPlugin::GetAudioSystemEditorImpl())
 {
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect(std::function<void()>([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
 		{
 			m_pAudioSystem = CAudioControlsEditorPlugin::GetAudioSystemEditorImpl();
 			beginResetModel();
 			endResetModel();
-	  }));
+	  });
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(std::function<void()>([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
 			beginResetModel();
 			m_pAudioSystem = nullptr;
 			endResetModel();
-	  }));
+	  });
 }
 
 int QAudioSystemModel::rowCount(const QModelIndex& parent) const

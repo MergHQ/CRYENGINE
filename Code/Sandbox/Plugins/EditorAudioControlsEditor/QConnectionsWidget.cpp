@@ -93,11 +93,11 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 
 	CAudioControlsEditorPlugin::GetATLModel()->AddListener(this);
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(std::function<void()>([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 		{
 			m_pConnectionsView->selectionModel()->clear();
 			RefreshConnectionProperties();
-	  }));
+	  });
 
 }
 
