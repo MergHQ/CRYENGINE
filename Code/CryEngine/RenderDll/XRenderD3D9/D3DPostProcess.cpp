@@ -1011,10 +1011,6 @@ bool CD3D9Renderer::FX_PostProcessScene(bool bEnable)
 			PostProcessUtils().Create();
 		}
 	}
-	else if (!CRenderer::CV_r_PostProcess && !CRenderer::CV_r_HDRRendering && CTexture::s_ptexBackBuffer)
-	{
-		PostProcessUtils().Release();
-	}
 
 	return true;
 }

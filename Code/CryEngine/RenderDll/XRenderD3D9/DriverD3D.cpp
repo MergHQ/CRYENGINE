@@ -6507,8 +6507,6 @@ void CD3D9Renderer::ResetToDefault()
 	m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags |= RBPF_FP_DIRTY;
 	const bool bReverseDepth = (m_RP.m_TI[m_RP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
 
-	EF_Scissor(false, 0, 0, 0, 0);
-
 	SStateDepth DS;
 	SStateBlend BS;
 	SStateRaster RS;
@@ -6534,6 +6532,9 @@ void CD3D9Renderer::ResetToDefault()
 	;
 	RS.Desc.FillMode = D3D11_FILL_SOLID;
 	SetRasterState(&RS);
+	
+	// Reset cached scissor state
+	m_bScissorPrev = false;
 
 	BS.Desc.RenderTarget[0].BlendEnable = FALSE;
 	BS.Desc.RenderTarget[1].BlendEnable = FALSE;

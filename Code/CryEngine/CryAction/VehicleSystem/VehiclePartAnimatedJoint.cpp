@@ -427,7 +427,7 @@ const Matrix34& CVehiclePartAnimatedJoint::GetWorldTM()
 	else
 		m_worldTM = GetEntity()->GetSlotWorldTM(m_slot);
 
-	CRY_ASSERT(m_worldTM.IsValid() && m_worldTM.IsOrthonormalRH());
+	CRY_ASSERT(m_worldTM.IsValid() && m_worldTM.IsOrthonormalRH(0.01f));
 
 	return VALIDATE_MAT(m_worldTM);
 }

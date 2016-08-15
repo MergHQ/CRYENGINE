@@ -298,12 +298,11 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 
 		// generate the RenderItem entries for this Particle Element
 		assert(pRenderObject->m_bPermanent);
+		EF_GetParticleListAndBatchFlags(
+			nBatchFlags, nList, shaderItem,
+			pRenderObject, passInfo);
 		if (!pRE->AddedToView())
 		{
-			EF_GetParticleListAndBatchFlags(
-				nBatchFlags, nList, shaderItem,
-				pRenderObject, passInfo);
-
 			passInfo.GetRenderView()->AddRenderItem(
 				pRE, pRenderObject, shaderItem, nList, nBatchFlags,
 				passInfo.GetRendItemSorter(), passInfo.IsShadowPass(),

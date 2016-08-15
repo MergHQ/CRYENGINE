@@ -202,6 +202,105 @@ bool CCommandList::Reset()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+void CCommandList::ResourceBarrier(UINT NumBarriers, const D3D12_RESOURCE_BARRIER* pBarriers)
+{
+	if (DX12_BARRIER_FUSION && CRenderer::CV_r_D3D12BatchResourceBarriers)
+	{
+#if 1
+		if (CRenderer::CV_r_D3D12BatchResourceBarriers > 1)
+		{
+			CRY_ASSERT(m_CurrentNumPendingBarriers + NumBarriers < 256);
+			for (UINT i = 0; i < NumBarriers; ++i)
+			{
+				UINT j = 0;
+
+				if (pBarriers[i].Type == D3D12_RESOURCE_BARRIER_TYPE_UAV)
+				{
+					for (; j < m_CurrentNumPendingBarriers; ++j)
+					{
+						if (pBarriers[i].Type == m_PendingBarrierHeap[j].Type &&
+							pBarriers[i].Transition.pResource == m_PendingBarrierHeap[j].Transition.pResource &&
+							pBarriers[i].Transition.Subresource == m_PendingBarrierHeap[j].Transition.Subresource)
+						{
+							break;
+						}
+					}
+				}
+
+				else if (pBarriers[i].Type == D3D12_RESOURCE_BARRIER_TYPE_TRANSITION)
+				{
+					for (; j < m_CurrentNumPendingBarriers; ++j)
+					{
+						if (pBarriers[i].Type == m_PendingBarrierHeap[j].Type &&
+							pBarriers[i].Transition.pResource == m_PendingBarrierHeap[j].Transition.pResource &&
+							pBarriers[i].Transition.Subresource == m_PendingBarrierHeap[j].Transition.Subresource)
+						{
+							if (m_PendingBarrierHeap[j].Flags == D3D12_RESOURCE_BARRIER_FLAG_NONE)
+							if (pBarriers[i].Flags == D3D12_RESOURCE_BARRIER_FLAG_NONE)
+							{
+								assert(m_PendingBarrierHeap[j].Transition.StateAfter == pBarriers[i].Transition.StateBefore);
+								m_PendingBarrierHeap[j].Transition.StateAfter = pBarriers[i].Transition.StateAfter;
+								break;
+							}
+					
+							if (m_PendingBarrierHeap[j].Flags == D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY)
+							if (pBarriers[i].Flags == D3D12_RESOURCE_BARRIER_FLAG_END_ONLY)
+							{
+								assert(m_PendingBarrierHeap[j].Transition.StateAfter == pBarriers[i].Transition.StateAfter);
+								assert(m_PendingBarrierHeap[j].Transition.StateBefore == pBarriers[i].Transition.StateBefore);
+								m_PendingBarrierHeap[j].Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+								break;
+							}
+						}
+					}
+				}
+
+				if (j == m_CurrentNumPendingBarriers)
+				{
+					m_PendingBarrierHeap[m_CurrentNumPendingBarriers] = pBarriers[i];
+					m_CurrentNumPendingBarriers += 1;
+					m_nCommands += CLCOUNT_BARRIER * 1;
+				}
+				else
+				{
+					if (m_PendingBarrierHeap[j].Type == D3D12_RESOURCE_BARRIER_TYPE_TRANSITION)
+					if (m_PendingBarrierHeap[j].Transition.StateBefore == m_PendingBarrierHeap[j].Transition.StateAfter)
+					{
+						m_CurrentNumPendingBarriers--;
+
+						memmove(m_PendingBarrierHeap + j, m_PendingBarrierHeap + j + 1, (m_CurrentNumPendingBarriers - j) * sizeof(D3D12_RESOURCE_BARRIER));
+					}
+				}
+			}
+		}
+		else
+#endif
+		{
+			CRY_ASSERT(m_CurrentNumPendingBarriers + NumBarriers < 256);
+			for (UINT i = 0; i < NumBarriers; ++i)
+				m_PendingBarrierHeap[m_CurrentNumPendingBarriers + i] = pBarriers[i];
+
+			m_CurrentNumPendingBarriers += NumBarriers;
+			m_nCommands += CLCOUNT_BARRIER * NumBarriers;
+		}
+	}
+	else
+	{
+		m_pCmdList->ResourceBarrier(NumBarriers, pBarriers);
+		m_nCommands += CLCOUNT_BARRIER;
+	}
+}
+
+void CCommandList::PendingResourceBarriers()
+{
+	if (DX12_BARRIER_FUSION && m_CurrentNumPendingBarriers)
+	{
+		m_pCmdList->ResourceBarrier(m_CurrentNumPendingBarriers, m_PendingBarrierHeap);
+		m_CurrentNumPendingBarriers = 0;
+	}
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 void CCommandList::SetRootSignature(const CRootSignature* pRootSignature, bool bGfx, const D3D12_GPU_VIRTUAL_ADDRESS (&vConstViews)[8 /*CB_PER_FRAME*/])
 {
 	if (bGfx)

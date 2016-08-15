@@ -72,6 +72,7 @@ int CRendererCVars::CV_r_durango_async_dips;
 int CRendererCVars::CV_r_durango_async_dips_sync;
 int CRendererCVars::CV_r_D3D12SubmissionThread;
 int CRendererCVars::CV_r_D3D12WaitableSwapChain;
+int CRendererCVars::CV_r_D3D12BatchResourceBarriers;
 int CRendererCVars::CV_r_D3D12EarlyResourceBarriers;
 int CRendererCVars::CV_r_D3D12AsynchronousCompute;
 int CRendererCVars::CV_r_D3D12HardwareComputeQueue;
@@ -2846,6 +2847,12 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_D3D12SubmissionThread [0-15]");
 	REGISTER_CVAR3("r_D3D12WaitableSwapChain", CV_r_D3D12WaitableSwapChain, 0, VF_REQUIRE_APP_RESTART | VF_CHEAT,
 	               "Enables highest performance in windowed mode (does not allow switching to fullscreen).");
+	REGISTER_CVAR3("r_D3D12BatchResourceBarriers", CV_r_D3D12BatchResourceBarriers, 1, VF_NULL,
+	               "Enables batching of resource barriers.\n"
+	               "0=Off,\n"
+	               "1=On,\n"
+	               "2=On + actively rewrite redundant barriers\n"
+	               "Usage: r_D3D12BatchResourceBarriers [0-2]");
 	REGISTER_CVAR3("r_D3D12EarlyResourceBarriers", CV_r_D3D12EarlyResourceBarriers, 0, VF_NULL,
 	               "Enables explicitly scheduled split barriers.");
 	REGISTER_CVAR3("r_D3D12AsynchronousCompute", CV_r_D3D12AsynchronousCompute, 0, VF_NULL,

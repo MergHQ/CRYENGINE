@@ -447,24 +447,18 @@ CATLAudioObject* CAudioObjectManager::GetInstance()
 		//have reserved instances
 		pAudioObject = m_audioObjectPool.m_reserved.back();
 		m_audioObjectPool.m_reserved.pop_back();
-		pAudioObject->Init();
 	}
 	else
 	{
 		//need to get a new instance
-		AudioObjectId const nNewID = m_audioObjectPool.GetNextID();
-		IAudioObject* const pObjectData = m_pImpl->NewAudioObject(nNewID);
-		POOL_NEW(CATLAudioObject, pAudioObject)(nNewID, pObjectData);
+		AudioObjectId const id = m_audioObjectPool.GetNextID();
+		IAudioObject* const pImplAudioObject = m_pImpl->NewAudioObject(id);
+		POOL_NEW(CATLAudioObject, pAudioObject)(id, pImplAudioObject);
 
 		if (pAudioObject == nullptr)
 		{
 			--m_audioObjectPool.m_idCounter;
 			g_audioLogger.Log(eAudioLogType_Warning, "Failed to get a new instance of an AudioObject from the implementation");
-			//failed to get a new instance from the implementation
-		}
-		else
-		{
-			pAudioObject->Init();
 		}
 	}
 

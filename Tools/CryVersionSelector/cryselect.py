@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import tempfile
 
-import win32api, win32ui, win32con
+import win32api, win32con
 from win32com.shell import shell
 import pywintypes
 
@@ -19,11 +19,17 @@ def command_title (args):
 	return {
 	'upgrade': 'Upgrade project',
 	'projgen': 'Generate solution',
-	'build': 'Build Solution',
-	'edit': 'Edit game',
-	'open': 'Run game',
-	'monodev': 'Edit C# code'
+	'build': 'Build solution',
+	'edit': 'Launch editor',
+	'open': 'Launch game',
+	'monodev': 'Edit C# code',
+	'switch': 'Switch engine version'
 	}.get (args.command, '')
+
+#---
+
+import ctypes
+MessageBox = ctypes.windll.user32.MessageBoxW
 
 #--- errors
 
@@ -34,7 +40,7 @@ def error_project_not_found (args):
 	if args.silent:
 		sys.stderr.write (message)
 	else:
-		win32ui.MessageBox (message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
+		MessageBox (None, message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
 	sys.exit (404)
 
 def error_project_json_decode (args):
@@ -42,7 +48,7 @@ def error_project_json_decode (args):
 	if args.silent:
 		sys.stderr.write (message)
 	else:
-		win32ui.MessageBox (message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
+		MessageBox (None, message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
 	sys.exit (1)
 
 def error_engine_path_not_found (args, engine_version):
@@ -50,7 +56,7 @@ def error_engine_path_not_found (args, engine_version):
 	if args.silent:
 		sys.stderr.write (message)
 	else:
-		win32ui.MessageBox (message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
+		MessageBox (None, message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
 	sys.exit (1)
 
 def error_engine_tool_not_found (path):
@@ -489,7 +495,7 @@ def cmd_run (args):
 		text= p.stderr.read().strip()
 		if not text:
 			text= SUBPROCESS_NO_STDERR
-		result= win32ui.MessageBox (text, title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
+		result= MessageBox (None, text, title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
 		if result == win32con.IDOK:
 			subprocess.call(('notepad.exe', temp_path))
 				

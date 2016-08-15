@@ -165,7 +165,6 @@ public:
 	float                                           GetOcclusionFadeOutDistance() const                           { return m_occlusionFadeOutDistance; }
 
 	void                                            Update(float const deltaTime, float const distance, Vec3 const& audioListenerPosition);
-	void                                            Init();
 	void                                            Clear();
 	void                                            ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo);
 	CryAudio::Impl::SAudioObject3DAttributes const& Get3DAttributes() const { return m_attributes; }

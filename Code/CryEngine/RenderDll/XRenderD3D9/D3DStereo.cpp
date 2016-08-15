@@ -626,6 +626,19 @@ CCamera CD3DStereoRenderer::PrepareCamera(int nEye, const CCamera& currentCamera
 
 void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& passInfo)
 {
+	// for recursive rendering (e.g. rendering to ocean reflection texture), stereo is not needed
+	if (passInfo.IsRecursivePass())
+	{
+		if (CRenderer::CV_r_StereoMode != STEREO_MODE_DUAL_RENDERING)
+		{
+			m_renderer.m_pRT->RC_SetStereoEye(0);
+		}
+
+		RenderScene(sceneFlags, passInfo);
+
+		return;
+	}
+
 	int nThreadID = passInfo.ThreadID();
 	CRenderView* pRenderView = passInfo.GetRenderView();
 
@@ -642,7 +655,7 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 		m_bPreviousCameraValid = true;
 	}
 
-	if (!RequiresSequentialSubmission() && CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING && !passInfo.IsRecursivePass())
+	if (!RequiresSequentialSubmission() && CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING)
 	{
 		int sceneFlagsDual = SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE;
 
@@ -670,7 +683,7 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 			m_renderer->SelectGPU(GPUMASK_BOTH);
 		}
 	}
-	else if (CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING && !passInfo.IsRecursivePass())   //for recursive rendering (e.g. rendering to ocean reflection texture), stereo is not needed
+	else if (CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING)
 	{
 		int sceneFlagsLeft = SHDF_STEREO_LEFT_EYE;
 		int sceneFlagsRight = SHDF_NO_SHADOWGEN | SHDF_STEREO_RIGHT_EYE;
@@ -729,15 +742,6 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 		{
 			m_renderer->SelectGPU(GPUMASK_BOTH);
 		}
-	}
-	else
-	{
-		if (CRenderer::CV_r_StereoMode != STEREO_MODE_DUAL_RENDERING)
-		{
-			m_renderer.m_pRT->RC_SetStereoEye(0);
-		}
-
-		RenderScene(sceneFlags, passInfo);
 	}
 
 	m_previousCamera[LEFT_EYE] = cameras[LEFT_EYE];
