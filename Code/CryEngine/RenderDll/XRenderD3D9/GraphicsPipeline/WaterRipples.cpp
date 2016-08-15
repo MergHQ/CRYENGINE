@@ -474,6 +474,7 @@ void CWaterRipplesStage::UpdateAndDrawDebugInfo(CRenderView* pRenderView)
 	{
 		return (record.lifetime > 0.0f);
 	});
+	const auto deadRippleDebugCount = m_debugRippleInfos.size() - remainingRippleDebugCount;
 	const auto maxRippleDebugCount = 2 * SWaterRippleInfo::MaxWaterRipplesInScene; // assign enough size to hold debug infos.
 
 	// remove old ripple debug infos to make empty spaces for newly added ripples.
@@ -487,7 +488,8 @@ void CWaterRipplesStage::UpdateAndDrawDebugInfo(CRenderView* pRenderView)
 		});
 
 		const auto removedCount = rippleDebugCount - maxRippleDebugCount;
-		for_each(m_debugRippleInfos.begin(), std::next(m_debugRippleInfos.begin(), removedCount),
+		auto removeBegin = std::next(m_debugRippleInfos.begin(), deadRippleDebugCount); // old infos exist after dead infos.
+		for_each(removeBegin, std::next(removeBegin, removedCount),
 		         [](SWaterRippleRecord& record)
 		{
 			record.lifetime = 0.0f;
