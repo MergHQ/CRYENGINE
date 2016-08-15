@@ -1111,7 +1111,9 @@ void CPostEffectsMgr::End()
 
 	const int kFloatMaxContinousInt = 0x1000000;  // 2^24
 	const bool bStereo = gcpRendD3D->GetS3DRend().IsStereoEnabled();
-	if (!bStereo || (bStereo && gRenDev->m_CurRenderEye == RIGHT_EYE))
+	const bool bStereoSequentialSubmission = gcpRendD3D->GetS3DRend().GetStereoSubmissionMode() == STEREO_SUBMISSION_SEQUENTIAL;
+
+	if (!bStereo || (bStereo && (!bStereoSequentialSubmission || gRenDev->m_CurRenderEye == RIGHT_EYE)))
 		SPostEffectsUtils::m_iFrameCounter = (SPostEffectsUtils::m_iFrameCounter + 1) % kFloatMaxContinousInt;
 
 	PostProcessUtils().Log("### POST-PROCESSING ENDS ### ");
