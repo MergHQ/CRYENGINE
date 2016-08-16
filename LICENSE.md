@@ -141,7 +141,7 @@ INDEMNIFICATION DISCLAIMER. EXCEPT FOR INTENTIONAL ACTS OR OMISSIONS OF CRYTEK, 
 
 
 ##6. Feedback
-You are not obliged to report to Crytek any feedback, bug fixes and optimizations made to the CryEngine (including the CryEngine Tools) (collectively the "Feedback"). However, if you report Feedback to Crytek you hereby grant Crytek a worldwide, non-exclusive, royalty-free, transferrable, sub-licensable and perpetual license to such Feedback for the purposes of (1) using the Feedback internally at Crytek, (2) incorporating the Feedback in future releases of the CryEngine and (3) distributing the CryEngine with the embedded Feedback to third parties without restriction in any way and without payment of any additional fees or royalties to Licensee. Crytek acknowledges that it does not obtain any rights in any Game itself.
+You are not obliged to report to Crytek any feedback (including but not limited to bug fixes, optimizations or any other changes) made to the CryEngine (including the CryEngine Tools) (collectively the "Feedback"). However, if you report Feedback to Crytek you hereby grant Crytek a worldwide, non-exclusive, royalty-free, transferrable, sub-licensable and perpetual license to such Feedback for the purposes of (1) using the Feedback internally at Crytek, (2) incorporating the Feedback in future releases of the CryEngine and (3) distributing the CryEngine with the embedded Feedback to third parties without restriction in any way and without payment of any additional fees or royalties to Licensee. Crytek acknowledges that it does not obtain any rights in any Game itself.
 
 
 ##7. Term and Termination

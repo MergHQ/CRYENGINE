@@ -5,14 +5,13 @@
 #include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
-
 struct PostAAConstants
 {
-	Matrix44  matReprojection;
-	Vec4      params;
-	Vec4      screenSize;
-	Vec4      worldViewPos;
-	Vec4      fxaaParams;
+	Matrix44 matReprojection;
+	Vec4     params;
+	Vec4     screenSize;
+	Vec4     worldViewPos;
+	Vec4     fxaaParams;
 };
 
 void CPostAAStage::Init()
@@ -38,7 +37,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 	if (!pEdgesRT || !pBlendWeightsRT)
 		return;
-	
+
 	// Prepare stencil prepass
 	int stencilRef = -1;
 	if (CRenderer::CV_r_AntialiasingModeSCull)
@@ -53,10 +52,10 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 		}
 		stencilRef = gcpRendD3D->m_nStencilMaskRef;
 	}
-	
+
 	pRenderer->FX_ClearTarget(pEdgesRT, Clr_Transparent);
 	pRenderer->FX_ClearTarget(pBlendWeightsRT, Clr_Transparent);
-	
+
 	// Pass 1: Edge Detection
 	{
 		if (m_passSMAAEdgeDetection.InputChanged(pCurrRT->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
@@ -72,11 +71,11 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 		{
 			m_passSMAAEdgeDetection.SetState(GS_NODEPTHTEST | GS_STENCIL);
 			m_passSMAAEdgeDetection.SetStencilState(
-				STENC_FUNC(FSS_STENCFUNC_ALWAYS) |
-				STENCOP_FAIL(FSS_STENCOP_REPLACE) |
-				STENCOP_ZFAIL(FSS_STENCOP_REPLACE) |
-				STENCOP_PASS(FSS_STENCOP_REPLACE),
-				(uint8)stencilRef);
+			  STENC_FUNC(FSS_STENCFUNC_ALWAYS) |
+			  STENCOP_FAIL(FSS_STENCOP_REPLACE) |
+			  STENCOP_ZFAIL(FSS_STENCOP_REPLACE) |
+			  STENCOP_PASS(FSS_STENCOP_REPLACE),
+			  (uint8)stencilRef);
 		}
 		m_passSMAAEdgeDetection.BeginConstantUpdate();
 		m_passSMAAEdgeDetection.Execute();
@@ -99,11 +98,11 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 		{
 			m_passSMAABlendWeights.SetState(GS_NODEPTHTEST | GS_STENCIL);
 			m_passSMAABlendWeights.SetStencilState(
-				STENC_FUNC(FSS_STENCFUNC_EQUAL) |
-				STENCOP_FAIL(FSS_STENCOP_KEEP) |
-				STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
-				STENCOP_PASS(FSS_STENCOP_KEEP),
-				(uint8)stencilRef);
+			  STENC_FUNC(FSS_STENCFUNC_EQUAL) |
+			  STENCOP_FAIL(FSS_STENCOP_KEEP) |
+			  STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
+			  STENCOP_PASS(FSS_STENCOP_KEEP),
+			  (uint8)stencilRef);
 		}
 		m_passSMAABlendWeights.BeginConstantUpdate();
 		m_passSMAABlendWeights.Execute();
@@ -130,21 +129,21 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint32 aaMode)
 {
 	// TODO: Relocate FXAA
-	
+
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 
 	CShader* pShader = CShaderMan::s_shPostAA;
 	CTexture* pDestRT = GetUtils().GetTaaRT(true);
 	CTexture* pPrevRT = ((SPostEffectsUtils::m_iFrameCounter - m_lastFrameID) < 10) ? GetUtils().GetTaaRT(false) : pCurrRT;
-		
+
 	assert((pCurrRT->GetFlags() & FT_USAGE_ALLOWREADSRGB) && (pPrevRT->GetFlags() & FT_USAGE_ALLOWREADSRGB));
-		
+
 	uint64 rtMask = 0;
 	if (aaMode & (eAT_SMAA_1TX_MASK))
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 	if (aaMode & eAT_FXAA_MASK)
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
-		
+
 	{
 		static CCryNameTSCRC techTemporalAA("PostAA");
 		m_passTemporalAA.SetTechnique(pShader, techTemporalAA, rtMask);
@@ -161,13 +160,16 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 		m_passTemporalAA.SetTextureSamplerPair(5, pPrevRT, m_samplerLinear, SResourceView::DefaultViewSRGB);
 		m_passTemporalAA.SetTexture(16, pRenderer->m_DepthBufferOrigMSAA.pTexture);
 	}
-		
+
 	(pMgpuRT = pDestRT)->MgpuResourceUpdate(true);
 	m_passTemporalAA.BeginConstantUpdate();
-		
+
 	{
+		CStandardGraphicsPipeline::SViewInfo viewInfo[2];
+		int viewInfoCount = pRenderer->GetGraphicsPipeline().GetViewInfo(viewInfo);
+
 		auto constants = m_passTemporalAA.BeginTypedConstantUpdate<PostAAConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
-		
+
 		const float rcpWidth = 1.0f / (float)pRenderer->GetWidth();
 		const float rcpHeight = 1.0f / (float)pRenderer->GetHeight();
 		constants->screenSize = Vec4((float)pRenderer->GetWidth(), (float)pRenderer->GetHeight(), rcpWidth, rcpHeight);
@@ -179,36 +181,40 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 		// Compute reprojection matrix with highest possible precision to minimize numeric diffusion
 		// TODO: Make sure NEAREST projection is handled correctly
 		Matrix44_tpl<f64> matReprojection64[2];
-		for (uint32 stereoEye = 0; stereoEye < 2; stereoEye++)
+		for (int i = 0; i < viewInfoCount; ++i)
 		{
-			Matrix44A matProj = GetUtils().m_pProj;
+			Matrix44A matProj = viewInfo[i].projMatrix;
 			assert(pRenderer->GetS3DRend().GetStereoMode() == STEREO_MODE_DUAL_RENDERING || (matProj.m20 == 0 && matProj.m21 == 0));  // Ensure jittering is removed from projection matrix
 
 			Matrix44_tpl<f64> matViewInv, matProjInv;
-			mathMatrixLookAtInverse(&matViewInv, &GetUtils().m_pView);
+			mathMatrixLookAtInverse(&matViewInv, &viewInfo[i].viewMatrix);
 			const bool bCanInvert = mathMatrixPerspectiveFovInverse(&matProjInv, &matProj);
 			assert(bCanInvert);
 
 			Matrix44_tpl<f64> matScaleBias1 = Matrix44_tpl<f64>(
-				0.5, 0, 0, 0,
-				0, -0.5, 0, 0,
-				0, 0, 1, 0,
-				0.5, 0.5, 0, 1);
+			  0.5, 0, 0, 0,
+			  0, -0.5, 0, 0,
+			  0, 0, 1, 0,
+			  0.5, 0.5, 0, 1);
 			Matrix44_tpl<f64> matScaleBias2 = Matrix44_tpl<f64>(
-				2.0, 0, 0, 0,
-				0, -2.0, 0, 0,
-				0, 0, 1, 0,
-				-1.0, 1.0, 0, 1);
+			  2.0, 0, 0, 0,
+			  0, -2.0, 0, 0,
+			  0, 0, 1, 0,
+			  -1.0, 1.0, 0, 1);
 
-			Matrix44 mPrevView = pRenderer->m_CameraMatrixPrev[pRenderer->m_CurViewportID][stereoEye];
-			matReprojection64[stereoEye] = matProjInv * matViewInv * Matrix44_tpl<f64>(mPrevView) * Matrix44_tpl<f64>(matProj);
-			matReprojection64[stereoEye] = matScaleBias2 * matReprojection64[stereoEye] * matScaleBias1;
+			Matrix44 mPrevView = viewInfo[i].prevCameraMatrix;
+			matReprojection64[i] = matProjInv * matViewInv * Matrix44_tpl<f64>(mPrevView) * Matrix44_tpl<f64>(matProj);
+			matReprojection64[i] = matScaleBias2 * matReprojection64[i] * matScaleBias1;
 		}
 
 		constants->matReprojection = (Matrix44)matReprojection64[0];
 
-		constants.BeginStereoOverride(true);
-		constants->matReprojection = (Matrix44)matReprojection64[1];
+		if (viewInfoCount > 1)
+		{
+			constants.BeginStereoOverride(true);
+			constants->matReprojection = (Matrix44)matReprojection64[1];
+			constants->worldViewPos = Vec4(viewInfo[1].pRenderCamera->vOrigin, 0);
+		}
 
 		m_passTemporalAA.EndTypedConstantUpdate(constants);
 	}
@@ -243,14 +249,14 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 	if (CRenderer::CV_r_colorRangeCompression)
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
-	
+
 	if (pRenderer->m_RP.m_PersFlags2 & RBPF2_LENS_OPTICS_COMPOSITE)
 	{
-		rtMask|= g_HWSR_MaskBit[HWSR_SAMPLE1];
+		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE1];
 		if (CRenderer::CV_r_FlaresChromaShift > 0.5f / (float)pRenderer->GetWidth())  // Only relevant if bigger than half pixel
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE3];
 	}
-	
+
 	if (m_passComposition.InputChanged(pCurrRT->GetID(), pOutputRT->GetID(), CTexture::s_ptexCurLumTexture->GetID()) || rtMask != prevRTMask)
 	{
 		static CCryNameTSCRC techComposition("PostAAComposites");
@@ -271,17 +277,17 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 		static CCryNameR lensOpticsParamsName("vLensOpticsParams");
 		static CCryNameR hdrParamsName("HDRParams");
 		static CCryNameR hdrEyeAdaptationName("HDREyeAdaptation");
-		
+
 		float sharpening = CRenderer::CV_r_AntialiasingTAASharpening;
 		if (max(fabs(pRenderer->m_vProjMatrixSubPixoffset.x), fabs(pRenderer->m_vProjMatrixSubPixoffset.y)) > 0)
 		{
 			// Apply stronger unsharp masking when averaging jittered samples (tweaked for 2 samples)
 			sharpening *= 2;
 		}
-		
+
 		const Vec4 params(max(1.0f + sharpening, 1.0f), 0, 0, 0);
 		m_passComposition.SetConstant(eHWSC_Pixel, paramsName, params);
-		
+
 		const Vec4 lensOpticsParams(1.0f, 1.0f, 1.0f, CRenderer::CV_r_FlaresChromaShift);
 		m_passComposition.SetConstant(eHWSC_Pixel, lensOpticsParamsName, lensOpticsParams);
 
@@ -293,7 +299,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 		CEffectParam* pParamArtifactsGrain = PostEffectMgr()->GetByName("FilterArtifacts_Grain");
 		const float grainAmount = max(pParamGrainAmount->GetParam(), pParamArtifactsGrain->GetParam());
 		const Vec4 v = Vec4(0, 0, 0, max(grainAmount, max(hdrSetupParams[1].w, CRenderer::CV_r_HDRGrainAmount)));
-		
+
 		m_passComposition.SetConstant(eHWSC_Pixel, hdrParamsName, v);
 		m_passComposition.SetConstant(eHWSC_Pixel, hdrEyeAdaptationName, hdrSetupParams[4]);
 	}
@@ -320,7 +326,7 @@ void CPostAAStage::Execute()
 	rd->FX_SetActiveRenderTargets();
 
 	rd->m_RP.m_PersFlags2 |= RBPF2_NOPOSTAA;
-	
+
 	if (aaMode & eAT_SMAA_MASK)
 	{
 		ApplySMAA(pCurrRT);
