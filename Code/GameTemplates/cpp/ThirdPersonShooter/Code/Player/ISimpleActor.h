@@ -128,6 +128,8 @@ struct ISimpleActor : public IActor
 	// Begin unreferenced IActor mentions
 	virtual int   GetTeamId() const override { return 0; }
 	virtual bool ShouldMuteWeaponSoundStimulus() const override { return false; }
+
+	virtual bool IsInteracting() const override { return false; }
 	// ~IActor
 
 	ISimpleActor() {}
