@@ -6,18 +6,205 @@
 #include "CryThread_win32.h"
 #include <CryCore/Platform/CryWindows.h>
 
-struct SThreadNameDesc
+namespace CryMT
 {
-	DWORD  dwType;
-	LPCSTR szName;
-	DWORD  dwThreadID;
-	DWORD  dwFlags;
-};
+namespace detail
+{
+
+STATIC_ASSERT(sizeof(CRY_CRITICAL_SECTION) == sizeof(CRITICAL_SECTION), "Win32 CRITICAL_SECTION size does not match CRY_CRITICAL_SECTION");
+STATIC_ASSERT(sizeof(CRY_SRWLOCK) == sizeof(SRWLOCK), "Win32 SRWLOCK size does not match CRY_SRWLOCK");
+STATIC_ASSERT(sizeof(CRY_CONDITION_VARIABLE) == sizeof(CONDITION_VARIABLE), "Win32 CONDITION_VARIABLE size does not match CRY_CONDITION_VARIABLE");
 
 //////////////////////////////////////////////////////////////////////////
-void CryYieldThread()
+//CryLock_SRWLOCK
+//////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
+CRY_SRWLOCK::CRY_SRWLOCK()
+	: SRWLock_(0)
 {
-	SwitchToThread();
+	STATIC_ASSERT(sizeof(SRWLock_) == sizeof(PSRWLOCK), "RWLock-pointer has invalid size");
+	InitializeSRWLock(reinterpret_cast<PSRWLOCK>(&SRWLock_));
+}
+
+//////////////////////////////////////////////////////////////////////////
+//CRY_CONDITION_VARIABLE
+//////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
+CRY_CONDITION_VARIABLE::CRY_CONDITION_VARIABLE()
+{
+	STATIC_ASSERT(sizeof(condVar_) == sizeof(PCONDITION_VARIABLE), "ConditionVariable-pointer has invalid size");
+	InitializeConditionVariable(reinterpret_cast<PCONDITION_VARIABLE>(&condVar_));
+}
+
+//////////////////////////////////////////////////////////////////////////
+// CryLock_SRWLOCK
+//////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
+void CryLock_SRWLOCK::LockShared()
+{
+	AcquireSRWLockShared(reinterpret_cast<PSRWLOCK>(&m_win32_lock_type.SRWLock_));
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CryLock_SRWLOCK::UnlockShared()
+{
+	ReleaseSRWLockShared(reinterpret_cast<PSRWLOCK>(&m_win32_lock_type.SRWLock_));
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CryLock_SRWLOCK::TryLockShared()
+{
+	return TryAcquireSRWLockShared(reinterpret_cast<PSRWLOCK>(&m_win32_lock_type.SRWLock_)) == TRUE;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CryLock_SRWLOCK::Lock()
+{
+	AcquireSRWLockExclusive(reinterpret_cast<PSRWLOCK>(&m_win32_lock_type.SRWLock_));
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CryLock_SRWLOCK::Unlock()
+{
+	ReleaseSRWLockExclusive(reinterpret_cast<PSRWLOCK>(&m_win32_lock_type.SRWLock_));
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CryLock_SRWLOCK::TryLock()
+{
+	return TryAcquireSRWLockExclusive(reinterpret_cast<PSRWLOCK>(&m_win32_lock_type.SRWLock_)) == TRUE;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// CryLock_SRWLOCK_Recursive
+//////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
+void CryLock_SRWLOCK_Recursive::Lock()
+{
+	const threadID threadId = CryGetCurrentThreadId();
+
+	if (threadId == m_exclusiveOwningThreadId)
+	{
+		++m_recurseCounter;
+	}
+	else
+	{
+		m_win32_lock_type.Lock();
+		CRY_ASSERT(m_recurseCounter == 0);
+		CRY_ASSERT(m_exclusiveOwningThreadId == THREADID_NULL);
+		m_exclusiveOwningThreadId = threadId;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CryLock_SRWLOCK_Recursive::Unlock()
+{
+	const threadID threadId = CryGetCurrentThreadId();
+	CRY_ASSERT(m_exclusiveOwningThreadId == threadId);
+
+	if (m_recurseCounter)
+	{
+		--m_recurseCounter;
+	}
+	else
+	{
+		m_exclusiveOwningThreadId = THREADID_NULL;
+		m_win32_lock_type.Unlock();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CryLock_SRWLOCK_Recursive::TryLock()
+{
+	const threadID threadId = CryGetCurrentThreadId();
+	if (m_exclusiveOwningThreadId == threadId)
+	{
+		++m_recurseCounter;
+		return true;
+	}
+	else
+	{
+		const bool ret = (m_win32_lock_type.TryLock() == TRUE);
+		if (ret)
+		{
+			m_exclusiveOwningThreadId = threadId;
+		}
+		return ret;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// CryLock_CritSection
+//////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
+CryLock_CriticalSection::CryLock_CriticalSection()
+{
+	InitializeCriticalSection((CRITICAL_SECTION*)&m_win32_lock_type);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CryLock_CriticalSection::~CryLock_CriticalSection()
+{
+	DeleteCriticalSection((CRITICAL_SECTION*)&m_win32_lock_type);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CryLock_CriticalSection::Lock()
+{
+	EnterCriticalSection((CRITICAL_SECTION*)&m_win32_lock_type);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CryLock_CriticalSection::Unlock()
+{
+	LeaveCriticalSection((CRITICAL_SECTION*)&m_win32_lock_type);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CryLock_CriticalSection::TryLock()
+{
+	return TryEnterCriticalSection((CRITICAL_SECTION*)&m_win32_lock_type) != FALSE;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// CryLock_WinMutex
+//////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
+CryLock_WinMutex::CryLock_WinMutex()
+	: m_win32_lock_type(CreateMutex(NULL, FALSE, NULL))
+{
+	STATIC_ASSERT(sizeof(HANDLE) == sizeof(m_win32_lock_type), "WinMutex-pointer has invalid size");
+}
+CryLock_WinMutex::~CryLock_WinMutex()
+{
+	CloseHandle(m_win32_lock_type);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CryLock_WinMutex::Lock()
+{
+	WaitForSingleObject(m_win32_lock_type, INFINITE);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CryLock_WinMutex::Unlock()
+{
+	ReleaseMutex(m_win32_lock_type);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CryLock_WinMutex::TryLock()
+{
+	return WaitForSingleObject(m_win32_lock_type, 0) != WAIT_TIMEOUT;
+}
+
+}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -59,163 +246,60 @@ bool CryEvent::Wait(const uint32 timeoutMillis) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-// CryLock_WinMutex
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
-CryLock_WinMutex::CryLock_WinMutex() : m_hdl(CreateMutex(NULL, FALSE, NULL)) {}
-CryLock_WinMutex::~CryLock_WinMutex()
+void CryConditionVariable::Wait(CryMutex& lock)
 {
-	CloseHandle(m_hdl);
+	TimedWait(lock, INFINITE);
+}
+
+void CryConditionVariable::Wait(CryMutexFast& lock)
+{
+	TimedWait(lock, INFINITE);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CryLock_WinMutex::Lock()
+bool CryConditionVariable::TimedWait(CryMutex& lock, uint32 millis)
 {
-	WaitForSingleObject(m_hdl, INFINITE);
+	if (lock.s_value == CryMT::detail::eLockType_SRW)
+	{
+		CRY_ASSERT(lock.m_recurseCounter == 0);
+		lock.m_exclusiveOwningThreadId = THREADID_NULL;
+		bool ret = SleepConditionVariableSRW(reinterpret_cast<PCONDITION_VARIABLE>(&m_condVar), reinterpret_cast<PSRWLOCK>(&lock.m_win32_lock_type), millis, ULONG(0)) == TRUE;
+		lock.m_exclusiveOwningThreadId = CryGetCurrentThreadId();
+		return ret;
+
+	}
+	else if (lock.s_value == CryMT::detail::eLockType_CRITICAL_SECTION)
+	{
+		return SleepConditionVariableCS(reinterpret_cast<PCONDITION_VARIABLE>(&m_condVar), reinterpret_cast<PCRITICAL_SECTION>(&lock.m_win32_lock_type), millis) == TRUE;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CryLock_WinMutex::Unlock()
+bool CryConditionVariable::TimedWait(CryMutexFast& lock, uint32 millis)
 {
-	ReleaseMutex(m_hdl);
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CryLock_WinMutex::TryLock()
-{
-	return WaitForSingleObject(m_hdl, 0) != WAIT_TIMEOUT;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// CryLock_CritSection
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
-CryLock_CritSection::CryLock_CritSection()
-{
-	InitializeCriticalSection((CRITICAL_SECTION*)&m_cs);
-}
-
-//////////////////////////////////////////////////////////////////////////
-CryLock_CritSection::~CryLock_CritSection()
-{
-	DeleteCriticalSection((CRITICAL_SECTION*)&m_cs);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CryLock_CritSection::Lock()
-{
-	EnterCriticalSection((CRITICAL_SECTION*)&m_cs);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CryLock_CritSection::Unlock()
-{
-	LeaveCriticalSection((CRITICAL_SECTION*)&m_cs);
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CryLock_CritSection::TryLock()
-{
-	return TryEnterCriticalSection((CRITICAL_SECTION*)&m_cs) != FALSE;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Most of this is taken from http://www.cs.wustl.edu/~schmidt/win32-cv-1.html
-//////////////////////////////////////////////////////////////////////////
-CryConditionVariable::CryConditionVariable()
-{
-	m_waitersCount = 0;
-	m_wasBroadcast = 0;
-	m_sema = CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
-	InitializeCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-	m_waitersDone = CreateEvent(NULL, FALSE, FALSE, NULL);
-}
-
-//////////////////////////////////////////////////////////////////////////
-CryConditionVariable::~CryConditionVariable()
-{
-	CloseHandle(m_sema);
-	DeleteCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-	CloseHandle(m_waitersDone);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CryConditionVariable::Wait(LockType& lock)
-{
-	EnterCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-	m_waitersCount++;
-	LeaveCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-
-	SignalObjectAndWait(lock._get_win32_handle(), m_sema, INFINITE, FALSE);
-
-	EnterCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-	m_waitersCount--;
-	bool lastWaiter = m_wasBroadcast && m_waitersCount == 0;
-	LeaveCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-
-	if (lastWaiter)
-		SignalObjectAndWait(m_waitersDone, lock._get_win32_handle(), INFINITE, FALSE);
-	else
-		WaitForSingleObject(lock._get_win32_handle(), INFINITE);
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CryConditionVariable::TimedWait(LockType& lock, uint32 millis)
-{
-	EnterCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-	m_waitersCount++;
-	LeaveCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-
-	bool ok = true;
-	if (WAIT_TIMEOUT == SignalObjectAndWait(lock._get_win32_handle(), m_sema, millis, FALSE))
-		ok = false;
-
-	EnterCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-	m_waitersCount--;
-	bool lastWaiter = m_wasBroadcast && m_waitersCount == 0;
-	LeaveCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-
-	if (lastWaiter)
-		SignalObjectAndWait(m_waitersDone, lock._get_win32_handle(), INFINITE, FALSE);
-	else
-		WaitForSingleObject(lock._get_win32_handle(), INFINITE);
-
-	return ok;
+	if (lock.s_value == CryMT::detail::eLockType_SRW)
+	{
+		return SleepConditionVariableSRW(reinterpret_cast<PCONDITION_VARIABLE>(&m_condVar), reinterpret_cast<PSRWLOCK>(&lock.m_win32_lock_type), millis, ULONG(0)) == TRUE;
+	}
+	else if (lock.s_value == CryMT::detail::eLockType_CRITICAL_SECTION)
+	{
+		return SleepConditionVariableCS(reinterpret_cast<PCONDITION_VARIABLE>(&m_condVar), reinterpret_cast<PCRITICAL_SECTION>(&lock.m_win32_lock_type), millis) == TRUE;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CryConditionVariable::NotifySingle()
 {
-	EnterCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-	bool haveWaiters = m_waitersCount > 0;
-	LeaveCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-	if (haveWaiters)
-		ReleaseSemaphore(m_sema, 1, 0);
+	WakeConditionVariable(reinterpret_cast<PCONDITION_VARIABLE>(&m_condVar));
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CryConditionVariable::Notify()
 {
-	EnterCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-	bool haveWaiters = false;
-	if (m_waitersCount > 0)
-	{
-		m_wasBroadcast = 1;
-		haveWaiters = true;
-	}
-	if (haveWaiters)
-	{
-		ReleaseSemaphore(m_sema, m_waitersCount, 0);
-		LeaveCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-		WaitForSingleObject(m_waitersDone, INFINITE);
-		m_wasBroadcast = 0;
-	}
-	else
-	{
-		LeaveCriticalSection((CRITICAL_SECTION*)&m_waitersCountLock);
-	}
+	WakeAllConditionVariable(reinterpret_cast<PCONDITION_VARIABLE>(&m_condVar));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -285,55 +369,39 @@ void CryFastSemaphore::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CryRWLock::CryRWLock()
-{
-	STATIC_ASSERT(sizeof(m_Lock) == sizeof(PSRWLOCK), "RWLock-pointer has invalid size");
-	InitializeSRWLock(reinterpret_cast<PSRWLOCK>(&m_Lock));
-}
-
-//////////////////////////////////////////////////////////////////////////
-CryRWLock::~CryRWLock()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CryRWLock::RLock()
 {
-	AcquireSRWLockShared(reinterpret_cast<PSRWLOCK>(&m_Lock));
+	m_srw.LockShared();
 }
 
 //////////////////////////////////////////////////////////////////////////
-#if defined(_CRYTHREAD_WANT_TRY_RWLOCK)
 bool CryRWLock::TryRLock()
 {
-	return TryAcquireSRWLockShared(reinterpret_cast<PSRWLOCK>(&m_Lock)) != 0;
+	return m_srw.TryLockShared();
 }
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 void CryRWLock::RUnlock()
 {
-	ReleaseSRWLockShared(reinterpret_cast<PSRWLOCK>(&m_Lock));
+	m_srw.UnlockShared();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CryRWLock::WLock()
 {
-	AcquireSRWLockExclusive(reinterpret_cast<PSRWLOCK>(&m_Lock));
+	m_srw.Lock();
 }
 
 //////////////////////////////////////////////////////////////////////////
-#if defined(_CRYTHREAD_WANT_TRY_RWLOCK)
 bool CryRWLock::TryWLock()
 {
-	return TryAcquireSRWLockExclusive(reinterpret_cast<PSRWLOCK>(&m_Lock)) != 0;
+	return m_srw.TryLock();
 }
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 void CryRWLock::WUnlock()
 {
-	ReleaseSRWLockExclusive(reinterpret_cast<PSRWLOCK>(&m_Lock));
+	m_srw.Unlock();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -343,12 +411,10 @@ void CryRWLock::Lock()
 }
 
 //////////////////////////////////////////////////////////////////////////
-#if defined(_CRYTHREAD_WANT_TRY_RWLOCK)
 bool CryRWLock::TryLock()
 {
 	return TryWLock();
 }
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 void CryRWLock::Unlock()
@@ -358,11 +424,16 @@ void CryRWLock::Unlock()
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace CryMT {
-namespace detail {
+
+//////////////////////////////////////////////////////////////////////////
 void CryMemoryBarrier()
 {
 	MemoryBarrier();
 }
 
-} // namespace detail
+//////////////////////////////////////////////////////////////////////////
+void CryYieldThread()
+{
+	SwitchToThread();
+}
 } // namespace CryMT
