@@ -2344,6 +2344,9 @@ void CD3D9Renderer::FX_WaterVolumesCausticsPreprocess(N3DEngineCommon::SCausticI
 	m->SetIdentity();
 	*m = mViewMatr;
 
+	// update m_CameraProjMatrix with the view and proj matrices.
+	RT_SetCameraInfo();
+
 	// Store for projection onto the scene.
 	causticInfo.m_mCausticMatr = mViewMatr * mOrthoMatr;
 	causticInfo.m_mCausticMatr.Transpose();
@@ -2360,6 +2363,9 @@ void CD3D9Renderer::FX_WaterVolumesCausticsPreprocess(N3DEngineCommon::SCausticI
 
 	EF_PopMatrix();
 	pShaderThreadInfo->m_matProj->Pop();
+
+	// restore m_CameraProjMatrix.
+	RT_SetCameraInfo();
 
 	FX_ResetPipe();
 	RT_SetViewport(0, 0, gcpRendD3D->GetWidth(), gcpRendD3D->GetHeight());

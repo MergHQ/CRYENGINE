@@ -1,7 +1,7 @@
 // CRYENGINE Source Code File
 // Copyright 2001-2015 Crytek GmbH. All rights reserved.
 
-float4 vCausticParams < psregister = c25; >; 
+float4 vCausticParams < psregister = c25; >;
 
 struct v2fCaustic
 {
@@ -21,7 +21,7 @@ v2fCaustic WaterCausticVS(a2v IN)
 {
 	v2fCaustic OUT = (v2fCaustic)1; 
   
-	float4 vPos = IN.Position;          
+	float4 vPos = IN.Position;
 	vPos.w = 1;
 
 	float4x4 InstMatrix = GetInstanceMatrix();
@@ -38,7 +38,7 @@ v2fCaustic WaterCausticVS(a2v IN)
 	OUT.ripplesTC = GetWaterRipplesUvs( vPos );
 #endif	
 
-	OUT.Position = mul(g_VS_ViewProjMatr, float4(vPos.xyz, 1)); 
+	OUT.Position = mul(vpMatrix, float4(vPos.xyz, 1));
 	OUT.screenProj = HPosToScreenTC( OUT.Position );
 
 	// Output bump layers texture coordinates
