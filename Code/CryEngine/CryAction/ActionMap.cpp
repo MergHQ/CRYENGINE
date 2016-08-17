@@ -997,6 +997,11 @@ bool CActionMap::IsActionInputTriggered(const SInputEvent& inputEvent, CActionMa
 		{
 			if (pActionInput->bHoldTriggerFired) // Initial hold trigger already fired
 			{
+				if (fCurrTime < pActionInput->fLastRepeatTime)
+				{
+					pActionInput->fLastRepeatTime = fCurrTime;
+				}
+
 				if (pActionInput->fHoldRepeatDelay != -1.0f && fCurrTime - pActionInput->fLastRepeatTime >= pActionInput->fHoldRepeatDelay) // fHoldRepeatDelay of -1.0f means no repeat
 				{
 					pActionInput->fLastRepeatTime = fCurrTime;
