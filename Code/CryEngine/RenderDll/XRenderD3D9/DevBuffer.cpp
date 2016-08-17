@@ -4207,6 +4207,8 @@ void CConstantBuffer::EndWrite(bool requires_flush)
 //////////////////////////////////////////////////////////////////////////////////////
 void CConstantBuffer::UpdateBuffer(const void* src, size_t size, uint32 numDataBlocks)
 {
+	assert(m_dynamic || size == m_size);
+	
 	STATOSCOPE_TIMER(s_PoolManager.m_sdata[0].m_io_time);
 	STATOSCOPE_IO_WRITTEN(m_size);
 	CConditonalDevManLock lock(&gcpRendD3D->m_DevBufMan, m_lock);
