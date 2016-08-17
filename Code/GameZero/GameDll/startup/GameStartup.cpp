@@ -5,6 +5,7 @@
 #include <CryCore/Platform/platform_impl.inl>
 #include <CryCore/Platform/CryLibrary.h>
 #include <CryInput/IHardwareMouse.h>
+#include <ILevelSystem.h>
 #include "game/Game.h"
 
 #if ENABLE_AUTO_TESTER
@@ -239,7 +240,7 @@ int CGameStartup::Run(const char* autoStartLevelName)
 			gEnv->pConsole->ExecuteString(mapCmd.c_str());
 		}
 	}
-	else
+	else if (!gEnv->pGameFramework->GetILevelSystem()->IsLevelLoaded())
 	{
 		gEnv->pConsole->ExecuteString("map example");
 	}
