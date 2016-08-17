@@ -111,7 +111,7 @@ private:
 
 #define AUDIO_TRIGGER_IMPL_ID_NUM_RESERVED 100 // IDs below that value are used for the CATLTriggerImpl_Internal
 
-#define MAX_AUDIO_CONTROL_NAME_LENGTH      64
+#define MAX_AUDIO_CONTROL_NAME_LENGTH      128
 #define MAX_AUDIO_FILE_NAME_LENGTH         128
 #define MAX_AUDIO_FILE_PATH_LENGTH         256
 #define MAX_AUDIO_OBJECT_NAME_LENGTH       256
