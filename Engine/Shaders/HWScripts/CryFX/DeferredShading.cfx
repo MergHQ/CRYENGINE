@@ -1306,7 +1306,7 @@ pixout DirOccPassPS(vtxOut IN)
 		sh2.xyz += fObscurance.x * vSample[0] + fObscurance.y * vSample[1] + fObscurance.z * vSample[2] + fObscurance.w * vSample[3];
 	}
 	
-	sh2.xyz = mul( CV_InvViewMatr, half4(sh2.xyz, 0) ).xyz * float3(1, -1, -1);
+	sh2.xyz = mul( CV_InvViewMatr, half4(sh2.xyz * float3(1, -1, -1), 0) ).xyz;
 
 	const half fNormFac = 0.15;
 	sh2.xyzw *= fNormFac;
