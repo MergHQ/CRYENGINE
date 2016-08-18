@@ -934,7 +934,7 @@ int box_box_lin_unprojection(unprojection_mode *pmode, const box *pbox1,int iFea
 		pt0[idir0] += t0.x*t0.y;
 		bContact = inrange(t0.x*t0.y,(real)0,size[0][idir0]*2) & isneg(fabs_tpl(axes[idir1]*(pt0+dir[0]*pcontact->t-center[0]))-size[1][idir1]);
 		pcontact->pt = pbox1->center + pt0*pbox1->Basis + pmode->dir*pcontact->t;
-		pcontact->n = (n*pbox1->Basis)*sgnnz(n*center[0]);
+		pcontact->n = (n*pbox1->Basis)*sgnnz(n*(center[0]-dir[0]*pcontact->t));
 		pcontact->iFeature[0] = 0x20 | idir0<<2|isg0.y+1|isg0.x+1>>1;
 		pcontact->iFeature[1] = 0x20 | idir1<<2|isg1.y+1|isg1.x+1>>1;
 	} else { // face-vertex

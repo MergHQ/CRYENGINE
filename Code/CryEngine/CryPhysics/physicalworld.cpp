@@ -2931,7 +2931,7 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 				} else if (n>(unsigned int)m_vars.nMaxAreaCells)
 					return -1;
 				for(ix=igx[0];ix<=igx[1];ix++) for(iy=igy[0];iy<=igy[1];iy++) {
-					if ((flags&4) && (ix|iy)>=0) {
+					if ((flags&4) && (ix|iy|m_entgrid.size.x-1-ix|m_entgrid.size.y-1-iy)>=0) {
 						float xMin = (ix*m_entgrid.step.x)+m_entgrid.origin[m_iEntAxisx];
 						float yMin = (iy*m_entgrid.step.y)+m_entgrid.origin[m_iEntAxisy];
 						float zMin = igz[0]*m_zGran+m_entgrid.origin[m_iEntAxisz];
