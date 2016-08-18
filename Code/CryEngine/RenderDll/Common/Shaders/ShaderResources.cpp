@@ -769,7 +769,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		size_t nSize = m_Constants.size() * sizeof(Vec4);
 
 		*ppBuf = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(nSize, false);
-		(*ppBuf)->UpdateBuffer(&m_Constants[0], nSize);
+		(*ppBuf)->UpdateBuffer(&m_Constants[0], Align(nSize, 256));
 
 #if !defined(_RELEASE) && CRY_PLATFORM_WINDOWS
 		if (*ppBuf)
