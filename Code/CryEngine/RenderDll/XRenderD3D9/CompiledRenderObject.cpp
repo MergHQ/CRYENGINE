@@ -30,22 +30,21 @@ CConstantBufferPtr CRenderObjectsPools::AllocatePerInstanceConstantBuffer()
 {
 	if (!m_freeConstantBuffers.empty())
 	{
-		CConstantBufferPtr ptr = m_freeConstantBuffers.back();
+		CConstantBufferPtr ptr = std::move(m_freeConstantBuffers.back());
 		m_freeConstantBuffers.pop_back();
+		CRY_ASSERT(ptr && !ptr->m_intentionallyNull && "Invalid cached pointer");
 		return ptr;
 	}
-	// returns refcount==1
-	CConstantBufferPtr pBuf = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerInstanceConstantBuffer_Skin)); // largest buffer type in use
-	pBuf->Release();                                                                                                     // now refcount==1 again
-	return pBuf;
+	return gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerInstanceConstantBuffer_Skin)); // largest buffer type in use
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderObjectsPools::FreePerInstanceConstantBuffer(const CConstantBufferPtr& buffer)
+void CRenderObjectsPools::FreePerInstanceConstantBuffer(CConstantBufferPtr&& buffer)
 {
-	if (buffer)
+	if (buffer && !buffer->m_intentionallyNull)
 	{
-		m_freeConstantBuffers.push_back(buffer);
+		CRY_ASSERT(buffer->m_nRefCount == 1 && "Attempt to free a buffer that is still used elsewhere");
+		m_freeConstantBuffers.emplace_back(std::move(buffer));
 	}
 }
 
@@ -61,9 +60,10 @@ CCompiledRenderObject::~CCompiledRenderObject()
 	m_StencilRef = 0;
 	m_nInstances = 0;
 
-	if (m_perInstanceCB && m_bOwnPerInstanceCB)
+	if (m_bOwnPerInstanceCB)
 	{
-		s_pPools->FreePerInstanceConstantBuffer(m_perInstanceCB);
+		CRY_ASSERT(m_perInstanceCB && "CompiledRenderObject tagged as owning a buffer, but no buffer present");
+		s_pPools->FreePerInstanceConstantBuffer(std::move(m_perInstanceCB));
 	}
 	m_perInstanceCB.reset();
 
@@ -94,7 +94,11 @@ void CCompiledRenderObject::UpdatePerInstanceCB(void* pData, size_t size)
 {
 	if (!m_perInstanceCB)
 	{
-		m_perInstanceCB = s_pPools->AllocatePerInstanceConstantBuffer();
+		CRY_ASSERT(!m_bOwnPerInstanceCB && "CompiledRenderObject tagged as owning a buffer, but no buffer present");
+		if (!(m_perInstanceCB = s_pPools->AllocatePerInstanceConstantBuffer()))
+		{
+			return;
+		}
 		m_bOwnPerInstanceCB = true;
 	}
 	m_perInstanceCB->UpdateBuffer(pData, size);
@@ -258,15 +262,14 @@ void CCompiledRenderObject::CompileInstancingData(CRenderObject* pRenderObject, 
 		assert(sizeof(CRenderObject::SInstanceData) == Align(sizeof(CRenderObject::SInstanceData), CRY_PLATFORM_ALIGNMENT));
 		size_t nSize = nInstsPerCB * sizeof(CRenderObject::SInstanceData);
 
-		CConstantBuffer* pCB = gcpRendD3D.m_DevBufMan.CreateConstantBuffer(nSize); // returns refcount==1
+		CConstantBufferPtr pCB = gcpRendD3D.m_DevBufMan.CreateConstantBuffer(nSize);
 		if (pCB)
 		{
 			pCB->UpdateBuffer(&pRenderObject->m_Instances[nBeginOffs], nSize);
 
 			CCompiledRenderObject::SInstancingData ID;
 			ID.m_nInstances = nInstsPerCB;
-			ID.m_pConstBuffer = pCB;
-			pCB->Release(); // back to refcount==1
+			ID.m_pConstBuffer = std::move(pCB);
 			m_InstancingCBs.push_back(ID);
 		}
 

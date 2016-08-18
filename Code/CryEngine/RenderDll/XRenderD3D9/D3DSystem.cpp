@@ -1015,7 +1015,7 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 		m_DevMan.ReleaseFence(m_frameFences[i]);
 
 	CHWShader::mfFlushPendedShadersWait(-1);
-	if (nFlags == FRR_ALL)
+	if (nFlags == FRR_ALL && !IsShaderCacheGenMode())
 	{
 		memset(&CTexture::s_TexStages[0], 0, sizeof(CTexture::s_TexStages));
 		CTexture::s_TexStates.clear();
@@ -1736,7 +1736,7 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 #endif
 
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
-	if (m_pPipelineProfiler)
+	if (m_pPipelineProfiler && !IsShaderCacheGenMode())
 	{
 		m_pPipelineProfiler->Init();
 	}

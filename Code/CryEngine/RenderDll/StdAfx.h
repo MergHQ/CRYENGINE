@@ -299,18 +299,6 @@ LINK_SYSTEM_LIBRARY("d3d11.lib")
 
 #endif
 
-#if CRY_PLATFORM_DURANGO
-	#include <xg.h>
-#endif
-
-#if !defined(_RELEASE) || defined(ENABLE_STATOSCOPE_RELEASE)
-	#define ENABLE_TEXTURE_STREAM_LISTENER
-#endif
-
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-	#define FEATURE_SILHOUETTE_POM
-#endif
-
 #if CRY_PLATFORM_ORBIS && !defined(CRY_USE_GNM_RENDERER)
 	#define FEATURE_PER_SHADER_INPUT_LAYOUT_CACHE
 #endif
@@ -391,6 +379,143 @@ LINK_SYSTEM_LIBRARY("d3d11.lib")
 #define D3DPrimitiveType     D3D11_PRIMITIVE_TOPOLOGY
 #define D3DBlob              ID3D10Blob
 #define D3DSamplerState      ID3D11SamplerState
+
+#if defined(CRY_USE_DX12_DEVIRTUALIZED)
+#define ID3D11DeviceContext1      CCryDX12DeviceContext
+#define ID3D11Device1             CCryDX12Device
+#define ID3D11DeviceContext       CCryDX12DeviceContext
+#define ID3D11Device              CCryDX12Device
+#define ID3D11DeviceChild         CCryDX12DeviceChild<IEmptyDeviceChild>
+#define ID3D11BlendState          CCryDX12BlendState
+#define ID3D11DepthStencilState   CCryDX12DepthStencilState
+#define ID3D11RasterizerState     CCryDX12RasterizerState
+#define ID3D11SamplerState        CCryDX12SamplerState
+#define ID3D11View					      CCryDX12View<IEmptyView>
+#define ID3D11DepthStencilView    CCryDX12DepthStencilView
+#define ID3D11RenderTargetView    CCryDX12RenderTargetView
+#define ID3D11ShaderResourceView  CCryDX12ShaderResourceView
+#define ID3D11UnorderedAccessView CCryDX12UnorderedAccessView
+#define ID3D11Resource			      CCryDX12Resource<IEmptyResource>
+#define ID3D11Buffer				      CCryDX12Buffer
+#define ID3D11Texture1D			      CCryDX12Texture1D
+#define ID3D11Texture2D			      CCryDX12Texture2D
+#define ID3D11Texture3D			      CCryDX12Texture3D
+#define ID3D11Asynchronous	      CCryDX12Asynchronous<IEmptyAsynchronous>
+#define ID3D11Query 				      CCryDX12Query
+#define ID3D11InputLayout				  CCryDX12InputLayout
+
+typedef IEmptyDeviceContext1      ID3D11DeviceContext1ToImplement;
+typedef IEmptyDevice1             ID3D11Device1ToImplement;
+typedef IEmptyDeviceContext1      ID3D11DeviceContextToImplement;
+typedef IEmptyDevice1             ID3D11DeviceToImplement;
+typedef IEmptyDeviceChild         ID3D11DeviceChildToImplement;
+typedef IEmptyState               ID3D11BlendStateToImplement;
+typedef IEmptyState               ID3D11DepthStencilStateToImplement;
+typedef IEmptyState               ID3D11RasterizerStateToImplement;
+typedef IEmptyState               ID3D11SamplerStateToImplement;
+typedef IEmptyView					      ID3D11ViewToImplement;
+typedef IEmptyView                ID3D11DepthStencilViewToImplement;
+typedef IEmptyView                ID3D11RenderTargetViewToImplement;
+typedef IEmptyView                ID3D11ShaderResourceViewToImplement;
+typedef IEmptyView                ID3D11UnorderedAccessViewToImplement;
+typedef IEmptyResource			      ID3D11ResourceToImplement;
+typedef IEmptyResource				    ID3D11BufferToImplement;
+typedef IEmptyResource			      ID3D11Texture1DToImplement;
+typedef IEmptyResource			      ID3D11Texture2DToImplement;
+typedef IEmptyResource			      ID3D11Texture3DToImplement;
+typedef IEmptyAsynchronous	      ID3D11AsynchronousToImplement;
+typedef IEmptyAsynchronous	      ID3D11QueryToImplement;
+typedef IEmptyInputLayout				  ID3D11InputLayoutToImplement;
+#elif defined(CRY_USE_DX12)												    
+	//#include "d3d11.h" // includes <windows.h>
+	#if defined(DEVICE_SUPPORTS_D3D11_1)
+		//#include "d3d11_1.h" 
+		typedef ID3D11DeviceContext1      ID3D11DeviceContext1ToImplement;
+		typedef ID3D11Device1             ID3D11Device1ToImplement;
+	#endif
+	typedef ID3D11DeviceContext       ID3D11DeviceContextToImplement;
+	typedef ID3D11Device              ID3D11DeviceToImplement;
+	typedef ID3D11DeviceChild         ID3D11DeviceChildToImplement;
+	typedef ID3D11BlendState          ID3D11BlendStateToImplement;
+	typedef ID3D11DepthStencilState   ID3D11DepthStencilStateToImplement;
+	typedef ID3D11RasterizerState     ID3D11RasterizerStateToImplement;
+	typedef ID3D11SamplerState        ID3D11SamplerStateToImplement;
+	typedef ID3D11DepthStencilView    ID3D11DepthStencilViewToImplement;
+	typedef ID3D11RenderTargetView    ID3D11RenderTargetViewToImplement;
+	typedef ID3D11ShaderResourceView  ID3D11ShaderResourceViewToImplement;
+	typedef ID3D11UnorderedAccessView ID3D11UnorderedAccessViewToImplement;
+	typedef ID3D11Resource			      ID3D11ResourceToImplement;
+	typedef ID3D11Buffer				      ID3D11BufferToImplement;
+	typedef ID3D11Texture1D			      ID3D11Texture1DToImplement;
+	typedef ID3D11Texture2D			      ID3D11Texture2DToImplement;
+	typedef ID3D11Texture3D			      ID3D11Texture3DToImplement;
+	typedef ID3D11Asynchronous	      ID3D11AsynchronousToImplement;
+	typedef ID3D11Query 				      ID3D11QueryToImplement;
+	typedef ID3D11InputLayout				  ID3D11InputLayoutToImplement;
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+#define MAX_FRAME_LATENCY    1
+#define MAX_FRAMES_IN_FLIGHT (MAX_FRAME_LATENCY + 1)    // Current and Last
+
+#if defined(CRY_USE_DX12)
+	#include <CryCore/Platform/CryLibrary.h>
+	#include "XRenderD3D9/DX12/CryDX12.hpp"
+
+	#include "XRenderD3D9/DX12/CryDX12Guid.hpp"
+	#include "XRenderD3D9/DX12/Device/CCryDX12Device.hpp"
+	#include "XRenderD3D9/DX12/Device/CCryDX12DeviceContext.hpp"
+	#include "XRenderD3D9/DX12/Device/CCryDX12DeviceChild.hpp"
+	#include "XRenderD3D9/DX12/Resource/State/CCryDX12SamplerState.hpp"
+	#include "XRenderD3D9/DX12/Resource/CCryDX12View.hpp"
+	#include "XRenderD3D9/DX12/Resource/View/CCryDX12DepthStencilView.hpp"
+	#include "XRenderD3D9/DX12/Resource/View/CCryDX12RenderTargetView.hpp"
+	#include "XRenderD3D9/DX12/Resource/View/CCryDX12ShaderResourceView.hpp"
+	#include "XRenderD3D9/DX12/Resource/View/CCryDX12UnorderedAccessView.hpp"
+	#include "XRenderD3D9/DX12/Resource/Misc/CCryDX12Buffer.hpp"
+	#include "XRenderD3D9/DX12/Resource/Texture/CCryDX12Texture1D.hpp"
+	#include "XRenderD3D9/DX12/Resource/Texture/CCryDX12Texture2D.hpp"
+	#include "XRenderD3D9/DX12/Resource/Texture/CCryDX12Texture3D.hpp"
+	#include "XRenderD3D9/DX12/Resource/CCryDX12Asynchronous.hpp"
+	#include "XRenderD3D9/DX12/Resource/Misc/CCryDX12Query.hpp"
+	#include "XRenderD3D9/DX12/Resource/Misc/CCryDX12InputLayout.hpp"
+	typedef uintptr_t SOCKET;
+#endif
+
+
+
+
+#if CRY_PLATFORM_DURANGO
+	#include <xg.h>
+#endif
+
+#if !defined(_RELEASE) || defined(ENABLE_STATOSCOPE_RELEASE)
+	#define ENABLE_TEXTURE_STREAM_LISTENER
+#endif
+
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
+	#define FEATURE_SILHOUETTE_POM
+#endif
+
+#if CRY_PLATFORM_ORBIS && !defined(CRY_USE_GNM_RENDERER)
+	#define FEATURE_PER_SHADER_INPUT_LAYOUT_CACHE
+#endif
+
+#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO) && !defined(OPENGL)
+	#define SUPPORT_D3D_DEBUG_RUNTIME
+#endif
+
+#if !CRY_PLATFORM_DURANGO && !CRY_PLATFORM_ORBIS
+	#define SUPPORT_DEVICE_INFO
+	#if CRY_PLATFORM_WINDOWS
+		#define SUPPORT_DEVICE_INFO_MSG_PROCESSING
+		#define SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES
+	#endif
+#endif
+
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryGame/IGame.h>
+
 
 #if defined(CRY_USE_DX12)
 // ConstantBuffer/ShaderResource/UnorderedAccess need markers,

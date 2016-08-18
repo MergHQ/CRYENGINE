@@ -1634,9 +1634,11 @@ struct CConstantBufferAllocator
 	bool Allocate(CConstantBuffer* cbuffer)
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_RENDERER);
+		CRY_ASSERT(cbuffer && cbuffer->m_size && "Bad allocation request");
 		const unsigned size = cbuffer->m_size;
 		const unsigned nsize = NextPower2(size);
 		const unsigned bucket = IntegerLog2(nsize) - 8;
+		CRY_ASSERT(bucket < CRY_ARRAY_COUNT(m_page_buckets) && "Bad allocation size");
 		bool failed = false;
 retry:
 		for (size_t i = m_page_buckets[bucket].size(); i > 0; --i)
@@ -3220,8 +3222,10 @@ public:
 // Manages all pool - in anonymous namespace to reduce recompiles
 struct SPoolManager
 {
+#if !DEVBUFFERMAN_DEBUG
 	// Storage for constant buffer wrapper instances
 	CPartitionTable<CConstantBuffer> m_constant_buffers[2];
+#endif
 
 #if defined(CRY_USE_DX12)
 	CDescriptorPool m_ResourceDescriptorPool;
@@ -3726,12 +3730,16 @@ void CDeviceBufferManager::EndReadDirectVB(D3DVertexBuffer* pVB)
 #endif
 
 //////////////////////////////////////////////////////////////////////////////////////
-CConstantBuffer* CDeviceBufferManager::CreateConstantBuffer(size_t size, bool dynamic, bool ts)
+CConstantBuffer* CDeviceBufferManager::CreateConstantBufferRaw(size_t size, bool dynamic, bool ts)
 {
 	STATOSCOPE_TIMER(s_PoolManager.m_sdata[0].m_creator_time);
 	size = (max(size, size_t(1u)) + (255)) & ~(255);
 	CConditonalDevManLock lock(this, ts);
+#if !DEVBUFFERMAN_DEBUG
 	CConstantBuffer* buffer = &s_PoolManager.m_constant_buffers[ts][s_PoolManager.m_constant_buffers[ts].Allocate()];
+#else
+	CConstantBuffer* buffer = new CConstantBuffer(0xCACACACA);
+#endif
 	buffer->m_size = size;
 	buffer->m_dynamic = dynamic;
 	buffer->m_lock = ts;
@@ -4118,14 +4126,16 @@ void CConstantBuffer::ReturnToPool()
 #endif
 	if (!m_intentionallyNull)
 	{
+#if !DEVBUFFERMAN_DEBUG
 		s_PoolManager.m_constant_buffers[m_lock].Free(m_handle);
+#else
+		delete this;
+#endif
 	}
 	else
 	{
 		SAFE_RELEASE(m_buffer);
 	}
-
-	m_used = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -4550,9 +4560,6 @@ CConstantBufferPtr CGraphicsDeviceConstantBuffer::GetConstantBuffer()
 	if (!m_pConstantBuffer)
 	{
 		m_pConstantBuffer = gRenDev->m_DevBufMan.CreateConstantBuffer(m_size);
-		// m_DevBufMan.CreateConstantBuffer creates a structure with a reference count already set to 1,
-		// to assign it to smart pointer properly we need to free one original reference.
-		m_pConstantBuffer->Release();
 	}
 	if (m_bDirty && m_data.size() > 0)
 	{

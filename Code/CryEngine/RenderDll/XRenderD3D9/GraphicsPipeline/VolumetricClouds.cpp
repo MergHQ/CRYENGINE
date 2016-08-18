@@ -477,13 +477,13 @@ void CVolumetricCloudsStage::Init()
 	m_pCloudShadowTex = CTexture::CreateTextureObject("$VolCloudShadowTmp", 0, 0, 0, eTT_3D, uavFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pCloudShadowConstantBuffer.get() == nullptr);
-	m_pCloudShadowConstantBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SCloudShadowShaderParam)));
+	m_pCloudShadowConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SCloudShadowShaderParam));
 
 	CRY_ASSERT(m_pRenderCloudConstantBuffer.get() == nullptr);
-	m_pRenderCloudConstantBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SVolumetricCloudsShaderParam)));
+	m_pRenderCloudConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SVolumetricCloudsShaderParam));
 
 	CRY_ASSERT(m_pReprojectionConstantBuffer.get() == nullptr);
-	m_pReprojectionConstantBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SReprojectionParam)));
+	m_pReprojectionConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SReprojectionParam));
 }
 
 void CVolumetricCloudsStage::Prepare(CRenderView* pRenderView)

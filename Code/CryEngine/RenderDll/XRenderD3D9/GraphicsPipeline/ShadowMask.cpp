@@ -192,7 +192,7 @@ void CShadowMaskStage::Init()
 	m_samplerTrilinearBorder = CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0));
 
 	// per view constant buffer
-	m_pPerViewConstantBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer)));
+	m_pPerViewConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer));
 }
 
 void CShadowMaskStage::Prepare(CRenderView* pRenderView)
@@ -982,13 +982,13 @@ void CLocalLightShadows::InitPrimitives()
 {
 	for (auto& prim : volumePrimitives)
 	{
-		CConstantBufferPtr pCB; pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants)));
+		CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants));
 		prim.SetConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	}
 
 	for (auto& prim : quadPrimitives)
 	{
-		CConstantBufferPtr pCB; pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants)));
+		CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants));
 		prim.SetConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	}
 }

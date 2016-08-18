@@ -70,7 +70,10 @@ public:
 
 	void reset(_I* p)
 	{
-		_smart_ptr<_I>(p).swap(*this);
+		if (p != this->p)
+		{
+			_smart_ptr<_I>(p).swap(*this);
+		}
 	}
 
 	_smart_ptr& operator=(const _smart_ptr& newp)
@@ -113,6 +116,7 @@ public:
 	//! Assigns a pointer without increasing ref count.
 	void Assign_NoAddRef(_I* ptr)
 	{
+		CRY_ASSERT_MESSAGE(!p, "Assign_NoAddRef should only be used on a default-constructed, not-yet-assigned smart_ptr instance");
 		p = ptr;
 	}
 

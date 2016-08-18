@@ -168,6 +168,9 @@ private:
 	}
 };
 
+// Note: Create[Vertex|Index]StreamSet rely on this property to perform de-duplication.
+static_assert(sizeof(CDeviceInputStream) == sizeof(buffer_handle_t) + 2 * sizeof(uint32), "CDeviceInputStream must be tightly packed");
+
 ////////////////////////////////////////////////////////////////////////////
 namespace DeviceResourceBinding
 {
@@ -710,15 +713,15 @@ public:
 		eQueue_Bundle = 3,
 	};
 
-	CDeviceResourceSetPtr    CreateResourceSet(CDeviceResourceSet::EFlags flags = CDeviceResourceSet::EFlags_None) const;
-	CDeviceResourceSetPtr    CloneResourceSet(const CDeviceResourceSetPtr pSrcResourceSet) const; // NOTE: does not copy device dependent resources. be sure to call Build() before usage
+	CDeviceResourceSetPtr     CreateResourceSet(CDeviceResourceSet::EFlags flags = CDeviceResourceSet::EFlags_None) const;
+	CDeviceResourceSetPtr     CloneResourceSet(const CDeviceResourceSetPtr pSrcResourceSet) const; // NOTE: does not copy device dependent resources. be sure to call Build() before usage
 
-	CDeviceResourceLayoutPtr CreateResourceLayout(const SDeviceResourceLayoutDesc& resourceLayoutDesc);
-	CDeviceInputStream*      CreateVertexStreamSet(uint32 numStreams, const SStreamInfo* streams);
-	CDeviceInputStream*      CreateIndexStreamSet(const SStreamInfo* stream);
+	CDeviceResourceLayoutPtr  CreateResourceLayout(const SDeviceResourceLayoutDesc& resourceLayoutDesc);
+	const CDeviceInputStream* CreateVertexStreamSet(uint32 numStreams, const SStreamInfo* streams);
+	const CDeviceInputStream* CreateIndexStreamSet(const SStreamInfo* stream);
 
-	CDeviceGraphicsPSOPtr    CreateGraphicsPSO(const CDeviceGraphicsPSODesc& psoDesc);
-	CDeviceComputePSOPtr     CreateComputePSO(const CDeviceComputePSODesc& psoDesc);
+	CDeviceGraphicsPSOPtr     CreateGraphicsPSO(const CDeviceGraphicsPSODesc& psoDesc);
+	CDeviceComputePSOPtr      CreateComputePSO(const CDeviceComputePSODesc& psoDesc);
 
 	// Get a pointer to the core graphics command-list, which runs on the command-queue assigned to Present().
 	// Only the allocating thread is allowed to call functions on this command-list (DX12 restriction).
@@ -762,24 +765,30 @@ private:
 
 	VectorMap<SDeviceResourceLayoutDesc, CDeviceResourceLayoutPtr>     m_ResourceLayoutCache;
 
-	template<class T, const size_t N> struct SDeviceStreamInfoHash
+	struct SDeviceStreamInfoHash
 	{
-		size_t operator()(const T& x) const
+		template<size_t U>
+		size_t operator()(const std::array<CDeviceInputStream, U>& x) const
 		{
-			return size_t(XXH64(x, sizeof(CDeviceInputStream) * N, 61));
+			// Note: Relies on CDeviceInputStream being tightly packed
+			return size_t(XXH64(x.data(), sizeof(CDeviceInputStream) * U, 61));
 		}
 	};
 
-	template<class T, const size_t N> struct SDeviceStreamInfoEquality
+	struct SDeviceStreamInfoEquality
 	{
-		bool operator()(const T& x, const T& y) const
+		template<size_t U>
+		bool operator()(const std::array<CDeviceInputStream, U>& x, const std::array<CDeviceInputStream, U>& y) const
 		{
-			return !memcmp(x, y, sizeof(CDeviceInputStream) * N);
+			// Note: Relies on CDeviceInputStream being tightly packed
+			return !memcmp(x.data(), y.data(), sizeof(CDeviceInputStream) * U);
 		}
 	};
 
-	std::unordered_set<CDeviceInputStream*, SDeviceStreamInfoHash<CDeviceInputStream*, 1>, SDeviceStreamInfoEquality<CDeviceInputStream*, 1>>             m_UniqueIndexStreams;
-	std::unordered_set<CDeviceInputStream*, SDeviceStreamInfoHash<CDeviceInputStream*, VSF_NUM>, SDeviceStreamInfoEquality<CDeviceInputStream*, VSF_NUM>> m_UniqueVertexStreams;
+	typedef std::array<CDeviceInputStream, 1>       TIndexStreams;
+	typedef std::array<CDeviceInputStream, VSF_NUM> TVertexStreams;
+	std::unordered_set<TIndexStreams, SDeviceStreamInfoHash, SDeviceStreamInfoEquality>  m_uniqueIndexStreams;
+	std::unordered_set<TVertexStreams, SDeviceStreamInfoHash, SDeviceStreamInfoEquality> m_uniqueVertexStreams;
 };
 
 struct SDeviceObjectHelpers

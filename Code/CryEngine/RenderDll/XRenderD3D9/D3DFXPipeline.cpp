@@ -317,8 +317,8 @@ void CD3D9Renderer::FX_ClearTargetRegion(const uint32 nAdditionalStates /* = 0*/
 	CShader* pSH     = CShaderMan::s_ShaderCommon;
 	uint32   nPasses = 0;
 	pSH->FXSetTechnique("Clear");
-	pSH->FXBegin(&nPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-	pSH->FXBeginPass(0);
+	bool bSuccess = pSH->FXBegin(&nPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
+	bSuccess &= pSH->FXBeginPass(0);
 	int nState = GS_NODEPTHTEST;
 	if (m_pNewTarget[0]->m_ClearFlags & (CLEAR_ZBUFFER | CLEAR_STENCIL))
 	{
@@ -338,7 +338,10 @@ void CD3D9Renderer::FX_ClearTargetRegion(const uint32 nAdditionalStates /* = 0*/
 	D3DSetCull(eCULL_None);
 	float fX = (float)m_CurViewport.nWidth;
 	float fY = (float)m_CurViewport.nHeight;
-	DrawQuad(-0.5f, -0.5f, fX - 0.5f, fY - 0.5f, m_pNewTarget[0]->m_ReqColor, 1.0f, fX, fY, fX, fY);
+	if (bSuccess)
+	{
+		DrawQuad(-0.5f, -0.5f, fX - 0.5f, fY - 0.5f, m_pNewTarget[0]->m_ReqColor, 1.0f, fX, fY, fX, fY);
+	}
 	m_RP.m_PersFlags1 &= ~RBPF1_IN_CLEAR;
 
 	m_RP.m_pCurObject       = pObj;

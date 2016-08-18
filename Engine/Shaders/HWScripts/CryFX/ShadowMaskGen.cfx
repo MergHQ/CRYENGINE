@@ -235,12 +235,7 @@ float BlendVP(float3 vp, bool blendOut)
 	float3 vBlend;
 	float2 BlendVal = (blendOut) ? c_ShadowMaskConstants.BlendInfo.xy : c_ShadowMaskConstants.BlendInfo.zw;
 
-#if ORBIS
-	// shader compiler workaround
-  vBlend.xy =  clamp(abs(vp.xy*2-1), 0.0f, 0.999999f);
-#else
 	vBlend.xy =  saturate(abs(vp.xy*2-1));
-#endif
 
 	vBlend.xy -= BlendVal.x;
 	vBlend.xy *= BlendVal.y;

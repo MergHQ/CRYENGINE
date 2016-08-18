@@ -2857,7 +2857,7 @@ bool CHWShader_D3D::mfActivateCacheItem(CShader* pSH, SShaderCacheHeaderItem* pI
 		if (m_eSHClass == eHWSC_Vertex)
 		{
 			ID3D10Blob* pS = NULL;
-			D3D10CreateBlob(nSize, (LPD3D10BLOB*)&pS);
+			D3DCreateBlob(nSize, (LPD3D10BLOB*)&pS);
 			DWORD* pBuffer = (DWORD*)pS->GetBufferPointer();
 			memcpy(pBuffer, pBuf, nSize);
 			mfVertexFormat(pInst, this, pS);
@@ -2879,7 +2879,7 @@ bool CHWShader_D3D::mfActivateCacheItem(CShader* pSH, SShaderCacheHeaderItem* pI
 			if (m_eSHClass == eHWSC_Vertex)
 			{
 				ID3D10Blob* pS = NULL;
-				D3D10CreateBlob(nSize, (LPD3D10BLOB*)&pS);
+				D3DCreateBlob(nSize, (LPD3D10BLOB*)&pS);
 				DWORD* pBuffer = (DWORD*)pS->GetBufferPointer();
 				memcpy(pBuffer, pBuf, nSize);
 				mfVertexFormat(pInst, this, pS);
@@ -3445,7 +3445,7 @@ bool CHWShader_D3D::mfCompileHLSL_Int(CShader* pSH, char* prog_text, LPD3D10BLOB
 			return false;
 		}
 
-		D3D10CreateBlob(Data.size(), (LPD3D10BLOB*)ppShader);
+		D3DCreateBlob(Data.size(), (LPD3D10BLOB*)ppShader);
 		LPD3D10BLOB pShader = (LPD3D10BLOB) *ppShader;
 		DWORD* pBuf = (DWORD*) pShader->GetBufferPointer();
 		memcpy(pBuf, &Data[0], Data.size());
@@ -4096,7 +4096,7 @@ bool CAsyncShaderTask::CompileAsyncShader(SShaderAsyncInfo* pAsync)
 		if (NRemoteCompiler::ESOK != NRemoteCompiler::CShaderSrv::Instance().Compile(Data, pAsync->m_Profile, pAsync->m_Text.c_str(), pAsync->m_Name.c_str(), sCompiler.c_str(), pAsync->m_RequestLine.c_str()))
 		{
 
-			D3D10CreateBlob(sizeof("D3DXCompileShader failed"), (LPD3D10BLOB*)&pAsync->m_pErrors);
+			D3DCreateBlob(sizeof("D3DXCompileShader failed"), (LPD3D10BLOB*)&pAsync->m_pErrors);
 			DWORD* pBuf = (DWORD*) pAsync->m_pErrors->GetBufferPointer();
 			memcpy(pBuf, "D3DXCompileShader failed", sizeof("D3DXCompileShader failed"));
 
@@ -4119,7 +4119,7 @@ bool CAsyncShaderTask::CompileAsyncShader(SShaderAsyncInfo* pAsync)
 		}
 
 		HRESULT hr = S_OK;
-		D3D10CreateBlob(Data.size(), (LPD3D10BLOB*) &pAsync->m_pDevShader);
+		D3DCreateBlob(Data.size(), (LPD3D10BLOB*) &pAsync->m_pDevShader);
 		LPD3D10BLOB pShader = (LPD3D10BLOB)*&pAsync->m_pDevShader;
 		DWORD* pBuf = (DWORD*)pShader->GetBufferPointer();
 		memcpy(pBuf, &Data[0], Data.size());

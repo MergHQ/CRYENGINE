@@ -7,7 +7,7 @@ import os
 from waflib import Logs
 
 def build(bld):
-	gnm_compiler_version = '"ORBIS/V029"' # Must be quoted
+	gnm_compiler_version = '"ORBIS/V030"' # Must be quoted
 	additional_defines = [ 'CRY_GNM_SHADER_COMPILER_VERSION=' + gnm_compiler_version ]
 
 	# Oculus can only be built using VS 2015.
@@ -159,15 +159,15 @@ def build(bld):
 
 		# GNM shader compiler
 		bld.CryConsoleApplication(
-			target     = 'GnmShaderCompiler',
-			vs_filter  = 'Tools',
-			file_list  = 'GNM/GnmShaderCompiler.waf_files',
-			defines    = [ '_CRT_SECURE_NO_WARNINGS' ],
-			cxxflags   = [ '/EHsc', '/GR' ],
-			includes   = Path('Code/SDKs/Orbis/target/include_common'),
-			libpath    = Path('Code/SDKs/Orbis/host_tools/lib'),
-			lib        = 'libSceShaderWavePsslc',
-			features   = 'copy_psslc',
+			target            = 'GnmShaderCompiler',
+			vs_filter         = 'Tools',
+			file_list         = 'GNM/GnmShaderCompiler.waf_files',
+			defines           = [ '_CRT_SECURE_NO_WARNINGS' ],
+			cxxflags          = [ '/EHsc', '/GR' ],
+			includes          = Path('Code/SDKs/Orbis/target/include_common'),
+			libpath           = Path('Code/SDKs/Orbis/host_tools/lib'),
+			lib               = 'libSceShaderWavePsslc',
+			features          = 'copy_psslc',
 
 			output_sub_folder = Path(os.path.join(rsc_output_folder, 'Compiler', gnm_compiler_version[1:-1])),
 			force_static_crt  = True,

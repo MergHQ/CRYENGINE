@@ -139,7 +139,7 @@ public:
 	CRenderObjectsPools();
 	~CRenderObjectsPools();
 	CConstantBufferPtr AllocatePerInstanceConstantBuffer();
-	void               FreePerInstanceConstantBuffer(const CConstantBufferPtr& buffer);
+	void               FreePerInstanceConstantBuffer(CConstantBufferPtr&& buffer);
 
 public:
 
@@ -226,8 +226,8 @@ public:
 	CGpuBuffer*           m_pExtraSkinWeights; // eight weight skinning
 
 	// Streams data.
-	CDeviceInputStream*   m_vertexStreamSet;
-	CDeviceInputStream*   m_indexStreamSet;
+	const CDeviceInputStream*   m_vertexStreamSet;
+	const CDeviceInputStream*   m_indexStreamSet;
 
 	std::vector<SInstancingData> m_InstancingCBs;
 

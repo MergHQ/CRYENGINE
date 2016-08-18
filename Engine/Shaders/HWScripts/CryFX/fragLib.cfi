@@ -315,7 +315,7 @@ half4 frag_shared_output(inout fragPass pPass)
       const float3 parallax = mul(pPass.mTangentToWS, pPass.vView).xyz;
 
       const float sceneDepth = pPass.fSceneDepthRT;
-      const float scale = sceneDepth - dot(viewDirWS, -CV_CameraFrontVector);
+      const float scale = sceneDepth - dot(viewDirWS, -CV_CameraFrontVector.xyz);
       const float2 offset = normalize( parallax.xy / -parallax.z ) * scale * 0.25;
 
       pPass.IN.baseTC.xy = microDetailBaseTC + offset.xy;
@@ -462,13 +462,8 @@ half4 frag_shared_output(inout fragPass pPass)
   if (!pPass.bSkipDirectLighting)
 	{
     // Initialize light pass structure with per-light shared data
-#if ORBIS
-    fragLightPass pLight; // To get around internal compiler error
-    pLight.cOut=0;
-#else
     fragLightPass pLight = (fragLightPass) 0;
-#endif
-    
+
     pLight.nType = LT_DIRECTIONAL;
                 
     pLight.cDiffuse = g_PS_SunColor.xyz;

@@ -59,8 +59,8 @@ public:
 	{
 		m_Notify.Lock();
 		m_nFinished = 1;
+		m_Notify.Unlock();	
 		m_CondNotify.Notify();
-		m_Notify.Unlock();
 	}
 
 	void SetRunning()

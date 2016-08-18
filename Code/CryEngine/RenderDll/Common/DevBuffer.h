@@ -243,7 +243,13 @@ public:
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// ConstantBuffer creation
-	CConstantBuffer*          CreateConstantBuffer(size_t size, bool dynamic = true, bool needslock = false);
+	CConstantBuffer*          CreateConstantBufferRaw(size_t size, bool dynamic = true, bool needslock = false);
+	inline CConstantBufferPtr CreateConstantBuffer(size_t size, bool dynamic = true, bool needslock = false)
+	{
+		CConstantBufferPtr result;
+		result.Assign_NoAddRef(CreateConstantBufferRaw(size, dynamic, needslock));
+		return result;
+	}
 	static CConstantBufferPtr CreateNullConstantBuffer();
 
 	////////////////////////////////////////////////////////////////////////////////////////

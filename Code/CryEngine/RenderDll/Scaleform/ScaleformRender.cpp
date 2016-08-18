@@ -87,10 +87,6 @@ void SSF_ResourcesD3D::STransientConstantBufferHeap::FreeUsedConstantBuffers()
 SSF_ResourcesD3D::STransientConstantBufferHeap::~STransientConstantBufferHeap()
 {
 	CRY_ASSERT(m_useList.empty());
-	for (auto pCB : m_freeList)
-	{
-		pCB->Release();
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

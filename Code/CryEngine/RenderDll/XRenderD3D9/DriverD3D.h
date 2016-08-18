@@ -324,7 +324,7 @@ public:
 	};
 	struct SCharacterInstanceCB
 	{
-		CConstantBuffer *boneTransformsBuffer;
+		CConstantBufferPtr boneTransformsBuffer;
 		// contains only the bone ids and the weighs [0-100] of the bones that move a morph for a particular frame
 		CGpuBuffer activeMorphsBuffer;
 		SSkinningData *m_pSD;
@@ -339,7 +339,7 @@ public:
 		{
 		}
 
-		~SCharacterInstanceCB() { SAFE_RELEASE(boneTransformsBuffer); list.erase(); }
+		~SCharacterInstanceCB() { list.erase(); }
 	};
 	struct SRenderTargetStack
 	{

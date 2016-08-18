@@ -81,7 +81,7 @@
 	"durango_performance_monolithic_build"  : "True",
 	"durango_release_monolithic_build"      : "True",
 
-	"orbis_modules"                         : [ "OrbisLauncher", "CryRenderD3D11" ],
+	"orbis_modules"                         : [ "OrbisLauncher", "CryRenderGNM" ],
 	"orbis_monolithic_build"                : "True",
 	"orbis_debug_modules"                   : ["CryLiveCreate"],
 	"orbis_profile_modules"                 : ["CryLiveCreate"],

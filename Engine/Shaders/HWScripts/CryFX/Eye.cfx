@@ -387,7 +387,7 @@ void frag_custom_per_light(inout fragPass pPass, inout fragLightPass pLight)
 	cSpecular *= fNdotL;
 #else
 	
-	half fNdotLVertex = dot(pLight.vLight, pPass.IN.vNormal);
+	half fNdotLVertex = dot(pLight.vLight, pPass.IN.vNormal.xyz);
 	half fNdotLCornea = dot(pLight.vLight, pPass.pCustom.vCorneaNormal);
 	
 	// Energy conserving wrap lighting for Iris SSS

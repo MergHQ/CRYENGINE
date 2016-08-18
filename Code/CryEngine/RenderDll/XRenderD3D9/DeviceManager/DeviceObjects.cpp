@@ -173,9 +173,9 @@ bool SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(::CShade
 				SConstantBufferBindInfo bindInfo;
 				bindInfo.shaderSlot = bufferSlot;
 				bindInfo.shaderStages = EShaderStage(BIT(shaderClass));
-				bindInfo.pBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(bufferSize));
+				bindInfo.pBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(bufferSize);
 				bindInfo.pBuffer->UpdateBuffer(zeroMem, updateSize);
-				bufferBindInfo.push_back(bindInfo);
+				bufferBindInfo.push_back(std::move(bindInfo));
 			}
 		}
 	}
@@ -1390,33 +1390,25 @@ CDeviceResourceLayoutPtr CDeviceObjectFactory::CreateResourceLayout(const SDevic
 	return pResult;
 }
 
-CDeviceInputStream* CDeviceObjectFactory::CreateVertexStreamSet(uint32 numStreams, const SStreamInfo* streams)
+const CDeviceInputStream* CDeviceObjectFactory::CreateVertexStreamSet(uint32 numStreams, const SStreamInfo* streams)
 {
-	CDeviceInputStream* vertexStreams = new CDeviceInputStream[VSF_NUM];
-	CDeviceInputStream* vertexStreamSet = nullptr;
+	TVertexStreams vertexStreams = {};
 	bool vertexFilled = false;
 
 	for (int i = 0; i < numStreams; ++i)
 		vertexFilled |= !!(vertexStreams[i] = streams[i]);
 
-	if ((vertexStreamSet = (vertexFilled ? *m_UniqueVertexStreams.insert(vertexStreams).first : nullptr)) != vertexStreams)
-		delete[] vertexStreams;
-
-	return vertexStreamSet;
+	return (vertexFilled ? m_uniqueVertexStreams.insert(vertexStreams).first->data() : nullptr);
 }
 
-CDeviceInputStream* CDeviceObjectFactory::CreateIndexStreamSet(const SStreamInfo* stream)
+const CDeviceInputStream* CDeviceObjectFactory::CreateIndexStreamSet(const SStreamInfo* stream)
 {
-	CDeviceInputStream* indexStream = new CDeviceInputStream();
-	CDeviceInputStream* indexStreamSet = nullptr;
+	TIndexStreams indexStream = {};
 	bool indexFilled = false;
 
-	indexFilled |= !!(*indexStream = *stream);
+	indexFilled |= !!(indexStream[0] = stream[0]);
 
-	if ((indexStreamSet = (indexFilled ? *m_UniqueIndexStreams.insert(indexStream).first : nullptr)) != indexStream)
-		delete indexStream;
-
-	return indexStreamSet;
+	return (indexFilled ? m_uniqueIndexStreams.insert(indexStream).first->data() : nullptr);
 }
 
 void CDeviceObjectFactory::ReleaseResources()

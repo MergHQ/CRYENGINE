@@ -649,8 +649,8 @@ CShadowMapStage::CShadowMapPass::CShadowMapPass(CShadowMapStage* pStage)
 	m_pShadowMapStage = pStage;
 
 	m_pPerPassResources = CCryDeviceWrapper::GetObjectFactory().CloneResourceSet(pStage->m_pPerPassResourceSetTemplate);
-	m_pPerPassConstantBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerPassConstantBuffer_ShadowGen)));
-	m_pPerViewConstantBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer)));
+	m_pPerPassConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerPassConstantBuffer_ShadowGen));
+	m_pPerViewConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer));
 }
 
 void CShadowMapStage::CShadowMapPass::PrepareResources(CRenderView* pMainView)

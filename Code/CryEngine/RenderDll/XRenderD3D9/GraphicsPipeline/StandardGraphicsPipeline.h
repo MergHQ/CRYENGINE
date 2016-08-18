@@ -139,6 +139,7 @@ public:
 	uint32 GetNumInvalidDrawcalls() const          { return m_numInvalidDrawcalls;   }
 
 	int GetViewInfo(SViewInfo viewInfo[2], const RECT * pCustomViewport = NULL);
+	uint32 GetRenderFlags() const { return m_renderingFlags; }
 
 	CConstantBufferPtr        GetPerViewConstantBuffer()         const { return m_pPerViewConstantBuffer; }
 	CDeviceResourceSetPtr     GetDefaultMaterialResources()      const { return m_pDefaultMaterialResources; }

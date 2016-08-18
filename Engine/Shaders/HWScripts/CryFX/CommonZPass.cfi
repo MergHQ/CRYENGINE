@@ -184,8 +184,8 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
       float3 Binormal = normalize(terrainLayerInfo[1].xyz);
 
       // project tangent and binormal to plane perpendicular to the normal
-      Tangent-=dot(Tangent,vertPassPos.Normal)*vertPassPos.Normal;
-      Binormal-=dot(Binormal,vertPassPos.Normal)*vertPassPos.Normal;
+      Tangent-=dot(Tangent,vertPassPos.Normal.xyz)*vertPassPos.Normal.xyz;
+      Binormal-=dot(Binormal,vertPassPos.Normal.xyz)*vertPassPos.Normal.xyz;
       Tangent=normalize(Tangent);
       Binormal=normalize(Binormal);
 
@@ -436,7 +436,7 @@ pixout_gbuffer Common_ZPassPS(vert2fragZ IN)
 		#endif
 		
 		#if !%_RT_DISSOLVE
-			const float fDepthLinear = dot(cbcRes.wsPos, -CV_CameraFrontVector) * CV_NearFarClipDist.w;
+			const float fDepthLinear = dot(cbcRes.wsPos, -CV_CameraFrontVector.xyz) * CV_NearFarClipDist.w;
 			const float fDevDepth = (fDepthLinear * g_PS_ProjRatio.x + g_PS_ProjRatio.y) / fDepthLinear;
 		
 			OUT.fDepth = fDevDepth;

@@ -240,7 +240,7 @@ void CStandardGraphicsPipeline::Init()
 	}
 
 	// per view constant buffer
-	m_pPerViewConstantBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer)));
+	m_pPerViewConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer));
 
 	// Register scene stages that make use of the global PSO cache
 	RegisterSceneStage<CShadowMapStage, eStage_ShadowMap>(m_pShadowMapStage);

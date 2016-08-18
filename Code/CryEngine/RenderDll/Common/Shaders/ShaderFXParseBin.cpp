@@ -2146,7 +2146,10 @@ bool CShaderManBin::ParseBinFX_Sampler(CParserBin& Parser, SParserFrame& Frame, 
 	ST.SetClampMode(nAddressU, nAddressV, nAddressW);
 	ST.SetBorderColor(dwBorderColor);
 
-	samp.m_nTexState = CTexture::GetTexState(ST);
+	if (!gcpRendD3D->IsShaderCacheGenMode())
+	{
+		samp.m_nTexState = CTexture::GetTexState(ST);
+	}
 	samp.m_nSlotId = m_pCEF->mfCheckTextureSlotName(samp.m_szTexture);
 
 	if (!Annotations.IsEmpty())
@@ -2350,7 +2353,10 @@ bool CShaderManBin::ParseBinFX_Sampler(CParserBin& Parser, SParserFrame& Frame, 
 		ST.SetClampMode(nAddressU, nAddressV, nAddressW);
 		ST.SetBorderColor(dwBorderColor);
 
-		Sampl.m_nTexState = CTexture::GetTexState(ST);
+		if (!gcpRendD3D->IsShaderCacheGenMode())
+		{
+			Sampl.m_nTexState = CTexture::GetTexState(ST);
+		}
 	}
 
 	Parser.EndFrame(OldFrame);
@@ -2418,9 +2424,9 @@ bool CShaderManBin::ParseBinFX_Texture(CParserBin& Parser, SParserFrame& Frame, 
 			}
 			break;
 #else
-        case eT_UIName:
-        case eT_UIDescription:
-            break;
+		case eT_UIName:
+		case eT_UIDescription:
+			break;
 #endif
 
 		case eT_sRGBLookup:

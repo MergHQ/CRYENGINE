@@ -157,12 +157,7 @@ void TiledForwardShading( inout fragPass pPass, const bool shadowHighQualityFilt
 	uint2 tileIdx = uint2( tcProj.x * numTiles.x, tcProj.y * numTiles.y );
 	uint bufferIdx = (tileIdx.y * numTiles.x + tileIdx.x) * 8;
 	
-	#if ORBIS
-		fragLightPass fragLight; // To get around internal compiler error
-		fragLight.cOut = 0;
-	#else
-		fragLightPass fragLight = (fragLightPass)0;
-	#endif
+	fragLightPass fragLight = (fragLightPass)0;
 	
 	float probeWeightSum = 0;
 	float3 envFresnel = GetEnvmapFresnel( pPass.cSpecularMap.xyz, pPass.fGloss, pPass.fNdotE );
@@ -254,7 +249,7 @@ void TiledForwardShading( inout fragPass pPass, const bool shadowHighQualityFilt
 			fragLight.cSpecular = light.color.rgb * light.color.a;
 			fragLight.cFilter = 1;
 			fragLight.fOcclShadow = 1;
-			fragLight.fNdotL = dot( pPass.vNormal, fragLight.vLight );
+			fragLight.fNdotL = dot( pPass.vNormal.xyz, fragLight.vLight );
 			
 			float attenuation = GetPhysicalLightAttenuation( length( lightVec ), 1.0 / light.posRad.w, light.attenuationParams.x );
 			fragLight.fFallOff = attenuation;

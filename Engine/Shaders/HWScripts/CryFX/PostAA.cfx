@@ -206,12 +206,7 @@ pixout Fxaa3(vtxOutAA IN, float4 screenSize)
   float gradient = max(abs(gradientN), abs(gradientS));
   if(pairN) lengthSign = -lengthSign;
 
-#if ORBIS
-	// shader compiler workaround
-  float subpixC = clamp(abs(subpixB) * subpixRcpRange, 0.0f, 0.999999f);
-#else
-	float subpixC = saturate(abs(subpixB) * subpixRcpRange);
-#endif
+  float subpixC = saturate(abs(subpixB) * subpixRcpRange);
 
   float2 posB;
   posB.x = posM.x;

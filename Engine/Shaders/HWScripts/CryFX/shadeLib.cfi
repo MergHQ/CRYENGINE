@@ -744,9 +744,7 @@ float4 ComputeBarycentricCorrespondence(in float3 wsPos, in float3 wsTriPos[3], 
 	float3 p0, p1, p2;
 	float3 u, v, n, d;
 
-#if ORBIS // workaround for shader code generation bug
 	[unroll]
-#endif
 	for (int i=0; i<10; ++i)
 	{
 		p0 = wsTriPos[0] + w * wsTriDispl[0];

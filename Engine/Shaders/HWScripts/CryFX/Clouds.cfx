@@ -3005,7 +3005,7 @@ pixout CloudsBlendPS( vtxOutWPOS IN )
 	if(fogWeightSum > 0.0f)
 #endif
 	{
-		const float distanceToDepth = dot(-CV_CameraFrontVector, normalize(vCamVec.xyz));
+		const float distanceToDepth = dot(-CV_CameraFrontVector.xyz, normalize(vCamVec.xyz));
 		const float depthToDistance = rcp(distanceToDepth);
 		const float3 camDir = normalize(vCamVec.xyz);
 		const float nearPlane = params.nearClipDist;

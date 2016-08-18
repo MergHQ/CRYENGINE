@@ -24,8 +24,8 @@ struct SCompiledRenderPrimitive : private NoCopy
 	CDeviceGraphicsPSOPtr      m_pPipelineState;
 	CDeviceResourceLayoutPtr   m_pResourceLayout;
 	CDeviceResourceSetPtr      m_pResources;
-	CDeviceInputStream*        m_pVertexInputSet;
-	CDeviceInputStream*        m_pIndexInputSet;
+	const CDeviceInputStream*  m_pVertexInputSet;
+	const CDeviceInputStream*  m_pIndexInputSet;
 
 	uint8                      m_stencilRef;
 	std::vector<SInstanceInfo> m_instances;

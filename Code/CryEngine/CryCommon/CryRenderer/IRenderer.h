@@ -247,9 +247,7 @@ typedef _smart_ptr<IGraphicsDeviceConstantBuffer> IGraphicsDeviceConstantBufferP
    void CreateDeviceBuffer()
    {
     int size = sizeof(T);
-    CConstantBuffer *cb = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(size);
-    m_constantBuffer = cb;
-    cb->Release(); // CConstantBuffer created with refcount=1
+    m_constantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(size);
     CopyToDevice();
    }
    void CopyToDevice()

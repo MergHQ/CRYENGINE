@@ -6599,7 +6599,7 @@ void CHWShader_D3D::mfSetSG()
 
 			if (!pCB)
 			{
-				pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(vectorCount * sizeof(Vec4));
+				pCB = gcpRendD3D->m_DevBufMan.CreateConstantBufferRaw(vectorCount * sizeof(Vec4));
 			}
 
 			CTypedConstantBuffer<HLSL_PerPassConstantBuffer_ShadowGen> cb(pCB);

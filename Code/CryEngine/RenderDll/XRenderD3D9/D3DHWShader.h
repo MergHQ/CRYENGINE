@@ -267,7 +267,6 @@ struct SShaderAsyncInfo
 #if CRY_PLATFORM_DURANGO || defined(OPENGL)
 	#define LPD3DXBUFFER    D3DBlob *
 	#define ID3DXBuffer     D3DBlob
-	#define D3D10CreateBlob D3DCreateBlob
 #endif
 
 	int                  m_nHashInstance;
@@ -1043,7 +1042,7 @@ public:
 					desc.StructureByteStride = sizeof(Vec4);
 					gcpRendD3D->GetDevice().CreateBuffer(&desc, NULL, &s_pCB[eSH][nCBufSlot][nMaxVecs]);
 #else
-					s_pCB[eSH][nCBufSlot][nMaxVecs] = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(nMaxVecs * sizeof(Vec4));
+					s_pCB[eSH][nCBufSlot][nMaxVecs] = gcpRendD3D->m_DevBufMan.CreateConstantBufferRaw(nMaxVecs * sizeof(Vec4));
 #endif
 					if (s_pCB[eSH][nCBufSlot][nMaxVecs] == NULL)
 					{

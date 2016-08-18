@@ -44,8 +44,7 @@ void CClipVolumesStage::Init()
 	{
 		// Stencil pass: two primitives per clip volume, both share the same constant buffer
 		{
-			CConstantBufferPtr pCB;
-			pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveConstants)));
+			CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveConstants));
 
 			m_stencilPrimitives[2 * i + 0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex);
 			m_stencilPrimitives[2 * i + 1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex);
@@ -53,8 +52,7 @@ void CClipVolumesStage::Init()
 
 		// Blend values pass: one primitive per clip volume, shared CB for vertex and pixel shader
 		{
-			CConstantBufferPtr pCB;
-			pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveConstants)));
+			CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveConstants));
 
 			m_blendPrimitives[i].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Pixel | EShaderStage_Vertex);
 		}

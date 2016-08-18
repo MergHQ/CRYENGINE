@@ -117,10 +117,7 @@ void CRenderPrimitive::Reset(EPrimitiveFlags flags)
 
 void CRenderPrimitive::AllocateTypedConstantBuffer(EConstantBufferShaderSlot shaderSlot, int size, EShaderStage shaderStages)
 {
-	CConstantBufferPtr pCB;
-	pCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(size));
-
-	SetInlineConstantBuffer(shaderSlot, pCB, shaderStages);
+	SetInlineConstantBuffer(shaderSlot, gcpRendD3D->m_DevBufMan.CreateConstantBuffer(size), shaderStages);
 }
 
 bool CRenderPrimitive::IsDirty() const

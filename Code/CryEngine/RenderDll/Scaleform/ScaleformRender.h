@@ -93,7 +93,7 @@ struct SSF_ResourcesD3D
 
 	struct STransientConstantBufferHeap
 	{
-		typedef std::forward_list<CConstantBuffer*> TransientCBList;
+		typedef std::forward_list<CConstantBufferPtr> TransientCBList;
 
 		TransientCBList m_freeList;
 		TransientCBList m_useList;

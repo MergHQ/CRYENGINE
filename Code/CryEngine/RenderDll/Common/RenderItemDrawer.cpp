@@ -149,7 +149,7 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 	if (numItems <= 0)
 		return;
 
-#ifdef CRY_USE_DX12
+#if defined(CRY_USE_DX12) || defined(CRY_USE_GNM_RENDERER)
 	if (!CRenderer::CV_r_multithreadedDrawing)
 		bForceImmediateExecution = true;
 
@@ -229,7 +229,7 @@ void CRenderItemDrawer::WaitForDrawSubmission()
 	if (gcpRendD3D->m_nGraphicsPipeline < 2)
 		return;
 
-#ifdef CRY_USE_DX12
+#if defined(CRY_USE_DX12) || defined(CRY_USE_GNM_RENDERER)
 	if (CRenderer::CV_r_multithreadedDrawing == 0)
 		return;
 

@@ -175,12 +175,7 @@ half4 ThermalVision( vert2fragCustomRender IN )
 
   half3 vView = normalize( -IN.vView.xyz );
 
-#if ORBIS
-	// shader compiler workaround
-  half fEdotN =  (VisionMtlParams.x +VisionMtlParams.x *IN.cVision.w) * clamp(abs(dot(vView.xyz, vNormal)), 0.0f, 0.999999f);
-#else
 	half fEdotN =  (VisionMtlParams.x +VisionMtlParams.x *IN.cVision.w) * saturate(abs(dot( vView.xyz, vNormal ))) ;
-#endif
 
 	return fEdotN;
 

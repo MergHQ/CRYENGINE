@@ -908,18 +908,10 @@ pixout FilterGBufferPS( vtxOut IN )
 		float4 depthQuad1 = FilterGBuffer_Depth.GatherRed( FilterGBuffer_SampStatePoint, IN.baseTC.xy, int2(-1, -1) );
 		float depthCenter = depthQuad0.w;
 
-#if ORBIS
-		// shader compiler workaround
-		float weightB = (1 - clamp(abs(depthQuad0.x - depthCenter) * PS_NearFarClipDist.y * 4), 0.0f, 0.999999f);  // Bottom
-		float weightT = (1 - clamp(abs(depthQuad1.z - depthCenter) * PS_NearFarClipDist.y * 4), 0.0f, 0.999999f);  // Top
-		float weightR = (1 - clamp(abs(depthQuad0.z - depthCenter) * PS_NearFarClipDist.y * 4), 0.0f, 0.999999f);  // Right
-		float weightL = (1 - clamp(abs(depthQuad1.x - depthCenter) * PS_NearFarClipDist.y * 4), 0.0f, 0.999999f);  // Left
-#else
 		float weightB = (1 - saturate(abs(depthQuad0.x - depthCenter) * PS_NearFarClipDist.y * 4));  // Bottom
 		float weightT = (1 - saturate(abs(depthQuad1.z - depthCenter) * PS_NearFarClipDist.y * 4));  // Top
 		float weightR = (1 - saturate(abs(depthQuad0.z - depthCenter) * PS_NearFarClipDist.y * 4));  // Right
 		float weightL = (1 - saturate(abs(depthQuad1.x - depthCenter) * PS_NearFarClipDist.y * 4));  // Left
-#endif
 
 		float3 avgNormal = DecodeGBufferNormal( tex2Dlod( _tex0, float4(IN.baseTC.xy, 0, 0) ) ).xyz;
 		avgNormal += DecodeGBufferNormal( tex2Dlod( _tex0, float4(IN.baseTC.xy + float2( 0.0,  1.0) / PS_ScreenSize.xy, 0, 0) ) ).xyz * weightB;
