@@ -1061,7 +1061,7 @@ void CStandardGraphicsPipeline::Execute()
 
 	// Water volumes
 	{
-		pRenderer->FX_ProcessRenderList(EFSLIST_WATER_VOLUMES, pRenderFunc, false);
+		pRenderer->FX_ProcessRenderList(EFSLIST_WATER_VOLUMES, pRenderFunc, false, FB_BELOW_WATER, 0);
 	}
 
 	pRenderer->UpdatePrevMatrix(true);

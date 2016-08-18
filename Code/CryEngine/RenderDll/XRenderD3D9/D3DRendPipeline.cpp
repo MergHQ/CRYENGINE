@@ -2726,6 +2726,8 @@ void CD3D9Renderer::FX_RenderWater(void (* RenderFunc)())
 
 	FX_ProcessRenderList(EFSLIST_WATER, RenderFunc, false);
 
+	FX_ProcessRenderList(EFSLIST_WATER_VOLUMES, RenderFunc, false, FB_GENERAL, FB_BELOW_WATER);
+
 	m_RP.m_PersFlags2 &= ~(RBPF2_WATERRIPPLES | RBPF2_RAINRIPPLES);
 }
 
@@ -5053,7 +5055,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 
 			if (nFlags & SHDF_ALLOW_WATER)
 			{
-				FX_ProcessRenderList(EFSLIST_WATER_VOLUMES, RenderFunc, false);   // Sorted list without preprocess
+				FX_ProcessRenderList(EFSLIST_WATER_VOLUMES, RenderFunc, false, FB_BELOW_WATER, 0);   // Sorted list without preprocess
 			}
 
 			UpdatePrevMatrix(bAllowPostProcess);
