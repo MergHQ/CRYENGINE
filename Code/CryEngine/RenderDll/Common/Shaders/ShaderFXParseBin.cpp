@@ -12,6 +12,9 @@
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryCore/AlignmentTools.h>
 #include "../Textures/TextureHelpers.h"
+#include "DriverD3D.h"
+
+extern CD3D9Renderer gcpRendD3D;
 
 static FOURCC FOURCC_SHADERBIN = MAKEFOURCC('F', 'X', 'B', '0');
 
