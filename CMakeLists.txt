@@ -133,14 +133,6 @@ set(WINSDK_SDK_DIR "${CMAKE_SOURCE_DIR}/Code/SDKs/Microsoft Windows SDK")
 set(WINSDK_SDK_LIB_DIR "${WINSDK_SDK_DIR}/V8.0/Lib/Win8/um")
 set(WINSDK_SDK_INCLUDE_DIR "${WINSDK_SDK_DIR}/V8.0/Include/um")
 
-# Check for availability of c functions
-include(CheckFunctionExists)
-CHECK_FUNCTION_EXISTS(stpcpy STPCPYEXISTS)
-if(STPCPYEXISTS)
-	add_definitions(-DHAS_STPCPY)
-endif()
-
-
 # custom defines
 set(global_defines "CRYENGINE_DEFINE")
 
@@ -166,6 +158,7 @@ if(OPTION_AUTO_BOOTSTRAP)
 	set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "bootstrap.dat")
 endif()
 
+include(${CMAKE_SOURCE_DIR}/Tools/CMake/ConfigureChecks.cmake)
 include(${CMAKE_SOURCE_DIR}/Tools/CMake/CommonMacros.cmake)
 
 include_directories( ${SDK_DIR} )
