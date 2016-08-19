@@ -53,7 +53,7 @@ void ToXML(IXmlNode& xml, T& val, const T& def_val, FToString flags)
 			continue;
 
 		string str = pVar->ToString(&val, flags, &def_val);
-		if (flags.SkipDefault && str.length() == 0)
+		if (flags.SkipDefault() && str.length() == 0)
 			continue;
 
 		xml.setAttr(name, str);
@@ -1855,7 +1855,7 @@ float CParticleEffect::Get(FMaxEffectLife const& opts) const
 	if (IsActive())
 	{
 		const ResourceParticleParams& params = GetParams();
-		if (opts.fEmitterMaxLife > 0.f)
+		if (opts.fEmitterMaxLife() > 0.f)
 		{
 			fLife = params.fPulsePeriod ? fHUGE : params.GetMaxEmitterLife();
 			if (const CParticleEffect* pParent = GetIndirectParent())
@@ -1863,22 +1863,22 @@ float CParticleEffect::Get(FMaxEffectLife const& opts) const
 				float fParentLife = pParent->GetParams().GetMaxParticleLife();
 				fLife = min(fLife, fParentLife);
 			}
-			fLife = min(fLife, +opts.fEmitterMaxLife);
+			fLife = min(fLife, opts.fEmitterMaxLife());
 
-			if (opts.bParticleLife)
+			if (opts.bParticleLife())
 				fLife += params.fParticleLifeTime.GetMaxValue();
 		}
-		else if (opts.bParticleLife)
+		else if (opts.bParticleLife())
 			fLife += params.GetMaxParticleLife();
 	}
 
-	if (opts.bAllChildren || opts.bIndirectChildren)
+	if (opts.bAllChildren() || opts.bIndirectChildren())
 	{
 		for (auto& child : m_children)
 		{
 			if (child.GetIndirectParent())
 				fLife = max(fLife, child.Get(opts().fEmitterMaxLife(fLife).bAllChildren(1)));
-			else if (opts.bAllChildren)
+			else if (opts.bAllChildren())
 				fLife = max(fLife, child.Get(opts));
 		}
 	}

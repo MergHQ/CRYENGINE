@@ -109,13 +109,13 @@ struct TCurve<S >::CCustomInfo : CTypeInfo
 	CCustomInfo()
 		: CTypeInfo("TCurve<>", sizeof(TThis), alignof(TThis))
 	{}
-	virtual string ToString(const void* data, FToString flags = 0, const void* def_data = 0) const
+	virtual string ToString(const void* data, FToString flags = {}, const void* def_data = 0) const
 	{
 		if (!HasString(*(const TThis*)data, flags, def_data))
 			return string();
 		return ((const TThis*)data)->ToString(flags);
 	}
-	virtual bool FromString(void* data, cstr str, FFromString flags = 0) const
+	virtual bool FromString(void* data, cstr str, FFromString flags = {}) const
 	{
 		return ((TThis*)data)->FromString(str, flags);
 	}

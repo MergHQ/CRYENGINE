@@ -294,8 +294,8 @@ public:
 	using super_type::interpolate;
 
 	// Implement serialization.
-	string ToString(FToString flags = 0) const;
-	bool   FromString(cstr str, FFromString flags = 0);
+	string ToString(FToString flags = {}) const;
+	bool   FromString(cstr str, FFromString flags = {});
 
 	// Access operators
 	T operator()(float fTime) const

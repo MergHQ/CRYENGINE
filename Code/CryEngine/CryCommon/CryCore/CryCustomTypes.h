@@ -27,7 +27,7 @@
 template<class T>
 inline bool HasString(const T& val, FToString flags, const void* def_data = 0)
 {
-	if (flags.SkipDefault)
+	if (flags.SkipDefault())
 	{
 		if (val == (def_data ? *(const T*)def_data : T()))
 			return false;
@@ -55,8 +55,8 @@ struct CStructInfo : CTypeInfo
 {
 	CStructInfo(cstr name, size_t size, size_t align, Array<CVarInfo> vars = Array<CVarInfo>(), Array<CTypeInfo const*> templates = Array<CTypeInfo const*>());
 	virtual bool                    IsType(CTypeInfo const& Info) const;
-	virtual string                  ToString(const void* data, FToString flags = 0, const void* def_data = 0) const;
-	virtual bool                    FromString(void* data, cstr str, FFromString flags = 0) const;
+	virtual string                  ToString(const void* data, FToString flags = {}, const void* def_data = 0) const;
+	virtual bool                    FromString(void* data, cstr str, FFromString flags = {}) const;
 	virtual bool                    ToValue(const void* data, void* value, const CTypeInfo& typeVal) const;
 	virtual bool                    FromValue(void* data, const void* value, const CTypeInfo& typeVal) const;
 	virtual bool                    ValueEqual(const void* data, const void* def_data) const;
@@ -104,17 +104,17 @@ struct TTypeInfo : CTypeInfo
 		return false;
 	}
 
-	virtual string ToString(const void* data, FToString flags = 0, const void* def_data = 0) const
+	virtual string ToString(const void* data, FToString flags = {}, const void* def_data = 0) const
 	{
 		if (!HasString(*(const T*)data, flags, def_data))
 			return string();
 		return ::ToString(*(const T*)data);
 	}
-	virtual bool FromString(void* data, cstr str, FFromString flags = 0) const
+	virtual bool FromString(void* data, cstr str, FFromString flags = {}) const
 	{
 		if (!*str)
 		{
-			if (!flags.SkipEmpty)
+			if (!flags.SkipEmpty())
 				*(T*)data = T();
 			return true;
 		}
@@ -166,18 +166,18 @@ struct TProxyTypeInfo : CTypeInfo
 		return false;
 	}
 
-	virtual string ToString(const void* data, FToString flags = 0, const void* def_data = 0) const
+	virtual string ToString(const void* data, FToString flags = {}, const void* def_data = 0) const
 	{
 		T val = T(*(const S*)data);
 		T def_val = def_data ? T(*(const S*)def_data) : T();
 		return ValTypeInfo().ToString(&val, flags, &def_val);
 	}
-	virtual bool FromString(void* data, cstr str, FFromString flags = 0) const
+	virtual bool FromString(void* data, cstr str, FFromString flags = {}) const
 	{
 		T val;
 		if (!*str)
 		{
-			if (!flags.SkipEmpty)
+			if (!flags.SkipEmpty())
 				*(S*)data = S();
 			return true;
 		}
@@ -204,7 +204,7 @@ template<>
 inline string TTypeInfo<string >::ToString(const void* data, FToString flags, const void* def_data) const
 {
 	const string& val = *(const string*)data;
-	if (def_data && flags.SkipDefault)
+	if (def_data && flags.SkipDefault())
 	{
 		if (val == *(const string*)def_data)
 			return string();
@@ -215,7 +215,7 @@ inline string TTypeInfo<string >::ToString(const void* data, FToString flags, co
 template<>
 inline bool TTypeInfo<string >::FromString(void* data, cstr str, FFromString flags) const
 {
-	if (!*str && flags.SkipEmpty)
+	if (!*str && flags.SkipEmpty())
 		return true;
 	*(string*)data = str;
 	return true;
@@ -552,7 +552,7 @@ protected:
 		}
 
 		//! Override ToString: Limit to significant digits.
-		virtual string ToString(const void* data, FToString flags = 0, const void* def_data = 0) const
+		virtual string ToString(const void* data, FToString flags = {}, const void* def_data = 0) const
 		{
 			if (!HasString(*(const S*)data, flags, def_data))
 				return string();
@@ -701,7 +701,7 @@ protected:
 		}
 
 		//! Override ToString: Limit to significant digits.
-		virtual string ToString(const void* data, FToString flags = 0, const void* def_data = 0) const
+		virtual string ToString(const void* data, FToString flags = {}, const void* def_data = 0) const
 		{
 			if (!HasString(*(const S*)data, flags, def_data))
 				return string();
@@ -808,7 +808,7 @@ struct TEnumInfo : TIntTypeInfo<TInt>, TEnumDef
 	virtual string ToString(const void* data, FToString flags, const void* def_data) const
 	{
 		TInt val = *(const TInt*)(data);
-		if (flags.SkipDefault && val == (def_data ? *(const TInt*)def_data : TInt(0)))
+		if (flags.SkipDefault() && val == (def_data ? *(const TInt*)def_data : TInt(0)))
 			return string();
 
 		if (cstr sName = TEnumDef::ToName(val))
@@ -822,7 +822,7 @@ struct TEnumInfo : TIntTypeInfo<TInt>, TEnumDef
 	{
 		if (!*str)
 		{
-			if (!flags.SkipEmpty)
+			if (!flags.SkipEmpty())
 				*(TInt*)data = (TInt)0;
 			return true;
 		}

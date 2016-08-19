@@ -222,8 +222,8 @@ class SizePoolAllocator : protected THeap, public SharedSizePoolAllocator<THeap>
 
 public:
 
-	SizePoolAllocator(size_t nSize, size_t nAlign = 0, FHeap opts = 0)
-		: THeap(opts.PageSize(opts.PageSize * AllocSize(nSize))),
+	SizePoolAllocator(size_t nSize, size_t nAlign = 0, FHeap opts = {})
+		: THeap(opts.PageSize(opts.PageSize() * AllocSize(nSize))),
 		TPool(*this, nSize, nAlign)
 	{
 	}
@@ -235,7 +235,7 @@ public:
 	{
 		FreeMemLock lock(*this);
 		TPool::Deallocate(lock, pObject);
-		if (THeap::FreeWhenEmpty && _Counts.nUsed == 0)
+		if (THeap::FreeWhenEmpty() && _Counts.nUsed == 0)
 		{
 			TPool::Reset(lock);
 			THeap::Clear(lock);
@@ -285,7 +285,7 @@ template<int S, typename L = PSyncMultiThread, int A = 0>
 class PoolAllocator : public SizePoolAllocator<HeapAllocator<L>>
 {
 public:
-	PoolAllocator(FHeap opts = 0)
+	PoolAllocator(FHeap opts = {})
 		: SizePoolAllocator<HeapAllocator<L>>(S, A, opts)
 	{
 	}
@@ -295,7 +295,7 @@ template<int S, int A = 0>
 class PoolAllocatorNoMT : public SizePoolAllocator<HeapAllocator<PSyncNone>>
 {
 public:
-	PoolAllocatorNoMT(FHeap opts = 0)
+	PoolAllocatorNoMT(FHeap opts = {})
 		: SizePoolAllocator<HeapAllocator<PSyncNone>>(S, A, opts)
 	{
 	}
@@ -311,7 +311,7 @@ public:
 	using TSizePool::Allocate;
 	using TSizePool::Deallocate;
 
-	TPoolAllocator(FHeap opts = 0)
+	TPoolAllocator(FHeap opts = {})
 		: TSizePool(sizeof(T), max<size_t>(alignof(T), A), opts)
 	{}
 
