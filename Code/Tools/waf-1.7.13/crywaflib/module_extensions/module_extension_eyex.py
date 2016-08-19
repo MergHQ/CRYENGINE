@@ -1,17 +1,29 @@
 # Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 import os
-from waflib import Logs
+from waflib import Logs, Utils
 from waflib.TaskGen import feature
 from waflib.CryModuleExtension import module_extension
 from waflib.Utils import run_once
+
+@Utils.memoize
+def check_path_exists(path):
+	if os.path.isdir(path):
+		return True
+	else:
+		Logs.warn('[WARNING] ' + path + ' not found, this feature is excluded from this build.')
+	return False
 
 @module_extension('eyex')
 def module_extensions_eyex(ctx, kw, entry_prefix, platform, configuration):
 	
 	if not platform.startswith('win'):
 		return		
-	
+
+	# Only include EyeX if it exists
+	if not check_path_exists(ctx.CreateRootRelativePath('Code/SDKs/Tobii')):
+		return
+
 	kw[entry_prefix + 'defines'] += [ 'USE_EYETRACKER' ]
 	kw[entry_prefix + 'includes'] += [ ctx.CreateRootRelativePath('Code/SDKs/Tobii/SDK/include') ]
 
