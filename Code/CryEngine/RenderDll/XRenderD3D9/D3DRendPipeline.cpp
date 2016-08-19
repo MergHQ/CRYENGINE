@@ -590,12 +590,6 @@ void CD3D9Renderer::FX_PipelineShutdown(bool bFastShutdown)
 	FX_Invalidate();
 
 	SAFE_DELETE_ARRAY(m_RP.m_SysArray);
-	m_RP.m_SysVertexPool[0].Free();
-	m_RP.m_SysIndexPool[0].Free();
-#if !defined(STRIP_RENDER_THREAD)
-	m_RP.m_SysVertexPool[1].Free();
-	m_RP.m_SysIndexPool[1].Free();
-#endif
 
 	const uint32 n = m_RP.MaxD3DVertexDeclaration();
 	for (j = 0; j < n; j++)
@@ -2283,23 +2277,23 @@ void CD3D9Renderer::FX_WaterVolumesCausticsPreprocess(N3DEngineCommon::SCausticI
 		}
 		else
 		{
-			FX_ResetPipe();
-			CWaterRipples* pWaterRipples = (CWaterRipples*)PostEffectMgr()->GetEffect(ePFX_WaterRipples);
-			CEffectParam*  pParam        = PostEffectMgr()->GetByName("WaterRipples_Amount");
-			pParam->SetParam(1.0f);
-			if (pWaterRipples->Preprocess())  // Preprocess here will clear the list and skip the one in FX_RenderWater.
-			{
+		FX_ResetPipe();
+		CWaterRipples* pWaterRipples = (CWaterRipples*)PostEffectMgr()->GetEffect(ePFX_WaterRipples);
+		CEffectParam*  pParam        = PostEffectMgr()->GetByName("WaterRipples_Amount");
+		pParam->SetParam(1.0f);
+		if (pWaterRipples->Preprocess())  // Preprocess here will clear the list and skip the one in FX_RenderWater.
+		{
 				// set the flag to change the shader runtime flag for water type shader in EFSLIST_WATER.
-				m_RP.m_PersFlags2 |= RBPF2_WATERRIPPLES;
-				gcpRendD3D->FX_ResetPipe();
-				gcpRendD3D->Set2DMode(true, 1, 1);
-				pWaterRipples->Render();
-				gcpRendD3D->Set2DMode(false, 1, 1);
-				gcpRendD3D->FX_ResetPipe();
+			m_RP.m_PersFlags2 |= RBPF2_WATERRIPPLES;
+			gcpRendD3D->FX_ResetPipe();
+			gcpRendD3D->Set2DMode(true, 1, 1);
+			pWaterRipples->Render();
+			gcpRendD3D->Set2DMode(false, 1, 1);
+			gcpRendD3D->FX_ResetPipe();
 
-				FX_Commit();
-			}
+			FX_Commit();
 		}
+	}
 	}
 
 	PostProcessUtils().Log(" +++ Begin watervolume caustics preprocessing +++ \n");
@@ -2702,24 +2696,24 @@ void CD3D9Renderer::FX_RenderWater(void (* RenderFunc)())
 			}
 			else
 			{
-				FX_ResetPipe();
-				CWaterRipples* pWaterRipples = (CWaterRipples*)PostEffectMgr()->GetEffect(ePFX_WaterRipples);
-				CEffectParam*  pParam = PostEffectMgr()->GetByName("WaterRipples_Amount");
-				pParam->SetParam(1.0f);
-				if(pWaterRipples->Preprocess())
-				{
+			FX_ResetPipe();
+			CWaterRipples* pWaterRipples = (CWaterRipples*)PostEffectMgr()->GetEffect(ePFX_WaterRipples);
+			CEffectParam*  pParam        = PostEffectMgr()->GetByName("WaterRipples_Amount");
+			pParam->SetParam(1.0f);
+			if (pWaterRipples->Preprocess())
+			{
 					// set the flag to change the shader runtime flag for water type shader in EFSLIST_WATER.
-					m_RP.m_PersFlags2 |= RBPF2_WATERRIPPLES;
-					gcpRendD3D->FX_ResetPipe();
-					gcpRendD3D->Set2DMode(true, 1, 1);
-					pWaterRipples->Render();
-					gcpRendD3D->Set2DMode(false, 1, 1);
-					gcpRendD3D->FX_ResetPipe();
+				m_RP.m_PersFlags2 |= RBPF2_WATERRIPPLES;
+				gcpRendD3D->FX_ResetPipe();
+				gcpRendD3D->Set2DMode(true, 1, 1);
+				pWaterRipples->Render();
+				gcpRendD3D->Set2DMode(false, 1, 1);
+				gcpRendD3D->FX_ResetPipe();
 
-					FX_Commit();
-				}
+				FX_Commit();
 			}
 		}
+	}
 	}
 
 	FX_WaterVolumesPreprocess();
@@ -2924,9 +2918,9 @@ void CD3D9Renderer::FX_DrawNormals()
 			gcpRendD3D->m_RP.m_pRE->mfCheckUpdate(gcpRendD3D->m_RP.m_pShader->m_eVertexFormat, -1, gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_nFrameUpdateID);
 		}
 
-		const byte* verts    = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Vert, &StrVrt, eType_FLOAT, eSrcPointer_Vert, FGP_SRC | FGP_REAL);
-		const byte* normals  = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Normal, &StrNorm, eType_FLOAT, eSrcPointer_Normal, FGP_SRC | FGP_REAL);
-		const byte* tangents = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Tangent, &StrTan, eType_FLOAT, eSrcPointer_Tangent, FGP_SRC | FGP_REAL);
+		const byte* verts = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Vert, &StrVrt, eType_FLOAT, eSrcPointer_Vert, 0);
+		const byte* normals = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Normal, &StrNorm, eType_FLOAT, eSrcPointer_Normal, 0);
+		const byte* tangents = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Tangent, &StrTan, eType_FLOAT, eSrcPointer_Tangent, 0);
 
 		verts    = ((INT_PTR)verts > 256 && StrVrt >= sizeof(Vec3)) ? verts : 0;
 		normals  = ((INT_PTR)normals > 256 && StrNorm >= sizeof(SPipNormal)) ? normals : 0;
@@ -2990,7 +2984,6 @@ void CD3D9Renderer::FX_DrawNormals()
 				Verts[v * 2 + 1].color.dcolor = col1;
 			}
 
-
 			TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(Verts, numVerts * 2, 0);
 
 			if (gcpRendD3D->m_RP.m_pCurPass)
@@ -3031,12 +3024,9 @@ void CD3D9Renderer::FX_DrawTangents()
 		}
 
 		int StrVrt, StrTan;
-		const int flags = (CRenderer::CV_r_showtangents == 1)
-		  ? FGP_SRC | FGP_REAL
-		  : FGP_REAL;
 
-		const byte* verts    = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Vert, &StrVrt, eType_FLOAT, eSrcPointer_Vert, flags);
-		const byte* tangents = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Tangent, &StrTan, eType_FLOAT, eSrcPointer_Tangent, FGP_SRC | FGP_REAL);
+		const byte* verts = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Vert, &StrVrt, eType_FLOAT, eSrcPointer_Vert, 0);
+		const byte* tangents = (const byte*)gcpRendD3D->EF_GetPointer(eSrcPointer_Tangent, &StrTan, eType_FLOAT, eSrcPointer_Tangent, 0);
 
 		verts    = ((INT_PTR)verts > 256 && StrVrt >= sizeof(Vec3)) ? verts : 0;
 		tangents = ((INT_PTR)tangents > 256 && (StrTan == sizeof(SPipQTangents) || StrTan == sizeof(SPipTangents))) ? tangents : 0;

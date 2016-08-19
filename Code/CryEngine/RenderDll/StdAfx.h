@@ -137,13 +137,13 @@ bool        CheckHResult(long const hr, bool breakOnError, const char* file, con
 	#ifdef USE_SCUE
 //#  define GNM_COMPATIBILITY_MODE						// Turn this on to use GNM validation / Razor GPU captures
 		#ifndef GNM_COMPATIBILITY_MODE
-			#define CUSTOM_FETCH_SHADERS          // InputLayouts generate fetch shader code instead of being generated when vertex shader created
+			#define CUSTOM_FETCH_SHADERS // InputLayouts generate fetch shader code instead of being generated when vertex shader created
 		#endif
 //#  define ENABLE_SCUE_VALIDATION	        // Checks for NULL bindings + incorrect bindings
 //#  define GPU_MEMORY_MAPPING_VALIDATION   // Checks that the objects being bound are mapped in GPU visible memory (Slow)
 	#else
 	#endif
-	#define CUE_SUPPORTS_GEOMETRY_SHADERS     // Define if you want to use geometry shaders
+	#define CUE_SUPPORTS_GEOMETRY_SHADERS // Define if you want to use geometry shaders
 
 	#define ORBIS_RENDERER_SUPPORT_JPG
 #endif
@@ -164,8 +164,8 @@ enum EVerifyType
 #if CRY_PLATFORM_SSE2 && CRY_COMPILER_MSVC
 	#include <fvec.h>
 	#include <CryCore/Assert/CryAssert.h> // to restore assert macro which was changed by <fvec.h>
-	#define CONST_INT32_PS(N, V3, V2, V1, V0)                                 \
-	  const _MM_ALIGN16 int _ ## N[] = { V0, V1, V2, V3 }; /*little endian!*/ \
+	#define CONST_INT32_PS(N, V3, V2, V1, V0)                                   \
+	  const _MM_ALIGN16 int _ ## N[] = { V0, V1, V2, V3 };   /*little endian!*/ \
 	  const F32vec4 N = _mm_load_ps((float*)_ ## N);
 #endif
 
@@ -912,7 +912,6 @@ unsigned sizeOfMapS(Map& map)
 
 // All handled render elements (except common ones included in "RendElement.h")
 #include "Common/RendElements/CREBeam.h"
-#include "Common/RendElements/CREClientPoly.h"
 #include "Common/RendElements/CRELensOptics.h"
 #include "Common/RendElements/CREHDRProcess.h"
 #include "Common/RendElements/CRECloud.h"
@@ -1182,5 +1181,5 @@ void fpUsePath(const char* name, const char* path, char (&dst)[bytes]) { fpUsePa
 #include "XRenderD3D9/DeviceManager/DeviceManagerInline.h"
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed
 #ifdef INCLUDE_SCALEFORM_SDK
-#include <CrySystem/Scaleform/ConfigScaleform.h>
+	#include <CrySystem/Scaleform/ConfigScaleform.h>
 #endif

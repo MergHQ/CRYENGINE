@@ -44,7 +44,7 @@ struct IAnimNode;
 struct SSkinningData;
 struct SSTexSamplerFX;
 namespace JobManager {
-	struct SJobState;
+struct SJobState;
 }
 
 //! Geometry Culling type.
@@ -120,14 +120,14 @@ struct SWaveForm2;
 #define FRF_REFRACTIVE 1
 // FREE                2
 #define FRF_HEAT       4
-#define MAX_HEATSCALE 4
+#define MAX_HEATSCALE  4
 
 #if !defined(MAX_JOINT_AMOUNT)
-#error MAX_JOINT_AMOUNT is not defined
+	#error MAX_JOINT_AMOUNT is not defined
 #endif
 
 #if (MAX_JOINT_AMOUNT <= 256)
-typedef uint8 JointIdType;
+typedef uint8  JointIdType;
 #else
 typedef uint16 JointIdType;
 #endif
@@ -159,14 +159,14 @@ enum ESamplerType
 
 union UParamVal
 {
-	byte  m_Byte;
-	bool  m_Bool;
-	short m_Short;
-	int m_Int;
-	float m_Float;
-	char* m_String;
-	float m_Color[4];
-	float m_Vector[3];
+	byte     m_Byte;
+	bool     m_Bool;
+	short    m_Short;
+	int      m_Int;
+	float    m_Float;
+	char*    m_String;
+	float    m_Color[4];
+	float    m_Vector[3];
 	CCamera* m_pCamera;
 };
 
@@ -174,18 +174,18 @@ union UParamVal
 //! Unfortunately this is necessary because we have particular needs that aren't met by the generic string class.
 struct SShaderParam
 {
-	char m_Name[32];
-	EParamType m_Type;
-	UParamVal  m_Value;
-	string m_Script;
-	uint8  m_eSemantic;
+	char        m_Name[32];
+	EParamType  m_Type;
+	UParamVal   m_Value;
+	string      m_Script;
+	uint8       m_eSemantic;
 
 	inline void Construct()
 	{
 		memset(&m_Value, 0, sizeof(m_Value));
-		m_Type      = eType_UNKNOWN;
+		m_Type = eType_UNKNOWN;
 		m_eSemantic = 0;
-		m_Name[0]   = 0;
+		m_Name[0] = 0;
 	}
 	inline SShaderParam()
 	{
@@ -195,7 +195,7 @@ struct SShaderParam
 	{
 		size_t nSize = sizeof(*this);
 		if (m_Type == eType_STRING)
-			nSize += strlen (m_Value.m_String) + 1;
+			nSize += strlen(m_Value.m_String) + 1;
 
 		return nSize;
 	}
@@ -203,7 +203,7 @@ struct SShaderParam
 	{
 		pSizer->AddObject(m_Script);
 		if (m_Type == eType_STRING)
-			pSizer->AddObject(m_Value.m_String, strlen (m_Value.m_String) + 1);
+			pSizer->AddObject(m_Value.m_String, strlen(m_Value.m_String) + 1);
 	}
 
 	inline void Destroy()
@@ -215,11 +215,11 @@ struct SShaderParam
 	{
 		Destroy();
 	}
-	inline SShaderParam (const SShaderParam& src)
+	inline SShaderParam(const SShaderParam& src)
 	{
 		memcpy(m_Name, src.m_Name, sizeof(m_Name));
-		m_Script    = src.m_Script;
-		m_Type      = src.m_Type;
+		m_Script = src.m_Script;
+		m_Type = src.m_Type;
 		m_eSemantic = src.m_eSemantic;
 		if (m_Type == eType_STRING)
 		{
@@ -229,7 +229,7 @@ struct SShaderParam
 		else
 			m_Value = src.m_Value;
 	}
-	inline SShaderParam& operator = (const SShaderParam& src)
+	inline SShaderParam& operator=(const SShaderParam& src)
 	{
 		this->~SShaderParam();
 		new(this)SShaderParam(src);
@@ -278,13 +278,13 @@ struct SShaderParam
 					break;
 
 				case eType_STRING:
-				{
-					char*  str = pr.m_String;
-					size_t len = strlen(str) + 1;
-					sp->m_Value.m_String = new char[len];
-					strcpy(sp->m_Value.m_String, str);
-				}
-				break;
+					{
+						char* str = pr.m_String;
+						size_t len = strlen(str) + 1;
+						sp->m_Value.m_String = new char[len];
+						strcpy(sp->m_Value.m_String, str);
+					}
+					break;
 				}
 				break;
 			}
@@ -332,7 +332,7 @@ struct IShaderPublicParams
 {
 	// <interfuscator:shuffle>
 	virtual ~IShaderPublicParams(){}
-	virtual void AddRef()  = 0;
+	virtual void AddRef() = 0;
 	virtual void Release() = 0;
 
 	//! Changes number of parameters in collection.
@@ -342,14 +342,14 @@ struct IShaderPublicParams
 	virtual int GetParamCount() const = 0;
 
 	//! Retrieves shader public parameter at specified index of the collection.
-	virtual SShaderParam&       GetParam(int nIndex)       = 0;
+	virtual SShaderParam&       GetParam(int nIndex) = 0;
 	virtual const SShaderParam& GetParam(int nIndex) const = 0;
 
 	//! Retrieves shader public parameter at specified index of the collection.
-	virtual SShaderParam*       GetParamByName(const char* pszName)       = 0;
+	virtual SShaderParam*       GetParamByName(const char* pszName) = 0;
 	virtual const SShaderParam* GetParamByName(const char* pszName) const = 0;
 
-	virtual SShaderParam*       GetParamBySemantic(uint8 eParamSemantic)       = 0;
+	virtual SShaderParam*       GetParamBySemantic(uint8 eParamSemantic) = 0;
 	virtual const SShaderParam* GetParamBySemantic(uint8 eParamSemantic) const = 0;
 
 	//! Sets a shader parameter (and if doesn't exists, add it to the parameters list).
@@ -365,16 +365,16 @@ struct IShaderPublicParams
 	virtual void AddParam(const SShaderParam& param) = 0;
 
 	//! Removes a shader public parameter
-	virtual void RemoveParamByName(const char* pszName)      = 0;
+	virtual void RemoveParamByName(const char* pszName) = 0;
 	virtual void RemoveParamBySemantic(uint8 eParamSemantic) = 0;
 
 	//! Assigns collection of shader public parameters to the specified render params structure.
-	virtual void AssignToRenderParams(struct SRendParams& rParams) = 0;
+	virtual void  AssignToRenderParams(struct SRendParams& rParams) = 0;
 
 	virtual uint8 GetSemanticByName(const char* pszName) = 0;
 
 	//! Gets shader parameters.
-	virtual DynArray<SShaderParam>*       GetShaderParams()       = 0;
+	virtual DynArray<SShaderParam>*       GetShaderParams() = 0;
 	virtual const DynArray<SShaderParam>* GetShaderParams() const = 0;
 	// </interfuscator:shuffle>
 };
@@ -395,7 +395,7 @@ public:
 		for (int i = 0; i < EFTT_MAX; i++)
 			m_Channels[i][0] = 0.0f,
 			m_Channels[i][1] = 1.0f;
-		}
+	}
 
 	//! Scale and bias.
 	ColorF m_Channels[EFTT_MAX][2];
@@ -407,7 +407,7 @@ public:
 	float  m_Opacity;
 	float  m_Smoothness;
 
-	inline friend bool operator == (const CInputLightMaterial& m1, const CInputLightMaterial& m2)
+	inline friend bool operator==(const CInputLightMaterial& m1, const CInputLightMaterial& m2)
 	{
 		return !memcmp(&m1, &m2, CInputLightMaterial::Size());
 	}
@@ -423,11 +423,11 @@ class CTexture;
 #include <CryRenderer/ITexture.h>
 
 //! Vertex modificators definitions (must be 16 bit flag).
-#define MDV_BENDING            0x100
-#define MDV_DET_BENDING        0x200
-#define MDV_DET_BENDING_GRASS  0x400
-#define MDV_WIND               0x800
-#define MDV_DEPTH_OFFSET       0x2000
+#define MDV_BENDING           0x100
+#define MDV_DET_BENDING       0x200
+#define MDV_DET_BENDING_GRASS 0x400
+#define MDV_WIND              0x800
+#define MDV_DEPTH_OFFSET      0x2000
 
 //! Deformations/Morphing types.
 enum EDeformType
@@ -469,24 +469,24 @@ enum EWaveForm
 struct SWaveForm
 {
 	EWaveForm m_eWFType;
-	byte m_Flags;
+	byte      m_Flags;
 
-	float m_Level;
-	float m_Level1;
-	float m_Amp;
-	float m_Amp1;
-	float m_Phase;
-	float m_Phase1;
-	float m_Freq;
-	float m_Freq1;
+	float     m_Level;
+	float     m_Level1;
+	float     m_Amp;
+	float     m_Amp1;
+	float     m_Phase;
+	float     m_Phase1;
+	float     m_Freq;
+	float     m_Freq1;
 
 	SWaveForm(EWaveForm eWFType, float fLevel, float fAmp, float fPhase, float fFreq)
 	{
 		m_eWFType = eWFType;
-		m_Level   = m_Level1 = fLevel;
-		m_Amp     = m_Amp1 = fAmp;
-		m_Phase   = m_Phase1 = fPhase;
-		m_Freq    = m_Freq1 = fFreq;
+		m_Level = m_Level1 = fLevel;
+		m_Amp = m_Amp1 = fAmp;
+		m_Phase = m_Phase1 = fPhase;
+		m_Freq = m_Freq1 = fFreq;
 	}
 
 	int Size()
@@ -498,23 +498,23 @@ struct SWaveForm
 	{
 		memset(this, 0, sizeof(SWaveForm));
 	}
-	bool operator == (const SWaveForm& wf) const
+	bool operator==(const SWaveForm& wf) const
 	{
 		if (m_eWFType == wf.m_eWFType && m_Level == wf.m_Level && m_Amp == wf.m_Amp && m_Phase == wf.m_Phase && m_Freq == wf.m_Freq && m_Level1 == wf.m_Level1 && m_Amp1 == wf.m_Amp1 && m_Phase1 == wf.m_Phase1 && m_Freq1 == wf.m_Freq1 && m_Flags == wf.m_Flags)
 			return true;
 		return false;
 	}
 
-	SWaveForm& operator += (const SWaveForm& wf)
+	SWaveForm& operator+=(const SWaveForm& wf)
 	{
-		m_Level  += wf.m_Level;
+		m_Level += wf.m_Level;
 		m_Level1 += wf.m_Level1;
-		m_Amp    += wf.m_Amp;
-		m_Amp1   += wf.m_Amp1;
-		m_Phase  += wf.m_Phase;
+		m_Amp += wf.m_Amp;
+		m_Amp1 += wf.m_Amp1;
+		m_Phase += wf.m_Phase;
 		m_Phase1 += wf.m_Phase1;
-		m_Freq   += wf.m_Freq;
-		m_Freq1  += wf.m_Freq1;
+		m_Freq += wf.m_Freq;
+		m_Freq1 += wf.m_Freq1;
 		return *this;
 	}
 };
@@ -523,28 +523,28 @@ struct SWaveForm2
 {
 	EWaveForm m_eWFType;
 
-	float m_Level;
-	float m_Amp;
-	float m_Phase;
-	float m_Freq;
+	float     m_Level;
+	float     m_Amp;
+	float     m_Phase;
+	float     m_Freq;
 
 	SWaveForm2()
 	{
 		memset(this, 0, sizeof(SWaveForm2));
 	}
-	bool operator == (const SWaveForm2& wf) const
+	bool operator==(const SWaveForm2& wf) const
 	{
 		if (m_eWFType == wf.m_eWFType && m_Level == wf.m_Level && m_Amp == wf.m_Amp && m_Phase == wf.m_Phase && m_Freq == wf.m_Freq)
 			return true;
 		return false;
 	}
 
-	SWaveForm2& operator += (const SWaveForm2& wf)
+	SWaveForm2& operator+=(const SWaveForm2& wf)
 	{
 		m_Level += wf.m_Level;
-		m_Amp   += wf.m_Amp;
+		m_Amp += wf.m_Amp;
 		m_Phase += wf.m_Phase;
-		m_Freq  += wf.m_Freq;
+		m_Freq += wf.m_Freq;
 		return *this;
 	}
 };
@@ -556,30 +556,30 @@ struct SDeformInfo
 	SWaveForm2  m_WaveY;
 	SWaveForm2  m_WaveZ;
 	SWaveForm2  m_WaveW;
-	float m_fDividerX;
-	float m_fDividerY;
-	float m_fDividerZ;
-	float m_fDividerW;
-	Vec3  m_vNoiseScale;
+	float       m_fDividerX;
+	float       m_fDividerY;
+	float       m_fDividerZ;
+	float       m_fDividerW;
+	Vec3        m_vNoiseScale;
 
 	SDeformInfo()
 	{
-		m_eType       = eDT_Unknown;
-		m_fDividerX   = 0.01f;
-		m_fDividerY   = 0.01f;
-		m_fDividerZ   = 0.01f;
-		m_fDividerW   = 0.01f;
+		m_eType = eDT_Unknown;
+		m_fDividerX = 0.01f;
+		m_fDividerY = 0.01f;
+		m_fDividerZ = 0.01f;
+		m_fDividerW = 0.01f;
 		m_vNoiseScale = Vec3(1, 1, 1);
 	}
 
-	inline bool operator == (const SDeformInfo& m)
+	inline bool operator==(const SDeformInfo& m)
 	{
 		if (m_eType == m.m_eType &&
-		  m_WaveX == m.m_WaveX && m_WaveY == m.m_WaveY &&
-		  m_WaveZ == m.m_WaveZ && m_WaveW == m.m_WaveW &&
-		  m_vNoiseScale == m.m_vNoiseScale &&
-		  m_fDividerX != m.m_fDividerX && m_fDividerY != m.m_fDividerY &&
-		  m_fDividerZ != m.m_fDividerZ && m_fDividerW != m.m_fDividerW)
+		    m_WaveX == m.m_WaveX && m_WaveY == m.m_WaveY &&
+		    m_WaveZ == m.m_WaveZ && m_WaveW == m.m_WaveW &&
+		    m_vNoiseScale == m.m_vNoiseScale &&
+		    m_fDividerX != m.m_fDividerX && m_fDividerY != m.m_fDividerY &&
+		    m_fDividerZ != m.m_fDividerZ && m_fDividerW != m.m_fDividerW)
 			return true;
 
 		return false;
@@ -598,7 +598,7 @@ struct SDeformInfo
 
 struct SDetailDecalInfo
 {
-	Vec4 vTileOffs[2];    //!< xy = tilling, zw = offsets.
+	Vec4   vTileOffs[2];  //!< xy = tilling, zw = offsets.
 	uint16 nRotation[2];
 	uint8  nThreshold[2];
 	uint8  nDeformation[2];
@@ -607,37 +607,37 @@ struct SDetailDecalInfo
 
 	SDetailDecalInfo()
 	{
-		vTileOffs[0]    = Vec4(1.0f, 1.0f, 0.0f, 0.0f);
-		vTileOffs[1]    = Vec4(0.5f, 0.5f, 0.5f, 0.5f);
-		nThreshold[0]   = nThreshold[1] = 0;
+		vTileOffs[0] = Vec4(1.0f, 1.0f, 0.0f, 0.0f);
+		vTileOffs[1] = Vec4(0.5f, 0.5f, 0.5f, 0.5f);
+		nThreshold[0] = nThreshold[1] = 0;
 		nDeformation[0] = nDeformation[1] = 0;
-		nRotation[0]    = nRotation[1] = 0;
-		nBlending       = 128;
-		nSSAOAmount     = 0;
+		nRotation[0] = nRotation[1] = 0;
+		nBlending = 128;
+		nSSAOAmount = 0;
 	}
-	inline bool operator == (const SDetailDecalInfo& m)
+	inline bool operator==(const SDetailDecalInfo& m)
 	{
 		if (vTileOffs[0].x == m.vTileOffs[0].x && vTileOffs[0].y == m.vTileOffs[0].y &&
-		  vTileOffs[0].z == m.vTileOffs[0].z && vTileOffs[0].w == m.vTileOffs[0].w &&
-		  vTileOffs[1].x == m.vTileOffs[1].x && vTileOffs[1].y == m.vTileOffs[1].y &&
-		  vTileOffs[1].z == m.vTileOffs[1].z && vTileOffs[1].w == m.vTileOffs[1].w &&
-		  nDeformation[0] == m.nDeformation[0] && nDeformation[1] != m.nDeformation[1] &&
-		  nRotation[0] == m.nRotation[0] && nRotation[1] != m.nRotation[1] &&
-		  nThreshold[0] != m.nThreshold[0] && nThreshold[1] != m.nThreshold[1] &&
-		  nBlending != m.nBlending && nSSAOAmount != m.nSSAOAmount)
+		    vTileOffs[0].z == m.vTileOffs[0].z && vTileOffs[0].w == m.vTileOffs[0].w &&
+		    vTileOffs[1].x == m.vTileOffs[1].x && vTileOffs[1].y == m.vTileOffs[1].y &&
+		    vTileOffs[1].z == m.vTileOffs[1].z && vTileOffs[1].w == m.vTileOffs[1].w &&
+		    nDeformation[0] == m.nDeformation[0] && nDeformation[1] != m.nDeformation[1] &&
+		    nRotation[0] == m.nRotation[0] && nRotation[1] != m.nRotation[1] &&
+		    nThreshold[0] != m.nThreshold[0] && nThreshold[1] != m.nThreshold[1] &&
+		    nBlending != m.nBlending && nSSAOAmount != m.nSSAOAmount)
 			return true;
 		return false;
 	}
 
 	void Reset()
 	{
-		vTileOffs[0]    = Vec4(1.0f, 1.0f, 0.0f, 0.0f);
-		vTileOffs[1]    = Vec4(0.5f, 0.5f, 0.5f, 0.5f);
-		nThreshold[0]   = nThreshold[1] = 0;
+		vTileOffs[0] = Vec4(1.0f, 1.0f, 0.0f, 0.0f);
+		vTileOffs[1] = Vec4(0.5f, 0.5f, 0.5f, 0.5f);
+		nThreshold[0] = nThreshold[1] = 0;
 		nDeformation[0] = nDeformation[1] = 0;
-		nRotation[0]    = nRotation[1] = 0;
-		nBlending       = 128;
-		nSSAOAmount     = 0;
+		nRotation[0] = nRotation[1] = 0;
+		nBlending = 128;
+		nSSAOAmount = 0;
 	}
 
 	int Size()
@@ -654,9 +654,9 @@ struct SDetailDecalInfo
 struct SSkyInfo
 {
 	ITexture* m_SkyBox[3];
-	float m_fSkyLayerHeight;
+	float     m_fSkyLayerHeight;
 
-	int Size()
+	int       Size()
 	{
 		int nSize = sizeof(SSkyInfo);
 		return nSize;
@@ -667,21 +667,6 @@ struct SSkyInfo
 	}
 };
 
-struct SBending
-{
-	Vec2  m_vBending;
-	float m_fMainBendingScale;
-	SWaveForm2 m_Waves[2];
-
-	SBending()
-	{
-		m_vBending.zero();
-		m_fMainBendingScale = 1.f;
-	}
-
-	Vec4 GetShaderConstants(float realTime) const;
-};
-
 enum EResClassName
 {
 	eRCN_Texture,
@@ -690,10 +675,10 @@ enum EResClassName
 
 struct SResourceAsync
 {
-	int nReady;               //!< 0: Not ready; 1: Ready; -1: Error.
-	byte* pData;
+	int           nReady; //!< 0: Not ready; 1: Ready; -1: Error.
+	byte*         pData;
 	EResClassName eClassName; //!< Resource class name.
-	char* Name;                //!< Resource name.
+	char*         Name;       //!< Resource name.
 	union
 	{
 		//! CTexture parameters
@@ -701,7 +686,7 @@ struct SResourceAsync
 		//! CShader parameters
 		struct { int nShaderFlags; };
 	};
-	void* pResource;           //!< Pointer to created resource.
+	void* pResource; //!< Pointer to created resource.
 
 	SResourceAsync()
 	{
@@ -721,12 +706,12 @@ struct SResourceAsync
 //! Color operations flags.
 enum EColorOp
 {
-	eCO_NOSET    = 0,
-	eCO_DISABLE  = 1,
-	eCO_REPLACE  = 2,
-	eCO_DECAL    = 3,
-	eCO_ARG2     = 4,
-	eCO_MODULATE = 5,
+	eCO_NOSET                     = 0,
+	eCO_DISABLE                   = 1,
+	eCO_REPLACE                   = 2,
+	eCO_DECAL                     = 3,
+	eCO_ARG2                      = 4,
+	eCO_MODULATE                  = 5,
 	eCO_MODULATE2X                = 6,
 	eCO_MODULATE4X                = 7,
 	eCO_BLENDDIFFUSEALPHA         = 8,
@@ -791,33 +776,33 @@ enum ETexGenType
 	ETG_Max
 };
 
-#define CASE_TEXMOD(var_name)			  \
-	if (!stricmp(#var_name, szParamName)) \
-	{									  \
-		var_name = fValue;				  \
-		return true;					  \
-	}									  \
+#define CASE_TEXMOD(var_name)             \
+  if (!stricmp( # var_name, szParamName)) \
+  {                                       \
+    var_name = fValue;                    \
+    return true;                          \
+  }                                       \
 
-#define CASE_TEXMODANGLE(var_name)		  \
-	if (!stricmp(#var_name, szParamName)) \
-	{									  \
-		var_name = Degr2Word(fValue);	  \
-		return true;					  \
-	}									  \
+#define CASE_TEXMODANGLE(var_name)        \
+  if (!stricmp( # var_name, szParamName)) \
+  {                                       \
+    var_name = Degr2Word(fValue);         \
+    return true;                          \
+  }                                       \
 
-#define CASE_TEXMODBYTE(var_name)		  \
-	if (!stricmp(#var_name, szParamName)) \
-	{									  \
-		var_name = (byte)fValue;		  \
-		return true;					  \
-	}									  \
+#define CASE_TEXMODBYTE(var_name)         \
+  if (!stricmp( # var_name, szParamName)) \
+  {                                       \
+    var_name = (byte)fValue;              \
+    return true;                          \
+  }                                       \
 
-#define CASE_TEXMODBOOL(var_name)		  \
-	if (!stricmp(#var_name, szParamName)) \
-	{									  \
-		var_name = (fValue == 1.f);		  \
-		return true;					  \
-	}									  \
+#define CASE_TEXMODBOOL(var_name)         \
+  if (!stricmp( # var_name, szParamName)) \
+  {                                       \
+    var_name = (fValue == 1.f);           \
+    return true;                          \
+  }                                       \
 
 struct SEfTexModificator
 {
@@ -865,30 +850,30 @@ struct SEfTexModificator
 	Matrix44A m_TexGenMatrix;
 	Matrix44A m_TexMatrix;
 
-	float m_Tiling[3];
-	float m_Offs[3];
+	float     m_Tiling[3];
+	float     m_Offs[3];
 
-	float m_RotOscCenter[3];
+	float     m_RotOscCenter[3];
 
-	float m_OscRate[2];
-	float m_OscAmplitude[2];
-	float m_OscPhase[2];
+	float     m_OscRate[2];
+	float     m_OscAmplitude[2];
+	float     m_OscPhase[2];
 
 	//! This members are used only during updating of the matrices.
-	float m_LastTime[2];
-	float m_CurrentJitter[2];
+	float  m_LastTime[2];
+	float  m_CurrentJitter[2];
 
 	uint16 m_RotOscPhase[3];
 	uint16 m_Rot[3];
 	uint16 m_RotOscRate[3];
 	uint16 m_RotOscAmplitude[3];
 
-	uint8 m_eTGType;
-	uint8 m_eRotType;
-	uint8 m_eMoveType[2];
-	bool  m_bTexGenProjected;
+	uint8  m_eTGType;
+	uint8  m_eRotType;
+	uint8  m_eMoveType[2];
+	bool   m_bTexGenProjected;
 
-	void Reset()
+	void   Reset()
 	{
 		memset(this, 0, sizeof(*this));
 		m_Tiling[0] = m_Tiling[1] = 1.0f;
@@ -904,7 +889,7 @@ struct SEfTexModificator
 			memcpy(this, &m, sizeof(*this));
 		}
 	}
-	SEfTexModificator& operator = (const SEfTexModificator& src)
+	SEfTexModificator& operator=(const SEfTexModificator& src)
 	{
 		if (&src != this)
 		{
@@ -918,7 +903,7 @@ struct SEfTexModificator
 		return sizeof(*this);
 	}
 
-	inline bool operator != (const SEfTexModificator& m)
+	inline bool operator!=(const SEfTexModificator& m)
 	{
 		return memcmp(this, &m, sizeof(*this)) != 0;
 	}
@@ -926,20 +911,20 @@ struct SEfTexModificator
 
 //////////////////////////////////////////////////////////////////////
 #define FILTER_NONE      -1
-#define FILTER_POINT      0
-#define FILTER_LINEAR     1
-#define FILTER_BILINEAR   2
-#define FILTER_TRILINEAR  3
-#define FILTER_ANISO2X    4
-#define FILTER_ANISO4X    5
-#define FILTER_ANISO8X    6
-#define FILTER_ANISO16X   7
+#define FILTER_POINT     0
+#define FILTER_LINEAR    1
+#define FILTER_BILINEAR  2
+#define FILTER_TRILINEAR 3
+#define FILTER_ANISO2X   4
+#define FILTER_ANISO4X   5
+#define FILTER_ANISO8X   6
+#define FILTER_ANISO16X  7
 
 //////////////////////////////////////////////////////////////////////
-#define TADDR_WRAP        0
-#define TADDR_CLAMP       1
-#define TADDR_MIRROR      2
-#define TADDR_BORDER      3
+#define TADDR_WRAP   0
+#define TADDR_CLAMP  1
+#define TADDR_MIRROR 2
+#define TADDR_BORDER 3
 
 struct STexState
 {
@@ -961,22 +946,22 @@ struct STexState
 	bool  m_bSRGBLookup;
 	byte  m_bPAD;
 
-	STexState ()
+	STexState()
 	{
-		m_nMinFilter    = 0;
-		m_nMagFilter    = 0;
-		m_nMipFilter    = 0;
-		m_nAnisotropy   = 0;
-		m_nAddressU     = 0;
-		m_nAddressV     = 0;
-		m_nAddressW     = 0;
+		m_nMinFilter = 0;
+		m_nMagFilter = 0;
+		m_nMipFilter = 0;
+		m_nAnisotropy = 0;
+		m_nAddressU = 0;
+		m_nAddressV = 0;
+		m_nAddressW = 0;
 		m_dwBorderColor = 0;
-		padding         = 0;
-		m_bSRGBLookup   = false;
-		m_bActive       = false;
-		m_bComparison   = false;
-		m_pDeviceState  = NULL;
-		m_bPAD          = 0;
+		padding = 0;
+		m_bSRGBLookup = false;
+		m_bActive = false;
+		m_bComparison = false;
+		m_pDeviceState = NULL;
+		m_bPAD = 0;
 	}
 	STexState(int nFilter, bool bClamp)
 	{
@@ -986,10 +971,10 @@ struct STexState
 		SetClampMode(nAddress, nAddress, nAddress);
 		SetBorderColor(0);
 		m_bSRGBLookup = false;
-		m_bActive     = false;
+		m_bActive = false;
 		m_bComparison = false;
-		padding       = 0;
-		m_bPAD        = 0;
+		padding = 0;
+		m_bPAD = 0;
 	}
 	STexState(int nFilter, int nAddressU, int nAddressV, int nAddressW, unsigned int borderColor)
 	{
@@ -998,31 +983,31 @@ struct STexState
 		SetClampMode(nAddressU, nAddressV, nAddressW);
 		SetBorderColor(borderColor);
 		m_bSRGBLookup = false;
-		m_bActive     = false;
+		m_bActive = false;
 		m_bComparison = false;
-		padding       = 0;
-		m_bPAD        = 0;
+		padding = 0;
+		m_bPAD = 0;
 	}
 #ifdef _RENDERER
 	~STexState();
-	STexState (const STexState& src);
+	STexState(const STexState& src);
 #else
 	~STexState(){}
-	STexState (const STexState& src)
+	STexState(const STexState& src)
 	{
 		memcpy(this, &src, sizeof(STexState));
 	}
 #endif
-	STexState& operator = (const STexState& src)
+	STexState& operator=(const STexState& src)
 	{
 		this->~STexState();
 		new(this)STexState(src);
 		return *this;
 	}
-	inline friend bool operator == (const STexState& m1, const STexState& m2)
+	inline friend bool operator==(const STexState& m1, const STexState& m2)
 	{
 		if (*(uint64*)&m1 == *(uint64*)&m2 && m1.m_dwBorderColor == m2.m_dwBorderColor &&
-		  m1.m_bActive == m2.m_bActive && m1.m_bComparison == m2.m_bComparison && m1.m_bSRGBLookup == m2.m_bSRGBLookup)
+		    m1.m_bActive == m2.m_bActive && m1.m_bComparison == m2.m_bComparison && m1.m_bSRGBLookup == m2.m_bSRGBLookup)
 			return true;
 		return false;
 	}
@@ -1042,7 +1027,7 @@ struct IRenderTarget
 {
 	virtual ~IRenderTarget(){}
 	virtual void Release() = 0;
-	virtual void AddRef()  = 0;
+	virtual void AddRef() = 0;
 };
 
 //==================================================================================================================
@@ -1061,7 +1046,7 @@ struct STexSamplerFX
 	union
 	{
 		struct SHRenderTarget* m_pTarget;
-		IRenderTarget* m_pITarget;
+		IRenderTarget*         m_pITarget;
 	};
 
 	int16  m_nTexState;
@@ -1071,10 +1056,10 @@ struct STexSamplerFX
 	STexSamplerFX()
 	{
 		m_nTexState = -1;
-		m_eTexType  = eTT_2D;
-		m_nSlotId   = EFTT_MAX;
+		m_eTexType = eTT_2D;
+		m_nSlotId = EFTT_MAX;
 		m_nTexFlags = 0;
-		m_pTarget   = NULL;
+		m_pTarget = NULL;
 	}
 	~STexSamplerFX()
 	{
@@ -1100,36 +1085,36 @@ struct STexSamplerFX
 	uint32 GetTexFlags() { return m_nTexFlags; }
 	void   Update();
 	void   PostLoad();
-	NO_INLINE STexSamplerFX (const STexSamplerFX& src)
+	NO_INLINE STexSamplerFX(const STexSamplerFX& src)
 	{
 		m_pITarget = src.m_pITarget;
 		if (m_pITarget)
 			m_pITarget->AddRef();
-		m_szName    = src.m_szName;
+		m_szName = src.m_szName;
 		m_szTexture = src.m_szTexture;
-		m_nSlotId   = src.m_nSlotId;
-		m_eTexType  = src.m_eTexType;
+		m_nSlotId = src.m_nSlotId;
+		m_eTexType = src.m_eTexType;
 		m_nTexFlags = src.m_nTexFlags;
 		m_nTexState = src.m_nTexState;
 
 #if SHADER_REFLECT_TEXTURE_SLOTS
-		m_szUIName        = src.m_szUIName;
+		m_szUIName = src.m_szUIName;
 		m_szUIDescription = src.m_szUIDescription;
 #endif
 	}
-	NO_INLINE STexSamplerFX& operator = (const STexSamplerFX& src)
+	NO_INLINE STexSamplerFX& operator=(const STexSamplerFX& src)
 	{
 		this->~STexSamplerFX();
 		new(this)STexSamplerFX(src);
 		return *this;
 	}
-	inline friend bool operator != (const STexSamplerFX& m1, const STexSamplerFX& m2)
+	inline friend bool operator!=(const STexSamplerFX& m1, const STexSamplerFX& m2)
 	{
 		if (m1.m_szTexture != m2.m_szTexture || m1.m_eTexType != m2.m_eTexType || m1.m_nTexFlags != m2.m_nTexFlags)
 			return true;
 		return false;
 	}
-	inline bool operator == (const STexSamplerFX& m1)
+	inline bool operator==(const STexSamplerFX& m1)
 	{
 		return !(*this != m1);
 	}
@@ -1150,32 +1135,32 @@ struct STexSamplerRT
 	union
 	{
 		struct SHRenderTarget* m_pTarget;
-		IRenderTarget* m_pITarget;
+		IRenderTarget*         m_pITarget;
 	};
 
-	STexAnim* m_pAnimInfo;
+	STexAnim*          m_pAnimInfo;
 	IDynTextureSource* m_pDynTexSource;
 
-	uint32 m_nTexFlags;
-	int16  m_nTexState;
+	uint32             m_nTexFlags;
+	int16              m_nTexState;
 
-	uint8 m_eTexType;           //!< ETEX_Type e.g. eTT_2D or eTT_Cube.
-	int8  m_nSamplerSlot;
-	int8  m_nTextureSlot;
-	bool  m_bGlobal;
+	uint8              m_eTexType; //!< ETEX_Type e.g. eTT_2D or eTT_Cube.
+	int8               m_nSamplerSlot;
+	int8               m_nTextureSlot;
+	bool               m_bGlobal;
 
 	STexSamplerRT()
 	{
-		m_nTexState     = -1;
-		m_pTex          = NULL;
-		m_eTexType      = eTT_2D;
-		m_nTexFlags     = 0;
-		m_pTarget       = NULL;
-		m_pAnimInfo     = NULL;
+		m_nTexState = -1;
+		m_pTex = NULL;
+		m_eTexType = eTT_2D;
+		m_nTexFlags = 0;
+		m_pTarget = NULL;
+		m_pAnimInfo = NULL;
 		m_pDynTexSource = NULL;
-		m_nSamplerSlot  = -1;
-		m_nTextureSlot  = -1;
-		m_bGlobal       = false;
+		m_nSamplerSlot = -1;
+		m_nTextureSlot = -1;
+		m_bGlobal = false;
 	}
 	~STexSamplerRT()
 	{
@@ -1203,7 +1188,7 @@ struct STexSamplerRT
 	uint32 GetTexFlags() const { return m_nTexFlags; }
 	bool   Update();
 	void   PostLoad();
-	NO_INLINE STexSamplerRT (const STexSamplerRT& src)
+	NO_INLINE STexSamplerRT(const STexSamplerRT& src)
 	{
 		m_pITex = src.m_pITex;
 		if (m_pITex)
@@ -1217,35 +1202,35 @@ struct STexSamplerRT
 		m_pAnimInfo = src.m_pAnimInfo;
 		if (m_pAnimInfo)
 			m_pAnimInfo->AddRef();
-		m_eTexType     = src.m_eTexType;
-		m_nTexFlags    = src.m_nTexFlags;
-		m_nTexState    = src.m_nTexState;
+		m_eTexType = src.m_eTexType;
+		m_nTexFlags = src.m_nTexFlags;
+		m_nTexState = src.m_nTexState;
 		m_nSamplerSlot = src.m_nSamplerSlot;
 		m_nTextureSlot = src.m_nTextureSlot;
-		m_bGlobal      = src.m_bGlobal;
+		m_bGlobal = src.m_bGlobal;
 	}
-	NO_INLINE STexSamplerRT& operator = (const STexSamplerRT& src)
+	NO_INLINE STexSamplerRT& operator=(const STexSamplerRT& src)
 	{
 		this->~STexSamplerRT();
 		new(this)STexSamplerRT(src);
 		return *this;
 	}
-	STexSamplerRT (const STexSamplerFX& src)
+	STexSamplerRT(const STexSamplerFX& src)
 	{
-		m_pITex         = NULL;
+		m_pITex = NULL;
 		m_pDynTexSource = NULL;
-		m_pAnimInfo     = NULL;
-		m_pITarget      = src.m_pITarget;
+		m_pAnimInfo = NULL;
+		m_pITarget = src.m_pITarget;
 		if (m_pITarget)
 			m_pITarget->AddRef();
-		m_eTexType     = src.m_eTexType;
-		m_nTexFlags    = src.m_nTexFlags;
-		m_nTexState    = src.m_nTexState;
+		m_eTexType = src.m_eTexType;
+		m_nTexFlags = src.m_nTexFlags;
+		m_nTexState = src.m_nTexState;
 		m_nSamplerSlot = -1;
 		m_nTextureSlot = -1;
-		m_bGlobal      = (src.m_nTexFlags & FT_FROMIMAGE) != 0;
+		m_bGlobal = (src.m_nTexFlags & FT_FROMIMAGE) != 0;
 	}
-	inline bool operator != (const STexSamplerRT& m) const
+	inline bool operator!=(const STexSamplerRT& m) const
 	{
 		if (m_pTex != m.m_pTex || m_eTexType != m.m_eTexType || m_nTexFlags != m.m_nTexFlags || m_nTexState != m.m_nTexState)
 			return true;
@@ -1257,19 +1242,19 @@ struct STexSamplerRT
 
 struct SEfResTextureExt
 {
-	int32 m_nFrameUpdated;
-	int32 m_nUpdateFlags;
-	int32 m_nLastRecursionLevel;
+	int32              m_nFrameUpdated;
+	int32              m_nUpdateFlags;
+	int32              m_nLastRecursionLevel;
 	SEfTexModificator* m_pTexModifier;
 
-	SEfResTextureExt ()
+	SEfResTextureExt()
 	{
-		m_nFrameUpdated       = -1;
-		m_nUpdateFlags        = 0;
+		m_nFrameUpdated = -1;
+		m_nUpdateFlags = 0;
 		m_nLastRecursionLevel = 0;
-		m_pTexModifier        = NULL;
+		m_pTexModifier = NULL;
 	}
-	~SEfResTextureExt ()
+	~SEfResTextureExt()
 	{
 		Cleanup();
 	}
@@ -1277,7 +1262,7 @@ struct SEfResTextureExt
 	{
 		SAFE_DELETE(m_pTexModifier);
 	}
-	inline bool operator != (const SEfResTextureExt& m) const
+	inline bool operator!=(const SEfResTextureExt& m) const
 	{
 		if (m_pTexModifier && m.m_pTexModifier)
 			return *m_pTexModifier != *m.m_pTexModifier;
@@ -1295,12 +1280,12 @@ struct SEfResTextureExt
 				m_pTexModifier = new SEfTexModificator;
 				* m_pTexModifier = *src.m_pTexModifier;
 			}
-			m_nFrameUpdated       = -1;
-			m_nUpdateFlags        = src.m_nUpdateFlags;
+			m_nFrameUpdated = -1;
+			m_nUpdateFlags = src.m_nUpdateFlags;
 			m_nLastRecursionLevel = -1;
 		}
 	}
-	SEfResTextureExt& operator = (const SEfResTextureExt& src)
+	SEfResTextureExt& operator=(const SEfResTextureExt& src)
 	{
 		if (&src != this)
 		{
@@ -1315,10 +1300,10 @@ struct SEfResTextureExt
 		if (pTo && pTo != this)
 		{
 			pTo->Cleanup();
-			pTo->m_nFrameUpdated       = -1;
-			pTo->m_nUpdateFlags        = m_nUpdateFlags;
+			pTo->m_nFrameUpdated = -1;
+			pTo->m_nUpdateFlags = m_nUpdateFlags;
 			pTo->m_nLastRecursionLevel = -1;
-			pTo->m_pTexModifier        = NULL;
+			pTo->m_pTexModifier = NULL;
 		}
 	}
 	inline int Size() const
@@ -1334,26 +1319,26 @@ struct SEfResTextureExt
 // If you don't like it, please write a substitute for all string within the project and use them everywhere.
 struct SEfResTexture
 {
-	string m_Name;
-	bool m_bUTile;
-	bool m_bVTile;
-	signed char m_Filter;
+	string           m_Name;
+	bool             m_bUTile;
+	bool             m_bVTile;
+	signed char      m_Filter;
 
-	STexSamplerRT m_Sampler;
+	STexSamplerRT    m_Sampler;
 	SEfResTextureExt m_Ext;
 
-	void UpdateForCreate();
-	void Update(int nTSlot);
-	void UpdateWithModifier(int nTSlot);
+	void        UpdateForCreate();
+	void        Update(int nTSlot);
+	void        UpdateWithModifier(int nTSlot);
 
-	inline bool operator != (const SEfResTexture& m) const
+	inline bool operator!=(const SEfResTexture& m) const
 	{
 		if (stricmp(m_Name.c_str(), m.m_Name.c_str()) != 0 ||
-		  m_bUTile != m.m_bUTile ||
-		  m_bVTile != m.m_bVTile ||
-		  m_Filter != m.m_Filter ||
-		  m_Ext != m.m_Ext ||
-		  m_Sampler != m.m_Sampler)
+		    m_bUTile != m.m_bUTile ||
+		    m_bVTile != m.m_bVTile ||
+		    m_Filter != m.m_Filter ||
+		    m_Ext != m.m_Ext ||
+		    m_Sampler != m.m_Sampler)
 			return true;
 		return false;
 	}
@@ -1442,20 +1427,20 @@ struct SEfResTexture
 		SAFE_DELETE(m_Ext.m_pTexModifier);
 		m_Ext.m_nFrameUpdated = -1;
 	}
-	SEfResTexture (const SEfResTexture& src)
+	SEfResTexture(const SEfResTexture& src)
 	{
 		if (&src != this)
 		{
 			Cleanup();
 			m_Sampler = src.m_Sampler;
-			m_Ext     = src.m_Ext;
-			m_Name    = src.m_Name;
-			m_bUTile  = src.m_bUTile;
-			m_bVTile  = src.m_bVTile;
-			m_Filter  = src.m_Filter;
+			m_Ext = src.m_Ext;
+			m_Name = src.m_Name;
+			m_bUTile = src.m_bUTile;
+			m_bVTile = src.m_bVTile;
+			m_Filter = src.m_Filter;
 		}
 	}
-	SEfResTexture& operator = (const SEfResTexture& src)
+	SEfResTexture& operator=(const SEfResTexture& src)
 	{
 		if (&src != this)
 		{
@@ -1471,7 +1456,7 @@ struct SEfResTexture
 			pTo->Cleanup();
 			pTo->m_Sampler = m_Sampler;
 			m_Ext.CopyTo(&pTo->m_Ext);
-			pTo->m_Name   = m_Name;
+			pTo->m_Name = m_Name;
 			pTo->m_bUTile = m_bUTile;
 			pTo->m_bVTile = m_bVTile;
 			pTo->m_Filter = m_Filter;
@@ -1484,21 +1469,21 @@ struct SEfResTexture
 	}
 };
 
-struct SBaseShaderResources:public CMultiThreadRefCount
+struct SBaseShaderResources : public CMultiThreadRefCount
 {
 	DynArray<SShaderParam> m_ShaderParams;
-	string m_TexturePath;
-	const char* m_szMaterialName;
+	string                 m_TexturePath;
+	const char*            m_szMaterialName;
 
-	float  m_AlphaRef;
-	uint32 m_ResFlags;
+	float                  m_AlphaRef;
+	uint32                 m_ResFlags;
 
-	uint16 m_SortPrio;
+	uint16                 m_SortPrio;
 
-	uint8 m_FurAmount;
-	uint8 m_VoxelCoverage;
-	uint8 m_HeatAmount;
-	uint8 m_CloakAmount;
+	uint8                  m_FurAmount;
+	uint8                  m_VoxelCoverage;
+	uint8                  m_HeatAmount;
+	uint8                  m_CloakAmount;
 
 	int Size() const
 	{
@@ -1516,27 +1501,27 @@ struct SBaseShaderResources:public CMultiThreadRefCount
 		{
 			ReleaseParams();
 			m_szMaterialName = src.m_szMaterialName;
-			m_ResFlags       = src.m_ResFlags;
-			m_AlphaRef       = src.m_AlphaRef;
-			m_HeatAmount     = src.m_HeatAmount;
-			m_FurAmount      = src.m_FurAmount;
-			m_VoxelCoverage  = src.m_VoxelCoverage;
-			m_CloakAmount    = src.m_CloakAmount;
-			m_SortPrio       = src.m_SortPrio;
-			m_ShaderParams   = src.m_ShaderParams;
+			m_ResFlags = src.m_ResFlags;
+			m_AlphaRef = src.m_AlphaRef;
+			m_HeatAmount = src.m_HeatAmount;
+			m_FurAmount = src.m_FurAmount;
+			m_VoxelCoverage = src.m_VoxelCoverage;
+			m_CloakAmount = src.m_CloakAmount;
+			m_SortPrio = src.m_SortPrio;
+			m_ShaderParams = src.m_ShaderParams;
 		}
 		return *this;
 	}
 
 	SBaseShaderResources()
 	{
-		m_ResFlags       = 0;
-		m_AlphaRef       = 0;
-		m_HeatAmount     = 0;
-		m_FurAmount      = 0;
-		m_VoxelCoverage  = 255;
-		m_CloakAmount    = 255;
-		m_SortPrio       = 0;
+		m_ResFlags = 0;
+		m_AlphaRef = 0;
+		m_HeatAmount = 0;
+		m_FurAmount = 0;
+		m_VoxelCoverage = 255;
+		m_CloakAmount = 255;
+		m_SortPrio = 0;
 		m_szMaterialName = NULL;
 	}
 
@@ -1558,31 +1543,31 @@ struct IRenderShaderResources
 	virtual void CloneConstants(const IRenderShaderResources* pSrc) = 0;
 
 	// properties
-	virtual void ToInputLM(CInputLightMaterial& lm)        = 0;
-	virtual void SetInputLM(const CInputLightMaterial& lm) = 0;
+	virtual void          ToInputLM(CInputLightMaterial& lm) = 0;
+	virtual void          SetInputLM(const CInputLightMaterial& lm) = 0;
 
-	virtual const ColorF& GetColorValue(EEfResTextures slot) const                = 0;
+	virtual const ColorF& GetColorValue(EEfResTextures slot) const = 0;
 	virtual void          SetColorValue(EEfResTextures slot, const ColorF& color) = 0;
 
-	virtual float GetStrengthValue(EEfResTextures slot) const        = 0;
-	virtual void  SetStrengthValue(EEfResTextures slot, float value) = 0;
+	virtual float         GetStrengthValue(EEfResTextures slot) const = 0;
+	virtual void          SetStrengthValue(EEfResTextures slot, float value) = 0;
 
 	// configs
-	virtual const float& GetAlphaRef() const  = 0;
-	virtual void         SetAlphaRef(float v) = 0;
+	virtual const float&               GetAlphaRef() const = 0;
+	virtual void                       SetAlphaRef(float v) = 0;
 
 	virtual int                        GetResFlags() = 0;
 	virtual void                       SetMtlLayerNoDrawFlags(uint8 nFlags) = 0;
-	virtual uint8                      GetMtlLayerNoDrawFlags() const       = 0;
-	virtual SSkyInfo*                  GetSkyInfo()                         = 0;
-	virtual CCamera*                   GetCamera()                          = 0;
-	virtual void                       SetCamera(CCamera* pCam)             = 0;
-	virtual void                       SetMaterialName(const char* szName)  = 0;
-	virtual SEfResTexture*             GetTexture(int nSlot) const          = 0;
-	virtual DynArrayRef<SShaderParam>& GetParameters()                      = 0;
+	virtual uint8                      GetMtlLayerNoDrawFlags() const = 0;
+	virtual SSkyInfo*                  GetSkyInfo() = 0;
+	virtual CCamera*                   GetCamera() = 0;
+	virtual void                       SetCamera(CCamera* pCam) = 0;
+	virtual void                       SetMaterialName(const char* szName) = 0;
+	virtual SEfResTexture*             GetTexture(int nSlot) const = 0;
+	virtual DynArrayRef<SShaderParam>& GetParameters() = 0;
 
-	virtual ColorF GetFinalEmittance() = 0;
-	virtual float  GetVoxelCoverage()  = 0;
+	virtual ColorF                     GetFinalEmittance() = 0;
+	virtual float                      GetVoxelCoverage() = 0;
 
 	virtual ~IRenderShaderResources() {}
 	virtual void                    Release() = 0;
@@ -1590,8 +1575,8 @@ struct IRenderShaderResources
 	virtual IRenderShaderResources* Clone() const = 0;
 	virtual void                    SetShaderParams(struct SInputShaderResources* pDst, IShader* pSH) = 0;
 
-	virtual size_t            GetResourceMemoryUsage(ICrySizer* pSizer) = 0;
-	virtual SDetailDecalInfo* GetDetailDecalInfo()                      = 0;
+	virtual size_t                  GetResourceMemoryUsage(ICrySizer* pSizer) = 0;
+	virtual SDetailDecalInfo*       GetDetailDecalInfo() = 0;
 
 	// Set this shader resources as invalid
 	virtual void SetInvalid() = 0;
@@ -1627,12 +1612,12 @@ struct IRenderShaderResources
 
 };
 
-struct SInputShaderResources:public SBaseShaderResources
+struct SInputShaderResources : public SBaseShaderResources
 {
 	CInputLightMaterial m_LMaterial;
-	SEfResTexture m_Textures[EFTT_MAX];
-	SDeformInfo m_DeformInfo;
-	SDetailDecalInfo m_DetailDecalInfo;
+	SEfResTexture       m_Textures[EFTT_MAX];
+	SDeformInfo         m_DeformInfo;
+	SDetailDecalInfo    m_DetailDecalInfo;
 
 	int Size() const
 	{
@@ -1649,9 +1634,9 @@ struct SInputShaderResources:public SBaseShaderResources
 		if (&src != this)
 		{
 			Cleanup();
-			SBaseShaderResources::operator = (src);
-			m_TexturePath     = src.m_TexturePath;
-			m_DeformInfo      = src.m_DeformInfo;
+			SBaseShaderResources::operator=(src);
+			m_TexturePath = src.m_TexturePath;
+			m_DeformInfo = src.m_DeformInfo;
 			m_DetailDecalInfo = src.m_DetailDecalInfo;
 			int i;
 			for (i = 0; i < EFTT_MAX; i++)
@@ -1708,37 +1693,37 @@ typedef _smart_ptr<SInputShaderResources> SInputShaderResourcesPtr;
 //===================================================================================
 // Shader gen structure (used for automatic shader script generating).
 
-#define SHGF_HIDDEN   1
-#define SHGF_PRECACHE 2
-#define SHGF_AUTO_PRECACHE 4
+#define SHGF_HIDDEN                1
+#define SHGF_PRECACHE              2
+#define SHGF_AUTO_PRECACHE         4
 #define SHGF_LOWSPEC_AUTO_PRECACHE 8
-#define SHGF_RUNTIME 0x10
+#define SHGF_RUNTIME               0x10
 
 // 0x1
-#define SHGD_TEX_DETAIL     2
-#define SHGD_TEX_NORMALS       4
-#define SHGD_TEX_ENVCM      8
-#define SHGD_TEX_SPECULAR          0x10
-#define SHGD_TEX_TRANSLUCENCY      0x20
-#define SHGD_TEX_HEIGHT            0x40
-#define SHGD_TEX_SUBSURFACE 0x80
+#define SHGD_TEX_DETAIL       2
+#define SHGD_TEX_NORMALS      4
+#define SHGD_TEX_ENVCM        8
+#define SHGD_TEX_SPECULAR     0x10
+#define SHGD_TEX_TRANSLUCENCY 0x20
+#define SHGD_TEX_HEIGHT       0x40
+#define SHGD_TEX_SUBSURFACE   0x80
 // 0x100
 // 0x200
-#define SHGD_HW_DURANGO  0x400
-#define SHGD_HW_ORBIS  0x800
-#define SHGD_TEX_CUSTOM 0x1000
+#define SHGD_HW_DURANGO           0x400
+#define SHGD_HW_ORBIS             0x800
+#define SHGD_TEX_CUSTOM           0x1000
 #define SHGD_TEX_CUSTOM_SECONDARY 0x2000
-#define SHGD_TEX_DECAL 0x4000
-#define SHGD_HW_GLES3   0x20000
-#define SHGD_USER_ENABLED 0x40000
+#define SHGD_TEX_DECAL            0x4000
+#define SHGD_HW_GLES3             0x20000
+#define SHGD_USER_ENABLED         0x40000
 // 0x80000
 // 0x100000
-#define SHGD_HW_DX10    0x200000
-#define SHGD_HW_DX11    0x400000
-#define SHGD_HW_GL4     0x800000
+#define SHGD_HW_DX10               0x200000
+#define SHGD_HW_DX11               0x400000
+#define SHGD_HW_GL4                0x800000
 #define SHGD_HW_WATER_TESSELLATION 0x1000000
-#define SHGD_HW_SILHOUETTE_POM 0x2000000
-#define SHGD_TEX_MASK (SHGD_TEX_DETAIL | SHGD_TEX_NORMALS | SHGD_TEX_ENVCM | SHGD_TEX_SPECULAR | SHGD_TEX_TRANSLUCENCY | SHGD_TEX_HEIGHT | SHGD_TEX_SUBSURFACE | SHGD_TEX_CUSTOM | SHGD_TEX_CUSTOM_SECONDARY | SHGD_TEX_DECAL)
+#define SHGD_HW_SILHOUETTE_POM     0x2000000
+#define SHGD_TEX_MASK              (SHGD_TEX_DETAIL | SHGD_TEX_NORMALS | SHGD_TEX_ENVCM | SHGD_TEX_SPECULAR | SHGD_TEX_TRANSLUCENCY | SHGD_TEX_HEIGHT | SHGD_TEX_SUBSURFACE | SHGD_TEX_CUSTOM | SHGD_TEX_CUSTOM_SECONDARY | SHGD_TEX_DECAL)
 
 struct SShaderTextureSlot
 {
@@ -1749,9 +1734,9 @@ struct SShaderTextureSlot
 
 	string m_Name;
 	string m_Description;
-	byte m_TexType;
+	byte   m_TexType;
 
-	void GetMemoryUsage(ICrySizer* pSizer) const
+	void   GetMemoryUsage(ICrySizer* pSizer) const
 	{
 		pSizer->AddObject(m_Name);
 		pSizer->AddObject(m_Description);
@@ -1761,7 +1746,7 @@ struct SShaderTextureSlot
 
 struct SShaderTexSlots
 {
-	uint32 m_nRefCount;
+	uint32              m_nRefCount;
 	SShaderTextureSlot* m_UsedSlots[EFTT_MAX];
 	SShaderTexSlots()
 	{
@@ -1794,27 +1779,27 @@ struct SShaderGenBit
 {
 	SShaderGenBit()
 	{
-		m_Mask             = 0;
-		m_Flags            = 0;
-		m_nDependencySet   = 0;
+		m_Mask = 0;
+		m_Flags = 0;
+		m_nDependencySet = 0;
 		m_nDependencyReset = 0;
-		m_NameLength       = 0;
-		m_dwToken          = 0;
+		m_NameLength = 0;
+		m_dwToken = 0;
 	}
-	string m_ParamName;
-	string m_ParamProp;
-	string m_ParamDesc;
-	int m_NameLength;
-	uint64 m_Mask;
-	uint32 m_Flags;
-	uint32 m_dwToken;
+	string              m_ParamName;
+	string              m_ParamProp;
+	string              m_ParamDesc;
+	int                 m_NameLength;
+	uint64              m_Mask;
+	uint32              m_Flags;
+	uint32              m_dwToken;
 	std::vector<uint32> m_PrecacheNames;
 	std::vector<string> m_DependSets;
 	std::vector<string> m_DependResets;
-	uint32 m_nDependencySet;
-	uint32 m_nDependencyReset;
+	uint32              m_nDependencySet;
+	uint32              m_nDependencyReset;
 
-	void GetMemoryUsage(ICrySizer* pSizer) const
+	void                GetMemoryUsage(ICrySizer* pSizer) const
 	{
 		pSizer->AddObject(m_ParamName);
 		pSizer->AddObject(m_ParamProp);
@@ -1827,7 +1812,7 @@ struct SShaderGenBit
 
 struct SShaderGen
 {
-	uint32 m_nRefCount;
+	uint32                 m_nRefCount;
 	TArray<SShaderGenBit*> m_BitMask;
 	SShaderGen()
 	{
@@ -1860,9 +1845,9 @@ struct SShaderGen
 
 enum EShaderType
 {
-	eST_All=-1, //!< To set all with one call.
+	eST_All     = -1, //!< To set all with one call.
 
-	eST_General=0,
+	eST_General = 0,
 	eST_Metal,
 	eST_Glass,
 	eST_Vegetation,
@@ -1877,29 +1862,29 @@ enum EShaderType
 	eST_Sky,
 	eST_Particle,
 	eST_Compute,
-	eST_Max     //!< To define array size.
+	eST_Max  //!< To define array size.
 };
 
 enum EShaderQuality
 {
-	eSQ_Low     =0,
-	eSQ_Medium  =1,
-	eSQ_High    =2,
-	eSQ_VeryHigh=3,
-	eSQ_Max     =4
+	eSQ_Low      = 0,
+	eSQ_Medium   = 1,
+	eSQ_High     = 2,
+	eSQ_VeryHigh = 3,
+	eSQ_Max      = 4
 };
 
 enum ERenderQuality
 {
-	eRQ_Low     =0,
-	eRQ_Medium  =1,
-	eRQ_High    =2,
-	eRQ_VeryHigh=3,
-	eRQ_Max     =4
+	eRQ_Low      = 0,
+	eRQ_Medium   = 1,
+	eRQ_High     = 2,
+	eRQ_VeryHigh = 3,
+	eRQ_Max      = 4
 };
 
 //! Shader profile flags .
-#define SPF_LOADNORMALALPHA   0x1
+#define SPF_LOADNORMALALPHA 0x1
 
 struct SShaderProfile
 {
@@ -1919,7 +1904,7 @@ struct SShaderProfile
 
 	// ----------------------------------------------------------------
 
-	int m_iShaderProfileQuality;     //!< EShaderQuality e.g. eSQ_Medium, use Get/Set functions if possible.
+	int    m_iShaderProfileQuality;  //!< EShaderQuality e.g. eSQ_Medium, use Get/Set functions if possible.
 	uint32 m_nShaderProfileFlags;    //!< SPF_...
 };
 
@@ -1989,134 +1974,134 @@ enum ERenderListID
 //================================================================
 //! Different preprocess flags for shaders that require preprocessing (like recursive render to texture, screen effects, visibility check, ...) SShader->m_nPreprocess flags in priority order.
 
-#define  SPRID_FIRST          25
-#define  SPRID_SCANTEXWATER   26
-#define  FSPR_SCANTEXWATER    (1 << SPRID_SCANTEXWATER)
-#define  SPRID_SCANTEX        27
-#define  FSPR_SCANTEX         (1 << SPRID_SCANTEX)
-#define  SPRID_GENSPRITES     29
-#define  FSPR_GENSPRITES      (1 << SPRID_GENSPRITES)
-#define  SPRID_CUSTOMTEXTURE  30
-#define  FSPR_CUSTOMTEXTURE   (1 << SPRID_CUSTOMTEXTURE)
-#define  SPRID_GENCLOUDS      31
-#define  FSPR_GENCLOUDS       (1 << SPRID_GENCLOUDS)
+#define  SPRID_FIRST         25
+#define  SPRID_SCANTEXWATER  26
+#define  FSPR_SCANTEXWATER   (1 << SPRID_SCANTEXWATER)
+#define  SPRID_SCANTEX       27
+#define  FSPR_SCANTEX        (1 << SPRID_SCANTEX)
+#define  SPRID_GENSPRITES    29
+#define  FSPR_GENSPRITES     (1 << SPRID_GENSPRITES)
+#define  SPRID_CUSTOMTEXTURE 30
+#define  FSPR_CUSTOMTEXTURE  (1 << SPRID_CUSTOMTEXTURE)
+#define  SPRID_GENCLOUDS     31
+#define  FSPR_GENCLOUDS      (1 << SPRID_GENCLOUDS)
 
-#define  FSPR_MASK            0xfff00000
-#define  FSPR_MAX             (1 << 31)
+#define  FSPR_MASK           0xfff00000
+#define  FSPR_MAX            (1 << 31)
 
-#define FEF_DONTSETTEXTURES   1    // Set: explicit setting of samplers (e.g. tex->Apply(1,nTexStatePoint)), not set: set sampler by sematics (e.g. $ZTarget).
-#define FEF_DONTSETSTATES     2
+#define FEF_DONTSETTEXTURES  1          // Set: explicit setting of samplers (e.g. tex->Apply(1,nTexStatePoint)), not set: set sampler by sematics (e.g. $ZTarget).
+#define FEF_DONTSETSTATES    2
 
 // SShader::m_Flags
 // Different useful flags
-#define EF_RELOAD        1         // Shader needs tangent vectors array.
-#define EF_FORCE_RELOAD  2
-#define EF_RELOADED      4
-#define EF_NODRAW        8
-#define EF_HASCULL       0x10
+#define EF_RELOAD                        1 // Shader needs tangent vectors array.
+#define EF_FORCE_RELOAD                  2
+#define EF_RELOADED                      4
+#define EF_NODRAW                        8
+#define EF_HASCULL                       0x10
 #define EF_SUPPORTSDEFERREDSHADING_MIXED 0x20
-#define EF_SUPPORTSDEFERREDSHADING_FULL 0x40
-#define EF_SUPPORTSDEFERREDSHADING (EF_SUPPORTSDEFERREDSHADING_MIXED | EF_SUPPORTSDEFERREDSHADING_FULL)
-#define EF_DECAL         0x80
-#define EF_LOADED        0x100
-#define EF_LOCALCONSTANTS 0x200
-#define EF_BUILD_TREE     0x400
-#define EF_LIGHTSTYLE    0x800
-#define EF_NOCHUNKMERGING 0x1000
-#define EF_SUNFLARES     0x2000
-#define EF_NEEDNORMALS   0x4000    // Need normals operations.
-#define EF_OFFSETBUMP    0x8000
-#define EF_NOTFOUND      0x10000
-#define EF_DEFAULT       0x20000
-#define EF_SKY           0x40000
-#define EF_USELIGHTS     0x80000
-#define EF_ALLOW3DC      0x100000
-#define EF_FOGSHADER     0x200000
-#define EF_FAILED_IMPORT 0x400000  // Currently just for debug, can be removed if necessary
-#define EF_PRECACHESHADER 0x800000
-#define EF_FORCEREFRACTIONUPDATE    0x1000000
-#define EF_SUPPORTSINSTANCING_CONST 0x2000000
-#define EF_SUPPORTSINSTANCING_ATTR  0x4000000
-#define EF_SUPPORTSINSTANCING (EF_SUPPORTSINSTANCING_CONST | EF_SUPPORTSINSTANCING_ATTR)
-#define EF_WATERPARTICLE  0x8000000
-#define EF_CLIENTEFFECT  0x10000000
-#define EF_SYSTEM        0x20000000
-#define EF_REFRACTIVE    0x40000000
-#define EF_NOPREVIEW     0x80000000
+#define EF_SUPPORTSDEFERREDSHADING_FULL  0x40
+#define EF_SUPPORTSDEFERREDSHADING       (EF_SUPPORTSDEFERREDSHADING_MIXED | EF_SUPPORTSDEFERREDSHADING_FULL)
+#define EF_DECAL                         0x80
+#define EF_LOADED                        0x100
+#define EF_LOCALCONSTANTS                0x200
+#define EF_BUILD_TREE                    0x400
+#define EF_LIGHTSTYLE                    0x800
+#define EF_NOCHUNKMERGING                0x1000
+#define EF_SUNFLARES                     0x2000
+#define EF_NEEDNORMALS                   0x4000 // Need normals operations.
+#define EF_OFFSETBUMP                    0x8000
+#define EF_NOTFOUND                      0x10000
+#define EF_DEFAULT                       0x20000
+#define EF_SKY                           0x40000
+#define EF_USELIGHTS                     0x80000
+#define EF_ALLOW3DC                      0x100000
+#define EF_FOGSHADER                     0x200000
+#define EF_FAILED_IMPORT                 0x400000 // Currently just for debug, can be removed if necessary
+#define EF_PRECACHESHADER                0x800000
+#define EF_FORCEREFRACTIONUPDATE         0x1000000
+#define EF_SUPPORTSINSTANCING_CONST      0x2000000
+#define EF_SUPPORTSINSTANCING_ATTR       0x4000000
+#define EF_SUPPORTSINSTANCING            (EF_SUPPORTSINSTANCING_CONST | EF_SUPPORTSINSTANCING_ATTR)
+#define EF_WATERPARTICLE                 0x8000000
+#define EF_CLIENTEFFECT                  0x10000000
+#define EF_SYSTEM                        0x20000000
+#define EF_REFRACTIVE                    0x40000000
+#define EF_NOPREVIEW                     0x80000000
 
-#define EF_PARSE_MASK    (EF_SUPPORTSINSTANCING | EF_SKY | EF_HASCULL | EF_USELIGHTS | EF_REFRACTIVE)
+#define EF_PARSE_MASK                    (EF_SUPPORTSINSTANCING | EF_SKY | EF_HASCULL | EF_USELIGHTS | EF_REFRACTIVE)
 
 // SShader::Flags2
 // Additional Different useful flags
 
-#define EF2_PREPR_GENSPRITES 0x1
-#define EF2_PREPR_GENCLOUDS 0x2
-#define EF2_PREPR_SCANWATER 0x4
-#define EF2_NOCASTSHADOWS  0x8
-#define EF2_NODRAW         0x10
-#define EF2_WRINKLE_BLENDING 0x20
-#define EF2_HASOPAQUE      0x40
+#define EF2_PREPR_GENSPRITES     0x1
+#define EF2_PREPR_GENCLOUDS      0x2
+#define EF2_PREPR_SCANWATER      0x4
+#define EF2_NOCASTSHADOWS        0x8
+#define EF2_NODRAW               0x10
+#define EF2_WRINKLE_BLENDING     0x20
+#define EF2_HASOPAQUE            0x40
 #define EF2_AFTERHDRPOSTPROCESS  0x80
-#define EF2_DONTSORTBYDIST 0x100
-#define EF2_FORCE_WATERPASS    0x200
-#define EF2_FORCE_GENERALPASS   0x400
-#define EF2_AFTERPOSTPROCESS  0x800
-#define EF2_IGNORERESOURCESTATES  0x1000
-#define EF2_EYE_OVERLAY  0x2000
-#define EF2_FORCE_TRANSPASS       0x4000
-#define EF2_DEFAULTVERTEXFORMAT 0x8000
-#define EF2_FORCE_ZPASS 0x10000
-#define EF2_FORCE_DRAWLAST 0x20000
+#define EF2_DONTSORTBYDIST       0x100
+#define EF2_FORCE_WATERPASS      0x200
+#define EF2_FORCE_GENERALPASS    0x400
+#define EF2_AFTERPOSTPROCESS     0x800
+#define EF2_IGNORERESOURCESTATES 0x1000
+#define EF2_EYE_OVERLAY          0x2000
+#define EF2_FORCE_TRANSPASS      0x4000
+#define EF2_DEFAULTVERTEXFORMAT  0x8000
+#define EF2_FORCE_ZPASS          0x10000
+#define EF2_FORCE_DRAWLAST       0x20000
 #define EF2_FORCE_DRAWAFTERWATER 0x40000
 // free 0x80000
-#define EF2_DEPTH_FIXUP 0x100000
-#define EF2_SINGLELIGHTPASS 0x200000
-#define EF2_FORCE_DRAWFIRST 0x400000
-#define EF2_HAIR            0x800000
-#define EF2_DETAILBUMPMAPPING 0x1000000
-#define EF2_HASALPHATEST      0x2000000
-#define EF2_HASALPHABLEND     0x4000000
-#define EF2_ZPREPASS 0x8000000
-#define EF2_VERTEXCOLORS 0x10000000
-#define EF2_SKINPASS 0x20000000
-#define EF2_HW_TESSELLATION 0x40000000
-#define EF2_ALPHABLENDSHADOWS 0x80000000
+#define EF2_DEPTH_FIXUP          0x100000
+#define EF2_SINGLELIGHTPASS      0x200000
+#define EF2_FORCE_DRAWFIRST      0x400000
+#define EF2_HAIR                 0x800000
+#define EF2_DETAILBUMPMAPPING    0x1000000
+#define EF2_HASALPHATEST         0x2000000
+#define EF2_HASALPHABLEND        0x4000000
+#define EF2_ZPREPASS             0x8000000
+#define EF2_VERTEXCOLORS         0x10000000
+#define EF2_SKINPASS             0x20000000
+#define EF2_HW_TESSELLATION      0x40000000
+#define EF2_ALPHABLENDSHADOWS    0x80000000
 
 struct IShader
 {
 public:
 	// <interfuscator:shuffle>
 	virtual ~IShader(){}
-	virtual int GetID()        = 0;
-	virtual int AddRef()       = 0;
-	virtual int Release()      = 0;
-	virtual int ReleaseForce() = 0;
+	virtual int                        GetID() = 0;
+	virtual int                        AddRef() = 0;
+	virtual int                        Release() = 0;
+	virtual int                        ReleaseForce() = 0;
 
-	virtual const char*                GetName()              = 0;
-	virtual const char*                GetName() const        = 0;
-	virtual int                        GetFlags() const       = 0;
-	virtual int                        GetFlags2() const      = 0;
-	virtual void                       SetFlags2(int Flags)   = 0;
+	virtual const char*                GetName() = 0;
+	virtual const char*                GetName() const = 0;
+	virtual int                        GetFlags() const = 0;
+	virtual int                        GetFlags2() const = 0;
+	virtual void                       SetFlags2(int Flags) = 0;
 	virtual void                       ClearFlags2(int Flags) = 0;
 	virtual bool                       Reload(int nFlags, const char* szShaderName) = 0;
-	virtual TArray<CRendElementBase*>* GetREs (int nTech)                           = 0;
-	virtual DynArrayRef<SShaderParam>& GetPublicParams()                            = 0;
+	virtual TArray<CRendElementBase*>* GetREs(int nTech) = 0;
+	virtual DynArrayRef<SShaderParam>& GetPublicParams() = 0;
 	virtual void                       CopyPublicParamsTo(SInputShaderResources& copyToResource) = 0;
-	virtual int                        GetTexId () = 0;
+	virtual int                        GetTexId() = 0;
 	virtual ITexture*                  GetBaseTexture(int* nPass, int* nTU) = 0;
-	virtual unsigned int               GetUsedTextureTypes(void)            = 0;
-	virtual SShaderTexSlots*           GetUsedTextureSlots(int nTechnique)  = 0;
-	virtual ECull                      GetCull(void)                        = 0;
-	virtual int                        Size(int Flags)                      = 0;
-	virtual uint64                     GetGenerationMask()                  = 0;
-	virtual SShaderGen*                GetGenerationParams()                = 0;
+	virtual unsigned int               GetUsedTextureTypes(void) = 0;
+	virtual SShaderTexSlots*           GetUsedTextureSlots(int nTechnique) = 0;
+	virtual ECull                      GetCull(void) = 0;
+	virtual int                        Size(int Flags) = 0;
+	virtual uint64                     GetGenerationMask() = 0;
+	virtual SShaderGen*                GetGenerationParams() = 0;
 	virtual int                        GetTechniqueID(int nTechnique, int nRegisteredTechnique) = 0;
 	virtual EVertexFormat              GetVertexFormat(void) = 0;
 
-	virtual EShaderType GetShaderType()        = 0;
-	virtual uint32      GetVertexModificator() = 0;
+	virtual EShaderType                GetShaderType() = 0;
+	virtual uint32                     GetVertexModificator() = 0;
 
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const = 0;
+	virtual void                       GetMemoryUsage(ICrySizer* pSizer) const = 0;
 	// </interfuscator:shuffle>
 
 	static uint32 GetTextureSlot(EEfResTextures textureType) { return (uint32)textureType; }
@@ -2124,41 +2109,41 @@ public:
 
 struct SShaderItem
 {
-	IShader* m_pShader;
+	IShader*                m_pShader;
 	IRenderShaderResources* m_pShaderResources;
-	int32  m_nTechnique;
-	uint32 m_nPreprocessFlags;
+	int32                   m_nTechnique;
+	uint32                  m_nPreprocessFlags;
 
 	SShaderItem()
 	{
-		m_pShader          = NULL;
+		m_pShader = NULL;
 		m_pShaderResources = NULL;
-		m_nTechnique       = -1;
+		m_nTechnique = -1;
 		m_nPreprocessFlags = 1;
 	}
 	SShaderItem(IShader* pSH)
 	{
-		m_pShader          = pSH;
+		m_pShader = pSH;
 		m_pShaderResources = NULL;
-		m_nTechnique       = -1;
+		m_nTechnique = -1;
 		m_nPreprocessFlags = 1;
 		if (pSH && (pSH->GetFlags2() & EF2_PREPR_GENSPRITES))
 			m_nPreprocessFlags |= FSPR_GENSPRITES;
 	}
 	SShaderItem(IShader* pSH, IRenderShaderResources* pRS)
 	{
-		m_pShader          = pSH;
+		m_pShader = pSH;
 		m_pShaderResources = pRS;
-		m_nTechnique       = -1;
+		m_nTechnique = -1;
 		m_nPreprocessFlags = 1;
 		if (pSH && (pSH->GetFlags2() & EF2_PREPR_GENSPRITES))
 			m_nPreprocessFlags |= FSPR_GENSPRITES;
 	}
 	SShaderItem(IShader* pSH, IRenderShaderResources* pRS, int nTechnique)
 	{
-		m_pShader          = pSH;
+		m_pShader = pSH;
 		m_pShaderResources = pRS;
-		m_nTechnique       = nTechnique;
+		m_nTechnique = nTechnique;
 		m_nPreprocessFlags = 1;
 		if (pSH && (pSH->GetFlags2() & EF2_PREPR_GENSPRITES))
 			m_nPreprocessFlags |= FSPR_GENSPRITES;
@@ -2172,7 +2157,7 @@ struct SShaderItem
 		SI.m_pShader->AddRef();
 		SI.m_pShaderResources = m_pShaderResources->Clone();
 		SI.m_pShaderResources->CloneConstants(m_pShaderResources);
-		SI.m_nTechnique       = m_nTechnique;
+		SI.m_nTechnique = m_nTechnique;
 		SI.m_nPreprocessFlags = m_nPreprocessFlags;
 
 		return SI;
@@ -2198,7 +2183,7 @@ struct SShaderItem
 	inline struct SShaderTechnique* GetTechnique() const;
 	bool                            IsMergable(SShaderItem& PrevSI);
 
-	void GetMemoryUsage(ICrySizer* pSizer) const
+	void                            GetMemoryUsage(ICrySizer* pSizer) const
 	{
 		pSizer->AddObject(m_pShader);
 		pSizer->AddObject(m_pShaderResources);
@@ -2209,19 +2194,19 @@ struct SShaderItem
 //! Define this before including <IRenderMesh.h>
 struct CRenderChunk
 {
-	bool m_bUsesBones;
-	CREMesh* pRE;        //!< Pointer to the mesh.
+	bool     m_bUsesBones;
+	CREMesh* pRE;  //!< Pointer to the mesh.
 
-	float m_texelAreaDensity;
+	float    m_texelAreaDensity;
 
-	uint32 nFirstIndexId;
-	uint32 nNumIndices;
+	uint32   nFirstIndexId;
+	uint32   nNumIndices;
 
-	uint32 nFirstVertId;
-	uint32 nNumVerts;
+	uint32   nFirstVertId;
+	uint32   nNumVerts;
 
-	uint16 m_nMatFlags; //!< Material flags from originally assigned material @see EMaterialFlags.
-	uint16 m_nMatID;    //!< Material Sub-object id.
+	uint16   m_nMatFlags; //!< Material flags from originally assigned material @see EMaterialFlags.
+	uint16   m_nMatID;    //!< Material Sub-object id.
 
 	//! Index of sub-object that this chunk originates from, used by sub-object hide mask.
 	//! \see IStatObj::GetSubObject
@@ -2241,7 +2226,7 @@ struct CRenderChunk
 	{
 	}
 
-	int Size() const;
+	int  Size() const;
 
 	void GetMemoryUsage(ICrySizer* pSizer) const
 	{
@@ -2254,34 +2239,34 @@ typedef DynArray<CRenderChunk> TRenderChunkArray;
 // DLights
 enum eDynamicLightFlags
 {
-	DLF_AREA_SPEC_TEX    = BIT(0),
-	DLF_DIRECTIONAL      = BIT(1),
-	DLF_BOX_PROJECTED_CM = BIT(2),
+	DLF_AREA_SPEC_TEX           = BIT(0),
+	DLF_DIRECTIONAL             = BIT(1),
+	DLF_BOX_PROJECTED_CM        = BIT(2),
 	// UNUSED										= BIT(3),
-	DLF_POST_3D_RENDERER     = BIT(4),
-	DLF_CASTSHADOW_MAPS      = BIT(5),
-	DLF_POINT                = BIT(6),
-	DLF_PROJECT              = BIT(7),
-	DLF_LIGHT_BEAM           = BIT(8),
+	DLF_POST_3D_RENDERER        = BIT(4),
+	DLF_CASTSHADOW_MAPS         = BIT(5),
+	DLF_POINT                   = BIT(6),
+	DLF_PROJECT                 = BIT(7),
+	DLF_LIGHT_BEAM              = BIT(8),
 	//	UNUSED										= BIT(9),
-	DLF_IGNORES_VISAREAS     = BIT(10),
-	DLF_DEFERRED_CUBEMAPS    = BIT(11),
-	DLF_HAS_CLIP_VOLUME      = BIT(12),
-	DLF_DISABLED             = BIT(13),
-	DLF_AREA_LIGHT           = BIT(14),
-	DLF_USE_FOR_SVOGI        = BIT(15),
+	DLF_IGNORES_VISAREAS        = BIT(10),
+	DLF_DEFERRED_CUBEMAPS       = BIT(11),
+	DLF_HAS_CLIP_VOLUME         = BIT(12),
+	DLF_DISABLED                = BIT(13),
+	DLF_AREA_LIGHT              = BIT(14),
+	DLF_USE_FOR_SVOGI           = BIT(15),
 	// UNUSED										=	BIT(16),
-	DLF_FAKE = BIT(17),                    //!< No lighting, used for Flares, beams and such.
-	DLF_SUN  = BIT(18),
-	DLF_LM   = BIT(19),
-	DLF_THIS_AREA_ONLY          = BIT(20), //!< Affects only current area/sector.
-	DLF_AMBIENT                 = BIT(21), //!< Ambient light (has name indicates, used for replacing ambient).
-	DLF_INDOOR_ONLY             = BIT(22), //!< Do not affect height map.
-	DLF_VOLUMETRIC_FOG          = BIT(23), //!< Affects volumetric fog.
+	DLF_FAKE                    = BIT(17),   //!< No lighting, used for Flares, beams and such.
+	DLF_SUN                     = BIT(18),
+	DLF_LM                      = BIT(19),
+	DLF_THIS_AREA_ONLY          = BIT(20),   //!< Affects only current area/sector.
+	DLF_AMBIENT                 = BIT(21),   //!< Ambient light (has name indicates, used for replacing ambient).
+	DLF_INDOOR_ONLY             = BIT(22),   //!< Do not affect height map.
+	DLF_VOLUMETRIC_FOG          = BIT(23),   //!< Affects volumetric fog.
 	//	UNUSED										= BIT(24),   //!< Add only to  Light Propagation Volume if it's possible.
-	DLF_ATTACH_TO_SUN           = BIT(25), //!< Add only to  Light Propagation Volume if it's possible.
-	DLF_TRACKVIEW_TIMESCRUBBING = BIT(26), //!< Add only to  Light Propagation Volume if it's possible.
-	DLF_VOLUMETRIC_FOG_ONLY     = BIT(27), //!< Affects only volumetric fog.
+	DLF_ATTACH_TO_SUN           = BIT(25),   //!< Add only to  Light Propagation Volume if it's possible.
+	DLF_TRACKVIEW_TIMESCRUBBING = BIT(26),   //!< Add only to  Light Propagation Volume if it's possible.
+	DLF_VOLUMETRIC_FOG_ONLY     = BIT(27),   //!< Affects only volumetric fog.
 
 	//! Deprecated. Remove once deferred shading by default.
 	DLF_DEFERRED_LIGHT = BIT(29),
@@ -2290,23 +2275,23 @@ enum eDynamicLightFlags
 	DLF_SPECULAROCCLUSION = BIT(30),
 	DLF_DIFFUSEOCCLUSION  = BIT(31),
 
-	DLF_LIGHTTYPE_MASK = (DLF_DIRECTIONAL | DLF_POINT | DLF_PROJECT | DLF_AREA_LIGHT)
+	DLF_LIGHTTYPE_MASK    = (DLF_DIRECTIONAL | DLF_POINT | DLF_PROJECT | DLF_AREA_LIGHT)
 };
 
 //! Area light types.
-#define DLAT_SPHERE       0x1
-#define DLAT_RECTANGLE    0x2
-#define DLAT_POINT        0x4
+#define DLAT_SPHERE            0x1
+#define DLAT_RECTANGLE         0x2
+#define DLAT_POINT             0x4
 
 #define DL_SHADOW_UPDATE_SHIFT 8
 
 struct IEntity;
 
-#include <CryRenderer/IRenderMesh.h>                 // <> required for Interfuscator
+#include <CryRenderer/IRenderMesh.h>  // <> required for Interfuscator
 
 struct IAnimNode;
 
-struct ILightAnimWrapper:public _i_reference_target_t
+struct ILightAnimWrapper : public _i_reference_target_t
 {
 public:
 	virtual bool Resolve() = 0;
@@ -2317,7 +2302,7 @@ protected:
 	virtual ~ILightAnimWrapper() {}
 
 protected:
-	string m_name;
+	string     m_name;
 	IAnimNode* m_pNode;
 };
 
@@ -2335,30 +2320,30 @@ struct SRenderLight
 	{
 		memset(this, 0, sizeof(SRenderLight));
 		m_fLightFrustumAngle = 45.0f;
-		m_fRadius            = 4.0f;
-		m_fBaseRadius        = 4.0f;
-		m_SpecMult           = m_BaseSpecMult = 1.0f;
+		m_fRadius = 4.0f;
+		m_fBaseRadius = 4.0f;
+		m_SpecMult = m_BaseSpecMult = 1.0f;
 		m_ProjMatrix.SetIdentity();
 		m_ObjMatrix.SetIdentity();
 		m_BaseObjMatrix.SetIdentity();
 		m_sName = "";
-		m_pSoftOccQuery          = NULL;
-		m_fAreaWidth             = 1;
-		m_fAreaHeight            = 1;
-		m_fBoxWidth              = 1.0f;
-		m_fBoxHeight             = 1.0f;
-		m_fBoxLength             = 1.0f;
-		m_fTimeScrubbed          = 0.0f;
-		m_fShadowBias            = 1.0f;
-		m_fShadowSlopeBias       = 1.0f;
+		m_pSoftOccQuery = NULL;
+		m_fAreaWidth = 1;
+		m_fAreaHeight = 1;
+		m_fBoxWidth = 1.0f;
+		m_fBoxHeight = 1.0f;
+		m_fBoxLength = 1.0f;
+		m_fTimeScrubbed = 0.0f;
+		m_fShadowBias = 1.0f;
+		m_fShadowSlopeBias = 1.0f;
 		m_fShadowResolutionScale = 1.0f;
-		m_nShadowMinResolution   = 0;
+		m_nShadowMinResolution = 0;
 		m_fShadowUpdateMinRadius = m_fRadius;
-		m_nShadowUpdateRatio     = 1 << DL_SHADOW_UPDATE_SHIFT;
-		m_nEntityId              = (uint32) - 1;
+		m_nShadowUpdateRatio = 1 << DL_SHADOW_UPDATE_SHIFT;
+		m_nEntityId = (uint32) - 1;
 		m_LensOpticsFrustumAngle = 255;
-		m_nAttenFalloffMax       = 255;
-		m_fAttenuationBulbSize   = 0.1f;
+		m_nAttenFalloffMax = 255;
+		m_fAttenuationBulbSize = 0.1f;
 	}
 
 	const Vec3& GetPosition() const
@@ -2368,13 +2353,13 @@ struct SRenderLight
 	void SetPosition(const Vec3& vPos)
 	{
 		m_BaseOrigin = vPos;
-		m_Origin     = vPos;
+		m_Origin = vPos;
 	}
 
 	//! Use this instead of m_Color.
 	void SetLightColor(const ColorF& cColor)
 	{
-		m_Color     = cColor;
+		m_Color = cColor;
 		m_BaseColor = cColor;
 	}
 
@@ -2412,7 +2397,7 @@ struct SRenderLight
 			m_pLensOpticsElement->AddRef();
 	}
 
-	void GetMemoryUsage(ICrySizer* pSizer) const { /*LATER*/}
+	void GetMemoryUsage(ICrySizer* pSizer) const { /*LATER*/ }
 
 	void AcquireResources()
 	{
@@ -2451,7 +2436,7 @@ struct SRenderLight
 
 	void SetAnimSpeed(float fAnimSpeed)
 	{
-		m_nAnimSpeed = int_round(min(fAnimSpeed * 255.0f / 4.0f, 255.0f));          // Assuming speed multiplier in range [0, 4]
+		m_nAnimSpeed = int_round(min(fAnimSpeed * 255.0f / 4.0f, 255.0f));   // Assuming speed multiplier in range [0, 4]
 	}
 
 	float GetAnimSpeed() const
@@ -2476,81 +2461,81 @@ struct SRenderLight
 	uint8  m_nStencilRef[2];
 	uint32 m_n3DEngineUpdateFrameID;
 	uint32 m_nEntityId;
-	uint32 m_Flags;                                       //!< Light flags (DLF_etc).
-	Vec3   m_Origin;                                      //!< World space position.
-	float  m_fRadius;                                     //!< xyz= Origin, w=Radius. (Do not change order).
-	ColorF m_Color;                                       //!< w component unused - todo pack spec mul into alpha (post c3 - touches quite some code).
+	uint32 m_Flags;                //!< Light flags (DLF_etc).
+	Vec3   m_Origin;               //!< World space position.
+	float  m_fRadius;              //!< xyz= Origin, w=Radius. (Do not change order).
+	ColorF m_Color;                //!< w component unused - todo pack spec mul into alpha (post c3 - touches quite some code).
 	float  m_SpecMult;
-	float  m_fHDRDynamic;                                 //!< <DEPRECATED> 0 to get the same results in HDR, <0 to get darker, >0 to get brighter.
-	int16  m_sX;                                          //!< Scissor parameters (2d extent).
+	float  m_fHDRDynamic;       //!< <DEPRECATED> 0 to get the same results in HDR, <0 to get darker, >0 to get brighter.
+	int16  m_sX;                //!< Scissor parameters (2d extent).
 	int16  m_sY;
 	int16  m_sWidth;
 	int16  m_sHeight;
 
 	// Env. probes.
-	ITexture* m_pDiffuseCubemap;                           //!< Very small cubemap texture to make a lookup for diffuse.
-	ITexture* m_pSpecularCubemap;                          //!< Cubemap texture to make a lookup for local specular.
-	Vec3  m_ProbeExtents;
-	float m_fBoxWidth;
-	float m_fBoxHeight;
-	float m_fBoxLength;
-	uint8 m_nAttenFalloffMax;
-	uint8 m_nSortPriority;
+	ITexture* m_pDiffuseCubemap;             //!< Very small cubemap texture to make a lookup for diffuse.
+	ITexture* m_pSpecularCubemap;            //!< Cubemap texture to make a lookup for local specular.
+	Vec3      m_ProbeExtents;
+	float     m_fBoxWidth;
+	float     m_fBoxHeight;
+	float     m_fBoxLength;
+	uint8     m_nAttenFalloffMax;
+	uint8     m_nSortPriority;
 
 	// Shadow map fields.
 	struct ILightSource* m_pOwner;
-	ShadowMapFrustum** m_pShadowMapFrustums;
-	float  m_fShadowBias;
-	float  m_fShadowSlopeBias;
-	float  m_fShadowResolutionScale;
-	float  m_fShadowUpdateMinRadius;
-	uint16 m_nShadowMinResolution;
-	uint16 m_nShadowUpdateRatio;
+	ShadowMapFrustum**   m_pShadowMapFrustums;
+	float                m_fShadowBias;
+	float                m_fShadowSlopeBias;
+	float                m_fShadowResolutionScale;
+	float                m_fShadowUpdateMinRadius;
+	uint16               m_nShadowMinResolution;
+	uint16               m_nShadowUpdateRatio;
 	uint8                m_ShadowMaskIndex;
 
 	// Projector.
-	ITexture* m_pLightAttenMap;                            //!< User can specify custom light attenuation gradient.
-	IDynTextureSource* m_pLightDynTexSource;               //!< Can be used to project dynamic textures.
-	ITexture* m_pLightImage;
-	Matrix44  m_ProjMatrix;
-	Matrix34  m_ObjMatrix;
-	float m_fLightFrustumAngle;
-	float m_fProjectorNearPlane;
+	ITexture*          m_pLightAttenMap;     //!< User can specify custom light attenuation gradient.
+	IDynTextureSource* m_pLightDynTexSource; //!< Can be used to project dynamic textures.
+	ITexture*          m_pLightImage;
+	Matrix44           m_ProjMatrix;
+	Matrix34           m_ObjMatrix;
+	float              m_fLightFrustumAngle;
+	float              m_fProjectorNearPlane;
 
 	// Misc fields. todo: put in cold data struct (post c3 - touches quite some code).
-	const char* m_sName;                                  //!< Optional name of the light source.
-	SShaderItem m_Shader;
-	CRenderObject* m_pObject[MAX_RECURSION_LEVELS];        //!< Object for light coronas and light flares.
+	const char*          m_sName;  //!< Optional name of the light source.
+	SShaderItem          m_Shader;
+	CRenderObject*       m_pObject[MAX_RECURSION_LEVELS];  //!< Object for light coronas and light flares.
 	IOpticsElementBase*  m_pLensOpticsElement;
 	ISoftOcclusionQuery* m_pSoftOccQuery;
-	ILightAnimWrapper* m_pLightAnim;
+	ILightAnimWrapper*   m_pLightAnim;
 
-	Matrix34 m_BaseObjMatrix;
-	float  m_fTimeScrubbed;
-	Vec3   m_BaseOrigin;                                  //!< World space position.
-	float  m_fBaseRadius;
-	ColorF m_BaseColor;                                   //!< w component unused..
-	float  m_BaseSpecMult;
+	Matrix34             m_BaseObjMatrix;
+	float                m_fTimeScrubbed;
+	Vec3                 m_BaseOrigin;  //!< World space position.
+	float                m_fBaseRadius;
+	ColorF               m_BaseColor;  //!< w component unused..
+	float                m_BaseSpecMult;
 
-	float m_fAttenuationBulbSize;
+	float                m_fAttenuationBulbSize;
 
-	float m_fAreaWidth;
-	float m_fAreaHeight;
+	float                m_fAreaWidth;
+	float                m_fAreaHeight;
 
-	float m_fFogRadialLobe;                               //!< The blend ratio of two radial lobe for volumetric fog.
+	float                m_fFogRadialLobe;  //!< The blend ratio of two radial lobe for volumetric fog.
 
-	uint8 m_nAnimSpeed;
-	uint8 m_nLightStyle;
-	uint8 m_nLightPhase;
-	uint8 m_LensOpticsFrustumAngle;                       //!< from 0 to 255, The range will be adjusted from 0 to 360 when used.
+	uint8                m_nAnimSpeed;
+	uint8                m_nLightStyle;
+	uint8                m_nLightPhase;
+	uint8                m_LensOpticsFrustumAngle;  //!< from 0 to 255, The range will be adjusted from 0 to 360 when used.
 
-	IClipVolume* m_pClipVolumes[2];
+	IClipVolume*         m_pClipVolumes[2];
 };
 
 typedef std::vector<SRenderLight> RenderLightsArray;
 
 //////////////////////////////////////////////////////////////////////
-class CDLight:public SRenderLight
+class CDLight : public SRenderLight
 {
 public:
 	CDLight() : SRenderLight()
@@ -2588,60 +2573,60 @@ public:
 
 		m_pOwner = dl.m_pOwner;
 		memcpy(m_pObject, dl.m_pObject, sizeof(m_pObject));
-		m_Shader                 = dl.m_Shader;
-		m_pShadowMapFrustums     = dl.m_pShadowMapFrustums;
-		m_pDiffuseCubemap        = dl.m_pDiffuseCubemap;
-		m_pSpecularCubemap       = dl.m_pSpecularCubemap;
-		m_pLightImage            = dl.m_pLightImage;
-		m_pLightDynTexSource     = dl.m_pLightDynTexSource;
-		m_pLightAttenMap         = dl.m_pLightAttenMap;
-		m_sName                  = dl.m_sName;
-		m_ProjMatrix             = dl.m_ProjMatrix;
-		m_ObjMatrix              = dl.m_ObjMatrix;
-		m_BaseObjMatrix          = dl.m_BaseObjMatrix;
-		m_Color                  = dl.m_Color;
-		m_BaseColor              = dl.m_BaseColor;
-		m_Origin                 = dl.m_Origin;
-		m_BaseOrigin             = dl.m_BaseOrigin;
-		m_fRadius                = dl.m_fRadius;
-		m_fBaseRadius            = dl.m_fBaseRadius;
-		m_ProbeExtents           = dl.m_ProbeExtents;
-		m_SpecMult               = dl.m_SpecMult;
-		m_BaseSpecMult           = dl.m_BaseSpecMult;
-		m_fShadowBias            = dl.m_fShadowBias;
-		m_fShadowSlopeBias       = dl.m_fShadowSlopeBias;
+		m_Shader = dl.m_Shader;
+		m_pShadowMapFrustums = dl.m_pShadowMapFrustums;
+		m_pDiffuseCubemap = dl.m_pDiffuseCubemap;
+		m_pSpecularCubemap = dl.m_pSpecularCubemap;
+		m_pLightImage = dl.m_pLightImage;
+		m_pLightDynTexSource = dl.m_pLightDynTexSource;
+		m_pLightAttenMap = dl.m_pLightAttenMap;
+		m_sName = dl.m_sName;
+		m_ProjMatrix = dl.m_ProjMatrix;
+		m_ObjMatrix = dl.m_ObjMatrix;
+		m_BaseObjMatrix = dl.m_BaseObjMatrix;
+		m_Color = dl.m_Color;
+		m_BaseColor = dl.m_BaseColor;
+		m_Origin = dl.m_Origin;
+		m_BaseOrigin = dl.m_BaseOrigin;
+		m_fRadius = dl.m_fRadius;
+		m_fBaseRadius = dl.m_fBaseRadius;
+		m_ProbeExtents = dl.m_ProbeExtents;
+		m_SpecMult = dl.m_SpecMult;
+		m_BaseSpecMult = dl.m_BaseSpecMult;
+		m_fShadowBias = dl.m_fShadowBias;
+		m_fShadowSlopeBias = dl.m_fShadowSlopeBias;
 		m_fShadowResolutionScale = dl.m_fShadowResolutionScale;
-		m_fHDRDynamic            = dl.m_fHDRDynamic;
-		m_pLensOpticsElement     = dl.m_pLensOpticsElement;
+		m_fHDRDynamic = dl.m_fHDRDynamic;
+		m_pLensOpticsElement = dl.m_pLensOpticsElement;
 		m_LensOpticsFrustumAngle = dl.m_LensOpticsFrustumAngle;
-		m_pSoftOccQuery          = dl.m_pSoftOccQuery;
-		m_fLightFrustumAngle     = dl.m_fLightFrustumAngle;
-		m_fProjectorNearPlane    = dl.m_fProjectorNearPlane;
-		m_Flags                  = dl.m_Flags;
+		m_pSoftOccQuery = dl.m_pSoftOccQuery;
+		m_fLightFrustumAngle = dl.m_fLightFrustumAngle;
+		m_fProjectorNearPlane = dl.m_fProjectorNearPlane;
+		m_Flags = dl.m_Flags;
 		m_Id = dl.m_Id;
 		m_n3DEngineUpdateFrameID = dl.m_n3DEngineUpdateFrameID;
-		m_sX                     = dl.m_sX;
-		m_sY                     = dl.m_sY;
-		m_sWidth                 = dl.m_sWidth;
-		m_sHeight                = dl.m_sHeight;
-		m_nLightStyle            = dl.m_nLightStyle;
-		m_nLightPhase            = dl.m_nLightPhase;
-		m_pLightAnim             = dl.m_pLightAnim;
-		m_fAreaWidth             = dl.m_fAreaWidth;
-		m_fAreaHeight            = dl.m_fAreaHeight;
-		m_fBoxWidth              = dl.m_fBoxWidth;
-		m_fBoxHeight             = dl.m_fBoxHeight;
-		m_fBoxLength             = dl.m_fBoxLength;
-		m_fTimeScrubbed          = dl.m_fTimeScrubbed;
-		m_nShadowMinResolution   = dl.m_nShadowMinResolution;
+		m_sX = dl.m_sX;
+		m_sY = dl.m_sY;
+		m_sWidth = dl.m_sWidth;
+		m_sHeight = dl.m_sHeight;
+		m_nLightStyle = dl.m_nLightStyle;
+		m_nLightPhase = dl.m_nLightPhase;
+		m_pLightAnim = dl.m_pLightAnim;
+		m_fAreaWidth = dl.m_fAreaWidth;
+		m_fAreaHeight = dl.m_fAreaHeight;
+		m_fBoxWidth = dl.m_fBoxWidth;
+		m_fBoxHeight = dl.m_fBoxHeight;
+		m_fBoxLength = dl.m_fBoxLength;
+		m_fTimeScrubbed = dl.m_fTimeScrubbed;
+		m_nShadowMinResolution = dl.m_nShadowMinResolution;
 		m_fShadowUpdateMinRadius = dl.m_fShadowUpdateMinRadius;
-		m_nShadowUpdateRatio     = dl.m_nShadowUpdateRatio;
-		m_nAnimSpeed             = dl.m_nAnimSpeed;
-		m_nSortPriority          = dl.m_nSortPriority;
-		m_nAttenFalloffMax       = dl.m_nAttenFalloffMax;
-		m_fAttenuationBulbSize   = dl.m_fAttenuationBulbSize;
-		m_fFogRadialLobe         = dl.m_fFogRadialLobe;
-		m_nEntityId              = dl.m_nEntityId;
+		m_nShadowUpdateRatio = dl.m_nShadowUpdateRatio;
+		m_nAnimSpeed = dl.m_nAnimSpeed;
+		m_nSortPriority = dl.m_nSortPriority;
+		m_nAttenFalloffMax = dl.m_nAttenFalloffMax;
+		m_fAttenuationBulbSize = dl.m_fAttenuationBulbSize;
+		m_fFogRadialLobe = dl.m_fFogRadialLobe;
+		m_nEntityId = dl.m_nEntityId;
 		memcpy(m_nStencilRef, dl.m_nStencilRef, sizeof(m_nStencilRef));
 		memcpy(m_pClipVolumes, dl.m_pClipVolumes, sizeof(m_pClipVolumes));
 		AcquireResources();
@@ -2658,13 +2643,13 @@ public:
 	//! Use this instead of m_Color.
 	void SetSpecularMult(float fSpecMult)
 	{
-		m_SpecMult     = fSpecMult;
+		m_SpecMult = fSpecMult;
 		m_BaseSpecMult = fSpecMult;
 	}
 
 	void SetShadowBiasParams(float fShadowBias, float fShadowSlopeBias)
 	{
-		m_fShadowBias      = fShadowBias;
+		m_fShadowBias = fShadowBias;
 		m_fShadowSlopeBias = fShadowSlopeBias;
 	}
 
@@ -2684,8 +2669,8 @@ public:
 		transMat(3, 0) = -Matrix(0, 3);
 		transMat(3, 1) = -Matrix(1, 3);
 		transMat(3, 2) = -Matrix(2, 3);
-		m_ProjMatrix   = transMat * m_ProjMatrix;
-		m_ObjMatrix    = Matrix;
+		m_ProjMatrix = transMat * m_ProjMatrix;
+		m_ObjMatrix = Matrix;
 
 		// Remove any scale
 		m_ObjMatrix.GetColumn0().NormalizeSafe(Vec3Constants<f32>::fVec3_OneX);
@@ -2715,8 +2700,8 @@ public:
 	}
 };
 
-#define DECAL_HAS_NORMAL_MAP  (1 << 0)
-#define DECAL_STATIC          (1 << 1)
+#define DECAL_HAS_NORMAL_MAP   (1 << 0)
+#define DECAL_STATIC           (1 << 1)
 #define DECAL_HAS_SPECULAR_MAP (1 << 2)
 
 struct SDeferredDecal
@@ -2727,13 +2712,13 @@ struct SDeferredDecal
 		rectTexture.w = rectTexture.h = 1.f;
 	}
 
-	Matrix34 projMatrix;    //!< Defines where projection should be applied in the world.
-	IMaterial* pMaterial;    //!< Decal material.
-	float  fAlpha;          //!< Transparency of decal, used mostly for distance fading.
-	float  fGrowAlphaRef;
-	RectF  rectTexture;     //!< Subset of texture to render.
-	uint32 nFlags;
-	uint8  nSortOrder;      //!< User defined sort order.
+	Matrix34   projMatrix; //!< Defines where projection should be applied in the world.
+	IMaterial* pMaterial;  //!< Decal material.
+	float      fAlpha;     //!< Transparency of decal, used mostly for distance fading.
+	float      fGrowAlphaRef;
+	RectF      rectTexture; //!< Subset of texture to render.
+	uint32     nFlags;
+	uint8      nSortOrder; //!< User defined sort order.
 };
 
 struct SDeferredClipVolume
@@ -2888,8 +2873,8 @@ enum EGrNodeIOSemantic
 
 struct SShaderGraphFunction
 {
-	string m_Data;
-	string m_Name;
+	string              m_Data;
+	string              m_Name;
 	std::vector<string> inParams;
 	std::vector<string> outParams;
 	std::vector<string> szInTypes;
@@ -2898,20 +2883,20 @@ struct SShaderGraphFunction
 
 struct SShaderGraphNode
 {
-	EGrNodeType m_eType;
-	EGrNodeFormat m_eFormat;
-	EGrNodeIOSemantic m_eSemantic;
-	string m_CustomSemantics;
-	string m_Name;
-	bool m_bEditable;
-	bool m_bWasAdded;
+	EGrNodeType            m_eType;
+	EGrNodeFormat          m_eFormat;
+	EGrNodeIOSemantic      m_eSemantic;
+	string                 m_CustomSemantics;
+	string                 m_Name;
+	bool                   m_bEditable;
+	bool                   m_bWasAdded;
 	SShaderGraphFunction*  m_pFunction;
 	DynArray<SShaderParam> m_Properties;
 
 	SShaderGraphNode()
 	{
-		m_eType     = eGrNode_Unknown;
-		m_eFormat   = eGrNodeFormat_Unknown;
+		m_eType = eGrNode_Unknown;
+		m_eFormat = eGrNodeFormat_Unknown;
 		m_eSemantic = eGrNodeIOSemantic_Unknown;
 		m_bEditable = false;
 		m_bWasAdded = false;
@@ -2921,20 +2906,20 @@ struct SShaderGraphNode
 };
 
 typedef std::vector<SShaderGraphNode*> FXShaderGraphNodes;
-typedef FXShaderGraphNodes::iterator FXShaderGraphNodeItor;
+typedef FXShaderGraphNodes::iterator   FXShaderGraphNodeItor;
 
 struct SShaderGraphBlock
 {
-	EGrBlockType m_eType;
+	EGrBlockType        m_eType;
 	EGrBlockSamplerType m_eSamplerType;
-	string m_ClassName;
-	FXShaderGraphNodes m_Nodes;
+	string              m_ClassName;
+	FXShaderGraphNodes  m_Nodes;
 
 	~SShaderGraphBlock();
 };
 
 typedef std::vector<SShaderGraphBlock*> FXShaderGraphBlocks;
-typedef FXShaderGraphBlocks::iterator FXShaderGraphBlocksItor;
+typedef FXShaderGraphBlocks::iterator   FXShaderGraphBlocksItor;
 
 #include <CryRenderer/RenderElements/RendElement.h>
 #include "RenderObject.h"

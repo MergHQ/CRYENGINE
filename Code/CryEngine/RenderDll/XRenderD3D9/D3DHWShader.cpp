@@ -1138,22 +1138,6 @@ float* sGetTexMatrix(UFloat4* sData, CD3D9Renderer* r, const SCGParam* ParamBind
 void sGetWind(UFloat4* sData, CD3D9Renderer* r)
 {
 	Vec4 pWind(0, 0, 0, 0);
-	SVegetationBending* pB;
-	CRenderObject* pObj = r->m_RP.m_pCurObject;
-	SRenderObjData* pOD = pObj->GetObjData();
-	if (pOD && (pB = &pOD->m_bending))
-	{
-		pWind.x = pB->m_vBending.x;
-		pWind.y = pB->m_vBending.y;
-
-		// Get phase variation based on object id
-		pWind.z = (float) ((INT_PTR) pObj->m_pRenderNode) / (float) (INT_MAX);
-		pWind.z *= 100000.0f;
-		pWind.z -= floorf(pWind.z);
-		pWind.z *= 10.0f;
-
-		pWind.w = pB->m_vBending.GetLength();
-	}
 
 	sData[0].f[0] = pWind.x;
 	sData[0].f[1] = pWind.y;
@@ -1298,32 +1282,6 @@ NO_INLINE void sGetBendInfo(UFloat4* sData, CD3D9Renderer* r, int* vals = NULL)
 {
 	const SRenderPipeline& RESTRICT_REFERENCE rRP = r->m_RP;
 	Vec4 vCurBending(0, 0, 0, 0);
-	CRenderObject* const __restrict pObj = rRP.m_pCurObject;
-	SBending bending;
-	// Set values to zero if no bending found - eg. trees created as geom entity and not vegetation,
-	// these are still rendered with bending/detailbending enabled in shader
-	// (very ineffective but they should not appear in real levels)
-	if (pObj->m_ObjFlags & FOB_BENDED)
-	{
-		Vec3 vObjPos = pObj->GetTranslation();
-
-		SVegetationBending& vb = pObj->GetObjData()->m_bending;
-		bending.m_vBending = vb.m_vBending;
-		bending.m_fMainBendingScale = vb.m_fMainBendingScale;
-		bending.m_Waves[0].m_Amp = vb.m_Waves[0].m_Amp;
-		bending.m_Waves[0].m_Freq = vb.m_Waves[0].m_Freq;
-		bending.m_Waves[0].m_Phase = vObjPos.x * 0.125f;
-		bending.m_Waves[0].m_Level = 0;
-		bending.m_Waves[0].m_eWFType = eWF_Sin;
-		bending.m_Waves[1].m_Amp = vb.m_Waves[1].m_Amp;
-		bending.m_Waves[1].m_Freq = vb.m_Waves[1].m_Freq;
-		bending.m_Waves[1].m_Phase = vObjPos.y * 0.125f;
-		bending.m_Waves[1].m_Level = 0;
-		bending.m_Waves[1].m_eWFType = eWF_Sin;
-
-		const float realTime = rRP.m_TI[rRP.m_nProcessThreadID].m_RealTime;
-		vCurBending = bending.GetShaderConstants(realTime);
-	}
 	*(alias_cast<Vec4*>(&sData[0])) = vCurBending;
 }
 
@@ -6903,38 +6861,4 @@ Vec4 CHWShader_D3D::GetFogColorGradientRadial()
 {
 	DETAILED_PROFILE_MARKER("GetFogColorGradientRadial");
 	return sGetFogColorGradientRadial(gcpRendD3D);
-}
-
-Vec4 SBending::GetShaderConstants(float realTime) const
-{
-	Vec4 result(ZERO);
-	if ((m_vBending.x * m_vBending.x + m_vBending.y * m_vBending.y) > 0.0f)
-	{
-		const Vec2& vBending = m_vBending;
-		Vec2 vAddBending(ZERO);
-
-		if (m_Waves[0].m_Amp)
-		{
-			// Fast version of CShaderMan::EvalWaveForm (for bending)
-			const SWaveForm2& RESTRICT_REFERENCE wave0 = m_Waves[0];
-			const SWaveForm2& RESTRICT_REFERENCE wave1 = m_Waves[1];
-			const float* const __restrict pSinTable = gcpRendD3D->m_RP.m_tSinTable;
-
-			int val0 = (int)((realTime * wave0.m_Freq + wave0.m_Phase) * (float)SRenderPipeline::sSinTableCount);
-			int val1 = (int)((realTime * wave1.m_Freq + wave1.m_Phase) * (float)SRenderPipeline::sSinTableCount);
-
-			float sinVal0 = pSinTable[val0 & (SRenderPipeline::sSinTableCount - 1)];
-			float sinVal1 = pSinTable[val1 & (SRenderPipeline::sSinTableCount - 1)];
-			vAddBending.x = wave0.m_Amp * sinVal0 + wave0.m_Level;
-			vAddBending.y = wave1.m_Amp * sinVal1 + wave1.m_Level;
-		}
-
-		result.x = vAddBending.x * 50.f + vBending.x;
-		result.y = vAddBending.y * 50.f + vBending.y;
-		result.z = vBending.GetLength() * 2.f;
-		result *= m_fMainBendingScale;
-		result.w = (vAddBending + vBending).GetLength() * 0.3f;
-	}
-
-	return result;
 }

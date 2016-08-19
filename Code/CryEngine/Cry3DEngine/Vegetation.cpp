@@ -257,6 +257,24 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CVegetation::FillBendingData(CRenderObject* pObj) const
+{
+	const StatInstGroup& vegetGroup = GetStatObjGroup();
+
+	if (GetCVars()->e_VegetationBending && vegetGroup.fBending)
+	{
+		pObj->m_vegetationBendingData.scale = 0.1f * vegetGroup.fBending;
+		pObj->m_vegetationBendingData.verticalRadius = vegetGroup.GetStatObj() ? vegetGroup.GetStatObj()->GetRadiusVert() : 1.0f;
+		pObj->m_ObjFlags |= FOB_BENDED | FOB_DYNAMIC_OBJECT;
+	}
+	else
+	{
+		pObj->m_vegetationBendingData.scale = 0.0f;
+		pObj->m_vegetationBendingData.verticalRadius = 0.0f;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lodValue, SSectorTextureSet* pTerrainTexInfo) const
 {
 	FUNCTION_PROFILER_3DENGINE;
@@ -282,11 +300,9 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 		{
 			// Copy vegetation static instancing data to the permanent render object.
 			pRenderObject->m_Instances.resize(m_pInstancingInfo->Count());
-			memcpy(&pRenderObject->m_Instances[0], m_pInstancingInfo->GetElements(), m_pInstancingInfo->Count() * sizeof(CRenderObject::SInstanceData));
+			memcpy(&pRenderObject->m_Instances[0], m_pInstancingInfo->GetElements(), m_pInstancingInfo->Count() * sizeof(CRenderObject::SInstanceInfo));
 		}
 	}
-
-	CRenderObject* pOriginalRenderObject = pRenderObject;
 
 	StatInstGroup& vegetGroup = GetStatObjGroup();
 
@@ -294,6 +310,8 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 
 	if (!pStatObj)
 		return;
+
+	FillBendingData(pRenderObject);
 
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	const Vec3 vObjCenter = GetBBox().GetCenter();
@@ -445,7 +463,6 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 		}
 		duplicated = true;
 	}
-	Get3DEngine()->SetupBending(pRenderObject, this, pStatObj->m_fRadiusVert, passInfo, duplicated);
 
 	if (Get3DEngine()->IsTessellationAllowed(pRenderObject, passInfo))
 	{
@@ -468,6 +485,12 @@ float CVegetation::GetSpriteSwitchDist() const
 	StatInstGroup& vegetGroup = GetStatObjGroup();
 
 	return vegetGroup.m_fSpriteSwitchDist * LERP(1.0f, CVegetation::GetScale(), GetFloatCVar(e_VegetationSpritesScaleFactor));
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CVegetation::IsBending() const
+{
+	return GetStatObjGroup().fBending != 0.0f;
 }
 
 void CVegetation::Physicalize(bool bInstant)
@@ -772,8 +795,6 @@ void CVegetation::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
 	CalcMatrix(mtx);
 	userData.objMat = mtx;
 
-	UpdateBending();
-
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	StatInstGroup& vegetGroup = GetStatObjGroup();
 	float fEntDistance2D = sqrt_tpl(vCamPos.GetSquaredDistance2D(m_vPos)) * passInfo.GetZoomFactor();
@@ -792,25 +813,6 @@ void CVegetation::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
 	userData.lodDistDissolveTransitionState.nNewLod = userData.lodDistDissolveTransitionState.nOldLod = nLod;
 	userData.lodDistDissolveTransitionState.fStartDist = 0.0f;
 	userData.lodDistDissolveTransitionState.bFarside = false;
-}
-
-void CVegetation::UpdateBending()
-{
-	const StatInstGroup& vegetGroup = GetStatObjGroup();
-	if (GetCVars()->e_VegetationBending)
-	{
-		// main bending scale (not affecting detail bending)
-		// size relative scale causing some inconsistency problems in current levels
-		// userData.m_Bending.m_fMainBendingScale = min(0.5f * vegetGroup.fBending / (vegetGroup.fVegRadiusVert * GetScale()), 1.f);
-		SRenderNodeTempData::SUserData& userData = m_pTempData->userData;
-		userData.m_Bending.m_fMainBendingScale = 0.1f * vegetGroup.fBending;
-	}
-}
-
-void CVegetation::AddBending(Vec3 const& v)
-{
-	if (m_pTempData)
-		m_pTempData->userData.vCurrentWind += v;
 }
 
 const float CVegetation::GetRadius() const

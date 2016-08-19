@@ -14,8 +14,10 @@
 class CSceneRenderPass;
 class CPermanentRenderObject;
 struct SGraphicsPipelinePassContext;
+class CRenderPolygonDataPool;
+class CREClientPoly;
 
-// This class encapsulate all renderbale information to render a camera view.
+// This class encapsulate all information required to render a camera view.
 // It stores list of render items added by 3D engine
 class CRenderView : public IRenderView
 {
@@ -176,9 +178,8 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Polygons.
-	CREClientPoly* AddClientPoly();
-	int            GetClientPolyCount() const     { return m_numUsedClientPolygons; }
-	CREClientPoly* GetClientPoly(int index) const { assert(index < m_numUsedClientPolygons); return m_polygonsPool[index]; }
+	virtual void            AddPolygon(const SRenderPolygonDescription& poly, const SRenderingPassInfo& passInfo) final;
+	CRenderPolygonDataPool* GetPolygonDataPool() { return m_polygonDataPool.get(); };
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -202,7 +203,6 @@ private:
 	void                   UpdateModifiedShaderItems();
 	void                   ClearTemporaryCompiledObjects();
 	void                   PrepareNearestShadows();
-	void                   AddRenderItemsFromClientPolys();
 	void                   CheckAndScheduleForUpdate(const SShaderItem& shaderItem);
 	template<bool bConcurrent>
 	void                   AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, int nBatchFlags, const SShaderItem& shaderItem);
@@ -255,8 +255,9 @@ private:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Simple polygons storage
-	std::vector<CREClientPoly*> m_polygonsPool;
-	int                         m_numUsedClientPolygons;
+	std::vector<CREClientPoly*>             m_polygonsPool;
+	int                                     m_numUsedClientPolygons;
+	std::shared_ptr<CRenderPolygonDataPool> m_polygonDataPool;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////

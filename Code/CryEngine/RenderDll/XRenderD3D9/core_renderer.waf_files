@@ -37,7 +37,6 @@
 		[
 			"D3DREImposter.cpp",
 			"D3DRenderAuxGeom.cpp",
-			"D3DRenderRE.cpp",
 			"D3DRenderThread.cpp",
 			"D3DRendPipeline.cpp",
 			"D3DRendPipeline_Jobs.cpp",
@@ -180,11 +179,8 @@
 		[
 			"../Scaleform/Scaleform.cpp",
 			"../Scaleform/ScaleformRender.cpp",
-			"../Scaleform/ScaleformPlayback.cpp"
-		],
-		"Scaleform_h":
-		[
-			"../Scaleform/ScaleformRender.h",
+			"../Scaleform/ScaleformPlayback.cpp",
+      "../Scaleform/ScaleformRender.h",
 			"../Scaleform/ScaleformPlayback.h"
 		]
 	},
@@ -230,11 +226,8 @@
 			"../Common/RendElements/CREVolumeObject.cpp",
 			"../Common/RendElements/CREWaterOcean.cpp",
 			"../Common/RendElements/CREWaterVolume.cpp",
-			"../Common/RendElements/RendElement.cpp"
-		],
-		"Common/RendElements_h":
-		[
-			"../Common/RendElements/CRELensOptics.h",
+			"../Common/RendElements/RendElement.cpp",
+      "../Common/RendElements/CRELensOptics.h",
 			"../Common/RendElements/CREBeam.h",
 			"../Common/RendElements/CREClientPoly.h",
 			"../Common/RendElements/CRECloud.h",
@@ -318,11 +311,8 @@
 			"../Common/Textures/Image/CImage.cpp",
 			"../Common/Textures/Image/DDSImage.cpp",
 			"../Common/Textures/Image/JpgImage.cpp",
-			"../Common/Textures/Image/TgaImage.cpp"
-		],
-		"Common/Textures/Image/Image_h":
-		[
-			"../Common/Textures/Image/CImage.h",
+			"../Common/Textures/Image/TgaImage.cpp",
+      "../Common/Textures/Image/CImage.h",
 			"../Common/Textures/Image/DDSImage.h"
 		]
 	},

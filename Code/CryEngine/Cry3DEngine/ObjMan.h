@@ -342,19 +342,6 @@ public:
 	                        EOcclusionObjectType eOcclusionObjectType,
 	                        const SRenderingPassInfo& passInfo);
 
-	void AddDecalToRenderer(float fDistance,
-	                        IMaterial* pMat,
-	                        const uint8 sortPrio,
-	                        Vec3 right,
-	                        Vec3 up,
-	                        const UCol& ucResCol,
-	                        const uint8 uBlendType,
-	                        const Vec3& vAmbientColor,
-	                        Vec3 vPos,
-	                        const int nAfterWater,
-	                        const SRenderingPassInfo& passInfo,
-	                        CVegetation* pVegetation);
-
 	// tmp containers (replacement for local static vars)
 
 	//  void DrawObjSpritesSorted(PodArray<CVegetation*> *pList, float fMaxViewDist, int useBending);
@@ -471,7 +458,7 @@ public:
 	void         BeginOcclusionCulling(const SRenderingPassInfo& passInfo);
 	void         EndOcclusionCulling();
 	void         RenderBufferedRenderMeshes(const SRenderingPassInfo& passInfo);
-	uint32			 GetResourcesModificationChecksum(IRenderNode * pOwnerNode) const;
+	uint32       GetResourcesModificationChecksum(IRenderNode* pOwnerNode) const;
 	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const SRenderingPassInfo& passInfo) const;
 
 private:

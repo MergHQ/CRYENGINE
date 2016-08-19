@@ -3684,6 +3684,12 @@ void CDeviceBufferManager::Update(uint32 frameId, bool called_during_loading)
 }
 
 #if defined(CD3D9RENDERER_DEBUG_CONSISTENCY_CHECK)
+
+CDeviceBufferManager* CDeviceBufferManager::Instance()
+{
+	return &gcpRendD3D->m_DevBufMan;
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 void* CDeviceBufferManager::BeginReadDirectIB(D3DIndexBuffer* pIB, size_t size, size_t offset)
 {

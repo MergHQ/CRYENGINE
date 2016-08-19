@@ -28,23 +28,19 @@ vert2fragZPrepass Common_ZPrepassVS(app2vertZGeneral IN)
 	OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
 	
 #if %_RT_ALPHATEST
-    // For regular materials using alpha test, we use PB_AlphaTest
-	int nInstance = 0;
-	#if %_RT_ENVIRONMENT_CUBEMAP
-		nInstance = vertPassPos.nInstance;
-	#endif
-    float4 fAlphaTest = Get_SPI_AlphaTest(nInstance);
+    float fAlphaTest = Get_MaterialAlphaTest();
+	float fDissolve = Get_SPI_Dissolve();
+	OUT.baseTC.wz = float2(fAlphaTest,fDissolve);
 
 	// todo: generalize alpha testing code
 	OUT.baseTC = vertPassPos.baseTC; 
-	OUT.baseTC.wz = fAlphaTest.wx;
 	#if %LEAVES
 		float3 worldTangentS = mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[0]);
 		float3 worldTangentT = mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[1]);
 		float3 worldTangentN = mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[2]);
 		OUT.baseTC.w = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, OUT.baseTC.w);
 	#endif
-#endif
+#endif 
 
 	return OUT;
 }

@@ -62,6 +62,9 @@ public:
 	static const buffer_handle_t invalidHandle = ~0u;
 	buffer_handle_t GetHandle() const { return m_handle; }
 
+public:
+	buffer_handle_t GetBufferHandle() const { return m_handle; };
+
 protected:
 	TempDynBufferBase() : m_handle(invalidHandle), m_numElements(0), m_DevBufMan(&gcpRendD3D->m_DevBufMan), m_validator() {}
 	~TempDynBufferBase() { m_validator.Check(Default); }

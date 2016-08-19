@@ -536,7 +536,6 @@ public:
 
 	virtual Vec3                      GetGlobalWind(bool bIndoors) const;
 	virtual bool                      SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, bool bIndoors) const;
-	void                              SetupBending(CRenderObject*& pObj, const IRenderNode* pNode, const float fRadiusVert, const SRenderingPassInfo& passInfo, bool alreadyDuplicated = false);
 	virtual IVisArea*                 GetVisAreaFromPos(const Vec3& vPos);
 	virtual bool                      IntersectsVisAreas(const AABB& box, void** pNodeCache = 0);
 	virtual bool                      ClipToVisAreas(IVisArea* pInside, Sphere& sphere, Vec3 const& vNormal, void* pNodeCache = 0);
@@ -1278,11 +1277,11 @@ private:
 	PodArray<SCollisionClass>                 m_collisionClasses;
 
 #define MAX_LIGHTS_NUM 32
-	PodArray<CCamera>                 m_arrLightProjFrustums;
+	PodArray<CCamera> m_arrLightProjFrustums;
 
-	class CTimeOfDay*                 m_pTimeOfDay;
+	class CTimeOfDay* m_pTimeOfDay;
 
-	ICVar*                            m_pLightQuality;
+	ICVar*            m_pLightQuality;
 
 	// FPS for savelevelstats
 

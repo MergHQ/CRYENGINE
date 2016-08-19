@@ -146,7 +146,7 @@ CRendElementBase::CRendElementBase()
 	m_PrevGlobal = NULL;
 	m_nID = CRendElementBase::s_nCounter++;
 	int i;
-	for (i = 0; i < MAX_CUSTOM_TEX_BINDS_NUM; i++)
+	for (i = 0; i < CRendElementBase::MAX_CUSTOM_TEX_BINDS_NUM; i++)
 		m_CustomTexBind[i] = -1;
 
 	//sAddRE(this);

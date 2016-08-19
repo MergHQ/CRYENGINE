@@ -1140,9 +1140,6 @@ void CRenderer::FreeResources(int nFlags)
 		for (int i = 0; i < sizeof(m_RP.m_RIs) / sizeof(m_RP.m_RIs[0]); ++i)
 			m_RP.m_RIs[i].Free();
 
-		stl::for_each_array(m_RP.m_SysVertexPool, stl::container_freer());
-		stl::for_each_array(m_RP.m_SysIndexPool, stl::container_freer());
-
 		// Reset render views
 		for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
 		{
@@ -1743,7 +1740,6 @@ void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 				it->second->Clear();
 		}
 
-		EF_RemovePolysFromScene();
 		m_RP.m_fogVolumeContibutions[nThreadID].resize(0);
 
 		m_pRT->RC_SetStereoEye(0);
@@ -1912,14 +1908,6 @@ float CRenderer::EF_GetWaterZElevation(float fX, float fY)
 	return eng->GetWaterLevel();
 }
 
-void CRenderer::EF_RemovePolysFromScene()
-{
-	ASSERT_IS_MAIN_THREAD(m_pRT)
-
-	m_RP.m_SysVertexPool[m_RP.m_nFillThreadID].SetUse(0);
-	m_RP.m_SysIndexPool[m_RP.m_nFillThreadID].SetUse(0);
-}
-
 void CRenderer::FX_StartMerging()
 {
 	if (m_RP.m_FrameMerge != m_RP.m_Frame)
@@ -2029,128 +2017,6 @@ void CRenderer::FX_SetMSAAFlagsRT()
 			m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_MSAA_QUALITY1];
 	}
 #endif
-}
-
-CRenderObject* CRenderer::EF_AddPolygonToScene(SShaderItem& si, int numPts, const SVF_P3F_C4B_T2F* verts, const SPipTangents* tangs, CRenderObject* obj, const SRenderingPassInfo& passInfo, uint16* inds, int ninds, int nAW)
-{
-	ASSERT_IS_MAIN_THREAD(m_pRT)
-	int nThreadID = m_RP.m_nFillThreadID;
-	const uint32 nPersFlags = m_RP.m_TI[nThreadID].m_PersFlags;
-
-	assert(si.m_pShader && si.m_pShaderResources);
-	if (!si.m_pShader || !si.m_pShaderResources)
-	{
-		Warning("CRenderer::EF_AddPolygonToScene without shader...");
-		return NULL;
-	}
-	if (si.m_nPreprocessFlags == -1)
-	{
-		if (!si.Update())
-			return obj;
-	}
-
-	CREClientPoly* pl = passInfo.GetRenderView()->AddClientPoly();
-
-	pl->m_Shader       = si;
-	pl->m_sNumVerts    = numPts;
-	pl->m_pObject      = obj;
-	pl->m_nCPFlags     = 0;
-	pl->rendItemSorter = passInfo.GetRendItemSorter();
-	if (nAW)
-		pl->m_nCPFlags |= CREClientPoly::efAfterWater;
-	if (passInfo.IsShadowPass())
-		pl->m_nCPFlags |= CREClientPoly::efShadowGen;
-
-	int nSize           = CRenderMesh::m_cSizeVF[eVF_P3F_C4B_T2F] * numPts;
-	int nOffs           = m_RP.m_SysVertexPool[nThreadID].Num();
-	SVF_P3F_C4B_T2F* vt = (SVF_P3F_C4B_T2F*)m_RP.m_SysVertexPool[nThreadID].GrowReset(nSize);
-	pl->m_nOffsVert = nOffs;
-	for (int i = 0; i < numPts; i++, vt++)
-	{
-		vt->xyz          = verts[i].xyz;
-		vt->st           = verts[i].st;
-		vt->color.dcolor = verts[i].color.dcolor;
-	}
-	if (tangs)
-	{
-		nSize = sizeof(SPipTangents) * numPts;
-		nOffs = m_RP.m_SysVertexPool[nThreadID].Num();
-		SPipTangents* t = (SPipTangents*)m_RP.m_SysVertexPool[nThreadID].GrowReset(nSize);
-		pl->m_nOffsTang = nOffs;
-		for (int i = 0; i < numPts; i++, t++)
-		{
-			*t = tangs[i];
-		}
-	}
-	else
-		pl->m_nOffsTang = -1;
-
-	pl->m_nOffsInd = m_RP.m_SysIndexPool[nThreadID].Num();
-
-	if (inds && ninds)
-	{
-		uint16* dstind = m_RP.m_SysIndexPool[nThreadID].Grow(ninds);
-		memcpy(dstind, inds, ninds * sizeof(uint16));
-		pl->m_sNumIndices = ninds;
-	}
-	else
-	{
-		uint16* dstind = m_RP.m_SysIndexPool[nThreadID].Grow((numPts - 2) * 3);
-		for (int i = 0; i < numPts - 2; i++, dstind += 3)
-		{
-			dstind[0] = 0;
-			dstind[1] = i + 1;
-			dstind[2] = i + 2;
-		}
-		pl->m_sNumIndices = (numPts - 2) * 3;
-	}
-
-	return obj;
-}
-
-CRenderObject* CRenderer::EF_AddPolygonToScene(SShaderItem& si, CRenderObject* obj, const SRenderingPassInfo& passInfo, int numPts, int ninds, SVF_P3F_C4B_T2F*& verts, SPipTangents*& tangs, uint16*& inds, int nAW)
-{
-	ASSERT_IS_MAIN_THREAD(m_pRT)
-	int nThreadID = m_RP.m_nFillThreadID;
-	const uint32 nPersFlags = m_RP.m_TI[nThreadID].m_PersFlags;
-
-	assert(si.m_pShader && si.m_pShaderResources);
-	if (!si.m_pShader || !si.m_pShaderResources)
-	{
-		Warning("CRenderer::EF_AddPolygonToScene without shader...");
-		return NULL;
-	}
-	if (si.m_nPreprocessFlags == -1)
-	{
-		if (!si.Update())
-			return obj;
-	}
-	CREClientPoly* pl = passInfo.GetRenderView()->AddClientPoly();
-
-	pl->m_Shader  = si;
-	pl->m_pObject = obj;
-	if (nAW)
-		pl->m_nCPFlags |= CREClientPoly::efAfterWater;
-	if (passInfo.IsShadowPass())
-		pl->m_nCPFlags |= CREClientPoly::efShadowGen;
-
-	//////////////////////////////////////////////////////////////////////////
-	// allocate buffer space for caller to fill
-
-	pl->m_sNumVerts = numPts;
-	pl->m_nOffsVert = m_RP.m_SysVertexPool[nThreadID].Num();
-	pl->m_nOffsTang = m_RP.m_SysVertexPool[nThreadID].Num() + sizeof(SVF_P3F_C4B_T2F) * numPts;
-	m_RP.m_SysVertexPool[nThreadID].GrowReset((sizeof(SVF_P3F_C4B_T2F) + sizeof(SPipTangents)) * numPts);
-	verts = (SVF_P3F_C4B_T2F*) &m_RP.m_SysVertexPool[nThreadID][pl->m_nOffsVert];
-	tangs = (SPipTangents*) &m_RP.m_SysVertexPool[nThreadID][pl->m_nOffsTang];
-
-	pl->m_sNumIndices = ninds;
-	pl->m_nOffsInd    = m_RP.m_SysIndexPool[nThreadID].Num();
-	inds              = m_RP.m_SysIndexPool[nThreadID].Grow(ninds);
-
-	//////////////////////////////////////////////////////////////////////////
-
-	return obj;
 }
 
 void CRenderer::Logv(const char* format, ...)

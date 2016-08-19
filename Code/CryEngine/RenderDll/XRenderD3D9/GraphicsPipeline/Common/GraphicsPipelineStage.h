@@ -26,6 +26,7 @@ struct SGraphicsPipelinePassContext
 		, passID(0)
 		, pRenderView(renderView)
 		, renderNearest(false)
+		, pCommandList(nullptr)
 	{
 	}
 
@@ -54,6 +55,9 @@ struct SGraphicsPipelinePassContext
 	TRange<int>  rendItems;
 
 	bool         renderNearest;
+
+	// Output command list.
+	CDeviceCommandList* pCommandList;
 };
 
 class CGraphicsPipelineStage

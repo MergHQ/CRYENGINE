@@ -125,13 +125,12 @@ void CSceneRenderPass::DrawRenderItems_GP2(SGraphicsPipelinePassContext& passCon
 	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
 
 	CDeviceCommandListPtr pCommandList = CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
-	CDeviceGraphicsCommandInterface* pCommandInterface = pCommandList->GetGraphicsInterface();
+	passContext.pCommandList = pCommandList.get();
 
 	PrepareRenderPassForUse(*pCommandList);
 	BeginRenderPass(*pCommandList, passContext.renderNearest);
 
 	auto& renderItems = passContext.pRenderView->GetRenderItems(rRP.m_nPassGroupID);
-	const uint32 drawParamsIndex = (passContext.pRenderView->GetType() == CRenderView::eViewType_Shadow) ? 1 : 0;
 
 	CShader* pShader = NULL;
 	CShaderResources* pRes = NULL;
@@ -169,12 +168,9 @@ void CSceneRenderPass::DrawRenderItems_GP2(SGraphicsPipelinePassContext& passCon
 		compiledObject.Init(shaderItem, pRE);
 
 		pObject->m_bInstanceDataDirty = false;  // Enforce recompilation of entire object
-		if (compiledObject.Compile(pObject, rRP.m_TI[rRP.m_nProcessThreadID].m_RealTime))
+		if (compiledObject.Compile(pObject))
 		{
-			if (!compiledObject.DrawVerification(passContext))
-				continue;
-
-			compiledObject.DrawToCommandList(*pCommandInterface, compiledObject.m_pso[passContext.stageID][passContext.passID], drawParamsIndex);
+			compiledObject.DrawToCommandList(passContext);
 		}
 	}
 

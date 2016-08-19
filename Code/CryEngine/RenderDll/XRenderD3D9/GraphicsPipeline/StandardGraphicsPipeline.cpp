@@ -234,9 +234,9 @@ void CStandardGraphicsPipeline::Init()
 		m_pDefaultInstanceExtraResources->SetConstantBuffer(eConstantBufferShaderSlot_SkinQuat, CDeviceBufferManager::CreateNullConstantBuffer(), shaderStages);
 		m_pDefaultInstanceExtraResources->SetConstantBuffer(eConstantBufferShaderSlot_SkinQuatPrev, CDeviceBufferManager::CreateNullConstantBuffer(), shaderStages);
 		m_pDefaultInstanceExtraResources->SetBuffer(EReservedTextureSlot_SkinExtraWeights, nullBuffer, false, shaderStages);
-		m_pDefaultInstanceExtraResources->SetBuffer(EReservedTextureSlot_AdjacencyInfo, nullBuffer, false, shaderStages);    // shares shader slot with EReservedTextureSlot_PatchID
-		m_pDefaultInstanceExtraResources->SetBuffer(EReservedTextureSlot_ComputeSkinVerts, nullBuffer, false, shaderStages); // shares shader slot with EReservedTextureSlot_PatchID
-		m_pDefaultInstanceExtraResources->Build();                                                                           // This needs to be a valid resource-set since it's shared by all CompiledRenderObject that don't need a unique instance
+		m_pDefaultInstanceExtraResources->SetBuffer(EReservedTextureSlot_AdjacencyInfo, nullBuffer, false, shaderStages); // shares shader slot with EReservedTextureSlot_PatchID
+		m_pDefaultInstanceExtraResources->SetBuffer(EReservedTextureSlot_ComputeSkinVerts, nullBuffer, false, shaderStages);          // shares shader slot with EReservedTextureSlot_PatchID
+		m_pDefaultInstanceExtraResources->Build();                                                                             // This needs to be a valid resource-set since it's shared by all CompiledRenderObject that don't need a unique instance
 	}
 
 	// per view constant buffer
@@ -360,7 +360,7 @@ int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo 
 	if (m_pCurrentRenderView) // called from within CStandardGraphicsPipeline::Execute() scope => use renderview cameras
 	{
 		for (CCamera::EEye eye = CCamera::eEye_Left; eye != CCamera::eEye_eCount; eye = CCamera::EEye(eye + 1))
-		{
+	{
 			uint32 renderingFlags = m_renderingFlags;
 
 			if ((renderingFlags & (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE)) == 0) // non-stereo case
@@ -392,16 +392,16 @@ int CStandardGraphicsPipeline::GetViewInfo(CStandardGraphicsPipeline::SViewInfo 
 		viewInfo[viewInfoCount].viewport = viewport;
 		viewInfo[viewInfoCount].downscaleFactor = Vec4(rp.m_CurDownscaleFactor.x, rp.m_CurDownscaleFactor.y, pRenderer->m_PrevViewportScale.x, pRenderer->m_PrevViewportScale.y);
 
-		if (rp.m_ShadowInfo.m_pCurShadowFrustum && (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
-		{
-			const SRenderPipeline::ShadowInfo& shadowInfo = rp.m_ShadowInfo;
-			assert(shadowInfo.m_nOmniLightSide >= 0 && shadowInfo.m_nOmniLightSide < OMNI_SIDES_NUM);
+	if (rp.m_ShadowInfo.m_pCurShadowFrustum && (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
+	{
+		const SRenderPipeline::ShadowInfo& shadowInfo = rp.m_ShadowInfo;
+		assert(shadowInfo.m_nOmniLightSide >= 0 && shadowInfo.m_nOmniLightSide < OMNI_SIDES_NUM);
 
-			CCamera& cam = shadowInfo.m_pCurShadowFrustum->FrustumPlanes[shadowInfo.m_nOmniLightSide];
+		CCamera& cam = shadowInfo.m_pCurShadowFrustum->FrustumPlanes[shadowInfo.m_nOmniLightSide];
 			viewInfo[viewInfoCount].pFrustumPlanes = cam.GetFrustumPlane(0);
-		}
-		else
-		{
+	}
+	else
+	{
 			viewInfo[viewInfoCount].pFrustumPlanes = pRenderer->GetCamera().GetFrustumPlane(0);
 		}
 
@@ -438,9 +438,10 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 		const SViewInfo& viewInfo = pViewInfo[i];
 		HLSL_PerViewGlobalConstantBuffer& cb = bufferData[i];
 
-		const float time = rp.m_TI[rp.m_nProcessThreadID].m_RealTime;
+	const float time = rp.m_TI[rp.m_nProcessThreadID].m_RealTime;
 		const bool bReverseDepth = (viewInfo.flags & CStandardGraphicsPipeline::SViewInfo::eFlags_ReverseDepth) != 0;
-		const bool bMirrorCull = (viewInfo.flags & CStandardGraphicsPipeline::SViewInfo::eFlags_MirrorCull) != 0;
+
+
 
 		cb.CV_HPosScale = viewInfo.downscaleFactor;
 		cb.CV_ScreenSize = Vec4(float(viewInfo.viewport.nWidth),
@@ -482,18 +483,18 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 		cb.CV_CamFrontVector = Vec4(viewInfo.pRenderCamera->vZ.GetNormalized(), 0);
 		cb.CV_CamUpVector = Vec4(viewInfo.pRenderCamera->vY.GetNormalized(), 0);
 
-		// CV_NearFarClipDist
-		{
-			// Note: CV_NearFarClipDist.z is used to put the weapon's depth range into correct relation to the whole scene
-			// when generating the depth texture in the z pass (_RT_NEAREST)
+	// CV_NearFarClipDist
+	{
+		// Note: CV_NearFarClipDist.z is used to put the weapon's depth range into correct relation to the whole scene
+		// when generating the depth texture in the z pass (_RT_NEAREST)
 			cb.CV_NearFarClipDist = Vec4(viewInfo.pRenderCamera->fNear,
 			                             viewInfo.pRenderCamera->fFar,
 			                             viewInfo.pRenderCamera->fFar / gEnv->p3DEngine->GetMaxViewDistance(),
 			                             1.0f / viewInfo.pRenderCamera->fFar);
-		}
+	}
 
-		// CV_ProjRatio
-		{
+	// CV_ProjRatio
+	{
 			float zn = viewInfo.pRenderCamera->fNear;
 			float zf = viewInfo.pRenderCamera->fFar;
 			float hfov = viewInfo.pCamera->GetHorizontalFov();
@@ -501,57 +502,57 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 			cb.CV_ProjRatio.y = bReverseDepth ? zn / (zf - zn) : zn / (zn - zf);
 			cb.CV_ProjRatio.z = 1.0f / hfov;
 			cb.CV_ProjRatio.w = 1.0f;
-		}
+	}
 
-		// CV_NearestScaled
-		{
+	// CV_NearestScaled
+	{
 			float zn = viewInfo.pRenderCamera->fNear;
 			float zf = viewInfo.pRenderCamera->fFar;
-			float nearZRange = pRenderer->CV_r_DrawNearZRange;
-			float camScale = pRenderer->CV_r_DrawNearFarPlane / gEnv->p3DEngine->GetMaxViewDistance();
+		float nearZRange = pRenderer->CV_r_DrawNearZRange;
+		float camScale = pRenderer->CV_r_DrawNearFarPlane / gEnv->p3DEngine->GetMaxViewDistance();
 			cb.CV_NearestScaled.x = bReverseDepth ? 1.0f - zf / (zf - zn) * nearZRange : zf / (zf - zn) * nearZRange;
 			cb.CV_NearestScaled.y = bReverseDepth ? zn / (zf - zn) * nearZRange * nearZRange : zn / (zn - zf) * nearZRange * nearZRange;
 			cb.CV_NearestScaled.z = bReverseDepth ? 1.0f - (nearZRange - 0.001f) : nearZRange - 0.001f;
 			cb.CV_NearestScaled.w = 1.0f;
-		}
+	}
 
-		// CV_TessInfo
-		{
-			// We want to obtain the edge length in pixels specified by CV_r_tessellationtrianglesize
-			// Therefore the tess factor would depend on the viewport size and CV_r_tessellationtrianglesize
-			static const ICVar* pCV_e_TessellationMaxDistance(gEnv->pConsole->GetCVar("e_TessellationMaxDistance"));
-			assert(pCV_e_TessellationMaxDistance);
+	// CV_TessInfo
+	{
+		// We want to obtain the edge length in pixels specified by CV_r_tessellationtrianglesize
+		// Therefore the tess factor would depend on the viewport size and CV_r_tessellationtrianglesize
+		static const ICVar* pCV_e_TessellationMaxDistance(gEnv->pConsole->GetCVar("e_TessellationMaxDistance"));
+		assert(pCV_e_TessellationMaxDistance);
 
 			const float hfov = viewInfo.pCamera->GetHorizontalFov();
 			cb.CV_TessInfo.x = sqrtf(float(viewInfo.viewport.nWidth * viewInfo.viewport.nHeight)) / (hfov * pRenderer->CV_r_tessellationtrianglesize);
 			cb.CV_TessInfo.y = pRenderer->CV_r_displacementfactor;
 			cb.CV_TessInfo.z = pCV_e_TessellationMaxDistance->GetFVal();
 			cb.CV_TessInfo.w = (float)CRenderer::CV_r_ParticlesTessellationTriSize;
-		}
+	}
 
 		cb.CV_FrustumPlaneEquation.SetRow4(0, (Vec4&)viewInfo.pFrustumPlanes[FR_PLANE_RIGHT]);
 		cb.CV_FrustumPlaneEquation.SetRow4(1, (Vec4&)viewInfo.pFrustumPlanes[FR_PLANE_LEFT]);
 		cb.CV_FrustumPlaneEquation.SetRow4(2, (Vec4&)viewInfo.pFrustumPlanes[FR_PLANE_TOP]);
 		cb.CV_FrustumPlaneEquation.SetRow4(3, (Vec4&)viewInfo.pFrustumPlanes[FR_PLANE_BOTTOM]);
 
-		// Shadow specific
+	// Shadow specific
+	{
+		const ShadowMapFrustum* pShadowFrustum = rp.m_ShadowInfo.m_pCurShadowFrustum;
+		if (pShadowFrustum && (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
 		{
-			const ShadowMapFrustum* pShadowFrustum = rp.m_ShadowInfo.m_pCurShadowFrustum;
-			if (pShadowFrustum && (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_SHADOWGEN))
-			{
 				cb.CV_ShadowLightPos = Vec4(pShadowFrustum->vLightSrcRelPos + pShadowFrustum->vProjTranslation, 0);
 				cb.CV_ShadowViewPos = Vec4(rp.m_ShadowInfo.vViewerPos, 0);
-			}
-			else
-			{
+		}
+		else
+		{
 				cb.CV_ShadowLightPos = Vec4(0, 0, 0, 0);
 				cb.CV_ShadowViewPos = Vec4(0, 0, 0, 0);
-			}
 		}
-		if (gRenDev->m_pCurWindGrid)
-		{
-			float fSizeWH = (float)gRenDev->m_pCurWindGrid->m_nWidth * gRenDev->m_pCurWindGrid->m_fCellSize * 0.5f;
-			float fSizeHH = (float)gRenDev->m_pCurWindGrid->m_nHeight * gRenDev->m_pCurWindGrid->m_fCellSize * 0.5f;
+	}
+	if (gRenDev->m_pCurWindGrid)
+	{
+		float fSizeWH = (float)gRenDev->m_pCurWindGrid->m_nWidth * gRenDev->m_pCurWindGrid->m_fCellSize * 0.5f;
+		float fSizeHH = (float)gRenDev->m_pCurWindGrid->m_nHeight * gRenDev->m_pCurWindGrid->m_fCellSize * 0.5f;
 			cb.CV_WindGridOffset = Vec4(gRenDev->m_pCurWindGrid->m_vCentr.x - fSizeWH, gRenDev->m_pCurWindGrid->m_vCentr.y - fSizeHH, 1.0f / (float)gRenDev->m_pCurWindGrid->m_nWidth, 1.0f / (float)gRenDev->m_pCurWindGrid->m_nHeight);
 		}
 	}
@@ -702,14 +703,14 @@ std::array<int, EFSS_MAX> CStandardGraphicsPipeline::GetDefaultMaterialSamplers(
 	std::array<int, EFSS_MAX> result =
 	{
 		{
-			gcpRendD3D->m_nMaterialAnisoHighSampler,                                                             // EFSS_ANISO_HIGH
-			gcpRendD3D->m_nMaterialAnisoLowSampler,                                                              // EFSS_ANISO_LOW
-			CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0)),         // EFSS_TRILINEAR
-			CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0)),          // EFSS_BILINEAR
-			CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0)),      // EFSS_TRILINEAR_CLAMP
-			CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0)),       // EFSS_BILINEAR_CLAMP
-			gcpRendD3D->m_nMaterialAnisoSamplerBorder,                                                           // EFSS_ANISO_HIGH_BORDER
-			CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0)),   // EFSS_TRILINEAR_BORDER
+		  gcpRendD3D->m_nMaterialAnisoHighSampler,                                                             // EFSS_ANISO_HIGH
+		  gcpRendD3D->m_nMaterialAnisoLowSampler,                                                              // EFSS_ANISO_LOW
+		  CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0)),         // EFSS_TRILINEAR
+		  CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_WRAP, TADDR_WRAP, TADDR_WRAP, 0x0)),          // EFSS_BILINEAR
+		  CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0)),      // EFSS_TRILINEAR_CLAMP
+		  CTexture::GetTexState(STexState(FILTER_BILINEAR, TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP, 0x0)),       // EFSS_BILINEAR_CLAMP
+		  gcpRendD3D->m_nMaterialAnisoSamplerBorder,                                                           // EFSS_ANISO_HIGH_BORDER
+		  CTexture::GetTexState(STexState(FILTER_TRILINEAR, TADDR_BORDER, TADDR_BORDER, TADDR_BORDER, 0x0)),   // EFSS_TRILINEAR_BORDER
 		}
 	};
 
@@ -810,7 +811,7 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 		if (!m_bUtilityPassesInitialized) s_passSimpleDownsample = CreateStaticUtilityPass<CStretchRectPass>();
 
 		if (CRenderer::CV_r_HDRBloomQuality > 0)
-			s_passStableDownsample->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetScaled[0], true);
+		s_passStableDownsample->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetScaled[0], true);
 		else
 			s_passSimpleDownsample->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetScaled[0]);
 	}
@@ -831,7 +832,7 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 
 	if (pRenderer->m_CurRenderEye != RIGHT_EYE)
 	{
-		m_pAutoExposureStage->Execute();
+	m_pAutoExposureStage->Execute();
 	}
 
 	m_pBloomStage->Execute();

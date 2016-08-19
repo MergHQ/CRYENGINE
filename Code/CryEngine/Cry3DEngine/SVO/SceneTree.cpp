@@ -599,8 +599,14 @@ bool CSvoEnv::Render()
 		static _smart_ptr<IMaterial> pMat = Cry3DEngineBase::MakeSystemMaterialFromShader("Total_Illumination.SvoDebugDraw", &res);
 		pObjVox->m_pCurrMaterial = pMat;
 
-		Cry3DEngineBase::GetRenderer()->EF_AddPolygonToScene(pMat->GetShaderItem(),
-		                                                     4, &arrVerts[0], NULL, pObjVox, (*CVoxelSegment::m_pCurrPassInfo), &arrIndices[0], 6, false);
+		SRenderPolygonDescription poly(
+		  pObjVox,
+		  pMat->GetShaderItem(),
+		  4, &arrVerts[0], nullptr,
+		  &arrIndices[0], 6,
+		  EFSLIST_DECAL, false);
+
+		CVoxelSegment::m_pCurrPassInfo->GetIRenderView()->AddPolygon(poly, (*CVoxelSegment::m_pCurrPassInfo));
 
 		if (ICVar* pV = gEnv->pConsole->GetCVar("r_UseAlphaBlend"))
 			pV->Set(1);

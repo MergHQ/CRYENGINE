@@ -127,6 +127,16 @@ struct SRendItem
 		int nRes = (nVal >> 6) & (MAX_REND_SHADER_RES - 1);
 		sh.m_pShaderResources = (IRenderShaderResources*)((nRes) ? CShader::s_ShaderResources_known[nRes] : nullptr);
 	}
+	static inline uint32 PackShaderItem(SShaderItem& shaderItem)
+	{
+		uint32 nResID = shaderItem.m_pShaderResources ? ((CShaderResources*)(shaderItem.m_pShaderResources))->m_Id : 0;
+		uint32 nShaderId = ((CShader*)shaderItem.m_pShader)->mfGetID();
+		assert(nResID < CShader::s_ShaderResources_known.size());
+		assert(nShaderId != 0);
+		uint32 value = (nResID << 6) | (nShaderId << 20) | (shaderItem.m_nTechnique & 0x3f);
+		return value;
+	}
+
 	static bool   IsListEmpty(int nList);
 	static uint32 BatchFlags(int nList);
 
@@ -379,6 +389,10 @@ struct CRY_ALIGN(128) SPipeStat
 	int m_nNumBoundUniformBuffers[2];  // Local=0,PCIe=1 - or in tech-speak, L1=0 and L0=1
 	int m_nNumBoundUniformTextures[2]; // Local=0,PCIe=1 - or in tech-speak, L1=0 and L0=1
 #endif
+
+	static SPipeStat* Out() { return s_pCurrentOutput; }
+
+	static SPipeStat* s_pCurrentOutput;
 };
 
 //Batch flags.
@@ -777,46 +791,43 @@ struct SRenderPipeline
 	// particle data for writing directly to VMEM
 	CParticleBufferSet                  m_particleBuffer;
 
-	int                                m_nStreamOffset[3]; // deprecated!
+	int                                 m_nStreamOffset[3]; // deprecated!
 
 	SOnDemandD3DVertexDeclarations      m_D3DVertexDeclaration;
 	SOnDemandD3DVertexDeclarationCaches m_D3DVertexDeclarationCache[1 << VSF_NUM][2]; // [StreamMask][Morph][VertexFmt]
 	SOnDemandD3DStreamProperties        m_D3DStreamProperties[VSF_NUM];
 
-	TArray<SVertexDeclaration*>        m_CustomVD;
+	TArray<SVertexDeclaration*>         m_CustomVD;
 
-	uint16*                            m_RendIndices;
-	uint16*                            m_SysRendIndices;
-	byte*                              m_SysArray;
-	int                                m_SizeSysArray;
+	uint16*                             m_RendIndices;
+	uint16*                             m_SysRendIndices;
+	byte*                               m_SysArray;
+	int                                 m_SizeSysArray;
 
-	TArray<byte>                       m_SysVertexPool[RT_COMMAND_BUF_COUNT];
-	TArray<uint16>                     m_SysIndexPool[RT_COMMAND_BUF_COUNT];
+	int                                 m_RendNumGroup;
+	int                                 m_RendNumIndices;
+	int                                 m_FirstIndex;
+	int                                 m_FirstVertex;
 
-	int                                m_RendNumGroup;
-	int                                m_RendNumIndices;
-	int                                m_FirstIndex;
-	int                                m_FirstVertex;
+	SEfResTexture*                      m_ShaderTexResources[MAX_TMU];
 
-	SEfResTexture*                     m_ShaderTexResources[MAX_TMU];
+	int                                 m_Frame;
+	int                                 m_FrameMerge;
 
-	int                                m_Frame;
-	int                                m_FrameMerge;
+	float                               m_fCurOpacity;
 
-	float                              m_fCurOpacity;
+	SPipeStat                           m_PS[RT_COMMAND_BUF_COUNT];
+	DynArray<SRTargetStat>              m_RTStats;
 
-	SPipeStat                          m_PS[RT_COMMAND_BUF_COUNT];
-	DynArray<SRTargetStat>             m_RTStats;
+	int                                 m_MaxVerts;
+	int                                 m_MaxTris;
 
-	int                                m_MaxVerts;
-	int                                m_MaxTris;
+	int                                 m_RECustomTexBind[8];
+	int                                 m_ShadowCustomTexBind[8];
+	bool                                m_ShadowCustomComparisonSampling[8];
 
-	int                                m_RECustomTexBind[8];
-	int                                m_ShadowCustomTexBind[8];
-	bool                               m_ShadowCustomComparisonSampling[8];
-
-	CRenderView*                       RenderView() const { return m_pCurrentRenderView; }
-	CRenderView*                       m_pCurrentRenderView;
+	CRenderView*                        RenderView() const { return m_pCurrentRenderView; }
+	CRenderView*                        m_pCurrentRenderView;
 
 	// Separate render views per recursion
 	_smart_ptr<CRenderView> m_pRenderViews[RT_COMMAND_BUF_COUNT][MAX_REND_RECURSION_LEVELS];
@@ -872,8 +883,8 @@ public:
 
 	// Arguments
 	//   vertexformat - 0..VERTEX_FORMAT_NUMS-1
-	void OnDemandVertexDeclaration(SOnDemandD3DVertexDeclaration& out, const int nStreamMask, const int vertexformat, const bool bMorph, const bool bInstanced);
-	void InitD3DVertexDeclarations();
+	void          OnDemandVertexDeclaration(SOnDemandD3DVertexDeclaration& out, const int nStreamMask, const int vertexformat, const bool bMorph, const bool bInstanced);
+	void          InitD3DVertexDeclarations();
 	EVertexFormat AddD3DVertexDeclaration(size_t numDescs, const D3D11_INPUT_ELEMENT_DESC* inputLayout);
 	EVertexFormat MaxD3DVertexDeclaration() { return EVertexFormat(m_D3DVertexDeclaration.size()); }
 };

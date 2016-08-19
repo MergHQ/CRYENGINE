@@ -21,7 +21,7 @@ CThreadSafeRendererContainer<CMotionBlur::OMBParamsMap::value_type> CMotionBlur:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CMotionBlur::GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res)
+bool CMotionBlur::GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res)
 {
 	assert(pObj);
 
@@ -38,11 +38,12 @@ void CMotionBlur::GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res)
 		if (it != m_pOMBData[nObjFrameReadID].end())
 		{
 			res = it->second.mObjToWorld;
-			return;
+			return true;
 		}
 	}
 
 	res = pObj->m_II.m_Matrix;
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

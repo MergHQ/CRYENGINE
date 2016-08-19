@@ -200,6 +200,16 @@ EVertexFormat CREMeshImpl::GetVertexFormat() const
 	return eVF_Unknown;
 }
 
+//////////////////////////////////////////////////////////////////////////
+bool CREMeshImpl::Compile(CRenderObject* pObj)
+{
+	if (!m_pRenderMesh)
+		return false;
+
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
 bool CREMeshImpl::GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessellation)
 {
 	if (!m_pRenderMesh)
@@ -344,7 +354,7 @@ bool CREMeshImpl::mfDraw(CShader* ef, SShaderPass* sl)
 	return true;
 }
 
-void CREMeshImpl::Draw(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx)
+void CREMeshImpl::DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx)
 {
 	//@TODO: implement
 

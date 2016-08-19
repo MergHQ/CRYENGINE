@@ -78,40 +78,25 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
       OUT.baseTC.xy *= CM_SilPomDetailParams.xy;
     #endif
 
-		float4 fAlphaTest = 0.0f;
+		float fAlphaTest = 0.0f;
+		float fDissolve = 0.0f;
     #if %_RT_ALPHATEST || %_RT_DISSOLVE
       #if %_RT_DISSOLVE
-        // For dissolve and instancing, we use PI_AlphaTest
-		  int nInstance = 0;
-		#if %_RT_ENVIRONMENT_CUBEMAP
-		  nInstance = vertPassPos.nInstance;
-		#endif
-        fAlphaTest = Get_SPI_AlphaTest(nInstance);
-        #if %_RT_INSTANCING_ATTR
-          {
-            float4 baseTC;
-            #fetchinst (baseTC = IN.InstAlphaTest, vertPassPos.nInstance);
-            fAlphaTest = baseTC;
-          }
-        #endif
+        fAlphaTest = Get_MaterialAlphaTest();
+		fDissolve = Get_SPI_Dissolve();
       #else
-        // For regular materials using alpha test, we use PB_AlphaTest
-		  int nInstance = 0;
-		#if %_RT_ENVIRONMENT_CUBEMAP
-		  nInstance = vertPassPos.nInstance;
-		#endif
-        fAlphaTest = Get_SPI_AlphaTest(nInstance);
+		fAlphaTest = Get_MaterialAlphaTest();
       #endif
-      OUT.baseTC.wz = fAlphaTest.wx;
+      OUT.baseTC.wz = float2(fAlphaTest,fDissolve);
       #if %LEAVES
-				OUT.baseTC.w = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, fAlphaTest.w);
+				OUT.baseTC.w = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, fAlphaTest);
       #endif
     #endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Output tangents
 
-		OUT.vNormalWS = float4(worldTangentN.xyz, fAlphaTest.y); // w= dissolve out sign
+		OUT.vNormalWS = float4(worldTangentN.xyz, 0); // w= dissolve out sign
 
 	  #if !%GRASS
 		  OUT.vTangent = float4(worldTangentS, vertPassPos.Tangent.w); 

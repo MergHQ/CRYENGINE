@@ -1410,8 +1410,6 @@ void CD3D9Renderer::BeginFrame()
 	assert(m_RP.m_TI[m_RP.m_nFillThreadID].m_matView->GetDepth() == 0);
 	assert(m_RP.m_TI[m_RP.m_nFillThreadID].m_matProj->GetDepth() == 0);
 	g_SelectedTechs.resize(0);
-	m_RP.m_SysVertexPool[m_RP.m_nFillThreadID].SetUse(0);
-	m_RP.m_SysIndexPool[m_RP.m_nFillThreadID].SetUse(0);
 	if (gEnv->p3DEngine)
 		gEnv->p3DEngine->ResetCoverageBufferSignalVariables();
 
@@ -1655,6 +1653,7 @@ void CD3D9Renderer::RT_BeginFrame()
 	{
 		memset(&m_RP.m_PS[m_RP.m_nProcessThreadID], 0, sizeof(SPipeStat));
 		m_RP.m_RTStats.resize(0);
+		SPipeStat::s_pCurrentOutput = &m_RP.m_PS[m_RP.m_nProcessThreadID];
 	}
 
 	m_OcclQueriesUsed = 0;
@@ -1864,7 +1863,7 @@ bool CD3D9Renderer::CaptureFrameBufferToFile(const char* pFilePath, CTexture* pR
 
 		int numSSSamplesX = IsEditorMode() ? m_CurrContext->m_nSSSamplesX : 1;
 		int numSSSamplesY = IsEditorMode() ? m_CurrContext->m_nSSSamplesY : 1;
-		
+
 		if (bbDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
 		    || numSSSamplesX > 1
 		    || numSSSamplesY > 1)
@@ -4145,7 +4144,6 @@ void CD3D9Renderer::RT_EndFrame()
 	if (gEnv && gEnv->pHardwareMouse)
 		gEnv->pHardwareMouse->Render();
 
-	
 	bool bProfilerOnSocialScreen = false;
 #if !CRY_PLATFORM_ORBIS  // PSVR currently does not use a custom social screen
 	if (const ICVar* pSocialScreenCVar = gEnv->pConsole->GetCVar("hmd_social_screen"))

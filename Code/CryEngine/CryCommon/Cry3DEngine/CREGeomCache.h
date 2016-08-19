@@ -55,7 +55,7 @@ public:
 	// accessors for new render pipeline
 	virtual EVertexFormat GetVertexFormat() const override;
 	virtual bool          GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation = false) override;
-	virtual void          Draw(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx) override;
+	virtual void          DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx) override;
 
 private:
 	uint16        m_materialId;

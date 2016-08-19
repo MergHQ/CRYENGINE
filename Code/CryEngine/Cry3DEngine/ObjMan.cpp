@@ -821,107 +821,6 @@ bool CObjManager::GetStaticObjectBBox(int nType, Vec3& vBoxMin, Vec3& vBoxMax, i
 	return true;
 }
 
-void CObjManager::AddDecalToRenderer(float fDistance,
-                                     IMaterial* pMat,
-                                     const uint8 sortPrio,
-                                     Vec3 right,
-                                     Vec3 up,
-                                     const UCol& ucResCol,
-                                     const uint8 uBlendType,
-                                     const Vec3& vAmbientColor,
-                                     Vec3 vPos,
-                                     const int nAfterWater,
-                                     const SRenderingPassInfo& passInfo,
-                                     CVegetation* pVegetation)
-{
-	FUNCTION_PROFILER_3DENGINE;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "AddDecalToRenderer");
-
-	bool bBending = pVegetation && pVegetation->m_pTempData && !!pVegetation->m_pTempData->userData.m_Bending.m_vBending;
-
-	if (bBending)
-	{
-		// transfer decal into object space
-		Matrix34A objMat;
-		IStatObj* pEntObject = pVegetation->GetEntityStatObj(0, 0, &objMat);
-		assert(pEntObject);
-		if (pEntObject)
-		{
-			objMat.Invert();
-			vPos = objMat.TransformPoint(vPos);
-			right = objMat.TransformVector(right);
-			up = objMat.TransformVector(up);
-		}
-	}
-
-	// repeated objects are free imedeately in renderer
-	CRenderObject* pOb(GetIdentityCRenderObject(passInfo.ThreadID()));
-	if (!pOb)
-		return;
-
-	if (bBending)
-	{
-		pVegetation->GetEntityStatObj(0, 0, &pOb->m_II.m_Matrix);
-		pOb->m_ObjFlags |= FOB_TRANS_MASK;
-		CStatObj* pBody = pVegetation->GetStatObj();
-		assert(pBody);
-		if (pBody)
-			Get3DEngine()->SetupBending(pOb, pVegetation, pBody->m_fRadiusVert, passInfo);
-	}
-
-	// prepare render object
-	pOb->m_fDistance = fDistance;
-	pOb->m_fAlpha = (float)ucResCol.bcolor[3] / 255.f;
-	pOb->m_II.m_AmbColor = vAmbientColor;
-	pOb->m_fSort = 0;
-	pOb->m_ObjFlags |= FOB_DECAL | FOB_INSHADOW;
-	pOb->m_nSort = sortPrio;
-
-	SVF_P3F_C4B_T2F pVerts[4];
-	uint16 pIndices[6];
-
-	// TODO: determine whether this is a decal on opaque or transparent geometry
-	// (put it in the respective renderlist for correct shadowing)
-	// fill general vertex data
-	pVerts[0].xyz = (-right - up) + vPos;
-	pVerts[0].st = Vec2(0, 1);
-	pVerts[0].color.dcolor = ~0;
-
-	pVerts[1].xyz = (right - up) + vPos;
-	pVerts[1].st = Vec2(1, 1);
-	pVerts[1].color.dcolor = ~0;
-
-	pVerts[2].xyz = (right + up) + vPos;
-	pVerts[2].st = Vec2(1, 0);
-	pVerts[2].color.dcolor = ~0;
-
-	pVerts[3].xyz = (-right + up) + vPos;
-	pVerts[3].st = Vec2(0, 0);
-	pVerts[3].color.dcolor = ~0;
-
-	// prepare tangent space (tangent, bitangent) and fill it in
-	Vec3 rightUnit(right.GetNormalized());
-	Vec3 upUnit(up.GetNormalized());
-
-	SPipTangents pTangents[4];
-
-	pTangents[0] = SPipTangents(rightUnit, -upUnit, -1);
-	pTangents[1] = pTangents[0];
-	pTangents[2] = pTangents[0];
-	pTangents[3] = pTangents[0];
-
-	// fill decals topology (two triangles)
-	pIndices[0] = 0;
-	pIndices[1] = 1;
-	pIndices[2] = 2;
-
-	pIndices[3] = 0;
-	pIndices[4] = 2;
-	pIndices[5] = 3;
-
-	GetRenderer()->EF_AddPolygonToScene(pMat->GetShaderItem(), 4, pVerts, pTangents, pOb, passInfo, pIndices, 6, nAfterWater);
-}
-
 void CObjManager::GetMemoryUsage(class ICrySizer* pSizer) const
 {
 	{
@@ -1344,7 +1243,7 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 				pTempData->userData.arrPermanentRenderObjects[nLod] = pRenderObject;
 
 				// Store resources modification checksum
-				if(pTempData->IsValid())
+				if (pTempData->IsValid())
 					pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
 			}
 
@@ -1359,7 +1258,7 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint32 CObjManager::GetResourcesModificationChecksum(IRenderNode * pOwnerNode) const
+uint32 CObjManager::GetResourcesModificationChecksum(IRenderNode* pOwnerNode) const
 {
 	uint32 nModificationId = 1;
 

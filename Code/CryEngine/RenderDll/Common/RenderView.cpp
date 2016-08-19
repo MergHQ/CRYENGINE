@@ -9,6 +9,8 @@
 #include "GraphicsPipeline/ClipVolumes.h"
 #include "CompiledRenderObject.h"
 
+#include "RendElements/CREClientPoly.h"
+
 //////////////////////////////////////////////////////////////////////////
 CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentView, ShadowMapFrustum* pShadowFrustumOwner)
 	: m_usageMode(eUsageModeUndefined)
@@ -37,6 +39,8 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 
 	m_permanentObjects.Init();
 	m_permanentObjects.SetNoneWorkerThreadID(gEnv->mMainThreadId);
+
+	m_polygonDataPool.reset(new CRenderPolygonDataPool);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -48,6 +52,7 @@ CRenderView::~CRenderView()
 void CRenderView::Clear()
 {
 	m_numUsedClientPolygons = 0;
+	m_polygonDataPool->Clear();
 
 	for (int i = 0; i < EFSLIST_NUM; i++)
 	{
@@ -477,14 +482,91 @@ const std::vector<SWaterRippleInfo>& CRenderView::GetWaterRipples() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-CREClientPoly* CRenderView::AddClientPoly()
+void CRenderView::AddPolygon(const SRenderPolygonDescription& poly, const SRenderingPassInfo& passInfo)
 {
+	SShaderItem& shaderItem = const_cast<SShaderItem&>(poly.shaderItem);
+
+	assert(shaderItem.m_pShader && shaderItem.m_pShaderResources);
+	if (!shaderItem.m_pShader || !shaderItem.m_pShaderResources)
+	{
+		Warning("CRenderView::AddPolygon without shader...");
+		return;
+	}
+	if (shaderItem.m_nPreprocessFlags == -1)
+	{
+		if (!shaderItem.Update())
+			return;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Get next client poly from pool
 	int nIndex = m_numUsedClientPolygons++;
 	if (nIndex >= m_polygonsPool.size())
 	{
 		m_polygonsPool.push_back(new CREClientPoly);
 	}
-	return m_polygonsPool[nIndex];
+	CREClientPoly* pl = m_polygonsPool[nIndex];
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// Fill CREClientPoly structure
+	pl->AssignPolygon(poly, passInfo, GetPolygonDataPool());
+
+	//////////////////////////////////////////////////////////////////////////
+	// Add Render Item directly here
+	//////////////////////////////////////////////////////////////////////////
+	uint32 batchFlags = FB_GENERAL;
+
+	ERenderListID renderListId = (ERenderListID)poly.renderListId;
+
+	bool bSkipAdding = false;
+
+	bool bRenderToShadowMap = (m_viewType == eViewType_Shadow);
+	if (!bRenderToShadowMap)
+	{
+		batchFlags |= (pl->m_nCPFlags & CREClientPoly::efAfterWater) ? 0 : FB_BELOW_WATER;
+
+		CShader* pShader = (CShader*)pl->m_Shader.m_pShader;
+		CShaderResources* const __restrict pShaderResources = static_cast<CShaderResources*>(pl->m_Shader.m_pShaderResources);
+		SShaderTechnique* pTech = pl->m_Shader.GetTechnique();
+
+		if (pl->m_Shader.m_nPreprocessFlags & FSPR_MASK)
+		{
+			renderListId = EFSLIST_PREPROCESS;
+		}
+
+		if ((pShader->GetFlags() & EF_DECAL) || poly.pRenderObject && (poly.pRenderObject->m_ObjFlags & FOB_DECAL))
+		{
+			if (pTech && pTech->m_nTechnique[TTYPE_Z] > 0 && (pShader && (pShader->m_Flags & EF_SUPPORTSDEFERREDSHADING)))
+			{
+				batchFlags |= FB_Z;
+			}
+
+			if (!(pl->m_nCPFlags & CREClientPoly::efShadowGen))
+				renderListId = EFSLIST_DECAL;
+		}
+		else
+		{
+			renderListId = EFSLIST_GENERAL;
+			if (poly.pRenderObject->m_fAlpha < 1.0f || (pShaderResources && pShaderResources->IsTransparent()))
+			{
+				renderListId = EFSLIST_TRANSP;
+				batchFlags |= FB_TRANSPARENT;
+			}
+		}
+	}
+	else
+	{
+		renderListId = (ERenderListID)passInfo.ShadowFrustumSide(); // in shadow map rendering render list is the shadow frustum side
+
+		// Rendering polygon into the shadow view if supported
+		if (!(pl->m_nCPFlags & CREClientPoly::efShadowGen))
+		{
+			bSkipAdding = true;
+		}
+	}
+
+	AddRenderItem(pl, poly.pRenderObject, poly.shaderItem, renderListId, batchFlags, SRendItemSorter(), bRenderToShadowMap, false);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -609,7 +691,9 @@ void CRenderView::AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT
 	else if (m_bTrackUncompiledItems)
 	{
 		// This item will need a temporary compiled object
-		if (pElem && pElem->mfGetType() == eDATA_Mesh)
+		EDataType reType = pElem ? pElem->mfGetType() : eDATA_Unknown;
+		bool bMeshCompatibleRenderElement = reType == eDATA_Mesh || reType == eDATA_Terrain || reType == eDATA_GeomCache || reType == eDATA_ClientPoly;
+		if (bMeshCompatibleRenderElement) // temporary disable for these types
 		{
 			// Allocate new CompiledRenderObject.
 			ri.pCompiledObject = AllocCompiledObjectTemporary(pObj, pElem, shaderItem);
@@ -832,9 +916,10 @@ void CRenderView::CompileModifiedRenderObjects()
 {
 	CRY_PROFILE_FUNCTION_ARG(PROFILE_RENDERER, m_name.c_str())
 
-	const float realTime = gRenDev->m_RP.m_TI[SRenderThread::GetLocalThreadCommandBufferId()].m_RealTime;
-
 	assert(gRenDev->m_pRT->IsRenderThread());
+
+	// Prepare polygon data buffers.
+	m_polygonDataPool->UpdateAPIBuffers();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Compile all modified objects.
@@ -874,7 +959,7 @@ void CRenderView::CompileModifiedRenderObjects()
 			auto& pri = general_items[i];
 			if (!pri.m_pCompiledObject)
 				continue;
-			if (!pri.m_pCompiledObject->Compile(pRenderObject, realTime))
+			if (!pri.m_pCompiledObject->Compile(pRenderObject))
 			{
 				bAllCompiled = false;
 			}
@@ -885,7 +970,7 @@ void CRenderView::CompileModifiedRenderObjects()
 			auto& pri = shadow_items[i];
 			if (!pri.m_pCompiledObject || pri.m_pCompiledObject->m_bSharedWithShadow) // This compiled object must be already compiled with the general items
 				continue;
-			if (!pri.m_pCompiledObject->Compile(pRenderObject, realTime))
+			if (!pri.m_pCompiledObject->Compile(pRenderObject))
 				bAllCompiled = false;
 		}
 
@@ -905,7 +990,7 @@ void CRenderView::CompileModifiedRenderObjects()
 	for (int i = 0; i < numTempObjects; i++)
 	{
 		auto& pair = m_temporaryCompiledObjects[i]; // first=CRenderObject, second=CCompiledObject
-		pair.pCompiledObject->Compile(pair.pRenderObject, realTime);
+		pair.pCompiledObject->Compile(pair.pRenderObject);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1032,8 +1117,6 @@ void CRenderView::Job_PostWrite()
 		return;
 
 	ExpandPermanentRenderObjects();
-
-	AddRenderItemsFromClientPolys();
 
 	for (int renderList = 0; renderList < EFSLIST_NUM; renderList++)
 	{
@@ -1199,74 +1282,6 @@ int CRenderView::FindRenderListSplit(ERenderListID list, uint32 objFlag)
 	}
 
 	return last + 1;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRenderView::AddRenderItemsFromClientPolys()
-{
-	FUNCTION_PROFILER_RENDERER
-
-	uint32 i;
-	CREClientPoly* pl;
-
-	// Needed to prevent assert in AddRenderItem
-	m_bAddingClientPolys = true;
-
-	int numPolys = GetClientPolyCount();
-
-	bool bShadows = (m_viewType == eViewType_Shadow);
-	int defaultList = (bShadows) ? 0 : EFSLIST_GENERAL;
-
-	if (!(m_nShaderRenderingFlags & SHDF_ALLOWPOSTPROCESS))
-		return;
-
-	for (i = 0; i < numPolys; i++)
-	{
-		pl = GetClientPoly(i);
-
-		CShader* pShader = (CShader*)pl->m_Shader.m_pShader;
-		CShaderResources* const __restrict pShaderResources = static_cast<CShaderResources*>(pl->m_Shader.m_pShaderResources);
-		SShaderTechnique* pTech = pl->m_Shader.GetTechnique();
-
-		uint32 nBatchFlags = FB_GENERAL;
-		nBatchFlags |= (pl->m_nCPFlags & CREClientPoly::efAfterWater) ? 0 : FB_BELOW_WATER;
-
-		//if (pTech && pShaderResources)
-		//{
-		//if (pTech->m_nTechnique[TTYPE_CUSTOMRENDERPASS] > 0 && m_nThermalVisionMode && pShaderResources->HeatAmount())
-		//nBatchFlags |= FB_CUSTOM_RENDER;
-		//}
-
-		if (pl->m_Shader.m_nPreprocessFlags & FSPR_MASK)
-		{
-			AddRenderItem(pl, pl->m_pObject, pl->m_Shader, (bShadows) ? 0 : EFSLIST_PREPROCESS, FB_GENERAL, pl->rendItemSorter, bShadows, false);
-		}
-
-		if (pShader->GetFlags() & EF_DECAL) // || pl->m_pObject && (pl->m_pObject->m_ObjFlags & FOB_DECAL))
-		{
-			if (pTech && pTech->m_nTechnique[TTYPE_Z] > 0 && (pShader && (pShader->m_Flags & EF_SUPPORTSDEFERREDSHADING)))
-			{
-				nBatchFlags |= FB_Z;
-			}
-
-			if (!bShadows && !(pl->m_nCPFlags & CREClientPoly::efShadowGen))
-				AddRenderItem(pl, pl->m_pObject, pl->m_Shader, EFSLIST_DECAL, nBatchFlags, pl->rendItemSorter, bShadows, false);
-			else if (bShadows && (pl->m_nCPFlags & CREClientPoly::efShadowGen))
-				AddRenderItem(pl, pl->m_pObject, pl->m_Shader, defaultList, FB_GENERAL, pl->rendItemSorter, bShadows, false);
-		}
-		else
-		{
-			uint32 list = defaultList;
-			if (!bShadows && (pl->m_pObject->m_fAlpha < 1.0f || (pShaderResources && pShaderResources->IsTransparent())))
-			{
-				list = EFSLIST_TRANSP;
-			}
-			nBatchFlags |= FB_TRANSPARENT;
-			AddRenderItem(pl, pl->m_pObject, pl->m_Shader, list, nBatchFlags, pl->rendItemSorter, bShadows, false);
-		}
-	}
-	m_numUsedClientPolygons = 0;
-	m_bAddingClientPolys = false;
 }
 
 //////////////////////////////////////////////////////////////////////////

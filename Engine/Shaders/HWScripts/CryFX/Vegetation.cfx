@@ -500,11 +500,8 @@ vtxOutVegetation VegetationVS(app2vertGeneral IN)
 #if %_RT_FOG
 	// pass through parallel view opacity falloff
 	#if !%GRASS && %LEAVES
-	  int nInstance = 0;
-	#if %_RT_ENVIRONMENT_CUBEMAP
-	  nInstance = vertPassPos.nInstance;
-	#endif
-		float alphaTest = Get_SPI_AlphaTest(nInstance).w;
+
+		float alphaTest = Get_MaterialAlphaTest();
 		OUT.binormVec.w = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, alphaTest);
 	#endif
 
@@ -804,7 +801,7 @@ pixout VegetationPS(vtxOutVegetation IN)
 
   half4 cFinal = frag_shared_output(pPass);
   
-  float alphaTest =	Get_SPI_AlphaTest(0).w;
+  float alphaTest =	Get_MaterialAlphaTest();
 
 #if %_RT_DEBUG0 && %_RT_DEBUG1 && %_RT_DEBUG2 && %_RT_DEBUG3
   clip(pPass.cDiffuseMap.w - alphaTest);

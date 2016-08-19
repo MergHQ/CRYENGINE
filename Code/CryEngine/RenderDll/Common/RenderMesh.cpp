@@ -1284,8 +1284,6 @@ size_t CRenderMesh::SetMesh_Int(CMesh &mesh, int nSecColorsSetOffset, uint32 fla
     // Cross link render chunk with render element.
     pRenderChunk->pRE = pRenderElement;
     AssignChunk(pRenderChunk, pRenderElement);
-    if (subset.nNumVerts <= 500 && !mesh.m_pBoneMapping && !(flags & FSM_NO_TANGENTS))
-      pRenderElement->mfUpdateFlags(FCEF_MERGABLE);
 
 		if (mesh.m_pBoneMapping)
 			pRenderElement->mfUpdateFlags(FCEF_SKINNED);
@@ -5260,4 +5258,41 @@ void SMeshSubSetIndicesJobEntry::CreateSubSetRenderMesh()
 		}
 		m_pIndexRM = pIndexMesh;
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+//#TODO: Must be refactored to new pipeline!!!
+void CRenderMesh::DrawImmediately()
+{
+	CD3D9Renderer* rd = gcpRendD3D;
+
+	HRESULT hr = rd->FX_SetVertexDeclaration(0, _GetVertexFormat());
+
+	if (FAILED(hr))
+	{
+		assert(!"CRenderMesh::DrawImmediately failed");
+		return;
+	}
+
+	// set vertex and index buffer
+	CheckUpdate(_GetVertexFormat(), 0);
+
+	size_t vbOffset(0);
+	size_t ibOffset(0);
+	D3DVertexBuffer* pVB = rd->m_DevBufMan.GetD3DVB(_GetVBStream(VSF_GENERAL), &vbOffset);
+	D3DIndexBuffer* pIB = rd->m_DevBufMan.GetD3DIB(_GetIBStream(), &ibOffset);
+	assert(pVB);
+	assert(pIB);
+
+	if (!pVB || !pIB)
+	{
+		assert(!"CRenderMesh::DrawImmediately failed");
+		return;
+	}
+
+	rd->FX_SetVStream(0, pVB, vbOffset, GetStreamStride(VSF_GENERAL));
+	rd->FX_SetIStream(pIB, ibOffset, (sizeof(vtx_idx) == 2 ? Index16 : Index32));
+
+	// draw indexed mesh
+	rd->FX_DrawIndexedPrimitive(eptTriangleList, 0, 0, _GetNumVerts(), 0, _GetNumInds());
 }

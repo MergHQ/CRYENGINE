@@ -52,18 +52,16 @@ hlsl_cbuffer(PerPassConstantBuffer_ShadowGen)
 
 hlsl_cbuffer_register(PerInstanceConstantBuffer_Base, register (b12), 12) // eConstantBufferShaderSlot_PerInstance
 {
-	hlsl_matrix34(SPIObjWorldMat);
-	hlsl_matrix34(SPIPrevObjWorldMat);
-	hlsl_float4(SPIBendInfo);
-	hlsl_float4(SPIAlphaTest);
+	hlsl_matrix34(PerInstanceWorldMatrix);
+	hlsl_matrix34(PerInstancePrevWorldMatrix);
+	hlsl_float4(PerInstanceCustomData);
 };
 
 hlsl_cbuffer_register(PerInstanceConstantBuffer_TerrainVegetation, register (b12), 12) // eConstantBufferShaderSlot_PerInstance
 {
-	hlsl_matrix34(SPIObjWorldMat);
-	hlsl_matrix34(SPIPrevObjWorldMat);
-	hlsl_float4(SPIBendInfo);
-	hlsl_float4(SPIAlphaTest);
+	hlsl_matrix34(PerInstanceWorldMatrix);
+	hlsl_matrix34(PerInstancePrevWorldMatrix);
+	hlsl_float4(PerInstanceCustomData);
 
 	hlsl_float4(BlendTerrainColInfo);
 	hlsl_matrix44(TerrainLayerInfo);
@@ -71,10 +69,9 @@ hlsl_cbuffer_register(PerInstanceConstantBuffer_TerrainVegetation, register (b12
 
 hlsl_cbuffer_register(PerInstanceConstantBuffer_Skin, register (b12), 12) // eConstantBufferShaderSlot_PerInstance
 {
-	hlsl_matrix34(SPIObjWorldMat);
-	hlsl_matrix34(SPIPrevObjWorldMat);
-	hlsl_float4(SPIBendInfo);
-	hlsl_float4(SPIAlphaTest);
+	hlsl_matrix34(PerInstanceWorldMatrix);
+	hlsl_matrix34(PerInstancePrevWorldMatrix);
+	hlsl_float4(PerInstanceCustomData);
 
 	hlsl_float4(SkinningInfo);
 	hlsl_float4(WrinklesMask0);

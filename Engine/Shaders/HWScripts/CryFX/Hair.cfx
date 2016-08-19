@@ -729,26 +729,7 @@ vert2fragZ_C ZPassVS(app2vertGBuffer IN)
   _TCModify(baseTC, OUT.baseTC, vertPassPos.Position, vertPassPos.ObjToTangentSpace[2], TS_DIFFUSE);	
 
   #if %_RT_ALPHATEST || %_RT_DISSOLVE
-    float4 fAlphaTest = 0.0f;
-    #if %_RT_DISSOLVE
-      // For dissolve and instancing, we use PI_AlphaTest
-      fAlphaTest = AlphaTest;
-      #if %_RT_INSTANCING_ATTR
-        {
-          float4 baseTC;
-          #fetchinst (baseTC = IN.InstAlphaTest, vertPassPos.nInstance);
-          fAlphaTest = baseTC;
-        }
-      #endif
-    #else
-      // For regular materials using alpha test, we use PB_AlphaTest
-	  int nInstance = 0;
-	#if %_RT_ENVIRONMENT_CUBEMAP
-	  nInstance = vertPassPos.nInstance;
-	#endif
-      fAlphaTest = Get_SPI_AlphaTest(nInstance);
-    #endif
-    OUT.baseTC.wz = fAlphaTest.wx;
+	OUT.baseTC.wz = float2(Get_MaterialAlphaTest(),Get_SPI_Dissolve());
   #endif
   
   return OUT;            

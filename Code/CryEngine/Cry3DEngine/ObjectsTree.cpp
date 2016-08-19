@@ -586,7 +586,7 @@ void COctreeNode::UpdateStaticInstancing()
 				CVegetation* pFirstNode = pInfo->GetAt(0).pRNode;
 
 				// put instancing into one of existing vegetations
-				PodArrayAABB<CRenderObject::SInstanceData>* pInsts = pFirstNode->m_pInstancingInfo = new PodArrayAABB<CRenderObject::SInstanceData>;
+				PodArrayAABB<CRenderObject::SInstanceInfo>* pInsts = pFirstNode->m_pInstancingInfo = new PodArrayAABB<CRenderObject::SInstanceInfo>;
 				pInsts->PreAllocate(pInfo->Count(), pInfo->Count());
 				pInsts->m_aabbBox.Reset();
 
@@ -617,9 +617,7 @@ void COctreeNode::UpdateStaticInstancing()
 					CStatObj* pStatObj = ii.pRNode->GetStatObj();
 					const StatInstGroup& vegetGroup = ii.pRNode->GetStatObjGroup();
 
-					(*pInsts)[i].m_MatInst = ii.nodeMatrix;
-					(*pInsts)[i].m_vDissolveInfo.zero();
-					(*pInsts)[i].m_vBendInfo = Vec4(pStatObj->m_fRadiusVert, 0, 0, 0.1f * vegetGroup.fBending);
+					(*pInsts)[i].m_Matrix = ii.nodeMatrix;
 
 					pInsts->m_aabbBox.Add(ii.pRNode->GetBBox());
 				}

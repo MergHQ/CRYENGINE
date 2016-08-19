@@ -423,13 +423,13 @@ struct IStatObj : IMeshObj, IStreamable
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const = 0;
 
 	//! Used for sprites.
-	virtual float& GetRadiusVert() = 0;
+	virtual float GetRadiusVert() const = 0;
 
 	//! Used for sprites.
-	virtual float& GetRadiusHors() = 0;
+	virtual float GetRadiusHors() const = 0;
 
 	//! Determines if the object has physics capabilities.
-	virtual bool IsPhysicsExist() = 0;
+	virtual bool IsPhysicsExist() const = 0;
 
 	//! Return a pointer to the object.
 	//! \return Pointer to the current object, which is simply done like this "return this;"

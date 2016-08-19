@@ -50,9 +50,10 @@ public:
 	inline bool ValidateDraw(EShaderType shaderType);
 #endif
 
-	virtual bool          GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessellation = false) override;
-	virtual EVertexFormat GetVertexFormat() const override;
-	virtual void          Draw(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx) override;
+	virtual bool          GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessellation = false) final;
+	virtual EVertexFormat GetVertexFormat() const final;
+	virtual bool          Compile(CRenderObject* pObj) final;
+	virtual void          DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx) final;
 
 	//protected:
 	//	CREMeshImpl(CREMeshImpl&);

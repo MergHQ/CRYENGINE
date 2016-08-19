@@ -149,7 +149,7 @@ private:
 	CConstantBufferPtr                                 m_pConstantBuffer;
 	bool                                               m_bDirty;
 
-	static CryCriticalSection s_accessLock;
+	static CryCriticalSection                          s_accessLock;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -198,19 +198,22 @@ class CDeviceBufferManager
 	void            UnpinItem_Locked(buffer_handle_t);
 	buffer_handle_t Create_Locked(BUFFER_BIND_TYPE, BUFFER_USAGE, size_t);
 	void            Destroy_Locked(buffer_handle_t);
-	void*           BeginRead_Locked(buffer_handle_t handle);
-	void*           BeginWrite_Locked(buffer_handle_t handle);
-	void            EndReadWrite_Locked(buffer_handle_t handle);
-	bool            UpdateBuffer_Locked(buffer_handle_t handle, const void*, size_t);
-	size_t          Size_Locked(buffer_handle_t);
+	void* BeginRead_Locked(buffer_handle_t handle);
+	void* BeginWrite_Locked(buffer_handle_t handle);
+	void  EndReadWrite_Locked(buffer_handle_t handle);
+	bool   UpdateBuffer_Locked(buffer_handle_t handle, const void*, size_t);
+	size_t Size_Locked(buffer_handle_t);
 
 public:
 	CDeviceBufferManager();
 	~CDeviceBufferManager();
 
+	// Get access to the singleton instance of device buffer manager
+	static CDeviceBufferManager* Instance();
+
 	// PPOL_ALIGNMENT is 128 in general, which is a bit much, we use the smallest alignment necessary for fast mem-copies
 #if 0
-	static        size_t GetBufferAlignmentForStreaming();
+	static size_t        GetBufferAlignmentForStreaming();
 #else
 	static inline size_t GetBufferAlignmentForStreaming()
 	{
@@ -336,9 +339,9 @@ public:
 
 	~CGuardedDeviceBufferManager() { m_pDevMan->UnlockDevMan(); }
 
-	static inline size_t   GetBufferAlignForStreaming() { return CDeviceBufferManager::GetBufferAlignmentForStreaming(); }
-	static inline size_t   AlignBufferSizeForStreaming(size_t size) { return CDeviceBufferManager::AlignBufferSizeForStreaming(size); }
-	static inline size_t   AlignElementCountForStreaming(size_t numElements, size_t sizeOfElement) { return CDeviceBufferManager::AlignElementCountForStreaming(numElements, sizeOfElement); }
+	static inline size_t GetBufferAlignForStreaming()                                            { return CDeviceBufferManager::GetBufferAlignmentForStreaming(); }
+	static inline size_t AlignBufferSizeForStreaming(size_t size)                                { return CDeviceBufferManager::AlignBufferSizeForStreaming(size); }
+	static inline size_t AlignElementCountForStreaming(size_t numElements, size_t sizeOfElement) { return CDeviceBufferManager::AlignElementCountForStreaming(numElements, sizeOfElement); }
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Pin/Unpin items for async access outside of the renderthread
@@ -349,7 +352,7 @@ public:
 	// Buffer Resource creation methods
 	//
 	buffer_handle_t Create(BUFFER_BIND_TYPE type, BUFFER_USAGE usage, size_t size) { return m_pDevMan->Create_Locked(type, usage, size); }
-	void            Destroy(buffer_handle_t handle) { return m_pDevMan->Destroy_Locked(handle); }
+	void            Destroy(buffer_handle_t handle)                                { return m_pDevMan->Destroy_Locked(handle); }
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Manual IO operations
@@ -360,14 +363,14 @@ public:
 	//       the contents of the untouched areas might be undefined as a copy-on-write semantic
 	//       ensures that the updating of buffers does not synchronize with the GPU at any cost.
 	//
-	void* BeginRead(buffer_handle_t handle)    { return m_pDevMan->BeginRead_Locked(handle); }
-	void* BeginWrite(buffer_handle_t handle)   { return m_pDevMan->BeginWrite_Locked(handle); }
-	void  EndReadWrite(buffer_handle_t handle) { m_pDevMan->EndReadWrite_Locked(handle); }
-	bool  UpdateBuffer(buffer_handle_t handle, const void* src, size_t size) { return m_pDevMan->UpdateBuffer_Locked(handle, src, size); }
+	void*            BeginRead(buffer_handle_t handle)                                  { return m_pDevMan->BeginRead_Locked(handle); }
+	void*            BeginWrite(buffer_handle_t handle)                                 { return m_pDevMan->BeginWrite_Locked(handle); }
+	void             EndReadWrite(buffer_handle_t handle)                               { m_pDevMan->EndReadWrite_Locked(handle); }
+	bool             UpdateBuffer(buffer_handle_t handle, const void* src, size_t size) { return m_pDevMan->UpdateBuffer_Locked(handle, src, size); }
 
-	D3DBuffer*       GetD3D  (buffer_handle_t handle, size_t* offset) { return                               m_pDevMan->GetD3D(handle, offset) ; }
-	D3DVertexBuffer* GetD3DVB(buffer_handle_t handle, size_t* offset) { return static_cast<D3DVertexBuffer*>(m_pDevMan->GetD3D(handle, offset)); }
-	D3DIndexBuffer*  GetD3DIB(buffer_handle_t handle, size_t* offset) { return static_cast<D3DIndexBuffer *>(m_pDevMan->GetD3D(handle, offset)); }
+	D3DBuffer*       GetD3D(buffer_handle_t handle, size_t* offset)                     { return m_pDevMan->GetD3D(handle, offset); }
+	D3DVertexBuffer* GetD3DVB(buffer_handle_t handle, size_t* offset)                   { return static_cast<D3DVertexBuffer*>(m_pDevMan->GetD3D(handle, offset)); }
+	D3DIndexBuffer*  GetD3DIB(buffer_handle_t handle, size_t* offset)                   { return static_cast<D3DIndexBuffer*>(m_pDevMan->GetD3D(handle, offset)); }
 };
 
 class SRecursiveSpinLock
@@ -576,7 +579,7 @@ static inline bool StreamBufferData(void* dst, const void* src, size_t sze)
 	assert(!(size_t(src) & (CRY_PLATFORM_ALIGNMENT - 1U)));
 	assert(!(size_t(dst) & (CRY_PLATFORM_ALIGNMENT - 1U)));
 	assert(!(size_t(sze) & (CRY_PLATFORM_ALIGNMENT - 1U)));
-//	assert(!(size_t(sze) & (SPoolConfig::POOL_ALIGNMENT - 1U)));
+	//	assert(!(size_t(sze) & (SPoolConfig::POOL_ALIGNMENT - 1U)));
 #endif
 
 #if CRY_PLATFORM_SSE2
@@ -620,9 +623,9 @@ static inline bool StreamBufferData(void* dst, const void* src, size_t sze)
 			offs += 1;
 		}
 
-#if !CRY_PLATFORM_ORBIS // Defer SFENCE until submit
+	#if !CRY_PLATFORM_ORBIS // Defer SFENCE until submit
 		_mm_sfence();
-#endif
+	#endif
 		requires_flush = false;
 	}
 	else
@@ -642,7 +645,7 @@ static inline bool FetchBufferData(void* dst, const void* src, size_t sze)
 	assert(!(size_t(src) & (CRY_PLATFORM_ALIGNMENT - 1U)));
 	assert(!(size_t(dst) & (CRY_PLATFORM_ALIGNMENT - 1U)));
 	assert(!(size_t(sze) & (CRY_PLATFORM_ALIGNMENT - 1U)));
-//	assert(!(size_t(sze) & (SPoolConfig::POOL_ALIGNMENT - 1U)));
+	//	assert(!(size_t(sze) & (SPoolConfig::POOL_ALIGNMENT - 1U)));
 #endif
 
 #if CRY_PLATFORM_SSE2

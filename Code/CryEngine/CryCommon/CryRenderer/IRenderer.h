@@ -1466,6 +1466,32 @@ struct ISvoRenderer
 	virtual void Release()                                                                   {}
 };
 
+struct SRenderPolygonDescription
+{
+	SShaderItem            shaderItem;
+	int                    numVertices = 0;
+	const SVF_P3F_C4B_T2F* pVertices = nullptr;
+	const SPipTangents*    pTangents = nullptr;
+	uint16*                pIndices = nullptr;
+	int                    numIndices = 0;
+	int                    afterWater = 0;
+	int                    renderListId = 0; // ERenderListID
+	CRenderObject*         pRenderObject = nullptr;
+
+	SRenderPolygonDescription() {}
+	SRenderPolygonDescription(CRenderObject* pRendObj, SShaderItem& si, int numPts, const SVF_P3F_C4B_T2F* verts, const SPipTangents* tangs, uint16* inds, int ninds, ERenderListID _renderListId, int nAW)
+		: numVertices(numPts)
+		, pVertices(verts)
+		, pTangents(tangs)
+		, pIndices(inds)
+		, numIndices(ninds)
+		, renderListId(_renderListId)
+		, afterWater(nAW)
+		, pRenderObject(pRendObj)
+		, shaderItem(si)
+	{}
+};
+
 // Interface to the render view.
 struct IRenderView : public CMultiThreadRefCount
 {
@@ -1529,6 +1555,7 @@ struct IRenderView : public CMultiThreadRefCount
 	//////////////////////////////////////////////////////////////////////////
 	// Water ripples
 	virtual void AddWaterRipple(const SWaterRippleInfo& waterRippleInfo) = 0;
+	virtual void AddPolygon(const SRenderPolygonDescription& poly, const SRenderingPassInfo& passInfo) = 0;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -1839,9 +1866,6 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual void           EF_AddMultipleParticlesToScene(const SAddParticlesToSceneJob* jobs, size_t numJobs, const SRenderingPassInfo& passInfo) = 0;
 	virtual void           GetMemoryUsageParticleREs(ICrySizer* pSizer) {}
-
-	virtual CRenderObject* EF_AddPolygonToScene(SShaderItem& si, int numPts, const SVF_P3F_C4B_T2F* verts, const SPipTangents* tangs, CRenderObject* obj, const SRenderingPassInfo& passInfo, uint16* inds, int ninds, int nAW) = 0;
-	virtual CRenderObject* EF_AddPolygonToScene(SShaderItem& si, CRenderObject* obj, const SRenderingPassInfo& passInfo, int numPts, int ninds, SVF_P3F_C4B_T2F*& verts, SPipTangents*& tangs, uint16*& inds, int nAW) = 0;
 
 	/////////////////////////////////////////////////////////////////////////////////
 	// Shaders/Shaders management /////////////////////////////////////////////////////////////////////////////////

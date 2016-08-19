@@ -912,7 +912,6 @@ public:
 	virtual void                GenerateObjSprites(PodArray<struct SVegetationSpriteInfo>* pList, const SRenderingPassInfo& passInfo) {};
 
 	void                        EF_AddClientPolys(const SRenderingPassInfo& passInfo);
-	void                        EF_RemovePolysFromScene();
 
 	bool                        FX_TryToMerge(CRenderObject* pNewObject, CRenderObject* pOldObject, CRendElementBase* pRE, bool bResIdentical);
 	virtual void*               FX_AllocateCharInstCB(SSkinningData*, uint32) { return NULL; }
@@ -937,9 +936,6 @@ public:
 	virtual bool                EF_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter) override = 0;
 	virtual bool                EF_PrecacheResource(IRenderMesh* pPB, IMaterial* pMaterial, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) override;
 	virtual bool                EF_PrecacheResource(CDLight* pLS, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) override;
-
-	virtual CRenderObject*      EF_AddPolygonToScene(SShaderItem& si, int numPts, const SVF_P3F_C4B_T2F* verts, const SPipTangents* tangs, CRenderObject* obj, const SRenderingPassInfo& passInfo, uint16* inds, int ninds, int nAW) override;
-	virtual CRenderObject*      EF_AddPolygonToScene(SShaderItem& si, CRenderObject* obj, const SRenderingPassInfo& passInfo, int numPts, int ninds, SVF_P3F_C4B_T2F*& verts, SPipTangents*& tangs, uint16*& inds, int nAW) override;
 
 	void                        FX_CheckOverflow(int nVerts, int nInds, CRendElementBase* re, int* nNewVerts = NULL, int* nNewInds = NULL);
 	void                        FX_Start(CShader* ef, int nTech, CShaderResources* Res, CRendElementBase* re);
