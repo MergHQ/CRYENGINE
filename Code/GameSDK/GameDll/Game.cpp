@@ -4866,6 +4866,17 @@ void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 			{
 				m_pScriptBindInteractiveObject->GetObjectDataRegistry().Init();
 			}
+
+			if (gEnv->pScriptSystem)
+			{
+				static bool physicsLuaLoaded = false;
+				if (!physicsLuaLoaded)
+				{
+					// Load explosion shapes.
+					gEnv->pScriptSystem->ExecuteFile("scripts/physics.lua", true, true);
+					physicsLuaLoaded = true;
+				}
+			}
 		}
 		break;
 	case ESYSTEM_EVENT_LEVEL_UNLOAD:

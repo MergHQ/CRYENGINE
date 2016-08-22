@@ -993,12 +993,6 @@ bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
 void C3DEngine::LoadPhysicsData()
 {
 	CPhysCallbacks::Init();
-
-	if (gEnv->pScriptSystem)
-	{
-		// Load explosion shapes.
-		gEnv->pScriptSystem->ExecuteFile("scripts/physics.lua", true, true);
-	}
 }
 
 static void OnReleaseGeom(IGeometry* pGeom)
