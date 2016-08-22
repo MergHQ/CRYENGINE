@@ -153,9 +153,11 @@ if (OUTPUT_DIRECTORY)
 endif (OUTPUT_DIRECTORY)
 
 # Bootstrap support
-include(${CMAKE_SOURCE_DIR}/Tools/CMake/Bootstrap.cmake)
-if(OPTION_AUTO_BOOTSTRAP)
-	set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "bootstrap.dat")
+if(EXISTS ${CMAKE_SOURCE_DIR}/Tools/CMake/Bootstrap.cmake)
+	include(${CMAKE_SOURCE_DIR}/Tools/CMake/Bootstrap.cmake)
+	if(OPTION_AUTO_BOOTSTRAP)
+		set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "bootstrap.dat")
+	endif()
 endif()
 
 include(${CMAKE_SOURCE_DIR}/Tools/CMake/ConfigureChecks.cmake)
@@ -169,13 +171,16 @@ include_directories( ${BOOST_DIR} )
 
 if(WIN32)
 	# Common Libriries linked to all targets
-	set(COMMON_LIBS jitprofiling libittnotify Ntdll User32 Advapi32 Ntdll Ws2_32)
+	set(COMMON_LIBS Ntdll User32 Advapi32 Ntdll Ws2_32)
 
-	include_directories( ${SDK_DIR}/GPA/include )
-	if (WIN64)
-		link_directories( ${SDK_DIR}/GPA/lib64 )
-	else()
-		link_directories( ${SDK_DIR}/GPA/lib32 )
+	if (EXISTS ${SDK_DIR}/GPA)
+		include_directories( ${SDK_DIR}/GPA/include )
+		if (WIN64)
+			link_directories( ${SDK_DIR}/GPA/lib64 )
+		else()
+			link_directories( ${SDK_DIR}/GPA/lib32 )
+		endif()
+		set(COMMON_LIBS ${COMMON_LIBS} jitprofiling libittnotify)
 	endif()
 else()
 	# Common Libriries linked to all targets
@@ -222,7 +227,9 @@ else()
 		option(AUDIO_PORTAUDIO "PortAudio sound system support" ON)
 	endif()
 	option(AUDIO_SDL_MIXER "SDLMixer sound system support" ON)
-	option(AUDIO_WWISE "WWise Sound System support" ON)
+	if (EXISTS ${SDK_DIR}/Audio/wwise)
+		option(AUDIO_WWISE "WWise Sound System support" ON)
+	endif()
 endif()
 
 #Renderer modules
