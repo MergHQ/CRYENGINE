@@ -16,6 +16,8 @@
 #ifndef __CryMemoryManager_h__
 #define __CryMemoryManager_h__
 #pragma once
+#include <algorithm>
+#include <cstddef>
 #include "../CryCore/Assert/CryAssert.h"
 
 #if !defined(_RELEASE)
@@ -86,37 +88,47 @@ struct SStackAllocation
 
 //////////////////////////////////////////////////////////////////////////
 // _alloca is required to be 16-byte aligned (C11)
-// Needs to be a define, because _alloca() frees it's memory when going out of scope.
-#define CryStackAllocVector(Type, Count, Alignment) \
-  (Type*)(((uintptr_t)alloca(((Count) * sizeof(Type) + (Alignment - 1)) & ~(Alignment - 1))))
-
+#define ALLOCA_ALIGN 16
 // Fire an assert when the allocation is large enough to risk a stack overflow
 #define ALLOCA_LIMIT (128 * 1024)
 
-#define CryStackAllocWithSize(Type, Name, AlignmentFunc)             \
-  const size_t Name ## Size = AlignmentFunc(sizeof(Type));           \
-  assert(Name ## Size <= ALLOCA_LIMIT);                              \
-  Type* Name ## Mem = reinterpret_cast<Type*>(alloca(Name ## Size)); \
+// Needs to be a define, because _alloca() frees it's memory when going out of scope.
+#define CryStackAllocVector(Type, Count, Alignment)                                               \
+  (Type*)(((uintptr_t)alloca(((Count) * sizeof(Type) + (Alignment - 1)) & ~(Alignment - 1))))
+
+#define CryStackAllocAlignedOffs(AlignmentFunc)                                                   \
+  (AlignmentFunc(1) > ALLOCA_ALIGN ? AlignmentFunc(1) - ALLOCA_ALIGN : 0)
+#define CryStackAllocAlignedPtr(Type, Size, Offset, AlignmentFunc)                                \
+  (Type*)AlignmentFunc((size_t)alloca((Size) + (Offset)))
+
+#define CryStackAllocWithSize(Type, Name, AlignmentFunc)                                          \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type));                                        \
+  const size_t Name ## Offset = CryStackAllocAlignedOffs(AlignmentFunc);                          \
+  assert(Name ## Size + Name ## Offset <= ALLOCA_LIMIT);                                          \
+  Type* Name ## Mem = CryStackAllocAlignedPtr(Type, Name ## Size, Name ## Offset, AlignmentFunc); \
   const SStackAllocation<Type> Name = { Name ## Size, Name ## Mem };
 
-#define CryStackAllocWithSizeCleared(Type, Name, AlignmentFunc)      \
-  const size_t Name ## Size = AlignmentFunc(sizeof(Type));           \
-  assert(Name ## Size <= ALLOCA_LIMIT);                              \
-  Type* Name ## Mem = reinterpret_cast<Type*>(alloca(Name ## Size)); \
-  const SStackAllocation<Type> Name = { Name ## Size, Name ## Mem }; \
+#define CryStackAllocWithSizeCleared(Type, Name, AlignmentFunc)                                   \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type));                                        \
+  const size_t Name ## Offset = CryStackAllocAlignedOffs(AlignmentFunc);                          \
+  assert(Name ## Size + Name ## Offset <= ALLOCA_LIMIT);                                          \
+  Type* Name ## Mem = CryStackAllocAlignedPtr(Type, Name ## Size, Name ## Offset, AlignmentFunc); \
+  const SStackAllocation<Type> Name = { Name ## Size, Name ## Mem };                              \
   ZeroMemory(Name ## Mem, Name ## Size);
 
-#define CryStackAllocWithSizeVector(Type, Count, Name, AlignmentFunc) \
-  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));  \
-  assert(Name ## Size <= ALLOCA_LIMIT);                               \
-  Type* Name ## Mem = reinterpret_cast<Type*>(alloca(Name ## Size));  \
+#define CryStackAllocWithSizeVector(Type, Count, Name, AlignmentFunc)                             \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));                              \
+  const size_t Name ## Offset = CryStackAllocAlignedOffs(AlignmentFunc);                          \
+  assert(Name ## Size + Name ## Offset <= ALLOCA_LIMIT);                                          \
+  Type* Name ## Mem = CryStackAllocAlignedPtr(Type, Name ## Size, Name ## Offset, AlignmentFunc); \
   const SStackAllocation<Type> Name = { Name ## Size, Name ## Mem };
 
-#define CryStackAllocWithSizeVectorCleared(Type, Count, Name, AlignmentFunc) \
-  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));         \
-  assert(Name ## Size <= ALLOCA_LIMIT);                                      \
-  Type* Name ## Mem = reinterpret_cast<Type*>(alloca(Name ## Size));         \
-  const SStackAllocation<Type> Name = { Name ## Size, Name ## Mem };         \
+#define CryStackAllocWithSizeVectorCleared(Type, Count, Name, AlignmentFunc)                      \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));                              \
+  const size_t Name ## Offset = CryStackAllocAlignedOffs(AlignmentFunc);                          \
+  assert(Name ## Size + Name ## Offset <= ALLOCA_LIMIT);                                          \
+  Type* Name ## Mem = CryStackAllocAlignedPtr(Type, Name ## Size, Name ## Offset, AlignmentFunc); \
+  const SStackAllocation<Type> Name = { Name ## Size, Name ## Mem };                              \
   ZeroMemory(Name ## Mem, Name ## Size);
 
 #include <memory>
@@ -233,58 +245,58 @@ private:
 // template<typename T> using CSingleBlockVector = CSingleBlockContainer<std::vector, T>;
 }
 
-#define CryStackAllocatorWithSize(Type, Name, AlignmentFunc) \
-  CryStackAllocWithSize(Type, Name ## T, AlignmentFunc);     \
+#define CryStackAllocatorWithSize(Type, Name, AlignmentFunc)                                      \
+  CryStackAllocWithSize(Type, Name ## T, AlignmentFunc);                                          \
   CryStack::CSingleBlockAllocator<Type> Name(Name ## T);
 
-#define CryStackAllocatorWithSizeCleared(Type, Name, AlignmentFunc) \
-  CryStackAllocWithSizeCleared(Type, Name ## T, AlignmentFunc);     \
+#define CryStackAllocatorWithSizeCleared(Type, Name, AlignmentFunc)                               \
+  CryStackAllocWithSizeCleared(Type, Name ## T, AlignmentFunc);                                   \
   CryStack::CSingleBlockAllocator<Type> Name(Name ## T);
 
-#define CryStackAllocatorWithSizeVector(Type, Count, Name, AlignmentFunc) \
-  CryStackAllocWithSizeVector(Type, Count, Name ## T, AlignmentFunc);     \
+#define CryStackAllocatorWithSizeVector(Type, Count, Name, AlignmentFunc)                         \
+  CryStackAllocWithSizeVector(Type, Count, Name ## T, AlignmentFunc);                             \
   CryStack::CSingleBlockAllocator<Type> Name(Name ## T);
 
-#define CryStackAllocatorWithSizeVectorCleared(Type, Count, Name, AlignmentFunc) \
-  CryStackAllocWithSizeVectorCleared(Type, Count, Name ## T, AlignmentFunc);     \
+#define CryStackAllocatorWithSizeVectorCleared(Type, Count, Name, AlignmentFunc)                  \
+  CryStackAllocWithSizeVectorCleared(Type, Count, Name ## T, AlignmentFunc);                      \
   CryStack::CSingleBlockAllocator<Type> Name(Name ## T);
 
 //////////////////////////////////////////////////////////////////////////
 // variation of CryStackAlloc behaving identical, except memory is taken from heap instead of stack
-#define CryScopedMem(Type, Size, Name)                                                \
-  struct Name ## SMemScoped {                                                         \
-    Name ## SMemScoped(size_t S) {                                                    \
-      Name = reinterpret_cast<Type*>(CryModuleMemalign(S, CRY_PLATFORM_ALIGNMENT)); } \
-    ~Name ## SMemScoped() {                                                           \
-      if (Name != nullptr) CryModuleMemalignFree(Name); }                             \
-    Type* Name;                                                                       \
-  };                                                                                  \
-  Name ## SMemScoped Name ## MemScoped(Size);                                         \
+#define CryScopedMem(Type, Size, Name, AlignmentFunc)                                             \
+  struct Name ## SMemScoped {                                                                     \
+    Name ## SMemScoped(size_t S) {                                                                \
+      Name = reinterpret_cast<Type*>(CryModuleMemalign(S, AlignmentFunc(1))); }                   \
+    ~Name ## SMemScoped() {                                                                       \
+      if (Name != nullptr) CryModuleMemalignFree(Name); }                                         \
+    Type* Name;                                                                                   \
+  };                                                                                              \
+  Name ## SMemScoped Name ## MemScoped(Size);                                                     \
 
-#define CryScopedAllocWithSize(Type, Name, AlignmentFunc)  \
-  const size_t Name ## Size = AlignmentFunc(sizeof(Type)); \
-  CryScopedMem(Type, Name ## Size, Name);                  \
-  Type* Name ## Mem = Name ## MemScoped.Name;              \
+#define CryScopedAllocWithSize(Type, Name, AlignmentFunc)                                         \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type));                                        \
+  CryScopedMem(Type, Name ## Size, Name, AlignmentFunc);                                          \
+  Type* Name ## Mem = Name ## MemScoped.Name;                                                     \
   const SHeapAllocation<Type> Name = { Name ## Size, Name ## Mem };
 
-#define CryScopedAllocWithSizeCleared(Type, Name, AlignmentFunc)    \
-  const size_t Name ## Size = AlignmentFunc(sizeof(Type));          \
-  CryScopedMem(Type, Name ## Size, Name);                           \
-  Type* Name ## Mem = Name ## MemScoped.Name;                       \
-  const SHeapAllocation<Type> Name = { Name ## Size, Name ## Mem }; \
+#define CryScopedAllocWithSizeCleared(Type, Name, AlignmentFunc)                                  \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type));                                        \
+  CryScopedMem(Type, Name ## Size, Name, AlignmentFunc);                                          \
+  Type* Name ## Mem = Name ## MemScoped.Name;                                                     \
+  const SHeapAllocation<Type> Name = { Name ## Size, Name ## Mem };                               \
   ZeroMemory(Name ## Mem, Name ## Size);
 
-#define CryScopedAllocWithSizeVector(Type, Count, Name, AlignmentFunc) \
-  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));   \
-  CryScopedMem(Type, Name ## Size, Name);                              \
-  Type* Name ## Mem = Name ## MemScoped.Name;                          \
+#define CryScopedAllocWithSizeVector(Type, Count, Name, AlignmentFunc)                            \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));                              \
+  CryScopedMem(Type, Name ## Size, Name, AlignmentFunc);                                          \
+  Type* Name ## Mem = Name ## MemScoped.Name;                                                     \
   const SHeapAllocation<Type> Name = { Name ## Size, Name ## Mem };
 
-#define CryScopedAllocWithSizeVectorCleared(Type, Count, Name, AlignmentFunc) \
-  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));          \
-  CryScopedMem(Type, Name ## Size, Name);                                     \
-  Type* Name ## Mem = Name ## MemScoped.Name;                                 \
-  const SHeapAllocation<Type> Name = { Name ## Size, Name ## Mem };           \
+#define CryScopedAllocWithSizeVectorCleared(Type, Count, Name, AlignmentFunc)                     \
+  const size_t Name ## Size = AlignmentFunc(sizeof(Type) * (Count));                              \
+  CryScopedMem(Type, Name ## Size, Name, AlignmentFunc);                                          \
+  Type* Name ## Mem = Name ## MemScoped.Name;                                                     \
+  const SHeapAllocation<Type> Name = { Name ## Size, Name ## Mem };                               \
   ZeroMemory(Name ## Mem, Name ## Size);
 
 //////////////////////////////////////////////////////////////////////////
