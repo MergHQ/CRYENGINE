@@ -1148,6 +1148,8 @@ void CTiledShading::BindForwardShadingResources(RenderPassType& pass)
 // explicit instantiation
 template
 void CTiledShading::BindForwardShadingResources(CComputeRenderPass& pass);
+template
+void CTiledShading::BindForwardShadingResources(CFullscreenPass& pass);
 
 struct STiledLightCullInfo* CTiledShading::GetTiledLightCullInfo()
 {

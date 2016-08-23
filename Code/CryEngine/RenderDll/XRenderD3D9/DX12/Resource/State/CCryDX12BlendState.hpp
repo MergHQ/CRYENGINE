@@ -15,10 +15,10 @@
 
 	#include "DX12/Device/CCryDX12DeviceChild.hpp"
 
-class CCryDX12BlendState : public CCryDX12DeviceChild<ID3D11BlendState>
+class CCryDX12BlendState : public CCryDX12DeviceChild<ID3D11BlendStateToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12BlendState, CCryDX12DeviceChild<ID3D11BlendState> );
+	DX12_OBJECT(CCryDX12BlendState, CCryDX12DeviceChild<ID3D11BlendStateToImplement> );
 
 	static CCryDX12BlendState* Create(const D3D11_BLEND_DESC* pBlendStateDesc);
 

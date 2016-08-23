@@ -732,7 +732,7 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 
 	if (!IsShadowGenView())
 	{
-		const bool bHasDebug = (nBatchFlags & FB_DEBUG) != 0;
+		const bool bForwardOpaqueFlags = (nBatchFlags & (FB_DEBUG | FB_TILED_FORWARD)) != 0;
 		const bool bIsMaterialEmissive = (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive());
 		const bool bIsTransparent = (nRenderList == EFSLIST_TRANSP);
 
@@ -748,7 +748,7 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_ZPREPASS], nBatchFlags);
 		}
 
-		if (bHasDebug || (bIsMaterialEmissive && !bIsTransparent))
+		if (bForwardOpaqueFlags || (bIsMaterialEmissive && !bIsTransparent))
 		{
 			m_renderItems[EFSLIST_FORWARD_OPAQUE].push_back(ri);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_FORWARD_OPAQUE], nBatchFlags);

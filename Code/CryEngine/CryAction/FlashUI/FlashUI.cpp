@@ -1557,9 +1557,12 @@ IUIElement* CFlashUI::GetUIElementByInstanceStr(const char* sUIInstanceStr) cons
 	if (sUIInstanceStr == NULL)
 		return NULL;
 
+	string tmpName(sUIInstanceStr);
+	PathUtil::RemoveExtension(tmpName);
+
 	char name[_MAX_PATH];
-	cry_strcpy(name, sUIInstanceStr);
-	PathUtil::RemoveExtension(name);
+	cry_strcpy(name, tmpName.c_str());
+
 	const char* pExt = PathUtil::GetExt(sUIInstanceStr);
 	if (*pExt != '\0' && strcmpi(pExt, "ui"))
 		return NULL;

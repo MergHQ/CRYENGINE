@@ -4565,7 +4565,7 @@ void CD3D9Renderer::FX_ZTargetReadBack()
 		CTexture::s_ptexZTarget->SetShaderResourceView(pZTargetOrigSRV, bMSAA);
 	}
 
-#if CRY_PLATFORM_DURANGO
+#if CRY_PLATFORM_DURANGO && defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
 	if (bReadZBufferDirectlyFromVMEM == true)
 	{
 		// get camera settings for reprojection
@@ -5162,7 +5162,8 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags, SThread
 	CV_r_texturesstreamingsync = nSaveStreamSync;
 
 	////////////////////////////////////////////////
-	if (!GetS3DRend().RequiresSequentialSubmission() || !(nFlags & SHDF_STEREO_LEFT_EYE))  // Lists still needed for right eye when stereo is active
+	// Lists still needed for right eye when stereo is active
+	if (!GetS3DRend().RequiresSequentialSubmission() || !(nFlags & SHDF_STEREO_LEFT_EYE))
 	{
 		PROFILE_FRAME(RenderViewEndFrame);
 		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReadingDone);

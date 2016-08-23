@@ -4398,22 +4398,6 @@ void CTexture::InvalidateDeviceResource(uint32 dirtyFlags)
 {
 	for (const auto& cb : m_invalidateCallbacks)
 	{
-		cb.second(dirtyFlags);
-	}
-}
-
-void CTexture::AddInvalidateCallback(void* listener, InvalidateCallbackType callback)
-{
-	m_invalidateCallbacks.push_back(std::make_pair(listener, callback));
-}
-
-void CTexture::RemoveInvalidateCallbacks(void* listener)
-{
-	for (auto it = m_invalidateCallbacks.begin(); it != m_invalidateCallbacks.end(); )
-	{
-		if (it->first == listener)
-			it = m_invalidateCallbacks.erase(it);
-		else
-			++it;
+		cb.second(cb.first, dirtyFlags);
 	}
 }

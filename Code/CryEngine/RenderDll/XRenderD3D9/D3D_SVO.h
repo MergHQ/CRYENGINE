@@ -14,21 +14,24 @@
 
 struct SSvoTargetsSet
 {
-	SSvoTargetsSet() { ZeroStruct(*this); }
 	void Release();
 
 	CTexture
 	// tracing targets
-	* pRT_RGB_0, * pRT_ALD_0,
-	* pRT_RGB_1, * pRT_ALD_1,
+	* pRT_RGB_0 = nullptr, * pRT_ALD_0 = nullptr,
+	* pRT_RGB_1 = nullptr, * pRT_ALD_1 = nullptr,
 	// de-mosaic targets
-	* pRT_RGB_DEM_MIN_0, * pRT_ALD_DEM_MIN_0,
-	* pRT_RGB_DEM_MAX_0, * pRT_ALD_DEM_MAX_0,
-	* pRT_RGB_DEM_MIN_1, * pRT_ALD_DEM_MIN_1,
-	* pRT_RGB_DEM_MAX_1, * pRT_ALD_DEM_MAX_1,
+	* pRT_RGB_DEM_MIN_0 = nullptr, * pRT_ALD_DEM_MIN_0 = nullptr,
+	* pRT_RGB_DEM_MAX_0 = nullptr, * pRT_ALD_DEM_MAX_0 = nullptr,
+	* pRT_RGB_DEM_MIN_1 = nullptr, * pRT_ALD_DEM_MIN_1 = nullptr,
+	* pRT_RGB_DEM_MAX_1 = nullptr, * pRT_ALD_DEM_MAX_1 = nullptr,
 	// output
-	* pRT_FIN_OUT_0,
-	* pRT_FIN_OUT_1;
+	* pRT_FIN_OUT_0 = nullptr,
+	* pRT_FIN_OUT_1 = nullptr;
+
+	CFullscreenPass passConeTrace;
+	CFullscreenPass passDemosaic;
+	CFullscreenPass passUpscale;
 };
 
 class CSvoRenderer : public ISvoRenderer
@@ -65,32 +68,30 @@ protected:
 	void             SetEditingHelper(const Sphere& sp);
 	bool             IsShaderItemUsedForVoxelization(SShaderItem& rShaderItem, IRenderNode* pRN);
 	static CTexture* GetGBuffer(int nId);
-	void             UpScalePass(SSvoTargetsSet* pTS);
+	void             UpscalePass(SSvoTargetsSet* pTS);
 	void             DemosaicPass(SSvoTargetsSet* pTS);
 	void             ConeTracePass(SSvoTargetsSet* pTS);
-	void             SetupRsmSun(const EHWShaderClass eShClass);
+	template<class T> void SetupRsmSun(T & rp);
 	void             TropospherePass();
-	void             SetShaderFloat(const EHWShaderClass eShClass, const CCryNameR& NameParam, const Vec4* fParams, int nParams);
 	void             CheckCreateUpdateRT(CTexture*& pTex, int nWidth, int nHeight, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szName);
 
-	enum EComputeStages
-	{
-		eCS_ClearBricks,
-		eCS_InjectDynamicLights,
-		eCS_InjectStaticLights,
-		eCS_InjectAirOpacity,
-		eCS_PropagateLighting_1to2,
-		eCS_PropagateLighting_2to3,
-	};
+	CComputeRenderPass m_passClearBricks;
+	CComputeRenderPass m_passInjectDynamicLights;
+	CComputeRenderPass m_passInjectStaticLights;
+	CComputeRenderPass m_passInjectAirOpacity;
+	CComputeRenderPass m_passPropagateLighting_1to2;
+	CComputeRenderPass m_passPropagateLighting_2to3;
+
+	CFullscreenPass m_passTroposphere;
 
 	void UpdateGpuVoxParams(I3DEngine::SSvoNodeInfo& nodeInfo);
-	void ExecuteComputeShader(CShader* pSH, const char* szTechFinalName, EComputeStages etiStage, int* nNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate);
-	void SetShaderFlags(bool bDiffuseMode = true, bool bPixelShader = true, bool bDemosaic = false);
-	void SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, EHWShaderClass eShaderClass, int nStage, int nStageOpa = 0, int nStageNorm = 0);
-	void SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate);
+	void ExecuteComputeShader(const char* szTechFinalName, CComputeRenderPass & rp, int* nNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate);
+	uint64 GetRunTimeFlags(bool bDiffuseMode = true, bool bPixelShader = true, bool bDemosaic = false);
+	template<class T> void SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, T & rp, int nStage, int nStageOpa = 0, int nStageNorm = 0);
+	void SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate, CComputeRenderPass & rp);
 	void CheckAllocateRT(bool bSpecPass);
-	void SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, CShader* pShader, bool bPS);
-	void BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, CDeviceManager::SHADER_TYPE shaderType);
+	template<class T> void SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, T & rp);
+	template<class T> void BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, T & rp);
 	void DrawPonts(PodArray<SVF_P3F_C4B_T2F>& arrVerts);
 	void InitCVarValues();
 	void VoxelizeRE();
@@ -124,6 +125,7 @@ protected:
 		int     nTexId;
 		D3DUAV* pUAV;
 		D3DShaderResource* pSRV;
+		CTexture* pTex;
 	};
 
 	SVoxPool vp_OPAC;
@@ -226,6 +228,7 @@ protected:
 		INIT_SVO_CVAR(float, e_svoTI_AnalyticalOccludersRange);				\
 		INIT_SVO_CVAR(float, e_svoTI_AnalyticalOccludersSoftness);		\
 		INIT_SVO_CVAR(int, e_svoTI_AnalyticalGI);		                  \
+		INIT_SVO_CVAR(int, e_svoTI_AsyncCompute);		                  \
 
 	  // INIT_ALL_SVO_CVARS
 

@@ -352,12 +352,12 @@ bool SDeviceObjectHelpers::CShaderConstantManager::SetTypedConstantBuffer(EConst
 	return true;
 }
 
-bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstant(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 param)
+bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstant(const CCryNameR& paramName, const Vec4 param, EHWShaderClass shaderClass)
 {
-	return SetNamedConstantArray(shaderClass, paramName, &param, 1);
+	return SetNamedConstantArray(paramName, &param, 1, shaderClass);
 }
 
-bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstantArray(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 params[], uint32 numParams)
+bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams, EHWShaderClass shaderClass)
 {
 	CRY_ASSERT_MESSAGE(m_pShaderReflection, "Flag eFlags_ReflectConstantBuffersFromShader might be required for pass");
 	if (!m_pShaderReflection->bValid)
@@ -721,7 +721,7 @@ CDeviceResourceSet::~CDeviceResourceSet()
 
 void CDeviceResourceSet::SetDirty(bool bDirty)
 {
-	m_bDirty = true;
+	m_bDirty = m_bDirty | bDirty;
 }
 
 void CDeviceResourceSet::Clear(bool bTextures, bool bConstantBuffers)
@@ -758,6 +758,11 @@ void CDeviceResourceSet::Clear(bool bTextures, bool bConstantBuffers)
 	m_bEmpty        = m_Textures.empty() & m_ConstantBuffers.empty();
 }
 
+static auto lambdaTextureCallback = [](void* set, uint32 dirtyFlags) 
+{
+	reinterpret_cast<CDeviceResourceSet*>(set)->SetDirty(true); 
+};
+
 void CDeviceResourceSet::SetTexture(int shaderSlot, CTexture* pTexture, SResourceView::KeyType resourceViewID, ::EShaderStage shaderStages)
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
@@ -781,10 +786,7 @@ void CDeviceResourceSet::SetTexture(int shaderSlot, CTexture* pTexture, SResourc
 		texData.view = resourceViewID;
 
 		if (texData.resource != nullptr)
-		{
-			auto lambdaTextureCallback = [this](uint32 dirtyFlags) { this->OnTextureChanged(dirtyFlags); };
 			texData.resource->AddInvalidateCallback(this, lambdaTextureCallback);
-		}
 
 		m_bDirty = true;
 		m_bEmpty = false;
@@ -951,11 +953,6 @@ bool CDeviceResourceSet::Fill(::CShader* pShader, CShaderResources* pResources, 
 	return true;
 }
 
-void CDeviceResourceSet::OnTextureChanged(uint32 dirtyFlags)
-{
-	SetDirty(true);
-}
-
 void CDeviceResourceSet::Build()
 {
 	m_bValid = false;
@@ -981,7 +978,6 @@ void CDeviceResourceSet::Build()
 			}
 		}
 	}
-
 
 	if (BuildImpl(flags))
 	{

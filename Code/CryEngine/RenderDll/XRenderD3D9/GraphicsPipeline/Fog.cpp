@@ -198,7 +198,7 @@ void CFogStage::Execute()
 		const f32 averageLuminance = rd->m_vSceneLuminanceInfo.x;
 		const f32 adaptedSceneScale = rd->m_fAdaptedSceneScale;
 		static CCryNameR szHDRParams("HDRParams2");
-		m_passFog.SetConstant(eHWSC_Pixel, szHDRParams, Vec4(averageLuminance, adaptedSceneScale, 0, 0));
+		m_passFog.SetConstant(szHDRParams, Vec4(averageLuminance, adaptedSceneScale, 0, 0), eHWSC_Pixel);
 
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 		if (bVolFogShadow)
@@ -207,7 +207,7 @@ void CFogStage::Execute()
 			gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_DARKENING, volFogShadowDarkeningP);
 
 			static CCryNameR volFogShadowDarkeningN("volFogShadowDarkening");
-			m_passFog.SetConstant(eHWSC_Pixel, volFogShadowDarkeningN, Vec4(volFogShadowDarkeningP, 0));
+			m_passFog.SetConstant(volFogShadowDarkeningN, Vec4(volFogShadowDarkeningP, 0), eHWSC_Pixel);
 
 			const float aSun = (1.0f - clamp_tpl(volFogShadowDarkeningP.y, 0.0f, 1.0f)) * 1.0f;
 			const float bSun = 1.0f - aSun;
@@ -215,7 +215,7 @@ void CFogStage::Execute()
 			const float bAmb = 1.0f - aAmb;
 
 			static CCryNameR volFogShadowDarkeningSunAmbN("volFogShadowDarkeningSunAmb");
-			m_passFog.SetConstant(eHWSC_Pixel, volFogShadowDarkeningSunAmbN, Vec4(aSun, bSun, aAmb, bAmb));
+			m_passFog.SetConstant(volFogShadowDarkeningSunAmbN, Vec4(aSun, bSun, aAmb, bAmb), eHWSC_Pixel);
 
 			Vec4 volFogShadowRange;
 			{
@@ -225,7 +225,7 @@ void CFogStage::Execute()
 				volFogShadowRange = Vec4(volFogShadowRangeP.x, 1.0f / volFogShadowRangeP.x, 0, 0);
 			}
 			static CCryNameR volFogShadowRangeN("volFogShadowRange");
-			m_passFog.SetConstant(eHWSC_Pixel, volFogShadowRangeN, volFogShadowRange);
+			m_passFog.SetConstant(volFogShadowRangeN, volFogShadowRange, eHWSC_Pixel);
 
 			Vec4 sampleOffsets[5];
 			{
@@ -239,7 +239,7 @@ void CFogStage::Execute()
 				sampleOffsets[4] = Vec4(0, tU, 0, 0);
 			}
 			static CCryNameR volFogShadowBufSampleOffsetsN("volFogShadowBufSampleOffsets");
-			m_passFog.SetConstantArray(eHWSC_Pixel, volFogShadowBufSampleOffsetsN, sampleOffsets, 5);
+			m_passFog.SetConstantArray(volFogShadowBufSampleOffsetsN, sampleOffsets, 5, eHWSC_Pixel);
 		}
 #endif
 
@@ -249,7 +249,7 @@ void CFogStage::Execute()
 		  bSVOGI ? float(width / pSR->GetTroposphereMinRT()->GetWidth()) : 0.0f,
 		  bSVOGI ? float(height / pSR->GetTroposphereMinRT()->GetHeight()) : 0.0f,
 		  0.0f, 0.0f);
-		m_passFog.SetConstant(eHWSC_Pixel, sSVO_AirTextureScale, vSVO_AirTextureScale);
+		m_passFog.SetConstant(sSVO_AirTextureScale, vSVO_AirTextureScale, eHWSC_Pixel);
 #endif
 
 		m_passFog.Execute();
@@ -282,12 +282,12 @@ void CFogStage::Execute()
 		Vec3 lPos;
 		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKY_HIGHLIGHT_POS, lPos);
 		static CCryNameR Param1Name("LightningPos");
-		m_passLightning.SetConstant(eHWSC_Pixel, Param1Name, Vec4(lPos.x, lPos.y, lPos.z, 0.0f));
+		m_passLightning.SetConstant(Param1Name, Vec4(lPos.x, lPos.y, lPos.z, 0.0f), eHWSC_Pixel);
 
 		Vec3 lSize;
 		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKY_HIGHLIGHT_SIZE, lSize);
 		static CCryNameR Param2Name("LightningColSize");
-		m_passLightning.SetConstant(eHWSC_Pixel, Param2Name, Vec4(lCol.x, lCol.y, lCol.z, lSize.x * 0.01f));
+		m_passLightning.SetConstant(Param2Name, Vec4(lCol.x, lCol.y, lCol.z, lSize.x * 0.01f), eHWSC_Pixel);
 
 		m_passLightning.Execute();
 	}
@@ -353,7 +353,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 		}
 
 		static CCryNameR volFogShadowRangeN("volFogShadowRange");
-		m_passVolFogShadowRaycast.SetConstant(eHWSC_Pixel, volFogShadowRangeN, volFogShadowRange);
+		m_passVolFogShadowRaycast.SetConstant(volFogShadowRangeN, volFogShadowRange, eHWSC_Pixel);
 
 		m_passVolFogShadowRaycast.Execute();
 	}
@@ -380,7 +380,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 			sampleOffsets[index] = Vec4(x * tU, 0.0f, 0.0f, 1.0f);
 		}
 		static CCryNameR volFogShadowBufSampleOffsetsN("volFogShadowBufSampleOffsets");
-		m_passVolFogShadowHBlur.SetConstantArray(eHWSC_Pixel, volFogShadowBufSampleOffsetsN, sampleOffsets, 8);
+		m_passVolFogShadowHBlur.SetConstantArray(volFogShadowBufSampleOffsetsN, sampleOffsets, 8, eHWSC_Pixel);
 
 		m_passVolFogShadowHBlur.Execute();
 	}
@@ -407,7 +407,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 			sampleOffsets[index] = Vec4(0.0f, y * tV, 0.0f, 1.0f);
 		}
 		static CCryNameR volFogShadowBufSampleOffsetsN("volFogShadowBufSampleOffsets");
-		m_passVolFogShadowVBlur.SetConstantArray(eHWSC_Pixel, volFogShadowBufSampleOffsetsN, sampleOffsets, 8);
+		m_passVolFogShadowVBlur.SetConstantArray(volFogShadowBufSampleOffsetsN, sampleOffsets, 8, eHWSC_Pixel);
 
 		m_passVolFogShadowVBlur.Execute();
 	}

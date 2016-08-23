@@ -1130,7 +1130,7 @@ void CDeferredShading::LightPass(const SRenderLight* const __restrict pDL, bool 
 	Vec4 pLightDiffuse = Vec4(pDL->m_Color.r, pDL->m_Color.g, pDL->m_Color.b, pDL->m_SpecMult);
 
 	float fInvRadius = (pDL->m_fRadius <= 0) ? 1.0f : 1.0f / pDL->m_fRadius;
-	Vec4 pLightPosCS = Vec4(pDL->m_Origin - m_pCamPos, fInvRadius);
+	Vec4 pLightPos = Vec4(pDL->m_Origin, fInvRadius);
 	Vec4 pDepthBounds = GetLightDepthBounds(pDL, (rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0);
 
 	Vec4 scaledLightRect = Vec4(
@@ -1305,12 +1305,6 @@ void CDeferredShading::LightPass(const SRenderLight* const __restrict pDL, bool 
 
 		// translate into camera space
 		ProjMatrixT.Transpose();
-		const Vec4 vEye(gRenDev->GetRCamera().vOrigin, 0.f);
-		Vec4 vecTranslation(vEye.Dot((Vec4&)ProjMatrixT.m00), vEye.Dot((Vec4&)ProjMatrixT.m10), vEye.Dot((Vec4&)ProjMatrixT.m20), vEye.Dot((Vec4&)ProjMatrixT.m30));
-		ProjMatrixT.m03 += vecTranslation.x;
-		ProjMatrixT.m13 += vecTranslation.y;
-		ProjMatrixT.m23 += vecTranslation.z;
-		ProjMatrixT.m33 += vecTranslation.w;
 		m_pShader->FXSetPSFloat(m_pParamLightProjMatrix, (Vec4*) ProjMatrixT.GetData(), 4);
 	}
 
@@ -1332,7 +1326,7 @@ void CDeferredShading::LightPass(const SRenderLight* const __restrict pDL, bool 
 		m_pShader->FXSetPSFloat(arealightMatrixName, alias_cast<Vec4*>(&mAreaLightMatrix), 4);
 	}
 
-	m_pShader->FXSetPSFloat(m_pParamLightPos, &pLightPosCS, 1);
+	m_pShader->FXSetPSFloat(m_pParamLightPos, &pLightPos, 1);
 	m_pShader->FXSetPSFloat(m_pParamLightDiffuse, &pLightDiffuse, 1);
 
 	uint32 stencilID = (pDL->m_nStencilRef[1] + 1) << 16 | pDL->m_nStencilRef[0] + 1;
@@ -1359,12 +1353,6 @@ void CDeferredShading::LightPass(const SRenderLight* const __restrict pDL, bool 
 		// set up shadow matrix
 		static CCryNameR paramName("g_mLightShadowProj");
 		Matrix44A shadowMat = gRenDev->m_TempMatrices[0][0];
-		const Vec4 vEye(gRenDev->GetRCamera().vOrigin, 0.f);
-		Vec4 vecTranslation(vEye.Dot((Vec4&)shadowMat.m00), vEye.Dot((Vec4&)shadowMat.m10), vEye.Dot((Vec4&)shadowMat.m20), vEye.Dot((Vec4&)shadowMat.m30));
-		shadowMat.m03 += vecTranslation.x;
-		shadowMat.m13 += vecTranslation.y;
-		shadowMat.m23 += vecTranslation.z;
-		shadowMat.m33 += vecTranslation.w;
 
 		// pre-multiply by 1/frustrum_far_plane
 		(Vec4&)shadowMat.m20 *= gRenDev->m_cEF.m_TempVecs[2].x;
@@ -1913,7 +1901,7 @@ void CDeferredShading::DeferredCubemapPass(const SRenderLight* const __restrict 
 	Vec4 pLightDiffuse = Vec4(pDL->m_Color.r, pDL->m_Color.g, pDL->m_Color.b, pDL->m_SpecMult);
 
 	const float fInvRadius = (pDL->m_fRadius <= 0) ? 1.0f : 1.0f / pDL->m_fRadius;
-	const Vec4 pLightPosCS = Vec4(pDL->m_Origin - m_pCamPos, fInvRadius);
+	const Vec4 pLightPos = Vec4(pDL->m_Origin, fInvRadius);
 	const float fAttenFalloffMax = max(pDL->GetFalloffMax(), 1e-3f);
 
 	const bool bReverseDepth = (rRP.m_TI[rRP.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
@@ -2053,7 +2041,7 @@ void CDeferredShading::DeferredCubemapPass(const SRenderLight* const __restrict 
 	if (bStencilMask)
 		rd->FX_StencilTestCurRef(true, false);
 
-	m_pShader->FXSetPSFloat(m_pParamLightPos, &pLightPosCS, 1);
+	m_pShader->FXSetPSFloat(m_pParamLightPos, &pLightPos, 1);
 	m_pShader->FXSetPSFloat(m_pParamLightDiffuse, &pLightDiffuse, 1);
 
 	m_pDepthRT->Apply(0, m_nTexStatePoint, EFTT_UNKNOWN, -1, (rRP.m_PersFlags2 & RBPF2_MSAA_SAMPLEFREQ_PASS) ? m_nBindResourceMsaa : SResourceView::DefaultView);

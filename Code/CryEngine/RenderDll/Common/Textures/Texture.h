@@ -1475,8 +1475,8 @@ private:
 	D3DShaderResource* m_pDeviceShaderResource;
 	D3DShaderResource* m_pDeviceShaderResourceSRGB;
 
-	typedef std::function<void (uint32)> InvalidateCallbackType;
-	std::vector<std::pair<void*, InvalidateCallbackType>> m_invalidateCallbacks;
+	typedef std::function<void (void*, uint32)> InvalidateCallbackType;
+	std::unordered_map<void*, InvalidateCallbackType> m_invalidateCallbacks;
 
 public:
 	int m_nUpdateFrameID;         // last write access, compare with GetFrameID(false)
@@ -1788,8 +1788,16 @@ public:
 	// Will notify resource's user that some data of the the resource was invalidated.
 	// dirtyFlags - one or more of the EDeviceDirtyFlags enum bits
 	void InvalidateDeviceResource(uint32 dirtyFlags);
-	void AddInvalidateCallback(void* listener, InvalidateCallbackType callback);
-	void RemoveInvalidateCallbacks(void* listener);
+
+	inline void AddInvalidateCallback(void* listener, InvalidateCallbackType callback)
+	{
+		m_invalidateCallbacks.emplace(listener, callback);
+	}
+
+	inline void RemoveInvalidateCallbacks(void* listener)
+	{
+		m_invalidateCallbacks.erase(listener);
+	}
 	//////////////////////////////////////////////////////////////////////////
 
 public:

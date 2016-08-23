@@ -114,7 +114,7 @@ DXGL_API HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
 	return S_OK;
 }
 
-DXGL_API HRESULT WINAPI D3D10CreateBlob(SIZE_T NumBytes, LPD3D10BLOB* ppBuffer)
+DXGL_API HRESULT WINAPI D3DCreateBlob(SIZE_T NumBytes, LPD3D10BLOB* ppBuffer)
 {
 	CCryDXGLBlob::ToInterface(ppBuffer, new CCryDXGLBlob(NumBytes));
 	return (*ppBuffer)->GetBufferPointer() != NULL;

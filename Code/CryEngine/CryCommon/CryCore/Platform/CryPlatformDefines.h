@@ -60,6 +60,7 @@
 	#endif
 	#define CRY_PLATFORM_SSE4    1
 	#define CRY_PLATFORM_F16C    1
+	#define CRY_PLATFORM_BMI1    1
 
 #elif defined(_ORBIS) || defined(__ORBIS__)
 
@@ -71,6 +72,7 @@
 	#endif
 	#define CRY_PLATFORM_SSE4    1
 	#define CRY_PLATFORM_F16C    1
+	#define CRY_PLATFORM_BMI1    1
 
 #elif defined(ANDROID) || defined(__ANDROID__)
 

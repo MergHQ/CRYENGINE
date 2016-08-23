@@ -67,8 +67,8 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 	}
 
 	m_pass.BeginConstantUpdate();
-	m_pass.SetConstant(eHWSC_Pixel, param0Name, params0);
-	m_pass.SetConstant(eHWSC_Pixel, param1Name, params1);
+	m_pass.SetConstant(param0Name, params0, eHWSC_Pixel);
+	m_pass.SetConstant(param1Name, params1, eHWSC_Pixel);
 	m_pass.Execute();
 }
 
@@ -138,7 +138,7 @@ void CDepthDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bLi
 	int scaledHeight = (pSrcRT->GetHeight() + 1) / 2;
 	params.x = (float)pDestRT->GetWidth() / (float)scaledWidth;
 	params.y = (float)pDestRT->GetHeight() / (float)scaledHeight;
-	m_pass.SetConstant(eHWSC_Pixel, paramName, params);
+	m_pass.SetConstant( paramName, params, eHWSC_Pixel);
 	m_pass.Execute();
 }
 
@@ -248,9 +248,9 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 	m_passH.SetTextureSamplerPair(0, pScrDestRT, texFilter);
 
 	m_passH.BeginConstantUpdate();
-	m_passH.SetConstantArray(eHWSC_Vertex, param1Name, m_paramsH, numSamples / 2);
-	m_passH.SetConstantArray(eHWSC_Pixel, param0Name, m_weights, numSamples / 2);
-	m_passH.SetConstant(eHWSC_Pixel, clampTCName, clampTC);
+	m_passH.SetConstantArray(param1Name, m_paramsH, numSamples / 2, eHWSC_Vertex);
+	m_passH.SetConstantArray(param0Name, m_weights, numSamples / 2, eHWSC_Pixel);
+	m_passH.SetConstant(clampTCName, clampTC, eHWSC_Pixel);
 	m_passH.Execute();
 
 	// Vertical
@@ -260,9 +260,9 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 	m_passV.SetTextureSamplerPair(0, pTempRT, texFilter);
 
 	m_passV.BeginConstantUpdate();
-	m_passV.SetConstantArray(eHWSC_Vertex, param1Name, m_paramsV, numSamples / 2);
-	m_passV.SetConstantArray(eHWSC_Pixel, param0Name, m_weights, numSamples / 2);
-	m_passV.SetConstant(eHWSC_Pixel, clampTCName, clampTC);
+	m_passV.SetConstantArray(param1Name, m_paramsV, numSamples / 2, eHWSC_Vertex);
+	m_passV.SetConstantArray(param0Name, m_weights, numSamples / 2, eHWSC_Pixel);
+	m_passV.SetConstant(clampTCName, clampTC, eHWSC_Pixel);
 	m_passV.Execute();
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -296,7 +296,7 @@ void CMipmapGenPass::Execute(CTexture* pScrDestRT, int mipCount)
 #if CRY_USE_DX12
 	// Revert state of resource to one coherent resource-state after mip-mapping
 	CDeviceCommandListPtr pCommandList = CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
-	CCryDX12Resource<ID3D11Resource>* DX11res = reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>(pScrDestRT->GetDevTexture()->GetBaseTexture());
+	CCryDX12Resource<ID3D11ResourceToImplement>* DX11res = reinterpret_cast<CCryDX12Resource<ID3D11ResourceToImplement>*>(pScrDestRT->GetDevTexture()->GetBaseTexture());
 	NCryDX12::CResource& DX12res = DX11res->GetDX12Resource();
 	NCryDX12::CCommandList* DX12cmd = pCommandList->GetDX12CommandList();
 

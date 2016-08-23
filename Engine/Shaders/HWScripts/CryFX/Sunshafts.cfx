@@ -100,6 +100,15 @@ float4 SunShafts_SunCol;
 float4x4 mColorMatrix;
 float4 ScratchParams;
 
+cbuffer CBSunShafts : register(b0)
+{
+	struct
+	{
+		float4 sunPos;
+		float4 params;
+	} cbSunShafts;
+};
+
 struct vtxOutSunShaftsGen
 {
   float4 HPosition  : POSITION; 
@@ -146,21 +155,21 @@ pixout SunShaftsGenPS(vtxOutSunShaftsGen IN)
 {
   pixout OUT;
 
-  float2 sunPosProj = SunShafts_SunPos.xy; //((IN.sunPos.xy / IN.sunPos.z));
+  float2 sunPosProj = cbSunShafts.sunPos.xy;
 
-	float fSign = SunShafts_SunPos.w; //(IN.sunPos.w);
+	float fSign = cbSunShafts.sunPos.w;
   
-  float2 sunVec = ( GetScaledScreenTC(sunPosProj.xy) - IN.baseTC.xy)/PS_HPosScale.xy;
+  float2 sunVec = ( GetScaledScreenTC(sunPosProj.xy) - IN.baseTC.xy)/CV_HPosScale.xy;
   
-  float fAspectRatio =  1.333 * (PS_ScreenSize.y*PS_HPosScale.x) /(PS_ScreenSize.x*PS_HPosScale.y);
+  float fAspectRatio =  1.333 * (CV_ScreenSize.y*CV_HPosScale.x) /(CV_ScreenSize.x*CV_HPosScale.y);
   
-  float sunDist = saturate(fSign) * saturate( 1 - saturate(length(sunVec * float2(1, fAspectRatio))*PI_sunShaftsParams.y));// * 
+  float sunDist = saturate(fSign) * saturate( 1 - saturate(length(sunVec * float2(1, fAspectRatio))*cbSunShafts.params.y));// * 
                             //saturate(saturate(fSign)*0.6+0.4  ) );
                             // *(1.0 - 0.2*(1- sin(AnimGenParams) ) pass variation per constant
   float2 sunDir =  ( GetScaledScreenTC(sunPosProj.xy) - IN.baseTC.xy);
    
   half4 accum = 0; 
-  sunDir.xy *= PI_sunShaftsParams.x* (fSign);
+  sunDir.xy *= cbSunShafts.params.x * (fSign);
   
   half4 depth = tex2D(_tex0, IN.baseTC.xy );      
   accum += depth;

@@ -919,9 +919,6 @@ public:
 	void EF_PrepareAllDepthMaps(CRenderView* pRenderView);
   void FX_StencilCullPass(int nStencilID, int nNumVers, int nNumInds);
 	void FX_StencilFrustumCull(int nStencilID, const SRenderLight* pLight, ShadowMapFrustum* pFrustum, int nAxis);
-  void FX_StencilCull(int nStencilID, t_arrDeferredMeshIndBuff& arrDeferredInds, t_arrDeferredMeshVertBuff& arrDeferredVerts, CShader *pShader);
-	void FX_StencilRefreshCustomVolume(int StencilFunc, uint32 nStencRef, uint32 nStencMask,
-	                                   Vec3 *pVerts, uint32 nNumVerts, uint16 *pInds, uint32 nNumInds);
 	void FX_StencilCullNonConvex(int nStencilID, IRenderMesh* pWaterTightMesh, const Matrix34& mWorldTM);
 
   void FX_ZTargetReadBack();

@@ -2344,6 +2344,7 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 	GetCVars()->e_svoTI_UseTODSkyColor = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "UseTODSkyColor", "0"));
 
 	GetCVars()->e_svoTI_HighGlossOcclusion = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "HighGlossOcclusion", "0"));
+	GetCVars()->e_svoTI_TranslucentBrightness = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "TranslucentBrightness", "2.5"));
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 	GetCVars()->e_svoTI_IntegrationMode = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "IntegrationMode", "0"));

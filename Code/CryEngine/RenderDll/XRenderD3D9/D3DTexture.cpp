@@ -4295,7 +4295,7 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDevTexture, int ownerMips, 
 	if (0)
 	{
 	}
-#if CRY_PLATFORM_DURANGO
+#if CRY_PLATFORM_DURANGO && defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
 	else if (!gcpRendD3D->m_pRT->IsRenderThread())
 	{
 		// We can use the move engine!

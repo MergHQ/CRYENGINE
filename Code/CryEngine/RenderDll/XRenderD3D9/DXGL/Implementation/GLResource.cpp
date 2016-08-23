@@ -185,12 +185,12 @@ struct SDefaultTex1DBase : SDefaultTexBase, STex1DBase
 
 	static void ApplyUnpackState(CContext* pContext, STexSize kSize, uint32 uLogDataAlignment, uint32 uRowPitch, uint32, const SGIFormatInfo* pFormat)
 	{
-		pContext->SetUnpackAlignment(min((int)MAX_UNPACK_ALIGNMENT, 1 << uLogDataAlignment));
+		pContext->SetUnpackAlignment(std::min<int>(MAX_UNPACK_ALIGNMENT, 1 << uLogDataAlignment));
 	}
 
 	static void ApplyPackState(CContext* pContext, STexSize kSize, uint32 uLogDataAlignment, uint32 uRowPitch, uint32, const SGIFormatInfo* pFormat)
 	{
-		pContext->SetPackAlignment(min((int)MAX_PACK_ALIGNMENT, 1 << uLogDataAlignment));
+		pContext->SetPackAlignment(std::min<int>(MAX_PACK_ALIGNMENT, 1 << uLogDataAlignment));
 	}
 };
 
@@ -206,13 +206,13 @@ struct SDefaultTex2DBase : SDefaultTexBase, STex2DBase
 	static void ApplyUnpackState(CContext* pContext, STexSize kSize, uint32 uLogDataAlignment, uint32 uRowPitch, uint32, const SGIFormatInfo* pFormat)
 	{
 		pContext->SetUnpackRowLength(GetRowPitch(kSize.x, uRowPitch, pFormat));
-		pContext->SetUnpackAlignment(min((int)MAX_UNPACK_ALIGNMENT, 1 << min(uLogDataAlignment, (uint32)countTrailingZeroes(uRowPitch))));
+		pContext->SetUnpackAlignment(std::min<int>(MAX_UNPACK_ALIGNMENT, 1 << std::min<int>(uLogDataAlignment, countTrailingZeros32(uRowPitch))));
 	}
 
 	static void ApplyPackState(CContext* pContext, STexSize kSize, uint32 uLogDataAlignment, uint32 uRowPitch, uint32, const SGIFormatInfo* pFormat)
 	{
 		pContext->SetPackRowLength(GetRowPitch(kSize.x, uRowPitch, pFormat));
-		pContext->SetPackAlignment(min((int)MAX_PACK_ALIGNMENT, 1 << min(uLogDataAlignment, (uint32)countTrailingZeroes(uRowPitch))));
+		pContext->SetPackAlignment(std::min<int>(MAX_PACK_ALIGNMENT, 1 << std::min<int>(uLogDataAlignment, countTrailingZeros32(uRowPitch))));
 	}
 
 	template<typename T>
@@ -235,14 +235,14 @@ struct SDefaultTex3DBase : SDefaultTexBase, STex3DBase
 	{
 		pContext->SetUnpackRowLength(GetRowPitch(kSize.x, uRowPitch, pFormat));
 		pContext->SetUnpackImageHeight(GetImagePitch(kSize.y, uImagePitch, uRowPitch));
-		pContext->SetUnpackAlignment(min((int)MAX_UNPACK_ALIGNMENT, 1 << min(uLogDataAlignment, (uint32)min(countTrailingZeroes(uRowPitch), countTrailingZeroes(uImagePitch)))));
+		pContext->SetUnpackAlignment(std::min<int>(MAX_UNPACK_ALIGNMENT, 1 << std::min<int>(uLogDataAlignment, std::min<int>(countTrailingZeros32(uRowPitch), countTrailingZeros32(uImagePitch)))));
 	}
 
 	static void ApplyPackState(CContext* pContext, STexSize kSize, uint32 uLogDataAlignment, uint32 uRowPitch, uint32 uImagePitch, const SGIFormatInfo* pFormat)
 	{
 		pContext->SetPackRowLength(GetRowPitch(kSize.x, uRowPitch, pFormat));
 		pContext->SetPackImageHeight(GetImagePitch(kSize.y, uImagePitch, uRowPitch));
-		pContext->SetPackAlignment(min((int)MAX_PACK_ALIGNMENT, 1 << min(uLogDataAlignment, (uint32)min(countTrailingZeroes(uRowPitch), countTrailingZeroes(uImagePitch)))));
+		pContext->SetPackAlignment(std::min<int>(MAX_PACK_ALIGNMENT, 1 << std::min<int>(uLogDataAlignment, std::min<int>(countTrailingZeros32(uRowPitch), countTrailingZeros32(uImagePitch)))));
 	}
 
 	template<typename T>
@@ -625,14 +625,14 @@ struct SSingleTexImpl : Interface
 		Partition::GetSubTargetAndLayer(pTexture, kSubID.m_uElement, eSubTarget, iLayer);
 		assert(iLayer == 0);
 
-		Interface::ApplyUnpackState(pContext, kBox.m_kSize, (uint32)countTrailingZeroes((unsigned int)reinterpret_cast<uintptr_t>(pSrcData)), uSrcRowPitch, uSrcDepthPitch, pFormat);
+		Interface::ApplyUnpackState(pContext, kBox.m_kSize, countTrailingZeros32((unsigned int)reinterpret_cast<uintptr_t>(pSrcData)), uSrcRowPitch, uSrcDepthPitch, pFormat);
 		TestUploadBounds<Interface>(pTexture, eSubTarget, kSubID.m_iMipLevel, kBox, pFormat, pSrcData, uSrcRowPitch, uSrcDepthPitch);
 		Interface::TexSubImage(pTexture, eSubTarget, kSubID.m_iMipLevel, kBox, pFormat->m_pTexture, pSrcData);
 	}
 
 	static void DownloadImage(STexture* pTexture, STexSubresourceID kSubID, STexBox kBox, void* pDstData, uint32 uDstRowPitch, uint32 uDstDepthPitch, CContext* pContext, const SGIFormatInfo* pFormat)
 	{
-		Interface::ApplyPackState(pContext, kBox.m_kSize, (uint32)countTrailingZeroes((unsigned int)reinterpret_cast<uintptr_t>(pDstData)), uDstRowPitch, uDstDepthPitch, pFormat);
+		Interface::ApplyPackState(pContext, kBox.m_kSize, countTrailingZeros32((unsigned int)reinterpret_cast<uintptr_t>(pDstData)), uDstRowPitch, uDstDepthPitch, pFormat);
 
 #if DXGL_SUPPORT_GETTEXIMAGE
 		GLenum eSubTarget;
@@ -728,14 +728,14 @@ struct SArrayTexImpl : Interface
 		Interface::SetLayerComponent(kBox.m_kOffset, iLayer);
 		Interface::SetLayerComponent(kBox.m_kSize, 1);
 
-		Interface::ApplyUnpackState(pContext, kBox.m_kSize, (uint32)countTrailingZeroes((unsigned int)reinterpret_cast<uintptr_t>(pSrcData)), uSrcRowPitch, uSrcDepthPitch, pFormat);
+		Interface::ApplyUnpackState(pContext, kBox.m_kSize, countTrailingZeros32((unsigned int)reinterpret_cast<uintptr_t>(pSrcData)), uSrcRowPitch, uSrcDepthPitch, pFormat);
 		TestUploadBounds<Interface>(pTexture, eSubTarget, kSubID.m_iMipLevel, kBox, pFormat, pSrcData, uSrcRowPitch, uSrcDepthPitch);
 		Interface::TexSubImage(pTexture, eSubTarget, kSubID.m_iMipLevel, kBox, pFormat->m_pTexture, pSrcData);
 	}
 
 	static void DownloadImage(STexture* pTexture, STexSubresourceID kSubID, STexBox kBox, void* pDstData, uint32 uDstRowPitch, uint32 uDstDepthPitch, CContext* pContext, const SGIFormatInfo* pFormat)
 	{
-		Interface::ApplyPackState(pContext, kBox.m_kSize, (uint32)countTrailingZeroes((unsigned int)reinterpret_cast<uintptr_t>(pDstData)), uDstRowPitch, uDstDepthPitch, pFormat);
+		Interface::ApplyPackState(pContext, kBox.m_kSize, countTrailingZeros32((unsigned int)reinterpret_cast<uintptr_t>(pDstData)), uDstRowPitch, uDstDepthPitch, pFormat);
 
 #if DXGL_SUPPORT_GETTEXIMAGE
 		GLenum eSubTarget;
@@ -1685,8 +1685,8 @@ bool SDynamicBufferCopy::GetDirtyRegion(uint32& uOffset, uint32& uSize)
 	{
 		assert(m_apDirtyPages[uChange] >= m_pData);
 		uint32 uOffset((uint32)(reinterpret_cast<char*>(m_apDirtyPages[uChange]) - reinterpret_cast<char*>(m_pData)));
-		uMin = min(uMin, uOffset);
-		uMax = max(uMax, uOffset);
+		uMin = std::min(uMin, uOffset);
+		uMax = std::max(uMax, uOffset);
 	}
 
 	if (uMin > uMax)
@@ -1696,7 +1696,7 @@ bool SDynamicBufferCopy::GetDirtyRegion(uint32& uOffset, uint32& uSize)
 	}
 	else
 	{
-		uMax = min(uMax + ms_uPageSize, m_uSize) - 1;
+		uMax = std::min(uMax + ms_uPageSize, m_uSize) - 1;
 
 		uOffset = uMin;
 		uSize = uMax - uMin + 1;

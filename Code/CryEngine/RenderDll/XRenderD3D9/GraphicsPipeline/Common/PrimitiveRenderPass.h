@@ -161,6 +161,7 @@ public:
 	CPrimitiveRenderPass& operator=(CPrimitiveRenderPass&& other);
 
 	void   SetRenderTarget(uint32 slot, CTexture* pRenderTarget, SResourceView::KeyType rendertargetView = SResourceView::DefaultRendertargetView);
+	CTexture* GetRenderTarget(uint32 slot) { return m_pRenderTargets[slot]; }
 	void   SetOutputUAV(uint32 slot, CGpuBuffer* pBuffer);
 	void   SetDepthTarget(SDepthTexture* pDepthTarget);
 	void   SetViewport(const D3DViewPort& viewport);

@@ -27,6 +27,7 @@ DECLARE_JOB("CreateSubsetRenderMesh", TCreateSubsetRenderMesh, SMeshSubSetIndice
 #define RENDERMESH_BUFFER_ENABLE_DIRECT_ACCESS 0
 #endif
 
+//////////////////////////////////////////////////////////////////////////////////////
 namespace 
 { 
 	inline uint32 GetCurrentRenderFrameID(const SRenderingPassInfo& passInfo)

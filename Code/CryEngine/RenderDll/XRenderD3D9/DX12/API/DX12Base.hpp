@@ -13,6 +13,23 @@
 #ifndef __DX12BASE__
 	#define __DX12BASE__
 
+#if defined(CRY_USE_DX12) && CRY_PLATFORM_DURANGO
+
+	#include <d3d11_x.h>
+	#include <d3d12_x.h>
+	#include "..\Includes\d3dx12.h"
+
+	#include "DX12\Includes\d3d11_empty.h"
+
+#elif defined(DURANGO_MONOD3D_DRIVER)
+	//#include <d3d11_x.h>
+
+	#include <d3d11_x.h>
+	#include <d3d12_x.h>
+	#include "..\Includes\d3dx12.h"
+	//	#include <d3dx12_x.h>
+
+#else
 	#include <d3d11.h>
 	#include <d3d11_1.h>
 	#include <dxgi1_2.h>
@@ -20,6 +37,10 @@
 	#include <d3d12.h>
 	#include <d3dx12.h>
 	#include <dxgi1_4.h>
+
+	#include "DX12\Includes\d3d11_empty.h"
+#endif
+
 
 	#include <CryMath/Range.h>
 

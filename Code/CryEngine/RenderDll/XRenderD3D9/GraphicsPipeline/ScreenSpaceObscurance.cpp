@@ -124,11 +124,11 @@ void CScreenSpaceObscuranceStage::Execute(ShadowMapFrustum* pHeightMapFrustum, C
 		m_passFilter.BeginConstantUpdate();
 
 		Vec4 v(0, 0, (float)srcSizeX, (float)srcSizeY);
-		m_passFilter.SetConstant(eHWSC_Vertex, pixelOffsetName, v);
+		m_passFilter.SetConstant(pixelOffsetName, v, eHWSC_Vertex);
 		v = Vec4(0.5f / (float)sizeX, 0.5f / (float)sizeY, 1.0f / (float)srcSizeX, 1.0f / (float)srcSizeY);
-		m_passFilter.SetConstant(eHWSC_Pixel, blurOffsetName, v);
+		m_passFilter.SetConstant(blurOffsetName, v, eHWSC_Pixel);
 		v = Vec4(2.0f / srcSizeX, 0, 2.0f / srcSizeY, 10.0f); // w: weight coef
-		m_passFilter.SetConstant(eHWSC_Pixel, blurKernelName, v);
+		m_passFilter.SetConstant(blurKernelName, v, eHWSC_Pixel);
 
 		m_passFilter.Execute();
 	}

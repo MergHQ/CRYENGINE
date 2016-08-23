@@ -8,10 +8,22 @@
 
 // TODO: Add support for occlusion query to find out if sky is visible at all
 
+struct SSunShaftConstants
+{
+	Vec4 sunPos;
+	Vec4 params;
+};
+
 void CSunShaftsStage::Init()
 {
 	m_samplerPoint = CTexture::GetTexState(STexState(FILTER_POINT, true));
 	m_samplerLinear = CTexture::GetTexState(STexState(FILTER_LINEAR, true));
+
+	m_passShaftsGen0.AllocateTypedConstantBuffer<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
+	m_passShaftsGen1.AllocateTypedConstantBuffer<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
+
+	m_passShaftsGen0.SetRequirePerViewConstantBuffer(true);
+	m_passShaftsGen1.SetRequirePerViewConstantBuffer(true);
 }
 
 bool CSunShaftsStage::IsActive()
@@ -78,23 +90,27 @@ void CSunShaftsStage::Execute()
 		Vec4 params0 = Vec4(s1 * 0.95f, t1 * 0.25f, -s1 * 0.25f, t1 * 0.96f);
 		Vec4 params1 = Vec4(-s1 * 0.96f, -t1 * 0.25f, s1 * 0.25f, -t1 * 0.96f);
 
-		m_passShaftsMask.SetConstant(eHWSC_Pixel, nameParams0, params0);
-		m_passShaftsMask.SetConstant(eHWSC_Pixel, nameParams1, params1);
+		m_passShaftsMask.SetConstant(nameParams0, params0, eHWSC_Pixel);
+		m_passShaftsMask.SetConstant(nameParams1, params1, eHWSC_Pixel);
 
 		m_passShaftsMask.Execute();
 	}
 
 	// Apply local radial blur to mask
 	{
-		static CCryNameR nameShaftParams("PI_sunShaftsParams");
-		static CCryNameR nameSunPos("SunShafts_SunPos");
-		static CCryNameR nameViewProj("SunShafts_ViewProj");
+		CStandardGraphicsPipeline::SViewInfo viewInfo[2];
+		int viewInfoCount = gcpRendD3D->GetGraphicsPipeline().GetViewInfo(viewInfo);
 
+		Vec4 sunPosScreen[2];
 		Vec3 sunPos = gEnv->p3DEngine->GetSunDir() * 1000.0f;
-		Vec4 sunPosScreen = PostProcessUtils().m_pViewProj * Vec4(sunPos, 1.0f);
-		sunPosScreen.x = ((sunPosScreen.x + sunPosScreen.w) * 0.5f) / (1e-6f + sunPosScreen.w);
-		sunPosScreen.y = ((-sunPosScreen.y + sunPosScreen.w) * 0.5f) / (1e-6f + sunPosScreen.w);
-		sunPosScreen.w = gEnv->p3DEngine->GetSunDirNormalized().dot(PostProcessUtils().m_pViewProj.GetRow(2));
+
+		for (int i = 0; i < viewInfoCount; ++i)
+		{
+			sunPosScreen[i] = Vec4(sunPos, 1.0f) * viewInfo[i].cameraProjMatrix;
+			sunPosScreen[i].x = (( sunPosScreen[i].x + sunPosScreen[i].w) * 0.5f) / (1e-6f + sunPosScreen[i].w);
+			sunPosScreen[i].y = ((-sunPosScreen[i].y + sunPosScreen[i].w) * 0.5f) / (1e-6f + sunPosScreen[i].w);
+			sunPosScreen[i].w = gEnv->p3DEngine->GetSunDirNormalized().dot(PostProcessUtils().m_pViewProj.GetRow(2));
+		}
 
 		// Pass 1
 		{
@@ -109,12 +125,17 @@ void CSunShaftsStage::Execute()
 				m_passShaftsGen0.SetTextureSamplerPair(0, pFinalRT, m_samplerLinear);
 			}
 
-			m_passShaftsGen0.BeginConstantUpdate();
+			auto constants = m_passShaftsGen0.BeginTypedConstantUpdate<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch);
+			constants->sunPos = sunPosScreen[0];
+			constants->params = Vec4(0.1f, rayAttenuation, 0, 0);
+			
+			if (viewInfoCount > 1)
+			{
+				constants.BeginStereoOverride();
+				constants->sunPos = sunPosScreen[1];
+			}
 
-			m_passShaftsGen0.SetConstant(eHWSC_Pixel, nameShaftParams, Vec4(0.1f, rayAttenuation, 0, 0));
-			m_passShaftsGen0.SetConstantArray(eHWSC_Vertex, nameViewProj, (Vec4*)PostProcessUtils().m_pViewProj.GetData(), 4);
-			m_passShaftsGen0.SetConstant(eHWSC_Pixel, nameSunPos, sunPosScreen);
-
+			m_passShaftsGen0.EndTypedConstantUpdate(constants);
 			m_passShaftsGen0.Execute();
 		}
 
@@ -131,12 +152,17 @@ void CSunShaftsStage::Execute()
 				m_passShaftsGen1.SetTextureSamplerPair(0, pTempRT, m_samplerLinear);
 			}
 
-			m_passShaftsGen1.BeginConstantUpdate();
+			auto constants = m_passShaftsGen1.BeginTypedConstantUpdate<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch);
+			constants->sunPos = sunPosScreen[0];
+			constants->params = Vec4(0.025f, rayAttenuation, 0, 0);
 
-			m_passShaftsGen1.SetConstant(eHWSC_Pixel, nameShaftParams, Vec4(0.025f, rayAttenuation, 0, 0));
-			m_passShaftsGen1.SetConstantArray(eHWSC_Vertex, nameViewProj, (Vec4*)PostProcessUtils().m_pViewProj.GetData(), 4);
-			m_passShaftsGen1.SetConstant(eHWSC_Pixel, nameSunPos, sunPosScreen);
+			if (viewInfoCount > 1)
+			{
+				constants.BeginStereoOverride();
+				constants->sunPos = sunPosScreen[1];
+			}
 
+			m_passShaftsGen1.EndTypedConstantUpdate(constants);
 			m_passShaftsGen1.Execute();
 		}
 	}

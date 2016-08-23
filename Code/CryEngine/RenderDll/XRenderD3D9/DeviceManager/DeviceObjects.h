@@ -272,7 +272,6 @@ public:
 
 protected:
 	virtual bool BuildImpl(EFlags updatedFlags) = 0;
-	void OnTextureChanged(uint32 dirtyFlags);
 
 	VectorMap<DeviceResourceBinding::SShaderSlot, STextureData>        m_Textures;
 	VectorMap<DeviceResourceBinding::SShaderSlot, SSamplerData>        m_Samplers;
@@ -842,7 +841,7 @@ struct SDeviceObjectHelpers
 		{
 			if (m_pBuffer)
 			{
-				m_pBuffer->UpdateBuffer(m_pCachedData, Align(sizeof(T), Alignment), m_CurrentBufferIndex + 1);
+				m_pBuffer->UpdateBuffer(m_pCachedData, Align(sizeof(T), Alignment), 0, m_CurrentBufferIndex + 1);
 			}
 		}
 
@@ -888,8 +887,8 @@ struct SDeviceObjectHelpers
 		void BeginNamedConstantUpdate();
 		void EndNamedConstantUpdate();
 
-		bool SetNamedConstant(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 param);
-		bool SetNamedConstantArray(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 params[], uint32 numParams);
+		bool SetNamedConstant(const CCryNameR& paramName, const Vec4 param, EHWShaderClass shaderClass = eHWSC_Pixel);
+		bool SetNamedConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams, EHWShaderClass shaderClass = eHWSC_Pixel);
 
 		////////// Manual constant update via typed buffers //////////
 		bool SetTypedConstantBuffer(EConstantBufferShaderSlot shaderSlot, CConstantBuffer* pBuffer, EShaderStage shaderStages = EShaderStage_Pixel);

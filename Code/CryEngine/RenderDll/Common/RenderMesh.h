@@ -571,45 +571,39 @@ public:
 class CVertexBuffer
 {
 public:
-  CVertexBuffer()
-  {
-    m_eVF = eVF_Unknown;
-    m_nVerts = 0;
-  }
-  CVertexBuffer(void* pData, EVertexFormat eVF, int nVerts=0)
-  {
-    m_VS.m_pLocalData = pData;
-    m_eVF = eVF;
-    m_nVerts = nVerts;
-  }
-#ifdef _RENDERER
-  ~CVertexBuffer();
-#endif
+	CVertexBuffer()
+	{
+		m_eVF = eVF_Unknown;
+		m_nVerts = 0;
+	}
+	CVertexBuffer(void* pData, EVertexFormat eVF, int nVerts = 0)
+	{
+		m_VData = pData;
+		m_eVF = eVF;
+		m_nVerts = nVerts;
+	}
 
-  SBufferStream m_VS;
-  EVertexFormat m_eVF;
-  int32 m_nVerts;
+	void* m_VData;
+	EVertexFormat m_eVF;
+	int32 m_nVerts;
 };
 
 class CIndexBuffer
 {
 public:
-  CIndexBuffer()
-  {
-    m_nInds = 0;
-  }
+	CIndexBuffer()
+	{
+		m_nInds = 0;
+	}
 
-  CIndexBuffer(uint16* pData)
-  {
-    m_VS.m_pLocalData = pData;
-    m_nInds = 0;
-  }
-#ifdef _RENDERER
-  ~CIndexBuffer();
-#endif
+	CIndexBuffer(uint16* pData)
+	{
+		m_IData = pData;
+		m_nInds = 0;
+	}
 
-  SBufferStream m_VS;
-  int32 m_nInds;
+	void* m_IData;
+	int32 m_nInds;
 };
 
 #endif // __RenderMesh2_h__

@@ -802,11 +802,11 @@ void CShadowMapStage::CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMap
 			Matrix44 mReprojDstToSrc = pDst->mLightViewMatrix.GetInverted() * pSrc->mLightViewMatrix;
 
 			static CCryNameR paramReprojMatDstToSrc("g_mReprojDstToSrc");
-			m_CopyShadowMapPass.SetConstantArray(eHWSC_Pixel, paramReprojMatDstToSrc, (Vec4*) mReprojDstToSrc.GetData(), 4);
+			m_CopyShadowMapPass.SetConstantArray(paramReprojMatDstToSrc, (Vec4*) mReprojDstToSrc.GetData(), 4, eHWSC_Pixel);
 
 			Matrix44 mReprojSrcToDst = pSrc->mLightViewMatrix.GetInverted() * pDst->mLightViewMatrix;
 			static CCryNameR paramReprojMatSrcToDst("g_mReprojSrcToDst");
-			m_CopyShadowMapPass.SetConstantArray(eHWSC_Pixel, paramReprojMatSrcToDst, (Vec4*) mReprojSrcToDst.GetData(), 4);
+			m_CopyShadowMapPass.SetConstantArray(paramReprojMatSrcToDst, (Vec4*) mReprojSrcToDst.GetData(), 4, eHWSC_Pixel);
 
 			m_CopyShadowMapPass.Execute();
 		}

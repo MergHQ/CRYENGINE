@@ -14,7 +14,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 // Forward Declarations
-	#if !defined(OPENGL) && !CRY_PLATFORM_ORBIS
+	#if !defined(OPENGL) && !CRY_PLATFORM_ORBIS && !defined(CRY_USE_DX12_DEVIRTUALIZED)
 struct ID3D11DeviceContext1;
 struct ID3D11CommandList;
 struct ID3D11View;
@@ -347,9 +347,7 @@ public:
 	virtual void MappedWriteToSubresource_PreCallHook(ID3D11Resource* pResource, UINT Subresource, SIZE_T Offset, SIZE_T Size, D3D11_MAP MapType, const void* pData, UINT numDataBlocks) {}
 	virtual void MappedReadFromSubresource_PreCallHook(ID3D11Resource* pResource, UINT Subresource, SIZE_T Offset, SIZE_T Size, D3D11_MAP MapType, void* pData, UINT numDataBlocks) {}
 
-	#ifndef CRY_PLATFORM_DURANGO
 	virtual void InsertFence_PreCallHook()                   {}
-	#endif
 	virtual void TestForFence_PreCallHook(UINT64 fenceValue) {}
 	virtual void FlushToFence_PreCallHook(UINT64 fenceValue) {}
 	virtual void WaitForFence_PreCallHook(UINT64 fenceValue) {}
@@ -384,7 +382,9 @@ public:
 	virtual void FlushGpuCaches_PreCallHook(ID3D11Resource* pResource)                                                                  {}
 	virtual void FlushGpuCacheRange_PreCallHook(UINT Flags, void* pBaseAddress, SIZE_T SizeInBytes)                                     {}
 
+#ifndef CRY_PLATFORM_DURANGO
 	virtual void InsertFence_PreCallHook()                                                                                              {}
+#endif
 	virtual void InsertWaitUntilIdle_PreCallHook(UINT Flags)                                                                            {}
 
 	virtual void RemapConstantBufferInheritance_PreCallHook(D3D11_STAGE Stage, UINT Slot, D3D11_STAGE InheritStage, UINT InheritSlot)   {}

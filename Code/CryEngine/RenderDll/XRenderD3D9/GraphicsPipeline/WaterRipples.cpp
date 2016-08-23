@@ -281,7 +281,7 @@ void CWaterRipplesStage::Execute(CRenderView* pRenderView)
 
 			pass.BeginConstantUpdate();
 
-			pass.SetConstant(eHWSC_Pixel, m_ripplesParamName, m_shaderParam);
+			pass.SetConstant(m_ripplesParamName, m_shaderParam, eHWSC_Pixel);
 
 			pass.Execute();
 
@@ -307,7 +307,7 @@ void CWaterRipplesStage::Execute(CRenderView* pRenderView)
 
 			pass.BeginConstantUpdate();
 
-			pass.SetConstant(eHWSC_Pixel, m_ripplesParamName, m_shaderParam);
+			pass.SetConstant(m_ripplesParamName, m_shaderParam, eHWSC_Pixel);
 
 			pass.Execute();
 		}
@@ -430,7 +430,7 @@ void CWaterRipplesStage::ExecuteWaterRipples(CRenderView* pRenderView, CTexture*
 
 				// Pass height scale to shader
 				param.w = ripple.strength;
-				primitive.GetConstantManager().SetNamedConstant(eHWSC_Pixel, m_ripplesParamName, param);
+				primitive.GetConstantManager().SetNamedConstant(m_ripplesParamName, param, eHWSC_Pixel);
 
 				// Engine viewport needs to be set so that data is available when filling reflected PB constants
 				gcpRendD3D->RT_SetViewport((int32)viewport.TopLeftX, (int32)viewport.TopLeftY, (int32)viewport.Width, (int32)viewport.Height);

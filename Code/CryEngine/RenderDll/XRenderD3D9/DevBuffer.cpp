@@ -165,13 +165,15 @@ struct SPoolConfig
 		m_cb_threshold        = size_t(NextPower2(gRenDev->CV_r_constantbuffer_watermark)) * POOL_BANK_GRANULARITY;
 
 		m_pool_bank_mask      = m_pool_bank_size - 1;
-		m_pool_max_allocs = gRenDev->CV_r_buffer_pool_max_allocs;
-		m_pool_defrag_static = gRenDev->CV_r_buffer_pool_defrag_static != 0;
+		m_pool_max_allocs     = gRenDev->CV_r_buffer_pool_max_allocs;
+		m_pool_defrag_static  = gRenDev->CV_r_buffer_pool_defrag_static != 0;
 		m_pool_defrag_dynamic = gRenDev->CV_r_buffer_pool_defrag_dynamic != 0;
+
 		if (m_pool_defrag_static | m_pool_defrag_dynamic)
 			m_pool_max_moves_per_update = gRenDev->CV_r_buffer_pool_defrag_max_moves;
 		else
 			m_pool_max_moves_per_update = 0;
+
 		return true;
 	}
 };
@@ -1735,7 +1737,7 @@ public:
 	virtual void*         BeginRead(SBufferPoolItem* item)                                            { return NULL; }
 	virtual void*         BeginWrite(SBufferPoolItem* item)                                           { return NULL; }
 	virtual void          EndReadWrite(SBufferPoolItem* item, bool requires_flush)                    {}
-	virtual void          Write(SBufferPoolItem* item, const void* src, size_t size)                  { __debugbreak(); }
+	virtual void          Write(SBufferPoolItem* item, const void* src, size_t size, size_t offset)   { __debugbreak(); }
 	SBufferPoolItem*      Resolve(item_handle_t handle)                                               { return &m_item_table[handle]; }
 };
 
@@ -2488,7 +2490,7 @@ private:
 		return item;
 	}
 
-	void WriteStaged(SBufferPoolItem* item_, const void* src, size_t size)
+	void WriteStaged(SBufferPoolItem* item_, const void* src, size_t size, size_t offset)
 	{
 		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
 		SBufferPoolItem* item = item_;
@@ -2498,7 +2500,7 @@ private:
 
 		item = GetWritableItem(item_);
 
-		m_updater.Write(item->m_buffer, size, item->m_offset, src);
+		m_updater.Write(item->m_buffer, size, item->m_offset + offset, src);
 		
 		item = ReturnUnwritableItem(item_);
 
@@ -2509,7 +2511,7 @@ private:
 	}
 
 #if !BUFFER_USE_STAGED_UPDATES
-	void WriteUnstaged(SBufferPoolItem* item_, const void* src, size_t size)
+	void WriteUnstaged(SBufferPoolItem* item_, const void* src, size_t size, size_t offset)
 	{
 		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
 		SBufferPoolItem* item = item_;
@@ -2531,7 +2533,7 @@ private:
 		}
 
 		// Transfer sub-set of GPU resource to CPU, also allows graphics debugger and multi-gpu broadcaster to do the right thing
-		CDeviceManager::UploadContents<true>(item->m_buffer, 0, item->m_offset, size, BINDFLAGS_to_NOOVERWRITE(BIND_FLAGS), src, item_base_ptr);
+		CDeviceManager::UploadContents<true>(item->m_buffer, 0, item->m_offset + offset, size, BINDFLAGS_to_NOOVERWRITE(BIND_FLAGS), src, item_base_ptr);
 
 		item = ReturnUnwritableItem(item_);
 
@@ -2648,18 +2650,18 @@ public:
 		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
 	}
 
-	void Write(SBufferPoolItem* item, const void* src, size_t size) final
+	void Write(SBufferPoolItem* item, const void* src, size_t size, size_t offset) final
 	{
-		DEVBUFFERMAN_ASSERT(size <= item->m_size);
+		DEVBUFFERMAN_ASSERT((size + offset) <= item->m_size);
 
 		size = min((size_t)item->m_size, size);
 
 		if (item->m_size <= s_PoolConfig.m_pool_bank_size)
 		{
 #if !BUFFER_USE_STAGED_UPDATES
-			WriteUnstaged(item, src, size);
+			WriteUnstaged(item, src, size, offset);
 #else
-			WriteStaged(item, src, size);
+			WriteStaged(item, src, size, offset);
 #endif
 			return;
 		}
@@ -2671,14 +2673,14 @@ public:
 
 		item->m_used = 1u;
 
-		for (size_t offset = 0; offset < size; )
+		for (size_t cursor = 0; cursor < size; )
 		{
-			const size_t sz = min(size - offset, s_PoolConfig.m_pool_bank_size);
-			const size_t of = offset;
+			const size_t sz = min(size - cursor, s_PoolConfig.m_pool_bank_size);
+			const size_t of = cursor;
 
-			m_updater.Write(item->m_buffer, sz, item->m_offset + of, reinterpret_cast<const uint8*>(src) + of);
+			m_updater.Write(item->m_buffer, sz, item->m_offset + offset + of, reinterpret_cast<const uint8*>(src) + of);
 
-			offset += sz;
+			cursor += sz;
 		}
 
 		SyncToGPU(gRenDev->CV_r_enable_full_gpu_sync != 0);
@@ -2901,18 +2903,18 @@ public:
 
 		m_map_type = BINDFLAGS_to_NOOVERWRITE(BIND_FLAGS);
 	}
-	void Write(SBufferPoolItem* item, const void* src, size_t size) final
+	void Write(SBufferPoolItem* item, const void* src, size_t size, size_t offset) final
 	{
 		MEMORY_SCOPE_CHECK_HEAP();
-		DEVBUFFERMAN_ASSERT(size <= item->m_size);
+		DEVBUFFERMAN_ASSERT((size + offset) <= item->m_size);
 		DEVBUFFERMAN_ASSERT(item->m_size <= m_backing_buffer.m_capacity);
 
 		size = min((size_t)item->m_size, Align(size, CRY_PLATFORM_ALIGNMENT));
 
 	#if BUFFER_ENABLE_DIRECT_ACCESS
-		CDeviceManager::UploadContents<true>(item->m_buffer, 0, item->m_offset, size, m_map_type, src, reinterpret_cast<uint8*>(item->m_base_ptr) + item->m_offset);
+		CDeviceManager::UploadContents<true>(item->m_buffer, 0, item->m_offset + offset, size, m_map_type, src, reinterpret_cast<uint8*>(item->m_base_ptr) + item->m_offset);
 	#else
-		CDeviceManager::UploadContents<false>(item->m_buffer, 0, item->m_offset, size, m_map_type, src);
+		CDeviceManager::UploadContents<false>(item->m_buffer, 0, item->m_offset + offset, size, m_map_type, src);
 	#endif
 
 		m_map_type = BINDFLAGS_to_NOOVERWRITE(BIND_FLAGS);
@@ -3038,9 +3040,9 @@ public:
 	{
 		m_updater.EndReadWrite(item->m_buffer, item->m_size, item->m_offset);
 	}
-	void Write(SBufferPoolItem* item, const void* src, size_t size) final
+	void Write(SBufferPoolItem* item, const void* src, size_t size, size_t offset) final
 	{
-		m_updater.Write(item->m_buffer, item->m_size, item->m_offset, src);
+		m_updater.Write(item->m_buffer, item->m_size, item->m_offset + offset, src);
 	}
 	static SBufferPool* Create(SStagingResources& resources, size_t size)
 	{
@@ -3976,7 +3978,7 @@ void CDeviceBufferManager::EndReadWrite(buffer_handle_t handle)
 
 //////////////////////////////////////////////////////////////////////////////////////
 bool CDeviceBufferManager::UpdateBuffer_Locked(
-  buffer_handle_t handle, const void* src, size_t size)
+  buffer_handle_t handle, const void* src, size_t size, size_t offset)
 {
 	STATOSCOPE_TIMER(s_PoolManager.m_sdata[0].m_io_time);
 	STATOSCOPE_IO_WRITTEN(Size(handle));
@@ -3984,18 +3986,18 @@ bool CDeviceBufferManager::UpdateBuffer_Locked(
 	MEMORY_SCOPE_CHECK_HEAP();
 	DEVBUFFERMAN_ASSERT(handle != 0);
 	SBufferPoolItem& item = *reinterpret_cast<SBufferPoolItem*>(handle);
-	item.m_pool->Write(&item, src, size);
+	item.m_pool->Write(&item, src, size, offset);
 	return true;
 }
 bool CDeviceBufferManager::UpdateBuffer
-  (buffer_handle_t handle, const void* src, size_t size)
+  (buffer_handle_t handle, const void* src, size_t size, size_t offset)
 {
 #if CRY_PLATFORM_WINDOWS
 	SRecursiveSpinLocker __lock(&s_PoolManager.m_lock);
 #endif
 	SBufferPoolItem& item = *reinterpret_cast<SBufferPoolItem*>(handle);
 	SREC_AUTO_LOCK(item.m_pool->m_lock);
-	return UpdateBuffer_Locked(handle, src, size);
+	return UpdateBuffer_Locked(handle, src, size, offset);
 }
 //////////////////////////////////////////////////////////////////////////////////////
 D3DBuffer* CDeviceBufferManager::GetD3D(buffer_handle_t handle, size_t* offset)
@@ -4044,55 +4046,6 @@ SStatoscopeData& GetStatoscopeData(uint32 nIndex)
 	return s_PoolManager.m_sdata[nIndex];
 }
 #endif
-/////////////////////////////////////////////////////////////
-// Legacy interface
-//
-// Use with care, can be removed at any point!
-//////////////////////////////////////////////////////////////////////////////////////
-void CDeviceBufferManager::ReleaseVBuffer(CVertexBuffer* pVB)
-{
-	MEMORY_SCOPE_CHECK_HEAP();
-	SAFE_DELETE(pVB);
-}
-//////////////////////////////////////////////////////////////////////////////////////
-void CDeviceBufferManager::ReleaseIBuffer(CIndexBuffer* pIB)
-{
-	MEMORY_SCOPE_CHECK_HEAP();
-	SAFE_DELETE(pIB);
-}
-//////////////////////////////////////////////////////////////////////////////////////
-CVertexBuffer* CDeviceBufferManager::CreateVBuffer(size_t nVerts, EVertexFormat eVF, const char* szName, BUFFER_USAGE usage)
-{
-	MEMORY_SCOPE_CHECK_HEAP();
-	CVertexBuffer* pVB = new CVertexBuffer(NULL, eVF);
-	pVB->m_nVerts = nVerts;
-	pVB->m_VS.m_BufferHdl = Create(BBT_VERTEX_BUFFER, usage, nVerts * CRenderMesh::m_cSizeVF[eVF]);
-
-	return pVB;
-}
-//////////////////////////////////////////////////////////////////////////////////////
-CIndexBuffer* CDeviceBufferManager::CreateIBuffer(size_t nInds, const char* szNam, BUFFER_USAGE usage)
-{
-	MEMORY_SCOPE_CHECK_HEAP();
-	CIndexBuffer* pIB = new CIndexBuffer(NULL);
-	pIB->m_nInds = nInds;
-	pIB->m_VS.m_BufferHdl = Create(BBT_INDEX_BUFFER, usage, nInds * sizeof(uint16));
-	return pIB;
-}
-//////////////////////////////////////////////////////////////////////////////////////
-bool CDeviceBufferManager::UpdateVBuffer(CVertexBuffer* pVB, void* pVerts, size_t nVerts)
-{
-	MEMORY_SCOPE_CHECK_HEAP();
-	DEVBUFFERMAN_ASSERT(pVB->m_VS.m_BufferHdl != ~0u);
-	return UpdateBuffer(pVB->m_VS.m_BufferHdl, pVerts, nVerts * CRenderMesh::m_cSizeVF[pVB->m_eVF]);
-}
-//////////////////////////////////////////////////////////////////////////////////////
-bool CDeviceBufferManager::UpdateIBuffer(CIndexBuffer* pIB, void* pInds, size_t nInds)
-{
-	MEMORY_SCOPE_CHECK_HEAP();
-	DEVBUFFERMAN_ASSERT(pIB->m_VS.m_BufferHdl != ~0u);
-	return UpdateBuffer(pIB->m_VS.m_BufferHdl, pInds, nInds * sizeof(uint16));
-}
 
 //////////////////////////////////////////////////////////////////////////////////////
 CConstantBuffer::CConstantBuffer(uint32 handle)
@@ -4221,7 +4174,7 @@ void CConstantBuffer::EndWrite(bool requires_flush)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-void CConstantBuffer::UpdateBuffer(const void* src, size_t size, uint32 numDataBlocks)
+void CConstantBuffer::UpdateBuffer(const void* src, size_t size, size_t offset, uint32 numDataBlocks)
 {
 	assert(m_dynamic || size == m_size);
 	
@@ -4238,7 +4191,7 @@ void CConstantBuffer::UpdateBuffer(const void* src, size_t size, uint32 numDataB
 	if (s_PoolManager.m_constant_allocator[m_lock].Allocate(this))
 	{
 		m_used = 1;
-		CDeviceManager::UploadContents<true>(m_buffer, 0, m_offset, size, D3D11_MAP_WRITE_NO_OVERWRITE_CB, src, reinterpret_cast<uint8*>(m_base_ptr) + m_offset, numDataBlocks);
+		CDeviceManager::UploadContents<true>(m_buffer, 0, m_offset + offset, size, D3D11_MAP_WRITE_NO_OVERWRITE_CB, src, reinterpret_cast<uint8*>(m_base_ptr) + m_offset + offset, numDataBlocks);
 	}
 #else
 	if (!m_used)
@@ -4263,41 +4216,18 @@ void CConstantBuffer::UpdateBuffer(const void* src, size_t size, uint32 numDataB
 	// Transfer sub-set of GPU resource to CPU, also allows graphics debugger and multi-gpu broadcaster to do the right thing
 	if (m_dynamic)
 	{
-		CDeviceManager::UploadContents<false>(m_buffer, 0, 0, size, D3D11_MAP_WRITE_DISCARD_CB, src, nullptr, numDataBlocks);
+		CDeviceManager::UploadContents<false>(m_buffer, 0, offset, size, D3D11_MAP_WRITE_DISCARD_CB, src, nullptr, numDataBlocks);
 	}
 	else
 	{
-		D3D11_BOX* pDstBox = nullptr;
 #if defined(DEVICE_SUPPORTS_D3D11_1) || defined(CRY_USE_DX12)
-		D3D11_BOX sDstBox = { 0U, 0U, 0U, size, 1U, 1U }; pDstBox = &sDstBox;
+		const D3D11_BOX sDstBox = { offset, 0U, 0U, size, 1U, 1U };
+		gcpRendD3D->GetDeviceContext().UpdateSubresource(m_buffer, 0, &sDstBox, src, 0, 0);
+#else
+		gcpRendD3D->GetDeviceContext().UpdateSubresource(m_buffer, 0, nullptr, src, 0, 0);
 #endif
-		gcpRendD3D->GetDeviceContext().UpdateSubresource(m_buffer, 0, pDstBox, src, 0, 0);
 	}
 #endif
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-CVertexBuffer::~CVertexBuffer()
-{
-	MEMORY_SCOPE_CHECK_HEAP();
-	if (m_VS.m_BufferHdl != ~0u)
-	{
-		//STATIC UNINITIALISATION. This can be called after gRenDev has been released
-		if (gRenDev)
-			gRenDev->m_DevBufMan.Destroy(m_VS.m_BufferHdl);
-		m_VS.m_BufferHdl = ~0u;
-	}
-}
-//////////////////////////////////////////////////////////////////////////////////////
-CIndexBuffer::~CIndexBuffer()
-{
-	MEMORY_SCOPE_CHECK_HEAP();
-	if (m_VS.m_BufferHdl != ~0u)
-	{
-		if (gRenDev)
-			gRenDev->m_DevBufMan.Destroy(m_VS.m_BufferHdl);
-		m_VS.m_BufferHdl = ~0u;
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

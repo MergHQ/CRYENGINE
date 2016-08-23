@@ -22,7 +22,13 @@
 
 CSvoRenderer* CSvoRenderer::s_pInstance = 0;
 
-CSvoRenderer::CSvoRenderer()
+CSvoRenderer::CSvoRenderer() : 
+	m_passClearBricks						(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader),
+	m_passInjectDynamicLights		(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader),
+	m_passInjectStaticLights		(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader),
+	m_passInjectAirOpacity			(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader),
+	m_passPropagateLighting_1to2(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader),
+	m_passPropagateLighting_2to3(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader)
 {
 	InitCVarValues();
 
@@ -179,7 +185,7 @@ void CSvoRenderer::UpdateCompute()
 		PROFILE_LABEL_SCOPE("TI_INJECT_CLEAR");
 
 		for (int nNodesForUpdateStartIndex = 0; nNodesForUpdateStartIndex < m_arrNodesForUpdateIncr.Count(); )
-			ExecuteComputeShader(m_pShader, "ComputeClearBricks", eCS_ClearBricks, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateIncr);
+			ExecuteComputeShader("ComputeClearBricks", m_passClearBricks, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateIncr);
 	}
 
 	// voxelize dynamic meshes
@@ -194,14 +200,14 @@ void CSvoRenderer::UpdateCompute()
 		PROFILE_LABEL_SCOPE("TI_INJECT_AIR");
 
 		for (int nNodesForUpdateStartIndex = 0; nNodesForUpdateStartIndex < m_arrNodesForUpdateIncr.Count(); )
-			ExecuteComputeShader(m_pShader, "ComputeInjectAtmosphere", eCS_InjectAirOpacity, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateIncr);
+			ExecuteComputeShader("ComputeInjectAtmosphere", m_passInjectAirOpacity, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateIncr);
 	}
 
 	{
 		PROFILE_LABEL_SCOPE("TI_INJECT_LIGHT");
 
 		for (int nNodesForUpdateStartIndex = 0; nNodesForUpdateStartIndex < m_arrNodesForUpdateIncr.Count(); )
-			ExecuteComputeShader(m_pShader, "ComputeDirectStaticLighting", eCS_InjectStaticLights, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateIncr);
+			ExecuteComputeShader("ComputeDirectStaticLighting", m_passInjectStaticLights, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateIncr);
 	}
 
 	if (e_svoTI_PropagationBooster || e_svoTI_InjectionMultiplier)
@@ -212,7 +218,7 @@ void CSvoRenderer::UpdateCompute()
 
 			m_nCurPropagationPassID = 0;
 			for (int nNodesForUpdateStartIndex = 0; nNodesForUpdateStartIndex < m_arrNodesForUpdateIncr.Count(); )
-				ExecuteComputeShader(m_pShader, "ComputePropagateLighting", eCS_PropagateLighting_1to2, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateIncr);
+				ExecuteComputeShader("ComputePropagateLighting", m_passPropagateLighting_1to2, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateIncr);
 		}
 
 		if (e_svoTI_NumberOfBounces > 2)
@@ -221,7 +227,7 @@ void CSvoRenderer::UpdateCompute()
 
 			m_nCurPropagationPassID++;
 			for (int nNodesForUpdateStartIndex = 0; nNodesForUpdateStartIndex < m_arrNodesForUpdateIncr.Count(); )
-				ExecuteComputeShader(m_pShader, "ComputePropagateLighting", eCS_PropagateLighting_2to3, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateIncr);
+				ExecuteComputeShader("ComputePropagateLighting", m_passPropagateLighting_2to3, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateIncr);
 		}
 	}
 
@@ -234,7 +240,7 @@ void CSvoRenderer::UpdateCompute()
 		// TODO: cull not affected nodes
 
 		for (int nNodesForUpdateStartIndex = 0; nNodesForUpdateStartIndex < m_arrNodesForUpdateNear.Count(); )
-			ExecuteComputeShader(m_pShader, "ComputeDirectDynamicLighting", eCS_InjectDynamicLights, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateNear);
+			ExecuteComputeShader("ComputeDirectDynamicLighting", m_passInjectDynamicLights, &nNodesForUpdateStartIndex, 0, m_arrNodesForUpdateNear);
 	}
 
 	nLightsDynamicCountPrevFrame = m_arrLightsDynamic.Count();
@@ -283,7 +289,7 @@ void CSvoRenderer::UpdateGpuVoxParams(I3DEngine::SSvoNodeInfo& nodeInfo)
 	m_mGpuVoxViewProj[2] = VoxelizationView[2] * m_mOrthoProjection;
 }
 
-void CSvoRenderer::ExecuteComputeShader(CShader* pSH, const char* szTechFinalName, EComputeStages eRenderStage, int* pnNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate)
+void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CComputeRenderPass & rp, int* pnNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate)
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
@@ -291,29 +297,22 @@ void CSvoRenderer::ExecuteComputeShader(CShader* pSH, const char* szTechFinalNam
 
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-	SetShaderFlags(true, false);
-
-	SD3DPostEffectsUtils::ShBeginPass(pSH, szTechFinalName, FEF_DONTSETSTATES);
-
-	if (!gRenDev->m_RP.m_pShader)
-	{
-		gEnv->pLog->LogWarning("%s: Technique not found: %s", __FUNC__, szTechFinalName);
-		(*pnNodesForUpdateStartIndex) += 1000;
-		return;
-	}
+	uint64 rtFlags = GetRunTimeFlags(true, false);
+	rp.SetTechnique(m_pShader, szTechFinalName, rtFlags);
+	rp.BeginConstantUpdate();
 
 	{
 		static CCryNameR parameterName6("SVO_FrameIdByte");
 		Vec4 ttt((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
 		if (rd->GetActiveGPUCount() > 1)
 			ttt.x = 0;
-		m_pShader->FXSetCSFloat(parameterName6, (Vec4*)&ttt, 1);
+		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
 	}
 
 	{
 		static CCryNameR parameterName6("SVO_CamPos");
 		Vec4 ttt(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
-		m_pShader->FXSetCSFloat(parameterName6, (Vec4*)&ttt, 1);
+		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
 	}
 
 	{
@@ -322,10 +321,10 @@ void CSvoRenderer::ExecuteComputeShader(CShader* pSH, const char* szTechFinalNam
 		mViewProj.Transpose();
 
 		static CCryNameR paramName("g_mViewProj");
-		m_pShader->FXSetCSFloat(paramName, alias_cast<Vec4*>(&mViewProj), 4);
+		rp.SetConstantArray(paramName, alias_cast<Vec4*>(&mViewProj), 4);
 
 		static CCryNameR paramNamePrev("g_mViewProjPrev");
-		m_pShader->FXSetPSFloat(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
+		rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
 	}
 
 	{
@@ -339,165 +338,131 @@ void CSvoRenderer::ExecuteComputeShader(CShader* pSH, const char* szTechFinalNam
 		f[2] = 1.0f / hfov;
 		f[3] = 1.0f;
 		static CCryNameR paramName("SVO_ProjRatio");
-		m_pShader->FXSetCSFloat(paramName, alias_cast<Vec4*>(&f), 1);
+		rp.SetConstantArray(paramName, alias_cast<Vec4*>(&f), 1);
 	}
 
 	{
 		static CCryNameR nameSVO_PortalsPos("SVO_PortalsPos");
-		SetShaderFloat(eHWSC_Compute, nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
+		rp.SetConstantArray(nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
 		static CCryNameR nameSVO_PortalsDir("SVO_PortalsDir");
-		SetShaderFloat(eHWSC_Compute, nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
+		rp.SetConstantArray(nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
 	}
 
 	if (e_svoTI_AnalyticalGI)
 	{
 		static CCryNameR nameAnalyticalOccluders("SVO_AnalyticalOccluders");
-		SetShaderFloat(eHWSC_Compute, nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
+		rp.SetConstantArray(nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
 	}
 
-	// setup SVO textures
+	// setup in/out textures
 
-	CCryDeviceContextWrapper* pDeviceCtx = &gcpRendD3D->GetDeviceContext();
-	UINT UAVInitialCounts = 0;
-
-	if (eRenderStage == eCS_InjectAirOpacity)
+	if (&rp == &m_passInjectAirOpacity)
 	{
-		SetupLightSources(m_arrLightsStatic, m_pShader, false);
-		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate);
+		SetupLightSources(m_arrLightsStatic, rp);
+		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
 
 		// update OPAC
-		pDeviceCtx->CSSetUnorderedAccessViews(2, 1, &vp_RGB0.pUAV, &UAVInitialCounts);
+		rp.SetOutputUAV(2, vp_RGB0.pTex);
 		if(vp_OPAC.pUAV)
-			pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &vp_OPAC.pUAV, &UAVInitialCounts);
+			rp.SetOutputUAV(7, vp_OPAC.pTex);
 
-		SetupSvoTexturesForRead(m_texInfo, eHWSC_Compute, 0, 1);
+		SetupSvoTexturesForRead(m_texInfo, rp, 0, 1);
 
-		// bind fail fix
-		CTexture::GetByID(vp_RGB0.nTexId)->Unbind();
-		CTexture::GetByID(vp_OPAC.nTexId)->Unbind();
-
-		m_pNoiseTex->Apply(15, m_nTexStateLinearWrap, -1, -1, -1, eHWSC_Compute);
+		rp.SetTextureSamplerPair(15, m_pNoiseTex, m_nTexStateLinearWrap);
 	}
-	else if (eRenderStage == eCS_InjectStaticLights)
+	else if (&rp == &m_passInjectStaticLights)
 	{
-		SetupLightSources(m_arrLightsStatic, m_pShader, false);
-		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate);
+		SetupLightSources(m_arrLightsStatic, rp);
+		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
 
 		// update RGB1
-		pDeviceCtx->CSSetUnorderedAccessViews(2, 1, &vp_RGB0.pUAV, &UAVInitialCounts);
-		pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &vp_RGB1.pUAV, &UAVInitialCounts);
-		pDeviceCtx->CSSetUnorderedAccessViews(5, 1, &vp_NORM.pUAV, &UAVInitialCounts);
+		rp.SetOutputUAV(2, vp_RGB0.pTex);
+		rp.SetOutputUAV(7, vp_RGB1.pTex);
+		rp.SetOutputUAV(5, vp_NORM.pTex);
 
-		if (vp_DYNL.pUAV) pDeviceCtx->CSSetUnorderedAccessViews(6, 1, &vp_DYNL.pUAV, &UAVInitialCounts);
+		if (vp_DYNL.pUAV) rp.SetOutputUAV(6, vp_DYNL.pTex);
 
-		SetupSvoTexturesForRead(m_texInfo, eHWSC_Compute, 0);
+		SetupSvoTexturesForRead(m_texInfo, rp, 0);
 
-		SetupRsmSun(eHWSC_Compute);
-
-		//	m_pNoiseTex->Apply(15, m_nTexStateLinearWrap, -1, -1, -1, eHWSC_Compute);
+		SetupRsmSun(rp);
 	}
-	else if (eRenderStage == eCS_InjectDynamicLights)
+	else if (&rp == &m_passInjectDynamicLights)
 	{
-		BindTiledLights(m_arrLightsDynamic, CDeviceManager::TYPE_CS);
-		SetupLightSources(m_arrLightsDynamic, m_pShader, false);
-		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate);
+		BindTiledLights(m_arrLightsDynamic, rp);
+		SetupLightSources(m_arrLightsDynamic, rp);
+		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
 
 		// update RGB
-		pDeviceCtx->CSSetUnorderedAccessViews(2, 1, &vp_RGB0.pUAV, &UAVInitialCounts);
+		rp.SetOutputUAV(2, vp_RGB0.pTex);
 
 		if (e_svoTI_NumberOfBounces == 1)
-			pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &vp_RGB1.pUAV, &UAVInitialCounts);
+			rp.SetOutputUAV(7, vp_RGB1.pTex);
 		if (e_svoTI_NumberOfBounces == 2)
-			pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &vp_RGB2.pUAV, &UAVInitialCounts);
+			rp.SetOutputUAV(7, vp_RGB2.pTex);
 		if (e_svoTI_NumberOfBounces == 3)
-			pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &vp_RGB3.pUAV, &UAVInitialCounts);
+			rp.SetOutputUAV(7, vp_RGB3.pTex);
 
-		pDeviceCtx->CSSetUnorderedAccessViews(5, 1, &vp_DYNL.pUAV, &UAVInitialCounts);
+		rp.SetOutputUAV(5, vp_DYNL.pTex);
 
-		SetupSvoTexturesForRead(m_texInfo, eHWSC_Compute, 0);
+		SetupSvoTexturesForRead(m_texInfo, rp, 0);
 
-		m_pNoiseTex->Apply(15, m_nTexStateLinearWrap, -1, -1, -1, eHWSC_Compute);
+		rp.SetTextureSamplerPair(15, m_pNoiseTex, m_nTexStateLinearWrap);
 
-		SetupRsmSun(eHWSC_Compute);
+		SetupRsmSun(rp);
 	}
-	else if (eRenderStage == eCS_PropagateLighting_1to2)
+	else if (&rp == &m_passPropagateLighting_1to2)
 	{
-		SetupLightSources(m_arrLightsStatic, m_pShader, false);
-		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate);
+		SetupLightSources(m_arrLightsStatic, rp);
+		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
 
 		// update RGB2
-		if (vp_RGB0.pUAV) pDeviceCtx->CSSetUnorderedAccessViews(0, 1, &vp_RGB0.pUAV, &UAVInitialCounts);
-		SetupSvoTexturesForRead(m_texInfo, eHWSC_Compute, 1); // input
-		if (vp_RGB2.pUAV) pDeviceCtx->CSSetUnorderedAccessViews(5, 1, &vp_RGB2.pUAV, &UAVInitialCounts);
-		if (vp_ALDI.pUAV) pDeviceCtx->CSSetUnorderedAccessViews(6, 1, &vp_ALDI.pUAV, &UAVInitialCounts);
-		if (vp_DYNL.pUAV) pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &vp_DYNL.pUAV, &UAVInitialCounts);
+		if (vp_RGB0.pUAV) rp.SetOutputUAV(0, vp_RGB0.pTex);
+		SetupSvoTexturesForRead(m_texInfo, rp, 1); // input
+		if (vp_RGB2.pUAV) rp.SetOutputUAV(5, vp_RGB2.pTex);
+		if (vp_ALDI.pUAV) rp.SetOutputUAV(6, vp_ALDI.pTex);
+		if (vp_DYNL.pUAV) rp.SetOutputUAV(7, vp_DYNL.pTex);
 	}
-	else if (eRenderStage == eCS_PropagateLighting_2to3)
+	else if (&rp == &m_passPropagateLighting_2to3)
 	{
-		SetupLightSources(m_arrLightsStatic, m_pShader, false);
-		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate);
+		SetupLightSources(m_arrLightsStatic, rp);
+		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
 
 		// update RGB3
-		if (vp_RGB0.pUAV) pDeviceCtx->CSSetUnorderedAccessViews(0, 1, &vp_RGB0.pUAV, &UAVInitialCounts);
-		if (vp_RGB1.pUAV) pDeviceCtx->CSSetUnorderedAccessViews(1, 1, &vp_RGB1.pUAV, &UAVInitialCounts);
-		SetupSvoTexturesForRead(m_texInfo, eHWSC_Compute, 2); // input
-		if (vp_RGB3.pUAV) pDeviceCtx->CSSetUnorderedAccessViews(5, 1, &vp_RGB3.pUAV, &UAVInitialCounts);
-		if (vp_DYNL.pUAV) pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &vp_DYNL.pUAV, &UAVInitialCounts);
+		if (vp_RGB0.pUAV) rp.SetOutputUAV(0, vp_RGB0.pTex);
+		if (vp_RGB1.pUAV) rp.SetOutputUAV(1, vp_RGB1.pTex);
+		SetupSvoTexturesForRead(m_texInfo, rp, 2); // input
+		if (vp_RGB3.pUAV) rp.SetOutputUAV(5, vp_RGB3.pTex);
+		if (vp_DYNL.pUAV) rp.SetOutputUAV(7, vp_DYNL.pTex);
 	}
-	else if (eRenderStage == eCS_ClearBricks)
+	else if (&rp == &m_passClearBricks)
 	{
-		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate);
+		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
 
 		if (vp_RGB4.pUAV)
-			pDeviceCtx->CSSetUnorderedAccessViews(3, 1, &vp_RGB4.pUAV, &UAVInitialCounts);
+			rp.SetOutputUAV(3, vp_RGB4.pTex);
 		if(vp_OPAC.pUAV)
-			pDeviceCtx->CSSetUnorderedAccessViews(4, 1, &vp_OPAC.pUAV, &UAVInitialCounts);
+			rp.SetOutputUAV(4, vp_OPAC.pTex);
 		if (vp_RGB3.pUAV)
-			pDeviceCtx->CSSetUnorderedAccessViews(6, 1, &vp_RGB3.pUAV, &UAVInitialCounts);
-		pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &vp_RGB1.pUAV, &UAVInitialCounts);
-		pDeviceCtx->CSSetUnorderedAccessViews(5, 1, &vp_RGB2.pUAV, &UAVInitialCounts);
-		pDeviceCtx->CSSetUnorderedAccessViews(0, 1, &vp_ALDI.pUAV, &UAVInitialCounts);
+			rp.SetOutputUAV(6, vp_RGB3.pTex);
+		if(vp_RGB1.pUAV)
+			rp.SetOutputUAV(7, vp_RGB1.pTex);
+		if(vp_RGB2.pUAV)
+			rp.SetOutputUAV(5, vp_RGB2.pTex);
+		if(vp_ALDI.pUAV)
+			rp.SetOutputUAV(0, vp_ALDI.pTex);
 	}
 
 	{
-		rd->FX_Commit();
-
 		uint32 nDispatchSizeX = e_svoDispatchX;
 		uint32 nDispatchSizeY = e_svoDispatchY;
 
-		#ifdef CINEBOX_APP
-		pDeviceCtx->Dispatch(nDispatchSizeX, nDispatchSizeY, 1);
-		#else
-		rd->m_DevMan.Dispatch(nDispatchSizeX, nDispatchSizeY, 1);
-		#endif
+		rp.SetDispatchSize(nDispatchSizeX, nDispatchSizeY, 1);
 
-		SD3DPostEffectsUtils::ShEndPass();
+		rp.PrepareResourcesForUse(*CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList(), EShaderStage_All);
+
+		SScopedComputeCommandList computeCommandList(e_svoTI_AsyncCompute != 0);
+		rp.Execute(computeCommandList, EShaderStage_All);
 	}
-
-	D3DUAV* pUAVNULL = NULL;
-
-	pDeviceCtx->CSSetUnorderedAccessViews(7, 1, &pUAVNULL, &UAVInitialCounts);
-	pDeviceCtx->CSSetUnorderedAccessViews(6, 1, &pUAVNULL, &UAVInitialCounts);
-	pDeviceCtx->CSSetUnorderedAccessViews(5, 1, &pUAVNULL, &UAVInitialCounts);
-	pDeviceCtx->CSSetUnorderedAccessViews(4, 1, &pUAVNULL, &UAVInitialCounts);
-	pDeviceCtx->CSSetUnorderedAccessViews(3, 1, &pUAVNULL, &UAVInitialCounts);
-	pDeviceCtx->CSSetUnorderedAccessViews(2, 1, &pUAVNULL, &UAVInitialCounts);
-	pDeviceCtx->CSSetUnorderedAccessViews(1, 1, &pUAVNULL, &UAVInitialCounts);
-	pDeviceCtx->CSSetUnorderedAccessViews(0, 1, &pUAVNULL, &UAVInitialCounts);
-
-	CTexture::GetByID(vp_RGB0.nTexId)->Unbind();
-	CTexture::GetByID(vp_RGB1.nTexId)->Unbind();
-	CTexture::GetByID(vp_DYNL.nTexId)->Unbind();
-	CTexture::GetByID(vp_RGB2.nTexId)->Unbind();
-	CTexture::GetByID(vp_RGB3.nTexId)->Unbind();
-	CTexture::GetByID(vp_RGB4.nTexId)->Unbind();
-	CTexture::GetByID(vp_NORM.nTexId)->Unbind();
-	CTexture::GetByID(vp_ALDI.nTexId)->Unbind();
-	CTexture::GetByID(vp_OPAC.nTexId)->Unbind();
-
-	gcpRendD3D->GetTiledShading().UnbindForwardShadingResources(CDeviceManager::TYPE_CS);
-
-	pSH->FXEnd();
 
 	#endif
 }
@@ -521,410 +486,358 @@ CTexture* CSvoRenderer::GetGBuffer(int nId) // simplify branch compatibility
 void CSvoRenderer::TropospherePass()
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	if (m_texInfo.bSvoFreeze)
+
+	CFullscreenPass & rp = m_passTroposphere;
+
+	if (m_texInfo.bSvoFreeze || !m_texInfo.pTexTree)
 		return;
 
 	const char* szTechFinalName = "RenderAtmosphere";
 
-	gcpRendD3D->FX_ClearTarget(m_pRT_AIR_MIN, Clr_Transparent);
-	gcpRendD3D->FX_ClearTarget(m_pRT_AIR_SHAD, Clr_Transparent);
-	gcpRendD3D->FX_ClearTarget(m_pRT_AIR_MAX, Clr_Transparent);
-	gcpRendD3D->FX_PushRenderTarget(0, m_pRT_AIR_MIN, NULL);
-	gcpRendD3D->FX_PushRenderTarget(1, m_pRT_AIR_SHAD, NULL);
-	gcpRendD3D->FX_PushRenderTarget(2, m_pRT_AIR_MAX, NULL);
-
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-	if (m_texInfo.pTexTree)
+	rp.SetRenderTarget(0, m_pRT_AIR_MIN);
+	rp.SetRenderTarget(1, m_pRT_AIR_SHAD);
+	rp.SetRenderTarget(2, m_pRT_AIR_MAX);
+	rp.SetRequireWorldPos(true);
+	rp.SetRequirePerViewConstantBuffer(true);
+
+	uint64 rtFlags = GetRunTimeFlags(0);
+	rp.SetTechnique(m_pShader, szTechFinalName, rtFlags);
+	rp.BeginConstantUpdate();
+	rp.SetState(GS_NODEPTHTEST);
+
+	SetupLightSources(m_arrLightsStatic, rp);
+
 	{
-		SetShaderFlags(0);
-
-		SD3DPostEffectsUtils::ShBeginPass(m_pShader, szTechFinalName, 0 /*FEF_DONTSETTEXTURES | FEF_DONTSETSTATES*/);
-
-		if (!gRenDev->m_RP.m_pShader)
-		{
-			gEnv->pLog->LogWarning("Error: %s: Technique not found: %s", __FUNC__, szTechFinalName);
-		}
-
-		{
-			Matrix44A matView;
-			matView = rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
-			Vec3 zAxis = matView.GetRow(1);
-			matView.SetRow(1, -matView.GetRow(2));
-			matView.SetRow(2, zAxis);
-			float z = matView.m13;
-			matView.m13 = -matView.m23;
-			matView.m23 = z;
-
-			SetupLightSources(m_arrLightsStatic, m_pShader, true);
-
-			/*				static int nReprojFrameId = -1;
-			   if(!bSpecPass && nReprojFrameId != rd->GetFrameID(false))
-			   {
-			   nReprojFrameId = rd->GetFrameID(false);
-
-			   Matrix44A matProj;
-			   const CCamera & cam = rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_cam;
-			   mathMatrixPerspectiveFov(&matProj, cam.GetFov(), cam.GetProjRatio(), cam.GetNearPlane(), cam.GetFarPlane());
-			   static Matrix44A matPrevView = matView;
-			   static Matrix44A matPrevProj = matProj;
-			   rd->GetReprojectionMatrix(m_matReproj, matView, matProj, matPrevView, matPrevProj, cam.GetFarPlane());
-			   matPrevView = matView;
-			   matPrevProj = matProj;
-			   }*/
-
-			{
-				static CCryNameR parameterName5("SVO_ReprojectionMatrix");
-				m_pShader->FXSetPSFloat(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
-			}
-
-			{
-				static CCryNameR parameterName6("SVO_FrameIdByte");
-				Vec4 ttt((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
-				if (rd->GetActiveGPUCount() > 1)
-					ttt.x = 0;
-				m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&ttt, 1);
-			}
-
-			{
-				static CCryNameR parameterName6("SVO_CamPos");
-				Vec4 ttt(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
-				m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&ttt, 1);
-			}
-
-			{
-				Matrix44A mViewProj;
-				mViewProj = gcpRendD3D->m_CameraProjMatrix;
-				mViewProj.Transpose();
-
-				static CCryNameR paramName("g_mViewProj");
-				m_pShader->FXSetPSFloat(paramName, alias_cast<Vec4*>(&mViewProj), 4);
-
-				static CCryNameR paramNamePrev("g_mViewProjPrev");
-				m_pShader->FXSetPSFloat(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
-			}
-
-			{
-				float fSizeRatioW = float(rd->GetWidth() / m_pRT_AIR_MIN->GetWidth());
-				float fSizeRatioH = float(rd->GetHeight() / m_pRT_AIR_MIN->GetHeight());
-				static CCryNameR parameterName6("SVO_TargetResScale");
-				static int nPrevWidth = 0;
-				Vec4 ttt(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase,
-				         (float)(nPrevWidth != m_pRT_AIR_MIN->GetWidth() || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
-				m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&ttt, 1);
-				nPrevWidth = m_pRT_AIR_MIN->GetWidth();
-			}
-
-			{
-				static CCryNameR parameterName6("SVO_helperInfo");
-				m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&m_texInfo.helperInfo, 1);
-			}
-
-			{
-				Matrix44A matView;
-				matView = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
-				Vec3 zAxis = matView.GetRow(1);
-				matView.SetRow(1, -matView.GetRow(2));
-				matView.SetRow(2, zAxis);
-				float z = matView.m13;
-				matView.m13 = -matView.m23;
-				matView.m23 = z;
-				static CCryNameR paramName2("TI_CameraMatrix");
-				m_pShader->FXSetPSFloat(paramName2, (Vec4*)matView.GetData(), 3);
-			}
-
-			{
-				Vec3 pvViewFrust[8];
-				const CRenderCamera& rc = gcpRendD3D->GetRCamera();
-				rc.CalcVerts(pvViewFrust);
-
-				static CCryNameR parameterName0("SVO_FrustumVerticesCam0");
-				static CCryNameR parameterName1("SVO_FrustumVerticesCam1");
-				static CCryNameR parameterName2("SVO_FrustumVerticesCam2");
-				static CCryNameR parameterName3("SVO_FrustumVerticesCam3");
-				Vec4 ttt0(pvViewFrust[4] - rc.vOrigin, 0);
-				Vec4 ttt1(pvViewFrust[5] - rc.vOrigin, 0);
-				Vec4 ttt2(pvViewFrust[6] - rc.vOrigin, 0);
-				Vec4 ttt3(pvViewFrust[7] - rc.vOrigin, 0);
-				m_pShader->FXSetPSFloat(parameterName0, (Vec4*)&ttt0, 1);
-				m_pShader->FXSetPSFloat(parameterName1, (Vec4*)&ttt1, 1);
-				m_pShader->FXSetPSFloat(parameterName2, (Vec4*)&ttt2, 1);
-				m_pShader->FXSetPSFloat(parameterName3, (Vec4*)&ttt3, 1);
-			}
-		}
-
-		rd->FX_SetState(GS_NODEPTHTEST);
-
-		SetupSvoTexturesForRead(m_texInfo, eHWSC_Pixel, e_svoTI_NumberOfBounces, 0, 0);
-
-		CTexture::s_ptexZTarget->Apply(4, m_nTexStatePoint);
-		GetGBuffer(0)->Apply(14, m_nTexStatePoint);
-		GetGBuffer(1)->Apply(5, m_nTexStatePoint);
-		GetGBuffer(2)->Apply(7, m_nTexStatePoint);
-		
-		rd->FX_Commit();
-
-		SD3DPostEffectsUtils::DrawFullScreenTriWPOS(CTexture::s_ptexCurrentSceneDiffuseAccMap->GetWidth(), CTexture::s_ptexCurrentSceneDiffuseAccMap->GetHeight());
-
-		SD3DPostEffectsUtils::ShEndPass();
+		static CCryNameR parameterName5("SVO_ReprojectionMatrix");
+		rp.SetConstantArray(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
 	}
 
-	gcpRendD3D->FX_PopRenderTarget(0);
-	gcpRendD3D->FX_PopRenderTarget(1);
-	gcpRendD3D->FX_PopRenderTarget(2);
+	{
+		static CCryNameR parameterName6("SVO_FrameIdByte");
+		Vec4 ttt((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
+		if (rd->GetActiveGPUCount() > 1)
+			ttt.x = 0;
+		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
+	}
+
+	{
+		static CCryNameR parameterName6("SVO_CamPos");
+		Vec4 ttt(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
+		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
+	}
+
+	{
+		Matrix44A mViewProj;
+		mViewProj = gcpRendD3D->m_CameraProjMatrix;
+		mViewProj.Transpose();
+
+		static CCryNameR paramName("g_mViewProj");
+		rp.SetConstantArray(paramName, alias_cast<Vec4*>(&mViewProj), 4);
+
+		static CCryNameR paramNamePrev("g_mViewProjPrev");
+		rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
+	}
+
+	{
+		float fSizeRatioW = float(rd->GetWidth() / m_pRT_AIR_MIN->GetWidth());
+		float fSizeRatioH = float(rd->GetHeight() / m_pRT_AIR_MIN->GetHeight());
+		static CCryNameR parameterName6("SVO_TargetResScale");
+		static int nPrevWidth = 0;
+		Vec4 ttt(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase,
+			(float)(nPrevWidth != m_pRT_AIR_MIN->GetWidth() || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
+		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
+		nPrevWidth = m_pRT_AIR_MIN->GetWidth();
+	}
+
+	{
+		static CCryNameR parameterName6("SVO_helperInfo");
+		rp.SetConstantArray(parameterName6, (Vec4*)&m_texInfo.helperInfo, 1);
+	}
+
+	{
+		Matrix44A matView;
+		matView = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
+		Vec3 zAxis = matView.GetRow(1);
+		matView.SetRow(1, -matView.GetRow(2));
+		matView.SetRow(2, zAxis);
+		float z = matView.m13;
+		matView.m13 = -matView.m23;
+		matView.m23 = z;
+		static CCryNameR paramName2("TI_CameraMatrix");
+		rp.SetConstantArray(paramName2, (Vec4*)matView.GetData(), 3);
+	}
+
+	{
+		Vec3 pvViewFrust[8];
+		const CRenderCamera& rc = gcpRendD3D->GetRCamera();
+		rc.CalcVerts(pvViewFrust);
+
+		static CCryNameR parameterName0("SVO_FrustumVerticesCam0");
+		static CCryNameR parameterName1("SVO_FrustumVerticesCam1");
+		static CCryNameR parameterName2("SVO_FrustumVerticesCam2");
+		static CCryNameR parameterName3("SVO_FrustumVerticesCam3");
+		Vec4 ttt0(pvViewFrust[4] - rc.vOrigin, 0);
+		Vec4 ttt1(pvViewFrust[5] - rc.vOrigin, 0);
+		Vec4 ttt2(pvViewFrust[6] - rc.vOrigin, 0);
+		Vec4 ttt3(pvViewFrust[7] - rc.vOrigin, 0);
+		rp.SetConstantArray(parameterName0, (Vec4*)&ttt0, 1);
+		rp.SetConstantArray(parameterName1, (Vec4*)&ttt1, 1);
+		rp.SetConstantArray(parameterName2, (Vec4*)&ttt2, 1);
+		rp.SetConstantArray(parameterName3, (Vec4*)&ttt3, 1);
+	}
+
+	SetupSvoTexturesForRead(m_texInfo, rp, e_svoTI_NumberOfBounces, 0, 0);
+
+	rp.SetTextureSamplerPair( 4, CTexture::s_ptexZTarget, m_nTexStatePoint);
+	rp.SetTextureSamplerPair(14, GetGBuffer(0), m_nTexStatePoint);
+	rp.SetTextureSamplerPair( 5, GetGBuffer(1), m_nTexStatePoint);
+	rp.SetTextureSamplerPair( 7, GetGBuffer(2), m_nTexStatePoint);
+
+	rp.Execute();
+
 	#endif
 }
 
 void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 {
+	CFullscreenPass & rp = pTS->passConeTrace;
+
 	CheckAllocateRT(pTS == &m_tsSpec);
 
-	if (!e_svoTI_Active || !e_svoTI_Apply || !e_svoRender || !m_pShader)
+	if (!e_svoTI_Active || !e_svoTI_Apply || !e_svoRender || !m_pShader || m_texInfo.bSvoFreeze || !m_texInfo.pTexTree)
 		return;
 
 	const char* szTechFinalName = "ConeTracePass";
 
-	if (m_texInfo.bSvoFreeze)
-		return;
-
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-	rd->FX_PushRenderTarget(0, pTS->pRT_ALD_0, NULL);
-	rd->FX_PushRenderTarget(1, pTS->pRT_RGB_0, NULL);
+	rp.SetRenderTarget(0, pTS->pRT_ALD_0);
+	rp.SetRenderTarget(1, pTS->pRT_RGB_0);
+	rp.SetRequireWorldPos(true);
+	rp.SetRequirePerViewConstantBuffer(true);
 
-	if (m_texInfo.pTexTree)
+	uint64 rtFlags = GetRunTimeFlags(pTS == &m_tsDiff);
+	rp.SetTechnique(m_pShader, szTechFinalName, rtFlags);
+	rp.BeginConstantUpdate();
+	rp.SetState(GS_NODEPTHTEST);
+
 	{
-		SetShaderFlags(pTS == &m_tsDiff);
+		Matrix44A matView;
+		matView = rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
+		Vec3 zAxis = matView.GetRow(1);
+		matView.SetRow(1, -matView.GetRow(2));
+		matView.SetRow(2, zAxis);
+		float z = matView.m13;
+		matView.m13 = -matView.m23;
+		matView.m23 = z;
 
-		SD3DPostEffectsUtils::ShBeginPass(m_pShader, szTechFinalName, FEF_DONTSETTEXTURES /*| FEF_DONTSETSTATES*/);
+		SetupRsmSun(rp);
+
+		static int nReprojFrameId = -1;
+		if ((pTS == &m_tsDiff) && nReprojFrameId != rd->GetFrameID(false))
+		{
+			nReprojFrameId = rd->GetFrameID(false);
+
+			Matrix44A matProj;
+			const CCamera& cam = rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_cam;
+			mathMatrixPerspectiveFov(&matProj, cam.GetFov(), cam.GetProjRatio(), cam.GetNearPlane(), cam.GetFarPlane());
+			static Matrix44A matPrevView = matView;
+			static Matrix44A matPrevProj = matProj;
+			rd->GetReprojectionMatrix(m_matReproj, matView, matProj, matPrevView, matPrevProj, cam.GetFarPlane());
+			matPrevView = matView;
+			matPrevProj = matProj;
+		}
+
+		{
+			static CCryNameR parameterName5("SVO_ReprojectionMatrix");
+			rp.SetConstantArray(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
+		}
+
+		{
+			static CCryNameR parameterName6("SVO_FrameIdByte");
+			Vec4 ttt((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
+			if (rd->GetActiveGPUCount() > 1)
+				ttt.x = 0;
+			rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
+		}
+
+		{
+			static CCryNameR parameterName6("SVO_CamPos");
+			Vec4 ttt(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
+			rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
+		}
+
+		{
+			Matrix44A mViewProj;
+			mViewProj = gcpRendD3D->m_CameraProjMatrix;
+			mViewProj.Transpose();
+
+			static CCryNameR paramName("g_mViewProj");
+			rp.SetConstantArray(paramName, alias_cast<Vec4*>(&mViewProj), 4);
+
+			static CCryNameR paramNamePrev("g_mViewProjPrev");
+			rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
+		}
+
+		{
+			float fSizeRatioW = float(rd->GetWidth() / rp.GetRenderTarget(0)->GetWidth());
+			float fSizeRatioH = float(rd->GetHeight() / rp.GetRenderTarget(0)->GetHeight());
+			static CCryNameR parameterName6("SVO_TargetResScale");
+			static int nPrevWidth = 0;
+			Vec4 ttt(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase,
+				(float)(nPrevWidth != (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0)) || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
+			rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
+			nPrevWidth = (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0));
+		}
+
+		{
+			static CCryNameR parameterName6("SVO_helperInfo");
+			rp.SetConstantArray(parameterName6, (Vec4*)&m_texInfo.helperInfo, 1);
+		}
 
 		{
 			Matrix44A matView;
-			matView = rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
+			matView = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
 			Vec3 zAxis = matView.GetRow(1);
 			matView.SetRow(1, -matView.GetRow(2));
 			matView.SetRow(2, zAxis);
 			float z = matView.m13;
 			matView.m13 = -matView.m23;
 			matView.m23 = z;
-
-			SetupRsmSun(eHWSC_Pixel);
-
-			static int nReprojFrameId = -1;
-			if ((pTS == &m_tsDiff) && nReprojFrameId != rd->GetFrameID(false))
-			{
-				nReprojFrameId = rd->GetFrameID(false);
-
-				Matrix44A matProj;
-				const CCamera& cam = rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_cam;
-				mathMatrixPerspectiveFov(&matProj, cam.GetFov(), cam.GetProjRatio(), cam.GetNearPlane(), cam.GetFarPlane());
-				static Matrix44A matPrevView = matView;
-				static Matrix44A matPrevProj = matProj;
-				rd->GetReprojectionMatrix(m_matReproj, matView, matProj, matPrevView, matPrevProj, cam.GetFarPlane());
-				matPrevView = matView;
-				matPrevProj = matProj;
-			}
-
-			{
-				static CCryNameR parameterName5("SVO_ReprojectionMatrix");
-				m_pShader->FXSetPSFloat(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
-			}
-
-			{
-				static CCryNameR parameterName6("SVO_FrameIdByte");
-				Vec4 ttt((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
-				if (rd->GetActiveGPUCount() > 1)
-					ttt.x = 0;
-				m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&ttt, 1);
-			}
-
-			{
-				static CCryNameR parameterName6("SVO_CamPos");
-				Vec4 ttt(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
-				m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&ttt, 1);
-			}
-
-			{
-				Matrix44A mViewProj;
-				mViewProj = gcpRendD3D->m_CameraProjMatrix;
-				mViewProj.Transpose();
-
-				static CCryNameR paramName("g_mViewProj");
-				m_pShader->FXSetPSFloat(paramName, alias_cast<Vec4*>(&mViewProj), 4);
-
-				static CCryNameR paramNamePrev("g_mViewProjPrev");
-				m_pShader->FXSetPSFloat(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
-			}
-
-			{
-				float fSizeRatioW = float(rd->GetWidth() / rd->m_RTStack[0][rd->m_nRTStackLevel[0]].m_Width);
-				float fSizeRatioH = float(rd->GetHeight() / rd->m_RTStack[0][rd->m_nRTStackLevel[0]].m_Height);
-				static CCryNameR parameterName6("SVO_TargetResScale");
-				static int nPrevWidth = 0;
-				Vec4 ttt(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase,
-				         (float)(nPrevWidth != (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0)) || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
-				m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&ttt, 1);
-				nPrevWidth = (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0));
-			}
-
-			{
-				static CCryNameR parameterName6("SVO_helperInfo");
-				m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&m_texInfo.helperInfo, 1);
-			}
-
-			{
-				Matrix44A matView;
-				matView = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
-				Vec3 zAxis = matView.GetRow(1);
-				matView.SetRow(1, -matView.GetRow(2));
-				matView.SetRow(2, zAxis);
-				float z = matView.m13;
-				matView.m13 = -matView.m23;
-				matView.m23 = z;
-				static CCryNameR paramName2("TI_CameraMatrix");
-				m_pShader->FXSetPSFloat(paramName2, (Vec4*)matView.GetData(), 3);
-			}
-
-			{
-				Vec3 pvViewFrust[8];
-				const CRenderCamera& rc = gcpRendD3D->GetRCamera();
-				rc.CalcVerts(pvViewFrust);
-
-				static CCryNameR parameterName0("SVO_FrustumVerticesCam0");
-				static CCryNameR parameterName1("SVO_FrustumVerticesCam1");
-				static CCryNameR parameterName2("SVO_FrustumVerticesCam2");
-				static CCryNameR parameterName3("SVO_FrustumVerticesCam3");
-				Vec4 ttt0(pvViewFrust[4] - rc.vOrigin, 0);
-				Vec4 ttt1(pvViewFrust[5] - rc.vOrigin, 0);
-				Vec4 ttt2(pvViewFrust[6] - rc.vOrigin, 0);
-				Vec4 ttt3(pvViewFrust[7] - rc.vOrigin, 0);
-				m_pShader->FXSetPSFloat(parameterName0, (Vec4*)&ttt0, 1);
-				m_pShader->FXSetPSFloat(parameterName1, (Vec4*)&ttt1, 1);
-				m_pShader->FXSetPSFloat(parameterName2, (Vec4*)&ttt2, 1);
-				m_pShader->FXSetPSFloat(parameterName3, (Vec4*)&ttt3, 1);
-			}
-
-			if (e_svoTI_AnalyticalGI)
-			{
-				static CCryNameR nameAnalyticalOccluders("SVO_AnalyticalOccluders");
-				SetShaderFloat(eHWSC_Pixel, nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
-			}
-
-			if (m_texInfo.arrPortalsPos[0].z)
-			{
-				static CCryNameR nameSVO_PortalsPos("SVO_PortalsPos");
-				SetShaderFloat(eHWSC_Pixel, nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
-				static CCryNameR nameSVO_PortalsDir("SVO_PortalsDir");
-				SetShaderFloat(eHWSC_Pixel, nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
-			}
-
-			if (pTS->pRT_ALD_1)
-			{
-				static int nPrevWidth = 0;
-				if (nPrevWidth != (pTS->pRT_ALD_1->GetWidth() + e_svoTI_Diffuse_Cache))
-				{
-					CTexture::s_ptexWhite->Apply(10, m_nTexStateLinear);
-					CTexture::s_ptexWhite->Apply(11, m_nTexStateLinear);
-					nPrevWidth = pTS->pRT_ALD_1->GetWidth() + e_svoTI_Diffuse_Cache;
-				}
-				else
-				{
-					pTS->pRT_ALD_1->Apply(10, m_nTexStateLinear);
-					pTS->pRT_RGB_1->Apply(11, m_nTexStateLinear);
-				}
-			}
-		}
-
-		rd->FX_SetState(GS_NODEPTHTEST);
-
-		SetupSvoTexturesForRead(m_texInfo, eHWSC_Pixel, (e_svoTI_Active ? e_svoTI_NumberOfBounces : 0), 0, 0);
-
-		CTexture::s_ptexZTarget->Apply(4, m_nTexStatePoint);
-		GetGBuffer(0)->Apply(14, m_nTexStatePoint);
-		GetGBuffer(1)->Apply(5, m_nTexStatePoint);
-		GetGBuffer(2)->Apply(7, m_nTexStatePoint);
-
-	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-		if (m_texInfo.pTexIndA)
-		{
-			((CTexture*)m_texInfo.pTexTexA)->Apply(8, m_nTexStateLinear);
-			((CTexture*)m_texInfo.pTexTriA)->Apply(9, m_nTexStatePoint);
-			((CTexture*)m_texInfo.pTexIndA)->Apply(13, m_nTexStatePoint);
-		}
-	#endif
-
-		if (!GetIntegratioMode() && e_svoTI_InjectionMultiplier && m_arrLightsDynamic.Count())
-		{
-			BindTiledLights(m_arrLightsDynamic, CDeviceManager::TYPE_PS);
-			SetupLightSources(m_arrLightsDynamic, m_pShader, true);
-		}
-
-		if (GetIntegratioMode() && e_svoTI_SSDepthTrace)
-		{
-			if (CTexture::s_ptexHDRTargetPrev->GetUpdateFrameID() > 1)
-				SD3DPostEffectsUtils::SetTexture(CTexture::s_ptexHDRTargetPrev, 12, FILTER_LINEAR, TADDR_BORDER);
-			else
-				SD3DPostEffectsUtils::SetTexture(CTexture::s_ptexBlack, 12, FILTER_LINEAR, TADDR_BORDER);
+			static CCryNameR paramName2("TI_CameraMatrix");
+			rp.SetConstantArray(paramName2, (Vec4*)matView.GetData(), 3);
 		}
 
 		{
-			static CCryNameR strName("SVO_CloudShadowAnimParams");
-			CD3D9Renderer* const __restrict r = gcpRendD3D;
-			SCGParamsPF& PF = r->m_cEF.m_PF[r->m_RP.m_nProcessThreadID];
-			Vec4 sData;
-			sData[0] = PF.pCloudShadowAnimParams.x;
-			sData[1] = PF.pCloudShadowAnimParams.y;
-			sData[2] = PF.pCloudShadowAnimParams.z;
-			sData[3] = PF.pCloudShadowAnimParams.w;
-			SetShaderFloat(eHWSC_Pixel, strName, (Vec4*)&sData, 1);
+			Vec3 pvViewFrust[8];
+			const CRenderCamera& rc = gcpRendD3D->GetRCamera();
+			rc.CalcVerts(pvViewFrust);
+
+			static CCryNameR parameterName0("SVO_FrustumVerticesCam0");
+			static CCryNameR parameterName1("SVO_FrustumVerticesCam1");
+			static CCryNameR parameterName2("SVO_FrustumVerticesCam2");
+			static CCryNameR parameterName3("SVO_FrustumVerticesCam3");
+			Vec4 ttt0(pvViewFrust[4] - rc.vOrigin, 0);
+			Vec4 ttt1(pvViewFrust[5] - rc.vOrigin, 0);
+			Vec4 ttt2(pvViewFrust[6] - rc.vOrigin, 0);
+			Vec4 ttt3(pvViewFrust[7] - rc.vOrigin, 0);
+			rp.SetConstantArray(parameterName0, (Vec4*)&ttt0, 1);
+			rp.SetConstantArray(parameterName1, (Vec4*)&ttt1, 1);
+			rp.SetConstantArray(parameterName2, (Vec4*)&ttt2, 1);
+			rp.SetConstantArray(parameterName3, (Vec4*)&ttt3, 1);
 		}
 
+		if (e_svoTI_AnalyticalGI)
 		{
-			static CCryNameR strName("SVO_CloudShadowParams");
-			CD3D9Renderer* const __restrict r = gcpRendD3D;
-			SCGParamsPF& PF = r->m_cEF.m_PF[r->m_RP.m_nProcessThreadID];
-			Vec4 sData;
-			sData[0] = PF.pCloudShadowParams.x;
-			sData[1] = PF.pCloudShadowParams.y;
-			sData[2] = PF.pCloudShadowParams.z;
-			sData[3] = PF.pCloudShadowParams.w;
-			SetShaderFloat(eHWSC_Pixel, strName, (Vec4*)&sData, 1);
+			static CCryNameR nameAnalyticalOccluders("SVO_AnalyticalOccluders");
+			rp.SetConstantArray(nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
 		}
 
+		if (m_texInfo.arrPortalsPos[0].z)
 		{
-			const bool setupCloudShadows = rd->m_bShadowsEnabled && rd->m_bCloudShadowsEnabled;
-			if (setupCloudShadows)
+			static CCryNameR nameSVO_PortalsPos("SVO_PortalsPos");
+			rp.SetConstantArray(nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
+			static CCryNameR nameSVO_PortalsDir("SVO_PortalsDir");
+			rp.SetConstantArray(nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
+		}
+
+		if (pTS->pRT_ALD_1)
+		{
+			static int nPrevWidth = 0;
+			if (nPrevWidth != (pTS->pRT_ALD_1->GetWidth() + e_svoTI_Diffuse_Cache))
 			{
-				// cloud shadow map
-				CTexture* pCloudShadowTex(rd->GetCloudShadowTextureId() > 0 ? CTexture::GetByID(rd->GetCloudShadowTextureId()) : CTexture::s_ptexWhite);
-				assert(pCloudShadowTex);
-
-				STexState pTexStateLinearClamp;
-				pTexStateLinearClamp.SetFilterMode(FILTER_LINEAR);
-				pTexStateLinearClamp.SetClampMode(false, false, false);
-				int nTexStateLinearClampID = CTexture::GetTexState(pTexStateLinearClamp);
-
-				pCloudShadowTex->Apply(15, m_nTexStateLinearWrap);
+				rp.SetTextureSamplerPair(10, CTexture::s_ptexWhite, m_nTexStateLinear);
+				rp.SetTextureSamplerPair(11, CTexture::s_ptexWhite, m_nTexStateLinear);
+				nPrevWidth = pTS->pRT_ALD_1->GetWidth() + e_svoTI_Diffuse_Cache;
 			}
 			else
 			{
-				CTexture::s_ptexWhite->Apply(15, m_nTexStateLinearWrap);
+				rp.SetTextureSamplerPair(10, pTS->pRT_ALD_1, m_nTexStateLinear);
+				rp.SetTextureSamplerPair(11, pTS->pRT_RGB_1, m_nTexStateLinear);
 			}
 		}
-
-		GetUtils().SetTexture(GetUtils().GetVelocityObjectRT(), 8, FILTER_POINT);
-
-		rd->FX_Commit();
-
-		SD3DPostEffectsUtils::DrawFullScreenTriWPOS(CTexture::s_ptexCurrentSceneDiffuseAccMap->GetWidth(), CTexture::s_ptexCurrentSceneDiffuseAccMap->GetHeight());
-
-		gcpRendD3D->GetTiledShading().UnbindForwardShadingResources(CDeviceManager::TYPE_PS);
-
-		SD3DPostEffectsUtils::ShEndPass();
 	}
 
-	rd->FX_PopRenderTarget(0);
-	rd->FX_PopRenderTarget(1);
+	SetupSvoTexturesForRead(m_texInfo, rp, (e_svoTI_Active ? e_svoTI_NumberOfBounces : 0), 0, 0);
+
+	rp.SetTextureSamplerPair( 4, CTexture::s_ptexZTarget, m_nTexStatePoint);
+	rp.SetTextureSamplerPair(14, GetGBuffer(0), m_nTexStatePoint);
+	rp.SetTextureSamplerPair( 5, GetGBuffer(1), m_nTexStatePoint);
+	rp.SetTextureSamplerPair( 7, GetGBuffer(2), m_nTexStatePoint);
+
+	#ifdef FEATURE_SVO_GI_ALLOW_HQ
+	if (m_texInfo.pTexIndA)
+	{
+		rp.SetTextureSamplerPair(8, (CTexture*)m_texInfo.pTexTexA, m_nTexStateLinear);
+		rp.SetTextureSamplerPair(9, (CTexture*)m_texInfo.pTexTriA, m_nTexStatePoint);
+		rp.SetTextureSamplerPair(13, (CTexture*)m_texInfo.pTexIndA, m_nTexStatePoint);
+	}
+	#endif
+
+	if (!GetIntegratioMode() && e_svoTI_InjectionMultiplier && m_arrLightsDynamic.Count())
+	{
+		BindTiledLights(m_arrLightsDynamic, rp);
+		SetupLightSources(m_arrLightsDynamic, rp);
+	}
+
+	if (GetIntegratioMode() && e_svoTI_SSDepthTrace)
+	{
+		if (CTexture::s_ptexHDRTargetPrev->GetUpdateFrameID() > 1)
+			rp.SetTextureSamplerPair(12, CTexture::s_ptexHDRTargetPrev, m_nTexStateLinear);
+		else
+			rp.SetTextureSamplerPair(12, CTexture::s_ptexBlack, m_nTexStateLinear);
+	}
+
+	{
+		static CCryNameR strName("SVO_CloudShadowAnimParams");
+		CD3D9Renderer* const __restrict r = gcpRendD3D;
+		SCGParamsPF& PF = r->m_cEF.m_PF[r->m_RP.m_nProcessThreadID];
+		Vec4 sData;
+		sData[0] = PF.pCloudShadowAnimParams.x;
+		sData[1] = PF.pCloudShadowAnimParams.y;
+		sData[2] = PF.pCloudShadowAnimParams.z;
+		sData[3] = PF.pCloudShadowAnimParams.w;
+		rp.SetConstantArray(strName, (Vec4*)&sData, 1);
+	}
+
+	{
+		static CCryNameR strName("SVO_CloudShadowParams");
+		CD3D9Renderer* const __restrict r = gcpRendD3D;
+		SCGParamsPF& PF = r->m_cEF.m_PF[r->m_RP.m_nProcessThreadID];
+		Vec4 sData;
+		sData[0] = PF.pCloudShadowParams.x;
+		sData[1] = PF.pCloudShadowParams.y;
+		sData[2] = PF.pCloudShadowParams.z;
+		sData[3] = PF.pCloudShadowParams.w;
+		rp.SetConstantArray(strName, (Vec4*)&sData, 1);
+	}
+
+	{
+		const bool setupCloudShadows = rd->m_bShadowsEnabled && rd->m_bCloudShadowsEnabled;
+		if (setupCloudShadows)
+		{
+			// cloud shadow map
+			CTexture* pCloudShadowTex(rd->GetCloudShadowTextureId() > 0 ? CTexture::GetByID(rd->GetCloudShadowTextureId()) : CTexture::s_ptexWhite);
+			assert(pCloudShadowTex);
+
+			STexState pTexStateLinearClamp;
+			pTexStateLinearClamp.SetFilterMode(FILTER_LINEAR);
+			pTexStateLinearClamp.SetClampMode(false, false, false);
+			int nTexStateLinearClampID = CTexture::GetTexState(pTexStateLinearClamp);
+
+			rp.SetTextureSamplerPair(15, pCloudShadowTex, m_nTexStateLinearWrap);
+		}
+		else
+		{
+			rp.SetTextureSamplerPair(15, CTexture::s_ptexWhite, m_nTexStateLinearWrap);
+		}
+	}
+
+	rp.SetTextureSamplerPair(8, GetUtils().GetVelocityObjectRT(), m_nTexStatePoint);
+
+	rp.Execute();
 }
 
 void CSvoRenderer::DrawPonts(PodArray<SVF_P3F_C4B_T2F>& arrVerts)
@@ -979,13 +892,13 @@ void CSvoRenderer::UpdateRender()
 	{
 		PROFILE_LABEL_SCOPE("TI_UPSCALE_DIFF");
 
-		UpScalePass(&m_tsDiff);
+		UpscalePass(&m_tsDiff);
 	}
 	if (GetIntegratioMode() == 2 && e_svoTI_SpecularAmplifier)
 	{
 		PROFILE_LABEL_SCOPE("TI_UPSCALE_SPEC");
 
-		UpScalePass(&m_tsSpec);
+		UpscalePass(&m_tsSpec);
 	}
 
 	{
@@ -999,144 +912,124 @@ void CSvoRenderer::UpdateRender()
 
 void CSvoRenderer::DemosaicPass(SSvoTargetsSet* pTS)
 {
+	CFullscreenPass & rp = pTS->passDemosaic;
+
 	const char* szTechFinalName = "DemosaicPass";
 
-	if (!e_svoTI_Active || !e_svoTI_Apply || !e_svoRender || !m_pShader)
+	if (!e_svoTI_Active || !e_svoTI_Apply || !e_svoRender || !m_pShader || !pTS->pRT_ALD_0 || m_texInfo.bSvoFreeze || !m_texInfo.pTexTree)
 		return;
 
-	if (m_texInfo.bSvoFreeze)
-		return;
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-	if (e_svoTI_Apply)
+	rp.SetRenderTarget(0, pTS->pRT_RGB_DEM_MIN_0);
+	rp.SetRenderTarget(1, pTS->pRT_ALD_DEM_MIN_0);
+	rp.SetRenderTarget(2, pTS->pRT_RGB_DEM_MAX_0);
+	rp.SetRenderTarget(3, pTS->pRT_ALD_DEM_MAX_0);
+	rp.SetRequireWorldPos(true);
+	rp.SetRequirePerViewConstantBuffer(true);
+
+	uint64 rtFlags = GetRunTimeFlags(pTS == &m_tsDiff, true, true);
+	rp.SetTechnique(m_pShader, szTechFinalName, rtFlags);
+	rp.BeginConstantUpdate();
+	rp.SetState(GS_NODEPTHTEST);
+
+	SetupSvoTexturesForRead(m_texInfo, rp, (e_svoTI_Active ? e_svoTI_NumberOfBounces : 0), 0, 0);
+
+	rp.SetTextureSamplerPair( 4, CTexture::s_ptexZTarget, m_nTexStatePoint);
+	rp.SetTextureSamplerPair(14, GetGBuffer(0), m_nTexStatePoint);
+	rp.SetTextureSamplerPair( 5, GetGBuffer(1), m_nTexStatePoint);
+	rp.SetTextureSamplerPair( 7, GetGBuffer(2), m_nTexStatePoint);
+
 	{
-		// SVO
-		if (!pTS->pRT_ALD_0)
-			return;
-
-		CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
-		rd->FX_PushRenderTarget(0, pTS->pRT_RGB_DEM_MIN_0, NULL, -1, false, 1);
-		rd->FX_PushRenderTarget(1, pTS->pRT_ALD_DEM_MIN_0, NULL, -1, false, 1);
-		rd->FX_PushRenderTarget(2, pTS->pRT_RGB_DEM_MAX_0, NULL, -1, false, 1);
-		rd->FX_PushRenderTarget(3, pTS->pRT_ALD_DEM_MAX_0, NULL, -1, false, 1);
-
-		if (m_texInfo.pTexTree)
-		{
-			SetShaderFlags(pTS == &m_tsDiff, true, true);
-
-			SD3DPostEffectsUtils::ShBeginPass(m_pShader, szTechFinalName, FEF_DONTSETTEXTURES /*| FEF_DONTSETSTATES*/);
-
-			rd->FX_SetState(GS_NODEPTHTEST);
-
-			SetupSvoTexturesForRead(m_texInfo, eHWSC_Pixel, (e_svoTI_Active ? e_svoTI_NumberOfBounces : 0), 0, 0);
-
-			CTexture::s_ptexZTarget->Apply(4, m_nTexStatePoint);
-			GetGBuffer(0)->Apply(14, m_nTexStatePoint);
-			GetGBuffer(1)->Apply(5, m_nTexStatePoint);
-			GetGBuffer(2)->Apply(7, m_nTexStatePoint);
-
-			{
-				static CCryNameR parameterName5("SVO_ReprojectionMatrix");
-				m_pShader->FXSetPSFloat(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
-			}
-
-			{
-				float fSizeRatioW = float(rd->GetWidth() / rd->m_RTStack[0][rd->m_nRTStackLevel[0]].m_Width);
-				float fSizeRatioH = float(rd->GetHeight() / rd->m_RTStack[0][rd->m_nRTStackLevel[0]].m_Height);
-				static CCryNameR parameterName6("SVO_TargetResScale");
-				static int nPrevWidth = 0;
-				Vec4 ttt(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase,
-				         (float)(nPrevWidth != (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0)) || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
-				m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&ttt, 1);
-				nPrevWidth = (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0));
-			}
-
-			{
-				static CCryNameR parameterName6("SVO_FrameIdByte");
-				Vec4 ttt((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
-				if (rd->GetActiveGPUCount() > 1)
-					ttt.x = 0;
-				m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&ttt, 1);
-			}
-
-			{
-				static CCryNameR parameterName6("SVO_CamPos");
-				Vec4 ttt(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
-				m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&ttt, 1);
-			}
-
-			{
-				Matrix44A mViewProj;
-				mViewProj = gcpRendD3D->m_CameraProjMatrix;
-				mViewProj.Transpose();
-
-				static CCryNameR paramName("g_mViewProj");
-				m_pShader->FXSetPSFloat(paramName, alias_cast<Vec4*>(&mViewProj), 4);
-
-				static CCryNameR paramNamePrev("g_mViewProjPrev");
-				m_pShader->FXSetPSFloat(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
-			}
-
-			{
-				Matrix44A matView;
-				matView = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
-				Vec3 zAxis = matView.GetRow(1);
-				matView.SetRow(1, -matView.GetRow(2));
-				matView.SetRow(2, zAxis);
-				float z = matView.m13;
-				matView.m13 = -matView.m23;
-				matView.m23 = z;
-				static CCryNameR paramName2("TI_CameraMatrix");
-				m_pShader->FXSetPSFloat(paramName2, (Vec4*)matView.GetData(), 3);
-			}
-
-			if (e_svoTI_AnalyticalGI)
-			{
-				static CCryNameR nameAnalyticalOccluders("SVO_AnalyticalOccluders");
-				SetShaderFloat(eHWSC_Pixel, nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
-			}
-
-			if (e_svoTI_AnalyticalOccluders && m_texInfo.arrAnalyticalOccluders[1][0].radius)
-			{
-				static CCryNameR nameAnalyticalOccluders("SVO_PostOccluders");
-				SetShaderFloat(eHWSC_Pixel, nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[1][0], sizeof(m_texInfo.arrAnalyticalOccluders[1]) / sizeof(Vec4));
-			}
-
-			if (m_texInfo.arrPortalsPos[0].z)
-			{
-				static CCryNameR nameSVO_PortalsPos("SVO_PortalsPos");
-				SetShaderFloat(eHWSC_Pixel, nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
-				static CCryNameR nameSVO_PortalsDir("SVO_PortalsDir");
-				SetShaderFloat(eHWSC_Pixel, nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
-			}
-
-			pTS->pRT_ALD_0->Apply(10, m_nTexStateLinear);
-			pTS->pRT_RGB_0->Apply(11, m_nTexStateLinear);
-
-			pTS->pRT_RGB_DEM_MIN_1->Apply(6, m_nTexStateLinear);
-			pTS->pRT_ALD_DEM_MIN_1->Apply(9, m_nTexStateLinear);
-			pTS->pRT_RGB_DEM_MAX_1->Apply(12, m_nTexStateLinear);
-			pTS->pRT_ALD_DEM_MAX_1->Apply(13, m_nTexStateLinear);
-
-			//CTexture::s_ptexSceneSpecularAccMap->Apply(15, m_nTexStateLinear);
-
-			GetUtils().SetTexture(GetUtils().GetVelocityObjectRT(), 8, FILTER_POINT);
-
-			rd->FX_Commit();
-
-			SD3DPostEffectsUtils::DrawFullScreenTriWPOS(CTexture::s_ptexCurrentSceneDiffuseAccMap->GetWidth(), CTexture::s_ptexCurrentSceneDiffuseAccMap->GetHeight());
-
-			SD3DPostEffectsUtils::ShEndPass();
-		}
-
-		rd->FX_PopRenderTarget(0);
-		rd->FX_PopRenderTarget(1);
-		rd->FX_PopRenderTarget(2);
-		rd->FX_PopRenderTarget(3);
+		static CCryNameR parameterName5("SVO_ReprojectionMatrix");
+		rp.SetConstantArray(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
 	}
+
+	{
+		float fSizeRatioW = float(rd->GetWidth() / rp.GetRenderTarget(0)->GetWidth());
+		float fSizeRatioH = float(rd->GetHeight() / rp.GetRenderTarget(0)->GetHeight());
+		static CCryNameR parameterName6("SVO_TargetResScale");
+		static int nPrevWidth = 0;
+		Vec4 ttt(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase,
+			(float)(nPrevWidth != (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0)) || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
+		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
+		nPrevWidth = (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0));
+	}
+
+	{
+		static CCryNameR parameterName6("SVO_FrameIdByte");
+		Vec4 ttt((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
+		if (rd->GetActiveGPUCount() > 1)
+			ttt.x = 0;
+		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
+	}
+
+	{
+		static CCryNameR parameterName6("SVO_CamPos");
+		Vec4 ttt(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
+		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
+	}
+
+	{
+		Matrix44A mViewProj;
+		mViewProj = gcpRendD3D->m_CameraProjMatrix;
+		mViewProj.Transpose();
+
+		static CCryNameR paramName("g_mViewProj");
+		rp.SetConstantArray(paramName, alias_cast<Vec4*>(&mViewProj), 4);
+
+		static CCryNameR paramNamePrev("g_mViewProjPrev");
+		rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
+	}
+
+	{
+		Matrix44A matView;
+		matView = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
+		Vec3 zAxis = matView.GetRow(1);
+		matView.SetRow(1, -matView.GetRow(2));
+		matView.SetRow(2, zAxis);
+		float z = matView.m13;
+		matView.m13 = -matView.m23;
+		matView.m23 = z;
+		static CCryNameR paramName2("TI_CameraMatrix");
+		rp.SetConstantArray(paramName2, (Vec4*)matView.GetData(), 3);
+	}
+
+	if (e_svoTI_AnalyticalGI)
+	{
+		static CCryNameR nameAnalyticalOccluders("SVO_AnalyticalOccluders");
+		rp.SetConstantArray(nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
+	}
+
+	if (e_svoTI_AnalyticalOccluders && m_texInfo.arrAnalyticalOccluders[1][0].radius)
+	{
+		static CCryNameR nameAnalyticalOccluders("SVO_PostOccluders");
+		rp.SetConstantArray(nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[1][0], sizeof(m_texInfo.arrAnalyticalOccluders[1]) / sizeof(Vec4));
+	}
+
+	if (m_texInfo.arrPortalsPos[0].z)
+	{
+		static CCryNameR nameSVO_PortalsPos("SVO_PortalsPos");
+		rp.SetConstantArray(nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
+		static CCryNameR nameSVO_PortalsDir("SVO_PortalsDir");
+		rp.SetConstantArray(nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
+	}
+
+	rp.SetTextureSamplerPair(10, pTS->pRT_ALD_0, m_nTexStateLinear);
+	rp.SetTextureSamplerPair(11, pTS->pRT_RGB_0, m_nTexStateLinear);
+
+	rp.SetTextureSamplerPair(6, pTS->pRT_RGB_DEM_MIN_1, m_nTexStateLinear);
+	rp.SetTextureSamplerPair(9, pTS->pRT_ALD_DEM_MIN_1, m_nTexStateLinear);
+	rp.SetTextureSamplerPair(12, pTS->pRT_RGB_DEM_MAX_1, m_nTexStateLinear);
+	rp.SetTextureSamplerPair(13, pTS->pRT_ALD_DEM_MAX_1, m_nTexStateLinear);
+
+	rp.SetTextureSamplerPair(8, GetUtils().GetVelocityObjectRT(), m_nTexStatePoint);
+
+	rp.Execute();
 }
 
-void CSvoRenderer::SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, CShader* pShader, bool bPS)
+template<class T>
+void CSvoRenderer::SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, T & rp)
 {
 	const int nLightGroupsNum = 2;
 
@@ -1171,23 +1064,13 @@ void CSvoRenderer::SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, CS
 			LightCol[x] = (nId < lightsTI.Count()) ? lightsTI[nId].vCol : Vec4(0, 0, 0, 0);
 		}
 
-		if (bPS)
-		{
-			pShader->FXSetPSFloat(paramNamesLightPos[g], alias_cast<Vec4*>(&LightPos[0][0]), 4);
-			pShader->FXSetPSFloat(paramNamesLightDir[g], alias_cast<Vec4*>(&LightDir[0][0]), 4);
-			pShader->FXSetPSFloat(paramNamesLightCol[g], alias_cast<Vec4*>(&LightCol[0][0]), 4);
-		}
-		else
-		{
-			// CS
-			pShader->FXSetCSFloat(paramNamesLightPos[g], alias_cast<Vec4*>(&LightPos[0][0]), 4);
-			pShader->FXSetCSFloat(paramNamesLightDir[g], alias_cast<Vec4*>(&LightDir[0][0]), 4);
-			pShader->FXSetCSFloat(paramNamesLightCol[g], alias_cast<Vec4*>(&LightCol[0][0]), 4);
-		}
+		rp.SetConstantArray(paramNamesLightPos[g], alias_cast<Vec4*>(&LightPos[0][0]), 4);
+		rp.SetConstantArray(paramNamesLightDir[g], alias_cast<Vec4*>(&LightDir[0][0]), 4);
+		rp.SetConstantArray(paramNamesLightCol[g], alias_cast<Vec4*>(&LightCol[0][0]), 4);
 	}
 }
 
-void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate)
+void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate, CComputeRenderPass & rp)
 {
 	static CCryNameR paramNames[SVO_MAX_NODE_GROUPS] =
 	{
@@ -1218,51 +1101,52 @@ void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<
 			}
 		}
 
-		m_pShader->FXSetCSFloat(paramNames[g], alias_cast<Vec4*>(&matVal[0][0]), 4);
+		rp.SetConstantArray(paramNames[g], alias_cast<Vec4*>(&matVal[0][0]), 4);
 	}
 
 	nNodesForUpdateStartIndex += 4 * 4 * SVO_MAX_NODE_GROUPS;
 }
 
-void CSvoRenderer::SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, EHWShaderClass eShaderClass, int nStage, int nStageOpa, int nStageNorm)
+template<class T>
+void CSvoRenderer::SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, T & rp, int nStage, int nStageOpa, int nStageNorm)
 {
 	if (e_svoTI_AnalyticalGI)
 		return;
 
-	((CTexture*)texInfo.pTexTree)->Apply(0, m_nTexStatePoint, -1, -1, -1, eShaderClass);
+	rp.SetTextureSamplerPair(0, ((CTexture*)texInfo.pTexTree), m_nTexStatePoint);
 
-	CTexture::s_ptexBlack->Apply(1, m_nTexStateLinear, -1, -1, -1, eShaderClass);
+	rp.SetTextureSamplerPair(1, CTexture::s_ptexBlack, m_nTexStateLinear);
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
 	if (nStage == 0)
-		CTexture::GetByID(vp_RGB0.nTexId)->Apply(1, m_nTexStateLinear, -1, -1, -1, eShaderClass);
+		rp.SetTextureSamplerPair(1, CTexture::GetByID(vp_RGB0.nTexId), m_nTexStateLinear);
 	else if (nStage == 1)
-		CTexture::GetByID(vp_RGB1.nTexId)->Apply(1, m_nTexStateLinear, -1, -1, -1, eShaderClass);
+		rp.SetTextureSamplerPair(1, CTexture::GetByID(vp_RGB1.nTexId), m_nTexStateLinear);
 	else if (nStage == 2)
-		CTexture::GetByID(vp_RGB2.nTexId)->Apply(1, m_nTexStateLinear, -1, -1, -1, eShaderClass);
+		rp.SetTextureSamplerPair(1, CTexture::GetByID(vp_RGB2.nTexId), m_nTexStateLinear);
 	else if (nStage == 3)
-		CTexture::GetByID(vp_RGB3.nTexId)->Apply(1, m_nTexStateLinear, -1, -1, -1, eShaderClass);
+		rp.SetTextureSamplerPair(1, CTexture::GetByID(vp_RGB3.nTexId), m_nTexStateLinear);
 	else if (nStage == 4)
-		CTexture::GetByID(vp_RGB4.nTexId)->Apply(1, m_nTexStateLinear, -1, -1, -1, eShaderClass);
+		rp.SetTextureSamplerPair(1, CTexture::GetByID(vp_RGB4.nTexId), m_nTexStateLinear);
 
 	if (nStageNorm == 0)
-		CTexture::GetByID(vp_NORM.nTexId)->Apply(2, m_nTexStateLinear, -1, -1, -1, eShaderClass);
+		rp.SetTextureSamplerPair(2, CTexture::GetByID(vp_NORM.nTexId), m_nTexStateLinear);
 
 	#endif
 
 	if (nStageOpa == 0)
-		((CTexture*)texInfo.pTexOpac)->Apply(3, m_nTexStateLinear, -1, -1, -1, eShaderClass);
+		rp.SetTextureSamplerPair(3, (CTexture*)texInfo.pTexOpac, m_nTexStateLinear);
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
 	else if (nStageOpa == 1)
-		CTexture::GetByID(vp_RGB4.nTexId)->Apply(3, m_nTexStateLinear, -1, -1, -1, eShaderClass);
+		rp.SetTextureSamplerPair(3, CTexture::GetByID(vp_RGB4.nTexId), m_nTexStateLinear);
 
 	if (texInfo.pTexTris)
-		((CTexture*)texInfo.pTexTris)->Apply(6, m_nTexStatePoint, -1, -1, -1, eShaderClass);
+		rp.SetTextureSamplerPair(6, (CTexture*)texInfo.pTexTris, m_nTexStatePoint);
 	if (texInfo.pGlobalSpecCM)
-		((CTexture*)texInfo.pGlobalSpecCM)->Apply(6, m_nTexStateTrilinear, -1, -1, -1, eShaderClass);
+		rp.SetTextureSamplerPair(6, (CTexture*)texInfo.pGlobalSpecCM, m_nTexStateTrilinear);
 
 	#endif
 }
@@ -1645,91 +1529,63 @@ void CSvoRenderer::DebugDrawStats(const RPProfilerStats* pBasicStats, float& ypo
 	SVO_Draw2dLabel(eRPPSTATS_TI_UPSCALE_SPEC);
 }
 
-void CSvoRenderer::SetShaderFlags(bool bDiffuseMode, bool bPixelShader, bool bDemosaic)
+uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader, bool bDemosaic)
 {
+	uint64 rtFlags = 0;
+
 	if (e_svoTI_LowSpecMode > 0) // simplify shaders
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE0];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE0];
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE0];
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 	if (m_texInfo.pGlobalSpecCM && GetIntegratioMode()) // use global env CM
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE1];
-	else
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE1];
 	#endif
-	gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE1];
 
 	if (e_svoTI_Troposphere_Active) // compute air lighting as well
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE2];
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 
 	if (e_svoTI_Diffuse_Cache) // use pre-baked lighting
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE3];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE3];
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE3];
 
 	if (bDiffuseMode) // diffuse or specular rendering
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE4];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE4];
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE4];
 
 	if (GetIntegratioMode()) // ignore colors and normals for AO only mode
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE5];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE5];
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE5];
 
 	if ((bPixelShader && e_svoTI_HalfresKernelPrimary) || (!bPixelShader && e_svoTI_HalfresKernelSecondary)) // smaller kernel - less de-mosaic work and faster compute update
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
+		rtFlags |= g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
 
 	if (bPixelShader && !GetIntegratioMode() && e_svoTI_InjectionMultiplier) // read sun light and shadow map during final cone tracing
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_LIGHT_TEX_PROJ];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_LIGHT_TEX_PROJ];
+		rtFlags |= g_HWSR_MaskBit[HWSR_LIGHT_TEX_PROJ];
 
 	if (bPixelShader && !GetIntegratioMode() && e_svoTI_InjectionMultiplier && m_arrLightsDynamic.Count()) // read sun light and shadow map during final cone tracing
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_POINT_LIGHT];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_POINT_LIGHT];
+		rtFlags |= g_HWSR_MaskBit[HWSR_POINT_LIGHT];
 
 	if (bPixelShader && e_svoTI_SSDepthTrace) // SS depth trace
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_BLEND_WITH_TERRAIN_COLOR];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_BLEND_WITH_TERRAIN_COLOR];
+		rtFlags |= g_HWSR_MaskBit[HWSR_BLEND_WITH_TERRAIN_COLOR];
 
 	if (bPixelShader && e_svoTI_DualTracing && (gRenDev->GetActiveGPUCount() >= e_svoTI_DualTracing))
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_MOTION_BLUR];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_MOTION_BLUR];
+		rtFlags |= g_HWSR_MaskBit[HWSR_MOTION_BLUR];
 
 	if (e_svoTI_AnalyticalGI)
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_LIGHTVOLUME1];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_LIGHTVOLUME1];
+		rtFlags |= g_HWSR_MaskBit[HWSR_LIGHTVOLUME1];
 
 	if (m_texInfo.arrPortalsPos[0].z)
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_LIGHTVOLUME0];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_LIGHTVOLUME0];
+		rtFlags |= g_HWSR_MaskBit[HWSR_LIGHTVOLUME0];
 
 	if (bPixelShader && e_svoTI_AnalyticalOccluders && m_texInfo.arrAnalyticalOccluders[1][0].radius)
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SPRITE];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SPRITE];
+		rtFlags |= g_HWSR_MaskBit[HWSR_SPRITE];
 
 	if (!bPixelShader && e_svoTI_SunRSMInject)
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_AMBIENT_OCCLUSION];
-	else
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_AMBIENT_OCCLUSION];
+		rtFlags |= g_HWSR_MaskBit[HWSR_AMBIENT_OCCLUSION];
 
 #if !CRY_PLATFORM_CONSOLE
 	if (bPixelShader && e_svoTI_RsmUseColors > 0)
-		gRenDev->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG];
-	else
+		rtFlags |= g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG];
 #endif
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG];
+
+	return rtFlags;
 }
 
 int CSvoRenderer::GetIntegratioMode()
@@ -1860,8 +1716,10 @@ CTexture* CSvoRenderer::GetSpecularFinRT()
 	return m_tsSpec.pRT_FIN_OUT_0;
 }
 
-void CSvoRenderer::UpScalePass(SSvoTargetsSet* pTS)
+void CSvoRenderer::UpscalePass(SSvoTargetsSet* pTS)
 {
+	CFullscreenPass & rp = pTS->passUpscale;
+
 	const char* szTechFinalName = "UpScalePass";
 
 	if (!e_svoTI_Active || !e_svoTI_Apply || !e_svoRender || !m_pShader)
@@ -1869,55 +1727,54 @@ void CSvoRenderer::UpScalePass(SSvoTargetsSet* pTS)
 
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-	rd->FX_PushRenderTarget(0, pTS->pRT_FIN_OUT_0, NULL, -1, false, 1);
+	uint64 rtFlags = GetRunTimeFlags(pTS == &m_tsDiff);
+	
+	rp.SetRenderTarget(0, pTS->pRT_FIN_OUT_0);
+	rp.SetRequireWorldPos(true);
+	rp.SetRequirePerViewConstantBuffer(true);
 
-	SetShaderFlags(pTS == &m_tsDiff);
+	rp.SetTechnique(m_pShader, szTechFinalName, rtFlags);
+	rp.BeginConstantUpdate();
+	rp.SetState(GS_NODEPTHTEST);
 
-	SD3DPostEffectsUtils::ShBeginPass(m_pShader, szTechFinalName, FEF_DONTSETTEXTURES /*| FEF_DONTSETSTATES*/);
+	rp.SetTextureSamplerPair( 4, CTexture::s_ptexZTarget, m_nTexStatePoint);
+	rp.SetTextureSamplerPair(14, GetGBuffer(0), m_nTexStatePoint);
+	rp.SetTextureSamplerPair( 5, GetGBuffer(1), m_nTexStatePoint);
+	rp.SetTextureSamplerPair( 7, GetGBuffer(2), m_nTexStatePoint);
 
-	if (!gRenDev->m_RP.m_pShader)
-	{
-		gEnv->pLog->LogWarning("Error: %s: Technique not found: %s", __FUNC__, szTechFinalName);
-	}
+	rp.SetTextureSamplerPair(10, pTS->pRT_ALD_DEM_MIN_0, m_nTexStatePoint);
+	rp.SetTextureSamplerPair(11, pTS->pRT_RGB_DEM_MIN_0, m_nTexStatePoint);
+	rp.SetTextureSamplerPair(12, pTS->pRT_ALD_DEM_MAX_0, m_nTexStatePoint);
+	rp.SetTextureSamplerPair(13, pTS->pRT_RGB_DEM_MAX_0, m_nTexStatePoint);
 
-	CTexture::s_ptexZTarget->Apply(4, m_nTexStatePoint);
-	GetGBuffer(1)->Apply(5, m_nTexStatePoint);
-	GetGBuffer(2)->Apply(7, m_nTexStatePoint);
-	GetGBuffer(0)->Apply(14, m_nTexStatePoint);
-
-	pTS->pRT_ALD_DEM_MIN_0->Apply(10, m_nTexStatePoint);
-	pTS->pRT_RGB_DEM_MIN_0->Apply(11, m_nTexStatePoint);
-	pTS->pRT_ALD_DEM_MAX_0->Apply(12, m_nTexStatePoint);
-	pTS->pRT_RGB_DEM_MAX_0->Apply(13, m_nTexStatePoint);
-
-	pTS->pRT_FIN_OUT_1->Apply(9, m_nTexStatePoint);
+	rp.SetTextureSamplerPair(9, pTS->pRT_FIN_OUT_1, m_nTexStatePoint);
 
 	if (pTS == &m_tsSpec && m_tsDiff.pRT_FIN_OUT_0)
-		m_tsDiff.pRT_FIN_OUT_0->Apply(15, m_nTexStatePoint);
+		rp.SetTextureSamplerPair(15, m_tsDiff.pRT_FIN_OUT_0, m_nTexStatePoint);
 	else
-		CTexture::s_ptexBlack->Apply(15, m_nTexStatePoint);
+		rp.SetTextureSamplerPair(15, CTexture::s_ptexBlack, m_nTexStatePoint);
 
 	{
 		static CCryNameR parameterName6("SVO_SrcPixSize");
 		Vec4 ttt(0, 0, 0, 0);
 		ttt.x = 1.f / float(pTS->pRT_ALD_DEM_MIN_0->GetWidth());
 		ttt.y = 1.f / float(pTS->pRT_ALD_DEM_MIN_0->GetHeight());
-		m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&ttt, 1);
+		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
 	}
 
 	{
 		static CCryNameR parameterName5("SVO_ReprojectionMatrix");
-		m_pShader->FXSetPSFloat(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
+		rp.SetConstantArray(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
 	}
 
 	{
-		float fSizeRatioW = float(rd->GetWidth() / rd->m_RTStack[0][rd->m_nRTStackLevel[0]].m_Width);
-		float fSizeRatioH = float(rd->GetHeight() / rd->m_RTStack[0][rd->m_nRTStackLevel[0]].m_Height);
+		float fSizeRatioW = float(rd->GetWidth() / rp.GetRenderTarget(0)->GetWidth());
+		float fSizeRatioH = float(rd->GetHeight() / rp.GetRenderTarget(0)->GetHeight());
 		static CCryNameR parameterName6("SVO_TargetResScale");
 		static int nPrevWidth = 0;
 		Vec4 ttt(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase,
-		         (float)(nPrevWidth != (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0)) || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
-		m_pShader->FXSetPSFloat(parameterName6, (Vec4*)&ttt, 1);
+			(float)(nPrevWidth != (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0)) || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
+		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
 		nPrevWidth = (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0));
 	}
 
@@ -1927,24 +1784,19 @@ void CSvoRenderer::UpScalePass(SSvoTargetsSet* pTS)
 		mViewProj.Transpose();
 
 		static CCryNameR paramName("g_mViewProj");
-		m_pShader->FXSetPSFloat(paramName, alias_cast<Vec4*>(&mViewProj), 4);
+		rp.SetConstantArray(paramName, alias_cast<Vec4*>(&mViewProj), 4);
 
 		static CCryNameR paramNamePrev("g_mViewProjPrev");
-		m_pShader->FXSetPSFloat(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
+		rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
 	}
 
-	GetUtils().SetTexture(GetUtils().GetVelocityObjectRT(), 8, FILTER_POINT);
+	rp.SetTextureSamplerPair(8, GetUtils().GetVelocityObjectRT(), m_nTexStatePoint);
 
-	rd->FX_Commit();
-
-	SD3DPostEffectsUtils::DrawFullScreenTriWPOS(CTexture::s_ptexCurrentSceneDiffuseAccMap->GetWidth(), CTexture::s_ptexCurrentSceneDiffuseAccMap->GetHeight());
-
-	SD3DPostEffectsUtils::ShEndPass();
-
-	rd->FX_PopRenderTarget(0);
+	rp.Execute();
 }
 
-void CSvoRenderer::SetupRsmSun(const EHWShaderClass eShClass)
+template<class T>
+void CSvoRenderer::SetupRsmSun(T & rp)
 {
 	int t0, t1, t2;
 	if (e_svoTI_AnalyticalGI)
@@ -1994,13 +1846,13 @@ void CSvoRenderer::SetupRsmSun(const EHWShaderClass eShClass)
 			TS.SetFilterMode(FILTER_POINT);
 			TS.SetClampMode(TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP);
 			TS.m_bSRGBLookup = false;
-			CTexture::s_ptexRT_ShadowPool->Apply(t0, CTexture::GetTexState(TS), EFTT_UNKNOWN, -1, -1, eShClass);
+			rp.SetTextureSamplerPair(t0, CTexture::s_ptexRT_ShadowPool, CTexture::GetTexState(TS));
 		}
 		else
 		{
-			firstFrustum.pDepthTex->Apply(t0, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
-			GetRsmColorMap(firstFrustum)->Apply(t1, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
-			GetRsmNormlMap(firstFrustum)->Apply(t2, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
+			rp.SetTextureSamplerPair(t0, firstFrustum.pDepthTex, m_nTexStatePoint);
+			rp.SetTextureSamplerPair(t1, GetRsmColorMap(firstFrustum), m_nTexStatePoint);
+			rp.SetTextureSamplerPair(t2, GetRsmNormlMap(firstFrustum), m_nTexStatePoint);
 		}
 
 		// set up shadow matrix
@@ -2012,24 +1864,24 @@ void CSvoRenderer::SetupRsmSun(const EHWShaderClass eShClass)
 		shadowMat.m23 += vecTranslation.z;
 		shadowMat.m33 += vecTranslation.w;
 		(Vec4&)shadowMat.m20 *= gRenDev->m_cEF.m_TempVecs[2].x;
-		SetShaderFloat(eShClass, lightProjParamName, alias_cast<Vec4*>(&shadowMat), 4);
+		rp.SetConstantArray(lightProjParamName, alias_cast<Vec4*>(&shadowMat), 4);
 
 		Vec4 ttt(gEnv->p3DEngine->GetSunColor(), e_svoTI_InjectionMultiplier);
-		SetShaderFloat(eShClass, rsmSunColParameterName, (Vec4*)&ttt, 1);
+		rp.SetConstantArray(rsmSunColParameterName, (Vec4*)&ttt, 1);
 		Vec4 ttt2(gEnv->p3DEngine->GetSunDirNormalized(), (float)e_svoTI_SunRSMInject);
-		SetShaderFloat(eShClass, rsmSunDirParameterName, (Vec4*)&ttt2, 1);
+		rp.SetConstantArray(rsmSunDirParameterName, (Vec4*)&ttt2, 1);
 	}
 	else
 	{
-		CTexture::s_ptexBlack->Apply(t0, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
-		CTexture::s_ptexBlack->Apply(t1, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
-		CTexture::s_ptexBlack->Apply(t2, m_nTexStatePoint, EFTT_UNKNOWN, -1, -1, eShClass);
-		SetShaderFloat(eShClass, lightProjParamName, alias_cast<Vec4*>(&shadowMat), 4);
+		rp.SetTextureSamplerPair(t0, CTexture::s_ptexBlack, m_nTexStatePoint);
+		rp.SetTextureSamplerPair(t1, CTexture::s_ptexBlack, m_nTexStatePoint);
+		rp.SetTextureSamplerPair(t2, CTexture::s_ptexBlack, m_nTexStatePoint);
+		rp.SetConstantArray(lightProjParamName, alias_cast<Vec4*>(&shadowMat), 4);
 
 		Vec4 ttt(0, 0, 0, 0);
-		SetShaderFloat(eShClass, rsmSunColParameterName, (Vec4*)&ttt, 1);
+		rp.SetConstantArray(rsmSunColParameterName, (Vec4*)&ttt, 1);
 		Vec4 ttt2(0, 0, 0, 0);
-		SetShaderFloat(eShClass, rsmSunDirParameterName, (Vec4*)&ttt2, 1);
+		rp.SetConstantArray(rsmSunDirParameterName, (Vec4*)&ttt2, 1);
 	}
 }
 
@@ -2038,19 +1890,10 @@ ISvoRenderer* CD3D9Renderer::GetISvoRenderer()
 	return CSvoRenderer::GetInstance(true);
 }
 
-void CSvoRenderer::SetShaderFloat(const EHWShaderClass eShClass, const CCryNameR& NameParam, const Vec4* fParams, int nParams)
+template<class T>
+void CSvoRenderer::BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, T & rp)
 {
-	if (eShClass == eHWSC_Pixel)
-		m_pShader->FXSetPSFloat(NameParam, fParams, nParams);
-	else if (eShClass == eHWSC_Compute)
-		m_pShader->FXSetCSFloat(NameParam, fParams, nParams);
-	else if (eShClass == eHWSC_Vertex)
-		m_pShader->FXSetVSFloat(NameParam, fParams, nParams);
-}
-
-void CSvoRenderer::BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, CDeviceManager::SHADER_TYPE shaderType)
-{
-	gcpRendD3D->GetTiledShading().BindForwardShadingResources(NULL, shaderType);
+	gcpRendD3D->GetTiledShading().BindForwardShadingResources(rp);
 
 	STiledLightShadeInfo* tiledLightShadeInfo = gcpRendD3D->GetTiledShading().GetTiledLightShadeInfo();
 
@@ -2141,7 +1984,7 @@ void CSvoRenderer::CheckCreateUpdateRT(CTexture*& pTex, int nWidth, int nHeight,
 
 void CSvoRenderer::SVoxPool::Init(ITexture* _pTex)
 {
-	CTexture* pTex = (CTexture*)_pTex;
+	pTex = (CTexture*)_pTex;
 
 	if (pTex)
 	{

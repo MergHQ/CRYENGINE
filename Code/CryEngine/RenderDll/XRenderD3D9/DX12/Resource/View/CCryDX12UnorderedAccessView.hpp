@@ -15,10 +15,10 @@
 
 	#include "DX12/Resource/CCryDX12View.hpp"
 
-class CCryDX12UnorderedAccessView : public CCryDX12View<ID3D11UnorderedAccessView>
+class CCryDX12UnorderedAccessView : public CCryDX12View<ID3D11UnorderedAccessViewToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12UnorderedAccessView, CCryDX12View<ID3D11UnorderedAccessView> );
+	DX12_OBJECT(CCryDX12UnorderedAccessView, CCryDX12View<ID3D11UnorderedAccessViewToImplement> );
 
 	static CCryDX12UnorderedAccessView* Create(CCryDX12Device* pDevice, ID3D11Resource* pResource11, const D3D11_UNORDERED_ACCESS_VIEW_DESC* pDesc11);
 

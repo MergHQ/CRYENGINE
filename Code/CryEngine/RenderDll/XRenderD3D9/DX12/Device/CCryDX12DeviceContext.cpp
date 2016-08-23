@@ -1,8 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "CCryDX12DeviceContext.hpp"
 #include "CCryDX12Device.hpp"
+#include "CCryDX12DeviceContext.hpp"
 
 #include "DX12/Resource/CCryDX12Resource.hpp"
 

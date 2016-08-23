@@ -962,7 +962,7 @@ bool CSunShadows::PrepareDebugPrimitive(CRenderPrimitive& primitive, const Shado
 	if (constantManager.IsShaderReflectionValid())
 	{
 		constantManager.BeginNamedConstantUpdate();
-		constantManager.SetNamedConstant(eHWSC_Pixel, CascadeColorParam, cascadeColors[pFrustum->nShadowMapLod % cascadeColorCount]);
+		constantManager.SetNamedConstant(CascadeColorParam, cascadeColors[pFrustum->nShadowMapLod % cascadeColorCount], eHWSC_Pixel);
 		constantManager.EndNamedConstantUpdate();
 
 		return true;
@@ -1176,11 +1176,8 @@ void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitiv
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	const bool bAreaLight = false;   // TheoM TODO
 
-	const CStandardGraphicsPipeline::SViewInfo& viewInfo = shadowMaskStage.m_viewInfo[0];
 	const auto pLight = pFrustumToRender->pLight;
 	const auto pFrustum = pFrustumToRender->pFrustum;
-
-	auto shadowSamplingInfo = CShadowUtils::GetShadowSamplingInfo(pFrustum, side, *viewInfo.pCamera, viewInfo.viewport, gcpRendD3D->m_vProjMatrixSubPixoffset);
 
 	// shadow clip space to world space transform
 	Matrix44A mUnitVolumeToWorld(IDENTITY);
@@ -1207,16 +1204,23 @@ void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitiv
 	float kernelSize = pFrustum->bOmniDirectionalShadow ? 2.5f : 1.5f;
 	const Vec4 vShadowParams(kernelSize * (float(pFrustum->nTexSize) / nShadowAtlasRes), float(pFrustum->nTexSize), 0.0f, pFrustum->fDepthConstBias);
 
-	Matrix44A shadowMat = shadowSamplingInfo.shadowTexGen;
-	const Vec4 vEye(gRenDev->GetRCamera().vOrigin, 0.f);
-	Vec4 vecTranslation(vEye.Dot((Vec4&)shadowMat.m00), vEye.Dot((Vec4&)shadowMat.m10), vEye.Dot((Vec4&)shadowMat.m20), vEye.Dot((Vec4&)shadowMat.m30));
-	shadowMat.m03 += vecTranslation.x;
-	shadowMat.m13 += vecTranslation.y;
-	shadowMat.m23 += vecTranslation.z;
-	shadowMat.m33 += vecTranslation.w;
+	Matrix44A shadowMat[2];
+	for (int i = 0; i < shadowMaskStage.m_viewInfoCount; ++i)
+	{
+		const CStandardGraphicsPipeline::SViewInfo& viewInfo = shadowMaskStage.m_viewInfo[i];
+		auto shadowSamplingInfo = CShadowUtils::GetShadowSamplingInfo(pFrustum, side, *viewInfo.pCamera, viewInfo.viewport, gcpRendD3D->m_vProjMatrixSubPixoffset);
 
-	// pre-multiply by 1/frustrum_far_plane
-	(Vec4&)shadowMat.m20 *= shadowSamplingInfo.oneDivFarDist;
+		shadowMat[i] = shadowSamplingInfo.shadowTexGen;
+		const Vec4 vEye(viewInfo.pRenderCamera->vOrigin, 0.f);
+		Vec4 vecTranslation(vEye.Dot((Vec4&)shadowMat[i].m00), vEye.Dot((Vec4&)shadowMat[i].m10), vEye.Dot((Vec4&)shadowMat[i].m20), vEye.Dot((Vec4&)shadowMat[i].m30));
+		shadowMat[i].m03 += vecTranslation.x;
+		shadowMat[i].m13 += vecTranslation.y;
+		shadowMat[i].m23 += vecTranslation.z;
+		shadowMat[i].m33 += vecTranslation.w;
+
+		// pre-multiply by 1/frustrum_far_plane
+		(Vec4&)shadowMat[i].m20 *= shadowSamplingInfo.oneDivFarDist;
+	}
 
 	// apply per view buffer to all primitives
 	primitives.sampling.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, shadowMaskStage.m_pPerViewConstantBuffer, EShaderStage_Vertex);
@@ -1229,10 +1233,16 @@ void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitiv
 	auto constants = constantManager.BeginTypedConstantUpdate<STypedConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
 	constants->unitMeshTransform = mUnitVolumeToWorld;
 	constants->lightVolumeSphereAdjust = vSphereAdjust;
-	constants->lightShadowProj = shadowMat;
+	constants->lightShadowProj = shadowMat[0];
 	constants->params = vShadowParams;
 	memcpy(constants->irreg_kernel_2d, shadowMaskStage.m_filterKernel, sizeof(shadowMaskStage.m_filterKernel));
 	constants->vLightPos = Vec4(pLight->m_Origin, 0.0f);
+
+	if (shadowMaskStage.m_viewInfoCount > 1)
+	{
+		constants.BeginStereoOverride();
+		constants->lightShadowProj = shadowMat[1];
+	}
 
 	constantManager.EndTypedConstantUpdate(constants);
 }

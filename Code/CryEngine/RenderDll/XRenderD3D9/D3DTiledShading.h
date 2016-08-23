@@ -50,6 +50,7 @@ class CTiledShading
 {
 protected:
 	friend class CTiledShadingStage;
+	friend class CSceneForwardStage;
 
 	struct AtlasItem
 	{

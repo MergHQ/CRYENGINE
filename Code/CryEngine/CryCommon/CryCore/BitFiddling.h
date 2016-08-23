@@ -4,75 +4,149 @@
 
 #include <CryCore/Assert/CompileTimeAssert.h>
 
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Count the number of leading zeros
+// Result ranges from 0 to 32/64
+#if (CRY_COMPILER_GCC || CRY_COMPILER_CLANG)
 
-	#define countLeadingZeros32(x) __builtin_clz(x)
+	// builtin doesn't want to work for 0
+	#define countLeadingZeros32(x) ((x) ? __builtin_clz  (x) : 32)
+	#define countLeadingZeros64(x) ((x) ? __builtin_clzll(x) : 64)
+
+#elif CRY_PLATFORM_SSE4
+
+	#define countLeadingZeros32(x) __lzcnt(x)
+	#define countLeadingZeros64(x) __lzcnt64(x)
 
 #else  // Windows implementation
 
 ILINE uint32 countLeadingZeros32(uint32 x)
 {
-	DWORD result = 32 ^ 31; // assumes result is unmodified if _BitScanReverse returns 0
+	unsigned long result = 32 ^ 31; // assumes result is unmodified if _BitScanReverse returns 0
 	_BitScanReverse(&result, x);
 	PREFAST_SUPPRESS_WARNING(6102);
 	result ^= 31; // needed because the index is from LSB (whereas all other implementations are from MSB)
 	return result;
 }
+
+ILINE uint64 countLeadingZeros64(uint64 x)
+{
+#if CRY_PLATFORM_X64
+	unsigned long result = 64 ^ 63; // assumes result is unmodified if _BitScanReverse returns 0
+	_BitScanReverse64(&result, x);
+	PREFAST_SUPPRESS_WARNING(6102);
+	result ^= 63; // needed because the index is from LSB (whereas all other implementations are from MSB)
+#else
+	unsigned long result = (x & 0xFFFFFFFF00000000ULL)
+		? countLeadingZeros32(uint32(x >> 32)) +  0
+		: countLeadingZeros32(uint32(x >>  0)) + 32;
 #endif
+	return result;
+}
+
+#endif
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Count the number of trailing zeros
+// Result ranges from 0 to 32/64
+#if (CRY_COMPILER_GCC || CRY_COMPILER_CLANG)
+
+	// builtin doesn't want to work for 0
+	#define countTrailingZeros32(x) ((x) ? __builtin_ctz  (x) : 32)
+	#define countTrailingZeros64(x) ((x) ? __builtin_ctzll(x) : 64)
+
+#elif CRY_PLATFORM_BMI1
+	#include "ammintrin.h"
+
+	#define countTrailingZeros32(x) _tzcnt_u32(x)
+	#define countTrailingZeros64(x) _tzcnt_u64(x)
+
+#else  // Windows implementation
+
+ILINE uint32 countTrailingZeros32(uint32 x)
+{
+	unsigned long result = 32; // assumes result is unmodified if _BitScanForward returns 0
+	_BitScanForward(&result, x);
+	PREFAST_SUPPRESS_WARNING(6102);
+	return result;
+}
+
+ILINE uint64 countTrailingZeros64(uint64 x)
+{
+#if CRY_PLATFORM_X64
+	unsigned long result = 64; // assumes result is unmodified if _BitScanForward returns 0
+	_BitScanForward64(&result, x);
+	PREFAST_SUPPRESS_WARNING(6102);
+#else
+	unsigned long result = (x & 0x00000000FFFFFFFFULL)
+		? countTrailingZeros32(uint32(x >>  0)) +  0
+		: countTrailingZeros32(uint32(x >> 32)) + 32;
+#endif
+	return result;
+}
+
+#endif
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+#if CRY_COMPILER_GCC || CRY_COMPILER_CLANG
 
 inline uint32 circularShift(uint32 nbits, uint32 i)
 {
 	return (i << nbits) | (i >> (32 - nbits));
 }
 
-template<typename T>
-inline size_t countTrailingZeroes(T v)
+#else  // Windows implementation
+
+	#define circularShift(nbits, i) _rotl(nbits, i)
+
+#endif
+
+#if CRY_PLATFORM_BMI1
+
+	#define isolateLowestBit(x) _blsi_u32(x)
+	#define clearLowestBit(x) _blsr_u32(x)
+
+#else  // Windows implementation
+
+ILINE uint32 isolateLowestBit(uint32 x)
 {
-	size_t n = 0;
-
-	v = ~v & (v - 1);
-	while (v)
-	{
-		++n;
-		v >>= 1;
-	}
-
-	return n;
+	PREFAST_SUPPRESS_WARNING(4146);
+	return x & (-x);
 }
 
+ILINE uint32 clearLowestBit(uint32 x)
+{
+	return x & (x - 1);
+}
+
+#endif
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 class CBitIter
 {
 public:
-	ILINE CBitIter(uint8 x) : m_val(x) {}
+	ILINE CBitIter(uint8  x) : m_val(x) {}
 	ILINE CBitIter(uint16 x) : m_val(x) {}
 	ILINE CBitIter(uint32 x) : m_val(x) {}
 
 	template<class T>
 	ILINE bool Next(T& rIndex)
 	{
-		bool r = (m_val != 0);
-		uint32 maskLSB;
-
-		// Rewritten to use clz technique. Note that the iterator now works from lsb to msb but that shouldn't matter - this way we avoid microcoded instructions.
-		maskLSB = m_val & (~(m_val - 1));
-		rIndex = 31 - countLeadingZeros32(maskLSB);
-		m_val &= ~maskLSB;
-		return r;
+		uint32 maskLSB = isolateLowestBit(m_val);
+		rIndex = countTrailingZeros32(maskLSB);
+		m_val ^= maskLSB;
+		return maskLSB != 0;
 	}
 
 private:
 	uint32 m_val;
 };
 
-//! This function returns the integer logarithm of various numbers without branching.
-#define IL2VAL(mask, shift)       \
-  c |= ((x & mask) != 0) * shift; \
-  x >>= ((x & mask) != 0) * shift
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename TInteger>
 inline bool IsPowerOfTwo(TInteger x)
 {
-	return (x & (x - 1)) == 0;
+	return clearLowestBit(x) == 0;
 }
 
 //! Compile-time version of IsPowerOfTwo, useful for STATIC_CHECK.
@@ -82,54 +156,55 @@ struct IsPowerOfTwoCompileTime
 	enum { IsPowerOfTwo = ((nValue & (nValue - 1)) == 0) };
 };
 
-inline uint32 NextPower2(uint32 n)
+// Calculates the base-2 logarithm for a given number.
+// Passing 0 will return -1 in an unsigned datatype.
+// Result ranges from -1 to 7/15/31/63
+#if CRY_COMPILER_GCC || CRY_COMPILER_CLANG
+
+static ILINE uint8  IntegerLog2(uint8  v) { return uint8 (31U   - __builtin_clz  (v)); }
+static ILINE uint16 IntegerLog2(uint16 v) { return uint16(31U   - __builtin_clz  (v)); }
+static ILINE uint32 IntegerLog2(uint32 v) { return uint32(31UL  - __builtin_clz  (v)); }
+static ILINE uint64 IntegerLog2(uint64 v) { return uint64(63ULL - __builtin_clzll(v)); }
+
+#else  // Windows implementation
+
+static ILINE uint8  IntegerLog2(uint8  v) { unsigned long result = ~0U; _BitScanReverse  (&result, v); return uint8 (result); }
+static ILINE uint16 IntegerLog2(uint16 v) { unsigned long result = ~0U; _BitScanReverse  (&result, v); return uint16(result); }
+static ILINE uint32 IntegerLog2(uint32 v) { unsigned long result = ~0U; _BitScanReverse  (&result, v); return uint32(result); }
+#if CRY_PLATFORM_X64
+static ILINE uint64 IntegerLog2(uint64 v) { unsigned long result = ~0U; _BitScanReverse64(&result, v); return uint64(result); }
+#else
+static ILINE uint64 IntegerLog2(uint64 v)
 {
-	n--;
-	n |= n >> 1;
-	n |= n >> 2;
-	n |= n >> 4;
-	n |= n >> 8;
-	n |= n >> 16;
-	n++;
-	return n;
+	unsigned long result = ~0U;
+	if      (v & 0xFFFFFFFF00000000ULL) _BitScanReverse(&result, uint32(v >> 32)), result += 32;
+	else if (v & 0x00000000FFFFFFFFULL) _BitScanReverse(&result, uint32(v >>  0)), result +=  0;
+	return result;
+}
+#endif
+
+#endif
+
+// Calculates the number of bits needed to represent a number.
+// Passing 0 will return the maximum number of bits.
+// Result ranges from 0 to 8/16/32/64
+static ILINE uint8  IntegerLog2_RoundUp(uint8  v) { return uint8 (IntegerLog2(uint8 (v - 1U  )) + 1U  ); }
+static ILINE uint16 IntegerLog2_RoundUp(uint16 v) { return uint16(IntegerLog2(uint16(v - 1U  )) + 1U  ); }
+static ILINE uint32 IntegerLog2_RoundUp(uint32 v) { return uint32(IntegerLog2(uint32(v - 1UL )) + 1UL ); }
+static ILINE uint64 IntegerLog2_RoundUp(uint64 v) { return uint64(IntegerLog2(uint64(v - 1ULL)) + 1ULL); }
+
+// Calculates the power-of-2 upper range of a given number.
+// Passing 0 will return 1 on x86 (shift modulo datatype size is no shift) and 0 on other platforms.
+// Result ranges from 1 to all bits set.
+inline uint32 NextPower2(uint32 x)
+{
+	return 1UL << IntegerLog2_RoundUp(x);
 }
 
-inline uint8 IntegerLog2(uint8 x)
+inline uint64 NextPower2_64(uint64 x)
 {
-	uint8 c = 0;
-	IL2VAL(0xf0, 4);
-	IL2VAL(0xc, 2);
-	IL2VAL(0x2, 1);
-	return c;
+	return 1ULL << IntegerLog2_RoundUp(x);
 }
-inline uint16 IntegerLog2(uint16 x)
-{
-	uint16 c = 0;
-	IL2VAL(0xff00, 8);
-	IL2VAL(0xf0, 4);
-	IL2VAL(0xc, 2);
-	IL2VAL(0x2, 1);
-	return c;
-}
-
-inline uint32 IntegerLog2(uint32 x)
-{
-	return 31 - countLeadingZeros32(x);
-}
-
-inline uint64 IntegerLog2(uint64 x)
-{
-	uint64 c = 0;
-	IL2VAL(0xffffffff00000000ull, 32);
-	IL2VAL(0xffff0000u, 16);
-	IL2VAL(0xff00, 8);
-	IL2VAL(0xf0, 4);
-	IL2VAL(0xc, 2);
-	IL2VAL(0x2, 1);
-	return c;
-}
-
-#undef IL2VAL
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 inline unsigned long int IntegerLog2(unsigned long int x)
@@ -153,28 +228,29 @@ inline size_t IntegerLog2(size_t x)
 }
 #endif
 
-template<typename TInteger>
-inline TInteger IntegerLog2_RoundUp(TInteger x)
-{
-	return 1 + IntegerLog2(x - 1);
-}
+// Find-first-MSB-set
+static ILINE uint8 BitIndex(uint8  v) { return uint8(IntegerLog2(v)); }
+static ILINE uint8 BitIndex(uint16 v) { return uint8(IntegerLog2(v)); }
+static ILINE uint8 BitIndex(uint32 v) { return uint8(IntegerLog2(v)); }
+static ILINE uint8 BitIndex(uint64 v) { return uint8(IntegerLog2(v)); }
 
-static ILINE uint8 BitIndex(uint8 v)
-{
-	uint32 vv = v;
-	return 31 - countLeadingZeros32(vv);
-}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Calculates the number of bits set.
+#if CRY_COMPILER_GCC || CRY_COMPILER_CLANG
 
-static ILINE uint8 BitIndex(uint16 v)
-{
-	uint32 vv = v;
-	return 31 - countLeadingZeros32(vv);
-}
+static ILINE uint8 CountBits(uint8  v) { return uint8(__builtin_popcount  (v)); }
+static ILINE uint8 CountBits(uint16 v) { return uint8(__builtin_popcount  (v)); }
+static ILINE uint8 CountBits(uint32 v) { return uint8(__builtin_popcount  (v)); }
+static ILINE uint8 CountBits(uint64 v) { return uint8(__builtin_popcountll(v)); }
 
-static ILINE uint8 BitIndex(uint32 v)
-{
-	return 31 - countLeadingZeros32(v);
-}
+#elif CRY_PLATFORM_SSE4
+
+static ILINE uint8 CountBits(uint8  v) { return uint8(__popcnt  (v)); }
+static ILINE uint8 CountBits(uint16 v) { return uint8(__popcnt  (v)); }
+static ILINE uint8 CountBits(uint32 v) { return uint8(__popcnt  (v)); }
+static ILINE uint8 CountBits(uint64 v) { return uint8(__popcnt64(v)); }
+
+#else
 
 static ILINE uint8 CountBits(uint8 v)
 {
@@ -187,18 +263,28 @@ static ILINE uint8 CountBits(uint8 v)
 
 static ILINE uint8 CountBits(uint16 v)
 {
-	return CountBits((uint8)(v & 0xff)) +
-	       CountBits((uint8)((v >> 8) & 0xff));
+	return
+		CountBits((uint8)(v & 0xff)) +
+		CountBits((uint8)((v >> 8) & 0xff));
 }
 
 static ILINE uint8 CountBits(uint32 v)
 {
-	return CountBits((uint8)(v & 0xff)) +
-	       CountBits((uint8)((v >> 8) & 0xff)) +
-	       CountBits((uint8)((v >> 16) & 0xff)) +
-	       CountBits((uint8)((v >> 24) & 0xff));
+	return
+		CountBits((uint16)(v & 0xffff)) +
+		CountBits((uint16)((v >> 16) & 0xffff));
 }
 
+static ILINE uint8 CountBits(uint64 v)
+{
+	return
+		CountBits((uint32)(v & 0xffffffff)) +
+		CountBits((uint32)((v >> 32) & 0xffffffff));
+}
+
+#endif
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 //! Branchless version of "return v < 0 ? alt : v;".
 ILINE int32 Isel32(int32 v, int32 alt)
 {

@@ -264,7 +264,7 @@ struct SShaderAsyncInfo
 	}
 	static void FlushPendingShaders();
 
-#if CRY_PLATFORM_DURANGO || defined(OPENGL)
+#if CRY_PLATFORM_DURANGO //|| defined(OPENGL)
 	#define LPD3DXBUFFER    D3DBlob *
 	#define ID3DXBuffer     D3DBlob
 #endif

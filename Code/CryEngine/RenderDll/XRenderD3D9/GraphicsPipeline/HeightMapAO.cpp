@@ -96,15 +96,15 @@ void CHeightMapAOStage::Execute(ShadowMapFrustum*& pHeightMapFrustum, CTexture*&
 			const float texelsPerMeter = CRenderer::CV_r_HeightMapAOResolution / CRenderer::CV_r_HeightMapAORange;
 			const bool enableMinMaxSampling = CRenderer::CV_r_HeightMapAO < 3;
 			Vec4 paramHMAO(CRenderer::CV_r_HeightMapAOAmount, texelsPerMeter / CTexture::s_ptexHeightMapAODepth[1]->GetWidth(), enableMinMaxSampling ? 1.0f : 0.0f, 0.0f);
-			m_passSampling.SetConstant(eHWSC_Pixel, nameParams, paramHMAO);
+			m_passSampling.SetConstant(nameParams, paramHMAO, eHWSC_Pixel);
 
 			Vec4 translation = Vec4(texToWorld.m03, texToWorld.m13, texToWorld.m23, 0);
-			m_passSampling.SetConstant(eHWSC_Pixel, nameTexToWorldT, translation);
+			m_passSampling.SetConstant(nameTexToWorldT, translation, eHWSC_Pixel);
 
 			Vec4 scale = Vec4(texToWorld.m00, texToWorld.m11, texToWorld.m22, 1);
-			m_passSampling.SetConstant(eHWSC_Pixel, nameTexToWorldS, scale);
+			m_passSampling.SetConstant(nameTexToWorldS, scale, eHWSC_Pixel);
 
-			m_passSampling.SetConstantArray(eHWSC_Pixel, nameTransform, (Vec4*)matHMAOTransform.GetData(), 4);
+			m_passSampling.SetConstantArray(nameTransform, (Vec4*)matHMAOTransform.GetData(), 4, eHWSC_Pixel);
 
 			m_passSampling.Execute();
 		}
@@ -138,9 +138,9 @@ void CHeightMapAOStage::Execute(ShadowMapFrustum*& pHeightMapFrustum, CTexture*&
 
 			m_passSmoothing.BeginConstantUpdate();
 
-			m_passSmoothing.SetConstant(eHWSC_Vertex, namePixelOffset, Vec4 (0, 0, (float)pDestRT->GetWidth(), (float)pDestRT->GetHeight()));
-			m_passSmoothing.SetConstantArray(eHWSC_Pixel, nameClipVolumeData, pClipVolumeParams, 
-				min(static_cast<uint32>(CClipVolumesStage::MaxDeferredClipVolumes), static_cast<uint32>(clipVolumeCount + CClipVolumesStage::VisAreasOutdoorStencilOffset)));
+			m_passSmoothing.SetConstant(namePixelOffset, Vec4 (0, 0, (float)pDestRT->GetWidth(), (float)pDestRT->GetHeight()), eHWSC_Vertex);
+			m_passSmoothing.SetConstantArray(nameClipVolumeData, pClipVolumeParams, 
+				min(static_cast<uint32>(CClipVolumesStage::MaxDeferredClipVolumes), static_cast<uint32>(clipVolumeCount + CClipVolumesStage::VisAreasOutdoorStencilOffset)), eHWSC_Pixel);
 
 			m_passSmoothing.Execute();
 		}

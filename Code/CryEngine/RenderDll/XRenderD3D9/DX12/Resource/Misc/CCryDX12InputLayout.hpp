@@ -15,10 +15,10 @@
 
 	#include "DX12/Device/CCryDX12DeviceChild.hpp"
 
-class CCryDX12InputLayout : public CCryDX12DeviceChild<ID3D11InputLayout>
+class CCryDX12InputLayout : public CCryDX12DeviceChild<ID3D11InputLayoutToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12InputLayout, CCryDX12DeviceChild<ID3D11InputLayout> );
+	DX12_OBJECT(CCryDX12InputLayout, CCryDX12DeviceChild<ID3D11InputLayoutToImplement> );
 
 	static CCryDX12InputLayout* Create(CCryDX12Device* pDevice, const D3D11_INPUT_ELEMENT_DESC* pInputElementDescs11, UINT NumElements, const void* pShaderBytecodeWithInputSignature, SIZE_T BytecodeLength);
 

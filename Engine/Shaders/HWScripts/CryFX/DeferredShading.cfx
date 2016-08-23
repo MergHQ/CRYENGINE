@@ -241,7 +241,7 @@ vtxOutWPOSOnly LightVolumeVS(vtxInLightPrePass IN)
 	}
 	
 	//final ViewProj transformation
-	OUT.HPosition = mul(vPos, g_mViewProj);
+	OUT.HPosition = mul(CV_ViewProjMatr, vPos);
 
   return OUT;
 }
@@ -255,7 +255,7 @@ vtxOutWPOSOnly DecalVolumeVS(vtxInLightPrePass IN)
   vPos = mul(g_mInvLightProj, vPos);
   vPos /= vPos.w;
 	
-  OUT.HPosition = mul(g_mViewProj, vPos);
+  OUT.HPosition = mul(CV_ViewProjMatr, vPos);
 
   return OUT;
 }
@@ -273,9 +273,9 @@ poDecalsMRT DecalPassPS(fragInWPOS IN)
 #endif
 
   float fDepth = GetLinearDepthPrecise( _tex0, ScreenTC.xy );
-  float3 vPosition = ReconstructViewPos(IN.WPos.xy, fDepth);
+  float3 vPosition = ReconstructWorldPos(IN.WPos.xy, fDepth, true);
 
-  float4 vProjTC = mul(g_mLightProj, float4(vPosition.xyz + g_WorldViewPos.xyz ,1.0));
+  float4 vProjTC = mul(g_mLightProj, float4(vPosition.xyz + GetWorldViewPos() ,1.0));
   vProjTC.xyz/=vProjTC.w;
 
   float4 clipFrustum;
@@ -444,7 +444,7 @@ pixoutMRT LightPassPS( fragInWPOS IN )
   return OUT;
 #endif
 
-  float3 vPosition = ReconstructViewPos(IN.WPos.xy, fDepth);
+  float3 vPosition = ReconstructWorldPos(IN.WPos.xy, fDepth, true);
 
   half fAttenuation = 1.h;
   half cFilter = 1;
@@ -452,11 +452,11 @@ pixoutMRT LightPassPS( fragInWPOS IN )
 // for compatibility with tiled shading, only use when area lights are on or if this is an ambient light.
 #if %_RT_SAMPLE1 && (%_RT_SAMPLE5 || %_RT_SAMPLE3)
 	// Area projected light position.
-	float3 vLightPoint = g_LightPos.xyz - vPosition.xyz;
+	float3 vLightPoint = (g_LightPos.xyz - GetWorldViewPos()) - vPosition.xyz;
 	float3 vLightWS = ComputeNearestLightOnRectangle(vPosition.xyz, vLightPoint, g_AreaLightMatrix);
 #else
 	// Only compute attenuation for local lights (point/projectors) - not for sun
-	float3 vLightWS = g_LightPos.xyz - vPosition.xyz;  
+	float3 vLightWS = (g_LightPos.xyz - GetWorldViewPos()) - vPosition.xyz;  
 #endif
   float3 vLight = normalize(vLightWS.xyz);
 
@@ -482,7 +482,7 @@ pixoutMRT LightPassPS( fragInWPOS IN )
 	{
 #if %_RT_SAMPLE0 && !%_RT_SAMPLE1
     // Projective light source
-    float4 vProjTC = mul(g_mLightProj, float4(vPosition, 1.f));    
+    float4 vProjTC = mul(g_mLightProj, float4(vPosition, 1)) + mul(g_mLightProj, float4(GetWorldViewPos(), 0.f));    
     #if %_RT_LIGHT_TEX_PROJ
         // optimization todo: implement per-light/distance LOD picking
         cFilter = tex2Dlod( _tex5, float4(vProjTC.xy/vProjTC.w, 0, 0) ).r;
@@ -494,7 +494,7 @@ pixoutMRT LightPassPS( fragInWPOS IN )
 
     half fInShadow = 1.0f;
 #if %_RT_SAMPLE4
-	float4 P0 = mul(g_mLightShadowProj, float4(vPosition, 1.f));
+	float4 P0 = mul(g_mLightShadowProj, float4(vPosition, 1)) + mul(g_mLightShadowProj, float4(GetWorldViewPos(), 0));
 	//P0 = CalcShadowSpace(P0);
 	P0.xy /= P0.w;
 	P0.z -= g_GeneralParams.w;//0.003f;
@@ -634,7 +634,7 @@ void GetDeferredCubemap( inout half4 Diffuse, inout half4 Specular, in samplerCU
   half3 vReflVec = reflect(vCamVec, attribs.NormalWorld);
   #if %_RT_SAMPLE3
 	// Box projected cube map
-	CubemapBoxParallaxCorrection(vReflVec, vPosition, g_LightPos, g_vBoxProjectionMin.xyz, g_vBoxProjectionMax.xyz, attribs.Smoothness);
+	CubemapBoxParallaxCorrection(vReflVec, vPosition, g_LightPos - GetWorldViewPos(), g_vBoxProjectionMin.xyz, g_vBoxProjectionMax.xyz, attribs.Smoothness);
   #endif
 
   half3 cSpecular = _GetEnvironmentCMap( samSpecular, vReflVec.xyz, fNdotE, attribs.Smoothness );
@@ -699,7 +699,7 @@ pixoutMRTCubemap CubemapPassPS( fragInWPOS IN )
 	float3 vPosition = HPos * fDepth;
 	float3 vCamVec = normalize(HPos);
 
-	float3 vLightWS = g_LightPos.xyz - vPosition.xyz;
+	float3 vLightWS = (g_LightPos.xyz - GetWorldViewPos()) - vPosition.xyz;
 	
 	// Compute attenuation for box
 	float3 lightVecBoxSpace;
@@ -1298,7 +1298,7 @@ pixout DirOccPassPS(vtxOut IN)
 		sh2.xyz += fObscurance.x * vSample[0] + fObscurance.y * vSample[1] + fObscurance.z * vSample[2] + fObscurance.w * vSample[3];
 	}
 	
-	sh2.xyz = mul( CV_InvViewMatr, half4(sh2.xyz * float3(1, -1, -1), 0) ).xyz;
+	sh2.xyz = mul( CV_InvViewMatr, half4(sh2.xyz, 0) ).xyz * float3(1, -1, -1);
 
 	const half fNormFac = 0.15;
 	sh2.xyzw *= fNormFac;
@@ -1658,7 +1658,7 @@ pixoutSSS DeferredShadingPassPS(vtxOutWPOS IN)
 	attribs = DecodeGBuffer( tex2D( _tex4, IN.baseTC.xy ), tex2D( _tex2, IN.baseTC.xy ), tex2D( _tex3, IN.baseTC.xy ) );
 #endif
 
-  float3 vPosition = ReconstructViewPos(IN.WPos.xy, fDepth);
+  float3 vPosition = ReconstructWorldPos(IN.WPos.xy, fDepth, true);
 	
 	half3 albedo = attribs.Albedo;
 	// Simple energy conservation between specular and diffuse
@@ -2253,7 +2253,7 @@ pixout ShadowMaskGenPS(float4 WPos : SV_POSITION)
   pixout OUT = (pixout) 0;
 
 	float fDepth = sceneDepthTex.Load(int3(WPos.xy, 0)).x;
-	float3 vPosition = ReconstructViewPos(WPos.xy, fDepth);
+	float3 vPosition = ReconstructWorldPos(WPos.xy, fDepth, true);
 	
 	float4 P0 = mul(c_ShadowMaskConstants.lightShadowProj, float4(vPosition, 1.f));
 	P0.xy /= P0.w;
@@ -2287,7 +2287,7 @@ technique ShadowMaskGen
 {
   pass p0
   {
-    VertexShader = LightPassVS()     DeferredLightPassVS;            
+    VertexShader = FullscreenTriVS() DeferredLightPassVS;            
     PixelShader  = ShadowMaskGenPS() DeferredLightPassPS;
 
     CullMode = None;        

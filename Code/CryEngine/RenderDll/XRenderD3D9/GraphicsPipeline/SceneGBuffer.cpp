@@ -368,7 +368,7 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 	nearProjParams.y = bReverseDepth ? zn / (zf - zn) * nearZRange * camScale : zn / (zn - zf) * nearZRange * camScale;
 	nearProjParams.z = bReverseDepth ? 1.0f - (nearZRange - 0.001f) : nearZRange - 0.001f;
 	nearProjParams.w = 1.0f;
-	m_passDepthLinearization.SetConstant(eHWSC_Pixel, paramName, nearProjParams);
+	m_passDepthLinearization.SetConstant(paramName, nearProjParams, eHWSC_Pixel);
 
 	m_passDepthLinearization.Execute();
 }

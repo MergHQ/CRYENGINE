@@ -350,13 +350,13 @@ bool CTiledShadingStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispa
 					volumeParams.y = bReverseDepth ? zn / (zf - zn) : zn / (zn - zf);
 			
 					constantManager.BeginNamedConstantUpdate();
-					constantManager.SetNamedConstantArray(eHWSC_Vertex, viewProjName, (Vec4*)viewProjMat.GetData(), 4);
-					constantManager.SetNamedConstant(eHWSC_Vertex, volumeParamsName, volumeParams);
-					constantManager.SetNamedConstant(eHWSC_Pixel, screenScaleName, screenScale);
-					constantManager.SetNamedConstant(eHWSC_Pixel, volumeParamsName, volumeParams);
-					constantManager.SetNamedConstant(eHWSC_Pixel, wBasisXName, (Vec4)wBasisX);
-					constantManager.SetNamedConstant(eHWSC_Pixel, wBasisYName, (Vec4)wBasisY);
-					constantManager.SetNamedConstant(eHWSC_Pixel, wBasisZName, (Vec4)wBasisZ);
+					constantManager.SetNamedConstantArray(viewProjName, (Vec4*)viewProjMat.GetData(), 4, eHWSC_Vertex);
+					constantManager.SetNamedConstant(volumeParamsName, volumeParams, eHWSC_Vertex);
+					constantManager.SetNamedConstant(screenScaleName, screenScale, eHWSC_Pixel);
+					constantManager.SetNamedConstant(volumeParamsName, volumeParams, eHWSC_Pixel);
+					constantManager.SetNamedConstant(wBasisXName, (Vec4)wBasisX, eHWSC_Pixel);
+					constantManager.SetNamedConstant(wBasisYName, (Vec4)wBasisY, eHWSC_Pixel);
+					constantManager.SetNamedConstant(wBasisZName, (Vec4)wBasisZ, eHWSC_Pixel);
 					constantManager.EndNamedConstantUpdate();
 				}
 				

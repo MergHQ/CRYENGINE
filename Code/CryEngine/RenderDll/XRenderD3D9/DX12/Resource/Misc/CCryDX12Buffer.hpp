@@ -16,10 +16,10 @@
 	#include "DX12/Resource/CCryDX12Resource.hpp"
 	#include "DX12/API/DX12View.hpp"
 
-class CCryDX12Buffer : public CCryDX12Resource<ID3D11Buffer>
+class CCryDX12Buffer : public CCryDX12Resource<ID3D11BufferToImplement>
 {
 public:
-	DX12_OBJECT(CCryDX12Buffer, CCryDX12Resource<ID3D11Buffer> );
+	DX12_OBJECT(CCryDX12Buffer, CCryDX12Resource<ID3D11BufferToImplement> );
 
 	static CCryDX12Buffer* Create(CCryDX12Device* pDevice);
 	static CCryDX12Buffer* Create(CCryDX12Device* pDevice, ID3D12Resource* pResource, D3D12_RESOURCE_STATES initialState);

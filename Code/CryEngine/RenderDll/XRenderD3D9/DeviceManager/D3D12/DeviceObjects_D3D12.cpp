@@ -1389,10 +1389,10 @@ void CDeviceGraphicsCommandInterfaceImpl::BeginResourceTransitionsImpl(uint32 nu
 	uint32 numBarriers = 0;
 	for (uint32 i = 0; i < numTextures; i++)
 	{
-		CCryDX12Resource<ID3D11Resource>* pResource = nullptr;
+		CCryDX12Resource<ID3D11ResourceToImplement>* pResource = nullptr;
 		if (pTextures[i] && pTextures[i]->GetDevTexture())
 		{
-			pResource = reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>(pTextures[i]->GetDevTexture()->GetBaseTexture());
+			pResource = DX12_EXTRACT_RESOURCE(pTextures[i]->GetDevTexture()->GetBaseTexture());
 		}
 
 		if (pResource != nullptr)

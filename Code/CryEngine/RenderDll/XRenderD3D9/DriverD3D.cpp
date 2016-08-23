@@ -6477,7 +6477,7 @@ void CD3D9Renderer::DrawPrimitivesInternal(CVertexBuffer* src, int vert_num, con
 
 	FX_SetVStream(3, NULL, 0, 0);
 
-	TempDynVBAny::CreateFillAndBind(src->m_VS.m_pLocalData, vert_num, 0, stride);
+	TempDynVBAny::CreateFillAndBind(src->m_VData, vert_num, 0, stride);
 
 	FX_DrawPrimitive(prim_type, 0, vert_num);
 }

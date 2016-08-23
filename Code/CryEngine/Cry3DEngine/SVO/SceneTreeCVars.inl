@@ -42,7 +42,6 @@ REGISTER_CVAR_AUTO(int, e_svoTI_ResScaleAir, 4, VF_NULL, "Defines resolution of 
 REGISTER_CVAR_AUTO(int, e_svoTI_DualTracing, 2, VF_NULL, "Double the number of rays per fragment\n1 = Always ON; 2 = Active only in multi-GPU mode");
 REGISTER_CVAR_AUTO(float, e_svoTI_PointLightsMultiplier, 1.f, VF_NULL, "Modulates point light injection (controls the intensity of bounce light)");
 REGISTER_CVAR_AUTO(float, e_svoTI_EmissiveMultiplier, 4.f, VF_NULL, "Modulates emissive materials light injection\nAllows controlling emission separately from post process glow");
-REGISTER_CVAR_AUTO(float, e_svoTI_TranslucentBrightness, 3.f, VF_NULL, "Adjusts the brightness of translucent surfaces\nAffects for example vegetation leaves and grass");
 REGISTER_CVAR_AUTO(float, e_svoTI_VegetationMaxOpacity, .18f, VF_NULL, "Limits the opacity of vegetation voxels");
 REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizaionPostpone, 2, VF_NULL, "1 - Postpone voxelization until all needed meshes are streamed in\n2 - Postpone voxelization and request streaming of missing meshes\nUse e_svoDebug = 7 to visualize postponed nodes and not ready meshes");
 REGISTER_CVAR_AUTO(float, e_svoTI_MinVoxelOpacity, 0.1f, VF_NULL, "Voxelize only geometry with opacity higher than specified value");
@@ -133,6 +132,8 @@ REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalOccluders, 0, VF_NULL,
                    "Enable basic support for hand-placed occlusion shapes like box, cylinder and capsule\nThis also enables indirect shadows from characters (shadow capsules are defined in .chrparams file)");
 REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalGI, 0, VF_EXPERIMENTAL,
 	                 "Completely replace voxel tracing with analytical shapes tracing\nLight bouncing is supported only in integration mode 0");
+REGISTER_CVAR_AUTO(float, e_svoTI_TranslucentBrightness, 0, VF_NULL,
+									 "Adjusts the brightness of semi translucent surfaces\nAffects mostly vegetation leaves and grass");
 
 // dump cvars for UI help
 #ifdef CVAR_CPP
@@ -226,3 +227,4 @@ REGISTER_CVAR_AUTO(float, e_svoTI_TemporalFilteringBase, .35f, VF_NULL, "Control
 REGISTER_CVAR_AUTO(float, e_svoTI_HighGlossOcclusion, 0.f, VF_NULL, "Normally specular contribution of env probes is corrected by diffuse GI\nThis parameter controls amount of correction (usually darkening) for very glossy and reflective surfaces");
 REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizeUnderTerrain, 0, VF_NULL, "0 = Skip underground triangles during voxelization");
 REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizeHiddenObjects, 0, VF_NULL, "0 = Skip hidden objects during voxelization");
+REGISTER_CVAR_AUTO(int, e_svoTI_AsyncCompute, 0, VF_NULL, "Use asynchronous compute for SVO updates");

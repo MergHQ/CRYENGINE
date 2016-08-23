@@ -2065,7 +2065,7 @@ bool CD3D9Renderer::SetRes()
 		ID3D11Device1* pDevice1 = static_cast<ID3D11Device1*>(pDevice);
 		m_DeviceWrapper.AssignDevice(pDevice1);
 
-		ID3D11DeviceContext1* pDeviceContext1 = NULL;
+		D3DDeviceContext* pDeviceContext1 = NULL;
 		GetDevice().GetImmediateContext1(&pDeviceContext1);
 		m_DeviceContextWrapper.AssignDeviceContext(pDeviceContext1);
 	#else

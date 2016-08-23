@@ -196,6 +196,9 @@ uint32 SShaderItem::PostLoad()
 		if (pSH->m_Flags2 & EF2_EYE_OVERLAY)
 			nPreprocessFlags |= FB_EYE_OVERLAY;
 
+		if ((pSH->m_Flags & EF_SUPPORTSDEFERREDSHADING_MIXED) && !(pSH->m_Flags & EF_SUPPORTSDEFERREDSHADING_FULL))
+			nPreprocessFlags |= FB_TILED_FORWARD;
+
 		if (CRenderer::CV_r_Refraction && (pSH->m_Flags & EF_REFRACTIVE))
 			nPreprocessFlags |= FB_TRANSPARENT;
 

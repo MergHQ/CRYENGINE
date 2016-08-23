@@ -384,6 +384,30 @@ void CMinimalLogUnitTestReporter::OnTestFinish(IUnitTest* pTest, float fRunTimeI
 
 #if defined(CRY_UNIT_TESTING)
 
+CRY_UNIT_TEST_SUITE(BITFIDDLING)
+{
+
+	CRY_UNIT_TEST(CUT_BITFIDDLING)
+	{
+		for (uint32 i = 0, j = ~0U; i < 32; ++i, j >>= 1)
+			CRY_UNIT_TEST_ASSERT(countLeadingZeros32(j) == i);
+		for (uint32 i = 0, j = ~0U; i < 32; ++i, j <<= 1)
+			CRY_UNIT_TEST_ASSERT(countTrailingZeros32(j) == i);
+
+		for (uint64 i = 0, j = ~0ULL; i < 64; ++i, j >>= 1)
+			CRY_UNIT_TEST_ASSERT(countLeadingZeros64(j) == i);
+		for (uint64 i = 0, j = ~0ULL; i < 64; ++i, j <<= 1)
+			CRY_UNIT_TEST_ASSERT(countTrailingZeros64(j) == i);
+
+		for (uint8 i = 7, j = 0x80; i > 0; --i, j >>= 1)
+		{
+			CRY_UNIT_TEST_ASSERT(IntegerLog2        (uint8(j           )) ==  i     );
+			CRY_UNIT_TEST_ASSERT(IntegerLog2        (uint8(j + (j >> 1))) ==  i     );
+			CRY_UNIT_TEST_ASSERT(IntegerLog2_RoundUp(uint8(j           )) ==  i     );
+			CRY_UNIT_TEST_ASSERT(IntegerLog2_RoundUp(uint8(j + (j >> 1))) == (i + 1));
+		}
+	}
+}
 CRY_UNIT_TEST_SUITE(Math)
 {
 	using namespace crymath;

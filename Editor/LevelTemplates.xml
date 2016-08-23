@@ -137,6 +137,7 @@
       <Troposphere_Brightness type="Float" value="1.0" TipCVar="e_svoTI_*"/>
       <AnalyticalOccluders type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <AnalyticalGI type="BOOL" value="0" TipCVar="e_svoTI_*"/>
+      <TranslucentBrightness type="Float" value="2.5"  min="0" max="3" TipCVar="e_svoTI_*"/>
     </Total_Illumination_v2>
 
   </Environment>

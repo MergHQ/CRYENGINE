@@ -286,10 +286,10 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 		}
 
 		const Vec4 params(max(1.0f + sharpening, 1.0f), 0, 0, 0);
-		m_passComposition.SetConstant(eHWSC_Pixel, paramsName, params);
+		m_passComposition.SetConstant(paramsName, params, eHWSC_Pixel);
 
 		const Vec4 lensOpticsParams(1.0f, 1.0f, 1.0f, CRenderer::CV_r_FlaresChromaShift);
-		m_passComposition.SetConstant(eHWSC_Pixel, lensOpticsParamsName, lensOpticsParams);
+		m_passComposition.SetConstant(lensOpticsParamsName, lensOpticsParams, eHWSC_Pixel);
 
 		// Apply grain (final luminance texture doesn't get its final value baked, so we have to replicate the entire hdr eye adaption)
 		Vec4 hdrSetupParams[5];
@@ -300,8 +300,8 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, uint32 aaMode)
 		const float grainAmount = max(pParamGrainAmount->GetParam(), pParamArtifactsGrain->GetParam());
 		const Vec4 v = Vec4(0, 0, 0, max(grainAmount, max(hdrSetupParams[1].w, CRenderer::CV_r_HDRGrainAmount)));
 
-		m_passComposition.SetConstant(eHWSC_Pixel, hdrParamsName, v);
-		m_passComposition.SetConstant(eHWSC_Pixel, hdrEyeAdaptationName, hdrSetupParams[4]);
+		m_passComposition.SetConstant(hdrParamsName, v, eHWSC_Pixel);
+		m_passComposition.SetConstant(hdrEyeAdaptationName, hdrSetupParams[4], eHWSC_Pixel);
 	}
 
 	m_passComposition.Execute();

@@ -304,8 +304,8 @@ vert2fragStencilCull StencilCullVS(app2vertStencilCull IN)
 {
 	vert2fragStencilCull OUT = (vert2fragStencilCull)0; 
 
-	float4 vPos = IN.Position;
-	OUT.HPosition = mul(CompMatrix, vPos);
+	float4 worldPos = mul(CompMatrix, IN.Position);
+	OUT.HPosition = mul(CV_ViewProjMatr, worldPos);
 
 	return OUT;
 }
@@ -332,8 +332,8 @@ vert2fragStencilCull FrustumVolumeVS(app2vertStencilCull IN)
 	vPos.xyz = IN.baseTC.x > 0 ? (LSPos.xyz + vLightDir) : LSPos.xyz; 
 
 	//final ViewProj transformation
-	OUT.HPosition = mul(CompMatrix, vPos);
-	
+	OUT.HPosition = mul(CV_ViewProjMatr, vPos);
+
 	return OUT;
 }
 

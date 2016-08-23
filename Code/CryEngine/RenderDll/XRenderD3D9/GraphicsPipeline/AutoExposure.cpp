@@ -89,8 +89,8 @@ void CAutoExposureStage::MeasureLuminance()
 		Vec4 sampleLumOffsets0 = Vec4(s1 * 0.95f, t1 * 0.25f, -s1 * 0.25f, t1 * 0.96f);
 		Vec4 sampleLumOffsets1 = Vec4(-s1 * 0.96f, -t1 * 0.25f, s1 * 0.25f, -t1 * 0.96f);
 
-		m_passLuminanceInitial.SetConstant(eHWSC_Pixel, sampleLumOffsets0Name, sampleLumOffsets0);
-		m_passLuminanceInitial.SetConstant(eHWSC_Pixel, sampleLumOffsets1Name, sampleLumOffsets1);
+		m_passLuminanceInitial.SetConstant(sampleLumOffsets0Name, sampleLumOffsets0, eHWSC_Pixel);
+		m_passLuminanceInitial.SetConstant(sampleLumOffsets1Name, sampleLumOffsets1, eHWSC_Pixel);
 
 		m_passLuminanceInitial.Execute();
 	}
@@ -120,7 +120,7 @@ void CAutoExposureStage::MeasureLuminance()
 		passLuminanceIteration.BeginConstantUpdate();
 
 		GetSampleOffsets_Downscale4x4Bilinear(CTexture::s_ptexHDRToneMaps[curTexture + 1]->GetWidth(), CTexture::s_ptexHDRToneMaps[curTexture + 1]->GetHeight(), sampleOffsets);
-		passLuminanceIteration.SetConstantArray(eHWSC_Pixel, param1Name, sampleOffsets, 4);
+		passLuminanceIteration.SetConstantArray(param1Name, sampleOffsets, 4, eHWSC_Pixel);
 
 		passLuminanceIteration.Execute();
 	}
@@ -168,7 +168,7 @@ void CAutoExposureStage::AdjustExposure()
 		param0[1] = 1.0f - expf(-CRenderer::CV_r_HDREyeAdaptationSpeed * param0[0]);
 		param0[2] = 1.0f - expf(-CRenderer::CV_r_HDRRangeAdaptationSpeed * param0[0]);
 	}
-	m_passAutoExposure.SetConstant(eHWSC_Pixel, param0Name, param0);
+	m_passAutoExposure.SetConstant(param0Name, param0, eHWSC_Pixel);
 
 	m_passAutoExposure.Execute();
 }

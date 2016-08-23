@@ -1530,7 +1530,7 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 		// upload data to constant buffer on GPU.
 		const auto size = sizeof(SVolumetricCloudsShaderParam);
 		CRY_ASSERT(m_pRenderCloudConstantBuffer->m_size >= size);
-		m_pRenderCloudConstantBuffer->UpdateBuffer(&bufferData[0], size, viewInfoCount);
+		m_pRenderCloudConstantBuffer->UpdateBuffer(&bufferData[0], size, 0, viewInfoCount);
 	}
 
 	// update constant buffer for temporal reprojection.
@@ -1568,7 +1568,7 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 
 		const auto size = sizeof(SReprojectionParam);
 		CRY_ASSERT(m_pReprojectionConstantBuffer->m_size >= size);
-		m_pReprojectionConstantBuffer->UpdateBuffer(&bufferData[0], size, viewInfoCount);
+		m_pReprojectionConstantBuffer->UpdateBuffer(&bufferData[0], size, 0, viewInfoCount);
 	}
 }
 

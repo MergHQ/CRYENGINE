@@ -132,9 +132,14 @@ void CStandardGraphicsPipeline::SViewInfo::SetLegacyCamera(CD3D9Renderer* pRende
 	cameraProjZeroMatrix = pRenderer->m_CameraProjZeroMatrix;
 	cameraProjMatrix = pRenderer->m_CameraProjMatrix;
 	projMatrix = pRenderer->m_ProjMatrix;
+	viewMatrix = pRenderer->m_ViewMatrix;
+	Matrix44_tpl<f64> invView64;
+	mathMatrixLookAtInverse(&invView64, &viewMatrix);
+	invViewMatrix = invView64;
 	invCameraProjMatrix = pRenderer->m_InvCameraProjMatrix;
 	cameraProjNearestMatrix = pRenderer->m_CameraZeroMatrix * nearestProj;
 
+	prevCameraMatrix = previousFrameCameraMatrix;
 	prevCameraProjMatrix = previousFrameCameraMatrix * pRenderer->m_ProjMatrix;
 	prevCameraProjNearestMatrix = previousFrameCameraMatrix;
 	prevCameraProjNearestMatrix.SetRow(3, Vec3(ZERO));
@@ -303,6 +308,12 @@ bool CStandardGraphicsPipeline::CreatePipelineStates(DevicePipelineStatesArray* 
 	{
 		stateDesc.technique = TTYPE_SHADOWGEN;
 		bFullyCompiled &= m_pShadowMapStage->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
+	}
+
+	// Forward
+	{
+		stateDesc.technique = TTYPE_GENERAL;
+		bFullyCompiled &= m_pSceneForwardStage->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
 	}
 
 	// Custom
@@ -557,7 +568,7 @@ void CStandardGraphicsPipeline::UpdatePerViewConstantBuffer(const SViewInfo* pVi
 		}
 	}
 
-	pPerViewBuffer->UpdateBuffer(&bufferData[0], sizeof(HLSL_PerViewGlobalConstantBuffer), viewInfoCount);
+	pPerViewBuffer->UpdateBuffer(&bufferData[0], sizeof(HLSL_PerViewGlobalConstantBuffer), 0, viewInfoCount);
 }
 
 bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelineStateDescription& inputDesc, CDeviceGraphicsPSODesc& psoDesc)

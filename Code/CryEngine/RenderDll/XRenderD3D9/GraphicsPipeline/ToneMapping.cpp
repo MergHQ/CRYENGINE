@@ -87,10 +87,10 @@ void CToneMappingStage::Execute()
 	Vec4 hdrSetupParams[5];
 	gEnv->p3DEngine->GetHDRSetupParams(hdrSetupParams);
 
-	m_passToneMapping.SetConstant(eHWSC_Pixel, eyeAdaptationName, CRenderer::CV_r_HDREyeAdaptationMode == 2 ? hdrSetupParams[4] : hdrSetupParams[3]);
-	m_passToneMapping.SetConstant(eHWSC_Pixel, filmCurveName, hdrSetupParams[0]);
-	m_passToneMapping.SetConstant(eHWSC_Pixel, colorBalanceName, hdrSetupParams[2]);
-	m_passToneMapping.SetConstant(eHWSC_Pixel, bloomColorName, hdrSetupParams[1] * Vec4(Vec3(1.0f / 8.0f), 1.0f)); // Division by 8.0f was done in shader before, remove this at some point
+	m_passToneMapping.SetConstant(eyeAdaptationName, CRenderer::CV_r_HDREyeAdaptationMode == 2 ? hdrSetupParams[4] : hdrSetupParams[3], eHWSC_Pixel);
+	m_passToneMapping.SetConstant(filmCurveName, hdrSetupParams[0], eHWSC_Pixel);
+	m_passToneMapping.SetConstant(colorBalanceName, hdrSetupParams[2], eHWSC_Pixel);
+	m_passToneMapping.SetConstant(bloomColorName, hdrSetupParams[1] * Vec4(Vec3(1.0f / 8.0f), 1.0f), eHWSC_Pixel); // Division by 8.0f was done in shader before, remove this at some point
 
 	Vec4 shaftsSunCol(0, 0, 0, 0);
 	if (bSunShafts)
@@ -102,7 +102,7 @@ void CToneMappingStage::Execute()
 		sunColor.SetLerp(Vec3(sunShaftParams[0].x, sunShaftParams[0].y, sunShaftParams[0].z), sunColor, sunShaftParams[1].w);
 		shaftsSunCol = Vec4(sunColor * sunShaftParams[1].z, 1);
 	}
-	m_passToneMapping.SetConstant(eHWSC_Pixel, shaftsSunColName, shaftsSunCol);
+	m_passToneMapping.SetConstant(shaftsSunColName, shaftsSunCol, eHWSC_Pixel);
 
 	m_passToneMapping.Execute();
 }

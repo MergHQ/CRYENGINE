@@ -87,6 +87,7 @@ bool CD3D9Renderer::FX_DeferredCaustics()
 		float fWaterPlaneSize = gRenDev->GetCamera().GetFarPlane();
 
 		m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->Push();
+		m_RP.m_TI[m_RP.m_nProcessThreadID].m_matProj->Push();
 		Matrix34 mLocal;
 		mLocal.SetIdentity();
 
@@ -99,7 +100,8 @@ bool CD3D9Renderer::FX_DeferredCaustics()
 		mLocal.SetTranslation(Vec3(vCamPos.x - fDist, vCamPos.y - fDist, fWatLevel - fCausticsDepth));
 
 		Matrix44 mLocalTransposed = mLocal.GetTransposed();
-		m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->MultMatrixLocal(&mLocalTransposed);
+		m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->LoadMatrix(&mLocalTransposed);
+		m_RP.m_TI[m_RP.m_nProcessThreadID].m_matProj->LoadIdentity();
 
 		uint32 nPasses = 0;
 		static CCryNameTSCRC TechName0 = "DeferredShadowPass";
@@ -120,6 +122,7 @@ bool CD3D9Renderer::FX_DeferredCaustics()
 		pSH->FXEnd();
 
 		m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->Pop();
+		m_RP.m_TI[m_RP.m_nProcessThreadID].m_matProj->Pop();
 
 		FX_StencilTestCurRef(true, false);
 

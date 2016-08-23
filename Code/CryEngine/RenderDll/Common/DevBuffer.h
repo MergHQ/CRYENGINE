@@ -122,7 +122,7 @@ public:
 
 	void* BeginWrite();
 	void  EndWrite(bool requires_flush = false);
-	void  UpdateBuffer(const void*, size_t, uint32 numDataBlocks = 1); // See CDeviceManager::UploadContents for details on numDataBlocks
+	void  UpdateBuffer(const void* src, size_t size, size_t offset = 0, uint32 numDataBlocks = 1); // See CDeviceManager::UploadContents for details on numDataBlocks
 
 private:
 	void  ReturnToPool();
@@ -173,9 +173,6 @@ struct SDeviceBufferPoolStats : private NoCopy
 	~SDeviceBufferPoolStats() {}
 };
 
-class CVertexBuffer;
-class CIndexBuffer;
-
 class CDeviceBufferManager
 {
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -198,11 +195,11 @@ class CDeviceBufferManager
 	void            UnpinItem_Locked(buffer_handle_t);
 	buffer_handle_t Create_Locked(BUFFER_BIND_TYPE, BUFFER_USAGE, size_t);
 	void            Destroy_Locked(buffer_handle_t);
-	void* BeginRead_Locked(buffer_handle_t handle);
-	void* BeginWrite_Locked(buffer_handle_t handle);
-	void  EndReadWrite_Locked(buffer_handle_t handle);
-	bool   UpdateBuffer_Locked(buffer_handle_t handle, const void*, size_t);
-	size_t Size_Locked(buffer_handle_t);
+	void*           BeginRead_Locked(buffer_handle_t handle);
+	void*           BeginWrite_Locked(buffer_handle_t handle);
+	void            EndReadWrite_Locked(buffer_handle_t handle);
+	bool            UpdateBuffer_Locked(buffer_handle_t handle, const void*, size_t, size_t = 0);
+	size_t          Size_Locked(buffer_handle_t);
 
 public:
 	CDeviceBufferManager();
@@ -291,7 +288,7 @@ public:
 	void* BeginRead(buffer_handle_t handle);
 	void* BeginWrite(buffer_handle_t handle);
 	void  EndReadWrite(buffer_handle_t handle);
-	bool UpdateBuffer(buffer_handle_t handle, const void*, size_t);
+	bool UpdateBuffer(buffer_handle_t handle, const void*, size_t, size_t = 0);
 
 	template<class T>
 	bool UpdateBuffer(buffer_handle_t handle, stl::aligned_vector<T, CRY_PLATFORM_ALIGNMENT>& vData)
@@ -311,21 +308,9 @@ public:
 	// Note: Do not store the returned device buffer pointer outside of the function performing
 	//       calls below.
 
-	D3DBuffer*       GetD3D(buffer_handle_t, size_t*);
+	D3DBuffer*       GetD3D  (buffer_handle_t, size_t*);
 	D3DVertexBuffer* GetD3DVB(buffer_handle_t, size_t*);
 	D3DIndexBuffer*  GetD3DIB(buffer_handle_t, size_t*);
-
-	/////////////////////////////////////////////////////////////
-	// Legacy interface
-	//
-	// Use with care, can be removed at any point!
-	CVertexBuffer* CreateVBuffer(size_t, EVertexFormat, const char*, BUFFER_USAGE usage = BU_STATIC);
-	void ReleaseVBuffer(CVertexBuffer*);
-	bool           UpdateVBuffer(CVertexBuffer*, void*, size_t);
-
-	CIndexBuffer*  CreateIBuffer(size_t, const char*, BUFFER_USAGE usage = BU_STATIC);
-	void ReleaseIBuffer(CIndexBuffer*);
-	bool           UpdateIBuffer(CIndexBuffer*, void*, size_t);
 };
 
 class CGuardedDeviceBufferManager : public NoCopy

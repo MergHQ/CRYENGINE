@@ -1072,6 +1072,7 @@ void CD3D9Renderer::FX_StencilFrustumCull(int nStencilID, const SRenderLight* pL
 		{
 			//////////////// light sphere/box processing /////////////////////////////////
 			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->Push();
+			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matProj->Push();
 
 			float fExpensionRadius = pLight->m_fRadius * 1.08f;
 
@@ -1098,7 +1099,8 @@ void CD3D9Renderer::FX_StencilFrustumCull(int nStencilID, const SRenderLight* pL
 			}
 
 			Matrix44 mLocalTransposed = mLocal.GetTransposed();
-			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->MultMatrixLocal(&mLocalTransposed);
+			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->LoadMatrix(&mLocalTransposed);
+			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matProj->LoadIdentity();
 
 			pShader->FXSetTechnique(StencilCullTechName);
 			pShader->FXBegin(&nPassCount, FEF_DONTSETSTATES);
@@ -1118,6 +1120,7 @@ void CD3D9Renderer::FX_StencilFrustumCull(int nStencilID, const SRenderLight* pL
 			pShader->FXEndPass();
 
 			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->Pop();
+			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matProj->Pop();
 
 			pShader->FXEnd();
 
@@ -1181,62 +1184,6 @@ void CD3D9Renderer::FX_StencilFrustumCull(int nStencilID, const SRenderLight* pL
 	return;
 }
 
-void CD3D9Renderer::FX_StencilCull(int nStencilID, t_arrDeferredMeshIndBuff& arrDeferredInds, t_arrDeferredMeshVertBuff& arrDeferredVerts, CShader* pShader)
-{
-	PROFILE_FRAME(FX_StencilCull);
-
-	TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(&arrDeferredVerts[0], arrDeferredVerts.size(), 0);
-	TempDynIB16::CreateFillAndBind(&arrDeferredInds[0], arrDeferredInds.size());
-
-	uint32 nPasses = 0;
-	pShader->FXBeginPass(DS_SHADOW_CULL_PASS);
-
-	if (!FAILED(FX_SetVertexDeclaration(0, eVF_P3F_C4B_T2F)))
-		FX_StencilCullPass(nStencilID, arrDeferredVerts.size(), arrDeferredInds.size());
-
-	pShader->FXEndPass();
-}
-
-void CD3D9Renderer::FX_StencilRefreshCustomVolume(int StencilFunc, uint32 nStencRef, uint32 nStencMask,
-                                                  Vec3* pVerts, uint32 nNumVerts, uint16* pInds, uint32 nNumInds)
-{
-	// Use the backfaces of a specified volume to refresh hi-stencil
-	if (!m_bDeviceSupports_NVDBT) return;  // For DBT capable hw only
-
-	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
-	CryStackAllocWithSizeVector(SVF_P3F_C4B_T2F, nNumVerts, Verts, CDeviceBufferManager::AlignBufferSizeForStreaming);
-
-	for (uint32 i = 0; i < nNumVerts; ++i)
-		Verts[i].xyz = pVerts[i];
-
-	TempDynVB<SVF_P3F_C4B_T2F>::CreateFillAndBind(Verts, nNumVerts, 0);
-
-	TempDynIB16::CreateFillAndBind(pInds, nNumInds);
-
-	uint32 nPasses = 0;
-	CShader* pSH(CShaderMan::s_ShaderShadowMaskGen);
-	static CCryNameTSCRC TechName = "StencilVolume";
-	pSH->FXSetTechnique(TechName);
-	pSH->FXBegin(&nPasses, FEF_DONTSETSTATES | FEF_DONTSETTEXTURES);
-
-	pSH->FXBeginPass(0);
-
-	FX_SetStencilState(
-	  StencilFunc |
-	  STENCOP_FAIL(FSS_STENCOP_KEEP) |
-	  STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
-	  STENCOP_PASS(FSS_STENCOP_KEEP),
-	  nStencRef, nStencMask, 0xFFFFFFFF
-	  );
-	D3DSetCull(eCULL_Front);
-
-	FX_Commit();
-
-	D3DSetCull(eCULL_None);
-	pSH->FXEndPass();
-	pSH->FXEnd();
-}
-
 void       CD3D9Renderer::FX_StencilCullNonConvex(int nStencilID, IRenderMesh* pWaterTightMesh, const Matrix34& mWorldTM)
 {
 	CShader* pShader(CShaderMan::s_ShaderShadowMaskGen);
@@ -1269,9 +1216,12 @@ void       CD3D9Renderer::FX_StencilCullNonConvex(int nStencilID, IRenderMesh* p
 			newState |= GS_DEPTHFUNC_LEQUAL | GS_STENCIL | GS_COLMASK_NONE;
 
 			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->Push();
+			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matProj->Push();
+
 			Matrix44 mLocalTransposed;
 			mLocalTransposed = mWorldTM.GetTransposed();
-			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->MultMatrixLocal(&mLocalTransposed);
+			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->LoadMatrix(&mLocalTransposed);
+			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matProj->LoadIdentity();
 
 			uint32 nPasses = 0;
 			pShader->FXSetTechnique(TechName0);
@@ -1310,6 +1260,7 @@ void       CD3D9Renderer::FX_StencilCullNonConvex(int nStencilID, IRenderMesh* p
 			FX_SetState(nPrevState);
 
 			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matView->Pop();
+			m_RP.m_TI[m_RP.m_nProcessThreadID].m_matProj->Pop();
 
 			pShader->FXEndPass();
 			pShader->FXEnd();

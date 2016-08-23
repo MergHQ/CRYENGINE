@@ -471,7 +471,7 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 
 				static CCryNameR paramDepth("ParamDepth");
 				const Vec4 vParamDepth(static_cast<float>(i), factor1, factor0, nearDepth);
-				m_passWriteJitteredDepth.SetConstant(eHWSC_Pixel, paramDepth, vParamDepth);
+				m_passWriteJitteredDepth.SetConstant(paramDepth, vParamDepth, eHWSC_Pixel);
 
 				m_passWriteJitteredDepth.Execute();
 			}
