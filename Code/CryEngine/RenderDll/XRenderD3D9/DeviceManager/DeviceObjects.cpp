@@ -689,6 +689,11 @@ uint64 CDeviceComputePSODesc::GetHash() const
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static auto lambdaTextureCallback = [](void* set, uint32 dirtyFlags)
+{
+	reinterpret_cast<CDeviceResourceSet*>(set)->SetDirty(true);
+};
+
 CDeviceResourceSet::CDeviceResourceSet(EFlags flags)
 	: m_bValid(false)
 	, m_bDirty(true)
@@ -702,16 +707,22 @@ CDeviceResourceSet::CDeviceResourceSet(const CDeviceResourceSet& other)
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
 
-	m_Textures = other.m_Textures;
-	m_Samplers = other.m_Samplers;
-	m_Buffers = other.m_Buffers;
+	m_Textures        = other.m_Textures;
+	m_Samplers        = other.m_Samplers;
+	m_Buffers         = other.m_Buffers;
 	m_ConstantBuffers = other.m_ConstantBuffers;
 
-	m_bValid = false;
-	m_bDirty = true;
-	m_bEmpty = other.m_bEmpty;
+	for (auto& rsTexBind : m_Textures)
+	{
+		if (CTexture* pTex = rsTexBind.second.resource)
+			pTex->AddInvalidateCallback(this, lambdaTextureCallback);
+	}
+
+	m_bValid       = false;
+	m_bDirty       = true;
+	m_bEmpty       = other.m_bEmpty;
 	m_bDirtyLayout = other.m_bDirtyLayout;
-	m_Flags = other.m_Flags;
+	m_Flags        = other.m_Flags;
 }
 
 CDeviceResourceSet::~CDeviceResourceSet()
@@ -757,11 +768,6 @@ void CDeviceResourceSet::Clear(bool bTextures, bool bConstantBuffers)
 	m_bDirtyLayout |= bInvalidated;
 	m_bEmpty        = m_Textures.empty() & m_ConstantBuffers.empty();
 }
-
-static auto lambdaTextureCallback = [](void* set, uint32 dirtyFlags) 
-{
-	reinterpret_cast<CDeviceResourceSet*>(set)->SetDirty(true); 
-};
 
 void CDeviceResourceSet::SetTexture(int shaderSlot, CTexture* pTexture, SResourceView::KeyType resourceViewID, ::EShaderStage shaderStages)
 {
