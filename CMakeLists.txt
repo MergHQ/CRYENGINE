@@ -257,7 +257,7 @@ if (EXISTS ${SDK_DIR}/Orbis AND EXISTS ${CMAKE_SOURCE_DIR/}Code/CryEngine/Render
 		#option(RENDERER_GNM "GNM renderer" ON)
 	endif()
 	if(WIN64)
-		option(RENDERER_GNM_SHADER_COMPILER "Shader compiler for Orbis" ON)
+		#option(RENDERER_GNM_SHADER_COMPILER "Shader compiler for Orbis" ON)
 	endif()
 endif()
 
