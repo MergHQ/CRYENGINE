@@ -15,6 +15,7 @@ import stat
 from win32com.shell import shell, shellcon
 import win32file, win32api
 import admin
+import distutils.dir_util, distutils.file_util
 
 import cryproject, cryregistry
 
@@ -147,6 +148,22 @@ def csharp_symlinks (args):
 		dwFlags= os.path.isdir (TargetFileName) and SYMBOLIC_LINK_FLAG_DIRECTORY or 0x0
 		win32file.CreateSymbolicLink (SymlinkFileName, TargetFileName, dwFlags)
 
+def csharp_copylinks (args):
+	dirname= os.path.dirname (args.project_file)
+	engine_path= get_engine_path()
+	
+	SymlinkFileName= os.path.join (dirname, 'Code', 'CryManaged', 'CESharp')
+	TargetFileName= os.path.join (engine_path, 'Code', 'CryManaged', 'CESharp')
+	distutils.dir_util.copy_tree (TargetFileName, SymlinkFileName, update= True)
+
+	SymlinkFileName= os.path.join (dirname, 'bin', args.platform, 'CryEngine.Common.dll')
+	TargetFileName= os.path.join (engine_path, 'bin', args.platform, 'CryEngine.Common.dll')
+	sym_dirname= os.path.dirname (SymlinkFileName)
+	if not os.path.isdir (sym_dirname):
+		os.makedirs (sym_dirname)
+
+	distutils.file_util.copy_file (TargetFileName, SymlinkFileName, update= True)	
+
 def csharp_userfile (args, csharp):
 	dirname= os.path.dirname (args.project_file)
 	engine_path= get_engine_path()
@@ -196,7 +213,7 @@ def cmd_projgen(args):
 	
 	csharp= project.get ("csharp")
 	if csharp:
-		csharp_symlinks (args)
+		csharp_copylinks (args)
 		csharp_userfile (args, csharp)
 	
 	#---
@@ -293,7 +310,7 @@ def cmd_open (args):
 	
 	csharp= project.get ("csharp")
 	if csharp:
-		csharp_symlinks (args)
+		csharp_copylinks (args)
 
 	subcmd= (
 		tool_path,
@@ -322,7 +339,7 @@ def cmd_edit(argv):
 
 	csharp= project.get ("csharp")
 	if csharp:
-		csharp_symlinks (args)
+		csharp_copylinks (args)
 
 	subcmd= (
 		tool_path,
