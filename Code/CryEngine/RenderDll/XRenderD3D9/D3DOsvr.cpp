@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#ifdef INCLUDE_OSVR_SDK
+#ifdef INCLUDE_VR_RENDERING
 
 	#include "D3DOsvr.h"
 	#include <DriverD3D.h>

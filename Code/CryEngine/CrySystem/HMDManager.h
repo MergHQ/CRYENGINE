@@ -10,6 +10,8 @@ public:
 	CHmdManager() : m_pHmdDevice(nullptr) {}
 	virtual ~CHmdManager();
 
+	virtual void RegisterDevice(const char* name, IHmdDevice& device) override;
+
 	// basic functionality needed to setup and destroy an Hmd during system init / system shutdown
 	virtual void SetupAction(EHmdSetupAction cmd) override;
 
@@ -28,10 +30,18 @@ public:
 	// populates o_info with the asymmetric camera information returned by the current Hmd device
 	virtual bool GetAsymmetricCameraSetupInfo(int nEye, SAsymmetricCameraSetupInfo& outInfo) const override;
 
-private:
+	virtual void RecenterPose() override;
 
-	void ShutDown();
+	virtual void AddEventListener(IHmdEventListener *pListener) override { stl::push_back_unique(m_listeners, pListener); }
+	virtual void RemoveEventListener(IHmdEventListener *pListener) override { stl::find_and_erase(m_listeners, pListener); }
 
 private:
+	// Devices connected to the computer and available for use
+	// Key = device / SDK name, value = reference-counted device pointer
+	typedef std::unordered_map<string, _smart_ptr<IHmdDevice>, stl::hash_strcmp<string>> TDeviceMap;
+	TDeviceMap m_availableDeviceMap;
+
 	struct IHmdDevice* m_pHmdDevice;
+
+	std::vector<IHmdEventListener*> m_listeners;
 };

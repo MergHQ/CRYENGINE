@@ -7,7 +7,7 @@
 	"game_projects"                         : "GameSDK",
 
 	"module_extensions"                     : ["scaleform"],
-	"win_module_extensions"                 : ["audio_fmod", "brofiler", "openvr", "osvr", "eyex", "mono"],
+	"win_module_extensions"                 : ["audio_fmod", "brofiler", "eyex", "mono"],
 
 	"modules" :
 	[
@@ -47,7 +47,11 @@
 		"tomcrypt",
 		"jsmn",
 
-		"CryGameSDK"
+		"CryGameSDK",
+
+		"CryOculusVR",
+		"CryOpenVR",
+		"CryOSVR"
 	],
 	"win_force_shared_monolithic_build_modules" : 
 	[

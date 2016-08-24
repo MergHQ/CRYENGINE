@@ -12,7 +12,7 @@
 	#include <IBenchmarkFramework.h>
 	#include <IBenchmarkRendererSensorManager.h>
 #endif
-#if defined(INCLUDE_OCULUS_SDK)
+#if defined(INCLUDE_VR_RENDERING)
 
 	#ifdef CRY_USE_DX12
 		#include "DX12/Resource/Texture/CCryDX12Texture2D.hpp"
@@ -214,7 +214,7 @@ bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, in
 			#endif // CRY_USE_DX12
 
 			ETEX_Format format = CTexture::TexFormatFromDeviceFormat((DXGI_FORMAT)desc.format);
-			CTexture* eyeTexture = WrapD3DRenderTarget(pTex, desc.width, desc.height, format, textureName, true);
+			CTexture* eyeTexture = m_pStereoRenderer->WrapD3DRenderTarget(pTex, desc.width, desc.height, format, textureName, true);
 
 			if (eyeTexture == nullptr)
 				return false;
@@ -263,7 +263,7 @@ bool CD3DOculusRenderer::InitializeMirrorTexture(ID3D11Device* pD3d11Device, Cry
 		#endif // CRY_USE_DX12
 
 		ETEX_Format format = CTexture::TexFormatFromDeviceFormat((DXGI_FORMAT)desc.format);
-		m_mirrorData.pMirrorTexture = WrapD3DRenderTarget(pTex, desc.width, desc.height, format, szName, true);
+		m_mirrorData.pMirrorTexture = m_pStereoRenderer->WrapD3DRenderTarget(pTex, desc.width, desc.height, format, szName, true);
 
 		return m_mirrorData.pMirrorTexture != nullptr;
 	}
@@ -662,42 +662,6 @@ bool CD3DOculusRenderer::PushTextureSet(RenderLayer::ELayerType type, RenderLaye
 	return false;
 }
 
-CTexture* CD3DOculusRenderer::WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, ETEX_Format format, const char* name, bool shaderResourceView)
-{
-	CTexture* texture = CTexture::CreateTextureObject(name, width, height, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, format);
-	if (texture == nullptr)
-	{
-		gEnv->pLog->Log("[HMD][Oculus] Unable to create texture object!");
-		return nullptr;
-	}
-
-	// CTexture::CreateTextureObject does not set width and height if the texture already existed
-	assert(texture->GetWidth() == width);
-	assert(texture->GetHeight() == height);
-	assert(texture->GetDepth() == 1);
-
-	d3dTexture->AddRef();
-	CDeviceTexture* pDeviceTexture = new CDeviceTexture(d3dTexture);
-	pDeviceTexture->SetNoDelete(true);
-
-	texture->SetDevTexture(pDeviceTexture);
-	texture->ClosestFormatSupported(format);
-
-	if (shaderResourceView)
-	{
-		void* default_srv = texture->GetResourceView(SResourceView::ShaderResourceView(format, 0, -1, 0, 1, false, false));
-		if (default_srv == nullptr)
-		{
-			gEnv->pLog->Log("[HMD][Oculus] Unable to create default shader resource view!");
-			texture->Release();
-			return nullptr;
-		}
-		texture->SetShaderResourceView((D3DShaderResource*)default_srv, false);
-	}
-
-	return texture;
-}
-
 RenderLayer::EQuadLayers CD3DOculusRenderer::CalculateQuadLayerId(ESwapChainArray swapChainIndex)
 {
 	if (swapChainIndex >= eSwapChainArray_FirstQuad && swapChainIndex <= eSwapChainArray_LastQuad)
@@ -709,4 +673,4 @@ RenderLayer::EQuadLayers CD3DOculusRenderer::CalculateQuadLayerId(ESwapChainArra
 	return RenderLayer::eQuadLayers_0;
 }
 
-#endif // defined(INCLUDE_OCULUS_SDK)
+#endif // defined(INCLUDE_VR_RENDERING)

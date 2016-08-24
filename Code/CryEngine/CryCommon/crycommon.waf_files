@@ -208,10 +208,7 @@
       {
         "VR":[
           "CrySystem/VR/IHMDManager.h",
-          "CrySystem/VR/IHMDDevice.h",
-		  "CrySystem/VR/IHmdOculusRiftDevice.h",
-		  "CrySystem/VR/IHmdOpenVRDevice.h",
-		  "CrySystem/VR/IHmdOSVRDevice.h"
+          "CrySystem/VR/IHMDDevice.h"
         ]
       },
       {

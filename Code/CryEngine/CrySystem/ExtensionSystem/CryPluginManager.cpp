@@ -222,10 +222,6 @@ void CCryPluginManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_
 {
 	switch (event)
 	{
-	case ESYSTEM_EVENT_GAME_POST_INIT:
-		Initialize();
-		break;
-
 	case ESYSTEM_EVENT_GAME_POST_INIT_DONE:
 	case ESYSTEM_EVENT_GAME_MODE_SWITCH_START:
 		for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)

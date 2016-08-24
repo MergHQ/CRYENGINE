@@ -1,0 +1,17 @@
+#Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld) :
+
+	bld.CryEngineModule(
+	  target = 'CryOculusVR',
+	  vs_filter = 'CryPlugins',
+	  file_list = 'cryoculusvr.waf_files',
+
+	  pch = 'StdAfx.cpp',
+	  
+	  includes  = Path('Code/SDKs/OculusSDK/LibOVR/Include'),
+	  
+	  win_use_module = [ 'oculus' ]
+	  )
+
+	  

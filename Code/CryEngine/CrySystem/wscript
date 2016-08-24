@@ -5,13 +5,6 @@ from waflib import Logs
 
 def build(bld):
 
-	# Oculus can only be built using VS 2015.
-	# This is a limitation of the Oculus code.
-	has_oculus = bld.env and bld.env['MSVC_VERSION'] and (bld.ToVersionNumbers(bld.env['MSVC_VERSION']) >= bld.ToVersionNumbers('14.0'))
-	oculus_dependency = []
-	if has_oculus:
-		oculus_dependency = [ 'oculus' ]
-
 	# If Scaleform SDK is available, compile the integration code into CrySystem
 	scaleform_file_list = []
 	if os.path.isdir(Path('Code/SDKs/Scaleform')):
@@ -44,7 +37,6 @@ def build(bld):
 			'tomcrypt',
 			'jsmn'
 		],
-		win_use_module = oculus_dependency,
 
 		durango_cxxflags  = [ '/EHsc',  '/ZW' ], 
 

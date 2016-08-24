@@ -13,11 +13,9 @@
 #define NO_LIVECREATE
 
 // [VR]
-// Optional HMD SDK integrations
-#if defined(DEDICATED_SERVER)
-	#undef INCLUDE_OCULUS_SDK
-	#undef INCLUDE_OPENVR_SDK
-	#undef INCLUDE_OSVR_SDK
+// Optional VR IHmdRenderer integration, note that HMD SDKs are implemented separately in plug-ins.
+#if !defined(DEDICATED_SERVER) && defined(CRY_PLATFORM_WINDOWS)
+	#define INCLUDE_VR_RENDERING
 #endif
 
 // Scaleform base configuration

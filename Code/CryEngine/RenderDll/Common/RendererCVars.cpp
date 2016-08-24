@@ -2936,12 +2936,6 @@ void CRendererCVars::InitCVars()
 	               " 1: Enable multi-GPU for dual rendering\n"
 	               "-1: Enable multi-GPU for dual rendering, but run on only one GPU (simulation)\n");
 
-#if defined(INCLUDE_OCULUS_SDK) || defined(INCLUDE_OPENVR_SDK) || defined(INCLUDE_OSVR_SDK)
-	#define VRDEVICE_STEREO_OUTPUT_INFO "7: VR Device (Oculus/Vive/HDK/Playstation VR)\n"
-#else
-	#define VRDEVICE_STEREO_OUTPUT_INFO
-#endif
-
 	REGISTER_CVAR3("r_StereoOutput", CV_r_StereoOutput, 0, VF_DUMPTODISK,
 	               "Sets stereo output. Output depends on the stereo monitor\n"
 	               "Usage: r_StereoOutput [0=off/1/2/3/4/5/6/...]\n"
@@ -2952,7 +2946,7 @@ void CRendererCVars::InitCVars()
 	               "4: Side by Side\n"
 	               "5: Line by Line (Interlaced)\n"
 	               "6: Anaglyph\n"
-	               VRDEVICE_STEREO_OUTPUT_INFO
+		           "7: VR Device\n"
 	               );
 
 #undef VRDEVICE_STEREO_OUTPUT_INFO

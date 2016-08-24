@@ -3072,7 +3072,14 @@ L_done:;
 #else
 		m_env.pHardwareMouse = new CHardwareMouse(true);
 #endif
+
+		InlineInitializationProcessing("CSystem::Init LoadPlugins");
+
+		m_pPluginManager->Initialize();
+
 		InlineInitializationProcessing("CSystem::Init InitRenderer");
+
+		m_pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_PRE_RENDERER_INIT, 0, 0);
 
 		// [VR]
 		if (m_pHmdManager)

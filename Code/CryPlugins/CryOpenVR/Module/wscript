@@ -1,0 +1,43 @@
+#Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+import os
+from waflib import Logs, Utils
+from waflib.TaskGen import feature
+from waflib.Utils import run_once
+
+def build(bld) :
+
+	bld.CryEngineModule(
+	  target = 'CryOpenVR',
+	  vs_filter = 'CryPlugins',
+	  file_list = 'cryopenvr.waf_files',
+
+	  pch = 'StdAfx.cpp',
+	  
+	  includes  = Path('Code/SDKs/OpenVR/headers'),
+	  lib  = [ 'openvr_api' ],
+	  
+	  win_x86_libpath = [ Path('Code/SDKs/OpenVR/lib/win32') ],
+	  win_x64_libpath = [ Path('Code/SDKs/OpenVR/lib/win64') ],
+	  
+	  features = [ 'copy_openvr_binaries' ]
+	)
+
+@feature('copy_openvr_binaries')
+@run_once
+def feature_copy_openvr_binaries(self):
+	bld 		  = self.bld
+	platform	  = bld.env['PLATFORM']
+	configuration = bld.env['CONFIGURATION']
+		
+	if platform  == 'project_generator':
+		return
+		
+	bin_location = {'win_x86' : '/win32/openvr_api.dll'	, 'win_x64' : '/win64/openvr_api.dll'}
+			
+	if not platform in bin_location:
+		Logs.error('[ERROR] OpenVR is not supported on plaform by WAF: %s' % platform)
+		
+	output_folder = bld.get_output_folders(platform, configuration)[0]			
+	openvr_bin = bld.CreateRootRelativePath('Code/SDKs/OpenVR/bin') + bin_location[platform]
+	self.create_task('copy_outputs', bld.root.make_node(openvr_bin), output_folder.make_node(os.path.basename(openvr_bin)))

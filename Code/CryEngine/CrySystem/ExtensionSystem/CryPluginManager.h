@@ -26,6 +26,10 @@ public:
 	{
 		m_pluginListeners.Remove(pListener);
 	}
+	
+	// Called by CrySystem during early init to initialize the manager and load plugins
+	// Plugins that require later activation can do so by listening to system events such as ESYSTEM_EVENT_PRE_RENDERER_INIT
+	bool Initialize();
 
 	virtual void Update(int updateFlags, int nPauseMode) override;
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
@@ -34,7 +38,6 @@ protected:
 	virtual ICryPluginPtr QueryPluginById(const CryClassID& classID) const override;
 
 private:
-	bool                    Initialize();
 	bool                    LoadExtensionFile(const char* filename);
 	bool                    LoadPlugin(const SPluginDescriptor& pluginDescriptor);
 	bool                    UnloadPlugin(const SPluginDescriptor& pluginDescriptor, bool bReloadOther = false);

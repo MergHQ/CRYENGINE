@@ -34,9 +34,6 @@
 #include <CrySystem/IBudgetingSystem.h>
 #include <CrySystem/VR/IHMDManager.h>
 #include <CrySystem/VR/IHMDDevice.h>
-#include <CrySystem/VR/IHmdOculusRiftDevice.h>
-#include <CrySystem/VR/IHmdOpenVRDevice.h>
-#include <CrySystem/VR/IHmdOSVRDevice.h>
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CrySystem/Profilers/IDiskProfiler.h>
 #include <CrySystem/File/IResourceManager.h>
@@ -96,9 +93,6 @@ using namespace JobManager;
 %include "../../../../CryEngine/CryCommon/CrySystem/IBudgetingSystem.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/VR/IHMDManager.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/VR/IHMDDevice.h"
-%include "../../../../CryEngine/CryCommon/CrySystem/VR/IHmdOculusRiftDevice.h"
-%include "../../../../CryEngine/CryCommon/CrySystem/VR/IHmdOpenVRDevice.h"
-%include "../../../../CryEngine/CryCommon/CrySystem/VR/IHmdOSVRDevice.h"
 %ignore IPlatformOS::Create;
 %include "../../../../CryEngine/CryCommon/CryCore/Platform/IPlatformOS.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/Profilers/IDiskProfiler.h"

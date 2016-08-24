@@ -1,10 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#ifdef INCLUDE_OSVR_SDK
+#ifdef INCLUDE_VR_RENDERING
 
 	#include <CrySystem/VR/IHMDDevice.h>
-	#include <CrySystem/VR/IHmdOSVRDevice.h>
+	#include <../CryPlugins/CryOSVR/Interface/IHmdOSVRDevice.h>
 	#include <CryRenderer/IStereoRenderer.h>
 
 class CD3D9Renderer;

@@ -2,12 +2,12 @@
 
 #pragma once
 
-#include <CrySystem/VR/IHmdOculusRiftDevice.h>
+#include <../CryPlugins/CryOculusVR/Interface/IHmdOculusRiftDevice.h>
 #include <CryRenderer/IStereoRenderer.h>
 
 class CD3D9Renderer;
 
-#if defined(INCLUDE_OCULUS_SDK)
+#if defined(INCLUDE_VR_RENDERING)
 
 class CD3DOculusRenderer : public IHmdRenderer
 {
@@ -71,7 +71,6 @@ private:
 		eSwapChainArray_LastQuad  = eSwapChainArray_Total - eSwapChainArray_Quad_0 + 1,
 	};
 
-	static CTexture*                WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, ETEX_Format format, const char* name, bool shaderResourceView);
 	static RenderLayer::EQuadLayers CalculateQuadLayerId(ESwapChainArray swapChainIndex);
 
 	#if defined(CRY_USE_DX12) && defined(CRY_USE_DX12_MULTIADAPTER)
@@ -112,4 +111,4 @@ private:
 	CD3DStereoRenderer*           m_pStereoRenderer;
 };
 
-#endif //defined(INCLUDE_OCULUS_SDK)
+#endif //defined(INCLUDE_VR_RENDERING)

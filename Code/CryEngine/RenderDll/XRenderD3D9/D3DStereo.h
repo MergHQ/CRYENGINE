@@ -110,6 +110,8 @@ public:
 	// This is called from the render thread
 	void TryInjectHmdCameraAsync(CRenderView* pRenderView);
 
+	CTexture* WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, ETEX_Format format, const char* name, bool shaderResourceView);
+
 public:
 	// IStereoRenderer Interface
 	virtual EStereoDevice      GetDevice();

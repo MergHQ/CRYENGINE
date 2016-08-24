@@ -1233,21 +1233,15 @@ IHmdRenderer* CD3DStereoRenderer::CreateHmdRenderer(EStereoOutput stereoOutput, 
 		const EHmdClass deviceClass = pDevice->GetClass();
 		switch (deviceClass)
 		{
-#if defined(INCLUDE_OCULUS_SDK)
+#if defined(INCLUDE_VR_RENDERING)
 		case eHmdClass_Oculus:
-			{
-				if (stereoOutput == STEREO_OUTPUT_HMD && pDevice != nullptr && pDevice->GetClass() == eHmdClass_Oculus)
-					return new CD3DOculusRenderer(static_cast<CryVR::Oculus::IOculusDevice*>(pDevice), pRenderer, pStereoRenderer);
-			}
+			if (stereoOutput == STEREO_OUTPUT_HMD && pDevice != nullptr && pDevice->GetClass() == eHmdClass_Oculus)
+				return new CD3DOculusRenderer(static_cast<CryVR::Oculus::IOculusDevice*>(pDevice), pRenderer, pStereoRenderer);
 			break;
-#endif
-#if defined(INCLUDE_OPENVR_SDK)
 		case eHmdClass_OpenVR:
 			if (stereoOutput == STEREO_OUTPUT_HMD && pDevice != NULL && pDevice->GetClass() == eHmdClass_OpenVR)
 				return new CD3DOpenVRRenderer(static_cast<CryVR::OpenVR::IOpenVRDevice*>(pDevice), pRenderer, pStereoRenderer);
 			break;
-#endif
-#if defined(INCLUDE_OSVR_SDK)
 		case eHmdClass_Osvr:
 			if (stereoOutput == STEREO_OUTPUT_HMD && pDevice != NULL && pDevice->GetClass() == eHmdClass_Osvr)
 				return new CryVR::Osvr::CD3DOsvrRenderer(static_cast<CryVR::Osvr::IOsvrDevice*>(pDevice), pRenderer, pStereoRenderer);
@@ -1295,4 +1289,41 @@ void CD3DStereoRenderer::TryInjectHmdCameraAsync(CRenderView* pRenderView)
 	currentCamera.SetMatrix(m_asyncCameraMatrix);
 	CCamera newCamera = PrepareCamera(m_renderer.m_CurRenderEye, currentCamera);
 	m_renderer.SetCamera(newCamera);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CTexture* CD3DStereoRenderer::WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, ETEX_Format format, const char* name, bool shaderResourceView)
+{
+	CTexture* texture = CTexture::CreateTextureObject(name, width, height, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, format);
+	if (texture == nullptr)
+	{
+		gEnv->pLog->Log("[HMD][Oculus] Unable to create texture object!");
+		return nullptr;
+	}
+
+	// CTexture::CreateTextureObject does not set width and height if the texture already existed
+	assert(texture->GetWidth() == width);
+	assert(texture->GetHeight() == height);
+	assert(texture->GetDepth() == 1);
+
+	d3dTexture->AddRef();
+	CDeviceTexture* pDeviceTexture = new CDeviceTexture(d3dTexture);
+	pDeviceTexture->SetNoDelete(true);
+
+	texture->SetDevTexture(pDeviceTexture);
+	texture->ClosestFormatSupported(format);
+
+	if (shaderResourceView)
+	{
+		void* default_srv = texture->GetResourceView(SResourceView::ShaderResourceView(format, 0, -1, 0, 1, false, false));
+		if (default_srv == nullptr)
+		{
+			gEnv->pLog->Log("[HMD][Oculus] Unable to create default shader resource view!");
+			texture->Release();
+			return nullptr;
+		}
+		texture->SetShaderResourceView((D3DShaderResource*)default_srv, false);
+	}
+
+	return texture;
 }
