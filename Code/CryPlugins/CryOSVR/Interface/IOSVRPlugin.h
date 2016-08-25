@@ -16,13 +16,7 @@ struct IOsvrPlugin : public ICryPlugin
 public:
 	virtual IOsvrDevice* CreateDevice() = 0;
 	virtual IOsvrDevice* GetDevice() const = 0;
-	static IOsvrPlugin* GetPlugin() { return m_pThis; }
-	
-protected:
-	static IOsvrPlugin* m_pThis;
 };
-
-IOsvrPlugin* IOsvrPlugin::m_pThis = 0;
 
 }      // namespace Osvr
 }      // namespace CryVR

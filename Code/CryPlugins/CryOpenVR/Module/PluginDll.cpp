@@ -20,7 +20,6 @@ namespace OpenVR {
 
 CPlugin_OpenVR::CPlugin_OpenVR()
 {
-	m_pThis = this;
 }
 
 CPlugin_OpenVR::~CPlugin_OpenVR()

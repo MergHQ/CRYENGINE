@@ -24,7 +24,6 @@ namespace Oculus {
 
 CPlugin_OculusVR::CPlugin_OculusVR()
 {
-	m_pThis = this;
 }
 
 CPlugin_OculusVR::~CPlugin_OculusVR()

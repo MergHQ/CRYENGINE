@@ -16,13 +16,7 @@ struct IOculusVRPlugin : public ICryPlugin
 public:
 	virtual IOculusDevice* CreateDevice() = 0;
 	virtual IOculusDevice* GetDevice() const = 0;
-	static IOculusVRPlugin* GetPlugin() { return m_pThis; }
-	
-protected:
-	static IOculusVRPlugin* m_pThis;
 };
-
-IOculusVRPlugin* IOculusVRPlugin::m_pThis = 0;
 
 }      // namespace Oculus
 }      // namespace CryVR

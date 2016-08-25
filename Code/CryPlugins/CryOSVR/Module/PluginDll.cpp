@@ -17,7 +17,6 @@ namespace Osvr {
 
 CPlugin_Osvr::CPlugin_Osvr()
 {
-	m_pThis = this;
 }
 
 CPlugin_Osvr::~CPlugin_Osvr()

@@ -2,21 +2,23 @@
 
 #include "StdAfx.h"
 
-	#include "OculusTouchController.h"
+#include "OculusTouchController.h"
 
-	#define AddSymbolBase(EKI, DEV_KEY_ID, KEY_NAME, KEY_TYPE) m_symbols[EKI - KI_MOTION_BASE] = MapSymbol(DEV_KEY_ID, EKI, KEY_NAME, KEY_TYPE, 0);
+#include <CryRenderer/IRenderer.h>
 
-	#define AddSymbolButton(EKI, DEV_KEY_ID, KEY_NAME, HELPER_FLAGS) \
-	  AddSymbolBase(EKI, DEV_KEY_ID, KEY_NAME, SInputSymbol::Button) \
-	  m_buttonSybmolsEx.push_back(SSymbolEx(EKI - KI_MOTION_BASE, HELPER_FLAGS));
+#define AddSymbolBase(EKI, DEV_KEY_ID, KEY_NAME, KEY_TYPE) m_symbols[EKI - KI_MOTION_BASE] = MapSymbol(DEV_KEY_ID, EKI, KEY_NAME, KEY_TYPE, 0);
 
-	#define AddSymbolTrigger(EKI, DEV_KEY_ID, KEY_NAME, HELPER_FLAGS) \
-	  AddSymbolBase(EKI, DEV_KEY_ID, KEY_NAME, SInputSymbol::Trigger) \
-	  m_triggerSybmolsEx.push_back(SSymbolEx(EKI - KI_MOTION_BASE, HELPER_FLAGS));
+#define AddSymbolButton(EKI, DEV_KEY_ID, KEY_NAME, HELPER_FLAGS) \
+	AddSymbolBase(EKI, DEV_KEY_ID, KEY_NAME, SInputSymbol::Button) \
+	m_buttonSybmolsEx.push_back(SSymbolEx(EKI - KI_MOTION_BASE, HELPER_FLAGS));
 
-	#define AddSymbolStick(EKI, DEV_KEY_ID, KEY_NAME, HELPER_FLAGS) \
-	  AddSymbolBase(EKI, DEV_KEY_ID, KEY_NAME, SInputSymbol::Axis)  \
-	  m_stickSybmolsEx.push_back(SSymbolEx(EKI - KI_MOTION_BASE, HELPER_FLAGS));
+#define AddSymbolTrigger(EKI, DEV_KEY_ID, KEY_NAME, HELPER_FLAGS) \
+	AddSymbolBase(EKI, DEV_KEY_ID, KEY_NAME, SInputSymbol::Trigger) \
+	m_triggerSybmolsEx.push_back(SSymbolEx(EKI - KI_MOTION_BASE, HELPER_FLAGS));
+
+#define AddSymbolStick(EKI, DEV_KEY_ID, KEY_NAME, HELPER_FLAGS) \
+	AddSymbolBase(EKI, DEV_KEY_ID, KEY_NAME, SInputSymbol::Axis)  \
+	m_stickSybmolsEx.push_back(SSymbolEx(EKI - KI_MOTION_BASE, HELPER_FLAGS));
 
 // -------------------------------------------------------------------------
 namespace CryVR {

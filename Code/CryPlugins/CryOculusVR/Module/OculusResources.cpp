@@ -2,8 +2,8 @@
 
 #include "StdAfx.h"
 
-	#include "OculusResources.h"
-	#include "OculusDevice.h"
+#include "OculusResources.h"
+#include "OculusDevice.h"
 
 namespace CryVR {
 namespace Oculus {

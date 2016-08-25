@@ -311,6 +311,14 @@ if (OPTION_CRY_EXTENSIONS)
 	add_subdirectory(Code/CryExtensions/CryLobby/Module)
 	#add_subdirectory(Code/CryExtensions/CrySchematyc)
 	#add_subdirectory(Code/CryExtensions/CryLink/Module)
+	
+	# Example plugin
+	add_subdirectory(Code/CryPlugins/CryFramesPerSecond/Module)
+	
+	# VR plugins
+	add_subdirectory(Code/CryPlugins/CryOculusVR/Module)
+	add_subdirectory(Code/CryPlugins/CryOpenVR/Module)
+	add_subdirectory(Code/CryPlugins/CryOSVR/Module)
 endif()
 
 add_custom_target(CE DEPENDS CryPhysics CrySystem CryAction CryRenderD3D11
