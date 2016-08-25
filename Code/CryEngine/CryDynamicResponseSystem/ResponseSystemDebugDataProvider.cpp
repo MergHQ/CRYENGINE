@@ -8,7 +8,71 @@
 #include "ConditionImpl.h"
 #include "ResponseSystem.h"
 
+#include <CrySystem/ISystem.h>
+#include <CrySystem/IConsole.h>
+
 using namespace CryDRS;
+
+enum EDrsLoggingOptions
+{
+	eDrsLoggingOptions_None       = 0,
+	eDrsLoggingOptions_Signals    = BIT(6),  // a
+	eDrsLoggingOptions_Lines      = BIT(7),  // b
+	eDrsLoggingOptions_Responses  = BIT(8),  // c
+	eDrsLoggingOptions_Conditions = BIT(9),  // d
+	eDrsLoggingOptions_Actions    = BIT(10), // e
+	eDrsLoggingOptions_Variables  = BIT(11)  // f
+};
+
+const char* GetStringFromEnum(CResponseSystemDebugDataProvider::EStatus valueToConvert)
+{
+	switch (valueToConvert)
+	{
+	case CResponseSystemDebugDataProvider::eER_NoValidSegment:
+		return "NotStarted - No Valid Responses";
+	case CResponseSystemDebugDataProvider::eER_Canceled:
+		return "Canceled";
+	case CResponseSystemDebugDataProvider::eER_Finished:
+		return "Finished";
+	case CResponseSystemDebugDataProvider::eER_NotStarted:
+		return "NotStarted";
+	case CResponseSystemDebugDataProvider::eER_Running:
+		return "Running";
+	case CResponseSystemDebugDataProvider::eER_NoResponse:
+		return "NotStarted - No Response";
+	case CResponseSystemDebugDataProvider::eER_Queued:
+		return "Queued";
+	case CResponseSystemDebugDataProvider::eER_CanceledWhileQueued:
+		return "Canceled - while queued";
+	case CResponseSystemDebugDataProvider::eER_Canceling:
+		return "Currently Canceling...";
+	}
+
+	return CryStringUtils::toString(static_cast<int>(valueToConvert));
+}
+
+//--------------------------------------------------------------------------------------------------
+CResponseSystemDebugDataProvider::CResponseSystemDebugDataProvider()
+	: m_CurrentResponse(MAX_NUMBER_OF_TRACKED_SIGNALS + 1)
+	, m_loggingOptions(0)
+{
+	REGISTER_CVAR2("drs_loggingOptions", &m_loggingOptions, 0, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
+	               "Toggles the logging of DRS related messages.\n"
+	               "Usage: drs_loggingOptions [0ab...] (flags can be combined)\n"
+	               "Default: 0 (none)\n"
+	               "a: Received Signals\n"
+	               "b: Dialog Lines\n"
+	               "c: Started Responses\n"
+	               "d: Checked Conditions\n"
+	               "e: Started Actions\n"
+	               "f: Changed Variables\n");
+}
+
+//--------------------------------------------------------------------------------------------------
+CResponseSystemDebugDataProvider::~CResponseSystemDebugDataProvider()
+{
+	CResponseSystem::GetInstance()->GetSpeakerManager()->RemoveListener(this);
+}
 
 //--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName, const string& collectionName, const CVariableValue& oldValue, const CVariableValue& newValue, float time)
@@ -40,11 +104,21 @@ void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName
 		m_VariableChangeHistory.erase(m_VariableChangeHistory.begin());
 	}
 	m_VariableChangeHistory.push_back(newEntry);
+
+	if (m_loggingOptions & eDrsLoggingOptions_Variables)
+	{
+		CryLogAlways("<DRS> <%.3f> Variable Change: '%s' '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), newEntry.variableName.c_str(), newEntry.change.c_str());
+	}
 }
 
 //--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::AddResponseStarted(const string& signalName)
 {
+	if (m_loggingOptions & eDrsLoggingOptions_Responses)
+	{
+		CryLogAlways("<DRS> <%.3f> Response started: '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), signalName.c_str());
+	}
+
 	const size_t numExecutedResponses = m_ExecutedResponses.size();
 	for (int i = 0; i < numExecutedResponses; i++)
 	{
@@ -81,6 +155,12 @@ bool CResponseSystemDebugDataProvider::AddResponseSegmentStarted(CResponseSegmen
 	newResponseSegment.pResponseSegment = pResponseSegment;
 	newResponseSegment.levelInHierarchy = response.currentlevelInHierarchy;
 	response.responseSegments.push_back(newResponseSegment);
+
+	if (m_loggingOptions & eDrsLoggingOptions_Responses)
+	{
+		CryLogAlways("<DRS> <%.3f> ResponseSegment started: '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), pResponseSegment->GetName());
+	}
+
 	return true;
 }
 
@@ -104,6 +184,11 @@ bool CResponseSystemDebugDataProvider::AddConditionChecked(const CConditionsColl
 	IVariableUsingBase::s_bDoDisplayCurrentValueInDebugOutput = false;
 	response.responseSegments.back().checkedConditions.push_back(newCondition);
 
+	if (m_loggingOptions & eDrsLoggingOptions_Conditions)
+	{
+		CryLogAlways("<DRS> <%.3f> Condition checked: '%s', Met: %i", CResponseSystem::GetInstance()->GetCurrentDrsTime(), newCondition.conditionDesc.c_str(), (int)newCondition.bMet);
+	}
+
 	return true;
 }
 
@@ -124,13 +209,17 @@ bool CResponseSystemDebugDataProvider::AddActionStarted(const string& actionDesc
 	{
 		if (pResponseSegment == it->pResponseSegment)
 		{
+			if (m_loggingOptions & eDrsLoggingOptions_Actions)
+			{
+				CryLogAlways("<DRS> <%.3f> Action started: '%s', Actor '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), newAction.actionDesc.c_str(), newAction.actorName.c_str());
+			}
+
 			it->bRunning = true;
 			it->bStarted = true;
 			it->executedAction.push_back(newAction);
 			return true;
 		}
 	}
-
 	return false;
 }
 
@@ -149,10 +238,17 @@ bool CResponseSystemDebugDataProvider::AddActionFinished(DRS::IResponseActionIns
 			if (it->pInstance == pInstance && !it->bEnded)
 			{
 				it->bEnded = true;
+
+				if (m_loggingOptions & eDrsLoggingOptions_Actions)
+				{
+					CryLogAlways("<DRS> <%.3f> Action finished: '%s', Source: '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), it->actionDesc.c_str(), itEnd->segmentName.c_str());
+				}
+
 				break;
 			}
 		}
 	}
+
 	return true;
 }
 
@@ -164,6 +260,11 @@ bool CResponseSystemDebugDataProvider::AddResponseInstanceFinished(EStatus reaso
 		return false;
 	}
 	SStartedResponses& response = m_ExecutedResponses[m_CurrentResponse];
+
+	if (m_loggingOptions & eDrsLoggingOptions_Responses)
+	{
+		CryLogAlways("<DRS> <%.3f> Response finished: '%s', Reason '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), response.signalName.c_str(), GetStringFromEnum(reason));
+	}
 
 	if (response.currentState != eER_Canceled)  //we dont want to change from canceled to finished
 	{
@@ -355,17 +456,6 @@ void CResponseSystemDebugDataProvider::VariableChangeInfo::Serialize(Serializati
 }
 
 //--------------------------------------------------------------------------------------------------
-CResponseSystemDebugDataProvider::CResponseSystemDebugDataProvider() : m_CurrentResponse(MAX_NUMBER_OF_TRACKED_SIGNALS + 1)
-{
-}
-
-//--------------------------------------------------------------------------------------------------
-CResponseSystemDebugDataProvider::~CResponseSystemDebugDataProvider()
-{
-	CResponseSystem::GetInstance()->GetSpeakerManager()->RemoveListener(this);
-}
-
-//--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::OnLineEvent(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const DRS::IDialogLine* pLine)
 {
 	string speakerName = (pSpeaker) ? pSpeaker->GetName().GetText() : "Missing Speaker";
@@ -374,16 +464,16 @@ void CResponseSystemDebugDataProvider::OnLineEvent(const DRS::IResponseActor* pS
 	switch (lineEvent)
 	{
 	case eLineEvent_Started:
-		AddDialogLineStarted(lineID, lineText, speakerName, eER_Running, "");
+		AddDialogLineStarted(lineID, lineText, speakerName, eER_Running, "Started");
 		break;
 	case eLineEvent_Queued:
 		AddDialogLineStarted(lineID, lineText, speakerName, eER_Queued, "Another line needs to finish first");
 		break;
 	case eLineEvent_SkippedBecauseOfPriority:
-		AddDialogLineStarted(lineID, lineText, speakerName, eER_NotStarted, "line ('" + lineText + "') with same/higher priority was already playing");
+		AddDialogLineStarted(lineID, "no line picked", speakerName, eER_NotStarted, "Line ('" + lineText + "') with same/higher priority was already playing");
 		break;
 	case eLineEvent_CouldNotBeStarted:
-		AddDialogLineStarted(lineID, lineText, speakerName, eER_NotStarted, "missing entity for speaker");
+		AddDialogLineStarted(lineID, lineText, speakerName, eER_NotStarted, "Missing entity for speaker");
 		break;
 	case eLineEvent_Finished:
 		AddDialogLineFinished(lineID, speakerName, eER_Finished, "Done");
@@ -429,6 +519,11 @@ void CResponseSystemDebugDataProvider::AddSignalFired(const string& signalName, 
 	newResponse.timeOfEvent = CResponseSystem::GetInstance()->GetCurrentDrsTime();
 
 	m_ExecutedResponses.push_back(newResponse);
+
+	if (m_loggingOptions & eDrsLoggingOptions_Signals)
+	{
+		CryLogAlways("<DRS> <%.3f> Signal fired: '%s', sender '%s', '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), signalName.c_str(), senderName.c_str(), contextVariables.c_str());
+	}
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -457,6 +552,11 @@ void CResponseSystemDebugDataProvider::AddDialogLineFinished(const CHashedString
 			it->description = reason;
 		}
 	}
+
+	if (m_loggingOptions & eDrsLoggingOptions_Lines)
+	{
+		CryLogAlways("<DRS> <%.3f> Line Finished: Speaker: '%s' ID: '%s' State: %s Reason: %s", CResponseSystem::GetInstance()->GetCurrentDrsTime(), speakerName.c_str(), lineID.GetText().c_str(), GetStringFromEnum(status), reason.c_str());
+	}
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -470,6 +570,11 @@ void CResponseSystemDebugDataProvider::AddDialogLineStarted(const CHashedString&
 	temp.description = reason;
 	temp.source = CResponseSystem::GetInstance()->GetCurrentDrsUserName();
 	temp.timeOfEvent = CResponseSystem::GetInstance()->GetCurrentDrsTime();
+
+	if (m_loggingOptions & eDrsLoggingOptions_Lines)
+	{
+		CryLogAlways("<DRS> <%.3f> Line Start Requested: Speaker: '%s' ID: '%s' State: '%s'. Reason: '%s' (Text: \"%s\") Source: '%s'", CResponseSystem::GetInstance()->GetCurrentDrsTime(), speakerName.c_str(), lineID.GetText().c_str(), GetStringFromEnum(status), reason.c_str(), lineText.c_str(), temp.source.c_str());
+	}
 
 	m_LineHistory.push_back(temp);
 }

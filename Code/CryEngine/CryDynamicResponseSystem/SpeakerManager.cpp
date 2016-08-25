@@ -16,6 +16,7 @@
 namespace
 {
 static const uint32 s_attachmentPosName = CCrc32::ComputeLowercase("voice");
+static const uint32 s_attachmentPosNameFallback = CCrc32::ComputeLowercase("eye_left");
 static const CHashedString s_isTalkingVariableName = "IsTalking";
 static const CHashedString s_lastLineId = "LastSpokenLine";
 static const int s_characterSlot = 0;  //todo: make this a property of the drs actor
@@ -670,9 +671,9 @@ void CryDRS::CSpeakerManager::StartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 				const IAttachmentManager* pAttachmentManager = pCharacter->GetIAttachmentManager();
 				if (pAttachmentManager)
 				{
-					pSpeakerInfoToUse->voiceAttachmentIndex = pAttachmentManager->GetIndexByName("voice");
+					pSpeakerInfoToUse->voiceAttachmentIndex = pAttachmentManager->GetIndexByNameCRC(s_attachmentPosName);
 					if (pSpeakerInfoToUse->voiceAttachmentIndex == -1)
-						pSpeakerInfoToUse->voiceAttachmentIndex = pAttachmentManager->GetIndexByName("eye_left");
+						pSpeakerInfoToUse->voiceAttachmentIndex = pAttachmentManager->GetIndexByNameCRC(s_attachmentPosNameFallback);
 					if (pSpeakerInfoToUse->voiceAttachmentIndex != -1)
 					{
 						pSpeakerInfoToUse->speechAuxProxy = pEntityAudioProxy->CreateAuxAudioProxy();

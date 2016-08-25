@@ -159,6 +159,8 @@ private:
 
 	ResponseInstanceID m_CurrentResponse;
 
+	int                m_loggingOptions;
+
 	static const int   MAX_NUMBER_OF_TRACKED_SIGNALS = 512;
 
 	typedef std::map<CResponseInstance*, ResponseInstanceID> ResponseInstanceToResponseInstanceIDMapping;
