@@ -49,7 +49,7 @@ public:
 
 private:
 	const EntityId      m_linkedEntityID;
-	const CHashedString m_localVariablesCollectionName;  //for now we dont store directly a pointer to the VariableCollection, because we would not get informed, if the collection is deleted/moved from the outside;
+	const CHashedString m_localVariablesCollectionName;    //for now we dont store directly a pointer to the VariableCollection, because we would not get informed, if the collection is deleted/moved from the outside;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -89,13 +89,13 @@ public:
 	virtual CResponseManager*                        GetResponseManager() const override    { return m_pResponseManager; }
 	virtual CSpeakerManager*                         GetSpeakerManager() const override     { return m_pSpeakerManager; }
 
-	void                                             GetCurrentState(DRS::VariableValuesList* pOutCollectionsList, uint32 saveHints = SaveHints_Variables) const override;
-	void                                             SetCurrentState(const DRS::VariableValuesList& outCollectionsList) override;
+	virtual DRS::ValuesListPtr                    GetCurrentState(uint32 saveHints) const override;
+	virtual void                                     SetCurrentState(const DRS::ValuesList& outCollectionsList) override;
 	virtual void                                     Serialize(Serialization::IArchive& ar) override;
 
 #if !defined(_RELEASE)
-	virtual void                                     SetCurrentDrsUserName(const char* szNewDrsUserName) override;
-	virtual const char*                              GetCurrentDrsUserName() const override { return m_currentDrsUserName.c_str(); }
+	virtual void        SetCurrentDrsUserName(const char* szNewDrsUserName) override;
+	virtual const char* GetCurrentDrsUserName() const override { return m_currentDrsUserName.c_str(); }
 	string m_currentDrsUserName;
 #endif
 	//////////////////////////////////////////////////////////
@@ -117,7 +117,7 @@ public:
 #endif
 
 private:
-	void _Reset(uint32 resetFlags);
+	void InternalReset(uint32 resetFlags);
 
 	typedef std::vector<CResponseActor*> ResponseActorList;
 

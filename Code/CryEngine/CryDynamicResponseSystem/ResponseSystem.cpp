@@ -134,7 +134,7 @@ void CResponseSystem::Update()
 {
 	if (m_pendingResetRequest != DRS::IDynamicResponseSystem::eResetHint_Nothing)
 	{
-		_Reset(m_pendingResetRequest);
+		InternalReset(m_pendingResetRequest);
 		m_pendingResetRequest = DRS::IDynamicResponseSystem::eResetHint_Nothing;
 	}
 
@@ -243,7 +243,7 @@ void CResponseSystem::Reset(uint32 resetHint)
 	}
 	else
 	{
-		_Reset(resetHint);
+		InternalReset(resetHint);
 	}
 }
 
@@ -306,7 +306,7 @@ void CResponseSystem::SetCurrentDrsUserName(const char* szNewDrsUserName)
 #endif
 
 //--------------------------------------------------------------------------------------------------
-void CResponseSystem::_Reset(uint32 resetFlags)
+void CResponseSystem::InternalReset(uint32 resetFlags)
 {
 	if (resetFlags & (DRS::IDynamicResponseSystem::eResetHint_StopRunningResponses | DRS::IDynamicResponseSystem::eResetHint_ResetAllResponses))
 	{
@@ -329,86 +329,96 @@ void CResponseSystem::_Reset(uint32 resetFlags)
 	}
 }
 
-constexpr const char* sz_DrsDataTag = "<DRS_DATA>";
-constexpr const char* sz_DrsVariablesStartTag = "VariablesStart";
-constexpr const char* sz_DrsVariablesEndTag = "VariablesEnd";
-constexpr const char* sz_DrsResponsesStartTag = "ResponsesStart";
-constexpr const char* sz_DrsResponsesEndTag = "ResponsesEnd";
-constexpr const char* sz_DrsLinesStartTag = "LinesStart";
-constexpr const char* sz_DrsLinesEndTag = "LinesEnd";
+constexpr const char* szDrsDataTag = "<DRS_DATA>";
+constexpr const char* szDrsVariablesStartTag = "VariablesStart";
+constexpr const char* szDrsVariablesEndTag = "VariablesEnd";
+constexpr const char* szDrsResponsesStartTag = "ResponsesStart";
+constexpr const char* szDrsResponsesEndTag = "ResponsesEnd";
+constexpr const char* szDrsLinesStartTag = "LinesStart";
+constexpr const char* szDrsLinesEndTag = "LinesEnd";
 
 //--------------------------------------------------------------------------------------------------
-void CResponseSystem::GetCurrentState(DRS::VariableValuesList* pOutCollectionsList, uint32 saveHints) const
+DRS::ValuesListPtr CResponseSystem::GetCurrentState(uint32 saveHints) const
 {
-	std::pair<string, string> temp;
-	temp.first = sz_DrsDataTag;
+	const bool bSkipDefaultValues = (saveHints & SaveHints_SkipDefaultValues) > 0;
+
+	DRS::ValuesListPtr variableList(new DRS::ValuesList(), [](DRS::ValuesList* pList)
+	{
+		pList->clear();
+		delete pList;
+	});
+
+	std::pair<DRS::ValuesString, DRS::ValuesString> temp;
+	temp.first = szDrsDataTag;
 	if (saveHints & SaveHints_Variables)
 	{
-		temp.second = sz_DrsVariablesStartTag;
-		pOutCollectionsList->push_back(temp);
-		m_pVariableCollectionManager->GetAllVariableCollections(pOutCollectionsList);
-		temp.second = sz_DrsVariablesEndTag;
-		pOutCollectionsList->push_back(temp);
+		temp.second = szDrsVariablesStartTag;
+		variableList->push_back(temp);
+		m_pVariableCollectionManager->GetAllVariableCollections(variableList.get(), bSkipDefaultValues);
+		temp.second = szDrsVariablesEndTag;
+		variableList->push_back(temp);
 	}
 
 	if (saveHints & SaveHints_ResponseData)
 	{
-		temp.second = sz_DrsResponsesStartTag;
-		pOutCollectionsList->push_back(temp);
-		m_pResponseManager->GetAllResponseData(pOutCollectionsList);
-		temp.second = sz_DrsResponsesEndTag;
-		pOutCollectionsList->push_back(temp);
+		temp.second = szDrsResponsesStartTag;
+		variableList->push_back(temp);
+		m_pResponseManager->GetAllResponseData(variableList.get(), bSkipDefaultValues);
+		temp.second = szDrsResponsesEndTag;
+		variableList->push_back(temp);
 	}
 
 	if (saveHints & SaveHints_LineData)
 	{
-		temp.second = sz_DrsLinesStartTag;
-		pOutCollectionsList->push_back(temp);
-		m_pDialogLineDatabase->GetAllLineData(pOutCollectionsList);
-		temp.second = sz_DrsLinesEndTag;
-		pOutCollectionsList->push_back(temp);
+		temp.second = szDrsLinesStartTag;
+		variableList->push_back(temp);
+		m_pDialogLineDatabase->GetAllLineData(variableList.get(), bSkipDefaultValues);
+		temp.second = szDrsLinesEndTag;
+		variableList->push_back(temp);
 	}
+
+	return variableList;
 }
 
 //--------------------------------------------------------------------------------------------------
-void CResponseSystem::SetCurrentState(const DRS::VariableValuesList& collectionsList)
+void CResponseSystem::SetCurrentState(const DRS::ValuesList& collectionsList)
 {
-	DRS::VariableValuesListIterator itStartOfVariables = collectionsList.begin();
-	DRS::VariableValuesListIterator itStartOfResponses = collectionsList.begin();
-	DRS::VariableValuesListIterator itStartOfLines = collectionsList.begin();
-	DRS::VariableValuesListIterator itEndOfVariables = collectionsList.begin();
-	DRS::VariableValuesListIterator itEndOfResponses = collectionsList.begin();
-	DRS::VariableValuesListIterator itEndOfLines = collectionsList.begin();
+	DRS::ValuesListIterator itStartOfVariables = collectionsList.begin();
+	DRS::ValuesListIterator itStartOfResponses = collectionsList.begin();
+	DRS::ValuesListIterator itStartOfLines = collectionsList.begin();
+	DRS::ValuesListIterator itEndOfVariables = collectionsList.begin();
+	DRS::ValuesListIterator itEndOfResponses = collectionsList.begin();
+	DRS::ValuesListIterator itEndOfLines = collectionsList.begin();
 
-	for (DRS::VariableValuesListIterator it = collectionsList.begin(); it != collectionsList.end(); ++it)
+	for (DRS::ValuesListIterator it = collectionsList.begin(); it != collectionsList.end(); ++it)
 	{
-		if (it->first == sz_DrsDataTag)
+		if (it->first == szDrsDataTag)
 		{
-			if (it->second == sz_DrsVariablesStartTag)
+			if (it->second == szDrsVariablesStartTag)
 				itStartOfVariables = it + 1;
-			if (it->second == sz_DrsVariablesEndTag)
+			if (it->second == szDrsVariablesEndTag)
 				itEndOfVariables = it;
 		}
 	}
 
-	for (DRS::VariableValuesListIterator it = collectionsList.begin(); it != collectionsList.end(); ++it)
+	for (DRS::ValuesListIterator it = collectionsList.begin(); it != collectionsList.end(); ++it)
 	{
-		if (it->first == sz_DrsDataTag)
+		if (it->first == szDrsDataTag)
 		{
-			if (it->second == sz_DrsResponsesStartTag)
+			if (it->second == szDrsResponsesStartTag)
 				itStartOfResponses = it + 1;
-			if (it->second == sz_DrsResponsesEndTag)
+			if (it->second == szDrsResponsesEndTag)
 				itEndOfResponses = it;
 		}
 	}
 
-	for (DRS::VariableValuesListIterator it = collectionsList.begin(); it != collectionsList.end(); ++it)
+	for (DRS::ValuesListIterator it = collectionsList.begin(); it != collectionsList.end(); ++it)
 	{
-		if (it->first == sz_DrsDataTag)
+		if (it->first == szDrsDataTag)
 		{
-			if (it->second == sz_DrsLinesStartTag)
+			if (it->second == szDrsLinesStartTag)
 				itStartOfLines = it + 1;
-			if (it->second == sz_DrsLinesEndTag)
+			if (it->second == szDrsLinesEndTag)
 				itEndOfLines = it;
 		}
 	}
@@ -430,6 +440,7 @@ void CResponseSystem::SetCurrentState(const DRS::VariableValuesList& collections
 		m_pDialogLineDatabase->SetAllLineData(itStartOfLines, itEndOfLines);
 	}
 }
+
 
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------

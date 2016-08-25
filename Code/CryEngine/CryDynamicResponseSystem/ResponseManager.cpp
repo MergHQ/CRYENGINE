@@ -666,12 +666,12 @@ void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-void CResponseManager::GetAllResponseData(DRS::VariableValuesList* pOutCollectionsList)
+void CResponseManager::GetAllResponseData(DRS::ValuesList* pOutCollectionsList, bool bSkipDefaultValues)
 {
 	std::pair<string, string> temp;
 	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
 	{
-		if (it->second->GetExecutionCounter() > 0)
+		if (!bSkipDefaultValues || it->second->GetExecutionCounter() > 0)
 		{
 			temp.first.Format("_Internal.%s", it->first.GetText().c_str());
 			temp.second.Format("%u,%f,%f", it->second->GetExecutionCounter(), it->second->GetLastStartTime(), it->second->GetLastEndTime());
@@ -681,7 +681,7 @@ void CResponseManager::GetAllResponseData(DRS::VariableValuesList* pOutCollectio
 }
 
 //--------------------------------------------------------------------------------------------------
-void CResponseManager::SetAllResponseData(DRS::VariableValuesListIterator start, DRS::VariableValuesListIterator end)
+void CResponseManager::SetAllResponseData(DRS::ValuesListIterator start, DRS::ValuesListIterator end)
 {
 	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
 	{
@@ -692,11 +692,11 @@ void CResponseManager::SetAllResponseData(DRS::VariableValuesListIterator start,
 	float startTime;
 	float endTime;
 
-	string collectionAndVariable;
-	string collectionName;
+	DRS::ValuesString collectionAndVariable;
+	DRS::ValuesString collectionName;
 	CHashedString responseName;
 	
-	for (DRS::VariableValuesListIterator it = start; it != end; ++it)
+	for (DRS::ValuesListIterator it = start; it != end; ++it)
 	{
 		collectionAndVariable = it->first;
 		const int pos = collectionAndVariable.find('.');
@@ -704,7 +704,7 @@ void CResponseManager::SetAllResponseData(DRS::VariableValuesListIterator start,
 
 		if (collectionName == "_Internal")
 		{
-			responseName = collectionAndVariable.substr(pos + 1);
+			responseName = collectionAndVariable.substr(pos + 1).c_str();
 			ResponsePtr pResponse = GetResponse(responseName);
 			if (pResponse)
 			{
@@ -716,7 +716,7 @@ void CResponseManager::SetAllResponseData(DRS::VariableValuesListIterator start,
 				}
 				else
 				{
-					DrsLogWarning((string("Could not parse response execution information from given data '") + it->second + "'.").c_str());
+					DrsLogWarning((string("Could not parse response execution information from given data '") + it->second.c_str() + "'.").c_str());
 				}
 			}
 		}

@@ -27,12 +27,14 @@ typedef Serialization::ClassFactory<IResponseCondition> ConditionSerializationCl
 typedef std::shared_ptr<IResponseCondition>             IConditionSharedPtr;
 
 struct IVariableCollection;
-typedef std::shared_ptr<IVariableCollection> IVariableCollectionSharedPtr;
+typedef std::shared_ptr<IVariableCollection>                        IVariableCollectionSharedPtr;
 
-typedef DynArray<std::pair<string, string>>  VariableValuesList;
-typedef VariableValuesList::const_iterator   VariableValuesListIterator;
+typedef CryStackStringT<char, 64>                                   ValuesString;
+typedef DynArray<std::pair<const ValuesString, const ValuesString>> ValuesList;
+typedef std::shared_ptr<ValuesList>                                 ValuesListPtr;
+typedef ValuesList::const_iterator                                  ValuesListIterator;
 
-typedef int                                  SignalInstanceId;
+typedef int                                                         SignalInstanceId;
 static const SignalInstanceId s_InvalidSignalId = -1;
 
 typedef int LipSyncID;
@@ -155,9 +157,9 @@ struct IVariableCollection
 	virtual const CHashedString& GetName() const = 0;
 
 	//! Simple way to store some additional user data with the variable collection. Might be useful, if you need to pass a string along with a signal. The string will be copied.
-	virtual void          SetUserString(const char* szUserString) = 0;
+	virtual void        SetUserString(const char* szUserString) = 0;
 	//! Returns the additional user data string
-	virtual const string& GetUserString() = 0;
+	virtual const char* GetUserString() const = 0;
 
 	/**
 	 * Serializes all the member variables of this class
@@ -223,7 +225,7 @@ struct IResponseInstance
 	 * @return returns the id of the signal-instance that triggered the response
 	 * @see DRS.IResponseManager.AddListener
 	 */
-	virtual const DRS::SignalInstanceId GetSignalInstanceId() const = 0;
+	virtual const SignalInstanceId GetSignalInstanceId() const = 0;
 
 	/**
 	 * Will return the context variable collection for this signal (if there was one specified when the signal was queued)
@@ -425,20 +427,23 @@ public:
 	//! \return A pointer to the ISpeakerManager
 	virtual ISpeakerManager* GetSpeakerManager() const = 0;
 
-	enum eSaveHints
+	enum eSaveHints : uint32
 	{
-		SaveHints_Variables    = BIT(0),
-		SaveHints_ResponseData = BIT(1),
-		SaveHints_LineData     = BIT(2),
+		SaveHints_Variables         = BIT(0),
+		SaveHints_ResponseData      = BIT(1),
+		SaveHints_LineData          = BIT(2),
+		SaveHints_Everything        = SaveHints_Variables | SaveHints_ResponseData | SaveHints_LineData,
+
+		SaveHints_SkipDefaultValues = BIT(3),   //optimization: do not store data that has the default value into the VariableValueList
 	};
 
 	//! Saves the current state of the DRS as a list of variables
 	//! the saveHints parameter can be used to include additional data in the list.
-	virtual void GetCurrentState(DRS::VariableValuesList* pOutCollectionsList, uint32 saveHints = IDynamicResponseSystem::SaveHints_Variables) const = 0;
+	virtual ValuesListPtr GetCurrentState(uint32 saveHints = IDynamicResponseSystem::SaveHints_Variables | IDynamicResponseSystem::SaveHints_SkipDefaultValues) const = 0;
 
 	//! Restores a previously stored state of the DRS.
 	//! Remark: Depending on the implementation you might need to call 'Reset' first, in order to stop all running responses.
-	virtual void SetCurrentState(const DRS::VariableValuesList& outCollectionsList) = 0;
+	virtual void SetCurrentState(const ValuesList& outCollectionsList) = 0;
 
 	//! Only needed for debug purposes, informs the system who is currently using it (so that debug outputs than create logs like "flowgraph 'human2' has changed variable X to value 0.3").
 	//! \return the currently source of DRS actions
@@ -647,7 +652,7 @@ struct IDialogLineSet
 {
 	enum EPickModeFlags : uint32
 	{
-		EPickModeFlags_None                         = 0,
+		EPickModeFlags_None                        = 0,
 		EPickModeFlags_RandomVariation             = BIT(0), //!< Pick one variation at random, but try not to repeat the last picked variation
 		EPickModeFlags_SequentialVariationRepeat   = BIT(1), //!< Pick the next variation in the order they are specified (start from the beginning after the last one)
 		EPickModeFlags_SequentialVariationClamp    = BIT(2), //!< Pick the next variation in the order they are specified (repeat the last one)
@@ -692,9 +697,9 @@ struct IDataImportHelper
 	typedef IConditionSharedPtr (*      CondtionCreatorFct)(const string&, const char* szFormatName);
 	typedef IResponseActionSharedPtr (* ActionCreatorFct)(const string&, const char* szFormatName);
 
-	typedef uint32                      ResponseID;
-	typedef uint32                      ResponseSegmentID;
-	static const uint32              INVALID_ID = -1;
+	static const uint32 INVALID_ID = -1;
+	typedef uint32 ResponseID;
+	typedef uint32 ResponseSegmentID;
 
 	virtual ResponseID               AddSignalResponse(const string& szName) = 0;
 	virtual bool                     AddResponseCondition(ResponseID responseID, IConditionSharedPtr pCondition, bool bNegated) = 0;

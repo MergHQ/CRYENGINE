@@ -87,8 +87,8 @@ public:
 	bool			   IsSignalProcessed(const SSignal& signal);
 	void               Update();
 
-	void               GetAllResponseData(DRS::VariableValuesList* pOutCollectionsList);
-	void               SetAllResponseData(DRS::VariableValuesListIterator start, DRS::VariableValuesListIterator end);
+	void               GetAllResponseData(DRS::ValuesList* pOutCollectionsList, bool bSkipDefaultValues);
+	void               SetAllResponseData(DRS::ValuesListIterator start, DRS::ValuesListIterator end);
 
 	CResponseInstance* CreateInstance(SSignal& signal, CResponse* pResponse);
 	void               ReleaseInstance(CResponseInstance* pInstance, bool removeFromRunningInstances = true);

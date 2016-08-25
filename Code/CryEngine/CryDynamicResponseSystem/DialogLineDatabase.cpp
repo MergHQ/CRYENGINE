@@ -224,12 +224,12 @@ bool CDialogLineDatabase::ExecuteScript(uint32 index)
 }
 
 //--------------------------------------------------------------------------------------------------
-void CryDRS::CDialogLineDatabase::GetAllLineData(DRS::VariableValuesList* pOutCollectionsList)
+void CryDRS::CDialogLineDatabase::GetAllLineData(DRS::ValuesList* pOutCollectionsList, bool bSkipDefaultValues)
 {
 	std::pair<string, string> temp;
 	for (const CDialogLineSet& line : m_lineSets)
 	{
-		if (line.GetLastPickedLine() != 0)
+		if (!bSkipDefaultValues || line.GetLastPickedLine() != 0)
 		{
 			temp.first = line.GetLineId().GetText();
 			temp.second = CryStringUtils::toString(line.GetLastPickedLine());
@@ -239,16 +239,16 @@ void CryDRS::CDialogLineDatabase::GetAllLineData(DRS::VariableValuesList* pOutCo
 }
 
 //--------------------------------------------------------------------------------------------------
-void CryDRS::CDialogLineDatabase::SetAllLineData(DRS::VariableValuesListIterator start, DRS::VariableValuesListIterator end)
+void CryDRS::CDialogLineDatabase::SetAllLineData(DRS::ValuesListIterator start, DRS::ValuesListIterator end)
 {
 	for (CDialogLineSet& line : m_lineSets)
 	{
 		line.Reset();
 	}
 
-	for (DRS::VariableValuesListIterator it = start; it != end; ++it)
+	for (DRS::ValuesListIterator it = start; it != end; ++it)
 	{
-		CDialogLineSet* pLine = GetLineSetById(it->first);
+		CDialogLineSet* pLine = GetLineSetById(it->first.c_str());
 		if (pLine)
 		{
 			pLine->SetLastPickedLine((int)atoi(it->second));

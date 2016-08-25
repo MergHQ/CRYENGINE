@@ -110,8 +110,8 @@ public:
 	virtual void                             SerializeLinesHistory(Serialization::IArchive& ar) override;
 	//////////////////////////////////////////////////////////
 
-	void GetAllLineData(DRS::VariableValuesList* pOutCollectionsList);  //stores the current state 
-	void SetAllLineData(DRS::VariableValuesListIterator start, DRS::VariableValuesListIterator end);  //restores a state
+	void GetAllLineData(DRS::ValuesList* pOutCollectionsList, bool bSkipDefaultValues);  //stores the current state 
+	void SetAllLineData(DRS::ValuesListIterator start, DRS::ValuesListIterator end);  //restores a state
 
 private:
 	CHashedString GenerateUniqueId(const string& root) const;

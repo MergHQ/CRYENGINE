@@ -32,8 +32,8 @@ public:
 	void                 Update();
 	void                 Reset();
 
-	void GetAllVariableCollections(DRS::VariableValuesList* pOutCollectionsList);
-	void SetAllVariableCollections(DRS::VariableValuesListIterator start, DRS::VariableValuesListIterator end);
+	void GetAllVariableCollections(DRS::ValuesList* pOutCollectionsList, bool bSkipDefaultValues);
+	void SetAllVariableCollections(DRS::ValuesListIterator start, DRS::ValuesListIterator end);
 
 	void                 Serialize(Serialization::IArchive& ar);
 
@@ -82,7 +82,7 @@ public:
 	virtual void                 Serialize(Serialization::IArchive& ar) override;
 
 	virtual void                 SetUserString(const char* szUserString) override { m_userString = szUserString; }
-	virtual const string&        GetUserString() override                         { return m_userString; }
+	virtual const char*          GetUserString() const override { return m_userString.c_str(); }
 	//////////////////////////////////////////////////////////
 
 	VariableList& GetAllVariables() { return m_allResponseVariables; }

@@ -408,13 +408,13 @@ void CVariableCollectionManager::Serialize(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-void CVariableCollectionManager::GetAllVariableCollections(DRS::VariableValuesList* pOutCollectionsList)
+void CVariableCollectionManager::GetAllVariableCollections(DRS::ValuesList* pOutCollectionsList, bool bSkipDefaultValues)
 {
 	CRY_ASSERT(pOutCollectionsList);
 
 	pOutCollectionsList->reserve(m_variableCollections.size());
 
-	std::pair<string, string> temp;
+	std::pair<DRS::ValuesString, DRS::ValuesString> temp;
 	for (CVariableCollection* const pCollection : m_variableCollections)
 	{
 		const string collectionName = pCollection->GetName().GetText() + ".";
@@ -424,26 +424,28 @@ void CVariableCollectionManager::GetAllVariableCollections(DRS::VariableValuesLi
 		for (CryDRS::CVariable* const pVariable : variables)
 		{
 			temp.first = collectionName + pVariable->GetName().GetText();
-			temp.second = pVariable->m_value.GetValueAsString();
+			CVariableValue variableValue = pVariable->m_value;
 
 			//check if there is already a cooldown for this variable, and if yes, we store the old-value instead
 			for (CVariableCollection::CoolingDownVariableList::const_iterator itCooling = coolingDownVariables.begin(); itCooling != coolingDownVariables.end(); ++itCooling)
 			{
 				if (itCooling->variable == pVariable)
 				{
-					CVariableValue oldValue = pVariable->m_value;
-					oldValue.SetValue(itCooling->oldValue);
-					temp.second = oldValue.GetValueAsString();
+					variableValue.SetValue(itCooling->oldValue);
 				}
 			}
 
-			pOutCollectionsList->push_back(temp);
+			if (!bSkipDefaultValues || variableValue.GetValue() != CVariableCollection::s_newVariableValue.GetValue())
+			{
+				temp.second = variableValue.GetValueAsString();
+				pOutCollectionsList->push_back(temp);
+			}
 		}
 	}
 }
 
 //--------------------------------------------------------------------------------------------------
-void CVariableCollectionManager::SetAllVariableCollections(DRS::VariableValuesListIterator start, DRS::VariableValuesListIterator end)
+void CVariableCollectionManager::SetAllVariableCollections(DRS::ValuesListIterator start, DRS::ValuesListIterator end)
 {
 	string collectionAndVariable;
 	string variableName;
@@ -451,9 +453,9 @@ void CVariableCollectionManager::SetAllVariableCollections(DRS::VariableValuesLi
 	m_variableCollections.clear();
 	m_variableCollections.reserve(std::distance(start, end));
 
-	for (DRS::VariableValuesListIterator it = start; it != end; ++it)
+	for (DRS::ValuesListIterator it = start; it != end; ++it)
 	{
-		collectionAndVariable = it->first;
+		collectionAndVariable = it->first.c_str();
 		const int pos = collectionAndVariable.find('.');
 		variableName = collectionAndVariable.substr(pos + 1);
 		collectionName = collectionAndVariable.substr(0, pos);
