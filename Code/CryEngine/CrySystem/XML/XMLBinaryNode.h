@@ -162,6 +162,7 @@ public:
 	void setAttr(const char* key, const Vec3d& value)                                   { assert(0); };
 	void setAttr(const char* key, const Quat& value)                                    { assert(0); };
 	void delAttr(const char* key)                                                       { assert(0); };
+	void setAttr(const char* key, const CryGUID& value);
 	void removeAllAttributes()                                                          { assert(0); };
 
 	//! Get attribute value of node.
@@ -181,6 +182,7 @@ public:
 	bool getAttr(const char* key, Vec3d& value) const;
 	bool getAttr(const char* key, Quat& value) const;
 	bool getAttr(const char* key, ColorB& value) const;
+	bool getAttr(const char* key, CryGUID& value) const;
 	//	bool getAttr( const char *key,CString &value ) const { XmlString v; if (getAttr(key,v)) { value = (const char*)v; return true; } else return false; }
 
 private:

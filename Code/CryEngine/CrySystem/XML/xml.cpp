@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <CrySystem/File/ICryPak.h>
 #include "XMLBinaryReader.h"
+#include "CryExtension/CryGUIDHelper.h"
 
 #define FLOAT_FMT  "%.8g"
 #define DOUBLE_FMT "%.17g"
@@ -365,6 +366,31 @@ void CXmlNode::setAttr(const char* key, const Quat& value)
 	cry_sprintf(str, FLOAT_FMT "," FLOAT_FMT "," FLOAT_FMT "," FLOAT_FMT, value.w, value.v.x, value.v.y, value.v.z);
 	setAttr(key, str);
 }
+
+void CXmlNode::setAttr(const char* key, const CryGUID& value)
+{
+	setAttr(key, CryGUIDHelper::Print(value));
+}
+
+bool CXmlNode::getAttr(const char* key, CryGUID& value) const
+{
+	const char* svalue = GetValue(key);
+	if (svalue)
+	{
+		const char* guidStr = getAttr(key);
+		value = CryGUIDHelper::FromString(svalue);
+		if ((value.hipart >> 32) == 0)
+		{
+			memset(&value, 0, sizeof(value));
+			// If bad GUID, use old guid system.
+			// Not sure if this will apply well in CryGUID!
+			value.hipart = (uint64)atoi(svalue) << 32;
+		}
+		return true;
+	}
+	return false;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 bool CXmlNode::getAttr(const char* key, int& value) const

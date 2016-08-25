@@ -54,6 +54,22 @@ static string Print(const CryGUID& val)
 
 	return string(buffer.c_str());
 }
+
+inline CryGUID FromString(const char *guidString)
+{
+	unsigned long  data1 = 0;
+	unsigned short data2 = 0;
+	unsigned short data3 = 0;
+
+	unsigned short data4 = 0;
+	unsigned short data5 = 0;
+	unsigned long  data6 = 0;
+	sscanf(guidString, "{%8X-%4hX-%4hX-%4hX-%4hX%8X}",
+		&data1, &data2, &data3, &data4, &data5, &data6);
+
+	return CryGUID::Construct(((uint64)data1 << 32) + ((uint64)data2 << 16) + (uint64)data3, ((uint64)data4 << 48) + ((uint64)data5 << 32) + (uint64)data6);
+}
+
 }
 
 #endif // #ifndef _CRYGUIDHELPER_H_
