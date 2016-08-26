@@ -62,7 +62,7 @@ macro(configure_android_build)
 	cmake_parse_arguments(ANDROID "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 	string(TOLOWER "${ANDROID_DEBUGGABLE}" ANDROID_DEBUGGABLE) 
 	
-	set(apk_folder "${CMAKE_BINARY_DIR}/apk_data")
+	set(apk_folder "${CMAKE_BINARY_DIR}/${THIS_PROJECT}Launcher/apk_data")
 	file(REMOVE_RECURSE ${apk_folder})
 	file(MAKE_DIRECTORY ${apk_folder}/src)
 	file(MAKE_DIRECTORY ${apk_folder}/lib/armeabi-v7a)
@@ -138,7 +138,7 @@ macro(configure_android_build)
 	#Generate ANT files
 	file(WRITE ${apk_folder}/build.xml
 		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-		"	<project name=\"AndroidLauncher\" default=\"help\">\n"
+		"	<project name=\"${THIS_PROJECT}Launcher\" default=\"help\">\n"
 		"\n"
 		"		<property file=\"build.properties\" />\n"
 		"\n"
@@ -199,8 +199,8 @@ macro(configure_android_build)
 
 endmacro()
 
-macro(configure_android_launcher)
-	set(apk_folder "${CMAKE_BINARY_DIR}/apk_data")
+macro(configure_android_launcher name)
+	set(apk_folder "${CMAKE_BINARY_DIR}/${name}/apk_data")
 
 	#Copy sources
 	foreach(source_file ${SOURCES})
@@ -219,5 +219,9 @@ macro(configure_android_launcher)
 	file(TO_NATIVE_PATH "${OUTPUT_DIRECTORY}" NATIVE_OUTDIR)
 	file(TO_NATIVE_PATH "${apk_folder}" apk_folder_native)
 
-	add_custom_command(TARGET ${THIS_PROJECT} POST_BUILD COMMAND copy ${NATIVE_OUTDIR}\\libAndroidLauncher.so ${apk_folder_native}\\lib\\armeabi-v7a\\libAndroidLauncher.so COMMAND call $ENV{ANT_HOME}/bin/ant clean COMMAND call $ENV{ANT_HOME}/bin/ant debug COMMAND copy ${apk_folder_native}\\bin\\AndroidLauncher-debug.apk ${NATIVE_OUTDIR}\\AndroidLauncher.apk WORKING_DIRECTORY ${apk_folder})	
+	add_custom_command(TARGET ${THIS_PROJECT} POST_BUILD
+		COMMAND copy ${NATIVE_OUTDIR}\\lib${name}.so ${apk_folder_native}\\lib\\armeabi-v7a\\lib${name}.so
+		COMMAND call $ENV{ANT_HOME}/bin/ant clean
+		COMMAND call $ENV{ANT_HOME}/bin/ant debug
+		COMMAND copy ${apk_folder_native}\\bin\\${name}-debug.apk ${NATIVE_OUTDIR}\\${name}.apk WORKING_DIRECTORY ${apk_folder})	
 endmacro()

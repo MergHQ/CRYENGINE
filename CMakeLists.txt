@@ -41,6 +41,7 @@ endif(ANDROID)
 project(CryEngine_CMake_${BUILD_PLATFORM} CXX C)
 
 set(MODULES CACHE INTERNAL "Modules for monolithic builds" FORCE)
+set(GAME_MODULES CACHE INTERNAL "Game Modules for monolithic builds" FORCE)
 
 if (DURANGO OR ORBIS OR ANDROID)
 	# WIN32 Should be unset  again after project( line to work correctly
@@ -64,15 +65,6 @@ if(WIN32 OR WIN64)
 endif()
 option(OPTION_ENABLE_SDK_OCULUS "Enable Oculus SDK" ON)
 
-# Select Game Project
-set(OPTION_GAME_PROJECT "GameSDK" CACHE STRING "What Game project to use")
-set(OPTION_GAME_PROJECT_VALUES "GameSDK" "GameMono" "GameZero")
-set_property(CACHE OPTION_GAME_PROJECT PROPERTY STRINGS ${OPTION_GAME_PROJECT_VALUES})
-list(FIND OPTION_GAME_PROJECT_VALUES ${OPTION_GAME_PROJECT} OPTION_GAME_PROJECT_INDEX)
-if(${OPTION_GAME_PROJECT_INDEX} EQUAL -1)
-	message(FATAL_ERROR "Option ${OPTION_GAME_PROJECT} is not supported, valid entries are ${OPTION_GAME_PROJECT_VALUES}")
-endif()
-
 if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Sandbox")
 	set(OPTION_SANDBOX "No" CACHE STRING "Enable Sandbox")
 	set_property(CACHE OPTION_SANDBOX PROPERTY STRINGS "No" "Qt" "Legacy")
@@ -86,7 +78,6 @@ option(OPTION_PCH "Enable Precompiled Headers" OFF)
 option(OPTION_CRY_EXTENSIONS "Enable CryExtensions" ON)
 
 # Print current project settings
-MESSAGE(STATUS "OPTION_GAME_PROJECT = ${OPTION_GAME_PROJECT}")
 MESSAGE(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
 MESSAGE(STATUS "CMAKE_GENERATOR = ${CMAKE_GENERATOR}")
 MESSAGE(STATUS "CMAKE_CONFIGURATION_TYPES = ${CMAKE_CONFIGURATION_TYPES}")
@@ -328,25 +319,20 @@ add_custom_target(CE DEPENDS CryPhysics CrySystem CryAction CryRenderD3D11
 
 
 # Game
-if (OPTION_GAME_PROJECT STREQUAL "GameSDK")
+option(OPTION_GAMESDK "Build GameSDK sample project" OFF)
+option(OPTION_GAMEZERO "Build GameZero sample project" OFF)
+option(OPTION_GAMEMONO "Build GameMono sample project" OFF)
+
+if (OPTION_GAMESDK) 
 	add_subdirectory(Code/GameSDK/GameDll)
-
-	set(GAME_RES_DIR Code/GameSDK/Resources)
-	set(GAME_TARGET CryGameSDK)
 endif()
 
-if (OPTION_GAME_PROJECT STREQUAL "GameMono")
-	add_subdirectory(Code/GameMono/GameDll)
-
-	set(GAME_RES_DIR Code/GameMono/Resources)
-	set(GAME_TARGET CryGameMono)
-endif()
-
-if (OPTION_GAME_PROJECT STREQUAL "GameZero")
+if (OPTION_GAMEZERO) 
 	add_subdirectory(Code/GameZero/GameDll)
+endif()
 
-	set(GAME_RES_DIR Code/GameZero/Resources)
-	set(GAME_TARGET CryGameZero)
+if (OPTION_GAMEMONO)
+	add_subdirectory(Code/GameMono/GameDll)
 endif()
 
 # Launchers

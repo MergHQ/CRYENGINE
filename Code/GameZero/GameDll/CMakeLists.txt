@@ -53,7 +53,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CryGameZero PCH "StdAfx.cpp" SOLUTION_FOLDER "Projects/GameZero")
+CryGameModule(CryGameZero PCH "StdAfx.cpp" SOLUTION_FOLDER "Projects/GameZero")
 
 target_include_directories( ${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryAction )
 

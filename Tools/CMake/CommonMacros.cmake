@@ -20,7 +20,7 @@ function(make_library list_name path)
 		if (WIN32 OR WIN64 OR DURANGO)
 			list(APPEND ${list_name}_TMP "${path}${s}.lib")
 		else()
-			#list(APPEND ${list_name}_TMP "lib${path}${s}.a")
+			list(APPEND ${list_name}_TMP "${path}lib${s}.a")
 		endif()
 	endforeach()
 	set( ${list_name} ${${list_name}_TMP} PARENT_SCOPE)
@@ -42,13 +42,13 @@ macro(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader PrecompiledSou
 			# Disable Precompiled Header on all C files
 			foreach(C_sourcefile ${SOURCES})
 				if (${C_sourcefile} MATCHES ".*\\.\\c$")
-					set_property(SOURCE "${C_sourcefile}" APPEND PROPERTY COMPILE_FLAGS "/Y-")
+					set_property(SOURCE "${C_sourcefile}" APPEND_STRING PROPERTY COMPILE_FLAGS " /Y- ")
 				endif ()
 			endforeach(C_sourcefile)
 			
 			# Disable Precompiled headers on QT generated files
 			if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp")
-				set_property( SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp" APPEND PROPERTY COMPILE_FLAGS "/Y-")
+				set_property( SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp" APPEND_STRING PROPERTY COMPILE_FLAGS " /Y- ")
 				set_property( SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TargetProject}_automoc.cpp" PROPERTY "SKIP_AUTOMOC" TRUE)
 			endif()
 			file(GLOB_RECURSE qrcs ${CMAKE_CURRENT_BINARY_DIR}/qrc_*.cpp)
@@ -112,15 +112,6 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 			set_target_properties(${TargetProject} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${runout})
 		endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 	endif()
-	
-	# Assign Intermediate Directory to Visual Studio Project per configuration
-	if(INTERMEDIATE_DIRECTORY)
-		# Iterate Debug/Release configs and adds _DEBUG or _RELEASE
-		foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
-			string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG_UPPER )
-			set_target_properties(${TargetProject} PROPERTIES VS_INTERMEDIATE_DIRECTORY_${OUTPUTCONFIG_UPPER} "${INTERMEDIATE_DIRECTORY}/$(Platform)/$(Configuration)/$(ProjectName)/")
-		endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
-	endif()
 ENDMACRO(SET_PLATFORM_TARGET_PROPERTIES)
 
 # Macro for the Unity Build, creating uber files
@@ -130,8 +121,6 @@ function(enable_unity_build UB_FILENAME SOURCE_VARIABLE_NAME)
 		
 		# Generate a unique filename for the unity build translation unit
 		set(unit_build_file ${CMAKE_CURRENT_BINARY_DIR}/${UB_FILENAME})
-
-		#MESSAGE( "GENERATE UBER FILE : ${unit_build_file}")
 
 		# Add include statement for each translation unit
 		foreach(source_file ${files} )
@@ -335,9 +324,6 @@ macro(apply_compile_settings)
 	if(MODULE_SOLUTION_FOLDER)
 		set_solution_folder("${MODULE_SOLUTION_FOLDER}" ${THIS_PROJECT})
 	endif()	
-	if(OPTION_AUTO_BOOTSTRAP)
-		add_dependencies(${THIS_PROJECT} RunBootstrap)
-	endif()
 endmacro()
 
 function(CryEngineModule target)
@@ -353,6 +339,19 @@ function(CryEngineModule target)
 	install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
 endfunction()
 
+function(CryGameModule target)
+	prepare_project(${ARGN})
+	add_library(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
+	use_scaleform()
+	apply_compile_settings()
+	if (OPTION_STATIC_LINKING)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE _LIB -DCRY_IS_MONOLITHIC_BUILD)
+		set(GAME_MODULES ${GAME_MODULES} ${THIS_PROJECT} CACHE INTERNAL "Game Modules for monolithic builds" FORCE)
+	endif()
+
+	install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+endfunction()
+
 function(CreateDynamicModule target)
 	prepare_project(${ARGN})
 	add_library(${THIS_PROJECT} SHARED ${${THIS_PROJECT}_SOURCES})
@@ -362,28 +361,63 @@ endfunction()
 function(CryEngineStaticModule target)
 	prepare_project(${ARGN})
 	add_library(${THIS_PROJECT} STATIC ${${THIS_PROJECT}_SOURCES})
+	target_compile_definitions(${THIS_PROJECT} PRIVATE -D_LIB)
 	apply_compile_settings()
 endfunction()
 
 function(CryLauncher target)
 	prepare_project(${ARGN})
-	if(WIN32)
+	if(ANDROID)
+		add_library(${target} SHARED ${${THIS_PROJECT}_SOURCES})
+		configure_android_launcher(${target})
+		file( WRITE "${CMAKE_CURRENT_BINARY_DIR}/${target}.vcxproj.user" 
+    "<?xml version=\"1.0\" encoding=\"utf-8\"?>
+    <Project ToolsVersion=\"4.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">
+		<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'\">
+			<OverrideAPKPath>$(OutDir)/AndroidLauncher.apk</OverrideAPKPath>		
+			<AdditionalLibraryDirectories>$(OutDir)/lib_debug/armeabi-v7a</AdditionalLibraryDirectories>
+			<BuildXmlPath>$(OutDir)</BuildXmlPath>
+			<GdbSetupPath>$(OutDir)</GdbSetupPath>
+			<DebuggerFlavor>AndroidDebugger</DebuggerFlavor>
+			<AndroidDebugMode>all</AndroidDebugMode>
+    </PropertyGroup>
+    <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Profile|Tegra-Android'\">
+			<OverrideAPKPath>$(OutDir)/AndroidLauncher.apk</OverrideAPKPath>
+			<AdditionalLibraryDirectories>$(OutDir)/lib_debug/armeabi-v7a</AdditionalLibraryDirectories>
+			<BuildXmlPath>$(OutDir)</BuildXmlPath>
+			<GdbSetupPath>$(OutDir)</GdbSetupPath>
+			<DebuggerFlavor>AndroidDebugger</DebuggerFlavor>
+			<AndroidDebugMode>all</AndroidDebugMode>
+    </PropertyGroup>		
+    <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|Tegra-Android'\">
+			<OverrideAPKPath>$(OutDir)/AndroidLauncher.apk</OverrideAPKPath>
+			<AdditionalLibraryDirectories>$(OutDir)/lib_debug/armeabi-v7a</AdditionalLibraryDirectories>
+			<BuildXmlPath>$(OutDir)</BuildXmlPath>
+			<GdbSetupPath>$(OutDir)</GdbSetupPath>
+			<DebuggerFlavor>AndroidDebugger</DebuggerFlavor>
+			<AndroidDebugMode>all</AndroidDebugMode>
+    </PropertyGroup>
+    </Project>")		
+	elseif(WIN32)
 		add_executable(${THIS_PROJECT} WIN32 ${${THIS_PROJECT}_SOURCES})
 	else()
-		add_executable(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
+		add_executable(${target} ${${THIS_PROJECT}_SOURCES})
 	endif()
 	if(ORBIS)
-		set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "Game.elf")	
-	else()
+		set_property(TARGET ${target} PROPERTY OUTPUT_NAME "${target}.elf")	
+	elseif(NOT ANDROID)
 		set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "Game")	
 	endif()
 	if(OPTION_STATIC_LINKING)
 		use_scaleform()
+		target_compile_definitions(${THIS_PROJECT} PRIVATE _LIB -DCRY_IS_MONOLITHIC_BUILD)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ${MODULES})
 	endif()
 	apply_compile_settings()	
 
-	install(TARGETS ${target} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+	if(NOT ANDROID)
+		install(TARGETS ${target} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+	endif()
 endfunction()
 
 function(CryDedicatedServer target)
@@ -708,7 +742,11 @@ macro(use_sdl2)
 	elseif(LINUX64)
 		target_include_directories( ${THIS_PROJECT} PRIVATE ${SDK_DIR}/SDL2/include/linux )
 		find_library(SDL2_LIB SDL2 PATHS "${SDK_DIR}/SDL2/lib/linux_x64")
+	elseif(ANDROID)
+		target_include_directories( ${THIS_PROJECT} PRIVATE ${SDK_DIR}/SDL2/include/linux )
+		find_library(SDL2_LIB SDL2 PATHS "${SDK_DIR}/SDL2/lib/android-armeabi-v7a")
 	endif()
+	mark_as_advanced(FORCE SDL2_LIB)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE "${SDL2_LIB}" )
 endmacro()
 
@@ -721,9 +759,12 @@ macro(use_sdl_mixer)
 		find_library(SDL_MIXER_LIB SDL2_mixer PATHS ${SDK_DIR}/Audio/SDL_mixer/lib/x86 )
 	elseif(LINUX)
 		target_include_directories( ${THIS_PROJECT} PRIVATE ${SDK_DIR}/Audio/SDL_mixer/include )
-		message("Linux binaries not available for SDL_Mixer")
+		message(STATUS "Linux binaries not available for SDL_Mixer")
 	endif()
-	target_link_libraries( ${THIS_PROJECT} PRIVATE "${SDL_MIXER_LIB}" )
+	if(SDL_MIXER_LIB)
+		mark_as_advanced(FORCE SDL_MIXER_LIB)
+		target_link_libraries( ${THIS_PROJECT} PRIVATE "${SDL_MIXER_LIB}" )
+	endif()
 endmacro()
 
 macro(use_xt)
