@@ -75,8 +75,6 @@ struct CryGUID
 	}
 };
 
-// This is only used by the editor where we use C++ 11.
-#if __cplusplus > 199711L
 namespace std
 {
 template<> struct hash<CryGUID>
@@ -89,7 +87,6 @@ public:
 	}
 };
 }
-#endif
 
 #define MAKE_CRYGUID(high, low) CryGUID::Construct((uint64) high ## LL, (uint64) low ## LL)
 
