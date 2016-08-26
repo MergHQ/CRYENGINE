@@ -223,7 +223,11 @@ public:
 
 				uint32 key = 0;
 				if (!StringToKey(name, key))
+				{
+					CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_ERROR,
+						"Scheduler policy name should not exceed 4 characters.");
 					return false;
+				}
 				m_policy[key] = pol;
 			}
 			else

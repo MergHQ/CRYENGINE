@@ -437,8 +437,10 @@ public:
 			}
 			else
 			{
-				cry_sprintf(msg, "Game object extension with base %.8x for entity %s for RMI %s not found", (uint32)(TRUNCATE_PTR)m_pRMI->pBase, pGameObject->GetEntity()->GetName(), m_pRMI->pMsgDef->description);
-				GameWarning("%s", msg);
+				CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_ERROR,
+					"Game object extension with base %.8x for entity %s for RMI %s not found",
+					(uint32)(TRUNCATE_PTR)m_pRMI->pBase, pGameObject->GetEntity()->GetName(),
+					m_pRMI->pMsgDef->description);
 			}
 		}
 		else
@@ -448,7 +450,8 @@ public:
 
 		if (!ok)
 		{
-			GameWarning("Error handling RMI %s", m_pRMI->pMsgDef->description);
+			CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_ERROR, 
+				"Error handling RMI %s", m_pRMI->pMsgDef->description);
 
 			if (!foundObject && !gEnv->bServer && !m_pChannel->IsInTransition())
 			{

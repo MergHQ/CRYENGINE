@@ -372,10 +372,8 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 			IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(entityId);
 			if (!pActor)
 			{
-				pEntitySystem->RemoveEntity(entityId);
-				CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
-				pNetChannel->Disconnect(eDC_ContextCorruption, "Client actor spawned entity was not an actor");
-				return false;
+				CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_WARNING,
+					"Client actor spawned entity is not an actor");
 			}
 			SetPlayerId(entityId);
 		}

@@ -545,7 +545,10 @@ bool CNetwork::Init(int ncpu)
 	m_pMessageQueueConfig = CMessageQueue::LoadConfig("Scripts/Network/Scheduler.xml");
 	if (!m_pMessageQueueConfig)
 	{
-		NetWarning("Network Config loading failed: Scripts/Network/Scheduler.xml");
+		const char *msg = "Network Config loading failed: Scripts/Network/Scheduler.xml";
+		// Dedicated won't accept connections at all without scheduler.
+		gEnv->IsDedicated() ? CryFatalError(msg) :
+			CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_WARNING, msg);
 	}
 	m_schedulerVersion = 1;
 
