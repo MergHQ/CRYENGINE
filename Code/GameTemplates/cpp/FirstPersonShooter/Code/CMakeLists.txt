@@ -3,6 +3,7 @@ project (FirstPersonShooterTemplate VERSION 1.0 LANGUAGES CXX)
 
 if (MSVC)
 	configure_file ("${PROJECT_NAME}.vcxproj.user.in" "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.vcxproj.user")
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 endif(MSVC)
 
 find_package (CryCommon REQUIRED)
