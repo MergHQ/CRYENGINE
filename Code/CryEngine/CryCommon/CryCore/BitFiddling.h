@@ -22,8 +22,9 @@
 
 ILINE uint32 countLeadingZeros32(uint32 x)
 {
-	unsigned long result = 32 ^ 31; // assumes result is unmodified if _BitScanReverse returns 0
-	_BitScanReverse(&result, x);
+	unsigned long result = 32 ^ 31;
+	if (!_BitScanReverse(&result, x))
+		result = 32 ^ 31; 
 	PREFAST_SUPPRESS_WARNING(6102);
 	result ^= 31; // needed because the index is from LSB (whereas all other implementations are from MSB)
 	return result;
@@ -32,8 +33,9 @@ ILINE uint32 countLeadingZeros32(uint32 x)
 ILINE uint64 countLeadingZeros64(uint64 x)
 {
 #if CRY_PLATFORM_X64
-	unsigned long result = 64 ^ 63; // assumes result is unmodified if _BitScanReverse returns 0
-	_BitScanReverse64(&result, x);
+	unsigned long result = 64 ^ 63;
+	if (!_BitScanReverse64(&result, x))
+		result = 64 ^ 63;
 	PREFAST_SUPPRESS_WARNING(6102);
 	result ^= 63; // needed because the index is from LSB (whereas all other implementations are from MSB)
 #else
@@ -65,8 +67,9 @@ ILINE uint64 countLeadingZeros64(uint64 x)
 
 ILINE uint32 countTrailingZeros32(uint32 x)
 {
-	unsigned long result = 32; // assumes result is unmodified if _BitScanForward returns 0
-	_BitScanForward(&result, x);
+	unsigned long result = 32;
+	if (!_BitScanForward(&result, x))
+		result = 32;
 	PREFAST_SUPPRESS_WARNING(6102);
 	return result;
 }
@@ -74,8 +77,9 @@ ILINE uint32 countTrailingZeros32(uint32 x)
 ILINE uint64 countTrailingZeros64(uint64 x)
 {
 #if CRY_PLATFORM_X64
-	unsigned long result = 64; // assumes result is unmodified if _BitScanForward returns 0
-	_BitScanForward64(&result, x);
+	unsigned long result = 64;
+	if (!_BitScanForward64(&result, x))
+		result = 64;
 	PREFAST_SUPPRESS_WARNING(6102);
 #else
 	unsigned long result = (x & 0x00000000FFFFFFFFULL)
