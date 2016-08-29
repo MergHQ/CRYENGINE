@@ -895,11 +895,14 @@ void CStandardGraphicsPipeline::Execute()
 
 	pRenderer->RT_SetCameraInfo();
 
-	m_pGpuParticlesStage->Execute(m_pCurrentRenderView);
-	SwitchToLegacyPipeline();
-	pRenderer->FX_DeferredRainPreprocess();
-	m_pComputeSkinningStage->Execute(m_pCurrentRenderView);
-	SwitchFromLegacyPipeline();
+	if (pRenderer->m_CurRenderEye != RIGHT_EYE)
+	{
+		m_pGpuParticlesStage->Execute(m_pCurrentRenderView);
+		SwitchToLegacyPipeline();
+		pRenderer->FX_DeferredRainPreprocess();
+		m_pComputeSkinningStage->Execute(m_pCurrentRenderView);
+		SwitchFromLegacyPipeline();
+	}
 
 	gcpRendD3D->GetS3DRend().TryInjectHmdCameraAsync(m_pCurrentRenderView);
 
@@ -1111,7 +1114,10 @@ void CStandardGraphicsPipeline::Execute()
 		//pRenderer->EF_ClearTargetsLater(0);
 	}
 
-	m_pGpuParticlesStage->PostDraw(m_pCurrentRenderView);
+	if (pRenderer->m_CurRenderEye == RIGHT_EYE || !pRenderer->GetS3DRend().IsStereoEnabled() || !pRenderer->GetS3DRend().RequiresSequentialSubmission())
+	{
+		m_pGpuParticlesStage->PostDraw(m_pCurrentRenderView);
+	}
 
 	if (!(pRenderer->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN))
 	{

@@ -28,22 +28,22 @@ void CGpuParticlesStage::Prepare(CRenderView* pRenderView)
 
 void CGpuParticlesStage::Execute(CRenderView* pRenderView)
 {
-	int newFrameId = gcpRendD3D.GetFrameID(false);
-	if (m_oldFrameIdExecute  != newFrameId)
+	int CurrentFrameID = gcpRendD3D.GetFrameID(false);
+	if (CurrentFrameID != m_oldFrameIdExecute)
 	{
 		m_pGpuParticleManager->RenderThreadUpdate();
-		m_oldFrameIdExecute = newFrameId;
+		m_oldFrameIdExecute = CurrentFrameID;
 	}
 }
 
 
 void CGpuParticlesStage::PostDraw(CRenderView* pRenderView)
 {
-	int newFrameId = gcpRendD3D.GetFrameID(false);
-	if (m_oldFrameIdPostDraw != newFrameId)
+	int CurrentFrameID = gcpRendD3D.GetFrameID(false);
+	if (CurrentFrameID != m_oldFrameIdPostDraw)
 	{
 		m_pGpuParticleManager->RenderThreadPostUpdate();
-		m_oldFrameIdPostDraw = newFrameId;
+		m_oldFrameIdPostDraw = CurrentFrameID;
 	}
 }
 
