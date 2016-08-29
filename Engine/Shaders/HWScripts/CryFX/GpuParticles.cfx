@@ -558,8 +558,8 @@ void FeatureInitializationCS(uint3 DTid : SV_DispatchThreadID)
 	    int b = c_numParticles - c_numNewBorns + i;
 		float3 position = parentData[newBornIndices[i]].position;
 		float3 velocity = parentData[newBornIndices[i]].velocity * c_init_velocityScale;
-		float fraction = 1.0 - (float)(i) / c_numNewBorns;
-		uint auxData = PackAuxData(-fraction, c_init_size, 0);
+		float fraction = (float)(i) / c_numNewBorns;
+		uint auxData = PackAuxData(fraction - 1.0, c_init_size, 0);
 		float4 color = float4(c_init_color, c_init_opacity);
 		position += parentData[newBornIndices[i]].velocity * c_deltaTime * fraction;
 		
