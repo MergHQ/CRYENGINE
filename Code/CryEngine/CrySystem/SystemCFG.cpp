@@ -364,6 +364,18 @@ bool CSystemConfiguration::OpenFile(const string& filename, CCryFile& file, int 
 		return true;
 	}
 
+	// Next Search in engine root.
+	if (file.Open(string("%ENGINEROOT%/") + filename, "rb", flags))
+	{
+		return true;
+	}
+
+	// Next Search in engine config subfolder, in case loosely stored on drive
+	if (file.Open(string("%ENGINEROOT%/Engine/config/") + filename, "rb", flags))
+	{
+		return true;
+	}
+
 	return false;
 }
 
