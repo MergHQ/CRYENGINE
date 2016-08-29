@@ -388,7 +388,7 @@ bool CVolumetricCloudManager::CreateResources()
 		"$VolCloudPrevDepthScaled",
 		"$VolCloudPrevDepthScaled_R",
 	};
-	bool bStereo = gRenDev->m_bDualStereoSupport;
+	bool bStereo = gRenDev->IsStereoEnabled();
 	bool stereoReproj = bStereo && CRenderer::CV_r_VolumetricCloudsStereoReprojection != 0;
 
 	for (int e = 0; e < MaxEyeNum; ++e)
@@ -569,7 +569,9 @@ bool CVolumetricCloudManager::AreTexturesValid() const
 	                      && CTexture::IsTextureExist(m_downscaledTemp)
 	                      && CTexture::IsTextureExist(m_downscaledMinTemp);
 
-	const int eyeNum = gRenDev->m_bDualStereoSupport ? MaxEyeNum : 1;
+	bool bStereo = gRenDev->IsStereoEnabled();
+
+	const int eyeNum = bStereo ? MaxEyeNum : 1;
 	for (int e = 0; e < eyeNum; ++e)
 	{
 		for (int i = 0; i < 2; ++i)
@@ -580,7 +582,6 @@ bool CVolumetricCloudManager::AreTexturesValid() const
 		bDownscaledRTs = bDownscaledRTs && CTexture::IsTextureExist(m_prevScaledDepthBuffer[e]);
 	}
 
-	bool bStereo = gRenDev->m_bDualStereoSupport;
 	bool stereoReproj = bStereo && CRenderer::CV_r_VolumetricCloudsStereoReprojection != 0;
 	bDownscaledRTs = bDownscaledRTs && (!stereoReproj || CTexture::IsTextureExist(m_downscaledLeftEye));
 
@@ -861,7 +862,7 @@ void CVolumetricCloudManager::MakeCloudShaderParam(VCCloudRenderContext& context
 	context.screenHeight = VCGetDownscaledResolution(gRenDev->GetHeight(), scale);
 	context.screenDepth = VCGetCloudRaymarchStepNum();
 
-	bool bStereo = gRenDev->m_bDualStereoSupport;
+	bool bStereo = gRenDev->IsStereoEnabled();
 	context.stereoReproj = bStereo && CRenderer::CV_r_VolumetricCloudsStereoReprojection != 0;
 	context.bRightEye = gRenDev->m_CurRenderEye == StereoEye::RIGHT_EYE;
 

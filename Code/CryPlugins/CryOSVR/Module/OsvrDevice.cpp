@@ -239,10 +239,6 @@ bool Device::InitializeDevice()
 			if (m_model.size() > 0)
 			{
 				m_deviceInfo.productName = m_model.c_str();
-
-				if (!strcmp(m_model.c_str(), "HDK1.2")) m_deviceInfo.type = eHmdType_HDK12;
-				else if (!strcmp(m_model.c_str(), "HDK1.3"))
-					m_deviceInfo.type = eHmdType_HDK13;
 			}
 
 			if (m_vendor.size() > 0)

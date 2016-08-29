@@ -35,6 +35,9 @@ public:
 	virtual void AddEventListener(IHmdEventListener *pListener) override { stl::push_back_unique(m_listeners, pListener); }
 	virtual void RemoveEventListener(IHmdEventListener *pListener) override { stl::find_and_erase(m_listeners, pListener); }
 
+public:
+	static void OnVirtualRealityDeviceChanged(ICVar* pCVar);
+
 private:
 	// Devices connected to the computer and available for use
 	// Key = device / SDK name, value = reference-counted device pointer

@@ -68,6 +68,8 @@ public:
 	int            GetRefCount() const { return m_refCount; }
 	bool           HasSession() const  { return m_pSession != 0; }
 
+	ovrHmdDesc     GetDesc() const { return m_hmdDesc; }
+
 	static Device* CreateInstance();
 
 private:

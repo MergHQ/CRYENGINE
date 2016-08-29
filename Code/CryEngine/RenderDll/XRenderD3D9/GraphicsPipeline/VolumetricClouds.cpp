@@ -491,7 +491,7 @@ void CVolumetricCloudsStage::Prepare(CRenderView* pRenderView)
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	const int32 screenWidth = rd->GetWidth();
 	const int32 screenHeight = rd->GetHeight();
-	const bool bStereo = rd->m_bDualStereoSupport;
+	const bool bStereo = rd->IsStereoEnabled();
 	const bool stereoReproj = bStereo && CRenderer::CV_r_VolumetricCloudsStereoReprojection != 0;
 
 	// TODO: move this texture to view-dependent structure if volumetric clouds is rendered in multiple view ports such as split screens.
@@ -1268,7 +1268,7 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 
 	const int32 width = rd->GetWidth();
 	const int32 height = rd->GetHeight();
-	const bool bStereo = rd->m_bDualStereoSupport;
+	const bool bStereo = rd->IsStereoEnabled();
 	const bool bReverseDepth = (ti.m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
 	const f32 time = ti.m_RealTime;
 	const int32 curEye = rd->m_CurRenderEye;
@@ -1608,7 +1608,7 @@ int32 CVolumetricCloudsStage::GetPreviousFrameIndex(const int32 gpuCount, bool b
 bool CVolumetricCloudsStage::AreTexturesValid() const
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	const bool bStereo = rd->m_bDualStereoSupport;
+	const bool bStereo = rd->IsStereoEnabled();
 
 	bool bDownscaledRTs = CTexture::IsTextureExist(m_pCloudDepthTex)
 	                      && CTexture::IsTextureExist(m_pDownscaledMaxTempTex)

@@ -17,10 +17,17 @@ CHmdManager::~CHmdManager()
 {
 }
 
+// ------------------------------------------------------------------------
 void CHmdManager::RegisterDevice(const char* name, IHmdDevice& device)
 {
 	// Reference counting will be handled inside the vector
 	m_availableDeviceMap.insert(TDeviceMap::value_type(name, &device));
+}
+
+// ------------------------------------------------------------------------
+void CHmdManager::OnVirtualRealityDeviceChanged(ICVar *pCVar)
+{
+	gEnv->pSystem->GetHmdManager()->SetupAction(EHmdSetupAction::eHmdSetupAction_Init);
 }
 
 // ------------------------------------------------------------------------
@@ -38,35 +45,46 @@ void CHmdManager::SetupAction(EHmdSetupAction cmd)
 	// ------------------------------------------------------------------------
 	case EHmdSetupAction::eHmdSetupAction_Init:
 		{
-			if (gEnv->pConsole && gEnv->pConsole->GetCVar("sys_vr_support")->GetIVal() > 0)
+			if (gEnv->pConsole)
 			{
-				m_pHmdDevice = nullptr;
-
-				const char *selectedHmdName = CryVR::CVars::pSelectedHmdNameVar->GetString();
-				TDeviceMap::iterator hmdIt;
-
-				if (strlen(selectedHmdName) > 0)
+				if (gEnv->pConsole->GetCVar("sys_vr_support")->GetIVal() > 0)
 				{
-					hmdIt = m_availableDeviceMap.find(selectedHmdName);
-					if (hmdIt == m_availableDeviceMap.end())
-					{
-						CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Tried to select unavailable VR device %s!", selectedHmdName);
-						return;
-					}
-				}
-				else // No HMD explicitly selected, opt for first available (since sys_vr_support was 1)
-				{
-					hmdIt = m_availableDeviceMap.begin();
-					if (hmdIt == m_availableDeviceMap.end())
-					{
-						CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "VR support was enabled, but no VR device was detected!");
-						return;
-					}
-				}
-				
-				m_pHmdDevice = hmdIt->second;
+					gEnv->pSystem->LoadConfiguration("vr.cfg", 0, eLoadConfigGame);
 
-				gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
+					m_pHmdDevice = nullptr;
+
+					const char *selectedHmdName = CryVR::CVars::pSelectedHmdNameVar->GetString();
+					TDeviceMap::iterator hmdIt;
+
+					if (strlen(selectedHmdName) > 0)
+					{
+						hmdIt = m_availableDeviceMap.find(selectedHmdName);
+						if (hmdIt == m_availableDeviceMap.end())
+						{
+							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Tried to select unavailable VR device %s!", selectedHmdName);
+							return;
+						}
+					}
+					else // No HMD explicitly selected, opt for first available (since sys_vr_support was 1)
+					{
+						hmdIt = m_availableDeviceMap.begin();
+						if (hmdIt == m_availableDeviceMap.end())
+						{
+							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "VR support was enabled, but no VR device was detected!");
+							return;
+						}
+					}
+
+					m_pHmdDevice = hmdIt->second;
+
+					gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
+				}
+				else if(m_pHmdDevice != nullptr)
+				{
+					m_pHmdDevice = nullptr;
+
+					gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
+				}
 			}
 		}
 		break;

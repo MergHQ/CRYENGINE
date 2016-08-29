@@ -3442,7 +3442,8 @@ void CDeferredShading::CreateDeferredMaps()
 	if (!CTexture::s_ptexSceneNormalsMap || CTexture::s_ptexSceneNormalsMap->IsMSAAChanged()
 	    || CTexture::s_ptexSceneNormalsMap->GetWidth() != gcpRendD3D->m_MainViewport.nWidth
 	    || CTexture::s_ptexSceneNormalsMap->GetHeight() != gcpRendD3D->m_MainViewport.nHeight
-	    || nPrevLBuffersFmt != CRenderer::CV_r_DeferredShadingLBuffersFmt)
+	    || nPrevLBuffersFmt != CRenderer::CV_r_DeferredShadingLBuffersFmt
+	    || (gRenDev->IsStereoEnabled() && !CTexture::s_ptexVelocityObjects[1]->GetDevTexture()))
 	{
 		nPrevLBuffersFmt = CRenderer::CV_r_DeferredShadingLBuffersFmt;
 
@@ -3474,7 +3475,7 @@ void CDeferredShading::CreateDeferredMaps()
 #endif
 
 		SD3DPostEffectsUtils::CreateRenderTarget("$VelocityObjects", CTexture::s_ptexVelocityObjects[0], width, height, Clr_Transparent, true, false, eTF_R16G16F, -1, nFTFlags);
-		if (gRenDev->m_bDualStereoSupport)
+		if (gRenDev->IsStereoEnabled())
 		{
 			SD3DPostEffectsUtils::CreateRenderTarget("$VelocityObject_R", CTexture::s_ptexVelocityObjects[1], width, height, Clr_Transparent, true, false, eTF_R16G16F, -1, nFTFlags);
 		}

@@ -16,13 +16,13 @@
 namespace
 {
 // Note: This symmetric fov is still used for frustum culling
-ovrFovPort ComputeSymmetricalFov(EHmdType hmdType, const ovrFovPort& fovLeftEye, const ovrFovPort& fovRightEye)
+ovrFovPort ComputeSymmetricalFov(ovrHmdType hmdType, const ovrFovPort& fovLeftEye, const ovrFovPort& fovRightEye)
 {
 	// CB aspect ratio = 1.8 (2160x1200), DK2 aspect ratio = 1.7777 (1920x1080)
 	const float stereoDeviceAR =
-	  hmdType == eHmdType_CB ? 1.8f :
-	  hmdType == eHmdType_EVT ? 1.8f :
-	  hmdType == eHmdType_DK2 ? 1.7777f :
+	  hmdType == ovrHmd_CB ? 1.8f :
+	  (hmdType >= ovrHmd_ES06 || hmdType == ovrHmd_Other) ? 1.8f :
+	  hmdType == ovrHmd_DK2 ? 1.7777f :
 	  1.7777f;   // not clear that we should support anything under DK2
 
 	CryLog("[OculusDevice] Aspect Ratio selected: %f", stereoDeviceAR);
@@ -190,29 +190,18 @@ void Device::CreateDevice()
 	if (m_pSession && OVR_SUCCESS(result))
 	{
 		m_hmdDesc = ovr_GetHmdDesc(m_pSession);
-		m_devInfo.type = eHmdType_Unknown;
-		if (m_hmdDesc.Type == ovrHmd_DK1)
-			m_devInfo.type = eHmdType_DK1;
-		else if (m_hmdDesc.Type == ovrHmd_DKHD)
-			m_devInfo.type = eHmdType_DKHD;
-		else if (m_hmdDesc.Type == ovrHmd_DK2)
-			m_devInfo.type = eHmdType_DK2;
-		else if (m_hmdDesc.Type == ovrHmd_CB)
-			m_devInfo.type = eHmdType_CB;
-		else if (m_hmdDesc.Type >= ovrHmd_ES06 || m_hmdDesc.Type == ovrHmd_Other) // TODO: need to properly address EVTs once they stabilize the models
-			m_devInfo.type = eHmdType_EVT;
-
-		if (m_devInfo.type == eHmdType_EVT)
+		
+		if (m_hmdDesc.Type >= ovrHmd_ES06 || m_hmdDesc.Type == ovrHmd_Other)
 		{
 			m_controller.Init(m_pSession);
 			CryLogAlways("[HMD][Oculus] Touch Controllers initialized.");
 		}
 		else
 		{
-			CryLogAlways("[HMD][Oculus] Touch Controllers were not initialized because the detected HMD does not support them. Device [(Oculus)%d / (CryEngine)%d]", m_hmdDesc.Type, m_devInfo.type);
+			CryLogAlways("[HMD][Oculus] Touch Controllers were not initialized because the detected HMD does not support them. Device %d", m_hmdDesc.Type);
 		}
 
-		m_eyeFovSym = ComputeSymmetricalFov(m_devInfo.type, m_hmdDesc.DefaultEyeFov[ovrEye_Left], m_hmdDesc.DefaultEyeFov[ovrEye_Right]);
+		m_eyeFovSym = ComputeSymmetricalFov(m_hmdDesc.Type, m_hmdDesc.DefaultEyeFov[ovrEye_Left], m_hmdDesc.DefaultEyeFov[ovrEye_Right]);
 
 		m_devInfo.productName = m_hmdDesc.ProductName;
 		m_devInfo.manufacturer = m_hmdDesc.Manufacturer;

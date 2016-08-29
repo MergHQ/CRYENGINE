@@ -42,7 +42,7 @@ bool SPostEffectsUtils::Create()
 	const SViewport& MainVp = gRenDev->m_MainViewport;
 	const bool bCreatePostAA = CRenderer::CV_r_AntialiasingMode && !CTexture::IsTextureExist(CTexture::s_ptexPrevBackBuffer[0][0]);
 	const bool bCreateCaustics = (CRenderer::CV_r_watervolumecaustics && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred) && !CTexture::IsTextureExist(CTexture::s_ptexWaterCaustics[0]);
-	if (!CTexture::s_ptexBackBufferScaled[0] || m_pScreenRect.right != MainVp.nWidth || m_pScreenRect.bottom != MainVp.nHeight || bCreatePostAA || bCreateCaustics)
+	if (!CTexture::s_ptexBackBufferScaled[0] || m_pScreenRect.right != MainVp.nWidth || m_pScreenRect.bottom != MainVp.nHeight || bCreatePostAA || bCreateCaustics || gRenDev->IsStereoEnabled())
 	{
 		assert(gRenDev);
 
@@ -60,7 +60,7 @@ bool SPostEffectsUtils::Create()
 		{
 			CreateRenderTarget("$PrevBackBuffer0", CTexture::s_ptexPrevBackBuffer[0][0], width, height, Clr_Unknown, 1, 0, eTF_R8G8B8A8, TO_PREVBACKBUFFERMAP0, FT_DONT_RELEASE | FT_USAGE_ALLOWREADSRGB);
 			CreateRenderTarget("$PrevBackBuffer1", CTexture::s_ptexPrevBackBuffer[1][0], width, height, Clr_Unknown, 1, 0, eTF_R8G8B8A8, TO_PREVBACKBUFFERMAP1, FT_DONT_RELEASE | FT_USAGE_ALLOWREADSRGB);
-			if (gRenDev->m_bDualStereoSupport)
+			if (gRenDev->IsStereoEnabled())
 			{
 				CreateRenderTarget("$PrevBackBuffer0_R", CTexture::s_ptexPrevBackBuffer[0][1], width, height, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE | FT_USAGE_ALLOWREADSRGB);
 				CreateRenderTarget("$PrevBackBuffer1_R", CTexture::s_ptexPrevBackBuffer[1][1], width, height, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE | FT_USAGE_ALLOWREADSRGB);

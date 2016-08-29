@@ -121,17 +121,7 @@ CD3DStereoRenderer::~CD3DStereoRenderer()
 
 void CD3DStereoRenderer::SelectDefaultDevice()
 {
-	EStereoDevice device = STEREO_DEVICE_NONE;
-
-#if CRY_PLATFORM_WINDOWS
-	device = STEREO_DEVICE_FRAMECOMP;
-#elif CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
-	device = STEREO_DEVICE_FRAMECOMP;
-#elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-	device = STEREO_DEVICE_FRAMECOMP;
-#endif
-
-	m_device = device;
+	m_device = STEREO_DEVICE_FRAMECOMP;
 }
 
 void CD3DStereoRenderer::InitDeviceBeforeD3D()
@@ -377,9 +367,6 @@ bool CD3DStereoRenderer::EnableStereo()
 	}
 #endif
 
-	if (!InitializeHmdRenderer())
-		return false;
-
 	return true;
 }
 
@@ -405,30 +392,6 @@ void CD3DStereoRenderer::ChangeOutputFormat()
 	m_frontBufHeight = 0;
 
 	ShutdownHmdRenderer();
-	InitializeHmdRenderer();
-}
-
-bool CD3DStereoRenderer::InitializeHmdRenderer()
-{
-	assert(m_pHmdRenderer == nullptr);
-	m_pHmdRenderer = CreateHmdRenderer(m_output, m_pHmdDevice, &m_renderer, this);
-
-	if (m_pHmdRenderer != nullptr)
-	{
-		if (!m_pHmdRenderer->Initialize())
-		{
-			SAFE_DELETE(m_pHmdRenderer);
-			return false;
-		}
-
-		gEnv->pLog->Log("[HMD] HMD Renderer initialized");
-	}
-	else
-	{
-		gEnv->pLog->Log("[HMD] HMD Renderer not initialized - stereoOuput [%d] hmdDevice [%s null]", m_output, m_pHmdDevice ? "NOT" : "");
-	}
-
-	return m_pHmdRenderer != nullptr;
 }
 
 void CD3DStereoRenderer::ShutdownHmdRenderer()
@@ -510,6 +473,17 @@ void CD3DStereoRenderer::PrepareStereo(EStereoMode mode, EStereoOutput output)
 
 		// Apply stereo strength
 		m_maxSeparationScene *= m_stereoStrength;
+
+		if (m_output == STEREO_OUTPUT_HMD && m_pHmdRenderer == nullptr && m_pHmdDevice != nullptr)
+		{
+			// Create the HMD renderer
+			m_pHmdRenderer = CreateHmdRenderer(*m_pHmdDevice, &m_renderer, this);
+
+			if (m_pHmdRenderer != nullptr)
+			{
+				m_pHmdRenderer->Initialize();
+			}
+		}
 
 		if (m_pHmdRenderer != nullptr)
 			m_pHmdRenderer->PrepareFrame();
@@ -1202,55 +1176,44 @@ void CD3DStereoRenderer::CalculateBackbufferResolution(int eyeWidth, int eyeHeig
 
 void CD3DStereoRenderer::OnHmdDeviceChanged(IHmdDevice* pHmdDevice)
 {
-	static bool firstInitialization = true;
-
-	ShutdownHmdRenderer();
-
 	m_pHmdDevice = pHmdDevice;
 
-	InitializeHmdRenderer();
-
-	//Do an initial initialization for the hmd renderer when not activated as output so it can setup it's state if needed (at least osvr needs to initialize the renderer before it can be queried for the preferred resolution)
-	if (m_pHmdDevice && !m_pHmdRenderer && m_output != STEREO_OUTPUT_HMD && firstInitialization)
+	if (m_pHmdDevice == nullptr)
 	{
-		m_pHmdRenderer = CreateHmdRenderer(STEREO_OUTPUT_HMD, m_pHmdDevice, &m_renderer, this);
-
-		if (m_pHmdRenderer != nullptr)
-		{
-			m_pHmdRenderer->Initialize();
-		}
-		ShutdownHmdRenderer();
+		m_device = STEREO_DEVICE_NONE;
+		return;
 	}
 
-	firstInitialization = false;
+	// Make sure PrepareStereo is called in Update by specifying a device
+	SelectDefaultDevice();
 
+	// Update renderer resolution
+	HmdDeviceInfo deviceInfo;
+	m_pHmdDevice->GetDeviceInfo(deviceInfo);
+
+	m_renderer.SetWidth(deviceInfo.screenWidth / 2);
+	m_renderer.SetHeight(deviceInfo.screenHeight);
 }
 
-IHmdRenderer* CD3DStereoRenderer::CreateHmdRenderer(EStereoOutput stereoOutput, IHmdDevice* pDevice, CD3D9Renderer* pRenderer, CD3DStereoRenderer* pStereoRenderer)
+IHmdRenderer* CD3DStereoRenderer::CreateHmdRenderer(IHmdDevice& device, CD3D9Renderer* pRenderer, CD3DStereoRenderer* pStereoRenderer)
 {
-	if (pDevice)
-	{
-		const EHmdClass deviceClass = pDevice->GetClass();
-		switch (deviceClass)
-		{
 #if defined(INCLUDE_VR_RENDERING)
-		case eHmdClass_Oculus:
-			if (stereoOutput == STEREO_OUTPUT_HMD && pDevice != nullptr && pDevice->GetClass() == eHmdClass_Oculus)
-				return new CD3DOculusRenderer(static_cast<CryVR::Oculus::IOculusDevice*>(pDevice), pRenderer, pStereoRenderer);
-			break;
-		case eHmdClass_OpenVR:
-			if (stereoOutput == STEREO_OUTPUT_HMD && pDevice != NULL && pDevice->GetClass() == eHmdClass_OpenVR)
-				return new CD3DOpenVRRenderer(static_cast<CryVR::OpenVR::IOpenVRDevice*>(pDevice), pRenderer, pStereoRenderer);
-			break;
-		case eHmdClass_Osvr:
-			if (stereoOutput == STEREO_OUTPUT_HMD && pDevice != NULL && pDevice->GetClass() == eHmdClass_Osvr)
-				return new CryVR::Osvr::CD3DOsvrRenderer(static_cast<CryVR::Osvr::IOsvrDevice*>(pDevice), pRenderer, pStereoRenderer);
-#endif
-		case eHmdClass_Null:
-		default:
-			break;
-		}
+	switch (device.GetClass())
+	{
+	case eHmdClass_Oculus:
+		return new CD3DOculusRenderer(static_cast<CryVR::Oculus::IOculusDevice*>(&device), pRenderer, pStereoRenderer);
+	case eHmdClass_OpenVR:
+		return new CD3DOpenVRRenderer(static_cast<CryVR::OpenVR::IOpenVRDevice*>(&device), pRenderer, pStereoRenderer);
+	case eHmdClass_Osvr:
+		return new CryVR::Osvr::CD3DOsvrRenderer(static_cast<CryVR::Osvr::IOsvrDevice*>(&device), pRenderer, pStereoRenderer);
+	default:
+		iLog->LogError("Tried to create HMD renderer for unknown headset!");
+		break;
 	}
+#else
+	iLog->LogError("Tried to create HMD renderer with VR rendering support disabled for renderer at compile-time!");
+#endif
+
 	return nullptr;
 }
 

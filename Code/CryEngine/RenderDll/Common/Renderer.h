@@ -1327,7 +1327,6 @@ public:
 	byte           m_bSystemTargetsInit;
 	bool           m_bAquireDeviceThread;
 	bool           m_bInitialized;
-	bool           m_bDualStereoSupport;
 
 	SRenderThread* m_pRT;
 

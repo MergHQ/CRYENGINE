@@ -29,9 +29,7 @@ Resources::Resources()
 		m_pDevice = Device::CreateInstance();
 		if (m_pDevice != nullptr)
 		{
-			HmdDeviceInfo info;
-			m_pDevice->GetDeviceInfo(info);
-			const bool initOk = info.type != eHmdType_Unknown;
+			const bool initOk = m_pDevice->GetDesc().Type != ovrHmd_None;
 			CryLogAlways("[HMD][Oculus] Oculus HMD was created. Initialization [%s]", initOk ? "was sucessful" : "failed");
 			return;
 		}

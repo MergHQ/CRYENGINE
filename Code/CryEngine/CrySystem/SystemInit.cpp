@@ -5356,7 +5356,7 @@ void CSystem::CreateSystemVars()
 	if (m_pHmdManager)
 	{
 		m_pHmdManager->SetupAction(IHmdManager::eHmdSetupAction_CreateCvars);
-		m_sys_vr_support = REGISTER_CVAR2("sys_vr_support", &g_cvars.sys_vr_support, 0, VF_REQUIRE_APP_RESTART, "Specifies if virtual reality (VR) devices should be enabled.");
+		m_sys_vr_support = REGISTER_CVAR2_CB("sys_vr_support", &g_cvars.sys_vr_support, 0, VF_NULL, "Specifies if virtual reality (VR) devices should be enabled.", CHmdManager::OnVirtualRealityDeviceChanged);
 	}
 
 	REGISTER_STRING("dlc_directory", "", 0, "Holds the path to the directory where DLC should be installed to and read from");

@@ -4,26 +4,12 @@
 
 #include <CryInput/IInput.h>
 
+// TODO: Remove when full VR device implementation (incl. renderer) is in plugin
 enum EHmdClass
 {
-	eHmdClass_Null,
 	eHmdClass_Oculus,
 	eHmdClass_OpenVR,
 	eHmdClass_Osvr
-};
-
-enum EHmdType
-{
-	eHmdType_Unknown,
-	// OCULUS
-	eHmdType_DK1,
-	eHmdType_DKHD,
-	eHmdType_DK2,
-	eHmdType_CB,
-	eHmdType_EVT,
-	//Osvr
-	eHmdType_HDK12,
-	eHmdType_HDK13
 };
 
 enum EHmdStatus
@@ -49,8 +35,7 @@ enum EEyeType
 struct HmdDeviceInfo
 {
 	HmdDeviceInfo()
-		: type(eHmdType_Unknown)
-		, productName(0)
+		: productName(0)
 		, manufacturer(0)
 		, screenWidth(0)
 		, screenHeight(0)
@@ -58,8 +43,6 @@ struct HmdDeviceInfo
 		, fovV(0)
 	{
 	}
-
-	EHmdType     type;
 
 	const char*  productName;
 	const char*  manufacturer;

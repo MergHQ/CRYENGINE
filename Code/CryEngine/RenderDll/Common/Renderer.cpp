@@ -123,7 +123,6 @@ void CRenderer::InitRenderer()
 	m_cEF.m_Bin.m_pCEF = &m_cEF;
 
 	m_pIntroMovieRenderer = 0;
-	m_bDualStereoSupport  = false;
 
 	m_bShaderCacheGen      = false;
 	m_bSystemResourcesInit = 0;

@@ -387,7 +387,6 @@ void CD3D9Renderer::InitRenderer()
 	gRenDev = this;
 
 	m_pStereoRenderer = new CD3DStereoRenderer(*this, (EStereoDevice)CRenderer::CV_r_StereoDevice);
-	m_bDualStereoSupport = CRenderer::CV_r_StereoDevice > 0;
 	m_pGraphicsPipeline = new CStandardGraphicsPipeline();
 	m_pTiledShading = new CTiledShading();
 	m_pVolumetricCloudMan = new CVolumetricCloudManager();
