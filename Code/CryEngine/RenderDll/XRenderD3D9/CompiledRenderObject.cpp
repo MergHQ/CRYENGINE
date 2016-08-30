@@ -52,12 +52,10 @@ void CRenderObjectsPools::FreePerInstanceConstantBuffer(const CConstantBufferPtr
 //////////////////////////////////////////////////////////////////////////
 CCompiledRenderObject::~CCompiledRenderObject()
 {
-	m_pRenderElement = 0;
-	//SAFE_RELEASE(m_shaderItem.m_pShader);
-	//SAFE_RELEASE(m_shaderItem.m_pShaderResources);
-	m_shaderItem.m_pShader = 0;
-	m_shaderItem.m_pShaderResources = 0;
+	SAFE_RELEASE(m_shaderItem.m_pShader);
+	SAFE_RELEASE(m_shaderItem.m_pShaderResources);
 
+	m_pRenderElement = 0;
 	m_StencilRef = 0;
 	m_nInstances = 0;
 
@@ -80,12 +78,16 @@ CCompiledRenderObject::~CCompiledRenderObject()
 //////////////////////////////////////////////////////////////////////////
 void CCompiledRenderObject::Init(const SShaderItem& shaderItem, CRendElementBase* pRE)
 {
+	SAFE_RELEASE(m_shaderItem.m_pShader);
+	SAFE_RELEASE(m_shaderItem.m_pShaderResources);
+
 	m_pRenderElement = pRE;
 	m_shaderItem = shaderItem;
-	//if (m_shaderItem.m_pShader)
-	//m_shaderItem.m_pShader->AddRef();
-	//if (m_shaderItem.m_pShaderResources)
-	//m_shaderItem.m_pShaderResources->AddRef();
+
+	if (m_shaderItem.m_pShader)
+		m_shaderItem.m_pShader->AddRef();
+	if (m_shaderItem.m_pShaderResources)
+		m_shaderItem.m_pShaderResources->AddRef();
 }
 
 //////////////////////////////////////////////////////////////////////////
