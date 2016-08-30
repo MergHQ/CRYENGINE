@@ -3,6 +3,14 @@
 #include <CryEntitySystem/IEntityClass.h>
 #include <CryEntitySystem/IEntitySystem.h>
 
+// Helper struct to allow for default values in native properties
+struct SNativeEntityPropertyInfo
+{
+	IEntityPropertyHandler::SPropertyInfo info;
+
+	const char *defaultValue;
+};
+
 // IEntityPropertyHandler handler implementation that keeps track of all property values in all instances of an entity class
 class CNativeEntityPropertyHandler
 	: public IEntityPropertyHandler

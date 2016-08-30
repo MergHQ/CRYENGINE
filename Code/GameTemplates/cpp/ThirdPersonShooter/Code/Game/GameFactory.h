@@ -2,14 +2,6 @@
 
 class CGameEntityNodeFactory;
 
-// Helper struct to allow for default values in native properties
-struct SNativeEntityPropertyInfo
-{
-	IEntityPropertyHandler::SPropertyInfo info;
-	
-	const char *defaultValue;
-};
-
 #include "Entities/Helpers/NativeEntityPropertyHandling.h"
 
 class CGameFactory
@@ -31,41 +23,41 @@ class CGameFactory
 public:
 	enum eGameObjectRegistrationFlags
 	{
-		eGORF_None								= 0x0,
-		eGORF_HiddenInEditor			= 0x1,
-		eGORF_NoEntityClass				= 0x2,
+		eGORF_None           = 0x0,
+		eGORF_HiddenInEditor = 0x1,
+		eGORF_NoEntityClass  = 0x2,
 	};
 
 	static void Init();
 	static void RegisterFlowNodes();
 
 	template<class T>
-	static void RegisterGameObject(const char *name, uint32 flags = 0)
+	static void RegisterGameObject(const char* name, uint32 flags = 0)
 	{
 		bool registerClass = ((flags & eGORF_NoEntityClass) == 0);
 		IEntityClassRegistry::SEntityClassDesc clsDesc;
 		clsDesc.sName = name;
-	
+
 		static CObjectCreator<T> _creator;
 
 		gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->RegisterExtension(name, &_creator, registerClass ? &clsDesc : nullptr);
 		T::SetExtensionId(gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->GetID(name));
 
 		if ((flags & eGORF_HiddenInEditor) != 0)
-		{ 
+		{
 			IEntityClass* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
-			pEntityClass->SetFlags(pEntityClass->GetFlags() | ECLF_INVISIBLE); 
+			pEntityClass->SetFlags(pEntityClass->GetFlags() | ECLF_INVISIBLE);
 		}
 	}
 
 	template<class T>
-	static void RegisterGameObjectExtension(const char *name)
+	static void RegisterGameObjectExtension(const char* name)
 	{
 		RegisterGameObject<T>(name, eGORF_NoEntityClass);
 	}
 
 	template<class T>
-	static void RegisterNativeEntity(const char *name, const char *path, const char *editorIcon = "", uint32 flags = 0, SNativeEntityPropertyInfo *pProperties = nullptr, uint32 numProperties = 0)
+	static void RegisterNativeEntity(const char* name, const char* path, const char* editorIcon = "", uint32 flags = 0, SNativeEntityPropertyInfo* pProperties = nullptr, uint32 numProperties = 0)
 	{
 		const bool registerClass = ((flags & eGORF_NoEntityClass) == 0);
 		IEntityClassRegistry::SEntityClassDesc clsDesc;
@@ -74,7 +66,7 @@ public:
 		clsDesc.editorClassInfo.sCategory = path;
 		clsDesc.editorClassInfo.sIcon = editorIcon;
 
-		if(registerClass && numProperties > 0)
+		if (registerClass && numProperties > 0)
 		{
 			clsDesc.pPropertyHandler = new CNativeEntityPropertyHandler(pProperties, numProperties, 0);
 		}
@@ -85,13 +77,13 @@ public:
 		T::SetExtensionId(gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->GetID(name));
 
 		if ((flags & eGORF_HiddenInEditor) != 0)
-		{ 
+		{
 			IEntityClass* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
-			pEntityClass->SetFlags(pEntityClass->GetFlags() | ECLF_INVISIBLE); 
+			pEntityClass->SetFlags(pEntityClass->GetFlags() | ECLF_INVISIBLE);
 		}
 	}
-	
-	static CGameEntityNodeFactory &RegisterEntityFlowNode(const char *className);
+
+	static CGameEntityNodeFactory& RegisterEntityFlowNode(const char* className);
 
 private:
 	static std::map<string, CGameEntityNodeFactory*> s_flowNodeFactories;
@@ -101,7 +93,7 @@ struct IEntityRegistrator
 {
 	IEntityRegistrator()
 	{
-		if(g_pFirst == nullptr)
+		if (g_pFirst == nullptr)
 		{
 			g_pFirst = this;
 			g_pLast = this;
@@ -116,10 +108,10 @@ struct IEntityRegistrator
 	virtual void Register() = 0;
 
 public:
-	IEntityRegistrator *m_pNext;
+	IEntityRegistrator*        m_pNext;
 
-	static IEntityRegistrator *g_pFirst;
-	static IEntityRegistrator *g_pLast;
+	static IEntityRegistrator* g_pFirst;
+	static IEntityRegistrator* g_pLast;
 };
 
 ////////////////////////////////////////
@@ -135,10 +127,10 @@ public:
 // }
 struct SEditorPropertyGroup
 {
-	SEditorPropertyGroup(const char *name, int indexBegin, int indexEnd, SNativeEntityPropertyInfo *pProperties)
-	: m_name(name)
-	, m_indexEnd(indexEnd)
-	, m_pProperties(pProperties)
+	SEditorPropertyGroup(const char* name, int indexBegin, int indexEnd, SNativeEntityPropertyInfo* pProperties)
+		: m_name(name)
+		, m_indexEnd(indexEnd)
+		, m_pProperties(pProperties)
 	{
 		pProperties[indexBegin].info.name = name;
 		pProperties[indexBegin].info.type = IEntityPropertyHandler::FolderBegin;
@@ -151,23 +143,23 @@ struct SEditorPropertyGroup
 	}
 
 protected:
-	string m_name;
+	string                     m_name;
 
-	int m_indexEnd;
-	SNativeEntityPropertyInfo *m_pProperties;
+	int                        m_indexEnd;
+	SNativeEntityPropertyInfo* m_pProperties;
 };
 
 #define ENTITY_PROPERTY_GROUP(name, begin, end, properties) SEditorPropertyGroup group = SEditorPropertyGroup(name, begin, end, properties);
 
 // Entity registration helpers
-template <typename T>
-inline void RegisterEntityProperty(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+template<typename T>
+inline void RegisterEntityProperty(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc, float min, float max)
 {
 	CRY_ASSERT_MESSAGE(false, "Entity property of invalid type was not registered");
 }
 
-template <>
-inline void RegisterEntityProperty<Vec3>(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+template<>
+inline void RegisterEntityProperty<Vec3>(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc, float min, float max)
 {
 	pProperties[index].info.name = name;
 	pProperties[index].defaultValue = defaultVal;
@@ -179,8 +171,8 @@ inline void RegisterEntityProperty<Vec3>(SNativeEntityPropertyInfo *pProperties,
 	pProperties[index].info.limits.max = max;
 }
 
-template <>
-inline void RegisterEntityProperty<ColorF>(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+template<>
+inline void RegisterEntityProperty<ColorF>(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc, float min, float max)
 {
 	pProperties[index].info.name = name;
 	pProperties[index].defaultValue = defaultVal;
@@ -192,8 +184,8 @@ inline void RegisterEntityProperty<ColorF>(SNativeEntityPropertyInfo *pPropertie
 	pProperties[index].info.limits.max = max;
 }
 
-template <>
-inline void RegisterEntityProperty<float>(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+template<>
+inline void RegisterEntityProperty<float>(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc, float min, float max)
 {
 	pProperties[index].info.name = name;
 	pProperties[index].defaultValue = defaultVal;
@@ -205,8 +197,8 @@ inline void RegisterEntityProperty<float>(SNativeEntityPropertyInfo *pProperties
 	pProperties[index].info.limits.max = max;
 }
 
-template <>
-inline void RegisterEntityProperty<int>(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+template<>
+inline void RegisterEntityProperty<int>(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc, float min, float max)
 {
 	pProperties[index].info.name = name;
 	pProperties[index].defaultValue = defaultVal;
@@ -218,8 +210,8 @@ inline void RegisterEntityProperty<int>(SNativeEntityPropertyInfo *pProperties, 
 	pProperties[index].info.limits.max = max;
 }
 
-template <>
-inline void RegisterEntityProperty<bool>(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+template<>
+inline void RegisterEntityProperty<bool>(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc, float min, float max)
 {
 	pProperties[index].info.name = name;
 	pProperties[index].defaultValue = defaultVal;
@@ -231,8 +223,8 @@ inline void RegisterEntityProperty<bool>(SNativeEntityPropertyInfo *pProperties,
 	pProperties[index].info.limits.max = 1;
 }
 
-template <>
-inline void RegisterEntityProperty<string>(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+template<>
+inline void RegisterEntityProperty<string>(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc, float min, float max)
 {
 	pProperties[index].info.name = name;
 	pProperties[index].defaultValue = defaultVal;
@@ -244,7 +236,7 @@ inline void RegisterEntityProperty<string>(SNativeEntityPropertyInfo *pPropertie
 	pProperties[index].info.limits.max = max;
 }
 
-inline void RegisterEntityPropertyTexture(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc)
+inline void RegisterEntityPropertyTexture(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc)
 {
 	pProperties[index].info.name = name;
 	pProperties[index].defaultValue = defaultVal;
@@ -254,7 +246,7 @@ inline void RegisterEntityPropertyTexture(SNativeEntityPropertyInfo *pProperties
 	pProperties[index].info.flags = 0;
 }
 
-inline void RegisterEntityPropertyFlare(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc)
+inline void RegisterEntityPropertyFlare(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc)
 {
 	pProperties[index].info.name = name;
 	pProperties[index].defaultValue = defaultVal;
@@ -264,7 +256,7 @@ inline void RegisterEntityPropertyFlare(SNativeEntityPropertyInfo *pProperties, 
 	pProperties[index].info.flags = 0;
 }
 
-inline void RegisterEntityPropertyObject(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc)
+inline void RegisterEntityPropertyObject(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc)
 {
 	pProperties[index].info.name = name;
 	pProperties[index].defaultValue = defaultVal;
@@ -274,7 +266,7 @@ inline void RegisterEntityPropertyObject(SNativeEntityPropertyInfo *pProperties,
 	pProperties[index].info.flags = 0;
 }
 
-inline void RegisterEntityPropertyMaterial(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc)
+inline void RegisterEntityPropertyMaterial(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc)
 {
 	pProperties[index].info.name = name;
 	pProperties[index].defaultValue = defaultVal;
@@ -284,7 +276,7 @@ inline void RegisterEntityPropertyMaterial(SNativeEntityPropertyInfo *pPropertie
 	pProperties[index].info.flags = 0;
 }
 
-inline void RegisterEntityPropertyEnum(SNativeEntityPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+inline void RegisterEntityPropertyEnum(SNativeEntityPropertyInfo* pProperties, int index, const char* name, const char* defaultVal, const char* desc, float min, float max)
 {
 	pProperties[index].info.name = name;
 	pProperties[index].defaultValue = defaultVal;
@@ -296,4 +288,4 @@ inline void RegisterEntityPropertyEnum(SNativeEntityPropertyInfo *pProperties, i
 	pProperties[index].info.limits.max = max;
 }
 
-#define ENTITY_PROPERTY(type, properties, name, defaultVal, desc, min, max) RegisterEntityProperty<type>(properties, eProperty_##name, #name, defaultVal, desc, min, max);
+#define ENTITY_PROPERTY(type, properties, name, defaultVal, desc, min, max) RegisterEntityProperty<type>(properties, eProperty_ ## name, # name, defaultVal, desc, min, max);
