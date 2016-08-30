@@ -374,15 +374,6 @@ add_sources("CryRenderer_dx_orbis_uber_1.cpp"
 		"DXOrbis/Layer0/CCryDXOrbis_Orbis.hpp"
 )
 
-# -- opengl_loader_egl.waf_files --
-sources_platform(ANDROID)
-add_sources("NoUberFile"
-	PROJECTS CryRenderOpenGL
-	SOURCE_GROUP "DXGL\\\\Specification"
-		"DXGL/Specification/glad_egl.c"
-		"DXGL/Specification/glad_egl.h"
-)
-
 # -- GNM/GnmShaderCompiler.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
@@ -527,6 +518,15 @@ add_sources("NoUberFile"
 		"DeviceManager/GNM/DeviceManager_GNM.inl"
 		"DeviceManager/GNM/DeviceObjects_GNM.inl"
 		"DeviceManager/GNM/DeviceObjects_GNM.cpp"
+)
+
+# -- opengl_loader_egl.waf_files --
+sources_platform(ANDROID)
+add_sources("NoUberFile"
+	PROJECTS CryRenderOpenGL
+	SOURCE_GROUP "DXGL\\\\Specification"
+		"DXGL/Specification/glad_egl.c"
+		"DXGL/Specification/glad_egl.h"
 )
 
 # -- mesh_baker.waf_files --
@@ -1046,9 +1046,6 @@ if (RENDERER_DX11)
 	if (WIN32 OR WIN64)
 		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
 		target_link_libraries(${THIS_PROJECT} PRIVATE dxguid d3d11 d3d10 d3dcompiler Ole32 Gdi32 wininet Shell32)
-		if(MSVC_VERSION EQUAL 1900)
-			target_link_libraries(${THIS_PROJECT} PRIVATE oculus)
-		endif()
 	elseif(DURANGO)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ws2_32 SmartGlassInterop d3dcompiler dxguid xg_x uuid kernelx)
 	elseif(ORBIS)
@@ -1071,9 +1068,6 @@ if (RENDERER_OPENGL)
 		target_include_directories(${THIS_PROJECT} PRIVATE ${SDK_DIR}/squish-ccr ${CMAKE_SOURCE_DIR}/Code/Tools/LibTIFF ${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/include)
 		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
 		target_link_libraries(${THIS_PROJECT} PRIVATE opengl32 winmm Ole32 Gdi32 wininet Shell32)
-		if(MSVC_VERSION EQUAL 1900)
-			target_link_libraries(${THIS_PROJECT} PRIVATE oculus)
-		endif()
 		if(WIN64)
 			find_library(LIBHLSLCC libHLSLcc PATHS "${CMAKE_SOURCE_DIR}/Code/Tools/HLSLCrossCompiler/lib/win64")
 		elseif(WIN32)
@@ -1110,7 +1104,7 @@ if (RENDERER_DX12)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DDIRECT3D10 -DCRY_USE_DX12 -DXRENDERD3D10_EXPORTS -DDO_RENDERSTATS -D_RENDERER ${extra_defines})
 	target_include_directories(${THIS_PROJECT} PRIVATE .. ${SDK_DIR} ${SDK_DIR}/squish-ccr ${CMAKE_SOURCE_DIR}/Code/Tools/LibTIFF ${CMAKE_SOURCE_DIR}/Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes)
 	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
-	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32 oculus)
+	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32)
 else()
 	CryFileContainer(CryRenderD3D12 SOLUTION_FOLDER "CryEngine")
 endif()
