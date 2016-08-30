@@ -63,7 +63,6 @@ option(OPTION_UNITY_BUILD "Enable Unity Build" ON)
 if(WIN32 OR WIN64)
 	option(OPTION_ENABLE_BROFILER "Enable Brofiler profiler support" ON)
 endif()
-option(OPTION_ENABLE_SDK_OCULUS "Enable Oculus SDK" ON)
 
 if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Sandbox")
 	set(OPTION_SANDBOX "No" CACHE STRING "Enable Sandbox")
@@ -76,6 +75,10 @@ endif()
 
 option(OPTION_PCH "Enable Precompiled Headers" OFF)
 option(OPTION_CRY_EXTENSIONS "Enable CryExtensions" ON)
+
+if(WIN32 OR WIN64)
+	option(OPTION_CRYMONO "C# support" OFF)
+endif()
 
 # Print current project settings
 MESSAGE(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
@@ -332,7 +335,15 @@ if (OPTION_GAMEZERO)
 endif()
 
 if (OPTION_GAMEMONO)
+	if (NOT OPTION_CRYMONO)
+		message(WARNING "Forcing C# support on for GameMono")
+		set(OPTION_CRYMONO ON)
+	endif()
 	add_subdirectory(Code/GameMono/GameDll)
+endif()
+
+if (OPTION_CRYMONO)
+	add_subdirectory(Code/CryManaged/CryMonoBridge)
 endif()
 
 # Launchers
@@ -365,12 +376,7 @@ add_subdirectory(Code/Libs/prt)
 add_subdirectory(Code/Libs/python)
 add_subdirectory(Code/Libs/jsmn)
 add_subdirectory(Code/Libs/vco)
-
-if (OPTION_ENABLE_SDK_OCULUS)
-	add_subdirectory(Code/Libs/oculus)
-elseif()
-	add_definitions(-DEXCLUDE_OCULUS_SDK)
-endif()
+add_subdirectory(Code/Libs/oculus)
 
 # Sandbox Editor
 if (OPTION_SANDBOX AND WIN64)

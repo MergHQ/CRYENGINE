@@ -619,6 +619,87 @@ macro(use_qt)
 	endforeach()
 endmacro()
 
+macro(process_csharp output_module)
+	set(CMAKE_MODULE_LINKER_FLAGS_PROFILE ${CMAKE_SHARED_LINKER_FLAGS_PROFILE})
+	set(swig_inputs)
+	set(swig_globals)
+	foreach(sourcefile ${SOURCES})
+		if (${sourcefile} MATCHES ".*\\.\\i$")
+			set(swig_inputs ${swig_inputs} ${sourcefile})
+		endif()
+		if (${sourcefile} MATCHES ".*\\.\\swig$")
+			set(swig_globals ${swig_globals} ${sourcefile})
+		endif()
+	endforeach()
+
+	set(SWIG_EXECUTABLE ${SDK_DIR}/swig/swig)
+	set(mono_inputs)
+
+	foreach(f ${swig_inputs})
+		string(LENGTH ${f} flen)
+		math(EXPR flen ${flen}-2)
+		string(SUBSTRING ${f} 0 ${flen} basename)
+		set(basename ${CMAKE_CURRENT_BINARY_DIR}/${basename})
+		set(f_cpp ${basename}.cpp)
+		set(f_cs ${basename}.cs)
+		set(f_h ${basename}.h)
+		if(WIN64)
+			set(defs -D_WIN32 -D_WIN64)
+		elseif(WIN32)
+			set(defs -D_WIN32)
+		else()
+			message(ERROR "Mono not supported on this platform")
+		endif()
+
+		get_target_property(target_defs ${THIS_PROJECT} COMPILE_DEFINITIONS)
+		foreach(d ${target_defs})
+			set(defs ${defs} -D${d})
+		endforeach()
+		set(defs ${defs} -D_MT -D_DLL -D_USRDLL)
+
+		get_filename_component(f_cs_dir ${f_cs} DIRECTORY)
+		get_filename_component(f_cs_name ${f_cs} NAME)
+
+		# Detect dependencies
+		execute_process(
+			COMMAND ${SWIG_EXECUTABLE} -MM ${defs} -csharp ${CMAKE_CURRENT_SOURCE_DIR}/${f}
+			OUTPUT_VARIABLE swig_deps
+		)
+		string(REGEX MATCHALL "\n  [^ ][^ ][^ :]+" temp ${swig_deps})
+		set(swig_deps)
+		foreach(t ${temp})
+			string(STRIP "${t}" t)
+			set(swig_deps ${swig_deps} "${t}")
+		endforeach()
+
+		set(defs ${defs} -D_$<UPPER_CASE:$<CONFIG>> -D$<UPPER_CASE:$<CONFIG>>)
+
+		set(mono_inputs ${mono_inputs} ${f_cs})
+		add_custom_command(
+			OUTPUT "${f_cpp}" "${f_h}" "${f_cs}"
+			COMMAND ${SWIG_EXECUTABLE} -c++ ${defs} -DSWIG_CSHARP_NO_IMCLASS_STATIC_CONSTRUCTOR ${secondary_defs} -csharp -o ${f_cpp} -outdir ${f_cs_dir} -outfile ${f_cs_name} -namespace ${output_module} -pch-file "\\\"StdAfx.h\\\"" -fno-include-guards -dllimport ${THIS_PROJECT} ${CMAKE_CURRENT_SOURCE_DIR}/${f}
+			MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${f}
+			DEPENDS ${swig_deps}
+		)
+	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${swig_deps} ${CMAKE_CURRENT_SOURCE_DIR}/${f})
+		set(secondary_defs -DSWIG_CXX_EXCLUDE_SWIG_INTERFACE_FUNCTIONS -DSWIG_CSHARP_EXCLUDE_STRING_HELPER -DSWIG_CSHARP_EXCLUDE_EXCEPTION_HELPER)
+		target_sources(${THIS_PROJECT} PRIVATE ${f_cpp} ${f_h})
+		source_group("Generated" FILES ${f_cpp} ${f_h})
+		set_source_files_properties(${f_h} PROPERTIES HEADER_FILE_ONLY true GENERATED true)
+	endforeach()
+
+	set(mono_path ${SDK_DIR}/Mono/bin/mcs)
+	set(mono_lib_path ${SDK_DIR}/Mono/lib/mono)
+
+	#TODO: Metadata
+	add_custom_command(
+		TARGET ${THIS_PROJECT} PRE_LINK
+		COMMAND ${mono_path} -target:library -langversion:4 -platform:anycpu -optimize -g -L ${mono_lib_path} ${mono_inputs} -out:${OUTPUT_DIRECTORY}/${output_module}.dll
+		DEPENDS ${mono_inputs}
+	)
+
+endmacro()
+
 # Common library requirements
 macro(use_fbx_sdk)
 	if(WIN32)
@@ -779,3 +860,4 @@ macro(use_xt)
 	set_libpath_flag()
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}${SDK_DIR}/XT_13_4/lib_${XT_VERSION}")
 endmacro()
+
