@@ -454,27 +454,6 @@ add_sources("CrySystem_uber_9.cpp"
 		"HMDManager.cpp"
 		"HMDCVars.h"
 		"HMDCVars.cpp"
-	SOURCE_GROUP "VR\\\\Oculus"
-		"Oculus/OculusConfig.h"
-		"Oculus/OculusDevice.h"
-		"Oculus/OculusDevice.cpp"
-		"Oculus/OculusResources.h"
-		"Oculus/OculusResources.cpp"
-		"Oculus/OculusTouchController.h"
-		"Oculus/OculusTouchController.cpp"
-	SOURCE_GROUP "VR\\\\OpenVR"
-		"OpenVR/OpenVRConfig.h"
-		"OpenVR/OpenVRDevice.h"
-		"OpenVR/OpenVRDevice.cpp"
-		"OpenVR/OpenVRResources.h"
-		"OpenVR/OpenVRResources.cpp"
-		"OpenVR/OpenVRController.h"
-		"OpenVR/OpenVRController.cpp"
-	SOURCE_GROUP "VR\\\\Osvr"
-		"Osvr/OsvrDevice.h"
-		"Osvr/OsvrDevice.cpp"
-		"Osvr/OsvrResources.h"
-		"Osvr/OsvrResources.cpp"
 	SOURCE_GROUP "ZLibDecompressor"
 		"ZLibDecompressor.h"
 		"ZLibDecompressor.cpp"
@@ -545,7 +524,6 @@ elseif(APPLE)
 elseif(ORBIS)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE SceMsgDialog_stub_weak SceImeDialog_stub_weak )
 elseif(DURANGO)
-	target_compile_options( ${THIS_PROJECT} PRIVATE /EHsc /ZW )
 	set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY COMPILE_FLAGS "\"/AI${DURANGO_PLATFORM_SDK}/ExtensionSDKs/Xbox Services API/8.0/References/CommonConfiguration/neutral\"")	
 	target_link_libraries( ${THIS_PROJECT} PRIVATE uuid acphal )
 elseif(ANDROID)

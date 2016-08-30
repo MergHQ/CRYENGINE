@@ -147,7 +147,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule("CryLobby" PCH "StdAfx.cpp" SOLUTION_FOLDER "CryExtensions")
+CryEngineModule(CryLobby PCH "StdAfx.cpp" SOLUTION_FOLDER "CryExtensions")
 target_include_directories(${THIS_PROJECT} PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Code/CryExtensions/CryLobby/Interface> $<INSTALL_INTERFACE:include/CryLobby>)
 target_include_directories(${THIS_PROJECT} PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Code/CryEngine/CryCommon/CryLobby> $<INSTALL_INTERFACE:include/CryCommon/CryLobby>)
 target_include_directories(${THIS_PROJECT} PRIVATE ${CMAKE_SOURCE_DIR}/Code/CryEngine/CryNetwork ${SDK_DIR}/speex-1.0.5/include )
