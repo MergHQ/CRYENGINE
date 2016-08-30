@@ -82,7 +82,7 @@ private:
 	{
 		TType v = TConvert::From(val.m_value);
 		bool res = ar(
-		  Serialization::Range(v, SoftMin(), SoftMax(), HardMin(), HardMax()),
+		  Serialization::Range(v, (TType)HardMin(), (TType)HardMax()),
 		  name, label);
 		val.m_value = TConvert::To(v);
 		return res;

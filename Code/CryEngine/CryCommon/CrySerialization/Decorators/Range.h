@@ -5,37 +5,34 @@
 namespace Serialization
 {
 
+template<typename Type>
+struct DefaultSinglestep
+{
+	static double value()
+	{
+		return std::is_integral<Type>::value ? 1.0 : 0.1;
+	}
+};
+
 template<class T>
 struct RangeDecorator
 {
 	T* value;
-	T  softMin;
-	T  softMax;
-	T  hardMin;
-	T  hardMax;
+	T hardMin;
+	T hardMax;
+	T singleStep;
+
+	void YASLI_SERIALIZE_METHOD(class yasli::Archive& ar) {}
 };
 
 template<class T>
-RangeDecorator<T> Range(T& value, T hardMin, T hardMax)
+RangeDecorator<T> Range(T& value, T hardMin, T hardMax, T singleStep = (T)DefaultSinglestep<T>::value())
 {
 	RangeDecorator<T> r;
 	r.value = &value;
-	r.softMin = hardMin;
-	r.softMax = hardMax;
 	r.hardMin = hardMin;
 	r.hardMax = hardMax;
-	return r;
-}
-
-template<class T>
-RangeDecorator<T> Range(T& value, T softMin, T softMax, T hardMin, T hardMax)
-{
-	RangeDecorator<T> r;
-	r.value = &value;
-	r.softMin = softMin;
-	r.softMax = softMax;
-	r.hardMin = hardMin;
-	r.hardMax = hardMax;
+	r.singleStep = singleStep;
 	return r;
 }
 
