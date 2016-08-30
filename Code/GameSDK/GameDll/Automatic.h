@@ -8,7 +8,7 @@ Description: C++ Item Implementation
 
 -------------------------------------------------------------------------
 History:
-- 11:9:2004   15:00 : Created by Márcio Martins
+- 11:9:2004   15:00 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #ifndef __AUTOMATIC_H__

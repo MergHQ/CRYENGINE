@@ -17,20 +17,20 @@
 #include "DeviceManager.h"
 
 #if CRY_PLATFORM_ORBIS
-	#include "DeviceManager_GNM.inl"
+	#include "GNM/DeviceManager_GNM.inl"
 #elif defined(CRY_USE_DX12)
-	#include "DeviceManager_D3D12.inl"
+	#include "D3D12/DeviceManager_D3D12.inl"
 #else
-	#include "DeviceManager_D3D11.inl"
+	#include "D3D11/DeviceManager_D3D11.inl"
 
 	#if CRY_PLATFORM_DURANGO
-		#include "DeviceManager_D3D11_Durango.h"
-		#include "DeviceManager_D3D11_Durango.inl"
+		#include "D3D11/DeviceManager_D3D11_Durango.h"
+		#include "D3D11/DeviceManager_D3D11_Durango.inl"
 	#endif
 
 	#if defined(USE_NV_API)
-		#include "DeviceManager_D3D11_NVAPI.h"
-		#include "DeviceManager_D3D11_NVAPI.inl"
+		#include "D3D11/DeviceManager_D3D11_NVAPI.h"
+		#include "D3D11/DeviceManager_D3D11_NVAPI.inl"
 	#endif
 #endif
 
@@ -119,82 +119,6 @@ void CDeviceManager::RT_Tick()
 
 #if CRY_PLATFORM_DURANGO
 	m_texturePool.RT_Tick();
-#endif
-}
-
-//=============================================================================
-
-HRESULT CDeviceManager::CreateDirectAccessBuffer(uint32 nSize, uint32 elemSize, int32 nBindFlags, D3DBuffer** ppBuff)
-{
-	int32 nUsage =
-	  CDeviceManager::USAGE_CPU_WRITE
-	  | CDeviceManager::USAGE_DIRECT_ACCESS
-	  | CDeviceManager::USAGE_DIRECT_ACCESS_CPU_COHERENT
-	  | CDeviceManager::USAGE_DIRECT_ACCESS_GPU_COHERENT;
-
-	// under dx12 there is direct access, but through the dynamic-usage flag
-#if defined(CRY_USE_DX12) && BUFFER_ENABLE_DIRECT_ACCESS
-	nUsage |= CDeviceManager::USAGE_DYNAMIC;
-	nUsage |= CDeviceManager::USAGE_CPU_WRITE;
-#endif
-
-	// if no direct access is available, let the driver handle preventing writing to VMEM while it is in use
-#if !BUFFER_ENABLE_DIRECT_ACCESS
-	nUsage |= CDeviceManager::USAGE_DYNAMIC;
-#endif
-
-#if CRY_PLATFORM_DURANGO && BUFFER_ENABLE_DIRECT_ACCESS
-	if (!IsAligned(nSize * elemSize, 4096)) // for direct memory access size must be aligned to 4kb
-	{
-		if (4096 % elemSize != 0)  // sanity check to ensure the auto alignment code works
-		{
-			CryFatalError("Element Size divisor for 4KB. Please adjust element size to allow creating 4KB aligned memory allocations for direct video memory access");
-		}
-
-		uint32 nRequieredMemory = nSize * elemSize;
-		uint32 nRequieredMemoryAligned = Align(nRequieredMemory, 4096);
-		nSize = nRequieredMemoryAligned / elemSize;
-	}
-#endif
-
-	return CreateBuffer(nSize, elemSize, nUsage, nBindFlags, ppBuff);
-}
-
-HRESULT CDeviceManager::DestroyDirectAccessBuffer(D3DBuffer* ppBuff)
-{
-	return ppBuff->Release();
-}
-
-HRESULT CDeviceManager::LockDirectAccessBuffer(D3DBuffer* pBuff, int32 nBindFlags, void** pBuffer)
-{
-	HRESULT hr = D3D_OK;
-
-	// get correct locking flags
-#if BUFFER_ENABLE_DIRECT_ACCESS
-	uint8* ptr;
-	ExtractBasePointer<CDeviceManager::BIND_VERTEX_BUFFER>(pBuff, ptr);
-	*pBuffer = reinterpret_cast<void*>(ptr);
-#else
-	D3D11_MAP nLockFlags = D3D11_MAP_WRITE_DISCARD_VB;
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	memset(&mappedResource, 0x0, sizeof(mappedResource));
-
-	hr = gcpRendD3D->GetDeviceContext().Map(pBuff, 0, nLockFlags, 0, &mappedResource);
-	IF (FAILED(hr), 0)
-	{
-		CHECK_HRESULT(hr);
-		return 0;
-	}
-	*pBuffer = mappedResource.pData;
-#endif
-
-	return hr;
-}
-
-void CDeviceManager::UnlockDirectAccessBuffer(D3DBuffer* pBuff, int32 nBindFlags)
-{
-#if !BUFFER_ENABLE_DIRECT_ACCESS
-	gcpRendD3D->GetDeviceContext().Unmap(pBuff, 0);
 #endif
 }
 
@@ -1427,3 +1351,15 @@ bool CRenderer::ReleaseChunk(int p, PodArray<alloc_info_struct>& alloc_info)
 
 	return false;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////
+void SUsageTrackedItem::MarkUsed()
+{
+	m_lastUseFrame = gcpRendD3D->GetCurrentFrameCounter();
+}
+
+bool SUsageTrackedItem::IsInUse() const
+{
+	return m_lastUseFrame > gcpRendD3D->GetCompletedFrameCounter();
+}
+

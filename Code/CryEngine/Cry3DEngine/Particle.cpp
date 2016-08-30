@@ -1076,8 +1076,8 @@ void CParticle::Update(SParticleUpdateContext const& context, float fFrameTime, 
 					float fPosSpace = vPosSpaceLoop * context.SpaceLoop.vScaledAxes[a];
 					if (abs(fPosSpace) > 1.f)
 					{
-						float fCorrect = floor_tpl(fPosSpace);
-						fCorrect = if_neg_else(fCorrect, fCorrect, fCorrect + 1.f);
+						float fCorrect = float(int(fPosSpace));
+						fCorrect += crymath::sign(fCorrect);
 						stateNew.m_Loc.t -= context.SpaceLoop.vScaledAxes[a] * (fCorrect * sqr(context.SpaceLoop.vSize[a]));
 					}
 				}

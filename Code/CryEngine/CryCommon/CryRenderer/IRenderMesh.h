@@ -36,12 +36,13 @@ enum ERenderMeshType
 	eRMT_Transient  = 3,
 };
 
-#define FSM_VERTEX_VELOCITY     1
-#define FSM_NO_TANGENTS         2
-#define FSM_CREATE_DEVICE_MESH  4
-#define FSM_SETMESH_ASYNC       8
-#define FSM_ENABLE_NORMALSTREAM 16
-#define FSM_IGNORE_TEXELDENSITY 32
+#define FSM_VERTEX_VELOCITY      1
+#define FSM_NO_TANGENTS          2
+#define FSM_CREATE_DEVICE_MESH   4
+#define FSM_SETMESH_ASYNC        8
+#define FSM_ENABLE_NORMALSTREAM  16
+#define FSM_IGNORE_TEXELDENSITY  32
+#define FSM_USE_COMPUTE_SKINNING 64
 
 // Invalidate video buffer flags
 #define FMINV_STREAM      1
@@ -154,7 +155,7 @@ struct IRenderMesh
 	virtual size_t SetMesh(CMesh& mesh, int nSecColorsSetOffset, uint32 flags, const Vec3* pPosOffset, bool requiresLock) = 0;
 	virtual void   CopyTo(IRenderMesh* pDst, int nAppendVtx = 0, bool bDynamic = false, bool fullCopy = true) = 0;
 	virtual void   SetSkinningDataVegetation(struct SMeshBoneMapping_uint8* pBoneMapping) = 0;
-	virtual void   SetSkinningDataCharacter(CMesh& mesh, struct SMeshBoneMapping_uint16* pBoneMapping, struct SMeshBoneMapping_uint16* pExtraBoneMapping) = 0;
+	virtual void   SetSkinningDataCharacter(CMesh& mesh, uint32 flags, struct SMeshBoneMapping_uint16* pBoneMapping, struct SMeshBoneMapping_uint16* pExtraBoneMapping) = 0;
 
 	//! Creates an indexed mesh from this render mesh (accepts an optional pointer to an IIndexedMesh object that should be used).
 	virtual IIndexedMesh* GetIndexedMesh(IIndexedMesh* pIdxMesh = 0) = 0;
@@ -216,7 +217,7 @@ struct IRenderMesh
 	virtual void                                 SetREUserData(float* pfCustomData, float fFogScale = 0, float fAlpha = 1) = 0;
 
 	//! Debug draw this render mesh.
-	virtual void DebugDraw(const struct SGeometryDebugDrawInfo& info, uint32 nVisibleChunksMask = ~0, float fExtrdueScale = 0.01f) = 0;
+	virtual void DebugDraw(const struct SGeometryDebugDrawInfo& info, uint32 nVisibleChunksMask = ~0) = 0;
 
 	//! Returns mesh memory usage and add it to the CrySizer (if not NULL).
 	//! \param pSizer Sizer interface, can be NULL if caller only want to calculate size.
@@ -228,7 +229,7 @@ struct IRenderMesh
 	virtual int   GetAllocatedBytes(bool bVideoMem) const = 0;
 	virtual float GetAverageTrisNumPerChunk(IMaterial* pMat) = 0;
 	virtual int   GetTextureMemoryUsage(const IMaterial* pMaterial, ICrySizer* pSizer = NULL, bool bStreamedIn = true) const = 0;
-	virtual void  KeepSysMesh(bool keep) = 0; // HACK: temp workaround for GDC-888
+	virtual void  KeepSysMesh(bool keep) = 0;                                                                                     // HACK: temp workaround for GDC-888
 	virtual void  UnKeepSysMesh() = 0;
 	virtual void  SetMeshLod(int nLod) = 0;
 
@@ -237,7 +238,7 @@ struct IRenderMesh
 
 	//! Sets the async update state - will sync before rendering to this.
 	virtual volatile int* SetAsyncUpdateState(void) = 0;
-	virtual void          CreateRemappedBoneIndicesPair(const DynArray<JointIdType>& arrRemapTable, const uint pairGuid) = 0;
+	virtual void          CreateRemappedBoneIndicesPair(const DynArray<JointIdType>& arrRemapTable, const uint pairGuid, const void* tag) = 0;
 	virtual void          ReleaseRemappedBoneIndicesPair(const uint pairGuid) = 0;
 
 	virtual void          OffsetPosition(const Vec3& delta) = 0;
@@ -247,7 +248,7 @@ struct IRenderMesh
 
 struct SBufferStream
 {
-	void*     m_pLocalData;   //!< Pointer to buffer data.
+	void*     m_pLocalData;                                                                                                        //!< Pointer to buffer data.
 	uintptr_t m_BufferHdl;
 	SBufferStream()
 	{
@@ -256,4 +257,4 @@ struct SBufferStream
 	}
 };
 
-#endif // _RenderMesh_H_
+#endif                                                                                                                          // _RenderMesh_H_

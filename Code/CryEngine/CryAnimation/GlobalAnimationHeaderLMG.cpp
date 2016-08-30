@@ -617,20 +617,9 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 						f32 w1 = 1.0f;
 
 						nodeExample->getAttr("p0", i0);
-						assert(i0 < numExamples);
 						nodeExample->getAttr("p1", i1);
-						assert(i1 < numExamples);
-
 						nodeExample->getAttr("w0", w0);
 						nodeExample->getAttr("w1", w1);
-
-						f32 sum = w0 + w1;
-						assert(fabsf(1.0f - sum) < 0.00001f);
-
-						m_arrParameter[numExamples + i].i0 = i0;
-						m_arrParameter[numExamples + i].w0 = w0;
-						m_arrParameter[numExamples + i].i1 = i1;
-						m_arrParameter[numExamples + i].w1 = w1;
 
 						if (i0 >= numExamples)
 						{
@@ -646,8 +635,22 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 							return false;
 						}
 
-						//	m_arrParameter[numExamples+i].m_Para=m_arrParameter[i0].m_Para*w0 + m_arrParameter[i1].m_Para*w1;
-						//	Vec4 w4=m_arrParameter[numExamples+i].m_Para;
+						const f32 wSum = w0 + w1;
+						if (fabsf(wSum) > 0.00001f)
+						{
+							w0 /= wSum;
+							w1 /= wSum;
+						}
+						else
+						{
+							w0 = 0.5f;
+							w1 = 0.5f;
+						}
+
+						m_arrParameter[numExamples + i].i0 = i0;
+						m_arrParameter[numExamples + i].w0 = w0;
+						m_arrParameter[numExamples + i].i1 = i1;
+						m_arrParameter[numExamples + i].w1 = w1;
 					}
 				}
 				continue;

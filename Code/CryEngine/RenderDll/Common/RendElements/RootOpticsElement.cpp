@@ -223,10 +223,11 @@ void RootOpticsElement::Render(SLensFlareRenderParam* pParam, const Vec3& vPos)
 	light.m_fClrMultiplier = 1;
 	light.m_fViewAngleFalloff = 1;
 
-	ProcessAll((CShader*)pParam->pShader, light, true, pParam->pCamera);
+	const bool bIgnoreOcclusionQueries = pParam->passInfo.IsAuxWindow();
+	ProcessAll((CShader*)pParam->pShader, light, true, pParam->pCamera, bIgnoreOcclusionQueries);
 }
 
-bool RootOpticsElement::ProcessAll(CShader* shader, SFlareLight& light, bool bForceRender, CCamera* pCamera)
+bool RootOpticsElement::ProcessAll(CShader* shader, SFlareLight& light, bool bForceRender, CCamera* pCamera, bool bIgnoreOcclusionQueries)
 {
 	CD3D9Renderer* pRD = gcpRendD3D;
 
@@ -306,6 +307,7 @@ bool RootOpticsElement::ProcessAll(CShader* shader, SFlareLight& light, bool bFo
 		aux.attachToSun = light.m_bAttachToSun;
 		aux.bMultiplyColor = IsMultiplyColor();
 		aux.bForceRender = bForceRender;
+		aux.bIgnoreOcclusionQueries = bIgnoreOcclusionQueries;
 
 		validateGlobalVars(aux);
 		if (bForceRender || m_globalFlareBrightness > 0.001f || m_globalShaftBrightness > 0.001f)

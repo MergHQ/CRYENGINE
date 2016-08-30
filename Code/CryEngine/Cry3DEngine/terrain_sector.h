@@ -282,6 +282,7 @@ public:
 struct SProcObjChunk : public Cry3DEngineBase
 {
 	CVegetation* m_pInstances;
+	int nAllocatedItems;
 	SProcObjChunk();
 	~SProcObjChunk();
 	void GetMemoryUsage(class ICrySizer* pSizer) const;
@@ -355,14 +356,15 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// streaming
 	virtual void StreamOnComplete(IReadStream* pStream, unsigned nError);
+	virtual void StreamAsyncOnComplete(IReadStream* pStream, unsigned nError);
 	//////////////////////////////////////////////////////////////////////////
 	void         StartSectorTexturesStreaming(bool bFinishNow);
 
 	void         Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bool bBuildErrorsTable, int nSID);
 	CTerrainNode() :
 		m_nSID(0),
-		m_nNodeTexSet(0, 0),
-		m_nTexSet(0, 0),
+		m_nNodeTexSet(),
+		m_nTexSet(),
 		m_nNodeTextureOffset(-1),
 		m_nNodeHMDataOffset(-1),
 		m_pParent(),
@@ -395,7 +397,7 @@ public:
 	void          IntersectTerrainAABB(const AABB& aabbBox, PodArray<CTerrainNode*>& lstResult);
 	void          UpdateDetailLayersInfo(bool bRecursive);
 	void          RemoveProcObjects(bool bRecursive = false, bool bReleaseAllObjects = true);
-	void          IntersectWithShadowFrustum(bool bAllIn, PodArray<CTerrainNode*>* plstResult, ShadowMapFrustum* pFrustum, const float fHalfGSMBoxSize, const SRenderingPassInfo& passInfo);
+	void          IntersectWithShadowFrustum(bool bAllIn, PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, const float fHalfGSMBoxSize, const SRenderingPassInfo& passInfo);
 	void          IntersectWithBox(const AABB& aabbBox, PodArray<CTerrainNode*>* plstResult);
 	CTerrainNode* FindMinNodeContainingBox(const AABB& aabbBox);
 	bool          RenderSector(const SRenderingPassInfo& passInfo); // returns true only if the sector rendermesh is valid and does not need to be updated
@@ -403,7 +405,7 @@ public:
 	CTerrainNode* GetReadyTexSourceNode(int nTexMML, eTexureType eTexType);
 	int           GetData(byte*& pData, int& nDataSize, EEndian eEndian, SHotUpdateInfo* pExportInfo);
 	void          CalculateTexGen(const CTerrainNode* pTextureSourceNode, float& fTexOffsetX, float& fTexOffsetY, float& fTexScale);
-
+	void          FillSectorHeightMapTextureData(Array2d<float> &arrHmData);
 	void          RescaleToInt();
 
 	template<class T>
@@ -417,12 +419,9 @@ public:
 	float GetSurfaceTypeAmount(Vec3 vPos, int nSurfType);
 	void  GetMemoryUsage(ICrySizer* pSizer) const;
 	void  GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB);
-	//	void GetProcVegetMemoryUsage(ICrySizer*pSizer);
 
 	void  SetLOD(const SRenderingPassInfo& passInfo);
 	uint8 GetTextureLOD(float fDistance, const SRenderingPassInfo& passInfo);
-
-	//	void SetHeightmapAABBAndHoleFlag();
 
 	void                ReleaseHeightMapGeometry(bool bRecursive = false, const AABB* pBox = NULL);
 	void                ResetHeightMapGeometry(bool bRecursive = false, const AABB* pBox = NULL);
@@ -434,12 +433,6 @@ public:
 	void                BuildVertices(int step, bool bSafetyBorder);
 
 	int                 GetMML(int dist, int mmMin, int mmMax);
-
-	PodArray<CDLight*>* GetAffectingLights(const SRenderingPassInfo& passInfo);
-	void                AddLightSource(CDLight* pSource, const SRenderingPassInfo& passInfo);
-	void                CheckInitAffectingLights(const SRenderingPassInfo& passInfo);
-
-	//	void GenerateIndicesForQuad(IRenderMesh * pRM, Vec3 vBoxMin, Vec3 vBoxMax, PodArray<uint16> & dstIndices);
 
 	uint32                       GetLastTimeUsed() { return m_nLastTimeUsed; }
 
@@ -454,7 +447,7 @@ public:
 	static void                  UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcRM, struct SSurfaceType* pSurface, _smart_ptr<IRenderMesh>& pMatRM, int nProjectionId, PodArray<vtx_idx>& lstIndices, const char* szComment, bool bUpdateOnlyBorders, int nNonBorderIndicesCount, const SRenderingPassInfo& passInfo);
 	static void                  SetupTexGenParams(SSurfaceType* pLayer, float* pOutParams, uint8 ucProjAxis, bool bOutdoor, float fTexGenScale = 1.f);
 
-	int                          CreateSectorTexturesFromBuffer();
+	int                          CreateSectorTexturesFromBuffer(float * pSectorHeightMap);
 
 	bool                         CheckUpdateDiffuseMap();
 	bool                         AssignTextureFileOffset(int16*& pIndices, int16& nElementsNum);
@@ -466,14 +459,11 @@ public:
 	const float                  GetDistance(const SRenderingPassInfo& passInfo);
 	bool                         IsProcObjectsReady() { return m_bProcObjectsReady != 0; }
 	void                         UpdateRangeInfoShift();
-
 	int                          GetSectorSizeInHeightmapUnits() const;
-
 	void                         CheckLeafData();
-
 	inline STerrainNodeLeafData* GetLeafData() { return m_pLeafData; }
-
 	void                         OffsetPosition(const Vec3& delta);
+	_smart_ptr<IRenderMesh>			 GetSharedRenderMesh();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Member variables
@@ -491,7 +481,9 @@ public:
 	uint8                m_bNoOcclusion       : 1; // sector has visareas under terrain surface
 	uint8                m_bUpdateOnlyBorders : 1; // remember if only the border were updated
 
-	ETextureEditingState m_eTextureEditingState;
+#ifndef _RELEASE
+	ETextureEditingState m_eTextureEditingState, m_eElevTexEditingState;
+#endif // _RELEASE
 
 	uint8 // LOD's
 	  m_cNewGeomMML, m_cCurrGeomMML,
@@ -511,9 +503,6 @@ protected:
 	CUpdateTerrainTempData* m_pUpdateTerrainTempData;
 
 public:
-
-	PodArray<CDLight*>         m_lstAffectingLights;
-	uint32                     m_nLightMaskFrameId;
 
 	PodArray<SSurfaceTypeInfo> m_lstSurfaceTypeInfo;
 

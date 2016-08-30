@@ -27,7 +27,8 @@ enum EValidatorSeverity
 	VALIDATOR_ERROR,
 	VALIDATOR_ERROR_DBGBRK, //!< Will __debugbreak() if sys_error_debugbreak is 1.
 	VALIDATOR_WARNING,
-	VALIDATOR_COMMENT
+	VALIDATOR_COMMENT,
+	VALIDATOR_ASSERT
 };
 
 enum EValidatorModule

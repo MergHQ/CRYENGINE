@@ -99,7 +99,7 @@ struct IForceFeedbackSystem
 	// Arguments:
 	//			amplifierA - Vibration amount from 0.0 to 1.0 for high frequency motor
 	//			amplifierB - Vibration amount from 0.0 to 1.0 for low frequency motor
-	virtual void AddFrameCustomForceFeedback(const float amplifierA, const float amplifierB) = 0;
+	virtual void AddFrameCustomForceFeedback(const float amplifierA, const float amplifierB, const float amplifierLT = 0.0f, const float amplifierRT = 0.0f) = 0;
 
 	// Description:
 	//			This function can be used to request custom vibration values for the triggers

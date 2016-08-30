@@ -12,7 +12,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\..\..\..\bin\win_x64\mono\AddIns</OutputPath>
+    <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
     <DefineConstants>DEBUG;TRACE;WIN64</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
@@ -21,14 +21,9 @@
     <Prefer32Bit>true</Prefer32Bit>
     <WarningLevel>4</WarningLevel>
     <Optimize>false</Optimize>
-    <CustomCommands>
-      <CustomCommands>
-        <Command type="AfterBuild" command="xcopy.EXE /H/Y/R/D &quot;${TargetDir}\${TargetName}*&quot; &quot;${TargetDir}\..\..&quot;" workingdir="${ProjectDir}" externalConsole="True" />
-      </CustomCommands>
-    </CustomCommands>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>..\..\..\..\bin\win_x64\mono\AddIns</OutputPath>
+    <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
     <DefineConstants>TRACE;WIN64</DefineConstants>
     <Optimize>true</Optimize>
     <PlatformTarget>x64</PlatformTarget>
@@ -39,7 +34,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\..\..\..\bin\win_x86\</OutputPath>
+    <OutputPath>..\..\..\..\bin\win_x64</OutputPath>
     <DefineConstants>DEBUG;TRACE;WIN86</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -51,7 +46,7 @@
     <Optimize>false</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>..\..\..\..\bin\win_x86\</OutputPath>
+    <OutputPath>..\..\..\..\bin\win_x64_release</OutputPath>
     <DefineConstants>TRACE;WIN86</DefineConstants>
     <Optimize>true</Optimize>
     <PlatformTarget>x86</PlatformTarget>
@@ -71,6 +66,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EntitySystem\EntityEventListener.cs" />
+    <Compile Include="EntitySystem\EntityComponent.cs" />
+    <Compile Include="EntitySystem\EntityPhysics.cs" />
+    <Compile Include="Logger.cs" />
     <Compile Include="SceneObject.cs" />
     <Compile Include="System.cs" />
     <Compile Include="UI\Canvas.cs" />
@@ -110,6 +109,22 @@
     <Compile Include="UI\Components\SplitBarCtrl.cs" />
     <Compile Include="Components\Camera.cs" />
     <Compile Include="Components\Application.cs" />
+    <Compile Include="EntitySystem\Attributes.cs" />
+    <Compile Include="EntitySystem\EntityClassRegistry.cs" />
+    <Compile Include="EntitySystem\EntityFramework.cs" />
+    <Compile Include="EntitySystem\EntityUpdateListener.cs" />
+    <Compile Include="EntitySystem\EntitySystemSink.cs" />
+    <Compile Include="EntitySystem\EntityPropertyConverter.cs" />
+    <Compile Include="EntitySystem\BaseEntity.cs" />
+    <Compile Include="EntitySystem\EntityPropertyHandler.cs" />
+    <Compile Include="Resources\ReflectionHelper.cs" />
+    <Compile Include="Timer.cs" />
+    <Compile Include="UI\HorizontalLayoutGroup.cs" />
+    <Compile Include="UI\LayoutGroup.cs" />
+    <Compile Include="UI\VerticalLayoutGroup.cs" />
+    <Compile Include="UI\TextElement.cs" />
+    <Compile Include="EntitySystem\EntityCollisionListener.cs" />
+    <Compile Include="RaycastHelper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -119,5 +134,11 @@
     <Folder Include="Resources\" />
     <Folder Include="EntitySystem\" />
     <Folder Include="FlowSystem\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DomainHandler\DomainHandler.csproj">
+      <Project>{7BD337C0-36D4-4048-93D2-08D613023978}</Project>
+      <Name>DomainHandler</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

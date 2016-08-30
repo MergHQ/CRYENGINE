@@ -74,11 +74,12 @@ CResource::CResource(CDevice* pDevice)
 	, m_pD3D12DownloadBuffer(nullptr)
 	, m_CurrentState(D3D12_RESOURCE_STATE_COMMON)
 	, m_AnnouncedState((D3D12_RESOURCE_STATES)-1)
-	, m_InitialData(NULL)
-	, m_CpuAccessibleData(NULL)
-	, m_pSwapChainOwner(NULL)
+	, m_InitialData(nullptr)
+	, m_CpuAccessibleData(nullptr)
+	, m_pSwapChainOwner(nullptr)
 	, m_bCompressed(false)
 	, m_PlaneCount(0)
+	, m_bConcurrentWritable(false)
 {
 	memset(&m_FenceValues, 0, sizeof(m_FenceValues));
 }
@@ -97,6 +98,7 @@ CResource::CResource(CResource&& r)
 	, m_pSwapChainOwner(std::move(r.m_pSwapChainOwner))
 	, m_bCompressed(std::move(r.m_bCompressed))
 	, m_PlaneCount(std::move(r.m_PlaneCount))
+	, m_bConcurrentWritable(std::move(r.m_bConcurrentWritable))
 	, m_SubresourceStates(std::move(r.m_SubresourceStates))
 {
 	memcpy(&m_FenceValues, &r.m_FenceValues, sizeof(m_FenceValues));
@@ -125,6 +127,7 @@ CResource& CResource::operator=(CResource&& r)
 	m_pSwapChainOwner = std::move(r.m_pSwapChainOwner);
 	m_bCompressed = std::move(r.m_bCompressed);
 	m_PlaneCount = std::move(r.m_PlaneCount);
+	m_bConcurrentWritable = std::move(r.m_bConcurrentWritable);
 	m_SubresourceStates = std::move(r.m_SubresourceStates);
 
 	memcpy(&m_FenceValues, &r.m_FenceValues, sizeof(m_FenceValues));
@@ -154,7 +157,7 @@ CResource::~CResource()
 		{
 			if (subresourceData.Data.RowPitch)
 			{
-				SAFE_DELETE_ARRAY(*(uint8**)&subresourceData.Data.pData);
+				CryModuleMemalignFree((void*)subresourceData.Data.pData);
 			}
 		}
 
@@ -169,7 +172,7 @@ void CResource::DiscardInitialData()
 	{
 		for (size_t i = 0, S = m_InitialData->m_SubResourceData.size(); i < S; ++i)
 		{
-			SAFE_DELETE_ARRAY(m_InitialData->m_SubResourceData[i].pData);
+			CryModuleMemalignFree((void*)m_InitialData->m_SubResourceData[i].pData);
 		}
 
 		SAFE_DELETE(m_InitialData);
@@ -192,38 +195,42 @@ bool CResource::Init(ID3D12Resource* pResource, D3D12_RESOURCE_STATES eInitialSt
 		if (m_pD3D12Resource->GetHeapProperties(&sHeap, nullptr) == S_OK)
 		{
 			m_HeapType = sHeap.Type;
-
-			// Certain heaps are restricted to certain D3D12_RESOURCE_STATES states, and cannot be changed.
-			// D3D12_HEAP_TYPE_UPLOAD requires D3D12_RESOURCE_STATE_GENERIC_READ.
-			if (m_HeapType == D3D12_HEAP_TYPE_UPLOAD)
-			{
-				m_CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
-			}
-			else if (m_HeapType == D3D12_HEAP_TYPE_READBACK)
-			{
-				m_CurrentState = D3D12_RESOURCE_STATE_COPY_DEST;
-			}
-			else
-			{
-				m_CurrentState = eInitialState;
-			}
+			m_CurrentState = eInitialState;
 
 			m_NodeMasks.creationMask = sHeap.CreationNodeMask;
 			m_NodeMasks.visibilityMask = sHeap.VisibleNodeMask;
 		}
 
-		if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+#if CRY_USE_DX12_MULTIADAPTER_SIMULATION
+		// Always allow getting GPUAddress (CreationMask == VisibilityMask), if running simulation
+		if ((m_NodeMasks.creationMask == m_NodeMasks.visibilityMask) || (CRenderer::CV_r_StereoEnableMgpu < 0))
+#else
+		// Don't get GPU-addresses for shared staging resources
+		if ((m_NodeMasks.creationMask == m_NodeMasks.visibilityMask))
+#endif
 		{
-			m_GPUVirtualAddress = m_pD3D12Resource->GetGPUVirtualAddress();
+			if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+			{
+				m_GPUVirtualAddress = m_pD3D12Resource->GetGPUVirtualAddress();
+			}
 		}
 	}
 	else
 	{
 		m_HeapType = D3D12_HEAP_TYPE_UPLOAD; // Null resource put on the UPLOAD heap to prevent attempts to transition the resource.
+		m_CurrentState = eInitialState;
 	}
+
+	// Certain heaps are restricted to certain D3D12_RESOURCE_STATES states, and cannot be changed.
+	// D3D12_HEAP_TYPE_UPLOAD requires D3D12_RESOURCE_STATE_GENERIC_READ.
+	if (m_HeapType == D3D12_HEAP_TYPE_UPLOAD)
+		m_CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
+	else if (m_HeapType == D3D12_HEAP_TYPE_READBACK)
+		m_CurrentState = D3D12_RESOURCE_STATE_COPY_DEST;
 
 	m_pSwapChainOwner = NULL;
 	m_bCompressed = IsDXGIFormatCompressed(desc.Format);
+	m_bConcurrentWritable = false;
 
 	return true;
 }
@@ -282,7 +289,7 @@ CResource::SCpuAccessibleData::SubresourceData& CResource::GetOrCreateCpuAccessi
 		{
 			result.Data.RowPitch = SIZE_T(rowPitch);
 			result.Data.SlicePitch = SIZE_T(requiredSize);
-			result.Data.pData = new uint8[SIZE_T(requiredSize)];
+			result.Data.pData = CryModuleMemalign(size_t(requiredSize), CRY_PLATFORM_ALIGNMENT);
 		}
 		else
 		{
@@ -387,10 +394,10 @@ D3D12_RESOURCE_STATES CResource::TransitionBarrier(CCommandList* pCmdList, D3D12
 {
 	if (m_InitialData)
 	{
-		InitDeferred(pCmdList);
+		InitDeferred(pCmdList, desiredState);
 	}
 
-	if (m_HeapType == D3D12_HEAP_TYPE_UPLOAD || m_HeapType == D3D12_HEAP_TYPE_READBACK)
+	if (IsOffCard())
 	{
 		return m_CurrentState;
 	}
@@ -420,7 +427,7 @@ D3D12_RESOURCE_STATES CResource::TransitionBarrier(CCommandList* pCmdList, D3D12
 	D3D12_RESOURCE_STATES ePreviousState = m_CurrentState;
 	if (IsPromotableState(m_CurrentState, desiredState))
 	{
-		DX12_LOG(g_nPrintDX12, "Resource barrier change %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier change %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
 		DX12_ASSERT(m_AnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_AnnouncedState));
 
 		m_CurrentState = desiredState;
@@ -430,7 +437,7 @@ D3D12_RESOURCE_STATES CResource::TransitionBarrier(CCommandList* pCmdList, D3D12
 	}
 	else if (IsIncompatibleState(m_CurrentState, desiredState))
 	{
-		DX12_LOG(g_nPrintDX12, "Resource barrier change %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier change %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
 		DX12_ASSERT(m_AnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_AnnouncedState));
 
 		D3D12_RESOURCE_BARRIER barrierDesc = {};
@@ -447,9 +454,9 @@ D3D12_RESOURCE_STATES CResource::TransitionBarrier(CCommandList* pCmdList, D3D12
 
 		DX12_ASSERT(m_CurrentState != m_AnnouncedState, "Resource barrier corruption detected!");
 	}
-	else if (desiredState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+	else if ((desiredState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && !IsConcurrentWritable())
 	{
-		DX12_LOG(g_nPrintDX12, "Resource barrier block %s (ID3D12: %p): %s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState));
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier block %s (ID3D12: %p): %s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState));
 		DX12_ASSERT(m_AnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_AnnouncedState));
 
 		D3D12_RESOURCE_BARRIER barrierDesc = {};
@@ -521,9 +528,60 @@ D3D12_RESOURCE_STATES CResource::TransitionBarrier(CCommandList* pCmdList, const
 	return D3D12_RESOURCE_STATES(-1);
 }
 
-bool CResource::NeedsTransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState) const
+int CResource::SelectQueueForTransitionBarrier(int altQueue, int desiredQueue, D3D12_RESOURCE_STATES desiredState) const
 {
-	if (m_HeapType == D3D12_HEAP_TYPE_UPLOAD || m_HeapType == D3D12_HEAP_TYPE_READBACK)
+	static bool validTable[4][14] =
+	{
+		// CMDLIST_TYPE_DIRECT
+		{ true , true , true , true , true , true , true , true , true , true , true, true, true , true  },
+		// CMDLIST_TYPE_BUNDLE
+		{ false },
+		// CMDLIST_TYPE_COMPUTE
+		{ true , false, false, true , false, false, true , false, false, true , true, true, false, false },
+		// CMDLIST_TYPE_COPY
+		{ false, false, false, false, false, false, false, false, false, false, true, true, false, false },
+	};
+
+	bool (&    altTable)[14] = validTable[CCommandListPool::m_MapQueueType[    altQueue]];
+	bool (&desiredTable)[14] = validTable[CCommandListPool::m_MapQueueType[desiredQueue]];
+
+	D3D12_RESOURCE_STATES mergedState = desiredState;
+	if (!HasSubresourceTransitionBarriers())
+	{
+		mergedState |= m_CurrentState;
+	}
+	else
+	{
+		for (auto subresourceState : m_SubresourceStates)
+			mergedState |= subresourceState;
+	}
+
+	uint32 stateOffset = 0;
+	while (mergedState)
+	{
+		// Move the cursor after the set bit
+		uint32 z = countTrailingZeroes(uint32(mergedState)) + 1;
+		
+		mergedState = D3D12_RESOURCE_STATES(mergedState >> z);
+		stateOffset = stateOffset + z;
+
+		if (!desiredTable[stateOffset])
+		{
+			if (!altTable[stateOffset])
+			{
+				return CMDQUEUE_GRAPHICS;
+			}
+
+			return altQueue;
+		}
+	}
+
+	return desiredQueue;
+}
+
+bool CResource::NeedsTransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState, bool bPrepare) const
+{
+	if (IsOffCard())
 	{
 		// Never issues barriers
 		return false;
@@ -548,16 +606,18 @@ bool CResource::NeedsTransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_ST
 #endif
 
 	// Needs a barrier when not compatible
-	return IsIncompatibleState(m_CurrentState, desiredState);
+	return
+		IsIncompatibleState(m_CurrentState, desiredState) ||
+		(bPrepare && (desiredState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && !IsConcurrentWritable());
 }
 
-bool CResource::NeedsTransitionBarrier(CCommandList* pCmdList, const CView& view, D3D12_RESOURCE_STATES desiredState) const
+bool CResource::NeedsTransitionBarrier(CCommandList* pCmdList, const CView& view, D3D12_RESOURCE_STATES desiredState, bool bPrepare) const
 {
 	if (view.MapsFullResource())
 	{
 		if (!HasSubresourceTransitionBarriers())
 		{
-			return NeedsTransitionBarrier(pCmdList, desiredState);
+			return NeedsTransitionBarrier(pCmdList, desiredState, bPrepare);
 		}
 		else
 		{
@@ -604,7 +664,7 @@ bool CResource::NeedsTransitionBarrier(CCommandList* pCmdList, const CView& view
 
 D3D12_RESOURCE_STATES CResource::DecayTransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState)
 {
-	if (m_HeapType == D3D12_HEAP_TYPE_UPLOAD || m_HeapType == D3D12_HEAP_TYPE_READBACK)
+	if (IsOffCard())
 	{
 		return m_CurrentState;
 	}
@@ -659,7 +719,7 @@ D3D12_RESOURCE_STATES CResource::BeginTransitionBarrier(CCommandList* pCmdList, 
 	return m_CurrentState;
 #endif
 
-	if (m_HeapType == D3D12_HEAP_TYPE_UPLOAD || m_HeapType == D3D12_HEAP_TYPE_READBACK)
+	if (IsOffCard())
 	{
 		return m_CurrentState;
 	}
@@ -687,7 +747,7 @@ D3D12_RESOURCE_STATES CResource::BeginTransitionBarrier(CCommandList* pCmdList, 
 	D3D12_RESOURCE_STATES ePreviousState = m_CurrentState;
 	if (IsPromotableState(m_CurrentState, desiredState))
 	{
-		DX12_LOG(g_nPrintDX12, "Resource barrier begin %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier begin %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
 		DX12_ASSERT(m_AnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_AnnouncedState));
 
 		//		m_CurrentState = (D3D12_RESOURCE_STATES)-1;
@@ -703,7 +763,7 @@ D3D12_RESOURCE_STATES CResource::BeginTransitionBarrier(CCommandList* pCmdList, 
 		}
 #endif
 
-		DX12_LOG(g_nPrintDX12, "Resource barrier begin %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier begin %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
 		DX12_ASSERT(m_AnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting initialization: %s", StateToString(m_AnnouncedState));
 
 		D3D12_RESOURCE_BARRIER barrierDesc = {};
@@ -720,9 +780,9 @@ D3D12_RESOURCE_STATES CResource::BeginTransitionBarrier(CCommandList* pCmdList, 
 
 		DX12_ASSERT(m_CurrentState != m_AnnouncedState, "Resource barrier corruption detected!");
 	}
-	else if (desiredState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+	else if ((desiredState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && !IsConcurrentWritable())
 	{
-		DX12_LOG(g_nPrintDX12, "Resource barrier block %s (ID3D12: %p): %s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState));
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier block %s (ID3D12: %p): %s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState));
 		DX12_ASSERT(m_AnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_AnnouncedState));
 
 		D3D12_RESOURCE_BARRIER barrierDesc = {};
@@ -772,7 +832,7 @@ D3D12_RESOURCE_STATES CResource::EndTransitionBarrier(CCommandList* pCmdList, D3
 	return m_CurrentState;
 #endif
 
-	if (m_HeapType == D3D12_HEAP_TYPE_UPLOAD || m_HeapType == D3D12_HEAP_TYPE_READBACK)
+	if (IsOffCard())
 	{
 		return m_CurrentState;
 	}
@@ -800,7 +860,7 @@ D3D12_RESOURCE_STATES CResource::EndTransitionBarrier(CCommandList* pCmdList, D3
 	D3D12_RESOURCE_STATES ePreviousState = m_CurrentState;
 	if (IsPromotableState(m_CurrentState, desiredState))
 	{
-		DX12_LOG(g_nPrintDX12, "Resource barrier end %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier end %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
 		DX12_ASSERT(m_AnnouncedState == desiredState, "Resource barrier has conflicting begin: %s", StateToString(m_AnnouncedState));
 
 		m_CurrentState = desiredState;
@@ -820,7 +880,7 @@ D3D12_RESOURCE_STATES CResource::EndTransitionBarrier(CCommandList* pCmdList, D3
 		}
 #endif
 
-		DX12_LOG(g_nPrintDX12, "Resource barrier end %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier end %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState), StateToString(desiredState));
 		DX12_ASSERT(m_AnnouncedState == desiredState, "Resource barrier has conflicting begin: %s", StateToString(m_AnnouncedState));
 
 		D3D12_RESOURCE_BARRIER barrierDesc = {};
@@ -837,7 +897,7 @@ D3D12_RESOURCE_STATES CResource::EndTransitionBarrier(CCommandList* pCmdList, D3
 
 		DX12_ASSERT(m_CurrentState != m_AnnouncedState, "Resource barrier corruption detected!");
 	}
-	else if (desiredState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+	else if ((desiredState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && !IsConcurrentWritable())
 	{
 #if defined(DX12_BARRIER_VERIFICATION)
 		if (m_AnnouncedState == (D3D12_RESOURCE_STATES)-1)
@@ -850,7 +910,7 @@ D3D12_RESOURCE_STATES CResource::EndTransitionBarrier(CCommandList* pCmdList, D3
 #endif
 
 #if 0
-		DX12_LOG(g_nPrintDX12, "Resource barrier block %p (ID3D12: %p): %s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState));
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier block %p (ID3D12: %p): %s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_CurrentState));
 		DX12_ASSERT(m_AnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_AnnouncedState));
 
 		D3D12_RESOURCE_BARRIER barrierDesc = {};
@@ -932,17 +992,12 @@ void CResource::MapDiscard()
 {
 	GetDevice()->ReleaseLater(GetFenceValues(CMDTYPE_ANY), m_pD3D12Resource);
 
-	D3D12_RESOURCE_STATES usage = D3D12_RESOURCE_STATE_GENERIC_READ;
-	D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_UPLOAD;
-
+	// NOTE: this might not be a staging resource, duplicate incoming nodeMasks
 	ID3D12Resource* resource = NULL;
-	if (S_OK != GetDevice()->CreateOrReuseCommittedResource(
-	      &CD3DX12_HEAP_PROPERTIES(heapType, blsi(m_NodeMasks.creationMask), m_NodeMasks.creationMask),
-	      D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
-	      &m_Desc,
-	      usage,
-	      NULL,
-	      IID_PPV_ARGS(&resource)
+	if (S_OK != GetDevice()->DuplicateCommittedResource(
+	      m_pD3D12Resource,
+		  D3D12_RESOURCE_STATE_GENERIC_READ,
+		  &resource
 	      ) || !resource)
 	{
 		DX12_ASSERT(0, "Could not create buffer resource!");
@@ -952,12 +1007,16 @@ void CResource::MapDiscard()
 	m_pD3D12Resource = resource;
 	resource->Release();
 
-	m_CurrentState = usage;
+	m_CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
 	m_SubresourceStates.clear();
 
-	if (m_pD3D12Resource && m_Desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+	// Don't get GPU-addresses for shared staging resources
+	if (m_NodeMasks.creationMask == m_NodeMasks.visibilityMask)
 	{
-		m_GPUVirtualAddress = m_pD3D12Resource->GetGPUVirtualAddress();
+		if (m_pD3D12Resource && m_Desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+		{
+			m_GPUVirtualAddress = m_pD3D12Resource->GetGPUVirtualAddress();
+		}
 	}
 }
 
@@ -965,6 +1024,31 @@ void CResource::CopyDiscard()
 {
 	// TODO: clone the surface
 	__debugbreak();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+HRESULT CResource::MappedWriteToSubresource(UINT Subresource, const D3D12_RANGE* Range, const void* pInData)
+{
+	const D3D12_RANGE sNoRead = { 0, 0 }; // It is valid to specify the CPU won't read any data by passing a range where End is less than or equal to Begin
+
+	void* pOutData;
+	GetD3D12Resource()->Map(Subresource, &sNoRead, &pOutData);
+	StreamBufferData(reinterpret_cast<uint8*>(pOutData) + Range->Begin, pInData, Range->End - Range->Begin);
+	GetD3D12Resource()->Unmap(Subresource, Range);
+
+	return S_OK;
+}
+
+HRESULT CResource::MappedReadFromSubresource(UINT Subresource, const D3D12_RANGE* Range, void* pOutData)
+{
+	const D3D12_RANGE sNoWrite = { 0, 0 }; // It is valid to specify the CPU won't read any data by passing a range where End is less than or equal to Begin
+
+	void* pInData;
+	GetD3D12Resource()->Map(Subresource, Range, &pInData);
+	FetchBufferData(pOutData, reinterpret_cast<uint8*>(pInData) + Range->Begin, Range->End - Range->Begin);
+	GetD3D12Resource()->Unmap(Subresource, &sNoWrite);
+
+	return S_OK;
 }
 
 }

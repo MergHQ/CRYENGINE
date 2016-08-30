@@ -80,7 +80,7 @@ public:
 		m_asyncQueue.FlushNextPresent();
 		DX12_ASSERT(!IsPresentScheduled(), "Flush didn't dry out all outstanding Present() calls!");
 
-		m_asyncQueue.Present(m_pDXGISwapChain, &m_PresentResult, SyncInterval, Flags, m_CurrentBackbufferIndex);
+		m_asyncQueue.Present(m_pDXGISwapChain, &m_PresentResult, SyncInterval, Flags, m_Desc.Flags, m_CurrentBackbufferIndex);
 
 		m_CurrentBackbufferIndex = (m_CurrentBackbufferIndex + 1) % m_Desc.BufferCount;
 	}

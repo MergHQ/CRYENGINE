@@ -12,6 +12,7 @@ class BroadcastableD3D12Fence : public ID3D12Fence
 	int                                  m_RefCount;
 	std::array<ID3D12Fence*, numTargets> m_Targets;
 	std::array<HANDLE, numTargets>       m_Events;
+	std::array<UINT64, numTargets>       m_CompletedValues;
 	ID3D12Fence* const* operator[](int i) const { return &m_Targets[i]; }
 
 	typedef BroadcastableD3D12Fence<numTargets> self;
@@ -30,6 +31,7 @@ public:
 			DX12_ASSERT(ret == S_OK, "Failed to create fence!");
 
 			m_Events[i] = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
+			m_CompletedValues[i] = 0ULL;
 		}
 	}
 
@@ -58,7 +60,6 @@ public:
     {                                           \
       if (m_Targets[i])                         \
       {                                         \
-        HRESULT ret;                            \
         if ((ret = m_Targets[i]->func) != S_OK) \
           return ret;                           \
       }                                         \
@@ -161,7 +162,10 @@ public:
 	{
 		UINT64 fenceValue = ~0ULL;
 		for (int i = 0; i < numTargets; ++i)
-			fenceValue = std::min(fenceValue, m_Targets[i]->GetCompletedValue());
+		{
+			m_CompletedValues[i] = std::max(m_CompletedValues[i], m_Targets[i]->GetCompletedValue());
+			fenceValue = std::min(fenceValue, m_CompletedValues[i]);
+		}
 
 		return fenceValue;
 	}
@@ -181,15 +185,22 @@ public:
 
 	#pragma endregion
 
-	virtual HRESULT STDMETHODCALLTYPE WaitForCompletion(
-	  UINT64 Value) final
+	HRESULT STDMETHODCALLTYPE WaitForCompletion(
+	  UINT64 Value)
 	{
-		HRESULT ret = S_OK;
+		// NOTE: event does ONLY trigger when the value has been set (it'll lock when trying with 0)
+		int numEvents = 0;
 		for (int i = 0; i < numTargets; ++i)
-			if ((ret = m_Targets[i]->SetEventOnCompletion(Value, m_Events[i])) != S_OK)
-				return ret;
+		{
+			if (Value && (m_CompletedValues[i] < Value))
+			{
+				m_Targets[i]->SetEventOnCompletion(Value, m_Events[numEvents++]);
+			}
+		}
 
-		WaitForMultipleObjects(numTargets, &m_Events[0], TRUE, INFINITE);
-		return ret;
+		if (numEvents)
+			WaitForMultipleObjects(numEvents, &m_Events[0], TRUE, INFINITE);
+
+		return S_OK;
 	}
 };

@@ -19,22 +19,6 @@
 
 namespace spline
 {
-inline bool IsEquivalent(float a, float b, float eps)
-{
-	return abs(a - b) <= eps;
-}
-
-// Returns |a-b| - |a-c|
-inline float diff_diff(float a, float b, float c)
-{
-	return abs(a - b) - abs(a - c);
-}
-inline float diff_diff(const Vec3& a, const Vec3& b, const Vec3& c)
-{
-	return diff_diff(a.x, b.x, c.x)
-	       + diff_diff(a.y, b.y, c.y)
-	       + diff_diff(a.z, b.z, c.z);
-}
 
 template<class Source, class Final>
 class FinalizingSpline : public CBaseSplineInterpolator<Source>
@@ -412,6 +396,7 @@ protected:
 	{
 		uint8 nKeys;             //!< Total number of keys.
 		Elem  aElems[1];         //!< Points and slopes. Last element is just Point without slopes.
+		                         //! Key flags are stored beyond last element.
 
 		Spline()
 			: nKeys(0)
@@ -433,11 +418,17 @@ protected:
 		static size_t alloc_size(int nKeys)
 		{
 			assert(nKeys > 0);
-			return sizeof(Spline) + max(nKeys - 2, 0) * sizeof(Elem) + sizeof(Point);
+			return sizeof(Spline) + max(nKeys - 2, 0) * sizeof(Elem) + sizeof(Point) + nKeys;
 		}
 		size_t alloc_size() const
 		{
 			return alloc_size(nKeys);
+		}
+		uint8& key_flags(int n) const
+		{
+			// Flags are stored beyond last element
+			assert(n < nKeys);
+			return *((uint8*) &aElems[nKeys-1].sc + n);
 		}
 
 		key_type key(int n) const
@@ -448,24 +439,18 @@ protected:
 				key.time = aElems[n].st;
 				key.value = aElems[n].sv;
 
-				// Infer slope flags from slopes.
-				value_type ds_def = default_slope(n);
 				if (n > 0)
 				{
 					// In slope.
 					key.ds = aElems[n - 1].end_slope();
-					value_type ds_lin = key.value - value_type(aElems[n - 1].sv);
-					if (diff_diff(key.ds, ds_lin, ds_def) < 0.f)
-						key.flags.inTangentType = ETangentType::Linear;
 				}
 				if (n < nKeys - 1)
 				{
 					// Out slope.
 					key.dd = aElems[n].start_slope();
-					value_type ds_lin = value_type(aElems[n + 1].sv) - key.value;
-					if (diff_diff(key.dd, ds_lin, ds_def) < 0.f)
-						key.flags.outTangentType = ETangentType::Linear;
 				}
+
+				key.flags = key_flags(n);
 			}
 			return key;
 		}
@@ -513,13 +498,6 @@ protected:
 				for (int i = 0; i < DIM; i++)
 					sval[i] = max(sval[i], aElems[n].sv[i]);
 			val = sval;
-		}
-
-		value_type default_slope(int n) const
-		{
-			return n > 0 && n < nKeys - 1 ?
-			       minmag(aElems[n].value() - aElems[n - 1].value(), aElems[n + 1].value() - aElems[n].value())
-			       : value_type(0.f);
 		}
 
 		void validate() const
@@ -670,7 +648,10 @@ public:
 		{
 			// First set key values, then compute slope coefficients.
 			for (int i = 0; i < nKeys; i++)
+			{
 				m_pSpline->aElems[i].set_key(source.time(i), source.value(i));
+				m_pSpline->key_flags(i) = source.flags(i);
+			}
 			for (int i = 0; i < nKeys - 1; i++)
 				m_pSpline->aElems[i].set_slopes(source.dd(i), source.ds(i + 1));
 
@@ -684,7 +665,7 @@ public:
 				assert(TStore(ks.time) == TStore(kf.time));
 				assert(VStore(ks.value) == VStore(kf.value));
 
-				static const float fSlopeEquivalence = 1.f / 60.f;
+				static const float fSlopeEquivalence = 1.f / 60.f * crymath::sqrt(float(DIM));
 				assert(IsEquivalent(ks.ds, kf.ds, fSlopeEquivalence));
 				assert(IsEquivalent(ks.dd, kf.dd, fSlopeEquivalence));
 
@@ -692,7 +673,6 @@ public:
 			}
 #endif
 		}
-
 	}
 
 	void to_source(source_spline& source) const

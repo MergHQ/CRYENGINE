@@ -582,14 +582,14 @@ bool CServiceNetworkConnection::TryReconnect()
 	if (m_socket == 0)
 	{
 		m_socket = CrySock::socketinet();
-		if (m_socket < 0)
+		if (m_socket == CRY_INVALID_SOCKET)
 		{
 			// We sent the initialization message
 			LOG_VERBOSE(1, "Connection local='%s', remote='%s', this=%p: failed to recreate socket",
 			            m_localAddress.ToString().c_str(),
 			            m_remoteAddress.ToString().c_str(),
 			            (UINT_PTR) this);
-
+			m_socket = 0;
 			return false;
 		}
 	}

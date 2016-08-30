@@ -1037,18 +1037,25 @@ bool CDevice::CreateRenderingContexts(
 		return false;
 
 #if DXGL_USE_ES_EMULATOR
-	EGLint aiContextAttributes[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
+	EGLint aiContextAttributes[] = 
+	{
+		EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE
+	};
 #elif CRY_PLATFORM_WINDOWS && !defined(DXGL_USE_SDL)
-	int32 aiAttributes[] =
+	int32 aiAttributes[9] =
 	{
 		WGL_CONTEXT_MAJOR_VERSION_ARB, kFeatureSpec.m_kVersion.m_uMajorVersion,
 		WGL_CONTEXT_MINOR_VERSION_ARB, kFeatureSpec.m_kVersion.m_uMinorVersion,
 		WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-	#if DXGL_DEBUG_CONTEXT
-		WGL_CONTEXT_FLAGS_ARB,         WGL_CONTEXT_DEBUG_BIT_ARB,
-	#endif // DXGL_DEBUG_CONTEXT
+		0, 0,
 		0
 	};
+
+	if (CRenderer::CV_r_EnableDebugLayer || DXGL_DEBUG_CONTEXT)
+	{
+		aiAttributes[6] = WGL_CONTEXT_FLAGS_ARB;
+		aiAttributes[7] = WGL_CONTEXT_DEBUG_BIT_ARB;
+	}
 #endif
 
 	kRenderingContexts.reserve(ms_uNumContextsPerDevice);
@@ -1303,13 +1310,13 @@ void CDevice::InitializeResourceUnitPartitions()
 {
 	const SCapabilities& kCapabilities(m_spAdapter->m_kCapabilities);
 
-	PartitionResourceIndices(eRUT_Texture, g_akTextureUnitBounds, DXGL_ARRAY_SIZE(g_akTextureUnitBounds));
+	PartitionResourceIndices(eRUT_Texture      , g_akTextureUnitBounds      , DXGL_ARRAY_SIZE(g_akTextureUnitBounds));
 	PartitionResourceIndices(eRUT_UniformBuffer, g_akUniformBufferUnitBounds, DXGL_ARRAY_SIZE(g_akUniformBufferUnitBounds));
 #if DXGL_SUPPORT_SHADER_STORAGE_BLOCKS
 	PartitionResourceIndices(eRUT_StorageBuffer, g_akStorageBufferUnitBounds, DXGL_ARRAY_SIZE(g_akStorageBufferUnitBounds));
 #endif
 #if DXGL_SUPPORT_SHADER_IMAGES
-	PartitionResourceIndices(eRUT_Image, g_akImageUnitBounds, DXGL_ARRAY_SIZE(g_akImageUnitBounds));
+	PartitionResourceIndices(eRUT_Image        , g_akImageUnitBounds        , DXGL_ARRAY_SIZE(g_akImageUnitBounds));
 #endif
 }
 
@@ -1858,16 +1865,21 @@ static const GLenum g_aeMaxImageUnits[] =
 
 #undef ELEMENT
 
+template<const uint32 uPerStageImplementationLimit, const uint32 uTotalImplementationLimit>
 void DetectResourceUnitCapabilities(SResourceUnitCapabilities* pCapabilities, const GLenum* aeMaxUnits)
 {
 	memset(pCapabilities->m_aiMaxPerStage, 0, sizeof(pCapabilities->m_aiMaxPerStage));
 	for (uint32 uStage = 0; uStage < eST_NUM; ++uStage)
 	{
 		glGetIntegerv(aeMaxUnits[uStage], pCapabilities->m_aiMaxPerStage + uStage);
+		if (pCapabilities->m_aiMaxPerStage[uStage] > uPerStageImplementationLimit)
+			pCapabilities->m_aiMaxPerStage[uStage] = uPerStageImplementationLimit;
 	}
 
 	pCapabilities->m_aiMaxTotal = 0;
 	glGetIntegerv(aeMaxUnits[eST_NUM], &pCapabilities->m_aiMaxTotal);
+	if (pCapabilities->m_aiMaxTotal > uTotalImplementationLimit)
+		pCapabilities->m_aiMaxTotal = uTotalImplementationLimit;
 }
 
 bool DetectFeaturesAndCapabilities(TFeatures& kFeatures, SCapabilities& kCapabilities)
@@ -1879,13 +1891,13 @@ bool DetectFeaturesAndCapabilities(TFeatures& kFeatures, SCapabilities& kCapabil
 #endif
 	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &kCapabilities.m_iUniformBufferOffsetAlignment);
 
-	DetectResourceUnitCapabilities(&kCapabilities.m_akResourceUnits[eRUT_Texture], g_aeMaxTextureUnits);
-	DetectResourceUnitCapabilities(&kCapabilities.m_akResourceUnits[eRUT_UniformBuffer], g_aeMaxUniformBufferUnits);
+	DetectResourceUnitCapabilities<MAX_STAGE_TEXTURE_UNITS       , MAX_TEXTURE_UNITS       >(&kCapabilities.m_akResourceUnits[eRUT_Texture      ], g_aeMaxTextureUnits);
+	DetectResourceUnitCapabilities<MAX_STAGE_UNIFORM_BUFFER_UNITS, MAX_UNIFORM_BUFFER_UNITS>(&kCapabilities.m_akResourceUnits[eRUT_UniformBuffer], g_aeMaxUniformBufferUnits);
 #if DXGL_SUPPORT_SHADER_STORAGE_BLOCKS
-	DetectResourceUnitCapabilities(&kCapabilities.m_akResourceUnits[eRUT_StorageBuffer], g_aeMaxStorageBufferUnits);
+	DetectResourceUnitCapabilities<MAX_STAGE_STORAGE_BUFFER_UNITS, MAX_STORAGE_BUFFER_UNITS>(&kCapabilities.m_akResourceUnits[eRUT_StorageBuffer], g_aeMaxStorageBufferUnits);
 #endif
 #if DXGL_SUPPORT_SHADER_IMAGES
-	DetectResourceUnitCapabilities(&kCapabilities.m_akResourceUnits[eRUT_Image], g_aeMaxImageUnits);
+	DetectResourceUnitCapabilities<MAX_STAGE_IMAGE_UNITS         , MAX_IMAGE_UNITS         >(&kCapabilities.m_akResourceUnits[eRUT_Image        ], g_aeMaxImageUnits);
 #endif
 
 #if DXGL_SUPPORT_VERTEX_ATTRIB_BINDING

@@ -43,6 +43,7 @@ struct SMFXParticleParams
 	{
 		eDT_Normal = 0,
 		eDT_Ricochet,
+		eDT_ProjectileDir,
 	};
 
 	SMFXParticleParams()

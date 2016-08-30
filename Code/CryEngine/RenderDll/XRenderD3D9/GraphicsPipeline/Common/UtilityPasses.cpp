@@ -67,8 +67,8 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 	}
 
 	m_pass.BeginConstantUpdate();
-	CShaderMan::s_shPostEffects->FXSetPSFloat(param0Name, &params0, 1);
-	CShaderMan::s_shPostEffects->FXSetPSFloat(param1Name, &params1, 1);
+	m_pass.SetConstant(eHWSC_Pixel, param0Name, params0);
+	m_pass.SetConstant(eHWSC_Pixel, param1Name, params1);
 	m_pass.Execute();
 }
 
@@ -138,8 +138,7 @@ void CDepthDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bLi
 	int scaledHeight = (pSrcRT->GetHeight() + 1) / 2;
 	params.x = (float)pDestRT->GetWidth() / (float)scaledWidth;
 	params.y = (float)pDestRT->GetHeight() / (float)scaledHeight;
-	CShaderMan::s_shPostEffects->FXSetPSFloat(paramName, &params, 1);
-
+	m_pass.SetConstant(eHWSC_Pixel, paramName, params);
 	m_pass.Execute();
 }
 
@@ -249,9 +248,9 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 	m_passH.SetTextureSamplerPair(0, pScrDestRT, texFilter);
 
 	m_passH.BeginConstantUpdate();
-	pShader->FXSetVSFloat(param1Name, m_paramsH, numSamples / 2);
-	pShader->FXSetPSFloat(param0Name, m_weights, numSamples / 2);
-	pShader->FXSetPSFloat(clampTCName, &clampTC, 1);
+	m_passH.SetConstantArray(eHWSC_Vertex, param1Name, m_paramsH, numSamples / 2);
+	m_passH.SetConstantArray(eHWSC_Pixel, param0Name, m_weights, numSamples / 2);
+	m_passH.SetConstant(eHWSC_Pixel, clampTCName, clampTC);
 	m_passH.Execute();
 
 	// Vertical
@@ -261,9 +260,9 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 	m_passV.SetTextureSamplerPair(0, pTempRT, texFilter);
 
 	m_passV.BeginConstantUpdate();
-	pShader->FXSetVSFloat(param1Name, m_paramsV, numSamples / 2);
-	pShader->FXSetPSFloat(param0Name, m_weights, numSamples / 2);
-	pShader->FXSetPSFloat(clampTCName, &clampTC, 1);
+	m_passV.SetConstantArray(eHWSC_Vertex, param1Name, m_paramsV, numSamples / 2);
+	m_passV.SetConstantArray(eHWSC_Pixel, param0Name, m_weights, numSamples / 2);
+	m_passV.SetConstant(eHWSC_Pixel, clampTCName, clampTC);
 	m_passV.Execute();
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -289,9 +288,18 @@ void CMipmapGenPass::Execute(CTexture* pScrDestRT, int mipCount)
 			curPass.SetTechnique(CShaderMan::s_shPostEffects, techDownsample, 0);
 			curPass.SetState(GS_NODEPTHTEST);
 			curPass.SetTextureSamplerPair(0, pScrDestRT, texFilter, srv.m_Desc.Key);
-			curPass.BeginConstantUpdate();
 		}
 
 		curPass.Execute();
 	}
+
+#if CRY_USE_DX12
+	// Revert state of resource to one coherent resource-state after mip-mapping
+	CDeviceCommandListPtr pCommandList = CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList();
+	CCryDX12Resource<ID3D11Resource>* DX11res = reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>(pScrDestRT->GetDevTexture()->GetBaseTexture());
+	NCryDX12::CResource& DX12res = DX11res->GetDX12Resource();
+	NCryDX12::CCommandList* DX12cmd = pCommandList->GetDX12CommandList();
+
+	DX12cmd->SetResourceState(DX12res, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+#endif
 }

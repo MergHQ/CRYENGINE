@@ -1,10 +1,11 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
 #include "FlowEntityNode.h"
 #include "Mannequin/Serialization.h"
+
 #include <CryExtension/ClassWeaver.h>
+#include <CryCore/Containers/CryListenerSet.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CFlowPlayMannequinFragment

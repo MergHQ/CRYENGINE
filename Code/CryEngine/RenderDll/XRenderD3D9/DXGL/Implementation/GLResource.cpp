@@ -1133,11 +1133,6 @@ void InitializeTexture(STexture* pTexture, const D3D11_SUBRESOURCE_DATA* pInitia
 	pTexture->m_kCreationFence.IssueFence(pContext->GetDevice());
 }
 
-SFrameBufferConfiguration::SFrameBufferConfiguration()
-{
-	memset(m_akAttachments, 0, sizeof(m_akAttachments));
-}
-
 GLenum SFrameBufferConfiguration::AttachmentIndexToID(uint32 uIndex)
 {
 	if (uIndex >= FIRST_COLOR_ATTACHMENT_INDEX &&

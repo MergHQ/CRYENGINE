@@ -178,6 +178,8 @@ private:
 			: time(1.0f)
 			, frequencyA(1.0f)
 			, frequencyB(1.0f)
+			, frequencyLT(0.0f)
+			, frequencyRT(0.0f)
 		{
 
 		}
@@ -186,9 +188,15 @@ private:
 		FFBInternalId envelopeA;
 		FFBInternalId patternB;
 		FFBInternalId envelopeB;
+		FFBInternalId patternLT;
+		FFBInternalId envelopeLT;
+		FFBInternalId patternRT;
+		FFBInternalId envelopeRT;
 
 		float         frequencyA;
 		float         frequencyB;
+		float         frequencyLT;
+		float         frequencyRT;
 		float         time;
 	};
 
@@ -200,6 +208,8 @@ private:
 		SFFOutput()
 			: forceFeedbackA(0.0f)
 			, forceFeedbackB(0.0f)
+			, forceFeedbackLT(0.0f)
+			, forceFeedbackRT(0.0f)
 		{
 
 		}
@@ -208,6 +218,8 @@ private:
 		{
 			forceFeedbackA += operand2.forceFeedbackA;
 			forceFeedbackB += operand2.forceFeedbackB;
+			forceFeedbackLT += operand2.forceFeedbackLT;
+			forceFeedbackRT += operand2.forceFeedbackRT;
 		}
 
 		ILINE float GetClampedFFA() const
@@ -220,13 +232,25 @@ private:
 			return clamp_tpl(forceFeedbackB, 0.0f, 1.0f);
 		}
 
+		ILINE float GetClampedFFLT() const
+		{
+			return clamp_tpl(forceFeedbackLT, 0.0f, 1.0f);
+		}
+
+		ILINE float GetClampedFFRT() const
+		{
+			return clamp_tpl(forceFeedbackRT, 0.0f, 1.0f);
+		}
+
 		ILINE void ZeroIt()
 		{
-			forceFeedbackA = forceFeedbackB = 0.0f;
+			forceFeedbackA = forceFeedbackB = forceFeedbackLT = forceFeedbackRT = 0.0f;
 		}
 
 		float forceFeedbackA;
 		float forceFeedbackB;
+		float forceFeedbackLT;
+		float forceFeedbackRT;
 	};
 
 	struct SActiveEffect
@@ -254,10 +278,16 @@ private:
 		float                       runningTime;
 		float                       frequencyA;
 		float                       frequencyB;
+		float                       frequencyLT;
+		float                       frequencyRT;
 		SPattern                    m_patternA;
 		SEnvelope                   m_envelopeA;
 		SPattern                    m_patternB;
 		SEnvelope                   m_envelopeB;
+		SPattern                    m_patternLT;
+		SEnvelope                   m_envelopeLT;
+		SPattern                    m_patternRT;
+		SEnvelope                   m_envelopeRT;
 	};
 
 	typedef std::vector<SActiveEffect> TActiveEffectsArray;
@@ -271,18 +301,18 @@ public:
 	~CForceFeedBackSystem();
 
 	//IForceFeedbackSystem
-	virtual void              PlayForceFeedbackEffect(ForceFeedbackFxId id, const SForceFeedbackRuntimeParams& runtimeParams);
-	virtual void              StopForceFeedbackEffect(ForceFeedbackFxId id);
-	virtual void              StopAllEffects();
+	virtual void              PlayForceFeedbackEffect(ForceFeedbackFxId id, const SForceFeedbackRuntimeParams& runtimeParams) override;
+	virtual void              StopForceFeedbackEffect(ForceFeedbackFxId id) override;
+	virtual void              StopAllEffects() override;
 
-	virtual ForceFeedbackFxId GetEffectIdByName(const char* effectName) const;
+	virtual ForceFeedbackFxId GetEffectIdByName(const char* effectName) const override;
 
-	virtual void              AddFrameCustomForceFeedback(const float amplifierA, const float amplifierB);
-	virtual void              AddCustomTriggerForceFeedback(const SFFTriggerOutputData& triggersData);
+	virtual void              AddFrameCustomForceFeedback(const float amplifierA, const float amplifierB, const float amplifierLT = 0.0f, const float amplifierRT = 0.0f) override;
+	virtual void              AddCustomTriggerForceFeedback(const SFFTriggerOutputData& triggersData) override;
 
-	virtual void              EnumerateEffects(IFFSPopulateCallBack* pCallBack); // intended to be used only from the editor
-	virtual int               GetEffectNamesCount() const;
-	virtual void              SuppressEffects(bool bSuppressEffects);
+	virtual void              EnumerateEffects(IFFSPopulateCallBack* pCallBack) override; // intended to be used only from the editor
+	virtual int               GetEffectNamesCount() const override;
+	virtual void              SuppressEffects(bool bSuppressEffects) override;
 	//~IForceFeedbackSystem
 
 	void Initialize();

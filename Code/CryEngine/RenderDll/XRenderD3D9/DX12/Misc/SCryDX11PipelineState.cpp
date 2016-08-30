@@ -239,9 +239,9 @@ void SCryDX11ShaderStageState::DebugPrint()
 			{
 				if (ConstantBufferViews.Get(i))
 				{
-					DX12_LOG(g_nPrintDX12, "  %2d: %p %p %p+%d[%d] %s", i,
-					         ConstantBufferViews.Get(i),
-					         ConstantBufferViews.Get(i)->GetDX12Resource(),
+					DX12_LOG(g_nPrintDX12, "  %2zd: %p %p %lld+%d[%d] %s", i,
+					         ConstantBufferViews.Get(i).get(),
+					         &ConstantBufferViews.Get(i)->GetDX12Resource(),
 					         ConstantBufferViews.Get(i)->GetDX12View().GetCBVDesc().BufferLocation,
 					         ConstBufferBindRange.Get(i).start,
 					         ConstBufferBindRange.Get(i).end - ConstBufferBindRange.Get(i).start,
@@ -250,7 +250,7 @@ void SCryDX11ShaderStageState::DebugPrint()
 				}
 				else
 				{
-					DX12_LOG(g_nPrintDX12, "  %2d: ERROR! Null resource.", i);
+					DX12_LOG(g_nPrintDX12, "  %2zd: ERROR! Null resource.", i);
 				}
 			}
 		}
@@ -266,8 +266,8 @@ void SCryDX11ShaderStageState::DebugPrint()
 			{
 				if (ShaderResourceViews.Get(i))
 				{
-					DX12_LOG(g_nPrintDX12, "  %2d: %p %p [%s, %s, %s] %s", i,
-					         ShaderResourceViews.Get(i),
+					DX12_LOG(g_nPrintDX12, "  %2zd: %p %p [%s, %s, %s] %s", i,
+					         ShaderResourceViews.Get(i).get(),
 					         ShaderResourceViews.Get(i)->GetD3D12Resource(),
 					         TypeToString(ranges[ri].m_Types[i - ranges[ri].m_Start]),
 					         DimensionToString(ranges[ri].m_Dimensions[i - ranges[ri].m_Start]),
@@ -277,7 +277,7 @@ void SCryDX11ShaderStageState::DebugPrint()
 				}
 				else
 				{
-					DX12_LOG(g_nPrintDX12, "  %2d: ERROR! Null resource.", i);
+					DX12_LOG(g_nPrintDX12, "  %2zd: ERROR! Null resource.", i);
 				}
 			}
 		}
@@ -293,8 +293,8 @@ void SCryDX11ShaderStageState::DebugPrint()
 			{
 				if (UnorderedAccessViews.Get(i))
 				{
-					DX12_LOG(g_nPrintDX12, "  %2d: %p %p [%s, %s, %s] %s", i,
-					         UnorderedAccessViews.Get(i),
+					DX12_LOG(g_nPrintDX12, "  %2zd: %p %p [%s, %s, %s] %s", i,
+					         UnorderedAccessViews.Get(i).get(),
 					         UnorderedAccessViews.Get(i)->GetD3D12Resource(),
 					         TypeToString(ranges[ri].m_Types[i - ranges[ri].m_Start]),
 					         DimensionToString(ranges[ri].m_Dimensions[i - ranges[ri].m_Start]),
@@ -304,7 +304,7 @@ void SCryDX11ShaderStageState::DebugPrint()
 				}
 				else
 				{
-					DX12_LOG(g_nPrintDX12, "  %2d: ERROR! Null resource.", i);
+					DX12_LOG(g_nPrintDX12, "  %2zd: ERROR! Null resource.", i);
 				}
 			}
 		}
@@ -320,13 +320,13 @@ void SCryDX11ShaderStageState::DebugPrint()
 			{
 				if (SamplerState.Get(i))
 				{
-					DX12_LOG(g_nPrintDX12, "  %2d: %p", i,
-					         SamplerState.Get(i)
+					DX12_LOG(g_nPrintDX12, "  %2zd: %p", i,
+					         SamplerState.Get(i).get()
 					         );
 				}
 				else
 				{
-					DX12_LOG(g_nPrintDX12, "  %2d: ERROR! Null resource.", i);
+					DX12_LOG(g_nPrintDX12, "  %2zd: ERROR! Null resource.", i);
 				}
 			}
 		}
@@ -364,8 +364,8 @@ void SCryDX11IAState::DebugPrint()
 	{
 		if (VertexBuffers.Get(i))
 		{
-			DX12_LOG(g_nPrintDX12, "  %2d: %p %p %s", i,
-			         VertexBuffers.Get(i),
+			DX12_LOG(g_nPrintDX12, "  %2zd: %p %p %s", i,
+			         VertexBuffers.Get(i).get(),
 			         VertexBuffers.Get(i)->GetD3D12Resource(),
 			         VertexBuffers.Get(i)->GetName().c_str()
 			         );
@@ -443,8 +443,8 @@ void SCryDX11OutputMergerState::DebugPrint()
 	{
 		if (RenderTargetViews.Get(i))
 		{
-			DX12_LOG(g_nPrintDX12, "  %2d: %p %p %s", i,
-			         RenderTargetViews.Get(i),
+			DX12_LOG(g_nPrintDX12, "  %2zd: %p %p %s", i,
+			         RenderTargetViews.Get(i).get(),
 			         RenderTargetViews.Get(i)->GetD3D12Resource(),
 			         RenderTargetViews.Get(i)->GetResourceName().c_str()
 			         );

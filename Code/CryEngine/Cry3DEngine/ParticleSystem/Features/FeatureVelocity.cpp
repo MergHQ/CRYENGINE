@@ -15,8 +15,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureVelocity = false;
-
 namespace pfx2
 {
 
@@ -64,7 +62,7 @@ public:
 		IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 		const float baseAngle = m_angle.GetBaseValue();
-		const float invBaseAngle = __fres(min(-FLT_EPSILON, baseAngle));
+		const float invBaseAngle = rcp_fast(min(-FLT_EPSILON, baseAngle));
 
 		STempModBuffer angles(context, m_angle);
 		STempModBuffer velocityMults(context, m_velocity);
@@ -79,11 +77,11 @@ public:
 			const float angleMult = angles.m_stream.SafeLoad(particleId);
 			const float velocity = velocityMults.m_stream.SafeLoad(particleId);
 
-			const Vec2 disc = SChaosKey().RandCircle();
+			const Vec2 disc = context.m_spawnRng.RandCircle();
 			const float angle = sqrtf(angleMult * invBaseAngle) * baseAngle;
 
 			float as, ac;
-			sincos_tpl(angle, &as, &ac);
+			sincos(angle, &as, &ac);
 			const Vec3 dir = Vec3(disc.x * as, disc.y * as, ac);
 			const Vec3 oVelocity = dir * velocity;
 			const Vec3 wVelocity1 = wVelocity0 + wQuat * oVelocity;
@@ -97,7 +95,7 @@ private:
 	CParamMod<SModParticleSpawnInit, UFloat10>  m_velocity;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityCone, "Velocity", "Cone", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityCone, "Velocity", "Cone", colorVelocity);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -164,7 +162,7 @@ private:
 	CParamMod<SModParticleSpawnInit, UFloat10> m_scale;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityDirectional, "Velocity", "Directional", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityDirectional, "Velocity", "Directional", colorVelocity);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -211,7 +209,7 @@ public:
 		{
 			const Vec3 wVelocity0 = velocities.Load(particleId);
 			const float velocity = velocityMults.m_stream.SafeLoad(particleId);
-			const Vec3 oVelocity = SChaosKey().RandSphere() * velocity;
+			const Vec3 oVelocity = context.m_spawnRng.RandSphere() * velocity;
 			const Vec3 wVelocity1 = wVelocity0 + oVelocity;
 			velocities.Store(particleId, wVelocity1);
 		}
@@ -222,7 +220,7 @@ private:
 	CParamMod<SModParticleSpawnInit, UFloat10> m_velocity;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityOmniDirectional, "Velocity", "OmniDirectional", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityOmniDirectional, "Velocity", "OmniDirectional", colorVelocity);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -258,7 +256,7 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		if (context.m_parentContainer.HasData(EPDT_AngularVelocityX))
+		if (context.m_parentContainer.HasData(EPVF_AngularVelocity))
 			InheritVelocity<true>(context);
 		else
 			InheritVelocity<false>(context);
@@ -304,7 +302,7 @@ private:
 	CParamMod<SModParticleSpawnInit, SFloat> m_scale;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityInherit, "Velocity", "Inherit", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityInherit, "Velocity", "Inherit", colorVelocity);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -336,8 +334,8 @@ public:
 
 		if (abs(m_positionInherit) > FLT_EPSILON)
 		{
-			const bool parentsHaveAngles3D = context.m_parentContainer.HasData(EPDT_OrientationX);
-			const bool childrenHaveAngles3D = context.m_container.HasData(EPDT_OrientationX);
+			const bool parentsHaveAngles3D = context.m_parentContainer.HasData(EPQF_Orientation);
+			const bool childrenHaveAngles3D = context.m_container.HasData(EPQF_Orientation);
 			if (parentsHaveAngles3D && childrenHaveAngles3D)
 				MoveRelativeToEmitter<true>(context);
 			else
@@ -430,6 +428,6 @@ private:
 	SFloat m_velocityInheritAfterDeath;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMoveRelativeToEmitter, "Velocity", "MoveRelativeToEmitter", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMoveRelativeToEmitter, "Velocity", "MoveRelativeToEmitter", colorVelocity);
 
 }

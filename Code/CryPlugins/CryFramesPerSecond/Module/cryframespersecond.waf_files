@@ -1,0 +1,29 @@
+{
+	"NoUberFile" :
+	{
+		"Root" :
+		[
+		  "StdAfx.cpp"
+		]
+	},
+	"CryFramesPerSecond_uber_0.cpp" :
+	{
+		"Interface" :
+		[
+		  "../Interface/IFramesPerSecond.h",
+		  "../Interface/ICryFramesPerSecondPlugin.h"
+		],
+
+		"Root" :
+		[
+		  "CryFramesPerSecond_FlowNodes.cpp",
+		  "CryFramesPerSecondDLL.cpp",
+		  "CryFramesPerSecondDLL.h",
+		  "FramesPerSecond.cpp",
+		  "FramesPerSecond.h",
+		  "resource.h",
+		  "StdAfx.cpp",
+		  "StdAfx.h"
+		]
+	}
+}

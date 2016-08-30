@@ -10,7 +10,7 @@
 	"game_projects"                         : "GameZero",
 	
 	"module_extensions"                     : ["scaleform"],
-	"win_module_extensions"                 : ["brofiler"],
+	"win_module_extensions"                 : ["brofiler", "mono"],
 	
 	"modules" :
 	[
@@ -51,7 +51,7 @@
 
 	"defines"                               : ["DEDICATED_SERVER"],
 
-	"win_modules"                           : [ "DedicatedLauncher", "CryRenderNULL" ],
+	"win_modules"                           : [ "DedicatedLauncher", "CryRenderNULL", "CryMonoBridge" ],
 	"win_debug_modules"                     : ["CryLiveCreate", "GameStream"],
 	"win_profile_modules"                   : ["CryLiveCreate", "GameStream"],
 	"win_performance_defines"               : "PURE_CLIENT(deprecated, those defines will be moved to another place and dont have any effect right now)",

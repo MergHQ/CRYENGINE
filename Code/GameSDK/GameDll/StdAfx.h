@@ -11,7 +11,7 @@
  -------------------------------------------------------------------------
 	History:
 	- 20:7:2004   10:51 : Created by Marco Koegler
-	- 3:8:2004		15:00 : Taken-over by Márcio Martins
+	- 3:8:2004		15:00 : Taken-over by MÃ¡rcio Martins
 
 *************************************************************************/
 #if !defined(AFX_STDAFX_H__B36C365D_F0EA_4545_B3BC_1E0EAB3B5E43__INCLUDED_)

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "DX12SwapChain.hpp"
+//#define I_WONT_USE_THE_FRAME_DEBUGGER // MSVC frame debugger has different internal ref-counts
 
 namespace NCryDX12
 {
@@ -141,24 +142,31 @@ void CSwapChain::AcquireBuffers()
 #ifdef CRY_USE_DX12_MULTIADAPTER
 			if (m_pCommandQueue.GetDevice()->IsMultiAdapter())
 			{
-				ID3D12Resource* pResource12b = nullptr;
+				ID3D12Resource* pResource12s[2] = { pResource12, nullptr };
+
 				HRESULT ret = m_pCommandQueue.GetDevice()->DuplicateNativeCommittedResource(
-				  0x2,
-				  m_pCommandQueue.GetDevice()->GetNodeMask(),
-				  pResource12,
-				  &pResource12b);
+					1U << 1U,
+					m_pCommandQueue.GetDevice()->GetNodeMask(),
+					pResource12s[0],
+					&pResource12s[1]);
 
 	#if !defined(RELEASE) && defined(I_WONT_USE_THE_FRAME_DEBUGGER)
-				ULONG refCount0 = pResource12->AddRef() - 1;
-				pResource12->Release();
-				ULONG refCountR = pResource12b->AddRef() - 1;
-				pResource12b->Release();
+				ULONG refCount0 = pResource12s[0]->AddRef() - 1;
+				pResource12s[0]->Release();
+				ULONG refCount1 = pResource12s[1]->AddRef() - 1;
+				pResource12s[1]->Release();
 				DX12_ASSERT(refCount0 == 1 + i, "RefCount corruption!");
-				DX12_ASSERT(refCountR == 1, "RefCount corruption!");
+				DX12_ASSERT(refCount1 == 1 + 0, "RefCount corruption!");
 	#endif  // !RELEASE
 
 				// Get broadcast resource from node "0" valid for all nodes
-				pResource12 = m_pCommandQueue.GetDevice()->CreateBroadcastObject(pResource12, pResource12b);
+				pResource12 = m_pCommandQueue.GetDevice()->CreateBroadcastObject(pResource12s);
+
+				ULONG refCount = pResource12s[0]->Release();
+
+	#if !defined(RELEASE) && defined(I_WONT_USE_THE_FRAME_DEBUGGER)
+				DX12_ASSERT(refCount == 1 + i, "RefCount corruption!");
+	#endif  // !RELEASE
 			}
 #endif
 
@@ -177,7 +185,7 @@ void CSwapChain::AcquireBuffers()
 #if !defined(RELEASE) && defined(I_WONT_USE_THE_FRAME_DEBUGGER)
 			if (m_pCommandQueue.GetDevice()->IsMultiAdapter())
 			{
-				DX12_ASSERT(refCount == 1, "RefCount corruption!");
+				DX12_ASSERT(refCount == 1 + 0, "RefCount corruption!");
 			}
 			else
 			{

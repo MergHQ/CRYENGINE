@@ -78,22 +78,15 @@ void CTerrain::DrawVisibleSectors(const SRenderingPassInfo& passInfo)
 		return;
 
 	// sort to get good texture streaming priority
-	if (m_lstVisSectors.Count())
+	if (m_lstVisSectors.Count() > 0)
 		std::sort(m_lstVisSectors.GetElements(), m_lstVisSectors.GetElements() + m_lstVisSectors.Count(), CTerrain__Cmp_Sectors(passInfo));
 
-	for (int i = 0; i < m_lstVisSectors.Count(); i++)
+	for (CTerrainNode* pNode : m_lstVisSectors)
 	{
-		CTerrainNode* pNode = (CTerrainNode*)m_lstVisSectors[i];
-
 		if (!pNode->RenderNodeHeightmap(passInfo))
 		{
 			m_pTerrainUpdateDispatcher->QueueJob(pNode, passInfo);
-			continue;
 		}
-
-		if (!pNode->GetLeafData())
-			continue;
-
 	}
 }
 

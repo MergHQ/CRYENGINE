@@ -448,7 +448,7 @@ inline int TriIndices(int aIndices[3], int nPart, EGeomForm eForm)
 		return 1;
 	case GeomForm_Edges:          // Part is vert index
 		aIndices[0] = nPart;
-		aIndices[1] = nPart % 3 < 2 ? nPart + 1 : nPart - 2;
+		aIndices[1] = nPart + 1 - ((nPart % 3) >> 1) * 3;
 		return 2;
 	case GeomForm_Surface:        // Part is tri index
 	case GeomForm_Volume:

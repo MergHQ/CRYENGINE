@@ -4,7 +4,8 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////
 class CFlowNode_SetDefaultActionEntity : public CFlowBaseNode<eNCT_Singleton>
@@ -229,7 +230,9 @@ class CFlowNode_InputActionListener : public CFlowBaseNode<eNCT_Instanced>, publ
 
 public:
 	CFlowNode_InputActionListener(SActivationInfo* pActInfo)
-		: m_bActive(false)
+		: m_pActInfo(*pActInfo)
+		, m_filterEntityId(INVALID_ENTITYID)
+		, m_bActive(false)
 	{
 	}
 
@@ -302,6 +305,12 @@ public:
 				break;
 			}
 
+		case eFE_SetEntityId:
+			{
+				m_filterEntityId = pActInfo && pActInfo->pEntity ? pActInfo->pEntity->GetId() : INVALID_ENTITYID;
+				break;
+			}
+
 		case eFE_Activate:
 			{
 				m_pActInfo = *pActInfo;
@@ -323,7 +332,7 @@ public:
 
 	virtual bool OnInputEvent(const SInputEvent& event)
 	{
-		if (gEnv->pConsole->IsOpened())
+		if (gEnv->pConsole->IsOpened() || CCryAction::GetCryAction()->IsGamePaused())
 			return false;
 
 		bool bActionFound = false;
@@ -332,15 +341,13 @@ public:
 		const string& actionMapName = actionInput.substr(0, actionInput.find_first_of(":"));
 		const string& actionName = actionInput.substr(actionInput.find_first_of(":") + 1, (actionInput.length() - actionInput.find_first_of(":")));
 
-		const EntityId filterEntityId = m_pActInfo.pEntity ? m_pActInfo.pEntity->GetId() : INVALID_ENTITYID;
-
 		if (!actionMapName.empty() && !actionName.empty())
 		{
-			IActionMapManager* pActionMapMgr = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
+			IActionMapManager* pActionMapMgr = CCryAction::GetCryAction()->GetIActionMapManager();
 			if (pActionMapMgr)
 			{
 				const IActionMap* pActionMap = pActionMapMgr->GetActionMap(actionMapName);
-				if (pActionMap && (filterEntityId == INVALID_ENTITYID || filterEntityId == pActionMap->GetActionListener()))
+				if (pActionMap && (m_filterEntityId == INVALID_ENTITYID || m_filterEntityId == pActionMap->GetActionListener()))
 				{
 					const IActionMapAction* pAction = pActionMap->GetAction(ActionId(actionName));
 					if (pAction)
@@ -386,6 +393,7 @@ public:
 	}
 
 	SActivationInfo m_pActInfo;
+	EntityId        m_filterEntityId;
 	bool            m_bActive;
 };
 

@@ -4,9 +4,10 @@
 #define physinterface_h
 
 #include <CryNetwork/SerializeFwd.h>
-
+#include <CryMemory/CrySizer.h>
 #include <CryMath/Cry_Geo.h>
 #include <CryCore/stridedptr.h>
+#include "primitives.h"
 #ifdef NEED_ENDIAN_SWAP
 	#include <CryCore/CryEndian.h>
 #endif
@@ -992,7 +993,7 @@ struct pe_params_car : pe_params
 		MARK_UNUSED engineMaxRPM, iIntegrationType, axleFriction, enginePower, maxSteer, maxTimeStep, minEnergy, damping, brakeTorque;
 		MARK_UNUSED engineMinRPM, engineShiftUpRPM, engineShiftDownRPM, engineIdleRPM, engineStartRPM, clutchSpeed, nGears, gearRatios, kStabilizer;
 		MARK_UNUSED slipThreshold, gearDirSwitchRPM, kDynFriction, minBrakingFriction, maxBrakingFriction, steerTrackNeutralTurn, maxGear, minGear, pullTilt;
-		MARK_UNUSED maxTilt, bKeepTractionWhenTilted;
+		MARK_UNUSED maxTilt, bKeepTractionWhenTilted, wheelMassScale;
 	}
 
 	float  axleFriction;       //!< friction torque at axes divided by mass of vehicle
@@ -1024,6 +1025,7 @@ struct pe_params_car : pe_params
 	float  pullTilt;                //!< for tracked vehicles, tilt angle of pulling force towards ground
 	float  maxTilt;                 //!< maximum wheel contact normal tilt (left or right) after which it acts as a locked part of the hull; it's a cosine of the angle
 	int    bKeepTractionWhenTilted; //!< keeps wheel traction in tilted mode
+	float  wheelMassScale;          //!< scales wheels' masses for inertia computations (default 0)
 };
 
 struct pe_params_wheel : pe_params
@@ -1709,7 +1711,7 @@ struct pe_status_constraint : pe_status
 struct pe_status_area : pe_status
 {
 	enum entype { type_id = ePE_status_area };
-	pe_status_area() { type = type_id; bUniformOnly = false; ctr.zero(); size.zero(); vel.zero(); MARK_UNUSED gravity, pb; pLockUpdate = 0; pSurface = 0; }
+	pe_status_area() { type = type_id; bUniformOnly = false; ctr.zero(); size.zero(); vel.zero(); MARK_UNUSED gravity, ptClosest; pLockUpdate = 0; pSurface = 0; }
 
 	// inputs.
 	Vec3 ctr, size;             //!< query bounds
@@ -1721,6 +1723,10 @@ struct pe_status_area : pe_status
 	pe_params_buoyancy pb;
 	volatile int*      pLockUpdate;
 	IGeometry*         pSurface;
+
+	// alternative query: closest point
+	Vec3               ptClosest;	 // input-output
+	Vec3               dirClosest; // output
 };
 
 ////////// living entity statuses

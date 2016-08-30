@@ -26,7 +26,7 @@ static int GetTexReqStreamSizePreClamped(const SPlanningTextureOrderKey& key, in
 		uint32 nPoTSlices = key.nSlicesPotMinus1 + 1;
 
 		uint32 n1SliceSize = code.sizes[nCodeMip].size;
-		uint32 nFormatSlices = isel(-(int)code.sizes[nCodeMip].alignSlices, nSlices, nPoTSlices);
+		uint32 nFormatSlices = code.sizes[nCodeMip].alignSlices ? nPoTSlices : nSlices;
 		nTotalSize = n1SliceSize * nFormatSlices;
 
 #if defined(PLAN_TEXSTRM_DEBUG) && defined(TEXSTRM_STORE_DEVSIZES)

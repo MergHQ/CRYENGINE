@@ -65,6 +65,7 @@ void CScreenSpaceReflectionsStage::Execute()
 			m_passRaytracing.SetTextureSamplerPair(4, CTexture::s_ptexHDRTargetPrev, m_samplerLinearBorder);
 			m_passRaytracing.SetTextureSamplerPair(5, CTexture::s_ptexHDRMeasuredLuminance[rd->RT_GetCurrGpuID()], m_samplerPoint);
 			m_passRaytracing.SetRequireWorldPos(true);
+			m_passRaytracing.SetRequirePerViewConstantBuffer(true);
 		}
 
 		static CCryNameR viewProjName("g_mViewProj");

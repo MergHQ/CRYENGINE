@@ -79,7 +79,7 @@ void ExtractProjectionParamsFromMatrix(float* matrix, float nearPlane, float far
 void ExtractEyeParamsFromMatrix(OSVR_ProjectionMatrix matrix, float& fov, float& aspect, float& asymV, float& asymH)
 {
 	aspect = static_cast<float>((matrix.right - matrix.left) / (matrix.top - matrix.bottom));
-	fov = atan(static_cast<float>(abs(matrix.top) / matrix.nearClip)) + atan(static_cast<float>(abs(matrix.bottom) / matrix.nearClip));
+	fov = atanf(static_cast<float>(matrix.top / matrix.nearClip)) + atanf(static_cast<float>(abs(matrix.bottom) / matrix.nearClip));
 	//AFAIK, asymmetry values get applied for both l and r (t and b) so divide by two
 	asymH = static_cast<float>(matrix.right + matrix.left) / 2.f;
 	asymV = static_cast<float>(matrix.top + matrix.bottom) / 2.f;
@@ -90,7 +90,6 @@ Device::Device()
 	m_nativeTrackingState(),
 	m_refCount(1),
 	m_context(0),
-	m_renderContext(0),
 	m_headInterface(0),
 	m_displayConfig(0),
 	m_disableTracking(false),
@@ -499,15 +498,11 @@ void Device::CalculateSymmetricalFovsFromDisplayConfig(float& fovH, float& fovV)
 	ExtractProjectionParamsFromMatrix(leftMatrix, nearPlane, farPlane, l, r, b, t);
 	ExtractProjectionParamsFromMatrix(rightMatrix, nearPlane, farPlane, l2, r2, b2, t2);
 
-	l = max(l, l2);
 	r = max(r, r2);
-	b = max(b, b2);
 	t = max(t, t2);
 
-	float hor = max(l, r);
-	float ver = max(b, t);
-	fovH = 2.f * atanf(hor / nearPlane);
-	fovV = 2.f * atanf(ver / nearPlane);
+	fovH = 2.f * atanf(r / nearPlane);
+	fovV = 2.f * atanf(t / nearPlane);
 }
 
 bool Device::UpdateEyeSetups()
@@ -540,6 +535,11 @@ void Device::UpdateRenderInfo()
 {
 	if (m_renderManager && m_renderManagerD3D11)
 	{
+		float nearPlane = gEnv->pRenderer->GetCamera().GetNearPlane();
+		float farPlane = gEnv->pRenderer->GetCamera().GetFarPlane();
+		m_renderParams.nearClipDistanceMeters = nearPlane;
+		m_renderParams.farClipDistanceMeters = farPlane;
+
 		OSVR_RenderInfoCount count;
 		osvrRenderManagerGetNumRenderInfo(m_renderManager, m_renderParams, &count);
 
@@ -559,13 +559,12 @@ void Device::UpdateRenderInfo()
 
 bool Device::InitializeRenderer(void* d3dDevice, void* d3dContext)
 {
-	m_renderContext = osvrClientInit(s_szClientName, 0);
 
 	OSVR_GraphicsLibraryD3D11 library;
 	library.device = static_cast<ID3D11Device*>(d3dDevice);
 	library.context = static_cast<ID3D11DeviceContext*>(d3dContext);
 
-	bool bSuccess = osvrCreateRenderManagerD3D11(m_renderContext, "Direct3D11", library, &m_renderManager, &m_renderManagerD3D11) == OSVR_RETURN_SUCCESS;
+	bool bSuccess = osvrCreateRenderManagerD3D11(m_context, "Direct3D11", library, &m_renderManager, &m_renderManagerD3D11) == OSVR_RETURN_SUCCESS;
 	if (bSuccess && m_renderManager && m_renderManagerD3D11)
 	{
 		OSVR_OpenResultsD3D11 res;
@@ -673,8 +672,6 @@ void Device::GetPreferredRenderResolution(unsigned int& width, unsigned int& hei
 void Device::ShutdownRenderer()
 {
 	osvrDestroyRenderManager(m_renderManager);
-	osvrClientShutdown(m_renderContext);
-	m_renderContext = 0;
 	m_renderManager = 0;
 	m_renderManagerD3D11 = 0;
 }

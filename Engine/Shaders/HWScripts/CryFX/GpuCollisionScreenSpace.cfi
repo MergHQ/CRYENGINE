@@ -18,20 +18,20 @@ float3 ScreenSpaceTextureCoordsWithLinearDepth(float3 worldPos)
 	return float3(texturePos, depth);
 }
 
-float ScreenSpaceDistance(float3 worldPos, float offset, float radius)
+float ScreenSpaceDistance(float3 worldPos, float offset)
 {
 	float3 coords = ScreenSpaceTextureCoordsWithLinearDepth(worldPos);
 	float depth = coords.z;
 	float depthCompare = depthMapTexture.SampleLevel(textureSampler, coords.xy, 0).x * c_farToNearDistance;
-	return abs(depth - depthCompare - radius + offset);
+	return abs(depth - depthCompare - offset);
 }
 
-float ScreenSpaceDistancePoint(float3 worldPos, float offset, float radius)
+float ScreenSpaceDistancePoint(float3 worldPos, float offset)
 {
 	float3 coords = ScreenSpaceTextureCoordsWithLinearDepth(worldPos);
 	float depth = coords.z;
 	float depthCompare = depthMapTexture.SampleLevel(texturePointSampler, coords.xy, 0).x * c_farToNearDistance;
-	return abs(depth - depthCompare - radius + offset);
+	return abs(depth - depthCompare - offset);
 }
 
 float3 ComputeGradient(float3 worldPos)
@@ -41,10 +41,10 @@ float3 ComputeGradient(float3 worldPos)
 	float3 dy = float3(0, e, 0);
 	float3 dz = float3(0, 0, e);
 
-	float d = ScreenSpaceDistance(worldPos, 0.0, 0.0);
-	float dfdx = ScreenSpaceDistance(worldPos + dx, 0.0, 0.0);
-	float dfdy = ScreenSpaceDistance(worldPos + dy, 0.0, 0.0);
-	float dfdz = ScreenSpaceDistance(worldPos + dz, 0.0, 0.0);
+	float d = ScreenSpaceDistance(worldPos, 0.0);
+	float dfdx = ScreenSpaceDistance(worldPos + dx, 0.0);
+	float dfdy = ScreenSpaceDistance(worldPos + dy, 0.0);
+	float dfdz = ScreenSpaceDistance(worldPos + dz, 0.0);
 
 	return normalize(float3(dfdx - d, dfdy - d, dfdz - d));
 }

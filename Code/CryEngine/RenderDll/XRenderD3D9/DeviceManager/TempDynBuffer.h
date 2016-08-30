@@ -60,6 +60,7 @@ class TempDynBufferBase
 {
 public:
 	static const buffer_handle_t invalidHandle = ~0u;
+	buffer_handle_t GetHandle() const { return m_handle; }
 
 protected:
 	TempDynBufferBase() : m_handle(invalidHandle), m_numElements(0), m_DevBufMan(&gcpRendD3D->m_DevBufMan), m_validator() {}
@@ -78,7 +79,7 @@ protected:
 	void UpdateInternal(const void* pData, size_t elementSize);
 
 protected:
-	size_t                      m_handle;
+	buffer_handle_t             m_handle;
 	size_t                      m_numElements;
 	CGuardedDeviceBufferManager m_DevBufMan;
 	Validator                   m_validator;
@@ -116,7 +117,7 @@ template<typename T, BUFFER_BIND_TYPE bindType, class Validator>
 void TempDynBufferBase<T, bindType, Validator >::UpdateInternal(const void* pData, size_t elementSize)
 {
 	m_validator.Check(Allocated);
-	m_DevBufMan.UpdateBuffer(m_handle, pData, m_numElements * elementSize);
+	m_DevBufMan.UpdateBuffer(m_handle, pData, CGuardedDeviceBufferManager::AlignBufferSizeForStreaming(m_numElements * elementSize));
 	m_validator.Set(Filled);
 }
 

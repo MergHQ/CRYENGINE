@@ -227,9 +227,9 @@ void CWaterRipplesGenerator::ProcessHit(bool isMoving)
 		float fScale = m_properties.m_scale + cry_random(-1.0f, 1.0f) * m_properties.m_randScale;
 		float fStrength = m_properties.m_strength + cry_random(-1.0f, 1.0f) * m_properties.m_randStrength;
 
-		if (gEnv->pRenderer)
+		if (gEnv->p3DEngine)
 		{
-			gEnv->pRenderer->EF_AddWaterSimHit(vWorldPos, fScale, fStrength);
+			gEnv->p3DEngine->AddWaterRipple(vWorldPos, fScale, fStrength);
 		}
 
 		float fTime = gEnv->pTimer->GetCurrTime();

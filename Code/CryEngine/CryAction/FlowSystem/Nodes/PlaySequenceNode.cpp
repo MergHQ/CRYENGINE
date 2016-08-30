@@ -1,12 +1,12 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <CrySystem/ISystem.h>
+#include "CryActionCVars.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryMovie/IMovieSystem.h>
 #include <IViewSystem.h>
-#include "CryActionCVars.h"
-#include "FlowBaseNode.h"
 
 class CPlaySequence_Node : public CFlowBaseNode<eNCT_Instanced>, public IMovieListener
 {

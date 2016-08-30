@@ -80,6 +80,8 @@ public:
 	TComponentId              FindComponentIdByName(const char* name) const;
 	const CAttributeTable& GetAttributeTable() const                      { return m_attributes; }
 	string                 MakeUniqueName(TComponentId forComponentId, const char* name);
+	uint                   AddRenderObjectId();
+	uint                   GetNumRenderObjectIds() const;
 
 	int                    GetEditVersion() const { return m_editVersion; }
 
@@ -88,6 +90,7 @@ private:
 	CAttributeInstance m_attributeInstance;
 	TComponents        m_components;
 	string             m_name;
+	uint               m_numRenderObjects;
 	int                m_editVersion;
 	bool               m_dirty;
 };

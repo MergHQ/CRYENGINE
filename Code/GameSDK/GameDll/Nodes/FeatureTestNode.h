@@ -1,21 +1,17 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
--------------------------------------------------------------------------
-History:
-- 30:03:2010   Created by Will Wilson
+   -------------------------------------------------------------------------
+   History:
+   - 30:03:2010   Created by Will Wilson
 *************************************************************************/
 
 #pragma once
 
-#ifndef FEATURETEST_NODE_H
-#define FEATURETEST_NODE_H
+#include "Testing/FeatureTestMgr.h"   // For IFeatureTest
 
-#include "G2FlowBaseNode.h"
-#include "Testing/FeatureTestMgr.h"		// For IFeatureTest
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryAISystem/ICommunicationManager.h>
-
-
 
 //helper struct to store data about the entities attached to the feature test node
 struct SEntityData
@@ -32,9 +28,9 @@ public:
 
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo);
 
-	virtual void GetConfiguration(SFlowNodeConfig& config);
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void GetMemoryUsage(ICrySizer* sizer) const;
+	virtual void         GetConfiguration(SFlowNodeConfig& config);
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const;
 
 	enum EInputPorts
 	{
@@ -79,17 +75,17 @@ public:
 	// Implements IFeatureTest
 
 	/// Indicates all dependencies are met and this test is ready to run
-	virtual bool ReadyToRun() const;
+	virtual bool        ReadyToRun() const;
 	/// Runs the test
-	virtual bool Start();
+	virtual bool        Start();
 	/// Used to update any time dependent state (such as timeouts)
-	virtual void Update(float deltaTime);
+	virtual void        Update(float deltaTime);
 	/// Called to cleanup test state once the test is complete
-	virtual void Cleanup();
+	virtual void        Cleanup();
 	/// Returns the name of the test
 	virtual const char* Name();
 	///Returns the xml description of the node
-	const XmlNodeRef XmlDescription();
+	const XmlNodeRef    XmlDescription();
 
 	// Serialize call for internal state
 	virtual void Serialize(SActivationInfo* pActivationInfo, TSerialize ser);
@@ -108,7 +104,7 @@ protected:
 	/// outEntity contains the entity if one could be found at the given index, otherwise NULL
 	/// bPrepareFromPool is used to specify if the entity at the given index should be prepared from the pool if needed
 	/// Returns: True if there was an entityId specified at this index. Note you can still have a NULL outEntity even if true, indicating error.
-	bool GetEntityAtIndex(int index, IEntity* &outEntity, bool bPrepareFromPool = false);
+	bool GetEntityAtIndex(int index, IEntity*& outEntity, bool bPrepareFromPool = false);
 
 	bool GetEntityDataAtIndex(int index, SEntityData& data);
 
@@ -122,25 +118,23 @@ protected:
 	bool TestHasRun() const { return m_timeRunning > 0.0f; }
 
 private:
-	SActivationInfo	m_actInfo;
+	SActivationInfo m_actInfo;
 
-	Vec3                        m_cameraOffset;
-	Vec3                        m_entityStartPos;		// Records the initial position of a sequence entity to aid debugging. Undefined for non-sequential.
-	int                         m_entitySeqIndex;		// The current (virtual - not port) entity index (or -1)
-	uint32                      m_failureCount;			// How many failures during a sequence run (used for AllPassed output)
-	float                       m_timeRunning;			// Start time for the current test case (or current sequence if sequential test)
-	bool                        m_ready;						// True when Ready input state
-	bool                        m_running;					// True when Run has been called.
-	bool                        m_startNextRun;			// Used to schedule the next test to run on next update (thus avoiding late false succeed/fail inputs)
-	bool                        m_labelProfileData;	// Switch to enable labeling profile data for test start and stop points
-	string                      m_owners;						// A string containing semi-colon separated list of owners (by domain name) responsible for associated test.
-	bool                        m_isEnabled;
+	Vec3            m_cameraOffset;
+	Vec3            m_entityStartPos;               // Records the initial position of a sequence entity to aid debugging. Undefined for non-sequential.
+	int             m_entitySeqIndex;               // The current (virtual - not port) entity index (or -1)
+	uint32          m_failureCount;                 // How many failures during a sequence run (used for AllPassed output)
+	float           m_timeRunning;                  // Start time for the current test case (or current sequence if sequential test)
+	bool            m_ready;                        // True when Ready input state
+	bool            m_running;                      // True when Run has been called.
+	bool            m_startNextRun;                 // Used to schedule the next test to run on next update (thus avoiding late false succeed/fail inputs)
+	bool            m_labelProfileData;             // Switch to enable labeling profile data for test start and stop points
+	string          m_owners;                       // A string containing semi-colon separated list of owners (by domain name) responsible for associated test.
+	bool            m_isEnabled;
 };
-
 
 // Forward declaration
 class CCodeCheckpoint;
-
 
 class CFlowNode_WatchCodeCheckpoint : public CFlowBaseNode<eNCT_Instanced>
 {
@@ -150,9 +144,9 @@ public:
 
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo);
 
-	virtual void GetConfiguration(SFlowNodeConfig& config);
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void GetMemoryUsage(ICrySizer* sizer) const;
+	virtual void         GetConfiguration(SFlowNodeConfig& config);
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const;
 
 	enum EInputPorts
 	{
@@ -177,14 +171,14 @@ private:
 	void RemoveAsWatcher();
 
 private:
-	SActivationInfo	m_actInfo;
+	SActivationInfo        m_actInfo;
 
-	size_t m_checkPointIdx;						/// The index for the checkpoint (~0 for invalid)
-	string m_checkpointName;						/// The checkpoint name
-	const CCodeCheckpoint* m_pCheckPoint;			/// The checkpoint in use (if it has been registered)
-	int m_prevHitCount;								/// The hit count of the associated CCCPOINT at the last sync
+	size_t                 m_checkPointIdx;  /// The index for the checkpoint (~0 for invalid)
+	string                 m_checkpointName; /// The checkpoint name
+	const CCodeCheckpoint* m_pCheckPoint;    /// The checkpoint in use (if it has been registered)
+	int                    m_prevHitCount;   /// The hit count of the associated CCCPOINT at the last sync
 
-	bool	m_watchRequested;
+	bool                   m_watchRequested;
 };
 
 ///This class will listen for communication events within a timeout window
@@ -196,11 +190,11 @@ public:
 
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo);
 
-	virtual void GetConfiguration(SFlowNodeConfig& config);
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void GetMemoryUsage(ICrySizer* sizer) const;
+	virtual void         GetConfiguration(SFlowNodeConfig& config);
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const;
 
-	virtual void OnCommunicationEvent(ICommunicationManager::ECommunicationEvent event, EntityId actorID, const CommID& playID);
+	virtual void         OnCommunicationEvent(ICommunicationManager::ECommunicationEvent event, EntityId actorID, const CommID& playID);
 
 	enum EInputPorts
 	{
@@ -225,16 +219,16 @@ private:
 
 private:
 
-	SActivationInfo	m_actInfo;
+	SActivationInfo m_actInfo;
 
-	string m_communicationName;					/// The communication name
-	CommID m_commId;							/// The id corresponding to the communication name
-	float m_timeout;								/// The length of time to list for this communication
+	string          m_communicationName; /// The communication name
+	CommID          m_commId;            /// The id corresponding to the communication name
+	float           m_timeout;           /// The length of time to list for this communication
 
-	EntityId m_entityId;						/// The ID corresponding to the tracked entity
+	EntityId        m_entityId;     /// The ID corresponding to the tracked entity
 
-	float m_timeListened;							/// Time since request to listen for comm signal
-	bool m_isListening;							/// State variable to indicate whether listening for a comm
+	float           m_timeListened; /// Time since request to listen for comm signal
+	bool            m_isListening;  /// State variable to indicate whether listening for a comm
 
 };
 
@@ -265,5 +259,3 @@ public:
 	virtual void GetMemoryUsage(ICrySizer* sizer) const;
 
 };
-
-#endif 

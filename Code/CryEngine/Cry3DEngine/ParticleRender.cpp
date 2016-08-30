@@ -1254,7 +1254,6 @@ void SParticleVertexContext::Init(float fMaxContainerPixels, CParticleContainer*
 	m_vCamPos -= m_vRenderOffset;
 
 	const float fAngularRes = m_CamInfo.pCamera->GetAngularResolution();
-	m_fInvMinPix = sqr(emitterMain.GetViewDistRatioFloat() * params.fViewDistanceAdjust / max(cvars.e_ParticlesMinDrawPixels, 0.125f));
 	m_fMaxPixFactor = params.nEnvFlags & REN_SPRITE ?
 	                  -2.f * params.fFillRateCost / sqr(max(cvars.e_ParticlesMaxDrawScreen * fAngularRes, 1.f))
 	                  : 0.f;
@@ -1276,6 +1275,9 @@ void SParticleVertexContext::Init(float fMaxContainerPixels, CParticleContainer*
 	if (m_uVertexFlags & FOB_OCTAGONAL)
 		m_fFillFactor *= 0.8285f;
 	m_fFillFade = 2.f / fMaxContainerPixels;
+
+	m_fInvMinPix = sqr(CParticleManager::Instance()->GetMaxAngularDensity(*m_CamInfo.pCamera) * emitterMain.GetViewDistRatioFloat() * params.fViewDistanceAdjust)
+		/ m_fFillFactor;
 
 	m_fDistFuncCoefs[0] = 1.f;
 	m_fDistFuncCoefs[1] = m_fDistFuncCoefs[2] = 0.f;

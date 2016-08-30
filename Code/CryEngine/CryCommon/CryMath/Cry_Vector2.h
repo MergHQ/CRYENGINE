@@ -3,7 +3,10 @@
 #ifndef CRYTEK_CRYVECTOR2_H
 #define CRYTEK_CRYVECTOR2_H
 
+const float VEC_EPSILON = 0.05f;
+
 template<typename T> struct Vec2_tpl;
+
 template<typename T> struct Vec2Constants
 {
 	static Vec2_tpl<T> fVec2_Zero;
@@ -47,14 +50,10 @@ template<class F> struct Vec2_tpl
 	ILINE Vec2_tpl& set(F nx, F ny) { x = F(nx); y = F(ny); return *this; }
 
 	template<class F1> ILINE Vec2_tpl(const Vec2_tpl<F1>& src) { x = F(src.x); y = F(src.y); }
-	template<class F1> ILINE explicit Vec2_tpl(const Vec3_tpl<F1>& src) { x = F(src.x); y = F(src.y); }
 	template<class F1> ILINE explicit Vec2_tpl(const F1* psrc) { x = F(psrc[0]); y = F(psrc[1]); }
-
-	explicit ILINE Vec2_tpl(const Vec3_tpl<F>& v) : x((F)v.x), y((F)v.y) { CRY_MATH_ASSERT(this->IsValid()); }
 
 	ILINE Vec2_tpl& operator=(const Vec2_tpl& src) { x = src.x; y = src.y; return *this; }
 	//template<class F1> Vec2_tpl& operator=(const Vec2_tpl<F1>& src) { x=F(src.x); y=F(src.y); return *this; }
-	//template<class F1> Vec2_tpl& operator=(const Vec3_tpl<F1>& src) { x=F(src.x); y=F(src.y); return *this; }
 
 	ILINE int operator!() const { return x == 0 && y == 0; }
 
@@ -104,18 +103,9 @@ template<class F> struct Vec2_tpl
 		}
 	}
 
-	ILINE bool IsEquivalent(const Vec2_tpl<F>& v1, F epsilon = VEC_EPSILON) const
+	ILINE bool IsEquivalent(const Vec2_tpl<F>& v1, f32 epsilon = VEC_EPSILON) const
 	{
-		CRY_MATH_ASSERT(v1.IsValid());
-		CRY_MATH_ASSERT(this->IsValid());
-		return  ((fabs_tpl(x - v1.x) <= epsilon) && (fabs_tpl(y - v1.y) <= epsilon));
-	}
-
-	ILINE static bool IsEquivalent(const Vec2_tpl<F>& v0, const Vec2_tpl<F>& v1, F epsilon = VEC_EPSILON)
-	{
-		CRY_MATH_ASSERT(v0.IsValid());
-		CRY_MATH_ASSERT(v1.IsValid());
-		return  ((fabs_tpl(v0.x - v1.x) <= epsilon) && (fabs_tpl(v0.y - v1.y) <= epsilon));
+		return ::IsEquivalent(*this, v1, epsilon);
 	}
 
 	ILINE F GetLength() const
@@ -317,9 +307,21 @@ bool operator==(const Vec2_tpl<F>& left, const Vec2_tpl<F>& right)
 	return left.x == right.x && left.y == right.y;
 }
 
-template<> ILINE Vec2 clamp_tpl<Vec2>(Vec2 X, Vec2 Min, Vec2 Max)
+
+template<typename F> ILINE Vec2_tpl<F> min(const Vec2_tpl<F>& a, const Vec2_tpl<F>& b)
 {
-	return Vec2(clamp_tpl(X.x, Min.x, Max.x), clamp_tpl(X.y, Min.y, Max.y));
+	return Vec2_tpl<F>(min(a.x, b.x), min(a.y, b.y));
 }
+
+template<typename F> ILINE Vec2_tpl<F> max(const Vec2_tpl<F>& a, const Vec2_tpl<F>& b)
+{
+	return Vec2_tpl<F>(max(a.x, b.x), max(a.y, b.y));
+}
+
+template<typename F> ILINE F sqr(const Vec2_tpl<F>& op)
+{
+	return op | op;
+}
+
 
 #endif // CRYTEK_CRYVECTOR2_H

@@ -64,8 +64,6 @@ SamplerState SAMPLER_STATE_depthMapSamplerLinear : SS_Shadow0
     AddressV = Clamp;
 };
 
-Texture2D<float4> depthMapSamplerLinear : TS_Shadow0;
-
 //single shadow maps
 SamplerComparisonState SAMPLER_STATE_depthMapSampler : SS_Shadow2
 {
@@ -89,6 +87,8 @@ sampler2D sRotSampler = sampler_state
   AddressV = Wrap;	
 };
 
+Texture2D sRotTex  = "EngineAssets/Textures/rotrandom.dds"; 
+
 //prefarable state
 /*  Texture = EngineAssets/Textures/rotrandom.dds;
 	//enable Point filtermode for MinFilter
@@ -111,16 +111,11 @@ sampler2D sRotSamplerCM = sampler_state
 
 CLOUD_SHADOW_MAP
 
-sampler3D volCloudShadowSampler = sampler_state
-{
-	Texture = $VolCloudShadows;
-	MinFilter = LINEAR;
-	MagFilter = LINEAR;
-	MipFilter = LINEAR;
-	AddressU = Mirror;
-	AddressV = Mirror;
-	AddressW = Clamp;
-};
+// TODO: remove this once everything has been ported to new render backend
+Texture2D gCloudShadowTex = TS_CloudShadow;
+SamplerState gCloudShadowSS : SS_MaterialBilinearWrap;
+Texture3D gVolCloudShadowTex : TS_VolCloudShadow;
+SamplerState gVolCloudShadowSS : SS_MaterialTrilinearBorder;
 
 
 void ShadowTexSpace(float4 vPos, float4x4 TexGen, float4x4 InstMatrix, float fInvFarDist, out float4 p)
@@ -213,49 +208,69 @@ float2 GetKernelSize()
   return KernelSize;
 }
 
-void shadow_sample(Texture2D depthMap, float3 p, out float shadow, bool bForceDepthFetch = false)
+struct ShadowSamplingContext
 {
-		if (bForceDepthFetch)
-		{
-		shadow = depthMap.SampleLevel( SAMPLER_STATE_depthMapSamplerLinear, p.xy, 0.0f).x;
-		}
-		else
-		{
-		shadow = depthMap.SampleCmpLevelZero( SAMPLER_STATE_depthMapSampler, p.xy, p.z );
-		}
+	SamplerComparisonState comparisonSampler;
+	SamplerState           pointSamplerWrap;
+	SamplerState           pointSamplerClamp;
+	SamplerState           bilinearSamplerWrap;
+	
+	Texture2D              noiseTex;
+};
+
+struct IrregularFilterKernel
+{
+	float4 taps[HALF_MAX_SHADOW_SAMPLES_NUM];
+	float2 scale;
+	float2 noiseLookupPos;
+	float4 adaption;
+};
+
+struct ShadowCascades
+{
+	Texture2D shadowMap0;
+	Texture2D shadowMap1;
+	Texture2D shadowMap2;
+	Texture2D shadowMap3;
+	Texture2D cloudShadowTex;
+};
+
+void shadow_sample(Texture2D depthMap, SamplerComparisonState comparisonSampler, float3 p, out float shadow)
+{
+	shadow = depthMap.SampleCmpLevelZero( comparisonSampler, p.xy, p.z );
 }
 
-void SampleRotated(Texture2D depthMap, float3 p, float4 rotMatr, float2 kernel, out float result)
+void SampleRotated(Texture2D depthMap, SamplerComparisonState comparisonSampler, float3 p, float4 rotMatr, float2 kernel, out float result)
 {
-		// Rotate tap for this pixel location
-		float2 rotatedOff;
+	// Rotate tap for this pixel location
+	float2 rotatedOff;
 
-		rotatedOff.x = dot(rotMatr.xy, kernel);
-		rotatedOff.y = dot(rotMatr.zw, kernel);
+	rotatedOff.x = dot(rotMatr.xy, kernel);
+	rotatedOff.y = dot(rotMatr.zw, kernel);
 
-		float2 fetchPos = p.xy + rotatedOff.xy;
+	float2 fetchPos = p.xy + rotatedOff.xy;
 
-		shadow_sample(depthMap, float3(fetchPos.xy, p.z), result);
+	shadow_sample(depthMap, comparisonSampler, float3(fetchPos.xy, p.z), result);
 }
 
-void DoubleSampleRotated(Texture2D depthMap, float3 p, float4 rotMatr, float4 kernel, out float2 result, bool bForceDepthFetch = false)
+void DoubleSampleRotated(Texture2D depthMap, SamplerComparisonState comparisonSampler, float3 p, float4 rotMatr, float4 kernel, out float2 result)
 {
-		// Rotate tap for this pixel location
-		float4 rotatedOff;
+	// Rotate tap for this pixel location
+	float4 rotatedOff;
 
-		rotatedOff = rotMatr.xyzw * kernel.xxww +
-								 rotMatr.zwxy * kernel.yyzz;
+	rotatedOff = rotMatr.xyzw * kernel.xxww +
+	             rotMatr.zwxy * kernel.yyzz;
 
 
-		float4 fetchPos = p.xyxy + rotatedOff;
+	float4 fetchPos = p.xyxy + rotatedOff;
 
-		shadow_sample(depthMap, float3(fetchPos.xy,p.z), result.x, bForceDepthFetch);
-		shadow_sample(depthMap, float3(fetchPos.zw,p.z), result.y, bForceDepthFetch);
+	shadow_sample(depthMap, comparisonSampler, float3(fetchPos.xy,p.z), result.x);
+	shadow_sample(depthMap, comparisonSampler, float3(fetchPos.zw,p.z), result.y);
 }
 
-void irregular_filter_impl(Texture2D depthMap, float4 p, float4 rotMatr, float2 kernelRadius, out float shadowTest, const bool bContactHardening = false)
+void irregular_filter_impl(Texture2D depthMap, ShadowSamplingContext samplingContext, IrregularFilterKernel filterKernel, float4 p, float4 rotMatr, float2 kernelRadius, out float shadowTest, const bool bContactHardening = false)
 {
-  half kernelOffset = 0;
+	half kernelOffset = 0;
 	half kernelSize = GetShadowSamplesNum()/2;
 
 	#define KERNEL_STEP_SIZE 2
@@ -271,16 +286,16 @@ void irregular_filter_impl(Texture2D depthMap, float4 p, float4 rotMatr, float2 
 		for(int i=kernelOffset; i<kernelSize; i+=KERNEL_STEP_SIZE) // Loop over taps
 		{
 			float4 sampleDepth;
-			shadow_sample(depthMapSampler0, float3(p.xy + irreg_kernel_2d[i+0].xy * kernelScale, 0), sampleDepth.x, true);
-			shadow_sample(depthMapSampler0, float3(p.xy + irreg_kernel_2d[i+0].zw * kernelScale, 0), sampleDepth.y, true);
-			shadow_sample(depthMapSampler0, float3(p.xy + irreg_kernel_2d[i+1].xy * kernelScale, 0), sampleDepth.z, true);
-			shadow_sample(depthMapSampler0, float3(p.xy + irreg_kernel_2d[i+1].zw * kernelScale, 0), sampleDepth.w, true);
+			sampleDepth.x = depthMap.SampleLevel(samplingContext.pointSamplerClamp, p.xy + filterKernel.taps[i+0].xy * kernelScale, 0);
+			sampleDepth.y = depthMap.SampleLevel(samplingContext.pointSamplerClamp, p.xy + filterKernel.taps[i+0].zw * kernelScale, 0);
+			sampleDepth.z = depthMap.SampleLevel(samplingContext.pointSamplerClamp, p.xy + filterKernel.taps[i+1].xy * kernelScale, 0);
+			sampleDepth.w = depthMap.SampleLevel(samplingContext.pointSamplerClamp, p.xy + filterKernel.taps[i+1].zw * kernelScale, 0);
 
 			float4 localArea = ( p.zzzz - sampleDepth);
 			float4 samplNum = localArea > 0.0f;
 			accumCoverage += dot(samplNum, float4(1,1,1,1));
 
-			localArea = min(abs(localArea), vAdaption.xxxx); 
+			localArea = min(abs(localArea), filterKernel.adaption.xxxx); 
 			accumArea += dot(localArea.xyzw, samplNum.xyzw);
 		}
 
@@ -289,12 +304,12 @@ void irregular_filter_impl(Texture2D depthMap, float4 p, float4 rotMatr, float2 
 		if (accumCoverage > 0.1f)
 		{
 			kernelAdjScale = accumArea/accumCoverage;
-			kernelAdjScale = kernelAdjScale * vAdaption.y;
-			rotMatr *= max(kernelAdjScale,vAdaption.z);
+			kernelAdjScale = kernelAdjScale * filterKernel.adaption.y;
+			rotMatr *= max(kernelAdjScale, filterKernel.adaption.z);
 		}
 		else
 		{
-			rotMatr *= vAdaption.z;
+			rotMatr *= filterKernel.adaption.z;
 		}
 	}
 	/////////////////////////////
@@ -305,48 +320,34 @@ void irregular_filter_impl(Texture2D depthMap, float4 p, float4 rotMatr, float2 
 	for(int i=kernelOffset; i<kernelSize; i+=KERNEL_STEP_SIZE) // Loop over taps
 	{
 		half4 inShadow;
-		DoubleSampleRotated(depthMap, p.xyz, rotMatr, irreg_kernel_2d[i+0], inShadow.xy);
-		DoubleSampleRotated(depthMap, p.xyz, rotMatr, irreg_kernel_2d[i+1], inShadow.zw);
+		DoubleSampleRotated(depthMap, samplingContext.comparisonSampler, p.xyz, rotMatr, filterKernel.taps[i+0], inShadow.xy);
+		DoubleSampleRotated(depthMap, samplingContext.comparisonSampler, p.xyz, rotMatr, filterKernel.taps[i+1], inShadow.zw);
 
-    half fInvSamplNum = (1.0 / GetShadowSamplesNum());
+		half fInvSamplNum = (1.0 / GetShadowSamplesNum());
 		shadowTest += dot(inShadow,fInvSamplNum.xxxx);
 	}
-
-	shadowTest = pow(shadowTest,2);
 }
 
 // Bring parameters into tex space first and then call irregular_filter_impl 
-void irregular_filter(Texture2D depthMap, sampler2D sRotations, float4 p, float2 NoiseP, float2 KernelSize, out float shadowTest, const bool bContactHardening = false)
+void irregular_filter(Texture2D depthMap, float2 invShadowMapSize, ShadowSamplingContext samplingContext, IrregularFilterKernel filterKernel, float4 p, out float shadowTest, const bool bContactHardening = false)
 {
-	float2 randDirTC = NoiseP.xy * (KernelSize.y * 15.h);
-	float2 kernelRadius = KernelSize * vInvShadowMapSize.xx;
+	float2 randDirTC = filterKernel.noiseLookupPos.xy;
+	float2 kernelRadius = filterKernel.scale * invShadowMapSize;
 
-	half2 rotSample = GetTexture2D(sRotations, randDirTC.xy).xy * kernelRadius.xy;
+	half2 rotSample = GetTexture2D(samplingContext.noiseTex, samplingContext.pointSamplerWrap, randDirTC.xy).xy * kernelRadius.xy;
 	float4 rotMatr = float4(rotSample.x, -rotSample.y, rotSample.y, rotSample.x);
 	
-	irregular_filter_impl(depthMapSampler0, p, rotMatr, kernelRadius, shadowTest, bContactHardening);
+	irregular_filter_impl(depthMap, samplingContext, filterKernel, p, rotMatr, kernelRadius, shadowTest, bContactHardening);
 }
 
-float GetVolumetricCloudShadow(float3 worldPos)
+float GetVolumetricCloudShadow(Texture3D volCloudShadowTex, SamplerState volCloudSState, float3 worldPos, float3 sunDir, float4 params, float4 animParams)
 {
-#if %_PS
-	const float3 sunDir = g_PS_SunLightDir.xyz;
-#elif %_VS
-	const float3 sunDir = g_VS_SunLightDir.xyz;
-#elif %_CS
-	const float3 sunDir = g_VS_SunLightDir.xyz;
-#elif %_DS
-	const float3 sunDir = g_VS_SunLightDir.xyz;
-#else
-	const float3 sunDir = normalize(float3(0.1, 0.1, 1.0));
-#endif
-
-	const float cloudBottomAltitude = CloudShadowParams.x;
-	const float cloudTopAltitude = CloudShadowParams.y;
-	const float invCloudShadowRamp = CloudShadowParams.z;
-	const float invCloudThickness = CloudShadowParams.w;
-	const float2 worldAlignmentOffset = CloudShadowAnimParams.xy;
-	const float2 invTilingSize = CloudShadowAnimParams.zw;
+	const float cloudBottomAltitude = params.x;
+	const float cloudTopAltitude = params.y;
+	const float invCloudShadowRamp = params.z;
+	const float invCloudThickness = params.w;
+	const float2 worldAlignmentOffset = animParams.xy;
+	const float2 invTilingSize = animParams.zw;
 	const float2 textureCenterOffset = float2(0.5f, 0.5f);
 
 	const float d = (abs(sunDir.z) < 0.0000001f) ? sign(sunDir.z) * 0.0000001f : sunDir.z;
@@ -357,7 +358,7 @@ float GetVolumetricCloudShadow(float3 worldPos)
 	uvw.xy = (t * sunDir.xy + (worldPos.xy - worldAlignmentOffset.xy)) * invTilingSize.xy + textureCenterOffset.xy;
 	uvw.z = saturate((worldPos.z - cloudBottomAltitude) * invCloudThickness);
 
-	float opticalThickness = tex3Dlod(volCloudShadowSampler, float4(uvw.xyz, 0)).x;
+	float opticalThickness = volCloudShadowTex.SampleLevel(volCloudSState, uvw.xyz, 0.0f).x;
 	return max(decayAboveCloud, exp(-opticalThickness));
 }
 
@@ -368,9 +369,23 @@ float GetCloudShadowCommon(float3 worldPos, sampler2D sShadowMap, float4 vAnimPa
 	return vParams.z>0 ? 1 - fCloudsShadow : fCloudsShadow;
 }
 
-float GetCloudShadow(float3 worldPos)
+float GetCloudShadowCommon(float3 worldPos, Texture2D cloudShadowTex, SamplerState bilinearSamplerWrap, float4 vAnimParams, float4 vParams)
 {
-	return GetCloudShadowCommon(worldPos, cloudShadowMap, CloudShadowAnimParams, CloudShadowParams);
+	float2 uv = ComputeCloudShadowMapUV(worldPos);
+	float fCloudsShadow = saturate( GetTexture2DLod(cloudShadowTex, bilinearSamplerWrap, float4((uv * vAnimParams.xy - vAnimParams.zw) , 0, 0)).r * vParams.w );
+	return vParams.z>0 ? 1 - fCloudsShadow : fCloudsShadow;
+}
+
+float GetCloudShadowCommon(float3 worldPos, Texture2D cloudShadowTex, SamplerState bilinearSamplerWrap, float4 vAnimParams, float4 vParams, float3 sunDirNormalized)
+{
+	float2 uv = ComputeCloudShadowMapUV(worldPos, sunDirNormalized);
+	float fCloudsShadow = saturate( GetTexture2DLod(cloudShadowTex, bilinearSamplerWrap, float4((uv * vAnimParams.xy - vAnimParams.zw) , 0, 0)).r * vParams.w );
+	return vParams.z>0 ? 1 - fCloudsShadow : fCloudsShadow;
+}
+
+float GetCloudShadow(float3 worldPos, ShadowCascades shadowCascades, ShadowSamplingContext samplingContext)
+{
+	return GetCloudShadowCommon(worldPos, shadowCascades.cloudShadowTex, samplingContext.bilinearSamplerWrap, CloudShadowAnimParams, CloudShadowParams);
 }
 
 uint GetForwardShadowsCascadeMask()
@@ -378,7 +393,7 @@ uint GetForwardShadowsCascadeMask()
 	return asuint(fKernelRadius.z);
 }
 
-bool ShadowCascadeSample(Texture2D depthMap, float4 p, float2 randDirTC, float fDepthTestBias, out float fShadow, bool bSingleTap = false)
+bool ShadowCascadeSample(Texture2D depthMap, ShadowSamplingContext samplingContext, float4 p, float2 randDirTC, float fDepthTestBias, out float fShadow, bool bSingleTap = false)
 {	
 	fShadow = 1;
 	
@@ -389,11 +404,18 @@ bool ShadowCascadeSample(Texture2D depthMap, float4 p, float2 randDirTC, float f
 	{
 		if(bSingleTap)
 		{
-			shadow_sample(depthMap, p.xyz, fShadow);
+			shadow_sample(depthMap, samplingContext.comparisonSampler, p.xyz, fShadow);
 		}
 		else
 		{
-			irregular_filter(depthMap, sRotSampler, p, randDirTC, GetKernelSize(), fShadow);
+			IrregularFilterKernel filterKernel;
+			filterKernel.taps = irreg_kernel_2d;
+			filterKernel.scale = GetKernelSize();
+			filterKernel.noiseLookupPos = randDirTC * (filterKernel.scale.y * 15.h);
+
+			irregular_filter(depthMap, vInvShadowMapSize.xx, samplingContext, filterKernel, p, fShadow);
+			
+			fShadow = pow(fShadow,2);
 		}
 		return true;
 	}
@@ -401,7 +423,7 @@ bool ShadowCascadeSample(Texture2D depthMap, float4 p, float2 randDirTC, float f
 	return false;
 }
 
-float ShadowDepthTest(float3 worldPos, bool bSampleCloudShadows = true, bool bForceSingleTap = false)
+float ShadowDepthTest(ShadowCascades shadowCascades, ShadowSamplingContext samplingContext, float3 worldPos, bool bSampleCloudShadows = true, bool bForceSingleTap = false)
 {
 	const uint nCascadeMask = GetForwardShadowsCascadeMask();
 	const bool bSingleTapFirstCascade = bForceSingleTap || (nCascadeMask & FORWARD_SHADOWS_CASCADE0_SINGLE_TAP);
@@ -414,25 +436,25 @@ float ShadowDepthTest(float3 worldPos, bool bSampleCloudShadows = true, bool bFo
 		ShadowTexSpace(float4(worldPos, 1), TexGen0, fOneDivFarDist.x, p);
 		const float2 randDirTC = p.xy / p.w * 1000.0;
 		
-		bool bDone = ShadowCascadeSample(depthMapSampler0, p, randDirTC, fDepthTestBias.x, fShadow, bSingleTapFirstCascade);
+		bool bDone = ShadowCascadeSample(shadowCascades.shadowMap0, samplingContext, p, randDirTC, fDepthTestBias.x, fShadow, bSingleTapFirstCascade);
 
 		[branch]
 		if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_1))
 		{
 			ShadowTexSpace(float4(worldPos, 1), TexGen1, fOneDivFarDist.y, p);
-			bDone = ShadowCascadeSample(depthMapSampler1, p, randDirTC, fDepthTestBias.y, fShadow, true);
+			bDone = ShadowCascadeSample(shadowCascades.shadowMap1, samplingContext, p, randDirTC, fDepthTestBias.y, fShadow, true);
 		
 			[branch]
 			if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_2))
 			{
 				ShadowTexSpace(float4(worldPos, 1), TexGen2, fOneDivFarDist.z, p);
-				bDone = ShadowCascadeSample(depthMapSampler2, p, randDirTC, fDepthTestBias.z, fShadow, true);
+				bDone = ShadowCascadeSample(shadowCascades.shadowMap2, samplingContext, p, randDirTC, fDepthTestBias.z, fShadow, true);
 				
 				[branch]
 				if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_3))
 				{
 					ShadowTexSpace(float4(worldPos, 1), TexGen3, fOneDivFarDist.w, p);
-					ShadowCascadeSample(depthMapSampler3, p, randDirTC, fDepthTestBias.w, fShadow, true);
+					ShadowCascadeSample(shadowCascades.shadowMap3, samplingContext, p, randDirTC, fDepthTestBias.w, fShadow, true);
 				}
 			}
 		}
@@ -440,16 +462,34 @@ float ShadowDepthTest(float3 worldPos, bool bSampleCloudShadows = true, bool bFo
 
 	if(bSampleCloudShadows && (nCascadeMask & FORWARD_SHADOWS_CLOUD_SHADOWS))
 	{
-		float fCloudShadow = GetCloudShadow(worldPos);
+		float fCloudShadow = GetCloudShadow(worldPos, shadowCascades, samplingContext);
 		fShadow *= fCloudShadow;
 	}
 	
 	return fShadow;
 }
 
-Texture2D <float4> sceneDepthTextureSS : TS_ZTarget  ;
+// TODO: remove this once everything has been ported to new render backend
+float ShadowDepthTest(float3 worldPos, bool bSampleCloudShadows = true, bool bForceSingleTap = false)
+{
+	ShadowSamplingContext samplingContext;
+	samplingContext.comparisonSampler   = SAMPLER_STATE_depthMapSampler;
+	samplingContext.pointSamplerClamp   = SAMPLER_STATE_depthMapSamplerLinear;
+	samplingContext.pointSamplerWrap    = ssPointWrap;
+	samplingContext.bilinearSamplerWrap = gCloudShadowSS;
+	samplingContext.noiseTex            = sRotTex;
 
-void CalculateDetailSSShadow(const float fDepth0, const float3 vPosWS, const float3 vPosLight, const float4x4 matComosite, inout float fInShadow, const bool bUseTexture2D = false)
+	ShadowCascades shadowCascades;
+	shadowCascades.shadowMap0 = depthMapSampler0;
+	shadowCascades.shadowMap1 = depthMapSampler1;
+	shadowCascades.shadowMap2 = depthMapSampler2;
+	shadowCascades.shadowMap3 = depthMapSampler3;
+	shadowCascades.cloudShadowTex = gCloudShadowTex;
+	
+	return ShadowDepthTest(shadowCascades, samplingContext, worldPos, bSampleCloudShadows, bForceSingleTap);
+}
+
+void CalculateDetailSSShadow(Texture2D sceneDepthTex, const float fDepth0, const float3 vPosWS, const float3 vPosLight, const float4x4 matComosite, inout float fInShadow, const bool bUseTexture2D = false)
 {
 	float4 vTC0 = mul(matComosite, float4(vPosWS, 1));
 
@@ -470,13 +510,10 @@ void CalculateDetailSSShadow(const float fDepth0, const float3 vPosWS, const flo
 		if (vTC.x < 0 || vTC.x>1 || vTC.y < 0 || vTC.y>1)
 			break;
 
-		float fScrDepth = 0;
-		if(bUseTexture2D)
-			fScrDepth = GetLinearDepth( sceneDepthTextureSS, vTC.xy ) * PS_NearFarClipDist.y;
-		else
-			fScrDepth = GetLinearDepth(_tex0, float4(vTC.xy, 0, 0)) * PS_NearFarClipDist.y;
+		int3 vPixCoord = int3(vTC.xy * CV_ScreenSize.xy, 0);
+		float fScrDepth = sceneDepthTex.Load(vPixCoord).x * CV_NearFarClipDist.y;
 
-		float fRayDepth = GetLinearDepth(g_PS_ProjRatio.y / (vTC.z - g_PS_ProjRatio.x)) * PS_NearFarClipDist.y - .0045f;
+		float fRayDepth = GetLinearDepth(CV_ProjRatio.y / (vTC.z - CV_ProjRatio.x)) * CV_NearFarClipDist.y - .0045f;
 			
 		float fSurDens = 1 - 200 * max((fScrDepth - fRayDepth), max(fRayDepth - fScrDepth - .03, 0) / 3);
 
@@ -487,7 +524,7 @@ void CalculateDetailSSShadow(const float fDepth0, const float3 vPosWS, const flo
 		vTCD *= 1.05;
 	}
 
-	fInSSS = lerp(fInSSS, 1, saturate(fDepth0 * PS_NearFarClipDist.y - 1.f));
+	fInSSS = lerp(fInSSS, 1, saturate(fDepth0 * CV_NearFarClipDist.y - 1.f));
 
 	fInShadow = min(fInSSS, fInShadow);
 }

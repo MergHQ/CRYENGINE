@@ -11,22 +11,22 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include <CryAISystem/IAIActionSequence.h>
-#include <CryAISystem/IAISystem.h>
-#include <IItemSystem.h>
-#include "G2FlowBaseNode.h"
 #include "Actor.h"
 #include "Weapon.h"
 
+#include <CryFlowGraph/IFlowBaseNode.h>
+#include <CryAISystem/IAIActionSequence.h>
+#include <CryAISystem/IAISystem.h>
+#include <IItemSystem.h>
 
-////////////////////////////////////////////////////////////////////////// 
+//////////////////////////////////////////////////////////////////////////
 //
 // CryGame_AIActionSequenceFlowNodeBase
 //
 //////////////////////////////////////////////////////////////////////////
-class CryGame_AIActionSequenceFlowNodeBase	// prefixed with "CryGame" to prevent naming clashes in monolithic builds
+class CryGame_AIActionSequenceFlowNodeBase  // prefixed with "CryGame" to prevent naming clashes in monolithic builds
 	: public CFlowBaseNode<eNCT_Instanced>
-	, public AIActionSequence::SequenceActionBase
+	  , public AIActionSequence::SequenceActionBase
 {
 protected:
 	void FinishSequenceActionAndActivateOutputPort(int port);
@@ -47,7 +47,6 @@ void CryGame_AIActionSequenceFlowNodeBase::CancelSequenceAndActivateOutputPort(i
 	ActivateOutput(&m_actInfo, port, true);
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 //
 // CFlowNode_AISequenceAction_WeaponDraw
@@ -62,9 +61,9 @@ public:
 
 	// IFlowNode
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo);
-	virtual void GetConfiguration(SFlowNodeConfig& config);
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void GetMemoryUsage(ICrySizer* sizer) const;
+	virtual void         GetConfiguration(SFlowNodeConfig& config);
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const;
 	// ~IFlowNode
 
 	// AIActionSequence::SequenceActionBase
@@ -102,7 +101,7 @@ void CFlowNode_AISequenceAction_WeaponDraw::GetConfiguration(SFlowNodeConfig& co
 	static const SInputPortConfig inputPortConfig[] =
 	{
 		InputPortConfig_Void("Start"),
-		InputPortConfig<bool>("SkipDrawAnimation", _HELP("If true, skip the draw animation")),
+		InputPortConfig<bool>("SkipDrawAnimation",_HELP("If true, skip the draw animation")),
 		{ 0 }
 	};
 
@@ -124,7 +123,7 @@ void CFlowNode_AISequenceAction_WeaponDraw::ProcessEvent(EFlowEvent event, SActi
 	if (!pActInfo->pEntity)
 		return;
 
-	switch(event)
+	switch (event)
 	{
 	case eFE_Activate:
 		{
@@ -149,7 +148,7 @@ void CFlowNode_AISequenceAction_WeaponDraw::GetMemoryUsage(ICrySizer* sizer) con
 
 void CFlowNode_AISequenceAction_WeaponDraw::HandleSequenceEvent(AIActionSequence::SequenceEvent sequenceEvent)
 {
-	switch(sequenceEvent)
+	switch (sequenceEvent)
 	{
 	case AIActionSequence::StartAction:
 		{
@@ -179,7 +178,6 @@ void CFlowNode_AISequenceAction_WeaponDraw::HandleSequenceEvent(AIActionSequence
 	}
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 //
 // CFlowNode_AISequenceAction_WeaponHolster
@@ -194,9 +192,9 @@ public:
 
 	// IFlowNode
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo);
-	virtual void GetConfiguration(SFlowNodeConfig& config);
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void GetMemoryUsage(ICrySizer* sizer) const;
+	virtual void         GetConfiguration(SFlowNodeConfig& config);
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const;
 	// ~IFlowNode
 
 	// AIActionSequence::SequenceActionBase
@@ -234,7 +232,7 @@ void CFlowNode_AISequenceAction_WeaponHolster::GetConfiguration(SFlowNodeConfig&
 	static const SInputPortConfig inputPortConfig[] =
 	{
 		InputPortConfig_Void("Start"),
-		InputPortConfig<bool>("SkipHolsterAnimation", _HELP("If true, skip the holster animation")),
+		InputPortConfig<bool>("SkipHolsterAnimation",_HELP("If true, skip the holster animation")),
 		{ 0 }
 	};
 
@@ -256,7 +254,7 @@ void CFlowNode_AISequenceAction_WeaponHolster::ProcessEvent(EFlowEvent event, SA
 	if (!pActInfo->pEntity)
 		return;
 
-	switch(event)
+	switch (event)
 	{
 	case eFE_Activate:
 		{
@@ -281,7 +279,7 @@ void CFlowNode_AISequenceAction_WeaponHolster::GetMemoryUsage(ICrySizer* sizer) 
 
 void CFlowNode_AISequenceAction_WeaponHolster::HandleSequenceEvent(AIActionSequence::SequenceEvent sequenceEvent)
 {
-	switch(sequenceEvent)
+	switch (sequenceEvent)
 	{
 	case AIActionSequence::StartAction:
 		{
@@ -325,9 +323,9 @@ public:
 
 	// IFlowNode
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo);
-	virtual void GetConfiguration(SFlowNodeConfig& config);
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void GetMemoryUsage(ICrySizer* sizer) const;
+	virtual void         GetConfiguration(SFlowNodeConfig& config);
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const;
 	// ~IFlowNode
 
 	// AIActionSequence::SequenceActionBase
@@ -365,7 +363,7 @@ void CFlowNode_AISequenceAction_WeaponDrawFromInventory::GetConfiguration(SFlowN
 	static const SInputPortConfig inputPortConfig[] =
 	{
 		InputPortConfig_Void("Start"),
-		InputPortConfig<string>("Weapon", _HELP("Name of the weapon to be selected from the AI's inventory.\nNotice: this is a list of all weapons available in the game, so, be sure to only select one actually available in the AI's inventory."), NULL, _UICONFIG("enum_global:weapon")),
+		InputPortConfig<string>("Weapon",_HELP("Name of the weapon to be selected from the AI's inventory.\nNotice: this is a list of all weapons available in the game, so, be sure to only select one actually available in the AI's inventory."),  NULL, _UICONFIG("enum_global:weapon")),
 		{ 0 }
 	};
 
@@ -387,7 +385,7 @@ void CFlowNode_AISequenceAction_WeaponDrawFromInventory::ProcessEvent(EFlowEvent
 	if (!pActInfo->pEntity)
 		return;
 
-	switch(event)
+	switch (event)
 	{
 	case eFE_Activate:
 		{
@@ -412,7 +410,7 @@ void CFlowNode_AISequenceAction_WeaponDrawFromInventory::GetMemoryUsage(ICrySize
 
 void CFlowNode_AISequenceAction_WeaponDrawFromInventory::HandleSequenceEvent(AIActionSequence::SequenceEvent sequenceEvent)
 {
-	switch(sequenceEvent)
+	switch (sequenceEvent)
 	{
 	case AIActionSequence::StartAction:
 		{
@@ -446,7 +444,7 @@ void CFlowNode_AISequenceAction_WeaponDrawFromInventory::HandleSequenceEvent(AIA
 				return;
 			}
 
-			pInventory->SetHolsteredItem(EntityId(0));	// otherwise trying to holster the new weapon later on will not work (i. e. will do nothing)
+			pInventory->SetHolsteredItem(EntityId(0));  // otherwise trying to holster the new weapon later on will not work (i. e. will do nothing)
 
 			// draw the weapon
 			const string& weaponName = GetPortString(&m_actInfo, InputPort_WeaponName);

@@ -1,9 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
 #include "CryAction.h"
 #include "IGameRulesSystem.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_EndLevel : public CFlowBaseNode<eNCT_Singleton>
 {
@@ -41,4 +42,4 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Mission:EndLevelNew", CFlowNode_EndLevel);
+REGISTER_FLOW_NODE("Mission:LoadNextLevel", CFlowNode_EndLevel);

@@ -1011,10 +1011,6 @@ bool CD3D9Renderer::FX_PostProcessScene(bool bEnable)
 			PostProcessUtils().Create();
 		}
 	}
-	else if (!CRenderer::CV_r_PostProcess && !CRenderer::CV_r_HDRRendering && CTexture::s_ptexBackBuffer)
-	{
-		PostProcessUtils().Release();
-	}
 
 	return true;
 }
@@ -1115,7 +1111,9 @@ void CPostEffectsMgr::End()
 
 	const int kFloatMaxContinousInt = 0x1000000;  // 2^24
 	const bool bStereo = gcpRendD3D->GetS3DRend().IsStereoEnabled();
-	if (!bStereo || (bStereo && gRenDev->m_CurRenderEye == RIGHT_EYE))
+	const bool bStereoSequentialSubmission = gcpRendD3D->GetS3DRend().GetStereoSubmissionMode() == STEREO_SUBMISSION_SEQUENTIAL;
+
+	if (!bStereo || (bStereo && (!bStereoSequentialSubmission || gRenDev->m_CurRenderEye == RIGHT_EYE)))
 		SPostEffectsUtils::m_iFrameCounter = (SPostEffectsUtils::m_iFrameCounter + 1) % kFloatMaxContinousInt;
 
 	PostProcessUtils().Log("### POST-PROCESSING ENDS ### ");
@@ -1127,7 +1125,7 @@ void CPostEffectsMgr::End()
 bool CREPostProcess::mfDraw(CShader* ef, SShaderPass* sfm)
 {
 	CPostEffectsMgr* pPostMgr = PostEffectMgr();
-	IF (!gcpRendD3D || !CRenderer::CV_r_PostProcess || pPostMgr->GetEffects().empty() || gcpRendD3D->GetWireframeMode() > R_SOLID_MODE, 0)
+	IF (!gcpRendD3D || !CRenderer::CV_r_PostProcess || pPostMgr->GetEffects().empty() || (gcpRendD3D->GetWireframeMode() > R_SOLID_MODE && gcpRendD3D->m_nGraphicsPipeline == 0), 0)
 		return 0;
 
 	// Skip hdr/post processing when rendering different camera views

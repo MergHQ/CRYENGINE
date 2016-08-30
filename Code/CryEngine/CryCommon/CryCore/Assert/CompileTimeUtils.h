@@ -7,18 +7,7 @@
 
 #include <CryCore/MetaUtils.h>
 
-#if _MSC_VER >= 1600
-	#define STATIC_ASSERT(condition, errMessage) static_assert(condition, errMessage)
-#else
-template<bool condition> struct _SStaticAssert {};
-template<> struct _SStaticAssert<true>
-{
-	static void Assert()
-	{
-	}
-};
-	#define STATIC_ASSERT(condition, errMessage) _SStaticAssert<(condition)>::Assert();
-#endif
+#define STATIC_ASSERT(condition, errMessage) static_assert(condition, errMessage)
 
 template<int left, int right> struct static_max
 {

@@ -42,8 +42,6 @@ public:
 
 private:
 
-	IVehicle* m_pVehicle;
-
 	Vec3      m_localOffset;
 	float     m_waterRipplesScale;
 	float     m_waterRipplesStrength;

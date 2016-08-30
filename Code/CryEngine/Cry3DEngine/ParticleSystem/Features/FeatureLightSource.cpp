@@ -7,10 +7,18 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureLightSource = false;
-
 namespace pfx2
 {
+
+extern EParticleDataType
+  EPDT_Color,
+  EPDT_Alpha;
+
+SERIALIZATION_DECLARE_ENUM(ELightAffectsFog,
+	No,
+	FogOnly,
+	Both
+	)
 
 class CFeatureLightSource : public CParticleFeature, public Cry3DEngineBase
 {
@@ -20,6 +28,7 @@ public:
 	CFeatureLightSource()
 		: m_intensity(1.0f)
 		, m_radius(1.0f)
+		, m_affectsFog(ELightAffectsFog::Both)
 		, m_affectsThisAreaOnly(false) {}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
@@ -33,10 +42,11 @@ public:
 		CParticleFeature::Serialize(ar);
 		ar(m_intensity, "Intensity", "Intensity");
 		ar(m_radius, "Radius", "Radius");
+		ar(m_affectsFog, "Affectsfog", "Affects Fog");
 		ar(m_affectsThisAreaOnly, "AffectsThisAreaOnly", "Affects This Area Only");
 	}
 
-	virtual void Render(ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, IRenderNode* pNode, const SRenderContext& renderContext) override
+	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
@@ -53,12 +63,17 @@ public:
 		const bool hasColors = container.HasData(EPDT_Color);
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const IColorStream colors = container.GetIColorStream(EPDT_Color);
+		const IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 		const TIStream<uint8> states = container.GetTIStream<uint8>(EPDT_State);
 
 		CDLight light;
 		light.m_nStencilRef[0] = m_affectsThisAreaOnly ? renderContext.m_renderParams.nClipVolumeStencilRef : CClipVolumeManager::AffectsEverythingStencilRef;
 		light.m_nStencilRef[1] = CClipVolumeManager::InactiveVolumeStencilRef;
-		light.m_Flags |= DLF_DEFERRED_LIGHT | DLF_VOLUMETRIC_FOG;
+		light.m_Flags |= DLF_DEFERRED_LIGHT;
+		if (m_affectsFog == ELightAffectsFog::Both)
+			light.m_Flags |= DLF_VOLUMETRIC_FOG;
+		else if (m_affectsFog == ELightAffectsFog::FogOnly)
+			light.m_Flags |= DLF_VOLUMETRIC_FOG | DLF_VOLUMETRIC_FOG_ONLY;
 
 		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
 		{
@@ -72,7 +87,8 @@ public:
 				color = colors.Load(particleId);
 			else
 				color.dcolor = ~0;
-			const float lightIntensity = m_intensity;
+			const float alpha = alphas.SafeLoad(particleId);
+			const float lightIntensity = alpha * m_intensity;
 			const float lightRadius = m_radius;
 
 			light.SetPosition(position);
@@ -96,12 +112,13 @@ public:
 	}
 
 private:
-	UFloat10 m_intensity;
-	UFloat10 m_radius;
-	bool     m_affectsThisAreaOnly;
+	UFloat10         m_intensity;
+	UFloat10         m_radius;
+	ELightAffectsFog m_affectsFog;
+	bool             m_affectsThisAreaOnly;
 };
 
 static const ColorB lightColor = ColorB(230, 216, 0);
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLightSource, "Light", "Light", defaultIcon, lightColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLightSource, "Light", "Light", colorLight);
 
 }

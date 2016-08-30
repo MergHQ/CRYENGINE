@@ -14,12 +14,11 @@
 #include "StdAfx.h"
 #include "CryAction.h"
 #include "IVehicleSystem.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
 #include "FlowVehicleBase.h"
 #include "VehicleSystem/Vehicle.h"
 #include "VehicleSystem/VehicleSeat.h"
 #include "VehicleSystem/VehicleSeatActionSound.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowVehicleHonk
 	: public CFlowVehicleBase
@@ -159,4 +158,4 @@ protected:
 	float m_timeout;
 };
 
-REGISTER_FLOW_NODE("Vehicle:VehicleHonk", CFlowVehicleHonk);
+REGISTER_FLOW_NODE("Vehicle:Honk", CFlowVehicleHonk);

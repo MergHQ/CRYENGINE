@@ -13,6 +13,7 @@ public:
 	virtual float             GetCurrTime(ETimer which = ETIMER_GAME) const;
 	virtual const CTimeValue& GetFrameStartTime(ETimer which = ETIMER_GAME) const;
 	virtual CTimeValue        GetAsyncTime() const;
+	virtual float             GetReplicationTime() const;
 	virtual float             GetAsyncCurTime();
 	virtual float             GetFrameTime(ETimer which = ETIMER_GAME) const;
 	virtual float             GetRealFrameTime() const;
@@ -44,6 +45,7 @@ private:
 
 	CTimeValue          m_remoteFrameStartTime;
 	float               m_frameTime;
+	float				m_replicationTime;
 
 	static CServerTimer m_this;
 };

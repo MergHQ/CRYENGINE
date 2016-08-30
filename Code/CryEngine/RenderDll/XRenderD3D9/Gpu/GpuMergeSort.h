@@ -27,19 +27,16 @@ public:
 		int32 inputBlockSize;
 	};
 
-	CMergeSort(int maxElements);
+	CMergeSort(uint32 maxElements);
 	// numElements needs to be power-of-two and <= maxElements
-	void                       Sort(size_t numElements);
-	ID3D11UnorderedAccessView* GetUAV()       { return m_data.Get().GetUAV(); }
-
-	ID3D11ShaderResourceView*  GetResultSRV() { return m_pResultSRV; }
+	void Sort(uint32 numElements, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	CGpuBuffer& GetBuffer() { return m_data.Get().GetBuffer(); }
 
 private:
 	void SyncParams(uint inputBlockSize);
 	int m_maxElements;
-	gpu::CTypedConstantBuffer<CParams, 8> m_params;
+	gpu::CTypedConstantBuffer<CParams> m_params;
 	gpu::CDoubleBuffered<gpu::CTypedResource<SMergeSortItem, gpu::BufferFlagsReadWriteReadback>> m_data;
-	gpu::CComputeBackend                  m_backend;
-	ID3D11ShaderResourceView*             m_pResultSRV;
+	CComputeRenderPass                 m_passesMergeSort[2];
 };
 }

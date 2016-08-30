@@ -21,7 +21,7 @@ namespace Movement
 {
 GenericPlanner::GenericPlanner(NavigationAgentTypeID navigationAgentTypeID)
 	: m_navigationAgentTypeID(navigationAgentTypeID)
-	, m_pendingPathReplanningDueToPreviousNavMeshChanges(false)
+	, m_pendingPathReplanning()
 	, m_pathfinderRequestQueued(false)
 {
 	gAIEnv.pNavigationSystem->AddMeshChangeCallback(m_navigationAgentTypeID, functor(*this, &GenericPlanner::OnNavigationMeshChanged));
@@ -37,17 +37,18 @@ bool GenericPlanner::IsUpdateNeeded() const
 	return m_plan.HasBlocks() || m_pathfinderRequestQueued;
 }
 
-void GenericPlanner::StartWorkingOnRequest(const MovementRequest& request, const MovementUpdateContext& context)
+void GenericPlanner::StartWorkingOnRequest(const MovementRequestID& requestId, const MovementRequest& request, const MovementUpdateContext& context)
 {
 	m_amountOfFailedReplanning = 0;
-	m_pendingPathReplanningDueToPreviousNavMeshChanges = false;
-	StartWorkingOnRequest_Internal(request, context);
+	m_pendingPathReplanning.Clear();
+	StartWorkingOnRequest_Internal(requestId, request, context);
 }
 
-void GenericPlanner::StartWorkingOnRequest_Internal(const MovementRequest& request, const MovementUpdateContext& context)
+void GenericPlanner::StartWorkingOnRequest_Internal(const MovementRequestID& requestId, const MovementRequest& request, const MovementUpdateContext& context)
 {
 	assert(IsReadyForNewRequest());
 
+	m_requestId = requestId;
 	m_request = request;
 
 	if (request.type == MovementRequest::MoveTo)
@@ -121,52 +122,17 @@ IPlanner::Status GenericPlanner::Update(const MovementUpdateContext& context)
 		}
 	}
 
-	//
-	// React to NavMesh changes:
-	// If we're no longer path-finding, we must have a plan that we might be executing already, so check with the path-follower if any NavMesh change will affect the path that
-	// is being traversed by the plan.
-	//
-
-	if (!m_pathfinderRequestQueued && m_plan.HasBlocks() && (m_pendingPathReplanningDueToPreviousNavMeshChanges || !m_queuedNavMeshChanges.empty()))
+	if (!m_pendingPathReplanning.bNavMeshChanged)
 	{
-		//
-		// Ignore NavMesh changes when moving along a designer-placed path. It's the responsibility of the
-		// level designer to place paths such that they will not interfere with (his scripted) NavMesh changes.
-		//
-		if (m_request.style.IsMovingAlongDesignedPath())
+		CheckForNeedToPathReplanningDueToNavMeshChanges(context);
+	}
+
+	if (m_pendingPathReplanning.IsPending())
+	{
+		if (IsReadyForNewRequest())
 		{
-			stl::free_container(m_queuedNavMeshChanges);
-			m_pendingPathReplanningDueToPreviousNavMeshChanges = false;
-		}
-		else
-		{
-			//
-			// Check with the path-follower for each NavMesh change: if the path is found to be invalid by now, wait until we're ready to re-plan and do so.
-			//
-
-			if (!m_pendingPathReplanningDueToPreviousNavMeshChanges)
-			{
-				AIAssert(!m_queuedNavMeshChanges.empty());
-
-				for (std::vector<MeshIDAndTileID>::const_iterator it = m_queuedNavMeshChanges.begin(), end = m_queuedNavMeshChanges.end(); it != end; ++it)
-				{
-					if (context.pathFollower.IsRemainingPathAffectedByNavMeshChange(it->meshID, it->tileID))
-					{
-						m_pendingPathReplanningDueToPreviousNavMeshChanges = true;
-						break;
-					}
-				}
-				stl::free_container(m_queuedNavMeshChanges);
-			}
-
-			if (m_pendingPathReplanningDueToPreviousNavMeshChanges)
-			{
-				if (IsReadyForNewRequest())
-				{
-					context.actor.Log("Movement plan couldn't be finished due to path-invalidation from NavMesh changes, re-planning.");
-					StartWorkingOnRequest(m_request, context);
-				}
-			}
+			context.actor.Log("Movement plan couldn't be finished either due to path-invalidation from NavMesh change or due to sudden non-interruptible block, re-planning now.");
+			StartWorkingOnRequest(m_requestId, m_request, context);
 		}
 	}
 
@@ -191,12 +157,55 @@ void GenericPlanner::OnNavigationMeshChanged(NavigationAgentTypeID navigationAge
 		//
 		if (m_plan.HasBlocks())
 		{
-			// extra check for whether we're already aware of some previous NavMesh-change having invalidated our path (we're just waiting for the SmartObject-traversal to finish before re-planning)
-			if (!m_pendingPathReplanningDueToPreviousNavMeshChanges)
+			//
+			// Ignore NavMesh changes when moving along a designer-placed path. It's the responsibility of the
+			// level designer to place paths such that they will not interfere with (his scripted) NavMesh changes.
+			//
+			if (!m_request.style.IsMovingAlongDesignedPath())
 			{
-				stl::push_back_unique(m_queuedNavMeshChanges, MeshIDAndTileID(meshID, tileID));
+				// extra check for whether we're already aware of some previous NavMesh-change having invalidated our path (we're just waiting for the SmartObject-traversal to finish before re-planning)
+				if (!m_pendingPathReplanning.bNavMeshChanged)
+				{
+					stl::push_back_unique(m_queuedNavMeshChanges, MeshIDAndTileID(meshID, tileID));
+				}
 			}
 		}
+	}
+}
+
+void GenericPlanner::CheckForNeedToPathReplanningDueToNavMeshChanges(const MovementUpdateContext& context)
+{
+	AIAssert(!m_pendingPathReplanning.bNavMeshChanged);
+
+	//
+	// React to NavMesh changes:
+	// If we're no longer path-finding, we must have a plan that we might be executing already, so check with the path-follower if any NavMesh change will affect the path that
+	// is being traversed by the plan.
+	//
+
+	if (!m_pathfinderRequestQueued && m_plan.HasBlocks())
+	{
+		if (!m_pendingPathReplanning.bNavMeshChanged && !m_queuedNavMeshChanges.empty())
+		{
+			//
+			// Check with the path-follower for whether any of the NavMesh changes affects the path we're traversing.
+			//
+
+			for (std::vector<MeshIDAndTileID>::const_iterator it = m_queuedNavMeshChanges.begin(), end = m_queuedNavMeshChanges.end(); it != end; ++it)
+			{
+				if (context.pathFollower.IsRemainingPathAffectedByNavMeshChange(it->meshID, it->tileID))
+				{
+					m_pendingPathReplanning.bNavMeshChanged = true;
+					break;
+				}
+			}
+		}
+
+		//
+		// Now, we don't need the collected NavMesh changes anymore.
+		//
+
+		stl::free_container(m_queuedNavMeshChanges);
 	}
 }
 
@@ -237,9 +246,27 @@ void GenericPlanner::CheckOnPathfinder(const MovementUpdateContext& context, OUT
 		m_pathfinderRequestQueued = false;
 
 		if (state == FoundPath)
-			ProducePlan(context);
+		{
+			// Careful: of course, we started pathfinding at a time when only interruptible blocks were running, but:
+			//          At the time we received the resulting path, a UseSmartObject block might have just transitioned from its internal "Prepare" state to "Traverse" which
+			//          means that this block suddenly is no longer interruptible (!) So, just don't replace the ongoing plan, but set a pending-flag to let Update() do a full re-pathfinding
+			//          at an appropriate time.
+
+			if (m_plan.InterruptibleNow())
+			{
+				// fine, the pathfind request started and finished within an interruptible block
+				ProducePlan(context);
+			}
+			else
+			{
+				// oh oh... we started in an interruptible block (fine), but received the path when that particular block was suddenly no longer interruptible!
+				m_pendingPathReplanning.bSuddenNonInterruptibleBlock = true;
+			}
+		}
 		else
-			status.SetPathfinderFailed();
+		{
+			status.SetPathfinderFailed(m_requestId);
+		}
 	}
 }
 
@@ -251,7 +278,7 @@ void GenericPlanner::ExecuteCurrentPlan(const MovementUpdateContext& context, OU
 
 		if (s == Plan::Finished)
 		{
-			status.SetRequestSatisfied();
+			status.SetRequestSatisfied(m_plan.GetRequestId());
 			m_plan.Clear(context.actor);
 		}
 		else if (s == Plan::CantBeFinished)
@@ -262,7 +289,7 @@ void GenericPlanner::ExecuteCurrentPlan(const MovementUpdateContext& context, OU
 			++m_amountOfFailedReplanning;
 			if (m_request.style.IsMovingAlongDesignedPath())
 			{
-				status.SetMovingAlongPathFailed();
+				status.SetMovingAlongPathFailed(m_plan.GetRequestId());
 			}
 			else if (IsReadyForNewRequest())
 			{
@@ -270,11 +297,11 @@ void GenericPlanner::ExecuteCurrentPlan(const MovementUpdateContext& context, OU
 				{
 					context.actor.Log("Movement plan couldn't be finished, re-planning.");
 					const MovementRequest replanRequest = m_request;
-					StartWorkingOnRequest_Internal(replanRequest, context);
+					StartWorkingOnRequest_Internal(m_requestId, replanRequest, context);
 				}
 				else
 				{
-					status.SetReachedMaxAllowedReplans();
+					status.SetReachedMaxAllowedReplans(m_plan.GetRequestId());
 				}
 			}
 		}
@@ -296,6 +323,7 @@ void GenericPlanner::ProducePlan(const MovementUpdateContext& context)
 	assert(m_plan.InterruptibleNow());
 
 	m_plan.Clear(context.actor);
+	m_plan.SetRequestId(m_requestId);
 
 	switch (m_request.type)
 	{

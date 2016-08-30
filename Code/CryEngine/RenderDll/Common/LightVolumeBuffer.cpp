@@ -22,6 +22,7 @@ CLightVolumeBuffer::CLightVolumeBuffer()
 
 void CLightVolumeBuffer::Create()
 {
+	// NOTE: Buffers have a 256-byte alignment requirement, which is enforced when allocating the buffer
 	m_lightInfosBuffer.Create(
 	  maxNumLightInfos, sizeof(SLightVolumeInfo),
 	  DXGI_FORMAT_UNKNOWN, DX11BUF_BIND_SRV | DX11BUF_DYNAMIC | DX11BUF_STRUCTURED,
@@ -49,10 +50,9 @@ void CLightVolumeBuffer::UpdateContent()
 	uint32 numVols;
 	gEnv->p3DEngine->GetLightVolumes(rp.m_nProcessThreadID, pLightVols, numVols);
 
-	SLightVolumeInfo gpuStageInfos[maxNumLightInfos];
-	SLightVolumeRange gpuStageRages[maxNumVolumes] = {
-		{ 0 }
-	};
+	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
+	CryStackAllocWithSizeVectorCleared(SLightVolumeInfo, maxNumLightInfos, gpuStageInfos, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	CryStackAllocWithSizeVectorCleared(SLightVolumeRange, maxNumVolumes, gpuStageRanges, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 	SLightVolumeRange currentRange;
 	currentRange.begin = currentRange.end = 0;
@@ -76,12 +76,16 @@ void CLightVolumeBuffer::UpdateContent()
 			gpuLightInfo.wProjectorDirection = cpuLightData.projectorDirection;
 			gpuLightInfo.projectorCosAngle = cpuLightData.projectorCosAngle;
 		}
-		gpuStageRages[rangeId] = currentRange;
+		gpuStageRanges[rangeId] = currentRange;
 		currentRange.begin = currentRange.end;
 	}
 
-	m_lightInfosBuffer.UpdateBufferContent(gpuStageInfos, sizeof(SLightVolumeInfo) * currentRange.end);
-	m_lightRangesBuffer.UpdateBufferContent(gpuStageRages, sizeof(gpuStageRages)); // TODO: Update smaller range
+	// Minimize transfer size
+	const size_t gpuStageInfosUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(SLightVolumeInfo) * currentRange.end);
+	const size_t gpuStageRangesUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(SLightVolumeRange) * maxNumVolumes); // TODO: Update smaller range: actualNumRanges
+
+	m_lightInfosBuffer.UpdateBufferContent(gpuStageInfos, gpuStageInfosUploadSize);
+	m_lightRangesBuffer.UpdateBufferContent(gpuStageRanges, gpuStageRangesUploadSize);
 
 	m_numVolumes = actualNumRanges;
 }

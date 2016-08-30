@@ -177,7 +177,7 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 			const uint8 validMask = ES_Alive;
 			const uint8 overrunMask = 0xff;
 			pContainer->Resize(bufferSize);
-			uint8* pData = static_cast<uint8*>(pContainer->GetData(EPDT_State));
+			uint8* pData = pContainer->GetData<uint8>(EPDT_State);
 
 			AddParticles(numParticles);
 			pContainer->ResetSpawnedParticles();
@@ -369,32 +369,32 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 		index = _mm_set1_epi32(2);
 		expected = _mm_set_ps(2.0f, 2.0f, 2.0f, 2.0f);
 		got = LoadIndexed4(stream, index, -1.0f);
-		CRY_PFX2_UNIT_TEST_ASSERT(AllEqual(got, expected));
+		CRY_PFX2_UNIT_TEST_ASSERT(All(got == expected));
 
 		index = _mm_set_epi32(7, 6, 5, 4);
 		expected = _mm_set_ps(7.0f, 6.0f, 5.0f, 4.0f);
 		got = LoadIndexed4(stream, index, -1.0f);
-		CRY_PFX2_UNIT_TEST_ASSERT(AllEqual(got, expected));
+		CRY_PFX2_UNIT_TEST_ASSERT(All(got == expected));
 
 		index = _mm_set_epi32(0, 1, 2, 0);
 		expected = _mm_set_ps(0.0f, 1.0f, 2.0f, 0.0f);
 		got = LoadIndexed4(stream, index, -1.0f);
-		CRY_PFX2_UNIT_TEST_ASSERT(AllEqual(got, expected));
+		CRY_PFX2_UNIT_TEST_ASSERT(All(got == expected));
 
 		index = _mm_set_epi32(0, -1, 2, -1);
 		expected = _mm_set_ps(0.0f, -1.0f, 2.0f, -1.0f);
 		got = LoadIndexed4(stream, index, -1.0f);
-		CRY_PFX2_UNIT_TEST_ASSERT(AllEqual(got, expected));
+		CRY_PFX2_UNIT_TEST_ASSERT(All(got == expected));
 
 		index = _mm_set_epi32(-1, -1, -1, -1);
 		expected = _mm_set_ps(-1.0f, -1.0f, -1.0f, -1.0f);
 		got = LoadIndexed4(stream, index, -1.0f);
-		CRY_PFX2_UNIT_TEST_ASSERT(AllEqual(got, expected));
+		CRY_PFX2_UNIT_TEST_ASSERT(All(got == expected));
 
 		index = _mm_set_epi32(9, 9, 2, 2);
 		expected = _mm_set_ps(9.0f, 9.0f, 2.0f, 2.0f);
 		got = LoadIndexed4(stream, index, -1.0f);
-		CRY_PFX2_UNIT_TEST_ASSERT(AllEqual(got, expected));
+		CRY_PFX2_UNIT_TEST_ASSERT(All(got == expected));
 	}
 
 #endif
@@ -404,92 +404,32 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 CRY_UNIT_TEST_SUITE(CryVectorTest)
 {
 
-#if defined(CRY_PFX2_USE_SSE) && CRY_COMPILER_MSVC
-
-	bool operator==(__m128 a, __m128 b)
-	{
-		return _mm_movemask_ps(_mm_cmpeq_ps(a, b)) == 0xf;
-	}
-
-	template<typename Real>
-	void MathTest()
-	{
-		using namespace crydetail;
-		Real v0, v1, v2, v3, v4;
-
-		v0 = crydetail::floorf(ToReal<Real>(257.35f));
-		v1 = crydetail::floorf(ToReal<Real>(252.0f));
-		v2 = crydetail::floorf(ToReal<Real>(-102.4f));
-		v3 = crydetail::floorf(ToReal<Real>(0.806228399f));
-		v4 = crydetail::floorf(ToReal<Real>(0.733564019));
-		CRY_PFX2_UNIT_TEST_ASSERT(v0 == ToReal<Real>(257.0f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v1 == ToReal<Real>(252.0f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v2 == ToReal<Real>(-103.0f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v3 == ToReal<Real>(0.0f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v4 == ToReal<Real>(0.0f));
-
-		v0 = crydetail::max(ToReal<Real>(257.35f), ToReal<Real>(510.0f));
-		v1 = crydetail::max(ToReal<Real>(-102.0f), ToReal<Real>(-201.4f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v0 == ToReal<Real>(510.0f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v1 == ToReal<Real>(-102.0f));
-
-		v0 = crydetail::saturate(ToReal<Real>(0.75f));
-		v1 = crydetail::saturate(ToReal<Real>(-0.35f));
-		v2 = crydetail::saturate(ToReal<Real>(2.05f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v0 == ToReal<Real>(0.75f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v1 == ToReal<Real>(0.0f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v2 == ToReal<Real>(1.0f));
-
-		v0 = crydetail::step(ToReal<Real>(0.75f), ToReal<Real>(1.25f));
-		v1 = crydetail::step(ToReal<Real>(0.25f), ToReal<Real>(-0.2f));
-		v2 = crydetail::step(ToReal<Real>(0.35f), ToReal<Real>(0.35f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v0 == ToReal<Real>(1.0f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v1 == ToReal<Real>(0.0f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v2 == ToReal<Real>(1.0f));
-
-		v0 = crydetail::absf(ToReal<Real>(104.35f));
-		v1 = crydetail::absf(ToReal<Real>(-24.75f));
-		v2 = crydetail::absf(ToReal<Real>(0.0f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v0 == ToReal<Real>(104.35f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v1 == ToReal<Real>(24.75f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v2 == ToReal<Real>(0.0f));
-
-		v0 = crydetail::lessThan(ToReal<Real>(257.35f), ToReal<Real>(510.0f));
-		v1 = crydetail::lessThan(ToReal<Real>(-102.0f), ToReal<Real>(-201.4f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v0 == ToReal<Real>(1.0f));
-		CRY_PFX2_UNIT_TEST_ASSERT(v1 == ToReal<Real>(0.0f));
-	}
-
-	CRY_UNIT_TEST(MathTestAll)
-	{
-		MathTest<float>();
-		MathTest<__m128>();
-	}
+#if defined(CRY_PFX2_USE_SSE)
 
 	template<typename Real>
 	void SnoiseTest()
 	{
 		using namespace crydetail;
-		const Vec4_tpl<Real> s0 = ToVec4(ToReal<Real>(0.0f));
-		const Vec4_tpl<Real> s1 = Vec4_tpl<Real>(ToReal<Real>(104.2f), ToReal<Real>(504.85f), ToReal<Real>(32.0f), ToReal<Real>(10.25f));
-		const Vec4_tpl<Real> s2 = Vec4_tpl<Real>(ToReal<Real>(-104.2f), ToReal<Real>(504.85f), ToReal<Real>(-32.0f), ToReal<Real>(1.25f));
-		const Vec4_tpl<Real> s3 = Vec4_tpl<Real>(ToReal<Real>(-257.07f), ToReal<Real>(-25.85f), ToReal<Real>(-0.5f), ToReal<Real>(105.5f));
-		const Vec4_tpl<Real> s4 = Vec4_tpl<Real>(ToReal<Real>(104.2f), ToReal<Real>(1504.85f), ToReal<Real>(78.57f), ToReal<Real>(-0.75f));
+		const Vec4_tpl<Real> s0 = ToVec4(convert<Real>(0.0f));
+		const Vec4_tpl<Real> s1 = Vec4_tpl<Real>(convert<Real>(104.2f), convert<Real>(504.85f), convert<Real>(32.0f), convert<Real>(10.25f));
+		const Vec4_tpl<Real> s2 = Vec4_tpl<Real>(convert<Real>(-104.2f), convert<Real>(504.85f), convert<Real>(-32.0f), convert<Real>(1.25f));
+		const Vec4_tpl<Real> s3 = Vec4_tpl<Real>(convert<Real>(-257.07f), convert<Real>(-25.85f), convert<Real>(-0.5f), convert<Real>(105.5f));
+		const Vec4_tpl<Real> s4 = Vec4_tpl<Real>(convert<Real>(104.2f), convert<Real>(1504.85f), convert<Real>(78.57f), convert<Real>(-0.75f));
 		Real p0 = SNoise(s0);
 		Real p1 = SNoise(s1);
 		Real p2 = SNoise(s2);
 		Real p3 = SNoise(s3);
 		Real p4 = SNoise(s4);
-		CRY_PFX2_UNIT_TEST_ASSERT(p0 == ToReal<Real>(0.0f));
-		CRY_PFX2_UNIT_TEST_ASSERT(p1 == ToReal<Real>(-0.291425288f));
-		CRY_PFX2_UNIT_TEST_ASSERT(p2 == ToReal<Real>(-0.295406163f));
-		CRY_PFX2_UNIT_TEST_ASSERT(p3 == ToReal<Real>(-0.127176195f));
-		CRY_PFX2_UNIT_TEST_ASSERT(p4 == ToReal<Real>(-0.0293087773f));
+		CRY_PFX2_UNIT_TEST_ASSERT(All(p0 == convert<Real>(0.0f)));
+		CRY_PFX2_UNIT_TEST_ASSERT(All(p1 == convert<Real>(-0.291425288f)));
+		CRY_PFX2_UNIT_TEST_ASSERT(All(p2 == convert<Real>(-0.295406163f)));
+		CRY_PFX2_UNIT_TEST_ASSERT(All(p3 == convert<Real>(-0.127176195f)));
+		CRY_PFX2_UNIT_TEST_ASSERT(All(p4 == convert<Real>(-0.0293087773f)));
 	}
 
 	CRY_UNIT_TEST(SNoiseTest)
 	{
-		// SnoiseTest<float>();
+		SnoiseTest<float>();
 		SnoiseTest<__m128>();
 	}
 

@@ -1,0 +1,30 @@
+////////////////////////////////////////////////////////////////////////////
+//
+//  Crytek Engine Source File.
+//  Shader extension
+//  Copyright (C), Crytek Studios, 2001-2016.
+// -------------------------------------------------------------------------
+//  File name:   ComputeSkinning.ext
+//  Version:     v1.00
+//  Created:     05/20/2016 by Benjamin Block
+//  Compilers:   
+//  Description: Compute Skinning Flags
+// -------------------------------------------------------------------------
+//
+////////////////////////////////////////////////////////////////////////////
+
+Property
+{
+  Name = %COMPUTE_SKINNING_WITH_MORPHS
+  Mask = 0x04
+  Property    (Apply Morph Targets)
+  Description (Apply Morph Targets)
+}
+
+Property
+{
+  Name = %COMPUTE_SKINNING_WITH_MORPHS_POST_SKINNING
+  Mask = 0x08
+  Property    (Apply Morph Targets post-skinning)
+  Description (Apply Morph Targets post-skinning)
+}

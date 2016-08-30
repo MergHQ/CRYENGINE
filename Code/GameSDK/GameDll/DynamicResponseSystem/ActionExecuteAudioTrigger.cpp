@@ -17,8 +17,8 @@ DRS::IResponseActionInstanceUniquePtr CActionExecuteAudioTrigger::Execute(DRS::I
 		{
 			const IEntityAudioProxyPtr pEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
 
-			DRS::IResponseActionInstanceUniquePtr pActionInstance(new CActionExecuteAudioTriggerInstance());
-			
+			DRS::IResponseActionInstanceUniquePtr pActionInstance(new CActionExecuteAudioTriggerInstance(pEntityAudioProxy, audioStartTriggerID));
+
 			if (m_bWaitToBeFinished)
 			{
 				SAudioCallBackInfo const callbackInfo((void* const)pActionInstance.get(), (void* const)ActionPlaySoundId, (void* const)pActionInstance.get(), eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
@@ -29,7 +29,7 @@ DRS::IResponseActionInstanceUniquePtr CActionExecuteAudioTrigger::Execute(DRS::I
 			}
 			else
 			{
-				pEntityAudioProxy->ExecuteTrigger(audioStartTriggerID, DEFAULT_AUDIO_PROXY_ID);
+				pEntityAudioProxy->ExecuteTrigger(audioStartTriggerID);
 			}
 		}
 	}
@@ -51,7 +51,9 @@ void CActionExecuteAudioTrigger::Serialize(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-CActionExecuteAudioTriggerInstance::CActionExecuteAudioTriggerInstance() : m_bHasFinished(false)
+CActionExecuteAudioTriggerInstance::CActionExecuteAudioTriggerInstance(IEntityAudioProxyPtr pAudioProxy, AudioControlId audioStartTriggerID)
+	: m_pEntityAudioProxy(pAudioProxy)
+	, m_audioStartTriggerID(audioStartTriggerID)
 {
 	gEnv->pAudioSystem->AddRequestListener(&CActionExecuteAudioTriggerInstance::OnAudioTriggerFinished, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance);
 	gEnv->pAudioSystem->AddRequestListener(&CActionExecuteAudioTriggerInstance::OnAudioTriggerFinished, this, eAudioRequestType_AudioObjectRequest, eAudioObjectRequestType_ExecuteTrigger);
@@ -67,10 +69,14 @@ CActionExecuteAudioTriggerInstance::~CActionExecuteAudioTriggerInstance()
 //--------------------------------------------------------------------------------------------------
 DRS::IResponseActionInstance::eCurrentState CActionExecuteAudioTriggerInstance::Update()
 {
-	if (!m_bHasFinished) 
+	if (m_pEntityAudioProxy)
+	{
 		return DRS::IResponseActionInstance::CS_RUNNING;
-	else 
+	}
+	else
+	{
 		return DRS::IResponseActionInstance::CS_FINISHED;
+	}
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -79,11 +85,26 @@ void CActionExecuteAudioTriggerInstance::OnAudioTriggerFinished(const SAudioRequ
 	if (pInfo->pUserData == ActionPlaySoundId)
 	{
 		if ((pInfo->audioRequestType == eAudioRequestType_AudioObjectRequest && pInfo->specificAudioRequest == eAudioObjectRequestType_ExecuteTrigger && pInfo->requestResult == eAudioRequestResult_Failure)
-			|| (pInfo->audioRequestType == eAudioRequestType_AudioCallbackManagerRequest && pInfo->specificAudioRequest == eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance))
+		    || (pInfo->audioRequestType == eAudioRequestType_AudioCallbackManagerRequest && pInfo->specificAudioRequest == eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance))
 		{
 			CRY_ASSERT(pInfo->pUserDataOwner);
 			CActionExecuteAudioTriggerInstance* pEndedInstance = reinterpret_cast<CActionExecuteAudioTriggerInstance*>(pInfo->pUserDataOwner);
-			pEndedInstance->SetFinished(true);
+			pEndedInstance->SetFinished();
 		}
 	}
+}
+
+//--------------------------------------------------------------------------------------------------
+void CActionExecuteAudioTriggerInstance::Cancel()
+{
+	if (m_pEntityAudioProxy)
+	{
+		m_pEntityAudioProxy->StopTrigger(m_audioStartTriggerID);
+	}
+}
+
+//--------------------------------------------------------------------------------------------------
+void CActionExecuteAudioTriggerInstance::SetFinished()
+{
+	m_pEntityAudioProxy = nullptr;
 }

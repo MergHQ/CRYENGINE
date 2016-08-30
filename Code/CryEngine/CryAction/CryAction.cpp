@@ -107,6 +107,7 @@
 #include "VehicleSystem.h"
 #include "SharedParams/SharedParamsManager.h"
 #include "ActionMapManager.h"
+#include "ColorGradientManager.h"
 
 #include "Statistics/GameStatistics.h"
 #include "UIDraw/UIDraw.h"
@@ -330,6 +331,7 @@ CCryAction::CCryAction()
 	m_pScriptBindMFX(0),
 	m_pScriptBindUIAction(0),
 	m_pPersistantDebug(0),
+	m_pColorGradientManager(nullptr),
 	m_pMaterialEffectsCVars(0),
 	m_pEnableLoadingScreen(0),
 	m_pShowLanBrowserCVAR(0),
@@ -362,7 +364,6 @@ CCryAction::CCryAction()
 	m_pPhysicsQueues(0),
 	m_PreUpdateTicks(0),
 	m_levelPrecachingDone(false),
-	m_usingLevelHeap(false),
 	m_pGameVolumesManager(NULL),
 	m_pNetMsgDispatcher(0)
 {
@@ -468,6 +469,13 @@ void CCryAction::StaticSetPbClEnabled(IConsoleCmdArgs* pArgs)
 	GameWarning("PunkBuster client will be %s for the next MP session", m_pThis->m_pbClEnabled ? "enabled" : "disabled");
 }
 
+uint16 ChooseListenPort()
+{
+	return (gEnv->pLobby && gEnv->bMultiplayer) ?
+	       gEnv->pLobby->GetLobbyParameters().m_listenPort :
+	       gEnv->pConsole->GetCVar("sv_port")->GetIVal();
+}
+
 //------------------------------------------------------------------------
 void CCryAction::MapCmd(IConsoleCmdArgs* args)
 {
@@ -482,6 +490,12 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 	if (gEnv->IsEditor())
 	{
 		GameWarning("Won't load level in editor");
+		return;
+	}
+
+	if (GetCryAction()->StartingGameContext())
+	{
+		GameWarning("Can't process map command while game context is starting!");
 		return;
 	}
 
@@ -748,7 +762,8 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 		}
 	}
 
-	if (!CCryAction::GetCryAction()->GetIGameSessionHandler()->ShouldCallMapCommand(tempLevel, tempGameRules))
+	if (gEnv->pNetwork->GetLobby() &&
+	    !CCryAction::GetCryAction()->GetIGameSessionHandler()->ShouldCallMapCommand(tempLevel, tempGameRules))
 	{
 		return;
 	}
@@ -788,21 +803,8 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 		}
 
 		params.pContextParams = &ctx;
-		params.port = pConsole->GetCVar("sv_port")->GetIVal();
-		if ((gEnv->pNetwork != NULL) && gEnv->bMultiplayer)
-		{
-			ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
-
-			if (pLobby != NULL)
-			{
-				const SCryLobbyParameters& lobbyParams = pLobby->GetLobbyParameters();
-
-				params.port = lobbyParams.m_listenPort;   // If using a lobby service, we must use the correct lobby port
-			}
-		}
-
+		params.port = ChooseListenPort();
 		params.session = CCryAction::GetCryAction()->GetIGameSessionHandler()->GetGameSessionHandle();
-
 		CCryAction::GetCryAction()->StartGameContext(&params);
 	}
 }
@@ -830,18 +832,7 @@ void CCryAction::PlayCmd(IConsoleCmdArgs* args)
 	context.demoPlaybackFilename = args->GetArg(1);
 	params.maxPlayers = 1;
 	params.flags = eGSF_Client | eGSF_Server | eGSF_DemoPlayback | eGSF_NoGameRules | eGSF_NoLevelLoading;
-	params.port = pConsole->GetCVar("sv_port")->GetIVal();
-	if ((gEnv->pNetwork != NULL) && gEnv->bMultiplayer)
-	{
-		ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
-
-		if (pLobby != NULL)
-		{
-			const SCryLobbyParameters& lobbyParams = pLobby->GetLobbyParameters();
-
-			params.port = lobbyParams.m_listenPort;   // If using a lobby service, we must use the correct lobby port
-		}
-	}
+	params.port = ChooseListenPort();
 	GetCryAction()->StartGameContext(&params);
 }
 
@@ -877,10 +868,7 @@ void CCryAction::ConnectCmd(IConsoleCmdArgs* args)
 	// hosted session at the address specified in cl_serveraddr
 	if (tempHost.find("<session>") == tempHost.npos)
 	{
-		INetwork* pNetwork = gEnv->pNetwork;
-		ICryLobby* pLobby = (pNetwork) ? pNetwork->GetLobby() : NULL;
-		ICryMatchMaking* pMatchMaking = (pLobby) ? pLobby->GetMatchMaking() : NULL;
-
+		ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ? gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 		if (pMatchMaking)
 		{
 			CrySessionID session = pMatchMaking->GetSessionIDFromConsole();
@@ -897,19 +885,7 @@ void CCryAction::ConnectCmd(IConsoleCmdArgs* args)
 	params.flags |= eGSF_ImmersiveMultiplayer;
 	params.hostname = tempHost.c_str();
 	params.pContextParams = NULL;
-	params.port = pConsole->GetCVar("cl_serverport")->GetIVal();
-	if ((gEnv->pNetwork != NULL) && gEnv->bMultiplayer)
-	{
-		ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
-
-		if (pLobby != NULL)
-		{
-			const SCryLobbyParameters& lobbyParams = pLobby->GetLobbyParameters();
-
-			params.port = lobbyParams.m_connectPort;    // If using a lobby service, we must use the correct lobby port
-		}
-	}
-
+	params.port = (gEnv->pLobby && gEnv->bMultiplayer) ? gEnv->pLobby->GetLobbyParameters().m_connectPort : pConsole->GetCVar("cl_serverport")->GetIVal();
 	GetCryAction()->StartGameContext(&params);
 }
 
@@ -963,8 +939,7 @@ void CCryAction::VersionCmd(IConsoleCmdArgs* args)
 //------------------------------------------------------------------------
 void CCryAction::StatusCmd(IConsoleCmdArgs* pArgs)
 {
-	ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
-	ICryMatchMaking* pMatchMaking = (pLobby != NULL) ? pLobby->GetMatchMaking() : NULL;
+	ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ? gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 
 	if ((pMatchMaking != NULL) && (pArgs->GetArgCount() > 1))
 	{
@@ -979,8 +954,7 @@ void CCryAction::StatusCmd(IConsoleCmdArgs* pArgs)
 
 void CCryAction::LegacyStatusCmd(IConsoleCmdArgs* args)
 {
-	ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
-	ICryMatchMaking* pMatchMaking = (pLobby != NULL) ? pLobby->GetMatchMaking() : NULL;
+	ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ? gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 
 	CGameServerNub* pServerNub = CCryAction::GetCryAction()->GetGameServerNub();
 	if (!pServerNub)
@@ -1156,7 +1130,7 @@ void CCryAction::KickPlayerCmd(IConsoleCmdArgs* pArgs)
 				}
 			}
 
-			ICryMatchMaking* pMatchMaking = gEnv->pNetwork->GetLobby()->GetMatchMaking();
+			ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ? gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 			if (pMatchMaking != NULL)
 			{
 				pMatchMaking->KickCmd(cx, id, pName, eDC_Kicked);
@@ -1216,7 +1190,7 @@ void CCryAction::KickPlayerByIdCmd(IConsoleCmdArgs* pArgs)
 			uint32 id;
 			sscanf_s(pArgs->GetArg(1), "%u", &id);
 
-			ICryMatchMaking* pMatchMaking = gEnv->pNetwork->GetLobby()->GetMatchMaking();
+			ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ? gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 			if (pMatchMaking != NULL)
 			{
 				pMatchMaking->KickCmd(id, 0, NULL, eDC_Kicked);
@@ -1269,8 +1243,7 @@ void CCryAction::BanPlayerCmd(IConsoleCmdArgs* pArgs)
 
 #if CRY_PLATFORM_WINDOWS
 
-	ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
-	ICryMatchMaking* pMatchMaking = (pLobby != NULL) ? pLobby->GetMatchMaking() : NULL;
+	ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ? gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 
 	if (pMatchMaking != NULL)
 	{
@@ -1367,8 +1340,7 @@ void CCryAction::LegacyBanPlayerCmd(IConsoleCmdArgs* args)
 
 void CCryAction::BanStatusCmd(IConsoleCmdArgs* pArgs)
 {
-	ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
-	ICryMatchMaking* pMatchMaking = (pLobby != NULL) ? pLobby->GetMatchMaking() : NULL;
+	ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ? gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 
 	if (pMatchMaking != NULL)
 	{
@@ -1391,8 +1363,7 @@ void CCryAction::UnbanPlayerCmd(IConsoleCmdArgs* pArgs)
 
 #if CRY_PLATFORM_WINDOWS
 
-	ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
-	ICryMatchMaking* pMatchMaking = (pLobby != NULL) ? pLobby->GetMatchMaking() : NULL;
+	ICryMatchMakingConsoleCommands* pMatchMaking = gEnv->pLobby ? gEnv->pLobby->GetMatchMakingConsoleCommands() : NULL;
 
 	if (pMatchMaking != NULL)
 	{
@@ -2062,14 +2033,17 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 
 	XMLCPB::CDebugUtils::Create();
 
-	CryGetIMemoryManager()->InitialiseLevelHeap();
-
 	if (!gEnv->IsDedicated())
 	{
 		XMLCPB::InitializeCompressorThread();
 	}
 
 	m_pNetMsgDispatcher = new CNetMessageDistpatcher();
+
+	if (gEnv->pRenderer)
+	{
+		m_pColorGradientManager = new CColorGradientManager();
+	}
 
 	InlineInitializationProcessing("CCryAction::Init End");
 	return true;
@@ -2401,6 +2375,8 @@ void CCryAction::Shutdown()
 	ReleaseScriptBinds();
 	ReleaseCVars();
 
+	SAFE_DELETE(m_pColorGradientManager);
+
 	SAFE_DELETE(m_pDevMode);
 	SAFE_DELETE(m_pCallbackTimer);
 	SAFE_DELETE(m_pSegmentedWorld);
@@ -2426,11 +2402,17 @@ void CCryAction::Shutdown()
 	// Nodes might try to access the FlowSystem at any time therefore
 	// keep it around until the last node has been destroyed.
 	SAFE_RELEASE(m_pFlowSystem);
+	if (m_pSystem)
+	{
+		m_pSystem->SetIFlowSystem(nullptr);
+	}
 
 	XMLCPB::CDebugUtils::Destroy();
 
 	if (m_pSystem)
+	{
 		m_pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system_event_listener_action);
+	}
 
 	// having a dll handle means we did create the system interface
 	// so we must release it
@@ -2605,6 +2587,11 @@ bool CCryAction::PreUpdate(bool haveFocus, unsigned int updateFlags)
 			m_pCooperativeAnimationManager->Update(frameTime);
 	}
 
+	if (gEnv->pRenderer)
+	{
+		m_pColorGradientManager->UpdateForThisFrame(gEnv->pTimer->GetFrameTime());
+	}
+
 	CRConServerListener::GetSingleton().Update();
 	CSimpleHttpServerListener::GetSingleton().Update();
 
@@ -2713,16 +2700,17 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 	if (gEnv->pCharacterManager)
 		gEnv->pCharacterManager->SyncAllAnimations();
 
-	// begin occlusion job after settign the correct camera
-	// if camera isn't driven by an animation, it is possible to
-	// move this call before the SyncAllAnimation call
-	gEnv->p3DEngine->PrepareOcclusion(m_pSystem->GetViewCamera());
-
+	//update view system before p3DEngine->PrepareOcclusion as it might change view camera
 	const bool useDeferredViewSystemUpdate = m_pViewSystem->UseDeferredViewSystemUpdate();
 	if (useDeferredViewSystemUpdate)
 	{
 		m_pViewSystem->Update(min(delta, 0.1f));
 	}
+
+	// begin occlusion job after settign the correct camera
+	// if camera isn't driven by an animation, it is possible to
+	// move this call before the SyncAllAnimation call
+	gEnv->p3DEngine->PrepareOcclusion(m_pSystem->GetViewCamera());
 
 	if (gEnv->pHardwareMouse)
 		gEnv->pHardwareMouse->Update();
@@ -2906,49 +2894,6 @@ void CCryAction::SetLevelPrecachingDone(bool bValue)
 	m_levelPrecachingDone = bValue;
 }
 
-void CCryAction::SwitchToLevelHeap(const char* acLevelName)
-{
-#if CAPTURE_REPLAY_LOG
-	static int loadCount = 0;
-	if (acLevelName)
-	{
-		CryGetIMemReplay()->AddLabelFmt("loadStart%d_%s", loadCount++, acLevelName);
-	}
-	else
-	{
-		CryGetIMemReplay()->AddLabelFmt("loadStart%d", loadCount++);
-	}
-#endif
-
-	if (m_usingLevelHeap == false)
-	{
-		CryLog("[MEM] Switching to level heap");
-		INDENT_LOG_DURING_SCOPE();
-
-		ISystem* pSystem = GetISystem();
-		ISystemEventDispatcher* pSystemEventDispatcher = pSystem ? pSystem->GetISystemEventDispatcher() : NULL;
-
-		m_usingLevelHeap = true;
-
-		if (pSystemEventDispatcher)
-		{
-			pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_SWITCHING_TO_LEVEL_HEAP, 0, 0);
-		}
-
-		CryGetIMemoryManager()->SwitchToLevelHeap();
-
-		if (pSystemEventDispatcher)
-		{
-			pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_SWITCHED_TO_LEVEL_HEAP, 0, 0);
-		}
-	}
-
-#ifdef SHUTDOWN_RENDERER_BETWEEN_LEVELS
-	// Free render resources that may have been allocated in frontend
-	gEnv->pRenderer->FreeResources(FRR_SYSTEM_RESOURCES);
-#endif
-}
-
 bool CCryAction::StartGameContext(const SGameStartParams* pGameStartParams)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -3130,32 +3075,6 @@ void CCryAction::EndGameContext()
 		}
 	}
 #endif
-
-	if (!gEnv->IsEditor())
-	{
-		if (m_usingLevelHeap == true)
-		{
-			CryLog("[MEM] Switching to global heap");
-			INDENT_LOG_DURING_SCOPE();
-
-			ISystem* pSystem = GetISystem();
-			ISystemEventDispatcher* pSystemEventDispatcher = pSystem ? pSystem->GetISystemEventDispatcher() : NULL;
-
-			m_usingLevelHeap = false;
-
-			if (pSystemEventDispatcher)
-			{
-				pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_SWITCHING_TO_GLOBAL_HEAP, 0, 0);
-			}
-
-			CryGetIMemoryManager()->SwitchToGlobalHeap();
-
-			if (pSystemEventDispatcher)
-			{
-				pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_SWITCHED_TO_GLOBAL_HEAP, 0, 0);
-			}
-		}
-	}
 
 	if (gEnv && gEnv->pSystem)
 	{
@@ -3530,18 +3449,7 @@ ELoadGameResult CCryAction::LoadGame(const char* path, bool quick, bool ignoreDe
 	params.hostname = "localhost";
 	params.maxPlayers = 1;
 	//	params.pContextParams = &ctx; (set by ::LoadGame)
-	params.port = gEnv->pConsole->GetCVar("sv_port")->GetIVal();
-	if ((gEnv->pNetwork != NULL) && gEnv->bMultiplayer)
-	{
-		ICryLobby* pLobby = gEnv->pNetwork->GetLobby();
-
-		if (pLobby != NULL)
-		{
-			const SCryLobbyParameters& lobbyParams = pLobby->GetLobbyParameters();
-
-			params.port = lobbyParams.m_listenPort;   // If using a lobby service, we must use the correct lobby port
-		}
-	}
+	params.port = ChooseListenPort();
 
 	//pause entity event timers update
 	gEnv->pEntitySystem->PauseTimers(true, false);
@@ -3653,6 +3561,8 @@ void CCryAction::OnEditorSetGameMode(int iMode)
 	{
 		m_pCooperativeAnimationManager->Reset();
 	}
+
+	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(iMode > 0 ? ESYSTEM_EVENT_GAME_MODE_SWITCH_START : ESYSTEM_EVENT_GAME_MODE_SWITCH_END, 0, 0);
 }
 
 //------------------------------------------------------------------------
@@ -4780,6 +4690,16 @@ void CCryAction::OnActionEvent(const SActionEvent& ev)
 				m_pTimeDemoRecorder->Reset();
 		}
 		break;
+
+	case eAE_unloadLevel:
+		{
+			if (gEnv->pRenderer)
+			{
+				m_pColorGradientManager->Reset();
+			}
+		}
+		break;
+
 	default:
 		break;
 	}
@@ -5157,7 +5077,6 @@ void CCryAction::StartNetworkStallTicker(bool includeMinimalUpdate)
 			CRY_ASSERT(m_networkStallTickerReferences == 0);
 
 			// Spawn thread to tick needed tasks
-			ScopedSwitchToGlobalHeap useGlobalHeap;
 			m_pNetworkStallTickerThread = new CNetworkStallTickerThread();
 
 			if (!gEnv->pThreadManager->SpawnThread(m_pNetworkStallTickerThread, "NetworkStallTicker"))

@@ -304,8 +304,7 @@ void CRecordingSystem::DiscardingPacket(SRecording_Packet *packet, float recorde
 						IDefaultSkeleton& rIDefaultSkeleton = pChar->GetIDefaultSkeleton();
 						if(pPose)
 						{
-						  STrackedCorpse corpse;
-						  CRY_ASSERT(rIDefaultSkeleton.GetJointCount() <= STrackedCorpse::k_maxJoints);
+							STrackedCorpse corpse;
 							corpse.m_corpseId = pCorpsePacket->corpseId;
 							corpse.m_numJoints = min((int32) rIDefaultSkeleton.GetJointCount(), static_cast<int32>(STrackedCorpse::k_maxJoints));
 

@@ -68,8 +68,6 @@ namespace CryEngine.Sydewinder
 
 		public virtual void OnAwake()
 		{
-			AudioManager.PlayTrigger ("game_start");
-
 			// Initialize highscore functionality.
 			_gameData = new GameData();
 
@@ -132,7 +130,7 @@ namespace CryEngine.Sydewinder
 			GamePool.Clear();
 
 			// Store highscore.
-			Highscore.CurrentScore.StoreToFile();
+			//Highscore.CurrentScore.StoreToFile();
 		}
 
 		public virtual void OnUpdate()
@@ -145,7 +143,7 @@ namespace CryEngine.Sydewinder
 				return;
 
 			// Increase level every 30 seconds.
-			_totalGameTime += FrameTime.Current;
+			_totalGameTime += FrameTime.Delta;
 			Hud.CurrentHud.SetStage((int)_totalGameTime / 30 + 1);
 
 			// Go Game Over if player destroyed.
@@ -183,7 +181,7 @@ namespace CryEngine.Sydewinder
 			Hud.CurrentHud.SetScore(_gameData.Score);
 
 			// Add frame time and check if greater than or equal timer.
-			_spawnTimer += FrameTime.Current;
+			_spawnTimer += FrameTime.Delta;
 			if(_spawnTimer >= SPAWN_EVERY_SECONDS)
 			{				
 				// Reset spawn timer.
@@ -225,7 +223,7 @@ namespace CryEngine.Sydewinder
 		private void Input_OnKey(SInputEvent e)
 		{
 			// Commands which are only allowed when game is currently running and not paused.
-			if (State != GameState.Paused)
+			if (State == GameState.Running)
 			{
 				// Fire primary player weapon.
 				if ((e.KeyPressed (EKeyId.eKI_Space) || e.KeyPressed (EKeyId.eKI_XI_A)) && _player.Exists) 

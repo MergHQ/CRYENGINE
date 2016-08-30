@@ -199,27 +199,30 @@ void CD3DOsvrRenderer::RenderSocialScreen()
 			CTexture* left = m_eyeTextures[0].textures[frame];
 			CTexture* right = m_eyeTextures[1].textures[frame];
 
-			const EHmdSocialScreen socialScreen = EHmdSocialScreen::eHmdSocialScreen_DistortedDualImage;    // pDev->GetSocialScreenType();
+			const EHmdSocialScreen socialScreen = pDev->GetSocialScreenType();
 			switch (socialScreen)
 			{
 			case EHmdSocialScreen::eHmdSocialScreen_DistortedDualImage:
 			case EHmdSocialScreen::eHmdSocialScreen_UndistortedDualImage:
-				{
-					if (!CShaderMan::s_shPostEffects) return;
+			{
+				if (!CShaderMan::s_shPostEffects) return;
 
-					int ox, oy, ow, oh;
-					m_pRenderer->GetViewport(&ox, &oy, &ow, &oh);
+				//Assume that the current viewport is the viewport that the social screen is supposed to be rendered.
+				int ox, oy, ow, oh;
+				m_pRenderer->GetViewport(&ox, &oy, &ow, &oh);
 
-					m_pRenderer->RT_SetViewport(0, 0, m_eyeWidth, m_eyeHeight);
-					PostProcessUtils().CopyTextureToScreen(left);
+				int halfW = ow >> 1;
 
-					m_pRenderer->RT_SetViewport(m_eyeWidth, 0, m_eyeWidth, m_eyeHeight);
-					PostProcessUtils().CopyTextureToScreen(right);
+				m_pRenderer->RT_SetViewport(0, 0, halfW, oh);
+				PostProcessUtils().CopyTextureToScreen(left);
 
-					m_pRenderer->RT_SetViewport(ox, oy, ow, oh);
+				m_pRenderer->RT_SetViewport(halfW, 0, halfW, oh);
+				PostProcessUtils().CopyTextureToScreen(right);
 
-				}
-				break;
+				m_pRenderer->RT_SetViewport(ox, oy, ow, oh);
+
+			}
+			break;
 			case EHmdSocialScreen::eHmdSocialScreen_Off:
 				if (CShaderMan::s_shPostEffects)
 				{
@@ -229,15 +232,15 @@ void CD3DOsvrRenderer::RenderSocialScreen()
 				break;
 
 			case EHmdSocialScreen::eHmdSocialScreen_UndistortedLeftEye:
-				{
-					PostProcessUtils().CopyTextureToScreen(left);
-					break;
-				}
+			{
+				PostProcessUtils().CopyTextureToScreen(left);
+				break;
+			}
 			case EHmdSocialScreen::eHmdSocialScreen_UndistortedRightEye:
-				{
-					PostProcessUtils().CopyTextureToScreen(right);
-					break;
-				}
+			{
+				PostProcessUtils().CopyTextureToScreen(right);
+				break;
+			}
 			default:
 				break;
 			}
@@ -245,7 +248,6 @@ void CD3DOsvrRenderer::RenderSocialScreen()
 	}
 
 }
-
 /*
 
    void CD3DOsvrRenderer::copyEyeTexturesToMirrorTexture(CTexture* left, CTexture* right)

@@ -57,10 +57,10 @@ struct STextureAnimation
 			animPos = min(animPos, 1.f);
 			break;
 		case EAnimationCycle::Loop:
-			animPos = fmod(animPos, 1.f);
+			animPos = mod(animPos, 1.f);
 			break;
 		case EAnimationCycle::Mirror:
-			animPos = 1.f - abs(fmod(animPos, 2.f) - 1.f);
+			animPos = 1.f - abs(mod(animPos, 2.f) - 1.f);
 			break;
 		}
 		return animPos * m_animPosScale;
@@ -170,9 +170,7 @@ public:
 	void                                  AddToUpdateList(EUpdateList list, CParticleFeature* pFeature);
 	TInstanceDataOffset                   AddInstanceData(size_t size);
 	void                                  AddParticleData(EParticleDataType type);
-	void                                  AddParticleData(EParticleVec3Field type);
-	void                                  AddParticleData(EParticleQuatField type);
-	const std::vector<CParticleFeature*>& GetUpdateList(EUpdateList list) const         { return m_updateLists[list]; }
+	const std::vector<CParticleFeature*>& GetUpdateList(EUpdateList list) const { return m_updateLists[list]; }
 
 	const SComponentParams& GetComponentParams() const                    { return m_componentParams; }
 	bool                    UseParticleData(EParticleDataType type) const { return m_useParticleData[type]; }
@@ -180,21 +178,11 @@ public:
 	bool                    SetSecondGeneration(CParticleComponent* pParentComponent);
 	CParticleComponent*     GetParentComponent() const;
 
-	void                    Render(ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext, IRenderNode* pNode);
+	void                    PrepareRenderObjects(CParticleEmitter* pEmitter);
+	void                    ResetRenderObjects(CParticleEmitter* pEmitter);
+	void                    Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
+
 private:
-	void                    AddRemoveParticles(const SUpdateContext& context);
-	void                    UpdateNewBorns(const SUpdateContext& context, const SUpdateRange& updateRange);
-	void                    UpdateFeatures(const SUpdateContext& context, const SUpdateRange& updateRange);
-	void                    Integrate(const SUpdateRange& updateRange, float deltaTime);
-	void                    PostUpdateFeatures(const SUpdateContext& context, const SUpdateRange& updateRange);
-
-	void                    AgeUpdate(const SUpdateRange& updateRange, float deltaTime);
-	void                    LinearIntegral(const SUpdateRange& updateRange, float deltaTime);
-	void                    QuadraticIntegral(const SUpdateRange& updateRange, float deltaTime);
-	void                    ExpDragIntegral(const SUpdateRange& updateRange, float deltaTime);
-
-	void                    DebugStabilityCheck();
-
 	friend class CParticleEffect;
 	Vec2                                                 m_nodePosition;
 	CParticleEffect*                                     m_pEffect;
@@ -204,7 +192,7 @@ private:
 	std::vector<TParticleFeaturePtr>                     m_features;
 	std::vector<CParticleFeature*>                       m_updateLists[EUL_Count];
 	std::vector<gpu_pfx2::IParticleFeatureGpuInterface*> m_gpuUpdateLists[EUL_Count];
-	bool                                                 m_useParticleData[EPDT_Count];
+	StaticEnumArray<bool, EParticleDataType>             m_useParticleData;
 	SEnable                                              m_enabled;
 	SEnable                                              m_visible;
 	bool                                                 m_dirty;

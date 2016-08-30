@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 struct IEntityClass;
 

@@ -10,7 +10,7 @@ CHUDMissionObjectiveSystem encapsulates all objectives of a level.
 
 -------------------------------------------------------------------------
 History:
-- 01/02:2006: Created by Jan Müller
+- 01/02:2006: Created by Jan MÃ¼ller
 
 *************************************************************************/
 #ifndef __HUD_MISSION_OBJECTIVE_SYSTEM_H__

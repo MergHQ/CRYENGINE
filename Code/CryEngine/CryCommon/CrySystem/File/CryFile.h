@@ -213,7 +213,8 @@ inline bool CCryFile::Open(const char* filename, const char* mode, int nOpenFlag
 			const int lowercasePaths = pCvar->GetIVal();
 			if (lowercasePaths)
 			{
-				const string lowerString = PathUtil::ToLower(tempfilename);
+				string lowerString = tempfilename;
+				lowerString.MakeLower();
 				cry_strcpy(tempfilename, lowerString.c_str());
 			}
 		}

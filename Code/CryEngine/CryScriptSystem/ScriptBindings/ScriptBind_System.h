@@ -144,22 +144,6 @@ public:
 	//! <description>Gets an entity class from its ID.</description>
 	int GetEntityClass(IFunctionHandler* pH);
 
-	//! <code>System.PrepareEntityFromPool(entityId)</code>
-	//!		<param name="entityId">Entity identifier.</param>
-	//!		<param name="bPrepareNow">(optional) Specifies whether the pooled entity shall be prepared immediately rather than queuing a request in case there is a preparation already in progress.</param>
-	//! <description>Prepares the given bookmarked entity from the pool, bringing it into existence.</description>
-	int PrepareEntityFromPool(IFunctionHandler* pH);
-
-	//! <code>System.ReturnEntityToPool(entityId)</code>
-	//!		<param name="entityId">Entity identifier.</param>
-	//! <returns>the bookmarked entity to the pool, destroying it.</returns>
-	int ReturnEntityToPool(IFunctionHandler* pH);
-
-	//! <code>System.ResetPoolEntity(entityId)</code>
-	//!		<param name="entityId">Entity identifier.</param>
-	//! <description>Resets the entity's bookmarked, which frees memory.</description>
-	int ResetPoolEntity(IFunctionHandler* pH);
-
 	//! <code>System.GetEntities(center, radius)</code>
 	//!		<param name="center">Center position vector for the area where to get entities.</param>
 	//!		<param name="radius">Radius of the area.</param>
@@ -294,6 +278,45 @@ public:
 	//!		<param name="alpha">Alpha component for the label color. Default is 1.</param>
 	//! <description>Draws text.</description>
 	int DrawText(IFunctionHandler* pH);
+
+	//! <code>System.DrawSphere( x, y, z, radius, r, g, b, a )</code>
+	//!		<param name="x">X position for the centre of the sphere.</param>
+	//!		<param name="y">Y position for the centre of the sphere.</param>
+	//!		<param name="z">Z position for the centre of the sphere.</param>
+	//!		<param name="radius">Radius of the sphere.</param>
+	//!		<param name="r">Red component for the sphere color. Default is 1.</param>
+	//!		<param name="g">Green component for the sphere color. Default is 1.</param>
+	//!		<param name="b">Blue component for the sphere color. Default is 1.</param>
+	//!		<param name="a">Alpha component for the sphere color. Default is 1.</param>
+	//! <description>Draws a wireframe sphere.</description>
+	int DrawSphere(IFunctionHandler* pH, float x, float y, float z, float radius, int r, int g, int b, int a);
+
+	//! <code>System.DrawAABB( x, y, z, x2, y2, z2, r, g, b, a )</code>
+	//!		<param name="x">X position of first corner.</param>
+	//!		<param name="y">Y position of first corner.</param>
+	//!		<param name="z">Z position of first corner.</param>
+	//!		<param name="x2">X position of second corner.</param>
+	//!		<param name="y2">Y position of second corner.</param>
+	//!		<param name="z2">Z position of second corner.</param>
+	//!		<param name="r">Red component for the sphere color. Default is 1.</param>
+	//!		<param name="g">Green component for the sphere color. Default is 1.</param>
+	//!		<param name="b">Blue component for the sphere color. Default is 1.</param>
+	//!		<param name="a">Alpha component for the sphere color. Default is 1.</param>
+	//! <description>Draws a axis aligned box.</description>
+	int DrawAABB(IFunctionHandler* pH, float x, float y, float z, float x2, float y2, float z2, int r, int g, int b, int a);
+
+	//! <code>System.DrawAABB( x, y, z, x2, y2, z2, r, g, b, a )</code>
+	//!		<param name="x">X component of the centre point of the box.</param>
+	//!		<param name="y">Y component of the centre point of the box.</param>
+	//!		<param name="z">Z component of the centre point of the box.</param>
+	//!		<param name="w">Width of the box.</param>
+	//!		<param name="h">Height of the box.</param>
+	//!		<param name="d">Depth of the box.</param>
+	//!		<param name="rx">Rotation in X of the box.</param>
+	//!		<param name="ry">Rotation in X of the box.</param>
+	//!		<param name="rz">Rotation in X of the box.</param>
+	//! <description>Draws an object bounding box.</description>
+	int DrawOBB(IFunctionHandler* pH, float x, float y, float z, float w, float h, float d, float rx, float ry, float rz);
 
 	//! <code>System.SetGammaDelta( fDelta )</code>
 	//!		<param name="fDelta">Delta value.</param>
@@ -663,20 +686,6 @@ public:
 	//! </description>
 	//! <seealso cref="SetSkyHighlight">
 	int GetSkyHighlight(IFunctionHandler* pH, SmartScriptTable params);
-
-	//! <code>System.PushCloudBlocker( params )</code>
-	//! <description>Push cloud blocker in this frame.</description>
-	//! <seealso cref="GetCloudBlocker">
-	//!		<param name="params">Table with cloud blocker parameters.
-	//!			<para>
-	//!				Cloud blocker Params     Meaning
-	//!				--------------------     -----------
-	//!				position                 the center position of blocker.
-	//!				decayStart               the distance from the center of blocker to cloud density decay start.
-	//!				decayEnd                 the distance from the center of blocker to cloud density decay end.
-	//!				decayInfluence           the influence of cloud density decay.
-	//!			 </para></param>
-	int PushCloudBlocker(IFunctionHandler* pH, SmartScriptTable params);
 
 	//! <code>System.LoadLocalizationXml( filename )</code>
 	//! <description>Loads Excel exported xml file with text and dialog localization data.</description>

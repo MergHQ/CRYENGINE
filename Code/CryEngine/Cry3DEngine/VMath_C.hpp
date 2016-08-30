@@ -10,10 +10,10 @@
 //							-	integrated into cryengine
 //
 ////////////////////////////////////////////////////////////////////////////
-#ifndef __D_VMATH_C__
-#define __D_VMATH_C__
+#pragma once
 
-//#include <xmmintrin.h>
+namespace NVMath
+{
 
 union vec4
 {
@@ -370,4 +370,4 @@ ILINE void ExtractByteToFloat(vec4& rVOut0, vec4& rVOut1, vec4& rVOut2, vec4& rV
 	rVOut3 = int32Tofloat(VOutVecs[3]);
 }
 
-#endif
+}

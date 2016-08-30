@@ -14,11 +14,11 @@
 #include "StdAfx.h"
 #include "CryAction.h"
 #include "IVehicleSystem.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
 #include "FlowVehicleLights.h"
 #include "VehicleSystem/Vehicle.h"
 #include "VehicleSystem/VehiclePartLight.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //------------------------------------------------------------------------
 IFlowNodePtr CFlowVehicleLights::Clone(SActivationInfo* pActivationInfo)
@@ -89,4 +89,4 @@ void CFlowVehicleLights::ProcessEvent(EFlowEvent flowEvent, SActivationInfo* pAc
 	}
 }
 
-REGISTER_FLOW_NODE("Vehicle:VehicleLights", CFlowVehicleLights);
+REGISTER_FLOW_NODE("Vehicle:Lights", CFlowVehicleLights);

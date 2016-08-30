@@ -13,8 +13,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureSecondGen = false;
-
 namespace pfx2
 {
 
@@ -108,14 +106,13 @@ private:
 		TParticleHeap::Array<CParticleComponentRuntime::SInstance> newInstances(*context.m_pMemHeap);
 		newInstances.reserve(triggerCount);
 		const uint numEntries = m_componentIds.size();
-		const uint32 key = cry_random_uint32();
 
 		for (uint i = 0; i < numEntries; ++i)
 		{
 			const TComponentId componentId = m_componentIds[i];
 			ICommonParticleComponentRuntime* pChildComponentRuntime =
 			  context.m_runtime.GetEmitter()->GetRuntimes()[componentId].pRuntime;
-			SChaosKey chaosKey(key);
+			SChaosKey chaosKey = context.m_spawnRng;
 
 			for (uint j = 0; j < triggerCount; ++j)
 			{
@@ -139,14 +136,13 @@ private:
 		TParticleHeap::Array<CParticleComponentRuntime::SInstance> newInstances(*context.m_pMemHeap);
 		newInstances.reserve(triggerCount);
 		const uint numEntries = m_componentIds.size();
-		const uint32 key = cry_random_uint32();
 
 		for (uint i = 0; i < numEntries; ++i)
 		{
 			const TComponentId componentId = m_componentIds[i];
 			ICommonParticleComponentRuntime* pChildComponentRuntime =
 			  context.m_runtime.GetEmitter()->GetRuntimes()[componentId].pRuntime;
-			SChaosKey chaosKey(key);
+			SChaosKey chaosKey = context.m_spawnRng;
 
 			for (uint j = 0; j < triggerCount; ++j)
 			{
@@ -246,7 +242,7 @@ public:
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnSpawn, "SecondGen", "OnSpawn", "Editor/Icons/Particles/onspawn.png", secondGenColor);
+CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnSpawn, "SecondGen", "OnSpawn", colorSecondGen);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -268,6 +264,6 @@ public:
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnDeath, "SecondGen", "OnDeath", "Editor/Icons/Particles/ondeath.png", secondGenColor);
+CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(CParticleFeature, CFeatureSecondGenOnDeath, "SecondGen", "OnDeath", colorSecondGen);
 
 }

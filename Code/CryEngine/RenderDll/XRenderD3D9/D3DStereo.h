@@ -59,6 +59,7 @@ public:
 	void              CreateResources();
 	void              ReleaseResources();
 
+	bool              IsQuadLayerEnabled() const           { return m_pHmdRenderer != nullptr && m_device != STEREO_DEVICE_NONE && m_mode == STEREO_MODE_DUAL_RENDERING && m_output == STEREO_OUTPUT_HMD && m_pVrQuadLayerTex[0]; }
 	bool              IsStereoEnabled() const              { return m_device != STEREO_DEVICE_NONE && m_mode != STEREO_MODE_NO_STEREO; }
 	bool              IsPostStereoEnabled() const          { return m_device != STEREO_DEVICE_NONE && m_mode == STEREO_MODE_POST_STEREO; }
 	bool              RequiresSequentialSubmission() const { return m_submission == STEREO_SUBMISSION_SEQUENTIAL; }
@@ -85,13 +86,13 @@ public:
 	void              OnResolutionChanged();
 	void              CalculateBackbufferResolution(int eyeWidth, int eyeHeight, int* pBackbufferWidth, int* pBackbufferHeight);
 
-	void              CopyToStereo(int channel);
 	void              SubmitFrameToHMD();
 	void              DisplayStereo();
 
 	void              BeginRenderingMRT(bool disableClear);
 	void              EndRenderingMRT(bool bResolve = true);
 
+	void              SkipEyeTargetClears() { m_needClearLeft = m_needClearRight = false; }
 	void              NotifyFrameFinished();
 
 	void              BeginRenderingTo(StereoEye eye);
@@ -148,6 +149,9 @@ private:
 	CTexture*     m_pVrQuadLayerTex[RenderLayer::eQuadLayers_Total];
 	CTexture*     m_pSideTexs[2];
 
+	CCamera       m_previousCamera[2];
+	bool          m_bPreviousCameraValid;
+
 	void*         m_nvStereoHandle;
 	float         m_nvStereoStrength;
 	uint8         m_nvStereoActivated;
@@ -194,7 +198,6 @@ private:
 	void          SelectShaderTechnique();
 
 	bool          IsRenderThread() const;
-	void          CopyToStereoFromMainThread(int channel);
 
 	void          PushRenderTargets();
 	void          PopRenderTargets(bool bResolve);

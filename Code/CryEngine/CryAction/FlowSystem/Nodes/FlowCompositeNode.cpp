@@ -2,9 +2,7 @@
 
 #include "StdAfx.h"
 #include "FlowCompositeNode.h"
-#include "../FlowSystem.h"
 #include "../FlowSerialize.h"
-#include "FlowBaseNode.h"
 
 using namespace NFlowCompositeHelpers;
 

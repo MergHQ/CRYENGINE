@@ -48,7 +48,7 @@ def load_clang_common_settings(v):
 	# Set common compiler flags
 	COMMON_COMPILER_FLAGS = [
 		'-Wall', # Generate more warnings
-		'-Werror', # Tread Warnings as Errors
+		'-Werror', # Treat Warnings as Errors
 		'-ffast-math', # Enable fast math
 		
 		'-fvisibility=hidden',

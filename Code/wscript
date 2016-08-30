@@ -2,6 +2,7 @@
 
 SUBFOLDERS =	[
 	'CryEngine',
+	'CryPlugins',
 	'Launcher',
 	'CryExtensions',
 	'CryManaged',

@@ -24,14 +24,9 @@ void CGPUTimesDG::Enable()
 {
 	IStatoscopeDataGroup::Enable();
 
-	ICVar* pCV_r_GPUTimersWait = gEnv->pConsole->GetCVar("r_GPUTimersWait");
-	if (pCV_r_GPUTimersWait)
-		pCV_r_GPUTimersWait->Set(1);
-
 	if (m_pRenderer->m_pPipelineProfiler)
 	{
 		m_pRenderer->m_pPipelineProfiler->SetEnabled(true);
-		m_pRenderer->m_pPipelineProfiler->SetWaitForGPUTimers(true);
 	}
 }
 

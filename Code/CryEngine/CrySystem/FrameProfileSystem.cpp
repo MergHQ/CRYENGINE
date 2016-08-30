@@ -207,10 +207,10 @@ void CFrameProfileSystem::Init(int nThreadSupport)
 //////////////////////////////////////////////////////////////////////////
 void CFrameProfileSystem::Done()
 {
-	Profilers::const_iterator Iter(m_profilers.begin());
-	Profilers::const_iterator IterEnd(m_profilers.end());
 	CFrameProfiler* pFrameProfiler = NULL;
 
+	auto Iter = m_pProfilers->cbegin();
+	auto IterEnd = m_pProfilers->cend();
 	for (; Iter != IterEnd; ++Iter)
 	{
 		pFrameProfiler = *Iter;
@@ -222,8 +222,8 @@ void CFrameProfileSystem::Done()
 		pFrameProfiler->m_pISystem = NULL;
 	}
 
-	Iter = m_netTrafficProfilers.begin();
-	IterEnd = m_netTrafficProfilers.end();
+	Iter = m_netTrafficProfilers.cbegin();
+	IterEnd = m_netTrafficProfilers.cend();
 
 	for (; Iter != IterEnd; ++Iter)
 	{
@@ -414,11 +414,12 @@ void CFrameProfileSystem::Reset()
 	m_frameOverheadSecAvg = 0.f;
 	m_bCollectionPaused = false;
 
-	int i;
 	// Iterate over all profilers update their history and reset them.
-	for (i = 0; i < (int)m_profilers.size(); i++)
+	auto Iter = m_profilers.cbegin();
+	auto IterEnd = m_profilers.cend();
+	for (; Iter != IterEnd; ++Iter)
 	{
-		CFrameProfiler* pProfiler = m_profilers[i];
+		CFrameProfiler* pProfiler = *Iter;
 		// Reset profiler.
 		if (pProfiler)
 		{
@@ -434,9 +435,11 @@ void CFrameProfileSystem::Reset()
 		}
 	}
 	// Iterate over all profilers update their history and reset them.
-	for (i = 0; i < (int)m_netTrafficProfilers.size(); i++)
+	Iter = m_netTrafficProfilers.cbegin();
+	IterEnd = m_netTrafficProfilers.cend();
+	for (; Iter != IterEnd; ++Iter)
 	{
-		CFrameProfiler* pProfiler = m_netTrafficProfilers[i];
+		CFrameProfiler* pProfiler = *Iter;
 		if (pProfiler)
 		{
 			// Reset profiler.
@@ -455,7 +458,6 @@ void CFrameProfileSystem::Reset()
 void CFrameProfileSystem::AddFrameProfiler(CFrameProfiler* pProfiler)
 {
 	CryAutoCriticalSection lock(m_profilersLock);
-	ScopedSwitchToGlobalHeap useGlobalHeap;
 
 	assert(pProfiler);
 	if (!pProfiler)
@@ -521,8 +523,6 @@ void CFrameProfileSystem::SProfilerThreads::Reset()
 	m_aThreadStacks[0].pProfilerSection = 0;
 	if (!m_pReservedProfilers)
 	{
-		ScopedSwitchToGlobalHeap useGlobalHeap;
-
 		// Allocate reserved profilers;
 		for (int i = 0; i < nMAX_THREADED_PROFILERS; i++)
 		{
@@ -991,8 +991,8 @@ void CFrameProfileSystem::EndFrame()
 		if (pDisplayInfo != NULL && pDisplayInfo->GetIVal() > 1)
 		{
 			// Update profilers that are Regions only (without waiting time).
-			Profilers::const_iterator Iter(m_pProfilers->begin());
-			Profilers::const_iterator const IterEnd(m_pProfilers->end());
+			auto Iter = m_pProfilers->cbegin();
+			const auto IterEnd = m_pProfilers->cend();
 
 			for (; Iter != IterEnd; ++Iter)
 			{
@@ -1060,8 +1060,8 @@ void CFrameProfileSystem::EndFrame()
 
 	if (m_bSubsystemFilterEnabled)
 	{
-		Profilers::const_iterator Iter(m_pProfilers->begin());
-		Profilers::const_iterator const IterEnd(m_pProfilers->end());
+		auto Iter = m_pProfilers->cbegin();
+		const auto IterEnd = m_pProfilers->cend();
 
 		for (; Iter != IterEnd; ++Iter)
 		{
@@ -1136,8 +1136,8 @@ void CFrameProfileSystem::EndFrame()
 	// Iterate over all profilers update their history and reset them.
 	int nProfileCalls = 0;
 
-	Profilers::const_iterator Iter(m_pProfilers->begin());
-	Profilers::const_iterator const IterEnd(m_pProfilers->end());
+	auto Iter = m_pProfilers->cbegin();
+	const auto IterEnd = m_pProfilers->cend();
 
 	for (; Iter != IterEnd; ++Iter)
 	{
@@ -1154,14 +1154,6 @@ void CFrameProfileSystem::EndFrame()
 			{
 				selfAccountedTime += pProfiler->m_selfTime;
 				nProfileCalls += pProfiler->m_count;
-			}
-			else
-			{
-				if (m_displayQuantity == SELF_TIME && (pProfiler->m_description & EProfileDescription::WAITING) && pProfiler->m_threadId != renderThreadId)
-				{
-					// Ignore all wait profilers outside main or render thread.
-					continue;
-				}
 			}
 
 			float aveValue;
@@ -1189,6 +1181,18 @@ void CFrameProfileSystem::EndFrame()
 			float fDisplay_SelfTime = TranslateToDisplayValue(pProfiler->m_selfTime);
 
 			bool bEnablePeaks = nWeightMode < 3;
+
+			// Only visually display render & main thread wait times
+			// Wait times for other threads are still visible in Statoscope
+			if (m_displayQuantity == SELF_TIME && pProfiler->m_description & EProfileDescription::WAITING && (pProfiler->m_threadId != renderThreadId && pProfiler->m_threadId != mainThreadId))
+			{
+				// Reset profiler
+				pProfiler->m_totalTime = 0;
+				pProfiler->m_selfTime = 0;
+				pProfiler->m_peak = 0;
+				pProfiler->m_count = 0;
+				continue;
+			}
 
 			switch ((int)m_displayQuantity)
 			{
@@ -1552,8 +1556,6 @@ void CFrameProfileSystem::SetSubsystemFilter(const char* szFilterName)
 //////////////////////////////////////////////////////////////////////////
 void CFrameProfileSystem::AddPeaksListener(IFrameProfilePeakCallback* pPeakCallback)
 {
-	ScopedSwitchToGlobalHeap useGlobalHeap;
-
 	// Only add one time.
 	stl::push_back_unique(m_peakCallbacks, pPeakCallback);
 }
@@ -1654,8 +1656,6 @@ void CFrameProfileSystem::UpdateInputSystemStatus()
 {
 	if (gEnv->pInput)
 	{
-		ScopedSwitchToGlobalHeap globalHeap;
-
 		// Remove ourself from the system
 		if (gEnv->pInput->GetExclusiveListener() == this)
 			gEnv->pInput->SetExclusiveListener(0);

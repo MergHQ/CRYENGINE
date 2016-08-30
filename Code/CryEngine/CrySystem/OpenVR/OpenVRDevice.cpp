@@ -847,6 +847,12 @@ void Device::GetRenderTargetSize(uint& w, uint& h)
 }
 
 // -------------------------------------------------------------------------
+void Device::GetMirrorImageView(EEyeType eye, void* resource, void** mirrorTextureView)
+{
+	vr::VRCompositor()->GetMirrorTextureD3D11(static_cast<vr::EVREye>(eye), resource, mirrorTextureView);
+}
+
+// -------------------------------------------------------------------------
 void Device::OnSetupEyeTargets(ERenderAPI api, ERenderColorSpace colorSpace, void* leftEyeHandle, void* rightEyeHandle)
 {
 	m_eyeTargets[EEyeType::eEyeType_LeftEye] = new vr::Texture_t();

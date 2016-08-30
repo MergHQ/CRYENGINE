@@ -12,7 +12,8 @@
 
 *************************************************************************/
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_MemoryStats : public CFlowBaseNode<eNCT_Singleton>
 {
@@ -268,6 +269,6 @@ private:
 	unsigned long m_lFrameCounter;
 };
 
-REGISTER_FLOW_NODE("Stats:Memory", CFlowNode_MemoryStats);
-REGISTER_FLOW_NODE("Stats:Frame", CFlowNode_FrameStats);
-REGISTER_FLOW_NODE("Stats:FrameExtended", CFlowNode_FrameStatsEx);
+REGISTER_FLOW_NODE("Debug:Memory", CFlowNode_MemoryStats);
+REGISTER_FLOW_NODE("Debug:Frame", CFlowNode_FrameStats);
+REGISTER_FLOW_NODE("Debug:FrameExtended", CFlowNode_FrameStatsEx);

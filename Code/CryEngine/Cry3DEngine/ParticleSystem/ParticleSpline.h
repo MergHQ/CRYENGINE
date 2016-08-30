@@ -23,12 +23,11 @@ class CParticleSpline : public ISplineEvaluator
 {
 public:
 	CParticleSpline();
-	~CParticleSpline();
 
 	void         MakeFlatLine(float v) { return MakeLinear(v, v); }
 	void         MakeLinear(float v0 = 0.0f, float v1 = 1.0f);
 
-	size_t       GetNumKeys() const { return m_numKeys; }
+	size_t       GetNumKeys() const { return m_keys.size(); }
 	bool         HasKeys() const    { return GetNumKeys() > 0; }
 
 	float        Interpolate(float time) const;
@@ -36,8 +35,6 @@ public:
 	floatv       Interpolate(const floatv time) const;
 #endif
 	const Range& GetValueRange() const { return m_valueRange; }
-	float        GetMaxValue() const   { return m_valueRange.end; }
-	float        GetMinValue() const   { return m_valueRange.start; }
 
 	// ISplineEvaluator
 	virtual int        GetKeyCount() const override { return GetNumKeys(); }
@@ -46,7 +43,7 @@ public:
 
 	virtual void       Interpolate(float time, ValueType& value) override;
 
-	static Formatting  StringFormatting()             { return Formatting(";,:"); }
+	static  Formatting StringFormatting()             { return Formatting(";,:"); }
 	virtual Formatting GetFormatting() const override { return StringFormatting(); }
 
 	virtual bool       FromString(cstr str) override;
@@ -64,24 +61,18 @@ private:
 	float StartSlope(size_t keyIdx) const;
 	float EndSlope(size_t keyIdx) const;
 
-	struct SplineKeyBase
+	struct SplineKey
 	{
 		float time;
 		float timeMult;
 		float value;
-	};
-
-	// Key structure for all but last key
-	struct SplineKey : SplineKeyBase
-	{
 		float coeff0;
 		float coeff1;
 	};
 
-	// Key array allocated via Resize. coeff0 and coeff1 are absent for final key
-	size_t     m_numKeys;
-	SplineKey* m_keys;
-	Range      m_valueRange;
+	std::vector<SplineKey>     m_keys;
+	std::vector<spline::Flags> m_keyFlags;
+	Range                      m_valueRange;
 };
 
 // Automatically creates a global Serialize() for Type, which invokes Type.Serialize

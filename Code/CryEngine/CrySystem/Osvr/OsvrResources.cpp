@@ -19,6 +19,13 @@ Resources::Resources()
 {
 	CryLogAlways("[HMD][Osvr] Initialising Resources - Using Osvr");
 
+	//if the renderer is not Dx11, don't initialize the OSVR
+	if (strcmp(gEnv->pConsole->GetCVar("r_driver")->GetString(), "DX11") != 0)
+	{
+		CryLogAlways("[HMD][OSVR] Unable to initialize OSVR, only DX11 supported.");
+		return;
+	}
+
 	m_pDevice = Device::CreateAndInitializeDevice();
 
 	if (!m_pDevice)

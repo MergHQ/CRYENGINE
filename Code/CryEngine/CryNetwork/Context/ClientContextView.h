@@ -67,26 +67,44 @@ struct SServerPublicAddress
 // implements CContextView in a way that acts like a client
 class CClientContextView :
 	public CNetMessageSinkHelper<CClientContextView, CContextView, CLIENTVIEW_MIN_NUM_MESSAGES + CCV_NUM_EXTRA_MESSAGES>
-#if NETWORK_HOST_MIGRATION
-	, public IHostMigrationEventListener
-#endif
 {
 public:
 	CClientContextView(CNetChannel*, CNetContext*);
 	virtual ~CClientContextView();
 
-#if NETWORK_HOST_MIGRATION
-	// IHostMigrationEventListener
-	virtual EHostMigrationReturn OnInitiate(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnDisconnectClient(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnDemoteToClient(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnPromoteToServer(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnReconnectClient(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnFinalise(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnTerminate(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual void                 OnComplete(SHostMigrationInfo& hostMigrationInfo);
-	virtual EHostMigrationReturn OnReset(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	// ~IHostMigrationEventListener
+	// Statically constructed protocol message defitions for aspect-related messages.
+	template <int AspectNum>
+	struct msgUpdateAspect { // template-template arg cannot be a function, only a class.
+		static SNetMessageDef* fun() { return Helper_AddAspectMessage(
+			TrampolineAspect<AspectNum, CContextView, &CClientContextView::UpdateAspect>,
+			"CClientContextView:UpdateAspect", AspectNum, eMPF_BlocksStateChange);
+		}
+	};
+
+	template<int AspectNum>
+	struct msgPartialAspect {
+		static SNetMessageDef* fun() { return Helper_AddAspectMessage(
+			TrampolineAspect<AspectNum, CContextView, &CClientContextView::PartialAspect>,
+			"CClientContextView:PartialAspect", AspectNum, eMPF_BlocksStateChange);
+		}
+	};
+
+	template<int AspectNum>
+	struct msgSetAspectProfile {
+		static SNetMessageDef* fun() { return Helper_AddAspectMessage(
+			TrampolineAspect<AspectNum, CClientContextView, &CClientContextView::SetAspectProfileMessage>,
+			"CClientContextView:SetAspectProfile", AspectNum);
+		}
+	};
+
+#if ENABLE_ASPECT_HASHING
+	template<int AspectNum>
+	struct msgHashAspect {
+		static SNetMessageDef* fun() { return Helper_AddAspectMessage(
+			TrampolineAspect<AspectNum, CContextView, &CClientContextView::HashAspect>,
+			"CClientContextView:HashAspect", AspectNum, eMPF_BlocksStateChange);
+		}
+	};
 #endif
 
 #if ENABLE_SESSION_IDS
@@ -108,157 +126,11 @@ public:
 	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(BeginUnbindObject, SSimpleObjectIDParams);
 	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(UnbindPredictedObject, SRemoveStaticObject);
 	NET_DECLARE_IMMEDIATE_MESSAGE(ReconfigureObject);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect0);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect1);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect2);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect3);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect4);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect5);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect6);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect7);
-#if NUM_ASPECTS > 8
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect8);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect9);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect10);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect11);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect12);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect13);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect14);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect15);
-#endif
-#if NUM_ASPECTS > 16
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect16);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect17);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect18);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect19);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect20);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect21);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect22);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect23);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect24);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect25);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect26);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect27);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect28);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect29);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect30);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect31);
-#endif
 	NET_DECLARE_IMMEDIATE_MESSAGE(RMI_UnreliableOrdered);
 	NET_DECLARE_IMMEDIATE_MESSAGE(RMI_ReliableUnordered);
 	NET_DECLARE_IMMEDIATE_MESSAGE(RMI_ReliableOrdered);
 	NET_DECLARE_IMMEDIATE_MESSAGE(RMI_Attachment);
 	NET_DECLARE_IMMEDIATE_MESSAGE(SetAuthority);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile0);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile1);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile2);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile3);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile4);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile5);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile6);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile7);
-#if NUM_ASPECTS > 8
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile8);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile9);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile10);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile11);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile12);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile13);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile14);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile15);
-#endif
-#if NUM_ASPECTS > 16
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile16);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile17);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile18);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile19);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile20);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile21);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile22);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile23);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile24);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile25);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile26);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile27);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile28);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile29);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile30);
-	NET_DECLARE_IMMEDIATE_MESSAGE(SetAspectProfile31);
-#endif
-#if ENABLE_ASPECT_HASHING
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect0);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect1);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect2);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect3);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect4);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect5);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect6);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect7);
-	#if NUM_ASPECTS > 8
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect8);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect9);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect10);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect11);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect12);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect13);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect14);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect15);
-	#endif
-	#if NUM_ASPECTS > 16
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect16);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect17);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect18);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect19);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect20);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect21);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect22);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect23);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect24);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect25);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect26);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect27);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect28);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect29);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect30);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect31);
-	#endif
-#endif
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect0);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect1);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect2);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect3);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect4);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect5);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect6);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect7);
-#if NUM_ASPECTS > 8
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect8);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect9);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect10);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect11);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect12);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect13);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect14);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect15);
-#endif
-#if NUM_ASPECTS > 16
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect16);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect17);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect18);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect19);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect20);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect21);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect22);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect23);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect24);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect25);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect26);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect27);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect28);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect29);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect30);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect31);
-#endif
 
 	NET_DECLARE_SIMPLE_ATSYNC_MESSAGE(BeginBreakStream, SOnlyBreakId);
 	NET_DECLARE_SIMPLE_ATSYNC_MESSAGE(DeclareBrokenProduct, SDeclareBrokenProduct);
@@ -334,7 +206,7 @@ private:
 	virtual const char* DebugString()       { return "CLIENT"; }
 	void                SendEstablishedMessage();
 	bool                DoBeginBind(TSerialize ser, uint32 flags);
-	bool                SetAspectProfileMessage(NetworkAspectID aspectIdx, TSerialize ser);
+	bool                SetAspectProfileMessage(NetworkAspectID aspectIdx, TSerialize ser, uint32, uint32, uint32);
 	void                ContinueEnterState();
 	static void                   OnUpdatePredictedSpawn(void* pUsr1, void* pUsr2, ENetSendableStateUpdate);
 

@@ -51,6 +51,7 @@ CCryDX12ShaderResourceView* CCryDX12ShaderResourceView::Create(CCryDX12Device* p
 		desc12.Texture2DArray.FirstArraySlice = pDesc->Texture2DArray.FirstArraySlice;
 		desc12.Texture2DArray.MipLevels = pDesc->Texture2DArray.MipLevels;
 		desc12.Texture2DArray.MostDetailedMip = pDesc->Texture2DArray.MostDetailedMip;
+		desc12.Texture2DArray.PlaneSlice = ((pDesc->Format == DXGI_FORMAT_X32_TYPELESS_G8X24_UINT) | (pDesc->Format == DXGI_FORMAT_X24_TYPELESS_G8_UINT));
 		desc12.Texture2DArray.ResourceMinLODClamp = 0.0f;
 		slices.start = pDesc->Texture2DArray.FirstArraySlice;
 		slices.end = slices.start + pDesc->Texture2DArray.ArraySize;
@@ -86,6 +87,7 @@ CCryDX12ShaderResourceView* CCryDX12ShaderResourceView::Create(CCryDX12Device* p
 	case D3D12_SRV_DIMENSION_TEXTURE2D:
 		desc12.Texture2D.MipLevels = pDesc->Texture2D.MipLevels;
 		desc12.Texture2D.MostDetailedMip = pDesc->Texture2D.MostDetailedMip;
+		desc12.Texture2D.PlaneSlice = ((pDesc->Format == DXGI_FORMAT_X32_TYPELESS_G8X24_UINT) | (pDesc->Format == DXGI_FORMAT_X24_TYPELESS_G8_UINT));
 		desc12.Texture2D.ResourceMinLODClamp = 0.0f;
 		mips.start = pDesc->Texture2D.MostDetailedMip;
 		mips.end = mips.start + pDesc->Texture2D.MipLevels;

@@ -196,16 +196,7 @@ Property
   Precache = EffectLayerVS
   Precache = MethaGenVS
   Precache = DebugPassVS
-}
-
-Property
-{
-  Name = %_RT_GLOBAL_ILLUMINATION
-  Mask = 0x80
-  Precache = ParticleVS
-  Precache = ParticleHS
-  Precache = ParticleDS
-  Precache = ParticlePS
+	Precache = ParticleVS
 }
 
 Property
@@ -363,6 +354,9 @@ Property
 	Precache = TiledShadingCS
 	Precache = FogPostProcessPS
 	Precache = VolumeLightInjectionCS
+	Precache = VolumetricCloudsPS
+	Precache = ReprojectCloudsPS
+	Precache = CloudShadowGenCS
 }
 
 Property
@@ -916,6 +910,8 @@ Property
   Precache = DeferredPassPS
   Precache = VolumeLightInjectionCS
   Precache = RenderDownscaledShadowMapPS
+  Precache = ConeTraceDiffusePS
+  Precache = DemosaicPS
 }
 
 Property
@@ -924,6 +920,8 @@ Property
   Mask = 0x2000000000
   Precache = VolumeLightInjectionCS
   Precache = RenderDownscaledShadowMapPS
+  Precache = ConeTraceDiffusePS
+  Precache = DemosaicPS
 }
 
 Property
@@ -1033,6 +1031,8 @@ Property
   Precache = CustomRenderPS
   Precache = SkinPS
   Precache = GlassPS
+  Precache = DebugPassVS
+  Precache = DebugPassPS
 
   Precache = FogPostProcessPS
   Precache = HDRPostProcessPS
@@ -1063,20 +1063,19 @@ Property
   Precache = EffectLayerPS
   Precache = ResolveVS
   Precache = ResolvePS
-  
-  Precache = WaterSurfaceVS
-  Precache = WaterSurfacePS
-  Precache = WaterSurfaceHS
-  Precache = WaterSurfaceDS
+
   Precache = WaterFogVolume_PS
 
-	Precache = BeamPS
-	Precache = LensOpticsVS
+  Precache = BeamPS
+  Precache = LensOpticsVS
 
-	Precache = TiledShadingCS
-	Precache = VolumeLightInjectionCS
-	Precache = VolumetricCloudsPS
-	Precache = ReprojectCloudsPS
+  Precache = TiledShadingCS
+  Precache = VolumeLightInjectionCS
+  Precache = VolumetricCloudsPS
+  Precache = ReprojectCloudsPS
+	
+  Precache = ShadowMaskGenVS
+  Precache = ShadowMaskGenPS 
 }
 
 // Reserved for post processes/deferred - do not use for light/common shaders
@@ -1136,6 +1135,35 @@ Property
   Precache = WaterFogVolume_PS
   Precache = DemosaicDiffusePS
   Precache = ConeTraceDiffusePS
+}
+
+Property
+{
+	Name = %_RT_COMPUTE_SKINNING
+		Mask = 0x20000000000000
+		Precache = GeneralVS
+		Precache = ClothVS
+		Precache = SkinVS 
+		Precache = HairVS	
+		Precache = EyeVS
+		Precache = GlassVS
+		Precache = VegetationVS    
+		Precache = ShadowVS
+		Precache = ShadowGenVS
+		Precache = ZVS
+		Precache = DetailVS
+		Precache = GlowVS
+		Precache = MotionBlurVS
+		Precache = FurVS
+		Precache = SoftAlphaTestPassVS
+		Precache = CausticsVS
+		Precache = CustomRenderVS
+		Precache = EffectLayerVS
+		Precache = CloakVS
+		Precache = MethaGenVS
+		Precache = DebugPassVS
+		Precache = CloakVS
+		Precache = DynamicOverlay
 }
 
 Property

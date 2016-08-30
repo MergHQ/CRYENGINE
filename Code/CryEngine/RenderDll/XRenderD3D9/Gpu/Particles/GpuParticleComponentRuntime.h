@@ -8,6 +8,7 @@
 #include "Gpu/GpuMergeSort.h"
 #include "CREGpuParticle.h"
 #include "GpuParticleFeatureBase.h"
+#include "GraphicsPipeline/Common/ComputeRenderPass.h"
 
 namespace gpu_pfx2
 {
@@ -108,6 +109,7 @@ enum EConstantBufferSlot
 	eConstantBufferSlot_Gravity,
 	eConstantBufferSlot_Vortex,
 	eConstantBufferSlot_PixelSize,
+	eConstantBufferSlot_Collisions,
 
 	eConstantBufferSlot_COUNT
 };
@@ -140,8 +142,9 @@ class CParticleComponentRuntime;
 struct SUpdateContext
 {
 	CParticleComponentRuntime* pRuntime;
-	ID3D11UnorderedAccessView* pReadbackUAV;
-	ID3D11UnorderedAccessView* pCounterUAV;
+	CGpuBuffer*                pReadbackBuffer;
+	CGpuBuffer*                pCounterBuffer;
+	CGpuBuffer*                pScratchBuffer;
 	float                      deltaTime;
 };
 
@@ -196,11 +199,12 @@ public:
 	int                 GetNumParticles()           { return m_parameters->numParticles; };
 
 	// this is from the render thread
-	void AddRemoveNewBornsParticles(SUpdateContext& context);
-	void UpdateParticles(SUpdateContext& context);
-	void CalculateBounds(ID3D11UnorderedAccessView* pReadbackUAV);
+	void AddRemoveNewBornsParticles(SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	void UpdateParticles(SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	void CalculateBounds(SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 	void SetBoundsFromManager(const SReadbackData* pData);
 	void SetCounterFromManager(const uint32* pCounter);
+	CGpuBuffer& PrepareForUse();
 
 	void SpawnParticles(int instanceID, uint32 count);
 
@@ -209,48 +213,45 @@ public:
 
 	CParticleContainer*                GetContainer() { return &m_container; }
 
-	void                               RunTechnique(CCryNameTSCRC tech);
-	void                               SetSRVs(const int numSRVs, ID3D11ShaderResourceView** SRVs);
-
-	void                               SetUpdateSRV(EFeatureUpdateSrvSlot slot, ID3D11ShaderResourceView* pSRV);
+	void                               SetUpdateTexture(EFeatureUpdateSrvSlot slot, CTexture* pTexture);
+	void                               SetUpdateBuffer(EFeatureUpdateSrvSlot slot, CGpuBuffer* pSRV);
 	void                               SetUpdateFlags(uint64 flags);
+	void                               SetUpdateConstantBuffer(EConstantBufferSlot slot, CConstantBufferPtr pConstantBuffer);
 
 	SParticleInitializationParameters& GetParticleInitializationParameters() { return m_particleInitializationParameters.GetHostData(); }
-	void                               SetInitializationSRV(EFeatureInitializationSrvSlot slot, ID3D11ShaderResourceView* pSRV);
+	void                               SetInitializationSRV(EFeatureInitializationSrvSlot slot, CGpuBuffer* pSRV);
 	void                               SetInitializationFlags(uint64 flags);
 
-	// code duplication :(
-	virtual void AddSubInstances(SInstance* pInstances, size_t count) override;
-	void         RemoveSubInstance(size_t instanceId);
-	void         RemoveAllSubInstances() override;
-	virtual void ReparentParticles(const uint* swapIds, const uint numSwapIds) override;
-	size_t       GetNumInstances() const       { return m_subInstancesRenderThread.size(); }
-	const uint&  GetInstance(size_t idx) const { return m_subInstancesRenderThread[idx]; }
+	virtual void                       AddSubInstances(SInstance* pInstances, size_t count) override;
+	void                               RemoveSubInstance(size_t instanceId);
+	void                               RemoveAllSubInstances() override;
+	virtual void                       ReparentParticles(const uint* swapIds, const uint numSwapIds) override;
+	size_t                             GetNumInstances() const       { return m_subInstancesRenderThread.size(); }
+	const uint&                        GetInstance(size_t idx) const { return m_subInstancesRenderThread[idx]; }
 
 	// currently called from the render element mfDraw, but may go somewhere else
-	void                                   SwapToEnd(SUpdateContext& context);
+	void SwapToEnd(const SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 
 	Vec3                                   GetPos() const { return m_parameters->emitterPosition; };
 
 	gpu_physics::CParticleFluidSimulation* CreateFluidSimulation();
 	gpu_physics::CParticleFluidSimulation* GetFluidSimulation() { return m_pFluidSimulation.get(); }
-	void                                   FluidCollisions();
-	void                                   EvolveParticles();
+	void FluidCollisions(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	void EvolveParticles(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 
 	bool                                   BindVertexShaderResources()
 	{
 		if (IsActive() && m_parameters->numParticles)
 		{
-			ID3D11ShaderResourceView* ppSRVs[] = { GetContainer()->GetDefaultParticleDataSRV() };
+			ID3D11ShaderResourceView* ppSRVs[] = { GetContainer()->GetDefaultParticleDataBuffer().GetSRV() };
 			gcpRendD3D->m_DevMan.BindSRV(CDeviceManager::TYPE_VS, ppSRVs, 7, 1);
-			m_vertexShaderParams.BindVertexShader();
+			gcpRendD3D->m_DevMan.BindConstantBuffer(CDeviceManager::TYPE_VS, m_vertexShaderParams.GetDeviceConstantBuffer(), 4);
 			return true;
 		}
 		return false;
 	}
 
 	SSpawnData& GetSpawnData(size_t idx) { return m_spawnData[idx]; }
-	// /code duplication :(
 private:
 
 	struct SSpawnEntry
@@ -260,12 +261,17 @@ private:
 	};
 
 	void AddRemoveParticles(const SUpdateContext& context);
-	void UpdateNewBorns(const SUpdateContext& context);
-	void FillKillList(const SUpdateContext& context);
-	void UpdateFeatures(const SUpdateContext& context);
-	void Sort(const SUpdateContext& context);
+	void UpdateNewBorns(const SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	void FillKillList(const SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	void UpdateFeatures(const SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	void Sort(const SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 
-	gpu::CTypedConstantBuffer<SParticleParameters, eConstantBufferSlot_Base> m_parameters;
+	// update passes with varying material flags
+	void InitializePasses();
+	// update passes with varying material flags
+	void UpdatePasses();
+
+	gpu::CTypedConstantBuffer<SParticleParameters>      m_parameters;
 
 	CParticleContainer                                  m_container;
 	std::unique_ptr<CREGpuParticle>                     m_pRendElement;
@@ -285,24 +291,37 @@ private:
 
 	// m_parentData corresponds to the subInstances in m_subInstances, while the buffer
 	// in m_parentDataRenderThread corresponds to subInstances in m_subInstancesRenderThread
-	std::vector<SInitialData>                                  m_parentData;
+	stl::aligned_vector<SInitialData, CRY_PLATFORM_ALIGNMENT>  m_parentData;
 	gpu::CTypedResource<SInitialData, gpu::BufferFlagsDynamic> m_parentDataRenderThread;
-	int                                                        m_parentDataSizeRenderThread;
+	int                       m_parentDataSizeRenderThread;
 
-	std::vector<SSpawnData>                                    m_spawnData;
-	std::vector<SSpawnEntry>                                   m_spawnEntries;
-	AABB                                                       m_bounds;
-	bool                                                       m_active;
-	bool                                                       m_isSecondGen;
+	std::vector<SSpawnData>   m_spawnData;
+	std::vector<SSpawnEntry>  m_spawnEntries;
+	AABB                      m_bounds;
+	bool                      m_active;
+	bool                      m_isSecondGen;
 
-	std::unique_ptr<gpu::CComputeBackend>                      m_pBackend;
+	// Compute Passes
+	CComputeRenderPass m_passCalcBounds;
+	CComputeRenderPass m_passFeatureInitialization;
+	CComputeRenderPass m_passFillKillList;
+	CComputeRenderPass m_passFeatureUpdate;
+	CComputeRenderPass m_passPrepareSort;
+	CComputeRenderPass m_passReorderParticles;
+	CComputeRenderPass m_passSwapToEnd;
 
-	ID3D11ShaderResourceView*                                  m_updateSrvSlots[eFeatureUpdateSrvSlot_COUNT];
-	uint64                                                     m_updateShaderFlags;
+	CGpuBuffer*        m_updateSrvSlots[eFeatureUpdateSrvSlot_COUNT];
+	CTexture*          m_updateTextureSlots[eFeatureUpdateSrvSlot_COUNT];
+	CConstantBufferPtr m_updateConstantBuffers[eConstantBufferSlot_COUNT];
+	uint64             m_updateShaderFlags;
 
-	ID3D11ShaderResourceView*                                  m_initializationSrvSlots[eFeatureInitializationSrvSlot_COUNT];
-	uint64                                                     m_initializationShaderFlags;
-	gpu::CTypedConstantBuffer<SParticleInitializationParameters, eConstantBufferSlot_Initialization> m_particleInitializationParameters;
+	CGpuBuffer*        m_initializationSrvSlots[eFeatureInitializationSrvSlot_COUNT];
+	uint64             m_initializationShaderFlags;
+
+	uint64             m_previousInitializationShaderFlags;
+	uint64             m_previousUpdateShaderShaderFlags;
+
+	gpu::CTypedConstantBuffer<SParticleInitializationParameters> m_particleInitializationParameters;
 
 	EState                                                 m_state;
 
@@ -316,12 +335,12 @@ private:
 	std::unique_ptr<gpu::CMergeSort>                       m_pMergeSort;
 
 	// set only during initialization
-	const int                                             m_maxParticles;
-	const int                                             m_maxNewBorns;
-	const pfx2::EGpuSortMode                              m_sortMode;
-	const uint32                                          m_facingMode;
-	const float                                           m_axisScale;
+	const int                                          m_maxParticles;
+	const int                                          m_maxNewBorns;
+	const pfx2::EGpuSortMode                           m_sortMode;
+	const uint32                                       m_facingMode;
+	const float                                        m_axisScale;
 
-	gpu::CTypedConstantBuffer<SVertexShaderParameters, 4> m_vertexShaderParams;
+	gpu::CTypedConstantBuffer<SVertexShaderParameters> m_vertexShaderParams;
 };
 }

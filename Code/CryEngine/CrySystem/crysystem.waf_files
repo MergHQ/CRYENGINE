@@ -26,7 +26,6 @@
       "IDebugCallStack.cpp",
       "JiraClient.cpp",
       "AsyncPakManager.cpp",
-      "LevelHeap.cpp",
       "Log.cpp",
       "MemReplay.cpp",
       "BootProfiler.cpp"
@@ -185,7 +184,6 @@
       "ZipDirList.h",
       "ZipDirStructures.h",
       "ZipDirTree.h",
-      "ZipFile.h",
       "ZipFileFormat.h",
       "ZipFileFormat_info.h"
     ]
@@ -261,6 +259,8 @@
       "NullImplementation/NULLRenderAuxGeom.cpp"
     ],
     "ExtensionSystem":[
+      "ExtensionSystem/CryPluginManager.cpp",
+      "ExtensionSystem/CryPluginManager.h",
       "ExtensionSystem/CryFactoryRegistryImpl.cpp",
       "ExtensionSystem/CryFactoryRegistryImpl.h"
     ],

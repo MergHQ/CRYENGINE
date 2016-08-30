@@ -16,7 +16,6 @@
 #include <QDropEvent>
 #include <QEvent>
 #include <QMimeData>
-#include <QMessageBox>
 #include <QMenu>
 #include <QVBoxLayout>
 #include <QTreeView>
@@ -25,16 +24,17 @@
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/STL.h>
 #include <QPropertyTree/QPropertyTree.h>
+#include <QAdvancedTreeView.h>
+#include <QMessageBox>
 
 namespace ACE
 {
 
-QConnectionsWidget::QConnectionsWidget(QWidget* pParent, const string& group)
+QConnectionsWidget::QConnectionsWidget(QWidget* pParent)
 	: QWidget(pParent)
-	, m_group(group)
 	, m_pControl(nullptr)
 	, m_pConnectionModel(new QConnectionModel())
-	, m_pConnectionsView(new QTreeView())
+	, m_pConnectionsView(new QAdvancedTreeView())
 {
 	resize(326, 450);
 	setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
@@ -79,50 +79,36 @@ QConnectionsWidget::QConnectionsWidget(QWidget* pParent, const string& group)
 	m_pConnectionProperties = new QPropertyTree(m_pConnectionPropertiesFrame);
 	m_pConnectionProperties->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum));
 	m_pConnectionProperties->setSizeToContent(true);
-	connect(m_pConnectionProperties, &QPropertyTree::signalChanged, [&]()
-		{
-			if (m_pControl)
-			{
-			  m_pControl->SignalControlModified();
-			}
-	  });
 
 	pVerticalLayout->addWidget(m_pConnectionProperties);
 	pHorizontalLayout->addWidget(m_pConnectionsView);
 	pHorizontalLayout->addWidget(m_pConnectionPropertiesFrame);
+
+	// Hide all the columns except "Name" and "Path"
+	const int count = m_pConnectionModel->columnCount(QModelIndex());
+	for (int i = 2; i < count; ++i)
+	{
+		m_pConnectionsView->SetColumnVisible(i, false);
+	}
+
+	CAudioControlsEditorPlugin::GetATLModel()->AddListener(this);
+
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect(std::function<void()>([&]()
+		{
+			m_pConnectionsView->selectionModel()->clear();
+			RefreshConnectionProperties();
+	  }));
+
 }
 
-void QConnectionsWidget::Init(const string& group)
+QConnectionsWidget::~QConnectionsWidget()
 {
-	m_group = group;
-	connect(m_pConnectionsView->selectionModel(), &QItemSelectionModel::selectionChanged, [&]()
-		{
-			ConnectionPtr pConnection;
-			if (m_pControl)
-			{
-			  QModelIndexList selectedIndices = m_pConnectionsView->selectionModel()->selectedIndexes();
-			  if (!selectedIndices.empty())
-			  {
-			    QModelIndex index = selectedIndices[0];
-			    if (index.isValid())
-			    {
-			      const CID id = index.data(QConnectionModel::eConnectionModelRoles_Id).toInt();
-			      pConnection = m_pControl->GetConnection(id);
-			    }
-			  }
-			}
+	CAudioControlsEditorPlugin::GetATLModel()->RemoveListener(this);
+}
 
-			if (pConnection && pConnection->HasProperties())
-			{
-			  m_pConnectionProperties->attach(Serialization::SStruct(*pConnection.get()));
-			  m_pConnectionPropertiesFrame->setHidden(false);
-			}
-			else
-			{
-			  m_pConnectionProperties->detach();
-			  m_pConnectionPropertiesFrame->setHidden(true);
-			}
-	  });
+void QConnectionsWidget::Init()
+{
+	connect(m_pConnectionsView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &QConnectionsWidget::RefreshConnectionProperties);
 }
 
 bool QConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
@@ -192,10 +178,55 @@ void QConnectionsWidget::SetControl(CATLControl* pControl)
 	if (m_pControl != pControl)
 	{
 		m_pControl = pControl;
-		m_pConnectionModel->Init(pControl, m_group);
-		m_pConnectionsView->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+		Reload();
+	}
+}
+
+void QConnectionsWidget::Reload()
+{
+	m_pConnectionModel->Init(m_pControl);
+	m_pConnectionsView->selectionModel()->clear();
+	m_pConnectionsView->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+	RefreshConnectionProperties();
+}
+
+void QConnectionsWidget::RefreshConnectionProperties()
+{
+	ConnectionPtr pConnection;
+	if (m_pControl)
+	{
+		QModelIndexList selectedIndices = m_pConnectionsView->selectionModel()->selectedIndexes();
+		if (!selectedIndices.empty())
+		{
+			QModelIndex index = selectedIndices[0];
+			if (index.isValid())
+			{
+				const CID id = index.data(QConnectionModel::eConnectionModelRoles_Id).toInt();
+				pConnection = m_pControl->GetConnection(id);
+			}
+		}
+	}
+
+	if (pConnection && pConnection->HasProperties())
+	{
+		m_pConnectionProperties->attach(Serialization::SStruct(*pConnection.get()));
+		m_pConnectionPropertiesFrame->setHidden(false);
+	}
+	else
+	{
 		m_pConnectionProperties->detach();
 		m_pConnectionPropertiesFrame->setHidden(true);
 	}
 }
+
+void QConnectionsWidget::OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl)
+{
+	if (m_pControl == pControl)
+	{
+		// clear the selection if a connection is removed
+		m_pConnectionsView->selectionModel()->clear();
+		RefreshConnectionProperties();
+	}
+}
+
 }

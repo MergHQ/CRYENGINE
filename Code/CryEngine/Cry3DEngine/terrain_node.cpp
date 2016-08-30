@@ -121,21 +121,31 @@ void CTerrainNode::SetupTexturing(bool bMakeUncompressedForEditing, const SRende
 #ifndef _RELEASE
 	if (gEnv->IsEditor())
 	{
-		if (CTerrainNode* pTextureSourceNode = GetReadyTexSourceNode(m_cNodeNewTexMML, ett_Diffuse))
+		if (CTerrainNode* pTextureSourceNode = GetReadyTexSourceNode(passInfo.IsShadowPass() ? 0 : m_cNodeNewTexMML, ett_Diffuse))
 		{
+			// update RGB and normal textures
 			if (pTextureSourceNode->m_eTextureEditingState == eTES_SectorIsModified_AtlasIsDirty && C3DEngine::m_pGetLayerIdAtCallback)
 			{
 				pTextureSourceNode->UpdateNodeTextureFromEditorData();
 				pTextureSourceNode->m_eTextureEditingState = eTES_SectorIsModified_AtlasIsUpToDate;
 			}
+
+			// update elevation texture
+			if (pTextureSourceNode->m_eElevTexEditingState == eTES_SectorIsModified_AtlasIsDirty)
+			{
+				static Array2d<float> arrHmData;
+				pTextureSourceNode->FillSectorHeightMapTextureData(arrHmData);
+				m_pTerrain->m_texCache[2].UpdateTexture((byte*)arrHmData.GetData(), pTextureSourceNode->m_nNodeTexSet.nSlot0);
+				pTextureSourceNode->m_eElevTexEditingState = eTES_SectorIsModified_AtlasIsUpToDate;
+			}
 		}
 	}
-#endif
+#endif // _RELEASE
 
 	CheckLeafData();
 
 	// find parent node containing requested texture lod
-	CTerrainNode* pTextureSourceNode = GetReadyTexSourceNode(m_cNodeNewTexMML, ett_Diffuse);
+	CTerrainNode* pTextureSourceNode = GetReadyTexSourceNode(passInfo.IsShadowPass() ? 0 : m_cNodeNewTexMML, ett_Diffuse);
 
 	if (!pTextureSourceNode) // at least root texture has to be loaded
 		pTextureSourceNode = m_pTerrain->GetParentNode(m_nSID);
@@ -174,6 +184,9 @@ void CTerrainNode::SetupTexturing(bool bMakeUncompressedForEditing, const SRende
 
 	m_nTexSet.nTex1 = (pTextureSourceNode && pTextureSourceNode->m_nNodeTexSet.nTex1) ?
 	                  pTextureSourceNode->m_nNodeTexSet.nTex1 : nDefaultTexId;
+
+	m_nTexSet.nTex2 = (pTextureSourceNode && pTextureSourceNode->m_nNodeTexSet.nTex2) ?
+										pTextureSourceNode->m_nNodeTexSet.nTex2 : nDefaultTexId;
 
 	if (pTextureSourceNode && pTextureSourceNode->m_nNodeTexSet.nTex0)
 		m_nTexSet = pTextureSourceNode->m_nNodeTexSet;
@@ -333,14 +346,14 @@ void CTerrainNode::Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bo
 	m_bMergeNotAllowed = 0;
 	m_bHasHoles = 0;
 
-	m_eTextureEditingState = eTES_SectorIsUnmodified;
+#ifndef _RELEASE
+	m_eTextureEditingState = m_eElevTexEditingState = eTES_SectorIsUnmodified;
+#endif // _RELEASE
 
 	m_nOriginX = m_nOriginY = 0; // sector origin
 	m_nLastTimeUsed = 0;         // basically last time rendered
 
 	uint8 m_cNewGeomMML = m_cCurrGeomMML = m_cNewGeomMML_Min = m_cNewGeomMML_Max = m_cNodeNewTexMML = m_cNodeNewTexMML_Min = 0;
-
-	m_nLightMaskFrameId = 0;
 
 	m_pLeafData = 0;
 
@@ -498,8 +511,10 @@ void CTerrainNode::EnableTextureEditingMode(unsigned int nEditorDiffuseTex)
 		return;
 #endif
 
+#ifndef _RELEASE
 	if (nEditorDiffuseTex > 0)
 		m_eTextureEditingState = eTES_SectorIsModified_AtlasIsDirty;
+#endif // _RELEASE
 }
 
 void CTerrainNode::UpdateNodeTextureFromEditorData()
@@ -521,9 +536,9 @@ void CTerrainNode::UpdateNodeTextureFromEditorData()
 		for (int y = 0; y < nTexSize; y++)
 		{
 			arrRGB[x][y] = C3DEngine::m_pGetLayerIdAtCallback->GetColorAtPosition(
-			  (float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize),
-			  (float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
-			  true);
+				(float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize),
+				(float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
+				true);
 
 			ColorF colRGB;
 			colRGB.r = 1.f / 255.f * arrRGB[x][y].r;
@@ -639,7 +654,7 @@ int CTerrainNode::GetAreaLOD(const SRenderingPassInfo& passInfo)
 bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	bool bUpdateRequired = false; // actually bUpdateNOTRequired
+	bool bMeshIsUpToDate = true; // actually bUpdateNOTRequired
 
 	if (m_arrfDistance[passInfo.GetRecursiveLevel()] < 8) // make sure near sectors are always potentially visible
 		m_nLastTimeUsed = fastftol_positive(GetCurTimeSec());
@@ -662,7 +677,7 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 
 	SetupTexturing(false, passInfo);
 
-	bUpdateRequired = RenderSector(passInfo);
+	bMeshIsUpToDate = RenderSector(passInfo);
 
 	if (GetCVars()->e_TerrainBBoxes)
 	{
@@ -708,7 +723,7 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 		}
 	}
 
-	return bUpdateRequired;
+	return bMeshIsUpToDate;
 }
 
 float CTerrainNode::GetSurfaceTypeAmount(Vec3 vPos, int nSurfType)
@@ -801,8 +816,8 @@ bool CTerrainNode::CheckUpdateProcObjects(const SRenderingPassInfo& passInfo)
 					if (m_nTreeLevel != GetCVars()->e_ProcVegetation - 3)
 						continue;
 
-				if (pGroup->fDensity < 0.2f)
-					pGroup->fDensity = 0.2f;
+				if (pGroup->fDensity < 0.5f)
+					pGroup->fDensity = 0.5f;
 
 				float fMinX = (float)m_nOriginX;
 				float fMinY = (float)m_nOriginY;
@@ -978,7 +993,7 @@ void CProcObjSector::ReleaseAllObjects()
 	for (int i = 0; i < m_ProcVegetChunks.Count(); i++)
 	{
 		SProcObjChunk* pChunk = m_ProcVegetChunks[i];
-		for (int o = 0; o < GetCVars()->e_ProcVegetationMaxObjectsInChunk; o++)
+		for (int o = 0; o < pChunk->nAllocatedItems; o++)
 			pChunk->m_pInstances[o].ShutDown();
 		CTerrainNode::m_pProcObjChunkPool->ReleaseObject(m_ProcVegetChunks[i]);
 	}
@@ -1169,27 +1184,18 @@ void CTerrainNode::UpdateDetailLayersInfo(bool bRecursive)
 	}
 }
 
-void CTerrainNode::IntersectWithShadowFrustum(bool bAllIn, PodArray<CTerrainNode*>* plstResult, ShadowMapFrustum* pFrustum, const float fHalfGSMBoxSize, const SRenderingPassInfo& passInfo)
+void CTerrainNode::IntersectWithShadowFrustum(bool bAllIn, PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, const float fHalfGSMBoxSize, const SRenderingPassInfo& passInfo)
 {
 	if (bAllIn || (pFrustum && pFrustum->IntersectAABB(GetBBox(), &bAllIn)))
 	{
 		float fSectorSize = GetBBox().max.x - GetBBox().min.x;
-		if (m_pChilds && (fSectorSize > fHalfGSMBoxSize || fSectorSize > 128))
+		if (m_pChilds && (fSectorSize*GetCVars()->e_TerrainMeshInstancingShadowLodRatio > fHalfGSMBoxSize || (m_nTreeLevel > GetCVars()->e_TerrainMeshInstancingMinLod && pFrustum->IsCached())))
 		{
 			for (int i = 0; i < 4; i++)
 				m_pChilds[i].IntersectWithShadowFrustum(bAllIn, plstResult, pFrustum, fHalfGSMBoxSize, passInfo);
 		}
 		else
 		{
-			if (!GetLeafData() || !GetLeafData()->m_pRenderMesh || (m_cNewGeomMML == MML_NOT_SET && GetLeafData() && GetLeafData()->m_pRenderMesh))
-			{
-				m_arrfDistance[passInfo.GetRecursiveLevel()] = GetPointToBoxDistance(passInfo.GetCamera().GetPosition(), GetBBox());
-				SetLOD(passInfo);
-				int nSectorSize = CTerrain::GetSectorSize() << m_nTreeLevel;
-				while ((1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize() < nSectorSize / 64)
-					m_cNewGeomMML++;
-			}
-
 			plstResult->Add(this);
 		}
 	}
@@ -1237,10 +1243,13 @@ void CTerrainNode::UnloadNodeTexture(bool bRecursive)
 	if (m_nNodeTexSet.nTex1)
 		m_pTerrain->m_texCache[1].ReleaseTexture(m_nNodeTexSet.nTex1, m_nNodeTexSet.nSlot1);
 
+	if (m_nNodeTexSet.nTex2)
+		m_pTerrain->m_texCache[2].ReleaseTexture(m_nNodeTexSet.nTex2, m_nNodeTexSet.nSlot2);
+
 	if (m_nNodeTexSet.nTex0 && GetCVars()->e_TerrainTextureStreamingDebug == 2)
 		PrintMessage("Texture released %d, Level=%d", GetSecIndex(), m_nTreeLevel);
 
-	m_nNodeTexSet = SSectorTextureSet(0, 0);
+	m_nNodeTexSet = SSectorTextureSet();
 
 	for (int i = 0; m_pChilds && bRecursive && i < 4; i++)
 		m_pChilds[i].UnloadNodeTexture(bRecursive);
@@ -1331,18 +1340,6 @@ void CTerrainNode::Render(const SRendParams& RendParams, const SRenderingPassInf
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	// render only prepared nodes for now
-	if (!GetLeafData() || !GetLeafData()->m_pRenderMesh)
-	{
-		// get distances
-		m_arrfDistance[passInfo.GetRecursiveLevel()] = GetPointToBoxDistance(passInfo.GetCamera().GetPosition(), GetBBox());
-		SetLOD(passInfo);
-
-		int nSectorSize = CTerrain::GetSectorSize() << m_nTreeLevel;
-		while ((1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize() < nSectorSize / 64)
-			m_cNewGeomMML++;
-	}
-
 	if (GetCVars()->e_TerrainDrawThisSectorOnly)
 	{
 		if (
@@ -1353,14 +1350,20 @@ void CTerrainNode::Render(const SRendParams& RendParams, const SRenderingPassInf
 			return; // false;
 	}
 
-	CheckLeafData();
+	if (passInfo.IsShadowPass())
+	{
+		// render shadow gen using fast path and mesh instancing
+		DrawArray(passInfo);
+	}
+	else
+	{
+		CheckLeafData();
 
-	if (!RenderSector(passInfo) && m_pTerrain)
-		m_pTerrain->m_pTerrainUpdateDispatcher->QueueJob(this, passInfo);
+		if (!RenderSector(passInfo) && m_pTerrain)
+			m_pTerrain->m_pTerrainUpdateDispatcher->QueueJob(this, passInfo);
+	}
 
 	m_nLastTimeUsed = fastftol_positive(GetCurTimeSec());
-
-	//	return true;
 }
 
 /*bool CTerrainNode::CheckUpdateLightMap()
@@ -1474,7 +1477,8 @@ int CTerrainNode::GetSectorSizeInHeightmapUnits() const
 
 SProcObjChunk::SProcObjChunk()
 {
-	m_pInstances = new CVegetation[GetCVars()->e_ProcVegetationMaxObjectsInChunk];
+	nAllocatedItems = GetCVars()->e_ProcVegetationMaxObjectsInChunk;
+	m_pInstances = new CVegetation[nAllocatedItems];
 }
 
 SProcObjChunk::~SProcObjChunk()
@@ -1532,4 +1536,9 @@ void CTerrainNode::OffsetPosition(const Vec3& delta)
 		for (int i = 0; i < 4; ++i)
 			m_pChilds[i].OffsetPosition(delta);
 #endif
+}
+
+void CTerrainNode::FillBBox(AABB& aabb)
+{
+	aabb = GetBBox();
 }

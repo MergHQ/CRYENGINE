@@ -878,7 +878,7 @@ void SRenderThread::RC_ReleaseSurfaceResource(SDepthTexture* pRes)
 	{
 		if (pRes)
 		{
-			pRes->Release();
+			pRes->Release(true);
 		}
 		return;
 	}
@@ -1442,7 +1442,7 @@ void SRenderThread::RC_SetCamera()
 
 		gRenDev->GetProjectionMatrix((float*)&pData[0]);
 		gRenDev->GetModelViewMatrix((float*)&pData[sizeof(Matrix44)]);
-		*(Matrix44*)((float*)&pData[sizeof(Matrix44) * 2]) = gRenDev->m_CameraZeroMatrix[m_nCurThreadFill];
+		gRenDev->GetCameraZeroMatrix((float*)&pData[sizeof(Matrix44) * 2]);
 
 		if (gRenDev->m_RP.m_TI[m_nCurThreadFill].m_PersFlags & RBPF_OBLIQUE_FRUSTUM_CLIPPING)
 		{
@@ -1898,20 +1898,6 @@ void SRenderThread::RC_PrepareStereo(int mode, int output)
 	byte* p = AddCommand(eRC_PrepareStereo, 8);
 	AddDWORD(p, mode);
 	AddDWORD(p, output);
-	EndCommand(p);
-}
-
-void SRenderThread::RC_CopyToStereoTex(int channel)
-{
-	if (IsRenderThread())
-	{
-		gRenDev->RT_CopyToStereoTex(channel);
-		return;
-	}
-
-	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_CopyToStereoTex, 4);
-	AddDWORD(p, channel);
 	EndCommand(p);
 }
 
@@ -2586,7 +2572,7 @@ void SRenderThread::ProcessCommands()
 				SDepthTexture* pRes = ReadCommand<SDepthTexture*>(n);
 				if (pRes)
 				{
-					pRes->Release();
+					pRes->Release(true);
 				}
 			}
 			break;
@@ -2772,8 +2758,7 @@ void SRenderThread::ProcessCommands()
 
 				if (m_eVideoThreadMode == eVTM_Disabled)
 				{
-					gRenDev->SetMatrices(ProjMat.GetData(), ViewMat.GetData());
-					gRenDev->m_CameraZeroMatrix[threadId] = CameraZeroMat;
+					gRenDev->SetMatrices(ProjMat.GetData(), ViewMat.GetData(), CameraZeroMat.GetData());
 
 					gRenDev->RT_SetCameraInfo();
 				}
@@ -2851,12 +2836,6 @@ void SRenderThread::ProcessCommands()
 				int output = ReadCommand<int>(n);
 				if (m_eVideoThreadMode == eVTM_Disabled)
 					gRenDev->RT_PrepareStereo(mode, output);
-			}
-			break;
-		case eRC_CopyToStereoTex:
-			{
-				int channel = ReadCommand<int>(n);
-				gRenDev->RT_CopyToStereoTex(channel);
 			}
 			break;
 		case eRC_SetStereoEye:

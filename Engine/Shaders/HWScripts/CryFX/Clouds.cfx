@@ -42,70 +42,16 @@ float Script : STANDARDSGLOBAL
 >;
 
 ///////////////// Constants //////////////////
-//float4 LightningPos;
-//float4 LightningColSize;
-
-float3 ShadeColorFromSun : PB_CloudShadingColorSun;
+// TODO: remove after removing old graphics pipeline.
 float4 CloudShadowAnimParams : PB_CloudShadowAnimParams;
 
-// Volumetric fog shadows
-float4 volFogShadowDarkening;
-float4 volFogShadowDarkeningSunAmb;
-
-// Cloud blockers
+// TODO: remove after removing old graphics pipeline.
 float4 vcCloudBlockerPos[4]; // xyz: the center position of the cloud blocker, w: number of blockers
 float4 vcCloudBlockerParam[4]; // x: reciprocal of length between decay start and end, y: decay start, z: decay influence, w: one minus decay influence
 
 
 ///////////////// Textures //////////////////
-RWTexture3D< float > VolDensityRW : register( u0 );
-RWTexture3D< float3 > VolShadowRW : register( u0 );
-
 Texture3D<float4> CloudBaseDensityTexture : register(t15);
-
-sampler3D volShadSampler = sampler_state
-{
-	Texture = $VolCloudShadows;
-	MinFilter = LINEAR;
-	MagFilter = LINEAR;
-	MipFilter = LINEAR;
-	AddressU = Wrap;
-	AddressV = Wrap;
-	AddressW = Clamp;
-};
-
-sampler3D noise3Dsampler = sampler_state
-{
-	Texture = EngineAssets/Textures/noise3d.dds;
-	MinFilter = LINEAR;
-	MagFilter = LINEAR;
-	MipFilter = LINEAR;
-	AddressU = Wrap;
-	AddressV = Wrap;
-	AddressW = Wrap;
-};
-
-sampler2D miePhaseSampler = sampler_state
-{
-	Texture = EngineAssets/Shading/cloud_mie_phase_function.dds;
-	MinFilter = LINEAR;
-	MagFilter = LINEAR;
-	MipFilter = LINEAR;
-	AddressU = Clamp;
-	AddressV = Clamp;
-};
-
-// Volumetric fog shadows
-sampler2D volFogShadowSampler = sampler_state
-{
-	Texture = $VolFogShadowBuf0;
-	MinFilter = LINEAR;
-	MagFilter = LINEAR;
-	MipFilter = LINEAR;
-	AddressU = Mirror;
-	AddressV = Mirror;
-};
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -136,7 +82,11 @@ float GetVdC(uint index)
 	return float(index) / float(0xFFFFFFFFu);
 }
 
-float3 vcTranslateWorldPosToCloudPos(in float3 samplePosWS, in float3 centerSphere, in float sphereRadius, in float cloudAltitude)
+float3 vcTranslateWorldPosToCloudPos(
+	in float3 samplePosWS,
+	in float3 centerSphere,
+	in float sphereRadius,
+	in float cloudAltitude)
 {
 	float3 cpos;
 
@@ -153,8 +103,13 @@ float vcGetIntersectionPlane(in float3 rayOrigin, in float3 rayDir, in float4 pl
 	return ((plane.w - dot(plane.xyz, rayOrigin.xyz)) / dot(plane.xyz, rayDir.xyz));
 }
 
-float2 vcGetIntersectionWithCloudLayer(in float3 rayOrigin, in float3 rayDir, in float cloudAltitude, in float cloudThickness, 
-																			 in float sphereRadius, in float3 centerSphere)
+float2 vcGetIntersectionWithCloudLayer(
+	in float3 rayOrigin,
+	in float3 rayDir,
+	in float cloudAltitude,
+	in float cloudThickness, 
+	in float sphereRadius,
+	in float3 centerSphere)
 {
 #if !%_RT_SAMPLE2
 	// intersect with cloud layer's bottom and top plane.
@@ -219,9 +174,9 @@ float2 vcGetIntersectionWithCloudLayer(in float3 rayOrigin, in float3 rayDir, in
 	return float2(tt, tb);
 }
 
-float GetFBM(float3 pos, const float maxOctaves, const float frequency, bool turbulence = false)
+float GetFBM(Texture3D noiseTex, SamplerState noiseSampler, float3 pos, const float maxOctaves, const float frequency, bool turbulence = false)
 {
-	const float nornalizationFactorNoise3DTex = 1.66f;
+	const float normalizationFactorNoise3DTex = 1.66f;
 
 	const float3x3 rot = float3x3(0.0f, 0.8f, 0.6f, -0.8f, 0.36f, -0.48f, -0.6f, -0.48f, 0.64f);
 	pos.xyz = mul(pos.xyz, rot);
@@ -234,13 +189,13 @@ float GetFBM(float3 pos, const float maxOctaves, const float frequency, bool tur
 	{
 		if(turbulence)
 		{
-			//f += amplitude * (tex3Dlod(noise3Dsampler, float4(pos.xyz, 0.0)).w * 2.0f - 1.0f);
-			f += amplitude * abs((tex3Dlod(noise3Dsampler, float4(pos.xyz, 0.0)).w * 2.0f - 1.0f) * nornalizationFactorNoise3DTex);
+			//f += amplitude * (noiseTex.SampleLevel(noiseSampler, pos.xyz, 0.0f).w * 2.0f - 1.0f);
+			f += amplitude * abs((noiseTex.SampleLevel(noiseSampler, pos.xyz, 0.0f).w * 2.0f - 1.0f) * normalizationFactorNoise3DTex);
 		}
 		else
 		{
-			//f += amplitude * (tex3Dlod(noise3Dsampler, float4(pos.xyz, 0.0)).w * 2.0f - 1.0f);
-			f += amplitude * ((tex3Dlod(noise3Dsampler, float4(pos.xyz, 0.0)).w * 2.0f - 1.0f) * nornalizationFactorNoise3DTex);
+			//f += amplitude * (noiseTex.SampleLevel(noiseSampler, pos.xyz, 0.0f).w * 2.0f - 1.0f);
+			f += amplitude * ((noiseTex.SampleLevel(noiseSampler, pos.xyz, 0.0f).w * 2.0f - 1.0f) * normalizationFactorNoise3DTex);
 		}
 		sum += amplitude;
 
@@ -267,29 +222,32 @@ float vcGetCloudBlockerInfluence(in float3 posWS, in float3 posBlocker, in float
 	return (t * decayInfluence + invDecayInfluence);
 }
 
-float vcGetAllCloudBlockersInfluence(in float3 posWS)
+float vcGetAllCloudBlockersInfluence(
+	in float3 posWS,
+	in float4 cloudBlockerPos[4],
+	in float4 cloudBlockerParam[4])
 {
-	int numBlocker = vcCloudBlockerPos[0].w;
+	int numBlocker = cloudBlockerPos[0].w;
 	float decay = (numBlocker <= 0) ? 1.0f : 0.0f;
 #if 0
 	for(int i = 0; i < numBlocker; ++i)
 	{
-		decay = max(decay, vcGetCloudBlockerInfluence(posWS, vcCloudBlockerPos[i].xyz, vcCloudBlockerParam[i]));
+		decay = max(decay, vcGetCloudBlockerInfluence(posWS, cloudBlockerPos[i].xyz, cloudBlockerParam[i]));
 	}
 #else
 	// faster on AMD GPU.
-	decay = max(decay, vcGetCloudBlockerInfluence(posWS, vcCloudBlockerPos[0].xyz, vcCloudBlockerParam[0]));
+	decay = max(decay, vcGetCloudBlockerInfluence(posWS, cloudBlockerPos[0].xyz, cloudBlockerParam[0]));
 	[branch] if(numBlocker > 1)
 	{
-		decay = max(decay, vcGetCloudBlockerInfluence(posWS, vcCloudBlockerPos[1].xyz, vcCloudBlockerParam[1]));
+		decay = max(decay, vcGetCloudBlockerInfluence(posWS, cloudBlockerPos[1].xyz, cloudBlockerParam[1]));
 	}
 	[branch] if(numBlocker > 2)
 	{
-		decay = max(decay, vcGetCloudBlockerInfluence(posWS, vcCloudBlockerPos[2].xyz, vcCloudBlockerParam[2]));
+		decay = max(decay, vcGetCloudBlockerInfluence(posWS, cloudBlockerPos[2].xyz, cloudBlockerParam[2]));
 	}
 	[branch] if(numBlocker > 3)
 	{
-		decay = max(decay, vcGetCloudBlockerInfluence(posWS, vcCloudBlockerPos[3].xyz, vcCloudBlockerParam[3]));
+		decay = max(decay, vcGetCloudBlockerInfluence(posWS, cloudBlockerPos[3].xyz, cloudBlockerParam[3]));
 	}
 #endif
 	return decay;
@@ -309,44 +267,50 @@ struct CloudGenParam
 	float4 edgeErode;
 	float cloudDensityScale;
 	float additionalNoiseIntensity;
+
+	float4 cloudBlockerPos[4]; // xyz: the center position of the cloud blocker, w: number of blockers
+	float4 cloudBlockerParam[4]; // x: reciprocal of length between decay start and end, y: decay start, z: decay influence, w: one minus decay influence
+
+	Texture3D noiseTex;
+	SamplerState linearWrapSampler;
 };
 
-float GetCloudDensity(in float3 posWS, CloudGenParam cloudGenParam)
+float GetCloudDensity(in float3 posWS, CloudGenParam param)
 {
-	float3 posCloudSpace = posWS.xyz + cloudGenParam.baseOffset.xyz; // baseOffset.z includes negative altitude.
-	float3 cpos = posCloudSpace * cloudGenParam.noiseSizeScale;
+	float3 posCloudSpace = posWS.xyz + param.baseOffset.xyz; // baseOffset.z includes negative altitude.
+	float3 cpos = posCloudSpace * param.noiseSizeScale;
 
-	const float baseTexMin = cloudGenParam.baseTexRemap.x;
-	const float baseTexMax = cloudGenParam.baseTexRemap.y;
-	const float3 erodeNoiseSizeScale = cloudGenParam.edgeNoiseSizeScale;
-	const float edgeTurbulence = cloudGenParam.edgeErode.x;
-	const float edgeThreshold = cloudGenParam.edgeErode.y;
-	const bool bErode = cloudGenParam.edgeErode.z > 0.0f;
-	const bool bAbs = cloudGenParam.edgeErode.w > 0.0f;
-	const float cloudMaxDensityScale = cloudGenParam.cloudDensityScale;
-	const float additionalNoiseIntensity = cloudGenParam.additionalNoiseIntensity;
+	const float baseTexMin = param.baseTexRemap.x;
+	const float baseTexMax = param.baseTexRemap.y;
+	const float3 erodeNoiseSizeScale = param.edgeNoiseSizeScale;
+	const float edgeTurbulence = param.edgeErode.x;
+	const float edgeThreshold = param.edgeErode.y;
+	const bool bErode = param.edgeErode.z > 0.0f;
+	const bool bAbs = param.edgeErode.w > 0.0f;
+	const float cloudMaxDensityScale = param.cloudDensityScale;
+	const float additionalNoiseIntensity = param.additionalNoiseIntensity;
 
 #if %_RT_SAMPLE3
-	float3 tcBase = posCloudSpace.xyz * cloudGenParam.baseSizeScale.xyz;
+	float3 tcBase = posCloudSpace.xyz * param.baseSizeScale.xyz;
 	tcBase.xy += 0.5f;
-	float baseTexDensity = CloudBaseDensityTexture.SampleLevel(TrilinearWrapSamplerState, tcBase.xyz, 0.0f).w;
+	float baseTexDensity = CloudBaseDensityTexture.SampleLevel(param.linearWrapSampler, tcBase.xyz, 0.0f).w;
 	float f = smoothstep(baseTexMin, baseTexMax, baseTexDensity);
 
 	const float octaves = 1;
 	const float frequency = 2.71285739f;
-	const float nz = GetFBM(cpos, octaves, frequency);
+	const float nz = GetFBM(param.noiseTex, param.linearWrapSampler, cpos, octaves, frequency);
 	f = f + saturate(nz) * additionalNoiseIntensity;
 #else
 	const float octaves = 2;
 	const float frequency = 2.71285739f;
-	float f = GetFBM(cpos, octaves, frequency);
+	float f = GetFBM(param.noiseTex, param.linearWrapSampler, cpos, octaves, frequency);
 #endif
 
 	f = saturate(f);
 
 	// height density gradation
 	const float heightVariation = 1.0f;
-	const float th = heightVariation * cloudGenParam.thickness;
+	const float th = heightVariation * param.thickness;
 	const float thresholdHeight = th * 0.5f;
 	const float start = (posCloudSpace.z > thresholdHeight) ? th : 0.0f;
 	const float end = (posCloudSpace.z > thresholdHeight) ? th * 0.7f : th * 0.3f;
@@ -354,7 +318,7 @@ float GetCloudDensity(in float3 posWS, CloudGenParam cloudGenParam)
 	f *= heightGradient;
 
 	// erode cloud's edge or add fine-grained clouds around edge.
-	float erode = GetFBM(posCloudSpace * erodeNoiseSizeScale, 1.0f, 2.31285739f, bAbs);
+	float erode = GetFBM(param.noiseTex, param.linearWrapSampler, posCloudSpace * erodeNoiseSizeScale, 1.0f, 2.31285739f, bAbs);
 	const float edgeFactor = saturate(f / edgeThreshold);
 	const float erodeFactor = -(1.0f - edgeFactor) * edgeTurbulence;
 	const float accumFactor = edgeFactor * edgeTurbulence;
@@ -362,22 +326,21 @@ float GetCloudDensity(in float3 posWS, CloudGenParam cloudGenParam)
 
 	f = saturate(f);
 
-	f *= cloudGenParam.cloudiness * cloudGenParam.cloudiness;
+	f *= param.cloudiness * param.cloudiness;
 
 	f *= cloudMaxDensityScale;
 
 #if %_RT_SAMPLE4
 	// decay cloud density with cloud blocker entity.
-	f *= vcGetAllCloudBlockersInfluence(posWS);
+	f *= vcGetAllCloudBlockersInfluence(posWS, param.cloudBlockerPos, param.cloudBlockerParam);
 #endif
 
 	return f;
 }
 
 float GetOpticalThickness(in float3 rayOriginWS, in float3 rayDir, in float extinctionCoefficient, 
-													CloudGenParam cloudGenParam, 
-													in bool usePreGeneratedShadow = false, in uint typeShadow = 0, 
-													in float3 invTilingShadowTex = float3(0,0,0), in float2 worldAlignmentOffset = float2(0,0))
+	CloudGenParam cloudGenParam, 
+	in uint typeShadow = 0, in float3 invTilingShadowTex = float3(0,0,0), in float2 worldAlignmentOffset = float2(0,0))
 {
 	const float MaxStepRaymarch = 6.0f;
 
@@ -398,20 +361,6 @@ float GetOpticalThickness(in float3 rayOriginWS, in float3 rayDir, in float exti
 	for(float i = 0.0f; i < maxStepNum; ++i)
 	{
 		d = vcGetLinearDepth(i, maxStepNum, distanceStart, distanceEnd);
-
-		if(usePreGeneratedShadow && i >= 1)
-		{
-			float3 cpos = rayDir.xyz * d + rayOriginWS;
-			float3 shadowTC = (cpos.xyz - float3(worldAlignmentOffset.xy, cloudGenParam.altitude))* invTilingShadowTex;
-			shadowTC.xy += 0.5f; // offset the difference to texture center.
-			if(all(shadowTC >= 0.0f) && all(shadowTC <= 1.0f))
-			{
-				float3 cShadows = tex3Dlod(volShadSampler, float4(shadowTC.xyz, 0)).xyz;
-				opticalThickness += cShadows[typeShadow];
-				break;
-			}
-		}
-
 		float dNext = vcGetLinearDepth(i + 1, maxStepNum, distanceStart, distanceEnd);
 		float stepSize = dNext - d;
 		float3 posWS = rayDir.xyz * d + rayOriginWS;
@@ -426,6 +375,36 @@ float GetOpticalThickness(in float3 rayOriginWS, in float3 rayDir, in float exti
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Volumetric cloud shadow gen
 
+RWTexture3D< float3 > VolShadowRW : register( u0 );
+
+Texture3D CloudShadowNoiseTex : register(t0) = "EngineAssets/Textures/noise3d.dds";
+SamplerState CloudShadowTrilinearWrapSState : register(s0) = SS_TrilinearWrap;
+
+cbuffer CloudShadowConstantBuffer : register(b3)
+{
+	struct
+	{
+		float4 sunLightDirection; // xyz: sun light direction, w: unused
+		float4 cloudGenParams; // x: cloud bottom altitude, y: cloud layer thickness, z: global cloudiness, w: extinction coefficient
+		float4 tilingParams; // xy: tiling shadow region size, zw: unused
+		float4 texParams; // xyz: shadow voxel size, w: unused
+		float4 noiseParams; // xyz: noise scale, w: unused
+		float4 baseScaleParams; // xyz: tiling size for base cloud density texture, w: unused
+		float4 baseOffsetParams; // xyz: tiling offset, w: unused
+		float4 densityParams; // x: global cloud density scale, y: density remap min, z: density remap max, w: additional noise intensity
+		float4 edgeNoiseScaleParams; // xyz: edge noise scale, w: unused
+		float4 edgeTurbulenceParams; // x: edge turbulence, y: edge threshold, z: enable edge erode, w: enable abs for edge noise
+
+		float4 cloudShadowAnimParams; // PB_CloudShadowAnimParams
+
+		// Cloud blockers
+		float4 cloudBlockerPos[4]; // xyz: the center position of the cloud blocker, w: number of blockers
+		float4 cloudBlockerParam[4]; // x: reciprocal of length between decay start and end, y: decay start, z: decay influence, w: one minus decay influence
+	} CloudShadow;
+};
+
+// TODO: remove after removing old graphics pipeline.
+float4 CloudShadowSunLightDirection; // xyz: sun light direction, w: unused
 float4 CloudShadowGenParams; // x: cloud bottom altitude, y: cloud layer thickness, z: global cloudiness, w: extinction coefficient
 float4 CloudShadowTilingParams; // xy: tiling shadow region size, zw: unused
 float4 CloudShadowTexParams; // xyz: shadow voxel size, w: unused
@@ -443,6 +422,8 @@ void CloudShadowGenCS(uint3 GroupID : SV_GroupID,
 {
 	const uint3 pixelCoord = DispatchThreadID.xyz;
 
+#if !%_RT_SAMPLE2
+	const float3 sunLightDir = CloudShadowSunLightDirection.xyz;
 	const float cloudAltitude = CloudShadowGenParams.x;
 	const float cloudThickness = CloudShadowGenParams.y;
 	const float cloudiness = CloudShadowGenParams.z;
@@ -451,6 +432,17 @@ void CloudShadowGenCS(uint3 GroupID : SV_GroupID,
 	const float3 voxelLength = CloudShadowTexParams.xyz;
 	const float2 worldAlignmentOffset = CloudShadowAnimParams.xy;
 	const float3 cloudNoiseScale = CloudShadowNoiseParams.xyz;
+#else
+	const float3 sunLightDir = CloudShadow.sunLightDirection.xyz;
+	const float cloudAltitude = CloudShadow.cloudGenParams.x;
+	const float cloudThickness = CloudShadow.cloudGenParams.y;
+	const float cloudiness = CloudShadow.cloudGenParams.z;
+	const float extinctionCoefficient = CloudShadow.cloudGenParams.w;
+	const float2 tilingSize = CloudShadow.tilingParams.xy;
+	const float3 voxelLength = CloudShadow.texParams.xyz;
+	const float3 cloudNoiseScale = CloudShadow.noiseParams.xyz;
+	const float2 worldAlignmentOffset = CloudShadow.cloudShadowAnimParams.xy;
+#endif
 
 	// current voxel position (0.5f is offset to center of voxel)
 	float3 worldPos = voxelLength * (float3(pixelCoord.xyz) + 0.5f);
@@ -464,6 +456,7 @@ void CloudShadowGenCS(uint3 GroupID : SV_GroupID,
 	cloudGenParam.altitude = cloudAltitude;
 	cloudGenParam.thickness = cloudThickness;
 	cloudGenParam.noiseSizeScale = cloudNoiseScale;
+#if !%_RT_SAMPLE2
 	cloudGenParam.baseSizeScale = CloudShadowBaseScaleParams.xyz;
 	cloudGenParam.baseOffset = CloudShadowBaseOffsetParams.xyz;
 	cloudGenParam.edgeErode = CloudShadowEdgeTurbulenceParams.xyzw;
@@ -471,8 +464,23 @@ void CloudShadowGenCS(uint3 GroupID : SV_GroupID,
 	cloudGenParam.cloudDensityScale = CloudShadowDensityParams.x;
 	cloudGenParam.baseTexRemap = CloudShadowDensityParams.yz;
 	cloudGenParam.additionalNoiseIntensity = CloudShadowDensityParams.w;
+	cloudGenParam.cloudBlockerPos = vcCloudBlockerPos;
+	cloudGenParam.cloudBlockerParam = vcCloudBlockerParam;
+#else
+	cloudGenParam.baseSizeScale = CloudShadow.baseScaleParams.xyz;
+	cloudGenParam.baseOffset = CloudShadow.baseOffsetParams.xyz;
+	cloudGenParam.edgeErode = CloudShadow.edgeTurbulenceParams.xyzw;
+	cloudGenParam.edgeNoiseSizeScale = CloudShadow.edgeNoiseScaleParams.xyz;
+	cloudGenParam.cloudDensityScale = CloudShadow.densityParams.x;
+	cloudGenParam.baseTexRemap = CloudShadow.densityParams.yz;
+	cloudGenParam.additionalNoiseIntensity = CloudShadow.densityParams.w;
+	cloudGenParam.cloudBlockerPos = CloudShadow.cloudBlockerPos;
+	cloudGenParam.cloudBlockerParam = CloudShadow.cloudBlockerParam;
+#endif
+	cloudGenParam.noiseTex = CloudShadowNoiseTex;
+	cloudGenParam.linearWrapSampler = CloudShadowTrilinearWrapSState;
 
-	float opticalThickness = GetOpticalThickness(worldPos, g_VS_SunLightDir.xyz, extinctionCoefficient, cloudGenParam);
+	float opticalThickness = GetOpticalThickness(worldPos, sunLightDir.xyz, extinctionCoefficient, cloudGenParam);
 	float opticalThicknessSky = GetOpticalThickness(worldPos, float3(0, 0, 1), extinctionCoefficient, cloudGenParam);
 	float opticalThicknessGround = GetOpticalThickness(worldPos, float3(0, 0, -1), extinctionCoefficient, cloudGenParam);
 
@@ -490,19 +498,6 @@ technique CloudShadowGen
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Cloud render
-
-vtxOutWPOS CloudsLayerVS(vtxInWPOS IN)
-{
-	vtxOutWPOS OUT = (vtxOutWPOS)0;
-
-	float4 vPos = IN.Position;
-	vPos.y = 1 - vPos.y;
-	OUT.HPosition = float4(vPos.xy*2-1, vPos.z, 1.0);
-	OUT.baseTC = HPosToScreenTC(OUT.HPosition);
-	OUT.CamVec.xyz = IN.CamVec.xyz;
-
-	return OUT;
-}
 
 #ifdef ENABLE_CIRRUS_CLOUD_LAYER
 sampler2D cloudDetailSampler = sampler_state
@@ -544,19 +539,122 @@ Texture2D LeftEyeDepthBuffer : register(t2);
 Texture3D<float> VolCloudDensity : register(t3);
 Texture3D<float3> VolCloudShadow : register(t4);
 
-RWTexture2D<float> cloudDepthOutput : register(u1);
-RWTexture2D<float4> cloudMinDepthColorOutput : register(u2);
+Texture3D VolCloudGlobalShadowTex : register(t5) = TS_VolCloudShadow;
+Texture3D VolCloudNoiseTex : register(t6) = "EngineAssets/Textures/noise3d.dds";
+Texture2D VolCloudMiePhaseTex : register(t7) = "EngineAssets/Shading/cloud_mie_phase_function.dds";
 
+Texture2D VolFogShadowTex : register(t8) = TS_VolumetricFogShadow0;
 
+Texture3D VolFogSamplingTex : register(t9) = TS_VolumetricFog;
+TextureCube VolFogGlobalEnvProbeTex0 : register(t10) = TS_VolumetricFogGlobalEnvProbe0;
+TextureCube VolFogGlobalEnvProbeTex1 : register(t11) = TS_VolumetricFogGlobalEnvProbe1;
+
+SamplerState VolCloudGlobalShadowSState : register(s0) = SS_MaterialTrilinearBorder;
+SamplerState VolCloudTrilinearWrapSState : register(s1) = SS_TrilinearWrap;
+SamplerState VolCloudTrilinearClampSState : register(s2) = SS_TrilinearClamp;
+SamplerState VolCloudPointClampSState : register(s3) = SS_PointClamp;
+
+cbuffer VolumetricCloudsConstantBuffer : register(b3)
+{
+	struct SVolumetricCloudsParams
+	{
+		float3 shadeColorFromSun; // PB_CloudShadingColorSun
+		float  waterLevel; // PB_WaterLevel
+
+		float3 cameraPos; // PB_CameraPos;
+		float  nearClipDist;
+		float3 cameraFrontVector; // xyz: camera front vector
+		float  farClipDist;
+		float3 sunLightDirection; // xyz: sun light direction
+		float  reciprocalFarClipDist;
+
+		float4 cloudShadowAnimParams; // PB_CloudShadowAnimParams
+
+		float4 screenSize;
+		float4 frustumTL;
+		float4 frustumTR;
+		float4 frustumBL;
+
+		float4 skylightRayleighInScatter; // xyz: sky lighting from CSkyLightManager, w: sky lighting factor
+		float4 cloudAtmosphericParams; // xyz: Rayleight scattering coefficient, w: sun intensity for atmospheric
+
+		float4 sunScatteringParams; // x: sun single scattering, y: sun low-order scattering, z: sun low-order anisotropy, w: sun high-order scattering
+		float4 groundLightingParams; // xyz: ground albedo, w: ground lighting factor
+		float4 cloudRenderParams; // x: scatter coefficient, y: extinction coefficient, z: powder effect factor, w: shading LOD threshold
+		float4 cloudGenParams; // x: cloud bottom altitude, y: cloud layer thickness, z: global cloudiness, w: upsampling scale
+		float4 cloudTilingParams; // xyz: reciprocal of shadow tiling size, w: sphere radius
+		float4 multiScatteringParams; // x: multi-scattering attenuation, y: multi-scattering preservation, zw: factors for converting linear depth to non-linear depth
+		float4 cloudNoiseParams; // xyz: noise scale, w: frame count of 1024 frame cycle
+		float4 cloudBaseScaleParams; // xyz: tiling size for base cloud density texture, w: jittered sampling offset
+		float4 cloudBaseOffsetParams; // xyz: tiling offset, w: unused
+		float4 densityParams; // x: global cloud density scale, y: density remap min, z: density remap max, w: additional noise intensity
+		float4 edgeNoiseScaleParams; // xyz: edge noise scale, w: unused
+		float4 edgeTurbulenceParams; // x: edge turbulence, y: edge threshold, z: enable edge erode, w: enable abs for edge noise
+		float4 cloudRaymarchParams; // x: max viewable distance, y: max ray-march distance, z: max ray-march step num, w: horizon's height
+
+		// Cloud blockers
+		float4 cloudBlockerPos[4]; // xyz: the center position of the cloud blocker, w: number of blockers
+		float4 cloudBlockerParam[4]; // x: reciprocal of length between decay start and end, y: decay start, z: decay influence, w: one minus decay influence
+
+		float4x4 leftToRightReprojMatrix; // from left eye to right eye reprojection matrix
+
+		// Volumetric fog shadows
+		float4 volFogShadowDarkening;
+		float4 volFogShadowDarkeningSunAmb;
+
+		// fog parameters
+		float4 vfParams; // PB_VolumetricFogParams
+		float4 vfRampParams; // PB_VolumetricFogRampParams
+		float4 vfSunDir; // PB_VolumetricFogSunDir
+		float3 vfColGradBase; // PB_FogColGradColBase
+		float  padding0;
+		float3 vfColGradDelta; // PB_FogColGradColDelta
+		float  padding1;
+		float4 vfColGradParams; // PB_FogColGradParams
+		float4 vfColGradRadial; // PB_FogColGradRadial
+
+		// voxel-based volumetric fog parameters
+		float4 vfSamplingParams; // PB_VolumetricFogSamplingParams
+		float4 vfDistributionParams; // PB_VolumetricFogDistributionParams
+		float4 vfScatteringParams; // PB_VolumetricFogScatteringParams
+		float4 vfScatteringBlendParams; // PB_VolumetricFogScatteringBlendParams
+		float4 vfScatteringColor; // PB_VolumetricFogScatteringColor
+		float4 vfScatteringSecondaryColor; // PB_VolumetricFogScatteringSecondaryColor
+		float4 vfHeightDensityParams; // PB_VolumetricFogHeightDensityParams
+		float4 vfHeightDensityRampParams; // PB_VolumetricFogHeightDensityRampParams
+		float4 vfDistanceParams; // PB_VolumetricFogDistanceParams
+		float4 vfGlobalEnvProbeParams0; // PB_VolumetricFogGlobalEnvProbe0
+		float4 vfGlobalEnvProbeParams1; // PB_VolumetricFogGlobalEnvProbe1
+		float4 vfTimeParams; // PB_time
+
+		// upscale parameters
+		float2 fullScreenSize;
+		float2 padding2;
+		float4 cloudBlockerSSPos;
+		float4 cloudBlockerSSParam;
+	} vc;
+};
+
+struct VolCloudGlobalShadowContext
+{
+	Texture3D shadowTex;
+	SamplerState shadowSState;
+};
+
+// TODO: remove after removing old graphics pipeline.
+float3 ShadeColorFromSun : PB_CloudShadingColorSun;
+float4 volFogShadowDarkening;
+float4 volFogShadowDarkeningSunAmb;
 float4 g_WaterLevel : PB_WaterLevel;
-
+float4 vcSunLightDirection; // xyz: sun light direction, w: unused
+float4 vcCameraFrontVector; // xyz: camera front vector, w: unused
 float4 vcSkylightRayleighInScatter; // xyz: sky lighting from CSkyLightManager, w: sky lighting factor
 float4 vcSunScatteringParams; // x: sun single scattering, y: sun low-order scattering, z: sun low-order anisotropy, w: sun high-order scattering
 float4 vcGroundLightingParams; // xyz: ground albedo, w: ground lighting factor
 float4 vcCloudRenderParams; // x: scatter coefficient, y: extinction coefficient, z: powder effect factor, w: shading LOD threshold
 float4 vcCloudGenParams; // x: cloud bottom altitude, y: cloud layer thickness, z: global cloudiness, w: upsampling scale
 float4 vcCloudTilingParams; // xyz: reciprocal of shadow tiling size, w: sphere radius
-float4 vcMultiScatteringParams; // x: multi-scattering attenuation, y: multi-scattering preservation, zw: unused
+float4 vcMultiScatteringParams; // x: multi-scattering attenuation, y: multi-scattering preservation, zw: factors for converting linear depth to non-linear depth
 float4 vcCloudNoiseParams; // xyz: noise scale, w: frame count of 1024 frame cycle
 float4 vcCloudBaseScaleParams; // xyz: tiling size for base cloud density texture, w: jittered sampling offset
 float4 vcCloudBaseOffsetParams; // xyz: tiling offset, w: unused
@@ -565,13 +663,195 @@ float4 vcEdgeNoiseScaleParams; // xyz: edge noise scale, w: unused
 float4 vcEdgeTurbulenceParams; // x: edge turbulence, y: edge threshold, z: enable edge erode, w: enable abs for edge noise
 float4 vcCloudRaymarchParams; // x: max viewable distance, y: max ray-march distance, z: max ray-march step num, w: horizon's height
 float4 vcCloudAtmosphericParams; // xyz: Rayleight scattering coefficient, w: sun intensity for atmospheric
+float4x4 vcLeftToRightReprojMatrix; // from left eye to right eye reprojection matrix
+float4 ScreenSize;
+float4 FrustumTL;
+float4 FrustumTR;
+float4 FrustumBL;
 
-float4x4 vcLeftViewProjMatrix; // view-projection matrix for left eye
+SFogParams GetFogParams()
+{
+	SFogParams params;
 
+#if !%_RT_SAMPLE2
+	params.viewPos = vfViewPos;
+	params.padding0 = 0.0f;
+
+	params.heightDensityScale = vfParams.x;
+	params.heightDensityAtBaseHeight = vfParams.y;
+	params.heightDiffFromBase = vfParams.z;
+	params.expHeightDiffFromBase = vfParams.w;
+
+	params.rampParams = vfRampParams;
+
+	params.sunDir = vfSunDir.xyz;
+	params.densityClamp = vfSunDir.w;
+
+	params.colGradBase = vfColGradBase;
+	params.padding1 = 0.0f;
+
+	params.colGradDelta = vfColGradDelta;
+	params.padding2 = 0.0f;
+
+	params.heightColGradScale = vfColGradParams.x;
+	params.heightColGradOffset = vfColGradParams.y;
+	params.radialSizeCtrl = vfColGradParams.z;
+	params.radialLobeCtrl = vfColGradParams.w;
+
+	params.radialColor = vfColGradRadial.xyz;
+	params.invZFar = vfColGradRadial.w;
+#else
+	params.viewPos = vc.cameraPos;
+	params.padding0 = 0.0f;
+
+	params.heightDensityScale = vc.vfParams.x;
+	params.heightDensityAtBaseHeight = vc.vfParams.y;
+	params.heightDiffFromBase = vc.vfParams.z;
+	params.expHeightDiffFromBase = vc.vfParams.w;
+
+	params.rampParams = vc.vfRampParams;
+
+	params.sunDir = vc.vfSunDir.xyz;
+	params.densityClamp = vc.vfSunDir.w;
+
+	params.colGradBase = vc.vfColGradBase;
+	params.padding1 = 0.0f;
+
+	params.colGradDelta = vc.vfColGradDelta;
+	params.padding2 = 0.0f;
+
+	params.heightColGradScale = vc.vfColGradParams.x;
+	params.heightColGradOffset = vc.vfColGradParams.y;
+	params.radialSizeCtrl = vc.vfColGradParams.z;
+	params.radialLobeCtrl = vc.vfColGradParams.w;
+
+	params.radialColor = vc.vfColGradRadial.xyz;
+	params.invZFar = vc.vfColGradRadial.w;
+#endif
+
+	return params;
+}
+
+SVolumetricFogParams GetVolumetricFogParams()
+{
+	SVolumetricFogParams params;
+
+#if !%_RT_SAMPLE2
+	params.sunDir = vfSunDir.xyz;
+	params.densityClamp = vfSunDir.w;
+
+	params.nearDist = vfSamplingParams.x;
+	params.invFarMinusNearDist = vfSamplingParams.y;
+	params.maxIndex = vfSamplingParams.z;
+	params.invMaxIndex = vfSamplingParams.w;
+
+	params.screenSize = PS_ScreenSize.xy;
+	params.farMinusNearDist = vfDistributionParams.y;
+	params.invMaxIndexMinusOne = vfDistributionParams.z;
+
+	params.viewPos = vfViewPos;
+	params.framwCountJitter = vfDistributionParams.w;
+
+	params.scatterCoefficient = vfScatteringParams.x;
+	params.extinctionCoefficient = vfScatteringParams.y;
+	params.blendFactor = vfScatteringBlendParams.x;
+	params.blendMode = vfScatteringBlendParams.y;
+
+	params.cDiffuse1 = vfScatteringColor.xyz;
+	params.padding0 = 0.0f;
+
+	params.cDiffuse2 = vfScatteringSecondaryColor.xyz;
+	params.padding1 = 0.0f;
+
+	params.anisotropy1.x = vfScatteringParams.z;
+	params.anisotropy1.y = vfScatteringParams.w;
+	params.anisotropy2.x = vfScatteringColor.w;
+	params.anisotropy2.y = vfScatteringSecondaryColor.w;
+
+	params.heightDensityScale = vfHeightDensityParams.x;
+	params.densityAtViewer = vfHeightDensityParams.y;
+	params.fogVisibility = vfHeightDensityParams.z;
+	params.clampTransmittance = vfHeightDensityParams.w;
+
+	params.rampStart = vfHeightDensityRampParams.x;
+	params.rampEnd = vfHeightDensityRampParams.y;
+	params.oneOverRampDiff = vfHeightDensityRampParams.z;
+	params.rampStartOverRampDiff = vfHeightDensityRampParams.w;
+
+	params.farDistTopLeft = vfDistanceParams.x;
+	params.farDistTopCenter = vfDistanceParams.y;
+	params.farDistCenterLeft = vfDistanceParams.z;
+	params.farDistCenter = vfDistanceParams.w;
+
+	params.globalProbeColor0 = vfGlobalEnvProbeParams0.xyz;
+	params.globalProbeAttenuation0 = vfGlobalEnvProbeParams0.w;
+
+	params.globalProbeColor1 = vfGlobalEnvProbeParams1.xyz;
+	params.globalProbeAttenuation1 = vfGlobalEnvProbeParams1.w;
+
+	params.timeParams = vfTimeParams;
+#else
+	params.sunDir = vc.vfSunDir.xyz;
+	params.densityClamp = vc.vfSunDir.w;
+
+	params.nearDist = vc.vfSamplingParams.x;
+	params.invFarMinusNearDist = vc.vfSamplingParams.y;
+	params.maxIndex = vc.vfSamplingParams.z;
+	params.invMaxIndex = vc.vfSamplingParams.w;
+
+	params.screenSize = vc.screenSize.xy;
+	params.farMinusNearDist = vc.vfDistributionParams.y;
+	params.invMaxIndexMinusOne = vc.vfDistributionParams.z;
+
+	params.viewPos = vc.cameraPos;
+	params.framwCountJitter = vc.vfDistributionParams.w;
+
+	params.scatterCoefficient = vc.vfScatteringParams.x;
+	params.extinctionCoefficient = vc.vfScatteringParams.y;
+	params.blendFactor = vc.vfScatteringBlendParams.x;
+	params.blendMode = vc.vfScatteringBlendParams.y;
+
+	params.cDiffuse1 = vc.vfScatteringColor.xyz;
+	params.padding0 = 0.0f;
+
+	params.cDiffuse2 = vc.vfScatteringSecondaryColor.xyz;
+	params.padding1 = 0.0f;
+
+	params.anisotropy1.x = vc.vfScatteringParams.z;
+	params.anisotropy1.y = vc.vfScatteringParams.w;
+	params.anisotropy2.x = vc.vfScatteringColor.w;
+	params.anisotropy2.y = vc.vfScatteringSecondaryColor.w;
+
+	params.heightDensityScale = vc.vfHeightDensityParams.x;
+	params.densityAtViewer = vc.vfHeightDensityParams.y;
+	params.fogVisibility = vc.vfHeightDensityParams.z;
+	params.clampTransmittance = vc.vfHeightDensityParams.w;
+
+	params.rampStart = vc.vfHeightDensityRampParams.x;
+	params.rampEnd = vc.vfHeightDensityRampParams.y;
+	params.oneOverRampDiff = vc.vfHeightDensityRampParams.z;
+	params.rampStartOverRampDiff = vc.vfHeightDensityRampParams.w;
+
+	params.farDistTopLeft = vc.vfDistanceParams.x;
+	params.farDistTopCenter = vc.vfDistanceParams.y;
+	params.farDistCenterLeft = vc.vfDistanceParams.z;
+	params.farDistCenter = vc.vfDistanceParams.w;
+
+	params.globalProbeColor0 = vc.vfGlobalEnvProbeParams0.xyz;
+	params.globalProbeAttenuation0 = vc.vfGlobalEnvProbeParams0.w;
+
+	params.globalProbeColor1 = vc.vfGlobalEnvProbeParams1.xyz;
+	params.globalProbeAttenuation1 = vc.vfGlobalEnvProbeParams1.w;
+
+	params.timeParams = vc.vfTimeParams;
+#endif
+
+	return params;
+}
 
 float3 GetOpticalThicknessCombined(in float3 rayOriginWS, in float3 rayDir, in float extinctionCoefficient, 
-																	in float2 worldAlignmentOffset, CloudGenParam cloudGenParam, 
-																	in bool lowDetail, in float3 invTilingShadowTex)
+	in float2 worldAlignmentOffset, CloudGenParam cloudGenParam, VolCloudGlobalShadowContext globalShadow, 
+	in bool lowDetail, in float3 invTilingShadowTex)
 {
 #if !ENABLE_PRECOMPUTE_SHADOW
 	float opticalThickness = GetOpticalThickness(rayOriginWS, rayDir, extinctionCoefficient, cloudGenParam);
@@ -589,17 +869,17 @@ float3 GetOpticalThicknessCombined(in float3 rayOriginWS, in float3 rayDir, in f
 	float3 cShadows = 0.0f;
 	if(all(shadowTC >= 0.0f) && all(shadowTC < 1.0f))
 	{
-		cShadows = tex3Dlod(volShadSampler, float4(shadowTC.xyz, 0)).xyz;
+		cShadows = globalShadow.shadowTex.SampleLevel(globalShadow.shadowSState, shadowTC.xyz, 0.0f).xyz;
 	}
 	return cShadows;
 #elif 0
 	float3 opticalThicknessCombined;
-	opticalThicknessCombined.x = GetOpticalThickness(rayOriginWS, rayDir, extinctionCoefficient, cloudGenParam, 
-																									false, 0, invTilingShadowTex, worldAlignmentOffset);
-	opticalThicknessCombined.y = GetOpticalThickness(rayOriginWS, float3(0, 0, 1), extinctionCoefficient, cloudGenParam, 
-																									true, 1, invTilingShadowTex, worldAlignmentOffset);
-	opticalThicknessCombined.z = GetOpticalThickness(rayOriginWS, float3(0, 0, -1), extinctionCoefficient, cloudGenParam, 
-																									true, 2, invTilingShadowTex, worldAlignmentOffset);
+	opticalThicknessCombined.x = GetOpticalThickness(rayOriginWS, rayDir, extinctionCoefficient, 
+		cloudGenParam, 0, invTilingShadowTex, worldAlignmentOffset);
+	opticalThicknessCombined.y = GetOpticalThickness(rayOriginWS, float3(0, 0, 1), extinctionCoefficient, 
+		cloudGenParam, 1, invTilingShadowTex, worldAlignmentOffset);
+	opticalThicknessCombined.z = GetOpticalThickness(rayOriginWS, float3(0, 0, -1), extinctionCoefficient, 
+		cloudGenParam, 2, invTilingShadowTex, worldAlignmentOffset);
 	return opticalThicknessCombined;
 #else
 	float3 opticalThicknessCombined = 0.0f;
@@ -610,7 +890,7 @@ float3 GetOpticalThicknessCombined(in float3 rayOriginWS, in float3 rayDir, in f
 
 	if(lowDetail && all(shadowTC >= 0.0f) && all(shadowTC <= 1.0f))
 	{
-		opticalThicknessCombined.xyz = tex3Dlod(volShadSampler, float4(shadowTC.xyz, 0)).xyz;
+		opticalThicknessCombined.xyz = globalShadow.shadowTex.SampleLevel(globalShadow.shadowSState, shadowTC.xyz, 0.0f).xyz;
 		rayMarchingShadow = false;
 	}
 
@@ -660,17 +940,17 @@ float3 GetOpticalThicknessCombined(in float3 rayOriginWS, in float3 rayDir, in f
 				float dTopNext = vcGetLinearDepth(1, MaxStepCoarseRaymarchSun, 0, distanceToTop);
 				float3 shadowTCTop = shadowTC.xyz;
 				shadowTCTop.z += dTopNext * invTilingShadowTex;
-				opticalThicknessCombined.y = tex3Dlod(volShadSampler, float4(shadowTCTop.xyz, 0)).y;
+				opticalThicknessCombined.y = globalShadow.shadowTex.SampleLevel(globalShadow.shadowSState, shadowTCTop.xyz, 0.0f).y;
 
 				float dbottomNext = vcGetLinearDepth(1, MaxStepCoarseRaymarchSun, 0, distanceToBottom);
 				float3 shadowTCBottom = shadowTC.xyz;
 				shadowTCBottom.z -= dbottomNext * invTilingShadowTex;
-				opticalThicknessCombined.z = tex3Dlod(volShadSampler, float4(shadowTCBottom.xyz, 0)).z;
+				opticalThicknessCombined.z = globalShadow.shadowTex.SampleLevel(globalShadow.shadowSState, shadowTCBottom.xyz, 0.0f).z;
 
 				opticalThicknessCombined.y += extinctionCoefficient * density.x * dTopNext;
 				opticalThicknessCombined.z += extinctionCoefficient * density.x * dbottomNext;
 #else
-				opticalThicknessCombined.yz = tex3Dlod(volShadSampler, float4(shadowTC.xyz, 0)).yz;
+				opticalThicknessCombined.yz = globalShadow.shadowTex.SampleLevel(globalShadow.shadowSState, shadowTC.xyz, 0.0f).yz;
 #endif
 			}
 			else
@@ -709,7 +989,11 @@ struct AtmosphericParam
 
 AtmosphericParam GetAtmosphericParam(in float dotLE)
 {
+#if !%_RT_SAMPLE2
 	const float sunIntensity = vcCloudAtmosphericParams.w;
+#else
+	const float sunIntensity = vc.cloudAtmosphericParams.w;
+#endif
 	const float gMie = 0.8f;
 	const float gMie2 = gMie * gMie;
 	const float mu = dotLE;
@@ -727,8 +1011,15 @@ AtmosphericParam GetAtmosphericParam(in float dotLE)
 
 float3 GetAtmosphericInscattering(in float3 rayDir, in float height, in float stepSize, in float transmittance, inout AtmosphericParam param)
 {
-	const float densityMultiplier = 1.0f;
+#if !%_RT_SAMPLE2
+	const float3 sunLightDir = vcSunLightDirection.xyz;
 	const float3 RayleighScatteringCoeff = vcCloudAtmosphericParams.xyz;
+#else
+	const float3 sunLightDir = vc.sunLightDirection.xyz;
+	const float3 RayleighScatteringCoeff = vc.cloudAtmosphericParams.xyz;
+#endif
+
+	const float densityMultiplier = 1.0f;
 	const float MieScatteringCoeff = 21e-6f;
 	const float RayleighScaleHeight = 8e3f;
 	const float MieScaleHeight = 1.2e3f;
@@ -747,7 +1038,7 @@ float3 GetAtmosphericInscattering(in float3 rayDir, in float height, in float st
 	float odRayleighSun = 0.0f;
 	float odMieSun = 0.0f;
 	float heightSun = height;
-	float stepSizeSun = max(0.0f, min(100000.0f, (stepHeightSun / g_PS_SunLightDir.z)));
+	float stepSizeSun = max(0.0f, min(100000.0f, (stepHeightSun / sunLightDir.z)));
 	for(float j = 0.0f; j < MaxStepNum; ++j)
 	{
 		heightSun += stepHeightSun;
@@ -793,15 +1084,23 @@ float3 GetAtmosphericInscattering(in float3 rayDir, in float height, in float st
 }
 
 void AccumulateRadiance(inout float3 inscatter, inout float transmittance, inout float totalOptThickness, 
-												in float density, in float stepSize, in float scatterCoefficient, 
-												in float3 cSunLight, in float3 cSunHighMultiScatter, in float3 cSkyLight, in float3 cGroundLight, 
-												in float3 samplePosWS, in float extinctionCoefficient, CloudGenParam cloudGenParam, 
-												in float2 worldAlignmentOffset, in bool lowDetail, in float3 invShadowTilingSize, 
-												const bool useCloudShadowTex, const int3 pixelCoord = int3(0,0,0))
+	in float density, in float stepSize, in float scatterCoefficient, in float3 cSunLight, 
+	in float3 cSunHighMultiScatter, in float3 cSkyLight, in float3 cGroundLight, in float3 samplePosWS, 
+	in float extinctionCoefficient, CloudGenParam cloudGenParam, VolCloudGlobalShadowContext globalShadow, 
+	in float2 worldAlignmentOffset, in bool lowDetail, in float3 invShadowTilingSize, 
+	const bool useCloudShadowTex, const int3 pixelCoord = int3(0,0,0))
 {
+#if !%_RT_SAMPLE2
+	const float3 sunLightDir = vcSunLightDirection.xyz;
 	const float multiScatterAttenuation = vcMultiScatteringParams.x;
 	const float multiScatterPreservation = vcMultiScatteringParams.y;
 	const float powderFactor = vcCloudRenderParams.z;
+#else
+	const float3 sunLightDir = vc.sunLightDirection.xyz;
+	const float multiScatterAttenuation = vc.multiScatteringParams.x;
+	const float multiScatterPreservation = vc.multiScatteringParams.y;
+	const float powderFactor = vc.cloudRenderParams.z;
+#endif
 
 
 	// get shadow factor for clouds
@@ -812,9 +1111,9 @@ void AccumulateRadiance(inout float3 inscatter, inout float transmittance, inout
 	}
 	else
 	{
-		float3 sunDir = g_PS_SunLightDir.xyz;
+		float3 sunDir = sunLightDir.xyz;
 		opticalThickness = GetOpticalThicknessCombined(samplePosWS, sunDir, extinctionCoefficient, worldAlignmentOffset, 
-																										cloudGenParam, lowDetail, invShadowTilingSize);
+			cloudGenParam, globalShadow, lowDetail, invShadowTilingSize);
 	}
 #if !ENABLE_PRECOMPUTE_SHADOW
 	const float shadow = opticalThickness.x;
@@ -867,10 +1166,11 @@ void AccumulateRadiance(inout float3 inscatter, inout float transmittance, inout
 #ifdef ENABLE_CIRRUS_CLOUD_LAYER
 float4 GetAltoAndCirrusCloud(in float3 posCloudSpace, in float3 camDir)
 {
-	const float skyLightingFactor = vcSkylightRayleighInScatter.w;
-	const float sunSingleScatterFactor = vcSunScatteringParams.x;
-	const float sunLowOrderFactor = vcSunScatteringParams.y;
-	const float sunLowOrderAnisotropy = vcSunScatteringParams.z;
+	const float3 sunLightDir = vc.sunLightDirection.xyz;
+	const float skyLightingFactor = vc.skylightRayleighInScatter.w;
+	const float sunSingleScatterFactor = vc.sunScatteringParams.x;
+	const float sunLowOrderFactor = vc.sunScatteringParams.y;
+	const float sunLowOrderAnisotropy = vc.sunScatteringParams.z;
 
 	const float fLightWrap = 0.8f;
 	const float2 frequencyCirrus = 1.0f / 32000.0f;//float2(0.00001f, 0.00001f);
@@ -887,24 +1187,24 @@ float4 GetAltoAndCirrusCloud(in float3 posCloudSpace, in float3 camDir)
 
 
 	// Fetch pre-computed mie phase function LUT for sun single scattering
-	float fAngle = acos_fast( dot( camDir, g_PS_SunLightDir.xyz ) ) * ONE_OVER_PI;
+	float fAngle = acos_fast( dot( camDir, sunLightDir.xyz ) ) * ONE_OVER_PI;
 	const float normalizeFactor = 1.0f / 12.71f;// nearly equal to 1 / (4 * PI)
-	float3 fMiePhase = tex2Dlod(miePhaseSampler, float4(fAngle, 0, 0, 0)) * sunSingleScatterFactor * normalizeFactor;
+	float3 fMiePhase = VolCloudMiePhaseTex.SampleLevel(VolCloudTrilinearClampSState, float2(fAngle, 0.0f), 0.0f) * sunSingleScatterFactor * normalizeFactor;
 
 	// approximation of low order(2 to 30 scattering events) sun scattering
 	const float g = sunLowOrderAnisotropy;
 	const float oneMinusG2 = 1.0f - sunLowOrderAnisotropy * sunLowOrderAnisotropy;
-	//fMiePhase += inscatteringFactor * GetVolumetricFogInscatteringHenyeyGreensteinPhaseFunction(dot(camDir, g_PS_SunLightDir), g, oneMinusG2);
-	fMiePhase += inscatteringFactor * GetVolumetricFogInscatteringSchlickPhaseFunction(dot(camDir, g_PS_SunLightDir), g, oneMinusG2);
+	//fMiePhase += inscatteringFactor * GetVolumetricFogInscatteringHenyeyGreensteinPhaseFunction(dot(camDir, sunLightDir.xyz), g, oneMinusG2);
+	fMiePhase += inscatteringFactor * GetVolumetricFogInscatteringSchlickPhaseFunction(dot(camDir, sunLightDir.xyz), g, oneMinusG2);
 
 
 	// sky lighting
 	float skyPhaseFunc = (0.25f * ONE_OVER_PI);// isotropic phase function
-	float3 cSkyLight = vcSkylightRayleighInScatter * skyPhaseFunc * skyLightingFactor;
+	float3 cSkyLight = vc.skylightRayleighInScatter * skyPhaseFunc * skyLightingFactor;
 
 	// Direct sun lighting
-	float sunFactor = saturate(dot(cloudsNorm, g_PS_SunLightDir.xyz) * (1.f-fLightWrap) + fLightWrap);
-	float3 cSunLight = ShadeColorFromSun * fMiePhase * sunFactor;
+	float sunFactor = saturate(dot(cloudsNorm, sunLightDir.xyz) * (1.f-fLightWrap) + fLightWrap);
+	float3 cSunLight = vc.shadeColorFromSun * fMiePhase * sunFactor;
 
 
 	float3 inscatter = (cSunLight + cSkyLight) * cloudsAlpha;
@@ -914,12 +1214,33 @@ float4 GetAltoAndCirrusCloud(in float3 posCloudSpace, in float3 camDir)
 }
 #endif
 
-pixout CloudsLayerPS(vtxOutWPOS IN)
+////////////////////////////////////////////////////////////////////////////////////////////
+// Compute clouds density, and render clouds by using ray-marching in one shader.
+
+RWTexture2D< float4 > VolCloudColorOUT : register( u0 );
+RWTexture2D<float> cloudDepthOutput : register(u1);
+RWTexture2D<float4> cloudMinDepthColorOutput : register(u2);
+
+[numthreads(8, 8, 1)]
+void RenderCloudMonolithicCS(uint3 GroupID : SV_GroupID,
+					  uint3 GroupThreadID : SV_GroupThreadID,
+					  uint3 DispatchThreadID : SV_DispatchThreadID)
 {
+#if !%_RT_SAMPLE2
+	const float3 shadeColorFromSun = ShadeColorFromSun;
 	const float nearPlane = PS_NearFarClipDist.x;
 	const float farPlane = PS_NearFarClipDist.y;
+	const float reciprocalFarClipDist = PS_NearFarClipDist.w;
+	const float3 cameraPos = PS_WorldViewPos.xyz;c
 	const float2 worldAlignmentOffset = CloudShadowAnimParams.xy;
+	const float4 screenSize = ScreenSize;
+	const float4 frustumTL = FrustumTL;
+	const float4 frustumTR = FrustumTR;
+	const float4 frustumBL = FrustumBL;
 
+	const float3 sunLightDir = vcSunLightDirection.xyz;
+	const float3 cameraFrontVec = vcCameraFrontVector.xyz;
+	const float3 skylightRayleighInScatter = vcSkylightRayleighInScatter.xyz;
 	const float skyLightingFactor = vcSkylightRayleighInScatter.w;
 	const float sunSingleScatterFactor = vcSunScatteringParams.x;
 	const float sunLowOrderFactor = vcSunScatteringParams.y;
@@ -936,6 +1257,8 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 	const float shadingLODThreshold = vcCloudRenderParams.w;
 	const float3 invShadowTilingSize = vcCloudTilingParams.xyz;
 	const float sphereRadius = vcCloudTilingParams.w;
+	const float projRatio0 = vcMultiScatteringParams.z;
+	const float projRatio1 = vcMultiScatteringParams.w;
 	const float3 cloudNoiseScale = vcCloudNoiseParams.xyz;
 	const float3 cloudBaseSizeScale = vcCloudBaseScaleParams.xyz;
 	const float3 cloudBaseOffset = vcCloudBaseOffsetParams.xyz;
@@ -944,93 +1267,151 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 	const float MaxStepRaymarch = vcCloudRaymarchParams.z;
 	const float horizonHeight = max(g_WaterLevel.x, vcCloudRaymarchParams.w);
 
+	const float4x4 leftToRightReprojMatrix = vcLeftToRightReprojMatrix;
+	const float4 edgeTurbulenceParams = vcEdgeTurbulenceParams.xyzw;
+	const float3 edgeNoiseScaleParams = vcEdgeNoiseScaleParams.xyz;
+	const float cloudDensityScale = vcDensityParams.x;
+	const float2 baseTexRemap = vcDensityParams.yz;
+	const float additionalNoiseIntensity = vcDensityParams.w;
+	const float noiseFrameCount = vcCloudNoiseParams.w;
+	const float jitteredOffset = vcCloudBaseScaleParams.w;
 
-	//float linearDepth = GetLinearDepth(linearDepthBuffer, IN.baseTC.xy);
-	int3 vPixCoord = int3(IN.baseTC.xy * PS_ScreenSize.xy, 0);
-	float2 linearDepth = linearDepthBuffer.Load(vPixCoord).xy;
+	const float4 vVolFogShadowDarkening = volFogShadowDarkening;
+	const float4 vVolFogShadowDarkeningSunAmb = volFogShadowDarkeningSunAmb;
+#else
+	const float3 shadeColorFromSun = vc.shadeColorFromSun;
+	const float nearPlane = vc.nearClipDist;
+	const float farPlane = vc.farClipDist;
+	const float reciprocalFarClipDist = vc.reciprocalFarClipDist;
+	const float3 cameraPos = vc.cameraPos;
+	const float2 worldAlignmentOffset = vc.cloudShadowAnimParams.xy;
+	const float4 screenSize = vc.screenSize;
+	const float4 frustumTL = vc.frustumTL;
+	const float4 frustumTR = vc.frustumTR;
+	const float4 frustumBL = vc.frustumBL;
+
+	const float3 sunLightDir = vc.sunLightDirection.xyz;
+	const float3 cameraFrontVec = vc.cameraFrontVector.xyz;
+	const float3 skylightRayleighInScatter = vc.skylightRayleighInScatter.xyz;
+	const float skyLightingFactor = vc.skylightRayleighInScatter.w;
+	const float sunSingleScatterFactor = vc.sunScatteringParams.x;
+	const float sunLowOrderFactor = vc.sunScatteringParams.y;
+	const float sunLowOrderAnisotropy = vc.sunScatteringParams.z;
+	const float sunHighOrderFactor = vc.sunScatteringParams.w;
+	const float3 groundAlbedo = vc.groundLightingParams.xyz;
+	const float groundLightingFactor = vc.groundLightingParams.w;
+	const float cloudAltitude = vc.cloudGenParams.x;
+	const float cloudThickness = vc.cloudGenParams.y;
+	const float cloudiness = vc.cloudGenParams.z;
+	const float upsamplingScale = vc.cloudGenParams.w;
+	const float scatterCoefficient = vc.cloudRenderParams.x;
+	const float extinctionCoefficient = vc.cloudRenderParams.y;
+	const float shadingLODThreshold = vc.cloudRenderParams.w;
+	const float3 invShadowTilingSize = vc.cloudTilingParams.xyz;
+	const float sphereRadius = vc.cloudTilingParams.w;
+	const float projRatio0 = vc.multiScatteringParams.z;
+	const float projRatio1 = vc.multiScatteringParams.w;
+	const float3 cloudNoiseScale = vc.cloudNoiseParams.xyz;
+	const float3 cloudBaseSizeScale = vc.cloudBaseScaleParams.xyz;
+	const float3 cloudBaseOffset = vc.cloudBaseOffsetParams.xyz;
+	const float MaxIntersectionDistance = vc.cloudRaymarchParams.x;
+	const float MaxRaymarchDistance = vc.cloudRaymarchParams.y;
+	const float MaxStepRaymarch = vc.cloudRaymarchParams.z;
+	const float horizonHeight = max(vc.waterLevel, vc.cloudRaymarchParams.w);
+
+	const float4x4 leftToRightReprojMatrix = vc.leftToRightReprojMatrix;
+	const float4 edgeTurbulenceParams = vc.edgeTurbulenceParams.xyzw;
+	const float3 edgeNoiseScaleParams = vc.edgeNoiseScaleParams.xyz;
+	const float cloudDensityScale = vc.densityParams.x;
+	const float2 baseTexRemap = vc.densityParams.yz;
+	const float additionalNoiseIntensity = vc.densityParams.w;
+	const float noiseFrameCount = vc.cloudNoiseParams.w;
+	const float jitteredOffset = vc.cloudBaseScaleParams.w;
+
+	const float4 vVolFogShadowDarkening = vc.volFogShadowDarkening;
+	const float4 vVolFogShadowDarkeningSunAmb = vc.volFogShadowDarkeningSunAmb;
+#endif
+
+
+
+	float2 linearDepth = linearDepthBuffer.Load(int3(DispatchThreadID.xy, 0)).xy;
 	const float linearMaxDepth = linearDepth.x;
 	const float linearMinDepth = linearDepth.y;
 
-	float3 nearPlanePos = IN.CamVec.xyz * (nearPlane / farPlane);
-	float3 nearPlanePosWS = nearPlanePos + PS_WorldViewPos.xyz;
-	float3 camDir = normalize(IN.CamVec.xyz);
 
-	const float distanceToDepth = dot(-CV_CameraFrontVector, normalize(IN.CamVec.xyz));
+
+	// Barycentric interpolation for reconstructing position
+	const float3 pixelCoord = DispatchThreadID.xyz;
+	float2 vPixelUV = (pixelCoord.xy + 0.5f) * screenSize.zw;
+	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * frustumTL.xyz + (vPixelUV.x * frustumTR.xyz + (vPixelUV.y * frustumBL.xyz)));
+	const float3 camDir = normalize(vCamVec);
+
+
+
+	// Fetch pre-computed mie phase function LUT for sun single scattering
+	float fAngle = acos_fast( dot( camDir, sunLightDir.xyz ) ) * ONE_OVER_PI;
+	const float normalizeFactor = 1.0f / 12.71f;// nearly equal to 1 / (4 * PI)
+	float3 fMiePhase = VolCloudMiePhaseTex.SampleLevel(VolCloudTrilinearClampSState, float2(fAngle, 0.0f), 0.0f) * sunSingleScatterFactor * normalizeFactor;
+
+	// approximation of low order(2 to 30 scattering events) sun scattering
+	const float g = sunLowOrderAnisotropy;
+	const float oneMinusG2 = 1.0f - sunLowOrderAnisotropy * sunLowOrderAnisotropy;
+	//float multiPhase = GetVolumetricFogInscatteringHenyeyGreensteinPhaseFunction(dot(camDir, sunLightDir.xyz), g, oneMinusG2);
+	float multiPhase = GetVolumetricFogInscatteringSchlickPhaseFunction(dot(camDir, sunLightDir.xyz), g, oneMinusG2);
+	float3 cSunLowMultiScatter = (sunLowOrderFactor * multiPhase) * shadeColorFromSun.xyz;
+
+	// sun single and low order scattering
+	float3 cSunLight = (shadeColorFromSun.xyz * fMiePhase) + cSunLowMultiScatter;
+
+	// approximation of high order(31 or more scattering events) sun scattering
+	float3 cSunHighMultiScatter = (sunHighOrderFactor * (0.25f * ONE_OVER_PI)) * shadeColorFromSun.xyz;
+
+#if 1
+	// ground lighting
+	const float dotLN = saturate(dot(sunLightDir.xyz, float3(0, 0, 1)));
+	float3 srcGroundLight = (dotLN * shadeColorFromSun.xyz) + skylightRayleighInScatter.xyz;// sky lighting reflects on ground.
+	const float groundPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
+	float3 cGroundLight = groundLightingFactor * groundPhaseFunc * srcGroundLight.xyz * groundAlbedo.xyz;
+
+	// sky lighting from above the cloud.
+	const float skyPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
+	float3 cSkyLight = skyLightingFactor * skyPhaseFunc * skylightRayleighInScatter;
+#else
+	// sky lighting from above the cloud.
+	const float skyPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
+	float3 cSkyLight = skyLightingFactor * skyPhaseFunc * skylightRayleighInScatter;
+
+	// ground lighting
+	const float dotLN = saturate(dot(sunLightDir.xyz, float3(0, 0, 1)));
+	float3 srcGroundLight = (dotLN * shadeColorFromSun.xyz) + cSkyLight.xyz;// sky lighting reflects on ground.
+	const float groundPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
+	float3 cGroundLight = groundLightingFactor * groundPhaseFunc * srcGroundLight.xyz * groundAlbedo.xyz;
+#endif
+
+
+
+#if ENABLE_ORIGIN_MOVE_WITH_CAMERA
+	// cloud layer's origin moves with camera.
+	float3 centerSphere = cameraPos.xyz;
+	centerSphere.z = -sphereRadius;
+#else
+	float3 centerSphere = float3(0, 0, -sphereRadius);
+#endif
+
+	float3 nearPlanePos = vCamVec.xyz * (nearPlane / farPlane);
+	float3 nearPlanePosWS = nearPlanePos + cameraPos.xyz;
+
+	float2 intersection = vcGetIntersectionWithCloudLayer(nearPlanePosWS, camDir, cloudAltitude, cloudThickness, 
+		sphereRadius, centerSphere);
+	float tt = intersection.x;
+	float tb = intersection.y;
+
+	const float distanceToDepth = dot(-cameraFrontVec, camDir);
 	const float depthToDistance = rcp(distanceToDepth);
 	const float distanceTarget = depthToDistance * linearMaxDepth * farPlane;
 	const float distanceFar = depthToDistance * farPlane;
 	const float distanceNear = depthToDistance * nearPlane;
 	float distanceTargetMin = depthToDistance * linearMinDepth * farPlane;
-
-
-#if ENABLE_ORIGIN_MOVE_WITH_CAMERA
-	// cloud layer's origin moves with camera.
-	float3 centerSphere = PS_WorldViewPos.xyz;
-	centerSphere.z = -sphereRadius;
-#else
-	float3 centerSphere = float3(0, 0, -sphereRadius);
-#endif
-	float2 intersection = vcGetIntersectionWithCloudLayer(nearPlanePosWS, camDir, cloudAltitude, cloudThickness, 
-																												sphereRadius, centerSphere);
-	float tt = intersection.x;
-	float tb = intersection.y;
-
-
-	// Fetch pre-computed mie phase function LUT for sun single scattering
-	float fAngle = acos_fast( dot( camDir, g_PS_SunLightDir.xyz ) ) * ONE_OVER_PI;
-	const float normalizeFactor = 1.0f / 12.71f;// nearly equal to 1 / (4 * PI)
-	float3 fMiePhase = tex2Dlod(miePhaseSampler, float4(fAngle, 0, 0, 0)) * sunSingleScatterFactor * normalizeFactor;
-
-	// approximation of low order(2 to 30 scattering events) sun scattering
-	const float g = sunLowOrderAnisotropy;
-	const float oneMinusG2 = 1.0f - sunLowOrderAnisotropy * sunLowOrderAnisotropy;
-	//float multiPhase = GetVolumetricFogInscatteringHenyeyGreensteinPhaseFunction(dot(camDir, g_PS_SunLightDir), g, oneMinusG2);
-	float multiPhase = GetVolumetricFogInscatteringSchlickPhaseFunction(dot(camDir, g_PS_SunLightDir), g, oneMinusG2);
-	float3 cSunLowMultiScatter = (sunLowOrderFactor * multiPhase) * ShadeColorFromSun.xyz;
-
-	// sun single and low order scattering
-	float3 cSunLight = (ShadeColorFromSun.xyz * fMiePhase) + cSunLowMultiScatter;
-
-	// approximation of high order(31 or more scattering events) sun scattering
-	float3 cSunHighMultiScatter = (sunHighOrderFactor * (0.25f * ONE_OVER_PI)) * ShadeColorFromSun.xyz;
-
-
-#if 1
-	// ground lighting
-	const float dotLN = saturate(dot(g_PS_SunLightDir.xyz, float3(0, 0, 1)));
-	float3 srcGroundLight = (dotLN * ShadeColorFromSun) + vcSkylightRayleighInScatter.xyz;// sky lighting reflects on ground.
-	const float groundPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
-	float3 cGroundLight = groundLightingFactor * groundPhaseFunc * srcGroundLight.xyz * groundAlbedo.xyz;
-
-	// sky lighting from above the cloud.
-	const float skyPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
-	float3 cSkyLight = skyLightingFactor * skyPhaseFunc * vcSkylightRayleighInScatter;
-#else
-	// sky lighting from above the cloud.
-	const float skyPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
-	float3 cSkyLight = skyLightingFactor * skyPhaseFunc * vcSkylightRayleighInScatter;
-
-	// ground lighting
-	const float dotLN = saturate(dot(g_PS_SunLightDir.xyz, float3(0, 0, 1)));
-	float3 srcGroundLight = (dotLN * ShadeColorFromSun) + cSkyLight.xyz;// sky lighting reflects on ground.
-	const float groundPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
-	float3 cGroundLight = groundLightingFactor * groundPhaseFunc * srcGroundLight.xyz * groundAlbedo.xyz;
-#endif
-
-
-	CloudGenParam cloudGenParam;
-	cloudGenParam.cloudiness = cloudiness;
-	cloudGenParam.altitude = cloudAltitude;
-	cloudGenParam.thickness = cloudThickness;
-	cloudGenParam.noiseSizeScale = cloudNoiseScale;
-	cloudGenParam.baseSizeScale = cloudBaseSizeScale;
-	cloudGenParam.baseOffset = cloudBaseOffset;
-	cloudGenParam.edgeErode = vcEdgeTurbulenceParams.xyzw;
-	cloudGenParam.edgeNoiseSizeScale = vcEdgeNoiseScaleParams.xyz;
-	cloudGenParam.cloudDensityScale = vcDensityParams.x;
-	cloudGenParam.baseTexRemap = vcDensityParams.yz;
-	cloudGenParam.additionalNoiseIntensity = vcDensityParams.w;
-
 
 	float distanceEnd = min(MaxIntersectionDistance, max(tb, tt));
 	float minD = min(tb, tt);
@@ -1062,19 +1443,39 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 #endif
 
 
-	// ray-march through cloud layer in the air.
-	float transmittance = 1.0f;
-	float3 inscatter = 0.0f;
-	float totalOptThickness = 0.0f;
-	float4 cloudColorMinDepth = float4(0,0,0,1);
+	CloudGenParam cloudGenParam;
+	cloudGenParam.cloudiness = cloudiness;
+	cloudGenParam.altitude = cloudAltitude;
+	cloudGenParam.thickness = cloudThickness;
+	cloudGenParam.noiseSizeScale = cloudNoiseScale;
+	cloudGenParam.baseSizeScale = cloudBaseSizeScale;
+	cloudGenParam.baseOffset = cloudBaseOffset;
+	cloudGenParam.edgeErode = edgeTurbulenceParams.xyzw;
+	cloudGenParam.edgeNoiseSizeScale = edgeNoiseScaleParams.xyz;
+	cloudGenParam.cloudDensityScale = cloudDensityScale.x;
+	cloudGenParam.baseTexRemap = baseTexRemap.xy;
+	cloudGenParam.additionalNoiseIntensity = additionalNoiseIntensity.x;
+	cloudGenParam.noiseTex = VolCloudNoiseTex;
+	cloudGenParam.linearWrapSampler = VolCloudTrilinearWrapSState;
+#if !%_RT_SAMPLE2
+	cloudGenParam.cloudBlockerPos = vcCloudBlockerPos;
+	cloudGenParam.cloudBlockerParam = vcCloudBlockerParam;
+#else
+	cloudGenParam.cloudBlockerPos = vc.cloudBlockerPos;
+	cloudGenParam.cloudBlockerParam = vc.cloudBlockerParam;
+#endif
+
+	VolCloudGlobalShadowContext cloudGlobalShadow;
+	cloudGlobalShadow.shadowTex = VolCloudGlobalShadowTex;
+	cloudGlobalShadow.shadowSState = VolCloudGlobalShadowSState;
 
 #if !ENABLE_LOW_DISCREPANCY_SEQUENCE
 	// interleaved gradient noise is better than low discrepancy sequence in most cases.
-	float jitter = GetJitterInternal(IN.baseTC.xy * PS_ScreenSize.xy, vcCloudNoiseParams.ww);
+	float jitter = GetJitterInternal(pixelCoord.xy, noiseFrameCount.xx);
 #else
 	// low discrepancy sequence
-	uint indexSeq = trunc((IN.baseTC.x * PS_ScreenSize.x + IN.baseTC.y * PS_ScreenSize.y * PS_ScreenSize.x));
-	float jitter = frac(GetVdC(indexSeq) - vcCloudBaseScaleParams.w);
+	uint indexSeq = trunc((pixelCoord.x + pixelCoord.y * screenSize.x));
+	float jitter = frac(GetVdC(indexSeq) - jitteredOffset);
 #endif
 
 
@@ -1083,23 +1484,26 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 	float4 colorReproj = 0.0f;
 	//if(maxStepNum > 0.0f) // this increases VGPR number so commented out.
 	{
-		const float3 position = camDir.xyz * distanceTarget;
-		const float3 worldPos = PS_WorldViewPos.xyz + position;
-		const float4 reprojPos = mul( float4(worldPos, 1), vcLeftViewProjMatrix );
-		const float2 leftEyeTC = reprojPos.xy / reprojPos.w;
-		const float leftEyeDepthReproj = reprojPos.w;
+		// convert linear depth to non-linear depth.
+		const float depth = ((projRatio1 / linearMaxDepth) + projRatio0);
+
+		const float4 reprojPos = mul(float4(vPixelUV.x, vPixelUV.y, depth, 1.0f), leftToRightReprojMatrix);
+		const float rcpW = rcp(reprojPos.w);
+		const float2 leftEyeTC = reprojPos.xy * rcpW;
+
+		// convert non-linear depth to linear depth.
+		const float leftDepthNorm = projRatio1 / (reprojPos.z * rcpW - projRatio0);
 
 #if 0
-		const int3 leftEyePixCoord = int3(leftEyeTC.xy * PS_ScreenSize.xy, 0);
+		const int3 leftEyePixCoord = int3(leftEyeTC.xy * screenSize.xy, 0);
 		const float linearDepthLeftEye = LeftEyeDepthBuffer.Load(leftEyePixCoord).x;
 #else
-		const float linearDepthLeftEye = LeftEyeDepthBuffer.Sample(TrilinearClampSamplerState, leftEyeTC.xy).x;
+		const float linearDepthLeftEye = LeftEyeDepthBuffer.SampleLevel(VolCloudTrilinearClampSState, leftEyeTC.xy, 0.0f).x;
 #endif
 
 		const float depthReprojDiffRatioThreshold = 0.75f;
 		const float depthMaxMinDiffRatioThreshold = 0.75f;
 
-		const float leftDepthNorm = leftEyeDepthReproj * PS_NearFarClipDist.w;
 		const float minLeftDepth = min(leftDepthNorm, linearDepthLeftEye);
 		const float maxLeftDepth = max(leftDepthNorm, linearDepthLeftEye);
 
@@ -1107,21 +1511,27 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 			&& saturate(pow(minLeftDepth / maxLeftDepth, 2.0f)) > depthReprojDiffRatioThreshold
 			&& saturate(pow(linearMinDepth / linearMaxDepth, 2.0f)) > depthMaxMinDiffRatioThreshold)
 		{
-			colorReproj = LeftEyeColorBuffer.Sample(TrilinearClampSamplerState, leftEyeTC.xy);
-			maxStepNum = -1.0f; // negative step number means success of reprojection
+			colorReproj = LeftEyeColorBuffer.SampleLevel(VolCloudTrilinearClampSState, leftEyeTC.xy, 0.0f);
+			maxStepNum = -1.0f; // negative step number means a success of reprojection;
 		}
 	}
 #endif
 
 
+	// ray-march through cloud layer in the air.
+	float transmittance = 1.0f;
+	float3 inscatter = 0.0f;
+	float totalOptThickness = 0.0f;
+	float4 cloudColorMinDepth = float4(0,0,0,1);
+
 #if ENABLE_CLOUD_ATMOSPHERIC_SCATTERING
-	AtmosphericParam atmosParam = GetAtmosphericParam(dot(camDir, g_PS_SunLightDir.xyz));
+	AtmosphericParam atmosParam = GetAtmosphericParam(dot(camDir, sunLightDir.xyz));
 	float distAtmos = distanceNear;
 	const float StepNumAtmos = 4.0f;
 	const float maxStepNumAtmos = (maxStepNum > 0.0f && distanceStart > distAtmos) ? StepNumAtmos : 0.0f;
 	const float stepSizeAtmos = distanceStart / StepNumAtmos;
 	const float3 stepVecAtmos = camDir.xyz * stepSizeAtmos;
-	float3 samplePosAtmosWS = PS_WorldViewPos.xyz;
+	float3 samplePosAtmosWS = cameraPos.xyz;
 	for(float i = 0.0f; i < maxStepNumAtmos; ++i)
 	{
 		samplePosAtmosWS.z += stepVecAtmos.z;
@@ -1131,7 +1541,7 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 #endif
 
 #if %_RT_SAMPLE1
-	// negative step number means success of stereoscopic reprojection
+	// negative step number means success of reprojection;
 	if(maxStepNum < 0.0f)
 	{
 #if 0
@@ -1166,7 +1576,7 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 			break;
 		}
 
-		float3 samplePosWS = camDir.xyz * d + PS_WorldViewPos.xyz;
+		float3 samplePosWS = camDir.xyz * d + cameraPos.xyz;
 
 #ifdef %_RT_SAMPLE2
 		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
@@ -1190,12 +1600,10 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 		{
 			bool lowDetail = (transmittance <= shadingLODThreshold) ? true : false; // level of detail according to transmittance
 
-			AccumulateRadiance(inscatter, transmittance, totalOptThickness, 
-												density, stepSize, scatterCoefficient, 
-												cSunLight, cSunHighMultiScatter, cSkyLight, cGroundLight, 
-												samplePosWS, extinctionCoefficient, cloudGenParam, 
-												worldAlignmentOffset, lowDetail, invShadowTilingSize, 
-												false);
+			AccumulateRadiance(inscatter, transmittance, totalOptThickness, density, stepSize, 
+				scatterCoefficient, cSunLight, cSunHighMultiScatter, cSkyLight, cGroundLight, 
+				samplePosWS, extinctionCoefficient, cloudGenParam, cloudGlobalShadow, 
+				worldAlignmentOffset, lowDetail, invShadowTilingSize, false);
 		}
 
 		++index;
@@ -1204,8 +1612,8 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 
 	// write the frontmost depth of cloud
 	float cloudDepth = (maxStepNum == 0.0) ? 0.0f : distanceToDepth * distanceStart; // outputs 0 as empty flag.
-	cloudDepth = cloudDepth * PS_NearFarClipDist.w;
-	cloudDepthOutput[int2(IN.HPosition.xy)] = cloudDepth;
+	cloudDepth = cloudDepth * reciprocalFarClipDist;
+	cloudDepthOutput[ DispatchThreadID.xy ] = cloudDepth;
 
 
 #if %_RT_SAMPLE1
@@ -1221,32 +1629,44 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 	if(maxStepNum != 0)
 #endif
 	{
+		const float2 pixelCoord = DispatchThreadID.xy;
+		float2 vPixelUV = (pixelCoord.xy + 0.5f) * screenSize.zw;
+
 		// apply fog effect of frontmost cloud position to clouds.
 #if !ENABLE_AVERAGED_DISTANCE_FOG
-		const float cloudFrontDistance = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceStart, PS_NearFarClipDist.y * depthToDistance);
+		const float cloudFrontDistance = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceStart, farPlane * depthToDistance);
 #else
-		const float cloudFrontDistance = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceAvg, PS_NearFarClipDist.y * depthToDistance);
+		const float cloudFrontDistance = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceAvg, farPlane * depthToDistance);
 #endif
 		const float cloudFrontDepth = (maxStepNum == 0.0) ? nearPlane : distanceToDepth * cloudFrontDistance;
 		float3 cameraToWorldPos = camDir * cloudFrontDepth;
-		float3 worldPos = cameraToWorldPos + PS_WorldViewPos.xyz;
+		float3 worldPos = cameraToWorldPos + cameraPos.xyz;
+
+		const SFogParams fogParams = GetFogParams();
+		const SVolumetricFogParams volFogParams = GetVolumetricFogParams();
 
 #if %_RT_VOLUMETRIC_FOG
-		VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(IN.baseTC, cloudFrontDepth);
-		float4 vf = GetVolumetricFogValue(vtc);
-		half4 globalFogColor = GetVolumetricFogAnalyticalColor(cameraToWorldPos, cloudFrontDistance);
-		globalFogColor = BlendVolumetricFogWithGlobalFog(vf, globalFogColor, vtc);
-		globalFogColor = ClampFinalFogDensity(globalFogColor);
+		VolumetricFogSampling vfs;
+		vfs.volumetricFogTex = VolFogSamplingTex;
+		vfs.globalEnvProbeTex0 = VolFogGlobalEnvProbeTex0;
+		vfs.globalEnvProbeTex1 = VolFogGlobalEnvProbeTex1;
+		vfs.trilinearClampSState = VolCloudTrilinearClampSState;
+
+		VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(volFogParams, vPixelUV.xy, cloudFrontDepth);
+		float4 vf = GetVolumetricFogValue(vfs, vtc);
+		half4 globalFogColor = GetVolumetricFogAnalyticalColor(volFogParams, vfs, cameraToWorldPos, cloudFrontDistance);
+		globalFogColor = BlendVolumetricFogWithGlobalFog(volFogParams, vf, globalFogColor, vtc);
+		globalFogColor = ClampFinalFogDensity(volFogParams, globalFogColor);
 		inscatter = inscatter.xyz * globalFogColor.w + globalFogColor.xyz * (1.0f - transmittance);
 #else
 	#if %_RT_SAMPLE0
 		// Read volumetric shadows and apply to the global fog.
-		const float volFogShadowContrib = tex2D( volFogShadowSampler, IN.baseTC.xy ).a;
-		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * volFogShadowDarkeningSunAmb.xz + volFogShadowDarkeningSunAmb.yw);
-		half4 localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
-		localFogColor.rgb = lerp(localFogColor.rgb * volFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
+		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, vPixelUV.xy, 0.0f).a;
+		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * vVolFogShadowDarkeningSunAmb.xz + vVolFogShadowDarkeningSunAmb.yw);
+		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
+		localFogColor.rgb = lerp(localFogColor.rgb * vVolFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
 	#else
-		half4 localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos);
+		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos);
 	#endif
 		inscatter.rgb = lerp( localFogColor.rgb, inscatter.rgb, localFogColor.a ) * (1.0f - transmittance);
 #endif
@@ -1255,22 +1675,22 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 		if(distanceTargetMin > distanceStart)
 		{
 #if ENABLE_AVERAGED_DISTANCE_FOG
-			const float cloudFrontDistance2 = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceAvgMinDepth, PS_NearFarClipDist.y * depthToDistance);
+			const float cloudFrontDistance2 = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceAvgMinDepth, farPlane * depthToDistance);
 			const float cloudFrontDepth2 = (maxStepNum == 0.0) ? nearPlane : distanceToDepth * cloudFrontDistance2;
 			float3 cameraToWorldPos = camDir * cloudFrontDepth2;
-			float3 worldPos = cameraToWorldPos + PS_WorldViewPos.xyz;
+			float3 worldPos = cameraToWorldPos + cameraPos.xyz;
 #if %_RT_VOLUMETRIC_FOG
-			VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(IN.baseTC, cloudFrontDepth2);
-			float4 vf = GetVolumetricFogValue(vtc);
-			half4 globalFogColor = GetVolumetricFogAnalyticalColor(cameraToWorldPos, cloudFrontDistance2);
-			globalFogColor = BlendVolumetricFogWithGlobalFog(vf, globalFogColor, vtc);
-			globalFogColor = ClampFinalFogDensity(globalFogColor);
+			VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(volFogParams, vPixelUV.xy, cloudFrontDepth2);
+			float4 vf = GetVolumetricFogValue(vfs, vtc);
+			half4 globalFogColor = GetVolumetricFogAnalyticalColor(volFogParams, vfs, cameraToWorldPos, cloudFrontDistance2);
+			globalFogColor = BlendVolumetricFogWithGlobalFog(volFogParams, vf, globalFogColor, vtc);
+			globalFogColor = ClampFinalFogDensity(volFogParams, globalFogColor);
 #else
 	#if %_RT_SAMPLE0
-			localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
-			localFogColor.rgb = lerp(localFogColor.rgb * volFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
+			localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
+			localFogColor.rgb = lerp(localFogColor.rgb * vVolFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
 	#else
-			localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos);
+			localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos);
 	#endif
 #endif
 #endif
@@ -1296,7 +1716,7 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 
 
 	// store min-depth cloud color.
-	cloudMinDepthColorOutput[int2(IN.HPosition.xy)] = cloudColorMinDepth;
+	cloudMinDepthColorOutput[ DispatchThreadID.xy ] = cloudColorMinDepth;
 
 
 #ifdef ENABLE_CIRRUS_CLOUD_LAYER
@@ -1308,7 +1728,7 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 		MaxIntersectionDistance > distCirrus && 
 		transmittance >= 0.01f)
 	{
-		float3 samplePosWS = camDir.xyz * distCirrus + PS_WorldViewPos.xyz;
+		float3 samplePosWS = camDir.xyz * distCirrus + cameraPos.xyz;
 
 #ifdef %_RT_SAMPLE2
 		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
@@ -1324,21 +1744,884 @@ pixout CloudsLayerPS(vtxOutWPOS IN)
 #endif
 
 
-	pixout OUT;
-
 	// use reversed alpha to reduce composition banding artifact.
 	const float reversedAlpha = transmittance;
-	OUT.Color = float4(inscatter.xyz, reversedAlpha);
 
-	return OUT;
+	VolCloudColorOUT[ DispatchThreadID.xy ] = float4(inscatter.xyz, reversedAlpha);
 }
 
-technique CloudsLayer
+technique RenderCloud_Monolithic
 {
 	pass p0
 	{
-		VertexShader = CloudsLayerVS() VolumetricCloudsVS;
-		PixelShader = CloudsLayerPS() VolumetricCloudsPS;
+		ComputeShader = RenderCloudMonolithicCS() VolumetricCloudsPS;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Inject clouds density and shadow to frustum aligned volume texture
+
+RWTexture3D< float3 > VolCloudShadowOUT : register( u0 );
+RWTexture3D< float > VolCloudDensityOUT : register( u1 );
+
+[numthreads(8, 8, 1)]
+void InjectCloudDensityAndShadowCS(uint3 GroupID : SV_GroupID,
+					  uint3 GroupThreadID : SV_GroupThreadID,
+					  uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+#if !%_RT_SAMPLE2
+	//const float3 shadeColorFromSun = ShadeColorFromSun;
+	const float nearPlane = PS_NearFarClipDist.x;
+	const float farPlane = PS_NearFarClipDist.y;
+	const float reciprocalFarClipDist = PS_NearFarClipDist.w;
+	const float3 cameraPos = PS_WorldViewPos.xyz;
+	const float2 worldAlignmentOffset = CloudShadowAnimParams.xy;
+	const float4 screenSize = ScreenSize;
+	const float4 frustumTL = FrustumTL;
+	const float4 frustumTR = FrustumTR;
+	const float4 frustumBL = FrustumBL;
+
+	const float3 sunLightDir = vcSunLightDirection.xyz;
+	const float3 cameraFrontVec = vcCameraFrontVector.xyz;
+	//const float3 skylightRayleighInScatter = vcSkylightRayleighInScatter.xyz;
+	//const float skyLightingFactor = vcSkylightRayleighInScatter.w;
+	//const float sunSingleScatterFactor = vcSunScatteringParams.x;
+	//const float sunLowOrderFactor = vcSunScatteringParams.y;
+	//const float sunLowOrderAnisotropy = vcSunScatteringParams.z;
+	//const float sunHighOrderFactor = vcSunScatteringParams.w;
+	//const float3 groundAlbedo = vcGroundLightingParams.xyz;
+	//const float groundLightingFactor = vcGroundLightingParams.w;
+	const float cloudAltitude = vcCloudGenParams.x;
+	const float cloudThickness = vcCloudGenParams.y;
+	const float cloudiness = vcCloudGenParams.z;
+	//const float upsamplingScale = vcCloudGenParams.w;
+	//const float scatterCoefficient = vcCloudRenderParams.x;
+	const float extinctionCoefficient = vcCloudRenderParams.y;
+	const float shadingLODThreshold = vcCloudRenderParams.w;
+	const float3 invShadowTilingSize = vcCloudTilingParams.xyz;
+	const float sphereRadius = vcCloudTilingParams.w;
+	const float projRatio0 = vcMultiScatteringParams.z;
+	const float projRatio1 = vcMultiScatteringParams.w;
+	const float3 cloudNoiseScale = vcCloudNoiseParams.xyz;
+	const float3 cloudBaseSizeScale = vcCloudBaseScaleParams.xyz;
+	const float3 cloudBaseOffset = vcCloudBaseOffsetParams.xyz;
+	const float MaxIntersectionDistance = vcCloudRaymarchParams.x;
+	const float MaxRaymarchDistance = vcCloudRaymarchParams.y;
+	const float MaxStepRaymarch = vcCloudRaymarchParams.z;
+	const float horizonHeight = max(g_WaterLevel.x, vcCloudRaymarchParams.w);
+
+	const float4x4 leftToRightReprojMatrix = vcLeftToRightReprojMatrix;
+	const float4 edgeTurbulenceParams = vcEdgeTurbulenceParams.xyzw;
+	const float3 edgeNoiseScaleParams = vcEdgeNoiseScaleParams.xyz;
+	const float cloudDensityScale = vcDensityParams.x;
+	const float2 baseTexRemap = vcDensityParams.yz;
+	const float additionalNoiseIntensity = vcDensityParams.w;
+	const float noiseFrameCount = vcCloudNoiseParams.w;
+	const float jitteredOffset = vcCloudBaseScaleParams.w;
+
+	//const float4 vVolFogShadowDarkening = volFogShadowDarkening;
+	//const float4 vVolFogShadowDarkeningSunAmb = volFogShadowDarkeningSunAmb;
+#else
+	//const float3 shadeColorFromSun = vc.shadeColorFromSun;
+	const float nearPlane = vc.nearClipDist;
+	const float farPlane = vc.farClipDist;
+	const float reciprocalFarClipDist = vc.reciprocalFarClipDist;
+	const float3 cameraPos = vc.cameraPos;
+	const float2 worldAlignmentOffset = vc.cloudShadowAnimParams.xy;
+	const float4 screenSize = vc.screenSize;
+	const float4 frustumTL = vc.frustumTL;
+	const float4 frustumTR = vc.frustumTR;
+	const float4 frustumBL = vc.frustumBL;
+
+	const float3 sunLightDir = vc.sunLightDirection.xyz;
+	const float3 cameraFrontVec = vc.cameraFrontVector.xyz;
+	//const float3 skylightRayleighInScatter = vc.skylightRayleighInScatter.xyz;
+	//const float skyLightingFactor = vc.skylightRayleighInScatter.w;
+	//const float sunSingleScatterFactor = vc.sunScatteringParams.x;
+	//const float sunLowOrderFactor = vc.sunScatteringParams.y;
+	//const float sunLowOrderAnisotropy = vc.sunScatteringParams.z;
+	//const float sunHighOrderFactor = vc.sunScatteringParams.w;
+	//const float3 groundAlbedo = vc.groundLightingParams.xyz;
+	//const float groundLightingFactor = vc.groundLightingParams.w;
+	const float cloudAltitude = vc.cloudGenParams.x;
+	const float cloudThickness = vc.cloudGenParams.y;
+	const float cloudiness = vc.cloudGenParams.z;
+	//const float upsamplingScale = vc.cloudGenParams.w;
+	//const float scatterCoefficient = vc.cloudRenderParams.x;
+	const float extinctionCoefficient = vc.cloudRenderParams.y;
+	const float shadingLODThreshold = vc.cloudRenderParams.w;
+	const float3 invShadowTilingSize = vc.cloudTilingParams.xyz;
+	const float sphereRadius = vc.cloudTilingParams.w;
+	const float projRatio0 = vc.multiScatteringParams.z;
+	const float projRatio1 = vc.multiScatteringParams.w;
+	const float3 cloudNoiseScale = vc.cloudNoiseParams.xyz;
+	const float3 cloudBaseSizeScale = vc.cloudBaseScaleParams.xyz;
+	const float3 cloudBaseOffset = vc.cloudBaseOffsetParams.xyz;
+	const float MaxIntersectionDistance = vc.cloudRaymarchParams.x;
+	const float MaxRaymarchDistance = vc.cloudRaymarchParams.y;
+	const float MaxStepRaymarch = vc.cloudRaymarchParams.z;
+	const float horizonHeight = max(vc.waterLevel, vc.cloudRaymarchParams.w);
+
+	const float4x4 leftToRightReprojMatrix = vc.leftToRightReprojMatrix;
+	const float4 edgeTurbulenceParams = vc.edgeTurbulenceParams.xyzw;
+	const float3 edgeNoiseScaleParams = vc.edgeNoiseScaleParams.xyz;
+	const float cloudDensityScale = vc.densityParams.x;
+	const float2 baseTexRemap = vc.densityParams.yz;
+	const float additionalNoiseIntensity = vc.densityParams.w;
+	const float noiseFrameCount = vc.cloudNoiseParams.w;
+	const float jitteredOffset = vc.cloudBaseScaleParams.w;
+
+	//const float4 vVolFogShadowDarkening = vc.volFogShadowDarkening;
+	//const float4 vVolFogShadowDarkeningSunAmb = vc.volFogShadowDarkeningSunAmb;
+#endif
+
+
+
+	float2 linearDepth = linearDepthBuffer.Load(int3(DispatchThreadID.xy, 0)).xy;
+	const float linearMaxDepth = linearDepth.x;
+	const float linearMinDepth = linearDepth.y;
+
+
+
+	// Barycentric interpolation for reconstructing position
+	const float3 pixelCoord = DispatchThreadID.xyz;
+	float2 vPixelUV = (pixelCoord.xy + 0.5f) * screenSize.zw;
+	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * frustumTL.xyz + (vPixelUV.x * frustumTR.xyz + (vPixelUV.y * frustumBL.xyz)));
+	const float3 camDir = normalize(vCamVec);
+
+
+
+	// TODO: moving this part might be faster.
+#if ENABLE_ORIGIN_MOVE_WITH_CAMERA
+	// cloud layer's origin moves with camera.
+	float3 centerSphere = cameraPos.xyz;
+	centerSphere.z = -sphereRadius;
+#else
+	float3 centerSphere = float3(0, 0, -sphereRadius);
+#endif
+
+	float3 nearPlanePos = vCamVec.xyz * (nearPlane / farPlane); // TODO: can be optimized.
+	float3 nearPlanePosWS = nearPlanePos + cameraPos.xyz;
+
+	float2 intersection = vcGetIntersectionWithCloudLayer(nearPlanePosWS, camDir, cloudAltitude, cloudThickness,
+		sphereRadius, centerSphere);
+	float tt = intersection.x;
+	float tb = intersection.y;
+
+	const float distanceToDepth = dot(-cameraFrontVec, camDir);
+	const float depthToDistance = rcp(distanceToDepth);
+	const float distanceTarget = depthToDistance * linearMaxDepth * farPlane;
+	const float distanceFar = depthToDistance * farPlane;
+	const float distanceNear = depthToDistance * nearPlane;
+	//float distanceTargetMin = depthToDistance * linearMinDepth * farPlane;
+
+	float distanceEnd = min(MaxIntersectionDistance, max(tb, tt));
+	float minD = min(tb, tt);
+	float distanceStart = max(minD, distanceNear);
+
+	// limit the length of ray-marching with in certain length.
+	distanceEnd = (distanceEnd - distanceStart) > MaxRaymarchDistance ? (MaxRaymarchDistance + distanceStart) : distanceEnd;
+
+	// limit the length of ray-marching by depth buffer.
+	distanceEnd = (distanceTarget < distanceEnd && distanceFar > distanceTarget) ? distanceTarget : distanceEnd;
+
+	// intersection with ocean or horizon to stop ray-marching under the horizon.
+	float distHorizon = vcGetIntersectionPlane(nearPlanePosWS, camDir, float4(0.0f, 0.0f, 1.0f, horizonHeight));
+
+	// limit ray-marching to stop on the horizon.
+	distanceEnd = (camDir.z >= 0.0f) ? distanceEnd : ((distHorizon >= 0.0f) ? min(distHorizon, distanceEnd) : distanceEnd);
+	distanceStart = (nearPlanePosWS.z <= horizonHeight && camDir.z <= 0.0f) ? distanceEnd : distanceStart;
+
+	//// if min-depth equals to far depth, it should be beyond far plane.
+	//distanceTargetMin = (distanceTargetMin == distanceFar) ? distanceEnd : distanceTargetMin;
+
+	// stop ray-marching if it isn't needed.
+	float maxStepNum = (distanceStart >= distanceEnd) ? 0.0f : MaxStepRaymarch;
+
+
+
+#if %_RT_SAMPLE1
+	// try reprojection from left eye to right eye.
+	if(maxStepNum > 0.0f)
+	{
+		// convert linear depth to non-linear depth.
+		const float depth = (projRatio1 / linearMaxDepth) + projRatio0;
+
+		const float4 reprojPos = mul(float4(vPixelUV.x, vPixelUV.y, depth, 1.0f), leftToRightReprojMatrix);
+		const float rcpW = rcp(reprojPos.w);
+		const float2 leftEyeTC = reprojPos.xy * rcpW;
+
+		// convert non-linear depth to linear depth.
+		const float leftDepthNorm = projRatio1 / (reprojPos.z * rcpW - projRatio0);
+
+#if 0
+		const int3 leftEyePixCoord = int3(leftEyeTC.xy * screenSize.xy, 0);
+		const float linearDepthLeftEye = LeftEyeDepthBuffer.Load(leftEyePixCoord).x;
+#else
+		const float linearDepthLeftEye = LeftEyeDepthBuffer.SampleLevel(VolCloudTrilinearClampSState, leftEyeTC.xy, 0.0f).x;
+#endif
+
+		const float depthReprojDiffRatioThreshold = 0.75f;
+		const float depthMaxMinDiffRatioThreshold = 0.75f;
+
+		const float minLeftDepth = min(leftDepthNorm, linearDepthLeftEye);
+		const float maxLeftDepth = max(leftDepthNorm, linearDepthLeftEye);
+
+		if(all(leftEyeTC.xy > 0.0f) && all(leftEyeTC.xy < 1.0f)
+			&& saturate(pow(minLeftDepth / maxLeftDepth, 2.0f)) > depthReprojDiffRatioThreshold
+			&& saturate(pow(linearMinDepth / linearMaxDepth, 2.0f)) > depthMaxMinDiffRatioThreshold)
+		{
+			maxStepNum = -1.0f; // negative step number means a success of reprojection;
+		}
+	}
+
+	[branch] if(maxStepNum <= 0.0f)
+	{
+		// zero or negative density are wirrten.
+		// negative density means a success of reprojection.
+		VolCloudDensityOUT[int3(DispatchThreadID.xy,0)] = maxStepNum;
+	}
+#endif
+
+
+	float transmittance = 1.0f;
+
+	CloudGenParam cloudGenParam;
+	cloudGenParam.cloudiness = cloudiness;
+	cloudGenParam.altitude = cloudAltitude;
+	cloudGenParam.thickness = cloudThickness;
+	cloudGenParam.noiseSizeScale = cloudNoiseScale;
+	cloudGenParam.baseSizeScale = cloudBaseSizeScale;
+	cloudGenParam.baseOffset = cloudBaseOffset;
+	cloudGenParam.edgeErode = edgeTurbulenceParams.xyzw;
+	cloudGenParam.edgeNoiseSizeScale = edgeNoiseScaleParams.xyz;
+	cloudGenParam.cloudDensityScale = cloudDensityScale.x;
+	cloudGenParam.baseTexRemap = baseTexRemap.xy;
+	cloudGenParam.additionalNoiseIntensity = additionalNoiseIntensity.x;
+	cloudGenParam.noiseTex = VolCloudNoiseTex;
+	cloudGenParam.linearWrapSampler = VolCloudTrilinearWrapSState;
+#if !%_RT_SAMPLE2
+	cloudGenParam.cloudBlockerPos = vcCloudBlockerPos;
+	cloudGenParam.cloudBlockerParam = vcCloudBlockerParam;
+#else
+	cloudGenParam.cloudBlockerPos = vc.cloudBlockerPos;
+	cloudGenParam.cloudBlockerParam = vc.cloudBlockerParam;
+#endif
+
+	VolCloudGlobalShadowContext cloudGlobalShadow;
+	cloudGlobalShadow.shadowTex = VolCloudGlobalShadowTex;
+	cloudGlobalShadow.shadowSState = VolCloudGlobalShadowSState;
+
+#if !ENABLE_LOW_DISCREPANCY_SEQUENCE
+	// interleaved gradient noise is better than low discrepancy sequence in most cases.
+	float jitter = GetJitterInternal(pixelCoord.xy, noiseFrameCount.xx);
+#else
+	// low discrepancy sequence
+	uint indexSeq = trunc((pixelCoord.x + pixelCoord.y * screenSize.x));
+	float jitter = frac(GetVdC(indexSeq) - jitteredOffset);
+#endif
+
+#if ENABLE_CLOUD_ATMOSPHERIC_SCATTERING
+	AtmosphericParam atmosParam = GetAtmosphericParam(dot(camDir, sunLightDir.xyz));
+	float distAtmos = distanceNear;
+	const float StepNumAtmos = 4.0f;
+	const float maxStepNumAtmos = (maxStepNum > 0.0f && distanceStart > distAtmos) ? StepNumAtmos : 0.0f;
+	const float stepSizeAtmos = distanceStart / StepNumAtmos;
+	const float3 stepVecAtmos = camDir.xyz * stepSizeAtmos;
+	float3 samplePosAtmosWS = cameraPos.xyz;
+	for(float i = 0.0f; i < maxStepNumAtmos; ++i)
+	{
+		samplePosAtmosWS.z += stepVecAtmos.z;
+		GetAtmosphericInscattering(camDir, samplePosAtmosWS.z, stepSizeAtmos, transmittance, atmosParam);
+		transmittance *= atmosParam.atmosTrns;
+	}
+#endif
+
+	for(float index = 0; index < maxStepNum; ++index)
+	{
+		// early exit if transmittance is enough low.
+		if(transmittance < 0.01f)
+		{
+			break;
+		}
+
+		const float d = vcGetLinearDepth(index + jitter, maxStepNum, distanceStart, distanceEnd);
+
+		float3 samplePosWS = camDir.xyz * d + cameraPos.xyz;
+
+#ifdef %_RT_SAMPLE2
+		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
+#endif
+
+		float density = GetCloudDensity(samplePosWS, cloudGenParam);
+		
+		VolCloudDensityOUT[ int3(DispatchThreadID.xy, int(index)) ] = density;
+
+
+		float dNext = vcGetLinearDepth(index + 1 + jitter, maxStepNum, distanceStart, distanceEnd);
+		float stepSize = dNext - d;
+
+#if ENABLE_CLOUD_ATMOSPHERIC_SCATTERING
+		GetAtmosphericInscattering(camDir, samplePosWS.z, stepSize, transmittance, atmosParam);
+		transmittance *= atmosParam.atmosTrns;
+#endif
+
+		float3 opticalThickness = 0.0f;
+
+		[branch] if(density > 0.0f)
+		{
+			// get shadow factor for clouds
+			bool lowDetail = (transmittance <= shadingLODThreshold) ? true : false; // level of detail according to transmittance
+			
+			float3 sunDir = sunLightDir.xyz;
+			opticalThickness = GetOpticalThicknessCombined(samplePosWS, sunDir, extinctionCoefficient, 
+				worldAlignmentOffset, cloudGenParam, cloudGlobalShadow, lowDetail, invShadowTilingSize);
+
+#if ENABLE_PRECISE_INSCATTERING_INTEGRATION
+			float muE = max(0.000000001f, extinctionCoefficient * density.x);
+			float trns = exp(-muE * stepSize);
+#else
+			float trns = exp(-extinctionCoefficient * density.x * stepSize);
+#endif
+			transmittance *= trns;
+		}
+
+		VolCloudShadowOUT[ int3(DispatchThreadID.xy, int(index)) ] = opticalThickness;
+	}
+}
+
+technique InjectCloudDensityAndShadow
+{
+	pass p0
+	{
+		ComputeShader = InjectCloudDensityAndShadowCS() VolumetricCloudsPS;
+	}
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Render clouds by using ray-marching
+
+[numthreads(8, 8, 1)]
+void RenderCloudCS(uint3 GroupID : SV_GroupID,
+					  uint3 GroupThreadID : SV_GroupThreadID,
+					  uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+#if !%_RT_SAMPLE2
+	const float3 shadeColorFromSun = ShadeColorFromSun;
+	const float nearPlane = PS_NearFarClipDist.x;
+	const float farPlane = PS_NearFarClipDist.y;
+	const float reciprocalFarClipDist = PS_NearFarClipDist.w;
+	const float3 cameraPos = PS_WorldViewPos.xyz;
+	const float2 worldAlignmentOffset = CloudShadowAnimParams.xy;
+	const float4 screenSize = ScreenSize;
+	const float4 frustumTL = FrustumTL;
+	const float4 frustumTR = FrustumTR;
+	const float4 frustumBL = FrustumBL;
+
+	const float3 sunLightDir = vcSunLightDirection.xyz;
+	const float3 cameraFrontVec = vcCameraFrontVector.xyz;
+	const float3 skylightRayleighInScatter = vcSkylightRayleighInScatter.xyz;
+	const float skyLightingFactor = vcSkylightRayleighInScatter.w;
+	const float sunSingleScatterFactor = vcSunScatteringParams.x;
+	const float sunLowOrderFactor = vcSunScatteringParams.y;
+	const float sunLowOrderAnisotropy = vcSunScatteringParams.z;
+	const float sunHighOrderFactor = vcSunScatteringParams.w;
+	const float3 groundAlbedo = vcGroundLightingParams.xyz;
+	const float groundLightingFactor = vcGroundLightingParams.w;
+	const float cloudAltitude = vcCloudGenParams.x;
+	const float cloudThickness = vcCloudGenParams.y;
+	const float cloudiness = vcCloudGenParams.z;
+	const float upsamplingScale = vcCloudGenParams.w;
+	const float scatterCoefficient = vcCloudRenderParams.x;
+	const float extinctionCoefficient = vcCloudRenderParams.y;
+	const float shadingLODThreshold = vcCloudRenderParams.w;
+	const float3 invShadowTilingSize = vcCloudTilingParams.xyz;
+	const float sphereRadius = vcCloudTilingParams.w;
+	const float projRatio0 = vcMultiScatteringParams.z;
+	const float projRatio1 = vcMultiScatteringParams.w;
+	const float3 cloudNoiseScale = vcCloudNoiseParams.xyz;
+	const float3 cloudBaseSizeScale = vcCloudBaseScaleParams.xyz;
+	const float3 cloudBaseOffset = vcCloudBaseOffsetParams.xyz;
+	const float MaxIntersectionDistance = vcCloudRaymarchParams.x;
+	const float MaxRaymarchDistance = vcCloudRaymarchParams.y;
+	const float MaxStepRaymarch = vcCloudRaymarchParams.z;
+	const float horizonHeight = max(g_WaterLevel.x, vcCloudRaymarchParams.w);
+
+	const float4x4 leftToRightReprojMatrix = vcLeftToRightReprojMatrix;
+	const float4 edgeTurbulenceParams = vcEdgeTurbulenceParams.xyzw;
+	const float3 edgeNoiseScaleParams = vcEdgeNoiseScaleParams.xyz;
+	const float cloudDensityScale = vcDensityParams.x;
+	const float2 baseTexRemap = vcDensityParams.yz;
+	const float additionalNoiseIntensity = vcDensityParams.w;
+	const float noiseFrameCount = vcCloudNoiseParams.w;
+	const float jitteredOffset = vcCloudBaseScaleParams.w;
+
+	const float4 vVolFogShadowDarkening = volFogShadowDarkening;
+	const float4 vVolFogShadowDarkeningSunAmb = volFogShadowDarkeningSunAmb;
+#else
+	const float3 shadeColorFromSun = vc.shadeColorFromSun;
+	const float nearPlane = vc.nearClipDist;
+	const float farPlane = vc.farClipDist;
+	const float reciprocalFarClipDist = vc.reciprocalFarClipDist;
+	const float3 cameraPos = vc.cameraPos;
+	const float2 worldAlignmentOffset = vc.cloudShadowAnimParams.xy;
+	const float4 screenSize = vc.screenSize;
+	const float4 frustumTL = vc.frustumTL;
+	const float4 frustumTR = vc.frustumTR;
+	const float4 frustumBL = vc.frustumBL;
+
+	const float3 sunLightDir = vc.sunLightDirection.xyz;
+	const float3 cameraFrontVec = vc.cameraFrontVector.xyz;
+	const float3 skylightRayleighInScatter = vc.skylightRayleighInScatter.xyz;
+	const float skyLightingFactor = vc.skylightRayleighInScatter.w;
+	const float sunSingleScatterFactor = vc.sunScatteringParams.x;
+	const float sunLowOrderFactor = vc.sunScatteringParams.y;
+	const float sunLowOrderAnisotropy = vc.sunScatteringParams.z;
+	const float sunHighOrderFactor = vc.sunScatteringParams.w;
+	const float3 groundAlbedo = vc.groundLightingParams.xyz;
+	const float groundLightingFactor = vc.groundLightingParams.w;
+	const float cloudAltitude = vc.cloudGenParams.x;
+	const float cloudThickness = vc.cloudGenParams.y;
+	const float cloudiness = vc.cloudGenParams.z;
+	const float upsamplingScale = vc.cloudGenParams.w;
+	const float scatterCoefficient = vc.cloudRenderParams.x;
+	const float extinctionCoefficient = vc.cloudRenderParams.y;
+	const float shadingLODThreshold = vc.cloudRenderParams.w;
+	const float3 invShadowTilingSize = vc.cloudTilingParams.xyz;
+	const float sphereRadius = vc.cloudTilingParams.w;
+	const float projRatio0 = vc.multiScatteringParams.z;
+	const float projRatio1 = vc.multiScatteringParams.w;
+	const float3 cloudNoiseScale = vc.cloudNoiseParams.xyz;
+	const float3 cloudBaseSizeScale = vc.cloudBaseScaleParams.xyz;
+	const float3 cloudBaseOffset = vc.cloudBaseOffsetParams.xyz;
+	const float MaxIntersectionDistance = vc.cloudRaymarchParams.x;
+	const float MaxRaymarchDistance = vc.cloudRaymarchParams.y;
+	const float MaxStepRaymarch = vc.cloudRaymarchParams.z;
+	const float horizonHeight = max(vc.waterLevel, vc.cloudRaymarchParams.w);
+
+	const float4x4 leftToRightReprojMatrix = vc.leftToRightReprojMatrix;
+	const float4 edgeTurbulenceParams = vc.edgeTurbulenceParams.xyzw;
+	const float3 edgeNoiseScaleParams = vc.edgeNoiseScaleParams.xyz;
+	const float cloudDensityScale = vc.densityParams.x;
+	const float2 baseTexRemap = vc.densityParams.yz;
+	const float additionalNoiseIntensity = vc.densityParams.w;
+	const float noiseFrameCount = vc.cloudNoiseParams.w;
+	const float jitteredOffset = vc.cloudBaseScaleParams.w;
+
+	const float4 vVolFogShadowDarkening = vc.volFogShadowDarkening;
+	const float4 vVolFogShadowDarkeningSunAmb = vc.volFogShadowDarkeningSunAmb;
+#endif
+
+
+
+	float2 linearDepth = linearDepthBuffer.Load(int3(DispatchThreadID.xy, 0)).xy;
+	const float linearMaxDepth = linearDepth.x;
+	const float linearMinDepth = linearDepth.y;
+
+
+
+	// Barycentric interpolation for reconstructing position
+	const float3 pixelCoord = DispatchThreadID.xyz;
+	float2 vPixelUV = (pixelCoord.xy + 0.5f) * screenSize.zw;
+	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * frustumTL.xyz + (vPixelUV.x * frustumTR.xyz + (vPixelUV.y * frustumBL.xyz)));
+	const float3 camDir = normalize(vCamVec);
+
+
+
+	// Fetch pre-computed mie phase function LUT for sun single scattering
+	float fAngle = acos_fast( dot( camDir, sunLightDir.xyz ) ) * ONE_OVER_PI;
+	const float normalizeFactor = 1.0f / 12.71f;// nearly equal to 1 / (4 * PI)
+	float3 fMiePhase = VolCloudMiePhaseTex.SampleLevel(VolCloudTrilinearClampSState, float2(fAngle, 0.0f), 0.0f) * sunSingleScatterFactor * normalizeFactor;
+
+	// approximation of low order(2 to 30 scattering events) sun scattering
+	const float g = sunLowOrderAnisotropy;
+	const float oneMinusG2 = 1.0f - sunLowOrderAnisotropy * sunLowOrderAnisotropy;
+	//float multiPhase = GetVolumetricFogInscatteringHenyeyGreensteinPhaseFunction(dot(camDir, sunLightDir.xyz), g, oneMinusG2);
+	float multiPhase = GetVolumetricFogInscatteringSchlickPhaseFunction(dot(camDir, sunLightDir.xyz), g, oneMinusG2);
+	float3 cSunLowMultiScatter = (sunLowOrderFactor * multiPhase) * shadeColorFromSun.xyz;
+
+	// sun single and low order scattering
+	float3 cSunLight = (shadeColorFromSun.xyz * fMiePhase) + cSunLowMultiScatter;
+
+	// approximation of high order(31 or more scattering events) sun scattering
+	float3 cSunHighMultiScatter = (sunHighOrderFactor * (0.25f * ONE_OVER_PI)) * shadeColorFromSun.xyz;
+
+#if 1
+	// ground lighting
+	const float dotLN = saturate(dot(sunLightDir.xyz, float3(0, 0, 1)));
+	float3 srcGroundLight = (dotLN * shadeColorFromSun.xyz) + skylightRayleighInScatter.xyz;// sky lighting reflects on ground.
+	const float groundPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
+	float3 cGroundLight = groundLightingFactor * groundPhaseFunc * srcGroundLight.xyz * groundAlbedo.xyz;
+
+	// sky lighting from above the cloud.
+	const float skyPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
+	float3 cSkyLight = skyLightingFactor * skyPhaseFunc * skylightRayleighInScatter;
+#else
+	// sky lighting from above the cloud.
+	const float skyPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
+	float3 cSkyLight = skyLightingFactor * skyPhaseFunc * skylightRayleighInScatter;
+
+	// ground lighting
+	const float dotLN = saturate(dot(sunLightDir.xyz, float3(0, 0, 1)));
+	float3 srcGroundLight = (dotLN * shadeColorFromSun.xyz) + cSkyLight.xyz;// sky lighting reflects on ground.
+	const float groundPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
+	float3 cGroundLight = groundLightingFactor * groundPhaseFunc * srcGroundLight.xyz * groundAlbedo.xyz;
+#endif
+
+
+
+#if ENABLE_ORIGIN_MOVE_WITH_CAMERA
+	// cloud layer's origin moves with camera.
+	float3 centerSphere = cameraPos.xyz;
+	centerSphere.z = -sphereRadius;
+#else
+	float3 centerSphere = float3(0, 0, -sphereRadius);
+#endif
+
+	float3 nearPlanePos = vCamVec.xyz * (nearPlane / farPlane);
+	float3 nearPlanePosWS = nearPlanePos + cameraPos.xyz;
+
+	float2 intersection = vcGetIntersectionWithCloudLayer(nearPlanePosWS, camDir, cloudAltitude, cloudThickness, 
+		sphereRadius, centerSphere);
+	float tt = intersection.x;
+	float tb = intersection.y;
+
+	const float distanceToDepth = dot(-cameraFrontVec, camDir);
+	const float depthToDistance = rcp(distanceToDepth);
+	const float distanceTarget = depthToDistance * linearMaxDepth * farPlane;
+	const float distanceFar = depthToDistance * farPlane;
+	const float distanceNear = depthToDistance * nearPlane;
+	float distanceTargetMin = depthToDistance * linearMinDepth * farPlane;
+
+	float distanceEnd = min(MaxIntersectionDistance, max(tb, tt));
+	float minD = min(tb, tt);
+	float distanceStart = max(minD, distanceNear);
+
+	// limit the length of ray-marching with in certain length.
+	distanceEnd = (distanceEnd - distanceStart) > MaxRaymarchDistance ? (MaxRaymarchDistance + distanceStart) : distanceEnd;
+
+	// limit the length of ray-marching by depth buffer.
+	distanceEnd = (distanceTarget < distanceEnd && distanceFar > distanceTarget) ? distanceTarget : distanceEnd;
+
+	// intersection with ocean or horizon to stop ray-marching under the horizon.
+	float distHorizon = vcGetIntersectionPlane(nearPlanePosWS, camDir, float4(0.0f, 0.0f, 1.0f, horizonHeight));
+
+	// limit ray-marching to stop on the horizon.
+	distanceEnd = (camDir.z >= 0.0f) ? distanceEnd : ((distHorizon >= 0.0f) ? min(distHorizon, distanceEnd) : distanceEnd);
+	distanceStart = (nearPlanePosWS.z <= horizonHeight && camDir.z <= 0.0f) ? distanceEnd : distanceStart;
+
+	// if min-depth equals to far depth, it should be beyond far plane.
+	distanceTargetMin = (distanceTargetMin == distanceFar) ? distanceEnd : distanceTargetMin;
+
+	// stop ray-marching if it isn't needed.
+	float maxStepNum = (distanceStart >= distanceEnd) ? 0.0f : MaxStepRaymarch;
+
+
+#if ENABLE_AVERAGED_DISTANCE_FOG
+	float distanceAvg = distanceStart;
+	float distanceAvgMinDepth = distanceStart;
+#endif
+
+
+	CloudGenParam cloudGenParam;
+	cloudGenParam.cloudiness = cloudiness;
+	cloudGenParam.altitude = cloudAltitude;
+	cloudGenParam.thickness = cloudThickness;
+	cloudGenParam.noiseSizeScale = cloudNoiseScale;
+	cloudGenParam.baseSizeScale = cloudBaseSizeScale;
+	cloudGenParam.baseOffset = cloudBaseOffset;
+	cloudGenParam.edgeErode = edgeTurbulenceParams.xyzw;
+	cloudGenParam.edgeNoiseSizeScale = edgeNoiseScaleParams.xyz;
+	cloudGenParam.cloudDensityScale = cloudDensityScale.x;
+	cloudGenParam.baseTexRemap = baseTexRemap.xy;
+	cloudGenParam.additionalNoiseIntensity = additionalNoiseIntensity.x;
+	cloudGenParam.noiseTex = VolCloudNoiseTex;
+	cloudGenParam.linearWrapSampler = VolCloudTrilinearWrapSState;
+#if !%_RT_SAMPLE2
+	cloudGenParam.cloudBlockerPos = vcCloudBlockerPos;
+	cloudGenParam.cloudBlockerParam = vcCloudBlockerParam;
+#else
+	cloudGenParam.cloudBlockerPos = vc.cloudBlockerPos;
+	cloudGenParam.cloudBlockerParam = vc.cloudBlockerParam;
+#endif
+
+	VolCloudGlobalShadowContext cloudGlobalShadow;
+	cloudGlobalShadow.shadowTex = VolCloudGlobalShadowTex;
+	cloudGlobalShadow.shadowSState = VolCloudGlobalShadowSState;
+
+#if !ENABLE_LOW_DISCREPANCY_SEQUENCE
+	// interleaved gradient noise is better than low discrepancy sequence in most cases.
+	float jitter = GetJitterInternal(pixelCoord.xy, noiseFrameCount.xx);
+#else
+	// low discrepancy sequence
+	uint indexSeq = trunc((pixelCoord.x + pixelCoord.y * screenSize.x));
+	float jitter = frac(GetVdC(indexSeq) - jitteredOffset);
+#endif
+
+
+#if %_RT_SAMPLE1
+	// try reprojection from left eye to right eye.
+	float4 colorReproj = 0.0f;
+	//if(maxStepNum > 0.0f) // this increases VGPR number so commented out.
+	{
+		int3 pixcoord = int3(DispatchThreadID.xy, 0);
+		float density=VolCloudDensity.Load(int4(pixcoord.xyz, 0)).x;
+
+		// negative density means a success of reprojection;
+		if(density < 0.0f)
+		{
+			// convert linear depth to non-linear depth.
+			const float depth = (projRatio1 / linearMaxDepth) + projRatio0;
+
+			const float4 reprojPos = mul(float4(vPixelUV.x, vPixelUV.y, depth, 1.0f), leftToRightReprojMatrix);
+			const float rcpW = rcp(reprojPos.w);
+			const float2 leftEyeTC = reprojPos.xy * rcpW;
+			colorReproj = LeftEyeColorBuffer.SampleLevel(VolCloudTrilinearClampSState, leftEyeTC.xy, 0.0f);
+			maxStepNum = -1.0f; // negative step number means success of reprojection;
+		}
+	}
+#endif
+
+
+	// ray-march through cloud layer in the air.
+	float transmittance = 1.0f;
+	float3 inscatter = 0.0f;
+	float totalOptThickness = 0.0f;
+	float4 cloudColorMinDepth = float4(0,0,0,1);
+
+#if ENABLE_CLOUD_ATMOSPHERIC_SCATTERING
+	AtmosphericParam atmosParam = GetAtmosphericParam(dot(camDir, sunLightDir.xyz));
+	float distAtmos = distanceNear;
+	const float StepNumAtmos = 4.0f;
+	const float maxStepNumAtmos = (maxStepNum > 0.0f && distanceStart > distAtmos) ? StepNumAtmos : 0.0f;
+	const float stepSizeAtmos = distanceStart / StepNumAtmos;
+	const float3 stepVecAtmos = camDir.xyz * stepSizeAtmos;
+	float3 samplePosAtmosWS = cameraPos.xyz;
+	for(float i = 0.0f; i < maxStepNumAtmos; ++i)
+	{
+		samplePosAtmosWS.z += stepVecAtmos.z;
+		inscatter += GetAtmosphericInscattering(camDir, samplePosAtmosWS.z, stepSizeAtmos, transmittance, atmosParam);
+		transmittance *= atmosParam.atmosTrns;
+	}
+#endif
+
+#if %_RT_SAMPLE1
+	// negative step number means success of reprojection;
+	if(maxStepNum < 0.0f)
+	{
+#if 0
+		// for debug
+		inscatter.xyz = float3(1,0,0);
+		transmittance = 0;
+		cloudColorMinDepth = float4(inscatter.xyz, transmittance);
+#else
+		inscatter.xyz = colorReproj.xyz;
+		transmittance = colorReproj.w;
+		cloudColorMinDepth = float4(inscatter.xyz, transmittance);
+#endif
+	}
+#endif
+
+	for(float index = 0; index < maxStepNum; )
+	{
+		// exponential step length ray-marching
+		const float d = vcGetLinearDepth(index + jitter, maxStepNum, distanceStart, distanceEnd);
+
+		if(distanceTargetMin >= d)
+		{
+			cloudColorMinDepth = float4(inscatter.xyz, transmittance);
+#if ENABLE_AVERAGED_DISTANCE_FOG
+			distanceAvgMinDepth = distanceAvg;
+#endif
+		}
+
+		// early exit if transmittance is enough low.
+		if(transmittance < 0.01f)
+		{
+			break;
+		}
+
+		float3 samplePosWS = camDir.xyz * d + cameraPos.xyz;
+
+#ifdef %_RT_SAMPLE2
+		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
+#endif
+
+		int3 pixcoord = int3(DispatchThreadID.xy, index);
+		float density = VolCloudDensity.Load(int4(pixcoord.xyz, 0)).x;
+
+		float dNext = vcGetLinearDepth(index + 1 + jitter, maxStepNum, distanceStart, distanceEnd);
+		float stepSize = dNext - d;
+
+#if ENABLE_AVERAGED_DISTANCE_FOG
+		distanceAvg += stepSize * pow(transmittance, 1.0f);
+#endif
+
+#if ENABLE_CLOUD_ATMOSPHERIC_SCATTERING
+		inscatter += GetAtmosphericInscattering(camDir, samplePosWS.z, stepSize, transmittance, atmosParam);
+		transmittance *= atmosParam.atmosTrns;
+#endif
+
+		if(density > 0.0f)
+		{
+			bool lowDetail = (transmittance <= shadingLODThreshold) ? true : false; // level of detail according to transmittance
+
+			AccumulateRadiance(inscatter, transmittance, totalOptThickness, density, stepSize, 
+				scatterCoefficient, cSunLight, cSunHighMultiScatter, cSkyLight, cGroundLight, 
+				samplePosWS, extinctionCoefficient, cloudGenParam, cloudGlobalShadow, 
+				worldAlignmentOffset, lowDetail, invShadowTilingSize, true, pixcoord.xyz);
+		}
+
+		++index;
+	}
+
+
+	// write the frontmost depth of cloud
+	float cloudDepth = (maxStepNum == 0.0) ? 0.0f : distanceToDepth * distanceStart; // outputs 0 as empty flag.
+	cloudDepth = cloudDepth * reciprocalFarClipDist;
+	cloudDepthOutput[ DispatchThreadID.xy ] = cloudDepth;
+
+
+#if %_RT_SAMPLE1
+	// maxStepNum should not be negative after this line.
+	maxStepNum = max(0.0f, maxStepNum);
+#endif
+
+
+#if %_RT_FOG
+#if ENABLE_FULL_SIZE_FOG
+	if(maxStepNum != 0 && upsamplingScale <= 1.0f)
+#else
+	if(maxStepNum != 0)
+#endif
+	{
+		const float2 pixelCoord = DispatchThreadID.xy;
+		float2 vPixelUV = (pixelCoord.xy + 0.5f) * screenSize.zw;
+
+		// apply fog effect of frontmost cloud position to clouds.
+#if !ENABLE_AVERAGED_DISTANCE_FOG
+		const float cloudFrontDistance = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceStart, farPlane * depthToDistance);
+#else
+		const float cloudFrontDistance = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceAvg, farPlane * depthToDistance);
+#endif
+		const float cloudFrontDepth = (maxStepNum == 0.0) ? nearPlane : distanceToDepth * cloudFrontDistance;
+		float3 cameraToWorldPos = camDir * cloudFrontDepth;
+		float3 worldPos = cameraToWorldPos + cameraPos.xyz;
+
+		const SFogParams fogParams = GetFogParams();
+		const SVolumetricFogParams volFogParams = GetVolumetricFogParams();
+
+#if %_RT_VOLUMETRIC_FOG
+		VolumetricFogSampling vfs;
+		vfs.volumetricFogTex = VolFogSamplingTex;
+		vfs.globalEnvProbeTex0 = VolFogGlobalEnvProbeTex0;
+		vfs.globalEnvProbeTex1 = VolFogGlobalEnvProbeTex1;
+		vfs.trilinearClampSState = VolCloudTrilinearClampSState;
+
+		VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(volFogParams, vPixelUV.xy, cloudFrontDepth);
+		float4 vf = GetVolumetricFogValue(vfs, vtc);
+		half4 globalFogColor = GetVolumetricFogAnalyticalColor(volFogParams, vfs, cameraToWorldPos, cloudFrontDistance);
+		globalFogColor = BlendVolumetricFogWithGlobalFog(volFogParams, vf, globalFogColor, vtc);
+		globalFogColor = ClampFinalFogDensity(volFogParams, globalFogColor);
+		inscatter = inscatter.xyz * globalFogColor.w + globalFogColor.xyz * (1.0f - transmittance);
+#else
+	#if %_RT_SAMPLE0
+		// Read volumetric shadows and apply to the global fog.
+		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, vPixelUV.xy, 0.0f).a;
+		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * vVolFogShadowDarkeningSunAmb.xz + vVolFogShadowDarkeningSunAmb.yw);
+		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
+		localFogColor.rgb = lerp(localFogColor.rgb * vVolFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
+	#else
+		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos);
+	#endif
+		inscatter.rgb = lerp( localFogColor.rgb, inscatter.rgb, localFogColor.a ) * (1.0f - transmittance);
+#endif
+
+		// apply fog effect to min-depth cloud
+		if(distanceTargetMin > distanceStart)
+		{
+#if ENABLE_AVERAGED_DISTANCE_FOG
+			const float cloudFrontDistance2 = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceAvgMinDepth, farPlane * depthToDistance);
+			const float cloudFrontDepth2 = (maxStepNum == 0.0) ? nearPlane : distanceToDepth * cloudFrontDistance2;
+			float3 cameraToWorldPos = camDir * cloudFrontDepth2;
+			float3 worldPos = cameraToWorldPos + cameraPos.xyz;
+#if %_RT_VOLUMETRIC_FOG
+			VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(volFogParams, vPixelUV.xy, cloudFrontDepth2);
+			float4 vf = GetVolumetricFogValue(vfs, vtc);
+			half4 globalFogColor = GetVolumetricFogAnalyticalColor(volFogParams, vfs, cameraToWorldPos, cloudFrontDistance2);
+			globalFogColor = BlendVolumetricFogWithGlobalFog(volFogParams, vf, globalFogColor, vtc);
+			globalFogColor = ClampFinalFogDensity(volFogParams, globalFogColor);
+#else
+	#if %_RT_SAMPLE0
+			localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
+			localFogColor.rgb = lerp(localFogColor.rgb * vVolFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
+	#else
+			localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos);
+	#endif
+#endif
+#endif
+
+#if %_RT_VOLUMETRIC_FOG
+			cloudColorMinDepth.rgb = cloudColorMinDepth.rgb * globalFogColor.w + globalFogColor.xyz * (1.0f - cloudColorMinDepth.w);
+#else
+			cloudColorMinDepth.rgb = lerp( localFogColor.rgb, cloudColorMinDepth.rgb, localFogColor.a ) * (1.0f - cloudColorMinDepth.w);
+#endif
+		}
+	}
+#endif
+
+
+#if ENABLE_FULL_SIZE_FOG && ENABLE_NAN_MASKING
+	// to prevent the value from leaking to other pixels, the value is set to NaN as a masking flag if it's empty.
+	if(maxStepNum == 0.0 && upsamplingScale > 1.0f)
+	{
+		cloudColorMinDepth.xyz = 0.0f / 0.0f;
+		inscatter.xyz = cloudColorMinDepth.xyz;
+	}
+#endif
+
+
+	// store min-depth cloud color.
+	cloudMinDepthColorOutput[ DispatchThreadID.xy ] = cloudColorMinDepth;
+
+
+#ifdef ENABLE_CIRRUS_CLOUD_LAYER
+	// add alto/cirrus cloud.
+	const float AltitudeCirrus = cloudAltitude + cloudThickness + 2000.0f;
+	float distCirrus = vcGetIntersectionPlane(nearPlanePosWS, camDir, float4(0.0f, 0.0f, 1.0f, AltitudeCirrus));
+
+	if((distCirrus >= 0.0f && (maxStepNum > 0 || minD <= 0.0f)) &&
+		MaxIntersectionDistance > distCirrus && 
+		transmittance >= 0.01f)
+	{
+		float3 samplePosWS = camDir.xyz * distCirrus + cameraPos.xyz;
+
+#ifdef %_RT_SAMPLE2
+		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
+#endif
+
+		float3 cpos = samplePosWS;
+		cpos.xy += cloudBaseOffset.xy;
+
+		float4 altoCirrusColor = GetAltoAndCirrusCloud(cpos, camDir);
+		inscatter += transmittance * altoCirrusColor.xyz;
+		transmittance *= altoCirrusColor.w;
+	}
+#endif
+
+
+	// use reversed alpha to reduce composition banding artifact.
+	const float reversedAlpha = transmittance;
+
+	VolCloudColorOUT[ DispatchThreadID.xy ] = float4(inscatter.xyz, reversedAlpha);
+}
+
+technique RenderCloud
+{
+	pass p0
+	{
+		ComputeShader = RenderCloudCS() VolumetricCloudsPS;
 	}
 }
 
@@ -1347,19 +2630,50 @@ technique CloudsLayer
 // Temporal re-projection of cloud
 
 Texture2D currDepthBuffer : register(t0);
-Texture2D prevDepthBuffer : register(t1);
-Texture2D currCloud : register(t2);
-Texture2D prevCloud : register(t3);
-Texture2D currCloudDepthBuffer : register(t4);
+Texture2D currCloud : register(t1);
+Texture2D prevCloud : register(t2);
+Texture2D currCloudDepthBuffer : register(t3);
+Texture2D prevDepthBuffer : register(t4);
 
-float4x4 PrevViewProjMatrix;
-float4x4 mReprojection;
+SamplerState vcTemporalReprojectionSState : register(s0) = SS_TrilinearClamp;
+
+cbuffer ReprojectionConstantBuffer : register(b3)
+{
+	struct SReprojectionParams
+	{
+		float4   screenSize; // xy: screen size, zw: reciprocal of screen size
+		float4   reprojectionParams; // xy: factors for converting linear depth to non-linear depth, zw: unused
+		float4x4 reprojectionMatrix;
+	} reprojConstants;
+};
+
+// TODO: remove after old graphics pipeline is removed.
+float4x4 ReprojectionMatrix;
+float4 ReprojectionParam; // xy: factors for converting linear depth to non-linear depth, zw: unused
+
+SReprojectionParams GetReprojectionParams()
+{
+	SReprojectionParams params;
+#if !%_RT_SAMPLE2
+	params.screenSize.xy = PS_ScreenSize.xy;
+	params.screenSize.zw = PS_ScreenSize.zw * 2.0f;
+	params.reprojectionParams = ReprojectionParam;
+	params.reprojectionMatrix = ReprojectionMatrix;
+#else
+	params.screenSize = reprojConstants.screenSize;
+	params.reprojectionParams = reprojConstants.reprojectionParams;
+	params.reprojectionMatrix = reprojConstants.reprojectionMatrix;
+#endif
+	return params;
+}
 
 pixout ReprojectCloudsPS( vtxOutWPOS IN )
 {
 	pixout OUT = (pixout)0;
 
-	int3 vPixCoord = int3(IN.baseTC.xy * PS_ScreenSize.xy, 0);
+	SReprojectionParams params = GetReprojectionParams();
+
+	int3 vPixCoord = int3(IN.baseTC.xy * params.screenSize.xy, 0);
 #if %_RT_SAMPLE0
 	float currDepth = currDepthBuffer.Load(vPixCoord).x; // max-depth
 #else
@@ -1369,48 +2683,53 @@ pixout ReprojectCloudsPS( vtxOutWPOS IN )
 	float currCloudDepth = currCloudDepthBuffer.Load(vPixCoord).x;
 
 
-	const float2 texel = PS_ScreenSize.zw * 2;
+	const float2 texel = params.screenSize.zw;
 
 	float4x4 colArray;
-	colArray[0] = currCloud.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2(-1.5f, -0.5f), 0.0f);
-	colArray[1] = currCloud.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2( 0.5f, -1.5f), 0.0f);
-	colArray[2] = currCloud.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2(-0.5f,  1.5f), 0.0f);
-	colArray[3] = currCloud.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2( 1.5f,  0.5f), 0.0f);
+	colArray[0] = currCloud.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2(-1.5f, -0.5f), 0.0f);
+	colArray[1] = currCloud.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2( 0.5f, -1.5f), 0.0f);
+	colArray[2] = currCloud.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2(-0.5f,  1.5f), 0.0f);
+	colArray[3] = currCloud.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2( 1.5f,  0.5f), 0.0f);
 #if %_RT_SAMPLE1
 	float4 depthArray;
 #if %_RT_SAMPLE0
 	// max-depth
-	depthArray[0] = currDepthBuffer.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2(-1.5f, -0.5f), 0.0f).x;
-	depthArray[1] = currDepthBuffer.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2( 0.5f, -1.5f), 0.0f).x;
-	depthArray[2] = currDepthBuffer.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2(-0.5f,  1.5f), 0.0f).x;
-	depthArray[3] = currDepthBuffer.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2( 1.5f,  0.5f), 0.0f).x;
+	depthArray[0] = currDepthBuffer.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2(-1.5f, -0.5f), 0.0f).x;
+	depthArray[1] = currDepthBuffer.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2( 0.5f, -1.5f), 0.0f).x;
+	depthArray[2] = currDepthBuffer.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2(-0.5f,  1.5f), 0.0f).x;
+	depthArray[3] = currDepthBuffer.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2( 1.5f,  0.5f), 0.0f).x;
 #else
 	// min-depth
-	depthArray[0] = currDepthBuffer.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2(-1.5f, -0.5f), 0.0f).y;
-	depthArray[1] = currDepthBuffer.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2( 0.5f, -1.5f), 0.0f).y;
-	depthArray[2] = currDepthBuffer.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2(-0.5f,  1.5f), 0.0f).y;
-	depthArray[3] = currDepthBuffer.SampleLevel(TrilinearClampSamplerState, IN.baseTC.xy + texel * float2( 1.5f,  0.5f), 0.0f).y;
+	depthArray[0] = currDepthBuffer.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2(-1.5f, -0.5f), 0.0f).y;
+	depthArray[1] = currDepthBuffer.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2( 0.5f, -1.5f), 0.0f).y;
+	depthArray[2] = currDepthBuffer.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2(-0.5f,  1.5f), 0.0f).y;
+	depthArray[3] = currDepthBuffer.SampleLevel(vcTemporalReprojectionSState, IN.baseTC.xy + texel * float2( 1.5f,  0.5f), 0.0f).y;
 #endif
 #endif
 
 #if !ENABLE_EXTENDED_DEPTH
-	float3 position = IN.CamVec.xyz;
-	float3 worldPos = PS_WorldViewPos.xyz + position;
-	float4 reprojPos = mul( float4(worldPos, 1), PrevViewProjMatrix );
-	float2 prevTC = reprojPos.xy / reprojPos.w;
+	const float linearDepth = 1.0f; // far plane depth
 #else
-	currCloudDepth = max(1.0f, currCloudDepth); // use if more than far plane depth.
-	float3 position = IN.CamVec.xyz * currCloudDepth;
-	float3 worldPos = PS_WorldViewPos.xyz + position;
-	float4 reprojPos = mul( float4(worldPos, 1), PrevViewProjMatrix );
-	float2 prevTC = reprojPos.xy / reprojPos.w;
+	const float linearDepth = max(1.0f, currCloudDepth); // use if more than far plane depth.
 #endif
 
-	float4 prevColor = prevCloud.SampleLevel(TrilinearClampSamplerState, prevTC.xy, 0.0f);
+	// convert linear depth to non-linear depth.
+	const float projRatio0 = params.reprojectionParams.x;
+	const float projRatio1 = params.reprojectionParams.y;
+	const float depth = (projRatio1 / linearDepth) + projRatio0;
+
+	// calculate the screen space position of previous frame.
+	const float4 reprojPos = mul(float4(IN.baseTC.x, IN.baseTC.y, depth, 1.0f), params.reprojectionMatrix);
+	const float rcpW = rcp(reprojPos.w);
+	const float2 prevTC = reprojPos.xy * rcpW;
+
+	float4 prevColor = prevCloud.SampleLevel(vcTemporalReprojectionSState, prevTC.xy, 0.0f);
+#if !%_RT_SAMPLE1
 #if %_RT_SAMPLE0
-	float prevDepth = prevDepthBuffer.SampleLevel(TrilinearClampSamplerState, prevTC.xy, 0.0f).x; // max-depth
+	float prevDepth = prevDepthBuffer.SampleLevel(vcTemporalReprojectionSState, prevTC.xy, 0.0f).x; // max-depth
 #else
-	float prevDepth = prevDepthBuffer.SampleLevel(TrilinearClampSamplerState, prevTC.xy, 0.0f).y; // min-depth
+	float prevDepth = prevDepthBuffer.SampleLevel(vcTemporalReprojectionSState, prevTC.xy, 0.0f).y; // min-depth
+#endif
 #endif
 
 	float blendRatio = 0.95f;
@@ -1427,7 +2746,9 @@ pixout ReprojectCloudsPS( vtxOutWPOS IN )
 	// apply depth similarity to color clip range.
 	[unroll] for(int i = 0; i < 4; ++i)
 	{
-		const float depthFactorClip = (depthArray[i] < currDepth) ? 4.0f : 1.0f;
+		const float frontDepthFactor = 8.0f; // aggressively decrease the similarity in front of the target pixel.
+		const float backDepthFactor = 1.0f;
+		const float depthFactorClip = (depthArray[i] < currDepth) ? frontDepthFactor : backDepthFactor;
 		const float minDepth = min(depthArray[i], currDepth);
 		const float maxDepth = max(depthArray[i], currDepth);
 		const float depthRatio = saturate(minDepth / maxDepth);
@@ -1440,7 +2761,8 @@ pixout ReprojectCloudsPS( vtxOutWPOS IN )
 	float4 cMax = max(max(max(max(colArray[0], colArray[1]), colArray[2]), colArray[3]), currColor);
 	prevColor = clamp(prevColor, cMin, cMax);
 
-	blendRatio = all(isfinite(prevColor.xyzw)) ? blendRatio : 0.0f;
+	// remove NaN.
+	prevColor.xyzw = all(isfinite(prevColor.xyzw)) ? prevColor.xyzw : currColor.xyzw;
 
 #if !%_RT_SAMPLE1
 	// apply depth similarity to blend ratio
@@ -1489,16 +2811,74 @@ technique ReprojectClouds
 Texture2D fullDepthBuffer : register(t0);
 Texture2D scaledDepthBuffer : register(t1);
 Texture2D scaledColorBuffer : register(t2);
-Texture2D scaledCloudDepthBuffer : register(t3);
-Texture2D scaledMinColorBuffer : register(t4);
+Texture2D scaledMinColorBuffer : register(t3);
+Texture2D scaledCloudDepthBuffer : register(t4);
 
 SamplerState SampStatePoint : register(s0);
 
+// TODO: remove after removing old graphics pipeline.
 float4 ScaledScreenSize;
 float4 CloudBlockerSSPos;
 float4 CloudBlockerSSParam;
 
-float2 vcGetIntersectionSphere(in float3 rayOrigin, in float3 rayDir, in float3 sphereCenter, in float sphereRadius)
+struct SUpscaleParams
+{
+	float3 cameraPos;
+
+	float  nearClipDist;
+	float  farClipDist;
+
+	float4 volFogShadowDarkening;
+	float4 volFogShadowDarkeningSunAmb;
+
+	float4 frustumTL;
+	float4 frustumTR;
+	float4 frustumBL;
+
+	float2 fullScreenSize;
+	float4 scaledScreenSize;
+	float4 cloudBlockerSSPos;
+	float4 cloudBlockerSSParam;
+};
+
+SUpscaleParams GetUpscaleParams()
+{
+	SUpscaleParams params;
+#if !%_RT_SAMPLE2
+	params.cameraPos = PS_WorldViewPos.xyz;
+	params.nearClipDist = PS_NearFarClipDist.x;
+	params.farClipDist = PS_NearFarClipDist.y;
+	params.volFogShadowDarkening = volFogShadowDarkening;
+	params.volFogShadowDarkeningSunAmb = volFogShadowDarkeningSunAmb;
+
+	params.fullScreenSize = PS_ScreenSize.xy;
+	params.scaledScreenSize = ScaledScreenSize;
+	params.cloudBlockerSSPos = CloudBlockerSSPos;
+	params.cloudBlockerSSParam = CloudBlockerSSParam;
+#else
+	params.cameraPos = vc.cameraPos;
+	params.nearClipDist = vc.nearClipDist;
+	params.farClipDist = vc.farClipDist;
+	params.volFogShadowDarkening = vc.volFogShadowDarkening;
+	params.volFogShadowDarkeningSunAmb = vc.volFogShadowDarkeningSunAmb;
+
+	params.frustumTL = vc.frustumTL;
+	params.frustumTR = vc.frustumTR;
+	params.frustumBL = vc.frustumBL;
+
+	params.fullScreenSize = vc.fullScreenSize.xy;
+	params.scaledScreenSize = vc.screenSize;
+	params.cloudBlockerSSPos = vc.cloudBlockerSSPos;
+	params.cloudBlockerSSParam = vc.cloudBlockerSSParam;
+#endif
+	return params;
+}
+
+float2 vcGetIntersectionSphere(
+	in float3 rayOrigin,
+	in float3 rayDir,
+	in float3 sphereCenter,
+	in float sphereRadius)
 {
 	float3 centerToRayOrigin = rayOrigin.xyz - sphereCenter;
 	float b = dot(centerToRayOrigin, rayDir);
@@ -1519,11 +2899,14 @@ float2 vcGetIntersectionSphere(in float3 rayOrigin, in float3 rayDir, in float3 
 	return t;
 }
 
-float vcGetCloudBlockerInfluenceOnScreenSpace(in float3 rayOrigin, in float3 rayDir)
+float vcGetCloudBlockerInfluenceOnScreenSpace(
+	in SUpscaleParams params,
+	in float3 rayOrigin,
+	in float3 rayDir)
 {
-	float3 posBlocker = CloudBlockerSSPos.xyz;
-	const float decayEnd = CloudBlockerSSParam.x;
-	const float decayInfluence = CloudBlockerSSParam.y;
+	float3 posBlocker = params.cloudBlockerSSPos.xyz;
+	const float decayEnd = params.cloudBlockerSSParam.x;
+	const float decayInfluence = params.cloudBlockerSSParam.y;
 	float t = vcGetIntersectionSphere(rayOrigin, rayDir, posBlocker, decayEnd);
 
 	float3 q = rayDir * t + rayOrigin;
@@ -1537,10 +2920,18 @@ pixout CloudsBlendPS( vtxOutWPOS IN )
 {
 	pixout OUT = (pixout)0;
 
+	const SUpscaleParams params = GetUpscaleParams();
+
+#if !%_RT_SAMPLE2
+	float3 vCamVec = IN.CamVec;
+#else
+	float3 vCamVec = ((1 - IN.baseTC.x - IN.baseTC.y) * params.frustumTL.xyz + (IN.baseTC.x * params.frustumTR.xyz + (IN.baseTC.y * params.frustumBL.xyz)));
+#endif
+
 #if %_RT_SAMPLE4
 	// decay cloud density with cloud blocker entity on screen space.
-	float3 camDir = normalize(IN.CamVec.xyz);
-	float decayOnScreen = vcGetCloudBlockerInfluenceOnScreenSpace(PS_WorldViewPos.xyz, camDir.xyz);
+	float3 camDir = normalize(vCamVec.xyz);
+	float decayOnScreen = vcGetCloudBlockerInfluenceOnScreenSpace(params, params.cameraPos.xyz, camDir.xyz);
 	if(decayOnScreen == 0.0f)
 	{
 		discard;
@@ -1549,10 +2940,11 @@ pixout CloudsBlendPS( vtxOutWPOS IN )
 
 	float2 uv = IN.baseTC.xy;
 
-	float depth = GetLinearDepth(fullDepthBuffer, uv.xy);
+	const int3 vPixCoord = int3(IN.baseTC.xy * params.fullScreenSize.xy, 0);
+	const float depth = fullDepthBuffer.Load(vPixCoord).x;
 
-	const float2 resTex = ScaledScreenSize.xy;
-	const float2 texel = ScaledScreenSize.zw;
+	const float2 resTex = params.scaledScreenSize.xy;
+	const float2 texel = params.scaledScreenSize.zw;
 
 	const float2 scaledTC = (uv.xy * resTex) + 0.5f;
 	const float2 fracTC = frac(scaledTC);
@@ -1586,25 +2978,17 @@ pixout CloudsBlendPS( vtxOutWPOS IN )
 		const float maxDepth = scaledDepth.x;
 		const float minDepth = scaledDepth.y;
 
-#if 0
-		const float depthFactor = 16.0f;
-		float clampedDepth = clamp(depth, minDepth, maxDepth);
-		float depthWeight = exp2(-depthFactor * abs(clampedDepth - depth));
-
-		float depthRatio = saturate((clampedDepth - minDepth) / (maxDepth - minDepth));
-
-		// bilinear up-sampling with interpolation between clouds for min and max depth.
-		const float weight = bilinearWeight[i] * depthWeight;
-		accColor.xyzw += weight * lerp(minColor.xyzw, maxColor.xyzw, depthRatio);
-		sumWeight += weight;
-#else
-		float minWeight = bilinearWeight[i] / (abs(minDepth - depth) + 1e-5f);
-		float maxWeight = bilinearWeight[i] / (abs(maxDepth - depth) + 1e-5f);
+		const float depthFactor = 4.0f;
+		const float2 minD = min(depth.xx, float2(maxDepth, minDepth));
+		const float2 maxD = max(depth.xx, float2(maxDepth, minDepth));
+		const float2 depthWeight = saturate(pow(minD.xy / maxD.xy, depthFactor.xx));
+		const float2 weightMaxMin = bilinearWeight[i].xx * depthWeight.xy;
+		const float minWeight = weightMaxMin.y;
+		const float maxWeight = weightMaxMin.x;
 		accColor.xyzw += minWeight * minColor.xyzw;
 		accColor.xyzw += maxWeight * maxColor.xyzw;
 		const float weight = maxWeight + minWeight;
 		sumWeight += weight;
-#endif
 
 		float fogWeight = (scaledCloudDepth > 0.0f) ? weight : 0.0f;
 		cloudDepth += fogWeight * saturate(scaledCloudDepth); // to match fog color, clamped within far plane depth.
@@ -1621,18 +3005,21 @@ pixout CloudsBlendPS( vtxOutWPOS IN )
 	if(fogWeightSum > 0.0f)
 #endif
 	{
-		float distanceToDepth = dot(-CV_CameraFrontVector, normalize(IN.CamVec.xyz));
-		float depthToDistance = rcp(distanceToDepth);
-		const float3 camDir = normalize(IN.CamVec.xyz);
-		const float nearPlane = PS_NearFarClipDist.x;
+		const float distanceToDepth = dot(-CV_CameraFrontVector, normalize(vCamVec.xyz));
+		const float depthToDistance = rcp(distanceToDepth);
+		const float3 camDir = normalize(vCamVec.xyz);
+		const float nearPlane = params.nearClipDist;
 		cloudDepth /= fogWeightSum;
-		cloudDepth *= PS_NearFarClipDist.y;
+		cloudDepth *= params.farClipDist;
 
 		// apply fog effect of frontmost cloud position to clouds.
 		const float cloudFrontDepth = max(nearPlane, cloudDepth);
 		const float cloudFrontDistance = max(nearPlane, cloudFrontDepth) * depthToDistance;
 		float3 cameraToWorldPos = camDir * cloudFrontDepth;
-		float3 worldPos = cameraToWorldPos + PS_WorldViewPos.xyz;
+		float3 worldPos = cameraToWorldPos + params.cameraPos;
+
+		const SFogParams fogParams = GetFogParams();
+		const SVolumetricFogParams volFogParams = GetVolumetricFogParams();
 
 #if ENABLE_EDGE_AWARE_FOG
 		// this mitigates the aliasing between sky and clouds.
@@ -1640,21 +3027,27 @@ pixout CloudsBlendPS( vtxOutWPOS IN )
 #endif
 
 #if %_RT_VOLUMETRIC_FOG
-		VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(IN.baseTC, cloudFrontDepth);
-		float4 vf = GetVolumetricFogValue(vtc);
-		half4 globalFogColor = GetVolumetricFogAnalyticalColor(cameraToWorldPos, cloudFrontDistance);
-		globalFogColor = BlendVolumetricFogWithGlobalFog(vf, globalFogColor, vtc);
-		globalFogColor = ClampFinalFogDensity(globalFogColor);
+		VolumetricFogSampling vfs;
+		vfs.volumetricFogTex = VolFogSamplingTex;
+		vfs.globalEnvProbeTex0 = VolFogGlobalEnvProbeTex0;
+		vfs.globalEnvProbeTex1 = VolFogGlobalEnvProbeTex1;
+		vfs.trilinearClampSState = VolCloudTrilinearClampSState;
+
+		VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(volFogParams, IN.baseTC, cloudFrontDepth);
+		float4 vf = GetVolumetricFogValue(vfs, vtc);
+		half4 globalFogColor = GetVolumetricFogAnalyticalColor(volFogParams, vfs, cameraToWorldPos, cloudFrontDistance);
+		globalFogColor = BlendVolumetricFogWithGlobalFog(volFogParams, vf, globalFogColor, vtc);
+		globalFogColor = ClampFinalFogDensity(volFogParams, globalFogColor);
 		accColor.xyz = accColor.xyz * globalFogColor.w + globalFogColor.xyz * (1.0f - accColor.w);
 #else
 	#if %_RT_SAMPLE0
 		// Read volumetric shadows and apply to the global fog.
-		const float volFogShadowContrib = tex2D( volFogShadowSampler, IN.baseTC.xy ).a;
-		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * volFogShadowDarkeningSunAmb.xz + volFogShadowDarkeningSunAmb.yw);
-		half4 localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
-		localFogColor.rgb = lerp(localFogColor.rgb * volFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
+		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, IN.baseTC.xy, 0.0f).a;
+		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * params.volFogShadowDarkeningSunAmb.xz + params.volFogShadowDarkeningSunAmb.yw);
+		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
+		localFogColor.rgb = lerp(localFogColor.rgb * params.volFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
 	#else
-		half4 localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos);
+		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos);
 	#endif
 		accColor.rgb = lerp( localFogColor.rgb, accColor.rgb, localFogColor.a ) * (1.0f - accColor.w);
 #endif
@@ -1680,694 +3073,3 @@ technique CloudsBlend
 		PixelShader = CloudsBlendPS() VolumetricCloudsPS;
 	}
 }
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-// Inject clouds density and shadow to frustum aligned volume texture
-
-RWTexture3D< float3 > VolCloudShadowOUT : register( u0 );
-RWTexture3D< float > VolCloudDensityOUT : register( u1 );
-
-float4 ScreenSize;
-float4 FrustumTL;
-float4 FrustumTR;
-float4 FrustumBL;
-
-[numthreads(8, 8, 1)]
-void InjectCloudDensityAndShadowCS(uint3 GroupID : SV_GroupID,
-					  uint3 GroupThreadID : SV_GroupThreadID,
-					  uint3 DispatchThreadID : SV_DispatchThreadID)
-{
-	const float nearPlane = PS_NearFarClipDist.x;
-	const float farPlane = PS_NearFarClipDist.y;
-	const float2 worldAlignmentOffset = CloudShadowAnimParams.xy;
-
-	//const float skyLightingFactor = vcSkylightRayleighInScatter.w;
-	//const float sunSingleScatterFactor = vcSunScatteringParams.x;
-	//const float sunLowOrderFactor = vcSunScatteringParams.y;
-	//const float sunLowOrderAnisotropy = vcSunScatteringParams.z;
-	//const float sunHighOrderFactor = vcSunScatteringParams.w;
-	//const float3 groundAlbedo = vcGroundLightingParams.xyz;
-	//const float groundLightingFactor = vcGroundLightingParams.w;
-	const float cloudAltitude = vcCloudGenParams.x;
-	const float cloudThickness = vcCloudGenParams.y;
-	const float cloudiness = vcCloudGenParams.z;
-	//const float upsamplingScale = vcCloudGenParams.w;
-	//const float scatterCoefficient = vcCloudRenderParams.x;
-	const float extinctionCoefficient = vcCloudRenderParams.y;
-	const float shadingLODThreshold = vcCloudRenderParams.w;
-	const float3 invShadowTilingSize = vcCloudTilingParams.xyz;
-	const float sphereRadius = vcCloudTilingParams.w;
-	const float3 cloudNoiseScale = vcCloudNoiseParams.xyz;
-	const float3 cloudBaseSizeScale = vcCloudBaseScaleParams.xyz;
-	const float3 cloudBaseOffset = vcCloudBaseOffsetParams.xyz;
-	const float MaxIntersectionDistance = vcCloudRaymarchParams.x;
-	const float MaxRaymarchDistance = vcCloudRaymarchParams.y;
-	const float MaxStepRaymarch = vcCloudRaymarchParams.z;
-	const float horizonHeight = max(g_WaterLevel.x, vcCloudRaymarchParams.w);
-
-	const float4x4 leftViewProjMatrix = vcLeftViewProjMatrix;
-	const float4 edgeTurbulenceParams = vcEdgeTurbulenceParams.xyzw;
-	const float3 edgeNoiseScaleParams = vcEdgeNoiseScaleParams.xyz;
-	const float cloudDensityScale = vcDensityParams.x;
-	const float2 baseTexRemap = vcDensityParams.yz;
-	const float additionalNoiseIntensity = vcDensityParams.w;
-	const float noiseFrameCount = vcCloudNoiseParams.w;
-	const float jitteredOffset = vcCloudBaseScaleParams.w;
-
-
-
-	float2 linearDepth = linearDepthBuffer.Load(int3(DispatchThreadID.xy, 0)).xy;
-	const float linearMaxDepth = linearDepth.x;
-	const float linearMinDepth = linearDepth.y;
-
-
-
-	// Barycentric interpolation for reconstructing position
-	const float3 pixelCoord = DispatchThreadID.xyz;
-	float2 vPixelUV = (pixelCoord.xy + 0.5f) * ScreenSize.zw;
-	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * FrustumTL.xyz + (vPixelUV.x * FrustumTR.xyz + (vPixelUV.y * FrustumBL.xyz)));
-	const float3 camDir = normalize(vCamVec);
-
-
-
-	// TODO: moving this part might be faster.
-#if ENABLE_ORIGIN_MOVE_WITH_CAMERA
-	// cloud layer's origin moves with camera.
-	float3 centerSphere = PS_WorldViewPos.xyz;
-	centerSphere.z = -sphereRadius;
-#else
-	float3 centerSphere = float3(0, 0, -sphereRadius);
-#endif
-
-	float3 nearPlanePos = vCamVec.xyz * (nearPlane / farPlane); // TODO: can be optimized.
-	float3 nearPlanePosWS = nearPlanePos + PS_WorldViewPos.xyz;
-
-	float2 intersection = vcGetIntersectionWithCloudLayer(nearPlanePosWS, camDir, cloudAltitude, cloudThickness, 
-																												sphereRadius, centerSphere);
-	float tt = intersection.x;
-	float tb = intersection.y;
-
-	const float distanceToDepth = dot(-CV_CameraFrontVector, camDir);
-	const float depthToDistance = rcp(distanceToDepth);
-	const float distanceTarget = depthToDistance * linearMaxDepth * farPlane;
-	const float distanceFar = depthToDistance * farPlane;
-	const float distanceNear = depthToDistance * nearPlane;
-	//float distanceTargetMin = depthToDistance * linearMinDepth * farPlane;
-
-	float distanceEnd = min(MaxIntersectionDistance, max(tb, tt));
-	float minD = min(tb, tt);
-	float distanceStart = max(minD, distanceNear);
-
-	// limit the length of ray-marching with in certain length.
-	distanceEnd = (distanceEnd - distanceStart) > MaxRaymarchDistance ? (MaxRaymarchDistance + distanceStart) : distanceEnd;
-
-	// limit the length of ray-marching by depth buffer.
-	distanceEnd = (distanceTarget < distanceEnd && distanceFar > distanceTarget) ? distanceTarget : distanceEnd;
-
-	// intersection with ocean or horizon to stop ray-marching under the horizon.
-	float distHorizon = vcGetIntersectionPlane(nearPlanePosWS, camDir, float4(0.0f, 0.0f, 1.0f, horizonHeight));
-
-	// limit ray-marching to stop on the horizon.
-	distanceEnd = (camDir.z >= 0.0f) ? distanceEnd : ((distHorizon >= 0.0f) ? min(distHorizon, distanceEnd) : distanceEnd);
-	distanceStart = (nearPlanePosWS.z <= horizonHeight && camDir.z <= 0.0f) ? distanceEnd : distanceStart;
-
-	//// if min-depth equals to far depth, it should be beyond far plane.
-	//distanceTargetMin = (distanceTargetMin == distanceFar) ? distanceEnd : distanceTargetMin;
-
-	// stop ray-marching if it isn't needed.
-	float maxStepNum = (distanceStart >= distanceEnd) ? 0.0f : MaxStepRaymarch;
-
-
-
-#if %_RT_SAMPLE1
-	// try reprojection from left eye to right eye.
-	if(maxStepNum > 0.0f)
-	{
-		const float3 position = camDir.xyz * distanceTarget;
-		const float3 worldPos = PS_WorldViewPos.xyz + position;
-		const float4 reprojPos = mul( float4(worldPos, 1), leftViewProjMatrix );
-		const float2 leftEyeTC = reprojPos.xy / reprojPos.w;
-		const float leftEyeDepthReproj = reprojPos.w;
-
-#if 0
-		const int3 leftEyePixCoord = int3(leftEyeTC.xy * ScreenSize.xy, 0);
-		const float linearDepthLeftEye = LeftEyeDepthBuffer.Load(leftEyePixCoord).x;
-#else
-		const float linearDepthLeftEye = LeftEyeDepthBuffer.SampleLevel(TrilinearClampSamplerState, leftEyeTC.xy, 0.0f).x;
-#endif
-
-		const float depthReprojDiffRatioThreshold = 0.75f;
-		const float depthMaxMinDiffRatioThreshold = 0.75f;
-
-		const float leftDepthNorm = leftEyeDepthReproj * PS_NearFarClipDist.w;
-		const float minLeftDepth = min(leftDepthNorm, linearDepthLeftEye);
-		const float maxLeftDepth = max(leftDepthNorm, linearDepthLeftEye);
-
-		if(all(leftEyeTC.xy > 0.0f) && all(leftEyeTC.xy < 1.0f)
-			&& saturate(pow(minLeftDepth / maxLeftDepth, 2.0f)) > depthReprojDiffRatioThreshold
-			&& saturate(pow(linearMinDepth / linearMaxDepth, 2.0f)) > depthMaxMinDiffRatioThreshold)
-		{
-			maxStepNum = -1.0f; // negative step number means a success of reprojection;
-		}
-	}
-
-	[branch] if(maxStepNum <= 0.0f)
-	{
-		// zero or negative density are wirrten.
-		// negative density means a success of reprojection.
-		VolCloudDensityOUT[int3(DispatchThreadID.xy,0)] = maxStepNum;
-	}
-#endif
-
-
-	float transmittance = 1.0f;
-
-	CloudGenParam cloudGenParam;
-	cloudGenParam.cloudiness = cloudiness;
-	cloudGenParam.altitude = cloudAltitude;
-	cloudGenParam.thickness = cloudThickness;
-	cloudGenParam.noiseSizeScale = cloudNoiseScale;
-	cloudGenParam.baseSizeScale = cloudBaseSizeScale;
-	cloudGenParam.baseOffset = cloudBaseOffset;
-	cloudGenParam.edgeErode = edgeTurbulenceParams.xyzw;
-	cloudGenParam.edgeNoiseSizeScale = edgeNoiseScaleParams.xyz;
-	cloudGenParam.cloudDensityScale = cloudDensityScale.x;
-	cloudGenParam.baseTexRemap = baseTexRemap.xy;
-	cloudGenParam.additionalNoiseIntensity = additionalNoiseIntensity.x;
-
-#if !ENABLE_LOW_DISCREPANCY_SEQUENCE
-	// interleaved gradient noise is better than low discrepancy sequence in most cases.
-	float jitter = GetJitterInternal(pixelCoord.xy, noiseFrameCount.xx);
-#else
-	// low discrepancy sequence
-	uint indexSeq = trunc((pixelCoord.x + pixelCoord.y * ScreenSize.x));
-	float jitter = frac(GetVdC(indexSeq) - jitteredOffset);
-#endif
-
-#if ENABLE_CLOUD_ATMOSPHERIC_SCATTERING
-	AtmosphericParam atmosParam = GetAtmosphericParam(dot(camDir, g_VS_SunLightDir.xyz));
-	float distAtmos = distanceNear;
-	const float StepNumAtmos = 4.0f;
-	const float maxStepNumAtmos = (maxStepNum > 0.0f && distanceStart > distAtmos) ? StepNumAtmos : 0.0f;
-	const float stepSizeAtmos = distanceStart / StepNumAtmos;
-	const float3 stepVecAtmos = camDir.xyz * stepSizeAtmos;
-	float3 samplePosAtmosWS = PS_WorldViewPos.xyz;
-	for(float i = 0.0f; i < maxStepNumAtmos; ++i)
-	{
-		samplePosAtmosWS.z += stepVecAtmos.z;
-		GetAtmosphericInscattering(camDir, samplePosAtmosWS.z, stepSizeAtmos, transmittance, atmosParam);
-		transmittance *= atmosParam.atmosTrns;
-	}
-#endif
-
-	for(float index = 0; index < maxStepNum; ++index)
-	{
-		// early exit if transmittance is enough low.
-		if(transmittance < 0.01f)
-		{
-			break;
-		}
-
-		const float d = vcGetLinearDepth(index + jitter, maxStepNum, distanceStart, distanceEnd);
-
-		float3 samplePosWS = camDir.xyz * d + PS_WorldViewPos.xyz;
-
-#ifdef %_RT_SAMPLE2
-		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
-#endif
-
-		float density = GetCloudDensity(samplePosWS, cloudGenParam);
-		
-		VolCloudDensityOUT[ int3(DispatchThreadID.xy, int(index)) ] = density;
-
-
-		float dNext = vcGetLinearDepth(index + 1 + jitter, maxStepNum, distanceStart, distanceEnd);
-		float stepSize = dNext - d;
-
-#if ENABLE_CLOUD_ATMOSPHERIC_SCATTERING
-		GetAtmosphericInscattering(camDir, samplePosWS.z, stepSize, transmittance, atmosParam);
-		transmittance *= atmosParam.atmosTrns;
-#endif
-
-		float3 opticalThickness = 0.0f;
-
-		[branch] if(density > 0.0f)
-		{
-			// get shadow factor for clouds
-			bool lowDetail = (transmittance <= shadingLODThreshold) ? true : false; // level of detail according to transmittance
-			
-			float3 sunDir = g_VS_SunLightDir.xyz;
-			opticalThickness = GetOpticalThicknessCombined(samplePosWS, sunDir, extinctionCoefficient, worldAlignmentOffset, 
-																											cloudGenParam, lowDetail, invShadowTilingSize);
-
-#if ENABLE_PRECISE_INSCATTERING_INTEGRATION
-			float muE = max(0.000000001f, extinctionCoefficient * density.x);
-			float trns = exp(-muE * stepSize);
-#else
-			float trns = exp(-extinctionCoefficient * density.x * stepSize);
-#endif
-			transmittance *= trns;
-		}
-
-		VolCloudShadowOUT[ int3(DispatchThreadID.xy, int(index)) ] = opticalThickness;
-	}
-}
-
-technique InjectCloudDensityAndShadow
-{
-	pass p0
-	{
-		ComputeShader = InjectCloudDensityAndShadowCS() VolumetricCloudsPS;
-	}
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-// Render clouds by using ray-marching
-
-pixout RenderCloudPS(vtxOutWPOS IN)
-{
-	const float nearPlane = PS_NearFarClipDist.x;
-	const float farPlane = PS_NearFarClipDist.y;
-	const float2 worldAlignmentOffset = CloudShadowAnimParams.xy;
-
-	const float skyLightingFactor = vcSkylightRayleighInScatter.w;
-	const float sunSingleScatterFactor = vcSunScatteringParams.x;
-	const float sunLowOrderFactor = vcSunScatteringParams.y;
-	const float sunLowOrderAnisotropy = vcSunScatteringParams.z;
-	const float sunHighOrderFactor = vcSunScatteringParams.w;
-	const float3 groundAlbedo = vcGroundLightingParams.xyz;
-	const float groundLightingFactor = vcGroundLightingParams.w;
-	const float cloudAltitude = vcCloudGenParams.x;
-	const float cloudThickness = vcCloudGenParams.y;
-	const float cloudiness = vcCloudGenParams.z;
-	const float upsamplingScale = vcCloudGenParams.w;
-	const float scatterCoefficient = vcCloudRenderParams.x;
-	const float extinctionCoefficient = vcCloudRenderParams.y;
-	const float shadingLODThreshold = vcCloudRenderParams.w;
-	const float3 invShadowTilingSize = vcCloudTilingParams.xyz;
-	const float sphereRadius = vcCloudTilingParams.w;
-	const float3 cloudNoiseScale = vcCloudNoiseParams.xyz;
-	const float3 cloudBaseSizeScale = vcCloudBaseScaleParams.xyz;
-	const float3 cloudBaseOffset = vcCloudBaseOffsetParams.xyz;
-	const float MaxIntersectionDistance = vcCloudRaymarchParams.x;
-	const float MaxRaymarchDistance = vcCloudRaymarchParams.y;
-	const float MaxStepRaymarch = vcCloudRaymarchParams.z;
-	const float horizonHeight = max(g_WaterLevel.x, vcCloudRaymarchParams.w);
-
-	const float4x4 leftViewProjMatrix = vcLeftViewProjMatrix;
-	const float4 edgeTurbulenceParams = vcEdgeTurbulenceParams.xyzw;
-	const float3 edgeNoiseScaleParams = vcEdgeNoiseScaleParams.xyz;
-	const float cloudDensityScale = vcDensityParams.x;
-	const float2 baseTexRemap = vcDensityParams.yz;
-	const float additionalNoiseIntensity = vcDensityParams.w;
-	const float noiseFrameCount = vcCloudNoiseParams.w;
-	const float jitteredOffset = vcCloudBaseScaleParams.w;
-
-
-
-	//float linearDepth = GetLinearDepth(linearDepthBuffer, IN.baseTC.xy);
-	int3 vPixCoord = int3(IN.baseTC.xy * PS_ScreenSize.xy, 0);
-	float2 linearDepth = linearDepthBuffer.Load(vPixCoord).xy;
-	const float linearMaxDepth = linearDepth.x;
-	const float linearMinDepth = linearDepth.y;
-
-	float3 camDir = normalize(IN.CamVec.xyz);
-
-
-	// Fetch pre-computed mie phase function LUT for sun single scattering
-	float fAngle = acos_fast( dot( camDir, g_PS_SunLightDir.xyz ) ) * ONE_OVER_PI;
-	const float normalizeFactor = 1.0f / 12.71f;// nearly equal to 1 / (4 * PI)
-	float3 fMiePhase = tex2Dlod(miePhaseSampler, float4(fAngle, 0, 0, 0)) * sunSingleScatterFactor * normalizeFactor;
-
-	// approximation of low order(2 to 30 scattering events) sun scattering
-	const float g = sunLowOrderAnisotropy;
-	const float oneMinusG2 = 1.0f - sunLowOrderAnisotropy * sunLowOrderAnisotropy;
-	//float multiPhase = GetVolumetricFogInscatteringHenyeyGreensteinPhaseFunction(dot(camDir, g_PS_SunLightDir), g, oneMinusG2);
-	float multiPhase = GetVolumetricFogInscatteringSchlickPhaseFunction(dot(camDir, g_PS_SunLightDir), g, oneMinusG2);
-	float3 cSunLowMultiScatter = (sunLowOrderFactor * multiPhase) * ShadeColorFromSun.xyz;
-
-	// sun single and low order scattering
-	float3 cSunLight = (ShadeColorFromSun.xyz * fMiePhase) + cSunLowMultiScatter;
-
-	// approximation of high order(31 or more scattering events) sun scattering
-	float3 cSunHighMultiScatter = (sunHighOrderFactor * (0.25f * ONE_OVER_PI)) * ShadeColorFromSun.xyz;
-
-#if 1
-	// ground lighting
-	const float dotLN = saturate(dot(g_PS_SunLightDir.xyz, float3(0, 0, 1)));
-	float3 srcGroundLight = (dotLN * ShadeColorFromSun) + vcSkylightRayleighInScatter.xyz;// sky lighting reflects on ground.
-	const float groundPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
-	float3 cGroundLight = groundLightingFactor * groundPhaseFunc * srcGroundLight.xyz * groundAlbedo.xyz;
-
-	// sky lighting from above the cloud.
-	const float skyPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
-	float3 cSkyLight = skyLightingFactor * skyPhaseFunc * vcSkylightRayleighInScatter;
-#else
-	// sky lighting from above the cloud.
-	const float skyPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
-	float3 cSkyLight = skyLightingFactor * skyPhaseFunc * vcSkylightRayleighInScatter;
-
-	// ground lighting
-	const float dotLN = saturate(dot(g_PS_SunLightDir.xyz, float3(0, 0, 1)));
-	float3 srcGroundLight = (dotLN * ShadeColorFromSun) + cSkyLight.xyz;// sky lighting reflects on ground.
-	const float groundPhaseFunc = 0.25f * ONE_OVER_PI;// isotropic phase function
-	float3 cGroundLight = groundLightingFactor * groundPhaseFunc * srcGroundLight.xyz * groundAlbedo.xyz;
-#endif
-
-
-
-#if ENABLE_ORIGIN_MOVE_WITH_CAMERA
-	// cloud layer's origin moves with camera.
-	float3 centerSphere = PS_WorldViewPos.xyz;
-	centerSphere.z = -sphereRadius;
-#else
-	float3 centerSphere = float3(0, 0, -sphereRadius);
-#endif
-
-	float3 nearPlanePos = IN.CamVec.xyz * (nearPlane / farPlane);
-	float3 nearPlanePosWS = nearPlanePos + PS_WorldViewPos.xyz;
-
-	float2 intersection = vcGetIntersectionWithCloudLayer(nearPlanePosWS, camDir, cloudAltitude, cloudThickness, 
-																												sphereRadius, centerSphere);
-	float tt = intersection.x;
-	float tb = intersection.y;
-
-	const float distanceToDepth = dot(-CV_CameraFrontVector, camDir);
-	const float depthToDistance = rcp(distanceToDepth);
-	const float distanceTarget = depthToDistance * linearMaxDepth * farPlane;
-	const float distanceFar = depthToDistance * farPlane;
-	const float distanceNear = depthToDistance * nearPlane;
-	float distanceTargetMin = depthToDistance * linearMinDepth * farPlane;
-
-	float distanceEnd = min(MaxIntersectionDistance, max(tb, tt));
-	float minD = min(tb, tt);
-	float distanceStart = max(minD, distanceNear);
-
-	// limit the length of ray-marching with in certain length.
-	distanceEnd = (distanceEnd - distanceStart) > MaxRaymarchDistance ? (MaxRaymarchDistance + distanceStart) : distanceEnd;
-
-	// limit the length of ray-marching by depth buffer.
-	distanceEnd = (distanceTarget < distanceEnd && distanceFar > distanceTarget) ? distanceTarget : distanceEnd;
-
-	// intersection with ocean or horizon to stop ray-marching under the horizon.
-	float distHorizon = vcGetIntersectionPlane(nearPlanePosWS, camDir, float4(0.0f, 0.0f, 1.0f, horizonHeight));
-
-	// limit ray-marching to stop on the horizon.
-	distanceEnd = (camDir.z >= 0.0f) ? distanceEnd : ((distHorizon >= 0.0f) ? min(distHorizon, distanceEnd) : distanceEnd);
-	distanceStart = (nearPlanePosWS.z <= horizonHeight && camDir.z <= 0.0f) ? distanceEnd : distanceStart;
-
-	// if min-depth equals to far depth, it should be beyond far plane.
-	distanceTargetMin = (distanceTargetMin == distanceFar) ? distanceEnd : distanceTargetMin;
-
-	// stop ray-marching if it isn't needed.
-	float maxStepNum = (distanceStart >= distanceEnd) ? 0.0f : MaxStepRaymarch;
-
-
-#if ENABLE_AVERAGED_DISTANCE_FOG
-	float distanceAvg = distanceStart;
-	float distanceAvgMinDepth = distanceStart;
-#endif
-
-
-	CloudGenParam cloudGenParam;
-	cloudGenParam.cloudiness = cloudiness;
-	cloudGenParam.altitude = cloudAltitude;
-	cloudGenParam.thickness = cloudThickness;
-	cloudGenParam.noiseSizeScale = cloudNoiseScale;
-	cloudGenParam.baseSizeScale = cloudBaseSizeScale;
-	cloudGenParam.baseOffset = cloudBaseOffset;
-	cloudGenParam.edgeErode = edgeTurbulenceParams.xyzw;
-	cloudGenParam.edgeNoiseSizeScale = edgeNoiseScaleParams.xyz;
-	cloudGenParam.cloudDensityScale = cloudDensityScale.x;
-	cloudGenParam.baseTexRemap = baseTexRemap.xy;
-	cloudGenParam.additionalNoiseIntensity = additionalNoiseIntensity.x;
-
-#if !ENABLE_LOW_DISCREPANCY_SEQUENCE
-	// interleaved gradient noise is better than low discrepancy sequence in most cases.
-	float jitter = GetJitterInternal(IN.baseTC.xy * PS_ScreenSize.xy, noiseFrameCount.xx);
-#else
-	// low discrepancy sequence
-	uint indexSeq = trunc((IN.baseTC.x * PS_ScreenSize.x + IN.baseTC.y * PS_ScreenSize.y * PS_ScreenSize.x));
-	float jitter = frac(GetVdC(indexSeq) - jitteredOffset);
-#endif
-
-
-#if %_RT_SAMPLE1
-	// try reprojection from left eye to right eye.
-	float4 colorReproj = 0.0f;
-	//if(maxStepNum > 0.0f) // this increases VGPR number so commented out.
-	{
-		int3 pixcoord = int3(vPixCoord.xy, 0);
-		float density=VolCloudDensity.Load(int4(pixcoord.xyz, 0)).x;
-
-		// negative density means a success of reprojection;
-		if(density < 0.0f)
-		{
-			const float3 position = camDir.xyz * distanceTarget;
-			const float3 worldPos = PS_WorldViewPos.xyz + position;
-			const float4 reprojPos = mul( float4(worldPos, 1), vcLeftViewProjMatrix );
-			const float2 leftEyeTC = reprojPos.xy / reprojPos.w;
-			colorReproj = LeftEyeColorBuffer.SampleLevel(TrilinearClampSamplerState, leftEyeTC.xy, 0.0f);
-			maxStepNum = -1.0f; // negative step number means success of reprojection;
-		}
-	}
-#endif
-
-
-	// ray-march through cloud layer in the air.
-	float transmittance = 1.0f;
-	float3 inscatter = 0.0f;
-	float totalOptThickness = 0.0f;
-	float4 cloudColorMinDepth = float4(0,0,0,1);
-
-#if ENABLE_CLOUD_ATMOSPHERIC_SCATTERING
-	AtmosphericParam atmosParam = GetAtmosphericParam(dot(camDir, g_PS_SunLightDir.xyz));
-	float distAtmos = distanceNear;
-	const float StepNumAtmos = 4.0f;
-	const float maxStepNumAtmos = (maxStepNum > 0.0f && distanceStart > distAtmos) ? StepNumAtmos : 0.0f;
-	const float stepSizeAtmos = distanceStart / StepNumAtmos;
-	const float3 stepVecAtmos = camDir.xyz * stepSizeAtmos;
-	float3 samplePosAtmosWS = PS_WorldViewPos.xyz;
-	for(float i = 0.0f; i < maxStepNumAtmos; ++i)
-	{
-		samplePosAtmosWS.z += stepVecAtmos.z;
-		inscatter += GetAtmosphericInscattering(camDir, samplePosAtmosWS.z, stepSizeAtmos, transmittance, atmosParam);
-		transmittance *= atmosParam.atmosTrns;
-	}
-#endif
-
-#if %_RT_SAMPLE1
-	// negative step number means success of reprojection;
-	if(maxStepNum < 0.0f)
-	{
-#if 0
-		// for debug
-		inscatter.xyz = float3(1,0,0);
-		transmittance = 0;
-		cloudColorMinDepth = float4(inscatter.xyz, transmittance);
-#else
-		inscatter.xyz = colorReproj.xyz;
-		transmittance = colorReproj.w;
-		cloudColorMinDepth = float4(inscatter.xyz, transmittance);
-#endif
-	}
-#endif
-
-	for(float index = 0; index < maxStepNum; )
-	{
-		// exponential step length ray-marching
-		const float d = vcGetLinearDepth(index + jitter, maxStepNum, distanceStart, distanceEnd);
-
-		if(distanceTargetMin >= d)
-		{
-			cloudColorMinDepth = float4(inscatter.xyz, transmittance);
-#if ENABLE_AVERAGED_DISTANCE_FOG
-			distanceAvgMinDepth = distanceAvg;
-#endif
-		}
-
-		// early exit if transmittance is enough low.
-		if(transmittance < 0.01f)
-		{
-			break;
-		}
-
-		float3 samplePosWS = camDir.xyz * d + PS_WorldViewPos.xyz;
-
-#ifdef %_RT_SAMPLE2
-		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
-#endif
-
-		int3 pixcoord = int3(vPixCoord.xy, index);
-		float density = VolCloudDensity.Load(int4(pixcoord.xyz, 0)).x;
-
-		float dNext = vcGetLinearDepth(index + 1 + jitter, maxStepNum, distanceStart, distanceEnd);
-		float stepSize = dNext - d;
-
-#if ENABLE_AVERAGED_DISTANCE_FOG
-		distanceAvg += stepSize * pow(transmittance, 1.0f);
-#endif
-
-#if ENABLE_CLOUD_ATMOSPHERIC_SCATTERING
-		inscatter += GetAtmosphericInscattering(camDir, samplePosWS.z, stepSize, transmittance, atmosParam);
-		transmittance *= atmosParam.atmosTrns;
-#endif
-
-		if(density > 0.0f)
-		{
-			bool lowDetail = (transmittance <= shadingLODThreshold) ? true : false; // level of detail according to transmittance
-
-			AccumulateRadiance(inscatter, transmittance, totalOptThickness, 
-												density, stepSize, scatterCoefficient, 
-												cSunLight, cSunHighMultiScatter, cSkyLight, cGroundLight, 
-												samplePosWS, extinctionCoefficient, cloudGenParam, 
-												worldAlignmentOffset, lowDetail, invShadowTilingSize, 
-												true, pixcoord.xyz);
-		}
-
-		++index;
-	}
-
-
-	// write the frontmost depth of cloud
-	float cloudDepth = (maxStepNum == 0.0) ? 0.0f : distanceToDepth * distanceStart; // outputs 0 as empty flag.
-	cloudDepth = cloudDepth * PS_NearFarClipDist.w;
-	cloudDepthOutput[int2(IN.HPosition.xy)] = cloudDepth;
-
-
-#if %_RT_SAMPLE1
-	// maxStepNum should not be negative after this line.
-	maxStepNum = max(0.0f, maxStepNum);
-#endif
-
-
-#if %_RT_FOG
-#if ENABLE_FULL_SIZE_FOG
-	if(maxStepNum != 0 && upsamplingScale <= 1.0f)
-#else
-	if(maxStepNum != 0)
-#endif
-	{
-		// apply fog effect of frontmost cloud position to clouds.
-#if !ENABLE_AVERAGED_DISTANCE_FOG
-		const float cloudFrontDistance = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceStart, PS_NearFarClipDist.y * depthToDistance);
-#else
-		const float cloudFrontDistance = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceAvg, PS_NearFarClipDist.y * depthToDistance);
-#endif
-		const float cloudFrontDepth = (maxStepNum == 0.0) ? nearPlane : distanceToDepth * cloudFrontDistance;
-		float3 cameraToWorldPos = camDir * cloudFrontDepth;
-		float3 worldPos = cameraToWorldPos + PS_WorldViewPos.xyz;
-
-#if %_RT_VOLUMETRIC_FOG
-		VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(IN.baseTC, cloudFrontDepth);
-		float4 vf = GetVolumetricFogValue(vtc);
-		half4 globalFogColor = GetVolumetricFogAnalyticalColor(cameraToWorldPos, cloudFrontDistance);
-		globalFogColor = BlendVolumetricFogWithGlobalFog(vf, globalFogColor, vtc);
-		globalFogColor = ClampFinalFogDensity(globalFogColor);
-		inscatter = inscatter.xyz * globalFogColor.w + globalFogColor.xyz * (1.0f - transmittance);
-#else
-	#if %_RT_SAMPLE0
-		// Read volumetric shadows and apply to the global fog.
-		const float volFogShadowContrib = tex2D( volFogShadowSampler, IN.baseTC.xy ).a;
-		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * volFogShadowDarkeningSunAmb.xz + volFogShadowDarkeningSunAmb.yw);
-		half4 localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
-		localFogColor.rgb = lerp(localFogColor.rgb * volFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
-	#else
-		half4 localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos);
-	#endif
-		inscatter.rgb = lerp( localFogColor.rgb, inscatter.rgb, localFogColor.a ) * (1.0f - transmittance);
-#endif
-
-		// apply fog effect to min-depth cloud
-		if(distanceTargetMin > distanceStart)
-		{
-#if ENABLE_AVERAGED_DISTANCE_FOG
-			const float cloudFrontDistance2 = (maxStepNum == 0.0) ? nearPlane * depthToDistance : min(distanceAvgMinDepth, PS_NearFarClipDist.y * depthToDistance);
-			const float cloudFrontDepth2 = (maxStepNum == 0.0) ? nearPlane : distanceToDepth * cloudFrontDistance2;
-			float3 cameraToWorldPos = camDir * cloudFrontDepth2;
-			float3 worldPos = cameraToWorldPos + PS_WorldViewPos.xyz;
-#if %_RT_VOLUMETRIC_FOG
-			VolumetricFogTexcoord vtc = GetVolumetricFogTexcoordParamByScreenTexcoordAndDepth(IN.baseTC, cloudFrontDepth2);
-			float4 vf = GetVolumetricFogValue(vtc);
-			half4 globalFogColor = GetVolumetricFogAnalyticalColor(cameraToWorldPos, cloudFrontDistance2);
-			globalFogColor = BlendVolumetricFogWithGlobalFog(vf, globalFogColor, vtc);
-			globalFogColor = ClampFinalFogDensity(globalFogColor);
-#else
-	#if %_RT_SAMPLE0
-			localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
-			localFogColor.rgb = lerp(localFogColor.rgb * volFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
-	#else
-			localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos);
-	#endif
-#endif
-#endif
-
-#if %_RT_VOLUMETRIC_FOG
-			cloudColorMinDepth.rgb = cloudColorMinDepth.rgb * globalFogColor.w + globalFogColor.xyz * (1.0f - cloudColorMinDepth.w);
-#else
-			cloudColorMinDepth.rgb = lerp( localFogColor.rgb, cloudColorMinDepth.rgb, localFogColor.a ) * (1.0f - cloudColorMinDepth.w);
-#endif
-		}
-	}
-#endif
-
-
-#if ENABLE_FULL_SIZE_FOG && ENABLE_NAN_MASKING
-	// to prevent the value from leaking to other pixels, the value is set to NaN as a masking flag if it's empty.
-	if(maxStepNum == 0.0 && upsamplingScale > 1.0f)
-	{
-		cloudColorMinDepth.xyz = 0.0f / 0.0f;
-		inscatter.xyz = cloudColorMinDepth.xyz;
-	}
-#endif
-
-
-	// store min-depth cloud color.
-	cloudMinDepthColorOutput[int2(IN.HPosition.xy)] = cloudColorMinDepth;
-
-
-#ifdef ENABLE_CIRRUS_CLOUD_LAYER
-	// add alto/cirrus cloud.
-	const float AltitudeCirrus = cloudAltitude + cloudThickness + 2000.0f;
-	float distCirrus = vcGetIntersectionPlane(nearPlanePosWS, camDir, float4(0.0f, 0.0f, 1.0f, AltitudeCirrus));
-
-	if((distCirrus >= 0.0f && (maxStepNum > 0 || minD <= 0.0f)) &&
-		MaxIntersectionDistance > distCirrus && 
-		transmittance >= 0.01f)
-	{
-		float3 samplePosWS = camDir.xyz * distCirrus + PS_WorldViewPos.xyz;
-
-#ifdef %_RT_SAMPLE2
-		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
-#endif
-
-		float3 cpos = samplePosWS;
-		cpos.xy += cloudBaseOffset.xy;
-
-		float4 altoCirrusColor = GetAltoAndCirrusCloud(cpos, camDir);
-		inscatter += transmittance * altoCirrusColor.xyz;
-		transmittance *= altoCirrusColor.w;
-	}
-#endif
-
-
-	pixout OUT;
-
-	// use reversed alpha to reduce composition banding artifact.
-	const float reversedAlpha = transmittance;
-	OUT.Color = float4(inscatter.xyz, reversedAlpha);
-
-	return OUT;
-}
-
-technique RenderCloud
-{
-	pass p0
-	{
-		VertexShader = CloudsLayerVS() VolumetricCloudsVS;
-		PixelShader = RenderCloudPS() VolumetricCloudsPS;
-	}
-}
-

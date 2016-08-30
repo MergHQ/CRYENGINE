@@ -39,6 +39,11 @@ struct SUpdateContext
 	const SUpdateRange         m_updateRange;
 	TParticleHeap*             m_pMemHeap;
 	const float                m_deltaTime;
+	const float                m_time;
+	mutable SChaosKey          m_spawnRng;
+	mutable SChaosKeyV         m_spawnRngv;
+	mutable SChaosKey          m_updateRng;
+	mutable SChaosKeyV         m_updateRngv;
 };
 
 #define CRY_PFX2_FOR_RANGE_PARTICLES(updateRange) \

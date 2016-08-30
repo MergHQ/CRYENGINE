@@ -1,20 +1,31 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ICompressionPolicy.h"
+#include "CompressionPolicyTime.h"
 #include "ArithModel.h"
 #include "AdaptiveFloat.h"
+#include "PredictiveFloat.h"
 
-class CAdaptiveVec3Policy
+template<typename FloatType>
+class CAdaptiveVec3PolicyT
 {
 public:
+	CAdaptiveVec3PolicyT()
+	{
+		m_timeFraction32 = 0;
+	}
+
 	bool Load(XmlNodeRef node, const string& filename)
 	{
-		return
+		m_name = node->getAttr("name");
+		bool ret =  
 		  m_floats[0].Load(node, filename, "XParams") &&
 		  m_floats[1].Load(node, filename, "YParams") &&
 		  m_floats[2].Load(node, filename, "ZParams");
+
+		return ret;
 	}
+
 #if USE_MEMENTO_PREDICTORS
 	bool ReadMemento(CByteInputStream& in) const
 	{
@@ -35,13 +46,31 @@ public:
 		for (int i = 0; i < 3; i++)
 			m_floats[i].NoMemento();
 	}
+
+	bool Manage(CCompressionManager* pManager)
+	{
+		bool ret = false;
+		for (unsigned k = 0; k < 3; k++)
+			ret |= m_floats[k].Manage(pManager, m_name.c_str(), k);
+
+		return ret;
+	}
+
+	void Init(CCompressionManager* pManager)
+	{
+		for (int k = 0; k < 3; k++)
+			m_floats[k].Init(m_name.c_str(), k, pManager->GetUseDirectory().c_str(), pManager->GetAccDirectory().c_str());
+	}
+#else
+	bool Manage(CCompressionManager* pManager) { return false; }
+	void Init(CCompressionManager* pManager) {}
 #endif
 
 #if USE_ARITHSTREAM
 	bool ReadValue(CCommInputStream& in, Vec3& value, CArithModel* pModel, uint32 age) const
 	{
 		for (int i = 0; i < 3; i++)
-			if (!m_floats[i].ReadValue(in, value[i], age))
+			if (!m_floats[i].ReadValue(in, value[i], age, m_timeFraction32))
 				return false;
 		NetLogPacketDebug("CAdaptiveVec3Policy::ReadValue Previously Read (CAdaptiveFloat, CAdaptiveFloat, CAdaptiveFloat) (%f, %f, %f) (%f)", value.x, value.y, value.z, in.GetBitSize());
 		return true;
@@ -49,7 +78,7 @@ public:
 	bool WriteValue(CCommOutputStream& out, Vec3 value, CArithModel* pModel, uint32 age) const
 	{
 		for (int i = 0; i < 3; i++)
-			m_floats[i].WriteValue(out, value[i], age);
+			m_floats[i].WriteValue(out, value[i], age, m_timeFraction32);
 		return true;
 	}
 
@@ -65,6 +94,7 @@ public:
 		NetWarning("AdaptiveVec3Policy: not implemented for generic types");
 		return false;
 	}
+
 #else
 	bool ReadValue(CNetInputSerializeImpl* in, Vec3& value, uint32 age) const
 	{
@@ -113,9 +143,19 @@ public:
 		return 0;
 	}
 #endif
-
+	void SetTimeValue(uint32 timeFraction32)
+	{
+		m_timeFraction32 = timeFraction32;
+	}
+	
 private:
-	CAdaptiveFloat m_floats[3];
+	FloatType m_floats[3];
+	mutable uint32 m_timeFraction32;
+	string m_name;
 };
 
-REGISTER_COMPRESSION_POLICY(CAdaptiveVec3Policy, "AdaptiveVec3");
+typedef CAdaptiveVec3PolicyT<CAdaptiveFloat> TAdaptiveVec3Policy;
+typedef CAdaptiveVec3PolicyT<CPredictiveFloat> TPredictiveVec3Policy;
+
+REGISTER_COMPRESSION_POLICY_TIME(TAdaptiveVec3Policy, "AdaptiveVec3");
+REGISTER_COMPRESSION_POLICY_TIME(TPredictiveVec3Policy, "PredictiveVec3");

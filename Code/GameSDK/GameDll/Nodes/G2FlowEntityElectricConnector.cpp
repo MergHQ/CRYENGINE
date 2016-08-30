@@ -1,19 +1,20 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
--------------------------------------------------------------------------
-$Id$
-$DateTime$
-Description:  Flow nodes for working with XBox 360 controller
--------------------------------------------------------------------------
-History:
-- 31:3:2008        : Created by Kevin
+   -------------------------------------------------------------------------
+   $Id$
+   $DateTime$
+   Description:  Flow nodes for working with XBox 360 controller
+   -------------------------------------------------------------------------
+   History:
+   - 31:3:2008        : Created by Kevin
 
 *************************************************************************/
 
 #include "StdAfx.h"
+
 #include <CryEntitySystem/IEntitySystem.h>
-#include "Nodes/G2FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowEntityElectricConnector : public CFlowBaseNode<eNCT_Instanced>, IEntityEventListener
 {
@@ -32,7 +33,7 @@ class CFlowEntityElectricConnector : public CFlowBaseNode<eNCT_Instanced>, IEnti
 	};
 
 public:
-	CFlowEntityElectricConnector(SActivationInfo * pActInfo)
+	CFlowEntityElectricConnector(SActivationInfo* pActInfo)
 	{
 		m_nodeID = pActInfo->myID;
 		m_pGraph = pActInfo->pGraph;
@@ -45,10 +46,10 @@ public:
 		UnregisterEvents();
 	}
 
-	IFlowNodePtr Clone( SActivationInfo * pActInfo ) { return new CFlowEntityElectricConnector(pActInfo); }
-	virtual void GetMemoryUsage(ICrySizer * s) const { s->Add(*this); }
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)   { return new CFlowEntityElectricConnector(pActInfo); }
+	virtual void GetMemoryUsage(ICrySizer* s) const { s->Add(*this); }
 
-	virtual void Serialize(SActivationInfo *pActInfo, TSerialize ser)
+	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
 	{
 		ser.Value("entity", m_entityId);
 		ser.Value("flow", m_flow);
@@ -62,17 +63,17 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig inputs[] = {
-			InputPortConfig<bool>("Emitter", _HELP("Enable entity as electric emitter.")),
+			InputPortConfig<bool>("Emitter",  _HELP("Enable entity as electric emitter.")),
 			InputPortConfig<bool>("Receiver", _HELP("Enable entity as electric receiver.")),
 			InputPortConfig<bool>("Disabled", _HELP("Disable entity as electric emitter and receiver.")),
-			{0}
+			{ 0 }
 		};
 
-		static const SOutputPortConfig outputs[] = 
+		static const SOutputPortConfig outputs[] =
 		{
-			OutputPortConfig<bool>( "ElectricFlow", _HELP("Flow is true when this electric connector is successfully connected with an opposite electric connector.")),
+			OutputPortConfig<bool>("ElectricFlow", _HELP("Flow is true when this electric connector is successfully connected with an opposite electric connector.")),
 			//OutputPortConfig<EntityId>( "ConnectedEntity", _HELP("Entity ID of successfully connected opposite electric connector.")),
-			{0}
+			{ 0 }
 		};
 
 		config.nFlags |= EFLN_TARGET_ENTITY;
@@ -82,7 +83,7 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo )
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
 		{
@@ -189,24 +190,23 @@ public:
 			pEnt->AddEntityLink(tag, 0);
 	}
 
-	void OnEntityEvent( IEntity *pEntity,SEntityEvent &event )
+	void OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
 	{
-		if ( !m_pGraph->IsEnabled() || m_pGraph->IsSuspended() || !m_pGraph->IsActive() )
+		if (!m_pGraph->IsEnabled() || m_pGraph->IsSuspended() || !m_pGraph->IsActive())
 			return;
 
-		if(event.event == ENTITY_EVENT_DONE)
+		if (event.event == ENTITY_EVENT_DONE)
 		{
 			m_pGraph->SetEntityId(m_nodeID, 0);
 		}
-		else
-		if(event.event == ENTITY_EVENT_ACTIVATE_FLOW_NODE_OUTPUT)
+		else if (event.event == ENTITY_EVENT_ACTIVATE_FLOW_NODE_OUTPUT)
 		{
 			SFlowNodeConfig config;
 			GetConfiguration(config);
 
-			for(int i = 0; i < eOP_Last; i++)
+			for (int i = 0; i < eOP_Last; i++)
 			{
-				if(strcmp(config.pOutputPorts[i].name, (const char*)event.nParam[0]) == 0)
+				if (strcmp(config.pOutputPorts[i].name, (const char*)event.nParam[0]) == 0)
 				{
 					SFlowAddress addr(m_nodeID, i, true);
 					if (event.nParam[1] == IEntityClass::EVT_BOOL)
@@ -223,7 +223,7 @@ public:
 
 	void RegisterEvents()
 	{
-		if(m_entityId)
+		if (m_entityId)
 		{
 			gEnv->pEntitySystem->AddEntityEventListener(m_entityId, ENTITY_EVENT_DONE, this);
 			gEnv->pEntitySystem->AddEntityEventListener(m_entityId, ENTITY_EVENT_ACTIVATE_FLOW_NODE_OUTPUT, this);
@@ -232,7 +232,7 @@ public:
 	}
 	void UnregisterEvents()
 	{
-		if ( m_entityId )
+		if (m_entityId)
 		{
 			gEnv->pEntitySystem->RemoveEntityEventListener(m_entityId, ENTITY_EVENT_DONE, this);
 			gEnv->pEntitySystem->RemoveEntityEventListener(m_entityId, ENTITY_EVENT_ACTIVATE_FLOW_NODE_OUTPUT, this);
@@ -241,17 +241,10 @@ public:
 
 private:
 	SActivationInfo m_actInfo; // Activation info instance
-	TFlowNodeId m_nodeID;
-	IFlowGraph *m_pGraph;
-	EntityId m_entityId;
-	int m_flow;
+	TFlowNodeId     m_nodeID;
+	IFlowGraph*     m_pGraph;
+	EntityId        m_entityId;
+	int             m_flow;
 };
 
 REGISTER_FLOW_NODE("Entity:ElectricConnector", CFlowEntityElectricConnector);
-
-
-
-
-
-
-

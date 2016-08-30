@@ -13,7 +13,7 @@ using namespace CryDRS;
 //--------------------------------------------------------------------------------------------------
 void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName, const string& collectionName, const CVariableValue& oldValue, const CVariableValue& newValue, float time)
 {
-	if (strncmp(collectionName.c_str(), "Context", 7) == 0)
+	if (strncmp(collectionName.c_str(), "Context", 7) == 0 || strncmp(variableName.c_str(), "CurrentTime", 11) == 0)
 	{
 		return;  //We dont want our list polluted by these...
 	}
@@ -193,7 +193,6 @@ bool CResponseSystemDebugDataProvider::AddResponseInstanceFinished(EStatus reaso
 
 //--------------------------------------------------------------------------------------------------
 SERIALIZATION_ENUM_BEGIN_NESTED(CResponseSystemDebugDataProvider, EStatus, "EndReason")
-SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_ExecuteOnlyOnce, "ExecuteOnlyOnce", "NotStarted - ExecuteOnlyOnce")
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_NoValidSegment, "NoValidSegment", "NotStarted - No Valid Responses")
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_Canceled, "Canceled", "Canceled")
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_Finished, "Finished", "Finished")
@@ -374,32 +373,31 @@ void CResponseSystemDebugDataProvider::OnLineEvent(const DRS::IResponseActor* pS
 
 	switch (lineEvent)
 	{
-	case DRS::ISpeakerManager::IListener::eLineEvent_Started:
+	case eLineEvent_Started:
 		AddDialogLineStarted(lineID, lineText, speakerName, eER_Running, "");
 		break;
-	case DRS::ISpeakerManager::IListener::eLineEvent_Queued:
+	case eLineEvent_Queued:
 		AddDialogLineStarted(lineID, lineText, speakerName, eER_Queued, "Another line needs to finish first");
 		break;
-	case DRS::ISpeakerManager::IListener::eLineEvent_SkippedBecauseOfPriority:
+	case eLineEvent_SkippedBecauseOfPriority:
 		AddDialogLineStarted(lineID, lineText, speakerName, eER_NotStarted, "line ('" + lineText + "') with same/higher priority was already playing");
 		break;
-	case DRS::ISpeakerManager::IListener::eLineEvent_CouldNotBeStarted:
+	case eLineEvent_CouldNotBeStarted:
 		AddDialogLineStarted(lineID, lineText, speakerName, eER_NotStarted, "missing entity for speaker");
 		break;
-	case DRS::ISpeakerManager::IListener::eLineEvent_Finished:
+	case eLineEvent_Finished:
 		AddDialogLineFinished(lineID, speakerName, eER_Finished, "Done");
 		break;
-	case DRS::ISpeakerManager::IListener::eLineEvent_Canceling:
+	case eLineEvent_Canceling:
 		AddDialogLineFinished(lineID, speakerName, eER_Canceling, "Waiting for stop trigger");
 		break;
-	case DRS::ISpeakerManager::IListener::eLineEvent_Canceled:
+	case eLineEvent_Canceled:
 		AddDialogLineFinished(lineID, speakerName, eER_Canceled, "Canceled or actor removed");
 		break;
-	case DRS::ISpeakerManager::IListener::eLineEvent_CanceledWhileQueued:
+	case eLineEvent_CanceledWhileQueued:
 		AddDialogLineFinished(lineID, speakerName, eER_CanceledWhileQueued, "Canceled or actor removed while queued");
 		break;
 	}
-	CResponseSystem::GetInstance()->GetDialogLineDatabase()->GetLineByID(lineID);
 	return;
 }
 

@@ -1,30 +1,26 @@
 #pragma once
 #ifdef INCLUDE_SCALEFORM_SDK
 
-	#include <CrySystem/Scaleform/IScaleformHelper.h>
-	#include <CrySystem/ISystem.h>
+#include <CrySystem/Scaleform/IScaleformHelper.h>
+#include <CrySystem/ISystem.h>
 
-	#include "ConfigScaleform.h"
-	#include "SharedResources.h"
-	#include "SharedStates.h"
-	#include "FlashPlayerInstance.h"
+#include <CrySystem/Scaleform/ConfigScaleform.h>
+#include "SharedResources.h"
+#include "SharedStates.h"
+#include "FlashPlayerInstance.h"
 
-	#if defined(GFX_AMP_SERVER)
-		#include <GFxAmpServer.h>
-	#endif
+#if defined(GFX_AMP_SERVER)
+#include <GFxAmpServer.h>
+#endif
 
 class CScaleformHelper final : public IScaleformHelper
 {
 public:
 	virtual bool Init() override
 	{
+		CFlashPlayer::InitCVars();
 		CSharedFlashPlayerResources::Init();
 		return true;
-	}
-
-	virtual void InitCVars() override
-	{
-		CFlashPlayer::InitCVars();
 	}
 
 	virtual void Destroy() override
@@ -34,18 +30,18 @@ public:
 
 	virtual void SetAmpEnabled(bool bEnabled) override
 	{
-	#if defined(GFX_AMP_SERVER)
+#if defined(GFX_AMP_SERVER)
 		GFxAmpServer::GetInstance().SetState(Amp_Disabled, !bEnabled);
-	#endif
+#endif
 	}
 
 	virtual void AmpAdvanceFrame() override
 	{
-	#if defined(GFX_AMP_SERVER)
+#if defined(GFX_AMP_SERVER)
 		GFxAmpServer::GetInstance().AdvanceFrame();
-	#endif
+#endif
 	}
-
+	
 	virtual void SetTranslatorWordWrappingMode(const char* szLanguage) override
 	{
 		CryGFxTranslator::GetAccess().SetWordWrappingMode(szLanguage);
@@ -97,8 +93,8 @@ public:
 	{
 		numDPs = 0;
 		numTris = 0;
-	#ifndef _RELEASE
-		GRendererXRender* pFlashRenderer(CSharedFlashPlayerResources::GetAccess().GetRenderer(true));
+#ifndef _RELEASE
+		IScaleformRecording* pFlashRenderer(CSharedFlashPlayerResources::GetAccess().GetRenderer(true));
 
 		if (pFlashRenderer)
 		{
@@ -108,12 +104,12 @@ public:
 			numDPs = stats.Primitives;
 			numTris = stats.Triangles;
 		}
-	#endif
+#endif
 	}
 
 	virtual void SetRenderThreadIDs(threadID main, threadID render) override
 	{
-		GRendererXRender* pRenderer = CSharedFlashPlayerResources::GetAccess().GetRenderer(true);
+		IScaleformRecording* pRenderer = CSharedFlashPlayerResources::GetAccess().GetRenderer(true);
 		if (pRenderer)
 		{
 			pRenderer->SetThreadIDs(main, render);

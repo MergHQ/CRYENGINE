@@ -2497,8 +2497,8 @@ int CPhysicalEntity::UpdateStructure(float time_interval, pe_explosion *pexpl, i
 					if (!pents)
 						iter = m_pWorld->GetEntitiesAround(m_BBox[0]-Vec3(0.1f),m_BBox[1]+Vec3(0.1f),pents,ent_rigid|ent_sleeping_rigid|ent_independent);
 					BBoxNew[0] -= Vec3(m_pWorld->m_vars.maxContactGap*5); 
-					BBoxNew[1] += Vec3(m_pWorld->m_vars.maxContactGap*5);
-					for(j=iter-1; j>=0; j--) if (AABB_overlap(pents[j]->m_BBox, BBoxNew))
+					BBoxNew[1] += Vec3(m_pWorld->m_vars.maxContactGap*5);	// cppcheck-suppress nullPointer
+					for(j=iter-1; j>=0; j--) if (AABB_overlap(pents[j]->m_BBox, BBoxNew))	// cppcheck-suppress nullPointer
 						pents[j]->OnNeighbourSplit(this,(CPhysicalEntity*)epcep.pEntNew);
 				}
 			}

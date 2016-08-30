@@ -14,14 +14,15 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include <CryAISystem/IAIActionSequence.h>
-#include <CryAISystem/IMovementSystem.h>
-#include <CryAISystem/MovementRequest.h>
-#include "FlowBaseNode.h"
 #include "VehicleSystem/VehicleSeat.h"
 #include "VehicleSystem/VehicleCVars.h"
 #include "VehicleSystem/Vehicle.h"
 #include "VehicleSystem/VehicleSeatActionRotateTurret.h"
+
+#include <CryAISystem/IAIActionSequence.h>
+#include <CryAISystem/IMovementSystem.h>
+#include <CryAISystem/MovementRequest.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 //

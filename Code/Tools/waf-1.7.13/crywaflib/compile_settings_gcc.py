@@ -57,6 +57,7 @@ def load_gcc_common_settings(conf):
 		'-Wall',					# Generate more warnings
 		'-Werror',					# Tread Warnings as Errors
 		'-ffast-math',				# Enable fast math
+		'-flax-vector-conversions', # Enable automatic casting between SIMD vector types
 		
 		'-fvisibility=hidden',			
 		

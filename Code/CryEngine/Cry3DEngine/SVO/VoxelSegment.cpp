@@ -1955,7 +1955,10 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 								else if (pNode->GetRenderNodeType() == eERType_Vegetation)
 									info.fObjScale = ((CVegetation*)pNode)->GetScale();
 								else if (pNode->GetRenderNodeType() == eERType_RenderProxy)
-									info.fObjScale = 1.f;
+								{
+									Vec3 vScaleAbs = info.matObj.TransformVector(Vec3(1, 1, 1)).abs();
+									info.fObjScale = min(min(vScaleAbs.x, vScaleAbs.y), vScaleAbs.z);
+								}
 								else
 									assert(!"Undefined object type");
 

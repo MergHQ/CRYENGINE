@@ -31,7 +31,7 @@ BASIC_TYPE_INFO(CCryName);
 //! Convert certain parameters where zero denotes an essentially infinite value.
 ILINE float ZeroIsHuge(float f)
 {
-	return if_pos_else(f, f, fHUGE);
+	return if_else(f, f, fHUGE);
 }
 
 //! For accessing specific information from variable parameters,
@@ -1032,7 +1032,7 @@ struct ParticleParams
 	}
 	float GetMaxParticleLife() const
 	{
-		return if_pos_else(fParticleLifeTime.GetMaxValue(), fParticleLifeTime.GetMaxValue(), ZeroIsHuge(fEmitterLifeTime.GetMaxValue()));
+		return if_else(fParticleLifeTime, fParticleLifeTime.GetMaxValue(), ZeroIsHuge(fEmitterLifeTime.GetMaxValue()));
 	}
 	uint8 GetTailSteps() const
 	{

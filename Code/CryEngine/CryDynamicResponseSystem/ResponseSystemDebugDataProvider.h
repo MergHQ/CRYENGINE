@@ -31,7 +31,6 @@ public:
 	{
 		eER_NotStarted,
 		eER_Running,
-		eER_ExecuteOnlyOnce,
 		eER_NoValidSegment,
 		eER_Canceled,
 		eER_Finished,

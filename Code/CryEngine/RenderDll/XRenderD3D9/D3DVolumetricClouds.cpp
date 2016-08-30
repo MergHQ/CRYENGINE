@@ -30,14 +30,16 @@ const static uint VCMaxCloudBlockerSSNum = 1;
 
 struct VCCloudRenderContext
 {
-	int  cloudVolumeTexId;
-	int  screenWidth;
-	int  screenHeight;
-	int  screenDepth;
-	bool stereoReproj;
-	bool bRightEye;
+	CTexture* scaledTarget;
+	CTexture* scaledZTarget;
+	int       cloudVolumeTexId;
+	int       screenWidth;
+	int       screenHeight;
+	int       screenDepth;
+	bool      stereoReproj;
+	bool      bRightEye;
 #if defined(VOLUMETRIC_FOG_SHADOWS)
-	bool renderFogShadow;
+	bool      renderFogShadow;
 #endif
 };
 
@@ -47,6 +49,8 @@ struct VCCloudShaderParam
 	Vec4  volFogShadowDarkening;
 	Vec4  volFogShadowDarkeningSunAmb;
 #endif
+	Vec3  sunLightDirection;
+	Vec3  cameraFrontVector;
 	Vec3  skylightRayleighInScatter;
 	Vec3  atmosphericScattering;
 	float cloudiness;
@@ -86,11 +90,22 @@ struct VCCloudShaderParam
 	Vec3  cloudOffset;
 	float frameCount;
 	float jitteredSamplingPosition;
+	float projRatio0;
+	float projRatio1;
 };
 
 static int VCGetDownscaleRatio()
 {
 	return clamp_tpl<int>(CRenderer::CV_r_VolumetricClouds, 1, 2); // half and quarter res are available.
+}
+
+static int32 VCGetDownscaledResolution(int32 resolution, int32 downscaleRatio)
+{
+	for (int32 i = 0; i < downscaleRatio; ++i)
+	{
+		resolution = (resolution + 1) / 2;
+	}
+	return resolution;
 }
 
 // calculate Van der Corput sequence
@@ -125,6 +140,44 @@ static int VCGetCloudRaymarchStepNum()
 	return num;
 }
 
+static Matrix44 VCGetReprojectionMatrix(const Matrix44& matViewReprojTarget, const Matrix44& matProjReprojTarget)
+{
+	// Compute reprojection matrix with highest possible precision to minimize numeric diffusion
+	Matrix44_tpl<f64> matReprojection64;
+
+	Matrix44A matProj = gcpRendD3D->m_ProjMatrix;
+	Matrix44A matView = gcpRendD3D->m_ViewMatrix;
+
+	if (gcpRendD3D->GetS3DRend().GetStereoMode() != STEREO_MODE_DUAL_RENDERING)
+	{
+		// Ensure jittering is removed from projection matrix
+		matProj.m20 = 0.0f;
+		matProj.m21 = 0.0f;
+	}
+
+	Matrix44_tpl<f64> matViewInv, matProjInv;
+	mathMatrixLookAtInverse(&matViewInv, &matView);
+	const bool bCanInvert = mathMatrixPerspectiveFovInverse(&matProjInv, &matProj);
+	CRY_ASSERT(bCanInvert);
+
+	Matrix44_tpl<f64> matScaleBias1 = Matrix44_tpl<f64>(
+	  0.5, 0, 0, 0,
+	  0, -0.5, 0, 0,
+	  0, 0, 1, 0,
+	  0.5, 0.5, 0, 1);
+	Matrix44_tpl<f64> matScaleBias2 = Matrix44_tpl<f64>(
+	  2.0, 0, 0, 0,
+	  0, -2.0, 0, 0,
+	  0, 0, 1, 0,
+	  -1.0, 1.0, 0, 1);
+
+	matReprojection64 = matProjInv * matViewInv * Matrix44_tpl<f64>(matViewReprojTarget) * Matrix44_tpl<f64>(matProjReprojTarget);
+	matReprojection64 = matScaleBias2 * matReprojection64 * matScaleBias1;
+
+	Matrix44 result = matReprojection64;
+	return result;
+}
+
 //////////////////////////////////////////////////////////////////////////
 CVolumetricCloudManager::CVolumetricCloudManager()
 	: m_enableVolumetricCloudsShadow(false)
@@ -137,7 +190,8 @@ CVolumetricCloudManager::CVolumetricCloudManager()
 
 		for (int i = 0; i < MaxFrameNum; ++i)
 		{
-			m_viewProj[e][i].SetIdentity();
+			m_viewMatrix[e][i].SetIdentity();
+			m_projMatrix[e][i].SetIdentity();
 		}
 
 		for (int i = 0; i < 2; ++i)
@@ -150,23 +204,16 @@ CVolumetricCloudManager::CVolumetricCloudManager()
 
 	m_cloudDepthBuffer = NULL;
 	m_downscaledTemp = NULL;
+	m_downscaledMinTemp = NULL;
 	m_downscaledLeftEye = NULL;
 	m_cloudDensityTex = NULL;
 	m_cloudShadowTex = NULL;
 
 	m_blockerPosArray.Reserve(VCMaxCloudBlockerNum);
 	m_blockerParamArray.Reserve(VCMaxCloudBlockerNum);
-	for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
-	{
-		m_blockerArray[i].Reserve(VCMaxCloudBlockerNum);
-	}
 
 	m_blockerSSPosArray.Reserve(VCMaxCloudBlockerSSNum);
 	m_blockerSSParamArray.Reserve(VCMaxCloudBlockerSSNum);
-	for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
-	{
-		m_blockerSSArray[i].Reserve(VCMaxCloudBlockerSSNum);
-	}
 }
 
 CVolumetricCloudManager::~CVolumetricCloudManager()
@@ -182,30 +229,10 @@ CVolumetricCloudManager::~CVolumetricCloudManager()
 	}
 	SAFE_RELEASE_FORCE(m_cloudDepthBuffer);
 	SAFE_RELEASE_FORCE(m_downscaledTemp);
+	SAFE_RELEASE_FORCE(m_downscaledMinTemp);
 	SAFE_RELEASE_FORCE(m_downscaledLeftEye);
 	SAFE_RELEASE_FORCE(m_cloudDensityTex);
 	SAFE_RELEASE_FORCE(m_cloudShadowTex);
-}
-
-void CVolumetricCloudManager::PushCloudBlocker(const Vec3& pos, const Vec3& param, int flag)
-{
-	const uint32 nThreadID = gcpRendD3D->m_RP.m_nFillThreadID;
-	assert(nThreadID == gcpRendD3D->m_pRT->GetThreadList());
-
-	auto& array = (flag == 0) ? m_blockerArray[nThreadID] : m_blockerSSArray[nThreadID];
-	uint MaxElementNum = (flag == 0) ? VCMaxCloudBlockerNum : VCMaxCloudBlockerSSNum;
-
-	if (array.size() >= MaxElementNum)
-	{
-		// TODO: show skipped Cloud Blocker number on the screen.
-		return;
-	}
-
-	SCloudBlocker temp;
-	temp.pos = pos;
-	temp.param = param;
-
-	array.Add(temp);
 }
 
 bool CVolumetricCloudManager::IsRenderable() const
@@ -254,18 +281,23 @@ Vec4 CVolumetricCloudManager::GetVolumetricCloudShadowParam(CD3D9Renderer* r, co
 
 void CVolumetricCloudManager::BuildCloudBlockerList()
 {
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	SRenderPipeline& rp(rd->m_RP);
+	CRenderView* pRenderView = rp.RenderView();
+	CRY_ASSERT(pRenderView);
+
+	const auto& blockers = pRenderView->GetCloudBlockers(0);
+
 	// build blocker list for current frame.
 	m_blockerPosArray.SetUse(0);
 	m_blockerParamArray.SetUse(0);
-	const uint32 nThreadID = gcpRendD3D->m_RP.m_nProcessThreadID;
-	auto& array = m_blockerArray[nThreadID];
-	uint numBlocker = array.Num();
-	for (uint i = 0; i < numBlocker; ++i)
-	{
-		Vec3& pos = array[i].pos;
-		m_blockerPosArray.push_back(Vec4(pos.x, pos.y, pos.z, (float)numBlocker));
 
-		Vec3& param = array[i].param;
+	auto numBlocker = blockers.size();
+	for (uint32 i = 0; i < numBlocker; ++i)
+	{
+		m_blockerPosArray.push_back(Vec4(blockers[i].position, (float)numBlocker));
+
+		const Vec3& param = blockers[i].param;
 		const float decayStart = param.x;
 		const float decayEnd = param.y;
 		const float decayDistance = VCGetCloudBlockerDecayDistance(decayStart, decayEnd); // to avoid floating point exception.
@@ -274,31 +306,30 @@ void CVolumetricCloudManager::BuildCloudBlockerList()
 		const float invDecayInfluence = 1.0f - decayInfluence;
 		m_blockerParamArray.push_back(Vec4(invDecayDist, decayStart, decayInfluence, invDecayInfluence));
 	}
-
-	// reset blockers array for the next frame.
-	array.SetUse(0);
 }
 
 void CVolumetricCloudManager::BuildCloudBlockerSSList()
 {
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	SRenderPipeline& rp(rd->m_RP);
+	CRenderView* pRenderView = rp.RenderView();
+	CRY_ASSERT(pRenderView);
+
+	const auto& blockers = pRenderView->GetCloudBlockers(1);
+
 	// build screen space blocker list for current frame.
 	m_blockerSSPosArray.SetUse(0);
 	m_blockerSSParamArray.SetUse(0);
-	const uint32 nThreadID = gcpRendD3D->m_RP.m_nProcessThreadID;
-	auto& array = m_blockerSSArray[nThreadID];
 
-	if (array.Num() > 0)
+	auto numBlocker = blockers.size();
+	for (uint32 i = 0; i < numBlocker; ++i)
 	{
-		Vec3& pos = array[0].pos;
-		m_blockerSSPosArray.push_back(Vec4(pos.x, pos.y, pos.z, 0.0f));
+		m_blockerSSPosArray.push_back(Vec4(blockers[i].position, 0.0f));
 
-		Vec3& param = array[0].param;
+		const Vec3& param = blockers[i].param;
 		const float decayIntensity = clamp_tpl(1.0f - param.z, 0.0f, 1.0f) * 10.0f;
 		m_blockerSSParamArray.push_back(Vec4(param.y, decayIntensity, 0.0f, 0.0f));
 	}
-
-	// reset blockers array for the next frame.
-	array.SetUse(0);
 }
 
 bool CVolumetricCloudManager::CreateResources()
@@ -327,8 +358,8 @@ bool CVolumetricCloudManager::CreateResources()
 
 	bool resetReprojection = false;
 	const int scale = VCGetDownscaleRatio();
-	int scaledWidth = gRenDev->GetWidth() >> scale;
-	int scaledHeight = gRenDev->GetHeight() >> scale;
+	int scaledWidth = VCGetDownscaledResolution(gRenDev->GetWidth(), scale);
+	int scaledHeight = VCGetDownscaledResolution(gRenDev->GetHeight(), scale);
 	int depth = VCGetCloudRaymarchStepNum();
 	const char* tname[MaxEyeNum][2] =
 	{
@@ -451,6 +482,23 @@ bool CVolumetricCloudManager::CreateResources()
 	}
 
 	{
+		if (m_downscaledMinTemp &&
+		    (scaledWidth != m_downscaledMinTemp->GetWidth() || scaledHeight != m_downscaledMinTemp->GetHeight()))
+		{
+			SAFE_RELEASE_FORCE(m_downscaledMinTemp);
+		}
+
+		if (!m_downscaledMinTemp)
+		{
+			int flags = FT_NOMIPS | FT_USAGE_UNORDERED_ACCESS;
+			const ETEX_Format texFormat = eTF_R16G16B16A16F;
+			m_downscaledMinTemp = CTexture::Create2DTexture("$VolCloudMinTemp", scaledWidth, scaledHeight, 1, flags, NULL, texFormat, texFormat);
+
+			resetReprojection = true;
+		}
+	}
+
+	{
 		if (m_downscaledLeftEye &&
 		    (scaledWidth != m_downscaledLeftEye->GetWidth() || scaledHeight != m_downscaledLeftEye->GetHeight()
 		     || !stereoReproj))
@@ -460,7 +508,7 @@ bool CVolumetricCloudManager::CreateResources()
 
 		if (!m_downscaledLeftEye && stereoReproj)
 		{
-			int flags = FT_NOMIPS | FT_USAGE_RENDERTARGET;
+			int flags = FT_NOMIPS | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS;
 			const ETEX_Format texFormat = eTF_R16G16B16A16F;
 			m_downscaledLeftEye = CTexture::Create2DTexture("$VolCloudLeftEye", scaledWidth, scaledHeight, 1, flags, NULL, texFormat, texFormat);
 
@@ -517,7 +565,10 @@ bool CVolumetricCloudManager::CreateResources()
 
 bool CVolumetricCloudManager::AreTexturesValid() const
 {
-	bool bDownscaledRTs = CTexture::IsTextureExist(m_cloudDepthBuffer) && CTexture::IsTextureExist(m_downscaledTemp);
+	bool bDownscaledRTs = CTexture::IsTextureExist(m_cloudDepthBuffer)
+	                      && CTexture::IsTextureExist(m_downscaledTemp)
+	                      && CTexture::IsTextureExist(m_downscaledMinTemp);
+
 	const int eyeNum = gRenDev->m_bDualStereoSupport ? MaxEyeNum : 1;
 	for (int e = 0; e < eyeNum; ++e)
 	{
@@ -535,7 +586,8 @@ bool CVolumetricCloudManager::AreTexturesValid() const
 
 	if (CRenderer::CV_r_VolumetricCloudsPipeline != 0)
 	{
-		bDownscaledRTs = bDownscaledRTs && CTexture::IsTextureExist(m_cloudDensityTex) && CTexture::IsTextureExist(m_cloudShadowTex);
+		bDownscaledRTs = bDownscaledRTs && CTexture::IsTextureExist(m_cloudDensityTex);
+		bDownscaledRTs = bDownscaledRTs && CTexture::IsTextureExist(m_cloudShadowTex);
 	}
 
 	return (CTexture::IsTextureExist(CTexture::s_ptexVolCloudShadow) && bDownscaledRTs);
@@ -573,11 +625,9 @@ void CVolumetricCloudManager::GenerateVolumeTextures()
 	// update previous view-projection matrix
 	if (bLeftEye || bRightEye)
 	{
-		CD3D9Renderer* const __restrict rd = gcpRendD3D;
-		Matrix44 mViewProj = rd->m_ViewMatrix * rd->m_ProjMatrix;
-		Matrix44& mViewport = SD3DPostEffectsUtils::GetInstance().m_pScaleBias;
-
-		m_viewProj[gRenDev->m_CurRenderEye][m_tick % MaxFrameNum] = mViewProj * mViewport;
+		const int32 currentFrameIndex = m_tick % MaxFrameNum;
+		m_viewMatrix[gRenDev->m_CurRenderEye][currentFrameIndex] = gcpRendD3D->m_ViewMatrix;
+		m_projMatrix[gRenDev->m_CurRenderEye][currentFrameIndex] = gcpRendD3D->m_ProjMatrix;
 	}
 
 	// Only generate once per frame.
@@ -617,7 +667,7 @@ void CVolumetricCloudManager::GenerateCloudShadowVol()
 	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_DENSITY_PARAMS, cloudDensityParams);
 	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_MISC_PARAM, cloudMiscParams);
 
-	assert(CTexture::s_ptexVolumetricFogDensity != NULL);
+	assert(CTexture::s_ptexVolCloudShadow != NULL);
 	const int widthVolShadowTex = CTexture::s_ptexVolCloudShadow->GetWidth();
 	const int heightVolShadowTex = CTexture::s_ptexVolCloudShadow->GetHeight();
 	const int depthVolShadowTex = CTexture::s_ptexVolCloudShadow->GetDepth();
@@ -693,6 +743,11 @@ void CVolumetricCloudManager::GenerateCloudShadowVol()
 
 	const Vec3 cloudOffset(PF.pVolCloudTilingOffset.x, PF.pVolCloudTilingOffset.y, PF.pVolCloudTilingOffset.z - altitude);
 
+	static CCryNameR cloudShadowSunDirectionParamName("CloudShadowSunLightDirection");
+	Vec3 sunDirection = rp.m_pSunLight ? rp.m_pSunLight->GetPosition().normalized() : Vec3(0.0f, 0.0f, 0.0f);
+	Vec4 cloudShadowSunDirectionParam(sunDirection, 0.0f);
+	pShader->FXSetCSFloat(cloudShadowSunDirectionParamName, &cloudShadowSunDirectionParam, 1);
+
 	static CCryNameR shadowGenParamName("CloudShadowGenParams");
 	Vec4 shadowGenParam(altitude, thickness, cloudiness, extinction);
 	pShader->FXSetCSFloat(shadowGenParamName, &shadowGenParam, 1);
@@ -767,6 +822,7 @@ void CVolumetricCloudManager::MakeCloudShaderParam(VCCloudRenderContext& context
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	SRenderPipeline& rp(rd->m_RP);
 	SCGParamsPF& PF = rd->m_cEF.m_PF[rp.m_nProcessThreadID];
+	const CRenderCamera& rc = rd->GetRCamera();
 
 	Vec3 cloudGenParams;
 	Vec3 cloudScatteringLowParams;
@@ -800,14 +856,22 @@ void CVolumetricCloudManager::MakeCloudShaderParam(VCCloudRenderContext& context
 
 	context.cloudVolumeTexId = rd->GetVolumetricCloudTextureId();
 
-	assert(m_cloudShadowTex != NULL);
-	context.screenWidth = m_cloudShadowTex->GetWidth();
-	context.screenHeight = m_cloudShadowTex->GetHeight();
-	context.screenDepth = m_cloudShadowTex->GetDepth();
+	const int scale = VCGetDownscaleRatio();
+	context.screenWidth = VCGetDownscaledResolution(gRenDev->GetWidth(), scale);
+	context.screenHeight = VCGetDownscaledResolution(gRenDev->GetHeight(), scale);
+	context.screenDepth = VCGetCloudRaymarchStepNum();
 
 	bool bStereo = gRenDev->m_bDualStereoSupport;
 	context.stereoReproj = bStereo && CRenderer::CV_r_VolumetricCloudsStereoReprojection != 0;
 	context.bRightEye = gRenDev->m_CurRenderEye == StereoEye::RIGHT_EYE;
+
+	const uint downscaleIndex = max(0, scale - 1);
+	context.scaledTarget = m_downscaledTemp;
+	if (context.stereoReproj && !context.bRightEye)
+	{
+		context.scaledTarget = m_downscaledLeftEye; // left eye is re-projected to right eye.
+	}
+	context.scaledZTarget = (downscaleIndex == 0) ? CTexture::s_ptexZTargetScaled : CTexture::s_ptexZTargetScaled2;
 
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 	context.renderFogShadow = rd->m_bVolFogShadowsEnabled;
@@ -824,6 +888,15 @@ void CVolumetricCloudManager::MakeCloudShaderParam(VCCloudRenderContext& context
 		param.volFogShadowDarkeningSunAmb = Vec4(aSun, bSun, aAmb, bAmb);
 	}
 #endif
+
+	const bool bReverseDepth = (rp.m_TI[rp.m_nProcessThreadID].m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
+	f64 zn = rc.fNear;
+	f64 zf = rc.fFar;
+	param.projRatio0 = static_cast<f32>(bReverseDepth ? zn / (zn - zf) : zf / (zf - zn));
+	param.projRatio1 = static_cast<f32>(bReverseDepth ? zn / (zf - zn) : zn / (zn - zf));
+
+	param.sunLightDirection = rp.m_pSunLight ? rp.m_pSunLight->GetPosition().normalized() : Vec3(0.0f, 0.0f, 0.0f);
+	param.cameraFrontVector = rc.vZ.GetNormalized();
 
 	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKYLIGHT_RAYLEIGH_INSCATTER, param.skylightRayleighInScatter);
 	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_ATMOSPHERIC_SCATTERING, param.atmosphericScattering);
@@ -910,11 +983,22 @@ void CVolumetricCloudManager::SetShaderParameters(CShader& shader, const VCCloud
 	}
 #endif
 
+	static CCryNameR sunLightDirectionParamName("vcSunLightDirection");
+	Vec4 sunLightDirectionParam(p.sunLightDirection, 0.0f);
+	shader.FXSetCSFloat(sunLightDirectionParamName, &sunLightDirectionParam, 1);
+
+	static CCryNameR cameraFrontVectorParamName("vcCameraFrontVector");
+	Vec4 cameraFrontVectorParam(p.cameraFrontVector, 0.0f);
+	shader.FXSetCSFloat(cameraFrontVectorParamName, &cameraFrontVectorParam, 1);
+
 	if (context.stereoReproj && context.bRightEye)
 	{
-		static CCryNameR vcLeftViewProjMatrixParamName("vcLeftViewProjMatrix");
-		Vec4* temp = (Vec4*)m_viewProj[StereoEye::LEFT_EYE][m_tick % MaxFrameNum].GetData();
-		shader.FXSetCSFloat(vcLeftViewProjMatrixParamName, temp, 4);
+		static CCryNameR vcLeftToRightReprojMatrixParamName("vcLeftToRightReprojMatrix");
+		const int32 currentFrameIndex = m_tick % MaxFrameNum;
+		const Matrix44 matReproj = VCGetReprojectionMatrix(m_viewMatrix[StereoEye::LEFT_EYE][currentFrameIndex],
+		                                                   m_projMatrix[StereoEye::LEFT_EYE][currentFrameIndex]);
+		Vec4* temp = (Vec4*)matReproj.GetData();
+		shader.FXSetCSFloat(vcLeftToRightReprojMatrixParamName, temp, 4);
 	}
 
 	static CCryNameR skylightRayleighInScatterParamName("vcSkylightRayleighInScatter");
@@ -934,7 +1018,7 @@ void CVolumetricCloudManager::SetShaderParameters(CShader& shader, const VCCloud
 	shader.FXSetCSFloat(cloudRenderParamName, &cloudRenderParam, 1);
 
 	static CCryNameR cloudGenParamName("vcCloudGenParams");
-	Vec4 cloudGenParam(p.altitude, p.thickness, p.cloudiness, 0.0f /*float(scale + 1)*/);
+	Vec4 cloudGenParam(p.altitude, p.thickness, p.cloudiness, 0.0f);
 	shader.FXSetCSFloat(cloudGenParamName, &cloudGenParam, 1);
 
 	static CCryNameR tilingParamName("vcCloudTilingParams");
@@ -942,7 +1026,7 @@ void CVolumetricCloudManager::SetShaderParameters(CShader& shader, const VCCloud
 	shader.FXSetCSFloat(tilingParamName, &tilingParam, 1);
 
 	static CCryNameR multiScatteringParamName("vcMultiScatteringParams");
-	Vec4 multiScatteringParam(p.multiScatterAttenuation, p.multiScatterPreservation, 0.0f, 0.0f);
+	Vec4 multiScatteringParam(p.multiScatterAttenuation, p.multiScatterPreservation, p.projRatio0, p.projRatio1);
 	shader.FXSetCSFloat(multiScatteringParamName, &multiScatteringParam, 1);
 
 	static CCryNameR cloudNoiseParamName("vcCloudNoiseParams");
@@ -984,7 +1068,7 @@ void CVolumetricCloudManager::SetShaderParameters(CShader& shader, const VCCloud
 	shader.FXSetCSFloat(vcCloudBlockerParamName, m_blockerParamArray.begin(), 4);
 }
 
-bool CVolumetricCloudManager::GenerateCloudDensityAndShadow()
+bool CVolumetricCloudManager::GenerateCloudDensityAndShadow(const VCCloudRenderContext& context, const VCCloudShaderParam& param)
 {
 	if (CRenderer::CV_r_VolumetricCloudsPipeline != 0)
 	{
@@ -993,24 +1077,15 @@ bool CVolumetricCloudManager::GenerateCloudDensityAndShadow()
 		CDeviceManager& dm = rd->m_DevMan;
 		const int nThreadID = rp.m_nProcessThreadID;
 		const SThreadInfo& ti = rp.m_TI[nThreadID];
-		SCGParamsPF& PF = rd->m_cEF.m_PF[nThreadID];
 		uint64 nFlagsShaderRTSave = rp.m_FlagsShader_RT;
-
-		VCCloudRenderContext context;
-		VCCloudShaderParam cloudParam;
-		MakeCloudShaderParam(context, cloudParam);
 
 		// needs to reset due to a mismatch between real device states and cached states.
 		CTexture::ResetTMUs();
 
-		const int scale = VCGetDownscaleRatio();
-		const uint downscaleIndex = max(0, scale - 1);
-		CTexture* scaledZTarget = (downscaleIndex == 0) ? CTexture::s_ptexZTargetScaled : CTexture::s_ptexZTargetScaled2;
-
 		// Inject clouds density and shadow to frustum aligned volume texture.
 		{
 #ifdef ENABLE_DETAILED_PROFILING
-			PROFILE_LABEL_SCOPE("INJECT_CLOUD_SHADOWs");
+			PROFILE_LABEL_SCOPE("INJECT_CLOUD_SHADOW");
 #endif
 
 			// need to manually apply several shader flags
@@ -1070,7 +1145,7 @@ bool CVolumetricCloudManager::GenerateCloudDensityAndShadow()
 			}
 
 			// take fast path when clouds are always rendered in low shading mode, and viewable region is covered by cloud shadow map.
-			if (cloudParam.shadingLOD >= 1.0f && cloudParam.cloudShadowTilingSize >= (cloudParam.maxViewableDistance * 2.0f))
+			if (param.shadingLOD >= 1.0f && param.cloudShadowTilingSize >= (param.maxViewableDistance * 2.0f))
 			{
 				rp.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE5];
 			}
@@ -1092,7 +1167,7 @@ bool CVolumetricCloudManager::GenerateCloudDensityAndShadow()
 			};
 			dm.BindUAV(CDeviceManager::TYPE_CS, pUAVs, NULL, 0, 2);
 
-			scaledZTarget->Apply(0, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Compute);
+			context.scaledZTarget->Apply(0, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Compute);
 
 			if (context.stereoReproj && context.bRightEye)
 			{
@@ -1109,7 +1184,7 @@ bool CVolumetricCloudManager::GenerateCloudDensityAndShadow()
 				}
 			}
 
-			SetShaderParameters(*pShader, cloudParam, context);
+			SetShaderParameters(*pShader, param, context);
 
 			// Commit shader params
 			rd->FX_Commit();
@@ -1133,106 +1208,31 @@ bool CVolumetricCloudManager::GenerateCloudDensityAndShadow()
 		ID3D11UnorderedAccessView* pUAVNull[2] = { NULL };
 		dm.BindUAV(CDeviceManager::TYPE_CS, pUAVNull, NULL, 0, 2);
 
-		CTexture::ResetTMUs();
-
 		rd->FX_Commit();
 		dm.CommitDeviceStates();
+
+		CTexture::ResetTMUs();
 	}
 
 	return true;
 }
 
-void CVolumetricCloudManager::RenderClouds()
+bool CVolumetricCloudManager::RenderCloudByRaymarching(const VCCloudRenderContext& context, const VCCloudShaderParam& param)
 {
-	if (!IsRenderable())
-		return;
-	if (!AreTexturesValid())
-		return;
-
-	PROFILE_LABEL_SCOPE("VOLUMETRIC_CLOUDS");
-
-	GenerateCloudDensityAndShadow();
-
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	SRenderPipeline& rp(rd->m_RP);
 	CDeviceManager& dm = rd->m_DevMan;
 	const int nThreadID = rp.m_nProcessThreadID;
 	const SThreadInfo& ti = rp.m_TI[nThreadID];
-	SCGParamsPF& PF = rd->m_cEF.m_PF[nThreadID];
-
-	Vec3 skylightRayleighInScatter;
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKYLIGHT_RAYLEIGH_INSCATTER, skylightRayleighInScatter);
-
-	Vec3 cloudGenParams;
-	Vec3 cloudScatteringLowParams;
-	Vec3 cloudScatteringHighParams;
-	Vec3 cloudGroundColorParams;
-	Vec3 cloudScatteringMulti;
-	Vec3 cloudWindAndAtmosphericParams;
-	Vec3 cloudTurbulenceParams;
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_GEN_PARAMS, cloudGenParams);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_SCATTERING_LOW, cloudScatteringLowParams);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_SCATTERING_HIGH, cloudScatteringHighParams);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_GROUND_COLOR, cloudGroundColorParams);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_SCATTERING_MULTI, cloudScatteringMulti);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_WIND_ATMOSPHERIC, cloudWindAndAtmosphericParams);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_TURBULENCE, cloudTurbulenceParams);
-
-	Vec3 cloudEnvParams;
-	Vec3 cloudGlobalNoiseScale;
-	Vec3 cloudRenderParams;
-	Vec3 cloudTurbulenceNoiseScale;
-	Vec3 cloudTurbulenceNoiseParams;
-	Vec3 cloudDensityParams;
-	Vec3 cloudMiscParams;
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_ENV_PARAMS, cloudEnvParams);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_GLOBAL_NOISE_SCALE, cloudGlobalNoiseScale);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_RENDER_PARAMS, cloudRenderParams);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_TURBULENCE_NOISE_SCALE, cloudTurbulenceNoiseScale);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_TURBULENCE_NOISE_PARAMS, cloudTurbulenceNoiseParams);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_DENSITY_PARAMS, cloudDensityParams);
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_MISC_PARAM, cloudMiscParams);
-
-	Vec3 atmosphericScattering;
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLCLOUD_ATMOSPHERIC_SCATTERING, atmosphericScattering);
-
-	const bool sphericalCloudLayer = (cloudEnvParams.y > 0.0f);
-
-	// Save previous states
-	int vX, vY, vWidth, vHeight;
-	rd->GetViewport(&vX, &vY, &vWidth, &vHeight);
 	uint64 nFlagsShaderRTSave = rp.m_FlagsShader_RT;
 
-	bool valid = true;
-	CShader* pShader = CShaderMan::s_ShaderClouds;
-	const int scale = VCGetDownscaleRatio();
-	const uint downscaleIndex = max(0, scale - 1);
-	bool bStereo = gRenDev->m_bDualStereoSupport;
-	bool stereoReproj = bStereo && CRenderer::CV_r_VolumetricCloudsStereoReprojection != 0;
-	bool bRightEye = gRenDev->m_CurRenderEye == StereoEye::RIGHT_EYE;
+	// needs to reset due to a mismatch between real device states and cached states.
+	CTexture::ResetTMUs();
 
-	CTexture* scaledTarget = CTexture::s_ptexHDRTargetScaledTmp[downscaleIndex]; // half or quarter resolution
-	if (stereoReproj && gRenDev->m_CurRenderEye == StereoEye::LEFT_EYE)
-	{
-		scaledTarget = m_downscaledLeftEye; // left eye is re-projected to right eye.
-	}
-
-	CTexture* scaledZTarget = (downscaleIndex == 0) ? CTexture::s_ptexZTargetScaled : CTexture::s_ptexZTargetScaled2;
-
-	{
-		rd->FX_PushRenderTarget(0, scaledTarget, NULL);
-		rd->FX_SetActiveRenderTargets();
-
-		int targetWidth = scaledTarget->GetWidth();
-		int targetHeight = scaledTarget->GetHeight();
-
-		rd->RT_SetViewport(0, 0, targetWidth, targetHeight);
-	}
-
-	// render cloud
+	// Render clouds by using ray-marching.
 	{
 #ifdef ENABLE_DETAILED_PROFILING
-		PROFILE_LABEL_SCOPE("RENDER_CLOUDS");
+		PROFILE_LABEL_SCOPE("RENDER_CLOUDS_COMPUTE");
 #endif
 
 		// need to manually apply several shader flags
@@ -1251,39 +1251,21 @@ void CVolumetricCloudManager::RenderClouds()
 		}
 
 #if defined(VOLUMETRIC_FOG_SHADOWS)
-		static CCryNameR volFogShadowDarkeningN("volFogShadowDarkening");
-		static CCryNameR volFogShadowDarkeningSunAmbN("volFogShadowDarkeningSunAmb");
-
-		Vec4 volFogShadowDarkening(0, 0, 0, 0);
-		Vec4 volFogShadowDarkeningSunAmb(0, 0, 0, 0);
-
-		const bool renderFogShadow = rd->m_bVolFogShadowsEnabled;
-
-		if (renderFogShadow)
+		if (context.renderFogShadow)
 		{
 			rp.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE0];
-
-			Vec3 volFogShadowDarkeningP;
-			gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_DARKENING, volFogShadowDarkeningP);
-			volFogShadowDarkening = Vec4(volFogShadowDarkeningP, 0);
-
-			const float aSun = (1.0f - clamp_tpl(volFogShadowDarkeningP.y, 0.0f, 1.0f)) * 1.0f;
-			const float bSun = 1.0f - aSun;
-			const float aAmb = (1.0f - clamp_tpl(volFogShadowDarkeningP.z, 0.0f, 1.0f)) * 0.4f;
-			const float bAmb = 1.0f - aAmb;
-			volFogShadowDarkeningSunAmb = Vec4(aSun, bSun, aAmb, bAmb);
 		}
 #endif
 
 		// temporarily disabled until these features are implemented.
 #if 0
-		Vec3 lCol(0, 0, 0);
-		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKY_HIGHLIGHT_COLOR, lCol);
-		bool bUseLightning(lCol.x > 1e-4f || lCol.y > 1e-4f || lCol.z > 1e-4f);
-		if (bUseLightning)
-		{
-			rp.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE1];
-		}
+		//Vec3 lCol(0, 0, 0);
+		//gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKY_HIGHLIGHT_COLOR, lCol);
+		//bool bUseLightning(lCol.x > 1e-4f || lCol.y > 1e-4f || lCol.z > 1e-4f);
+		//if(bUseLightning)
+		//{
+		//	rp.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE1];
+		//}
 
 		if (sphericalCloudLayer)
 		{
@@ -1292,16 +1274,14 @@ void CVolumetricCloudManager::RenderClouds()
 #endif
 
 		// enable reprojection from left eye to right eye.
-		if (stereoReproj && bRightEye)
+		if (context.stereoReproj && context.bRightEye)
 		{
 			rp.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE1];
 		}
 
-		const int texId = rd->GetVolumetricCloudTextureId();
-		CTexture* cloudVolumeTex = NULL;
-		if (texId > 0)
+		// enable user specified cloud volume texture.
+		if (context.cloudVolumeTexId > 0)
 		{
-			cloudVolumeTex = CTexture::GetByID(texId);
 			rp.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE3];
 		}
 
@@ -1312,206 +1292,129 @@ void CVolumetricCloudManager::RenderClouds()
 		}
 
 		// take fast path when clouds are always rendered in low shading mode, and viewable region is covered by cloud shadow map.
-		const float maxViewableDistance = cloudRenderParams.x;
-		const float shadingLOD = cloudMiscParams.y;
-		const float cloudShadowTilingSize = cloudMiscParams.z;
-		if (shadingLOD >= 1.0f && cloudShadowTilingSize >= (maxViewableDistance * 2.0f))
+		if (param.shadingLOD >= 1.0f && param.cloudShadowTilingSize >= (param.maxViewableDistance * 2.0f))
 		{
 			rp.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE5];
 		}
 
-		static CCryNameTSCRC shaderName = "CloudsLayer";
-		static CCryNameTSCRC shaderName2 = "RenderCloud";
-		if (CRenderer::CV_r_VolumetricCloudsPipeline != 0)
+		CShader* pShader = CShaderMan::s_ShaderClouds;
+		static CCryNameTSCRC shaderName0 = "RenderCloud_Monolithic";
+		static CCryNameTSCRC shaderName1 = "RenderCloud";
+		bool result;
+		if (CRenderer::CV_r_VolumetricCloudsPipeline == 0)
 		{
-			pShader->FXSetTechnique(shaderName2);
+			result = GetUtils().ShBeginPass(pShader, shaderName0, FEF_DONTSETSTATES);
 		}
 		else
 		{
-			pShader->FXSetTechnique(shaderName);
+			result = GetUtils().ShBeginPass(pShader, shaderName1, FEF_DONTSETSTATES);
 		}
 
-		uint32 nPasses;
-		pShader->FXBegin(&nPasses, FEF_DONTSETSTATES);
-		valid &= pShader->FXBeginPass(0);
-
+		if (!result) //This could happen if shader is being compiled asynchronously
 		{
-			scaledZTarget->Apply(0, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
-
-			// Set UAV
-			ID3D11UnorderedAccessView* pUAVs[2] = {
-				(ID3D11UnorderedAccessView*)m_cloudDepthBuffer->GetDeviceUAV(),
-				(ID3D11UnorderedAccessView*)m_downscaledTemp->GetDeviceUAV(),
-			};
-			dm.BindUAV(CDeviceManager::TYPE_PS, pUAVs, NULL, 1, 2);
+			rp.m_FlagsShader_RT = nFlagsShaderRTSave;
+			return false;
 		}
 
-		if (stereoReproj && bRightEye)
+		// Set UAV
+		ID3D11UnorderedAccessView* pUAVs[3] = {
+			(ID3D11UnorderedAccessView*)context.scaledTarget->GetDeviceUAV(),
+			(ID3D11UnorderedAccessView*)m_cloudDepthBuffer->GetDeviceUAV(),
+			(ID3D11UnorderedAccessView*)m_downscaledMinTemp->GetDeviceUAV(),
+		};
+		dm.BindUAV(CDeviceManager::TYPE_CS, pUAVs, NULL, 0, 3);
+
+		context.scaledZTarget->Apply(0, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Compute);
+
+		if (context.stereoReproj && context.bRightEye)
 		{
-			m_downscaledLeftEye->Apply(1, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Pixel);
+			m_downscaledLeftEye->Apply(1, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Compute);
 			if (CRenderer::CV_r_VolumetricCloudsPipeline == 0)
 			{
-				m_prevScaledDepthBuffer[StereoEye::LEFT_EYE]->Apply(2, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Pixel);
+				m_prevScaledDepthBuffer[StereoEye::LEFT_EYE]->Apply(2, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Compute);
 			}
 		}
 
-		// set cloud base texture.
-		if (cloudVolumeTex)
-		{
-			cloudVolumeTex->Apply(15, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Pixel);
-		}
-
-#if defined(VOLUMETRIC_FOG_SHADOWS)
-		if (renderFogShadow)
-		{
-			pShader->FXSetPSFloat(volFogShadowDarkeningN, &volFogShadowDarkening, 1);
-			pShader->FXSetPSFloat(volFogShadowDarkeningSunAmbN, &volFogShadowDarkeningSunAmb, 1);
-		}
-#endif
-
 		if (CRenderer::CV_r_VolumetricCloudsPipeline != 0)
 		{
-			m_cloudDensityTex->Apply(3, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Pixel);
-			m_cloudShadowTex->Apply(4, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Pixel);
+			m_cloudDensityTex->Apply(3, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Compute);
+			m_cloudShadowTex->Apply(4, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Compute);
 		}
 
-		const float cloudiness = cloudGenParams.x;
-		const float altitude = cloudGenParams.y;
-		const float thickness = max(1e-3f, cloudGenParams.z);
-		const float sunSingleScatter = cloudScatteringLowParams.x;
-		const float sunLowOrderScatter = cloudScatteringLowParams.y;
-		const float sunLowOrderScatterAnisotropy = cloudScatteringLowParams.z;
-		const float sunHighOrderScatter = cloudScatteringHighParams.x;
-		const float skyLightingFactor = cloudScatteringHighParams.y;
-		const float groundLightingFactor = cloudScatteringHighParams.z;
-		const Vec3& groundAlbedo = cloudGroundColorParams;
-		const float multiScatterAttenuation = cloudScatteringMulti.x;
-		const float multiScatterPreservation = cloudScatteringMulti.y;
-		const float powderFactor = cloudScatteringMulti.z;
-		const float sunIntensityForAtmospheric = cloudWindAndAtmosphericParams.z;
-		const float edgeNoiseErode = cloudTurbulenceNoiseParams.x;
-		const float edgeNoiseAbs = cloudTurbulenceNoiseParams.y;
-		const float edgeTurbulence = (edgeNoiseErode > 0.0f) ? 2.0f * cloudTurbulenceParams.x : 8.0f * cloudTurbulenceParams.x;
-		const float edgeThreshold = cloudTurbulenceParams.y + 1e-4f;
-		const float absorptionFactor = cloudTurbulenceParams.z; // 1 to 5 percent is absorbed in clouds at most.
-
-		const float radius = clamp_tpl<float>(cloudEnvParams.x, VCMinSphereRadius, VCMaxSphereRadius);
-		const float horizonHeight = cloudEnvParams.z;
-		const Vec3 cloudNoiseScale = VCBaseNoiseScale.CompMul(cloudGlobalNoiseScale);
-		const float maxRayMarchDistance = cloudRenderParams.y;
-		const float maxRayMarchStep = float(VCGetCloudRaymarchStepNum());
-
-		float extinction = VCScatterCoefficient + (VCScatterCoefficient * absorptionFactor);
-
-		const Vec3 vTiling(cloudShadowTilingSize, cloudShadowTilingSize, thickness);
-		const Vec3 vInvTiling(1.0f / vTiling.x, 1.0f / vTiling.y, 1.0f / vTiling.z);
-
-		const Vec3& baseTexTiling = PF.pVolCloudTilingSize;
-		const Vec3 invBaseTexTiling(1.0f / baseTexTiling.x, 1.0f / baseTexTiling.y, 1.0f / baseTexTiling.z);
-
-		const Vec3 edgeTurbulenceNoiseScale = VCBaseNoiseScale.CompMul(cloudTurbulenceNoiseScale * VCEdgeNoiseScale);
-
-		const float maxGlobalCloudDensity = cloudDensityParams.x;
-		const float minRescaleCloudTexDensity = cloudDensityParams.y;
-		const float maxRescaleCloudTexDensity = cloudDensityParams.z;
-
-		const float additionalNoiseIntensity = cloudMiscParams.x;
-
-		const Vec3 cloudOffset(PF.pVolCloudTilingOffset.x, PF.pVolCloudTilingOffset.y, PF.pVolCloudTilingOffset.z - altitude);
-
-		int32 iFrameCount = m_tick % VCFrameCountCycle;
-		float frameCount = float(iFrameCount);
-		float jitteredSamplingPosition = VCGetVdC(iFrameCount);
-
-		static CCryNameR skylightRayleighInScatterParamName("vcSkylightRayleighInScatter");
-		Vec4 skylightRayleighInScatterParam(skylightRayleighInScatter.x, skylightRayleighInScatter.y, skylightRayleighInScatter.z, skyLightingFactor);
-		pShader->FXSetPSFloat(skylightRayleighInScatterParamName, &skylightRayleighInScatterParam, 1);
-
-		static CCryNameR cloudSunScatteringParamName("vcSunScatteringParams");
-		Vec4 cloudSunScatteringParam(sunSingleScatter, sunLowOrderScatter, sunLowOrderScatterAnisotropy, sunHighOrderScatter);
-		pShader->FXSetPSFloat(cloudSunScatteringParamName, &cloudSunScatteringParam, 1);
-
-		static CCryNameR cloudGroundLightingParamName("vcGroundLightingParams");
-		Vec4 cloudGroundLightingParam(groundAlbedo.x, groundAlbedo.y, groundAlbedo.z, groundLightingFactor);
-		pShader->FXSetPSFloat(cloudGroundLightingParamName, &cloudGroundLightingParam, 1);
-
-		static CCryNameR cloudRenderParamName("vcCloudRenderParams");
-		Vec4 cloudRenderParam(VCScatterCoefficient, extinction, powderFactor, shadingLOD);
-		pShader->FXSetPSFloat(cloudRenderParamName, &cloudRenderParam, 1);
-
-		static CCryNameR cloudGenParamName("vcCloudGenParams");
-		Vec4 cloudGenParam(altitude, thickness, cloudiness, float(scale + 1));
-		pShader->FXSetPSFloat(cloudGenParamName, &cloudGenParam, 1);
-
-		static CCryNameR tilingParamName("vcCloudTilingParams");
-		Vec4 tilingParam(vInvTiling.x, vInvTiling.y, vInvTiling.z, radius);
-		pShader->FXSetPSFloat(tilingParamName, &tilingParam, 1);
-
-		static CCryNameR multiScatteringParamName("vcMultiScatteringParams");
-		Vec4 multiScatteringParam(multiScatterAttenuation, multiScatterPreservation, 0.0f, 0.0f);
-		pShader->FXSetPSFloat(multiScatteringParamName, &multiScatteringParam, 1);
-
-		static CCryNameR cloudNoiseParamName("vcCloudNoiseParams");
-		Vec4 cloudNoiseParam(cloudNoiseScale.x, cloudNoiseScale.y, cloudNoiseScale.z, frameCount);
-		pShader->FXSetPSFloat(cloudNoiseParamName, &cloudNoiseParam, 1);
-
-		static CCryNameR cloudBaseScaleParamName("vcCloudBaseScaleParams");
-		Vec4 cloudBaseScaleParam(invBaseTexTiling.x, invBaseTexTiling.y, invBaseTexTiling.z, jitteredSamplingPosition);
-		pShader->FXSetPSFloat(cloudBaseScaleParamName, &cloudBaseScaleParam, 1);
-
-		static CCryNameR cloudBaseOffsetParamName("vcCloudBaseOffsetParams");
-		Vec4 cloudBaseOffsetParam(cloudOffset.x, cloudOffset.y, cloudOffset.z, 0);
-		pShader->FXSetPSFloat(cloudBaseOffsetParamName, &cloudBaseOffsetParam, 1);
-
-		static CCryNameR densityParamName("vcDensityParams");
-		Vec4 densityParam(maxGlobalCloudDensity, minRescaleCloudTexDensity, maxRescaleCloudTexDensity, additionalNoiseIntensity);
-		pShader->FXSetPSFloat(densityParamName, &densityParam, 1);
-
-		static CCryNameR edgeNoiseScaleParamName("vcEdgeNoiseScaleParams");
-		Vec4 edgeNoiseScaleParam(edgeTurbulenceNoiseScale.x, edgeTurbulenceNoiseScale.y, edgeTurbulenceNoiseScale.z, 0);
-		pShader->FXSetPSFloat(edgeNoiseScaleParamName, &edgeNoiseScaleParam, 1);
-
-		static CCryNameR edgeTurbulenceParamName("vcEdgeTurbulenceParams");
-		Vec4 edgeTurbulenceParam(edgeTurbulence, edgeThreshold, edgeNoiseErode, edgeNoiseAbs);
-		pShader->FXSetPSFloat(edgeTurbulenceParamName, &edgeTurbulenceParam, 1);
-
-		static CCryNameR cloudRaymarchParamName("vcCloudRaymarchParams");
-		Vec4 cloudRaymarchParam(maxViewableDistance, maxRayMarchDistance, maxRayMarchStep, horizonHeight);
-		pShader->FXSetPSFloat(cloudRaymarchParamName, &cloudRaymarchParam, 1);
-
-		static CCryNameR cloudAtmosphericParamName("vcCloudAtmosphericParams");
-		Vec4 cloudAtmosphericParam(atmosphericScattering.x, atmosphericScattering.y, atmosphericScattering.z, sunIntensityForAtmospheric);
-		pShader->FXSetPSFloat(cloudAtmosphericParamName, &cloudAtmosphericParam, 1);
-
-		static CCryNameR vcCloudBlockerPosName("vcCloudBlockerPos");
-		pShader->FXSetPSFloat(vcCloudBlockerPosName, m_blockerPosArray.begin(), 4);
-
-		static CCryNameR vcCloudBlockerParamName("vcCloudBlockerParam");
-		pShader->FXSetPSFloat(vcCloudBlockerParamName, m_blockerParamArray.begin(), 4);
-
-		if (stereoReproj && bRightEye)
+		// set cloud base texture.
+		if (context.cloudVolumeTexId > 0)
 		{
-			static CCryNameR vcLeftViewProjMatrixParamName("vcLeftViewProjMatrix");
-			Vec4* temp = (Vec4*)m_viewProj[StereoEye::LEFT_EYE][m_tick % MaxFrameNum].GetData();
-			pShader->FXSetPSFloat(vcLeftViewProjMatrixParamName, temp, 4);
+			CTexture* cloudVolumeTex = CTexture::GetByID(context.cloudVolumeTexId);
+			if (cloudVolumeTex)
+			{
+				cloudVolumeTex->Apply(15, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView, eHWSC_Compute);
+			}
 		}
 
-		rd->FX_SetState(GS_NODEPTHTEST);
+		SetShaderParameters(*pShader, param, context);
 
+		// Commit shader params
 		rd->FX_Commit();
 
-		PostProcessUtils().DrawFullScreenTriWPOS(CTexture::s_ptexSceneTarget->GetWidth(), CTexture::s_ptexSceneTarget->GetHeight(), 1.0f);
+		// Tile sizes defined in [numthreads()] in shader
+		const uint32 nTileSizeX = 8;
+		const uint32 nTileSizeY = 8;
+		const uint32 nTileSizeZ = 1;
 
-		pShader->FXEndPass();
+		uint32 dispatchSizeX = context.screenWidth / nTileSizeX + (context.screenWidth % nTileSizeX > 0 ? 1 : 0);
+		uint32 dispatchSizeY = context.screenHeight / nTileSizeY + (context.screenHeight % nTileSizeY > 0 ? 1 : 0);
+		uint32 dispatchSizeZ = 1;
 
-		rp.m_FlagsShader_RT = nFlagsShaderRTSave;
+		dm.Dispatch(dispatchSizeX, dispatchSizeY, dispatchSizeZ);
+
+		GetUtils().ShEndPass();
 	}
 
+	rp.m_FlagsShader_RT = nFlagsShaderRTSave;
+
+	ID3D11UnorderedAccessView* pUAVNull[3] = { NULL };
+	dm.BindUAV(CDeviceManager::TYPE_CS, pUAVNull, NULL, 0, 3);
+
+	rd->FX_Commit();
+	dm.CommitDeviceStates();
+
+	CTexture::ResetTMUs();
+
+	return true;
+}
+
+void CVolumetricCloudManager::RenderClouds()
+{
+	if (!IsRenderable())
+		return;
+	if (!AreTexturesValid())
+		return;
+
+	PROFILE_LABEL_SCOPE("VOLUMETRIC_CLOUDS");
+
+	bool valid = true;
+
+	VCCloudRenderContext context;
+	VCCloudShaderParam cloudParam;
+	MakeCloudShaderParam(context, cloudParam);
+
+	valid &= GenerateCloudDensityAndShadow(context, cloudParam);
+
+	valid &= RenderCloudByRaymarching(context, cloudParam);
+
 	{
-		ID3D11UnorderedAccessView* pUAVNull[2] = { NULL };
-		dm.BindUAV(CDeviceManager::TYPE_PS, pUAVNull, NULL, 1, 2);
-		rd->FX_Commit();
-		dm.CommitDeviceStates();
+		CD3D9Renderer* const __restrict rd = gcpRendD3D;
+		SRenderPipeline& rp(rd->m_RP);
+		CDeviceManager& dm = rd->m_DevMan;
+		const int nThreadID = rp.m_nProcessThreadID;
+		const SThreadInfo& ti = rp.m_TI[nThreadID];
+
+		// Save previous states
+		int vX, vY, vWidth, vHeight;
+		rd->GetViewport(&vX, &vY, &vWidth, &vHeight);
+		uint64 nFlagsShaderRTSave = rp.m_FlagsShader_RT;
+
+		CShader* pShader = CShaderMan::s_ShaderClouds;
 
 		int32 curEye = gRenDev->m_CurRenderEye;
 		int32 tick = (m_tick / gcpRendD3D->GetActiveGPUCount()) & 0x1;
@@ -1521,12 +1424,19 @@ void CVolumetricCloudManager::RenderClouds()
 		CTexture* currMinTex = tick ? m_downscaledMinTex[curEye][1] : m_downscaledMinTex[curEye][0];
 		CTexture* prevScaledDepth = m_prevScaledDepthBuffer[curEye];
 
+		CRY_ASSERT(prevScaledDepth->GetWidth() == context.scaledZTarget->GetWidth());
+		CRY_ASSERT(prevScaledDepth->GetHeight() == context.scaledZTarget->GetHeight());
+
 		if (m_cleared > 0)
 		{
-			rd->GetDeviceContext().CopyResource(prevTex->GetDevTexture()->Get2DTexture(), currTex->GetDevTexture()->Get2DTexture());
-			rd->GetDeviceContext().CopyResource(prevMinTex->GetDevTexture()->Get2DTexture(), currMinTex->GetDevTexture()->Get2DTexture());
-			rd->GetDeviceContext().CopyResource(prevScaledDepth->GetDevTexture()->Get2DTexture(), scaledZTarget->GetDevTexture()->Get2DTexture());
+			rd->GetDeviceContext().CopyResource(prevTex->GetDevTexture()->Get2DTexture(), context.scaledTarget->GetDevTexture()->Get2DTexture());
+			rd->GetDeviceContext().CopyResource(prevMinTex->GetDevTexture()->Get2DTexture(), m_downscaledMinTemp->GetDevTexture()->Get2DTexture());
+			rd->GetDeviceContext().CopyResource(prevScaledDepth->GetDevTexture()->Get2DTexture(), context.scaledZTarget->GetDevTexture()->Get2DTexture());
 		}
+
+		const int32 previousFrameIndex = max((m_tick - (int32)rd->GetActiveGPUCount()) % MaxFrameNum, 0);
+		const Matrix44 matReproj = VCGetReprojectionMatrix(m_viewMatrix[curEye][previousFrameIndex],
+		                                                   m_projMatrix[curEye][previousFrameIndex]);
 
 		// apply temporal re-projection.
 		{
@@ -1534,7 +1444,6 @@ void CVolumetricCloudManager::RenderClouds()
 			PROFILE_LABEL_SCOPE("REPROJECTION_CLOUDS_0");
 #endif
 
-			rd->FX_PopRenderTarget(0);
 			rd->FX_PushRenderTarget(0, currTex, NULL);
 			rd->FX_SetActiveRenderTargets();
 
@@ -1548,7 +1457,7 @@ void CVolumetricCloudManager::RenderClouds()
 			rp.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_SAMPLE0]);
 
 			// enables less flicker temporal reprojection filter.
-			if (CRenderer::CV_r_VolumetricCloudsTemporalReprojection == 1)
+			if (CRenderer::CV_r_VolumetricCloudsTemporalReprojection != 0)
 			{
 				rp.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_SAMPLE1]);
 			}
@@ -1560,15 +1469,22 @@ void CVolumetricCloudManager::RenderClouds()
 			pShader->FXBegin(&nPasses, FEF_DONTSETSTATES);
 			valid &= pShader->FXBeginPass(0);
 
-			scaledZTarget->Apply(0, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
-			prevScaledDepth->Apply(1, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
-			scaledTarget->Apply(2, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
-			prevTex->Apply(3, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
-			m_cloudDepthBuffer->Apply(4, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			context.scaledZTarget->Apply(0, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			context.scaledTarget->Apply(1, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			prevTex->Apply(2, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			m_cloudDepthBuffer->Apply(3, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			if (CRenderer::CV_r_VolumetricCloudsTemporalReprojection == 0)
+			{
+				prevScaledDepth->Apply(4, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			}
 
-			static CCryNameR paramPrevMatrix("PrevViewProjMatrix");
-			Vec4* temp = (Vec4*)m_viewProj[curEye][max(m_tick - (int32)rd->GetActiveGPUCount(), 0) % MaxFrameNum].GetData();
+			static CCryNameR paramPrevMatrix("ReprojectionMatrix");
+			Vec4* temp = (Vec4*)matReproj.GetData();
 			pShader->FXSetPSFloat(paramPrevMatrix, temp, 4);
+
+			static CCryNameR reeprojectionParamName("ReprojectionParam");
+			Vec4 reprojectionParam(cloudParam.projRatio0, cloudParam.projRatio1, 0.0f, 0.0f);
+			pShader->FXSetPSFloat(reeprojectionParamName, &reprojectionParam, 1);
 
 			rd->FX_SetState(GS_NODEPTHTEST);
 			rd->FX_Commit();
@@ -1576,13 +1492,14 @@ void CVolumetricCloudManager::RenderClouds()
 			PostProcessUtils().DrawFullScreenTriWPOS(targetWidth, targetHeight, 1.0f);
 
 			pShader->FXEndPass();
+
+			rd->FX_PopRenderTarget(0);
 		}
 		{
 #ifdef ENABLE_DETAILED_PROFILING
 			PROFILE_LABEL_SCOPE("REPROJECTION_CLOUDS_1");
 #endif
 
-			rd->FX_PopRenderTarget(0);
 			rd->FX_PushRenderTarget(0, currMinTex, NULL);
 			rd->FX_SetActiveRenderTargets();
 
@@ -1593,7 +1510,7 @@ void CVolumetricCloudManager::RenderClouds()
 			rp.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE0] | g_HWSR_MaskBit[HWSR_SAMPLE1]);
 
 			// enables less flicker temporal reprojection filter.
-			if (CRenderer::CV_r_VolumetricCloudsTemporalReprojection == 1)
+			if (CRenderer::CV_r_VolumetricCloudsTemporalReprojection != 0)
 			{
 				rp.m_FlagsShader_RT |= (g_HWSR_MaskBit[HWSR_SAMPLE1]);
 			}
@@ -1605,15 +1522,22 @@ void CVolumetricCloudManager::RenderClouds()
 			pShader->FXBegin(&nPasses, FEF_DONTSETSTATES);
 			valid &= pShader->FXBeginPass(0);
 
-			scaledZTarget->Apply(0, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
-			prevScaledDepth->Apply(1, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
-			m_downscaledTemp->Apply(2, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
-			prevMinTex->Apply(3, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
-			m_cloudDepthBuffer->Apply(4, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			context.scaledZTarget->Apply(0, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			m_downscaledMinTemp->Apply(1, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			prevMinTex->Apply(2, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			m_cloudDepthBuffer->Apply(3, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			if (CRenderer::CV_r_VolumetricCloudsTemporalReprojection == 0)
+			{
+				prevScaledDepth->Apply(4, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			}
 
-			static CCryNameR paramPrevMatrix("PrevViewProjMatrix");
-			Vec4* temp = (Vec4*)m_viewProj[curEye][max(m_tick - (int32)rd->GetActiveGPUCount(), 0) % MaxFrameNum].GetData();
+			static CCryNameR paramPrevMatrix("ReprojectionMatrix");
+			Vec4* temp = (Vec4*)matReproj.GetData();
 			pShader->FXSetPSFloat(paramPrevMatrix, temp, 4);
+
+			static CCryNameR reeprojectionParamName("ReprojectionParam");
+			Vec4 reprojectionParam(cloudParam.projRatio0, cloudParam.projRatio1, 0.0f, 0.0f);
+			pShader->FXSetPSFloat(reeprojectionParamName, &reprojectionParam, 1);
 
 			rd->FX_SetState(GS_NODEPTHTEST);
 			rd->FX_Commit();
@@ -1621,10 +1545,12 @@ void CVolumetricCloudManager::RenderClouds()
 			PostProcessUtils().DrawFullScreenTriWPOS(targetWidth, targetHeight, 1.0f);
 
 			pShader->FXEndPass();
+
+			rd->FX_PopRenderTarget(0);
 		}
 
 		// copy current downscaled depth for next frame's temporal re-projection
-		rd->GetDeviceContext().CopyResource(prevScaledDepth->GetDevTexture()->Get2DTexture(), scaledZTarget->GetDevTexture()->Get2DTexture());
+		rd->GetDeviceContext().CopyResource(prevScaledDepth->GetDevTexture()->Get2DTexture(), context.scaledZTarget->GetDevTexture()->Get2DTexture());
 
 		if (valid)
 		{
@@ -1632,7 +1558,6 @@ void CVolumetricCloudManager::RenderClouds()
 		}
 
 		// restore render target.
-		rd->FX_PopRenderTarget(0);
 		rd->RT_SetViewport(vX, vY, vWidth, vHeight);
 		rd->FX_SetActiveRenderTargets();
 
@@ -1694,11 +1619,11 @@ void CVolumetricCloudManager::RenderClouds()
 			pShader->FXBegin(&nPasses, FEF_DONTSETSTATES);
 			pShader->FXBeginPass(0);
 
-			CTexture::s_ptexZTarget->Apply(0, -1, EFTT_UNKNOWN, -2, rp.m_MSAAData.Type ? SResourceView::DefaultViewMS : SResourceView::DefaultView); // bind as msaa target (if valid)
-			scaledZTarget->Apply(1, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			CTexture::s_ptexZTarget->Apply(0, -1, EFTT_UNKNOWN, -2, rp.m_MSAAData.Type ? SResourceView::DefaultViewMS : SResourceView::DefaultView);     // bind as msaa target (if valid)
+			context.scaledZTarget->Apply(1, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
 			currTex->Apply(2, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
-			m_cloudDepthBuffer->Apply(3, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
-			currMinTex->Apply(4, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			currMinTex->Apply(3, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
+			m_cloudDepthBuffer->Apply(4, -1, EFTT_UNKNOWN, -2, SResourceView::DefaultView);
 
 			const static int nTStatePointClamp = CTexture::GetTexState(STexState(FILTER_POINT, true));
 			CTexture::SetSamplerState(nTStatePointClamp, 0, eHWSC_Pixel);
@@ -1713,8 +1638,11 @@ void CVolumetricCloudManager::RenderClouds()
 
 			float scaledWidth = (float)currTex->GetWidth();
 			float scaledHeight = (float)currTex->GetHeight();
+			float rcpScaledWidth = 1.0f / scaledWidth;
+			float rcpScaledHeight = 1.0f / scaledHeight;
+
 			static CCryNameR scaledScreenSizeParamName("ScaledScreenSize");
-			Vec4 scaledScreenSizeParam(scaledWidth, scaledHeight, 1.0f / scaledWidth, 1.0f / scaledHeight);
+			Vec4 scaledScreenSizeParam(scaledWidth, scaledHeight, rcpScaledWidth, rcpScaledHeight);
 			pShader->FXSetPSFloat(scaledScreenSizeParamName, &scaledScreenSizeParam, 1);
 
 			static CCryNameR cloudBlockerPosName("CloudBlockerSSPos");
@@ -1731,7 +1659,7 @@ void CVolumetricCloudManager::RenderClouds()
 
 			pShader->FXEndPass();
 		}
-	}
 
-	rp.m_FlagsShader_RT = nFlagsShaderRTSave;
+		rp.m_FlagsShader_RT = nFlagsShaderRTSave;
+	}
 }

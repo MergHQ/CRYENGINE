@@ -627,13 +627,16 @@ const uint32_t* DecodeDeclaration(Shader* psShader, const uint32_t* pui32Token, 
 		}
 	case OPCODE_DCL_UNORDERED_ACCESS_VIEW_TYPED:
 		{
-			psDecl->ui32NumOperands = 2;
+			psDecl->ui32NumOperands = 1;
 			psDecl->value.eResourceDimension = DecodeResourceDimension(*pui32Token);
 			psDecl->sUAV.ui32GloballyCoherentAccess = DecodeAccessCoherencyFlags(*pui32Token);
 			psDecl->sUAV.bCounter = 0;
 			psDecl->sUAV.ui32BufferSize = 0;
 			ui32OperandOffset += DecodeOperand(pui32Token+ui32OperandOffset, &psDecl->asOperands[0]);
-			psDecl->sUAV.Type = DecodeResourceReturnType(0, pui32Token[ui32OperandOffset]);
+			psDecl->sUAV.Type[0] = DecodeResourceReturnType(0, pui32Token[ui32OperandOffset]);
+			psDecl->sUAV.Type[1] = DecodeResourceReturnType(1, pui32Token[ui32OperandOffset]);
+			psDecl->sUAV.Type[2] = DecodeResourceReturnType(2, pui32Token[ui32OperandOffset]);
+			psDecl->sUAV.Type[3] = DecodeResourceReturnType(3, pui32Token[ui32OperandOffset]);
 			break;
 		}
 	case OPCODE_DCL_UNORDERED_ACCESS_VIEW_RAW:

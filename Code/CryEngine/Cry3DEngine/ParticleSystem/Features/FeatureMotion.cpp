@@ -19,8 +19,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureMotion = false;
-
 namespace pfx2
 {
 
@@ -42,6 +40,11 @@ void ILocalEffectors::Serialize(Serialization::IArchive& ar)
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+EParticleDataType PDT(EPDT_Gravity, float, 1, BHasInit(true));
+EParticleDataType PDT(EPDT_Drag, float, 1, BHasInit(true));
+EParticleDataType PDT(EPVF_Acceleration, float, 3);
+EParticleDataType PDT(EPVF_VelocityField, float, 3);
 
 enum EIntegrator
 {
@@ -69,8 +72,8 @@ public:
 	{
 		pComponent->AddToUpdateList(EUL_Update, this);
 
-		m_gravity.AddToComponent(pComponent, this, EPDT_Gravity, EPDT_GravityInit);
-		m_drag.AddToComponent(pComponent, this, EPDT_Drag, EPDT_DragInit);
+		m_gravity.AddToComponent(pComponent, this, EPDT_Gravity);
+		m_drag.AddToComponent(pComponent, this, EPDT_Drag);
 
 		for (auto& effector : m_localEffectors)
 			effector->AddToComponent(pComponent, pParams);
@@ -115,8 +118,8 @@ public:
 
 	virtual void InitParticles(const SUpdateContext& context) override
 	{
-		m_gravity.InitParticles(context, EPDT_Gravity, EPDT_GravityInit);
-		m_drag.InitParticles(context, EPDT_Drag, EPDT_DragInit);
+		m_gravity.InitParticles(context, EPDT_Gravity);
+		m_drag.InitParticles(context, EPDT_Drag);
 	}
 
 	virtual void Update(const SUpdateContext& context) override
@@ -150,7 +153,7 @@ private:
 	EIntegrator m_integrator;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionPhysics, "Motion", "Physics", defaultIcon, motionColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionPhysics, "Motion", "Physics", colorMotion);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -213,7 +216,7 @@ void CFeatureMotionPhysics::DragFastIntegral(const SUpdateContext& context)
 	const Vec3v uniformAccel = ToVec3v(m_uniformAcceleration);
 
 	const float maxDragFactor = m_drag.GetValueRange(context).end * context.m_deltaTime;
-	const floatv dragReduction = ToFloatv(div_min(1.0f - exp_tpl(-maxDragFactor), maxDragFactor, 1.0f));
+	const floatv dragReduction = ToFloatv(div_min(1.0f - exp(-maxDragFactor), maxDragFactor, 1.0f));
 
 	CRY_PFX2_FOR_ACTIVE_PARTICLESGROUP(context)
 	{
@@ -241,6 +244,8 @@ void CFeatureMotionPhysics::DragFastIntegral(const SUpdateContext& context)
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+EParticleDataType PDT(EPDT_PhysicalEntity, IPhysicalEntity*);
 
 class CFeatureMotionCryPhysics : public CParticleFeature
 {
@@ -393,7 +398,7 @@ private:
 	Vec3   m_uniformAcceleration;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionCryPhysics, "Motion", "CryPhysics", defaultIcon, motionColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionCryPhysics, "Motion", "CryPhysics", colorMotion);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -507,16 +512,15 @@ private:
 		const CParticleContainer& container = context.m_container;
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const float time = max(1.0f / 1024.0f, context.m_deltaTime);
-		const floatv speed = ToFloatv(m_speed * isqrt_tpl(time));
-		SChaosKeyV chaosKey;
+		const floatv speed = ToFloatv(m_speed * rsqrt(time));
 
 		CRY_PFX2_FOR_ACTIVE_PARTICLESGROUP(context)
 		{
 			const Vec3v position = positions.Load(particleGroupId);
 			const Vec3v accel0 = localAccelerations.Load(particleGroupId);
-			const floatv keyX = chaosKey.RandSNorm();
-			const floatv keyY = chaosKey.RandSNorm();
-			const floatv keyZ = chaosKey.RandSNorm();
+			const floatv keyX = context.m_updateRngv.RandSNorm();
+			const floatv keyY = context.m_updateRngv.RandSNorm();
+			const floatv keyZ = context.m_updateRngv.RandSNorm();
 			const Vec3v accel1 = MAdd(Vec3v(keyX, keyY, keyZ), speed, accel0);
 			localAccelerations.Store(particleGroupId, accel1);
 		}
@@ -531,9 +535,9 @@ private:
 		CParticleContainer& container = context.m_container;
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		const float maxSize = (float)(1 << 12);
-		const float minSize = __fres(maxSize); // small enough and prevents SIMD exceptions
-		const floatv time = ToFloatv(fmodf(gEnv->pTimer->GetCurrTime() * m_rate * minSize, 1.0f) * maxSize);
-		const floatv invSize = ToFloatv(__fres(MAX(minSize, float(m_size))));
+		const float minSize = rcp_fast(maxSize); // small enough and prevents SIMD exceptions
+		const floatv time = ToFloatv(fmodf(context.m_time * m_rate * minSize, 1.0f) * maxSize);
+		const floatv invSize = ToFloatv(rcp_fast(MAX(minSize, float(m_size))));
 		const floatv speed = ToFloatv(m_speed);
 		const uint octaves = m_octaves;
 		const floatv scalex = ToFloatv(m_scale.x);
@@ -600,7 +604,7 @@ private:
 			totalMult = Add(mult, totalMult);
 			mult = Mul(ToFloatv(0.5f), mult);
 		}
-		mult = Rcp(totalMult);
+		mult = rcp_fast(totalMult);
 		for (uint i = 0; i < octaves; ++i)
 		{
 			total = MAdd(fieldFn(sample), mult, total);
@@ -699,7 +703,7 @@ private:
 		const IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		// m_decay is actually the distance at which gravity is halved.
-		const float decay = __fres(m_decay * m_decay);
+		const float decay = rcp_fast(m_decay * m_decay);
 
 		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
 		{
@@ -723,7 +727,7 @@ private:
 				}
 
 				const float distanceSqr = accelVec.GetLengthSquared();
-				const float gravity = __fres(1.0f + decay * distanceSqr) * m_acceleration;
+				const float gravity = rcp_fast(1.0f + decay * distanceSqr) * m_acceleration;
 				const Vec3 accel1 = accel0 + accelVec.GetNormalized() * gravity;
 				localAccelerations.Store(particleId, accel1);
 			}
@@ -798,7 +802,7 @@ public:
 		const IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		// m_decay is actually the distance at which gravity is halved.
-		const float decay = __fres(m_decay * m_decay);
+		const float decay = rcp_fast(m_decay * m_decay);
 		const float speed = m_speed * (m_direction == EVortexDirection::ClockWise ? -1.0f : 1.0f);
 
 		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
@@ -814,7 +818,7 @@ public:
 				const Vec3 axis = wQuat * m_axis;
 				const Vec3 toAxis = (targetPosition + axis * axis.Dot(position - targetPosition)) - position;
 				const float distanceSqr = toAxis.GetLengthSquared();
-				const float vortexSpeed = __fres(1.0f + decay * distanceSqr) * speed;
+				const float vortexSpeed = rcp_fast(1.0f + decay * distanceSqr) * speed;
 				const Vec3 velocity1 = velocity0 + toAxis.GetNormalized().Cross(axis) * vortexSpeed;
 				localVelocities.Store(particleId, velocity1);
 			}

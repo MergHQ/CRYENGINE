@@ -17,7 +17,6 @@ History:
 
 #include <IGameObject.h>
 
-class CFlowTornadoWander;
 struct IGroundEffect;
 
 class CTornado : public CGameObjectExtensionHelper<CTornado, IGameObjectExtension>
@@ -51,7 +50,7 @@ public:
 	
 	//~IGameObjectExtension
 
-	void	SetTarget(IEntity *pTargetEntity, CFlowTornadoWander *pCallback);
+	void SetTarget(IEntity* pTargetEntity);
 
 	bool Reset();
 
@@ -90,7 +89,6 @@ protected:
 
 	// target
 	IEntity*						m_pTargetEntity;	// the tornado will try to reach this entity
-	CFlowTornadoWander*	m_pTargetCallback;
 
 	//
 	float m_nextEntitiesCheck;

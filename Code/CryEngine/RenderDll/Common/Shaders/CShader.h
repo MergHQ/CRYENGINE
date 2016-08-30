@@ -254,6 +254,8 @@ private:
 	bool           CheckAllFilesAreWritable(const char* szDir) const;
 #endif
 
+	static void    FilterShaderCacheGenListForOrbis(FXShaderCacheCombinations& combinations);
+
 public:
 	char*                 m_pCurScript;
 	CShaderManBin         m_Bin;
@@ -324,7 +326,6 @@ public:
 	static CShader*              s_ShaderTreeSprites;
 	static CShader*              s_ShaderScaleForm;
 	static CShader*              s_ShaderStars;
-	static CShader*              s_ShaderLPV;
 	static CShader*              s_ShaderShadowBlur;
 	static CShader*              s_ShaderShadowMaskGen;
 #if defined(FEATURE_SVO_GI)
@@ -567,7 +568,7 @@ public:
 
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
 	#pragma warning( push )           //AMD Port
-	#pragma warning( disable : 4267 )     // conversion from 'size_t' to 'XXX', possible loss of data
+	#pragma warning( disable : 4267 ) // conversion from 'size_t' to 'XXX', possible loss of data
 #endif
 
 	int Size()
@@ -595,9 +596,9 @@ public:
 };
 
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-	#pragma warning( pop )            //AMD Port
+	#pragma warning( pop ) //AMD Port
 #endif
 
 //=====================================================================
 
-#endif  // __CSHADER_H__
+#endif                   // __CSHADER_H__

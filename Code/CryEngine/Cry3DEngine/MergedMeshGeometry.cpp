@@ -17,9 +17,6 @@
 	#define MMRM_FRAME_PROFILER(x, y, z) (void)0
 #endif
 
-#define _aligned_alloca(Type, count, align) \
-  (Type*)(((uintptr_t)alloca(((count) * sizeof(Type) + (align - 1)) & ~(align - 1)) + (align - 1)) & ~(align - 1))
-
 namespace
 {
 template<class T, class D>
@@ -115,116 +112,279 @@ static inline Quat mat33_to_quat(const Matrix33& m)
 }
 
 #if MMRM_USE_VECTORIZED_SSE_INSTRUCTIONS
-static inline __m128i float_to_half_SSE2(__m128 f)
-{
-	#define DECL_CONST4(name, val) static const CRY_ALIGN(16) uint name[4] = { (val), (val), (val), (val) }
-	#define GET_CONSTI(name)       *(const __m128i*)&name
-	#define GET_CONSTF(name)       *(const __m128*)&name
+	#if CRY_PLATFORM_SSE4
+	// _mm_dp_ps
+	//
+	// tmp0 : = (mask4 == 1) ? (a0 * b0) : +0.0
+	// tmp1 : = (mask5 == 1) ? (a1 * b1) : +0.0
+	// tmp2 : = (mask6 == 1) ? (a2 * b2) : +0.0
+	// tmp3 : = (mask7 == 1) ? (a3 * b3) : +0.0
+	// 
+	// tmp4 : = tmp0 + tmp1 + tmp2 + tmp3
+	// 
+	// r0 : = (mask0 == 1) ? tmp4 : +0.0
+	// r1 : = (mask1 == 1) ? tmp4 : +0.0
+	// r2 : = (mask2 == 1) ? tmp4 : +0.0
+	// r3 : = (mask3 == 1) ? tmp4 : +0.0
+	static inline __m128 DotProduct4(__m128 a, __m128 b)
+	{
+		return _mm_dp_ps(a, b, 0xff);
+	}
+	static inline __m128 DotProduct3(__m128 a, __m128 b)
+	{
+		return _mm_dp_ps(a, b, 0x77);
+	}
+	static inline __m128 DotProduct3to4(__m128 a, __m128 b)
+	{
+		return _mm_dp_ps(a, b, 0x7f);
+	}
 
-	DECL_CONST4(mask_sign, 0x80000000u);
-	DECL_CONST4(mask_round, ~0xfffu);
-	DECL_CONST4(c_f32infty, 255 << 23);
-	DECL_CONST4(c_magic, 15 << 23);
-	DECL_CONST4(c_nanbit, 0x200);
-	DECL_CONST4(c_infty_as_fp16, 0x7c00);
-	DECL_CONST4(c_clamp, (31 << 23) - 0x1000);
+	// _mm_blendv_ps
+	//
+	// r0 : = (mask0 & 0x80000000) ? b0 : a0
+	// r1 : = (mask1 & 0x80000000) ? b1 : a1
+	// r2 : = (mask2 & 0x80000000) ? b2 : a2
+	// r3 : = (mask3 & 0x80000000) ? b3 : a3
+	static inline __m128 SelectFromVector(__m128 a, __m128 b, __m128 c)
+	{
+		return _mm_blendv_ps(a, b, c);
+	}
 
-	__m128 msign = GET_CONSTF(mask_sign);
-	__m128 justsign = _mm_and_ps(msign, f);
-	__m128i f32infty = GET_CONSTI(c_f32infty);
-	__m128 absf = _mm_xor_ps(f, justsign);
-	__m128 mround = GET_CONSTF(mask_round);
-	__m128i absf_int = _mm_castps_si128(absf); // pseudo-op, but val needs to be copied once so count as mov
-	__m128i b_isnan = _mm_cmpgt_epi32(absf_int, f32infty);
-	__m128i b_isnormal = _mm_cmpgt_epi32(f32infty, _mm_castps_si128(absf));
-	__m128i nanbit = _mm_and_si128(b_isnan, GET_CONSTI(c_nanbit));
-	__m128i inf_or_nan = _mm_or_si128(nanbit, GET_CONSTI(c_infty_as_fp16));
+	// _mm_blend_ps
+	//
+	// r0 : = (mask0 == 0) ? b0 : a0
+	// r1 : = (mask1 == 0) ? b1 : a1
+	// r2 : = (mask2 == 0) ? b2 : a2
+	// r3 : = (mask3 == 0) ? b3 : a3
+	template<const int c>
+	static inline __m128 SelectFromImmediate(__m128 a, __m128 b)
+	{
+		return _mm_blend_ps(a, b, c);
+	}
+	#elif CRY_PLATFORM_SSE3
+	static inline __m128 DotProduct4(__m128 a, __m128 b)
+	{
+		__m128 res;
 
-	__m128 fnosticky = _mm_and_ps(absf, mround);
-	__m128 scaled = _mm_mul_ps(fnosticky, GET_CONSTF(c_magic));
-	__m128 clamped = _mm_min_ps(scaled, GET_CONSTF(c_clamp)); // logically, we want PMINSD on "biased", but this should gen better code
-	__m128i biased = _mm_sub_epi32(_mm_castps_si128(clamped), _mm_castps_si128(mround));
-	__m128i shifted = _mm_srli_epi32(biased, 13);
-	__m128i normal = _mm_and_si128(shifted, b_isnormal);
-	__m128i not_normal = _mm_andnot_si128(b_isnormal, inf_or_nan);
-	__m128i joined = _mm_or_si128(normal, not_normal);
+		res = _mm_mul_ps(a, b);
+		res = _mm_hadd_ps(res, res);
+		res = _mm_hadd_ps(res, res);
 
-	__m128i sign_shift = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
-	__m128i final = _mm_or_si128(joined, sign_shift);
+		return res;
+	}
+	static inline __m128 DotProduct3(__m128 a, __m128 b)
+	{
+		__m128 res;
 
-	// ~20 SSE2 ops
-	return final;
+		res = _mm_mul_ps(a, b);
+		res = _mm_and_ps(res, _mm_castsi128_ps(_mm_setr_epi32(~0, ~0, ~0, 0)));
+		res = _mm_hadd_ps(res, res);
+		res = _mm_hadd_ps(res, res);
+		res = _mm_and_ps(res, _mm_castsi128_ps(_mm_setr_epi32(~0, ~0, ~0, 0)));
 
-	#undef DECL_CONST4
-	#undef GET_CONSTI
-	#undef GET_CONSTF
-}
-static inline __m128i approx_float_to_half_SSE2(__m128 f)
-{
+		return res;
+	}
+	static inline __m128 DotProduct3to4(__m128 a, __m128 b)
+	{
+		__m128 res;
 
-	#if defined(__GNUC__)
-		#define DECL_CONST4(name, val) static const uint __attribute__((aligned(16))) name[4] = { (val), (val), (val), (val) }
+		res = _mm_and_ps(_mm_mul_ps(a, b), _mm_castsi128_ps(_mm_setr_epi32(~0, ~0, ~0, 0)));
+		res = _mm_hadd_ps(res, res);
+		res = _mm_hadd_ps(res, res);
+
+		return res;
+	}
+
+	static inline __m128 SelectFromVector(__m128 a, __m128 b, __m128 c)
+	{
+		__m128 bs = _mm_and_ps(b, c);
+		__m128 as = _mm_andnot_ps(c, a);
+
+		return _mm_or_ps(bs, as);
+	}
 	#else
-		#define DECL_CONST4(name, val) static const __declspec(align(16)) uint name[4] = { (val), (val), (val), (val) }
+	static inline __m128 DotProduct4(__m128 a, __m128 b)
+	{
+		__m128 res;
+
+		res = _mm_mul_ps(a, b);
+		res = _mm_add_ps(res, _mm_shuffle_ps(res, res, _MM_SHUFFLE(1, 0, 3, 2)));
+		res = _mm_add_ps(res, _mm_shuffle_ps(res, res, _MM_SHUFFLE(0, 1, 2, 3)));
+
+		return res;
+	}
+	static inline __m128 DotProduct3(__m128 a, __m128 b)
+	{
+		__m128 res;
+
+		res = _mm_mul_ps(a, b);
+		res = _mm_and_ps(res, _mm_castsi128_ps(_mm_setr_epi32(~0, ~0, ~0, 0)));
+		res = _mm_add_ps(res, _mm_shuffle_ps(res, res, _MM_SHUFFLE(1, 0, 3, 2)));
+		res = _mm_add_ps(res, _mm_shuffle_ps(res, res, _MM_SHUFFLE(0, 1, 2, 3)));
+		res = _mm_and_ps(res, _mm_castsi128_ps(_mm_setr_epi32(~0, ~0, ~0, 0)));
+
+		return res;
+	}
+	static inline __m128 DotProduct3to4(__m128 a, __m128 b)
+	{
+		__m128 res;
+
+		res = _mm_mul_ps(a, b);
+		res = _mm_and_ps(res, _mm_castsi128_ps(_mm_setr_epi32(~0, ~0, ~0, 0)));
+		res = _mm_add_ps(res, _mm_shuffle_ps(res, res, _MM_SHUFFLE(1, 0, 3, 2)));
+		res = _mm_add_ps(res, _mm_shuffle_ps(res, res, _MM_SHUFFLE(0, 1, 2, 3)));
+
+		return res;
+	}
+
+	static inline __m128 SelectFromVector(__m128 a, __m128 b, __m128 c)
+	{
+		__m128 bs = _mm_and_ps(b, c);
+		__m128 as = _mm_andnot_ps(c, a);
+
+		return _mm_or_ps(bs, as);
+	}
+#endif
+
+	static inline __m128 Absolute(__m128 a)
+	{
+		return _mm_and_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF)));
+	}
+#endif
+
+#if MMRM_USE_VECTORIZED_SSE_INSTRUCTIONS
+	#if CRY_PLATFORM_F16C
+	static inline void CvtToHalf(Vec3f16& v, __m128 value)
+	{
+		static_assert(sizeof(Vec3f16) == sizeof(uint64_t), "64-bit store intended here for performance");
+		const __m128i result = _mm_cvtps_ph(value, 0);
+		_mm_storel_epi64(reinterpret_cast<__m128i*>(&v), result); // Store X, Y, Z, W(!)
+	}
+
+	static inline void CvtToHalf(Vec3f16& v, const Vec3& value)
+	{
+		CvtToHalf(v, _mm_set_ps(0.0f, value.z, value.y, value.x));
+	}
+
+	static inline void CvtToHalf(Vec2f16& v, const Vec2& value)
+	{
+		static_assert(sizeof(Vec2f16) == sizeof(uint32_t), "32-bit store intended here for performance");
+		const __m128 halfreg = _mm_castsi128_ps(_mm_loadl_epi64(reinterpret_cast<const __m128i*>(&value))); // Load X, Y, 0, 0
+		const __m128i result = _mm_cvtps_ph(halfreg, 0);
+		*reinterpret_cast<int*>(&v) = _mm_cvtsi128_si32(result); // _mm_storeu_si32 not supported on all compilers, this should (hopefully) be MOVD m32, xmm
+	}
+	#else
+	static inline __m128i float_to_half_SSE2(__m128 f)
+	{
+		#define DECL_CONST4(name, val) static const CRY_ALIGN(16) uint name[4] = { (val), (val), (val), (val) }
+		#define GET_CONSTI(name)       *(const __m128i*)&name
+		#define GET_CONSTF(name)       *(const __m128*)&name
+
+		DECL_CONST4(mask_sign, 0x80000000u);
+		DECL_CONST4(mask_round, ~0xfffu);
+		DECL_CONST4(c_f32infty, 255 << 23);
+		DECL_CONST4(c_magic, 15 << 23);
+		DECL_CONST4(c_nanbit, 0x200);
+		DECL_CONST4(c_infty_as_fp16, 0x7c00);
+		DECL_CONST4(c_clamp, (31 << 23) - 0x1000);
+
+		__m128 msign = GET_CONSTF(mask_sign);
+		__m128 justsign = _mm_and_ps(msign, f);
+		__m128i f32infty = GET_CONSTI(c_f32infty);
+		__m128 absf = _mm_xor_ps(f, justsign);
+		__m128 mround = GET_CONSTF(mask_round);
+		__m128i absf_int = _mm_castps_si128(absf); // pseudo-op, but val needs to be copied once so count as mov
+		__m128i b_isnan = _mm_cmpgt_epi32(absf_int, f32infty);
+		__m128i b_isnormal = _mm_cmpgt_epi32(f32infty, _mm_castps_si128(absf));
+		__m128i nanbit = _mm_and_si128(b_isnan, GET_CONSTI(c_nanbit));
+		__m128i inf_or_nan = _mm_or_si128(nanbit, GET_CONSTI(c_infty_as_fp16));
+
+		__m128 fnosticky = _mm_and_ps(absf, mround);
+		__m128 scaled = _mm_mul_ps(fnosticky, GET_CONSTF(c_magic));
+		__m128 clamped = _mm_min_ps(scaled, GET_CONSTF(c_clamp)); // logically, we want PMINSD on "biased", but this should gen better code
+		__m128i biased = _mm_sub_epi32(_mm_castps_si128(clamped), _mm_castps_si128(mround));
+		__m128i shifted = _mm_srli_epi32(biased, 13);
+		__m128i normal = _mm_and_si128(shifted, b_isnormal);
+		__m128i not_normal = _mm_andnot_si128(b_isnormal, inf_or_nan);
+		__m128i joined = _mm_or_si128(normal, not_normal);
+
+		__m128i sign_shift = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
+		__m128i final = _mm_or_si128(joined, sign_shift);
+
+		// ~20 SSE2 ops
+		return final;
+
+		#undef DECL_CONST4
+		#undef GET_CONSTI
+		#undef GET_CONSTF
+	}
+	static inline __m128i approx_float_to_half_SSE2(__m128 f)
+	{
+
+		#if defined(__GNUC__)
+			#define DECL_CONST4(name, val) static const uint __attribute__((aligned(16))) name[4] = { (val), (val), (val), (val) }
+		#else
+			#define DECL_CONST4(name, val) static const __declspec(align(16)) uint name[4] = { (val), (val), (val), (val) }
+		#endif
+		#define GET_CONSTF(name)         *(const __m128*)&name
+
+		DECL_CONST4(mask_fabs, 0x7fffffffu);
+		DECL_CONST4(c_f32infty, (255 << 23));
+		DECL_CONST4(c_expinf, (255 ^ 31) << 23);
+		DECL_CONST4(c_f16max, (127 + 16) << 23);
+		DECL_CONST4(c_magic, 15 << 23);
+
+		__m128 mabs = GET_CONSTF(mask_fabs);
+		__m128 fabs = _mm_and_ps(mabs, f);
+		__m128 justsign = _mm_xor_ps(f, fabs);
+
+		__m128 f16max = GET_CONSTF(c_f16max);
+		__m128 expinf = GET_CONSTF(c_expinf);
+		__m128 infnancase = _mm_xor_ps(expinf, fabs);
+		__m128 clamped = _mm_min_ps(f16max, fabs);
+		__m128 b_notnormal = _mm_cmpnlt_ps(fabs, GET_CONSTF(c_f32infty));
+		__m128 scaled = _mm_mul_ps(clamped, GET_CONSTF(c_magic));
+
+		__m128 merge1 = _mm_and_ps(infnancase, b_notnormal);
+		__m128 merge2 = _mm_andnot_ps(b_notnormal, scaled);
+		__m128 merged = _mm_or_ps(merge1, merge2);
+
+		__m128i shifted = _mm_srli_epi32(_mm_castps_si128(merged), 13);
+		__m128i signshifted = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
+		__m128i final = _mm_or_si128(shifted, signshifted);
+
+		// ~15 SSE2 ops
+		return final;
+
+		#undef DECL_CONST4
+		#undef GET_CONSTF
+	}
+
+	static inline void CvtToHalf(Vec3f16& v, __m128 value)
+	{
+		__m128i result = approx_float_to_half_SSE2(value);
+		v.x = (reinterpret_cast<int*>(&result))[0];
+		v.y = (reinterpret_cast<int*>(&result))[1];
+		v.z = (reinterpret_cast<int*>(&result))[2];
+	}
+
+	static inline void CvtToHalf(Vec3f16& v, const Vec3& value)
+	{
+		__m128 val128 = _mm_set_ps(0.f, value.z, value.y, value.x);
+		__m128i result = approx_float_to_half_SSE2(val128);
+		v.x = (reinterpret_cast<int*>(&result))[0];
+		v.y = (reinterpret_cast<int*>(&result))[1];
+		v.z = (reinterpret_cast<int*>(&result))[2];
+	}
+
+	static inline void CvtToHalf(Vec2f16& v, const Vec2& value)
+	{
+		__m128 val128 = _mm_set_ps(0.f, 0.f, value.y, value.x);
+		__m128i result = approx_float_to_half_SSE2(val128);
+		v.x = (reinterpret_cast<int*>(&result))[0];
+		v.y = (reinterpret_cast<int*>(&result))[1];
+	}
 	#endif
-	#define GET_CONSTF(name)         *(const __m128*)&name
-
-	DECL_CONST4(mask_fabs, 0x7fffffffu);
-	DECL_CONST4(c_f32infty, (255 << 23));
-	DECL_CONST4(c_expinf, (255 ^ 31) << 23);
-	DECL_CONST4(c_f16max, (127 + 16) << 23);
-	DECL_CONST4(c_magic, 15 << 23);
-
-	__m128 mabs = GET_CONSTF(mask_fabs);
-	__m128 fabs = _mm_and_ps(mabs, f);
-	__m128 justsign = _mm_xor_ps(f, fabs);
-
-	__m128 f16max = GET_CONSTF(c_f16max);
-	__m128 expinf = GET_CONSTF(c_expinf);
-	__m128 infnancase = _mm_xor_ps(expinf, fabs);
-	__m128 clamped = _mm_min_ps(f16max, fabs);
-	__m128 b_notnormal = _mm_cmpnlt_ps(fabs, GET_CONSTF(c_f32infty));
-	__m128 scaled = _mm_mul_ps(clamped, GET_CONSTF(c_magic));
-
-	__m128 merge1 = _mm_and_ps(infnancase, b_notnormal);
-	__m128 merge2 = _mm_andnot_ps(b_notnormal, scaled);
-	__m128 merged = _mm_or_ps(merge1, merge2);
-
-	__m128i shifted = _mm_srli_epi32(_mm_castps_si128(merged), 13);
-	__m128i signshifted = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
-	__m128i final = _mm_or_si128(shifted, signshifted);
-
-	// ~15 SSE2 ops
-	return final;
-
-	#undef DECL_CONST4
-	#undef GET_CONSTF
-}
-
-static inline void CvtToHalf(Vec3f16& v, __m128 value)
-{
-	__m128i result = approx_float_to_half_SSE2(value);
-	v.x = (reinterpret_cast<int*>(&result))[0];
-	v.y = (reinterpret_cast<int*>(&result))[1];
-	v.z = (reinterpret_cast<int*>(&result))[2];
-}
-
-static inline void CvtToHalf(Vec3f16& v, const Vec3& value)
-{
-	__m128 val128 = _mm_set_ps(0.f, value.z, value.y, value.x);
-	__m128i result = approx_float_to_half_SSE2(val128);
-	v.x = (reinterpret_cast<int*>(&result))[0];
-	v.y = (reinterpret_cast<int*>(&result))[1];
-	v.z = (reinterpret_cast<int*>(&result))[2];
-}
-
-static inline void CvtToHalf(Vec2f16& v, const Vec2& value)
-{
-	__m128 val128 = _mm_set_ps(0.f, 0.f, value.y, value.x);
-	__m128i result = approx_float_to_half_SSE2(val128);
-	v.x = (reinterpret_cast<int*>(&result))[0];
-	v.y = (reinterpret_cast<int*>(&result))[1];
-}
 #endif
 
 #define MMRM_USE_OPTIMIZED_LINESEG_SPHERE 1
@@ -312,14 +472,14 @@ static ILINE float _Point_LinesegSq(const Vec3& p, const Lineseg& lineseg)
 	Vec3 diff = p - lineseg.start;
 	Vec3 dir = lineseg.end - lineseg.start;
 	float fT = diff.Dot(dir);
-	fT = __fself(fT, fT, 0.f);
+	fT = __fsel(fT, fT, 0.f);
 
 	float fSqrLen = dir.len2();
 	float mask = fT - fSqrLen;
-	float mul0 = __fself(mask, 1.f, 0.f);
-	float mul1 = __fself(mask, 0.f, 1.f);
+	float mul0 = __fsel(mask, 1.f, 0.f);
+	float mul1 = __fsel(mask, 0.f, 1.f);
 
-	mul1 /= __fself(mask, 1.f, fSqrLen);
+	mul1 /= __fsel(mask, 1.f, fSqrLen);
 	diff -= dir * (mul0 + mul1);
 
 	return diff.len2();
@@ -428,7 +588,7 @@ static inline size_t CullInstanceList(
 			continue;
 		}
 		int nLodTmp = (int)(distanceSq * lodRatioSq / (max(20.0f * 20.f * diameterSq, 0.001f)));
-		size_t nLod = (size_t) isel(-cullLod, nLodTmp, forceLod);
+		size_t nLod = (size_t) (cullLod ? forceLod : nLodTmp);
 		PREFAST_SUPPRESS_WARNING(6385)
 		for (nLod = std::min(nLod, size_t(MAX_STATOBJ_LODS_NUM - 1)); !(chunks = context.geom->pChunks[nLod]); --nLod)
 			;
@@ -614,10 +774,10 @@ static inline void UpdateNormals(
 			_wq[3 * 2 + 0] = _mm_add_ps(_wq[3 * 2 + 0], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 3].boneIds[0]].nq), vw[3]));
 			_wq[3 * 2 + 1] = _mm_add_ps(_wq[3 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 3].boneIds[0]].dq), vw[3]));
 		}
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
-		nq_len[1] = _mm_rsqrt_ps(_mm_dp_ps(_wq[1 * 2 + 0], _wq[1 * 2 + 0], 0xff));
-		nq_len[2] = _mm_rsqrt_ps(_mm_dp_ps(_wq[2 * 2 + 0], _wq[2 * 2 + 0], 0xff));
-		nq_len[3] = _mm_rsqrt_ps(_mm_dp_ps(_wq[3 * 2 + 0], _wq[3 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
+		nq_len[1] = _mm_rsqrt_ps(DotProduct4(_wq[1 * 2 + 0], _wq[1 * 2 + 0]));
+		nq_len[2] = _mm_rsqrt_ps(DotProduct4(_wq[2 * 2 + 0], _wq[2 * 2 + 0]));
+		nq_len[3] = _mm_rsqrt_ps(DotProduct4(_wq[3 * 2 + 0], _wq[3 * 2 + 0]));
 
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
@@ -656,7 +816,7 @@ static inline void UpdateNormals(
 			_wq[0 * 2 + 0] = _mm_add_ps(_wq[0 * 2 + 0], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 0].boneIds[0]].nq), vw[0]));
 			_wq[0 * 2 + 1] = _mm_add_ps(_wq[0 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 0].boneIds[0]].dq), vw[0]));
 		}
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
 		out[i + 0] = wq[0].nq * in[i + 0];
@@ -841,10 +1001,10 @@ static inline void UpdateGeneral(
 			_wq[3 * 2 + 0] = _mm_add_ps(_wq[3 * 2 + 0], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 3].boneIds[0]].nq), vw[3]));
 			_wq[3 * 2 + 1] = _mm_add_ps(_wq[3 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 3].boneIds[0]].dq), vw[3]));
 		}
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
-		nq_len[1] = _mm_rsqrt_ps(_mm_dp_ps(_wq[1 * 2 + 0], _wq[1 * 2 + 0], 0xff));
-		nq_len[2] = _mm_rsqrt_ps(_mm_dp_ps(_wq[2 * 2 + 0], _wq[2 * 2 + 0], 0xff));
-		nq_len[3] = _mm_rsqrt_ps(_mm_dp_ps(_wq[3 * 2 + 0], _wq[3 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
+		nq_len[1] = _mm_rsqrt_ps(DotProduct4(_wq[1 * 2 + 0], _wq[1 * 2 + 0]));
+		nq_len[2] = _mm_rsqrt_ps(DotProduct4(_wq[2 * 2 + 0], _wq[2 * 2 + 0]));
+		nq_len[3] = _mm_rsqrt_ps(DotProduct4(_wq[3 * 2 + 0], _wq[3 * 2 + 0]));
 
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
@@ -898,7 +1058,7 @@ static inline void UpdateGeneral(
 			_wq[0 * 2 + 0] = _mm_add_ps(_wq[0 * 2 + 0], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 0].boneIds[0]].nq), vw[0]));
 			_wq[0 * 2 + 1] = _mm_add_ps(_wq[0 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 0].boneIds[0]].dq), vw[0]));
 		}
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
 		out[i].xyz = wq[0] * (in[i].xyz * fScale);
@@ -1085,10 +1245,10 @@ static inline void UpdateTangents(
 			_wq[3 * 2 + 0] = _mm_add_ps(_wq[3 * 2 + 0], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 3].boneIds[0]].nq), vw[3]));
 			_wq[3 * 2 + 1] = _mm_add_ps(_wq[3 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 3].boneIds[0]].dq), vw[3]));
 		}
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
-		nq_len[1] = _mm_rsqrt_ps(_mm_dp_ps(_wq[1 * 2 + 0], _wq[1 * 2 + 0], 0xff));
-		nq_len[2] = _mm_rsqrt_ps(_mm_dp_ps(_wq[2 * 2 + 0], _wq[2 * 2 + 0], 0xff));
-		nq_len[3] = _mm_rsqrt_ps(_mm_dp_ps(_wq[3 * 2 + 0], _wq[3 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
+		nq_len[1] = _mm_rsqrt_ps(DotProduct4(_wq[1 * 2 + 0], _wq[1 * 2 + 0]));
+		nq_len[2] = _mm_rsqrt_ps(DotProduct4(_wq[2 * 2 + 0], _wq[2 * 2 + 0]));
+		nq_len[3] = _mm_rsqrt_ps(DotProduct4(_wq[3 * 2 + 0], _wq[3 * 2 + 0]));
 
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
@@ -1151,7 +1311,7 @@ static inline void UpdateTangents(
 			_wq[0 * 2 + 0] = _mm_add_ps(_wq[0 * 2 + 0], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 0].boneIds[0]].nq), vw[0]));
 			_wq[0 * 2 + 1] = _mm_add_ps(_wq[0 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 0].boneIds[0]].dq), vw[0]));
 		}
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
 		out_tangents[0] = (wq[0].nq * in_tangents[0]);
@@ -1404,10 +1564,10 @@ static inline void UpdateGeneralTangents(
 			_wq[3 * 2 + 0] = _mm_add_ps(_wq[3 * 2 + 0], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 3].boneIds[0]].nq), vw[3]));
 			_wq[3 * 2 + 1] = _mm_add_ps(_wq[3 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 3].boneIds[0]].dq), vw[3]));
 		}
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
-		nq_len[1] = _mm_rsqrt_ps(_mm_dp_ps(_wq[1 * 2 + 0], _wq[1 * 2 + 0], 0xff));
-		nq_len[2] = _mm_rsqrt_ps(_mm_dp_ps(_wq[2 * 2 + 0], _wq[2 * 2 + 0], 0xff));
-		nq_len[3] = _mm_rsqrt_ps(_mm_dp_ps(_wq[3 * 2 + 0], _wq[3 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
+		nq_len[1] = _mm_rsqrt_ps(DotProduct4(_wq[1 * 2 + 0], _wq[1 * 2 + 0]));
+		nq_len[2] = _mm_rsqrt_ps(DotProduct4(_wq[2 * 2 + 0], _wq[2 * 2 + 0]));
+		nq_len[3] = _mm_rsqrt_ps(DotProduct4(_wq[3 * 2 + 0], _wq[3 * 2 + 0]));
 
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
@@ -1486,7 +1646,7 @@ static inline void UpdateGeneralTangents(
 			_wq[0 * 2 + 0] = _mm_add_ps(_wq[0 * 2 + 0], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 0].boneIds[0]].nq), vw[0]));
 			_wq[0 * 2 + 1] = _mm_add_ps(_wq[0 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 0].boneIds[0]].dq), vw[0]));
 		}
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
 		CvtToHalf(out_general[i + 0].xyz, wq[0] * (in_general[i + 0].xyz * fScale));
@@ -1723,10 +1883,10 @@ static inline void UpdateGeneralTangentsNormals(
 			_wq[3 * 2 + 1] = _mm_add_ps(_wq[3 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 3].boneIds[0]].dq), vw[3]));
 		}
 
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
-		nq_len[1] = _mm_rsqrt_ps(_mm_dp_ps(_wq[1 * 2 + 0], _wq[1 * 2 + 0], 0xff));
-		nq_len[2] = _mm_rsqrt_ps(_mm_dp_ps(_wq[2 * 2 + 0], _wq[2 * 2 + 0], 0xff));
-		nq_len[3] = _mm_rsqrt_ps(_mm_dp_ps(_wq[3 * 2 + 0], _wq[3 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
+		nq_len[1] = _mm_rsqrt_ps(DotProduct4(_wq[1 * 2 + 0], _wq[1 * 2 + 0]));
+		nq_len[2] = _mm_rsqrt_ps(DotProduct4(_wq[2 * 2 + 0], _wq[2 * 2 + 0]));
+		nq_len[3] = _mm_rsqrt_ps(DotProduct4(_wq[3 * 2 + 0], _wq[3 * 2 + 0]));
 
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
@@ -1810,7 +1970,7 @@ static inline void UpdateGeneralTangentsNormals(
 			_wq[0 * 2 + 0] = _mm_add_ps(_wq[0 * 2 + 0], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 0].boneIds[0]].nq), vw[0]));
 			_wq[0 * 2 + 1] = _mm_add_ps(_wq[0 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[weights[i + 0].boneIds[0]].dq), vw[0]));
 		}
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
 		CvtToHalf(out_general[i + 0].xyz, wq[0] * (in_general[i + 0].xyz * fScale));
@@ -2054,10 +2214,10 @@ static inline void UpdateGeneralTangents(
 			_wq[3 * 2 + 1] = _mm_add_ps(_wq[3 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[in[i + 3].boneIds[0]].dq), vw[3]));
 		}
 
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
-		nq_len[1] = _mm_rsqrt_ps(_mm_dp_ps(_wq[1 * 2 + 0], _wq[1 * 2 + 0], 0xff));
-		nq_len[2] = _mm_rsqrt_ps(_mm_dp_ps(_wq[2 * 2 + 0], _wq[2 * 2 + 0], 0xff));
-		nq_len[3] = _mm_rsqrt_ps(_mm_dp_ps(_wq[3 * 2 + 0], _wq[3 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
+		nq_len[1] = _mm_rsqrt_ps(DotProduct4(_wq[1 * 2 + 0], _wq[1 * 2 + 0]));
+		nq_len[2] = _mm_rsqrt_ps(DotProduct4(_wq[2 * 2 + 0], _wq[2 * 2 + 0]));
+		nq_len[3] = _mm_rsqrt_ps(DotProduct4(_wq[3 * 2 + 0], _wq[3 * 2 + 0]));
 
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
@@ -2137,7 +2297,7 @@ static inline void UpdateGeneralTangents(
 			_wq[0 * 2 + 0] = _mm_add_ps(_wq[0 * 2 + 0], _mm_mul_ps(_mm_load_ps((float*)&bones[in[i + 0].boneIds[0]].nq), vw[0]));
 			_wq[0 * 2 + 1] = _mm_add_ps(_wq[0 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[in[i + 0].boneIds[0]].dq), vw[0]));
 		}
-		__m128 dp = _mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff);
+		__m128 dp = DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]);
 		__m128 len = _mm_rsqrt_ps(dp);
 		nq_len[0] = _mm_mul_ps(_mm_mul_ps(_mm_set1_ps(0.5f), len), _mm_sub_ps(_mm_set1_ps(3.0f), _mm_mul_ps(_mm_mul_ps(dp, len), len))); // Newton-Rhapson for improved accuracy
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
@@ -2378,10 +2538,10 @@ static inline void UpdateGeneralTangentsNormals(
 			_wq[3 * 2 + 1] = _mm_add_ps(_wq[3 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[in[i + 3].boneIds[0]].dq), vw[3]));
 		}
 
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
-		nq_len[1] = _mm_rsqrt_ps(_mm_dp_ps(_wq[1 * 2 + 0], _wq[1 * 2 + 0], 0xff));
-		nq_len[2] = _mm_rsqrt_ps(_mm_dp_ps(_wq[2 * 2 + 0], _wq[2 * 2 + 0], 0xff));
-		nq_len[3] = _mm_rsqrt_ps(_mm_dp_ps(_wq[3 * 2 + 0], _wq[3 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
+		nq_len[1] = _mm_rsqrt_ps(DotProduct4(_wq[1 * 2 + 0], _wq[1 * 2 + 0]));
+		nq_len[2] = _mm_rsqrt_ps(DotProduct4(_wq[2 * 2 + 0], _wq[2 * 2 + 0]));
+		nq_len[3] = _mm_rsqrt_ps(DotProduct4(_wq[3 * 2 + 0], _wq[3 * 2 + 0]));
 
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
@@ -2466,7 +2626,7 @@ static inline void UpdateGeneralTangentsNormals(
 			_wq[0 * 2 + 0] = _mm_add_ps(_wq[0 * 2 + 0], _mm_mul_ps(_mm_load_ps((float*)&bones[in[i + 0].boneIds[0]].nq), vw[0]));
 			_wq[0 * 2 + 1] = _mm_add_ps(_wq[0 * 2 + 1], _mm_mul_ps(_mm_load_ps((float*)&bones[in[i + 0].boneIds[0]].dq), vw[0]));
 		}
-		nq_len[0] = _mm_rsqrt_ps(_mm_dp_ps(_wq[0 * 2 + 0], _wq[0 * 2 + 0], 0xff));
+		nq_len[0] = _mm_rsqrt_ps(DotProduct4(_wq[0 * 2 + 0], _wq[0 * 2 + 0]));
 		_mm_store_ps((float*)&wq[0].nq, _mm_mul_ps(_wq[0 * 2 + 0], nq_len[0]));
 		_mm_store_ps((float*)&wq[0].dq, _mm_mul_ps(_wq[0 * 2 + 1], nq_len[0]));
 		CvtToHalf(out_general[i + 0].xyz, wq[0] * (in[i + 0].pos * fScale));
@@ -3102,7 +3262,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 	Vec3f16* normals = update->normals;
 	vtx_idx* idxBuf = update->idxBuf;
 	PREFAST_SUPPRESS_WARNING(6255)
-	DualQuatA * bones = spines && geom->numSpineVtx ? _aligned_alloca(DualQuatA, (geom->numSpineVtx + 1), 16) : NULL;
+	DualQuatA * bones = spines && geom->numSpineVtx ? CryStackAllocVector(DualQuatA, (geom->numSpineVtx + 1), CRY_PLATFORM_ALIGNMENT) : NULL;
 	if (bones) mmrm_printf("alloced %#x bytes\n", sizeof(DualQuatA) * (geom->numSpineVtx + 1));
 	if (bones) { memset(bones, 0x0, sizeof(DualQuatA) * (geom->numSpineVtx + 1)); }
 	mmrm_printf("updating %d samples\n", context.amount);
@@ -3112,21 +3272,21 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 	mmrm_printf("updating %#x<==>%#x idxBuf\n", (unsigned int)idxBuf, (unsigned int)TLS_GET(unsigned int, s_idx_end));
 #endif
 	PREFAST_SUPPRESS_WARNING(6255)
-	Vec3A * npt = spines && geom->numSpineVtx ? _aligned_alloca(Vec3A, geom->numSpineVtx, 16) : NULL;
+	Vec3A * npt = spines && geom->numSpineVtx ? CryStackAllocVector(Vec3A, geom->numSpineVtx, CRY_PLATFORM_ALIGNMENT) : NULL;
 	if (npt)
 	{
 		mmrm_printf("alloced %#x bytes\n", sizeof(Vec3A) * (geom->numSpineVtx));
 		memset(npt, 0x0, sizeof(Vec3A) * (geom->numSpineVtx));
 	}
 	PREFAST_SUPPRESS_WARNING(6255)
-	Vec3A * opt = spines && geom->numSpineVtx ? _aligned_alloca(Vec3A, geom->numSpineVtx, 16) : NULL;
+	Vec3A * opt = spines && geom->numSpineVtx ? CryStackAllocVector(Vec3A, geom->numSpineVtx, CRY_PLATFORM_ALIGNMENT) : NULL;
 	if (opt)
 	{
 		mmrm_printf("alloced %#x bytes\n", sizeof(Vec3A) * (geom->numSpineVtx));
 		memset(opt, 0x0, sizeof(Vec3A) * (geom->numSpineVtx));
 	}
 	PREFAST_SUPPRESS_WARNING(6255)
-	Vec3A * nvel = spines && geom->numSpineVtx ? _aligned_alloca(Vec3A, geom->numSpineVtx, 16) : NULL;
+	Vec3A * nvel = spines && geom->numSpineVtx ? CryStackAllocVector(Vec3A, geom->numSpineVtx, CRY_PLATFORM_ALIGNMENT) : NULL;
 	if (nvel)
 	{
 		mmrm_printf("alloced %#x bytes\n", sizeof(Vec3A) * (geom->numSpineVtx));
@@ -3135,7 +3295,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 	primitives::sphere* colliders = context.colliders;
 	SMMRMProjectile* projectiles = context.projectiles;
 	PREFAST_SUPPRESS_WARNING(6255)
-	SMMRMContact * contacts = geom->numSpineVtx ? (SMMRMContact*)alloca(sizeof(SMMRMContact) * (geom->numSpineVtx)) : NULL;
+	SMMRMContact * contacts = geom->numSpineVtx ? CryStackAllocVector(SMMRMContact, geom->numSpineVtx, CRY_PLATFORM_ALIGNMENT) : NULL;
 	if (contacts) mmrm_printf("alloced %#x bytes\n", sizeof(SMMRMContact) * (geom->numSpineVtx));
 	int i = 0, j = 0, l = 0, off = 0, boneIdx = 1, nLod, nspines = (int)geom->numSpines;
 	float i_f = 0.f;
@@ -3287,25 +3447,25 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 						const vec4 vi0 = _mm_set1_ps(i_f);
 
 						const vec4 vdir0 = Sub(vopt1, vopt0);
-						const vec4 vlen0 = _mm_dp_ps(vdir0, vdir0, 0x77);
+						const vec4 vlen0 = DotProduct3(vdir0, vdir0);
 						const vec4 rvlen0 = _mm_rsqrt_ps(Max(vlen0, vEpsilon));
 						const vec4 vndir0 = Mul(rvlen0, vdir0);
 
 						const vec4 vdir1 = Sub(vopt2, vopt0);
-						const vec4 vlen1 = _mm_dp_ps(vdir1, vdir1, 0x77);
+						const vec4 vlen1 = DotProduct3(vdir1, vdir1);
 						const vec4 rvlen1 = _mm_rsqrt_ps(Max(vlen1, vEpsilon));
 						const vec4 vndir1 = Mul(rvlen1, vdir1);
 
-						const vec4 va0 = Sub(vOne, _mm_dp_ps(vDW, vndir0, 0x77));
-						vec4 vdw = Mul(vHalf, Mul(vDW, _mm_blendv_ps(va0, Mul(va0, vNegOne), _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(va0), 31)))));
+						const vec4 va0 = Sub(vOne, DotProduct3(vDW, vndir0));
+						vec4 vdw = Mul(vHalf, Mul(vDW, Absolute(va0)));
 
-						const vec4 va1 = Sub(vOne, _mm_dp_ps(vDW, vndir1, 0x77));
-						vdw = Add(vdw, Mul(vHalf, Mul(vDW, _mm_blendv_ps(va1, Mul(va1, vNegOne), _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(va1), 31))))));
+						const vec4 va1 = Sub(vOne, DotProduct3(vDW, vndir1));
+						vdw = Add(vdw, Mul(vHalf, Mul(vDW, Absolute(va1))));
 
 						vec4 vnvel = Mul(Add(Mul(vdw, vAR), vGrav), vDT);
 						vnvel = Add(ovel, vnvel);
 						vnvel = Mul(vnvel, Mul(Sub(vOne, Mul(vDamping, vDT)), vPlasticity));
-						vnvel = _mm_blendv_ps(vnvel, vZero, _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(vi0), 31)));
+						vnvel = SelectFromVector(vnvel, vZero, _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(vi0), 31)));
 						vec4 vnpt = Add(vopt0, Mul(vnvel, vDT));
 
 						_mm_store_ps(&nvel[off + i].x, vnvel);
@@ -3317,7 +3477,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 						dir[1] *= (float)isqrt_tpl(max(dir[1].len2(), sqr(FLT_EPSILON)));
 						dw0 = dw * (fabs_tpl(1.f - (dw * dir[0]))) * 0.5f;
 						dw0 += dw * (fabs_tpl(1.f - dw * dir[1])) * 0.5f;
-						const Vec3& new_vel = (nvel[off + i] * plasticity + (dw0 * airResistance + Vec3(0, 0, -9.81f)) * dt) * __fself(i_f, 1.f, 0.f) * (1.f - (damping * dt));
+						const Vec3& new_vel = (nvel[off + i] * plasticity + (dw0 * airResistance + Vec3(0, 0, -9.81f)) * dt) * __fsel(i_f, 1.f, 0.f) * (1.f - (damping * dt));
 						npt[off + i] = opt[off + i] + new_vel * dt;
 						nvel[off + i] = new_vel;
 #endif
@@ -3482,13 +3642,13 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 						vec4 vsplen = NVMath::Vec4(geomSpines[off + 0].len);
 						vec4 vndir, vlen2, rvlen, vxxxx, vyyyy, vzzzz, vLX, vLY, vLZ;
 
-						vspt0 = _mm_blendv_ps(Mul(vspt0, vScale), vW, vWMask);
-						vxxxx = _mm_dp_ps(vWX, vspt0, 0xff);
-						vyyyy = _mm_dp_ps(vWY, vspt0, 0xff);
-						vzzzz = _mm_dp_ps(vWZ, vspt0, 0xff);
-						vspt0 = _mm_blendv_ps(vspt0, vxxxx, vXMask);
-						vspt0 = _mm_blendv_ps(vspt0, vyyyy, vYMask);
-						vspt0 = _mm_blendv_ps(vspt0, vzzzz, vZMask);
+						vspt0 = SelectFromVector(Mul(vspt0, vScale), vW, vWMask);
+						vxxxx = DotProduct4(vWX, vspt0);
+						vyyyy = DotProduct4(vWY, vspt0);
+						vzzzz = DotProduct4(vWZ, vspt0);
+						vspt0 = SelectFromVector(vspt0, vxxxx, vXMask);
+						vspt0 = SelectFromVector(vspt0, vyyyy, vYMask);
+						vspt0 = SelectFromVector(vspt0, vzzzz, vZMask);
 	#endif
 						for (i = 0; i < (int)geomSpineInfo[j].nSpineVtx - 1; ++i)
 						{
@@ -3501,40 +3661,40 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 							vLZ = _mm_load_ps((float*)((char*)&lmat + sizeof(__m128) * 2));
 
 							vec4 vdir = Sub(vnpt1, vnpt0);
-							vlen2 = _mm_dp_ps(vdir, vdir, 0x77);
+							vlen2 = DotProduct3(vdir, vdir);
 							vlen2 = Max(vlen2, vEpsilon);
 							rvlen = _mm_rsqrt_ps(vlen2);
 							vndir = Mul(vdir, rvlen);
 
-							vspt1 = _mm_blendv_ps(Mul(vspt1, vScale), vW, vWMask);
-							vxxxx = _mm_dp_ps(vWX, vspt1, 0xff);
-							vyyyy = _mm_dp_ps(vWY, vspt1, 0xff);
-							vzzzz = _mm_dp_ps(vWZ, vspt1, 0xff);
-							vspt1 = _mm_blendv_ps(vspt1, vxxxx, vXMask);
-							vspt1 = _mm_blendv_ps(vspt1, vyyyy, vYMask);
-							vspt1 = _mm_blendv_ps(vspt1, vzzzz, vZMask);
+							vspt1 = SelectFromVector(Mul(vspt1, vScale), vW, vWMask);
+							vxxxx = DotProduct4(vWX, vspt1);
+							vyyyy = DotProduct4(vWY, vspt1);
+							vzzzz = DotProduct4(vWZ, vspt1);
+							vspt1 = SelectFromVector(vspt1, vxxxx, vXMask);
+							vspt1 = SelectFromVector(vspt1, vyyyy, vYMask);
+							vspt1 = SelectFromVector(vspt1, vzzzz, vZMask);
 
 							vec4 vodir = Sub(vspt1, vspt0);
-							vlen2 = _mm_dp_ps(vodir, vodir, 0x77);
+							vlen2 = DotProduct3(vodir, vodir);
 							vlen2 = Max(vlen2, vEpsilon);
 							rvlen = _mm_rsqrt_ps(vlen2);
 
 							vec4 vnodir = Mul(vodir, rvlen);
-							vxxxx = _mm_dp_ps(vLX, vnodir, 0x77);
-							vyyyy = _mm_dp_ps(vLY, vnodir, 0x77);
-							vzzzz = _mm_dp_ps(vLZ, vnodir, 0x77);
-							vnodir = _mm_blendv_ps(vnodir, vxxxx, vXMask);
-							vnodir = _mm_blendv_ps(vnodir, vyyyy, vYMask);
-							vnodir = _mm_blendv_ps(vnodir, vzzzz, vZMask);
+							vxxxx = DotProduct3(vLX, vnodir);
+							vyyyy = DotProduct3(vLY, vnodir);
+							vzzzz = DotProduct3(vLZ, vnodir);
+							vnodir = SelectFromVector(vnodir, vxxxx, vXMask);
+							vnodir = SelectFromVector(vnodir, vyyyy, vYMask);
+							vnodir = SelectFromVector(vnodir, vzzzz, vZMask);
 							_mm_store_ps(&dirO[1].x, vnodir);
 
-							vec4 vangle = Sub(vOne, _mm_dp_ps(vndir, vnodir, 0x77));
-							vangle = _mm_blendv_ps(vangle, Mul(vangle, vNegOne), _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(vangle), 31)));
+							vec4 vangle = Sub(vOne, DotProduct3(vndir, vnodir));
+							vangle = Absolute(vangle);
 							vangle = Mul(vkhkl, vangle);
 							vangle = Max(Min(vangle, vOne), vZero);
 
 							vec4 ndir1 = Add(vndir, Mul(Sub(vnodir, vndir), vangle));
-							vlen2 = _mm_dp_ps(ndir1, ndir1, 0x77);
+							vlen2 = DotProduct3(ndir1, ndir1);
 							vlen2 = Max(vlen2, vEpsilon);
 							rvlen = _mm_rsqrt_ps(vlen2);
 							ndir1 = Mul(ndir1, rvlen);
@@ -3646,14 +3806,13 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 							vsplen = _mm_set1_ps(geomSpines[off + i].len);
 
 							const vec4 vdisp = Sub(vnpt0, vnpt1);
-							vlen2 = _mm_dp_ps(vdisp, vdisp, 0x7f);
-							rvlen = _mm_rsqrt_ps(Max(vlen2, vEpsilon));
-							const vec4 vlen = RcpFAST(rvlen);
+							vlen2 = DotProduct3to4(vdisp, vdisp);
+							const vec4 vlen = _mm_sqrt_ps(Max(vlen2, vEpsilon));
 							const vec4 vndisp = Mul(vdisp, rvlen);
 							const vec4 vdiff = Sub(vlen, Mul(vsplen, vScale));
 
 							const vec4 vKLiwsum = Mul(vdiff, Mul(vkL, viwsum));
-							const vec4 vwsum0 = Mul(_mm_blendv_ps(vOne, vZero, _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(vi0), 31))), vKLiwsum);
+							const vec4 vwsum0 = Mul(SelectFromVector(vOne, vZero, _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(vi0), 31))), vKLiwsum);
 							const vec4 vwsum1 = vKLiwsum;
 							const vec4 valpha0 = Mul(vwsum0, vndisp);
 							const vec4 valpha1 = Mul(vwsum1, vndisp);
@@ -3671,7 +3830,7 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 							d = sqrt_tpl(max(disp.len2(), sqr(FLT_EPSILON)));
 							const float diff = (d - geomSpines[off + i].len * fScale);
 							ndisp = disp / d;
-							npt[off + i] += (-(__fself(i_f, 1.f, 0.f) * iwsum) * (diff) * ndisp) * kL;
+							npt[off + i] += (-(__fsel(i_f, 1.f, 0.f) * iwsum) * (diff) * ndisp) * kL;
 							npt[off + i + 1] += (iwsum * (diff) * ndisp) * kL;
 #endif
 						}

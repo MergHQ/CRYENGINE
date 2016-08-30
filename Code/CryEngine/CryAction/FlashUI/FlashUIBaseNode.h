@@ -9,11 +9,10 @@
 //  History:
 //
 ////////////////////////////////////////////////////////////////////////////
-#ifndef __FlashUINodeBase_H__
-#define __FlashUINodeBase_H__
+#pragma once
 
 #include "FlashUI.h"
-#include "FlowSystem/Nodes/FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 #ifndef RELEASE
 	#define ENABLE_UISTACK_DEBUGGING
@@ -372,7 +371,3 @@ private:
 	IFlowGraph*                       m_pGraph;
 	const IUIAction*                  m_pAction;
 };
-
-// ---------------------------------------------------------------
-
-#endif // #ifndef __FlashUINodeBase_H__

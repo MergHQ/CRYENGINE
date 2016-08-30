@@ -63,6 +63,8 @@ template<typename F> struct Vec4_tpl
 	explicit ILINE Vec4_tpl(F m) { x = y = z = w = m; }
 	ILINE Vec4_tpl(type_zero) { x = y = z = w = F(0); }
 
+	ILINE operator const Vec3_tpl<F> &() const { return reinterpret_cast<const Vec3_tpl<F>&>(*this); }
+
 	ILINE void operator()(F vx, F vy, F vz, F vw)     { x = vx; y = vy; z = vz; w = vw; };
 	ILINE void operator()(const Vec3_tpl<F>& v, F vw) { x = v.x; y = v.y; z = v.z; vw = vw; };
 
@@ -72,11 +74,9 @@ template<typename F> struct Vec4_tpl
 
 	ILINE Vec4_tpl& zero() { x = y = z = w = 0; return *this; }
 
-	ILINE bool      IsEquivalent(const Vec4_tpl<F>& v1, F epsilon = VEC_EPSILON) const
+	ILINE bool      IsEquivalent(const Vec4_tpl<F>& v1, f32 epsilon = VEC_EPSILON) const
 	{
-		CRY_MATH_ASSERT(v1.IsValid());
-		CRY_MATH_ASSERT(this->IsValid());
-		return  ((fabs_tpl(x - v1.x) <= epsilon) && (fabs_tpl(y - v1.y) <= epsilon) && (fabs_tpl(z - v1.z) <= epsilon) && (fabs_tpl(w - v1.w) <= epsilon));
+		return ::IsEquivalent(*this, v1, epsilon);
 	}
 
 	ILINE Vec4_tpl& operator=(const Vec4_tpl& src)
@@ -245,5 +245,30 @@ ILINE Vec4_tpl<F1> operator/(const Vec4_tpl<F1>& v0, const Vec4_tpl<F2>& v1)
 {
 	return Vec4_tpl<F1>(v0.x / v1.x, v0.y / v1.y, v0.z / v1.z, v0.w / v1.w);
 }
+
+//! Dot product
+template<class F1, class F2>
+ILINE F1 operator|(const Vec4_tpl<F1> v0, const Vec4_tpl<F2>& v1)
+{
+	return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z + v0.w * v1.w;
+}
+
+
+
+template<typename F> ILINE Vec4_tpl<F> min(const Vec4_tpl<F>& a, const Vec4_tpl<F>& b)
+{
+	return Vec4_tpl<F>(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z), min(a.w, b.w));
+}
+
+template<typename F> ILINE Vec4_tpl<F> max(const Vec4_tpl<F>& a, const Vec4_tpl<F>& b)
+{
+	return Vec4_tpl<F>(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z), max(a.w, b.w));
+}
+
+template<typename F> ILINE F sqr(const Vec4_tpl<F>& op)
+{
+	return op | op;
+}
+
 
 #endif //vector

@@ -3,6 +3,15 @@
 #include "StdAfx.h"
 #include "ResFile.h"
 
+// Prevent type-clash between LZMA and Scaleform
+#define UInt32 UInt32_NoOverwrite
+#define UInt64 UInt64_NoOverwrite
+#include <lzss/LZSS.H>
+#include <lzma/Lzma86.h>
+static_assert(sizeof(uint32) == 4 && sizeof(uint64) == 8, "Bad type sizes");
+#undef  UInt32
+#undef  UInt64
+
 CResFile CResFile::m_Root("Root");
 CResFile CResFile::m_RootStream("RootStream");
 int CResFile::m_nNumOpenResources;

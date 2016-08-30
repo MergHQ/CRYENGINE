@@ -362,10 +362,10 @@ void FeatureUpdateCS(uint3 DTid : SV_DispatchThreadID)
 
 		float3 p0 = defaultParticleData[i].position;
 		float3 v0 = defaultParticleData[i].velocity;
+#endif
 		
 		float3 partAccel = float3(0.0, 0.0, 0.0);
 		float3 fieldVel = float3(0.0, 0.0, 0.0);
-#endif
 
 #if %PFX_UPDATE_PIXELSIZE
 		{
@@ -388,12 +388,11 @@ void FeatureUpdateCS(uint3 DTid : SV_DispatchThreadID)
 #endif
 
 #if %PFX_COLLISION_SCREENSPACE
-		float radius = 0.5;
-		float dist = ScreenSpaceDistancePoint(defaultParticleData[i].position, 0.1, radius);
-		if (dist < radius)
+		float dist = ScreenSpaceDistancePoint(defaultParticleData[i].position, c_collision_offset);
+		if (dist < c_collision_radius)
 		{
 			float3 normal = ComputeGradient(defaultParticleData[i].position);
-			v0 = reflect(v0, normal) * 0.5;
+			v0 = reflect(v0, normal) * c_collision_restitution;
 		}
 #endif
 		// the effectors are supposed to write into partAccel and fieldVel

@@ -595,7 +595,6 @@ public:
 
 	const CTagDefinition* GetSubTagDefinition(TagID tagID) const
 	{
-		CRY_ASSERT(IsValidTagID(tagID));
 		if (!IsValidTagID(tagID))
 			return NULL;
 
@@ -1134,6 +1133,26 @@ public:
 			return false;
 
 		return state.AreAnySet(m_defData.groupMasks[groupID]);
+	}
+
+	TagID GetTagInGroup(const STagStateBase& state, const TagGroupID& groupID) const
+	{
+		CRY_ASSERT(IsValidTagGroupID(groupID));
+		if (!IsValidTagGroupID(groupID))
+			return TAG_ID_INVALID;
+
+		const uint8 groupMask = state & m_defData.groupMasks[groupID];
+		const TagID numTags = m_tags.size();
+		for (TagID itTags = 0; itTags < numTags; ++itTags)
+		{
+			const STag& tag = m_tags[itTags];
+			const STagMask& tagMask = m_defData.tagMasks[itTags];
+			if ((tag.m_groupID == groupID) && (groupMask == tagMask.mask))
+			{
+				return itTags;
+			}
+		}
+		return TAG_ID_INVALID;
 	}
 
 	void SetGroup(STagStateBase state, const TagGroupID groupID, const TagID tagID) const

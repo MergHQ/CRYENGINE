@@ -746,7 +746,7 @@ bool CPlanningTextureStreamer::TrimTexture(int nBias, TStreamerTextureVec& trimm
 
 			if (pTrimItemPool == pPrioritise)
 			{
-				int nPersMip = bsel(pTrimTex->m_bForceStreamHighRes, 0, pTrimTex->m_nMips - pTrimTex->m_CacheFileHeader.m_nMipsPersistent);
+				int nPersMip = pTrimTex->m_bForceStreamHighRes ? 0 : pTrimTex->m_nMips - pTrimTex->m_CacheFileHeader.m_nMipsPersistent;
 				int nTrimMip = pTrimTex->m_nMinMipVidUploaded;
 				int nTrimTargetMip = max(0, min((int)(pTrimTex->m_fpMinMipCur + nBias) >> 8, nPersMip));
 
@@ -792,7 +792,7 @@ ptrdiff_t CPlanningTextureStreamer::TrimTextures(ptrdiff_t nRequired, int nBias,
 
 		if (!pTrimTex->IsUnloaded())
 		{
-			int nPersMip = bsel(pTrimTex->m_bForceStreamHighRes, 0, pTrimTex->m_nMips - pTrimTex->m_CacheFileHeader.m_nMipsPersistent);
+			int nPersMip = pTrimTex->m_bForceStreamHighRes ? 0 : pTrimTex->m_nMips - pTrimTex->m_CacheFileHeader.m_nMipsPersistent;
 			int nTrimMip = pTrimTex->m_nMinMipVidUploaded;
 			int nTrimTargetMip = max(0, min((int)(pTrimTex->m_fpMinMipCur + nBias) >> 8, nPersMip));
 			ptrdiff_t nProfit = pTrimTex->StreamComputeDevDataSize(nTrimMip) - pTrimTex->StreamComputeDevDataSize(nTrimTargetMip);
@@ -825,7 +825,7 @@ ptrdiff_t CPlanningTextureStreamer::KickTextures(CTexture** pTextures, ptrdiff_t
 		if (!pKillTex->IsUnloaded())
 		{
 			int nKillMip = pKillTex->m_nMinMipVidUploaded;
-			int nKillPersMip = bsel(pKillTex->m_bForceStreamHighRes, 0, pKillTex->m_nMips - pKillTex->m_CacheFileHeader.m_nMipsPersistent);
+			int nKillPersMip = pKillTex->m_bForceStreamHighRes ? 0 : pKillTex->m_nMips - pKillTex->m_CacheFileHeader.m_nMipsPersistent;
 
 			// unload textures that are older than 4 update cycles
 			if (nKillPersMip > nKillMip)

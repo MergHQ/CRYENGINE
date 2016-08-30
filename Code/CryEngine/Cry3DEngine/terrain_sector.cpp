@@ -27,6 +27,21 @@ int CTerrainNode::GetMML(int nDist, int mmMin, int mmMax)
 	return mmMax;
 }
 
+void CTerrainNode::FillSectorHeightMapTextureData(Array2d<float> &arrHmData)
+{
+	FUNCTION_PROFILER_3DENGINE;
+
+	int nTexSize = m_pTerrain->m_texCache[2].m_nDim;
+	float fBoxSize = GetBBox().GetSize().x;
+	arrHmData.Allocate(nTexSize);
+	for (int x = 0; x < nTexSize; x++) for (int y = 0; y < nTexSize; y++)
+	{
+		arrHmData[x][y] = m_pTerrain->GetZApr(
+			(float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
+			(float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize), 0);
+	}
+}
+
 void CTerrainNode::SetLOD(const SRenderingPassInfo& passInfo)
 {
 	// Calculate geometry LOD
@@ -68,29 +83,4 @@ int CTerrainNode::GetSecIndex()
 	int nSectorSize = CTerrain::GetSectorSize() << m_nTreeLevel;
 	int nSectorsTableSize = CTerrain::GetSectorsTableSize(m_nSID) >> m_nTreeLevel;
 	return (m_nOriginX / nSectorSize) * nSectorsTableSize + (m_nOriginY / nSectorSize);
-}
-
-void CTerrainNode::CheckInitAffectingLights(const SRenderingPassInfo& passInfo)
-{
-	m_lstAffectingLights.Clear();
-	PodArray<CDLight*>* pSceneLights = Get3DEngine()->GetDynamicLightSources();
-	if (pSceneLights->Count() && (pSceneLights->GetAt(0)->m_Flags & DLF_SUN) && (pSceneLights->GetAt(0)->m_pOwner == Get3DEngine()->GetSunEntity()))
-		m_lstAffectingLights.Add(pSceneLights->GetAt(0));
-
-	m_nLightMaskFrameId = passInfo.GetFrameID() + passInfo.GetRecursiveLevel();
-
-}
-
-PodArray<CDLight*>* CTerrainNode::GetAffectingLights(const SRenderingPassInfo& passInfo)
-{
-	CheckInitAffectingLights(passInfo);
-
-	return &m_lstAffectingLights;
-}
-
-void CTerrainNode::AddLightSource(CDLight* pSource, const SRenderingPassInfo& passInfo)
-{
-	CheckInitAffectingLights(passInfo);
-
-	m_lstAffectingLights.Add(pSource);
 }

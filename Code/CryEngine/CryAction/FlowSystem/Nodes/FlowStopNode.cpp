@@ -13,7 +13,8 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_Stop : public CFlowBaseNode<eNCT_Instanced>
 {

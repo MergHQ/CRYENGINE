@@ -28,7 +28,7 @@
 
 CCryDX12Device* CCryDX12Device::Create(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatureLevel)
 {
-	DX12_PTR(NCryDX12::CDevice) device = NCryDX12::CDevice::Create(static_cast<CCryDX12GIAdapter*>(pAdapter)->GetDXGIAdapter(), pFeatureLevel);
+	DX12_PTR(NCryDX12::CDevice) device = NCryDX12::CDevice::Create(pAdapter ? static_cast<CCryDX12GIAdapter*>(pAdapter)->GetDXGIAdapter() : nullptr, pFeatureLevel);
 
 	if (!device)
 	{
@@ -677,7 +677,7 @@ HRESULT STDMETHODCALLTYPE CCryDX12Device::CreateTarget3D(
 
 HRESULT STDMETHODCALLTYPE CCryDX12Device::CreateNullResource(
   _In_ D3D11_RESOURCE_DIMENSION eType,
-  _Out_ ID3D11Resource** ppNullResource)
+  _Out_opt_ ID3D11Resource** ppNullResource)
 {
 	DX12_FUNC_LOG
 	switch (eType)
@@ -694,6 +694,9 @@ HRESULT STDMETHODCALLTYPE CCryDX12Device::CreateNullResource(
 	case D3D11_RESOURCE_DIMENSION_TEXTURE3D:
 		*ppNullResource = CCryDX12Texture3D::Create(this);
 		break;
+	default:
+		*ppNullResource = nullptr;
+		break;
 	}
 	return *ppNullResource ? S_OK : E_FAIL;
 }
@@ -707,7 +710,7 @@ HRESULT STDMETHODCALLTYPE CCryDX12Device::ReleaseNullResource(
 
 HRESULT STDMETHODCALLTYPE CCryDX12Device::CreateStagingResource(
   _In_ ID3D11Resource* pInputResource,
-  _Out_ ID3D11Resource** ppStagingResource,
+  _Out_opt_ ID3D11Resource** ppStagingResource,
   _In_ BOOL Upload)
 {
 	ICryDX12Resource* dx12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pInputResource);

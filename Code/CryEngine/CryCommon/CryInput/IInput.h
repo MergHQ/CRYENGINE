@@ -60,6 +60,7 @@ enum EInputDeviceType
 	eIDT_Keyboard,
 	eIDT_Mouse,
 	eIDT_Joystick,
+	eIDT_EyeTracker,
 	eIDT_Gamepad,
 	eIDT_MotionController,
 	eIDT_Unknown = 0xff,
@@ -108,7 +109,8 @@ inline bool   operator>(const char* str, const TKeyName& n)  { return n > str; }
 #define KI_XINPUT_BASE   512
 #define KI_ORBIS_BASE    1024
 #define KI_MOTION_BASE   2048
-#define KI_SYS_BASE      4096
+#define KI_EYETRACKER_BASE 4096
+#define KI_SYS_BASE      8192
 
 enum EKeyId
 {
@@ -344,6 +346,10 @@ enum EKeyId
 	eKI_Motion_OculusTouch_FirstTriggerIndex = eKI_Motion_OculusTouch_L1,
 	eKI_Motion_OculusTouch_LastTriggerIndex  = eKI_Motion_OculusTouch_R2,
 
+	// Eye Tracker
+	eKI_EyeTracker_X = KI_EYETRACKER_BASE,
+	eKI_EyeTracker_Y,	
+	
 	// OpenVR
 	eKI_Motion_OpenVR_System = KI_MOTION_BASE + eKI_Motion_OculusTouch_NUM_SYMBOLS,
 	eKI_Motion_OpenVR_ApplicationMenu,
@@ -444,13 +450,14 @@ struct SFFTriggerOutputData
 	};
 
 	float  leftGain, rightGain;
+	float  leftStrength, rightStrength;
 	uint16 leftEnv, rightEnv;
 	uint32 flags;
 
 	SFFTriggerOutputData()  { Init(Initial::ZeroIt); }
 	SFFTriggerOutputData(Initial::Value v)  { Init(v); }
-	SFFTriggerOutputData(bool leftTouchToActivate, bool rightTouchToActivate, float lTrigger, float rTrigger, uint16 lTriggerEnv, uint16 rTriggerEnv) :
-		leftGain(lTrigger), rightGain(rTrigger), leftEnv(lTriggerEnv), rightEnv(rTriggerEnv)
+	SFFTriggerOutputData(bool leftTouchToActivate, bool rightTouchToActivate, float lTrigger, float rTrigger, float lStrength, float rStrength, uint16 lTriggerEnv, uint16 rTriggerEnv) :
+		leftGain(lTrigger), rightGain(rTrigger), leftStrength(lStrength), rightStrength(rStrength), leftEnv(lTriggerEnv), rightEnv(rTriggerEnv)
 	{
 		SetFlag(Flags::LeftTouchToActivate, leftTouchToActivate);
 		SetFlag(Flags::RightTouchToActivate, rightTouchToActivate);
@@ -461,13 +468,15 @@ struct SFFTriggerOutputData
 		if (v == Initial::ZeroIt)
 		{
 			flags = 0;
-			leftGain = rightGain = 0.f;
+			leftGain = rightGain = 0.0f;
+			leftStrength = rightStrength = 0.0f;
 			leftEnv = rightEnv = 0;
 		}
 		else if (v == Initial::Default)
 		{
 			flags = 0;
-			leftGain = rightGain = 1.f;
+			leftGain = rightGain = 1.0f;
+			leftStrength = rightStrength = 0.0f;
 			leftEnv = rightEnv = 4;
 		}
 	}
@@ -1052,6 +1061,15 @@ struct IKinectInput
 	// </interfuscator:shuffle>
 };
 
+struct IEyeTrackerInput
+{
+	// <interfuscator:shuffle>
+	virtual ~IEyeTrackerInput() {};
+
+	virtual bool Init() = 0;
+	virtual void Update() = 0;
+};
+
 //////////////////////////////////////////////////////////////////////////
 struct IKinectInputListener
 {
@@ -1321,6 +1339,10 @@ struct IInput
 	//////////////////////////////////////////////////////////////////////////
 	// SDL
 	virtual bool GrabInput(bool bGrab) = 0;
+
+	//! Allows for Sandbox to intercept and modify events prior to system wide sending.
+	//! \return True if the event is supposed to be broadcasted.
+	bool (*OnFilterInputEvent)(SInputEvent*);
 
 	// </interfuscator:shuffle>
 };

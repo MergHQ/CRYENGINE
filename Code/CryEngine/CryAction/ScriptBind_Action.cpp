@@ -872,7 +872,7 @@ int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 			}
 			else
 			{
-				// Márcio: backwards compatibility
+				// MÃ¡rcio: backwards compatibility
 				int species = -1;
 				if (!pTable->GetValue("eiSpecies", species))
 					pTable->GetValue("species", species);

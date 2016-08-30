@@ -325,14 +325,14 @@ public:
 
 	HRESULT STDMETHODCALLTYPE CreateNullResource(
 	  _In_ D3D11_RESOURCE_DIMENSION eType,
-	  _Out_ ID3D11Resource** ppNullResource);
+	  _Out_opt_ ID3D11Resource** ppNullResource);
 
 	HRESULT STDMETHODCALLTYPE ReleaseNullResource(
 	  _In_ ID3D11Resource* pNullResource);
 
 	HRESULT STDMETHODCALLTYPE CreateStagingResource(
 	  _In_ ID3D11Resource* pInputResource,
-	  _Out_ ID3D11Resource** ppStagingResource,
+	  _Out_opt_ ID3D11Resource** ppStagingResource,
 	  _In_ BOOL Upload);
 
 	HRESULT STDMETHODCALLTYPE ReleaseStagingResource(

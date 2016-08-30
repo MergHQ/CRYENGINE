@@ -28,6 +28,9 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 	{
 		ctx.pInstance->SetupThroughParams(m_pParams);
 	}
+
+	const uint32 wasAnimPlaying = ctx.pInstance->m_SkeletonAnim.m_IsAnimPlaying;
+
 	ctx.pInstance->m_SkeletonAnim.m_IsAnimPlaying = false;
 	QuatTS location = ctx.pInstance->m_location;
 
@@ -47,6 +50,11 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 
 	pSkeletonPose->m_physics.SetLocation(location);
 	pSkeletonPose->m_physics.Job_SynchronizeWithPhysicsPrepare(*GetMemoryPool());
+
+	if (wasAnimPlaying && !ctx.pInstance->m_SkeletonAnim.m_IsAnimPlaying && ctx.pInstance->GetObjectType() == CGA)
+	{
+		pSkeletonPose->m_physics.RequestForcedPostSynchronization();
+	}
 
 	return SContext::EState::StartAnimationProcessed;
 }

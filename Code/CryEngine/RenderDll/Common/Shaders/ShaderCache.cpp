@@ -362,9 +362,11 @@ void CShaderMan::mfInitShadersCacheMissLog()
 	}
 }
 
-static inline bool IsDigit(int ch)
+static inline bool IsHexDigit(int ch)
 {
-	return unsigned(ch - '0') <= 9;
+	const int nDigit = (ch - int('0'));
+	const int bHex = (ch - int('a'));
+	return ((nDigit >= 0) && (nDigit <= 9)) || ((bHex >= 0) && (bHex < 6));
 }
 
 void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* Combinations, const char* pCombinations, int nType)
@@ -554,7 +556,7 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 				sSkipLine(s);
 				goto end;
 			}
-			if (IsDigit(ss[1]))
+			if (IsHexDigit(ss[1]) && (ss[2] != 'S'))
 			{
 				s = ss + 1;
 				cmb.Ident.m_pipelineState.opaque = shGetHex64(s);
@@ -1112,78 +1114,110 @@ void CShaderMan::mfInsertNewCombination(SShaderCombIdent& Ident, EHWShaderClass 
 string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState pipelineState) const
 {
 	// NOTE: when updating remote compiler folders, please ensure folders path is matching
-	const char* pCompilerOrbis = "ORBIS/V028/DXOrbisShaderCompiler.exe %s %s %s %s";
+	const char* pCompilerOrbis = "ORBIS/V029/DXOrbisShaderCompiler.exe %s %s %s %s";
 
-	const char* pCompilerDurango = "Durango/March2016/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo %s %s";
+	const char* pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo %s %s";
 
 	const char* pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo %s %s";
 
-	const char* pCompilerGL4 = "PCGL/V011/HLSLcc.exe -lang=440 -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo\" -out=%s -in=%s";
-	const char* pCompilerGLES3 = "PCGL/V011/HLSLcc.exe -lang=es310 -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo\" -out=%s -in=%s";
+#define ESSL_VERSION "es310"
+#if DXGL_REQUIRED_VERSION >= DXGL_VERSION_45
+#define GLSL_VERSION "450"
+#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_44
+#define GLSL_VERSION "440"
+#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_43
+#define GLSL_VERSION "430"
+#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_42
+#define GLSL_VERSION "420"
+#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_41
+#define GLSL_VERSION "410"
+#elif DXGLES_REQUIRED_VERSION >= DXGLES_VERSION_31
+#define GLSL_VERSION "310"
+#elif DXGLES_REQUIRED_VERSION >= DXGLES_VERSION_30
+#define GLSL_VERSION "300"
+#else
+#error "Shading language revision not defined for this GL version"
+#endif
+
+	const char* pCompilerGL4 = "PCGL/V012/HLSLcc.exe -lang=" GLSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo\" -out=%s -in=%s";
+	const char* pCompilerGLES3 = "PCGL/V012/HLSLcc.exe -lang=" ESSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr /Gec /Fo\" -out=%s -in=%s";
 
 	if (CRenderer::CV_r_shadersdebug == 3)
 	{
 		// Set debug information
 		pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /Od /Fo %s %s";
-		pCompilerDurango = "Durango/March2016/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /Od /Fo %s %s";
+		pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /Od /Fo %s %s";
 	}
 	else if (CRenderer::CV_r_shadersdebug == 4)
 	{
 		// Set debug information, optimized shaders
 		pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /O3 /Fo %s %s";
-		pCompilerDurango = "Durango/March2016/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /O3 /Fo %s %s";
+		pCompilerDurango = "Durango/March2016QFE3/fxc.exe /nologo /E %s /T %s /Zpr /Gec /Zi /O3 /Fo %s %s";
 	}
 
 	if (pipelineState.opaque != 0)
 	{
 		string result;
-#if defined(CRY_GNM_SHADER_COMPILER_VERSION)
-		CRY_ASSERT(CParserBin::m_nPlatform == SF_ORBIS && "PipelineState only supported for GNM backend at this time");
-		const char* const pCompilerGnm = CRY_GNM_SHADER_COMPILER_VERSION "/GnmShaderCompiler.exe %s %s %s %s";
-		static const char* kVsStages[] =
+		if (CParserBin::m_nPlatform == SF_ORBIS)
 		{
-			"VS",
-			"LS",
-			"ES",
-			"ES_LDS",
-			"DD",
-			"DDI",
-			nullptr,
-			nullptr
-		};
-		static const int kPsDepthBits[] =
-		{
-			0,
-			16,
-			32,
-			0,
-		};
+			const char* const pCompilerGnm = CRY_GNM_SHADER_COMPILER_VERSION "/GnmShaderCompiler.exe %s %s %s %s";
 
-		switch (eClass)
-		{
-		case eHWSC_Vertex:
-			result.Format("%s -HwStage=%s", pCompilerGnm, kVsStages[pipelineState.VS.targetStage & 7]);
-			break;
-		case eHWSC_Hull:
-			result.Format("%s -HwStage=%s", pCompilerGnm, "HS");
-			break;
-		case eHWSC_Domain:
-			result.Format("%s -HwStage=%s", pCompilerGnm, ((pipelineState.DS.targetStage >> 6) & 1) ? "ES" : "VS");
-			break;
-		case eHWSC_Geometry:
-			result.Format("%s -HwStage=%s", pCompilerGnm, ((pipelineState.GS.targetStage >> 6) & 1) ? "GS" : "GS_LDS");
-			break;
-		case eHWSC_Pixel:
-			result.Format("%s -HwStage=%s -PsColor=0x%x -PsDepth=%d -PsStencil=%d", pCompilerGnm, "PS", pipelineState.PS.targetFormats, kPsDepthBits[(pipelineState.PS.depthStencilInfo >> 1) & 3], pipelineState.PS.depthStencilInfo & 1 ? 8 : 0);
-			break;
-		case eHWSC_Compute:
-			result.Format("%s -HwStage=%s", pCompilerGnm, "CS");
-			break;
-		default:
-			CRY_ASSERT(false && "Unknown stage");
-			break;
+			static const char* kVsStages[] =
+			{
+				"VS",
+				"LS",
+				"ES",
+				"ES_LDS",
+				"DD",
+				"DDI",
+				nullptr,
+				nullptr
+			};
+			static const int kPsDepthBits[] =
+			{
+				0,
+				16,
+				32,
+				0,
+			};
+			static const char kISA[] =
+			{
+				'B',
+				'C',
+				'N',
+				'R',
+			};
+
+			switch (eClass)
+			{
+			case eHWSC_Vertex:
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, kVsStages[pipelineState.VS.targetStage & 7], kISA[(pipelineState.VS.targetStage >> 5) & 3]);
+				break;
+			case eHWSC_Hull:
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "HS", kISA[(pipelineState.HS.targetStage >> 5) & 3]);
+				break;
+			case eHWSC_Domain:
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.DS.targetStage & 1) ? "ES" : "VS", kISA[(pipelineState.DS.targetStage >> 5) & 3]);
+				break;
+			case eHWSC_Geometry:
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, (pipelineState.GS.targetStage & 1) ? "GS" : "GS_LDS", kISA[(pipelineState.GS.targetStage >> 5) & 3]);
+				break;
+			case eHWSC_Pixel:
+				result.Format("%s -HwStage=%s -HwISA=%c -PsColor=0x%x -PsDepth=%d -PsStencil=%d", pCompilerGnm, "PS", kISA[(pipelineState.PS.depthStencilInfo >> 29) & 3], pipelineState.PS.targetFormats, kPsDepthBits[(pipelineState.PS.depthStencilInfo >> 1) & 3], pipelineState.PS.depthStencilInfo & 1 ? 8 : 0);
+				break;
+			case eHWSC_Compute:
+				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "CS", kISA[(pipelineState.CS.targetStage >> 5) & 3]);
+				break;
+			default:
+				CRY_ASSERT(false && "Unknown stage");
+				break;
+			}
 		}
-#endif
+		else
+		{
+			CRY_ASSERT(false && "PipelineState only supported for GNM backend at this time");
+		}
+
 		CRY_ASSERT(!result.empty());
 		return result;
 	}
@@ -1597,6 +1631,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 			gRenDev->m_RP.m_FlagsShader_LT = 0;
 			gRenDev->m_RP.m_FlagsShader_MD = 0;
 			gRenDev->m_RP.m_FlagsShader_MDV = 0;
+			gRenDev->m_RP.m_FlagsShader_PipelineState = 0;
 			CShader* pSH = CShaderMan::mfForName(str1, 0, NULL, cmb->Ident.m_GLMask);
 
 			gRenDev->m_RP.m_pShader = pSH;
@@ -1713,6 +1748,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 						gRenDev->m_RP.m_FlagsShader_LT = cmba->Ident.m_LightMask;
 						gRenDev->m_RP.m_FlagsShader_MD = cmba->Ident.m_MDMask;
 						gRenDev->m_RP.m_FlagsShader_MDV = cmba->Ident.m_MDVMask;
+						gRenDev->m_RP.m_FlagsShader_PipelineState = cmba->Ident.m_pipelineState.opaque;
 						// Adjust some flags for low spec
 						CHWShader* shaders[] = { pPass->m_PShader, pPass->m_VShader };
 						for (int i = 0; i < 2; i++)

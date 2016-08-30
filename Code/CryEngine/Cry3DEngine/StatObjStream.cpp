@@ -195,7 +195,7 @@ void CStatObj::ReleaseStreamableContent()
 	assert(!m_pClonedSourceObject);
 	assert(!m_bSharesChildren);
 
-	bool bLodsAreLoadedFromSeparateFile = m_pLod0 ? m_pLod0->m_bLodsAreLoadedFromSeparateFile : m_bLodsAreLoadedFromSeparateFile;
+	bool bLodsAreLoadedFromSeparateFile = (m_pLod0 != 0) ? m_pLod0->m_bLodsAreLoadedFromSeparateFile : m_bLodsAreLoadedFromSeparateFile;
 
 	if (!bLodsAreLoadedFromSeparateFile)
 	{
@@ -278,7 +278,7 @@ int CStatObj::GetStreamableContentMemoryUsage(bool bJustForDebug)
 {
 	assert(!m_pParentObject || bJustForDebug); // only parents allowed to be registered for streaming
 
-	bool bLodsAreLoadedFromSeparateFile = m_pLod0 ? m_pLod0->m_bLodsAreLoadedFromSeparateFile : m_bLodsAreLoadedFromSeparateFile;
+	bool bLodsAreLoadedFromSeparateFile = (m_pLod0 != 0) ? m_pLod0->m_bLodsAreLoadedFromSeparateFile : m_bLodsAreLoadedFromSeparateFile;
 	bool bCountLods = !bLodsAreLoadedFromSeparateFile;
 
 	if (m_arrRenderMeshesPotentialMemoryUsage[bCountLods] < 0)

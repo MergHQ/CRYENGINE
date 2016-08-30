@@ -17,6 +17,9 @@ class CAdaptiveFloat
 public:
 	CAdaptiveFloat();
 
+	void Init(const char* szName, uint32 channel, const char* szUseDir, const char* szAccDir) {}
+	bool Manage(CCompressionManager* pManager, const char* szPolicy, int channel) { return false; }
+
 	bool Load(XmlNodeRef node, const string& filename, const string& child);
 #if USE_MEMENTO_PREDICTORS
 	void ReadMemento(CByteInputStream& stm) const;
@@ -24,11 +27,11 @@ public:
 	void NoMemento() const;
 #endif
 #if USE_ARITHSTREAM
-	bool ReadValue(CCommInputStream& stm, float& value, uint32 mementoAge) const;
-	void WriteValue(CCommOutputStream& stm, float value, uint32 mementoAge) const;
+	bool ReadValue(CCommInputStream& stm, float& value, uint32 mementoAge, uint32 timeFraction32 = 0) const;
+	void WriteValue(CCommOutputStream& stm, float value, uint32 mementoAge, uint32 timeFraction32 = 0) const;
 #else
-	bool ReadValue(CNetInputSerializeImpl* stm, float& value, uint32 mementoAge) const;
-	void WriteValue(CNetOutputSerializeImpl* stm, float value, uint32 mementoAge) const;
+	bool ReadValue(CNetInputSerializeImpl* stm, float& value, uint32 mementoAge, uint32 timeFraction32 = 0) const;
+	void WriteValue(CNetOutputSerializeImpl* stm, float value, uint32 mementoAge, uint32 timeFraction32 = 0) const;
 #endif
 #if NET_PROFILE_ENABLE
 	int GetBitCount();

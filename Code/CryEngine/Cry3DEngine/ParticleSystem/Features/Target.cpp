@@ -6,8 +6,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gPfx2Target = false;
-
 namespace pfx2
 {
 

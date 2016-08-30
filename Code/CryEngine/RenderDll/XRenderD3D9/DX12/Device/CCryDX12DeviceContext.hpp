@@ -45,61 +45,26 @@ public:
 		return m_nodeMask;
 	}
 
+	bool RecreateCommandListPool(int nPoolId);
+
 	ILINE void CeaseCoreCommandList(uint32 nPoolId)
 	{
-		if (nPoolId == CMDQUEUE_GRAPHICS)
-		{
-			CeaseGraphicsCommandQueue(false);
-		}
-		else if (nPoolId == CMDQUEUE_COMPUTE)
-		{
-			CeaseComputeCommandQueue(false);
-		}
-		else if (nPoolId == CMDQUEUE_COPY)
-		{
-			CeaseCopyCommandQueue(false);
-		}
-
-		__debugbreak();
-		abort();
+		CeaseCommandQueue(nPoolId, false);
 	}
 
 	ILINE void ResumeCoreCommandList(uint32 nPoolId)
 	{
-		if (nPoolId == CMDQUEUE_GRAPHICS)
-		{
-			ResumeGraphicsCommandQueue();
-		}
-		else if (nPoolId == CMDQUEUE_COMPUTE)
-		{
-			ResumeComputeCommandQueue();
-		}
-		else if (nPoolId == CMDQUEUE_COPY)
-		{
-			ResumeCopyCommandQueue();
-		}
-
-		__debugbreak();
-		abort();
+		ResumeCommandQueue(nPoolId);
 	}
 
-	ILINE NCryDX12::CCommandListPool& GetCoreCommandListPool(int nPoolId)
+	ILINE NCryDX12::CCommandListPool& GetCoreCommandListPool(int nPoolId = CMDQUEUE_GRAPHICS)
 	{
-		if (nPoolId == CMDQUEUE_GRAPHICS)
-		{
-			return m_CmdListPools[CMDQUEUE_GRAPHICS];
-		}
-		else if (nPoolId == CMDQUEUE_COMPUTE)
-		{
-			return m_CmdListPools[CMDQUEUE_COMPUTE];
-		}
-		else if (nPoolId == CMDQUEUE_COPY)
-		{
-			return m_CmdListPools[CMDQUEUE_COPY];
-		}
+		return m_CmdListPools[nPoolId];
+	}
 
-		__debugbreak();
-		abort();
+	ILINE NCryDX12::CCommandList* GetCoreCommandList(int nPoolId = CMDQUEUE_GRAPHICS)
+	{
+		return m_pCmdLists[nPoolId];
 	}
 
 	ILINE NCryDX12::CCommandListPool& GetCoreGraphicsCommandListPool()
@@ -193,10 +158,23 @@ public:
 	  _In_ D3D11_MAP MapType,
 	  _In_ UINT MapFlags,
 	  _Out_ D3D11_MAPPED_SUBRESOURCE* pMappedResource) final;
+	
+	virtual HRESULT STDMETHODCALLTYPE Map(
+	  _In_ ID3D11Resource* pResource,
+	  _In_ UINT Subresource,
+	  _In_ SIZE_T* BeginEnd,
+	  _In_ D3D11_MAP MapType,
+	  _In_ UINT MapFlags,
+	  _Out_ D3D11_MAPPED_SUBRESOURCE* pMappedResource) final;
 
 	virtual void STDMETHODCALLTYPE Unmap(
 	  _In_ ID3D11Resource* pResource,
 	  _In_ UINT Subresource) final;
+	
+	virtual void STDMETHODCALLTYPE Unmap(
+	  _In_ ID3D11Resource* pResource,
+	  _In_ UINT Subresource,
+	  _In_ SIZE_T* BeginEnd) final;
 
 	virtual void STDMETHODCALLTYPE PSSetConstantBuffers(
 	  _In_range_(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1)  UINT StartSlot,
@@ -347,6 +325,17 @@ public:
 	  _In_ ID3D11Resource* pSrcResource,
 	  _In_ UINT SrcSubresource,
 	  _In_opt_ const D3D11_BOX* pSrcBox) final;
+
+	virtual void STDMETHODCALLTYPE CopySubresourcesRegion(
+		_In_ ID3D11Resource* pDstResource,
+		_In_ UINT DstSubresource,
+		_In_ UINT DstX,
+		_In_ UINT DstY,
+		_In_ UINT DstZ,
+		_In_ ID3D11Resource* pSrcResource,
+		_In_ UINT SrcSubresource,
+		_In_opt_ const D3D11_BOX* pSrcBox,
+		_In_ UINT NumSubresources) final;
 
 	virtual void STDMETHODCALLTYPE CopyResource(
 	  _In_ ID3D11Resource* pDstResource,
@@ -562,9 +551,9 @@ public:
 	  _Out_writes_opt_(NumUAVs)  ID3D11UnorderedAccessView * *ppUnorderedAccessViews) final;
 
 	virtual void STDMETHODCALLTYPE OMGetBlendState(
-	  _Out_opt_ ID3D11BlendState** ppBlendState,
+	  _Out_opt_ ID3D11BlendState * *ppBlendState,
 	  _Out_opt_ FLOAT BlendFactor[4],
-	  _Out_opt_ UINT* pSampleMask) final;
+	  _Out_opt_ UINT * pSampleMask) final;
 
 	virtual void STDMETHODCALLTYPE OMGetDepthStencilState(
 	  _Out_opt_ ID3D11DepthStencilState** ppDepthStencilState,
@@ -671,6 +660,7 @@ public:
 	#pragma region /* D3D 11.1 specific functions */
 
 	virtual void STDMETHODCALLTYPE CopySubresourceRegion1(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags) final;
+	virtual void STDMETHODCALLTYPE CopySubresourcesRegion1(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags, UINT NumSubresource) final;
 	virtual void STDMETHODCALLTYPE CopyResource1(ID3D11Resource* pDstResource, ID3D11Resource* pSrcResource, UINT CopyFlags) final;
 	virtual void STDMETHODCALLTYPE UpdateSubresource1(ID3D11Resource* pDstResource, UINT DstSubresource, const D3D11_BOX* pDstBox, const void* pSrcData, UINT SrcRowPitch, UINT SrcDepthPitch, UINT CopyFlags) final;
 	virtual void STDMETHODCALLTYPE DiscardResource(ID3D11Resource* pResource) final;
@@ -724,28 +714,37 @@ public:
 	  _In_reads_opt_(NumRects)  const D3D11_RECT * pRects);
 
 	// Cross-node multi-adapter API
+	void STDMETHODCALLTYPE CopyResourceOvercross(
+	  _In_ ID3D11Resource* pDstResource,
+	  _In_ ID3D11Resource* pSrcResource);
+
+	void STDMETHODCALLTYPE CopyResourceOvercross1(
+		_In_ ID3D11Resource* pDstResource,
+		_In_ ID3D11Resource* pSrcResource,
+		_In_ UINT CopyFlags);
+
 	void STDMETHODCALLTYPE JoinSubresourceRegion(
-	  ID3D11Resource* pDstResource,
-	  UINT DstSubresource,
-	  UINT DstX,
-	  UINT DstY,
-	  UINT DstZ,
-	  ID3D11Resource* pSrcResourceL,
-	  ID3D11Resource* pSrcResourceR,
-	  UINT SrcSubresource,
-	  const D3D11_BOX* pSrcBox);
+	  _In_ ID3D11Resource* pDstResource,
+	  _In_ UINT DstSubresource,
+	  _In_ UINT DstX,
+	  _In_ UINT DstY,
+	  _In_ UINT DstZ,
+	  _In_ ID3D11Resource* pSrcResourceL,
+	  _In_ ID3D11Resource* pSrcResourceR,
+	  _In_ UINT SrcSubresource,
+	  _In_opt_ const D3D11_BOX* pSrcBox);
 
 	void STDMETHODCALLTYPE JoinSubresourceRegion1(
-	  ID3D11Resource* pDstResource,
-	  UINT DstSubresource,
-	  UINT DstX,
-	  UINT DstY,
-	  UINT DstZ,
-	  ID3D11Resource* pSrcResourceL,
-	  ID3D11Resource* pSrcResourceR,
-	  UINT SrcSubresource,
-	  const D3D11_BOX* pSrcBox,
-	  UINT CopyFlags);
+	  _In_ ID3D11Resource* pDstResource,
+	  _In_ UINT DstSubresource,
+	  _In_ UINT DstX,
+	  _In_ UINT DstY,
+	  _In_ UINT DstZ,
+	  _In_ ID3D11Resource* pSrcResourceL,
+	  _In_ ID3D11Resource* pSrcResourceR,
+	  _In_ UINT SrcSubresource,
+	  _In_opt_ const D3D11_BOX* pSrcBox,
+	  _In_ UINT CopyFlags);
 
 	// Staging resource API
 	HRESULT STDMETHODCALLTYPE CopyStagingResource(
@@ -768,6 +767,24 @@ public:
 	void STDMETHODCALLTYPE UnmapStagingResource(
 	  _In_ ID3D11Resource* pStagingResource,
 	  _In_ BOOL Upload);
+
+	HRESULT STDMETHODCALLTYPE MappedWriteToSubresource(
+	  _In_ ID3D11Resource* pResource,
+	  _In_ UINT Subresource,
+	  _In_ SIZE_T Offset,
+	  _In_ SIZE_T Size,
+	  _In_ D3D11_MAP MapType,
+	  _In_reads_bytes_(Size) const void* pData,
+	  _In_ const UINT numDataBlocks);
+
+	HRESULT STDMETHODCALLTYPE MappedReadFromSubresource(
+	  _In_ ID3D11Resource* pResource,
+	  _In_ UINT Subresource,
+	  _In_ SIZE_T Offset,
+	  _In_ SIZE_T Size,
+	  _In_ D3D11_MAP MapType,
+	  _Out_writes_bytes_(Size) void* pData,
+	  _In_ const UINT numDataBlocks);
 
 	// Upload resource API
 	void STDMETHODCALLTYPE UploadResource(
@@ -821,10 +838,14 @@ public:
 		QueryTimestamp(m_pCmdLists[CMDQUEUE_GRAPHICS], index, mem);
 	}
 
-	ILINE void QueryTimestamps(INT firstIndex, INT lastIndex, void* mem)
+	ILINE void QueryTimestamps(INT firstIndex, INT numIndices, void* mem)
 	{
-		for (INT index = firstIndex; index < lastIndex; ++index)
-			QueryTimestamp(m_pCmdLists[CMDQUEUE_GRAPHICS], index, (char*)mem + firstIndex);
+		uint32 outIndex = 0;
+		for (INT index = firstIndex; index < firstIndex + numIndices; ++index)
+		{
+			QueryTimestamp(m_pCmdLists[CMDQUEUE_GRAPHICS], index, (char*)mem + outIndex * sizeof(UINT64));
+			++outIndex;
+		}
 	}
 
 	ILINE void QueryTimestampBuffer(ID3D11Buffer** ppTimestampBuffer)
@@ -843,7 +864,7 @@ public:
 
 	ILINE HRESULT FlushToFence(UINT64 fenceValue)
 	{
-		SubmitGraphicsCommands(false, fenceValue);
+		SubmitCommands(CMDQUEUE_GRAPHICS, false, fenceValue);
 		m_CmdListPools[CMDQUEUE_GRAPHICS].GetAsyncCommandQueue().Flush(fenceValue);
 		return S_OK;
 	}
@@ -862,9 +883,6 @@ public:
 	// Misc
 	void ResetCachedState(bool bGraphics = true, bool bCompute = false);
 
-	void BeginBatchingComputeTasks();
-	void EndBatchingComputeTasks();
-
 private:
 	bool PrepareComputePSO();
 	bool PrepareGraphicsPSO();
@@ -874,21 +892,13 @@ private:
 	bool PrepareGraphicsState();
 	bool PrepareComputeState();
 
-	void CeaseGraphicsCommandQueue(bool wait);
-	void ResumeGraphicsCommandQueue();
-	void CeaseComputeCommandQueue(bool wait);
-	void ResumeComputeCommandQueue();
-	void CeaseCopyCommandQueue(bool wait);
-	void ResumeCopyCommandQueue();
+	void CeaseCommandQueue(int nPoolId, bool wait);
+	void ResumeCommandQueue(int nPoolId);
 	void CeaseAllCommandQueues(bool wait);
 	void ResumeAllCommandQueues();
 
-	void SubmitGraphicsCommands(bool wait);
-	void SubmitGraphicsCommands(bool wait, const UINT64 fenceValue);
-	void SubmitComputeCommands(bool wait);
-	void SubmitComputeCommands(bool wait, const UINT64 fenceValue);
-	void SubmitCopyCommands(bool wait);
-	void SubmitCopyCommands(bool wait, const UINT64 fenceValue);
+	void SubmitCommands(int nPoolId, bool wait);
+	void SubmitCommands(int nPoolId, bool wait, const UINT64 fenceValue);
 	void SubmitAllCommands(bool wait);
 	void SubmitAllCommands(bool wait, const UINT64 (&fenceValues)[CMDQUEUE_NUM]);
 	void SubmitAllCommands(bool wait, const NCryDX12::FVAL64 (&fenceValues)[CMDQUEUE_NUM]);
@@ -939,6 +949,9 @@ public:
 	void InsertOcclusionStop(NCryDX12::CCommandList* pCmdList, UINT index, bool counter);
 	void ResolveOcclusion(NCryDX12::CCommandList* pCmdList, UINT index, void* mem);
 
+	void PushProfilerEvent(const char* label);
+	void PopProfilerEvent();
+
 private:
 	ID3D12Resource*            m_TimestampDownloadBuffer;
 	ID3D12Resource*            m_OcclusionDownloadBuffer;
@@ -959,9 +972,10 @@ private:
 
 	NCryDX12::CQueryHeap       m_TimestampHeap;
 	NCryDX12::CQueryHeap       m_OcclusionHeap;
-	NCryDX12::CQueryHeap       m_PipelineHeap;
 
-	#ifdef DX12_STATS
+	DynArray<const char*>      m_profilerEventStack;
+
+#ifdef DX12_STATS
 	size_t m_NumMapDiscardSkips;
 	size_t m_NumMapDiscards;
 	size_t m_NumCopyDiscardSkips;
@@ -969,7 +983,7 @@ private:
 
 	size_t m_NumCommandListOverflows;
 	size_t m_NumCommandListSplits;
-	#endif // DX12_STATS
+#endif // DX12_STATS
 };
 
 #endif // __CCRYDX12DEVICECONTEXT__

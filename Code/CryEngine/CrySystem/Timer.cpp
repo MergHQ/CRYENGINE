@@ -111,6 +111,11 @@ float CTimer::GetFrameTime(ETimer which) const
 	return m_bEnabled && (which != ETIMER_GAME || !m_bGameTimerPaused) ? m_fFrameTime : 0.0f;
 }
 
+float CTimer::GetReplicationTime() const
+{
+	return m_replicationTime;
+}
+
 /////////////////////////////////////////////////////
 float CTimer::GetCurrTime(ETimer which) const
 {
@@ -349,6 +354,9 @@ void CTimer::UpdateOnFrameStart()
 	if (m_fFrameTime < 0.0f) m_fFrameTime = 0.0f;
 	if (m_fRealFrameTime < 0.0f) m_fRealFrameTime = 0.0;
 
+	if (m_bEnabled && !m_bGameTimerPaused)
+		m_replicationTime += m_fFrameTime;
+
 	// Adjust the base time so that time actually seems to have moved forward m_fFrameTime
 	const int64 frameTicks = SecondsToTicks(m_fFrameTime);
 	const int64 realTicks = SecondsToTicks(m_fRealFrameTime);
@@ -430,7 +438,8 @@ void CTimer::ResetTimer()
 
 	m_fFrameTime = 0.0f;
 	m_fRealFrameTime = 0.0f;
-
+	m_replicationTime = 0;
+	
 	RefreshGameTime(0);
 	RefreshUITime(0);
 

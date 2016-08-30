@@ -491,163 +491,11 @@ CServerContextView::CServerContextView(CNetChannel* pChannel, CNetContext* pCont
 		IF_SERVER_FILE_SYNC(CClientContextView::AddFileData,   NULL),
 		IF_SERVER_FILE_SYNC(CClientContextView::EndSyncFile,   NULL),
 		IF_SERVER_FILE_SYNC(CClientContextView::AllFilesSynced,NULL),
-		// partial update notification messages
-		{
-			CClientContextView::PartialAspect0,
-			CClientContextView::PartialAspect1,
-			CClientContextView::PartialAspect2,
-			CClientContextView::PartialAspect3,
-			CClientContextView::PartialAspect4,
-			CClientContextView::PartialAspect5,
-			CClientContextView::PartialAspect6,
-			CClientContextView::PartialAspect7,
-#if NUM_ASPECTS > 8
-			CClientContextView::PartialAspect8,
-			CClientContextView::PartialAspect9,
-			CClientContextView::PartialAspect10,
-			CClientContextView::PartialAspect11,
-			CClientContextView::PartialAspect12,
-			CClientContextView::PartialAspect13,
-			CClientContextView::PartialAspect14,
-			CClientContextView::PartialAspect15,
-#endif//NUM_ASPECTS > 8
-#if NUM_ASPECTS > 16
-			CClientContextView::PartialAspect16,
-			CClientContextView::PartialAspect17,
-			CClientContextView::PartialAspect18,
-			CClientContextView::PartialAspect19,
-			CClientContextView::PartialAspect20,
-			CClientContextView::PartialAspect21,
-			CClientContextView::PartialAspect22,
-			CClientContextView::PartialAspect23,
-			CClientContextView::PartialAspect24,
-			CClientContextView::PartialAspect25,
-			CClientContextView::PartialAspect26,
-			CClientContextView::PartialAspect27,
-			CClientContextView::PartialAspect28,
-			CClientContextView::PartialAspect29,
-			CClientContextView::PartialAspect30,
-			CClientContextView::PartialAspect31,
-#endif//NUM_ASPECTS > 16
-		},
-		// set aspect profile messages
-		{
-			CClientContextView::SetAspectProfile0,
-			CClientContextView::SetAspectProfile1,
-			CClientContextView::SetAspectProfile2,
-			CClientContextView::SetAspectProfile3,
-			CClientContextView::SetAspectProfile4,
-			CClientContextView::SetAspectProfile5,
-			CClientContextView::SetAspectProfile6,
-			CClientContextView::SetAspectProfile7,
-#if NUM_ASPECTS > 8
-			CClientContextView::SetAspectProfile8,
-			CClientContextView::SetAspectProfile9,
-			CClientContextView::SetAspectProfile10,
-			CClientContextView::SetAspectProfile11,
-			CClientContextView::SetAspectProfile12,
-			CClientContextView::SetAspectProfile13,
-			CClientContextView::SetAspectProfile14,
-			CClientContextView::SetAspectProfile15,
-#endif//NUM_ASPECTS > 8
-#if NUM_ASPECTS > 16
-			CClientContextView::SetAspectProfile16,
-			CClientContextView::SetAspectProfile17,
-			CClientContextView::SetAspectProfile18,
-			CClientContextView::SetAspectProfile19,
-			CClientContextView::SetAspectProfile20,
-			CClientContextView::SetAspectProfile21,
-			CClientContextView::SetAspectProfile22,
-			CClientContextView::SetAspectProfile23,
-			CClientContextView::SetAspectProfile24,
-			CClientContextView::SetAspectProfile25,
-			CClientContextView::SetAspectProfile26,
-			CClientContextView::SetAspectProfile27,
-			CClientContextView::SetAspectProfile28,
-			CClientContextView::SetAspectProfile29,
-			CClientContextView::SetAspectProfile30,
-			CClientContextView::SetAspectProfile31,
-#endif//NUM_ASPECTS > 16
-		},
-		// update aspect messages
-		{
-			CClientContextView::UpdateAspect0,
-			CClientContextView::UpdateAspect1,
-			CClientContextView::UpdateAspect2,
-			CClientContextView::UpdateAspect3,
-			CClientContextView::UpdateAspect4,
-			CClientContextView::UpdateAspect5,
-			CClientContextView::UpdateAspect6,
-			CClientContextView::UpdateAspect7,
-#if NUM_ASPECTS > 8
-			CClientContextView::UpdateAspect8,
-			CClientContextView::UpdateAspect9,
-			CClientContextView::UpdateAspect10,
-			CClientContextView::UpdateAspect11,
-			CClientContextView::UpdateAspect12,
-			CClientContextView::UpdateAspect13,
-			CClientContextView::UpdateAspect14,
-			CClientContextView::UpdateAspect15,
-#endif//NUM_ASPECTS > 8
-#if NUM_ASPECTS > 16
-			CClientContextView::UpdateAspect16,
-			CClientContextView::UpdateAspect17,
-			CClientContextView::UpdateAspect18,
-			CClientContextView::UpdateAspect19,
-			CClientContextView::UpdateAspect20,
-			CClientContextView::UpdateAspect21,
-			CClientContextView::UpdateAspect22,
-			CClientContextView::UpdateAspect23,
-			CClientContextView::UpdateAspect24,
-			CClientContextView::UpdateAspect25,
-			CClientContextView::UpdateAspect26,
-			CClientContextView::UpdateAspect27,
-			CClientContextView::UpdateAspect28,
-			CClientContextView::UpdateAspect29,
-			CClientContextView::UpdateAspect30,
-			CClientContextView::UpdateAspect31,
-#endif//NUM_ASPECTS > 16
-		},
+		static_array<CClientContextView::msgPartialAspect, NumAspects>::value,
+		static_array<CClientContextView::msgSetAspectProfile, NumAspects>::value,
+		static_array<CClientContextView::msgUpdateAspect, NumAspects>::value,
 #if ENABLE_ASPECT_HASHING
-		// update aspect messages
-		{
-			CClientContextView::HashAspect0,
-			CClientContextView::HashAspect1,
-			CClientContextView::HashAspect2,
-			CClientContextView::HashAspect3,
-			CClientContextView::HashAspect4,
-			CClientContextView::HashAspect5,
-			CClientContextView::HashAspect6,
-			CClientContextView::HashAspect7,
-	#if NUM_ASPECTS > 8
-			CClientContextView::HashAspect8,
-			CClientContextView::HashAspect9,
-			CClientContextView::HashAspect10,
-			CClientContextView::HashAspect11,
-			CClientContextView::HashAspect12,
-			CClientContextView::HashAspect13,
-			CClientContextView::HashAspect14,
-			CClientContextView::HashAspect15,
-	#endif//NUM_ASPECTS > 8
-	#if NUM_ASPECTS > 16
-			CClientContextView::HashAspect16,
-			CClientContextView::HashAspect17,
-			CClientContextView::HashAspect18,
-			CClientContextView::HashAspect19,
-			CClientContextView::HashAspect20,
-			CClientContextView::HashAspect21,
-			CClientContextView::HashAspect22,
-			CClientContextView::HashAspect23,
-			CClientContextView::HashAspect24,
-			CClientContextView::HashAspect25,
-			CClientContextView::HashAspect26,
-			CClientContextView::HashAspect27,
-			CClientContextView::HashAspect28,
-			CClientContextView::HashAspect29,
-			CClientContextView::HashAspect30,
-			CClientContextView::HashAspect31,
-	#endif//NUM_ASPECTS > 16
-		},
+		static_array<CClientContextView::msgHashAspect, NumAspects>::value,
 #endif
 		// rmi messages
 		{
@@ -677,18 +525,11 @@ CServerContextView::CServerContextView(CNetChannel* pChannel, CNetContext* pCont
 #endif
 
 	Init(pChannel, pContext, &config);
-
-#if NETWORK_HOST_MIGRATION
-	CNetwork::Get()->AddHostMigrationEventListener(this, "CServerContextView", ELPT_Engine);
-#endif
 }
 
 CServerContextView::~CServerContextView()
 {
 	MMM_REGION(m_pMMM);
-#if NETWORK_HOST_MIGRATION
-	CNetwork::Get()->RemoveHostMigrationEventListener(this);
-#endif
 	m_pBreakSegmentStreams.reset();
 	m_pValidatedPredictions.reset();
 	m_pPendingUnbinds.reset();
@@ -708,7 +549,7 @@ void CServerContextView::CompleteInitialization()
 	SetName("Server_" + RESOLVER.ToString(Parent()->GetIP()));
 }
 
-void CServerContextView::GC_BindObject(SNetObjectID netID, CNetObjectBindLock lk, CChangeStateLock cslk)
+void CServerContextView::GC_BindObject( SNetObjectID netID, CNetObjectBindLock lk, CChangeStateLock cslk, bool levelInit)
 {
 	ASSERT_GLOBAL_LOCK;
 
@@ -794,10 +635,20 @@ void CServerContextView::GC_BindObject(SNetObjectID netID, CNetObjectBindLock lk
 
 		if (prediction || bStatic)
 			pSpawnHook = 0;
-		_smart_ptr<CUpdateMessage> pSend = new CBindObjectMessage(netID, pSpawnHook, this, prediction, lk, cslk);
-		uint32 grp = m_objects[netID.id].authority ? obj.xtra->scheduler_owned : obj.xtra->scheduler_normal;
-		pSend->SetGroup(grp);
-		Parent()->NetAddSendable(&*pSend, 1, &after, &m_objects[netID.id].msgHandle);
+		_smart_ptr<CUpdateMessage> pSend = new CBindObjectMessage( netID, pSpawnHook, this, prediction, lk, cslk );
+		uint32 grp = m_objects[netID.id].authority? obj.xtra->scheduler_owned : obj.xtra->scheduler_normal;
+
+		static uint32 initGroup = 0;
+		if (levelInit)
+		{
+			if (initGroup == 0)
+				StringToKey("init", initGroup);
+
+			grp = initGroup;
+		}
+
+		pSend->SetGroup( grp );
+		Parent()->NetAddSendable( &*pSend, 1, &after, &m_objects[netID.id].msgHandle );
 		pSend->SetHandle(m_objects[netID.id].msgHandle);
 		m_objects[netID.id].activeHandle = m_objects[netID.id].msgHandle;
 #if ENABLE_URGENT_RMIS
@@ -900,9 +751,6 @@ bool CServerContextView::EnterState(EContextViewState state)
 		FinishLocalState();
 		break;
 	case eCVS_Begin:
-#if NETWORK_HOST_MIGRATION
-		ContextState()->ServerTakeObjectOwnership();
-#endif
 		FinishLocalState();
 #ifdef __WITH_PB__
 		m_clientHasPunkBuster = false;
@@ -963,168 +811,6 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, FinishState, eNRT_ReliableUn
 {
 	return FinishRemoteState();
 }
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect0, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(0, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect1, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(1, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect2, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(2, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect3, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(3, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect4, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(4, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect5, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(5, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect6, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(6, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect7, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(7, ser, nCurSeq, nOldSeq);
-}
-#if NUM_ASPECTS > 8
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect8, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(8, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect9, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(9, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect10, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(10, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect11, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(11, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect12, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(12, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect13, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(13, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect14, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(14, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect15, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(15, ser, nCurSeq, nOldSeq);
-}
-#endif//NUM_ASPECTS > 8
-#if NUM_ASPECTS > 16
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect16, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(16, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect17, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(17, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect18, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(18, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect19, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(19, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect20, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(20, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect21, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(21, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect22, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(22, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect23, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(23, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect24, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(24, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect25, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(25, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect26, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(26, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect27, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(27, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect28, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(28, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect29, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(29, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect30, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(30, ser, nCurSeq, nOldSeq);
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, UpdateAspect31, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
-{
-	return UpdateAspect(31, ser, nCurSeq, nOldSeq);
-}
-#endif//NUM_ASPECTS > 16
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, RMI_UnreliableOrdered, eNRT_UnreliableOrdered, eMPF_BlocksStateChange)
 {
@@ -1239,397 +925,6 @@ NET_IMPLEMENT_SIMPLE_IMMEDIATE_MESSAGE(CServerContextView, SkippedCollectedObjec
 	return true;
 }
 
-#if ENABLE_ASPECT_HASHING
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect0, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(0, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect1, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(1, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect2, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(2, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect3, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(3, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect4, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(4, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect5, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(5, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect6, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(6, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect7, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(7, ser);
-	return true;
-}
-	#if NUM_ASPECTS > 8
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect8, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(8, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect9, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(9, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect10, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(10, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect11, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(11, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect12, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(12, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect13, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(13, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect14, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(14, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect15, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(15, ser);
-	return true;
-}
-	#endif//NUM_ASPECTS > 8
-	#if NUM_ASPECTS > 16
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect16, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(16, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect17, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(17, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect18, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(18, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect19, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(19, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect20, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(20, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect21, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(21, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect22, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(22, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect23, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(23, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect24, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(24, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect25, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(25, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect26, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(26, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect27, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(27, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect28, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(28, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect29, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(29, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect30, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(30, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, HashAspect31, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	HashAspect(31, ser);
-	return true;
-}
-	#endif//NUM_ASPECTS > 16
-
-#endif
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect0, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(0, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect1, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(1, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect2, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(2, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect3, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(3, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect4, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(4, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect5, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(5, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect6, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(6, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect7, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(7, ser);
-	return true;
-}
-#if NUM_ASPECTS > 8
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect8, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(8, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect9, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(9, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect10, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(10, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect11, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(11, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect12, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(12, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect13, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(13, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect14, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(14, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect15, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(15, ser);
-	return true;
-}
-#endif//NUM_ASPECTS > 8
-#if NUM_ASPECTS > 16
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect16, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(16, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect17, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(17, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect18, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(18, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect19, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(19, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect20, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(20, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect21, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(21, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect22, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(22, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect23, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(23, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect24, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(24, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect25, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(25, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect26, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(26, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect27, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(27, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect28, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(28, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect29, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(29, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect30, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(30, ser);
-	return true;
-}
-
-NET_IMPLEMENT_IMMEDIATE_MESSAGE(CServerContextView, PartialAspect31, eNRT_UnreliableUnordered, eMPF_BlocksStateChange)
-{
-	PartialAspect(31, ser);
-	return true;
-}
-#endif//NUM_ASPECTS > 16
-
 NET_IMPLEMENT_SIMPLE_IMMEDIATE_MESSAGE(CServerContextView, UpdatePhysicsTime, eNRT_UnreliableUnordered, 0)
 {
 	return SetPhysicsTime(param.tm);
@@ -1678,6 +973,8 @@ void CServerContextView::BindObject(SNetObjectID nID)
 		return;
 	}
 
+	bool init = (GetLocalState() != eCVS_InGame);
+
 	CContextView::BindObject(nID);
 
 	TValidatedPredictionMap::iterator itPred = m_pValidatedPredictions->find(pCtxObj->userID);
@@ -1689,7 +986,7 @@ void CServerContextView::BindObject(SNetObjectID nID)
 	if (pCtxObj->spawnType == eST_Collected)
 		return;
 
-	TO_GAME(&CServerContextView::GC_BindObject, this, nID, ContextState()->LockObject(nID, "SENDBIND"), CChangeStateLock(this, "SENDBIND"));
+	TO_GAME( &CServerContextView::GC_BindObject, this, nID, ContextState()->LockObject(nID, "SENDBIND"), CChangeStateLock(this, "SENDBIND"), init);
 }
 
 void CServerContextView::UnbindObject(SNetObjectID nID)
@@ -1988,84 +1285,3 @@ void CServerContextView::RemoveStaticEntity(EntityId id)
 
 	Parent()->NetAddSendable(new CRemoveStaticObjectMessage(CClientContextView::RemoveStaticObject, id), 0, NULL, NULL);
 }
-
-#if NETWORK_HOST_MIGRATION
-// IHostMigrationEventListener
-IHostMigrationEventListener::EHostMigrationReturn CServerContextView::OnInitiate(SHostMigrationInfo& hostMigrationInfo, HMStateType& state)
-{
-	if (!hostMigrationInfo.ShouldMigrateNub())
-	{
-		return IHostMigrationEventListener::Listener_Done;
-	}
-
-	if (!IsPastOrInState(eCVS_InGame))
-	{
-		CryLogAlways("[Host Migration]Not in game - unable to proceed with host migration!");
-		return IHostMigrationEventListener::Listener_Terminate;
-	}
-
-	return IHostMigrationEventListener::Listener_Done;
-}
-
-IHostMigrationEventListener::EHostMigrationReturn CServerContextView::OnDisconnectClient(SHostMigrationInfo& hostMigrationInfo, HMStateType& state)
-{
-	return IHostMigrationEventListener::Listener_Done;
-}
-
-IHostMigrationEventListener::EHostMigrationReturn CServerContextView::OnDemoteToClient(SHostMigrationInfo& hostMigrationInfo, HMStateType& state)
-{
-	return IHostMigrationEventListener::Listener_Done;
-}
-
-IHostMigrationEventListener::EHostMigrationReturn CServerContextView::OnPromoteToServer(SHostMigrationInfo& hostMigrationInfo, HMStateType& state)
-{
-	return IHostMigrationEventListener::Listener_Done;
-}
-
-IHostMigrationEventListener::EHostMigrationReturn CServerContextView::OnReconnectClient(SHostMigrationInfo& hostMigrationInfo, HMStateType& state)
-{
-	return IHostMigrationEventListener::Listener_Done;
-}
-
-IHostMigrationEventListener::EHostMigrationReturn CServerContextView::OnFinalise(SHostMigrationInfo& hostMigrationInfo, HMStateType& state)
-{
-	if (!hostMigrationInfo.ShouldMigrateNub())
-	{
-		return IHostMigrationEventListener::Listener_Done;
-	}
-
-	if (IsMigrating() && (GetLocalState() < eCVS_InGame))
-	{
-		return IHostMigrationEventListener::Listener_Wait;
-	}
-
-	return IHostMigrationEventListener::Listener_Done;
-}
-
-IHostMigrationEventListener::EHostMigrationReturn CServerContextView::OnTerminate(SHostMigrationInfo& hostMigrationInfo, HMStateType& state)
-{
-	if (!hostMigrationInfo.ShouldMigrateNub())
-	{
-		return IHostMigrationEventListener::Listener_Done;
-	}
-
-	ClearStateDuringMigration();
-	return IHostMigrationEventListener::Listener_Done;
-}
-
-IHostMigrationEventListener::EHostMigrationReturn CServerContextView::OnReset(SHostMigrationInfo& hostMigrationInfo, HMStateType& state)
-{
-	return IHostMigrationEventListener::Listener_Done;
-}
-
-void CServerContextView::OnComplete(SHostMigrationInfo& hostMigrationInfo)
-{
-	if (!hostMigrationInfo.ShouldMigrateNub())
-	{
-		return;
-	}
-
-	ClearStateDuringMigration();
-}
-// ~IHostMigrationEventListener
-#endif

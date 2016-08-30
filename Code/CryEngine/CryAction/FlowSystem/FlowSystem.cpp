@@ -5,18 +5,16 @@
 #include "FlowSystem.h"
 
 #include <CryAction.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 #include "FlowGraph.h"
-#include "Nodes/FlowBaseNode.h"
 #include "Nodes/FlowLogNode.h"
 #include "Nodes/FlowStartNode.h"
 #include "Nodes/FlowTrackEventNode.h"
 #include "Nodes/FlowDelayNode.h"
-#include "Nodes/FlowConditionNode.h"
 
 #include "Nodes/FlowScriptedNode.h"
 #include "Nodes/FlowCompositeNode.h"
-#include "Nodes/FlowTimeNode.h"
 #include "Nodes/FlowEntityNode.h"
 
 #include "Inspectors/FlowInspectorDefault.h"
@@ -44,8 +42,8 @@ CFlowSystem::TSFGProfile CFlowSystem::FGProfile;
 //////////////////////////////////////////////////////////////////////////
 // CAutoFlowNodeFactoryBase
 //////////////////////////////////////////////////////////////////////////
-CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pFirst = 0;
-CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = 0;
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pFirst = nullptr;
+CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::m_pLast = nullptr;
 //////////////////////////////////////////////////////////////////////////
 
 template<class T>
@@ -233,16 +231,18 @@ void CFlowSystem::RegisterAllNodeTypes()
 	// register all types
 	TFlowNodeTypeId typeId = RegisterType("InvalidType", 0);
 	assert(typeId == InvalidFlowNodeTypeId);
-	RegisterType("Log", new CSingletonFlowFactory<CFlowLogNode>());
-	RegisterType("Start", new CAutoFlowFactory<CFlowStartNode>());
+	RegisterType("Debug:Log", new CSingletonFlowFactory<CFlowLogNode>());
+	RegisterType("Game:Start", new CAutoFlowFactory<CFlowStartNode>());
 	RegisterType("TrackEvent", new CAutoFlowFactory<CFlowTrackEventNode>());
 
 	RegisterAutoTypes();
 
 	LoadExtensions("Libs/FlowNodes");
 
+#ifndef _LIB
 	// register game specific flownodes
 	gEnv->pGame->RegisterGameFlowNodes();
+#endif
 
 	// register entity type flownodes after the game
 	RegisterEntityTypes();

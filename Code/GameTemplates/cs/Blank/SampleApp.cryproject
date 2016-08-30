@@ -1,0 +1,30 @@
+{
+    "content": {
+	    "assets": ["Assets"],
+        "code": ["Code/Game/GameDll"],
+		"libs": [{
+			"name": "Game",
+			"shared": {
+				"win_x64": "bin/win_x64/Game.dll",
+				"win_x86": "bin/win_x86/Game.dll"
+			}
+		}]
+    },
+    "info": {
+        "name": "CE# Framework - Sample App"
+    },
+	"csharp":
+	{
+		"monodev": {
+			"solution": "Code/SampleApp.sln",
+			"user": "Code/SampleApp/SampleApp.csproj.user"
+		},
+		"msdev": {
+			"solution": "Code/SampleApp_VS.sln",
+			"user": "Code/SampleApp/SampleApp.ceproj.user"
+		}
+	},
+    "require": {
+        "engine": "engine-5.2"
+    }
+}

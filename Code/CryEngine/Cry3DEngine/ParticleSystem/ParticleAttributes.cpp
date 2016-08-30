@@ -31,8 +31,8 @@ SAttribute::SAttribute()
 
 void SAttribute::Serialize(Serialization::IArchive& ar)
 {
-	ar(m_type, "Type", "^>42>");
-	ar(m_name, "Name", "^>120>");
+	ar(m_type, "Type", "^>85>");
+	ar(m_name, "Name", "^");
 	ar(m_scope, "Scope", "Scope");
 	switch (m_type)
 	{

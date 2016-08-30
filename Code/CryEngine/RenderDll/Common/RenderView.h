@@ -48,6 +48,12 @@ public:
 	typedef std::vector<SShadowFrustumToRender*> ShadowFrustumsPtr;
 	typedef lockfree_add_vector<CRenderObject*>  ModifiedObjects;
 
+	static const int32 MaxFogVolumeNum = 64;
+
+	static const int32 CloudBlockerTypeNum = 2;
+	static const int32 MaxCloudBlockerWorldSpaceNum = 4;
+	static const int32 MaxCloudBlockerScreenSpaceNum = 1;
+
 public:
 	//////////////////////////////////////////////////////////////////////////
 	// IRenderView
@@ -61,6 +67,9 @@ public:
 	virtual void   SetShaderRenderingFlags(uint32 nFlags) override { m_nShaderRenderingFlags = nFlags; }
 	virtual uint32 GetShaderRenderingFlags() const final           { return m_nShaderRenderingFlags; };
 
+	virtual void   SetCameras(const CCamera* pCameras, int cameraCount) final;
+	virtual void   SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount) final;
+
 	// Begin/End writing items to the view from 3d engine traversal.
 	virtual void         SwitchUsageMode(EUsageMode mode) override;
 
@@ -72,16 +81,20 @@ public:
 	CRenderView(const char* name, EViewType type, CRenderView* pParentView = nullptr, ShadowMapFrustum* pShadowFrustumOwner = nullptr);
 	~CRenderView();
 
-	EViewType    GetType() const                         { return m_viewType;  }
+	EViewType            GetType() const                                                 { return m_viewType;  }
 
-	void         SetParentView(CRenderView* pParentView) { m_pParentView = pParentView; };
-	CRenderView* GetParentView() const                   { return m_pParentView;  };
+	void                 SetParentView(CRenderView* pParentView)                         { m_pParentView = pParentView; };
+	CRenderView*         GetParentView() const                                           { return m_pParentView;  };
 
-	RenderItems& GetRenderItems(int nRenderList);
-	uint32       GetBatchFlags(int nRenderList) const;
+	const CCamera&       GetCamera(CCamera::EEye eye = CCamera::eEye_Left)         const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_camera[eye]; }
+	const CCamera&       GetPreviousCamera(CCamera::EEye eye = CCamera::eEye_Left) const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_previousCamera[eye]; }
+	const CRenderCamera& GetRenderCamera(CCamera::EEye eye = CCamera::eEye_Left)   const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_renderCamera[eye]; }
 
-	void         AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
-	                           SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward);
+	RenderItems&         GetRenderItems(int nRenderList);
+	uint32               GetBatchFlags(int nRenderList) const;
+
+	void                 AddRenderItem(CRendElementBase* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
+	                                   SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward);
 
 	void       AddPermanentObjectInline(CPermanentRenderObject* pObject, SRendItemSorter sorter, int shadowFrustumSide);
 
@@ -100,7 +113,6 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Shadows related
 	void AddShadowFrustumToRender(const SShadowFrustumToRender& frustum);
-	void AddCustomShadowFrustum(const ShadowMapFrustumPtr& pFrustum, const ShadowMapFrustumPtr& pOriginalFrustum);
 
 	// Get render view used for given frustum.
 	CRenderView*                         GetShadowsView(ShadowMapFrustum* pFrustum);
@@ -142,6 +154,27 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
+	// Fog Volumes
+	//////////////////////////////////////////////////////////////////////////
+	void                               AddFogVolume(const CREFogVolume* pFogVolume) final;
+	const std::vector<SFogVolumeInfo>& GetFogVolumes(IFogVolumeRenderNode::eFogVolumeType volumeType) const;
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// Cloud Blockers
+	//////////////////////////////////////////////////////////////////////////
+	void                              AddCloudBlocker(const Vec3& pos, const Vec3& param, int32 flags) final;
+	const std::vector<SCloudBlocker>& GetCloudBlockers(uint32 blockerType) const;
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// Water Ripples
+	//////////////////////////////////////////////////////////////////////////
+	void                                 AddWaterRipple(const SWaterRippleInfo& waterRippleInfo) final;
+	const std::vector<SWaterRippleInfo>& GetWaterRipples() const;
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
 	// Polygons.
 	CREClientPoly* AddClientPoly();
 	int            GetClientPolyCount() const     { return m_numUsedClientPolygons; }
@@ -171,6 +204,8 @@ private:
 	void                   PrepareNearestShadows();
 	void                   AddRenderItemsFromClientPolys();
 	void                   CheckAndScheduleForUpdate(const SShaderItem& shaderItem);
+	template<bool bConcurrent>
+	void                   AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, int nBatchFlags, const SShaderItem& shaderItem);
 
 	CCompiledRenderObject* AllocCompiledObject(CRenderObject* pObj, CRendElementBase* pElem, const SShaderItem& shaderItem);
 	CCompiledRenderObject* AllocCompiledObjectTemporary(CRenderObject* pObj, CRendElementBase* pElem, const SShaderItem& shaderItem);
@@ -201,6 +236,21 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	// Clip Volumes
 	std::vector<SDeferredClipVolume> m_clipVolumes;
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// Fog Volumes
+	std::vector<SFogVolumeInfo> m_fogVolumes[IFogVolumeRenderNode::eFogVolumeType_Count];
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// Cloud Blockers
+	std::vector<SCloudBlocker> m_cloudBlockers[CloudBlockerTypeNum];
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// Water Ripples
+	std::vector<SWaterRippleInfo> m_waterRipples;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -238,8 +288,9 @@ private:
 	};
 	lockfree_add_vector<SPermanentObjectRecord> m_permanentObjects;
 
-	CCamera       m_camera;       // Current camera
-	CRenderCamera m_renderCamera; // Current render camera
+	CCamera       m_camera[CCamera::eEye_eCount];          // Current camera
+	CCamera       m_previousCamera[CCamera::eEye_eCount];  // Previous frame render camera
+	CRenderCamera m_renderCamera[CCamera::eEye_eCount];    // Current render camera
 
 	// Internal job states to control when view job processing is done.
 	CryJobState                    m_jobstate_Sort;
@@ -255,13 +306,16 @@ private:
 	struct SShadows
 	{
 		// Shadow frustums needed for a view.
-		ShadowMapFrustum*                                             m_pShadowFrustumOwner;
+		ShadowMapFrustum* m_pShadowFrustumOwner;
 		std::vector<SShadowFrustumToRender>                           m_renderFrustums;
 
 		std::map<int, ShadowFrustumsPtr>                              m_frustumsByLight;
 		std::array<ShadowFrustumsPtr, eShadowFrustumRenderType_Count> m_frustumsByType;
 
+		CThreadSafeRendererContainer<AABB>                            m_nearestCasterBoxes;
+
 		void Clear();
+		void AddNearestCaster(CRenderObject* pObj);
 		void CreateFrustumGroups();
 		void PrepareNearestShadows();
 	};

@@ -1,29 +1,28 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-
-   Revision history:
-* Created by Nicolas Schulz, February 2012
-
-   =============================================================================*/
-
 #include "StdAfx.h"
 #include "PipelineProfiler.h"
 #include "DriverD3D.h"
 
 CRenderPipelineProfiler::CRenderPipelineProfiler()
 {
-	m_sectionsFrameIdx = 0;
-	m_gpuSyncTime = 0;
+	m_frameDataIndex = 0;
 	m_avgFrameTime = 0;
 	m_enabled = false;
 	m_recordData = false;
-	m_waitForGPUTimers = false;
 
 	m_stack.reserve(8);
 
 	for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
 		ResetBasicStats(m_basicStats[i], true);
+}
+
+void CRenderPipelineProfiler::Init()
+{
+	for (uint32 i = 0; i < kNumPendingFrames; i++)
+	{
+		m_frameData[i].m_timestampGroup.Init();
+	}
 }
 
 void CRenderPipelineProfiler::BeginFrame()
@@ -33,135 +32,82 @@ void CRenderPipelineProfiler::BeginFrame()
 	if (gEnv->IsEditor() && !gcpRendD3D->m_CurrContext->m_bMainViewport)
 		m_recordData = false;
 
-	if (m_recordData)
-		CSimpleGPUTimer::EnableTiming();
+	if (!m_recordData)
+		return;
 
-	uint32 nextSectionsFrameIdx = (m_sectionsFrameIdx + 1) % NumSectionsFrames;
-	RPPSectionsFrame& nextSectionsFrame = m_sectionsFrames[nextSectionsFrameIdx];
+	m_frameDataIndex = (m_frameDataIndex + 1) % kNumPendingFrames;
+	
+	SFrameData& frameData = m_frameData[m_frameDataIndex];
+	frameData.m_numSections = 0;
+	
+	frameData.m_timestampGroup.BeginMeasurement();
 
-	if (!WaitForTimers())
-	{
-		CSimpleGPUTimer::EndMeasuring(false);
-	}
-
-	if (nextSectionsFrame.m_numSections > 0)
-	{
-		RPProfilerSection& lastSection = nextSectionsFrame.m_sections[nextSectionsFrame.m_numSections - 1];
-
-		lastSection.gpuTimer.UpdateTime();
-		if (lastSection.gpuTimer.HasPendingQueries())
-		{
-			// Don't record new data if there are still pending GPU time queries, otherwise results may be wrong when labels change between frames
-			m_recordData = false;
-			return;
-		}
-	}
-
-	m_sectionsFrameIdx = nextSectionsFrameIdx;
-
-	if (!WaitForTimers())
-	{
-		UpdateBasicStats();
-	}
-
-	nextSectionsFrame.m_numSections = 0;
-
-	CSimpleGPUTimer::BeginMeasuring();
 	BeginSection("FRAME", 0);
-	if (m_recordData)
-	{
-		nextSectionsFrame.m_sections[0].numDIPs = 0;
-		nextSectionsFrame.m_sections[0].numPolys = 0;
-	}
+	frameData.m_sections[0].numDIPs = 0;
+	frameData.m_sections[0].numPolys = 0;
 }
 
 void CRenderPipelineProfiler::EndFrame()
 {
+	if (!m_recordData)
+		return;
+	
 	EndSection("FRAME");
 
-	RPPSectionsFrame& sectionsFrame = m_sectionsFrames[m_sectionsFrameIdx];
+	SFrameData& frameData = m_frameData[m_frameDataIndex];
 
 	if (!m_stack.empty())
 	{
-		sectionsFrame.m_sections[0].recLevel = -1;
+		frameData.m_sections[0].recLevel = -1;
 		m_stack.resize(0);
 	}
 
-	m_gpuSyncTime = 0;
+	frameData.m_timestampGroup.EndMeasurement();
 
-	if (WaitForTimers())
+	// Resolve gpu timestamps from previous frame
+	uint32 prevFrameIndex = (m_frameDataIndex + (kNumPendingFrames - 1)) % kNumPendingFrames;
+	if (!m_frameData[prevFrameIndex].m_timestampGroup.ResolveTimestamps())
 	{
-		CSimpleGPUTimer::EndMeasuring(true);
+		// If previous frame is not yet ready, get data from 2 frames earlier
+		prevFrameIndex = (m_frameDataIndex + (kNumPendingFrames - 2)) % kNumPendingFrames;
+		bool bDataReady = m_frameData[prevFrameIndex].m_timestampGroup.ResolveTimestamps();
+		assert(bDataReady);
 	}
 
-	if (sectionsFrame.m_numSections > 0 && WaitForTimers())
-	{
-		RPProfilerSection& lastSection = sectionsFrame.m_sections[sectionsFrame.m_numSections - 1];
-
-		// This will lower the overall framerate but gives accurate GPU times
-		do
-		{
-			lastSection.gpuTimer.UpdateTime();
-		}
-		while (lastSection.gpuTimer.HasPendingQueries());
-
-		CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
-		m_gpuSyncTime = gEnv->pTimer->GetAsyncTime().GetDifferenceInSeconds(startTime) * 1000.0f;
-
-		UpdateBasicStats();
-	}
-
+	UpdateGPUTimes(prevFrameIndex);
+	UpdateBasicStats(prevFrameIndex);
 	UpdateThreadTimings();
 
 	m_recordData = false;
-}
 
-void CRenderPipelineProfiler::DisplayUI()
-{
-	int mode = abs(CRenderer::CV_r_profiler);
-
-	if (mode == 1)
-		DisplayBasicStats();
-	else if (mode == 2)
-		DisplayAdvancedStats();
-	else if (mode == 3)
-		DisplayExtensiveStats();
-}
-
-void CRenderPipelineProfiler::ReleaseGPUTimers()
-{
-	for (uint32 i = 0; i < NumSectionsFrames; ++i)
-	{
-		RPPSectionsFrame& sectionsFrame = m_sectionsFrames[i];
-		for (uint32 j = 0; j < sectionsFrame.m_numSections; ++j)
-		{
-			RPProfilerSection& section = sectionsFrame.m_sections[j];
-			section.gpuTimer.Stop();
-			section.gpuTimer.Release();
-		}
-	}
+	// Display UI
+	if (CRenderer::CV_r_profiler == 1)
+		DisplayOverviewStats();
+	if (CRenderer::CV_r_profiler == 2)
+		DisplayDetailedPassStats(prevFrameIndex);
 }
 
 bool CRenderPipelineProfiler::FilterLabel(const char* name)
 {
 	return
 	  (strcmp(name, "SCREEN_STRETCH_RECT") == 0) ||
-	  (strcmp(name, "STRETCHRECT_EMU") == 0) ||
+	  (strcmp(name, "STRETCHRECT") == 0) ||
 	  (strcmp(name, "STENCIL_VOLUME") == 0) ||
-	  (strcmp(name, "DRAWSTRINGW") == 0);    // FIXME: Label stack error in DRAWSTRINGW
+	  (strcmp(name, "DRAWSTRINGW") == 0) ||
+		(strcmp(name, "DRAWSTRINGU") == 0);
 }
 
 void CRenderPipelineProfiler::BeginSection(const char* name, uint32 eProfileLabelFlags)
 {
-	RPPSectionsFrame& sectionsFrame = m_sectionsFrames[m_sectionsFrameIdx];
+	SFrameData& frameData = m_frameData[m_frameDataIndex];
 
-	if (sectionsFrame.m_numSections >= RPPSectionsFrame::MaxNumSections)
+	if (frameData.m_numSections >= SFrameData::kMaxNumSections)
 		m_recordData = false;
 
 	if (!m_recordData || FilterLabel(name))
 		return;
 
-	RPProfilerSection& section = sectionsFrame.m_sections[sectionsFrame.m_numSections++];
+	SProfilerSection& section = frameData.m_sections[frameData.m_numSections++];
 
 	cry_strcpy(section.name, name);
 
@@ -169,15 +115,15 @@ void CRenderPipelineProfiler::BeginSection(const char* name, uint32 eProfileLabe
 	section.numDIPs = gcpRendD3D->GetCurrentNumberOfDrawCalls();
 	section.numPolys = gcpRendD3D->RT_GetPolyCount();
 	section.startTimeCPU = gEnv->pTimer->GetAsyncTime();
-	section.gpuTimer.Start();
+	section.startTimestamp = frameData.m_timestampGroup.IssueTimestamp();
 
-	m_stack.push_back(sectionsFrame.m_numSections - 1);
+	m_stack.push_back(frameData.m_numSections - 1);
 
 	string path = "";
 	for (int i = 0; i < m_stack.size(); i++)
 	{
 		path += "\\";
-		path += sectionsFrame.m_sections[m_stack[i]].name;
+		path += frameData.m_sections[m_stack[i]].name;
 	}
 	section.path = CCryNameTSCRC(path);
 }
@@ -189,17 +135,27 @@ void CRenderPipelineProfiler::EndSection(const char* name)
 
 	if (!m_stack.empty())
 	{
-		RPPSectionsFrame& sectionsFrame = m_sectionsFrames[m_sectionsFrameIdx];
-		RPProfilerSection& section = sectionsFrame.m_sections[m_stack.back()];
+		SFrameData& frameData = m_frameData[m_frameDataIndex];
+		SProfilerSection& section = frameData.m_sections[m_stack.back()];
 
 		section.numDIPs = gcpRendD3D->GetCurrentNumberOfDrawCalls() - section.numDIPs;
 		section.numPolys = gcpRendD3D->RT_GetPolyCount() - section.numPolys;
 		section.endTimeCPU = gEnv->pTimer->GetAsyncTime();
-		section.gpuTimer.Stop();
+		section.endTimestamp = frameData.m_timestampGroup.IssueTimestamp();
 		if (strncmp(section.name, name, 30) != 0)
 			section.recLevel = -section.recLevel;
 
 		m_stack.pop_back();
+	}
+}
+
+void CRenderPipelineProfiler::UpdateGPUTimes(uint32 frameDataIndex)
+{
+	SFrameData& frameData = m_frameData[frameDataIndex];
+	for (uint32 i = 0; i < frameData.m_numSections; ++i)
+	{
+		SProfilerSection& section = frameData.m_sections[i];
+		section.gpuTime = frameData.m_timestampGroup.GetTimeMS(section.startTimestamp, section.endTimestamp);
 	}
 }
 
@@ -215,22 +171,6 @@ void CRenderPipelineProfiler::UpdateThreadTimings()
 	m_threadTimings.gpuFrameTime = (gcpRendD3D->m_fTimeProcessedGPU[fillThreadID] * (1.0f - weight) + m_threadTimings.gpuFrameTime * weight);
 	m_threadTimings.frameTime = (iTimer->GetRealFrameTime() * (1.0f - weight) + m_threadTimings.frameTime * weight);
 	m_threadTimings.renderTime = min((gcpRendD3D->m_fTimeProcessedRT[fillThreadID] * (1.0f - weight) + m_threadTimings.renderTime * weight), m_threadTimings.frameTime);
-}
-
-ILINE void AddToStats(RPProfilerStats& outStats, RPProfilerSection& section)
-{
-	outStats.gpuTime += section.gpuTimer.GetTime();
-	outStats.cpuTime += section.endTimeCPU.GetDifferenceInSeconds(section.startTimeCPU) * 1000.0f;
-	outStats.numDIPs += section.numDIPs;
-	outStats.numPolys += section.numPolys;
-}
-
-ILINE void SubtractFromStats(RPProfilerStats& outStats, RPProfilerSection& section)
-{
-	outStats.gpuTime -= section.gpuTimer.GetTime();
-	outStats.cpuTime -= section.endTimeCPU.GetDifferenceInSeconds(section.startTimeCPU) * 1000.0f;
-	outStats.numDIPs -= section.numDIPs;
-	outStats.numPolys -= section.numPolys;
 }
 
 void CRenderPipelineProfiler::ResetBasicStats(RPProfilerStats* pBasicStats, bool bResetAveragedStats)
@@ -282,20 +222,34 @@ void CRenderPipelineProfiler::ComputeAverageStats()
 	s_frameCounter += 1;
 }
 
-void CRenderPipelineProfiler::UpdateBasicStats()
+ILINE void CRenderPipelineProfiler::AddToStats(RPProfilerStats& outStats, SProfilerSection& section)
+{
+	outStats.gpuTime += section.gpuTime;
+	outStats.cpuTime += section.endTimeCPU.GetDifferenceInSeconds(section.startTimeCPU) * 1000.0f;
+	outStats.numDIPs += section.numDIPs;
+	outStats.numPolys += section.numPolys;
+}
+
+ILINE void CRenderPipelineProfiler::SubtractFromStats(RPProfilerStats& outStats, SProfilerSection& section)
+{
+	outStats.gpuTime -= section.gpuTime;
+	outStats.cpuTime -= section.endTimeCPU.GetDifferenceInSeconds(section.startTimeCPU) * 1000.0f;
+	outStats.numDIPs -= section.numDIPs;
+	outStats.numPolys -= section.numPolys;
+}
+
+void CRenderPipelineProfiler::UpdateBasicStats(uint32 frameDataIndex)
 {
 	RPProfilerStats* pBasicStats = m_basicStats[gcpRendD3D->m_RP.m_nProcessThreadID];
 
 	ResetBasicStats(pBasicStats, false);
 
 	bool bRecursivePass = false;
-	RPPSectionsFrame& sectionsFrame = m_sectionsFrames[m_sectionsFrameIdx];
+	SFrameData& frameData = m_frameData[frameDataIndex];
 
-	for (uint32 i = 0; i < sectionsFrame.m_numSections; ++i)
+	for (uint32 i = 0; i < frameData.m_numSections; ++i)
 	{
-		RPProfilerSection& section = sectionsFrame.m_sections[i];
-
-		section.gpuTimer.UpdateTime();
+		SProfilerSection& section = frameData.m_sections[i];
 
 		if (strcmp(section.name, "SCENE_REC") == 0)
 		{
@@ -476,30 +430,39 @@ void CRenderPipelineProfiler::UpdateBasicStats()
 		}
 	}
 
-	AddToStats(pBasicStats[eRPPSTATS_OverallFrame], sectionsFrame.m_sections[0]);
+	AddToStats(pBasicStats[eRPPSTATS_OverallFrame], frameData.m_sections[0]);
 
 	ComputeAverageStats();
 }
 
-void CRenderPipelineProfiler::DisplayAdvancedStats()
+void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 {
 #ifndef _RELEASE
+	if (gEnv->pConsole->IsOpened())
+		return;
+	
 	CD3D9Renderer* rd = gcpRendD3D;
-
-	RPPSectionsFrame& sectionsFrame = m_sectionsFrames[m_sectionsFrameIdx];
+	SFrameData& frameData = m_frameData[frameDataIndex];
 	uint32 elemsPerColumn = (gcpRendD3D->GetBackbufferHeight() - 60) / 16;
 
-	ColorF color = sectionsFrame.m_numSections >= RPPSectionsFrame::MaxNumSections ? Col_Red : ColorF(1.0f, 1.0f, 0.2f, 1);
+	// Dim background to make text more readable
+	rd->SetState(GS_NODEPTHTEST | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
+	rd->Draw2dImage(0, 0, VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT, CTexture::s_ptexWhite->GetID(), 0, 0, 1, 1, 0, ColorF(0.05f, 0.05f, 0.05f, 0.5f));
+	rd->SetState(GS_NODEPTHTEST);
+	
+	ColorF color = frameData.m_numSections >= SFrameData::kMaxNumSections ? Col_Red : ColorF(1.0f, 1.0f, 0.2f, 1);
 	m_avgFrameTime = 0.8f * gEnv->pTimer->GetRealFrameTime() + 0.2f * m_avgFrameTime; // exponential moving average for frame time
 
-	rd->Draw2dLabel(20, 10, 1.7f, &color.r, false, "FPS %.1f  GPU Sync %.1fms", 1.0f / m_avgFrameTime, m_gpuSyncTime);
-	color.r = color.g = color.b = 0.35f;
+	int frameDist = m_frameDataIndex - frameDataIndex;
+	frameDist += frameDist < 0 ? kNumPendingFrames : 0;
+	color = ColorF(0.35f, 0.35f, 0.35f);
+	rd->Draw2dLabel(20, 10, 1.7f, &color.r, false, "Showing data for frame n-%i", frameDist);
 	rd->Draw2dLabel(320, 10, 1.5f, &color.r, false, "GPU");
 	rd->Draw2dLabel(400, 10, 1.5f, &color.r, false, "CPU");
 	rd->Draw2dLabel(470, 10, 1.5f, &color.r, false, "DIPs");
 	rd->Draw2dLabel(520, 10, 1.5f, &color.r, false, "Polys");
 
-	if (sectionsFrame.m_numSections > elemsPerColumn)
+	if (frameData.m_numSections > elemsPerColumn)
 	{
 		rd->Draw2dLabel(320 + 600, 10, 1.5f, &color.r, false, "GPU");
 		rd->Draw2dLabel(400 + 600, 10, 1.5f, &color.r, false, "CPU");
@@ -507,7 +470,7 @@ void CRenderPipelineProfiler::DisplayAdvancedStats()
 		rd->Draw2dLabel(520 + 600, 10, 1.5f, &color.r, false, "Polys");
 	}
 
-	// refresh the list every 3 seconds to clear out old data and reduce gaps
+	// Refresh the list every 3 seconds to clear out old data and reduce gaps
 	CTimeValue currentTime = gEnv->pTimer->GetAsyncTime();
 	static CTimeValue lastClearTime = currentTime;
 
@@ -517,18 +480,31 @@ void CRenderPipelineProfiler::DisplayAdvancedStats()
 		m_staticNameList.clear();
 	}
 
-	// reset the used flag
+	// Reset the used flag
 	for (std::multimap<CCryNameTSCRC, SStaticElementInfo>::iterator it = m_staticNameList.begin(); it != m_staticNameList.end(); ++it)
 	{
 		it->second.bUsed = false;
 	}
 
-	static float gpuTimeAverage[2] = { 10, 10 };
-	gpuTimeAverage[1] = gpuTimeAverage[0];
-
-	for (uint32 i = 0; i < sectionsFrame.m_numSections; ++i)
+	// Find median of GPU times
+	float medianTimeGPU = 0;
+	if (frameData.m_numSections > 0)
 	{
-		RPProfilerSection& section = sectionsFrame.m_sections[i];
+		static std::vector<float> s_arrayTimes;
+		s_arrayTimes.resize(0);
+		for (uint32 i = 0; i < frameData.m_numSections; ++i)
+		{
+			s_arrayTimes.push_back(frameData.m_sections[i].gpuTime);
+		}
+		std::sort(s_arrayTimes.begin(), s_arrayTimes.end());
+		medianTimeGPU = s_arrayTimes[frameData.m_numSections / 2];
+	}
+
+	float frameTimeGPU = max(m_threadTimings.gpuFrameTime * 1000.0f, 0.0f);
+	
+	for (uint32 i = 0; i < frameData.m_numSections; ++i)
+	{
+		SProfilerSection& section = frameData.m_sections[i];
 
 		// find the slot we should render to according to the static list - if not found, insert
 		std::multimap<CCryNameTSCRC, SStaticElementInfo>::iterator it = m_staticNameList.lower_bound(section.path);
@@ -541,214 +517,34 @@ void CRenderPipelineProfiler::DisplayAdvancedStats()
 
 		it->second.bUsed = true;
 
-		float gpuTime = section.gpuTimer.GetTime();
+		float gpuTime = section.gpuTime;
 		float cpuTime = section.endTimeCPU.GetDifferenceInSeconds(section.startTimeCPU);
 		float ypos = 30.0f + (it->second.nPos % elemsPerColumn) * 16.0f;
 		float xpos = 20.0f + ((int)(it->second.nPos / elemsPerColumn)) * 600.0f;
-		color.r = color.g = color.b = min(0.4f + gpuTime * 0.4f, 0.9f);
-
-		if (section.recLevel < 0)   // Label stack error
+		
+		if (section.recLevel < 0)  // Label stack error
 		{
-			color.r = 1;
-			color.g = color.b = 0;
+			color = ColorF(1, 0, 0);
 		}
-		else if (i == 0)   // Special case for FRAME section
+		else
 		{
-			color.r = 1;
-			color.g = 1;
-			color.b = 0.2f;
+			// Highlight items which are more expensive relative to the other items in the list
+			color.r = color.g = color.b = 0.4f + 0.3f * std::min(gpuTime / medianTimeGPU, 2.0f);
+			// Tint items which are expensive relative to the overall frame time
+			color.b *= clamp_tpl(1.2f - (gpuTime / frameTimeGPU) * 8.0f, 0.0f, 1.0f);
 		}
-		else if (max(gpuTime, cpuTime) > gpuTimeAverage[1] * 0.75f)
-		{
-			color.r = color.g = color.b = 1; // highlight heavy elements
-		}
+		
 		rd->Draw2dLabel(xpos + max((int)(abs(section.recLevel) - 2), 0) * 15.0f, ypos, 1.5f, &color.r, false, "%s", section.name);
 		rd->Draw2dLabel(xpos + 300, ypos, 1.5f, &color.r, false, "%.2fms", gpuTime);
 		rd->Draw2dLabel(xpos + 380, ypos, 1.5f, &color.r, false, "%.2fms", cpuTime * 1000.0f);
 		rd->Draw2dLabel(xpos + 450, ypos, 1.5f, &color.r, false, "%i", section.numDIPs);
 		rd->Draw2dLabel(xpos + 500, ypos, 1.5f, &color.r, false, "%i", section.numPolys);
-
-		if (i != 0)
-		{
-			gpuTimeAverage[0] += (max(gpuTime, cpuTime) - gpuTimeAverage[0]) * 0.05f;
-		}
 	}
 
 	rd->RT_FlushTextMessages();
 #endif
 }
 
-void CRenderPipelineProfiler::DisplayExtensiveStats()
-{
-#ifndef _RELEASE
-	CD3D9Renderer* rd = gcpRendD3D;
-
-	RPPSectionsFrame& sectionsFrame = m_sectionsFrames[m_sectionsFrameIdx];
-	uint32 elemsPerColumn = (gcpRendD3D->GetBackbufferHeight() - 60) / 16;
-
-	ColorF color = sectionsFrame.m_numSections >= RPPSectionsFrame::MaxNumSections ? Col_Red : ColorF(1.0f, 1.0f, 0.2f, 1);
-	m_avgFrameTime = 0.8f * gEnv->pTimer->GetRealFrameTime() + 0.2f * m_avgFrameTime; // exponential moving average for frame time
-
-	rd->Draw2dLabel(20, 10, 1.7f, &color.r, false, "FPS %.1f  GPU Sync %.1fms", 1.0f / m_avgFrameTime, m_gpuSyncTime);
-	color.r = color.g = color.b = 0.35f;
-	rd->Draw2dLabel(320, 10, 1.5f, &color.r, false, "GPU");
-	rd->Draw2dLabel(380, 10, 1.5f, &color.r, false, "Histogram");
-
-	if (sectionsFrame.m_numSections > elemsPerColumn)
-	{
-		rd->Draw2dLabel(320 + 600, 10, 1.5f, &color.r, false, "GPU");
-		rd->Draw2dLabel(380 + 600, 10, 1.5f, &color.r, false, "Histogram");
-	}
-
-	// refresh the list every 3 seconds to clear out old data and reduce gaps
-	CTimeValue currentTime = gEnv->pTimer->GetAsyncTime();
-	static CTimeValue lastClearTime = currentTime;
-
-	if (currentTime.GetDifferenceInSeconds(lastClearTime) > 3.0f)
-	{
-		lastClearTime = currentTime;
-		m_staticNameList.clear();
-	}
-
-	// reset the used flag
-	for (std::multimap<CCryNameTSCRC, SStaticElementInfo>::iterator it = m_staticNameList.begin(); it != m_staticNameList.end(); ++it)
-	{
-		it->second.bUsed = false;
-	}
-
-	static float gpuTimeAverage[2] = { 10, 10 };
-	gpuTimeAverage[1] = gpuTimeAverage[0];
-
-	static float topTimes[2] = { 0.0f, 0.0f };
-	float& curTop = topTimes[m_sectionsFrameIdx];
-
-	// Find current maximum
-	float maxTop = 0.0f;
-	for (uint32 i = 0; i < sectionsFrame.m_numSections; ++i)
-	{
-		RPProfilerSection& section = sectionsFrame.m_sections[i];
-
-		float newTop = section.gpuTimer.GetWindowedMaxTime();
-		if (maxTop < newTop)
-			maxTop = newTop;
-	}
-
-	// If larger than last, bump it up, if smaller smooth it down
-	if (curTop < maxTop)
-		curTop = maxTop;
-	else
-		curTop = (curTop * 0.5f + maxTop * 0.5f);
-
-	// Provide a stable top for both even/odd frames
-	float topTime = std::max(topTimes[0], topTimes[1]);
-
-	for (uint32 i = 0; i < sectionsFrame.m_numSections; ++i)
-	{
-		RPProfilerSection& section = sectionsFrame.m_sections[i];
-
-		// find the slot we should render to according to the static list - if not found, insert
-		std::multimap<CCryNameTSCRC, SStaticElementInfo>::iterator it = m_staticNameList.lower_bound(section.path);
-		while (it != m_staticNameList.end() && it->second.bUsed)
-			++it;
-
-		// not found: either a new element or a duplicate - insert at correct position and render there
-		if (it == m_staticNameList.end() || it->first != section.path)
-			it = m_staticNameList.insert(std::make_pair(section.path, i));
-
-		it->second.bUsed = true;
-
-		float ypos = 30.0f + (it->second.nPos % elemsPerColumn) * 16.0f;
-		float xpos = 20.0f + ((int)(it->second.nPos / elemsPerColumn)) * 600.0f;
-
-		unsigned char histogram[256];
-		unsigned char maxFreq;
-		float minTime, maxTime, medTime, avgTime, curTime;
-		unsigned int bucket;
-		Vec3 line[2];
-		ColorF lineColor(1, 1, 0, 0.5f);
-
-		curTime = section.gpuTimer.GetTime();
-		maxFreq = section.gpuTimer.GetWindowedHistogram(topTime, 256, histogram);
-		section.gpuTimer.GetWindowedTimes(minTime, maxTime, medTime, avgTime);
-
-		rd->Set2DMode(true, rd->GetWidth(), rd->GetHeight());
-
-		bucket = (unsigned int)ceilf((minTime * (256 - 1) + 0.5f) / topTime);
-		line[0] = Vec3(xpos + 360 + bucket, ypos + 8, 0);
-		line[1] = Vec3(xpos + 360 + bucket, ypos + 16, 0);
-		rd->DrawLines(line, 2, lineColor, 3, -1.0f);
-
-		bucket = (unsigned int)ceilf((medTime * (256 - 1) + 0.5f) / topTime);
-		line[0] = Vec3(xpos + 360 + bucket, ypos + 8, 0);
-		line[1] = Vec3(xpos + 360 + bucket, ypos + 16, 0);
-		rd->DrawLines(line, 2, lineColor, 3, -1.0f);
-
-		bucket = (unsigned int)ceilf((maxTime * (256 - 1) + 0.5f) / topTime);
-		line[0] = Vec3(xpos + 360 + bucket, ypos + 8, 0);
-		line[1] = Vec3(xpos + 360 + bucket, ypos + 16, 0);
-		rd->DrawLines(line, 2, lineColor, 3, -1.0f);
-
-		line[0] = Vec3(xpos + 360 + 0, ypos + 16, 0);
-		line[1] = Vec3(xpos + 360 + 255, ypos + 16, 0);
-		rd->DrawLines(line, 2, lineColor, 3, -1.0f);
-
-		for (unsigned int j = 0; j < 256; ++j)
-		{
-			if (histogram[j])
-			{
-				line[0] = Vec3(xpos + 360 + j, ypos + 0, 0);
-				line[1] = Vec3(xpos + 360 + j, ypos + 15, 0);
-
-				ColorF histogramLine(0, 1, 0, float(histogram[j]) / float(maxFreq));
-				rd->DrawLines(line, 2, histogramLine, 3, -1.0f);
-			}
-		}
-
-		ColorF colRed(1, 0, 0, 1);
-		bucket = (unsigned int)ceilf((avgTime * (256 - 1) + 0.5f) / topTime);
-		line[0] = Vec3(xpos + 360 + bucket, ypos + 0, 0);
-		line[1] = Vec3(xpos + 360 + bucket, ypos + 15, 0);
-		rd->DrawLines(line, 2, colRed, 0, -1.0f);
-
-		ColorF colBlue(0, 0, 1, 1);
-		bucket = (unsigned int)ceilf((curTime * (256 - 1) + 0.5f) / topTime);
-		line[0] = Vec3(xpos + 360 + bucket, ypos + 0, 0);
-		line[1] = Vec3(xpos + 360 + bucket, ypos + 15, 0);
-		rd->DrawLines(line, 2, colBlue, 0, -1.0f);
-
-		rd->Set2DMode(false, rd->GetWidth(), rd->GetHeight());
-
-		float gpuTime = avgTime;
-		float cpuTime = section.endTimeCPU.GetDifferenceInSeconds(section.startTimeCPU);
-		color.r = color.g = color.b = min(0.4f + gpuTime * 0.4f, 0.9f);
-
-		if (section.recLevel < 0)  // Label stack error
-		{
-			color.r = 1;
-			color.g = color.b = 0;
-		}
-		else if (i == 0)  // Special case for FRAME section
-		{
-			color.r = 1;
-			color.g = 1;
-			color.b = 0.2f;
-		}
-		else if (max(gpuTime, cpuTime) > gpuTimeAverage[1] * 0.75f)
-		{
-			color.r = color.g = color.b = 1; // highlight heavy elements
-		}
-		rd->Draw2dLabel(xpos + max((int)(abs(section.recLevel) - 2), 0) * 15.0f, ypos, 1.5f, &color.r, false, "%s", section.name);
-		rd->Draw2dLabel(xpos + 300, ypos, 1.5f, &color.r, false, "%.2fms", gpuTime);
-
-		if (i != 0)
-		{
-			gpuTimeAverage[0] += (max(gpuTime, cpuTime) - gpuTimeAverage[0]) * 0.05f;
-		}
-	}
-
-	rd->RT_FlushTextMessages();
-#endif
-}
 
 namespace DebugUI
 {
@@ -818,7 +614,7 @@ void DrawTableBar(float x, float tableY, int columnIndex, float percentage, Colo
 }
 }
 
-void CRenderPipelineProfiler::DisplayBasicStats()
+void CRenderPipelineProfiler::DisplayOverviewStats()
 {
 #ifndef _RELEASE
 	if (gEnv->pConsole->IsOpened())

@@ -26,22 +26,31 @@
 void CryAssertSetGlobalFlagAddress(int*);
 bool CryAssertIsEnabled();
 void CryAssertTrace(const char*, ...);
+void CryLogAssert(const char*, const char*, unsigned int, bool*);
 bool CryAssert(const char*, const char*, unsigned int, bool*);
 void CryDebugBreak();
 
 //! The code to insert when assert is used.
-		#define CRY_ASSERT_TRACE(condition, parenthese_message)                  \
-		  do                                                                     \
-		  {                                                                      \
-		    static bool s_bIgnoreAssert = false;                                 \
-		    if (!s_bIgnoreAssert && !(condition) && CryAssertIsEnabled())        \
-		    {                                                                    \
-		      CryAssertTrace parenthese_message;                                 \
-		      if (CryAssert( # condition, __FILE__, __LINE__, &s_bIgnoreAssert)) \
-		      {                                                                  \
-		        __debugbreak();                                                  \
-		      }                                                                  \
-		    }                                                                    \
+		#define CRY_ASSERT_TRACE(condition, parenthese_message)                    \
+		  do                                                                       \
+		  {                                                                        \
+		    static bool s_bIgnoreAssert = false;                                   \
+		    static bool s_bLogAssert = true;                                       \
+		    if (!(condition))                                                      \
+		    {                                                                      \
+		      CryAssertTrace parenthese_message;                                   \
+		      if (s_bLogAssert) /* Just log assert the first time */               \
+		        CryLogAssert( # condition, __FILE__, __LINE__, &s_bIgnoreAssert);  \
+		      s_bLogAssert = false;                                                \
+		                                                                           \
+		      if (!s_bIgnoreAssert && CryAssertIsEnabled())                        \
+		      {                                                                    \
+		        if (CryAssert( # condition, __FILE__, __LINE__, &s_bIgnoreAssert)) \
+		        {                                                                  \
+		          __debugbreak();                                                  \
+		        }                                                                  \
+		      }                                                                    \
+		    }                                                                      \
 		  } while (0)
 		#define CRY_ASSERT_MESSAGE(condition, message) CRY_ASSERT_TRACE(condition, (message))
 		#define CRY_ASSERT(condition)                  CRY_ASSERT_MESSAGE(condition, nullptr)

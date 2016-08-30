@@ -10,12 +10,9 @@
 
  *********************************************************************/
 
-#ifndef __FLOWTRACKEVENTNODE_H__
-#define __FLOWTRACKEVENTNODE_H__
-
 #pragma once
 
-#include "FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryMovie/IMovieSystem.h>
 
 class CFlowTrackEventNode : public CFlowBaseNode<eNCT_Instanced>, public ITrackEventListener
@@ -58,5 +55,3 @@ private:
 	SActivationInfo    m_actInfo;
 	IAnimSequence*     m_pSequence;
 };
-
-#endif

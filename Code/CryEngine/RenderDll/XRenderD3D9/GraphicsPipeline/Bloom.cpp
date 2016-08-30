@@ -28,7 +28,9 @@ void CBloomStage::Execute()
 	int height = CTexture::s_ptexHDRFinalBloom->GetHeight();
 
 	// Note: Just scaling the sampling offsets depending on the resolution is not very accurate but works acceptably
-	assert(CTexture::s_ptexHDRFinalBloom->GetWidth() == CTexture::s_ptexHDRTarget->GetWidth() / 4);
+	int widthHalfRes = (CTexture::s_ptexHDRTarget->GetWidth() + 1) / 2;
+	int widthQuarterRes = (widthHalfRes + 1) / 2;
+	assert(CTexture::s_ptexHDRFinalBloom->GetWidth() == widthQuarterRes);
 	float scaleW = ((float)width / 400.0f) / (float)width;
 	float scaleH = ((float)height / 225.0f) / (float)height;
 
@@ -47,8 +49,7 @@ void CBloomStage::Execute()
 	}
 
 	m_pass1H.BeginConstantUpdate();
-	Vec4 v = Vec4(scaleW, 0, 0, 0);
-	CShaderMan::s_shHDRPostProcess->FXSetPSFloat(hdrParams0Name, &v, 1);
+	m_pass1H.SetConstant(eHWSC_Pixel, hdrParams0Name, Vec4(scaleW, 0, 0, 0));
 	m_pass1H.Execute();
 
 	// Pass 1 Vertical
@@ -62,8 +63,7 @@ void CBloomStage::Execute()
 	}
 
 	m_pass1V.BeginConstantUpdate();
-	v = Vec4(0, scaleH, 0, 0);
-	CShaderMan::s_shHDRPostProcess->FXSetPSFloat(hdrParams0Name, &v, 1);
+	m_pass1V.SetConstant(eHWSC_Pixel, hdrParams0Name, Vec4(0, scaleH, 0, 0));
 	m_pass1V.Execute();
 
 	// Pass 2 Horizontal
@@ -77,8 +77,7 @@ void CBloomStage::Execute()
 	}
 
 	m_pass2H.BeginConstantUpdate();
-	v = Vec4((sigma2 / sigma1) * scaleW, 0, 0, 0);
-	CShaderMan::s_shHDRPostProcess->FXSetPSFloat(hdrParams0Name, &v, 1);
+	m_pass2H.SetConstant(eHWSC_Pixel, hdrParams0Name, Vec4((sigma2 / sigma1) * scaleW, 0, 0, 0));
 	m_pass2H.Execute();
 
 	// Pass 2 Vertical
@@ -93,7 +92,6 @@ void CBloomStage::Execute()
 	}
 
 	m_pass2V.BeginConstantUpdate();
-	v = Vec4(0, (sigma2 / sigma1) * scaleH, 0, 0);
-	CShaderMan::s_shHDRPostProcess->FXSetPSFloat(hdrParams0Name, &v, 1);
+	m_pass2H.SetConstant(eHWSC_Pixel, hdrParams0Name, Vec4(0, (sigma2 / sigma1) * scaleH, 0, 0));
 	m_pass2V.Execute();
 }

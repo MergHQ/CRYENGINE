@@ -17,6 +17,12 @@
 	#pragma once
 #endif
 
+template<typename F> struct Quat_tpl;
+template<typename F> struct QuatT_tpl;
+template<typename F> struct QuatTS_tpl;
+template<typename F> struct QuatTNS_tpl;
+template<typename F> struct DualQuat_tpl;
+
 template<typename F> struct Matrix34_tpl
 {
 	F m00, m01, m02, m03;
@@ -613,12 +619,12 @@ template<typename F> struct Matrix34_tpl
 	//! Example:
 	//!   Matrix34 m34;
 	//!   m34.SetRotationX(0.5f);
-	ILINE void SetRotationX(const f32 rad, const Vec3_tpl<F>& t = Vec3(ZERO))
+	ILINE void SetRotationX(const F rad, const Vec3_tpl<F>& t = Vec3(ZERO))
 	{
 		*this = Matrix33_tpl<F>::CreateRotationX(rad);
 		this->SetTranslation(t);
 	}
-	ILINE static Matrix34_tpl<F> CreateRotationX(const f32 rad, const Vec3_tpl<F>& t = Vec3(ZERO))
+	ILINE static Matrix34_tpl<F> CreateRotationX(const F rad, const Vec3_tpl<F>& t = Vec3(ZERO))
 	{
 		Matrix34_tpl<F> m34;
 		m34.SetRotationX(rad, t);
@@ -632,12 +638,12 @@ template<typename F> struct Matrix34_tpl
 	//! Example:
 	//!  Matrix34 m34;
 	//!  m34.SetRotationY(0.5f);
-	ILINE void SetRotationY(const f32 rad, const Vec3_tpl<F>& t = Vec3(ZERO))
+	ILINE void SetRotationY(const F rad, const Vec3_tpl<F>& t = Vec3(ZERO))
 	{
 		*this = Matrix33_tpl<F>::CreateRotationY(rad);
 		this->SetTranslation(t);
 	}
-	ILINE static Matrix34_tpl<F> CreateRotationY(const f32 rad, const Vec3_tpl<F>& t = Vec3(ZERO))
+	ILINE static Matrix34_tpl<F> CreateRotationY(const F rad, const Vec3_tpl<F>& t = Vec3(ZERO))
 	{
 		Matrix34_tpl<F> m34;
 		m34.SetRotationY(rad, t);
@@ -650,12 +656,12 @@ template<typename F> struct Matrix34_tpl
 	//! Example:
 	//!  Matrix34 m34;
 	//!  m34.SetRotationZ(0.5f);
-	ILINE void SetRotationZ(const f32 rad, const Vec3_tpl<F>& t = Vec3(ZERO))
+	ILINE void SetRotationZ(const F rad, const Vec3_tpl<F>& t = Vec3(ZERO))
 	{
 		*this = Matrix33_tpl<F>::CreateRotationZ(rad);
 		this->SetTranslation(t);
 	}
-	ILINE static Matrix34_tpl<F> CreateRotationZ(const f32 rad, const Vec3_tpl<F>& t = Vec3(ZERO))
+	ILINE static Matrix34_tpl<F> CreateRotationZ(const F rad, const Vec3_tpl<F>& t = Vec3(ZERO))
 	{
 		Matrix34_tpl<F> m34;
 		m34.SetRotationZ(rad, t);
@@ -820,7 +826,7 @@ template<typename F> struct Matrix34_tpl
 	}
 
 	//! Determinant is ambiguous: only the upper-left-submatrix's determinant is calculated.
-	ILINE f32 Determinant() const
+	ILINE F Determinant() const
 	{
 		return (m00 * m11 * m22) + (m01 * m12 * m20) + (m02 * m10 * m21) - (m02 * m11 * m20) - (m00 * m12 * m21) - (m01 * m10 * m22);
 	}
@@ -833,7 +839,8 @@ template<typename F> struct Matrix34_tpl
 	ILINE F                  operator()(uint32 i, uint32 j) const   { CRY_MATH_ASSERT((i < 3) && (j < 4)); F* p_data = (F*)(&m00);   return p_data[i * 4 + j]; }
 	ILINE F&                 operator()(uint32 i, uint32 j)         { CRY_MATH_ASSERT((i < 3) && (j < 4)); F* p_data = (F*)(&m00);   return p_data[i * 4 + j]; }
 
-	ILINE void               SetRow(int i, const Vec3_tpl<F>& v)    { CRY_MATH_ASSERT(i < 3); F* p = (F*)(&m00);  p[0 + 4 * i] = v.x; p[1 + 4 * i] = v.y; p[2 + 4 * i] = v.z;   }
+	ILINE void               SetRow(int i, const Vec3_tpl<F>& v)    { CRY_MATH_ASSERT(i < 3); F* p = (F*)(&m00);  p[0 + 4 * i] = v.x; p[1 + 4 * i] = v.y; p[2 + 4 * i] = v.z; }
+	ILINE void               SetRow4(int i, const Vec4_tpl<F>& v)   { CRY_MATH_ASSERT(i < 3); F* p = (F*)(&m00);  p[0 + 4 * i] = v.x; p[1 + 4 * i] = v.y; p[2 + 4 * i] = v.z; p[3 + 4 * i] = v.w; }
 
 	ILINE const Vec3_tpl<F>& GetRow(int i) const                    { CRY_MATH_ASSERT(i < 3); return *(const Vec3_tpl<F>*)(&m00 + 4 * i); }
 	ILINE const Vec4_tpl<F>& GetRow4(int i) const                   { CRY_MATH_ASSERT(i < 3); return *(const Vec4_tpl<F>*)(&m00 + 4 * i); }
@@ -879,11 +886,11 @@ template<typename F> struct Matrix34_tpl
 	//! Check if we have an orthonormal-base (general case, works even with reflection matrices).
 	int IsOrthonormal(F threshold = 0.001) const
 	{
-		f32 d0 = fabs_tpl(GetColumn0() | GetColumn1());
+		F d0 = fabs_tpl(GetColumn0() | GetColumn1());
 		if (d0 > threshold) return 0;
-		f32 d1 = fabs_tpl(GetColumn0() | GetColumn2());
+		F d1 = fabs_tpl(GetColumn0() | GetColumn2());
 		if (d1 > threshold) return 0;
-		f32 d2 = fabs_tpl(GetColumn1() | GetColumn2());
+		F d2 = fabs_tpl(GetColumn1() | GetColumn2());
 		if (d2 > threshold) return 0;
 		int a = (fabs_tpl(1 - (GetColumn0() | GetColumn0()))) < threshold;
 		int b = (fabs_tpl(1 - (GetColumn1() | GetColumn1()))) < threshold;
@@ -899,7 +906,7 @@ template<typename F> struct Matrix34_tpl
 		int c = Vec3_tpl<F>::IsEquivalent(GetColumn2(), GetColumn0() % GetColumn1(), threshold);
 		return a & b & c;
 	}
-	static bool IsEquivalent(const Matrix34_tpl<F>& m0, const Matrix34_tpl<F>& m1, F e = VEC_EPSILON)
+	static bool IsEquivalent(const Matrix34_tpl<F>& m0, const Matrix34_tpl<F>& m1, f32 e = VEC_EPSILON)
 	{
 		return  (
 		  (fabs_tpl(m0.m00 - m1.m00) <= e) && (fabs_tpl(m0.m01 - m1.m01) <= e) && (fabs_tpl(m0.m02 - m1.m02) <= e) && (fabs_tpl(m0.m03 - m1.m03) <= e) &&
@@ -1093,9 +1100,15 @@ typedef CRY_ALIGN (16) Matrix34_tpl<f32> Matrix34A;
 
 // implementation of Matrix34
 
+template<class F>
+ILINE bool IsEquivalent(const Matrix34_tpl<F>& m0, const Matrix34_tpl<F>& m1, f32 e = VEC_EPSILON)
+{
+	return Matrix34_tpl<F>::IsEquivalent(m0, m1, e);
+}
+
 //! multiply all matrix's values by f and return the matrix
 template<class F>
-ILINE Matrix34_tpl<F> operator*(const Matrix34_tpl<F>& m, const f32 f)
+ILINE Matrix34_tpl<F> operator*(const Matrix34_tpl<F>& m, const F f)
 {
 	CRY_MATH_ASSERT(m.IsValid());
 	Matrix34_tpl<F> r;

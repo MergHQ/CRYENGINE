@@ -130,6 +130,12 @@ protected:
 	//!		<param name="table">Table property for the cloud movement.</param>
 	int SetCloudMovementProperties(IFunctionHandler* pH, int nSlot, SmartScriptTable table);
 
+	//! <code>Entity.LoadCloudBlocker( nSlot, table )</code>
+	//! <description>Loads the properties of cloud blocker into the entity slot.</description>
+	//!		<param name="nSlot">Slot identifier.</param>
+	//!		<param name="table">Table with cloud blocker properties.</param>
+	int LoadCloudBlocker(IFunctionHandler* pH, int nSlot, SmartScriptTable table);
+
 	//! <code>Entity.LoadFogVolume( nSlot, table )</code>
 	//! <description>Loads the fog volume XML file into the entity slot.</description>
 	//!		<param name="nSlot">Slot identifier.</param>
@@ -569,14 +575,6 @@ protected:
 	//!		false - Entity is not active.
 	//!	</returns>
 	int IsActive(IFunctionHandler* pH);
-
-	//! <code>Entity.IsFromPool()</code>
-	//! <description>Returns if the entity came from an entity pool.</description>
-	//! <returns>
-	//!    true - Entity is from a pool. (Bookmarked)
-	//!    false - Entity is not from a pool. (Not bookmarked)
-	//! </returns>
-	int IsFromPool(IFunctionHandler* pH);
 
 	//! <code>Entity.SetUpdatePolicy( nUpdatePolicy )</code>
 	//! <description>

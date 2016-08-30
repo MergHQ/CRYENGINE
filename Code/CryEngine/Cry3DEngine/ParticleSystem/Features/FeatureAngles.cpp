@@ -14,10 +14,11 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureAngles = false;
-
 namespace pfx2
 {
+
+EParticleDataType PDT(EPDT_Angle2D, float);
+EParticleDataType PDT(EPDT_Spin2D, float);
 
 class CFeatureAnglesRotate2D : public CParticleFeature
 {
@@ -49,6 +50,12 @@ public:
 		ar(m_randomAngle, "RandomAngle", "Random Angle");
 		ar(m_initialSpin, "InitialSpin", "Initial Spin");
 		ar(m_randomSpin, "RandomSpin", "Random Spin");
+
+		if (ar.isInput() && GetVersion(ar) < 8)
+		{
+			m_initialAngle = -m_initialAngle;
+			m_initialSpin = -m_initialSpin;
+		}
 	}
 
 	virtual void InitParticles(const SUpdateContext& context) override
@@ -58,11 +65,11 @@ public:
 		CParticleContainer& container = context.m_container;
 
 		IOFStream angles = container.GetIOFStream(EPDT_Angle2D);
-		const float initAngle = m_initialAngle.Get();
+		const float initAngle = -m_initialAngle.Get();
 		const float randAngle = m_randomAngle.Get();
 		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
 		{
-			const float snorm = SChaosKey().RandSNorm();
+			const float snorm = context.m_spawnRng.RandSNorm();
 			const float angle = randAngle * snorm + initAngle;
 			angles.Store(particleId, angle);
 		}
@@ -71,11 +78,11 @@ public:
 		if (container.HasData(EPDT_Spin2D))
 		{
 			IOFStream spins = container.GetIOFStream(EPDT_Spin2D);
-			const float initSpin = m_initialSpin.Get();
+			const float initSpin = -m_initialSpin.Get();
 			const float randSpin = m_randomSpin.Get();
 			CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
 			{
-				const float snorm = SChaosKey().RandSNorm();
+				const float snorm = context.m_spawnRng.RandSNorm();
 				const float spin = randSpin * snorm + initSpin;
 				spins.Store(particleId, spin);
 			}
@@ -109,7 +116,11 @@ private:
 	UAngle    m_randomSpin;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAnglesRotate2D, "Angles", "Rotate2D", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAnglesRotate2D, "Angles", "Rotate2D", colorAngles);
+
+
+EParticleDataType PDT(EPQF_Orientation, float, 4);
+EParticleDataType PDT(EPVF_AngularVelocity, float, 3);
 
 class CFeatureAnglesRotate3D : public CParticleFeature
 {
@@ -155,7 +166,7 @@ public:
 		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
 		{
 			const Quat wOrientation0 = orientations.Load(particleId);
-			const Ang3 randAngle = RandomAng3(randomInitAngles);
+			const Ang3 randAngle = RandomAng3(context.m_spawnRng, randomInitAngles);
 			const Ang3 angle = initAngles + randAngle;
 			const Quat oOrientation = Quat::CreateRotationXYZ(angle);
 			const Quat wOrientation1 = wOrientation0 * oOrientation;
@@ -163,14 +174,14 @@ public:
 		}
 		CRY_PFX2_FOR_END;
 
-		if (container.HasData(EPDT_AngularVelocityX))
+		if (container.HasData(EPVF_AngularVelocity))
 		{
 			IOVec3Stream angularVelocities = container.GetIOVec3Stream(EPVF_AngularVelocity);
 			const Ang3 initSpin = FromVec3(m_initialSpin);
 			const Ang3 randSpin = FromVec3(m_randomSpin);
 			CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
 			{
-				const Ang3 angularVelocity = RandomAng3(randSpin) + initSpin;
+				const Ang3 angularVelocity = RandomAng3(context.m_spawnRng, randSpin) + initSpin;
 				angularVelocities.Store(particleId, Vec3(angularVelocity));
 			}
 			CRY_PFX2_FOR_END;
@@ -202,13 +213,12 @@ private:
 		return Ang3(DEG2RAD(-v.x), DEG2RAD(-v.y), DEG2RAD(v.z));
 	}
 
-	ILINE Ang3 RandomAng3(Ang3 mult)
+	ILINE Ang3 RandomAng3(SChaosKey& chaosKey, Ang3 mult)
 	{
-		SChaosKey randKey;
 		return Ang3(
-		  randKey.RandSNorm() * mult.x,
-		  randKey.RandSNorm() * mult.y,
-		  randKey.RandSNorm() * mult.z);
+		  chaosKey.RandSNorm() * mult.x,
+		  chaosKey.RandSNorm() * mult.y,
+		  chaosKey.RandSNorm() * mult.z);
 	}
 
 	Vec3 m_initAngles;
@@ -217,6 +227,6 @@ private:
 	Vec3 m_randomSpin;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAnglesRotate3D, "Angles", "Rotate3D", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAnglesRotate3D, "Angles", "Rotate3D", colorAngles);
 
 }

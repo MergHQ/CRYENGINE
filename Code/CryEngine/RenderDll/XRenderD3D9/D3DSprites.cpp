@@ -263,11 +263,11 @@ static void sRT_EndEf(const SRenderingPassInfo& passInfo)
 	CD3D9Renderer* rd = gcpRendD3D;
 	int nThreadID = rd->m_RP.m_nProcessThreadID;
 
-	rd->m_RP.m_ForceStateAnd |= GS_ALPHATEST_MASK;
+	rd->m_RP.m_ForceStateAnd |= GS_ALPHATEST;
 
 	rd->m_pRT->RC_RenderScene(passInfo.GetRenderView(), SHDF_ALLOWHDR, CD3D9Renderer::FX_FlushShader_General);
 
-	rd->m_RP.m_ForceStateAnd &= ~GS_ALPHATEST_MASK;
+	rd->m_RP.m_ForceStateAnd &= ~GS_ALPHATEST;
 }
 
 static void sCreateFT(bool bHDR)
@@ -357,7 +357,6 @@ void CD3D9Renderer::MakeSprites(TArray<SSpriteGenInfo>& SGI, const SRenderingPas
 	CV_r_usezpass = 0;
 
 	rParms.dwFObjFlags |= FOB_TRANS_MASK;
-	rParms.nDLightMask = 1;
 	rParms.fRenderQuality = 0.0f;
 	rParms.pRenderNode = (struct IRenderNode*)(intptr_t)-1; // avoid random skipping of rendering
 
@@ -378,7 +377,7 @@ void CD3D9Renderer::MakeSprites(TArray<SSpriteGenInfo>& SGI, const SRenderingPas
 	uint32 saveFlags2 = m_RP.m_PersFlags2;
 	m_RP.m_TI[nThreadID].m_PersFlags |= RBPF_MAKESPRITE;
 	m_RP.m_PersFlags2 &= ~(RBPF2_NOALPHABLEND | RBPF2_NOALPHATEST);
-	m_RP.m_StateAnd |= (GS_BLEND_MASK | GS_ALPHATEST_MASK);
+	m_RP.m_StateAnd |= (GS_BLEND_MASK | GS_ALPHATEST);
 
 	EF_PushFog();
 	EF_PushMatrix();
@@ -461,7 +460,7 @@ void CD3D9Renderer::MakeSprites(TArray<SSpriteGenInfo>& SGI, const SRenderingPas
 		m_RP.m_TI[nThreadID].m_PersFlags |= RBPF_FP_MATRIXDIRTY;
 
 		*m_RP.m_TI[nThreadID].m_matView->GetTop() = mView;
-		m_CameraZeroMatrix[nThreadID] = mView;
+		m_RP.m_TI[nThreadID].m_matCameraZero = mView;
 
 		RT_SetCameraInfo();
 
@@ -1187,7 +1186,7 @@ void CD3D9Renderer::DrawObjSprites(PodArray<SVegetationSpriteInfo>* pList, SSpri
 					pTerrTex->Apply(3, nTerrainTexState);
 
 					static CCryNameR SpritesOutdoorAOVertInfoName("SpritesOutdoorAOVertInfo");
-					const Vec4 cSPVal(pTexInfo->fTexOffsetX, pTexInfo->fTexOffsetY, pTexInfo->fTexScale, pTexInfo->fTerrainMinZ);
+					const Vec4 cSPVal(pTexInfo->fTexOffsetX, pTexInfo->fTexOffsetY, pTexInfo->fTexScale, 0);
 					m_cEF.s_ShaderTreeSprites->FXSetVSFloat(SpritesOutdoorAOVertInfoName, &cSPVal, 1);
 				}
 				else

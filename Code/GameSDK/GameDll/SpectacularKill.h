@@ -73,7 +73,7 @@ private:
 			, victimAnimation("")
 			, optimalDist(-1.0f)
 			, targetToKillerAngle(-1.0f)
-			, targetToKillerMinDot(0.342f) // [*DavidR | 27/Aug/2010] FixMe: cos 70บ (140บ cone), make it more strict when behaviors are ready
+			, targetToKillerMinDot(0.342f) // [*DavidR | 27/Aug/2010] FixMe: cos 70ยบ (140ยบ cone), make it more strict when behaviors are ready
 			, vKillerObstacleCheckOffset(ZERO)
 			, fObstacleCheckLength(-1.0f)
 		{

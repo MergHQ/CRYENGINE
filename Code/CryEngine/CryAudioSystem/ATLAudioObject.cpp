@@ -2,10 +2,8 @@
 
 #include "stdafx.h"
 #include "ATLAudioObject.h"
-#include "SoundCVars.h"
-#include <Cry3DEngine/I3DEngine.h>
+#include "AudioCVars.h"
 #include <CryRenderer/IRenderAuxGeom.h>
-#include <Cry3DEngine/ISurfaceType.h>
 
 using namespace CryAudio::Impl;
 
@@ -83,6 +81,7 @@ void CATLAudioObject::ReportStartedEvent(CATLEvent* const _pEvent)
 	if (_pEvent->m_pTrigger)
 	{
 		m_maxRadius = std::max(_pEvent->m_pTrigger->m_maxRadius, m_maxRadius);
+		m_occlusionFadeOutDistance = std::max(_pEvent->m_pTrigger->m_occlusionFadeOutDistance, m_occlusionFadeOutDistance);
 	}
 
 	ObjectTriggerStates::iterator const iter(m_triggerStates.find(_pEvent->m_audioTriggerInstanceId));
@@ -143,11 +142,13 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const _pEvent, bool const _
 
 	// recalculate the max radius of the audio object
 	m_maxRadius = 0.0f;
+	m_occlusionFadeOutDistance = 0.0f;
 	for (auto const pEvent : m_activeEvents)
 	{
 		if (pEvent->m_pTrigger)
 		{
 			m_maxRadius = std::max(pEvent->m_pTrigger->m_maxRadius, m_maxRadius);
+			m_occlusionFadeOutDistance = std::max(pEvent->m_pTrigger->m_occlusionFadeOutDistance, m_occlusionFadeOutDistance);
 		}
 	}
 
@@ -260,7 +261,6 @@ void CATLAudioObject::ReportPrepUnprepTriggerImpl(AudioTriggerImplId const audio
 		m_triggerImplStates[audioTriggerImplId].flags &= ~eAudioTriggerStatus_Prepared;
 	}
 }
-
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId)
 {
@@ -314,6 +314,12 @@ void CATLAudioObject::Clear()
 	m_rtpcs.clear();
 	m_environments.clear();
 	m_attributes = SAudioObject3DAttributes();
+	m_flags = eAudioObjectFlags_None;
+	m_maxRadius = 0.0f;
+	m_occlusionFadeOutDistance = 0.0f;
+	m_previousVelocity = 0.0f;
+	m_previousTime.SetValue(0);
+	m_velocity = ZERO;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -348,492 +354,38 @@ void CATLAudioObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterato
 	}
 }
 
-float const CATLAudioObject::CPropagationProcessor::SRayInfo::s_fSmoothingAlpha = 0.05f;
-
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::SRayInfo::Reset()
+void CATLAudioObject::Update(
+  float const deltaTime,
+  float const distance,
+  Vec3 const& audioListenerPosition)
 {
-	totalSoundOcclusion = 0.0f;
-	numHits = 0;
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	startPosition.zero();
-	direction.zero();
-	randomOffset.zero();
-	averageHits = 0.0f;
-	distanceToFirstObstacle = FLT_MAX;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-}
+	m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition);
 
-bool CATLAudioObject::CPropagationProcessor::s_bCanIssueRWIs = false;
-
-///////////////////////////////////////////////////////////////////////////
-int CATLAudioObject::CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
-{
-	EventPhysRWIResult* const pRWIResult = (EventPhysRWIResult*)pEvent;
-
-	if (pRWIResult->iForeignData == PHYS_FOREIGN_ID_SOUND_OBSTRUCTION)
+	if (m_maxRadius > 0.0f)
 	{
-		CPropagationProcessor::SRayInfo* const pRayInfo = static_cast<CPropagationProcessor::SRayInfo*>(pRWIResult->pForeignData);
-
-		if (pRayInfo != nullptr)
+		float occlusionFadeOut = 0.0f;
+		if (distance < m_maxRadius)
 		{
-			ProcessObstructionRay(pRWIResult->nHits, pRayInfo);
-
-			SAudioRequest request;
-			SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportProcessedObstructionRay> requestData(pRayInfo->audioObjectId, pRayInfo->rayId);
-			request.flags = eAudioRequestFlags_ThreadSafePush;
-			request.pData = &requestData;
-
-			gEnv->pAudioSystem->PushRequest(request);
-		}
-		else
-		{
-			CRY_ASSERT(false);
-		}
-	}
-	else
-	{
-		CRY_ASSERT(false);
-	}
-
-	return 1;
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::ProcessObstructionRay(int const numHits, SRayInfo* const pRayInfo, bool const bReset /*= false*/)
-{
-	float totalOcclusion = 0.0f;
-	int numRealHits = 0;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	float minDistance = FLT_MAX;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	if (numHits > 0)
-	{
-		ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
-		size_t const count = min(static_cast<size_t>(numHits) + 1, AUDIO_MAX_RAY_HITS);
-
-		for (size_t i = 0; i < count; ++i)
-		{
-			float const distance = pRayInfo->hits[i].dist;
-
-			if (distance > 0.0f)
+			float const fadeOutStart = m_maxRadius - m_occlusionFadeOutDistance;
+			if (fadeOutStart < distance)
 			{
-				ISurfaceType* const pMat = pSurfaceTypeManager->GetSurfaceType(pRayInfo->hits[i].surface_idx);
-
-				if (pMat != nullptr)
-				{
-					const ISurfaceType::SPhysicalParams& physParams = pMat->GetPhyscalParams();
-					totalOcclusion += physParams.sound_obstruction;// not clamping b/w 0 and 1 for performance reasons
-					++numRealHits;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-					minDistance = min(minDistance, distance);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
-				}
-			}
-		}
-	}
-
-	totalOcclusion = clamp_tpl(totalOcclusion, 0.0f, 1.0f);
-
-	// If the num hits differs too much from the last ray, reduce the change in TotalOcclusion in inverse proportion.
-	// This reduces thrashing at the boundaries of occluding entities.
-	int const absoluteHitDiff = abs(numRealHits - pRayInfo->numHits);
-	float const numHitCorrection = absoluteHitDiff > 1 ? 1.0f / absoluteHitDiff : 1.0f;
-
-	pRayInfo->numHits = numRealHits;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	pRayInfo->distanceToFirstObstacle = minDistance;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	if (bReset)
-	{
-		pRayInfo->totalSoundOcclusion = totalOcclusion;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		pRayInfo->averageHits = static_cast<float>(pRayInfo->numHits);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-	}
-	else
-	{
-		pRayInfo->totalSoundOcclusion += numHitCorrection * (totalOcclusion - pRayInfo->totalSoundOcclusion) * SRayInfo::s_fSmoothingAlpha;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		pRayInfo->averageHits += (pRayInfo->numHits - pRayInfo->averageHits) * SRayInfo::s_fSmoothingAlpha;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-size_t CATLAudioObject::CPropagationProcessor::NumRaysFromCalcType(EAudioOcclusionType const occlusionType)
-{
-	AudioEnumFlagsType index = static_cast<AudioEnumFlagsType>(occlusionType);
-	size_t numRays = 0;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if (g_audioCVars.m_audioObjectsRayType > 0)
-	{
-		index = clamp_tpl<AudioEnumFlagsType>(static_cast<AudioEnumFlagsType>(g_audioCVars.m_audioObjectsRayType), eAudioOcclusionType_Ignore, eAudioOcclusionType_MultiRay);
-	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	switch (index)
-	{
-	case eAudioOcclusionType_Ignore:
-		numRays = 0;
-		break;
-	case eAudioOcclusionType_SingleRay:
-		numRays = 1;
-		break;
-	case eAudioOcclusionType_MultiRay:
-		numRays = 5;
-		break;
-	case eAudioOcclusionType_None: // falls through
-	default:
-		CRY_ASSERT(false); // unknown ObstructionOcclusionCalcType
-		break;
-	}
-
-	return numRays;
-}
-
-#define AUDIO_MAX_OBSTRUCTION_RAYS     static_cast<size_t>(5)
-#define AUDIO_MIN_OBSTRUCTION_DISTANCE 0.3f
-
-///////////////////////////////////////////////////////////////////////////
-CATLAudioObject::CPropagationProcessor::CPropagationProcessor(
-  AudioObjectId const _audioObjectId,
-  CAudioObjectTransformation const& _position)
-	: m_remainingRays(0)
-	, m_totalRays(0)
-	, m_obstructionValue(0.2f, 0.0001f)
-	, m_occlusionValue(0.2f, 0.0001f)
-	, m_position(_position)
-	, m_currentListenerDistance(0.0f)
-	, m_occlusionType(eAudioOcclusionType_None)
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	, m_rayDebugInfos(AUDIO_MAX_OBSTRUCTION_RAYS)
-	, m_timeSinceLastUpdateMS(0.0f)
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-{
-	m_rayInfos.reserve(AUDIO_MAX_OBSTRUCTION_RAYS);
-
-	for (size_t i = 0; i < AUDIO_MAX_OBSTRUCTION_RAYS; ++i)
-	{
-		m_rayInfos.push_back(SRayInfo(i, _audioObjectId));
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-CATLAudioObject::CPropagationProcessor::~CPropagationProcessor()
-{
-	stl::free_container(m_rayInfos);
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::Update(float const deltaTime)
-{
-	m_obstructionValue.Update(deltaTime);
-	m_occlusionValue.Update(deltaTime);
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	m_timeSinceLastUpdateMS += deltaTime;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::SetObstructionOcclusionCalcType(EAudioOcclusionType const occlusionType)
-{
-	m_occlusionType = occlusionType;
-
-	if (occlusionType == eAudioOcclusionType_Ignore)
-	{
-		// Reset the sound obstruction/occlusion when disabled.
-		m_obstructionValue.Reset();
-		m_occlusionValue.Reset();
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::GetPropagationData(SATLSoundPropagationData& propagationData) const
-{
-	propagationData.obstruction = m_obstructionValue.GetCurrent();
-	propagationData.occlusion = m_occlusionValue.GetCurrent();
-}
-
-static inline float frand_symm()
-{
-	return cry_random(-1.0f, 1.0f);
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::RunObstructionQuery(
-  CAudioObjectTransformation const& listenerPosition,
-  bool const bSyncCall,
-  bool const bReset /*= false*/)
-{
-	if (m_remainingRays == 0)
-	{
-		static Vec3 const up(0.0f, 0.0f, 1.0f);
-		static float const minPeripheralRayOffset = 0.3f;
-		static float const maxPeripheralRayOffset = 1.0f;
-		static float const minRandomOffset = 0.05f;
-		static float const maxRandomOffset = 0.5f;
-		static float const minOffsetDistance = 1.0f;
-		static float const maxOffsetDistance = 20.0f;
-
-		// the previous query has already been processed
-		m_totalRays = NumRaysFromCalcType(m_occlusionType);
-
-		if (m_totalRays > 0)
-		{
-			Vec3 const& listener = listenerPosition.GetPosition();
-			Vec3 const& object = m_position.GetPosition();
-			Vec3 const diff = object - listener;
-
-			float const distance = diff.GetLength();
-
-			m_currentListenerDistance = distance;
-
-			float const offsetParam = clamp_tpl((distance - minOffsetDistance) / (maxOffsetDistance - minOffsetDistance), 0.0f, 1.0f);
-			float const offsetScale = maxPeripheralRayOffset * offsetParam + minPeripheralRayOffset * (1.0f - offsetParam);
-			float const randomOffsetScale = maxRandomOffset * offsetParam + minRandomOffset * (1.0f - offsetParam);
-
-			Vec3 const side = diff.GetNormalized() % up;
-
-			// the 0th ray is always shot from the listener to the center of the source
-			// the 0th ray only gets 1/2 of the random variation
-			CastObstructionRay(
-			  listener,
-			  (up * frand_symm() + side * frand_symm()) * randomOffsetScale * 0.5f,
-			  diff,
-			  0,
-			  bSyncCall,
-			  bReset);
-
-			if (m_totalRays > 1)
-			{
-				// rays 1 and 2 start below and above the listener and go towards the source
-				CastObstructionRay(
-				  listener - (up * offsetScale),
-				  (up * frand_symm() + side * frand_symm()) * randomOffsetScale,
-				  diff,
-				  1,
-				  bSyncCall,
-				  bReset);
-				CastObstructionRay(
-				  listener + (up * offsetScale),
-				  (up * frand_symm() + side * frand_symm()) * randomOffsetScale,
-				  diff,
-				  2,
-				  bSyncCall,
-				  bReset);
-
-				// rays 3 and 4 start left and right of the listener and go towards the source
-				CastObstructionRay(
-				  listener - (side * offsetScale),
-				  (up * frand_symm() + side * frand_symm()) * randomOffsetScale,
-				  diff,
-				  3,
-				  bSyncCall,
-				  bReset);
-				CastObstructionRay(
-				  listener + (side * offsetScale),
-				  (up * frand_symm() + side * frand_symm()) * randomOffsetScale,
-				  diff,
-				  4,
-				  bSyncCall,
-				  bReset);
-			}
-
-			if (bSyncCall)
-			{
-				// If the ObstructionQuery was synchronous, calculate the new obstruction/occlusion values right away.
-				// Reset the resulting values without smoothing if bReset is true.
-				ProcessObstructionOcclusion(bReset);
-			}
-		}
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::ReportRayProcessed(size_t const rayId)
-{
-	CRY_ASSERT(m_remainingRays > 0);                    // make sure there are rays remaining
-	CRY_ASSERT((0 <= rayId) && (rayId <= m_totalRays)); // check RayID validity
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if (m_remainingRays == 0)
-	{
-		CryFatalError("Negative ref or ray count on audio object %u", m_rayInfos[rayId].audioObjectId);
-	}
-#endif
-
-	if (--m_remainingRays == 0)
-	{
-		ProcessObstructionOcclusion();
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::ReleasePendingRays()
-{
-	if (m_remainingRays > 0)
-	{
-		m_remainingRays = 0;
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::ProcessObstructionOcclusion(bool const bReset)
-{
-	if (m_totalRays > 0)
-	{
-		// the obstruction value always comes from the 0th ray, going directly from the listener to the source
-		float obstruction = m_rayInfos[0].totalSoundOcclusion;
-		float occlusion = 0.0f;
-
-		if (m_currentListenerDistance > ATL_FLOAT_EPSILON)
-		{
-			if (m_totalRays > 1)
-			{
-				// the total occlusion value is the average of the occlusions of all of the peripheral rays
-				for (size_t i = 1; i < m_totalRays; ++i)
-				{
-					occlusion += m_rayInfos[i].totalSoundOcclusion;
-				}
-
-				occlusion /= (m_totalRays - 1);
+				occlusionFadeOut = 1.0f - ((distance - fadeOutStart) / m_occlusionFadeOutDistance);
 			}
 			else
 			{
-				occlusion = obstruction;
-			}
-
-			//the obstruction effect gets less pronounced when the distance between the object and the listener increases
-			obstruction *= min(g_audioCVars.m_fullObstructionMaxDistance / m_currentListenerDistance, 1.0f);
-
-			// since the Obstruction filter is applied on top of Occlusion, make sure we only apply what's exceeding the occlusion value
-			obstruction = max(obstruction - occlusion, 0.0f);
-		}
-		else
-		{
-			// sound is tracking the listener, there is no obstruction
-			obstruction = 0.0f;
-			occlusion = 0.0f;
-		}
-
-		m_obstructionValue.SetNewTarget(obstruction, bReset);
-		m_occlusionValue.SetNewTarget(occlusion, bReset);
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		if (m_timeSinceLastUpdateMS > 100.0f) // only re-sample the rays about 10 times per second for a smoother debug drawing
-		{
-			m_timeSinceLastUpdateMS = 0.0f;
-
-			for (size_t i = 0; i < m_totalRays; ++i)
-			{
-				SRayInfo const& rayInfo = m_rayInfos[i];
-				SRayDebugInfo& rayDebugInfo = m_rayDebugInfos[i];
-
-				rayDebugInfo.begin = rayInfo.startPosition + rayInfo.randomOffset;
-				rayDebugInfo.end = rayInfo.startPosition + rayInfo.randomOffset + rayInfo.direction;
-
-				if (rayDebugInfo.stableEnd.IsZeroFast())
-				{
-					// to be moved to the PropagationProcessor Reset method
-					rayDebugInfo.stableEnd = rayDebugInfo.end;
-				}
-				else
-				{
-					rayDebugInfo.stableEnd += (rayDebugInfo.end - rayDebugInfo.stableEnd) * 0.1f;
-				}
-
-				rayDebugInfo.distanceToNearestObstacle = rayInfo.distanceToFirstObstacle;
-				rayDebugInfo.numHits = rayInfo.numHits;
-				rayDebugInfo.averageHits = rayInfo.averageHits;
-				rayDebugInfo.occlusionValue = rayInfo.totalSoundOcclusion;
+				occlusionFadeOut = 1.0f;
 			}
 		}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+		m_propagationProcessor.SetOcclusionMultiplier(occlusionFadeOut);
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::CastObstructionRay(
-  Vec3 const& origin,
-  Vec3 const& randomOffset,
-  Vec3 const& direction,
-  size_t const rayIndex,
-  bool const bSyncCall,
-  bool const bReset /*= false*/)
+void CATLAudioObject::ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo)
 {
-	static int const nPhysicsFlags = ent_water | ent_static | ent_sleeping_rigid | ent_rigid | ent_terrain;
-	SRayInfo& rayInfo = m_rayInfos[rayIndex];
-
-	int const numHits = gEnv->pPhysicalWorld->RayWorldIntersection(
-	  origin + randomOffset,
-	  direction,
-	  nPhysicsFlags,
-	  bSyncCall ? rwi_pierceability0 : rwi_pierceability0 | rwi_queue,
-	  rayInfo.hits,
-	  static_cast<int>(AUDIO_MAX_RAY_HITS),
-	  nullptr,
-	  0,
-	  &rayInfo,
-	  PHYS_FOREIGN_ID_SOUND_OBSTRUCTION);
-
-	if (bSyncCall)
-	{
-		ProcessObstructionRay(numHits, &rayInfo, bReset);
-	}
-	else
-	{
-		++m_remainingRays;
-	}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	rayInfo.startPosition = origin;
-	rayInfo.direction = direction;
-	rayInfo.randomOffset = randomOffset;
-
-	if (bSyncCall)
-	{
-		++s_totalSyncPhysRays;
-	}
-	else
-	{
-		++s_totalAsyncPhysRays;
-	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::Update(float const deltaTime, SAudioObject3DAttributes const& listenerAttributes)
-{
-	m_propagationProcessor.Update(deltaTime);
-
-	if (CanRunObstructionOcclusion())
-	{
-		float const distance = (m_attributes.transformation.GetPosition() - listenerAttributes.transformation.GetPosition()).GetLength();
-
-		if ((AUDIO_MIN_OBSTRUCTION_DISTANCE < distance) && (distance < g_audioCVars.m_occlusionMaxDistance))
-		{
-			// Make the physics ray cast call sync or async depending on the distance to the listener.
-			bool const bSyncCall = (distance <= g_audioCVars.m_occlusionMaxSyncDistance);
-			m_propagationProcessor.RunObstructionQuery(listenerAttributes.transformation, bSyncCall);
-		}
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::ReportPhysicsRayProcessed(size_t const rayId)
-{
-	m_propagationProcessor.ReportRayProcessed(rayId);
+	m_propagationProcessor.ProcessPhysicsRay(pAudioRayInfo);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -845,29 +397,26 @@ void CATLAudioObject::SetTransformation(CAudioObjectTransformation const& transf
 	{
 		m_attributes.transformation = transformation;
 		m_attributes.velocity = (m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition()) / deltaTime;
+		m_flags |= eAudioObjectFlags_NeedsVelocityUpdate;
 		m_previousTime = g_lastMainThreadFrameStartTime;
 		m_previousAttributes = m_attributes;
-		m_flags |= eAudioObjectFlags_NeedsVelocityUpdate;
+	}
+	else if (deltaTime < 0.0f) // delta time can get negative after loading a savegame...
+	{
+		m_previousTime = 0.0f;  // ...in that case we force an update to the new position
+		SetTransformation(transformation);
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::SetObstructionOcclusionCalc(EAudioOcclusionType const calcType)
+void CATLAudioObject::SetOcclusionType(EAudioOcclusionType const calcType, Vec3 const& audioListenerPosition)
 {
 	CRY_ASSERT(calcType != eAudioOcclusionType_None);
-	m_propagationProcessor.SetObstructionOcclusionCalcType(calcType);
+	m_propagationProcessor.SetOcclusionType(calcType, audioListenerPosition);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::ResetObstructionOcclusion(CAudioObjectTransformation const& listenerTransformation)
-{
-	// cast the obstruction rays synchronously and reset the obstruction/occlusion values
-	// (instead of merely setting them as targets for the SmoothFloats)
-	m_propagationProcessor.RunObstructionQuery(listenerTransformation, true, true);
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::GetPropagationData(SATLSoundPropagationData& propagationData)
+void CATLAudioObject::GetPropagationData(SATLSoundPropagationData& propagationData) const
 {
 	m_propagationProcessor.GetPropagationData(propagationData);
 }
@@ -978,8 +527,8 @@ void CATLAudioObject::UpdateControls(float const deltaTime, SAudioObject3DAttrib
 		// Exponential decay towards zero.
 		if (m_attributes.velocity.GetLengthSquared() > 0.0f)
 		{
-			float const deltaTime = (g_lastMainThreadFrameStartTime - m_previousTime).GetSeconds();
-			float const decay = std::max(1.0f - deltaTime / 0.125f, 0.0f);
+			float const deltaTime2 = (g_lastMainThreadFrameStartTime - m_previousTime).GetSeconds();
+			float const decay = std::max(1.0f - deltaTime2 / 0.125f, 0.0f);
 			m_attributes.velocity *= decay;
 		}
 	}
@@ -1007,6 +556,7 @@ void CATLAudioObject::RemoveFlag(EAudioObjectFlags const flag)
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::CheckBeforeRemoval(CATLDebugNameStore const* const pDebugNameStore) const
 {
@@ -1029,7 +579,6 @@ void CATLAudioObject::CheckBeforeRemoval(CATLDebugNameStore const* const pDebugN
 		g_audioLogger.Log(eAudioLogType_Warning, "Active standalone files on an object to be released: %u! FileNames: %s", GetId(), szStandaloneFilesString);
 	}
 }
-
 typedef std::map<AudioControlId, size_t, std::less<AudioControlId>,
                  STLSoundAllocator<std::pair<AudioControlId, size_t>>> TTriggerCountMap;
 
@@ -1065,7 +614,6 @@ CryFixedStringT<MAX_AUDIO_CONTROL_NAME_LENGTH> CATLAudioObject::GetTriggerNames(
 			triggers += temp;
 		}
 	}
-
 	return triggers;
 }
 
@@ -1116,7 +664,6 @@ CryFixedStringT<MAX_AUDIO_MISC_STRING_LENGTH> CATLAudioObject::GetStandaloneFile
 			{
 				temp.Format("%s(%" PRISIZE_T " inst.)%s", szName, numInstances, _szSeparator);
 			}
-
 			audioStandaloneFiles += temp;
 		}
 	}
@@ -1128,6 +675,7 @@ CryFixedStringT<MAX_AUDIO_MISC_STRING_LENGTH> CATLAudioObject::GetStandaloneFile
 float const CATLAudioObject::CStateDebugDrawData::s_minAlpha = 0.5f;
 float const CATLAudioObject::CStateDebugDrawData::s_maxAlpha = 1.0f;
 int const CATLAudioObject::CStateDebugDrawData::s_maxToMinUpdates = 100;
+static char const* const s_szOcclusionTypes[] = { "None", "Ignore", "Adaptive", "Low", "Medium", "High" };
 
 ///////////////////////////////////////////////////////////////////////////
 CATLAudioObject::CStateDebugDrawData::CStateDebugDrawData(AudioSwitchStateId const audioSwitchState)
@@ -1191,7 +739,6 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listene
 				auxGeom.DrawSphere(position, radius, ColorB(255, 1, 1, 255));
 				auxGeom.SetRenderFlags(previousRenderFlags);
 			}
-
 			float const fontSize = 1.3f;
 			float const lineHeight = 12.0f;
 
@@ -1227,12 +774,14 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listene
 				}
 			}
 
+			CryFixedStringT<MAX_AUDIO_MISC_STRING_LENGTH> temp;
+
 			if ((g_audioCVars.m_drawAudioDebug & eADDF_SHOW_OBJECT_LABEL) > 0)
 			{
 				static float const objectTextColor[4] = { 0.90f, 0.90f, 0.90f, 1.0f };
 				static float const objectGrayTextColor[4] = { 0.50f, 0.50f, 0.50f, 1.0f };
 
-				size_t const numRays = m_propagationProcessor.GetNumRays();
+				EAudioOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
 				SATLSoundPropagationData propagationData;
 				m_propagationProcessor.GetPropagationData(propagationData);
 
@@ -1249,16 +798,36 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listene
 				  audioObjectId,
 				  distance);
 
+				if (distance < g_audioCVars.m_occlusionMaxDistance)
+				{
+					if (occlusionType == eAudioOcclusionType_Adaptive)
+					{
+
+						temp.Format(
+						  "%s(%s)",
+						  s_szOcclusionTypes[occlusionType],
+						  s_szOcclusionTypes[m_propagationProcessor.GetOcclusionTypeWhenAdaptive()]);
+					}
+					else
+					{
+						temp.Format("%s", s_szOcclusionTypes[occlusionType]);
+					}
+				}
+				else
+				{
+					temp.Format("Ignore (exceeded activity range)");
+				}
+
 				auxGeom.Draw2dLabel(
 				  screenPos.x,
 				  screenPos.y + lineHeight,
 				  fontSize,
-				  numRays > 0 ? objectTextColor : objectGrayTextColor,
+				  (occlusionType != eAudioOcclusionType_None && occlusionType != eAudioOcclusionType_Ignore) ? objectTextColor : objectGrayTextColor,
 				  false,
-				  "Obst: %3.2f Occl: %3.2f #Rays: %1" PRISIZE_T,
+				  "Obst: %3.2f Occl: %3.2f Type: %s",
 				  propagationData.obstruction,
 				  propagationData.occlusion,
-				  numRays);
+				  temp.c_str());
 			}
 
 			float const textColor[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
@@ -1271,20 +840,17 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listene
 				{
 					AudioControlId const rtpcId = rtpcPair.first;
 					float const rtpcValue = rtpcPair.second;
-
 					char const* const szRtpcName = pDebugNameStore->LookupAudioRtpcName(rtpcId);
 
 					if (szRtpcName != nullptr)
 					{
 						float const offsetOnX = (strlen(szRtpcName) + 5.6f) * 5.4f * fontSize;
-
 						rtpcPos.y -= lineHeight;
 						auxGeom.Draw2dLabel(
 						  rtpcPos.x - offsetOnX,
 						  rtpcPos.y,
 						  fontSize,
-						  textColor,
-						  false,
+						  textColor, false,
 						  "%s: %2.2f\n",
 						  szRtpcName,
 						  rtpcValue);
@@ -1322,7 +888,6 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listene
 			}
 
 			CryFixedStringT<MAX_AUDIO_MISC_STRING_LENGTH> controls;
-			CryFixedStringT<MAX_AUDIO_MISC_STRING_LENGTH> temp;
 
 			if ((g_audioCVars.m_drawAudioDebug & eADDF_SHOW_OBJECT_TRIGGERS) > 0 && !m_triggerStates.empty())
 			{
@@ -1393,102 +958,12 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listene
 				auxGeom.Draw2dLabel(
 				  screenPos.x,
 				  screenPos.y + 2.0f * lineHeight,
-				  fontSize,
-				  textColor,
+				  fontSize, textColor,
 				  false,
 				  "%s",
 				  controls.c_str());
 			}
 		}
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-size_t CATLAudioObject::CPropagationProcessor::s_totalSyncPhysRays = 0;
-size_t CATLAudioObject::CPropagationProcessor::s_totalAsyncPhysRays = 0;
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::DrawObstructionRays(IRenderAuxGeom& auxGeom) const
-{
-	static ColorB const obstructedRayColor(200, 20, 1, 255);
-	static ColorB const freeRayColor(20, 200, 1, 255);
-	static ColorB const intersectionSphereColor(250, 200, 1, 240);
-	static float const obstructedRayLabelColor[4] = { 1.0f, 0.0f, 0.02f, 0.9f };
-	static float const freeRayLabelColor[4] = { 0.0f, 1.0f, 0.02f, 0.9f };
-	static float const collisionPtSphereRadius = 0.01f;
-
-	if (CanRunObstructionOcclusion())
-	{
-		SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-		SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
-		newRenderFlags.SetCullMode(e_CullModeNone);
-
-		for (size_t i = 0; i < m_totalRays; ++i)
-		{
-			bool const bRayObstructed = (m_rayDebugInfos[i].numHits > 0);
-			Vec3 const rayEnd = bRayObstructed ?
-			                    m_rayDebugInfos[i].begin + (m_rayDebugInfos[i].end - m_rayDebugInfos[i].begin).GetNormalized() * m_rayDebugInfos[i].distanceToNearestObstacle :
-			                    m_rayDebugInfos[i].end; // only draw the ray to the first collision point
-
-			if ((g_audioCVars.m_drawAudioDebug & eADDF_DRAW_OBSTRUCTION_RAYS) > 0)
-			{
-				ColorB const& rayColor = bRayObstructed ? obstructedRayColor : freeRayColor;
-
-				auxGeom.SetRenderFlags(newRenderFlags);
-
-				if (bRayObstructed)
-				{
-					// mark the nearest collision with a small sphere
-					auxGeom.DrawSphere(rayEnd, collisionPtSphereRadius, intersectionSphereColor);
-				}
-
-				auxGeom.DrawLine(m_rayDebugInfos[i].begin, rayColor, rayEnd, rayColor, 1.0f);
-				auxGeom.SetRenderFlags(previousRenderFlags);
-			}
-
-			if (IRenderer* const pRenderer = (g_audioCVars.m_drawAudioDebug & eADDF_SHOW_OBSTRUCTION_RAY_LABELS) > 0 ? gEnv->pRenderer : nullptr)
-			{
-				Vec3 screenPos(ZERO);
-
-				pRenderer->ProjectToScreen(m_rayDebugInfos[i].stableEnd.x, m_rayDebugInfos[i].stableEnd.y, m_rayDebugInfos[i].stableEnd.z, &screenPos.x, &screenPos.y, &screenPos.z);
-
-				screenPos.x = screenPos.x * 0.01f * pRenderer->GetWidth();
-				screenPos.y = screenPos.y * 0.01f * pRenderer->GetHeight();
-
-				if ((0.0f <= screenPos.z) && (screenPos.z <= 1.0f))
-				{
-					float const colorLerp = clamp_tpl(m_rayInfos[i].averageHits, 0.0f, 1.0f);
-					float const labelColor[4] =
-					{
-						obstructedRayLabelColor[0] * colorLerp + freeRayLabelColor[0] * (1.0f - colorLerp),
-						obstructedRayLabelColor[1] * colorLerp + freeRayLabelColor[1] * (1.0f - colorLerp),
-						obstructedRayLabelColor[2] * colorLerp + freeRayLabelColor[2] * (1.0f - colorLerp),
-						obstructedRayLabelColor[3] * colorLerp + freeRayLabelColor[3] * (1.0f - colorLerp)
-					};
-
-					auxGeom.Draw2dLabel(
-					  screenPos.x,
-					  screenPos.y - 12.0f,
-					  1.2f,
-					  labelColor,
-					  true,
-					  "ObjID:%u\n#Hits:%2.1f\nOccl:%3.2f",
-					  m_rayInfos[i].audioObjectId, // a const member, will not be overwritten by a thread filling the obstruction data in
-					  m_rayDebugInfos[i].averageHits,
-					  m_rayDebugInfos[i].occlusionValue);
-				}
-			}
-		}
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CPropagationProcessor::ResetRayData()
-{
-	for (size_t i = 0; i < m_totalRays; ++i)
-	{
-		m_rayInfos[i].Reset();
-		m_rayDebugInfos[i] = SRayDebugInfo();
 	}
 }
 

@@ -29,7 +29,6 @@
 #include "CloudsManager.h"
 #include "MatMan.h"
 #include "VolumeObjectRenderNode.h"
-#include "GlobalIllumination.h"
 #include <CryString/CryPath.h>
 #include <CryMemory/ILocalMemoryUsage.h>
 #include <CryCore/BitFiddling.h>
@@ -48,6 +47,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryAISystem/IAISystem.h>
 #include <CryCore/Platform/IPlatformOS.h>
+#include "WaterRippleManager.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "SVO/SceneTreeManager.h"
@@ -1064,6 +1064,7 @@ void C3DEngine::PreWorldStreamUpdate(const CCamera& cam)
 		if (GetCVars()->e_AutoPrecacheCameraJumpDist && fDistance > GetCVars()->e_AutoPrecacheCameraJumpDist)
 		{
 			m_bContentPrecacheRequested = true;
+			m_bResetRNTmpDataPool = true;
 
 			// Invalidate existing precache info
 			m_pObjManager->m_nUpdateStreamingPrioriryRoundIdFast += 8;
@@ -1191,10 +1192,6 @@ void C3DEngine::WorldStreamUpdate()
 				}
 #endif
 				// gEnv->pCryPak->GetFileReadSequencer()->EndSection(); // STREAMING
-			}
-			else if (m_szLevelFolder[0])
-			{
-				ProposeContentPrecache();
 			}
 		}
 	}
@@ -1589,16 +1586,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 #endif
 
 	////////////////////////////////////////////////////////////////////////////////////////
-	// Define indoor visibility
-	////////////////////////////////////////////////////////////////////////////////////////
-
-	if (m_pVisAreaManager)
-	{
-		m_pVisAreaManager->DrawOcclusionAreasIntoCBuffer(passInfo);
-		m_pVisAreaManager->CheckVis(passInfo);
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////////
 	// Draw potential occluders into z-buffer
 	////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1618,6 +1605,16 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	GetRenderer()->EF_StartEf(passInfo);
+
+	////////////////////////////////////////////////////////////////////////////////////////
+	// Define indoor visibility
+	////////////////////////////////////////////////////////////////////////////////////////
+
+	if (m_pVisAreaManager)
+	{
+		m_pVisAreaManager->DrawOcclusionAreasIntoCBuffer(passInfo);
+		m_pVisAreaManager->CheckVis(passInfo);
+	}
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Add clip volumes to renderer
@@ -1680,7 +1677,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		    (m_pVisAreaManager->m_pCurArea || m_pVisAreaManager->m_pCurPortal))
 		{
 			// enable multi-camera culling
-			const_cast<CCamera&>(passInfo.GetCamera()).m_pMultiCamera = &m_pVisAreaManager->m_lstOutdoorPortalCameras;
+			//const_cast<CCamera&>(passInfo.GetCamera()).m_pMultiCamera = &m_pVisAreaManager->m_lstOutdoorPortalCameras;
 		}
 
 		if (IsOutdoorVisible())
@@ -1768,6 +1765,11 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	passInfo.GetRendItemSorter().IncreaseGroupCounter();
 
 	ProcessOcean(passInfo);
+
+	if (m_pWaterRippleManager)
+	{
+		m_pWaterRippleManager->Render(passInfo);
+	}
 
 	if (m_pDecalManager && passInfo.RenderDecals())
 		m_pDecalManager->Render(passInfo);
@@ -1941,9 +1943,6 @@ void C3DEngine::ProcessOcean(const SRenderingPassInfo& passInfo)
 			}
 		}
 	}
-
-	if (GetCVars()->e_WaterRipplesDebug > 0)
-		GetRenderer()->EF_DrawWaterSimHits();
 }
 
 void C3DEngine::RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo)
@@ -2385,8 +2384,10 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	m_pRenderer->EF_Query(EFQ_AAMode, sAAMode);
 	AppendString(szFlagsEnd, sAAMode);
 
-	if (m_pGlobalIlluminationManager && m_pGlobalIlluminationManager->IsEnabled())
-		AppendString(szFlagsEnd, "GI");
+#if defined(FEATURE_SVO_GI)
+	if (GetCVars()->e_svoTI_Apply)
+		AppendString(szFlagsEnd, "SVOGI");
+#endif
 
 	if (IsAreaActivationInUse())
 		AppendString(szFlagsEnd, "LA");
@@ -2796,26 +2797,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		}
 		else
 		{
-
-	#if TRACK_LEVEL_HEAP_USAGE
-			{
-				bool usingLevelHeap;
-				size_t lvlAllocs, lvlSize;
-				bool leaked = CryGetIMemoryManager()->GetLevelHeapViolationState(usingLevelHeap, lvlAllocs, lvlSize);
-				if (usingLevelHeap)
-				{
-					if (leaked)
-					{
-						DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, 1.3f, Col_Red, "Level Heap Leaked (%i allocs, totalling %iKB)", (int) lvlAllocs, (int) (lvlSize / 1024));
-					}
-					else
-					{
-						DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, 1.3f, Col_Green, "Level Heap Healthy");
-					}
-				}
-			}
-	#endif
-
 	#ifndef _RELEASE
 			// Checkpoint loading information
 			if (!gEnv->bMultiplayer)
@@ -3367,10 +3348,10 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		DRAW_OBJ_STATS(eERType_VolumeObject);
 		DRAW_OBJ_STATS(eERType_Rope);
 		DRAW_OBJ_STATS(eERType_PrismObject);
-		DRAW_OBJ_STATS(eERType_LightPropagationVolume);
 		DRAW_OBJ_STATS(eERType_RenderProxy);
 		DRAW_OBJ_STATS(eERType_GameEffect);
 		DRAW_OBJ_STATS(eERType_BreakableGlass);
+		DRAW_OBJ_STATS(eERType_CloudBlocker);
 		DRAW_OBJ_STATS(eERType_MergedMesh);
 		DRAW_OBJ_STATS(eERType_GeomCache);
 

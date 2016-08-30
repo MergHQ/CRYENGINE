@@ -354,7 +354,7 @@ int CLivingEntity::SetParams(pe_params *_params, int bThreadSafe)
 	if (_params->type==pe_player_dimensions::type_id) {
 		pe_player_dimensions *params = (pe_player_dimensions*)_params;
 		ENTITY_VALIDATE("CLivingEntity:SetParams(player_dimensions)",params);
-		if (is_unused(params->sizeCollider)) params->sizeCollider = m_size;
+ 		if (is_unused(params->sizeCollider)) params->sizeCollider = m_size;
 		if (is_unused(params->heightCollider)) params->heightCollider = m_hCyl;
 		if (is_unused(params->heightPivot)) params->heightPivot = m_hPivot;
 		if (is_unused(params->bUseCapsule)) params->bUseCapsule = m_bUseCapsule;
@@ -1018,7 +1018,7 @@ float CLivingEntity::ShootRayDown(le_precomp_entity* pents, int nents, le_precom
 		if (j<pent->m_nColliders)
 			continue;
 		for(j1=pents[i].iPartsBegin;j1<pents[i].iPartsEnd;bHasMatSubst|=pparts[j1++].partflags & geom_mat_substitutor) 
-			if ((pparts[j1].partflags & (collider_flags|geom_no_coll_response)) == collider_flags) {
+			if ((pparts[j1].partflags & collider_flags) && !(pparts[j1].partflags & geom_no_coll_response)) {
 			PrefetchLine(&pparts[j1+1],0);
 			if (bIgnoreSmallObjects && (pentbest || pent->GetRigidBody(j)->v.len2()>1)) {
 				pparts[j1].pgeom->GetBBox(&bbox);
@@ -1170,7 +1170,7 @@ void CLivingEntity::RegisterUnprojContact(const le_contact &unproj)
 	if (m_nContacts==m_nContactsAlloc) {
 		le_contact *pContacts = m_pContacts;
 		m_pContacts = new le_contact[m_nContactsAlloc+=4];
-		NO_BUFFER_OVERRUN
+		NO_BUFFER_OVERRUN	// cppcheck-suppress memsetClass
 		memcpy(m_pContacts, pContacts, m_nContacts*sizeof(le_contact));
 		delete[] pContacts;
 	}
@@ -1411,12 +1411,12 @@ int CLivingEntity::Step(float time_interval)
 			const float fSizeZ = m_size.z;
 			movelen = move.len(); 
 			const float fGap = (movelen+m_pWorld->m_vars.maxContactGapPlayer)*1.5f;
-			const Vec3 posDiff = pos - m_pos;
-			BBoxInner[0] = m_BBox[0]+(posDiff)-Vec3(fGap,fGap,fGap);
-			BBoxInner[1] = m_BBox[1]+(posDiff)+Vec3(fGap,fGap,fGap);
+			const Vec3 posDiff = pos - m_pos, maxUpStep = axis*(m_hCyl-m_size.z-m_size.x*m_bUseCapsule);
+			BBoxInner[0] = m_BBox[0]+(posDiff)-Vec3(fGap,fGap,fGap)+min(maxUpStep,Vec3(0));
+			BBoxInner[1] = m_BBox[1]+(posDiff)+Vec3(fGap,fGap,fGap)+max(maxUpStep,Vec3(0));
 			const float fGap2 = max(10.0f*time_interval,fGap); // adds a safety margin of m_size.x width
-			const Vec3 BBoxOuter0 = m_BBox[0]+(posDiff)-Vec3(fGap2,fGap2,fGap2);
-			const Vec3 BBoxOuter1 = m_BBox[1]+(posDiff)+Vec3(fGap2,fGap2,fGap2);
+			const Vec3 BBoxOuter0 = m_BBox[0]+(posDiff)-Vec3(fGap2,fGap2,fGap2)+min(maxUpStep,Vec3(0));
+			const Vec3 BBoxOuter1 = m_BBox[1]+(posDiff)+Vec3(fGap2,fGap2,fGap2)+max(maxUpStep,Vec3(0));
 
 			nents = m_pWorld->GetEntitiesAround(BBoxOuter0,BBoxOuter1, 
 				pentlist, m_collTypes|ent_independent|ent_triggers|ent_sort_by_mass, this, 0,iCaller);

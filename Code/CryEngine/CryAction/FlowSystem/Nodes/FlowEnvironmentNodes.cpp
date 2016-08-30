@@ -1,72 +1,11 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CrySystem/IStreamEngine.h>
-
-class CFlowNode_EnvLighting : public CFlowBaseNode<eNCT_Singleton>
-{
-public:
-	CFlowNode_EnvLighting(SActivationInfo* pActInfo)
-	{
-	}
-
-	enum EInputPorts
-	{
-		eIP_TimeOfDay = 0,
-	};
-
-	enum EOutputPorts
-	{
-		eOP_SunDirection = 0,
-	};
-
-	void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SInputPortConfig in_config[] = {
-			InputPortConfig<float>("TimeOfDay"),
-			{ 0 }
-		};
-		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig<Vec3>("SunDirection"),
-			{ 0 }
-		};
-		config.pInputPorts = in_config;
-		config.pOutputPorts = out_config;
-		config.SetCategory(EFLN_OBSOLETE);
-	}
-
-	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
-	{
-		switch (event)
-		{
-		case eFE_Activate:
-			if (IsPortActive(pActInfo, eIP_TimeOfDay))
-				Update(pActInfo);
-		}
-	}
-
-	virtual void GetMemoryUsage(ICrySizer* s) const
-	{
-		s->Add(*this);
-	}
-
-private:
-
-	void Update(SActivationInfo* pActInfo)
-	{
-		float timeOfDay = GetPortFloat(pActInfo, eIP_TimeOfDay);
-		float longitude = timeOfDay / 24.0f * gf_PI * 2.0f;
-		float latitude = -45.0f * gf_PI / 180.0f;
-		Vec3 sunDir(sinf(longitude) * cosf(latitude), sinf(longitude) * sinf(latitude), cosf(longitude));
-
-		CRY_ASSERT(!"Direct call of I3DEngine::SetSunDir() is not supported anymore. Use Time of day featue instead.");
-		//		gEnv->p3DEngine->SetSunDir(sunDir);
-		ActivateOutput(pActInfo, eOP_SunDirection, sunDir);
-	}
-};
 
 class CFlowNode_EnvMoonDirection : public CFlowBaseNode<eNCT_Singleton>
 {
@@ -810,7 +749,76 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("Environment:Lighting", CFlowNode_EnvLighting);
+class CFlowNode_PresetSwitch : public CFlowBaseNode<eNCT_Singleton>
+{
+public:
+	CFlowNode_PresetSwitch(SActivationInfo* pActInfo)
+	{
+	}
+
+	virtual void GetMemoryUsage(ICrySizer* s) const
+	{
+		s->Add(*this);
+	}
+
+	enum EInputs
+	{
+		eIN_Activate = 0,
+		eIN_PresetName,
+	};
+
+	enum EOutputPorts
+	{
+		eOP_Success = 0,
+		eOP_Failed,
+	};
+
+	void GetConfiguration(SFlowNodeConfig& config)
+	{
+		static const SInputPortConfig in_config[] = {
+			InputPortConfig_Void("Activate",  _HELP("Input for switching time of day to this preset")),
+			InputPortConfig<string>("Preset", _HELP("Preset name")),
+			//blend time might be here
+			{ 0 }
+		};
+
+		static const SOutputPortConfig out_config[] = {
+			OutputPortConfig_Void("Success", _HELP("Triggered when successfully finished")),
+			OutputPortConfig_Void("Failed",  _HELP("Triggered when something went wrong")),
+			{ 0 }
+		};
+
+		config.pInputPorts = in_config;
+		config.pOutputPorts = out_config;
+		config.sDescription = _HELP("Switch environment preset");
+		config.SetCategory(EFLN_ADVANCED);
+	}
+
+	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	{
+		switch (event)
+		{
+		case eFE_Activate:
+			{
+				if (IsPortActive(pActInfo, eIN_Activate))
+				{
+					const string& sPresetName = GetPortString(pActInfo, eIN_PresetName);
+					ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
+					bool bResult = false;
+
+					if (pTOD)
+					{
+						bResult = pTOD->SetCurrentPreset(sPresetName.c_str());
+					}
+
+					ActivateOutput(pActInfo, bResult ? eOP_Success : eOP_Failed, 0);
+				}
+			}
+			break;
+		}
+	}
+};
+
 REGISTER_FLOW_NODE("Environment:MoonDirection", CFlowNode_EnvMoonDirection);
 REGISTER_FLOW_NODE("Environment:Sun", CFlowNode_EnvSun);
 REGISTER_FLOW_NODE("Time:TimeOfDayTransitionTrigger", CFlowNode_TimeOfDayTransitionTrigger)
@@ -818,3 +826,4 @@ REGISTER_FLOW_NODE("Environment:Wind", CFlowNode_EnvWind)
 REGISTER_FLOW_NODE("Environment:SetOceanMaterial", CFlowNode_SetOceanMat)
 REGISTER_FLOW_NODE("Environment:SkyMaterialSwitch", CFlowNode_SkyMaterialSwitch);
 REGISTER_FLOW_NODE("Environment:VolumetericCloudSwitch", CFlowNode_SetVolumetricCloudSwitch);
+REGISTER_FLOW_NODE("Environment:PresetSwitch", CFlowNode_PresetSwitch);

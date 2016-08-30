@@ -6,6 +6,7 @@
 #include <CryPhysics/IPhysics.h>
 #include <CryPhysics/IPhysicsDebugRenderer.h>
 
+#if !defined(_LIB)
 bop_meshupdate::~bop_meshupdate() 
 {
 	if (pRemovedVtx) delete[] pRemovedVtx;
@@ -21,6 +22,8 @@ bop_meshupdate::~bop_meshupdate()
 	if (pMesh[0]) pMesh[0]->Release(); 
 	if (pMesh[1]) pMesh[1]->Release();
 }
+#endif
+
 %}
 %feature("nspace", 1);
 %ignore CreatePhysicalWorld;

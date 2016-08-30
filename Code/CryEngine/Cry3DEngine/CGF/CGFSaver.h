@@ -64,7 +64,7 @@ public:
 	int  SaveBones(bool bSwapEndian, void* pData, int numBones, int nSize);
 	int  SaveBoneNames(bool bSwapEndian, char* boneList, int numBones, int listSize);
 	int  SaveBoneInitialMatrices(bool bSwapEndian, SBoneInitPosMatrix* matrices, int numBones, int nSize);
-	int  SaveBoneMesh(bool bSwapEndian, PhysicalProxy& proxy);
+	int  SaveBoneMesh(bool bSwapEndian, const PhysicalProxy& proxy);
 	#if defined(RESOURCE_COMPILER)
 	void SaveUncompiledNodes();
 	int  SaveUncompiledNode(CNodeCGF* pNode);
@@ -80,6 +80,8 @@ public:
 	int SaveControllerDB905(bool bSwapEndian, const CONTROLLER_CHUNK_DESC_0905& ctrlChunk, void* pData, int nSize);
 
 	int SaveFoliage();
+
+	int SaveVCloth(bool bSwapEndian);
 
 	#if defined(RESOURCE_COMPILER)
 	int SaveTiming(CInternalSkinningInfo* pSkinningInfo);

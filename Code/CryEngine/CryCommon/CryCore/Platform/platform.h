@@ -347,12 +347,8 @@ inline int IsHeapValid()
 #undef strdup
 #define strdup dont_use_strdup
 
-// compile time error stuff
-template<bool> struct CompileTimeError;
-template<> struct CompileTimeError<true> {};
 #undef STATIC_CHECK
-#define STATIC_CHECK(expr, msg) \
-  { CompileTimeError<((expr) != 0)> ERROR_ ## msg; (void)ERROR_ ## msg; }
+#define STATIC_CHECK(expr, msg) static_assert((expr) != 0, # msg)
 
 // Assert dialog box macros
 #include <CryCore/Assert/CryAssert.h>

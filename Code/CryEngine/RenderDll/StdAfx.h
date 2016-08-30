@@ -40,6 +40,8 @@ bool        CheckHResult(long const hr, bool breakOnError, const char* file, con
 // stores pointers to actual backing storage of vertex buffers. Can only be used on architectures
 // that have a unified memory architecture and further guarantee that buffer storage does not change
 // on repeated accesses.
+// NOTE: DX12 doesn't support non-direct buffer access, because the otherwise used MAP_DISCARD
+// implementation doesn't track if to-be-discarded resources have open views, this is a design decision
 #if (CRY_PLATFORM_CONSOLE || defined(CRY_USE_DX12))
 	#define BUFFER_ENABLE_DIRECT_ACCESS 1
 #endif
@@ -113,18 +115,35 @@ bool        CheckHResult(long const hr, bool breakOnError, const char* file, con
 	#define PROFILE 1
 #endif
 
+#define FUNCTION_PROFILER_RENDERER FUNCTION_PROFILER(iSystem, PROFILE_RENDERER)
+
+#define SCOPED_RENDERER_ALLOCATION_NAME_HINT(str)
+
+#define SHADER_ASYNC_COMPILATION
+
+#if !defined(_RELEASE)
+//# define DETAILED_PROFILING_MARKERS
+#endif
+#if defined(DETAILED_PROFILING_MARKERS)
+	#define DETAILED_PROFILE_MARKER(x) DETAILED_PROFILE_MARKER((x))
+#else
+	#define DETAILED_PROFILE_MARKER(x) (void)0
+#endif
+
+#define RAIN_OCC_MAP_SIZE 256
+
 #if CRY_PLATFORM_ORBIS
 	#define USE_SCUE
 	#ifdef USE_SCUE
 //#  define GNM_COMPATIBILITY_MODE						// Turn this on to use GNM validation / Razor GPU captures
 		#ifndef GNM_COMPATIBILITY_MODE
-			#define CUSTOM_FETCH_SHADERS // InputLayouts generate fetch shader code instead of being generated when vertex shader created
+			#define CUSTOM_FETCH_SHADERS          // InputLayouts generate fetch shader code instead of being generated when vertex shader created
 		#endif
 //#  define ENABLE_SCUE_VALIDATION	        // Checks for NULL bindings + incorrect bindings
 //#  define GPU_MEMORY_MAPPING_VALIDATION   // Checks that the objects being bound are mapped in GPU visible memory (Slow)
 	#else
 	#endif
-	#define CUE_SUPPORTS_GEOMETRY_SHADERS // Define if you want to use geometry shaders
+	#define CUE_SUPPORTS_GEOMETRY_SHADERS     // Define if you want to use geometry shaders
 
 	#define ORBIS_RENDERER_SUPPORT_JPG
 #endif
@@ -145,8 +164,8 @@ enum EVerifyType
 #if CRY_PLATFORM_SSE2 && CRY_COMPILER_MSVC
 	#include <fvec.h>
 	#include <CryCore/Assert/CryAssert.h> // to restore assert macro which was changed by <fvec.h>
-	#define CONST_INT32_PS(N, V3, V2, V1, V0)                                     \
-	  const _MM_ALIGN16 int _ ## N[] = { V0, V1, V2, V3 };     /*little endian!*/ \
+	#define CONST_INT32_PS(N, V3, V2, V1, V0)                                 \
+	  const _MM_ALIGN16 int _ ## N[] = { V0, V1, V2, V3 }; /*little endian!*/ \
 	  const F32vec4 N = _mm_load_ps((float*)_ ## N);
 #endif
 
@@ -388,12 +407,15 @@ LINK_SYSTEM_LIBRARY("d3d11.lib")
 	#define D3D11_MAP_WRITE_NO_OVERWRITE_SR (D3D11_MAP_WRITE_NO_OVERWRITE)
 	#define D3D11_MAP_WRITE_NO_OVERWRITE_UA (D3D11_MAP_WRITE_NO_OVERWRITE)
 
+	#define D3D11_COPY_NO_OVERWRITE_REVERT  D3D11_COPY_FLAGS(D3D11_COPY_NO_OVERWRITE + DX12_COPY_REVERTSTATE_MARKER)
+	#define D3D11_COPY_NO_OVERWRITE_PXLSRV  D3D11_COPY_FLAGS(D3D11_COPY_NO_OVERWRITE + DX12_COPY_PIXELSTATE_MARKER)
+	#define D3D11_RESOURCE_MISC_UAV_OVERLAP D3D11_RESOURCE_MISC_FLAG(DX12_RESOURCE_FLAG_OVERLAP)
 #else
-	#define D3D11_MAP_WRITE_DISCARD_VB (D3D11_MAP_WRITE_DISCARD)
-	#define D3D11_MAP_WRITE_DISCARD_IB (D3D11_MAP_WRITE_DISCARD)
-	#define D3D11_MAP_WRITE_DISCARD_CB (D3D11_MAP_WRITE_DISCARD)
-	#define D3D11_MAP_WRITE_DISCARD_SR (D3D11_MAP_WRITE_DISCARD)
-	#define D3D11_MAP_WRITE_DISCARD_UA (D3D11_MAP_WRITE_DISCARD)
+	#define D3D11_MAP_WRITE_DISCARD_VB      (D3D11_MAP_WRITE_DISCARD)
+	#define D3D11_MAP_WRITE_DISCARD_IB      (D3D11_MAP_WRITE_DISCARD)
+	#define D3D11_MAP_WRITE_DISCARD_CB      (D3D11_MAP_WRITE_DISCARD)
+	#define D3D11_MAP_WRITE_DISCARD_SR      (D3D11_MAP_WRITE_DISCARD)
+	#define D3D11_MAP_WRITE_DISCARD_UA      (D3D11_MAP_WRITE_DISCARD)
 
 // NO_OVERWRITE on CBs/SRs-UAs could actually work when we require 11.1
 // and check the feature in D3D11_FEATURE_DATA_D3D11_OPTIONS
@@ -403,6 +425,9 @@ LINK_SYSTEM_LIBRARY("d3d11.lib")
 	#define D3D11_MAP_WRITE_NO_OVERWRITE_SR (D3D11_MAP_WRITE_DISCARD)
 	#define D3D11_MAP_WRITE_NO_OVERWRITE_UA (D3D11_MAP_WRITE_DISCARD)
 
+	#define D3D11_COPY_NO_OVERWRITE_REVERT  D3D11_COPY_NO_OVERWRITE
+	#define D3D11_COPY_NO_OVERWRITE_PXLSRV  D3D11_COPY_NO_OVERWRITE
+	#define D3D11_RESOURCE_MISC_UAV_OVERLAP D3D11_RESOURCE_MISC_FLAG(0)
 #endif
 
 #if !defined(USE_D3DX)
@@ -734,8 +759,8 @@ unsigned sizeOfMapS(Map& map)
 //#include "_Malloc.h"
 //#include "math.h"
 #include <CryCore/StlUtils.h>
-#include "Common/DevBuffer.h"
 #include "XRenderD3D9/DeviceManager/DeviceManager.h"
+#include "Common/DevBuffer.h"
 
 #include <CryRenderer/VertexFormats.h>
 
@@ -771,7 +796,7 @@ unsigned sizeOfMapS(Map& map)
 
 #include "Common/PostProcess/PostProcess.h"
 
-#include "../XRenderD3D9/DeviceManager/DeviceWrapper12.h"
+#include "../XRenderD3D9/DeviceManager/DeviceObjects.h"
 
 /*-----------------------------------------------------------------------------
    Vector transformations.
@@ -1029,22 +1054,8 @@ void fpUsePath(const char* name, const char* path, char (&dst)[bytes]) { fpUsePa
 
 #include "Common/Defs.h"
 
-#define FUNCTION_PROFILER_RENDERER FUNCTION_PROFILER(iSystem, PROFILE_RENDERER)
-
-#define SCOPED_RENDERER_ALLOCATION_NAME_HINT(str)
-
-#define SHADER_ASYNC_COMPILATION
-
-#if !defined(_RELEASE)
-//# define DETAILED_PROFILING_MARKERS
-#endif
-#if defined(DETAILED_PROFILING_MARKERS)
-	#define DETAILED_PROFILE_MARKER(x) DETAILED_PROFILE_MARKER((x))
-#else
-	#define DETAILED_PROFILE_MARKER(x) (void)0
-#endif
-
-#define RAIN_OCC_MAP_SIZE 256
-
 #include "XRenderD3D9/DeviceManager/DeviceManagerInline.h"
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed
+#ifdef INCLUDE_SCALEFORM_SDK
+#include <CrySystem/Scaleform/ConfigScaleform.h>
+#endif

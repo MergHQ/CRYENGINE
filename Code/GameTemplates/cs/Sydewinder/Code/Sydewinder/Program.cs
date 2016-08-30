@@ -9,82 +9,92 @@ using CryEngine.Common;
 
 namespace CryEngine.Sydewinder
 {
-	/// <summary>
-	/// Plugin Entry point will be re-instantiated in runtime, whenever the assembly is updated (e.g. Re-compiled).
-	/// </summary>
-	public class Program : ICryEngineAddIn
+/// <summary>
+/// Plugin Entry point will be re-instantiated in runtime, whenever the assembly is updated (e.g. Re-compiled).
+/// </summary>
+public class Program : ICryEnginePlugin
+{
+	private const string        HIGHSCORE_URL = "highscore.json";
+
+	public static SydewinderApp GameApp { get; private set; }
+
+	public override void Initialize()
 	{
-		private const string HIGHSCORE_URL = "highscore.json";
+		GameApp = Application.Instantiate<SydewinderApp>();
+	}
 
-		public static SydewinderApp GameApp { get; private set; }
+	public void OnGameStart()
+	{
+		AudioManager.PlayTrigger ("game_start");
 
-		/// <summary>
-		/// Add-In Entry point.
-		/// </summary>
-		public void Initialize(InterDomainHandler handler)
+		if (!Env.IsSandbox)
+			Env.Console.ExecuteString("map Canyon");
+
+		GameApp = Application.Instantiate<SydewinderApp>();
+
+		// Initialize Highscore with file name.
+		Highscore.InitializeFromFile(HIGHSCORE_URL);
+
+		GameApp.GameOver += showHighscore =>
 		{
-			if (!Env.IsSandbox) 
-				Env.Console.ExecuteString ("map Canyon");
+			// Reset field of view to ehance 3D look.
+			Camera.FieldOfView = 60f;
 
-			GameApp = Application.Instantiate<SydewinderApp>();
+			UI.MainMenu.SetInactive();
+			if (showHighscore)
+				UI.MainMenu.SetupHighscoreMenuPerspective();
+			else
+				UI.MainMenu.SetupMainMenuPerspective();
+		};
 
-			// Initialize Highscore with file name.
-			Highscore.InitializeFromFile(HIGHSCORE_URL);
+		InitializeMainMenu();
+	}
 
-			GameApp.GameOver += showHighscore =>
-			{
-				// Reset field of view to ehance 3D look.
-				Camera.FieldOfView = 60f;
+	private void InitializeMainMenu()
+	{
+		var mainMenu = UI.MainMenu.GetMainMenu(GameApp.Root);
+		UI.MainMenu.SelectedMenuPage(0);
+		Mouse.ShowCursor();
 
-				UI.MainMenu.SetInactive();
-				if (showHighscore)
-					UI.MainMenu.SetupHighscoreMenuPerspective ();
-				else 
-					UI.MainMenu.SetupMainMenuPerspective ();
-			};
-
-			InitializeMainMenu();
-		}
-
-		private void InitializeMainMenu()
+		mainMenu.StartClicked += () =>
 		{
-			var mainMenu = UI.MainMenu.GetMainMenu(GameApp.Root);
-			UI.MainMenu.SelectedMenuPage (0);
-			Mouse.ShowCursor ();
-
-			mainMenu.StartClicked += () => 
-			{
-				Mouse.HideCursor ();
-				GameApp.Reset ();
-				UI.MainMenu.SetInactive ();
-			};
-			mainMenu.ExitClicked += () => 
-			{
-				Mouse.HideCursor ();
-				if (!Env.IsSandbox)
-					GameApp.Shutdown ();
-
-				AudioManager.PlayTrigger("game_stop");
-				mainMenu.Destroy ();
-			};
-
-			UI.MainMenu.SetInactive ();
-			UI.MainMenu.SetupMainMenuPerspective ();
-		}
-
-		/// <summary>
-		/// Not used in this application. Implementation required by interface.
-		/// </summary>
-		public void OnFlowNodeSignal(FlowNode node, PropertyInfo signal)
-		{ 
-		}
-
-		/// <summary>
-		/// Called when engine is being shut down or if application is reloaded.
-		/// </summary>
-		public void Shutdown()
+			Mouse.HideCursor();
+			GameApp.Reset();
+			UI.MainMenu.SetInactive();
+		};
+		mainMenu.ExitClicked += () =>
 		{
+			Mouse.HideCursor();
+			if (!Env.IsSandbox)
+				Shutdown();
+
+			AudioManager.PlayTrigger("game_stop");
+			mainMenu.Destroy();
+		};
+
+		UI.MainMenu.SetInactive();
+		UI.MainMenu.SetupMainMenuPerspective();
+	}
+
+	public void OnGameStop()
+	{
+		AudioManager.PlayTrigger ("game_stop");
+
+		UI.MainMenu.DestroyMenu();
+	}
+
+	/// <summary>
+	/// Called when engine is being shut down or if application is reloaded.
+	/// </summary>
+	public override void Shutdown()
+	{
+		if (GameApp != null)
+		{
+			UI.MainMenu.DestroyMenu();
 			GameApp.Shutdown(false);
+			GameApp.Destroy();
+			GameApp = null;
 		}
 	}
+}
 }

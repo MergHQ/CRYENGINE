@@ -54,6 +54,11 @@ CCryDX12Texture3D* CCryDX12Texture3D::Create(CCryDX12Device* pDevice, CCryDX12Sw
 		desc11.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
 	}
 
+	if (!(desc12.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
+	{
+		desc11.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+	}
+
 	CCryDX12Texture3D* result = DX12_NEW_RAW(CCryDX12Texture3D(pDevice, desc11, pResource, D3D12_RESOURCE_STATE_PRESENT, CD3DX12_RESOURCE_DESC(desc12), NULL));
 	result->GetDX12Resource().SetDX12SwapChain(pSwapChain->GetDX12SwapChain());
 
@@ -83,33 +88,21 @@ CCryDX12Texture3D* CCryDX12Texture3D::Create(CCryDX12Device* pDevice, const FLOA
 
 #if DX12_ALLOW_TEXTURE_ACCESS
 	if (pDesc->Usage == D3D11_USAGE_IMMUTABLE)
-	{
 		heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, pDevice->GetCreationMask(false), pDevice->GetVisibilityMask(false));
-		resourceUsage = D3D12_RESOURCE_STATE_COPY_DEST;
-	}
 	else if (pDesc->Usage == D3D11_USAGE_STAGING)
-	{
 		heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK, pDevice->GetCreationMask(true), pDevice->GetVisibilityMask(true));
-		resourceUsage = D3D12_RESOURCE_STATE_COPY_DEST;
-	}
 	else if (pDesc->Usage == D3D11_USAGE_DYNAMIC)
-	{
 		heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD, pDevice->GetCreationMask(true), pDevice->GetVisibilityMask(true));
-		resourceUsage = D3D12_RESOURCE_STATE_GENERIC_READ;
-	}
 
 	if (pDesc->CPUAccessFlags != 0)
 	{
+		// TODO: Check feasibility and performance of allocating staging textures as row major buffers
+		// and using CopyTextureRegion instead of ReadFromSubresource/WriteToSubresource
+
 		if (pDesc->CPUAccessFlags == D3D11_CPU_ACCESS_WRITE)
-		{
 			heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD, pDevice->GetCreationMask(true), pDevice->GetVisibilityMask(true));
-			resourceUsage = D3D12_RESOURCE_STATE_GENERIC_READ;
-		}
 		else if (pDesc->CPUAccessFlags == D3D11_CPU_ACCESS_READ)
-		{
 			heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK, pDevice->GetCreationMask(true), pDevice->GetVisibilityMask(true));
-			resourceUsage = D3D12_RESOURCE_STATE_COPY_DEST;
-		}
 		else
 		{
 			DX12_NOT_IMPLEMENTED;
@@ -120,6 +113,7 @@ CCryDX12Texture3D* CCryDX12Texture3D::Create(CCryDX12Device* pDevice, const FLOA
 	DX12_ASSERT(pDesc->Usage == D3D11_USAGE_DEFAULT && !pDesc->CPUAccessFlags, "Unsupported Texture access requested!");
 #endif
 
+	allowClearValue = !!(pDesc->BindFlags & (D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_RENDER_TARGET));
 	if (cClearValue)
 	{
 		if (pDesc->BindFlags & D3D11_BIND_DEPTH_STENCIL)
@@ -136,25 +130,51 @@ CCryDX12Texture3D* CCryDX12Texture3D::Create(CCryDX12Device* pDevice, const FLOA
 		}
 	}
 
+	if (pDesc->BindFlags & D3D11_BIND_SHADER_RESOURCE)
+		resourceUsage = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+	if (pDesc->BindFlags & (D3D11_BIND_VERTEX_BUFFER | D3D11_BIND_CONSTANT_BUFFER))
+		resourceUsage = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+	if (pDesc->BindFlags & D3D11_BIND_INDEX_BUFFER)
+		resourceUsage = D3D12_RESOURCE_STATE_INDEX_BUFFER;
 	if (pDesc->BindFlags & D3D11_BIND_UNORDERED_ACCESS)
-	{
-		desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-		//	allowClearValue = true;
-		resourceUsage = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-	}
-
+		resourceUsage = D3D12_RESOURCE_STATE_UNORDERED_ACCESS, desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 	if (pDesc->BindFlags & D3D11_BIND_DEPTH_STENCIL)
-	{
-		desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-		allowClearValue = true;
-		resourceUsage = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-	}
-
+		resourceUsage = D3D12_RESOURCE_STATE_DEPTH_WRITE, desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 	if (pDesc->BindFlags & D3D11_BIND_RENDER_TARGET)
+		resourceUsage = D3D12_RESOURCE_STATE_RENDER_TARGET, desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+	if (!(pDesc->BindFlags & D3D11_BIND_SHADER_RESOURCE))
+		desc12.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+
+	// Certain heaps are restricted to certain D3D12_RESOURCE_STATES states, and cannot be changed.
+	// D3D12_HEAP_TYPE_UPLOAD requires D3D12_RESOURCE_STATE_GENERIC_READ.
+	if (heapProperties.Type == D3D12_HEAP_TYPE_UPLOAD)
+		resourceUsage = D3D12_RESOURCE_STATE_GENERIC_READ;
+	else if (heapProperties.Type == D3D12_HEAP_TYPE_READBACK)
+		resourceUsage = D3D12_RESOURCE_STATE_COPY_DEST;
+
+	// Any of these flags require a view with a GPUVirtualAddress, in which case the resource needs to be duplicated for all GPUs
+	if (pDesc->BindFlags & (
+		D3D11_BIND_VERTEX_BUFFER   | // vertex buffer    view
+		D3D11_BIND_INDEX_BUFFER    | // index buffer     view
+		D3D11_BIND_CONSTANT_BUFFER | // constant buffer  view
+		D3D11_BIND_SHADER_RESOURCE | // shader resource  view
+		D3D11_BIND_RENDER_TARGET   | // render target    view
+		D3D11_BIND_DEPTH_STENCIL   | // depth stencil    view
+		D3D11_BIND_UNORDERED_ACCESS  // unordered access view
+	))
 	{
-		desc12.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-		allowClearValue = true;
-		resourceUsage = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		heapProperties.CreationNodeMask = pDevice->GetCreationMask(false) | pDevice->GetVisibilityMask(false);
+		heapProperties.VisibleNodeMask = pDevice->GetVisibilityMask(false);
+
+#if CRY_USE_DX12_MULTIADAPTER_SIMULATION
+		// Always allow getting GPUAddress (CreationMask == VisibilityMask), if running simulation
+		if (CRenderer::CV_r_StereoEnableMgpu < 0 && (heapProperties.Type == D3D12_HEAP_TYPE_UPLOAD || heapProperties.Type == D3D12_HEAP_TYPE_READBACK))
+		{
+			heapProperties.CreationNodeMask = 1U;
+			heapProperties.VisibleNodeMask = pDevice->GetCreationMask(false) | pDevice->GetVisibilityMask(false);
+		}
+#endif
 	}
 
 	ID3D12Resource* resource = NULL;
@@ -188,7 +208,7 @@ CCryDX12Texture3D::CCryDX12Texture3D(CCryDX12Device* pDevice, const D3D11_TEXTUR
 	: Super(pDevice, pResource, eInitialState, desc12, pInitialData, numInitialData)
 	, m_Desc11(desc11)
 {
-
+	m_DX12Resource.MakeConcurrentWritable(m_Desc11.MiscFlags & D3D11_RESOURCE_MISC_UAV_OVERLAP ? true : false);
 }
 
 CCryDX12Texture3D::~CCryDX12Texture3D()

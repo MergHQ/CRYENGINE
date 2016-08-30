@@ -1,24 +1,25 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
--------------------------------------------------------------------------
-$Id$
-$DateTime$
-Description:  Flow nodes for working with XBox 360 controller
--------------------------------------------------------------------------
-History:
-- 31:3:2008        : Created by Kevin
+   -------------------------------------------------------------------------
+   $Id$
+   $DateTime$
+   Description:  Flow nodes for working with XBox 360 controller
+   -------------------------------------------------------------------------
+   History:
+   - 31:3:2008        : Created by Kevin
 
 *************************************************************************/
 
 #include "StdAfx.h"
-#include "Nodes/G2FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryEntitySystem/IEntitySystem.h>
 
 class CFlowEntityVelocity : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
-	CFlowEntityVelocity(SActivationInfo * pActInfo) : m_enabled(false)
+	CFlowEntityVelocity(SActivationInfo* pActInfo) : m_enabled(false)
 	{
 	}
 
@@ -26,19 +27,19 @@ public:
 	{
 	}
 
-	IFlowNodePtr Clone( SActivationInfo * pActInfo )
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
 		return new CFlowEntityVelocity(pActInfo);
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
 
-	virtual void Serialize(SActivationInfo *pActInfo, TSerialize ser)
+	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
 	{
-		ser.Value( "enabled", m_enabled );
+		ser.Value("enabled", m_enabled);
 		if (ser.IsReading())
 		{
 			m_actInfo = *pActInfo;
@@ -61,15 +62,15 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig inputs[] = {
-			InputPortConfig<bool>( "Enabled", true, _HELP("Enable / disable the node") ),
-			{0}
+			InputPortConfig<bool>("Enabled", true, _HELP("Enable / disable the node")),
+			{ 0 }
 		};
 		static const SOutputPortConfig outputs[] = {
-			OutputPortConfig<float>("Velocity_Horizontal", _HELP("Magnitude of horizontal entity velocity.")),
-			OutputPortConfig<float>("Velocity_Vertical", _HELP("Magnitude of vertical entity velocity.")),
+			OutputPortConfig<float>("Velocity_Horizontal",      _HELP("Magnitude of horizontal entity velocity.")),
+			OutputPortConfig<float>("Velocity_Vertical",        _HELP("Magnitude of vertical entity velocity.")),
 			OutputPortConfig<float>("Velocity_ForwardBackward", _HELP("Magnitude of forward (positive) and backward (negative) entity velocity.")),
-			OutputPortConfig<float>("Velocity_RightLeft", _HELP("Magnitude of rightward (positive) and leftward (negative) entity velocity.")),
-			{0}
+			OutputPortConfig<float>("Velocity_RightLeft",       _HELP("Magnitude of rightward (positive) and leftward (negative) entity velocity.")),
+			{ 0 }
 		};
 		config.nFlags |= EFLN_TARGET_ENTITY;
 		config.pInputPorts = inputs;
@@ -78,13 +79,13 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo )
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		switch (event)
 		{
 		case eFE_Initialize:
 			{
-				m_enabled = GetPortBool( pActInfo, IN_ENABLED );
+				m_enabled = GetPortBool(pActInfo, IN_ENABLED);
 				m_actInfo = *pActInfo;
 				if (m_actInfo.pGraph != NULL && m_enabled)
 					m_actInfo.pGraph->SetRegularlyUpdated(m_actInfo.myID, true);
@@ -99,10 +100,10 @@ public:
 
 		case eFE_Activate:
 			{
-				if (IsPortActive(pActInfo, IN_ENABLED)) 
+				if (IsPortActive(pActInfo, IN_ENABLED))
 				{
-					m_enabled = GetPortBool( pActInfo, IN_ENABLED );
-					m_actInfo.pGraph->SetRegularlyUpdated( pActInfo->myID, m_enabled );
+					m_enabled = GetPortBool(pActInfo, IN_ENABLED);
+					m_actInfo.pGraph->SetRegularlyUpdated(pActInfo->myID, m_enabled);
 				}
 			}
 			break;
@@ -141,8 +142,8 @@ public:
 				float velocity_horizontal = velocity_horizontal_vector.GetLength();
 				float velocity_forwardbackward = velocity_world * entity_forward;
 				float velocity_rightleft = velocity_world * entity_right;
-				
-#define RoundTwoDecimals(x) ((float)(int)((x)*100.0f)*0.01f)
+
+#define RoundTwoDecimals(x) ((float)(int)((x) * 100.0f) * 0.01f)
 				velocity_horizontal = RoundTwoDecimals(velocity_horizontal);
 				velocity_vertical = RoundTwoDecimals(velocity_vertical);
 				velocity_forwardbackward = RoundTwoDecimals(velocity_forwardbackward);

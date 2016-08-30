@@ -43,28 +43,11 @@ struct SSetNicknameParams
 // implement CContextView in a way that acts like a server
 typedef CNetMessageSinkHelper<CServerContextView, CContextView, 80 + ((NUM_ASPECTS - 8)*3)> TServerContextViewParent;
 class CServerContextView : public TServerContextViewParent
-#if NETWORK_HOST_MIGRATION
-	                         , public IHostMigrationEventListener
-#endif
 {
 	friend class CPerformBreakSimpleServer;
 public:
 	CServerContextView(CNetChannel*, CNetContext*);
 	~CServerContextView();
-
-#if NETWORK_HOST_MIGRATION
-	// IHostMigrationEventListener
-	virtual EHostMigrationReturn OnInitiate(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnDisconnectClient(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnDemoteToClient(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnPromoteToServer(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnReconnectClient(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnFinalise(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual void                 OnComplete(SHostMigrationInfo& hostMigrationInfo);
-	virtual EHostMigrationReturn OnTerminate(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	virtual EHostMigrationReturn OnReset(SHostMigrationInfo& hostMigrationInfo, HMStateType& state);
-	// ~IHostMigrationEventListener
-#endif
 
 	virtual void        BindObject(SNetObjectID nID);
 	virtual void        UnbindObject(SNetObjectID nID);
@@ -77,6 +60,33 @@ public:
 	virtual void        CompleteInitialization();
 	virtual void        OnObjectEvent(CNetContextState*, SNetObjectEvent* pEvent);
 
+	// Statically constructed protocol message defitions for aspect-related messages.
+	template <int AspectNum>
+	struct msgUpdateAspect {
+		static SNetMessageDef* fun() { return Helper_AddAspectMessage(
+			TrampolineAspect<AspectNum, CContextView, &CServerContextView::UpdateAspect>,
+			"CServerContextView:UpdateAspect", AspectNum, eMPF_BlocksStateChange);
+		}
+	};
+
+	template<int AspectNum>
+	struct msgPartialAspect {
+		static SNetMessageDef* fun() { return Helper_AddAspectMessage(
+			TrampolineAspect<AspectNum, CContextView, &CServerContextView::PartialAspect>,
+			"CServerContextView:PartialAspect", AspectNum, eMPF_BlocksStateChange);
+		}
+	};
+
+#if ENABLE_ASPECT_HASHING
+	template<int AspectNum>
+	struct msgHashAspect {
+		static SNetMessageDef* fun() { return Helper_AddAspectMessage(
+			TrampolineAspect<AspectNum, CContextView, &CServerContextView::HashAspect>,
+			"CServerContextView:HashAspect", AspectNum, eMPF_BlocksStateChange);
+		}
+	};
+#endif
+
 	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(AuthenticateResponse, CWhirlpoolHash);
 	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(ChangeState, SChangeStateMessage);
 	NET_DECLARE_IMMEDIATE_MESSAGE(FinishState);
@@ -87,116 +97,7 @@ public:
 
 	NET_DECLARE_IMMEDIATE_MESSAGE(BeginUpdateObject);
 	NET_DECLARE_IMMEDIATE_MESSAGE(EndUpdateObject);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect0);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect1);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect2);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect3);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect4);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect5);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect6);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect7);
-#if NUM_ASPECTS > 8
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect8);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect9);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect10);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect11);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect12);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect13);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect14);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect15);
-#endif
-#if NUM_ASPECTS > 16
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect16);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect17);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect18);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect19);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect20);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect21);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect22);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect23);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect24);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect25);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect26);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect27);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect28);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect29);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect30);
-	NET_DECLARE_IMMEDIATE_MESSAGE(UpdateAspect31);
-#endif
-#if ENABLE_ASPECT_HASHING
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect0);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect1);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect2);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect3);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect4);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect5);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect6);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect7);
-	#if NUM_ASPECTS > 8
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect8);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect9);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect10);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect11);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect12);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect13);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect14);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect15);
-	#endif
-	#if NUM_ASPECTS > 16
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect16);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect17);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect18);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect19);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect20);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect21);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect22);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect23);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect24);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect25);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect26);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect27);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect28);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect29);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect30);
-	NET_DECLARE_IMMEDIATE_MESSAGE(HashAspect31);
-	#endif
-#endif
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect0);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect1);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect2);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect3);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect4);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect5);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect6);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect7);
-#if NUM_ASPECTS > 8
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect8);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect9);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect10);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect11);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect12);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect13);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect14);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect15);
-#endif
-#if NUM_ASPECTS > 16
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect16);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect17);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect18);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect19);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect20);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect21);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect22);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect23);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect24);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect25);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect26);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect27);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect28);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect29);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect30);
-	NET_DECLARE_IMMEDIATE_MESSAGE(PartialAspect31);
-#endif
+
 	NET_DECLARE_IMMEDIATE_MESSAGE(RMI_UnreliableOrdered);
 	NET_DECLARE_IMMEDIATE_MESSAGE(RMI_ReliableUnordered);
 	NET_DECLARE_IMMEDIATE_MESSAGE(RMI_ReliableOrdered);
@@ -240,7 +141,7 @@ private:
 	void                InitSessionIDs();
 	void                RemoveStaticEntity(EntityId id);
 
-	void GC_BindObject(SNetObjectID, CNetObjectBindLock lk, CChangeStateLock cslk);
+	void GC_BindObject( SNetObjectID, CNetObjectBindLock lk, CChangeStateLock cslk, bool levelInit);
 
 	typedef std::auto_ptr<SAuthenticationSalt> TAuthPtr;
 

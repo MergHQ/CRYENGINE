@@ -235,7 +235,6 @@ CShaderResources* CShaderResources::Clone() const
 		return CShader::s_ShaderResources_known[1];
 	}
 	pSR->m_Id = CShader::s_ShaderResources_known.Num();
-	ScopedSwitchToGlobalHeap globalHeap;
 	CShader::s_ShaderResources_known.AddElem(pSR);
 
 	return pSR;
@@ -621,7 +620,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		Vec4 deformWave(0, 0, 0, 1);
 		if (m_pDeformInfo && m_pDeformInfo->m_fDividerX != 0)
 		{
-			deformWave.x = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_RealTime * m_pDeformInfo->m_WaveX.m_Freq + m_pDeformInfo->m_WaveX.m_Phase;
+			deformWave.x = m_pDeformInfo->m_WaveX.m_Freq + m_pDeformInfo->m_WaveX.m_Phase;
 			deformWave.y = m_pDeformInfo->m_WaveX.m_Amp;
 			deformWave.z = m_pDeformInfo->m_WaveX.m_Level;
 			deformWave.w = 1.0f / m_pDeformInfo->m_fDividerX;
@@ -732,7 +731,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		std::sort(Params.begin(), Params.end(), CompareItem());
 	}
 
-	std::vector<Vec4>* pConstants = &m_Constants;
+	auto* __restrict pConstants = &m_Constants;
 	SFXParam* pPR;
 	int nFirstConst = FIRST_REG_PM;
 	int nLastConst = -1;
@@ -766,8 +765,11 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 
 	if (m_Constants.size())
 	{
-		*ppBuf = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(m_Constants.size() * sizeof(Vec4), false);
-		(*ppBuf)->UpdateBuffer(&m_Constants[0], m_Constants.size() * sizeof(Vec4));
+		// NOTE: The pointers and the size is 16 byte aligned
+		size_t nSize = m_Constants.size() * sizeof(Vec4);
+
+		*ppBuf = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(nSize, false);
+		(*ppBuf)->UpdateBuffer(&m_Constants[0], Align(nSize, 256));
 
 #if !defined(_RELEASE) && CRY_PLATFORM_WINDOWS
 		if (*ppBuf)
@@ -784,8 +786,9 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 #endif
 	}
 
-	if (!m_pCompiledResourceSet)
+	if (!m_pCompiledResourceSet || (m_flags & eFlagRecreateResourceSet))
 	{
+		m_flags = m_flags & (~eFlagRecreateResourceSet);
 		m_pCompiledResourceSet = CCryDeviceWrapper::GetObjectFactory().CreateResourceSet();
 	}
 
@@ -828,7 +831,8 @@ void CShaderResources::CloneConstants(const IRenderShaderResources* pISrc)
 			pCB0Dst = pCB0Src;
 		}
 
-		m_pCompiledResourceSet = pSrc->m_pCompiledResourceSet ? CCryDeviceWrapper::GetObjectFactory().CloneResourceSet(pSrc->m_pCompiledResourceSet) : nullptr;
+		m_pCompiledResourceSet = pSrc->m_pCompiledResourceSet;
+		m_flags |= eFlagRecreateResourceSet;
 	}
 }
 

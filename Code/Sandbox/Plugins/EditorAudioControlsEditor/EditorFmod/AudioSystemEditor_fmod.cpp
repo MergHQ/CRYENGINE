@@ -106,6 +106,10 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		ar(type, "action", "Action");
+		if (ar.isInput())
+		{
+			signalConnectionChanged();
+		}
 	}
 
 	EFmodEventType type;
@@ -128,6 +132,10 @@ public:
 	{
 		ar(mult, "mult", "Multiply");
 		ar(shift, "shift", "Shift");
+		if (ar.isInput())
+		{
+			signalConnectionChanged();
+		}
 	}
 
 	float mult;
@@ -152,6 +160,10 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		ar(m_value, "value", "Value");
+		if (ar.isInput())
+		{
+			signalConnectionChanged();
+		}
 	}
 
 	float m_value;

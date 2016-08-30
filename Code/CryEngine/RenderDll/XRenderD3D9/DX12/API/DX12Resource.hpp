@@ -201,9 +201,24 @@ public:
 		return D3D12_RESOURCE_STATES(m_CurrentState | (m_AnnouncedState != (D3D12_RESOURCE_STATES)-1 ? m_AnnouncedState : 0));
 	}
 
+	ILINE D3D12_RESOURCE_STATES GetTargetState() const
+	{
+		return D3D12_RESOURCE_STATES(m_AnnouncedState != (D3D12_RESOURCE_STATES)-1 ? m_AnnouncedState : m_CurrentState);
+	}
+	
+	template<const bool bCheckCVar = true>
+	ILINE bool IsConcurrentWritable() const
+	{
+		return m_bConcurrentWritable & !(bCheckCVar && !CRenderer::CV_r_D3D12AsynchronousCompute);
+	}
+	ILINE void MakeConcurrentWritable(bool bCW)
+	{
+		m_bConcurrentWritable = bCW;
+	}
+
 	// Transition resource to desired state
-	bool                  NeedsTransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState) const;
-	bool                  NeedsTransitionBarrier(CCommandList* pCmdList, const CView& view, D3D12_RESOURCE_STATES desiredState) const;
+	bool                  NeedsTransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState, bool bPrepare = false) const;
+	bool                  NeedsTransitionBarrier(CCommandList* pCmdList, const CView& view, D3D12_RESOURCE_STATES desiredState, bool bPrepare = false) const;
 	D3D12_RESOURCE_STATES DecayTransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState);
 	D3D12_RESOURCE_STATES TransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState);
 	D3D12_RESOURCE_STATES TransitionBarrier(CCommandList* pCmdList, const CView& view, D3D12_RESOURCE_STATES desiredState);
@@ -211,6 +226,8 @@ public:
 	D3D12_RESOURCE_STATES BeginTransitionBarrier(CCommandList* pCmdList, const CView& view, D3D12_RESOURCE_STATES desiredState);
 	D3D12_RESOURCE_STATES EndTransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState);
 	D3D12_RESOURCE_STATES EndTransitionBarrier(CCommandList* pCmdList, const CView& view, D3D12_RESOURCE_STATES desiredState);
+
+	int                   SelectQueueForTransitionBarrier(int altQueue, int desiredQueue, D3D12_RESOURCE_STATES desiredState) const;
 
 	ILINE bool            HasSubresourceTransitionBarriers() const
 	{
@@ -352,6 +369,9 @@ public:
 	void MapDiscard();
 	void CopyDiscard();
 
+	HRESULT MappedWriteToSubresource(UINT Subresource, const D3D12_RANGE* Range, const void* pInData);
+	HRESULT MappedReadFromSubresource(UINT Subresource, const D3D12_RANGE* Range, void* pOutData);
+
 protected:
 	void DiscardInitialData();
 
@@ -367,6 +387,7 @@ protected:
 	NODE64 m_NodeMasks;
 	bool m_bCompressed;
 	uint8 m_PlaneCount;
+	bool m_bConcurrentWritable;
 
 	// Potentially changes on every resource-use
 	D3D12_RESOURCE_STATES m_CurrentState;

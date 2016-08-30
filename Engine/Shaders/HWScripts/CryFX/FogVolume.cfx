@@ -27,18 +27,6 @@ float3		fogColor;
 float4		heightFallOffBasePoint;
 float3		heightFallOffDirScaled;
 
-sampler2D noiseSampler = sampler_state
-{
-  Texture = EngineAssets/Textures/rotrandomcm.dds;
-  MinFilter = LINEAR;
-  MagFilter = LINEAR;
-  MipFilter = LINEAR;
-  AddressU = Wrap;
-  AddressV = Wrap;
-}
-
-Texture2DArray<uint2> VolumetricClipVolumeStencil : TS_VolumetricClipVolumeStencil;
-
 struct a2v
 {
   float4 Position  : POSITION; 

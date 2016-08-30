@@ -32,6 +32,9 @@ public:
 	void                 Update();
 	void                 Reset();
 
+	void GetAllVariableCollections(DRS::VariableValuesList* pOutCollectionsList);
+	void SetAllVariableCollections(const DRS::VariableValuesList& collectionsList);
+
 	void                 Serialize(Serialization::IArchive& ar);
 
 private:
@@ -48,6 +51,8 @@ public:
 	static const CHashedString  s_localCollectionName;
 	static const CHashedString  s_contextCollectionName;
 	static const CVariableValue s_newVariableValue;
+
+	typedef std::vector<CVariable*> VariableList;
 
 	CVariableCollection(const CHashedString& name);    //preallocate hint?
 	virtual ~CVariableCollection();
@@ -72,6 +77,8 @@ public:
 	virtual const string&        GetUserString() override                         { return m_userString; }
 	//////////////////////////////////////////////////////////
 
+	VariableList& GetAllVariables() { return m_allResponseVariables; }
+
 	bool       SetVariableValue(CVariable* pVariable, const CVariableValue& newValue, float resetTime /*= -1.0f*/);
 	bool       SetVariableValue(const CHashedString& name, const CVariableValue& newValue, bool createIfNotExisting = true, float resetTime = -1.0f);
 	CVariable* CreateVariable(const CHashedString& name, const CVariableValue& initialValue);
@@ -81,10 +88,9 @@ public:
 
 	//will create the variable if not yet existing
 	CVariable*            CreateOrGetVariable(const CHashedString& variableName);
-	//REMARK: If the variable is not existing, Will return NewVariableValue
+	//REMARK: If the variable is not existing, Will return s_newVariableValue
 	const CVariableValue& GetVariableValue(const CHashedString& name) const;
 
-	string                GetNameAsString() const { return m_name.GetText(); }
 	string                GetVariablesAsString() const;
 
 private:
@@ -101,7 +107,6 @@ private:
 
 	const CHashedString m_name;
 
-	typedef std::vector<CVariable*> VariableList;
 	VariableList m_allResponseVariables;
 
 	typedef std::vector<VariableCooldownInfo> CoolingDownVariableList;

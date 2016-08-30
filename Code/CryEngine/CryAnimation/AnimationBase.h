@@ -6,6 +6,14 @@
 #include "cvars.h"
 #include "AnimationManager.h"
 
+// Angular utilities
+#define DEG2COS(a)   (crymath::cos((a) * (gf_PI / 180.0f)))
+#define COS2DEG(a)   (crymath::acos(a) * (180.0f / gf_PI))
+#define HCOS2RAD(a)  (crymath::acos(a) * 2.0f)
+#define DEG2HCOS(a)  (crymath::cos((a * 0.5f) * (gf_PI / 180.0f)))
+#define DEG2HSIN(a)  (crymath::sin((a * 0.5f) * (gf_PI / 180.0f)))
+#define HCOS2DEG(a)  (crymath::acos(a) * 2.0f * (180.0f / gf_PI))
+
 #define APX_NUM_OF_CGA_ANIMATIONS (200) //to avoid unnecessary resizing of a dynamic array
 #define MAX_FEET_AMOUNT           (4)   //this is used for feetlock
 
@@ -14,11 +22,6 @@
 #define NUM_AIM_FILES             (0x0400) //to avoid resizing in production mode
 
 #define STORE_ANIMATION_NAMES
-
-// Is CRYANIMATION_REPEAT_MOTION is set: When an animation gets started with
-// CA_REPEAT_LAST_KEY and the end of the animation is reached, motion extraction
-// will also keep repeating the final motion
-#define CRYANIMATION_REPEAT_MOTION() 0
 
 ILINE void g_LogToFile(const char* szFormat, ...) PRINTF_PARAMS(1, 2);
 

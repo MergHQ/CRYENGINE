@@ -419,7 +419,7 @@ void CPlayerStateUtil::FinalizeMovementRequest( CPlayer& player, const SActorFra
 		request.allowStrafe = movement.allowStrafe;
 		request.prediction = movement.prediction;
 
-		CRY_ASSERT_TRACE(request.velocity.IsValid(), ("Invalid velocity %.2f %.2f %.2f for %s!", request.velocity.x, request.velocity.y, request.velocity.z, player.GetEntity()->GetEntityTextDescription()));
+		CRY_ASSERT_TRACE(request.velocity.IsValid(), ("Invalid velocity %.2f %.2f %.2f for %s!", request.velocity.x, request.velocity.y, request.velocity.z, player.GetEntity()->GetEntityTextDescription().c_str()));
 
 		NETINPUT_TRACE(player.GetEntityId(), request.rotation * FORWARD_DIRECTION);
 		NETINPUT_TRACE(player.GetEntityId(), request.velocity);
@@ -485,7 +485,6 @@ void CPlayerStateUtil::UpdateRemotePlayersInterpolation( CPlayer& player, const 
 			interVel = desiredVel;
 
 			IPhysicalEntity* pPhysEnt = player.GetEntity()->GetPhysics();
-			CRY_ASSERT_MESSAGE(pPhysEnt, "Entity not physicalized! TomB would like to look at this.");
 
 			const bool isPlayerInAir = player.IsInAir();
 			if (inAir && isPlayerInAir)

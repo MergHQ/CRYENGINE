@@ -6,8 +6,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureRenderGpuSprites = false;
-
 namespace pfx2
 {
 
@@ -60,6 +58,6 @@ void CFeatureRenderGpuSprites::ResolveDependency(CParticleComponent* pComponent)
 	pComponent->SetRuntimeInitializationParameters(params);
 }
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderGpuSprites, "Render", "GPU Sprites", "Editor/Icons/Particles/sprites.png", renderFeatureColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderGpuSprites, "Render", "GPU Sprites", colorRender);
 
 }

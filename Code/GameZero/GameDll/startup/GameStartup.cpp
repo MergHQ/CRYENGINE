@@ -106,22 +106,12 @@ IGameRef CGameStartup::Init(SSystemInitParams& startupParams)
 	GetISystem()->RegisterErrorObserver(&m_errorObsever);
 
 #if defined(CRY_UNIT_TESTING)
-	#if defined(_LIB)
-	CryUnitTest::Test* pTest = CryUnitTest::Test::m_pFirst;
-	for (; pTest != 0; pTest = pTest->m_pNext)
+	if (CryUnitTest::IUnitTestManager* pTestManager = GetISystem()->GetITestSystem()->GetIUnitTestManager())
 	{
-		CryUnitTest::IUnitTestManager* pTestManager = GetISystem()->GetITestSystem()->GetIUnitTestManager();
-		if (pTestManager)
-		{
-			pTest->m_unitTestInfo.module = "StaticBinary";
-			pTestManager->CreateTest(pTest->m_unitTestInfo);
-		}
-	}
+	#if defined(_LIB)
+		pTestManager->CreateTests(CryUnitTest::Test::m_pFirst, "StaticBinary");
 	#endif
 
-	CryUnitTest::IUnitTestManager* pTestManager = GetISystem()->GetITestSystem()->GetIUnitTestManager();
-	if (pTestManager)
-	{
 		const ICmdLineArg* pSkipUnitTest = GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "skip_unit_tests");
 		if (!pSkipUnitTest)
 		{

@@ -8,6 +8,7 @@ class BroadcastableD3D12GraphicsCommandList : public ID3D12GraphicsCommandList
 {
 	template<const int numTargets> friend class BroadcastableD3D12CommandQueue;
 
+public:
 	int m_RefCount;
 	std::array<ID3D12GraphicsCommandList*, numTargets> m_Targets;
 	ID3D12GraphicsCommandList* const* operator[](int i) const { return &m_Targets[i]; }
@@ -30,6 +31,12 @@ public:
 			m_Targets[i] = nullptr;
 			if (UINT nM = (nodeMask & (1 << i)))
 			{
+#if CRY_USE_DX12_MULTIADAPTER_SIMULATION
+				// Always create on the first GPU, if running simulation
+				if (CRenderer::CV_r_StereoEnableMgpu < 0)
+					nM = 1;
+#endif
+
 				HRESULT ret = pDevice->CreateCommandList(
 				  nM, type, *(*pCommandAllocator)[i], pInitialState, riid, (void**)&m_Targets[i]);
 				DX12_ASSERT(ret == S_OK, "Failed to create graphics command list!");
@@ -37,33 +44,58 @@ public:
 		}
 	}
 
-#define Pick(i, func) \
+#define Pick(i, func)                           \
   m_Targets[i]->func;
 
-#define Broadcast(func)                  \
-  if (numTargets > 2)                    \
-  {                                      \
-    for (int i = 0; i < numTargets; ++i) \
-      if (m_Targets[i])                  \
-        m_Targets[i]->func;              \
-  }                                      \
-  else                                   \
-  {                                      \
-    m_Targets[0]->func;                  \
-    m_Targets[1]->func;                  \
+#define Broadcast(func)                         \
+  if (numTargets > 2)                           \
+  {                                             \
+    for (int i = 0; i < numTargets; ++i)        \
+      if (m_Targets[i])                         \
+        m_Targets[i]->func;                     \
+  }                                             \
+  else                                          \
+  {                                             \
+    m_Targets[0]->func;                         \
+    m_Targets[1]->func;                         \
   }
 
-#define Parallelize(func)                \
-  if (numTargets > 2)                    \
-  {                                      \
-    for (int i = 0; i < numTargets; ++i) \
-      if (m_Targets[i])                  \
-        m_Targets[i]->func;              \
-  }                                      \
-  else                                   \
-  {                                      \
-    { int i = 0; m_Targets[0]->func; }   \
-    { int i = 1; m_Targets[1]->func; }   \
+#define Verify(func, message)                   \
+  if (numTargets > 2)                           \
+  {                                             \
+    for (int i = 0; i < numTargets; ++i)        \
+      DX12_ASSERT(func, message);               \
+  }                                             \
+  else                                          \
+  {                                             \
+    { int i = 0; DX12_ASSERT(func, message); }  \
+    { int i = 1; DX12_ASSERT(func, message); }  \
+  }
+
+#define Parallelize(func)                       \
+  if (numTargets > 2)                           \
+  {                                             \
+    for (int i = 0; i < numTargets; ++i)        \
+      if (m_Targets[i])                         \
+        m_Targets[i]->func;                     \
+  }                                             \
+  else                                          \
+  {                                             \
+    { int i = 0; m_Targets[i]->func; }          \
+    { int i = 1; m_Targets[i]->func; }          \
+  }
+
+#define ParallelizeMapped(map, func)            \
+  if (numTargets > 2)                           \
+  {                                             \
+    for (int i = 0; i < numTargets; ++i)        \
+      if (m_Targets[i])                         \
+        m_Targets[map(i)]->func;                \
+  }                                             \
+  else                                          \
+  {                                             \
+    { int i = 0; m_Targets[map(i)]->func; }     \
+    { int i = 1; m_Targets[map(i)]->func; }     \
   }
 
 #define BroadcastWithFail(func)                 \
@@ -75,7 +107,6 @@ public:
     {                                           \
       if (m_Targets[i])                         \
       {                                         \
-        HRESULT ret;                            \
         if ((ret = m_Targets[i]->func) != S_OK) \
           return ret;                           \
       }                                         \
@@ -239,7 +270,17 @@ public:
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableDstBuffer = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pDstBuffer);
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableSrcBuffer = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pSrcBuffer);
 
-		Parallelize(CopyBufferRegion(*(*pBroadcastableDstBuffer)[i], DstOffset, *(*pBroadcastableSrcBuffer)[i], SrcOffset, NumBytes));
+		// For each copy, select the command-list which is on the GPU that owns the source resource: "Push" is the only cross-GPU copy allowed
+		// The current resource-allocation contract disallows GPU-resources to be shared, so the condition will never be true because of it
+		if (false /* pBroadcastableSrcBuffer->IsSharedAndGPUHeap() */)
+		{
+			ParallelizeMapped(pBroadcastableSrcBuffer->GetSharedOrigin, CopyBufferRegion(*(*pBroadcastableDstBuffer)[i], DstOffset, *(*pBroadcastableSrcBuffer)[i], SrcOffset, NumBytes));
+		}
+		// Exception: Copies from the Upload/Readback heap are "Push"able, because it's a CPU-to-GPU copy instead of a GPU-to-GPU one
+		else
+		{
+			Parallelize(CopyBufferRegion(*(*pBroadcastableDstBuffer)[i], DstOffset, *(*pBroadcastableSrcBuffer)[i], SrcOffset, NumBytes));
+		}
 	}
 
 	virtual void STDMETHODCALLTYPE CopyTextureRegion(
@@ -250,18 +291,28 @@ public:
 	  _In_ const D3D12_TEXTURE_COPY_LOCATION* pSrc,
 	  _In_opt_ const D3D12_BOX* pSrcBox) final
 	{
+		BroadcastableD3D12Resource<numTargets>* pBroadcastableDstResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pDst->pResource);
+		BroadcastableD3D12Resource<numTargets>* pBroadcastableSrcResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pSrc->pResource);
+
 		D3D12_TEXTURE_COPY_LOCATION Dst = *pDst;
 		D3D12_TEXTURE_COPY_LOCATION Src = *pSrc;
 
 		for (int i = 0; i < numTargets; ++i)
 		{
-			BroadcastableD3D12Resource<numTargets>* pBroadcastableDstResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pDst->pResource);
-			BroadcastableD3D12Resource<numTargets>* pBroadcastableSrcResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pSrc->pResource);
-
 			Dst.pResource = *(*pBroadcastableDstResource)[i];
 			Src.pResource = *(*pBroadcastableSrcResource)[i];
 
-			Pick(i, CopyTextureRegion(&Dst, DstX, DstY, DstZ, &Src, pSrcBox));
+			// For each copy, select the command-list which is on the GPU that owns the source resource: "Push" is the only cross-GPU copy allowed
+			// The current resource-allocation contract disallows GPU-resources to be shared, so the condition will never be true because of it
+			if (false /* pBroadcastableSrcBuffer->IsSharedAndGPUHeap(i) */)
+			{
+				Pick(pBroadcastableSrcResource->GetSharedOrigin(i), CopyTextureRegion(&Dst, DstX, DstY, DstZ, &Src, pSrcBox));
+			}
+			// Exception: Copies from the Upload/Readback heap are "Push"able, because it's a CPU-to-GPU copy instead of a GPU-to-GPU one
+			else
+			{
+				Pick(i, CopyTextureRegion(&Dst, DstX, DstY, DstZ, &Src, pSrcBox));
+			}
 		}
 	}
 
@@ -272,7 +323,17 @@ public:
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableDstResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pDstResource);
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableSrcResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pSrcResource);
 
-		Parallelize(CopyResource(*(*pBroadcastableDstResource)[i], *(*pBroadcastableSrcResource)[i]));
+		// For each copy, select the command-list which is on the GPU that owns the source resource: "Push" is the only cross-GPU copy allowed
+		// The current resource-allocation contract disallows GPU-resources to be shared, so the condition will never be true because of it
+		if (false /* pBroadcastableSrcBuffer->IsSharedAndGPUHeap() */)
+		{
+			ParallelizeMapped(pBroadcastableSrcResource->GetSharedOrigin, CopyResource(*(*pBroadcastableDstResource)[i], *(*pBroadcastableSrcResource)[i]));
+		}
+		// Exception: Copies from the Upload/Readback heap are "Push"able, because it's a CPU-to-GPU copy instead of a GPU-to-GPU one
+		else
+		{
+			Parallelize(CopyResource(*(*pBroadcastableDstResource)[i], *(*pBroadcastableSrcResource)[i]));
+		}
 	}
 
 	virtual void STDMETHODCALLTYPE CopyTiles(
@@ -342,55 +403,61 @@ public:
 	  _In_reads_(NumBarriers)  const D3D12_RESOURCE_BARRIER* pBarriers) final
 	{
 		D3D12_RESOURCE_BARRIER* Barriers = (D3D12_RESOURCE_BARRIER*)alloca(sizeof(D3D12_RESOURCE_BARRIER) * NumBarriers);
+		UINT numBarriers = NumBarriers;
 
-		DX12_ASSERT(NumBarriers <= 1, "Currently there is no reliable support for N resource-barriers when using multi-gpu!");
+		// Even though shared resources can only be used for CopyResource/Copy...Region/UpdateSubresource
+		// they can cycle through COPY_SOURCE/COPY_DEST for that effect, and need support for regular barriers
+
 		for (int i = 0; i < numTargets; ++i)
 		{
+			numBarriers = 0;
 			bool skip = false;
 			for (int n = 0; n < NumBarriers; ++n)
 			{
-				Barriers[n] = pBarriers[n];
-				switch (Barriers[n].Type)
+				Barriers[numBarriers] = pBarriers[n];
+				switch (Barriers[numBarriers].Type)
 				{
 				case D3D12_RESOURCE_BARRIER_TYPE_TRANSITION:
-					{
-						BroadcastableD3D12Resource<numTargets>* pBroadcastableResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(Barriers[n].Transition.pResource);
+				{
+					BroadcastableD3D12Resource<numTargets>* pBroadcastableResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(Barriers[n].Transition.pResource);
 
-						Barriers[n].Transition.pResource = (ID3D12Resource*)*(*pBroadcastableResource)[i];
+					Barriers[numBarriers].Transition.pResource = (ID3D12Resource*)*(*pBroadcastableResource)[i];
 
-						skip = pBroadcastableResource->IsShared(i);
-					}
-					break;
-				case D3D12_RESOURCE_BARRIER_TYPE_ALIASING:
-					{
-						BroadcastableD3D12Resource<numTargets>* pBroadcastableResourceBefore = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(Barriers[n].Aliasing.pResourceBefore);
-						BroadcastableD3D12Resource<numTargets>* pBroadcastableResourceAfter = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(Barriers[n].Aliasing.pResourceAfter);
-
-						Barriers[n].Aliasing.pResourceBefore = (ID3D12Resource*)*(*pBroadcastableResourceBefore)[i];
-						Barriers[n].Aliasing.pResourceAfter = (ID3D12Resource*)*(*pBroadcastableResourceAfter)[i];
-
-						skip =
-						  pBroadcastableResourceBefore->IsShared(i) ||
-						  pBroadcastableResourceAfter->IsShared(i);
-					}
-					break;
-				case D3D12_RESOURCE_BARRIER_TYPE_UAV:
-					{
-						BroadcastableD3D12Resource<numTargets>* pBroadcastableResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(Barriers[n].UAV.pResource);
-
-						Barriers[n].UAV.pResource = (ID3D12Resource*)*(*pBroadcastableResource)[i];
-
-						skip = pBroadcastableResource->IsShared(i);
-					}
-					break;
+					skip =
+						pBroadcastableResource->IsShared(i);
 				}
+				break;
+				case D3D12_RESOURCE_BARRIER_TYPE_ALIASING:
+				{
+					BroadcastableD3D12Resource<numTargets>* pBroadcastableResourceBefore = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(Barriers[n].Aliasing.pResourceBefore);
+					BroadcastableD3D12Resource<numTargets>* pBroadcastableResourceAfter = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(Barriers[n].Aliasing.pResourceAfter);
+
+					Barriers[numBarriers].Aliasing.pResourceBefore = (ID3D12Resource*)*(*pBroadcastableResourceBefore)[i];
+					Barriers[numBarriers].Aliasing.pResourceAfter = (ID3D12Resource*)*(*pBroadcastableResourceAfter)[i];
+
+					skip =
+						pBroadcastableResourceBefore->IsShared(i) ||
+						pBroadcastableResourceAfter->IsShared(i);
+				}
+				break;
+				case D3D12_RESOURCE_BARRIER_TYPE_UAV:
+				{
+					BroadcastableD3D12Resource<numTargets>* pBroadcastableResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(Barriers[n].UAV.pResource);
+
+					Barriers[numBarriers].UAV.pResource = (ID3D12Resource*)*(*pBroadcastableResource)[i];
+
+					skip =
+						pBroadcastableResource->IsShared(i);
+				}
+				break;
+				}
+
+				// Don't issue transition barriers multiple times for the same resource
+				if (!skip)
+					numBarriers++;
 			}
 
-			// Don't issue transition barriers multiple times for the same resource (NOTE: doesn't work with N barriers currently)
-			if (skip)
-				continue;
-
-			Pick(i, ResourceBarrier(NumBarriers, Barriers));
+			Pick(i, ResourceBarrier(numBarriers, Barriers));
 		}
 	}
 
@@ -438,6 +505,7 @@ public:
 	  _In_ D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor) final
 	{
 		auto GPUDeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetGPUDeltasFromHandle(UINT32(BaseDescriptor.ptr >> 32));
+		Verify(((BaseDescriptor.ptr >> 32) == 0) || (GPUDeltaDescriptors[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		D3D12_GPU_DESCRIPTOR_HANDLE GPUDescriptor = BaseDescriptor;
 		for (int i = 0; i < numTargets; ++i)
@@ -453,6 +521,7 @@ public:
 	  _In_ D3D12_GPU_DESCRIPTOR_HANDLE BaseDescriptor) final
 	{
 		auto GPUDeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetGPUDeltasFromHandle(UINT32(BaseDescriptor.ptr >> 32));
+		Verify(((BaseDescriptor.ptr >> 32) == 0) || (GPUDeltaDescriptors[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		D3D12_GPU_DESCRIPTOR_HANDLE GPUDescriptor = BaseDescriptor;
 		for (int i = 0; i < numTargets; ++i)
@@ -502,6 +571,7 @@ public:
 	  _In_ D3D12_GPU_VIRTUAL_ADDRESS BufferLocation) final
 	{
 		auto DeltaLocations = BroadcastableD3D12Resource<numTargets>::GetGPUDeltasFromHandle(UINT32(BufferLocation >> 32));
+		Verify(((BufferLocation >> 32) == 0) || (DeltaLocations[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		Parallelize(SetComputeRootConstantBufferView(RootParameterIndex, BufferLocation + DeltaLocations[i]));
 	}
@@ -511,6 +581,7 @@ public:
 	  _In_ D3D12_GPU_VIRTUAL_ADDRESS BufferLocation) final
 	{
 		auto DeltaLocations = BroadcastableD3D12Resource<numTargets>::GetGPUDeltasFromHandle(UINT32(BufferLocation >> 32));
+		Verify(((BufferLocation >> 32) == 0) || (DeltaLocations[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		Parallelize(SetGraphicsRootConstantBufferView(RootParameterIndex, BufferLocation + DeltaLocations[i]));
 	}
@@ -520,6 +591,7 @@ public:
 	  _In_ D3D12_GPU_VIRTUAL_ADDRESS BufferLocation) final
 	{
 		auto DeltaLocations = BroadcastableD3D12Resource<numTargets>::GetGPUDeltasFromHandle(UINT32(BufferLocation >> 32));
+		Verify(((BufferLocation >> 32) == 0) || (DeltaLocations[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		Parallelize(SetComputeRootShaderResourceView(RootParameterIndex, BufferLocation + DeltaLocations[i]));
 	}
@@ -529,6 +601,7 @@ public:
 	  _In_ D3D12_GPU_VIRTUAL_ADDRESS BufferLocation) final
 	{
 		auto DeltaLocations = BroadcastableD3D12Resource<numTargets>::GetGPUDeltasFromHandle(UINT32(BufferLocation >> 32));
+		Verify(((BufferLocation >> 32) == 0) || (DeltaLocations[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		Parallelize(SetGraphicsRootShaderResourceView(RootParameterIndex, BufferLocation + DeltaLocations[i]));
 	}
@@ -538,6 +611,7 @@ public:
 	  _In_ D3D12_GPU_VIRTUAL_ADDRESS BufferLocation) final
 	{
 		auto DeltaLocations = BroadcastableD3D12Resource<numTargets>::GetGPUDeltasFromHandle(UINT32(BufferLocation >> 32));
+		Verify(((BufferLocation >> 32) == 0) || (DeltaLocations[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		Parallelize(SetComputeRootUnorderedAccessView(RootParameterIndex, BufferLocation + DeltaLocations[i]));
 	}
@@ -547,6 +621,7 @@ public:
 	  _In_ D3D12_GPU_VIRTUAL_ADDRESS BufferLocation) final
 	{
 		auto DeltaLocations = BroadcastableD3D12Resource<numTargets>::GetGPUDeltasFromHandle(UINT32(BufferLocation >> 32));
+		Verify(((BufferLocation >> 32) == 0) || (DeltaLocations[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		Parallelize(SetGraphicsRootUnorderedAccessView(RootParameterIndex, BufferLocation + DeltaLocations[i]));
 	}
@@ -562,11 +637,13 @@ public:
 		}
 
 		auto DeltaLocations = BroadcastableD3D12Resource<numTargets>::GetGPUDeltasFromHandle(UINT32(pView->BufferLocation >> 32));
+		Verify(((pView->BufferLocation >> 32) == 0) || (DeltaLocations[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		D3D12_INDEX_BUFFER_VIEW View = *pView;
 		for (int i = 0; i < numTargets; ++i)
 		{
 			View.BufferLocation = pView->BufferLocation + DeltaLocations[i];
+
 			Pick(i, IASetIndexBuffer(&View));
 		}
 	}
@@ -590,6 +667,7 @@ public:
 			for (UINT n = 0; n < NumViews; ++n)
 			{
 				auto DeltaLocations = BroadcastableD3D12Resource<numTargets>::GetGPUDeltasFromHandle(UINT32(pViews[n].BufferLocation >> 32));
+				DX12_ASSERT(((pViews[n].BufferLocation >> 32) == 0) || (DeltaLocations[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 				Views[n] = pViews[n];
 				Views[n].BufferLocation = pViews[n].BufferLocation + DeltaLocations[i];
@@ -619,6 +697,8 @@ public:
 			{
 				auto DeltaLocations = BroadcastableD3D12Resource<numTargets>::GetGPUDeltasFromHandle(UINT32(pViews[n].BufferLocation >> 32));
 				auto DeltaFilledSizeLocations = BroadcastableD3D12Resource<numTargets>::GetGPUDeltasFromHandle(UINT32(pViews[n].BufferFilledSizeLocation >> 32));
+				DX12_ASSERT(((pViews[n].BufferLocation >> 32) == 0) || (DeltaLocations[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
+				DX12_ASSERT(((pViews[n].BufferFilledSizeLocation >> 32) == 0) || (DeltaFilledSizeLocations[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 				Views[n] = pViews[n];
 				Views[n].BufferLocation = pViews[n].BufferLocation + DeltaLocations[i];
@@ -647,6 +727,7 @@ public:
 				for (int n = 0; n < (RTsSingleHandleToDescriptorRange ? 1 : NumRenderTargetDescriptors); ++n)
 				{
 					auto RenderTargetDeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetCPUDeltasFromHandle(UINT32(pRenderTargetDescriptors[n].ptr >> 32));
+					DX12_ASSERT(((pRenderTargetDescriptors[n].ptr >> 32) == 0) || (RenderTargetDeltaDescriptors[i] != 0), "CPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 					RenderTargetDescriptors[n] = pRenderTargetDescriptors[n];
 					RenderTargetDescriptors[n].ptr = pRenderTargetDescriptors[n].ptr + RenderTargetDeltaDescriptors[i];
@@ -657,6 +738,7 @@ public:
 			if (pDepthStencilDescriptor)
 			{
 				auto DepthStencilDeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetCPUDeltasFromHandle(UINT32(pDepthStencilDescriptor->ptr >> 32));
+				DX12_ASSERT(((pDepthStencilDescriptor->ptr >> 32) == 0) || (DepthStencilDeltaDescriptors[i] != 0), "CPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 				DepthStencilDescriptor = pDepthStencilDescriptor[0];
 				DepthStencilDescriptor.ptr = pDepthStencilDescriptor->ptr + DepthStencilDeltaDescriptors[i];
@@ -679,6 +761,8 @@ public:
 		D3D12_CPU_DESCRIPTOR_HANDLE Descriptor = DepthStencilView;
 		for (int i = 0; i < numTargets; ++i)
 		{
+			DX12_ASSERT(((DepthStencilView.ptr >> 32) == 0) || (DeltaDescriptors[i] != 0), "CPUAddressCorruption! It should not be possible to receive 0 deltas.");
+
 			Descriptor.ptr = DepthStencilView.ptr + DeltaDescriptors[i];
 
 			Pick(i, ClearDepthStencilView(Descriptor, ClearFlags, Depth, Stencil, NumRects, pRects));
@@ -692,6 +776,7 @@ public:
 	  _In_reads_(NumRects)  const D3D12_RECT* pRects) final
 	{
 		auto DeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetCPUDeltasFromHandle(UINT32(RenderTargetView.ptr >> 32));
+		Verify(((RenderTargetView.ptr >> 32) == 0) || (DeltaDescriptors[i] != 0), "CPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		D3D12_CPU_DESCRIPTOR_HANDLE Descriptor = RenderTargetView;
 		for (int i = 0; i < numTargets; ++i)
@@ -713,6 +798,8 @@ public:
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pResource);
 		auto GPUDeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetGPUDeltasFromHandle(UINT32(ViewGPUHandleInCurrentHeap.ptr >> 32));
 		auto CPUDeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetCPUDeltasFromHandle(UINT32(ViewCPUHandle.ptr >> 32));
+		Verify(((ViewGPUHandleInCurrentHeap.ptr >> 32) == 0) || (GPUDeltaDescriptors[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
+		Verify(((ViewCPUHandle.ptr >> 32) == 0) || (CPUDeltaDescriptors[i] != 0), "CPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		D3D12_GPU_DESCRIPTOR_HANDLE GPUDescriptor = ViewGPUHandleInCurrentHeap;
 		D3D12_CPU_DESCRIPTOR_HANDLE CPUDescriptor = ViewCPUHandle;
@@ -736,6 +823,8 @@ public:
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pResource);
 		auto GPUDeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetGPUDeltasFromHandle(UINT32(ViewGPUHandleInCurrentHeap.ptr >> 32));
 		auto CPUDeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetCPUDeltasFromHandle(UINT32(ViewCPUHandle.ptr >> 32));
+		Verify(((ViewGPUHandleInCurrentHeap.ptr >> 32) == 0) || (GPUDeltaDescriptors[i] != 0), "GPUAddressCorruption! It should not be possible to receive 0 deltas.");
+		Verify(((ViewCPUHandle.ptr >> 32) == 0) || (CPUDeltaDescriptors[i] != 0), "CPUAddressCorruption! It should not be possible to receive 0 deltas.");
 
 		D3D12_GPU_DESCRIPTOR_HANDLE GPUDescriptor = ViewGPUHandleInCurrentHeap;
 		D3D12_CPU_DESCRIPTOR_HANDLE CPUDescriptor = ViewCPUHandle;
@@ -788,6 +877,8 @@ public:
 		BroadcastableD3D12QueryHeap<numTargets>* pQueryHeap = (BroadcastableD3D12QueryHeap<numTargets>*)pQueryHeap_;
 		BroadcastableD3D12Resource<numTargets>* pDestinationBuffer = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pDestinationBuffer_);
 
+		// TODO: IsShared() possible?
+
 		Parallelize(ResolveQueryData((ID3D12QueryHeap*)*(*pQueryHeap)[i], Type, StartIndex, NumQueries, *(*pDestinationBuffer)[i], AlignedDestinationBufferOffset));
 	}
 
@@ -804,6 +895,8 @@ public:
 		}
 
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableBuffer = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pBuffer);
+
+		// TODO: IsShared() possible?
 
 		Parallelize(SetPredication(*(*pBroadcastableBuffer)[i], AlignedBufferOffset, Operation));
 	}
@@ -841,5 +934,17 @@ public:
 	}
 
 	#pragma endregion
+
+	inline void CopyResourceOvercross(
+		ID3D12Resource* pDstResource,
+		ID3D12Resource* pSrcResource
+	)
+	{
+		BroadcastableD3D12Resource<numTargets>* pDstResources = (BroadcastableD3D12Resource<numTargets>*)pDstResource;
+		BroadcastableD3D12Resource<numTargets>* pSrcResources = (BroadcastableD3D12Resource<numTargets>*)pSrcResource;
+
+		m_Targets[0]->CopyResource(*(*pDstResources)[1], *(*pSrcResources)[0]);
+		m_Targets[1]->CopyResource(*(*pDstResources)[0], *(*pSrcResources)[1]);
+	}
 
 };

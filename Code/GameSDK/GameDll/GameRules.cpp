@@ -1531,7 +1531,6 @@ void CGameRules::ApplyLoadoutChange()
 	IActor *pClientActor = g_pGame->GetIGameFramework()->GetClientActor();
 	CEquipmentLoadout *pEquipmentLoadout = g_pGame->GetEquipmentLoadout();
 
-	CRY_ASSERT(pClientActor);
 	if (pClientActor != NULL && pEquipmentLoadout != NULL)
 	{
 		uint16 gameChannelId = pClientActor->GetChannelId();
@@ -2319,7 +2318,7 @@ void CGameRules::PrecacheLevelResource(const char* resourceName, EGameResourceTy
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	INDENT_LOG_DURING_SCOPE(true, "While %s is precaching level resource '%s' (resourceType=%d)...", GetEntity()->GetEntityTextDescription(), resourceName, resourceType);
+	INDENT_LOG_DURING_SCOPE(true, "While %s is precaching level resource '%s' (resourceType=%d)...", GetEntity()->GetEntityTextDescription().c_str(), resourceName, resourceType);
 
 	switch(resourceType)
 	{
@@ -2345,7 +2344,7 @@ XmlNodeRef CGameRules::LoadLevelXml()
 	string levelName = pGameFramework->GetLevelName();
 	levelName = PathUtil::GetFileName(levelName);	// ensure we don't have anything like !testmap/ in the path
 
-	INDENT_LOG_DURING_SCOPE(true, "While %s is loading level XML '%s'", GetEntity()->GetEntityTextDescription(), levelName.c_str());
+	INDENT_LOG_DURING_SCOPE(true, "While %s is loading level XML '%s'", GetEntity()->GetEntityTextDescription().c_str(), levelName.c_str());
 
 	if(!IsValidName(levelName))
 	{
@@ -5684,7 +5683,7 @@ void CGameRules::OnCollision_NotifyAI( const EventPhys * pEvent )
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 	// Skip the collision handling if there is no AI system or when in multi-player.
-	if (!gEnv->pAISystem || (gEnv->bMultiplayer && !gEnv->bServer)) // Márcio: Enabling AI in Multiplayer!
+	if (!gEnv->pAISystem || (gEnv->bMultiplayer && !gEnv->bServer)) // MÃ¡rcio: Enabling AI in Multiplayer!
 		return;
 
 	IActorSystem* pActorSystem = g_pGame->GetIGameFramework()->GetIActorSystem();

@@ -85,11 +85,11 @@ void CMotionBlurStage::Execute()
 		m_passPacking.BeginConstantUpdate();
 
 		mViewProjPrev.Transpose();
-		pShader->FXSetPSFloat(viewProjPrevName, (Vec4*)mViewProjPrev.GetData(), 4);
-		pShader->FXSetPSFloat(dirBlurName, &dirBlurParam, 1);
-		pShader->FXSetPSFloat(radBlurName, &radBlurParam, 1);
-		const Vec4 motionBlurParams = Vec4(ComputeMotionScale(), 1.0f / tileCountX, 1.0f / tileCountX * CRenderer::CV_r_MotionBlurCameraMotionScale, 0);
-		pShader->FXSetPSFloat(motionBlurParamName, &motionBlurParams, 1);
+		m_passPacking.SetConstantArray(eHWSC_Pixel, viewProjPrevName, (Vec4*)mViewProjPrev.GetData(), 4);
+		m_passPacking.SetConstant(eHWSC_Pixel, dirBlurName, dirBlurParam);
+		m_passPacking.SetConstant(eHWSC_Pixel, radBlurName, radBlurParam);
+		m_passPacking.SetConstant(eHWSC_Pixel, motionBlurParamName, 
+			Vec4(ComputeMotionScale(), 1.0f / tileCountX, 1.0f / tileCountX * CRenderer::CV_r_MotionBlurCameraMotionScale, 0));
 
 		m_passPacking.Execute();
 
@@ -120,7 +120,7 @@ void CMotionBlurStage::Execute()
 			m_passTileGen1.BeginConstantUpdate();
 
 			Vec4 params = Vec4((float)CTexture::s_ptexVelocity->GetWidth(), (float)CTexture::s_ptexVelocity->GetHeight(), ceilf((float)gcpRendD3D->GetWidth() / tileCountX), 0);
-			pShader->FXSetPSFloat(motionBlurParamName, &params, 1);
+			m_passTileGen1.SetConstant(eHWSC_Pixel, motionBlurParamName, params);
 
 			m_passTileGen1.Execute();
 		}
@@ -138,7 +138,7 @@ void CMotionBlurStage::Execute()
 			m_passTileGen2.BeginConstantUpdate();
 
 			Vec4 params = Vec4((float)CTexture::s_ptexVelocityTiles[0]->GetWidth(), (float)CTexture::s_ptexVelocityTiles[0]->GetHeight(), ceilf((float)gcpRendD3D->GetHeight() / tileCountY), 1);
-			pShader->FXSetPSFloat(motionBlurParamName, &params, 1);
+			m_passTileGen2.SetConstant(eHWSC_Pixel, motionBlurParamName, params);
 
 			m_passTileGen2.Execute();
 		}
@@ -156,7 +156,7 @@ void CMotionBlurStage::Execute()
 			m_passNeighborMax.BeginConstantUpdate();
 
 			Vec4 params = Vec4(1.0f / tileCountX, 1.0f / tileCountY, 0, 0);
-			pShader->FXSetPSFloat(motionBlurParamName, &params, 1);
+			m_passNeighborMax.SetConstant(eHWSC_Pixel, motionBlurParamName, params);
 
 			m_passNeighborMax.Execute();
 		}
@@ -188,7 +188,7 @@ void CMotionBlurStage::Execute()
 		m_passMotionBlur.BeginConstantUpdate();
 
 		Vec4 params = Vec4(1.0f / tileCountX, 1.0f / tileCountY, 0, 0);
-		pShader->FXSetPSFloat(motionBlurParamName, &params, 1);
+		m_passMotionBlur.SetConstant(eHWSC_Pixel, motionBlurParamName, params);
 
 		m_passMotionBlur.Execute();
 	}

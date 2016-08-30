@@ -11,12 +11,14 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef __D_VMATH_NEON__
-	#define __D_VMATH_NEON__
+#pragma once
 
-	#include <arm_neon.h>
+#include <arm_neon.h>
 
-typedef float32x4_t vec4;
+namespace NVMath
+{
+
+	typedef float32x4_t vec4;
 
 	#include "VMath_Prototypes.hpp"
 
@@ -541,6 +543,6 @@ ILINE vec4 SelectStatic(vec4 V0, vec4 V1)
 	return Select(V0, V1, mask);
 }
 
-#endif // __D_VMATH_NEON__
+}
 
 #undef AVOID_COMPILER_BUG

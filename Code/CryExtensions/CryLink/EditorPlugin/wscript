@@ -1,0 +1,25 @@
+#############################################################################
+## Crytek Source File
+## Copyright (C) 2015, Crytek Studios
+##
+## Creator: Dominique Mader
+## Date: October 2, 2015
+## Description: WAF based build system
+#############################################################################
+
+def build(bld):	
+	files = bld.read_file_list('editorplugin.waf_files')
+
+	bld.CryPlugin(
+		target = 'EditorCryLink',
+		vs_filter = 'Sandbox/Plugins/Extensions',
+		file_list = 'editorplugin.waf_files',
+		module_extensions = ['toolkit_pro'],
+		includes = [
+			'.',
+			'..',
+			Path('Code/CryExtensions/CryLink/Interface'),
+			Path('Code/SDKs/XT_13_4/Include'), 
+		],						
+		use = [ 'Editor', 'EditorCommon' ]
+	)

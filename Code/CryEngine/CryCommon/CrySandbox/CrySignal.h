@@ -123,6 +123,24 @@ protected:
 	typedef Observer<void (Arg1, Arg2, Arg3, Arg4)> TObserver;
 	std::vector<TObserver> m_observers;
 };
+
+template<typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
+class CrySignalBase<void(Arg1, Arg2, Arg3, Arg4, Arg5)>
+{
+public:
+	void operator()(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5) const
+	{
+		const int count = m_observers.size();
+		for (int i = count - 1; i >= 0; i--)
+		{
+			m_observers[i].m_function(arg1, arg2, arg3, arg4, arg5);
+		}
+	}
+
+protected:
+	typedef Observer<void(Arg1, Arg2, Arg3, Arg4, Arg5)> TObserver;
+	std::vector<TObserver> m_observers;
+};
 }
 
 //////////////////////////////////////////////////////////////////////////

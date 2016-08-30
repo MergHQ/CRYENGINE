@@ -45,10 +45,11 @@ public:
 	//////////////////////////////////////////////////////////
 	// IResponseActionInstance implementation
 	virtual eCurrentState Update() override;
-	virtual void          Cancel() override { m_finishTime = 0; }
+	virtual void          Cancel() override { m_finishTime = 0.0f; }
 	//////////////////////////////////////////////////////////
 
 private:
 	float m_finishTime;
 };
+
 } // namespace CryDRS

@@ -85,7 +85,7 @@ void CFilterBlurring::Render()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CColorGrading::UpdateParams(SColorGradingMergeParams& pMergeParams)
+bool CColorGrading::UpdateParams(SColorGradingMergeParams& pMergeParams, bool bUpdateChart)
 {
 	float fSharpenAmount = max(m_pSharpenAmount->GetParam(), 0.0f);
 
@@ -200,19 +200,15 @@ bool CColorGrading::UpdateParams(SColorGradingMergeParams& pMergeParams)
 	pMergeParams.pSelectiveColor[1] = pParams4;
 
 	// Always using color charts
-
-	if (gcpRendD3D->m_pColorGradingControllerD3D && (gEnv->IsCutscenePlaying() || (gRenDev->GetFrameID(false) % max(1, CRenderer::CV_r_ColorgradingChartsCache)) == 0))
+	if (bUpdateChart)
 	{
-		if (!gcpRendD3D->m_pColorGradingControllerD3D->Update(&pMergeParams))
-			return false;
+		if (gcpRendD3D->m_pColorGradingControllerD3D && (gEnv->IsCutscenePlaying() || (gRenDev->GetFrameID(false) % max(1, CRenderer::CV_r_ColorgradingChartsCache)) == 0))
+		{
+			if (!gcpRendD3D->m_pColorGradingControllerD3D->Update(&pMergeParams))
+				return false;
+		}
+
 	}
-
-	// If using merged color grading with color chart disable regular color transformations in display - only need to use color chart
-	pMergeParams.nFlagsShaderRT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE0] | g_HWSR_MaskBit[HWSR_SAMPLE2] | g_HWSR_MaskBit[HWSR_SAMPLE4]);
-
-	//// Always using color charts - %SAMPLE5 for defining volume lookup
-	//if( gcpRendD3D->m_pColorGradingControllerD3D && gcpRendD3D->m_pColorGradingControllerD3D->GetColorChart() && gcpRendD3D->m_pColorGradingControllerD3D->GetColorChart()->GetTexType() == eTT_3D)
-	//	pMergeParams.nFlagsShaderRT |= g_HWSR_MaskBit[HWSR_SAMPLE5];
 
 	return true;
 }
@@ -279,7 +275,7 @@ void CPostAA::ApplySMAA(CTexture*& pCurrRT)
 			GetUtils().BeginStencilPrePass(false, true);
 
 		GetUtils().SetTexture(pCurrRT, 0, FILTER_POINT);
-		SD3DPostEffectsUtils::DrawFullScreenTriWPOS(iWidth, iHeight);
+		SD3DPostEffectsUtils::DrawFullScreenTri(iWidth, iHeight);
 
 		GetUtils().ShEndPass();
 
@@ -304,7 +300,7 @@ void CPostAA::ApplySMAA(CTexture*& pCurrRT)
 		GetUtils().SetTexture(m_pAreaSMAA, 1, FILTER_LINEAR);
 		GetUtils().SetTexture(m_pSearchSMAA, 2, FILTER_POINT);
 
-		SD3DPostEffectsUtils::DrawFullScreenTriWPOS(iWidth, iHeight);
+		SD3DPostEffectsUtils::DrawFullScreenTri(iWidth, iHeight);
 
 		GetUtils().ShEndPass();
 
@@ -325,7 +321,7 @@ void CPostAA::ApplySMAA(CTexture*& pCurrRT)
 		GetUtils().SetTexture(pBlendTex, 0, FILTER_POINT);
 		GetUtils().SetTexture(pCurrRT, 1, FILTER_LINEAR);
 
-		SD3DPostEffectsUtils::DrawFullScreenTriWPOS(iWidth, iHeight);
+		SD3DPostEffectsUtils::DrawFullScreenTri(iWidth, iHeight);
 
 		GetUtils().ShEndPass();
 
@@ -351,7 +347,7 @@ void CPostAA::Render()
 	static CCryNameTSCRC TechName("PostAA");
 	CShader* pShader = CShaderMan::s_shPostAA;
 
-	if (gcpRendD3D->IsHDRModeEnabled() && (nAAMode & (eAT_SMAA_MASK | eAT_FXAA_MASK | eAT_MSAA_MASK)) && pCurrRT)
+	if (gcpRendD3D->IsHDRModeEnabled() && (nAAMode & (eAT_SMAA_MASK | eAT_FXAA_MASK)) && pCurrRT)
 		gcpRendD3D->FX_PopRenderTarget(0);
 
 	gcpRendD3D->FX_SetActiveRenderTargets();// Avoiding d3d error (due deferred rt setup, ping-pong'ing between RTs we can bump into RTs still bound when binding it as a SRV - on this particular case, we would get a permanent black screen)
@@ -547,7 +543,7 @@ void CPostAA::ApplyComposites(CTexture* pCurrRT)
 	}
 
 	GetUtils().SetTexture(pCurrRT, 0, FILTER_LINEAR);
-	SD3DPostEffectsUtils::DrawFullScreenTriWPOS(CTexture::s_ptexBackBuffer->GetWidth(), CTexture::s_ptexBackBuffer->GetHeight());
+	SD3DPostEffectsUtils::DrawFullScreenTri(CTexture::s_ptexBackBuffer->GetWidth(), CTexture::s_ptexBackBuffer->GetHeight());
 	GetUtils().ShEndPass();
 }
 
@@ -560,6 +556,8 @@ void CPostAA::UpscaleImage()
 		return;
 
 	PROFILE_LABEL_SCOPE("NATIVE_UPSCALE");
+
+	gcpRendD3D->GetGraphicsPipeline().SwitchToLegacyPipeline();
 
 	gcpRendD3D->FX_PushWireframeMode(R_SOLID_MODE);
 

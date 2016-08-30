@@ -113,6 +113,50 @@ class CNetContextState;
 // implementation of IArithModel for the network engine
 class CArithModel
 {
+private:
+	struct STimeAdaption
+	{
+		STimeAdaption()
+		{
+			timeFraction32 = 0;
+		}
+
+		CTimeValue startTime;
+		CTimeValue lastTime;
+
+		struct STimeDelta
+		{
+			STimeDelta() { Reset(); }
+			STimeDelta(const STimeDelta& other) : rate(other.rate), error(other.error) {}
+			STimeDelta& operator=(const STimeDelta& other) { rate = other.rate; error = other.error; return *this; }
+			uint32 rate;
+			uint32 error;
+
+			uint16 Left() const
+			{
+				if (rate > error)
+					return rate - error;
+				else
+					return 0;
+			}
+			uint16 Right() const
+			{
+				uint32 sum = uint32(error) + rate;
+				if (sum > 65535)
+					return 65535;
+				else
+					return uint16(sum);
+			}
+			void Update(uint16 encodedDelta, bool hit);
+			void Reset();
+		};
+		STimeDelta startDelta;
+		STimeDelta frameDelta;
+
+		uint32     timeFraction32;
+		bool       isInFrame;
+	};
+
 public:
 	CArithModel();
 	~CArithModel();
@@ -120,6 +164,9 @@ public:
 	CArithModel&      operator=(const CArithModel&);
 
 	size_t            GetSize();
+
+	void              SetTimeFraction(uint32 timeFraction32);
+	uint32            GetTimeFraction() const;
 
 	void              SetNetContextState(CNetContextState* pContext) { m_pNetContext = pContext; }
 	CNetContextState* GetNetContextState()                           { return m_pNetContext; }
@@ -139,6 +186,10 @@ public:
 	{
 		m_stringTable.ReadString(in, szString, this);
 	}
+
+	bool         IsTimeInFrame(ETimeStream time) const;
+	int64        WriteGetTimeDelta(ETimeStream time, const CTimeValue& value, STimeAdaption::STimeDelta** pOutDeltaInfo = 0);
+	CTimeValue   ReadTimeWithDelta(CCommInputStream& stm, ETimeStream time, int64 delta);
 
 	void         WriteTime(CCommOutputStream&, ETimeStream stream, CTimeValue timeValue);
 	CTimeValue   ReadTime(CCommInputStream&, ETimeStream stream);
@@ -170,41 +221,8 @@ private:
 	CStringTable                m_stringTable;
 
 	// stores parameters for the time stream adaption
-	struct STimeAdaption
-	{
-		CTimeValue startTime;
-		CTimeValue lastTime;
 
-		struct STimeDelta
-		{
-			STimeDelta() { Reset(); }
-			STimeDelta(const STimeDelta& other) : rate(other.rate), error(other.error) {}
-			STimeDelta& operator=(const STimeDelta& other) { rate = other.rate; error = other.error; return *this; }
-			uint16 rate;
-			uint16 error;
-			uint16 Left() const
-			{
-				if (rate > error)
-					return rate - error;
-				else
-					return 0;
-			}
-			uint16 Right() const
-			{
-				uint32 sum = uint32(error) + rate;
-				if (sum > 65535)
-					return 65535;
-				else
-					return uint16(sum);
-			}
-			void Update(uint16 encodedDelta, bool hit);
-			void Reset();
-		};
-		STimeDelta startDelta;
-		STimeDelta frameDelta;
-
-		bool       isInFrame;
-	};
+	uint32        m_timeFraction32;
 	STimeAdaption m_vTimeAdaption[NUM_TIME_STREAMS];
 };
 

@@ -972,8 +972,8 @@ bool CVehicleSeat::StandUp()
 	if (!pActor)
 		return false;
 
-	const string actorTextDescription = pActor->GetEntity()->GetEntityTextDescription();
-	const string vehicleTextDescription = m_pVehicle->GetEntity()->GetEntityTextDescription();
+	const string actorTextDescription = pActor->GetEntity()->GetEntityTextDescription().c_str();
+	const string vehicleTextDescription = m_pVehicle->GetEntity()->GetEntityTextDescription().c_str();
 	CryLog("Making %s leave %s", actorTextDescription.c_str(), vehicleTextDescription.c_str());
 	INDENT_LOG_DURING_SCOPE();
 
@@ -2333,6 +2333,15 @@ bool CVehicleSeat::RequestMovement(CMovementRequest& movementRequest)
 	return true;
 }
 
+// we use this function for computing SMovementState::eyeDirection and SMovementState::upDirecton from a transformation matrix that might hold a scaling
+static Vec3 RotateAndNormalize(const Matrix34& tm, const Vec3& vectorToRotateAndNormalize)
+{
+	Matrix33 orientation;
+	tm.GetRotation33(orientation);
+	const Vec3 transformedVector = orientation * vectorToRotateAndNormalize;
+	return transformedVector.GetNormalized();
+}
+
 //------------------------------------------------------------------------
 void CVehicleSeat::GetMovementState(SMovementState& movementState)
 {
@@ -2349,20 +2358,20 @@ void CVehicleSeat::GetMovementState(SMovementState& movementState)
 
 	// todo: is this really intended?
 	movementState.pos = worldTM.GetTranslation();
-	movementState.upDirection = worldTM.GetColumn(2);
+	movementState.upDirection = RotateAndNormalize(worldTM, Vec3(0, 0, 1));
 	// ~todo
 
 	if (m_pAimPart)
 	{
 		const Matrix34& partWorldTM = m_pAimPart->GetWorldTM();
 		movementState.eyePosition = partWorldTM.GetTranslation();
-		movementState.eyeDirection = partWorldTM.GetColumn(1);
+		movementState.eyeDirection = RotateAndNormalize(partWorldTM, FORWARD_DIRECTION);
 	}
 	else
 	{
 		if (!pActor || !m_pSitHelper) // || !pActor->IsPlayer())
 		{
-			movementState.eyeDirection = worldTM.GetColumn(1);
+			movementState.eyeDirection = RotateAndNormalize(worldTM, FORWARD_DIRECTION);
 			movementState.eyePosition = worldTM.GetTranslation();
 		}
 		else
@@ -2373,12 +2382,12 @@ void CVehicleSeat::GetMovementState(SMovementState& movementState)
 			if (m_autoAimEnabled)
 			{
 				const Matrix34& viewMatrix = GetISystem()->GetViewCamera().GetMatrix();
-				movementState.eyeDirection = viewMatrix.GetColumn1();
+				movementState.eyeDirection = viewMatrix.GetColumn1(); // assumes no scaling
 				movementState.eyePosition = viewMatrix.GetTranslation();
 			}
 			else
 			{
-				movementState.eyeDirection = seatWorldTM.GetColumn1();
+				movementState.eyeDirection = RotateAndNormalize(seatWorldTM, FORWARD_DIRECTION);
 
 				if (pActor != NULL)
 					movementState.eyePosition = seatWorldTM.GetTranslation() + seatWorldTM.TransformVector(pActor->GetLocalEyePos());

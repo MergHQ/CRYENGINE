@@ -409,3 +409,36 @@ inline bool cry_sprintf(char (&dst)[SIZE_IN_CHARS], const char* const format, ..
 	va_end(args);
 	return b;
 }
+
+//////////////////////////////////////////////////////////////////////////
+// cry_strcmp, cry_strncmp, cry_strcmpi, cry_strnicmp
+
+inline int cry_strcmp(const char* string1, const char* string2)
+{
+	return strcmp(string1, string2);
+}
+
+inline int cry_stricmp(const char* string1, const char* string2)
+{
+#if CRY_PLATFORM_WINDOWS
+	//_stricmp is deprecated according to MSDN
+	return _stricmp(string1, string2);
+#else
+	return stricmp(string1, string2);
+#endif
+}
+
+inline int cry_strncmp(const char* string1, const char* string2, size_t count)
+{
+	return strncmp(string1, string2, count);
+}
+
+inline int cry_strnicmp(const char* string1, const char* string2, size_t count)
+{
+#if CRY_PLATFORM_WINDOWS
+	//strnicmp is deprecated according to MSDN
+	return _strnicmp(string1, string2, count);
+#else
+	return strnicmp(string1, string2, count);
+#endif
+}

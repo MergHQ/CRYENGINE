@@ -1095,7 +1095,7 @@ void CPlayerRotation::ProcessLeanAndPeek( const SActorFrameMovementParams& movem
 		}
 	}
 
-	// TODO(Márcio): Maybe do some checks here!
+	// TODO(MÃ¡rcio): Maybe do some checks here!
 	m_peekOverAmount = movement.desiredPeekOver;
 }
 

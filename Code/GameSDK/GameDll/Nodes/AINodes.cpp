@@ -526,5 +526,5 @@ void CFlowNode_AICorpses::GetMemoryUsage( ICrySizer * sizer ) const
 REGISTER_FLOW_NODE("AI:BattleFrontControl", CFlowNode_BattleFrontControl)
 REGISTER_FLOW_NODE("AI:SetTurretFaction", CFlowNode_SetTurretFaction);
 REGISTER_FLOW_NODE("AI:AIAwarenessToPlayer", CFlowNode_AIAwarenessToPlayer);
-REGISTER_FLOW_NODE("AI:AIAlertness",CFlowNode_AIAlertness )
+REGISTER_FLOW_NODE("AI:AlertnessState",CFlowNode_AIAlertness )
 REGISTER_FLOW_NODE("AI:Corpses", CFlowNode_AICorpses );

@@ -1,25 +1,25 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
- -------------------------------------------------------------------------
-  $Id$
-  $DateTime$
-  Description: Flow node to check if an entity is inside an area
-  
- -------------------------------------------------------------------------
-  History:
-  - 27:07:2010: Created by Kevin Kirst
+   -------------------------------------------------------------------------
+   $Id$
+   $DateTime$
+   Description: Flow node to check if an entity is inside an area
+
+   -------------------------------------------------------------------------
+   History:
+   - 27:07:2010: Created by Kevin Kirst
 
 *************************************************************************/
 
 #include "StdAfx.h"
-#include "Nodes/G2FlowBaseNode.h"
-#include <CryEntitySystem/IEntityPoolManager.h>
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_CheckArea : public CFlowBaseNode<eNCT_Instanced>, public IEntityEventListener
 {
 public:
-	CFlowNode_CheckArea(SActivationInfo *pActInfo) : m_entityId(0), m_bInside(false)
+	CFlowNode_CheckArea(SActivationInfo* pActInfo) : m_entityId(0), m_bInside(false)
 	{
 
 	}
@@ -29,12 +29,12 @@ public:
 		UnregisterEvents();
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
 
-	IFlowNodePtr Clone(SActivationInfo *pActInfo)
+	IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
 		return new CFlowNode_CheckArea(pActInfo);
 	}
@@ -65,21 +65,21 @@ public:
 		EOP_Leave,
 	};
 
-	virtual void GetConfiguration(SFlowNodeConfig &config)
+	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] =
 		{
-			InputPortConfig_Void("Check", _HELP("Check now if the entity is inside the node entity's area")),
+			InputPortConfig_Void("Check",       _HELP("Check now if the entity is inside the node entity's area")),
 			InputPortConfig<EntityId>("Entity", _HELP("Node will output when this entity enters/leaves the node entity's area")),
-			InputPortConfig<bool>("Automatic", false, _HELP("Automatically report when the entity enters/leaves the node entity's area")),
-			{0}
+			InputPortConfig<bool>("Automatic",  false,                                                                           _HELP("Automatically report when the entity enters/leaves the node entity's area")),
+			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] =
 		{
 			OutputPortConfig<bool>("Result", _HELP("Outputs the current result of the check. True for inside, false for outside.")),
-			OutputPortConfig_Void("Inside", _HELP("Outputs when the entity is inside the node entity's area")),
+			OutputPortConfig_Void("Inside",  _HELP("Outputs when the entity is inside the node entity's area")),
 			OutputPortConfig_Void("Outside", _HELP("Outputs when the entity is outside the node entity's area")),
-			{0}
+			{ 0 }
 		};
 
 		config.sDescription = _HELP("Checks if the given entity is inside the node entity's area");
@@ -98,32 +98,32 @@ public:
 			ActivateOutput(&m_actInfo, EOP_Leave, true);
 	}
 
-	void OnEntityEvent(IEntity *pEntity, SEntityEvent &event)
+	void OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
 	{
 		switch (event.event)
 		{
-			case ENTITY_EVENT_ENTERAREA:
-			case ENTITY_EVENT_LEAVEAREA:
+		case ENTITY_EVENT_ENTERAREA:
+		case ENTITY_EVENT_LEAVEAREA:
 			{
 				const EntityId checkId = GetPortEntityId(&m_actInfo, EIP_Entity);
 				const EntityId triggeredId = (EntityId)event.nParam[0];
 				if (checkId == triggeredId)
 				{
 					m_bInside = (event.event == ENTITY_EVENT_ENTERAREA);
-					
+
 					if (GetPortBool(&m_actInfo, EIP_Automatic))
 						ActivateOutputs();
 				}
 			}
 			break;
 
-			default:
-				CRY_ASSERT_MESSAGE(false, "CFlowNode_IsInArea::OnEntityEvent Received unhandled event");
-				break;
+		default:
+			CRY_ASSERT_MESSAGE(false, "CFlowNode_IsInArea::OnEntityEvent Received unhandled event");
+			break;
 		}
 	}
 
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo *pActInfo)
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		if (eFE_Initialize == event)
 		{
@@ -135,12 +135,6 @@ public:
 			if (pActInfo->pEntity)
 			{
 				newEntityId = pActInfo->pEntity->GetId();
-			}
-			else
-			{
-				const EntityId graphEntityId = pActInfo->pGraph->GetEntityId(pActInfo->myID);
-				if (gEnv->pEntitySystem->GetIEntityPoolManager()->IsEntityBookmarked(graphEntityId))
-					newEntityId = graphEntityId;
 			}
 
 			if (m_entityId && newEntityId)
@@ -164,8 +158,8 @@ public:
 
 private:
 	SActivationInfo m_actInfo;
-	EntityId m_entityId;
-	bool m_bInside;
+	EntityId        m_entityId;
+	bool            m_bInside;
 };
 
 REGISTER_FLOW_NODE("Entity:CheckArea", CFlowNode_CheckArea);

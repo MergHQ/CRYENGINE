@@ -28,4 +28,28 @@ typedef std::vector<CID> ControlList;
 
 class IAudioConnection;
 typedef std::shared_ptr<IAudioConnection> ConnectionPtr;
+
+// available levels where the controls can be stored
+struct SScopeInfo
+{
+	SScopeInfo() {}
+	SScopeInfo(const string& _name, bool _bOnlyLocal) : name(_name), bOnlyLocal(_bOnlyLocal) {}
+	string name;
+
+	// if true, there is a level in the game audio
+	// data that doesn't exist in the global list
+	// of levels for your project
+	bool bOnlyLocal;
+};
+
+typedef uint32                  Scope;
+typedef std::vector<SScopeInfo> ScopeInfoList;
+
+enum EErrorCode
+{
+	eErrorCode_NoError                  = 0,
+	eErrorCode_UnkownPlatform           = BIT(0),
+	eErrorCode_NonMatchedActivityRadius = BIT(1),
+};
+
 }

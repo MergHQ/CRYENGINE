@@ -11,8 +11,33 @@
 #include "ParticleSystem.h"
 #include "ParticleComponentRuntime.h"
 #include "ParticleUpdate.h"
+#include "ParticleEmitter.h"
 
 CRY_PFX2_DBG
+
+namespace
+{
+
+pfx2::SChaosKey MakeSpawnSeed(pfx2::CParticleComponentRuntime* pRuntime)
+{
+	uint32 emitterSeed = pRuntime->GetEmitter()->GetInitialSeed();
+	uint32 containerSeed = pRuntime->GetContainer().GetNextSpawnId();
+	return pfx2::SChaosKey(
+		pfx2::SChaosKey(emitterSeed),
+		pfx2::SChaosKey(containerSeed));
+}
+
+pfx2::SChaosKey MakeUpdateSeed(pfx2::CParticleComponentRuntime* pRuntime, uint firstParticleId)
+{
+	uint32 emitterSeed = pRuntime->GetEmitter()->GetCurrentSeed();
+	uint32 containerSeed = pRuntime->GetContainer().GetNextSpawnId();
+	return pfx2::SChaosKey(
+		pfx2::SChaosKey(emitterSeed),
+		pfx2::SChaosKey(containerSeed),
+		pfx2::SChaosKey(firstParticleId));
+}
+
+}
 
 namespace pfx2
 {
@@ -25,6 +50,11 @@ SUpdateContext::SUpdateContext(CParticleComponentRuntime* pRuntime)
 	, m_params(pRuntime->GetComponentParams())
 	, m_updateRange(m_container.GetFullRange())
 	, m_deltaTime(gEnv->pTimer->GetFrameTime())
+	, m_time(pRuntime->GetEmitter()->GetTime())
+	, m_spawnRng(MakeSpawnSeed(pRuntime))
+	, m_spawnRngv(MakeSpawnSeed(pRuntime))
+	, m_updateRng(MakeUpdateSeed(pRuntime, 0))
+	, m_updateRngv(MakeUpdateSeed(pRuntime, 0))
 {
 	const uint32 threadId = JobManager::GetWorkerThreadId();
 	m_pMemHeap = &m_pSystem->GetMemHeap(threadId);
@@ -38,6 +68,11 @@ SUpdateContext::SUpdateContext(CParticleComponentRuntime* pRuntime, const SUpdat
 	, m_params(pRuntime->GetComponentParams())
 	, m_updateRange(updateRange)
 	, m_deltaTime(gEnv->pTimer->GetFrameTime())
+	, m_time(pRuntime->GetEmitter()->GetTime())
+	, m_spawnRng(MakeSpawnSeed(pRuntime))
+	, m_spawnRngv(MakeSpawnSeed(pRuntime))
+	, m_updateRng(MakeUpdateSeed(pRuntime, updateRange.m_firstParticleId))
+	, m_updateRngv(MakeUpdateSeed(pRuntime, updateRange.m_firstParticleId))
 {
 	const uint32 threadId = JobManager::GetWorkerThreadId();
 	m_pMemHeap = &m_pSystem->GetMemHeap(threadId);

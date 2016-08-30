@@ -46,9 +46,8 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 
 		m_passH.BeginConstantUpdate();
 
-		pShader->FXSetPSFloat(viewSpaceParamsName, &viewSpaceParams, 1);
-		Vec4 blurDir(fProjScaleX, 0, 0, 0);
-		pShader->FXSetPSFloat(blurDirName, &blurDir, 1);
+		m_passH.SetConstant(eHWSC_Pixel, viewSpaceParamsName, viewSpaceParams);
+		m_passH.SetConstant(eHWSC_Pixel, blurDirName, Vec4(fProjScaleX, 0, 0, 0));
 
 		m_passH.Execute();
 	}
@@ -71,9 +70,8 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 
 		m_passV.BeginConstantUpdate();
 
-		pShader->FXSetPSFloat(viewSpaceParamsName, &viewSpaceParams, 1);
-		Vec4 blurDir(0, fProjScaleY, 0, 0);
-		pShader->FXSetPSFloat(blurDirName, &blurDir, 1);
+		m_passV.SetConstant(eHWSC_Pixel, viewSpaceParamsName, viewSpaceParams);	
+		m_passV.SetConstant(eHWSC_Pixel, blurDirName, Vec4(0, fProjScaleY, 0, 0));
 
 		m_passV.Execute();
 	}

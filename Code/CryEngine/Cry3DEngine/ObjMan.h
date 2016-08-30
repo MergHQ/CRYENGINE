@@ -155,18 +155,15 @@ struct SObjManRenderDebugInfo
 	SObjManRenderDebugInfo()
 		: pEnt(nullptr)
 		, fEntDistance(0.0f)
-		, nDLightMask(0)
 	{}
 
-	SObjManRenderDebugInfo(IRenderNode* _pEnt, float _fEntDistance, int _nDLightMask)
+	SObjManRenderDebugInfo(IRenderNode* _pEnt, float _fEntDistance)
 		: pEnt(_pEnt)
 		, fEntDistance(_fEntDistance)
-		, nDLightMask(_nDLightMask)
 	{}
 
 	IRenderNode* pEnt;
 	float        fEntDistance;
-	int          nDLightMask;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -318,13 +315,16 @@ public:
 										 SSectorTextureSet * pTerrainTexInfo,
 										 const AABB &objBox, float fEntDistance, bool bSunOnly,
 										 CVisArea * pVisArea, bool nCheckOcclusion, const SRenderingPassInfo &passInfo);
+
+	int ComputeDissolve(const CLodValue &lodValueIn, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2]);
+
 	void RenderDecalAndRoad(IRenderNode* pEnt, PodArray<CDLight*>* pAffectingLights,
 	                        const Vec3& vAmbColor, const AABB& objBox, float fEntDistance,
 	                        bool bSunOnly, bool nCheckOcclusion, const SRenderingPassInfo& passInfo);
 
-	void      RenderObjectDebugInfo(IRenderNode* pEnt, float fEntDistance, int nDLightMask, const SRenderingPassInfo& passInfo);
+	void      RenderObjectDebugInfo(IRenderNode* pEnt, float fEntDistance, const SRenderingPassInfo& passInfo);
 	void      RenderAllObjectDebugInfo();
-	void      RenderObjectDebugInfo_Impl(IRenderNode* pEnt, float fEntDistance, int nDLightMask);
+	void      RenderObjectDebugInfo_Impl(IRenderNode* pEnt, float fEntDistance);
 	void      RemoveFromRenderAllObjectDebugInfo(IRenderNode* pEnt);
 
 	float     GetXYRadius(int nType, int nSID = GetDefSID());
@@ -344,7 +344,6 @@ public:
 
 	void AddDecalToRenderer(float fDistance,
 	                        IMaterial* pMat,
-	                        const int nDynLMask,
 	                        const uint8 sortPrio,
 	                        Vec3 right,
 	                        Vec3 up,

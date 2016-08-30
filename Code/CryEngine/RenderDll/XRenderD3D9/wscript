@@ -7,11 +7,12 @@ import os
 from waflib import Logs
 
 def build(bld):
-	additional_defines = []
+	gnm_compiler_version = '"ORBIS/V029"' # Must be quoted
+	additional_defines = [ 'CRY_GNM_SHADER_COMPILER_VERSION=' + gnm_compiler_version ]
 
 	# Oculus can only be built using VS 2015.
 	# This is a limitation of the Oculus code.
-	has_oculus = ('MSVC_VERSION' in bld.env and bld.env['MSVC_VERSION'] == '14.0')
+	has_oculus = bld.env and bld.env['MSVC_VERSION'] and (bld.ToVersionNumbers(bld.env['MSVC_VERSION']) >= bld.ToVersionNumbers('14.0'))
 	oculus_dependency = []
 	if has_oculus:
 		oculus_dependency = [ 'oculus' ]
@@ -25,14 +26,15 @@ def build(bld):
 		additional_defines += ['EXCLUDE_AMD_API']
 
 	bld.CryEngineModule(
-		target       = 'CryRenderD3D11',
-		vs_filter    = 'CryEngine',
+		target      = 'CryRenderD3D11',
+		vs_filter   = 'CryEngine',
 
-		file_list    = 'core_renderer.waf_files',
-		pch          = '../StdAfx.cpp',
-		includes     = [ '..', Path('Code/SDKs/squish-ccr') ],
-		defines      = [ 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
-		use_module   = [ 'lzma', 'lzss', 'lz4' ],
+		file_list   = 'core_renderer.waf_files',
+		pch         = '../StdAfx.cpp',
+		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
+		defines     = [ 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
+		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
+		features    = [ 'copy_d3d_compiler' ],
 
 		win_features    = [ 'copy_d3d_compiler' ],
 		win_file_list   = 'mesh_baker.waf_files',
@@ -64,8 +66,8 @@ def build(bld):
 		file_list   = [ 'core_renderer.waf_files', 'opengl_renderer.waf_files' ],
 		pch         = '../StdAfx.cpp',
 		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
-		defines     = [ 'OPENGL', 'DO_RENDERSTATS', '_RENDERER' ],
-		use_module  = [ 'lzma', 'lzss', 'lz4' ],
+		defines     = [ 'OPENGL', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
+		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
 
 		win_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_wgl.waf_files'],
 		win_includes     = [ Path('Code/SDKs/squish-ccr'), Path('Code/Tools/LibTIFF'), Path('Code/Tools/HLSLCrossCompiler/include') ],
@@ -97,19 +99,23 @@ def build(bld):
 	)
 
 	# CryRenderD3D12 can only be built using VS 2015.
-	build_d3d12 = ('MSVC_VERSION' in bld.env and bld.env['MSVC_VERSION'] == '14.0')
+	min_msvc_version = '14.0'
+	min_winsdk_version = '10.0.10586.0'
+	
+	build_d3d12_msvc_check = bld.env and bld.env['MSVC_VERSION'] and (bld.ToVersionNumbers(bld.env['MSVC_VERSION']) >= bld.ToVersionNumbers(min_msvc_version))
+	build_d3d12_winsdk_check = bld.env and bld.env['WINSDK_VERSION'] and (bld.ToVersionNumbers(bld.env['WINSDK_VERSION']) >= bld.ToVersionNumbers(min_winsdk_version))
 	parse_d3d12 = ('build' not in bld.cmd)
 
-	if build_d3d12 or parse_d3d12:
+	if build_d3d12_msvc_check and build_d3d12_winsdk_check or parse_d3d12:
 		bld.CryEngineModule(
 			target      = 'CryRenderD3D12',
 			vs_filter   = 'CryEngine',
 			
 			file_list   = [ 'core_renderer.waf_files' ],
-			pchv        = '../StdAfx.cpp',
+			pch        = '../StdAfx.cpp',
 			includes    = [ '..', Path('Code/SDKs'), Path('Code/SDKs/squish-ccr') ],
-			defines     = [ 'DIRECT3D10', 'CRY_USE_DX12', 'XRENDERD3D10_EXPORTS', 'DO_RENDERSTATS', '_RENDERER' ],
-			use_module  = [ 'lzma', 'lzss', 'lz4' ],
+			defines     = [ 'DIRECT3D10', 'CRY_USE_DX12', 'XRENDERD3D10_EXPORTS', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
+			use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
 
 			# , 'd3d11'
 			win_features     = [ 'copy_d3d_compiler' ],
@@ -122,22 +128,26 @@ def build(bld):
 			# additional_settings = Settings( files = '../Common/lzss.cpp', disable_pch = True )
 		)
 	else:
-		Logs.warn('MSVC 14.0 is not being used - CryRenderD3D12 cannot be built.')
+		if not build_d3d12_msvc_check:
+			bld.cry_warning('CryRenderD3D12 not build. Requires MSVC %s or newer. Current installed: %s' % (min_msvc_version, bld.env['MSVC_VERSION']))
+
+		if not build_d3d12_winsdk_check:
+			bld.cry_warning('CryRenderD3D12 not build. Requires WINDSDK %s or newer - Current installed: %s' % (min_winsdk_version, bld.env['WINSDK_VERSION']))
 
 	# GNM backend may not be available, so check here
-	if os.path.isdir(Path('Code/SDKs/Orbis')) and os.path.isdir(Path('Code/CryEngine/RenderDll/XRenderD3D9/GNM')) and ('orbis' in bld.get_supported_platforms()):
+	if os.path.isdir(Path('Code/SDKs/Orbis')) and os.path.isdir(Path('Code/CryEngine/RenderDll/XRenderD3D9/GNM')):
 		rsc_output_folder = 'Tools/RemoteShaderCompiler'
-		compiler_version = '"ORBIS/V028"' # Must be quoted
 
 		# GNM render backend
 		bld.CryEngineModule(
 			target      = 'CryRenderGNM',
 			vs_filter   = 'CryEngine',
 			file_list   = [ 'core_renderer.waf_files', 'GNM/GnmRenderer.waf_files' ],
-			defines     = [ '_RENDERER', 'DO_RENDERSTATS', 'CRY_USE_GNM', 'CRY_USE_GNM_RENDERER', 'CRY_GNM_SHADER_COMPILER_VERSION=' + compiler_version ],
+			pch        = '../StdAfx.cpp',
+			defines     = [ '_RENDERER', 'DO_RENDERSTATS', 'CRY_USE_GNM', 'CRY_USE_GNM_RENDERER' ] + additional_defines,
 			lib         = [ 'SceSystemService_stub_weak', 'SceGnmDriver_stub_weak' ],
 			includes    = [ '..' ],
-			use_module  = [ 'lzma', 'lzss', 'lz4' ],
+			use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
 
 			performance_cxxflags = '-flto',
 			release_cxxflags     = '-flto',
@@ -159,7 +169,7 @@ def build(bld):
 			lib        = 'libSceShaderWavePsslc',
 			features   = 'copy_psslc',
 
-			output_sub_folder = Path(os.path.join(rsc_output_folder, 'Compiler', compiler_version)),
+			output_sub_folder = Path(os.path.join(rsc_output_folder, 'Compiler', gnm_compiler_version[1:-1])),
 			force_static_crt  = True,
 		)
 

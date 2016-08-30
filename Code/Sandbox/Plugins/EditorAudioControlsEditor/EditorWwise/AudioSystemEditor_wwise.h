@@ -29,6 +29,10 @@ public:
 	{
 		ar(mult, "mult", "Multiply");
 		ar(shift, "shift", "Shift");
+		if (ar.isInput())
+		{
+			signalConnectionChanged();
+		}
 	}
 
 	float mult;
@@ -51,6 +55,10 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		ar(value, "value", "Value");
+		if (ar.isInput())
+		{
+			signalConnectionChanged();
+		}
 	}
 
 	float value;
@@ -61,8 +69,9 @@ class CImplementationSettings_wwise final : public IImplementationSettings
 {
 public:
 	CImplementationSettings_wwise()
-		: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise_project") {}
-	virtual const char* GetSoundBanksPath() const { return PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise"; }
+		: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise_project")
+		, m_soundBanksPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise") {}
+	virtual const char* GetSoundBanksPath() const { return m_soundBanksPath.c_str(); }
 	virtual const char* GetProjectPath() const    { return m_projectPath.c_str(); }
 	virtual void        SetProjectPath(const char* szPath);
 
@@ -72,7 +81,8 @@ public:
 	}
 
 private:
-	string m_projectPath;
+	string       m_projectPath;
+	const string m_soundBanksPath;
 };
 
 class CAudioSystemEditor_wwise final : public IAudioSystemEditor
@@ -102,22 +112,25 @@ public:
 	//////////////////////////////////////////////////////////
 
 private:
-	IAudioSystemItem* GetControlByName(const string& sName, bool bIsLocalised = false, IAudioSystemItem* pParent = nullptr) const;
-	IAudioSystemItem* CreateControl(const SControlDef& controlDefinition);
-
-	// Gets the ID of the control given its name. As controls can have the same name
-	// if they're under different parents, the name of the parent is also needed (if there is one)
-	CID  GetID(const string& sName) const;
+	void Clear();
+	void CreateControlCache(IAudioSystemItem* pParent);
 	void UpdateConnectedStatus();
+
+	// Generates the ID of the control given its full path name.
+	CID GenerateID(const string& controlName, bool bIsLocalised, IAudioSystemItem* pParent) const;
+	// Convenience function to form the full path name.
+	// Controls can have the same name if they're under different parents so knowledge of the parent name is needed.
+	// Localized controls live in different areas of disk so we also need to know if its localized.
+	CID GenerateID(const string& fullPathName) const;
 
 	IAudioSystemItem m_rootControl;
 
-	typedef std::shared_ptr<IAudioSystemItem> TControlPtr;
-	typedef std::map<CID, TControlPtr>        TControlMap;
-	TControlMap m_controls;
+	typedef std::map<CID, IAudioSystemItem*> ControlMap;
+	ControlMap m_controlsCache;       // cache of the controls stored by id for faster access
 
 	typedef std::map<CID, int> TConnectionsMap;
 	TConnectionsMap               m_connectionsByID;
 	CImplementationSettings_wwise m_settings;
+
 };
 }

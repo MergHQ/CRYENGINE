@@ -102,10 +102,6 @@ void CGameTokenCondition::Serialize(Serialization::IArchive& ar)
 		{
 			ar.warning(m_tokenName, "You need to specify a GameToken Name");
 		}
-		else if (!m_pCachedToken)
-		{
-			ar.warning(m_tokenName, "No GameToken with the name found");
-		}
 		else if (m_maxValue == CVariableValue::POS_INFINITE && m_minValue == CVariableValue::NEG_INFINITE)
 		{
 			ar.warning(m_tokenName, "This Condition will always be true!");
@@ -319,7 +315,7 @@ string CTimeSinceCondition::GetVerboseInfo() const
 //--------------------------------------------------------------------------------------------------
 bool CExecutionLimitCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 {
-	CResponse* pResponse;
+	CResponse* pResponse = nullptr;
 	if (!m_ResponseToTest.IsValid())
 	{
 		pResponse = static_cast<CResponseInstance*>(pResponseInstance)->GetResponse();
@@ -359,7 +355,7 @@ void CExecutionLimitCondition::Serialize(Serialization::IArchive& ar)
 		}
 		else if (m_maxExecutions <= 0)
 		{
-			ar.warning(m_maxExecutions, "Will never be true. Because Min is larger than Max");
+			ar.warning(m_maxExecutions, "Will never be true. Because the maximum execution count is set to 0");
 		}
 	}
 #endif
@@ -374,7 +370,7 @@ string CryDRS::CExecutionLimitCondition::GetVerboseInfo() const
 //--------------------------------------------------------------------------------------------------
 bool CryDRS::CTimeSinceResponseCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 {
-	CResponse* pResponse;
+	CResponse* pResponse = nullptr;
 	if (!m_responseId.IsValid())
 	{
 		pResponse = static_cast<CResponseInstance*>(pResponseInstance)->GetResponse();
@@ -390,7 +386,6 @@ bool CryDRS::CTimeSinceResponseCondition::IsMet(DRS::IResponseInstance* pRespons
 	if (pResponse)
 	{
 		const float timeSinceLastExecution = (pResponse->GetLastEndTime() > 0) ? CResponseSystem::GetInstance()->GetCurrentDrsTime() - pResponse->GetLastEndTime() : std::numeric_limits<float>::max();
-
 		return timeSinceLastExecution >= m_minTime && ((timeSinceLastExecution <= m_maxTime) || m_maxTime < 0.0f);
 	}
 	else

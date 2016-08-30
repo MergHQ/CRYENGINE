@@ -8,7 +8,7 @@ Description: Throw Fire Mode Implementation
 
 -------------------------------------------------------------------------
 History:
-- 26ye:10:2005   15:45 : Created by Márcio Martins
+- 26ye:10:2005   15:45 : Created by MÃ¡rcio Martins
 
 *************************************************************************/
 #ifndef __PLANT_H__

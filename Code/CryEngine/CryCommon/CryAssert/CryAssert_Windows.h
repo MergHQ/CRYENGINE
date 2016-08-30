@@ -2,7 +2,7 @@
 
 #pragma once
 #if defined(USE_CRY_ASSERT) && CRY_PLATFORM_WINDOWS
-	#include <CryString/StringUtils.h>
+	#include <CryString/CryPath.h>
 	#include <CryInput/IInput.h>
 
 	#define XTOKENIZE_(x, y) x ## y
@@ -162,7 +162,7 @@ static INT_PTR CALLBACK DlgProc(HWND _hDlg, UINT _uiMsg, WPARAM _wParam, LPARAM 
 			pAssertInfo = (SCryAssertInfo*)_lParam;
 
 			char buf[MAX_PATH];
-			const bool bFolded = CryStringUtils::SimplifyFilePath(pAssertInfo->pszFile, buf, MAX_PATH, CryStringUtils::ePathStyle_Windows);
+			const bool bFolded = PathUtil::SimplifyFilePath(pAssertInfo->pszFile, buf, MAX_PATH, PathUtil::ePathStyle_Windows);
 
 			SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_CONDITION), pAssertInfo->pszCondition);
 			SetWindowTextA(GetDlgItem(_hDlg, IDC_CRYASSERT_EDIT_FILE), bFolded ? buf : pAssertInfo->pszFile);
@@ -263,19 +263,17 @@ void CryAssertTrace(const char* _pszFormat, ...)
 	{
 		return;
 	}
-	if (!gEnv->bIgnoreAllAsserts || gEnv->bTesting)
+
+	if (NULL == _pszFormat)
 	{
-		if (NULL == _pszFormat)
-		{
-			gs_szMessage[0] = '\0';
-		}
-		else
-		{
-			va_list args;
-			va_start(args, _pszFormat);
-			cry_vsprintf(gs_szMessage, _pszFormat, args);
-			va_end(args);
-		}
+		gs_szMessage[0] = '\0';
+	}
+	else
+	{
+		va_list args;
+		va_start(args, _pszFormat);
+		cry_vsprintf(gs_szMessage, _pszFormat, args);
+		va_end(args);
 	}
 }
 
@@ -346,6 +344,21 @@ public:
 private:
 	int m_numberOfShows;
 };
+
+void CryLogAssert(const char* _pszCondition, const char* _pszFile, unsigned int _uiLine, bool* _pbIgnore)
+{
+	if (!gEnv || !gEnv->pSystem)
+		return;
+
+	if (gEnv->pConsole)
+	{
+		static ICVar* pLogAsserts = gEnv->pConsole->GetCVar("sys_log_asserts");
+		if (pLogAsserts && !pLogAsserts->GetIVal())
+			return;
+	}
+
+	GetISystem()->WarningV(VALIDATOR_MODULE_UNKNOWN, VALIDATOR_ASSERT, 0, _pszFile, gs_szMessage, va_list());
+}
 
 bool CryAssert(const char* _pszCondition, const char* _pszFile, unsigned int _uiLine, bool* _pbIgnore)
 {

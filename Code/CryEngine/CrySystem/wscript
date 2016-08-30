@@ -7,7 +7,7 @@ def build(bld):
 
 	# Oculus can only be built using VS 2015.
 	# This is a limitation of the Oculus code.
-	has_oculus = ('MSVC_VERSION' in bld.env and bld.env['MSVC_VERSION'] == '14.0')
+	has_oculus = bld.env and bld.env['MSVC_VERSION'] and (bld.ToVersionNumbers(bld.env['MSVC_VERSION']) >= bld.ToVersionNumbers('14.0'))
 	oculus_dependency = []
 	if has_oculus:
 		oculus_dependency = [ 'oculus' ]
@@ -27,7 +27,7 @@ def build(bld):
 		linux_file_list   = ['platformos.waf_files', 'crysystem_posix.waf_files'],
 		darwin_file_list  = ['platformos.waf_files', 'crysystem_posix.waf_files'],
 		android_file_list = ['platformos.waf_files', 'crysystem_posix.waf_files'],
-		orbis_file_list   = ['crysystem_sce.waf_files', 'crysystem_sce.waf_files', 'crysystem_posix.waf_files',  'crysystem_orbis.waf_files'],
+		orbis_file_list   = ['crysystem_sce.waf_files', 'crysystem_posix.waf_files',  'crysystem_orbis.waf_files'],
 
 		pch  = 'StdAfx.cpp',
 
@@ -41,7 +41,8 @@ def build(bld):
 			'lz4',
 			'md5',
 			'yasli',
-			'tomcrypt'
+			'tomcrypt',
+			'jsmn'
 		],
 		win_use_module = oculus_dependency,
 
@@ -56,5 +57,5 @@ def build(bld):
 		durango_lib = [ 'uuid', 'acphal' ],
 		android_lib = [ 'm' ],
 		
-		durango_meta_includes = Path('Code/SDKs/Microsoft SDKs/Durango.160300/v8.0/ExtensionSDKs/xbox services api/8.0/references/commonconfiguration/neutral')
+		durango_meta_includes = Path('Code/SDKs/Microsoft SDKs/Durango.160303/v8.0/ExtensionSDKs/xbox services api/8.0/references/commonconfiguration/neutral')
 	)	

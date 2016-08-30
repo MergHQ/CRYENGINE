@@ -730,6 +730,7 @@ void CSmartPathFollower::ProcessPath()
 	}
 
 	// Ensure end point is at ground level (very often it isn't)
+	if (m_params.snapEndPointToGround)
 	{
 		SPathControlPoint2& endPoint = m_path.back();
 
@@ -895,7 +896,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 			else
 			{
 				// we're at the start of the path
-				indexAtCurrentPos = m_path.FindClosestSegmentIndex(curPos, 0.0f, 5.0f); // 5m tolerance
+				indexAtCurrentPos = m_path.FindClosestSegmentIndex(curPos, 0.0f, 5.0f, FLT_MAX); // 5m tolerance; using a FLT_MAX z-tolerance in case we're currently traversing a SmartObject that will make us end up at a "much higher" (or "much lower") position than we started at the time of the traveral
 			}
 
 			const float currentDistance = m_path.GetDistanceAtSegmentIndex(indexAtCurrentPos);
@@ -954,8 +955,8 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 		}
 		else
 		{
-			currentIndex = m_path.FindClosestSegmentIndex(curPos, 0.0f, 5.0f);  // We're at the start of the path,
-			// so we should be within 5m
+			currentIndex = m_path.FindClosestSegmentIndex(curPos, 0.0f, 5.0f, FLT_MAX);  // We're at the start of the path,
+			// so we should be within 5m; using a FLT_MAX z-tolerance in case we're currently traversing a SmartObject that will make us end up at a "much higher" (or "much lower") position than we started at the time of the traveral
 
 			const float currentDistance = m_path.GetDistanceAtSegmentIndex(currentIndex);
 			lookAheadIndex = m_path.FindSegmentIndexAtDistance(currentDistance + LookAheadDistance);

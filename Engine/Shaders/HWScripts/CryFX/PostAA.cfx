@@ -28,9 +28,6 @@ half4 vLensOpticsParams;
 half4 vDebugParams;
 half4 PostAAParams;
 
-float4 RcpFrameOpt;
-float4 RcpFrameOpt2;
-
 ////////////////// samplers /////////////////////
 
 struct vtxOutAA
@@ -102,7 +99,7 @@ float4 sampler2DOff(sampler2D t, float2 p, float2 o, float2 r)
 	return tex2Dlod(t, float4(p + (o * r), 0, 0));
 }
 
-pixout Fxaa3(vtxOutAA IN)
+pixout Fxaa3(vtxOutAA IN, float4 screenSize)
 {
 
   pixout OUT = (pixout) 1;
@@ -111,7 +108,7 @@ pixout Fxaa3(vtxOutAA IN)
 
 	//	Convert CryENGINE inputs to fxaa inputs
 	float2 pos = IN.baseTC.xy;
-	float2 fxaaQualityRcpFrame = PS_ScreenSize.zw * 2.0;
+	float2 fxaaQualityRcpFrame = screenSize.zw;
 	//   1.00 - upper limit (softer)
 	//   0.75 - default amount of filtering
 	//   0.50 - lower limit (sharper, less sub-pixel aliasing removal)
@@ -437,7 +434,7 @@ pixout Fxaa3(vtxOutAA IN)
 
 	return OUT;
 }
-half4 FxaaConsoles(sampler2D tex, float2 pos, float4 fxaaConsolePosPos) 
+half4 FxaaConsoles(sampler2D tex, float2 pos, float4 fxaaConsolePosPos, float4 samplingOffsets) 
 {
   half3 dir = 0;
   half4 lumaNe = tex2Dlod(tex, half4(fxaaConsolePosPos.zy, 0, 0));
@@ -467,21 +464,21 @@ half4 FxaaConsoles(sampler2D tex, float2 pos, float4 fxaaConsolePosPos)
   dir1_pos.zw = pos.xy;
   dir2_pos.zw = pos.xy;
   half4 temp1N;
-  temp1N.xy = dir1_pos.zw - dir1_pos.xy * RcpFrameOpt.zw;
+  temp1N.xy = dir1_pos.zw - dir1_pos.xy * samplingOffsets.xy;
 
   temp1N = tex2Dlod(tex, half4(temp1N.xy, 0.0, 0.0));
   half4 rgby1;
-  rgby1.xy = dir1_pos.zw + dir1_pos.xy * RcpFrameOpt.zw;
+  rgby1.xy = dir1_pos.zw + dir1_pos.xy * samplingOffsets.xy;
 
   rgby1 = tex2Dlod(tex, half4(rgby1.xy, 0.0, 0.0));
   rgby1 = (temp1N + rgby1) * 0.5;
 
   half4 temp2N;
-  temp2N.xy = dir2_pos.zw - dir2_pos.xy * RcpFrameOpt2.zw;
+  temp2N.xy = dir2_pos.zw - dir2_pos.xy * samplingOffsets.zw;
   temp2N = tex2Dlod(tex, half4(temp2N.xy, 0.0, 0.0));
 
   half4 rgby2;
-  rgby2.xy = dir2_pos.zw + dir2_pos.xy * RcpFrameOpt2.zw;
+  rgby2.xy = dir2_pos.zw + dir2_pos.xy * samplingOffsets.zw;
   rgby2 = tex2Dlod(tex, half4(rgby2.xy, 0.0, 0.0));
   rgby2 = (temp2N + rgby2) * 0.5;
 
@@ -531,38 +528,43 @@ float ClipHistory(half3 cHistory, half3 cM, half3 cMin, half3 cMax)
 
 Texture2D<float4> PostAA_DepthTex : register(t16);
 
+cbuffer CBPostAA : register(b0)
+{
+	struct TemporalAAConstants
+	{
+		float4x4 matReprojection;
+		float4   params;
+		float4   screenSize;
+		float4   worldViewPos;
+		float4   fxaaParams;
+	} cbPostAA;
+};
+
 pixout PostAA_PS(vtxOutAA IN)
 {
   pixout OUT = (pixout) 0;
 	
 #if %_RT_SAMPLE4
-	//OUT.Color = FxaaConsoles(_tex0, IN.baseTC.xy, (IN.baseTC.xyxy + 2.0f * PS_ScreenSize.zwzw * float4(-1, -1, 1, 1)) * PS_HPosScale.xyxy);
-	OUT = Fxaa3(IN);
+	//OUT.Color = FxaaConsoles(_tex0, IN.baseTC.xy, (IN.baseTC.xyxy + PS_ScreenSize.zwzw * float4(-1, -1, 1, 1)) * PS_HPosScale.xyxy);
+	OUT = Fxaa3(IN, cbPostAA.screenSize);
 	return OUT;
 #endif	
 
 	const float2 tc = IN.baseTC.xy;
-	const float2 texel = PS_ScreenSize.zw * 2;
+	const float2 texel = cbPostAA.screenSize.zw;
 	
 	// Compute velocity vector for static geometry
-#if %_RT_SAMPLE2
-	const float3 vPosWS = WorldViewPos.xyz + IN.CamVec.xyz * GetLinearDepth(_tex2, tc).x; 
-	float3 vPosHPrev = mViewProjPrev[0].xyw * vPosWS.x + (mViewProjPrev[1].xyw * vPosWS.y + (mViewProjPrev[2].xyw * vPosWS.z + mViewProjPrev[3].xyw)); // <=> mul(float4(vPosWS, 1.0), mViewProjPrev).xyw;
-	vPosHPrev.xy /= vPosHPrev.z;	// Screen space position of pixel in previous frame
-#else
-	// Use native depth and for more accurate reprojection
 	float depth = PostAA_DepthTex.Load(int3(IN.WPos.xy, 0));
-	float4 vPosHPrev = mul(float4(IN.baseTC.x, IN.baseTC.y, depth, 1.0), mReprojection);
+	float4 vPosHPrev = mul(float4(IN.baseTC.x, IN.baseTC.y, depth, 1.0), cbPostAA.matReprojection);
 	vPosHPrev.xy /= vPosHPrev.w;
-#endif
 	
 	float2 vObj = tex2D(_tex3, tc);
 	float2 v = (vObj.x==0) ? vPosHPrev.xy - tc : DecodeMotionVector(vObj);
 
 #if %_RT_SAMPLE2
 	// SMAA 1TX Mode
-	float fMaxFramesL = vParams.z;		// Frames to keep in history (low freq). Higher = less aliasing, but blurier result. Lower = sharper result, but more aliasing.
-	float fMaxFramesH = vParams.w;		// Frames to keep in history (high freq). Higher = less aliasing, but blurier result. Lower = sharper result, but more aliasing.
+	float fMaxFramesL = cbPostAA.params.z;		// Frames to keep in history (low freq). Higher = less aliasing, but blurier result. Lower = sharper result, but more aliasing.
+	float fMaxFramesH = cbPostAA.params.w;		// Frames to keep in history (high freq). Higher = less aliasing, but blurier result. Lower = sharper result, but more aliasing.
 	
  	// Curr frame and neighbor texels
 	half3 cM	= sqr(tex2D(_tex0, tc));
@@ -572,7 +574,7 @@ pixout PostAA_PS(vtxOutAA IN)
 	half3 cBR = sqr(tex2D(_tex0, tc + texel * float2( 0.5f,  0.5f)));
 	
 	half3 cBlur = (cTL + cTR + cBL + cBR) * 0.25f;
-	cM.rgb = saturate( lerp(cBlur, cM, vParams.x) );
+	cM.rgb = saturate( lerp(cBlur, cM, cbPostAA.params.x) );
 		
 	half3 cMin = min(min(min(min(cTL, cTR), cBL), cBR), cM);
 	half3 cMax = max(max(max(max(cTL, cTR), cBL), cBR), cM);	
@@ -656,7 +658,7 @@ pixout PostAA_PS(vtxOutAA IN)
 
 #define SCALE_PIXELSIZE 2
 
-pixout LumaEdgeDetectionSMAA_PS(vtxOutAA IN)
+pixout LumaEdgeDetectionSMAA_PS(vtxOut IN)
 {
   pixout OUT = (pixout) 0;
 
@@ -947,7 +949,7 @@ void SMAADetectVerticalCornerPattern(sampler2D edgesTex, inout float2 weights, f
 }
 
 // Second pass: Blending Weight Calculation
-pixout BlendWeightSMAA_PS(vtxOutAA IN)
+pixout BlendWeightSMAA_PS(vtxOut IN)
 {
 	pixout OUT = (pixout) 0;
 	// tex0 = edgesTex
@@ -1073,7 +1075,7 @@ pixout BlendWeightSMAA_PS(vtxOutAA IN)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pixout NeighborhoodBlendingSMAA_PS(vtxOutAA IN)
+pixout NeighborhoodBlendingSMAA_PS(vtxOut IN)
 {
 	pixout OUT = (pixout) 0;
 
@@ -1147,7 +1149,7 @@ technique LumaEdgeDetectionSMAA
 {
   pass p0
   {
-    VertexShader = PostAA_VS() PostAA_VS;
+    VertexShader = FullscreenTriVS();
     PixelShader = LumaEdgeDetectionSMAA_PS() PostAA_PS;
     CullMode = None;        
   }
@@ -1157,7 +1159,7 @@ technique BlendWeightSMAA
 {
   pass p0
   {
-    VertexShader = PostAA_VS() PostAA_VS;
+    VertexShader = FullscreenTriVS();
     PixelShader = BlendWeightSMAA_PS() PostAA_PS;
     CullMode = None;        
   }
@@ -1167,7 +1169,7 @@ technique NeighborhoodBlendingSMAA
 {
   pass p0
   {
-    VertexShader = PostAA_VS() PostAA_VS;
+    VertexShader = FullscreenTriVS() PostAA_VS;
     PixelShader = NeighborhoodBlendingSMAA_PS() PostAA_PS;
     CullMode = None;        
   }
@@ -1223,7 +1225,7 @@ void ApplyFilmGrain(inout half4 cScene, in half3 cColor, float4 baseTC)
 	cScene.xyz = lerp((cColor.xyz * fFilmGrain * 2.h), (1.h - (2.h * (1.h - cColor.xyz) * (1.h - fFilmGrain))), cScene.xyz);
 }
 
-pixout PostAAComposites_PS(vtxOutAA IN)
+pixout PostAAComposites_PS(vtxOut IN)
 {
   pixout OUT = (pixout) 0;
 
@@ -1263,7 +1265,7 @@ technique PostAAComposites
 {
   pass p0
   {
-    VertexShader = PostAA_VS() PostAA_VS;
+    VertexShader = FullscreenTriVS();
     PixelShader = PostAAComposites_PS() PostAA_PS;
     CullMode = None;        
   }

@@ -40,12 +40,6 @@ inline int minmax(int op1,int op2,int bMax) {	return (op1&-bMax | op2&~-bMax) + 
 template<class F> inline F max_safe(F op1,F op2) { return op1>op2 ? op1:op2; }//int mask=isneg(op2-op1); return op1*mask+op2*(mask^1); }
 template<class F> inline F min_safe(F op1,F op2) { return op1<op2 ? op1:op2; }//{ int mask=isneg(op1-op2); return op1*mask+op2*(mask^1); }
 
-template<class F> ILINE Vec3_tpl<F> min(const Vec3_tpl<F> &v0,const Vec3_tpl<F> &v1) { 
-	return Vec3_tpl<F>(min(v0.x,v1.x), min(v0.y,v1.y), min(v0.z,v1.z)); 
-}
-template<class F> ILINE Vec3_tpl<F> max(const Vec3_tpl<F> &v0,const Vec3_tpl<F> &v1) { 
-	return Vec3_tpl<F>(max(v0.x,v1.x), max(v0.y,v1.y), max(v0.z,v1.z)); 
-}
 template<class F> ILINE Vec3_tpl<F> min_safe(const Vec3_tpl<F> &v0,const Vec3_tpl<F> &v1) { 
 	return Vec3_tpl<F>(min_safe(v0.x,v1.x), min_safe(v0.y,v1.y), min_safe(v0.z,v1.z)); 
 }
@@ -53,12 +47,6 @@ template<class F> ILINE Vec3_tpl<F> max_safe(const Vec3_tpl<F> &v0,const Vec3_tp
 	return Vec3_tpl<F>(max_safe(v0.x,v1.x), max_safe(v0.y,v1.y), max_safe(v0.z,v1.z)); 
 }
 
-template<class F> ILINE Vec2_tpl<F> min(const Vec2_tpl<F> &v0,const Vec2_tpl<F> &v1) { 
-	return Vec2_tpl<F>(min(v0.x,v1.x), min(v0.y,v1.y));
-}
-template<class F> ILINE Vec2_tpl<F> max(const Vec2_tpl<F> &v0,const Vec2_tpl<F> &v1) { 
-	return Vec2_tpl<F>(max(v0.x,v1.x), max(v0.y,v1.y)); 
-}
 template<class F> ILINE Vec2_tpl<F> min_safe(const Vec2_tpl<F> &v0,const Vec2_tpl<F> &v1) { 
 	return Vec2_tpl<F>(min_safe(v0.x,v1.x), min_safe(v0.y,v1.y));
 }
@@ -791,7 +779,7 @@ struct subref {
 
 // spinlocks
 /*ILINE void SpinLock(volatile int *pLock,int checkVal,int setVal) { 
-#ifdef _CPU_X86
+#if CRY_PLATFORM_X86
 	__asm {
 	mov edx, setVal
 	mov ecx, pLock
@@ -805,7 +793,7 @@ struct subref {
 }
 
 ILINE void AtomicAdd(volatile int *pVal, int iAdd) {
-#ifdef _CPU_X86
+#if CRY_PLATFORM_X86
 	__asm {
 		mov edx, pVal
 		mov eax, iAdd

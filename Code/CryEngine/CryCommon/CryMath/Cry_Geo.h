@@ -278,10 +278,10 @@ struct AABB
 	{ return (max - min) * IsResetSel(0.0f, 1.0f); }
 
 	ILINE float GetRadius() const
-	{ return IsResetSel(0.0f, (max - min).GetLengthFloat() * 0.5f); }
+	{ return IsResetSel(0.0f, (max - min).GetLength() * 0.5f); }
 
 	ILINE float GetRadiusSqr() const
-	{ return IsResetSel(0.0f, ((max - min) * 0.5f).GetLengthSquaredFloat()); }
+	{ return IsResetSel(0.0f, ((max - min) * 0.5f).GetLengthSquared()); }
 
 	ILINE float GetVolume() const
 	{ return IsResetSel(0.0f, (max.x - min.x) * (max.y - min.y) * (max.z - min.z)); }
@@ -624,24 +624,6 @@ struct Sphere
 	Sphere() {}
 	Sphere(const Vec3& c, float r) : center(c), radius(r) {}
 	void operator()(const Vec3& c, float r) { center = c; radius = r; }
-};
-
-struct HWVSphere
-{
-	hwvec3 center;
-	simdf  radius;
-
-	ILINE HWVSphere(const hwvec3& c, const simdf& r)
-	{
-		center = c;
-		radius = r;
-	}
-
-	ILINE HWVSphere(const Sphere& sp)
-	{
-		center = HWVLoadVecUnaligned(&sp.center);
-		radius = SIMDFLoadFloat(sp.radius);
-	}
 };
 
 struct AAEllipsoid

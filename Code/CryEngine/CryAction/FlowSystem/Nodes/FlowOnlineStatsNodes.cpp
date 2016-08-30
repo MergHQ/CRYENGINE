@@ -1,8 +1,9 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
 #include "IPlayerProfiles.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_ProfileAttribute : public CFlowBaseNode<eNCT_Singleton>
 {

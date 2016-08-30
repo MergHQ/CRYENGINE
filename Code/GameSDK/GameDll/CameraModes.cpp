@@ -804,7 +804,7 @@ void CSpectatorFollowCameraMode::ApplyEffects( const CPlayer& clientPlayer, cons
 			// make the local player exit all areas.. will turn off any reverb effects that are setup around the local player
 			// ready for the killer cam and kill cam cameras to have their correct audio setup
 			IAreaManager* pAreaManager = gEnv->pEntitySystem->GetAreaManager();
-			pAreaManager->ExitAllAreas(clientPlayer.GetEntity());
+			pAreaManager->ExitAllAreas(clientPlayer.GetEntity()->GetId());
 		}
 	}
 

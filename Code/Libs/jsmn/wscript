@@ -1,0 +1,22 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'jsmn', 
+		vs_filter = 'Libs',
+		file_list = 'jsmn.waf_files',
+
+		defines = ['JSMN_STRICT', 'JSMN_PARENT_LINKS'],
+		includes = [
+			Path('Code/SDKs/jsmn')
+		],
+
+		module_provides = dict(
+			includes = [
+				Path('Code/SDKs/jsmn'),
+				Path('Code/Libs/jsmn')
+			],
+			defines = ['JSMN_PARENT_LINKS']
+		)
+	)

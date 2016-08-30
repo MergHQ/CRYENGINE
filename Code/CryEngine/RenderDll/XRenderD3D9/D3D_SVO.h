@@ -85,7 +85,7 @@ protected:
 
 	void UpdateGpuVoxParams(I3DEngine::SSvoNodeInfo& nodeInfo);
 	void ExecuteComputeShader(CShader* pSH, const char* szTechFinalName, EComputeStages etiStage, int* nNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate);
-	void SetShaderFlags(bool bDiffuseMode = true, bool bPixelShader = true);
+	void SetShaderFlags(bool bDiffuseMode = true, bool bPixelShader = true, bool bDemosaic = false);
 	void SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, EHWShaderClass eShaderClass, int nStage, int nStageOpa = 0, int nStageNorm = 0);
 	void SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate);
 	void CheckAllocateRT(bool bSpecPass);
@@ -174,7 +174,8 @@ protected:
 	  INIT_SVO_CVAR(float, e_svoMinNodeSize);                       \
 	  INIT_SVO_CVAR(float, e_svoMaxNodeSize);                       \
 	  INIT_SVO_CVAR(int, e_svoTI_LowSpecMode);                      \
-	  INIT_SVO_CVAR(int, e_svoTI_HalfresKernel);                    \
+	  INIT_SVO_CVAR(int, e_svoTI_HalfresKernelPrimary);             \
+	  INIT_SVO_CVAR(int, e_svoTI_HalfresKernelSecondary);           \
 	  INIT_SVO_CVAR(int, e_svoVoxelPoolResolution);                 \
 	  INIT_SVO_CVAR(int, e_svoTI_Apply);                            \
 	  INIT_SVO_CVAR(float, e_svoTI_Diffuse_Spr);                    \
@@ -224,6 +225,7 @@ protected:
 		INIT_SVO_CVAR(int, e_svoTI_RsmUseColors);											\
 		INIT_SVO_CVAR(float, e_svoTI_AnalyticalOccludersRange);				\
 		INIT_SVO_CVAR(float, e_svoTI_AnalyticalOccludersSoftness);		\
+		INIT_SVO_CVAR(int, e_svoTI_AnalyticalGI);		                  \
 
 	  // INIT_ALL_SVO_CVARS
 

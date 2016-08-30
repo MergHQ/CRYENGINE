@@ -19,9 +19,10 @@ class CShaderResources : public IRenderShaderResources, public SBaseShaderResour
 	enum EFlags
 	{
 		eFlagInvalid = BIT(0),
+		eFlagRecreateResourceSet = BIT(1)
 	};
 public:
-	std::vector<Vec4>              m_Constants;
+	stl::aligned_vector<Vec4, 256> m_Constants;
 	SEfResTexture*                 m_Textures[EFTT_MAX]; // 48 bytes
 	SDeformInfo*                   m_pDeformInfo;        // 4 bytes
 	TArray<struct SHRenderTarget*> m_RTargets;           // 4

@@ -27,7 +27,6 @@ CShader* CShaderMan::s_ShaderFPEmu;
 CShader* CShaderMan::s_ShaderFallback;
 CShader* CShaderMan::s_ShaderScaleForm;
 CShader* CShaderMan::s_ShaderStars;
-CShader* CShaderMan::s_ShaderLPV;
 CShader* CShaderMan::s_ShaderTreeSprites;
 CShader* CShaderMan::s_ShaderShadowBlur;
 CShader* CShaderMan::s_ShaderShadowMaskGen;
@@ -47,7 +46,6 @@ CShader* CShaderMan::s_ShaderOcclTest;
 CShader* CShaderMan::s_ShaderDXTCompress = NULL;
 CShader* CShaderMan::s_ShaderStereo = NULL;
 CShader* CShaderMan::s_ShaderClouds = NULL;
-
 CCryNameTSCRC CShaderMan::s_cNameHEAD;
 
 TArray<CShaderResources*> CShader::s_ShaderResources_known(0, 2600);  // Based on BatteryPark
@@ -248,7 +246,7 @@ CShader::~CShader()
 
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
 	#pragma warning( push )               //AMD Port
-	#pragma warning( disable : 4311 )         // I believe the int cast below is okay.
+	#pragma warning( disable : 4311 )     // I believe the int cast below is okay.
 #endif
 
 CShader& CShader::operator=(const CShader& src)
@@ -273,7 +271,7 @@ CShader& CShader::operator=(const CShader& src)
 		{
 			m_HWTechniques[i] = new SShaderTechnique(this);
 			*m_HWTechniques[i] = *src.m_HWTechniques[i];
-			m_HWTechniques[i]->m_shader = this; // copy operator will override m_shader
+			m_HWTechniques[i]->m_shader = this;   // copy operator will override m_shader
 		}
 	}
 
@@ -281,7 +279,7 @@ CShader& CShader::operator=(const CShader& src)
 }
 
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-	#pragma warning( pop )                //AMD Port
+	#pragma warning( pop )                  //AMD Port
 #endif
 
 SShaderPass::SShaderPass()
@@ -610,7 +608,7 @@ void CShaderMan::mfCreateCommonGlobalFlags(const char* szName)
 	cry_strcat(dirn, "*.*");
 
 	handle = gEnv->pCryPak->FindFirst(dirn, &fileinfo);
-	if (handle == -1)// failed search
+	if (handle == -1)   // failed search
 		return;
 
 	do
@@ -652,7 +650,7 @@ void CShaderMan::mfCreateCommonGlobalFlags(const char* szName)
 					pCurrOffset += 4;
 					char dummy[256] = "\n";
 					char name[256] = "\n";
-					int res = sscanf(pCurrOffset, "%255s %255s", dummy, name);      // Get flag name..
+					int res = sscanf(pCurrOffset, "%255s %255s", dummy, name);         // Get flag name..
 					assert(res);
 
 					string pszNameFlag = name;
@@ -999,6 +997,8 @@ void CShaderMan::mfInitGlobal(void)
 				g_HWSR_MaskBit[HWSR_SKELETON_SSD] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_SKELETON_SSD_LINEAR")
 				g_HWSR_MaskBit[HWSR_SKELETON_SSD_LINEAR] = gb->m_Mask;
+			else if (gb->m_ParamName == "%_RT_COMPUTE_SKINNING")
+				g_HWSR_MaskBit[HWSR_COMPUTE_SKINNING] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_DISSOLVE")
 				g_HWSR_MaskBit[HWSR_DISSOLVE] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_SOFT_PARTICLE")
@@ -1037,8 +1037,6 @@ void CShaderMan::mfInitGlobal(void)
 				g_HWSR_MaskBit[HWSR_SAMPLE4] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_SAMPLE5")
 				g_HWSR_MaskBit[HWSR_SAMPLE5] = gb->m_Mask;
-			else if (gb->m_ParamName == "%_RT_GLOBAL_ILLUMINATION")
-				g_HWSR_MaskBit[HWSR_GLOBAL_ILLUMINATION] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_ANIM_BLEND")
 				g_HWSR_MaskBit[HWSR_ANIM_BLEND] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_MOTION_BLUR")
@@ -1092,20 +1090,20 @@ void CShaderMan::mfInit(void)
 			CRenderer::CV_r_shadersAllowCompilation = 1; // allow compilation
 			CRenderer::CV_r_shaderslogcachemisses = 0;   // don't bother about cache misses
 			CParserBin::m_bEditable = true;
-			CRenderer::CV_r_shadersImport = 0; // don't allow shader importing
+			CRenderer::CV_r_shadersImport = 0;           // don't allow shader importing
 
 			ICVar* pPakPriortyCVar = gEnv->pConsole->GetCVar("sys_PakPriority");
 			if (pPakPriortyCVar)
-				pPakPriortyCVar->Set(0); // shaders are loaded from disc, always
+				pPakPriortyCVar->Set(0);                   // shaders are loaded from disc, always
 			ICVar* pInvalidFileAccessCVar = gEnv->pConsole->GetCVar("sys_PakLogInvalidFileAccess");
 			if (pInvalidFileAccessCVar)
-				pInvalidFileAccessCVar->Set(0); // don't bother logging invalid access when editing shaders
+				pInvalidFileAccessCVar->Set(0);            // don't bother logging invalid access when editing shaders
 		}
 #endif
 		if (CRenderer::CV_r_shadersAllowCompilation)
 		{
 			CRenderer::CV_r_shadersasyncactivation = 0;
-			CRenderer::CV_r_shadersImport = 0; // don't allow shader importing
+			CRenderer::CV_r_shadersImport = 0;           // don't allow shader importing
 		}
 
 		// make sure correct paks are open - shaders.pak will be unloaded from memory after init
@@ -1338,13 +1336,13 @@ void CShaderMan::RT_SetShaderQuality(EShaderType eST, EShaderQuality eSQ)
 		for (int i = 0; i < eST_Max; i++)
 		{
 			m_ShaderProfiles[i] = m_ShaderFixedProfiles[eSQ];
-			m_ShaderProfiles[i].m_iShaderProfileQuality = eSQ;      // good?
+			m_ShaderProfiles[i].m_iShaderProfileQuality = eSQ;        // good?
 		}
 	}
 	else
 	{
 		m_ShaderProfiles[eST] = m_ShaderFixedProfiles[eSQ];
-		m_ShaderProfiles[eST].m_iShaderProfileQuality = eSQ;      // good?
+		m_ShaderProfiles[eST].m_iShaderProfileQuality = eSQ;        // good?
 	}
 	if (eST == eST_All || eST == eST_General)
 	{
@@ -1379,6 +1377,7 @@ static bool sLoadShader(const char* szName, CShader*& pStorage)
 
 void CShaderMan::mfReleaseSystemShaders()
 {
+	CCryDeviceWrapper::GetObjectFactory().ReleaseResources();
 
 	SAFE_RELEASE_FORCE(s_DefaultShader);
 	SAFE_RELEASE_FORCE(s_shPostEffects);
@@ -1394,7 +1393,6 @@ void CShaderMan::mfReleaseSystemShaders()
 	SAFE_RELEASE_FORCE(s_ShaderFallback);
 	SAFE_RELEASE_FORCE(s_ShaderScaleForm);
 	SAFE_RELEASE_FORCE(s_ShaderStars);
-	SAFE_RELEASE_FORCE(s_ShaderLPV);
 	SAFE_RELEASE_FORCE(s_ShaderTreeSprites);
 	SAFE_RELEASE_FORCE(s_ShaderShadowBlur);
 	SAFE_RELEASE_FORCE(s_ShaderShadowMaskGen);
@@ -1484,7 +1482,6 @@ void CShaderMan::mfLoadDefaultSystemShaders()
 		mfRefreshSystemShader("PostEffectsRenderModes", CShaderMan::s_shPostEffectsRenderModes);
 		mfRefreshSystemShader("PostAA", CShaderMan::s_shPostAA);
 		mfRefreshSystemShader("ShadowBlur", CShaderMan::s_ShaderShadowBlur);
-		mfRefreshSystemShader("LightPropagationVolumes", CShaderMan::s_ShaderLPV);
 		mfRefreshSystemShader("Sunshafts", CShaderMan::s_shPostSunShafts);
 		mfRefreshSystemShader("Clouds", CShaderMan::s_ShaderClouds);
 	}
@@ -1639,6 +1636,11 @@ int CShaderMan::mfInitShadersList(std::vector<string>* Names)
 		m_ShaderCacheExportCombinations.clear();
 
 		mfInitShadersCache(false, NULL, NULL, 0);
+
+		if (CParserBin::m_nPlatform == SF_ORBIS)
+		{
+			FilterShaderCacheGenListForOrbis(m_ShaderCacheCombinations[0]);
+		}
 	}
 
 	mfGatherShadersList(m_ShadersPath, false, bChanged, Names);
@@ -2102,7 +2104,7 @@ void SEfResTexture::UpdateWithModifier(int nTSlot)
 			break;
 		case ETMM_Constant:
 			{
-				float du = pMod->m_OscAmplitude[0] * Su;   //(Su - floor_tpl(Su));
+				float du = pMod->m_OscAmplitude[0] * Su;       //(Su - floor_tpl(Su));
 				pMod->m_TexMatrix(3, 0) = du;
 			}
 			break;
@@ -2150,7 +2152,7 @@ void SEfResTexture::UpdateWithModifier(int nTSlot)
 			break;
 		case ETMM_Constant:
 			{
-				float dv = pMod->m_OscAmplitude[1] * Sv;   //(Sv - floor_tpl(Sv));
+				float dv = pMod->m_OscAmplitude[1] * Sv;       //(Sv - floor_tpl(Sv));
 				pMod->m_TexMatrix(3, 1) = dv;
 			}
 			break;
@@ -2929,4 +2931,98 @@ void CLightStyle::mfUpdate(float fTime)
 			}
 		}
 	}
+}
+
+void CShaderMan::FilterShaderCacheGenListForOrbis(FXShaderCacheCombinations& combinations)
+{
+	// This function will perform shader list mutation for Orbis targets based on a target ISA list.
+	// The target list is stored in the CVar r_ShadersOrbisFiltering, with one character per item.
+	// L: Legacy combinations (ie, those without pipeline state), when present, are passed through.
+	// B/C/N/R: ISA combinations (ie, those with pipeline state), for each present character, the combination is generated if not present.
+	enum ECombinationKind
+	{
+		kCombinationB,
+		kCombinationC,
+		kCombinationN,
+		kCombinationR,
+		kCombinationLegacy,
+		kCombinationCount,
+	};
+	bool combinationFilter[kCombinationCount] = { false };
+
+	static const char* const szFilter = gEnv->pConsole->RegisterString("r_ShadersOrbisFiltering", "L", VF_NULL)->GetString();
+	for (const char* szFilterItem = szFilter; szFilterItem && *szFilterItem; ++szFilterItem)
+	{
+		switch (*szFilterItem)
+		{
+		case 'l':
+		case 'L':
+			combinationFilter[kCombinationLegacy] = true;
+			break;
+		case 'b':
+		case 'B':
+			combinationFilter[kCombinationB] = true;
+			break;
+		case 'c':
+		case 'C':
+			combinationFilter[kCombinationC] = true;
+			break;
+		case 'n':
+		case 'N':
+			combinationFilter[kCombinationN] = true;
+			break;
+		case 'r':
+		case 'R':
+			combinationFilter[kCombinationR] = true;
+			break;
+		}
+	}
+
+	FXShaderCacheCombinations result;
+	for (auto& item : combinations)
+	{
+		if (!item.second.Ident.m_pipelineState.opaque)
+		{
+			if (combinationFilter[kCombinationLegacy])
+			{
+				result[item.first] = item.second; // Copy legacy combination unchanged
+			}
+		}
+		else
+		{
+			uint8 isa = item.second.Ident.m_pipelineState.GetISA(item.second.eCL);
+			const auto insertIsa = [&result, &item, isa](uint8 targetIsa)
+			{
+				item.second.Ident.m_pipelineState.SetISA(item.second.eCL, targetIsa);
+
+				string name = item.first.c_str();
+				const string::size_type endPos = name.find_last_of('(', string::npos) - 1;
+				const string::size_type beginPos = name.find_last_of('(', endPos) + 1;
+				const string prefix = name.substr(0, beginPos);
+				const string affix = name.substr(endPos);
+				name.Format("%s%llx%s", prefix.c_str(), item.second.Ident.m_pipelineState.opaque, affix.c_str());
+
+				result[CCryNameR(name.c_str())] = item.second;
+			};
+			
+			// Create ISA mutations
+			if (combinationFilter[kCombinationB])
+			{
+				insertIsa(kCombinationB);
+			}
+			if (combinationFilter[kCombinationC])
+			{
+				insertIsa(kCombinationC);
+			}
+			if (combinationFilter[kCombinationN])
+			{
+				insertIsa(kCombinationN);
+			}
+			if (combinationFilter[kCombinationR])
+			{
+				insertIsa(kCombinationR);
+			}
+		}
+	}
+	result.swap(combinations);
 }

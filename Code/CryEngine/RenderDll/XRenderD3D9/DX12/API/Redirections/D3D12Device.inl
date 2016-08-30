@@ -7,7 +7,8 @@
 // Always give out unique handles
 #include "../../Includes/concqueue.hpp"
 
-#define DX12_MULTIGPU_NUM_DESCRIPTORHEAPS (1 << 6)
+#define DX12_MULTIGPU_VAR_HANDLE          true
+#define DX12_MULTIGPU_NUM_DESCRIPTORHEAPS (1 << 10)
 #define DX12_MULTIGPU_NUM_RESOURCES       (1 << 17)
 
 template<class T, const int numTargets>
@@ -58,6 +59,15 @@ struct Handable
 		UINT32 handle;
 		if (!m_FreeHandles.dequeue(handle))
 			handle = CryInterlockedIncrement((int*)&m_HighHandle);
+
+#if DX12_MULTIGPU_VAR_HANDLE
+		if (handle >= m_AddressTableLookUp.size())
+		{
+			m_AddressTableLookUp        .resize(m_AddressTableLookUp        .size() << 1);
+			m_DeltaCPUAddressTableLookUp.resize(m_DeltaCPUAddressTableLookUp.size() << 1);
+			m_DeltaGPUAddressTableLookUp.resize(m_DeltaGPUAddressTableLookUp.size() << 1);
+		}
+#endif
 		return handle;
 	}
 
@@ -162,6 +172,13 @@ public:
 
 #define Redirect(func) \
   m_Target->func;
+
+	static void DuplicateMetaData(
+		_In_ ID3D12Resource* pInputResource,
+		_In_ ID3D12Resource* pOutputResource)
+	{
+		return BroadcastableD3D12Resource<numTargets>::DuplicateMetaData(pInputResource, pOutputResource);
+	}
 
 	#pragma region /* IUnknown implementation */
 
@@ -312,6 +329,12 @@ public:
 	  REFIID riid,
 	  _COM_Outptr_ void** ppvRootSignature) final
 	{
+#if CRY_USE_DX12_MULTIADAPTER_SIMULATION
+		// Always create on the first GPU, if running simulation
+		if (CRenderer::CV_r_StereoEnableMgpu < 0)
+			nodeMask = 1;
+#endif
+
 		return Redirect(CreateRootSignature(nodeMask, pBlobWithRootSignature, blobLengthInBytes, riid, ppvRootSignature));
 	}
 
@@ -357,6 +380,8 @@ public:
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pResource);
 		auto DeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetCPUDeltasFromHandle(UINT32(DestDescriptor.ptr >> 32));
 
+		DX12_ASSERT(!pBroadcastableResource || !pBroadcastableResource->IsShared(), "CreateView is not valid on a shared resource");
+
 		D3D12_CPU_DESCRIPTOR_HANDLE Descriptor = DestDescriptor;
 		for (int i = 0; i < numTargets; ++i)
 		{
@@ -380,6 +405,9 @@ public:
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pResource);
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableCounterResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pCounterResource);
 		auto DeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetCPUDeltasFromHandle(UINT32(DestDescriptor.ptr >> 32));
+
+		DX12_ASSERT(!pBroadcastableResource || !pBroadcastableResource->IsShared(), "CreateView is not valid on a shared resource");
+		DX12_ASSERT(!pBroadcastableCounterResource || !pBroadcastableCounterResource->IsShared(), "CreateView is not valid on a shared resource");
 
 		D3D12_CPU_DESCRIPTOR_HANDLE Descriptor = DestDescriptor;
 		for (int i = 0; i < numTargets; ++i)
@@ -408,7 +436,7 @@ public:
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pResource);
 		auto DeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetCPUDeltasFromHandle(UINT32(DestDescriptor.ptr >> 32));
 
-		DX12_ASSERT(!pBroadcastableResource->IsShared(numTargets - 1), "Can't bind shared rendertarget to any node but 0!");
+		DX12_ASSERT(!pBroadcastableResource || !pBroadcastableResource->IsShared(), "CreateView is not valid on a shared resource");
 
 		D3D12_CPU_DESCRIPTOR_HANDLE Descriptor = DestDescriptor;
 		for (int i = 0; i < numTargets; ++i)
@@ -417,7 +445,7 @@ public:
 
 			// optional
 			pResource = nullptr;
-			if (pBroadcastableResource && !pBroadcastableResource->IsShared(i))
+			if (pBroadcastableResource)
 				pResource = *(*pBroadcastableResource)[i];
 
 			Redirect(CreateRenderTargetView(pResource, pDesc, Descriptor));
@@ -432,7 +460,7 @@ public:
 		BroadcastableD3D12Resource<numTargets>* pBroadcastableResource = reinterpret_cast<BroadcastableD3D12Resource<numTargets>*>(pResource);
 		auto DeltaDescriptors = BroadcastableD3D12DescriptorHeap<numTargets>::GetCPUDeltasFromHandle(UINT32(DestDescriptor.ptr >> 32));
 
-		DX12_ASSERT(!pBroadcastableResource->IsShared(numTargets - 1), "Can't bind shared depthstencil to any node but 0!");
+		DX12_ASSERT(!pBroadcastableResource || !pBroadcastableResource->IsShared(), "CreateView is not valid on a shared resource");
 
 		D3D12_CPU_DESCRIPTOR_HANDLE Descriptor = DestDescriptor;
 		for (int i = 0; i < numTargets; ++i)
@@ -441,7 +469,7 @@ public:
 
 			// optional
 			pResource = nullptr;
-			if (pBroadcastableResource && !pBroadcastableResource->IsShared(i))
+			if (pBroadcastableResource)
 				pResource = *(*pBroadcastableResource)[i];
 
 			Redirect(CreateDepthStencilView(pResource, pDesc, Descriptor));
@@ -494,7 +522,7 @@ public:
 				SrcDescriptorRangeStarts[j].ptr = pSrcDescriptorRangeStarts[j].ptr + StartDeltaDescriptors[i];
 			}
 
-			Redirect(CopyDescriptors(NumDestDescriptorRanges, DstDescriptorRangeStarts, pDestDescriptorRangeSizes, NumSrcDescriptorRanges, pSrcDescriptorRangeStarts, pSrcDescriptorRangeSizes, DescriptorHeapsType));
+			Redirect(CopyDescriptors(NumDestDescriptorRanges, DstDescriptorRangeStarts, pDestDescriptorRangeSizes, NumSrcDescriptorRanges, SrcDescriptorRangeStarts, pSrcDescriptorRangeSizes, DescriptorHeapsType));
 		}
 	}
 
@@ -530,6 +558,12 @@ public:
 	  _In_ UINT nodeMask,
 	  D3D12_HEAP_TYPE heapType) final
 	{
+#if CRY_USE_DX12_MULTIADAPTER_SIMULATION
+		// Always create on the first GPU, if running simulation
+		if (CRenderer::CV_r_StereoEnableMgpu < 0)
+			nodeMask = 1;
+#endif
+
 		// Q: Could the be different for each node?
 		return Redirect(GetCustomHeapProperties(blsi(nodeMask), heapType));
 	}
@@ -671,6 +705,8 @@ public:
 	  REFIID riid,
 	  _COM_Outptr_opt_ void** ppvCommandSignature) final
 	{
+		// TODO: implement BroadcastableD3D12CommandSignature
+		__debugbreak();
 		return Redirect(CreateCommandSignature(pDesc, pRootSignature, riid, ppvCommandSignature));
 	}
 
@@ -692,5 +728,4 @@ public:
 	}
 
 	#pragma endregion
-
 };

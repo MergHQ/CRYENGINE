@@ -572,26 +572,13 @@ IGameRef CGameStartup::Init(SSystemInitParams &startupParams)
 
 #if defined(CRY_UNIT_TESTING)
 	// Register All unit tests of this module.
-#if defined(_LIB)
-	if(gEnv->pSystem)
+	// run unit tests
+	if (CryUnitTest::IUnitTestManager *pTestManager = gEnv->pSystem->GetITestSystem()->GetIUnitTestManager())
 	{
-		CryUnitTest::Test *pTest = CryUnitTest::Test::m_pFirst; 
-		for (; pTest != 0; pTest = pTest->m_pNext)
-		{
-			CryUnitTest::IUnitTestManager *pTestManager = gEnv->pSystem->GetITestSystem()->GetIUnitTestManager();
-			if (pTestManager)
-			{
-				pTest->m_unitTestInfo.module = "StaticBinary";
-				pTestManager->CreateTest( pTest->m_unitTestInfo );
-			}
-		}
-	}
+#if defined(_LIB)
+		pTestManager->CreateTests(CryUnitTest::Test::m_pFirst, "StaticBinary");
 #endif
 
-	// run unit tests
-	CryUnitTest::IUnitTestManager *pTestManager =  (gEnv && gEnv->pSystem) ? gEnv->pSystem->GetITestSystem()->GetIUnitTestManager() : NULL;
-	if (pTestManager)
-	{
 		const ICmdLineArg* pSkipUnitTest = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "skip_unit_tests"); 
 		if(pSkipUnitTest == NULL)
 		{

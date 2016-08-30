@@ -1,15 +1,15 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
--------------------------------------------------------------------------
-$Id$
-$DateTime$
-Description: Controls script variables coming from track view to add some 
-control/feedback during cutscenes
+   -------------------------------------------------------------------------
+   $Id$
+   $DateTime$
+   Description: Controls script variables coming from track view to add some
+   control/feedback during cutscenes
 
--------------------------------------------------------------------------
-History:
-- 28:04:2010   Created by Benito Gangoso Rodriguez
+   -------------------------------------------------------------------------
+   History:
+   - 28:04:2010   Created by Benito Gangoso Rodriguez
 
 *************************************************************************/
 
@@ -25,9 +25,9 @@ History:
 
 #include "Weapon.h"
 
-#define CINEMATIC_INPUT_MOUSE_RECENTER_TIMEOUT	3.0f
-#define CINEMATIC_INPUT_MAX_AIM_DISTANCE			250.0f
-#define CINEMATIC_INPUT_MIN_AIM_DISTANCE			10.0f
+#define CINEMATIC_INPUT_MOUSE_RECENTER_TIMEOUT 3.0f
+#define CINEMATIC_INPUT_MAX_AIM_DISTANCE       250.0f
+#define CINEMATIC_INPUT_MIN_AIM_DISTANCE       10.0f
 
 CCinematicInput::CCinematicInput()
 	: m_controllerAccumulatedAngles(ZERO)
@@ -58,7 +58,7 @@ CCinematicInput::~CCinematicInput()
 	}
 }
 
-void CCinematicInput::OnBeginCutScene( int cutSceneFlags )
+void CCinematicInput::OnBeginCutScene(int cutSceneFlags)
 {
 	m_cutsceneRunningCount++;
 
@@ -78,16 +78,18 @@ void CCinematicInput::OnBeginCutScene( int cutSceneFlags )
 
 	if (m_cutsceneRunningCount == 1 && (cutSceneFlags & IAnimSequence::eSeqFlags_NoUI))
 	{
-		if(ICVar* pCVar = gEnv->pConsole->GetCVar("sys_flash"))
+		if (ICVar* pCVar = gEnv->pConsole->GetCVar("hud_hide"))
 		{
-			m_bCutsceneDisabledUISystem = pCVar->GetIVal() != 0;
-			if(m_bCutsceneDisabledUISystem)
-				pCVar->Set(0);
+			m_bCutsceneDisabledUISystem = pCVar->GetIVal() != 1;
+			if (m_bCutsceneDisabledUISystem)
+			{
+				pCVar->Set(1);
+			}
 		}
 	}
 }
 
-void CCinematicInput::OnEndCutScene( int cutSceneFlags )
+void CCinematicInput::OnEndCutScene(int cutSceneFlags)
 {
 	m_cutsceneRunningCount = max(m_cutsceneRunningCount - 1, 0);
 	if (m_cutsceneRunningCount == 0)
@@ -112,9 +114,9 @@ void CCinematicInput::OnEndCutScene( int cutSceneFlags )
 	if (m_bCutsceneDisabledUISystem && m_cutsceneRunningCount == 0)
 	{
 		m_bCutsceneDisabledUISystem = false;
-		if(ICVar* pCVar = gEnv->pConsole->GetCVar("sys_flash"))
+		if (ICVar* pCVar = gEnv->pConsole->GetCVar("hud_hide"))
 		{
-			pCVar->Set(1);
+			pCVar->Set(0);
 		}
 	}
 }
@@ -131,7 +133,7 @@ void CCinematicInput::TogglePlayerThirdPerson(bool bEnable)
 	}
 }
 
-void CCinematicInput::Update( float frameTime )
+void CCinematicInput::Update(float frameTime)
 {
 	IScriptSystem* pScriptSystem = gEnv->pScriptSystem;
 	if (pScriptSystem)
@@ -143,24 +145,24 @@ void CCinematicInput::Update( float frameTime )
 	UpdateWeapons();
 }
 
-void CCinematicInput::OnAction( const EntityId actorId, const ActionId& actionId, int activationMode, float value)
+void CCinematicInput::OnAction(const EntityId actorId, const ActionId& actionId, int activationMode, float value)
 {
 	const CGameActions& gameActions = g_pGame->Actions();
 
 	if (actionId == gameActions.attack1_cine)
 	{
-		CWeapon* pPrimaryWeapon = GetWeapon( eWeapon_Primary );
+		CWeapon* pPrimaryWeapon = GetWeapon(eWeapon_Primary);
 		if (pPrimaryWeapon != NULL)
 		{
-			pPrimaryWeapon->OnAction( actorId, actionId, activationMode, value );
+			pPrimaryWeapon->OnAction(actorId, actionId, activationMode, value);
 		}
 	}
 	else if (actionId == gameActions.attack2_cine)
 	{
-		CWeapon* pSecondaryWeapon = GetWeapon( eWeapon_Secondary );
+		CWeapon* pSecondaryWeapon = GetWeapon(eWeapon_Secondary);
 		if (pSecondaryWeapon != NULL)
 		{
-			pSecondaryWeapon->OnAction( actorId, actionId, activationMode, value );
+			pSecondaryWeapon->OnAction(actorId, actionId, activationMode, value);
 		}
 	}
 	else if (actionId == gameActions.skip_cutscene)
@@ -182,21 +184,21 @@ void CCinematicInput::OnAction( const EntityId actorId, const ActionId& actionId
 
 void CCinematicInput::OnRayCastDataReceived(const QueuedRayID& rayID, const RayCastResult& result)
 {
-	assert( rayID == m_aimingRayID );
+	assert(rayID == m_aimingRayID);
 
 	m_aimingRayID = 0;
 
 	m_aimingDistance = (result.hitCount > 0) ? max(result.hits[0].dist, CINEMATIC_INPUT_MIN_AIM_DISTANCE) : CINEMATIC_INPUT_MAX_AIM_DISTANCE;
 }
 
-void CCinematicInput::SetUpWeapon( const CCinematicInput::Weapon& weaponClass, const IEntity* pEntity )
+void CCinematicInput::SetUpWeapon(const CCinematicInput::Weapon& weaponClass, const IEntity* pEntity)
 {
-	assert( (weaponClass >= 0) && (weaponClass < eWeapon_ClassCount) );
+	assert((weaponClass >= 0) && (weaponClass < eWeapon_ClassCount));
 
 	if (pEntity != NULL)
 	{
 		m_weapons[weaponClass].m_weaponId = pEntity->GetId();
-		
+
 		IEntity* pParent = pEntity->GetParent();
 		m_weapons[weaponClass].m_parentId = (pParent != NULL) ? pParent->GetId() : 0;
 	}
@@ -232,7 +234,7 @@ void CCinematicInput::ClearCutSceneVariables()
 	m_controllerAccumulatedAngles.Set(0.0f, 0.0f, 0.0f);
 }
 
-void CCinematicInput::UpdateForceFeedback( IScriptSystem* pScriptSystem, float frameTime )
+void CCinematicInput::UpdateForceFeedback(IScriptSystem* pScriptSystem, float frameTime)
 {
 	float rumbleA = 0.0f, rumbleB = 0.0f;
 
@@ -245,7 +247,7 @@ void CCinematicInput::UpdateForceFeedback( IScriptSystem* pScriptSystem, float f
 	}
 }
 
-void CCinematicInput::UpdateAdditiveCameraInput( IScriptSystem* pScriptSystem, float frameTime )
+void CCinematicInput::UpdateAdditiveCameraInput(IScriptSystem* pScriptSystem, float frameTime)
 {
 	CCinematicInput::SUpdateContext updateCtx;
 
@@ -271,9 +273,9 @@ void CCinematicInput::UpdateAdditiveCameraInput( IScriptSystem* pScriptSystem, f
 		CPlayer* pClientPlayer = static_cast<CPlayer*>(pClientActor);
 
 		IPlayerInput* pIPlayerInput = pClientPlayer->GetPlayerInput();
-		if(pIPlayerInput && pIPlayerInput->GetType() == IPlayerInput::PLAYER_INPUT)
+		if (pIPlayerInput && pIPlayerInput->GetType() == IPlayerInput::PLAYER_INPUT)
 		{
-			CPlayerInput * pPlayerInput = static_cast<CPlayerInput*>(pIPlayerInput);
+			CPlayerInput* pPlayerInput = static_cast<CPlayerInput*>(pIPlayerInput);
 
 			Ang3 frameAccumulatedAngles(0.0f, 0.0f, 0.0f);
 
@@ -313,16 +315,16 @@ void CCinematicInput::UpdateWeapons()
 	{
 		const CCamera& camera = gEnv->pSystem->GetViewCamera();
 
-		const Vec3 viewPosition  = camera.GetPosition();
+		const Vec3 viewPosition = camera.GetPosition();
 		const Vec3 viewDirection = camera.GetViewdir();
 
 		// Update raycast
 		if (m_aimingRayID == 0)
 		{
-			IEntity *pIgnoredEntity = gEnv->pEntitySystem->GetEntity(m_weapons[eWeapon_Primary].m_parentId);
-			IEntity *pIgnoredEntity2 = gEnv->pEntitySystem->GetEntity(m_weapons[eWeapon_Secondary].m_parentId);
+			IEntity* pIgnoredEntity = gEnv->pEntitySystem->GetEntity(m_weapons[eWeapon_Primary].m_parentId);
+			IEntity* pIgnoredEntity2 = gEnv->pEntitySystem->GetEntity(m_weapons[eWeapon_Secondary].m_parentId);
 			int ignoreCount = 0;
-			IPhysicalEntity *pIgnoredEntityPhysics[2] = { NULL, NULL };
+			IPhysicalEntity* pIgnoredEntityPhysics[2] = { NULL, NULL };
 			if (pIgnoredEntity)
 			{
 				pIgnoredEntityPhysics[ignoreCount] = pIgnoredEntity->GetPhysics();
@@ -335,39 +337,39 @@ void CCinematicInput::UpdateWeapons()
 			}
 
 			m_aimingRayID = g_pGame->GetRayCaster().Queue(
-				RayCastRequest::HighestPriority,
-				RayCastRequest(viewPosition, viewDirection * CINEMATIC_INPUT_MAX_AIM_DISTANCE,
-				ent_all|ent_water,
-				rwi_stop_at_pierceable|rwi_ignore_back_faces,
-				pIgnoredEntityPhysics,
-				ignoreCount),
-				functor(*this, &CCinematicInput::OnRayCastDataReceived));
+			  RayCastRequest::HighestPriority,
+			  RayCastRequest(viewPosition, viewDirection * CINEMATIC_INPUT_MAX_AIM_DISTANCE,
+			                 ent_all | ent_water,
+			                 rwi_stop_at_pierceable | rwi_ignore_back_faces,
+			                 pIgnoredEntityPhysics,
+			                 ignoreCount),
+			  functor(*this, &CCinematicInput::OnRayCastDataReceived));
 		}
 
 		// Update weapon orientation
 		const Vec3 aimTargetPosition = viewPosition + (viewDirection * m_aimingDistance);
 		if (pPrimaryWeapon != NULL)
 		{
-			UpdateWeaponOrientation( pPrimaryWeapon->GetEntity(), aimTargetPosition );
+			UpdateWeaponOrientation(pPrimaryWeapon->GetEntity(), aimTargetPosition);
 		}
 
 		if (pSecondaryWeapon != NULL)
 		{
-			UpdateWeaponOrientation( pSecondaryWeapon->GetEntity(), aimTargetPosition );
+			UpdateWeaponOrientation(pSecondaryWeapon->GetEntity(), aimTargetPosition);
 		}
 	}
 }
 
-void CCinematicInput::UpdateWeaponOrientation( IEntity* pWeaponEntity, const Vec3& targetPosition )
+void CCinematicInput::UpdateWeaponOrientation(IEntity* pWeaponEntity, const Vec3& targetPosition)
 {
-	assert( pWeaponEntity != NULL );
+	assert(pWeaponEntity != NULL);
 	const Vec3 weaponPosition = pWeaponEntity->GetWorldPos();
 	const Vec3 desiredAimDirection = (targetPosition - weaponPosition).GetNormalized();
-	
-	Matrix34 newWorldTM( Quat::CreateRotationVDir(desiredAimDirection) );
-	newWorldTM.SetTranslation( weaponPosition );
 
-	pWeaponEntity->SetWorldTM( newWorldTM );
+	Matrix34 newWorldTM(Quat::CreateRotationVDir(desiredAimDirection));
+	newWorldTM.SetTranslation(weaponPosition);
+
+	pWeaponEntity->SetWorldTM(newWorldTM);
 }
 
 void CCinematicInput::ReEnablePlayerAfterCutscenes()
@@ -378,29 +380,29 @@ void CCinematicInput::ReEnablePlayerAfterCutscenes()
 		CRY_ASSERT(pClientActor->GetActorClass() == CPlayer::GetActorClassType());
 		CPlayer* pClientPlayer = static_cast<CPlayer*>(pClientActor);
 		IEntity* pPlayerEntity = pClientPlayer->GetEntity();
-		
+
 		if (m_bMutedAudioForCutscene)
 		{
 			uint32 playerFlags = pClientPlayer->GetEntity()->GetFlagsExtended();
 			pPlayerEntity->SetFlagsExtended(playerFlags & ~ENTITY_FLAG_EXTENDED_AUDIO_DISABLED);
 		}
 
-		if(!m_bPlayerWasInvisible && !gEnv->IsEditor())
+		if (!m_bPlayerWasInvisible && !gEnv->IsEditor())
 		{
 			pPlayerEntity->Invisible(false);
 		}
 
-		pClientPlayer->StateMachineHandleEventMovement( SStateEventCutScene( false ) );
+		pClientPlayer->StateMachineHandleEventMovement(SStateEventCutScene(false));
 	}
 
 	g_pGameActions->FilterCutsceneNoPlayer()->Enable(false);
 
-	g_pGame->GetIGameFramework()->GetIActionMapManager()->EnableActionMap( "player_cine" , false );
+	g_pGame->GetIGameFramework()->GetIActionMapManager()->EnableActionMap("player_cine", false);
 }
 
 CWeapon* CCinematicInput::GetWeapon(const CCinematicInput::Weapon& weaponClass) const
 {
-	assert( (weaponClass >= 0) && (weaponClass < eWeapon_ClassCount) );
+	assert((weaponClass >= 0) && (weaponClass < eWeapon_ClassCount));
 
 	if (m_weapons[weaponClass].m_weaponId != 0)
 	{
@@ -420,7 +422,7 @@ void CCinematicInput::DisablePlayerForCutscenes()
 		CPlayer* pClientPlayer = static_cast<CPlayer*>(pClientActor);
 		IEntity* pPlayerEntity = pClientPlayer->GetEntity();
 		uint32 playerFlags = pClientPlayer->GetEntity()->GetFlagsExtended();
-		
+
 		m_bMutedAudioForCutscene = !(playerFlags & ENTITY_FLAG_EXTENDED_AUDIO_DISABLED);
 		if (m_bMutedAudioForCutscene)
 		{
@@ -428,7 +430,7 @@ void CCinematicInput::DisablePlayerForCutscenes()
 		}
 
 		m_bPlayerWasInvisible = pPlayerEntity->IsInvisible();
-		if(!m_bPlayerWasInvisible)
+		if (!m_bPlayerWasInvisible)
 		{
 			pPlayerEntity->Invisible(true);
 		}
@@ -438,10 +440,10 @@ void CCinematicInput::DisablePlayerForCutscenes()
 
 	g_pGameActions->FilterCutsceneNoPlayer()->Enable(true);
 
-	g_pGame->GetIGameFramework()->GetIActionMapManager()->EnableActionMap( "player_cine" , true );
+	g_pGame->GetIGameFramework()->GetIActionMapManager()->EnableActionMap("player_cine", true);
 }
 
-Ang3 CCinematicInput::UpdateAdditiveCameraInputWithMouse( const SUpdateContext& updateCtx, const Ang3& rawMouseInput )
+Ang3 CCinematicInput::UpdateAdditiveCameraInputWithMouse(const SUpdateContext& updateCtx, const Ang3& rawMouseInput)
 {
 #if CINEMATIC_INPUT_PC_MOUSE
 	Ang3 rawMouseInputModified = rawMouseInput * updateCtx.m_frameTime * updateCtx.m_frameTime;
@@ -454,7 +456,7 @@ Ang3 CCinematicInput::UpdateAdditiveCameraInputWithMouse( const SUpdateContext& 
 	m_mouseAccumulatedInput.y = 0.0f;
 
 	//Yaw angle (Z axis)
-	m_mouseAccumulatedAngles.z = -(float)__fsel(m_mouseAccumulatedInput.z, m_mouseAccumulatedInput.z * updateCtx.m_lookRightLimit, m_mouseAccumulatedInput.z * updateCtx.m_lookLeftLimit);		
+	m_mouseAccumulatedAngles.z = -(float)__fsel(m_mouseAccumulatedInput.z, m_mouseAccumulatedInput.z * updateCtx.m_lookRightLimit, m_mouseAccumulatedInput.z * updateCtx.m_lookLeftLimit);
 
 	//Pitch angle (X axis)
 	m_mouseAccumulatedAngles.x = (float)__fsel(m_mouseAccumulatedInput.x, m_mouseAccumulatedInput.x * updateCtx.m_lookUpLimit, m_mouseAccumulatedInput.x * updateCtx.m_lookDownLimit);
@@ -476,17 +478,17 @@ Ang3 CCinematicInput::UpdateAdditiveCameraInputWithMouse( const SUpdateContext& 
 #else
 	return Ang3(0.0f, 0.0f, 0.0f);
 #endif
-	
+
 }
 
-Ang3 CCinematicInput::UpdateAdditiveCameraInputWithController( const SUpdateContext& updateCtx, const Ang3& rawControllerInput )
+Ang3 CCinematicInput::UpdateAdditiveCameraInputWithController(const SUpdateContext& updateCtx, const Ang3& rawControllerInput)
 {
 	if (updateCtx.m_recenter)
 	{
 		Ang3 finalControllerAnglesLimited = rawControllerInput;
 
 		//Yaw angle (Z axis)
-		finalControllerAnglesLimited.z = -clamp_tpl((float)__fsel(finalControllerAnglesLimited.z, finalControllerAnglesLimited.z * updateCtx.m_lookRightLimit, finalControllerAnglesLimited.z * updateCtx.m_lookLeftLimit), -updateCtx.m_lookLeftLimit, updateCtx.m_lookRightLimit);		
+		finalControllerAnglesLimited.z = -clamp_tpl((float)__fsel(finalControllerAnglesLimited.z, finalControllerAnglesLimited.z * updateCtx.m_lookRightLimit, finalControllerAnglesLimited.z * updateCtx.m_lookLeftLimit), -updateCtx.m_lookLeftLimit, updateCtx.m_lookRightLimit);
 
 		//Pitch angle (X axis)
 		finalControllerAnglesLimited.x *= (g_pGameCVars->cl_invertController == 0) ? 1.0f : -1.0f;
@@ -501,7 +503,7 @@ Ang3 CCinematicInput::UpdateAdditiveCameraInputWithController( const SUpdateCont
 	{
 		Ang3 finalControllerAnglesLimited = m_controllerAccumulatedAngles;
 
-		finalControllerAnglesLimited.x += ( (rawControllerInput.x * updateCtx.m_frameTime * 1.5f) * ((g_pGameCVars->cl_invertController == 0) ? 1.0f : -1.0f) );
+		finalControllerAnglesLimited.x += ((rawControllerInput.x * updateCtx.m_frameTime * 1.5f) * ((g_pGameCVars->cl_invertController == 0) ? 1.0f : -1.0f));
 		finalControllerAnglesLimited.z -= (rawControllerInput.z * updateCtx.m_frameTime * 1.5f);
 
 		finalControllerAnglesLimited.x = clamp_tpl(finalControllerAnglesLimited.x, -updateCtx.m_lookDownLimit, updateCtx.m_lookUpLimit);
@@ -515,7 +517,7 @@ Ang3 CCinematicInput::UpdateAdditiveCameraInputWithController( const SUpdateCont
 	return m_controllerAccumulatedAngles;
 }
 
-void CCinematicInput::RefreshInputMethod( const bool isMouseInput )
+void CCinematicInput::RefreshInputMethod(const bool isMouseInput)
 {
 #if CINEMATIC_INPUT_PC_MOUSE
 	if (isMouseInput == m_lastUpdateWithMouse)

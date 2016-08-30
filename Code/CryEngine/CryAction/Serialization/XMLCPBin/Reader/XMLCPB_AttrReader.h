@@ -26,6 +26,7 @@ public:
 	{
 		if (this != &other)
 		{
+			CRY_ASSERT (&m_Reader == &other.m_Reader);
 			m_type = other.m_type;
 			m_nameId = other.m_nameId;
 			m_addr = other.m_addr;

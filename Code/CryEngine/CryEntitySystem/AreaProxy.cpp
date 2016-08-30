@@ -792,7 +792,7 @@ size_t CAreaProxy::GetNumberOfEntitiesInArea() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-EntityId CAreaProxy::GetEntityInAreaByIdx(size_t index) const
+EntityId CAreaProxy::GetEntityInAreaByIdx(size_t const index) const
 {
 	return m_pArea->GetEntityByIdx(index);
 }

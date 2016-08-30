@@ -12,7 +12,7 @@ public:
 
 	bool InputChanged(int var0 = 0, int var1 = 0, int var2 = 0, int var3 = 0)
 	{
-		bool bChanged = GetPrimitive().IsDirty() ||
+		bool bChanged = m_primitive.IsDirty() ||
 		                var0 != m_inputVars[0] || var1 != m_inputVars[1] ||
 		                var2 != m_inputVars[2] || var3 != m_inputVars[3];
 
@@ -27,30 +27,35 @@ public:
 		return bChanged;
 	}
 
-	ILINE void SetTechnique(CShader* pShader, CCryNameTSCRC& techName, uint64 rtMask)
+	ILINE void SetTechnique(CShader* pShader, const CCryNameTSCRC& techName, uint64 rtMask)
 	{
-		GetPrimitive().SetTechnique(pShader, techName, rtMask);
+		m_primitive.SetTechnique(pShader, techName, rtMask);
 	}
 
 	ILINE void SetTexture(uint32 slot, CTexture* pTexture, SResourceView::KeyType resourceViewID = SResourceView::DefaultView)
 	{
-		GetPrimitive().SetTexture(slot, pTexture, resourceViewID);
+		m_primitive.SetTexture(slot, pTexture, resourceViewID);
 	}
 
 	ILINE void SetSampler(uint32 slot, int32 sampler)
 	{
-		GetPrimitive().SetSampler(slot, sampler);
+		m_primitive.SetSampler(slot, sampler);
 	}
 
 	ILINE void SetTextureSamplerPair(uint32 slot, CTexture* pTex, int32 sampler, SResourceView::KeyType resourceViewID = SResourceView::DefaultView)
 	{
-		GetPrimitive().SetTexture(slot, pTex, resourceViewID);
-		GetPrimitive().SetSampler(slot, sampler);
+		m_primitive.SetTexture(slot, pTex, resourceViewID);
+		m_primitive.SetSampler(slot, sampler);
 	}
 
 	ILINE void SetState(int state)
 	{
-		GetPrimitive().SetRenderState(state);
+		m_primitive.SetRenderState(state);
+	}
+
+	ILINE void SetStencilState(int state, uint8 stencilRef, uint8 stencilReadMask = 0xFF, uint8 stencilWriteMask = 0xFF)
+	{
+		m_primitive.SetStencilState(state, stencilRef, stencilReadMask, stencilWriteMask);
 	}
 
 	void SetRequirePerViewConstantBuffer(bool bRequirePerViewCB)
@@ -58,24 +63,59 @@ public:
 		m_bRequirePerViewCB = bRequirePerViewCB;
 	}
 
-	void SetRequireWorldPos(bool bRequireWPos)
+	void SetRequireWorldPos(bool bRequireWPos, f32 clipSpaceZ = 0.0f)
 	{
 		m_bRequireWorldPos = bRequireWPos;
+		m_clipZ = clipSpaceZ;
+	}
+
+	void SetConstant(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 param)
+	{
+		m_primitive.GetConstantManager().SetNamedConstant(shaderClass, paramName, param);
+	}
+
+	void SetConstantArray(EHWShaderClass shaderClass, const CCryNameR& paramName, const Vec4 params[], uint32 numParams)
+	{
+		m_primitive.GetConstantManager().SetNamedConstantArray(shaderClass, paramName, params, numParams);
+	}
+
+	void SetInlineConstantBuffer(EConstantBufferShaderSlot shaderSlot, CConstantBuffer* pBuffer, EShaderStage shaderStages = EShaderStage_Pixel)
+	{
+		m_primitive.SetInlineConstantBuffer(shaderSlot, pBuffer, shaderStages);
+	}
+
+	template<typename T>
+	void AllocateTypedConstantBuffer(EConstantBufferShaderSlot shaderSlot, EShaderStage shaderStages)
+	{
+		m_primitive.AllocateTypedConstantBuffer(shaderSlot, sizeof(T), shaderStages);
 	}
 
 	void BeginConstantUpdate();
+
+	template<typename T>
+	SDeviceObjectHelpers::STypedConstants<T> BeginTypedConstantUpdate(EConstantBufferShaderSlot shaderSlot, EShaderStage shaderStages = EShaderStage_Pixel) const
+	{
+		return m_primitive.GetConstantManager().BeginTypedConstantUpdate<T>(shaderSlot, shaderStages);
+	}
+
+	template<typename T>
+	void EndTypedConstantUpdate(SDeviceObjectHelpers::STypedConstants<T>& constants) const
+	{
+		return m_primitive.GetConstantManager().EndTypedConstantUpdate<T>(constants);
+	}
+
 	void Execute();
 
 private:
-	ILINE CCompiledRenderPrimitive& GetPrimitive() { return m_primitives[0]; }
+	int                      m_inputVars[4];
 
-	int             m_inputVars[4];
+	bool                     m_bRequirePerViewCB;
+	bool                     m_bRequireWorldPos;
+	bool                     m_bPendingConstantUpdate;
 
-	bool            m_bRequirePerViewCB;
-	bool            m_bRequireWorldPos;
-	bool            m_bValidConstantBuffers;
-	bool            m_bPendingConstantUpdate;
+	f32                      m_clipZ;        // only work for WPos
+	buffer_handle_t          m_vertexBuffer; // only required for WPos
+	uint64                   m_prevRTMask;
 
-	buffer_handle_t m_vertexBuffer; // only required for WPos
-	uint64          m_prevRTMask;
+	CRenderPrimitive m_primitive;
 };

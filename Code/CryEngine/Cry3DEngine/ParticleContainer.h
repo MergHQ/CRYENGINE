@@ -294,6 +294,10 @@ private:
 
 	ParticleList<CParticle>            m_Particles;
 
+	CRenderObject*                     m_pBeforeWaterRO[RT_COMMAND_BUF_COUNT];
+	CRenderObject*                     m_pAfterWaterRO[RT_COMMAND_BUF_COUNT];
+	CRenderObject*                     m_pRecursiveRO[RT_COMMAND_BUF_COUNT];
+
 	// Last time when emitter updated, and static bounds validated.
 	float m_fAgeLastUpdate;
 	float m_fAgeStaticBoundsStable;
@@ -320,6 +324,9 @@ private:
 	int   GetMaxParticleCount(const SParticleUpdateContext& context) const;
 	void  UpdateParticleStates(SParticleUpdateContext& context);
 	void  SetScreenBounds(const CCamera& cam, uint8 aScreenBounds[4]);
+
+	CRenderObject* CreateRenderObject(uint64 nObjFlags);
+	void           ResetRenderObjects();
 };
 
 #endif // __particlecontainer_h__

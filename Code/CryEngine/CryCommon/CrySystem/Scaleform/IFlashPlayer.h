@@ -590,8 +590,8 @@ protected:
 //! Color transformation to control flash movie clips.
 struct SFlashCxform
 {
-	ColorF mul;
-	ColorF add;
+	ColorF mul; // Range: 0.0f - 1.0f
+	ColorB add; // Range: 0 - 255
 };
 
 //! DisplayInfo structure for flash display objects (MovieClip, TextField, Button).

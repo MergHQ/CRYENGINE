@@ -90,7 +90,6 @@ CShaderResources* CShaderMan::mfCreateShaderResources(const SInputShaderResource
 	pSR->m_nRefCounter = 1;
 	if (!CShader::s_ShaderResources_known.Num())
 	{
-		ScopedSwitchToGlobalHeap globalHeap;
 		CShader::s_ShaderResources_known.AddIndex(1);
 		CShaderResources* pSRNULL = new CShaderResources;
 		pSRNULL->m_nRefCounter = 1;
@@ -110,7 +109,6 @@ CShaderResources* CShaderMan::mfCreateShaderResources(const SInputShaderResource
 	}
 	else
 	{
-		ScopedSwitchToGlobalHeap globalHeap;
 		pSR->m_Id = CShader::s_ShaderResources_known.Num();
 		pSR->m_IdGroup = pSR->m_Id;
 		CShader::s_ShaderResources_known.AddElem(pSR);
@@ -156,7 +154,7 @@ uint32 SShaderItem::PostLoad()
 				nPreprocessFlags |= FSPR_SCANTEX;
 		}
 	}
-	if (pTech && pTech->m_Passes.Num() && (pTech->m_Passes[0].m_RenderState & GS_ALPHATEST_MASK))
+	if (pTech && pTech->m_Passes.Num() && (pTech->m_Passes[0].m_RenderState & GS_ALPHATEST))
 	{
 		if (pR && !pR->m_AlphaRef)
 			pR->m_AlphaRef = 0.5f;
@@ -309,10 +307,6 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 		TexPic = CTexture::s_ptexFromRE[6];
 	else if (!stricmp(mapname, "$FromRE7"))
 		TexPic = CTexture::s_ptexFromRE[7];
-	else if (!stricmp(mapname, "$FromSF0"))
-		TexPic = CTexture::s_ptexText_FromSF[0];
-	else if (!stricmp(mapname, "$FromSF1"))
-		TexPic = CTexture::s_ptexText_FromSF[1];
 	else if (!stricmp(mapname, "$VolObj_Density"))
 		TexPic = CTexture::s_ptexVolObj_Density;
 	else if (!stricmp(mapname, "$VolObj_Shadow"))
@@ -405,18 +399,6 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 		TexPic = CTexture::s_ptexSceneDiffuseAccMapMS;
 	else if (!stricmp(mapname, "$SceneSpecularAccMS"))
 		TexPic = CTexture::s_ptexSceneSpecularAccMapMS;
-	else if (!stricmp(mapname, "$LPV_Red_RT"))
-		TexPic = CTexture::s_ptexLPV_RTs[0];
-	else if (!stricmp(mapname, "$LPV_Green_RT"))
-		TexPic = CTexture::s_ptexLPV_RTs[1];
-	else if (!stricmp(mapname, "$LPV_Blue_RT"))
-		TexPic = CTexture::s_ptexLPV_RTs[2];
-	else if (!stricmp(mapname, "$RSM_Flux_RT"))
-		TexPic = CTexture::s_ptexRSMFlux;
-	else if (!stricmp(mapname, "$RSM_Normals_RT"))
-		TexPic = CTexture::s_ptexRSMNormals;
-	else if (!stricmp(mapname, "$RSM_Depth_RT"))
-		TexPic = CTexture::s_ptexRSMDepth;
 	else if (!stricmp(mapname, "$VolCloudShadows"))
 		TexPic = CTexture::s_ptexVolCloudShadow;
 
@@ -568,7 +550,8 @@ STexAnim* CShaderMan::mfReadTexSequence(const char* na, int Flags, bool bFindOnl
 	for (i = 0; i < nums; i++)
 	{
 		sprintf(nam, frm, prefix, startn + i, postfix, ext);
-		tp = (CTexture*)gRenDev->EF_LoadTexture(nam, Flags);
+		// TODO: add support for animated sequences to the texture streaming
+		tp = (CTexture*)gRenDev->EF_LoadTexture(nam, Flags | FT_DONT_STREAM);
 		if (!tp || !tp->IsLoaded())
 		{
 			if (tp)
@@ -597,23 +580,19 @@ STexAnim* CShaderMan::mfReadTexSequence(const char* na, int Flags, bool bFindOnl
 
 int CShaderMan::mfReadTexSequence(STexSamplerRT* smp, const char* na, int Flags, bool bFindOnly)
 {
-	if (smp->m_pAnimInfo)
-	{
-		assert(0);
-		return 0;
-	}
+	STexAnim* ta;
 
-	STexAnim* ta = mfReadTexSequence(na, Flags, bFindOnly);
-	if (ta)
+	if ((ta = smp->m_pAnimInfo) ||
+		(ta = mfReadTexSequence(na, Flags, bFindOnly)))
 	{
 		smp->m_pAnimInfo = ta;
 
-		//Don't think this is ever set
+		// Release texture which has been set previously
 		SAFE_RELEASE(smp->m_pTex);
 
-		// this appears to always get overwritten, and so shouldn't be needed
-		//		smp->m_pTex = ta->m_TexPics[0];
-		//		smp->m_pTex->AddRef();
+		// Set initial texture so that subsequent checks understand that it has been loaded
+		smp->m_pTex = ta->m_TexPics[0];
+		smp->m_pTex->AddRef();
 
 		return ta->m_NumAnimTexs;
 	}
@@ -634,12 +613,12 @@ void CShaderMan::mfSetResourceTexState(SEfResTexture* Tex)
 
 CTexture* CShaderMan::mfTryToLoadTexture(const char* nameTex, STexSamplerRT* smp, int Flags, bool bFindOnly)
 {
-	CTexture* tx = NULL;
-
 	if (nameTex && strchr(nameTex, '#')) // test for " #" to skip max material names
 	{
 		int n = mfReadTexSequence(smp, nameTex, Flags, bFindOnly);
 	}
+
+	CTexture* tx = smp->m_pTex;
 
 	if (!tx)
 	{

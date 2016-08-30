@@ -32,9 +32,8 @@ public:
 
 	// Allocate resources needed by the pipeline and its stages
 	virtual void            Init() = 0;
-	virtual void            ReleaseBuffers() = 0;
 	// Prepare all stages before actual drawing starts
-	virtual void            Prepare(CRenderView* pRenderView) = 0;
+	virtual void            Prepare(CRenderView* pRenderView, EShaderRenderingFlags renderingFlags) = 0;
 	// Execute the pipeline and its stages
 	virtual void            Execute() = 0;
 

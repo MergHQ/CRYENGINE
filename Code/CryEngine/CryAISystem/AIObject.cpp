@@ -45,7 +45,6 @@ CAIObject::CAIObject() :
 	m_isThreateningForHostileFactions(true),
 	m_bTouched(false),
 	m_observable(false),
-	m_createdFromPool(false),
 	m_serialize(true)
 {
 	AILogComment("CAIObject (%p)", this);
@@ -209,9 +208,18 @@ void CAIObject::Reset(EObjectResetType type)
 
 	m_lastNavNodeIndex = 0;
 
-	// grenades and rockets are always observable
-	if ((m_nObjectType == AIOBJECT_RPG) || (m_nObjectType == AIOBJECT_GRENADE))
-		SetObservable(true);
+	switch (type)
+	{
+	case AIOBJRESET_INIT:
+		// grenades and rockets are always observable
+		if ((m_nObjectType == AIOBJECT_RPG) || (m_nObjectType == AIOBJECT_GRENADE))
+			SetObservable(true);
+		break;
+
+	case AIOBJRESET_SHUTDOWN:
+		SetObservable(false);
+		break;
+	}
 }
 
 size_t CAIObject::GetNavNodeIndex() const
@@ -237,9 +245,6 @@ void CAIObject::SetRadius(float fRadius)
 bool CAIObject::ShouldSerialize() const
 {
 	if (!m_serialize)
-		return false;
-
-	if (m_createdFromPool)
 		return false;
 
 	if (gAIEnv.CVars.ForceSerializeAllObjects == 0)
@@ -656,16 +661,7 @@ bool CAIObject::IsUpdatedOnce() const
 
 void CAIObject::Release()
 {
-	// AI objects relating to pooled entities are
-	// handled by CAIObjectManager and shouldn't be deleted directly
-	if (m_createdFromPool)
-	{
-		gAIEnv.pAIObjectManager->ReleasePooledObject(this);
-	}
-	else
-	{
-		delete this;
-	}
+	delete this;
 }
 
 const Vec3& CAIObject::GetViewDir() const
@@ -792,7 +788,7 @@ void CAIObject::SetObservable(bool observable)
 			for (size_t i = 0; i < static_cast<size_t>(observableParams.skipListSize); ++i)
 				observableParams.skipList[i] = skipList[i];
 
-			// Márcio: Should check for associated objects and add them here too?
+			// MÃ¡rcio: Should check for associated objects and add them here too?
 			if (!m_visionID)
 				m_visionID = gAIEnv.pVisionMap->CreateVisionID(GetName());
 

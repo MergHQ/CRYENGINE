@@ -24,13 +24,21 @@ vert2fragDebug Common_DebugPassVS(app2vertDebug IN)
   vtxStreamUnifyCommon(IN.vertCommon, vertPassPos);
 
   OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+	
+#if %_RT_SAMPLE0  // Wireframe debug pass
 
-  #if (%_RT_INSTANCING_ATTR || %_RT_INSTANCING_CONST)
-    #fetchinst (OUT.Color = IN.InstAmbientOp, vertPassPos.nInstance);
+	OUT.Color = lerp(float4(0, 0.7, 0.9, 1), float4(0.35, 0.35, 0.35, 1), saturate(OUT.HPosition.w / 100.0));
+	
+#else
+	
+	#if (%_RT_INSTANCING_ATTR || %_RT_INSTANCING_CONST)
+		#fetchinst (OUT.Color = IN.InstAmbientOp, vertPassPos.nInstance);
   #else
-    OUT.Color = AmbientOp;
+		OUT.Color = AmbientOp;
   #endif
-
+	
+#endif
+	
   return OUT;            
 }
 

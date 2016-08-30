@@ -3290,7 +3290,7 @@ void CSmartObjectManager::RescanSOClasses(IEntity* pEntity)
 void CSmartObjectManager::OnSpawn(IEntity* pEntity, SEntitySpawnParams& params)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_AI);
-	/* Márcio: Enabling SmartObjects in multiplayer.
+	/* MÃ¡rcio: Enabling SmartObjects in multiplayer.
 	   if (gEnv->bMultiplayer)
 	    return;
 	 */

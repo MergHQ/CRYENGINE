@@ -67,6 +67,7 @@ private:
 	  TSerialize serialize,
 	  uint32 curSeq,
 	  uint32 oldSeq,
+	  uint32 timeFraction32,
 	  EntityId* entityId, INetChannel*);
 };
 

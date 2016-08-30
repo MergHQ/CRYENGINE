@@ -3,8 +3,13 @@
 #pragma once
 
 #include "ATLEntities.h"
-#include "ATLComponents.h"
 #include "FileCacheManager.h"
+#include "AudioListenerManager.h"
+#include "AudioEventListenerManager.h"
+#include "AudioStandaloneFileManager.h"
+#include "AudioEventManager.h"
+#include "AudioObjectManager.h"
+#include "AudioXMLProcessor.h"
 #include <CryInput/IInput.h>
 
 class CAudioTranslationLayer : public IInputEventListener
@@ -120,8 +125,6 @@ private:
 
 	AudioTriggerInstanceId    m_triggerInstanceIDCounter;
 
-	CATLTrigger const*        m_pDefaultStandaloneFileTrigger;
-
 	// Components
 	CAudioStandaloneFileManager m_audioStandaloneFileMgr;
 	CAudioEventManager          m_audioEventMgr;
@@ -129,10 +132,10 @@ private:
 	CAudioListenerManager       m_audioListenerMgr;
 	CFileCacheManager           m_fileCacheMgr;
 	CAudioEventListenerManager  m_audioEventListenerMgr;
-	CATLXMLProcessor            m_xmlProcessor;
+	CAudioXMLProcessor          m_xmlProcessor;
 
 	// Utility members
-	uint32                      m_lastMainThreadFramId;
+	uint32                      m_lastMainThreadFrameId;
 	volatile AudioEnumFlagsType m_flags;
 	CryAudio::Impl::IAudioImpl* m_pImpl;
 
@@ -142,6 +145,7 @@ public:
 	bool                      ReserveAudioObjectId(AudioObjectId& audioObjectId, char const* const szAudioObjectName);
 	void                      DrawAudioSystemDebugInfo();
 	CATLDebugNameStore const& GetDebugStore() const { return m_debugNameStore; }
+	void                      GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioTriggerData) const;
 
 private:
 

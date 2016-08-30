@@ -103,10 +103,10 @@ void CSystem::QueryVersionInfo()
 	GetModuleFileName(NULL, moduleName, _MAX_PATH);  //retrieves the PATH for the current module
 
 	#ifdef _LIB
-	GetModuleFileName(NULL, moduleName, _MAX_PATH); //retrieves the PATH for the current module
-	#else                                           //_LIB
-	cry_strcpy(moduleName, "CrySystem.dll");        // we want to version from the system dll
-	#endif                                          //_LIB
+	GetModuleFileName(NULL, moduleName, _MAX_PATH);  //retrieves the PATH for the current module
+	#else                                    //_LIB
+	cry_strcpy(moduleName, "CrySystem.dll"); // we want to version from the system dll
+	#endif                                   //_LIB
 
 	int verSize = GetFileVersionInfoSize(moduleName, &dwHandle);
 	if (verSize > 0)
@@ -187,6 +187,7 @@ void CSystem::LogVersion()
 #elif CRY_PLATFORM_MAC
 	CryLogAlways("Running 64 bit Mac version");
 #endif
+	CryLogAlways("Command Line: %s", m_pCmdLine->GetCommandLine());
 #if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_APPLE && !CRY_PLATFORM_DURANGO && !CRY_PLATFORM_ORBIS
 	GetModuleFileName(NULL, s, sizeof(s));
 	CryLogAlways("Executable: %s", s);

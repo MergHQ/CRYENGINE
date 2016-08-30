@@ -32,10 +32,10 @@ LINK_SYSTEM_LIBRARY("d3d11.lib")
 #endif
 
 #include "D3DStereo.h"
-#include "D3DLightPropagationVolume.h"
 #include "D3DPostProcess.h"
 #include "D3DREBreakableGlassBuffer.h"
 #include "NullD3D11Device.h"
+#include "PipelineProfiler.h"
 #include <CryInput/IHardwareMouse.h>
 
 #define CRY_AMD_AGS_USE_DLL
@@ -186,7 +186,7 @@ bool CD3D9Renderer::SetCurrentContext(WIN_HWND hWnd)
 	return true;
 }
 
-bool CD3D9Renderer::CreateContext(WIN_HWND hWnd, bool bAllowMSAA, int SSX, int SSY)
+bool CD3D9Renderer::CreateContext(WIN_HWND hWnd, bool bMainViewport, int SSX, int SSY)
 {
 	LOADING_TIME_PROFILE_SECTION;
 	uint32 i;
@@ -212,7 +212,7 @@ bool CD3D9Renderer::CreateContext(WIN_HWND hWnd, bool bAllowMSAA, int SSX, int S
 	pContext->m_nViewportHeight = m_height / (m_CurrContext ? m_CurrContext->m_nSSSamplesY : 1);
 	pContext->m_nSSSamplesX = std::max(1, SSX);
 	pContext->m_nSSSamplesY = std::max(1, SSY);
-	pContext->m_bMainViewport = false;
+	pContext->m_bMainViewport = bMainViewport;
 	m_CurrContext = pContext;
 	m_RContexts.AddElem(pContext);
 
@@ -283,65 +283,27 @@ bool CD3D9Renderer::CreateMSAADepthBuffer()
 		if (m_RP.m_MSAAData.Type != CV_r_msaa_samples ||
 		    m_RP.m_MSAAData.Quality != CV_r_msaa_quality)
 		{
-			SAFE_RELEASE(m_RP.m_MSAAData.m_pZTexture);
-			m_DepthBufferOrigMSAA.Release();
-		}
-
 		m_RP.m_MSAAData.Type = CV_r_msaa_samples;
 		m_RP.m_MSAAData.Quality = CV_r_msaa_quality;
-
-		if (m_RP.m_MSAAData.Type > 1 && !m_RP.m_MSAAData.m_pZTexture)
-		{
-			// Create depth stencil texture
-			D3D11_TEXTURE2D_DESC descDepth;
-			ZeroStruct(descDepth);
-
-			descDepth.Width = m_width;
-			descDepth.Height = m_height;
-			descDepth.MipLevels = 1;
-			descDepth.ArraySize = 1;
-			descDepth.Format = m_ZFormat;
-			descDepth.SampleDesc.Count = m_RP.m_MSAAData.Type;
-			descDepth.SampleDesc.Quality = m_RP.m_MSAAData.Quality;
-			descDepth.Usage = D3D11_USAGE_DEFAULT;
-			descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE; // bind-able as shader resource view
-			descDepth.CPUAccessFlags = 0;
-			descDepth.MiscFlags = 0;
 
 			const float clearDepth = CRenderer::CV_r_ReverseDepth ? 0.f : 1.f;
 			const uint clearStencil = 1;
 			const ColorF clearValues = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
 
-			CDeviceTexture* pZTexture;
+			rd->m_pZTextureMSAA = CTexture::CreateRenderTarget("$DeviceDepthMSAA", m_width, m_height,
+				clearValues, eTT_2D, FT_USAGE_MSAA | FT_USAGE_DEPTHSTENCIL | FT_DONT_RELEASE | FT_DONT_STREAM, rd->m_zbpp == 32 ? eTF_D32FS8 : eTF_D24S8);
 
-			hr = rd->m_DevMan.Create2DTexture(descDepth, clearValues, &pZTexture);
-			if (FAILED(hr))
-				return false;
-			m_RP.m_MSAAData.m_pZTexture = new CTexture(FT_DONT_STREAM, clearValues, pZTexture);
-			m_RP.m_MSAAData.m_pZTexture->SetDevTextureMSAA(&m_RP.m_MSAAData);
-
+			m_RP.m_MSAAData.m_pZTexture = rd->m_pZTextureMSAA;
 			m_DepthBufferOrigMSAA.pTexture = m_RP.m_MSAAData.m_pZTexture;
 			m_DepthBufferOrigMSAA.pTarget = m_RP.m_MSAAData.m_pZTexture->GetDevTexture()->Get2DTexture();
 			m_DepthBufferOrigMSAA.pSurface = m_RP.m_MSAAData.m_pZTexture->GetDeviceDepthStencilView(0, -1, true, false);
-			m_DepthBufferOrigMSAA.pTexture->AddRef();
 		}
 	}
 	else
 	{
 		m_RP.m_MSAAData.Type = 0;
 		m_RP.m_MSAAData.Quality = 0;
-
-		SAFE_RELEASE(m_RP.m_MSAAData.m_pZTexture);
-		m_DepthBufferOrigMSAA.Release();
-
-		m_RP.m_MSAAData.m_pZTexture = m_pZTexture;
-		m_RP.m_MSAAData.m_pZTexture->SetDevTextureMSAA(&m_RP.m_MSAAData);
-		m_RP.m_MSAAData.m_pZTexture->AddRef();
-
-		m_DepthBufferOrigMSAA.pTexture = m_pZTexture;
-		m_DepthBufferOrigMSAA.pTarget = m_pZTexture->GetDevTexture()->Get2DTexture();
-		m_DepthBufferOrigMSAA.pSurface = m_pZTexture->GetDeviceDepthStencilView(0, -1, false, false);
-		m_DepthBufferOrigMSAA.pTexture->AddRef();
+		m_DepthBufferOrigMSAA = m_DepthBufferOrig;
 	}
 
 	return (hr == S_OK);
@@ -460,6 +422,11 @@ bool CD3D9Renderer::ChangeResolution(int nNewWidth, int nNewHeight, int nNewColD
 		// disable floating point exceptions due to driver bug when switching to fullscreen
 		SCOPED_DISABLE_FLOAT_EXCEPTIONS();
 	#endif
+	#if defined(CRY_USE_DX12)
+		CRY_ASSERT_MESSAGE(!(bFullScreen && (m_devInfo.SwapChainDesc().Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)),
+			"Fullscreen does not work with Waitable SwapChain");
+	#endif
+		
 		m_devInfo.SwapChainDesc().Windowed = !bFullScreen;
 		m_devInfo.SwapChainDesc().BufferDesc.Width = m_backbufferWidth;
 		m_devInfo.SwapChainDesc().BufferDesc.Height = m_backbufferHeight;
@@ -508,10 +475,11 @@ bool CD3D9Renderer::ChangeResolution(int nNewWidth, int nNewHeight, int nNewColD
 		D3DSurface* pRTVs[8] = { 0 };
 		GetDeviceContext().OMSetRenderTargets(8, pRTVs, pDSV);
 
-		m_pGraphicsPipeline->ReleaseBuffers();
 		ReleaseBackBuffers();
 
+		if (bPrevFullScreen != bFullScreen)
 		m_pSwapChain->SetFullscreenState(bFullScreen, 0);
+
 		m_pSwapChain->ResizeTarget(&m_devInfo.SwapChainDesc().BufferDesc);
 		m_devInfo.ResizeDXGIBuffers();
 
@@ -552,8 +520,6 @@ bool CD3D9Renderer::ChangeResolution(int nNewWidth, int nNewHeight, int nNewColD
 #endif
 
 	CreateMSAADepthBuffer();
-
-	CreateContext(m_hWnd, CV_r_msaa != 0);
 
 	ICryFont* pCryFont = gEnv->pCryFont;
 	if (pCryFont)
@@ -986,11 +952,14 @@ SDepthTexture::~SDepthTexture()
 {
 }
 
-void SDepthTexture::Release()
+void SDepthTexture::Release(bool bReleaseTexture)
 {
+	if (bReleaseTexture && pTexture)
+		pTexture->Release();
+	
 	pTarget = nullptr;
 	pSurface = nullptr;
-	SAFE_RELEASE(pTexture);
+	pTexture = nullptr;
 }
 
 void CD3D9Renderer::ShutDownFast()
@@ -1018,13 +987,23 @@ void CD3D9Renderer::ShutDownFast()
 
 void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 {
+	SAFE_RELEASE(m_pZTexture);
+	SAFE_RELEASE(m_pZTextureMSAA);
+	SAFE_RELEASE(m_pNativeZTexture);
+
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+	SF_DestroyResources();
+#endif
+
 	CREBreakableGlassBuffer::RT_ReleaseInstance();
-	LPVManager.Shutdown();
 	SAFE_DELETE(m_pColorGradingControllerD3D);
 	SAFE_DELETE(m_pPostProcessMgr);
 	SAFE_DELETE(m_pWaterSimMgr);
 	SAFE_DELETE(m_pStereoRenderer);
 	SAFE_DELETE(m_pPipelineProfiler);
+#if defined(ENABLE_RENDER_AUX_GEOM)
+	SAFE_DELETE(m_pRenderAuxGeomD3D);
+#endif
 
 	for (size_t i = 0; i < 3; ++i)
 		while (m_CharCBActiveList[i].next != &m_CharCBActiveList[i])
@@ -1065,17 +1044,6 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 	if (m_bShaderCacheGen)
 		GetDevice().ReleaseDevice();
 #endif
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-	SF_DestroyResources();
-#endif
-
-#if defined(ENABLE_RENDER_AUX_GEOM)
-	SAFE_DELETE(m_pRenderAuxGeomD3D);
-#endif
-
-	m_DepthBufferOrig.Release();
-	m_DepthBufferOrigMSAA.Release();
-	m_DepthBufferNative.Release();
 }
 
 void CD3D9Renderer::ShutDown(bool bReInit)
@@ -1085,7 +1053,6 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 	// Force Flush RT command buffer
 	ForceFlushRTCommands();
 	PreShutDown();
-	CWaterRipples::ReleasePhysCallbacks();
 	if (m_pRT)
 		m_pRT->RC_ShutDown(bReInit ? (FRR_SHADERS | FRR_TEXTURES | FRR_REINITHW) : FRR_ALL);
 
@@ -1122,9 +1089,6 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 		iTimer = NULL;
 		iSystem = NULL;
 	}
-
-	EnableGPUTimers2(false);
-	AllowGPUTimers2(false);
 
 	PostShutDown();
 }
@@ -1750,9 +1714,6 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 	if (!m_pRT->IsRenderThread())
 		DXGLUnbindDeviceContext(GetDeviceContext().GetRealDeviceContext(), !CV_r_multithreaded);
 	#endif
-	// Temporarily disabled in OpenGL because it crashes
-	CRenderer::CV_r_GpuParticles = 0;
-	CRenderer::CV_r_GraphicsPipeline = 0;
 #endif //defined(OPENGL) && !DXGL_FULL_EMULATION
 
 	if (!bShaderCacheGen)
@@ -1762,8 +1723,6 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 		g_shaderGeneralHeap = CryGetIMemoryManager()->CreateGeneralExpandingMemoryHeap(4 * 1024 * 1024, 0, "Shader General");
 
 	m_cEF.mfInit();
-
-	CWaterRipples::CreatePhysCallbacks();
 
 	if (!IsEditorMode() && !IsShaderCacheGenMode())
 		m_pRT->RC_PrecacheDefaultShaders();
@@ -1776,6 +1735,12 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 	m_bDisplayChanged = false;
 #endif
 
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	if (m_pPipelineProfiler)
+	{
+		m_pPipelineProfiler->Init();
+	}
+#endif
 	m_bInitialized = true;
 
 	//  Cry_memcheck();
@@ -1837,6 +1802,13 @@ int CD3D9Renderer::GetAAFormat(TArray<SAAFormat>& Formats)
 
 bool CD3D9Renderer::CheckMSAAChange()
 {
+	if (CV_r_msaa != m_MSAA)
+	{
+		iLog->LogError("MSAA is not supported any longer and will be removed in an upcoming version.");
+		_SetVar("r_MSAA", 0);
+		return false;
+	}
+	
 	bool bChanged = false;
 	if (!CV_r_HDRRendering && CV_r_msaa)
 	{
@@ -2143,7 +2115,7 @@ bool CD3D9Renderer::SetRes()
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = { 0 };
 	swapChainDesc.Width = m_backbufferWidth;
 	swapChainDesc.Height = m_backbufferHeight;
-	swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = 2;
 	swapChainDesc.Stereo = false;
@@ -2193,8 +2165,6 @@ bool CD3D9Renderer::SetRes()
 
 	OnD3D11PostCreateDevice(GetDevice().GetRealDevice());
 
-	CreateContext(NULL, false);
-
 #elif CRY_PLATFORM_MOBILE
 
 	m_bFullScreen = true;
@@ -2206,8 +2176,6 @@ bool CD3D9Renderer::SetRes()
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 
 	AdjustWindowForChange();
-
-	CreateContext(m_hWnd);
 
 #elif CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 
@@ -2237,8 +2205,6 @@ bool CD3D9Renderer::SetRes()
 	#endif
 
 	AdjustWindowForChange();
-
-	CreateContext(m_hWnd);
 
 #elif CRY_PLATFORM_ORBIS
 
@@ -2309,6 +2275,7 @@ bool CD3D9Renderer::SetRes()
 		m_RP.m_TI[id].m_matProj = new CMatrixStack(16, 0);
 		if (m_RP.m_TI[id].m_matProj == NULL)
 			return false;
+		m_RP.m_TI[id].m_matCameraZero.SetIdentity();
 	}
 
 	m_DevBufMan.Init();
@@ -2423,17 +2390,10 @@ void SPixFormatSupport::CheckFormatSupport()
 	m_FormatR9G9B9E5.CheckSupport(DXGI_FORMAT_R9G9B9E5_SHAREDEXP, "R9G9B9E5");
 
 	// Depth formats
-#if CRY_PLATFORM_ORBIS
-	m_FormatD32FS8.CheckSupport(DXGI_FORMAT_D32_FLOAT_S8X24_UINT, "D32FS8");
-	m_FormatD32F.CheckSupport(DXGI_FORMAT_D32_FLOAT, "D32F");
-	m_FormatD24S8.CheckSupport(DXGI_FORMAT_D24_UNORM_S8_UINT, "D24S8");
-	m_FormatD16.CheckSupport(DXGI_FORMAT_D16_UNORM, "D16");
-#else
 	m_FormatD32FS8.CheckSupport(DXGI_FORMAT_R32G8X24_TYPELESS, "R32FX8T");
 	m_FormatD32F.CheckSupport(DXGI_FORMAT_R32_TYPELESS, "R32T");
 	m_FormatD24S8.CheckSupport(DXGI_FORMAT_R24G8_TYPELESS, "R24G8T");
 	m_FormatD16.CheckSupport(DXGI_FORMAT_R16_TYPELESS, "R16T");
-#endif
 
 	m_FormatB5G6R5.CheckSupport(DXGI_FORMAT_B5G6R5_UNORM, "B5G6R5");
 	m_FormatB5G5R5.CheckSupport(DXGI_FORMAT_B5G5R5A1_UNORM, "B5G5R5");
@@ -2673,119 +2633,81 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	if (FAILED(hr))
 		return hr;
 
-	SAFE_RELEASE(rd->m_RP.m_MSAAData.m_pZTexture);
-
-	SAFE_RELEASE(rd->m_pZTexture);
-	SAFE_RELEASE(rd->m_pNativeZTexture);
-	rd->m_pZTarget = nullptr;
-	rd->m_pNativeZTarget = nullptr;
-	rd->m_pZSurface = nullptr;
-	rd->m_pNativeZSurface = nullptr;
-
-	rd->m_DepthBufferOrig.Release();
-	rd->m_DepthBufferOrigMSAA.Release();
-	rd->m_DepthBufferNative.Release();
-
-	CDeviceTexture* pZTexture;
-	CDeviceTexture* pNativeZTexture;
-
-	// Collect depth stencil parameters
-	D3D11_TEXTURE2D_DESC dsTextureDesc;
-	dsTextureDesc.MipLevels = 1;
-	dsTextureDesc.ArraySize = 1;
-	dsTextureDesc.Format = rd->m_ZFormat;
-	dsTextureDesc.SampleDesc = rd->m_d3dsdBackBuffer.SampleDesc;
-	dsTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-	dsTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
-	dsTextureDesc.CPUAccessFlags = 0;
-	dsTextureDesc.MiscFlags = 0;
+	// Prepare backbuffer texture
+	if (!rd->m_pBackBufferTexture)
+	{
+		ETEX_Format format = CTexture::TexFormatFromDeviceFormat(rd->m_d3dsdBackBuffer.Format);
+		rd->m_pBackBufferTexture = CTexture::CreateTextureObject("$SwapChainBackBuffer", 0, 0, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, format);
+	}
+	if (!gEnv->IsEditor())
+	{
+#if CRY_PLATFORM_ORBIS
+		CCryDXOrbisTexture* pBackbuffer;
+		DXOrbis::m_pSwapChain->GetBuffer(0, ID3D11Texture2D__GUID, (void**)&pBackbuffer);
+		CDeviceTexture* const pDeviceTexture = new CDeviceTexture(pBackbuffer);
+#elif CRY_PLATFORM_DURANGO
+		D3DBaseTexture* pBackBuffer;
+		HRESULT hr = rd->m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+		CDeviceTexture* const pDeviceTexture = new CDeviceTexture(pBackBuffer);
+#elif defined(SUPPORT_DEVICE_INFO)
+		CDeviceTexture* pDeviceTexture = new CDeviceTexture(rd->m_devInfo.BackbufferTex2D());
+#else
+		assert(0);
+#endif
+		rd->m_pBackBufferTexture->SetDevTexture(pDeviceTexture);
+		rd->m_pBackBufferTexture->SetWidth(rd->m_d3dsdBackBuffer.Width);
+		rd->m_pBackBufferTexture->SetHeight(rd->m_d3dsdBackBuffer.Height);
+		rd->m_pBackBufferTexture->ClosestFormatSupported(rd->m_pBackBufferTexture->GetDstFormat());
+	}
 
 	const float clearDepth = CRenderer::CV_r_ReverseDepth ? 0.f : 1.f;
 	const uint clearStencil = 1;
 	const ColorF clearValues = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
 
-	int nDepthBufferWidth = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Width : rd->m_width;
-	int nDepthBufferHeight = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Height : rd->m_height;
+	int nDepthBufferWidth = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Width : rd->GetOverlayWidth();
+	int nDepthBufferHeight = rd->IsEditorMode() ? rd->m_d3dsdBackBuffer.Height : rd->GetOverlayHeight();
 
-	// Create the depth stencil buffer for scene rendering
-	dsTextureDesc.Width = nDepthBufferWidth;
-	dsTextureDesc.Height = nDepthBufferHeight;
+	rd->m_pZTexture = CTexture::CreateRenderTarget("$DeviceDepthScene", nDepthBufferWidth, nDepthBufferHeight,
+	                                               clearValues, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_DONT_RELEASE | FT_DONT_STREAM, rd->m_zbpp == 32 ? eTF_D32FS8 : eTF_D24S8);
 #if defined(DURANGO_USE_ESRAM)
-	dsTextureDesc.MiscFlags = D3D11X_RESOURCE_MISC_ESRAM_RESIDENT;
-	dsTextureDesc.ESRAMOffsetBytes = 11894784 + 5955584 * 2;
+	rd->m_pZTexture->SetESRAMOffset(11894784 + 5955584 * 2);
 #endif
 
-	hr = rd->m_DevMan.Create2DTexture(dsTextureDesc, clearValues, &pZTexture);
-	if (FAILED(hr))
-		return hr;
-	rd->m_pZTexture = new CTexture(FT_USAGE_DEPTHSTENCIL | FT_DONT_STREAM, clearValues, pZTexture);
-	rd->m_pZTarget = rd->m_pZTexture->GetDevTexture()->Get2DTexture();
-	rd->m_pZSurface = rd->m_pZTexture->GetDeviceDepthStencilView(0, -1, dsTextureDesc.SampleDesc.Count > 1, false);
-	rd->m_pZTexture->SetShaderResourceView(rd->m_pZTexture->GetDeviceDepthReadOnlySRV(0, -1, dsTextureDesc.SampleDesc.Count > 1), dsTextureDesc.SampleDesc.Count > 1);
+	D3DTexture* pZTarget = rd->m_pZTexture->GetDevTexture()->Get2DTexture();
+	D3DDepthSurface* pZSurface = rd->m_pZTexture->GetDeviceDepthStencilView(0, -1, rd->m_d3dsdBackBuffer.SampleDesc.Count > 1, false);
+	rd->m_pZTexture->SetShaderResourceView(rd->m_pZTexture->GetDeviceDepthReadOnlySRV(0, -1, rd->m_d3dsdBackBuffer.SampleDesc.Count > 1), rd->m_d3dsdBackBuffer.SampleDesc.Count > 1);
 
-#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-	pZTexture->GetBaseTexture()->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("ZTexture"), "ZTexture");
-#endif
-	rd->GetDeviceContext().ClearDepthStencilView(rd->m_pZSurface, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
-
-	// Create the native resolution depth stencil buffer for overlay rendering if needed
-	if (!rd->IsEditorMode() && (gcpRendD3D->GetOverlayWidth() != dsTextureDesc.Width || gcpRendD3D->GetOverlayHeight() != dsTextureDesc.Height))
-	{
-		dsTextureDesc.Width = gcpRendD3D->GetOverlayWidth();
-		dsTextureDesc.Height = gcpRendD3D->GetOverlayHeight();
-#if defined(DURANGO_USE_ESRAM)
-		// Native depth buffer is harder to fit in ESRAM and doesn't require much bandwidth (only used for overlay)
-		dsTextureDesc.MiscFlags = 0;
-		dsTextureDesc.ESRAMOffsetBytes = 0;
-#endif
-
-		hr = rd->m_DevMan.Create2DTexture(dsTextureDesc, clearValues, &pNativeZTexture);
-		if (FAILED(hr))
-			return hr;
-		rd->m_pNativeZTexture = new CTexture(FT_USAGE_DEPTHSTENCIL | FT_DONT_STREAM, clearValues, pNativeZTexture);
-		rd->m_pNativeZTarget = rd->m_pNativeZTexture->GetDevTexture()->Get2DTexture();
-		rd->m_pNativeZSurface = rd->m_pNativeZTexture->GetDeviceDepthStencilView(0, -1, dsTextureDesc.SampleDesc.Count > 1, false);
-		rd->m_pNativeZTexture->SetShaderResourceView(rd->m_pNativeZTexture->GetDeviceDepthReadOnlySRV(0, -1, dsTextureDesc.SampleDesc.Count > 1), dsTextureDesc.SampleDesc.Count > 1);
-
-#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-		pNativeZTexture->GetBaseTexture()->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("NativeZTexture"), "NativeZTexture");
-#endif
-		rd->GetDeviceContext().ClearDepthStencilView(rd->m_pNativeZSurface, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
-	}
-	else
-	{
-		rd->m_pNativeZTexture = rd->m_pZTexture;
-		rd->m_pNativeZTarget = rd->m_pZTarget;
-		rd->m_pNativeZSurface = rd->m_pZSurface;
-		rd->m_pNativeZTexture->AddRef();
-	}
+	rd->GetDeviceContext().ClearDepthStencilView(pZSurface, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
 
 	rd->m_DepthBufferOrig.pTexture = rd->m_pZTexture;
-	rd->m_DepthBufferOrig.pTarget = rd->m_pZTarget;
-	rd->m_DepthBufferOrig.pSurface = rd->m_pZSurface;
+	rd->m_DepthBufferOrig.pTarget = pZTarget;
+	rd->m_DepthBufferOrig.pSurface = pZSurface;
 	rd->m_DepthBufferOrig.nWidth = nDepthBufferWidth;
 	rd->m_DepthBufferOrig.nHeight = nDepthBufferHeight;
 	rd->m_DepthBufferOrig.bBusy = true;
 	rd->m_DepthBufferOrig.nFrameAccess = -2;
-	rd->m_DepthBufferOrig.pTexture->AddRef();
 
-	rd->m_DepthBufferOrigMSAA.pTexture = rd->m_pZTexture;
-	rd->m_DepthBufferOrigMSAA.pTarget = rd->m_pZTarget;
-	rd->m_DepthBufferOrigMSAA.pSurface = rd->m_pZSurface;
-	rd->m_DepthBufferOrigMSAA.nWidth = nDepthBufferWidth;
-	rd->m_DepthBufferOrigMSAA.nHeight = nDepthBufferHeight;
-	rd->m_DepthBufferOrigMSAA.bBusy = true;
-	rd->m_DepthBufferOrigMSAA.nFrameAccess = -2;
-	rd->m_DepthBufferOrigMSAA.pTexture->AddRef();
+	rd->m_DepthBufferOrigMSAA = rd->m_DepthBufferOrig;
+	rd->m_DepthBufferNative= rd->m_DepthBufferOrig;
+
+	// Create the native resolution depth stencil buffer for overlay rendering if needed
+	if (!rd->IsEditorMode() && (gcpRendD3D->GetOverlayWidth() != nDepthBufferWidth || gcpRendD3D->GetOverlayHeight() != nDepthBufferHeight))
+	{
+		rd->m_pNativeZTexture = CTexture::CreateRenderTarget("$DeviceDepthOverlay", rd->GetOverlayWidth(), rd->GetOverlayHeight(),
+		                                                     clearValues, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_DONT_RELEASE | FT_DONT_STREAM, rd->m_zbpp == 32 ? eTF_D32FS8 : eTF_D24S8);
+		
+		D3DTexture* pNativeZTarget = rd->m_pZTexture->GetDevTexture()->Get2DTexture();
+		D3DDepthSurface* pNativeZSurface = rd->m_pZTexture->GetDeviceDepthStencilView(0, -1, rd->m_d3dsdBackBuffer.SampleDesc.Count > 1, false);
+		rd->m_pNativeZTexture->SetShaderResourceView(rd->m_pNativeZTexture->GetDeviceDepthReadOnlySRV(0, -1, rd->m_d3dsdBackBuffer.SampleDesc.Count > 1), rd->m_d3dsdBackBuffer.SampleDesc.Count > 1);
+
+		rd->GetDeviceContext().ClearDepthStencilView(pNativeZSurface, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
 
 	rd->m_DepthBufferNative.pTexture = rd->m_pNativeZTexture;
-	rd->m_DepthBufferNative.pTarget = rd->m_pNativeZTarget;
-	rd->m_DepthBufferNative.pSurface = rd->m_pNativeZSurface;
+		rd->m_DepthBufferNative.pTarget = pNativeZTarget;
+		rd->m_DepthBufferNative.pSurface = pNativeZSurface;
 	rd->m_DepthBufferNative.nWidth = rd->m_nativeWidth;
 	rd->m_DepthBufferNative.nHeight = rd->m_nativeHeight;
-	rd->m_DepthBufferNative.bBusy = true;
-	rd->m_DepthBufferNative.nFrameAccess = -2;
-	rd->m_DepthBufferNative.pTexture->AddRef();
+	}
 
 	rd->m_nRTStackLevel[0] = 0;
 	if (rd->m_d3dsdBackBuffer.Width == rd->m_nativeWidth && rd->m_d3dsdBackBuffer.Height == rd->m_nativeHeight)

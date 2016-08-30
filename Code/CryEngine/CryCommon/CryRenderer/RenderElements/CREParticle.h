@@ -61,6 +61,8 @@ struct IParticleVertexCreator
 class CREParticle : public CRendElementBase
 {
 public:
+	static const uint numBuffers = 3;
+
 	enum EParticleObjFlags
 	{
 		ePOF_HALF_RES              = BIT(0),
@@ -68,8 +70,8 @@ public:
 		ePOF_USE_VERTEX_PULL_MODEL = BIT(2),
 	};
 
+public:
 	CREParticle();
-	void Reset(IParticleVertexCreator* pVC, int nThreadId, uint allocId);
 
 	//! Custom copy constructor required to avoid m_Lock copy.
 	CREParticle(const CREParticle& in)
@@ -77,6 +79,8 @@ public:
 		, m_nThreadId(in.m_nThreadId)
 	{
 	}
+
+	void Reset(IParticleVertexCreator* pVC, int nThreadId, uint allocId);
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const
 	{
@@ -103,10 +107,8 @@ public:
 
 	void                     ComputeVertices(SCameraInfo camInfo, uint64 uRenderFlags);
 
-	float                    GetPixels() const
-	{
-		return m_RenderVerts.fPixels;
-	}
+	bool                     AddedToView() const { return m_addedToView != 0; }
+	void                     SetAddedToView() { m_addedToView = 1; }
 
 private:
 	IParticleVertexCreator* m_pVertexCreator;   //!< Particle object which computes vertices.
@@ -115,6 +117,7 @@ private:
 	uint32                  m_nFirstIndex;
 	uint32                  m_allocId;
 	uint16                  m_nThreadId;
+	uint8                   m_addedToView;
 };
 
 #endif  // __CREPARTICLE_H__

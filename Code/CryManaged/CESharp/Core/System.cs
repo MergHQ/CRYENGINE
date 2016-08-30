@@ -11,6 +11,8 @@ using CryEngine.FlowSystem;
 using CryEngine.Components;
 using CryEngine.Resources;
 using CryEngine.EntitySystem;
+using CryEngine.DomainHandler;
+using CryEngine;
 
 namespace CryEngine
 {
@@ -96,13 +98,21 @@ namespace CryEngine
 	{
 		public static event EventHandler<SInputEvent> OnKey; ///< Fired when a key-state was modified
 
-		static Input _instance = null;
-		static bool _lShiftDown = false;
-		static bool _rShiftDown = false;
+		private static Input _instance = null;
+		private static bool _lShiftDown = false;
+		private static bool _rShiftDown = false;
+		private static Dictionary<string, Vec2> _axisByName = new Dictionary<string, Vec2>();
 
 		public static bool ShiftDown { get { return _lShiftDown || _rShiftDown; } } ///< Set if Shift key is held Down
 
-		Dictionary<string, string> _charByDescription = new Dictionary<string, string>() {{"comma", ","}, {"period", "."}, {"minus","-"}, {"plus","+"}};
+		public static Vec2 GetAxis(string name)
+		{
+			Vec2 axis;
+			_axisByName.TryGetValue (name, out axis);
+			return axis;
+		}
+
+		private Dictionary<string, string> _charByDescription = new Dictionary<string, string>() {{"comma", ","}, {"period", "."}, {"minus","-"}, {"plus","+"}};
 
 		/// <summary>
 		/// Called by CryEngine. Do not call directly.
@@ -160,6 +170,19 @@ namespace CryEngine
 				if(OnKey != null)
 					OnKey (e);
 			}
+			else if (e.deviceType == EInputDeviceType.eIDT_EyeTracker)
+			{
+				if (e.keyId == EKeyId.eKI_EyeTracker_X) 
+				{
+					var axis = GetAxis ("EyeTracker");
+					_axisByName ["EyeTracker"] = new Vec2 (e.value, axis != null ? axis.y : 0);
+				}
+				if (e.keyId == EKeyId.eKI_EyeTracker_Y) 
+				{
+					var axis = GetAxis ("EyeTracker");
+					_axisByName ["EyeTracker"] = new Vec2 (axis != null ? axis.x : 0, e.value);
+				}
+			}		
 			return false;
 		}
 
@@ -432,7 +455,7 @@ namespace CryEngine
 
 		public override void OnSaveGame (ISaveGame pSaveGame)
 		{
-			Debug.Log ("OnSaveGame");
+			Log.Info<GameFramework> ("OnSaveGame");
 		}
 
 		public override void OnLoadGame (ILoadGame pLoadGame)
@@ -550,21 +573,6 @@ namespace CryEngine
 	}
 
 	/// <summary>
-	/// Outputs message to standard CryEngine log.
-	/// </summary>
-	public class Debug
-	{
-		/// <summary>
-		/// Outputs message to standard CryEngine log.
-		/// </summary>
-		/// <param name="msg">The Message.</param>
-		public static void Log(string msg)
-		{
-			Global.CryLogAlways("[Mono] " + msg);
-		}
-	}
-
-	/// <summary>
 	/// Wraps CryEngine's gEnv variable for global access to main modules. Initializes all C# sided handler and wrapper classes.
 	/// </summary>
 	public class Env
@@ -584,12 +592,14 @@ namespace CryEngine
 		public static IGame Game { get { return Global.gEnv.pGame; } }
 		public static ITimer Timer { get { return Global.gEnv.pTimer; }}
 		public static IAudioSystem AudioSystem { get { return Global.gEnv.pAudioSystem; } }
-		public static bool IsSandbox { get { return Global.gEnv.IsEditor(); } } ///< Indicates whether CryEngine is run in Editor mode.
+        public static IRenderAuxGeom AuxRenderer {  get { return Global.gEnv.pRenderer.GetIRenderAuxGeom(); } }
+        public static IPhysicalWorld PhysicalWorld { get { return Global.gEnv.pPhysicalWorld; } }
+        public static bool IsSandbox { get { return Global.gEnv.IsEditor(); } } ///< Indicates whether CryEngine is run in Editor mode.
 
 		/// <summary>
 		/// Called by framework. Do not call directly.
 		/// </summary>
-		public static void Initialize()
+		public static void Initialize(InterDomainHandler handler)
 		{
 			if (_isInitialized)
 				return;
@@ -602,18 +612,19 @@ namespace CryEngine
 			SceneManager.Instantiate ();
 			GameFramework.Instantiate ();
 			LevelSystem.Instantiate ();
+			EntityFramework.Instantiate (handler);
 		}
 
 		/// <summary>
 		/// Called by framework. Do not call directly.
 		/// </summary>
-		public static void Shutdown()
+		public static void Shutdown(InterDomainHandler handler)
 		{
 			if (!_isInitialized)
 				return;
 			_isInitialized = false;
 
-			//EntityFramework.Destroy ();
+			EntityFramework.Destroy (handler);
 			GameFramework.Destroy ();
 			SceneManager.Destroy ();
 			LevelSystem.Destroy ();
@@ -624,24 +635,28 @@ namespace CryEngine
 		}
 	}
 
-	public class AddIn : ICryEngineAddIn
+	public class AddIn : ICryEnginePlugin
 	{
-		public static InterDomainHandler InterDomainHandler { get; private set; }
-
-		public void Initialize(InterDomainHandler handler)
+		public override void Initialize()
 		{
-			InterDomainHandler = handler;
-			Env.Initialize ();
+			if (m_interDomainHandler != null) 
+			{
+				Env.Initialize (m_interDomainHandler);
+			}
 		}
 
-		public void OnFlowNodeSignal(FlowNode node, PropertyInfo signal)
+		public override void Shutdown()
 		{
+			Env.Shutdown (m_interDomainHandler);
 		}
+	}
 
-		public void Shutdown()
-		{
-			Env.Shutdown ();
-		}
+	public class ICryEnginePlugin : ICryEngineBasePlugin
+	{
+		public static InterDomainHandler m_interDomainHandler { get; set; }
+
+		public virtual void Initialize () {}
+		public virtual void Shutdown() {}
 	}
 
 	/// <summary>
@@ -788,15 +803,18 @@ namespace CryEngine
 	{
 		public interface IMouseOverride
 		{
-			uint HitEntityID { get; }
-			Vec2 HitEntityUV { get; }
 			event MouseEventHandler LeftButtonDown;
 			event MouseEventHandler LeftButtonUp;
+            event MouseEventHandler RightButtonDown;
+			event MouseEventHandler RightButtonUp;
+			event MouseEventHandler Move;
 		}
 
 		public delegate void MouseEventHandler (int x, int y); ///< Used by all Mouse events.
 		public static event MouseEventHandler OnLeftButtonDown;
 		public static event MouseEventHandler OnLeftButtonUp;
+        public static event MouseEventHandler OnRightButtonDown;
+        public static event MouseEventHandler OnRightButtonUp;
 		public static event MouseEventHandler OnMove;
 		public static event MouseEventHandler OnWindowLeave;
 		public static event MouseEventHandler OnWindowEnter;
@@ -807,22 +825,26 @@ namespace CryEngine
 		private static float _lmy = 0;
 		private static bool _updateLeftDown = false;
 		private static bool _updateLeftUp = false;
-		private static uint s_hitEntityId = 0;
-		private static Vec2 s_hitEntityUV = new Vec2();
+        private static bool _updateRightDown = false;
+        private static bool _updateRightUp = false;
+		private static uint _hitEntityId = 0;
+		private static Vec2 _hitEntityUV = new Vec2();
 		private static bool _cursorVisible = false;
 
 		public static Point CursorPosition { get { return new Point (_lmx, _lmy); } } ///< Current Mouse Cursor Position, refreshed before update loop.
 		public static bool LeftDown { get; private set; } ///< Indicates whether left mouse button is Down during one update phase.
 		public static bool LeftUp { get; private set; } ///< Indicates whether left mouse button is Released during one update phase.
+        public static bool RightDown { get; private set; } ///< Indicates whether right mouse button is Down during one update phase.
+        public static bool RightUp { get; private set; } ///< Indicates whether right mouse button is Released during one update phase.
 		public static uint HitEntityId ///< ID of IEntity under cursor position.
 		{
-			get { return s_override == null ? s_hitEntityId : s_override.HitEntityID; }
-			set { if (s_override == null) s_hitEntityId = value; }
+			get { return _hitEntityId; }
+			set { _hitEntityId = value; }
 		}
 		public static Vec2 HitEntityUV ///< UV of IEntity under cursor position.
 		{
-			get { return s_override == null ? s_hitEntityUV : s_override.HitEntityUV; }
-			set { if (s_override == null) s_hitEntityUV = value; }
+			get { return _hitEntityUV; }
+			set { _hitEntityUV = value; }
 		}
 		public static EntitySystem.Entity HitEntity
 		{
@@ -831,6 +853,13 @@ namespace CryEngine
 				return Entity.ById (HitEntityId);
 			}
 		}
+        public static EntitySystem.BaseEntity HitBaseEntity
+        {
+            get
+            {
+                return EntityFramework.GetEntity(HitEntityId);
+            }
+        }
 
 		public static void ShowCursor()
 		{
@@ -855,25 +884,41 @@ namespace CryEngine
 		/// <param name="wheelDelta">Wheel delta.</param>
 		public override void OnHardwareMouseEvent(int x, int y, EHARDWAREMOUSEEVENT eHardwareMouseEvent, int wheelDelta)
 		{
-			switch (eHardwareMouseEvent) 
-			{
-			case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONDOWN:
-				{
-					_updateLeftDown = true;
-					HitScenes (x, y);
-					if (OnLeftButtonDown != null)
-						OnLeftButtonDown (x, y);
-					break;
-				}
-			case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONUP:
-				{
-					_updateLeftUp = true;
-					HitScenes (x, y);
-					if (OnLeftButtonUp != null)
-						OnLeftButtonUp (x, y);
-					break;
-				}
-			}
+            switch (eHardwareMouseEvent)
+            {
+            case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONDOWN:
+                {
+                    _updateLeftDown = true;
+                    HitScenes(x, y);
+                    if (OnLeftButtonDown != null)
+                        OnLeftButtonDown(x, y);
+                    break;
+                }
+            case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONUP:
+                {
+                    _updateLeftUp = true;
+                    HitScenes(x, y);
+                    if (OnLeftButtonUp != null)
+                        OnLeftButtonUp(x, y);
+                    break;
+                }
+            case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_RBUTTONDOWN:
+                {
+                    _updateRightDown = true;
+                    HitScenes(x, y);
+                    if (OnRightButtonDown != null)
+                        OnRightButtonDown(x, y);
+                    break;
+                }
+            case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_RBUTTONUP:
+                {
+                    _updateRightUp = true;
+                    HitScenes(x, y);
+                    if (OnRightButtonUp != null)
+                        OnRightButtonUp(x, y);
+                    break;
+                }
+            }
 		}
 
 		private static void OnOverrideLeftButtonDown(int x, int y)
@@ -890,16 +935,42 @@ namespace CryEngine
 				OnLeftButtonUp (x, y);			
 		}
 
+        private static void OnOverrideRightButtonDown(int x, int y)
+        {
+            _updateRightDown = true;
+            if (OnRightButtonDown != null)
+                OnRightButtonDown (x, y);            
+        }
+
+        private static void OnOverrideRightButtonUp(int x, int y)
+        {
+            _updateRightUp = true;
+            if (OnRightButtonUp != null)
+                OnRightButtonUp (x, y);          
+        }
+
+		private static void OnOverrideMove(int x, int y)
+		{
+			if (OnMove != null)
+				OnMove (x, y);          
+		}
+
 		public static void SetOverride(IMouseOverride mouseOverride)
 		{
 			if (s_override != null) {
 				s_override.LeftButtonDown -= OnOverrideLeftButtonDown;
 				s_override.LeftButtonUp -= OnOverrideLeftButtonUp;
+                s_override.RightButtonDown -= OnOverrideRightButtonDown;
+                s_override.RightButtonUp -= OnOverrideRightButtonUp;
+				s_override.Move -= OnOverrideMove;
 			}
 			s_override = mouseOverride;
 			if (s_override != null) {
 				s_override.LeftButtonDown += OnOverrideLeftButtonDown;
 				s_override.LeftButtonUp += OnOverrideLeftButtonUp;
+                s_override.RightButtonDown += OnOverrideRightButtonDown;
+				s_override.RightButtonUp += OnOverrideRightButtonUp;
+				s_override.Move += OnOverrideMove;
 			}
 				
 		}
@@ -911,9 +982,13 @@ namespace CryEngine
 		{	
 			LeftDown = _updateLeftDown;
 			LeftUp = _updateLeftUp;
+            RightDown = _updateRightDown;
+            RightUp = _updateRightUp;
 
 			_updateLeftDown = false;
 			_updateLeftUp = false;
+            _updateRightDown = false;
+            _updateRightUp = false;
 
 			float x = 0, y = 0;
 			Env.Mouse.GetHardwareMouseClientPosition (ref x, ref y);
@@ -942,7 +1017,7 @@ namespace CryEngine
 			}
 		}
 
-		void HitScenes(int x, int y)
+		public static void HitScenes(int x, int y)
 		{
 			HitEntityId = 0;
 			if (Camera.Current == null || Camera.Current.HostEntity == null)

@@ -4,16 +4,16 @@
 
 #ifdef INCLUDE_SCALEFORM_SDK
 
-	#include "ConfigScaleform.h"
+#include <CrySystem/Scaleform/ConfigScaleform.h>
 	#include "SharedStates.h"
 
 	#include "../PakVars.h"
 	#include "FlashPlayerInstance.h"
 	#include "GFileCryPak.h"
-	#include "GImageInfoXRender.h"
-	#include "GTextureXRender.h"
 	#include "GImage.h"
 	#include "GFxVideoWrapper.h"
+	#include "GImageInfo_Impl.h"
+	#include "GTexture_Impl.h"
 
 	#include <CrySystem/IConsole.h>
 	#include <CryString/StringUtils.h>
@@ -192,8 +192,8 @@ UInt CryGFxTranslator::GetCaps() const
 
 void CryGFxTranslator::Translate(TranslateInfo* pTranslateInfo)
 {
-	IF (m_pILocMan == 0, 0)
-		m_pILocMan = gEnv->pSystem->GetLocalizationManager();
+	IF(m_pILocMan == 0, 0)
+	m_pILocMan = gEnv->pSystem->GetLocalizationManager();
 
 	if (!m_pILocMan || !pTranslateInfo)
 		return;

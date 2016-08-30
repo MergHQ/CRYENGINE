@@ -34,7 +34,7 @@ CCryDX12GIOutput::~CCryDX12GIOutput()
 
 HRESULT STDMETHODCALLTYPE CCryDX12GIOutput::FindClosestMatchingMode(_In_ const DXGI_MODE_DESC* pModeToMatch, _Out_ DXGI_MODE_DESC* pClosestMatch, _In_opt_ IUnknown* pConcernedDevice)
 {
-	return m_pDXGIOutput4->FindClosestMatchingMode(pModeToMatch, pClosestMatch, static_cast<CCryDX12Device*>(pConcernedDevice)->GetD3D12Device());
+	return m_pDXGIOutput4->FindClosestMatchingMode(pModeToMatch, pClosestMatch, pConcernedDevice ? static_cast<CCryDX12Device*>(pConcernedDevice)->GetD3D12Device() : nullptr);
 }
 
 HRESULT STDMETHODCALLTYPE CCryDX12GIOutput::TakeOwnership(_In_ IUnknown* pDevice, BOOL Exclusive)
@@ -44,7 +44,7 @@ HRESULT STDMETHODCALLTYPE CCryDX12GIOutput::TakeOwnership(_In_ IUnknown* pDevice
 
 HRESULT STDMETHODCALLTYPE CCryDX12GIOutput::FindClosestMatchingMode1(_In_ const DXGI_MODE_DESC1* pModeToMatch, _Out_ DXGI_MODE_DESC1* pClosestMatch, _In_opt_ IUnknown* pConcernedDevice)
 {
-	return m_pDXGIOutput4->FindClosestMatchingMode1(pModeToMatch, pClosestMatch, static_cast<CCryDX12Device*>(pConcernedDevice)->GetD3D12Device());
+	return m_pDXGIOutput4->FindClosestMatchingMode1(pModeToMatch, pClosestMatch, pConcernedDevice ? static_cast<CCryDX12Device*>(pConcernedDevice)->GetD3D12Device() : nullptr);
 }
 
 HRESULT STDMETHODCALLTYPE CCryDX12GIOutput::CheckOverlaySupport(_In_ DXGI_FORMAT EnumFormat, _In_ IUnknown* pConcernedDevice, _Out_ UINT* pFlags)

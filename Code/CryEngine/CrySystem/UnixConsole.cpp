@@ -48,8 +48,8 @@ LINK_SYSTEM_LIBRARY("pdcurses.lib")
 // be exposed through INetwork.
 			#include <CryScriptSystem/IScriptSystem.h>
 			#include <CryNetwork/INetwork.h>
-			#include <CryAction.h>
-			#include <Network/GameServerNub.h>
+			#include <../CryAction/CryAction.h>
+			#include <../CryAction/Network/GameServerNub.h>
 		#endif
 
 		#include <CryGame/IGameFramework.h>

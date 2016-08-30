@@ -2608,7 +2608,8 @@ void CMergedMeshRenderNode::CreateRenderMesh(RENDERMESH_UPDATE_TYPE type, const 
 				{
 					if (update->chunks[j].matId != chunk.m_nMatID)
 					{
-						rmchunks.push_back(chunk);
+						if (chunk.nNumIndices && chunk.nNumVerts)
+							rmchunks.push_back(chunk);
 						chunk.m_nMatID = update->chunks[j].matId;
 						chunk.nFirstIndexId = ii;
 						chunk.nFirstVertId = iv;
@@ -2617,8 +2618,10 @@ void CMergedMeshRenderNode::CreateRenderMesh(RENDERMESH_UPDATE_TYPE type, const 
 					}
 					update->chunks[j].ioff = ii;
 					update->chunks[j].voff = iv;
-					chunk.nNumIndices = (ii += update->chunks[j].icnt);
-					chunk.nNumVerts = (iv += update->chunks[j].vcnt);
+					chunk.nNumIndices += update->chunks[j].icnt;
+					ii += update->chunks[j].icnt;
+					chunk.nNumVerts += update->chunks[j].vcnt;
+					iv += update->chunks[j].vcnt;
 				}
 			}
 done:
@@ -3859,7 +3862,6 @@ void CMergedMeshesManager::Init()
 	if (!s_MergedMeshPool)
 	{
 		AUTO_LOCK(s_MergedMeshPoolLock);
-		ScopedSwitchToGlobalHeap heaper;
 		size_t memsize = (Cry3DEngineBase::GetCVars()->e_MergedMeshesPool + 4096) * 1024; // include 2mb buffer size for overhead and large peaks
 		if (memsize && (s_MergedMeshPool = gEnv->pSystem->GetIMemoryManager()->CreateGeneralExpandingMemoryHeap(
 		                  memsize, 0, "MERGEDMESH_POOL")) == NULL)
@@ -5171,6 +5173,32 @@ bool CMergedMeshesManager::GetCompiledData(uint32 index, byte* pData, int nSize,
 	m_SegNodes[index]->Compile(pData, nSize, pName, *ppStatInstGroupTable, segmentOffset);
 
 	return true;
+}
+
+void CMergedMeshRenderNode::FillBBox(AABB& aabb)
+{
+	aabb = CMergedMeshRenderNode::GetBBox();
+}
+
+EERType CMergedMeshRenderNode::GetRenderNodeType()
+{
+	return eERType_MergedMesh;
+}
+
+float CMergedMeshRenderNode::GetMaxViewDist()
+{
+	float radius = m_internalAABB.GetRadius();
+	return max(GetCVars()->e_ViewDistMin, radius * GetCVars()->e_MergedMeshesViewDistRatio);
+}
+
+Vec3 CMergedMeshRenderNode::GetPos(bool bWorldOnly) const
+{
+	return m_pos;
+}
+
+IMaterial* CMergedMeshRenderNode::GetMaterial(Vec3* pHitPos) const
+{
+	return NULL;
 }
 
 #undef FSL_CREATE_MODE

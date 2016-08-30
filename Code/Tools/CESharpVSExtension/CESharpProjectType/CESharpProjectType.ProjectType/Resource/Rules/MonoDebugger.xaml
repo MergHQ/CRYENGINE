@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--Copyright, Microsoft Corporation, All rights reserved.-->
+
+<!--TODO: Update the following files with the specified content
+
+    *BuildSystem\DeployedBuildSystem\CustomProject.Default.props* - update the value of the existing DebuggerFlavor element to use the new debugger
+    <PropertyGroup>
+      <DebuggerFlavor>MonoDebugger</DebuggerFlavor>
+    </PropertyGroup>
+-->
+<Rule
+	Name="MonoDebugger"
+	DisplayName="Run CryENGINE"
+	PageTemplate="debugger"
+	Description="MonoDebugger options"
+	xmlns="http://schemas.microsoft.com/build/2009/properties">
+    <Rule.DataSource>
+        <DataSource Persistence="UserFileWithXamlDefaults" />
+    </Rule.DataSource>
+
+    <StringProperty Name="MonoDebuggerCommand" DisplayName="Command"
+                Default="$(TargetPath)"
+                Description="The debug command to execute.">
+        <StringProperty.ValueEditors>
+            <ValueEditor EditorType="DefaultFindFullPathPropertyEditor" DisplayName="&lt;regsvr32.exe&gt;">
+                <ValueEditor.Metadata>
+                    <NameValuePair Name="Exename" Value="regsvr32.exe" />
+                </ValueEditor.Metadata>
+            </ValueEditor>
+            <ValueEditor EditorType="DefaultStringPropertyEditor" DisplayName="&lt;Edit...&gt;"/>
+            <ValueEditor EditorType="DefaultFilePropertyEditor" DisplayName="&lt;Browse...&gt;">
+                <ValueEditor.Metadata>
+                    <NameValuePair Name="Filters" Value="Executables (*.exe)|*.exe" />
+                </ValueEditor.Metadata>
+            </ValueEditor>
+        </StringProperty.ValueEditors>
+    </StringProperty>
+
+    <StringProperty Name="MonoDebuggerCommandArguments" DisplayName="Command Arguments"
+                Description="The command line arguments to pass to the application.">
+        <Argument Property="MonoDebuggerCommand" />
+    </StringProperty>
+    <StringProperty Name="MonoDebuggerWorkingDirectory" DisplayName="Working Directory"
+                Default="$(MSBuildProjectDirectory)"  
+                Description="The application's working directory. By default, the directory containing the project file."
+                Subtype="folder"/>
+    <BoolProperty Name="MonoDebuggerDebuggerAttach" DisplayName="Attach"
+                Default="False"
+                Description="Specifies whether the debugger should attempt to attach to an existing process when debugging starts." />
+</Rule>

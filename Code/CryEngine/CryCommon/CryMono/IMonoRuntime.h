@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <CryCore/smartptr.h>
-
 enum EMonoLogLevel
 {
 	eMLL_NULL = 0,
@@ -15,30 +13,19 @@ enum EMonoLogLevel
 	eMLL_Debug
 };
 
+struct ICryEngineBasePlugin;
+struct SMonoDomainHandlerLibrary;
+
 struct IMonoLibrary
 {
 	virtual ~IMonoLibrary() {}
 
-	virtual const char* GetName() = 0;
-	virtual const char* GetPath() = 0;
-	virtual bool        IsLoaded() = 0;
-	virtual bool        IsInMemory() = 0;
-	virtual bool        RunMethod(const char* name) = 0;
+	virtual ICryEngineBasePlugin* Initialize(void* pMonoDomain, void* pDomainHandler = nullptr) = 0;
+	virtual bool                  RunMethod(const char* szMethodName) const = 0;
+	virtual const char*           GetImageName() const = 0;
+	virtual bool                  IsInMemory() const = 0;
+	virtual bool                  IsLoaded() const = 0;
 };
-
-struct IMonoLibraryIt
-{
-	virtual ~IMonoLibraryIt() {}
-
-	virtual void          AddRef() = 0;
-	virtual void          Release() = 0;
-	virtual bool          IsEnd() = 0;
-	virtual IMonoLibrary* This() = 0;
-	virtual IMonoLibrary* Next() = 0;
-	virtual void          MoveFirst() = 0;
-};
-
-typedef _smart_ptr<IMonoLibraryIt> IMonoLibraryItPtr;
 
 struct IMonoListener
 {
@@ -53,15 +40,52 @@ struct IMonoListener
 struct IMonoRuntime
 {
 	virtual ~IMonoRuntime() {}
+	virtual void                  Initialize(EMonoLogLevel logLevel) = 0;
+	virtual bool                  LoadBinary(const char* szBinaryPath) = 0;
+	virtual bool                  UnloadBinary(const char* szBinaryPath) = 0;
 
-	virtual void            Initialize(EMonoLogLevel logLevel) = 0;
-	virtual void            LoadGame() = 0;
-	virtual void            UnloadGame() = 0;
-	virtual void            ReloadGame() { UnloadGame(); LoadGame(); }
-	virtual void            RegisterListener(IMonoListener* pListener) = 0;
-	virtual void            UnregisterListener(IMonoListener* pListener) = 0;
-	virtual void            Update(int updateFlags = 0, int nPauseMode = 0) = 0;
-	virtual const char*     GetProjectDllDir() = 0;
-	virtual EMonoLogLevel   GetLogLevel() = 0;
-	virtual IMonoLibraryIt* GetLibraryIterator() = 0;
+	virtual void                  Update(int updateFlags = 0, int nPauseMode = 0) = 0;
+	virtual ICryEngineBasePlugin* GetPlugin(const char* szBinaryPath) const = 0;
+	virtual bool                  RunMethod(const ICryEngineBasePlugin* pPlugin, const char* szMethodName) const = 0;
+
+	virtual void                  RegisterListener(IMonoListener* pListener) = 0;
+	virtual void                  UnregisterListener(IMonoListener* pListener) = 0;
+	virtual EMonoLogLevel         GetLogLevel() = 0;
+};
+
+// TODO: #CryPlugins: make this an abstract container
+struct ICryEngineBasePlugin
+{
+	bool        Call_Initialize() const                           { return gEnv->pMonoRuntime->RunMethod(this, "Initialize"); }
+	bool        Call_OnGameStart() const                          { return gEnv->pMonoRuntime->RunMethod(this, "OnGameStart"); }
+	bool        Call_OnGameStop() const                           { return gEnv->pMonoRuntime->RunMethod(this, "OnGameStop"); }
+	bool        Call_Shutdown() const                             { return gEnv->pMonoRuntime->RunMethod(this, "Shutdown"); }
+
+	void        SetBinaryDirectory(const char* szBinaryDirectory) { cry_strcpy(m_szBinaryDirectory, szBinaryDirectory); }
+	void        SetAssetDirectory(const char* szAssetDirectory)   { cry_strcpy(m_szAssetDirectory, szAssetDirectory); }
+
+	const char* GetBinaryDirectory() const                        { return m_szBinaryDirectory; }
+	const char* GetAssetDirectory() const                         { return m_szAssetDirectory; }
+
+private:
+	char m_szAssetDirectory[_MAX_PATH];
+	char m_szBinaryDirectory[_MAX_PATH];
+};
+
+struct IMonoEntityPropertyHandler : IEntityPropertyHandler
+{
+	virtual ~IMonoEntityPropertyHandler() {}
+
+	virtual IEntityPropertyHandler::SPropertyInfo* GetMonoPropertyInfo(int index) const = 0;
+	virtual bool                                   GetPropertyInfo(int index, IEntityPropertyHandler::SPropertyInfo& info) const
+	{
+		const IEntityPropertyHandler::SPropertyInfo* pProperty = GetMonoPropertyInfo(index);
+		if (!pProperty)
+		{
+			return false;
+		}
+
+		info = *pProperty;
+		return true;
+	}
 };

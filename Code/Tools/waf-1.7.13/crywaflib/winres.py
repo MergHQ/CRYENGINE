@@ -427,7 +427,7 @@ def generate_rc_file(self):
 	rc_task = self.create_task( 'create_rc_file', rc_task_inputs, rc_file )
 	
 	# Set special flags for launcher
-	if self.target == 'WindowsLauncher':			
+	if self.target.startswith('WindowsLauncher'):			
 		rc_task.has_icons = True
 		rc_task.icon_name = 'WindowsIcon.ico'
 		rc_task.icon_resource_name = 'IDI_ICON' # has to match define in launchers resource.h file e.g. "#define IDI_ICON	101"
@@ -438,7 +438,7 @@ def generate_rc_file(self):
 		#rc_task.cursor_resource_name = 'IDC_CUSOR' # has to match define in launchers resource.h file e.g. "#define IDC_CUSOR 105"
 					
 	# Set special flags for launcher
-	if self.target == 'DedicatedLauncher':
+	if self.target.startswith('DedicatedLauncher'):
 		rc_task.has_icons = True
 		rc_task.icon_name = 'WindowsServerIcon.ico'
 		rc_task.icon_resource_name = 'IDI_ICON'

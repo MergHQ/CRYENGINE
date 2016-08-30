@@ -146,7 +146,6 @@ NavigationSystem::NavigationSystem(const char* configName)
 	SetupTasks();
 
 	m_worldMonitor = WorldMonitor(functor(*this, &NavigationSystem::WorldChanged));
-	StartWorldMonitoring();
 
 	ReloadConfig();
 
@@ -701,9 +700,9 @@ void NavigationSystem::SetExclusionVolume(const NavigationAgentTypeID* agentType
    {
    if (meshID && volumeID && m_meshes.validate(meshID) && m_volumes.validate(volumeID))
    {
-    NavigationMesh& mesh = m_meshes[meshID];
+   NavigationMesh& mesh = m_meshes[meshID];
 
-    if (stl::push_back_unique(mesh.exclusions, volumeID))
+   if (stl::push_back_unique(mesh.exclusions, volumeID))
    ++mesh.version;
    }
    }
@@ -712,9 +711,9 @@ void NavigationSystem::SetExclusionVolume(const NavigationAgentTypeID* agentType
    {
    if (meshID && volumeID && m_meshes.validate(meshID) && m_volumes.validate(volumeID))
    {
-    NavigationMesh& mesh = m_meshes[meshID];
+   NavigationMesh& mesh = m_meshes[meshID];
 
-    if (stl::find_and_erase(mesh.exclusions, volumeID))
+   if (stl::find_and_erase(mesh.exclusions, volumeID))
    ++mesh.version;
    }
    }
@@ -1530,6 +1529,9 @@ void NavigationSystem::AddIslandConnectionsBetweenTriangles(const NavigationMesh
 					const MNM::Tile::Link& link = tile.links[startingTriangle.firstLink + l];
 					if (link.side == MNM::Tile::Link::OffMesh)
 					{
+#if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
+						AILogCommentID("<MNM:OffMeshLink>", "NavigationSystem::AddIslandConnectionsBetweenTriangles link from %u to %u (mesh %u)", startingTriangle.islandID, endingTriangle.islandID, meshID);
+#endif
 						MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
 						MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
 						MNM::OffMeshNavigation::QueryLinksResult linksResult = offMeshNavigation.GetLinksForTriangle(startingTriangleID, link.triangle);
@@ -1560,6 +1562,9 @@ void NavigationSystem::RemoveAllIslandConnectionsForObject(const NavigationMeshI
 void NavigationSystem::RemoveIslandsConnectionBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID,
                                                                const MNM::TriangleID endingTriangleID)
 {
+	// NOTE pavloi 2016.02.05: be advised, that this function is not use anywhere. It should be called before triangles are unlinked
+	// from each other, but currently OffMeshNavigationManager first unlinks triangles and only then unlinks islands.
+
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
 	if (m_meshes.validate(meshID))
@@ -1578,6 +1583,9 @@ void NavigationSystem::RemoveIslandsConnectionBetweenTriangles(const NavigationM
 					const MNM::Tile::Link& link = tile.links[startingTriangle.firstLink + l];
 					if (link.side == MNM::Tile::Link::OffMesh)
 					{
+#if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
+						AILogCommentID("<MNM:OffMeshLink>", "NavigationSystem::RemoveIslandsConnectionBetweenTriangles link from %u to %u (mesh %u)", startingTriangle.islandID, endingTriangle.islandID, meshID);
+#endif
 						MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
 						MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
 						MNM::OffMeshNavigation::QueryLinksResult linksResult = offMeshNavigation.GetLinksForTriangle(startingTriangleID, link.triangle);
@@ -1593,6 +1601,174 @@ void NavigationSystem::RemoveIslandsConnectionBetweenTriangles(const NavigationM
 							}
 						}
 					}
+				}
+			}
+		}
+	}
+}
+
+void NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles(
+  const NavigationMeshID& meshID,
+  const MNM::TriangleID startingTriangleID,
+  const MNM::TriangleID endingTriangleID,
+  const MNM::OffMeshLinkID& linkID)
+{
+	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+
+#if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
+	{
+		bool bLinkIsFound = false;
+		// Next piece code is an almost exact copy from AddIslandConnectionsBetweenTriangles()
+		if (m_meshes.validate(meshID))
+		{
+			const NavigationMesh& mesh = m_meshes[meshID];
+			MNM::Tile::Triangle startingTriangle, endingTriangle;
+			if (mesh.grid.GetTriangle(startingTriangleID, startingTriangle))
+			{
+				if (mesh.grid.GetTriangle(endingTriangleID, endingTriangle))
+				{
+					const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
+					const MNM::Tile& tile = mesh.grid.GetTile(MNM::ComputeTileID(startingTriangleID));
+					for (uint16 l = 0; l < startingTriangle.linkCount && !bLinkIsFound; ++l)
+					{
+						const MNM::Tile::Link& link = tile.links[startingTriangle.firstLink + l];
+						if (link.side == MNM::Tile::Link::OffMesh)
+						{
+							const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
+							const MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
+							const MNM::OffMeshNavigation::QueryLinksResult linksResult = offMeshNavigation.GetLinksForTriangle(startingTriangleID, link.triangle);
+							while (MNM::WayTriangleData nextTri = linksResult.GetNextTriangle())
+							{
+								if (nextTri.triangleID == endingTriangleID)
+								{
+									if (nextTri.offMeshLinkID == linkID)
+									{
+										if (const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID))
+										{
+											bLinkIsFound = true;
+											break;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (!bLinkIsFound)
+		{
+			// It's expected, that the triangles in tiles are already linked together before this function is called.
+			// But we haven't found a link during validation.
+			AIErrorID("<MNM:OffMeshLink>", "NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles is called with wrong input");
+		}
+	}
+#endif // DEBUG_MNM_DATA_CONSISTENCY_ENABLED
+
+	// TODO pavloi 2016.02.05: whole piece is suboptimal - this function is called from m_offMeshNavigationManager already, where
+	// it linked triangles and had full info about them. I leave it like this to be consistent with AddIslandConnectionsBetweenTriangles()
+	if (m_meshes.validate(meshID))
+	{
+		NavigationMesh& mesh = m_meshes[meshID];
+		MNM::Tile::Triangle startingTriangle, endingTriangle;
+		if (mesh.grid.GetTriangle(startingTriangleID, startingTriangle))
+		{
+			if (mesh.grid.GetTriangle(endingTriangleID, endingTriangle))
+			{
+				const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
+				const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
+
+				const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(linkID);
+				if (pLink)
+				{
+					const MNM::IslandConnections::Link islandLink(endingTriangleID, linkID, endingIslandID, pLink->GetEntityIdForOffMeshLink());
+					MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
+					islandConnections.SetOneWayConnectionBetweenIsland(startingIslandID, islandLink);
+				}
+			}
+		}
+	}
+}
+
+void NavigationSystem::RemoveOffMeshLinkIslandsConnectionBetweenTriangles(
+  const NavigationMeshID& meshID,
+  const MNM::TriangleID startingTriangleID,
+  const MNM::TriangleID endingTriangleID,
+  const MNM::OffMeshLinkID& linkID)
+{
+	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+#if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
+	{
+		bool bLinkIsFound = false;
+		// Next piece code is an almost exact copy from RemoveIslandConnectionsBetweenTriangles()
+		if (m_meshes.validate(meshID))
+		{
+			const NavigationMesh& mesh = m_meshes[meshID];
+			MNM::Tile::Triangle startingTriangle, endingTriangle;
+			if (mesh.grid.GetTriangle(startingTriangleID, startingTriangle))
+			{
+				if (mesh.grid.GetTriangle(endingTriangleID, endingTriangle))
+				{
+					const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
+
+					const MNM::Tile& tile = mesh.grid.GetTile(MNM::ComputeTileID(startingTriangleID));
+					for (uint16 l = 0; l < startingTriangle.linkCount && !bLinkIsFound; ++l)
+					{
+						const MNM::Tile::Link& link = tile.links[startingTriangle.firstLink + l];
+						if (link.side == MNM::Tile::Link::OffMesh)
+						{
+							const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
+							const MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
+							const MNM::OffMeshNavigation::QueryLinksResult linksResult = offMeshNavigation.GetLinksForTriangle(startingTriangleID, link.triangle);
+							while (MNM::WayTriangleData nextTri = linksResult.GetNextTriangle())
+							{
+								if (nextTri.triangleID == endingTriangleID)
+								{
+									if (nextTri.offMeshLinkID == linkID)
+									{
+										if (const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID))
+										{
+											bLinkIsFound = true;
+											break;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (bLinkIsFound)
+		{
+			// It's expected, that the triangles in tiles are already unlinked from each other before this function is called.
+			// But validation actually found, that the link is still there.
+			AIErrorID("<MNM:OffMeshLink>", "NavigationSystem::RemoveOffMeshLinkIslandsConnectionBetweenTriangles is called with wrong input");
+		}
+	}
+#endif // DEBUG_MNM_DATA_CONSISTENCY_ENABLED
+
+	// TODO pavloi 2016.02.05: whole piece is suboptimal - this function is called from m_offMeshNavigationManager already, where
+	// it unlinked triangles and had full info about them. I leave it like this to be consistent with RemoveIslandConnectionsBetweenTriangles()
+	if (m_meshes.validate(meshID))
+	{
+		NavigationMesh& mesh = m_meshes[meshID];
+		MNM::Tile::Triangle startingTriangle, endingTriangle;
+		if (mesh.grid.GetTriangle(startingTriangleID, startingTriangle))
+		{
+			if (mesh.grid.GetTriangle(endingTriangleID, endingTriangle))
+			{
+				const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
+				const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
+
+				const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(linkID);
+				if (pLink)
+				{
+					const MNM::IslandConnections::Link islandLink(endingTriangleID, linkID, endingIslandID, pLink->GetEntityIdForOffMeshLink());
+					MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
+					islandConnections.RemoveOneWayConnectionBetweenIsland(startingIslandID, islandLink);
 				}
 			}
 		}
@@ -1958,7 +2134,23 @@ void NavigationSystem::ClearAndNotify()
 
 bool NavigationSystem::ReloadConfig()
 {
+	// TODO pavloi 2016.03.09: this function should be refactored.
+	// Proper way of doing things should be something like this:
+	// 1) load config data into an array of CreateAgentTypeParams, do nothing, if there are errors
+	// 2) pass array of CreateAgentTypeParams into different publically available function, which will:
+	//    a) notify interested listeners, that we're about to wipe out and reload navigation;
+	//    b) clear current data;
+	//    c) replace agent settings;
+	//    d) kick-off navmesh regeneration (if required/enabled);
+	//    e) notify listeners, that new settings are available.
+	// This way:
+	// 1) loading and application of config will be decoupled from each other, so we will be able to put data in descriptor database (if we want);
+	// 2) it will be possible to reliably reload config and provide better editor tools, which react to config changes in runtime;
+	// 3) continuous nav mesh update can be taken away from editor's CAIManager to navigation system.
+
 	Clear();
+
+	m_agentTypes.clear();
 
 	XmlNodeRef rootNode = GetISystem()->LoadXmlFromFile(m_configName.c_str());
 	if (!rootNode)
@@ -2213,9 +2405,9 @@ void NavigationSystem::SetupTasks()
 	m_free = 0;
 }
 
-void NavigationSystem::RegisterArea(const char* shapeName)
+bool NavigationSystem::RegisterArea(const char* shapeName, NavigationVolumeID& outVolumeId)
 {
-	m_volumesManager.RegisterArea(shapeName);
+	return m_volumesManager.RegisterArea(shapeName, outVolumeId);
 }
 
 void NavigationSystem::UnRegisterArea(const char* shapeName)
@@ -2236,6 +2428,51 @@ void NavigationSystem::SetAreaId(const char* shapeName, NavigationVolumeID id)
 void NavigationSystem::UpdateAreaNameForId(const NavigationVolumeID id, const char* newShapeName)
 {
 	m_volumesManager.UpdateNameForAreaID(id, newShapeName);
+}
+
+void NavigationSystem::RemoveLoadedMeshesWithoutRegisteredAreas()
+{
+	std::vector<NavigationVolumeID> volumesToRemove;
+	m_volumesManager.GetLoadedUnregisteredVolumes(volumesToRemove);
+
+	if (!volumesToRemove.empty())
+	{
+		std::vector<NavigationMeshID> meshesToRemove;
+
+		for (const NavigationVolumeID& volumeId : volumesToRemove)
+		{
+			AILogComment("Removing Navigation Volume id = %u because it was created by loaded unregistered navigation area.",
+			             (uint32)volumeId);
+
+			for (const AgentType& agentType : m_agentTypes)
+			{
+				for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+				{
+					const NavigationMeshID meshID = meshInfo.id;
+					const NavigationMesh& mesh = m_meshes[meshID];
+
+					if (mesh.boundary == volumeId)
+					{
+						meshesToRemove.push_back(meshID);
+						AILogComment("Removing NavMesh '%s' (meshId = %u, agent = %s) because it uses loaded unregistered navigation area id = %u.",
+						             mesh.name.c_str(), (uint32)meshID, agentType.name.c_str(), (uint32)volumeId);
+					}
+				}
+			}
+		}
+
+		for (const NavigationMeshID& meshId : meshesToRemove)
+		{
+			DestroyMesh(meshId);
+		}
+
+		for (const NavigationVolumeID& volumeId : volumesToRemove)
+		{
+			DestroyVolume(volumeId);
+		}
+	}
+
+	m_volumesManager.ClearLoadedAreas();
 }
 
 void NavigationSystem::StartWorldMonitoring()
@@ -2549,6 +2786,8 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 
 	m_pEditorBackgroundUpdate->Pause(true);
 
+	m_volumesManager.ClearLoadedAreas();
+
 	CCryFile file;
 	if (false != file.Open(fileName, "rb"))
 	{
@@ -2615,10 +2854,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 				uint32 areaIDUint32 = 0;
 				file.ReadType(&areaIDUint32);
 #if !defined(SEG_WORLD)
-				if (gEnv->IsEditor())
-				{
-					m_volumesManager.SetAreaID(areaName, NavigationVolumeID(areaIDUint32));
-				}
+				m_volumesManager.RegisterAreaFromLoadedData(areaName, NavigationVolumeID(areaIDUint32));
 #endif
 			}
 
@@ -2680,12 +2916,6 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 
 					const size_t fileSeekPositionForNextMesh = file.GetPosition() + totalMeshMemory;
 
-					if (gEnv->IsEditor() && !m_volumesManager.IsAreaPresent(meshName))
-					{
-						file.Seek(fileSeekPositionForNextMesh, SEEK_SET);
-						continue;
-					}
-
 					// Reading mesh boundary
 #ifdef SW_NAVMESH_USE_GUID
 					NavigationVolumeGUID boundaryGUID = 0;
@@ -2695,6 +2925,39 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					file.ReadType(&boundaryIDuint32);
 					NavigationVolumeID boundaryID = NavigationVolumeID(boundaryIDuint32);
 #endif
+
+					{
+						if (m_volumesManager.GetLoadedAreaID(meshName) != boundaryID)
+						{
+							AIWarning("The NavMesh '%s' (agent = '%s', meshId = %u, boundaryVolumeId = %u) and the loaded corresponding Navigation Area have different IDs. Data might be corrupted.",
+							          meshName, agentName, meshIDuint32, (uint32)boundaryID);
+						}
+
+						const NavigationVolumeID existingAreaId = m_volumesManager.GetAreaID(meshName);
+						if (existingAreaId != boundaryID)
+						{
+							if (!m_volumesManager.IsAreaPresent(meshName))
+							{
+								if (!m_volumesManager.IsLoadedAreaPresent(meshName))
+								{
+									AIWarning("The NavMesh '%s' (agent = '%s', meshId = %u, boundaryVolumeId = %u) doesn't have a loaded corresponding Navigation Area. Data might be corrupted.",
+									          meshName, agentName, meshIDuint32, (uint32)boundaryID);
+								}
+							}
+							else
+							{
+								if (existingAreaId == NavigationVolumeID() && bAfterExporting)
+								{
+									// Expected situation
+								}
+								else
+								{
+									AIWarning("The NavMesh '%s' (agent = '%s', meshId = %u, boundaryVolumeId = %u) and the existing corresponding Navigation Area have different IDs. Data might be corrupted.",
+									          meshName, agentName, meshIDuint32, (uint32)boundaryID);
+								}
+							}
+						}
+					}
 
 					//Saving the volume used by the boundary
 					MNM::BoundingVolume volume;
@@ -3401,12 +3664,15 @@ void NavigationSystemDebugDraw::UpdateWorkingProgress(const float frameTime, con
 MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem& navigationSystem, const DebugDrawSettings& settings)
 {
 	MNM::TileID debugTileID(0);
+	#if DEBUG_MNM_ENABLED
 
-	#if CRY_PLATFORM_WINDOWS
+	// TODO pavloi 2016.03.09: instead of calling GetAsyncKeyState(), register for events with GetISystem()->GetIInput()->AddEventListener().
+
 	static MNM::TileGenerator debugGenerator;
 	static MNM::TileID tileID(0);
 	static bool prevKeyState = false;
-	static size_t drawMode = MNM::TileGenerator::DrawNone;
+	static size_t drawMode = (size_t)MNM::TileGenerator::EDrawMode::DrawNone;
+	static bool bDrawAdditionalInfo = false;
 
 	NavigationMesh& mesh = navigationSystem.m_meshes[settings.meshID];
 	const MNM::MeshGrid::Params& paramsGrid = mesh.grid.GetParams();
@@ -3432,10 +3698,10 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 		else
 			++drawMode;
 
-		if (drawMode == MNM::TileGenerator::LastDrawMode)
-			drawMode = MNM::TileGenerator::DrawNone;
-		else if (drawMode > MNM::TileGenerator::LastDrawMode)
-			drawMode = MNM::TileGenerator::LastDrawMode - 1;
+		if (drawMode == (size_t)MNM::TileGenerator::EDrawMode::LastDrawMode)
+			drawMode = (size_t)MNM::TileGenerator::EDrawMode::DrawNone;
+		else if (drawMode > (size_t)MNM::TileGenerator::EDrawMode::LastDrawMode)
+			drawMode = (size_t)MNM::TileGenerator::EDrawMode::LastDrawMode - 1;
 	}
 
 	prevKeyState = keyState;
@@ -3492,6 +3758,16 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 		selectPrevKeyState = selectKeyState;
 	}
 
+	{
+		static bool bPrevAdditionalInfoKeyState = false;
+		bool bAdditionalInfoKeyState = (GetAsyncKeyState(VK_DIVIDE) & 0x8000) != 0;
+		if (bAdditionalInfoKeyState && bAdditionalInfoKeyState != bPrevAdditionalInfoKeyState)
+		{
+			bDrawAdditionalInfo = !bDrawAdditionalInfo;
+		}
+		bPrevAdditionalInfoKeyState = bAdditionalInfoKeyState;
+	}
+
 	if (forceGeneration)
 	{
 		tileID = 0;
@@ -3525,51 +3801,67 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 			mesh.grid.ClearTile(tileID);
 	}
 
-	debugGenerator.Draw((MNM::TileGenerator::DrawMode)drawMode);
+	debugGenerator.Draw((MNM::TileGenerator::EDrawMode)drawMode, bDrawAdditionalInfo);
 
 	const char* drawModeName = "None";
 
-	switch (drawMode)
+	switch ((MNM::TileGenerator::EDrawMode)drawMode)
 	{
-	default:
-	case MNM::TileGenerator::DrawNone:
-	case MNM::TileGenerator::LastDrawMode:
+	case MNM::TileGenerator::EDrawMode::DrawNone:
 		break;
 
-	case MNM::TileGenerator::DrawRawVoxels:
+	case MNM::TileGenerator::EDrawMode::DrawRawInputGeometry:
+		drawModeName = "Raw Input Geometry";
+		break;
+
+	case MNM::TileGenerator::EDrawMode::DrawRawVoxels:
 		drawModeName = "Raw Voxels";
 		break;
 
-	case MNM::TileGenerator::DrawFlaggedVoxels:
+	case MNM::TileGenerator::EDrawMode::DrawFilteredVoxels:
+		drawModeName = "Filtered Voxels - filtered after walkable test";
+		break;
+
+	case MNM::TileGenerator::EDrawMode::DrawFlaggedVoxels:
 		drawModeName = "Flagged Voxels";
 		break;
 
-	case MNM::TileGenerator::DrawDistanceTransform:
+	case MNM::TileGenerator::EDrawMode::DrawDistanceTransform:
 		drawModeName = "Distance Transform";
 		break;
 
-	case MNM::TileGenerator::DrawSegmentation:
+	case MNM::TileGenerator::EDrawMode::DrawPainting:
+		drawModeName = "Painting";
+		break;
+
+	case MNM::TileGenerator::EDrawMode::DrawSegmentation:
 		drawModeName = "Segmentation";
 		break;
 
-	case MNM::TileGenerator::DrawNumberedContourVertices:
-	case MNM::TileGenerator::DrawContourVertices:
+	case MNM::TileGenerator::EDrawMode::DrawNumberedContourVertices:
+	case MNM::TileGenerator::EDrawMode::DrawContourVertices:
 		drawModeName = "Contour Vertices";
 		break;
 
-	case MNM::TileGenerator::DrawTracers:
+	case MNM::TileGenerator::EDrawMode::DrawTracers:
 		drawModeName = "Tracers";
 		break;
-	case MNM::TileGenerator::DrawSimplifiedContours:
+
+	case MNM::TileGenerator::EDrawMode::DrawSimplifiedContours:
 		drawModeName = "Simplified Contours";
 		break;
 
-	case MNM::TileGenerator::DrawTriangulation:
+	case MNM::TileGenerator::EDrawMode::DrawTriangulation:
 		drawModeName = "Triangulation";
 		break;
 
-	case MNM::TileGenerator::DrawBVTree:
+	case MNM::TileGenerator::EDrawMode::DrawBVTree:
 		drawModeName = "BV Tree";
+		break;
+
+	case MNM::TileGenerator::EDrawMode::LastDrawMode:
+	default:
+		drawModeName = "Unknown";
 		break;
 	}
 
@@ -3610,11 +3902,11 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 	                triangleMemory,
 	                bvTreeMemory);
 
-	if (drawMode != MNM::TileGenerator::DrawNone)
+	if (drawMode != (size_t)MNM::TileGenerator::EDrawMode::DrawNone)
 	{
 		debugTileID = mesh.grid.GetTileID(selectedX, selectedY, selectedZ);
 	}
-	#endif
+	#endif // DEBUG_MNM_ENABLED
 
 	return debugTileID;
 }
@@ -3859,9 +4151,6 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 				workingSet.aStarOpenList.SetFrameTimeQuota(0.0f);
 				workingSet.aStarOpenList.SetUpForPathSolving(grid.GetTriangleCount(), triStart, fixedPointStartLoc, startToEndDist);
 
-				const size_t MaxWaySize = 512;
-				MNM::WayTriangleData outputWay[MaxWaySize];
-
 				CTimeValue timeStart = gEnv->pTimer->GetAsyncTime();
 
 				MNM::DangerousAreasList dangersInfo;
@@ -3878,11 +4167,12 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 					dangersInfo.push_back(info);
 				}
 
+				const size_t k_MaxWaySize = 512;
 				const float pathSharingPenalty = .0f;
 				const float pathLinkSharingPenalty = .0f;
 				MNM::MeshGrid::WayQueryRequest inputParams(debugObjectStart->CastToIAIActor(), triStart, startLoc, triEnd, endLoc,
 				                                           offMeshNavigation, *offMeshNavigationManager, dangersInfo);
-				MNM::MeshGrid::WayQueryResult result;
+				MNM::MeshGrid::WayQueryResult result(k_MaxWaySize);
 
 				const bool hasPathfindingFinished = (grid.FindWay(inputParams, workingSet, result) == MNM::MeshGrid::eWQR_Done);
 
@@ -3891,13 +4181,16 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 
 				assert(hasPathfindingFinished);
 
-				for (size_t i = 0; i < result.GetWaySize(); ++i)
+				const MNM::WayTriangleData* const pOutputWay = result.GetWayData();
+				const size_t outputWaySize = result.GetWaySize();
+
+				for (size_t i = 0; i < outputWaySize; ++i)
 				{
-					if ((outputWay[i].triangleID != triStart) && (outputWay[i].triangleID != triEnd))
+					if ((pOutputWay[i].triangleID != triStart) && (pOutputWay[i].triangleID != triEnd))
 					{
 						MNM::vector3_t a, b, c;
 
-						grid.GetVertices(outputWay[i].triangleID, a, b, c);
+						grid.GetVertices(pOutputWay[i].triangleID, a, b, c);
 
 						renderAuxGeom->DrawTriangle(
 						  (a + originOffset).GetVec3(), ColorB(Col_Maroon),
@@ -3910,23 +4203,22 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 				PathPointDescriptor navPathEnd(IAISystem::NAV_UNSET, endLoc);
 
 				CPathHolder<PathPointDescriptor> outputPath;
-				size_t waySize = result.GetWaySize();
-				for (size_t i = 0; i < waySize; ++i)
+				for (size_t i = 0; i < outputWaySize; ++i)
 				{
 					// Using the edge-midpoints of adjacent triangles to build the path.
 					if (i > 0)
 					{
 						Vec3 edgeMidPoint;
-						if (grid.CalculateMidEdge(outputWay[i - 1].triangleID, outputWay[i].triangleID, edgeMidPoint))
+						if (grid.CalculateMidEdge(pOutputWay[i - 1].triangleID, pOutputWay[i].triangleID, edgeMidPoint))
 						{
 							outputPath.PushFront(PathPointDescriptor(IAISystem::NAV_UNSET, edgeMidPoint + origin.GetVec3()));
 						}
 					}
 
-					if (outputWay[i].offMeshLinkID)
+					if (pOutputWay[i].offMeshLinkID)
 					{
 						// Grab off-mesh link object
-						const MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->GetOffMeshLink(outputWay[i].offMeshLinkID);
+						const MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->GetOffMeshLink(pOutputWay[i].offMeshLinkID);
 						assert(pOffMeshLink);
 
 						if (pOffMeshLink)
@@ -3936,17 +4228,17 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 
 							// Add Entry/Exit points
 							PathPointDescriptor pathPoint(type);
-							pathPoint.iTriId = outputWay[i].triangleID;
+							pathPoint.iTriId = pOutputWay[i].triangleID;
 
 							// Cache off-mesh link data on the waypoint
-							pathPoint.offMeshLinkData.offMeshLinkID = outputWay[i].offMeshLinkID;
+							pathPoint.offMeshLinkData.offMeshLinkID = pOutputWay[i].offMeshLinkID;
 
 							pathPoint.vPos = pOffMeshLink->GetEndPosition();
 							pathPoint.iTriId = 0;
 							outputPath.PushFront(pathPoint);
 
 							pathPoint.vPos = pOffMeshLink->GetStartPosition();
-							pathPoint.iTriId = outputWay[i].triangleID;
+							pathPoint.iTriId = pOutputWay[i].triangleID;
 							outputPath.PushFront(pathPoint);
 						}
 					}
@@ -3960,7 +4252,9 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 
 					CTimeValue stringPullingStartTime = gEnv->pTimer->GetAsyncTime();
 					if (gAIEnv.CVars.BeautifyPath)
-						outputPath.PullPathOnNavigationMesh(meshID, gAIEnv.CVars.PathStringPullingIterations, &outputWay[0], result.GetWaySize());
+					{
+						outputPath.PullPathOnNavigationMesh(meshID, gAIEnv.CVars.PathStringPullingIterations, &pOutputWay[0], outputWaySize);
+					}
 					stringPullingTotalTime = gEnv->pTimer->GetAsyncTime() - stringPullingStartTime;
 					size_t pathSize = outputPath.Size();
 					const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
@@ -3986,22 +4280,66 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 	}
 }
 
+static bool FindObjectToTestIslandConnectivity(const char* szName, Vec3& outPos, IEntity** ppOutEntityToTestOffGridLinks)
+{
+	if (const CAIObject* pAiObject = gAIEnv.pAIObjectManager->GetAIObjectByName(szName))
+	{
+		outPos = pAiObject->GetPos();
+
+		if (ppOutEntityToTestOffGridLinks)
+		{
+			const IAIPathAgent* pPathAgent = pAiObject->CastToIAIActor();
+			assert(pPathAgent);
+			if (pPathAgent)
+			{
+				(*ppOutEntityToTestOffGridLinks) = pPathAgent->GetPathAgentEntity();
+			}
+		}
+		return true;
+	}
+	else if (IEntity* pEntity = gEnv->pEntitySystem->FindEntityByName(szName))
+	{
+		outPos = pEntity->GetWorldPos();
+
+		if (ppOutEntityToTestOffGridLinks)
+		{
+			(*ppOutEntityToTestOffGridLinks) = pEntity;
+		}
+		return true;
+	}
+	return false;
+}
+
 void NavigationSystemDebugDraw::DebugDrawIslandConnection(NavigationSystem& navigationSystem, const DebugDrawSettings& settings)
 {
-	bool isReachable = false;
+	// NOTE: difference between two possible start entities:
+	// - "MNMIslandStart" is used during island connectivity check to traverse OffNavMesh links;
+	// - "MNMIslandStartAnyLink" is not used during connectivity check, so any OffNavMesh link is considered to be traversable all the time.
+	const char* szStartName = "MNMIslandStart";
+	const char* szStartNameAnyLink = "MNMIslandStartAnyLink";
+	const char* szEndName = "MNMIslandEnd";
 
-	if (CAIObject* debugObjectStart = gAIEnv.pAIObjectManager->GetAIObjectByName("MNMIslandStart"))
+	Vec3 startPos;
+	Vec3 endPos;
+	IEntity* pEntityToTestOffGridLinksOrNull = nullptr;
+
+	if (!FindObjectToTestIslandConnectivity(szStartName, startPos, &pEntityToTestOffGridLinksOrNull))
 	{
-		if (CAIObject* debugObjectEnd = gAIEnv.pAIObjectManager->GetAIObjectByName("MNMIslandEnd"))
+		if (!FindObjectToTestIslandConnectivity(szStartNameAnyLink, startPos, nullptr))
 		{
-			assert(debugObjectStart->CastToIAIActor());
-			IAIPathAgent* pPathAgent = debugObjectStart->CastToIAIActor();
-			isReachable = gAIEnv.pNavigationSystem->IsPointReachableFromPosition(m_agentTypeID, pPathAgent->GetPathAgentEntity(), debugObjectStart->GetPos(), debugObjectEnd->GetPos());
-
-			CDebugDrawContext dc;
-			dc->Draw2dLabel(10.0f, 250.0f, 1.6f, isReachable ? Col_ForestGreen : Col_VioletRed, false, isReachable ? "The two islands ARE connected" : "The two islands ARE NOT connected");
+			return;
 		}
 	}
+
+	if (!FindObjectToTestIslandConnectivity(szEndName, endPos, nullptr))
+	{
+		return;
+	}
+
+	const bool isReachable = gAIEnv.pNavigationSystem->IsPointReachableFromPosition(m_agentTypeID, pEntityToTestOffGridLinksOrNull, startPos, endPos);
+
+	CDebugDrawContext dc;
+	dc->Draw2dLabel(10.0f, 250.0f, 1.6f, isReachable ? Col_ForestGreen : Col_VioletRed, false, isReachable ? "The two islands ARE connected" : "The two islands ARE NOT connected");
 }
 
 void NavigationSystemDebugDraw::DebugDrawNavigationMeshesForSelectedAgent(NavigationSystem& navigationSystem, MNM::TileID excludeTileID)
@@ -4038,7 +4376,7 @@ void NavigationSystemDebugDraw::DebugDrawNavigationMeshesForSelectedAgent(Naviga
 			break;
 		case 5:
 			mesh.grid.Draw(drawFlag | MNM::Tile::DrawInternalLinks | MNM::Tile::DrawExternalLinks |
-			               MNM::Tile::DrawOffMeshLinks | MNM::Tile::DrawIslandsId, excludeTileID);
+			               MNM::Tile::DrawOffMeshLinks | MNM::Tile::DrawTrianglesId | MNM::Tile::DrawIslandsId, excludeTileID);
 			break;
 		default:
 			break;
@@ -4148,7 +4486,7 @@ NavigationSystemDebugDraw::DebugDrawSettings NavigationSystemDebugDraw::GetDebug
 	{
 		const Vec3 debugLocation = pMNMDebugLocator->GetPos();
 
-		if ((lastLocation - debugLocation).len2() > 0.0001f)
+		if ((lastLocation - debugLocation).len2() > 0.00001f)
 		{
 			settings.meshID = navigationSystem.GetEnclosingMeshID(m_agentTypeID, debugLocation);
 
@@ -4266,7 +4604,14 @@ void NavigationSystemDebugDraw::NavigationSystemWorkingProgress::DrawQuad(const 
 	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 	if (pRenderAux)
 	{
+		const SAuxGeomRenderFlags oldFlags = pRenderAux->GetRenderFlags();
+		SAuxGeomRenderFlags flags = oldFlags;
+		flags.SetMode2D3DFlag(e_Mode2D);
+		flags.SetDrawInFrontMode(e_DrawInFrontOn);
+		flags.SetDepthTestFlag(e_DepthTestOff);
+		pRenderAux->SetRenderFlags(flags);
 		pRenderAux->DrawTriangles(quadVertices, 4, auxIndices, 6, color);
+		pRenderAux->SetRenderFlags(oldFlags);
 	}
 }
 

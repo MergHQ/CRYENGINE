@@ -416,17 +416,25 @@ void frag_custom_ambient(inout fragPass pPass, inout half3 cAmbient)
 	
 	const float2 tcProj = pPass.IN.screenProj.xy / pPass.IN.screenProj.w;
 	const uint2 tileIdx = uint2( tcProj.x * numTiles.x, tcProj.y * numTiles.y );
-	const uint bufferIdx = (tileIdx.y * numTiles.x + tileIdx.x) * TILED_SHADING_MAX_NUM_LIGHTS;
+	const uint bufferIdx = (tileIdx.y * numTiles.x + tileIdx.x) * 8;
 	
 	float probeWeightSum = 0;
 	
-	uint lightIter = 0;
-	[loop] for (lightIter = 0; lightIter < 8; ++lightIter)  // Restrict number of probes being considered
+	int lightIndex = -1;
+	uint maskIndex = 0;
+	uint curMask = TileLightMask[bufferIdx];
+	
+	[loop] for (uint lightIter = 0; lightIter < 8; ++lightIter)  // Restrict number of probes being considered
 	{
-		const uint lightIndex = TileLightIndices[bufferIdx + lightIter];
+		while (maskIndex < 8)
+		{
+			lightIndex = GetNextTileLightIndex(curMask, lightIndex);
+			if (lightIndex >= 0) break;
+			else curMask = TileLightMask[++maskIndex + bufferIdx];
+		}
 
 		[branch]
-		if (lightIndex >= TILED_SHADING_MAX_NUM_LIGHTS || TiledLightsShadeInfo[lightIndex].lightType != TILEDLIGHT_TYPE_PROBE)
+		if (lightIndex < 0 || TiledLightsShadeInfo[lightIndex].lightType != TILEDLIGHT_TYPE_PROBE)
 			break;
 			
 		STiledLightShadeInfo light = TiledLightsShadeInfo[lightIndex];
@@ -489,8 +497,11 @@ void frag_custom_end(inout fragPass pPass, inout half3 cFinal)
 		TiledForwardShading(pPass, false, false, false);
 	#endif
 #else
-	float2 tcProj = pPass.IN.screenProj.xy / pPass.IN.screenProj.w;
-	ApplyGI(pPass.cSpecularAcc, pPass.cAmbientAcc, pPass.cDiffuseAcc, tcProj + .5f / PS_ScreenSize.xy, pPass.fGloss, pPass.cSpecularMap, ForwGiDiffuseRT, ForwGiSpecularRT, (int)(ForwGiIntegrationMode.y));
+	#if FEATURE_SVO_GI
+		float2 tcProj = pPass.IN.screenProj.xy / pPass.IN.screenProj.w;
+		ApplyGI(pPass.cSpecularAcc, pPass.cAmbientAcc, pPass.cDiffuseAcc, tcProj + .5f / PS_ScreenSize.xy, pPass.fGloss, pPass.cSpecularMap, 
+			ForwGiDiffuseRT, ForwGiSpecularRT, TrilinearClampSamplerState, (int)(ForwGiIntegrationMode.y));
+	#endif
 #endif
 	
 	// Final composition
@@ -841,8 +852,12 @@ v2f_sh HairSG_VS(app2vertGeneral IN)
 	float4 HPosition = mul(g_VS_ViewProjMatr, vertPassPos.WorldPos);
 
 #if !%_RT_CUBEMAP0 
-	#if %_RT_ALPHABLEND
-		OUT.Depth = HPosition.z;
+	#if !%_RT_NEAREST
+		HPosition.z /= CP_ShadowGen_FrustumInfo.y;
+	#endif
+
+	#if %_RT_SAMPLE0
+		OUT.Depth = HPosition.z + CP_ShadowGen_DepthTestBias.x;
 	#endif
 #else 
 	OUT.Depth = (HPosition.z/CP_ShadowGen_FrustumInfo.y);

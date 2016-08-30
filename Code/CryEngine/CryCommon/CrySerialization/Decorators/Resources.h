@@ -25,7 +25,9 @@ template<class T> ResourceSelector<T> GeomCachePicker(T& s)               { retu
 template<class T> ResourceSelector<T> ParticleName(T& s)                  { return ResourceSelector<T>(s, "Particle"); }
 template<class T> ResourceSelector<T> TextureFilename(T& s)               { return ResourceSelector<T>(s, "Texture"); }
 template<class T> ResourceSelector<T> GeneralFilename(T& s)               { return ResourceSelector<T>(s, "AnyFile"); }
+template<class T> ResourceSelector<T> SoundFilename(T& s)                 { return ResourceSelector<T>(s, "Sound"); }
 template<class T> ResourceSelector<T> SmartObjectClasses(T& s)            { return ResourceSelector<T>(s, "SmartObjectClasses"); }
+template<class T> ResourceSelector<T> MissionPicker(T& s)                 { return ResourceSelector<T>(s, "Missions"); }
 template<class T> ResourceSelector<T> MaterialPicker(T& s)                { return ResourceSelector<T>(s, "Material"); }
 template<class T> ResourceSelector<T> LevelLayerPicker(T& s)              { return ResourceSelector<T>(s, "LevelLayer"); }
 template<class T> ResourceSelector<T> SequenceEventPicker(T& s)           { return ResourceSelector<T>(s, "SequenceEvent"); }

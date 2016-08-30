@@ -14,8 +14,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureSpawn = false;
-
 namespace pfx2
 {
 
@@ -210,19 +208,19 @@ public:
 	{
 		if (spawn.m_duration)
 		{
-			const float spawned = amount * dt * __fres(spawn.m_duration);
+			const float spawned = amount * dt * rcp_fast(spawn.m_duration);
 			spawn.m_spawned += spawned;
-			entry.m_ageIncrement = SafeRcp(spawned);
+			entry.m_ageIncrement = rcp_safe(spawned);
 		}
 		else
 		{
 			spawn.m_spawned = amount;
 		}
-		entry.m_fractionCounter = __fres(max(amount - 1.0f, 1.0f));
+		entry.m_fractionCounter = rcp_fast(max(amount - 1.0f, 1.0f));
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnCount, "Spawn", "Count", defaultIcon, spawnColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnCount, "Spawn", "Count", colorSpawn);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -267,15 +265,15 @@ public:
 	{
 		const float spawned = m_mode == ESpawnRateMode::ParticlesPerSecond ? dt * amount : dt / amount;
 		spawn.m_spawned += spawned;
-		entry.m_ageIncrement = SafeRcp(spawned);
-		entry.m_fractionCounter = dt * SafeRcp(spawned * context.m_params.m_baseParticleLifeTime);
+		entry.m_ageIncrement = rcp_safe(spawned);
+		entry.m_fractionCounter = dt * rcp_safe(spawned * context.m_params.m_baseParticleLifeTime);
 	}
 
 private:
 	ESpawnRateMode m_mode;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnRate, "Spawn", "Rate", defaultIcon, spawnColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnRate, "Spawn", "Rate", colorSpawn);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -310,14 +308,14 @@ public:
 		const float distance = parentSpeed * dt;
 		const float spawned = m_mode == ESpawnDistanceMode::ParticlesPerMeter ? distance * amount : distance / amount;
 		spawn.m_spawned += spawned;
-		entry.m_ageIncrement = SafeRcp(spawned);
+		entry.m_ageIncrement = rcp_safe(spawned);
 	}
 
 private:
 	ESpawnDistanceMode m_mode;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDistance, "Spawn", "Distance", defaultIcon, spawnColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDistance, "Spawn", "Distance", colorSpawn);
 
 class CFeatureSpawnDensity : public CParticleFeatureSpawnBase<CFeatureSpawnDensity>
 {
@@ -355,11 +353,11 @@ public:
 		                      amount * dt / context.m_params.m_baseParticleLifeTime :
 		                      max(amount - spawn.m_spawned, 0.0f);
 		spawn.m_spawned += spawned;
-		entry.m_ageIncrement = SafeRcp(spawned);
-		entry.m_fractionCounter = __fres(max(amount - 1.0f, 1.0f));
+		entry.m_ageIncrement = rcp_safe(spawned);
+		entry.m_fractionCounter = rcp_fast(max(amount - 1.0f, 1.0f));
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDensity, "Spawn", "Density", defaultIcon, spawnColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDensity, "Spawn", "Density", colorSpawn);
 
 }

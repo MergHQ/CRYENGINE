@@ -150,6 +150,11 @@ void AddVersionDependentCode(HLSLCrossCompilerContext* psContext)
 		}
 	}
 
+	if (psContext->psShader->sInfo.ui32NumUniformBuffers > 0)
+	{
+		bcatcstr(glsl, "#extension GL_ARB_enhanced_layouts : enable\n");
+	}
+
 	if(!HaveCompute(psContext->psShader->eTargetLanguage))
 	{
 		if(psContext->psShader->eShaderType == COMPUTE_SHADER)
@@ -1119,6 +1124,11 @@ const char* GetVersionString(GLLang language)
 	case LANG_440:
 		{
 			return "#version 440\n";
+			break;
+	}
+	case LANG_450:
+		{
+			return "#version 450\n";
 			break;
 		}
 	default:

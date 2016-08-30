@@ -79,7 +79,7 @@
 
 // Enables/disables the use of vectorized instructions for large parts of the
 // simulation / skinning
-#define MMRM_USE_VECTORIZED_SSE_INSTRUCTIONS 1
+#define MMRM_USE_VECTORIZED_SSE_INSTRUCTIONS CRY_PLATFORM_SSE2
 
 // Enables/disables the use of the frameprofiler for mergedmesh geometry stages
 #define MMRM_ENABLE_PROFILER 1
@@ -95,13 +95,6 @@
 
 // Number of instances that will submitted per job
 #define MMRM_MAX_SAMPLES_PER_BATCH (1024u)
-
-// Disable the use of vectorized on PC because a plethora of them are actually
-// not ported yet
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
-	#undef MMRM_USE_VECTORIZED_SSE_INSTRUCTIONS
-	#define MMRM_USE_VECTORIZED_SSE_INSTRUCTIONS 0
-#endif
 
 // disable vectorized instructions in debug builds
 #if defined(_DEBUG)

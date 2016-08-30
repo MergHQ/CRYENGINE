@@ -1,22 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   FlowEntityNode.h
-//  Version:     v1.00
-//  Created:     23/5/2005 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __FlowEntityNode_h__
-#define __FlowEntityNode_h__
 #pragma once
 
-#include "FlowBaseNode.h"
-#include <CryEntitySystem/IEntityPoolManager.h>
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 class CFlowEntityClass : public IFlowNodeFactory
@@ -90,13 +76,12 @@ public:
 	}
 
 	// Return entity of this node.
-	// Note: Will not work if the entity is pooled and not yet prepared.
 	ILINE IEntity* GetEntity() const
 	{
 		return gEnv->pEntitySystem->GetEntity(m_entityId);
 	}
 
-	// Return entityId of this node (works with entity pools)
+	// Return entityId of this node
 	EntityId GetEntityId(SActivationInfo* pActInfo) const
 	{
 		assert(pActInfo);
@@ -106,12 +91,6 @@ public:
 		if (pActInfo->pEntity)
 		{
 			entityId = pActInfo->pEntity->GetId();
-		}
-		else
-		{
-			const EntityId graphEntityId = pActInfo->pGraph->GetEntityId(pActInfo->myID);
-			if (gEnv->pEntitySystem->GetIEntityPoolManager()->IsEntityBookmarked(graphEntityId))
-				entityId = graphEntityId;
 		}
 
 		return entityId;
@@ -179,5 +158,3 @@ protected:
 	_smart_ptr<CFlowEntityClass> m_pClass;
 	int                          m_lastInitializeFrameId;
 };
-
-#endif // __FlowEntityNode_h__

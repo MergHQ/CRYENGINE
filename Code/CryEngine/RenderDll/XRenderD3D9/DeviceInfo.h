@@ -51,6 +51,7 @@ struct DeviceInfo
 	D3DDeviceContext*                   Context() const                   { return m_pContext; }
 
 	DXGISwapChain*                      SwapChain() const                 { return m_pSwapChain; }
+	D3DTexture*                         BackbufferTex2D() const           { return m_pBackbufferTex2D; }
 	D3DSurface*                         BackbufferRTV() const             { return m_pBackbufferRTV; }
 	std::vector<_smart_ptr<D3DSurface>> BackbufferRTVs() const            { return m_pBackbufferRTVs; }
 	unsigned int                        GetCurrentBackBufferIndex() const { return m_pCurrentBackBufferRTVIndex; }
@@ -81,6 +82,7 @@ protected:
 	D3DDeviceContext*                   m_pContext;
 
 	DXGISwapChain*                      m_pSwapChain;
+	D3DTexture*                         m_pBackbufferTex2D;
 	std::vector<_smart_ptr<D3DSurface>> m_pBackbufferRTVs;
 	D3DSurface*                         m_pBackbufferRTV;
 	unsigned int                        m_pCurrentBackBufferRTVIndex;

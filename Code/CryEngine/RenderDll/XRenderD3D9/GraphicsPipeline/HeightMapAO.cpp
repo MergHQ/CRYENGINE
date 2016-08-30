@@ -4,6 +4,7 @@
 #include "HeightMapAO.h"
 #include "DriverD3D.h"
 #include "D3DPostProcess.h"
+#include "GraphicsPipeline/ClipVolumes.h"
 
 void CHeightMapAOStage::Init()
 {
@@ -20,7 +21,7 @@ void CHeightMapAOStage::Execute(ShadowMapFrustum*& pHeightMapFrustum, CTexture*&
 	pHeightMapAOScreenDepthTex = nullptr;
 	pHeightMapAOTex = nullptr;
 
-	if (!CRenderer::CV_r_HeightMapAO || pRenderer->m_RP.m_pSunLight == NULL)
+	if (!CRenderer::CV_r_HeightMapAO)
 		return;
 
 	if (CDeferredShading::Instance().GetResolvedStencilRT() == nullptr)
@@ -95,15 +96,15 @@ void CHeightMapAOStage::Execute(ShadowMapFrustum*& pHeightMapFrustum, CTexture*&
 			const float texelsPerMeter = CRenderer::CV_r_HeightMapAOResolution / CRenderer::CV_r_HeightMapAORange;
 			const bool enableMinMaxSampling = CRenderer::CV_r_HeightMapAO < 3;
 			Vec4 paramHMAO(CRenderer::CV_r_HeightMapAOAmount, texelsPerMeter / CTexture::s_ptexHeightMapAODepth[1]->GetWidth(), enableMinMaxSampling ? 1.0f : 0.0f, 0.0f);
-			pShader->FXSetPSFloat(nameParams, &paramHMAO, 1);
+			m_passSampling.SetConstant(eHWSC_Pixel, nameParams, paramHMAO);
 
 			Vec4 translation = Vec4(texToWorld.m03, texToWorld.m13, texToWorld.m23, 0);
-			pShader->FXSetPSFloat(nameTexToWorldT, &translation, 1);
+			m_passSampling.SetConstant(eHWSC_Pixel, nameTexToWorldT, translation);
 
 			Vec4 scale = Vec4(texToWorld.m00, texToWorld.m11, texToWorld.m22, 1);
-			pShader->FXSetPSFloat(nameTexToWorldS, &scale, 1);
+			m_passSampling.SetConstant(eHWSC_Pixel, nameTexToWorldS, scale);
 
-			pShader->FXSetPSFloat(nameTransform, (Vec4*)matHMAOTransform.GetData(), 4);
+			m_passSampling.SetConstantArray(eHWSC_Pixel, nameTransform, (Vec4*)matHMAOTransform.GetData(), 4);
 
 			m_passSampling.Execute();
 		}
@@ -137,10 +138,9 @@ void CHeightMapAOStage::Execute(ShadowMapFrustum*& pHeightMapFrustum, CTexture*&
 
 			m_passSmoothing.BeginConstantUpdate();
 
-			Vec4 param0(0, 0, (float)pDestRT->GetWidth(), (float)pDestRT->GetHeight());
-			pShader->FXSetVSFloat(namePixelOffset, &param0, 1);
-
-			pShader->FXSetPSFloat(nameClipVolumeData, pClipVolumeParams, min((uint32)MAX_DEFERRED_CLIP_VOLUMES, clipVolumeCount + VIS_AREAS_OUTDOOR_STENCIL_OFFSET));
+			m_passSmoothing.SetConstant(eHWSC_Vertex, namePixelOffset, Vec4 (0, 0, (float)pDestRT->GetWidth(), (float)pDestRT->GetHeight()));
+			m_passSmoothing.SetConstantArray(eHWSC_Pixel, nameClipVolumeData, pClipVolumeParams, 
+				min(static_cast<uint32>(CClipVolumesStage::MaxDeferredClipVolumes), static_cast<uint32>(clipVolumeCount + CClipVolumesStage::VisAreasOutdoorStencilOffset)));
 
 			m_passSmoothing.Execute();
 		}

@@ -48,16 +48,8 @@ REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizaionPostpone, 2, VF_NULL, "1 - Postpone v
 REGISTER_CVAR_AUTO(float, e_svoTI_MinVoxelOpacity, 0.1f, VF_NULL, "Voxelize only geometry with opacity higher than specified value");
 REGISTER_CVAR_AUTO(float, e_svoTI_MinReflectance, 0.2f, VF_NULL, "Controls light bouncing from very dark surfaces (and from surfaces missing in RSM)");
 REGISTER_CVAR_AUTO(int, e_svoTI_ObjectsLod, 1, VF_NULL, "Mesh LOD used for voxelization\nChanges are visible only after re-voxelization (click <Update geometry> or restart)");
-REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalOccluders, 0, VF_NULL, "Enable support for hand-placed occlusion shapes like box, cylinder and capsule\nThis also enables indirect shadows from characters (see e_svoTI_AnalyticalOccludersBoneNames)");
-REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersRange, 3.f, VF_NULL, "Shadow length");
+REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersRange, 4.f, VF_NULL, "Shadow length");
 REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersSoftness, 0.5f, VF_NULL, "Shadow softness");
-
-REGISTER_CVAR_AUTO_STRING(e_svoTI_AnalyticalOccludersBoneNames, "Bip01#Head Bip01#Neck Bip01#Spine Bip01#$#Calf Bip01#$#Foot Bip01#$#Toe0 Bip01#$#ForeTwist1 Bip01#$#Finger20", VF_NULL, 
-									 "Names of bones used to construct occlusion capsules for characters\n"
-									 "Names must be separated by spaces, order is important\n"
-									 "Spaces in names must be replaced by '#'\n"
-									 "'$' means 'R' and 'L'\n"
-									 "'*' means 'Right' and 'Left'");
 
 #ifdef CVAR_CPP
 m_arrVars.Clear();
@@ -68,15 +60,18 @@ REGISTER_CVAR_AUTO(int, e_svoTI_Active, 0, VF_NULL,
                    "Activates voxel GI for the level");
 REGISTER_CVAR_AUTO(int, e_svoTI_IntegrationMode, 0, VF_EXPERIMENTAL,
                    "GI computations may be used in several ways:\n"
-                   "0 = AO + Sun bounce\n"
-                   "      Large scale ambient occlusion (static) modulates (or replaces) default ambient lighting\n"
+                   "0 = Basic diffuse GI mode\n"
+									 "      GI completely replaces default diffuse ambient lighting\n"
                    "      Single light bounce (fully real-time) is supported for sun and projectors (use '_TI_DYN' in light name)\n"
+									 "      Default ambient specular (usually coming from env probes) is modulated by intensity of diffuse GI\n"
                    "      This mode takes less memory (only opacity is voxelized) and works acceptable on consoles\n"
-                   "1 = Diffuse GI mode (experimental)\n"
+									 "      Optionally this mode may be converted into low cost AO-only mode: set InjectionMultiplier=0 and UseLightProbes=true\n"
+									 "1 = Advanced diffuse GI mode (experimental)\n"
                    "      GI completely replaces default diffuse ambient lighting\n"
                    "      Two indirect light bounces are supported for sun and semi-static lights (use '_TI' in light name)\n"
                    "      Single fully dynamic light bounce is supported for projectors (use '_TI_DYN' in light name)\n"
                    "      Default ambient specular is modulated by intensity of diffuse GI\n"
+									 "      Please perform scene re-voxelization if IntegrationMode was changed (use UpdateGeometry)\n"
                    "2 = Full GI mode (very experimental)\n"
                    "      Both ambient diffuse and ambient specular lighting is computed by voxel cone tracing\n"
                    "      This mode works fine only on good modern PC");
@@ -116,8 +111,10 @@ REGISTER_CVAR_AUTO(int, e_svoTI_SkipNonGILights, 0, VF_NULL,
                    "Disable all lights except sun and lights marked to be used for GI\nThis mode ignores all local environment probes and ambient lights");
 REGISTER_CVAR_AUTO(int, e_svoTI_LowSpecMode, 0, VF_NULL,
                    "Set low spec mode\nValues greater than 0 scale down internal render targets and simplify shaders\nIf set to -2 it will be initialized by value specified in sys_spec_Shading.cfg (on level load or on spec change)");
-REGISTER_CVAR_AUTO(int, e_svoTI_HalfresKernel, 0, VF_EXPERIMENTAL,
-                   "Use less rays for secondary bounce for faster update\nDifference is only visible with number of bounces more than 1");
+REGISTER_CVAR_AUTO(int, e_svoTI_HalfresKernelPrimary, 0, VF_NULL,
+                   "Use less rays for first bounce and AO\nThis gives faster frame rate and sharper lighting but may increase noise and GI aliasing");
+REGISTER_CVAR_AUTO(int, e_svoTI_HalfresKernelSecondary, 0, VF_EXPERIMENTAL,
+									 "Use less rays for secondary bounce\nThis gives faster update of cached lighting but may reduce the precision of secondary bounce\nDifference is only visible with number of bounces more than 1");
 REGISTER_CVAR_AUTO(int, e_svoTI_UseLightProbes, 0, VF_NULL,
                    "If enabled - environment probes lighting is multiplied with GI\nIf disabled - diffuse contribution of environment probes is replaced with GI\nIn modes 1-2 it enables usage of global env probe for sky light instead of TOD fog color");
 REGISTER_CVAR_AUTO(float, e_svoTI_VoxelizaionLODRatio, 0, VF_NULL,
@@ -132,6 +129,10 @@ REGISTER_CVAR_AUTO(int, e_svoTI_SunRSMInject, 0, VF_EXPERIMENTAL,
                    "Enable additional RSM sun injection\nHelps getting sun bounces in over-occluded areas where primary injection methods are not able to inject enough sun light");
 REGISTER_CVAR_AUTO(float, e_svoTI_SSDepthTrace, 0, VF_EXPERIMENTAL,
                    "Use SS depth tracing together with voxel tracing");
+REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalOccluders, 0, VF_NULL,
+                   "Enable basic support for hand-placed occlusion shapes like box, cylinder and capsule\nThis also enables indirect shadows from characters (shadow capsules are defined in .chrparams file)");
+REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalGI, 0, VF_EXPERIMENTAL,
+	                 "Completely replace voxel tracing with analytical shapes tracing\nLight bouncing is supported only in integration mode 0");
 
 // dump cvars for UI help
 #ifdef CVAR_CPP

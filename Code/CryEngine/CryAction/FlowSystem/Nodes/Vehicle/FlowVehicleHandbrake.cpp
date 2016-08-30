@@ -15,10 +15,9 @@
 #include "StdAfx.h"
 #include "CryAction.h"
 #include "IVehicleSystem.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
 #include "VehicleSystem/Vehicle.h"
 #include "FlowVehicleHandbrake.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //------------------------------------------------------------------------
 CFlowVehicleHandbrake::CFlowVehicleHandbrake(SActivationInfo* pActivationInfo)

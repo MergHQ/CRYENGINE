@@ -17,11 +17,12 @@ namespace gpu_pfx2
 
 struct CLocalEffector
 {
+	virtual ~CLocalEffector() {};
 	virtual void Update(const gpu_pfx2::SUpdateContext& context) = 0;
 	virtual void Initialize() = 0;
 };
 
-template<class ConstantBufferStruct, const int constantBufferSlot, const uint32 updateFlag, const EParameterType type>
+template<class ConstantBufferStruct, const EConstantBufferSlot constantBufferSlot, const uint32 updateFlag, const EParameterType type>
 struct CEffectorBase : public CLocalEffector
 {
 	typedef ConstantBufferStruct TConstantBufferStruct;
@@ -36,7 +37,7 @@ struct CEffectorBase : public CLocalEffector
 		CParticleComponentRuntime* pRuntime = static_cast<CParticleComponentRuntime*>(context.pRuntime);
 		pRuntime->SetUpdateFlags(updateFlag);
 		m_parameters.CopyToDevice();
-		m_parameters.Bind();
+		pRuntime->SetUpdateConstantBuffer(constantBufferSlot, m_parameters.GetDeviceConstantBuffer());
 	}
 	virtual void Initialize()
 	{
@@ -46,7 +47,7 @@ struct CEffectorBase : public CLocalEffector
 		}
 	}
 private:
-	gpu::CTypedConstantBuffer<ConstantBufferStruct, constantBufferSlot> m_parameters;
+	gpu::CTypedConstantBuffer<ConstantBufferStruct> m_parameters;
 };
 
 typedef CEffectorBase<SFeatureParametersMotionPhysicsBrownian, eConstantBufferSlot_Brownian, eFeatureUpdateFlags_Motion_Brownian, EParameterType::MotionPhysicsBrownian> TBrownianEffector;
@@ -66,13 +67,13 @@ struct CFeatureMotion : public CFeature
 		EI_DragFast,
 	};
 
-	virtual void Update(const gpu_pfx2::SUpdateContext& context) override;
+	virtual void Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList) override;
 	virtual void Initialize() override;
 	virtual void InternalSetParameters(const EParameterType type, const SFeatureParametersBase& p) override;
 private:
-	gpu::CTypedConstantBuffer<SFeatureParametersMotionPhysics, eConstantBufferSlot_Motion> m_parameters;
-	std::unique_ptr<CLocalEffector> m_pEffectors[kNumberOfEffectors];
-	EIntegrator                     m_integrator;
+	gpu::CTypedConstantBuffer<SFeatureParametersMotionPhysics> m_parameters;
+	std::unique_ptr<CLocalEffector>                            m_pEffectors[kNumberOfEffectors];
+	EIntegrator m_integrator;
 };
 
 }

@@ -1,17 +1,5 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   CryFactoryRegistryImpl.h
-//  Version:     v1.00
-//  Created:     02/25/2009 by CarstenW
-//  Description: Part of CryEngine's extension framework.
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _CRYFACTORYREGISTRYIMPL_H_
-#define _CRYFACTORYREGISTRYIMPL_H_
-
 #pragma once
 
 #include <CryExtension/ICryFactoryRegistryImpl.h>
@@ -103,5 +91,3 @@ private:
 
 	Callbacks                 m_callbacks;
 };
-
-#endif // #ifndef _CRYFACTORYREGISTRYIMPL_H_

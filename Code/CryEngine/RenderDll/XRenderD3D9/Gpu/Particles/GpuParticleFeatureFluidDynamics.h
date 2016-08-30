@@ -18,7 +18,7 @@ struct CFeatureMotionFluidDynamics : public CFeatureWithParameterStruct<SFeature
 {
 	static const EGpuFeatureType type = eGpuFeatureType_MotionFluidDynamics;
 
-	virtual void Update(const gpu_pfx2::SUpdateContext& context) override;
+	virtual void Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList) override;
 	virtual void Initialize() override;
 private:
 };

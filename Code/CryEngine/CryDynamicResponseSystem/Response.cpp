@@ -54,7 +54,6 @@ void CConditionParserHelper::GetResponseVariableValueFromString(const char* szVa
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 
-//--------------------------------------------------------------------------------------------------
 CResponseInstance* CResponse::StartExecution(SSignal& signal)
 {
 	DRS_DEBUG_DATA_ACTION(AddResponseStarted(signal.m_signalName.GetText()));
@@ -74,7 +73,6 @@ CResponseInstance* CResponse::StartExecution(SSignal& signal)
 		--m_executionCounter;
 		DRS_DEBUG_DATA_ACTION(AddResponseInstanceFinished(CResponseSystemDebugDataProvider::eER_NoValidSegment));
 	}
-
 	return nullptr;
 }
 

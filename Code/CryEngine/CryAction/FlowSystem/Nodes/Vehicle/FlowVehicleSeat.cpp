@@ -7,8 +7,8 @@
 #include "IVehicleSystem.h"
 #include "VehicleSystem/Vehicle.h"
 #include "VehicleSystem/VehicleSeat.h"
-#include <CryFlowGraph/IFlowSystem.h>
-#include "FlowSystem/Nodes/FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 IFlowNodePtr CFlowVehicleSeat::Clone(SActivationInfo* pActivationInfo)
 {
@@ -270,6 +270,6 @@ public:
 
 };
 
-REGISTER_FLOW_NODE("Vehicle:VehicleSeat", CFlowVehicleSeat);
+REGISTER_FLOW_NODE("Vehicle:Seat", CFlowVehicleSeat);
 REGISTER_FLOW_NODE("Vehicle:ChangeSeat", CFlowVehicleChangeSeat)
 REGISTER_FLOW_NODE("Vehicle:Lock", CFlowVehicleLock)

@@ -52,6 +52,9 @@ struct ITimer
 	//! Returns the absolute current time at the moment of the call.
 	virtual float GetAsyncCurTime() = 0;
 
+	//! Returns sum of relative time passed at each frame.
+	virtual float GetReplicationTime() const = 0;
+
 	//! Returns the relative time passed from the last UpdateOnFrameStart() in seconds.
 	virtual float GetFrameTime(ETimer which = ETIMER_GAME) const = 0;
 

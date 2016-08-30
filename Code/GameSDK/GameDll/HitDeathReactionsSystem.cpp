@@ -16,200 +16,200 @@
 // Unnamed namespace for constants
 namespace
 {
-	const char HIT_DEATH_REACTIONS_SCRIPT_FILE[] = "Scripts/GameRules/HitDeathReactions.lua";
+const char HIT_DEATH_REACTIONS_SCRIPT_FILE[] = "Scripts/GameRules/HitDeathReactions.lua";
 
-	const char REACTIONS_PRELOAD_LIST_FILE[]		= "Libs/HitDeathReactionsData/ReactionsPreloadList.xml";
-	const char REACTIONS_PRELOAD_LIST_FILE_MP[] = "Libs/HitDeathReactionsData/ReactionsPreloadListMP.xml";
-	const char PRELOAD_CHARACTER_FILE[] = "characterFile";
-	const char PRELOAD_REACTIONS_FILE[] = "reactionsFile";
+const char REACTIONS_PRELOAD_LIST_FILE[] = "Libs/HitDeathReactionsData/ReactionsPreloadList.xml";
+const char REACTIONS_PRELOAD_LIST_FILE_MP[] = "Libs/HitDeathReactionsData/ReactionsPreloadListMP.xml";
+const char PRELOAD_CHARACTER_FILE[] = "characterFile";
+const char PRELOAD_REACTIONS_FILE[] = "reactionsFile";
 
-	const char LOAD_XML_DATA_FUNCTION[] = "LoadXMLData";
+const char LOAD_XML_DATA_FUNCTION[] = "LoadXMLData";
 
-	const char REACTIONS_DATA_FILE_PROPERTY[] = "fileHitDeathReactionsParamsDataFile";
-	const char ACTOR_PROPERTIES_TABLE[] = "Properties";
-	const char ACTOR_PROPERTIES_DAMAGE_TABLE[] = "Damage";
-	const char ACTOR_PROPERTIES_DAMAGE_MAXHEALTH[] = "health";
+const char REACTIONS_DATA_FILE_PROPERTY[] = "fileHitDeathReactionsParamsDataFile";
+const char ACTOR_PROPERTIES_TABLE[] = "Properties";
+const char ACTOR_PROPERTIES_DAMAGE_TABLE[] = "Damage";
+const char ACTOR_PROPERTIES_DAMAGE_MAXHEALTH[] = "health";
 
-	const char ACTOR_HIT_DEATH_REACTIONS_PARAMS[] = "hitDeathReactionsParams";
+const char ACTOR_HIT_DEATH_REACTIONS_PARAMS[] = "hitDeathReactionsParams";
 
-	// Config params strings
-	const char HIT_DEATH_REACTIONS_CONFIG[] = "HitDeathReactionsConfig";
+// Config params strings
+const char HIT_DEATH_REACTIONS_CONFIG[] = "HitDeathReactionsConfig";
 
-	const char COLLISION_BONE_PROPERTY[] = "collisionBone";
-	const char COLLISION_RADIUS_PROPERTY[] = "collisionRadius";
-	const char COLLISION_VERTICAL_OFFSET[] = "collisionVerticalOffset";
-	const char COLL_MAX_HORZ_ANGLE_PROPERTY[] = "collMaxHorzAngle";
-	const char COLL_MAX_MOV_ANGLE_PROPERTY[] = "collMaxMovAngle";
-	const char COLL_REACTION_START_DIST[] = "collReactionStartDist";
-	const char MAX_REACTION_TIME_PROPERTY[] = "maximumReactionTime";
-	const char MANQ_TARGET_TAG[] = "manqTargetTag";
-	const char MANQ_SLAVE_ADB[] = "animDatabaseSlave";
-	const char MAX_RAGDOLL_TIME[] = "maxRagdollTime";
+const char COLLISION_BONE_PROPERTY[] = "collisionBone";
+const char COLLISION_RADIUS_PROPERTY[] = "collisionRadius";
+const char COLLISION_VERTICAL_OFFSET[] = "collisionVerticalOffset";
+const char COLL_MAX_HORZ_ANGLE_PROPERTY[] = "collMaxHorzAngle";
+const char COLL_MAX_MOV_ANGLE_PROPERTY[] = "collMaxMovAngle";
+const char COLL_REACTION_START_DIST[] = "collReactionStartDist";
+const char MAX_REACTION_TIME_PROPERTY[] = "maximumReactionTime";
+const char MANQ_TARGET_TAG[] = "manqTargetTag";
+const char MANQ_SLAVE_ADB[] = "animDatabaseSlave";
+const char MAX_RAGDOLL_TIME[] = "maxRagdollTime";
 
-	// Reaction params strings
-	const char HIT_REACTIONS_PARAMS[] = "HitReactionParams";
-	const char DEATH_REACTIONS_PARAMS[] = "DeathReactionParams";
-	const char COLLISION_REACTIONS_PARAMS[] = "CollisionReactionParams";
+// Reaction params strings
+const char HIT_REACTIONS_PARAMS[] = "HitReactionParams";
+const char DEATH_REACTIONS_PARAMS[] = "DeathReactionParams";
+const char COLLISION_REACTIONS_PARAMS[] = "CollisionReactionParams";
 
-	const char VALIDATION_SECTION[] = "ValidationSection";
-	const char VALIDATION_FUNC_PROPERTY[] = "validationFunc";
-	const char REACTION_FUNC_PROPERTY[] = "reactionFunc";
-	const char REACTION_END_FUNC_PROPERTY[] = "reactionEndFunc";
-	const char AISIGNAL_PROPERTY[] = "AISignal";
-	const char MINIMUM_SPEED_PROPERTY[] = "minimumSpeed";
-	const char MAXIMUM_SPEED_PROPERTY[] = "maximumSpeed";
-	const char ALLOWED_PARTS_ARRAY[] = "AllowedParts";
-	const char MOVEMENT_DIRECTION_PROPERTY[] = "movementDirection";
-	const char SHOT_ORIGIN_PROPERTY[] = "shotOrigin";
-	const char PROBABILITY_PERCENT_PROPERTY[] = "probabilityPercent";
-	const char ALLOWED_STANCES_ARRAY[] = "AllowedStances";
-	const char ALLOWED_HIT_TYPES_ARRAY[] = "AllowedHitTypes";
-	const char ALLOWED_PROJECTILES_ARRAY[] = "AllowedProjectiles";
-	const char ALLOWED_WEAPONS_ARRAY[] = "AllowedWeapons";
-	const char SNAP_ORIENTATION_ANGLE[] = "snapOrientationAngle";
-	const char SNAP_TO_MOVEMENT_DIR[] = "snapToMovementDir";
-	const char MINIMUM_DAMAGE_PROPERTY[] = "minimumDamage";
-	const char MAXIMUM_DAMAGE_PROPERTY[] = "maximumDamage";
-	const char ONLY_ON_HEALTH_THRESHOLDS[] = "OnlyWhenPassingHealthThresholds";
-	const char RAGDOLL_ON_COLLISION_PROPERTY[] = "ragdollOnCollision";  // Does exactly the same that endReactionOnCollision, but is more descriptive for death reactions
-	const char COLLISION_CHECK_INTERSECTION_WITH_GROUND[] = "collisionCheckIntersectionWithGround";
-	const char REACTION_ON_COLLISION_PROPERTY[] = "reactionOnCollision";
-	const char PAUSE_AI_PROPERTY[] = "pauseAI";
-	const char ONLY_IF_USING_MOUNTED_ITEM_PROPERTY[] = "onlyIfUsingMountedItem";
-	const char AIR_STATE_PROPERTY[] = "airState";
-	const char DESTRUCTIBLE_EVENT_PROPERTY[] = "destructibleEvent";
-	const char MINIMUM_DISTANCE_PROPERTY[] = "minimumDistanceToShooter";
-	const char MAXIMUM_DISTANCE_PROPERTY[] = "maximumDistanceToShooter";
-	const char NO_RAGDOLL_ON_END_PROPERTY[] = "noRagdollOnEnd";
-	const char REACTION_FINISHES_AIMING_PROPERTY[] = "reactionFinishesAiming";
-	const char END_VELOCITY_PROPERTY[] = "endVelocity";
+const char VALIDATION_SECTION[] = "ValidationSection";
+const char VALIDATION_FUNC_PROPERTY[] = "validationFunc";
+const char REACTION_FUNC_PROPERTY[] = "reactionFunc";
+const char REACTION_END_FUNC_PROPERTY[] = "reactionEndFunc";
+const char AISIGNAL_PROPERTY[] = "AISignal";
+const char MINIMUM_SPEED_PROPERTY[] = "minimumSpeed";
+const char MAXIMUM_SPEED_PROPERTY[] = "maximumSpeed";
+const char ALLOWED_PARTS_ARRAY[] = "AllowedParts";
+const char MOVEMENT_DIRECTION_PROPERTY[] = "movementDirection";
+const char SHOT_ORIGIN_PROPERTY[] = "shotOrigin";
+const char PROBABILITY_PERCENT_PROPERTY[] = "probabilityPercent";
+const char ALLOWED_STANCES_ARRAY[] = "AllowedStances";
+const char ALLOWED_HIT_TYPES_ARRAY[] = "AllowedHitTypes";
+const char ALLOWED_PROJECTILES_ARRAY[] = "AllowedProjectiles";
+const char ALLOWED_WEAPONS_ARRAY[] = "AllowedWeapons";
+const char SNAP_ORIENTATION_ANGLE[] = "snapOrientationAngle";
+const char SNAP_TO_MOVEMENT_DIR[] = "snapToMovementDir";
+const char MINIMUM_DAMAGE_PROPERTY[] = "minimumDamage";
+const char MAXIMUM_DAMAGE_PROPERTY[] = "maximumDamage";
+const char ONLY_ON_HEALTH_THRESHOLDS[] = "OnlyWhenPassingHealthThresholds";
+const char RAGDOLL_ON_COLLISION_PROPERTY[] = "ragdollOnCollision";    // Does exactly the same that endReactionOnCollision, but is more descriptive for death reactions
+const char COLLISION_CHECK_INTERSECTION_WITH_GROUND[] = "collisionCheckIntersectionWithGround";
+const char REACTION_ON_COLLISION_PROPERTY[] = "reactionOnCollision";
+const char PAUSE_AI_PROPERTY[] = "pauseAI";
+const char ONLY_IF_USING_MOUNTED_ITEM_PROPERTY[] = "onlyIfUsingMountedItem";
+const char AIR_STATE_PROPERTY[] = "airState";
+const char DESTRUCTIBLE_EVENT_PROPERTY[] = "destructibleEvent";
+const char MINIMUM_DISTANCE_PROPERTY[] = "minimumDistanceToShooter";
+const char MAXIMUM_DISTANCE_PROPERTY[] = "maximumDistanceToShooter";
+const char NO_RAGDOLL_ON_END_PROPERTY[] = "noRagdollOnEnd";
+const char REACTION_FINISHES_AIMING_PROPERTY[] = "reactionFinishesAiming";
+const char END_VELOCITY_PROPERTY[] = "endVelocity";
 
-	const char VARIATIONS_ARRAY[] = "Variations";
-	const char VARIATION_NAME[] = "name";
-	const char VARIATION_VALUE[] = "value";
+const char VARIATIONS_ARRAY[] = "Variations";
+const char VARIATION_NAME[] = "name";
+const char VARIATION_VALUE[] = "value";
 
-	const char REACTION_ANIM_NAME_PROPERTY[] = "animName";
-	const char REACTION_ANIM_PROPERTY[] = "ReactionAnim";
-	const char REACTION_ANIM_ADDITIVE_ANIM[] = "additive";
-	const char REACTION_ANIM_NO_ANIM_CAMERA[] = "noAnimCamera";
-	const char REACTION_ANIM_LAYER[] = "layer";
-	const char REACTION_ANIM_OVERRIDE_TRANS_TIME_TO_AG[] = "overrideTransTimeToAG";
-	const char ANIM_NAME_ARRAY[] = "AnimNames";
-	const char ANIM_NAME_PROPERTY[] = "name";
-	const char ANIM_VARIANTS_PROPERTY[] = "variants";
+const char REACTION_ANIM_NAME_PROPERTY[] = "animName";
+const char REACTION_ANIM_PROPERTY[] = "ReactionAnim";
+const char REACTION_ANIM_ADDITIVE_ANIM[] = "additive";
+const char REACTION_ANIM_NO_ANIM_CAMERA[] = "noAnimCamera";
+const char REACTION_ANIM_LAYER[] = "layer";
+const char REACTION_ANIM_OVERRIDE_TRANS_TIME_TO_AG[] = "overrideTransTimeToAG";
+const char ANIM_NAME_ARRAY[] = "AnimNames";
+const char ANIM_NAME_PROPERTY[] = "name";
+const char ANIM_VARIANTS_PROPERTY[] = "variants";
 
-	// Crymann stuff
-	const char MANQ_TAG_FRAGMENT[] = "hitDeath";
-	const char MANQ_TAG_FILENAME[] = "Animations/Mannequin/ADB/hitDeathTags.xml";
-	const char MANQ_REACTION[] = "manqReaction";
+// Crymann stuff
+const char MANQ_TAG_FRAGMENT[] = "hitDeath";
+const char MANQ_TAG_FILENAME[] = "Animations/Mannequin/ADB/hitDeathTags.xml";
+const char MANQ_REACTION[] = "manqReaction";
 
-	const float HYSTERESIS_REQUEST_TIMER_SECONDS = 0.5f;
-	const float HYSTERESIS_RELEASE_TIMER_SECONDS = 3.0f;
+const float HYSTERESIS_REQUEST_TIMER_SECONDS = 0.5f;
+const float HYSTERESIS_RELEASE_TIMER_SECONDS = 3.0f;
 
-	struct FAllowedParts
+struct FAllowedParts
+{
+	FAllowedParts(ICharacterInstance* pCharInstance)
+		: m_pCharInstance(pCharInstance) {}
+	int operator()(const char* pName) const
 	{
-		FAllowedParts( ICharacterInstance* pCharInstance ) 
-			: m_pCharInstance(pCharInstance) {}
-		int operator()( const char* pName ) const
+		int iPartId = m_pCharInstance->GetIDefaultSkeleton().GetJointIDByName(pName);
+
+		// [*DavidR | 12/Nov/2009] ToDo: Log iPartId == -1 without spamming
+		if (iPartId != -1)
 		{
-			int iPartId = m_pCharInstance->GetIDefaultSkeleton().GetJointIDByName(pName);
-
-			// [*DavidR | 12/Nov/2009] ToDo: Log iPartId == -1 without spamming
-			if (iPartId != -1)
-			{
-				return iPartId;
-			}
-			else
-			{
-				// perhaps it's an attachment?
-				const int FIRST_ATTACHMENT_PARTID = 1000;
-
-				IAttachmentManager* pAttachmentManager = m_pCharInstance->GetIAttachmentManager();
-				int32 iAttachmentIdx = pAttachmentManager->GetIndexByName(pName);
-				if (iAttachmentIdx != -1)
-				{
-					return( iAttachmentIdx + FIRST_ATTACHMENT_PARTID );
-				}
-			}
-
-			return -1;
+			return iPartId;
 		}
-
-	private:
-		ICharacterInstance* m_pCharInstance;
-	};
-
-	struct FAllowedHitTypes
-	{
-		explicit FAllowedHitTypes( const CGameRules* pGameRules ) : m_pGameRules(pGameRules){}
-		int operator()( const char* pName ) const 
-		{ 
-			const int hitTypeID = m_pGameRules->GetHitTypeId(pName);
-			if( hitTypeID > 0 )
-			{
-				return hitTypeID;
-			}
-			return -1;
-		}
-	private:
-		const CGameRules* m_pGameRules;
-	};
-
-	struct FAllowedStances
-	{
-		explicit FAllowedStances( IScriptSystem* piScriptSystem ) : m_piScriptSystem(piScriptSystem){}
-		int operator()( const char* pName ) const
+		else
 		{
-			int iStance = -1;
-			if( m_piScriptSystem->GetGlobalValue(pName, iStance) )
+			// perhaps it's an attachment?
+			const int FIRST_ATTACHMENT_PARTID = 1000;
+
+			IAttachmentManager* pAttachmentManager = m_pCharInstance->GetIAttachmentManager();
+			int32 iAttachmentIdx = pAttachmentManager->GetIndexByName(pName);
+			if (iAttachmentIdx != -1)
 			{
-				return iStance;
+				return(iAttachmentIdx + FIRST_ATTACHMENT_PARTID);
 			}
-			return -1;
-		}
-	private:
-		IScriptSystem* m_piScriptSystem;
-
-	};
-
-	struct FAllowedNetClass
-	{
-		explicit FAllowedNetClass( const IGameFramework* piGameFramework ) : m_piGameFramework(piGameFramework){}
-		int operator()( const char* pName ) const
-		{
-			uint16 uClassId;
-			if (g_pGame->GetIGameFramework()->GetNetworkSafeClassId(uClassId, pName))
-			{
-				return int(uClassId);
-			}
-			return -1;
 		}
 
-	private:
-		const IGameFramework* m_piGameFramework;
-	};
-
-	TagID GenerateMannequinTargetTag( const FragmentID fragID, const IActionController* piActionController, const char* pTargetTag )
-	{
-		if( piActionController )
-		{
-			uint32 crc = CCrc32::ComputeLowercase( pTargetTag );
-
-			return piActionController->GetFragTagID( fragID, crc );
-		}
-		return TAG_ID_INVALID;
+		return -1;
 	}
+
+private:
+	ICharacterInstance* m_pCharInstance;
+};
+
+struct FAllowedHitTypes
+{
+	explicit FAllowedHitTypes(const CGameRules* pGameRules) : m_pGameRules(pGameRules){}
+	int operator()(const char* pName) const
+	{
+		const int hitTypeID = m_pGameRules->GetHitTypeId(pName);
+		if (hitTypeID > 0)
+		{
+			return hitTypeID;
+		}
+		return -1;
+	}
+private:
+	const CGameRules* m_pGameRules;
+};
+
+struct FAllowedStances
+{
+	explicit FAllowedStances(IScriptSystem* piScriptSystem) : m_piScriptSystem(piScriptSystem){}
+	int operator()(const char* pName) const
+	{
+		int iStance = -1;
+		if (m_piScriptSystem->GetGlobalValue(pName, iStance))
+		{
+			return iStance;
+		}
+		return -1;
+	}
+private:
+	IScriptSystem* m_piScriptSystem;
+
+};
+
+struct FAllowedNetClass
+{
+	explicit FAllowedNetClass(const IGameFramework* piGameFramework) : m_piGameFramework(piGameFramework){}
+	int operator()(const char* pName) const
+	{
+		uint16 uClassId;
+		if (g_pGame->GetIGameFramework()->GetNetworkSafeClassId(uClassId, pName))
+		{
+			return int(uClassId);
+		}
+		return -1;
+	}
+
+private:
+	const IGameFramework* m_piGameFramework;
+};
+
+TagID GenerateMannequinTargetTag(const FragmentID fragID, const IActionController* piActionController, const char* pTargetTag)
+{
+	if (piActionController)
+	{
+		uint32 crc = CCrc32::ComputeLowercase(pTargetTag);
+
+		return piActionController->GetFragTagID(fragID, crc);
+	}
+	return TAG_ID_INVALID;
+}
 }
 
 // Suppress passedByValue for smart pointers like ScriptTablePtr
 // cppcheck-suppress passedByValue
-template void CHitDeathReactionsSystem::FindAndSetTag( const ScriptTablePtr pScriptTable, const CHitDeathReactionsSystem::TTagToMapTag* pTagMap, const CTagDefinition* pTagDefinition, TagState& tagState, SReactionParams::IdContainer& container, const FAllowedParts& functor ) const;
+template void CHitDeathReactionsSystem::FindAndSetTag(const ScriptTablePtr pScriptTable, const CHitDeathReactionsSystem::TTagToMapTag* pTagMap, const CTagDefinition* pTagDefinition, TagState& tagState, SReactionParams::IdContainer& container, const FAllowedParts& functor) const;
 // cppcheck-suppress passedByValue
-template void CHitDeathReactionsSystem::FindAndSetTag( const ScriptTablePtr pScriptTable, const CHitDeathReactionsSystem::TTagToMapTag* pTagMap, const CTagDefinition* pTagDefinition, TagState& tagState, SReactionParams::IdContainer& container, const FAllowedHitTypes& functor ) const;
+template void CHitDeathReactionsSystem::FindAndSetTag(const ScriptTablePtr pScriptTable, const CHitDeathReactionsSystem::TTagToMapTag* pTagMap, const CTagDefinition* pTagDefinition, TagState& tagState, SReactionParams::IdContainer& container, const FAllowedHitTypes& functor) const;
 // cppcheck-suppress passedByValue
-template void CHitDeathReactionsSystem::FindAndSetTag( const ScriptTablePtr pScriptTable, const CHitDeathReactionsSystem::TTagToMapTag* pTagMap, const CTagDefinition* pTagDefinition, TagState& tagState, SReactionParams::IdContainer& container, const FAllowedStances& functor ) const;
+template void CHitDeathReactionsSystem::FindAndSetTag(const ScriptTablePtr pScriptTable, const CHitDeathReactionsSystem::TTagToMapTag* pTagMap, const CTagDefinition* pTagDefinition, TagState& tagState, SReactionParams::IdContainer& container, const FAllowedStances& functor) const;
 // cppcheck-suppress passedByValue
-template void CHitDeathReactionsSystem::FindAndSetTag( const ScriptTablePtr pScriptTable, const CHitDeathReactionsSystem::TTagToMapTag* pTagMap, const CTagDefinition* pTagDefinition, TagState& tagState, SReactionParams::IdContainer& container, const FAllowedNetClass& functor ) const;
+template void CHitDeathReactionsSystem::FindAndSetTag(const ScriptTablePtr pScriptTable, const CHitDeathReactionsSystem::TTagToMapTag* pTagMap, const CTagDefinition* pTagDefinition, TagState& tagState, SReactionParams::IdContainer& container, const FAllowedNetClass& functor) const;
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -224,7 +224,7 @@ CHitDeathReactionsSystem::SReactionsProfile::~SReactionsProfile()
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-void CHitDeathReactionsSystem::SReactionsProfile::GetMemoryUsage(ICrySizer * s) const
+void CHitDeathReactionsSystem::SReactionsProfile::GetMemoryUsage(ICrySizer* s) const
 {
 	s->AddObject(this, sizeof(*this));
 
@@ -248,7 +248,7 @@ void CHitDeathReactionsSystem::SReactionsProfile::GetMemoryUsage(ICrySizer * s) 
 struct CHitDeathReactionsSystem::SPredGetMemoryUsage
 {
 	SPredGetMemoryUsage(ICrySizer* s) : m_pCrySizer(s) {}
-	void operator() (const ProfilesContainer::value_type& item)
+	void operator()(const ProfilesContainer::value_type& item)
 	{
 		item.second.GetMemoryUsage(m_pCrySizer);
 	}
@@ -263,8 +263,8 @@ struct CHitDeathReactionsSystem::SPredGetAnims : public std::unary_function<void
 {
 	typedef std::set<uint32> AnimCRCsContainer;
 
-	SPredGetAnims(AnimCRCsContainer& totalAnims, AnimCRCsContainer& usedAnims, uint& redundantAnimations, EntityId entityId, uint32& animationsSizeInMemory) : 
-	m_totalAnimIDs(totalAnims), m_usedAnimIDs(usedAnims), 
+	SPredGetAnims(AnimCRCsContainer& totalAnims, AnimCRCsContainer& usedAnims, uint& redundantAnimations, EntityId entityId, uint32& animationsSizeInMemory) :
+		m_totalAnimIDs(totalAnims), m_usedAnimIDs(usedAnims),
 		m_redundantAnimations(redundantAnimations), m_animationsSizeInMemory(animationsSizeInMemory), m_pAnimationSet(NULL)
 	{
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
@@ -273,7 +273,7 @@ struct CHitDeathReactionsSystem::SPredGetAnims : public std::unary_function<void
 		m_pAnimationSet = pCharInst ? pCharInst->GetIAnimationSet() : NULL;
 	}
 
-	void operator() (const ReactionsContainer::value_type& item)
+	void operator()(const ReactionsContainer::value_type& item)
 	{
 		const SReactionParams::SReactionAnim& reactionAnim = *(item.reactionAnim);
 		if (!reactionAnim.animCRCs.empty())
@@ -291,7 +291,7 @@ struct CHitDeathReactionsSystem::SPredGetAnims : public std::unary_function<void
 			{
 				const uint32 animCRC = reactionAnim.animCRCs[iNextIdx];
 				m_usedAnimIDs.insert(animCRC);
-				
+
 				if (m_pAnimationSet)
 				{
 					int animID = m_pAnimationSet->GetAnimIDByCRC(animCRC);
@@ -303,11 +303,11 @@ struct CHitDeathReactionsSystem::SPredGetAnims : public std::unary_function<void
 	}
 
 private:
-	AnimCRCsContainer&		m_totalAnimIDs; 
-	AnimCRCsContainer&		m_usedAnimIDs;
-	uint&									m_redundantAnimations;
-	uint32&								m_animationsSizeInMemory;
-	const IAnimationSet*	m_pAnimationSet;
+	AnimCRCsContainer&   m_totalAnimIDs;
+	AnimCRCsContainer&   m_usedAnimIDs;
+	uint&                m_redundantAnimations;
+	uint32&              m_animationsSizeInMemory;
+	const IAnimationSet* m_pAnimationSet;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -316,9 +316,9 @@ private:
 class CHitDeathReactionsSystem::CHitDeathReactionsDebugWidget : public ICryPerfHUDWidget
 {
 public:
-	virtual void Reset() {}
+	virtual void Reset()                         {}
 	virtual void LoadBudgets(XmlNodeRef perfXML) {}
-	virtual void SaveStats(XmlNodeRef statsXML) {}
+	virtual void SaveStats(XmlNodeRef statsXML)  {}
 
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
@@ -372,17 +372,17 @@ public:
 	void Enable(int mode)
 	{
 		if (m_pTable)
-			m_pTable->Hide(false); 
+			m_pTable->Hide(false);
 		else
 			m_pInfoBox->Hide(false);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
-	void Disable() 
-	{ 
+	void Disable()
+	{
 		if (m_pTable)
-			m_pTable->Hide(true); 
+			m_pTable->Hide(true);
 		else
 			m_pInfoBox->Hide(false);
 	}
@@ -394,7 +394,7 @@ private:
 
 		//////////////////////////////////////////////////////////////////////////
 		//////////////////////////////////////////////////////////////////////////
-		void operator() (const ProfilesContainersItem& profilePair) const
+		void operator()(const ProfilesContainersItem& profilePair) const
 		{
 			const ProfileId profileId = profilePair.first;
 			const SReactionsProfile& profile = profilePair.second;
@@ -466,8 +466,8 @@ private:
 								}
 								else
 								{
-									text.Format("  %s -- Alive[%s] -- AIProxy[%s] -- Pool[%s]", pActor->GetEntity()->GetName(), 
-										!pActor->IsDead() ? YES : NO, (pAIProxy && pAIProxy->IsEnabled()) ? YES : NO, !pActor->IsPoolEntity() ? NO : YES);
+									text.Format("  %s -- Alive[%s] -- AIProxy[%s] -- Pool[%s]", pActor->GetEntity()->GetName(),
+									            !pActor->IsDead() ? YES : NO, (pAIProxy && pAIProxy->IsEnabled()) ? YES : NO, !pActor->IsPoolEntity() ? NO : YES);
 									m_widget.m_pInfoBox->AddEntry(text.c_str(), textColor, fTextSize);
 								}
 							}
@@ -489,8 +489,8 @@ private:
 		CHitDeathReactionsDebugWidget& m_widget;
 	};
 
-	minigui::IMiniTable*			m_pTable;
-	minigui::IMiniInfoBox*		m_pInfoBox;
+	minigui::IMiniTable*      m_pTable;
+	minigui::IMiniInfoBox*    m_pInfoBox;
 	CHitDeathReactionsSystem& m_hitDeathReactionsSystem;
 };
 
@@ -500,7 +500,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 struct CHitDeathReactionsSystem::SPredRequestAnims : public std::unary_function<void, const ReactionsContainer::value_type&>
 {
-	SPredRequestAnims(bool bRequest, EntityId entityId, const IAnimationDatabase* piAnimDB ) 
+	SPredRequestAnims(bool bRequest, EntityId entityId, const IAnimationDatabase* piAnimDB)
 		: m_bRequest(bRequest)
 		, m_pAnimSet(NULL)
 		, m_pActionController(NULL)
@@ -508,8 +508,8 @@ struct CHitDeathReactionsSystem::SPredRequestAnims : public std::unary_function<
 	{
 		if (bRequest)
 		{
-			IActor* piActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor( entityId );
-			if( piActor )
+			IActor* piActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(entityId);
+			if (piActor)
 			{
 				IEntity* pEntity = piActor->GetEntity();
 				ICharacterInstance* pCharInst = pEntity ? pEntity->GetCharacter(0) : NULL;
@@ -521,7 +521,7 @@ struct CHitDeathReactionsSystem::SPredRequestAnims : public std::unary_function<
 		}
 	}
 
-	void operator() (const ReactionsContainer::value_type& item)
+	void operator()(const ReactionsContainer::value_type& item)
 	{
 		SReactionParams::SReactionAnim& reactionAnim = *(item.reactionAnim);
 		if (!reactionAnim.animCRCs.empty())
@@ -536,17 +536,17 @@ struct CHitDeathReactionsSystem::SPredRequestAnims : public std::unary_function<
 				reactionAnim.ReleaseRequestedAnims();
 			}
 		}
-		else if( item.mannequinData.actionType !=  SReactionParams::SMannequinData::EActionType_Invalid )
+		else if (item.mannequinData.actionType != SReactionParams::SMannequinData::EActionType_Invalid)
 		{
-			SReactionParams::SMannequinData& mannequinData = const_cast<SReactionParams::SMannequinData&> (item.mannequinData);
-			if( m_bRequest )
+			SReactionParams::SMannequinData& mannequinData = const_cast<SReactionParams::SMannequinData&>(item.mannequinData);
+			if (m_bRequest)
 			{
-				if( m_pActionController )
+				if (m_pActionController)
 				{
-					mannequinData.Initialize( m_pActionController );						
-					if( m_pOptionalAnimDB )
+					mannequinData.Initialize(m_pActionController);
+					if (m_pOptionalAnimDB)
 					{
-						mannequinData.AddDB( m_pActionController, m_pOptionalAnimDB );
+						mannequinData.AddDB(m_pActionController, m_pOptionalAnimDB);
 					}
 				}
 			}
@@ -558,20 +558,20 @@ struct CHitDeathReactionsSystem::SPredRequestAnims : public std::unary_function<
 	}
 
 private:
-	bool									m_bRequest;
-	const IAnimationSet*	m_pAnimSet;
-	const IActionController*	m_pActionController;
+	bool                      m_bRequest;
+	const IAnimationSet*      m_pAnimSet;
+	const IActionController*  m_pActionController;
 	const IAnimationDatabase* m_pOptionalAnimDB;
 };
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-inline void AnimIDError(const char *animName)
+inline void AnimIDError(const char* animName)
 {
 #ifndef _RELEASE
 	if (g_pGameCVars->g_animatorDebug)
 	{
-		static const ColorF col (1.0f, 0.0f, 0.0f, 1.0f);
+		static const ColorF col(1.0f, 0.0f, 0.0f, 1.0f);
 		g_pGame->GetIGameFramework()->GetIPersistantDebug()->Add2DText(string().Format("Missing %s", animName).c_str(), 1.0f, col, 10.0f);
 	}
 
@@ -587,7 +587,7 @@ void CHitDeathReactionsSystem::Warning(const char* szFormat, ...)
 	if (!gEnv || !gEnv->pSystem || !szFormat)
 		return;
 
-	va_list	args;
+	va_list args;
 	va_start(args, szFormat);
 	GetISystem()->WarningV(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, 0, 0, (string("[CHitDeathReactions] ") + szFormat).c_str(), args);
 	va_end(args);
@@ -602,22 +602,22 @@ CHitDeathReactionsSystem::CHitDeathReactionsSystem() : m_streamingEnabled(g_pGam
 	m_failSafeProfile.pDeathReactions.reset(new ReactionsContainer);
 	m_failSafeProfile.pCollisionReactions.reset(new ReactionsContainer);
 	m_failSafeProfile.pHitDeathReactionsConfig.reset(new SHitDeathReactionsConfig);
-	
+
 	// Execute scripts
 	ExecuteHitDeathReactionsScripts(false);
 
 #ifndef _RELEASE
 	m_pWidget = NULL;
 	ICryPerfHUD* pPerfHUD = gEnv->pSystem->GetPerfHUD();
-	if(pPerfHUD)
+	if (pPerfHUD)
 	{
 		minigui::IMiniCtrl* pGameMenu = pPerfHUD->GetMenu("Game");
-		if(!pGameMenu)
+		if (!pGameMenu)
 			pGameMenu = pPerfHUD->CreateMenu("Game");
 
 		m_pWidget = new CHitDeathReactionsDebugWidget(pGameMenu, pPerfHUD, *this);
 	}
-#endif 
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -718,7 +718,7 @@ ProfileId CHitDeathReactionsSystem::GetReactionParamsForActor(const CActor& acto
 			ReactionsContainerPtr pNewCollisionReactions(new ReactionsContainer);
 			SHitDeathReactionsConfigPtr pNewHitDeathReactionsConfig(new SHitDeathReactionsConfig);
 
-			// Fill death and hit reactions params script table 
+			// Fill death and hit reactions params script table
 			ScriptTablePtr hitAndDeathReactions = LoadReactionsScriptTable(actor);
 			if (hitAndDeathReactions)
 			{
@@ -802,8 +802,8 @@ void CHitDeathReactionsSystem::RequestReactionAnimsForActor(const CActor& actor,
 							}
 							else
 							{
-								profile.timerId = gEnv->pGame->GetIGameFramework()->AddTimer(CTimeValue(HYSTERESIS_REQUEST_TIMER_SECONDS), 
-									false, functor(*this, &CHitDeathReactionsSystem::OnRequestAnimsTimer), reinterpret_cast<void*>(static_cast<uintptr_t>(profileId)));
+								profile.timerId = gEnv->pGame->GetIGameFramework()->AddTimer(CTimeValue(HYSTERESIS_REQUEST_TIMER_SECONDS),
+								                                                             false, functor(*this, &CHitDeathReactionsSystem::OnRequestAnimsTimer), reinterpret_cast<void*>(static_cast<uintptr_t>(profileId)));
 							}
 						}
 
@@ -845,7 +845,7 @@ void CHitDeathReactionsSystem::ReleaseReactionAnimsForActor(const CActor& actor,
 							if (profile.iRefCount == 1)
 							{
 								// Instead of immediately releasing the animations, we allow some hysteresis by delaying the
-								// actual release some time (HYSTERESIS_RELEASE_TIMER_SECONDS). This is to avoid rapid changes 
+								// actual release some time (HYSTERESIS_RELEASE_TIMER_SECONDS). This is to avoid rapid changes
 								// that could lead to expensive request/release/request... sequences on a short period of time
 
 								// The logic assumes the request/release timer requests are interleaved, so if there's a timer already
@@ -857,8 +857,8 @@ void CHitDeathReactionsSystem::ReleaseReactionAnimsForActor(const CActor& actor,
 								}
 								else
 								{
-									profile.timerId = gEnv->pGame->GetIGameFramework()->AddTimer(CTimeValue(HYSTERESIS_RELEASE_TIMER_SECONDS), 
-										false, functor(*this, &CHitDeathReactionsSystem::OnReleaseAnimsTimer), reinterpret_cast<void*>(static_cast<uintptr_t>(profileId)));
+									profile.timerId = gEnv->pGame->GetIGameFramework()->AddTimer(CTimeValue(HYSTERESIS_RELEASE_TIMER_SECONDS),
+									                                                             false, functor(*this, &CHitDeathReactionsSystem::OnReleaseAnimsTimer), reinterpret_cast<void*>(static_cast<uintptr_t>(profileId)));
 								}
 							}
 
@@ -898,8 +898,8 @@ void CHitDeathReactionsSystem::PreloadData()
 
 	m_streamingEnabled = g_pGameCVars->g_hitDeathReactions_streaming;
 
-	const char *preloadList = gEnv->bMultiplayer ? REACTIONS_PRELOAD_LIST_FILE_MP : REACTIONS_PRELOAD_LIST_FILE;
-	// Cache the reaction params script tables from the XML data files which filepath is 
+	const char* preloadList = gEnv->bMultiplayer ? REACTIONS_PRELOAD_LIST_FILE_MP : REACTIONS_PRELOAD_LIST_FILE;
+	// Cache the reaction params script tables from the XML data files which filepath is
 	// specified on the preload list
 	XmlNodeRef xmlNode = GetISystem()->LoadXmlFromFile(preloadList);
 	if (xmlNode)
@@ -907,7 +907,7 @@ void CHitDeathReactionsSystem::PreloadData()
 		const int iEntries = xmlNode->getChildCount();
 		for (int i = 0; i < iEntries; ++i)
 		{
-			const XmlNodeRef pairElement = xmlNode->getChild(i); 
+			const XmlNodeRef pairElement = xmlNode->getChild(i);
 			if (pairElement->haveAttr(PRELOAD_REACTIONS_FILE))
 			{
 				const char* pReactionsFile = pairElement->getAttr(PRELOAD_REACTIONS_FILE);
@@ -938,17 +938,17 @@ void CHitDeathReactionsSystem::PreloadActorData(SmartScriptTable pActorPropertie
 	if (!pHitDeathReactionsTable->GetValue(HIT_DEATH_REACTIONS_CONFIG, pReactionsConfigTable))
 		return;
 
-	const char *szAnimDatabase = NULL;
-	if(pReactionsConfigTable->GetValue(MANQ_SLAVE_ADB, szAnimDatabase) && szAnimDatabase)
+	const char* szAnimDatabase = NULL;
+	if (pReactionsConfigTable->GetValue(MANQ_SLAVE_ADB, szAnimDatabase) && szAnimDatabase)
 	{
-		IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+		IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
 		mannequinSys.GetAnimationDatabaseManager().Load(szAnimDatabase);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-void CHitDeathReactionsSystem::GetMemoryUsage(ICrySizer * s) const
+void CHitDeathReactionsSystem::GetMemoryUsage(ICrySizer* s) const
 {
 	SIZER_SUBCOMPONENT_NAME(s, "HitDeathReactionsSystem");
 
@@ -1041,7 +1041,7 @@ void CHitDeathReactionsSystem::DumpHitDeathReactionsAssetUsage() const
 //////////////////////////////////////////////////////////////////////////
 void CHitDeathReactionsSystem::ExecuteHitDeathReactionsScripts(bool bForceReload)
 {
-	if(!gEnv->pScriptSystem->ExecuteFile(HIT_DEATH_REACTIONS_SCRIPT_FILE, true, bForceReload))
+	if (!gEnv->pScriptSystem->ExecuteFile(HIT_DEATH_REACTIONS_SCRIPT_FILE, true, bForceReload))
 		Warning("Error executing HitDeathReactions script file");
 }
 
@@ -1051,7 +1051,7 @@ ProfileId CHitDeathReactionsSystem::GetActorProfileId(const CActor& actor) const
 {
 	// Reaction params are dependent on:
 	// - Reaction params data file
-	CRY_ASSERT( actor.GetActorClass() == CPlayer::GetActorClassType() );
+	CRY_ASSERT(actor.GetActorClass() == CPlayer::GetActorClassType());
 
 	CHitDeathReactionsConstPtr pHitDeathReactions = static_cast<const CPlayer&>(actor).GetHitDeathReactions();
 #ifndef _DEBUG
@@ -1066,35 +1066,35 @@ ProfileId CHitDeathReactionsSystem::GetActorProfileId(const CActor& actor) const
 	ProfileId key = INVALID_PROFILE_ID;
 #endif
 	{
-			// Check for animated character validity too. Is as basic as having a character instance for the HitDeathReactions
-			// This way the CHitDeathReactions class can assume the AnimatedCharacter pointer of its actor is always valid as 
-			// long as it has reactions
-			const IAnimatedCharacter* pAnimChar = actor.GetAnimatedCharacter(); 
-			if (pAnimChar)
+		// Check for animated character validity too. Is as basic as having a character instance for the HitDeathReactions
+		// This way the CHitDeathReactions class can assume the AnimatedCharacter pointer of its actor is always valid as
+		// long as it has reactions
+		const IAnimatedCharacter* pAnimChar = actor.GetAnimatedCharacter();
+		if (pAnimChar)
+		{
+			ScriptTablePtr pActorScriptTable = actor.GetEntity()->GetScriptTable();
+			CRY_ASSERT(pActorScriptTable.GetPtr());
+
+			ScriptAnyValue propertiesTable;
+			pActorScriptTable->GetValueAny(ACTOR_PROPERTIES_TABLE, propertiesTable);
+
+			const char* szReactionsDataFilePath = NULL;
+			if ((propertiesTable.type == ANY_TTABLE) && propertiesTable.table->GetValue(REACTIONS_DATA_FILE_PROPERTY, szReactionsDataFilePath))
 			{
-				ScriptTablePtr pActorScriptTable = actor.GetEntity()->GetScriptTable();
-				CRY_ASSERT(pActorScriptTable.GetPtr());
+				CryPathString sReactionsDataFilePath(szReactionsDataFilePath);
+				PathUtil::UnifyFilePath(sReactionsDataFilePath);
 
-				ScriptAnyValue propertiesTable;
-				pActorScriptTable->GetValueAny(ACTOR_PROPERTIES_TABLE, propertiesTable);
-
-				const char* szReactionsDataFilePath = NULL;
-				if ((propertiesTable.type == ANY_TTABLE) && propertiesTable.table->GetValue(REACTIONS_DATA_FILE_PROPERTY, szReactionsDataFilePath))
-				{
-					CryPathString sReactionsDataFilePath(szReactionsDataFilePath);
-					CryStringUtils::UnifyFilePath(sReactionsDataFilePath);
-
-					key = CCrc32::Compute(sReactionsDataFilePath);
-				}
-				else
-				{
-					Warning("Couldn't find %s field on %s properties table", REACTIONS_DATA_FILE_PROPERTY, actor.GetEntity()->GetName());
-				}
+				key = CCrc32::Compute(sReactionsDataFilePath);
 			}
 			else
 			{
-				Warning("Couldn't obtain an Animated Character object on actor %s while calculating its unique key", actor.GetEntity()->GetName());
+				Warning("Couldn't find %s field on %s properties table", REACTIONS_DATA_FILE_PROPERTY, actor.GetEntity()->GetName());
 			}
+		}
+		else
+		{
+			Warning("Couldn't obtain an Animated Character object on actor %s while calculating its unique key", actor.GetEntity()->GetName());
+		}
 	}
 
 #ifdef _DEBUG
@@ -1122,7 +1122,7 @@ ScriptTablePtr CHitDeathReactionsSystem::LoadReactionsScriptTable(const CActor& 
 	if ((propertiesTable.type == ANY_TTABLE) && propertiesTable.table->GetValue(REACTIONS_DATA_FILE_PROPERTY, szReactionsDataFilePath))
 	{
 		CryPathString sReactionsDataFile(szReactionsDataFilePath);
-		CryStringUtils::UnifyFilePath(sReactionsDataFile);
+		PathUtil::UnifyFilePath(sReactionsDataFile);
 
 		return LoadReactionsScriptTable(sReactionsDataFile.c_str());
 	}
@@ -1135,7 +1135,7 @@ ScriptTablePtr CHitDeathReactionsSystem::LoadReactionsScriptTable(const CActor& 
 ScriptTablePtr CHitDeathReactionsSystem::LoadReactionsScriptTable(const char* szReactionsDataFile) const
 {
 	CryPathString sReactionsDataFile(szReactionsDataFile);
-	CryStringUtils::UnifyFilePath(sReactionsDataFile);
+	PathUtil::UnifyFilePath(sReactionsDataFile);
 
 	ScriptTablePtr reactionsParamsTable;
 	FileToScriptTableMap::const_iterator itFind = m_reactionsScriptTableCache.find(CONST_TEMP_STRING(sReactionsDataFile.c_str()));
@@ -1144,7 +1144,7 @@ ScriptTablePtr CHitDeathReactionsSystem::LoadReactionsScriptTable(const char* sz
 		SmartScriptTable pHitDeathReactionsTable;
 		HSCRIPTFUNCTION loadXMLDataFnc = NULL;
 		if (gEnv->pScriptSystem->GetGlobalValue(HIT_DEATH_REACTIONS_SCRIPT_TABLE, pHitDeathReactionsTable) &&
-			pHitDeathReactionsTable->GetValue(LOAD_XML_DATA_FUNCTION, loadXMLDataFnc))
+		    pHitDeathReactionsTable->GetValue(LOAD_XML_DATA_FUNCTION, loadXMLDataFnc))
 		{
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "HitDeathReactions_SharedReactionTables");
 
@@ -1165,19 +1165,19 @@ ScriptTablePtr CHitDeathReactionsSystem::LoadReactionsScriptTable(const char* sz
 
 //////////////////////////////////////////////////////////////////////////
 
-void CHitDeathReactionsSystem::GenerateTagMapping( ScriptTablePtr pTags, const char* pArrayName, const int tagType, STagMappingHelper& tagMappingHelper )
+void CHitDeathReactionsSystem::GenerateTagMapping(ScriptTablePtr pTags, const char* pArrayName, const int tagType, STagMappingHelper& tagMappingHelper)
 {
-	CRY_ASSERT_MESSAGE(tagType<STagMappingHelper::ETagType_NUM, "TagType index out of range!");
+	CRY_ASSERT_MESSAGE(tagType < STagMappingHelper::ETagType_NUM, "TagType index out of range!");
 
 	const char* pTagName = NULL;
-	if( pTags->GetValue( VARIATION_VALUE, pTagName ) )
+	if (pTags->GetValue(VARIATION_VALUE, pTagName))
 	{
 		{
 			ScriptTablePtr pAllowedParts;
-			pTags->GetValue( pArrayName, pAllowedParts );
+			pTags->GetValue(pArrayName, pAllowedParts);
 
 			TTagToMapTag* pNameToTags = NULL;
-			if( tagMappingHelper.m_tagMapping[tagType] != NULL )
+			if (tagMappingHelper.m_tagMapping[tagType] != NULL)
 			{
 				pNameToTags = tagMappingHelper.m_tagMapping[tagType];
 			}
@@ -1188,25 +1188,25 @@ void CHitDeathReactionsSystem::GenerateTagMapping( ScriptTablePtr pTags, const c
 
 			// Generate the name to tag map.
 			const int count = pAllowedParts->Count();
-			for( int i=0;i<count;++i )
+			for (int i = 0; i < count; ++i)
 			{
 				const char* pName = NULL;
-				if( pAllowedParts->GetAt( i+1, pName ) )
+				if (pAllowedParts->GetAt(i + 1, pName))
 				{
 					// multimap so inserting on the same tag is safe!
-					pNameToTags->insert( TTagToMapTag::value_type( pTagName, pName ) );
+					pNameToTags->insert(TTagToMapTag::value_type(pTagName, pName));
 
 #ifdef DEBUG_MANQ_TAGS
-					Warning( "  Mapping <%s> from <%s>", pTagName, pName );
+					Warning("  Mapping <%s> from <%s>", pTagName, pName);
 #endif
 				}
 			}
 
-			if( tagMappingHelper.m_tagMapping[tagType]==NULL )
+			if (tagMappingHelper.m_tagMapping[tagType] == NULL)
 			{
-				if( pNameToTags->empty() )
+				if (pNameToTags->empty())
 				{
-					SAFE_DELETE( pNameToTags );
+					SAFE_DELETE(pNameToTags);
 				}
 				else
 				{
@@ -1217,69 +1217,69 @@ void CHitDeathReactionsSystem::GenerateTagMapping( ScriptTablePtr pTags, const c
 	}
 }
 
-void CHitDeathReactionsSystem::LoadTagMapping( const CActor& actor, ScriptTablePtr pHitDeathReactionsTable, STagMappingHelper* pTagMappingHelper )
+void CHitDeathReactionsSystem::LoadTagMapping(const CActor& actor, ScriptTablePtr pHitDeathReactionsTable, STagMappingHelper* pTagMappingHelper)
 {
 	ScriptTablePtr pTagMap;
 	if (pHitDeathReactionsTable->GetValue("TagMap", pTagMap))
 	{
 		IScriptTable::Iterator it = pTagMap->BeginIteration();
 
-		for ( ; pTagMap->MoveNext(it); )
+		for (; pTagMap->MoveNext(it); )
 		{
 			CRY_ASSERT(it.value.type == ANY_TTABLE);
 
 			ScriptTablePtr pTags = it.value.table;
 
-			if( pTags->HaveValue( ALLOWED_PARTS_ARRAY ) )
+			if (pTags->HaveValue(ALLOWED_PARTS_ARRAY))
 			{
 				// Find Part Mapping.
 				ICharacterInstance* pMainChar = actor.GetEntity()->GetCharacter(0);
 				ISkeletonPose* pSkeletonPose = pMainChar ? pMainChar->GetISkeletonPose() : NULL;
 
-				if( pSkeletonPose )
+				if (pSkeletonPose)
 				{
 #ifdef DEBUG_MANQ_TAGS
-					Warning( "Generating TagMap For Parts" );
+					Warning("Generating TagMap For Parts");
 #endif
 
-					GenerateTagMapping( pTags, ALLOWED_PARTS_ARRAY, STagMappingHelper::ETagType_Part, *pTagMappingHelper );
+					GenerateTagMapping(pTags, ALLOWED_PARTS_ARRAY, STagMappingHelper::ETagType_Part, *pTagMappingHelper);
 				}
 			}
 
-			if( pTags->HaveValue( ALLOWED_HIT_TYPES_ARRAY ) )
+			if (pTags->HaveValue(ALLOWED_HIT_TYPES_ARRAY))
 			{
 #ifdef DEBUG_MANQ_TAGS
-				Warning( "Generating TagMap For HitTypes" );
+				Warning("Generating TagMap For HitTypes");
 #endif
 
-				GenerateTagMapping( pTags, ALLOWED_HIT_TYPES_ARRAY, STagMappingHelper::ETagType_HitType, *pTagMappingHelper );
+				GenerateTagMapping(pTags, ALLOWED_HIT_TYPES_ARRAY, STagMappingHelper::ETagType_HitType, *pTagMappingHelper);
 			}
 
-			if( pTags->HaveValue( ALLOWED_PROJECTILES_ARRAY ) )
+			if (pTags->HaveValue(ALLOWED_PROJECTILES_ARRAY))
 			{
 #ifdef DEBUG_MANQ_TAGS
-				Warning( "Generating TagMap For Projectiles" );
+				Warning("Generating TagMap For Projectiles");
 #endif
 
-				GenerateTagMapping( pTags, ALLOWED_PROJECTILES_ARRAY, STagMappingHelper::ETagType_Projectile, *pTagMappingHelper );
+				GenerateTagMapping(pTags, ALLOWED_PROJECTILES_ARRAY, STagMappingHelper::ETagType_Projectile, *pTagMappingHelper);
 			}
 
-			if( pTags->HaveValue( ALLOWED_WEAPONS_ARRAY ) )
+			if (pTags->HaveValue(ALLOWED_WEAPONS_ARRAY))
 			{
 #ifdef DEBUG_MANQ_TAGS
-				Warning( "Generating TagMap For Weapons" );
+				Warning("Generating TagMap For Weapons");
 #endif
 
-				GenerateTagMapping( pTags, ALLOWED_WEAPONS_ARRAY, STagMappingHelper::ETagType_Weapon, *pTagMappingHelper );
+				GenerateTagMapping(pTags, ALLOWED_WEAPONS_ARRAY, STagMappingHelper::ETagType_Weapon, *pTagMappingHelper);
 			}
 
-			if( pTags->HaveValue( ALLOWED_STANCES_ARRAY ) )
+			if (pTags->HaveValue(ALLOWED_STANCES_ARRAY))
 			{
 #ifdef DEBUG_MANQ_TAGS
-				Warning( "Generating TagMap For Stances" );
+				Warning("Generating TagMap For Stances");
 #endif
 
-				GenerateTagMapping( pTags, ALLOWED_STANCES_ARRAY, STagMappingHelper::ETagType_Stances, *pTagMappingHelper );
+				GenerateTagMapping(pTags, ALLOWED_STANCES_ARRAY, STagMappingHelper::ETagType_Stances, *pTagMappingHelper);
 			}
 		}
 	}
@@ -1293,13 +1293,13 @@ bool CHitDeathReactionsSystem::LoadHitDeathReactionsParams(const CActor& actor, 
 	CRY_ASSERT(pDeathReactions.get());
 	CRY_ASSERT(pCollisionReactions.get());
 
-	IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
-	const CTagDefinition* pTagDefinition = mannequinSys.GetAnimationDatabaseManager().LoadTagDefs( MANQ_TAG_FILENAME, true );
+	IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+	const CTagDefinition* pTagDefinition = mannequinSys.GetAnimationDatabaseManager().LoadTagDefs(MANQ_TAG_FILENAME, true);
 
-	if( pTagDefinition )
+	if (pTagDefinition)
 	{
-		STagMappingHelper tagMapping( pTagDefinition );
-		LoadTagMapping( actor, pHitDeathReactionsTable, &tagMapping );
+		STagMappingHelper tagMapping(pTagDefinition);
+		LoadTagMapping(actor, pHitDeathReactionsTable, &tagMapping);
 
 		// [*DavidR | 23/Feb/2010] CryShared pointer doesn't have and overload for unary operator *
 		LoadReactionsParams(actor, tagMapping, pHitDeathReactionsTable, pNewHitDeathReactionsConfig, DEATH_REACTIONS_PARAMS, true, 0, CHitDeathReactions::eRT_Death, *(pDeathReactions.get()));
@@ -1308,17 +1308,17 @@ bool CHitDeathReactionsSystem::LoadHitDeathReactionsParams(const CActor& actor, 
 	}
 	else
 	{
-		Warning( "TagDef not present, abortin load of reactions" );
+		Warning("TagDef not present, abortin load of reactions");
 		return false;
 	}
-	
+
 	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 bool CHitDeathReactionsSystem::LoadHitDeathReactionsConfig(const CActor& actor, ScriptTablePtr pHitDeathReactionsTable, SHitDeathReactionsConfigPtr pHitDeathReactionsConfig)
-{	
+{
 	CRY_ASSERT(pHitDeathReactionsTable.GetPtr());
 	CRY_ASSERT(pHitDeathReactionsConfig.get());
 
@@ -1365,17 +1365,17 @@ bool CHitDeathReactionsSystem::LoadHitDeathReactionsConfig(const CActor& actor, 
 		if (pReactionsConfigTable->HaveValue(MAX_RAGDOLL_TIME))
 			pReactionsConfigTable->GetValue(MAX_RAGDOLL_TIME, pHitDeathReactionsConfig->fEndRagdollTime);
 
-		const char *szAnimDatabase = NULL;
-		if(pReactionsConfigTable->GetValue(MANQ_SLAVE_ADB, szAnimDatabase) && szAnimDatabase)
+		const char* szAnimDatabase = NULL;
+		if (pReactionsConfigTable->GetValue(MANQ_SLAVE_ADB, szAnimDatabase) && szAnimDatabase)
 		{
-			IMannequin &mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
+			IMannequin& mannequinSys = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
 			pHitDeathReactionsConfig->piOptionalAnimationADB = mannequinSys.GetAnimationDatabaseManager().Load(szAnimDatabase);
 		}
 
-		if( const IActionController* piActionController = actor.GetAnimatedCharacter()->GetActionController() )
+		if (const IActionController* piActionController = actor.GetAnimatedCharacter()->GetActionController())
 		{
-			const uint32 MANQ_HITDEATH_FRAGMENT = CCrc32::Compute( MANQ_TAG_FRAGMENT );
-			pHitDeathReactionsConfig->fragmentID = piActionController->GetFragID( MANQ_HITDEATH_FRAGMENT );
+			const uint32 MANQ_HITDEATH_FRAGMENT = CCrc32::Compute(MANQ_TAG_FRAGMENT);
+			pHitDeathReactionsConfig->fragmentID = piActionController->GetFragID(MANQ_HITDEATH_FRAGMENT);
 		}
 
 		if (pReactionsConfigTable->HaveValue(MANQ_TARGET_TAG))
@@ -1384,7 +1384,7 @@ bool CHitDeathReactionsSystem::LoadHitDeathReactionsConfig(const CActor& actor, 
 			pReactionsConfigTable->GetValue(MANQ_TARGET_TAG, szManqTargetTag);
 
 			// Sadly, can't store the fragID as it might be used on a different action controller.
-			pHitDeathReactionsConfig->manqTargetCRC = CCrc32::ComputeLowercase( szManqTargetTag );
+			pHitDeathReactionsConfig->manqTargetCRC = CCrc32::ComputeLowercase(szManqTargetTag);
 		}
 	}
 
@@ -1412,32 +1412,38 @@ void CHitDeathReactionsSystem::LoadReactionsParams(const CActor& actor, const ST
 	{
 		IScriptTable::Iterator it = pReactionsTable->BeginIteration();
 
-		for ( ; pReactionsTable->MoveNext(it); )
+		for (; pReactionsTable->MoveNext(it); )
 		{
 			CRY_ASSERT(it.value.type == ANY_TTABLE);
 
-			const ReactionId thisReactionId =  (ReactionId(reactions.size() + 1) + baseReactionId) * (bDeathReactions ? -1 : 1);
+			const ReactionId thisReactionId = (ReactionId(reactions.size() + 1) + baseReactionId) * (bDeathReactions ? -1 : 1);
 
 			SReactionParams reactionParams;
 			GetReactionParamsFromScript(actor, tagMapping, it.value.table, pNewHitDeathReactionsConfig, reactionParams, thisReactionId);
 
 			it.value.table->SetValue(REACTION_ID, thisReactionId);
 
-			if( reactionParams.mannequinData.actionType != SReactionParams::SMannequinData::EActionType_Invalid )
+			if (reactionParams.mannequinData.actionType != SReactionParams::SMannequinData::EActionType_Invalid)
 			{
 				const char* pTypeTagName = NULL;
 
-				switch( (CHitDeathReactions::EReactionType)reactionType )
+				switch ((CHitDeathReactions::EReactionType)reactionType)
 				{
-				case CHitDeathReactions::eRT_Hit: pTypeTagName = "hit"; break;
-				case CHitDeathReactions::eRT_Death: pTypeTagName = "death"; break;
-				case CHitDeathReactions::eRT_Collision: pTypeTagName = "collisionreaction"; break;
+				case CHitDeathReactions::eRT_Hit:
+					pTypeTagName = "hit";
+					break;
+				case CHitDeathReactions::eRT_Death:
+					pTypeTagName = "death";
+					break;
+				case CHitDeathReactions::eRT_Collision:
+					pTypeTagName = "collisionreaction";
+					break;
 				}
 
-				if( pTypeTagName )
+				if (pTypeTagName)
 				{
-					const TagID tagID = tagMapping.m_pTagDefinition->Find( pTypeTagName );
-					tagMapping.m_pTagDefinition->Set( reactionParams.mannequinData.tagState, tagID, true );
+					const TagID tagID = tagMapping.m_pTagDefinition->Find(pTypeTagName);
+					tagMapping.m_pTagDefinition->Set(reactionParams.mannequinData.tagState, tagID, true);
 				}
 			}
 
@@ -1447,7 +1453,6 @@ void CHitDeathReactionsSystem::LoadReactionsParams(const CActor& actor, const ST
 
 		// Shrink capacity excess
 		ReactionsContainer(reactions).swap(reactions);
-
 
 #ifndef _RELEASE
 		// Log loaded anims, if needed
@@ -1502,7 +1507,7 @@ void CHitDeathReactionsSystem::LoadReactionsParams(const CActor& actor, const ST
 //////////////////////////////////////////////////////////////////////////
 void CHitDeathReactionsSystem::PreProcessStanceParams(SmartScriptTable pReactionTable) const
 {
-	// Parse the stance array strings to the value hold by the lua global variable with that name. 
+	// Parse the stance array strings to the value hold by the lua global variable with that name.
 	// Transform the every stance array item to hold the value of that global variable (or -1 if not found, not likely to happen)
 	ScriptTablePtr pAllowedStancesArray;
 	pReactionTable->GetValue(ALLOWED_STANCES_ARRAY, pAllowedStancesArray);
@@ -1517,9 +1522,9 @@ void CHitDeathReactionsSystem::PreProcessStanceParams(SmartScriptTable pReaction
 			const char* szStanceGlobalValue = NULL;
 			pAllowedStancesArray->GetAt(i + 1, szStanceGlobalValue);
 			gEnv->pScriptSystem->GetGlobalValue(szStanceGlobalValue, iStance);
-			
+
 			// we might have non-stance data in the allowed stances (e.g. mannequin tags).
-			if(iStance != -1)
+			if (iStance != -1)
 			{
 				pAllowedStancesArray->SetAt(i + 1, iStance);
 			}
@@ -1541,13 +1546,13 @@ void CHitDeathReactionsSystem::GetReactionParamsFromScript(const CActor& actor, 
 	reactionParams.reactionScriptTable = pScriptTable;
 
 	// Test for mannequin reaction first!
-	if(pScriptTable->HaveValue(MANQ_REACTION))
+	if (pScriptTable->HaveValue(MANQ_REACTION))
 	{
 		int reactionType = -1;
 		pScriptTable->GetValue(MANQ_REACTION, reactionType);
 
 		SReactionParams::SMannequinData& manqData = reactionParams.mannequinData;
-		if ((reactionType < 0 ) || (reactionType > SReactionParams::SMannequinData::EActionType_Last))
+		if ((reactionType < 0) || (reactionType > SReactionParams::SMannequinData::EActionType_Last))
 		{
 			Warning("Invalid or missing %s setting: %d. (allowed values are 0 to %d)", MANQ_REACTION, reactionType, SReactionParams::SMannequinData::EActionType_Last);
 		}
@@ -1572,7 +1577,7 @@ void CHitDeathReactionsSystem::GetReactionParamsFromScript(const CActor& actor, 
 				for (int i = 0; i < iCount; ++i)
 				{
 					ScriptTablePtr pValidationParams;
-					if (pValidationParamsArray->GetAt(i + 1, pValidationParams)) 
+					if (pValidationParamsArray->GetAt(i + 1, pValidationParams))
 					{
 						GetValidationParamsFromScript(pValidationParams, tagMapping, reactionParams, actor, reactionId);
 					}
@@ -1610,8 +1615,8 @@ void CHitDeathReactionsSystem::GetReactionParamsFromScript(const CActor& actor, 
 			reactionParams.sCustomAISignal = szSignal;
 	}
 
-	if (pScriptTable->HaveValue(REACTION_ON_COLLISION_PROPERTY) || 
-		pScriptTable->HaveValue(RAGDOLL_ON_COLLISION_PROPERTY))
+	if (pScriptTable->HaveValue(REACTION_ON_COLLISION_PROPERTY) ||
+	    pScriptTable->HaveValue(RAGDOLL_ON_COLLISION_PROPERTY))
 	{
 		unsigned int reactionOnCollision = NO_COLLISION_REACTION;
 		bool bRagdollOnCollision = false;
@@ -1628,7 +1633,7 @@ void CHitDeathReactionsSystem::GetReactionParamsFromScript(const CActor& actor, 
 
 		pScriptTable->GetValue(COLLISION_CHECK_INTERSECTION_WITH_GROUND, bCollisionCheckIntersectionWithGround);
 
-		if(bCollisionCheckIntersectionWithGround)
+		if (bCollisionCheckIntersectionWithGround)
 		{
 			reactionParams.flags |= SReactionParams::CollisionCheckIntersectionWithGround;
 		}
@@ -1657,25 +1662,24 @@ void CHitDeathReactionsSystem::GetReactionParamsFromScript(const CActor& actor, 
 	{
 		pScriptTable->GetValue(END_VELOCITY_PROPERTY, reactionParams.endVelocity);
 	}
-	
-	if( reactionParams.mannequinData.actionType != SReactionParams::SMannequinData::EActionType_Invalid )
+
+	if (reactionParams.mannequinData.actionType != SReactionParams::SMannequinData::EActionType_Invalid)
 	{
 		GenerateDirectionalMannequinTagsFromReactionParams(actor, tagMapping, reactionParams, reactionParams.mannequinData.tagState);
 
 #ifdef DEBUG_MANQ_TAGS
 		const int BUFFER_SIZE = 1024;
-		char buffer[BUFFER_SIZE] = {0};
+		char buffer[BUFFER_SIZE] = { 0 };
 		tagMapping.m_pTagDefinition->FlagsToTagList(reactionParams.mannequinData.tagState, buffer, BUFFER_SIZE);
 
-		if( strlen( buffer ) == 0 )
+		if (strlen(buffer) == 0)
 		{
-			Warning( "We found no tagState for this reaction!" );
+			Warning("We found no tagState for this reaction!");
 		}
 
-		Warning( "Actor: <%s>; Tags <%s>", actor.GetEntity()->GetName(), buffer );
+		Warning("Actor: <%s>; Tags <%s>", actor.GetEntity()->GetName(), buffer);
 #endif
 	}
-
 
 	reactionParams.reactionAnim.reset(new SReactionParams::SReactionAnim);
 	GetReactionAnimParamsFromScript(actor, pScriptTable, *reactionParams.reactionAnim);
@@ -1720,75 +1724,75 @@ void CHitDeathReactionsSystem::GetReactionParamsFromScript(const CActor& actor, 
 	}
 }
 
-template< typename FUNC >
-void CHitDeathReactionsSystem::FindAndSetTag( const ScriptTablePtr pScriptTable, const CHitDeathReactionsSystem::TTagToMapTag* pTagMap, const CTagDefinition* pTagDefinition, TagState& tagState, SReactionParams::IdContainer& container, const FUNC& functor ) const
+template<typename FUNC>
+void CHitDeathReactionsSystem::FindAndSetTag(const ScriptTablePtr pScriptTable, const CHitDeathReactionsSystem::TTagToMapTag* pTagMap, const CTagDefinition* pTagDefinition, TagState& tagState, SReactionParams::IdContainer& container, const FUNC& functor) const
 {
 	const int iCount = pScriptTable->Count();
 
 	const char* pFoundTag = NULL;
 
-	for( int i=0; i<iCount; ++i )
+	for (int i = 0; i < iCount; ++i)
 	{
 		const char* tagName = NULL;
-		if( pScriptTable->GetAt( i+1, tagName ) )
+		if (pScriptTable->GetAt(i + 1, tagName))
 		{
 			const char* pTag = NULL;
-			
+
 			// find the map tag if we can.
-			if( pTagMap )
+			if (pTagMap)
 			{
-				const string tagString( tagName );
-				TTagToMapTag::const_iterator it = pTagMap->find( tagString );
+				const string tagString(tagName);
+				TTagToMapTag::const_iterator it = pTagMap->find(tagString);
 				const TTagToMapTag::const_iterator iEnd = pTagMap->end();
 
-				if( it != iEnd )
+				if (it != iEnd)
 				{
 					pTag = it->first.c_str();
 				}
 
-				for( ; (it != iEnd) && (it->first==tagString); ++it )
+				for (; (it != iEnd) && (it->first == tagString); ++it)
 				{
-					const int id = functor( it->second.c_str() );
+					const int id = functor(it->second.c_str());
 
-					if( id != -1 )
+					if (id != -1)
 					{
-						container.insert( id );
+						container.insert(id);
 					}
 				}
 			}
 
-			if( pTag == NULL )
+			if (pTag == NULL)
 			{
 				// probably a raw tag.
 				pTag = tagName;
 
-				const int id = functor( tagName );
+				const int id = functor(tagName);
 
-				if( id != -1 )
+				if (id != -1)
 				{
-					container.insert( id );
+					container.insert(id);
 				}
 			}
 
-			const TagID tagID = pTagDefinition->Find( pTag );
-			if( tagID == TAG_ID_INVALID )
+			const TagID tagID = pTagDefinition->Find(pTag);
+			if (tagID == TAG_ID_INVALID)
 			{
-				Warning( "Didn't find Tag <%s> in TagDef.", pTag );
+				Warning("Didn't find Tag <%s> in TagDef.", pTag);
 
 				// not a valid meta tag if not in the tagmap.
 				continue;
 			}
 
-			if( pFoundTag != NULL && stricmp(pTag, pFoundTag)!=0 )
+			if (pFoundTag != NULL && stricmp(pTag, pFoundTag) != 0)
 			{
-				Warning( "Found more than one tag in the container! <%s> <%s>", pFoundTag, pTag );
+				Warning("Found more than one tag in the container! <%s> <%s>", pFoundTag, pTag);
 			}
 
 			pFoundTag = pTag;
 
-			if( i == 0 )
+			if (i == 0)
 			{
-				pTagDefinition->Set( tagState, tagID, true );
+				pTagDefinition->Set(tagState, tagID, true);
 			}
 		}
 	}
@@ -1797,9 +1801,9 @@ void CHitDeathReactionsSystem::FindAndSetTag( const ScriptTablePtr pScriptTable,
 //////////////////////////////////////////////////////////////////////////
 // Suppress passedByValue for smart pointers like ScriptTablePtr
 // cppcheck-suppress passedByValue
-bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePtr pScriptTable, const STagMappingHelper& tagMapping, SReactionParams &reactionParams, const CActor &actor, ReactionId reactionId) const
+bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePtr pScriptTable, const STagMappingHelper& tagMapping, SReactionParams& reactionParams, const CActor& actor, ReactionId reactionId) const
 {
-//	PreProcessStanceParams(pScriptTable);
+	//	PreProcessStanceParams(pScriptTable);
 
 	const bool bIsMannequinReaction = (reactionParams.mannequinData.actionType != SReactionParams::SMannequinData::EActionType_Invalid);
 	bool bHadValidationParams = false;
@@ -1822,28 +1826,28 @@ bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePt
 		}
 	}
 
-	if (pScriptTable->HaveValue(MINIMUM_SPEED_PROPERTY)) 
+	if (pScriptTable->HaveValue(MINIMUM_SPEED_PROPERTY))
 	{
 		pScriptTable->GetValue(MINIMUM_SPEED_PROPERTY, validationParams.fMinimumSpeedAllowed);
 
 		bHadValidationParams = true;
 	}
 
-	if (pScriptTable->HaveValue(MAXIMUM_SPEED_PROPERTY)) 
+	if (pScriptTable->HaveValue(MAXIMUM_SPEED_PROPERTY))
 	{
 		pScriptTable->GetValue(MAXIMUM_SPEED_PROPERTY, validationParams.fMaximumSpeedAllowed);
 
 		bHadValidationParams = true;
 	}
 
-	if (pScriptTable->HaveValue(MINIMUM_DAMAGE_PROPERTY)) 
+	if (pScriptTable->HaveValue(MINIMUM_DAMAGE_PROPERTY))
 	{
 		pScriptTable->GetValue(MINIMUM_DAMAGE_PROPERTY, validationParams.fMinimumDamageAllowed);
 
 		bHadValidationParams = true;
 	}
 
-	if (pScriptTable->HaveValue(MAXIMUM_DAMAGE_PROPERTY)) 
+	if (pScriptTable->HaveValue(MAXIMUM_DAMAGE_PROPERTY))
 	{
 		pScriptTable->GetValue(MAXIMUM_DAMAGE_PROPERTY, validationParams.fMaximumDamageAllowed);
 
@@ -1863,7 +1867,7 @@ bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePt
 			validationParams.healthThresholds.reserve(iCount);
 
 			// const float fActorMaxHealth = actor.GetMaxHealth();
-			// [*DavidR | 8/Nov/2010] Unfortunately, on initialization maxHealth hasn't been set yet, since it's set on 
+			// [*DavidR | 8/Nov/2010] Unfortunately, on initialization maxHealth hasn't been set yet, since it's set on
 			// the ScriptPRoxy initialization(which always happens last), from OnInit methods. We need to obtain it from the script
 			ScriptTablePtr pActorScriptTable = actor.GetEntity()->GetScriptTable();
 			CRY_ASSERT(pActorScriptTable.GetPtr());
@@ -1871,8 +1875,8 @@ bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePt
 			float fActorMaxHealth = actor.GetMaxHealth();
 			ScriptTablePtr propertiesTable;
 			ScriptTablePtr propertiesDamageTable;
-			if (pActorScriptTable->GetValue(ACTOR_PROPERTIES_TABLE, propertiesTable) && 
-				propertiesTable->GetValue(ACTOR_PROPERTIES_DAMAGE_TABLE, propertiesDamageTable)) 
+			if (pActorScriptTable->GetValue(ACTOR_PROPERTIES_TABLE, propertiesTable) &&
+			    propertiesTable->GetValue(ACTOR_PROPERTIES_DAMAGE_TABLE, propertiesDamageTable))
 				propertiesDamageTable->GetValue(ACTOR_PROPERTIES_DAMAGE_MAXHEALTH, fActorMaxHealth);
 
 			for (int i = 0; i < iCount; ++i)
@@ -1950,9 +1954,9 @@ bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePt
 		ScriptTablePtr pAllowedStancesArray;
 		pScriptTable->GetValue(ALLOWED_STANCES_ARRAY, pAllowedStancesArray);
 
-		if( bIsMannequinReaction )
+		if (bIsMannequinReaction)
 		{
-			FindAndSetTag( pAllowedStancesArray, tagMapping.m_tagMapping[STagMappingHelper::ETagType_Stances], tagMapping.m_pTagDefinition, reactionParams.mannequinData.tagState, validationParams.allowedStances, FAllowedStances(gEnv->pScriptSystem) );
+			FindAndSetTag(pAllowedStancesArray, tagMapping.m_tagMapping[STagMappingHelper::ETagType_Stances], tagMapping.m_pTagDefinition, reactionParams.mannequinData.tagState, validationParams.allowedStances, FAllowedStances(gEnv->pScriptSystem));
 		}
 		else
 		{
@@ -1967,14 +1971,14 @@ bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePt
 					pAllowedStancesArray->GetAt(i + 1, szStanceGlobalValue);
 
 					gEnv->pScriptSystem->GetGlobalValue(szStanceGlobalValue, iStance);
-					if(iStance != -1)
+					if (iStance != -1)
 					{
 						validationParams.allowedStances.insert(static_cast<EStance>(iStance));
 					}
 				}
 				else
 				{
-					Warning( "Found non-string in hitDeath for stances - not sure why" );
+					Warning("Found non-string in hitDeath for stances - not sure why");
 				}
 			}
 		}
@@ -1987,9 +1991,9 @@ bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePt
 		ScriptTablePtr pAllowedHitTypesArray;
 		pScriptTable->GetValue(ALLOWED_HIT_TYPES_ARRAY, pAllowedHitTypesArray);
 
-		if( bIsMannequinReaction )
+		if (bIsMannequinReaction)
 		{
-			FindAndSetTag( pAllowedHitTypesArray, tagMapping.m_tagMapping[STagMappingHelper::ETagType_HitType], tagMapping.m_pTagDefinition, reactionParams.mannequinData.tagState, validationParams.allowedHitTypes, FAllowedHitTypes(g_pGame->GetGameRules()) );
+			FindAndSetTag(pAllowedHitTypesArray, tagMapping.m_tagMapping[STagMappingHelper::ETagType_HitType], tagMapping.m_pTagDefinition, reactionParams.mannequinData.tagState, validationParams.allowedHitTypes, FAllowedHitTypes(g_pGame->GetGameRules()));
 		}
 		else
 		{
@@ -1997,7 +2001,7 @@ bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePt
 			for (int i = 0; i < iCount; ++i)
 			{
 				const char* szHitType = NULL;
-				if( pAllowedHitTypesArray->GetAt(i + 1, szHitType) )
+				if (pAllowedHitTypesArray->GetAt(i + 1, szHitType))
 				{
 					validationParams.allowedHitTypes.insert(g_pGame->GetGameRules()->GetHitTypeId(szHitType));
 				}
@@ -2012,9 +2016,9 @@ bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePt
 		ScriptTablePtr pAllowedProjectilesArray;
 		pScriptTable->GetValue(ALLOWED_PROJECTILES_ARRAY, pAllowedProjectilesArray);
 
-		if( bIsMannequinReaction )
+		if (bIsMannequinReaction)
 		{
-			FindAndSetTag( pAllowedProjectilesArray, tagMapping.m_tagMapping[STagMappingHelper::ETagType_Projectile], tagMapping.m_pTagDefinition, reactionParams.mannequinData.tagState, validationParams.allowedProjectiles, FAllowedNetClass( g_pGame->GetIGameFramework() ) );
+			FindAndSetTag(pAllowedProjectilesArray, tagMapping.m_tagMapping[STagMappingHelper::ETagType_Projectile], tagMapping.m_pTagDefinition, reactionParams.mannequinData.tagState, validationParams.allowedProjectiles, FAllowedNetClass(g_pGame->GetIGameFramework()));
 		}
 		else
 		{
@@ -2040,9 +2044,9 @@ bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePt
 		ScriptTablePtr pAllowedWeapons;
 		pScriptTable->GetValue(ALLOWED_WEAPONS_ARRAY, pAllowedWeapons);
 
-		if( bIsMannequinReaction )
+		if (bIsMannequinReaction)
 		{
-			FindAndSetTag( pAllowedWeapons, tagMapping.m_tagMapping[STagMappingHelper::ETagType_Weapon], tagMapping.m_pTagDefinition, reactionParams.mannequinData.tagState, validationParams.allowedWeapons, FAllowedNetClass( g_pGame->GetIGameFramework() ) );
+			FindAndSetTag(pAllowedWeapons, tagMapping.m_tagMapping[STagMappingHelper::ETagType_Weapon], tagMapping.m_pTagDefinition, reactionParams.mannequinData.tagState, validationParams.allowedWeapons, FAllowedNetClass(g_pGame->GetIGameFramework()));
 		}
 		else
 		{
@@ -2085,14 +2089,14 @@ bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePt
 		if (pScriptTable->GetValue(DESTRUCTIBLE_EVENT_PROPERTY, szDestructibleEvent) && szDestructibleEvent && (szDestructibleEvent[0] != '\0'))
 		{
 			validationParams.destructibleEvent = CCrc32::ComputeLowercase(szDestructibleEvent);
-			const TagID tagID = tagMapping.m_pTagDefinition->Find( szDestructibleEvent );
-			if( tagID != TAG_ID_INVALID )
+			const TagID tagID = tagMapping.m_pTagDefinition->Find(szDestructibleEvent);
+			if (tagID != TAG_ID_INVALID)
 			{
-				tagMapping.m_pTagDefinition->Set(	reactionParams.mannequinData.tagState, tagID, true );
+				tagMapping.m_pTagDefinition->Set(reactionParams.mannequinData.tagState, tagID, true);
 			}
 			else
 			{
-				Warning( "Tag not found in tagdef <%s>", szDestructibleEvent );
+				Warning("Tag not found in tagdef <%s>", szDestructibleEvent);
 			}
 		}
 
@@ -2102,7 +2106,7 @@ bool CHitDeathReactionsSystem::GetValidationParamsFromScript(const ScriptTablePt
 	if (bHadValidationParams)
 	{
 		validationParams.validationParamsScriptTable->SetValue(REACTION_ID, reactionId);
-		reactionParams.validationParams.push_back( validationParams );
+		reactionParams.validationParams.push_back(validationParams);
 	}
 
 	return bHadValidationParams;
@@ -2136,7 +2140,7 @@ void CHitDeathReactionsSystem::GetReactionAnimParamsFromScript(const CActor& act
 			}
 		}
 
-		if (pScriptTable->HaveValue(REACTION_ANIM_PROPERTY)) 
+		if (pScriptTable->HaveValue(REACTION_ANIM_PROPERTY))
 		{
 			ScriptAnyValue reactionAnimTable;
 			if (pScriptTable->GetValueAny(REACTION_ANIM_PROPERTY, reactionAnimTable) && (reactionAnimTable.type == ANY_TTABLE))
@@ -2168,7 +2172,7 @@ void CHitDeathReactionsSystem::GetReactionAnimParamsFromScript(const CActor& act
 				}
 
 				// List of animations and their variation
-				if (pReactionAnimTable->HaveValue(ANIM_NAME_ARRAY)) 
+				if (pReactionAnimTable->HaveValue(ANIM_NAME_ARRAY))
 				{
 					ScriptTablePtr pAnimationArray;
 					pReactionAnimTable->GetValue(ANIM_NAME_ARRAY, pAnimationArray);
@@ -2233,7 +2237,7 @@ void CHitDeathReactionsSystem::GetReactionAnimParamsFromScript(const CActor& act
 		}
 
 		// Request loading of first asset of this set on creation
-		if (GetStreamingPolicy() != SCVars::eHDRSP_ActorsAliveAndNotInPool)		
+		if (GetStreamingPolicy() != SCVars::eHDRSP_ActorsAliveAndNotInPool)
 			reactionAnim.RequestNextAnim(pAnimSet);
 	}
 }
@@ -2242,7 +2246,7 @@ void CHitDeathReactionsSystem::GetReactionAnimParamsFromScript(const CActor& act
 //////////////////////////////////////////////////////////////////////////
 // Suppress passedByValue for smart pointers like ScriptTablePtr
 // cppcheck-suppress passedByValue
-void CHitDeathReactionsSystem::FillAllowedPartIds(const CActor& actor, const ScriptTablePtr pScriptTable, const STagMappingHelper& tagMapping, bool bIsMannequinReaction, SReactionParams& reactionParams, SReactionParams::SValidationParams& validationParams ) const
+void CHitDeathReactionsSystem::FillAllowedPartIds(const CActor& actor, const ScriptTablePtr pScriptTable, const STagMappingHelper& tagMapping, bool bIsMannequinReaction, SReactionParams& reactionParams, SReactionParams::SValidationParams& validationParams) const
 {
 	ScriptTablePtr pAllowedPartArray;
 	pScriptTable->GetValue(ALLOWED_PARTS_ARRAY, pAllowedPartArray);
@@ -2250,9 +2254,9 @@ void CHitDeathReactionsSystem::FillAllowedPartIds(const CActor& actor, const Scr
 	ICharacterInstance* pMainChar = actor.GetEntity()->GetCharacter(0);
 	if (pMainChar)
 	{
-		if( bIsMannequinReaction )
+		if (bIsMannequinReaction)
 		{
-			FindAndSetTag( pAllowedPartArray, tagMapping.m_tagMapping[STagMappingHelper::ETagType_Part], tagMapping.m_pTagDefinition, reactionParams.mannequinData.tagState, validationParams.allowedPartIds, FAllowedParts(pMainChar) );
+			FindAndSetTag(pAllowedPartArray, tagMapping.m_tagMapping[STagMappingHelper::ETagType_Part], tagMapping.m_pTagDefinition, reactionParams.mannequinData.tagState, validationParams.allowedPartIds, FAllowedParts(pMainChar));
 		}
 		else
 		{
@@ -2318,7 +2322,7 @@ ECardinalDirection CHitDeathReactionsSystem::GetCardinalDirectionFromString(cons
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-EAirState CHitDeathReactionsSystem::GetAirStateFromString( const char* szAirState ) const
+EAirState CHitDeathReactionsSystem::GetAirStateFromString(const char* szAirState) const
 {
 	EAirState airState = eAS_Unset;
 	if (szAirState)
@@ -2356,19 +2360,19 @@ void CHitDeathReactionsSystem::OnRequestAnimsTimer(void* pUserData, IGameFramewo
 			// more than one animation), it's sure it will be the same across the network
 			g_pGame->GetHitDeathReactionsSystem().GetRandomGenerator().seed(gEnv->bNoRandomSeed ? 0 : profileId);
 
-			if( g_pGameCVars->g_hitDeathReactions_usePrecaching > 0 )
+			if (g_pGameCVars->g_hitDeathReactions_usePrecaching > 0)
 			{
 				// Find a valid entity ID which still has a CharInst.
 				EntityId validEntityId = profile.entitiesUsingProfile.begin()->first;
 				SReactionsProfile::entitiesUsingProfileContainer::const_iterator it = profile.entitiesUsingProfile.begin();
 				const SReactionsProfile::entitiesUsingProfileContainer::const_iterator iEnd = profile.entitiesUsingProfile.end();
-				for( ; it!=iEnd; ++it )
+				for (; it != iEnd; ++it)
 				{
-					IEntity* piEntity = gEnv->pEntitySystem->GetEntity( it->first );
-					if( piEntity )
+					IEntity* piEntity = gEnv->pEntitySystem->GetEntity(it->first);
+					if (piEntity)
 					{
 						ICharacterInstance* piCharInst = piEntity->GetCharacter(0);
-						if( piCharInst )
+						if (piCharInst)
 						{
 							validEntityId = piEntity->GetId();
 							break;
@@ -2377,7 +2381,7 @@ void CHitDeathReactionsSystem::OnRequestAnimsTimer(void* pUserData, IGameFramewo
 				}
 
 				// Lock reaction anims
-				SPredRequestAnims requestPredicate(true, validEntityId, profile.pHitDeathReactionsConfig.lock()->piOptionalAnimationADB );
+				SPredRequestAnims requestPredicate(true, validEntityId, profile.pHitDeathReactionsConfig.lock()->piOptionalAnimationADB);
 				std::for_each(profile.pHitReactions.lock()->begin(), profile.pHitReactions.lock()->end(), requestPredicate);
 				std::for_each(profile.pDeathReactions.lock()->begin(), profile.pDeathReactions.lock()->end(), requestPredicate);
 				std::for_each(profile.pCollisionReactions.lock()->begin(), profile.pCollisionReactions.lock()->end(), requestPredicate);
@@ -2439,26 +2443,26 @@ void CHitDeathReactionsSystem::OnReleaseAnimsTimer(void* pUserData, IGameFramewo
 	}
 }
 
-void CHitDeathReactionsSystem::GenerateDirectionalMannequinTagsFromReactionParams( const CActor& actor, const STagMappingHelper& tagMapping, const SReactionParams& reactionParams, TagState& tagState ) const
+void CHitDeathReactionsSystem::GenerateDirectionalMannequinTagsFromReactionParams(const CActor& actor, const STagMappingHelper& tagMapping, const SReactionParams& reactionParams, TagState& tagState) const
 {
-	if( tagMapping.m_pTagDefinition )
+	if (tagMapping.m_pTagDefinition)
 	{
 		SReactionParams::ValidationParamsList::const_iterator it = reactionParams.validationParams.begin();
 		const SReactionParams::ValidationParamsList::const_iterator iEnd = reactionParams.validationParams.end();
-		for( ; it!=iEnd; ++it )
+		for (; it != iEnd; ++it)
 		{
 			const SReactionParams::SValidationParams& validationParams = *it;
 
-			AddDirectionToTagState( validationParams.shotOrigin,  "so_", tagMapping, tagState );
-			AddDirectionToTagState( validationParams.movementDir, "md_", tagMapping, tagState );
+			AddDirectionToTagState(validationParams.shotOrigin, "so_", tagMapping, tagState);
+			AddDirectionToTagState(validationParams.movementDir, "md_", tagMapping, tagState);
 		}
 	}
 }
 
-void CHitDeathReactionsSystem::AddDirectionToTagState( const ECardinalDirection direction, const char* pPrefix, const STagMappingHelper& tagMapping, TagState& tagState ) const
+void CHitDeathReactionsSystem::AddDirectionToTagState(const ECardinalDirection direction, const char* pPrefix, const STagMappingHelper& tagMapping, TagState& tagState) const
 {
 	const char* pShotOrigin = NULL;
-	switch( direction )
+	switch (direction)
 	{
 	case eCD_Forward:
 		pShotOrigin = "forward";
@@ -2485,17 +2489,16 @@ void CHitDeathReactionsSystem::AddDirectionToTagState( const ECardinalDirection 
 		pShotOrigin = "rightside";
 		break;
 	}
-	if( pShotOrigin )
+	if (pShotOrigin)
 	{
-		string tmp( pPrefix );
+		string tmp(pPrefix);
 		tmp += pShotOrigin;
 
-		const TagID tagID = tagMapping.m_pTagDefinition->Find( tmp.c_str() );
+		const TagID tagID = tagMapping.m_pTagDefinition->Find(tmp.c_str());
 
-		if( tagID != TAG_ID_INVALID )
+		if (tagID != TAG_ID_INVALID)
 		{
-			tagMapping.m_pTagDefinition->Set( tagState, tagID, true );
+			tagMapping.m_pTagDefinition->Set(tagState, tagID, true);
 		}
 	}
 }
-

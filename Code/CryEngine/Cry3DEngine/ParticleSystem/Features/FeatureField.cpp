@@ -17,10 +17,10 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureField = false;
-
 namespace pfx2
 {
+
+EParticleDataType PDT(EPDT_Alpha, float, 1, BHasInit(true));
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureFieldOpacity
@@ -40,7 +40,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		m_opacity.AddToComponent(pComponent, this, EPDT_Alpha, EPDT_AlphaInit);
+		m_opacity.AddToComponent(pComponent, this, EPDT_Alpha);
 
 		pParams->m_shaderData.m_alphaTest[0][0] = m_alphaScale.x;
 		pParams->m_shaderData.m_alphaTest[1][0] = m_alphaScale.y - m_alphaScale.x;
@@ -77,7 +77,7 @@ public:
 	virtual void InitParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		m_opacity.InitParticles(context, EPDT_Alpha, EPDT_AlphaInit);
+		m_opacity.InitParticles(context, EPDT_Alpha);
 	}
 
 	virtual void Update(const SUpdateContext& context) override
@@ -92,10 +92,12 @@ private:
 	Vec2 m_clipLow, m_clipRange;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldOpacity, "Field", "Opacity", defaultIcon, fieldColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldOpacity, "Field", "Opacity", colorField);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureFieldSize
+
+EParticleDataType PDT(EPDT_Size, float, 1, BHasInit(true));
 
 class CFeatureFieldSize : public CParticleFeature
 {
@@ -106,7 +108,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		m_size.AddToComponent(pComponent, this, EPDT_Size, EPDT_SizeInit);
+		m_size.AddToComponent(pComponent, this, EPDT_Size);
 		pParams->m_maxParticleSize = max(pParams->m_maxParticleSize, m_size.GetBaseValue());
 
 		if (auto gpuInt = GetGpuInterface())
@@ -135,7 +137,7 @@ public:
 	virtual void InitParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		m_size.InitParticles(context, EPDT_Size, EPDT_SizeInit);
+		m_size.InitParticles(context, EPDT_Size);
 	}
 
 	virtual void Update(const SUpdateContext& context) override
@@ -148,7 +150,7 @@ private:
 	CParamMod<SModParticleField, UFloat10> m_size;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldSize, "Field", "Size", defaultIcon, fieldColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldSize, "Field", "Size", colorField);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureFieldPixelSize
@@ -169,12 +171,10 @@ public:
 	{
 		pComponent->AddParticleData(EPVF_Position);
 		pComponent->AddParticleData(EPDT_Size);
-		pComponent->AddParticleData(EPDT_SizeInit);
 		if (m_affectOpacity)
 		{
 			m_initAlphas = !pComponent->UseParticleData(EPDT_Alpha);
 			pComponent->AddParticleData(EPDT_Alpha);
-			pComponent->AddParticleData(EPDT_AlphaInit);
 		}
 		pComponent->AddToUpdateList(EUL_Update, this);
 
@@ -222,16 +222,16 @@ public:
 		{
 			const Vec3v position = positions.Load(particleGroupId);
 			const floatv size0 = sizes.Load(particleGroupId);
-			const floatv distance = Max(epsilon, DistFromPlane(projectionPlane, position));
-			const floatv pixelSize0 = Mul(Rcp(Mul(distance, minDrawPixels)), size0);
-			const floatv pixelSize1 = Clamp(pixelSize0, minPixelSize, maxPixelSize);
-			const floatv size1 = Mul(pixelSize1, Mul(distance, minDrawPixels));
+			const floatv distance = max(epsilon, projectionPlane.DistFromPlane(position));
+			const floatv pixelSize0 = rcp_fast(distance * minDrawPixels) * size0;
+			const floatv pixelSize1 = clamp(pixelSize0, minPixelSize, maxPixelSize);
+			const floatv size1 = pixelSize1 * distance * minDrawPixels;
 			sizes.Store(particleGroupId, size1);
 
 			if (m_affectOpacity)
 			{
 				const floatv alpha0 = inputAlphas.SafeLoad(particleGroupId);
-				const floatv alpha1 = Mul(alpha0, Saturate(Mul(pixelSize0, invMinPixelSize)));
+				const floatv alpha1 = alpha0 * saturate(pixelSize0 * invMinPixelSize);
 				outputAlphas.Store(particleGroupId, alpha1);
 			}
 		}
@@ -245,6 +245,6 @@ private:
 	bool     m_initAlphas;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldPixelSize, "Field", "PixelSize", defaultIcon, fieldColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldPixelSize, "Field", "PixelSize", colorField);
 
 }

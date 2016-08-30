@@ -14,8 +14,6 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureLife = false;
-
 namespace pfx2
 {
 
@@ -57,14 +55,14 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		m_lifeTime.InitParticles(context, EPDT_LifeTime, EPDT_LifeTime);
+		m_lifeTime.InitParticles(context, EPDT_LifeTime);
 	}
 
 private:
 	CParamMod<SModParticleSpawnInit, UFloat10> m_lifeTime;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLifeTime, "Life", "Time", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLifeTime, "Life", "Time", colorLife);
 
 class CFeatureLifeImmortal : public CParticleFeature
 {
@@ -110,6 +108,6 @@ public:
 private:
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLifeImmortal, "Life", "Immortal", defaultIcon, defaultColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLifeImmortal, "Life", "Immortal", colorLife);
 
 }

@@ -190,11 +190,13 @@ void CResponseManager::Update()
 
 	for (SignalList::iterator itToCancel = m_currentlySignalsWaitingToBeCanceled.begin(); itToCancel != m_currentlySignalsWaitingToBeCanceled.end(); )
 	{
+		SSignal& signalToCancel = *itToCancel;
 		for (SignalList::iterator itQueued = m_currentlyQueuedSignals.begin(); itQueued != m_currentlyQueuedSignals.end(); )
 		{
-			if ((itQueued->m_pSender == itToCancel->m_pSender || itToCancel->m_pSender == nullptr) && itQueued->m_signalName == itToCancel->m_signalName)
+			SSignal& currentSignal = *itQueued;
+			if ((currentSignal.m_pSender == signalToCancel.m_pSender || signalToCancel.m_pSender == nullptr) && currentSignal.m_signalName == signalToCancel.m_signalName)
 			{
-				InformListenerAboutSignalProcessingFinished(itQueued->m_signalName, itQueued->m_pSender, itQueued->m_pSignalContext, itQueued->m_id, nullptr, DRS::IResponseManager::IListener::ProcessingResult_Canceled);
+				InformListenerAboutSignalProcessingFinished(currentSignal.m_signalName, currentSignal.m_pSender, currentSignal.m_pSignalContext, currentSignal.m_id, nullptr, DRS::IResponseManager::IListener::ProcessingResult_Canceled);
 				itQueued = m_currentlyQueuedSignals.erase(itQueued);
 			}
 			else
@@ -205,7 +207,7 @@ void CResponseManager::Update()
 
 		for (CResponseInstance* runningResponse : m_runningResponses)
 		{
-			if ((runningResponse->GetCurrentActor() == itToCancel->m_pSender || itToCancel->m_pSender == nullptr) && runningResponse->GetSignalName() == itToCancel->m_signalName)
+			if ((runningResponse->GetCurrentActor() == signalToCancel.m_pSender || signalToCancel.m_pSender == nullptr) && runningResponse->GetSignalName() == signalToCancel.m_signalName)
 			{
 				runningResponse->Cancel();
 			}
@@ -222,7 +224,7 @@ void CResponseManager::Update()
 		}
 		else
 		{
-			InformListenerAboutSignalProcessingFinished((*it)->GetSignalName(), (*it)->GetOriginalSender(), (*it)->GetContextVariablesImpl(), (*it)->GetSignalId(), *it, IResponseManager::IListener::ProcessingResult_Done);
+			InformListenerAboutSignalProcessingFinished((*it)->GetSignalName(), (*it)->GetOriginalSender(), (*it)->GetContextVariablesImpl(), (*it)->GetSignalInstanceId(), *it, IResponseManager::IListener::ProcessingResult_Done);
 			ReleaseInstance(*it, false);
 			it = m_runningResponses.erase(it);
 		}
@@ -232,25 +234,26 @@ void CResponseManager::Update()
 
 	for (SignalList::iterator itQueued = m_currentlyQueuedSignals.begin(); itQueued != m_currentlyQueuedSignals.end(); )
 	{
+		SSignal& currentSignal = *itQueued;
 		//find the mapped Response for the Signal
-		MappedSignals::const_iterator mappedResponse = m_mappedSignals.find(itQueued->m_signalName);
+		MappedSignals::const_iterator mappedResponse = m_mappedSignals.find(currentSignal.m_signalName);
 
 		if (mappedResponse != m_mappedSignals.end())
 		{
 			//drs-todo: handle queuing for a specified amount of time. Check if the response can be started right now, based on priorities of already running responses
-			CResponseInstance* pResponseInstance = mappedResponse->second->StartExecution(*itQueued);
+			CResponseInstance* pResponseInstance = mappedResponse->second->StartExecution(currentSignal);
 			InformListenerAboutSignalProcessingStarted(*itQueued, pResponseInstance);
 			if (!pResponseInstance) //no instance = conditions not met, we are done
 			{
-				InformListenerAboutSignalProcessingFinished(itQueued->m_signalName, itQueued->m_pSender, itQueued->m_pSignalContext, itQueued->m_id, pResponseInstance, DRS::IResponseManager::IListener::ProcessingResult_ConditionsNotMet);
+				InformListenerAboutSignalProcessingFinished(currentSignal.m_signalName, currentSignal.m_pSender, currentSignal.m_pSignalContext, currentSignal.m_id, pResponseInstance, DRS::IResponseManager::IListener::ProcessingResult_ConditionsNotMet);
 			}
 		}
 		else
 		{
 			InformListenerAboutSignalProcessingStarted(*itQueued, nullptr);
-			DRS_DEBUG_DATA_ACTION(AddResponseStarted(itQueued->m_signalName.GetText()));
+			DRS_DEBUG_DATA_ACTION(AddResponseStarted(currentSignal.m_signalName.GetText()));
 			DRS_DEBUG_DATA_ACTION(AddResponseInstanceFinished(CResponseSystemDebugDataProvider::eER_NoResponse));
-			InformListenerAboutSignalProcessingFinished(itQueued->m_signalName, itQueued->m_pSender, itQueued->m_pSignalContext, itQueued->m_id, nullptr, DRS::IResponseManager::IListener::ProcessingResult_NoResponseDefined);
+			InformListenerAboutSignalProcessingFinished(currentSignal.m_signalName, currentSignal.m_pSender, currentSignal.m_pSignalContext, currentSignal.m_id, nullptr, DRS::IResponseManager::IListener::ProcessingResult_NoResponseDefined);
 		}
 		itQueued = m_currentlyQueuedSignals.erase(itQueued);  //we finished handling this signal, therefore we can remove it from the queued-list
 	}
@@ -281,8 +284,6 @@ CResponseInstance* CResponseManager::CreateInstance(SSignal& signal, CResponse* 
 //--------------------------------------------------------------------------------------------------
 void CResponseManager::ReleaseInstance(CResponseInstance* pInstance, bool removeFromRunningInstances /* = true */)
 {
-	DRS_DEBUG_DATA_ACTION(AddResponseInstanceFinished(CResponseSystemDebugDataProvider::eER_Finished));
-
 	if (removeFromRunningInstances)
 	{
 		for (ResponseInstanceList::iterator it = m_runningResponses.begin(); it != m_runningResponses.end(); ++it)
@@ -300,6 +301,8 @@ void CResponseManager::ReleaseInstance(CResponseInstance* pInstance, bool remove
 	{
 		delete pInstance;
 	}
+
+	DRS_DEBUG_DATA_ACTION(AddResponseInstanceFinished(CResponseSystemDebugDataProvider::eER_Finished));
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -542,7 +545,7 @@ ResponsePtr CResponseManager::GetResponse(const CHashedString& signalName)
 }
 
 //--------------------------------------------------------------------------------------------------
-bool CResponseManager::AddListener(DRS::IResponseManager::IListener* pNewListener, DRS::SignalId signalID /* = DRS::s_InvalidSignalID */)
+bool CResponseManager::AddListener(DRS::IResponseManager::IListener* pNewListener, DRS::SignalInstanceId signalID /* = DRS::s_InvalidSignalID */)
 {
 	m_Listener.push_back(std::make_pair(pNewListener, signalID));
 	return true;
@@ -567,7 +570,7 @@ void CResponseManager::InformListenerAboutSignalProcessingStarted(const SSignal&
 {
 	DRS::IResponseManager::IListener::SSignalInfos signalInfo(signal.m_signalName, signal.m_pSender, signal.m_pSignalContext, signal.m_id);
 
-	for (std::pair<DRS::IResponseManager::IListener*, DRS::SignalId>& current : m_Listener)
+	for (std::pair<DRS::IResponseManager::IListener*, DRS::SignalInstanceId>& current : m_Listener)
 	{
 		if (current.second == signal.m_id || current.second == DRS::s_InvalidSignalId)
 		{
@@ -581,7 +584,7 @@ void CResponseManager::InformListenerAboutSignalProcessingFinished(
   const CHashedString& signalName,
   CResponseActor* pSender,
   const VariableCollectionSharedPtr& pSignalContext,
-  const DRS::SignalId signalID,
+  const DRS::SignalInstanceId signalID,
   DRS::IResponseInstance* pInstance,
   DRS::IResponseManager::IListener::eProcessingResult outcome)
 {
@@ -605,9 +608,10 @@ void CResponseManager::InformListenerAboutSignalProcessingFinished(
 	}
 }
 
+//--------------------------------------------------------------------------------------------------
 void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 {
-	struct responseStateInfo
+	struct SResponseStateInfo
 	{
 		CHashedString responsename;
 		uint32        executionCount;
@@ -628,12 +632,12 @@ void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 			ar(lastEndTime, "LastEnd", "^>70>LastEnd");
 		}
 	};
-	std::vector<responseStateInfo> responseStates;
+	std::vector<SResponseStateInfo> responseStates;
 
 	if (ar.isInput())
 	{
-		ar(responseStates, "ResponseStates", "-ResponseStates");
-		for (responseStateInfo& current : responseStates)
+		ar(responseStates, "_internal", "-_Internal");
+		for (SResponseStateInfo& current : responseStates)
 		{
 			ResponsePtr pResponse = GetResponse(current.responsename);
 			if (pResponse)
@@ -656,7 +660,64 @@ void CResponseManager::SerializeResponseStates(Serialization::IArchive& ar)
 			responseStates[i].lastEndTime = it->second->GetLastEndTime();
 			++i;
 		}
-		ar(responseStates, "ResponseStates", "ResponseStates");
+		ar(responseStates, "_internal", "_Internal");
+	}
+}
+
+//--------------------------------------------------------------------------------------------------
+void CryDRS::CResponseManager::GetAllResponseData(DRS::VariableValuesList* pOutCollectionsList)
+{
+	std::pair<string, string> temp;
+	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
+	{
+		if (it->second->GetExecutionCounter() > 0)
+		{
+			const string collectionName = "_Internal.";
+			temp.first = collectionName + it->first.GetText();
+			char buffer[128];
+			cry_sprintf(buffer, "%u,%f,%f", it->second->GetExecutionCounter(), it->second->GetLastStartTime(), it->second->GetLastEndTime());
+			temp.second = buffer;
+			pOutCollectionsList->push_back(temp);
+		}
+	}
+}
+
+//--------------------------------------------------------------------------------------------------
+void CryDRS::CResponseManager::SetAllResponseData(const DRS::VariableValuesList& collectionsList)
+{
+	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
+	{
+		it->second->Reset();
+	}
+
+	uint32 executionCounter;
+	float startTime;
+	float endTime;
+
+	string collectionAndVariable;
+	CHashedString responseName;
+	CHashedString collectionName;
+	for (std::pair<string, string> variableValuePair : collectionsList)
+	{
+		collectionAndVariable = variableValuePair.first;
+		const int pos = collectionAndVariable.find('.');
+		collectionName = collectionAndVariable.substr(0, pos);
+
+		if (collectionName == "_Internal")
+		{
+			responseName = collectionAndVariable.substr(pos + 1);
+			ResponsePtr pResponse = GetResponse(responseName);
+			if (pResponse)
+			{
+				string responseData = variableValuePair.second;
+				if (sscanf(variableValuePair.second.c_str(), "%u,%f,%f", &executionCounter, &startTime, &endTime) == 3)
+				{
+					pResponse->SetExecutionCounter(executionCounter);
+					pResponse->SetLastStartTime(startTime);
+					pResponse->SetLastEndTime(endTime);
+				}
+			}
+		}
 	}
 }
 
@@ -671,5 +732,5 @@ SSignal::SSignal(
 	, m_pSender(pSender)
 	, m_pSignalContext(pSignalContext)
 {
-	m_id = static_cast<DRS::SignalId>(++s_currentSignalId);
+	m_id = static_cast<DRS::SignalInstanceId>(++s_currentSignalId);
 }

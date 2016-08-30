@@ -244,7 +244,7 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 		const char* fileWildcard = strchr(szFile, '*');
 		int32 offset = (int32)(fileWildcard - szFile);
 
-		stack_string filepath = PathUtil::GetParentDirectoryStackString(stack_string(szFolder));
+		stack_string filepath = PathUtil::GetParentDirectory(stack_string(szFolder));
 		char* starPos = strchr(szAnimName, '*');
 		if (starPos)
 			*starPos++ = 0;
@@ -276,7 +276,7 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 			{
 				GlobalAnimationHeaderAIM& rAIM = g_AnimationManager.m_arrGlobalAIM[nCafID];
 				stack_string strFilename = PathUtil::GetFile(rAIM.GetFilePath());
-				stack_string strFilePath = PathUtil::GetPath(rAIM.GetFilePath());
+				stack_string strFilePath = PathUtil::GetPathWithoutFilename(rAIM.GetFilePath());
 				const int32 filePathLen = strFilePath.length();
 
 				if (parseSubfolders)
@@ -292,7 +292,7 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 				if (PathUtil::MatchWildcard(strFilename.c_str(), szFile))
 				{
 					stack_string animName = szAnimName;
-					animName.append(PathUtil::GetFileName(strFilename).c_str());
+					animName.append(PathUtil::GetFileName(strFilename));
 					if (starPos)
 					{
 						animName.append(starPos);
@@ -394,8 +394,8 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 							bool match2 = PathUtil::MatchWildcard(file, szFile);
 							if (match1 && match2)
 							{
-								stack_string folderPathCurrentFile = PathUtil::GetParentDirectoryStackString(stack_string(currentFile));
-								stack_string folderPathFileName = PathUtil::GetParentDirectoryStackString(stack_string(szFolder));
+								stack_string folderPathCurrentFile = PathUtil::GetParentDirectory(stack_string(currentFile));
+								stack_string folderPathFileName = PathUtil::GetParentDirectory(stack_string(szFolder));
 
 								if (parseSubfolders || (!parseSubfolders && folderPathCurrentFile == folderPathFileName))
 								{
@@ -440,7 +440,7 @@ bool CParamLoader::ExpandWildcards(uint32 listID)
 				for (uint32 f = 0; f < numCafFiles; f++)
 				{
 					stack_string currentFile = arrDBAPathNames[f].c_str();
-					CryStringUtils::UnifyFilePath(currentFile);
+					PathUtil::UnifyFilePath(currentFile);
 
 					const char* file = PathUtil::GetFile(currentFile.c_str());
 					const char* ext = PathUtil::GetExt(currentFile.c_str());
@@ -492,7 +492,7 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 
 	SAnimListInfo animList(paramFileName);
 	const char* pFilePath = m_pDefaultSkeleton->GetModelFilePath();
-	const char* pFileName = CryStringUtils::FindFileNameInPath(pFilePath);
+	const char* pFileName = PathUtil::GetFile(pFilePath);
 	animList.arrAnimFiles.push_back(SAnimFile(stack_string(NULL_ANIM_FILE "/") + pFileName, "null"));
 
 	const int BITE = 512;
@@ -542,7 +542,7 @@ int32 CParamLoader::LoadAnimList(const XmlNodeRef calNode, const char* paramFile
 
 		if (0 == stricmp(key, "#filepath"))
 		{
-			strAnimDirName = PathUtil::ToUnixPath(value.c_str());
+			strAnimDirName = PathUtil::ToUnixPath(line.c_str());
 			strAnimDirName.TrimRight('/'); // delete the trailing slashes
 			continue;
 		}
@@ -838,7 +838,7 @@ bool CParamLoader::AddIfNewModelTracksDatabase(SAnimListInfo& animList, const ch
 {
 
 	stack_string tmp = dataBase;
-	CryStringUtils::UnifyFilePath(tmp);
+	PathUtil::UnifyFilePath(tmp);
 	if (NoModelTracksDatabaseInDependencies(animList, tmp.c_str()))
 	{
 		animList.modelTracksDatabases.push_back(tmp);
@@ -933,6 +933,11 @@ bool CParamLoader::LoadXML(CDefaultSkeleton* pDefaultSkeleton, string defaultAni
 		else if (stricmp(nodeTag, "BBoxExtension") == 0)
 		{
 			if (!LoadBBoxExtension(node))
+				return false;
+		}
+		else if (stricmp(nodeTag, "ShadowCapsulesList") == 0)
+		{
+			if (!LoadShadowCapsulesList(node))
 				return false;
 		}
 		else if (stricmp(nodeTag, "UsePhysProxyBBox") == 0)
@@ -1066,6 +1071,64 @@ bool CParamLoader::LoadBBoxExtension(const XmlNodeRef node)
 		joint->getAttr("posZ", rDefaultSkeleton.m_AABBExtension.max.z);
 		rDefaultSkeleton.m_AABBExtension.max.z = fabsf(rDefaultSkeleton.m_AABBExtension.max.z);
 	}
+	return true;
+}
+
+bool CParamLoader::LoadShadowCapsulesList(const XmlNodeRef node)
+{
+	if (m_pDefaultSkeleton == 0)
+		return false;
+	if (node == 0)
+		return false;
+
+	CDefaultSkeleton& rDefaultSkeleton = *m_pDefaultSkeleton;
+	uint count = node->getChildCount();
+	rDefaultSkeleton.m_ShadowCapsulesList.clear();
+	rDefaultSkeleton.m_ShadowCapsulesList.reserve(count);
+	for (uint i = 0; i < count; ++i)
+	{
+		XmlNodeRef capsuleNode = node->getChild(i);
+		if (!capsuleNode->isTag("Capsule"))
+			continue;
+
+		SBoneShadowCapsule shadowCapsule;
+		shadowCapsule.arrJoints[0] = -1;
+		shadowCapsule.arrJoints[1] = -1;
+		shadowCapsule.radius = 0;
+
+		for (int nJ = 0; nJ <= 1; nJ++)
+		{
+			const char* pAttrName = nJ ? "JointName1" : "JointName0";
+
+			const char* pJointName = capsuleNode->getAttr(pAttrName);
+			if (!pJointName)
+			{
+				g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "LoadShadowCapsulesList Error: Attribute '%s' is missing", pAttrName);
+				continue;
+			}
+
+			int jointIndex = rDefaultSkeleton.GetJointIDByName(pJointName);
+			if (jointIndex < 0)
+			{
+				g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "LoadShadowCapsulesList Error: JointName '%s' not found in model", pJointName);
+				continue;
+			}
+
+			shadowCapsule.arrJoints[nJ] = jointIndex;
+		}
+
+		if (!capsuleNode->getAttr("Radius", shadowCapsule.radius))
+		{
+			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "LoadShadowCapsulesList Error: Attribute 'Radius' is missing");
+			continue;
+		}
+
+		if (shadowCapsule.arrJoints[0] >= 0 && shadowCapsule.arrJoints[1] >= 0 && shadowCapsule.radius > 0)
+		{
+			rDefaultSkeleton.m_ShadowCapsulesList.push_back(shadowCapsule);
+		}
+	}
+
 	return true;
 }
 

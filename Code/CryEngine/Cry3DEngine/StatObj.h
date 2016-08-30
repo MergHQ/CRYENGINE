@@ -305,7 +305,7 @@ public:
 	float m_lastBooleanOpScale;
 
 	_smart_ptr<CStatObj>* m_pLODs;
-	CStatObj* m_pLod0;                 // Level 0 stat object. (Pointer to the original object of the LOD)
+	_smart_ptr<CStatObj> m_pLod0;      // Level 0 stat object. (Pointer to the original object of the LOD)
 	unsigned int m_nMinUsableLod0 : 8; // What is the minimal LOD that can be used as LOD0.
 	unsigned int m_nMaxUsableLod0 : 8; // What is the maximal LOD that can be used as LOD0.
 	unsigned int m_nMaxUsableLod  : 8; // What is the maximal LOD that can be used.
@@ -621,7 +621,7 @@ public:
 	virtual bool RayIntersection(SRayHitInfo & hitInfo, IMaterial * pCustomMtl = 0) override;
 	virtual bool LineSegIntersection(const Lineseg &lineSeg, Vec3 & hitPos, int& surfaceTypeId) override;
 
-	virtual void DebugDraw(const SGeometryDebugDrawInfo &info, float fExtrdueScale = 0.01f) override;
+	virtual void DebugDraw(const SGeometryDebugDrawInfo &info) override;
 	virtual void GetStatistics(SStatistics & stats) override;
 	//////////////////////////////////////////////////////////////////////////
 

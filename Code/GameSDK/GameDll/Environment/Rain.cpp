@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "Rain.h"
 
-#include "Nodes/G2FlowBaseNode.h"
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 CRain::CRain() : m_bEnabled(false)
 {
@@ -11,23 +11,21 @@ CRain::CRain() : m_bEnabled(false)
 
 CRain::~CRain()
 {
-	for (TTextureList::iterator it = m_Textures.begin(), itEnd = m_Textures.end(); it != itEnd; ++ it)
+	for (TTextureList::iterator it = m_Textures.begin(), itEnd = m_Textures.end(); it != itEnd; ++it)
 	{
 		(*it)->Release();
 	}
 }
 
 //------------------------------------------------------------------------
-bool CRain::Init(IGameObject *pGameObject)
+bool CRain::Init(IGameObject* pGameObject)
 {
 	SetGameObject(pGameObject);
-
 
 	if (!gEnv->IsDedicated())
 	{
 		PreloadTextures();
 	}
-
 
 	return Reset();
 }
@@ -37,7 +35,7 @@ void CRain::PreloadTextures()
 {
 	uint32 nDefaultFlags = FT_DONT_STREAM;
 
-	XmlNodeRef root = GetISystem()->LoadXmlFromFile( "EngineAssets/raintextures.xml" );
+	XmlNodeRef root = GetISystem()->LoadXmlFromFile("EngineAssets/raintextures.xml");
 	if (root)
 	{
 		for (int i = 0; i < root->getChildCount(); i++)
@@ -54,7 +52,8 @@ void CRain::PreloadTextures()
 				nFlags |= FT_NOMIPS;
 
 			ITexture* pTexture = gEnv->pRenderer->EF_LoadTexture(entry->getContent(), nFlags);
-			if (pTexture)	{
+			if (pTexture)
+			{
 				m_Textures.push_back(pTexture);
 			}
 		}
@@ -62,26 +61,26 @@ void CRain::PreloadTextures()
 }
 
 //------------------------------------------------------------------------
-void CRain::PostInit(IGameObject *pGameObject)
+void CRain::PostInit(IGameObject* pGameObject)
 {
 	GetGameObject()->EnableUpdateSlot(this, 0);
 }
 
 //------------------------------------------------------------------------
-bool CRain::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
+bool CRain::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
 {
 	ResetGameObject();
 
 	CRY_ASSERT_MESSAGE(false, "CRain::ReloadExtension not implemented");
-	
+
 	return false;
 }
 
 //------------------------------------------------------------------------
-bool CRain::GetEntityPoolSignature( TSerialize signature )
+bool CRain::GetEntityPoolSignature(TSerialize signature)
 {
 	CRY_ASSERT_MESSAGE(false, "CRain::GetEntityPoolSignature not implemented");
-	
+
 	return true;
 }
 
@@ -115,9 +114,9 @@ void CRain::FullSerialize(TSerialize ser)
 }
 
 //------------------------------------------------------------------------
-void CRain::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CRain::Update(SEntityUpdateContext& ctx, int updateSlot)
 {
-	const IActor * pClient = g_pGame->GetIGameFramework()->GetClientActor();
+	const IActor* pClient = g_pGame->GetIGameFramework()->GetClientActor();
 	if (pClient && Reset())
 	{
 		const Vec3 vCamPos = gEnv->pRenderer->GetCamera().GetPosition();
@@ -150,12 +149,12 @@ void CRain::Update(SEntityUpdateContext &ctx, int updateSlot)
 }
 
 //------------------------------------------------------------------------
-void CRain::HandleEvent(const SGameObjectEvent &event)
+void CRain::HandleEvent(const SGameObjectEvent& event)
 {
 }
 
 //------------------------------------------------------------------------
-void CRain::ProcessEvent(SEntityEvent &event)
+void CRain::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -190,7 +189,7 @@ bool CRain::Reset()
 	m_params.bDisableOcclusion = false;
 	m_params.fRadius = 10000.f;
 	m_params.fAmount = 1.f;
-	m_params.vColor.Set(1,1,1);
+	m_params.vColor.Set(1, 1, 1);
 	m_params.fFakeGlossiness = 0.5f;
 	m_params.fDiffuseDarkening = 0.5f;
 	m_params.fPuddlesAmount = 1.5f;
@@ -201,7 +200,7 @@ bool CRain::Reset()
 	m_params.fRainDropsLighting = 1.f;
 	m_params.fMistAmount = 3.f;
 	m_params.fMistHeight = 8.f;
-	m_params.fFakeReflectionAmount = 1.5f;	
+	m_params.fFakeReflectionAmount = 1.5f;
 	m_params.fSplashesAmount = 1.3f;
 
 	SmartScriptTable props;
@@ -226,7 +225,7 @@ bool CRain::Reset()
 	props->GetValue("fPuddlesMaskAmount", m_params.fPuddlesMaskAmount);
 	props->GetValue("fPuddlesRippleAmount", m_params.fPuddlesRippleAmount);
 	props->GetValue("fSplashesAmount", m_params.fSplashesAmount);
-	
+
 	props->GetValue("bEnabled", m_bEnabled);
 	if (!m_bEnabled)
 		m_params.fAmount = 0;
@@ -234,12 +233,11 @@ bool CRain::Reset()
 	return true;
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 class CFlowNode_RainProperties : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
-	CFlowNode_RainProperties( SActivationInfo * pActInfo )
+	CFlowNode_RainProperties(SActivationInfo* pActInfo)
 	{
 	}
 
@@ -255,16 +253,16 @@ public:
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig inputs[] = {
-			InputPortConfig_Void("Trigger", _HELP("Update the engine")),
-			InputPortConfig<float>("Amount", 1.0f, _HELP("Overall Amount")),
-			InputPortConfig<float>("PuddlesAmount", 1.5f, _HELP("PuddlesAmount")),
-			InputPortConfig<float>("PuddlesRippleAmount", 2.0f, _HELP("PuddlesRippleAmount")),
-			InputPortConfig<float>("RainDropsAmount", 0.5f, _HELP("RainDropsAmount")),
-			{0}
+			InputPortConfig_Void("Trigger",               _HELP("Update the engine")),
+			InputPortConfig<float>("Amount",              1.0f,                       _HELP("Overall Amount")),
+			InputPortConfig<float>("PuddlesAmount",       1.5f,                       _HELP("PuddlesAmount")),
+			InputPortConfig<float>("PuddlesRippleAmount", 2.0f,                       _HELP("PuddlesRippleAmount")),
+			InputPortConfig<float>("RainDropsAmount",     0.5f,                       _HELP("RainDropsAmount")),
+			{ 0 }
 		};
 		static const SOutputPortConfig outputs[] = {
-			{0}
-		};    
+			{ 0 }
+		};
 		config.nFlags |= EFLN_TARGET_ENTITY;
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
@@ -272,7 +270,7 @@ public:
 		config.SetCategory(EFLN_APPROVED);
 	}
 
-	virtual void ProcessEvent( EFlowEvent event, SActivationInfo *pActInfo )
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
 		EFlowEvent eventType = event;
 
@@ -318,15 +316,15 @@ public:
 		}
 	}
 
-	virtual void GetMemoryUsage(ICrySizer * s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);
 	}
 
-	virtual IFlowNodePtr Clone( SActivationInfo * pActInfo)
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)
 	{
-		return new CFlowNode_RainProperties( pActInfo );
+		return new CFlowNode_RainProperties(pActInfo);
 	}
 };
 
-REGISTER_FLOW_NODE("Environment:RainProperties", CFlowNode_RainProperties )
+REGISTER_FLOW_NODE("Environment:RainProperties", CFlowNode_RainProperties)

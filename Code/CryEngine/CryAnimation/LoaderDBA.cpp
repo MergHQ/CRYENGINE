@@ -14,7 +14,7 @@ void CGlobalHeaderDBA::CreateDatabaseDBA(const char* filename)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_DBA, 0, filename);
 	stack_string strPath = filename;
-	CryStringUtils::UnifyFilePath(strPath);
+	PathUtil::UnifyFilePath(strPath);
 	m_strFilePathDBA = strPath.c_str();
 	m_FilePathDBACRC32 = CCrc32::Compute(strPath.c_str());
 	m_nUsedAnimations = 0;

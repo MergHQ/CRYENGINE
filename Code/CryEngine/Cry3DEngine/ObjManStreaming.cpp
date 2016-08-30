@@ -181,7 +181,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 					for (int v = 0; v < m_tmpAreas0.Count(); v++)
 					{
 						CVisArea* pN1 = m_tmpAreas0[v];
-						assert(m_arrStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
+						assert(bNeedsUnique || m_arrStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
 						if (pN1->m_pObjectsTree)
 							m_arrStreamingNodeStack.Add(pN1->m_pObjectsTree);
 					}
@@ -206,7 +206,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 					for (int v = 0; v < m_tmpAreas1.Count(); v++)
 					{
 						CVisArea* pN1 = m_tmpAreas1[v];
-						assert(m_arrStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
+						assert(bNeedsUnique || m_arrStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
 						if (pN1->m_pObjectsTree)
 							m_arrStreamingNodeStack.Add(pN1->m_pObjectsTree);
 					}
@@ -309,7 +309,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 				for (int v = 0; v < m_tmpAreas0.Count(); v++)
 				{
 					CVisArea* pN1 = m_tmpAreas0[v];
-					assert(fastStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
+					assert(bNeedsUnique || fastStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
 					if (pN1->m_pObjectsTree)
 						fastStreamingNodeStack.Add(pN1->m_pObjectsTree);
 				}
@@ -334,7 +334,7 @@ void CObjManager::UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderin
 				for (int v = 0; v < m_tmpAreas1.Count(); v++)
 				{
 					CVisArea* pN1 = m_tmpAreas1[v];
-					assert(fastStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
+					assert(bNeedsUnique || fastStreamingNodeStack.Find(pN1->m_pObjectsTree) < 0);
 					if (pN1->m_pObjectsTree)
 						fastStreamingNodeStack.Add(pN1->m_pObjectsTree);
 				}

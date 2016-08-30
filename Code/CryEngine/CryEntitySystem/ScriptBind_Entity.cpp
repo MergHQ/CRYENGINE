@@ -99,6 +99,7 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 	SCRIPT_REG_TEMPLFUNC(SetSelfAsLightCasterException, "nLightSlot");
 	SCRIPT_REG_TEMPLFUNC(LoadCloud, "nSlot,sCloudFilename");
 	SCRIPT_REG_TEMPLFUNC(SetCloudMovementProperties, "nSlot,tCloudMovementProperties");
+	SCRIPT_REG_TEMPLFUNC(LoadCloudBlocker, "nSlot,tCloudBlockerProperties");
 	SCRIPT_REG_TEMPLFUNC(LoadFogVolume, "nSlot,tFogVolumeDescription");
 	SCRIPT_REG_TEMPLFUNC(FadeGlobalDensity, "nSlot,fFadeTime,fNewGlobalDensity");
 
@@ -280,7 +281,6 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 	SCRIPT_REG_FUNC(GetUpdateRadius);
 	SCRIPT_REG_TEMPLFUNC(Activate, "bActive");
 	SCRIPT_REG_TEMPLFUNC(IsActive, "");
-	SCRIPT_REG_TEMPLFUNC(IsFromPool, "");
 	SCRIPT_REG_TEMPLFUNC(SetUpdatePolicy, "nUpdatePolicy");
 	SCRIPT_REG_FUNC(SetPublicParam);
 	SCRIPT_REG_TEMPLFUNC(SetAnimationEvent, "nSlot,sAnimation");
@@ -585,14 +585,14 @@ CScriptBind_Entity::~CScriptBind_Entity()
 //////////////////////////////////////////////////////////////////////////
 void CScriptBind_Entity::DelegateCalls(IScriptTable* pInstanceTable)
 {
-	assert(pInstanceTable);
+	CRY_ASSERT(pInstanceTable);
 	pInstanceTable->Delegate(m_pMethodsTable);
 }
 
 //////////////////////////////////////////////////////////////////////////
 IEntity* CScriptBind_Entity::GetEntity(IFunctionHandler* pH)
 {
-	IEntity* pEntity = NULL;
+	IEntity* pEntity = nullptr;
 	//IEntity *pEntity = (IEntity*)pH->GetThis();
 	//if (!pEntity)
 	{
@@ -617,7 +617,7 @@ IEntity* CScriptBind_Entity::GetEntity(IFunctionHandler* pH)
 			}
 		}
 	}
-	//assert(pEntity);
+	//CRY_ASSERT(pEntity);
 	return pEntity;
 }
 
@@ -756,6 +756,7 @@ int CScriptBind_Entity::GetWorldAngles(IFunctionHandler* pH)
 int CScriptBind_Entity::SetScale(IFunctionHandler* pH, float fScale)
 {
 	GET_ENTITY;
+
 	if (!gEnv->bMultiplayer)
 		pEntity->SetScale(Vec3(fScale, fScale, fScale));
 
@@ -788,6 +789,7 @@ int CScriptBind_Entity::GetWorldScale(IFunctionHandler* pH)
 	return pH->EndFunction(fScale);
 }
 
+//////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::GetBoneLocal(IFunctionHandler* pH, const char* boneName, Vec3 trgDir)
 {
 	GET_ENTITY;
@@ -822,7 +824,6 @@ int CScriptBind_Entity::GetBoneLocal(IFunctionHandler* pH, const char* boneName,
 }
 
 //////////////////////////////////////////////////////////////////////////
-
 int CScriptBind_Entity::CalcWorldAnglesFromRelativeDir(IFunctionHandler* pH, Vec3 dir)
 {
 	GET_ENTITY;
@@ -838,6 +839,7 @@ int CScriptBind_Entity::CalcWorldAnglesFromRelativeDir(IFunctionHandler* pH, Vec
 	return pH->EndFunction(ang);
 }
 
+//////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::IsEntityInside(IFunctionHandler* pH, ScriptHandle entityId)
 {
 	IEntity* pProbe = m_pEntitySystem->GetEntity((EntityId)entityId.n);
@@ -1166,7 +1168,7 @@ int CScriptBind_Entity::LoadObjectWithFlags(IFunctionHandler* pH, int nSlot, con
 	}
 	else
 	{
-		nSlot = pEntity->LoadGeometry(nSlot, sFilename, NULL, loadFlags);
+		nSlot = pEntity->LoadGeometry(nSlot, sFilename, nullptr, loadFlags);
 	}
 
 	if (nSlot < 0)
@@ -1277,7 +1279,7 @@ int CScriptBind_Entity::SetSelfAsLightCasterException(IFunctionHandler* pH, int 
 		return pH->EndFunction();
 
 	ILightSource* pLightSource = slotLightInfo.pLight;
-	IRenderNode* pRenderNode = NULL;
+	IRenderNode* pRenderNode = nullptr;
 	if (IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
 		pRenderNode = pRenderProxy->GetRenderNode();
 
@@ -1311,6 +1313,32 @@ int CScriptBind_Entity::SetCloudMovementProperties(IFunctionHandler* pH, int nSl
 		if (nSlot < 0)
 			return pH->EndFunction();
 	}
+	return pH->EndFunction(nSlot);
+}
+
+//////////////////////////////////////////////////////////////////////////
+int CScriptBind_Entity::LoadCloudBlocker(IFunctionHandler* pH, int nSlot, SmartScriptTable table)
+{
+	GET_ENTITY;
+
+	SCloudBlockerProperties properties;
+	properties.decayStart = 0.0f;
+	properties.decayEnd = 0.0f;
+	properties.decayInfluence = 0.0f;
+	int screenSpace = 0;
+
+	table->GetValue("DecayStart", properties.decayStart);
+	table->GetValue("DecayEnd", properties.decayEnd);
+	table->GetValue("fDecayInfluence", properties.decayInfluence);
+	table->GetValue("bScreenSpace", screenSpace);
+
+	properties.decayStart = max(0.0f, properties.decayStart);
+	properties.decayEnd = max(0.0f, properties.decayEnd);
+	properties.decayInfluence = clamp_tpl<float>(properties.decayInfluence, 0.0f, 1.0f);
+	properties.bScreenspace = (screenSpace != 0) ? true : false;
+
+	pEntity->LoadCloudBlocker(nSlot, properties);
+
 	return pH->EndFunction(nSlot);
 }
 
@@ -1402,6 +1430,7 @@ int CScriptBind_Entity::LoadParticleEffect(IFunctionHandler* pH, int nSlot, cons
 		chain.GetValue("bCountPerUnit", params.bCountPerUnit);
 		chain.GetValue("bPrime", params.bPrime);
 		chain.GetValue("bRegisterByBBox", params.bRegisterByBBox);
+		chain.GetValue("iSeed", params.nSeed);
 
 		SmartScriptTable audio;
 
@@ -1448,12 +1477,12 @@ int CScriptBind_Entity::LoadParticleEffect(IFunctionHandler* pH, int nSlot, cons
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::PreLoadParticleEffect(IFunctionHandler* pH, const char* sEffectName)
 {
-	IParticleEffect* piEffect = NULL;
+	IParticleEffect* piEffect = nullptr;
 	if (sEffectName && sEffectName[0] != '\0')
 	{
 		piEffect = gEnv->pParticleManager->FindEffect(sEffectName);
 
-		if (piEffect == NULL)
+		if (piEffect == nullptr)
 		{
 			CryLog("LUA is Unable to Precache Effect <%s> because it does not exist!", sEffectName);
 
@@ -1708,7 +1737,7 @@ int CScriptBind_Entity::SetSlotHud3D(IFunctionHandler* pH, int nSlot)
 	pEntity->SetSlotFlags(nSlot, pEntity->GetSlotFlags(nSlot) | ENTITY_SLOT_RENDER_AFTER_POSTPROCESSING | ENTITY_SLOT_RENDER_NEAREST);
 
 	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	IRenderNode* pRenderNode = pRenderProxy ? pRenderProxy->GetRenderNode() : NULL;
+	IRenderNode* pRenderNode = pRenderProxy ? pRenderProxy->GetRenderNode() : nullptr;
 	if (pRenderNode)
 	{
 		pRenderNode->SetRndFlags(ERF_HUD | ERF_RENDER_ALWAYS | ERF_NO_DECALNODE_DECALS, true);
@@ -1893,7 +1922,7 @@ int CScriptBind_Entity::ReattachSoftEntityVtx(IFunctionHandler* pH, ScriptHandle
 
 	EntityId attachEntityToId = (EntityId)entityId.n;
 	IEntity* pEntityAttach = gEnv->pEntitySystem->GetEntity(attachEntityToId);
-	IPhysicalEntity* pPhysEntityAttach = pEntityAttach ? pEntityAttach->GetPhysics() : NULL;
+	IPhysicalEntity* pPhysEntityAttach = pEntityAttach ? pEntityAttach->GetPhysics() : nullptr;
 
 	pEntity->GetPhysicalProxy()->ReattachSoftEntityVtx(pPhysEntityAttach, partId);
 
@@ -2071,7 +2100,6 @@ int CScriptBind_Entity::DestroyAttachment(IFunctionHandler* pH, int characterSlo
 	GET_ENTITY;
 
 	ICharacterInstance* pCharacter = pEntity->GetCharacter(characterSlot);
-
 	if (!pCharacter)
 	{
 		return pH->EndFunction();
@@ -2518,7 +2546,7 @@ int CScriptBind_Entity::AttachChild(IFunctionHandler* pH, ScriptHandle childEnti
 		if (pEntity == pChildEntity)
 		{
 			gEnv->pLog->LogError("FATAL ERROR: CScriptBind_Entity::AttachChild '%s' to itself", pEntity->GetName());
-			assert(0);
+			CRY_ASSERT(0);
 		}
 		else pEntity->AttachChild(pChildEntity, flags);
 	}
@@ -2826,7 +2854,7 @@ int CScriptBind_Entity::StartAnimation(IFunctionHandler* pH)
 	if (!pCharacter)
 		return pH->EndFunction(false);
 
-	if (stricmp(animname, "NULL") == 0)
+	if (stricmp(animname, "nullptr") == 0)
 	{
 		bool result = pCharacter->GetISkeletonAnim()->StopAnimationInLayer(layer, 0.0f);
 		return pH->EndFunction(result);
@@ -3009,7 +3037,7 @@ int CScriptBind_Entity::GetHelperPos(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 	//	SCRIPT_CHECK_PARAMETERS(1);
-	//assert(pH->GetParamCount() == 1 || pH->GetParamCount() == 2 || pH->GetParamCount() == 3);
+	//CRY_ASSERT(pH->GetParamCount() == 1 || pH->GetParamCount() == 2 || pH->GetParamCount() == 3);
 
 	const char* helper;
 	bool bUseObjectSpace = false;
@@ -3030,7 +3058,7 @@ int CScriptBind_Entity::GetHelperPos(IFunctionHandler* pH)
 		IStatObj* pObj = pEntity->GetStatObj(i);
 		if (pObj)
 		{
-			if (pObj->GetGeoName() != NULL)
+			if (pObj->GetGeoName() != nullptr)
 			{
 				_smart_ptr<IStatObj> pRootObj = gEnv->p3DEngine->LoadStatObj(pObj->GetFilePath());
 				if (pRootObj)
@@ -3099,7 +3127,7 @@ int CScriptBind_Entity::GetHelperDir(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 	//	SCRIPT_CHECK_PARAMETERS(1);
-	//assert(pH->GetParamCount() == 1 || pH->GetParamCount() == 2);
+	//CRY_ASSERT(pH->GetParamCount() == 1 || pH->GetParamCount() == 2);
 
 	const char* helper;
 	bool bUseObjectSpace = false;
@@ -3147,7 +3175,7 @@ int CScriptBind_Entity::GetHelperAngles(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 	//	SCRIPT_CHECK_PARAMETERS(1);
-	//assert(pH->GetParamCount() == 1 || pH->GetParamCount() == 2);
+	//CRY_ASSERT(pH->GetParamCount() == 1 || pH->GetParamCount() == 2);
 
 	const char* helper;
 	bool bUseObjectSpace = false;
@@ -3554,7 +3582,9 @@ int CScriptBind_Entity::SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEnt
 		pTable->GetValue("intergration_type", vehicle_params.iIntegrationType);
 		pTable->GetValue("max_time_step_vehicle", vehicle_params.maxTimeStep);
 		if (pTable->GetValue("sleep_speed_vehicle", fSpeed))
+		{
 			vehicle_params.minEnergy = fSpeed * fSpeed;
+		}
 		pTable->GetValue("damping_vehicle", vehicle_params.damping);
 		pTable->GetValue("max_braking_friction", vehicle_params.maxBrakingFriction);
 		pTable->GetValue("engine_minRPM", vehicle_params.engineMinRPM);
@@ -4373,31 +4403,28 @@ int CScriptBind_Entity::SetAudioObstructionCalcType(IFunctionHandler* pH, int co
 
 	if (pIEntityAudioProxy)
 	{
-		EAudioOcclusionType eObstructionCalcType = eAudioOcclusionType_None;
+		EAudioOcclusionType audioOcclusionType = eAudioOcclusionType_None;
 
 		switch (nObstructionCalcType)
 		{
 		case 1:
-			{
-				eObstructionCalcType = eAudioOcclusionType_Ignore;
-
-				break;
-			}
+			audioOcclusionType = eAudioOcclusionType_Ignore;
+			break;
 		case 2:
-			{
-				eObstructionCalcType = eAudioOcclusionType_SingleRay;
-
-				break;
-			}
+			audioOcclusionType = eAudioOcclusionType_Adaptive;
+			break;
 		case 3:
-			{
-				eObstructionCalcType = eAudioOcclusionType_MultiRay;
-
-				break;
-			}
+			audioOcclusionType = eAudioOcclusionType_Low;
+			break;
+		case 4:
+			audioOcclusionType = eAudioOcclusionType_Medium;
+			break;
+		case 5:
+			audioOcclusionType = eAudioOcclusionType_High;
+			break;
 		}
 
-		pIEntityAudioProxy->SetObstructionCalcType(eObstructionCalcType, HandleToInt<AudioProxyId>(hAudioProxyLocalID));
+		pIEntityAudioProxy->SetObstructionCalcType(audioOcclusionType, HandleToInt<AudioProxyId>(hAudioProxyLocalID));
 	}
 
 	return pH->EndFunction();
@@ -4462,74 +4489,58 @@ int CScriptBind_Entity::SetAudioEnvironmentID(IFunctionHandler* pH, ScriptHandle
 
 	if (pIEntityAudioProxy)
 	{
-		AudioEnvironmentId const nAudioEnvironmentIDToSet = HandleToInt<AudioEnvironmentId>(hAudioEnvironmentID);
-		AudioEnvironmentId const nAudioEnvironmentIDToUnset = pIEntityAudioProxy->GetEnvironmentID();
+		AudioEnvironmentId const audioEnvironmentIdToSet = HandleToInt<AudioEnvironmentId>(hAudioEnvironmentID);
+		AudioEnvironmentId const audioEnvironmentIdToUnset = pIEntityAudioProxy->GetEnvironmentId();
 
-		pIEntityAudioProxy->SetEnvironmentId(nAudioEnvironmentIDToSet);
+		pIEntityAudioProxy->SetEnvironmentId(audioEnvironmentIdToSet);
 
-		int nFlag = 0;
-		nFlag |= (nAudioEnvironmentIDToSet == INVALID_AUDIO_ENVIRONMENT_ID && nAudioEnvironmentIDToUnset != INVALID_AUDIO_ENVIRONMENT_ID) << 0;
-		nFlag |= (nAudioEnvironmentIDToSet != INVALID_AUDIO_ENVIRONMENT_ID && nAudioEnvironmentIDToUnset == INVALID_AUDIO_ENVIRONMENT_ID) << 1;
-		nFlag |= (nAudioEnvironmentIDToSet != INVALID_AUDIO_ENVIRONMENT_ID && nAudioEnvironmentIDToUnset != INVALID_AUDIO_ENVIRONMENT_ID) << 2;
+		int flag = 0;
+		flag |= (audioEnvironmentIdToSet == INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset != INVALID_AUDIO_ENVIRONMENT_ID) << 0;
+		flag |= (audioEnvironmentIdToSet != INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset == INVALID_AUDIO_ENVIRONMENT_ID) << 1;
+		flag |= (audioEnvironmentIdToSet != INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset != INVALID_AUDIO_ENVIRONMENT_ID) << 2;
 
 		// The audio environment is being tampered with, we need to inform all entities affected by the area.
-		TAreaPointers apAreas;
+		TAreaPointers areas;
 
-		if (nFlag > 0 && static_cast<CAreaManager*>(m_pEntitySystem->GetAreaManager())->GetLinkedAreas(pEntity->GetId(), -1, apAreas))
+		if (flag > 0 && static_cast<CAreaManager*>(m_pEntitySystem->GetAreaManager())->GetLinkedAreas(pEntity->GetId(), -1, areas))
 		{
-			TAreaPointers::const_iterator IterAreas(apAreas.begin());
-			TAreaPointers::const_iterator const IterAreasEnd(apAreas.end());
-
-			for (; IterAreas != IterAreasEnd; ++IterAreas)
+			for (auto const pArea : areas)
 			{
-				CArea* const pArea = *IterAreas;
-				SEntityProximityQuery oQuery;
-				oQuery.nEntityFlags = 0;
-				oQuery.pEntityClass = NULL;
-				Vec3 oMin, oMax;
-				pArea->GetWorldBox(oMin, oMax);
-				float const fFadeDistance = pArea->GetGreatestFadeDistance();
-				oQuery.box.min = oMin - Vec3(fFadeDistance, fFadeDistance, fFadeDistance);
-				oQuery.box.max = oMax + Vec3(fFadeDistance, fFadeDistance, fFadeDistance);
-				gEnv->pEntitySystem->QueryProximity(oQuery);
+				SEntityProximityQuery query;
+				query.nEntityFlags = 0;
+				query.pEntityClass = nullptr;
+				Vec3 boxMin, boxMax;
+				pArea->GetWorldBox(boxMin, boxMax);
+				float const environmentFadeDistance = pArea->GetEnvironmentFadeDistance();
+				query.box.min = boxMin - Vec3(environmentFadeDistance, environmentFadeDistance, environmentFadeDistance);
+				query.box.max = boxMax + Vec3(environmentFadeDistance, environmentFadeDistance, environmentFadeDistance);
+				gEnv->pEntitySystem->QueryProximity(query);
 
-				for (int i = 0; i < oQuery.nCount; ++i)
+				for (int i = 0; i < query.nCount; ++i)
 				{
-					IEntity* const pIEntity = oQuery.pEntities[i];
+					IEntity* const pIEntity = query.pEntities[i];
 
-					if (pIEntity != NULL)
+					if (pIEntity != nullptr)
 					{
 						IEntityAudioProxy* const pIEntityAudioProxyToAdjust = (IEntityAudioProxy*)pIEntity->GetProxy(ENTITY_PROXY_AUDIO);
 
-						if (pIEntityAudioProxyToAdjust != NULL)
+						if (pIEntityAudioProxyToAdjust != nullptr)
 						{
-							switch (nFlag)
+							switch (flag)
 							{
 							case 1 << 0:
-									  {
-									  pIEntityAudioProxyToAdjust->SetEnvironmentAmount(nAudioEnvironmentIDToUnset, 0.0f, INVALID_AUDIO_PROXY_ID);
-
-									  break;
-								  }
-								  case 1 << 1:
-									  {
-									  pIEntityAudioProxyToAdjust->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
-
-									  break;
-								  }
-								  case 1 << 2:
-									  {
-									  pIEntityAudioProxyToAdjust->SetEnvironmentAmount(nAudioEnvironmentIDToUnset, 0.0f, INVALID_AUDIO_PROXY_ID);
-									  pIEntityAudioProxyToAdjust->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
-
-									  break;
-								  }
-								  default:
-									  {
-									  assert(false);
-
-									  break;
-								  }
+								  pIEntityAudioProxyToAdjust->SetEnvironmentAmount(audioEnvironmentIdToUnset, 0.0f, INVALID_AUDIO_PROXY_ID);
+								break;
+							case 1 << 1:
+								  pIEntityAudioProxyToAdjust->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
+								break;
+							case 1 << 2:
+								  pIEntityAudioProxyToAdjust->SetEnvironmentAmount(audioEnvironmentIdToUnset, 0.0f, INVALID_AUDIO_PROXY_ID);
+								pIEntityAudioProxyToAdjust->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
+								break;
+							default:
+								CRY_ASSERT(false);
+								break;
 							}
 						}
 					}
@@ -4917,7 +4928,7 @@ int CScriptBind_Entity::SetPublicParam(IFunctionHandler* pH)
 	/*
 	   IEntityRenderProxy *pProxy = (IEntityRenderProxy *) pEntity->GetProxy(ENTITY_PROXY_RENDER);
 
-	   IShaderPublicParams *pPublicParams = NULL; //pProxy->GetShaderPublicParams();
+	   IShaderPublicParams *pPublicParams = nullptr; //pProxy->GetShaderPublicParams();
 
 	   for (int i = 0; i < pPublicParams->GetParamCount(); i++)
 	   {
@@ -4950,14 +4961,6 @@ int CScriptBind_Entity::IsActive(IFunctionHandler* pH)
 	GET_ENTITY;
 	bool bActive = pEntity->IsActive();
 	return pH->EndFunction(bActive);
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CScriptBind_Entity::IsFromPool(IFunctionHandler* pH)
-{
-	GET_ENTITY;
-	const bool bFromPool = pEntity->IsFromPool();
-	return pH->EndFunction(bFromPool);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -5035,7 +5038,7 @@ int CScriptBind_Entity::SetAnimationSpeed(IFunctionHandler* pH, int characterSlo
 int CScriptBind_Entity::SetAnimationTime(IFunctionHandler* pH, int nSlot, int nLayer, float fNormalizedTime)
 {
 	GET_ENTITY;
-	assert(fNormalizedTime >= 0.0f && fNormalizedTime <= 1.0f);
+	CRY_ASSERT(fNormalizedTime >= 0.0f && fNormalizedTime <= 1.0f);
 	ICharacterInstance* pCharacter = pEntity->GetCharacter(nSlot);
 	if (pCharacter)
 	{
@@ -5503,7 +5506,7 @@ int CScriptBind_Entity::GetCurAnimation(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 	int iPos;
-	ICharacterInstance* pCharacter = NULL;
+	ICharacterInstance* pCharacter = nullptr;
 
 	SCRIPT_CHECK_PARAMETERS(1);
 
@@ -5586,7 +5589,7 @@ int CScriptBind_Entity::GetBonePos(IFunctionHandler* pH)
 
 	Vec3 JointPos = pCharacter->GetISkeletonPose()->GetAbsJointByID(id).t;
 	Vec3 vBonePos = pEntity->GetSlotWorldTM(0) * JointPos; //pEntity->GetWorldTM().TransformPoint( pBone->GetBonePosition() );
-	assert(!_isnan(vBonePos.x + vBonePos.y + vBonePos.z));
+	CRY_ASSERT(!_isnan(vBonePos.x + vBonePos.y + vBonePos.z));
 
 	//	Vec3 vBonePos = pEntity->GetSlotWorldTM(0) * pBone->GetBonePosition(); //pEntity->GetWorldTM().TransformPoint( pBone->GetBonePosition() );
 	return pH->EndFunction(Script::SetCachedVector(vBonePos, pH, 2));
@@ -5637,7 +5640,6 @@ int CScriptBind_Entity::GetBoneVelocity(IFunctionHandler* pH, int characterSlot,
 			{
 				pe_status_dynamics dyn;
 				dyn.partid = pBone_id;//pBone->GetId();
-
 				pPhysics->GetStatus(&dyn);
 				v = dyn.v;
 			}
@@ -5859,9 +5861,9 @@ int CScriptBind_Entity::SetDefaultIdleAnimations(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 	//SCRIPT_CHECK_PARAMETERS(1);
-	assert(pH->GetParamCount() == 1 || pH->GetParamCount() == 2);
+	CRY_ASSERT(pH->GetParamCount() == 1 || pH->GetParamCount() == 2);
 
-	const char* animname = NULL;
+	const char* animname = nullptr;
 	int pos;
 	pH->GetParam(1, pos);
 	if (pH->GetParamCount() > 1)
@@ -5960,9 +5962,9 @@ int CScriptBind_Entity::GetMaterial(IFunctionHandler* pH)
 		int slot;
 		if (pH->GetParamCount() > 0 && pH->GetParam(1, slot))
 		{
-			IMaterial* pMat = NULL;
+			IMaterial* pMat = nullptr;
 
-			CEntityObject* obj = pEntity->GetRenderProxy() ? pEntity->GetRenderProxy()->GetSlot(slot) : NULL;
+			CEntityObject* obj = pEntity->GetRenderProxy() ? pEntity->GetRenderProxy()->GetSlot(slot) : nullptr;
 			if (obj)
 			{
 				if (obj->pCharacter)
@@ -6133,7 +6135,7 @@ int CScriptBind_Entity::CloneMaterial(IFunctionHandler* pH, int slot)
 		IMaterial* pMtl = pRenderProxy->GetRenderMaterial(slot);
 		if (pMtl)
 		{
-			const char* sSubMtlName = NULL;
+			const char* sSubMtlName = nullptr;
 			if (pH->GetParamCount() > 1)
 				pH->GetParam(2, sSubMtlName);
 			IMaterial* pCloned = pMtl->GetMaterialManager()->CloneMultiMaterial(pMtl, sSubMtlName);
@@ -6256,7 +6258,7 @@ int CScriptBind_Entity::MaterialFlashInvoke(IFunctionHandler* pH)
 	pH->GetParam(4, pMethodName);
 
 	int numArgs(pH->GetParamCount() - 4); // number of arguments to AS script call
-	assert(numArgs >= 0);
+	CRY_ASSERT(numArgs >= 0);
 
 	// build variable argument list
 	PREFAST_SUPPRESS_WARNING(6255) SFlashVarValue * pArgList = numArgs != 0 ? (SFlashVarValue*) alloca(sizeof(SFlashVarValue) * numArgs) : 0;
@@ -6287,7 +6289,7 @@ int CScriptBind_Entity::MaterialFlashInvoke(IFunctionHandler* pH)
 				}
 			default:
 				{
-					assert(0); // unsupported type
+					CRY_ASSERT(0); // unsupported type
 					pArgList[i] = SFlashVarValue::CreateUndefined();
 				}
 			}
@@ -7028,7 +7030,6 @@ int CScriptBind_Entity::CharacterUpdateAlways(IFunctionHandler* pH, int characte
 
 	if (pCharacter)
 		pCharacter->SetFlags(pCharacter->GetFlags() | CS_FLAG_UPDATE_ALWAYS);
-
 	return pH->EndFunction();
 }
 
@@ -7081,7 +7082,7 @@ int CScriptBind_Entity::Hide(IFunctionHandler* pH)
 int CScriptBind_Entity::CheckCollisions(IFunctionHandler* pH)
 {
 	GET_ENTITY;
-	assert(pH->GetParamCount() <= 2);
+	CRY_ASSERT(pH->GetParamCount() <= 2);
 	int iEntTypes = ent_sleeping_rigid | ent_rigid | ent_living, iCollTypes = -1;
 	pH->GetParam(1, iEntTypes);
 	pH->GetParam(2, iCollTypes);
@@ -7454,7 +7455,7 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, CDLight& li
 			}
 
 			char diffuseCubemap[ICryPak::g_nMaxPath];
-			cry_sprintf(diffuseCubemap, "%s%s%s.%s", PathUtil::AddSlash(PathUtil::GetPath(specularCubemap)).c_str(),
+			cry_sprintf(diffuseCubemap, "%s%s%s.%s", PathUtil::AddSlash(PathUtil::GetPathWithoutFilename(specularCubemap)).c_str(),
 			            PathUtil::GetFileName(specularCubemap).c_str(), "_diff", PathUtil::GetExt(specularCubemap));
 
 			// '\\' in filename causing texture duplication
@@ -7509,8 +7510,6 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, CDLight& li
 		light.m_Flags |= DLF_VOLUMETRIC_FOG;
 	if (chain.GetValue("volumetric_fog_only", flag) && flag)
 		light.m_Flags |= DLF_VOLUMETRIC_FOG_ONLY;
-	if (chain.GetValue("irradiance_volumes", flag) && flag)
-		light.m_Flags |= DLF_ALLOW_LPV;
 	Vec3 color;
 	if (chain.GetValue("diffuse_color", color))
 		light.SetLightColor(ColorF(color.x, color.y, color.z, 1.0f));
@@ -7635,7 +7634,7 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, CDLight& li
 			}
 			else
 			{
-				light.SetLensOpticsElement(NULL);
+				light.SetLensOpticsElement(nullptr);
 			}
 		}
 		else if (flareName && flareName[0] && strcmp(flareName, "@root"))
@@ -7715,7 +7714,7 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, CDLight& li
 	if (bTimeScrubbingInTrackView)
 		light.m_Flags |= DLF_TRACKVIEW_TIMESCRUBBING;
 
-	if (!(light.m_Flags & DLF_AREA_LIGHT) && light.m_fLightFrustumAngle && (light.m_pLightImage != NULL) && light.m_pLightImage->IsTextureLoaded() || light.m_pLightDynTexSource)
+	if (!(light.m_Flags & DLF_AREA_LIGHT) && light.m_fLightFrustumAngle && (light.m_pLightImage != nullptr) && light.m_pLightImage->IsTextureLoaded() || light.m_pLightDynTexSource)
 		light.m_Flags |= DLF_PROJECT;
 	else
 	{
@@ -8325,7 +8324,7 @@ int CScriptBind_Entity::IntersectRay(IFunctionHandler* pH, int slot, Vec3 rayOri
 
 				resultCount += hits;
 
-				assert(resultCount <= 32);
+				CRY_ASSERT(resultCount <= 32);
 				if (resultCount >= 32)
 				{
 					break;
@@ -8385,7 +8384,7 @@ int CScriptBind_Entity::IStatObjRayIntersect(IStatObj* pStatObj, const Vec3& ray
 
 	int hitCount = 0;
 
-	assert((indexCount % 3) == 0);
+	CRY_ASSERT((indexCount % 3) == 0);
 
 	for (int i = 0; i < indexCount; i += 3)
 	{
@@ -8506,7 +8505,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 	IEntityClass* pEntityClass = pEntity->GetClass();
 	if (!pEntityClass->FindEventInfo(sEventName, eventInfo))
 	{
-		EntityWarning("ActivateOutput called with undefined event %s for entity %s", sEventName, pEntity->GetEntityTextDescription());
+		EntityWarning("ActivateOutput called with undefined event %s for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 		return pH->EndFunction();
 	}
 
@@ -8520,7 +8519,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 		{
 			int value = 0;
 			if (!pH->GetParam(2, value))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			event.nParam[2] = (INT_PTR)&value;
 			pEntity->SendEvent(event);
 		}
@@ -8529,7 +8528,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 		{
 			float value = 0;
 			if (!pH->GetParam(2, value))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			event.nParam[2] = (INT_PTR)&value;
 			pEntity->SendEvent(event);
 		}
@@ -8538,7 +8537,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 		{
 			bool value = false;
 			if (!pH->GetParam(2, value))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			event.nParam[2] = (INT_PTR)&value;
 			pEntity->SendEvent(event);
 		}
@@ -8547,7 +8546,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 		{
 			Vec3 value(0, 0, 0);
 			if (!pH->GetParam(2, value))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			event.nParam[2] = (INT_PTR)&value;
 			pEntity->SendEvent(event);
 		}
@@ -8557,7 +8556,7 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 			EntityId value = 0;
 			ScriptHandle entityId;
 			if (!pH->GetParam(2, entityId))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			value = (EntityId)entityId.n;
 			event.nParam[2] = (INT_PTR)&value;
 			pEntity->SendEvent(event);
@@ -8567,13 +8566,13 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 		{
 			const char* value = "";
 			if (!pH->GetParam(2, value))
-				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription());
+				EntityWarning("ActivateOutput(%s,value) called with wrong type for 2nd parameter for entity %s", sEventName, pEntity->GetEntityTextDescription().c_str());
 			event.nParam[2] = (INT_PTR)value;
 			pEntity->SendEvent(event);
 		}
 		break;
 	default:
-		assert(0);
+		CRY_ASSERT(0);
 	}
 
 	return pH->EndFunction();
@@ -8780,7 +8779,7 @@ int CScriptBind_Entity::RenderAlways(IFunctionHandler* pH, int enable)
 	GET_ENTITY;
 
 	IEntityRenderProxy* pRenderProxy(pEntity->GetRenderProxy());
-	IRenderNode* pRenderNode = (pRenderProxy != NULL) ? pRenderProxy->GetRenderNode() : NULL;
+	IRenderNode* pRenderNode = (pRenderProxy != nullptr) ? pRenderProxy->GetRenderNode() : nullptr;
 	if (pRenderNode)
 	{
 		pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS, (enable != 0) ? true : false);

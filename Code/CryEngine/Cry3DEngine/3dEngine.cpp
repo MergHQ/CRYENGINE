@@ -53,8 +53,6 @@
 #include "RopeRenderNode.h"
 #include "RenderMeshMerger.h"
 #include "PhysCallbacks.h"
-#include "LPVRenderNode.h"
-#include "GlobalIllumination.h"
 #include "DeferredCollisionEvent.h"
 #include "MergedMeshRenderNode.h"
 #include "BreakableGlassRenderNode.h"
@@ -64,6 +62,8 @@
 #include "GeomCacheManager.h"
 #include "ClipVolumeManager.h"
 #include <CryNetwork/IRemoteCommand.h>
+#include "CloudBlockerRenderNode.h"
+#include "WaterRippleManager.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "SVO/SceneTreeManager.h"
@@ -94,7 +94,6 @@ CVars* Cry3DEngineBase::m_pCVars = 0;
 ICryPak* Cry3DEngineBase::m_pCryPak = 0;
 IParticleManager* Cry3DEngineBase::m_pPartManager = 0;
 std::shared_ptr<pfx2::IParticleSystem> Cry3DEngineBase::m_pParticleSystem;
-extern volatile bool gParticleSystem; // HACK : check ParticleSystem.cpp for the reasoning behind this
 IOpticsManager* Cry3DEngineBase::m_pOpticsManager = 0;
 CDecalManager* Cry3DEngineBase::m_pDecalManager = 0;
 CSkyLightManager* Cry3DEngineBase::m_pSkyLightManager = 0;
@@ -213,12 +212,12 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_pDecalManager = 0;    //new CDecalManager   (m_pSystem, this);
 	m_pCloudsManager = new CCloudsManager;
 	m_pPartManager = 0;
-	gParticleSystem = true;
 	m_pOpticsManager = 0;
 	m_pVisAreaManager = 0;
 	m_pClipVolumeManager = new CClipVolumeManager();
 	m_pSkyLightManager = CryAlignedNew<CSkyLightManager>();
 	m_pWaterWaveManager = 0;
+	m_pWaterRippleManager.reset(new CWaterRippleManager());
 
 	// create REs
 	m_pRESky = 0;
@@ -242,6 +241,7 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_nOceanRenderFlags = 0;
 
 	m_bSunShadows = m_bShowTerrainSurface = true;
+	m_bSunShadowsFromTerrain = false;
 	m_nSunAdditionalCascades = 0;
 	m_CachedShadowsBounds.Reset();
 	m_nCachedShadowsUpdateStrategy = ShadowMapFrustum::ShadowCacheData::eFullUpdate;
@@ -390,8 +390,6 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_pSegmentsManager = 0;
 	m_bSegmentOperationInProgress = false;
 
-	m_pGlobalIlluminationManager = NULL;
-
 	ClearDebugFPSInfo();
 
 	m_fMaxViewDistScale = 1.f;
@@ -526,6 +524,9 @@ bool C3DEngine::Init()
 	m_pOpticsManager = new COpticsManager;
 	m_pSystem->SetIOpticsManager(m_pOpticsManager);
 
+	CRY_ASSERT(m_pWaterRippleManager);
+	m_pWaterRippleManager->Initialize();
+
 	for (int i = 0; i < eERType_TypesNum; i++)
 	{
 		m_bRenderTypeEnabled[i] = true;
@@ -602,6 +603,7 @@ void C3DEngine::OnFrameStart()
 		m_pPartManager->OnFrameStart();
 	if (m_pParticleSystem)
 		m_pParticleSystem->OnFrameStart();
+
 	m_nRenderWorldUSecs = 0;
 	m_pDeferredPhysicsEventManager->Update();
 
@@ -613,6 +615,11 @@ void C3DEngine::OnFrameStart()
 #endif
 
 	UpdateWindAreas();
+
+	if (m_pWaterRippleManager)
+	{
+		m_pWaterRippleManager->OnFrameStart();
+	}
 }
 
 float g_oceanLevel, g_oceanStep;
@@ -899,6 +906,10 @@ void C3DEngine::ShutDown()
 		m_pOpticsManager = 0;
 		m_pSystem->SetIOpticsManager(m_pOpticsManager);
 	}
+
+	CRY_ASSERT(m_pWaterRippleManager);
+	m_pWaterRippleManager->Finalize();
+	m_pWaterRippleManager.reset();
 
 	CryAlignedDelete(m_pObjManager);
 	m_pObjManager = 0;
@@ -1220,16 +1231,36 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 		// alwasy set camera to request postion for the renderer, allows debugging with e_camerafreeze
 		if (GetRenderer())
 		{
-			GetRenderer()->SetCamera(gEnv->pSystem->GetViewCamera());
+			const CCamera& currentCamera = gEnv->pSystem->GetViewCamera();
+			static CCamera previousCamera = gEnv->pSystem->GetViewCamera();
+
+			GetRenderer()->SetCamera(currentCamera);
+
+			if (auto pRenderView = passInfo.GetIRenderView())
+			{
+				pRenderView->SetCameras(&currentCamera, 1);
+				pRenderView->SetPreviousFrameCameras(&previousCamera, 1);
+			}
+
+			previousCamera = currentCamera;
 		}
 	}
 	else
 	{
+		CCamera previousCam = m_RenderingCamera;
 		m_RenderingCamera = newCam;
+
 		// alwasy set camera to request postion for the renderer, allows debugging with e_camerafreeze
 		if (GetRenderer())
 		{
 			GetRenderer()->SetCamera(newCam);
+
+			if (auto pRenderView = passInfo.GetIRenderView())
+			{
+				pRenderView->SetCameras(&newCam, 1);
+				pRenderView->SetPreviousFrameCameras(&previousCam, 1);
+			}
+
 		}
 	}
 
@@ -1246,11 +1277,6 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 		else
 			assert(IsEquivalent(passInfo.GetCamera().GetViewdir(), GetObjManager()->m_CullThread.GetViewDir())); // early set camera differs from current main camera - will cause occlusion errors
 	}
-
-	/////////////////////////////////////////////////////////////////////////////
-	// update all system which depend on the 3dengine camera
-	if (m_pGlobalIlluminationManager)
-		m_pGlobalIlluminationManager->UpdatePosition(passInfo);
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Update Foliage
@@ -1279,7 +1305,6 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 			PrintMessage("C3DEngine::RegisterEntity__GetObjManager()->UpdateRenderNodeStreamingPriority %s", pRenderNode->GetName());
 	}
 	m_deferredRenderProxyStreamingPriorityUpdates.resize(0);
-
 }
 
 void C3DEngine::PrepareOcclusion(const CCamera& rCamera)
@@ -1372,8 +1397,8 @@ void C3DEngine::SelectEntity(IRenderNode* pEntity)
 
 void C3DEngine::CreateDecal(const struct CryEngineDecalInfo& decal)
 {
-	IF (!GetCVars()->e_DecalsAllowGameDecals, 0)
-		return;
+	IF(!GetCVars()->e_DecalsAllowGameDecals, 0)
+	return;
 
 	if (GetCVars()->e_Decals == 2)
 	{
@@ -1713,7 +1738,6 @@ bool C3DEngine::IsTessellationAllowedForShadowMap(const SRenderingPassInfo& pass
 	case SRenderingPassInfo::SHADOW_MAP_LOCAL:
 		return GetCVars()->e_ShadowsTessellateDLights != 0;
 	case SRenderingPassInfo::SHADOW_MAP_NONE:
-	case SRenderingPassInfo::SHADOW_MAP_REFLECTIVE:
 	default:
 		return false;
 	}
@@ -2302,6 +2326,11 @@ void C3DEngine::GetMemoryUsage(class ICrySizer* pSizer) const
 		SIZER_COMPONENT_NAME(pSizer, "LayersBaseTextureData");
 		pSizer->AddObject(m_arrBaseTextureData);
 	}
+
+	{
+		SIZER_COMPONENT_NAME(pSizer, "WaterRipples");
+		pSizer->AddObject(m_pWaterRippleManager.get());
+	}
 }
 
 void C3DEngine::GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB)
@@ -2354,6 +2383,14 @@ void C3DEngine::GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB)
 		{
 			poTerrainNode->GetResourceMemoryUsage(pSizer, cstAABB);
 		}
+	}
+}
+
+void C3DEngine::AddWaterRipple(const Vec3& vPos, float scale, float strength)
+{
+	if (m_pWaterRippleManager)
+	{
+		m_pWaterRippleManager->AddWaterRipple(vPos, scale, strength);
 	}
 }
 
@@ -2916,11 +2953,6 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 			IVolumeObjectRenderNode* pRenderNode = new CVolumeObjectRenderNode();
 			return pRenderNode;
 		}
-	case eERType_LightPropagationVolume:
-		{
-			ILPVRenderNode* pRenderNode = new CLPVRenderNode();
-			return pRenderNode;
-		}
 #if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
 	case eERType_PrismObject:
 		{
@@ -2932,6 +2964,12 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 	case eERType_BreakableGlass:
 		{
 			IBreakableGlassRenderNode* pRenderNode = new CBreakableGlassRenderNode();
+			return pRenderNode;
+		}
+
+	case eERType_CloudBlocker:
+		{
+			IRenderNode* pRenderNode = new CCloudBlockerRenderNode();
 			return pRenderNode;
 		}
 
@@ -3149,20 +3187,27 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 	// 2 Step: Initialize the rest of the field by global wind value
 	const int nSize = rWindGrid.m_nWidth * rWindGrid.m_nHeight;
 	Vec2 vWindCur = Vec2(vGlobalWind.x, vGlobalWind.y) * GetCVars()->e_WindBendingStrength;
+
+	CryHalf2* pData = &rWindGrid.m_pData[0];
+	int* pFrames = &m_pWindAreaFrames[0];
+	Vec2* pField = &m_pWindField[0];
+
 	for (x = 0; x < nSize; x++)
 	{
-		if (m_pWindAreaFrames[x] == nFrame)
+		if (pFrames[x] == nFrame)
 			continue;
-		m_pWindAreaFrames[x] = nFrame;
+		pFrames[x] = nFrame;
 
 		// Interpolate
-		Vec2 vWindInt = m_pWindField[x];
-		vWindInt += (vWindCur - vWindInt) * fInterp;
-		m_pWindField[x] = vWindInt;
+		{
+			Vec2 vWindInt = pField[x];
+			vWindInt += (vWindCur - vWindInt) * fInterp;
+			pField[x] = vWindInt;
 
-		Vec2 vBend = vWindInt * fBEND_RESPONSE;
-		vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
-		rWindGrid.m_pData[x] = CryHalf2(vBend.x, vBend.y);
+			Vec2 vBend = vWindInt * fBEND_RESPONSE;
+			vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
+			pData[x] = CryHalf2(vBend.x, vBend.y);
+		}
 	}
 }
 
@@ -3219,11 +3264,6 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 	assert(nYGrid >= 0 && nYGrid + (nY2 - nY1) <= rWindGrid.m_nHeight);
 	for (y = nY1; y < nY2; y++)
 	{
-		/*if (nYGrid >= rWindGrid.m_nHeight)
-		   {
-		   g_nWindError++;
-		   continue;
-		   }*/
 		// Setup scanline gradients
 		float fLerpY = ((float)y - areaBox.min.y) * fInvAreaY;      // 0..1
 		Vec3 windStart, windEnd;
@@ -3234,28 +3274,28 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 		int* pFrames = &m_pWindAreaFrames[nYGrid * rWindGrid.m_nWidth];
 		Vec2* pField = &m_pWindField[nYGrid * rWindGrid.m_nWidth];
 		int nX = nXGrid;
+
+		windStart *= fAreaStrength;
+		windDelta *= fAreaStrength;
+
+		Vec2 vWindCur = Vec2(windStart.x, windStart.y) + Vec2(vGlobalWind.x, vGlobalWind.y);
 		for (x = nX1; x < nX2; x++)
 		{
-			/*if (nX >= rWindGrid.m_nWidth)
-			   {
-			   g_nWindError++;
-			   continue;
-			   }*/
-			Vec2 vWindCur = Vec2(windStart.x, windStart.y) * fAreaStrength + Vec2(vGlobalWind.x, vGlobalWind.y);
-
 			// Interpolate
-			Vec2 vWindInt = pField[nX];
-			vWindInt += (vWindCur - vWindInt) * fInterp;
-			pField[nX] = vWindInt;
+			{
+				Vec2 vWindInt = pField[nX];
+				vWindInt += (vWindCur - vWindInt) * fInterp;
+				pField[nX] = vWindInt;
 
-			Vec2 vBend = vWindInt * fBEND_RESPONSE;
-			vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
-			pData[nX] = CryHalf2(vBend.x, vBend.y);
+				Vec2 vBend = vWindInt * fBEND_RESPONSE;
+				vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
+				pData[nX] = CryHalf2(vBend.x, vBend.y);
+			}
+
+			vWindCur += Vec2(windDelta.x, windDelta.y);
 
 			pFrames[nX] = nFrame;
 			nX++;
-
-			windStart += windDelta;
 		}
 		nYGrid++;
 	}
@@ -3273,18 +3313,18 @@ void C3DEngine::StartWindGridJob(const Vec3& vPos)
 	SWindGrid& rWindGrid = m_WindGrid[m_nCurWind];
 	if (!rWindGrid.m_pData)
 	{
+		rWindGrid.m_fCellSize = 1.0f;
 		rWindGrid.m_nWidth = 256;
 		rWindGrid.m_nHeight = 256;
-		rWindGrid.m_pData = new CryHalf2[rWindGrid.m_nWidth * rWindGrid.m_nHeight];
+		rWindGrid.m_pData = reinterpret_cast<CryHalf2*>(CryModuleMemalign(rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(CryHalf2), CRY_PLATFORM_ALIGNMENT));
 		memset(rWindGrid.m_pData, 0, rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(CryHalf2));
-		rWindGrid.m_fCellSize = 1.0f;
 
 		if (!m_pWindField)
 		{
-			m_pWindField = new Vec2[rWindGrid.m_nWidth * rWindGrid.m_nHeight];
+			m_pWindField = reinterpret_cast<Vec2*>(CryModuleMemalign(rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(Vec2), CRY_PLATFORM_ALIGNMENT));
 			memset(m_pWindField, 0, rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(Vec2));
 
-			m_pWindAreaFrames = new int[rWindGrid.m_nWidth * rWindGrid.m_nHeight];
+			m_pWindAreaFrames = reinterpret_cast<int*>(CryModuleMemalign(rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(int), CRY_PLATFORM_ALIGNMENT));
 			memset(m_pWindAreaFrames, 0, rWindGrid.m_nWidth * rWindGrid.m_nHeight * sizeof(int));
 		}
 	}
@@ -3592,17 +3632,14 @@ void C3DEngine::UpdateWindAreas()
 
 			// Sample wind at the corners of the area
 			pe_status_area area;
-			area.size = Vec3(0.1f, 0.1f, 0.1f);
-			windArea.point[0] = Vec2(b0.x, b0.y);
-			windArea.point[1] = Vec2(b1.x, b0.y);
-			windArea.point[2] = Vec2(b1.x, b1.y);
-			windArea.point[3] = Vec2(b0.x, b1.y);
-			windArea.point[4] = 0.5f * (Vec2(b0.x, b0.y) + Vec2(b1.x, b1.y));
-			for (int i = 0; i < 5; ++i)
+			Vec3 c = (b1 + b0) * 0.5f, sz = (b1 - b0) * 0.45f;
+			Vec2i idir(0);
+			area.pb.waterFlow.zero();
+			for (int i = 4; i >= 0; idir = idir.rot90cw() + Vec2i(-(i >> 2), i >> 2), --i)
 			{
-				area.ctr = Vec3(windArea.point[i].x, windArea.point[i].y, windArea.z);
-				if (pArea->GetStatus(&area))
-					windArea.windSpeed[i] = area.pb.waterFlow;
+				area.ctr = c + Vec3(sz.x * idir.x, sz.y * idir.y, 0);
+				pArea->GetStatus(&area);
+				windArea.windSpeed[i] = area.pb.waterFlow;
 			}
 			if (bIndoor)
 				m_indoorWindAreas[nextWindAreaList].push_back(windArea);
@@ -4674,7 +4711,8 @@ void C3DEngine::ObjectsTreeMarkAsUncompiled(const IRenderNode* pRenderNode)
 			curNode->MarkAsUncompiled(pRenderNode);
 	}
 
-	GetVisAreaManager()->MarkAllSectorsAsUncompiled(pRenderNode);
+	if (GetVisAreaManager())
+		GetVisAreaManager()->MarkAllSectorsAsUncompiled(pRenderNode);
 }
 
 void C3DEngine::OnObjectModified(IRenderNode* pRenderNode, uint dwFlags)
@@ -6034,3 +6072,457 @@ const char* CDebugDrawListMgr::GetAssetTypeName(I3DEngine::EDebugDrawListAssetTy
 }
 
 #endif //RELEASE
+
+///////////////////////////////////////////////////////////////////////////////
+float C3DEngine::GetWaterLevel()
+{
+	return m_pTerrain ? m_pTerrain->CTerrain::GetWaterLevel() : WATER_LEVEL_UNKNOWN;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+Vec3 C3DEngine::GetSkyColor() const
+{
+	return m_pObjManager ? m_pObjManager->m_vSkyColor : Vec3(0, 0, 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+bool C3DEngine::IsTessellationAllowed(const CRenderObject* pObj, const SRenderingPassInfo& passInfo, bool bIgnoreShadowPass) const
+{
+#ifdef MESH_TESSELLATION_ENGINE
+	assert(pObj && GetCVars());
+	bool rendererTessellation;
+	GetRenderer()->EF_Query(EFQ_MeshTessellation, rendererTessellation);
+	if (pObj->m_fDistance < GetCVars()->e_TessellationMaxDistance
+	    && GetCVars()->e_Tessellation
+	    && rendererTessellation
+	    && !(pObj->m_ObjFlags & FOB_DISSOLVE)) // dissolve is not working with tessellation for now
+	{
+		bool bAllowTessellation = true;
+
+		// Check if rendering into shadow map and enable tessellation only if allowed
+		if (!bIgnoreShadowPass && passInfo.IsShadowPass())
+		{
+			if (IsTessellationAllowedForShadowMap(passInfo))
+			{
+				// NOTE: This might be useful for game projects
+				// Use tessellation only for objects visible in main view
+				// Shadows will switch to non-tessellated when caster gets out of view
+				IRenderNode* pRN = (IRenderNode*)pObj->m_pRenderNode;
+				if (pRN)
+					bAllowTessellation = ((pRN->GetRenderNodeType() != eERType_TerrainSector) && (pRN->GetDrawFrame() > passInfo.GetFrameID() - 10));
+			}
+			else
+				bAllowTessellation = false;
+		}
+
+		return bAllowTessellation;
+	}
+#endif //#ifdef MESH_TESSELLATION_ENGINE
+
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const SRenderingPassInfo& passInfo)
+{
+	assert(passInfo.IsShadowPass());
+
+	IRenderNode* pRenderNode = static_cast<IRenderNode*>(pShadowCaster);
+	if ((pRenderNode->m_dwRndFlags & ERF_HIDDEN) != 0)
+	{
+		return;
+	}
+
+	int nStaticObjectLod = -1;
+	if (passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED)
+		nStaticObjectLod = GetCVars()->e_ShadowsCacheObjectLod;
+	else if (passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED_MGPU_COPY)
+		nStaticObjectLod = pRenderNode->m_cStaticShadowLod;
+
+	if (!Get3DEngine()->CheckAndCreateRenderNodeTempData(&pRenderNode->m_pTempData, pRenderNode, passInfo))
+	{
+		return;
+	}
+
+	int wantedLod = pRenderNode->m_pTempData->userData.nWantedLod;
+	if (pRenderNode->GetShadowLodBias() != IRenderNode::SHADOW_LODBIAS_DISABLE)
+	{
+		if (passInfo.IsShadowPass() && (pRenderNode->GetDrawFrame(0) < (passInfo.GetFrameID() - 10)))
+			wantedLod += GetCVars()->e_ShadowsLodBiasInvis;
+		wantedLod += GetCVars()->e_ShadowsLodBiasFixed;
+		wantedLod += pRenderNode->GetShadowLodBias();
+	}
+
+	if (nStaticObjectLod >= 0)
+		wantedLod = nStaticObjectLod;
+
+	switch (pRenderNode->GetRenderNodeType())
+	{
+	case eERType_Vegetation:
+		{
+			CVegetation* pVegetation = static_cast<CVegetation*>(pRenderNode);
+			const CLodValue lodValue = pVegetation->ComputeLod(wantedLod, passInfo);
+			pVegetation->Render(passInfo, lodValue, NULL);
+		}
+		break;
+	case eERType_Brush:
+		{
+			CBrush* pBrush = static_cast<CBrush*>(pRenderNode);
+			const CLodValue lodValue = pBrush->ComputeLod(wantedLod, passInfo);
+			pBrush->Render(lodValue, passInfo, NULL, NULL);
+		}
+		break;
+	default:
+		{
+			const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
+			const AABB objBox = pRenderNode->GetBBoxVirtual();
+			SRendParams rParams;
+			rParams.fDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
+			rParams.lodValue = pRenderNode->ComputeLod(wantedLod, passInfo);
+
+			pRenderNode->Render(rParams, passInfo);
+		}
+		break;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+ITimeOfDay* C3DEngine::GetTimeOfDay()
+{
+	CTimeOfDay* tod = m_pTimeOfDay;
+
+	if (!tod)
+	{
+		tod = new CTimeOfDay;
+		m_pTimeOfDay = tod;
+	}
+
+	return tod;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void C3DEngine::TraceFogVolumes(const Vec3& worldPos, ColorF& fogVolumeContrib, const SRenderingPassInfo& passInfo)
+{
+	CFogVolumeRenderNode::TraceFogVolumes(worldPos, fogVolumeContrib, passInfo);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+int C3DEngine::GetTerrainSize()
+{
+	return CTerrain::GetTerrainSize();
+}
+#include "ParticleEmitter.h"
+
+///////////////////////////////////////////////////////////////////////////////
+void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsideredSafe, uint32 nFrameID, bool bUnRegisterOnly)
+{
+	FUNCTION_PROFILER_3DENGINE;
+
+#ifdef _DEBUG // crash test basically
+	const char* szClass = pEnt->GetEntityClassName();
+	const char* szName = pEnt->GetName();
+	if (!szName[0] && !szClass[0])
+		Warning("I3DEngine::RegisterEntity: Entity undefined"); // do not register undefined objects
+	                                                          //  if(strstr(szName,"Dude"))
+	                                                          //  int y=0;
+#endif
+
+	IF(bUnRegisterOnly, 0)
+	{
+		UnRegisterEntityImpl(pEnt);
+		return;
+	}
+
+	AABB aabb;
+	pEnt->FillBBox(aabb);
+	float fObjRadiusSqr = aabb.GetRadiusSqr();
+	EERType eERType = pEnt->GetRenderNodeType();
+
+#ifdef SUPP_HMAP_OCCL
+	if (pEnt->m_pTempData)
+		pEnt->m_pTempData->userData.m_OcclState.vLastVisPoint.Set(0, 0, 0);
+#endif
+
+	UpdateObjectsLayerAABB(pEnt);
+
+	const unsigned int dwRndFlags = pEnt->GetRndFlags();
+
+	if (!(dwRndFlags & ERF_RENDER_ALWAYS) && !(dwRndFlags & ERF_CASTSHADOWMAPS))
+		if (GetCVars()->e_ObjFastRegister && pEnt->m_pOcNode && ((COctreeNode*)pEnt->m_pOcNode)->IsRightNode(aabb, fObjRadiusSqr, pEnt->m_fWSMaxViewDist))
+		{
+			// same octree node
+			Vec3 vEntCenter = GetEntityRegisterPoint(pEnt);
+
+			IVisArea* pVisArea = pEnt->GetEntityVisArea();
+			if (pVisArea && pVisArea->IsPointInsideVisArea(vEntCenter))
+				return; // same visarea
+
+			IVisArea* pVisAreaFromPos = (!m_pVisAreaManager || dwRndFlags & ERF_OUTDOORONLY) ? NULL : GetVisAreaManager()->GetVisAreaFromPos(vEntCenter);
+			if (pVisAreaFromPos == pVisArea)
+			{
+				// NOTE: can only get here when pVisArea==NULL due to 'same visarea' check above. So check for changed clip volume
+				if (GetClipVolumeManager()->IsClipVolumeRequired(pEnt))
+					GetClipVolumeManager()->UpdateEntityClipVolume(vEntCenter, pEnt);
+
+				return; // same visarea or same outdoor
+			}
+		}
+
+	if (pEnt->m_pOcNode)
+	{
+		UnRegisterEntityImpl(pEnt);
+	}
+	else if (GetCVars()->e_StreamCgf && eERType == eERType_RenderProxy)
+	{
+		//  Temporary solution: Force streaming priority update for objects that was not registered before
+		//  and was not visible before since usual prediction system was not able to detect them
+
+		if ((uint32)pEnt->GetDrawFrame(0) < nFrameID - 16)
+		{
+			// deferr the render node streaming priority update still we have a correct 3D Engine camera
+			int nElementID = m_deferredRenderProxyStreamingPriorityUpdates.Find(pEnt);
+			if (nElementID == -1)  // only add elements once
+				m_deferredRenderProxyStreamingPriorityUpdates.push_back(pEnt);
+		}
+
+	}
+
+	if (eERType == eERType_Vegetation)
+	{
+		CVegetation* pInst = (CVegetation*)pEnt;
+		pInst->UpdateRndFlags();
+	}
+
+	pEnt->m_fWSMaxViewDist = pEnt->GetMaxViewDist();
+
+	if (eERType != eERType_Light)
+	{
+		if (fObjRadiusSqr > sqr(MAX_VALID_OBJECT_VOLUME) || !_finite(fObjRadiusSqr))
+		{
+			Warning("I3DEngine::RegisterEntity: Object has invalid bbox: name: %s, class name: %s, GetRadius() = %.2f",
+			        pEnt->GetName(), pEnt->GetEntityClassName(), fObjRadiusSqr);
+			return; // skip invalid objects - usually only objects with invalid very big scale will reach this point
+		}
+
+		if (dwRndFlags & ERF_RENDER_ALWAYS)
+		{
+			if (m_lstAlwaysVisible.Find(pEnt) < 0)
+				m_lstAlwaysVisible.Add(pEnt);
+
+			if (dwRndFlags & ERF_HUD)
+				return;
+		}
+	}
+	else
+	{
+		CLightEntity* pLight = (CLightEntity*)pEnt;
+		if ((pLight->m_light.m_Flags & (DLF_IGNORES_VISAREAS | DLF_DEFERRED_LIGHT | DLF_THIS_AREA_ONLY)) == (DLF_IGNORES_VISAREAS | DLF_DEFERRED_LIGHT))
+		{
+			if (m_lstAlwaysVisible.Find(pEnt) < 0)
+				m_lstAlwaysVisible.Add(pEnt);
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Check for occlusion proxy.
+	{
+		CStatObj* pStatObj = (CStatObj*)pEnt->GetEntityStatObj();
+		if (pStatObj)
+		{
+			if (pStatObj->m_bHaveOcclusionProxy)
+			{
+				pEnt->m_dwRndFlags |= ERF_GOOD_OCCLUDER;
+				pEnt->m_nInternalFlags |= IRenderNode::HAS_OCCLUSION_PROXY;
+			}
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	if (pEnt->m_dwRndFlags & ERF_OUTDOORONLY || !(m_pVisAreaManager && m_pVisAreaManager->SetEntityArea(pEnt, aabb, fObjRadiusSqr)))
+	{
+#ifndef SEG_WORLD
+		if (nSID == -1)
+		{
+			nSID = 0;
+
+			// if segment is not set - find best one automatically
+			Vec3 vCenter = aabb.GetCenter();
+			const int iTreeCount = Get3DEngine()->m_pObjectsTree.Count();
+			for (int n = 0; n < iTreeCount; n++)
+			{
+				if (Get3DEngine()->m_pObjectsTree[n])
+				{
+					if (Overlap::Point_AABB2D(vCenter, m_pObjectsTree[n]->GetNodeBox()))
+					{
+						nSID = n;
+						break;
+					}
+				}
+			}
+		}
+
+		if (nSID >= 0 && nSID < m_pObjectsTree.Count())
+		{
+			if (!m_pObjectsTree[nSID])
+			{
+				const float terrainSize = (float)GetTerrainSize();
+				m_pObjectsTree[nSID] = COctreeNode::Create(nSID, AABB(Vec3(0, 0, 0), Vec3(terrainSize, terrainSize, terrainSize)), NULL);
+			}
+
+			m_pObjectsTree[nSID]->InsertObject(pEnt, aabb, fObjRadiusSqr, aabb.GetCenter());
+		}
+#else
+		if (gEnv->IsEditor() || eERType != eERType_Vegetation)
+		{
+			// CS - opt here
+			if (GetITerrain())
+			{
+				Vec3 vCenter = aabb.GetCenter();
+				nSID = GetITerrain()->WorldToSegment(vCenter, GetDefSID());
+			}
+		}
+		else
+		{
+			// use specified sid from which the objects are actually serialized for vegetation objects
+			CVegetation* pInst = (CVegetation*)pEnt;
+			nSID = pInst->m_nStaticTypeSlot;
+		}
+
+		if (nSID >= 0 && nSID < m_pObjectsTree.Count())
+		{
+			//#ifdef _DEBUG
+			//		  if(nSID != nSIDConsideredSafe)
+			//		  {
+			//			  Warning("I3DEngine::RegisterEntity: Object %s was not added to the scene", pEnt->GetName());
+			//		  }
+			//#endif
+			// TODO: this should only work if the segment is safe or if it's unsafe and the object is being inserted by SetCompiledData...
+			if (nSID == nSIDConsideredSafe || IsSegmentSafeToUse(nSID))
+				m_pObjectsTree[nSID]->InsertObject(pEnt, aabb, fObjRadiusSqr, aabb.GetCenter());
+		}
+#endif
+	}
+
+	// update clip volume: use vis area if we have one, otherwise check if we're in the same volume as before. check other volumes as last resort only
+	if (pEnt->m_pTempData)
+	{
+		Vec3 vEntCenter = GetEntityRegisterPoint(pEnt);
+		SRenderNodeTempData::SUserData& userData = pEnt->m_pTempData->userData;
+
+		if (IVisArea* pVisArea = pEnt->GetEntityVisArea())
+			userData.m_pClipVolume = pVisArea;
+		else if (GetClipVolumeManager()->IsClipVolumeRequired(pEnt))
+			GetClipVolumeManager()->UpdateEntityClipVolume(vEntCenter, pEnt);
+	}
+
+	// register decals, to clean up longer not renderes decals and their render meshes
+	if (eERType == eERType_Decal)
+	{
+		m_decalRenderNodes.push_back((IDecalRenderNode*)pEnt);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void C3DEngine::UpdateObjectsLayerAABB(IRenderNode* pEnt)
+{
+	uint16 nLayerId = pEnt->GetLayerId();
+	if (nLayerId && nLayerId < 0xFFFF)
+	{
+		m_arrObjectLayersActivity.CheckAllocated(nLayerId + 1);
+
+		if (m_arrObjectLayersActivity[nLayerId].objectsBox.GetVolume())
+			m_arrObjectLayersActivity[nLayerId].objectsBox.Add(pEnt->GetBBox());
+		else
+			m_arrObjectLayersActivity[nLayerId].objectsBox = pEnt->GetBBox();
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+bool C3DEngine::UnRegisterEntityImpl(IRenderNode* pEnt)
+{
+	// make sure we don't try to update the streaming priority if an object
+	// was added and removed in the same frame
+	int nElementID = m_deferredRenderProxyStreamingPriorityUpdates.Find(pEnt);
+	if (nElementID != -1)
+		m_deferredRenderProxyStreamingPriorityUpdates.DeleteFastUnsorted(nElementID);
+
+	FUNCTION_PROFILER_3DENGINE;
+
+#ifdef _DEBUG // crash test basically
+	const char* szClass = pEnt->GetEntityClassName();
+	const char* szName = pEnt->GetName();
+	if (!szName[0] && !szClass[0])
+		Warning("C3DEngine::RegisterEntity: Entity undefined");
+#endif
+
+	EERType eRenderNodeType = pEnt->GetRenderNodeType();
+
+	bool bFound = false;
+	//pEnt->PhysicalizeFoliage(false);
+
+	if (pEnt->m_pOcNode)
+		bFound = ((COctreeNode*)pEnt->m_pOcNode)->DeleteObject(pEnt);
+
+	if (pEnt->m_dwRndFlags & ERF_RENDER_ALWAYS || (eRenderNodeType == eERType_Light) || (eRenderNodeType == eERType_FogVolume))
+	{
+		m_lstAlwaysVisible.Delete(pEnt);
+	}
+
+	if (eRenderNodeType == eERType_Decal)
+	{
+		std::vector<IDecalRenderNode*>::iterator it = std::find(m_decalRenderNodes.begin(), m_decalRenderNodes.end(), (IDecalRenderNode*)pEnt);
+		if (it != m_decalRenderNodes.end())
+		{
+			m_decalRenderNodes.erase(it);
+		}
+	}
+
+	if (CClipVolumeManager* pClipVolumeManager = GetClipVolumeManager())
+	{
+		pClipVolumeManager->UnregisterRenderNode(pEnt);
+	}
+
+	return bFound;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+Vec3 C3DEngine::GetEntityRegisterPoint(IRenderNode* pEnt)
+{
+	AABB aabb;
+	pEnt->FillBBox(aabb);
+
+	Vec3 vPoint;
+
+	if (pEnt->m_dwRndFlags & ERF_REGISTER_BY_POSITION)
+	{
+		vPoint = pEnt->GetPos();
+		vPoint.z += 0.25f;
+
+		if (pEnt->GetRenderNodeType() != eERType_Light)
+		{
+			// check for valid position
+			if (aabb.GetDistanceSqr(vPoint) > sqr(128.f))
+			{
+				Warning("I3DEngine::RegisterEntity: invalid entity position: Name: %s, Class: %s, Pos=(%.1f,%.1f,%.1f), BoxMin=(%.1f,%.1f,%.1f), BoxMax=(%.1f,%.1f,%.1f)",
+				        pEnt->GetName(), pEnt->GetEntityClassName(),
+				        pEnt->GetPos().x, pEnt->GetPos().y, pEnt->GetPos().z,
+				        pEnt->GetBBox().min.x, pEnt->GetBBox().min.y, pEnt->GetBBox().min.z,
+				        pEnt->GetBBox().max.x, pEnt->GetBBox().max.y, pEnt->GetBBox().max.z
+				        );
+			}
+			// clamp by bbox
+			vPoint.CheckMin(aabb.max);
+			vPoint.CheckMax(aabb.min + Vec3(0, 0, .5f));
+		}
+	}
+	else
+		vPoint = aabb.GetCenter();
+
+	return vPoint;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+Vec3 C3DEngine::GetSunDirNormalized() const
+{
+	return m_vSunDirNormalized;
+}

@@ -224,23 +224,7 @@ ILINE void TIOStream<T >::Store(TParticleId pId, T value)
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Functions
-
-ILINE Vec3 Min(const Vec3 a, const Vec3 b)
-{
-	return Vec3(
-	  min(a.x, b.x),
-	  min(a.y, b.y),
-	  min(a.z, b.z));
-}
-
-ILINE Vec3 Max(const Vec3 a, const Vec3 b)
-{
-	return Vec3(
-	  max(a.x, b.x),
-	  max(a.y, b.y),
-	  max(a.z, b.z));
-}
+// Vector functions
 
 ILINE Vec3 HMin(const Vec3v& v0)
 {
@@ -258,24 +242,41 @@ ILINE Vec3 HMax(const Vec3v& v0)
 	  HMax(v0.z));
 }
 
-ILINE floatv Dot(const Vec3v& v0, const Vec3v& v1)
+ILINE Vec3v Add(const Vec3v& a, floatv b)
 {
-	return MAdd(v0.x, v1.x, MAdd(v0.y, v1.y, Mul(v0.z, v1.z)));
+	return Vec3v(a.x + b, a.y + b, a.z + b);
+}
+ILINE Vec3v Sub(const Vec3v& a, floatv b)
+{
+	return Vec3v(a.x - b, a.y - b, a.z - b);
 }
 
-ILINE floatv Length(const Vec3v& v0)
+template<typename T>
+ILINE Vec3_tpl<T> MAdd(const Vec3_tpl<T>& a, const Vec3_tpl<T>& b, const Vec3_tpl<T>& c)
 {
-	return Sqrt(Dot(v0, v0));
+	return Vec3_tpl<T>(
+	  MAdd(a.x, b.x, c.x),
+	  MAdd(a.y, b.y, c.y),
+	  MAdd(a.z, b.z, c.z));
 }
 
-ILINE const float DeltaTime(const float normAge, const float frameTime)
+template<typename T>
+ILINE Vec3_tpl<T> MAdd(const Vec3_tpl<T>& a, T b, const Vec3_tpl<T>& c)
+{
+	return Vec3_tpl<T>(
+	  MAdd(a.x, b, c.x),
+	  MAdd(a.y, b, c.y),
+	  MAdd(a.z, b, c.z));
+}
+
+ILINE floatv DeltaTime(floatv normAge, floatv frameTime)
 {
 	return __fsel(normAge, frameTime, -(normAge * frameTime));
 }
 
 ILINE uint8 FloatToUFrac8Saturate(float v)
 {
-	return uint8(SATURATE(v) * 255.0f + 0.5f);
+	return uint8(saturate(v) * 255.0f + 0.5f);
 }
 
 ILINE ColorF ToColorF(UCol color)
@@ -304,11 +305,11 @@ ILINE UCol ColorFToUCol(const ColorF& color)
 	return result;
 }
 
-ILINE void RotateAxes(Vec3* v0, Vec3* v1, const float angle)
+ILINE void RotateAxes(Vec3* v0, Vec3* v1, float angle)
 {
 	CRY_PFX2_ASSERT(v0 && v1);
 	Vec2 vRot;
-	sincos_tpl(angle, &vRot.x, &vRot.y);
+	sincos(angle, &vRot.x, &vRot.y);
 	Vec3 vXAxis = *v0 * vRot.y - *v1 * vRot.x;
 	Vec3 vYAxis = *v0 * vRot.x + *v1 * vRot.y;
 	*v0 = vXAxis;
@@ -355,56 +356,6 @@ ILINE Planev ToPlanev(Plane v)
 	return v;
 }
 
-ILINE float __fsel(const float _a, const float _b, const float _c)
-{
-	return (_a < 0.0f) ? _c : _b;
-}
-
-ILINE float __fres(const float _a)
-{
-	return 1.0f / _a;
-}
-
-ILINE float SafeRcp(const float f)
-{
-	return __fres(Max(f, FLT_EPSILON));
-}
-
-ILINE floatv Add(const floatv v0, const floatv v1)
-{
-	return v0 + v1;
-}
-
-ILINE floatv Sub(const floatv v0, const floatv v1)
-{
-	return v0 - v1;
-}
-
-ILINE floatv Mul(const floatv v0, const floatv v1)
-{
-	return v0 * v1;
-}
-
-ILINE floatv MAdd(const floatv a, const floatv b, const floatv c)
-{
-	return a * b + c;
-}
-
-ILINE floatv Sqrt(const floatv v0)
-{
-	return sqrtf(v0);
-}
-
-ILINE floatv Min(floatv a, floatv b)
-{
-	return (a < b) ? a : b;
-}
-
-ILINE floatv Max(floatv a, floatv b)
-{
-	return (a < b) ? b : a;
-}
-
 ILINE float HMin(floatv v0)
 {
 	return v0;
@@ -415,64 +366,9 @@ ILINE float HMax(floatv v0)
 	return v0;
 }
 
-ILINE floatv FSel(floatv a, floatv b, floatv c)
-{
-	return __fsel(a, b, c); // PFX2_TODO : remove __fsel
-}
-
-ILINE floatv Rcp(floatv a)
-{
-	return __fres(a); // PFX2_TODO : remove __fres
-}
-
-ILINE floatv Clamp(floatv x, floatv minv, floatv maxv)
-{
-	return Max(Min(x, maxv), minv);
-}
-
-ILINE floatv Saturate(floatv x)
-{
-	return Max(Min(x, 1.0f), 0.0f);
-}
-
-ILINE Vec3v Add(const Vec3v& a, const Vec3v& b)
-{
-	return a + b;
-}
-
-ILINE Vec3v Add(const Vec3v& a, const floatv b)
-{
-	return a + Vec3(b, b, b);
-}
-
-ILINE Vec3v Sub(const Vec3v& a, const Vec3v& b)
-{
-	return a - b;
-}
-
-ILINE Vec3v Sub(const Vec3v& a, const floatv b)
-{
-	return a - Vec3(b, b, b);
-}
-
-ILINE Vec3v Mul(const Vec3v& a, const floatv b)
-{
-	return a * b;
-}
-
-ILINE Vec3v MAdd(const Vec3v& a, const floatv b, const Vec3v& c)
-{
-	return a * b + c;
-}
-
-ILINE Vec4v Add(const Vec4v& a, const Vec4v& b)
-{
-	return a + b;
-}
-
 ILINE ColorFv ToColorFv(UColv color)
 {
-	return ColorF(
+	return ColorFv(
 	  ufrac8_to_float(color.r),
 	  ufrac8_to_float(color.g),
 	  ufrac8_to_float(color.b));
@@ -493,10 +389,6 @@ ILINE UColv ToUColv(UCol color)
 	return color;
 }
 
-ILINE floatv DistFromPlane(Planev plane, Vec3v point)
-{
-	return Add(Dot(plane.n, point), plane.d);
-}
 
 }
 

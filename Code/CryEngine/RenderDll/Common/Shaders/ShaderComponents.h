@@ -185,19 +185,6 @@ enum ECGParam
 	ECGP_PF_ShadowViewPos,
 	ECGP_PB_PullVerticesInfo,
 
-	ECGP_Matr_PB_SFCompMat,
-	ECGP_Matr_PB_SFTexGenMat0,
-	ECGP_Matr_PB_SFTexGenMat1,
-	ECGP_PB_SFBitmapColorTransform,
-	ECGP_PB_SFColorTransformMatrix,
-	ECGP_PB_SFStereoVideoFrameSelect,
-	ECGP_PB_SFPremultipliedAlpha,
-	ECGP_PB_SFBlurFilterSize,
-	ECGP_PB_SFBlurFilterScale,
-	ECGP_PB_SFBlurFilterOffset,
-	ECGP_PB_SFBlurFilterColor1,
-	ECGP_PB_SFBlurFilterColor2,
-
 	ECGP_PB_CloudShadingColorSun,
 	ECGP_PB_CloudShadingColorSky,
 
@@ -218,13 +205,6 @@ enum ECGParam
 	ECGP_PB_TexelDensityColor,
 	ECGP_PB_TexelsPerMeterInfo,
 
-	ECGP_Matr_PB_GIGridMatrix,
-	ECGP_Matr_PB_GIInvGridMatrix,
-	ECGP_PB_GIGridSize,
-	ECGP_PB_GIInvGridSize,
-	ECGP_PB_GIGridSpaceCamPos,
-	ECGP_PB_GIAttenuation,
-	ECGP_PB_GIGridCenter,
 	ECGP_PB_WaterRipplesLookupParams,
 	ECGP_PB_SkinningExtraWeights,
 
@@ -582,12 +562,13 @@ enum ECGTexture : uint8
 	ECGT_MatSlot_Translucency,
 	ECGT_MatSlot_Emittance,
 
-	ECGT_SF_Slot0,
-	ECGT_SF_Slot1,
-	ECGT_SF_SlotY,
-	ECGT_SF_SlotU,
-	ECGT_SF_SlotV,
-	ECGT_SF_SlotA,
+	ECGT_ScaleformInput0,
+	ECGT_ScaleformInput1,
+	ECGT_ScaleformInput2,
+	ECGT_ScaleformInputY,
+	ECGT_ScaleformInputU,
+	ECGT_ScaleformInputV,
+	ECGT_ScaleformInputA,
 
 	ECGT_Shadow0,
 	ECGT_Shadow1,
@@ -642,8 +623,12 @@ enum ECGTexture : uint8
 
 	ECGT_TerrainNormMap,
 	ECGT_TerrainBaseMap,
+	ECGT_TerrainElevMap,
 
 	ECGT_WindGrid,
+
+	ECGT_CloudShadow,
+	ECGT_VolCloudShadow,
 
 	ECGT_COUNT
 };

@@ -121,7 +121,6 @@ half4 Ambient      : PI_Ambient       < psregister = PS_REG_PB_9; vsregister = c
 
 cbuffer CBPerViewGlobal : register(b13)
 {
-	float4    CV_WorldViewPos;
 	float4x4  CV_ViewProjZeroMatr;
 	float4    CV_AnimGenParams;
 	
@@ -130,8 +129,10 @@ cbuffer CBPerViewGlobal : register(b13)
 	float4x4  CV_InvViewProj;
 	float4x4  CV_PrevViewProjMatr;
 	float4x4  CV_PrevViewProjNearestMatr;
+	float3x4  CV_ScreenToWorldBasis;
 	float4    CV_TessInfo;
 	float4    CV_CameraFrontVector;
+	float4    CV_CameraUpVector;
 	
 	float4    CV_ScreenSize;
 	float4    CV_HPosScale;
@@ -153,6 +154,9 @@ cbuffer CBPerViewGlobal : register(b13)
 	float4    CV_ShadowViewPos;
 
 	float4    CV_WindGridOffset;
+	
+	float4x4  CV_ViewMatr;
+	float4x4  CV_InvViewMatr;
 };
 
 cbuffer CBPerPassShadowGen : register(b5)
@@ -168,7 +172,7 @@ cbuffer CBPerPassShadowGen : register(b5)
 	
 	
 #define g_VS_WindGridOffs          CV_WindGridOffset
-#define g_VS_WorldViewPos          CV_WorldViewPos
+#define g_VS_WorldViewPos          CV_ScreenToWorldBasis._m03_m13_m23
 #define g_VS_ViewProjZeroMatr      CV_ViewProjZeroMatr
 #define g_VS_ViewProjMatr          CV_ViewProjMatr
 #define g_VS_ScreenSize            CV_ScreenSize

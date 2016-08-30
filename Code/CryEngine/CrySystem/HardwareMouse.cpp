@@ -13,7 +13,7 @@
 
    -------------------------------------------------------------------------
    History:
-   - 18:12:2006   Created by Julien Darré
+   - 18:12:2006   Created by Julien DarrÃ©
 
 *************************************************************************/
 
@@ -46,6 +46,7 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 	: m_debugHardwareMouse(0)
 	, m_pExclusiveEventListener(nullptr)
 	, m_pCursorTexture(nullptr)
+	, m_bPrevShowState(true)
 #if !defined(_RELEASE)
 	, m_allowConfine(GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "nomouse") == nullptr)
 #else
@@ -131,6 +132,30 @@ CHardwareMouse::~CHardwareMouse()
 
 void CHardwareMouse::ShowHardwareMouse(bool bShow)
 {
+	// Only manage mouse visibility if the application actually has focus.
+	// We don't want to mess around with the cursor otherwise
+	if (!m_bFocus)
+	{
+		return;
+	}
+
+	// Apply overrides here. Needless to say if any override changes value, then ShowHardwareMouse
+	// should be called with the reference counted value
+	bShow = m_shouldUseSystemCursor && ((bShow && !m_hide) || (m_allowConfine == false));
+
+	// This is very important! Since ShowCursor acts as a stack on OS level,
+	// and the state here is quite complex, with variables suspending reference
+	// counting and enforcable state, we really should only call pInput->ShowCursor if the value
+	// was different than before. This ensures that at OS level we never have
+	// a stack value more than 0/1 (at least we don't have a bigger/lower value that is
+	// caused by CHardwareMouse).
+	if (bShow == m_bPrevShowState)
+	{
+		return;
+	}
+
+	m_bPrevShowState = bShow;
+
 	if (m_debugHardwareMouse)
 	{
 		CryLogAlways("HM: ShowHardwareMouse = %d", bShow);
@@ -145,14 +170,11 @@ void CHardwareMouse::ShowHardwareMouse(bool bShow)
 		GetHardwareMousePosition(&m_fCursorX, &m_fCursorY);
 	}
 
-	const bool bConfine = !bShow || IsFullscreen();
-	ConfineCursor(bConfine);
-
 	IInput* const pInput = gEnv->pInput;
 	if (pInput)
 	{
-		pInput->ShowCursor(m_shouldUseSystemCursor && ((bShow && !m_hide) || (m_allowConfine == false)));
-		gEnv->pInput->SetExclusiveMode(eIDT_Mouse, false);
+		pInput->ShowCursor(bShow);
+		pInput->SetExclusiveMode(eIDT_Mouse, false);
 	}
 
 	m_calledShowHWMouse = true;
@@ -165,7 +187,7 @@ void CHardwareMouse::ConfineCursor(bool confine)
 	if (m_debugHardwareMouse)
 		CryLogAlways("HM: ConfineCursor = %d", confine);
 
-	if (!gEnv || gEnv->pRenderer == NULL || m_allowConfine == false)
+	if (!gEnv || gEnv->pRenderer == NULL || m_allowConfine == false || !m_bFocus)
 		return;
 
 #if CRY_PLATFORM_WINDOWS
@@ -332,48 +354,59 @@ bool CHardwareMouse::OnInputEvent(const SInputEvent& rInputEvent)
 	return false;
 }
 
+void CHardwareMouse::HandleFocusEvent(bool bFocus)
+{
+	//gEnv->pLog->Log("Change focus - %d", bFocus);
+
+	if (bFocus)
+	{
+		// set focus first so the calls below work
+		m_bFocus = true;
+
+		ShowHardwareMouse(m_iReferenceCounter >= 1);
+		EvaluateCursorConfinement();
+	}
+	else
+	{
+		// always, always show and release the mouse confinement when we lose focus
+		ShowHardwareMouse(true);
+		ConfineCursor(false);
+
+		// first release, then lose focus, so calls above work
+		m_bFocus = false;
+	}
+}
+
 //-----------------------------------------------------------------------------------------------------
 void CHardwareMouse::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 {
+	// if we are in editor then we wait for ESYSTEM_EVENT_GAMEWINDOW_ACTIVATE instead because we care for more
+	// fine grained focus notifications to determine mouse visibility and capture
 	if (event == ESYSTEM_EVENT_ACTIVATE || event == ESYSTEM_EVENT_CHANGE_FOCUS)
 	{
-		//gEnv->pLog->Log("Change focus - %d", wparam);
-		m_bFocus = wparam != 0;
-
-		if (m_bFocus)
+		if (!gEnv->IsEditor())
 		{
-			if (!gEnv->IsEditing() && m_recapture)
-			{
-				m_recapture = false;
-				DecrementCounter();
-			}
-
-			if (IsFullscreen() || gEnv->IsEditorGameMode() || m_iReferenceCounter == 0)
-				ConfineCursor(true);
+			bool bFocus = (wparam != 0);
+			HandleFocusEvent(bFocus);
 		}
-		else
-		{
-			if (!gEnv->IsEditing() && m_iReferenceCounter == 0)
-			{
-				m_recapture = true;
-				IncrementCounter();
-			}
-		}
+	}
+	// only makes sense for editor (or engine clients that support many windows)
+	else if (event == ESYSTEM_EVENT_GAMEWINDOW_ACTIVATE)
+	{
+		bool bFocus = (wparam != 0);
+		HandleFocusEvent(bFocus);
 	}
 	else if (event == ESYSTEM_EVENT_MOVE)
 	{
-		if (IsFullscreen() || m_iReferenceCounter == 0)
-			ConfineCursor(true);
+		EvaluateCursorConfinement();
 	}
 	else if (event == ESYSTEM_EVENT_RESIZE)
 	{
-		if (IsFullscreen() || m_iReferenceCounter == 0)
-			ConfineCursor(true);
+		EvaluateCursorConfinement();
 	}
 	else if (event == ESYSTEM_EVENT_TOGGLE_FULLSCREEN)
 	{
-		if (wparam || m_iReferenceCounter == 0)
-			ConfineCursor(true);
+		EvaluateCursorConfinement();
 	}
 }
 
@@ -464,10 +497,8 @@ void CHardwareMouse::IncrementCounter()
 		CryLogAlways("HM: IncrementCounter = %d", m_iReferenceCounter);
 	CRY_ASSERT(m_iReferenceCounter >= 0);
 
-	if (1 == m_iReferenceCounter)
-	{
-		ShowHardwareMouse(true);
-	}
+	ShowHardwareMouse(m_iReferenceCounter > 0);
+	EvaluateCursorConfinement();
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -480,10 +511,8 @@ void CHardwareMouse::DecrementCounter()
 		CryLogAlways("HM: DecrementCounter = %d", m_iReferenceCounter);
 	CRY_ASSERT(m_iReferenceCounter >= 0);
 
-	if (0 == m_iReferenceCounter)
-	{
-		ShowHardwareMouse(false);
-	}
+	ShowHardwareMouse(m_iReferenceCounter > 0);
+	EvaluateCursorConfinement();
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -717,7 +746,6 @@ void CHardwareMouse::Reset(bool bVisibleByDefault)
 	m_fIncX = 0.0f;
 	m_fIncY = 0.0f;
 	m_bFocus = true;
-	m_recapture = false;
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -727,11 +755,8 @@ void CHardwareMouse::Update()
 	// Note: Calling ShowCursor from a different thread does not work
 	if (m_usingSystemCursor != m_shouldUseSystemCursor)
 	{
-		if (gEnv->pInput)
-		{
-			gEnv->pInput->ShowCursor(m_shouldUseSystemCursor && ((m_iReferenceCounter > 0 && !m_hide) || (m_allowConfine == false)));
-		}
 		m_usingSystemCursor = m_shouldUseSystemCursor;
+		ShowHardwareMouse(m_iReferenceCounter > 0);
 	}
 }
 
@@ -777,7 +802,13 @@ void CHardwareMouse::Hide(bool hide)
 	m_hide = hide;
 	if (m_calledShowHWMouse && gEnv->pInput)
 	{
-		gEnv->pInput->ShowCursor(m_shouldUseSystemCursor && ((m_iReferenceCounter > 0 && !m_hide) || (m_allowConfine == false)));
+		bool bShow = m_shouldUseSystemCursor && ((m_iReferenceCounter > 0 && !m_hide) || (m_allowConfine == false));
+
+		if (bShow != m_bPrevShowState)
+		{
+			m_bPrevShowState = bShow;
+			gEnv->pInput->ShowCursor(bShow);
+		}
 	}
 }
 
@@ -836,4 +867,11 @@ void CHardwareMouse::DestroyCursor()
 	}
 	m_nCurIDCCursorId = 0;
 #endif
+}
+
+void CHardwareMouse::EvaluateCursorConfinement()
+{
+	bool bConfine = IsFullscreen() || m_iReferenceCounter == 0;
+
+	ConfineCursor(bConfine);
 }

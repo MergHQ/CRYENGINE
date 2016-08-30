@@ -1252,12 +1252,6 @@ pixout WaterPS(v2f_hs IN)
 #endif
 #endif
 
-#if %_RT_SAMPLE0
-	// debugging ripples activation
-  //cFinal.xyz *= 0.01;//+= half3(IN.ripplesTC.w, 0, 0);
-	//cFinal.xyz = GetTexture2D(WaterDynRipplesSampler, IN.ripplesTC.xy);
-#endif
-
 	OUT.Color.xyz =  cFinal * PS_HDR_RANGE_ADAPT_MAX;
   
   return OUT;

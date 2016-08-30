@@ -14,10 +14,14 @@
 
 CRY_PFX2_DBG
 
-volatile bool gFeatureRenderRibbon = false;
-
 namespace pfx2
 {
+
+
+EParticleDataType PDT(EPDT_RibbonId, TParticleId);
+
+extern EParticleDataType EPDT_Alpha, EPDT_Color;
+
 
 SERIALIZATION_DECLARE_ENUM(ERibbonMode,
                            Camera,
@@ -25,9 +29,15 @@ SERIALIZATION_DECLARE_ENUM(ERibbonMode,
                            )
 
 SERIALIZATION_DECLARE_ENUM(ERibbonStreamSource,
-                           Age = EPDT_NormalAge,
-                           Spawn = EPDT_SpawnFraction
+                           Age,
+                           Spawn
                            )
+
+
+EParticleDataType DataType(ERibbonStreamSource source)
+{
+	return source == ERibbonStreamSource::Spawn ? EPDT_SpawnFraction : EPDT_NormalAge;
+}
 
 class CFeatureRenderRibbon : public CParticleRenderBase
 {
@@ -69,7 +79,7 @@ private:
 	bool                m_connectToOrigin;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderRibbon, "Render", "Ribbon", "Editor/Icons/Particles/ribbons.png", renderFeatureColor);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderRibbon, "Render", "Ribbon", colorRender);
 
 CFeatureRenderRibbon::CFeatureRenderRibbon()
 	: m_ribbonMode(ERibbonMode::Camera)
@@ -97,7 +107,7 @@ void CFeatureRenderRibbon::AddToComponent(CParticleComponent* pComponent, SCompo
 	pParams->m_renderObjectSortBias = m_sortBias;
 	if (m_ribbonMode == ERibbonMode::Free)
 		pComponent->AddParticleData(EPQF_Orientation);
-	pComponent->AddParticleData(EParticleDataType(m_streamSource));
+	pComponent->AddParticleData(DataType(m_streamSource));
 	pParams->m_shaderData.m_textureFrequency = m_frequency;
 }
 
@@ -296,7 +306,7 @@ class CRibbonColorSTs
 public:
 	CRibbonColorSTs(const CParticleContainer& container, ERibbonStreamSource streamSource)
 		: m_colors(container.GetIColorStream(EPDT_Color))
-		, m_stream(container.GetIFStream(EParticleDataType(streamSource)))
+		, m_stream(container.GetIFStream(DataType(streamSource)))
 		, m_sizes(container.GetIFStream(EPDT_Size))
 		, m_alphas(container.GetIFStream(EPDT_Alpha, 1.0f))
 		, m_hasColors(container.HasData(EPDT_Color)) {}

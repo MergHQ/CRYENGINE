@@ -79,6 +79,20 @@ protected:
 		return def;
 	}
 
+	// Aspect-related messages don't use NET_DECLARE_... macros, and instead
+	// are instantiated by template members variating on the aspect number.
+	// Correct message description is crucial for the protocol, so we compose
+	// it at runtime, even though for members with static duration only.
+	static SNetMessageDef* Helper_AddAspectMessage(
+		SNetMessageDef::HandlerType handler, const char* szDescription, 
+		const int aspectNum, uint32 parallelFlags = 0)
+	{
+		return Helper_AddMessage(handler, eNRT_UnreliableUnordered,
+			// Leak is intentional, but constant.
+			(new string(szDescription + CryStringUtils::toString(aspectNum)))->c_str(),
+			parallelFlags);
+	}
+
 private:
 	struct Statics
 	{
@@ -112,8 +126,8 @@ typename CNetMessageSinkHelper<T, U, N>::Statics CNetMessageSinkHelper<T, U, N>:
   private:                                                                                        \
     static TNetMessageCallbackResult Trampoline ## name(uint32,                                   \
                                                         INetMessageSink*, TSerialize,             \
-                                                        uint32, uint32, EntityId*, INetChannel*); \
-    bool Handle ## name(TSerialize, uint32, uint32, EntityId*, INetChannel*);                     \
+                                                        uint32, uint32, uint32, EntityId*, INetChannel*); \
+    bool Handle ## name(TSerialize, uint32, uint32, uint32, EntityId*, INetChannel*);                     \
   public:                                                                                         \
     static const SNetMessageDef* const name
 
@@ -126,21 +140,22 @@ typename CNetMessageSinkHelper<T, U, N>::Statics CNetMessageSinkHelper<T, U, N>:
     TSerialize serialize,                                                                                                               \
     uint32 curSeq,                                                                                                                      \
     uint32 oldSeq,                                                                                                                      \
+    uint32 timeFraction32,                                                                                                                      \
     EntityId * pEntityId, INetChannel * pChannel)                                                                                       \
   {                                                                                                                                     \
     char* p = (char*) handler;                                                                                                          \
     p -= size_t((INetMessageSink*)(cls*)NULL);                                                                                          \
-    return TNetMessageCallbackResult(((cls*)p)->Handle ## name(serialize, curSeq, oldSeq, pEntityId, pChannel), (INetAtSyncItem*)NULL); \
+    return TNetMessageCallbackResult(((cls*)p)->Handle ## name(serialize, curSeq, oldSeq, timeFraction32, pEntityId, pChannel), (INetAtSyncItem*)NULL); \
   }                                                                                                                                     \
   inline bool cls::Handle ## name(TSerialize ser,                                                                                       \
-                                  uint32 nCurSeq, uint32 nOldSeq, EntityId * pEntityId, INetChannel * pNetChannel)
+                                  uint32 nCurSeq, uint32 nOldSeq, uint32 timeFraction32, EntityId * pEntityId, INetChannel * pNetChannel)
 
 #define NET_DECLARE_ATSYNC_MESSAGE(name)                                                          \
   private:                                                                                        \
     static TNetMessageCallbackResult Trampoline ## name(uint32,                                   \
                                                         INetMessageSink*, TSerialize,             \
-                                                        uint32, uint32, EntityId*, INetChannel*); \
-    bool Handle ## name(TSerialize, uint32, uint32, EntityId, INetChannel*);                      \
+                                                        uint32, uint32, uint32, EntityId*, INetChannel*); \
+    bool Handle ## name(TSerialize, uint32, uint32, uint32, EntityId, INetChannel*);                      \
   public:                                                                                         \
     static const SNetMessageDef* const name
 
@@ -153,15 +168,16 @@ typename CNetMessageSinkHelper<T, U, N>::Statics CNetMessageSinkHelper<T, U, N>:
     TSerialize serialize,                                                                                             \
     uint32 curSeq,                                                                                                    \
     uint32 oldSeq,                                                                                                    \
+    uint32 timeFraction32,                                                                                                    \
     EntityId * entityId, INetChannel * pChannel)                                                                      \
   {                                                                                                                   \
     char* p = (char*) handler;                                                                                        \
     p -= size_t((INetMessageSink*)(cls*)NULL);                                                                        \
     return TNetMessageCallbackResult(                                                                                 \
-      ((cls*)p)->Handle ## name(serialize, curSeq, oldSeq, *entityId, pChannel), static_cast<INetAtSyncItem*>(NULL)); \
+      ((cls*)p)->Handle ## name(serialize, curSeq, oldSeq, timeFraction32, *entityId, pChannel), static_cast<INetAtSyncItem*>(NULL)); \
   }                                                                                                                   \
   inline bool cls::Handle ## name(TSerialize ser,                                                                     \
-                                  uint32 nCurSeq, uint32 nOldSeq, EntityId entityId, INetChannel * pChannel)
+                                  uint32 nCurSeq, uint32 nOldSeq, uint32 timeFraction32, EntityId entityId, INetChannel * pChannel)
 
 //! Helper class for NET_DECLARE_SIMPLE_MESSAGE.
 template<class T>
@@ -210,7 +226,7 @@ private:
   private:                                                                                        \
     static TNetMessageCallbackResult Trampoline ## name(uint32,                                   \
                                                         INetMessageSink*, TSerialize,             \
-                                                        uint32, uint32, EntityId*, INetChannel*); \
+                                                        uint32, uint32, uint32, EntityId*, INetChannel*); \
     bool Handle ## name(const CClass &, EntityId*, bool bFromDemoSystem, INetChannel * pChannel); \
     typedef CClass TParam ## name;                                                                \
   public:                                                                                         \
@@ -228,6 +244,7 @@ private:
     TSerialize serialize,                                                                                                          \
     uint32 curSeq,                                                                                                                 \
     uint32 oldSeq,                                                                                                                 \
+    uint32 timeFraction32,                                                                                                         \
     EntityId * pEntityId, INetChannel * pChannel)                                                                                  \
   {                                                                                                                                \
     char* p = (char*) handler;                                                                                                     \
@@ -275,7 +292,7 @@ private:
   private:                                                                                                                                                \
     static TNetMessageCallbackResult Trampoline ## name(uint32,                                                                                           \
                                                         INetMessageSink*, TSerialize,                                                                     \
-                                                        uint32, uint32, EntityId*, INetChannel*);                                                         \
+                                                        uint32, uint32, uint32, EntityId*, INetChannel*);                                                 \
     bool Handle ## name(const CClass &, EntityId, bool bFromDemoSystem, INetChannel*, EDisconnectionCause & disconnectCause, string & disconnectMessage); \
     typedef CClass TParam ## name;                                                                                                                        \
   public:                                                                                                                                                 \
@@ -306,6 +323,7 @@ private:
     TSerialize serialize,                                                                                                    \
     uint32 curSeq,                                                                                                           \
     uint32 oldSeq,                                                                                                           \
+    uint32 timeFraction32,                                                                                                           \
     EntityId * pEntityId, INetChannel * pChannel)                                                                            \
   {                                                                                                                          \
     char* p = (char*) handler;                                                                                               \

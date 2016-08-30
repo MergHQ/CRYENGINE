@@ -28,18 +28,14 @@ CCommandList::CCommandList(CCommandListPool& rPool)
 	, m_eListType(rPool.GetD3D12QueueType())
 	, m_eState(CLSTATE_FREE)
 #if defined(_ALLOW_INITIALIZER_LISTS)
+	// *INDENT-OFF*
 	, m_DescriptorHeaps{
-	                    { rPool.GetDevice()->GetGlobalDescriptorBlock(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024) },
-		{
-			rPool.GetDevice()->GetGlobalDescriptorBlock(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024)
-	  },
-		{
-			rPool.GetDevice()->GetGlobalDescriptorBlock(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1024)
-	  },
-		{
-			rPool.GetDevice()->GetGlobalDescriptorBlock(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1024)
-	  }
-	                    }
+		{ rPool.GetDevice()->GetGlobalDescriptorBlock(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024) },
+		{ rPool.GetDevice()->GetGlobalDescriptorBlock(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024) },
+		{ rPool.GetDevice()->GetGlobalDescriptorBlock(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1024) },
+		{ rPool.GetDevice()->GetGlobalDescriptorBlock(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1024) }
+	}
+	// *INDENT-ON*
 #endif
 {
 #if !defined(_ALLOW_INITIALIZER_LISTS)
@@ -138,7 +134,11 @@ void CCommandList::End()
 void CCommandList::Schedule()
 {
 	if (m_eState < CLSTATE_SCHEDULED)
+	{
 		m_eState = CLSTATE_SCHEDULED;
+
+		m_rPool.SetSubmittedFenceValue(m_CurrentFenceValue);
+	}
 }
 
 void CCommandList::Submit()
@@ -164,10 +164,10 @@ void CCommandList::Submit()
 	}
 
 	// Inject the signal of the utilized fence to unblock code which picked up the fence of the command-list (even if it doesn't have contents)
-	m_rPool.SetSubmittedFenceValue(SignalFenceOnGPU());
+	SignalFenceOnGPU();
 	m_eState = CLSTATE_SUBMITTED;
 
-	DX12_LOG(DX12_CONCURRENCY_ANALYZER, "######################################## END [%s %d] CL ########################################",
+	DX12_LOG(DX12_CONCURRENCY_ANALYZER, "######################################## END [%s %lld] CL ########################################",
 	         m_rPool.GetFenceID() == CMDQUEUE_GRAPHICS ? "gfx" : m_rPool.GetFenceID() == CMDQUEUE_COMPUTE ? "cmp" : "cpy",
 	         m_rPool.GetSubmittedFenceValue());
 }
@@ -199,6 +199,105 @@ bool CCommandList::Reset()
 	m_eState = CLSTATE_FREE;
 	m_nCommands = 0;
 	return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+void CCommandList::ResourceBarrier(UINT NumBarriers, const D3D12_RESOURCE_BARRIER* pBarriers)
+{
+	if (DX12_BARRIER_FUSION && CRenderer::CV_r_D3D12BatchResourceBarriers)
+	{
+#if 1
+		if (CRenderer::CV_r_D3D12BatchResourceBarriers > 1)
+		{
+			CRY_ASSERT(m_CurrentNumPendingBarriers + NumBarriers < 256);
+			for (UINT i = 0; i < NumBarriers; ++i)
+			{
+				UINT j = 0;
+
+				if (pBarriers[i].Type == D3D12_RESOURCE_BARRIER_TYPE_UAV)
+				{
+					for (; j < m_CurrentNumPendingBarriers; ++j)
+					{
+						if (pBarriers[i].Type == m_PendingBarrierHeap[j].Type &&
+							pBarriers[i].Transition.pResource == m_PendingBarrierHeap[j].Transition.pResource &&
+							pBarriers[i].Transition.Subresource == m_PendingBarrierHeap[j].Transition.Subresource)
+						{
+							break;
+						}
+					}
+				}
+
+				else if (pBarriers[i].Type == D3D12_RESOURCE_BARRIER_TYPE_TRANSITION)
+				{
+					for (; j < m_CurrentNumPendingBarriers; ++j)
+					{
+						if (pBarriers[i].Type == m_PendingBarrierHeap[j].Type &&
+							pBarriers[i].Transition.pResource == m_PendingBarrierHeap[j].Transition.pResource &&
+							pBarriers[i].Transition.Subresource == m_PendingBarrierHeap[j].Transition.Subresource)
+						{
+							if (m_PendingBarrierHeap[j].Flags == D3D12_RESOURCE_BARRIER_FLAG_NONE)
+							if (pBarriers[i].Flags == D3D12_RESOURCE_BARRIER_FLAG_NONE)
+							{
+								assert(m_PendingBarrierHeap[j].Transition.StateAfter == pBarriers[i].Transition.StateBefore);
+								m_PendingBarrierHeap[j].Transition.StateAfter = pBarriers[i].Transition.StateAfter;
+								break;
+							}
+					
+							if (m_PendingBarrierHeap[j].Flags == D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY)
+							if (pBarriers[i].Flags == D3D12_RESOURCE_BARRIER_FLAG_END_ONLY)
+							{
+								assert(m_PendingBarrierHeap[j].Transition.StateAfter == pBarriers[i].Transition.StateAfter);
+								assert(m_PendingBarrierHeap[j].Transition.StateBefore == pBarriers[i].Transition.StateBefore);
+								m_PendingBarrierHeap[j].Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+								break;
+							}
+						}
+					}
+				}
+
+				if (j == m_CurrentNumPendingBarriers)
+				{
+					m_PendingBarrierHeap[m_CurrentNumPendingBarriers] = pBarriers[i];
+					m_CurrentNumPendingBarriers += 1;
+					m_nCommands += CLCOUNT_BARRIER * 1;
+				}
+				else
+				{
+					if (m_PendingBarrierHeap[j].Type == D3D12_RESOURCE_BARRIER_TYPE_TRANSITION)
+					if (m_PendingBarrierHeap[j].Transition.StateBefore == m_PendingBarrierHeap[j].Transition.StateAfter)
+					{
+						m_CurrentNumPendingBarriers--;
+
+						memmove(m_PendingBarrierHeap + j, m_PendingBarrierHeap + j + 1, (m_CurrentNumPendingBarriers - j) * sizeof(D3D12_RESOURCE_BARRIER));
+					}
+				}
+			}
+		}
+		else
+#endif
+		{
+			CRY_ASSERT(m_CurrentNumPendingBarriers + NumBarriers < 256);
+			for (UINT i = 0; i < NumBarriers; ++i)
+				m_PendingBarrierHeap[m_CurrentNumPendingBarriers + i] = pBarriers[i];
+
+			m_CurrentNumPendingBarriers += NumBarriers;
+			m_nCommands += CLCOUNT_BARRIER * NumBarriers;
+		}
+	}
+	else
+	{
+		m_pCmdList->ResourceBarrier(NumBarriers, pBarriers);
+		m_nCommands += CLCOUNT_BARRIER;
+	}
+}
+
+void CCommandList::PendingResourceBarriers()
+{
+	if (DX12_BARRIER_FUSION && m_CurrentNumPendingBarriers)
+	{
+		m_pCmdList->ResourceBarrier(m_CurrentNumPendingBarriers, m_PendingBarrierHeap);
+		m_CurrentNumPendingBarriers = 0;
+	}
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -388,9 +487,6 @@ CResource& CCommandList::PatchRenderTarget(CResource& assumedResource)
 
 const CView& CCommandList::PatchRenderTargetView(const CView& assumedView)
 {
-	// NOTE: should not be necessary here but causes artifacts in flash rendering on nvidia if omitted
-	PendingResourceBarriers();
-
 #ifdef DX12_REPLACE_BACKBUFFER
 	CResource& assumedResource = assumedView.GetDX12Resource();
 
@@ -543,7 +639,7 @@ void CCommandList::BindResourceView(const CView& assumedview, const TRange<UINT>
 
 		if (m_eListType == D3D12_COMMAND_LIST_TYPE_COMPUTE)
 		{
-			TrackResourceCRVUsage(resource);
+			TrackResourceCRVUsage(resource, view);
 		}
 		else
 		{
@@ -781,7 +877,7 @@ void CCommandList::ClearUnorderedAccessView(const CView& view, const UINT rgba[4
 	DX12_ASSERT(INVALID_CPU_DESCRIPTOR_HANDLE != view.GetDescriptorHandle(), "View has no descriptor handle, that is not allowed!");
 
 	// TODO: if we know early that the resource(s) will be PRESENT we can begin the barrier early and end it here
-	TrackResourceUAVUsage(view.GetDX12Resource(), view);
+	TrackResourceUCVUsage(view.GetDX12Resource(), view);
 
 	PendingResourceBarriers();
 
@@ -794,7 +890,7 @@ void CCommandList::ClearUnorderedAccessView(const CView& view, const FLOAT rgba[
 	DX12_ASSERT(INVALID_CPU_DESCRIPTOR_HANDLE != view.GetDescriptorHandle(), "View has no descriptor handle, that is not allowed!");
 
 	// TODO: if we know early that the resource(s) will be PRESENT we can begin the barrier early and end it here
-	TrackResourceUAVUsage(view.GetDX12Resource(), view);
+	TrackResourceUCVUsage(view.GetDX12Resource(), view);
 
 	PendingResourceBarriers();
 
@@ -859,7 +955,7 @@ void CCommandList::CopyResource(CResource& rDstResource, CResource& rSrcResource
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void CCommandList::CopySubresource(CResource& rDstResource, UINT dstSubResource, UINT x, UINT y, UINT z, CResource& rSrcResource, UINT srcSubResource, const D3D12_BOX* srcBox)
+void CCommandList::CopySubresources(CResource& rDstResource, UINT dstSubResource, UINT x, UINT y, UINT z, CResource& rSrcResource, UINT srcSubResource, const D3D12_BOX* srcBox, UINT NumSubresources)
 {
 	MaxResourceFenceValue(rDstResource, CMDTYPE_ANY);
 	MaxResourceFenceValue(rSrcResource, CMDTYPE_WRITE);
@@ -872,18 +968,22 @@ void CCommandList::CopySubresource(CResource& rDstResource, UINT dstSubResource,
 
 	if (rSrcResource.GetDesc().Dimension == D3D12_RESOURCE_DIMENSION_BUFFER && rDstResource.GetDesc().Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
 	{
-		UINT64 length = (srcBox ? srcBox->right - srcBox->left : rSrcResource.GetDesc().Width);
+		UINT64 offset = (srcBox ? srcBox->left : 0);
+		UINT64 length = (srcBox ? srcBox->right : rSrcResource.GetDesc().Width) - offset;
 
-		m_pCmdList->CopyBufferRegion(rDstResource.GetD3D12Resource(), x, rSrcResource.GetD3D12Resource(), 0, length);
+		m_pCmdList->CopyBufferRegion(rDstResource.GetD3D12Resource(), x, rSrcResource.GetD3D12Resource(), offset, length);
 		m_nCommands += CLCOUNT_COPY;
 	}
 	else if (rSrcResource.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER && rDstResource.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
 	{
-		CD3DX12_TEXTURE_COPY_LOCATION src(rSrcResource.GetD3D12Resource(), srcSubResource);
-		CD3DX12_TEXTURE_COPY_LOCATION dst(rDstResource.GetD3D12Resource(), dstSubResource);
+		for (UINT n = 0; n < NumSubresources; ++n)
+		{
+			CD3DX12_TEXTURE_COPY_LOCATION src(rSrcResource.GetD3D12Resource(), srcSubResource + n);
+			CD3DX12_TEXTURE_COPY_LOCATION dst(rDstResource.GetD3D12Resource(), dstSubResource + n);
 
-		m_pCmdList->CopyTextureRegion(&dst, x, y, z, &src, srcBox);
-		m_nCommands += CLCOUNT_COPY;
+			m_pCmdList->CopyTextureRegion(&dst, x, y, z, &src, srcBox);
+			m_nCommands += CLCOUNT_COPY;
+		}
 	}
 	else if (rDstResource.GetDesc().Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
 	{
@@ -989,6 +1089,7 @@ void CCommandList::UpdateSubresources(CResource& rResource, D3D12_RESOURCE_STATE
 	ID3D12Resource* res12 = rResource.GetD3D12Resource();
 	ID3D12Resource* uploadBuffer = NULL;
 
+	// NOTE: this is a staging resource, a single instance for all GPUs is valid
 	const NODE64& uploadMasks = rResource.GetNodeMasks();
 	if (S_OK != GetDevice()->CreateOrReuseCommittedResource(
 	      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD, blsi(uploadMasks.creationMask), uploadMasks.creationMask),
@@ -1028,6 +1129,13 @@ void CCommandList::DiscardResource(CResource& rResource, const D3D12_DISCARD_REG
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+D3D12_COMMAND_LIST_TYPE CCommandListPool::m_MapQueueType[CMDQUEUE_NUM] =
+{
+	D3D12_COMMAND_LIST_TYPE(CMDLIST_TYPE_DIRECT),
+	D3D12_COMMAND_LIST_TYPE(CMDLIST_TYPE_COMPUTE),
+	D3D12_COMMAND_LIST_TYPE(CMDLIST_TYPE_COPY)
+};
+
 //---------------------------------------------------------------------------------------------------------------------
 CCommandListPool::CCommandListPool(CDevice* device, CCommandListFenceSet& rCmdFence, int nPoolFenceId)
 	: m_pDevice(device)
@@ -1038,6 +1146,8 @@ CCommandListPool::CCommandListPool(CDevice* device, CCommandListFenceSet& rCmdFe
 	m_PeakNumCommandListsAllocated = 0;
 	m_PeakNumCommandListsInFlight = 0;
 #endif // DX12_STATS
+
+	Configure();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1046,6 +1156,13 @@ CCommandListPool::~CCommandListPool()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+void CCommandListPool::Configure()
+{
+	m_MapQueueType[CMDQUEUE_GRAPHICS] = D3D12_COMMAND_LIST_TYPE(CMDLIST_TYPE_DIRECT); // 0 -> 0
+	m_MapQueueType[CMDQUEUE_COMPUTE] = D3D12_COMMAND_LIST_TYPE((CRenderer::CV_r_D3D12HardwareComputeQueue % 2) * 2); // 0 -> 0, 1 -> 2
+	m_MapQueueType[CMDQUEUE_COPY] = D3D12_COMMAND_LIST_TYPE((CRenderer::CV_r_D3D12HardwareCopyQueue % 3) + !!(CRenderer::CV_r_D3D12HardwareCopyQueue % 3)); // 0 -> 0, 1 -> 2, 2-> 3
+}
+
 bool CCommandListPool::Init(D3D12_COMMAND_LIST_TYPE eType, UINT nodeMask)
 {
 	if (!m_pCmdQueue)
@@ -1076,6 +1193,20 @@ bool CCommandListPool::Init(D3D12_COMMAND_LIST_TYPE eType, UINT nodeMask)
 #endif // DX12_STATS
 
 	return true;
+}
+
+void CCommandListPool::Clear()
+{
+	// No running command lists of any type allowed:
+	// * trigger Live-to-Busy transitions
+	// * trigger Busy-to-Free transitions
+	while (m_LiveCommandLists.size() || m_BusyCommandLists.size())
+		ScheduleCommandLists(); 
+
+	m_FreeCommandLists.clear();
+	m_AsyncCommandQueue.Clear();
+
+	m_pCmdQueue = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------

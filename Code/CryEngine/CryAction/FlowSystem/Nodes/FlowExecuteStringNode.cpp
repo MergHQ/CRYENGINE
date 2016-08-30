@@ -1,7 +1,8 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FlowBaseNode.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 class CFlowNode_ExecuteString : public CFlowBaseNode<eNCT_Singleton>
 {
@@ -53,4 +54,4 @@ public:
 	}
 };
 
-REGISTER_FLOW_NODE("System:ExecuteString", CFlowNode_ExecuteString);
+REGISTER_FLOW_NODE("Debug:ExecuteString", CFlowNode_ExecuteString);

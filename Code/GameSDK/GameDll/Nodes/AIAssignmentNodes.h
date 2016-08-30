@@ -2,26 +2,24 @@
 
 #pragma once
 
-#ifndef AIAssignmentNodes_h
-#define AIAssignmentNodes_h
-
-#include "G2FlowBaseNode.h"
 #include "AI/Assignment.h"
+
+#include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
 
-class AssignmentFlowNodeBase 
+class AssignmentFlowNodeBase
 	: public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	virtual int GetSetPortNumber() const = 0;
+	virtual int        GetSetPortNumber() const = 0;
 	virtual Assignment SpecifyAssignment(SActivationInfo* pActInfo) = 0;
 
-	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
+	void               ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
 
 protected:
 
-	void DispatchAssignment( Assignment assignment, IEntity* entity );
+	void DispatchAssignment(Assignment assignment, IEntity* entity);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -35,13 +33,13 @@ public:
 		InputPort_Set,
 	};
 
-	ClearAssignmentFlowNode(SActivationInfo* pActInfo)	{}
+	ClearAssignmentFlowNode(SActivationInfo* pActInfo)  {}
 
-	virtual void GetConfiguration( SFlowNodeConfig& config );
-	virtual void GetMemoryUsage( ICrySizer * sizer ) const { sizer->Add(*this); }
+	virtual void GetConfiguration(SFlowNodeConfig& config);
+	virtual void GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
 
-	int GetSetPortNumber() const { return InputPort_Set; }
-	Assignment SpecifyAssignment(SActivationInfo* pActInfo);
+	int          GetSetPortNumber() const               { return InputPort_Set; }
+	Assignment   SpecifyAssignment(SActivationInfo* pActInfo);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -57,13 +55,13 @@ public:
 		InputPort_Radius,
 	};
 
-	DefendAreaAssignmentFlowNode(SActivationInfo* pActInfo)	{}
+	DefendAreaAssignmentFlowNode(SActivationInfo* pActInfo) {}
 
-	virtual void GetConfiguration( SFlowNodeConfig& config );
-	virtual void GetMemoryUsage( ICrySizer * sizer ) const { sizer->Add(*this); }
+	virtual void GetConfiguration(SFlowNodeConfig& config);
+	virtual void GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
 
-	int GetSetPortNumber() const { return InputPort_Set; }
-	Assignment SpecifyAssignment(SActivationInfo* pActInfo);
+	int          GetSetPortNumber() const               { return InputPort_Set; }
+	Assignment   SpecifyAssignment(SActivationInfo* pActInfo);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -81,13 +79,13 @@ public:
 		InputPort_UseCover,
 	};
 
-	HoldPositionAssignmentFlowNode(SActivationInfo* pActInfo)	{}
+	HoldPositionAssignmentFlowNode(SActivationInfo* pActInfo) {}
 
-	virtual void GetConfiguration( SFlowNodeConfig& config );
-	virtual void GetMemoryUsage( ICrySizer * sizer ) const { sizer->Add(*this); }
+	virtual void GetConfiguration(SFlowNodeConfig& config);
+	virtual void GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
 
-	int GetSetPortNumber() const { return InputPort_Set; }
-	Assignment SpecifyAssignment(SActivationInfo* pActInfo);
+	int          GetSetPortNumber() const               { return InputPort_Set; }
+	Assignment   SpecifyAssignment(SActivationInfo* pActInfo);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -103,16 +101,11 @@ public:
 		InputPort_UseCover,
 	};
 
-	CombatMoveAssignmentFlowNode(SActivationInfo* pActInfo)	{}
+	CombatMoveAssignmentFlowNode(SActivationInfo* pActInfo) {}
 
-	virtual void GetConfiguration( SFlowNodeConfig& config );
-	virtual void GetMemoryUsage( ICrySizer * sizer ) const { sizer->Add(*this); }
+	virtual void GetConfiguration(SFlowNodeConfig& config);
+	virtual void GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
 
-	int GetSetPortNumber() const { return InputPort_Set; }
-	Assignment SpecifyAssignment(SActivationInfo* pActInfo);
+	int          GetSetPortNumber() const               { return InputPort_Set; }
+	Assignment   SpecifyAssignment(SActivationInfo* pActInfo);
 };
-
-//////////////////////////////////////////////////////////////////////////
-
-
-#endif //AIAssignmentNodes_h
