@@ -12,6 +12,9 @@
 
 #include <CrySystem/ParseEngineConfig.h>
 
+#include <jsmn.h>
+#include <jsmnutil.h>
+
 // We need shell api for Current Root Extruction.
 #include "shlwapi.h"
 #pragma comment(lib, "shlwapi.lib")
@@ -62,26 +65,57 @@ ILINE unsigned Hash( unsigned a )
 // encode size ignore last 3 bits of size in bytes. (encode by 8bytes min)
 #define TEA_GETSIZE( len ) ((len) & (~7))
 
-static const LPWSTR GetProjectRootArgument(int argc, const LPWSTR argv[])
+static const LPWSTR GetProjectFileArgument(int argc, const LPWSTR argv[])
 {
 	for (int i = 1; i < argc - 1; i++)
 	{
-		if (wcscmp(argv[i], L"-projectroot") == 0)
+		if (wcscmp(argv[i], L"-project") == 0)
 			return argv[i + 1];
 	}
 
 	return nullptr;
 }
 
-static const LPWSTR GetProjectDllDirArgument(int argc, const LPWSTR argv[])
+static string file_get_contents(LPCWSTR lpFileName)
 {
-	for (int i = 1; i < argc - 1; i++)
+	FILE* file = _wfopen(lpFileName, L"rb");
+
+	string buffer;
+	if (file != NULL)
 	{
-		if (wcscmp(argv[i], L"-projectdlldir") == 0)
-			return argv[i + 1];
+		fseek(file, 0, SEEK_END);
+		size_t size = ftell(file);
+
+		buffer.resize(size);
+
+		fseek(file, 0, SEEK_SET);
+		fread((void*) &buffer[0], size, 1, file);
+		fclose(file);
 	}
 
-	return nullptr;
+	return buffer;
+}
+
+static std::vector<jsmntok_t> json_decode(const string& buffer)
+{
+	std::vector<jsmntok_t> tokens;
+	tokens.resize(64);
+
+	jsmn_parser parser;
+	jsmn_init(&parser);
+	int ntokens = jsmn_parse(&parser, buffer.data(), buffer.size(), tokens.data(), tokens.size());
+	while (ntokens == JSMN_ERROR_NOMEM)
+	{
+		tokens.resize(tokens.size() * 2);
+		ntokens = jsmn_parse(&parser, buffer.data(), buffer.size(), tokens.data(), tokens.size());
+	}
+
+	if (0 <= ntokens)
+		tokens.resize(ntokens);
+	else
+		tokens.clear();
+
+	return tokens;
 }
 
 ILINE int RunGame(const char *commandLine)
@@ -93,20 +127,32 @@ ILINE int RunGame(const char *commandLine)
 	{
 		int argc = 0;
 		LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-		const LPWSTR sProjectRoot = GetProjectRootArgument(argc, argv);
-		if (sProjectRoot)
+		const LPWSTR sProjectFile = GetProjectFileArgument(argc, argv);
+		if (sProjectFile)
 		{
-			SetCurrentDirectoryW(sProjectRoot);
+			string js = file_get_contents(sProjectFile);
+			std::vector<jsmntok_t> tokens = json_decode(js);
 
-			const LPWSTR sProjectDllDir = GetProjectDllDirArgument(argc, argv);
-			if (sProjectDllDir && sProjectDllDir[0])
+#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT)
+			const jsmntok_t* shared = jsmnutil_xpath(js.data(), tokens.data(), "content", "libs", "0", "shared", "win_x64", nullptr);
+#elif (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT)
+			const jsmntok_t* shared = jsmnutil_xpath(js.data(), tokens.data(), "content", "libs", "0", "shared", "win_x86", nullptr);
+#endif
+
+			string sSysGameDll;
+			if (shared && shared->type == JSMN_STRING)
 			{
-				SetDllDirectoryW(sProjectDllDir);
-				WideCharToMultiByte(CP_ACP, 0, sProjectDllDir, -1, startupParams.szProjectDllDir, CRY_ARRAY_COUNT(startupParams.szProjectDllDir), NULL, NULL);
+				sSysGameDll.assign(js.data() + shared->start, shared->end - shared->start);
+				gameDLLName = PathUtil::GetFile(sSysGameDll);
+
+				string szProjectDllDir = PathUtil::GetPathWithoutFilename(sSysGameDll);
+				cry_strcpy(startupParams.szProjectDllDir, szProjectDllDir);
+				if (!szProjectDllDir.empty())
+					SetDllDirectoryW(CryStringUtils::UTF8ToWStr(szProjectDllDir));
 			}
 
-			CProjectConfig projectCfg;
-			gameDLLName = projectCfg.m_gameDLL;
+			string sProjectRoot = PathUtil::GetPathWithoutFilename(CryStringUtils::WStrToUTF8(sProjectFile));
+			SetCurrentDirectoryW(CryStringUtils::UTF8ToWStr(sProjectRoot));
 		}
 		else
 		{
