@@ -142,7 +142,8 @@ bool SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(::CShade
 			int maxVectorCount = 0;
 			for (const auto& bind : pInstance->m_pBindVars)
 			{
-				if ((bind.m_dwBind & (SHADER_BIND_TEXTURE | SHADER_BIND_SAMPLER)) == 0)
+				if ((bind.m_dwBind & (SHADER_BIND_TEXTURE | SHADER_BIND_SAMPLER)) == 0
+				    && bind.m_dwCBufSlot <= eConstantBufferShaderSlot_PerFrame)
 				{
 					usedBuffersSlots.insert(EConstantBufferShaderSlot(bind.m_dwCBufSlot));
 					maxVectorCount = std::max(maxVectorCount, vectorCount[bind.m_dwCBufSlot]);

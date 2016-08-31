@@ -91,7 +91,7 @@ void CCompiledRenderObject::Init(const SShaderItem& shaderItem, CRendElementBase
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::CheckDynamicInstancing(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext,CCompiledRenderObject* pNextObject) const
+bool CCompiledRenderObject::CheckDynamicInstancing(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CCompiledRenderObject* pNextObject) const
 {
 	if (!m_bDynamicInstancingPossible || !pNextObject->m_bDynamicInstancingPossible)
 		return false;
@@ -281,12 +281,12 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		cb->PerInstancePrevWorldMatrix = Matrix34(objPrevMatr);
 		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
 		cb->PerInstanceCustomData =
-			Vec4(
-				pRenderObject->m_vegetationBendingData.verticalRadius,
-				pRenderObject->m_vegetationBendingData.scale,
-				tessellationPatchIDOffset,
-				dissolve
-			);
+		  Vec4(
+		    pRenderObject->m_vegetationBendingData.verticalRadius,
+		    pRenderObject->m_vegetationBendingData.scale,
+		    tessellationPatchIDOffset,
+		    dissolve
+		    );
 
 		UpdatePerInstanceCB(cb, cbSize);
 	}
@@ -315,7 +315,7 @@ void CCompiledRenderObject::CompileInstancingData(CRenderObject* pRenderObject, 
 			SPerInstanceShaderData& inst = tempInstanceBuffer[i];
 			inst = m_instanceShaderData;
 			if (i < nSrcInsts)
-	{
+			{
 				inst.matrix = pRenderObject->m_Instances[i].m_Matrix;
 			}
 		}
@@ -331,7 +331,7 @@ void CCompiledRenderObject::CompileInstancingData(CRenderObject* pRenderObject, 
 		pCB->UpdateBuffer(tempInstanceBuffer, nSize);
 		m_pInstancingConstBuffer = std::move(pCB);
 	}
-	}
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CCompiledRenderObject::CompilePerInstanceExtraResources(CRenderObject* pRenderObject)
@@ -394,6 +394,7 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject)
 	const bool bMuteWarnings = gcpRendD3D->m_nGraphicsPipeline >= 1;  // @TODO: Remove later
 
 	m_bIncomplete = true;
+	m_bCustomRenderElement = false;
 
 	bool bInstanceDataUpdateOnly = pRenderObject->m_bInstanceDataDirty;
 
@@ -559,10 +560,10 @@ void CCompiledRenderObject::PrepareForUse(CDeviceCommandListRef RESTRICT_REFEREN
 			{
 				// Render instanced draw calls.
 				pCommandInterface->PrepareInlineConstantBufferForUse(EResourceLayoutSlot_PerInstanceCB, m_pInstancingConstBuffer, eConstantBufferShaderSlot_PerInstance, EShaderStage_Vertex | EShaderStage_Pixel);
-				}
 			}
 		}
 	}
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext,
@@ -571,8 +572,8 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
                                               ) const
 {
 	if (m_bCustomRenderElement)
-{
-		m_pRenderElement->DrawToCommandList(m_pRO,passContext);
+	{
+		m_pRenderElement->DrawToCommandList(m_pRO, passContext);
 		return;
 	}
 
@@ -645,12 +646,12 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
 			else
 			{
 				if (m_pInstancingConstBuffer)
-			{
-				// Render instanced draw calls.
+				{
+					// Render instanced draw calls.
 					commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerInstanceCB, m_pInstancingConstBuffer, eConstantBufferShaderSlot_PerInstance, perInstanceCBShaderStages);
 					commandInterface.DrawIndexed(m_drawParams[drawParamsIndex].m_nNumIndices, m_nInstances, m_drawParams[drawParamsIndex].m_nStartIndex, 0, 0);
-				return;
-			}
+					return;
+				}
 				commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerInstanceCB, m_perInstanceCB, eConstantBufferShaderSlot_PerInstance, perInstanceCBShaderStages);
 				commandInterface.DrawIndexed(m_drawParams[drawParamsIndex].m_nNumIndices, 1, m_drawParams[drawParamsIndex].m_nStartIndex, 0, 0);
 				return;
