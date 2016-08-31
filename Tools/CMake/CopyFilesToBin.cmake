@@ -4,14 +4,6 @@ set (BinaryFileList_Win64
 	Code/SDKs/XT_13_4/bin_vc14/*.dll
 	Code/SDKs/Mono/bin/x64/mono-2.0.dll
 
-	Code/SDKs/audio/fmod/windows/api/lowlevel/lib/fmod64.dll
-	Code/SDKs/audio/fmod/windows/api/studio/lib/fmodstudio64.dll
-
-	Code/SDKs/Audio/SDL_mixer/lib/x64/SDL2_mixer.dll
-	Code/SDKs/Audio/SDL_mixer/lib/x64/libogg-0.dll
-	Code/SDKs/Audio/SDL_mixer/lib/x64/libvorbis-0.dll
-	Code/SDKs/Audio/SDL_mixer/lib/x64/libvorbisfile-3.dll
-
 	Code/SDKs/Brofiler/ProfilerCore64.dll
 
 	Code/SDKs/audio/oculus/wwise/bin/plugins/OculusSpatializer.dll
@@ -32,7 +24,7 @@ set (BinaryFileList_LINUX64
 function(deploy_runtime_files fileexpr)
 	file(GLOB FILES_TO_COPY ${fileexpr})
 	foreach(FILE_PATH ${FILES_TO_COPY})
-		message("Deploy file: ${FILE_PATH}")
+		message(STATUS "Deploy file: ${FILE_PATH}")
 		get_filename_component(FILE_NAME ${FILE_PATH} NAME)
 
 		# If another argument was passed files are deployed to the subdirectory
@@ -49,7 +41,7 @@ endfunction()
 function(deploy_runtime_dir dir output_dir)
 	file(GLOB_RECURSE FILES_TO_COPY RELATIVE ${CMAKE_SOURCE_DIR}/${dir} ${dir}/*)
 	
-	message("Deploy directory: ${dir}")
+	message(STATUS "Deploy directory: ${dir}")
 
 	foreach(FILE_NAME ${FILES_TO_COPY})
 		set(FILE_PATH ${CMAKE_SOURCE_DIR}/${dir}/${FILE_NAME})
