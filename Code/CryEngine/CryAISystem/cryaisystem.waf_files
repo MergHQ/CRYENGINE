@@ -451,11 +451,6 @@
 			"Sequence/SequenceFlowNodes.h",
 			"Sequence/SequenceManager.h"
 		],
-		"FlowNodes":
-		[
-			"FlowNodes/AIFlowBaseNode.cpp",
-			"FlowNodes/AIFlowBaseNode.h"
-		],
 		"Behavior Tree":
 		[
 			"BehaviorTree/BehaviorTreeGraft.cpp",

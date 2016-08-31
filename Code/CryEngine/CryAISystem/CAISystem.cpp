@@ -72,7 +72,7 @@
 	#include "AIBubblesSystem/AIBubblesSystemImpl.h"
 #endif
 
-#include "FlowNodes/AIFlowBaseNode.h"
+#include "Sequence/SequenceFlowNodes.h"
 #include "FlyHelpers_TacticalPointLanguageExtender.h"
 
 #include <algorithm>  // std::min()
@@ -463,7 +463,10 @@ bool CAISystem::Init()
 
 bool CAISystem::CompleteInit()
 {
-	AIFlowBaseNode::RegisterFactory();
+#ifndef _LIB
+	AIFlowBaseNode::RegisterFlowNodes();
+#endif
+
 	return true;
 }
 
