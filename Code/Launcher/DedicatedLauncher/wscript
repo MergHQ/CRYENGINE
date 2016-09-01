@@ -8,4 +8,6 @@ def build(bld):
 		
 		win_file_list   = 'launcher.waf_files', 
 		lib         = 'Shell32', 
+		
+		use_module = ['jsmn'],
 	)	

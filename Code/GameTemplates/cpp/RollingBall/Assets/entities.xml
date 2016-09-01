@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<Entities>
+  <Entity Name="AreaBox" Invisible="1"/>
+  <Entity Name="AreaShape" Invisible="1"/>
+  <Entity Name="AreaSolid" Invisible="1"/>
+  <Entity Name="AreaSphere" Invisible="1"/>
+  <Entity Name="AudioAreaAmbience" Script="Scripts/Entities/Sound/AudioAreaAmbience.lua"/>
+  <Entity Name="AudioAreaEntity" Script="Scripts/Entities/Sound/AudioAreaEntity.lua"/>
+  <Entity Name="AudioAreaRandom" Script="Scripts/Entities/Sound/AudioAreaRandom.lua"/>
+  <Entity Name="AudioTriggerSpot" Script="Scripts/Entities/Sound/AudioTriggerSpot.lua"/>
+</Entities>

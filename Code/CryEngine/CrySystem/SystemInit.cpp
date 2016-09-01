@@ -168,7 +168,7 @@ extern AAssetManager* androidGetAssetManager();
 #define DLL_RENDERER_DX12 "CryRenderD3D12"
 #define DLL_RENDERER_GL   "CryRenderOpenGL"
 #define DLL_RENDERER_NULL "CryRenderNULL"
-#define DLL_GAME          "CryGame"
+#define DLL_GAME          "CryGameZero"
 #define DLL_LIVECREATE    "CryLiveCreate"
 #define DLL_MONO_BRIDGE   "CryMonoBridge"
 #define DLL_SCALEFORM     "CryScaleformHelper"

@@ -18,7 +18,7 @@ end_sources()
 
 if(WIN32)
 	CryDedicatedServer(DedicatedLauncher SOLUTION_FOLDER "Launcher")
-	target_link_libraries( ${THIS_PROJECT} PRIVATE Shell32)
+	target_link_libraries( ${THIS_PROJECT} PRIVATE Shell32 jsmn)
 else()
 	CryFileContainer(DedicatedLauncher SOLUTION_FOLDER "Launcher")
 endif()
