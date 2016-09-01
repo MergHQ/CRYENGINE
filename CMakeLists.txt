@@ -445,6 +445,11 @@ if (OPTION_RC AND WIN64)
 	add_subdirectory(Code/Tools/RC/ResourceCompilerPC)
 	add_subdirectory(Code/Tools/RC/ResourceCompilerXML)
 endif()
+
+if (WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Tools/ShaderCacheGen/ShaderCacheGen")
+	add_subdirectory(Code/Tools/ShaderCacheGen/ShaderCacheGen EXCLUDE_FROM_ALL)
+endif()
+
 set(CMAKE_INSTALL_MESSAGE LAZY)
 install(FILES Tools/CMake/modules/CryCommonConfig.cmake DESTINATION share/cmake)
 install(FILES Tools/CMake/modules/CryActionConfig.cmake DESTINATION share/cmake)
