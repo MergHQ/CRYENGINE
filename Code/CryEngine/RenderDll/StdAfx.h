@@ -818,8 +818,8 @@ unsigned sizeOfMapS(Map& map)
 	#define VOLUMETRIC_FOG_SHADOWS
 #endif
 
-#if CRY_PLATFORM_WINDOWS && !(defined(OPENGL) && defined(RELEASE))
-	//#define ENABLE_NULL_D3D11DEVICE
+#if CRY_PLATFORM_WINDOWS && !defined(CRY_USE_DX12) && !(defined(OPENGL) && defined(RELEASE))
+	#define ENABLE_NULL_D3D11DEVICE
 #endif
 
 #if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
