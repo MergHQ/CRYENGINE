@@ -355,22 +355,39 @@ inline int IsHeapValid()
 
 #include <CryCore/Assert/CompileTimeAssert.h>
 // Platform dependent functions that emulate Win32 API. Mostly used only for debugging!
-void         CryDebugBreak();
-void         CrySleep(unsigned int dwMilliseconds);
-void         CryLowLatencySleep(unsigned int dwMilliseconds);
-int          CryMessageBox(const char* lpText, const char* lpCaption, unsigned int uType);
-bool         CryCreateDirectory(const char* lpPathName);
-void         CryGetCurrentDirectory(unsigned int pathSize, char* szOutPath);
-short        CryGetAsyncKeyState(int vKey);
-unsigned int CryGetFileAttributes(const char* lpFileName);
-int          CryGetWritableDirectory(unsigned int pathSize, char* szOutPath);
 
-void         CryGetExecutableFolder(unsigned int pathSize, char* szOutPath);
-void         CryFindEngineRootFolder(unsigned int pathSize, char* szOutPath);
-void         CrySetCurrentWorkingDirectory(const char* szWorkingDirectory);
-void         CryFindRootFolderAndSetAsCurrentWorkingDirectory();
+enum EQuestionResult
+{
+	eQR_None,
+	eQR_Cancel = eQR_None,
+	eQR_Yes,
+	eQR_No
+};
 
-inline void  CryHeapCheck()
+enum EMessageBox
+{
+	eMB_Info,
+	eMB_YesCancel,
+	eMB_YesNoCancel,
+	eMB_Error,
+};
+
+void            CryDebugBreak();
+void            CrySleep(unsigned int dwMilliseconds);
+void            CryLowLatencySleep(unsigned int dwMilliseconds);
+EQuestionResult CryMessageBox(const char* lpText, const char* lpCaption, EMessageBox uType = eMB_Info);
+bool            CryCreateDirectory(const char* lpPathName);
+void            CryGetCurrentDirectory(unsigned int pathSize, char* szOutPath);
+short           CryGetAsyncKeyState(int vKey);
+unsigned int    CryGetFileAttributes(const char* lpFileName);
+int             CryGetWritableDirectory(unsigned int pathSize, char* szOutPath);
+
+void            CryGetExecutableFolder(unsigned int pathSize, char* szOutPath);
+void            CryFindEngineRootFolder(unsigned int pathSize, char* szOutPath);
+void            CrySetCurrentWorkingDirectory(const char* szWorkingDirectory);
+void            CryFindRootFolderAndSetAsCurrentWorkingDirectory();
+
+inline void     CryHeapCheck()
 {
 #if CRY_PLATFORM_WINDOWS // todo: this might be readded with later xdks?
 	int Result = _heapchk();

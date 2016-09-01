@@ -1766,14 +1766,6 @@ void CUNIXConsole::Print(const char* line)
 	Unlock();
 }
 
-bool CUNIXConsole::OnError(const char* errorString)
-{
-	if (!m_Initialized)
-		return true;
-
-	return true;
-}
-
 void CUNIXConsole::OnInitProgress(const char* sProgressMsg)
 {
 	if (!m_Initialized)

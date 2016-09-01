@@ -1112,24 +1112,22 @@ void DebugCallStack::LogExceptionInfo(EXCEPTION_POINTERS* pex)
 	}
 	const bool bQuitting = !gEnv || !gEnv->pSystem || gEnv->pSystem->IsQuitting();
 
-	//[AlexMcC|16.04.10] When the engine is shutting down, MessageBox doesn't display a box
-	// and immediately returns IDYES. Avoid this by just not trying to save if we're quitting.
-	// Don't ask to save if this isn't a real crash (a real crash has exception pointers)
 	if (g_cvars.sys_no_crash_dialog == 0 && g_bUserDialog && gEnv->IsEditor() && !bQuitting && pex)
 	{
-		const int res = DialogBoxParam(gDLLHandle, MAKEINTRESOURCE(IDD_CONFIRM_SAVE_LEVEL), NULL, DebugCallStack::ConfirmSaveDialogProc, NULL);
-		if (res == IDB_CONFIRM_SAVE)
+		EQuestionResult res = CryMessageBox("WARNING!\n\nThe engine / game / editor crashed and is now unstable.\r\nSaving may cause level corruption or further crashes.\r\n\r\nProceed with Save ? ", "Crash", eMB_YesCancel);
+		if (res == eQR_Yes)
 		{
 			// Make one additional backup.
 			if (BackupCurrentLevel())
 			{
-				MessageBox(NULL, "Level has been successfully saved!\r\nPress Ok to terminate Editor.", "Save", MB_OK);
+				CryMessageBox("Level has been successfully saved!\r\nPress Ok to terminate Editor.", "Save");
 			}
 			else
 			{
-				MessageBox(NULL, "Error saving level.\r\nPress Ok to terminate Editor.", "Save", MB_OK | MB_ICONWARNING);
+				CryMessageBox("Error saving level.\r\nPress Ok to terminate Editor.", "Save", eMB_Error);
 			}
 		}
+		TerminateProcess(GetCurrentProcess(), 1);
 	}
 
 	if (g_cvars.sys_no_crash_dialog != 0 || !g_bUserDialog)
@@ -1241,35 +1239,6 @@ INT_PTR CALLBACK DebugCallStack::ExceptionDialogProc(HWND hwndDlg, UINT message,
 			return TRUE;
 		}
 	}
-	return FALSE;
-}
-
-INT_PTR CALLBACK DebugCallStack::ConfirmSaveDialogProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		{
-			// The user might be holding down the spacebar while the engine crashes.
-			// If we don't remove keyboard focus from this dialog, the keypress will
-			// press the default button before the dialog actually appears, even if
-			// the user has already released the key, which sucks.
-			SetFocus(NULL);
-		} break;
-	case WM_COMMAND:
-		{
-			switch (LOWORD(wParam))
-			{
-			case IDB_CONFIRM_SAVE:   // Fall through
-			case IDB_DONT_SAVE:
-				{
-					EndDialog(hwndDlg, wParam);
-					return TRUE;
-				}
-			}
-		} break;
-	}
-
 	return FALSE;
 }
 

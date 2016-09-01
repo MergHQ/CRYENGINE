@@ -309,7 +309,7 @@ void CAIBubblesSystem::PopupBlockingAlert(const char* const message, const TBubb
 
 	if (flags & eBNS_BlockingPopup && gAIEnv.CVars.BubblesSystemAlertnessFilter & eBNS_BlockingPopup)
 	{
-		CryMessageBox(message, "AIBubbleSystemMessageBox", 0);
+		CryMessageBox(message, "AIBubbleSystemMessageBox");
 	}
 }
 

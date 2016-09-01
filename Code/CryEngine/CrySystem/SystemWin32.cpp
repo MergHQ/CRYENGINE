@@ -1155,9 +1155,6 @@ void CSystem::FatalError(const char* format, ...)
 		if (pLoadingProfilerCallstack[0])
 			CryLogAlways("<CrySystem> LoadingProfilerCallstack: %s", pLoadingProfilerCallstack);
 
-	if (GetUserCallback())
-		GetUserCallback()->OnError(szBuffer);
-
 	assert(szBuffer[0] >= ' ');
 	//	strcpy(szBuffer,szBuffer+1);	// remove verbosity tag since it is not supported by ::MessageBox
 
@@ -1168,19 +1165,6 @@ void CSystem::FatalError(const char* format, ...)
 	OutputDebugString(szBuffer);
 #if CRY_PLATFORM_WINDOWS
 	OnFatalError(szBuffer);
-	if (!g_cvars.sys_no_crash_dialog)
-	{
-		ICVar* pFullscreen = (gEnv && gEnv->pConsole) ? gEnv->pConsole->GetCVar("r_Fullscreen") : 0;
-		if (pFullscreen && pFullscreen->GetIVal() != 0 && gEnv->pRenderer && gEnv->pRenderer->GetHWND())
-		{
-			::ShowWindow((HWND)gEnv->pRenderer->GetHWND(), SW_MINIMIZE);
-		}
-		::MessageBox(NULL, szBuffer, "CryEngine Error", MB_OK | MB_ICONERROR | MB_SYSTEMMODAL);
-	}
-
-	// Dump callstack.
-#endif
-#if CRY_PLATFORM_WINDOWS
 	//Triggers a fatal error, so the DebugCallstack can create the error.log and terminate the application
 	IDebugCallStack::instance()->FatalError(szBuffer);
 #endif

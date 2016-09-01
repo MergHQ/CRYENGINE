@@ -3364,7 +3364,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 				{
 					CryMessageBox("Sandbox detected a possible data corruption during the save of the navigation mesh."
 					              "Trigger a full rebuild and re-export to engine to fix"
-					              " the binary data associated with the MNM.", "Navigation Save Error", 0);
+					              " the binary data associated with the MNM.", "Navigation Save Error");
 				}
 	#ifdef SW_NAVMESH_USE_GUID
 				file.Write(&mesh.boundaryGUID, sizeof(mesh.boundaryGUID));

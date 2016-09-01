@@ -1411,29 +1411,6 @@ void CFlowGraphBase::FlowLoadError(const char* format, ...)
 		else
 			CryFatalError("[flow] %s : %s", pEnt ? pEnt->GetName() : "<noname>", buffer);
 	}
-	else if (CFlowSystemCVars::Get().m_abortOnLoadError != 0 && gEnv->IsEditor() == false)
-	{
-		if (m_pAIAction != 0)
-		{
-			string msg("[flow] ");
-			msg.append(m_pAIAction->GetName());
-			msg.append(" : ");
-			msg.append(buffer);
-			if (gEnv->IsEditor())
-				gEnv->pSystem->ShowMessage(msg.c_str(), "FlowSystem Error", 0);
-			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[flow] %s : %s", m_pAIAction->GetName(), buffer);
-		}
-		else
-		{
-			string msg("[flow] ");
-			msg.append(pEnt ? pEnt->GetName() : "<noname>");
-			msg.append(" : ");
-			msg.append(buffer);
-			if (gEnv->IsEditor())
-				gEnv->pSystem->ShowMessage(msg.c_str(), "FlowSystem Error", 0);
-			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[flow] %s : %s", pEnt ? pEnt->GetName() : "<noname>", buffer);
-		}
-	}
 	else
 	{
 		if (m_pAIAction != 0)

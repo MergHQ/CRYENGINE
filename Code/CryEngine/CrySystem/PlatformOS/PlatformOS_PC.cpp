@@ -451,8 +451,8 @@ CPlatformOS_PC::DebugMessageBox(const char* body, const char* title, unsigned in
 	}
 
 	#if CRY_PLATFORM_WINDOWS
-	int winresult = CryMessageBox(body, title, MB_OKCANCEL);
-	return (winresult == IDOK) ? eMsgBox_OK : eMsgBox_Cancel;
+	int winresult = CryMessageBox(body, title, eMB_YesCancel);
+	return (winresult == eQR_Yes) ? eMsgBox_OK : eMsgBox_Cancel;
 	#else
 	CRY_ASSERT_MESSAGE(false, "DebugMessageBox not implemented on non-windows platforms!");
 	return eMsgBox_OK; // [AlexMcC|30.03.10]: Ok? Cancel? Dunno! Uh-oh :( This is only used in CryPak.cpp so far, and for that use it's better to return ok

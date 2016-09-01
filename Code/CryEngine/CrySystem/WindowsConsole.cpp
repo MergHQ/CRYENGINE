@@ -179,11 +179,6 @@ void CWindowsConsole::Print(const char* pInszText)
 	Unlock();
 }
 
-bool CWindowsConsole::OnError(const char* szErrorString)
-{
-	return true;
-}
-
 bool CWindowsConsole::OnSaveDocument()
 {
 	return false;

@@ -446,20 +446,20 @@ public:
 	bool      IsTestMode() const override { return m_bTestMode; }
 	//@}
 
-	void         SleepIfNeeded();
+	void                    SleepIfNeeded();
 
-	virtual void DisplayErrorMessage(const char* acMessage, float fTime, const float* pfColor = 0, bool bHardError = true) override;
+	virtual void            DisplayErrorMessage(const char* acMessage, float fTime, const float* pfColor = 0, bool bHardError = true) override;
 
-	virtual void FatalError(const char* format, ...) override PRINTF_PARAMS(2, 3);
-	virtual void ReportBug(const char* format, ...) override  PRINTF_PARAMS(2, 3);
+	virtual void            FatalError(const char* format, ...) override PRINTF_PARAMS(2, 3);
+	virtual void            ReportBug(const char* format, ...) override  PRINTF_PARAMS(2, 3);
 	// Validator Warning.
-	void         WarningV(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, va_list args) override;
-	void         Warning(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) override;
-	virtual int  ShowMessage(const char* text, const char* caption, unsigned int uType) override;
-	bool         CheckLogVerbosity(int verbosity) override;
+	void                    WarningV(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, va_list args) override;
+	void                    Warning(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) override;
+	virtual EQuestionResult ShowMessage(const char* text, const char* caption, EMessageBox uType) override;
+	bool                    CheckLogVerbosity(int verbosity) override;
 
-	virtual void DebugStats(bool checkpoint, bool leaks) override;
-	void         DumpWinHeaps() override;
+	virtual void            DebugStats(bool checkpoint, bool leaks) override;
+	void                    DumpWinHeaps() override;
 
 	// tries to log the call stack . for DEBUG purposes only
 	void        LogCallStack();

@@ -2241,11 +2241,15 @@ void CSystem::Warning(EValidatorModule module, EValidatorSeverity severity, int 
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CSystem::ShowMessage(const char* text, const char* caption, unsigned int uType)
+EQuestionResult CSystem::ShowMessage(const char* text, const char* caption, EMessageBox uType)
 {
 	if (m_pUserCallback)
 		return m_pUserCallback->ShowMessage(text, caption, uType);
+#if CRY_PLATFORM_WINDOWS
+	return eQR_None;
+#else
 	return CryMessageBox(text, caption, uType);
+#endif
 }
 
 inline const char* ValidatorModuleToString(EValidatorModule module)

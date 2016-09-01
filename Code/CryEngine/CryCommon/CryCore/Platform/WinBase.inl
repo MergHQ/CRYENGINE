@@ -1839,7 +1839,7 @@ BOOL RemoveDirectory(LPCSTR lpPathName)
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-int CryMessageBox(const char* lpText, const char* lpCaption, unsigned int uType)
+EQuestionResult CryMessageBox(const char* lpText, const char* lpCaption, EMessageBox uType)
 {
 #if CRY_PLATFORM_WINDOWS
 	#error CRY_PLATFORM_WINDOWS is defined in WinBase.cpp (it is a non-Windows file)
@@ -1866,12 +1866,12 @@ int CryMessageBox(const char* lpText, const char* lpCaption, unsigned int uType)
 	CFRelease(strText);
 
 	if (kResult == kCFUserNotificationDefaultResponse)
-		return 1; // IDOK on Windows
+		return eQR_Yes;
 	else
-		return 2; // IDCANCEL on Windows
+		return eQR_Cancel;
 #else
 	printf("Messagebox: cap: %s  text:%s\n", lpCaption ? lpCaption : " ", lpText ? lpText : " ");
-	return 0;
+	return eQR_None;
 #endif
 }
 

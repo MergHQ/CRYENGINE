@@ -468,7 +468,6 @@ public:
 	DLL_EXPORT virtual void Print(const char* line);
 
 	// Interface ISystemUserCallback //////////////////////////////////////////
-	virtual bool OnError(const char* errorString);
 	virtual bool OnSaveDocument()  { return false; }
 	virtual void OnProcessSwitch() {}
 	virtual void OnInitProgress(const char* sProgressMsg);
@@ -506,10 +505,7 @@ public:
 	   the log might not be yet there
 	 */
 	virtual void OnSystemConnect(ISystem* pSystem)  {};
-	/** Signals to User that engine error occured.
-	   @return true to Halt execution or false to ignore this error.
-	 */
-	virtual bool OnError(const char* szErrorString) { return false; };
+
 	/** If working in Editor environment notify user that engine want to Save current document.
 	   This happens if critical error have occured and engine gives a user way to save data and not lose it
 	   due to crash.

@@ -1881,7 +1881,6 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 						nMaxSubSlots = 32;
 					}
 
-
 					for (int nSlotId = 0; nSlotId < nMaxSlots; nSlotId++)
 					{
 						for (int nSubSlotId = 0; nSubSlotId < nMaxSubSlots; nSubSlotId++)
@@ -1893,7 +1892,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 							if (!pMaterial && pStatObj)
 								pMaterial = pStatObj->GetMaterial();
 
-							if(pMaterial)
+							if (pMaterial)
 							{
 								SObjInfo info;
 								info.matObjInv = nodeTM.GetInverted();
@@ -1946,7 +1945,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 
 								info.pStatObj = (CStatObj*)info.pStatObj->GetLodObject(nLod, true);
 
-								CStatObj * pParent = info.pStatObj->GetParentObject() ? ((CStatObj*)info.pStatObj->GetParentObject()) : (CStatObj*)info.pStatObj;
+								CStatObj* pParent = info.pStatObj->GetParentObject() ? ((CStatObj*)info.pStatObj->GetParentObject()) : (CStatObj*)info.pStatObj;
 								EFileStreamingStatus eStreamingStatusParent = pParent->m_eStreamingStatus;
 								bool bUnloadable = pParent->IsUnloadable();
 
@@ -2954,7 +2953,7 @@ void CVoxelSegment::ErrorTerminate(const char* format, ...)
 		// quick terminate if in developer mode
 		char szTextFull[512];
 		cry_sprintf(szTextFull, "%s\nTerminate process?", szText);
-		if (CryMessageBox(szTextFull, "3DEngine fatal error", 0x00000004L) == IDYES)
+		if (CryMessageBox(szTextFull, "3DEngine fatal error", eMB_YesCancel) == eQR_Yes)
 			TerminateProcess(GetCurrentProcess(), 0);
 		else
 			return;

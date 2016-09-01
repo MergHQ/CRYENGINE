@@ -468,10 +468,6 @@ struct ISystemUserCallback
 	//! This method is called at the earliest point the ISystem pointer can be used the log might not be yet there.
 	virtual void OnSystemConnect(ISystem* pSystem) {}
 
-	//! Signals to User that engine error occurred.
-	//! \return true to Halt execution or false to ignore this error.
-	virtual bool OnError(const char* szErrorString) = 0;
-
 	//! If working in Editor environment notify user that engine want to Save current document.
 	//! This happens if critical error have occurred and engine gives a user way to save data and not lose it due to crash.
 #if CRY_PLATFORM_WINDOWS
@@ -499,7 +495,7 @@ struct ISystemUserCallback
 	virtual void OnUpdate() {}
 
 	//! Show message by provider.
-	virtual int ShowMessage(const char* text, const char* caption, unsigned int uType) { return CryMessageBox(text, caption, uType); }
+	virtual EQuestionResult ShowMessage(const char* text, const char* caption, EMessageBox uType) { return eQR_None; }
 
 	//! Collects the memory information in the user program/application.
 	virtual void GetMemoryUsage(ICrySizer* pSizer) = 0;
@@ -1184,7 +1180,7 @@ struct ISystem
 
 	//! Report message by provider or by using CryMessageBox.
 	//! Doesn't terminate the execution.
-	virtual int ShowMessage(const char* text, const char* caption, unsigned int uType) = 0;
+	virtual EQuestionResult ShowMessage(const char* text, const char* caption, EMessageBox uType) = 0;
 
 	//! Compare specified verbosity level to the one currently set.
 	virtual bool CheckLogVerbosity(int verbosity) = 0;

@@ -72,7 +72,6 @@ protected:
 
 	static int              PrintException(EXCEPTION_POINTERS* exception_pointer);
 	static INT_PTR CALLBACK ExceptionDialogProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam);
-	static INT_PTR CALLBACK ConfirmSaveDialogProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
 	int                     updateCallStack(EXCEPTION_POINTERS* exception_pointer);
 	void                    LogExceptionInfo(EXCEPTION_POINTERS* exception_pointer);

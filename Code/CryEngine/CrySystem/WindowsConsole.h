@@ -79,7 +79,6 @@ public:
 	// ~IOutputPrintSink
 
 	// ISystemUserCallback
-	virtual bool OnError(const char* szErrorString);
 	virtual bool OnSaveDocument();
 	virtual void OnProcessSwitch();
 	virtual void OnInitProgress(const char* sProgressMsg);

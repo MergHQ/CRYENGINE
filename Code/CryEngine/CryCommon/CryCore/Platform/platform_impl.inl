@@ -199,23 +199,23 @@ void CryDebugBreak()
 	#if CRY_PLATFORM_WINAPI
 
 //////////////////////////////////////////////////////////////////////////
-int CryMessageBox(const char* lpText, const char* lpCaption, unsigned int uType)
+EQuestionResult CryMessageBox(const char* lpText, const char* lpCaption, EMessageBox uType)
 {
-		#if CRY_PLATFORM_WINDOWS
-			#if !defined(RESOURCE_COMPILER)
+#if CRY_PLATFORM_WINDOWS
+	#if !defined(RESOURCE_COMPILER)
 	ICVar* const pCVar = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_no_crash_dialog") : NULL;
 	if ((pCVar && pCVar->GetIVal() != 0) || gEnv->bNoAssertDialog)
 	{
-		return 0;
+		return eQR_None;
 	}
-			#endif
-	wstring wideText, wideCaption;
-	Unicode::Convert(wideText, lpText);
-	Unicode::Convert(wideCaption, lpCaption);
-	return MessageBoxW(NULL, wideText.c_str(), wideCaption.c_str(), uType);
-		#else
-	return 0;
-		#endif
+	#endif
+
+	if (gEnv && gEnv->pSystem)
+	{
+		return gEnv->pSystem->ShowMessage(lpText, lpCaption, uType);
+	}
+#endif
+	return eQR_None;
 }
 
 //////////////////////////////////////////////////////////////////////////
