@@ -22,13 +22,7 @@
 
 CSvoRenderer* CSvoRenderer::s_pInstance = 0;
 
-CSvoRenderer::CSvoRenderer() : 
-	m_passClearBricks						(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader),
-	m_passInjectDynamicLights		(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader),
-	m_passInjectStaticLights		(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader),
-	m_passInjectAirOpacity			(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader),
-	m_passPropagateLighting_1to2(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader),
-	m_passPropagateLighting_2to3(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader)
+CSvoRenderer::CSvoRenderer()
 {
 	InitCVarValues();
 
@@ -130,8 +124,6 @@ void CSvoRenderer::UpdateCompute()
 
 	if (!gEnv->p3DEngine->GetSvoStaticTextures(m_texInfo, &m_arrLightsStatic, &m_arrLightsDynamic))
 		return;
-
-	CD3D9Renderer* rd = gcpRendD3D;
 
 	m_arrNodesForUpdateIncr.Clear();
 	m_arrNodesForUpdateNear.Clear();
@@ -289,70 +281,16 @@ void CSvoRenderer::UpdateGpuVoxParams(I3DEngine::SSvoNodeInfo& nodeInfo)
 	m_mGpuVoxViewProj[2] = VoxelizationView[2] * m_mOrthoProjection;
 }
 
-void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CComputeRenderPass & rp, int* pnNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate)
+void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoComputePass & rp, int* pnNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate)
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
 	FUNCTION_PROFILER_RENDERER;
 
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
-	uint64 rtFlags = GetRunTimeFlags(true, false);
-	rp.SetTechnique(m_pShader, szTechFinalName, rtFlags);
+	rp.SetTechnique(m_pShader, szTechFinalName, GetRunTimeFlags(true, false));
 	rp.BeginConstantUpdate();
 
-	{
-		static CCryNameR parameterName6("SVO_FrameIdByte");
-		Vec4 ttt((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
-		if (rd->GetActiveGPUCount() > 1)
-			ttt.x = 0;
-		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-	}
-
-	{
-		static CCryNameR parameterName6("SVO_CamPos");
-		Vec4 ttt(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
-		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-	}
-
-	{
-		Matrix44A mViewProj;
-		mViewProj = gcpRendD3D->m_CameraProjMatrix;
-		mViewProj.Transpose();
-
-		static CCryNameR paramName("g_mViewProj");
-		rp.SetConstantArray(paramName, alias_cast<Vec4*>(&mViewProj), 4);
-
-		static CCryNameR paramNamePrev("g_mViewProjPrev");
-		rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
-	}
-
-	{
-		const CRenderCamera& rc = gcpRendD3D->GetRCamera();
-		float zn = rc.fNear;
-		float zf = rc.fFar;
-		float hfov = gcpRendD3D->GetCamera().GetHorizontalFov();
-		Vec4 f;
-		f[0] = zf / (zf - zn);
-		f[1] = zn / (zn - zf);
-		f[2] = 1.0f / hfov;
-		f[3] = 1.0f;
-		static CCryNameR paramName("SVO_ProjRatio");
-		rp.SetConstantArray(paramName, alias_cast<Vec4*>(&f), 1);
-	}
-
-	{
-		static CCryNameR nameSVO_PortalsPos("SVO_PortalsPos");
-		rp.SetConstantArray(nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
-		static CCryNameR nameSVO_PortalsDir("SVO_PortalsDir");
-		rp.SetConstantArray(nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
-	}
-
-	if (e_svoTI_AnalyticalGI)
-	{
-		static CCryNameR nameAnalyticalOccluders("SVO_AnalyticalOccluders");
-		rp.SetConstantArray(nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
-	}
+	SetupCommonConstants(NULL, rp, NULL);
 
 	// setup in/out textures
 
@@ -368,7 +306,7 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CComputeRen
 
 		SetupSvoTexturesForRead(m_texInfo, rp, 0, 1);
 
-		rp.SetTextureSamplerPair(15, m_pNoiseTex, m_nTexStateLinearWrap);
+		rp.SetTexture(15, m_pNoiseTex);
 	}
 	else if (&rp == &m_passInjectStaticLights)
 	{
@@ -388,7 +326,7 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CComputeRen
 	}
 	else if (&rp == &m_passInjectDynamicLights)
 	{
-		BindTiledLights(m_arrLightsDynamic, rp);
+		BindTiledLights(m_arrLightsDynamic, (CComputeRenderPass&)rp);
 		SetupLightSources(m_arrLightsDynamic, rp);
 		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
 
@@ -406,7 +344,7 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CComputeRen
 
 		SetupSvoTexturesForRead(m_texInfo, rp, 0);
 
-		rp.SetTextureSamplerPair(15, m_pNoiseTex, m_nTexStateLinearWrap);
+		rp.SetTexture(15, m_pNoiseTex);
 
 		SetupRsmSun(rp);
 	}
@@ -453,10 +391,7 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CComputeRen
 	}
 
 	{
-		uint32 nDispatchSizeX = e_svoDispatchX;
-		uint32 nDispatchSizeY = e_svoDispatchY;
-
-		rp.SetDispatchSize(nDispatchSizeX, nDispatchSizeY, 1);
+		rp.SetDispatchSize(e_svoDispatchX, e_svoDispatchY, 1);
 
 		rp.PrepareResourcesForUse(*CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList(), EShaderStage_All);
 
@@ -487,14 +422,12 @@ void CSvoRenderer::TropospherePass()
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
-	CFullscreenPass & rp = m_passTroposphere;
+	CSvoFullscreenPass & rp = m_passTroposphere;
 
 	if (m_texInfo.bSvoFreeze || !m_texInfo.pTexTree)
 		return;
 
 	const char* szTechFinalName = "RenderAtmosphere";
-
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	rp.SetRenderTarget(0, m_pRT_AIR_MIN);
 	rp.SetRenderTarget(1, m_pRT_AIR_SHAD);
@@ -502,107 +435,34 @@ void CSvoRenderer::TropospherePass()
 	rp.SetRequireWorldPos(true);
 	rp.SetRequirePerViewConstantBuffer(true);
 
-	uint64 rtFlags = GetRunTimeFlags(0);
-	rp.SetTechnique(m_pShader, szTechFinalName, rtFlags);
+	rp.SetTechnique(m_pShader, szTechFinalName, GetRunTimeFlags(0));
 	rp.BeginConstantUpdate();
 	rp.SetState(GS_NODEPTHTEST);
 
+	SetupCommonConstants(NULL, rp, rp.GetRenderTarget(0));
+
 	SetupLightSources(m_arrLightsStatic, rp);
-
-	{
-		static CCryNameR parameterName5("SVO_ReprojectionMatrix");
-		rp.SetConstantArray(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
-	}
-
-	{
-		static CCryNameR parameterName6("SVO_FrameIdByte");
-		Vec4 ttt((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
-		if (rd->GetActiveGPUCount() > 1)
-			ttt.x = 0;
-		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-	}
-
-	{
-		static CCryNameR parameterName6("SVO_CamPos");
-		Vec4 ttt(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
-		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-	}
-
-	{
-		Matrix44A mViewProj;
-		mViewProj = gcpRendD3D->m_CameraProjMatrix;
-		mViewProj.Transpose();
-
-		static CCryNameR paramName("g_mViewProj");
-		rp.SetConstantArray(paramName, alias_cast<Vec4*>(&mViewProj), 4);
-
-		static CCryNameR paramNamePrev("g_mViewProjPrev");
-		rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
-	}
-
-	{
-		float fSizeRatioW = float(rd->GetWidth() / m_pRT_AIR_MIN->GetWidth());
-		float fSizeRatioH = float(rd->GetHeight() / m_pRT_AIR_MIN->GetHeight());
-		static CCryNameR parameterName6("SVO_TargetResScale");
-		static int nPrevWidth = 0;
-		Vec4 ttt(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase,
-			(float)(nPrevWidth != m_pRT_AIR_MIN->GetWidth() || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
-		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-		nPrevWidth = m_pRT_AIR_MIN->GetWidth();
-	}
-
-	{
-		static CCryNameR parameterName6("SVO_helperInfo");
-		rp.SetConstantArray(parameterName6, (Vec4*)&m_texInfo.helperInfo, 1);
-	}
-
-	{
-		Matrix44A matView;
-		matView = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
-		Vec3 zAxis = matView.GetRow(1);
-		matView.SetRow(1, -matView.GetRow(2));
-		matView.SetRow(2, zAxis);
-		float z = matView.m13;
-		matView.m13 = -matView.m23;
-		matView.m23 = z;
-		static CCryNameR paramName2("TI_CameraMatrix");
-		rp.SetConstantArray(paramName2, (Vec4*)matView.GetData(), 3);
-	}
-
-	{
-		Vec3 pvViewFrust[8];
-		const CRenderCamera& rc = gcpRendD3D->GetRCamera();
-		rc.CalcVerts(pvViewFrust);
-
-		static CCryNameR parameterName0("SVO_FrustumVerticesCam0");
-		static CCryNameR parameterName1("SVO_FrustumVerticesCam1");
-		static CCryNameR parameterName2("SVO_FrustumVerticesCam2");
-		static CCryNameR parameterName3("SVO_FrustumVerticesCam3");
-		Vec4 ttt0(pvViewFrust[4] - rc.vOrigin, 0);
-		Vec4 ttt1(pvViewFrust[5] - rc.vOrigin, 0);
-		Vec4 ttt2(pvViewFrust[6] - rc.vOrigin, 0);
-		Vec4 ttt3(pvViewFrust[7] - rc.vOrigin, 0);
-		rp.SetConstantArray(parameterName0, (Vec4*)&ttt0, 1);
-		rp.SetConstantArray(parameterName1, (Vec4*)&ttt1, 1);
-		rp.SetConstantArray(parameterName2, (Vec4*)&ttt2, 1);
-		rp.SetConstantArray(parameterName3, (Vec4*)&ttt3, 1);
-	}
-
+	
 	SetupSvoTexturesForRead(m_texInfo, rp, e_svoTI_NumberOfBounces, 0, 0);
 
-	rp.SetTextureSamplerPair( 4, CTexture::s_ptexZTarget, m_nTexStatePoint);
-	rp.SetTextureSamplerPair(14, GetGBuffer(0), m_nTexStatePoint);
-	rp.SetTextureSamplerPair( 5, GetGBuffer(1), m_nTexStatePoint);
-	rp.SetTextureSamplerPair( 7, GetGBuffer(2), m_nTexStatePoint);
+	SetupGBufferTextures(rp);
 
 	rp.Execute();
 
 	#endif
 }
 
+void CSvoRenderer::SetupGBufferTextures(CSvoFullscreenPass &rp)
+{
+	rp.SetTexture( 4, CTexture::s_ptexZTarget);
+	rp.SetTexture(14, GetGBuffer(0));
+	rp.SetTexture( 5, GetGBuffer(1));
+	rp.SetTexture( 7, GetGBuffer(2));
+}
+
 void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 {
-	CFullscreenPass & rp = pTS->passConeTrace;
+	CSvoFullscreenPass & rp = pTS->passConeTrace;
 
 	CheckAllocateRT(pTS == &m_tsSpec);
 
@@ -611,34 +471,100 @@ void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 
 	const char* szTechFinalName = "ConeTracePass";
 
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	rp.SetRenderTarget(0, pTS->pRT_ALD_0);
 	rp.SetRenderTarget(1, pTS->pRT_RGB_0);
 	rp.SetRequireWorldPos(true);
 	rp.SetRequirePerViewConstantBuffer(true);
 
-	uint64 rtFlags = GetRunTimeFlags(pTS == &m_tsDiff);
-	rp.SetTechnique(m_pShader, szTechFinalName, rtFlags);
+	rp.SetTechnique(m_pShader, szTechFinalName, GetRunTimeFlags(pTS == &m_tsDiff));
 	rp.BeginConstantUpdate();
 	rp.SetState(GS_NODEPTHTEST);
 
-	{
-		Matrix44A matView;
-		matView = rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
-		Vec3 zAxis = matView.GetRow(1);
-		matView.SetRow(1, -matView.GetRow(2));
-		matView.SetRow(2, zAxis);
-		float z = matView.m13;
-		matView.m13 = -matView.m23;
-		matView.m23 = z;
+	SetupCommonConstants(pTS, rp, pTS->pRT_ALD_0);
 
-		SetupRsmSun(rp);
+	SetupRsmSun(rp);
+
+	SetupSvoTexturesForRead(m_texInfo, rp, (e_svoTI_Active ? e_svoTI_NumberOfBounces : 0), 0, 0);
+
+	rp.SetTexture(10, pTS->pRT_ALD_1);
+	rp.SetTexture(11, pTS->pRT_RGB_1);
+
+	SetupGBufferTextures(rp);
+
+	#ifdef FEATURE_SVO_GI_ALLOW_HQ
+	if (m_texInfo.pTexIndA)
+	{
+		rp.SetTexture( 8, (CTexture*)m_texInfo.pTexTexA);
+		rp.SetTexture( 9, (CTexture*)m_texInfo.pTexTriA);
+		rp.SetTexture(13, (CTexture*)m_texInfo.pTexIndA);
+	}
+	#endif
+
+	if (!GetIntegratioMode() && e_svoTI_InjectionMultiplier && m_arrLightsDynamic.Count())
+	{
+		BindTiledLights(m_arrLightsDynamic, (CFullscreenPass&)rp);
+		SetupLightSources(m_arrLightsDynamic, rp);
+	}
+
+	if (GetIntegratioMode() && e_svoTI_SSDepthTrace)
+	{
+		if (CTexture::s_ptexHDRTargetPrev->GetUpdateFrameID() > 1)
+			rp.SetTexture(12, CTexture::s_ptexHDRTargetPrev);
+		else
+			rp.SetTexture(12, CTexture::s_ptexBlack);
+	}
+
+	{
+		const bool setupCloudShadows = gcpRendD3D->m_bShadowsEnabled && gcpRendD3D->m_bCloudShadowsEnabled;
+		if (setupCloudShadows)
+		{
+			// cloud shadow map
+			CTexture* pCloudShadowTex(gcpRendD3D->GetCloudShadowTextureId() > 0 ? CTexture::GetByID(gcpRendD3D->GetCloudShadowTextureId()) : CTexture::s_ptexWhite);
+			assert(pCloudShadowTex);
+
+			STexState pTexStateLinearClamp;
+			pTexStateLinearClamp.SetFilterMode(FILTER_LINEAR);
+			pTexStateLinearClamp.SetClampMode(false, false, false);
+			int nTexStateLinearClampID = CTexture::GetTexState(pTexStateLinearClamp);
+
+			rp.SetTexture(15, pCloudShadowTex);
+		}
+		else
+		{
+			rp.SetTexture(15, CTexture::s_ptexWhite);
+		}
+	}
+
+	rp.SetTexture( 8, GetUtils().GetVelocityObjectRT());
+
+	rp.Execute();
+}
+
+template<class T>
+void CSvoRenderer::SetupCommonConstants(SSvoTargetsSet* pTS, T &rp, CTexture * pRT)
+{
+	rp.SetSampler(0, m_nTexStatePoint);
+	rp.SetSampler(1, m_nTexStateLinear);
+	rp.SetSampler(2, m_nTexStateLinearWrap);
+
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+
+	{
+		static CCryNameR paramName("SVO_ReprojectionMatrix");
 
 		static int nReprojFrameId = -1;
 		if ((pTS == &m_tsDiff) && nReprojFrameId != rd->GetFrameID(false))
 		{
 			nReprojFrameId = rd->GetFrameID(false);
+
+			Matrix44A matView;
+			matView = rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
+			Vec3 zAxis = matView.GetRow(1);
+			matView.SetRow(1, -matView.GetRow(2));
+			matView.SetRow(2, zAxis);
+			float z = matView.m13;
+			matView.m13 = -matView.m23;
+			matView.m23 = z;
 
 			Matrix44A matProj;
 			const CCamera& cam = rd->m_RP.m_TI[rd->m_RP.m_nProcessThreadID].m_cam;
@@ -649,195 +575,123 @@ void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 			matPrevView = matView;
 			matPrevProj = matProj;
 		}
-
-		{
-			static CCryNameR parameterName5("SVO_ReprojectionMatrix");
-			rp.SetConstantArray(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
-		}
-
-		{
-			static CCryNameR parameterName6("SVO_FrameIdByte");
-			Vec4 ttt((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
-			if (rd->GetActiveGPUCount() > 1)
-				ttt.x = 0;
-			rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-		}
-
-		{
-			static CCryNameR parameterName6("SVO_CamPos");
-			Vec4 ttt(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
-			rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-		}
-
-		{
-			Matrix44A mViewProj;
-			mViewProj = gcpRendD3D->m_CameraProjMatrix;
-			mViewProj.Transpose();
-
-			static CCryNameR paramName("g_mViewProj");
-			rp.SetConstantArray(paramName, alias_cast<Vec4*>(&mViewProj), 4);
-
-			static CCryNameR paramNamePrev("g_mViewProjPrev");
-			rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
-		}
-
-		{
-			float fSizeRatioW = float(rd->GetWidth() / rp.GetRenderTarget(0)->GetWidth());
-			float fSizeRatioH = float(rd->GetHeight() / rp.GetRenderTarget(0)->GetHeight());
-			static CCryNameR parameterName6("SVO_TargetResScale");
-			static int nPrevWidth = 0;
-			Vec4 ttt(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase,
-				(float)(nPrevWidth != (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0)) || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
-			rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-			nPrevWidth = (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0));
-		}
-
-		{
-			static CCryNameR parameterName6("SVO_helperInfo");
-			rp.SetConstantArray(parameterName6, (Vec4*)&m_texInfo.helperInfo, 1);
-		}
-
-		{
-			Matrix44A matView;
-			matView = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
-			Vec3 zAxis = matView.GetRow(1);
-			matView.SetRow(1, -matView.GetRow(2));
-			matView.SetRow(2, zAxis);
-			float z = matView.m13;
-			matView.m13 = -matView.m23;
-			matView.m23 = z;
-			static CCryNameR paramName2("TI_CameraMatrix");
-			rp.SetConstantArray(paramName2, (Vec4*)matView.GetData(), 3);
-		}
-
-		{
-			Vec3 pvViewFrust[8];
-			const CRenderCamera& rc = gcpRendD3D->GetRCamera();
-			rc.CalcVerts(pvViewFrust);
-
-			static CCryNameR parameterName0("SVO_FrustumVerticesCam0");
-			static CCryNameR parameterName1("SVO_FrustumVerticesCam1");
-			static CCryNameR parameterName2("SVO_FrustumVerticesCam2");
-			static CCryNameR parameterName3("SVO_FrustumVerticesCam3");
-			Vec4 ttt0(pvViewFrust[4] - rc.vOrigin, 0);
-			Vec4 ttt1(pvViewFrust[5] - rc.vOrigin, 0);
-			Vec4 ttt2(pvViewFrust[6] - rc.vOrigin, 0);
-			Vec4 ttt3(pvViewFrust[7] - rc.vOrigin, 0);
-			rp.SetConstantArray(parameterName0, (Vec4*)&ttt0, 1);
-			rp.SetConstantArray(parameterName1, (Vec4*)&ttt1, 1);
-			rp.SetConstantArray(parameterName2, (Vec4*)&ttt2, 1);
-			rp.SetConstantArray(parameterName3, (Vec4*)&ttt3, 1);
-		}
-
-		if (e_svoTI_AnalyticalGI)
-		{
-			static CCryNameR nameAnalyticalOccluders("SVO_AnalyticalOccluders");
-			rp.SetConstantArray(nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
-		}
-
-		if (m_texInfo.arrPortalsPos[0].z)
-		{
-			static CCryNameR nameSVO_PortalsPos("SVO_PortalsPos");
-			rp.SetConstantArray(nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
-			static CCryNameR nameSVO_PortalsDir("SVO_PortalsDir");
-			rp.SetConstantArray(nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
-		}
-
-		if (pTS->pRT_ALD_1)
-		{
-			static int nPrevWidth = 0;
-			if (nPrevWidth != (pTS->pRT_ALD_1->GetWidth() + e_svoTI_Diffuse_Cache))
-			{
-				rp.SetTextureSamplerPair(10, CTexture::s_ptexWhite, m_nTexStateLinear);
-				rp.SetTextureSamplerPair(11, CTexture::s_ptexWhite, m_nTexStateLinear);
-				nPrevWidth = pTS->pRT_ALD_1->GetWidth() + e_svoTI_Diffuse_Cache;
-			}
-			else
-			{
-				rp.SetTextureSamplerPair(10, pTS->pRT_ALD_1, m_nTexStateLinear);
-				rp.SetTextureSamplerPair(11, pTS->pRT_RGB_1, m_nTexStateLinear);
-			}
-		}
-	}
-
-	SetupSvoTexturesForRead(m_texInfo, rp, (e_svoTI_Active ? e_svoTI_NumberOfBounces : 0), 0, 0);
-
-	rp.SetTextureSamplerPair( 4, CTexture::s_ptexZTarget, m_nTexStatePoint);
-	rp.SetTextureSamplerPair(14, GetGBuffer(0), m_nTexStatePoint);
-	rp.SetTextureSamplerPair( 5, GetGBuffer(1), m_nTexStatePoint);
-	rp.SetTextureSamplerPair( 7, GetGBuffer(2), m_nTexStatePoint);
-
-	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	if (m_texInfo.pTexIndA)
-	{
-		rp.SetTextureSamplerPair(8, (CTexture*)m_texInfo.pTexTexA, m_nTexStateLinear);
-		rp.SetTextureSamplerPair(9, (CTexture*)m_texInfo.pTexTriA, m_nTexStatePoint);
-		rp.SetTextureSamplerPair(13, (CTexture*)m_texInfo.pTexIndA, m_nTexStatePoint);
-	}
-	#endif
-
-	if (!GetIntegratioMode() && e_svoTI_InjectionMultiplier && m_arrLightsDynamic.Count())
-	{
-		BindTiledLights(m_arrLightsDynamic, rp);
-		SetupLightSources(m_arrLightsDynamic, rp);
-	}
-
-	if (GetIntegratioMode() && e_svoTI_SSDepthTrace)
-	{
-		if (CTexture::s_ptexHDRTargetPrev->GetUpdateFrameID() > 1)
-			rp.SetTextureSamplerPair(12, CTexture::s_ptexHDRTargetPrev, m_nTexStateLinear);
-		else
-			rp.SetTextureSamplerPair(12, CTexture::s_ptexBlack, m_nTexStateLinear);
+		rp.SetConstantArray(paramName, (Vec4*)m_matReproj.GetData(), 3);
 	}
 
 	{
-		static CCryNameR strName("SVO_CloudShadowAnimParams");
+		static CCryNameR paramName("SVO_FrameIdByte");
+		Vec4 vData((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
+		if (rd->GetActiveGPUCount() > 1)
+			vData.x = 0;
+		rp.SetConstantArray(paramName, (Vec4*)&vData, 1);
+	}
+
+	{
+		static CCryNameR paramName("SVO_CamPos");
+		Vec4 vData(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
+		rp.SetConstantArray(paramName, (Vec4*)&vData, 1);
+	}
+
+	{
+		static CCryNameR paramName("SVO_ViewProj");
+		static CCryNameR paramNamePrev("SVO_ViewProjPrev");
+
+		Matrix44A mViewProj;
+		mViewProj = gcpRendD3D->m_CameraProjMatrix;
+		mViewProj.Transpose();
+
+		rp.SetConstantArray(paramName, alias_cast<Vec4*>(&mViewProj), 4);
+		rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
+	}
+
+	if(pRT)
+	{
+		int nTargetSize = pRT->GetWidth() + pRT->GetHeight() + int(e_svoTI_SkyColorMultiplier > 0) + e_svoTI_Diffuse_Cache;
+		bool bNoReprojection = (rp.nPrevTargetSize != nTargetSize) || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1);
+		rp.nPrevTargetSize = nTargetSize;
+
+		static CCryNameR paramName("SVO_TargetResScale");
+		float fSizeRatioW = float(rd->GetWidth() / pRT->GetWidth());
+		float fSizeRatioH = float(rd->GetHeight() / pRT->GetHeight());
+		Vec4 vData(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase, (float)bNoReprojection);
+		rp.SetConstantArray(paramName, (Vec4*)&vData, 1);
+	}
+
+	{
+		static CCryNameR paramName("SVO_helperInfo");
+		rp.SetConstantArray(paramName, (Vec4*)&m_texInfo.helperInfo, 1);
+	}
+
+	{
+		static CCryNameR paramName0("SVO_FrustumVerticesCam0");
+		static CCryNameR paramName1("SVO_FrustumVerticesCam1");
+		static CCryNameR paramName2("SVO_FrustumVerticesCam2");
+		static CCryNameR paramName3("SVO_FrustumVerticesCam3");
+		Vec3 pvViewFrust[8];
+		const CRenderCamera& rc = gcpRendD3D->GetRCamera();
+		rc.CalcVerts(pvViewFrust);
+		Vec4 vData0(pvViewFrust[4] - rc.vOrigin, 0);
+		Vec4 vData1(pvViewFrust[5] - rc.vOrigin, 0);
+		Vec4 vData2(pvViewFrust[6] - rc.vOrigin, 0);
+		Vec4 vData3(pvViewFrust[7] - rc.vOrigin, 0);
+		rp.SetConstantArray(paramName0, (Vec4*)&vData0, 1);
+		rp.SetConstantArray(paramName1, (Vec4*)&vData1, 1);
+		rp.SetConstantArray(paramName2, (Vec4*)&vData2, 1);
+		rp.SetConstantArray(paramName3, (Vec4*)&vData3, 1);
+	}
+
+	if (e_svoTI_AnalyticalGI)
+	{
+		static CCryNameR paramName("SVO_AnalyticalOccluders");
+		rp.SetConstantArray(paramName, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
+	}
+
+	if (e_svoTI_AnalyticalOccluders && m_texInfo.arrAnalyticalOccluders[1][0].radius)
+	{
+		static CCryNameR paramName("SVO_PostOccluders");
+		rp.SetConstantArray(paramName, (Vec4*)&m_texInfo.arrAnalyticalOccluders[1][0], sizeof(m_texInfo.arrAnalyticalOccluders[1]) / sizeof(Vec4));
+	}
+
+	if (m_texInfo.arrPortalsPos[0].z)
+	{
+		static CCryNameR paramName_PortalsPos("SVO_PortalsPos");
+		rp.SetConstantArray(paramName_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
+		static CCryNameR paramName_PortalsDir("SVO_PortalsDir");
+		rp.SetConstantArray(paramName_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
+	}
+
+	{
+		static CCryNameR paramName("SVO_CloudShadowAnimParams");
 		CD3D9Renderer* const __restrict r = gcpRendD3D;
 		SCGParamsPF& PF = r->m_cEF.m_PF[r->m_RP.m_nProcessThreadID];
-		Vec4 sData;
-		sData[0] = PF.pCloudShadowAnimParams.x;
-		sData[1] = PF.pCloudShadowAnimParams.y;
-		sData[2] = PF.pCloudShadowAnimParams.z;
-		sData[3] = PF.pCloudShadowAnimParams.w;
-		rp.SetConstantArray(strName, (Vec4*)&sData, 1);
+		Vec4 vData;
+		vData[0] = PF.pCloudShadowAnimParams.x;
+		vData[1] = PF.pCloudShadowAnimParams.y;
+		vData[2] = PF.pCloudShadowAnimParams.z;
+		vData[3] = PF.pCloudShadowAnimParams.w;
+		rp.SetConstantArray(paramName, (Vec4*)&vData, 1);
 	}
 
 	{
-		static CCryNameR strName("SVO_CloudShadowParams");
+		static CCryNameR paramName("SVO_CloudShadowParams");
 		CD3D9Renderer* const __restrict r = gcpRendD3D;
 		SCGParamsPF& PF = r->m_cEF.m_PF[r->m_RP.m_nProcessThreadID];
-		Vec4 sData;
-		sData[0] = PF.pCloudShadowParams.x;
-		sData[1] = PF.pCloudShadowParams.y;
-		sData[2] = PF.pCloudShadowParams.z;
-		sData[3] = PF.pCloudShadowParams.w;
-		rp.SetConstantArray(strName, (Vec4*)&sData, 1);
+		Vec4 vData;
+		vData[0] = PF.pCloudShadowParams.x;
+		vData[1] = PF.pCloudShadowParams.y;
+		vData[2] = PF.pCloudShadowParams.z;
+		vData[3] = PF.pCloudShadowParams.w;
+		rp.SetConstantArray(paramName, (Vec4*)&vData, 1);
 	}
 
+	if(pTS)
 	{
-		const bool setupCloudShadows = rd->m_bShadowsEnabled && rd->m_bCloudShadowsEnabled;
-		if (setupCloudShadows)
-		{
-			// cloud shadow map
-			CTexture* pCloudShadowTex(rd->GetCloudShadowTextureId() > 0 ? CTexture::GetByID(rd->GetCloudShadowTextureId()) : CTexture::s_ptexWhite);
-			assert(pCloudShadowTex);
-
-			STexState pTexStateLinearClamp;
-			pTexStateLinearClamp.SetFilterMode(FILTER_LINEAR);
-			pTexStateLinearClamp.SetClampMode(false, false, false);
-			int nTexStateLinearClampID = CTexture::GetTexState(pTexStateLinearClamp);
-
-			rp.SetTextureSamplerPair(15, pCloudShadowTex, m_nTexStateLinearWrap);
-		}
-		else
-		{
-			rp.SetTextureSamplerPair(15, CTexture::s_ptexWhite, m_nTexStateLinearWrap);
-		}
+		static CCryNameR paramName("SVO_SrcPixSize");
+		Vec4 vData(0, 0, 0, 0);
+		vData.x = 1.f / float(pTS->pRT_ALD_DEM_MIN_0->GetWidth());
+		vData.y = 1.f / float(pTS->pRT_ALD_DEM_MIN_0->GetHeight());
+		rp.SetConstantArray(paramName, (Vec4*)&vData, 1);
 	}
-
-	rp.SetTextureSamplerPair(8, GetUtils().GetVelocityObjectRT(), m_nTexStatePoint);
-
-	rp.Execute();
 }
 
 void CSvoRenderer::DrawPonts(PodArray<SVF_P3F_C4B_T2F>& arrVerts)
@@ -912,14 +766,12 @@ void CSvoRenderer::UpdateRender()
 
 void CSvoRenderer::DemosaicPass(SSvoTargetsSet* pTS)
 {
-	CFullscreenPass & rp = pTS->passDemosaic;
+	CSvoFullscreenPass & rp = pTS->passDemosaic;
 
 	const char* szTechFinalName = "DemosaicPass";
 
 	if (!e_svoTI_Active || !e_svoTI_Apply || !e_svoRender || !m_pShader || !pTS->pRT_ALD_0 || m_texInfo.bSvoFreeze || !m_texInfo.pTexTree)
 		return;
-
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	rp.SetRenderTarget(0, pTS->pRT_RGB_DEM_MIN_0);
 	rp.SetRenderTarget(1, pTS->pRT_ALD_DEM_MIN_0);
@@ -928,102 +780,25 @@ void CSvoRenderer::DemosaicPass(SSvoTargetsSet* pTS)
 	rp.SetRequireWorldPos(true);
 	rp.SetRequirePerViewConstantBuffer(true);
 
-	uint64 rtFlags = GetRunTimeFlags(pTS == &m_tsDiff, true, true);
-	rp.SetTechnique(m_pShader, szTechFinalName, rtFlags);
+	rp.SetTechnique(m_pShader, szTechFinalName, GetRunTimeFlags(pTS == &m_tsDiff));
 	rp.BeginConstantUpdate();
 	rp.SetState(GS_NODEPTHTEST);
 
+	SetupCommonConstants(pTS, rp, pTS->pRT_ALD_0);
+
 	SetupSvoTexturesForRead(m_texInfo, rp, (e_svoTI_Active ? e_svoTI_NumberOfBounces : 0), 0, 0);
 
-	rp.SetTextureSamplerPair( 4, CTexture::s_ptexZTarget, m_nTexStatePoint);
-	rp.SetTextureSamplerPair(14, GetGBuffer(0), m_nTexStatePoint);
-	rp.SetTextureSamplerPair( 5, GetGBuffer(1), m_nTexStatePoint);
-	rp.SetTextureSamplerPair( 7, GetGBuffer(2), m_nTexStatePoint);
+	SetupGBufferTextures(rp);
 
-	{
-		static CCryNameR parameterName5("SVO_ReprojectionMatrix");
-		rp.SetConstantArray(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
-	}
+	rp.SetTexture(10, pTS->pRT_ALD_0);
+	rp.SetTexture(11, pTS->pRT_RGB_0);
 
-	{
-		float fSizeRatioW = float(rd->GetWidth() / rp.GetRenderTarget(0)->GetWidth());
-		float fSizeRatioH = float(rd->GetHeight() / rp.GetRenderTarget(0)->GetHeight());
-		static CCryNameR parameterName6("SVO_TargetResScale");
-		static int nPrevWidth = 0;
-		Vec4 ttt(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase,
-			(float)(nPrevWidth != (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0)) || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
-		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-		nPrevWidth = (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0));
-	}
+	rp.SetTexture( 6, pTS->pRT_RGB_DEM_MIN_1);
+	rp.SetTexture( 9, pTS->pRT_ALD_DEM_MIN_1);
+	rp.SetTexture(12, pTS->pRT_RGB_DEM_MAX_1);
+	rp.SetTexture(13, pTS->pRT_ALD_DEM_MAX_1);
 
-	{
-		static CCryNameR parameterName6("SVO_FrameIdByte");
-		Vec4 ttt((float)(rd->GetFrameID(false) & 255), (float)rd->GetFrameID(false), 3, 4);
-		if (rd->GetActiveGPUCount() > 1)
-			ttt.x = 0;
-		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-	}
-
-	{
-		static CCryNameR parameterName6("SVO_CamPos");
-		Vec4 ttt(gEnv->pSystem->GetViewCamera().GetPosition(), 0);
-		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-	}
-
-	{
-		Matrix44A mViewProj;
-		mViewProj = gcpRendD3D->m_CameraProjMatrix;
-		mViewProj.Transpose();
-
-		static CCryNameR paramName("g_mViewProj");
-		rp.SetConstantArray(paramName, alias_cast<Vec4*>(&mViewProj), 4);
-
-		static CCryNameR paramNamePrev("g_mViewProjPrev");
-		rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
-	}
-
-	{
-		Matrix44A matView;
-		matView = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_cam.GetViewMatrix();
-		Vec3 zAxis = matView.GetRow(1);
-		matView.SetRow(1, -matView.GetRow(2));
-		matView.SetRow(2, zAxis);
-		float z = matView.m13;
-		matView.m13 = -matView.m23;
-		matView.m23 = z;
-		static CCryNameR paramName2("TI_CameraMatrix");
-		rp.SetConstantArray(paramName2, (Vec4*)matView.GetData(), 3);
-	}
-
-	if (e_svoTI_AnalyticalGI)
-	{
-		static CCryNameR nameAnalyticalOccluders("SVO_AnalyticalOccluders");
-		rp.SetConstantArray(nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[0][0], sizeof(m_texInfo.arrAnalyticalOccluders[0]) / sizeof(Vec4));
-	}
-
-	if (e_svoTI_AnalyticalOccluders && m_texInfo.arrAnalyticalOccluders[1][0].radius)
-	{
-		static CCryNameR nameAnalyticalOccluders("SVO_PostOccluders");
-		rp.SetConstantArray(nameAnalyticalOccluders, (Vec4*)&m_texInfo.arrAnalyticalOccluders[1][0], sizeof(m_texInfo.arrAnalyticalOccluders[1]) / sizeof(Vec4));
-	}
-
-	if (m_texInfo.arrPortalsPos[0].z)
-	{
-		static CCryNameR nameSVO_PortalsPos("SVO_PortalsPos");
-		rp.SetConstantArray(nameSVO_PortalsPos, (Vec4*)&m_texInfo.arrPortalsPos[0], SVO_MAX_PORTALS);
-		static CCryNameR nameSVO_PortalsDir("SVO_PortalsDir");
-		rp.SetConstantArray(nameSVO_PortalsDir, (Vec4*)&m_texInfo.arrPortalsDir[0], SVO_MAX_PORTALS);
-	}
-
-	rp.SetTextureSamplerPair(10, pTS->pRT_ALD_0, m_nTexStateLinear);
-	rp.SetTextureSamplerPair(11, pTS->pRT_RGB_0, m_nTexStateLinear);
-
-	rp.SetTextureSamplerPair(6, pTS->pRT_RGB_DEM_MIN_1, m_nTexStateLinear);
-	rp.SetTextureSamplerPair(9, pTS->pRT_ALD_DEM_MIN_1, m_nTexStateLinear);
-	rp.SetTextureSamplerPair(12, pTS->pRT_RGB_DEM_MAX_1, m_nTexStateLinear);
-	rp.SetTextureSamplerPair(13, pTS->pRT_ALD_DEM_MAX_1, m_nTexStateLinear);
-
-	rp.SetTextureSamplerPair(8, GetUtils().GetVelocityObjectRT(), m_nTexStatePoint);
+	rp.SetTexture( 8, GetUtils().GetVelocityObjectRT());
 
 	rp.Execute();
 }
@@ -1070,7 +845,7 @@ void CSvoRenderer::SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, T 
 	}
 }
 
-void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate, CComputeRenderPass & rp)
+void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate, CSvoComputePass & rp)
 {
 	static CCryNameR paramNames[SVO_MAX_NODE_GROUPS] =
 	{
@@ -1113,40 +888,40 @@ void CSvoRenderer::SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo
 	if (e_svoTI_AnalyticalGI)
 		return;
 
-	rp.SetTextureSamplerPair(0, ((CTexture*)texInfo.pTexTree), m_nTexStatePoint);
+	rp.SetTexture(0, ((CTexture*)texInfo.pTexTree));
 
-	rp.SetTextureSamplerPair(1, CTexture::s_ptexBlack, m_nTexStateLinear);
+	rp.SetTexture(1, CTexture::s_ptexBlack);
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
 	if (nStage == 0)
-		rp.SetTextureSamplerPair(1, CTexture::GetByID(vp_RGB0.nTexId), m_nTexStateLinear);
+		rp.SetTexture(1, CTexture::GetByID(vp_RGB0.nTexId));
 	else if (nStage == 1)
-		rp.SetTextureSamplerPair(1, CTexture::GetByID(vp_RGB1.nTexId), m_nTexStateLinear);
+		rp.SetTexture(1, CTexture::GetByID(vp_RGB1.nTexId));
 	else if (nStage == 2)
-		rp.SetTextureSamplerPair(1, CTexture::GetByID(vp_RGB2.nTexId), m_nTexStateLinear);
+		rp.SetTexture(1, CTexture::GetByID(vp_RGB2.nTexId));
 	else if (nStage == 3)
-		rp.SetTextureSamplerPair(1, CTexture::GetByID(vp_RGB3.nTexId), m_nTexStateLinear);
+		rp.SetTexture(1, CTexture::GetByID(vp_RGB3.nTexId));
 	else if (nStage == 4)
-		rp.SetTextureSamplerPair(1, CTexture::GetByID(vp_RGB4.nTexId), m_nTexStateLinear);
+		rp.SetTexture(1, CTexture::GetByID(vp_RGB4.nTexId));
 
 	if (nStageNorm == 0)
-		rp.SetTextureSamplerPair(2, CTexture::GetByID(vp_NORM.nTexId), m_nTexStateLinear);
+		rp.SetTexture(2, CTexture::GetByID(vp_NORM.nTexId));
 
 	#endif
 
 	if (nStageOpa == 0)
-		rp.SetTextureSamplerPair(3, (CTexture*)texInfo.pTexOpac, m_nTexStateLinear);
+		rp.SetTexture(3, (CTexture*)texInfo.pTexOpac);
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
 	else if (nStageOpa == 1)
-		rp.SetTextureSamplerPair(3, CTexture::GetByID(vp_RGB4.nTexId), m_nTexStateLinear);
+		rp.SetTexture(3, CTexture::GetByID(vp_RGB4.nTexId));
 
 	if (texInfo.pTexTris)
-		rp.SetTextureSamplerPair(6, (CTexture*)texInfo.pTexTris, m_nTexStatePoint);
+		rp.SetTexture(6, (CTexture*)texInfo.pTexTris);
 	if (texInfo.pGlobalSpecCM)
-		rp.SetTextureSamplerPair(6, (CTexture*)texInfo.pGlobalSpecCM, m_nTexStateTrilinear);
+		rp.SetTexture(6, (CTexture*)texInfo.pGlobalSpecCM);
 
 	#endif
 }
@@ -1529,7 +1304,7 @@ void CSvoRenderer::DebugDrawStats(const RPProfilerStats* pBasicStats, float& ypo
 	SVO_Draw2dLabel(eRPPSTATS_TI_UPSCALE_SPEC);
 }
 
-uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader, bool bDemosaic)
+uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader)
 {
 	uint64 rtFlags = 0;
 
@@ -1718,79 +1493,38 @@ CTexture* CSvoRenderer::GetSpecularFinRT()
 
 void CSvoRenderer::UpscalePass(SSvoTargetsSet* pTS)
 {
-	CFullscreenPass & rp = pTS->passUpscale;
+	CSvoFullscreenPass & rp = pTS->passUpscale;
 
 	const char* szTechFinalName = "UpScalePass";
 
 	if (!e_svoTI_Active || !e_svoTI_Apply || !e_svoRender || !m_pShader)
 		return;
 
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
-	uint64 rtFlags = GetRunTimeFlags(pTS == &m_tsDiff);
-	
 	rp.SetRenderTarget(0, pTS->pRT_FIN_OUT_0);
 	rp.SetRequireWorldPos(true);
 	rp.SetRequirePerViewConstantBuffer(true);
 
-	rp.SetTechnique(m_pShader, szTechFinalName, rtFlags);
+	rp.SetTechnique(m_pShader, szTechFinalName, GetRunTimeFlags(pTS == &m_tsDiff));
 	rp.BeginConstantUpdate();
 	rp.SetState(GS_NODEPTHTEST);
 
-	rp.SetTextureSamplerPair( 4, CTexture::s_ptexZTarget, m_nTexStatePoint);
-	rp.SetTextureSamplerPair(14, GetGBuffer(0), m_nTexStatePoint);
-	rp.SetTextureSamplerPair( 5, GetGBuffer(1), m_nTexStatePoint);
-	rp.SetTextureSamplerPair( 7, GetGBuffer(2), m_nTexStatePoint);
+	SetupCommonConstants(pTS, rp, pTS->pRT_ALD_0);
 
-	rp.SetTextureSamplerPair(10, pTS->pRT_ALD_DEM_MIN_0, m_nTexStatePoint);
-	rp.SetTextureSamplerPair(11, pTS->pRT_RGB_DEM_MIN_0, m_nTexStatePoint);
-	rp.SetTextureSamplerPair(12, pTS->pRT_ALD_DEM_MAX_0, m_nTexStatePoint);
-	rp.SetTextureSamplerPair(13, pTS->pRT_RGB_DEM_MAX_0, m_nTexStatePoint);
+	SetupGBufferTextures(rp);
 
-	rp.SetTextureSamplerPair(9, pTS->pRT_FIN_OUT_1, m_nTexStatePoint);
+	rp.SetTexture(10, pTS->pRT_ALD_DEM_MIN_0);
+	rp.SetTexture(11, pTS->pRT_RGB_DEM_MIN_0);
+	rp.SetTexture(12, pTS->pRT_ALD_DEM_MAX_0);
+	rp.SetTexture(13, pTS->pRT_RGB_DEM_MAX_0);
+
+	rp.SetTexture( 9, pTS->pRT_FIN_OUT_1);
 
 	if (pTS == &m_tsSpec && m_tsDiff.pRT_FIN_OUT_0)
-		rp.SetTextureSamplerPair(15, m_tsDiff.pRT_FIN_OUT_0, m_nTexStatePoint);
+		rp.SetTexture(15, m_tsDiff.pRT_FIN_OUT_0);
 	else
-		rp.SetTextureSamplerPair(15, CTexture::s_ptexBlack, m_nTexStatePoint);
+		rp.SetTexture(15, CTexture::s_ptexBlack);
 
-	{
-		static CCryNameR parameterName6("SVO_SrcPixSize");
-		Vec4 ttt(0, 0, 0, 0);
-		ttt.x = 1.f / float(pTS->pRT_ALD_DEM_MIN_0->GetWidth());
-		ttt.y = 1.f / float(pTS->pRT_ALD_DEM_MIN_0->GetHeight());
-		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-	}
-
-	{
-		static CCryNameR parameterName5("SVO_ReprojectionMatrix");
-		rp.SetConstantArray(parameterName5, (Vec4*)m_matReproj.GetData(), 3);
-	}
-
-	{
-		float fSizeRatioW = float(rd->GetWidth() / rp.GetRenderTarget(0)->GetWidth());
-		float fSizeRatioH = float(rd->GetHeight() / rp.GetRenderTarget(0)->GetHeight());
-		static CCryNameR parameterName6("SVO_TargetResScale");
-		static int nPrevWidth = 0;
-		Vec4 ttt(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase,
-			(float)(nPrevWidth != (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0)) || (rd->m_RP.m_nRendFlags & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1)));
-		rp.SetConstantArray(parameterName6, (Vec4*)&ttt, 1);
-		nPrevWidth = (pTS->pRT_ALD_0->GetWidth() + int(e_svoTI_SkyColorMultiplier > 0));
-	}
-
-	{
-		Matrix44A mViewProj;
-		mViewProj = gcpRendD3D->m_CameraProjMatrix;
-		mViewProj.Transpose();
-
-		static CCryNameR paramName("g_mViewProj");
-		rp.SetConstantArray(paramName, alias_cast<Vec4*>(&mViewProj), 4);
-
-		static CCryNameR paramNamePrev("g_mViewProjPrev");
-		rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
-	}
-
-	rp.SetTextureSamplerPair(8, GetUtils().GetVelocityObjectRT(), m_nTexStatePoint);
+	rp.SetTexture( 8, GetUtils().GetVelocityObjectRT());
 
 	rp.Execute();
 }
@@ -1812,8 +1546,6 @@ void CSvoRenderer::SetupRsmSun(T & rp)
 		t2 = 9;
 	}
 
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	int nLightID = 0;
 
 	threadID m_nThreadID = gcpRendD3D->m_RP.m_nProcessThreadID;
@@ -1821,8 +1553,8 @@ void CSvoRenderer::SetupRsmSun(T & rp)
 	CRenderView* pRenderView = gcpRendD3D->m_RP.RenderView();
 
 	static CCryNameR lightProjParamName("SVO_RsmSunShadowProj");
-	static CCryNameR rsmSunColParameterName("SVO_RsmSunCol");
-	static CCryNameR rsmSunDirParameterName("SVO_RsmSunDir");
+	static CCryNameR rsmSunColparamName("SVO_RsmSunCol");
+	static CCryNameR rsmSunDirparamName("SVO_RsmSunDir");
 	Matrix44A shadowMat;
 	shadowMat.SetIdentity();
 
@@ -1838,7 +1570,7 @@ void CSvoRenderer::SetupRsmSun(T & rp)
 	if ((nFrIdx < SMFrustums.size()) && GetRsmColorMap(*SMFrustums[nFrIdx]->pFrustum))
 	{
 		ShadowMapFrustum& firstFrustum = *SMFrustums[nFrIdx]->pFrustum;
-		rd->ConfigShadowTexgen(0, &firstFrustum, 0);
+		gcpRendD3D->ConfigShadowTexgen(0, &firstFrustum, 0);
 
 		if (firstFrustum.bUseShadowsPool)
 		{
@@ -1846,13 +1578,13 @@ void CSvoRenderer::SetupRsmSun(T & rp)
 			TS.SetFilterMode(FILTER_POINT);
 			TS.SetClampMode(TADDR_CLAMP, TADDR_CLAMP, TADDR_CLAMP);
 			TS.m_bSRGBLookup = false;
-			rp.SetTextureSamplerPair(t0, CTexture::s_ptexRT_ShadowPool, CTexture::GetTexState(TS));
+			rp.SetTexture(t0, CTexture::s_ptexRT_ShadowPool, CTexture::GetTexState(TS));
 		}
 		else
 		{
-			rp.SetTextureSamplerPair(t0, firstFrustum.pDepthTex, m_nTexStatePoint);
-			rp.SetTextureSamplerPair(t1, GetRsmColorMap(firstFrustum), m_nTexStatePoint);
-			rp.SetTextureSamplerPair(t2, GetRsmNormlMap(firstFrustum), m_nTexStatePoint);
+			rp.SetTexture(t0, firstFrustum.pDepthTex);
+			rp.SetTexture(t1, GetRsmColorMap(firstFrustum));
+			rp.SetTexture(t2, GetRsmNormlMap(firstFrustum));
 		}
 
 		// set up shadow matrix
@@ -1866,22 +1598,22 @@ void CSvoRenderer::SetupRsmSun(T & rp)
 		(Vec4&)shadowMat.m20 *= gRenDev->m_cEF.m_TempVecs[2].x;
 		rp.SetConstantArray(lightProjParamName, alias_cast<Vec4*>(&shadowMat), 4);
 
-		Vec4 ttt(gEnv->p3DEngine->GetSunColor(), e_svoTI_InjectionMultiplier);
-		rp.SetConstantArray(rsmSunColParameterName, (Vec4*)&ttt, 1);
-		Vec4 ttt2(gEnv->p3DEngine->GetSunDirNormalized(), (float)e_svoTI_SunRSMInject);
-		rp.SetConstantArray(rsmSunDirParameterName, (Vec4*)&ttt2, 1);
+		Vec4 vData(gEnv->p3DEngine->GetSunColor(), e_svoTI_InjectionMultiplier);
+		rp.SetConstantArray(rsmSunColparamName, (Vec4*)&vData, 1);
+		Vec4 vData2(gEnv->p3DEngine->GetSunDirNormalized(), (float)e_svoTI_SunRSMInject);
+		rp.SetConstantArray(rsmSunDirparamName, (Vec4*)&vData2, 1);
 	}
 	else
 	{
-		rp.SetTextureSamplerPair(t0, CTexture::s_ptexBlack, m_nTexStatePoint);
-		rp.SetTextureSamplerPair(t1, CTexture::s_ptexBlack, m_nTexStatePoint);
-		rp.SetTextureSamplerPair(t2, CTexture::s_ptexBlack, m_nTexStatePoint);
+		rp.SetTexture(t0, CTexture::s_ptexBlack);
+		rp.SetTexture(t1, CTexture::s_ptexBlack);
+		rp.SetTexture(t2, CTexture::s_ptexBlack);
 		rp.SetConstantArray(lightProjParamName, alias_cast<Vec4*>(&shadowMat), 4);
 
-		Vec4 ttt(0, 0, 0, 0);
-		rp.SetConstantArray(rsmSunColParameterName, (Vec4*)&ttt, 1);
-		Vec4 ttt2(0, 0, 0, 0);
-		rp.SetConstantArray(rsmSunDirParameterName, (Vec4*)&ttt2, 1);
+		Vec4 vData(0, 0, 0, 0);
+		rp.SetConstantArray(rsmSunColparamName, (Vec4*)&vData, 1);
+		Vec4 vData2(0, 0, 0, 0);
+		rp.SetConstantArray(rsmSunDirparamName, (Vec4*)&vData2, 1);
 	}
 }
 

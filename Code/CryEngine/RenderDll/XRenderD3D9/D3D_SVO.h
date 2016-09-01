@@ -12,6 +12,25 @@
 
 #if defined(FEATURE_SVO_GI)
 
+class CSvoComputePass : public CComputeRenderPass
+{
+public:
+
+	CSvoComputePass()
+		: CComputeRenderPass::CComputeRenderPass(CSvoComputePass::eFlags_ReflectConstantBuffersFromShader)
+	{ 
+	}
+
+	int nPrevTargetSize = 0;
+};
+
+class CSvoFullscreenPass : public CFullscreenPass
+{
+public:
+
+	int nPrevTargetSize = 0;
+};
+
 struct SSvoTargetsSet
 {
 	void Release();
@@ -29,9 +48,9 @@ struct SSvoTargetsSet
 	* pRT_FIN_OUT_0 = nullptr,
 	* pRT_FIN_OUT_1 = nullptr;
 
-	CFullscreenPass passConeTrace;
-	CFullscreenPass passDemosaic;
-	CFullscreenPass passUpscale;
+	CSvoFullscreenPass passConeTrace;
+	CSvoFullscreenPass passDemosaic;
+	CSvoFullscreenPass passUpscale;
 };
 
 class CSvoRenderer : public ISvoRenderer
@@ -71,24 +90,31 @@ protected:
 	void             UpscalePass(SSvoTargetsSet* pTS);
 	void             DemosaicPass(SSvoTargetsSet* pTS);
 	void             ConeTracePass(SSvoTargetsSet* pTS);
+
+	template<class T>
+	void SetupCommonConstants(SSvoTargetsSet* pTS, T &rp, CTexture * pRT);
+
 	template<class T> void SetupRsmSun(T & rp);
 	void             TropospherePass();
+
+	void SetupGBufferTextures(CSvoFullscreenPass &rp);
+
 	void             CheckCreateUpdateRT(CTexture*& pTex, int nWidth, int nHeight, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szName);
 
-	CComputeRenderPass m_passClearBricks;
-	CComputeRenderPass m_passInjectDynamicLights;
-	CComputeRenderPass m_passInjectStaticLights;
-	CComputeRenderPass m_passInjectAirOpacity;
-	CComputeRenderPass m_passPropagateLighting_1to2;
-	CComputeRenderPass m_passPropagateLighting_2to3;
+	CSvoComputePass m_passClearBricks;
+	CSvoComputePass m_passInjectDynamicLights;
+	CSvoComputePass m_passInjectStaticLights;
+	CSvoComputePass m_passInjectAirOpacity;
+	CSvoComputePass m_passPropagateLighting_1to2;
+	CSvoComputePass m_passPropagateLighting_2to3;
 
-	CFullscreenPass m_passTroposphere;
+	CSvoFullscreenPass m_passTroposphere;
 
 	void UpdateGpuVoxParams(I3DEngine::SSvoNodeInfo& nodeInfo);
-	void ExecuteComputeShader(const char* szTechFinalName, CComputeRenderPass & rp, int* nNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate);
-	uint64 GetRunTimeFlags(bool bDiffuseMode = true, bool bPixelShader = true, bool bDemosaic = false);
+	void ExecuteComputeShader(const char* szTechFinalName, CSvoComputePass & rp, int* nNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate);
+	uint64 GetRunTimeFlags(bool bDiffuseMode = true, bool bPixelShader = true);
 	template<class T> void SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, T & rp, int nStage, int nStageOpa = 0, int nStageNorm = 0);
-	void SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate, CComputeRenderPass & rp);
+	void SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate, CSvoComputePass & rp);
 	void CheckAllocateRT(bool bSpecPass);
 	template<class T> void SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, T & rp);
 	template<class T> void BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, T & rp);
