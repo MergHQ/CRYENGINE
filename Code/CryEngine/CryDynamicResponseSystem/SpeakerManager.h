@@ -5,6 +5,7 @@
 #include <CryString/HashedString.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
+#include "../CryCommon/CryCore/Containers/CryListenerSet.h"
 
 struct ICVar;
 
@@ -48,9 +49,9 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// ISpeakerManager implementation
-	virtual bool IsSpeaking(const DRS::IResponseActor* pActor, const CHashedString& lineID = CHashedString::GetEmpty()) const override;
-	virtual bool StartSpeaking(DRS::IResponseActor* pActor, const CHashedString& lineID) override;
-	virtual bool CancelSpeaking(const DRS::IResponseActor* pActor, int maxPrioToCancel = -1) override;
+	virtual bool IsSpeaking(const DRS::IResponseActor* pActor, const CHashedString& lineID = CHashedString::GetEmpty(), bool bCheckQueuedLinesAsWell = false) const override;
+	virtual IListener::eLineEvent StartSpeaking(DRS::IResponseActor* pActor, const CHashedString& lineID) override;
+	virtual bool CancelSpeaking(const DRS::IResponseActor* pActor, int maxPrioToCancel = -1, const CHashedString& lineID = CHashedString::GetEmpty(), bool bCancelQueuedLines = true) override;
 	virtual bool AddListener(DRS::ISpeakerManager::IListener* pListener) override;
 	virtual bool RemoveListener(DRS::ISpeakerManager::IListener* pListener) override;
 	virtual void SetCustomLipsyncProvider(DRS::ISpeakerManager::ILipsyncProvider* pProvider) override;
@@ -89,9 +90,12 @@ private:
 
 	struct SWaitingInfo
 	{
-		SSpeakInfo*     pSpeechThatWeWaitingFor;
 		CResponseActor* pActor;
 		CHashedString   lineID;
+		int             linePriority;
+		float           waitEndTime;
+
+		bool operator ==(const SWaitingInfo& other) const { return pActor == other.pActor && lineID == other.lineID; } //no need to check prio or endTime, since we only allow one instance of the same lineId per speaker
 	};
 
 	void        UpdateAudioProxyPosition(IEntity* pEntity, const SSpeakInfo& newSpeakerInfo);
@@ -99,9 +103,13 @@ private:
 	static void OnAudioCallback(SAudioRequestInfo const* const pAudioRequestInfo);
 
 	void        InformListener(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID, DRS::ISpeakerManager::IListener::eLineEvent event, const CDialogLine* pLine);
+	bool        OnLineAboutToStart(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID);
 	void        SetNumActiveSpeaker(int newAmountOfSpeaker);
 
-	void        StartSpeaking(SSpeakInfo* pSpeakerInfoToUse);
+	//the pure execution, without further checking if the line can be started (that should have happen before)
+	void        ExecuteStartSpeaking(SSpeakInfo* pSpeakerInfoToUse);
+
+	void QueueLine(CResponseActor* pActor, const CHashedString& lineID, float maxQueueDuration, const int priority);
 
 	typedef std::vector<SSpeakInfo> SpeakerList;
 	SpeakerList m_activeSpeakers;
@@ -109,7 +117,7 @@ private:
 	typedef std::vector<SWaitingInfo> QueuedSpeakerList;
 	QueuedSpeakerList m_queuedSpeakers;
 
-	typedef std::vector<DRS::ISpeakerManager::IListener*> ListenerList;
+	typedef CListenerSet<DRS::ISpeakerManager::IListener*> ListenerList;
 	ListenerList                            m_listeners;
 
 	DRS::ISpeakerManager::ILipsyncProvider* m_pLipsyncProvider;
@@ -119,10 +127,14 @@ private:
 	AudioControlId m_audioRtpcIdLocal;
 	AudioControlId m_audioRtpcIdGlobal;
 
+	std::vector<std::pair<CResponseActor*, float>> m_recentlyFinishedSpeakers;
+
 	// CVars
 	int    m_displaySubtitlesCVar;
 	int    m_playAudioCVar;
 	int    m_samePrioCancelsLinesCVar;
+	float  m_defaultMaxQueueTime;
+	static float  s_defaultPauseAfterLines;
 	ICVar* m_pDrsDialogDialogRunningEntityRtpcName;
 	ICVar* m_pDrsDialogDialogRunningGlobalRtpcName;
 };

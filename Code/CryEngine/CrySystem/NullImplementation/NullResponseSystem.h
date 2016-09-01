@@ -95,8 +95,8 @@ public:
 	virtual DRS::ISpeakerManager*                    GetSpeakerManager() const override                                                                                                   { return nullptr; }
 	virtual DRS::IDialogLineDatabase*                GetDialogLineDatabase() const override                                                                                               { return nullptr; }
 	virtual DRS::IResponseManager*                   GetResponseManager() const override                                                                                                  { return nullptr; }
-	virtual DRS::ValuesListPtr                    GetCurrentState(uint32 saveHints) const override                                                                                     { return nullptr; }
-	virtual void                                     SetCurrentState(const DRS::ValuesList& outCollectionsList) override                                                               {}
+	virtual DRS::ValuesListPtr                       GetCurrentState(uint32 saveHints) const override                                                                                     { return nullptr; }
+	virtual void                                     SetCurrentState(const DRS::ValuesList& outCollectionsList) override                                                                  {}
 	//////////////////////////////////////////////////////////
 
 private:

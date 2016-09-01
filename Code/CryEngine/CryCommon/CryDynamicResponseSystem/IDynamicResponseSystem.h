@@ -55,27 +55,32 @@ struct ISpeakerManager
 	{
 		enum eLineEvent
 		{
-			eLineEvent_Started                   = BIT(0), //line started successfully
+			eLineEvent_Started                               = BIT(0), //line started successfully
+			eLineEvent_Finished                              = BIT(1), //line finished successfully
+			eLineEvent_Canceled                              = BIT(2), //was canceled while playing (by calling cancel or by destroying the actor)
+			eLineEvent_Queued                                = BIT(3), //line is waiting to start
 
-			eLineEvent_Finished                  = BIT(1),                                    //line finished successfully
-			eLineEvent_Canceled                  = BIT(2),                                    //was canceled while playing (by calling cancel or by destroying the actor)
-			eLineEvent_HasEndedInAnyWay          = eLineEvent_Finished | eLineEvent_Canceled, //useful combination, if you are only interested in IF the line has ended and not HOW it happened.
+			eLineEvent_SkippedBecauseOfFaultyData            = BIT(4), //was not started because of incorrect data.
+			eLineEvent_SkippedBecauseOfPriority              = BIT(5), //another more important line was already playing (pLine will hold that line) and the line did not allow queuing
+			eLineEvent_SkippedBecauseOfTimeOut               = BIT(6), //line was queued for some time but could not start in the allowed max-queue time
+			eLineEvent_SkippedBecauseOfNoValidLineVariations = BIT(7), //line used up all his line variations. (most commonly happens with the only-once flag)
+			eLineEvent_SkippedBecauseOfAlreadyRequested      = BIT(8), //the line was already running or queued
+			eLineEvent_SkippedBecauseOfExternalCode          = BIT(9), //a registered listener declined the execution of the line
 
-			eLineEvent_Queued                    = BIT(3), //line is waiting to start
-			eLineEvent_Canceling                 = BIT(4), //waiting for stop trigger to finish
-
-			eLineEvent_CanceledWhileQueued       = BIT(5),                                                                                              //was canceled while queued (by calling cancel or by destroying the actor)
-			eLineEvent_CouldNotBeStarted         = BIT(6),                                                                                              //was not started because of incorrect data.
-			eLineEvent_SkippedBecauseOfPriority  = BIT(7),                                                                                              //another more important line was already playing (pLine will hold that line)
-			eLineEvent_WasNotStartedForAnyReason = eLineEvent_CanceledWhileQueued | eLineEvent_CouldNotBeStarted | eLineEvent_SkippedBecauseOfPriority, //useful combination, if you are only interested IF the line has not started and not WHY it did not happen.
+			//useful combination, if you are only interested in IF the line has ended and not HOW it happened.
+			eLineEvent_HasEndedInAnyWay          = eLineEvent_Finished | eLineEvent_Canceled,
+			//useful combination, if you are only interested IF the line has not started and not WHY it did not happen.
+			eLineEvent_WasNotStartedForAnyReason = eLineEvent_SkippedBecauseOfFaultyData | eLineEvent_SkippedBecauseOfPriority | eLineEvent_SkippedBecauseOfTimeOut | eLineEvent_SkippedBecauseOfNoValidLineVariations | eLineEvent_SkippedBecauseOfAlreadyRequested | eLineEvent_SkippedBecauseOfExternalCode,
 
 		};
-		virtual void OnLineEvent(const IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const IDialogLine* pLine) = 0;  //Remark: pLine can be a nullptr, if the triggered line does not exist in the database, but still 'started' to display debug text (like: "missing: 'Missing_line_ID'")
+
+		virtual bool OnLineAboutToStart(const IResponseActor* pSpeaker, const CHashedString& lineID) { return true; }                              //line is going to be started, but the execution will be skipped if this function returns false. Remark: This is not really a listener method, since its return value changes the execution-flow
+		virtual void OnLineEvent(const IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const IDialogLine* pLine) = 0; //Remark: pLine can be a nullptr if the line was skipped or if the triggered line does not exist in the database, but still 'started' to display debug text (like: "missing: 'Missing_line_ID'")
 	};
 
-	virtual bool IsSpeaking(const IResponseActor* pActor, const CHashedString& lineID = CHashedString::GetEmpty()) const = 0;
-	virtual bool StartSpeaking(IResponseActor* pActor, const CHashedString& lineID) = 0;
-	virtual bool CancelSpeaking(const IResponseActor* pActor, int maxPrioToCancel = -1) = 0;
+	virtual IListener::eLineEvent StartSpeaking(IResponseActor* pActor, const CHashedString& lineID) = 0;
+	virtual bool IsSpeaking(const IResponseActor* pActor, const CHashedString& lineID = CHashedString::GetEmpty(), bool bCheckQueuedLinesAsWell = false) const = 0;
+	virtual bool CancelSpeaking(const IResponseActor* pActor, int maxPrioToCancel = -1, const CHashedString& lineID = CHashedString::GetEmpty(), bool bCancelQueuedLines = true) = 0;
 	virtual bool AddListener(IListener* pListener) = 0;
 	virtual bool RemoveListener(IListener* pListener) = 0;
 	virtual void SetCustomLipsyncProvider(ILipsyncProvider* pProvider) = 0;
@@ -582,7 +587,6 @@ struct IResponseActor
 	 */
 	virtual SignalInstanceId QueueSignal(const CHashedString& signalName, IVariableCollectionSharedPtr pSignalContext = nullptr, IResponseManager::IListener* pSignalListener = nullptr) = 0;
 };
-
 //////////////////////////////////////////////////////////////////////////
 //! A base class for all objects (conditions, actions for now) that are displayed in Sandbox.
 struct IEditorObject
@@ -624,7 +628,7 @@ struct SCurrentDrsUserScopeHelper
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-// Interfaces needed only for the editor plugin.
+// Interfaces needed mainly for the editor plugin.
 
 struct IDialogLine
 {
@@ -634,8 +638,9 @@ struct IDialogLine
 	virtual const string& GetEndAudioTrigger() const = 0;
 	virtual const string& GetLipsyncAnimation() const = 0;
 	virtual const string& GetStandaloneFile() const = 0;
-	virtual const float   GetPauseLength() const = 0;
+	virtual float         GetPauseLength() const = 0;
 	virtual const string& GetCustomData() const = 0;
+
 	virtual void          SetText(const string& text) = 0;
 	virtual void          SetStartAudioTrigger(const string& trigger) = 0;
 	virtual void          SetEndAudioTrigger(const string& trigger) = 0;
@@ -665,9 +670,11 @@ struct IDialogLineSet
 	virtual void          SetLineId(const CHashedString& lineId) = 0;
 	virtual void          SetPriority(int priority) = 0;
 	virtual void          SetFlags(uint32 flags) = 0;
+	virtual void          SetMaxQueuingDuration(float length) = 0;
 	virtual CHashedString GetLineId() const = 0;
 	virtual int           GetPriority() const = 0;
 	virtual uint32        GetFlags() const = 0;
+	virtual float         GetMaxQueuingDuration() const = 0;
 	virtual uint32        GetLineCount() const = 0;
 	virtual IDialogLine*  GetLineByIndex(uint32 index) = 0;
 	virtual IDialogLine*  InsertLine(uint32 index) = 0;

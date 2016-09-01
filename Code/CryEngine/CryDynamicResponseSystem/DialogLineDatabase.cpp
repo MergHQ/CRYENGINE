@@ -264,6 +264,7 @@ CDialogLineSet::CDialogLineSet()
 	: m_priority(50)
 	, m_flags(IDialogLineSet::EPickModeFlags_RandomVariation)
 	, m_lastPickedLine(0)
+	, m_maxQueuingDuration(-1.0f) //negative values do mean 'default' which maps to the value set in CSpeakerManager via cvar 'drs_dialogsDefaultMaxQueueTime'
 {
 	m_lines.push_back(CDialogLine());
 }
@@ -431,8 +432,9 @@ void CDialogLineSet::Serialize(Serialization::IArchive& ar)
 	ar(m_lineId, "lineID", "lineID");
 	ar(m_priority, "priority", "Priority");
 	ar(m_lastPickedLine, "lastPicked", "Last Picked variation");
-	ar(m_flags, "flags", "+Flags");
+	ar(m_flags, "flags", "Flags");
 	ar(m_lines, "lineVariations", "+Lines");
+	ar(m_maxQueuingDuration, "maxQueuingDuration", "MaxQueuingDuration");
 
 #if !defined(_RELEASE)
 	if (ar.isEdit())
@@ -451,16 +453,16 @@ void CDialogLineSet::Serialize(Serialization::IArchive& ar)
 
 bool CryDRS::CDialogLineSet::HasAvailableLines()
 {
-	if (m_flags & EPickModeFlags::EPickModeFlags_SequentialVariationOnlyOnce)
+	if ((m_flags & EPickModeFlags::EPickModeFlags_SequentialVariationOnlyOnce) > 0)
 	{
 		return m_lastPickedLine < static_cast<int>(m_lines.size());
 	}
-	return true;
+	return !m_lines.empty();
 }
 
 void CryDRS::CDialogLineSet::OnLineCanceled(const CDialogLine* pCanceledLine)
 {
-	if (m_flags & EPickModeFlags::EPickModeFlags_SequentialVariationOnlyOnce)
+	if ((m_flags & EPickModeFlags::EPickModeFlags_SequentialVariationOnlyOnce) > 0)
 	{
 		m_lastPickedLine--; //remark: if a only-once line is canceled, we do allow it to repeat.
 	}
@@ -469,7 +471,8 @@ void CryDRS::CDialogLineSet::OnLineCanceled(const CDialogLine* pCanceledLine)
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
-CDialogLine::CDialogLine() : m_pauseLength(0.0f)
+CDialogLine::CDialogLine() 
+	: m_pauseLength(-1.0f)   //negative values mean "default value", specified by drs_dialogsDefaultPauseAfterLines
 {}
 
 //--------------------------------------------------------------------------------------------------

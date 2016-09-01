@@ -44,9 +44,7 @@ DRS::IResponseActionInstance::eCurrentState CryDRS::CActionCancelSignalInstance:
 			return IResponseActionInstance::CS_RUNNING;
 		}
 	}
-
 	return IResponseActionInstance::CS_FINISHED;
-
 }
 
 void CryDRS::CActionCancelSignalInstance::Cancel()
