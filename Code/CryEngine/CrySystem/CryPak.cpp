@@ -1062,6 +1062,16 @@ const char* CCryPak::AdjustFileName(const char* src, char dst[g_nMaxPath], unsig
 		for (it = m_arrMods.rbegin(); it != m_arrMods.rend(); ++it)
 		{
 			CryPathString modPath = (*it).c_str();
+			//FIXME: Used to limit search scope of %ENGINEROOT% mod
+			//Remove test once %ENGINEROOT% is no longer added as a mod
+			if (modPath == "%engineroot%" &&
+				!(filehelpers::CheckPrefix(src, "editor/") ||
+				filehelpers::CheckPrefix(src, "engine/") ||
+				filehelpers::CheckPrefix(src, "editor\\") ||
+				filehelpers::CheckPrefix(src, "engine\\")))
+				continue;
+
+
 			modPath.append(1, '/');
 			modPath += src;
 			const char* szFinalPath = AdjustFileNameInternal(modPath, dst, nFlags | FLAGS_PATH_REAL);
