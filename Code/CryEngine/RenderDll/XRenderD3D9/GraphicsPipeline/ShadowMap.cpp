@@ -157,7 +157,7 @@ bool CShadowMapStage::CreatePipelineState(const SGraphicsPipelineStateDescriptio
 	{
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE4];
 
-		if (!bTwoSided)
+		if (!bTwoSided && psoDesc.m_CullMode == eCULL_Front)
 			psoDesc.m_CullMode = eCULL_Back;
 
 		if (objectFlags & FOB_DECAL_TEXGEN_2D)
