@@ -101,7 +101,7 @@ private:
 	void InformListenerAboutSignalProcessingStarted(const SSignal& signal, DRS::IResponseInstance* pInstance);
 	void InformListenerAboutSignalProcessingFinished(const CHashedString& signalName, CResponseActor* pSender, const VariableCollectionSharedPtr& pSignalContext, const DRS::SignalInstanceId signalID, DRS::IResponseInstance* pInstance, DRS::IResponseManager::IListener::eProcessingResult outcome);
 
-	EUsedFileFormat      m_UsedFileFormat;
+	EUsedFileFormat      m_usedFileFormat;
 
 	MappedSignals        m_mappedSignals;
 

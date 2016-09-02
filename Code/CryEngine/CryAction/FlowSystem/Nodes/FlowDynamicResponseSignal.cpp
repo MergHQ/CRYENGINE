@@ -15,6 +15,12 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	~CFlowNode_SendDynamicResponseSignal()
+	{
+		gEnv->pDynamicResponseSystem->GetResponseManager()->RemoveListener(this);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override
 	{
 		return new CFlowNode_SendDynamicResponseSignal(pActInfo);

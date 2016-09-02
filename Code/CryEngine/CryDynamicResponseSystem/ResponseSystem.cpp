@@ -114,7 +114,7 @@ bool CResponseSystem::Init(const char* szFilesFolder)
 	m_pSpeakerManager->Init();
 	m_pDialogLineDatabase->InitFromFiles(m_filesFolder + "/DialogLines");
 
-	m_CurrentTime.SetSeconds(0.0f);
+	m_currentTime.SetSeconds(0.0f);
 
 	m_pVariableCollectionManager->GetCollection("Global")->CreateVariable("CurrentTime", 0.0f);
 
@@ -138,9 +138,9 @@ void CResponseSystem::Update()
 		m_pendingResetRequest = DRS::IDynamicResponseSystem::eResetHint_Nothing;
 	}
 
-	m_CurrentTime += gEnv->pTimer->GetFrameTime();
+	m_currentTime += gEnv->pTimer->GetFrameTime();
 
-	m_pVariableCollectionManager->GetCollection("Global")->SetVariableValue("CurrentTime", m_CurrentTime.GetSeconds());
+	m_pVariableCollectionManager->GetCollection("Global")->SetVariableValue("CurrentTime", m_currentTime.GetSeconds());
 
 	m_bIsCurrentlyUpdating = true;
 	m_pVariableCollectionManager->Update();
@@ -201,19 +201,19 @@ CDataImportHelper* CResponseSystem::GetCustomDataformatHelper()
 CResponseActor* CResponseSystem::CreateResponseActor(const CHashedString& pActorName, const EntityId userData)
 {
 	CResponseActor* newActor = new CResponseActor(pActorName, userData);
-	m_CreatedActors.push_back(newActor);
+	m_createdActors.push_back(newActor);
 	return newActor;
 }
 
 //--------------------------------------------------------------------------------------------------
 bool CResponseSystem::ReleaseResponseActor(DRS::IResponseActor* pActorToFree)
 {
-	for (ResponseActorList::iterator it = m_CreatedActors.begin(), itEnd = m_CreatedActors.end(); it != itEnd; ++it)
+	for (ResponseActorList::iterator it = m_createdActors.begin(), itEnd = m_createdActors.end(); it != itEnd; ++it)
 	{
 		if (*it == pActorToFree)
 		{
 			delete *it;
-			m_CreatedActors.erase(it);
+			m_createdActors.erase(it);
 			return true;
 		}
 	}
@@ -223,7 +223,7 @@ bool CResponseSystem::ReleaseResponseActor(DRS::IResponseActor* pActorToFree)
 //--------------------------------------------------------------------------------------------------
 CResponseActor* CResponseSystem::GetResponseActor(const CHashedString& actorName)
 {
-	for (CResponseActor* pActor : m_CreatedActors)
+	for (CResponseActor* pActor : m_createdActors)
 	{
 		if (pActor->GetName() == actorName)
 		{
@@ -274,7 +274,7 @@ void CResponseSystem::Serialize(Serialization::IArchive& ar)
 
 	m_pResponseManager->SerializeResponseStates(ar);
 
-	m_CurrentTime.SetSeconds(m_pVariableCollectionManager->GetCollection("Global")->GetVariableValue("CurrentTime").GetValueAsFloat());  //we serialize our DRS time manually via the time variable
+	m_currentTime.SetSeconds(m_pVariableCollectionManager->GetCollection("Global")->GetVariableValue("CurrentTime").GetValueAsFloat());  //we serialize our DRS time manually via the time variable
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -315,8 +315,8 @@ void CResponseSystem::InternalReset(uint32 resetFlags)
 	if (resetFlags & DRS::IDynamicResponseSystem::eResetHint_Variables)
 	{
 		m_pVariableCollectionManager->Reset();
-		m_CurrentTime.SetSeconds(0.0f);
-		m_pVariableCollectionManager->GetCollection("Global")->SetVariableValue("CurrentTime", m_CurrentTime.GetSeconds());
+		m_currentTime.SetSeconds(0.0f);
+		m_pVariableCollectionManager->GetCollection("Global")->SetVariableValue("CurrentTime", m_currentTime.GetSeconds());
 	}
 	if (resetFlags & DRS::IDynamicResponseSystem::eResetHint_Speaker)
 	{
@@ -427,7 +427,7 @@ void CResponseSystem::SetCurrentState(const DRS::ValuesList& collectionsList)
 	{
 		m_pVariableCollectionManager->SetAllVariableCollections(itStartOfVariables, itEndOfVariables);
 		//we serialize our DRS time manually via the "CurrentTime" variable
-		m_CurrentTime.SetSeconds(m_pVariableCollectionManager->GetCollection("Global")->GetVariableValue("CurrentTime").GetValueAsFloat());
+		m_currentTime.SetSeconds(m_pVariableCollectionManager->GetCollection("Global")->GetVariableValue("CurrentTime").GetValueAsFloat());
 	}
 
 	if (itStartOfResponses != itEndOfResponses)

@@ -69,7 +69,7 @@ bool Serialize(Serialization::IArchive& ar, ResponsePairSorted& pair, const char
 CResponseManager::CResponseManager()
 {
 	m_bCurrentlyUpdating = false;
-	m_UsedFileFormat = CResponseManager::eUFF_JSON;
+	m_usedFileFormat = CResponseManager::eUFF_JSON;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -105,15 +105,15 @@ bool CResponseManager::_LoadFromFiles(const string& dataPath)
 				else
 				{
 					s_currentFilePath = dataPath + sName;
-					if (m_UsedFileFormat == eUFF_JSON)
+					if (m_usedFileFormat == eUFF_JSON)
 					{
 						Serialization::LoadJsonFile(*this, s_currentFilePath);
 					}
-					else if (m_UsedFileFormat == eUFF_XML)
+					else if (m_usedFileFormat == eUFF_XML)
 					{
 						Serialization::LoadXmlFile(*this, s_currentFilePath);
 					}
-					else if (m_UsedFileFormat == eUFF_BIN)
+					else if (m_usedFileFormat == eUFF_BIN)
 					{
 						Serialization::LoadBinaryFile(*this, s_currentFilePath);
 					}
@@ -143,17 +143,17 @@ bool CResponseManager::SaveToFiles(const char* szDataPath)
 	const string outFolder = szDataPath;
 	for (MappedSignals::iterator it = m_mappedSignals.begin(); it != m_mappedSignals.end(); ++it)
 	{
-		if (m_UsedFileFormat == eUFF_JSON)
+		if (m_usedFileFormat == eUFF_JSON)
 		{
 			string outfile = outFolder + it->first.GetText() + ".response";
 			Serialization::SaveJsonFile(outfile, Serialization::SStruct(*it->second));
 		}
-		else if (m_UsedFileFormat == eUFF_XML)
+		else if (m_usedFileFormat == eUFF_XML)
 		{
 			string outfile = outFolder + it->first.GetText() + ".xml";
 			Serialization::SaveXmlFile(outfile, Serialization::SStruct(*it->second), "responses");
 		}
-		else if (m_UsedFileFormat == eUFF_BIN)
+		else if (m_usedFileFormat == eUFF_BIN)
 		{
 			string outfile = outFolder + it->first.GetText() + ".bin";
 			Serialization::SaveBinaryFile(outfile, Serialization::SStruct(*it->second));
@@ -398,7 +398,7 @@ void CResponseManager::Serialize(Serialization::IArchive& ar)
 //--------------------------------------------------------------------------------------------------
 void CResponseManager::SetFileFormat(EUsedFileFormat format)
 {
-	m_UsedFileFormat = format;
+	m_usedFileFormat = format;
 }
 
 //--------------------------------------------------------------------------------------------------
