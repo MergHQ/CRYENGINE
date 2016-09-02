@@ -69,10 +69,6 @@ if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Sandbox")
 	set_property(CACHE OPTION_SANDBOX PROPERTY STRINGS "No" "Qt" "Legacy")
 endif()
 
-if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Tools/RC")
-	option(OPTION_RC "Enable Resource Compiler" OFF)
-endif()
-
 option(OPTION_PCH "Enable Precompiled Headers" OFF)
 option(OPTION_CRY_EXTENSIONS "Enable CryExtensions" ON)
 
@@ -430,20 +426,6 @@ if (OPTION_SANDBOX AND WIN64)
 	add_subdirectory(Code/Sandbox/Plugins/FbxPlugin)
 	add_subdirectory(Code/Sandbox/Plugins/MeshImporter)
 	add_subdirectory(Code/Sandbox/Plugins/PerforcePlugin)
-endif()
-
-# Resource Compiler
-if (OPTION_RC AND WIN64)
-	MESSAGE(STATUS "Include Resource Compiler")
-	add_subdirectory(Code/Libs/alembic)
-	add_subdirectory(Code/Libs/ilmbase)
-	add_subdirectory(Code/Libs/hdf5)
-	add_subdirectory(Code/Libs/szip)	
-	add_subdirectory(Code/Tools/RC/ResourceCompiler)
-	add_subdirectory(Code/Tools/RC/ResourceCompilerABC)
-	add_subdirectory(Code/Tools/RC/ResourceCompilerImage)
-	add_subdirectory(Code/Tools/RC/ResourceCompilerPC)
-	add_subdirectory(Code/Tools/RC/ResourceCompilerXML)
 endif()
 
 if (WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Tools/ShaderCacheGen/ShaderCacheGen")
