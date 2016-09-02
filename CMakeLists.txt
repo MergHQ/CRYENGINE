@@ -322,7 +322,7 @@ add_custom_target(CE DEPENDS CryPhysics CrySystem CryAction CryRenderD3D11
 
 
 # Game
-option(OPTION_GAMESDK "Build GameSDK sample project" OFF)
+option(OPTION_GAMESDK "Build GameSDK sample project" ON)
 option(OPTION_GAMEZERO "Build GameZero sample project" OFF)
 option(OPTION_GAMEMONO "Build GameMono sample project" OFF)
 
