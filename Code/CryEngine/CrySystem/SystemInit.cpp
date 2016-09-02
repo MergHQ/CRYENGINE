@@ -3553,7 +3553,6 @@ L_done:;
 					CryFatalError("<DRS>: Could not create an instance of NULLDynamicResponse::CSystem!");
 				}
 			}
-			m_env.pDynamicResponseSystem->Init(PathUtil::GetGameFolder() + "/libs/DynamicResponseSystem");
 		}
 
 		InlineInitializationProcessing("CSystem::Init Dynamic Response System");
