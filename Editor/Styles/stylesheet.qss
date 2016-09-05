@@ -13,6 +13,8 @@ green color					rgb(125,198,83)
 yellow						rgb(233,233,117)
 *******************************************************************/
 
+
+
 QWidget {
 	background-color: rgb(66,66,66);
 	font-family:"Arial";
@@ -42,7 +44,7 @@ QComboBox {
 
 QComboBox::item {
 	color:rgb(166,166,166);
-	background-color:rgb(50,50,50);
+	background-color:red; /* for debugging purposes - old value (rgb(50,50,50);*/
 }
 
 QComboBox::item:selected {
@@ -965,6 +967,26 @@ QTreeView::indicator:checked
 	image: url("icons:General/Tick_Tinted.ico");
 }
 
+QTreeView::branch:has-children:closed
+{
+    image: url(icons:General/Pointer_Right_Tinted.ico);
+}
+
+QTreeView::branch:has-children::selected:closed
+{
+    image: url(icons:General/Pointer_Right.ico);
+}
+
+QTreeView::branch:has-children
+{
+    image: url(icons:General/Pointer_Down_Tinted.ico);
+}
+
+QTreeView::branch:has-children::selected
+{
+    image: url(icons:General/Pointer_Down.ico);
+}
+
 QTreeView QHeaderView {
 	color:rgb(166,166,166);
 	background-color:rgb(35,35,35);
@@ -997,8 +1019,6 @@ QTreeView QHeaderView::section {                /* the tree view header */
 	padding-bottom:3px;
 	padding-left:4px;
 }
-
-
 
 QViewportHeader {
 	background-color:rgb(58,58,58);
@@ -1238,7 +1258,7 @@ QLineEdit:disabled {
 
 QComboBox:disabled {
 	color:rgb(120,120,120);
-	background-color:rgb(58,58,58);
+	background-color:red; /* for debugging purposes - old value (rgb(58,58,58);*/
 }
 
 QComboBox::drop-down:disabled {
