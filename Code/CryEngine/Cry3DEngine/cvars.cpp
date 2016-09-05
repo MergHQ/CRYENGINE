@@ -192,7 +192,7 @@ void CVars::Init()
 	                   " z = freeze particle system");
 	REGISTER_CVAR(e_ParticlesThread, 1, VF_BITFIELD,
 	              "Enable particle threading");
-	REGISTER_CVAR(e_ParticlesObjectCollisions, 1, VF_NULL,
+	REGISTER_CVAR(e_ParticlesObjectCollisions, 2, VF_NULL,
 	              "Enable particle/object collisions for SimpleCollision:\n"
 	              "  1 = against static objects only, 2 = dynamic also");
 	REGISTER_CVAR(e_ParticlesMinPhysicsDynamicBounds, 2, VF_NULL,
