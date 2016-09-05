@@ -171,161 +171,158 @@ void CParticleSubEmitter::EmitParticles(SParticleUpdateContext& context)
 
 	while (nMaxPulses-- > 0)
 	{
-		if (fAge > m_fLastEmitAge)
+		// Determine time window to update.
+		float fAge0 = max(m_fLastEmitAge, m_fStartAge);
+		float fAge1 = min(fAge, m_fStopAge);
+
+		// Skip time before emitted particles would still be alive.
+		fAge0 = max(fAge0, fAge - fFullLife);
+
+		if (fAge1 > m_fLastEmitAge && fAge0 <= fAge1)
 		{
-			// Determine time window to update.
-			float fAge0 = max(m_fLastEmitAge, m_fStartAge);
-			float fAge1 = min(fAge, m_fStopAge);
-
-			// Skip time before emitted particles would still be alive.
-			fAge0 = max(fAge0, fAge - fFullLife);
-
-			if (fAge0 <= fAge1)
+			const float fStrength = GetStrength((fAge0 + fAge1) * 0.5f - fAge);
+			float fCount = params.fCount(VRANDOM, fStrength);
+			if (!GetContainer().GetParent())
+				fCount *= GetMain().GetEmitCountScale();
+			if (fCount > 0.f)
 			{
-				const float fStrength = GetStrength((fAge0 + fAge1) * 0.5f - fAge);
-				float fCount = params.fCount(VRANDOM, fStrength);
-				if (!GetContainer().GetParent())
-					fCount *= GetMain().GetEmitCountScale();
-				if (fCount > 0.f)
+				const float fEmitterLife = m_fStopAge - m_fStartAge;
+				float fParticleLife = params.fParticleLifeTime(VMAX, fStrength);
+				if (fParticleLife == 0.f)
+					fParticleLife = fEmitterLife;
+
+				if (fParticleLife > 0.f)
 				{
-					const float fEmitterLife = m_fStopAge - m_fStartAge;
-					float fParticleLife = params.fParticleLifeTime(VMAX, fStrength);
-					if (fParticleLife == 0.f)
-						fParticleLife = fEmitterLife;
+					EmitParticleData data;
+					data.Location = GetSource().GetLocation();
 
-					if (fParticleLife > 0.f)
+					if (params.bContinuous && fEmitterLife > 0.f)
 					{
-						EmitParticleData data;
-						data.Location = GetSource().GetLocation();
+						// Continuous emission rate which maintains fCount particles
+						float fAgeIncrement = min(fParticleLife, fEmitterLife) / fCount;
 
-						if (params.bContinuous && fEmitterLife > 0.f)
+						// Set up location interpolation.
+						const QuatTS& locA = GetSource().GetLocation();
+						const QuatTS& locB = m_LastLoc;
+
+						struct
 						{
-							// Continuous emission rate which maintains fCount particles
-							float fAgeIncrement = min(fParticleLife, fEmitterLife) / fCount;
+							bool  bInterp;
+							bool  bSlerp;
+							float fInterp;
+							float fInterpInc;
+							Vec3  vArc;
+							float fA;
+							float fCosA;
+							float fInvSinA;
+						} Interp;
 
-							// Set up location interpolation.
-							const QuatTS& locA = GetSource().GetLocation();
-							const QuatTS& locB = m_LastLoc;
+						Interp.bInterp = context.fUpdateTime > 0.f && !params.bMoveRelativeEmitter
+							                && m_LastLoc.s >= 0.f && !IsEquivalent(locA, locB, 0.0045f, 1e-5f);
 
-							struct
+						if (params.fMaintainDensity && (Interp.bInterp || params.nEnvFlags & ENV_PHYS_AREA))
+						{
+							float fAdjust = ComputeDensityIncrease(fStrength, fParticleLife, locA, Interp.bInterp ? &locB : 0);
+							if (fAdjust > 1.f)
 							{
-								bool  bInterp;
-								bool  bSlerp;
-								float fInterp;
-								float fInterpInc;
-								Vec3  vArc;
-								float fA;
-								float fCosA;
-								float fInvSinA;
-							} Interp;
+								fAdjust = Lerp(1.f, fAdjust, params.fMaintainDensity);
+								float fInvAdjust = 1.f / fAdjust;
+								fAgeIncrement *= fInvAdjust;
+								context.fDensityAdjust = Lerp(1.f, fInvAdjust, params.fMaintainDensity.fReduceAlpha);
+							}
+						}
 
-							Interp.bInterp = context.fUpdateTime > 0.f && !params.bMoveRelativeEmitter
-							                 && m_LastLoc.s >= 0.f && !IsEquivalent(locA, locB, 0.0045f, 1e-5f);
+						if (Interp.bInterp)
+						{
+							Interp.bSlerp = false;
+							Interp.fInterp = div_min(fAge - fAge0, context.fUpdateTime, 1.f);
+							Interp.fInterpInc = -div_min(fAgeIncrement, context.fUpdateTime, 1.f);
 
-							if (params.fMaintainDensity && (Interp.bInterp || params.nEnvFlags & ENV_PHYS_AREA))
+							if (!(GetCVars()->e_ParticlesDebug & AlphaBit('q')))
 							{
-								float fAdjust = ComputeDensityIncrease(fStrength, fParticleLife, locA, Interp.bInterp ? &locB : 0);
-								if (fAdjust > 1.f)
+								/*
+									  Spherically interpolate based on rotation changes and velocity.
+									  Instead of interpolating linearly along path (P0,P1,t);
+									  Interpolate along an arc:
+
+									  (P0,P1,y) + C x, where
+									  a = half angle of arc segment = angle(R0,R1) / 2 = acos (R1 ~R0).w
+									  C = max arc extension, perpendicular to (P0,P1)
+									  = (P0,P1)/2 ^ (R1 ~R0).xyz.norm (1 - cos a)
+									  y = (sin (a (2t-1)) / sin(a) + 1)/2
+									  x = cos (a (2t-1)) - cos a
+									*/
+
+								Vec3 vVelB = GetSource().GetVelocity().vLin;
+								Vec3 vDeltaAdjusted = locB.t - locA.t - vVelB * context.fUpdateTime;
+								if (!vDeltaAdjusted.IsZero())
 								{
-									fAdjust = Lerp(1.f, fAdjust, params.fMaintainDensity);
-									float fInvAdjust = 1.f / fAdjust;
-									fAgeIncrement *= fInvAdjust;
-									context.fDensityAdjust = Lerp(1.f, fInvAdjust, params.fMaintainDensity.fReduceAlpha);
+									Quat qDelta = locB.q * locA.q.GetInverted();
+									float fSinA = qDelta.v.GetLength();
+									if (fSinA > 0.001f)
+									{
+										Interp.bSlerp = true;
+										if (qDelta.w < 0.f)
+											qDelta = -qDelta;
+										Interp.fA = asin_tpl(fSinA);
+										Interp.fInvSinA = 1.f / fSinA;
+										Interp.fCosA = qDelta.w;
+										Interp.vArc = vDeltaAdjusted ^ qDelta.v;
+										Interp.vArc *= Interp.fInvSinA * Interp.fInvSinA * 0.5f;
+									}
 								}
 							}
+						}
 
+						if (params.Connection.bConnectToOrigin)
+							fAge -= fAgeIncrement;
+
+						float fPast = fAge - fAge0, fMinPast = fAge - fAge1;
+						for (; fPast > fMinPast; fPast -= fAgeIncrement)
+						{
 							if (Interp.bInterp)
 							{
-								Interp.bSlerp = false;
-								Interp.fInterp = div_min(fAge - fAge0, context.fUpdateTime, 1.f);
-								Interp.fInterpInc = -div_min(fAgeIncrement, context.fUpdateTime, 1.f);
+								// Interpolate the location linearly.
+								data.Location.q.SetNlerp(locA.q, locB.q, Interp.fInterp);
+								data.Location.s = locA.s + (locB.s - locA.s) * Interp.fInterp;
 
-								if (!(GetCVars()->e_ParticlesDebug & AlphaBit('q')))
+								if (Interp.bSlerp)
 								{
-									/*
-									   Spherically interpolate based on rotation changes and velocity.
-									   Instead of interpolating linearly along path (P0,P1,t);
-									   Interpolate along an arc:
+									float fX, fY;
+									sincos_tpl(Interp.fA * (2.f * Interp.fInterp - 1.f), &fY, &fX);
+									fY = (fY * Interp.fInvSinA + 1.f) * 0.5f;
+									fX -= Interp.fCosA;
 
-									   (P0,P1,y) + C x, where
-									   a = half angle of arc segment = angle(R0,R1) / 2 = acos (R1 ~R0).w
-									   C = max arc extension, perpendicular to (P0,P1)
-									   = (P0,P1)/2 ^ (R1 ~R0).xyz.norm (1 - cos a)
-									   y = (sin (a (2t-1)) / sin(a) + 1)/2
-									   x = cos (a (2t-1)) - cos a
-									 */
-
-									Vec3 vVelB = GetSource().GetVelocity().vLin;
-									Vec3 vDeltaAdjusted = locB.t - locA.t - vVelB * context.fUpdateTime;
-									if (!vDeltaAdjusted.IsZero())
-									{
-										Quat qDelta = locB.q * locA.q.GetInverted();
-										float fSinA = qDelta.v.GetLength();
-										if (fSinA > 0.001f)
-										{
-											Interp.bSlerp = true;
-											if (qDelta.w < 0.f)
-												qDelta = -qDelta;
-											Interp.fA = asin_tpl(fSinA);
-											Interp.fInvSinA = 1.f / fSinA;
-											Interp.fCosA = qDelta.w;
-											Interp.vArc = vDeltaAdjusted ^ qDelta.v;
-											Interp.vArc *= Interp.fInvSinA * Interp.fInvSinA * 0.5f;
-										}
-									}
+									data.Location.t.SetLerp(locA.t, locB.t, fY);
+									data.Location.t += Interp.vArc * fX;
 								}
+								else
+								{
+									data.Location.t.SetLerp(locA.t, locB.t, Interp.fInterp);
+								}
+								Interp.fInterp += Interp.fInterpInc;
 							}
 
-							if (params.Connection.bConnectToOrigin)
-								fAge -= fAgeIncrement;
-
-							float fPast = fAge - fAge0, fMinPast = fAge - fAge1;
-							for (; fPast > fMinPast; fPast -= fAgeIncrement)
+							if (!EmitParticle(context, data, fPast))
 							{
-								if (Interp.bInterp)
-								{
-									// Interpolate the location linearly.
-									data.Location.q.SetNlerp(locA.q, locB.q, Interp.fInterp);
-									data.Location.s = locA.s + (locB.s - locA.s) * Interp.fInterp;
-
-									if (Interp.bSlerp)
-									{
-										float fX, fY;
-										sincos_tpl(Interp.fA * (2.f * Interp.fInterp - 1.f), &fY, &fX);
-										fY = (fY * Interp.fInvSinA + 1.f) * 0.5f;
-										fX -= Interp.fCosA;
-
-										data.Location.t.SetLerp(locA.t, locB.t, fY);
-										data.Location.t += Interp.vArc * fX;
-									}
-									else
-									{
-										data.Location.t.SetLerp(locA.t, locB.t, Interp.fInterp);
-									}
-									Interp.fInterp += Interp.fInterpInc;
-								}
-
-								if (!EmitParticle(context, data, fPast))
-								{
-									GetContainer().GetCounts().ParticlesReject += (fPast - fMinPast) / fAgeIncrement;
-									break;
-								}
+								GetContainer().GetCounts().ParticlesReject += (fPast - fMinPast) / fAgeIncrement;
+								break;
 							}
-							m_fLastEmitAge = fAge - fPast;
 						}
-						else
+						m_fLastEmitAge = fAge - fPast;
+					}
+					else
+					{
+						// Instant emission of fCount particles
+						for (int nEmit = int_round(fCount); nEmit > 0; nEmit--)
 						{
-							// Instant emission of fCount particles
-							for (int nEmit = int_round(fCount); nEmit > 0; nEmit--)
+							if (!EmitParticle(context, data, fAge - m_fStartAge))
 							{
-								if (!EmitParticle(context, data, fAge - m_fStartAge))
-								{
-									GetContainer().GetCounts().ParticlesReject += nEmit;
-									break;
-								}
+								GetContainer().GetCounts().ParticlesReject += nEmit;
+								break;
 							}
-							m_fLastEmitAge = fAge;
 						}
+						m_fLastEmitAge = fAge;
 					}
 				}
 			}
