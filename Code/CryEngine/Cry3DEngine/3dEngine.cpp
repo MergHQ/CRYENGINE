@@ -3119,6 +3119,97 @@ bool C3DEngine::SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, boo
 }
 
 //==============================================================================================================================================
+// From "MergedMeshGeometry.cpp"
+#if CRY_PLATFORM_SSE2 && !CRY_PLATFORM_F16C
+static inline __m128i float_to_half_SSE2(__m128 f, __m128i& s)
+{
+	#define DECL_CONST4(name, val) static const CRY_ALIGN(16) uint name[4] = { (val), (val), (val), (val) }
+	#define GET_CONSTI(name)       *(const __m128i*)&name
+	#define GET_CONSTF(name)       *(const __m128*)&name
+
+	DECL_CONST4(mask_sign, 0x80000000u);
+	DECL_CONST4(mask_round, ~0xfffu);
+	DECL_CONST4(c_f32infty, 255 << 23);
+	DECL_CONST4(c_magic, 15 << 23);
+	DECL_CONST4(c_nanbit, 0x200);
+	DECL_CONST4(c_infty_as_fp16, 0x7c00);
+	DECL_CONST4(c_clamp, (31 << 23) - 0x1000);
+
+	__m128 msign = GET_CONSTF(mask_sign);
+	__m128 justsign = _mm_and_ps(msign, f);
+	__m128i f32infty = GET_CONSTI(c_f32infty);
+	__m128 absf = _mm_xor_ps(f, justsign);
+	__m128 mround = GET_CONSTF(mask_round);
+	__m128i absf_int = _mm_castps_si128(absf); // pseudo-op, but val needs to be copied once so count as mov
+	__m128i b_isnan = _mm_cmpgt_epi32(absf_int, f32infty);
+	__m128i b_isnormal = _mm_cmpgt_epi32(f32infty, _mm_castps_si128(absf));
+	__m128i nanbit = _mm_and_si128(b_isnan, GET_CONSTI(c_nanbit));
+	__m128i inf_or_nan = _mm_or_si128(nanbit, GET_CONSTI(c_infty_as_fp16));
+
+	__m128 fnosticky = _mm_and_ps(absf, mround);
+	__m128 scaled = _mm_mul_ps(fnosticky, GET_CONSTF(c_magic));
+	__m128 clamped = _mm_min_ps(scaled, GET_CONSTF(c_clamp)); // logically, we want PMINSD on "biased", but this should gen better code
+	__m128i biased = _mm_sub_epi32(_mm_castps_si128(clamped), _mm_castps_si128(mround));
+	__m128i shifted = _mm_srli_epi32(biased, 13);
+	__m128i normal = _mm_and_si128(shifted, b_isnormal);
+	__m128i not_normal = _mm_andnot_si128(b_isnormal, inf_or_nan);
+	__m128i joined = _mm_or_si128(normal, not_normal);
+
+//	__m128i sign_shift = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
+//	__m128i final = _mm_or_si128(joined, sign_shift);
+	s = _mm_castps_si128(justsign);
+
+	// ~20 SSE2 ops
+	return shifted;
+
+	#undef DECL_CONST4
+	#undef GET_CONSTI
+	#undef GET_CONSTF
+}
+
+static inline __m128i approx_float_to_half_SSE2(__m128 f, __m128i& s)
+{
+	#if defined(__GNUC__)
+	#define DECL_CONST4(name, val) static const uint __attribute__((aligned(16))) name[4] = { (val), (val), (val), (val) }
+	#else
+	#define DECL_CONST4(name, val) static const __declspec(align(16)) uint name[4] = { (val), (val), (val), (val) }
+	#endif
+	#define GET_CONSTF(name)         *(const __m128*)&name
+
+	DECL_CONST4(mask_fabs, 0x7fffffffu);
+	DECL_CONST4(c_f32infty, (255 << 23));
+	DECL_CONST4(c_expinf, (255 ^ 31) << 23);
+	DECL_CONST4(c_f16max, (127 + 16) << 23);
+	DECL_CONST4(c_magic, 15 << 23);
+
+	__m128 mabs = GET_CONSTF(mask_fabs);
+	__m128 fabs = _mm_and_ps(mabs, f);
+	__m128 justsign = _mm_xor_ps(f, fabs);
+
+	__m128 f16max = GET_CONSTF(c_f16max);
+	__m128 expinf = GET_CONSTF(c_expinf);
+	__m128 infnancase = _mm_xor_ps(expinf, fabs);
+	__m128 clamped = _mm_min_ps(f16max, fabs);
+	__m128 b_notnormal = _mm_cmpnlt_ps(fabs, GET_CONSTF(c_f32infty));
+	__m128 scaled = _mm_mul_ps(clamped, GET_CONSTF(c_magic));
+
+	__m128 merge1 = _mm_and_ps(infnancase, b_notnormal);
+	__m128 merge2 = _mm_andnot_ps(b_notnormal, scaled);
+	__m128 merged = _mm_or_ps(merge1, merge2);
+
+	__m128i shifted = _mm_srli_epi32(_mm_castps_si128(merged), 13);
+
+//	__m128i signshifted = _mm_srli_epi32(_mm_castps_si128(justsign), 16);
+//	__m128i final = _mm_or_si128(shifted, signshifted);
+	s = _mm_castps_si128(justsign);
+
+	// ~15 SSE2 ops
+	return shifted;
+
+	#undef DECL_CONST4
+	#undef GET_CONSTF
+}
+#endif
 
 void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 {
@@ -3144,6 +3235,7 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 
 	Vec3 vGlobalWind = GetGlobalWind(bIndoors);
 
+	// Don't update anything if there are no areas with wind
 	if (pWindAreas->size() == 0 && vGlobalWind.IsZero())
 		return;
 
@@ -3187,12 +3279,84 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 	const int nSize = rWindGrid.m_nWidth * rWindGrid.m_nHeight;
 	Vec2 vWindCur = Vec2(vGlobalWind.x, vGlobalWind.y) * GetCVars()->e_WindBendingStrength;
 
+#if CRY_PLATFORM_SSE2
+	__m128i  nFrames = _mm_set1_epi32(nFrame);
+	__m128i* pData   = (__m128i*)&rWindGrid.m_pData[0];
+	__m128i* pFrames = (__m128i*)&m_pWindAreaFrames[0];
+	__m128*  pField  = (__m128 *)&m_pWindField[0];
+	__m128   vWindCurs = _mm_set_ps(vWindCur.y, vWindCur.x, vWindCur.y, vWindCur.x);
+	__m128   fInterps = _mm_set1_ps(fInterp);
+	__m128   fBendRps = _mm_set1_ps(fBEND_RESPONSE);
+	__m128   fBendMax = _mm_set1_ps(fMAX_BENDING);
+
+	for (x = 0; x < ((nSize + 3) / 4); ++x)
+	{
+		// Test and update or skip
+		__m128i cFrame = pFrames[x];
+		__m128i bMask = _mm_cmpgt_epi32(nFrames, cFrame);
+		if (_mm_movemask_ps(_mm_castsi128_ps(bMask)) == 0x0)
+			continue;
+
+		pFrames[x] = _mm_or_si128(_mm_and_si128(bMask, nFrames), _mm_andnot_si128(bMask, cFrame));
+
+		// Interpolate
+		{
+			__m128 loField = pField[x * 2 + 0];
+			__m128 hiField = pField[x * 2 + 1];
+			__m128 ipField = _mm_and_ps(fInterps, _mm_castsi128_ps(bMask));
+
+			__m128 loFieldInterps = _mm_unpacklo_ps(ipField, ipField);
+			__m128 hiFieldInterps = _mm_unpackhi_ps(ipField, ipField);
+
+			loField = _mm_add_ps(loField, _mm_mul_ps(_mm_sub_ps(vWindCurs, loField), loFieldInterps));
+			hiField = _mm_add_ps(hiField, _mm_mul_ps(_mm_sub_ps(vWindCurs, hiField), hiFieldInterps));
+
+			pField[x * 2 + 0] = loField;
+			pField[x * 2 + 1] = hiField;
+
+			loField = _mm_mul_ps(loField, fBendRps);
+			hiField = _mm_mul_ps(hiField, fBendRps);
+
+			__m128 loFieldLength = _mm_mul_ps(loField, loField);
+			__m128 hiFieldLength = _mm_mul_ps(hiField, hiField);
+
+#if CRY_PLATFORM_SSE4
+			loFieldLength = _mm_add_ps(_mm_sqrt_ps(_mm_hadd_ps(hiFieldLength, loFieldLength)), fBendMax);
+
+			loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_unpacklo_ps(loFieldLength, loFieldLength));
+			hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_unpackhi_ps(loFieldLength, loFieldLength));
+#else
+			loFieldLength = _mm_sqrt_ps(_mm_add_ps(loFieldLength, _mm_shuffle_ps(loFieldLength, loFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
+			hiFieldLength = _mm_sqrt_ps(_mm_add_ps(hiFieldLength, _mm_shuffle_ps(hiFieldLength, hiFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
+
+			loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_add_ps(loFieldLength, fBendMax));
+			hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_add_ps(hiFieldLength, fBendMax));
+#endif
+
+#if CRY_PLATFORM_F16C
+			__m128i loData = _mm_cvtps_ph(loField, 0);
+			__m128i hiData = _mm_cvtps_ph(hiField, 0);
+
+			pData[x] = _mm_unpacklo_epi64(loData, hiData);
+#else
+			__m128i loSign, loData = approx_float_to_half_SSE2(loField, loSign);
+			__m128i hiSign, hiData = approx_float_to_half_SSE2(hiField, hiSign);
+
+			loSign = _mm_packs_epi32(loSign, hiSign);
+			loData = _mm_packs_epi32(loData, hiData);
+
+			pData[x] = _mm_or_si128(loSign, loData);
+#endif
+		}
+	}
+#else
 	CryHalf2* pData = &rWindGrid.m_pData[0];
 	int* pFrames = &m_pWindAreaFrames[0];
 	Vec2* pField = &m_pWindField[0];
 
 	for (x = 0; x < nSize; x++)
 	{
+		// Test and update or skip
 		if (pFrames[x] == nFrame)
 			continue;
 		pFrames[x] = nFrame;
@@ -3208,6 +3372,7 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 			pData[x] = CryHalf2(vBend.x, vBend.y);
 		}
 	}
+#endif
 }
 
 //static int g_nWindError;
@@ -3269,33 +3434,128 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 		windStart.SetLerp(windTopX1, windBottomX1, fLerpY);
 		windEnd.SetLerp(windTopX2, windBottomX2, fLerpY);
 		Vec3 windDelta = (windEnd - windStart) * fInvX;
-		CryHalf2* pData = &rWindGrid.m_pData[nYGrid * rWindGrid.m_nWidth];
-		int* pFrames = &m_pWindAreaFrames[nYGrid * rWindGrid.m_nWidth];
-		Vec2* pField = &m_pWindField[nYGrid * rWindGrid.m_nWidth];
-		int nX = nXGrid;
 
 		windStart *= fAreaStrength;
 		windDelta *= fAreaStrength;
 
+		const int nSize = nX2 - nX1;
 		Vec2 vWindCur = Vec2(windStart.x, windStart.y) + Vec2(vGlobalWind.x, vGlobalWind.y);
-		for (x = nX1; x < nX2; x++)
+
+#if CRY_PLATFORM_SSE2
+		__m128i  xs;
+		__m128i  nFrames = _mm_set1_epi32(nFrame);
+		__m128i  nSizes = _mm_set_epi32(nSize - 3, nSize - 2, nSize - 1, nSize - 0);
+		__m128i* pData = (__m128i*)&rWindGrid.m_pData[nYGrid * rWindGrid.m_nWidth + nXGrid];
+		__m128i* pFrames = (__m128i*)&m_pWindAreaFrames[nYGrid * rWindGrid.m_nWidth + nXGrid];
+		__m128*  pField = (__m128 *)&m_pWindField[nYGrid * rWindGrid.m_nWidth + nXGrid];
+		__m128   vWindCurs = _mm_set_ps(vWindCur.y, vWindCur.x, vWindCur.y, vWindCur.x);
+		__m128   vWindDeltas = _mm_set_ps(windDelta.y, windDelta.x, windDelta.y, windDelta.x);
+		__m128   fInterps = _mm_set1_ps(fInterp);
+		__m128   fBendRps = _mm_set1_ps(fBEND_RESPONSE);
+		__m128   fBendMax = _mm_set1_ps(fMAX_BENDING);
+
+		// manage start alignment
+		if (nXGrid & 3)
 		{
+			int nXFrac = nXGrid & 3;
+			nXGrid -= nXFrac;
+
+			x = -1;
+			xs = _mm_set_epi32(nXFrac <= 3 ? 0 : nSize, nXFrac <= 2 ? 0 : nSize, nXFrac <= 1 ? 0 : nSize, nXFrac <= 0 ? 0 : nSize);
+		}
+		else
+		{
+			x = 0;
+			xs = _mm_set1_epi32(x);
+		}
+
+		for (; x < ((nSize + 3) / 4); ++x, xs = _mm_set1_epi32(x))
+		{
+			// manage end alignment
+			__m128i bMask = _mm_cmpgt_epi32(nSizes, xs);
+
+			// Loop range ensures we either have a somewhat filled head, fully filled nodes, or somewhat filled tail, but never a empty iteration 
+			if (false && _mm_movemask_ps(_mm_castsi128_ps(bMask)) == 0x0)
+				continue;
+
+			pFrames[x] = _mm_or_si128(_mm_and_si128(bMask, nFrames), _mm_andnot_si128(bMask, pFrames[x]));
+
 			// Interpolate
 			{
-				Vec2 vWindInt = pField[nX];
+				__m128 loField = pField[x * 2 + 0];
+				__m128 hiField = pField[x * 2 + 1];
+				__m128 ipField = _mm_and_ps(fInterps, _mm_castsi128_ps(bMask));
+
+				__m128 loFieldInterps = _mm_unpacklo_ps(ipField, ipField);
+				__m128 hiFieldInterps = _mm_unpackhi_ps(ipField, ipField);
+
+				loField = _mm_add_ps(loField, _mm_mul_ps(_mm_sub_ps(vWindCurs, loField), loFieldInterps));
+				hiField = _mm_add_ps(hiField, _mm_mul_ps(_mm_sub_ps(vWindCurs, hiField), hiFieldInterps));
+
+				pField[x * 2 + 0] = loField;
+				pField[x * 2 + 1] = hiField;
+
+				loField = _mm_mul_ps(loField, fBendRps);
+				hiField = _mm_mul_ps(hiField, fBendRps);
+
+				__m128 loFieldLength = _mm_mul_ps(loField, loField);
+				__m128 hiFieldLength = _mm_mul_ps(hiField, hiField);
+
+#if CRY_PLATFORM_SSE4
+				loFieldLength = _mm_add_ps(_mm_sqrt_ps(_mm_hadd_ps(hiFieldLength, loFieldLength)), fBendMax);
+
+				loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_unpacklo_ps(loFieldLength, loFieldLength));
+				hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_unpackhi_ps(loFieldLength, loFieldLength));
+#else
+				loFieldLength = _mm_sqrt_ps(_mm_add_ps(loFieldLength, _mm_shuffle_ps(loFieldLength, loFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
+				hiFieldLength = _mm_sqrt_ps(_mm_add_ps(hiFieldLength, _mm_shuffle_ps(hiFieldLength, hiFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
+
+				loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_add_ps(loFieldLength, fBendMax));
+				hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_add_ps(hiFieldLength, fBendMax));
+#endif
+
+#if CRY_PLATFORM_F16C
+				__m128i loData = _mm_cvtps_ph(loField, 0);
+				__m128i hiData = _mm_cvtps_ph(hiField, 0);
+
+				pData[x] = _mm_unpacklo_epi64(loData, hiData);
+#else
+				__m128i loSign, loData = approx_float_to_half_SSE2(loField, loSign);
+				__m128i hiSign, hiData = approx_float_to_half_SSE2(hiField, hiSign);
+
+				loSign = _mm_packs_epi32(loSign, hiSign);
+				loData = _mm_packs_epi32(loData, hiData);
+
+				pData[x] = _mm_or_si128(loSign, loData);
+#endif
+			}
+
+			vWindCurs = _mm_add_ps(vWindCurs, vWindDeltas);
+		}
+#else
+		CryHalf2* pData = &rWindGrid.m_pData[nYGrid * rWindGrid.m_nWidth + nXGrid];
+		int* pFrames = &m_pWindAreaFrames[nYGrid * rWindGrid.m_nWidth + nXGrid];
+		Vec2* pField = &m_pWindField[nYGrid * rWindGrid.m_nWidth + nXGrid];
+
+		for (x = 0; x < nSize; x++)
+		{
+			pFrames[x] = nFrame;
+
+			// Interpolate
+			{
+				Vec2 vWindInt = pField[x];
 				vWindInt += (vWindCur - vWindInt) * fInterp;
-				pField[nX] = vWindInt;
+				pField[x] = vWindInt;
 
 				Vec2 vBend = vWindInt * fBEND_RESPONSE;
 				vBend *= fMAX_BENDING / (fMAX_BENDING + vBend.GetLength());
-				pData[nX] = CryHalf2(vBend.x, vBend.y);
+				pData[x] = CryHalf2(vBend.x, vBend.y);
 			}
 
 			vWindCur += Vec2(windDelta.x, windDelta.y);
-
-			pFrames[nX] = nFrame;
-			nX++;
 		}
+#endif
+
 		nYGrid++;
 	}
 }
