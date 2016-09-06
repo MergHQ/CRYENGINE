@@ -344,6 +344,7 @@ endif()
 
 if (OPTION_CRYMONO)
 	add_subdirectory(Code/CryManaged/CryMonoBridge)
+	add_subdirectory(Code/CryManaged/CESharp)
 endif()
 
 # Launchers
