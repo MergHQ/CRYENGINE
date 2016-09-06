@@ -76,6 +76,7 @@ void CParticleSubEmitter::Initialize(float fAge)
 		float fRepeat = params.fPulsePeriod(VRANDOM);
 		fRepeat = max(fRepeat, fMIN_PULSE_PERIOD);
 		m_fRepeatAge = m_fActivateAge + fRepeat;
+		m_fStopAge = min(m_fStopAge, m_fRepeatAge);
 	}
 	else
 		m_fRepeatAge = fHUGE;
