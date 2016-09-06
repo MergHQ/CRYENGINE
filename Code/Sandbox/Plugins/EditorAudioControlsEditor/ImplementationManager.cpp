@@ -51,11 +51,7 @@ bool CImplementationManager::LoadImplementation()
 
 		char szExecutableDirPath[_MAX_PATH];
 		CryGetExecutableFolder(sizeof(szExecutableDirPath), szExecutableDirPath);
-#ifdef SANDBOX_QT
 		cry_sprintf(szExecutableDirPath, "%sEditorPlugins\\Editor%s.dll", szExecutableDirPath, pCVar->GetString());
-#else
-		cry_sprintf(szExecutableDirPath, "%sEditorPluginsLegacy\\Editor%s.dll", szExecutableDirPath, pCVar->GetString());
-#endif
 
 		ms_hMiddlewarePlugin = LoadLibraryA(szExecutableDirPath);
 		if (!ms_hMiddlewarePlugin)

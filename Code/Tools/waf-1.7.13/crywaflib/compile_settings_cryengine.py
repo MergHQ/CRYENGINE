@@ -98,7 +98,6 @@ def set_editor_flags(self, kw):
 		self.CreateRootRelativePath('Code/Sandbox/EditorQt'),
 		self.CreateRootRelativePath('Code/Sandbox/EditorQt/Include')		
 		]
-		kw['defines'] += ['SANDBOX_QT']
 
 	kw['includes'] = includes + [
 		self.CreateRootRelativePath('Code/Sandbox/Plugins/EditorCommon'),
