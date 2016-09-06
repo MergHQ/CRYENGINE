@@ -2390,7 +2390,7 @@ static bool CheckCPURequirements(CCpuFeatures* pCpu, CSystem* pSystem)
 	#if CRY_PLATFORM_WINDOWS
 	if (!gEnv->IsEditor() && !gEnv->IsDedicated())
 	{
-		if (!(pCpu->hasSSE() && pCpu->hasSSE2() && pCpu->hasSSE3()))
+		if (!(pCpu->GetFeatures() & CPUF_SSE3))
 		{
 			CryLogAlways("Unsupported CPU! Need SSE, SSE2 and SSE3 instructions to be available.");
 

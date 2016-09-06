@@ -165,7 +165,6 @@ ILINE void g_LogToFile(const char* szFormat, ...)
 }
 
 f32 g_fCurrTime = 0;
-int g_CpuFlags = 0;
 bool g_bProfilerOn = false;
 
 AnimStatisticsInfo g_AnimStatisticsInfo;

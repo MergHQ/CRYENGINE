@@ -236,7 +236,7 @@ inline void multMatrixf_Transp2(float* product, const float* m1, const float* m2
 #undef P
 }
 
-inline void mathMatrixMultiply_Transp2(float* pOut, const float* pM1, const float* pM2, int OptFlags)
+inline void mathMatrixMultiply_Transp2(float* pOut, const float* pM1, const float* pM2)
 {
 #if CRY_PLATFORM_SSE2
 	multMatrixf_Transp2_SSE(pOut, pM1, pM2);
@@ -3154,7 +3154,7 @@ float* CHWShader_D3D::mfSetParametersPI(SCGParam* pParams, const int nINParams, 
 					TransposeAndStore(sData, r->m_CameraProjMatrix);
 				else
 				{
-					mathMatrixMultiply_Transp2(&sData[4].f[0], r->m_CameraProjMatrix.GetData(), rInstInfo.m_Matrix.GetData(), g_CpuFlags);
+					mathMatrixMultiply_Transp2(&sData[4].f[0], r->m_CameraProjMatrix.GetData(), rInstInfo.m_Matrix.GetData());
 					TransposeAndStore(sData, *alias_cast<Matrix44A*>(&sData[4]));
 				}
 				sAppendClipSpaceAdaptation(alias_cast<Matrix44A*>(&sData[0]));

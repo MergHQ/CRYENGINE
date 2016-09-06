@@ -164,7 +164,7 @@ bool CREImposter::PrepareForUpdate()
 
 		tempCam.LookAt(cam.vOrigin, vCenter, vU);
 		tempCam.GetModelviewMatrix(viewMat.GetData());
-		mathVec3ProjectArray((Vec3*)&vProjPos[0].x, sizeof(Vec3), (Vec3*)&vUnProjPos[0].x, sizeof(Vec3), D3DVP, &projMat, &viewMat, &rd->m_IdentityMatrix, 9, g_CpuFlags);
+		mathVec3ProjectArray((Vec3*)&vProjPos[0].x, sizeof(Vec3), (Vec3*)&vUnProjPos[0].x, sizeof(Vec3), D3DVP, &projMat, &viewMat, &rd->m_IdentityMatrix, 9);
 
 		// Calculate 2D extents
 		fMinX = fMinY = FLT_MAX;
@@ -202,7 +202,7 @@ bool CREImposter::PrepareForUpdate()
 	   vProjPos[2] = Vec3(fMaxX, fMaxY, vProjPos[8].z);
 	   vProjPos[3] = Vec3(fMinX, fMaxY, vProjPos[8].z);
 	   // Unproject back to the world with new z-value
-	   mathVec3UnprojectArray((Vec3 *)&vUnProjPos[0].x, sizeof(Vec3), (Vec3 *)&vProjPos[0].x, sizeof(Vec3), D3DVP, &projMat, &viewMat, &sIdentityMatrix, 4, g_CpuFlags);
+	   mathVec3UnprojectArray((Vec3 *)&vUnProjPos[0].x, sizeof(Vec3), (Vec3 *)&vProjPos[0].x, sizeof(Vec3), D3DVP, &projMat, &viewMat, &sIdentityMatrix, 4);
 	 */
 	// high precision - no jitter
 	float fCamZ = (tempCam.vOrigin - vCenter).Dot(tempCam.ViewDir());

@@ -77,12 +77,6 @@ int CRenderer::m_iGeomInstancingThreshold = 0;      // 0 means not set yet
 
 #define RENDERER_DEFAULT_FONT "Fonts/default.xml"
 
-#if defined(_LIB)
-extern int g_CpuFlags;
-#else
-int g_CpuFlags;
-#endif
-
 //////////////////////////////////////////////////////////////////////////
 // Pool allocators.
 //////////////////////////////////////////////////////////////////////////

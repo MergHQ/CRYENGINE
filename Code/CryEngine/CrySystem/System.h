@@ -414,28 +414,8 @@ public:
 	void                                 SetViewCamera(CCamera& Camera) override { m_ViewCamera = Camera; }
 	CCamera&                             GetViewCamera() override                { return m_ViewCamera; }
 
-	virtual int                          GetCPUFlags() override
-	{
-		int Flags = 0;
-		if (!m_pCpu)
-			return Flags;
-		if (m_pCpu->hasMMX())
-			Flags |= CPUF_MMX;
-		if (m_pCpu->hasSSE())
-			Flags |= CPUF_SSE;
-		if (m_pCpu->hasSSE2())
-			Flags |= CPUF_SSE;
-		if (m_pCpu->has3DNow())
-			Flags |= CPUF_3DNOW;
-
-		return Flags;
-	}
-	virtual int GetLogicalCPUCount() override
-	{
-		if (m_pCpu)
-			return m_pCpu->GetLogicalCPUCount();
-		return 0;
-	}
+	virtual uint32                       GetCPUFlags() override                  { return m_pCpu ? m_pCpu->GetFeatures() : 0; }
+	virtual int                          GetLogicalCPUCount() override           { return m_pCpu ? m_pCpu->GetLogicalCPUCount() : 0; }
 
 	void      IgnoreUpdates(bool bIgnore) override { m_bIgnoreUpdates = bIgnore; }
 	void      SetGCFrequency(const float fRate);

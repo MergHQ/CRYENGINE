@@ -42,12 +42,6 @@
 	#define cpuid(op, eax, ebx, ecx, edx) __asm__("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (op) : "cc");
 #endif
 
-#if defined(_LIB)
-extern int g_CpuFlags;
-#else
-int g_CpuFlags;
-#endif
-
 struct SAutoMaxPriority
 {
 	SAutoMaxPriority()
@@ -333,25 +327,37 @@ unsigned long GetCPUFeatureSet()
 	const int nIds = CPUInfo[0];
 
 	__cpuid(CPUInfo, 0x80000000);
-	const unsigned int nExIds = CPUInfo[0];
+	const uint nExIds = CPUInfo[0];
 
 	if (nIds > 0)
 	{
 		__cpuid(CPUInfo, 0x00000001);
-
-		if (CPUInfo[3] & (1 << 26))
-			features |= CFI_SSE2;
 		if (CPUInfo[3] & (1 << 25))
-			features |= CFI_SSE;
-		if (CPUInfo[2] & (1 << 0))
-			features |= CFI_SSE3;
+			features |= CPUF_SSE;
+		if (CPUInfo[3] & (1 << 26))
+			features |= CPUF_SSE2;
+		if (CPUInfo[2] & (1 << 9))
+			features |= CPUF_SSE3;
+		if (CPUInfo[2] & (1 << 20))
+			features |= CPUF_SSE4;
+		if (CPUInfo[2] & (1 << 28))
+			features |= CPUF_AVX;
+		if (CPUInfo[2] & (1 << 12))
+			features |= CPUF_FMA;
+		if (CPUInfo[2] & (1 << 29))
+			features |= CPUF_FP16;
 	}
-
+	if (nIds >= 7 )
+	{
+		__cpuid(CPUInfo, 0x00000007);
+		if (CPUInfo[1] & (1 << 5))
+			features |= CPUF_AVX2;
+	}
 	if (nExIds > 0x80000000)
 	{
 		__cpuid(CPUInfo, 0x80000001);
 		if (CPUInfo[3] & (1 << 31))
-			features |= CFI_3DNOW;
+			features |= CPUF_3DNOW;
 	}
 
 	return features;
@@ -693,9 +699,9 @@ end_fpu_type:
 
 	p->mFeatures = 0;
 
-	p->mFeatures |= amd3d_flag ? CFI_3DNOW : 0;
-	p->mFeatures |= (features_edx & MMX_FLAG) ? CFI_MMX : 0;
-	p->mFeatures |= (features_edx & ISSE_FLAG) ? CFI_SSE : 0;
+	p->mFeatures |= amd3d_flag ? CPUF_3DNOW : 0;
+	p->mFeatures |= (features_edx & MMX_FLAG) ? CPUF_MMX : 0;
+	p->mFeatures |= (features_edx & ISSE_FLAG) ? CPUF_SSE : 0;
 	p->mbSerialPresent = ((features_edx & SERIAL_FLAG) != 0);
 
 	if (features_edx & SERIAL_FLAG)
@@ -1306,188 +1312,6 @@ static void* DetectProcessorThreadProc(void* pData)
    #endif // CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
  */
 
-// #define SQRT_TEST
-
-#ifdef SQRT_TEST
-/* ------------------------------------------------------------------------------ */
-
-ILINE float CorrectInvSqrt(float fNum, float fInvSqrtEst)
-{
-	// Newton-Rhapson method for improving estimated inv sqrt.
-	//	f(x) = x^(-1/2)
-	//	f(n) = f(a) + (n-a)f'(a)
-	//			 = a^(-1/2) + (n-a)(-1/2)a^(-3/2)
-	//			 = a^(-1/2)*3/2 - na^(-3/2)/2
-	//			 = e*3/2 - ne^3/2
-	return fInvSqrtEst * (1.5f - fNum * fInvSqrtEst * fInvSqrtEst * 0.5f);
-}
-
-float Null(float f)      { return f; }
-float Inv(float f)       { return 1.f / f; }
-
-float Square(float f)    { return f * f; }
-float InvSquare(float f) { return 1.f / (f * f); }
-
-float Sqrt(float f)      { return sqrtf(f); }
-float SqrtT(float f)     { return sqrt_tpl(f); }
-float SqrtFT(float f)    { return sqrt_fast_tpl(f); }
-
-float InvSqrt(float f)   { return 1.f / sqrtf(f); }
-float ISqrtT(float f)    { return isqrt_tpl(f); }
-float ISqrtFT(float f)   { return isqrt_fast_tpl(f); }
-
-float SSEInv(float f)
-{
-	__m128 s = _mm_rcp_ss(_mm_load_ss(&f));
-	float r;
-	_mm_store_ss(&r, s);
-	return r;
-}
-float SSESqrt(float f)
-{
-	__m128 s = _mm_sqrt_ss(_mm_load_ss(&f));
-	float r;
-	_mm_store_ss(&r, s);
-	return r;
-}
-float SSEISqrt(float f)
-{
-	__m128 s = _mm_sqrt_ss(_mm_load_ss(&f));
-	float r;
-	_mm_store_ss(&r, s);
-	return 1.f / r;
-}
-float SSERSqrt(float f)
-{
-	__m128 s = _mm_rsqrt_ss(_mm_load_ss(&f));
-	float r;
-	_mm_store_ss(&r, s);
-	return r;
-}
-float SSERSqrtInv(float f)
-{
-	__m128 s = _mm_rcp_ss(_mm_rsqrt_ss(_mm_load_ss(&f)));
-	float r;
-	_mm_store_ss(&r, s);
-	return r;
-}
-float SSERSqrtNR(float f)
-{
-	__m128 s = _mm_rsqrt_ss(_mm_load_ss(&f));
-	float r;
-	_mm_store_ss(&r, s);
-	return CorrectInvSqrt(f, r);
-}
-float SSERISqrtNR(float f)
-{
-	__m128 s = _mm_rsqrt_ss(_mm_load_ss(&f));
-	float r;
-	_mm_store_ss(&r, s);
-	return 1.f / CorrectInvSqrt(f, r);
-}
-
-inline float cryISqrtf(float fVal)
-{
-	unsigned int* n1 = (unsigned int*)&fVal;
-	unsigned int n = 0x5f3759df - (*n1 >> 1);
-	float* n2 = (float*)&n;
-	fVal = (1.5f - (fVal * 0.5f) * *n2 * *n2) * *n2;
-	return fVal;
-}
-
-float cryISqrtNRf(float f)
-{
-	return CorrectInvSqrt(f, cryISqrtf(f));
-}
-
-inline float crySqrtf(float fVal)
-{
-	return 1.0f / cryISqrtf(fVal);
-}
-
-/* ------------------------------------------------------------------------------ */
-struct SMathTest
-{
-	typedef int64 TTime;
-	static inline TTime GetTime()
-	{
-		return CryGetTicks();
-	}
-
-	static const int T = 100, N = 1000;
-	float            fNullTime;
-
-	float            aTestVals[T];
-	float            aResVals[T];
-
-	typedef float (* FFloatFunc)(float f);
-
-	float Timer(const char* sName, FFloatFunc func, FFloatFunc finv)
-	{
-		for (int i = 0; i < T; i++)
-			aResVals[i] = func(aTestVals[i]);
-		TTime tStart = GetTime();
-		for (int r = 0; r < N; r++)
-			for (int i = 0; i < T; i++)
-				aResVals[i] = func(aTestVals[i]);
-		float fTime = (GetTime() - tStart) / float(N * T);
-
-		// Error computation.
-		float fAvgErr = 0.f, fMaxErr = 0.f;
-		for (int i = 0; i < T; i++)
-		{
-			float fErr = abs(finv(aResVals[i]) / aTestVals[i] - 1.f);
-			fAvgErr += fErr;
-			fMaxErr = max(fMaxErr, fErr);
-		}
-		fAvgErr /= float(T);
-
-		CryLogAlways("%-20s : %5.2f cycles, avg err %.2e, max err %.2e", sName, fTime - fNullTime, fAvgErr, fMaxErr);
-
-		return fTime;
-	}
-
-	SMathTest()
-	{
-		for (int i = 0; i < T; i++)
-			aTestVals[i] = powf(cry_random(1.f, 2.f), cry_random(-30.f, 30.f));
-
-		CryLogAlways("--- Math Test ---");
-
-		fNullTime = 0.f;
-		fNullTime = Timer("(null)", &Null, &Null);
-
-		CryLogAlways("-- Inverse methods");
-		Timer("1/f", &Inv, &Inv);
-		Timer("rcpss", &SSEInv, &Inv);
-
-		CryLogAlways("-- Sqrt methods");
-		Timer("sqrtf()", &Sqrt, &Square);
-		Timer("sqrt_tpl()", &SqrtT, &Square);
-		Timer("sqrt_fast_tpl()", &SqrtFT, &Square);
-		Timer("crySqrt()", &crySqrtf, &Square);
-
-		// Timer("sqrtss", &SSESqrt, &Square);
-		// Timer("rsqrtss,rcpss", &SSERSqrtInv, &Square);
-		Timer("1/rsqrtss,correction", &SSERISqrtNR, &Square);
-
-		CryLogAlways("-- InvSqrt methods");
-		Timer("1/sqrtf()", &InvSqrt, &InvSquare);
-		Timer("isqrt_tpl()", &ISqrtT, &InvSquare);
-		Timer("isqrt_fast_tpl()", &ISqrtFT, &InvSquare);
-		Timer("cryISqrt()", &cryISqrtf, &InvSquare);
-
-		Timer("1/sqrtss", &SSEISqrt, &InvSquare);
-		// Timer("rsqrtss", &SSERSqrt, &InvSquare);
-		// Timer("rsqrtss,correction", &SSERSqrtNR, &InvSquare);
-		Timer("cryISqrt,correction", &cryISqrtNRf, &InvSquare);
-
-		CryLogAlways("--------------------");
-	}
-};
-
-#endif // SQRT_TEST
-
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 // collection of functions to read from /proc/cpuinfo
 
@@ -1668,17 +1492,17 @@ void CCpuFeatures::Detect(void)
 			{
 				if (strstr(buffer + index, "mmx"))
 				{
-					m_Cpu[nCpu].mFeatures |= CFI_MMX;
+					m_Cpu[nCpu].mFeatures |= CPUF_MMX;
 				}
 
 				if (strstr(buffer + index, "sse"))
 				{
-					m_Cpu[nCpu].mFeatures |= CFI_SSE;
+					m_Cpu[nCpu].mFeatures |= CPUF_SSE;
 				}
 
 				if (strstr(buffer + index, "sse2"))
 				{
-					m_Cpu[nCpu].mFeatures |= CFI_SSE2;
+					m_Cpu[nCpu].mFeatures |= CPUF_SSE2;
 				}
 			}
 		}
@@ -1688,7 +1512,7 @@ void CCpuFeatures::Detect(void)
 
 #elif CRY_PLATFORM_APPLE
 	size_t len;
-	unsigned int ncpu;
+	uint ncpu;
 
 	len = sizeof(ncpu);
 	if (sysctlbyname("hw.physicalcpu_max", &ncpu, &len, NULL, 0) == 0)
@@ -1766,7 +1590,7 @@ void CCpuFeatures::Detect(void)
 	CryLogAlways("Total number of logical processors: %d", m_NumSystemProcessors);
 	CryLogAlways("Number of available logical processors: %d", m_NumAvailProcessors);
 
-	unsigned int numSysCores(1), numProcessCores(1);
+	uint numSysCores(1), numProcessCores(1);
 	Win32SysInspect::GetNumCPUCores(numSysCores, numProcessCores);
 	m_NumSystemProcessors = numSysCores;
 	m_NumAvailProcessors = numProcessCores;
@@ -1784,26 +1608,35 @@ void CCpuFeatures::Detect(void)
 	for (int i = 0; i < m_NumAvailProcessors; i++)
 	{
 		SCpu* p = &m_Cpu[i];
+		if (i == 0)
+			m_nFeatures = p->mFeatures;
+		else
+			m_nFeatures &= p->mFeatures;
 
 		CryLogAlways(" ");
 		CryLogAlways("Processor %d:", i);
 		CryLogAlways("  CPU: %s %s", p->mVendor, p->mCpuType);
 		CryLogAlways("  Family: %d, Model: %d, Stepping: %d", p->mFamily, p->mModel, p->mStepping);
 		CryLogAlways("  FPU: %s", p->mFpuType);
-		CryLogAlways("  3DNow!: %s", (p->mFeatures & CFI_3DNOW) ? "present" : "not present");
-		CryLogAlways("  MMX: %s", (p->mFeatures & CFI_MMX) ? "present" : "not present");
-		CryLogAlways("  SSE: %s", (p->mFeatures & CFI_SSE) ? "present" : "not present");
-		CryLogAlways("  SSE2: %s", (p->mFeatures & CFI_SSE2) ? "present" : "not present");
-		CryLogAlways("  SSE3: %s", (p->mFeatures & CFI_SSE3) ? "present" : "not present");
+		string sFeatures;
+		if (p->mFeatures & CPUF_FP16) sFeatures += "FP16, ";
+		if (p->mFeatures & CPUF_MMX) sFeatures += "MMX, ";
+		if (p->mFeatures & CPUF_3DNOW) sFeatures += "3DNow, ";
+		if (p->mFeatures & CPUF_SSE) sFeatures += "SSE, ";
+		if (p->mFeatures & CPUF_SSE2) sFeatures += "SSE2, ";
+		if (p->mFeatures & CPUF_SSE3) sFeatures += "SSE3, ";
+		if (p->mFeatures & CPUF_SSE4) sFeatures += "SSE4.2, ";
+		if (p->mFeatures & CPUF_AVX) sFeatures += "AVX, ";
+		if (p->mFeatures & CPUF_AVX2) sFeatures += "AVX2, ";
+		if (p->mFeatures & CPUF_FMA) sFeatures += "FMA3, ";
+		if (sFeatures.size())
+			sFeatures.resize(sFeatures.size() - 2);
+		CryLogAlways("  Features: %s", sFeatures.c_str());
 		if (p->mbSerialPresent)
 			CryLogAlways("  Serial number: %s", p->mSerialNumber);
 		else
 			CryLogAlways("  Serial number not present or disabled");
 	}
-
-#ifdef SQRT_TEST
-	SMathTest test;
-#endif
 
 	CryLogAlways(" ");
 
@@ -1811,12 +1644,4 @@ void CCpuFeatures::Detect(void)
 	for (int i = m_NumPhysicsProcessors = 0; i < m_NumAvailProcessors; i++)
 		if (m_Cpu[i].mbPhysical)
 			++m_NumPhysicsProcessors;
-
-	// Set the cpu flags global variable
-	g_CpuFlags = 0;
-	if (hasMMX())   g_CpuFlags |= CPUF_MMX;
-	if (hasSSE())   g_CpuFlags |= CPUF_SSE;
-	if (hasSSE2())  g_CpuFlags |= CPUF_SSE2;
-	if (hasSSE3())  g_CpuFlags |= CPUF_SSE3;
-	if (has3DNow()) g_CpuFlags |= CPUF_3DNOW;
 }

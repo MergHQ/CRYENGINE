@@ -97,7 +97,6 @@ struct Cry3DEngineBase
 	static bool              m_bRenderTypeEnabled[eERType_TypesNum];
 	static int               m_mergedMeshesPoolSize;
 
-	static int               m_CpuFlags;
 	static ESystemConfigSpec m_LightConfigSpec;
 #if CRY_PLATFORM_DESKTOP
 	static bool              m_bEditor;

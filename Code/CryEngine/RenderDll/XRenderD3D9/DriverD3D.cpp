@@ -7674,8 +7674,6 @@ extern "C" DLL_EXPORT IRenderer * CreateCryRenderInterface(ISystem * pSystem)
 	QueryPerformanceCounter(&li);
 	srand((uint32) li.QuadPart);
 
-	g_CpuFlags = iSystem->GetCPUFlags();
-
 	iSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_render);
 	return gRenDev;
 }

@@ -746,6 +746,19 @@ struct SPlatformInfo
 #endif
 };
 
+/// Cpu Features
+#define CPUF_FPUEMULATION 1
+#define CPUF_FP16         2
+#define CPUF_MMX          4
+#define CPUF_3DNOW        8
+#define CPUF_SSE          0x10
+#define CPUF_SSE2         0x20
+#define CPUF_SSE3         0x40
+#define CPUF_SSE4         0x80
+#define CPUF_AVX          0x100
+#define CPUF_AVX2         0x200
+#define CPUF_FMA          0x400
+
 //! Holds info about system update stats over perior of time (cvar-tweakable)
 struct SSystemUpdateStats
 {
@@ -1132,7 +1145,7 @@ struct ISystem
 	virtual const char* GetUserName() = 0;
 
 	//! Gets current supported CPU features flags. (CPUF_SSE, CPUF_SSE2, CPUF_3DNOW, CPUF_MMX)
-	virtual int GetCPUFlags() = 0;
+	virtual uint32 GetCPUFlags() = 0;
 
 	//! Gets number of CPUs
 	virtual int GetLogicalCPUCount() = 0;

@@ -20,14 +20,6 @@
 	#define MAX_CPU 32
 #endif
 
-/// Cpu Features
-#define CFI_FPUEMULATION 1
-#define CFI_MMX          2
-#define CFI_3DNOW        4
-#define CFI_SSE          8
-#define CFI_SSE2         0x10
-#define CFI_SSE3         0x20
-
 /// Type of Cpu Vendor.
 enum ECpuVendor
 {
@@ -82,7 +74,7 @@ struct SCpu
 {
 	ECpuVendor    meVendor;
 	ECpuModel     meModel;
-	unsigned long mFeatures;
+	uint32        mFeatures;
 	bool          mbSerialPresent;
 	char          mSerialNumber[30];
 	int           mFamily;
@@ -110,10 +102,11 @@ struct SCpu
 class CCpuFeatures
 {
 private:
-	int  m_NumLogicalProcessors;
-	int  m_NumSystemProcessors;
-	int  m_NumAvailProcessors;
-	int  m_NumPhysicsProcessors;
+	uint  m_NumLogicalProcessors;
+	uint  m_NumSystemProcessors;
+	uint  m_NumAvailProcessors;
+	uint  m_NumPhysicsProcessors;
+	uint32 m_nFeatures;
 	bool m_bOS_ISSE;
 	bool m_bOS_ISSE_EXCEPTIONS;
 public:
@@ -127,23 +120,20 @@ public:
 		m_NumSystemProcessors = 0;
 		m_NumAvailProcessors = 0;
 		m_NumPhysicsProcessors = 0;
+		m_nFeatures = 0;
 		m_bOS_ISSE = 0;
 		m_bOS_ISSE_EXCEPTIONS = 0;
 		ZeroMemory(m_Cpu, sizeof(m_Cpu));
 	}
 
-	void         Detect(void);
-	bool         hasSSE()                              { return (m_Cpu[0].mFeatures & CFI_SSE) != 0; }
-	bool         hasSSE2()                             { return (m_Cpu[0].mFeatures & CFI_SSE2) != 0; }
-	bool         hasSSE3()                             { return (m_Cpu[0].mFeatures & CFI_SSE3) != 0; }
-	bool         has3DNow()                            { return (m_Cpu[0].mFeatures & CFI_3DNOW) != 0; }
-	bool         hasMMX()                              { return (m_Cpu[0].mFeatures & CFI_MMX) != 0; }
+	void      Detect();
 
-	unsigned int GetLogicalCPUCount()                  { return m_NumLogicalProcessors; }
-	unsigned int GetPhysCPUCount()                     { return m_NumPhysicsProcessors; }
-	unsigned int GetCPUCount()                         { return m_NumAvailProcessors; }
-	DWORD_PTR    GetCPUAffinityMask(unsigned int iCPU) { assert(iCPU < MAX_CPU); return iCPU < GetCPUCount() ? m_Cpu[iCPU].mAffinityMask : 0; }
-	DWORD_PTR    GetPhysCPUAffinityMask(unsigned int iCPU)
+	uint      GetLogicalCPUCount() const          { return m_NumLogicalProcessors; }
+	uint      GetPhysCPUCount() const             { return m_NumPhysicsProcessors; }
+	uint      GetCPUCount() const                 { return m_NumAvailProcessors; }
+	uint32    GetFeatures() const                 { return m_nFeatures; }
+	DWORD_PTR GetCPUAffinityMask(uint iCPU) const { assert(iCPU < MAX_CPU); return iCPU < GetCPUCount() ? m_Cpu[iCPU].mAffinityMask : 0; }
+	DWORD_PTR GetPhysCPUAffinityMask(uint iCPU) const
 	{
 		if (iCPU > GetPhysCPUCount())
 			return 0;

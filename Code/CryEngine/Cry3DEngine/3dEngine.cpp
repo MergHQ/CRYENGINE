@@ -116,7 +116,6 @@ bool Cry3DEngineBase::m_bLevelLoadingInProgress = false;
 bool Cry3DEngineBase::m_bIsInRenderScene = false;
 int Cry3DEngineBase::m_mergedMeshesPoolSize = 0;
 
-int Cry3DEngineBase::m_CpuFlags = 0;
 #if CRY_PLATFORM_DESKTOP
 bool Cry3DEngineBase::m_bEditor = false;
 #endif
@@ -175,7 +174,6 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	Cry3DEngineBase::m_pMatMan = new CMatMan;
 	Cry3DEngineBase::m_pBreezeGenerator = new CBreezeGenerator;
 	Cry3DEngineBase::m_pStreamListener = NULL;
-	Cry3DEngineBase::m_CpuFlags = pSystem->GetCPUFlags();
 
 	memset(Cry3DEngineBase::m_arrInstancesCounter, 0, sizeof(Cry3DEngineBase::m_arrInstancesCounter));
 
