@@ -4,7 +4,7 @@
 #include "DevBuffer.h"
 #include "DriverD3D.h"
 
-template<typename T, size_t Alignment = CRY_PLATFORM_ALIGNMENT>
+template<typename T, size_t Alignment = 256>
 class CTypedConstantBuffer : private NoCopy
 {
 protected:
@@ -34,7 +34,7 @@ public:
 	void CreateDeviceBuffer()
 	{
 		int size = sizeof(T);
-		m_constantBuffer.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(size)); // TODO: this could be a good candidate for dynamic=false
+		m_constantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(size); // TODO: this could be a good candidate for dynamic=false
 		CopyToDevice();
 	}
 	void CopyToDevice()

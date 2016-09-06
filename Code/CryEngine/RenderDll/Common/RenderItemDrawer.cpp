@@ -41,7 +41,7 @@ void DrawCompiledRenderItemsToCommandList(
 	if (cvarInstancing)
 	{
 		// Constant buffer return with reference count of 1
-		tempInstancingCB.Assign_NoAddRef(gcpRendD3D->m_DevBufMan.CreateConstantBuffer(cDynamicInstancingMaxCount * sizeof(CCompiledRenderObject::SPerInstanceShaderData), false, true));
+		tempInstancingCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(cDynamicInstancingMaxCount * sizeof(CCompiledRenderObject::SPerInstanceShaderData), false, true);
 	}
 
 	// NOTE: doesn't load-balance well when the conditions for the draw mask lots of draws
