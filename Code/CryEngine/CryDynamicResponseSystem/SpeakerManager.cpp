@@ -19,6 +19,7 @@ static const uint32 s_attachmentPosName = CCrc32::ComputeLowercase("voice");
 static const uint32 s_attachmentPosNameFallback = CCrc32::ComputeLowercase("eye_left");
 static const CHashedString s_isTalkingVariableName = "IsTalking";
 static const CHashedString s_lastLineId = "LastSpokenLine";
+static const CHashedString s_lastLineFinishTime = "LastLineFinishTime";
 static const CHashedString s_currentLinePriority = "CurrentLinePriority";
 static const int s_characterSlot = 0;  //todo: make this a property of the drs actor
 static const float s_delayBeforeExecutingQueuedLines = 0.1f; // we do wait a short amount of time before actually starting any queued lines, to reduce the changes to interrupt a running dialog
@@ -192,6 +193,7 @@ void CSpeakerManager::Update()
 			ReleaseSpeakerAudioProxy(*it, true);
 			CVariableCollection* pLocalCollection = it->pActor->GetLocalVariables();
 			pLocalCollection->SetVariableValue(s_isTalkingVariableName, false);
+			pLocalCollection->SetVariableValue(s_lastLineFinishTime, CResponseSystem::GetInstance()->GetCurrentDrsTime());
 			pLocalCollection->SetVariableValue(s_currentLinePriority, 0);
 			bool bWasAlreeadyExisting = false;
 			if (!m_queuedSpeakers.empty())
@@ -528,6 +530,7 @@ void CSpeakerManager::Reset()
 		InformListener(speakerInfo.pActor, speakerInfo.lineID, DRS::ISpeakerManager::IListener::eLineEvent_Canceled, speakerInfo.pPickedLine);
 		CVariableCollection* pLocalCollection = speakerInfo.pActor->GetLocalVariables();
 		pLocalCollection->SetVariableValue(s_isTalkingVariableName, false);
+		pLocalCollection->SetVariableValue(s_lastLineFinishTime, CResponseSystem::GetInstance()->GetCurrentDrsTime());
 		pLocalCollection->SetVariableValue(s_currentLinePriority, 0);
 		ReleaseSpeakerAudioProxy(speakerInfo, true);
 	}
@@ -838,6 +841,8 @@ void CSpeakerManager::ExecuteStartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 	CVariableCollection* pLocalCollection = pSpeakerInfoToUse->pActor->GetLocalVariables();
 	pLocalCollection->SetVariableValue(s_isTalkingVariableName, true);
 	pLocalCollection->SetVariableValue(s_lastLineId, pSpeakerInfoToUse->lineID);
+	float pointInFarFuture = (((int)CResponseSystem::GetInstance()->GetCurrentDrsTime() % 5000) + 1) * 5000.0f; //we set the 'LastFinishTime' to a point in the far future, so that conditions like 'if TimeSince LastFinishTime > 3' (to detect longer pauses) will savely work.
+	pLocalCollection->SetVariableValue(s_lastLineFinishTime, pointInFarFuture);
 	pLocalCollection->SetVariableValue(s_currentLinePriority, pSpeakerInfoToUse->priority);
 	SetNumActiveSpeaker((int)m_activeSpeakers.size());
 }
