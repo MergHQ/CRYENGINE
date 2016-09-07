@@ -1258,7 +1258,7 @@ QLineEdit:disabled {
 
 QComboBox:disabled {
 	color:rgb(120,120,120);
-	background-color:red; /* for debugging purposes - old value (rgb(58,58,58);*/
+	background-color:rgb(58,58,58);
 }
 
 QComboBox::drop-down:disabled {
