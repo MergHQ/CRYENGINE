@@ -314,6 +314,7 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 #endif
 		Vec3 scale;
 		if ((scale=get_xqs_from_matrices(params->pMtx3x4,params->pMtx3x3, params->pos,params->q,params->scale)).len2()>3.0001f) {
+			WriteLock lock(m_lockUpdate);
 			for(i=0;i<m_nParts;i++) {
 				phys_geometry *pgeom;
 				if (m_parts[i].pPhysGeom!=m_parts[i].pPhysGeomProxy) {
