@@ -194,7 +194,6 @@ struct SVolumetricCloudsShaderParam
 
 	// upscale parameters
 	Vec4 fullScreenSize;
-	Vec4 scaledScreenSize;
 	Vec4 cloudBlockerSSPos;
 	Vec4 cloudBlockerSSParam;
 };
@@ -1042,7 +1041,7 @@ void CVolumetricCloudsStage::UpdateCloudShadowGenShaderParam(const Vec3& texSize
 	CTypedConstantBuffer<SCloudShadowShaderParam> cb(m_pCloudShadowConstantBuffer);
 	CRY_ASSERT(m_pCloudShadowConstantBuffer->m_size >= sizeof(SCloudShadowShaderParam));
 
-	const Vec3 sunLightDirection = rp.m_pSunLight ? rp.m_pSunLight->GetPosition().normalized() : Vec3(0.0f, 0.0f, 0.0f);
+	const Vec3 sunLightDirection = PF.pSunDirection;
 	cb->sunLightDirection = Vec4(sunLightDirection, 0.0f);
 
 	cb->cloudGenParams = Vec4(altitude, thickness, cloudiness, extinction);
@@ -1372,7 +1371,7 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 			cb.cameraPos = rc.vOrigin;
 			cb.cameraFrontVector = rc.vZ.GetNormalized();
 
-			cb.sunLightDirection = rp.m_pSunLight ? rp.m_pSunLight->GetPosition().normalized() : Vec3(0.0f, 0.0f, 0.0f);
+			cb.sunLightDirection = PF.pSunDirection;
 
 			cb.nearClipDist = rc.fNear;
 			cb.farClipDist = rc.fFar;

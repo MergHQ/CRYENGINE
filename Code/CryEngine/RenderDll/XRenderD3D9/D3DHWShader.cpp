@@ -2778,6 +2778,8 @@ void CRenderer::UpdateConstParamsPF(const SRenderingPassInfo& passInfo)
 
 	// ECGP_PF_SunColor
 	PF.pSunColor = p3DEngine->GetSunColor();
+	PF.pSunDirection = p3DEngine->GetSunDirNormalized();
+	PF.sunSpecularMultiplier = p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER);
 	// ECGP_PF_SkyColor
 	PF.pSkyColor = p3DEngine->GetSkyColor();
 

@@ -281,6 +281,7 @@ public:
 
 	Vec3     pCausticsParams; //ECGP_PB_CausticsParams *
 	Vec3     pSunColor;       //ECGP_PF_SunColor *
+	float    sunSpecularMultiplier;
 	Vec3     pSkyColor;       //ECGP_PF_SkyColor *
 	Vec3     pSunDirection;   //ECGP_PF_SunDirection *
 
