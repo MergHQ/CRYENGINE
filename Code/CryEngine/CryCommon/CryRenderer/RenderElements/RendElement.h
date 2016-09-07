@@ -218,8 +218,8 @@ public:
 	virtual bool          GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation = false) { return false; }
 
 	//! Compile is called on a non mesh render elements, must be called only in rendering thread
-	//! Returns true if compile failed, and render element must not be rendered
-	virtual bool          Compile(CRenderObject* pObj)  { return true; };
+	//! Returns false if compile failed, and render element must not be rendered
+	virtual bool          Compile(CRenderObject* pObj)  { return false; };
 
 	//! Custom Drawing for the non mesh render elements.
 	//! Must be thread safe for the parallel recording
