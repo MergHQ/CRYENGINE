@@ -165,7 +165,6 @@ void CharacterManager::PreloadModelsCHR()
 			}
 			filename = sFilenameInResource;
 			uint32 nFileOnDisk = gEnv->pCryPak->IsFileExist(filename);
-			assert(nFileOnDisk);
 			if (nFileOnDisk)
 			{
 				CDefaultSkeleton* pSkel = FetchModelSKEL(filename.c_str(), 0);
