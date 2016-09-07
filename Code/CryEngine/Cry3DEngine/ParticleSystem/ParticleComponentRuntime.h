@@ -18,7 +18,7 @@
 namespace pfx2
 {
 
-class CParticleComponentRuntime : public ICommonParticleComponentRuntime, public IParticleVertexCreator, public _i_reference_target_t
+class CParticleComponentRuntime : public ICommonParticleComponentRuntime, public IParticleVertexCreator
 {
 public:
 	typedef std::vector<SInstance, stl::aligned_alloc<SInstance, CRY_PFX2_PARTICLES_ALIGNMENT>> TInstances;

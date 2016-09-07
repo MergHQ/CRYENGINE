@@ -118,7 +118,7 @@ struct SRuntimeInitializationParameters
 	int            version;
 };
 
-class ICommonParticleComponentRuntime : public _i_multithread_reference_target_t
+class ICommonParticleComponentRuntime : public _i_reference_target_t
 {
 public:
 	struct SInstance
