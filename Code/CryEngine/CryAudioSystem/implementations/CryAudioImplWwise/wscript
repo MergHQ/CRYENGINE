@@ -76,7 +76,7 @@ def build(bld):
 	durango_release_libs        = common_wwise_libs + wwise_extra_plugins_libs + durango_libs
 	durango_non_release_libs    = comm_central_libs + durango_release_libs
 
-	orbis_libs                  = [ 'SceAudioOut_stub_weak', 'SceAjm_stub_weak', 'SceAudio3d_stub_weak' ]
+	orbis_libs                  = [ 'SceAudioOut_stub_weak', 'SceAjm_stub_weak', 'SceAudio3d_stub_weak', 'SceMove_stub_weak']
 	orbis_wwise_libs            = wwise_extra_plugins_libs + [ 'SceAudio3dEngine' ]
 	orbis_release_libs          = common_wwise_libs + orbis_wwise_libs + orbis_libs
 	orbis_non_release_libs      = comm_central_libs + orbis_release_libs

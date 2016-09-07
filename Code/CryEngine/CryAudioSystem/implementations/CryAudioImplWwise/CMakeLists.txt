@@ -134,7 +134,7 @@ if (AUDIO_WWISE)
 	set( DURANGO_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${DURANGO_WWISE_LIBS} ${DURANGO_LIBS} )
 	set( DURANGO_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${DURANGO_RELEASE_LIBS} )
 
-	set( ORBIS_LIBS SceAudioOut_stub_weak SceAjm_stub_weak SceAudio3d_stub_weak)
+	set( ORBIS_LIBS SceAudioOut_stub_weak SceAjm_stub_weak SceAudio3d_stub_weak SceMove_Stub_weak)
 	set( ORBIS_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} SceAudio3dEngine AuroHeadphoneFX AuroPannerMixer )
 	make_library(ORBIS_WWISE_LIBS ${WWISE_LIB_PATH})
 	set( ORBIS_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${ORBIS_WWISE_LIBS} ${ORBIS_LIBS} )
