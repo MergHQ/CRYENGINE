@@ -70,7 +70,20 @@ if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Sandbox")
 endif()
 
 option(OPTION_PCH "Enable Precompiled Headers" OFF)
-option(OPTION_CRY_EXTENSIONS "Enable CryExtensions" ON)
+
+#Extensions
+
+#option(EXTENSION_CRYDESCRIPTOR "Enable CryDescriptor" ON)
+#option(EXTENSION_CRYDRSCOMMON "Enable CryDRSCommonElements" ON)
+option(EXTENSION_CRYLOBBY "Enable CryLobby" ON)
+#option(EXTENSION_SCHEMATYC "Enable Schematyc" ON)
+#option(EXTENSION_CRYLINK "Enable CryLink" ON)
+
+#Plugins
+option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
+option(PLUGIN_OCULUSPLUGIN "Oculus support" ON)
+option(PLUGIN_OPENVRPLUGIN "OpenVR support" ON)
+option(PLUGIN_OSVRPLUGIN "OSVR support" ON)
 
 if(WIN32 OR WIN64)
 	option(OPTION_CRYMONO "C# support" OFF)
@@ -298,20 +311,39 @@ if (WIN32)
 	#add_subdirectory(Code/CryExtensions/GameStream)
 endif (WIN32)
 
-if (OPTION_CRY_EXTENSIONS)
-	# CryExtensions
+# CryExtensions
+if (EXTENSION_CRYDESCRIPTOR)
 	#add_subdirectory(Code/CryExtensions/CryDescriptor)
+endif()	
+if (EXTENSION_CRYDRSCOMMON)
 	#add_subdirectory(Code/CryExtensions/CryDrsCommonElements/Module)
+endif()
+
+if (EXTENSION_CRYLOBBY)
 	add_subdirectory(Code/CryExtensions/CryLobby/Module)
+endif()
+if (EXTENSION_SCHEMATYC)
 	#add_subdirectory(Code/CryExtensions/CrySchematyc)
+endif()
+if (EXTENSION_CRYLINK)
 	#add_subdirectory(Code/CryExtensions/CryLink/Module)
-	
-	# Example plugin
+endif()
+
+
+
+
+# Example plugin
+if (PLUGIN_FPS)
 	add_subdirectory(Code/CryPlugins/CryFramesPerSecond/Module)
-	
-	# VR plugins
+endif()
+# VR plugins
+if (PLUGIN_OCULUS)
 	add_subdirectory(Code/CryPlugins/CryOculusVR/Module)
+endif()
+if (PLUGIN_OPENVR)	
 	add_subdirectory(Code/CryPlugins/CryOpenVR/Module)
+endif()	
+if (PLUGIN_OSVR)	
 	add_subdirectory(Code/CryPlugins/CryOSVR/Module)
 endif()
 
