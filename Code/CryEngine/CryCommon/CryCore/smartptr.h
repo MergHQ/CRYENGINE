@@ -88,11 +88,13 @@ public:
 
 	_smart_ptr& operator=(_smart_ptr&& p_)
 	{
-		CRY_ASSERT_MESSAGE(this != &p_, "Error: Assigning _smart_ptr into itself.");
-		if (p)
-			p->Release();
-		p = p_.p;
-		p_.p = nullptr;
+		if (this != &p_)
+		{
+			if (p)
+				p->Release();
+			p = p_.p;
+			p_.p = nullptr;
+		}
 		return *this;
 	}
 
