@@ -736,6 +736,16 @@ QPushButton {
 				stop:1 rgb(78,78,78));
 }
 
+QPushButton::default {
+	border:1px solid rgb(97,172,236);
+	background: qlineargradient(x2:1, y2:2, x2:0, y2:2,
+				stop:0 rgb(110,110,110), 
+				stop:0.5 rgb(88,88,88), 
+				stop:1 rgb(78,78,78));
+	color:rgb(180,180,180);
+	padding:-1px;
+}
+
 QPushButton::hover {
 background-color: rgb(95,95,95);
 color:rgb(200,200,200);
@@ -1064,6 +1074,12 @@ QToolWindowCustomWrapper {           /*CEditorDialog*/
 	border:1px solid rgb(45,45,45);
 }
 
+CEditorDialog QPushButton::pressed {
+	border:0px solid rgb(97,172,236);
+	background: rgb(97,172,236);
+	color:white;
+}
+
 CEditorDialog {
 	background-color: rgb(35,35,35);
 	border:1px solid rgb(45,45,45);
@@ -1258,7 +1274,7 @@ QLineEdit:disabled {
 
 QComboBox:disabled {
 	color:rgb(120,120,120);
-	background-color:rgb(58,58,58);
+	background-color:red; /* for debugging purposes - old value (rgb(58,58,58);*/
 }
 
 QComboBox::drop-down:disabled {
