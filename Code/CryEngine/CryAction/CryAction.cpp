@@ -687,6 +687,7 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 		paramCheck.AddParam("record");
 		paramCheck.AddParam("server");
 		paramCheck.AddParam("nonblocking");
+		paramCheck.AddParam("nb");
 		paramCheck.AddParam("x");
 		//
 		for (int i = 2; i < args->GetArgCount(); i++)
@@ -723,6 +724,10 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 			else if (!strcmp(arg, "nonblocking"))
 			{
 				blocking = false;
+			}
+			else if (!strcmp(arg, "nb"))
+			{
+				//This is always on now - check is preserved for backwards compatibility
 			}
 			else if (!strcmp(arg, "x"))
 			{
