@@ -1373,6 +1373,8 @@ target_link_libraries( ${THIS_PROJECT} PRIVATE CryLobby )
 
 if (WIN32 OR WIN64)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE shell32 Gdi32  )
+elseif(ORBIS)
+	deploy_runtime_dir(../Resources/orbis/sce_sys app/sce_sys)
 elseif(DURANGO)
 	target_compile_options( ${THIS_PROJECT} PRIVATE /EHsc /ZW )
 	target_link_libraries( ${THIS_PROJECT} PRIVATE etwplus ixmlhttprequest2 Ws2_32 uuid )

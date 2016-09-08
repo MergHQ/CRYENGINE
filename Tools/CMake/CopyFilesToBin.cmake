@@ -21,6 +21,7 @@ set (BinaryFileList_LINUX64
 	Code/SDKs/ncurses/lib/libncursesw.so.6
 	)
 
+
 function(deploy_runtime_files fileexpr)
 	file(GLOB FILES_TO_COPY ${fileexpr})
 	foreach(FILE_PATH ${FILES_TO_COPY})
@@ -39,13 +40,14 @@ function(deploy_runtime_files fileexpr)
 endfunction()
 
 function(deploy_runtime_dir dir output_dir)
-	file(GLOB_RECURSE FILES_TO_COPY RELATIVE ${CMAKE_SOURCE_DIR}/${dir} ${dir}/*)
+	file(GLOB_RECURSE FILES_TO_COPY RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/${dir} ${CMAKE_CURRENT_SOURCE_DIR}/${dir}/*)
 	
 	message(STATUS "Deploy directory: ${dir}")
 
 	foreach(FILE_NAME ${FILES_TO_COPY})
-		set(FILE_PATH ${CMAKE_SOURCE_DIR}/${dir}/${FILE_NAME})
+		set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${dir}/${FILE_NAME})
 
+		message(${FILE_NAME})
 		configure_file(${FILE_PATH} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${output_dir}/${FILE_NAME} COPYONLY)
 	endforeach()
 
@@ -56,6 +58,10 @@ macro(copy_binary_files_to_target)
 	set( file_list_name "BinaryFileList_${BUILD_PLATFORM}" )
 	get_property( BINARY_FILE_LIST VARIABLE PROPERTY ${file_list_name} )
 	deploy_runtime_files("${BINARY_FILE_LIST}")
+
+	if (ORBIS)
+		deploy_runtime_files(Code/SDKs/Orbis/target/sce_module/*.prx app/sce_module)
+	endif()
 
 	if (WIN64) 
 		deploy_runtime_files(Code/SDKs/Qt/5.6/msvc2015_64/plugins/platforms/*.dll platforms)
