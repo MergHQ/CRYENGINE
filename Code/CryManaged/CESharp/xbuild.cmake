@@ -22,6 +22,8 @@ endmacro()
 
 
 function(add_csproj CSPROJ_FILE) 
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CSPROJ_FILE})
+
 	parse_cs_files(CS_FILES ${CSPROJ_FILE})
 	parse_csproj_files(REFERENCES ${CSPROJ_FILE})
 	get_filename_component(PROJ_PATH ${CSPROJ_FILE} DIRECTORY)
@@ -36,6 +38,8 @@ function(add_csproj CSPROJ_FILE)
 		list(APPEND CS_PATHS ${PROJ_PATH}/${CS_FILE})
 	endforeach()
 	foreach(REFERENCE ${REFERENCES})
+		set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${REFERENCE})
+
 		get_filename_component(reference_path ${PROJ_PATH}/${REFERENCE} DIRECTORY)
 		parse_cs_files(cs_files ${PROJ_PATH}/${REFERENCE})
 		foreach(cs_file ${cs_files})
@@ -48,5 +52,5 @@ function(add_csproj CSPROJ_FILE)
 		COMMENT "Building Mono project \"${CSPROJ_FILE}\""
 		DEPENDS CryMonoBridge ${CS_PATHS} ${CSPROJ_FILE})
 
-	add_custom_target(${ASSEMBLY_NAME} DEPENDS ${ASSEMBLIES})
+	add_custom_target(${ASSEMBLY_NAME} ALL DEPENDS ${ASSEMBLIES})
 endfunction()
