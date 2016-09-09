@@ -366,7 +366,7 @@ void COverloadSceneManager::DebugDrawDisplay()
 		static ColorF textCol(0.0f, 1.0f, 0.0f, 1.0f);
 		static Vec2 textPos(10.0f, 10.0f);
 		static float textSize = 1.4f;
-		gEnv->pRenderer->Draw2dLabel(textPos.x, textPos.y, textSize, &textCol.r, false, "Overload Scene Manager debug view");
+		IRenderAuxText::Draw2dLabel(textPos.x, textPos.y, textSize, &textCol.r, false, "Overload Scene Manager debug view");
 
 		DebugDrawGraphs();
 	}

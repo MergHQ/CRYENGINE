@@ -337,7 +337,7 @@ void CAnimatedCharacter::UpdateMCMs()
 #ifdef _DEBUG
 	if (DebugFilter() && ((CAnimationGraphCVars::Get().m_debugText != 0) || (CAnimationGraphCVars::Get().m_debugMovementControlMethods != 0)))
 	{
-		//gEnv->pRenderer->Draw2dLabel(10, 75, 2.0f, (float*)&ColorF(1,1,1,1), false, "MCM H[%s] V[%s]", g_szMCMString[mcmh], g_szMCMString[mcmv]);
+		//IRenderAuxText::Draw2dLabel(10, 75, 2.0f, (float*)&ColorF(1,1,1,1), false, "MCM H[%s] V[%s]", g_szMCMString[mcmh], g_szMCMString[mcmv]);
 
 		EMovementControlMethod mcmh = GetMCMH();
 		EMovementControlMethod mcmv = GetMCMV();

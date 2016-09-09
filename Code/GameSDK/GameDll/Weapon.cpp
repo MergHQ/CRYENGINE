@@ -4544,10 +4544,10 @@ void CWeapon::ShowDebugInfo()
 
 	bool pickerHasThisWeapon = pInventory->GetCountOfClass(pWeaponClass->GetName()) != 0;
 
-	gEnv->pRenderer->DrawLabelEx(baseText, 1.25f, textColor, true, false, pickerHasThisWeapon ? "'Weapon (%s) in inventory" : "Weapon (%s) NOT in inventory", pWeaponClass->GetName());
+	IRenderAuxText::DrawLabelEx(baseText, 1.25f, textColor, true, false, pickerHasThisWeapon ? "'Weapon (%s) in inventory" : "Weapon (%s) NOT in inventory", pWeaponClass->GetName());
 	
 	lineCounter += 2.0f;
-	gEnv->pRenderer->DrawLabelEx(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "---- Bonus Ammo -------" );
+	IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "---- Bonus Ammo -------" );
 
 	TAmmoVector::iterator bonusAmmoEndIt = m_bonusammo.end();
 	for (TAmmoVector::iterator bonusAmmoIt = m_bonusammo.begin(); bonusAmmoIt != bonusAmmoEndIt; ++bonusAmmoIt)
@@ -4556,12 +4556,12 @@ void CWeapon::ShowDebugInfo()
 		if (bonusAmmo.pAmmoClass)
 		{
 			lineCounter += 1.0f;
-			gEnv->pRenderer->DrawLabelEx(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "  Ammo: '%s' - %d", bonusAmmo.pAmmoClass->GetName(), bonusAmmo.count);
+			IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "  Ammo: '%s' - %d", bonusAmmo.pAmmoClass->GetName(), bonusAmmo.count);
 		}
 	}
 
 	lineCounter += 2.0f;
-	gEnv->pRenderer->DrawLabelEx(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "---- Magazine Ammo -------" );
+	IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "---- Magazine Ammo -------" );
 
 	TAmmoVector::iterator ammoEndCit = m_ammo.end();
 	for (TAmmoVector::iterator ammoCit = m_ammo.begin(); ammoCit != ammoEndCit; ++ammoCit)
@@ -4570,7 +4570,7 @@ void CWeapon::ShowDebugInfo()
 		if (ammo.pAmmoClass)
 		{
 			lineCounter += 1.0f;
-			gEnv->pRenderer->DrawLabelEx(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "  Ammo: '%s' - %d", ammo.pAmmoClass->GetName(), ammo.count);
+			IRenderAuxText::DrawLabelEx(baseText - (textLineOffset * lineCounter), 1.25f, textColor, true, false, "  Ammo: '%s' - %d", ammo.pAmmoClass->GetName(), ammo.count);
 		}
 
 	}

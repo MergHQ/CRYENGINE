@@ -324,7 +324,7 @@ void CPersistantDebug::Update(float frameTime)
 			case eOT_Text2D:
 				{
 					float clrAry[4] = { clr.r, clr.g, clr.b, clr.a };
-					gEnv->pRenderer->Draw2dLabel(iterList->pos.x, iterList->pos.y, iterList->radius, clrAry, false, "%s", iterList->text.c_str());
+					IRenderAuxText::Draw2dLabel(iterList->pos.x, iterList->pos.y, iterList->radius, clrAry, false, "%s", iterList->text.c_str());
 				}
 				break;
 			case eOT_Text3D:
@@ -467,7 +467,7 @@ void CPersistantDebug::PostUpdate(float frameTime)
 		}
 		else
 		{
-			pRenderer->Draw2dLabel(x, y, textObj.size, &clr[0], true, "%s", textObj.text.c_str());
+			IRenderAuxText::Draw2dLabel(x, y, textObj.size, &clr[0], true, "%s", textObj.text.c_str());
 			y += 18.0f;
 		}
 		textObj.timeRemaining -= frameTime;

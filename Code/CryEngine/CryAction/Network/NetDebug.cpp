@@ -269,14 +269,13 @@ void CNetDebug::DrawAspects()
 				if (pEnt->entityTTL[i] > 0)
 				{
 					char msg[256];
-					IRenderer* pRenderer = gEnv->pRenderer;
 					ITextModeConsole* pTextModeConsole = gEnv->pSystem->GetITextModeConsole();
 
 					if (yPos > cellSize * maxRow)
 					{
 						cry_sprintf(msg, "There are more messages to track. Please use filter.");
 						color[3] = color[0] = 1;
-						pRenderer->Draw2dLabel(xPos, yPos, 1.2f, &color[0], false, "%s", msg);
+						IRenderAuxText::Draw2dLabel(xPos, yPos, 1.2f, &color[0], false, "%s", msg);
 					}
 					else
 					{
@@ -288,7 +287,7 @@ void CNetDebug::DrawAspects()
 						            pEnt->aspectChangeRate[i]);
 
 						color[3] = (pEnt->entityTTL[i]) / (float)MAX_TTL;
-						pRenderer->Draw2dLabel(xPos, yPos, 1.2f, &color[0], false, "%s", msg);
+						IRenderAuxText::Draw2dLabel(xPos, yPos, 1.2f, &color[0], false, "%s", msg);
 						if (pTextModeConsole)
 							pTextModeConsole->PutText(0, row, msg);
 
@@ -319,7 +318,7 @@ void CNetDebug::DrawRMI()
 		DebugRMIEntity* pEnt = &(it->second);
 
 		char msg[256];
-		IRenderer* pRenderer = gEnv->pRenderer;
+
 		ITextModeConsole* pTextModeConsole = gEnv->pSystem->GetITextModeConsole();
 
 		if (yPos < cellSize * maxRow)
@@ -331,7 +330,7 @@ void CNetDebug::DrawRMI()
 			            pEnt->peakRate,
 			            pEnt->rate);
 
-			pRenderer->Draw2dLabel(xPos, yPos, 1.2f, &color[0], false, "%s", msg);
+			IRenderAuxText::Draw2dLabel(xPos, yPos, 1.2f, &color[0], false, "%s", msg);
 			if (pTextModeConsole)
 				pTextModeConsole->PutText(0, row, msg);
 

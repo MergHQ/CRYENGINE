@@ -422,8 +422,8 @@ void CPlayerStateSwim_WaterTestProxy::DebugDraw(const CPlayer& player, const Vec
 
 		gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(referencePosition, surfaceColor1, surfacePosition, surfaceColor1, 2.0f);
 		gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere(surfacePosition, 0.2f, surfaceColor1);
-		gEnv->pRenderer->DrawLabel(referencePosition + vRight * 0.5f, 1.5f, "WaterLevel %3.2f (Head underwater: %d)", m_playerWaterLevel, m_headUnderwater ? 1 : 0);
-		gEnv->pRenderer->DrawLabel(referencePosition + vRight * 0.5f - Vec3(0.f,0.f,0.2f), 1.5f, "OxygenLevel %1.2f", GetOxygenLevel());
+		IRenderAuxText::DrawLabel(referencePosition + vRight * 0.5f, 1.5f, "WaterLevel %3.2f (Head underwater: %d)", m_playerWaterLevel, m_headUnderwater ? 1 : 0);
+		IRenderAuxText::DrawLabel(referencePosition + vRight * 0.5f - Vec3(0.f,0.f,0.2f), 1.5f, "OxygenLevel %1.2f", GetOxygenLevel());
 
 		const static int lines = 16;
 		const static float radius0 = 0.5f;
@@ -445,7 +445,7 @@ void CPlayerStateSwim_WaterTestProxy::DebugDraw(const CPlayer& player, const Vec
 
 			gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(referencePosition, bottomColor, bottomPosition, bottomColor, 2.0f);
 			gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere(bottomPosition, 0.2f, bottomColor);
-			gEnv->pRenderer->DrawLabel(bottomPosition + Vec3(0,0,0.5f) - vRight * 0.5f, 1.5f, "BottomDepth %3.3f", m_waterLevel - m_bottomLevel);
+			IRenderAuxText::DrawLabel(bottomPosition + Vec3(0,0,0.5f) - vRight * 0.5f, 1.5f, "BottomDepth %3.3f", m_waterLevel - m_bottomLevel);
 		}
 	}
 }

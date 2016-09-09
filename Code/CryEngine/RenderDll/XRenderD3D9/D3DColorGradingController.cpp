@@ -343,8 +343,8 @@ void CColorGradingControllerD3D::DrawLayer(float x, float y, float w, float h, C
 	SD3DPostEffectsUtils::ShEndPass();
 
 	float color[4] = { 1, 1, 1, 1 };
-	m_pRenderer->Draw2dLabel(x + w + 10.0f, y, 1.35f, color, false, "%2.1f%%", blendAmount * 100.0f);
-	m_pRenderer->Draw2dLabel(x + w + 55.0f, y, 1.35f, color, false, "%s", pLayerName);
+	IRenderAuxText::Draw2dLabel(x + w + 10.0f, y, 1.35f, color, false, "%2.1f%%", blendAmount * 100.0f);
+	IRenderAuxText::Draw2dLabel(x + w + 55.0f, y, 1.35f, color, false, "%s", pLayerName);
 #endif // #if !defined(_RELEASE)
 }
 

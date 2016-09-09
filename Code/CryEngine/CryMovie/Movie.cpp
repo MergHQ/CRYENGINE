@@ -1300,16 +1300,16 @@ void CMovieSystem::ShowPlayedSequencesDebug()
 	float y = 10.0f;
 	std::vector<const char*> names;
 
-	gEnv->pRenderer->Draw2dLabel(1.0f, y, 1.5f, purple, false, "mov_debugSequences = %i", m_mov_debugSequences);
+	IRenderAuxText::Draw2dLabel(1.0f, y, 1.5f, purple, false, "mov_debugSequences = %i", m_mov_debugSequences);
 	y += 20.0f;
 
-	gEnv->pRenderer->Draw2dLabel(1.0f, y, 1.5f, purple, false, "Name:");
-	gEnv->pRenderer->Draw2dLabel(200.0f, y, 1.5f, purple, false, "Speed:");
-	gEnv->pRenderer->Draw2dLabel(300.0f, y, 1.5f, purple, false, "Time:");
+	IRenderAuxText::Draw2dLabel(1.0f, y, 1.5f, purple, false, "Name:");
+	IRenderAuxText::Draw2dLabel(200.0f, y, 1.5f, purple, false, "Speed:");
+	IRenderAuxText::Draw2dLabel(300.0f, y, 1.5f, purple, false, "Time:");
 
 	if (m_mov_debugSequences == 3)
 	{
-		gEnv->pRenderer->Draw2dLabel(400.0f, y, 1.5f, purple, false, "Nodes:");
+		IRenderAuxText::Draw2dLabel(400.0f, y, 1.5f, purple, false, "Nodes:");
 	}
 	y += 20.0f;
 
@@ -1325,13 +1325,13 @@ void CMovieSystem::ShowPlayedSequencesDebug()
 		const SAnimTime playingTime = bIsRunning ? GetPlayingTime(currentSequence) : SAnimTime(0);
 
 		float x = 1.0f;
-		gEnv->pRenderer->Draw2dLabel(x, y, 1.2f, bIsRunning ? green : white, false, "%s", szSeqName);
+		IRenderAuxText::Draw2dLabel(x, y, 1.2f, bIsRunning ? green : white, false, "%s", szSeqName);
 
 		x += 200.0f;
-		gEnv->pRenderer->Draw2dLabel(x, y, 1.2f, bIsRunning ? green : white, false, "x %1.1f", GetPlayingSpeed(currentSequence));
+		IRenderAuxText::Draw2dLabel(x, y, 1.2f, bIsRunning ? green : white, false, "x %1.1f", GetPlayingSpeed(currentSequence));
 
 		x += 100.0f;
-		gEnv->pRenderer->Draw2dLabel(x, y, 1.2f, bIsRunning ? green : white, false, "%u", playingTime.GetTicks());
+		IRenderAuxText::Draw2dLabel(x, y, 1.2f, bIsRunning ? green : white, false, "%u", playingTime.GetTicks());
 
 		if (m_mov_debugSequences == 3)
 		{
@@ -1361,7 +1361,7 @@ void CMovieSystem::ShowPlayedSequencesDebug()
 					names.push_back(szNodeName);
 				}
 
-				gEnv->pRenderer->Draw2dLabel(x, y, 1.2f, bAlreadyThere ? purple : white, false, "%s", szNodeName);
+				IRenderAuxText::Draw2dLabel(x, y, 1.2f, bAlreadyThere ? purple : white, false, "%s", szNodeName);
 				y += 10.0f;
 			}
 		}

@@ -355,10 +355,10 @@ CFlowInspectorDefault::DrawLabel(float col, float row, const ColorF& color, floa
 	if (glow > 0.1f)
 	{
 		ColorF glowColor(color[0], color[1], color[2], glow);
-		m_pRenderer->Draw2dLabel((float)(ColumnSize * col + 1), (float)(BASE_Y + RowSize * row + 1), fScale * 1.2f, &glowColor[0], false, "%s", msg.c_str());
+		IRenderAuxText::Draw2dLabel((float)(ColumnSize * col + 1), (float)(BASE_Y + RowSize * row + 1), fScale * 1.2f, &glowColor[0], false, "%s", msg.c_str());
 	}
 	ColorF tmp(color);
-	m_pRenderer->Draw2dLabel((float)(ColumnSize * col), (float)(BASE_Y + RowSize * row), fScale * 1.2f, &tmp[0], false, "%s", msg.c_str());
+	IRenderAuxText::Draw2dLabel((float)(ColumnSize * col), (float)(BASE_Y + RowSize * row), fScale * 1.2f, &tmp[0], false, "%s", msg.c_str());
 }
 
 /* virtual */ void

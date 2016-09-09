@@ -1876,9 +1876,9 @@ bool CD3D9Renderer::FX_DeferredShadows(CRenderView* pRenderView, SRenderLight* p
 
 		// Draw information text for Cascade colors
 		float yellow[4] = { 1.f, 1.f, 0.f, 1.f };
-		Draw2dLabel(10.f, 30.f, 2.0f, yellow, false,
+		IRenderAuxText::Draw2dLabel(10.f, 30.f, 2.0f, yellow, false,
 		            "e_ShadowsCascadesDebug");
-		Draw2dLabel(40.f, 60.f, 1.5f, yellow, false,
+		IRenderAuxText::Draw2dLabel(40.f, 60.f, 1.5f, yellow, false,
 		            "Cascade0: Red\n"
 		            "Cascade1: Green\n"
 		            "Cascade2: Blue\n"

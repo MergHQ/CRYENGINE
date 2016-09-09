@@ -1280,12 +1280,12 @@ void CSvoRenderer::DebugDrawStats(const RPProfilerStats* pBasicStats, float& ypo
 	const EDrawTextFlags txtFlags = (EDrawTextFlags)(eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace);
 
 	#define SVO_Draw2dLabel(labelName)                                                                                                      \
-	  gRenDev->Draw2dLabel(60, ypos += ystep, 2, &color.r, false, (const char*)(((const char*)( # labelName)) + 10));                       \
+	  IRenderAuxText::Draw2dLabel(60, ypos += ystep, 2, &color.r, false, (const char*)(((const char*)( # labelName)) + 10));                \
 	  if (pBasicStats[labelName].gpuTimeMax > 0.01)                                                                                         \
-	    gRenDev->Draw2dLabelEx(xposms, ypos, 2, color, txtFlags, "%5.2f Aver=%5.2f Max=%5.2f",                                              \
+	    IRenderAuxText::Draw2dLabelEx(xposms, ypos, 2, color, txtFlags, "%5.2f Aver=%5.2f Max=%5.2f",                                       \
 	                           pBasicStats[labelName].gpuTime, pBasicStats[labelName].gpuTimeSmoothed, pBasicStats[labelName].gpuTimeMax);  \
 	  else                                                                                                                                  \
-	    gRenDev->Draw2dLabelEx(xposms, ypos, 2, color, txtFlags, "%5.2f", pBasicStats[labelName].gpuTime);                                  \
+	    IRenderAuxText::Draw2dLabelEx(xposms, ypos, 2, color, txtFlags, "%5.2f", pBasicStats[labelName].gpuTime);                                  \
 
 	SVO_Draw2dLabel(eRPPSTATS_TI_INJECT_CLEAR);
 	SVO_Draw2dLabel(eRPPSTATS_TI_VOXELIZE);

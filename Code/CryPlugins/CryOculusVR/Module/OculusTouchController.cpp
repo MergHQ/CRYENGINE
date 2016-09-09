@@ -526,11 +526,6 @@ void COculusController::Update()
 // -------------------------------------------------------------------------
 void COculusController::DebugDraw(float& xPosLabel, float& yPosLabel) const
 {
-	IRenderer* pRenderer = gEnv->pRenderer;
-
-	if (!pRenderer)
-		return;
-
 	// Basic info
 	const float yPos = yPosLabel, xPosData = xPosLabel, yDelta = 20.f;
 	float y = yPos;
@@ -541,48 +536,48 @@ void COculusController::DebugDraw(float& xPosLabel, float& yPosLabel) const
 	const ColorF fColorDataTh(1.0f, 0.0f, 1.0f, 1.0f);
 	const ColorF fColorDataPose(0.0f, 1.0f, 1.0f, 1.0f);
 
-	pRenderer->Draw2dLabel(xPosLabel, y, 1.3f, fColorLabel, false, "Oculus VR Controller Info: %s", m_pSession ? "Initialized" : "NOT INITIALIZED");
+	IRenderAuxText::Draw2dLabel(xPosLabel, y, 1.3f, fColorLabel, false, "Oculus VR Controller Info: %s", m_pSession ? "Initialized" : "NOT INITIALIZED");
 	y += yDelta;
 
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataConn, false, "Left Hand Controller:%s", IsConnected(eHmdController_OculusLeftHand) ? "Connected" : "Disconnected");
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataConn, false, "Left Hand Controller:%s", IsConnected(eHmdController_OculusLeftHand) ? "Connected" : "Disconnected");
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataConn, false, "Right Hand Controller:%s", IsConnected(eHmdController_OculusRightHand) ? "Connected" : "Disconnected");
-	y += yDelta;
-
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt A:%s", IsButtonPressed_Internal(eHmdControllerButtons_A) ? "Pressed" : "Released");
-	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt B:%s", IsButtonPressed_Internal(eHmdControllerButtons_B) ? "Pressed" : "Released");
-	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt X:%s", IsButtonPressed_Internal(eHmdControllerButtons_X) ? "Pressed" : "Released");
-	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt Y:%s", IsButtonPressed_Internal(eHmdControllerButtons_Y) ? "Pressed" : "Released");
-	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt LThumb:%s", IsButtonPressed_Internal(eHmdControllerButtons_LThumb) ? "Pressed" : "Released");
-	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt LShoulder:%s", IsButtonPressed_Internal(eHmdControllerButtons_LTrigger) ? "Pressed" : "Released");
-	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt RThumb:%s", IsButtonPressed_Internal(eHmdControllerButtons_RThumb) ? "Pressed" : "Released");
-	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt RShoulder:%s", IsButtonPressed_Internal(eHmdControllerButtons_RTrigger) ? "Pressed" : "Released");
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataConn, false, "Right Hand Controller:%s", IsConnected(eHmdController_OculusRightHand) ? "Connected" : "Disconnected");
 	y += yDelta;
 
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataTr, false, "Index Trigger L:%.2f R:%.2f", GetTriggerValue_Internal(eHmdControllerTriggers_LT), GetTriggerValue_Internal(eHmdControllerTriggers_RT));
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt A:%s", IsButtonPressed_Internal(eHmdControllerButtons_A) ? "Pressed" : "Released");
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataTr, false, "Hand  Trigger L:%.2f R:%.2f", GetTriggerValue_Internal(eHmdControllerTriggers_LT2), GetTriggerValue_Internal(eHmdControllerTriggers_RT2));
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt B:%s", IsButtonPressed_Internal(eHmdControllerButtons_B) ? "Pressed" : "Released");
+	y += yDelta;
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt X:%s", IsButtonPressed_Internal(eHmdControllerButtons_X) ? "Pressed" : "Released");
+	y += yDelta;
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt Y:%s", IsButtonPressed_Internal(eHmdControllerButtons_Y) ? "Pressed" : "Released");
+	y += yDelta;
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt LThumb:%s", IsButtonPressed_Internal(eHmdControllerButtons_LThumb) ? "Pressed" : "Released");
+	y += yDelta;
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt LShoulder:%s", IsButtonPressed_Internal(eHmdControllerButtons_LTrigger) ? "Pressed" : "Released");
+	y += yDelta;
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt RThumb:%s", IsButtonPressed_Internal(eHmdControllerButtons_RThumb) ? "Pressed" : "Released");
+	y += yDelta;
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataBt, false, "Bt RShoulder:%s", IsButtonPressed_Internal(eHmdControllerButtons_RTrigger) ? "Pressed" : "Released");
+	y += yDelta;
+
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataTr, false, "Index Trigger L:%.2f R:%.2f", GetTriggerValue_Internal(eHmdControllerTriggers_LT), GetTriggerValue_Internal(eHmdControllerTriggers_RT));
+	y += yDelta;
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataTr, false, "Hand  Trigger L:%.2f R:%.2f", GetTriggerValue_Internal(eHmdControllerTriggers_LT2), GetTriggerValue_Internal(eHmdControllerTriggers_RT2));
 	y += yDelta;
 
 	Vec2 tsLeft = GetThumbStickValue_Internal(eHmdControllerThumbSticks_Left);
 	Vec2 tsRight = GetThumbStickValue_Internal(eHmdControllerThumbSticks_Right);
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataTh, false, "Thumbstick L:(%.2f ,  %.2f) R:(%.2f ,  %.2f)", tsLeft.x, tsLeft.y, tsRight.x, tsRight.y);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataTh, false, "Thumbstick L:(%.2f ,  %.2f) R:(%.2f ,  %.2f)", tsLeft.x, tsLeft.y, tsRight.x, tsRight.y);
 	y += yDelta;
 
 	Vec3 posLH = GetNativeTrackingState(eHmdController_OculusLeftHand).pose.position;
 	Vec3 posRH = GetNativeTrackingState(eHmdController_OculusRightHand).pose.position;
 	Vec3 posWLH = GetLocalTrackingState(eHmdController_OculusLeftHand).pose.position;
 	Vec3 posWRH = GetLocalTrackingState(eHmdController_OculusRightHand).pose.position;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "Pose   L:(%.2f,%.2f,%.2f) R:(%.2f,%.2f,%.2f)", posLH.x, posLH.y, posLH.z, posRH.x, posRH.y, posRH.z);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "Pose   L:(%.2f,%.2f,%.2f) R:(%.2f,%.2f,%.2f)", posLH.x, posLH.y, posLH.z, posRH.x, posRH.y, posRH.z);
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "W-Pose L:(%.2f,%.2f,%.2f) R:(%.2f,%.2f,%.2f)", posWLH.x, posWLH.y, posWLH.z, posWRH.x, posWRH.y, posWRH.z);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "W-Pose L:(%.2f,%.2f,%.2f) R:(%.2f,%.2f,%.2f)", posWLH.x, posWLH.y, posWLH.z, posWRH.x, posWRH.y, posWRH.z);
 	y += yDelta;
 
 	Ang3 rotLHAng(GetNativeTrackingState(eHmdController_OculusLeftHand).pose.orientation);
@@ -595,9 +590,9 @@ void COculusController::DebugDraw(float& xPosLabel, float& yPosLabel) const
 	Ang3 rotWRHAng(GetLocalTrackingState(eHmdController_OculusRightHand).pose.orientation);
 	Vec3 rotWRH(RAD2DEG(rotWRHAng));
 
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "Rot[PRY]   L:(%.2f,%.2f,%.2f) R:(%.2f,%.2f,%.2f)", rotLH.x, rotLH.y, rotLH.z, rotRH.x, rotRH.y, rotRH.z);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "Rot[PRY]   L:(%.2f,%.2f,%.2f) R:(%.2f,%.2f,%.2f)", rotLH.x, rotLH.y, rotLH.z, rotRH.x, rotRH.y, rotRH.z);
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "W-Rot[PRY] L:(%.2f,%.2f,%.2f) R:(%.2f,%.2f,%.2f)", rotWLH.x, rotWLH.y, rotWLH.z, rotWRH.x, rotWRH.y, rotWRH.z);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "W-Rot[PRY] L:(%.2f,%.2f,%.2f) R:(%.2f,%.2f,%.2f)", rotWLH.x, rotWLH.y, rotWLH.z, rotWRH.x, rotWRH.y, rotWRH.z);
 	y += yDelta;
 
 	yPosLabel = y;

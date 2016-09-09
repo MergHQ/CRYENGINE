@@ -922,15 +922,15 @@ public:
 				float fWhite[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 				static float xPos = 400.0f;
 				float yPos = 50.0f;
-				gEnv->pRenderer->Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Target: (%f %f %f)", m_posAdjuster.m_targetLoc.t.x, m_posAdjuster.m_targetLoc.t.y, m_posAdjuster.m_targetLoc.t.z);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Target: (%f %f %f)", m_posAdjuster.m_targetLoc.t.x, m_posAdjuster.m_targetLoc.t.y, m_posAdjuster.m_targetLoc.t.z);
 				yPos += 20.0f;
-				gEnv->pRenderer->Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Current: (%f %f %f)", entLoc.t.x, entLoc.t.y, entLoc.t.z);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Current: (%f %f %f)", entLoc.t.x, entLoc.t.y, entLoc.t.z);
 				yPos += 20.0f;
-				gEnv->pRenderer->Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Anim Remainder: (%f %f %f)", pendingMovement.t.x, pendingMovement.t.y, pendingMovement.t.z);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Anim Remainder: (%f %f %f)", pendingMovement.t.x, pendingMovement.t.y, pendingMovement.t.z);
 				yPos += 20.0f;
-				gEnv->pRenderer->Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Delta: (%f %f %f)", requiredDelta.t.x, requiredDelta.t.y, requiredDelta.t.z);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "Delta: (%f %f %f)", requiredDelta.t.x, requiredDelta.t.y, requiredDelta.t.z);
 				yPos += 20.0f;
-				gEnv->pRenderer->Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "CNT: %f tgtTime: %f", curANTime, m_posAdjuster.m_targetTime);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, fWhite, false, "CNT: %f tgtTime: %f", curANTime, m_posAdjuster.m_targetTime);
 
 				DebugDrawLocation(
 				  expectedLoc,

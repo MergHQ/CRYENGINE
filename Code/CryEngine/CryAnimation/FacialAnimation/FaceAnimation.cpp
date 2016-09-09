@@ -271,7 +271,7 @@ bool CFacialAnimationContext::Update(CFaceState& faceState, const QuatTS& rAnimL
 			int16 id = pChar->GetIDefaultSkeleton().GetJointIDByName("Bip01 Head");
 			if (id >= 0)
 				pos += pChar->GetISkeletonPose()->GetAbsJointByID(id).t;
-			g_pIRenderer->DrawLabelEx(pos, 1.1f, color, true, true, "%s", m_debugText.c_str());
+			IRenderAuxText::DrawLabelEx(pos, 1.1f, color, true, true, "%s", m_debugText.c_str());
 		}
 	}
 
@@ -421,7 +421,7 @@ void CFacialAnimationContext::UpdatePlayingSequences(const QuatTS& rAnimLocation
 			Vec3 pos = rAnimLocationNext.t;
 			float color[4] = { 1, 1, 1, 1 };
 			pos.z -= i * 0.1f;
-			g_pIRenderer->DrawLabelEx(pos, 1.1f, color, true, true, "%s : (time=%.2f)", seq.pSequence->GetName(), seq.playTime);
+			IRenderAuxText::DrawLabelEx(pos, 1.1f, color, true, true, "%s : (time=%.2f)", seq.pSequence->GetName(), seq.playTime);
 		}
 
 		if (seq.bPaused)

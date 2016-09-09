@@ -5,6 +5,7 @@
 #include "CrySharedLobbyPacket.h"
 #include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "LAN/CryLANLobby.h"
 #include "CryDedicatedServer.h"
 
@@ -476,12 +477,6 @@ void CCryMatchMaking::Tick(CTimeValue tv)
 	#if !defined(_RELEASE)
 void CCryMatchMaking::DrawDebugText()
 {
-	if (CryGetCurrentThreadId() != gEnv->mMainThreadId)
-	{
-		// During loading, this can happen not on the main thread, this can cause a crash in the renderer since Draw2dLabel is not thread safe
-		return;
-	}
-
 	static float white[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	static float red[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 	static float green[] = { 0.0f, 1.0f, 0.0f, 1.0f };
@@ -496,7 +491,7 @@ void CCryMatchMaking::DrawDebugText()
 
 			if (pTask->used)
 			{
-				gEnv->pRenderer->Draw2dLabel(xpos, ypos, 1.5f, white, false, "[Matchmaking]: task [%i], startedTask [%i][%i]", i, pTask->startedTask, pTask->subTask);
+				IRenderAuxText::Draw2dLabel(xpos, ypos, 1.5f, white, false, "[Matchmaking]: task [%i], startedTask [%i][%i]", i, pTask->startedTask, pTask->subTask);
 				ypos += 15.0f;
 			}
 		}

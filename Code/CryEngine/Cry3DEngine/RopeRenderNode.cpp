@@ -911,8 +911,6 @@ bool CRopeRenderNode::RenderDebugInfo(const SRendParams& rParams, const SRenderi
 	if (passInfo.IsShadowPass())
 		return false;
 
-	IRenderer* pRend = GetRenderer();
-
 	//	bool bVerbose = GetCVars()->e_DebugDraw > 1;
 	bool bOnlyBoxes = GetCVars()->e_DebugDraw < 0;
 
@@ -926,9 +924,9 @@ bool CRopeRenderNode::RenderDebugInfo(const SRendParams& rParams, const SRenderi
 	float color[4] = { 0, 1, 1, 1 };
 
 	if (GetCVars()->e_DebugDraw == 2)          // color coded polygon count
-		pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d", nTris);
+		IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d", nTris);
 	else if (GetCVars()->e_DebugDraw == 5)  // number of render materials (color coded)
-		pRend->DrawLabelEx(pos, 1.3f, color, true, true, "1");
+		IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "1");
 
 	return true;
 }

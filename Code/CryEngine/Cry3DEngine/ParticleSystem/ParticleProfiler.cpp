@@ -56,7 +56,7 @@ struct CScreenOutput : IStatOutput
 		          columnX[m_curColumn] :
 		          columnX.size() ? columnX.back() + columnSz * (m_curColumn + 1 - columnX.size()) :
 		          columnSz * m_curColumn;
-		gEnv->pRenderer->Draw2dLabel(x, m_curY, fontSz, color, false, "%s", text);
+		IRenderAuxText::Draw2dLabel(x, m_curY, fontSz, color, false, "%s", text);
 		m_curColumn++;
 	}
 	virtual void NewLine()

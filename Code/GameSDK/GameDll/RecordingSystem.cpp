@@ -6951,7 +6951,7 @@ void CRecordingSystem::DebugDrawAnimationData(void)
 						IAnimationSet* pAnimationSet = ici->GetIAnimationSet();
 						const char *animName = pAnimationSet->GetNameByAnimID( sad->animID );
 
-						gEnv->pRenderer->Draw2dLabel(xPos, yPos, FONT_SIZE, FONT_COLOUR, false, animName);
+						IRenderAuxText::Draw2dLabel(xPos, yPos, FONT_SIZE, FONT_COLOUR, false, animName);
 
 						yPos += TEXT_INC;
 					}
@@ -7023,7 +7023,6 @@ void CRecordingSystem::DebugDrawMemoryUsage()
 			}
 		}
 
-		IRenderer *pRenderer = gEnv->pRenderer;
 		float red[] = {1.f, 0.f, 0.f, 1.f};
 		float green[] = {0.f, 1.f, 0.f, 1.f};
 		float white[] = {1.f, 1.f, 1.f, 1.f};
@@ -7038,20 +7037,20 @@ void CRecordingSystem::DebugDrawMemoryUsage()
 
 		if (IsRecordingAndNotPlaying())
 		{
-			pRenderer->Draw2dLabel(70.f, yPos, 2, red, false, "RECORDING");
+			IRenderAuxText::Draw2dLabel(70.f, yPos, 2, red, false, "RECORDING");
 		}
 		else if(IsPlayingBack())
 		{
-			pRenderer->Draw2dLabel(70.f, yPos, 2, green, false, "PLAYBACK");
+			IRenderAuxText::Draw2dLabel(70.f, yPos, 2, green, false, "PLAYBACK");
 		}
 
 		yPos += 20.f;
 
 		char temp[255];
 		cry_sprintf(temp, "First person buffer size: %" PRISIZE_T ", Frames: %d, Time: %f", m_pBufferFirstPerson->size(), numFPFrames, lastFPFrameTime - firstFPFrameTime);
-		pRenderer->Draw2dLabel(xPos, yPos, 2, red, false, temp);
+		IRenderAuxText::Draw2dLabel(xPos, yPos, 2, red, false, temp);
 		yPos += 20.f;
-		pRenderer->Draw2dLabel(xPos, yPos, 2, red, false, "Recording buffer size: %" PRISIZE_T ", Frames: %d, Time: %f", m_pBuffer->size(), numFrames, lastFrameTime - firstFrameTime);
+		IRenderAuxText::Draw2dLabel(xPos, yPos, 2, red, false, "Recording buffer size: %" PRISIZE_T ", Frames: %d, Time: %f", m_pBuffer->size(), numFrames, lastFrameTime - firstFrameTime);
 		yPos += 30.f;
 
 		for (int i=0; i<eTPP_Last; ++i)
@@ -7070,11 +7069,11 @@ void CRecordingSystem::DebugDrawMemoryUsage()
 				const int packetIndex = i - eRBPT_Custom;
 				assert(packetIndex >= 0 && packetIndex < eTPP_Last - eRBPT_Custom);
 				const char* typeName = s_thirdPersonPacketList[packetIndex];
-				pRenderer->Draw2dLabel(xPos, yPos, 1.5f, white, false, "[%s] %.1f%% Packet type: %s, size: %d", progress, percentage, typeName, memory[i]);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, white, false, "[%s] %.1f%% Packet type: %s, size: %d", progress, percentage, typeName, memory[i]);
 			}
 			else
 			{
-				pRenderer->Draw2dLabel(xPos, yPos, 1.5f, white, false, "[%s] %.1f%% Packet type: %d, size: %d", progress, percentage, i, memory[i]);
+				IRenderAuxText::Draw2dLabel(xPos, yPos, 1.5f, white, false, "[%s] %.1f%% Packet type: %d, size: %d", progress, percentage, i, memory[i]);
 			}
 			yPos += ySpacing;
 		}

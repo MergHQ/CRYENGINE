@@ -427,8 +427,8 @@ public:
 
 			const Vec3 velocity = pPipeUser->GetVelocity();
 			const float speed = velocity.GetLength();
-			gEnv->pRenderer->DrawLabel(pathEntityIn.position + Vec3(0, 0, -2.0f), 1.0f, "velocity <%f, %f, %f> speed %f", velocity.x, velocity.y, velocity.z, speed);
-			gEnv->pRenderer->DrawLabel(pathEntityIn.position + Vec3(0, 0, -3.5f), 1.0f, "next requested speed %f", pathEntityOut.speed);
+			IRenderAuxText::DrawLabel(pathEntityIn.position + Vec3(0, 0, -2.0f), 1.0f, "velocity <%f, %f, %f> speed %f", velocity.x, velocity.y, velocity.z, speed);
+			IRenderAuxText::DrawLabel(pathEntityIn.position + Vec3(0, 0, -3.5f), 1.0f, "next requested speed %f", pathEntityOut.speed);
 		}
 
 		const float closeToPathEndDistance = max(m_params.decelerateDistance, m_pathEndDistance);

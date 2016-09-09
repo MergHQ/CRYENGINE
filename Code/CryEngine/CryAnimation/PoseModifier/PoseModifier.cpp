@@ -95,7 +95,7 @@ void CConstraintPoint::Draw(const Vec3& point, const Vec3& target) const
 	pAuxGeom->SetRenderFlags(flags);
 
 	pAuxGeom->DrawSphere(point, 0.01f, ColorB(0xff, 0x80, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(point, 1.0f, "Point");
+	IRenderAuxText::DrawLabel(point, 1.0f, "Point");
 
 	pAuxGeom->DrawSphere(target, 0.01f, ColorB(0xff, 0xff, 0xff, 0x80));
 }
@@ -234,10 +234,10 @@ void CConstraintLine::Draw(const Vec3& startPoint, const Vec3& endPoint, const V
 	pAuxGeom->SetRenderFlags(flags);
 
 	pAuxGeom->DrawSphere(startPoint, 0.01f, ColorB(0xff, 0x80, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(startPoint, 1.0f, "Start");
+	IRenderAuxText::DrawLabel(startPoint, 1.0f, "Start");
 
 	pAuxGeom->DrawSphere(endPoint, 0.01f, ColorB(0x80, 0xff, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(endPoint, 1.0f, "End");
+	IRenderAuxText::DrawLabel(endPoint, 1.0f, "End");
 
 	pAuxGeom->DrawLine(
 	  startPoint, ColorB(0xff, 0x80, 0x80, 0xff),
@@ -389,10 +389,10 @@ void CConstraintAim::Draw(const Vec3& origin, const Vec3& target, const Vec3& up
 	pAuxGeom->DrawSphere(origin, 0.01f, ColorB(0xff, 0xff, 0xff, 0x80));
 
 	pAuxGeom->DrawSphere(target, 0.01f, ColorB(0xff, 0x80, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(target, 1.0f, "Target");
+	IRenderAuxText::DrawLabel(target, 1.0f, "Target");
 
 	pAuxGeom->DrawSphere(up, 0.01f, ColorB(0x80, 0xff, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(up, 1.0f, "Up");
+	IRenderAuxText::DrawLabel(up, 1.0f, "Up");
 
 	pAuxGeom->DrawLine(
 	  origin, ColorB(0xff, 0x00, 0x00, 0xff),
@@ -674,13 +674,13 @@ void CIk2Segments::Draw(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Ve
 	pAuxGeom->SetRenderFlags(flags);
 
 	pAuxGeom->DrawSphere(p0, 0.01f, ColorB(0xff, 0xff, 0xff, 0x80));
-	gEnv->pRenderer->DrawLabel(p0, 1.0f, "p0");
+	IRenderAuxText::DrawLabel(p0, 1.0f, "p0");
 
 	pAuxGeom->DrawSphere(p1, 0.01f, ColorB(0xff, 0xff, 0xff, 0x80));
-	gEnv->pRenderer->DrawLabel(p1, 1.0f, "p1");
+	IRenderAuxText::DrawLabel(p1, 1.0f, "p1");
 
 	pAuxGeom->DrawSphere(p2, 0.01f, ColorB(0xff, 0xff, 0xff, 0x80));
-	gEnv->pRenderer->DrawLabel(p2, 1.0f, "p2");
+	IRenderAuxText::DrawLabel(p2, 1.0f, "p2");
 
 	pAuxGeom->DrawLine(
 	  p0, ColorB(0xff, 0xff, 0xff, 0xff),
@@ -706,13 +706,13 @@ void CIk2Segments::Draw(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Ve
 	  target1, ColorB(0xff, 0x80, 0x80, 0xff));
 
 	pAuxGeom->DrawSphere(target0, 0.01f, ColorB(0x80, 0xff, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(target0, 1.0f, "target0");
+	IRenderAuxText::DrawLabel(target0, 1.0f, "target0");
 	pAuxGeom->DrawSphere(target1, 0.01f, ColorB(0xff, 0x80, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(target1, 1.0f, "target1");
+	IRenderAuxText::DrawLabel(target1, 1.0f, "target1");
 
 	Vec3 target = Vec3::CreateLerp(target0, target1, targetWeight);
 	pAuxGeom->DrawSphere(target, 0.01f, ColorB(0xff, 0x80, 0x80, 0x80));
-	gEnv->pRenderer->DrawLabel(target, 1.0f, "target");
+	IRenderAuxText::DrawLabel(target, 1.0f, "target");
 }
 
 // IAnimationPoseModifier

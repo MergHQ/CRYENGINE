@@ -1711,7 +1711,7 @@ bool CGameContext::Update()
 	float white[] = { 1, 1, 1, 1 };
 	if (!m_bHasSpawnPoint)
 	{
-		gEnv->pRenderer->Draw2dLabel(10, 10, 4, white, false, "NO SPAWN POINT");
+		IRenderAuxText::Draw2dLabel(10, 10, 4, white, false, "NO SPAWN POINT");
 	}
 
 	// TODO: This block should be moved into GameSDK code, since sv_pacifist is a GameSDK-only CVar
@@ -1725,7 +1725,7 @@ bool CGameContext::Update()
 		}
 		if (gEnv->IsClient() && !gEnv->bServer && pPacifist && pPacifist->GetIVal() == 1)
 		{
-			gEnv->pRenderer->Draw2dLabel(10, 10, 4, white, false, "PACIFIST MODE");
+			IRenderAuxText::Draw2dLabel(10, 10, 4, white, false, "PACIFIST MODE");
 		}
 	}
 

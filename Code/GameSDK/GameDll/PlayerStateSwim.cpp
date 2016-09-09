@@ -158,11 +158,11 @@ bool CPlayerStateSwim::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameMov
 #ifdef STATE_DEBUG
 		if (debug)
 		{
-			gEnv->pRenderer->DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,0.8f), 1.5f, "BaseSpeed %1.3f", baseSpeed);
-			gEnv->pRenderer->DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,1.0f), 1.5f, "SprintMul %1.2f", sprintMultiplier);
-			gEnv->pRenderer->DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,0.6f), 1.5f, "MoveN[%1.3f, %1.3f, %1.3f]", desiredLocalNormalizedVelocity.x, desiredLocalNormalizedVelocity.y, desiredLocalNormalizedVelocity.z);
-			gEnv->pRenderer->DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,0.5f), 1.5f, "VeloL[%1.3f, %1.3f, %1.3f]", desiredLocalVelocity.x, desiredLocalVelocity.y, desiredLocalVelocity.z);
-			gEnv->pRenderer->DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,0.4f), 1.5f, "VeloW[%1.3f, %1.3f, %1.3f]", desiredWorldVelocity.x, desiredWorldVelocity.y, desiredWorldVelocity.z);
+			IRenderAuxText::DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,0.8f), 1.5f, "BaseSpeed %1.3f", baseSpeed);
+			IRenderAuxText::DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,1.0f), 1.5f, "SprintMul %1.2f", sprintMultiplier);
+			IRenderAuxText::DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,0.6f), 1.5f, "MoveN[%1.3f, %1.3f, %1.3f]", desiredLocalNormalizedVelocity.x, desiredLocalNormalizedVelocity.y, desiredLocalNormalizedVelocity.z);
+			IRenderAuxText::DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,0.5f), 1.5f, "VeloL[%1.3f, %1.3f, %1.3f]", desiredLocalVelocity.x, desiredLocalVelocity.y, desiredLocalVelocity.z);
+			IRenderAuxText::DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,0.4f), 1.5f, "VeloW[%1.3f, %1.3f, %1.3f]", desiredWorldVelocity.x, desiredWorldVelocity.y, desiredWorldVelocity.z);
 		}
 #endif
 
@@ -178,7 +178,7 @@ bool CPlayerStateSwim::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameMov
 #ifdef STATE_DEBUG
 	if( debug )
 	{
-		gEnv->pRenderer->DrawLabel(entityPos - vRight * 1.5f - Vec3(0,0,0.2f), 1.5f, " Axx[%1.3f, %1.3f, %1.3f]", acceleration.x, acceleration.y, acceleration.z);
+		IRenderAuxText::DrawLabel(entityPos - vRight * 1.5f - Vec3(0,0,0.2f), 1.5f, " Axx[%1.3f, %1.3f, %1.3f]", acceleration.x, acceleration.y, acceleration.z);
 	}
 #endif
 
@@ -262,12 +262,12 @@ bool CPlayerStateSwim::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameMov
 	// DEBUG VELOCITY
 	if (debug)
 	{
-		gEnv->pRenderer->DrawLabel(entityPos - vRight * 1.5f - Vec3(0,0,0.0f), 1.5f, "Velo[%1.3f, %1.3f, %1.3f]", velocity.x, velocity.y, velocity.z);
-		gEnv->pRenderer->DrawLabel(entityPos - vRight * 1.5f - Vec3(0,0,0.4f), 1.5f, "Damp[%1.3f, %1.3f, %1.3f]", damping.x, damping.y, damping.z);
-		gEnv->pRenderer->DrawLabel(entityPos - vRight * 1.5f - Vec3(0,0,0.6f), 1.5f, "FrameTime %1.4f", frameTime);
-		gEnv->pRenderer->DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,0.3f), 1.5f, "DeltaSpeed[%1.3f]", speedDelta );
+		IRenderAuxText::DrawLabel(entityPos - vRight * 1.5f - Vec3(0,0,0.0f), 1.5f, "Velo[%1.3f, %1.3f, %1.3f]", velocity.x, velocity.y, velocity.z);
+		IRenderAuxText::DrawLabel(entityPos - vRight * 1.5f - Vec3(0,0,0.4f), 1.5f, "Damp[%1.3f, %1.3f, %1.3f]", damping.x, damping.y, damping.z);
+		IRenderAuxText::DrawLabel(entityPos - vRight * 1.5f - Vec3(0,0,0.6f), 1.5f, "FrameTime %1.4f", frameTime);
+		IRenderAuxText::DrawLabel(entityPos - vRight * 1.5f + Vec3(0,0,0.3f), 1.5f, "DeltaSpeed[%1.3f]", speedDelta );
 		//if (bNewSwimJumping)
-			//gEnv->pRenderer->DrawLabel(entityPos - vRight * 0.15f + Vec3(0,0,0.6f), 2.0f, "JUMP");
+			//IRenderAuxText::DrawLabel(entityPos - vRight * 0.15f + Vec3(0,0,0.6f), 2.0f, "JUMP");
 	}
 #endif
 

@@ -243,10 +243,7 @@ void CAIDebugRenderer::Draw2dLabel(int nCol, int nRow, const char* szText, const
 		color.a / 255.0f
 	};
 
-	if (m_pRenderer)
-	{
-		m_pRenderer->Draw2dLabel(ColumnSize * static_cast<float>(nCol), baseY + RowSize * static_cast<float>(nRow), 1.2f, p_fColor, false, "%s", szText);
-	}
+	IRenderAuxText::Draw2dLabel(ColumnSize * static_cast<float>(nCol), baseY + RowSize * static_cast<float>(nRow), 1.2f, p_fColor, false, "%s", szText);
 }
 
 void CAIDebugRenderer::Draw2dLabel(float fX, float fY, float fFontSize, const ColorB& color, bool bCenter, const char* text, ...)

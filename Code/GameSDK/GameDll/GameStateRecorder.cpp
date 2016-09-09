@@ -1020,12 +1020,10 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 {
 	float retY = 0;
 
-	IRenderer *pRenderer = gEnv->pRenderer;
-
 	if (bRecording)
 	{
 		float fColor[4] = {1,0,0,1};
-		pRenderer->Draw2dLabel( 1,y+retY, 1.3f, fColor,false," Recording game state");
+		IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, fColor,false," Recording game state");
 		retY +=15;
 	}
 	else 
@@ -1041,7 +1039,7 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 		CActor *pActor = GetActorOfName(actorName);
 		if(pActor)
 		{
-			pRenderer->Draw2dLabel( 1,y+retY, 1.3f, fColor,false," Game state - Actor: %s --------------------------------------------------",pActor->GetEntity()? pActor->GetEntity()->GetName(): "(no entity)");
+			IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, fColor,false," Game state - Actor: %s --------------------------------------------------",pActor->GetEntity()? pActor->GetEntity()->GetName(): "(no entity)");
 			retY +=15;
 
 			if(m_itSingleActorGameState != m_GameStates.end() && pActor->GetEntity() && m_itSingleActorGameState->first == pActor->GetEntity()->GetId())
@@ -1052,14 +1050,14 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 					int demo_forceGameState = pVar->GetIVal();
 					if(demo_forceGameState)
 					{
-						pRenderer->Draw2dLabel( 1,y+retY, 1.3f, fColor,false,demo_forceGameState==1 ? 
+						IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, fColor,false,demo_forceGameState==1 ?
 							" Override mode = (health)" : " Override mode = (all)");
 						retY +=15;
 					}
 				}
 
-				pRenderer->Draw2dLabel( xp,y+retY, 1.3f, fColor,false,"Current");
-				pRenderer->Draw2dLabel( xr,y+retY, 1.3f, fColor,false,"Recorded");
+				IRenderAuxText::Draw2dLabel( xp,y+retY, 1.3f, fColor,false,"Current");
+				IRenderAuxText::Draw2dLabel( xr,y+retY, 1.3f, fColor,false,"Recorded");
 				retY +=15;
 
 				SActorGameState& gstate = m_itSingleActorGameState->second;
@@ -1067,16 +1065,16 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 				float health = pActor->GetHealth();
 				bool bError = CHECK_MISMATCH(health, recordedHealth,10);
 
-				pRenderer->Draw2dLabel( 1,y+retY, 1.3f, fColor,false," Health:");
-				pRenderer->Draw2dLabel( xp,y+retY, 1.3f, bError? fColorWarning : fColor, false,"%d",(int)health);
-				pRenderer->Draw2dLabel( xr,y+retY, 1.3f, bError? fColorWarning : fColor, false,"%d",(int)recordedHealth);
+				IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, fColor,false," Health:");
+				IRenderAuxText::Draw2dLabel( xp,y+retY, 1.3f, bError? fColorWarning : fColor, false,"%d",(int)health);
+				IRenderAuxText::Draw2dLabel( xr,y+retY, 1.3f, bError? fColorWarning : fColor, false,"%d",(int)recordedHealth);
 				retY +=15;
 
 				// items
-				pRenderer->Draw2dLabel( 1,y+retY, 1.3f, fColor,false," Inventory ---------------------------------------------------------------------------------------");
+				IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, fColor,false," Inventory ---------------------------------------------------------------------------------------");
 				retY +=15;
-				pRenderer->Draw2dLabel( xp,y+retY, 1.3f, fColor,false,"Current");
-				pRenderer->Draw2dLabel( xri,y+retY, 1.3f, fColor,false,"Recorded");
+				IRenderAuxText::Draw2dLabel( xp,y+retY, 1.3f, fColor,false,"Current");
+				IRenderAuxText::Draw2dLabel( xri,y+retY, 1.3f, fColor,false,"Recorded");
 				retY +=15;
 
 				CInventory *pInventory = (CInventory*)(pActor->GetInventory());
@@ -1100,23 +1098,23 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 
 							TItemContainer::iterator it = Items.find(szItemName);
 							bError = it==Items.end();
-							pRenderer->Draw2dLabel( 1,y+retY, 1.3f, fColor,false," %2d)",i+1);
+							IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, fColor,false," %2d)",i+1);
 
 							EntityId curId = pItem->GetEntityId();
 							TItemName curClass = GetItemName(curId);
 							if(equal_strings(curClass,curSelClass) )
-								pRenderer->Draw2dLabel( xp-16,y+retY, 1.3f,bSelectedError ? fColorWarning:fColor, false, "[]");
+								IRenderAuxText::Draw2dLabel( xp-16,y+retY, 1.3f,bSelectedError ? fColorWarning:fColor, false, "[]");
 
 							if(equal_strings(szItemName, gstate.itemSelected))
-								pRenderer->Draw2dLabel( xri-16,y+retY, 1.3f,bSelectedError ? fColorWarning:fColor, false, "[]");
+								IRenderAuxText::Draw2dLabel( xri-16,y+retY, 1.3f,bSelectedError ? fColorWarning:fColor, false, "[]");
 
 							char itemName[32];
 							const char* originalItemName = pItem->GetEntity() ? pItem->GetEntity()->GetName():"(null)";
 							cry_strcpy(itemName,originalItemName);
-							pRenderer->Draw2dLabel( 1,y+retY, 1.3f, bError? fColorWarning : fColor, false,"     %s",itemName);
+							IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, bError? fColorWarning : fColor, false,"     %s",itemName);
 
 							if(bError)
-								pRenderer->Draw2dLabel( xp,y+retY, 1.3f, fColorWarning, false, "Missing");
+								IRenderAuxText::Draw2dLabel( xp,y+retY, 1.3f, fColorWarning, false, "Missing");
 							else
 							{
 								SItemProperties& recItem = it->second;
@@ -1145,8 +1143,8 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 											{
 												int recAmmoCount = recItem.Ammo[ammoClass];
 												bool bError2 = ammoCount!=recAmmoCount;
-												pRenderer->Draw2dLabel( xp+xa,y+retY, 1.3f, bError2? fColorWarning : fColor, false,"Am%d:%d",idx,ammoCount);
-												pRenderer->Draw2dLabel( xri+xa,y+retY, 1.3f, bError2? fColorWarning : fColor, false,"Am%d:%d",idx,recAmmoCount);
+												IRenderAuxText::Draw2dLabel( xp+xa,y+retY, 1.3f, bError2? fColorWarning : fColor, false,"Am%d:%d",idx,ammoCount);
+												IRenderAuxText::Draw2dLabel( xri+xa,y+retY, 1.3f, bError2? fColorWarning : fColor, false,"Am%d:%d",idx,recAmmoCount);
 												xa += 50;
 												++idx;
 												if(idx%5 ==0)
@@ -1162,12 +1160,12 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 									int curFireModeIdx = pWeapon->GetCurrentFireMode();
 									int recFireModeIdx = recItem.fireMode;
 									bool bError3 = curFireModeIdx!= recFireModeIdx;
-									pRenderer->Draw2dLabel( xp+xa,y+retY, 1.3f, bError3? fColorWarning : fColor, false,"FMode:%d",curFireModeIdx);
-									pRenderer->Draw2dLabel( xri+xa,y+retY, 1.3f, bError3? fColorWarning : fColor, false,"FMode:%d",recFireModeIdx);
+									IRenderAuxText::Draw2dLabel( xp+xa,y+retY, 1.3f, bError3? fColorWarning : fColor, false,"FMode:%d",curFireModeIdx);
+									IRenderAuxText::Draw2dLabel( xri+xa,y+retY, 1.3f, bError3? fColorWarning : fColor, false,"FMode:%d",recFireModeIdx);
 								}
 								else
 								{
-									pRenderer->Draw2dLabel( xp,y+retY, 1.3f, fColor, false, "Ok");
+									IRenderAuxText::Draw2dLabel( xp,y+retY, 1.3f, fColor, false, "Ok");
 								}
 							}
 
@@ -1183,7 +1181,7 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 					int nRecAccessories = Accessories.size();
 					if(nRecAccessories)
 					{
-						pRenderer->Draw2dLabel( 1,y+retY, 1.3f, bError? fColorWarning : fColor, false," Accessories");
+						IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, bError? fColorWarning : fColor, false," Accessories");
 						retY +=15;
 					}
 
@@ -1195,16 +1193,16 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 							TItemName szItemName = pClass->GetName();
 							TAccessoryContainer::iterator it = Accessories.find(szItemName);
 							bError = it==Accessories.end();
-							pRenderer->Draw2dLabel( 1,y+retY, 1.3f, fColor,false," %2d)",i+1);
+							IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, fColor,false," %2d)",i+1);
 
 							char itemName[32];
 							cry_strcpy(itemName,szItemName);
-							pRenderer->Draw2dLabel( 1,y+retY, 1.3f, bError? fColorWarning : fColor, false,"     %s",itemName);
+							IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, bError? fColorWarning : fColor, false,"     %s",itemName);
 
 							if(bError)
-								pRenderer->Draw2dLabel( xp,y+retY, 1.3f, fColorWarning, false, "Missing");
+								IRenderAuxText::Draw2dLabel( xp,y+retY, 1.3f, fColorWarning, false, "Missing");
 							else
-								pRenderer->Draw2dLabel( xp,y+retY, 1.3f, fColor, false, "Ok");
+								IRenderAuxText::Draw2dLabel( xp,y+retY, 1.3f, fColor, false, "Ok");
 
 							retY +=15;
 						}
@@ -1213,7 +1211,7 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 					int nInvAmmo = pInventory->GetAmmoPackCount();
 					if(nInvAmmo)
 					{
-						pRenderer->Draw2dLabel( 1,y+retY, 1.3f, bError? fColorWarning : fColor, false," Ammo Packs");
+						IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, bError? fColorWarning : fColor, false," Ammo Packs");
 						retY +=15;
 					}
 
@@ -1230,12 +1228,12 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 							int recAmmoCount = bNotFound ? 0 :Mags[ammoClassName];
 							bool bError2 =  bNotFound || invAmmoCount!= recAmmoCount;
 
-							pRenderer->Draw2dLabel( 1,y+retY, 1.3f, bError2? fColorWarning : fColor, false,"  %s:",ammoClassName);
-							pRenderer->Draw2dLabel( xp,y+retY, 1.3f, bError2? fColorWarning : fColor, false,"%d",invAmmoCount);
+							IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, bError2? fColorWarning : fColor, false,"  %s:",ammoClassName);
+							IRenderAuxText::Draw2dLabel( xp,y+retY, 1.3f, bError2? fColorWarning : fColor, false,"%d",invAmmoCount);
 							if(bNotFound)
-								pRenderer->Draw2dLabel( xr,y+retY, 1.3f, fColorWarning, false,"NotRecd");
+								IRenderAuxText::Draw2dLabel( xr,y+retY, 1.3f, fColorWarning, false,"NotRecd");
 							else
-								pRenderer->Draw2dLabel( xr,y+retY, 1.3f, bError2? fColorWarning : fColor, false,"%d",recAmmoCount);
+								IRenderAuxText::Draw2dLabel( xr,y+retY, 1.3f, bError2? fColorWarning : fColor, false,"%d",recAmmoCount);
 							retY +=15;
 
 						}
@@ -1244,13 +1242,13 @@ float CGameStateRecorder::RenderInfo(float y, bool bRecording)
 			}
 			else // m_itSingleActorGameState != m_GameStates.end()
 			{
-				pRenderer->Draw2dLabel( 1,y+retY, 1.3f, fColor,false, "<<Not Recorded>>");
+				IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, fColor,false, "<<Not Recorded>>");
 				retY +=15;
 			}
 		}
 		else // pActor
 		{
-			pRenderer->Draw2dLabel( 1,y+retY, 1.3f, fColor,false, "<<Actor %s not in the map>>",actorName ? actorName:"(no name)");
+			IRenderAuxText::Draw2dLabel( 1,y+retY, 1.3f, fColor,false, "<<Actor %s not in the map>>",actorName ? actorName:"(no name)");
 			retY +=15;		
 		}
 

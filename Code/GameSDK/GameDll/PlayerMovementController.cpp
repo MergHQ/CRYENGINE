@@ -1368,14 +1368,14 @@ void CPlayerMovementController::Update( float frameTime, SActorFrameMovementPara
 	if (g_pGame->GetCVars()->g_debugaimlook)
 	{
 		IRenderer* pRend = gEnv->pRenderer;
-		pRend->Draw2dLabel( 10.f, (float)y, 1.5f, s_dbg_my_white, false, 
+		IRenderAuxText::Draw2dLabel( 10.f, (float)y, 1.5f, s_dbg_my_white, false,
 			"%s:  body=%s   look=%s   aim=%s   rotik=%s   move=%s   delta ang=(%+3.3f, %+3.3f, %+3.3f)  maxdeltarate = %3.3f", 
 			pEntity->GetName(), bodyTargetType, aimType, lookType, ikType, moveTargetType, 
 			params.deltaAngles.x, params.deltaAngles.y, params.deltaAngles.z, maxDeltaAngleRate );
 		y += 15;
 		if (m_state.GetDistanceToPathEnd() >= 0.0f)
 		{
-			pRend->Draw2dLabel( 10.f, (float)y, 1.5f, yellow, false, "distanceToEnd: %f (%f)", m_state.GetDistanceToPathEnd(), moveTarget.GetDistance(playerPos) );
+			IRenderAuxText::Draw2dLabel( 10.f, (float)y, 1.5f, yellow, false, "distanceToEnd: %f (%f)", m_state.GetDistanceToPathEnd(), moveTarget.GetDistance(playerPos) );
 			y += 15;
 		}
 

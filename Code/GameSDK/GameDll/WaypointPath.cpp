@@ -504,7 +504,7 @@ void CWaypointPath::DebugDraw(bool renderLooped) const
 	for(TNodeId i = 0; i <= m_MaxNodeIndex; ++i)
 	{
 		pRenderAuxGeom->DrawSphere(m_Nodes[i].pos, 0.1f, nodeColour, false);
-		gEnv->pRenderer->DrawLabelEx(m_Nodes[i].pos+vTextPosOffset, g_pGameCVars->g_mpPathFollowingNodeTextSize, textColour, true, true, "%i", i);
+		IRenderAuxText::DrawLabelEx(m_Nodes[i].pos+vTextPosOffset, g_pGameCVars->g_mpPathFollowingNodeTextSize, textColour, true, true, "%i", i);
 
 		if(i > 0)
 		{

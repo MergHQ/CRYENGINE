@@ -967,7 +967,7 @@ void CPlayerRotation::ProcessTargetAssistance( IItem* pCurrentPlayerItem )
 	if(g_pGameCVars->ctrlr_OUTPUTDEBUGINFO)
 	{
 		float white[] = {1,1,1,1};
-		gEnv->pRenderer->Draw2dLabel( 20, 100, 1.4f, white, false, "Aim Acceleration & Assist\n  absInput: %.6f", absInput );
+		IRenderAuxText::Draw2dLabel( 20, 100, 1.4f, white, false, "Aim Acceleration & Assist\n  absInput: %.6f", absInput );
 	}
 #endif
 }

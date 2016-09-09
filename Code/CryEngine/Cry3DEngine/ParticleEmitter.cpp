@@ -1197,7 +1197,7 @@ void CParticleEmitter::RenderDebugInfo()
 				colLabel.g = 1.f;
 				colLabel.b *= 0.5f;
 			}
-			GetRenderer()->DrawLabelEx(vLabel, 1.5f, (float*)&colLabel, true, true, sLabel);
+			IRenderAuxText::DrawLabelEx(vLabel, 1.5f, (float*)&colLabel, true, true, sLabel);
 
 			// Compare static and dynamic boxes.
 			if (!bbDyn.IsReset())

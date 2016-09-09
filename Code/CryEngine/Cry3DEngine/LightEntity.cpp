@@ -2028,7 +2028,7 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 				CDLight* pL = &m_light;
 				float fSize = 0.05f * (sinf(GetCurTimeSec() * 10.f) + 2.0f);
 				DrawSphere(pL->m_Origin, fSize, pL->m_Color);
-				GetRenderer()->DrawLabel(pL->m_Origin, 1.3f, "id=%d, rad=%.1f, vdr=%d", pL->m_Id, pL->m_fRadius, (int)m_ucViewDistRatio);
+				IRenderAuxText::DrawLabel(pL->m_Origin, 1.3f, "id=%d, rad=%.1f, vdr=%d", pL->m_Id, pL->m_fRadius, (int)m_ucViewDistRatio);
 			}
 
 			const float mult = SATURATE(6.f * (1.f - (rParams.fDistance / m_fWSMaxViewDist)));

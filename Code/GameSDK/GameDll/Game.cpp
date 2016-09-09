@@ -2515,7 +2515,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 				text.Format("SessionID: NULL");
 			}
 
-			gEnv->pRenderer->Draw2dLabel(x0, y0, scale, &color.r, false, "%s", text.c_str());
+			IRenderAuxText::Draw2dLabel(x0, y0, scale, &color.r, false, "%s", text.c_str());
 		}
 #endif
 
@@ -2550,7 +2550,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 				warning = warning || rstats.queueSize > (3 * rstats.quota);
 
 				ColorF color = warning ? Col_Red : Col_DarkTurquoise;
-				gEnv->pRenderer->Draw2dLabel(400.f, 40.f, 1.25f, &color.r, false, "%s", text.c_str());
+				IRenderAuxText::Draw2dLabel(400.f, 40.f, 1.25f, &color.r, false, "%s", text.c_str());
 			}
 
 			if (m_pIntersectionTester)
@@ -2580,7 +2580,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 				warning = warning || istats.queueSize > (3 * istats.quota);
 
 				ColorF color = warning ? Col_Red : Col_DarkTurquoise;
-				gEnv->pRenderer->Draw2dLabel(600.0, 745.0f, 1.25f, &color.r, false, "%s", text.c_str());
+				IRenderAuxText::Draw2dLabel(600.0, 745.0f, 1.25f, &color.r, false, "%s", text.c_str());
 			}
 		}
 	}
@@ -2730,7 +2730,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 
 	if (gEnv->IsClient() && !gEnv->bServer && g_pGameCVars->sv_pacifist)
 	{
-		gEnv->pRenderer->Draw2dLabel(10, 10, 4, Col_White, false, "PACIFIST MODE ENABLED (Actors don't get damage)");
+		IRenderAuxText::Draw2dLabel(10, 10, 4, Col_White, false, "PACIFIST MODE ENABLED (Actors don't get damage)");
 	}
 
 	m_pFramework->PostUpdate(true, updateFlags);

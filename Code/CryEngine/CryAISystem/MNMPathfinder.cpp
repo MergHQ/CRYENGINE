@@ -742,7 +742,7 @@ void CMNMPathfinder::PathRequestFailed(MNM::QueuedPathID requestID, const MNM::P
 void CMNMPathfinder::DebugAllStatistics()
 {
 	float y = 40.0f;
-	gEnv->pRenderer->Draw2dLabel(100.f, y, 1.4f, Col_White, false, "Currently we have %" PRISIZE_T " queued requests in the MNMPathfinder", m_requestedPathsQueue.size());
+	IRenderAuxText::Draw2dLabel(100.f, y, 1.4f, Col_White, false, "Currently we have %" PRISIZE_T " queued requests in the MNMPathfinder", m_requestedPathsQueue.size());
 
 	y += 100.0f;
 	const size_t maximumAmountOfSlotsToUpdate = m_processingContextsPool.GetMaxSlots();
@@ -772,5 +772,5 @@ void CMNMPathfinder::DebugStatistics(MNM::PathfinderUtils::ProcessingContext& pr
 	  stats.averageSearchTime,
 	  stats.peakSearchTime);
 
-	gEnv->pRenderer->Draw2dLabel(100.f, textY, 1.4f, Col_White, false, "%s", text.c_str());
+	IRenderAuxText::Draw2dLabel(100.f, textY, 1.4f, Col_White, false, "%s", text.c_str());
 }

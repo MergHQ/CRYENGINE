@@ -222,6 +222,92 @@ struct IRenderAuxGeom
 	// </interfuscator:shuffle>
 };
 
+
+
+class IRenderAuxText
+{
+	static IRenderAuxGeom* GetAux()
+	{
+		return gEnv->pRenderer->GetIRenderAuxGeom();
+	}
+
+public:
+	struct AColor
+	{
+		float rgba[4];
+
+		static const float* white()
+		{
+			static float col[] = { 1, 1, 1, 1 };
+			return col;
+		}
+
+		AColor(const float* ptr)
+		{
+			const float* col = ptr ? ptr : white();
+
+			rgba[0] = col[0];
+			rgba[1] = col[1];
+			rgba[2] = col[2];
+			rgba[3] = col[3];
+		}
+
+		AColor(const ColorF& cf)
+		{
+			rgba[0] = cf.r;
+			rgba[1] = cf.g;
+			rgba[2] = cf.b;
+			rgba[3] = cf.a;
+		}
+	};
+
+	static void DrawLabel2D(Vec3 pos, float font_size, const AColor& color, int flags, const char* label_text, va_list args)
+	{
+		SDrawTextInfo ti;
+		ti.xscale = ti.yscale = font_size;
+		ti.flags = flags;
+		ti.color[0] = color.rgba[0];
+		ti.color[1] = color.rgba[1];
+		ti.color[2] = color.rgba[2];
+		ti.color[3] = color.rgba[3];
+
+		GetAux()->RenderText(pos, ti, label_text, args);
+	}
+
+	static void DrawLabel(Vec3 pos, float font_size, const char* label_text, ...) PRINTF_PARAMS(3, 4)
+	{
+		va_list args;
+		va_start(args, label_text);
+		DrawLabel2D(pos, font_size, AColor::white(), eDrawText_FixedSize | eDrawText_800x600, label_text, args);
+		va_end(args);
+	}
+
+	static void DrawLabelEx(Vec3 pos, float font_size, const AColor& color, bool bFixedSize, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(6, 7)
+	{
+		va_list args;
+		va_start(args, label_text);
+		SDrawTextInfo ti;
+		DrawLabel2D(pos, font_size, color, ((bFixedSize) ? eDrawText_FixedSize : 0) | ((bCenter) ? eDrawText_Center : 0) | eDrawText_800x600, label_text, args);
+		va_end(args);
+	}
+
+	static void Draw2dLabelEx(float x, float y, float font_size, const AColor& color, EDrawTextFlags flags, const char* label_text, ...) PRINTF_PARAMS(6, 7)
+	{
+		va_list args;
+		va_start(args, label_text);
+		DrawLabel2D(Vec3(x, y, 0.5f), font_size, color, flags, label_text, args);
+		va_end(args);
+	}
+
+	static void Draw2dLabel(float x, float y, float font_size, const AColor& color, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(6, 7)
+	{
+		va_list args;
+		va_start(args, label_text);
+		DrawLabel2D(Vec3(x, y, 0.5f), font_size, color, eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0), label_text, args);
+		va_end(args);
+	}
+};
+
 //! Don't change the xxxShift values blindly as they affect the rendering output.
 //! For example, 2D primitives have to be rendered after 3D primitives, alpha blended geometry must be rendered after opaque ones, etc.
 //! This also applies to the individual flags in EAuxGeomPublicRenderflags_*!.

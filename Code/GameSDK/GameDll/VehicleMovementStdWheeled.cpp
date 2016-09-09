@@ -673,7 +673,7 @@ void CVehicleMovementStdWheeled::ApplyBoost(float speed, float maxSpeed, float s
 	GetPhysics()->Action(&imp, THREAD_SAFE);
 
     //const static float color[] = {1,1,1,1};
-    //gEnv->pRenderer->Draw2dLabel(400, 400, 1.4f, color, false, "fBoost: %.2f", fraction);
+    //IRenderAuxText::Draw2dLabel(400, 400, 1.4f, color, false, "fBoost: %.2f", fraction);
   }
 }
 
@@ -690,7 +690,7 @@ void CVehicleMovementStdWheeled::DebugDrawMovement(const float deltaTime)
   m_lastDebugFrame = gEnv->pRenderer->GetFrameID();
   
   IPhysicalEntity* pPhysics = GetPhysics();
-  IRenderer* pRenderer = gEnv->pRenderer;
+
   float color[4] = {1,1,1,1};
   float green[4] = {0,1,0,1};
 //  float red[4] = {1,0,0,1};
@@ -707,41 +707,41 @@ void CVehicleMovementStdWheeled::DebugDrawMovement(const float deltaTime)
   pe_params_car carparams;
   pPhysics->GetParams(&carparams);
 
-  pRenderer->Draw2dLabel(5.0f,   y, sizeL, color, false, "Car movement");
-  pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "Speed: %.1f (%.1f km/h) (%i)", speed, speed*3.6f, percent);
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "localVel: %.1f %.1f %.1f", localVel.x, localVel.y, localVel.z);
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "rpm_scale:   %.2f (max rpm: %.0f)", m_rpmScale, carparams.engineMaxRPM); 
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "Gear:  %i", m_vehicleStatus.iCurGear-1);
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "Clutch:  %.2f", m_vehicleStatus.clutch);
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "Torque:  %.1f", m_vehicleStatus.drivingTorque);
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "AxleFric:  %.0f", m_axleFriction);
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "Dampers:  %.2f", m_suspDamping);
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "Stabi:  %.2f", m_stabi);
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "LatSlip:  %.2f", m_avgLateralSlip);  
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "AvgWheelSpeed:  %.2f", m_avgWheelRot);
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "BrakeTime:  %.2f", m_brakeTimer);
-	pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "ReverseTime:  %.2f", m_reverseTimer);
+	IRenderAuxText::Draw2dLabel(5.0f,   y, sizeL, color, false, "Car movement");
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size, color, false, "Speed: %.1f (%.1f km/h) (%i)", speed, speed*3.6f, percent);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "localVel: %.1f %.1f %.1f", localVel.x, localVel.y, localVel.z);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "rpm_scale:   %.2f (max rpm: %.0f)", m_rpmScale, carparams.engineMaxRPM); 
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "Gear:  %i", m_vehicleStatus.iCurGear-1);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "Clutch:  %.2f", m_vehicleStatus.clutch);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "Torque:  %.1f", m_vehicleStatus.drivingTorque);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "AxleFric:  %.0f", m_axleFriction);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "Dampers:  %.2f", m_suspDamping);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "Stabi:  %.2f", m_stabi);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "LatSlip:  %.2f", m_avgLateralSlip);  
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "AvgWheelSpeed:  %.2f", m_avgWheelRot);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "BrakeTime:  %.2f", m_brakeTimer);
+	IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "ReverseTime:  %.2f", m_reverseTimer);
     
   if (m_statusDyn.submergedFraction > 0.f)
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "Submerged:  %.2f", m_statusDyn.submergedFraction);
+	  IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "Submerged:  %.2f", m_statusDyn.submergedFraction);
 
   if (m_damage > 0.f)
-    pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "Damage:  %.2f", m_damage);  
+	  IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size, color, false, "Damage:  %.2f", m_damage);
     
   if (Boosting())
-    pRenderer->Draw2dLabel(5.0f,  y+=step1, size, green, false, "Boost:  %.2f", m_boostCounter);
+	  IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, green, false, "Boost:  %.2f", m_boostCounter);
 
-  pRenderer->Draw2dLabel(5.0f,  y+=step2, sizeL, color, false, "Driver input");
-  pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "power: %.2f", m_movementAction.power);
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "steer: %.2f", m_movementAction.rotateYaw); 
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "brake: %i", m_movementAction.brake);
+  IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, sizeL, color, false, "Driver input");
+  IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size, color, false, "power: %.2f", m_movementAction.power);
+  IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "steer: %.2f", m_movementAction.rotateYaw); 
+  IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "brake: %i", m_movementAction.brake);
 
-  pRenderer->Draw2dLabel(5.0f,  y+=step2, sizeL, color, false, "Car action");
-  pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "pedal: %.2f", m_action.pedal);
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "steer: %.2f (max %.2f)", RAD2DEG(m_action.steer), RAD2DEG(steerMax)); 
-  pRenderer->Draw2dLabel(5.0f,  y+=step1, size, color, false, "brake: %i", m_action.bHandBrake);
+  IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, sizeL, color, false, "Car action");
+  IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size, color, false, "pedal: %.2f", m_action.pedal);
+  IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "steer: %.2f (max %.2f)", RAD2DEG(m_action.steer), RAD2DEG(steerMax)); 
+  IRenderAuxText::Draw2dLabel(5.0f,  y+=step1, size, color, false, "brake: %i", m_action.bHandBrake);
 
-  pRenderer->Draw2dLabel(5.0f,  y+=step2, size, color, false, "steerSpeed: %.2f", steerSpeed); 
+  IRenderAuxText::Draw2dLabel(5.0f,  y+=step2, size, color, false, "steerSpeed: %.2f", steerSpeed);
 
   const Matrix34& worldTM = m_pVehicle->GetEntity()->GetWorldTM();
   
@@ -787,11 +787,11 @@ void CVehicleMovementStdWheeled::DebugDrawMovement(const float deltaTime)
         }        
       }
             
-      //gEnv->pRenderer->DrawLabel(wp.pos, 1.2f, "%.2f", m_wheelStats[i].friction);      
+      //IRenderAuxText::DrawLabel(wp.pos, 1.2f, "%.2f", m_wheelStats[i].friction);      
 
       if (wparams.bDriving || g_pGameCVars->v_draw_slip>1)
       {
-        gEnv->pRenderer->DrawLabel(wp.pos, 1.2f, "T: %.2f", m_wheelStats[i].torqueScale);
+        IRenderAuxText::DrawLabel(wp.pos, 1.2f, "T: %.2f", m_wheelStats[i].torqueScale);
         tScaleTotal += m_wheelStats[i].torqueScale;
       }      
     }    
@@ -820,7 +820,7 @@ void CVehicleMovementStdWheeled::DebugDrawMovement(const float deltaTime)
 
   if (tScaleTotal != 0.f)
   {
-    gEnv->pRenderer->DrawLabel(worldTM.GetTranslation(),1.3f,"tscale: %.2f",tScaleTotal);
+    IRenderAuxText::DrawLabel(worldTM.GetTranslation(),1.3f,"tscale: %.2f",tScaleTotal);
   }
 
   if (m_pWind[0])
@@ -829,11 +829,11 @@ void CVehicleMovementStdWheeled::DebugDrawMovement(const float deltaTime)
     pe_status_pos pos;
     if (m_pWind[0]->GetParams(&buoy) && m_pWind[0]->GetStatus(&pos))
     {
-      gEnv->pRenderer->DrawLabel(pos.pos, 1.3f, "rad: %.1f", buoy.waterFlow.len());
+      IRenderAuxText::DrawLabel(pos.pos, 1.3f, "rad: %.1f", buoy.waterFlow.len());
     }
     if (m_pWind[1]->GetParams(&buoy) && m_pWind[1]->GetStatus(&pos))
     {
-      gEnv->pRenderer->DrawLabel(pos.pos, 1.3f, "lin: %.1f", buoy.waterFlow.len());
+      IRenderAuxText::DrawLabel(pos.pos, 1.3f, "lin: %.1f", buoy.waterFlow.len());
     }
   }
 }
@@ -1881,7 +1881,7 @@ void CVehicleMovementStdWheeled::UpdateSurfaceEffects(const float deltaTime)
   if (DebugParticles())
   {
     float color[] = {1,1,1,1};
-    gEnv->pRenderer->Draw2dLabel(100, 280, 1.3f, color, false, "%s:", m_pVehicle->GetEntity()->GetName());
+    IRenderAuxText::Draw2dLabel(100, 280, 1.3f, color, false, "%s:", m_pVehicle->GetEntity()->GetName());
   }
 #endif
     
@@ -2053,7 +2053,7 @@ void CVehicleMovementStdWheeled::UpdateSurfaceEffects(const float deltaTime)
     if (DebugParticles())
     {
       float color[] = {1,1,1,1};
-      gEnv->pRenderer->Draw2dLabel((float)(100+330*emitterIt->layer), (float)(300+25*emitterIt->group), 1.2f, color, false, "group %i, matId %i: sizeScale %.2f, countScale %.2f, speedScale %.2f (emit: %i)", emitterIt->group, emitterIt->matId, sizeScale, countScale, speedScale, info.pParticleEmitter?1:0);
+      IRenderAuxText::Draw2dLabel((float)(100+330*emitterIt->layer), (float)(300+25*emitterIt->group), 1.2f, color, false, "group %i, matId %i: sizeScale %.2f, countScale %.2f, speedScale %.2f (emit: %i)", emitterIt->group, emitterIt->matId, sizeScale, countScale, speedScale, info.pParticleEmitter?1:0);
       gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere(m_pVehicle->GetEntity()->GetSlotWorldTM(emitterIt->slot).GetTranslation(), 0.2f, ColorB(0,0,255,200));
     }     
 #endif

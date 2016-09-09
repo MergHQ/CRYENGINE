@@ -2457,10 +2457,10 @@ void CHitDeathReactions::DrawDebugInfo()
 		sMsg2 += string().Format("\nPos (%.2f, %.2f, %.2f) RotZ (%f)%s. speedFlat: %.2f\nName: \"%s\". Health: %.1f", 
 			m_actor.GetEntity()->GetPos().x, m_actor.GetEntity()->GetPos().y, m_actor.GetEntity()->GetPos().z, m_actor.GetEntity()->GetRotation().GetRotZ(), m_actor.GetActorStats()->isRagDoll ? " RAGDOLL" : "", pActorStats->speedFlat.Value(), m_actor.GetEntity()->GetName(), m_actor.GetHealth());
 
-		gEnv->pRenderer->DrawLabelEx(vDrawPos, fFontSize, drawColor, true, false, "%s", sMsg2.c_str());
+		IRenderAuxText::DrawLabelEx(vDrawPos, fFontSize, drawColor, true, false, "%s", sMsg2.c_str());
 	}
 
-	gEnv->pRenderer->DrawLabelEx(vDrawPos, fFontSize, drawColor, true, false, "%s", sMsg.c_str());
+	IRenderAuxText::DrawLabelEx(vDrawPos, fFontSize, drawColor, true, false, "%s", sMsg.c_str());
 
 	if ((g_pGameCVars->g_hitDeathReactions_debug > 1) && IsInDeathReaction())
 	{

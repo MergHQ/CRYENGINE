@@ -692,9 +692,9 @@ void CPlayerInput::PreUpdate()
 			if(g_pGameCVars->ctrlr_OUTPUTDEBUGINFO > 0)
 			{
 				const float dbg_my_white[4] = {1,1,1,1};
-				gEnv->pRenderer->Draw2dLabel( 20, 400, 1.3f, dbg_my_white, false, "PRE-DT MULTIPLY:\n  xRot: %.9f\n  zRot: %.9f\n", xiDeltaRot.x, xiDeltaRot.z);
+				IRenderAuxText::Draw2dLabel( 20, 400, 1.3f, dbg_my_white, false, "PRE-DT MULTIPLY:\n  xRot: %.9f\n  zRot: %.9f\n", xiDeltaRot.x, xiDeltaRot.z);
 			}
-			
+
 			deltaRotation += (xiDeltaRot * dt * generalSensitivity);
 		}
 
@@ -1079,7 +1079,7 @@ void CPlayerInput::GetState( SSerializedPlayerInput& input )
 		IPhysicalEntity* pEnt = m_pPlayer->GetEntity()->GetPhysics();
 		pe_status_dynamics dynStat;
 		pEnt->GetStatus(&dynStat);
-		gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "FilteredDelta (%f, %f, %f) Vel (%f, %f, %f)", m_filteredDeltaMovement.x, m_filteredDeltaMovement.y, m_filteredDeltaMovement.z, dynStat.v.x, dynStat.v.y, dynStat.v.z);
+		IRenderAuxText::Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "FilteredDelta (%f, %f, %f) Vel (%f, %f, %f)", m_filteredDeltaMovement.x, m_filteredDeltaMovement.y, m_filteredDeltaMovement.z, dynStat.v.x, dynStat.v.y, dynStat.v.z);
 	}
 #endif //0
 	

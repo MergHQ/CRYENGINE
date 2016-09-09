@@ -107,7 +107,7 @@ void CWorldBuilder::DrawDebugInfo()
 				{
 					cry_sprintf( szDebugInfo, "%s", szPrefabName );
 					wp.z-= 0.1f;
-					gEnv->pRenderer->DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szDebugInfo);
+					IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szDebugInfo);
 				}
 			}
 		}	

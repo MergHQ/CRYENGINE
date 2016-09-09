@@ -4044,7 +4044,6 @@ void CActionGame::RegisterBrokenMesh(IPhysicalEntity* pPhysEnt, IGeometry* pPhys
 
 void CActionGame::DrawBrokenMeshes()
 {
-	IRenderer* pRnd = gEnv->pRenderer;
 	std::map<int, SBrokenMeshSize>::iterator iter;
 	int sizes[16] = { 0 }, keys[16] = { 0 }, nTop = 0, i;
 	pe_status_pos sp;
@@ -4056,7 +4055,7 @@ void CActionGame::DrawBrokenMeshes()
 		if (!iter->second.pent->GetStatus(&sp))
 			continue;
 		Vec3 pos = (sp.BBox[0] + sp.BBox[1]) * 0.5f + sp.pos;
-		pRnd->DrawLabelEx(pos, 1.4f, clr, true, true, "%s (%d Kb) - %.1fm", GetGeomName(iter->second), iter->second.size, (pos - posCam).len());
+		IRenderAuxText::DrawLabelEx(pos, 1.4f, clr, true, true, "%s (%d Kb) - %.1fm", GetGeomName(iter->second), iter->second.size, (pos - posCam).len());
 		for (i = 0; i<nTop&& sizes[i]> iter->second.size; i++)
 			;
 		if (i < 16)
@@ -4069,9 +4068,9 @@ void CActionGame::DrawBrokenMeshes()
 			nTop++;
 		}
 	}
-	pRnd->Draw2dLabel(10.0f, 60.0f, 1.3f, clr, false, "Top procedurally broken objects (total size - %d Kb):", m_totBreakageSize);
+	IRenderAuxText::Draw2dLabel(10.0f, 60.0f, 1.3f, clr, false, "Top procedurally broken objects (total size - %d Kb):", m_totBreakageSize);
 	for (i = 0; i < nTop; i++)
-		pRnd->Draw2dLabel(10.0f, 72.0f + i * 12.0f, 1.3f, clr, false, "%d Kb %s", sizes[i], GetGeomName(m_mapBrokenMeshes.find(keys[i])->second));
+		IRenderAuxText::Draw2dLabel(10.0f, 72.0f + i * 12.0f, 1.3f, clr, false, "%d Kb %s", sizes[i], GetGeomName(m_mapBrokenMeshes.find(keys[i])->second));
 }
 
 void CActionGame::AddBroken2DChunkId(int id)

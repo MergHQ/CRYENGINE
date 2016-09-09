@@ -4262,7 +4262,7 @@ void CPickAndThrowWeapon::DebugDraw()
 
 		for (int i=0; i<s_stateListUsed; ++i)
 		{
-			gEnv->pRenderer->Draw2dLabel(20, yHIST+20.f*i, 2.0f, white, false, "%s %3.2f", s_statesHist[i].pStateName, s_statesHist[i].time );
+			IRenderAuxText::Draw2dLabel(20, yHIST+20.f*i, 2.0f, white, false, "%s %3.2f", s_statesHist[i].pStateName, s_statesHist[i].time );
 		}	
 		s_lastState = m_state;
 	}			
@@ -4289,9 +4289,9 @@ void CPickAndThrowWeapon::DebugDraw()
 
 			float y = yHIST + 20*HIST_SIZE + 20;
 
-			gEnv->pRenderer->Draw2dLabel(20, y, 2.0f, white, false, "Ply dur: %.2f %d  %.2f  '%s' ", playerAnim.GetCurrentSegmentNormalizedTime(), playerFrame, playerAnim.GetCurrentSegmentExpectedDurationSeconds(), pPlayerAnimName );
-			gEnv->pRenderer->Draw2dLabel(20, y+20, 2.0f, white, false, "npc dur: %.2f %d  %.2f  '%s'", NPCAnim.GetCurrentSegmentNormalizedTime(), NPCFrame, NPCAnim.GetCurrentSegmentExpectedDurationSeconds(), pNPCAnimName );
-			gEnv->pRenderer->Draw2dLabel(20, y+40, 2.0f, white, false, "dif %.2f  framedif: %d DurDif: %.3f", 
+			IRenderAuxText::Draw2dLabel(20, y, 2.0f, white, false, "Ply dur: %.2f %d  %.2f  '%s' ", playerAnim.GetCurrentSegmentNormalizedTime(), playerFrame, playerAnim.GetCurrentSegmentExpectedDurationSeconds(), pPlayerAnimName );
+			IRenderAuxText::Draw2dLabel(20, y+20, 2.0f, white, false, "npc dur: %.2f %d  %.2f  '%s'", NPCAnim.GetCurrentSegmentNormalizedTime(), NPCFrame, NPCAnim.GetCurrentSegmentExpectedDurationSeconds(), pNPCAnimName );
+			IRenderAuxText::Draw2dLabel(20, y+40, 2.0f, white, false, "dif %.2f  framedif: %d DurDif: %.3f", 
 				playerAnim.GetCurrentSegmentNormalizedTime() - NPCAnim.GetCurrentSegmentNormalizedTime(), playerFrame - NPCFrame, playerAnim.GetCurrentSegmentExpectedDurationSeconds() - NPCAnim.GetCurrentSegmentExpectedDurationSeconds());
 		}
 	}
@@ -4300,7 +4300,7 @@ void CPickAndThrowWeapon::DebugDraw()
 	if (m_flyingActorInfo.valid)
 	{
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity( m_flyingActorInfo.entityId );
-		gEnv->pRenderer->Draw2dLabel(600, 40.f, 2.0f, white, false, "falling actor: %d %s   time: %f", m_flyingActorInfo.entityId, pEntity?pEntity->GetName() : "<NULL>", m_flyingActorInfo.timeToEndTracking);
+		IRenderAuxText::Draw2dLabel(600, 40.f, 2.0f, white, false, "falling actor: %d %s   time: %f", m_flyingActorInfo.entityId, pEntity?pEntity->GetName() : "<NULL>", m_flyingActorInfo.timeToEndTracking);
 	}
 
 
@@ -4309,11 +4309,11 @@ void CPickAndThrowWeapon::DebugDraw()
 	{
 		float X = 600;
 		float green[] = {0.0f,1.0f,0.0f,1.0f};
-		gEnv->pRenderer->Draw2dLabel(X, 20, 2.0f, white, false, "infiniteViewEntities");
+		IRenderAuxText::Draw2dLabel(X, 20, 2.0f, white, false, "infiniteViewEntities");
 		for (uint32 i=0; i<m_infiniteViewEntities.size(); i++)
 		{
 			const SInfiniteViewDistEntity& info = m_infiniteViewEntities[i];
-			gEnv->pRenderer->Draw2dLabel(X, 60.f+i*20.f, 2.0f, info.valid?green:white, false, "entityId: %d  timeLimit: %f  timeStopped: %f  oldViewDistRatio: %d", info.entityId, info.timeLimit - gEnv->pTimer->GetCurrTime(), info.timeStopped, info.oldViewDistRatio );
+			IRenderAuxText::Draw2dLabel(X, 60.f+i*20.f, 2.0f, info.valid?green:white, false, "entityId: %d  timeLimit: %f  timeStopped: %f  oldViewDistRatio: %d", info.entityId, info.timeLimit - gEnv->pTimer->GetCurrTime(), info.timeStopped, info.oldViewDistRatio );
 		}
 	}
 
@@ -4337,7 +4337,7 @@ void CPickAndThrowWeapon::DebugDraw()
 		{
 			int hitsToDropNPC = GetGrabTypeParams().shieldingHits - m_hitsTakenByNPC;
 			float colWhite[] = {1.0f,1.0f,1.0f,1.0f};
-			gEnv->pRenderer->Draw2dLabel(20, 100, 2.0f, colWhite, false, "Hits to dropNPC: %d", hitsToDropNPC);
+			IRenderAuxText::Draw2dLabel(20, 100, 2.0f, colWhite, false, "Hits to dropNPC: %d", hitsToDropNPC);
 		}
 
 
@@ -4363,7 +4363,7 @@ void CPickAndThrowWeapon::DebugDraw()
 		AABB box( Vec3(-boxSize, -boxSize, -boxSize), Vec3( boxSize, boxSize, boxSize ) );
 		gEnv->pRenderer->GetIRenderAuxGeom()->DrawAABB( box, mat, false, colorBox, eBBD_Faceted );
 
-		gEnv->pRenderer->DrawLabelEx( wposCenter, 2, textColor, true, true, "%s", pHelperName );
+		IRenderAuxText::DrawLabelEx( wposCenter, 2, textColor, true, true, "%s", pHelperName );
 	}
 }
 

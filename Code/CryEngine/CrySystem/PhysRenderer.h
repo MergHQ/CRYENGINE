@@ -57,7 +57,7 @@ public:
 		float clr[4] = { min(saturation * 2, 1.0f), 0, 0, 1 };
 		clr[1] = min((1 - saturation) * 2, 1.0f) * 0.5f;
 		clr[idxColor + 1] = min((1 - saturation) * 2, 1.0f);
-		gEnv->pRenderer->DrawLabelEx(pt, 1.5f, clr, true, true, "%s", txt);
+		IRenderAuxText::DrawLabelEx(pt, 1.5f, clr, true, true, "%s", txt);
 	}
 	static const char*  GetPhysForeignName(void* pForeignData, int iForeignData, int iForeignFlags);
 	virtual const char* GetForeignName(void* pForeignData, int iForeignData, int iForeignFlags)

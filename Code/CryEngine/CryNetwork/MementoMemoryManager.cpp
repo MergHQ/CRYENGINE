@@ -4,6 +4,7 @@
 #include "MementoMemoryManager.h"
 #include "Network.h"
 #include <CrySystem/ITextModeConsole.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #define PREVENT_ZERO_ALLOCS(x) x = MAX(x, 1)
 
@@ -217,7 +218,7 @@ static void DrawDebugLine(int x, int y, const char* fmt, ...)
 
 	float white[] = { 1, 1, 1, 1 };
 
-	gEnv->pRenderer->Draw2dLabel((float)(x * 12 + 12), (float)(y * 12 + 12), 1.2f, white, false, "%s", buffer);
+	IRenderAuxText::Draw2dLabel((float)(x * 12 + 12), (float)(y * 12 + 12), 1.2f, white, false, "%s", buffer);
 
 	if (ITextModeConsole* pC = gEnv->pSystem->GetITextModeConsole())
 	{

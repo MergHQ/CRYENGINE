@@ -110,7 +110,7 @@ namespace
 				const float pointSize = 3.0f;
 				const float recoilScale = 100.0f;
 
-				gEnv->pRenderer->Draw2dLabel(
+				IRenderAuxText::Draw2dLabel(
 					center.x, center.y,
 					pointSize, yellow, false, ".");
 
@@ -120,7 +120,7 @@ namespace
 					it->time += frameTime;
 					float opacity = SATURATE(1.0f-(it->time / pointTimeOut));
 					const float red[4] = {1, 0, 0, opacity};
-					gEnv->pRenderer->Draw2dLabel(
+					IRenderAuxText::Draw2dLabel(
 						it->direction.x*it->recoil*recoilScale + center.x,
 						-it->direction.y*it->recoil*recoilScale + center.y,
 						pointSize, red, false, ".");
@@ -149,26 +149,26 @@ namespace
 		if(g_pGameCVars->i_debug_zoom_mods!=0)
 		{
 			float white[4] = {1,1,1,1};
-			gEnv->pRenderer->Draw2dLabel(50.0f, 30.0f, 1.4f, white, false, "Recoil.attack : %f", recoilParams.attack);
-			gEnv->pRenderer->Draw2dLabel(50.0f, 45.0f, 1.4f, white, false, "Recoil.decay : %f", recoilParams.decay);
-			gEnv->pRenderer->Draw2dLabel(50.0f, 60.0f, 1.4f, white, false, "Recoil.impulse : %f", recoilParams.impulse);
-			gEnv->pRenderer->Draw2dLabel(50.0f, 75.0f, 1.4f, white, false, "Recoil.max x,y : %f, %f", recoilParams.max.x, recoilParams.max.y);
-			gEnv->pRenderer->Draw2dLabel(50.0f, 90.0f, 1.4f, white, false, "Recoil.max_recoil : %f", recoilParams.max_recoil);
-			gEnv->pRenderer->Draw2dLabel(50.0f, 105.0f, 1.4f, white, false, "Recoil.recoil_crouch_m : %f", recoilParams.recoil_crouch_m);
-			gEnv->pRenderer->Draw2dLabel(50.0f, 120.0f, 1.4f, white, false, "Recoil.recoil_jump_m : %f", recoilParams.recoil_jump_m);
-			gEnv->pRenderer->Draw2dLabel(50.0f, 135.0f, 1.4f, white, false, "Recoil.recoil_strMode_m : %f", recoilParams.recoil_holdBreathActive_m);
+			IRenderAuxText::Draw2dLabel(50.0f, 30.0f, 1.4f, white, false, "Recoil.attack : %f", recoilParams.attack);
+			IRenderAuxText::Draw2dLabel(50.0f, 45.0f, 1.4f, white, false, "Recoil.decay : %f", recoilParams.decay);
+			IRenderAuxText::Draw2dLabel(50.0f, 60.0f, 1.4f, white, false, "Recoil.impulse : %f", recoilParams.impulse);
+			IRenderAuxText::Draw2dLabel(50.0f, 75.0f, 1.4f, white, false, "Recoil.max x,y : %f, %f", recoilParams.max.x, recoilParams.max.y);
+			IRenderAuxText::Draw2dLabel(50.0f, 90.0f, 1.4f, white, false, "Recoil.max_recoil : %f", recoilParams.max_recoil);
+			IRenderAuxText::Draw2dLabel(50.0f, 105.0f, 1.4f, white, false, "Recoil.recoil_crouch_m : %f", recoilParams.recoil_crouch_m);
+			IRenderAuxText::Draw2dLabel(50.0f, 120.0f, 1.4f, white, false, "Recoil.recoil_jump_m : %f", recoilParams.recoil_jump_m);
+			IRenderAuxText::Draw2dLabel(50.0f, 135.0f, 1.4f, white, false, "Recoil.recoil_strMode_m : %f", recoilParams.recoil_holdBreathActive_m);
 
-			gEnv->pRenderer->Draw2dLabel(300.0f, 30.0f, 1.4f, white, false, "Spread.attack : %f", spreadParams.attack);
-			gEnv->pRenderer->Draw2dLabel(300.0f, 45.0f, 1.4f, white, false, "Spread.decay : %f", spreadParams.decay);
-			gEnv->pRenderer->Draw2dLabel(300.0f, 60.0f, 1.4f, white, false, "Spread.max : %f", spreadParams.max);
-			gEnv->pRenderer->Draw2dLabel(300.0f, 75.0f, 1.4f, white, false, "Spread.min : %f", spreadParams.min);
-			gEnv->pRenderer->Draw2dLabel(300.0f, 90.0f, 1.4f, white, false, "Spread.rotation_m : %f", spreadParams.rotation_m);
-			gEnv->pRenderer->Draw2dLabel(300.0f, 105.0f, 1.4f, white, false, "Spread.speed_m : %f", spreadParams.speed_m);
-			gEnv->pRenderer->Draw2dLabel(300.0f, 120.0f, 1.4f, white, false, "Spread.speed_holdBreathActive_m : %f", spreadParams.speed_holdBreathActive_m);
-			gEnv->pRenderer->Draw2dLabel(300.0f, 135.0f, 1.4f, white, false, "Spread.spread_crouch_m : %f", spreadParams.spread_crouch_m);
-			gEnv->pRenderer->Draw2dLabel(300.0f, 150.0f, 1.4f, white, false, "Spread.spread_jump_m : %f", spreadParams.spread_jump_m);
-			gEnv->pRenderer->Draw2dLabel(300.0f, 165.0f, 1.4f, white, false, "Spread.spread_slide_m : %f", spreadParams.spread_slide_m);
-			gEnv->pRenderer->Draw2dLabel(300.0f, 180.0f, 1.4f, white, false, "Spread.spread_holdBreathActive_m : %f", spreadParams.spread_holdBreathActive_m);
+			IRenderAuxText::Draw2dLabel(300.0f, 30.0f, 1.4f, white, false, "Spread.attack : %f", spreadParams.attack);
+			IRenderAuxText::Draw2dLabel(300.0f, 45.0f, 1.4f, white, false, "Spread.decay : %f", spreadParams.decay);
+			IRenderAuxText::Draw2dLabel(300.0f, 60.0f, 1.4f, white, false, "Spread.max : %f", spreadParams.max);
+			IRenderAuxText::Draw2dLabel(300.0f, 75.0f, 1.4f, white, false, "Spread.min : %f", spreadParams.min);
+			IRenderAuxText::Draw2dLabel(300.0f, 90.0f, 1.4f, white, false, "Spread.rotation_m : %f", spreadParams.rotation_m);
+			IRenderAuxText::Draw2dLabel(300.0f, 105.0f, 1.4f, white, false, "Spread.speed_m : %f", spreadParams.speed_m);
+			IRenderAuxText::Draw2dLabel(300.0f, 120.0f, 1.4f, white, false, "Spread.speed_holdBreathActive_m : %f", spreadParams.speed_holdBreathActive_m);
+			IRenderAuxText::Draw2dLabel(300.0f, 135.0f, 1.4f, white, false, "Spread.spread_crouch_m : %f", spreadParams.spread_crouch_m);
+			IRenderAuxText::Draw2dLabel(300.0f, 150.0f, 1.4f, white, false, "Spread.spread_jump_m : %f", spreadParams.spread_jump_m);
+			IRenderAuxText::Draw2dLabel(300.0f, 165.0f, 1.4f, white, false, "Spread.spread_slide_m : %f", spreadParams.spread_slide_m);
+			IRenderAuxText::Draw2dLabel(300.0f, 180.0f, 1.4f, white, false, "Spread.spread_holdBreathActive_m : %f", spreadParams.spread_holdBreathActive_m);
 		}
 	}
 

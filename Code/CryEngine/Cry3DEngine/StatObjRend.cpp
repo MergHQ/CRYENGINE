@@ -314,7 +314,6 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 	if (!passInfo.IsGeneralPass())
 		return false;
 
-	IRenderer* pRend = GetRenderer();
 	IMaterial* pMaterial = pObj->m_pCurrMaterial;
 
 	IRenderAuxGeom* pAuxGeom = GetRenderer()->GetIRenderAuxGeom();
@@ -412,9 +411,9 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				else
 					shortName = PathUtil::GetFile(m_szFileName.c_str());
 				if (nNumLods > 1)
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%s\n%d (LOD %d/%d)", shortName, m_nRenderTrisCount, nLod, nNumLods);
+					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%s\n%d (LOD %d/%d)", shortName, m_nRenderTrisCount, nLod, nNumLods);
 				else
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%s\n%d", shortName, m_nRenderTrisCount);
+					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%s\n%d", shortName, m_nRenderTrisCount);
 			}
 			break;
 
@@ -447,7 +446,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				}
 
 				if (!bNoText)
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d", m_nRenderTrisCount);
+					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d", m_nRenderTrisCount);
 
 				return false;
 				//////////////////////////////////////////////////////////////////////////
@@ -504,7 +503,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 					const int maxLod = GetMaxUsableLod();
 					const bool bRenderNodeValid(pObj && pObj->m_pRenderNode && ((UINT_PTR)(void*)(pObj->m_pRenderNode) > 0));
 					IRenderNode* pRN = (IRenderNode*)pObj->m_pRenderNode;
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d [%d;%d] (%d/%.1f)",
+					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d [%d;%d] (%d/%.1f)",
 					                   nLod, nLod0, maxLod,
 					                   bRenderNodeValid ? pRN->GetLodRatio() : -1, pObj->m_fDistance);
 				}
@@ -518,7 +517,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				if (m_pRenderMesh)
 				{
 					int nTexMemUsage = m_pRenderMesh->GetTextureMemoryUsage(pMaterial);
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d", nTexMemUsage / 1024);    // in KByte
+					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d", nTexMemUsage / 1024);    // in KByte
 				}
 			}
 			break;
@@ -554,7 +553,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				}
 
 				if (!bNoText)
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d", nRenderMats);
+					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d", nRenderMats);
 			}
 			break;
 
@@ -570,7 +569,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 					col = pObj->m_II.m_AmbColor;
 				}
 
-				pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d,%d,%d,%d", (int)(col.r * 255.0f), (int)(col.g * 255.0f), (int)(col.b * 255.0f), (int)(col.a * 255.0f));
+				IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d,%d,%d,%d", (int)(col.r * 255.0f), (int)(col.g * 255.0f), (int)(col.b * 255.0f), (int)(col.a * 255.0f));
 			}
 			break;
 
@@ -578,7 +577,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 			if (m_pRenderMesh)
 			{
 				int nTexMemUsage = m_pRenderMesh->GetTextureMemoryUsage(pMaterial);
-				pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d,%d,%d", m_nRenderTrisCount, nRenderMats, nTexMemUsage / 1024);
+				IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d,%d,%d", m_nRenderTrisCount, nRenderMats, nTexMemUsage / 1024);
 			}
 			break;
 
@@ -605,9 +604,9 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 
 					if (m_pParentObject == NULL)
 					{
-						pRend->Draw2dLabel(xOffset, 40.f, 1.5f, yellow, false, "%s", shortName);
+						IRenderAuxText::Draw2dLabel(xOffset, 40.f, 1.5f, yellow, false, "%s", shortName);
 
-						pRend->Draw2dLabel(xOffset, yOffset, 1.5f, color, false,
+						IRenderAuxText::Draw2dLabel(xOffset, yOffset, 1.5f, color, false,
 						                   //"Mesh: %s\n"
 						                   "LOD: %d/%d\n"
 						                   "Num Instances: %d\n"
@@ -635,12 +634,12 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 								//only render the header once
 								if (i == 0)
 								{
-									pRend->Draw2dLabel(600.f, 40.f, 2.f, yellow, false, "Debug Gun: %s", shortName);
+									IRenderAuxText::Draw2dLabel(600.f, 40.f, 2.f, yellow, false, "Debug Gun: %s", shortName);
 								}
 								float y = yOffset + ((i % 4) * 150.f);
 								float x = xOffset - (floor(i / 4.f) * 200.f);
 
-								pRend->Draw2dLabel(x, y, 1.5f, color, false,
+								IRenderAuxText::Draw2dLabel(x, y, 1.5f, color, false,
 								                   "Sub Mesh: %s\n"
 								                   "LOD: %d/%d\n"
 								                   "Num Instances: %d\n"
@@ -679,7 +678,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				if (nPhysTrisCount == 0)
 					color[3] = 0.1f;
 
-				pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%d", nPhysTrisCount);
+				IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%d", nPhysTrisCount);
 			}
 			return false;
 
@@ -688,7 +687,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				// Show texture usage.
 				if (m_pRenderMesh)
 				{
-					pRend->DrawLabelEx(pos, 1.3f, color, true, true, "[LOD %d: %d]", nLod, m_pRenderMesh->GetVerticesCount());
+					IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "[LOD %d: %d]", nLod, m_pRenderMesh->GetVerticesCount());
 				}
 			}
 			break;
@@ -767,7 +766,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 
 			// text
 			float color[4] = { 0, 1, 1, 1 };
-			pRend->DrawLabelEx(pos, 1.3f, color, true, true, "%s", pSubObject->name.c_str());
+			IRenderAuxText::DrawLabelEx(pos, 1.3f, color, true, true, "%s", pSubObject->name.c_str());
 		}
 	}
 

@@ -456,18 +456,18 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 	int frameDist = m_frameDataIndex - frameDataIndex;
 	frameDist += frameDist < 0 ? kNumPendingFrames : 0;
 	color = ColorF(0.35f, 0.35f, 0.35f);
-	rd->Draw2dLabel(20, 10, 1.7f, &color.r, false, "Showing data for frame n-%i", frameDist);
-	rd->Draw2dLabel(320, 10, 1.5f, &color.r, false, "GPU");
-	rd->Draw2dLabel(400, 10, 1.5f, &color.r, false, "CPU");
-	rd->Draw2dLabel(470, 10, 1.5f, &color.r, false, "DIPs");
-	rd->Draw2dLabel(520, 10, 1.5f, &color.r, false, "Polys");
+	IRenderAuxText::Draw2dLabel(20, 10, 1.7f, &color.r, false, "Showing data for frame n-%i", frameDist);
+	IRenderAuxText::Draw2dLabel(320, 10, 1.5f, &color.r, false, "GPU");
+	IRenderAuxText::Draw2dLabel(400, 10, 1.5f, &color.r, false, "CPU");
+	IRenderAuxText::Draw2dLabel(470, 10, 1.5f, &color.r, false, "DIPs");
+	IRenderAuxText::Draw2dLabel(520, 10, 1.5f, &color.r, false, "Polys");
 
 	if (frameData.m_numSections > elemsPerColumn)
 	{
-		rd->Draw2dLabel(320 + 600, 10, 1.5f, &color.r, false, "GPU");
-		rd->Draw2dLabel(400 + 600, 10, 1.5f, &color.r, false, "CPU");
-		rd->Draw2dLabel(470 + 600, 10, 1.5f, &color.r, false, "DIPs");
-		rd->Draw2dLabel(520 + 600, 10, 1.5f, &color.r, false, "Polys");
+		IRenderAuxText::Draw2dLabel(320 + 600, 10, 1.5f, &color.r, false, "GPU");
+		IRenderAuxText::Draw2dLabel(400 + 600, 10, 1.5f, &color.r, false, "CPU");
+		IRenderAuxText::Draw2dLabel(470 + 600, 10, 1.5f, &color.r, false, "DIPs");
+		IRenderAuxText::Draw2dLabel(520 + 600, 10, 1.5f, &color.r, false, "Polys");
 	}
 
 	// Refresh the list every 3 seconds to clear out old data and reduce gaps
@@ -534,11 +534,11 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 			color.b *= clamp_tpl(1.2f - (gpuTime / frameTimeGPU) * 8.0f, 0.0f, 1.0f);
 		}
 		
-		rd->Draw2dLabel(xpos + max((int)(abs(section.recLevel) - 2), 0) * 15.0f, ypos, 1.5f, &color.r, false, "%s", section.name);
-		rd->Draw2dLabel(xpos + 300, ypos, 1.5f, &color.r, false, "%.2fms", gpuTime);
-		rd->Draw2dLabel(xpos + 380, ypos, 1.5f, &color.r, false, "%.2fms", cpuTime * 1000.0f);
-		rd->Draw2dLabel(xpos + 450, ypos, 1.5f, &color.r, false, "%i", section.numDIPs);
-		rd->Draw2dLabel(xpos + 500, ypos, 1.5f, &color.r, false, "%i", section.numPolys);
+		IRenderAuxText::Draw2dLabel(xpos + max((int)(abs(section.recLevel) - 2), 0) * 15.0f, ypos, 1.5f, &color.r, false, "%s", section.name);
+		IRenderAuxText::Draw2dLabel(xpos + 300, ypos, 1.5f, &color.r, false, "%.2fms", gpuTime);
+		IRenderAuxText::Draw2dLabel(xpos + 380, ypos, 1.5f, &color.r, false, "%.2fms", cpuTime * 1000.0f);
+		IRenderAuxText::Draw2dLabel(xpos + 450, ypos, 1.5f, &color.r, false, "%i", section.numDIPs);
+		IRenderAuxText::Draw2dLabel(xpos + 500, ypos, 1.5f, &color.r, false, "%i", section.numPolys);
 	}
 
 	rd->RT_FlushTextMessages();

@@ -7,7 +7,7 @@ Description: Utilities for debugging input synchronization problems
 
 -------------------------------------------------------------------------
 History:
--	30:03:2007  : Created by Craig TillerNetInputChainPrint( const char * 
+-	30:03:2007  : Created by Craig TillerNetInputChainPrint( const char *
 
 *************************************************************************/
 
@@ -15,6 +15,7 @@ History:
 #include "NetInputChainDebug.h"
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySystem/ITextModeConsole.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #if ENABLE_NETINPUTCHAINDEBUG
 #include <CryCore/BoostHelpers.h>
@@ -63,7 +64,7 @@ static void Put( const char * name, const TNetInputValue& value )
 	if (const Vec3 * pVec = boost::get<const Vec3>(&value))
 	{
 		cry_sprintf(buf, "%s: %f %f %f", name, pVec->x, pVec->y, pVec->z);
-		gEnv->pRenderer->Draw2dLabel(10.f, (float)(ypos+=20), 2.f, white, false, "%s", buf);
+		IRenderAuxText::Draw2dLabel(10.f, (float)(ypos+=20), 2.f, white, false, "%s", buf);
 		if (pTMC)
 			pTMC->PutText( 0, ypos/20, buf );
 #ifndef _RELEASE
@@ -73,7 +74,7 @@ static void Put( const char * name, const TNetInputValue& value )
 	else if (const float * pFloat = boost::get<const float>(&value))
 	{
 		cry_sprintf(buf, "%s: %f", name, *pFloat);
-		gEnv->pRenderer->Draw2dLabel(10.f, (float)(ypos+=20), 2, white, false, "%s", buf);
+		IRenderAuxText::Draw2dLabel(10.f, (float)(ypos+=20), 2, white, false, "%s", buf);
 		if (pTMC)
 			pTMC->PutText( 0, ypos/20, buf );
 #ifndef _RELEASE

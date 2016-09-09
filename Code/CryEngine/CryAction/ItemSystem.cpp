@@ -1678,10 +1678,10 @@ void CItemSystem::DisplayItemSystemStats()
 	float white[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 	//Global
-	gEnv->pRenderer->Draw2dLabel(50.0f, 50.0f, 1.5f, white, false, "Item system mem:		%.2f Kb.", itemSystemMem * kbInvert);
+	IRenderAuxText::Draw2dLabel(50.0f, 50.0f, 1.5f, white, false, "Item system mem:		%.2f Kb.", itemSystemMem * kbInvert);
 
-	gEnv->pRenderer->Draw2dLabel(50.0f, 65.0f, 1.5f, white, false, "Num. Item instances:		%d.		Total mem: %.2f Kb", itemCount, (float)(pSizer->GetTotalSize() - itemSystemMem) * kbInvert);
-	gEnv->pRenderer->Draw2dLabel(50.0f, 80.0f, 1.5f, white, false, "Num. Weapon instances:	%d.		Total mem: %.2f Kb", weaponCount, (float)weaponMemSize * kbInvert);
+	IRenderAuxText::Draw2dLabel(50.0f, 65.0f, 1.5f, white, false, "Num. Item instances:		%d.		Total mem: %.2f Kb", itemCount, (float)(pSizer->GetTotalSize() - itemSystemMem) * kbInvert);
+	IRenderAuxText::Draw2dLabel(50.0f, 80.0f, 1.5f, white, false, "Num. Weapon instances:	%d.		Total mem: %.2f Kb", weaponCount, (float)weaponMemSize * kbInvert);
 
 	//Per item class
 	TDebugClassesMem::const_iterator cit2 = debugClassesMap.begin();
@@ -1693,7 +1693,7 @@ void CItemSystem::DisplayItemSystemStats()
 		float grey[4] = { 0.7f, 0.7f, 0.7f, 1.0f };
 
 		float midSize = (float)cit2->second.memSize / (float)cit2->second.countOfClass;
-		gEnv->pRenderer->Draw2dLabel(50.0f, 100.0f + (10.0f * i), 1.2f, grey, false, "Class %s:	Instances: %d.	MemSize: %.2f Kb.	Instance Size:%.3f Kb", cit2->first->GetName(), cit2->second.countOfClass, (float)cit2->second.memSize * kbInvert, midSize * kbInvert);
+		IRenderAuxText::Draw2dLabel(50.0f, 100.0f + (10.0f * i), 1.2f, grey, false, "Class %s:	Instances: %d.	MemSize: %.2f Kb.	Instance Size:%.3f Kb", cit2->first->GetName(), cit2->second.countOfClass, (float)cit2->second.memSize * kbInvert, midSize * kbInvert);
 
 		++cit2;
 		i++;

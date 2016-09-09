@@ -1315,9 +1315,6 @@ void CEntitySystem::DebugDrawEntityUsage()
 
 	if (!classEntitiesMap.empty())
 	{
-		IRenderer* pRenderer = gEnv->pRenderer;
-		assert(pRenderer);
-
 		float fColumnY = 11.0f;
 		const float colWhite[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		const float colGreen[] = { 0.0f, 1.0f, 0.0f, 1.0f };
@@ -1337,11 +1334,11 @@ void CEntitySystem::DebugDrawEntityUsage()
 			sTitle.append("]");
 		}
 
-		pRenderer->Draw2dLabel(fColumnX_Class, fColumnY, 1.2f, colWhite, false, "%s", sTitle.c_str());
-		pRenderer->Draw2dLabel(fColumnX_ActiveCount, fColumnY, 1.2f, colWhite, true, "Active");
-		pRenderer->Draw2dLabel(fColumnX_HiddenCount, fColumnY, 1.2f, colWhite, true, "Hidden");
-		pRenderer->Draw2dLabel(fColumnX_MemoryUsage, fColumnY, 1.2f, colWhite, true, "Memory Usage");
-		pRenderer->Draw2dLabel(fColumnX_MemoryHidden, fColumnY, 1.2f, colWhite, true, "[Only Hidden]");
+		IRenderAuxText::Draw2dLabel(fColumnX_Class, fColumnY, 1.2f, colWhite, false, "%s", sTitle.c_str());
+		IRenderAuxText::Draw2dLabel(fColumnX_ActiveCount, fColumnY, 1.2f, colWhite, true, "Active");
+		IRenderAuxText::Draw2dLabel(fColumnX_HiddenCount, fColumnY, 1.2f, colWhite, true, "Hidden");
+		IRenderAuxText::Draw2dLabel(fColumnX_MemoryUsage, fColumnY, 1.2f, colWhite, true, "Memory Usage");
+		IRenderAuxText::Draw2dLabel(fColumnX_MemoryHidden, fColumnY, 1.2f, colWhite, true, "[Only Hidden]");
 		fColumnY += 15.0f;
 
 		TClassEntitiesMap::const_iterator itClass = classEntitiesMap.begin();
@@ -1382,11 +1379,11 @@ void CEntitySystem::DebugDrawEntityUsage()
 				}
 			}
 
-			pRenderer->Draw2dLabel(fColumnX_Class, fColumnY, 1.0f, colWhite, false, "%s", szName);
-			pRenderer->Draw2dLabel(fColumnX_ActiveCount, fColumnY, 1.0f, colWhite, true, "%u", uActiveCount);
-			pRenderer->Draw2dLabel(fColumnX_HiddenCount, fColumnY, 1.0f, colWhite, true, "%u", uHiddenCount);
-			pRenderer->Draw2dLabel(fColumnX_MemoryUsage, fColumnY, 1.0f, colWhite, true, "%u (%uKb)", uTotalMemory, uTotalMemory / 1000);
-			pRenderer->Draw2dLabel(fColumnX_MemoryHidden, fColumnY, 1.0f, colGreen, true, "%u (%uKb)", uHiddenMemory, uHiddenMemory / 1000);
+			IRenderAuxText::Draw2dLabel(fColumnX_Class, fColumnY, 1.0f, colWhite, false, "%s", szName);
+			IRenderAuxText::Draw2dLabel(fColumnX_ActiveCount, fColumnY, 1.0f, colWhite, true, "%u", uActiveCount);
+			IRenderAuxText::Draw2dLabel(fColumnX_HiddenCount, fColumnY, 1.0f, colWhite, true, "%u", uHiddenCount);
+			IRenderAuxText::Draw2dLabel(fColumnX_MemoryUsage, fColumnY, 1.0f, colWhite, true, "%u (%uKb)", uTotalMemory, uTotalMemory / 1000);
+			IRenderAuxText::Draw2dLabel(fColumnX_MemoryHidden, fColumnY, 1.0f, colGreen, true, "%u (%uKb)", uHiddenMemory, uHiddenMemory / 1000);
 			fColumnY += 12.0f;
 		}
 	}
@@ -1816,7 +1813,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 							else
 								cry_sprintf(szProfInfo, "Entity: %s is force being updated, but is not required by AI", ce->GetEntityTextDescription().c_str());
 							float colors[4] = { 1, 1, 1, 1 };
-							gEnv->pRenderer->Draw2dLabel(xpos, ypos, 1.5f, colors, false, "%s", szProfInfo);
+							IRenderAuxText::Draw2dLabel(xpos, ypos, 1.5f, colors, false, "%s", szProfInfo);
 							ypos += 12;
 						}
 					}
@@ -1896,7 +1893,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 		else
 			cry_sprintf(szProfInfo, "Entities: Total=%d Active=%d", numEnts, ctx.numUpdatedEntities);
 		float colors[4] = { 1, 1, 1, 1 };
-		gEnv->pRenderer->Draw2dLabel(10, 10, 1.5, colors, false, "%s", szProfInfo);
+		IRenderAuxText::Draw2dLabel(10, 10, 1.5, colors, false, "%s", szProfInfo);
 	}
 }
 
@@ -2409,8 +2406,7 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 {
 	char szProfInfo[256];
 
-	IRenderer* pRender = gEnv->pRenderer;
-	IRenderAuxGeom* pRenderAux = pRender->GetIRenderAuxGeom();
+	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 
 	Vec3 wp = ce->GetWorldTM().GetTranslation();
 
@@ -2439,15 +2435,15 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 				cry_sprintf(szProfInfo, "%.3f ms : %s", timeMs, ce->GetEntityTextDescription().c_str());
 			if (timeMs > 0.5f)
 			{
-				pRender->DrawLabelEx(wp, 1.3f, colorsYellow, true, true, "%s", szProfInfo);
+				IRenderAuxText::DrawLabelEx(wp, 1.3f, colorsYellow, true, true, "%s", szProfInfo);
 			}
 			else if (timeMs > 1.0f)
 			{
-				pRender->DrawLabelEx(wp, 1.6f, colorsRed, true, true, "%s", szProfInfo);
+				IRenderAuxText::DrawLabelEx(wp, 1.6f, colorsRed, true, true, "%s", szProfInfo);
 			}
 			else
 			{
-				pRender->DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szProfInfo);
+				IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szProfInfo);
 
 				if (ce->GetPhysicalProxy() && ce->GetPhysicalProxy()->GetPhysicalEntity())
 				{
@@ -2455,19 +2451,19 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 					ce->GetPhysicalProxy()->GetPhysicalEntity()->GetStatus(&pe);
 					cry_sprintf(szProfInfo, "Physics: %8.5f %8.5f %8.5f", pe.pos.x, pe.pos.y, pe.pos.z);
 					wp.z -= 0.1f;
-					pRender->DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szProfInfo);
+					IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szProfInfo);
 				}
 
 				Vec3 entPos = ce->GetPos();
 				cry_sprintf(szProfInfo, "Entity:  %8.5f %8.5f %8.5f", entPos.x, entPos.y, entPos.z);
 				wp.z -= 0.1f;
-				pRender->DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szProfInfo);
+				IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szProfInfo);
 			}
 		}
 		else
 		{
 			float colors[4] = { 1, 1, 1, 1 };
-			pRender->DrawLabelEx(wp, 1.2f, colors, true, true, "%s", ce->GetEntityTextDescription().c_str());
+			IRenderAuxText::DrawLabelEx(wp, 1.2f, colors, true, true, "%s", ce->GetEntityTextDescription().c_str());
 		}
 
 		boundsColor.set(255, 255, 0, 255);
@@ -2495,7 +2491,7 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 
 		// Draw text.
 		float colors[4] = { color.r, color.g, color.b, 1.0f };
-		gEnv->pRenderer->DrawLabelEx(ce->GetPos(), 1.2f, colors, true, true, "%s", textToRender);
+		IRenderAuxText::DrawLabelEx(ce->GetPos(), 1.2f, colors, true, true, "%s", textToRender);
 
 		// specify color for drawing bounds below
 		boundsColor.set((uint8)(color.r * 255.0f), (uint8)(color.g * 255.0f), (uint8)(color.b * 255.0f), 255);

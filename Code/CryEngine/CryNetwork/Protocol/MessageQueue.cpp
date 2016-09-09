@@ -1796,7 +1796,7 @@ void CMessageQueue::DrawLabel(float x, float y, float* clr, const char* msg, ...
 	char buffer[4096];
 	cry_vsprintf(buffer, msg, args);
 
-	gEnv->pRenderer->Draw2dLabel((float)x, (float)y, 1.f, clr, false, "%s", buffer);
+	IRenderAuxText::Draw2dLabel((float)x, (float)y, 1.f, clr, false, "%s", buffer);
 	ITextModeConsole* t = gEnv->pSystem->GetITextModeConsole();
 	if (t)
 		t->PutText((int)(x / 4 - 2), (int)(y / 10 - 1), buffer);

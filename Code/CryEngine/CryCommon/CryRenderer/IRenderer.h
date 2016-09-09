@@ -2335,69 +2335,6 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void CollectDrawCallsInfo(bool status) = 0;
 	virtual void CollectDrawCallsInfoPerNode(bool status) = 0;
 
-	//////////////////////////////////////////////////////////////////////////
-	// Summary:
-	//	 Helper functions to draw text.
-	//////////////////////////////////////////////////////////////////////////
-	void DrawLabel(Vec3 pos, float font_size, const char* label_text, ...) PRINTF_PARAMS(4, 5)
-	{
-		va_list args;
-		va_start(args, label_text);
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
-		ti.flags = eDrawText_FixedSize | eDrawText_800x600;
-		DrawTextQueued(pos, ti, label_text, args);
-		va_end(args);
-	}
-
-	void DrawLabelEx(Vec3 pos, float font_size, const float* pfColor, bool bFixedSize, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(7, 8)
-	{
-		va_list args;
-		va_start(args, label_text);
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
-		ti.flags = ((bFixedSize) ? eDrawText_FixedSize : 0) | ((bCenter) ? eDrawText_Center : 0) | eDrawText_800x600;
-		if (pfColor) { ti.color[0] = pfColor[0]; ti.color[1] = pfColor[1]; ti.color[2] = pfColor[2]; ti.color[3] = pfColor[3]; }
-		DrawTextQueued(pos, ti, label_text, args);
-		va_end(args);
-	}
-
-	void Draw2dLabelEx(float x, float y, float font_size, const ColorF& fColor, EDrawTextFlags flags, const char* label_text, ...) PRINTF_PARAMS(7, 8)
-	{
-		va_list args;
-		va_start(args, label_text);
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
-		ti.flags = flags;
-		{ ti.color[0] = fColor[0]; ti.color[1] = fColor[1]; ti.color[2] = fColor[2]; ti.color[3] = fColor[3]; }
-		DrawTextQueued(Vec3(x, y, 0.5f), ti, label_text, args);
-		va_end(args);
-	}
-
-	void Draw2dLabel(float x, float y, float font_size, const float* pfColor, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(7, 8)
-	{
-		va_list args;
-		va_start(args, label_text);
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
-		ti.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0);
-		if (pfColor) { ti.color[0] = pfColor[0]; ti.color[1] = pfColor[1]; ti.color[2] = pfColor[2]; ti.color[3] = pfColor[3]; }
-		DrawTextQueued(Vec3(x, y, 0.5f), ti, label_text, args);
-		va_end(args);
-	}
-
-	void Draw2dLabel(float x, float y, float font_size, const ColorF& fColor, bool bCenter, const char* label_text, ...) PRINTF_PARAMS(7, 8)
-	{
-		va_list args;
-		va_start(args, label_text);
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
-		ti.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0);
-		{ ti.color[0] = fColor[0]; ti.color[1] = fColor[1]; ti.color[2] = fColor[2]; ti.color[3] = fColor[3]; }
-		DrawTextQueued(Vec3(x, y, 0.5f), ti, label_text, args);
-		va_end(args);
-	}
-
 	// Summary:
 	virtual SSkinningData* EF_CreateSkinningData(uint32 nNumBones, bool bNeedJobSyncVar) = 0;
 	virtual SSkinningData* EF_CreateRemappedSkinningData(uint32 nNumBones, SSkinningData* pSourceSkinningData, uint32 nCustomDataSize, uint32 pairGuid) = 0;

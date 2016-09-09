@@ -230,7 +230,7 @@ void CCodeCheckpointDebugMgr::DrawDebugInfo()
 
 	static float statusColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
 	float height = (float) 0.05 * pRenderer->GetHeight();
-	pRenderer->Draw2dLabel(30.f, height, 2.f, statusColor, false, 
+	IRenderAuxText::Draw2dLabel(30.f, height, 2.f, statusColor, false,
 		"THit: %i | TWatched: %" PRISIZE_T " | WatchedHit: %i | %% WatchedHit: %.2f", 
 		totalHit, m_watchedPoints.size(), watchedHit, percHit * 100.0f );
 
@@ -252,7 +252,7 @@ void CCodeCheckpointDebugMgr::DrawDebugInfo()
 		else if(filterMin && (int)outputIt->m_currHitcount < filterMin)
 			continue;
 
-		pRenderer->Draw2dLabel(30.f, outputOffset * pRenderer->GetHeight(), 2.f, outputIt->m_queried? watchedColor : unwatchedColor, false, 
+		IRenderAuxText::Draw2dLabel(30.f, outputOffset * pRenderer->GetHeight(), 2.f, outputIt->m_queried? watchedColor : unwatchedColor, false,
 			"CheckPoint: %s Count:%i", outputIt->m_name.c_str(), outputIt->m_currHitcount);
 
 		//Update the display output height

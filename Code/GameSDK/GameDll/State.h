@@ -19,6 +19,7 @@ History:
 #define __State_h__
 
 #include <CryCore/CryFlags.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #include "AutoEnum.h"
 
@@ -119,7 +120,7 @@ public:
 		, m_debugContextAt(-1) { AddDebugContext( context ); }
 #endif
 
-	SStateEvent( const SStateEvent& rhs )	
+	SStateEvent( const SStateEvent& rhs )
 		: m_eventType(rhs.m_eventType)
 #ifdef STATE_DEBUG
 		, m_debugContextAt(rhs.m_debugContextAt)
@@ -141,7 +142,7 @@ public:
 
 #ifdef STATE_DEBUG
 	mutable int m_debugContextAt;
-	const SStateEvent& AddDebugContext(const SStateDebugContext& context ) const 
+	const SStateEvent& AddDebugContext(const SStateDebugContext& context ) const
 	{
 		if( m_debugContextAt == -1 && m_data.size()<m_data.max_size())
 		{
@@ -157,20 +158,20 @@ private:
 
 	int	m_eventType;
 #ifdef STATE_DEBUG
-	mutable 
+	mutable
 #endif
 		TStateEventData	m_data;
 };
 
 struct SStateEventSerialize : public SStateEvent
 {
-	explicit SStateEventSerialize( TSerialize& ser ) 
+	explicit SStateEventSerialize( TSerialize& ser )
 		:	SStateEvent( STATE_EVENT_SERIALIZE )
 	{
 		AddData( &ser );
 	}
 
-	ILINE TSerialize& GetSerializer() const 
+	ILINE TSerialize& GetSerializer() const
 	{
 		// Work O Devil.
 		const TSerialize* pSerialize = static_cast<const TSerialize*> (GetData(0).GetPtr());
@@ -265,14 +266,14 @@ struct SStateEventSerialize : public SStateEvent
 		{\
 			va_list args; \
 			va_start(args,n); \
-			gEnv->pRenderer->Draw2dLabel(horz, vert, 1.5f, state_white, false, n, args ); \
+			IRenderAuxText::Draw2dLabel(horz, vert, 1.5f, state_white, false, n, args ); \
 			va_end(args); \
 		}*/
 
 	#define STATE_DEBUG_EVENT_LOG( state, debugEvent, logit, colour, n, ... ) \
 		{\
 			const SStateDebugContext& stateDebugCtx = *static_cast<const SStateDebugContext*>(debugEvent.GetData(debugEvent.m_debugContextAt).GetPtr()); \
-			stateDebugCtx.m_renderer->Draw2dLabel(stateDebugCtx.m_baseHorizontal, stateDebugCtx.m_currentVertical, 1.5f, colour, false, n, __VA_ARGS__ ); \
+			IRenderAuxText::Draw2dLabel(stateDebugCtx.m_baseHorizontal, stateDebugCtx.m_currentVertical, 1.5f, colour, false, n, __VA_ARGS__ ); \
 			stateDebugCtx.m_currentVertical += 15.f; \
 			if( logit )	state->m_historyDebug.AddToHistory( n, __VA_ARGS__ ); \
 		}\
@@ -304,7 +305,7 @@ struct SStateEventSerialize : public SStateEvent
 
 #else
 	#define DebugInit( n )
-	#define STATE_DEBUG_LOG( n,m, ... ) 
+	#define STATE_DEBUG_LOG( n,m, ... )
 	#define STATE_DEBUG_EVENT_LOG( state, debugEvent, logit, colour, n, ... )
 	#define STATE_DEBUG_EVENT_LOG_TO_HISTORY( state, colour, n, ... )
 	#define STATE_DEBUG_APPEND_EVENT( e ) e
@@ -380,7 +381,7 @@ class CStateMachineRegistration
 
 	typedef std::vector<SStateFactory> TStateFactory;
 	TStateFactory m_factories;
-	
+
 public:
 
 	void RegisterState( typename CStateProxy<HOST>::CreateStatePtr createPtr, typename CStateProxy<HOST>::DeleteStatePtr deletePtr, const uint stateID )
@@ -432,7 +433,7 @@ struct SStateIndex
 		, m_func(0)
 		, m_parent(nullptr)
 		, m_stateID(UNDEFINED)
-		, m_hierarchy(UNDEFINED) 
+		, m_hierarchy(UNDEFINED)
 	{
 		DebugInit("UNDEFINED_NEED_TO_ADD_STATE_TO_HIERARCHY_BEFORE_TRANSITIONING_TO_IT");
 	}
@@ -442,7 +443,7 @@ struct SStateIndex
 		, m_func(0)
 		, m_parent(nullptr)
 		, m_stateID(0)
-		, m_hierarchy(0) 
+		, m_hierarchy(0)
 	{
 		DebugInit("UnknownHash");
 	}
@@ -464,7 +465,7 @@ struct SStateIndex
 		, m_stateID((1ULL << static_cast<uint64>(stateID)))
 		, m_hierarchy(0)
 	{
-		DebugInit(pName); 
+		DebugInit(pName);
 		RecursiveGenerateHierarchy(*this, m_hierarchy);
 	}
 
@@ -542,7 +543,7 @@ public:
 		RecursiveToCommon( host, pState->m_currentState, 0, pState, STATE_DEBUG_RAW_EVENT_LOG( pState, STATE_EVENT_EXIT ) );
 		RecursiveToCommon( host, pState->m_currentState, 0, pState, STATE_EVENT_RELEASE );
 	}
-	
+
 	static void StateTransition( HOST& host, CStateMachineRegistration<HOST>& stateMachineReg, STATE*& pActiveState )
 	{
 		STATE_DEBUG_LOG( pActiveState, "StateTransition: From: <%s> To: <%s>", pActiveState->m_currentState.m_pDebugName, pActiveState->m_pTransitionState->m_currentState.m_pDebugName );
@@ -645,7 +646,7 @@ public:
 			stateResult = CALL_SUBSTATE_FN( pState, currentState )( host, event );
 		}
 
-		do 
+		do
 		{
 			STATE_DEBUG_LOG( pState, "HandleEvent: Name: <%s> Event: <%d>", pState->m_currentState.m_pDebugName, event.GetEventId() );
 
@@ -811,7 +812,7 @@ private:
 			CStateHelper<HOST, CStateHierarchy<HOST> >::StateDelete( host, stateMachineReg, m_pTransitionStateHierarchy );
 		}
 	}
-	
+
 	bool TransitionFromCurrentToSubState( HOST& host, CStateMachineRegistration<HOST>& stateMachineReg, int64 stateHierarchy, int stateID, uint32 stateName )
 	{
 		if( (m_currentState.m_stateID != stateID) || (m_currentState.m_hierarchy != stateHierarchy) || (m_currentState.m_name != stateName) )
@@ -943,7 +944,7 @@ public:
 			//History
 			debugCtx.m_baseHorizontal = 450.0f;
 			debugCtx.m_currentVertical = 50.0f;
-			debugCtx.m_renderer->Draw2dLabel(debugCtx.m_baseHorizontal, debugCtx.m_currentVertical, 1.5f, white, false, "=== HISTORY ===" );
+			IRenderAuxText::Draw2dLabel(debugCtx.m_baseHorizontal, debugCtx.m_currentVertical, 1.5f, white, false, "=== HISTORY ===" );
 
 			debugCtx.m_baseHorizontal += 10.0f;
 
@@ -951,14 +952,14 @@ public:
 			{
 				debugCtx.m_currentVertical += 15.0f;
 
-				debugCtx.m_renderer->Draw2dLabel(debugCtx.m_baseHorizontal, debugCtx.m_currentVertical, 1.4f, white, false, "%s", m_pCurrentStateHierarchy->m_historyDebug.GetStateAt(i).c_str() );
+				IRenderAuxText::Draw2dLabel(debugCtx.m_baseHorizontal, debugCtx.m_currentVertical, 1.4f, white, false, "%s", m_pCurrentStateHierarchy->m_historyDebug.GetStateAt(i).c_str() );
 			}
 
 			for (int i = m_pCurrentStateHierarchy->m_historyDebug.GetBack(); i > m_pCurrentStateHierarchy->m_historyDebug.GetFront(); --i)
 			{
 				debugCtx.m_currentVertical += 15.0f;
 
-				debugCtx.m_renderer->Draw2dLabel(debugCtx.m_baseHorizontal, debugCtx.m_currentVertical, 1.4f, white, false, "%s", m_pCurrentStateHierarchy->m_historyDebug.GetStateAt(i).c_str() );
+				IRenderAuxText::Draw2dLabel(debugCtx.m_baseHorizontal, debugCtx.m_currentVertical, 1.4f, white, false, "%s", m_pCurrentStateHierarchy->m_historyDebug.GetStateAt(i).c_str() );
 			}
 
 			SStateEvent debugEvent( STATE_EVENT_DEBUG );
@@ -1177,10 +1178,10 @@ private:
 
 	#define DECLARE_STATE_CLASS_ADD( host, stateName ) \
 		const TStateIndex stateName( host& blah, const SStateEvent& event ); \
-		TStateIndex State_##stateName; 
+		TStateIndex State_##stateName;
 
 	#define DECLARE_STATE_CLASS_ADD_DUMMY( host, stateName ) \
-		TStateIndex State_##stateName; 
+		TStateIndex State_##stateName;
 
 	#define DECLARE_STATE_CLASS_END( host ) \
 		DECLARE_STATE_CLASS_ADD( host, Root )
@@ -1202,15 +1203,15 @@ private:
 		, m_subStateIndex(1) \
 		{\
 			State_Root = SStateIndex<host> ("Root", (CStateProxy<host>::StatePtr)&stateClass::Root, NULL, m_subStateIndex++ ); \
-			m_stateIndexContainer.push_back( &State_Root ); 
+			m_stateIndexContainer.push_back( &State_Root );
 
 	#define DEFINE_STATE_CLASS_ADD( host, stateClass, stateFunc, parentState )\
 		  State_##stateFunc = SStateIndex<host> (#stateFunc, (CStateProxy<host>::StatePtr)&stateClass::stateFunc, &State_##parentState, m_subStateIndex++ );\
-			m_stateIndexContainer.push_back( &State_##stateFunc ); 
+			m_stateIndexContainer.push_back( &State_##stateFunc );
 
 	#define DEFINE_STATE_CLASS_ADD_DUMMY( host, stateClass, stateDummy, stateFunc, parentState )\
 		  State_##stateDummy = SStateIndex<host> (#stateDummy, (CStateProxy<host>::StatePtr)&stateClass::stateFunc, &State_##parentState, m_subStateIndex++ );\
-			m_stateIndexContainer.push_back( &State_##stateDummy ); 
+			m_stateIndexContainer.push_back( &State_##stateDummy );
 
 	#define DEFINE_STATE_CLASS_END( host, stateClass )\
 		}\

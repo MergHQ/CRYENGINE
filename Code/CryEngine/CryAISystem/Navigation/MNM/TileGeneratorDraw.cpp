@@ -624,7 +624,7 @@ public:
 			{
 				ColorF textColor(Col_White);
 
-				gEnv->pRenderer->Draw2dLabel(screenPos.x, screenPos.y, 1.5f, (float*)&textColor, true, "%" PRISIZE_T, vtxIdx);
+				IRenderAuxText::Draw2dLabel(screenPos.x, screenPos.y, 1.5f, (float*)&textColor, true, "%" PRISIZE_T, vtxIdx);
 			}
 		}
 	};
@@ -743,8 +743,8 @@ public:
 		{
 			ColorF textColor(vcolor.pack_abgr8888());
 
-			gEnv->pRenderer->Draw2dLabel(screenPos.x, screenPos.y, 1.8f, (float*)&textColor, true, "%" PRISIZE_T, regionIndex);
-			gEnv->pRenderer->Draw2dLabel(screenPos.x, screenPos.y + 1.6f * 10.0f, 1.1f, (float*)&textColor, true,
+			IRenderAuxText::Draw2dLabel(screenPos.x, screenPos.y, 1.8f, (float*)&textColor, true, "%" PRISIZE_T, regionIndex);
+			IRenderAuxText::Draw2dLabel(screenPos.x, screenPos.y + 1.6f * 10.0f, 1.1f, (float*)&textColor, true,
 			                             "spans: %" PRISIZE_T " holes: %" PRISIZE_T, region.spanCount, region.holes.size());
 		}
 	}
@@ -1003,8 +1003,8 @@ void CTileGenerator::DrawSegmentation(const Vec3& origin, const bool bDrawAdditi
 			const ColorB vcolor = LabelColor()(i);
 			ColorF textColor(vcolor.pack_abgr8888());
 
-			gEnv->pRenderer->Draw2dLabel(screenPos.x, screenPos.y, 1.8f, (float*)&textColor, true, "%" PRISIZE_T, i);
-			gEnv->pRenderer->Draw2dLabel(screenPos.x, screenPos.y + 1.6f * 10.0f, 1.1f, (float*)&textColor, true,
+			IRenderAuxText::Draw2dLabel(screenPos.x, screenPos.y, 1.8f, (float*)&textColor, true, "%" PRISIZE_T, i);
+			IRenderAuxText::Draw2dLabel(screenPos.x, screenPos.y + 1.6f * 10.0f, 1.1f, (float*)&textColor, true,
 			                             "spans: %" PRISIZE_T " holes: %" PRISIZE_T, region.spanCount, region.holes.size());
 		}
 	}
@@ -1077,7 +1077,7 @@ void CTileGenerator::DrawSimplifiedContours(const Vec3& origin) const
 
 			renderAuxGeom->DrawLine(v0, vcolor, v1, vcolor, 8.0f);
 			renderAuxGeom->DrawSphere(v1, 0.025f, vcolor);
-			gEnv->pRenderer->DrawLabel(v1, 1.8f, "%d", (int)s);
+			IRenderAuxText::DrawLabel(v1, 1.8f, "%d", (int)s);
 
 			v0 = v1;
 		}

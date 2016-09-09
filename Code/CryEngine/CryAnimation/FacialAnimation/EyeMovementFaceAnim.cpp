@@ -262,7 +262,7 @@ void CEyeMovementFaceAnim::DisplayDebugInfoForEye(const QuatTS& rAnimLocationNex
 	Vec3 pos = rAnimLocationNext.t;
 	float color[4] = { 1, 1, 1, 1 };
 	pos += (pSkeletonPose ? pSkeletonPose->GetAbsJointByID(m_eyeBoneIDs[eye]).t : Vec3(ZERO));
-	g_pIRenderer->DrawLabelEx(pos, 2.0f, color, true, true, "%s", text.c_str());
+	IRenderAuxText::DrawLabelEx(pos, 2.0f, color, true, true, "%s", text.c_str());
 }
 
 void CEyeMovementFaceAnim::CalculateEyeAdditionalRotation(CCharInstance* pCharacter, CFaceState* pFaceState, CFacialEffectorsLibrary* pEffectorsLibrary, QuatT additionalRotation[EyeCOUNT])

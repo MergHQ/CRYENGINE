@@ -639,7 +639,7 @@ void CGameObject::DebugUpdateState()
 		pOut += sprintf(pOut, " force:%d", m_forceUpdate);
 	if (m_physDisableMode != eADPM_Never)
 		pOut += sprintf(pOut, " physDisable:%d", m_physDisableMode);
-	gEnv->pRenderer->Draw2dLabel(10, g_y += 10, 1, white, false, "%s", buf);
+	IRenderAuxText::Draw2dLabel(10, g_y += 10, 1, white, false, "%s", buf);
 	if (pTMC)
 		pTMC->PutText(0, g_TextModeY++, buf);
 
@@ -685,7 +685,7 @@ void CGameObject::DebugUpdateState()
 				}
 				if (ShouldUpdateSlot(&*iter, slot, slotbit, checkAIDisable))
 				{
-					gEnv->pRenderer->Draw2dLabel(20, g_y += 10, 1, white, false, "%s", buf);
+					IRenderAuxText::Draw2dLabel(20, g_y += 10, 1, white, false, "%s", buf);
 					if (pTMC)
 						pTMC->PutText(1, g_TextModeY++, buf);
 				}

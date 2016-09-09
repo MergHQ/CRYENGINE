@@ -81,7 +81,7 @@ void CPostProcessEffect::Update(float point)
 	gEnv->p3DEngine->SetPostEffectParam(m_paramName, m_currentVal);
 	
 	//const float white[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-	//gEnv->pRenderer->Draw2dLabel(50.0f, 50.0f, 2.0f, white, false, "Post Effect: %s Value = %.3f", m_paramName.c_str(), m_currentVal);
+	//IRenderAuxText::Draw2dLabel(50.0f, 50.0f, 2.0f, white, false, "Post Effect: %s Value = %.3f", m_paramName.c_str(), m_currentVal);
 }
 
 //---------------------------------

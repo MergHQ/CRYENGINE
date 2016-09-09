@@ -610,8 +610,8 @@ void CVehicleMovementTank::Update(const float deltaTime)
 				imp.angImpulse = worldTM.GetColumn2() * corr;
 
 				float color[] = {1,1,1,1};
-				gEnv->pRenderer->Draw2dLabel(300,300,1.5f,color,false,"err: %.2f ", err);
-				gEnv->pRenderer->Draw2dLabel(300,320,1.5f,color,false,"corr: %.3f", corr/m_statusDyn.mass);
+				IRenderAuxText::Draw2dLabel(300,300,1.5f,color,false,"err: %.2f ", err);
+				IRenderAuxText::Draw2dLabel(300,320,1.5f,color,false,"corr: %.3f", corr/m_statusDyn.mass);
 
 				IRenderAuxGeom* pGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 				float len = 4.f * imp.angImpulse.len() / deltaTime / m_statusDyn.mass;

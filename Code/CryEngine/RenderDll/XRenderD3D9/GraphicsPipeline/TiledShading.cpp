@@ -553,9 +553,9 @@ void CTiledShadingStage::Execute()
 	// Output debug information
 	if (CRenderer::CV_r_DeferredShadingTiledDebug == 1)
 	{
-		rd->Draw2dLabel(20, 60, 2.0f, Col_Blue, false, "Tiled Shading Debug");
-		rd->Draw2dLabel(20, 95, 1.7f, pTiledShading->m_numSkippedLights > 0 ? Col_Red : Col_Blue, false, "Skipped Lights: %i", pTiledShading->m_numSkippedLights);
-		rd->Draw2dLabel(20, 120, 1.7f, Col_Blue, false, "Atlas Updates: %i", pTiledShading->m_numAtlasUpdates);
+		IRenderAuxText::Draw2dLabel(20, 60, 2.0f, Col_Blue, false, "Tiled Shading Debug");
+		IRenderAuxText::Draw2dLabel(20, 95, 1.7f, pTiledShading->m_numSkippedLights > 0 ? Col_Red : Col_Blue, false, "Skipped Lights: %i", pTiledShading->m_numSkippedLights);
+		IRenderAuxText::Draw2dLabel(20, 120, 1.7f, Col_Blue, false, "Atlas Updates: %i", pTiledShading->m_numAtlasUpdates);
 	}
 
 	pTiledShading->m_bApplyCaustics = false;  // Reset flag

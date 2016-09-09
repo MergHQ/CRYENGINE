@@ -1764,17 +1764,16 @@ float CTimeDemoRecorder::RenderInfo(float y)
 
 	const char* sInfo = m_bPaused ? " (Paused)" : "";
 
-	IRenderer* pRenderer = gEnv->pRenderer;
 	if (m_bRecording)
 	{
 		// TO DO
 		float fColor[4] = { 0.7f, 0, 0, 1 };
-		pRenderer->Draw2dLabel(1, y, 1.3f, fColor, false, "Recording AutoTest%s", sInfo);
+		IRenderAuxText::Draw2dLabel(1, y, 1.3f, fColor, false, "Recording AutoTest%s", sInfo);
 	}
 	else if (m_bPlaying)
 	{
 		float fColor[4] = { 0, 0.7f, 0, 1 };
-		pRenderer->Draw2dLabel(1, y, 1.3f, fColor, false, "Playing AutoTest%s - Loop %d of %d, Orientation %d of %d", sInfo, (m_numLoops / m_numOrientations) + 1, m_maxLoops, (m_numLoops % m_numOrientations) + 1, m_numOrientations);
+		IRenderAuxText::Draw2dLabel(1, y, 1.3f, fColor, false, "Playing AutoTest%s - Loop %d of %d, Orientation %d of %d", sInfo, (m_numLoops / m_numOrientations) + 1, m_maxLoops, (m_numLoops % m_numOrientations) + 1, m_numOrientations);
 	}
 
 	y += 15;
@@ -1782,14 +1781,14 @@ float CTimeDemoRecorder::RenderInfo(float y)
 	if (m_bRecording)
 	{
 		float fColor[4] = { 1, 0, 0, 1 };
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TimeDemo%s, Frames: %d", sInfo, m_currentFrame);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TimeDemo%s, Frames: %d", sInfo, m_currentFrame);
 		retY += 15;
 	}
 	else if (m_bPlaying)
 	{
 		int numFrames = GetNumFrames();
 		float fColor[4] = { 0, 1, 0, 1 };
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TimeDemo%s, Frame %d of %d", sInfo, m_currentFrame, numFrames);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TimeDemo%s, Frame %d of %d", sInfo, m_currentFrame, numFrames);
 		retY += 15;
 
 		float aveFrameRate = GetAverageFrameRate();
@@ -1798,14 +1797,14 @@ float CTimeDemoRecorder::RenderInfo(float y)
 		float polyRatio = m_nTotalPolysPlayed ? (float)m_nTotalPolysRecorded / m_nTotalPolysPlayed : 0.0f;
 		//int numFrames = GetNumFrames();
 
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TestProfiler%s, Frame %d", sInfo, m_currentFrame);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, "TestProfiler%s, Frame %d", sInfo, m_currentFrame);
 		retY += 15;
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Last Played Length: %.2fs, FPS: %.2f", m_lastPlayedTotalTime, m_lastAveFrameRate);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Last Played Length: %.2fs, FPS: %.2f", m_lastPlayedTotalTime, m_lastAveFrameRate);
 		retY += 15;
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Average FPS: %.2f, FPS: %.2f, Polys/Frame: %d", aveFrameRate, m_currFPS, m_nCurrPolys);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Average FPS: %.2f, FPS: %.2f, Polys/Frame: %d", aveFrameRate, m_currFPS, m_nCurrPolys);
 		retY += 15;
 
-		pRenderer->Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Polys Rec/Play Ratio: %.2f", polyRatio);
+		IRenderAuxText::Draw2dLabel(1, y + retY, 1.3f, fColor, false, " Polys Rec/Play Ratio: %.2f", polyRatio);
 		retY += 15;
 	}
 

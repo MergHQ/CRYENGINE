@@ -243,7 +243,7 @@ void CPerfHUD::Draw()
 			if ((gEnv->pRenderer->GetFrameID(false) % 40) < 20)
 			{
 				float col[4] = { 1.f, 1.f, 0.f, 1.f };
-				gEnv->pRenderer->Draw2dLabel(500.f, 220.f, 2.f, col, false, "PefHUD Paused");
+				IRenderAuxText::Draw2dLabel(500.f, 220.f, 2.f, col, false, "PefHUD Paused");
 			}
 		}
 		else //Update
@@ -746,8 +746,8 @@ bool CPerfHUD::OnInputEvent(const SInputEvent& rInputEvent)
 				}
 
 				float col[4] = { 1.f, 1.f, 1.f, 1.f };
-				gEnv->pRenderer->Draw2dLabel(450.f, 200.f, 2.f, col, false, "%s", hudStateStr);
-				gEnv->pRenderer->Draw2dLabel(450.f, 220.f, 2.f, col, false, "Press X to change Mode");
+				IRenderAuxText::Draw2dLabel(450.f, 200.f, 2.f, col, false, "%s", hudStateStr);
+				IRenderAuxText::Draw2dLabel(450.f, 220.f, 2.f, col, false, "Press X to change Mode");
 			}
 		}
 		else if (rInputEvent.state == eIS_Released)

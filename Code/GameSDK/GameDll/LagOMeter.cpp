@@ -224,7 +224,7 @@ void CLagOMeter::Update() PREFAST_SUPPRESS_WARNING (6262)
 		float alpha = m_timeSinceLastPerceivedLagEvent < 1.0f ? m_timeSinceLastPerceivedLagEvent: 1.0f;
 
 		ColorF textCol(1.0f,1.0f,1.0f,alpha);
-		gEnv->pRenderer->Draw2dLabel(textPos.x, textPos.y, 2.0f, textCol, false, "PERCEIVED LAG EVENT RECORDED");
+		IRenderAuxText::Draw2dLabel(textPos.x, textPos.y, 2.0f, textCol, false, "PERCEIVED LAG EVENT RECORDED");
 
 		m_timeSinceLastPerceivedLagEvent -= dt;
 	}

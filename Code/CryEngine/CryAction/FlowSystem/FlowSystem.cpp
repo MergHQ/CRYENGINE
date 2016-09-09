@@ -517,8 +517,8 @@ void CFlowSystem::Update()
 #ifdef SHOW_FG_CRITICAL_LOADING_ERROR_ON_SCREEN
 	if (m_criticalLoadingErrorHappened && !gEnv->IsEditor() && gEnv->pRenderer)
 	{
-		gEnv->pRenderer->Draw2dLabel(10, 30, 2, Col_Red, false, "CRITICAL ERROR. SOME FLOWGRAPHS HAVE BEEN DISCARDED");
-		gEnv->pRenderer->Draw2dLabel(10, 50, 2, Col_Red, false, "LEVEL LOGIC COULD BE DAMAGED. check log for more info.");
+		IRenderAuxText::Draw2dLabel(10, 30, 2, Col_Red, false, "CRITICAL ERROR. SOME FLOWGRAPHS HAVE BEEN DISCARDED");
+		IRenderAuxText::Draw2dLabel(10, 50, 2, Col_Red, false, "LEVEL LOGIC COULD BE DAMAGED. check log for more info.");
 	}
 #endif
 
@@ -616,11 +616,10 @@ void CFlowSystem::UpdateGraphs()
 #ifndef _RELEASE
 	if (m_cVars.m_profile != 0)
 	{
-		IRenderer* pRend = gEnv->pRenderer;
 		float white[4] = { 1, 1, 1, 1 };
-		pRend->Draw2dLabel(10, 100, 2, white, false, "Number of Flow Graphs Updated: %d", FGProfile.graphsUpdated);
-		pRend->Draw2dLabel(10, 120, 2, white, false, "Number of Flow Graph Nodes Updated: %d", FGProfile.nodeUpdates);
-		pRend->Draw2dLabel(10, 140, 2, white, false, "Number of Flow Graph Nodes Activated: %d", FGProfile.nodeActivations);
+		IRenderAuxText::Draw2dLabel(10, 100, 2, white, false, "Number of Flow Graphs Updated: %d", FGProfile.graphsUpdated);
+		IRenderAuxText::Draw2dLabel(10, 120, 2, white, false, "Number of Flow Graph Nodes Updated: %d", FGProfile.nodeUpdates);
+		IRenderAuxText::Draw2dLabel(10, 140, 2, white, false, "Number of Flow Graph Nodes Activated: %d", FGProfile.nodeActivations);
 	}
 	FGProfile.Reset();
 #endif //_RELEASE

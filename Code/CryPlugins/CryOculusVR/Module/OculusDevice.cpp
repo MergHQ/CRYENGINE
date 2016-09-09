@@ -9,6 +9,7 @@
 
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IStereoRenderer.h>
+#include "CryRenderer/IRenderAuxGeom.h"
 
 #include <d3d11.h>
 #include <d3d12.h>
@@ -598,11 +599,6 @@ void Device::PrintHmdInfo()
 // -------------------------------------------------------------------------
 void Device::DebugDraw(float& xPosLabel, float& yPosLabel) const
 {
-	IRenderer* pRenderer = gEnv->pRenderer;
-
-	if (!pRenderer)
-		return;
-
 	// Basic info
 	const float yPos = yPosLabel, xPosData = xPosLabel, yDelta = 20.f;
 	float y = yPos;
@@ -611,18 +607,18 @@ void Device::DebugDraw(float& xPosLabel, float& yPosLabel) const
 	const ColorF fColorInfo(0.0f, 1.0f, 0.0f, 1.0f);
 	const ColorF fColorDataPose(0.0f, 1.0f, 1.0f, 1.0f);
 
-	pRenderer->Draw2dLabel(xPosLabel, y, 1.3f, fColorLabel, false, "Oculus Hmd Info:");
+	IRenderAuxText::Draw2dLabel(xPosLabel, y, 1.3f, fColorLabel, false, "Oculus Hmd Info:");
 	y += yDelta;
 
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorIdInfo, false, "Device:%s (%u)-Manufacturer:%s", m_hmdDesc.ProductName ? m_hmdDesc.ProductName : "unknown", m_hmdDesc.Type, m_hmdDesc.Manufacturer ? m_hmdDesc.Manufacturer : "unknown");
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorIdInfo, false, "Device:%s (%u)-Manufacturer:%s", m_hmdDesc.ProductName ? m_hmdDesc.ProductName : "unknown", m_hmdDesc.Type, m_hmdDesc.Manufacturer ? m_hmdDesc.Manufacturer : "unknown");
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorIdInfo, false, "VendorId:%d-ProductId:%d-Firmware: %d.%d-SerialNumber: %s", m_hmdDesc.VendorId, m_hmdDesc.ProductId, m_hmdDesc.FirmwareMajor, m_hmdDesc.FirmwareMinor, m_hmdDesc.SerialNumber);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorIdInfo, false, "VendorId:%d-ProductId:%d-Firmware: %d.%d-SerialNumber: %s", m_hmdDesc.VendorId, m_hmdDesc.ProductId, m_hmdDesc.FirmwareMajor, m_hmdDesc.FirmwareMinor, m_hmdDesc.SerialNumber);
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorInfo, false, "Resolution: %dx%d", m_hmdDesc.Resolution.w, m_hmdDesc.Resolution.h);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorInfo, false, "Resolution: %dx%d", m_hmdDesc.Resolution.w, m_hmdDesc.Resolution.h);
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorInfo, false, "FOV (degrees): H:%.2f - V:%.2f", RAD2DEG(m_devInfo.fovH), RAD2DEG(m_devInfo.fovV));
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorInfo, false, "FOV (degrees): H:%.2f - V:%.2f", RAD2DEG(m_devInfo.fovH), RAD2DEG(m_devInfo.fovV));
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorInfo, false, "Caps: Rot tracking [%s], Mag Yaw correction [%s], Pos tracking [%s]",
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorInfo, false, "Caps: Rot tracking [%s], Mag Yaw correction [%s], Pos tracking [%s]",
 	                       (m_hmdDesc.AvailableTrackingCaps & ovrTrackingCap_Orientation) ? "supported" : "unsupported",
 	                       (m_hmdDesc.AvailableTrackingCaps & ovrTrackingCap_MagYawCorrection) ? "supported" : "unsupported",
 	                       (m_hmdDesc.AvailableTrackingCaps & ovrTrackingCap_Position) ? "supported" : "unsupported"
@@ -632,9 +628,9 @@ void Device::DebugDraw(float& xPosLabel, float& yPosLabel) const
 	const Vec3 hmdPos = m_localTrackingState.pose.position;
 	const Ang3 hmdRotAng(m_localTrackingState.pose.orientation);
 	const Vec3 hmdRot(RAD2DEG(hmdRotAng));
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "HmdPos(LS):[%.f,%f,%f]", hmdPos.x, hmdPos.y, hmdPos.z);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "HmdPos(LS):[%.f,%f,%f]", hmdPos.x, hmdPos.y, hmdPos.z);
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "HmdRot(LS):[%.f,%f,%f] (PRY) degrees", hmdRot.x, hmdRot.y, hmdRot.z);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "HmdRot(LS):[%.f,%f,%f] (PRY) degrees", hmdRot.x, hmdRot.y, hmdRot.z);
 	y += yDelta;
 
 	yPosLabel = y;

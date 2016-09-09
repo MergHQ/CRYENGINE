@@ -4237,7 +4237,7 @@ void CRenderer::EF_PrintRTStats(const char* szName)
 	int nY = 30; // initial Y pos
 	int nX = 20; // initial X pos
 	ColorF col = Col_Green;
-	Draw2dLabel((float)nX, (float)nY, 1.6f, &col.r, false, "%s", szName);
+	IRenderAuxText::Draw2dLabel((float)nX, (float)nY, 1.6f, &col.r, false, "%s", szName);
 	nX += 10;
 	nY += 25;
 
@@ -4248,7 +4248,7 @@ void CRenderer::EF_PrintRTStats(const char* szName)
 	{
 		SRTargetStat* pRT = &m_RP.m_RTStats[i];
 
-		Draw2dLabel((float)nX, (float)nY, 1.4f, &col.r, false, "%s (%d x %d x %s), Size: %.3f Mb", pRT->m_Name.c_str(), pRT->m_nWidth, pRT->m_nHeight, CTexture::NameForTextureFormat(pRT->m_eTF), (float)pRT->m_nSize / 1024.0f / 1024.0f);
+		IRenderAuxText::Draw2dLabel((float)nX, (float)nY, 1.4f, &col.r, false, "%s (%d x %d x %s), Size: %.3f Mb", pRT->m_Name.c_str(), pRT->m_nWidth, pRT->m_nHeight, CTexture::NameForTextureFormat(pRT->m_eTF), (float)pRT->m_nSize / 1024.0f / 1024.0f);
 		nY += nYstep;
 		if (nY >= m_height - 25)
 		{
@@ -4258,7 +4258,7 @@ void CRenderer::EF_PrintRTStats(const char* szName)
 		nSize += pRT->m_nSize;
 	}
 	col = Col_Yellow;
-	Draw2dLabel((float)nX, (float)(nY + 10), 1.4f, &col.r, false, "Total: %d RT's, Size: %.3f Mb", m_RP.m_RTStats.size(), nSize / 1024.0f / 1024.0f);
+	IRenderAuxText::Draw2dLabel((float)nX, (float)(nY + 10), 1.4f, &col.r, false, "Total: %d RT's, Size: %.3f Mb", m_RP.m_RTStats.size(), nSize / 1024.0f / 1024.0f);
 }
 
 bool CTexture::IsMSAAChanged()

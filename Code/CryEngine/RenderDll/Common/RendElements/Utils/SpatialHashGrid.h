@@ -265,7 +265,7 @@ void CSpatialHashGrid<T, GridSize, BucketSize >::DebugDraw()
 				textCol.b = textCol.b * 0.4f + 0.6f;
 			}
 
-			gEnv->pRenderer->Draw2dLabel(x, y, 1.0f, &textCol.r, false, "%i", count);
+			IRenderAuxText::Draw2dLabel(x, y, 1.0f, &textCol.r, false, "%i", count);
 			y += 15.0f;
 		}
 

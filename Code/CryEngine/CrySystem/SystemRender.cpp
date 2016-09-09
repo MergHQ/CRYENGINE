@@ -360,11 +360,11 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 				  dt = gEnv->pTimer->TicksToSeconds(pInfos[i].nTicksAvg) * 1000.0f, pInfos[i].nCallsAvg,
 				  gEnv->pTimer->TicksToSeconds(pInfos[i].nTicksPeak) * 1000.0f, pInfos[i].nCallsPeak,
 				  pInfos[i].pName ? pInfos[i].pName : "", pInfos[i].id);
-				GetIRenderer()->Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false, "%s", msgbuf);
+				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false, "%s", msgbuf);
 				if (pTMC) pTMC->PutText(0, i, msgbuf);
 				IPhysicalEntity* pent = pWorld->GetPhysicalEntityById(pInfos[i].id);
 				if (dt > 0.1f && pInfos[i].pName && pent && pent->GetStatus(&sp))
-					GetIRenderer()->DrawLabelEx(sp.pos + Vec3(0, 0, sp.BBox[1].z), 1.4f, fColor, true, true, "%s %.2fms", pInfos[i].pName, dt);
+					IRenderAuxText::DrawLabelEx(sp.pos + Vec3(0, 0, sp.BBox[1].z), 1.4f, fColor, true, true, "%s %.2fms", pInfos[i].pName, dt);
 				pInfos[i].peakAge = pInfos[i].peakAge + 1 & ~mask;
 				//pInfos[i].nCalls=pInfos[i].nTicks = 0;
 			}
@@ -396,7 +396,7 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 				mask                 |= (70 - pInfos[j].peakAge) >> 31;
 				pInfos[j].nTicksPeak += pInfos[j].nTicks - pInfos[j].nTicksPeak & mask;
 				pInfos[j].nCallsPeak += pInfos[j].nCalls - pInfos[j].nCallsPeak & mask;
-				GetIRenderer()->Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false,
+				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false,
 				  "%s %.2fms/%d (peak %.2fms/%d)", pInfos[j].pName, gEnv->pTimer->TicksToSeconds(pInfos[j].nTicks) * 1000.0f, pInfos[j].nCalls,
 				  gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksPeak) * 1000.0f, pInfos[j].nCallsPeak);
 				pInfos[j].peakAge = pInfos[j].peakAge + 1 & ~mask;
@@ -420,7 +420,7 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 				float time     = gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksAvg) * 1000.0f;
 				float timeNorm = time * (1.0f / 32);
 				fColor[1] = fColor[2] = 1.0f - (max(0.7f, min(1.0f, timeNorm)) - 0.7f) * (1.0f / 0.3f);
-				GetIRenderer()->Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false,
+				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false,
 				  "%s %.2fms/%d (peak %.2fms/%d)", pInfos[j].pName, time, pInfos[j].nCallsLast,
 				  gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksPeak) * 1000.0f, pInfos[j].nCallsPeak);
 				pInfos[j].peakAge = pInfos[j].peakAge + 1 & ~mask;
@@ -1000,15 +1000,15 @@ void CSystem::RenderThreadInfo()
 		ColorF col2   = Col_Red;
 
 		for (int i = 0; i < maxCPU; ++i)
-			gEnv->pRenderer->Draw2dLabel(nX + i * dX, nY, fFSize, i < maxAvailCPU ? &col1.r : &col2.r, false, "%i", i + 1);
+			IRenderAuxText::Draw2dLabel(nX + i * dX, nY, fFSize, i < maxAvailCPU ? &col1.r : &col2.r, false, "%i", i + 1);
 
 		nY += dY;
 		for (std::multimap<DWORD, SThreadProcessorInfo>::const_iterator it = sortetThreads.begin(); it != sortetThreads.end(); ++it)
 		{
 			for (int i = 0; i < maxCPU; ++i)
-				gEnv->pRenderer->Draw2dLabel(nX + i * dX, nY, fFSize, i < maxAvailCPU ? &col1.r : &col2.r, false, "%s", it->first & BIT(i) ? "X" : "-");
+				IRenderAuxText::Draw2dLabel(nX + i * dX, nY, fFSize, i < maxAvailCPU ? &col1.r : &col2.r, false, "%s", it->first & BIT(i) ? "X" : "-");
 
-			gEnv->pRenderer->Draw2dLabel(nX + dX * maxCPU, nY, fFSize, &col1.r, false, "Thread: %s (0x%X)", it->second.name.c_str(), it->second.id);
+			IRenderAuxText::Draw2dLabel(nX + dX * maxCPU, nY, fFSize, &col1.r, false, "Thread: %s (0x%X)", it->second.name.c_str(), it->second.id);
 			nY += dY;
 		}
 	}

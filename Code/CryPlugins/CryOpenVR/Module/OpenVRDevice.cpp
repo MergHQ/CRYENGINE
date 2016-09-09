@@ -711,11 +711,6 @@ void Device::CreateDevice()
 // -------------------------------------------------------------------------
 void Device::DebugDraw(float& xPosLabel, float& yPosLabel) const
 {
-	IRenderer* pRenderer = gEnv->pRenderer;
-
-	if (!pRenderer)
-		return;
-
 	// Basic info
 	const float yPos = yPosLabel, xPosData = xPosLabel, yDelta = 20.f;
 	float y = yPos;
@@ -724,24 +719,24 @@ void Device::DebugDraw(float& xPosLabel, float& yPosLabel) const
 	const ColorF fColorInfo(0.0f, 1.0f, 0.0f, 1.0f);
 	const ColorF fColorDataPose(0.0f, 1.0f, 1.0f, 1.0f);
 
-	pRenderer->Draw2dLabel(xPosLabel, y, 1.3f, fColorLabel, false, "OpenVR HMD Info:");
+	IRenderAuxText::Draw2dLabel(xPosLabel, y, 1.3f, fColorLabel, false, "OpenVR HMD Info:");
 	y += yDelta;
 
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorIdInfo, false, "Device:%ss", m_devInfo.productName ? m_devInfo.productName : "unknown");
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorIdInfo, false, "Device:%ss", m_devInfo.productName ? m_devInfo.productName : "unknown");
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorIdInfo, false, "Manufacturer:%s", m_devInfo.manufacturer ? m_devInfo.manufacturer : "unknown");
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorIdInfo, false, "Manufacturer:%s", m_devInfo.manufacturer ? m_devInfo.manufacturer : "unknown");
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorInfo, false, "Resolution: %dx%d", m_devInfo.screenWidth, m_devInfo.screenHeight);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorInfo, false, "Resolution: %dx%d", m_devInfo.screenWidth, m_devInfo.screenHeight);
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorInfo, false, "FOV (degrees): H:%.2f - V:%.2f", m_devInfo.fovH * 180.0f / gf_PI, m_devInfo.fovV * 180.0f / gf_PI);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorInfo, false, "FOV (degrees): H:%.2f - V:%.2f", m_devInfo.fovH * 180.0f / gf_PI, m_devInfo.fovV * 180.0f / gf_PI);
 	y += yDelta;
 
 	const Vec3 hmdPos = m_localStates[vr::k_unTrackedDeviceIndex_Hmd].pose.position;
 	const Ang3 hmdRotAng(m_localStates[vr::k_unTrackedDeviceIndex_Hmd].pose.orientation);
 	const Vec3 hmdRot(RAD2DEG(hmdRotAng));
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "HmdPos(LS):[%.f,%f,%f]", hmdPos.x, hmdPos.y, hmdPos.z);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "HmdPos(LS):[%.f,%f,%f]", hmdPos.x, hmdPos.y, hmdPos.z);
 	y += yDelta;
-	pRenderer->Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "HmdRot(LS):[%.f,%f,%f] (PRY) degrees", hmdRot.x, hmdRot.y, hmdRot.z);
+	IRenderAuxText::Draw2dLabel(xPosData, y, 1.3f, fColorDataPose, false, "HmdRot(LS):[%.f,%f,%f] (PRY) degrees", hmdRot.x, hmdRot.y, hmdRot.z);
 	y += yDelta;
 
 	yPosLabel = y;

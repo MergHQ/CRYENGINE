@@ -1031,14 +1031,14 @@ void CFlightNavRegion2::DrawPath(const std::vector<Vec3>& path)
 		uint32 num = path.size();
 		char buffer[16];
 		cry_sprintf(buffer, "%d", --num);
-		gEnv->pRenderer->DrawLabel(*segmentStart, 2.0f, "%s", buffer);
+		IRenderAuxText::DrawLabel(*segmentStart, 2.0f, "%s", buffer);
 
 		for (; path.end() != segmentEnd; ++segmentEnd, ++segmentStart)
 		{
 			gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(*segmentStart, c, *segmentEnd, c, 20.0f);
 
 			cry_sprintf(buffer, "%d", --num);
-			gEnv->pRenderer->DrawLabel(*segmentEnd, 2.0f, "%s", buffer);
+			IRenderAuxText::DrawLabel(*segmentEnd, 2.0f, "%s", buffer);
 		}
 	}
 }
@@ -1226,7 +1226,7 @@ void CFlightNavRegion2::DebugDraw() const
 						uint32 num = path.size();
 						char buffer[16];
 						cry_sprintf(buffer, "(%d, %d, %d)", coord.x, coord.y, coord.z);
-						gEnv->pRenderer->DrawLabel(center, 2.0f, "%s", buffer);
+						IRenderAuxText::DrawLabel(center, 2.0f, "%s", buffer);
 
 						std::vector<Vec3i>::const_iterator coordsNext = coords + 1;
 

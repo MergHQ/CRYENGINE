@@ -3417,7 +3417,7 @@ void CMergedMeshRenderNode::DebugRender(int nLod)
 					nVerts += m_renderMeshes[t][i].vertices;
 					nChunks += m_renderMeshes[t][i].chunks;
 				}
-			gEnv->pRenderer->DrawLabel(m_pos, 1.2f, "vb %d ib %d\nsize %3.1f kb\nlod %d ch %d"
+			IRenderAuxText::DrawLabel(m_pos, 1.2f, "vb %d ib %d\nsize %3.1f kb\nlod %d ch %d"
 			                           , nVerts
 			                           , nInds
 			                           , (m_SizeInVRam) / 1024.f

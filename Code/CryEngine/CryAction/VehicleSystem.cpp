@@ -604,7 +604,6 @@ void CVehicleSystem::Update(float deltaTime)
 #if ENABLE_VEHICLE_DEBUG
 	if (VehicleCVars().v_debug_mem > 0)
 	{
-		IRenderer* pRenderer = gEnv->pRenderer;
 		float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		ICrySizer* pSizer = gEnv->pSystem->CreateSizer();
 
@@ -615,7 +614,7 @@ void CVehicleSystem::Update(float deltaTime)
 				it->second->GetMemoryUsage(pSizer);
 		}
 
-		pRenderer->Draw2dLabel(15.0f, 10.0f, 2.0f, color, false, "Vehicle system takes %" PRISIZE_T " bytes for its c++ side.", pSizer->GetTotalSize());
+		IRenderAuxText::Draw2dLabel(15.0f, 10.0f, 2.0f, color, false, "Vehicle system takes %" PRISIZE_T " bytes for its c++ side.", pSizer->GetTotalSize());
 
 		pSizer->Release();
 	}

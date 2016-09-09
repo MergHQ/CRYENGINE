@@ -75,7 +75,7 @@ static void RenderThreadSpan(SThreadProfilerRenderInfo& ri)
 	float half = 7;
 
 	float fColorThreadName[4] = { ri.clrThreadName.r / 255.0f, ri.clrThreadName.g / 255.0f, ri.clrThreadName.b / 255.0f, 1.f };
-	gEnv->pRenderer->Draw2dLabel(1, ri.y, ri.fTextSize, fColorThreadName, false, "%s, %d(ms)", ri.sThreadName, ri.threadTime);
+	IRenderAuxText::Draw2dLabel(1, ri.y, ri.fTextSize, fColorThreadName, false, "%s, %d(ms)", ri.sThreadName, ri.threadTime);
 
 	float ly = ri.y + ri.fLineHeight / 2.0f;
 	pAux->DrawLine(Vec3(ri.fLeftGraphOffset, ly, 0), ri.clrLine, Vec3(ri.width, ly, 0), ri.clrLine);
@@ -157,7 +157,7 @@ void CThreadProfiler::Render()
 	base_y = height - (m_nDisplayedThreads) * szy - 5;
 
 	{
-		//gEnv->pRenderer->Draw2dLabel( 1,base_y,fTextSize,colInfo1,false,"Context Switches per sec:%d",contextSwitches );
+		//IRenderAuxText::Draw2dLabel( 1,base_y,fTextSize,colInfo1,false,"Context Switches per sec:%d",contextSwitches );
 		//base_y += szy*2;
 	}
 
@@ -166,10 +166,10 @@ void CThreadProfiler::Render()
 	{
 		nContextSwitchesTotal += snapshotInfo->m_procNumCtxtSwitches[cpu];
 	}
-	gEnv->pRenderer->Draw2dLabel(1, base_y - szy, fTextSize, colHeader, false, "Context Switches: %d", nContextSwitchesTotal);
+	IRenderAuxText::Draw2dLabel(1, base_y - szy, fTextSize, colHeader, false, "Context Switches: %d", nContextSwitchesTotal);
 	for (uint32 cpu = 0; cpu < snapshotInfo->m_procNumCtxtSwitches.size(); cpu++)
 	{
-		gEnv->pRenderer->Draw2dLabel((float)(200 + cpu * 100), (float)(base_y - szy), fTextSize, colHeader, false, "Core%d: %d", cpu, snapshotInfo->m_procNumCtxtSwitches[cpu]);
+		IRenderAuxText::Draw2dLabel((float)(200 + cpu * 100), (float)(base_y - szy), fTextSize, colHeader, false, "Core%d: %d", cpu, snapshotInfo->m_procNumCtxtSwitches[cpu]);
 	}
 
 	char str[128];

@@ -693,7 +693,7 @@ float CNetPlayerInput::CalculatePseudoSpeed() const
 	const float XPOS = 500.0f;
 	const float YPOS = 100.0f;
 	const float COLOUR[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, 2.0f, COLOUR, false, "CurSpeed: %.2f CurISpeed: %f PS: %.2f", actualSpeed, inputSpeed, pseudoSpeed);
+	IRenderAuxText::Draw2dLabel(XPOS, YPOS, 2.0f, COLOUR, false, "CurSpeed: %.2f CurISpeed: %f PS: %.2f", actualSpeed, inputSpeed, pseudoSpeed);
 #endif 
 
 	return pseudoSpeed;

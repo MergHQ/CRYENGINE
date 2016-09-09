@@ -1899,19 +1899,19 @@ void CActionController::DebugDraw() const
 	const SControllerDef& controllerDef = m_context.controllerDef;
 	if (m_flags & AC_PausedUpdate)
 	{
-		gEnv->pRenderer->Draw2dLabel(XPOS_SCOPELIST, ypos, FONT_SIZE, FONT_COLOUR, false, "[PAUSED ACTION CONTROLLER]");
+		IRenderAuxText::Draw2dLabel(XPOS_SCOPELIST, ypos, FONT_SIZE, FONT_COLOUR, false, "[PAUSED ACTION CONTROLLER]");
 		ypos += YINC;
 	}
 	CryStackStringT<char, 1024> sTagState;
 	m_context.controllerDef.m_tags.FlagsToTagList(m_context.state.GetMask(), sTagState);
-	gEnv->pRenderer->Draw2dLabel(XPOS_SCOPELIST, ypos, FONT_SIZE, FONT_COLOUR, false, "TagState: %s", sTagState.c_str());
+	IRenderAuxText::Draw2dLabel(XPOS_SCOPELIST, ypos, FONT_SIZE, FONT_COLOUR, false, "TagState: %s", sTagState.c_str());
 	ypos += YINC;
 
 	for (uint32 i = 0; i < m_context.subStates.size(); i++)
 	{
 		CryStackStringT<char, 1024> sSubState;
 		m_context.controllerDef.m_tags.FlagsToTagList(m_context.subStates[i].GetMask(), sSubState);
-		gEnv->pRenderer->Draw2dLabel(XPOS_SCOPELIST, ypos, FONT_SIZE, FONT_COLOUR, false, "%s: %s", controllerDef.m_subContextIDs.GetTagName(i), sSubState.c_str());
+		IRenderAuxText::Draw2dLabel(XPOS_SCOPELIST, ypos, FONT_SIZE, FONT_COLOUR, false, "%s: %s", controllerDef.m_subContextIDs.GetTagName(i), sSubState.c_str());
 		ypos += YINC;
 	}
 	ypos += YINC;
@@ -1988,7 +1988,7 @@ void CActionController::DebugDraw() const
 		}
 
 		float *colour = (m_activeScopes & BIT64(1<<i)) ? FONT_COLOUR : FONT_COLOUR_INACTIVE;
-		gEnv->pRenderer->Draw2dLabel(XPOS_SCOPELIST, ypos, FONT_SIZE, colour, false, "%s:", scope.m_name.c_str());
+		IRenderAuxText::Draw2dLabel(XPOS_SCOPELIST, ypos, FONT_SIZE, colour, false, "%s:", scope.m_name.c_str());
 
 		CryStackStringT<char, 1024> sExitingAction;
 		if (scope.m_pExitingAction)
@@ -1996,9 +1996,9 @@ void CActionController::DebugDraw() const
 
 		sExitingAction += scope.m_pAction ? scope.m_pAction->GetName() : " --- ";
 		if (scope.m_pAction)
-			gEnv->pRenderer->Draw2dLabel(XPOS_SCOPEACTIONLIST, ypos, FONT_SIZE, colour, false, "%s \t%s(%s)\tP: %d %d TR: %f", sExitingAction.c_str(), fragName, sMessage.c_str(), scope.m_pAction ? scope.m_pAction->GetPriority() : 0, scope.m_pAction ? scope.m_pAction->m_refCount : 0, scope.CalculateFragmentTimeRemaining());
+			IRenderAuxText::Draw2dLabel(XPOS_SCOPEACTIONLIST, ypos, FONT_SIZE, colour, false, "%s \t%s(%s)\tP: %d %d TR: %f", sExitingAction.c_str(), fragName, sMessage.c_str(), scope.m_pAction ? scope.m_pAction->GetPriority() : 0, scope.m_pAction ? scope.m_pAction->m_refCount : 0, scope.CalculateFragmentTimeRemaining());
 		else
-			gEnv->pRenderer->Draw2dLabel(XPOS_SCOPEACTIONLIST, ypos, FONT_SIZE, colour, false, "%s", sExitingAction.c_str());
+			IRenderAuxText::Draw2dLabel(XPOS_SCOPEACTIONLIST, ypos, FONT_SIZE, colour, false, "%s", sExitingAction.c_str());
 		ypos += YINC;
 
 		if (scope.m_scopeContext.pCharInst)
@@ -2024,7 +2024,7 @@ void CActionController::DebugDraw() const
 						{
 							colourA = FONT_COLOUR_ANIM_INSTALLED;
 						}
-						gEnv->pRenderer->Draw2dLabel(xpos, ypos, FONT_SIZE_ANIMLIST, colourA, false, "%s", animName);
+						IRenderAuxText::Draw2dLabel(xpos, ypos, FONT_SIZE_ANIMLIST, colourA, false, "%s", animName);
 						xpos += XPOS_SCOPELIST + (letterCount * XINC_PER_LETTER);
 					}
 					ypos += YINC_SEQUENCE;
@@ -2068,7 +2068,7 @@ void CActionController::DebugDraw() const
 						if (!infoString.IsEmpty())
 							sTypename += "(" + CryStackStringT<char, 1024>(infoString.c_str()) + ")";
 
-						gEnv->pRenderer->Draw2dLabel(xpos, ypos, FONT_SIZE_ANIMLIST, colourA, false, "%s", sTypename.c_str());
+						IRenderAuxText::Draw2dLabel(xpos, ypos, FONT_SIZE_ANIMLIST, colourA, false, "%s", sTypename.c_str());
 						xpos += XPOS_SCOPELIST + (letterCount * XINC_PER_LETTER);
 					}
 				}
@@ -2098,7 +2098,7 @@ void CActionController::DebugDraw() const
 	g_mannequinYPosEnd = ypos;
 
 	ypos = YPOS;
-	gEnv->pRenderer->Draw2dLabel(XPOS_QUEUE, ypos, FONT_SIZE, FONT_COLOUR_ACTION_QUEUE, false, "Pending Action Queue");
+	IRenderAuxText::Draw2dLabel(XPOS_QUEUE, ypos, FONT_SIZE, FONT_COLOUR_ACTION_QUEUE, false, "Pending Action Queue");
 	ypos += YINC * 2.0f;
 	for (uint32 i = 0; i < m_queuedActions.size(); i++)
 	{
@@ -2125,7 +2125,7 @@ void CActionController::DebugDraw() const
 		}
 		FragmentID fragID = action.GetFragmentID();
 		const char* fragName = (fragID != FRAGMENT_ID_INVALID) ? m_context.controllerDef.m_fragmentIDs.GetTagName(fragID) : "NoFragment";
-		gEnv->pRenderer->Draw2dLabel(XPOS_QUEUE, ypos, FONT_SIZE, isPending ? FONT_COLOUR_ACTION_QUEUE : FONT_COLOUR, false, "%s: %s P: %d - %s", action.GetName(), fragName, action.GetPriority(), sScopes.c_str());
+		IRenderAuxText::Draw2dLabel(XPOS_QUEUE, ypos, FONT_SIZE, isPending ? FONT_COLOUR_ACTION_QUEUE : FONT_COLOUR, false, "%s: %s P: %d - %s", action.GetName(), fragName, action.GetPriority(), sScopes.c_str());
 
 		ypos += YINC;
 	}

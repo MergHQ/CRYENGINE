@@ -469,7 +469,7 @@ void CPlayerStateLedge::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameMo
 			const float FONT_SIZE = 2.0f;
 			const float FONT_COLOUR[4] = {1,1,1,1};
 			Vec3 pos = player.GetEntity()->GetPos();
-			gEnv->pRenderer->Draw2dLabel(XPOS, YPOS+20.0f, FONT_SIZE, FONT_COLOUR, false, "Ledge Grab: Cur: (%f %f %f) Tgt: (%f %f %f) T:%f", pos.x, pos.y, pos.z, m_ledgeBlending.m_qtTargetLocation.t.x, m_ledgeBlending.m_qtTargetLocation.t.y, m_ledgeBlending.m_qtTargetLocation.t.z, frameTime);
+			IRenderAuxText::Draw2dLabel(XPOS, YPOS+20.0f, FONT_SIZE, FONT_COLOUR, false, "Ledge Grab: Cur: (%f %f %f) Tgt: (%f %f %f) T:%f", pos.x, pos.y, pos.z, m_ledgeBlending.m_qtTargetLocation.t.x, m_ledgeBlending.m_qtTargetLocation.t.y, m_ledgeBlending.m_qtTargetLocation.t.z, frameTime);
 			gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere(m_ledgeBlending.m_qtTargetLocation.t, 0.15f, ColorB(0,0,255,255));
 			gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere(pos, 0.1f, ColorB(255,0,0,255));
 

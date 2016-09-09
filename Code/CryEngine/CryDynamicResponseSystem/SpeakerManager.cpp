@@ -144,12 +144,12 @@ void CSpeakerManager::Update()
 					{
 						if (gEnv->pGame && gEnv->pGame->GetIGameFramework() && gEnv->pGame->GetIGameFramework()->GetClientActorId() == pEntity->GetId())
 						{
-							gEnv->pRenderer->Draw2dLabel(8.0f, currentPos2Y, 2.0f, fColorBlue, false, "%s", it->text.c_str());
+							IRenderAuxText::Draw2dLabel(8.0f, currentPos2Y, 2.0f, fColorBlue, false, "%s", it->text.c_str());
 							currentPos2Y += 10.0f;
 						}
 						else
 						{
-							gEnv->pRenderer->DrawLabelEx(pEntity->GetWorldPos() + Vec3(0.0f, 0.0f, 2.0f), 2.0f, fColorBlue, true, true, "%s", it->text.c_str());
+							IRenderAuxText::DrawLabelEx(pEntity->GetWorldPos() + Vec3(0.0f, 0.0f, 2.0f), 2.0f, fColorBlue, true, true, "%s", it->text.c_str());
 						}
 					}
 				}

@@ -651,17 +651,17 @@ void CExplosionGameEffect::DebugDisplay(const Vec2& textStartPos,float textSize,
 {
 	ColorF textCol(1.0f,1.0f,0.0f,1.0f);
 	Vec2 currentTextPos = textStartPos;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Reset distance: NumPad 0");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Reset distance: NumPad 0");
 	currentTextPos.y += textYStep;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Add distance: NumPad *");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Add distance: NumPad *");
 	currentTextPos.y += textYStep;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Subtract distance: NumPad /");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Subtract distance: NumPad /");
 	currentTextPos.y += textYStep;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Frag: NumPad 1");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Frag: NumPad 1");
 	currentTextPos.y += textYStep;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Flashbang: NumPad 2");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Flashbang: NumPad 2");
 	currentTextPos.y += textYStep;
-	gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"L-tag: NumPad 3");
+	IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"L-tag: NumPad 3");
 }//-------------------------------------------------------------------------------------------------
 #endif
 

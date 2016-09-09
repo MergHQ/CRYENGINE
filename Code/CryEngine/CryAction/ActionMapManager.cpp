@@ -161,7 +161,7 @@ void CActionMapManager::Update()
 					const float width = defaultFont->GetTextSize(message, true, ctx).x + 5.f;
 					secondColumnOffset = max(width, secondColumnOffset);
 
-					gEnv->pRenderer->Draw2dLabel(xMargin, yPos, 1.5f, color, false, "%s", message.c_str());
+					IRenderAuxText::Draw2dLabel(xMargin, yPos, 1.5f, color, false, "%s", message.c_str());
 					yPos -= 15.f;
 				}
 
@@ -177,7 +177,7 @@ void CActionMapManager::Update()
 			const bool isEnabled = pAm->Enabled();
 			if (renderAll || !isEnabled)
 			{
-				gEnv->pRenderer->Draw2dLabel(xMargin + secondColumnOffset, yPos, 1.5f, color, false, "%sAction map '%s' %s", isEnabled ? "$3" : "$4", pAm->GetName(), isEnabled ? "enabled" : "disabled");
+				IRenderAuxText::Draw2dLabel(xMargin + secondColumnOffset, yPos, 1.5f, color, false, "%sAction map '%s' %s", isEnabled ? "$3" : "$4", pAm->GetName(), isEnabled ? "enabled" : "disabled");
 				yPos -= 15.f;
 			}
 		}

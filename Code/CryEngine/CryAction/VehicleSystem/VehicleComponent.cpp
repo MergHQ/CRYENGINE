@@ -362,8 +362,7 @@ void CVehicleComponent::DebugDraw()
 {
 	if (VehicleCVars().v_draw_components == 1)
 	{
-		IRenderer* pRenderer = gEnv->pRenderer;
-		IRenderAuxGeom* pRenderAux = pRenderer->GetIRenderAuxGeom();
+		IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 
 		const Matrix34& worldTM = m_pVehicle->GetEntity()->GetWorldTM();
 		const AABB& localBounds = GetBounds();
@@ -373,7 +372,7 @@ void CVehicleComponent::DebugDraw()
 		char pMessage[256];
 		cry_sprintf(pMessage, "%s - %5.2f (%3.2f)", m_pSharedParams->name.c_str(), m_damage, m_damage / max(1.f, m_pSharedParams->damageMax));
 
-		pRenderer->DrawLabelEx(worldTM * localBounds.GetCenter(), 1.2f, drawColor, true, true, "%s", pMessage);
+		IRenderAuxText::DrawLabelEx(worldTM * localBounds.GetCenter(), 1.2f, drawColor, true, true, "%s", pMessage);
 
 		pRenderAux->DrawAABB(localBounds, worldTM, false, RGBA8(255, 0, 0, 255), eBBD_Faceted);
 

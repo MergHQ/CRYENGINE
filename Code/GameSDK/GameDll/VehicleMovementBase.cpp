@@ -1065,7 +1065,7 @@ void CVehicleMovementBase::ApplyAirDamp(float angleMin, float angVelMin, float d
 		//if (IsProfilingMovement())
 		//{
 		//  float color[] = {1,1,1,1};
-		//  gEnv->pRenderer->Draw2dLabel(300,500,1.4f,color,false,"corr: %.1f, %.1f", correction.x, correction.y);
+		//  IRenderAuxText::Draw2dLabel(300,500,1.4f,color,false,"corr: %.1f, %.1f", correction.x, correction.y);
 		//}
 
 		pe_action_impulse imp;
@@ -1612,14 +1612,13 @@ void CVehicleMovementBase::UpdateExhaust(const float deltaTime)
 #if ENABLE_VEHICLE_DEBUG
     if (DebugParticles())
     {
-      IRenderer* pRenderer = gEnv->pRenderer;
       float color[4] = {1,1,1,1};
       float x = 200.f;
 
-      pRenderer->Draw2dLabel(x,  80.0f, 1.5f, color, false, "Exhaust:");
-      pRenderer->Draw2dLabel(x,  105.0f, 1.5f, color, false, "countScale: %.2f", sp.fCountScale);
-      pRenderer->Draw2dLabel(x,  120.0f, 1.5f, color, false, "sizeScale: %.2f", sp.fSizeScale);
-			pRenderer->Draw2dLabel(x,  135.0f, 1.5f, color, false, "speedScale: %.2f", sp.fSpeedScale);
+      IRenderAuxText::Draw2dLabel(x,  80.0f, 1.5f, color, false, "Exhaust:");
+      IRenderAuxText::Draw2dLabel(x,  105.0f, 1.5f, color, false, "countScale: %.2f", sp.fCountScale);
+      IRenderAuxText::Draw2dLabel(x,  120.0f, 1.5f, color, false, "sizeScale: %.2f", sp.fSizeScale);
+	  IRenderAuxText::Draw2dLabel(x,  135.0f, 1.5f, color, false, "speedScale: %.2f", sp.fSpeedScale);
     }
 #endif
   }
@@ -2114,87 +2113,87 @@ void CVehicleMovementBase::DebugDraw(const float deltaTime)
 
 	if (g_pGameCVars->v_debugSounds)
 	{
-		gEnv->pRenderer->Draw2dLabel(500.0f,y,1.5f,color,false,"vehicle rpm: %.2f", m_rpmScale);
+		IRenderAuxText::Draw2dLabel(500.0f,y,1.5f,color,false,"vehicle rpm: %.2f", m_rpmScale);
 
 		REINST("needs verification!");
     /*if (ISound* pSound = GetSound(eSID_Run))
     { 
       if (pSound->GetParam("rpm_scale", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":run rpm_scale: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":run rpm_scale: %.2f", val);
 
       if (pSound->GetParam("load", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":run load: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":run load: %.2f", val);
 
       if (pSound->GetParam("speed", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":run speed: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":run speed: %.2f", val);
 
       if (pSound->GetParam("abs_speed", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":run abs_speed: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":run abs_speed: %.2f", val);
 
       if (pSound->GetParam("acceleration", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":run acceleration: %.1f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":run acceleration: %.1f", val);
 
       if (pSound->GetParam("surface", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":run surface: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":run surface: %.2f", val);
 
       if (pSound->GetParam("scratch", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":run scratch: %.0f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":run scratch: %.0f", val);
 
       if (pSound->GetParam("slip", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":run slip: %.1f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":run slip: %.1f", val);
 
       if (pSound->GetParam("in_out", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":run in_out: %.1f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":run in_out: %.1f", val);
 
       if (pSound->GetParam("damage", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":run damage: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":run damage: %.2f", val);
 
       if (pSound->GetParam("swim", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":run swim: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":run swim: %.2f", val);
     }
 
     if (ISound* pSound = GetSound(eSID_Ambience))
     { 
-      gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,"-----------------------------");
+      IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,"-----------------------------");
 
       if (pSound->GetParam("rpm_scale", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":ambience rpm_scale: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":ambience rpm_scale: %.2f", val);
 
       if (pSound->GetParam("speed", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":ambience speed: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":ambience speed: %.2f", val);
 
       if (pSound->GetParam("abs_speed", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":ambience abs_speed: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":ambience abs_speed: %.2f", val);
 
       if (pSound->GetParam("thirdperson", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":ambience thirdperson: %.1f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":ambience thirdperson: %.1f", val);
     }
 
     if (ISound* pSound = GetSound(eSID_Slip))
     { 
-      gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,"-----------------------------");
+      IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,"-----------------------------");
 
       if (pSound->GetParam("slip_speed", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":slip slip_speed: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":slip slip_speed: %.2f", val);
 
       if (pSound->GetParam("surface", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":slip surface: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":slip surface: %.2f", val);
     }
 
     if (ISound* pSound = GetSound(eSID_Bump))
     { 
-      gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,"-----------------------------");
+      IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,"-----------------------------");
 
       if (pSound->GetParam("intensity", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":bump intensity: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":bump intensity: %.2f", val);
     }
 
     if (ISound* pSound = GetSound(eSID_Splash))
     { 
-      gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,"-----------------------------");
+      IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,"-----------------------------");
 
       if (pSound->GetParam("intensity", &val, false) != -1)
-        gEnv->pRenderer->Draw2dLabel(500.0f,y+=step,size,color,false,":splash intensity: %.2f", val);
+        IRenderAuxText::Draw2dLabel(500.0f,y+=step,size,color,false,":splash intensity: %.2f", val);
     }*/
 	}
 
@@ -2207,7 +2206,7 @@ void CVehicleMovementBase::DebugDraw(const float deltaTime)
 		else if (speed*3.6f < g_pGameCVars->v_sprintSpeed)    
 			m_sprintTime += deltaTime;      
 
-		gEnv->pRenderer->Draw2dLabel(400.0f, 300.0f, 1.5f, color, false, "t: %.2f", m_sprintTime);
+		IRenderAuxText::Draw2dLabel(400.0f, 300.0f, 1.5f, color, false, "t: %.2f", m_sprintTime);
 	}
 }
 #endif

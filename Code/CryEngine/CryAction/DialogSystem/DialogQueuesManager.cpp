@@ -139,8 +139,8 @@ void CDialogQueuesManager::Update()
 			float red[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 			float x = 300.f * i;
 			float y = 100;
-			gEnv->pRenderer->Draw2dLabel(x, y, 1.2f, white, false, "%s", m_bufferNames[i].c_str());
-			gEnv->pRenderer->Draw2dLabel(x, y + 20, 1.2f, white, false, "------------------------------------");
+			IRenderAuxText::Draw2dLabel(x, y, 1.2f, white, false, "%s", m_bufferNames[i].c_str());
+			IRenderAuxText::Draw2dLabel(x, y + 20, 1.2f, white, false, "------------------------------------");
 
 			for (uint32 j = 0; j < buffer.size(); ++j)
 			{
@@ -148,7 +148,7 @@ void CDialogQueuesManager::Update()
 				TDialogNames::const_iterator iter = m_dialogNames.find(buffer[j]);
 				if (iter != m_dialogNames.end())
 					pName = iter->second.c_str();
-				gEnv->pRenderer->Draw2dLabel(x, y + 40 + 20 * j, 1.2f, j == 0 ? green : red, false, "%s", pName);
+				IRenderAuxText::Draw2dLabel(x, y + 40 + 20 * j, 1.2f, j == 0 ? green : red, false, "%s", pName);
 			}
 		}
 	}

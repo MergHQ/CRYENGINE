@@ -84,8 +84,8 @@ void CNetVis::Update()
 
 	float reda[4] = { 1, 0, 0, 1 };
 	float greena[4] = { 0, 1, 0, 1 };
-	gEnv->pRenderer->Draw2dLabel(10, 10, 1.3f, greena, false, "%.3f", avMin);
-	gEnv->pRenderer->Draw2dLabel(10, 30, 1.3f, reda, false, "%.3f", avMax);
+	IRenderAuxText::Draw2dLabel(10, 10, 1.3f, greena, false, "%.3f", avMin);
+	IRenderAuxText::Draw2dLabel(10, 30, 1.3f, reda, false, "%.3f", avMax);
 
 	IRenderAuxGeom* pRAG = gEnv->pRenderer->GetIRenderAuxGeom();
 

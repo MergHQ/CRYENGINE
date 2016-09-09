@@ -262,7 +262,7 @@ void CGameRulesSPDamageHandling::DrawFakeHits(float frameTime)
 	if (highestAlpha > 0.001f)
 	{
 		float color[4] = { 0.85f, 0.0f, 0.0f, std::min(highestAlpha, 1.0f) };
-		gEnv->pRenderer->Draw2dLabel(1024.0f * 0.5f, 500.0f, 2.45f, color, true, "FAKE HIT!");
+		IRenderAuxText::Draw2dLabel(1024.0f * 0.5f, 500.0f, 2.45f, color, true, "FAKE HIT!");
 	}
 }
 #endif

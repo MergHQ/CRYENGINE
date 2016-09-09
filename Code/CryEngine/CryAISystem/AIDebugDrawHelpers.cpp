@@ -445,7 +445,7 @@ void DebugDrawLabel(IRenderer* pRenderer, int col, int row, const char* szText, 
 	float ColumnSize = 11;
 	float RowSize = 11;
 	float baseY = 10;
-	pRenderer->Draw2dLabel(ColumnSize * static_cast<float>(col), baseY + RowSize * static_cast<float>(row), 1.2f, pColor, false, "%s", szText);
+	IRenderAuxText::Draw2dLabel(ColumnSize * static_cast<float>(col), baseY + RowSize * static_cast<float>(row), 1.2f, pColor, false, "%s", szText);
 }
 
 //====================================================================

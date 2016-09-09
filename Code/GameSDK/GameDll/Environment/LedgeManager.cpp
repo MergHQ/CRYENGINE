@@ -869,7 +869,7 @@ void CLedgeManager::DebugDraw() const
 
 			if (g_LedgeGrabManager_DebugDraw > 1)
 			{
-				gEnv->pRenderer->Draw2dLabel( 50.0f, 50.f, 1.5f, Col_White, false, "Total Number of ledges %d - Non static %d", totalLedgeCount, nonStaticLedges );
+				IRenderAuxText::Draw2dLabel( 50.0f, 50.f, 1.5f, Col_White, false, "Total Number of ledges %d - Non static %d", totalLedgeCount, nonStaticLedges );
 			}
 		}
 	}

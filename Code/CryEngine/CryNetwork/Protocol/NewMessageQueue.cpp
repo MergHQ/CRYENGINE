@@ -2212,6 +2212,8 @@ static int GetIndentForMessage(int depth)
 	return 0;
 }
 
+#include <CryRenderer/IRenderAuxGeom.h>
+
 void CMessageQueue::DrawLabel(float x, float y, float* clr, const char* msg, ...)
 {
 	va_list args;
@@ -2220,7 +2222,7 @@ void CMessageQueue::DrawLabel(float x, float y, float* clr, const char* msg, ...
 	cry_vsprintf(buffer, msg, args);
 
 	float drawScale = CNetCVars::Get().DebugDrawScale;
-	gEnv->pRenderer->Draw2dLabel(x, y, drawScale, clr, false, "%s", buffer);
+	IRenderAuxText::Draw2dLabel(x, y, drawScale, clr, false, "%s", buffer);
 	ITextModeConsole* t = gEnv->pSystem->GetITextModeConsole();
 	if (t)
 		t->PutText((int)(x / (drawScale * 4.0f)) - 2, (int)(y / (drawScale * 10.0f)) - 1, buffer);

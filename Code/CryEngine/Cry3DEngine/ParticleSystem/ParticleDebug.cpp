@@ -70,7 +70,6 @@ void DebugDrawEffect(CParticleEffect* pEffect, size_t effectBarIdx)
 
 void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitterBarIdx, size_t barIdx)
 {
-	IRenderer* pRender = gEnv->pRenderer;
 	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 	Vec2 screenSz = Vec2(float(gEnv->pRenderer->GetWidth()), float(gEnv->pRenderer->GetHeight()));
 
@@ -143,7 +142,7 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 		CRY_PFX2_FOR_END;
 	}
 
-	pRender->Draw2dLabel(
+	IRenderAuxText::Draw2dLabel(
 	  screenSz.x * (barIdx * barGap + startPos),
 	  screenSz.y * 0.95f, 1.0f, whiteF, false,
 	  "%s", pRuntime->GetComponent()->GetName());

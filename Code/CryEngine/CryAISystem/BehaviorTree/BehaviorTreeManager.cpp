@@ -476,7 +476,7 @@ void BehaviorTreeManager::Update()
 			{
 				const float color[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
 				const Vec3 position = entity->GetPos() + Vec3(0.0f, 0.0f, 2.0f);
-				gEnv->pRenderer->DrawLabelEx(position, 1.5f, color, true, true, "Behavior tree error.");
+				IRenderAuxText::DrawLabelEx(position, 1.5f, color, true, true, "Behavior tree error.");
 			}
 		}
 	}

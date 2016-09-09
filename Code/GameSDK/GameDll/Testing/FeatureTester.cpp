@@ -1764,9 +1764,8 @@ bool CFeatureTester::CheckPrerequisite(const SFeatureTest * test)
 //-------------------------------------------------------------------------------
 void CFeatureTester::DisplayCaption(const SFeatureTest * test)
 {
-	IRenderer * renderer = gEnv->pRenderer;
 
-	if (renderer)
+	if ( IRenderer * renderer = gEnv->pRenderer )
 	{
 		assert (test);
 
@@ -1783,15 +1782,15 @@ void CFeatureTester::DisplayCaption(const SFeatureTest * test)
 		}
 
 		int height = renderer->GetHeight();
-		renderer->Draw2dLabel(30.f, height - 80.f, 3.f, m_currentTest ? s_colour_testName_Active : s_colour_testName_CannotStart, false, "%s%s", test->m_testName, paramString.c_str());
-		renderer->Draw2dLabel(30.f, height - 45.f, 2.f, s_colour_testDescription, false, "%s", test->m_testDescription);
+		IRenderAuxText::Draw2dLabel(30.f, height - 80.f, 3.f, m_currentTest ? s_colour_testName_Active : s_colour_testName_CannotStart, false, "%s%s", test->m_testName, paramString.c_str());
+		IRenderAuxText::Draw2dLabel(30.f, height - 45.f, 2.f, s_colour_testDescription, false, "%s", test->m_testDescription);
 
 		ICVar * timeScaleCVar = gEnv->pConsole->GetCVar("t_Scale");
 		if (timeScaleCVar)
 		{
-			renderer->Draw2dLabel(30.f, height - 100.f, 2.f, s_colour_testDescription, false, "Speed = %.1f", timeScaleCVar->GetFVal());
+			IRenderAuxText::Draw2dLabel(30.f, height - 100.f, 2.f, s_colour_testDescription, false, "Speed = %.1f", timeScaleCVar->GetFVal());
 		}
-		renderer->Draw2dLabel(30.f, height - 120.f, 2.f, s_colour_testDescription, false, "%s", m_informAutoTesterOfResults ? m_informAutoTesterOfResults->GetTestName() : "UNKNOWN" );
+		IRenderAuxText::Draw2dLabel(30.f, height - 120.f, 2.f, s_colour_testDescription, false, "%s", m_informAutoTesterOfResults ? m_informAutoTesterOfResults->GetTestName() : "UNKNOWN");
 	}
 }
 

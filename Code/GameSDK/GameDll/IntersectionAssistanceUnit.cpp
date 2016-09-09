@@ -135,7 +135,7 @@ void CIntersectionAssistanceUnit::DebugUpdate() const
 
 				// RENDER
 				Vec3 vDrawPos = pEntity->GetWorldPos() + Vec3(0.0f,0.0f,0.6f);
-				gEnv->pRenderer->DrawLabelEx(vDrawPos, fFontSize, drawColor, true, true, "%s", sMsg.c_str());
+				IRenderAuxText::DrawLabelEx(vDrawPos, fFontSize, drawColor, true, true, "%s", sMsg.c_str());
 
 				// Box
 				pe_params_bbox bbox;

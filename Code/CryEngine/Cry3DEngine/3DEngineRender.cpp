@@ -913,7 +913,7 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 
 		float fYLine = 8.0f, fYStep = 20.0f;
 
-		GetRenderer()->Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "e_DebugDraw = %d", GetCVars()->e_DebugDraw);
+		IRenderAuxText::Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "e_DebugDraw = %d", GetCVars()->e_DebugDraw);
 
 		char* szMode = "";
 
@@ -999,16 +999,16 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 			assert(0);
 		}
 
-		GetRenderer()->Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   %s", szMode);
+		IRenderAuxText::Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   %s", szMode);
 
 		if (GetCVars()->e_DebugDraw == 17)
 		{
-			GetRenderer()->Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   StatObj geometry used: %.2fMb / %dMb", CObjManager::s_nLastStreamingMemoryUsage / (1024.f * 1024.f), GetCVars()->e_StreamCgfPoolSize);
+			IRenderAuxText::Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   StatObj geometry used: %.2fMb / %dMb", CObjManager::s_nLastStreamingMemoryUsage / (1024.f * 1024.f), GetCVars()->e_StreamCgfPoolSize);
 
 			ICVar* cVar = GetConsole()->GetCVar("r_TexturesStreaming");
 			if (!cVar || !cVar->GetIVal())
 			{
-				GetRenderer()->Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   You have to set r_TexturesStreaming = 1 to see texture information!");
+				IRenderAuxText::Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "   You have to set r_TexturesStreaming = 1 to see texture information!");
 			}
 		}
 	}

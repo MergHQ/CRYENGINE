@@ -1822,7 +1822,7 @@ void CPlayer::Update(SEntityUpdateContext& ctx, int updateSlot)
 				float offColor[4] = { 0.2f, 0.2f, 0.2f, 1 };
 				float onColor[4]  = { 0.0f, 1.0f, 0.0f, 1 };
 
-				gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, 2.5f, (blendFactor > 0.0001f) ? onColor : offColor, false, "LHand IK Blend %.2f", blendFactor);
+				IRenderAuxText::Draw2dLabel(XPOS, YPOS, 2.5f, (blendFactor > 0.0001f) ? onColor : offColor, false, "LHand IK Blend %.2f", blendFactor);
 			}
 
 			currRenderFlags.SetDepthTestFlag(depthTest);
@@ -2202,7 +2202,7 @@ void CPlayer::UpdateEyeOffsets(CWeapon* pCurrentWeapon, float frameTime)
 	//const float YPOS = 40.0f;
 	//const float FONT_SIZE = 2.0f;
 	//const float FONT_COLOUR[4] = {1,1,1,1};
-	//gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "UpdateEyeoffset: (%f %f %f)", m_eyeOffset.x, m_eyeOffset.y, m_eyeOffset.z);
+	//IRenderAuxText::Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "UpdateEyeoffset: (%f %f %f)", m_eyeOffset.x, m_eyeOffset.y, m_eyeOffset.z);
 
 	CHECKQNAN_VEC(m_eyeOffset);
 
@@ -8566,7 +8566,7 @@ void CPlayer::UpdateFPAiming()
 	const bool disableSnapAimTorsoIK = inVehicle;
 
 	//const float XPOS = 200.0f, YPOS = 60.0f, FONT_SIZE = 2.0f, FONT_COLOUR[4] = {1,1,1,1};
-	//gEnv->pRenderer->Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "UpdateFPAiming: %s w:%s", enableWeaponAim ? "update" : "dont update", pWeapon ? "Armed" : "UnArmed");
+	//IRenderAuxText::Draw2dLabel(XPOS, YPOS, FONT_SIZE, FONT_COLOUR, false, "UpdateFPAiming: %s w:%s", enableWeaponAim ? "update" : "dont update", pWeapon ? "Armed" : "UnArmed");
 
 	if (enableWeaponAim)
 	{

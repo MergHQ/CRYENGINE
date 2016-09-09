@@ -520,7 +520,7 @@ void _DrawText(ISystem* pSystem, int x, int y, const float fScale, const char* f
 	va_end(args);
 
 	float color[4] = { 0, 1, 0, 1 };
-	gEnv->pRenderer->Draw2dLabel((float)x, (float)y, fScale, color, false, "%s", buffer);
+	IRenderAuxText::Draw2dLabel((float)x, (float)y, fScale, color, false, "%s", buffer);
 }
 
 void CD3D9Renderer::DrawAllShadowsOnTheScreen()

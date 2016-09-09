@@ -883,7 +883,7 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 	float fColorRed[4] = { 1, 0, 0, 1 };
 	uint32 nJobsRunCounter = m_nJobsRunCounter;
 	uint32 nFallbackJobsRunCounter = m_nFallbackJobsRunCounter;
-	gEnv->pRenderer->Draw2dLabel(1, 5.0f, 1.3f, nFallbackJobsRunCounter ? fColorRed : fColorGreen, false, "Jobs Submitted %d, FallbackJobs %d", nJobsRunCounter, nFallbackJobsRunCounter);
+	IRenderAuxText::Draw2dLabel(1, 5.0f, 1.3f, nFallbackJobsRunCounter ? fColorRed : fColorGreen, false, "Jobs Submitted %d, FallbackJobs %d", nJobsRunCounter, nFallbackJobsRunCounter);
 #endif
 	m_nJobsRunCounter = 0;
 	m_nFallbackJobsRunCounter = 0;

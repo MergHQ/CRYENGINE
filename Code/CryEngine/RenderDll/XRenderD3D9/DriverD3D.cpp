@@ -1088,28 +1088,28 @@ void CD3D9Renderer::PostMeasureOverdraw()
 			float color[4] = { 1, 1, 1, 1 };
 			if (CV_r_measureoverdraw == 1 || CV_r_measureoverdraw == 3)
 			{
-				Draw2dLabel(nX + nW - 25, nY + nH - 30, 1.2f, color, false, CV_r_measureoverdraw == 1 ? "Pixel Shader:" : "Vertex Shader:");
+				IRenderAuxText::Draw2dLabel(nX + nW - 25, nY + nH - 30, 1.2f, color, false, CV_r_measureoverdraw == 1 ? "Pixel Shader:" : "Vertex Shader:");
 				int n = FtoI(32.0f * CV_r_measureoverdrawscale);
 				for (int i = 0; i < 8; i++)
 				{
 					char str[256];
 					cry_sprintf(str, "-- >%d instructions --", n);
 
-					Draw2dLabel(nX + nW, nY + nH * (i + 1), 1.2f, color, false, "%s", str);
+					IRenderAuxText::Draw2dLabel(nX + nW, nY + nH * (i + 1), 1.2f, color, false, "%s", str);
 					n += FtoI(32.0f * CV_r_measureoverdrawscale);
 				}
 			}
 			else
 			{
-				Draw2dLabel(nX + nW - 25, nY + nH - 30, 1.2f, color, false, CV_r_measureoverdraw == 2 ? "Pass Count:" : "Overdraw Estimation (360 Hi-Z):");
-				Draw2dLabel(nX + nW, nY + nH, 1.2f, color, false, "-- 1 pass --");
-				Draw2dLabel(nX + nW, nY + nH * 2, 1.2f, color, false, "-- 2 passes --");
-				Draw2dLabel(nX + nW, nY + nH * 3, 1.2f, color, false, "-- 3 passes --");
-				Draw2dLabel(nX + nW, nY + nH * 4, 1.2f, color, false, "-- 4 passes --");
-				Draw2dLabel(nX + nW, nY + nH * 5, 1.2f, color, false, "-- 5 passes --");
-				Draw2dLabel(nX + nW, nY + nH * 6, 1.2f, color, false, "-- 6 passes --");
-				Draw2dLabel(nX + nW, nY + nH * 7, 1.2f, color, false, "-- 7 passes --");
-				Draw2dLabel(nX + nW, nY + nH * 8, 1.2f, color, false, "-- >8 passes --");
+				IRenderAuxText::Draw2dLabel(nX + nW - 25, nY + nH - 30, 1.2f, color, false, CV_r_measureoverdraw == 2 ? "Pass Count:" : "Overdraw Estimation (360 Hi-Z):");
+				IRenderAuxText::Draw2dLabel(nX + nW, nY + nH, 1.2f, color, false, "-- 1 pass --");
+				IRenderAuxText::Draw2dLabel(nX + nW, nY + nH * 2, 1.2f, color, false, "-- 2 passes --");
+				IRenderAuxText::Draw2dLabel(nX + nW, nY + nH * 3, 1.2f, color, false, "-- 3 passes --");
+				IRenderAuxText::Draw2dLabel(nX + nW, nY + nH * 4, 1.2f, color, false, "-- 4 passes --");
+				IRenderAuxText::Draw2dLabel(nX + nW, nY + nH * 5, 1.2f, color, false, "-- 5 passes --");
+				IRenderAuxText::Draw2dLabel(nX + nW, nY + nH * 6, 1.2f, color, false, "-- 6 passes --");
+				IRenderAuxText::Draw2dLabel(nX + nW, nY + nH * 7, 1.2f, color, false, "-- 7 passes --");
+				IRenderAuxText::Draw2dLabel(nX + nW, nY + nH * 8, 1.2f, color, false, "-- >8 passes --");
 			}
 			//WriteXY(nX+10, nY+10, 1, 1,  1,1,1,1, "-- 10 instructions --");
 		}
@@ -1140,10 +1140,10 @@ void CD3D9Renderer::DrawTexelsPerMeterInfo()
 		y = y * m_height / 600;
 		w = w * m_width / 800;
 
-		Draw2dLabel(x - 100, y - 20, 1.2f, color, false, "r_TexelsPerMeter:");
-		Draw2dLabel(x - 2, y - 20, 1.2f, color, false, "0");
-		Draw2dLabel(x + w / 2 - 5, y - 20, 1.2f, color, false, "%.0f", CV_r_TexelsPerMeter);
-		Draw2dLabel(x + w - 50, y - 20, 1.2f, color, false, ">= %.0f", CV_r_TexelsPerMeter * 2.0f);
+		IRenderAuxText::Draw2dLabel(x - 100, y - 20, 1.2f, color, false, "r_TexelsPerMeter:");
+		IRenderAuxText::Draw2dLabel(x - 2, y - 20, 1.2f, color, false, "0");
+		IRenderAuxText::Draw2dLabel(x + w / 2 - 5, y - 20, 1.2f, color, false, "%.0f", CV_r_TexelsPerMeter);
+		IRenderAuxText::Draw2dLabel(x + w - 50, y - 20, 1.2f, color, false, ">= %.0f", CV_r_TexelsPerMeter * 2.0f);
 
 		RT_FlushTextMessages();
 	}
@@ -2225,13 +2225,13 @@ void CD3D9Renderer::DebugDrawStats1()
 	int nX = 50; // initial X pos
 
 	ColorF col = Col_Yellow;
-	Draw2dLabel(nX, nY, 2.0f, &col.r, false, "Per-frame stats:");
+	IRenderAuxText::Draw2dLabel(nX, nY, 2.0f, &col.r, false, "Per-frame stats:");
 
 	col = Col_White;
 	nX += 10;
 	nY += 25;
 	//DebugDrawRect(nX-2, nY, nX+180, nY+150, &col.r);
-	Draw2dLabel(nX, nY, 1.4f, &col.r, false, "Draw-calls:");
+	IRenderAuxText::Draw2dLabel(nX, nY, 1.4f, &col.r, false, "Draw-calls:");
 
 	float fFSize = 1.2f;
 
@@ -2239,75 +2239,75 @@ void CD3D9Renderer::DebugDrawStats1()
 	nY += 10;
 	int nXBars = nX;
 
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "General: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_GENERAL], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_GENERAL]);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Decals: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_DECAL], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_DECAL]);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Terrain layers: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_TERRAINLAYER], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_TERRAINLAYER]);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Transparent: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_TRANSP], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_TRANSP]);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shadow-gen: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_SHADOW_GEN], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_SHADOW_GEN]);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shadow-pass: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_SHADOW_PASS], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_SHADOW_PASS]);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Water: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_WATER], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_WATER]);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Imposters: %d (Updates: %d)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumCloudImpostersDraw, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumCloudImpostersUpdates);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Sprites: %d (%d dips, %d updates, %d altases, %d cells, %d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSprites, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSpriteDIPS, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSpriteUpdates, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSpriteAltasesUsed, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSpriteCellsUsed, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSpritePolys);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "General: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_GENERAL], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_GENERAL]);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Decals: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_DECAL], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_DECAL]);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Terrain layers: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_TERRAINLAYER], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_TERRAINLAYER]);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Transparent: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_TRANSP], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_TRANSP]);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shadow-gen: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_SHADOW_GEN], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_SHADOW_GEN]);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shadow-pass: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_SHADOW_PASS], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_SHADOW_PASS]);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Water: %d (%d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nDIPs[EFSLIST_WATER], m_RP.m_PS[m_RP.m_nProcessThreadID].m_nPolygons[EFSLIST_WATER]);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Imposters: %d (Updates: %d)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumCloudImpostersDraw, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumCloudImpostersUpdates);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Sprites: %d (%d dips, %d updates, %d altases, %d cells, %d polys)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSprites, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSpriteDIPS, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSpriteUpdates, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSpriteAltasesUsed, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSpriteCellsUsed, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumSpritePolys);
 
-	Draw2dLabel(nX - 5, nY + 20, 1.4f, &col.r, false, "Total: %d (%d polys)", GetCurrentNumberOfDrawCalls(), RT_GetPolyCount());
+	IRenderAuxText::Draw2dLabel(nX - 5, nY + 20, 1.4f, &col.r, false, "Total: %d (%d polys)", GetCurrentNumberOfDrawCalls(), RT_GetPolyCount());
 
 	col = Col_Yellow;
 	nX -= 5;
 	nY += 45;
 	//DebugDrawRect(nX-2, nY, nX+180, nY+160, &col.r);
-	Draw2dLabel(nX, nY, 1.4f, &col.r, false, "Occlusions: Issued: %d, Occluded: %d, NotReady: %d", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumQIssued, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumQOccluded, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumQNotReady);
+	IRenderAuxText::Draw2dLabel(nX, nY, 1.4f, &col.r, false, "Occlusions: Issued: %d, Occluded: %d, NotReady: %d", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumQIssued, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumQOccluded, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumQNotReady);
 
 	col = Col_Cyan;
 	nX -= 5;
 	nY += 45;
 	//DebugDrawRect(nX-2, nY, nX+180, nY+160, &col.r);
-	Draw2dLabel(nX, nY, 1.4f, &col.r, false, "Device resource switches:");
+	IRenderAuxText::Draw2dLabel(nX, nY, 1.4f, &col.r, false, "Device resource switches:");
 
 	nX += 5;
 	nY += 10;
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "VShaders: %d (%d unique)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumVShadChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumVShaders);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "PShaders: %d (%d unique)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumPShadChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumPShaders);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Textures: %d (%d unique)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumTextChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumTextures);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "RT's: %d (%d unique), cleared: %d times, copied: %d times", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRTChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRTs, m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared, m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCopied);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "States: %d", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumStateChanges);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "MatBatches: %d, GeomBatches: %d, Instances: %d", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendMaterialBatches, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendGeomBatches, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendInstances);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "HW Instances: DIP's: %d, Instances: %d (polys: %d/%d)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_RendHWInstancesDIPs, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendHWInstances, m_RP.m_PS[m_RP.m_nProcessThreadID].m_RendHWInstancesPolysOne, m_RP.m_PS[m_RP.m_nProcessThreadID].m_RendHWInstancesPolysAll);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Skinned instances: %d", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendSkinnedObjects);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "VShaders: %d (%d unique)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumVShadChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumVShaders);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "PShaders: %d (%d unique)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumPShadChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumPShaders);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Textures: %d (%d unique)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumTextChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumTextures);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "RT's: %d (%d unique), cleared: %d times, copied: %d times", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRTChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRTs, m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCleared, m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCopied);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "States: %d", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumStateChanges);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "MatBatches: %d, GeomBatches: %d, Instances: %d", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendMaterialBatches, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendGeomBatches, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendInstances);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "HW Instances: DIP's: %d, Instances: %d (polys: %d/%d)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_RendHWInstancesDIPs, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendHWInstances, m_RP.m_PS[m_RP.m_nProcessThreadID].m_RendHWInstancesPolysOne, m_RP.m_PS[m_RP.m_nProcessThreadID].m_RendHWInstancesPolysAll);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Skinned instances: %d", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendSkinnedObjects);
 
 	CHWShader_D3D* ps = (CHWShader_D3D*)m_RP.m_PS[m_RP.m_nProcessThreadID].m_pMaxPShader;
 	CHWShader_D3D::SHWSInstance* pInst = (CHWShader_D3D::SHWSInstance*)m_RP.m_PS[m_RP.m_nProcessThreadID].m_pMaxPSInstance;
 	if (ps)
-		Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "MAX PShader: %s (instructions: %d, lights: %d)", ps->GetName(), pInst->m_nInstructions, pInst->m_Ident.m_LightMask & 0xf);
+		IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "MAX PShader: %s (instructions: %d, lights: %d)", ps->GetName(), pInst->m_nInstructions, pInst->m_Ident.m_LightMask & 0xf);
 	CHWShader_D3D* vs = (CHWShader_D3D*)m_RP.m_PS[m_RP.m_nProcessThreadID].m_pMaxVShader;
 	pInst = (CHWShader_D3D::SHWSInstance*)m_RP.m_PS[m_RP.m_nProcessThreadID].m_pMaxVSInstance;
 	if (vs)
-		Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "MAX VShader: %s (instructions: %d, lights: %d)", vs->GetName(), pInst->m_nInstructions, pInst->m_Ident.m_LightMask & 0xf);
+		IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "MAX VShader: %s (instructions: %d, lights: %d)", vs->GetName(), pInst->m_nInstructions, pInst->m_Ident.m_LightMask & 0xf);
 
 	col = Col_Green;
 	nX -= 5;
 	nY += 35;
 	//DebugDrawRect(nX-2, nY, nX+180, nY+160, &col.r);
-	Draw2dLabel(nX, nY, 1.4f, &col.r, false, "Device resource sizes:");
+	IRenderAuxText::Draw2dLabel(nX, nY, 1.4f, &col.r, false, "Device resource sizes:");
 
 	nX += 5;
 	nY += 10;
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Managed non-streamed textures: Sys=%.3f Mb, Vid:=%.3f", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesSysMemSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesVidMemSize));
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Managed streamed textures: Sys=%.3f Mb, Vid:=%.3f", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesStreamSysSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesStreamVidSize));
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "RT textures: Used: %.3f Mb, Updated: %.3f Mb, Cleared: %.3f Mb, Copied: %.3f Mb", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_DynTexturesSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCopiedSize));
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Meshes updated: Static: %.3f Mb, Dynamic: %.3f Mb", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_MeshUpdateBytes), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_DynMeshUpdateBytes));
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Cloud textures updated: %.3f Mb", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_CloudImpostersSizeUpdate));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Managed non-streamed textures: Sys=%.3f Mb, Vid:=%.3f", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesSysMemSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesVidMemSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Managed streamed textures: Sys=%.3f Mb, Vid:=%.3f", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesStreamSysSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesStreamVidSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "RT textures: Used: %.3f Mb, Updated: %.3f Mb, Cleared: %.3f Mb, Copied: %.3f Mb", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_DynTexturesSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTClearedSize), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_RTCopiedSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Meshes updated: Static: %.3f Mb, Dynamic: %.3f Mb", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_MeshUpdateBytes), BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_DynMeshUpdateBytes));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Cloud textures updated: %.3f Mb", BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_CloudImpostersSizeUpdate));
 
 	int nYBars = nY;
 
 	nY = 30;  // initial Y pos
 	nX = 430; // initial X pos
 	col = Col_Yellow;
-	Draw2dLabel(nX, nY, 2.0f, &col.r, false, "Global stats:");
+	IRenderAuxText::Draw2dLabel(nX, nY, 2.0f, &col.r, false, "Global stats:");
 
 	col = Col_YellowGreen;
 	nX += 10;
 	nY += 55;
-	Draw2dLabel(nX, nY, 1.4f, &col.r, false, "Mesh size:");
+	IRenderAuxText::Draw2dLabel(nX, nY, 1.4f, &col.r, false, "Mesh size:");
 
 	size_t nMemApp = 0;
 	size_t nMemDevVB = 0;
@@ -2326,7 +2326,7 @@ void CD3D9Renderer::DebugDrawStats1()
 			nMemDevIB += pRM->Size(CRenderMesh::SIZE_IB);
 		}
 	}
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Static: (app: %.3f Mb, dev VB: %.3f Mb, dev IB: %.3f Mb)",
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Static: (app: %.3f Mb, dev VB: %.3f Mb, dev IB: %.3f Mb)",
 	            nMemApp / 1024.0f / 1024.0f, nMemDevVB / 1024.0f / 1024.0f, nMemDevIB / 1024.0f / 1024.0f);
 
 	for (i = 0; i < BBT_MAX; i++)
@@ -2335,7 +2335,7 @@ void CD3D9Renderer::DebugDrawStats1()
 			SDeviceBufferPoolStats stats;
 			if (m_DevBufMan.GetStats((BUFFER_BIND_TYPE)i, (BUFFER_USAGE)j, stats) == false)
 				continue;
-			Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Pool '%10s': size %5.3f banks %4" PRISIZE_T " allocs %6d frag %3.3f pinned %4d moving %4d",
+			IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Pool '%10s': size %5.3f banks %4" PRISIZE_T " allocs %6d frag %3.3f pinned %4d moving %4d",
 			            stats.buffer_descr.c_str()
 			            , (stats.num_banks * stats.bank_size) / (1024.f * 1024.f)
 			            , stats.num_banks
@@ -2361,7 +2361,7 @@ void CD3D9Renderer::DebugDrawStats1()
 		nMemDevVB += m_pRenderAuxGeomD3D->GetDeviceDataSize();
 	#endif
 
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Dynamic: %.3f (app: %.3f Mb, dev VB: %.3f Mb, dev IB: %.3f Mb)", BYTES_TO_MB(nMemDevVB + nMemDevIB), BYTES_TO_MB(nMemApp), BYTES_TO_MB(nMemDevVB), BYTES_TO_MB(nMemDevIB) /*, BYTES_TO_MB(nMemDevVBPool)*/);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Dynamic: %.3f (app: %.3f Mb, dev VB: %.3f Mb, dev IB: %.3f Mb)", BYTES_TO_MB(nMemDevVB + nMemDevIB), BYTES_TO_MB(nMemApp), BYTES_TO_MB(nMemDevVB), BYTES_TO_MB(nMemDevIB) /*, BYTES_TO_MB(nMemDevVBPool)*/);
 
 	CCryNameTSCRC Name;
 	SResourceContainer* pRL;
@@ -2382,11 +2382,11 @@ void CD3D9Renderer::DebugDrawStats1()
 		}
 	}
 	nY += nYstep;
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "FX Shaders: %d (size: %.3f Mb)", n, BYTES_TO_MB(nSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "FX Shaders: %d (size: %.3f Mb)", n, BYTES_TO_MB(nSize));
 
 	n = 0;
 	nSize = m_cEF.m_Bin.mfSizeFXParams(n);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "FX Shader parameters for %d shaders (size: %.3f Mb)", n, BYTES_TO_MB(nSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "FX Shader parameters for %d shaders (size: %.3f Mb)", n, BYTES_TO_MB(nSize));
 
 	nSize = 0;
 	n = 0;
@@ -2398,8 +2398,8 @@ void CD3D9Renderer::DebugDrawStats1()
 		nSize += pSR->Size();
 		n++;
 	}
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shader resources: %d (size: %.3f Mb)", n, BYTES_TO_MB(nSize));
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shader manager (size: %.3f Mb)", BYTES_TO_MB(m_cEF.Size()));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shader resources: %d (size: %.3f Mb)", n, BYTES_TO_MB(nSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shader manager (size: %.3f Mb)", BYTES_TO_MB(m_cEF.Size()));
 
 	n = 0;
 	for (i = 0; i < CGParamManager::s_Groups.size(); i++)
@@ -2407,7 +2407,7 @@ void CD3D9Renderer::DebugDrawStats1()
 		n += CGParamManager::s_Groups[i].nParams;
 
 	}
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Groups: %d, Shader parameters: %d (size: %.3f Mb), in pool: %d (size: %.3f Mb)", i, n, BYTES_TO_MB(n * sizeof(SCGParam)), CGParamManager::s_Pools.size(), BYTES_TO_MB(CGParamManager::s_Pools.size() * PARAMS_POOL_SIZE * sizeof(SCGParam)));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Groups: %d, Shader parameters: %d (size: %.3f Mb), in pool: %d (size: %.3f Mb)", i, n, BYTES_TO_MB(n * sizeof(SCGParam)), CGParamManager::s_Pools.size(), BYTES_TO_MB(CGParamManager::s_Pools.size() * PARAMS_POOL_SIZE * sizeof(SCGParam)));
 
 	nY += nYstep;
 	nY += nYstep;
@@ -2452,7 +2452,7 @@ void CD3D9Renderer::DebugDrawStats1()
 			}
 		}
 	}
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "VShaders: %d (size: %.3f Mb), Instances: %d, Device VShaders: %d (Size: %.3f Mb)", n, BYTES_TO_MB(nSize), nInsts, ShadersVS.Num(), BYTES_TO_MB(CHWShader_D3D::s_nDeviceVSDataSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "VShaders: %d (size: %.3f Mb), Instances: %d, Device VShaders: %d (Size: %.3f Mb)", n, BYTES_TO_MB(nSize), nInsts, ShadersVS.Num(), BYTES_TO_MB(CHWShader_D3D::s_nDeviceVSDataSize));
 
 	nInsts = 0;
 	Name = CHWShader::mfGetClassName(eHWSC_Pixel);
@@ -2490,7 +2490,7 @@ void CD3D9Renderer::DebugDrawStats1()
 			}
 		}
 	}
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "PShaders: %d (size: %.3f Mb), Instances: %d, Device PShaders: %d (Size: %.3f Mb)", n, BYTES_TO_MB(nSize), nInsts, ShadersPS.Num(), BYTES_TO_MB(CHWShader_D3D::s_nDevicePSDataSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "PShaders: %d (size: %.3f Mb), Instances: %d, Device PShaders: %d (Size: %.3f Mb)", n, BYTES_TO_MB(nSize), nInsts, ShadersPS.Num(), BYTES_TO_MB(CHWShader_D3D::s_nDevicePSDataSize));
 
 	n = 0;
 	nSize = 0;
@@ -2508,7 +2508,7 @@ void CD3D9Renderer::DebugDrawStats1()
 		nCache++;
 		nSize += sc->Size();
 	}
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shader Cache: %" PRISIZE_T " (size: %.3f Mb)", nCache, BYTES_TO_MB(nSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shader Cache: %" PRISIZE_T " (size: %.3f Mb)", nCache, BYTES_TO_MB(nSize));
 
 	nSize = 0;
 	n = 0;
@@ -2520,7 +2520,7 @@ void CD3D9Renderer::DebugDrawStats1()
 		pRE = pRE->m_NextGlobal;
 	}
 	nY += nYstep;
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Render elements: %d (size: %.3f Mb)", n, BYTES_TO_MB(nSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Render elements: %d (size: %.3f Mb)", n, BYTES_TO_MB(nSize));
 
 	size_t nSAll = 0;
 	size_t nSOneMip = 0;
@@ -2587,13 +2587,13 @@ void CD3D9Renderer::DebugDrawStats1()
 	}
 
 	nY += nYstep;
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "CryName: %d, Size: %.3f Mb...", CCryNameR::GetNumberOfEntries(), BYTES_TO_MB(CCryNameR::GetMemoryUsage()));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "CryName: %d, Size: %.3f Mb...", CCryNameR::GetNumberOfEntries(), BYTES_TO_MB(CCryNameR::GetMemoryUsage()));
 	nY += nYstep;
 
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Textures: %d, ObjSize: %.3f Mb...", n, BYTES_TO_MB(nObjSize));
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " All Managed Video Size: %.3f Mb (Normals: %.3f Mb + Other: %.3f Mb), One mip: %.3f", BYTES_TO_MB(nSNM + nSAll), BYTES_TO_MB(nSNM), BYTES_TO_MB(nSAll), BYTES_TO_MB(nSOneMip));
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " All Managed System Size: %.3f Mb (Normals: %.3f Mb + Other: %.3f Mb), One mip: %.3f", BYTES_TO_MB(nSysNM + nSysAll), BYTES_TO_MB(nSysNM), BYTES_TO_MB(nSysAll), BYTES_TO_MB(nSysOneMip));
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " Streamed Size: Video: %.3f, System: %.3f, Unloaded: %.3f", BYTES_TO_MB(nStreamed), BYTES_TO_MB(nStreamedSys), BYTES_TO_MB(nStreamedUnload));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Textures: %d, ObjSize: %.3f Mb...", n, BYTES_TO_MB(nObjSize));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " All Managed Video Size: %.3f Mb (Normals: %.3f Mb + Other: %.3f Mb), One mip: %.3f", BYTES_TO_MB(nSNM + nSAll), BYTES_TO_MB(nSNM), BYTES_TO_MB(nSAll), BYTES_TO_MB(nSOneMip));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " All Managed System Size: %.3f Mb (Normals: %.3f Mb + Other: %.3f Mb), One mip: %.3f", BYTES_TO_MB(nSysNM + nSysAll), BYTES_TO_MB(nSysNM), BYTES_TO_MB(nSysAll), BYTES_TO_MB(nSysOneMip));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " Streamed Size: Video: %.3f, System: %.3f, Unloaded: %.3f", BYTES_TO_MB(nStreamed), BYTES_TO_MB(nStreamedSys), BYTES_TO_MB(nStreamedUnload));
 
 	SDynTexture_Shadow* pTXSH = SDynTexture_Shadow::s_RootShadow.m_NextShadow;
 	size_t nSizeSH = 0;
@@ -2611,7 +2611,7 @@ void CD3D9Renderer::DebugDrawStats1()
 	size_t nSizeAtlas = nSizeAtlasClouds + nSizeAtlasSprites + nSizeAtlasVoxTerrain + nSizeAtlasDynTexSources;
 	size_t nSizeManagedDyn = SDynTexture::s_nMemoryOccupied;
 
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " Dynamic DataSize: %.3f Mb (Atlases: %.3f Mb, Managed: %.3f Mb (Shadows: %.3f Mb), Other: %.3f Mb)", BYTES_TO_MB(nSRT), BYTES_TO_MB(nSizeAtlas), BYTES_TO_MB(nSizeManagedDyn), BYTES_TO_MB(nSizeSH), BYTES_TO_MB(nSRT - nSizeManagedDyn - nSizeAtlas));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " Dynamic DataSize: %.3f Mb (Atlases: %.3f Mb, Managed: %.3f Mb (Shadows: %.3f Mb), Other: %.3f Mb)", BYTES_TO_MB(nSRT), BYTES_TO_MB(nSizeAtlas), BYTES_TO_MB(nSizeManagedDyn), BYTES_TO_MB(nSizeSH), BYTES_TO_MB(nSRT - nSizeManagedDyn - nSizeAtlas));
 
 	size_t nSizeZRT = 0;
 	size_t nSizeCRT = 0;
@@ -2630,7 +2630,7 @@ void CD3D9Renderer::DebugDrawStats1()
 
 	nSizeCRT += m_d3dsdBackBuffer.Width * m_d3dsdBackBuffer.Height * 4 * 2;
 
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " Targets DataSize: %.3f Mb (Color Buffer RT's: %.3f Mb, Z-Buffers: %.3f Mb", BYTES_TO_MB(nSizeCRT + nSizeZRT), BYTES_TO_MB(nSizeCRT), BYTES_TO_MB(nSizeZRT));
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, " Targets DataSize: %.3f Mb (Color Buffer RT's: %.3f Mb, Z-Buffers: %.3f Mb", BYTES_TO_MB(nSizeCRT + nSizeZRT), BYTES_TO_MB(nSizeCRT), BYTES_TO_MB(nSizeZRT));
 
 	DebugPerfBars(nXBars, nYBars + 30);
 #endif
@@ -2652,13 +2652,13 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 	float fOffs = 190.0f;
 
 	ColorF colT = Col_Gray;
-	Draw2dLabel(nX + 50, nY, 1.6f, &colT.r, false, "Video resources:");
+	IRenderAuxText::Draw2dLabel(nX + 50, nY, 1.6f, &colT.r, false, "Video resources:");
 	nY += 20;
 
 	double fMaxTextureMemory = m_MaxTextureMemory * 1024.0 * 1024.0;
 
 	ColorF colF = Col_Orange;
-	Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Total memory: %.1f Mb", BYTES_TO_MB(fMaxTextureMemory));
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Total memory: %.1f Mb", BYTES_TO_MB(fMaxTextureMemory));
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 1, nX + fOffs + fMaxBar, nY + 12, Col_Cyan, 1.0f);
 	nY += nYst;
@@ -2671,7 +2671,7 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 			nSizeSH += pTXSH->m_pTexture->GetDeviceDataSize();
 		pTXSH = pTXSH->m_NextShadow;
 	}
-	Draw2dLabel(nX, nY, fFSize, &col.r, false, "Shadow textures: %.1f Mb", BYTES_TO_MB(nSizeSH));
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Shadow textures: %.1f Mb", BYTES_TO_MB(nSizeSH));
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeSH / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst;
@@ -2685,7 +2685,7 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 		pTX = pTX->m_Next;
 	}
 	nSizeD -= nSizeSH;
-	Draw2dLabel(nX, nY, fFSize, &col.r, false, "Dyn. text.: %.1f Mb", BYTES_TO_MB(nSizeD));
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Dyn. text.: %.1f Mb", BYTES_TO_MB(nSizeD));
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeD / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst;
@@ -2695,7 +2695,7 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 	{
 		nSizeD2 += SDynTexture2::s_nMemoryOccupied[i];
 	}
-	Draw2dLabel(nX, nY, fFSize, &col.r, false, "Dyn. atlas text.: %.1f Mb", BYTES_TO_MB(nSizeD2));
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Dyn. atlas text.: %.1f Mb", BYTES_TO_MB(nSizeD2));
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeD2 / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst;
@@ -2718,7 +2718,7 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 	nSizeCRT += m_d3dsdBackBuffer.Width * m_d3dsdBackBuffer.Height * 4 * 2;
 	nSizeCRT += nSizeZRT;
 
-	Draw2dLabel(nX, nY, fFSize, &col.r, false, "Frame targets: %.1f Mb", BYTES_TO_MB(nSizeCRT));
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Frame targets: %.1f Mb", BYTES_TO_MB(nSizeCRT));
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeCRT / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst;
@@ -2776,12 +2776,12 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 		}
 	}
 	nSRT -= (nSizeD + nSizeD2 + nSizeSH);
-	Draw2dLabel(nX, nY, fFSize, &col.r, false, "Render targets: %.1f Mb", BYTES_TO_MB(nSRT));
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Render targets: %.1f Mb", BYTES_TO_MB(nSRT));
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSRT / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst;
 
-	Draw2dLabel(nX, nY, fFSize, &col.r, false, "Textures: %.1f Mb", BYTES_TO_MB(nSAll));
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Textures: %.1f Mb", BYTES_TO_MB(nSAll));
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSAll / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst;
@@ -2794,7 +2794,7 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 			nSizeMeshes += iter->item<& CRenderMesh::m_Chain>()->Size(CRenderMesh::SIZE_VB | CRenderMesh::SIZE_IB);
 		}
 	}
-	Draw2dLabel(nX, nY, fFSize, &col.r, false, "Meshes: %.1f Mb", BYTES_TO_MB(nSizeMeshes));
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Meshes: %.1f Mb", BYTES_TO_MB(nSizeMeshes));
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeMeshes / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst;
@@ -2811,14 +2811,14 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 		m_pRenderAuxGeomD3D->GetDeviceDataSize();
 	#endif
 
-	Draw2dLabel(nX, nY, fFSize, &col.r, false, "Dyn. mesh: %.1f Mb", BYTES_TO_MB(nSizeDynM));
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Dyn. mesh: %.1f Mb", BYTES_TO_MB(nSizeDynM));
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeDynM / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst + 4;
 
 	size_t nSize = nSizeDynM + nSRT + nSizeCRT + nSizeSH + nSizeD + nSizeD2;
 	ColorF colO = Col_Blue;
-	Draw2dLabel(nX, nY, fFSize, &colO.r, false, "Overall (Pure): %.1f Mb", BYTES_TO_MB(nSize));
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colO.r, false, "Overall (Pure): %.1f Mb", BYTES_TO_MB(nSize));
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSize / fMaxTextureMemory * fMaxBar, nY + 12, Col_White, 1.0f);
 	nY += nYst;
@@ -2857,68 +2857,68 @@ void CD3D9Renderer::DebugPerfBars(int nX, int nY)
 	float fMaxBar = 200;
 	float fOffs = 180.0f;
 
-	Draw2dLabel(nX + 30, nY, 1.6f, &colP.r, false, "Instances: %d, GeomBatches: %d, MatBatches: %d, DrawCalls: %d, Text: %d, Stat: %d, PShad: %d, VShad: %d", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendInstances, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendGeomBatches, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendMaterialBatches, GetCurrentNumberOfDrawCalls(), m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumTextChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumStateChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumPShadChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumVShadChanges);
+	IRenderAuxText::Draw2dLabel(nX + 30, nY, 1.6f, &colP.r, false, "Instances: %d, GeomBatches: %d, MatBatches: %d, DrawCalls: %d, Text: %d, Stat: %d, PShad: %d, VShad: %d", m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendInstances, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendGeomBatches, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumRendMaterialBatches, GetCurrentNumberOfDrawCalls(), m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumTextChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumStateChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumPShadChanges, m_RP.m_PS[m_RP.m_nProcessThreadID].m_NumVShadChanges);
 	nY += 30;
 
 	ColorF colT = Col_Gray;
-	Draw2dLabel(nX + 50, nY, 1.6f, &colT.r, false, "Performance:");
+	IRenderAuxText::Draw2dLabel(nX + 50, nY, 1.6f, &colT.r, false, "Performance:");
 	nY += 20;
 
 	float fSmooth = 5.0f;
 	fFrameTime = (iTimer->GetFrameTime() + fFrameTime * fSmooth) / (fSmooth + 1.0f);
 
 	ColorF colF = Col_Orange;
-	Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Frame: %.3fms", fFrameTime * 1000.0f);
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Frame: %.3fms", fFrameTime * 1000.0f);
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 4, nX + fOffs + fMaxBar, nY + 12, Col_Cyan, 1.0f);
 	nY += nYst + 5;
 
 	float fTimeDIPSum = fTimeDIPZ + fTimeDIP[EFSLIST_DEFERRED_PREPROCESS] + fTimeDIP[EFSLIST_GENERAL] + fTimeDIP[EFSLIST_TERRAINLAYER] + fTimeDIP[EFSLIST_SHADOW_GEN] + fTimeDIP[EFSLIST_DECAL] + fTimeDIPAO + fTimeDIPRAIN + fTimeDIPLayers + fTimeDIP[EFSLIST_WATER_VOLUMES] + fTimeDIP[EFSLIST_TRANSP] + fTimeDIP[EFSLIST_POSTPROCESS] + fTimeDIPSprites;
-	Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Sum all passes: %.3fms", fTimeDIPSum * 1000.0f);
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Sum all passes: %.3fms", fTimeDIPSum * 1000.0f);
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 4, nX + fOffs + fTimeDIPSum / fFrameTime * fMaxBar, nY + 12, Col_Yellow, 1.0f);
 	nY += nYst + 5;
 
 	fRTTimeProcess = (m_fTimeProcessedRT[m_RP.m_nFillThreadID] + fRTTimeProcess * fSmooth) / (fSmooth + 1.0f);
-	Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT process time: %.3fms", fRTTimeProcess * 1000.0f);
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT process time: %.3fms", fRTTimeProcess * 1000.0f);
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeProcess / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 	nX += 5;
 
 	fRTTimeEndFrame = (m_fRTTimeEndFrame + fRTTimeEndFrame * fSmooth) / (fSmooth + 1.0f);
-	Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT end frame: %.3fms", fRTTimeEndFrame * 1000.0f);
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT end frame: %.3fms", fRTTimeEndFrame * 1000.0f);
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeEndFrame / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 
 	fRTTimeFlashRender = (m_fRTTimeFlashRender + fRTTimeFlashRender * fSmooth) / (fSmooth + 1.0f);
-	Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT flash render: %.3fms", fRTTimeFlashRender * 1000.0f);
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT flash render: %.3fms", fRTTimeFlashRender * 1000.0f);
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeFlashRender / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 
 	fRTTimeMiscRender = (m_fRTTimeMiscRender + fRTTimeMiscRender * fSmooth) / (fSmooth + 1.0f);
-	Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT misc render: %.3fms", fRTTimeMiscRender * 1000.0f);
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT misc render: %.3fms", fRTTimeMiscRender * 1000.0f);
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeMiscRender / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 
 	fRTTimeSceneRender = (m_fRTTimeSceneRender + fRTTimeSceneRender * fSmooth) / (fSmooth + 1.0f);
-	Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT scene render: %.3fms", fRTTimeSceneRender * 1000.0f);
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT scene render: %.3fms", fRTTimeSceneRender * 1000.0f);
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeSceneRender / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 
 	float fRTTimeOverall = fRTTimeSceneRender + fRTTimeEndFrame + fRTTimeFlashRender + fRTTimeMiscRender;
-	Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT CPU overall: %.3fms", fRTTimeOverall * 1000.0f);
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT CPU overall: %.3fms", fRTTimeOverall * 1000.0f);
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeOverall / fFrameTime * fMaxBar, nY + 12, Col_LightGray, 1.0f);
 	nY += nYst + 5;
 	nX -= 5;
 
 	fWaitForGPU = (m_fTimeWaitForGPU[m_RP.m_nFillThreadID] + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
-	Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Wait for GPU: %.3fms", fWaitForGPU * 1000.0f);
+	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Wait for GPU: %.3fms", fWaitForGPU * 1000.0f);
 	CTexture::s_ptexWhite->Apply(0);
 	DrawQuad(nX + fOffs, nY + 4, nX + fOffs + fWaitForGPU / fFrameTime * fMaxBar, nY + 12, Col_Blue, 1.0f);
 	nY += nYst;
@@ -3049,7 +3049,7 @@ void CD3D9Renderer::DebugPrintShader(CHWShader_D3D* pSH, void* pI, int nX, int n
 	pSH->mfGenName(pInst, &str[nSize], 512 - nSize, 1);
 
 	ColorF col = Col_Green;
-	Draw2dLabel(nX, nY, 1.6f, &col.r, false, "Shader: %s (%d instructions)", str, pInst->m_nInstructions);
+	IRenderAuxText::Draw2dLabel(nX, nY, 1.6f, &col.r, false, "Shader: %s (%d instructions)", str, pInst->m_nInstructions);
 	nX += 10;
 	nY += 25;
 
@@ -3069,7 +3069,7 @@ void CD3D9Renderer::DebugPrintShader(CHWShader_D3D* pSH, void* pI, int nX, int n
 	while (szAsm[0])
 	{
 		fxFillCR(&szAsm, str);
-		Draw2dLabel(nX, nY, 1.2f, &colSH.r, false, "%s", str);
+		IRenderAuxText::Draw2dLabel(nX, nY, 1.2f, &colSH.r, false, "%s", str);
 		nY += 11;
 		if (nY + 12 > nMaxY)
 		{
@@ -3090,7 +3090,7 @@ void CD3D9Renderer::DebugDrawStats8()
 {
 #if !defined(_RELEASE) && defined(ENABLE_PROFILING_CODE)
 	ColorF col = Col_White;
-	Draw2dLabel(30, 50, 1.2f, &col.r, false, "%d total instanced DIPs in %d batches", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nInsts, m_RP.m_PS[m_RP.m_nProcessThreadID].m_nInstCalls);
+	IRenderAuxText::Draw2dLabel(30, 50, 1.2f, &col.r, false, "%d total instanced DIPs in %d batches", m_RP.m_PS[m_RP.m_nProcessThreadID].m_nInsts, m_RP.m_PS[m_RP.m_nProcessThreadID].m_nInstCalls);
 #endif
 }
 
@@ -3150,7 +3150,7 @@ void CD3D9Renderer::DebugDrawStats2()
 	SShaderTechniqueStat* pTech = Techs[snTech];
 
 	ColorF col = Col_Yellow;
-	Draw2dLabel(nX, nY, 2.0f, &col.r, false, "FX Shader: %s, Technique: %s (%d out of %d), Pass: %d", pTech->pShader->GetName(), pTech->pTech->m_NameStr.c_str(), snTech, Techs.Num(), 0);
+	IRenderAuxText::Draw2dLabel(nX, nY, 2.0f, &col.r, false, "FX Shader: %s, Technique: %s (%d out of %d), Pass: %d", pTech->pShader->GetName(), pTech->pTech->m_NameStr.c_str(), snTech, Techs.Num(), 0);
 	nY += 25;
 
 	CHWShader_D3D* pVS = pTech->pVS;
@@ -3164,18 +3164,18 @@ void CD3D9Renderer::DebugDrawStats20()
 {
 #if !defined(_RELEASE) && defined(ENABLE_PROFILING_CODE)
 	ColorF col = Col_Yellow;
-	Draw2dLabel(30, 50, 1.5f, &col.r, false, "Compiled Render Objects");
-	Draw2dLabel(30, 80, 1.5f, &col.r, false, "Objects: Modified: %-5d  Temporary: %-5d  Incomplete: %-5d",
+	IRenderAuxText::Draw2dLabel(30, 50, 1.5f, &col.r, false, "Compiled Render Objects");
+	IRenderAuxText::Draw2dLabel(30, 80, 1.5f, &col.r, false, "Objects: Modified: %-5d  Temporary: %-5d  Incomplete: %-5d",
 	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nModifiedCompiledObjects,
 	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nTempCompiledObjects,
 	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nIncompleteCompiledObjects);
-	Draw2dLabel(30, 110, 1.5f, &col.r, false, "State Changes: PSO [%d] PT [%d] L [%d] I [%d] RS [%d]",
+	IRenderAuxText::Draw2dLabel(30, 110, 1.5f, &col.r, false, "State Changes: PSO [%d] PT [%d] L [%d] I [%d] RS [%d]",
 	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumPSOSwitches,
 	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumTopologySets,
 	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumLayoutSwitches,
 	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumInlineSets,
 	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumResourceSetSwitches);
-	Draw2dLabel(30, 140, 1.5f, &col.r, false, "Resource bindings Mem[GPU,CPU]: VB [%d,%d] IB [%d,%d] CB [%d,%d] / [%d,%d] UB [%d,%d] TEX [%d,%d]",
+	IRenderAuxText::Draw2dLabel(30, 140, 1.5f, &col.r, false, "Resource bindings Mem[GPU,CPU]: VB [%d,%d] IB [%d,%d] CB [%d,%d] / [%d,%d] UB [%d,%d] TEX [%d,%d]",
 	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundVertexBuffers[0],
 	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundVertexBuffers[1],
 	            m_RP.m_PS[m_RP.m_nProcessThreadID].m_nNumBoundIndexBuffers[0],
@@ -3271,11 +3271,11 @@ void CD3D9Renderer::DebugDrawStats()
 						pfColor = &clrDPInterp.r;
 					}
 
-					DrawLabelEx(pInfo.pPos, 1.3f, pfColor, true, true, "DP: %d (%d/%d/%d/%d/%d)",
+					IRenderAuxText::DrawLabelEx(pInfo.pPos, 1.3f, pfColor, true, true, "DP: %d (%d/%d/%d/%d/%d)",
 					            nDrawcalls, pInfo.nZpass, pInfo.nGeneral, pInfo.nTransparent, pInfo.nShadows, pInfo.nMisc);
 				}
 
-				Draw2dLabel(40.f, 40.f, 1.3f, &clrInfo.r, false, "Instance drawcall count (zpass/general/transparent/shadows/misc)");
+				IRenderAuxText::Draw2dLabel(40.f, 40.f, 1.3f, &clrInfo.r, false, "Instance drawcall count (zpass/general/transparent/shadows/misc)");
 			}
 			break;
 		}
@@ -3302,7 +3302,7 @@ void CD3D9Renderer::DebugDrawStats()
 
 					uint32 nDrawcalls = pInfo.nShadows + pInfo.nZpass + pInfo.nGeneral + pInfo.nTransparent + pInfo.nMisc;
 
-					Draw2dLabel(970.f, 65.f, 1.5f, yellow, false, "Draw calls: %d \n  zpass: %d\n  general: %d\n  transparent: %d\n  shadows: %d\n  misc: %d\n",
+					IRenderAuxText::Draw2dLabel(970.f, 65.f, 1.5f, yellow, false, "Draw calls: %d \n  zpass: %d\n  general: %d\n  transparent: %d\n  shadows: %d\n  misc: %d\n",
 					            nDrawcalls, pInfo.nZpass, pInfo.nGeneral, pInfo.nTransparent, pInfo.nShadows, pInfo.nMisc);
 				}
 			}
@@ -3345,15 +3345,15 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 
 		float fInvScreenArea = 1.0f / ((float)GetWidth() * (float)GetHeight());
 
-		Draw2dLabel(xPos, yPos, size, &titleColor.r, bCentre, "Partial Resolves");
+		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &titleColor.r, bCentre, "Partial Resolves");
 		yPos += textYSpacing;
-		Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Count: %d", pRP->m_refractionPartialResolveCount);
+		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Count: %d", pRP->m_refractionPartialResolveCount);
 		yPos += textYSpacing;
-		Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Pixels: %d", pRP->m_refractionPartialResolvePixelCount);
+		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Pixels: %d", pRP->m_refractionPartialResolvePixelCount);
 		yPos += textYSpacing;
-		Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Percentage of Screen area: %d", (int) (pRP->m_refractionPartialResolvePixelCount * fInvScreenArea * 100.0f));
+		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Percentage of Screen area: %d", (int) (pRP->m_refractionPartialResolvePixelCount * fInvScreenArea * 100.0f));
 		yPos += textYSpacing;
-		Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Estimated cost: %.2fms", pRP->m_fRefractionPartialResolveEstimatedCost);
+		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Estimated cost: %.2fms", pRP->m_fRefractionPartialResolveEstimatedCost);
 	}
 	#endif
 

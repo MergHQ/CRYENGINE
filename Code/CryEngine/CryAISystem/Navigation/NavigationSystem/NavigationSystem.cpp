@@ -4534,11 +4534,11 @@ void NavigationSystemDebugDraw::DebugDrawMemoryStats(NavigationSystem& navigatio
 
 				size_t totalMemory = meshMemStats.totalNavigationMeshMemory + offMeshMemStats.totalSize + linkMemStats.totalSize;
 
-				gEnv->pRenderer->Draw2dLabel(posX, posY, 1.3f, white, false, "Mesh: %s Agent: %s - Total Memory %.3f KB : Mesh %.3f KB / Grid %.3f KB / OffMesh %.3f",
+				IRenderAuxText::Draw2dLabel(posX, posY, 1.3f, white, false, "Mesh: %s Agent: %s - Total Memory %.3f KB : Mesh %.3f KB / Grid %.3f KB / OffMesh %.3f",
 				                             mesh.name.c_str(), agentType.name.c_str(),
 				                             totalMemory * kbInvert, meshMemStats.totalNavigationMeshMemory * kbInvert, meshMemStats.gridProfiler.GetMemoryUsage() * kbInvert, (offMeshMemStats.totalSize + linkMemStats.totalSize) * kbInvert);
 				posY += 12.0f;
-				gEnv->pRenderer->Draw2dLabel(posX, posY, 1.3f, grey, false, "Tiles [%d] / Vertices [%d] - %.3f KB / Triangles [%d] - %.3f KB / Links [%d] - %.3f KB / BVNodes [%d] - %.3f KB",
+				IRenderAuxText::Draw2dLabel(posX, posY, 1.3f, grey, false, "Tiles [%d] / Vertices [%d] - %.3f KB / Triangles [%d] - %.3f KB / Links [%d] - %.3f KB / BVNodes [%d] - %.3f KB",
 				                             meshMemStats.gridProfiler[MNM::MeshGrid::TileCount],
 				                             meshMemStats.gridProfiler[MNM::MeshGrid::VertexCount], meshMemStats.gridProfiler[MNM::MeshGrid::VertexMemory].used * kbInvert,
 				                             meshMemStats.gridProfiler[MNM::MeshGrid::TriangleCount], meshMemStats.gridProfiler[MNM::MeshGrid::TriangleMemory].used * kbInvert,
@@ -4547,7 +4547,7 @@ void NavigationSystemDebugDraw::DebugDrawMemoryStats(NavigationSystem& navigatio
 				                             );
 
 				posY += 12.0f;
-				gEnv->pRenderer->Draw2dLabel(posX, posY, 1.3f, grey, false, "OffMesh Memory : Tile Links %.3f KB / Object Info %.3f KB",
+				IRenderAuxText::Draw2dLabel(posX, posY, 1.3f, grey, false, "OffMesh Memory : Tile Links %.3f KB / Object Info %.3f KB",
 				                             offMeshMemStats.offMeshTileLinksMemory * kbInvert,
 				                             linkMemStats.linkInfoSize * kbInvert
 				                             );
@@ -4559,7 +4559,7 @@ void NavigationSystemDebugDraw::DebugDrawMemoryStats(NavigationSystem& navigatio
 
 		//TODO: Add Navigation system itself (internal containers and others)
 
-		gEnv->pRenderer->Draw2dLabel(40.0f, 20.0f, 1.5f, white, false, "Navigation System: %.3f KB", totalNavigationSystemMemory * kbInvert);
+		IRenderAuxText::Draw2dLabel(40.0f, 20.0f, 1.5f, white, false, "Navigation System: %.3f KB", totalNavigationSystemMemory * kbInvert);
 
 		pSizer->Release();
 	}
@@ -4653,7 +4653,7 @@ void NavigationSystemDebugDraw::NavigationSystemWorkingProgress::Draw()
 
 	const float white[4] = { 1.0f, 1.0f, 1.0f, 0.85f * m_timeUpdating };
 
-	gEnv->pRenderer->Draw2dLabel(progressBarLocation.x * width, (progressBarLocation.y * height) - 18.0f, 1.4f, white, false, "Processing Navigation Meshes");
+	IRenderAuxText::Draw2dLabel(progressBarLocation.x * width, (progressBarLocation.y * height) - 18.0f, 1.4f, white, false, "Processing Navigation Meshes");
 
 	DrawQuad(progressBarLocation, progressBarSize, backGroundColor);
 	DrawQuad(progressBarLocation, Vec2(progressBarSize.x * progressFraction, progressBarSize.y), progressColor);

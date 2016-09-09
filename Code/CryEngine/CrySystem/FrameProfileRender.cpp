@@ -1103,7 +1103,7 @@ void DrawTextLabel(IRenderer* pRenderer, float& x, float& y, float* pColor, floa
 	cry_vsprintf(buffer, format, args);
 	va_end(args);
 
-	pRenderer->Draw2dLabel(x, y, fFontScale, pColor, false, "%s", buffer);
+	IRenderAuxText::Draw2dLabel(x, y, fFontScale, pColor, false, "%s", buffer);
 	y += FrameProfileRenderConstants::c_yStepSizeText;
 }
 

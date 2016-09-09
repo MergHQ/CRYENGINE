@@ -471,7 +471,7 @@ void CAutoAimManager::DebugDraw()
 	pRenderAux->SetRenderFlags(oldFlags);
 
 	const float white[4] = {1.0f, 1.0f, 1.0f, 0.75f};
-	gEnv->pRenderer->Draw2dLabel(50.0f, 50.0f, 1.5f, white, false, "Number of targets: %d", numAutoaimTargets);
+	IRenderAuxText::Draw2dLabel(50.0f, 50.0f, 1.5f, white, false, "Number of targets: %d", numAutoaimTargets);
 }
 
 void CAutoAimManager::DrawDisc(const Vec3& center, Vec3 axis, float innerRadius, float outerRadius, const ColorB& innerColor, const ColorB& outerColor)

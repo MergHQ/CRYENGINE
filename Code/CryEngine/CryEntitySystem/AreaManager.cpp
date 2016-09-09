@@ -220,7 +220,7 @@ void CAreaManager::Update()
 
 		if (bDrawDebug)
 		{
-			gEnv->pRenderer->Draw2dLabel(debugPosX, debugPosY, 1.35f, fColor, false, "Entities to update: %d\n", static_cast<int>(m_mapEntitiesToUpdate.size()));
+			IRenderAuxText::Draw2dLabel(debugPosX, debugPosY, 1.35f, fColor, false, "Entities to update: %d\n", static_cast<int>(m_mapEntitiesToUpdate.size()));
 			debugPosY += 12.0f;
 		}
 #endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
@@ -246,7 +246,7 @@ void CAreaManager::Update()
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
 				if (bDrawDebug)
 				{
-					gEnv->pRenderer->Draw2dLabel(debugPosX + 10.0f, debugPosY, 1.35f, fColor, false, "Entity: %d (%s) Pos: (%.2f, %.2f, %.2f)\n", entityIdPair.first, pIEntity ? pIEntity->GetName() : "nullptr", position.x, position.y, position.z);
+					IRenderAuxText::Draw2dLabel(debugPosX + 10.0f, debugPosY, 1.35f, fColor, false, "Entity: %d (%s) Pos: (%.2f, %.2f, %.2f)\n", entityIdPair.first, pIEntity ? pIEntity->GetName() : "nullptr", position.x, position.y, position.z);
 					debugPosY += 12.0f;
 				}
 #endif  // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
@@ -1093,9 +1093,9 @@ void CAreaManager::DrawAreas(ISystem const* const pSystem)
 	if (bDraw)
 	{
 		float fDebugPosY = 10.0f;
-		gEnv->pRenderer->Draw2dLabel(10.0f, fDebugPosY, 1.5f, fColor, false, "<AreaManager>");
+		IRenderAuxText::Draw2dLabel(10.0f, fDebugPosY, 1.5f, fColor, false, "<AreaManager>");
 		fDebugPosY += 20.0f;
-		gEnv->pRenderer->Draw2dLabel(30.0f, fDebugPosY, 1.3f, fColor, false, "Entities: %d | Areas in Grid: %d", static_cast<int>(m_mapAreaCache.size()), static_cast<int>(m_areaGrid.GetNumAreas()));
+		IRenderAuxText::Draw2dLabel(30.0f, fDebugPosY, 1.3f, fColor, false, "Entities: %d | Areas in Grid: %d", static_cast<int>(m_mapAreaCache.size()), static_cast<int>(m_areaGrid.GetNumAreas()));
 		fDebugPosY += 20.0f;
 
 		TAreaCacheMap::const_iterator const IterAreaCacheEnd(m_mapAreaCache.end());
@@ -1114,7 +1114,7 @@ void CAreaManager::DrawAreas(ISystem const* const pSystem)
 					SAreasCache const& areaCache((*IterAreaCache).second);
 					Vec3 const& pos(areaCache.lastUpdatePos);
 
-					gEnv->pRenderer->Draw2dLabel(30.0f, fDebugPosY, 1.3f, fColor, false, "Entity: %d (%s) Pos: (%.2f, %.2f, %.2f) Areas in AreaCache: %d", entityId, pEntity->GetName(), pos.x, pos.y, pos.z, static_cast<int>(areaCache.entries.size()));
+					IRenderAuxText::Draw2dLabel(30.0f, fDebugPosY, 1.3f, fColor, false, "Entity: %d (%s) Pos: (%.2f, %.2f, %.2f) Areas in AreaCache: %d", entityId, pEntity->GetName(), pos.x, pos.y, pos.z, static_cast<int>(areaCache.entries.size()));
 					fDebugPosY += 12.0f;
 
 					// Invalidate grid flag in area cache
@@ -1174,7 +1174,7 @@ void CAreaManager::DrawAreas(ISystem const* const pSystem)
 						}
 
 						CryFixedStringT<16> const sState(bIsPointWithin ? "Inside" : (areaCacheEntry.bNear ? "Near" : "Far"));
-						gEnv->pRenderer->Draw2dLabel(30.0f, fDebugPosY, 1.3f, fColor, false, "Name: %s AreaID: %d GroupID: %d Priority: %d Type: %s Distance: %.2f State: %s Entities: %d", pArea->GetAreaEntityName(), pArea->GetID(), pArea->GetGroup(), pArea->GetPriority(), sAreaType.c_str(), sqrt_tpl(fDistanceSq > 0.0f ? fDistanceSq : 0.0f), sState.c_str(), static_cast<int>(pArea->GetCacheEntityCount()));
+						IRenderAuxText::Draw2dLabel(30.0f, fDebugPosY, 1.3f, fColor, false, "Name: %s AreaID: %d GroupID: %d Priority: %d Type: %s Distance: %.2f State: %s Entities: %d", pArea->GetAreaEntityName(), pArea->GetID(), pArea->GetGroup(), pArea->GetPriority(), sAreaType.c_str(), sqrt_tpl(fDistanceSq > 0.0f ? fDistanceSq : 0.0f), sState.c_str(), static_cast<int>(pArea->GetCacheEntityCount()));
 						fDebugPosY += 12.0f;
 					}
 

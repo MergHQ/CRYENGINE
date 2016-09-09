@@ -176,7 +176,7 @@ void CAnimatedCharacter::UpdateTime()
 	if (DebugTextEnabled())
 	{
 		const ColorF cWhite = ColorF(1, 1, 1, 1);
-		gEnv->pRenderer->Draw2dLabel(10, 50, 2.0f, (float*)&cWhite, false, "FrameTime Cur[%f] Prev[%f]", m_curFrameTime, m_prevFrameTime);
+		IRenderAuxText::Draw2dLabel(10, 50, 2.0f, (float*)&cWhite, false, "FrameTime Cur[%f] Prev[%f]", m_curFrameTime, m_prevFrameTime);
 	}
 #endif
 }
@@ -277,7 +277,7 @@ void CAnimatedCharacter::AcquireRequestedBehaviourMovement()
 	{
 		Ang3 requestedEntityRot(m_requestedEntityMovement.q);
 		const ColorF cWhite = ColorF(1, 1, 1, 1);
-		gEnv->pRenderer->Draw2dLabel(350, 50, 2.0f, (float*)&cWhite, false, "Req Movement[%.2f, %.2f, %.2f | %.2f, %.2f, %.2f]",
+		IRenderAuxText::Draw2dLabel(350, 50, 2.0f, (float*)&cWhite, false, "Req Movement[%.2f, %.2f, %.2f | %.2f, %.2f, %.2f]",
 		                             m_requestedEntityMovement.t.x / m_curFrameTime, m_requestedEntityMovement.t.y / m_curFrameTime, m_requestedEntityMovement.t.z / m_curFrameTime,
 		                             RAD2DEG(requestedEntityRot.x), RAD2DEG(requestedEntityRot.y), RAD2DEG(requestedEntityRot.z));
 	}
@@ -415,7 +415,7 @@ void CAnimatedCharacter::PostProcessingUpdate()
 		{
 			bool inAir = status.bFlying != 0;
 
-			//			gEnv->pRenderer->Draw2dLabel(10, 100, 1.3f, (float*)&Vec4(1, 1, 1, 1), false, "Ground: %f Ent: %f", groundHeight, entHeight);
+			//			IRenderAuxText::Draw2dLabel(10, 100, 1.3f, (float*)&Vec4(1, 1, 1, 1), false, "Ground: %f Ent: %f", groundHeight, entHeight);
 
 			if (inAir != m_wasInAir)
 			{
@@ -464,7 +464,7 @@ void CAnimatedCharacter::PostProcessingUpdate()
 			landingOffset -= t * m_totalLandBob;
 			snapAlignFeet = true;
 
-			//			gEnv->pRenderer->Draw2dLabel(10, 220, 1.3f, (float*)&Vec4(1, 1, 1, 1), false, "FT: %f t: %f", m_landBobTime, t);
+			//			IRenderAuxText::Draw2dLabel(10, 220, 1.3f, (float*)&Vec4(1, 1, 1, 1), false, "FT: %f t: %f", m_landBobTime, t);
 		}
 	}
 	else
@@ -986,16 +986,16 @@ void CAnimatedCharacter::UpdatePhysicalColliderMode()
 		static float h = 20.0f;
 
 		string name = GetEntity()->GetName();
-		gEnv->pRenderer->Draw2dLabel(x, y - h, 1.7f, (float*)&color, false, "ColliderMode (%s)", name.c_str());
+		IRenderAuxText::Draw2dLabel(x, y - h, 1.7f, (float*)&color, false, "ColliderMode (%s)", name.c_str());
 
 		int layer;
 		const char* tag;
 		for (layer = 0; layer < eColliderModeLayer_COUNT; layer++)
 		{
 			tag = (m_colliderModeLayersTag[layer] == NULL) ? "" : m_colliderModeLayersTag[layer];
-			gEnv->pRenderer->Draw2dLabel(x, y + (float)layer * h, 1.7f, (float*)&color, false, "  %s(%d): %s(%d)   %s", g_szColliderModeLayerString[layer], layer, g_szColliderModeString[m_colliderModeLayers[layer]], m_colliderModeLayers[layer], tag);
+			IRenderAuxText::Draw2dLabel(x, y + (float)layer * h, 1.7f, (float*)&color, false, "  %s(%d): %s(%d)   %s", g_szColliderModeLayerString[layer], layer, g_szColliderModeString[m_colliderModeLayers[layer]], m_colliderModeLayers[layer], tag);
 		}
-		gEnv->pRenderer->Draw2dLabel(x, y + (float)layer * h, 1.7f, (float*)&color, false, "  FINAL: %s(%d)", g_szColliderModeString[newColliderMode], newColliderMode);
+		IRenderAuxText::Draw2dLabel(x, y + (float)layer * h, 1.7f, (float*)&color, false, "  FINAL: %s(%d)", g_szColliderModeString[newColliderMode], newColliderMode);
 	}
 	//#endif
 
@@ -1276,7 +1276,7 @@ void CAnimatedCharacter::UpdatePhysicsInertia()
 		   if (DebugTextEnabled())
 		   {
 		   ColorF colorWhite(1,1,1,1);
-		   gEnv->pRenderer->Draw2dLabel(500, 35, 1.0f, (float*)&colorWhite, false, "Inertia [%.2f, %.2f]", dynNew.kInertia, dynNew.kInertiaAccel);
+		   IRenderAuxText::Draw2dLabel(500, 35, 1.0f, (float*)&colorWhite, false, "Inertia [%.2f, %.2f]", dynNew.kInertia, dynNew.kInertiaAccel);
 		   }
 		 */
 	}

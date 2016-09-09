@@ -1021,7 +1021,7 @@ void CEnvironmentalWeapon::UpdateDebugOutput() const
 
 						// Render number at pt
 						const int count = static_cast<int>(iter - m_debugCollisionPts_Geom.begin()); 
-						gEnv->pRenderer->DrawLabelEx(iter->m_wCollisionPos, fFontSize, txtDrawColor, true, true, "%d",count);
+						IRenderAuxText::DrawLabelEx(iter->m_wCollisionPos, fFontSize, txtDrawColor, true, true, "%d",count);
 
 						if(iter->m_showDamageZoneHelper)
 						{
@@ -1034,7 +1034,7 @@ void CEnvironmentalWeapon::UpdateDebugOutput() const
 							pAuxGeom->DrawLine(dzhPos, drawCol, dzhPos + (iter->m_damageHelperDir*currentFacingLineLength), drawCol, 1.0f);
 					
 							// Render number at damage zone helper
-							gEnv->pRenderer->DrawLabelEx(dzhPos, fFontSize, txtDrawColor, true, true, "%d",count);
+							IRenderAuxText::DrawLabelEx(dzhPos, fFontSize, txtDrawColor, true, true, "%d",count);
 						}
 					}
 				}
@@ -1168,7 +1168,7 @@ void CEnvironmentalWeapon::RenderDebugStats() const
 		}
 	}
 	Vec3 vDrawPos = GetEntity()->GetWorldPos() + Vec3(0.0f,0.0f,0.6f);
-	gEnv->pRenderer->DrawLabelEx(vDrawPos, fFontSize, drawColor, true, true, "%s", sMsg.c_str());
+	IRenderAuxText::DrawLabelEx(vDrawPos, fFontSize, drawColor, true, true, "%s", sMsg.c_str());
 }
 #endif // #ifndef _RELEASE
 

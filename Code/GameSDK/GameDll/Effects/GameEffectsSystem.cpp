@@ -625,21 +625,21 @@ void CGameEffectsSystem::DrawDebugDisplay()
 	int debugEffectCount = s_effectDebugList.Size();
 	if((g_pGameCVars->g_gameFXSystemDebug) && (debugEffectCount > 0))
 	{
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Debug view:");
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x+effectNameXOffset,currentTextPos.y,textSize,&effectNameCol.r,false, "%s", GAME_FX_DEBUG_VIEW_NAMES[m_debugView]);
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Debug view:");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x+effectNameXOffset,currentTextPos.y,textSize,&effectNameCol.r,false, "%s", GAME_FX_DEBUG_VIEW_NAMES[m_debugView]);
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Change debug view: Left/Right arrows)");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Change debug view: Left/Right arrows)");
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Debug effect:");
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x+effectNameXOffset,currentTextPos.y,textSize,&effectNameCol.r,false, "%s", s_effectDebugList[s_currentDebugEffectId].effectName);
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,"Debug effect:");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x+effectNameXOffset,currentTextPos.y,textSize,&effectNameCol.r,false, "%s", s_effectDebugList[s_currentDebugEffectId].effectName);
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Change effect: NumPad +/-)");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Change effect: NumPad +/-)");
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Reload effect data: NumPad .)");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Reload effect data: NumPad .)");
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Reset Particle System: Delete)");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Reset Particle System: Delete)");
 		currentTextPos.y += textYSpacing;
-		gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Pause Particle System: End)");
+		IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&controlCol.r,false,"(Pause Particle System: End)");
 		currentTextPos.y += textYSpacing;
 
 		if(s_effectDebugList[s_currentDebugEffectId].displayCallback)
@@ -657,7 +657,7 @@ void CGameEffectsSystem::DrawDebugDisplay()
 			const int EFFECT_LIST_COUNT = 2;
 			IGameEffect* pEffectListArray[EFFECT_LIST_COUNT] = {m_effectsToUpdate,m_effectsNotToUpdate};
 
-			gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&effectNameCol.r,false,"Name");
+			IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&effectNameCol.r,false,"Name");
 			currentTextPos.x += nameSize;
 
 			const int FLAG_COUNT = 9;
@@ -675,7 +675,7 @@ void CGameEffectsSystem::DrawDebugDisplay()
 
 			for(int i=0; i<FLAG_COUNT; i++)
 			{
-				gEnv->pRenderer->Draw2dLabel(currentTextPos.x, currentTextPos.y, textSize, &effectNameCol.r, false, "%s", flagName[i]);
+				IRenderAuxText::Draw2dLabel(currentTextPos.x, currentTextPos.y, textSize, &effectNameCol.r, false, "%s", flagName[i]);
 				currentTextPos.x += tabSize;
 			}
 		
@@ -688,12 +688,12 @@ void CGameEffectsSystem::DrawDebugDisplay()
 				{
 					currentTextPos.x = listPos.x;
 
-					gEnv->pRenderer->Draw2dLabel(currentTextPos.x, currentTextPos.y, textSize, &textCol.r, false, "%s", pCurrentEffect->GetName());
+					IRenderAuxText::Draw2dLabel(currentTextPos.x, currentTextPos.y, textSize, &textCol.r, false, "%s", pCurrentEffect->GetName());
 					currentTextPos.x += nameSize;
 
 					for(int i=0; i<FLAG_COUNT; i++)
 					{
-						gEnv->pRenderer->Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,pCurrentEffect->IsFlagSet(flag[i])?"1":"0");
+						IRenderAuxText::Draw2dLabel(currentTextPos.x,currentTextPos.y,textSize,&textCol.r,false,pCurrentEffect->IsFlagSet(flag[i])?"1":"0");
 						currentTextPos.x += tabSize;
 					}
 

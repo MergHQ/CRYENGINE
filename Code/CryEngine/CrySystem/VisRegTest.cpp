@@ -150,7 +150,7 @@ void CVisRegTest::ExecCommands()
 	if (m_nextCmd >= m_cmdBuf.size()) return;
 
 	float col[] = { 0, 1, 0, 1 };
-	gEnv->pRenderer->Draw2dLabel(10, 10, 2, col, false, "Visual Regression Test");
+	IRenderAuxText::Draw2dLabel(10, 10, 2, col, false, "Visual Regression Test");
 
 	if (m_waitFrames > 0)
 	{

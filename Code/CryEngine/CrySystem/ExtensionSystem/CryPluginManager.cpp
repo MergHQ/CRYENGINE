@@ -4,6 +4,7 @@
 #include "CryPluginManager.h"
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ICryFactoryRegistry.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #include <CryMono/IMonoRuntime.h>
 
@@ -487,7 +488,7 @@ void CCryPluginManager::Update(int updateFlags, int nPauseMode)
 		{
 			for (TPluginList::const_iterator it = m_pluginContainer.begin(); it != m_pluginContainer.end(); ++it)
 			{
-				gEnv->pRenderer->Draw2dLabel(xMargin + secondColumnOffset, yPos, 1.5f, color, false, "$3%s '%s'", it->GetPluginDescriptor().m_pluginClassName.c_str(), it->GetPluginDescriptor().m_pluginBinaryPath.c_str());
+				IRenderAuxText::Draw2dLabel(xMargin + secondColumnOffset, yPos, 1.5f, color, false, "$3%s '%s'", it->GetPluginDescriptor().m_pluginClassName.c_str(), it->GetPluginDescriptor().m_pluginBinaryPath.c_str());
 				yPos -= 15.f;
 			}
 		}

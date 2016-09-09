@@ -321,7 +321,7 @@ void CLocalPlayerComponent::UpdateFPBodyPartsVisibility()
 			}
 
 			//const float white[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-			//gEnv->pRenderer->Draw2dLabel(50.0f, 50.0f, 2.0f, white, false, visible ? "Rendering complete FP body" : "Rendering only arms");
+			//IRenderAuxText::Draw2dLabel(50.0f, 50.0f, 2.0f, white, false, visible ? "Rendering complete FP body" : "Rendering only arms");
 
 			//Early out if no change
 			if (m_fpCompleteBodyVisible == visible)

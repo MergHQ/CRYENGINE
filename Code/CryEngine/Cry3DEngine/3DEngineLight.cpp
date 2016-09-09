@@ -593,7 +593,7 @@ void C3DEngine::PrepareLightSourcesForRendering_1(const SRenderingPassInfo& pass
 			CDLight* pL = m_lstDynLights[i];
 			float fSize = 0.05f * (sinf(GetCurTimeSec() * 10.f) + 2.0f);
 			DrawSphere(pL->m_Origin, fSize, pL->m_Color);
-			GetRenderer()->DrawLabel(pL->m_Origin, 1.3f, "id=%d, rad=%.1f, vdr=%d", pL->m_Id, pL->m_fRadius, (int)(pL->m_pOwner ? pL->m_pOwner->m_ucViewDistRatio : 0));
+			IRenderAuxText::DrawLabel(pL->m_Origin, 1.3f, "id=%d, rad=%.1f, vdr=%d", pL->m_Id, pL->m_fRadius, (int)(pL->m_pOwner ? pL->m_pOwner->m_ucViewDistRatio : 0));
 		}
 	}
 }
