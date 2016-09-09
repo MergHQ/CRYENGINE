@@ -118,14 +118,15 @@ void CFogStage::Execute()
 #endif
 
 		// prevent fog depth clipping if volumetric fog or SVOGI are activated.
-		const bool useFogDepthTest = (CRenderer::CV_r_FogDepthTest != 0.0f)
-		                             && !bVolumtricFog
-		                             && !bSVOGI;
+		bool useFogDepthTest = (CRenderer::CV_r_FogDepthTest != 0.0f)
+		                       && !bVolumtricFog
+		                       && !bSVOGI;
 
 		f32 fogDepth = 0.0f;
 		if (useFogDepthTest)
 		{
 			fogDepth = GetFogCullDistance();
+			useFogDepthTest = (fogDepth >= 0.01f);
 		}
 		rd->m_fogCullDistance = fogDepth;
 
