@@ -49,8 +49,27 @@ if (DURANGO OR ORBIS OR ANDROID)
 	unset(WIN64)
 endif ()
 
+set(game_folder CACHE INTERNAL "Game folder used for resource files on Windows" FORCE)
+
 if(WIN32)
 	set(WINDOWS TRUE)
+
+	if (NOT METADATA_COMPNAY)
+		set(METADATA_COMPANY "Crytek GmbH")
+	endif()
+	set(METADATA_COMPANY ${METADATA_COMPANY} CACHE STRING "Company name for executable metadata")
+
+	if (NOT METADATA_COPYRIGHT)
+		string(TIMESTAMP year "%Y")
+		set(METADATA_COPYRIGHT "(C) ${year} ${METADATA_COMPANY}")
+	endif()
+	set(METADATA_COPYRIGHT ${METADATA_COPYRIGHT} CACHE STRING "Copyright string for executable metadata")	
+	
+	if (NOT VERSION)
+		set(VERSION "1.0.0.0")
+	endif()
+	set(METADATA_VERSION ${VERSION} CACHE STRING "Version number for executable metadata" FORCE)
+	string(REPLACE . , METADATA_VERSION_COMMA ${METADATA_VERSION})
 endif()
 
 if(LINUX32 OR LINUX64)

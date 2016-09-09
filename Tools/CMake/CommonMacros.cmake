@@ -265,6 +265,8 @@ macro(add_sources name)
 			list(APPEND SOURCE_GROUP_${CURRENT_SOURCE_GROUP_VAR} ${ARG})
 			if(NOT ${CURRENT_SOURCE_GROUP} STREQUAL "Root")
 				source_group(${CURRENT_SOURCE_GROUP} FILES ${ARG})
+			else()
+				source_group("" FILES ${ARG})
 			endif()
 			# .mm files are Objective-C; disable those from build on non-Apple
 			if(NOT (${PLATFORM_CONDITION}) OR (NOT APPLE AND ${ARG} MATCHES ".*\\.\\mm$"))
@@ -344,7 +346,6 @@ macro(apply_compile_settings)
 		USE_MSVC_PRECOMPILED_HEADER( ${THIS_PROJECT} ${PCH_H} ${MODULE_PCH} )
 		set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY AUTOMOC_MOC_OPTIONS -b ${PCH_H})
 	endif()
-	
 	SET_PLATFORM_TARGET_PROPERTIES( ${THIS_PROJECT} )	
 	if(MODULE_SOLUTION_FOLDER)
 		set_solution_folder("${MODULE_SOLUTION_FOLDER}" ${THIS_PROJECT})
@@ -359,6 +360,8 @@ function(CryEngineModule target)
 	if (OPTION_STATIC_LINKING)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE _LIB -DCRY_IS_MONOLITHIC_BUILD)
 		set(MODULES ${MODULES} ${THIS_PROJECT} CACHE INTERNAL "Modules for monolithic builds" FORCE)
+	else()
+		generate_rc_file()
 	endif()
 
 	install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
@@ -369,9 +372,14 @@ function(CryGameModule target)
 	add_library(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
 	use_scaleform()
 	apply_compile_settings()
+	if (NOT game_folder)
+		set(game_folder ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "Game folder used for resource files on Windows" FORCE)
+	endif()
 	if (OPTION_STATIC_LINKING)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE _LIB -DCRY_IS_MONOLITHIC_BUILD)
 		set(GAME_MODULES ${GAME_MODULES} ${THIS_PROJECT} CACHE INTERNAL "Game Modules for monolithic builds" FORCE)
+	else()
+		generate_rc_file()
 	endif()
 
 	install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
@@ -433,11 +441,13 @@ function(CryLauncher target)
 	elseif(NOT ANDROID)
 		set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "Game")	
 	endif()
+
 	if(OPTION_STATIC_LINKING)
 		use_scaleform()
 		target_compile_definitions(${THIS_PROJECT} PRIVATE _LIB -DCRY_IS_MONOLITHIC_BUILD)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ${MODULES})
 	endif()
+	generate_rc_file(WindowsIcon.ico)
 	apply_compile_settings()	
 
 	if(NOT ANDROID)
@@ -454,6 +464,7 @@ function(CryDedicatedServer target)
 	endif()
 	set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "Game_Server")
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:WINDOWS")	
+	generate_rc_file(WindowsServerIcon.ico)
 	apply_compile_settings()	
 endfunction()
 
@@ -684,6 +695,157 @@ macro(process_csharp output_module)
 
 endmacro()
 
+macro(generate_rc_file)
+	if (WIN32 OR WIN64)
+		set(icon_name ${ARGN})
+		if (NOT PRODUCT_NAME)
+			set(PRODUCT_NAME ${THIS_PROJECT})
+		endif()
+		file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.autogen.rc
+			"// Microsoft Visual C++ generated resource script.\n"
+			"//\n"
+			"#include \"resource.h\"\n"
+			"\n"
+			"#define APSTUDIO_READONLY_SYMBOLS\n"
+			"/////////////////////////////////////////////////////////////////////////////\n"
+			"//\n"
+			"// Generated from the TEXTINCLUDE 2 resource.\n"
+			"//\n"
+			"#include \"winres.h\"\n"
+			"\n"
+			"/////////////////////////////////////////////////////////////////////////////\n"
+			"#undef APSTUDIO_READONLY_SYMBOLS\n"
+			"\n"
+			)
+		if (FALSE)
+			file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.autogen.rc
+				"/////////////////////////////////////////////////////////////////////////////\n"
+				"// Neutral resources\n"
+				"\n"
+				"#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)\n"
+				"LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL\n"
+				"#pragma code_page(1252)\n"
+				"\n"
+				"/////////////////////////////////////////////////////////////////////////////\n"
+				"//\n"
+				"// Cursor\n"
+				"//\n"
+				"\n"
+				"\"${project.cursor_resource_name}\"   CURSOR                  \"${project.cursor_name}\"\n"
+				"\n"
+				"#endif    // Neutral resources\n"
+				"/////////////////////////////////////////////////////////////////////////////\n"
+			)
+		endif()
+		file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.autogen.rc
+			"		"
+			"/////////////////////////////////////////////////////////////////////////////\n"
+			"// English (United States) resources\n"
+			"\n"
+			"#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\n"
+			"LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US\n"
+			"#pragma code_page(1252)\n"
+			"\n"
+			"#ifdef APSTUDIO_INVOKED\n"
+			"/////////////////////////////////////////////////////////////////////////////\n"
+			"//\n"
+			"// TEXTINCLUDE\n"
+			"//\n"
+			"\n"
+			"1 TEXTINCLUDE \n"
+			"BEGIN\n"
+			"    \"resource.h\\0\"\n"
+			"END\n"
+			"\n"
+			"2 TEXTINCLUDE \n"
+			"BEGIN\n"
+			"    \"#include \"\"winres.h\"\"\\r\\n\"\n"
+			"    \"\\0\"\n"
+			"END\n"
+			"\n"
+			"3 TEXTINCLUDE \n"
+			"BEGIN\n"
+			"    \"\\r\\n\"\n"
+			"    \"\\0\"\n"
+			"END\n"
+			"\n"
+			"#endif    // APSTUDIO_INVOKED\n"
+			"\n"
+		)
+		if (icon_name AND EXISTS ${game_folder}/../Resources/${icon_name})
+			file(COPY ${game_folder}/../Resources/${icon_name} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+			file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.autogen.rc
+				"// Icon with lowest ID value placed first to ensure application icon\n"
+				"// remains consistent on all systems.\n"
+				"IDI_ICON                ICON                    \"${icon_name}\"\n"
+			)
+		endif()
+		file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.autogen.rc
+			"#endif    // English (United States) resources\n"
+			"/////////////////////////////////////////////////////////////////////////////\n"
+			"\n"
+			"\n"
+			"/////////////////////////////////////////////////////////////////////////////\n"
+			"// German (Germany) resources\n"
+			"\n"
+			"#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)\n"
+			"LANGUAGE LANG_GERMAN, SUBLANG_GERMAN\n"
+			"#pragma code_page(1252)\n"
+			"\n"
+			"/////////////////////////////////////////////////////////////////////////////\n"
+			"//\n"
+			"// Version\n"
+			"//\n"
+			"\n"
+			"VS_VERSION_INFO VERSIONINFO\n"
+			" FILEVERSION ${METADATA_VERSION_COMMA}\n"
+			" PRODUCTVERSION ${METADATA_VERSION}\n"
+			" FILEFLAGSMASK 0x17L\n"
+			"#ifdef _DEBUG\n"
+			" FILEFLAGS 0x1L\n"
+			"#else\n"
+			" FILEFLAGS 0x0L\n"
+			"#endif\n"
+			" FILEOS 0x4L\n"
+			" FILETYPE 0x2L\n"
+			" FILESUBTYPE 0x0L\n"
+			"BEGIN\n"
+			"    BLOCK \"StringFileInfo\"\n"
+			"    BEGIN\n"
+			"        BLOCK \"000904b0\"\n"
+			"        BEGIN\n"
+			"            VALUE \"CompanyName\", \"${METADATA_COMPANY}\"\n"
+			"            VALUE \"FileVersion\", \"${METADATA_VERSION_COMMA}\"\n"
+			"            VALUE \"LegalCopyright\", \"${METADATA_COPYRIGHT}\"\n"
+			"            VALUE \"ProductName\", \"${PRODUCT_NAME}\"\n"
+			"            VALUE \"ProductVersion\", \"${METADATA_VERSION}\"\n"
+			"        END\n"
+			"    END\n"
+			"    BLOCK \"VarFileInfo\"\n"
+			"    BEGIN\n"
+			"        VALUE \"Translation\", 0x9, 1200\n"
+			"    END\n"
+			"END\n"
+			"\n"
+			"#endif    // German (Germany) resources\n"
+			"/////////////////////////////////////////////////////////////////////////////\n"
+			"\n"
+			"\n"
+			"\n"
+			"#ifndef APSTUDIO_INVOKED\n"
+			"/////////////////////////////////////////////////////////////////////////////\n"
+			"//\n"
+			"// Generated from the TEXTINCLUDE 3 resource.\n"
+			"//\n"
+			"\n"
+			"\n"
+			"/////////////////////////////////////////////////////////////////////////////\n"
+			"#endif    // not APSTUDIO_INVOKED\n"
+		)
+	target_sources(${THIS_PROJECT} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.autogen.rc)
+	source_group("Resource Files" FILES ${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.autogen.rc)
+	endif()
+endmacro()
 
 # Module extensions from WAF
 macro(use_mono)
