@@ -1225,17 +1225,8 @@ def CryPlugin(ctx, *k, **kw):
 	SetupRunTimeLibraries(ctx,kw)
 	kw['cxxflags'] += ['/EHsc', '/GR', '/wd4251', '/wd4275']
 	kw['defines']   += [ 'SANDBOX_IMPORTS', 'PLUGIN_EXPORTS', 'EDITOR_COMMON_IMPORTS', 'NOT_USE_CRY_MEMORY_MANAGER' ]
-			
-	# [HACK]: QT Editor conversion	
-	platform = ctx.env['PLATFORM']
-	spec = ctx.options.project_spec
-	configuration = ctx.GetConfiguration(kw['target'])			
-	if platform and not platform == 'project_generator' and not ctx.cmd == 'generate_uber_files' and 'SandboxLegacy' in ctx.spec_modules(spec, platform, configuration):
-		kw['output_sub_folder']  = 'EditorPluginsLegacy' # Override output location
-		kw['use']  +=['SandboxLegacy', 'EditorCommon']
-	else:
-		kw['output_sub_folder']  = 'EditorPlugins'
-		kw['use']  +=['Sandbox', 'EditorCommon']
+	kw['output_sub_folder']  = 'EditorPlugins'
+	kw['use']  +=['Sandbox', 'EditorCommon']
 		
 	ConfigureTaskGenerator(ctx, kw)
 		
@@ -1244,34 +1235,12 @@ def CryPlugin(ctx, *k, **kw):
 		
 	ctx.shlib(*k, **kw)
 	
-# [HACK]: QT Editor conversion
-# For EditorQt spec we switch the output_file_name ... the parameter is not respected when the module is "used" by another module
-# Needs fixing
-@feature('c', 'cxx', 'use')
-@after_method('apply_link')
-def override_libname(self):
-
-	# [HACK]: QT Editor conversion
-	platform = self.bld.env['PLATFORM']
-	spec = self.bld.options.project_spec
-	configuration = self.bld.GetConfiguration(self.target)	
-	if platform and not platform == 'project_generator' and not self.bld.cmd == 'generate_uber_files' and 'SandboxLegacy' in self.bld.spec_modules(spec, platform, configuration):
-		link_task = getattr(self, 'link_task', None)
-		link_task.env['LIB'] = [ 'EditorCommonLegacy' if lib == 'EditorCommon' else lib for lib in link_task.env['LIB']]	
-		
 ###############################################################################
 @conf
 def CryPluginModule(ctx, *k, **kw):
 	"""
 	Wrapper for CryEngine Editor Plugins Util dlls, those used by multiple plugins
 	"""
-	# [HACK]: QT Editor conversion	
-	platform = ctx.env['PLATFORM']
-	spec = ctx.options.project_spec
-	configuration = ctx.GetConfiguration(kw['target'])		
-	if platform and not platform == 'project_generator' and not ctx.cmd == 'generate_uber_files' and 'SandboxLegacy' in ctx.spec_modules(spec, platform, configuration) and kw['target'] == 'EditorCommon':
-		kw['output_file_name']  = 'EditorCommonLegacy'
-		
 	# Initialize the Task Generator
 	InitializeTaskGenerator(ctx, kw)	
 

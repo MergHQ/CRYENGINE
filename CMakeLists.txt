@@ -66,7 +66,7 @@ endif()
 
 if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Sandbox")
 	set(OPTION_SANDBOX "No" CACHE STRING "Enable Sandbox")
-	set_property(CACHE OPTION_SANDBOX PROPERTY STRINGS "No" "Qt" "Legacy")
+	set_property(CACHE OPTION_SANDBOX PROPERTY STRINGS "No" "Qt")
 endif()
 
 option(OPTION_PCH "Enable Precompiled Headers" OFF)
@@ -416,20 +416,13 @@ if (OPTION_SANDBOX AND WIN64)
 	set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "AUTOGEN")
 	set_property(GLOBAL PROPERTY AUTOMOC_TARGETS_FOLDER  "AUTOMOC")	
 
-	if (OPTION_SANDBOX STREQUAL "Qt")
-		set(EDITOR_DIR "${CMAKE_SOURCE_DIR}/Code/Sandbox/EditorQt" )
-		add_subdirectory(Code/Sandbox/EditorQt)
-		add_subdirectory(Code/Sandbox/Plugins/3DConnexionPlugin)	
-		add_subdirectory(Code/Sandbox/Plugins/EditorConsole)
-		add_subdirectory(Code/CryExtensions/CryLink/EditorPlugin)
+	set(EDITOR_DIR "${CMAKE_SOURCE_DIR}/Code/Sandbox/EditorQt" )
+	add_subdirectory(Code/Sandbox/EditorQt)
+	add_subdirectory(Code/Sandbox/Plugins/3DConnexionPlugin)	
+	add_subdirectory(Code/Sandbox/Plugins/EditorConsole)
+	add_subdirectory(Code/CryExtensions/CryLink/EditorPlugin)
 		
-		add_custom_target(GameAndTools DEPENDS ${GAME_TARGET} Sandbox)
-	elseif(OPTION_SANDBOX STREQUAL "Legacy")
-		set(EDITOR_DIR "${CMAKE_SOURCE_DIR}/Code/Sandbox/Editor" )
-		add_subdirectory(Code/Sandbox/Editor)
-
-		add_custom_target(GameAndTools DEPENDS ${GAME_TARGET} SandboxLegacy)
-	endif()
+	add_custom_target(GameAndTools DEPENDS ${GAME_TARGET} Sandbox)
 
 	add_subdirectory(Code/Sandbox/Plugins/EditorCommon)
 

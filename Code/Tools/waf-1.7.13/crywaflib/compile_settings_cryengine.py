@@ -81,31 +81,16 @@ def load_release_cryengine_settings(conf):
 @conf	
 def set_editor_flags(self, kw):
 
-	includes = ['.']		
-
-	# [HACK]: EditorQT conversion
-	spec = self.options.project_spec
-	platform = self.env['PLATFORM']
-	configuration = self.GetConfiguration(kw['target'])
-	
-	if platform and (platform == 'project_generator' or self.cmd == 'generate_uber_files' or 'SandboxLegacy' in self.spec_modules(spec, platform, configuration)):
-		includes += [
-		self.CreateRootRelativePath('Code/Sandbox/Editor'),
-		self.CreateRootRelativePath('Code/Sandbox/Editor/Include')
-		]	
-	else:		
-		includes += [
+	kw['includes'] += [
+		'.',
 		self.CreateRootRelativePath('Code/Sandbox/EditorQt'),
-		self.CreateRootRelativePath('Code/Sandbox/EditorQt/Include')		
-		]
-
-	kw['includes'] = includes + [
+		self.CreateRootRelativePath('Code/Sandbox/EditorQt/Include'),
 		self.CreateRootRelativePath('Code/Sandbox/Plugins/EditorCommon'),
 		self.CreateRootRelativePath('Code/CryEngine/CryCommon') ,
 		self.CreateRootRelativePath('Code/SDKs/boost'),
 		self.CreateRootRelativePath('Code/SDKs/yasli'),
 		self.CreateRootRelativePath('Code/Libs/yasli'),
-		] + kw['includes']
+		]
 	
 	if 'priority_includes' in kw:
 		kw['includes'] = kw['priority_includes'] + kw['includes']
