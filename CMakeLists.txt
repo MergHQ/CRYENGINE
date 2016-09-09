@@ -359,7 +359,6 @@ add_custom_target(CE DEPENDS CryPhysics CrySystem CryAction CryRenderD3D11
 # Game
 option(OPTION_GAMESDK "Build GameSDK sample project" ON)
 option(OPTION_GAMEZERO "Build GameZero sample project" OFF)
-option(OPTION_GAMEMONO "Build GameMono sample project" OFF)
 
 if (OPTION_GAMESDK) 
 	add_subdirectory(Code/GameSDK/GameDll)
@@ -367,14 +366,6 @@ endif()
 
 if (OPTION_GAMEZERO) 
 	add_subdirectory(Code/GameZero/GameDll)
-endif()
-
-if (OPTION_GAMEMONO)
-	if (NOT OPTION_CRYMONO)
-		message(WARNING "Forcing C# support on for GameMono")
-		set(OPTION_CRYMONO ON)
-	endif()
-	add_subdirectory(Code/GameMono/GameDll)
 endif()
 
 if (OPTION_CRYMONO)
