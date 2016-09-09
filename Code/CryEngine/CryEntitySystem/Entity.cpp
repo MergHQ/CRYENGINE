@@ -476,6 +476,20 @@ void CEntity::SetFlags(uint32 flags)
 };
 
 //////////////////////////////////////////////////////////////////////////
+void CEntity::SetFlagsExtended(uint32 flagsExtended)
+{
+	if (flagsExtended != m_flagsExtended)
+	{
+		m_flagsExtended = flagsExtended;
+		CRenderProxy* pRenderProxy = GetRenderProxy();
+		if (pRenderProxy)
+		{
+			pRenderProxy->UpdateEntityFlags();
+		}
+	}
+};
+
+//////////////////////////////////////////////////////////////////////////
 bool CEntity::SendEvent(SEntityEvent& event)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);

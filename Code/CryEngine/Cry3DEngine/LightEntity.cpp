@@ -1838,7 +1838,7 @@ void CLightEntity::UpdateCastShadowFlag(float fDistance, const SRenderingPassInf
 	}
 
 #if defined(FEATURE_SVO_GI)
-	if (GetVoxMode() == VM_Dynamic)
+	if (GetGIMode() == eGM_DynamicVoxelization)
 		m_light.m_Flags |= DLF_USE_FOR_SVOGI;
 	else
 		m_light.m_Flags &= ~DLF_USE_FOR_SVOGI;
@@ -1848,9 +1848,9 @@ void CLightEntity::UpdateCastShadowFlag(float fDistance, const SRenderingPassInf
 void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& passInfo)
 {
 #if defined(FEATURE_SVO_GI)
-	if (GetCVars()->e_svoTI_SkipNonGILights && GetCVars()->e_svoTI_Apply && !GetVoxMode())
+	if (GetCVars()->e_svoTI_SkipNonGILights && GetCVars()->e_svoTI_Apply && !GetGIMode())
 		return;
-	if (GetCVars()->e_svoTI_Apply && (m_dwRndFlags & ERF_VOXELIZE_STATIC) && (m_dwRndFlags & ERF_VOXELIZE_DYNAMIC))
+	if (GetCVars()->e_svoTI_Apply && (IRenderNode::GetGIMode() == eGM_HideIfGiIsActive))
 		return;
 #endif
 
@@ -1901,7 +1901,7 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 
 	if ((m_light.m_Flags & DLF_PROJECT) && (m_light.m_fLightFrustumAngle < 90.f) && (m_light.m_pLightImage || m_light.m_pLightDynTexSource))
 #if defined(FEATURE_SVO_GI)
-		if (!GetCVars()->e_svoTI_Apply || GetVoxMode() != VM_Dynamic)
+		if (!GetCVars()->e_svoTI_Apply || GetGIMode() != eGM_DynamicVoxelization)
 #endif
 	{
 		CCamera lightCam = passInfo.GetCamera();
@@ -2049,34 +2049,28 @@ void CLightEntity::SetViewDistRatio(int nViewDistRatio)
 }
 
 #if defined(FEATURE_SVO_GI)
-IRenderNode::EVoxMode CLightEntity::GetVoxMode()
+IRenderNode::EGIMode CLightEntity::GetGIMode() const
 {
-	if ((m_dwRndFlags & ERF_VOXELIZE_STATIC) && (m_dwRndFlags & ERF_VOXELIZE_DYNAMIC))
-		return VM_None; // special case for lights disabled when GI is ON
-
-	if (!(m_light.m_Flags & (DLF_DISABLED | DLF_FAKE | DLF_VOLUMETRIC_FOG_ONLY | DLF_AMBIENT | DLF_DEFERRED_CUBEMAPS)) && !(m_dwRndFlags & ERF_HIDDEN))
+	if (IRenderNode::GetGIMode() == eGM_StaticVoxelization || IRenderNode::GetGIMode() == eGM_DynamicVoxelization || m_light.m_Flags & DLF_SUN)
 	{
-		if (m_light.m_BaseColor.Luminance() > .01f && m_light.m_fBaseRadius > 0.5f)
+		if (!(m_light.m_Flags & (DLF_DISABLED | DLF_FAKE | DLF_VOLUMETRIC_FOG_ONLY | DLF_AMBIENT | DLF_DEFERRED_CUBEMAPS)) && !(m_dwRndFlags & ERF_HIDDEN))
 		{
-			if (m_light.m_Flags & DLF_SUN)
+			if (m_light.m_BaseColor.Luminance() > .01f && m_light.m_fBaseRadius > 0.5f)
 			{
-				if (GetCVars()->e_Sun)
-					return VM_Static;
-				else
-					return VM_None;
+				if (m_light.m_Flags & DLF_SUN)
+				{
+					if (GetCVars()->e_Sun)
+						return eGM_StaticVoxelization;
+					else
+						return eGM_None;
+				}
+
+				return IRenderNode::GetGIMode();
 			}
-
-			if (m_pSrcEnt)
-				SetSrcEntity(m_pSrcEnt);
-
-			if (m_dwRndFlags & ERF_VOXELIZE_STATIC)
-				return VM_Static;
-
-			if ((m_dwRndFlags & ERF_VOXELIZE_DYNAMIC) || (GetCVars()->e_svoTI_ForceGIForAllLights))
-				return VM_Dynamic;
 		}
 	}
-	return VM_None;
+
+	return eGM_None;
 }
 #endif
 
@@ -2084,12 +2078,9 @@ void CLightEntity::SetSrcEntity(IEntity* pEnt)
 {
 	m_pSrcEnt = pEnt;
 
-#if defined(FEATURE_SVO_GI)
-	SetRndFlags(ERF_VOXELIZE_STATIC, m_pSrcEnt && strstr(m_pSrcEnt->GetName(), "_TI") && !strstr(m_pSrcEnt->GetName(), "_TI_DYN"));
-	SetRndFlags(ERF_VOXELIZE_DYNAMIC, m_pSrcEnt && strstr(m_pSrcEnt->GetName(), "_TI_DYN") != 0);
-	if (m_pSrcEnt && strstr(m_pSrcEnt->GetName(), "_NTI") != 0)
-		SetRndFlags(ERF_VOXELIZE_STATIC | ERF_VOXELIZE_DYNAMIC, true);
-#endif
+	SetRndFlags(ERF_GI_MODE_BIT0, (pEnt->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_GI_MODE_BIT0) != 0);
+	SetRndFlags(ERF_GI_MODE_BIT1, (pEnt->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_GI_MODE_BIT1) != 0);
+	SetRndFlags(ERF_GI_MODE_BIT2, (pEnt->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) != 0);
 }
 
 void CLightEntity::OffsetPosition(const Vec3& delta)

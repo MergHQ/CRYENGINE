@@ -625,7 +625,7 @@ float4 ConeTraceTreeAndSkyEx(float fRayLen, Ray r, float fConeSev, out float4 vN
 		float4 vC = 0;
 		float fDirectionality = 1;
 		Ray r2 = r;
-		r2.startpoint += r2.direction * 0.01f;
+		r2.startpoint += r2.direction * 0.005f;
 		fAoHitDist = ProcessAnalyticalOccluders(fRayLen, r2, vC, fDirectionality, false);
 		fAoOpacity = vC.a;
 	}
@@ -1082,7 +1082,7 @@ pixoutMRT DemosaicPS(vtxOutWPOS IN)
 					else
 						vC4 = float4(0, 0, 0, 1);
 
-					float fBr = GetSkyColor(vNor0, 0).b * saturate(1 - vC4.w) * pow(0.3 + 0.7*saturate(dot(normalize(vNor0), r.direction)), .5) * saturate(1 / (fDist + 1));
+					float fBr = GetSkyColor(vNor0, 0).b * saturate(1 - vC4.w) * saturate(dot(normalize(vNor0), r.direction)) * saturate(1 / (fDist + 1));
 
 					if (!nPass)
 					{

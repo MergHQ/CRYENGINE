@@ -391,17 +391,12 @@ void COctreeNode::CompileObjects()
 			IF (pObj->m_dwRndFlags & ERF_HIDDEN, 0)
 				continue;
 
-			bool bVegetHasAlphaTrans = false;
-
 			// update vegetation instances data
 			EERType eRType = pObj->GetRenderNodeType();
 			if (eRType == eERType_Vegetation)
 			{
 				CVegetation* pInst = (CVegetation*)pObj;
 				pInst->UpdateRndFlags();
-				StatInstGroup& vegetGroup = pInst->GetStatObjGroup();
-				if (vegetGroup.pStatObj && vegetGroup.bUseAlphaBlending)
-					bVegetHasAlphaTrans = true;
 			}
 
 			// update max view distances
@@ -425,7 +420,7 @@ void COctreeNode::CompileObjects()
 
 					if (CMatInfo* pMatInfo = (CMatInfo*)pObj->GetMaterial())
 					{
-						if (bVegetHasAlphaTrans || pMatInfo->IsForwardRenderingRequired())
+						if (pMatInfo->IsForwardRenderingRequired())
 							pObj->m_nInternalFlags |= IRenderNode::REQUIRES_FORWARD_RENDERING;
 
 						if (pMatInfo->IsNearestCubemapRequired())
@@ -1205,11 +1200,11 @@ void COctreeNode::UpdateTerrainNodes(CTerrainNode* pParentNode)
 			m_arrChilds[i]->UpdateTerrainNodes();
 }
 
-void C3DEngine::GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady)
+void C3DEngine::GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady, uint32 dwFlags)
 {
 	for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
 		if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-			Get3DEngine()->m_pObjectsTree[nSID]->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady);
+			Get3DEngine()->m_pObjectsTree[nSID]->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady, dwFlags);
 }
 
 void C3DEngine::MoveObjectsIntoListGlobal(PodArray<SRNInfo>* plstResultEntities, const AABB* pAreaBox,
@@ -3134,7 +3129,6 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 	size_t numCasters = 0;
 	CObjManager* pObjManager = GetObjManager();
 
-	bool bVegetHasAlphaTrans = false;
 	int nFlags = pObj->GetRndFlags();
 	EERType eRType = pObj->GetRenderNodeType();
 	float WSMaxViewDist = pObj->GetMaxViewDist();
@@ -3153,10 +3147,6 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 	{
 		CVegetation* pInst = (CVegetation*)pObj;
 		pInst->UpdateRndFlags();
-
-		StatInstGroup& vegetGroup = pInst->GetStatObjGroup();
-		if (vegetGroup.pStatObj && vegetGroup.bUseAlphaBlending)
-			bVegetHasAlphaTrans = true;
 	}
 
 	// update max view distances
@@ -3174,7 +3164,7 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 			CMatInfo* pMatInfo = (CMatInfo*)pObj->GetMaterial();
 			if (pMatInfo)
 			{
-				if (bVegetHasAlphaTrans || pMatInfo->IsForwardRenderingRequired())
+				if (pMatInfo->IsForwardRenderingRequired())
 					pObj->m_nInternalFlags |= IRenderNode::REQUIRES_FORWARD_RENDERING;
 
 				if (pMatInfo->IsNearestCubemapRequired())
@@ -3709,7 +3699,7 @@ void COctreeNode::GetObjectsByFlags(uint dwFlags, PodArray<IRenderNode*>& lstObj
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void COctreeNode::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamCheckReady)
+void COctreeNode::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamCheckReady, uint32 dwFlags)
 {
 	if (objType == eERType_Light && !m_bHasLights)
 		return;
@@ -3741,7 +3731,7 @@ void COctreeNode::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType o
 
 	for (IRenderNode* pObj = m_arrObjects[eListType].m_pFirstNode; pObj; pObj = pObj->m_pNext)
 	{
-		if (pObj->GetRenderNodeType() == objType)
+		if ((pObj->GetRenderNodeType() == objType) && (pObj->GetRndFlags() & dwFlags))
 		{
 			AABB box;
 			pObj->FillBBox(box);
@@ -3754,7 +3744,7 @@ void COctreeNode::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType o
 
 	for (int i = 0; i < 8; i++)
 		if (m_arrChilds[i])
-			m_arrChilds[i]->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamCheckReady);
+			m_arrChilds[i]->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamCheckReady, dwFlags);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

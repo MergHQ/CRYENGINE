@@ -1122,7 +1122,7 @@ public:
 
 	void                      MarkRNTmpDataPoolForReset() { m_bResetRNTmpDataPool = true; }
 
-	static void               GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady = NULL);
+	static void               GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady = NULL, uint32 dwFlags = ~0);
 	static void               MoveObjectsIntoListGlobal(PodArray<SRNInfo>* plstResultEntities, const AABB* pAreaBox, bool bRemoveObjects = false, bool bSkipDecals = false, bool bSkip_ERF_NO_DECALNODE_DECALS = false, bool bSkipDynamicObjects = false, EERType eRNType = eERType_TypesNum);
 
 	virtual ISegmentsManager* GetSegmentsManager() { return m_pSegmentsManager; };

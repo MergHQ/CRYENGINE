@@ -302,13 +302,11 @@ struct IStatInstGroup
 		szFileName[0] = 0;
 		bHideability = 0;
 		bHideabilitySecondary = 0;
-
 		bPickable = 0;
 		fBending = 0;
 		nCastShadowMinSpec = 0;
-		bRecvShadow = 0;
 		bDynamicDistanceShadows = false;
-		bUseAlphaBlending = 0;
+		bGIMode = true;
 		fSpriteDistRatio = 1.f;
 		fShadowDistRatio = 1.f;
 		fMaxViewDistRatio = 1.f;
@@ -316,7 +314,6 @@ struct IStatInstGroup
 		fBrightness = 1.f;
 		pMaterial = 0;
 		bUseSprites = true;
-
 		fDensity = 1;
 		fElevationMax = 4096;
 		fElevationMin = 8;
@@ -347,11 +344,9 @@ struct IStatInstGroup
 	bool                 bHideabilitySecondary;
 	bool                 bPickable;
 	float                fBending;
-	//bool	bCastShadow;
 	uint8                nCastShadowMinSpec;
-	bool                 bRecvShadow;
 	bool                 bDynamicDistanceShadows;
-	bool                 bUseAlphaBlending;
+	bool                 bGIMode;
 	float                fSpriteDistRatio;
 	float                fLodDistRatio;
 	float                fShadowDistRatio;
@@ -360,12 +355,10 @@ struct IStatInstGroup
 	bool                 bUseSprites;
 	bool                 bRandomRotation;
 	int32                nRotationRangeToTerrainNormal;
-	//bool bAlignToTerrain;
 	float                fAlignToTerrainCoefficient;
 	bool                 bUseTerrainColor;
 	bool                 bAllowIndoor;
 	bool                 bAutoMerged;
-
 	float                fDensity;
 	float                fElevationMax;
 	float                fElevationMin;
@@ -377,11 +370,9 @@ struct IStatInstGroup
 	float                fDamping;
 	float                fVariance;
 	float                fAirResistance;
-
 	float                fVegRadius;
 	float                fVegRadiusVert;
 	float                fVegRadiusHor;
-
 	int                  nPlayerHideable;
 	int                  nID;
 
@@ -2312,6 +2303,7 @@ struct I3DEngine : public IProcess
 
 		Vec3                vSkyColorTop;
 		Vec3                vSkyColorBottom;
+		Vec4                vSvoOriginAndSize;
 	};
 
 	struct SLightTI

@@ -963,6 +963,8 @@ void StatInstGroup::Update(CVars* pCVars, int nGeomDetailScreenRes)
 		m_dwRndFlags |= ERF_PICKABLE;
 	if (!bAllowIndoor)
 		m_dwRndFlags |= ERF_OUTDOORONLY;
+	if (bGIMode)
+		m_dwRndFlags |= ERF_GI_MODE_BIT0; // corresponds to IRenderNode::eGM_StaticVoxelization
 
 	uint32 nSpec = (uint32)minConfigSpec;
 	if (nSpec != 0)

@@ -1115,7 +1115,7 @@ void CVisAreaManager::GetNearestCubeProbe(float& fMinDistance, int& nMaxPriority
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CVisAreaManager::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady)
+void CVisAreaManager::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady, uint32 dwFlags)
 {
 	{
 		uint32 dwSize = m_lstVisAreas.Count();
@@ -1123,7 +1123,7 @@ void CVisAreaManager::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERTy
 		for (uint32 dwI = 0; dwI < dwSize; ++dwI)
 			if (m_lstVisAreas[dwI]->m_pObjectsTree)
 				if (!pBBox || Overlap::AABB_AABB(*m_lstVisAreas[dwI]->GetAABBox(), *pBBox))
-					m_lstVisAreas[dwI]->m_pObjectsTree->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady);
+					m_lstVisAreas[dwI]->m_pObjectsTree->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady, dwFlags);
 	}
 
 	{
@@ -1132,7 +1132,7 @@ void CVisAreaManager::GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERTy
 		for (uint32 dwI = 0; dwI < dwSize; ++dwI)
 			if (m_lstPortals[dwI]->m_pObjectsTree)
 				if (!pBBox || Overlap::AABB_AABB(*m_lstPortals[dwI]->GetAABBox(), *pBBox))
-					m_lstPortals[dwI]->m_pObjectsTree->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady);
+					m_lstPortals[dwI]->m_pObjectsTree->GetObjectsByType(lstObjects, objType, pBBox, pInstStreamReady, dwFlags);
 	}
 }
 

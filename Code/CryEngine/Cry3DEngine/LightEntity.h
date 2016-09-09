@@ -39,7 +39,7 @@ public:
 	virtual int              GetSlotCount() const;
 	virtual void             SetViewDistRatio(int nViewDistRatio);
 #if defined(FEATURE_SVO_GI)
-	virtual EVoxMode         GetVoxMode();
+	virtual EGIMode          GetGIMode() const;
 #endif
 	virtual void             SetSrcEntity(IEntity* pEnt);
 	void                     InitEntityShadowMapInfoStructure();

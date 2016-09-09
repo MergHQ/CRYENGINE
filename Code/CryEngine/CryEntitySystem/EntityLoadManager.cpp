@@ -562,8 +562,10 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 		bool bNoDecals = false;
 		bool bDynamicDistanceShadows = false;
 		int castShadowMinSpec = CONFIG_LOW_SPEC;
+		int giMode = 0;
 
 		entityNode->getAttr("CastShadowMinSpec", castShadowMinSpec);
+		entityNode->getAttr("GIMode", giMode);
 		entityNode->getAttr("DynamicDistanceShadows", bDynamicDistanceShadows);
 		entityNode->getAttr("GoodOccluder", bGoodOccluder);
 		entityNode->getAttr("OutdoorOnly", bOutdoorOnly);
@@ -591,6 +593,8 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 		{
 			spawnParams.nFlags |= ENTITY_FLAG_NO_DECALNODE_DECALS;
 		}
+
+		spawnParams.nFlagsExtended = (spawnParams.nFlagsExtended & ~ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK) | ((giMode << ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET) & ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK);
 
 		const char* szArchetypeName = entityNode->getAttr("Archetype");
 		if (szArchetypeName && szArchetypeName[0])

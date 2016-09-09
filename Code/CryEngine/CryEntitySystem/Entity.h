@@ -107,7 +107,7 @@ public:
 	virtual void   ClearFlags(uint32 flagsToClear) override                  { SetFlags(m_flags & (~flagsToClear)); }
 	virtual bool   CheckFlags(uint32 flagsToCheck) const override            { return (m_flags & flagsToCheck) == flagsToCheck; }
 
-	virtual void   SetFlagsExtended(uint32 flags) override                   { m_flagsExtended = flags; }
+	virtual void   SetFlagsExtended(uint32 flags) override;
 	virtual uint32 GetFlagsExtended() const override                         { return m_flagsExtended; }
 
 	virtual bool   IsGarbage() const override                                { return m_bGarbage; }

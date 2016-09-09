@@ -385,7 +385,7 @@ public:
 	void         DeleteObjectsByFlag(int nRndFlag);
 	void         UnregisterEngineObjectsInArea(const SHotUpdateInfo* pExportInfo, PodArray<IRenderNode*>& arrUnregisteredObjects, bool bOnlyEngineObjects);
 	uint32       GetLastVisFrameId() { return m_nLastVisFrameId; }
-	void         GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamCheckReady = NULL);
+	void         GetObjectsByType(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamCheckReady = NULL, uint32 dwFlags = ~0);
 	void         GetObjectsByFlags(uint dwFlags, PodArray<IRenderNode*>& lstObjects);
 
 	void         GetNearestCubeProbe(float& fMinDistance, int& nMaxPriority, CLightEntity*& pNearestLight, const AABB* pBBox);

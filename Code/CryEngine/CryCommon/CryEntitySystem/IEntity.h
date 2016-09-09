@@ -503,7 +503,13 @@ enum EEntityFlagsExtended
 	ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE               = BIT(2),
 	ENTITY_FLAG_EXTENDED_CAN_COLLIDE_WITH_MERGED_MESHES = BIT(3),
 	ENTITY_FLAG_EXTENDED_DYNAMIC_DISTANCE_SHADOWS       = BIT(4),
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT0                   = BIT(5), // Bit0 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT1                   = BIT(6), // Bit1 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT2                   = BIT(7), // Bit2 of entity GI mode, see IRenderNode::EGIMode
 };
+
+#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 5               // Bit offset of entity GI mode in EEntityFlagsExtended.
+#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK (ENTITY_FLAG_EXTENDED_GI_MODE_BIT0 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT1 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) // Bit mask of entity GI mode.
 
 //! Flags can be passed to IEntity::Serialize().
 enum EEntitySerializeFlags

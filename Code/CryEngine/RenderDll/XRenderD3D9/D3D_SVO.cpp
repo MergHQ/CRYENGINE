@@ -1171,10 +1171,14 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 			sData[0].f[1] = pSR->e_svoTI_Diffuse_Spr;
 			sData[0].f[2] = pSR->e_svoTI_DiffuseBias;
 
-			static float fEvenFrameTime = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_RealTime;
-			if (gRenDev->GetFrameID(false) & 1)
-				fEvenFrameTime = gcpRendD3D->m_RP.m_TI[gcpRendD3D->m_RP.m_nProcessThreadID].m_RealTime;
-			sData[0].f[3] = fEvenFrameTime;
+			float fDepth = 0;
+			float nWS = pSR->m_texInfo.vSvoOriginAndSize.w;
+			while (nWS > pSR->e_svoMinNodeSize)
+			{
+				nWS /= 2;
+				fDepth ++;
+			}
+			sData[0].f[3] = 0.1f + fDepth;
 
 			break;
 		}
@@ -1252,9 +1256,9 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 	case ECGP_PB_SvoParams6:
 		{
 			sData[0].f[0] = pSR->e_svoTI_PointLightsMultiplier;
-			sData[0].f[1] = 0;
+			sData[0].f[1] = pSR->m_texInfo.vSvoOriginAndSize.x;
 			sData[0].f[2] = pSR->e_svoTI_MinReflectance;
-			sData[0].f[3] = 0;
+			sData[0].f[3] = pSR->m_texInfo.vSvoOriginAndSize.y;
 			break;
 		}
 
@@ -1262,8 +1266,8 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 		{
 			sData[0].f[0] = pSR->e_svoTI_AnalyticalOccludersRange;
 			sData[0].f[1] = pSR->e_svoTI_AnalyticalOccludersSoftness;
-			sData[0].f[2] = 0;
-			sData[0].f[3] = 0;
+			sData[0].f[2] = pSR->m_texInfo.vSvoOriginAndSize.z;
+			sData[0].f[3] = pSR->m_texInfo.vSvoOriginAndSize.w;
 			break;
 		}
 

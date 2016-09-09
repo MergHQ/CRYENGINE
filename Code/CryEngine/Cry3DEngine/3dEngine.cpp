@@ -2095,10 +2095,8 @@ bool C3DEngine::SetStatInstGroup(int nGroupId, const IStatInstGroup& siGroup, in
 	rGroup.bPickable = siGroup.bPickable;
 	rGroup.fBending = siGroup.fBending;
 	rGroup.nCastShadowMinSpec = siGroup.nCastShadowMinSpec;
-	rGroup.bRecvShadow = siGroup.bRecvShadow;
 	rGroup.bDynamicDistanceShadows = siGroup.bDynamicDistanceShadows;
-
-	rGroup.bUseAlphaBlending = siGroup.bUseAlphaBlending;
+	rGroup.bGIMode = siGroup.bGIMode;
 	rGroup.fSpriteDistRatio = siGroup.fSpriteDistRatio;
 	rGroup.fLodDistRatio = siGroup.fLodDistRatio;
 	rGroup.fShadowDistRatio = siGroup.fShadowDistRatio;
@@ -2169,10 +2167,8 @@ bool C3DEngine::GetStatInstGroup(int nGroupId, IStatInstGroup& siGroup, int nSID
 	siGroup.bPickable = rGroup.bPickable;
 	siGroup.fBending = rGroup.fBending;
 	siGroup.nCastShadowMinSpec = rGroup.nCastShadowMinSpec;
-	siGroup.bRecvShadow = rGroup.bRecvShadow;
 	siGroup.bDynamicDistanceShadows = rGroup.bDynamicDistanceShadows;
-
-	siGroup.bUseAlphaBlending = rGroup.bUseAlphaBlending;
+	siGroup.bGIMode = rGroup.bGIMode;
 	siGroup.fSpriteDistRatio = rGroup.fSpriteDistRatio;
 	siGroup.fLodDistRatio = rGroup.fLodDistRatio;
 	siGroup.fShadowDistRatio = rGroup.fShadowDistRatio;

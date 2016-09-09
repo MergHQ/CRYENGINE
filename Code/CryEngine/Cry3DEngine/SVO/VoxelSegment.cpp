@@ -1830,9 +1830,9 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 			{
 				PodArray<IRenderNode*> arrRenderNodes;
 
-				Get3DEngine()->GetObjectsByTypeGlobal(arrRenderNodes, (EERType)nObjType, &cloudBoxWS, bAllowStartStreaming ? &bSuccess : 0);
+				Get3DEngine()->GetObjectsByTypeGlobal(arrRenderNodes, (EERType)nObjType, &cloudBoxWS, bAllowStartStreaming ? &bSuccess : 0, ERF_GI_MODE_BIT0);
 				if (Get3DEngine()->GetVisAreaManager())
-					Get3DEngine()->GetVisAreaManager()->GetObjectsByType(arrRenderNodes, (EERType)nObjType, &cloudBoxWS, bAllowStartStreaming ? &bSuccess : 0);
+					Get3DEngine()->GetVisAreaManager()->GetObjectsByType(arrRenderNodes, (EERType)nObjType, &cloudBoxWS, bAllowStartStreaming ? &bSuccess : 0, ERF_GI_MODE_BIT0);
 
 				if (!arrRenderNodes.Count())
 					continue;
@@ -1852,6 +1852,9 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 					if (bThisIsLowLodNode)
 						if (!(pNode->GetRndFlags() & ERF_CASTSHADOWMAPS))
 							continue;
+
+					if (pNode->GetGIMode() != IRenderNode::eGM_StaticVoxelization)
+						continue;
 
 					float fMaxViewDist = pNode->GetMaxViewDist();
 
@@ -1875,8 +1878,6 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 					int nMaxSubSlots = 1;
 					if (pNode->GetRenderNodeType() == eERType_RenderProxy)
 					{
-						if (!strstr(pNode->GetName(), "_TI_VOX"))
-							continue;
 						nMaxSlots = 32;
 						nMaxSubSlots = 32;
 					}

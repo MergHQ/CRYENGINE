@@ -3126,6 +3126,7 @@ void CParserBin::SetupFeatureDefines()
 	}
 
 #if defined(FEATURE_SVO_GI)
-	AddMacro(CParserBin::GetCRC32("FEATURE_SVO_GI"), nEnable, 1, 0, m_StaticMacros);
+	if (m_nPlatform == SF_D3D11 || m_nPlatform == SF_DURANGO)
+		AddMacro(CParserBin::GetCRC32("FEATURE_SVO_GI"), nEnable, 1, 0, m_StaticMacros);
 #endif
 }

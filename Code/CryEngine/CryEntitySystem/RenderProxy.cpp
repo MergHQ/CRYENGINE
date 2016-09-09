@@ -205,6 +205,8 @@ void CRenderProxy::UpdateEntityFlags()
 	int nExtendedFlags = m_pEntity->GetFlagsExtended();
 
 	m_nEntityFlags = nEntityFlags;
+
+	int dwPrevRndFlags = m_dwRndFlags;
 	
 	if (nEntityFlags & ENTITY_FLAG_CASTSHADOW)
 		m_dwRndFlags |= ERF_CASTSHADOWMAPS|ERF_HAS_CASTSHADOWMAPS;
@@ -236,8 +238,28 @@ void CRenderProxy::UpdateEntityFlags()
 	else
 		m_dwRndFlags &= ~ERF_NO_DECALNODE_DECALS;
 
+	SetRndFlags(ERF_GI_MODE_BIT0, (nExtendedFlags & ENTITY_FLAG_EXTENDED_GI_MODE_BIT0) != 0);
+	SetRndFlags(ERF_GI_MODE_BIT1, (nExtendedFlags & ENTITY_FLAG_EXTENDED_GI_MODE_BIT1) != 0);
+	SetRndFlags(ERF_GI_MODE_BIT2, (nExtendedFlags & ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) != 0);
+
 	if (m_nEntityFlags & ENTITY_FLAG_SEND_RENDER_EVENT) 
 		ClearFlags(FLAG_EXECUTE_AS_JOB_FLAG);
+
+	// propagate some flags to the light source
+	if (m_nFlags & FLAG_HAS_LIGHTS)
+	{
+		for (uint32 i = 0; i < m_slots.size(); i++)
+		{
+			CEntityObject *pSlot = m_slots[i];
+			if (pSlot && pSlot->pLight)
+			{
+				pSlot->pLight->SetSrcEntity(m_pEntity);
+			}
+		}
+	}
+
+	if (dwPrevRndFlags != m_dwRndFlags && m_pOcNode)
+		m_pOcNode->SetCompiled(false);
 }
 
 //////////////////////////////////////////////////////////////////////////

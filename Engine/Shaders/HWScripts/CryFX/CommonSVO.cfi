@@ -15,7 +15,7 @@ float4 SvoTreeSettings3  : PB_SvoTreeSettings3;
 float4 SvoTreeSettings4  : PB_SvoTreeSettings4;
 float4 SvoTreeSettings5  : PB_SvoTreeSettings5;
 
-float4 SvoParamsCommon   : PB_SvoParams0; // shadows sev, diffuse spreading, diffuse base, even frame time
+float4 SvoParamsCommon   : PB_SvoParams0; // shadows sev, diffuse spreading, diffuse base, max tree depth
 float4 SvoParamsDiffuse  : PB_SvoParams1; // wid, max cone len, diff targ res scale, mult
 float4 SvoParamsInject   : PB_SvoParams2; // light, propagation booster, refl satur, trans mult
 float4 SvoParamsMisc     : PB_SvoParams5; // emissive mult, propagation pass id, passes num, CM mult
@@ -82,6 +82,8 @@ float SampleLinearDepth(Texture2D depthTexture, float2 ScreenTC)
 #define VOX_DIST_TO_SURF_RANGE	4
 
 #define VOX_WORLD_SIZE		(SvoTreeSettings0.x)
+#define VOX_SVO_ORIGIN		float4(SvoParamsMisc2.y, SvoParamsMisc2.w, SvoParamsMisc3.z, SvoParamsMisc3.w)
+
 #define VOX_MIN_NODE_SIZE (SvoTreeSettings0.y)
 #define VOX_BRICK_TEXRES	(SvoTreeSettings0.z)
 #define VOX_MIN_VOX_SIZE	(VOX_MIN_NODE_SIZE / VOX_BRICK_TEXRES)
@@ -107,7 +109,6 @@ float SampleLinearDepth(Texture2D depthTexture, float2 ScreenTC)
 
 #define VOX_TI_ATMO_DENSITY (SvoTreeSettings1.w)
 
-#define SVO_PREDICTION_MAX_ALPHA_IN_RANGE  1
 #define SVO_PREDICTION_MIN_DIST_TO_SURFACE 0
 
 #define SVO_TRACE_MODE_GEOMETRY 0
@@ -207,18 +208,6 @@ bool IsDiffuseMode()
 #else
 	return false;
 #endif
-}
-
-int GetMaxTreeDepth()
-{
-	float nWS = VOX_WORLD_SIZE;
-	int nDepth = 0;
-	while (nWS>VOX_MIN_NODE_SIZE)
-	{
-		nWS /= 2;
-		nDepth++;
-	}
-	return nDepth;
 }
 
 bool IsPointInAABB(float3 p, float3 m1, float3 m2)
@@ -426,8 +415,8 @@ void PrepareBrickInjection(
 	{
 		const float3 vBoxSize = voxAreaMax.xyz - voxAreaMin.xyz;
 
-		float3 vBegPos = 0;
-		float3 vEndPos = VOX_WORLD_SIZE;
+		float3 vBegPos = -VOX_WORLD_SIZE*4;
+		float3 vEndPos =  VOX_WORLD_SIZE*5;
 
 		float ocNodeSize = voxAreaMin.w;
 		const float3 vHalfTexSizeWS = 0.5f / VOX_BRICK_TEXRES * ocNodeSize;
@@ -931,12 +920,6 @@ bool ConeTraceBrick_SS_Far(const float3 vRayStartPos, Ray r, const float _fDista
 				{
 					vPosOut.xyz = r.startpoint;
 					vPosOut.w = vRGBD.a;
-
-					if (bUseLighting)
-					{
-						if (nPredictionMode == SVO_PREDICTION_MAX_ALPHA_IN_RANGE)
-							vNormal.a = vNORA.a; // precomputed lighting
-					}
 				}
 			}
 
@@ -1056,10 +1039,6 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 
 		float4 arrGoodTC = 0;
 
-		float fAxisMult = 1.f;
-		if (nPredictionMode == SVO_PREDICTION_MAX_ALPHA_IN_RANGE) // for MRT
-			fAxisMult = 1.f - 0.2f*saturate(dot(normalize(float3(1, 1, 1)), normalize(abs(r.direction))));
-
 		float t = max(0, tmin);
 		r.startpoint += r.direction*max(0, tmin);
 		fDistance = fDistanceIn + length(r.startpoint - vRayStartPos);
@@ -1069,10 +1048,6 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 		while(1)
 		{
 			float fStepSize = bAirOnlyMode ? 1.f : 0.5f; // todo: pass from outside
-
-			//			if(nPredictionMode == SVO_PREDICTION_MAX_ALPHA_IN_RANGE)
-			//			if( t<=(tmin+voxAreaMin.w/16) || t>=(tmax-voxAreaMin.w/7) )
-			//			fStepSize *= .5;
 
 			if (!bAirOnlyMode)
 			{
@@ -1085,23 +1060,6 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 					//	fStepSize = fStepSize  * clamp(255-vNORA.a*255, 1, 4);
 				}
 			}
-
-			/*if(!bAirOnlyMode)
-			{
-			if(nPredictionMode == SVO_PREDICTION_MAX_ALPHA_IN_RANGE)
-			{ // TODO: try level voxelization with a lot of alpha voxels for fog or clouds
-			//			fStepSize = (vRGBD.a>fAlphaRefMin) ? 0.5 : 3.0;//clamp(32.f-vRGBD.a*255.f, 0.5f, VOX_DIST_TO_SURF_RANGE);
-			float fFar = saturate((fAlphaRefMin-vRGBD.a)/(fAlphaRefMin/2));
-			fStepSize = lerp(0.5, VOX_DIST_TO_SURF_RANGE, fFar);
-			}
-			else // if(nPredictionMode == SVO_PREDICTION_MIN_DIST_TO_SURFACE)
-			{
-			//			const fStepSize = 1.f;//clamp(32.f-vReadNormal.a*255.f, 1.f, VOX_DIST_TO_SURF_RANGE);
-			//			const fStepSize = vReadNormal.g ? 0.75f : 1.5f;//clamp(32.f-vReadNormal.a*255.f, 1.f, VOX_DIST_TO_SURF_RANGE);
-			//			fStepSize = 0.5; //bMrtMode ? 0.35f : 1.f;//clamp(32.f-vReadNormal.a*255.f, 1.f, VOX_DIST_TO_SURF_RANGE);
-			fStepSize = clamp((255.f - pow(vNORA.a,.6)*255.f) * fStepSize, fStepSize, 4);
-			}
-			}*/
 
 			r.startpoint += r.direction*fVoxSize*fStepSize;
 			t += fVoxSize*fStepSize;
@@ -1132,7 +1090,7 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 
 			if (!bAirOnlyMode)
 			{
-				vRGBD.a = saturate(max(pow(vOPAC.a * 0, 2)*fAirDensityScale, fAxisMult*dot(vOPAC.zyx, normalize(abs(r.direction)))));
+				vRGBD.a = saturate(max(pow(vOPAC.a * 0, 2)*fAirDensityScale, dot(vOPAC.zyx, normalize(abs(r.direction)))));
 			}
 			else
 			{
@@ -1268,12 +1226,6 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 				{
 					vPosOut.xyz = r.startpoint;
 					vPosOut.w = vRGBD.a;
-
-					if (bUseLighting)
-					{
-						if (nPredictionMode == SVO_PREDICTION_MAX_ALPHA_IN_RANGE)
-							vNormal.a = vNORA.a; // precomputed lighting
-					}
 				}
 
 				if (bAirOnlyMode)
@@ -1324,8 +1276,6 @@ bool ConeTraceBrick_MB(const float3 vRayStartPos, inout Ray r, const float fDist
 
 		const float3 vMulTC = 1.f / ocNodeSize*vBoxSize / VOX_ATLAS_SIZE*VOX_SUBBLOCK_SIZE_RATIO;
 
-		float fAxisMult = 1.f;
-
 		r.startpoint += r.direction*max(0, tmin);
 		fDistance = fDistanceIn + length(r.startpoint - vRayStartPos);
 
@@ -1346,7 +1296,7 @@ bool ConeTraceBrick_MB(const float3 vRayStartPos, inout Ray r, const float fDist
 			// bigger steps collect more opacity
 			float fAirDensityScale = ocNodeSize * fStepSize;
 
-			vRGBD.a = saturate(max(pow(vOPAC.a, 2)*fAirDensityScale, fAxisMult*dot(vOPAC.zyx, normalize(abs(r.direction)))));
+			vRGBD.a = saturate(max(pow(vOPAC.a, 2)*fAirDensityScale, dot(vOPAC.zyx, normalize(abs(r.direction)))));
 
 			fDistance += (ocNodeSize / VOX_BRICK_TEXRES)*fStepSize;
 
@@ -1415,9 +1365,9 @@ float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, ou
 
 	// define root node
 	SNodeInfo rootNode;
-	rootNode.nId = 0;
-	rootNode.vMin = 0;
-	rootNode.vMax = VOX_WORLD_SIZE;
+	rootNode.nId = 0;	
+	rootNode.vMin.xyz = VOX_SVO_ORIGIN.xyz;
+	rootNode.vMax.xyz = VOX_SVO_ORIGIN.xyz + VOX_SVO_ORIGIN.w;
 	rootNode.vTC = 0;
 	rootNode.nTreeLevel = 0;
 
@@ -1438,7 +1388,7 @@ float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, ou
 			rayForTree.startpoint += rayForTree.direction * fMaxTMIN;
 	}
 
-	const int nVoxMaxTreeDepth = GetMaxTreeDepth();
+	const int nVoxMaxTreeDepth = (int)SvoParamsCommon.w;
 
 	float fIsoValPrev = 0;
 
@@ -2183,7 +2133,7 @@ const static float3 kernel_HS_512[512] =
 	float3(0.527499, -0.579715, 0.621027),
 };
 
-static float3 kernel_S_512[512] =
+const static float3 kernel_S_512[512] =
 {
 	float3(-0.110998, -0.863143, -0.492610),
 	float3(-0.227532, 0.678302, 0.698667),
@@ -3091,7 +3041,7 @@ const static float3 kernel_HS_128[128] =
 	float3(-0.205112, -0.439208, 0.874657),
 };
 
-static float3 kernel_S_128[128] =
+const static float3 kernel_S_128[128] =
 {
 	float3(-0.400773, 0.331119, 0.854249),
 	float3(0.216972, -0.431971, 0.875400),
@@ -3291,7 +3241,7 @@ const static float3 kernel_HS_64[64] =
 	float3(0.756106, -0.423491, 0.498958),
 };
 
-static float3 kernel_S_64[64] =
+const static float3 kernel_S_64[64] =
 {
 	float3(-0.182543, 0.821262, 0.540562),
 	float3(-0.380227, -0.842966, 0.380572),

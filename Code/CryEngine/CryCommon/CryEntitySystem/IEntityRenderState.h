@@ -101,33 +101,31 @@ struct OcclusionTestClient
 #define ERF_HIDABLE_SECONDARY          BIT(7)
 #define ERF_HIDDEN                     BIT(8)
 #define ERF_SELECTED                   BIT(9)
-#define ERF_PROCEDURAL_ENTITY          BIT(10)  // this is an object generated at runtime which has a limited lifetime (matches procedural entity)
+#define ERF_GI_MODE_BIT0               BIT(10) // Bit0 of GI mode.
 #define ERF_OUTDOORONLY                BIT(11)
 #define ERF_NODYNWATER                 BIT(12)
 #define ERF_EXCLUDE_FROM_TRIANGULATION BIT(13)
 #define ERF_REGISTER_BY_BBOX           BIT(14)
 #define ERF_PICKABLE                   BIT(15)
-#define ERF_VOXELIZE_STATIC            BIT(16)
+#define ERF_GI_MODE_BIT1               BIT(16) // Bit1 of GI mode.
 #define ERF_NO_PHYSICS                 BIT(17)
 #define ERF_NO_DECALNODE_DECALS        BIT(18)
 #define ERF_REGISTER_BY_POSITION       BIT(19)
 #define ERF_STATIC_INSTANCING          BIT(20)
 #define ERF_RECVWIND                   BIT(21)
-
-//! Collision proxy is a special object that is only visible in editor and used for physical collisions with player and vehicles.
-#define ERF_COLLISION_PROXY    BIT(22)
-
-#define ERF_VOXELIZE_DYNAMIC   BIT(23)
-#define ERF_SPEC_BIT0          BIT(24)                                         // Bit0 of min config specification.
-#define ERF_SPEC_BIT1          BIT(25)                                         // Bit1 of min config specification.
-#define ERF_SPEC_BIT2          BIT(26)                                         // Bit2 of min config specification.
-#define ERF_SPEC_BITS_MASK     (ERF_SPEC_BIT0 | ERF_SPEC_BIT1 | ERF_SPEC_BIT2) // Bit mask of the min spec bits.
-#define ERF_SPEC_BITS_SHIFT    (24)                                            // Bit offset of the ERF_SPEC_BIT0.
-#define ERF_RAYCAST_PROXY      BIT(27)                                         // raycast proxy is only used for raycasting
-#define ERF_HUD                BIT(28)                                         // Hud object that can avoid some visibility tests
-#define ERF_RAIN_OCCLUDER      BIT(29)                                         // Is used for rain occlusion map
-#define ERF_HAS_CASTSHADOWMAPS BIT(30)                                         // at one point had ERF_CASTSHADOWMAPS set
-#define ERF_ACTIVE_LAYER       BIT(31)                                         // the node is on a currently active layer
+#define ERF_COLLISION_PROXY            BIT(22) // Collision proxy is a special object that is only visible in editor and used for physical collisions with player and vehicles.
+#define ERF_GI_MODE_BIT2               BIT(23) // Bit2 of GI mode.
+#define ERF_GI_MODE_BITS_MASK          (ERF_GI_MODE_BIT0 | ERF_GI_MODE_BIT1 | ERF_GI_MODE_BIT2) // Bit mask of the GI mode.
+#define ERF_SPEC_BIT0                  BIT(24)                                         // Bit0 of min config specification.
+#define ERF_SPEC_BIT1                  BIT(25)                                         // Bit1 of min config specification.
+#define ERF_SPEC_BIT2                  BIT(26)                                         // Bit2 of min config specification.
+#define ERF_SPEC_BITS_MASK             (ERF_SPEC_BIT0 | ERF_SPEC_BIT1 | ERF_SPEC_BIT2) // Bit mask of the min spec bits.
+#define ERF_SPEC_BITS_SHIFT            (24)                                            // Bit offset of the ERF_SPEC_BIT0.
+#define ERF_RAYCAST_PROXY              BIT(27)                                         // raycast proxy is only used for raycasting
+#define ERF_HUD                        BIT(28)                                         // Hud object that can avoid some visibility tests
+#define ERF_RAIN_OCCLUDER              BIT(29)                                         // Is used for rain occlusion map
+#define ERF_HAS_CASTSHADOWMAPS         BIT(30)                                         // at one point had ERF_CASTSHADOWMAPS set
+#define ERF_ACTIVE_LAYER               BIT(31)                                         // the node is on a currently active layer
 
 struct IShadowCaster
 {
@@ -324,16 +322,23 @@ struct IRenderNode : public IShadowCaster
 
 	virtual uint8 GetSortPriority()                                             { return 0; }
 
-#if defined(FEATURE_SVO_GI)
-	//! Types of voxelization for objects and lights.
-	enum EVoxMode
+	//! Object can be used by GI system in several ways.
+	enum EGIMode
 	{
-		VM_None = 0, //!< No voxelization.
-		VM_Static,   //!< Incremental or asynchronous lazy voxelization.
-		VM_Dynamic,  //!< Real-time every-frame voxelization on GPU.
+		eGM_None = 0,                //!< No voxelization.
+		eGM_StaticVoxelization,      //!< Incremental or asynchronous lazy voxelization.
+		eGM_DynamicVoxelization,     //!< Real-time every-frame voxelization on GPU.
+		eGM_HideIfGiIsActive,        //!< Hide this light source if GI is enabled
+		eGM_AnalyticalProxy_Soft,		 //!< Analytical proxy (with shadow fading)
+		eGM_AnalyticalProxy_Hard,		 //!< Analytical proxy (no shadow fading)
+		eGM_AnalytPostOccluder,      //!< Analytical occluder (used with average light direction)
 	};
-	virtual EVoxMode GetVoxMode() { return VM_None; }
-#endif
+
+	//! Retrieves the way object is used by GI system.
+	virtual EGIMode GetGIMode() const 
+	{ 
+		return (EGIMode)(((m_dwRndFlags & ERF_GI_MODE_BIT0) ? 1 : 0) | ((m_dwRndFlags & ERF_GI_MODE_BIT1) ? 2 : 0) | ((m_dwRndFlags & ERF_GI_MODE_BIT2) ? 4 : 0)); 
+	}
 
 	virtual void SetMinSpec(int nMinSpec) { m_dwRndFlags &= ~ERF_SPEC_BITS_MASK; m_dwRndFlags |= (nMinSpec << ERF_SPEC_BITS_SHIFT) & ERF_SPEC_BITS_MASK; };
 

@@ -49,6 +49,7 @@ REGISTER_CVAR_AUTO(float, e_svoTI_MinReflectance, 0.2f, VF_NULL, "Controls light
 REGISTER_CVAR_AUTO(int, e_svoTI_ObjectsLod, 1, VF_NULL, "Mesh LOD used for voxelization\nChanges are visible only after re-voxelization (click <Update geometry> or restart)");
 REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersRange, 4.f, VF_NULL, "Shadow length");
 REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersSoftness, 0.5f, VF_NULL, "Shadow softness");
+REGISTER_CVAR_AUTO(int, e_svoRootSize, 512, VF_NULL, "Limits the area covered by SVO. Smaller values reduce number of tree levels and speedup the tracing. Value must be the power of 2");
 
 #ifdef CVAR_CPP
 m_arrVars.Clear();
