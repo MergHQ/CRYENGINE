@@ -54,7 +54,7 @@ set(game_folder CACHE INTERNAL "Game folder used for resource files on Windows" 
 if(WIN32)
 	set(WINDOWS TRUE)
 
-	if (NOT METADATA_COMPNAY)
+	if (NOT METADATA_COMPANY)
 		set(METADATA_COMPANY "Crytek GmbH")
 	endif()
 	set(METADATA_COMPANY ${METADATA_COMPANY} CACHE STRING "Company name for executable metadata")
