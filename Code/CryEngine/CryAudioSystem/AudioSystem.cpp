@@ -387,7 +387,7 @@ void CAudioSystem::InternalUpdate()
 	{
 		CRY_PROFILE_REGION_WAITING(PROFILE_AUDIO, "Wait - Audio Update");
 
-		CrySleep(2);
+		CrySleep(10);
 	}
 }
 

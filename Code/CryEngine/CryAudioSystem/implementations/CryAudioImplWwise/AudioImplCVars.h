@@ -18,7 +18,6 @@ public:
 	void RegisterVariables();
 	void UnregisterVariables();
 
-	int m_primaryMemoryPoolSize;
 	int m_secondaryMemoryPoolSize;
 	int m_prepareEventMemoryPoolSize;
 	int m_streamManagerMemoryPoolSize;

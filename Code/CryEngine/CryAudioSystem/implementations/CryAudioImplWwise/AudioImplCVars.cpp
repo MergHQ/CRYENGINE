@@ -8,8 +8,7 @@ using namespace CryAudio::Impl::Wwise;
 
 //////////////////////////////////////////////////////////////////////////
 CAudioImplCVars::CAudioImplCVars()
-	: m_primaryMemoryPoolSize(0)
-	, m_secondaryMemoryPoolSize(0)
+	: m_secondaryMemoryPoolSize(0)
 	, m_prepareEventMemoryPoolSize(0)
 	, m_streamManagerMemoryPoolSize(0)
 	, m_streamDeviceMemoryPoolSize(0)
@@ -36,7 +35,6 @@ CAudioImplCVars::~CAudioImplCVars()
 void CAudioImplCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS
-	m_primaryMemoryPoolSize = 64 << 10;            // 64 MiB
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -51,7 +49,6 @@ void CAudioImplCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_DURANGO
-	m_primaryMemoryPoolSize = 64 << 10;            // 64 MiB
 	m_secondaryMemoryPoolSize = 32 << 10;          // 32 MiB
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -66,7 +63,6 @@ void CAudioImplCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ORBIS
-	m_primaryMemoryPoolSize = 64 << 10;            // 64 MiB
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -81,7 +77,6 @@ void CAudioImplCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_MAC
-	m_primaryMemoryPoolSize = 64 << 10;            // 64 MiB
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -96,7 +91,6 @@ void CAudioImplCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_LINUX
-	m_primaryMemoryPoolSize = 64 << 10;            // 64 MiB
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -111,7 +105,6 @@ void CAudioImplCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif defined(CRY_PLATFORM_IOS)
-	m_primaryMemoryPoolSize = 64 << 10;            // 64 MiB
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -126,7 +119,6 @@ void CAudioImplCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ANDROID
-	m_primaryMemoryPoolSize = 64 << 10;            // 64 MiB
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -143,11 +135,6 @@ void CAudioImplCVars::RegisterVariables()
 #else
 	#error "Undefined platform."
 #endif
-
-	REGISTER_CVAR2("s_WwisePrimaryPoolSize", &m_primaryMemoryPoolSize, m_primaryMemoryPoolSize, VF_REQUIRE_APP_RESTART,
-	               "Specifies the size (in KiB) of the memory pool to be used by the Wwise audio system implementation.\n"
-	               "Usage: s_WwisePrimaryPoolSize [0/...]\n"
-	               "Default PC: 131072 (128 MiB), XboxOne: 131072 (128 MiB), PS4: 131072 (128 MiB), Mac: 131072 (128 MiB), Linux: 131072 (128 MiB), iOS: 8192 (8 MiB), Android: 32768 (32 MiB)\n");
 
 	REGISTER_CVAR2("s_WwiseSecondaryPoolSize", &m_secondaryMemoryPoolSize, m_secondaryMemoryPoolSize, VF_REQUIRE_APP_RESTART,
 	               "Specifies the size (in KiB) of the memory pool to be used by the Wwise audio system implementation.\n"
@@ -226,7 +213,6 @@ void CAudioImplCVars::UnregisterVariables()
 
 	if (pConsole != nullptr)
 	{
-		pConsole->UnregisterVariable("s_WwisePrimaryPoolSize");
 		pConsole->UnregisterVariable("s_WwiseSecondaryPoolSize");
 		pConsole->UnregisterVariable("s_WwisePrepareEventMemoryPoolSize");
 		pConsole->UnregisterVariable("s_WwiseStreamManagerMemoryPoolSize");

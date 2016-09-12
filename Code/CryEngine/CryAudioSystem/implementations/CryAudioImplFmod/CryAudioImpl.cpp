@@ -16,7 +16,7 @@
 using namespace CryAudio::Impl::Fmod;
 
 // Define global objects.
-CSoundAllocator g_audioImplMemoryPool;
+CSoundAllocator<2*1024*1024> g_audioImplMemoryPool;
 CAudioLogger g_audioImplLogger;
 CAudioImplCVars CryAudio::Impl::Fmod::g_audioImplCVars;
 

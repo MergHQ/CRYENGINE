@@ -23,7 +23,7 @@
 // Define global objects.
 CAudioCVars g_audioCVars;
 CAudioLogger g_audioLogger;
-CSoundAllocator g_audioMemoryPoolPrimary;
+CSoundAllocator<13*1024*1024> g_audioMemoryPoolPrimary;
 CTimeValue g_lastMainThreadFrameStartTime;
 
 #define MAX_MODULE_NAME_LENGTH 256

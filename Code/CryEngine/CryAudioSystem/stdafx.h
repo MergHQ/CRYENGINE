@@ -18,7 +18,7 @@
 #include <SoundAllocator.h>
 #include <AudioLogger.h>
 
-extern CSoundAllocator g_audioMemoryPoolPrimary;
+extern CSoundAllocator<13*1024*1024> g_audioMemoryPoolPrimary;
 extern CAudioLogger g_audioLogger;
 extern CTimeValue g_lastMainThreadFrameStartTime;
 
