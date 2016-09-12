@@ -457,6 +457,12 @@ enum ESystemEvent
 	//! This is needed because some sub-systems still want to work even without focus on main application
 	//! while others would prefer to suspend their operation
 	ESYSTEM_EVENT_GAMEWINDOW_ACTIVATE,
+
+	//! Sent when a new CVar is registered
+	ESYSTEM_EVENT_CVAR_REGISTERED,
+
+	//! Sent when a CVar is unregistered
+	ESYSTEM_EVENT_CVAR_UNREGISTERED,
 };
 
 //! User defined callback, which can be passed to ISystem.

@@ -600,6 +600,7 @@ void CXConsole::RegisterVar(ICVar* pCVar, ConsoleVarFunc pChangeFunc)
 	ConsoleVariablesMapItor::value_type value = ConsoleVariablesMapItor::value_type(pCVar->GetName(), pCVar);
 
 	m_mapVariables.insert(value);
+	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CVAR_REGISTERED, reinterpret_cast<UINT_PTR>(pCVar), 0);
 
 	int flags = pCVar->GetFlags();
 
@@ -1046,6 +1047,7 @@ void CXConsole::UnregisterVariable(const char* sVarName, bool bDelete)
 	}
 
 	m_mapVariables.erase(sVarName);
+	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CVAR_UNREGISTERED, reinterpret_cast<UINT_PTR>(pCVar), 0);
 
 	delete pCVar;
 }
