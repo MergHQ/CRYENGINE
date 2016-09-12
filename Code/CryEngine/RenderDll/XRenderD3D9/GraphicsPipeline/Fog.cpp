@@ -116,11 +116,14 @@ void CFogStage::Execute()
 #else
 		const bool bSVOGI = false;
 #endif
+		const int viewInfoCount = rd->GetGraphicsPipeline().GetViewInfoCount();
+		const bool bSinglePassStereo = (viewInfoCount > 1) ? true : false;
 
-		// prevent fog depth clipping if volumetric fog or SVOGI are activated.
+		// prevent fog depth clipping if volumetric fog, SVOGI, or single pass stereo rendering are activated.
 		bool useFogDepthTest = (CRenderer::CV_r_FogDepthTest != 0.0f)
 		                       && !bVolumtricFog
-		                       && !bSVOGI;
+		                       && !bSVOGI
+		                       && !bSinglePassStereo;
 
 		f32 fogDepth = 0.0f;
 		if (useFogDepthTest)
@@ -193,6 +196,8 @@ void CFogStage::Execute()
 		}
 
 		m_passFog.SetRequireWorldPos(true, clipZ); // don't forget if shader reconstructs world position.
+
+		m_passFog.SetRequirePerViewConstantBuffer(true);
 
 		m_passFog.BeginConstantUpdate();
 
@@ -276,6 +281,8 @@ void CFogStage::Execute()
 			m_passLightning.SetTexture(0, CTexture::s_ptexZTarget);
 
 			m_passLightning.SetRequireWorldPos(true);
+
+			m_passLightning.SetRequirePerViewConstantBuffer(true);
 		}
 
 		m_passLightning.BeginConstantUpdate();
@@ -368,6 +375,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 			m_passVolFogShadowHBlur.SetRenderTarget(0, CTexture::s_ptexVolFogShadowBuf[1]);
 			m_passVolFogShadowHBlur.SetState(GS_NODEPTHTEST);
 			m_passVolFogShadowHBlur.SetRequireWorldPos(true);
+			m_passVolFogShadowHBlur.SetRequirePerViewConstantBuffer(true);
 
 			m_passVolFogShadowHBlur.SetTextureSamplerPair(0, CTexture::s_ptexVolFogShadowBuf[0], m_samplerPointClamp);
 		}
@@ -395,6 +403,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 			m_passVolFogShadowVBlur.SetRenderTarget(0, CTexture::s_ptexVolFogShadowBuf[0]);
 			m_passVolFogShadowVBlur.SetState(GS_NODEPTHTEST);
 			m_passVolFogShadowVBlur.SetRequireWorldPos(true);
+			m_passVolFogShadowVBlur.SetRequirePerViewConstantBuffer(true);
 
 			m_passVolFogShadowVBlur.SetTextureSamplerPair(0, CTexture::s_ptexVolFogShadowBuf[1], m_samplerPointClamp);
 		}

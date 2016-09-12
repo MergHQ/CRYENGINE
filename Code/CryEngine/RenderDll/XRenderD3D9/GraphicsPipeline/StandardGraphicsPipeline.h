@@ -138,6 +138,7 @@ public:
 	uint32 IncrementNumInvalidDrawcalls(int count) { return CryInterlockedAdd((volatile int*)&m_numInvalidDrawcalls, count); }
 	uint32 GetNumInvalidDrawcalls() const          { return m_numInvalidDrawcalls;   }
 
+	int GetViewInfoCount() const;
 	int GetViewInfo(SViewInfo viewInfo[2], const RECT * pCustomViewport = NULL);
 	uint32 GetRenderFlags() const { return m_renderingFlags; }
 

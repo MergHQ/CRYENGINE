@@ -12,17 +12,13 @@ float Script : STANDARDSGLOBAL
 >;
 
 
-float4x4 objMatrix				: PI_TransObjMatrix;
-float3 cameraFrontVector	: PB_CameraFront;
+float4x4 objMatrix : PI_TransObjMatrix; // this doesn't include non-uniform scaling, vertex positions are scaled on CPU.
 
-float3x4	invObjSpaceMatrix;
+float3x4	invObjSpaceMatrix; // this includes non-uniform scaling.
 float4		globalDensity;
 float4		densityOffset;
-float4		nearCutoff;
+float4		nearCutoff; // x: the distance of rendering off, y: set to 0 if viewer is inside the volume otherwise 1, zw: not used
 float4		outsideSoftEdgesLerp;
-float3		eyePosInOS;
-float3		eyePosInOSx2;
-float4		eyePosInWS;
 float3		fogColor;
 float4		heightFallOffBasePoint;
 float3		heightFallOffDirScaled;
@@ -45,7 +41,8 @@ struct v2f_ellipsoid
 {
   float4 hPos					: POSITION;   
   float3 eyeDirInWS		: TEXCOORDN;  
-  float3 eyeDirInOS		: TEXCOORDN;  
+  float3 eyeDirInOS		: TEXCOORDN;
+  float3 eyePosInOSx2	: TEXCOORDN;
   float4 hPosTexProj	: TEXCOORDN;
 
 	MSAA_SAMPLE_INDEX_PS
@@ -57,12 +54,14 @@ v2f_ellipsoid FogVolumeEllipsoidVS( a2v IN )
   v2f_ellipsoid OUT = (v2f_ellipsoid) 0; 
 
   float4 vPos = IN.Position;
-  float4 hPos = mul( vpMatrix, vPos );
+  float3 posInWS = mul( (float3x4) objMatrix, vPos );
+  float4 hPos = mul( CV_ViewProjMatr, float4(posInWS, 1.0f) );
   
   OUT.hPos = hPos;
   // multiply homogeneous z by either zero (inside) or one (outside) to prevent far clipping plane artifacts if we're inside a huge fog volume
-  OUT.hPos.z *= eyePosInWS.w; 
-	OUT.hPos.z += nearCutoff.x * OUT.hPos.w * (1.0 - eyePosInWS.w);  // Emulate depth bounds min when inside volume
+  const float viewerOutsideVolume = nearCutoff.y;
+  OUT.hPos.z *= viewerOutsideVolume; 
+	OUT.hPos.z += nearCutoff.x * OUT.hPos.w * (1.0 - viewerOutsideVolume);  // Emulate depth bounds min when inside volume
 
 #if %_RT_REVERSE_DEPTH
 	OUT.hPos.z = OUT.hPos.w - OUT.hPos.z;
@@ -72,8 +71,12 @@ v2f_ellipsoid FogVolumeEllipsoidVS( a2v IN )
 	OUT.hPosTexProj.x = (  OUT.hPosTexProj.x + OUT.hPosTexProj.w ) * 0.5;
 	OUT.hPosTexProj.y = ( -OUT.hPosTexProj.y + OUT.hPosTexProj.w ) * 0.5;
   	OUT.hPosTexProj.xy = GetScaledScreenTC(OUT.hPosTexProj.xy);
-	OUT.eyeDirInWS = mul( (float3x4) objMatrix, vPos ) - eyePosInWS.xyz;  
-  OUT.eyeDirInOS = mul( (float3x3) invObjSpaceMatrix, OUT.eyeDirInWS.xyz );  
+
+	OUT.eyeDirInWS = posInWS.xyz - g_VS_WorldViewPos.xyz;
+	OUT.eyeDirInOS = mul( (float3x3) invObjSpaceMatrix, OUT.eyeDirInWS.xyz );
+
+	const float3 eyePosInOS = mul( invObjSpaceMatrix, float4(g_VS_WorldViewPos.xyz, 1.0f) );
+	OUT.eyePosInOSx2 = 2.0f * eyePosInOS.xyz;
 
   return OUT;
 }
@@ -88,9 +91,9 @@ pixout FogVolumeEllipsoidPS( v2f_ellipsoid IN )
    DebugOutput(OUT.Color, float4(0, 0, 0, 1));
    return OUT;
  #endif
-  
+
 	// setup ray tracing in OS
-  float3 cameraPosInOSx2 = eyePosInOSx2;  
+	float3 cameraPosInOSx2 = IN.eyePosInOSx2;
 	float3 cameraLookDirInOS = IN.eyeDirInOS; //mul( (float3x3) invObjSpaceMatrix, IN.eyeDirInWS.xyz );
 	
 	float invOfScaledCamDirLength = rsqrt( dot( cameraLookDirInOS, cameraLookDirInOS ) );
@@ -109,7 +112,7 @@ pixout FogVolumeEllipsoidPS( v2f_ellipsoid IN )
 	//clip( discrSqrt - B ); // now handled by "tE = max( ... );" below
 		
 	// ray hit
-	float3 cameraPosInWS = eyePosInWS.xyz;  
+	float3 cameraPosInWS = g_VS_WorldViewPos.xyz;
 	float3 cameraLookDirInWS = IN.eyeDirInWS.xyz * invOfScaledCamDirLength;
 
 	////////////////////////////////////////////////////////////////////////
@@ -121,9 +124,9 @@ pixout FogVolumeEllipsoidPS( v2f_ellipsoid IN )
 	float tE = max( 0.5 * ( -B + discrSqrt ), 0.0 );		
 	float3 back = cameraPosInWS + tE * cameraLookDirInWS;
 
-	float d = dot( cameraPosInWS, -cameraFrontVector );		
-	float t0 = dot( front, -cameraFrontVector );		
-	float t1 = dot( back, -cameraFrontVector );
+	float d = dot( cameraPosInWS, -CV_CameraFrontVector );		
+	float t0 = dot( front, -CV_CameraFrontVector );		
+	float t1 = dot( back, -CV_CameraFrontVector );
 
 	float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.hPosTexProj ) + d;	
 	sceneDepth = min( sceneDepth, t1 );
@@ -150,7 +153,7 @@ pixout FogVolumeEllipsoidPS( v2f_ellipsoid IN )
 	#else
 		float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.hPosTexProj );
 	#endif
-	float tI = sceneDepth / dot( cameraLookDirInWS, -cameraFrontVector );		
+	float tI = sceneDepth / dot( cameraLookDirInWS, -CV_CameraFrontVector );
 	tI = max( tS, min( tI, tE ) ); // clamp to range [tS, tE]
 
 	float3 front = tS * cameraLookDirInWS + cameraPosInWS;
@@ -228,12 +231,14 @@ v2f_box FogVolumeBoxVS( a2v IN )
   v2f_box OUT = (v2f_box) 0; 
 
   float4 vPos = IN.Position;
-  float4 hPos = mul( vpMatrix, vPos );
+  float3 posInWS = mul( (float3x4) objMatrix, vPos );
+  float4 hPos = mul( CV_ViewProjMatr, float4(posInWS, 1.0f) );
   
   OUT.hPos = hPos;
   // multiply homogeneous z by either zero (inside) or one (outside) to prevent far clipping plane artifacts if we're inside a huge fog volume
-  OUT.hPos.z *= eyePosInWS.w; 
-	OUT.hPos.z += nearCutoff.x * OUT.hPos.w * (1.0 - eyePosInWS.w);  // Emulate depth bounds min when inside volume
+  const float viewerOutsideVolume = nearCutoff.y;
+  OUT.hPos.z *= viewerOutsideVolume; 
+	OUT.hPos.z += nearCutoff.x * OUT.hPos.w * (1.0 - viewerOutsideVolume);  // Emulate depth bounds min when inside volume
 
 #if %_RT_REVERSE_DEPTH
 	OUT.hPos.z = OUT.hPos.w - OUT.hPos.z;
@@ -243,12 +248,14 @@ v2f_box FogVolumeBoxVS( a2v IN )
 	OUT.hPosTexProj.x = (  OUT.hPosTexProj.x + OUT.hPosTexProj.w ) * 0.5;
 	OUT.hPosTexProj.y = ( -OUT.hPosTexProj.y + OUT.hPosTexProj.w ) * 0.5;
   	OUT.hPosTexProj.xy = GetScaledScreenTC(OUT.hPosTexProj.xy);
-	OUT.eyeDirInWS = mul( (float3x4) objMatrix, vPos ) - eyePosInWS.xyz;
-  OUT.eyeDirInOS = mul( (float3x3) invObjSpaceMatrix, OUT.eyeDirInWS.xyz );  
-    
+
+	OUT.eyeDirInWS = posInWS.xyz - g_VS_WorldViewPos.xyz;
+	OUT.eyeDirInOS = mul( (float3x3) invObjSpaceMatrix, OUT.eyeDirInWS.xyz );
+
+	const float3 eyePosInOS = mul( invObjSpaceMatrix, float4(g_VS_WorldViewPos.xyz, 1.0f) );
 	OUT.tPosPlane =  1 - eyePosInOS;
-	OUT.tNegPlane = -1 - eyePosInOS;  
-  
+	OUT.tNegPlane = -1 - eyePosInOS;
+
   return OUT;
 }
 
@@ -289,7 +296,7 @@ pixout FogVolumeBoxPS( v2f_box IN )
 	float tS = t.x;
 	float tE = t.y;
 	
-	float3 cameraPosInWS = eyePosInWS.xyz;  
+	float3 cameraPosInWS = g_VS_WorldViewPos.xyz;
 	float3 cameraLookDirInWS = IN.eyeDirInWS.xyz * invOfScaledCamDirLength;
 
 	////////////////////////////////////////////////////////////////////////
@@ -304,7 +311,7 @@ pixout FogVolumeBoxPS( v2f_box IN )
 	#else
 		float sceneDepth = DecodeSceneDepth( sceneDepthSampler, IN.hPosTexProj );
 	#endif
-	float tI = sceneDepth / dot( cameraLookDirInWS, -cameraFrontVector );		
+	float tI = sceneDepth / dot( cameraLookDirInWS, -CV_CameraFrontVector );
 	tI = max( tS, min( tI, tE ) ); // clamp to range [tS, tE]
 
 	float3 front = tS * cameraLookDirInWS + cameraPosInWS;

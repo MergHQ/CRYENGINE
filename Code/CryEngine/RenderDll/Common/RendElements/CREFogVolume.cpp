@@ -91,15 +91,7 @@ bool CREFogVolume::mfDraw(CShader* ef, SShaderPass* sfm)
 	static CCryNameR invObjSpaceMatrixName("invObjSpaceMatrix");
 	ef->FXSetVSFloat(invObjSpaceMatrixName, (const Vec4*)&m_matWSInv.m00, 3);
 
-	const Vec4 cEyePosVec(m_eyePosInWS, !m_viewerInsideVolume ? 1.f : 0);
-	static CCryNameR eyePosInWSName("eyePosInWS");
-	ef->FXSetVSFloat(eyePosInWSName, &cEyePosVec, 1);
-
-	const Vec4 cEyePosInOSVec(m_eyePosInOS, 0);
-	static CCryNameR eyePosInOSName("eyePosInOS");
-	ef->FXSetVSFloat(eyePosInOSName, &cEyePosInOSVec, 1);
-
-	const Vec4 cNearCutoffVec(m_nearCutoff, m_nearCutoff, m_nearCutoff, m_nearCutoff);
+	const Vec4 cNearCutoffVec(m_nearCutoff, (!m_viewerInsideVolume ? 1.0f : 0.0f), 0.0f, 0.0f);
 	static CCryNameR nearCutoffName("nearCutoff");
 	ef->FXSetVSFloat(nearCutoffName, &cNearCutoffVec, 1);
 
@@ -127,13 +119,6 @@ bool CREFogVolume::mfDraw(CShader* ef, SShaderPass* sfm)
 	const Vec4 cOutsideSoftEdgesLerpVec(m_softEdgesLerp.x, m_softEdgesLerp.y, 0, 0);
 	static CCryNameR outsideSoftEdgesLerpName("outsideSoftEdgesLerp");
 	ef->FXSetPSFloat(outsideSoftEdgesLerpName, &cOutsideSoftEdgesLerpVec, 1);
-
-	const Vec4 cEyePosInWSVec(m_eyePosInWS, 0);
-	ef->FXSetPSFloat(eyePosInWSName, &cEyePosInWSVec, 1);
-
-	const Vec4 cEyePosInOSx2Vec(2.0f * m_eyePosInOS, 0);
-	static CCryNameR eyePosInOSx2Name("eyePosInOSx2");
-	ef->FXSetPSFloat(eyePosInOSx2Name, &cEyePosInOSx2Vec, 1);
 
 	// commit all render changes
 	rd->FX_Commit();

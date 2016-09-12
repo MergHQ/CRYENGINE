@@ -181,6 +181,7 @@ struct SRenderObjData
 		m_pTerrainSectorTextureInfo = 0;
 		m_fMaxViewDistance = 100000.f;
 		m_pParticleShaderData = nullptr;
+		m_FogVolumeContribIdx = (uint16) - 1;
 	}
 
 	void SetShaderParams(const DynArray<SShaderParam>* pShaderParams)
