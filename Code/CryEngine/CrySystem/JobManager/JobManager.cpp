@@ -678,11 +678,7 @@ void MyDraw2dLabel(float x, float y, float font_size, const float* pfColor, bool
 {
 	va_list args;
 	va_start(args, label_text);
-	SDrawTextInfo ti;
-	ti.xscale = ti.yscale = font_size;
-	ti.flags = eDrawText_2D | eDrawText_FixedSize | eDrawText_IgnoreOverscan | eDrawText_Monospace;
-	if (pfColor) { ti.color[0] = pfColor[0]; ti.color[1] = pfColor[1]; ti.color[2] = pfColor[2]; ti.color[3] = pfColor[3]; }
-	gEnv->pRenderer->DrawTextQueued(Vec3(x, y, 1.0f), ti, label_text, args);
+	IRenderAuxText::DrawText(Vec3(x, y, 1.0f), font_size, pfColor, eDrawText_2D | eDrawText_FixedSize | eDrawText_IgnoreOverscan | eDrawText_Monospace, label_text, args);
 	va_end(args);
 }
 

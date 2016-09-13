@@ -1398,15 +1398,7 @@ void DrawText(const float x, const float y, ColorF c, const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
-
-	SDrawTextInfo ti;
-	ti.flags = eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace;
-	ti.xscale = ti.yscale = 1.2f;
-	ti.color[0] = c.r;
-	ti.color[1] = c.g;
-	ti.color[2] = c.b;
-	ti.color[3] = c.a;
-	gEnv->pRenderer->DrawTextQueued(Vec3(x, y, 1.0f), ti, format, args);
+	IRenderAuxText::DrawText(Vec3(x, y, 1.0f), 1.2f, c, eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace, format, args);
 	va_end(args);
 }
 }

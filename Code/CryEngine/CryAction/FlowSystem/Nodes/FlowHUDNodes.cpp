@@ -177,16 +177,11 @@ public:
 				}
 
 				SDrawTextInfo ti;
-				ti.xscale = ti.yscale = GetPortFloat(pActInfo, INP_FontSize);
-				ti.flags = eDrawText_2D | aspectRatioFlag | eDrawText_FixedSize;
+				float scale = GetPortFloat(pActInfo, INP_FontSize);
+				int flags = eDrawText_2D | aspectRatioFlag | eDrawText_FixedSize | (GetPortBool(pActInfo, INP_Centered) ? eDrawText_Center | eDrawText_CenterV : 0);
 				Vec3 color = GetPortVec3(pActInfo, INP_Color);
-				ti.color[0] = color.x;
-				ti.color[1] = color.y;
-				ti.color[2] = color.z;
 
-				ti.flags |= GetPortBool(pActInfo, INP_Centered) ? eDrawText_Center | eDrawText_CenterV : 0;
-
-				pRenderer->DrawTextQueued(Vec3(x, y, 0.5f), ti, GetPortString(pActInfo, INP_Message).c_str());
+				IRenderAuxText::DrawText(Vec3(x, y, 0.5f), scale, color, flags, GetPortString(pActInfo, INP_Message).c_str());
 			}
 			break;
 		}

@@ -3295,26 +3295,8 @@ void CNetContextState::DrawDebugScreens()
 
 						if ((pClassName[0] == 0) || CryStringUtils::stristr(pEntity->GetClass()->GetName(), pClassName))
 						{
-							SDrawTextInfo ti;
-							ColorB color;
+							ColorB color = !netID ? ColorB(128, 128, 128, 255) : ColorB(255, 255, 255, 255);
 							AABB aabb;
-
-							if (!netID)
-							{
-								ti.color[0] = 0.5f;
-								ti.color[1] = 0.5f;
-								ti.color[2] = 0.5f;
-								ti.color[3] = 1.0f;
-							}
-							else
-							{
-								ti.color[0] = 1.0f;
-								ti.color[1] = 1.0f;
-								ti.color[2] = 1.0f;
-								ti.color[3] = 1.0f;
-							}
-
-							color.set(uint8(ti.color[0] * 255.0f), uint8(ti.color[1] * 255.0f), uint8(ti.color[2] * 255.0f), uint8(ti.color[3] * 255.0f));
 
 							pEntity->GetLocalBounds(aabb);
 							pRenderAuxGeom->DrawAABB(aabb, pEntity->GetWorldTM(), false, color, eBBD_Faceted);
@@ -3326,15 +3308,11 @@ void CNetContextState::DrawDebugScreens()
 
 							textPos = aabbCenterPos + aabb.GetRadius() * dir;
 
-							ti.xscale = textSize;
-							ti.yscale = textSize;
-							ti.flags = eDrawText_DepthTest | eDrawText_FixedSize | eDrawText_Center | eDrawText_CenterV | eDrawText_800x600;
-
 							char buff[160];
 							cry_sprintf(buff, "%s\n%s\nAct %d Hid %d Inv %d\nID %u\nNetID %s\nGUID %016" PRIx64,
 							            pEntity->GetName(), pEntity->GetClass()->GetName(), pEntity->IsActive(), pEntity->IsHidden(), pEntity->IsInvisible(), pEntity->GetId(), netID.GetText(), pEntity->GetGuid());
 
-							gEnv->pRenderer->DrawTextQueued(textPos, ti, buff);
+							IRenderAuxText::DrawText(textPos, textSize, color, eDrawText_DepthTest | eDrawText_FixedSize | eDrawText_Center | eDrawText_CenterV | eDrawText_800x600, buff);
 						}
 					}
 				}

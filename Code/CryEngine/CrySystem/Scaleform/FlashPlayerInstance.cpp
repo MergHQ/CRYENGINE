@@ -4236,19 +4236,12 @@ size_t CFlashPlayer::GetCommandBufferSize() const
 }
 
 	#if defined(ENABLE_FLASH_INFO)
+
+#include <CryRenderer/IRenderAuxGeom.h>
+
 static void Draw2dLabel(float x, float y, float fontSize, const float* pColor, const char* pText)
 {
-	SDrawTextInfo ti;
-	ti.xscale = ti.yscale = fontSize;
-	ti.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace;
-	if (pColor)
-	{
-		ti.color[0] = pColor[0];
-		ti.color[1] = pColor[1];
-		ti.color[2] = pColor[2];
-		ti.color[3] = pColor[3];
-	}
-	gEnv->pRenderer->DrawTextQueued(Vec3(x, y, 0.5f), ti, pText);
+	IRenderAuxText::DrawText(Vec3(x, y, 0.5f), fontSize, pColor, eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace, pText);
 }
 
 static void DrawText(float x, float y, const float* pColor, const char* pFormat, ...)

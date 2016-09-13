@@ -5967,16 +5967,7 @@ void CDebugDrawListMgr::PrintText(float x, float y, const ColorF& fColor, const 
 {
 	va_list args;
 	va_start(args, label_text);
-	SDrawTextInfo ti;
-	ti.xscale = ti.yscale = 1.2f;
-	ti.flags = eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace;
-	{
-		ti.color[0] = fColor[0];
-		ti.color[1] = fColor[1];
-		ti.color[2] = fColor[2];
-		ti.color[3] = fColor[3];
-	}
-	gEnv->pRenderer->DrawTextQueued(Vec3(x, y, 0.5f), ti, label_text, args);
+	IRenderAuxText::DrawText(Vec3(x, y, 0.5f), 1.2f, fColor, eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace, label_text, args);
 	va_end(args);
 }
 

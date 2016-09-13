@@ -4782,25 +4782,19 @@ void CRigidEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 {
 #if USE_IMPROVED_RIGID_ENTITY_SYNCHRONISATION
 	if (m_pWorld->m_vars.netDebugDraw && m_pNetStateHistory && m_bAwake) {
-		IRenderer *pRendererInstance = gEnv->pRenderer;
-		IRenderAuxGeom* pAux = pRendererInstance ? pRendererInstance->GetIRenderAuxGeom() : NULL;
-		if (pRendererInstance && pAux) {
+		IRenderAuxGeom* pAux = gEnv->pRenderer ? gEnv->pRenderer->GetIRenderAuxGeom() : NULL;
+		if (pAux) {
 			{
 				ReadLock lock(m_lockNetInterp);
 				for (int i=0; i<m_pNetStateHistory->GetNumReceivedStates(); ++i) {
 					SRigidEntityNetSerialize& receivedState = m_pNetStateHistory->GetReceivedState(i);
 					Vec3 pos = receivedState.pos + Vec3(0, 0, 3);
-					SDrawTextInfo ti;
-					ti.color[0] = 0.0f;
-					ti.color[1] = 1.0f;
-					ti.color[2] = 0.0f;
-					ti.xscale = ti.yscale = 1.5f;
-					ti.flags = eDrawText_Center | eDrawText_CenterV | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_DepthTest;
+
 					stack_string text;
 
 					text.Format("seq: %d", (int)receivedState.sequenceNumber);
 
-					pRendererInstance->DrawTextQueued(pos, ti, text.c_str());
+					IRenderAuxText::DrawText(pos, 1.5f, Vec3(0, 1, 0), eDrawText_Center | eDrawText_CenterV | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_DepthTest, text.c_str());
 					pAux->DrawCone(receivedState.pos + Vec3(0, 0, 2), receivedState.rot.GetColumn1(), 0.25f, 0.5f, ColorF(0,1,0,1));
 				}
 			}
@@ -4811,17 +4805,12 @@ void CRigidEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 				SRigidEntityNetSerialize interpolatedPos;
 				if (GetInterpolatedState(interpedSequence, interpolatedPos)) {
 					Vec3 pos = interpolatedPos.pos + Vec3(0, 0, 3);
-					SDrawTextInfo ti;
-					ti.color[0] = 1.0f;
-					ti.color[1] = 1.0f;
-					ti.color[2] = 0.0f;
-					ti.xscale = ti.yscale = 1.5f;
-					ti.flags = eDrawText_Center | eDrawText_CenterV | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_DepthTest;
+
 					stack_string text;
 
 					text.Format("seq: %f", interpedSequence);
 
-					pRendererInstance->DrawTextQueued(pos, ti, text.c_str());
+					IRenderAuxText::DrawText(pos, 1.5f, Vec3(1, 1, 0), eDrawText_Center | eDrawText_CenterV | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_DepthTest, text.c_str());
 					pAux->DrawCone(interpolatedPos.pos + Vec3(0, 0, 2), interpolatedPos.rot.GetColumn1(), 0.25f, 0.5f, ColorF(1,1,0,1));
 				}
 			}

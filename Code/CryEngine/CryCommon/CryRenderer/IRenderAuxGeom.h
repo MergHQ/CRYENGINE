@@ -162,9 +162,21 @@ struct IRenderAuxGeom
 
 	//! Draw Text.
 	//! ##@{
-	virtual void RenderText(Vec3 pos, SDrawTextInfo& ti, const char* format, va_list args) = 0;
+	virtual void RenderText(Vec3 pos, const SDrawTextInfo& ti, const char* text) = 0;
 
-	void         Draw2dLabel(float x, float y, float font_size, const ColorF& fColor, bool bCenter, const char* format, va_list args)
+	void RenderText(Vec3 pos, const SDrawTextInfo& ti, const char* format, va_list args)
+	{
+		if( format )
+		{
+			char str[512];
+
+			cry_vsprintf(str, format, args);
+
+			RenderText(pos, ti, str);
+		}
+	}
+
+	void Draw2dLabel(float x, float y, float font_size, const ColorF& fColor, bool bCenter, const char* format, va_list args)
 	{
 		SDrawTextInfo ti;
 		ti.xscale = ti.yscale = font_size;
@@ -259,26 +271,71 @@ public:
 			rgba[2] = cf.b;
 			rgba[3] = cf.a;
 		}
+
+		AColor(const Vec3& v)
+		{
+			rgba[0] = v.x;
+			rgba[1] = v.y;
+			rgba[2] = v.z;
+			rgba[3] = 1;
+		}
+
+		AColor(const ColorB& cb)
+		{
+			rgba[0] = cb.r / 255.0f;
+			rgba[1] = cb.g / 255.0f;
+			rgba[2] = cb.b / 255.0f;
+			rgba[3] = cb.a / 255.0f;
+		}
 	};
 
-	static void DrawLabel2D(Vec3 pos, float font_size, const AColor& color, int flags, const char* label_text, va_list args)
+	struct ASize
 	{
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
-		ti.flags = flags;
-		ti.color[0] = color.rgba[0];
-		ti.color[1] = color.rgba[1];
-		ti.color[2] = color.rgba[2];
-		ti.color[3] = color.rgba[3];
+		Vec2 val;
 
-		GetAux()->RenderText(pos, ti, label_text, args);
+		ASize(const Vec2& v) : val(v) {}
+		ASize(float f)       : val(f) {}
+	};
+
+	static void DrawText(Vec3 pos, const SDrawTextInfo& ti, const char* text)
+	{
+		GetAux()->RenderText(pos, ti, text);
+	}
+
+	static void DrawText(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* format, va_list args)
+	{
+		if( format && !gEnv->IsDedicated() )
+		{
+			char str[512];
+
+			cry_vsprintf(str, format, args);
+
+			SDrawTextInfo ti;
+			ti.xscale = size.val.x;
+			ti.yscale = size.val.y;
+			ti.flags = flags;
+			ti.color[0] = color.rgba[0];
+			ti.color[1] = color.rgba[1];
+			ti.color[2] = color.rgba[2];
+			ti.color[3] = color.rgba[3];
+
+			DrawText(pos, ti, str);
+		}
+	}
+
+	static void DrawText(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* label_text, ...) PRINTF_PARAMS(5, 6)
+	{
+		va_list args;
+		va_start(args, label_text);
+		DrawText(pos, size, color, flags, label_text, args);
+		va_end(args);
 	}
 
 	static void DrawLabel(Vec3 pos, float font_size, const char* label_text, ...) PRINTF_PARAMS(3, 4)
 	{
 		va_list args;
 		va_start(args, label_text);
-		DrawLabel2D(pos, font_size, AColor::white(), eDrawText_FixedSize | eDrawText_800x600, label_text, args);
+		DrawText(pos, font_size, AColor::white(), eDrawText_FixedSize | eDrawText_800x600, label_text, args);
 		va_end(args);
 	}
 
@@ -286,8 +343,7 @@ public:
 	{
 		va_list args;
 		va_start(args, label_text);
-		SDrawTextInfo ti;
-		DrawLabel2D(pos, font_size, color, ((bFixedSize) ? eDrawText_FixedSize : 0) | ((bCenter) ? eDrawText_Center : 0) | eDrawText_800x600, label_text, args);
+		DrawText(pos, font_size, color, ((bFixedSize) ? eDrawText_FixedSize : 0) | ((bCenter) ? eDrawText_Center : 0) | eDrawText_800x600, label_text, args);
 		va_end(args);
 	}
 
@@ -295,7 +351,7 @@ public:
 	{
 		va_list args;
 		va_start(args, label_text);
-		DrawLabel2D(Vec3(x, y, 0.5f), font_size, color, flags, label_text, args);
+		DrawText(Vec3(x, y, 0.5f), font_size, color, flags, label_text, args);
 		va_end(args);
 	}
 
@@ -303,7 +359,7 @@ public:
 	{
 		va_list args;
 		va_start(args, label_text);
-		DrawLabel2D(Vec3(x, y, 0.5f), font_size, color, eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0), label_text, args);
+		DrawText(Vec3(x, y, 0.5f), font_size, color, eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0), label_text, args);
 		va_end(args);
 	}
 };

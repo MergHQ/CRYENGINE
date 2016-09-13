@@ -766,9 +766,6 @@ public:
 	void         Draw2dText(float posX, float posY, const char* pStr, const SDrawTextInfo& ti);
 	void         Draw2dTextWithDepth(float posX, float posY, float posZ, const char* pStr, const SDrawTextInfo& ti);
 
-	virtual void DrawTextQueued(Vec3 pos, SDrawTextInfo& ti, const char* text) override;
-	virtual void DrawTextQueued(Vec3 pos, SDrawTextInfo& ti, const char* format, va_list args) override;
-
 	virtual void Draw2dImage(float xpos, float ypos, float w, float h, int texture_id, float s0 = 0, float t0 = 0, float s1 = 1, float t1 = 1, float angle = 0,
 	                         float r = 1, float g = 1, float b = 1, float a = 1, float z = 1) override = 0;
 	virtual void Push2dImage(float xpos, float ypos, float w, float h, int texture_id, float s0 = 0, float t0 = 0, float s1 = 1, float t1 = 1, float angle = 0,

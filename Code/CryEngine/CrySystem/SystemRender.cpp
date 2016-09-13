@@ -839,11 +839,7 @@ void CSystem::RenderStats()
 		++itnext;
 		SErrorMessage& message = *it;
 
-		SDrawTextInfo ti;
-		ti.flags = eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace;
-		memcpy(ti.color, message.m_Color, 4 * sizeof(float));
-		ti.xscale = ti.yscale = 1.4f;
-		m_env.pRenderer->DrawTextQueued(Vec3(fTextPosX, fTextPosY += fTextStepY, 1.0f), ti, message.m_Message.c_str());
+		IRenderAuxText::DrawText(Vec3(fTextPosX, fTextPosY += fTextStepY, 1.0f), 1.4f, message.m_Color, eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace, message.m_Message.c_str());
 
 		message.m_fTimeToShow -= fFrameTime;
 

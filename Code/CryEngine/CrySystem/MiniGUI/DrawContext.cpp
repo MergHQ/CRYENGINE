@@ -112,26 +112,21 @@ void CDrawContext::DrawString(float x, float y, float font_size, ETextAlign alig
 
 	va_list args;
 	va_start(args, format);
-	SDrawTextInfo ti;
-	ti.xscale = ti.yscale = font_size / 12.0f; // font size in pixels to text scale.
 
-	ti.flags = eDrawText_Monospace | eDrawText_2D | eDrawText_FixedSize | eDrawText_IgnoreOverscan;
+	int flags = eDrawText_Monospace | eDrawText_2D | eDrawText_FixedSize | eDrawText_IgnoreOverscan;
 	if (align == eTextAlign_Left)
 	{
 	}
 	else if (align == eTextAlign_Right)
 	{
-		ti.flags |= eDrawText_Right;
+		flags |= eDrawText_Right;
 	}
 	else if (align == eTextAlign_Center)
 	{
-		ti.flags |= eDrawText_Center;
+		flags |= eDrawText_Center;
 	}
-	ti.color[0] = (float)m_color.r / 255.0f;
-	ti.color[1] = (float)m_color.g / 255.0f;
-	ti.color[2] = (float)m_color.b / 255.0f;
-	ti.color[3] = (float)m_color.a / 255.0f;
-	gEnv->pRenderer->DrawTextQueued(Vec3(m_x + x, m_y + y, m_defaultZ), ti, format, args);
+
+	IRenderAuxText::DrawText(Vec3(m_x + x, m_y + y, m_defaultZ), font_size / 12.0f, m_color, flags, format, args);
 	va_end(args);
 }
 

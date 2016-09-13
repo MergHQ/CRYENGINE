@@ -1206,6 +1206,7 @@ public:
 //! Flags used in DrawText function.
 enum EDrawTextFlags
 {
+	eDrawText_Default,
 	eDrawText_Center         = BIT(0),  //!< Centered alignment, otherwise right or left.
 	eDrawText_Right          = BIT(1),  //!< Right alignment, otherwise center or left.
 	eDrawText_CenterV        = BIT(2),  //!< Center vertically, oterhwise top.
@@ -2055,14 +2056,6 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual int  GetFrameID(bool bIncludeRecursiveCalls = true) = 0;
 
 	virtual void MakeMatrix(const Vec3& pos, const Vec3& angles, const Vec3& scale, Matrix34* mat) = 0;
-
-	//! Draws text queued.
-	//! \note Position can be in 3d or in 2d depending on the flags.
-	virtual void DrawTextQueued(Vec3 pos, SDrawTextInfo& ti, const char* format, va_list args) = 0;
-
-	//! Draws text queued.
-	//! \note Position can be in 3D or in 2D depending on the flags.
-	virtual void DrawTextQueued(Vec3 pos, SDrawTextInfo& ti, const char* text) = 0;
 
 	//////////////////////////////////////////////////////////////////////
 

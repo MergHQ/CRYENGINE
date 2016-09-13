@@ -732,7 +732,7 @@ void CSegmentedWorld::DrawSegmentGrid(const Vec2& origin, float size)
 void CSegmentedWorld::PrintSegmentInfo(const Vec2& origin, float size)
 {
 	SDrawTextInfo ti;
-	ti.flags = eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace;
+	int flags = eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace;
 
 	Vec3 step(0, 16, 0);
 	Vec3 pos(origin.x, origin.y, 1);
@@ -740,50 +740,46 @@ void CSegmentedWorld::PrintSegmentInfo(const Vec2& origin, float size)
 
 	Vec3 worldPosLC, worldPosWC;
 #if USE_RELATIVE_COORD
-	ti.xscale = ti.yscale = 1.5f;
-	gEnv->pRenderer->DrawTextQueued(pos, ti, string("Use Relative Coordinates"));
+	float scale = 1.5f;
+	IRenderAuxText::DrawText(pos, scale, NULL, flags, string("Use Relative Coordinates"));
 	pos += step;
-	ti.xscale = ti.yscale = 1.2f;
+	scale = 1.2f;
 	worldPosLC = m_worldFocalPoint;
 	worldPosWC = worldPosLC + GridToWorldPosition(m_neededSegmentsMin);
 #else
-	ti.xscale = ti.yscale = 1.5f;
-	gEnv->pRenderer->DrawTextQueued(pos, ti, string("Use Absolute Coordinates"));
+	scale = 1.5f;
+	IRenderAuxText::DrawText(pos, scale, NULL, flags, string("Use Absolute Coordinates"));
 	pos += step;
 	ti.xscale = ti.yscale = 1.2f;
 	worldPosWC = m_worldFocalPoint;
 	worldPosLC = worldPosWC - GridToWorldPosition(m_neededSegmentsMin);
 #endif
 	pos += step;
-	gEnv->pRenderer->DrawTextQueued(pos, ti, string().Format("Player Global World Position: %.2f, %.2f, %.2f", worldPosWC.x, worldPosWC.y, worldPosWC.z).c_str());
+	IRenderAuxText::DrawText(pos, scale, NULL, flags, string().Format("Player Global World Position: %.2f, %.2f, %.2f", worldPosWC.x, worldPosWC.y, worldPosWC.z).c_str());
 	pos += step;
-	gEnv->pRenderer->DrawTextQueued(pos, ti, string().Format("Player Global Grid Position: %d, %d", m_gridFocalPointWC.x, m_gridFocalPointWC.y).c_str());
+	IRenderAuxText::DrawText(pos, scale, NULL, flags, string().Format("Player Global Grid Position: %d, %d", m_gridFocalPointWC.x, m_gridFocalPointWC.y).c_str());
 	pos += step;
-	gEnv->pRenderer->DrawTextQueued(pos, ti, string().Format("Global Segments: (%d, %d), (%d,%d)", m_segmentsMin.x, m_segmentsMin.y, m_segmentsMax.x, m_segmentsMax.y).c_str());
+	IRenderAuxText::DrawText(pos, scale, NULL, flags, string().Format("Global Segments: (%d, %d), (%d,%d)", m_segmentsMin.x, m_segmentsMin.y, m_segmentsMax.x, m_segmentsMax.y).c_str());
 #ifdef _DEBUG
 	pos += step;
 	pos += step;
-	gEnv->pRenderer->DrawTextQueued(pos, ti, string().Format("Player Local World Position: %.2f, %.2f, %.2f", worldPosLC.x, worldPosLC.y, worldPosLC.z).c_str());
+	IRenderAuxText::DrawText(pos, scale, NULL, flags, string().Format("Player Local World Position: %.2f, %.2f, %.2f", worldPosLC.x, worldPosLC.y, worldPosLC.z).c_str());
 	pos += step;
-	gEnv->pRenderer->DrawTextQueued(pos, ti, string().Format("Player Local Grid Position: %d, %d", m_gridFocalPointLC.x, m_gridFocalPointLC.y).c_str());
+	IRenderAuxText::DrawText(pos, scale, NULL, flags, string().Format("Player Local Grid Position: %d, %d", m_gridFocalPointLC.x, m_gridFocalPointLC.y).c_str());
 	pos += step;
-	gEnv->pRenderer->DrawTextQueued(pos, ti, string().Format("Active Segments: (%d, %d), (%d,%d)", m_neededSegmentsMin.x, m_neededSegmentsMin.y, m_neededSegmentsMax.x, m_neededSegmentsMax.y).c_str());
+	IRenderAuxText::DrawText(pos, scale, NULL, flags, string().Format("Active Segments: (%d, %d), (%d,%d)", m_neededSegmentsMin.x, m_neededSegmentsMin.y, m_neededSegmentsMax.x, m_neededSegmentsMax.y).c_str());
 	pos += step;
-	gEnv->pRenderer->DrawTextQueued(pos, ti, string().Format("Active Segments Center: (%d, %d)", m_neededSegmentsCenter.x, m_neededSegmentsCenter.y).c_str());
+	IRenderAuxText::DrawText(pos, scale, NULL, flags, string().Format("Active Segments Center: (%d, %d)", m_neededSegmentsCenter.x, m_neededSegmentsCenter.y).c_str());
 #endif
 }
 
 void CSegmentedWorld::PrintMemoryInfo(const Vec2& origin, float size)
 {
-	SDrawTextInfo ti;
-	ti.flags = eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace;
-	ti.xscale = ti.yscale = 1.2f;
-
 	Vec3 step(0, 16, 0);
 	Vec3 pos(origin.x, origin.y, 1);
 	pos.x += m_segmentsMax.x * size + 50;
 
 	const stl::SPoolMemoryUsage memUsage = m_pPoolAllocator->GetTotalMemory();
-	gEnv->pRenderer->DrawTextQueued(pos, ti, string().Format("Segment Heap: %d KB Used, %d KB Freed, %d KB Unused",
+	IRenderAuxText::DrawText(pos, 1.2f, NULL, eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace, string().Format("Segment Heap: %d KB Used, %d KB Freed, %d KB Unused",
 	                                                         (int)(memUsage.nUsed >> 10), (int)(memUsage.nPoolFree() >> 10), (int)(memUsage.nNonPoolFree() >> 10)).c_str());
 }

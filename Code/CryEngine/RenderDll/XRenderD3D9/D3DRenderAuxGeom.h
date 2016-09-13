@@ -179,9 +179,9 @@ private:
 
 					gRenDev->GetThreadIDs(mainThreadID, renderThreadID);
 
-					if (tid == renderThreadID) pAuxGeomCB = new CAuxGeomCB(pRenderAuxGeomImpl);
+					if (tid == renderThreadID)    pAuxGeomCB = new CAuxGeomCB(pRenderAuxGeomImpl);
 					else if (tid == mainThreadID) pAuxGeomCB = new CAuxGeomCBMainThread(pRenderAuxGeomImpl);
-					else                             pAuxGeomCB = new CAuxGeomCBWorkerThread(pRenderAuxGeomImpl);
+					else                          pAuxGeomCB = new CAuxGeomCBWorkerThread(pRenderAuxGeomImpl);
 
 					m_rwlLocal.WLock();
 					m_auxJobMap.insert(AUXJobMap::value_type(jobID, pAuxGeomCB));

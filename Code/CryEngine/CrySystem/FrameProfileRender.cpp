@@ -85,27 +85,21 @@ void CFrameProfileSystem::DrawLabel(float col, float row, float* fColor, float g
 
 	if (m_pRenderer)
 	{
-		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = fScale * 1.3f;
-		ti.flags = eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace;
-		ti.color[0] = fColor[0];
-		ti.color[1] = fColor[1];
-		ti.color[2] = fColor[2];
-		ti.color[3] = fColor[3];
+		ColorF color;
+		float scale = fScale * 1.3f;
+		int flags = eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace;
+		color[0] = fColor[0];
+		color[1] = fColor[1];
+		color[2] = fColor[2];
 
 		if (glow > 0.1f)
 		{
-			ti.color[0] = fColor[0];
-			ti.color[1] = fColor[1];
-			ti.color[2] = fColor[2];
-			ti.color[3] = glow;
-			m_pRenderer->DrawTextQueued(Vec3(ColumnSize * col + 1, m_baseY + RowSize * row + 1 - m_offset, 0.5f), ti, szText);
+			color[3] = glow;
+			IRenderAuxText::DrawText(Vec3(ColumnSize * col + 1, m_baseY + RowSize * row + 1 - m_offset, 0.5f), scale, color, flags, szText);
 		}
-		ti.color[0] = fColor[0];
-		ti.color[1] = fColor[1];
-		ti.color[2] = fColor[2];
-		ti.color[3] = fColor[3];
-		m_pRenderer->DrawTextQueued(Vec3(ColumnSize * col + 1, m_baseY + RowSize * row + 1 - m_offset, 0.5f), ti, szText);
+
+		color[3] = fColor[3];
+		IRenderAuxText::DrawText(Vec3(ColumnSize * col + 1, m_baseY + RowSize * row + 1 - m_offset, 0.5f), scale, color, flags, szText);
 	}
 
 	if (ITextModeConsole* pTC = gEnv->pSystem->GetITextModeConsole())

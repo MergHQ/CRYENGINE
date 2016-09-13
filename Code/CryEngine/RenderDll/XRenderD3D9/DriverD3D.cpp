@@ -3364,17 +3364,17 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 		const int line = 10;
 
 		float y = 0;
-		SDrawTextInfo ti;
-		ti.flags = eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace;
+		ColorF color(1.0f);
+		int flags = eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace;
 
-		ti.color[2] = 0.0f;
-		DrawTextQueued(Vec3(0, y += line, 0), ti, "Colors (black,white,blue,..): { $00$11$22$33$44$55$66$77$88$99$$$o } ()_!+*/# ?");
-		ti.color[2] = 1.0f;
-		DrawTextQueued(Vec3(0, y += line, 0), ti, "Colors (black,white,blue,..): { $00$11$22$33$44$55$66$77$88$99$$$o } ()_!+*/# ?");
+		color[2] = 0.0f;
+		IRenderAuxText::DrawText(Vec3(0, y += line, 0), 1, color, eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace, "Colors (black,white,blue,..): { $00$11$22$33$44$55$66$77$88$99$$$o } ()_!+*/# ?");
+		color[2] = 1.0f;
+		IRenderAuxText::DrawText(Vec3(0, y += line, 0), 1, color, eDrawText_2D | eDrawText_FixedSize | eDrawText_Monospace, "Colors (black,white,blue,..): { $00$11$22$33$44$55$66$77$88$99$$$o } ()_!+*/# ?");
 
 		for (int iPass = 0; iPass < 3; ++iPass)      // left, center, right
 		{
-			ti.xscale = ti.yscale = fPixelPerfectScale * 0.5f;
+			Float scale = fPixelPerfectScale * 0.5f;
 			float x = 0;
 
 			y = 3 * line;
@@ -3392,66 +3392,66 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 				passflags |= eDrawText_Right;
 			}
 
-			ti.color[3] = 0.5f;
-			ti.flags = passflags | eDrawText_FixedSize | eDrawText_Monospace;
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "0");
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "AbcW !.....!");
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "AbcW !MMMMM!");
+			color[3] = 0.5f;
+			int flags = passflags | eDrawText_FixedSize | eDrawText_Monospace;
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "0");
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "AbcW !.....!");
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "AbcW !MMMMM!");
 
-			ti.color[0] = 0.0f;
-			ti.color[3] = 1.0f;
-			ti.flags = passflags | eDrawText_FixedSize;
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "1");
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "AbcW !.....!");
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "AbcW !MMMMM!");
+			color[0] = 0.0f;
+			color[3] = 1.0f;
+			flags = passflags | eDrawText_FixedSize;
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "1");
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "AbcW !.....!");
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "AbcW !MMMMM!");
 			/*
-			      ti.flags = passflags | eDrawText_Monospace;
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"2");
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"AbcW !.....!");
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"AbcW !MMMMM!");
+			      flags = passflags | eDrawText_Monospace;
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"2");
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"AbcW !.....!");
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"AbcW !MMMMM!");
 
-			      ti.flags = passflags;
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"3");
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"AbcW !.....!");
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"AbcW !MMMMM!");
+			      flags = passflags;
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"3");
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"AbcW !.....!");
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"AbcW !MMMMM!");
 			 */
-			ti.color[1] = 0.0f;
-			ti.flags = passflags | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace;
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "4");
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "AbcW !.....!");
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "AbcW !MMMMM!");
+			color[1] = 0.0f;
+			flags = passflags | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace;
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "4");
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "AbcW !.....!");
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "AbcW !MMMMM!");
 
-			ti.color[0] = 1.0f;
-			ti.color[1] = 1.0f;
-			ti.flags = passflags | eDrawText_800x600 | eDrawText_FixedSize;
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "5");
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "AbcW !.....!");
-			DrawTextQueued(Vec3(x, y += line, 0), ti, "AbcW !MMMMM!");
+			color[0] = 1.0f;
+			color[1] = 1.0f;
+			flags = passflags | eDrawText_800x600 | eDrawText_FixedSize;
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "5");
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "AbcW !.....!");
+			IRenderAuxText::DrawText(Vec3(x, y += line, 0), scale, color, flags, "AbcW !MMMMM!");
 
 			/*
-			      ti.flags = passflags | eDrawText_800x600 | eDrawText_Monospace;
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"6");
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"Halfsize");
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"AbcW !MMMMM!");
+			      flags = passflags | eDrawText_800x600 | eDrawText_Monospace;
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"6");
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"Halfsize");
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"AbcW !MMMMM!");
 
-			      ti.flags = passflags | eDrawText_800x600;
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"7");
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"AbcW !.....!");
-			      DrawTextQueued(Vec3(x,y+=line,0),ti,"AbcW !MMMMM!");
+			      flags = passflags | eDrawText_800x600;
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"7");
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"AbcW !.....!");
+			      IRenderAuxText::DrawText(Vec3(x,y+=line,0),scale, color, flags,"AbcW !MMMMM!");
 			 */
 			// Pixel Perfect (1:1 mapping of the texels to the pixels on the screeen)
 
-			ti.flags = passflags | eDrawText_FixedSize | eDrawText_Monospace;
-			ti.xscale = ti.yscale = fPixelPerfectScale;
-			DrawTextQueued(Vec3(x, y += line * 2, 0), ti, "8");
-			DrawTextQueued(Vec3(x, y += line * 2, 0), ti, "AbcW !.....!");
-			DrawTextQueued(Vec3(x, y += line * 2, 0), ti, "AbcW !MMMMM!");
+			flags = passflags | eDrawText_FixedSize | eDrawText_Monospace;
 
-			ti.flags = passflags | eDrawText_FixedSize;
-			ti.xscale = ti.yscale = fPixelPerfectScale;
-			DrawTextQueued(Vec3(x, y += line * 2, 0), ti, "9");
-			DrawTextQueued(Vec3(x, y += line * 2, 0), ti, "AbcW !.....!");
-			DrawTextQueued(Vec3(x, y += line * 2, 0), ti, "AbcW !MMMMM!");
+			IRenderAuxText::DrawText(Vec3(x, y += line * 2, 0), fPixelPerfectScale, color, flags, "8");
+			IRenderAuxText::DrawText(Vec3(x, y += line * 2, 0), fPixelPerfectScale, color, flags, "AbcW !.....!");
+			IRenderAuxText::DrawText(Vec3(x, y += line * 2, 0), fPixelPerfectScale, color, flags, "AbcW !MMMMM!");
+
+			flags = passflags | eDrawText_FixedSize;
+
+			IRenderAuxText::DrawText(Vec3(x, y += line * 2, 0), fPixelPerfectScale, color, flags, "9");
+			IRenderAuxText::DrawText(Vec3(x, y += line * 2, 0), fPixelPerfectScale, color, flags, "AbcW !.....!");
+			IRenderAuxText::DrawText(Vec3(x, y += line * 2, 0), fPixelPerfectScale, color, flags, "AbcW !MMMMM!");
 		}
 
 	}

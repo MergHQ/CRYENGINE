@@ -329,14 +329,7 @@ void CPersistantDebug::Update(float frameTime)
 				break;
 			case eOT_Text3D:
 				{
-					SDrawTextInfo ti;
-					ti.xscale = ti.yscale = iterList->radius;
-					ti.flags = eDrawText_FixedSize | eDrawText_800x600;
-					ti.color[0] = clr.r;
-					ti.color[1] = clr.g;
-					ti.color[2] = clr.b;
-					ti.color[3] = clr.a;
-					gEnv->pRenderer->DrawTextQueued(iterList->pos, ti, iterList->text.c_str());
+					IRenderAuxText::DrawText(iterList->pos, iterList->radius, clr, eDrawText_FixedSize | eDrawText_800x600, iterList->text.c_str());
 				}
 				break;
 			case eOT_Disc:

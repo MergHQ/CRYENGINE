@@ -59,7 +59,7 @@ public:
 
 	virtual void                DrawBone(const Vec3& rParent, const Vec3& rBone, ColorB col)                                                          {}
 
-	virtual void                RenderText(Vec3 pos, SDrawTextInfo& ti, const char* forma, va_list args)                                              {}
+	virtual void                RenderText(Vec3 pos, const SDrawTextInfo& ti, const char* text)                                              {}
 
 	virtual int32               PushMatrix(const Matrix34& mat)                                                                                             { return -1; }
 	virtual Matrix34*           GetMatrix()                                                                                                           { return nullptr; }

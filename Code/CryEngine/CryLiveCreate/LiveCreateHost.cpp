@@ -829,11 +829,7 @@ void CHost::DrawSelection()
 		// name
 		if (!obj.m_name.empty())
 		{
-			SDrawTextInfo info;
-			info.flags |= eDrawText_Center | eDrawText_FixedSize | eDrawText_800x600;
-			info.xscale = 2.0f;
-			info.yscale = 2.0f;
-			gEnv->pRenderer->DrawTextQueued(obj.m_position, info, obj.m_name.c_str());
+			IRenderAuxText::DrawText(obj.m_position, Vec2(2), NULL, eDrawText_Center | eDrawText_FixedSize | eDrawText_800x600, obj.m_name.c_str());
 		}
 	}
 }

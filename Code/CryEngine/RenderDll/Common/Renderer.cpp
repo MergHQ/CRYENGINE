@@ -666,37 +666,6 @@ void CRenderer::WriteXY(int x, int y, float xscale, float yscale, float r, float
 	Draw2dText((float)x, (float)y, buffer, ti);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CRenderer::DrawTextQueued(Vec3 pos, SDrawTextInfo& ti, const char* text)
-{
-	int nT = m_pRT->GetThreadList();
-	if (text && !gEnv->IsDedicated())
-	{
-		// ti.yscale is currently ignored, input struct can be refactored
-
-		ColorB col(ColorF(ti.color[0], ti.color[1], ti.color[2], ti.color[3]));
-
-		m_TextMessages[nT].PushEntry_Text(pos, col, ti.xscale, ti.flags, text);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRenderer::DrawTextQueued(Vec3 pos, SDrawTextInfo& ti, const char* format, va_list args)
-{
-	int nT = m_pRT->GetThreadList();
-	if (format && !gEnv->IsDedicated())
-	{
-		char str[512];
-
-		cry_vsprintf(str, format, args);
-
-		// ti.yscale is currently ignored, input struct can be refactored
-
-		ColorB col(ColorF(ti.color[0], ti.color[1], ti.color[2], ti.color[3]));
-
-		m_TextMessages[nT].PushEntry_Text(pos, col, ti.xscale, ti.flags, str);
-	}
-}
 
 const bool CRenderer::IsEditorMode() const
 {

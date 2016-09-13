@@ -2048,12 +2048,7 @@ void C3DEngine::DrawTextRightAligned(const float x, const float y, const char* f
 {
 	va_list args;
 	va_start(args, format);
-
-	SDrawTextInfo ti;
-	ti.flags = eDrawText_FixedSize | eDrawText_Right | eDrawText_2D | eDrawText_Monospace;
-	ti.xscale = ti.yscale = DISPLAY_INFO_SCALE;
-	GetRenderer()->DrawTextQueued(Vec3(x, y, 1.0f), ti, format, args);
-
+	IRenderAuxText::DrawText(Vec3(x, y, 1.0f), DISPLAY_INFO_SCALE, NULL, eDrawText_FixedSize | eDrawText_Right | eDrawText_2D | eDrawText_Monospace, format, args);
 	va_end(args);
 }
 
@@ -2061,15 +2056,7 @@ void C3DEngine::DrawTextAligned(int flags, const float x, const float y, const f
 {
 	va_list args;
 	va_start(args, format);
-
-	SDrawTextInfo ti;
-	ti.flags = flags;
-	ti.color[0] = color[0];
-	ti.color[1] = color[1];
-	ti.color[2] = color[2];
-	ti.color[3] = color[3];
-	ti.xscale = ti.yscale = scale;
-	GetRenderer()->DrawTextQueued(Vec3(x, y, 1.0f), ti, format, args);
+	IRenderAuxText::DrawText(Vec3(x, y, 1.0f), scale, color, flags, format, args);
 
 	va_end(args);
 }
@@ -2078,16 +2065,7 @@ void C3DEngine::DrawTextLeftAligned(const float x, const float y, const float sc
 {
 	va_list args;
 	va_start(args, format);
-
-	SDrawTextInfo ti;
-	ti.flags = eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace;
-	ti.color[0] = color[0];
-	ti.color[1] = color[1];
-	ti.color[2] = color[2];
-	ti.color[3] = color[3];
-	ti.xscale = ti.yscale = scale;
-	GetRenderer()->DrawTextQueued(Vec3(x, y, 1.0f), ti, format, args);
-
+	IRenderAuxText::DrawText(Vec3(x, y, 1.0f), scale, color, eDrawText_FixedSize | eDrawText_2D | eDrawText_Monospace, format, args);
 	va_end(args);
 
 }
@@ -2096,16 +2074,7 @@ void C3DEngine::DrawTextRightAligned(const float x, const float y, const float s
 {
 	va_list args;
 	va_start(args, format);
-
-	SDrawTextInfo ti;
-	ti.flags = eDrawText_FixedSize | eDrawText_Right | eDrawText_2D | eDrawText_Monospace;
-	ti.color[0] = color[0];
-	ti.color[1] = color[1];
-	ti.color[2] = color[2];
-	ti.color[3] = color[3];
-	ti.xscale = ti.yscale = scale;
-	GetRenderer()->DrawTextQueued(Vec3(x, y, 1.0f), ti, format, args);
-
+	IRenderAuxText::DrawText(Vec3(x, y, 1.0f), scale, color, eDrawText_FixedSize | eDrawText_Right | eDrawText_2D | eDrawText_Monospace, format, args);
 	va_end(args);
 }
 

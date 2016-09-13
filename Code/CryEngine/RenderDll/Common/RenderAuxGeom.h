@@ -65,7 +65,7 @@ public:
 
 	virtual void                DrawBone(const Vec3& rParent, const Vec3& rBone, ColorB col);
 
-	virtual void                RenderText(Vec3 pos, SDrawTextInfo& ti, const char* format, va_list args);
+	virtual void                RenderText(Vec3 pos, const SDrawTextInfo& ti, const char* text);
 
 	virtual int                 PushMatrix(const Matrix34&  mat);
 	virtual Matrix34*           GetMatrix();
@@ -585,7 +585,7 @@ public:
 
 	virtual void                DrawBone(const Vec3& rParent, const Vec3& rBone, ColorB col)                                                                   {}
 
-	virtual void                RenderText(Vec3 pos, SDrawTextInfo& ti, const char* format, va_list args)                                                      {}
+	virtual void                RenderText(Vec3 pos, const SDrawTextInfo& ti, const char* text)                                                                      {}
 
 	virtual int                 PushMatrix(const Matrix34&  mat)                                                                                                      { return -1; }
 	virtual Matrix34*           GetMatrix()                                                                                                                    { return nullptr; }
