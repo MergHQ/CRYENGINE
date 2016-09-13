@@ -409,6 +409,7 @@
           "CryAISystem/NavigationSystem/MNMFixedAABB.h",
           "CryAISystem/NavigationSystem/MNMFixedVec2.h",
           "CryAISystem/NavigationSystem/MNMFixedVec3.h",
+          "CryAISystem/NavigationSystem/MNMMeshGrid.h",
           "CryAISystem/NavigationSystem/MNMTile.h",
           "CryAISystem/NavigationSystem/MNMTileGenerator.h",
           "CryAISystem/NavigationSystem/NavigationIdTypes.h",

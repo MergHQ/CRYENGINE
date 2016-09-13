@@ -32,10 +32,8 @@ struct INavigationSystemUser
 
 namespace MNM
 {
-namespace Tile
-{
-struct ITileGrid;
-} // namespace Tile
+struct IMeshGrid;
+
 namespace TileGenerator
 {
 struct IExtension;
@@ -230,13 +228,13 @@ struct INavigationSystem
 
 	virtual void               CalculateAccessibility() = 0;
 
-	virtual uint32             GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location) = 0;
+	virtual MNM::TileID        GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location) = 0;
 	virtual void               GetTileBoundsForMesh(NavigationMeshID meshID, uint32 tileID, AABB& bounds) const = 0;
 
 	virtual MNM::TriangleID    GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location) = 0;
 
-	//! Get a MNM NavMesh's ITileGrid, which provides an access to the NavMesh data
-	virtual const MNM::Tile::ITileGrid*      GetMNMTileGrid(NavigationMeshID meshID) const = 0;
+	//! Get a MNM NavMesh's IMeshGrid, which provides an access to the NavMesh data
+	virtual const MNM::IMeshGrid*            GetMNMMeshGrid(NavigationMeshID meshID) const = 0;
 
 	virtual const IOffMeshNavigationManager& GetIOffMeshNavigationManager() const = 0;
 	virtual IOffMeshNavigationManager&       GetIOffMeshNavigationManager() = 0;

@@ -14,7 +14,6 @@
 
 namespace MNM
 {
-
 typedef fixed_t<int, 16>   real_t;
 typedef FixedVec2<int, 16> vector2_t;
 typedef FixedVec3<int, 16> vector3_t;
@@ -40,7 +39,9 @@ struct STriangle
 	{
 		eFlags_None         = 0,
 		eFlags_ExternalMesh = BIT(0),  //!< Triangles created by TileGeneratorExtension (MNM doesn't automatically set the flag).
-		eFlags_Custom       = BIT(1)   //!< First bit flag not used by MNM system itself - user code is free to use this and succeeding flags
+		eFlags_Custom       = BIT(1),  //!< First bit flag not used by MNM system itself - user code is free to use this and succeeding flags
+
+		eFlags_All          = ~uint32(0) //!< Helper value with all bits set.
 	};
 	EFlags triangleFlags; //!< Triangle flags
 
@@ -98,19 +99,11 @@ struct STileData
 
 	uint32                 hashValue;
 
-	vector3_t              tileOriginWorld;
-};
-
-//! Provides an access to the NavMesh data
-struct ITileGrid
-{
-	virtual ~ITileGrid() {}
-
-	//! Fills a STileData structure for a read-only tile data access
-	//! \param tileId Id of tile
-	//! \param outTileData STileData structure to fill
-	//! \return true if tile is found and outTileData is filled.
-	virtual bool GetTileData(const TileID tileId, STileData& outTileData) const = 0;
+	// #MNM_TODO pavloi 2016.08.15: there is code, which delivers tile coord as vector3_t (see MeshGrid::GetTileContainerCoordinates)
+	// but it's a bit wasteful - forces user to get values using as_int(), do bit shifting, hard to read without visualizers, etc.
+	// Just introduce new structure, which holds uint32 x,y,z and pass it everywhere. Or use Vec3i.
+	vector3_t tileGridCoord;                     //!< tile coordinates in the mesh grid (integer values)
+	vector3_t tileOriginWorld;
 };
 
 //! Contains utility functions to read and manipulate tile data.

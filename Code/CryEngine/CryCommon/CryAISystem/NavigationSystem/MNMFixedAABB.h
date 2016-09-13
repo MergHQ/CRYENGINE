@@ -58,7 +58,7 @@ struct FixedAABB
 	}
 
 	template<typename BaseTypeO, size_t IntegerBitCountO>
-	bool overlaps(const FixedAABB<BaseTypeO, IntegerBitCountO>& other)
+	bool overlaps(const FixedAABB<BaseTypeO, IntegerBitCountO>& other) const
 	{
 		if ((min.x > typename value_type::value_type(other.max.x)) || (min.y > typename value_type::value_type(other.max.y))
 		    || (min.z > typename value_type::value_type(other.max.z)) || (max.x < typename value_type::value_type(other.min.x))

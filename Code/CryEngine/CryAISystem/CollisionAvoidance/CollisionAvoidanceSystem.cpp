@@ -779,9 +779,8 @@ Vec2 CollisionAvoidanceSystem::ClampSpeedWithNavigationMesh(const NavigationAgen
 			MNM::TriangleID triEnd = grid.GetTriangleAt(endLoc, verticalRange, verticalRange);
 			if (!triEnd)
 			{
-				MNM::real_t closestEndDistSq(.0f);
 				MNM::vector3_t closestEndLocation;
-				triEnd = grid.GetClosestTriangle(endLoc, verticalRange, horizontalRange, &closestEndDistSq, &closestEndLocation);
+				triEnd = grid.GetClosestTriangle(endLoc, verticalRange, horizontalRange, nullptr, &closestEndLocation);
 				grid.PushPointInsideTriangle(triEnd, closestEndLocation, MNM::real_t(.05f));
 				endLoc = closestEndLocation;
 			}

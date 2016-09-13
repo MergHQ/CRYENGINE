@@ -742,8 +742,7 @@ const Vec3 CAIObject::GetPosInNavigationMesh(const uint32 agentTypeID) const
 			const MNM::real_t largeVerticalRange = MNM::real_t(6.0f);
 			const MNM::real_t largeHorizontalRange = MNM::real_t(3.0f);
 			MNM::vector3_t closestLocation;
-			MNM::real_t distSq;
-			if (triangleID = mesh.grid.GetClosestTriangle(location_t, largeVerticalRange, largeHorizontalRange, &distSq, &closestLocation))
+			if (triangleID = mesh.grid.GetClosestTriangle(location_t, largeVerticalRange, largeHorizontalRange, nullptr, &closestLocation))
 			{
 				outputLocation = closestLocation.GetVec3();
 				outputLocation.z += fPushUp;

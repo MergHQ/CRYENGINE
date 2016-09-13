@@ -286,5 +286,11 @@
   <Type Name="CTexture">
     <DisplayString>~ CTexture: Dim={m_nWidth,d}x{m_nHeight,d}, Fmt={m_eTFDst}: Name={m_SrcName}</DisplayString>
   </Type>
+  
+  <!-- CryEngine fixed point number types -->
+  <Type Name="fixed_t&lt;*&gt;">
+    <!-- See fixed_t::as_double() -->
+    <DisplayString>{{ as_double = {v / (double)integer_scale,f} }}</DisplayString>
+  </Type>
 
 </AutoVisualizer>

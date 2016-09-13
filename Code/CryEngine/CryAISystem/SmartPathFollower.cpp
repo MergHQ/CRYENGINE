@@ -625,9 +625,8 @@ bool CSmartPathFollower::CanReachTarget(float testIndex) const
 			MNM::TriangleID triangleStartID = grid.GetTriangleAt(startLocationInMeshCoordinates, verticalRange, verticalRange);
 			if (!triangleStartID)
 			{
-				MNM::real_t startDistSq;
 				MNM::vector3_t closestStartLocation, triangleCenter;
-				triangleStartID = grid.GetClosestTriangle(startLocationInMeshCoordinates, verticalRange, horizontalRange, &startDistSq, &closestStartLocation);
+				triangleStartID = grid.GetClosestTriangle(startLocationInMeshCoordinates, verticalRange, horizontalRange, nullptr, &closestStartLocation);
 				grid.PushPointInsideTriangle(triangleStartID, closestStartLocation, MNM::real_t(.05f));
 				startLocationInMeshCoordinates = closestStartLocation;
 			}
@@ -636,9 +635,8 @@ bool CSmartPathFollower::CanReachTarget(float testIndex) const
 			if (!triangleEndID)
 			{
 				// Couldn't find a triangle for the end position. Pick the closest one.
-				MNM::real_t endDistSq;
 				MNM::vector3_t closestEndLocation;
-				triangleEndID = grid.GetClosestTriangle(endLocationInMeshCoordinates, verticalRange, horizontalRange, &endDistSq, &closestEndLocation);
+				triangleEndID = grid.GetClosestTriangle(endLocationInMeshCoordinates, verticalRange, horizontalRange, nullptr, &closestEndLocation);
 				grid.PushPointInsideTriangle(triangleEndID, closestEndLocation, MNM::real_t(.05f));
 				endLocationInMeshCoordinates = closestEndLocation;
 			}

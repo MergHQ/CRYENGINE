@@ -475,7 +475,7 @@ public:
 	NavigationMeshID      GetEnclosingMeshID(NavigationAgentTypeID agentTypeID, const Vec3& location) const override;
 	bool                  IsLocationInMesh(NavigationMeshID meshID, const Vec3& location) const;
 	MNM::TriangleID       GetClosestMeshLocation(NavigationMeshID meshID, const Vec3& location, float vrange, float hrange,
-	                                             Vec3* meshLocation, float* distSq) const;
+	                                             Vec3* meshLocation, float* distance) const;
 	bool                  GetGroundLocationInMesh(NavigationMeshID meshID, const Vec3& location,
 	                                              float vDownwardRange, float hRange, Vec3* meshLocation) const;
 
@@ -534,7 +534,7 @@ public:
 	virtual void                             GetTileBoundsForMesh(NavigationMeshID meshID, MNM::TileID tileID, AABB& bounds) const override;
 	virtual MNM::TriangleID                  GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location) override;
 
-	virtual const MNM::Tile::ITileGrid*      GetMNMTileGrid(NavigationMeshID meshID) const override;
+	virtual const MNM::IMeshGrid*            GetMNMMeshGrid(NavigationMeshID meshID) const override;
 
 	virtual const IOffMeshNavigationManager& GetIOffMeshNavigationManager() const override { return m_offMeshNavigationManager; }
 	virtual IOffMeshNavigationManager&       GetIOffMeshNavigationManager() override       { return m_offMeshNavigationManager; }

@@ -1199,9 +1199,8 @@ Vec3 GetSafePositionInMesh(const NavigationMesh& mesh, const Vec3& testLocation,
 
 	if (!mesh.grid.GetTriangleAt(testLocationFixedPoint, vRange, vRange))
 	{
-		MNM::real_t distanceSqr;
 		MNM::vector3_t closestLocation;
-		if (mesh.grid.GetClosestTriangle(testLocationFixedPoint, vRange, hRange, &distanceSqr, &closestLocation))
+		if (mesh.grid.GetClosestTriangle(testLocationFixedPoint, vRange, hRange, nullptr, &closestLocation))
 		{
 			safePosition = closestLocation.GetVec3();
 		}

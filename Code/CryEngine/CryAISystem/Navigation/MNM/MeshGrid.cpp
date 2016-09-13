@@ -212,29 +212,6 @@ const real_t MeshGrid::kMinPullingThreshold = real_t(0.05f);
 const real_t MeshGrid::kMaxPullingThreshold = real_t(0.95f);
 const real_t MeshGrid::kAdjecencyCalculationToleranceSq = square(real_t(0.02f));
 
-static const int NeighbourOffset_MeshGrid[14][3] =
-{
-	{ 1,  0,  0  },
-	{ 1,  0,  1  },
-	{ 1,  0,  -1 },
-
-	{ 0,  1,  0  },
-	{ 0,  1,  1  },
-	{ 0,  1,  -1 },
-
-	{ 0,  0,  1  },
-
-	{ -1, 0,  0  },
-	{ -1, 0,  -1 },
-	{ -1, 0,  1  },
-
-	{ 0,  -1, 0  },
-	{ 0,  -1, -1 },
-	{ 0,  -1, 1  },
-
-	{ 0,  0,  -1 },
-};
-
 MeshGrid::MeshGrid()
 	: m_triangleCount(0)
 {
@@ -252,19 +229,145 @@ void MeshGrid::Init(const Params& params)
 	m_tiles.Init(params.tileCount);
 }
 
-#pragma warning(push)
-#pragma warning(disable:28285)
-size_t MeshGrid::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriCount, float minIslandArea) const
+//! Filter to support old GetTriangles() function (and such), which allow to specify minIslandArea
+struct MeshGrid::SMinIslandAreaQueryTrianglesFilter
 {
-	const size_t minX = (std::max(aabb.min.x, real_t(0)) / real_t(m_params.tileSize.x)).as_uint();
-	const size_t minY = (std::max(aabb.min.y, real_t(0)) / real_t(m_params.tileSize.y)).as_uint();
-	const size_t minZ = (std::max(aabb.min.z, real_t(0)) / real_t(m_params.tileSize.z)).as_uint();
+	SMinIslandAreaQueryTrianglesFilter(const MeshGrid& meshGrid_, float minIslandArea_)
+		: meshGrid(meshGrid_)
+		, minIslandArea(minIslandArea_)
+	{}
 
-	const size_t maxX = (std::max(aabb.max.x, real_t(0)) / real_t(m_params.tileSize.x)).as_uint();
-	const size_t maxY = (std::max(aabb.max.y, real_t(0)) / real_t(m_params.tileSize.y)).as_uint();
-	const size_t maxZ = (std::max(aabb.max.z, real_t(0)) / real_t(m_params.tileSize.z)).as_uint();
+	bool                                      IsAcceptAll() const { return minIslandArea <= 0.f; }
+
+	NMeshGrid::IQueryTrianglesFilter::EResult Check(const TriangleID triangleId) const
+	{
+		return
+		  (meshGrid.GetIslandAreaForTriangle(triangleId) >= minIslandArea)
+		  ? NMeshGrid::IQueryTrianglesFilter::EResult::Accepted
+		  : NMeshGrid::IQueryTrianglesFilter::EResult::Rejected;
+	}
+
+	const MeshGrid& meshGrid;
+	float           minIslandArea;
+};
+
+template<typename TFilter>
+size_t MeshGrid::QueryTileTrianglesLinear(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+{
+	CRY_ASSERT(maxTrianglesCount > 0);
+	if (maxTrianglesCount == 0)
+		return 0;
 
 	size_t triCount = 0;
+	for (size_t i = 0; i < tile.triangleCount; ++i)
+	{
+		const Tile::STriangle& triangle = tile.triangles[i];
+
+		const Tile::Vertex& v0 = tile.vertices[triangle.vertex[0]];
+		const Tile::Vertex& v1 = tile.vertices[triangle.vertex[1]];
+		const Tile::Vertex& v2 = tile.vertices[triangle.vertex[2]];
+
+		const aabb_t triaabb(vector3_t::minimize(v0, v1, v2), vector3_t::maximize(v0, v1, v2));
+
+		if (queryAabbTile.overlaps(triaabb))
+		{
+			const TriangleID triangleID = ComputeTriangleID(tileID, static_cast<uint16>(i));
+
+			if (filter.Check(triangleID) == NMeshGrid::IQueryTrianglesFilter::EResult::Accepted)
+			{
+				pOutTriangles[triCount++] = triangleID;
+
+				if (triCount == maxTrianglesCount)
+					break;
+			}
+		}
+	}
+	return triCount;
+}
+
+template<typename TFilter>
+size_t MeshGrid::QueryTileTrianglesBV(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+{
+	CRY_ASSERT(maxTrianglesCount > 0);
+	if (maxTrianglesCount == 0)
+		return 0;
+
+	size_t triCount = 0;
+
+	const size_t nodeCount = tile.nodeCount;
+	size_t nodeID = 0;
+	while (nodeID < nodeCount)
+	{
+		const Tile::SBVNode& node = tile.nodes[nodeID];
+
+		if (!queryAabbTile.overlaps(node.aabb))
+			nodeID += node.leaf ? 1 : node.offset;
+		else
+		{
+			++nodeID;
+
+			if (node.leaf)
+			{
+				const uint16 triangleIdx = node.offset;
+				const TriangleID triangleID = ComputeTriangleID(tileID, triangleIdx);
+
+				if (filter.Check(triangleID) == NMeshGrid::IQueryTrianglesFilter::EResult::Accepted)
+				{
+					pOutTriangles[triCount++] = triangleID;
+
+					if (triCount == maxTrianglesCount)
+						break;
+				}
+			}
+		}
+	}
+	return triCount;
+}
+
+template<typename TFilter>
+size_t MeshGrid::QueryTileTriangles(const TileID tileID, const vector3_t& tileOrigin, const aabb_t& queryAabbWorld, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+{
+	const STile& tile = GetTile(tileID);
+
+	const vector3_t tileMin(0, 0, 0);
+	const vector3_t tileMax(m_params.tileSize.x, m_params.tileSize.y, m_params.tileSize.z);
+
+	aabb_t queryAabbTile(queryAabbWorld);
+	queryAabbTile.min = vector3_t::maximize(queryAabbTile.min - tileOrigin, tileMin);
+	queryAabbTile.max = vector3_t::minimize(queryAabbTile.max - tileOrigin, tileMax);
+
+	if (!tile.nodeCount)
+	{
+		return QueryTileTrianglesLinear(tileID, tile, queryAabbTile, filter, maxTrianglesCount, pOutTriangles);
+	}
+	else
+	{
+		return QueryTileTrianglesBV(tileID, tile, queryAabbTile, filter, maxTrianglesCount, pOutTriangles);
+	}
+}
+
+template<typename TFilter>
+size_t MeshGrid::QueryTrianglesWithFilterInternal(const aabb_t& queryAabbWorld, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+{
+	CRY_ASSERT(pOutTriangles);
+	CRY_ASSERT(maxTrianglesCount > 0);
+	if (!(pOutTriangles && maxTrianglesCount > 0))
+	{
+		return 0;
+	}
+
+	const size_t minX = (std::max(queryAabbWorld.min.x, real_t(0)) / real_t(m_params.tileSize.x)).as_uint();
+	const size_t minY = (std::max(queryAabbWorld.min.y, real_t(0)) / real_t(m_params.tileSize.y)).as_uint();
+	const size_t minZ = (std::max(queryAabbWorld.min.z, real_t(0)) / real_t(m_params.tileSize.z)).as_uint();
+
+	const size_t maxX = (std::max(queryAabbWorld.max.x, real_t(0)) / real_t(m_params.tileSize.x)).as_uint();
+	const size_t maxY = (std::max(queryAabbWorld.max.y, real_t(0)) / real_t(m_params.tileSize.y)).as_uint();
+	const size_t maxZ = (std::max(queryAabbWorld.max.z, real_t(0)) / real_t(m_params.tileSize.z)).as_uint();
+
+	size_t triCount = 0;
+
+	TriangleID* pTrianglesBegin = pOutTriangles;
+	size_t maxTrianglesCountLeft = maxTrianglesCount;
 
 	for (uint y = minY; y <= maxY; ++y)
 	{
@@ -274,73 +377,21 @@ size_t MeshGrid::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriC
 			{
 				if (const TileID tileID = GetTileID(x, y, z))
 				{
-					const STile& tile = GetTile(tileID);
-
 					const vector3_t tileOrigin(
 					  real_t(x * m_params.tileSize.x),
 					  real_t(y * m_params.tileSize.y),
 					  real_t(z * m_params.tileSize.z));
 
-					aabb_t relative(aabb);
-					relative.min = vector3_t::maximize(relative.min - tileOrigin, vector3_t(0, 0, 0));
-					relative.max = vector3_t::minimize(relative.max - tileOrigin,
-					                                   vector3_t(m_params.tileSize.x, m_params.tileSize.y, m_params.tileSize.z));
+					const size_t trianglesInTileCount = QueryTileTriangles(tileID, tileOrigin, queryAabbWorld, filter, maxTrianglesCountLeft, pTrianglesBegin);
 
-					if (!tile.nodeCount)
+					CRY_ASSERT(maxTrianglesCountLeft >= trianglesInTileCount);
+					maxTrianglesCountLeft -= trianglesInTileCount;
+					pTrianglesBegin += trianglesInTileCount;
+					triCount += trianglesInTileCount;
+
+					if (maxTrianglesCountLeft == 0)
 					{
-						for (size_t i = 0; i < tile.triangleCount; ++i)
-						{
-							const Tile::STriangle& triangle = tile.triangles[i];
-
-							const Tile::Vertex& v0 = tile.vertices[triangle.vertex[0]];
-							const Tile::Vertex& v1 = tile.vertices[triangle.vertex[1]];
-							const Tile::Vertex& v2 = tile.vertices[triangle.vertex[2]];
-
-							const aabb_t triaabb(vector3_t::minimize(v0, v1, v2), vector3_t::maximize(v0, v1, v2));
-
-							if (relative.overlaps(triaabb))
-							{
-								TriangleID triangleID = ComputeTriangleID(tileID, static_cast<uint16>(i));
-
-								if (minIslandArea <= 0.f || GetIslandAreaForTriangle(triangleID) >= minIslandArea)
-								{
-									triangles[triCount++] = triangleID;
-
-									if (triCount == maxTriCount)
-										return triCount;
-								}
-							}
-						}
-					}
-					else
-					{
-						size_t nodeID = 0;
-						const size_t nodeCount = tile.nodeCount;
-
-						while (nodeID < nodeCount)
-						{
-							const Tile::SBVNode& node = tile.nodes[nodeID];
-
-							if (!relative.overlaps(node.aabb))
-								nodeID += node.leaf ? 1 : node.offset;
-							else
-							{
-								++nodeID;
-
-								if (node.leaf)
-								{
-									TriangleID triangleID = ComputeTriangleID(tileID, node.offset);
-
-									if (minIslandArea <= 0.f || GetIslandAreaForTriangle(triangleID) >= minIslandArea)
-									{
-										triangles[triCount++] = triangleID;
-
-										if (triCount == maxTriCount)
-											return triCount;
-									}
-								}
-							}
-						}
+						return triCount;
 					}
 				}
 			}
@@ -348,6 +399,77 @@ size_t MeshGrid::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriC
 	}
 
 	return triCount;
+}
+
+size_t MeshGrid::QueryTrianglesNoFilterInternal(const aabb_t& queryAabbWorld, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+{
+	SAcceptAllQueryTrianglesFilter filter;
+	return QueryTrianglesWithFilterInternal(queryAabbWorld, filter, maxTrianglesCount, pOutTriangles);
+}
+
+TriangleID MeshGrid::FindClosestTriangleInternal(
+  const vector3_t& queryPosWorld,
+  const TriangleID* pCandidateTriangles,
+  const size_t candidateTrianglesCount,
+  vector3_t* pOutClosestPosWorld,
+  real_t::unsigned_overflow_type* pOutClosestDistanceSq) const
+{
+	TriangleID closestID = Constants::InvalidTriangleID;
+	MNM::real_t::unsigned_overflow_type closestDistanceSq = std::numeric_limits<MNM::real_t::unsigned_overflow_type>::max();
+	vector3_t closestPos(real_t::max());
+
+	if (candidateTrianglesCount)
+	{
+		MNM::vector3_t a, b, c;
+
+		for (size_t i = 0; i < candidateTrianglesCount; ++i)
+		{
+			const TriangleID triangleId = pCandidateTriangles[i];
+
+			if (GetVertices(triangleId, a, b, c))
+			{
+				const MNM::vector3_t ptClosest = ClosestPtPointTriangle(queryPosWorld, a, b, c);
+				const MNM::real_t::unsigned_overflow_type dSq = (ptClosest - queryPosWorld).lenSqNoOverflow();
+
+				if (dSq < closestDistanceSq)
+				{
+					closestID = triangleId;
+					closestDistanceSq = dSq;
+					closestPos = ptClosest;
+				}
+			}
+		}
+	}
+
+	if (closestID != Constants::InvalidTriangleID)
+	{
+		if (pOutClosestPosWorld)
+		{
+			*pOutClosestPosWorld = closestPos;
+		}
+
+		if (pOutClosestDistanceSq)
+		{
+			*pOutClosestDistanceSq = closestDistanceSq;
+		}
+	}
+
+	return closestID;
+}
+
+#pragma warning(push)
+#pragma warning(disable:28285)
+size_t MeshGrid::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriCount, float minIslandArea) const
+{
+	SMinIslandAreaQueryTrianglesFilter filter(*this, minIslandArea);
+	if (filter.IsAcceptAll())
+	{
+		return QueryTrianglesNoFilterInternal(aabb, maxTriCount, triangles);
+	}
+	else
+	{
+		return QueryTrianglesWithFilterInternal(aabb, filter, maxTriCount, triangles);
+	}
 }
 #pragma warning(pop)
 
@@ -473,7 +595,7 @@ bool MeshGrid::IsTriangleAcceptableForLocation(const vector3_t& location, Triang
 	return false;
 }
 
-TriangleID MeshGrid::GetClosestTriangle(const vector3_t& location, real_t vrange, real_t hrange, real_t* distSq,
+TriangleID MeshGrid::GetClosestTriangle(const vector3_t& location, real_t vrange, real_t hrange, real_t* distance,
                                         vector3_t* closest, float minIslandArea) const
 {
 	const MNM::aabb_t aabb(
@@ -483,37 +605,16 @@ TriangleID MeshGrid::GetClosestTriangle(const vector3_t& location, real_t vrange
 	const size_t MaxTriCandidateCount = 1024;
 	TriangleID candidates[MaxTriCandidateCount];
 
-	TriangleID closestID = 0;
+	const size_t candidatesCount = GetTriangles(aabb, candidates, MaxTriCandidateCount, minIslandArea);
+	real_t::unsigned_overflow_type distanceSq;
+	const TriangleID resultClosestTriangleId = FindClosestTriangleInternal(location, candidates, candidatesCount, closest, &distanceSq);
 
-	const size_t candidateCount = GetTriangles(aabb, candidates, MaxTriCandidateCount, minIslandArea);
-	MNM::real_t distMinSq = MNM::real_t::max();
-
-	if (candidateCount)
+	if ((resultClosestTriangleId != Constants::InvalidTriangleID) && (distance != nullptr))
 	{
-		MNM::vector3_t a, b, c;
-
-		for (size_t i = 0; i < candidateCount; ++i)
-		{
-			GetVertices(candidates[i], a, b, c);
-
-			const MNM::vector3_t ptClosest = ClosestPtPointTriangle(location, a, b, c);
-			const MNM::real_t dSq = (ptClosest - location).lenNoOverflow();
-
-			if (dSq < distMinSq)
-			{
-				if (closest)
-					*closest = ptClosest;
-
-				distMinSq = dSq;
-				closestID = candidates[i];
-			}
-		}
+		*distance = real_t::sqrtf(distanceSq);
 	}
 
-	if (distSq)
-		*distSq = distMinSq;
-
-	return closestID;
+	return resultClosestTriangleId;
 }
 
 bool MeshGrid::GetVertices(TriangleID triangleID, vector3_t& v0, vector3_t& v1, vector3_t& v2) const
@@ -1830,8 +1931,8 @@ bool TestEdgeOverlap2D(const real_t& toleranceSq, const vector2_t& a0, const vec
 bool TestEdgeOverlap(size_t side, const real_t& toleranceSq, const vector3_t& a0, const vector3_t& a1,
                      const vector3_t& b0, const vector3_t& b1)
 {
-	const int ox = NeighbourOffset_MeshGrid[side][0];
-	const int oy = NeighbourOffset_MeshGrid[side][1];
+	const int ox = NMeshGrid::GetNeighbourTileOffset(side)[0];
+	const int oy = NMeshGrid::GetNeighbourTileOffset(side)[1];
 	const real_t dx = real_t::fraction(1, 1000);
 
 	if (ox || oy)
@@ -1954,9 +2055,9 @@ void MeshGrid::ClearTile(TileID tileID, bool clearNetwork)
 		{
 			for (size_t side = 0; side < SideCount; ++side)
 			{
-				size_t nx = container.x + NeighbourOffset_MeshGrid[side][0];
-				size_t ny = container.y + NeighbourOffset_MeshGrid[side][1];
-				size_t nz = container.z + NeighbourOffset_MeshGrid[side][2];
+				size_t nx = container.x + NMeshGrid::GetNeighbourTileOffset(side)[0];
+				size_t ny = container.y + NMeshGrid::GetNeighbourTileOffset(side)[1];
+				size_t nz = container.z + NMeshGrid::GetNeighbourTileOffset(side)[2];
 
 				if (TileID neighbourID = GetTileID(nx, ny, nz))
 				{
@@ -2004,9 +2105,9 @@ void MeshGrid::ConnectToNetwork(TileID tileID)
 
 		for (size_t side = 0; side < SideCount; ++side)
 		{
-			size_t nx = container.x + NeighbourOffset_MeshGrid[side][0];
-			size_t ny = container.y + NeighbourOffset_MeshGrid[side][1];
-			size_t nz = container.z + NeighbourOffset_MeshGrid[side][2];
+			size_t nx = container.x + NMeshGrid::GetNeighbourTileOffset(side)[0];
+			size_t ny = container.y + NMeshGrid::GetNeighbourTileOffset(side)[1];
+			size_t nz = container.z + NMeshGrid::GetNeighbourTileOffset(side)[2];
 
 			if (TileID neighbourID = GetTileID(nx, ny, nz))
 			{
@@ -2190,11 +2291,75 @@ void ComputeTileTriangleAdjacency(const Tile::STriangle* triangles, const size_t
 
 TileID MeshGrid::GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) const
 {
-	size_t nx = x + NeighbourOffset_MeshGrid[side][0];
-	size_t ny = y + NeighbourOffset_MeshGrid[side][1];
-	size_t nz = z + NeighbourOffset_MeshGrid[side][2];
+	size_t nx = x + NMeshGrid::GetNeighbourTileOffset(side)[0];
+	size_t ny = y + NMeshGrid::GetNeighbourTileOffset(side)[1];
+	size_t nz = z + NMeshGrid::GetNeighbourTileOffset(side)[2];
 
 	return GetTileID(nx, ny, nz);
+}
+
+void MeshGrid::GetMeshParams(NMeshGrid::SParams& outParams) const
+{
+	const Params& params = GetParams();
+	outParams.originWorld = params.origin;
+}
+
+TileID MeshGrid::FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const
+{
+	const int nx = tileGridCoord.x.as_int();
+	const int ny = tileGridCoord.y.as_int();
+	const int nz = tileGridCoord.z.as_int();
+
+	if (nx < 0 || ny < 0 || nz < 0)
+	{
+		return Constants::InvalidTileID;
+	}
+
+	return GetTileID(nx, ny, nz);
+}
+
+size_t MeshGrid::QueryTriangles(const aabb_t& queryAabbWorld, MNM::NMeshGrid::IQueryTrianglesFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const
+{
+	CRY_ASSERT(pOutTriangles);
+	CRY_ASSERT(maxTrianglesCount > 0);
+
+	if (!(pOutTriangles && maxTrianglesCount > 0))
+	{
+		return 0;
+	}
+
+	if (pOptionalFilter)
+	{
+		return QueryTrianglesWithFilterInternal(queryAabbWorld, *pOptionalFilter, maxTrianglesCount, pOutTriangles);
+	}
+	else
+	{
+		return QueryTrianglesNoFilterInternal(queryAabbWorld, maxTrianglesCount, pOutTriangles);
+	}
+}
+
+TriangleID MeshGrid::FindClosestTriangle(const vector3_t& queryPosWorld, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestPosWorld, float* pOutClosestDistanceSq) const
+{
+	CRY_ASSERT(pCandidateTriangles);
+	CRY_ASSERT(candidateTrianglesCount > 0);
+
+	if (!(pCandidateTriangles && candidateTrianglesCount > 0))
+	{
+		return Constants::InvalidTriangleID;
+	}
+
+	real_t::unsigned_overflow_type closestDistanceSq;
+	const TriangleID resultTriangleId = FindClosestTriangleInternal(queryPosWorld, pCandidateTriangles, candidateTrianglesCount, pOutClosestPosWorld, &closestDistanceSq);
+	if (resultTriangleId != Constants::InvalidTriangleID)
+	{
+		if (pOutClosestDistanceSq)
+		{
+			// Can't assign overflow_type directly to real_t, but it's still at the same scale, so we can calculate float from it.
+			// See fixed_t::as_float().
+			*pOutClosestDistanceSq = (closestDistanceSq / (float)real_t::integer_scale);
+		}
+	}
+	return resultTriangleId;
 }
 
 bool MeshGrid::GetTileData(const TileID tileId, Tile::STileData& outTileData) const
@@ -2209,6 +2374,10 @@ bool MeshGrid::GetTileData(const TileID tileId, Tile::STileData& outTileData) co
 		  real_t(container.z * m_params.tileSize.z));
 
 		container.tile.GetTileData(outTileData);
+		outTileData.tileGridCoord = vector3_t(
+		  real_t(container.x),
+		  real_t(container.y),
+		  real_t(container.z));
 		outTileData.tileOriginWorld = origin;
 
 		return true;
@@ -2260,13 +2429,13 @@ void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 	{
 		SideTileInfo& side = sides[s];
 
-		if (TileID id = GetTileID(x + NeighbourOffset_MeshGrid[s][0], y + NeighbourOffset_MeshGrid[s][1], z + NeighbourOffset_MeshGrid[s][2]))
+		if (TileID id = GetTileID(x + NMeshGrid::GetNeighbourTileOffset(s)[0], y + NMeshGrid::GetNeighbourTileOffset(s)[1], z + NMeshGrid::GetNeighbourTileOffset(s)[2]))
 		{
 			side.tile = &GetTile(id);
 			side.offset = vector3_t(
-			  NeighbourOffset_MeshGrid[s][0] * m_params.tileSize.x,
-			  NeighbourOffset_MeshGrid[s][1] * m_params.tileSize.y,
-			  NeighbourOffset_MeshGrid[s][2] * m_params.tileSize.z);
+			  NMeshGrid::GetNeighbourTileOffset(s)[0] * m_params.tileSize.x,
+			  NMeshGrid::GetNeighbourTileOffset(s)[1] * m_params.tileSize.y,
+			  NMeshGrid::GetNeighbourTileOffset(s)[2] * m_params.tileSize.z);
 		}
 	}
 
@@ -2341,7 +2510,7 @@ void MeshGrid::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 								link.triangle = k;
 
 #if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
-								const TileID checkId = GetTileID(x + NeighbourOffset_MeshGrid[s][0], y + NeighbourOffset_MeshGrid[s][1], z + NeighbourOffset_MeshGrid[s][2]);
+								const TileID checkId = GetTileID(x + NMeshGrid::GetNeighbourTileOffset(s)[0], y + NMeshGrid::GetNeighbourTileOffset(s)[1], z + NMeshGrid::GetNeighbourTileOffset(s)[2]);
 								m_tiles.BreakOnInvalidTriangle(ComputeTriangleID(checkId, k));
 #endif
 
@@ -2388,9 +2557,9 @@ void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& to
 	else
 	{
 		const vector3_t noffset = vector3_t(
-		  NeighbourOffset_MeshGrid[side][0] * m_params.tileSize.x,
-		  NeighbourOffset_MeshGrid[side][1] * m_params.tileSize.y,
-		  NeighbourOffset_MeshGrid[side][2] * m_params.tileSize.z);
+		  NMeshGrid::GetNeighbourTileOffset(side)[0] * m_params.tileSize.x,
+		  NMeshGrid::GetNeighbourTileOffset(side)[1] * m_params.tileSize.y,
+		  NMeshGrid::GetNeighbourTileOffset(side)[2] * m_params.tileSize.z);
 
 		assert(originTriangleCount <= MaxTriangleCount);
 
@@ -2456,7 +2625,7 @@ void MeshGrid::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& to
 							link.triangle = k;
 							++triLinkCount;
 #if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
-							const TileID checkId = GetTileID(x + NeighbourOffset_MeshGrid[side][0], y + NeighbourOffset_MeshGrid[side][1], z + NeighbourOffset_MeshGrid[side][2]);
+							const TileID checkId = GetTileID(x + NMeshGrid::GetNeighbourTileOffset(side)[0], y + NMeshGrid::GetNeighbourTileOffset(side)[1], z + NMeshGrid::GetNeighbourTileOffset(side)[2]);
 							m_tiles.BreakOnInvalidTriangle(ComputeTriangleID(checkId, k));
 							/*
 							   Tile::Link testLink;

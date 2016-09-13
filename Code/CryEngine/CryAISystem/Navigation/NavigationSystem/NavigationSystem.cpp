@@ -1181,10 +1181,14 @@ bool NavigationSystem::SpawnJob(TileTaskResult& result, NavigationMeshID meshID,
 
 	if (gAIEnv.CVars.DebugDrawNavigation)
 	{
-		CDebugDrawContext dc;
-
-		dc->DrawAABB(AABB(params.origin, params.origin + Vec3((float)params.sizeX, (float)params.sizeY, (float)params.sizeZ)),
-		             IDENTITY, false, Col_Red, eBBD_Faceted);
+		if (gEnv->pRenderer)
+		{
+			if (IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom())
+			{
+				pRenderAuxGeom->DrawAABB(AABB(params.origin, params.origin + Vec3((float)params.sizeX, (float)params.sizeY, (float)params.sizeZ)),
+				                         IDENTITY, false, Col_Red, eBBD_Faceted);
+			}
+		}
 	}
 
 	return true;
@@ -1965,7 +1969,7 @@ bool NavigationSystem::IsLocationInMesh(NavigationMeshID meshID, const Vec3& loc
 }
 
 MNM::TriangleID NavigationSystem::GetClosestMeshLocation(NavigationMeshID meshID, const Vec3& location, float vrange,
-                                                         float hrange, Vec3* meshLocation, float* distSq) const
+                                                         float hrange, Vec3* meshLocation, float* distance) const
 {
 	if (meshID && m_meshes.validate(meshID))
 	{
@@ -1977,23 +1981,23 @@ MNM::TriangleID NavigationSystem::GetClosestMeshLocation(NavigationMeshID meshID
 			if (meshLocation)
 				*meshLocation = location;
 
-			if (distSq)
-				*distSq = 0.0f;
+			if (distance)
+				*distance = 0.0f;
 
 			return enclosingTriID;
 		}
 		else
 		{
-			MNM::real_t dSq;
+			MNM::real_t distanceFixed;
 			MNM::vector3_t closest;
 
-			if (const MNM::TriangleID closestTriID = mesh.grid.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), &dSq, &closest))
+			if (const MNM::TriangleID closestTriID = mesh.grid.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), &distanceFixed, &closest))
 			{
 				if (meshLocation)
 					*meshLocation = closest.GetVec3();
 
-				if (distSq)
-					*distSq = dSq.as_float();
+				if (distance)
+					*distance = distanceFixed.as_float();
 
 				return closestTriID;
 			}
@@ -2023,10 +2027,9 @@ bool NavigationSystem::GetGroundLocationInMesh(NavigationMeshID meshID, const Ve
 		}
 		else
 		{
-			MNM::real_t dSq;
 			MNM::vector3_t closest;
 
-			if (const MNM::TriangleID closestTriID = mesh.grid.GetClosestTriangle(loc, verticalRange, MNM::real_t(hRange), &dSq, &closest))
+			if (const MNM::TriangleID closestTriID = mesh.grid.GetClosestTriangle(loc, verticalRange, MNM::real_t(hRange), nullptr, &closest))
 			{
 				if (meshLocation)
 					*meshLocation = closest.GetVec3();
@@ -2518,10 +2521,9 @@ bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentType
 		}
 		else
 		{
-			MNM::real_t dSq;
 			MNM::vector3_t closest;
 
-			if (const MNM::TriangleID closestTriID = mesh.grid.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), &dSq, &closest, minIslandArea))
+			if (const MNM::TriangleID closestTriID = mesh.grid.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), nullptr, &closest, minIslandArea))
 			{
 				if (meshLocation)
 				{
@@ -2654,7 +2656,7 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 	return MNM::TriangleID(0);
 }
 
-const MNM::Tile::ITileGrid* NavigationSystem::GetMNMTileGrid(NavigationMeshID meshID) const
+const MNM::IMeshGrid* NavigationSystem::GetMNMMeshGrid(NavigationMeshID meshID) const
 {
 	if (m_meshes.validate(meshID))
 	{
@@ -4106,7 +4108,7 @@ void NavigationSystemDebugDraw::DebugDrawClosestPoint(NavigationSystem& navigati
 
 		const Vec3 startLoc = debugObject->GetEntity() ? debugObject->GetEntity()->GetWorldPos() : debugObject->GetPos();
 		const MNM::vector3_t fixedPointStartLoc(MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z));
-		const MNM::real_t range = MNM::real_t(1.0f);
+		const MNM::real_t range = MNM::real_t(5.0f);
 
 		MNM::real_t distance(.0f);
 		MNM::vector3_t closestPosition;
@@ -4535,22 +4537,22 @@ void NavigationSystemDebugDraw::DebugDrawMemoryStats(NavigationSystem& navigatio
 				size_t totalMemory = meshMemStats.totalNavigationMeshMemory + offMeshMemStats.totalSize + linkMemStats.totalSize;
 
 				IRenderAuxText::Draw2dLabel(posX, posY, 1.3f, white, false, "Mesh: %s Agent: %s - Total Memory %.3f KB : Mesh %.3f KB / Grid %.3f KB / OffMesh %.3f",
-				                             mesh.name.c_str(), agentType.name.c_str(),
-				                             totalMemory * kbInvert, meshMemStats.totalNavigationMeshMemory * kbInvert, meshMemStats.gridProfiler.GetMemoryUsage() * kbInvert, (offMeshMemStats.totalSize + linkMemStats.totalSize) * kbInvert);
+				                            mesh.name.c_str(), agentType.name.c_str(),
+				                            totalMemory * kbInvert, meshMemStats.totalNavigationMeshMemory * kbInvert, meshMemStats.gridProfiler.GetMemoryUsage() * kbInvert, (offMeshMemStats.totalSize + linkMemStats.totalSize) * kbInvert);
 				posY += 12.0f;
 				IRenderAuxText::Draw2dLabel(posX, posY, 1.3f, grey, false, "Tiles [%d] / Vertices [%d] - %.3f KB / Triangles [%d] - %.3f KB / Links [%d] - %.3f KB / BVNodes [%d] - %.3f KB",
-				                             meshMemStats.gridProfiler[MNM::MeshGrid::TileCount],
-				                             meshMemStats.gridProfiler[MNM::MeshGrid::VertexCount], meshMemStats.gridProfiler[MNM::MeshGrid::VertexMemory].used * kbInvert,
-				                             meshMemStats.gridProfiler[MNM::MeshGrid::TriangleCount], meshMemStats.gridProfiler[MNM::MeshGrid::TriangleMemory].used * kbInvert,
-				                             meshMemStats.gridProfiler[MNM::MeshGrid::LinkCount], meshMemStats.gridProfiler[MNM::MeshGrid::LinkMemory].used * kbInvert,
-				                             meshMemStats.gridProfiler[MNM::MeshGrid::BVTreeNodeCount], meshMemStats.gridProfiler[MNM::MeshGrid::BVTreeMemory].used * kbInvert
-				                             );
+				                            meshMemStats.gridProfiler[MNM::MeshGrid::TileCount],
+				                            meshMemStats.gridProfiler[MNM::MeshGrid::VertexCount], meshMemStats.gridProfiler[MNM::MeshGrid::VertexMemory].used * kbInvert,
+				                            meshMemStats.gridProfiler[MNM::MeshGrid::TriangleCount], meshMemStats.gridProfiler[MNM::MeshGrid::TriangleMemory].used * kbInvert,
+				                            meshMemStats.gridProfiler[MNM::MeshGrid::LinkCount], meshMemStats.gridProfiler[MNM::MeshGrid::LinkMemory].used * kbInvert,
+				                            meshMemStats.gridProfiler[MNM::MeshGrid::BVTreeNodeCount], meshMemStats.gridProfiler[MNM::MeshGrid::BVTreeMemory].used * kbInvert
+				                            );
 
 				posY += 12.0f;
 				IRenderAuxText::Draw2dLabel(posX, posY, 1.3f, grey, false, "OffMesh Memory : Tile Links %.3f KB / Object Info %.3f KB",
-				                             offMeshMemStats.offMeshTileLinksMemory * kbInvert,
-				                             linkMemStats.linkInfoSize * kbInvert
-				                             );
+				                            offMeshMemStats.offMeshTileLinksMemory * kbInvert,
+				                            linkMemStats.linkInfoSize * kbInvert
+				                            );
 				posY += 13.0f;
 
 				totalNavigationSystemMemory += totalMemory;

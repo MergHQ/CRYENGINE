@@ -12,6 +12,8 @@
 #include <CryMath/SimpleHashLookUp.h>
 #include <CryCore/Containers/VectorMap.h>
 
+#include <CryAISystem/NavigationSystem/MNMMeshGrid.h>
+
 class OffMeshNavigationManager;
 
 namespace MNM
@@ -126,7 +128,8 @@ typedef CryFixedArray<MNM::DangerAreaConstPtr, max_danger_amount> DangerousAreas
 
 ///////////////////////////////////////////////////////////////////////
 
-struct MeshGrid : public MNM::Tile::ITileGrid
+// #MNM_TODO pavloi 2016.08.15: rename to SMeshGrid
+struct MeshGrid : public MNM::IMeshGrid
 {
 	enum { x_bits = 11, };   // must add up to a 32 bit - the "tileName"
 	enum { y_bits = 11, };
@@ -279,7 +282,7 @@ struct MeshGrid : public MNM::Tile::ITileGrid
 
 	size_t     GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriCount, float minIslandArea = 0.f) const;
 	TriangleID GetTriangleAt(const vector3_t& location, const real_t verticalDownwardRange, const real_t verticalUpwardRange, float minIslandArea = 0.f) const;
-	TriangleID GetClosestTriangle(const vector3_t& location, real_t vrange, real_t hrange, real_t* distSq = 0, vector3_t* closest = 0, float minIslandArea = 0.f) const;
+	TriangleID GetClosestTriangle(const vector3_t& location, real_t vrange, real_t hrange, real_t* distance = 0, vector3_t* closest = 0, float minIslandArea = 0.f) const;
 
 	TriangleID GetTriangleEdgeAlongLine(const vector3_t& startLocation, const vector3_t& endLocation,
 	                                    const real_t verticalDownwardRange, const real_t verticalUpwardRange,
@@ -454,7 +457,6 @@ struct MeshGrid : public MNM::Tile::ITileGrid
 			: fromTriangle(_fromTriangleId)
 			, offMeshNavigation(_offMeshNavigation)
 		{}
-
 		const TriangleID         fromTriangle;
 		const OffMeshNavigation& offMeshNavigation;
 	};
@@ -468,9 +470,13 @@ struct MeshGrid : public MNM::Tile::ITileGrid
 
 	TileID GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) const;
 
-	// MNM::Tile::ITileGrid
-	virtual bool GetTileData(const TileID tileId, Tile::STileData& outTileData) const override;
-	// ~MNM::Tile::ITileGrid
+	// MNM::Tile::IMeshGrid
+	virtual void       GetMeshParams(NMeshGrid::SParams& outParams) const override;
+	virtual TileID     FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const override;
+	virtual size_t     QueryTriangles(const aabb_t& queryAabbWorld, MNM::NMeshGrid::IQueryTrianglesFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const override;
+	virtual TriangleID FindClosestTriangle(const vector3_t& queryPosWorld, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestPosWorld, float* pOutClosestDistanceSq) const override;
+	virtual bool       GetTileData(const TileID tileId, Tile::STileData& outTileData) const override;
+	// ~MNM::Tile::IMeshGrid
 
 private:
 
@@ -493,6 +499,30 @@ private:
 	void    ComputeStaticIslands();
 
 	void    PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangleID, const vector3_t& startPosition, const TriangleID nextTriangleID, const unsigned int vertexIndex, const vector3_t& finalLocation, vector3_t& outPosition) const;
+
+	//! Filter for QueryTriangles, which accepts all triangles.
+	//! Note, that the signature of Check() function is same as IQueryTrianglesFilter::Check(), but it's not virtual.
+	//! This way, templated implementation functions can avoid unnecessary checks and virtual calls.
+	struct SAcceptAllQueryTrianglesFilter
+	{
+		NMeshGrid::IQueryTrianglesFilter::EResult Check(TriangleID) { return NMeshGrid::IQueryTrianglesFilter::EResult::Accepted; }
+	};
+
+	struct SMinIslandAreaQueryTrianglesFilter;
+
+	size_t QueryTrianglesNoFilterInternal(const aabb_t& queryAabbWorld, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const;
+
+	template<typename TFilter>
+	size_t QueryTrianglesWithFilterInternal(const aabb_t& queryAabbWorld, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const;
+
+	template<typename TFilter>
+	size_t     QueryTileTriangles(const TileID tileID, const vector3_t& tileOrigin, const aabb_t& queryAabbWorld, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const;
+	template<typename TFilter>
+	size_t     QueryTileTrianglesLinear(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const;
+	template<typename TFilter>
+	size_t     QueryTileTrianglesBV(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const;
+
+	TriangleID FindClosestTriangleInternal(const vector3_t& queryPosWorld, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestPosWorld, real_t::unsigned_overflow_type* pOutClosestDistanceSq) const;
 
 protected:
 	void ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile);
