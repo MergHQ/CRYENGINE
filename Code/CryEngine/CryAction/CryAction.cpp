@@ -686,8 +686,8 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 		paramCheck.AddParam("dedicated");
 		paramCheck.AddParam("record");
 		paramCheck.AddParam("server");
-		paramCheck.AddParam("nonblocking");
-		paramCheck.AddParam("nb");
+		paramCheck.AddParam("nonblocking"); //If this is set, map load and player connection become non-blocking operations.
+		paramCheck.AddParam("nb"); //This flag previously made initial server connection non-blocking. This is now always enabled.
 		paramCheck.AddParam("x");
 		//
 		for (int i = 2; i < args->GetArgCount(); i++)
