@@ -156,15 +156,15 @@ QViewportHeader > QToolButton::checked{
 	border-radius:2px;
 }*/
 
-QToolWindowCustomWrapper#mainWindow > QCustomTitleBar {
+QCustomWindowFrame#mainWindow > QCustomTitleBar {
 	background: center bottom url(icons:Logo/Cryengine_Logo_Top.png) no-repeat rgb(35,35,35);
 }
 
-QToolWindowCustomWrapper#mainWindow > QMainWindow > QMainFrameMenuBar {
+QCustomWindowFrame#mainWindow > QMainWindow > QMainFrameMenuBar {
 	background: center top url(icons:Logo/Cryengine_Logo_Bottom.png) no-repeat rgb(35,35,35);
 }
 
-QToolWindowCustomWrapper#mainWindow > QMainWindow > QMainFrameMenuBar > QMenuBar {
+QCustomWindowFrame#mainWindow > QMainWindow > QMainFrameMenuBar > QMenuBar {
 	background-color: rgba(35,35,35,0); /*Make this transparent and add the logo to the MenuBar container*/
 }
 
@@ -868,11 +868,11 @@ QToolBar::handle {
 	image: url(icons:Window/Handle_Round.ico);
 }
 
-QToolWindowCustomWrapper QSplitter, QToolWindowCustomWrapper > QWidget {
+QCustomWindowFrame > QWidget, QToolWindowCustomWrapper QSplitter, QToolWindowCustomWrapper > QWidget {
 	background-color: rgb(35,35,35);
 }
 
-QToolWindowCustomWrapper > QFrame {
+QCustomWindowFrame > QFrame, QToolWindowCustomWrapper > QFrame {
 	background-color: rgb(35,35,35);
 }
 
@@ -1069,7 +1069,7 @@ QCustomTitleBar {
 	border:0px;
 }
 
-QToolWindowCustomWrapper {           /*CEditorDialog*/
+QCustomWindowFrame, QToolWindowCustomWrapper {           /*CEditorDialog*/
 	background-color: rgb(35,35,35);
 	border:1px solid rgb(45,45,45);
 }
@@ -1085,7 +1085,12 @@ CEditorDialog {
 	border:1px solid rgb(45,45,45);
 }
 
-QToolWindowCustomWrapper QToolWindowCustomWrapper {
+QCustomWindowFrame QCustomWindowFrame {
+	margin:0px;
+	border:0px;
+}
+
+QCustomWindowFrame > QToolWindowCustomWrapper {
 	background-color:rgb(35,35,35);                         /* this is the wierd line that goes long the toolbar */
 	/*padding:-10px;*/
 	margin:0px;
