@@ -852,7 +852,7 @@ unsigned sizeOfMapS(Map& map)
 
 // The below submits the device context state changes and draw commands
 // asynchronously via a high priority packet queue.
-// Note: please continously monitor ASYNC_DIP_SYNC profile marker for stalls
+// Note: please continuously monitor ASYNC_DIP_SYNC profile marker for stalls
 #if CRY_PLATFORM_DURANGO
 	#define DURANGO_ENABLE_ASYNC_DIPS 1
 #endif

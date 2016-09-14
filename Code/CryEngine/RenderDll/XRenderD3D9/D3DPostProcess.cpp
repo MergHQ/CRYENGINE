@@ -1109,12 +1109,12 @@ void CPostEffectsMgr::End()
 	gRenDev->SetPreviousFrameCameraMatrix(gcpRendD3D->GetCameraMatrix());
 	gRenDev->m_CameraMatrixNearestPrev = gRenDev->m_CameraMatrixNearest;
 
-	const int kFloatMaxContinousInt = 0x1000000;  // 2^24
+	const int kFloatMaxContinuousInt = 0x1000000;  // 2^24
 	const bool bStereo = gcpRendD3D->GetS3DRend().IsStereoEnabled();
 	const bool bStereoSequentialSubmission = gcpRendD3D->GetS3DRend().GetStereoSubmissionMode() == STEREO_SUBMISSION_SEQUENTIAL;
 
 	if (!bStereo || (bStereo && (!bStereoSequentialSubmission || gRenDev->m_CurRenderEye == RIGHT_EYE)))
-		SPostEffectsUtils::m_iFrameCounter = (SPostEffectsUtils::m_iFrameCounter + 1) % kFloatMaxContinousInt;
+		SPostEffectsUtils::m_iFrameCounter = (SPostEffectsUtils::m_iFrameCounter + 1) % kFloatMaxContinuousInt;
 
 	PostProcessUtils().Log("### POST-PROCESSING ENDS ### ");
 }

@@ -6171,7 +6171,7 @@ void CPlayer::ExecuteFootStep(ICharacterInstance* pCharacter, const float frameT
 				usingWaterEffectId = true;
 				
 				// Plug water hits directly into water sim
-				// todo: move out of foot-step for more continous ripple gen (currently skips during sprint, looks weird).
+				// todo: move out of foot-step for more continuous ripple gen (currently skips during sprint, looks weird).
 				if (gEnv->p3DEngine)
 				{
 					gEnv->p3DEngine->AddWaterRipple(GetEntity()->GetWorldPos(), 1.0f, relativeSpeed * 2);

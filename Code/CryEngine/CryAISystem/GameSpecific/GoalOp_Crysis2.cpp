@@ -4123,18 +4123,18 @@ EGoalOpResult COPCrysis2FlightFireWeapons::Execute(CPipeUser* pPipeUser)
 	return ret;
 }
 
-COPCrysis2Hover::COPCrysis2Hover() : m_State(CHS_INVALID), m_target(AI_REG_NONE), m_Continous(false), m_NextState(CHS_INVALID)
+COPCrysis2Hover::COPCrysis2Hover() : m_State(CHS_INVALID), m_target(AI_REG_NONE), m_Continuous(false), m_NextState(CHS_INVALID)
 {
 
 }
 
-COPCrysis2Hover::COPCrysis2Hover(EAIRegister reg, bool continous) : m_State(CHS_INVALID), m_target(reg), m_Continous(continous), m_NextState(CHS_INVALID)
+COPCrysis2Hover::COPCrysis2Hover(EAIRegister reg, bool continuous) : m_State(CHS_INVALID), m_target(reg), m_Continuous(continuous), m_NextState(CHS_INVALID)
 {}
 
-COPCrysis2Hover::COPCrysis2Hover(const XmlNodeRef& node) : m_State(CHS_INVALID), m_target(AI_REG_NONE), m_Continous(false), m_NextState(CHS_INVALID)
+COPCrysis2Hover::COPCrysis2Hover(const XmlNodeRef& node) : m_State(CHS_INVALID), m_target(AI_REG_NONE), m_Continuous(false), m_NextState(CHS_INVALID)
 {
 	s_xml.GetRegister(node, "register", m_target);
-	m_Continous = s_xml.GetBool(node, "continousUpdate");
+	m_Continuous = s_xml.GetBool(node, "continuousUpdate");
 }
 
 COPCrysis2Hover::~COPCrysis2Hover()
@@ -4202,7 +4202,7 @@ EGoalOpResult COPCrysis2Hover::Execute(CPipeUser* pPipeUser)
 	{
 	case CHS_INVALID:
 		{
-			m_NextState = m_Continous ? CHS_HOVERING : CHS_INVALID;
+			m_NextState = m_Continuous ? CHS_HOVERING : CHS_INVALID;
 			if (GetTarget(pPipeUser, m_CurrentTarget))
 			{
 				//m_CurrentTarget = GetAISystem()->GetPlayer()->GetPos() ;
@@ -4236,7 +4236,7 @@ EGoalOpResult COPCrysis2Hover::Execute(CPipeUser* pPipeUser)
 	case CHS_HOVERING:
 		if (pPipeUser)
 		{
-			if (m_Continous && GetTarget(pPipeUser, m_CurrentTarget))
+			if (m_Continuous && GetTarget(pPipeUser, m_CurrentTarget))
 			{
 				m_InitialForward = m_CurrentTarget - pPipeUser->GetPos();
 				m_InitialForward.Normalize();
