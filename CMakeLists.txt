@@ -84,8 +84,7 @@ if(WIN32 OR WIN64)
 endif()
 
 if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Sandbox")
-	set(OPTION_SANDBOX "No" CACHE STRING "Enable Sandbox")
-	set_property(CACHE OPTION_SANDBOX PROPERTY STRINGS "No" "Qt")
+	option(OPTION_SANDBOX "Enable Sandbox" OFF)
 endif()
 
 option(OPTION_PCH "Enable Precompiled Headers" OFF)
@@ -426,7 +425,7 @@ add_subdirectory(Code/Libs/oculus)
 
 # Sandbox Editor
 if (OPTION_SANDBOX AND WIN64)
-	MESSAGE(STATUS "Include ${OPTION_SANDBOX} Sandbox Editor")
+	MESSAGE(STATUS "Include Sandbox Editor")
 	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}")
 	set(CMAKE_INCLUDE_CURRENT_DIR ON)
 	set(CMAKE_AUTOMOC_RELAXED_MODE TRUE)
