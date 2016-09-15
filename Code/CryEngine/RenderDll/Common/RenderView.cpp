@@ -736,7 +736,7 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 		const bool bIsMaterialEmissive = (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive());
 		const bool bIsTransparent = (nRenderList == EFSLIST_TRANSP);
 
-		if (nRenderList != EFSLIST_GENERAL && (nBatchFlags & FB_Z))
+		if (nRenderList != EFSLIST_GENERAL && nRenderList != EFSLIST_TERRAINLAYER && (nBatchFlags & FB_Z))
 		{
 			m_renderItems[EFSLIST_GENERAL].push_back(ri);
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_GENERAL], nBatchFlags);

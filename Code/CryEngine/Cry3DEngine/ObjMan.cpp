@@ -1270,5 +1270,8 @@ uint32 CObjManager::GetResourcesModificationChecksum(IRenderNode* pOwnerNode) co
 	if (CMatInfo* pMatInfo = (CMatInfo*)pOwnerNode->GetMaterial())
 		nModificationId += pMatInfo->GetModificationId();
 
+	if (pOwnerNode->GetRenderNodeType() == eERType_TerrainSector)
+		nModificationId += ((CTerrainNode*)pOwnerNode)->GetMaterialsModificationId();
+
 	return nModificationId;
 }

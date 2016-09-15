@@ -507,7 +507,7 @@ void CVars::Init()
 	              "Activates usage of software coverage buffer.\n"
 	              "1 - camera culling only\n"
 	              "2 - camera culling and light-to-object check");
-	DefineConstIntCVar(e_CoverageBufferCullIndividualBrushesMaxNodeSize, 0, VF_CHEAT,
+	DefineConstIntCVar(e_CoverageBufferCullIndividualBrushesMaxNodeSize, 16, VF_CHEAT,
 	                   "128 - cull only nodes of scene tree and very big brushes\n"
 	                   "0 - cull all brushes individually");
 	DefineConstIntCVar(e_CoverageBufferTerrain, 0, VF_NULL,
