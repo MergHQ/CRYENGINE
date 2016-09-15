@@ -2112,7 +2112,7 @@ void CTexture::Update()
 			if (fp)
 				fprintf(fp, "\n\n*** Textures used in current frame: ***\n");
 			else
-				rd->TextToScreenColor(4, 13, 1, 1, 0, 1, "*** Textures used in current frame: ***");
+				IRenderAuxText::TextToScreenColor(4, 13, 1, 1, 0, 1, "*** Textures used in current frame: ***");
 			int nY = 17;
 
 			if (Texs.Num())
@@ -2126,7 +2126,7 @@ void CTexture::Update()
 				else
 				{
 					cry_sprintf(buf, "%.3fKb  Type: %s  Format: %s  (%s)", Texs[i]->GetDeviceDataSize() / 1024.0f, CTexture::NameForTextureType(Texs[i]->GetTextureType()), CTexture::NameForTextureFormat(Texs[i]->GetDstFormat()), Texs[i]->GetName());
-					rd->TextToScreenColor(4, nY, 0, 1, 0, 1, buf);
+					IRenderAuxText::TextToScreenColor(4, nY, 0, 1, 0, 1, buf);
 					nY += 3;
 				}
 				PartSize += Texs[i]->GetDeviceDataSize();
@@ -2139,7 +2139,7 @@ void CTexture::Update()
 			else
 			{
 				cry_sprintf(buf, "*** Total Size: %.3fMb, Device Size: %.3fMb", Size / (1024.0f * 1024.0f), PartSize / (1024.0f * 1024.0f));
-				rd->TextToScreenColor(4, nY + 1, 0, 1, 1, 1, buf);
+				IRenderAuxText::TextToScreenColor(4, nY + 1, 0, 1, 1, 1, buf);
 			}
 
 			Texs.Free();
@@ -2162,7 +2162,7 @@ void CTexture::Update()
 			if (fp)
 				fprintf(fp, "\n\n*** All Existing Textures: ***\n");
 			else
-				rd->TextToScreenColor(4, 13, 1, 1, 0, 1, "*** Textures loaded: ***");
+				IRenderAuxText::TextToScreenColor(4, 13, 1, 1, 0, 1, "*** Textures loaded: ***");
 
 			if (Texs.Num())
 				qsort(&Texs[0], Texs.Num(), sizeof(CTexture*), TexCallback);
@@ -2179,7 +2179,7 @@ void CTexture::Update()
 				else
 				{
 					cry_sprintf(buf, "%.3fKb  Type: %s  Format: %s  (%s)", Texs[i]->GetDataSize() / 1024.0f, CTexture::NameForTextureType(Texs[i]->GetTextureType()), CTexture::NameForTextureFormat(Texs[i]->GetDstFormat()), Texs[i]->GetName());
-					rd->TextToScreenColor(4, nY, 0, 1, 0, 1, buf);
+					IRenderAuxText::TextToScreenColor(4, nY, 0, 1, 0, 1, buf);
 					nY += 3;
 				}
 				Size += Texs[i]->GetDeviceDataSize();
@@ -2191,7 +2191,7 @@ void CTexture::Update()
 			else
 			{
 				cry_sprintf(buf, "*** Total Size: %.3fMb", Size / (1024.0f * 1024.0f));
-				rd->TextToScreenColor(4, nY + 1, 0, 1, 1, 1, buf);
+				IRenderAuxText::TextToScreenColor(4, nY + 1, 0, 1, 1, 1, buf);
 			}
 
 			Texs.Free();
@@ -2297,13 +2297,13 @@ void CTexture::Update()
 			}
 
 			cry_sprintf(buf, "All texture objects: %u (Size: %.3fMb), NonStreamed: %d (Size: %.3fMb)", Texs.Num(), AllSize / (1024.0 * 1024.0), nNoStr, NonStrSize / (1024.0 * 1024.0));
-			rd->TextToScreenColor(4, 13, 1, 1, 0, 1, buf);
+			IRenderAuxText::TextToScreenColor(4, 13, 1, 1, 0, 1, buf);
 			cry_sprintf(buf, "All Loaded Texture Maps: %d (All MIPS: %.3fMb, Loaded MIPS: %.3fMb)", nNumTex, Size / (1024.0f * 1024.0f), PartSize / (1024.0 * 1024.0));
-			rd->TextToScreenColor(4, 16, 1, 1, 0, 1, buf);
+			IRenderAuxText::TextToScreenColor(4, 16, 1, 1, 0, 1, buf);
 			cry_sprintf(buf, "All Loaded Normal Maps: %d (All MIPS: %.3fMb, Loaded MIPS: %.3fMb)", nNumTexNM, SizeNM / (1024.0 * 1024.0), PartSizeNM / (1024.0 * 1024.0));
-			rd->TextToScreenColor(4, 19, 1, 1, 0, 1, buf);
+			IRenderAuxText::TextToScreenColor(4, 19, 1, 1, 0, 1, buf);
 			cry_sprintf(buf, "All Dynamic textures: %d (%.3fMb), %d Atlases (%.3fMb), %d Separared (%.3fMb)", nNumTexDynAtl + nNumTexDynCom, (SizeDynAtl + SizeDynCom) / (1024.0 * 1024.0), nNumTexDynAtl, SizeDynAtl / (1024.0 * 1024.0), nNumTexDynCom, SizeDynCom / (1024.0 * 1024.0));
-			rd->TextToScreenColor(4, 22, 1, 1, 0, 1, buf);
+			IRenderAuxText::TextToScreenColor(4, 22, 1, 1, 0, 1, buf);
 
 			Texs.Free();
 			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
@@ -2339,7 +2339,7 @@ void CTexture::Update()
 					NonStrSize += Texs[i]->GetDataSize();
 			}
 			cry_sprintf(buf, "Current tex. objects: %u (Size: %.3fMb, Dyn. Atlases: %.3f, Dyn. Separated: %.3f, Loaded: %.3f, NonStreamed: %.3f)", Texs.Num(), Size / (1024.0f * 1024.0f), SizeDynAtl / (1024.0f * 1024.0f), SizeDynCom / (1024.0f * 1024.0f), PartSize / (1024.0f * 1024.0f), NonStrSize / (1024.0f * 1024.0f));
-			rd->TextToScreenColor(4, 27, 1, 0, 0, 1, buf);
+			IRenderAuxText::TextToScreenColor(4, 27, 1, 0, 0, 1, buf);
 		}
 #endif
 	}

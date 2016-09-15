@@ -3227,13 +3227,13 @@ void CD3D9Renderer::DebugDrawStats()
 			{
 				const int nYstep = 30;
 				int nYpos = 270; // initial Y pos
-				crend->WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery stats:%d",
+				IRenderAuxText::WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery stats:%d",
 				               CREOcclusionQuery::m_nQueriesPerFrameCounter);
-				crend->WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery::m_nQueriesPerFrameCounter=%d",
+				IRenderAuxText::WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery::m_nQueriesPerFrameCounter=%d",
 				               CREOcclusionQuery::m_nQueriesPerFrameCounter);
-				crend->WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery::m_nReadResultNowCounter=%d",
+				IRenderAuxText::WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery::m_nReadResultNowCounter=%d",
 				               CREOcclusionQuery::m_nReadResultNowCounter);
-				crend->WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery::m_nReadResultTryCounter=%d",
+				IRenderAuxText::WriteXY(10, nYpos += nYstep, 2, 2, 1, 1, 1, 1, "CREOcclusionQuery::m_nReadResultTryCounter=%d",
 				               CREOcclusionQuery::m_nReadResultTryCounter);
 			}
 			break;
@@ -3601,7 +3601,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 			fgUpl[nC] = (byte)f;
 			Graph(fgUpl, 0, hgt - 280, wdt, 256, nC, type, NULL, ColUpl, fScaleUpl);
 			col = ColUpl;
-			WriteXY(4, hgt - 280, 1, 1, col.r, col.g, col.b, 1, "UploadMB (%d-%d)", (int)(BYTES_TO_MB(CTexture::s_nTexturesDataBytesUploaded)), (int)fScaleUpl);
+			IRenderAuxText::WriteXY(4, hgt - 280, 1, 1, col.r, col.g, col.b, 1, "UploadMB (%d-%d)", (int)(BYTES_TO_MB(CTexture::s_nTexturesDataBytesUploaded)), (int)fScaleUpl);
 		}
 
 		if (sMask & 2)
@@ -3611,7 +3611,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 			fgTimeUpl[nC] = (byte)f;
 			Graph(fgTimeUpl, 0, hgt - 280, wdt, 256, nC, type, NULL, ColTimeUpl, fScaleTimeUpl);
 			col = ColTimeUpl;
-			WriteXY(4, hgt - 280 + 16, 1, 1, col.r, col.g, col.b, 1, "Upload Time (%.3fMs - %.3fMs)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_fTexUploadTime, fScaleTimeUpl);
+			IRenderAuxText::WriteXY(4, hgt - 280 + 16, 1, 1, col.r, col.g, col.b, 1, "Upload Time (%.3fMs - %.3fMs)", m_RP.m_PS[m_RP.m_nProcessThreadID].m_fTexUploadTime, fScaleTimeUpl);
 		}
 
 		if (sMask & 4)
@@ -3621,7 +3621,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 			fgStreamSync[nC] = (byte)f;
 			Graph(fgStreamSync, 0, hgt - 280, wdt, 256, nC, type, NULL, ColStreamSync, fScaleStreamSync);
 			col = ColStreamSync;
-			WriteXY(4, hgt - 280 + 16 * 2, 1, 1, col.r, col.g, col.b, 1, "StreamMB (%d-%d)", (int)BYTES_TO_MB(CTexture::s_nTexturesDataBytesLoaded), (int)fScaleStreamSync);
+			IRenderAuxText::WriteXY(4, hgt - 280 + 16 * 2, 1, 1, col.r, col.g, col.b, 1, "StreamMB (%d-%d)", (int)BYTES_TO_MB(CTexture::s_nTexturesDataBytesLoaded), (int)fScaleStreamSync);
 		}
 
 		if (sMask & 32)
@@ -3632,7 +3632,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 			fgTotalMem[nC] = (byte)f;
 			Graph(fgTotalMem, 0, hgt - 280, wdt, 256, nC, type, NULL, ColTotalMem, fScaleTotalMem);
 			col = ColTotalMem;
-			WriteXY(4, hgt - 280 + 16 * 5, 1, 1, col.r, col.g, col.b, 1, "Streaming textures pool used (Mb) (%d of %d)", (int)BYTES_TO_MB(pool), (int)fScaleTotalMem);
+			IRenderAuxText::WriteXY(4, hgt - 280 + 16 * 5, 1, 1, col.r, col.g, col.b, 1, "Streaming textures pool used (Mb) (%d of %d)", (int)BYTES_TO_MB(pool), (int)fScaleTotalMem);
 		}
 		if (sMask & 64)
 		{
@@ -3641,7 +3641,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 			fgCurMem[nC] = (byte)f;
 			Graph(fgCurMem, 0, hgt - 280, wdt, 256, nC, type, NULL, ColCurMem, fScaleCurMem);
 			col = ColCurMem;
-			WriteXY(4, hgt - 280 + 16 * 6, 1, 1, col.r, col.g, col.b, 1, "Cur Scene Size: Dyn. + Stat. (Mb) (%d-%d)", (int)(BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesSysMemSize + m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesStreamSysSize + m_RP.m_PS[m_RP.m_nProcessThreadID].m_DynTexturesSize)), (int)fScaleCurMem);
+			IRenderAuxText::WriteXY(4, hgt - 280 + 16 * 6, 1, 1, col.r, col.g, col.b, 1, "Cur Scene Size: Dyn. + Stat. (Mb) (%d-%d)", (int)(BYTES_TO_MB(m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesSysMemSize + m_RP.m_PS[m_RP.m_nProcessThreadID].m_ManagedTexturesStreamSysSize + m_RP.m_PS[m_RP.m_nProcessThreadID].m_DynTexturesSize)), (int)fScaleCurMem);
 		}
 		if (sMask & 128)    // streaming stat
 		{
@@ -3689,15 +3689,15 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 			fgStreamSystem[nC] = (byte)f;
 			Graph(fgStreamSystem, 0, hgt - 280, wdt, 256, nC, type, NULL, ColCurStream, fScaleStreaming);
 			col = ColCurStream;
-			WriteXY(4, hgt - 280 + 14 * 7, 1, 1, col.r, col.g, col.b, 1, "Streaming throughput (Kb/s) (%d of %d)", (int)thp, (int)fScaleStreaming * 1024);
+			IRenderAuxText::WriteXY(4, hgt - 280 + 14 * 7, 1, 1, col.r, col.g, col.b, 1, "Streaming throughput (Kb/s) (%d of %d)", (int)thp, (int)fScaleStreaming * 1024);
 
 			// output assets
 			if (!vecStreamingProblematicAssets.empty())
 			{
 				int top = vecStreamingProblematicAssets.size() * nLineStep + 320;
-				WriteXY(4, hgt - top - nLineStep, 1, 1, col.r, col.g, col.b, 1, "Problematic assets:");
+				IRenderAuxText::WriteXY(4, hgt - top - nLineStep, 1, 1, col.r, col.g, col.b, 1, "Problematic assets:");
 				for (int i = vecStreamingProblematicAssets.size() - 1; i >= 0; --i)
-					WriteXY(4, hgt - top + nLineStep * i, 1, 1, col.r, col.g, col.b, 1, "[%.1fKB] '%s'", BYTES_TO_KB(vecStreamingProblematicAssets[i].m_nSize), vecStreamingProblematicAssets[i].m_sName.c_str());
+					IRenderAuxText::WriteXY(4, hgt - top + nLineStep * i, 1, 1, col.r, col.g, col.b, 1, "[%.1fKB] '%s'", BYTES_TO_KB(vecStreamingProblematicAssets[i].m_nSize), vecStreamingProblematicAssets[i].m_sName.c_str());
 			}
 		}
 		nC++;
@@ -3783,8 +3783,8 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 			"", "", "", "", "gray: standard -- yellow: transmittance -- blue: pom self-shadowing", "", "", "",
 			"blue: too low -- orange: too high and not yet metal -- pink: just valid for oxidized metal/rust"
 		};
-		WriteXY(10, 10, 1.0f, 1.0f, 0, 1, 0, 1, "%s", nameList[clamp_tpl(CV_r_DeferredShadingDebugGBuffer - 1, 0, 8)]);
-		WriteXY(10, 30, 0.85f, 0.85f, 0, 1, 0, 1, "%s", descList[clamp_tpl(CV_r_DeferredShadingDebugGBuffer - 1, 0, 8)]);
+		IRenderAuxText::WriteXY(10, 10, 1.0f, 1.0f, 0, 1, 0, 1, "%s", nameList[clamp_tpl(CV_r_DeferredShadingDebugGBuffer - 1, 0, 8)]);
+		IRenderAuxText::WriteXY(10, 30, 0.85f, 0.85f, 0, 1, 0, 1, "%s", descList[clamp_tpl(CV_r_DeferredShadingDebugGBuffer - 1, 0, 8)]);
 	}
 
 	if (m_showRenderTargetInfo.bShowList)
@@ -3829,11 +3829,11 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 			{
 				RT_SetViewport(m_width - m_width / 3 - 10, m_height - m_height / 3 - 10, m_width / 3, m_height / 3);
 				DrawImage(0, 0, 1, 1, pTexToShow->GetID(), 0, 1, 1, 0, 1, 1, 1, 1, true);
-				WriteXY(10, 10, 1, 1, 1, 1, 1, 1, "Name: %s", pTexToShow->GetSourceName());
-				WriteXY(10, 25, 1, 1, 1, 1, 1, 1, "Fmt: %s, Type: %s", pTexToShow->GetFormatName(), CTexture::NameForTextureType(pTexToShow->GetTextureType()));
-				WriteXY(10, 40, 1, 1, 1, 1, 1, 1, "Size: %dx%dx%d", pTexToShow->GetWidth(), pTexToShow->GetHeight(), pTexToShow->GetDepth());
-				WriteXY(10, 40, 1, 1, 1, 1, 1, 1, "Size: %dx%d", pTexToShow->GetWidth(), pTexToShow->GetHeight());
-				WriteXY(10, 55, 1, 1, 1, 1, 1, 1, "Mips: %d", pTexToShow->GetNumMips());
+				IRenderAuxText::WriteXY(10, 10, 1, 1, 1, 1, 1, 1, "Name: %s", pTexToShow->GetSourceName());
+				IRenderAuxText::WriteXY(10, 25, 1, 1, 1, 1, 1, 1, "Fmt: %s, Type: %s", pTexToShow->GetFormatName(), CTexture::NameForTextureType(pTexToShow->GetTextureType()));
+				IRenderAuxText::WriteXY(10, 40, 1, 1, 1, 1, 1, 1, "Size: %dx%dx%d", pTexToShow->GetWidth(), pTexToShow->GetHeight(), pTexToShow->GetDepth());
+				IRenderAuxText::WriteXY(10, 40, 1, 1, 1, 1, 1, 1, "Size: %dx%d", pTexToShow->GetWidth(), pTexToShow->GetHeight());
+				IRenderAuxText::WriteXY(10, 55, 1, 1, 1, 1, 1, 1, "Mips: %d", pTexToShow->GetNumMips());
 			}
 		}
 		else if (strlen(arg) == 2)
@@ -3879,11 +3879,11 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 			{
 				RT_SetViewport(m_width - m_width / 3 - 10, m_height - m_height / 3 - 10, m_width / 3, m_height / 3);
 				DrawImage(0, 0, 1, 1, pTexToShow->GetID(), 0, 1, 1, 0, 1, 1, 1, 1, true);
-				WriteXY(10, 10, 1, 1, 1, 1, 1, 1, "Name: %s", pTexToShow->GetSourceName());
-				WriteXY(10, 25, 1, 1, 1, 1, 1, 1, "Fmt: %s, Type: %s", pTexToShow->GetFormatName(), CTexture::NameForTextureType(pTexToShow->GetTextureType()));
-				WriteXY(10, 40, 1, 1, 1, 1, 1, 1, "Size: %dx%dx%d", pTexToShow->GetWidth(), pTexToShow->GetHeight(), pTexToShow->GetDepth());
-				WriteXY(10, 40, 1, 1, 1, 1, 1, 1, "Size: %dx%d", pTexToShow->GetWidth(), pTexToShow->GetHeight());
-				WriteXY(10, 55, 1, 1, 1, 1, 1, 1, "Mips: %d", pTexToShow->GetNumMips());
+				IRenderAuxText::WriteXY(10, 10, 1, 1, 1, 1, 1, 1, "Name: %s", pTexToShow->GetSourceName());
+				IRenderAuxText::WriteXY(10, 25, 1, 1, 1, 1, 1, 1, "Fmt: %s, Type: %s", pTexToShow->GetFormatName(), CTexture::NameForTextureType(pTexToShow->GetTextureType()));
+				IRenderAuxText::WriteXY(10, 40, 1, 1, 1, 1, 1, 1, "Size: %dx%dx%d", pTexToShow->GetWidth(), pTexToShow->GetHeight(), pTexToShow->GetDepth());
+				IRenderAuxText::WriteXY(10, 40, 1, 1, 1, 1, 1, 1, "Size: %dx%d", pTexToShow->GetWidth(), pTexToShow->GetHeight());
+				IRenderAuxText::WriteXY(10, 55, 1, 1, 1, 1, 1, 1, "Mips: %d", pTexToShow->GetNumMips());
 			}
 			else
 			{
@@ -3924,8 +3924,8 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 					float curY = tileGapH + row * (tileH + tileGapH);
 					gcpRendD3D->FX_SetState(GS_NODEPTHTEST);  // fix the state change by using WriteXY
 					DrawImage(curX, curY, tileW, tileH, tex->GetID(), 0, 1, 1, 0, 1, 1, 1, 1, true);
-					WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 - 15), 1, 1, 1, 1, 1, 1, "Fmt: %s, Type: %s", tex->GetFormatName(), CTexture::NameForTextureType(tex->GetTextureType()));
-					WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 + 1), 1, 1, 1, 1, 1, 1, "%s   %d x %d", nameList[i].c_str(), tex->GetWidth(), tex->GetHeight());
+					IRenderAuxText::WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 - 15), 1, 1, 1, 1, 1, 1, "Fmt: %s, Type: %s", tex->GetFormatName(), CTexture::NameForTextureType(tex->GetTextureType()));
+					IRenderAuxText::WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 + 1), 1, 1, 1, 1, 1, 1, "%s   %d x %d", nameList[i].c_str(), tex->GetWidth(), tex->GetHeight());
 				}
 			}
 		}
@@ -5929,8 +5929,8 @@ void CD3D9Renderer::Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int t
 
 	if (text)
 	{
-		WriteXY(4, y - 18, 0.5f, 1, 1, 1, 1, 1, "%s", text);
-		WriteXY(wdt - 260, y - 18, 0.5f, 1, 1, 1, 1, 1, "%d ms", (int)(1000.0f * fScale));
+		IRenderAuxText::WriteXY(4, y - 18, 0.5f, 1, 1, 1, 1, 1, "%s", text);
+		IRenderAuxText::WriteXY(wdt - 260, y - 18, 0.5f, 1, 1, 1, 1, 1, "%d ms", (int)(1000.0f * fScale));
 	}
 
 	Set2DMode(false, 0, 0);
@@ -7509,8 +7509,8 @@ void CD3D9Renderer::DebugShowRenderTarget()
 		float curX = col * (tileW + tileGapW);
 		float curY = row * (tileH + tileGapH);
 		gcpRendD3D->FX_SetState(GS_NODEPTHTEST);  // fix the state change by using WriteXY
-		WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 - 15), 1, 1, 1, 1, 1, 1, "Fmt: %s, Type: %s", pTex->GetFormatName(), CTexture::NameForTextureType(pTex->GetTextureType()));
-		WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 + 1), 1, 1, 1, 1, 1, 1, "%s   %d x %d", pTex->GetName(), pTex->GetWidth(), pTex->GetHeight());
+		IRenderAuxText::WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 - 15), 1, 1, 1, 1, 1, 1, "Fmt: %s, Type: %s", pTex->GetFormatName(), CTexture::NameForTextureType(pTex->GetTextureType()));
+		IRenderAuxText::WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 + 1), 1, 1, 1, 1, 1, 1, "%s   %d x %d", pTex->GetName(), pTex->GetWidth(), pTex->GetHeight());
 	}
 
 	RT_SetViewport(x0, y0, w0, h0);

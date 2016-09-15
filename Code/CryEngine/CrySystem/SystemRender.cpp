@@ -877,7 +877,7 @@ void CSystem::RenderStats()
 #if defined(ENABLE_LW_PROFILERS)
 		if (m_rDisplayInfo->GetIVal() == 2)
 		{
-			m_env.pRenderer->TextToScreen(nTextPosX, nTextPosY += nTextStepY, "SysMem %.1f mb",
+			IRenderAuxText::TextToScreen(nTextPosX, nTextPosY += nTextStepY, "SysMem %.1f mb",
 			  float(DumpMMStats(false)) / 1024.f);
 
 			//if (m_env.pAudioSystem)

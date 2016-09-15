@@ -1038,7 +1038,7 @@ void CTexture::OutputDebugInfo()
 
 	char szText[512];
 	cry_sprintf(szText, "Size | WantedSize |  MF   | P |  Mips  |  N  | F | Z | S | Name");
-	r->WriteXY(nX, nY, 1.f, 1.f, 1, 1, 0, 1, "%s", szText);
+	IRenderAuxText::WriteXY(nX, nY, 1.f, 1.f, 1, 1, 0, 1, "%s", szText);
 	if (CRenderer::CV_r_TexturesStreamingDebugDumpIntoLog)
 	{
 		CryLogAlways("%s", szText);
@@ -1117,7 +1117,7 @@ void CTexture::OutputDebugInfo()
 		            tp->m_nAccessFrameID >= (int)ti.m_nFrameUpdateID - 8,
 		            tp->m_SrcName.c_str());
 
-		r->WriteXY(nX, nY + (nTexNum + 1) * 10, 1.f, 1.f, color.r, color.g, color.b, 1, "%s", szText);
+		IRenderAuxText::WriteXY(nX, nY + (nTexNum + 1) * 10, 1.f, 1.f, color.r, color.g, color.b, 1, "%s", szText);
 		if (CRenderer::CV_r_TexturesStreamingDebugDumpIntoLog)
 		{
 			CryLogAlways("%s", szText);

@@ -287,14 +287,22 @@ public:
 			rgba[2] = cb.b / 255.0f;
 			rgba[3] = cb.a / 255.0f;
 		}
+
+		AColor(float r, float g, float b, float a)
+		{
+			rgba[0] = r;
+			rgba[1] = g;
+			rgba[2] = b;
+			rgba[3] = a;
+		}
 	};
 
 	struct ASize
 	{
 		Vec2 val;
 
-		ASize(const Vec2& v) : val(v) {}
-		ASize(float f)       : val(f) {}
+		ASize(float f)          : val(f)    {}
+		ASize(float x, float y) : val(x, y) {}
 	};
 
 	static void DrawText(Vec3 pos, const SDrawTextInfo& ti, const char* text)
@@ -361,6 +369,47 @@ public:
 		va_start(args, label_text);
 		DrawText(Vec3(x, y, 0.5f), font_size, color, eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0), label_text, args);
 		va_end(args);
+	}
+
+
+	static void Draw2dText(float posX, float posY, const AColor& color, const char* pStr)
+	{
+		DrawText(Vec3(posX, posX, 1.f), 1, AColor::white(), eDrawText_Default, pStr);
+	}
+
+	static void PrintToScreen(float x, float y, float size, const char* buf)
+	{
+		DrawText(Vec3(x, y, 1.f), ASize(size * 0.5f / 8, size * 1.f / 8), AColor::white(), eDrawText_800x600 | eDrawText_2D, buf);
+	}
+
+	static void WriteXY(int x, int y, float xscale, float yscale, float r, float g, float b, float a, const char* format, ...)
+	{
+		va_list args;
+		va_start(args, format);
+		DrawText(Vec3(float(x), float(y), 1.f), ASize(xscale, yscale), AColor(r, g, b, a), eDrawText_800x600 | eDrawText_2D, format, args);
+		va_end(args);
+	}
+
+	static void TextToScreenColor(int x, int y, float r, float g, float b, float a, const char* format, ...)
+	{
+		char buffer[512];
+		va_list args;
+		va_start(args, format);
+		cry_vsprintf(buffer, format, args);
+		va_end(args);
+
+		WriteXY((int)(8 * x), (int)(6 * y), 1, 1, r, g, b, a, buffer);
+	}
+
+	static void TextToScreen(float x, float y, const char* format, ...)
+	{
+		char buffer[512];
+		va_list args;
+		va_start(args, format);
+		cry_vsprintf(buffer, format, args);
+		va_end(args);
+
+		TextToScreenColor((int)(8 * x), (int)(6 * y), 1, 1, 1, 1, buffer);
 	}
 };
 

@@ -1212,21 +1212,17 @@ bool CREPostProcess::mfDraw(CShader* ef, SShaderPass* sfm)
 
 	if (!activeEffects.empty() && CRenderer::CV_r_PostProcess >= 2) // Debug output for active post effects
 	{
-		SDrawTextInfo pDrawTexInfo;
 		if (CRenderer::CV_r_PostProcess >= 2)
 		{
 			int nPosY = 20;
-			pDrawTexInfo.color[0] = pDrawTexInfo.color[2] = 0.0f;
-			pDrawTexInfo.color[1] = 1.0f;
-			gcpRendD3D->Draw2dText(30, nPosY += 15, "Active post effects:", pDrawTexInfo);
+			IRenderAuxText::Draw2dText(30, nPosY += 15, Vec3(0, 1, 0), "Active post effects:");
 
-			pDrawTexInfo.color[0] = pDrawTexInfo.color[1] = pDrawTexInfo.color[2] = 1.0f;
 			for (uint32 i = 0, nNumEffects = activeEffects.size(); i < nNumEffects; ++i)
 			{
 				SPostEffectsDebugInfo& debugInfo = activeEffects[i];
 				if (debugInfo.fTimeOut > 0.0f)
 				{
-					gcpRendD3D->Draw2dText(30, nPosY += 10, debugInfo.pEffect->GetName(), pDrawTexInfo);
+					IRenderAuxText::Draw2dText(30, nPosY += 10, Vec3(1), debugInfo.pEffect->GetName());
 				}
 				debugInfo.fTimeOut -= gEnv->pTimer->GetFrameTime();
 			}
@@ -1259,11 +1255,9 @@ bool CREPostProcess::mfDraw(CShader* ef, SShaderPass* sfm)
 				}
 
 				int nPosX = 250, nPosY = 5;
-				pDrawTexInfo.color[0] = pDrawTexInfo.color[2] = 0.0f;
-				pDrawTexInfo.color[1] = 1.0f;
-				gcpRendD3D->Draw2dText(nPosX, nPosY += 15, "Frame parameters:", pDrawTexInfo);
 
-				pDrawTexInfo.color[0] = pDrawTexInfo.color[1] = pDrawTexInfo.color[2] = 1.0f;
+				IRenderAuxText::Draw2dText(nPosX, nPosY += 15, Vec3(0, 1, 0), "Frame parameters:");
+
 				for (uint32 p = 0, nNumParams = activeParams.size(); p < nNumParams; ++p)
 				{
 					SPostEffectsDebugInfo& debugInfo = activeParams[p];
@@ -1271,7 +1265,7 @@ bool CREPostProcess::mfDraw(CShader* ef, SShaderPass* sfm)
 					{
 						char pNameAndValue[128];
 						cry_sprintf(pNameAndValue, "%s: %.4f\n", debugInfo.szParamName.c_str(), debugInfo.fParamVal);
-						gcpRendD3D->Draw2dText(nPosX, nPosY += 10, pNameAndValue, pDrawTexInfo);
+						IRenderAuxText::Draw2dText(nPosX, nPosY += 10, Vec3(1), pNameAndValue);
 					}
 					debugInfo.fTimeOut -= gEnv->pTimer->GetFrameTime();
 				}

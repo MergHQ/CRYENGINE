@@ -552,20 +552,11 @@ const float columnHeight = 0.027f;
 
 void DrawText(float x, float y, float size, ColorF color, const char* text)
 {
-	CD3D9Renderer* rd = gcpRendD3D;
-	float aspect = (float)rd->GetBackbufferWidth() / (float)rd->GetBackbufferHeight();
+	float aspect = (float)gcpRendD3D->GetBackbufferWidth() / (float)gcpRendD3D->GetBackbufferHeight();
 	float sx = VIRTUAL_SCREEN_WIDTH / aspect;
 	float sy = VIRTUAL_SCREEN_HEIGHT;
 
-	SDrawTextInfo ti;
-	ti.xscale = size * 1.55f / aspect;
-	ti.yscale = size * 1.1f;
-	ti.color[0] = color.r;
-	ti.color[1] = color.r;
-	ti.color[2] = color.b;
-	ti.color[3] = color.a;
-	ti.flags = eDrawText_800x600 | eDrawText_2D;
-	rd->Draw2dText(x * sx, y * sy, text, ti);
+	IRenderAuxText::DrawText(Vec3(x * sx, y * sy, 1.f), IRenderAuxText::ASize(size * 1.55f / aspect, size * 1.1f), color, eDrawText_800x600 | eDrawText_2D, text);
 }
 
 void DrawText(float x, float y, float size, ColorF color, const char* format, va_list args)

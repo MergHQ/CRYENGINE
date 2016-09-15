@@ -516,41 +516,6 @@ void CRenderer::RemoveListener(IRendererEventListener* pRendererEventListener)
     iConsole->Help("ShowFps");
    } */
 
-//////////////////////////////////////////////////////////////////////
-void CRenderer::TextToScreenColor(int x, int y, float r, float g, float b, float a, const char* format, ...)
-{
-	//  if(!cVars->e_text_info)
-	//  return;
-
-	char buffer[512];
-	va_list args;
-	va_start(args, format);
-	cry_vsprintf(buffer, format, args);
-	va_end(args);
-
-	WriteXY((int)(8 * x), (int)(6 * y), 1, 1, r, g, b, a, "%s", buffer);
-}
-
-//////////////////////////////////////////////////////////////////////
-void CRenderer::TextToScreen(float x, float y, const char* format, ...)
-{
-	//  if(!cVars->e_text_info)
-	//  return;
-
-	char buffer[512];
-	va_list args;
-	va_start(args, format);
-	cry_vsprintf(buffer, format, args);
-	va_end(args);
-
-	WriteXY((int)(8 * x), (int)(6 * y), 1, 1, 1, 1, 1, 1, "%s", buffer);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRenderer::Draw2dText(float posX, float posY, const char* pStr, const SDrawTextInfo& ti)
-{
-	Draw2dTextWithDepth(posX, posY, 1.0f, pStr, ti);
-}
 
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::Draw2dTextWithDepth(float posX, float posY, float posZ, const char* pStr, const SDrawTextInfo& ti)
@@ -625,47 +590,6 @@ void CRenderer::Draw2dTextWithDepth(float posX, float posY, float posZ, const ch
 
 	pFont->DrawString(posX, posY, posZ, pStr, true, ctx);
 }
-
-void CRenderer::PrintToScreen(float x, float y, float size, const char* buf)
-{
-	SDrawTextInfo ti;
-	ti.xscale   = size * 0.5f / 8;
-	ti.yscale   = size * 1.f / 8;
-	ti.color[0] = 1;
-	ti.color[1] = 1;
-	ti.color[2] = 1;
-	ti.color[3] = 1;
-	ti.flags    = eDrawText_800x600 | eDrawText_2D;
-	Draw2dText(x, y, buf, ti);
-}
-
-void CRenderer::WriteXY(int x, int y, float xscale, float yscale, float r, float g, float b, float a, const char* format, ...)
-{
-	//////////////////////////////////////////////////////////////////////
-	// Write a string to the screen
-	//////////////////////////////////////////////////////////////////////
-
-	va_list args;
-
-	char buffer[512];
-
-	// Check for the presence of a D3D device
-	// Format the string
-	va_start(args, format);
-	cry_vsprintf(buffer, format, args);
-	va_end(args);
-
-	SDrawTextInfo ti;
-	ti.xscale   = xscale;
-	ti.yscale   = yscale;
-	ti.color[0] = r;
-	ti.color[1] = g;
-	ti.color[2] = b;
-	ti.color[3] = a;
-	ti.flags    = eDrawText_800x600 | eDrawText_2D;
-	Draw2dText((float)x, (float)y, buffer, ti);
-}
-
 
 const bool CRenderer::IsEditorMode() const
 {
@@ -806,10 +730,11 @@ void CRenderer::FlushTextMessages(CTextMessages& messages, bool reset)
 						{
 							sz = 1.0f;
 						}
-						if (b800x600)
-							Draw2dTextWithDepth(0.01f * 800 * sx, 0.01f * 600 * sy, sz, szText, ti);
-						else
-							Draw2dTextWithDepth(sx, sy, sz, szText, ti);
+
+						float xmod = b800x600 ? 8.f : 1.f;
+						float ymod = b800x600 ? 6.f : 1.f;
+
+						Draw2dTextWithDepth(xmod * sx, ymod * sy, sz, szText, ti);
 					}
 				}
 	}

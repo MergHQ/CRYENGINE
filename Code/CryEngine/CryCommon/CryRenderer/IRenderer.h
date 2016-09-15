@@ -2091,8 +2091,6 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual IColorGradingController* GetIColorGradingController() = 0;
 	virtual IStereoRenderer*         GetIStereoRenderer() = 0;
 
-	virtual void                     TextToScreen(float x, float y, const char* format, ...) PRINTF_PARAMS(4, 5) = 0;
-	virtual void                     TextToScreenColor(int x, int y, float r, float g, float b, float a, const char* format, ...) PRINTF_PARAMS(8, 9) = 0;
 	virtual void                     ResetToDefault() = 0;
 	virtual void                     SetMaterialColor(float r, float g, float b, float a) = 0;
 

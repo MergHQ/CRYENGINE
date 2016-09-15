@@ -754,16 +754,11 @@ public:
 	virtual void         SetWhiteTexture() override;
 	virtual int          GetWhiteTextureId() const override;
 
-	virtual void         PrintToScreen(float x, float y, float size, const char* buf);
-	virtual void         TextToScreen(float x, float y, const char* format, ...) override;
-	virtual void         TextToScreenColor(int x, int y, float r, float g, float b, float a, const char* format, ...) override;
-
 	CTextureManager*     GetTextureManager() { return m_pTextureManager; }
 
 	// =======================================================================================
 	// = Functions which draw directly into the swap-chain's backbuffer ======================
-	void         WriteXY(int x, int y, float xscale, float yscale, float r, float g, float b, float a, const char* message, ...) PRINTF_PARAMS(10, 11);
-	void         Draw2dText(float posX, float posY, const char* pStr, const SDrawTextInfo& ti);
+
 	void         Draw2dTextWithDepth(float posX, float posY, float posZ, const char* pStr, const SDrawTextInfo& ti);
 
 	virtual void Draw2dImage(float xpos, float ypos, float w, float h, int texture_id, float s0 = 0, float t0 = 0, float s1 = 1, float t1 = 1, float angle = 0,
