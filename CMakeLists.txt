@@ -87,6 +87,7 @@ if(WIN64 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Sandbox")
 	option(OPTION_SANDBOX "Enable Sandbox" OFF)
 endif()
 
+option(OPTION_RC "Include RC in the build" OFF)
 option(OPTION_PCH "Enable Precompiled Headers" OFF)
 
 #Extensions
@@ -468,6 +469,14 @@ endif()
 
 if (WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Tools/ShaderCacheGen/ShaderCacheGen")
 	add_subdirectory(Code/Tools/ShaderCacheGen/ShaderCacheGen EXCLUDE_FROM_ALL)
+endif()
+
+if (OPTION_RC AND EXISTS "${CMAKE_SOURCE_DIR}/Code/Tools/rc")
+	include(ExternalProject)
+	ExternalProject_Add(RC
+		SOURCE_DIR "${CMAKE_SOURCE_DIR}/Code/Tools/rc"
+		INSTALL_COMMAND echo "Skipping install"
+	)
 endif()
 
 set(CMAKE_INSTALL_MESSAGE LAZY)
