@@ -215,7 +215,7 @@ void CCryDedicatedServerArbitrator::ProcessDedicatedServerIsFree(const TNetAddre
 
 void CCryDedicatedServerArbitrator::SendRequestSetupDedicatedServerResult(bool success, uint32 clientTaskID, uint32 clientCookie, const TNetAddress& clientAddr, const TNetAddress& serverPublicAddr, SCryMatchMakingConnectionUID serverUID)
 {
-	const SIPv4Addr* pIPv4Addr = boost::get<const SIPv4Addr>(&serverPublicAddr);
+	const SIPv4Addr* pIPv4Addr = stl::get_if<SIPv4Addr>(&serverPublicAddr);
 	const uint32 MaxBufferSize = CryLobbyPacketUnReliableHeaderSize + CryLobbyPacketBoolSize + CryLobbyPacketUINT8Size + CryLobbyPacketUINT32Size + CryLobbyPacketConnectionUIDSize + CryLobbyPacketUINT32Size + CryLobbyPacketUINT16Size;
 	uint8 buffer[MaxBufferSize];
 	CCrySharedLobbyPacket packet;
@@ -305,7 +305,7 @@ void CCryDedicatedServerArbitrator::ProcessRequestSetupDedicatedServer(const TNe
 		else
 		{
 			// The server isn't ready so tell it it has been allocated.
-			const SIPv4Addr* pIPv4Addr = boost::get<const SIPv4Addr>(&clientAddr);
+			const SIPv4Addr* pIPv4Addr = stl::get_if<SIPv4Addr>(&clientAddr);
 
 			if (pIPv4Addr)
 			{

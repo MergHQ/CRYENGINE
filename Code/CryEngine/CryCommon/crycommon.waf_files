@@ -28,6 +28,7 @@
       "CryCore/CryFlags.h",
       "CryCore/CryTypeInfo.h",
       "CryCore/CryTypeInfo.inl",
+      "CryCore/CryVariant.h",
 		  "CryCore/DynamicEnum.h",
       "CryCore/Common_TypeInfo2.h",
       "CryCore/Common_TypeInfo.h",

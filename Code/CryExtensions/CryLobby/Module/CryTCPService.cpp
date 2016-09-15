@@ -661,7 +661,7 @@ void CCryTCPService::WaitResolve()
 			{
 				TNetAddress netAddr = nav[i];
 
-				pIpv4Addr = boost::get<SIPv4Addr>(&netAddr);
+				pIpv4Addr = stl::get_if<SIPv4Addr>(&netAddr);
 
 				if (pIpv4Addr)
 				{

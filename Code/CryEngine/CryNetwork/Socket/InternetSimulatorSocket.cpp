@@ -72,7 +72,7 @@ ESocketError CInternetSimulatorSocket::Send(const uint8* pBuffer, size_t nLength
 	//local server context can't handle buffering of packets on local connection
 	//  buffering can result in packets arriving next frame for object unbound this frame
 	//   => will cause disconnect and context destruction
-	if (boost::get<const TLocalNetAddress>(&to))
+	if (stl::get_if<TLocalNetAddress>(&to))
 	{
 		return m_pChild->Send(pBuffer, nLength, to);
 	}
@@ -117,7 +117,7 @@ ESocketError CInternetSimulatorSocket::Send(const uint8* pBuffer, size_t nLength
 
 ESocketError CInternetSimulatorSocket::SendVoice(const uint8* pBuffer, size_t nLength, const TNetAddress& to)
 {
-	if (boost::get<const TLocalNetAddress>(&to))
+	if (stl::get_if<TLocalNetAddress>(&to))
 	{
 		return m_pChild->SendVoice(pBuffer, nLength, to);
 	}

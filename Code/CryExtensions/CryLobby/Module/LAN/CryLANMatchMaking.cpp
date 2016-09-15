@@ -1256,7 +1256,7 @@ CrySessionID CCryLANMatchMaking::GetSessionIDFromConsole(void)
 					return CrySessionInvalidID;
 				}
 
-				SIPv4Addr* pAddr = boost::get<SIPv4Addr>(&pReq->GetAddrs()[0]);
+				SIPv4Addr* pAddr = stl::get_if<SIPv4Addr>(&pReq->GetAddrs()[0]);
 				if (pAddr)
 				{
 					SCryLANSessionID* pId = new SCryLANSessionID;
@@ -1294,7 +1294,7 @@ ECryLobbyError CCryLANMatchMaking::GetSessionIDFromIP(const char* const pAddress
 				pReq->Wait();
 				if (pReq->GetResult() == eNRR_Succeeded)
 				{
-					SIPv4Addr* pAddr = boost::get<SIPv4Addr>(&pReq->GetAddrs()[0]);
+					SIPv4Addr* pAddr = stl::get_if<SIPv4Addr>(&pReq->GetAddrs()[0]);
 					if (pAddr)
 					{
 						SCryLANSessionID* pId = new SCryLANSessionID;

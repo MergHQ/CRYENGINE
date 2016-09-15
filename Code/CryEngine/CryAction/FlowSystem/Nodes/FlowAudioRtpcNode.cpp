@@ -139,8 +139,7 @@ private:
 
 			m_request.pData = &m_requestData;
 
-			float const value = GetPortFloat(pActInfo, eIn_RtpcValue);
-			SetValue(pActInfo->pEntity, value);
+			SetValue(pActInfo->pEntity, 0.0f);
 		}
 	}
 

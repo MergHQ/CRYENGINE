@@ -189,8 +189,8 @@ struct ISocketIOManager
 	virtual void        SetAcceptTarget(SSocketID sockid, IAcceptTarget* pTarget) = 0;
 	virtual void        SetRecvTarget(SSocketID sockid, IRecvTarget* pTarget) = 0;
 	virtual void        SetSendTarget(SSocketID sockid, ISendTarget* pTarget) = 0;
-	virtual void        RegisterBackoffAddressForSocket(TNetAddress addr, SSocketID sockid) = 0;
-	virtual void        UnregisterBackoffAddressForSocket(TNetAddress addr, SSocketID sockid) = 0;
+	virtual void        RegisterBackoffAddressForSocket(const TNetAddress& addr, SSocketID sockid) = 0;
+	virtual void        UnregisterBackoffAddressForSocket(const TNetAddress& addr, SSocketID sockid) = 0;
 	virtual void        UnregisterSocket(SSocketID sockid) = 0;
 
 	virtual bool        RequestRecvFrom(SSocketID sockid) = 0;
@@ -220,8 +220,8 @@ class CSocketIOManager : public ISocketIOManager
 public:
 	CSocketIOManager(uint32 c) : ISocketIOManager(c)  {}
 
-	virtual IDatagramSocketPtr CreateDatagramSocket(const TNetAddress& addr, uint32 flags);
-	virtual void               FreeDatagramSocket(IDatagramSocketPtr pSocket);
+	virtual IDatagramSocketPtr CreateDatagramSocket(const TNetAddress& addr, uint32 flags) override;
+	virtual void               FreeDatagramSocket(IDatagramSocketPtr pSocket) override;
 
 #if NET_MINI_PROFILE || NET_PROFILE_ENABLE
 	void RecordPacketSendStatistics(const uint8* pData, size_t len);

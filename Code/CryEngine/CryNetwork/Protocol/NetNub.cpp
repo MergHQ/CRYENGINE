@@ -57,13 +57,13 @@ typename Map::iterator LookupAddress(const TNetAddress& addr, Map& m, uint32 fla
 	if (flags & eCLF_HandleBrokenWindowsICMP)
 	{
 		// icmp messages returned via GetQueuedCompletionStatus have bogus ports
-		if (const SIPv4Addr* pAddr = boost::get<const SIPv4Addr>(&addr))
+		if (const SIPv4Addr* pAddr = stl::get_if<SIPv4Addr>(&addr))
 		{
 			int count = 0;
 			Map::iterator itOut = m.end();
 			for (typename Map::iterator it = m.begin(); it != m.end(); ++it)
 			{
-				if (const SIPv4Addr* pKey = boost::get<const SIPv4Addr>(&it->first))
+				if (const SIPv4Addr* pKey = stl::get_if<SIPv4Addr>(&it->first))
 				{
 					if (pKey->addr == pAddr->addr)
 					{
@@ -1643,7 +1643,7 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 		return;
 	}
 
-	if (!boost::get<const TLocalNetAddress>(&from))
+	if (!stl::get_if<TLocalNetAddress>(&from))
 	{
 		INetworkServicePtr pNetTokens = CNetwork::Get()->GetService("NetProfileTokens");
 

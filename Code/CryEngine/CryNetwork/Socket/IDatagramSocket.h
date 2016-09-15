@@ -46,8 +46,8 @@ struct IDatagramSocket : public CMultiThreadRefCount
 	virtual ESocketError SendVoice(const uint8* pBuffer, size_t nLength, const TNetAddress& to) = 0;
 	virtual void         Die() = 0;
 	virtual bool         IsDead() = 0;
-	virtual void         RegisterBackoffAddress(TNetAddress addr) = 0;
-	virtual void         UnregisterBackoffAddress(TNetAddress addr) = 0;
+	virtual void         RegisterBackoffAddress(const TNetAddress& addr) = 0;
+	virtual void         UnregisterBackoffAddress(const TNetAddress& addr) = 0;
 	virtual CRYSOCKET    GetSysSocket()                         { return CRY_INVALID_SOCKET; }
 
 	virtual void         GetMemoryStatistics(ICrySizer* pSizer) { /* do nothing */ }

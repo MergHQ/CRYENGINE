@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "FlowSerialize.h"
 
-class CFlowDataReadVisitor : public boost::static_visitor<void>
+class CFlowDataReadVisitor
 {
 public:
 	CFlowDataReadVisitor(const char* data) : m_data(data), m_ok(false) {}
@@ -56,12 +56,35 @@ public:
 		Visit(type);
 	}
 
+	void operator()(TFlowInputDataVariant& var)
+	{
+		VisitVariant(var);
+	}
+
 private:
+	template<size_t I = 0>
+	void VisitVariant(TFlowInputDataVariant& var)
+	{
+		if (var.index() == I)
+		{
+			Visit(stl::get<I>(var));
+		}
+		else
+		{
+			VisitVariant<I + 1>(var);
+		}
+	}
+
 	const char* m_data;
 	bool        m_ok;
 };
+template<>
+void CFlowDataReadVisitor::VisitVariant<stl::variant_size<TFlowInputDataVariant>::value>(TFlowInputDataVariant& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
 
-class CFlowDataWriteVisitor : public boost::static_visitor<void>
+class CFlowDataWriteVisitor
 {
 public:
 	CFlowDataWriteVisitor(string& out) : m_out(out) {}
@@ -107,9 +130,32 @@ public:
 		Visit(type);
 	}
 
+	void operator()(const TFlowInputDataVariant& var)
+	{
+		VisitVariant(var);
+	}
+
 private:
+	template<size_t I = 0>
+	void VisitVariant(const TFlowInputDataVariant& var)
+	{
+		if (var.index() == I)
+		{
+			Visit(stl::get<I>(var));
+		}
+		else
+		{
+			VisitVariant<I + 1>(var);
+		}
+	}
+
 	string& m_out;
 };
+template<>
+void CFlowDataWriteVisitor::VisitVariant<stl::variant_size<TFlowInputDataVariant>::value>(const TFlowInputDataVariant& var)
+{
+	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+}
 
 bool SetFromString(TFlowInputData& value, const char* str)
 {

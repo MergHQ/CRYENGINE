@@ -510,7 +510,7 @@ void CSocketIOManagerIOCP::UnregisterSocket(SSocketID sockid)
 	*pSock = SRegisteredSocket(pSock->salt + 1);
 }
 
-void CSocketIOManagerIOCP::RegisterBackoffAddressForSocket(TNetAddress addr, SSocketID sockid)
+void CSocketIOManagerIOCP::RegisterBackoffAddressForSocket(const TNetAddress& addr, SSocketID sockid)
 {
 	SCOPED_COMM_LOCK;
 
@@ -526,7 +526,7 @@ void CSocketIOManagerIOCP::RegisterBackoffAddressForSocket(TNetAddress addr, SSo
 	}
 }
 
-void CSocketIOManagerIOCP::UnregisterBackoffAddressForSocket(TNetAddress addr, SSocketID sockid)
+void CSocketIOManagerIOCP::UnregisterBackoffAddressForSocket(const TNetAddress& addr, SSocketID sockid)
 {
 	SCOPED_COMM_LOCK;
 

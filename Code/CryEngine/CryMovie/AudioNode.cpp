@@ -175,7 +175,7 @@ void CAudioNode::Animate(SAnimContext& animContext)
 					AudioControlId audioParameterId = static_cast<CAudioParameterTrack*>(pTrack)->m_audioParameterId;
 					if (audioParameterId != INVALID_AUDIO_CONTROL_ID)
 					{
-						const float newAudioParameterValue = boost::get<float>(pTrack->GetValue(animContext.time));
+						const float newAudioParameterValue = stl::get<float>(pTrack->GetValue(animContext.time));
 						float& prevAudioParameterValue = m_audioParameterTracks[numAudioParameterTracks-1];
 						if (fabs(prevAudioParameterValue - newAudioParameterValue) > FLT_EPSILON)
 						{

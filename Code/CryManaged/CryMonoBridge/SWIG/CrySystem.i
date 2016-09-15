@@ -59,7 +59,7 @@ public:
 
 namespace minigui { class CDrawContext{ public: virtual ~CDrawContext() {} }; }
 
-using namespace JobManager;
+using JobManager::SJobStateBase;
 %}
 %feature("director") ILogCallback;
 %include "../../../../CryEngine/CryCommon/CrySystem/ILog.h"

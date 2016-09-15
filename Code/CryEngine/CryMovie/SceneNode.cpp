@@ -230,7 +230,7 @@ void CAnimSceneNode::Animate(SAnimContext& animContext)
 		case eAnimParamType_TimeWarp:
 			{
 				const TMovieSystemValue value = pTrack->GetValue(animContext.time);
-				const float timeScale = std::max(boost::get<float>(value), 0.0f);
+				const float timeScale = std::max(stl::get<float>(value), 0.0f);
 
 				float fixedTimeStep = 0;
 
@@ -258,7 +258,7 @@ void CAnimSceneNode::Animate(SAnimContext& animContext)
 		case eAnimParamType_FixedTimeStep:
 			{
 				const TMovieSystemValue value = pTrack->GetValue(animContext.time);
-				const float timeStep = std::max(boost::get<float>(value), 0.0f);
+				const float timeStep = std::max(stl::get<float>(value), 0.0f);
 
 				if (m_cvar_t_FixedStep)
 				{
@@ -534,7 +534,7 @@ void CAnimSceneNode::ApplyCameraKey(SCameraKey& key, SAnimContext& animContext)
 	if (pCameraInfluenceTrack)
 	{
 		const TMovieSystemValue value = pCameraInfluenceTrack->GetValue(animContext.time);
-		const float fGameCameraInfluence = boost::get<float>(value);
+		const float fGameCameraInfluence = stl::get<float>(value);
 		cameraParams.fGameCameraInfluence = clamp_tpl(fGameCameraInfluence, 0.0f, 1.0f);
 	}
 
@@ -555,14 +555,14 @@ void CAnimSceneNode::ApplyCameraKey(SCameraKey& key, SAnimContext& animContext)
 		if (pNearZTrack)
 		{
 			const TMovieSystemValue value = pNearZTrack->GetValue(animContext.time);
-			cameraParams.fNearZ = boost::get<float>(value);
+			cameraParams.fNearZ = stl::get<float>(value);
 		}
 
 		IAnimTrack* pFOVTrack = pFirstCameraNode->GetTrackForParameter(eAnimParamType_FOV);
 		if (pFOVTrack)
 		{
 			const TMovieSystemValue value = pFOVTrack->GetValue(animContext.time);
-			fFirstCameraFOV = boost::get<float>(value);
+			fFirstCameraFOV = stl::get<float>(value);
 		}
 
 		cameraParams.fFOV = DEG2RAD(fFirstCameraFOV);
@@ -585,7 +585,7 @@ void CAnimSceneNode::ApplyCameraKey(SCameraKey& key, SAnimContext& animContext)
 			if (pFOVTrack)
 			{
 				const TMovieSystemValue value = pFOVTrack->GetValue(animContext.time);
-				m_backedUpFovForInterp = boost::get<float>(value);
+				m_backedUpFovForInterp = stl::get<float>(value);
 			}
 		}
 
@@ -619,7 +619,7 @@ void CAnimSceneNode::ApplyCameraKey(SCameraKey& key, SAnimContext& animContext)
 			if (pFOVTrack)
 			{
 				const TMovieSystemValue value = pFOVTrack->GetValue(animContext.time);
-				fSecondCameraFOV = boost::get<float>(value);
+				fSecondCameraFOV = stl::get<float>(value);
 			}
 		}
 
@@ -646,7 +646,7 @@ void CAnimSceneNode::ApplyCameraKey(SCameraKey& key, SAnimContext& animContext)
 			if (pPosTrack)
 			{
 				const TMovieSystemValue value = pPosTrack->GetValue(animContext.time);
-				vNextKeyPos = boost::get<Vec3>(value);
+				vNextKeyPos = stl::get<Vec3>(value);
 				;
 			}
 		}
@@ -672,7 +672,7 @@ void CAnimSceneNode::ApplyCameraKey(SCameraKey& key, SAnimContext& animContext)
 			if (pPosTrack)
 			{
 				const TMovieSystemValue value = pPosTrack->GetValue(animContext.time);
-				vFirstCamPos = boost::get<Vec3>(value);
+				vFirstCamPos = stl::get<Vec3>(value);
 			}
 		}
 
@@ -725,7 +725,7 @@ void CAnimSceneNode::ApplyCameraKey(SCameraKey& key, SAnimContext& animContext)
 		if (pOrgRotationTrack)
 		{
 			const TMovieSystemValue value = pOrgRotationTrack->GetValue(animContext.time);
-			firstCameraRotation = boost::get<Quat>(value);
+			firstCameraRotation = stl::get<Quat>(value);
 		}
 
 		if (pFirstCameraEntity->GetParent())
@@ -747,7 +747,7 @@ void CAnimSceneNode::ApplyCameraKey(SCameraKey& key, SAnimContext& animContext)
 			if (pRotationTrack)
 			{
 				const TMovieSystemValue value = pRotationTrack->GetValue(animContext.time);
-				secondCameraRotation = boost::get<Quat>(value);
+				secondCameraRotation = stl::get<Quat>(value);
 			}
 		}
 
@@ -874,14 +874,14 @@ bool CAnimSceneNode::GetEntityTransform(IAnimSequence* pSequence, IEntity* pEnti
 			if (pPosTrack)
 			{
 				const TMovieSystemValue value = pPosTrack->GetValue(time);
-				vCamPos = boost::get<Vec3>(value);
+				vCamPos = stl::get<Vec3>(value);
 			}
 
 			IAnimTrack* pOrgRotationTrack = pNode->GetTrackForParameter(eAnimParamType_Rotation);
 			if (pOrgRotationTrack != NULL)
 			{
 				const TMovieSystemValue value = pOrgRotationTrack->GetValue(time);
-				qCamRot = boost::get<Quat>(value);
+				qCamRot = stl::get<Quat>(value);
 			}
 
 			return true;

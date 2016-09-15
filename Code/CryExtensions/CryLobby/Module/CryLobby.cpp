@@ -2592,7 +2592,7 @@ CCryLobby::SSocketService* CCryLobby::GetCorrectSocketServiceForAddr(const TNetA
 
 ECryLobbyService CCryLobby::GetCorrectSocketServiceTypeForAddr(const TNetAddress& addr)
 {
-	const SIPv4Addr* pIPv4Addr = boost::get<const SIPv4Addr>(&addr);
+	const SIPv4Addr* pIPv4Addr = stl::get_if<SIPv4Addr>(&addr);
 
 	if (pIPv4Addr && (pIPv4Addr->lobbyService != eCLS_NumServices))
 	{
@@ -2737,7 +2737,7 @@ bool CCryLobby::DecodeAddress(const TNetAddress& address, uint32* pIP, uint16* p
 {
 	bool decoded = true;
 
-	const SIPv4Addr* pIPv4Addr = boost::get<const SIPv4Addr>(&address);
+	const SIPv4Addr* pIPv4Addr = stl::get_if<SIPv4Addr>(&address);
 	if (pIPv4Addr != NULL)
 	{
 		*pIP = pIPv4Addr->addr;
@@ -2745,7 +2745,7 @@ bool CCryLobby::DecodeAddress(const TNetAddress& address, uint32* pIP, uint16* p
 	}
 	else
 	{
-		const TLocalNetAddress* pLocalAddr = boost::get<const TLocalNetAddress>(&address);
+		const TLocalNetAddress* pLocalAddr = stl::get_if<TLocalNetAddress>(&address);
 		if (pLocalAddr != NULL)
 		{
 			*pIP = LOOPBACK_ADDRESS;

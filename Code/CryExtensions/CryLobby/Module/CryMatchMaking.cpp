@@ -4131,7 +4131,7 @@ void CCryMatchMaking::EndSessionSetupDedicatedServer(CryMatchMakingTaskID mmTask
 
 			if (pServerAddr)
 			{
-				const SIPv4Addr* pIPv4Addr = boost::get<const SIPv4Addr>(pServerAddr);
+				const SIPv4Addr* pIPv4Addr = stl::get_if<SIPv4Addr>(pServerAddr);
 
 				if (pIPv4Addr)
 				{
@@ -4161,7 +4161,7 @@ void CCryMatchMaking::SendServerInfo(CryLobbySessionHandle h, CryMatchMakingConn
 
 		if (pServerAddr)
 		{
-			pIPv4Addr = boost::get<const SIPv4Addr>(pServerAddr);
+			pIPv4Addr = stl::get_if<SIPv4Addr>(pServerAddr);
 		}
 	}
 

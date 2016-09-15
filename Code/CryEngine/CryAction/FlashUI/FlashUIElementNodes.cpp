@@ -990,6 +990,7 @@ void CFlashUIFunctionNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActI
 			GetDynInput(args, *iter, pActInfo, port++);
 
 		TUIData res;
+		res.Set(string());
 		const int instanceId = GetPortInt(pActInfo, eI_InstanceID);
 
 		if (IsTemplate() && !UpdateTmplDesc(GetPortString(pActInfo, eI_TemplateInstanceName), pActInfo))

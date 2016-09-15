@@ -29,10 +29,10 @@ enum EItemParamMapTypes
 {
 	eIPT_None   = -2,
 	eIPT_Any    = -1,
-	eIPT_Float  = boost::mpl::find<TFlowSystemDataTypes, float>::type::pos::value,
-	eIPT_Int    = boost::mpl::find<TFlowSystemDataTypes, int>::type::pos::value,
-	eIPT_Vec3   = boost::mpl::find<TFlowSystemDataTypes, Vec3>::type::pos::value,
-	eIPT_String = boost::mpl::find<TFlowSystemDataTypes, string>::type::pos::value
+	eIPT_Float  = EFlowDataTypes::eFDT_Float,
+	eIPT_Int    = EFlowDataTypes::eFDT_Int,
+	eIPT_Vec3   = EFlowDataTypes::eFDT_Vec3,
+	eIPT_String = EFlowDataTypes::eFDT_String,
 };
 
 struct IItemParamsNode

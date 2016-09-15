@@ -1,12 +1,9 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __NETADDRESS_H__
-#define __NETADDRESS_H__
-
 #pragma once
 
+#include <CryCore/CryVariant.h>
 #include <CryNetwork/CrySocks.h>
-#include <CryCore/BoostHelpers.h>
 
 #if !CRY_PLATFORM_APPLE && !CRY_PLATFORM_ORBIS && defined(__GNUC__)
 	#define _SS_MAXSIZE 256
@@ -141,15 +138,11 @@ struct SNullAddr
 	void GetMemoryUsage(ICrySizer* pSizer) const {}
 };
 
-typedef  boost::mpl::vector<
+typedef CryVariant<
     SNullAddr, TLocalNetAddress, SIPv4Addr, LobbyIdAddr
 #if USE_SOCKADDR_STORAGE_ADDR
     , SSockAddrStorageAddr
 #endif
-    > TNetAddressTypes;
-
-typedef boost::make_variant_over<TNetAddressTypes>::type TNetAddress;
+    > TNetAddress;
 
 typedef DynArray<TNetAddress>                            TNetAddressVec;
-
-#endif

@@ -431,7 +431,7 @@ void CSocketIOManagerSelect::UnregisterSocket(SSocketID sockid)
 	}
 }
 
-void CSocketIOManagerSelect::RegisterBackoffAddressForSocket(TNetAddress addr, SSocketID sockid)
+void CSocketIOManagerSelect::RegisterBackoffAddressForSocket(const TNetAddress& addr, SSocketID sockid)
 {
 	if (m_pWatchdog)
 	{
@@ -442,7 +442,7 @@ void CSocketIOManagerSelect::RegisterBackoffAddressForSocket(TNetAddress addr, S
 	}
 }
 
-void CSocketIOManagerSelect::UnregisterBackoffAddressForSocket(TNetAddress addr, SSocketID sockid)
+void CSocketIOManagerSelect::UnregisterBackoffAddressForSocket(const TNetAddress& addr, SSocketID sockid)
 {
 	if (m_pWatchdog)
 	{

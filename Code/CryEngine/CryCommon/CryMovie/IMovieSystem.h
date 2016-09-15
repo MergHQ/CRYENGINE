@@ -1,18 +1,12 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   IMovieSystem.h
-//  Created:     26/4/2002 by Timur.
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
+#include <CryCore/CryVariant.h>
 #include <CryMath/Range.h>
 #include <CryMovie/AnimKey.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryString/CryName.h>
-#include <CryCore/BoostHelpers.h>
 #include <CryExtension/CryGUID.h>
 
 // forward declaration.
@@ -23,7 +17,6 @@ struct IMovieSystem;
 struct STrackKey;
 class XmlNodeRef;
 struct ISplineInterpolator;
-//struct ILightAnimWrapper;
 
 typedef IMovieSystem* (* PFNCREATEMOVIESYSTEM)(struct ISystem*);
 
@@ -371,6 +364,10 @@ struct SCameraParams
 struct SMovieSystemVoid
 {
 };
+inline bool operator==(const SMovieSystemVoid&, const SMovieSystemVoid&)
+{
+	return true;
+}
 
 struct SSequenceAudioTrigger
 {
@@ -388,26 +385,24 @@ struct SSequenceAudioTrigger
 	AudioControlId m_onResumeTrigger;
 };
 
-typedef boost::mpl::vector<
-    SMovieSystemVoid,
-    float,
-    Vec3,
-    Vec4,
-    Quat,
-    bool
-    > TMovieTrackDataTypes;
+typedef CryVariant<
+	SMovieSystemVoid,
+	float,
+	Vec3,
+	Vec4,
+	Quat,
+	bool
+	> TMovieSystemValue;
 
 enum EMovieTrackDataTypes
 {
-	eTDT_Void  = boost::mpl::find<TMovieTrackDataTypes, SMovieSystemVoid>::type::pos::value,
-	eTDT_Float = boost::mpl::find<TMovieTrackDataTypes, float>::type::pos::value,
-	eTDT_Vec3  = boost::mpl::find<TMovieTrackDataTypes, Vec3>::type::pos::value,
-	eTDT_Vec4  = boost::mpl::find<TMovieTrackDataTypes, Vec4>::type::pos::value,
-	eTDT_Quat  = boost::mpl::find<TMovieTrackDataTypes, Quat>::type::pos::value,
-	eTDT_Bool  = boost::mpl::find<TMovieTrackDataTypes, bool>::type::pos::value,
+	eTDT_Void  = detail::get_index<SMovieSystemVoid, TMovieSystemValue>::value,
+	eTDT_Float = detail::get_index<float, TMovieSystemValue>::value,
+	eTDT_Vec3  = detail::get_index<Vec3, TMovieSystemValue>::value,
+	eTDT_Vec4  = detail::get_index<Vec4, TMovieSystemValue>::value,
+	eTDT_Quat  = detail::get_index<Quat, TMovieSystemValue>::value,
+	eTDT_Bool  = detail::get_index<bool, TMovieSystemValue>::value,
 };
-
-typedef boost::make_variant_over<TMovieTrackDataTypes>::type TMovieSystemValue;
 
 //! Interface for movie-system implemented by user for advanced function-support
 struct IMovieUser

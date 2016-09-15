@@ -71,7 +71,7 @@ void CAnimScriptVarNode::Animate(SAnimContext& animContext)
 		}
 
 		TMovieSystemValue value = pValueTrack->GetValue(animContext.time);
-		floatValue = boost::get<float>(value);
+		floatValue = stl::get<float>(value);
 	}
 
 	if (floatValue != m_value)

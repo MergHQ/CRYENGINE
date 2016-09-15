@@ -108,7 +108,7 @@ TMovieSystemValue CCompoundSplineTrack::GetValue(SAnimTime time) const
 			for (int i = 0; i < m_nDimensions; i++)
 			{
 				TMovieSystemValue value = m_subTracks[i]->GetValue(time);
-				vector[i] = boost::get<float>(value);
+				vector[i] = stl::get<float>(value);
 			}
 			return TMovieSystemValue(vector);
 		}
@@ -119,7 +119,7 @@ TMovieSystemValue CCompoundSplineTrack::GetValue(SAnimTime time) const
 			for (int i = 0; i < m_nDimensions; ++i)
 			{
 				TMovieSystemValue value = m_subTracks[i]->GetValue(time);
-				vector[i] = boost::get<float>(value);
+				vector[i] = stl::get<float>(value);
 			}
 			return TMovieSystemValue(vector);
 		}
@@ -133,7 +133,7 @@ TMovieSystemValue CCompoundSplineTrack::GetValue(SAnimTime time) const
 				if (m_subTracks[i]->HasKeys())
 				{
 					TMovieSystemValue value = m_subTracks[i]->GetValue(time);
-					angles[i] = boost::get<float>(value);
+					angles[i] = stl::get<float>(value);
 				}
 			}
 			return TMovieSystemValue(Quat::CreateRotationXYZ(Ang3(DEG2RAD(angles[0]), DEG2RAD(angles[1]), DEG2RAD(angles[2]))));
@@ -161,7 +161,7 @@ TMovieSystemValue CCompoundSplineTrack::GetDefaultValue() const
 			for (int i = 0; i < m_nDimensions; i++)
 			{
 				TMovieSystemValue value = m_subTracks[i]->GetDefaultValue();
-				vector[i] = boost::get<float>(value);
+				vector[i] = stl::get<float>(value);
 			}
 			return TMovieSystemValue(vector);
 		}
@@ -172,7 +172,7 @@ TMovieSystemValue CCompoundSplineTrack::GetDefaultValue() const
 			for (int i = 0; i < m_nDimensions; ++i)
 			{
 				TMovieSystemValue value = m_subTracks[i]->GetDefaultValue();
-				vector[i] = boost::get<float>(value);
+				vector[i] = stl::get<float>(value);
 			}
 			return TMovieSystemValue(vector);
 		}
@@ -184,7 +184,7 @@ TMovieSystemValue CCompoundSplineTrack::GetDefaultValue() const
 			for (int i = 0; i < m_nDimensions; ++i)
 			{
 				TMovieSystemValue value = m_subTracks[i]->GetDefaultValue();
-				angles[i] = boost::get<float>(value);
+				angles[i] = stl::get<float>(value);
 			}
 			return TMovieSystemValue(Quat::CreateRotationXYZ(Ang3(DEG2RAD(angles[0]), DEG2RAD(angles[1]), DEG2RAD(angles[2]))));
 		}
@@ -195,19 +195,19 @@ TMovieSystemValue CCompoundSplineTrack::GetDefaultValue() const
 
 void CCompoundSplineTrack::SetDefaultValue(const TMovieSystemValue& value)
 {
-	switch (value.which())
+	switch (value.index())
 	{
 	case eTDT_Float:
 		if (m_nDimensions == 1)
 		{
-			const float floatValue = boost::get<float>(value);
+			const float floatValue = stl::get<float>(value);
 			m_subTracks[0]->SetDefaultValue(TMovieSystemValue(floatValue));
 		}
 		break;
 	case eTDT_Vec3:
 		if (m_nDimensions == 3)
 		{
-			const Vec3 vecValue = boost::get<Vec3>(value);
+			const Vec3 vecValue = stl::get<Vec3>(value);
 			for (int i = 0; i < m_nDimensions; ++i)
 			{
 				m_subTracks[i]->SetDefaultValue(TMovieSystemValue(vecValue[i]));
@@ -216,7 +216,7 @@ void CCompoundSplineTrack::SetDefaultValue(const TMovieSystemValue& value)
 	case eTDT_Vec4:
 		if (m_nDimensions == 4)
 		{
-			const Vec4 vecValue = boost::get<Vec4>(value);
+			const Vec4 vecValue = stl::get<Vec4>(value);
 			for (int i = 0; i < m_nDimensions; ++i)
 			{
 				m_subTracks[i]->SetDefaultValue(TMovieSystemValue(vecValue[i]));
@@ -226,7 +226,7 @@ void CCompoundSplineTrack::SetDefaultValue(const TMovieSystemValue& value)
 	case eTDT_Quat:
 		if (m_nDimensions == 3)
 		{
-			const Quat quatValue = boost::get<Quat>(value);
+			const Quat quatValue = stl::get<Quat>(value);
 
 			// Assume Euler Angles XYZ
 			Ang3 angles = Ang3::GetAnglesXYZ(quatValue);

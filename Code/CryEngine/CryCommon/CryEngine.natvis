@@ -293,4 +293,139 @@
     <DisplayString>{{ as_double = {v / (double)integer_scale,f} }}</DisplayString>
   </Type>
 
+  <!-- CryVariant -->
+  <Type Name="CryVariant&lt;*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 5">*($T6*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 5">*($T6*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 6">*($T7*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 5">*($T6*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 6">*($T7*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 7">*($T8*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 5">*($T6*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 6">*($T7*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 7">*($T8*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 8">*($T9*)m_data.c</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CryVariant&lt;*,*,*,*,*,*,*,*,*,*&gt;">
+    <DisplayString Condition="m_index == stl::variant_npos">~ invalid</DisplayString>
+    <DisplayString>~ CryVariant</DisplayString>
+    <Expand>
+      <Item Name="Current type">m_index</Item>
+      <Item Name="Value" Condition="m_index == 0">*($T1*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 1">*($T2*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 2">*($T3*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 3">*($T4*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 4">*($T5*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 5">*($T6*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 6">*($T7*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 7">*($T8*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 8">*($T9*)m_data.c</Item>
+      <Item Name="Value" Condition="m_index == 9">*($T10*)m_data.c</Item>
+    </Expand>
+  </Type>
 </AutoVisualizer>
