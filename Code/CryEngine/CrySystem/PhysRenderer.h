@@ -12,6 +12,7 @@
 #define PHYSRENDERER_H
 
 #include <CryPhysics/IPhysicsDebugRenderer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #if _MSC_VER > 1000
 	#pragma once

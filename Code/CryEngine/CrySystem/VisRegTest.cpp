@@ -21,6 +21,7 @@
 #include <CryInput/IInput.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySystem/IStreamEngine.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 const float CVisRegTest::MaxStreamingWait = 30.0f;
 

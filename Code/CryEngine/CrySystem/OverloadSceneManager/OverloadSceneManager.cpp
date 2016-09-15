@@ -7,6 +7,7 @@
 #include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
 #include <CrySystem/Profilers/IStatoscope.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #if ENABLE_STATOSCOPE
 class COverloadDG : public IStatoscopeDataGroup

@@ -12,6 +12,7 @@ History:
 
 #include "GameXmlParamReader.h"
 #include "Stereo3D/StereoZoom.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #define DEFAULT_ZOOM_EYE_DISTANCE         0.f   // default stereo off
 #define DEFAULT_ZOOM_CONVERGENCE_DISTANCE 0.01f

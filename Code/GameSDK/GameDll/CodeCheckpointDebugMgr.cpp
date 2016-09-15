@@ -12,6 +12,7 @@
 
 #include "GameCVars.h"
 #include "CodeCheckpointDebugMgr.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 const static int LABEL_LENGTH = 100;
 const static int BUFF_SIZE = LABEL_LENGTH + 3;

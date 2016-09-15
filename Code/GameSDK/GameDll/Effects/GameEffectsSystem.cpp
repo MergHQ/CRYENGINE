@@ -10,6 +10,7 @@
 #include "Effects/RenderNodes/IGameRenderNode.h"
 #include "Effects/RenderElements/GameRenderElement.h"
 #include "GameRules.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //--------------------------------------------------------------------------------------------------
 // Desc: Defines
@@ -140,7 +141,7 @@ void CGameEffectsSystem::Destroy()
 		s_singletonInstance->AutoReleaseAndDeleteFlaggedEffects(s_singletonInstance->m_effectsToUpdate);
 		s_singletonInstance->AutoReleaseAndDeleteFlaggedEffects(s_singletonInstance->m_effectsNotToUpdate);
 
-		FX_ASSERT_MESSAGE(	(s_singletonInstance->m_effectsToUpdate==NULL) && 
+		FX_ASSERT_MESSAGE(	(s_singletonInstance->m_effectsToUpdate==NULL) &&
 												(s_singletonInstance->m_effectsNotToUpdate==NULL),
 												"Game Effects System being destroyed even though game effects still exist!");
 	}
@@ -411,7 +412,7 @@ void CGameEffectsSystem::SetPostEffectCVarCallbacks()
 {
 #if DEBUG_GAME_FX_SYSTEM
 	ICVar* postEffectCvar = NULL;
-	const char postEffectNames[][64] = {	"g_postEffect.FilterGrain_Amount", 
+	const char postEffectNames[][64] = {	"g_postEffect.FilterGrain_Amount",
 																				"g_postEffect.FilterRadialBlurring_Amount",
 																				"g_postEffect.FilterRadialBlurring_ScreenPosX",
 																				"g_postEffect.FilterRadialBlurring_ScreenPosY",
@@ -489,7 +490,7 @@ void CGameEffectsSystem::RegisterEffect(IGameEffect* effect)
 		bool isActive = effect->IsFlagSet(GAME_EFFECT_ACTIVE);
 		bool autoUpdatesWhenActive = effect->IsFlagSet(GAME_EFFECT_AUTO_UPDATES_WHEN_ACTIVE);
 		bool autoUpdatesWhenNotActive = effect->IsFlagSet(GAME_EFFECT_AUTO_UPDATES_WHEN_NOT_ACTIVE);
-		if((isActive && autoUpdatesWhenActive) || 
+		if((isActive && autoUpdatesWhenActive) ||
 			((!isActive) && autoUpdatesWhenNotActive))
 		{
 			effectList = &m_effectsToUpdate;
@@ -548,7 +549,7 @@ void CGameEffectsSystem::UnRegisterEffect(IGameEffect* effect)
 		{
 			effect->Next()->SetPrev(effect->Prev());
 		}
-	
+
 		effect->SetNext(NULL);
 		effect->SetPrev(NULL);
 
@@ -678,7 +679,7 @@ void CGameEffectsSystem::DrawDebugDisplay()
 				IRenderAuxText::Draw2dLabel(currentTextPos.x, currentTextPos.y, textSize, &effectNameCol.r, false, "%s", flagName[i]);
 				currentTextPos.x += tabSize;
 			}
-		
+
 			currentTextPos.y += textYSpacing;
 
 			for(int l=0; l<EFFECT_LIST_COUNT; l++)
@@ -880,8 +881,8 @@ void CGameEffectsSystem::OnDeActivateDebugView(int debugView)
 
 //--------------------------------------------------------------------------------------------------
 // Name: RegisterEffectDebugData
-// Desc: Registers effect's debug data with the game effects system, which will then call the 
-//			 relevant debug callback functions for the for the effect when its selected using the 
+// Desc: Registers effect's debug data with the game effects system, which will then call the
+//			 relevant debug callback functions for the for the effect when its selected using the
 //			 s_currentDebugEffectId
 //--------------------------------------------------------------------------------------------------
 #if DEBUG_GAME_FX_SYSTEM

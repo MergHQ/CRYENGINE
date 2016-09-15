@@ -15,6 +15,7 @@ History:
 #include "EntityEffectsHeat.h"
 
 #include "Game.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #ifndef _RELEASE
 

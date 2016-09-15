@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "AreaManager.h"
 #include "Area.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //////////////////////////////////////////////////////////////////////////
 CAreaManager::CAreaManager(CEntitySystem* pEntitySystem)  // : CSoundAreaManager(pEntitySystem)

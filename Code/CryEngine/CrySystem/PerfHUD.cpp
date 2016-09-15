@@ -25,6 +25,7 @@
 	#include "System.h"
 
 	#include <CryExtension/CryCreateClassInstance.h>
+	#include <CryRenderer/IRenderAuxGeom.h>
 
 	#define PERFHUD_CONFIG_FILE "Config/PerfHud_PC.xml"
 

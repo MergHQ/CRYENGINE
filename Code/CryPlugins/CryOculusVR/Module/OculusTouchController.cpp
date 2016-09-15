@@ -5,6 +5,7 @@
 #include "OculusTouchController.h"
 
 #include <CryRenderer/IRenderer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #define AddSymbolBase(EKI, DEV_KEY_ID, KEY_NAME, KEY_TYPE) m_symbols[EKI - KI_MOTION_BASE] = MapSymbol(DEV_KEY_ID, EKI, KEY_NAME, KEY_TYPE, 0);
 

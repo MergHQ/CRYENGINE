@@ -5,6 +5,7 @@
 #include "OpenVRController.h"
 
 #include <CryRenderer/IRenderer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace CryVR {
 namespace OpenVR {
