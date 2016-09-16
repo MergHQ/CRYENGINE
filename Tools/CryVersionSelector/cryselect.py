@@ -41,7 +41,7 @@ def error_project_not_found (args):
 		sys.stderr.write (message)
 	else:
 		MessageBox (None, message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
-	sys.exit (404)
+	sys.exit (600)
 
 def error_project_json_decode (args):
 	message= "Unable to parse '%s'.\n" % args.project_file
@@ -49,7 +49,7 @@ def error_project_json_decode (args):
 		sys.stderr.write (message)
 	else:
 		MessageBox (None, message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
-	sys.exit (1)
+	sys.exit (601)
 
 def error_engine_path_not_found (args, engine_version):
 	message= "CryEngine '%s' has not been registered locally.\n" % engine_version
@@ -57,11 +57,11 @@ def error_engine_path_not_found (args, engine_version):
 		sys.stderr.write (message)
 	else:
 		MessageBox (None, message, command_title (args), win32con.MB_OK | win32con.MB_ICONERROR)
-	sys.exit (1)
+	sys.exit (602)
 
 def error_engine_tool_not_found (path):
 	sys.stderr.write ("'%s' not found. Please re-register CRYENGINE version that includes the required tool.\n" % path)
-	sys.exit (404)
+	sys.exit (620)
 
 def print_subprocess (cmd):
 	print (' '.join (map (lambda a: '"%s"' % a, cmd)))
@@ -98,10 +98,7 @@ def uninstall_integration():
 
 def cmd_uninstall (args):
 	uninstall_integration()
-
-	registry_path= cryregistry.path (cryregistry.ENGINE_FILENAME)
-	if os.path.isfile (registry_path):
-		os.remove (registry_path)
+	cryregistry.delete()
 
 #--- INSTALL ---
 #http://stackoverflow.com/questions/2123762/add-menu-item-to-windows-context-menu-only-for-specific-filetype
@@ -363,6 +360,7 @@ class CrySwitch(tk.Frame):
 		if cryproject.engine_id (project) != engine_id:
 			project['require']['engine']= engine_id
 			cryproject.save (project, self.project_file)
+			cmd_run (args, ('projgen', self.project_file))
 
 		self.close()
 		
@@ -388,20 +386,25 @@ def cmd_switch (args):
 	#---
 	
 	engine_list= []
+	engine_version= []
 	
 	engines= cryregistry.load_engines()
 	for (engine_id, engine_data) in engines.items():
 		engine_file= engine_data['uri']
 		
-		info= engine_data.get ('info', {})
-		version= info.get ('version', 0)
+		info= engine_data.get ('info', {})		
 		name= info.get ('name', os.path.dirname (engine_file))
-				
-		engine_list.append ((version, name, engine_id))
-		
+		version= info.get ('version')
+		if version is not None:			
+			engine_version.append ((version, name, engine_id))
+		else:
+			engine_list.append ((name, engine_id))
+	
+	engine_version.sort()
+	engine_version.reverse()
 	engine_list.sort()
-	engine_list.reverse()
-	engine_list= list (map (lambda a: (a[2], a[1]), engine_list))
+	
+	engine_list= list (map (lambda a: (a[2], a[1]), engine_version)) + list (map (lambda a: (a[1], a[0]), engine_list))
 	
 	#---
 	
@@ -447,7 +450,7 @@ def cmd_upgrade (args):
 
 #--- RUN ----
 
-def cmd_run (args):
+def cmd_run (args, sys_argv= sys.argv[1:]):
 	if not os.path.isfile (args.project_file):
 		error_project_not_found (args)
 	
@@ -476,7 +479,7 @@ def cmd_run (args):
 	if not os.path.isfile (subcmd[-1]):
 		error_engine_tool_not_found (subcmd[-1])
 
-	subcmd.extend (sys.argv[1:])
+	subcmd.extend (sys_argv)
 
 	(temp_fd, temp_path)= tempfile.mkstemp(suffix='.out', prefix=args.command + '_', text=True)
 	temp_file= os.fdopen(temp_fd, 'w')

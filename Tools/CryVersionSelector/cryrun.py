@@ -20,46 +20,46 @@ import distutils.dir_util, distutils.file_util
 import cryproject, cryregistry
 
 #--- errors
-
-def error_unable_to_replace_file (path):
-	sys.stderr.write ("Unable to replace file '%s'. Please remove the file manually.\n" % path)
-	sys.exit (1)
 	
 def error_project_not_found (path):
 	sys.stderr.write ("'%s' not found.\n" % path)
-	sys.exit (404)
+	sys.exit (600)
 
 def error_project_json_decode (path):
 	sys.stderr.write ("Unable to parse '%s'.\n" % path)
-	sys.exit (1)
+	sys.exit (601)
 
-def error_cmake_not_found():
-	sys.stderr.write ("Unable to locate CMake.\n")
-	sys.exit (1)
+def error_unable_to_replace_file (path):
+	sys.stderr.write ("Unable to replace file '%s'. Please remove the file manually.\n" % path)
+	sys.exit (610)
 
 def error_engine_tool_not_found (path):
 	sys.stderr.write ("'%s' not found.\n" % path)
-	sys.exit (404)
-	
-def error_mono_not_set (path):
-	sys.stderr.write ("'%s' is not a C# project.\n" % path)
-	sys.exit (1)
+	sys.exit (620)
 
+def error_cmake_not_found():
+	sys.stderr.write ("Unable to locate CMake.\n")
+	sys.exit (621)
+	
 def error_mono_not_found (path):
 	sys.stderr.write ("'%s' not found.\n" % path)
-	sys.exit (1)
+	sys.exit (622)
 
 def error_upgrade_engine_version (engine_version):
 	sys.stderr.write ("Unknown engine version: %s.\n" % path)
-	sys.exit (1)
+	sys.exit (630)
 
 def error_upgrade_template_unknown (project_file):
 	sys.stderr.write ("Unable to identify original project template for '%s'.\n" % path)
-	sys.exit (1)
+	sys.exit (631)
 
 def error_upgrade_template_missing (restore_path):
 	sys.stderr.write ("Missing upgrade information '%s'.\n" % restore_path)
-	sys.exit (1)
+	sys.exit (632)
+
+def error_mono_not_set (path):
+	sys.stderr.write ("'%s' is not a C# project.\n" % path)
+	sys.exit (640)
 		
 def print_subprocess (cmd):
 	print (' '.join (map (lambda a: '"%s"' % a, cmd)))
@@ -104,144 +104,15 @@ def get_solution_dir (args):
 	basename= os.path.basename (args.project_file)
 	return os.path.join ('Solutions', "%s.%s" % (os.path.splitext (basename)[0], args.platform))
 	#return os.path.join ('Solutions', os.path.splitext (basename)[0], args.platform)
-	
 
-#--- PROJGEN ---
+#--- BACKUP ---
 
-def csharp_symlinks (args):
-	dirname= os.path.dirname (args.project_file)
-	engine_path= get_engine_path()
-	
-	symlinks= []
-	SymlinkFileName= os.path.join (dirname, 'Code', 'CryManaged', 'CESharp')
-	TargetFileName= os.path.join (engine_path, 'Code', 'CryManaged', 'CESharp')
-	symlinks.append ((SymlinkFileName, TargetFileName))
-
-	SymlinkFileName= os.path.join (dirname, 'bin', args.platform, 'CryEngine.Common.dll')
-	TargetFileName= os.path.join (engine_path, 'bin', args.platform, 'CryEngine.Common.dll')
-	symlinks.append ((SymlinkFileName, TargetFileName))
-	
-	create_symlinks= []
-	for (SymlinkFileName, TargetFileName) in symlinks:
-		if os.path.islink (SymlinkFileName):
-			if os.path.samefile (SymlinkFileName, TargetFileName):
-				continue
-		elif os.path.exists (SymlinkFileName):
-			error_unable_to_replace_file (SymlinkFileName)
-
-		create_symlinks.append ((SymlinkFileName, TargetFileName))
-	
-	if create_symlinks and not admin.isUserAdmin():
-		cmdline= getattr( sys, 'frozen', False ) and sys.argv or None
-		rc = admin.runAsAdmin(cmdline)
-		sys.exit(rc)
-
-	for (SymlinkFileName, TargetFileName) in create_symlinks:
-		if os.path.islink (SymlinkFileName):
-			os.remove (SymlinkFileName)
-		
-		sym_dirname= os.path.dirname (SymlinkFileName)
-		if not os.path.isdir (sym_dirname):
-			os.makedirs (sym_dirname)
-
-		SYMBOLIC_LINK_FLAG_DIRECTORY= 0x1
-		dwFlags= os.path.isdir (TargetFileName) and SYMBOLIC_LINK_FLAG_DIRECTORY or 0x0
-		win32file.CreateSymbolicLink (SymlinkFileName, TargetFileName, dwFlags)
-
-def csharp_copylinks (args):
-	dirname= os.path.dirname (args.project_file)
-	engine_path= get_engine_path()
-	
-	SymlinkFileName= os.path.join (dirname, 'Code', 'CryManaged', 'CESharp')
-	TargetFileName= os.path.join (engine_path, 'Code', 'CryManaged', 'CESharp')
-	distutils.dir_util.copy_tree (TargetFileName, SymlinkFileName, update= True)
-
-	SymlinkFileName= os.path.join (dirname, 'bin', args.platform, 'CryEngine.Common.dll')
-	TargetFileName= os.path.join (engine_path, 'bin', args.platform, 'CryEngine.Common.dll')
-	sym_dirname= os.path.dirname (SymlinkFileName)
-	if not os.path.isdir (sym_dirname):
-		os.makedirs (sym_dirname)
-
-	distutils.file_util.copy_file (TargetFileName, SymlinkFileName, update= True)	
-
-def csharp_userfile (args, csharp):
-	dirname= os.path.dirname (args.project_file)
-	engine_path= get_engine_path()
-		
-	#--- debug file
-	user_settings= csharp.get("monodev", {}).get("user")
-	if user_settings:
-		tool_path= os.path.join (engine_path, 'bin', args.platform, 'GameSDK.exe')
-		projectfile_path= os.path.abspath (args.project_file)
-		file= open (os.path.join (dirname, user_settings), 'w')
-		file.write('''<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <LocalDebuggerCommand>%s</LocalDebuggerCommand>
-    <LocalDebuggerCommandArguments>-project "%s"</LocalDebuggerCommandArguments>
-  </PropertyGroup>
-</Project>''' % (tool_path, projectfile_path))
-		file.close()
-
-	user_settings= csharp.get("msdev", {}).get("user")
-	if user_settings:
-		projectfile_path= os.path.abspath (args.project_file)
-		file= open (os.path.join (dirname, user_settings), 'w')
-		file.write('''<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup Condition="'$(Platform)'=='x64'">
-    <MonoDebuggerCommand>%s</MonoDebuggerCommand>
-    <MonoDebuggerCommandArguments>-project "%s"</MonoDebuggerCommandArguments>
-    <DebuggerFlavor>MonoDebugger</DebuggerFlavor>
-  </PropertyGroup>
-</Project>''' % (tool_path, projectfile_path))
-		file.close()
-
-def cmd_projgen(args):
-	if not os.path.isfile (args.project_file):
-		error_project_not_found (args.project_file)
-	
-	project= cryproject.load (args.project_file)
-	if project is None:
-		error_project_json_decode (args.project_file)
-	
-	cmake_path= get_cmake_path()
-	if cmake_path is None:
-		error_cmake_not_found()
-	
-	#---
-	
-	csharp= project.get ("csharp")
-	if csharp:
-		csharp_copylinks (args)
-		csharp_userfile (args, csharp)
-	
-	#---
-		
-	project_path= os.path.abspath (os.path.dirname (args.project_file))
-	solution_path= os.path.join (project_path, get_solution_dir (args))
-	engine_path= get_engine_path()
-	
-	subcmd= (
-		cmake_path,
-		'-Wno-dev',
-		{'win_x86': '-AWin32', 'win_x64': '-Ax64'}[args.platform],
-		'-DPROJECT_FILE:FILEPATH=%s' % os.path.abspath (args.project_file),
-		'-DCryEngine_DIR:PATH=%s' % engine_path,
-		'-DCMAKE_PREFIX_PATH:PATH=%s' % os.path.join (engine_path, 'Tools', 'CMake', 'modules'),
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Debug')),
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Release')),
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'MinSizeRel')),		
-		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'RelWithDebInfo')),
-		os.path.join (project_path, cryproject.cmakelists_dir(project))
-	)
-	
-	if not os.path.isdir (solution_path):
-		os.makedirs (solution_path)
-
-	os.chdir (solution_path)
-	print_subprocess (subcmd)
-	sys.exit (subprocess.call(subcmd))
+def backup_deletefiles (zfilename):
+	z= zipfile.ZipFile (zfilename, 'r')
+	for filename in z.namelist():
+		os.chmod(filename, stat.S_IWRITE)
+		os.remove (filename)
+	z.close()
 	
 #-- BUILD ---
 
@@ -288,10 +159,183 @@ def cmd_build(args):
 		'--config', args.config
 	)
 	
-	os.chdir (project_path)
 	print_subprocess (subcmd)
-	sys.exit (subprocess.call(subcmd))
+	errcode= subprocess.call(subcmd, cwd= project_path)
+	if errcode != 0:
+		sys.exit (errcode)
 
+
+#--- PROJGEN ---
+
+def csharp_symlinks (args):
+	dirname= os.path.dirname (args.project_file)
+	engine_path= get_engine_path()
+	
+	symlinks= []
+	SymlinkFileName= os.path.join (dirname, 'Code', 'CryManaged', 'CESharp')
+	TargetFileName= os.path.join (engine_path, 'Code', 'CryManaged', 'CESharp')
+	symlinks.append ((SymlinkFileName, TargetFileName))
+
+	SymlinkFileName= os.path.join (dirname, 'bin', args.platform, 'CryEngine.Common.dll')
+	TargetFileName= os.path.join (engine_path, 'bin', args.platform, 'CryEngine.Common.dll')
+	symlinks.append ((SymlinkFileName, TargetFileName))
+	
+	create_symlinks= []
+	for (SymlinkFileName, TargetFileName) in symlinks:
+		if os.path.islink (SymlinkFileName):
+			if os.path.samefile (SymlinkFileName, TargetFileName):
+				continue
+		elif os.path.exists (SymlinkFileName):
+			error_unable_to_replace_file (SymlinkFileName)
+
+		create_symlinks.append ((SymlinkFileName, TargetFileName))
+	
+	if create_symlinks and not admin.isUserAdmin():
+		cmdline= getattr( sys, 'frozen', False ) and sys.argv or None
+		rc = admin.runAsAdmin(cmdline)
+		sys.exit(rc)
+
+	for (SymlinkFileName, TargetFileName) in create_symlinks:
+		if os.path.islink (SymlinkFileName):
+			os.remove (SymlinkFileName)
+		
+		sym_dirname= os.path.dirname (SymlinkFileName)
+		if not os.path.isdir (sym_dirname):
+			os.makedirs (sym_dirname)
+
+		SYMBOLIC_LINK_FLAG_DIRECTORY= 0x1
+		dwFlags= os.path.isdir (TargetFileName) and SYMBOLIC_LINK_FLAG_DIRECTORY or 0x0
+		win32file.CreateSymbolicLink (SymlinkFileName, TargetFileName, dwFlags)
+
+def csharp_copylinks (args, update= True):
+	dirname= os.path.dirname (args.project_file)
+	engine_path= get_engine_path()
+	
+	SymlinkFileName= os.path.join (dirname, 'Code', 'CryManaged', 'CESharp')
+	TargetFileName= os.path.join (engine_path, 'Code', 'CryManaged', 'CESharp')
+	distutils.dir_util.copy_tree (TargetFileName, SymlinkFileName, update= True)
+
+	SymlinkFileName= os.path.join (dirname, 'bin', args.platform, 'CryEngine.Common.dll')
+	TargetFileName= os.path.join (engine_path, 'bin', args.platform, 'CryEngine.Common.dll')
+	sym_dirname= os.path.dirname (SymlinkFileName)
+	if not os.path.isdir (sym_dirname):
+		os.makedirs (sym_dirname)
+
+	distutils.file_util.copy_file (TargetFileName, SymlinkFileName, update= update)
+
+def csharp_userfile (args, csharp):
+	dirname= os.path.dirname (args.project_file)
+	engine_path= get_engine_path()
+		
+	#--- debug file
+	user_settings= csharp.get("monodev", {}).get("user")
+	if user_settings:
+		tool_path= os.path.join (engine_path, 'bin', args.platform, 'GameSDK.exe')
+		projectfile_path= os.path.abspath (args.project_file)
+		file= open (os.path.join (dirname, user_settings), 'w')
+		file.write('''<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <LocalDebuggerCommand>%s</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>-project "%s"</LocalDebuggerCommandArguments>
+  </PropertyGroup>
+</Project>''' % (tool_path, projectfile_path))
+		file.close()
+
+	user_settings= csharp.get("msdev", {}).get("user")
+	if user_settings:
+		projectfile_path= os.path.abspath (args.project_file)
+		file= open (os.path.join (dirname, user_settings), 'w')
+		file.write('''<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Platform)'=='x64'">
+    <MonoDebuggerCommand>%s</MonoDebuggerCommand>
+    <MonoDebuggerCommandArguments>-project "%s"</MonoDebuggerCommandArguments>
+    <DebuggerFlavor>MonoDebugger</DebuggerFlavor>
+  </PropertyGroup>
+</Project>''' % (tool_path, projectfile_path))
+		file.close()
+
+def cmd_projgen(args):
+	if not os.path.isfile (args.project_file):
+		error_project_not_found (args.project_file)
+	
+	project= cryproject.load (args.project_file)
+	if project is None:
+		error_project_json_decode (args.project_file)
+	
+	cmake_path= get_cmake_path()
+	if cmake_path is None:
+		error_cmake_not_found()
+	
+	#--- remove old files
+	
+	dirname= os.path.dirname (os.path.abspath (args.project_file))
+	prevcwd= os.getcwd()
+	os.chdir (dirname)
+	
+	(fd, zfilename)= tempfile.mkstemp('.zip', datetime.date.today().strftime ('projgen_%y%m%d_'), dirname)
+	file= os.fdopen(fd, 'wb')
+	backup= zipfile.ZipFile (file, 'w', zipfile.ZIP_DEFLATED)
+	
+	#Solution	
+	for (dirpath, dirnames, filenames) in os.walk (get_solution_dir (args)):
+		for filename in filenames:
+			backup.write (os.path.join (dirpath, filename))
+
+	#CryManaged
+	for (dirpath, dirnames, filenames) in os.walk (os.path.join ('Code', 'CryManaged', 'CESharp')):
+		for filename in filenames:
+			backup.write (os.path.join (dirpath, filename))
+	
+	#bin	
+	for (dirpath, dirnames, filenames) in os.walk ('bin'):
+		for filename in filter (lambda a: os.path.splitext(a)[1] in ('.exe', '.dll'), filenames):
+			backup.write (os.path.join (dirpath, filename))
+
+	backup.close()
+	file.close()
+	
+	backup_deletefiles (zfilename)	
+	os.chdir (prevcwd)
+	
+	#---
+	
+	csharp= project.get ("csharp")
+	if csharp:
+		csharp_copylinks (args, update= False)
+		csharp_userfile (args, csharp)
+	
+	#---
+		
+	project_path= os.path.abspath (os.path.dirname (args.project_file))
+	solution_path= os.path.join (project_path, get_solution_dir (args))
+	engine_path= get_engine_path()
+	
+	subcmd= (
+		cmake_path,
+		'-Wno-dev',
+		{'win_x86': '-AWin32', 'win_x64': '-Ax64'}[args.platform],
+		'-DPROJECT_FILE:FILEPATH=%s' % os.path.abspath (args.project_file),
+		'-DCryEngine_DIR:PATH=%s' % engine_path,
+		'-DCMAKE_PREFIX_PATH:PATH=%s' % os.path.join (engine_path, 'Tools', 'CMake', 'modules'),
+		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Debug')),
+		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'Release')),
+		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'MinSizeRel')),		
+		'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO:PATH=%s' % os.path.join (project_path, cryproject.shared_dir (project, args.platform, 'RelWithDebInfo')),
+		os.path.join (project_path, cryproject.cmakelists_dir(project))
+	)
+	
+	if not os.path.isdir (solution_path):
+		os.makedirs (solution_path)
+
+	print_subprocess (subcmd)
+	errcode= subprocess.call(subcmd, cwd= solution_path)
+	if errcode != 0:
+		sys.exit (errcode)
+		
+	cmd_build (args)
+	
 #--- OPEN ---
 
 def cmd_open (args):
@@ -384,6 +428,8 @@ def cmd_monodev (args):
 
 	print_subprocess (subcmd)
 	subprocess.Popen(subcmd, env= dict(os.environ, CRYENGINEROOT=engine_path))
+
+#--- UPGRADE ---					 
 					 
 def upgrade_identify50 (project_file):
 	dirname= os.path.dirname (project_file)
@@ -462,7 +508,7 @@ def cmd_upgrade (args):
 	#---
 	
 	(dirname, basename)= os.path.split (os.path.abspath (args.project_file))
-	cwd= os.getcwd()
+	prevcwd= os.getcwd()
 	os.chdir (dirname)
 		
 	(fd, zfilename)= tempfile.mkstemp('.zip', datetime.date.today().strftime ('upgrade_%y%m%d_'), dirname)
@@ -507,7 +553,9 @@ def cmd_upgrade (args):
 	z.close()
 	
 	restore.extractall()
-	restore.close()
+	restore.close()	
+	os.chdir (prevcwd)
+
 
 #--- REQUIRE ---
 
@@ -585,7 +633,7 @@ if __name__ == '__main__':
 	parser_upgrade.add_argument ('project_file')
 	parser_upgrade.add_argument ('--engine_version')
 	parser_upgrade.set_defaults(func=cmd_upgrade)
-	
+
 	parser_require= subparsers.add_parser ('require')
 	parser_require.add_argument ('project_file')
 	parser_require.set_defaults(func=cmd_require)
