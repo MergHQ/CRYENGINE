@@ -482,7 +482,7 @@ def verify_options_common(env):
 		frozenset(['/Z7', '/Zi', '/ZI']),
 		frozenset(['/Za', '/Ze']),
 		frozenset(['/MD', '/MT', '/LD', '/MDd', '/MTd', '/LDd']),
-		frozenset(['/W0', '/W1', '/W2', '/W3', '/W4']),
+		frozenset(['/W0', '/W1', '/W2', '/W3', '/W4', '/w']),
 		frozenset(['/Zp1', '/Zp2', '/Zp4', '/Zp8', '/Zp16'])]	
 		
 	# Mutatable options 

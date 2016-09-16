@@ -84,15 +84,53 @@ import mscv_helper
 	
 HEADERS_GLOB = '**/(*.h|*.hpp|*.H|*.inl)'
 
+ANDROID_PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	
+	<ItemGroup Label="ProjectConfigurations">
+		${for b in project.build_properties}
+		<ProjectConfiguration Include="${b.configuration}|${b.platform}">
+			<Configuration>${b.configuration}</Configuration>
+			<Platform>${b.platform}</Platform>
+		</ProjectConfiguration>
+		${endfor}
+	</ItemGroup>
+	
+	<PropertyGroup Label="Globals">
+		<MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
+		<ProjectVersion>1.0</ProjectVersion>
+		<ProjectGuid>{${project.uuid}}</ProjectGuid>		
+	</PropertyGroup>
+	<Import Project="$(AndroidTargetsPath)\Android.Default.props" />
+	${for b in project.build_properties}
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='${b.configuration}|${b.platform}'" Label="Configuration">
+		<ConfigurationType>Application</ConfigurationType>
+		<OutDir>${b.outdir}</OutDir>
+		${if getattr(b, 'output_file', None)}
+		<TargetName>${xml:b.output_file}.apk</TargetName>
+		${endif}
+	</PropertyGroup>
+	${endfor}
+	
+	<!-- 1) Use the values set by the user [currently from Android.props , eventually override? IntelliSense might use them] 
+    <VS_AndroidHome Condition="'$(VS_AndroidHome)' == ''">$(Registry:HKEY_CURRENT_USER\SOFTWARE\Microsoft\VisualStudio\SecondaryInstaller\VC@AndroidHome)</VS_AndroidHome>
+    <VS_AntHome Condition="'$(VS_AntHome)' == ''">$(Registry:HKEY_CURRENT_USER\SOFTWARE\Microsoft\VisualStudio\SecondaryInstaller\VC@AntHome)</VS_AntHome>
+    <VS_GradleHome Condition="'$(VS_GradleHome)' == ''">$(Registry:HKEY_CURRENT_USER\SOFTWARE\Microsoft\VisualStudio\SecondaryInstaller\VC@GradleHome)</VS_GradleHome>
+    <VS_JavaHome Condition="'$(VS_JavaHome)' == ''">$(Registry:HKEY_CURRENT_USER\SOFTWARE\Microsoft\VisualStudio\SecondaryInstaller\VC@JavaHome)</VS_JavaHome>
+    <VS_JavaRuntime Condition="'$(VS_JavaRuntime)' == ''">$(Registry:HKEY_CURRENT_USER\SOFTWARE\Microsoft\VisualStudio\SecondaryInstaller\VC@JavaRuntime)</VS_JavaRuntime>
+    <VS_NdkRoot Condition="'$(VS_NdkRoot)' == ''">$(Registry:HKEY_CURRENT_USER\SOFTWARE\Microsoft\VisualStudio\SecondaryInstaller\VC@NDKRoot)</VS_NdkRoot>
+	-->
+	
+	<Import Project="$(AndroidTargetsPath)\Android.props" />
+	<Import Project="$(AndroidTargetsPath)\Android.targets" />
+	
+	<Import Project="$(MSBuildProjectDirectory)\..\..\_WAF_\msbuild\waf_build.targets" />
+  
+</Project>
+'''
+
 PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="${project.vstoolsver}" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
-	${if project.ctx.nsight_tegra_vs_plugin_version is not None}
-  <!-- Enable for all projects to avoid NVIDIA TEGRA auto updater dialog -->
-  <PropertyGroup Label="NsightTegraProject">
-    <NsightTegraProjectRevisionNumber>${project.ctx.nsight_tegra_vs_plugin_version}</NsightTegraProjectRevisionNumber>
-  </PropertyGroup>
-	${endif}
 
 	<ItemGroup Label="ProjectConfigurations">
 		${for b in project.build_properties}
@@ -104,9 +142,21 @@ PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
 	</ItemGroup>
 
 	<PropertyGroup Label="Globals">
-		<ProjectGuid>{${project.uuid}}</ProjectGuid>
-		<Keyword>${project.get_project_keyword()}</Keyword>
-		<ProjectName>${project.name}</ProjectName>
+		
+		${if project.is_android_project()}
+			<ProjectGuid>{${project.uuid}}</ProjectGuid>
+			<ProjectName>${project.name}</ProjectName>
+			<Keyword>${project.get_project_keyword()}</Keyword>
+			<DefaultLanguage>en-US</DefaultLanguage>
+			<MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
+			<ApplicationType>Android</ApplicationType>
+			<ApplicationTypeRevision>2.0</ApplicationTypeRevision>
+		${endif}
+		${if project.name != 'AndroidLauncher'}
+			<ProjectGuid>{${project.uuid}}</ProjectGuid>
+			<Keyword>${project.get_project_keyword()}</Keyword>
+			<ProjectName>${project.name}</ProjectName>
+		${endif}
 	</PropertyGroup>
 	<Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
 
@@ -191,7 +241,7 @@ PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
 '''
 
 PROJECT_USER_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">	
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">	
 	${for b in project.build_properties}
 	${if b.platform == 'ORBIS'}
 	${if b.game_project != ''}
@@ -203,24 +253,26 @@ PROJECT_USER_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
 	${endif}
 	${endif}
 	${endfor}
+
+</Project>
+'''
+
+#<AdditionalSourceSearchPaths>E:\P4\CE_STREAMS2\Code\Launcher\AndroidLauncher;$(AdditionalSourceSearchPaths)</AdditionalSourceSearchPaths>
+ANDROID_PROJECT_USER_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">	
 	
-	${if project.is_android_project()}
 	${for b in project.build_properties}
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='${b.configuration}|${b.platform}'">
-		<OverrideAPKPath>${b.bin_output_folder.abspath()}\\${project.name}.apk</OverrideAPKPath>
-		<AdditionalLibraryDirectories>${b.bin_output_folder.abspath()}\\lib_debug\\armeabi-v7a</AdditionalLibraryDirectories>
-		<BuildXmlPath>${b.bin_output_folder.abspath()}</BuildXmlPath>
-		<GdbSetupPath>${b.bin_output_folder.abspath()}</GdbSetupPath>
+		<PackagePath>${b.bin_output_folder.abspath()}\\${project.name}.apk</PackagePath>
 		<DebuggerFlavor>AndroidDebugger</DebuggerFlavor>
-		<AndroidDebugMode>all</AndroidDebugMode>
+		<AdditionalSymbolSearchPaths>${b.bin_output_folder.abspath()}\\lib_debug\\armeabi-v7a;$(AdditionalSymbolSearchPaths)</AdditionalSymbolSearchPaths>
 	</PropertyGroup>
-	${endif}
 	${endfor}
 </Project>
 '''
 
 FILTER_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
 		${for x in project.source}
 			<${project.get_key(x)} Include="${x.abspath()}">
@@ -429,7 +481,7 @@ def convert_waf_platform_to_vs_platform(self, platform):
 		return 'CppCheck'
 	
 	if platform == 'android_arm_gcc':
-		return 'Tegra-Android'
+		return 'ARM'
 		
 	print('to_vs error ' + platform)
 	return 'UNKNOWN'
@@ -455,7 +507,7 @@ def convert_vs_platform_to_waf_platform(self, platform):
 	if platform == 'CppCheck':
 		return 'cppcheck'
 		
-	if platform == 'Tegra-Android':
+	if platform == 'ARM':
 		return 'android_arm_gcc'
 		
 	print('to_waf error ' + platform)
@@ -623,7 +675,7 @@ def stealth_write(self, data, flags='wb'):
 		data = data.decode(sys.getfilesystemencoding(), 'replace')
 		data = data.encode('utf-8')
 
-	if self.name.endswith('.vcproj') or self.name.endswith('.vcxproj'):
+	if self.name.endswith('.vcproj') or self.name.endswith('.vcxproj') or self.name.endswith('.androidproj'):
 		data = BOM + data
 
 	try:
@@ -771,7 +823,7 @@ def strip_unsupported_msbuild_platforms(conf):
 		'durango' : 'Durango',
 		'orbis' 	: 'ORBIS',
 		'cppcheck': 'CppCheck',
-		'android_arm_gcc' : 'Tegra-Android'	
+		'android_arm_gcc' : 'ARM'	
 		}
 
 	installed_platforms = []
@@ -925,13 +977,14 @@ def _get_filter_name(project_filter_dict, file_name):
 			return '.'
 			
 		return project_filter
-			
+
 class vsnode_project(vsnode):
 	"""
 	Abstract class representing visual studio project elements
 	A project is assumed to be writable, and has a node representing the file to write to
 	"""
 	VS_GUID_VCPROJ = "8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942"
+	
 	def ptype(self):
 		return self.VS_GUID_VCPROJ
 
@@ -944,7 +997,7 @@ class vsnode_project(vsnode):
 		self.source = [] # list of node objects
 		self.build_properties = [] # list of properties (nmake commands, output dir, etc)
 		self.waf_command_override_files = []
-		self.tools_version = '4.0'
+		self.tools_version = '14.0'
 
 	def dirs(self):
 		"""
@@ -981,7 +1034,7 @@ class vsnode_project(vsnode):
 			template_str = rm_blank_lines(template_str)			
 			output_node.stealth_write(template_str)
 		
-		_write(PROJECT_TEMPLATE, self.path )
+		_write(PROJECT_TEMPLATE, self.path.parent.make_node(self.path.name ))
 		_write(FILTER_TEMPLATE, self.path.parent.make_node(self.path.name + '.filters') )
 		_write(PROJECT_USER_TEMPLATE, self.path.parent.make_node(self.path.name + '.user') )		
 		_write(PROPERTY_SHEET_TEMPLATE, self.path.parent.make_node(self.path.name + '.default.props') )
@@ -1055,10 +1108,17 @@ class vsnode_project(vsnode):
 		return False
 		
 	def get_project_type(self):
-		return 'Makefile'
+	
+		if self.is_android_project():
+			return 'ExternalBuildSystem'
+		else:
+			return 'Makefile'
 	
 	def get_project_keyword(self):
-		return 'MakeFileProj'
+		if self.is_android_project():
+			return 'Android'
+		else:
+			return 'MakeFileProj'
 
 class vsnode_alias(vsnode_project):
 	def __init__(self, ctx, node, name):
@@ -1075,7 +1135,7 @@ class vsnode_alias(vsnode_project):
 				if float(msvc_version) > max_msvc_version:
 					max_msvc_version = float(msvc_version)
 					self.vstoolsver = tools_version_lookup[msvc_version]
-
+					
 class vsnode_build_all(vsnode_alias):
 	"""
 	Fake target used to emulate the behaviour of "make all" (starting one process by target is slow)
@@ -1242,6 +1302,12 @@ class vsnode_target(vsnode_alias):
 	def is_android_project(self):
 		for feature in self.tg.features:
 			if 'android' in feature:
+				return True
+		return False
+		
+	def is_android_launcher_project(self):
+		for feature in self.tg.features:
+			if 'android_launcher' in feature:
 				return True
 		return False
 		
@@ -1499,6 +1565,35 @@ class vsnode_target(vsnode_alias):
 								
 				x.includes_search_path = ';'.join( include_list )
 
+				
+class vsnode_android_package_target(vsnode_target):
+	VS_GUID_ANDROIDPROJ = "39E2626F-3545-4960-A6E8-258AD8476CE5"
+	
+	def ptype(self):
+		return self.VS_GUID_ANDROIDPROJ
+
+	def __init__(self, ctx, tg):
+		vsnode_target.__init__(self, ctx, tg)
+		self.project_extension = '.androidproj'		
+		base = getattr(ctx, 'projects_dir', None) or tg.path		
+		self.path = base.make_node(quote(tg.name) + '.Packaging' + self.project_extension) # the project file as a Node	
+		self.name = quote(tg.name)
+		self.title = self.path.abspath()
+		self.uuid = make_uuid(self.title)
+		
+	def write(self):
+		Logs.debug('msvs android package: creating %r' % self.path)
+
+		def _write(template_name, output_node):			
+			template = compile_template(template_name)
+			template_str = template(self)
+			template_str = rm_blank_lines(template_str)			
+			output_node.stealth_write(template_str)
+
+		_write(ANDROID_PROJECT_TEMPLATE, self.path)
+		_write(ANDROID_PROJECT_USER_TEMPLATE,  self.path.parent.make_node(self.path.name + '.user'))
+
+		
 class msvs_generator(BuildContext):
 	'''generates a visual studio solution'''
 	cmd = 'msvs'
@@ -1549,6 +1644,8 @@ class msvs_generator(BuildContext):
 			self.vsnode_vsdir = vsnode_vsdir
 		if not getattr(self, 'vsnode_target', None):
 			self.vsnode_target = vsnode_target
+		if not getattr(self, 'vsnode_android_package_target', None):
+			self.vsnode_android_package_target = vsnode_android_package_target
 		if not getattr(self, 'vsnode_build_all', None):
 			self.vsnode_build_all = vsnode_build_all
 		if not getattr(self, 'vsnode_install_all', None):
@@ -1697,6 +1794,12 @@ class msvs_generator(BuildContext):
 				p.collect_source() # delegate this processing
 				p.collect_properties()
 				self.all_projects.append(p)
+				
+				if p.is_android_launcher_project():
+					p_android_package = self.vsnode_android_package_target(self, tg)
+					p_android_package.collect_source() # delegate this processing
+					p_android_package.collect_properties()
+					self.all_projects.append(p_android_package)
 
 	def add_aliases(self):
 		"""

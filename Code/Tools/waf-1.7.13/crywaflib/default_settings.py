@@ -194,7 +194,6 @@ def _validate_incredibuild_registry_settings(ctx):
 			else:
 				Logs.warn('[WARNING] WAF is running with "unsupported" IncrediBuild settings. Expect to encounter IncrediBuild errors during compilation.')
 	
-	_check_ib_setting('PdbForwardingMode', '0', '"PdbForwardingMode" controls how Incredibuld handles PDB files and is mandatory for WAF')
 	_check_ib_setting('MaxConcurrentPDBs', '0', '"MaxConcurrentPDBs" controls how many files can be processed in parallel (an optimization also useful for MSBuild)')
 	_check_ib_setting('AllowDoubleTargets', '0', '"AllowDoubleTargets" controls if remote processes can be restarted on local machine when possible\nThis option is mandatory since it causes compiler crashed with WAF')
 

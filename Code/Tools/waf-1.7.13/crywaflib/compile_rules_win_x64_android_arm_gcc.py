@@ -6,7 +6,7 @@ from waflib import Utils
 import os.path
 
 android_target_version = 19
-android_compiler_version = 4.8
+android_compiler_version = 4.9
 android_app_name = "CRYENGINE SDK"
 android_package_name = "com.crytek.cryengine"
 android_version_code = "1"
@@ -19,20 +19,6 @@ ANT_BUILD_TEMPLATE = r'''<?xml version="1.0" encoding="UTF-8"?>
 <project name="AndroidLauncher" default="help">
 
 	<property file="build.properties" />
-
-	<!--REGION-BEGIN: The following properties allow Nsight Tegra to maintain build results per-configuration (debug, release, etc)-->
-	<target name="-pre-compile">
-		<property name="nsight.tegra.project.all.jars.path" value="${toString:project.all.jars.path}" />
-		<path id="project.all.jars.path">
-			<path path="${nsight.tegra.project.all.jars.path}" />
-			<fileset dir="${jar.libs.dir}">
-				<include name="*.jar" />
-			</fileset>
-		</path>
-		<echo>Ant Java version: ${ant.java.version}</echo>
-		<echo>Java Tools version: ${java.version}</echo>
-	</target>
-	<!--REGION-END-->
 
 	<!-- quick check on sdk.dir -->
 	<fail	message="sdk.dir is missing. Make sure to generate local.properties using 'android update project' or to inject it through the ANDROID_HOME environment variable."
@@ -305,6 +291,9 @@ def load_win_x64_android_arm_gcc_common_settings(conf):
 	v['cxxstlib_PATTERN']   = 'lib%s.a'
 
 	v['DEFINES'] += ['_LINUX', 'LINUX', 'LINUX32', 'ANDROID', '_HAS_C9X' ]
+	
+	if android_target_version >= 21:
+		v['DEFINES'] += ['HAS_STPCPY=1']
 
 	# Setup global include paths
 	v['INCLUDES'] += [ 

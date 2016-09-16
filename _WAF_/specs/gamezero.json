@@ -46,6 +46,8 @@
 		"yasli",
 		"tomcrypt",
 		"jsmn",
+		"png16",
+		"jpeg",
 		
 		"CryGameZero"
 	],

@@ -425,7 +425,7 @@ int RunGame(const char *commandLine)
 		char path[1024];
 		cry_strcpy(path, paths[i]);
 #if !defined(ANDROID_OBB)
-		cry_strcat(path, "/GameSDK/GameData.pak");
+		cry_strcat(path, "/gamesdk/gamedata.pak");
 		LOGI( "Searching for %s", path);
 		FILE* f = fopen( path, "r" );
 		if (f != NULL)
