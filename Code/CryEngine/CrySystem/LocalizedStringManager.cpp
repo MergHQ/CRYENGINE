@@ -314,6 +314,7 @@ CLocalizedStringsManager::CLocalizedStringsManager(ISystem* pSystem)
 //////////////////////////////////////////////////////////////////////
 CLocalizedStringsManager::~CLocalizedStringsManager()
 {
+	m_pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 	FreeData();
 }
 
