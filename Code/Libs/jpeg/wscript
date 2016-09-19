@@ -19,6 +19,11 @@ def build(bld):
 		durango_cxxflags = ['/w'],
 		
 		defines = ['STDC_HEADERS=1'],
+		orbis_defines = ['NO_GETENV'],
+
+		linux_cflags = ['-Wno-error=main'],
+		linux_cxxflags = ['-Wno-error=main'],
+
 		android_cflags = ['-Wno-error=main'],
 		android_cxxflags = ['-Wno-error=main'],
 	)
