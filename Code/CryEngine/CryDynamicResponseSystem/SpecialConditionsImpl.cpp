@@ -29,7 +29,7 @@ bool CRandomCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 //--------------------------------------------------------------------------------------------------
 void CRandomCondition::Serialize(Serialization::IArchive& ar)
 {
-	ar(Serialization::Range(m_randomFactor, 1, 99), "RandomFactor", "^ Probability");
+	ar(Serialization::Range(m_randomFactor, 0, 100), "RandomFactor", "^ Probability");
 
 #if !defined(_RELEASE)
 	if (ar.isEdit())
@@ -96,13 +96,20 @@ void CGameTokenCondition::Serialize(Serialization::IArchive& ar)
 		ar(m_maxValue, "MaxVal", "and LESS than or equal to");
 	}
 
-	if (ar.isEdit())
+#if !defined(_RELEASE)
+	if (ar.isEdit() && ar.isOutput())
 	{
+		ar(GetVerboseInfo(), "ConditionDesc", "!^<");
+
 		if (m_tokenName.empty())
 		{
 			ar.warning(m_tokenName, "You need to specify a GameToken Name");
 		}
-		else if (m_maxValue == CVariableValue::POS_INFINITE && m_minValue == CVariableValue::NEG_INFINITE)
+		else if (!m_tokenName.empty() && (m_tokenName.front() == ' ' || m_tokenName.back() == ' '))
+		{
+			ar.warning(m_tokenName, "GameToken name starts or ends with a space. Check if this is really wanted.");
+		}
+		if (m_maxValue == CVariableValue::POS_INFINITE && m_minValue == CVariableValue::NEG_INFINITE)
 		{
 			ar.warning(m_tokenName, "This Condition will always be true!");
 		}
@@ -110,11 +117,6 @@ void CGameTokenCondition::Serialize(Serialization::IArchive& ar)
 		{
 			ar.warning(m_tokenName, "The type of min and max value do not match!");
 		}
-	}
-#if !defined(_RELEASE)
-	if (ar.isEdit() && ar.isOutput())
-	{
-		ar(GetVerboseInfo(), "ConditionDesc", "!^<");
 	}
 #endif
 }
@@ -244,7 +246,7 @@ bool CInheritConditionsCondition::IsMet(DRS::IResponseInstance* pResponseInstanc
 void CInheritConditionsCondition::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_responseToReuse, "ResponseToCopyConditionsFrom", "^ Response to inherit from");
-	m_pCachedResponse = CResponseSystem::GetInstance()->GetResponseManager()->GetResponse(m_responseToReuse);
+	m_pCachedResponse = nullptr; // we cannot cache the response in most cases here, because the response to cache needs to be serialized before hand, and we cannot guarantee that.
 
 #if defined(HASHEDSTRING_STORES_SOURCE_STRING)
 	if (ar.isEdit())
@@ -253,7 +255,7 @@ void CInheritConditionsCondition::Serialize(Serialization::IArchive& ar)
 		{
 			ar.warning(m_responseToReuse.m_textCopy, "No Response to inherit conditions from specified");
 		}
-		else if (!m_pCachedResponse)
+		else if (!CResponseSystem::GetInstance()->GetResponseManager()->HasMappingForSignal(m_responseToReuse))
 		{
 			ar.warning(m_responseToReuse.m_textCopy, "No response specified from which the conditions should be inherited");
 		}
@@ -283,8 +285,8 @@ bool CTimeSinceCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 void CTimeSinceCondition::Serialize(Serialization::IArchive& ar)
 {
 	IVariableUsingBase::_Serialize(ar, "^TimerVariable");
-	ar(m_minTime, "minTime", "^MinElpasedTime");
-	ar(m_maxTime, "maxTime", "^MaxElpasedTime");
+	ar(m_minTime, "minTime", "^MinElapsedTime");
+	ar(m_maxTime, "maxTime", "^MaxElapsedTime");
 
 #if defined (ENABLE_VARIABLE_VALUE_TYPE_CHECKINGS)
 	CVariableCollection* pCollection = CResponseSystem::GetInstance()->GetCollection(m_collectionName);
@@ -362,13 +364,13 @@ void CExecutionLimitCondition::Serialize(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-string CryDRS::CExecutionLimitCondition::GetVerboseInfo() const
+string CExecutionLimitCondition::GetVerboseInfo() const
 {
 	return string("min: ") + CryStringUtils::toString(m_minExecutions) + string(" max: ") + CryStringUtils::toString(m_maxExecutions);
 }
 
 //--------------------------------------------------------------------------------------------------
-bool CryDRS::CTimeSinceResponseCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
+bool CTimeSinceResponseCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 {
 	CResponse* pResponse = nullptr;
 	if (!m_responseId.IsValid())
@@ -395,7 +397,7 @@ bool CryDRS::CTimeSinceResponseCondition::IsMet(DRS::IResponseInstance* pRespons
 }
 
 //--------------------------------------------------------------------------------------------------
-void CryDRS::CTimeSinceResponseCondition::Serialize(Serialization::IArchive& ar)
+void CTimeSinceResponseCondition::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_responseId, "response", "^ Response");
 	ar(m_minTime, "minTime", "^MinElpasedTime");
@@ -403,7 +405,7 @@ void CryDRS::CTimeSinceResponseCondition::Serialize(Serialization::IArchive& ar)
 }
 
 //--------------------------------------------------------------------------------------------------
-string CryDRS::CTimeSinceResponseCondition::GetVerboseInfo() const
+string CTimeSinceResponseCondition::GetVerboseInfo() const
 {
 	string responseName = (m_responseId.IsValid()) ? m_responseId.GetText() : "CurrentResponse";
 	return "Execution of '" + responseName + string("' more than ") + CryStringUtils::toString(m_minTime) + " seconds and less then " + CryStringUtils::toString(m_maxTime);

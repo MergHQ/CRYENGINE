@@ -83,7 +83,7 @@ public:
 	virtual DRS::IVariableCollection*                GetCollection(const CHashedString& name) override                                                                                    { return &m_nullVariableCollection; }
 	virtual DRS::IVariableCollection*                GetCollection(const CHashedString& name, DRS::IResponseInstance* pResponseInstance) override                                         { return &m_nullVariableCollection; }
 	virtual DRS::IVariableCollectionSharedPtr        CreateContextCollection() override                                                                                                   { return m_nullVariableCollectionSharedPtr; }
-	virtual void                                     CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender, DRS::SignalInstanceId instanceToSkip) override {}
+	virtual bool                                     CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender, DRS::SignalInstanceId instanceToSkip) override { return true; }
 	virtual DRS::IResponseActor*                     CreateResponseActor(const CHashedString& pActorName, EntityId entityID = INVALID_ENTITYID) override                                  { return &m_nullActor; }
 	virtual bool                                     ReleaseResponseActor(DRS::IResponseActor* pActorToFree) override                                                                     { return true; }
 	virtual DRS::IResponseActor*                     GetResponseActor(const CHashedString& pActorName) override                                                                           { return nullptr; }

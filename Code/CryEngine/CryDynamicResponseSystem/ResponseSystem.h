@@ -76,7 +76,7 @@ public:
 	virtual void                                     ReleaseVariableCollection(DRS::IVariableCollection* pToBeReleased) override;
 	virtual DRS::IVariableCollectionSharedPtr        CreateContextCollection() override;
 
-	virtual void                                     CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender = nullptr, DRS::SignalInstanceId instanceToSkip = DRS::s_InvalidSignalId) override;
+	virtual bool                                     CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender = nullptr, DRS::SignalInstanceId instanceToSkip = DRS::s_InvalidSignalId) override;
 
 	virtual CResponseActor*                          CreateResponseActor(const CHashedString& pActorName, EntityId entityID = INVALID_ENTITYID) override;
 	virtual bool                                     ReleaseResponseActor(DRS::IResponseActor* pActorToFree) override;

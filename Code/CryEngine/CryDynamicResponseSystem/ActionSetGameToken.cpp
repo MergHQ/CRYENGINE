@@ -19,6 +19,20 @@ void CActionSetGameToken::Serialize(Serialization::IArchive& ar)
 	ar(m_tokenName, "tokenname", "^TokenName");
 	ar(m_valueToSet, "stringValue", "^ Value");
 	ar(m_bCreateTokenIfNotExisting, "create", "^ Create");
+
+#if !defined(_RELEASE)
+	if (ar.isEdit() && ar.isOutput())
+	{
+		if (!m_tokenName.empty() && (m_tokenName.front() == ' ' || m_tokenName.back() == ' '))
+		{
+			ar.warning(m_tokenName, "GameToken name starts or ends with a space. Check if this is really wanted.");
+		}
+		if (!m_valueToSet.empty() && (m_valueToSet.front() == ' ' || m_valueToSet.back() == ' '))
+		{
+			ar.warning(m_valueToSet, "Value starts or ends with a space. Check if this is really wanted.");
+		}
+	}
+#endif
 }
 
 //--------------------------------------------------------------------------------------------------

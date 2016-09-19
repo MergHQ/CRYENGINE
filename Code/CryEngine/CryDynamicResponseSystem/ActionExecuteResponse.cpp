@@ -22,6 +22,20 @@ DRS::IResponseActionInstanceUniquePtr CActionExecuteResponse::Execute(DRS::IResp
 void CActionExecuteResponse::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_responseID, "response", "^ Response");
+
+#if defined(HASHEDSTRING_STORES_SOURCE_STRING)
+	if (ar.isEdit())
+	{
+		if (!m_responseID.IsValid())
+		{
+			ar.warning(m_responseID.m_textCopy, "No response to execute specified.");
+		}
+		else if (!CResponseSystem::GetInstance()->GetResponseManager()->HasMappingForSignal(m_responseID))
+		{
+			ar.warning(m_responseID.m_textCopy, "Response to execute not found.");
+		}
+	}
+#endif
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -62,6 +76,5 @@ void CryDRS::CActionExecuteResponseInstance::OnSignalProcessingStarted(SSignalIn
 {
 	m_pStartedResponse = static_cast<CResponseInstance*>(pStartedResponse);
 }
-
 
 REGISTER_DRS_ACTION(CActionExecuteResponse, "ExecuteResponse", DEFAULT_DRS_ACTION_COLOR);

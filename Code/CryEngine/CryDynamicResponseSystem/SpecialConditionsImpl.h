@@ -42,7 +42,7 @@ private:
 class CRandomCondition final : public DRS::IResponseCondition
 {
 public:
-	CRandomCondition() : m_randomFactor(0) {}
+	CRandomCondition() : m_randomFactor(50) {}
 	CRandomCondition(int factor) : m_randomFactor(factor) {}
 	virtual ~CRandomCondition() {}
 

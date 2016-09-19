@@ -248,7 +248,7 @@ void CResponseSystem::Reset(uint32 resetHint)
 }
 
 //--------------------------------------------------------------------------------------------------
-void CResponseSystem::CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender /* = nullptr */, DRS::SignalInstanceId instanceToSkip /* = s_InvalidSignalId */)
+bool CResponseSystem::CancelSignalProcessing(const CHashedString& signalName, DRS::IResponseActor* pSender /* = nullptr */, DRS::SignalInstanceId instanceToSkip /* = s_InvalidSignalId */)
 {
 	SSignal temp(signalName, static_cast<CResponseActor*>(pSender), nullptr);
 	temp.m_id = instanceToSkip;
@@ -328,7 +328,6 @@ void CResponseSystem::InternalReset(uint32 resetFlags)
 		DRS_DEBUG_DATA_ACTION(Reset());
 	}
 }
-
 constexpr const char* szDrsDataTag = "<DRS_DATA>";
 constexpr const char* szDrsVariablesStartTag = "VariablesStart";
 constexpr const char* szDrsVariablesEndTag = "VariablesEnd";
@@ -440,7 +439,6 @@ void CResponseSystem::SetCurrentState(const DRS::ValuesList& collectionsList)
 		m_pDialogLineDatabase->SetAllLineData(itStartOfLines, itEndOfLines);
 	}
 }
-
 
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------

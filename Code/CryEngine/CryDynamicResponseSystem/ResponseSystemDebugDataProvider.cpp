@@ -169,6 +169,8 @@ bool CResponseSystemDebugDataProvider::AddConditionChecked(const CConditionsColl
 	}
 
 	SStartedResponses& response = m_executedResponses[m_currentResponse];
+
+
 	SCheckedCondition newCondition;
 	newCondition.bMet = result;
 	if (pCondition->m_bNegated)
@@ -178,7 +180,10 @@ bool CResponseSystemDebugDataProvider::AddConditionChecked(const CConditionsColl
 	IVariableUsingBase::s_bDoDisplayCurrentValueInDebugOutput = true;
 	newCondition.conditionDesc += pCondition->m_pCondition->GetVerboseInfoWithType();
 	IVariableUsingBase::s_bDoDisplayCurrentValueInDebugOutput = false;
-	response.responseSegments.back().checkedConditions.push_back(newCondition);
+	if (!response.responseSegments.empty())
+	{
+		response.responseSegments.back().checkedConditions.push_back(newCondition);
+	}
 
 	if (m_loggingOptions & eDrsLoggingOptions_Conditions)
 	{

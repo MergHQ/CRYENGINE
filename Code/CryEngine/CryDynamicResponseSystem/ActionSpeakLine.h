@@ -25,7 +25,6 @@ public:
 		ESpeakLineFlags_SendSignalOnFinish            = BIT(7),
 		ESpeakLineFlags_ReevaluteConditionsAfterQueue = BIT(8),
 		ESpeakLineFlags_Default                       = ESpeakLineFlags_ReevaluteConditionsAfterQueue | eSpeakLineFlags_CancelResponseOnSkip | eSpeakLineFlags_CancelResponseOnCanceled
-
 	};
 
 	CActionSpeakLine() : m_flags(ESpeakLineFlags_Default) {}

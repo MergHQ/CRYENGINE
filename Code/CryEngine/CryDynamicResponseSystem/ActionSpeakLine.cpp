@@ -1,23 +1,30 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+
 #include "ActionSpeakLine.h"
 #include "DialogLineDatabase.h"
+#include "ResponseSegment.h"
 #include "ResponseSystem.h"
+#include "ResponseInstance.h"
 #include "SpeakerManager.h"
+
 #include <CryAudio/IAudioSystem.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <CryDynamicResponseSystem/IDynamicResponseAction.h>
-#include "ResponseInstance.h"
+
 #include <yasli/BitVectorImpl.h>
-#include "ResponseSegment.h"
 
 using namespace CryDRS;
 
+namespace
+{
 static const CHashedString s_signalOnLineCancel = "LineCanceled";
 static const CHashedString s_signalOnLineSkip = "LineSkipped";
 static const CHashedString s_signalOnLineStart = "LineStarted";
 static const CHashedString s_signalOnLineFinish = "LineFinished";
+static const CHashedString s_allKeyWord = "All";
+}
 
 //--------------------------------------------------------------------------------------------------
 DRS::IResponseActionInstanceUniquePtr CActionSpeakLine::Execute(DRS::IResponseInstance* pResponseInstance)
@@ -38,16 +45,16 @@ DRS::IResponseActionInstanceUniquePtr CActionSpeakLine::Execute(DRS::IResponseIn
 
 	DRS::ISpeakerManager::IListener::eLineEvent result = pDrs->GetSpeakerManager()->StartSpeaking(pSpeaker, m_lineIDToSpeak);
 
-	if ((result & DRS::ISpeakerManager::IListener::eLineEvent_WasNotStartedForAnyReason) > 0)
+	if (result == DRS::ISpeakerManager::IListener::eLineEvent_WasNotStartedForAnyReason)
 	{
 		//for whatever reason no line was started (maybe because of priority or only-once flag or faulty data)
-		if ((m_flags & CActionSpeakLine::ESpeakLineFlags_SendSignalOnSkip) > 0)
+		if ((m_flags& CActionSpeakLine::ESpeakLineFlags_SendSignalOnSkip) > 0)
 		{
 			DRS::IVariableCollectionSharedPtr contextVariablesPtr = CResponseSystem::GetInstance()->CreateContextCollection();
 			contextVariablesPtr->CreateVariable("Line", m_lineIDToSpeak);
 			pSpeaker->QueueSignal(s_signalOnLineSkip, contextVariablesPtr);
 		}
-		if ((m_flags & CActionSpeakLine::eSpeakLineFlags_CancelResponseOnSkip) > 0)
+		if ((m_flags& CActionSpeakLine::eSpeakLineFlags_CancelResponseOnSkip) > 0)
 		{
 			pResponseInstanceImpl->Cancel();
 		}
@@ -55,8 +62,8 @@ DRS::IResponseActionInstanceUniquePtr CActionSpeakLine::Execute(DRS::IResponseIn
 	}
 	else
 	{
-		if (result == DRS::ISpeakerManager::IListener::eLineEvent_Started 
-			&& (m_flags & CActionSpeakLine::ESpeakLineFlags_SendSignalOnStart) > 0)
+		if (result == DRS::ISpeakerManager::IListener::eLineEvent_Started
+		    && (m_flags& CActionSpeakLine::ESpeakLineFlags_SendSignalOnStart) > 0)
 		{
 			//remark: if the line is queued for now, then this signal will be send by the actionInstance when the line is actually started
 			DRS::IVariableCollectionSharedPtr contextVariablesPtr = CResponseSystem::GetInstance()->CreateContextCollection();
@@ -64,7 +71,7 @@ DRS::IResponseActionInstanceUniquePtr CActionSpeakLine::Execute(DRS::IResponseIn
 			pSpeaker->QueueSignal(s_signalOnLineStart, contextVariablesPtr);
 		}
 
-		return DRS::IResponseActionInstanceUniquePtr (new CActionSpeakLineInstance(pSpeaker, m_lineIDToSpeak, pResponseInstanceImpl, m_flags));
+		return DRS::IResponseActionInstanceUniquePtr(new CActionSpeakLineInstance(pSpeaker, m_lineIDToSpeak, pResponseInstanceImpl, m_flags));
 
 	}
 }
@@ -120,10 +127,14 @@ void CActionSpeakLineInstance::Cancel()
 //--------------------------------------------------------------------------------------------------
 bool CActionSpeakLineInstance::OnLineAboutToStart(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID)
 {
-	if (lineID == m_lineID && ((m_flags & CActionSpeakLine::ESpeakLineFlags_ReevaluteConditionsAfterQueue) > 0))
+	if (m_pSpeaker == pSpeaker && lineID == m_lineID && ((m_flags& CActionSpeakLine::ESpeakLineFlags_ReevaluteConditionsAfterQueue) > 0))
 	{
 		//if a queued-line is started, we re-check the conditions again
-		return m_pResponseInstance->GetCurrentSegment()->AreConditionsMet(m_pResponseInstance);
+		if (m_pResponseInstance->GetCurrentSegment() && m_currentState == CS_RUNNING)
+		{
+			return m_pResponseInstance->GetCurrentSegment()->AreConditionsMet(m_pResponseInstance);
+		}
+		return false;
 	}
 	return true;
 }
@@ -135,7 +146,7 @@ void CActionSpeakLineInstance::OnLineEvent(const DRS::IResponseActor* pSpeaker, 
 	{
 		if (lineEvent == eLineEvent_Started)
 		{
-			if ((m_flags & CActionSpeakLine::ESpeakLineFlags_SendSignalOnStart) > 0)
+			if ((m_flags& CActionSpeakLine::ESpeakLineFlags_SendSignalOnStart) > 0)
 			{
 				DRS::IVariableCollectionSharedPtr contextVariablesPtr = CResponseSystem::GetInstance()->CreateContextCollection();
 				contextVariablesPtr->CreateVariable("Line", m_lineID);
@@ -146,7 +157,7 @@ void CActionSpeakLineInstance::OnLineEvent(const DRS::IResponseActor* pSpeaker, 
 		{
 			CRY_ASSERT_MESSAGE(m_currentState == CS_RUNNING, "received a 'line-finished' callback when the speak-line action was not in the running state, should not happen");
 			m_currentState = CS_FINISHED;
-			if ((m_flags & CActionSpeakLine::ESpeakLineFlags_SendSignalOnFinish) > 0)
+			if ((m_flags& CActionSpeakLine::ESpeakLineFlags_SendSignalOnFinish) > 0)
 			{
 				DRS::IVariableCollectionSharedPtr contextVariablesPtr = CResponseSystem::GetInstance()->CreateContextCollection();
 				contextVariablesPtr->CreateVariable("Line", m_lineID);
@@ -157,7 +168,7 @@ void CActionSpeakLineInstance::OnLineEvent(const DRS::IResponseActor* pSpeaker, 
 		{
 			CRY_ASSERT_MESSAGE(m_currentState == CS_RUNNING, "received a 'line-canceled' callback when the speak-line action was not in the running state, should not happen");
 			m_currentState = CS_CANCELED;
-			if ((m_flags & CActionSpeakLine::ESpeakLineFlags_SendSignalOnCancel) > 0)
+			if ((m_flags& CActionSpeakLine::ESpeakLineFlags_SendSignalOnCancel) > 0)
 			{
 				DRS::IVariableCollectionSharedPtr contextVariablesPtr = CResponseSystem::GetInstance()->CreateContextCollection();
 				contextVariablesPtr->CreateVariable("Line", m_lineID);
@@ -171,13 +182,13 @@ void CActionSpeakLineInstance::OnLineEvent(const DRS::IResponseActor* pSpeaker, 
 		else if ((lineEvent & eLineEvent_WasNotStartedForAnyReason) > 0)
 		{
 			m_currentState = CS_CANCELED;
-			if ((m_flags & CActionSpeakLine::ESpeakLineFlags_SendSignalOnSkip) > 0)
+			if ((m_flags& CActionSpeakLine::ESpeakLineFlags_SendSignalOnSkip) > 0)
 			{
 				DRS::IVariableCollectionSharedPtr contextVariablesPtr = CResponseSystem::GetInstance()->CreateContextCollection();
 				contextVariablesPtr->CreateVariable("Line", m_lineID);
 				m_pSpeaker->QueueSignal(s_signalOnLineSkip, contextVariablesPtr);
 			}
-			if ((m_flags & CActionSpeakLine::eSpeakLineFlags_CancelResponseOnSkip) > 0)
+			if ((m_flags& CActionSpeakLine::eSpeakLineFlags_CancelResponseOnSkip) > 0)
 			{
 				m_pResponseInstance->Cancel();  //remark: This will call 'cancel' on our own instance as well, so we need to handle that.
 			}
@@ -205,13 +216,12 @@ CActionSpeakLineInstance::~CActionSpeakLineInstance()
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
-static const CHashedString s_AllKeyWord = "All";
 
 DRS::IResponseActionInstanceUniquePtr CActionCancelSpeaking::Execute(DRS::IResponseInstance* pResponseInstance)
 {
 	CResponseSystem* pDrs = CResponseSystem::GetInstance();
 	CResponseActor* pSpeaker = nullptr;
-	if (m_speakerOverrideName != s_AllKeyWord)
+	if (m_speakerOverrideName != s_allKeyWord)
 	{
 		if (m_speakerOverrideName.IsValid())
 		{
@@ -240,15 +250,13 @@ DRS::IResponseActionInstanceUniquePtr CActionCancelSpeaking::Execute(DRS::IRespo
 }
 
 //--------------------------------------------------------------------------------------------------
-CryDRS::CActionCancelSpeaking::CActionCancelSpeaking() : m_maxPrioToCancel(-1), m_lineId(s_AllKeyWord)
+CryDRS::CActionCancelSpeaking::CActionCancelSpeaking() : m_maxPrioToCancel(-1), m_lineId(s_allKeyWord)
 {
-
 }
 
 //--------------------------------------------------------------------------------------------------
-CryDRS::CActionCancelSpeaking::CActionCancelSpeaking(const CHashedString& speakerName) : m_maxPrioToCancel(-1), m_lineId(s_AllKeyWord)
+CryDRS::CActionCancelSpeaking::CActionCancelSpeaking(const CHashedString& speakerName) : m_maxPrioToCancel(-1), m_lineId(s_allKeyWord)
 {
-
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -257,6 +265,20 @@ void CActionCancelSpeaking::Serialize(Serialization::IArchive& ar)
 	ar(m_speakerOverrideName, "speakerOverride", "^ SpeakerOverride");
 	ar(m_maxPrioToCancel, "maxPrioToCancel", "^ MaxPrioToCancel");
 	ar(m_lineId, "lineToCancel", "^ lineToCancel");
+
+#if defined(HASHEDSTRING_STORES_SOURCE_STRING)
+	if (ar.isEdit())
+	{
+		if (!m_lineId.IsValid())
+		{
+			ar.warning(m_lineId.m_textCopy, "No line specified");
+		}
+		else if (!gEnv->pDynamicResponseSystem->GetDialogLineDatabase()->GetLineSetById(m_lineId))
+		{
+			ar.warning(m_lineId.m_textCopy, "Specified line not found in the database");
+		}
+	}
+#endif
 }
 
 //--------------------------------------------------------------------------------------------------

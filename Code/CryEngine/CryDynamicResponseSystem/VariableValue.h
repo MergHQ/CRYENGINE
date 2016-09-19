@@ -46,7 +46,7 @@ public:
 #if defined (ENABLE_VARIABLE_VALUE_TYPE_CHECKINGS)
 	#define SetTypeInfoOfValue(x)    if (m_value == POS_INFINITE) m_type = eDRVT_PosInfinite; else if (m_value == NEG_INFINITE) \
 	  m_type = eDRVT_NegInfinite; else m_type = x; m_hashedText.clear();
-	#define WarnIfTypeDiffers(other) if (!DoTypesMatch(other)) { DrsLogWarning("Compared to VariableValues with different types"); }
+	#define WarnIfTypeDiffers(other) if (!DoTypesMatch(other)) { DrsLogWarning("Compared two VariableValues with different types"); }
 #else
 	#define SetTypeInfoOfValue(x)
 	#define WarnIfTypeDiffers(other)

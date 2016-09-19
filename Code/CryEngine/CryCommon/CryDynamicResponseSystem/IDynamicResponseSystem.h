@@ -336,7 +336,7 @@ public:
 	 * @param signalName - Name of the signal for which we want to interrupt the execution of responses
 	 * @param pSender - the Actor for which we want to stop the execution
 	 */
-	virtual void CancelSignalProcessing(const CHashedString& signalName, IResponseActor* pSender = nullptr, SignalInstanceId instanceToSkip = s_InvalidSignalId) = 0;
+	virtual bool CancelSignalProcessing(const CHashedString& signalName, IResponseActor* pSender = nullptr, SignalInstanceId instanceToSkip = s_InvalidSignalId) = 0;
 
 	/**
 	 * Will create a new Response Actor. This actor is registered in the DRS.

@@ -51,9 +51,9 @@ public:
 		eSH_EvaluateResponses         = BIT(2), //will display if the condition is currently met (editor only)
 	};
 
-	typedef std::unordered_map<CHashedString, ResponsePtr>                           MappedSignals;
-	typedef std::vector<SSignal>                                                     SignalList;
-	typedef std::vector<CResponseInstance*>                                          ResponseInstanceList;
+	typedef std::unordered_map<CHashedString, ResponsePtr>                                   MappedSignals;
+	typedef std::vector<SSignal>                                                             SignalList;
+	typedef std::vector<CResponseInstance*>                                                  ResponseInstanceList;
 	typedef std::vector<std::pair<DRS::IResponseManager::IListener*, DRS::SignalInstanceId>> ListenerList;
 
 	CResponseManager();
@@ -81,10 +81,11 @@ public:
 	void               SerializeResponseStates(Serialization::IArchive& ar);
 
 	ResponsePtr        GetResponse(const CHashedString& signalName);
+	bool			   HasMappingForSignal(const CHashedString& signalName);
 
 	void               QueueSignal(const SSignal& signal);
-	void               CancelSignalProcessing(const SSignal& signal);
-	bool			   IsSignalProcessed(const SSignal& signal);
+	bool               CancelSignalProcessing(const SSignal& signal);
+	bool               IsSignalProcessed(const SSignal& signal);
 	void               Update();
 
 	void               GetAllResponseData(DRS::ValuesList* pOutCollectionsList, bool bSkipDefaultValues);
@@ -107,12 +108,8 @@ private:
 
 	ResponseInstanceList m_runningResponses;
 
-	bool                 m_bCurrentlyUpdating;
-
 	ListenerList         m_Listener;
 
 	SignalList           m_currentlyQueuedSignals;
-	SignalList           m_currentlyQueuedSignalsDuringUpdate;  //we have a second list where we store signals that gets queued while we are updating the normal list (because we dont want the original list to change, while we use it)
-	SignalList           m_currentlyWaitingToBeCanceledSignals;
 };
 } // namespace CryDRS
