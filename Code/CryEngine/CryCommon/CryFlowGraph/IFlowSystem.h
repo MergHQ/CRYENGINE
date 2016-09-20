@@ -527,7 +527,8 @@ class TFlowInputData
 		{
 			int index;
 			m_ser.Value("tag", index);
-			SerializeVariant(var);
+			if (index >= 0)
+				SerializeVariant(var);
 		}
 
 	private:
