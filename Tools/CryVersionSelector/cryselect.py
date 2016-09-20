@@ -344,6 +344,10 @@ class CrySwitch(tk.Frame):
 			engine_files= list (filter (lambda filename: os.path.isfile (os.path.join (engine_dirname, filename)) and os.path.splitext(filename)[1] == cryregistry.ENGINE_EXTENSION, listdir))
 			engine_files.sort()
 			if not engine_files:
+				message= 'Folder is not a previously registered CRYENGINE folder. Would you like to add the folder as a custom engine?'
+				if MessageBox (None, message, 'Switch engine version', win32con.MB_OKCANCEL | win32con.MB_ICONWARNING) == win32con.IDCANCEL:
+					return
+				
 				engine_id= "{%s}" % uuid.uuid4()
 				engine_path= os.path.join (engine_dirname, os.path.basename (engine_dirname) + cryregistry.ENGINE_EXTENSION)
 				file= open (engine_path, 'w')

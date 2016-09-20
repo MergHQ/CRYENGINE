@@ -38,7 +38,7 @@ def error_engine_tool_not_found (path):
 	sys.exit (620)
 
 def error_cmake_not_found():
-	sys.stderr.write ("Unable to locate CMake.\n")
+	sys.stderr.write ("Unable to locate CMake.\nPlease download and install CMake from https://cmake.org/download/ and make sure it is available through the PATH environment variable.\n")
 	sys.exit (621)
 	
 def error_mono_not_found (path):
