@@ -120,7 +120,7 @@ public:
 #endif
 
 private:
-	bool       AddCustomLink(const NavigationMeshID& meshID, MNM::OffMeshLink& linkData, MNM::OffMeshLinkID& linkID);
+	bool       AddCustomLink(const NavigationMeshID& meshID, MNM::OffMeshLinkPtr& pLinkData, MNM::OffMeshLinkID& linkID, const bool bCloneLinkData);
 	void       RemoveCustomLink(const MNM::OffMeshLinkID& linkID);
 
 	bool       IsLinkRemovalRequested(const MNM::OffMeshLinkID& linkID) const;

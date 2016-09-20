@@ -71,10 +71,14 @@ bool OffMeshNavigationManager::IsLinkRemovalRequested(const MNM::OffMeshLinkID& 
 	return false;
 }
 
-bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM::OffMeshLink& linkData, MNM::OffMeshLinkID& linkID)
+bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM::OffMeshLinkPtr& pLinkData, MNM::OffMeshLinkID& linkID, const bool bCloneLinkData)
 {
 	// Grab the navigation mesh
 	NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
+
+	CRY_ASSERT(pLinkData.get() != nullptr);
+
+	MNM::OffMeshLink& linkData = *pLinkData;
 
 	// Query the entry/exit positions
 	const Vec3 startPoint = linkData.GetStartPosition();
@@ -130,10 +134,21 @@ bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM
 	}
 
 	// Register the new link with the off-mesh navigation system
-	MNM::OffMeshLinkPtr pClonedData(offMeshNavigation.AddLink(mesh, startTriangleID, endTriangleID, linkData, linkID));
+	offMeshNavigation.AddLink(mesh, startTriangleID, endTriangleID, *&linkID);
 	assert(linkID > 0);
 
-	m_links[linkID] = SLinkInfo(meshID, startTriangleID, endTriangleID, pClonedData);
+	MNM::OffMeshLinkPtr pOffMeshLink;
+	if (bCloneLinkData)
+	{
+		pOffMeshLink.reset(linkData.Clone());
+	}
+	else
+	{
+		pOffMeshLink = pLinkData;
+	}
+	pOffMeshLink->SetLinkID(linkID);
+
+	m_links[linkID] = SLinkInfo(meshID, startTriangleID, endTriangleID, std::move(pOffMeshLink));
 
 	gAIEnv.pNavigationSystem->AddOffMeshLinkIslandConnectionsBetweenTriangles(meshID, startTriangleID, endTriangleID, linkID);
 
@@ -173,7 +188,7 @@ void OffMeshNavigationManager::ProcessQueuedRequests()
 			{
 			case MNM::eOffMeshOperationType_Add:
 				{
-					const bool linkGotSuccessfullyAdded = AddCustomLink(it->meshId, *(it->pLinkData), it->linkId);
+					const bool linkGotSuccessfullyAdded = AddCustomLink(it->meshId, it->pLinkData, it->linkId, it->bCloneLinkData);
 					if (it->callback)
 					{
 						it->callback(MNM::SOffMeshOperationCallbackData(it->linkId, linkGotSuccessfullyAdded));
@@ -630,6 +645,11 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID,
 			if (!IsLinkRemovalRequested(linkID))
 			{
 				MNM::LinkAdditionRequest request(linkInfo.offMeshLink->GetEntityIdForOffMeshLink(), meshID, linkInfo.offMeshLink, linkID);
+
+				// Link data was already cloned when it was added the first time. If we clone it again, the game-side of the link have no way
+				// to know, that link data was cloned (there is no event about refreshed connections). That means, if the game-side holds a
+				// pointer to the link, it will become dangling and will lead to crash.
+				request.bCloneLinkData = false;
 				QueueCustomLinkAddition(request);
 			}
 

@@ -26,7 +26,7 @@ void MNM::OffMeshNavigation::TileLinks::CopyLinks(TriangleLink* links, uint16 li
 		memcpy(triangleLinks, links, sizeof(TriangleLink) * linkCount);
 }
 
-MNM::OffMeshLinkPtr MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const TriangleID startTriangleID, const TriangleID endTriangleID, OffMeshLink& linkData, OffMeshLinkID& linkID)
+void MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const TriangleID startTriangleID, const TriangleID endTriangleID, OffMeshLinkID& linkID)
 {
 	// We only support 1024 links per tile
 	const int kMaxTileLinks = 1024;
@@ -116,16 +116,6 @@ MNM::OffMeshLinkPtr MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMe
 		// Add the new link to the off-mesh link to the tile itself
 		navigationMesh.grid.AddOffMeshLinkToTile(tileID, startTriangleID, triangleIdx);
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// Resolve and store the link data
-	OffMeshLinkPtr pOffMeshLink;
-	// Clone data
-	pOffMeshLink.reset(linkData.Clone());
-	pOffMeshLink->SetLinkID(linkID);
-
-	// Return the potentially cloned data.
-	return pOffMeshLink;
 }
 
 void MNM::OffMeshNavigation::RemoveLink(NavigationMesh& navigationMesh, const TriangleID boundTriangleID, const OffMeshLinkID linkID)
