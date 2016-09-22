@@ -62,11 +62,6 @@ public:
 	void UnlockShared();
 	bool TryLockShared();
 
-	// Deprecated
-	bool IsLocked()
-	{
-		return m_win32_lock_type.SRWLock_ != 0;
-	}
 private:
 	CryLock_SRWLOCK(const CryLock_SRWLOCK&) = delete;
 	CryLock_SRWLOCK& operator=(const CryLock_SRWLOCK&) = delete;
@@ -96,7 +91,7 @@ public:
 #ifndef _RELEASE
 	bool IsLocked()
 	{
-		return m_win32_lock_type.IsLocked();
+		return m_exclusiveOwningThreadId == CryGetCurrentThreadId();
 	}
 #endif
 
@@ -107,6 +102,9 @@ private:
 private:
 	CryLock_SRWLOCK m_win32_lock_type;
 	uint32          m_recurseCounter;
+	
+	// Due to its semantics, this member can be accessed in an unprotected manner,
+	// but only for comparison with the current tid.
 	threadID        m_exclusiveOwningThreadId;
 };
 
