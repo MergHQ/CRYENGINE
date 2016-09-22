@@ -3804,7 +3804,8 @@ void C3DEngine::UpdateWindAreas()
 			area.pb.waterFlow.zero();
 			for (int i = 4; i >= 0; idir = idir.rot90cw() + Vec2i(-(i >> 2), i >> 2), --i)
 			{
-				area.ctr = c + Vec3(sz.x * idir.x, sz.y * idir.y, 0);
+				windArea.point[i].set(sz.x * idir.x, sz.y * idir.y);
+				area.ctr = c + Vec3(windArea.point[i]);
 				pArea->GetStatus(&area);
 				windArea.windSpeed[i] = area.pb.waterFlow;
 			}
