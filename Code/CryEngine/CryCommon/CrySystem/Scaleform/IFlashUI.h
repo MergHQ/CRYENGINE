@@ -901,8 +901,16 @@ template<class T> struct SUIItemLookupIDD
 template<class Base>
 struct SUIItemLookupSet_Impl
 {
+	struct CILess
+	{
+		bool operator() (const CCryName& lhs, const CCryName& rhs) const
+		{
+			return stricmp(lhs.c_str(), rhs.c_str()) < 0;
+		}
+	};
+
 	typedef DynArray<Base*>                 TITems;
-	typedef std::map<CCryName, int>         TLookup;
+	typedef std::map<CCryName, int, CILess> TLookup;
 	typedef typename TITems::iterator       iterator;
 	typedef typename TITems::const_iterator const_iterator;
 	typedef typename TITems::size_type      size_type;

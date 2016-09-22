@@ -803,8 +803,8 @@ void CScaleformPlayback::PopExternalRenderTarget()
 	{
 		if (pCurOutput->renderPass.GetPrimitiveCount() >= 1)
 		{
-			m_pRenderer->SF_HandleClear(params);
 			pCurOutput->renderPass.Execute();
+			pCurOutput->renderPass.ClearPrimitives();
 		}
 
 		m_pRenderer->SF_GetResources().m_PrimitiveHeap.FreeUsedPrimitives(pCurOutput->key);
@@ -902,8 +902,8 @@ void CScaleformPlayback::PopRenderTarget()
 	{
 		if (pCurOutput->renderPass.GetPrimitiveCount() >= 1)
 		{
-			m_pRenderer->SF_HandleClear(params);
 			pCurOutput->renderPass.Execute();
+			pCurOutput->renderPass.ClearPrimitives();
 		}
 
 		m_pRenderer->SF_GetResources().m_PrimitiveHeap.FreeUsedPrimitives(pCurOutput->key);
@@ -1556,7 +1556,7 @@ void CScaleformPlayback::DrawBlurRect(ITexture* _pSrcIn, const RectF& inSrcRect,
 	ITexture* pnextsrc = NULL;
 	RectF srcrect, destrect = { -1, -1, 1, 1 };
 
-	uint32 n = filter.Passes;
+	uint32 numPasses = filter.Passes;
 
 	BlurFilterParams pass[3];
 	SSF_GlobalDrawParams::EBlurType passis[3];
@@ -1600,7 +1600,8 @@ void CScaleformPlayback::DrawBlurRect(ITexture* _pSrcIn, const RectF& inSrcRect,
 
 	if (filter.BlurX * filter.BlurY > 32)
 	{
-		n *= 2;
+		numPasses *= 2;
+
 		pass[0].BlurY = 1;
 		pass[1].BlurX = 1;
 		pass[2].BlurX = 1;
@@ -1614,11 +1615,11 @@ void CScaleformPlayback::DrawBlurRect(ITexture* _pSrcIn, const RectF& inSrcRect,
 
 	uint32 bufWidth  = (uint32)ceilf(inSrcRect.Width());
 	uint32 bufHeight = (uint32)ceilf(inSrcRect.Height());
-	uint32 last      = n - 1;
+	uint32 lastPass  = numPasses - 1;
 
-	for (uint32 i = 0; i < n; i++)
+	for (uint32 i = 0; i < numPasses; i++)
 	{
-		uint32 passi = (i == last) ? 2 : (i & 1);
+		uint32 passi = (i == lastPass) ? 2 : (i & 1);
 		const BlurFilterParams& pparams = pass[passi];
 		params.blurType = passis[passi];
 
@@ -1642,7 +1643,7 @@ void CScaleformPlayback::DrawBlurRect(ITexture* _pSrcIn, const RectF& inSrcRect,
 		ApplyTextureInfo(0, &fillTexture);
 		ApplyTextureInfo(1, &sourceTexture);
 
-		if (i != n - 1)
+		if (i != lastPass)
 		{
 			pnextsrc = static_cast<CTexture*>(m_pRenderer->EF_GetTextureByID(PushTempRenderTarget(RectF(-1, -1, 1, 1), bufWidth, bufHeight, true, false)));
 			ApplyMatrix(&Matrix23::Identity());
@@ -1670,7 +1671,7 @@ void CScaleformPlayback::DrawBlurRect(ITexture* _pSrcIn, const RectF& inSrcRect,
 
 		//set blend state
 		{
-			if (i == n - 1)
+			if (i == lastPass)
 			{
 				const float cxformData[4 * 2] =
 				{
@@ -1746,7 +1747,7 @@ void CScaleformPlayback::DrawBlurRect(ITexture* _pSrcIn, const RectF& inSrcRect,
 		psrc->Release();
 		pSrcIn->Release();
 
-		if (i != n - 1)
+		if (i != lastPass)
 		{
 			PopRenderTarget();
 			psrc = pnextsrc;
@@ -1754,7 +1755,7 @@ void CScaleformPlayback::DrawBlurRect(ITexture* _pSrcIn, const RectF& inSrcRect,
 	}
 
 	SetWorld3D(pMat3D_Cached);
-	m_renderStats[m_rsIdx].Filters += n;
+	m_renderStats[m_rsIdx].Filters += numPasses;
 
 	//restore blend mode
 	ApplyBlendMode(m_curBlendMode);

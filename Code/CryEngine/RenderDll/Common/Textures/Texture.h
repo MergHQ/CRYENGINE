@@ -2448,7 +2448,7 @@ public:
 public:
 	CFlashTextureSourceBase(const char* pFlashFileName, const IRenderer::SLoadShaderItemArgs* pArgs);
 
-	void AutoUpdate(const float delta, const bool isEditing, const bool isPaused);
+	void AutoUpdate(const CTimeValue& curTime, const float delta, const bool isEditing, const bool isPaused);
 	void AutoUpdateRT(const int frameID);
 
 	struct IFlashPlayerInstanceWrapper
@@ -2688,6 +2688,8 @@ protected:
 	static int                   Align8(int dim)                       { return (dim + 7) & ~7; }
 
 private:
+	void Advance(const float delta, bool isPaused);
+
 	struct CachedTexStateID
 	{
 		int orig;

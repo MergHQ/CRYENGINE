@@ -547,7 +547,7 @@ uint32 CD3D9Renderer::SF_AdjustBlendStateForMeasureOverdraw(uint32 blendModeStat
 //////////////////////////////////////////////////////////////////////////
 void CD3D9Renderer::SF_HandleClear(const SSF_GlobalDrawParams& __restrict params)
 {
-	const SSF_GlobalDrawParams::OutputParams& __restrict rCurOutput = *params.pRenderOutput;
+	SSF_GlobalDrawParams::OutputParams& __restrict rCurOutput = *params.pRenderOutput;
 
 	if (rCurOutput.bRenderTargetClear || rCurOutput.bStencilTargetClear)
 	{
@@ -559,11 +559,19 @@ void CD3D9Renderer::SF_HandleClear(const SSF_GlobalDrawParams& __restrict params
 			LONG(params.viewport.TopLeftY + params.viewport.Height)
 		};
 
+		// Graphics pipeline >= 1
+		if (CRenderer::CV_r_GraphicsPipeline > 0)
+		{
+			if (rCurOutput.renderPass.GetPrimitiveCount() >= 1)
+			{
+				rCurOutput.renderPass.Execute();
+				rCurOutput.renderPass.ClearPrimitives();
+			}
+		}
+
 		if (rCurOutput.bRenderTargetClear)
-//			CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetGraphicsInterface()->ClearSurface(rCurOutput.pRenderTarget->GetSurface(0, 0), (float*)&Clr_Transparent, 1, &rect);
 			FX_ClearTarget(rCurOutput.pRenderTarget, Clr_Transparent, 1, &rect, true);
 		if (rCurOutput.bStencilTargetClear)
-//			CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->GetGraphicsInterface()->ClearSurface(rCurOutput.pStencilTarget->pSurface, CLEAR_STENCIL, Clr_Unused.r, 0, 1, &rect);
 			FX_ClearTarget(rCurOutput.pStencilTarget, CLEAR_STENCIL, Clr_Unused.r, 0, 1, &rect, true);
 	}
 

@@ -3256,6 +3256,7 @@ public:
 		SRenderThread* pRT = gRenDev->m_pRT;
 		if (!pRT || (pRT->IsMainThread() && pRT->m_eVideoThreadMode == SRenderThread::eVTM_Disabled))
 		{
+			CTimeValue curTime = gEnv->pTimer->GetAsyncTime();
 			const int frameID = gRenDev->GetFrameID(false);
 			if (ms_lastTickFrameID != frameID)
 			{
@@ -3268,7 +3269,7 @@ public:
 				const size_t size = ms_sources.size();
 				for (size_t i = 0; i < size; ++i)
 				{
-					ms_sources[i]->AutoUpdate(deltaTime, isEditing, isPaused);
+					ms_sources[i]->AutoUpdate(curTime, deltaTime, isEditing, isPaused);
 				}
 
 				ms_lastTickFrameID = frameID;
@@ -3332,26 +3333,17 @@ void CFlashTextureSourceBase::AddToLightRenderList(const IDynTextureSource* pSrc
 	FlashTextureSourceSharedRT_AutoUpdate::AddToLightList((CFlashTextureSourceBase*)pSrc);
 }
 
-void CFlashTextureSourceBase::AutoUpdate(const float delta, const bool isEditing, const bool isPaused)
+void CFlashTextureSourceBase::AutoUpdate(const CTimeValue& curTime, const float delta, const bool isEditing, const bool isPaused)
 {
 	if (m_autoUpdate)
 	{
-		m_pFlashPlayer->UpdatePlayer(this);
-		AutoReleasedFlashPlayerPtr pFlashPlayer(m_pFlashPlayer->GetTempPtr());
-		if (pFlashPlayer)
-		{
-			if (isPaused != pFlashPlayer->IsPaused())
-				pFlashPlayer->Pause(isPaused);
-
 #if CRY_PLATFORM_WINDOWS
-			m_perFrameRendering &= !isEditing;
+		m_perFrameRendering &= !isEditing;
 #endif
 
-			CTimeValue curTime = gEnv->pTimer->GetAsyncTime();
-			if (m_perFrameRendering || (curTime - m_lastVisible).GetSeconds() < 1.0f)
-			{
-				m_pFlashPlayer->Advance(delta);
-			}
+		if (m_perFrameRendering || (curTime - m_lastVisible).GetSeconds() < 1.0f)
+		{
+			Advance(delta, isPaused);
 		}
 	}
 }
@@ -3360,7 +3352,7 @@ void CFlashTextureSourceBase::AutoUpdateRT(const int frameID)
 {
 	if (m_autoUpdate)
 	{
-		if (m_perFrameRendering && frameID != m_lastVisibleFrameID)
+		if (m_perFrameRendering && (frameID != m_lastVisibleFrameID))
 		{
 			Update();
 		}
@@ -3724,10 +3716,18 @@ bool CFlashTextureSourceBase::IsFlashFile(const char* pFlashFileName)
 	if (pFlashFileName)
 	{
 		const char* pExt = fpGetExtension(pFlashFileName);
+		const bool bPath = strchr(pFlashFileName, '/') || strchr(pFlashFileName, '\\');
 
 		if (pExt)
 		{
-			return (!stricmp(pExt, ".ui") || !stricmp(pExt, ".layout") || !stricmp(pExt, ".gfx") || !stricmp(pExt, ".swf") || !stricmp(pExt, ".usm"));
+			if (!bPath)
+			{
+				// Pseudo files (no path, looks up flow-node)
+				return (!stricmp(pExt, ".ui"));
+			}
+
+			// Real files (looks up filesystem)
+			return (!stricmp(pExt, ".layout") || !stricmp(pExt, ".gfx") || !stricmp(pExt, ".swf") || !stricmp(pExt, ".usm"));
 		}
 	}
 
@@ -3739,10 +3739,15 @@ bool CFlashTextureSourceBase::IsFlashUIFile(const char* pFlashFileName)
 	if (pFlashFileName)
 	{
 		const char* pExt = fpGetExtension(pFlashFileName);
+		const bool bPath = strchr(pFlashFileName, '/') || strchr(pFlashFileName, '\\');
 
 		if (pExt)
 		{
-			return !stricmp(pExt, ".ui");
+			if (!bPath)
+			{
+				// Pseudo files (no path, looks up flow-node)
+				return !stricmp(pExt, ".ui");
+			}
 		}
 	}
 

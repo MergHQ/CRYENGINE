@@ -835,10 +835,10 @@ void CShaderMan::mfRefreshResources(CShaderResources* Res, const IRenderer::SLoa
 
 			if (Tex->m_Sampler.m_eTexType == eTT_Dyn2D)
 			{
+				SAFE_RELEASE(Tex->m_Sampler.m_pTex);
+
 				if (CFlashTextureSource::IsFlashFile(Tex->m_Name.c_str()))
 				{
-					SAFE_RELEASE(Tex->m_Sampler.m_pTex);
-
 					mfSetResourceTexState(Tex);
 
 					SAFE_RELEASE(Tex->m_Sampler.m_pTarget);
@@ -858,6 +858,10 @@ void CShaderMan::mfRefreshResources(CShaderResources* Res, const IRenderer::SLoa
 					Tex->m_Sampler.m_pTarget->m_nIDInPool = -1;
 					Tex->m_Sampler.m_pTarget->m_nFlags |= FRT_RENDTYPE_RECURSIVECURSCENE | FRT_CAMERA_CURRENT;
 					Tex->m_Sampler.m_pTarget->m_nFlags |= FRT_CLEAR_DEPTH | FRT_CLEAR_STENCIL | FRT_CLEAR_COLOR;
+				}
+				else
+				{
+					Tex->m_Sampler.m_pTex = mfLoadResourceTexture("EngineAssets/TextureMsg/NotFound.tif", Res->m_TexturePath.c_str(), Res->m_Textures[i]->m_Sampler.GetTexFlags() | Flags, Res->m_Textures[i]);
 				}
 			}
 			else if (!Tex->m_Sampler.m_pTex)
@@ -883,7 +887,7 @@ void CShaderMan::mfRefreshResources(CShaderResources* Res, const IRenderer::SLoa
 					}
 				}
 				else if (Tex->m_Sampler.m_eTexType == eTT_User)
-					Tex->m_Sampler.m_pTex = NULL;
+					Tex->m_Sampler.m_pTex = nullptr;
 				else
 				{
 					mfLoadResourceTexture((EEfResTextures)i, *Res, Flags);
