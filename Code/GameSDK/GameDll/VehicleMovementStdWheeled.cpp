@@ -82,6 +82,21 @@ CVehicleMovementStdWheeled::CVehicleMovementStdWheeled()
 	m_submergedRatioMax = 0.0f;
 	m_initialHandbreak = true;
 	m_maxSoundSlipSpeed = 0.0f;
+	m_massCW = 0;
+	m_partidCW = 799;
+	m_pos0CW.Set(0,0,1); 
+	m_velxCW=m_posxCW = 0;
+	m_poszCW = m_pos0CW.z;
+	m_kzCW = 0;
+	m_ktiltCW[0] = m_ktiltCW[1] = m_ktiltCW[2] = 1; 
+	m_stiltCW = 40;
+	m_maxxCW = 100;
+	m_minVelSteerLean = 0;
+	m_dampingy = 0;
+	m_velWheelDisable = 0;
+	m_maskWheelDisable = 0;
+	m_uprightOnMount = 0;
+	m_qPrev.SetIdentity();
 }
 
 //------------------------------------------------------------------------
@@ -114,6 +129,21 @@ bool CVehicleMovementStdWheeled::Init(IVehicle* pVehicle, const CVehicleParams& 
   MOVEMENT_VALUE_OPT("steerRelaxation", m_steerRelaxation, table);
   MOVEMENT_VALUE_OPT("vMaxSteerMax", m_vMaxSteerMax, table);
   MOVEMENT_VALUE_OPT("pedalLimitMax", m_pedalLimitMax, table);
+
+	MOVEMENT_VALUE_OPT("driverMass", m_massCW, table);
+	MOVEMENT_VALUE_OPT("driverPosY", m_pos0CW.y, table);
+	MOVEMENT_VALUE_OPT("driverPosZ", m_pos0CW.z, table);
+	MOVEMENT_VALUE_OPT("driverMoveZ", m_kzCW, table);
+	MOVEMENT_VALUE_OPT("driverMoveX", m_ktiltCW[0], table);
+	MOVEMENT_VALUE_OPT("driverMoveXSteer", m_ktiltCW[1], table);
+	MOVEMENT_VALUE_OPT("driverMoveXSteerHarder", m_ktiltCW[2], table);
+	MOVEMENT_VALUE_OPT("driverMaxMoveX", m_maxxCW, table);
+	MOVEMENT_VALUE_OPT("driverSpeed", m_stiltCW, table);
+	MOVEMENT_VALUE_OPT("minVelSteerLean", m_minVelSteerLean, table);
+	MOVEMENT_VALUE_OPT("rollDamping", m_dampingy, table);
+	MOVEMENT_VALUE_OPT("wheelDisableSpeed", m_velWheelDisable, table);
+	MOVEMENT_VALUE_OPT("wheelDisableMask", m_maskWheelDisable, table);
+	MOVEMENT_VALUE_OPT("uprightOnMount", m_uprightOnMount, table);
   
   table.getAttr("rpmRelaxSpeed", m_rpmRelaxSpeed);
   table.getAttr("rpmInterpSpeed", m_rpmInterpSpeed);
@@ -185,6 +215,7 @@ bool CVehicleMovementStdWheeled::InitPhysics(const CVehicleParams& table)
   MOVEMENT_VALUE_OPT("stabiMax", m_stabiMax, wheeledTable);
 	MOVEMENT_VALUE_OPT("maxSpeed", m_maxSpeed, wheeledTable);
   MOVEMENT_VALUE_OPT("brakeImpulse", m_brakeImpulse, wheeledTable);
+	MOVEMENT_VALUE_OPT("wheelMassScale", m_carParams.wheelMassScale, wheeledTable);
   
   int maxGear = 0;
   if (wheeledTable.getAttr("maxGear", maxGear) && maxGear>0)
@@ -292,6 +323,20 @@ void CVehicleMovementStdWheeled::Physicalize()
 		pe_params_foreign_data pfd; pfd.iForeignFlagsOR = PFF_UNIMPORTANT;
 		pPhysEnt->SetParams(&pf);
 		pPhysEnt->SetParams(&pfd);
+	}
+
+	if (m_massCW>0)
+	{
+		IGeomManager *pGeoman = gEnv->pPhysicalWorld->GetGeomManager();
+		primitives::sphere sph; 
+		sph.center.zero(); sph.r=0.1f;
+		phys_geometry *pGeom = pGeoman->RegisterGeometry(pGeoman->CreatePrimitive(primitives::sphere::type, &sph));
+		pGeom->pGeom->Release(); pGeom->nRefCount--;
+		pe_geomparams gp;
+		gp.pos = m_pos0CW;
+		gp.mass = m_massCW;
+		gp.flags = gp.flagsCollider = 0;
+		pPhysEnt->AddGeometry(pGeom, &gp, m_partidCW);
 	}
 }
 
@@ -510,7 +555,14 @@ void CVehicleMovementStdWheeled::OnEvent(EVehicleMovementEvent event, const SVeh
         } 
       }
     }     
-  }  
+  }
+	else if (m_uprightOnMount && event==eVME_PlayerEnterLeaveVehicle && params.bValue)
+	{
+		Quat q = m_pVehicle->GetEntity()->GetRotation();
+		Vec3 xaxis = q*Vec3(1,0,0), xaxisNew = xaxis;
+		xaxisNew.z = 0; xaxisNew.normalize();
+		m_pVehicle->GetEntity()->SetRotation(Quat::CreateRotationV0V1(xaxis,xaxisNew)*q);
+	}
 }
 
 //------------------------------------------------------------------------
@@ -1591,6 +1643,95 @@ void CVehicleMovementStdWheeled::ProcessMovement(const float deltaTime)
 
 	float speed = m_PhysDyn.v.len();
 
+	bool driverActive = m_actorId && !m_pVehicle->IsDestroyed();
+	if (m_massCW>0)
+	{
+		pe_params_part pp;
+		pp.partid = m_partidCW;
+		if (pPhysics->GetParams(&pp) && driverActive!=(pp.mass>0))
+		{
+			new(&pp) pe_params_part;
+			pp.partid = m_partidCW;
+			pp.mass = driverActive ? m_massCW : 0;
+			pPhysics->SetParams(&pp);
+		}
+	}
+
+	pe_params_car pc; pPhysics->GetParams(&pc);
+	if (m_maskWheelDisable)
+	{
+		int active = speed<m_velWheelDisable && driverActive;
+		pe_params_part pp;
+		pe_status_nparts snp;
+		int nParts = pPhysics->GetStatus(&snp);
+		for(int i=0; i<pc.nWheels; i++)
+			if (m_maskWheelDisable & 1<<i) 
+			{
+				pp.ipart = nParts-pc.nWheels+i;
+				pp.flagsAND = pp.flagsColliderAND = 0;
+				pp.flagsOR = geom_collides & -active;
+				pp.flagsColliderOR = (geom_colltype0|geom_colltype_vehicle) & -active;
+				pPhysics->SetParams(&pp);
+			}
+	}
+
+	// speed ratio    
+	float speedRel = min(speed, m_vMaxSteerMax) / m_vMaxSteerMax;  
+	float steerMax = GetMaxSteer(speedRel);
+	float steering = m_movementAction.rotateYaw;    
+
+	if (driverActive && m_massCW>0)
+	{
+		Vec3 xworld = m_PhysPos.q*Vec3(1,0,0), yworld = m_PhysPos.q*Vec3(0,1,0);
+		xworld.z=0; xworld.normalize();
+		m_poszCW = m_pos0CW.z+m_kzCW*fabs(m_posxCW);
+		Vec3 posw = m_PhysPos.pos+m_PhysPos.q*Vec3(0,m_pos0CW.y,m_poszCW)+xworld*m_posxCW;
+		float vcur = (m_PhysDyn.v+(m_PhysDyn.w^posw-m_PhysDyn.centerOfMass))*xworld;
+		float xcur = (m_PhysPos.q*Vec3(0,0,m_poszCW))*xworld;
+		float xtrg = 0, k = m_ktiltCW[0];
+		pe_status_wheel sw;
+		Vec3 ptc[2] = { Vec3(0),Vec3(0) };
+		for(sw.iWheel=0; sw.iWheel<pc.nWheels; sw.iWheel++)
+		{
+			pPhysics->GetStatus(&sw);
+			Vec3 ptloc = (sw.ptContact-m_PhysPos.pos)*m_PhysPos.q;
+			if (sw.bContact)
+				ptc[isneg(-ptloc.y)] = ptloc;
+		}
+		if (speed>m_minVelSteerLean && fabs_tpl(steering)>0.01f && ptc[0].y*ptc[1].y<0)
+		{
+			float invR = sin(steerMax*ptc[0].y/(ptc[1].y-ptc[0].y))/ptc[0].y;
+			pe_simulation_params simp; pPhysics->GetParams(&simp);
+			float g = -simp.gravity.z*Vec2(yworld).GetLength();
+			float tg = sqr(yworld*m_PhysDyn.v)*invR/g;
+			xtrg = m_poszCW*tg/sqrt_tpl(1+tg*tg)*sgnnz(steering);
+			float dxFrame = (m_PhysPos.q*Vec3(0,0,1)-m_qPrev*Vec3(0,0,1))*xworld;
+			k = m_ktiltCW[1+isneg((xtrg-xcur)*dxFrame)];
+		}
+		float dx = xtrg-xcur+(xtrg-xcur)*k-m_posxCW;
+		float dv = dx*m_stiltCW - (m_velxCW+vcur);
+		m_velxCW += dv;
+		m_posxCW += m_velxCW*deltaTime;
+		if (m_posxCW*m_velxCW > m_maxxCW*fabs_tpl(m_velxCW))
+		{
+			m_posxCW = max(-m_maxxCW,min(m_maxxCW, m_posxCW));
+			m_velxCW = 0;
+		}
+
+		pe_params_part pp;
+		pp.partid = m_partidCW;
+		pp.pos = Vec3(0,m_pos0CW.y,m_poszCW)+(xworld*m_PhysPos.q)*m_posxCW;
+		GetPhysics()->SetParams(&pp, THREAD_SAFE);
+		pe_action_impulse ai; ai.iApplyTime=0;
+		ai.impulse = xworld*(m_massCW*-dv/(m_PhysDyn.mass-m_massCW));
+		GetPhysics()->Action(&ai, THREAD_SAFE);
+		pPhysics->GetStatus(&m_PhysDyn);
+		pe_action_set_velocity asv;
+		asv.w = m_PhysDyn.w-yworld*((yworld*m_PhysDyn.w)*m_dampingy*deltaTime);
+		pPhysics->Action(&asv, THREAD_SAFE);
+		m_qPrev = m_PhysPos.q;
+	}
+
 	if (!(m_actorId && m_isEnginePowered) || m_pVehicle->IsDestroyed() )
 	{
 
@@ -1649,12 +1790,7 @@ void CVehicleMovementStdWheeled::ProcessMovement(const float deltaTime)
 	UpdateAxleFriction(m_movementAction.power, true, deltaTime);
 	//UpdateBrakes(deltaTime);
 
-	// speed ratio    
-	float speedRel = min(speed, m_vMaxSteerMax) / m_vMaxSteerMax;  
-	float steerMax = GetMaxSteer(speedRel);
-    
 	// calc steer error  	
-	float steering = m_movementAction.rotateYaw;    
 	float steerError = steering * steerMax - m_action.steer;
 	steerError = (fabs(steerError)<0.01) ? 0 : steerError;
 

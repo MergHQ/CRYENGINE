@@ -224,6 +224,21 @@ protected:
   int	m_passengerCount;
   int   m_lastDebugFrame;
 
+	float m_massCW;	// CW = counter-weight
+	int m_partidCW;
+	Vec3 m_pos0CW;
+	float m_kzCW;
+	float m_maxxCW;
+	float m_posxCW, m_poszCW, m_velxCW;
+	float m_ktiltCW[3], m_stiltCW;
+	float m_minVelSteerLean;
+
+	float m_dampingy;
+	float m_velWheelDisable;
+	int m_maskWheelDisable;
+	int m_uprightOnMount;
+	Quat m_qPrev;
+
 	//------------------------------------------------------------------------------
 	// AI related
 	// PID controller for speed control.	
