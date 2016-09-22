@@ -52,6 +52,8 @@ endif ()
 set(game_folder CACHE INTERNAL "Game folder used for resource files on Windows" FORCE)
 
 if(WIN32)
+	set(CMAKE_RC_FLAGS "/nologo")
+
 	set(WINDOWS TRUE)
 
 	if (NOT METADATA_COMPANY)

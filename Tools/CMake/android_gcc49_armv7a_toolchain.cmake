@@ -210,7 +210,6 @@ macro(configure_android_launcher name)
 	endforeach()
 
 	#Copy external libs
-	file(COPY ${NDKROOT}/sources/cxx-stl/gnu-libstdc++/4.8/libs/armeabi-v7a/libgnustl_shared.so DESTINATION ${apk_folder}/lib/armeabi-v7a)
 	file(COPY ${NDKROOT}/prebuilt/android-arm/gdbserver/gdbserver DESTINATION ${apk_folder}/lib/armeabi-v7a)
 	file(COPY ${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/lib/android-armeabi-v7a/libSDL2Ext.so DESTINATION ${apk_folder}/lib/armeabi-v7a)
 	file(COPY ${SDK_DIR}/SDL2/lib/android-armeabi-v7a/libSDL2.so DESTINATION ${apk_folder}/lib/armeabi-v7a)
