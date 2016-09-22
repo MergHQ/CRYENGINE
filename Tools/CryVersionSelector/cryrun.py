@@ -230,16 +230,17 @@ def csharp_userfile (args, csharp):
 	#--- debug file
 	user_settings= csharp.get("monodev", {}).get("user")
 	if user_settings:
-		tool_path= os.path.join (engine_path, 'bin', args.platform, 'GameSDK.exe')
+		tool_path= os.path.join (engine_path, 'bin', args.platform, 'Game.exe')
 		projectfile_path= os.path.abspath (args.project_file)
 		file= open (os.path.join (dirname, user_settings), 'w')
 		file.write('''<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <LocalDebuggerCommand>%s</LocalDebuggerCommand>
-    <LocalDebuggerCommandArguments>-project "%s"</LocalDebuggerCommandArguments>
+	<CryEngineRoot>{}</CryEngineRoot>
+    <LocalDebuggerCommand>{}</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>-project "{}"</LocalDebuggerCommandArguments>
   </PropertyGroup>
-</Project>''' % (tool_path, projectfile_path))
+</Project>'''.format (engine_path, tool_path, projectfile_path))
 		file.close()
 
 	user_settings= csharp.get("msdev", {}).get("user")
@@ -249,11 +250,12 @@ def csharp_userfile (args, csharp):
 		file.write('''<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Platform)'=='x64'">
-    <MonoDebuggerCommand>%s</MonoDebuggerCommand>
-    <MonoDebuggerCommandArguments>-project "%s"</MonoDebuggerCommandArguments>
+	<CryEngineRoot>{}</CryEngineRoot>
+    <MonoDebuggerCommand>{}</MonoDebuggerCommand>
+    <MonoDebuggerCommandArguments>-project "{}"</MonoDebuggerCommandArguments>
     <DebuggerFlavor>MonoDebugger</DebuggerFlavor>
   </PropertyGroup>
-</Project>''' % (tool_path, projectfile_path))
+</Project>'''.format (engine_path, tool_path, projectfile_path))
 		file.close()
 
 def cmd_projgen(args):
@@ -346,7 +348,7 @@ def cmd_open (args):
 	if project is None:
 		error_project_json_decode (args.project_file)
 	
-	tool_path= os.path.join (get_engine_path(), 'bin', args.platform, 'GameSDK.exe')
+	tool_path= os.path.join (get_engine_path(), 'bin', args.platform, 'Game.exe')
 	if not os.path.isfile (tool_path):
 		error_engine_tool_not_found (tool_path)
 		
