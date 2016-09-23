@@ -1,25 +1,24 @@
 cmake_minimum_required(VERSION 3.5)
+set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS Debug Profile)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/Tools/CMake/modules")
 
+
+# C/C++ languages required.
 enable_language(C)
 enable_language(CXX)
-
-set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS Debug Profile)
+# Force C++11 support requirement
+set (CMAKE_CXX_STANDARD 11)
 
 if (DURANGO OR ORBIS OR ANDROID)
 	unset(WIN32)
-	unset(WIN64)	
+	unset(WIN64)
 endif ()
 
-if(WIN32)
-	set(CMAKE_SYSTEM_VERSION 10.0.10586.0)
-	include(${CMAKE_SOURCE_DIR}/Tools/CMake/MSVC-Windows.cmake)
-endif()
-
-if(NOT MSVC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-endif()
+if (WIN32)  # Either Win32 or Win64
+	set(WINDOWS TRUE)
+	include(Tools/CMake/toolchain/windows/WindowsPC-MSVC.cmake)
+endif(WIN32)
 
 if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
 	set(valid_configs Debug Profile Release)
@@ -52,9 +51,7 @@ endif ()
 set(game_folder CACHE INTERNAL "Game folder used for resource files on Windows" FORCE)
 
 if(WIN32)
-	set(CMAKE_RC_FLAGS "/nologo")
-
-	set(WINDOWS TRUE)
+	set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS} /nologo")
 
 	if (NOT METADATA_COMPANY)
 		set(METADATA_COMPANY "Crytek GmbH")

@@ -141,7 +141,7 @@ using std::abs;
 using std::floor;
 using std::ceil;
 
-#if !CRY_COMPILER_GCC
+#if CRY_COMPILER_MSVC || CRY_PLATFORM_ORBIS
 using std::trunc;
 #else
 ILINE f32 trunc(f32 op) { return ::truncf(op); }

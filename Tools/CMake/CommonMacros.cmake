@@ -114,6 +114,16 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 	IF(ORBIS)
 		set_target_properties_for_orbis(${TargetProject})
 	ENDIF(ORBIS)
+  
+	if(VC_MDD_ANDROID)
+    if (VC_MDD_ANDROID_PLATFORM_TOOLSET)
+      set_property(TARGET ${TargetProject} PROPERTY VC_MDD_ANDROID_PLATFORM_TOOLSET "${VC_MDD_ANDROID_PLATFORM_TOOLSET}")
+    endif()
+    if (VC_MDD_ANDROID_USE_OF_STL)
+      set_property(TARGET ${TargetProject} PROPERTY VC_MDD_ANDROID_USE_OF_STL "${VC_MDD_ANDROID_USE_OF_STL}")
+    endif()
+		set_property(TARGET ${TargetProject} PROPERTY VC_MDD_ANDROID_API_LEVEL "${VC_MDD_ANDROID_API_LEVEL}")
+	endif()
 	
 	if(CMAKE_RUNTIME_OUTPUT_DIRECTORY)
 		get_target_property(archout ${TargetProject} ARCHIVE_OUTPUT_DIRECTORY)
@@ -402,35 +412,7 @@ function(CryLauncher target)
 	prepare_project(${ARGN})
 	if(ANDROID)
 		add_library(${target} SHARED ${${THIS_PROJECT}_SOURCES})
-		configure_android_launcher(${target})
-		file( WRITE "${CMAKE_CURRENT_BINARY_DIR}/${target}.vcxproj.user" 
-    "<?xml version=\"1.0\" encoding=\"utf-8\"?>
-    <Project ToolsVersion=\"4.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">
-		<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|Tegra-Android'\">
-			<OverrideAPKPath>$(OutDir)/AndroidLauncher.apk</OverrideAPKPath>		
-			<AdditionalLibraryDirectories>$(OutDir)/lib_debug/armeabi-v7a</AdditionalLibraryDirectories>
-			<BuildXmlPath>$(OutDir)</BuildXmlPath>
-			<GdbSetupPath>$(OutDir)</GdbSetupPath>
-			<DebuggerFlavor>AndroidDebugger</DebuggerFlavor>
-			<AndroidDebugMode>all</AndroidDebugMode>
-    </PropertyGroup>
-    <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Profile|Tegra-Android'\">
-			<OverrideAPKPath>$(OutDir)/AndroidLauncher.apk</OverrideAPKPath>
-			<AdditionalLibraryDirectories>$(OutDir)/lib_debug/armeabi-v7a</AdditionalLibraryDirectories>
-			<BuildXmlPath>$(OutDir)</BuildXmlPath>
-			<GdbSetupPath>$(OutDir)</GdbSetupPath>
-			<DebuggerFlavor>AndroidDebugger</DebuggerFlavor>
-			<AndroidDebugMode>all</AndroidDebugMode>
-    </PropertyGroup>		
-    <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|Tegra-Android'\">
-			<OverrideAPKPath>$(OutDir)/AndroidLauncher.apk</OverrideAPKPath>
-			<AdditionalLibraryDirectories>$(OutDir)/lib_debug/armeabi-v7a</AdditionalLibraryDirectories>
-			<BuildXmlPath>$(OutDir)</BuildXmlPath>
-			<GdbSetupPath>$(OutDir)</GdbSetupPath>
-			<DebuggerFlavor>AndroidDebugger</DebuggerFlavor>
-			<AndroidDebugMode>all</AndroidDebugMode>
-    </PropertyGroup>
-    </Project>")		
+		configure_android_launcher(${target})		
 	elseif(WIN32)
 		add_executable(${THIS_PROJECT} WIN32 ${${THIS_PROJECT}_SOURCES})
 	else()
@@ -515,6 +497,7 @@ function(CryEditor target)
 		add_executable(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
 	endif()
 	set_editor_flags()
+	generate_rc_file()
 	target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR /bigobj /Zm200 /wd4251 /wd4275)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DSANDBOX_EXPORTS -DPLUGIN_IMPORTS -DEDITOR_COMMON_IMPORTS)
 	target_link_libraries(${THIS_PROJECT} PRIVATE EditorCommon)
@@ -897,7 +880,7 @@ macro(use_scaleform)
 
 		if(SCALEFORM_HAS_SHIPPING_LIB)
 			set(SCALEFORM_RELEASE_CONFIG Shipping)
-			set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:Release>:-DGFC_BUILD_SHIPPING>)
+			target_compile_definitions(${THIS_PROJECT} PRIVATE "$<$<CONFIG:Release>:GFC_BUILD_SHIPPING>")
 		else()
 			set(SCALEFORM_RELEASE_CONFIG Release)
 		endif()

@@ -1,0 +1,142 @@
+#ifndef HEADER_CURL_CONFIG_H
+#define HEADER_CURL_CONFIG_H
+
+//--- HEADER FILES
+
+#cmakedefine HAVE_ARPA_INET_H 1
+#cmakedefine HAVE_ASSERT_H 1
+#cmakedefine HAVE_CRYPTO_H 1
+#cmakedefine HAVE_ERRNO_H 1
+#cmakedefine HAVE_ERR_H 1
+#cmakedefine HAVE_FCNTL_H 1
+#cmakedefine HAVE_GETOPT_H 1
+#cmakedefine HAVE_INTTYPES_H 1
+#cmakedefine HAVE_IO_H 1
+#cmakedefine HAVE_LIMITS_H 1
+#cmakedefine HAVE_LOCALE_H 1
+#cmakedefine HAVE_NETDB_H 1
+#cmakedefine HAVE_NETINET_IN_H 1
+#cmakedefine HAVE_PROCESS_H 1
+#cmakedefine HAVE_SIGNAL_H 1
+#cmakedefine HAVE_SGTTY_H 1
+#cmakedefine HAVE_SSL_H 1
+#cmakedefine HAVE_STDBOOL_H 1
+#cmakedefine HAVE_STDLIB_H 1
+#cmakedefine HAVE_SYS_PARAM_H 1
+#cmakedefine HAVE_SYS_SELECT_H 1
+#cmakedefine HAVE_SYS_SOCKET_H 1
+#cmakedefine HAVE_SYS_SOCKIO_H 1
+#cmakedefine HAVE_SYS_STAT_H 1
+#cmakedefine HAVE_SYS_TIME_H 1
+#cmakedefine HAVE_SYS_TYPES_H 1
+#cmakedefine HAVE_SYS_UTIME_H 1
+#cmakedefine HAVE_TERMIO_H 1
+#cmakedefine HAVE_TERMIOS_H 1
+#cmakedefine HAVE_TIME_H 1
+#cmakedefine HAVE_UNISTD_H 1
+#cmakedefine HAVE_WINDOWS_H 1
+#cmakedefine HAVE_WINSOCK_H 1
+#cmakedefine HAVE_WINSOCK2_H 1
+#cmakedefine HAVE_WS2TCPIP_H 1
+
+//--- OTHER HEADER INFO
+
+#define HAVE_SIG_ATOMIC_T 1
+#define STDC_HEADERS 1
+/* Define if you can safely include both <sys/time.h> and <time.h>. */
+/* #define TIME_WITH_SYS_TIME 1 */
+#define HAVE_BOOL_T 1
+
+//--- FUNCTIONS
+
+#cmakedefine HAVE_CLOSESOCKET 1
+#cmakedefine HAVE_DOPRNT 1
+#cmakedefine HAVE_FTRUNCATE 1
+#cmakedefine HAVE_GETHOSTBYADDR 1
+#cmakedefine HAVE_GETHOSTNAME 1
+#cmakedefine HAVE_GETPASS 1
+#cmakedefine HAVE_GETSERVBYNAME 1
+#cmakedefine HAVE_GETPROTOBYNAME
+#cmakedefine HAVE_GETTIMEOFDAY 1
+#cmakedefine HAVE_INET_ADDR 1
+#cmakedefine HAVE_IOCTLSOCKET 1
+#cmakedefine HAVE_IOCTLSOCKET_FIONBIO 1
+#cmakedefine HAVE_PERROR 1
+#cmakedefine HAVE_PTHREAD_H 1
+#cmakedefine HAVE_RAND_SCREEN 1
+#cmakedefine HAVE_RAND_STATUS 1
+#cmakedefine HAVE_CRYPTO_CLEANUP_ALL_EX_DATA 1
+#cmakedefine HAVE_SELECT 1
+#cmakedefine HAVE_SETLOCALE 1
+#cmakedefine HAVE_SETMODE 1
+#cmakedefine HAVE_SETVBUF 1
+#cmakedefine HAVE_SOCKET 1
+#cmakedefine HAVE_STRCASECMP 1
+#cmakedefine HAVE_STRDUP 1
+#cmakedefine HAVE_STRFTIME 1
+#cmakedefine HAVE_STRICMP 1
+#cmakedefine HAVE_STRNCASECMP 1
+#cmakedefine HAVE_STRNICMP 1
+#cmakedefine HAVE_STRSTR 1
+#cmakedefine HAVE_STRTOLL 1
+#cmakedefine HAVE_TCGETATTR 1
+#cmakedefine HAVE_TCSETATTR 1
+#cmakedefine HAVE_UTIME 1
+
+#define GETNAMEINFO_QUAL_ARG1 const
+#define GETNAMEINFO_TYPE_ARG1 struct sockaddr *
+#define GETNAMEINFO_TYPE_ARG2 socklen_t
+#define GETNAMEINFO_TYPE_ARG46 DWORD
+#define GETNAMEINFO_TYPE_ARG7 int
+
+#cmakedefine HAVE_RECV 1
+#define RECV_TYPE_ARG1 int
+#define RECV_TYPE_ARG2 void *
+#define RECV_TYPE_ARG3 size_t
+#define RECV_TYPE_ARG4 int
+#define RECV_TYPE_RETV ssize_t
+
+#cmakedefine HAVE_RECVFROM 1
+#define RECVFROM_TYPE_ARG1 int
+#define RECVFROM_TYPE_ARG2 void*
+#define RECVFROM_TYPE_ARG3 size_t
+#define RECVFROM_TYPE_ARG4 int
+#define RECVFROM_TYPE_ARG5 const struct sockaddr*
+#define RECVFROM_TYPE_ARG6 socklen_t*
+#define RECVFROM_TYPE_RETV ssize_t
+
+#cmakedefine HAVE_SEND 1
+#define SEND_TYPE_ARG1 int
+#define SEND_QUAL_ARG2 const
+#define SEND_TYPE_ARG2 void *
+#define SEND_TYPE_ARG3 size_t
+#define SEND_TYPE_ARG4 int
+#define SEND_TYPE_RETV ssize_t
+
+//--- TYPE SIZES
+
+#define SIZEOF_INT	${SIZEOF_INT}
+#define SIZEOF_LONG_DOUBLE	${SIZEOF_LONG_DOUBLE}
+#define SIZEOF_LONG_LONG	${SIZEOF_LONG_LONG}
+#define SIZEOF_SHORT	${SIZEOF_SHORT}
+#define SIZEOF_SIZE_T	${SIZEOF_SIZE_T}
+
+//--- COMPILER SPECIFIC
+
+#cmakedefine HAVE_LONGLONG 1
+
+//--- STRUCT RELATED
+
+#cmakedefine HAVE_STRUCT_TIMEVAL 1
+
+//--- ADDITIONAL DEFINITIONS
+
+#define OS	${OS}
+
+//--- CMake/CurlTests.c
+#define HAVE_FCNTL_O_NONBLOCK 1
+
+//--- MORE
+#cmakedefine USE_THREADS_POSIX 1
+
+#endif //HEADER_CURL_CONFIG_H

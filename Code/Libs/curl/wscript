@@ -1,0 +1,56 @@
+# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'curl', 
+		vs_filter = 'Libs',
+		file_list = 'curl.waf_files',
+		exclude_from_static_code_analyzer = True,
+
+		defines = [
+			# PUBLIC
+			'CURL_STATICLIB', # this will be used as a static library
+			
+			# PRIVATE
+			'BUILDING_LIBCURL',
+
+			# disable unused features
+			#'CURL_DISABLE_CRYPTO_AUTH',
+			'CURL_DISABLE_PROXY',
+			'CURL_DISABLE_COOKIES',
+						
+			# disable all unused protocols
+			#'CURL_DISABLE_HTTP',
+			'CURL_DISABLE_DICT',
+			'CURL_DISABLE_FILE',
+			'CURL_DISABLE_FTP',
+			'CURL_DISABLE_GOPHER',			
+			'CURL_DISABLE_IMAP',
+			'CURL_DISABLE_TFTP',
+			'CURL_DISABLE_LDAP',
+			'CURL_DISABLE_POP3',
+			'CURL_DISABLE_RTSP',
+			'CURL_DISABLE_SMB',
+			'CURL_DISABLE_SMTP',
+			'CURL_DISABLE_TELNET',
+			
+			# available modules
+			'HAVE_ZLIB_H',
+			'HAVE_LIBZ'
+		],
+		includes = [
+			Path('Code/SDKs/curl/include'),
+			Path('Code/SDKs/curl/lib')
+		],		
+		use_module = ['zlib'],
+		
+		# add SSL support on Windows
+		win_defines = ['USE_WINDOWS_SSPI', 'USE_SCHANNEL'],
+
+		module_provides = dict(
+			defines  = [ 'CURL_STATICLIB' ],
+			includes = [ Path('Code/SDKs/curl/include') ],
+			win_lib = ['Ws2_32', 'Crypt32']
+		)
+	)
