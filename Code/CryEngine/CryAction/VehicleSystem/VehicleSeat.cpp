@@ -903,8 +903,6 @@ bool CVehicleSeat::Exit(bool isTransitionEnabled, bool force /*=false*/, Vec3 ex
 					QuatT targetPos(m_pVehicle->GetEntity()->GetPos(), m_pVehicle->GetEntity()->GetRotation());
 					exitAction->SetParam("TargetPos", targetPos);
 					pActionController->Queue(*exitAction);
-
-					m_exitWorldPos.zero();
 				}
 			}
 			else
