@@ -162,15 +162,13 @@ CryGFxTextClipboard::CryGFxTextClipboard()
 		HandleMessage(reinterpret_cast<HWND>(pSystem->GetHWND()), WM_CLIPBOARDUPDATE, 0, 0, nullptr); // Sync current clipboard content with Scaleform
 #endif // CRY_PLATFORM_WINDOWS
 		pSystem->RegisterWindowMessageHandler(this);
+		pSystem->GetISystemEventDispatcher()->RegisterListener(this);
 	}
 }
 
 CryGFxTextClipboard::~CryGFxTextClipboard()
 {
-	if (gEnv && gEnv->pSystem)
-	{
-		gEnv->pSystem->UnregisterWindowMessageHandler(this);
-	}
+	OnSystemEvent(ESYSTEM_EVENT_FAST_SHUTDOWN, 0, 0);
 }
 
 CryGFxTextClipboard& CryGFxTextClipboard::GetAccess()
@@ -234,6 +232,19 @@ bool CryGFxTextClipboard::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 	return false;
 }
 #endif // CRY_PLATFORM_WINDOWS
+
+void CryGFxTextClipboard::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+{
+	if (event == ESYSTEM_EVENT_FAST_SHUTDOWN
+		|| event == ESYSTEM_EVENT_FULL_SHUTDOWN)
+	{
+		if (gEnv && gEnv->pSystem)
+		{
+			gEnv->pSystem->UnregisterWindowMessageHandler(this);
+			gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+		}
+	}
+}
 
 //////////////////////////////////////////////////////////////////////////
 // CryGFxTranslator

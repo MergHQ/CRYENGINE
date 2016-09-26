@@ -68,7 +68,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 // CryGFxTextClipboard
 
-class CryGFxTextClipboard : public GFxTextClipboard, IWindowMessageHandler
+class CryGFxTextClipboard : public GFxTextClipboard, IWindowMessageHandler, ISystemEventListener
 {
 public:
 	void OnTextStore(const wchar_t* szText, UPInt length) override;
@@ -78,6 +78,7 @@ public:
 #if CRY_PLATFORM_WINDOWS
 	bool HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult) override;
 #endif // CRY_PLATFORM_WINDOWS
+	void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 
 private:
 	CryGFxTextClipboard();
