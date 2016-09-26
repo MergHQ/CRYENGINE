@@ -173,6 +173,7 @@ CPhysicalWorld::CPhysicalWorld(ILog *pLog) : m_nWorkerThreads(0)
 	m_vars.timeGranularity = 0.0001f;
 	m_vars.maxWorldStep = 0.2f;
 	m_vars.iDrawHelpers = 0;
+	m_vars.drawHelpersOpacity = 1.0f;
 	m_vars.iOutOfBounds = raycast_out_of_bounds|get_entities_out_of_bounds;
 #if CRY_PLATFORM_MOBILE
 	m_vars.nMaxSubsteps = 2;

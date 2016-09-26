@@ -349,10 +349,16 @@ void CPhysRenderer::DrawGeometry(IGeometry* pGeom, geom_world_data* pgwd, const 
 	if (itype != GEOM_HEIGHTFIELD && !m_camera.IsAABBVisible_F(AABB(center - sz, center + sz)))
 		return;
 
-	m_pAuxRenderer->SetRenderFlags(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthTestOn |
-	                               (clr.a == 255 ? e_DepthWriteOn : e_DepthWriteOff));
+	// handle opacity
+	ColorB clrNew = clr;
+	float fAlpha = gEnv->pConsole->GetCVar("p_draw_helpers_opacity")->GetFVal();
+	fAlpha = ::min(::max(0.0f, fAlpha), 1.0f);
+	if (fAlpha < 0.99) clrNew.set(clr.r, clr.g, clr.b, (uint8)(fAlpha * (float)clr.a));
 
-	DrawGeometry(itype, pGeom->GetData(), pgwd, clr, sweepDir);
+	m_pAuxRenderer->SetRenderFlags(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthTestOn |
+	                               (clrNew.a == 255 ? e_DepthWriteOn : e_DepthWriteOff));
+
+	DrawGeometry(itype, pGeom->GetData(), pgwd, clrNew, sweepDir);
 }
 
 void CPhysRenderer::DrawGeometry(int itype, const void* pGeomData, geom_world_data* pgwd, const ColorB& clr0, const Vec3& sweepDir)

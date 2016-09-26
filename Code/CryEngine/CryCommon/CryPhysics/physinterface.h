@@ -2745,6 +2745,7 @@ struct PhysicsVars : SolverSettings
 	float timeGranularity;
 	float maxWorldStep;
 	int   iDrawHelpers;
+	float drawHelpersOpacity;
 	int   iOutOfBounds;
 	float maxContactGap;
 	float maxContactGapPlayer;

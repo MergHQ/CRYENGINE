@@ -1417,6 +1417,10 @@ bool CSystem::InitPhysics()
 	               "bit 12 - show helpers for independent entities (alive physical skeletons,particles,ropes)\n"
 	               "bits 16-31 - level of bounding volume trees to display (if 0, it just shows geometry)\n"
 	               "Examples: show static objects - 258, show active rigid bodies - 1026, show players - 2050");
+	REGISTER_CVAR2("p_draw_helpers_opacity", &pVars->drawHelpersOpacity, pVars->drawHelpersOpacity, VF_CHEAT,
+					"Opacity of physical helpers (see p_draw_helpers).\n"
+					"Usage: p_draw_helpers_opacity [0..1]\n"
+					"0.0 indicates full transparency, 1.0 full opacity (default) - e.g., 0.5 indicates half transparency.");
 	REGISTER_CVAR2("p_check_out_of_bounds", &pVars->iOutOfBounds, pVars->iOutOfBounds, 0,
 	               "Check for physics entities outside world (terrain) grid:\n"
 	               "1 - Enable raycasts; 2 - Enable proximity checks; 3 - Both");
