@@ -1478,8 +1478,6 @@ void C3DEngine::RenderInternal(const int nRenderFlags, const SRenderingPassInfo&
 		}
 	}
 
-	m_fInvDissolveDistBand = 1.0f / GetFloatCVar(e_DissolveDistband);
-
 	if (m_pObjManager)
 	{
 		m_pObjManager->m_fMaxViewDistanceScale = 1.f;

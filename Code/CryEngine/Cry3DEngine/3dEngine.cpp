@@ -110,7 +110,6 @@ IStreamedObjectListener* Cry3DEngineBase::m_pStreamListener = 0;
 CGeomCacheManager* Cry3DEngineBase::m_pGeomCacheManager = 0;
 #endif
 
-float Cry3DEngineBase::m_fInvDissolveDistBand = 1.f;
 bool Cry3DEngineBase::m_bProfilerEnabled = false;
 bool Cry3DEngineBase::m_bLevelLoadingInProgress = false;
 bool Cry3DEngineBase::m_bIsInRenderScene = false;
@@ -768,12 +767,8 @@ void C3DEngine::ProcessCVarsChange()
 
 	float fNewCVarsSumm =
 	  GetCVars()->e_ShadowsCastViewDistRatio +
-	  GetCVars()->e_Dissolve +
-	  GetFloatCVar(e_DissolveDistMin) +
-	  GetFloatCVar(e_DissolveDistMax) +
-	  GetFloatCVar(e_DissolveDistband) +
-	  GetCVars()->e_DissolveSpriteDistRatio +
-	  GetCVars()->e_DissolveSpriteMinDist +
+	  GetCVars()->e_LodTransitionSpriteDistRatio +
+	  GetCVars()->e_LodTransitionSpriteMinDist +
 	  GetCVars()->e_VegetationUseTerrainColor +
 	  GetCVars()->e_TerrainDetailMaterials +
 	  GetCVars()->e_ViewDistRatio +

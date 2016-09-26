@@ -88,7 +88,6 @@ struct Cry3DEngineBase
 	static CGeomCacheManager*                     m_pGeomCacheManager;
 #endif
 
-	static float             m_fInvDissolveDistBand;
 	static bool              m_bProfilerEnabled;
 	static threadID          m_nMainThreadId;
 	static bool              m_bLevelLoadingInProgress;

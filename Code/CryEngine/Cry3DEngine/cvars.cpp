@@ -307,9 +307,9 @@ void CVars::Init()
 	                 "Activates drawing of distributed objects like trees", OnVegetationVisibleChange); // it run Physicalize or UnPhysicalize, So when use this value on Game, you should check the Performance.
 	REGISTER_CVAR(e_VegetationSprites, 0, VF_DEPRECATED,
 	              "[DEPRECATED] Activates drawing of sprites instead of distributed objects at far distance");
-	REGISTER_CVAR(e_DissolveSpriteMinDist, 4.f, VF_DEPRECATED,
+	REGISTER_CVAR(e_LodTransitionSpriteMinDist, 4.f, VF_DEPRECATED,
 	              "[DEPRECATED] The min dist over which vegetation sprites dissolve");
-	REGISTER_CVAR(e_DissolveSpriteDistRatio, 0.1f, VF_DEPRECATED,
+	REGISTER_CVAR(e_LodTransitionSpriteDistRatio, 0.1f, VF_DEPRECATED,
 	              "[DEPRECATED] The fraction of vegetation sprite draw distance over which to dissolve");
 	DefineConstIntCVar(e_VegetationSpritesBatching, 1, VF_DEPRECATED,
 	                   "[DEPRECATED] Activates batch processing for sprites, optimizes CPU usage in case of dense vegetation");
@@ -673,15 +673,6 @@ void CVars::Init()
 	DefineConstFloatCVar(e_StreamPredictionAheadDebug, VF_CHEAT,
 	                     "Draw ball at predicted position");
 
-	DefineConstFloatCVar(e_DissolveDistMax, VF_CHEAT,
-	                     "At most how near to object MVD dissolve effect triggers (10% of MVD, clamped to this)");
-
-	DefineConstFloatCVar(e_DissolveDistMin, VF_CHEAT,
-	                     "At least how near to object MVD dissolve effect triggers (10% of MVD, clamped to this)");
-
-	DefineConstFloatCVar(e_DissolveDistband, VF_CHEAT,
-	                     "Over how many metres transition takes place");
-
 	DefineConstIntCVar(e_StreamCgfUpdatePerNodeDistance, 1, VF_CHEAT,
 	                   "Use node distance as entity distance for far nodex ");
 
@@ -765,11 +756,6 @@ void CVars::Init()
 
 	DefineConstIntCVar(e_PrecacheLevel, 0, VF_NULL,
 	                   "Pre-render objects right after level loading");
-	//	REGISTER_CVAR(e_Dissolve, 0, VF_NULL,
-	//	"Objects alphatest_noise_fading out on distance and between lods");
-#ifndef CONSOLE_CONST_CVAR_MODE
-	e_Dissolve = 0; // TODO: support dissolve in new graphics pipeline (for now cvar is removed completely because otherwise it is getting re-enabled by multiple custom/user/project config files)
-#endif
 
 	DefineConstIntCVar(e_Lods, 1, VF_NULL,
 	                   "Load and use LOD models for static geometry");

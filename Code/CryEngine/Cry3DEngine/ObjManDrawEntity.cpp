@@ -298,16 +298,6 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<CDLight*>* pAffecting
 		DrawParams.nTextureID = nCubemapTexId;
 	}
 
-	if (pCVars->e_Dissolve && eERType != eERType_Light && passInfo.IsGeneralPass())
-	{
-		if (DrawParams.nDissolveRef = GetDissolveRef(fEntDistance, pEnt->m_fWSMaxViewDist))
-		{
-			DrawParams.dwFObjFlags |= FOB_DISSOLVE | FOB_DISSOLVE_OUT;
-			if (DrawParams.nDissolveRef == 255)
-				return;
-		}
-	}
-
 	DrawParams.nAfterWater = IsAfterWater(objBox.GetCenter(), vCamPos, passInfo) ? 1 : 0;
 
 	if (nRndFlags & ERF_SELECTED)

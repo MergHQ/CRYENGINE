@@ -23,8 +23,6 @@
 
 #define BYTE2RAD(x) ((x) * float(g_PI2) / 255.0f)
 
-//volatile int g_lockVegetationPhysics = 0;
-
 float CRY_ALIGN(128) CVegetation::g_scBoxDecomprTable[256];
 
 // g_scBoxDecomprTable heps on consoles (no difference on PC)
@@ -166,49 +164,6 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 		{
 			const float fSpriteSwitchDist = GetSpriteSwitchDist();
 
-			if (GetCVars()->e_Dissolve)
-			{
-				const float fEntDistance2D = sqrt_tpl(vCamPos.GetSquaredDistance2D(m_vPos)) * passInfo.GetZoomFactor();
-
-				int nLod;
-				float fSwitchRange = min(fSpriteSwitchDist * GetCVars()->e_DissolveSpriteDistRatio, GetCVars()->e_DissolveSpriteMinDist);
-				bool bUsingSprite = vegetGroup.bUseSprites && (fEntDistance2D > (fSpriteSwitchDist - fSwitchRange));
-				if (bUsingSprite)
-				{
-					nLod = -1;
-				}
-				else
-				{
-					nLod = nLodA;
-				}
-
-				SLodDistDissolveTransitionState* pLodDistDissolveTransitionState = &m_pTempData->userData.lodDistDissolveTransitionState;
-
-				if (pLodDistDissolveTransitionState->nOldLod != -1 &&
-				    pLodDistDissolveTransitionState->nNewLod != -1 &&
-				    nLod == -1)
-				{
-					nLod = nLodA;
-				}
-
-				// when we first load before streaming we get a lod of -1. When a lod streams in
-				// we kick off a transition to N, but without moving there's nothing to continue the transition.
-				// Catch this case when we claim to be in lod -1 but have no sprite info, and snap.
-				if (pLodDistDissolveTransitionState->nOldLod == -1 && !m_pSpriteInfo)
-					pLodDistDissolveTransitionState->nOldLod = pLodDistDissolveTransitionState->nNewLod;
-
-				float fDissolve = GetObjManager()->GetLodDistDissolveRef(pLodDistDissolveTransitionState, fEntDistance2D, nLod, passInfo);
-
-				nDissolveRefA = (uint8)(255.f * SATURATE(fDissolve));
-				nLodA = pLodDistDissolveTransitionState->nOldLod;
-				nLodB = pLodDistDissolveTransitionState->nNewLod;
-
-				minUsableLod = min(minUsableLod, -1); // allow for sprites.
-
-				nLodA = CLAMP(nLodA, minUsableLod, maxUsableLod);
-				nLodB = CLAMP(nLodB, minUsableLod, maxUsableLod);
-			}
-
 			if (m_pSpriteInfo)
 			{
 				m_pSpriteInfo->ucDissolveOut = 255;
@@ -231,26 +186,7 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 					m_pSpriteInfo->ucAlphaTestRef = 255;
 				}
 			}
-		}
-
-		if (GetCVars()->e_Dissolve && !m_pSpriteInfo && !passInfo.IsCachedShadowPass())
-		{
-			float fDissolveDist = CLAMP(0.1f * m_fWSMaxViewDist, GetFloatCVar(e_DissolveDistMin), GetFloatCVar(e_DissolveDistMax));
-
-			const float fDissolveStartDist = sqr(m_fWSMaxViewDist - fDissolveDist);
-
-			AABB bbox;
-			FillBBox_NonVirtual(bbox);
-			float fEntDistanceSq = Distance::Point_AABBSq(vCamPos, bbox) * sqr(passInfo.GetZoomFactor());
-
-			if (fEntDistanceSq > fDissolveStartDist)
-			{
-				float fDissolve = (sqrt(fEntDistanceSq) - (m_fWSMaxViewDist - fDissolveDist))
-				                  / fDissolveDist;
-				nDissolveRefA = (uint8)(255.f * SATURATE(fDissolve));
-				nLodB = -1;
-			}
-		}
+		}		
 	}
 
 	return CLodValue(nLodA, nDissolveRefA, nLodB);
@@ -801,18 +737,6 @@ void CVegetation::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
 	float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
 
 	userData.nWantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
-
-	int nLod = userData.nWantedLod;
-
-	const float fSpriteSwitchDist = GetSpriteSwitchDist();
-	float fSwitchRange = min(fSpriteSwitchDist * GetCVars()->e_DissolveSpriteDistRatio, GetCVars()->e_DissolveSpriteMinDist);
-
-	if (fEntDistance2D > (fSpriteSwitchDist - fSwitchRange) && fSpriteSwitchDist + GetFloatCVar(e_DissolveDistband) < m_fWSMaxViewDist)
-		nLod = -1;
-
-	userData.lodDistDissolveTransitionState.nNewLod = userData.lodDistDissolveTransitionState.nOldLod = nLod;
-	userData.lodDistDissolveTransitionState.fStartDist = 0.0f;
-	userData.lodDistDissolveTransitionState.bFarside = false;
 }
 
 const float CVegetation::GetRadius() const
@@ -834,12 +758,7 @@ void CVegetation::UpdateSpriteInfo(SVegetationSpriteInfo& si, float fSpriteAmoun
 	const float nMin = 1;
 	const float nMax = 255;
 
-	IF (GetCVars()->e_Dissolve, 1)
-	{
-		si.ucAlphaTestRef = SATURATEB((int)((1.f - fSpriteAmount) * nMax + fSpriteAmount * nMin));
-	}
-	else
-		si.ucAlphaTestRef = (byte)nMin;
+	si.ucAlphaTestRef = (byte)nMin;
 
 	si.pTerrainTexInfo = vegetGroup.bUseTerrainColor ? pTerrainTexInfo : NULL;
 	si.pVegetation = this;

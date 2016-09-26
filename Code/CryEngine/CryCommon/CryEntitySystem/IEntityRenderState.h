@@ -159,23 +159,6 @@ private:
 	INT_PTR m_pTerrainNode;
 };
 
-struct SLodDistDissolveTransitionState
-{
-	float fStartDist;
-	int8  nOldLod;
-	int8  nNewLod;
-	bool  bFarside;
-};
-
-struct SLightInfo
-{
-	bool operator==(const SLightInfo& other) const
-	{ return other.vPos.IsEquivalent(vPos, 0.1f) && fabs(other.fRadius - fRadius) < 0.1f; }
-	Vec3  vPos;
-	float fRadius;
-	bool  bAffecting;
-};
-
 struct IRenderNode : public IShadowCaster
 {
 	enum EInternalFlags

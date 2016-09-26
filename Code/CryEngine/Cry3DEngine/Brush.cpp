@@ -48,9 +48,7 @@ CLodValue CBrush::ComputeLod(int wantedLod, const SRenderingPassInfo& passInfo)
 {
 	CVars* pCVars = GetCVars();
 
-	uint8 nDissolveRefA = 0;
 	int nLodA = -1;
-	int nLodB = -1;
 
 	if (CStatObj* pStatObj = (CStatObj*)CBrush::GetEntityStatObj())
 	{
@@ -63,90 +61,13 @@ CLodValue CBrush::ComputeLod(int wantedLod, const SRenderingPassInfo& passInfo)
 			wantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
 		}
 
-		if (pCVars->e_Dissolve && passInfo.IsGeneralPass() && !(pStatObj->m_nFlags & STATIC_OBJECT_COMPOUND))
-		{
-			int nLod = CLAMP(wantedLod, pStatObj->GetMinUsableLod(), (int)pStatObj->m_nMaxUsableLod);
-			nLod = pStatObj->FindNearesLoadedLOD(nLod, true);
+		nLodA = CLAMP(wantedLod, pStatObj->GetMinUsableLod(), (int)pStatObj->m_nMaxUsableLod);
 
-			SLodDistDissolveTransitionState& rState = m_pTempData->userData.lodDistDissolveTransitionState;
-
-			// if we're more than one LOD away we've either zoomed in quickly
-			// or we streamed in some LODs really late. In either case we want
-			// to pop rather than get stuck in a dissolve that started way too late.
-			if (rState.nOldLod >= 0 && nLod >= 0 &&
-			    (rState.nOldLod > nLod + 1 || rState.nOldLod < nLod - 1)
-			    )
-				rState.nOldLod = nLod;
-
-			// when we first load before streaming we get a lod of -1. When a lod streams in
-			// we kick off a transition to N, but without moving there's nothing to continue the transition.
-			// Catch this case when we claim to be in lod -1 but are too close, and snap.
-			if (rState.nOldLod == -1 && fEntDistance < 0.5f * m_fWSMaxViewDist)
-				rState.nOldLod = nLod;
-
-			uint32 prevState = (((uint32)rState.nOldLod) << 8) | rState.nNewLod;
-
-			float fDissolve = GetObjManager()->GetLodDistDissolveRef(&rState, fEntDistance, nLod, passInfo);
-
-			uint32 newState = (((uint32)rState.nOldLod) << 8) | rState.nNewLod;
-
-			// ensure old lod is still around. If not find closest lod
-			if (rState.nOldLod != rState.nNewLod && rState.nOldLod >= 0)
-			{
-				rState.nOldLod = pStatObj->FindNearesLoadedLOD(rState.nOldLod, true);
-			}
-			else if (rState.nOldLod >= 0)
-			{
-				// we can actually fall back into this case (even though we know nLod is valid).
-				rState.nOldLod = rState.nNewLod = pStatObj->FindNearesLoadedLOD(rState.nOldLod, true);
-			}
-
-			// only bother to check if we are dissolving and we've just kicked off a new dissolve transition
-			if (rState.nOldLod != rState.nNewLod && prevState != newState)
-			{
-				// LOD cutoff point, this is about where the transition should be triggered.
-				const float fEntityLodRatio = std::max(GetLodRatioNormalized(), FLT_MIN);
-				const float fDistMultiplier = 1.0f / (fEntityLodRatio * Get3DEngine()->GetFrameLodInfo().fTargetSize);
-				float dist = pStatObj->GetLodDistance() * max(rState.nOldLod, rState.nNewLod) * fDistMultiplier;
-
-				// we started way too late, most likely object LOD streamed in very late, just snap.
-				if (fabsf(rState.fStartDist - dist) > GetFloatCVar(e_DissolveDistband))
-				{
-					rState.nOldLod = rState.nNewLod;
-				}
-			}
-
-			nDissolveRefA = (uint8)(255.f * SATURATE(fDissolve));
-			nLodA = rState.nOldLod;
-			nLodB = rState.nNewLod;
-		}
-		else
-		{
-			nDissolveRefA = 0;
-
-			nLodA = CLAMP(wantedLod, pStatObj->GetMinUsableLod(), (int)pStatObj->m_nMaxUsableLod);
-			if (!(pStatObj->m_nFlags & STATIC_OBJECT_COMPOUND))
-				nLodA = pStatObj->FindNearesLoadedLOD(nLodA, true);
-			nLodB = -1;
-		}
-
-		if (pCVars->e_Dissolve && !passInfo.IsCachedShadowPass())
-		{
-			float fDissolveDist = CLAMP(0.1f * m_fWSMaxViewDist, GetFloatCVar(e_DissolveDistMin), GetFloatCVar(e_DissolveDistMax));
-
-			const float fDissolveStartDist = m_fWSMaxViewDist - fDissolveDist;
-
-			if (fEntDistance > fDissolveStartDist)
-			{
-				float fDissolve = (fEntDistance - fDissolveStartDist)
-				                  / fDissolveDist;
-				nDissolveRefA = (uint8)(255.f * SATURATE(fDissolve));
-				nLodB = -1;
-			}
-		}
+		if (!(pStatObj->m_nFlags & STATIC_OBJECT_COMPOUND))
+			nLodA = pStatObj->FindNearesLoadedLOD(nLodA, true);
 	}
 
-	return CLodValue(nLodA, nDissolveRefA, nLodB);
+	return CLodValue(nLodA, 0, -1);
 }
 
 void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPassInfo& passInfo)
@@ -993,18 +914,6 @@ void CBrush::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
 	float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
 
 	userData.nWantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
-
-	int nLod = userData.nWantedLod;
-
-	if (CStatObj* pStatObj = (CStatObj*)CBrush::GetEntityStatObj())
-	{
-		nLod = CLAMP(nLod, pStatObj->GetMinUsableLod(), (int)pStatObj->m_nMaxUsableLod);
-		nLod = pStatObj->FindNearesLoadedLOD(nLod);
-	}
-
-	userData.lodDistDissolveTransitionState.nNewLod = userData.lodDistDissolveTransitionState.nOldLod = userData.nWantedLod;
-	userData.lodDistDissolveTransitionState.fStartDist = 0.0f;
-	userData.lodDistDissolveTransitionState.bFarside = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

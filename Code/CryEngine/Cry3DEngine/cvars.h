@@ -109,9 +109,6 @@ struct CVars : public Cry3DEngineBase
 #define e_StreamCgfGridUpdateDistanceDefault               (0.f)
 #define e_StreamPredictionAheadDefault                     (0.5f)
 #define e_StreamPredictionAheadDebugDefault                (0.f)
-#define e_DissolveDistMaxDefault                           (8.0f)
-#define e_DissolveDistMinDefault                           (2.0f)
-#define e_DissolveDistbandDefault                          (3.0f)
 #define e_RenderMeshCollisionToleranceDefault              (0.3f)
 #define e_VegetationSpritesScaleFactorDefault              (1.0f)
 #ifdef DEDICATED_SERVER
@@ -236,7 +233,6 @@ struct CVars : public Cry3DEngineBase
 	float e_CoverageBufferEarlyOutDelay;
 	float e_CoverageBufferTerrainExpand;
 	DeclareConstIntCVar(e_WaterWaves, 0);
-	DeclareConstIntCVar(e_Dissolve, 0);
 	int   e_GsmCastFromTerrain;
 	float e_TerrainLodRatio;
 	float e_TerrainLodDistRatio;
@@ -401,7 +397,7 @@ struct CVars : public Cry3DEngineBase
 	float e_TerrainMeshInstancingShadowBias;
 	int   e_StatObjTessellationMode;
 	DeclareConstIntCVar(e_OcclusionLazyHideFrames, 0);
-	DeclareConstIntCVar(e_CoverageBufferCullIndividualBrushesMaxNodeSize, 0);
+	int   e_CoverageBufferCullIndividualBrushesMaxNodeSize;
 	DeclareConstFloatCVar(e_TerrainOcclusionCullingPrecision);
 	float e_RenderMeshCollisionTolerance;
 	DeclareConstIntCVar(e_ShadowsMasksLimit, 0);
@@ -418,11 +414,8 @@ struct CVars : public Cry3DEngineBase
 	int   e_ObjectLayersActivation;
 	DeclareConstIntCVar(e_DecalsScissor, 1);
 	float e_VegetationSpritesDistanceCustomRatioMin;
-	float e_DissolveSpriteDistRatio;
-	float e_DissolveSpriteMinDist;
-	DeclareConstFloatCVar(e_DissolveDistMax);
-	DeclareConstFloatCVar(e_DissolveDistMin);
-	DeclareConstFloatCVar(e_DissolveDistband);
+	float e_LodTransitionSpriteDistRatio;
+	float e_LodTransitionSpriteMinDist;
 	int e_WaterTessellationAmountX;
 	int e_ScreenShotMinSlices;
 	int e_DecalsMaxUpdatesPerFrame;

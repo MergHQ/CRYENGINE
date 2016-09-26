@@ -12,7 +12,6 @@ struct SRenderNodeTempData
 		int                             lastSeenShadowFrame;                 // When was last rendered to shadow
 		CRenderObject*                  arrPermanentRenderObjects[MAX_STATOBJ_LODS_NUM];
 		float														arrLodLastTimeUsed[MAX_STATOBJ_LODS_NUM];
-		SLodDistDissolveTransitionState lodDistDissolveTransitionState;
 		Matrix34                        objMat;
 		OcclusionTestClient             m_OcclState;
 		struct IFoliage*                m_pFoliage;

@@ -120,7 +120,8 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 		StatInstGroup& vegetGroup = pObj->GetStatObjGroup();
 
 		const float fSpriteSwitchDist = pObj->GetSpriteSwitchDist();
-		float fSwitchRange = min(fSpriteSwitchDist * GetCVars()->e_DissolveSpriteDistRatio, GetCVars()->e_DissolveSpriteMinDist);
+		float fSwitchRange = min(fSpriteSwitchDist * GetCVars()->e_LodTransitionSpriteDistRatio, GetCVars()->e_LodTransitionSpriteMinDist);
+		float fLodTransitionDistband = 1.f;
 
 		if (pObj->m_pSpriteInfo)
 		{
@@ -133,32 +134,15 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 				nLodA = CLAMP(pObj->m_pTempData->userData.nWantedLod, (uint32)pStatObj->GetMinUsableLod(), (uint32)pStatObj->m_nMaxUsableLod);
 				nLodA = pStatObj->FindNearesLoadedLOD(nLodA);
 
-				// start dissolve transition to 3d lod
-				SLodDistDissolveTransitionState* pLodDissolveTransitionState = &pObj->m_pTempData->userData.lodDistDissolveTransitionState;
-				GetObjManager()->GetLodDistDissolveRef(pLodDissolveTransitionState, fEntDistance2D, nLodA, passInfo);
+				// TODO: start dissolve transition to 3d lod
 			}
-
-			float fDissolveRef = 1.0f;
-			bool dissolveFinished = false;
 
 			if (pObj->m_pTempData)
 			{
-				SLodDistDissolveTransitionState* pLodDistDissolveTransitionState = &pObj->m_pTempData->userData.lodDistDissolveTransitionState;
-
-				if (passInfo.IsGeneralPass() && passInfo.IsZoomInProgress())
-					pLodDistDissolveTransitionState->nOldLod = pLodDistDissolveTransitionState->nNewLod;
-
-				float fDissolve = GetObjManager()->GetLodDistDissolveRef(pLodDistDissolveTransitionState, fEntDistance2D, pLodDistDissolveTransitionState->nNewLod, passInfo);
-				fDissolveRef = SATURATE(pLodDistDissolveTransitionState->nOldLod == -1 ? 1.f - fDissolve : fDissolve);
-
-				if (pLodDistDissolveTransitionState->nOldLod == pLodDistDissolveTransitionState->nNewLod)
-					fDissolveRef = 1.0f;
-
-				dissolveFinished = (pLodDistDissolveTransitionState->nOldLod != -1 &&
-				                    pLodDistDissolveTransitionState->nNewLod != -1);
+				// TODO: update dissolve transition to 3d lod, detect finish oif transition
 			}
 
-			if (dissolveFinished || fEntDistanceSqr > sqr(pObj->m_fWSMaxViewDist * 1.1f))
+			if (fEntDistanceSqr > sqr(pObj->m_fWSMaxViewDist * 1.1f))
 			{
 				SAFE_DELETE(pObj->m_pSpriteInfo);
 
@@ -170,14 +154,14 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 				continue;
 			}
 
-			float dist3D = fSpriteSwitchDist - fSwitchRange + GetFloatCVar(e_DissolveDistband);
+			float dist3D = fSpriteSwitchDist - fSwitchRange + fLodTransitionDistband;
 
-			pObj->UpdateSpriteInfo(*pObj->m_pSpriteInfo, fDissolveRef, pTerrainTexInfo, passInfo);
+			pObj->UpdateSpriteInfo(*pObj->m_pSpriteInfo, 0, pTerrainTexInfo, passInfo);
 			pObj->m_pSpriteInfo->ucShow3DModel = (fEntDistance2D < dist3D);
 		}
 		else if (!pObj->m_pInstancingInfo)
 		{
-			if (fEntDistance2D > (fSpriteSwitchDist - fSwitchRange) && fEntDistance2D + GetFloatCVar(e_DissolveDistband) < pObj->m_fWSMaxViewDist)
+			if (fEntDistance2D > (fSpriteSwitchDist - fSwitchRange) && fEntDistance2D + fLodTransitionDistband < pObj->m_fWSMaxViewDist)
 			{
 				UnlinkObject(pObj);
 				LinkObject(pObj, eERType_Vegetation, false); //We know that only eERType_Vegetation can get into the vegetation list, see GetRenderNodeListId()
@@ -188,15 +172,7 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 
 				if (pObj->m_pTempData)
 				{
-					// start dissolve transition to -1 (sprite)
-					SLodDistDissolveTransitionState* pLodDissolveTransitionState = &pObj->m_pTempData->userData.lodDistDissolveTransitionState;
-					GetObjManager()->GetLodDistDissolveRef(pLodDissolveTransitionState, fEntDistance2D, -1, passInfo);
-
-					if (passInfo.IsGeneralPass() && passInfo.IsZoomInProgress())
-						pLodDissolveTransitionState->nOldLod = pLodDissolveTransitionState->nNewLod;
-
-					si.ucAlphaTestRef = 0;
-					si.ucDissolveOut = 0;
+					// TODO: start lod transition into sprite
 				}
 
 				pObj->UpdateSpriteInfo(si, 0.0f, pTerrainTexInfo, passInfo);
@@ -2653,19 +2629,6 @@ void COctreeNode::RenderVegetations(TDoublyLinkedList<IRenderNode>* lstObjects, 
 					pObj->m_pSpriteInfo->ucAlphaTestRef = 0;
 					pObj->m_pSpriteInfo->ucDissolveOut = 255;
 
-					if (pCVars->e_Dissolve)
-					{
-						float fDissolveDist = CLAMP(0.1f * pObj->m_fWSMaxViewDist, GetFloatCVar(e_DissolveDistMin), GetFloatCVar(e_DissolveDistMax));
-
-						const float fDissolveStartDist = sqr(pObj->m_fWSMaxViewDist - fDissolveDist);
-						if (fEntDistanceSq > fDissolveStartDist)
-						{
-							float fDissolve = (sqrt(fEntDistanceSq) - (pObj->m_fWSMaxViewDist - fDissolveDist))
-								/ fDissolveDist;
-							pObj->m_pSpriteInfo->ucAlphaTestRef = (uint8)(255.f * SATURATE(fDissolve));
-						}
-					}
-
 					AddSpriteInfo(arrSpriteInfo, *pObj->m_pSpriteInfo);
 					continue;
 				}
@@ -3544,75 +3507,6 @@ void CObjManager::PushIntoCullOutputQueue(const SCheckOcclusionOutput& rCheckOcc
 bool CObjManager::PopFromCullOutputQueue(SCheckOcclusionOutput* pCheckOcclusionOutput)
 {
 	return m_CheckOcclusionOutputQueue.Pop(pCheckOcclusionOutput);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-uint8 CObjManager::GetDissolveRef(float fDist, float fMVD)
-{
-	float fDissolveDist = 1.0f / CLAMP(0.1f * fMVD, GetFloatCVar(e_DissolveDistMin), GetFloatCVar(e_DissolveDistMax));
-
-	return (uint8)SATURATEB((1.0f + (fDist - fMVD) * fDissolveDist) * 255.f);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-float CObjManager::GetLodDistDissolveRef(SLodDistDissolveTransitionState* pState, float curDist, int nNewLod, const SRenderingPassInfo& passInfo)
-{
-	float fDissolveDistbandClamped = min(GetFloatCVar(e_DissolveDistband), curDist * .4f) + 0.001f;
-
-	if (!pState->fStartDist)
-	{
-		pState->fStartDist = curDist;
-		pState->nOldLod = nNewLod;
-		pState->nNewLod = nNewLod;
-
-		pState->bFarside = (pState->nNewLod < pState->nOldLod && pState->nNewLod != -1) || pState->nOldLod == -1;
-	}
-	else if (pState->nNewLod != nNewLod)
-	{
-		pState->nNewLod = nNewLod;
-		pState->fStartDist = curDist;
-
-		pState->bFarside = (pState->nNewLod < pState->nOldLod && pState->nNewLod != -1) || pState->nOldLod == -1;
-	}
-	else if ((pState->nOldLod != pState->nNewLod))
-	{
-		// transition complete
-		if (
-			(!pState->bFarside && curDist - pState->fStartDist > fDissolveDistbandClamped) ||
-			(pState->bFarside && pState->fStartDist - curDist > fDissolveDistbandClamped)
-			)
-		{
-			pState->nOldLod = pState->nNewLod;
-		}
-		// with distance based transitions we can always 'fail' back to the previous LOD.
-		else if (
-			(!pState->bFarside && curDist < pState->fStartDist) ||
-			(pState->bFarside && curDist > pState->fStartDist)
-			)
-		{
-			pState->nNewLod = pState->nOldLod;
-		}
-	}
-
-	// don't dissolve in zoom mode
-	if (passInfo.IsGeneralPass() && passInfo.IsZoomActive())
-	{
-		pState->fStartDist = curDist + (pState->bFarside ? 1 : -1) * fDissolveDistbandClamped;
-		pState->nOldLod = pState->nNewLod;
-		return 0.0f;
-	}
-
-	if (pState->nOldLod == pState->nNewLod)
-	{
-		return 0.f;
-	}
-	else
-	{
-		if (pState->bFarside)
-			return SATURATE(((pState->fStartDist - curDist) * (1.f / fDissolveDistbandClamped)));
-		else
-			return SATURATE(((curDist - pState->fStartDist) * (1.f / fDissolveDistbandClamped)));
-	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

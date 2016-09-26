@@ -448,9 +448,6 @@ public:
 	static void FillTerrainTexInfo(IOctreeNode* pOcNode, float fEntDistance, struct SSectorTextureSet*& pTerrainTexInfo, const AABB& objBox);
 	PodArray<CVisArea*> m_tmpAreas0, m_tmpAreas1;
 
-	uint8        GetDissolveRef(float fDist, float fMaxViewDist);
-	float        GetLodDistDissolveRef(SLodDistDissolveTransitionState* pState, float curDist, int nNewLod, const SRenderingPassInfo& passInfo);
-
 	void         CleanStreamingData();
 	IRenderMesh* GetRenderMeshBox();
 
