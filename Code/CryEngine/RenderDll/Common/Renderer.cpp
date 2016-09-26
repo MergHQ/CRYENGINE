@@ -518,78 +518,6 @@ void CRenderer::RemoveListener(IRendererEventListener* pRendererEventListener)
 
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderer::Draw2dTextWithDepth(float posX, float posY, float posZ, const char* pStr, const SDrawTextInfo& ti)
-{
-	IF (!m_pDefaultFont, 0)
-	return;
-
-	IFFont* pFont = m_pDefaultFont;
-
-	const float r = CLAMP(ti.color[0], 0.0f, 1.0f);
-	const float g = CLAMP(ti.color[1], 0.0f, 1.0f);
-	const float b = CLAMP(ti.color[2], 0.0f, 1.0f);
-	const float a = CLAMP(ti.color[3], 0.0f, 1.0f);
-
-	STextDrawContext ctx;
-	ctx.SetColor(ColorF(r, g, b, a));
-	ctx.SetCharWidthScale(1.0f);
-	ctx.EnableFrame((ti.flags & eDrawText_Framed) != 0);
-
-	if (ti.flags & eDrawText_Monospace)
-	{
-		if (ti.flags & eDrawText_FixedSize)
-			ctx.SetSizeIn800x600(false);
-		ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * ti.xscale, UIDRAW_TEXTSIZEFACTOR * ti.yscale));
-		ctx.SetCharWidthScale(0.5f);
-		ctx.SetProportional(false);
-
-		if (ti.flags & eDrawText_800x600)
-			ScaleCoordInternal(posX, posY);
-	}
-	else if (ti.flags & eDrawText_FixedSize)
-	{
-		ctx.SetSizeIn800x600(false);
-		ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * ti.xscale, UIDRAW_TEXTSIZEFACTOR * ti.yscale));
-		ctx.SetProportional(true);
-
-		if (ti.flags & eDrawText_800x600)
-			ScaleCoordInternal(posX, posY);
-	}
-	else
-	{
-		ctx.SetSizeIn800x600(true);
-		ctx.SetProportional(false);
-		ctx.SetCharWidthScale(0.5f);
-		ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * ti.xscale, UIDRAW_TEXTSIZEFACTOR * ti.yscale));
-	}
-
-	// align left/right/center
-	if (ti.flags & (eDrawText_Center | eDrawText_CenterV | eDrawText_Right))
-	{
-		Vec2 textSize = pFont->GetTextSize(pStr, true, ctx);
-
-		// If we're using virtual 800x600 coordinates, convert the text size from
-		// pixels to that before using it as an offset.
-		if (ctx.m_sizeIn800x600)
-		{
-			textSize.x /= ScaleCoordXInternal(1.0f);
-			textSize.y /= ScaleCoordYInternal(1.0f);
-		}
-
-		if (ti.flags & eDrawText_Center)
-			posX -= textSize.x * 0.5f;
-		else if (ti.flags & eDrawText_Right)
-			posX -= textSize.x;
-
-		if (ti.flags & eDrawText_CenterV)
-			posY -= textSize.y * 0.5f;
-	}
-
-	// Pass flags so that overscan borders can be applied if necessary
-	ctx.SetFlags(ti.flags);
-
-	pFont->DrawString(posX, posY, posZ, pStr, true, ctx);
-}
 
 const bool CRenderer::IsEditorMode() const
 {
@@ -640,7 +568,7 @@ void CRenderer::FlushTextMessages(CTextMessages& messages, bool reset)
 		int  nDrawFlags    = 0;
 		const char* szText = 0;
 		Vec4  vColor(1, 1, 1, 1);
-		float fSize = 0;
+		Vec2 fSize;
 
 		if (pText)
 		{
@@ -695,33 +623,8 @@ void CRenderer::FlushTextMessages(CTextMessages& messages, bool reset)
 			if (sy >= 0 && sy <= fMaxPosY)
 				if (sz >= 0 && sz <= 1)
 				{
-					// calculate size
-					float sizeX;
-					float sizeY;
-					if (nDrawFlags & eDrawText_FixedSize)
-					{
-						sizeX = fSize;
-						sizeY = fSize;
-						//sizeX = pTextInfo->font_size * 800.0f/vw;
-						//sizeY = pTextInfo->font_size * 500.0f/vh;
-					}
-					else
-					{
-						sizeX  = sizeY = (1.0f - (float)(sz)) * 32.f * fSize;
-						sizeX *= 0.5f;
-					}
-
 					if (szText)
 					{
-						// print
-						SDrawTextInfo ti;
-						ti.flags    = nDrawFlags;
-						ti.color[0] = vColor.x;
-						ti.color[1] = vColor.y;
-						ti.color[2] = vColor.z;
-						ti.color[3] = vColor.w;
-						ti.xscale   = sizeX;
-						ti.yscale   = sizeY;
 						if (nDrawFlags & eDrawText_DepthTest)
 						{
 							sz = 1.0f - 2.0f * sz;
@@ -731,10 +634,78 @@ void CRenderer::FlushTextMessages(CTextMessages& messages, bool reset)
 							sz = 1.0f;
 						}
 
-						float xmod = b800x600 ? 8.f : 1.f;
-						float ymod = b800x600 ? 6.f : 1.f;
+						sx *=  (b800x600 ? 8.f : 1.f);
+						sy *=  (b800x600 ? 6.f : 1.f);
 
-						Draw2dTextWithDepth(xmod * sx, ymod * sy, sz, szText, ti);
+						{
+							IF(!m_pDefaultFont, 0)
+								return;
+
+							IFFont* pFont = m_pDefaultFont;
+
+							const float r = CLAMP(vColor[0], 0.0f, 1.0f);
+							const float g = CLAMP(vColor[1], 0.0f, 1.0f);
+							const float b = CLAMP(vColor[2], 0.0f, 1.0f);
+							const float a = CLAMP(vColor[3], 0.0f, 1.0f);
+
+							STextDrawContext ctx;
+							ctx.SetColor(ColorF(r, g, b, a));
+							ctx.SetCharWidthScale(1.0f);
+							ctx.EnableFrame((nDrawFlags & eDrawText_Framed) != 0);
+
+							if( nDrawFlags & eDrawText_Monospace )
+							{
+								if( nDrawFlags & eDrawText_FixedSize )
+									ctx.SetSizeIn800x600(false);
+								ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
+								ctx.SetCharWidthScale(0.5f);
+								ctx.SetProportional(false);
+
+								if( nDrawFlags & eDrawText_800x600 )
+									ScaleCoordInternal(sx, sy);
+							}
+							else if( nDrawFlags & eDrawText_FixedSize )
+							{
+								ctx.SetSizeIn800x600(false);
+								ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
+								ctx.SetProportional(true);
+
+								if( nDrawFlags & eDrawText_800x600 )
+									ScaleCoordInternal(sx, sy);
+							}
+							else
+							{
+								ctx.SetSizeIn800x600(true);
+								ctx.SetProportional(false);
+								ctx.SetCharWidthScale(0.5f);
+								ctx.SetSize(Vec2(UIDRAW_TEXTSIZEFACTOR * fSize.x, UIDRAW_TEXTSIZEFACTOR * fSize.y));
+							}
+
+							// align left/right/center
+							if( nDrawFlags & (eDrawText_Center | eDrawText_CenterV | eDrawText_Right) )
+							{
+								Vec2 textSize = pFont->GetTextSize(szText, true, ctx);
+
+								// If we're using virtual 800x600 coordinates, convert the text size from
+								// pixels to that before using it as an offset.
+								if( ctx.m_sizeIn800x600 )
+								{
+									textSize.x /= ScaleCoordXInternal(1.0f);
+									textSize.y /= ScaleCoordYInternal(1.0f);
+								}
+
+								if     ( nDrawFlags & eDrawText_Center ) sx -= textSize.x * 0.5f;
+								else if( nDrawFlags & eDrawText_Right  ) sx -= textSize.x;
+
+								if( nDrawFlags & eDrawText_CenterV )
+									sy -= textSize.y * 0.5f;
+							}
+
+							// Pass flags so that overscan borders can be applied if necessary
+							ctx.SetFlags(nDrawFlags);
+
+							pFont->DrawString(sx, sy, sz, szText, true, ctx);
+						}
 					}
 				}
 	}

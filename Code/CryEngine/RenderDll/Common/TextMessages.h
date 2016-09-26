@@ -18,7 +18,7 @@ public:
 	//   vPos - WorldSpace position
 	//   szText - must not be 0
 	//   nDrawFlags - EDrawTextFlags
-	void PushEntry_Text(const Vec3& vPos, const ColorB col, const float fFontSize, const int nDrawFlags, const char* szText);
+	void PushEntry_Text(const Vec3& vPos, const ColorB col, const Vec2& fFontSize, const int nDrawFlags, const char* szText);
 
 	// usually called every frame
 	// resets/ends iteration
@@ -59,7 +59,7 @@ public:
 
 		Vec3   m_vPos;
 		ColorB m_Color;
-		float  m_fFontSize;
+		Vec2  m_fFontSize;
 		uint32 m_nDrawFlags;      // EDrawTextFlags
 	};
 

@@ -1025,8 +1025,7 @@ void CFlightNavRegion2::DrawPath(const std::vector<Vec3>& path)
 		SDrawTextInfo ti;
 		ti.color[0] = ti.color[1] = ti.color[2] = ti.color[3] = 1.0f;
 		ti.flags = eDrawText_Center;
-		ti.xscale = 8.0f;
-		ti.yscale = 8.0f;
+		ti.scale = Vec2(8.0f);
 
 		uint32 num = path.size();
 		char buffer[16];
@@ -1220,8 +1219,7 @@ void CFlightNavRegion2::DebugDraw() const
 						ti.color[0] = ti.color[1] = 0.0f;
 						ti.color[2] = ti.color[3] = 1.0f;
 						ti.flags = eDrawText_Center;
-						ti.xscale = 8.0f;
-						ti.yscale = 8.0f;
+						ti.scale = Vec2(8.0f);
 
 						uint32 num = path.size();
 						char buffer[16];

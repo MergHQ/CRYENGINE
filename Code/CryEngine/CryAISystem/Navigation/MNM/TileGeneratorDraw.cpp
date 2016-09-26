@@ -512,7 +512,7 @@ public:
 			const CTileGenerator::SNonWalkableReason& info = iterCoordInfoPair->second;
 
 			SDrawTextInfo ti;
-			ti.xscale = ti.yscale = 0.08f;
+			ti.scale = Vec2(0.08f);
 			ti.flags = eDrawText_800x600 | eDrawText_IgnoreOverscan | eDrawText_Center | eDrawText_CenterV;
 
 			if (info.bIsNeighbourReason)
@@ -547,7 +547,7 @@ public:
 		if (IsOnScreen(topCenter))
 		{
 			SDrawTextInfo ti;
-			ti.xscale = ti.yscale = 0.1f;
+			ti.scale = Vec2(0.1f);
 			ti.flags = eDrawText_800x600 | eDrawText_IgnoreOverscan | eDrawText_Center | eDrawText_CenterV;
 
 			RenderText(pRenderAuxGeom, topCenter, ti, "%u", uint32(pDistances[spanCoord.spanAbsIdx]));
@@ -651,7 +651,7 @@ public:
 				if (IsOnScreen(vtxPosWorld))
 				{
 					SDrawTextInfo ti;
-					ti.xscale = ti.yscale = 0.1f;
+					ti.scale = Vec2(0.1f);
 					ti.flags = eDrawText_800x600 | eDrawText_IgnoreOverscan | eDrawText_Center | eDrawText_CenterV;
 
 					const char dirNames[4] = { 'N', 'E', 'S', 'W' };

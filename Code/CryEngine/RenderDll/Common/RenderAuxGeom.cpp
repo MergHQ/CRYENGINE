@@ -1938,13 +1938,13 @@ void CAuxGeomCB::DrawBone(const Vec3& p, const Vec3& c, ColorB col)
 
 	#include "CommonRender.h"
 
-void CAuxGeomCB::RenderText(Vec3 pos, const SDrawTextInfo& ti, const char* text)
+void CAuxGeomCB::RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text)
 {
 	if(!gEnv->IsDedicated())
 	{
 		ColorB col(ColorF(ti.color[0], ti.color[1], ti.color[2], ti.color[3]));
 
-		m_cbCurrent->m_TextMessages.PushEntry_Text(pos, col, ti.xscale, ti.flags, text);
+		m_cbCurrent->m_TextMessages.PushEntry_Text(pos, col, ti.scale, ti.flags, text);
 	}
 }
 

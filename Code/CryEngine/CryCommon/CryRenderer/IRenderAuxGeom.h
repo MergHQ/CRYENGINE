@@ -162,7 +162,7 @@ struct IRenderAuxGeom
 
 	//! Draw Text.
 	//! ##@{
-	virtual void RenderText(Vec3 pos, const SDrawTextInfo& ti, const char* text) = 0;
+	virtual void RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) = 0;
 
 	void RenderText(Vec3 pos, const SDrawTextInfo& ti, const char* format, va_list args)
 	{
@@ -172,14 +172,14 @@ struct IRenderAuxGeom
 
 			cry_vsprintf(str, format, args);
 
-			RenderText(pos, ti, str);
+			RenderTextQueued(pos, ti, str);
 		}
 	}
 
 	void Draw2dLabel(float x, float y, float font_size, const ColorF& fColor, bool bCenter, const char* format, va_list args)
 	{
 		SDrawTextInfo ti;
-		ti.xscale = ti.yscale = font_size;
+		ti.scale = Vec2(font_size);
 		ti.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0);
 		ti.color[0] = fColor[0];
 		ti.color[1] = fColor[1];
@@ -307,7 +307,7 @@ public:
 
 	static void DrawText(Vec3 pos, const SDrawTextInfo& ti, const char* text)
 	{
-		GetAux()->RenderText(pos, ti, text);
+		GetAux()->RenderTextQueued(pos, ti, text);
 	}
 
 	static void DrawText(Vec3 pos, const ASize& size, const AColor& color, int flags, const char* format, va_list args)
@@ -319,8 +319,7 @@ public:
 			cry_vsprintf(str, format, args);
 
 			SDrawTextInfo ti;
-			ti.xscale = size.val.x;
-			ti.yscale = size.val.y;
+			ti.scale = size.val;
 			ti.flags = flags;
 			ti.color[0] = color.rgba[0];
 			ti.color[1] = color.rgba[1];
