@@ -29,25 +29,20 @@ struct SQueuedAudioCommandBase
 		: type(_type)
 	{}
 
-	virtual ~SQueuedAudioCommandBase() {}
+	virtual ~SQueuedAudioCommandBase() = default;
+	SQueuedAudioCommandBase(SQueuedAudioCommandBase const&) = delete;
+	SQueuedAudioCommandBase(SQueuedAudioCommandBase&&) = delete;
+	SQueuedAudioCommandBase& operator=(SQueuedAudioCommandBase const&) = delete;
+	SQueuedAudioCommandBase& operator=(SQueuedAudioCommandBase&&) = delete;
 
 	EQueuedAudioCommandType const type;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SQueuedAudioCommandBase);
-	PREVENT_OBJECT_COPY(SQueuedAudioCommandBase);
 };
 
 //////////////////////////////////////////////////////////////////////////
 template<EQueuedAudioCommandType T>
 struct SQueuedAudioCommand final : public SQueuedAudioCommandBase
 {
-	SQueuedAudioCommand()
-		: SQueuedAudioCommandBase(T)
-	{}
-
-	virtual ~SQueuedAudioCommand() {}
-
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
+	virtual ~SQueuedAudioCommand() override = default;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -72,7 +67,7 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_PlayFile> final : public SQue
 		, fileName(szFileName)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
+	virtual ~SQueuedAudioCommand() override = default;
 
 	AudioControlId const                              audioTriggerId;
 	void* const                                       pOwnerOverride;
@@ -81,9 +76,6 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_PlayFile> final : public SQue
 	AudioEnumFlagsType const                          requestFlags;
 	bool const                                        bLocalized;
 	CryFixedStringT<MAX_AUDIO_FILE_NAME_LENGTH> const fileName;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SQueuedAudioCommand);
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -95,12 +87,9 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_StopFile> final : public SQue
 		, fileName(szFileName)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
+	virtual ~SQueuedAudioCommand() override = default;
 
 	CryFixedStringT<MAX_AUDIO_FILE_NAME_LENGTH> const fileName;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SQueuedAudioCommand);
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -121,16 +110,13 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_ExecuteTrigger> final : publi
 		, requestFlags(_requestFlags)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
+	virtual ~SQueuedAudioCommand() override = default;
 
 	AudioControlId const     audioTriggerId;
 	void* const              pOwnerOverride;
 	void* const              pUserData;
 	void* const              pUserDataOwner;
 	AudioEnumFlagsType const requestFlags;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SQueuedAudioCommand);
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -142,12 +128,9 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_StopTrigger> final : public S
 		, audioTriggerId(_audioTriggerId)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
+	virtual ~SQueuedAudioCommand() override = default;
 
 	AudioControlId const audioTriggerId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SQueuedAudioCommand);
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -160,13 +143,10 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_SetSwitchState> final : publi
 		, audioSwitchStateId(_audioSwitchStateId)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
+	virtual ~SQueuedAudioCommand() override = default;
 
 	AudioControlId const     audioSwitchId;
 	AudioSwitchStateId const audioSwitchStateId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SQueuedAudioCommand);
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -179,13 +159,10 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_SetRtpcValue> final : public 
 		, value(_value)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
+	virtual ~SQueuedAudioCommand() override = default;
 
 	AudioControlId const audioRtpcId;
 	float const          value;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SQueuedAudioCommand);
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -197,12 +174,9 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_SetTransformation> final : pu
 		, transformation(_transformation)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
+	virtual ~SQueuedAudioCommand() override = default;
 
 	Matrix34 const transformation;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SQueuedAudioCommand);
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -215,13 +189,10 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_SetEnvironmentAmount> final :
 		, value(_value)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
+	virtual ~SQueuedAudioCommand() override = default;
 
 	AudioEnvironmentId const audioEnvironmentId;
 	float const              value;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SQueuedAudioCommand);
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -233,12 +204,9 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_SetCurrentEnvironments> final
 		, entityId(_entityId)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
+	virtual ~SQueuedAudioCommand() override = default;
 
 	EntityId const entityId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SQueuedAudioCommand);
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -249,9 +217,7 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_ClearEnvironments> final : pu
 		: SQueuedAudioCommandBase(eQueuedAudioCommandType_ClearEnvironments)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
-
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
+	virtual ~SQueuedAudioCommand() override = default;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -262,9 +228,7 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_Reset> final : public SQueued
 		: SQueuedAudioCommandBase(eQueuedAudioCommandType_Reset)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
-
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
+	virtual ~SQueuedAudioCommand() override = default;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -275,9 +239,7 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_Release> final : public SQueu
 		: SQueuedAudioCommandBase(eQueuedAudioCommandType_Release)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
-
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
+	virtual ~SQueuedAudioCommand() override = default;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -289,10 +251,7 @@ struct SQueuedAudioCommand<eQueuedAudioCommandType_Initialize> final : public SQ
 		, audioObjectName(szAudioObjectName)
 	{}
 
-	virtual ~SQueuedAudioCommand() {}
+	virtual ~SQueuedAudioCommand() override = default;
 
 	CryFixedStringT<MAX_AUDIO_OBJECT_NAME_LENGTH> const audioObjectName;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SQueuedAudioCommand);
-	PREVENT_OBJECT_COPY(SQueuedAudioCommand);
 };

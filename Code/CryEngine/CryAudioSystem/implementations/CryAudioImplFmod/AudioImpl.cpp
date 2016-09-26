@@ -15,6 +15,7 @@ using namespace CryAudio::Impl::Fmod;
 
 AudioParameterToIndexMap g_parameterToIndex;
 FmodSwitchToIndexMap g_switchToIndex;
+FmodAudioObjectId g_globalAudioObjectId = 0;
 
 char const* const CAudioImpl::s_szFmodEventTag = "FmodEvent";
 char const* const CAudioImpl::s_szFmodSnapshotTag = "FmodSnapshot";
@@ -108,8 +109,7 @@ FMOD_RESULT F_CALLBACK StandaloneFileCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE ty
 
 ///////////////////////////////////////////////////////////////////////////
 CAudioImpl::CAudioImpl()
-	: m_globalAudioObjectID(INVALID_AUDIO_OBJECT_ID)
-	, m_pSystem(nullptr)
+	: m_pSystem(nullptr)
 	, m_pLowLevelSystem(nullptr)
 	, m_pMasterBank(nullptr)
 	, m_pStringsBank(nullptr)
@@ -665,7 +665,7 @@ EAudioRequestStatus CAudioImpl::SetEnvironment(
 
 	if ((pFmodAudioObject != nullptr) && (pFmodAudioEnvironment != nullptr))
 	{
-		if (pFmodAudioObject->GetId() != m_globalAudioObjectID)
+		if (pFmodAudioObject->GetId() != g_globalAudioObjectId)
 		{
 			pFmodAudioObject->SetEnvironment(pFmodAudioEnvironment, amount);
 		}
@@ -699,7 +699,7 @@ EAudioRequestStatus CAudioImpl::SetRtpc(
 
 	if ((pFmodAudioObject != nullptr) && (pFmodAudioParameter != nullptr))
 	{
-		if (pFmodAudioObject->GetId() != m_globalAudioObjectID)
+		if (pFmodAudioObject->GetId() != g_globalAudioObjectId)
 		{
 			pFmodAudioObject->SetParameter(pFmodAudioParameter, value);
 		}
@@ -732,7 +732,7 @@ EAudioRequestStatus CAudioImpl::SetSwitchState(
 
 	if ((pFmodAudioObject != nullptr) && (pFmodAudioSwitchState != nullptr))
 	{
-		if (pFmodAudioObject->GetId() != m_globalAudioObjectID)
+		if (pFmodAudioObject->GetId() != g_globalAudioObjectId)
 		{
 			pFmodAudioObject->SetSwitch(pFmodAudioSwitchState);
 		}
@@ -765,7 +765,7 @@ EAudioRequestStatus CAudioImpl::SetObstructionOcclusion(
 
 	if (pFmodAudioObject != nullptr)
 	{
-		if (pFmodAudioObject->GetId() != m_globalAudioObjectID)
+		if (pFmodAudioObject->GetId() != g_globalAudioObjectId)
 		{
 			pFmodAudioObject->SetObstructionOcclusion(obstruction, occlusion);
 		}
@@ -933,15 +933,15 @@ char const* const CAudioImpl::GetAudioFileLocation(SAudioFileEntryInfo* const pF
 ///////////////////////////////////////////////////////////////////////////
 IAudioObject* CAudioImpl::NewGlobalAudioObject(AudioObjectId const audioObjectID)
 {
-	POOL_NEW_CREATE(CAudioObject, pFmodAudioObject)(audioObjectID);
-	m_globalAudioObjectID = audioObjectID;
+	POOL_NEW_CREATE(CAudioObject, pFmodAudioObject)(g_globalAudioObjectId);
 	return pFmodAudioObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 IAudioObject* CAudioImpl::NewAudioObject(AudioObjectId const audioObjectID)
 {
-	POOL_NEW_CREATE(CAudioObject, pFmodAudioObject)(audioObjectID);
+	static FmodAudioObjectId nextId = g_globalAudioObjectId + 1;
+	POOL_NEW_CREATE(CAudioObject, pFmodAudioObject)(nextId++);
 	return pFmodAudioObject;
 }
 

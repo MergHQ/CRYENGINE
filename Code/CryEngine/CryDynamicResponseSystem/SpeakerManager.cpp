@@ -796,7 +796,7 @@ void CSpeakerManager::ExecuteStartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 		}
 		else
 		{
-			bAudioPlaybackStarted = pEntityAudioProxy->PlayFile(pSpeakerInfoToUse->standaloneFile.c_str(), pSpeakerInfoToUse->speechAuxProxy, callbackInfo);
+			bAudioPlaybackStarted = pEntityAudioProxy->PlayFile(SAudioPlayFileInfo(pSpeakerInfoToUse->standaloneFile.c_str()), pSpeakerInfoToUse->speechAuxProxy, callbackInfo);
 		}
 		if (bAudioPlaybackStarted)
 		{

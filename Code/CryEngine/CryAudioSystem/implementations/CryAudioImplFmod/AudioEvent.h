@@ -43,7 +43,12 @@ public:
 		, m_pAudioObject(nullptr)
 	{}
 
-	virtual ~CAudioEvent() {}
+	virtual ~CAudioEvent() override = default;
+
+	CAudioEvent(CAudioEvent const&) = delete;
+	CAudioEvent(CAudioEvent&&) = delete;
+	CAudioEvent&                 operator=(CAudioEvent const&) = delete;
+	CAudioEvent&                 operator=(CAudioEvent&&) = delete;
 
 	bool                         PrepareForOcclusion();
 	void                         SetObstructionOcclusion(float const obstruction, float const occlusion);
@@ -70,9 +75,6 @@ private:
 	FMOD::DSP*                       m_pLowpass;
 	FMOD::Studio::ParameterInstance* m_pOcclusionParameter;
 	CAudioObject*                    m_pAudioObject;
-
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioEvent);
-	PREVENT_OBJECT_COPY(CAudioEvent);
 };
 }
 }

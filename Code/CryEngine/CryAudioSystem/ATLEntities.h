@@ -127,13 +127,17 @@ public:
 		, m_dataScope(dataScope)
 	{}
 
-	virtual ~CATLEntity() {}
+	CATLEntity(CATLEntity const&) = delete;
+	CATLEntity(CATLEntity&&) = delete;
+	CATLEntity&             operator=(CATLEntity const&) = delete;
+	CATLEntity&             operator=(CATLEntity&&) = delete;
 
 	virtual IDType          GetId() const        { return m_id; }
 	virtual EAudioDataScope GetDataScope() const { return m_dataScope; }
 
 protected:
 
+	~CATLEntity() = default;
 	EAudioDataScope m_dataScope;
 
 private:
@@ -146,15 +150,8 @@ typedef CATLEntity<AudioObjectId>  TATLObject;
 
 struct SATLSoundPropagationData
 {
-	SATLSoundPropagationData()
-		: obstruction(0.0f)
-		, occlusion(0.0f)
-	{}
-
-	~SATLSoundPropagationData() {}
-
-	float obstruction;
-	float occlusion;
+	float obstruction = 0.0f;
+	float occlusion = 0.0f;
 };
 
 class CATLListenerObject final : public TATLObject
@@ -169,8 +166,6 @@ public:
 		, m_velocity(0.0f)
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	{}
-
-	virtual ~CATLListenerObject() {}
 
 	void Update(CryAudio::Impl::IAudioImpl* const pImpl)
 	{
@@ -231,33 +226,33 @@ private:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	float m_velocity;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	PREVENT_OBJECT_COPY(CATLListenerObject);
-	DELETE_DEFAULT_CONSTRUCTOR(CATLListenerObject);
 };
 
 class CATLControlImpl
 {
 public:
 
-	CATLControlImpl()
-		: m_audioSubsystem(eAudioSubsystem_None)
-	{}
+	CATLControlImpl(CATLControlImpl const&) = delete;
+	CATLControlImpl(CATLControlImpl&&) = delete;
+	CATLControlImpl& operator=(CATLControlImpl const&) = delete;
+	CATLControlImpl& operator=(CATLControlImpl&&) = delete;
+
+	EAudioSubsystem  GetReceiver() const { return m_audioSubsystem; }
+
+protected:
+
+	CATLControlImpl() = default;
 
 	explicit CATLControlImpl(EAudioSubsystem const audioSubsystem)
 		: m_audioSubsystem(audioSubsystem)
 	{}
 
-	virtual ~CATLControlImpl() {}
+	~CATLControlImpl() = default;
 
-	EAudioSubsystem GetReceiver() const { return m_audioSubsystem; }
-
-protected:
-
-	EAudioSubsystem m_audioSubsystem;
+	EAudioSubsystem m_audioSubsystem = eAudioSubsystem_None;
 };
 
-class CATLTriggerImpl : public CATLControlImpl
+class CATLTriggerImpl final : public CATLControlImpl
 {
 public:
 
@@ -272,14 +267,12 @@ public:
 		, m_pImplData(pImplData)
 	{}
 
-	virtual ~CATLTriggerImpl() {}
-
 	AudioTriggerImplId const                   m_audioTriggerImplId;
 	AudioControlId const                       m_audioTriggerId;
 	CryAudio::Impl::IAudioTrigger const* const m_pImplData;
 };
 
-class CATLTrigger : public TATLControl
+class CATLTrigger final : public TATLControl
 {
 public:
 
@@ -292,14 +285,12 @@ public:
 		, m_occlusionFadeOutDistance(occlusionFadeOutDistance)
 	{}
 
-	virtual ~CATLTrigger() {}
-
 	ImplPtrVec const m_implPtrs;
 	float const      m_maxRadius;
 	float const      m_occlusionFadeOutDistance;
 };
 
-class CATLRtpcImpl : public CATLControlImpl
+class CATLRtpcImpl final : public CATLControlImpl
 {
 public:
 
@@ -308,12 +299,10 @@ public:
 		, m_pImplData(pImplData)
 	{}
 
-	virtual ~CATLRtpcImpl() {}
-
 	CryAudio::Impl::IAudioRtpc const* const m_pImplData;
 };
 
-class CATLRtpc : public TATLControl
+class CATLRtpc final : public TATLControl
 {
 public:
 
@@ -324,12 +313,10 @@ public:
 		, m_implPtrs(cImplPtrs)
 	{}
 
-	virtual ~CATLRtpc() {}
-
 	ImplPtrVec const m_implPtrs;
 };
 
-class CATLSwitchStateImpl : public CATLControlImpl
+class CATLSwitchStateImpl final : public CATLControlImpl
 {
 public:
 
@@ -338,12 +325,10 @@ public:
 		, m_pImplData(pImplData)
 	{}
 
-	virtual ~CATLSwitchStateImpl() {}
-
 	CryAudio::Impl::IAudioSwitchState const* const m_pImplData;
 };
 
-class CATLSwitchState
+class CATLSwitchState final
 {
 public:
 
@@ -358,10 +343,13 @@ public:
 		, m_implPtrs(implPtrs)
 	{}
 
-	virtual ~CATLSwitchState() {}
+	CATLSwitchState(CATLSwitchState const&) = delete;
+	CATLSwitchState(CATLSwitchState&&) = delete;
+	CATLSwitchState&   operator=(CATLSwitchState const&) = delete;
+	CATLSwitchState&   operator=(CATLSwitchState&&) = delete;
 
-	virtual AudioSwitchStateId GetId() const       { return m_audioSwitchStateId; }
-	virtual AudioSwitchStateId GetParentId() const { return m_audioSwitchId; }
+	AudioSwitchStateId GetId() const       { return m_audioSwitchStateId; }
+	AudioSwitchStateId GetParentId() const { return m_audioSwitchId; }
 
 	ImplPtrVec const m_implPtrs;
 
@@ -371,7 +359,7 @@ private:
 	AudioControlId const     m_audioSwitchId;
 };
 
-class CATLSwitch : public TATLControl
+class CATLSwitch final : public TATLControl
 {
 public:
 
@@ -379,13 +367,11 @@ public:
 		: TATLControl(audioSwitchId, dataScope)
 	{}
 
-	virtual ~CATLSwitch() {}
-
 	typedef std::map<AudioSwitchStateId, CATLSwitchState const*, std::less<AudioSwitchStateId>, STLSoundAllocator<std::pair<AudioSwitchStateId, CATLSwitchState const*>>> AudioStates;
 	AudioStates audioSwitchStates;
 };
 
-class CATLEnvironmentImpl : public CATLControlImpl
+class CATLEnvironmentImpl final : public CATLControlImpl
 {
 public:
 
@@ -394,12 +380,10 @@ public:
 		, m_pImplData(pImplData)
 	{}
 
-	virtual ~CATLEnvironmentImpl() {}
-
 	CryAudio::Impl::IAudioEnvironment const* const m_pImplData;
 };
 
-class CATLAudioEnvironment : public CATLEntity<AudioEnvironmentId>
+class CATLAudioEnvironment final : public CATLEntity<AudioEnvironmentId>
 {
 public:
 
@@ -410,12 +394,10 @@ public:
 		, m_implPtrs(implPtrs)
 	{}
 
-	virtual ~CATLAudioEnvironment() {}
-
 	ImplPtrVec const m_implPtrs;
 };
 
-class CATLStandaloneFile : public CATLEntity<AudioStandaloneFileId>
+class CATLStandaloneFile final : public CATLEntity<AudioStandaloneFileId>
 {
 public:
 
@@ -426,8 +408,6 @@ public:
 		, m_pImplData(nullptr)
 		, m_state(eAudioStandaloneFileState_None)
 	{}
-
-	virtual ~CATLStandaloneFile() {}
 
 	bool         IsPlaying() const { return (m_state == eAudioStandaloneFileState_Playing) || (m_state == eAudioStandaloneFileState_Stopping); }
 
@@ -442,12 +422,9 @@ public:
 	AudioObjectId                         m_audioObjectId;
 	CryAudio::Impl::IAudioStandaloneFile* m_pImplData;
 	EAudioStandaloneFileState             m_state;
-
-	DELETE_DEFAULT_CONSTRUCTOR(CATLStandaloneFile);
-	PREVENT_OBJECT_COPY(CATLStandaloneFile);
 };
 
-class CATLEvent : public CATLEntity<AudioEventId>
+class CATLEvent final : public CATLEntity<AudioEventId>
 {
 public:
 
@@ -462,12 +439,10 @@ public:
 		, m_pImplData(nullptr)
 	{}
 
-	virtual ~CATLEvent() {}
+	void SetDataScope(EAudioDataScope const dataScope) { m_dataScope = dataScope; }
+	bool IsPlaying() const                             { return m_audioEventState == eAudioEventState_Playing || m_audioEventState == eAudioEventState_PlayingDelayed; }
 
-	void         SetDataScope(EAudioDataScope const dataScope) { m_dataScope = dataScope; }
-	bool         IsPlaying() const                             { return m_audioEventState == eAudioEventState_Playing || m_audioEventState == eAudioEventState_PlayingDelayed; }
-
-	virtual void Clear()
+	void Clear()
 	{
 		m_dataScope = eAudioDataScope_None;
 		m_audioObjectId = INVALID_AUDIO_OBJECT_ID;
@@ -484,12 +459,9 @@ public:
 	EAudioEventState             m_audioEventState;
 	EAudioSubsystem const        m_audioSubsystem;
 	CryAudio::Impl::IAudioEvent* m_pImplData;
-
-	DELETE_DEFAULT_CONSTRUCTOR(CATLEvent);
-	PREVENT_OBJECT_COPY(CATLEvent);
 };
 
-class CATLAudioFileEntry
+class CATLAudioFileEntry final
 {
 public:
 
@@ -510,7 +482,10 @@ public:
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 
-	virtual ~CATLAudioFileEntry() {}
+	CATLAudioFileEntry(CATLAudioFileEntry const&) = delete;
+	CATLAudioFileEntry(CATLAudioFileEntry&&) = delete;
+	CATLAudioFileEntry& operator=(CATLAudioFileEntry const&) = delete;
+	CATLAudioFileEntry& operator=(CATLAudioFileEntry&&) = delete;
 
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> m_path;
 	size_t                           m_size;
@@ -526,12 +501,9 @@ public:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CTimeValue m_timeCached;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	DELETE_DEFAULT_CONSTRUCTOR(CATLAudioFileEntry);
-	PREVENT_OBJECT_COPY(CATLAudioFileEntry);
 };
 
-class CATLPreloadRequest : public CATLEntity<AudioPreloadRequestId>
+class CATLPreloadRequest final : public CATLEntity<AudioPreloadRequestId>
 {
 public:
 
@@ -547,13 +519,8 @@ public:
 		, m_fileEntryIds(fileEntryIds)
 	{}
 
-	virtual ~CATLPreloadRequest() {}
-
 	bool const   m_bAutoLoad;
 	FileEntryIds m_fileEntryIds;
-
-	DELETE_DEFAULT_CONSTRUCTOR(CATLPreloadRequest);
-	PREVENT_OBJECT_COPY(CATLPreloadRequest);
 };
 
 //-------------------- ATLObject container typedefs --------------------------
@@ -564,66 +531,73 @@ typedef std::map<AudioPreloadRequestId, CATLPreloadRequest*, std::less<AudioPrel
 typedef std::map<AudioEnvironmentId, CATLAudioEnvironment const*, std::less<AudioEnvironmentId>, STLSoundAllocator<std::pair<AudioEnvironmentId, CATLAudioEnvironment const*>>> AudioEnvironmentLookup;
 
 //------------------------ ATLInternal Entity Data ----------------------------
-struct SATLSwitchStateImplData_internal : public CryAudio::Impl::IAudioSwitchState
+struct SATLSwitchStateImplData_internal final : public CryAudio::Impl::IAudioSwitchState
 {
 	explicit SATLSwitchStateImplData_internal(AudioControlId const _internalAudioSwitchId, AudioSwitchStateId const _internalAudioSwitchStateId)
 		: internalAudioSwitchId(_internalAudioSwitchId)
 		, internalAudioSwitchStateId(_internalAudioSwitchStateId)
 	{}
 
-	virtual ~SATLSwitchStateImplData_internal() {}
+	virtual ~SATLSwitchStateImplData_internal() override = default;
+
+	SATLSwitchStateImplData_internal(SATLSwitchStateImplData_internal const&) = delete;
+	SATLSwitchStateImplData_internal(SATLSwitchStateImplData_internal&&) = delete;
+	SATLSwitchStateImplData_internal& operator=(SATLSwitchStateImplData_internal const&) = delete;
+	SATLSwitchStateImplData_internal& operator=(SATLSwitchStateImplData_internal&&) = delete;
 
 	AudioControlId const     internalAudioSwitchId;
 	AudioSwitchStateId const internalAudioSwitchStateId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SATLSwitchStateImplData_internal);
-	PREVENT_OBJECT_COPY(SATLSwitchStateImplData_internal);
 };
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-class CATLDebugNameStore
+class CATLDebugNameStore final
 {
 public:
 
 	CATLDebugNameStore();
 	~CATLDebugNameStore();
 
-	void        SyncChanges(CATLDebugNameStore const& otherNameStore);
+	CATLDebugNameStore(CATLDebugNameStore const&) = delete;
+	CATLDebugNameStore(CATLDebugNameStore&&) = delete;
+	CATLDebugNameStore& operator=(CATLDebugNameStore const&) = delete;
+	CATLDebugNameStore& operator=(CATLDebugNameStore&&) = delete;
 
-	void        AddAudioObject(AudioObjectId const audioObjectId, char const* const szName);
-	void        AddAudioTrigger(AudioControlId const audioTriggerId, char const* const szName);
-	void        AddAudioRtpc(AudioControlId const audioRtpcId, char const* const szName);
-	void        AddAudioSwitch(AudioControlId const audioSwitchId, char const* const szName);
-	void        AddAudioSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId, char const* const szName);
-	void        AddAudioPreloadRequest(AudioPreloadRequestId const audioPreloadRequestId, char const* const szName);
-	void        AddAudioEnvironment(AudioEnvironmentId const audioEnvironmentId, char const* const szName);
-	void        AddAudioStandaloneFile(AudioStandaloneFileId const audioStandaloneFileId, char const* const szName);
+	void                SyncChanges(CATLDebugNameStore const& otherNameStore);
 
-	void        RemoveAudioObject(AudioObjectId const audioObjectId);
-	void        RemoveAudioTrigger(AudioControlId const audioTriggerId);
-	void        RemoveAudioRtpc(AudioControlId const audioRtpcId);
-	void        RemoveAudioSwitch(AudioControlId const audioSwitchId);
-	void        RemoveAudioPreloadRequest(AudioPreloadRequestId const audioPreloadRequestId);
-	void        RemoveAudioEnvironment(AudioEnvironmentId const audioEnvironmentId);
-	void        RemoveAudioStandaloneFile(AudioStandaloneFileId const audioStandaloneFileId);
+	void                AddAudioObject(AudioObjectId const audioObjectId, char const* const szName);
+	void                AddAudioTrigger(AudioControlId const audioTriggerId, char const* const szName);
+	void                AddAudioRtpc(AudioControlId const audioRtpcId, char const* const szName);
+	void                AddAudioSwitch(AudioControlId const audioSwitchId, char const* const szName);
+	void                AddAudioSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId, char const* const szName);
+	void                AddAudioPreloadRequest(AudioPreloadRequestId const audioPreloadRequestId, char const* const szName);
+	void                AddAudioEnvironment(AudioEnvironmentId const audioEnvironmentId, char const* const szName);
+	void                AddAudioStandaloneFile(AudioStandaloneFileId const audioStandaloneFileId, char const* const szName);
 
-	bool        AudioObjectsChanged() const       { return m_bAudioObjectsChanged; }
-	bool        AudioTriggersChanged() const      { return m_bAudioTriggersChanged; }
-	bool        AudioRtpcsChanged() const         { return m_bAudioRtpcsChanged; }
-	bool        AudioSwitchesChanged() const      { return m_bAudioSwitchesChanged; }
-	bool        AudioPreloadsChanged() const      { return m_bAudioPreloadsChanged; }
-	bool        AudioEnvironamentsChanged() const { return m_bAudioEnvironmentsChanged; }
+	void                RemoveAudioObject(AudioObjectId const audioObjectId);
+	void                RemoveAudioTrigger(AudioControlId const audioTriggerId);
+	void                RemoveAudioRtpc(AudioControlId const audioRtpcId);
+	void                RemoveAudioSwitch(AudioControlId const audioSwitchId);
+	void                RemoveAudioPreloadRequest(AudioPreloadRequestId const audioPreloadRequestId);
+	void                RemoveAudioEnvironment(AudioEnvironmentId const audioEnvironmentId);
+	void                RemoveAudioStandaloneFile(AudioStandaloneFileId const audioStandaloneFileId);
 
-	char const* LookupAudioObjectName(AudioObjectId const audioObjectId) const;
-	char const* LookupAudioTriggerName(AudioControlId const audioTriggerId) const;
-	char const* LookupAudioRtpcName(AudioControlId const audioRtpcId) const;
-	char const* LookupAudioSwitchName(AudioControlId const audioSwitchId) const;
-	char const* LookupAudioSwitchStateName(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId) const;
-	char const* LookupAudioPreloadRequestName(AudioPreloadRequestId const audioPreloadRequestId) const;
-	char const* LookupAudioEnvironmentName(AudioEnvironmentId const audioEnvironmentId) const;
-	char const* LookupAudioStandaloneFileName(AudioStandaloneFileId const audioStandaloneFileId) const;
+	bool                AudioObjectsChanged() const       { return m_bAudioObjectsChanged; }
+	bool                AudioTriggersChanged() const      { return m_bAudioTriggersChanged; }
+	bool                AudioRtpcsChanged() const         { return m_bAudioRtpcsChanged; }
+	bool                AudioSwitchesChanged() const      { return m_bAudioSwitchesChanged; }
+	bool                AudioPreloadsChanged() const      { return m_bAudioPreloadsChanged; }
+	bool                AudioEnvironamentsChanged() const { return m_bAudioEnvironmentsChanged; }
 
-	void        GetAudioDebugData(SAudioDebugData& audioDebugData) const;
+	char const*         LookupAudioObjectName(AudioObjectId const audioObjectId) const;
+	char const*         LookupAudioTriggerName(AudioControlId const audioTriggerId) const;
+	char const*         LookupAudioRtpcName(AudioControlId const audioRtpcId) const;
+	char const*         LookupAudioSwitchName(AudioControlId const audioSwitchId) const;
+	char const*         LookupAudioSwitchStateName(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId) const;
+	char const*         LookupAudioPreloadRequestName(AudioPreloadRequestId const audioPreloadRequestId) const;
+	char const*         LookupAudioEnvironmentName(AudioEnvironmentId const audioEnvironmentId) const;
+	char const*         LookupAudioStandaloneFileName(AudioStandaloneFileId const audioStandaloneFileId) const;
+
+	void                GetAudioDebugData(SAudioDebugData& audioDebugData) const;
 
 private:
 
@@ -650,7 +624,5 @@ private:
 	mutable bool            m_bAudioPreloadsChanged;
 	mutable bool            m_bAudioEnvironmentsChanged;
 	mutable bool            m_bAudioStandaloneFilesChanged;
-
-	PREVENT_OBJECT_COPY(CATLDebugNameStore);
 };
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

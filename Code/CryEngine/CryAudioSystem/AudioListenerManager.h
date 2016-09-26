@@ -15,12 +15,17 @@ struct SAudioObject3DAttributes;
 
 class CATLListenerObject;
 
-class CAudioListenerManager
+class CAudioListenerManager final
 {
 public:
 
 	CAudioListenerManager();
 	~CAudioListenerManager();
+
+	CAudioListenerManager(CAudioListenerManager const&) = delete;
+	CAudioListenerManager(CAudioListenerManager&&) = delete;
+	CAudioListenerManager& operator=(CAudioListenerManager const&) = delete;
+	CAudioListenerManager& operator=(CAudioListenerManager&&) = delete;
 
 	void                                            Init(CryAudio::Impl::IAudioImpl* const pImpl);
 	void                                            Release();
@@ -48,6 +53,4 @@ private:
 	AudioObjectId const         m_defaultListenerId;
 	AudioObjectId               m_numListeners;
 	CryAudio::Impl::IAudioImpl* m_pImpl;
-
-	PREVENT_OBJECT_COPY(CAudioListenerManager);
 };

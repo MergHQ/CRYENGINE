@@ -16,7 +16,11 @@ class CAudioImpl final : public IAudioImpl
 public:
 
 	CAudioImpl();
-	virtual ~CAudioImpl();
+	virtual ~CAudioImpl() override = default;
+	CAudioImpl(CAudioImpl const&) = delete;
+	CAudioImpl(CAudioImpl&&) = delete;
+	CAudioImpl& operator=(CAudioImpl const&) = delete;
+	CAudioImpl& operator=(CAudioImpl&&) = delete;
 
 	// IAudioImpl
 	virtual void                     Update(float const deltaTime) override;
@@ -107,7 +111,7 @@ private:
 	ICVar*                   m_pCVarFileExtension;
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	std::map<AudioObjectId, string>             m_idToName;
+	std::map<uint32, string>                    m_idToName;
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> m_fullImplString;
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 

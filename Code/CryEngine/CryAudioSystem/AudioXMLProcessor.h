@@ -5,11 +5,11 @@
 #include "ATLEntities.h"
 #include "FileCacheManager.h"
 
-class CAudioXMLProcessor
+class CAudioXMLProcessor final
 {
 public:
 
-	CAudioXMLProcessor(
+	explicit CAudioXMLProcessor(
 	  AudioTriggerLookup& triggers,
 	  AudioRtpcLookup& rtpcs,
 	  AudioSwitchLookup& switches,
@@ -17,7 +17,10 @@ public:
 	  AudioPreloadRequestLookup& preloadRequests,
 	  CFileCacheManager& fileCacheMgr);
 
-	~CAudioXMLProcessor();
+	CAudioXMLProcessor(CAudioXMLProcessor const&) = delete;
+	CAudioXMLProcessor(CAudioXMLProcessor&&) = delete;
+	CAudioXMLProcessor& operator=(CAudioXMLProcessor const&) = delete;
+	CAudioXMLProcessor& operator=(CAudioXMLProcessor&&) = delete;
 
 	void Init(CryAudio::Impl::IAudioImpl* const pImpl);
 	void Release();
@@ -64,7 +67,4 @@ private:
 
 	CATLDebugNameStore* m_pDebugNameStore;
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
-
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioXMLProcessor);
-	PREVENT_OBJECT_COPY(CAudioXMLProcessor);
 };

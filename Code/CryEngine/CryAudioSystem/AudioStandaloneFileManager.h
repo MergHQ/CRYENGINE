@@ -13,12 +13,17 @@ struct IAudioImpl;
 }
 }
 
-class CAudioStandaloneFileManager
+class CAudioStandaloneFileManager final
 {
 public:
 
 	CAudioStandaloneFileManager();
-	virtual ~CAudioStandaloneFileManager();
+	~CAudioStandaloneFileManager();
+
+	CAudioStandaloneFileManager(CAudioStandaloneFileManager const&) = delete;
+	CAudioStandaloneFileManager(CAudioStandaloneFileManager&&) = delete;
+	CAudioStandaloneFileManager& operator=(CAudioStandaloneFileManager const&) = delete;
+	CAudioStandaloneFileManager& operator=(CAudioStandaloneFileManager&&) = delete;
 
 	void                Init(CryAudio::Impl::IAudioImpl* const pImpl);
 	void                Release();
@@ -49,6 +54,4 @@ private:
 
 	CATLDebugNameStore* m_pDebugNameStore;
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
-
-	PREVENT_OBJECT_COPY(CAudioStandaloneFileManager);
 };

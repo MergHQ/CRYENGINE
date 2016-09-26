@@ -21,11 +21,6 @@ CFileCacheManager::CFileCacheManager(AudioPreloadRequestLookup& preloadRequests)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileCacheManager::~CFileCacheManager()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::Init(IAudioImpl* const pImpl)
 {
 	m_pImpl = pImpl;

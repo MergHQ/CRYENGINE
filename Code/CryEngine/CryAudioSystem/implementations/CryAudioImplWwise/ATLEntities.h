@@ -25,15 +25,17 @@ struct SAudioObject final : public IAudioObject
 		, bNeedsToUpdateEnvironments(false)
 	{}
 
-	virtual ~SAudioObject() {}
+	virtual ~SAudioObject() override = default;
+
+	SAudioObject(SAudioObject const&) = delete;
+	SAudioObject(SAudioObject&&) = delete;
+	SAudioObject& operator=(SAudioObject const&) = delete;
+	SAudioObject& operator=(SAudioObject&&) = delete;
 
 	AkGameObjectID const id;
 	bool const           bHasPosition;
 	bool                 bNeedsToUpdateEnvironments;
-	TEnvironmentImplMap  cEnvironemntImplAmounts;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioObject);
-	PREVENT_OBJECT_COPY(SAudioObject);
+	TEnvironmentImplMap  environemntImplAmounts;
 };
 
 struct SAudioListener final : public IAudioListener
@@ -42,12 +44,14 @@ struct SAudioListener final : public IAudioListener
 		: id(_id)
 	{}
 
-	virtual ~SAudioListener() {}
+	virtual ~SAudioListener() override = default;
+
+	SAudioListener(SAudioListener const&) = delete;
+	SAudioListener(SAudioListener&&) = delete;
+	SAudioListener& operator=(SAudioListener const&) = delete;
+	SAudioListener& operator=(SAudioListener&&) = delete;
 
 	AkUniqueID const id;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioListener);
-	PREVENT_OBJECT_COPY(SAudioListener);
 };
 
 struct SAudioTrigger final : public IAudioTrigger
@@ -56,12 +60,14 @@ struct SAudioTrigger final : public IAudioTrigger
 		: id(_id)
 	{}
 
-	virtual ~SAudioTrigger() {}
+	virtual ~SAudioTrigger() override = default;
+
+	SAudioTrigger(SAudioTrigger const&) = delete;
+	SAudioTrigger(SAudioTrigger&&) = delete;
+	SAudioTrigger& operator=(SAudioTrigger const&) = delete;
+	SAudioTrigger& operator=(SAudioTrigger&&) = delete;
 
 	AkUniqueID const id;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioTrigger);
-	PREVENT_OBJECT_COPY(SAudioTrigger);
 };
 
 struct SAudioRtpc final : public IAudioRtpc
@@ -72,14 +78,16 @@ struct SAudioRtpc final : public IAudioRtpc
 		, id(_id)
 	{}
 
-	virtual ~SAudioRtpc() {}
+	virtual ~SAudioRtpc() override = default;
+
+	SAudioRtpc(SAudioRtpc const&) = delete;
+	SAudioRtpc(SAudioRtpc&&) = delete;
+	SAudioRtpc& operator=(SAudioRtpc const&) = delete;
+	SAudioRtpc& operator=(SAudioRtpc&&) = delete;
 
 	float const    mult;
 	float const    shift;
 	AkRtpcID const id;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioRtpc);
-	PREVENT_OBJECT_COPY(SAudioRtpc);
 };
 
 enum EWwiseSwitchType : AudioEnumFlagsType
@@ -103,15 +111,17 @@ struct SAudioSwitchState final : public IAudioSwitchState
 		, rtpcValue(rtpcValue)
 	{}
 
-	virtual ~SAudioSwitchState() {}
+	virtual ~SAudioSwitchState() override = default;
+
+	SAudioSwitchState(SAudioSwitchState const&) = delete;
+	SAudioSwitchState(SAudioSwitchState&&) = delete;
+	SAudioSwitchState& operator=(SAudioSwitchState const&) = delete;
+	SAudioSwitchState& operator=(SAudioSwitchState&&) = delete;
 
 	EWwiseSwitchType const type;
 	AkUInt32 const         switchId;
 	AkUInt32 const         stateId;
 	float const            rtpcValue;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioSwitchState);
-	PREVENT_OBJECT_COPY(SAudioSwitchState);
 };
 
 enum EWwiseAudioEnvironmentType : AudioEnumFlagsType
@@ -147,7 +157,12 @@ struct SAudioEnvironment final : public IAudioEnvironment
 		CRY_ASSERT(_type == eWwiseAudioEnvironmentType_Rtpc);
 	}
 
-	virtual ~SAudioEnvironment() {}
+	virtual ~SAudioEnvironment() override = default;
+
+	SAudioEnvironment(SAudioEnvironment const&) = delete;
+	SAudioEnvironment(SAudioEnvironment&&) = delete;
+	SAudioEnvironment& operator=(SAudioEnvironment const&) = delete;
+	SAudioEnvironment& operator=(SAudioEnvironment&&) = delete;
 
 	EWwiseAudioEnvironmentType const type;
 
@@ -167,9 +182,6 @@ struct SAudioEnvironment final : public IAudioEnvironment
 			float    shift;
 		};
 	};
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioEnvironment);
-	PREVENT_OBJECT_COPY(SAudioEnvironment);
 };
 
 struct SAudioEvent final : public IAudioEvent
@@ -180,31 +192,40 @@ struct SAudioEvent final : public IAudioEvent
 		, audioEventId(_id)
 	{}
 
-	virtual ~SAudioEvent() {}
+	virtual ~SAudioEvent() override = default;
+
+	SAudioEvent(SAudioEvent const&) = delete;
+	SAudioEvent(SAudioEvent&&) = delete;
+	SAudioEvent& operator=(SAudioEvent const&) = delete;
+	SAudioEvent& operator=(SAudioEvent&&) = delete;
 
 	EAudioEventState   audioEventState;
 	AkUniqueID         id;
 	AudioEventId const audioEventId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioEvent);
-	PREVENT_OBJECT_COPY(SAudioEvent);
 };
 
 struct SAudioFileEntry final : public IAudioFileEntry
 {
-	SAudioFileEntry()
-		: bankId(AK_INVALID_BANK_ID)
-	{}
+	SAudioFileEntry() = default;
+	virtual ~SAudioFileEntry() override = default;
 
-	virtual ~SAudioFileEntry() {}
+	SAudioFileEntry(SAudioFileEntry const&) = delete;
+	SAudioFileEntry(SAudioFileEntry&&) = delete;
+	SAudioFileEntry& operator=(SAudioFileEntry const&) = delete;
+	SAudioFileEntry& operator=(SAudioFileEntry&&) = delete;
 
-	AkBankID bankId;
-
-	PREVENT_OBJECT_COPY(SAudioFileEntry);
+	AkBankID bankId = AK_INVALID_BANK_ID;
 };
 
 struct SAudioStandaloneFile final : public IAudioStandaloneFile
 {
+	SAudioStandaloneFile() = default;
+	virtual ~SAudioStandaloneFile() override = default;
+
+	SAudioStandaloneFile(SAudioStandaloneFile const&) = delete;
+	SAudioStandaloneFile(SAudioStandaloneFile&&) = delete;
+	SAudioStandaloneFile& operator=(SAudioStandaloneFile const&) = delete;
+	SAudioStandaloneFile& operator=(SAudioStandaloneFile&&) = delete;
 };
 }
 }

@@ -22,20 +22,12 @@ enum EAudioTriggerStatus : AudioEnumFlagsType
 
 struct SAudioTriggerImplState
 {
-	SAudioTriggerImplState()
-		: flags(eAudioTriggerStatus_None)
-	{}
-
-	AudioEnumFlagsType flags;
+	AudioEnumFlagsType flags = eAudioTriggerStatus_None;
 };
 
 struct SUserDataBase
 {
-	SUserDataBase()
-		: pOwnerOverride(nullptr)
-		, pUserData(nullptr)
-		, pUserDataOwner(nullptr)
-	{}
+	SUserDataBase() = default;
 
 	explicit SUserDataBase(
 	  void* const _pOwnerOverride,
@@ -46,36 +38,24 @@ struct SUserDataBase
 		, pUserDataOwner(_pUserDataOwner)
 	{}
 
-	void* pOwnerOverride;
-	void* pUserData;
-	void* pUserDataOwner;
+	void* pOwnerOverride = nullptr;
+	void* pUserData = nullptr;
+	void* pUserDataOwner = nullptr;
 };
 
 struct SAudioTriggerInstanceState : public SUserDataBase
 {
-	SAudioTriggerInstanceState()
-		: flags(eAudioTriggerStatus_None)
-		, audioTriggerId(INVALID_AUDIO_CONTROL_ID)
-		, numPlayingEvents(0)
-		, numLoadingEvents(0)
-		, expirationTimeMS(0.0f)
-		, remainingTimeMS(0.0f)
-	{}
-
-	AudioEnumFlagsType flags;
-	AudioControlId     audioTriggerId;
-	size_t             numPlayingEvents;
-	size_t             numLoadingEvents;
-	float              expirationTimeMS;
-	float              remainingTimeMS;
+	AudioEnumFlagsType flags = eAudioTriggerStatus_None;
+	AudioControlId     audioTriggerId = INVALID_AUDIO_CONTROL_ID;
+	size_t             numPlayingEvents = 0;
+	size_t             numLoadingEvents = 0;
+	float              expirationTimeMS = 0.0f;
+	float              remainingTimeMS = 0.0f;
 };
 
 struct SAudioStandaloneFileData : public SUserDataBase
 {
-	SAudioStandaloneFileData()
-		: SUserDataBase(nullptr, nullptr, nullptr)
-		, fileId(INVALID_AUDIO_STANDALONE_FILE_ID)
-	{}
+	SAudioStandaloneFileData() = default;
 
 	explicit SAudioStandaloneFileData(
 	  void* const _pOwner,
@@ -86,7 +66,7 @@ struct SAudioStandaloneFileData : public SUserDataBase
 		, fileId(_fileId)
 	{}
 
-	AudioStandaloneFileId const fileId;
+	AudioStandaloneFileId const fileId = INVALID_AUDIO_STANDALONE_FILE_ID;
 };
 
 // CATLAudioObject-related typedefs
@@ -121,20 +101,19 @@ public:
 		, m_maxRadius(0.0f)
 		, m_previousVelocity(0.0f)
 		, m_propagationProcessor(audioObjectId, m_attributes.transformation)
-		, m_occlusionFadeOutDistance(0.0f) {}
+		, m_occlusionFadeOutDistance(0.0f)
+	{}
 
-	~CATLAudioObject() {}
+	void             Release();
 
-	void Release();
+	void             ReportStartingTriggerInstance(AudioTriggerInstanceId const audioTriggerInstanceId, AudioControlId const audioTriggerId);
+	void             ReportStartedTriggerInstance(AudioTriggerInstanceId const audioTriggerInstanceId, void* const pOwnerOverride, void* const pUserData, void* const pUserDataOwner, AudioEnumFlagsType const flags);
 
-	void ReportStartingTriggerInstance(AudioTriggerInstanceId const audioTriggerInstanceId, AudioControlId const audioTriggerId);
-	void ReportStartedTriggerInstance(AudioTriggerInstanceId const audioTriggerInstanceId, void* const pOwnerOverride, void* const pUserData, void* const pUserDataOwner, AudioEnumFlagsType const flags);
+	void             ReportStartedEvent(CATLEvent* const _pEvent);
+	void             ReportFinishedEvent(CATLEvent* const _pEvent, bool const _bSuccess);
 
-	void ReportStartedEvent(CATLEvent* const _pEvent);
-	void ReportFinishedEvent(CATLEvent* const _pEvent, bool const _bSuccess);
-
-	void GetStartedStandaloneFileRequestData(CATLStandaloneFile const* const _pStandaloneFile, CAudioRequestInternal& _request);
-	void ReportStartedStandaloneFile(
+	void             GetStartedStandaloneFileRequestData(CATLStandaloneFile const* const _pStandaloneFile, CAudioRequestInternal& _request);
+	void             ReportStartedStandaloneFile(
 	  CATLStandaloneFile const* const _pStandaloneFile,
 	  void* const _pOwner,
 	  void* const _pUserData,
@@ -241,7 +220,4 @@ private:
 
 	mutable StateDrawInfoMap m_stateDrawInfoMap;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	DELETE_DEFAULT_CONSTRUCTOR(CATLAudioObject);
-	PREVENT_OBJECT_COPY(CATLAudioObject);
 };

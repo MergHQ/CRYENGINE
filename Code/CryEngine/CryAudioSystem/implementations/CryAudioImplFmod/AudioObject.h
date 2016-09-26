@@ -11,14 +11,22 @@ namespace Impl
 {
 namespace Fmod
 {
+
+using FmodAudioObjectId = uint32;
+
 class CAudioObject final : public IAudioObject
 {
 public:
 
-	explicit CAudioObject(AudioObjectId const _id);
-	virtual ~CAudioObject() {}
+	explicit CAudioObject(FmodAudioObjectId const _id);
+	virtual ~CAudioObject() override = default;
 
-	AudioObjectId             GetId() const { return m_id; }
+	CAudioObject(CAudioObject const&) = delete;
+	CAudioObject(CAudioObject&&) = delete;
+	CAudioObject&             operator=(CAudioObject const&) = delete;
+	CAudioObject&             operator=(CAudioObject&&) = delete;
+
+	FmodAudioObjectId         GetId() const { return m_id; }
 	void                      RemoveAudioEvent(CAudioEvent* const pAudioEvent);
 	bool                      SetAudioEvent(CAudioEvent* const pAudioEvent);
 	void                      RemoveParameter(CAudioParameter const* const pParameter);
@@ -36,20 +44,17 @@ public:
 
 private:
 
-	AudioObjectId const m_id;
-	FMOD_3D_ATTRIBUTES  m_attributes;
+	FmodAudioObjectId const m_id;
+	FMOD_3D_ATTRIBUTES      m_attributes;
 
-	AudioEvents         m_audioEvents;
+	AudioEvents             m_audioEvents;
 	typedef std::map<CAudioParameter const* const, float>    AudioParameters;
-	AudioParameters     m_audioParameters;
+	AudioParameters         m_audioParameters;
 	typedef std::map<uint32 const, CAudioSwitchState const*> AudioSwitches;
-	AudioSwitches       m_audioSwitches;
+	AudioSwitches           m_audioSwitches;
 	typedef std::map<CAudioEnvironment const* const, float, std::less<CAudioEnvironment const* const>,
 	                 STLSoundAllocator<std::pair<CAudioEnvironment const* const, float>>> AudioEnvironments;
 	AudioEnvironments m_audioEnvironments;
-
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioObject);
-	PREVENT_OBJECT_COPY(CAudioObject);
 };
 }
 }

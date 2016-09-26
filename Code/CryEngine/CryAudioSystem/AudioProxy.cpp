@@ -20,13 +20,6 @@ AudioSwitchStateId CAudioProxy::s_occlusionTypeStateIds[eAudioOcclusionType_Coun
 };
 
 //////////////////////////////////////////////////////////////////////////
-CAudioProxy::CAudioProxy()
-	: m_audioObjectId(INVALID_AUDIO_OBJECT_ID)
-	, m_flags(eAudioProxyFlags_None)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 CAudioProxy::~CAudioProxy()
 {
 	CRY_ASSERT(m_audioObjectId == INVALID_AUDIO_OBJECT_ID);
@@ -558,14 +551,14 @@ void CAudioProxy::QueueCommand(SQueuedAudioCommandBase const* const pNewCommandB
 			{
 				if (pExistingCommandBase->type == eQueuedAudioCommandType_SetSwitchState)
 				{
-					SQueuedAudioCommand<eQueuedAudioCommandType_SetSwitchState> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetSwitchState> const* const>(pExistingCommandBase);
+				  SQueuedAudioCommand<eQueuedAudioCommandType_SetSwitchState> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetSwitchState> const* const>(pExistingCommandBase);
 
-					if (pExistingCommand->audioSwitchId == pNewCommand->audioSwitchId)
-					{
-						POOL_FREE_CONST(pExistingCommand);
-						bAdd = false;
-						return true;
-					}
+				  if (pExistingCommand->audioSwitchId == pNewCommand->audioSwitchId)
+				  {
+				    POOL_FREE_CONST(pExistingCommand);
+				    bAdd = false;
+				    return true;
+				  }
 				}
 
 				return false;
@@ -581,14 +574,14 @@ void CAudioProxy::QueueCommand(SQueuedAudioCommandBase const* const pNewCommandB
 			{
 				if (pExistingCommandBase->type == eQueuedAudioCommandType_SetRtpcValue)
 				{
-					SQueuedAudioCommand<eQueuedAudioCommandType_SetRtpcValue> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetRtpcValue> const* const>(pExistingCommandBase);
+				  SQueuedAudioCommand<eQueuedAudioCommandType_SetRtpcValue> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetRtpcValue> const* const>(pExistingCommandBase);
 
-					if (pExistingCommand->audioRtpcId == pNewCommand->audioRtpcId)
-					{
-						POOL_FREE_CONST(pExistingCommand);
-						bAdd = false;
-						return true;
-					}
+				  if (pExistingCommand->audioRtpcId == pNewCommand->audioRtpcId)
+				  {
+				    POOL_FREE_CONST(pExistingCommand);
+				    bAdd = false;
+				    return true;
+				  }
 				}
 
 				return false;
@@ -603,9 +596,9 @@ void CAudioProxy::QueueCommand(SQueuedAudioCommandBase const* const pNewCommandB
 			{
 				if (pExistingCommandBase->type == eQueuedAudioCommandType_SetTransformation)
 				{
-					POOL_FREE_CONST(pExistingCommandBase);
-					bAdd = false;
-					return true;
+				  POOL_FREE_CONST(pExistingCommandBase);
+				  bAdd = false;
+				  return true;
 				}
 
 				return false;
@@ -620,14 +613,14 @@ void CAudioProxy::QueueCommand(SQueuedAudioCommandBase const* const pNewCommandB
 			{
 				if (pExistingCommandBase->type == eQueuedAudioCommandType_SetEnvironmentAmount)
 				{
-					SQueuedAudioCommand<eQueuedAudioCommandType_SetEnvironmentAmount> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetEnvironmentAmount> const* const>(pExistingCommandBase);
+				  SQueuedAudioCommand<eQueuedAudioCommandType_SetEnvironmentAmount> const* const pExistingCommand = static_cast<SQueuedAudioCommand<eQueuedAudioCommandType_SetEnvironmentAmount> const* const>(pExistingCommandBase);
 
-					if (pExistingCommand->audioEnvironmentId == pNewCommand->audioEnvironmentId)
-					{
-						POOL_FREE_CONST(pExistingCommand);
-						bAdd = false;
-						return true;
-					}
+				  if (pExistingCommand->audioEnvironmentId == pNewCommand->audioEnvironmentId)
+				  {
+				    POOL_FREE_CONST(pExistingCommand);
+				    bAdd = false;
+				    return true;
+				  }
 				}
 
 				return false;

@@ -15,41 +15,6 @@ void OnCVarChangedAudioSystemCallback(ICVar* pCVar)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioCVars::CAudioCVars()
-	: m_audioPrimaryPoolSize(0)
-	, m_fileCacheManagerSize(0)
-	, m_audioObjectPoolSize(0)
-	, m_audioEventPoolSize(0)
-	, m_audioStandaloneFilePoolSize(0)
-	, m_audioProxiesInitType(0)
-	, m_tickWithMainThread(0)
-	, m_occlusionMaxDistance(0.0f)
-	, m_occlusionMaxSyncDistance(0.0f)
-	, m_occlusionHighDistance(0.0f)
-	, m_occlusionMediumDistance(0.0f)
-	, m_fullObstructionMaxDistance(0.0f)
-	, m_positionUpdateThreshold(0.0f)
-	, m_velocityTrackingThreshold(0.0f)
-	, m_occlusionRayLengthOffset(0.0f)
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	, m_ignoreWindowFocus(0)
-	, m_drawAudioDebug(0)
-	, m_fileCacheManagerDebugFilter(0)
-	, m_audioLoggingOptions(0)
-	, m_showActiveAudioObjectsOnly(0)
-	, m_audioObjectsRayType(0)
-	, m_pAudioTriggersDebugFilter(nullptr)
-	, m_pAudioObjectsDebugFilter(nullptr)
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-CAudioCVars::~CAudioCVars()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAudioCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS

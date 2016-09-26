@@ -10,8 +10,12 @@ class CAudioProxy final : public IAudioProxy
 {
 public:
 
-	CAudioProxy();
-	virtual ~CAudioProxy();
+	CAudioProxy() = default;
+	virtual ~CAudioProxy() override;
+	CAudioProxy(CAudioProxy const&) = delete;
+	CAudioProxy(CAudioProxy&&) = delete;
+	CAudioProxy& operator=(CAudioProxy const&) = delete;
+	CAudioProxy& operator=(CAudioProxy&&) = delete;
 
 	// IAudioProxy
 	virtual void          Initialize(char const* const szAudioObjectName, bool const bInitAsync = true) override;
@@ -51,7 +55,7 @@ private:
 	void QueueCommand(SQueuedAudioCommandBase const* const pNewCommandBase);
 	void SetTransformationInternal(Matrix34 const& transformation);
 
-	AudioObjectId              m_audioObjectId;
+	AudioObjectId              m_audioObjectId = INVALID_AUDIO_OBJECT_ID;
+	AudioEnumFlagsType         m_flags = eAudioProxyFlags_None;
 	CAudioObjectTransformation m_transformation;
-	AudioEnumFlagsType         m_flags;
 };

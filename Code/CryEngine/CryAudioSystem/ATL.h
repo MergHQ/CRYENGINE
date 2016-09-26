@@ -12,12 +12,17 @@
 #include "AudioXMLProcessor.h"
 #include <CryInput/IInput.h>
 
-class CAudioTranslationLayer : public IInputEventListener
+class CAudioTranslationLayer final : public IInputEventListener
 {
 public:
 
 	CAudioTranslationLayer();
 	virtual ~CAudioTranslationLayer();
+
+	CAudioTranslationLayer(CAudioTranslationLayer const&) = delete;
+	CAudioTranslationLayer(CAudioTranslationLayer&&) = delete;
+	CAudioTranslationLayer& operator=(CAudioTranslationLayer const&) = delete;
+	CAudioTranslationLayer& operator=(CAudioTranslationLayer&&) = delete;
 
 	// IInputEventListener
 	virtual bool OnInputEvent(SInputEvent const& event);
@@ -156,6 +161,4 @@ private:
 	CATLDebugNameStore                            m_debugNameStore;
 	CryFixedStringT<MAX_AUDIO_MISC_STRING_LENGTH> m_implNameString;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	PREVENT_OBJECT_COPY(CAudioTranslationLayer);
 };

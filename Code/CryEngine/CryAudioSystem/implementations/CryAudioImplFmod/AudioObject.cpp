@@ -11,7 +11,7 @@ extern FmodSwitchToIndexMap g_switchToIndex;
 extern AudioParameterToIndexMap g_parameterToIndex;
 
 //////////////////////////////////////////////////////////////////////////
-CAudioObject::CAudioObject(AudioObjectId const _id)
+CAudioObject::CAudioObject(FmodAudioObjectId const _id)
 	: m_id(_id)
 {
 	ZeroStruct(m_attributes);

@@ -34,7 +34,7 @@ class IGeneralMemoryHeap;
  * A wrapper class for all pool allocations. Small allocations are redirected to the global bucket allocator,
  * the larger ones are kept in the module's memory pool.
  */
-template <size_t TBucketSize>
+template<size_t TBucketSize>
 class CSoundAllocator
 {
 public:
@@ -60,6 +60,9 @@ public:
 		if (m_mspace)
 			m_mspace->Release();
 	}
+
+	CSoundAllocator(CSoundAllocator const&) = delete;
+	CSoundAllocator& operator=(CSoundAllocator const&) = delete;
 	//DOC-IGNORE-END
 
 	void* AllocateRaw(size_t const nSize, size_t const nAlign, char const* const sUsage)
@@ -179,7 +182,7 @@ private:
 #ifdef USE_GLOBAL_BUCKET_ALLOCATOR
 	typedef BucketAllocator<BucketAllocatorDetail::DefaultTraits<TBucketSize, BucketAllocatorDetail::SyncPolicyLocked, false>> SoundBuckets;
 #else
-	typedef node_alloc<eCryDefaultMalloc, true, 512* 1024>                                                                        SoundBuckets;
+	typedef node_alloc<eCryDefaultMalloc, true, 512* 1024>                                                                     SoundBuckets;
 #endif
 
 	void TrackSmallAlloc(void* ptr, size_t nSize)
@@ -235,6 +238,4 @@ private:
 
 	volatile int        nSmallAllocationsSize;
 	volatile int        nAllocationsSize;
-
-	PREVENT_OBJECT_COPY(CSoundAllocator);
 };

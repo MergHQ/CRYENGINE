@@ -145,12 +145,9 @@ struct SAudioManagerRequestDataBase : public SAudioRequestDataBase
 		, type(_type)
 	{}
 
-	virtual ~SAudioManagerRequestDataBase() {}
+	virtual ~SAudioManagerRequestDataBase() override = default;
 
 	EAudioManagerRequestType const type;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestDataBase);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestDataBase);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -161,9 +158,7 @@ struct SAudioManagerRequestData : public SAudioManagerRequestDataBase
 		: SAudioManagerRequestDataBase(T)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
-
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
+	virtual ~SAudioManagerRequestData() override = default;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -175,31 +170,25 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_SetAudioImpl> : public 
 		, pImpl(_pImpl)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	CryAudio::Impl::IAudioImpl* const pImpl;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SAudioManagerRequestData<eAudioManagerRequestType_ReserveAudioObjectId> : public SAudioManagerRequestDataBase
 {
-	SAudioManagerRequestData(AudioObjectId* const _pAudioObjectId, char const* const _szAudioObjectName)
+	explicit SAudioManagerRequestData(AudioObjectId* const _pAudioObjectId, char const* const _szAudioObjectName)
 		: SAudioManagerRequestDataBase(eAudioManagerRequestType_ReserveAudioObjectId)
 		, pAudioObjectId(_pAudioObjectId)
 		, szAudioObjectName(_szAudioObjectName)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	AudioObjectId* const pAudioObjectId;
 	char const* const    szAudioObjectName;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -218,15 +207,12 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_AddRequestListener> : p
 		, specificRequestMask(_specificRequestMask)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	void const* const        pObjectToListenTo;
 	void                     (* func)(SAudioRequestInfo const* const);
 	EAudioRequestType const  type;
 	AudioEnumFlagsType const specificRequestMask;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -239,13 +225,10 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_RemoveRequestListener> 
 		, func(_func)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	void const* const pObjectToListenTo;
 	void              (* func)(SAudioRequestInfo const* const);
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -258,13 +241,10 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_ParseControlsData> : pu
 		, dataScope(_dataScope)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	char const* const     szFolderPath;
 	EAudioDataScope const dataScope;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -277,13 +257,10 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_ParsePreloadsData> : pu
 		, dataScope(_dataScope)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	char const* const     szFolderPath;
 	EAudioDataScope const dataScope;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -295,12 +272,9 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_ClearControlsData> : pu
 		, dataScope(_dataScope)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	EAudioDataScope const dataScope;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -312,12 +286,9 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_ClearPreloadsData> : pu
 		, dataScope(_dataScope)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	EAudioDataScope const dataScope;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -330,13 +301,10 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_PreloadSingleRequest> :
 		, bAutoLoadOnly(_bAutoLoadOnly)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	AudioPreloadRequestId const audioPreloadRequestId;
 	bool const                  bAutoLoadOnly;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -348,12 +316,9 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_UnloadSingleRequest> : 
 		, audioPreloadRequestId(_audioPreloadRequestId)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	AudioPreloadRequestId const audioPreloadRequestId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -365,12 +330,9 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_UnloadAFCMDataByScope> 
 		, dataScope(_dataScope)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	EAudioDataScope const dataScope;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -382,12 +344,9 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_RefreshAudioSystem> : p
 		, szLevelName(_szLevelName)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	char const* const szLevelName;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -400,13 +359,10 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_ReloadControlsData> : p
 		, szLevelName(_szLevelName)
 	{}
 
-	virtual ~SAudioManagerRequestData() {}
+	virtual ~SAudioManagerRequestData() override = default;
 
 	char const* const szFolderPath;
 	char const* const szLevelName;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -417,25 +373,16 @@ struct SAudioCallbackManagerRequestDataBase : public SAudioRequestDataBase
 		, type(_type)
 	{}
 
-	virtual ~SAudioCallbackManagerRequestDataBase() {}
+	virtual ~SAudioCallbackManagerRequestDataBase() override = default;
 
 	EAudioCallbackManagerRequestType const type;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestDataBase);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestDataBase);
 };
 
 //////////////////////////////////////////////////////////////////////////
 template<EAudioCallbackManagerRequestType T>
 struct SAudioCallbackManagerRequestData : public SAudioCallbackManagerRequestDataBase
 {
-	SAudioCallbackManagerRequestData()
-		: SAudioCallbackManagerRequestDataBase(T)
-	{}
-
-	virtual ~SAudioCallbackManagerRequestData() {}
-
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestData);
+	virtual ~SAudioCallbackManagerRequestData() override = default;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -447,12 +394,9 @@ struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportS
 		, audioEventId(_audioEventId)
 	{}
 
-	virtual ~SAudioCallbackManagerRequestData() {}
+	virtual ~SAudioCallbackManagerRequestData() override = default;
 
 	AudioEventId const audioEventId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -465,13 +409,10 @@ struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportF
 		, bSuccess(_bSuccess)
 	{}
 
-	virtual ~SAudioCallbackManagerRequestData() {}
+	virtual ~SAudioCallbackManagerRequestData() override = default;
 
 	AudioEventId const audioEventId;
 	bool const         bSuccess;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -483,12 +424,9 @@ struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportV
 		, audioEventId(_audioEventId)
 	{}
 
-	virtual ~SAudioCallbackManagerRequestData() {}
+	virtual ~SAudioCallbackManagerRequestData() override = default;
 
 	AudioEventId const audioEventId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -500,12 +438,9 @@ struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportP
 		, audioEventId(_audioEventId)
 	{}
 
-	virtual ~SAudioCallbackManagerRequestData() {}
+	virtual ~SAudioCallbackManagerRequestData() override = default;
 
 	AudioEventId const audioEventId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -517,12 +452,9 @@ struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportF
 		, audioTriggerId(_audioTriggerId)
 	{}
 
-	virtual ~SAudioCallbackManagerRequestData() {}
+	virtual ~SAudioCallbackManagerRequestData() override = default;
 
 	AudioControlId const audioTriggerId;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -538,14 +470,11 @@ struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportS
 		, bSuccess(_bSuccess)
 	{}
 
-	virtual ~SAudioCallbackManagerRequestData() {}
+	virtual ~SAudioCallbackManagerRequestData() override = default;
 
 	AudioStandaloneFileId const audioStandaloneFileInstanceId;
 	char const* const           szFile;
 	bool const                  bSuccess;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -560,13 +489,10 @@ struct SAudioCallbackManagerRequestData<eAudioCallbackManagerRequestType_ReportS
 		, szFile(_szFile)
 	{}
 
-	virtual ~SAudioCallbackManagerRequestData() {}
+	virtual ~SAudioCallbackManagerRequestData() override = default;
 
 	AudioStandaloneFileId const audioStandaloneFileInstanceId;
 	char const* const           szFile;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioCallbackManagerRequestData);
-	PREVENT_OBJECT_COPY(SAudioCallbackManagerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -577,12 +503,9 @@ struct SAudioObjectRequestDataBase : public SAudioRequestDataBase
 		, type(_type)
 	{}
 
-	virtual ~SAudioObjectRequestDataBase() {}
+	virtual ~SAudioObjectRequestDataBase() override = default;
 
 	EAudioObjectRequestType const type;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioObjectRequestDataBase);
-	PREVENT_OBJECT_COPY(SAudioObjectRequestDataBase);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -593,9 +516,7 @@ struct SAudioObjectRequestData : public SAudioObjectRequestDataBase
 		: SAudioObjectRequestDataBase(T)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
-
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
+	virtual ~SAudioObjectRequestData() override = default;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -612,11 +533,9 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_PrepareTrigger> : public 
 		, audioTriggerId(_audioTriggerId)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
+	virtual ~SAudioObjectRequestData() override = default;
 
 	AudioControlId audioTriggerId;
-
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -633,11 +552,9 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_UnprepareTrigger> : publi
 		, audioTriggerId(_audioTriggerId)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
+	virtual ~SAudioObjectRequestData() override = default;
 
 	AudioControlId audioTriggerId;
-
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -658,13 +575,11 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_PlayFile> : public SAudio
 		, usedAudioTriggerId(_usedAudioTriggerId)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
+	virtual ~SAudioObjectRequestData() override = default;
 
 	char const*    szFile;
 	bool           bLocalized;
 	AudioControlId usedAudioTriggerId;
-
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -681,11 +596,9 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_StopFile> : public SAudio
 		, szFile(_szFile)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
+	virtual ~SAudioObjectRequestData() override = default;
 
 	char const* szFile;
-
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -704,12 +617,10 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTrigger> : public 
 		, timeUntilRemovalInMS(fPassedTimeUntilRemovalInMS)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
+	virtual ~SAudioObjectRequestData() override = default;
 
 	AudioControlId audioTriggerId;
 	float          timeUntilRemovalInMS;
-
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -726,9 +637,9 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_StopTrigger> : public SAu
 		, audioTriggerId(_audioTriggerId)
 	{}
 
-	AudioControlId audioTriggerId;
+	virtual ~SAudioObjectRequestData() override = default;
 
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
+	AudioControlId audioTriggerId;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -740,12 +651,9 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_SetTransformation> : publ
 		, transformation(_transformation)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
+	virtual ~SAudioObjectRequestData() override = default;
 
 	CAudioObjectTransformation const& transformation;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioObjectRequestData);
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -764,12 +672,10 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> : public SA
 		, value(fPassedValue)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
+	virtual ~SAudioObjectRequestData() override = default;
 
 	AudioControlId audioRtpcId;
 	float          value;
-
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -788,12 +694,10 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_SetSwitchState> : public 
 		, audioSwitchStateId(_audioSwitchStateId)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
+	virtual ~SAudioObjectRequestData() override = default;
 
 	AudioControlId     audioSwitchId;
 	AudioSwitchStateId audioSwitchStateId;
-
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -810,16 +714,14 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_SetVolume> : public SAudi
 		, volume(_volume)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
+	virtual ~SAudioObjectRequestData() override = default;
 
 	float const volume;
-
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironmentAmount>  : public SAudioObjectRequestDataBase
+struct SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironmentAmount> : public SAudioObjectRequestDataBase
 {
 	SAudioObjectRequestData()
 		: SAudioObjectRequestDataBase(eAudioObjectRequestType_SetEnvironmentAmount)
@@ -833,12 +735,10 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_SetEnvironmentAmount>  : 
 		, amount(_amount)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
+	virtual ~SAudioObjectRequestData() override = default;
 
 	AudioEnvironmentId audioEnvironmentId;
 	float              amount;
-
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -850,12 +750,9 @@ struct SAudioObjectRequestData<eAudioObjectRequestType_ProcessPhysicsRay> : publ
 		, pAudioRayInfo(_pAudioRayInfo)
 	{}
 
-	virtual ~SAudioObjectRequestData() {}
+	virtual ~SAudioObjectRequestData() override = default;
 
 	CAudioRayInfo* const pAudioRayInfo;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioObjectRequestData);
-	PREVENT_OBJECT_COPY(SAudioObjectRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -866,25 +763,16 @@ struct SAudioListenerRequestDataBase : public SAudioRequestDataBase
 		, type(_type)
 	{}
 
-	virtual ~SAudioListenerRequestDataBase() {}
+	virtual ~SAudioListenerRequestDataBase() override = default;
 
 	EAudioListenerRequestType const type;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioListenerRequestDataBase);
-	PREVENT_OBJECT_COPY(SAudioListenerRequestDataBase);
 };
 
 //////////////////////////////////////////////////////////////////////////
 template<EAudioListenerRequestType T>
 struct SAudioListenerRequestData : public SAudioListenerRequestDataBase
 {
-	SAudioListenerRequestData()
-		: SAudioListenerRequestDataBase(T)
-	{}
-
-	virtual ~SAudioListenerRequestData() {}
-
-	PREVENT_OBJECT_COPY(SAudioListenerRequestData);
+	virtual ~SAudioListenerRequestData() override = default;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -896,19 +784,16 @@ struct SAudioListenerRequestData<eAudioListenerRequestType_SetTransformation> : 
 		, transformation(_transformation)
 	{}
 
-	virtual ~SAudioListenerRequestData() {}
+	virtual ~SAudioListenerRequestData() override = default;
 
 	CAudioObjectTransformation const& transformation;
-
-	DELETE_DEFAULT_CONSTRUCTOR(SAudioListenerRequestData);
-	PREVENT_OBJECT_COPY(SAudioListenerRequestData);
 };
 
 //////////////////////////////////////////////////////////////////////////
 struct IAudioProxy
 {
 	// <interfuscator:shuffle>
-	virtual ~IAudioProxy() {}
+	virtual ~IAudioProxy() = default;
 
 	virtual void          Initialize(char const* const szAudioObjectName, bool const bInitAsync = true) = 0;
 	virtual void          Release() = 0;
@@ -932,7 +817,7 @@ struct IAudioProxy
 struct IAudioSystem
 {
 	// <interfuscator:shuffle>
-	virtual ~IAudioSystem() {}
+	virtual ~IAudioSystem() = default;
 
 	virtual bool         Initialize() = 0;
 	virtual void         Release() = 0;

@@ -20,7 +20,11 @@ class CAudioImpl final : public IAudioImpl
 public:
 
 	CAudioImpl();
-	virtual ~CAudioImpl();
+	virtual ~CAudioImpl() override = default;
+	CAudioImpl(CAudioImpl const&) = delete;
+	CAudioImpl(CAudioImpl&&) = delete;
+	CAudioImpl& operator=(CAudioImpl const&) = delete;
+	CAudioImpl& operator=(CAudioImpl&&) = delete;
 
 	// IAudioImpl
 	virtual void                     Update(float const deltaTime) override;

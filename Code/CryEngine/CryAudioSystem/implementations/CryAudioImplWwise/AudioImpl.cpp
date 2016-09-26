@@ -288,11 +288,6 @@ CAudioImpl::CAudioImpl()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CAudioImpl::~CAudioImpl()
-{
-}
-
-///////////////////////////////////////////////////////////////////////////
 void CAudioImpl::Update(float const deltaTime)
 {
 	if (AK::SoundEngine::IsInitialized())
@@ -819,7 +814,7 @@ EAudioRequestStatus CAudioImpl::ResetAudioObject(IAudioObject* const pAudioObjec
 {
 	SAudioObject* const pWwiseAudioObject = static_cast<SAudioObject* const>(pAudioObject);
 
-	pWwiseAudioObject->cEnvironemntImplAmounts.clear();
+	pWwiseAudioObject->environemntImplAmounts.clear();
 	pWwiseAudioObject->bNeedsToUpdateEnvironments = false;
 
 	return eAudioRequestStatus_Success;
@@ -1051,13 +1046,13 @@ EAudioRequestStatus CAudioImpl::SetEnvironment(
 		case eWwiseAudioEnvironmentType_AuxBus:
 			{
 				float const fCurrentAmount = stl::find_in_map(
-				  pWwiseAudioObject->cEnvironemntImplAmounts,
+				  pWwiseAudioObject->environemntImplAmounts,
 				  pAKEnvironmentData->busId,
 				  -1.0f);
 
 				if ((fCurrentAmount == -1.0f) || (fabs(fCurrentAmount - amount) > envEpsilon))
 				{
-					pWwiseAudioObject->cEnvironemntImplAmounts[pAKEnvironmentData->busId] = amount;
+					pWwiseAudioObject->environemntImplAmounts[pAKEnvironmentData->busId] = amount;
 					pWwiseAudioObject->bNeedsToUpdateEnvironments = true;
 				}
 
@@ -1459,7 +1454,9 @@ IAudioObject* CAudioImpl::NewGlobalAudioObject(AudioObjectId const audioObjectID
 ///////////////////////////////////////////////////////////////////////////
 IAudioObject* CAudioImpl::NewAudioObject(AudioObjectId const audioObjectID)
 {
-	POOL_NEW_CREATE(SAudioObject, pWwiseAudioObject)(static_cast<AkGameObjectID>(audioObjectID), true);
+	static AkGameObjectID objectIDCounter = 1;
+	CRY_ASSERT(objectIDCounter != AK_INVALID_GAME_OBJECT);
+	POOL_NEW_CREATE(SAudioObject, pWwiseAudioObject)(static_cast<AkGameObjectID>(objectIDCounter++), true);
 	return pWwiseAudioObject;
 }
 
@@ -1957,11 +1954,11 @@ EAudioRequestStatus CAudioImpl::PostEnvironmentAmounts(IAudioObject* const pAudi
 		AkAuxSendValue auxValues[AK_MAX_AUX_PER_OBJ];
 		uint32 auxIndex = 0;
 
-		SAudioObject::TEnvironmentImplMap::iterator iEnvPair = pWwiseAudioObject->cEnvironemntImplAmounts.begin();
-		SAudioObject::TEnvironmentImplMap::const_iterator const iEnvStart = pWwiseAudioObject->cEnvironemntImplAmounts.begin();
-		SAudioObject::TEnvironmentImplMap::const_iterator const iEnvEnd = pWwiseAudioObject->cEnvironemntImplAmounts.end();
+		SAudioObject::TEnvironmentImplMap::iterator iEnvPair = pWwiseAudioObject->environemntImplAmounts.begin();
+		SAudioObject::TEnvironmentImplMap::const_iterator const iEnvStart = pWwiseAudioObject->environemntImplAmounts.begin();
+		SAudioObject::TEnvironmentImplMap::const_iterator const iEnvEnd = pWwiseAudioObject->environemntImplAmounts.end();
 
-		if (pWwiseAudioObject->cEnvironemntImplAmounts.size() <= AK_MAX_AUX_PER_OBJ)
+		if (pWwiseAudioObject->environemntImplAmounts.size() <= AK_MAX_AUX_PER_OBJ)
 		{
 			for (; iEnvPair != iEnvEnd; ++auxIndex)
 			{
@@ -1973,7 +1970,7 @@ EAudioRequestStatus CAudioImpl::PostEnvironmentAmounts(IAudioObject* const pAudi
 				// If an amount is zero, we still want to send it to the middleware, but we also want to remove it from the map.
 				if (fAmount == 0.0f)
 				{
-					pWwiseAudioObject->cEnvironemntImplAmounts.erase(iEnvPair++);
+					pWwiseAudioObject->environemntImplAmounts.erase(iEnvPair++);
 				}
 				else
 				{
@@ -2001,7 +1998,7 @@ EAudioRequestStatus CAudioImpl::PostEnvironmentAmounts(IAudioObject* const pAudi
 			{
 				if (iEnvPair->second == 0.0f)
 				{
-					pWwiseAudioObject->cEnvironemntImplAmounts.erase(iEnvPair++);
+					pWwiseAudioObject->environemntImplAmounts.erase(iEnvPair++);
 				}
 				else
 				{

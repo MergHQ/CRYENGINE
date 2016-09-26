@@ -108,7 +108,6 @@ private:
 	void                UnloadMasterBanks();
 	EAudioRequestStatus MuteMasterBus(bool const bMute);
 
-	AudioObjectId                                  m_globalAudioObjectID;
 	AudioObjects                                   m_registeredAudioObjects;
 	AudioEvents                                    m_pendingAudioEvents;
 	StandaloneFiles                                m_pendingStandaloneFiles;

@@ -1,29 +1,34 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-class CFlowNode_AudioTrigger : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_AudioTrigger final : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
 
 	explicit CFlowNode_AudioTrigger(SActivationInfo* pActInfo)
-		: m_bIsPlaying(false)
+		: m_flags(eFlowNodeAudioTriggerFlags_None)
 		, m_playTriggerId(INVALID_AUDIO_CONTROL_ID)
 		, m_stopTriggerId(INVALID_AUDIO_CONTROL_ID)
-	{
-		gEnv->pAudioSystem->AddRequestListener(&CFlowNode_AudioTrigger::OnAudioTriggerFinished, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance);
-	}
+	{}
 
 	//////////////////////////////////////////////////////////////////////////
-	~CFlowNode_AudioTrigger()
+	virtual ~CFlowNode_AudioTrigger() override
 	{
-		gEnv->pAudioSystem->RemoveRequestListener(&CFlowNode_AudioTrigger::OnAudioTriggerFinished, this);
+		if ((m_flags & eFlowNodeAudioTriggerFlags_IsListener) > 0)
+		{
+			RemoveRequestListener();
+		}
 	}
 
+	CFlowNode_AudioTrigger(CFlowNode_AudioTrigger const&) = delete;
+	CFlowNode_AudioTrigger(CFlowNode_AudioTrigger&&) = delete;
+	CFlowNode_AudioTrigger& operator=(CFlowNode_AudioTrigger const&) = delete;
+	CFlowNode_AudioTrigger& operator=(CFlowNode_AudioTrigger&&) = delete;
+
 	//////////////////////////////////////////////////////////////////////////
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override
 	{
 		return new CFlowNode_AudioTrigger(pActInfo);
 	}
@@ -42,7 +47,7 @@ public:
 		eOut_Done,
 	};
 
-	virtual void GetConfiguration(SFlowNodeConfig& config)
+	virtual void GetConfiguration(SFlowNodeConfig& config) override
 	{
 		static const SInputPortConfig inputs[] =
 		{
@@ -68,22 +73,21 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
+	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser) override
 	{
-		bool bPlay = m_bIsPlaying;
+		bool bPlay = ((m_flags & eFlowNodeAudioTriggerFlags_IsPlaying) > 0);
 		ser.BeginGroup("FlowAudioTriggerNode");
 		ser.Value("play", bPlay);
 		ser.EndGroup();
 
 		if (ser.IsReading())
 		{
-			m_bIsPlaying = false;
 			Init(pActInfo, bPlay);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override
 	{
 		switch (event)
 		{
@@ -91,6 +95,24 @@ public:
 			{
 				Stop(pActInfo->pEntity);
 				Init(pActInfo, false);
+
+				break;
+			}
+		case eFE_ConnectOutputPort:
+			{
+				if ((m_flags & eFlowNodeAudioTriggerFlags_IsListener) == 0)
+				{
+					AddRequestListener();
+				}
+
+				break;
+			}
+		case eFE_DisconnectOutputPort:
+			{
+				if ((m_flags & eFlowNodeAudioTriggerFlags_IsListener) > 0)
+				{
+					RemoveRequestListener();
+				}
 
 				break;
 			}
@@ -124,15 +146,15 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void GetMemoryUsage(ICrySizer* s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const override
 	{
 		s->Add(*this);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void TriggerFinished(AudioControlId const nTriggerID)
+	void TriggerFinished(AudioControlId const audioTriggerId)
 	{
-		if (nTriggerID == m_playTriggerId)
+		if (audioTriggerId == m_playTriggerId)
 		{
 			ActivateOutput(&m_playActivationInfo, eOut_Done, true);
 		}
@@ -140,12 +162,19 @@ public:
 
 private:
 
-	enum EPlayMode
+	enum EPlayMode : AudioEnumFlagsType
 	{
-		ePM_None      = 0,
-		ePM_Play      = 1,
-		ePM_PlayStop  = 2,
-		ePM_ForceStop = 3,
+		ePlayMode_None      = 0,
+		ePlayMode_Play      = 1,
+		ePlayMode_PlayStop  = 2,
+		ePlayMode_ForceStop = 3,
+	};
+
+	enum EFlowNodeAudioTriggerFlags : AudioEnumFlagsType
+	{
+		eFlowNodeAudioTriggerFlags_None       = 0,
+		eFlowNodeAudioTriggerFlags_IsPlaying  = BIT(0),
+		eFlowNodeAudioTriggerFlags_IsListener = BIT(1),
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -156,62 +185,74 @@ private:
 		if (gEnv->pFlowSystem->GetGraphById(id) != nullptr)
 		{
 			// Here we are sure that this FlowGraphNode is still valid.
-			CFlowNode_AudioTrigger* pAudioTrigger = static_cast<CFlowNode_AudioTrigger*>(pAudioRequestInfo->pOwner);
+			CFlowNode_AudioTrigger* const pAudioTrigger = static_cast<CFlowNode_AudioTrigger*>(pAudioRequestInfo->pOwner);
 			pAudioTrigger->TriggerFinished(pAudioRequestInfo->audioControlId);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void GetTriggerID(SActivationInfo* const pActInfo, uint32 const nPortIdx, AudioControlId& rOutTriggerID)
+	void GetTriggerID(SActivationInfo* const pActInfo, uint32 const portIndex, AudioControlId& outAudioTriggerId)
 	{
-		rOutTriggerID = INVALID_AUDIO_CONTROL_ID;
-		string const& rTriggerName = GetPortString(pActInfo, nPortIdx);
+		outAudioTriggerId = INVALID_AUDIO_CONTROL_ID;
+		string const& audioTriggerName = GetPortString(pActInfo, portIndex);
 
-		if (!rTriggerName.empty())
+		if (!audioTriggerName.empty())
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(rTriggerName.c_str(), rOutTriggerID);
+			gEnv->pAudioSystem->GetAudioTriggerId(audioTriggerName.c_str(), outAudioTriggerId);
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	void Init(SActivationInfo* const pActInfo, bool const bPlay)
 	{
-		m_bIsPlaying = false;
+		m_flags &= ~eFlowNodeAudioTriggerFlags_IsPlaying;
 
 		if (gEnv->pAudioSystem != nullptr)
 		{
 			GetTriggerID(pActInfo, eIn_PlayTrigger, m_playTriggerId);
 			GetTriggerID(pActInfo, eIn_StopTrigger, m_stopTriggerId);
 		}
+
+		if (IsOutputConnected(pActInfo, eOut_Done))
+		{
+			if ((m_flags & eFlowNodeAudioTriggerFlags_IsListener) == 0)
+			{
+				AddRequestListener();
+			}
+		}
+		else if ((m_flags & eFlowNodeAudioTriggerFlags_IsListener) > 0)
+		{
+			RemoveRequestListener();
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void ExecuteOnProxy(IEntity* const pEntity, AudioControlId const nTriggerID, EPlayMode const ePlayMode)
+	void ExecuteOnProxy(IEntity* const pIEntity, AudioControlId const audioTriggerId, EPlayMode const playMode)
 	{
-		IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+		IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pIEntity->CreateProxy(ENTITY_PROXY_AUDIO));
 
 		if (pIEntityAudioProxy != nullptr)
 		{
-			switch (ePlayMode)
+			switch (playMode)
 			{
-			case ePM_Play:
+			case ePlayMode_Play:
 				{
 					SAudioCallBackInfo const callbackInfo(this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this, eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
 					pIEntityAudioProxy->SetCurrentEnvironments();
-					pIEntityAudioProxy->ExecuteTrigger(nTriggerID, DEFAULT_AUDIO_PROXY_ID, callbackInfo);
+					pIEntityAudioProxy->ExecuteTrigger(audioTriggerId, DEFAULT_AUDIO_PROXY_ID, callbackInfo);
 
 					break;
 				}
-			case ePM_PlayStop:
+			case ePlayMode_PlayStop:
 				{
 					pIEntityAudioProxy->SetCurrentEnvironments();
-					pIEntityAudioProxy->ExecuteTrigger(nTriggerID);
+					pIEntityAudioProxy->ExecuteTrigger(audioTriggerId);
 
 					break;
 				}
-			case ePM_ForceStop:
+			case ePlayMode_ForceStop:
 				{
-					pIEntityAudioProxy->StopTrigger(nTriggerID);
+					pIEntityAudioProxy->StopTrigger(audioTriggerId);
 
 					break;
 				}
@@ -228,7 +269,7 @@ private:
 	{
 		switch (playMode)
 		{
-		case ePM_Play:
+		case ePlayMode_Play:
 			{
 				m_executeRequestData.audioTriggerId = audioTriggerId;
 				m_request.pOwner = this;
@@ -237,7 +278,7 @@ private:
 
 				break;
 			}
-		case ePM_PlayStop:
+		case ePlayMode_PlayStop:
 			{
 				m_executeRequestData.audioTriggerId = audioTriggerId;
 				m_request.pData = &m_executeRequestData;
@@ -245,7 +286,7 @@ private:
 
 				break;
 			}
-		case ePM_ForceStop:
+		case ePlayMode_ForceStop:
 			{
 				m_stopRequestData.audioTriggerId = audioTriggerId;
 				m_request.pData = &m_stopRequestData;
@@ -261,61 +302,85 @@ private:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void Play(IEntity* const pEntity)
+	void Play(IEntity* const pIEntity)
 	{
 		if (m_playTriggerId != INVALID_AUDIO_CONTROL_ID)
 		{
-			if (pEntity != nullptr)
+			if (pIEntity != nullptr)
 			{
-				ExecuteOnProxy(pEntity, m_playTriggerId, ePM_Play);
+				ExecuteOnProxy(pIEntity, m_playTriggerId, ePlayMode_Play);
 			}
 			else
 			{
-				ExecuteOnGlobalObject(m_playTriggerId, ePM_Play);
+				ExecuteOnGlobalObject(m_playTriggerId, ePlayMode_Play);
 			}
 
-			m_bIsPlaying = true;
+			m_flags |= eFlowNodeAudioTriggerFlags_IsPlaying;
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void Stop(IEntity* const pEntity)
+	void Stop(IEntity* const pIEntity)
 	{
-		if (m_bIsPlaying)
+		if ((m_flags & eFlowNodeAudioTriggerFlags_IsPlaying) > 0)
 		{
 			if (m_stopTriggerId != INVALID_AUDIO_CONTROL_ID)
 			{
-				if (pEntity != nullptr)
+				if (pIEntity != nullptr)
 				{
-					ExecuteOnProxy(pEntity, m_stopTriggerId, ePM_PlayStop);
+					ExecuteOnProxy(pIEntity, m_stopTriggerId, ePlayMode_PlayStop);
 				}
 				else
 				{
-					ExecuteOnGlobalObject(m_stopTriggerId, ePM_PlayStop);
+					ExecuteOnGlobalObject(m_stopTriggerId, ePlayMode_PlayStop);
 				}
 			}
 			else
 			{
-				if (pEntity != nullptr)
+				if (pIEntity != nullptr)
 				{
-					ExecuteOnProxy(pEntity, m_playTriggerId, ePM_ForceStop);
+					ExecuteOnProxy(pIEntity, m_playTriggerId, ePlayMode_ForceStop);
 				}
 				else
 				{
-					ExecuteOnGlobalObject(m_playTriggerId, ePM_ForceStop);
+					ExecuteOnGlobalObject(m_playTriggerId, ePlayMode_ForceStop);
 				}
 			}
 
-			m_bIsPlaying = false;
+			m_flags &= ~eFlowNodeAudioTriggerFlags_IsPlaying;
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	bool            m_bIsPlaying;
-	AudioControlId  m_playTriggerId;
-	AudioControlId  m_stopTriggerId;
-	SActivationInfo m_playActivationInfo;
-	SAudioRequest   m_request;
+	void AddRequestListener()
+	{
+		SAudioManagerRequestData<eAudioManagerRequestType_AddRequestListener> requestData(this, &CFlowNode_AudioTrigger::OnAudioTriggerFinished, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance);
+		SAudioRequest request;
+		request.flags = eAudioRequestFlags_PriorityHigh;
+		request.pOwner = this;
+		request.pData = &requestData;
+		gEnv->pAudioSystem->PushRequest(request);
+		m_flags |= eFlowNodeAudioTriggerFlags_IsListener;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void RemoveRequestListener()
+	{
+		SAudioManagerRequestData<eAudioManagerRequestType_RemoveRequestListener> requestData(this, &CFlowNode_AudioTrigger::OnAudioTriggerFinished);
+		SAudioRequest request;
+		request.flags = eAudioRequestFlags_PriorityHigh;
+		request.pOwner = this;
+		request.pData = &requestData;
+		gEnv->pAudioSystem->PushRequest(request);
+		m_flags &= ~eFlowNodeAudioTriggerFlags_IsListener;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	AudioEnumFlagsType m_flags;
+	AudioControlId     m_playTriggerId;
+	AudioControlId     m_stopTriggerId;
+	SActivationInfo    m_playActivationInfo;
+	SAudioRequest      m_request;
 	SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTrigger> m_executeRequestData;
 	SAudioObjectRequestData<eAudioObjectRequestType_StopTrigger>    m_stopRequestData;
 };

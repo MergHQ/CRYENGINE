@@ -4,7 +4,7 @@
 
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-class CFlowNode_AudioSwitch : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_AudioSwitch final : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
 
@@ -22,10 +22,15 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	~CFlowNode_AudioSwitch() {}
+	virtual ~CFlowNode_AudioSwitch() override = default;
+
+	CFlowNode_AudioSwitch(CFlowNode_AudioSwitch const&) = delete;
+	CFlowNode_AudioSwitch(CFlowNode_AudioSwitch&&) = delete;
+	CFlowNode_AudioSwitch& operator=(CFlowNode_AudioSwitch const&) = delete;
+	CFlowNode_AudioSwitch& operator=(CFlowNode_AudioSwitch&&) = delete;
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override
 	{
 		return new CFlowNode_AudioSwitch(pActInfo);
 	}
@@ -50,7 +55,7 @@ public:
 	{
 	};
 
-	virtual void GetConfiguration(SFlowNodeConfig& config)
+	virtual void GetConfiguration(SFlowNodeConfig& config) override
 	{
 		static const SInputPortConfig inputs[] =
 		{
@@ -80,7 +85,7 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser)
+	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser) override
 	{
 		int currentState = m_currentState;
 		ser.BeginGroup("FlowAudioSwitchNode");
@@ -95,7 +100,7 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override
 	{
 		switch (event)
 		{
@@ -135,7 +140,7 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void GetMemoryUsage(ICrySizer* s) const
+	virtual void GetMemoryUsage(ICrySizer* s) const override
 	{
 		s->Add(*this);
 	}

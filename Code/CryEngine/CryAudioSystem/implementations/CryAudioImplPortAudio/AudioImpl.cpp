@@ -22,16 +22,6 @@ char const* const CAudioImpl::s_szPortAudioEventTypeAttribute = "event_type";
 char const* const CAudioImpl::s_szPortAudioEventNumLoopsAttribute = "num_loops";
 
 ///////////////////////////////////////////////////////////////////////////
-CAudioImpl::CAudioImpl()
-{
-}
-
-///////////////////////////////////////////////////////////////////////////
-CAudioImpl::~CAudioImpl()
-{
-}
-
-///////////////////////////////////////////////////////////////////////////
 void CAudioImpl::Update(float const deltaTime)
 {
 	for (auto pAudioObject : m_registeredAudioObjects)

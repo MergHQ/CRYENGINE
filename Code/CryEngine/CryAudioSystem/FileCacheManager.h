@@ -19,12 +19,16 @@ enum EAudioFileCacheManagerDebugFilter
 	eAFCMDF_USE_COUNTED     = BIT(8), // c
 };
 
-class CFileCacheManager : public IStreamCallback
+class CFileCacheManager final : public IStreamCallback
 {
 public:
 
 	explicit CFileCacheManager(AudioPreloadRequestLookup& preloadRequests);
-	virtual ~CFileCacheManager();
+
+	CFileCacheManager(CFileCacheManager const&) = delete;
+	CFileCacheManager(CFileCacheManager&&) = delete;
+	CFileCacheManager& operator=(CFileCacheManager const&) = delete;
+	CFileCacheManager& operator=(CFileCacheManager&&) = delete;
 
 	// Public methods
 	void                Init(CryAudio::Impl::IAudioImpl* const pImpl);
@@ -40,15 +44,12 @@ public:
 
 private:
 
-	DELETE_DEFAULT_CONSTRUCTOR(CFileCacheManager);
-	PREVENT_OBJECT_COPY(CFileCacheManager);
-
 	// Internal type definitions.
 	typedef std::map<AudioFileEntryId, CATLAudioFileEntry*, std::less<AudioFileEntryId>, STLSoundAllocator<std::pair<AudioFileEntryId, CATLAudioFileEntry*>>> AudioFileEntries;
 
 	// IStreamCallback
-	virtual void StreamAsyncOnComplete(IReadStream* pStream, unsigned int nError);
-	virtual void StreamOnComplete(IReadStream* pStream, unsigned int nError) {}
+	virtual void StreamAsyncOnComplete(IReadStream* pStream, unsigned int nError) override;
+	virtual void StreamOnComplete(IReadStream* pStream, unsigned int nError) override {}
 	// ~IStreamCallback
 
 	// Internal methods

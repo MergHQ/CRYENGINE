@@ -7,31 +7,6 @@
 using namespace CryAudio::Impl::Wwise;
 
 //////////////////////////////////////////////////////////////////////////
-CAudioImplCVars::CAudioImplCVars()
-	: m_secondaryMemoryPoolSize(0)
-	, m_prepareEventMemoryPoolSize(0)
-	, m_streamManagerMemoryPoolSize(0)
-	, m_streamDeviceMemoryPoolSize(0)
-	, m_soundEngineDefaultMemoryPoolSize(0)
-	, m_commandQueueMemoryPoolSize(0)
-	, m_lowerEngineDefaultPoolSize(0)
-	, m_enableEventManagerThread(0)
-	, m_enableSoundBankManagerThread(0)
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	, m_enableCommSystem(0)
-	, m_enableOutputCapture(0)
-	, m_monitorMemoryPoolSize(0)
-	, m_monitorQueueMemoryPoolSize(0)
-#endif // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-CAudioImplCVars::~CAudioImplCVars()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAudioImplCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS

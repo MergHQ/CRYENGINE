@@ -77,9 +77,6 @@ CAudioImpl::CAudioImpl()
 #endif
 }
 
-CAudioImpl::~CAudioImpl()
-{}
-
 void CAudioImpl::Update(float const deltaTime)
 {
 	SoundEngine::Update();
@@ -555,13 +552,14 @@ void CAudioImpl::DeleteAudioEnvironment(IAudioEnvironment const* const pOldAudio
 
 IAudioObject* CAudioImpl::NewGlobalAudioObject(AudioObjectId const audioObjectID)
 {
-	POOL_NEW_CREATE(SAudioObject, pNewObject)(audioObjectID, true);
+	POOL_NEW_CREATE(SAudioObject, pNewObject)(0, true);
 	return pNewObject;
 }
 
 IAudioObject* CAudioImpl::NewAudioObject(AudioObjectId const audioObjectID)
 {
-	POOL_NEW_CREATE(SAudioObject, pNewObject)(audioObjectID, false);
+	static uint32 objectIDCounter = 1;
+	POOL_NEW_CREATE(SAudioObject, pNewObject)(objectIDCounter++, false);
 	return pNewObject;
 }
 
@@ -578,7 +576,8 @@ CryAudio::Impl::IAudioListener* CAudioImpl::NewDefaultAudioListener(AudioObjectI
 
 CryAudio::Impl::IAudioListener* CAudioImpl::NewAudioListener(AudioObjectId const audioObjectId)
 {
-	POOL_NEW_CREATE(SAudioListener, pNewObject)(audioObjectId);
+	static ListenerId listenerIDCounter = 1;
+	POOL_NEW_CREATE(SAudioListener, pNewObject)(listenerIDCounter++);
 	return pNewObject;
 }
 

@@ -10,17 +10,21 @@
 class CAudioSystem;
 class CAudioProxy;
 
-class CAudioThread : public IThread
+class CAudioThread final : public IThread
 {
 public:
 
-	CAudioThread();
-	~CAudioThread();
+	CAudioThread() = default;
+	CAudioThread(CAudioThread const&) = delete;
+	CAudioThread(CAudioThread&&) = delete;
+	CAudioThread& operator=(CAudioThread const&) = delete;
+	CAudioThread& operator=(CAudioThread&&) = delete;
 
-	void Init(CAudioSystem* const pAudioSystem);
+	void          Init(CAudioSystem* const pAudioSystem);
 
-	// Start accepting work on thread
+	// IThread
 	virtual void ThreadEntry();
+	// ~IThread
 
 	// Signals the thread that it should not accept anymore work and exit
 	void SignalStopWork();
@@ -30,8 +34,9 @@ public:
 	void Deactivate();
 
 private:
-	CAudioSystem* m_pAudioSystem;
-	volatile bool m_bQuit;
+
+	CAudioSystem* m_pAudioSystem = nullptr;
+	volatile bool m_bQuit = false;
 };
 
 class CAudioSystem final : public IAudioSystem, ISystemEventListener
@@ -39,7 +44,12 @@ class CAudioSystem final : public IAudioSystem, ISystemEventListener
 public:
 
 	CAudioSystem();
-	virtual ~CAudioSystem();
+	virtual ~CAudioSystem() override;
+
+	CAudioSystem(CAudioSystem const&) = delete;
+	CAudioSystem(CAudioSystem&&) = delete;
+	CAudioSystem& operator=(CAudioSystem const&) = delete;
+	CAudioSystem& operator=(CAudioSystem&&) = delete;
 
 	// IAudioSystem
 	virtual bool         Initialize() override;
@@ -72,8 +82,6 @@ public:
 	virtual void         GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioTriggerData) override;
 	virtual void         SetAllowedThreadId(threadID id) override { m_allowedThreadId = id; }
 	// ~IAudioSystem
-
-	
 
 	// ISystemEventListener
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
@@ -151,6 +159,4 @@ private:
 
 	void DrawAudioDebugData();
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	PREVENT_OBJECT_COPY(CAudioSystem);
 };

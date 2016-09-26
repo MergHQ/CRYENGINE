@@ -239,15 +239,13 @@ bool CAudioObjectManager::ReserveId(AudioObjectId& audioObjectId)
 }
 
 //////////////////////////////////////////////////////////////////////////
-class CObjectIDPredicate
+class CObjectIDPredicate final
 {
 public:
 
 	explicit CObjectIDPredicate(AudioObjectId const audioObjectId)
 		: m_audioObjectId(audioObjectId)
 	{}
-
-	~CObjectIDPredicate() {}
 
 	bool operator()(CATLAudioObject const* const pAudioObject)
 	{
@@ -256,7 +254,6 @@ public:
 
 private:
 
-	DELETE_DEFAULT_CONSTRUCTOR(CObjectIDPredicate);
 	AudioObjectId const m_audioObjectId;
 };
 

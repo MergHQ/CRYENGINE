@@ -16,13 +16,18 @@ class CAudioListener final : public IAudioListener
 {
 public:
 
-	CAudioListener(int const _id)
+	explicit CAudioListener(int const _id)
 		: m_id(_id)
 	{
 		ZeroStruct(m_attributes);
 	}
 
-	virtual ~CAudioListener() {}
+	virtual ~CAudioListener() override = default;
+
+	CAudioListener(CAudioListener const&) = delete;
+	CAudioListener(CAudioListener&&) = delete;
+	CAudioListener&           operator=(CAudioListener const&) = delete;
+	CAudioListener&           operator=(CAudioListener&&) = delete;
 
 	ILINE int                 GetId() const                                               { return m_id; }
 	ILINE FMOD_3D_ATTRIBUTES& Get3DAttributes()                                           { return m_attributes; }
@@ -32,9 +37,6 @@ private:
 
 	int                m_id;
 	FMOD_3D_ATTRIBUTES m_attributes;
-
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioListener);
-	PREVENT_OBJECT_COPY(CAudioListener);
 };
 
 enum EFmodEventType : AudioEnumFlagsType
@@ -74,7 +76,12 @@ public:
 	{}
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
-	virtual ~CAudioTrigger() {}
+	virtual ~CAudioTrigger() override = default;
+
+	CAudioTrigger(CAudioTrigger const&) = delete;
+	CAudioTrigger(CAudioTrigger&&) = delete;
+	CAudioTrigger& operator=(CAudioTrigger const&) = delete;
+	CAudioTrigger& operator=(CAudioTrigger&&) = delete;
 
 	uint32 const                          m_eventPathId;
 	AudioEnumFlagsType const              m_eventType;
@@ -84,9 +91,6 @@ public:
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	CryFixedStringT<512> const m_eventPath;
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
-
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioTrigger);
-	PREVENT_OBJECT_COPY(CAudioTrigger);
 };
 
 class CAudioParameter final : public IAudioRtpc
@@ -104,7 +108,12 @@ public:
 		, m_name(_szName)
 	{}
 
-	virtual ~CAudioParameter() {}
+	virtual ~CAudioParameter() override = default;
+
+	CAudioParameter(CAudioParameter const&) = delete;
+	CAudioParameter(CAudioParameter&&) = delete;
+	CAudioParameter&                                     operator=(CAudioParameter const&) = delete;
+	CAudioParameter&                                     operator=(CAudioParameter&&) = delete;
 
 	uint32                                               GetEventPathId() const     { return m_eventPathId; }
 	float                                                GetValueMultiplier() const { return m_multiplier; }
@@ -117,9 +126,6 @@ private:
 	float const  m_multiplier;
 	float const  m_shift;
 	CryFixedStringT<MAX_AUDIO_OBJECT_NAME_LENGTH> const m_name;
-
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioParameter);
-	PREVENT_OBJECT_COPY(CAudioParameter);
 };
 
 class CAudioSwitchState final : public IAudioSwitchState
@@ -135,13 +141,16 @@ public:
 		, name(_szName)
 	{}
 
-	virtual ~CAudioSwitchState() {}
+	virtual ~CAudioSwitchState() override = default;
+
+	CAudioSwitchState(CAudioSwitchState const&) = delete;
+	CAudioSwitchState(CAudioSwitchState&&) = delete;
+	CAudioSwitchState& operator=(CAudioSwitchState const&) = delete;
+	CAudioSwitchState& operator=(CAudioSwitchState&&) = delete;
 
 	uint32 const eventPathId;
 	float const  value;
 	CryFixedStringT<MAX_AUDIO_OBJECT_NAME_LENGTH> const name;
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioSwitchState);
-	PREVENT_OBJECT_COPY(CAudioSwitchState);
 };
 
 class CAudioEnvironment final : public IAudioEnvironment
@@ -155,31 +164,36 @@ public:
 		, pBus(_pBus)
 	{}
 
+	virtual ~CAudioEnvironment() override = default;
+
+	CAudioEnvironment(CAudioEnvironment const&) = delete;
+	CAudioEnvironment(CAudioEnvironment&&) = delete;
+	CAudioEnvironment& operator=(CAudioEnvironment const&) = delete;
+	CAudioEnvironment& operator=(CAudioEnvironment&&) = delete;
+
 	FMOD::Studio::EventDescription* const pEventDescription;
 	FMOD::Studio::Bus* const              pBus;
-
-	DELETE_DEFAULT_CONSTRUCTOR(CAudioEnvironment);
-	PREVENT_OBJECT_COPY(CAudioEnvironment);
 };
 
 class CAudioFileEntry final : public IAudioFileEntry
 {
 public:
 
-	CAudioFileEntry()
-		: pBank(nullptr)
-	{}
+	CAudioFileEntry() = default;
+	virtual ~CAudioFileEntry() override = default;
 
-	virtual ~CAudioFileEntry() {}
+	CAudioFileEntry(CAudioFileEntry const&) = delete;
+	CAudioFileEntry(CAudioFileEntry&&) = delete;
+	CAudioFileEntry& operator=(CAudioFileEntry const&) = delete;
+	CAudioFileEntry& operator=(CAudioFileEntry&&) = delete;
 
-	FMOD::Studio::Bank* pBank;
-
-	PREVENT_OBJECT_COPY(CAudioFileEntry);
+	FMOD::Studio::Bank* pBank = nullptr;
 };
 
 class CAudioStandaloneFile final : public IAudioStandaloneFile
 {
 public:
+
 	CAudioStandaloneFile()
 		: fileId(INVALID_AUDIO_STANDALONE_FILE_ID)
 		, fileInstanceId(INVALID_AUDIO_STANDALONE_FILE_ID)
@@ -189,9 +203,6 @@ public:
 		, bWaitingForData(false)
 		, bHasFinished(false)
 		, bShouldBeStreamed(false)
-	{}
-
-	~CAudioStandaloneFile()
 	{}
 
 	void Reset()
@@ -205,6 +216,8 @@ public:
 		bHasFinished = false;
 		bShouldBeStreamed = false;
 	}
+
+	virtual ~CAudioStandaloneFile() override = default;
 
 	AudioStandaloneFileId                       fileId;                     // ID unique to the file, only needed for the 'finished' request
 	AudioStandaloneFileId                       fileInstanceId;             // ID unique to the file instance, only needed for the 'finished' request

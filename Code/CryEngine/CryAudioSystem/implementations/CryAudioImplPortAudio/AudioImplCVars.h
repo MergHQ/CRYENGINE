@@ -8,19 +8,20 @@ namespace Impl
 {
 namespace PortAudio
 {
-class CAudioImplCVars
+class CAudioImplCVars final
 {
 public:
 
-	CAudioImplCVars();
-	~CAudioImplCVars();
+	CAudioImplCVars() = default;
+	CAudioImplCVars(CAudioImplCVars const&) = delete;
+	CAudioImplCVars(CAudioImplCVars&&) = delete;
+	CAudioImplCVars& operator=(CAudioImplCVars const&) = delete;
+	CAudioImplCVars& operator=(CAudioImplCVars&&) = delete;
 
 	void RegisterVariables();
 	void UnregisterVariables();
 
-	int m_primaryMemoryPoolSize;
-
-	PREVENT_OBJECT_COPY(CAudioImplCVars);
+	int m_primaryMemoryPoolSize = 0;
 };
 
 extern CAudioImplCVars g_audioImplCVars;

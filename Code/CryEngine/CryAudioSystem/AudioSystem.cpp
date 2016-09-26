@@ -9,18 +9,6 @@
 #include <CryString/CryPath.h>
 
 ///////////////////////////////////////////////////////////////////////////
-CAudioThread::CAudioThread()
-	: m_pAudioSystem(nullptr)
-	, m_bQuit(false)
-{
-}
-
-///////////////////////////////////////////////////////////////////////////
-CAudioThread::~CAudioThread()
-{
-}
-
-///////////////////////////////////////////////////////////////////////////
 void CAudioThread::Init(CAudioSystem* const pAudioSystem)
 {
 	m_pAudioSystem = pAudioSystem;
@@ -256,7 +244,7 @@ void CAudioSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 	case ESYSTEM_EVENT_LEVEL_LOAD_START:
 		{
 			const string levelNameOnly = (const char*)wparam;
-			
+
 			if (!levelNameOnly.empty() && levelNameOnly.compareNoCase("Untitled") != 0)
 			{
 				CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> audioLevelPath(gEnv->pAudioSystem->GetConfigPath());

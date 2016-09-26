@@ -10,12 +10,16 @@ namespace Impl
 {
 namespace Null
 {
-class CAudioImpl : public IAudioImpl
+class CAudioImpl final : public IAudioImpl
 {
 public:
 
-	CAudioImpl();
-	virtual ~CAudioImpl();
+	CAudioImpl() = default;
+	virtual ~CAudioImpl() override = default;
+	CAudioImpl(CAudioImpl const&) = delete;
+	CAudioImpl(CAudioImpl&&) = delete;
+	CAudioImpl& operator=(CAudioImpl const&) = delete;
+	CAudioImpl& operator=(CAudioImpl&&) = delete;
 
 	// IAudioImpl
 	virtual void                     Update(float const deltaTime) override;
@@ -82,8 +86,6 @@ public:
 	virtual void              GetMemoryInfo(SAudioImplMemoryInfo& memoryInfo) const override;
 	virtual void              GetAudioFileData(char const* const szFilename, SAudioFileData& audioFileData) const override;
 	// ~IAudioImpl
-
-	PREVENT_OBJECT_COPY(CAudioImpl);
 };
 }
 }
