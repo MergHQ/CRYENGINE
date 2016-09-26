@@ -365,18 +365,28 @@ SShaderTechnique* CShader::GetTechnique(int nStartTechnique, int nRequestedTechn
 		{
 			assert(nStartTechnique < (int)m_HWTechniques.Num());
 			if (nStartTechnique < (int)m_HWTechniques.Num())
+			{
 				pTech = m_HWTechniques[nStartTechnique];
+			}
 			else
 			{
 				if (!bSilent)
 					LogWarning("ERROR: CShader::GetTechnique: Technique %d for shader '%s' is out of range", nStartTechnique, GetName());
+				pTech = nullptr;
 			}
 		}
 	}
 	else
 		pTech = nullptr;
 
+	if (nRequestedTechnique == TTYPE_GENERAL)
+	{
+		return pTech;
+	}
+
 	if (!pTech ||
+	    nRequestedTechnique < 0 ||
+	    nRequestedTechnique >= TTYPE_MAX ||
 	    pTech->m_nTechnique[nRequestedTechnique] < 0 ||
 	    pTech->m_nTechnique[nRequestedTechnique] >= (int)m_HWTechniques.Num())
 	{
@@ -384,6 +394,7 @@ SShaderTechnique* CShader::GetTechnique(int nStartTechnique, int nRequestedTechn
 			LogWarning("ERROR: CShader::GetTechnique: No Technique (%d,%d) for shader '%s' ", nStartTechnique, nRequestedTechnique, GetName());
 		return nullptr;
 	}
+
 	pTech = m_HWTechniques[pTech->m_nTechnique[nRequestedTechnique]];
 
 	return pTech;
