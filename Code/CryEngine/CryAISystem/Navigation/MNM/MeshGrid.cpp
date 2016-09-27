@@ -1263,29 +1263,19 @@ void MeshGrid::PullString(const vector3_t& from, const TriangleID fromTriID, con
 
 		if (vi0 != vi1)
 		{
-			real_t s, t;
 			PREFAST_ASSUME(vi0 < 3 && vi1 < 3);
-			vector3_t dir = fromVertices[vi1] - fromVertices[vi0];
-			dir.normalized();
-			if (IntersectSegmentSegment(vector2_t(fromVertices[vi0]),
-			                            vector2_t(fromVertices[vi1]), vector2_t(from), vector2_t(to), s, t))
-			{
-				const Tile::STriangle& triangle = startContainer.tile.triangles[ComputeTriangleIndex(fromTriID)];
 
-				s = clamp(s, kMinPullingThreshold, kMaxPullingThreshold);
-				middlePoint = fromVertices[vi0] + dir * s;
-			}
-			else
+			real_t s, t;
+			if (!IntersectSegmentSegment(vector2_t(fromVertices[vi0]),
+				vector2_t(fromVertices[vi1]), vector2_t(from), vector2_t(to), s, t))
 			{
-				if (s < 0)
-				{
-					middlePoint = fromVertices[vi0] + dir * kMinPullingThreshold;
-				}
-				else
-				{
-					middlePoint = fromVertices[vi0] + dir * kMaxPullingThreshold;
-				}
+				s = 0;
 			}
+			
+			// Even if segments don't intersect, s = 0 and is clamped to the pulling threshold range
+			s = clamp(s, kMinPullingThreshold, kMaxPullingThreshold);
+			
+			middlePoint = Lerp(fromVertices[vi0], fromVertices[vi1], s);
 		}
 	}
 }
