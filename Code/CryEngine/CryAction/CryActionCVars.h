@@ -74,6 +74,8 @@ public:
 
 	int g_disableSequencePlayback;
 
+	int cl_initClientActor;
+
 	int g_enableMergedMeshRuntimeAreas;
 
 	// AI stances

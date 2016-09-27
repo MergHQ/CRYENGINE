@@ -23,6 +23,7 @@
 #include "ActionGame.h"
 #include <CryNetwork/INetworkService.h>
 #include <CryNetwork/INetwork.h>
+#include "CryActionCVars.h"
 
 #define LOCAL_ACTOR_VARIABLE     "g_localActor"
 #define LOCAL_CHANNELID_VARIABLE "g_localChannelId"
@@ -369,11 +370,15 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 		CRY_ASSERT(pGameObject);
 		if (param.bClientActor)
 		{
-			IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(entityId);
-			if (!pActor)
+			// Note: Consider removing all this, this check might not be even needed
+			if (CCryActionCVars::Get().cl_initClientActor != 0)
 			{
-				CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_WARNING,
-					"Client actor spawned entity is not an actor");
+				IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(entityId);
+				if (!pActor)
+				{
+					CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_WARNING,
+						"Client actor spawned entity is not an actor");
+				}
 			}
 			SetPlayerId(entityId);
 		}

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "CryAction.h"
+#include "CryActionCVars.h"
 #include "IActorSystem.h"
 #include "GameObjects/GameObject.h"
 #include "IGameRulesSystem.h"
@@ -18,6 +19,17 @@ inline IActor* GetAIActor(IFlowNode::SActivationInfo* pActInfo)
 
 class CFlowPlayer : public CFlowBaseNode<eNCT_Singleton>
 {
+private:
+	enum EInputPort
+	{
+		eInputPort_Update = 0,
+	};
+
+	enum EOuputPort
+	{
+		eOutputPort_LocalPlayerId = 0,
+	};
+
 public:
 	CFlowPlayer(SActivationInfo* pActInfo)
 	{
@@ -64,14 +76,27 @@ public:
 
 	bool UpdateEntityIdOutput(SActivationInfo* pActInfo)
 	{
+		EntityId playerId = 0;
+
 		IActor* pActor = CCryAction::GetCryAction()->GetClientActor();
 		if (pActor)
 		{
-			ActivateOutput(pActInfo, 0, pActor->GetEntityId());
+			playerId = pActor->GetEntityId();
+		}
+		else if (CCryActionCVars::Get().cl_initClientActor == 0)
+		{
+			playerId = CCryAction::GetCryAction()->GetClientEntityId();
+		}
+
+		if (playerId != 0)
+		{
+			ActivateOutput(pActInfo, eOutputPort_LocalPlayerId, playerId);
 			return true;
 		}
 		else
+		{
 			return false;
+		}
 	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const

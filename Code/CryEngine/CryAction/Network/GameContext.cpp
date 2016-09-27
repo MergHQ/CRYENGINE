@@ -495,10 +495,12 @@ bool CGameContext::InitGlobalEstablishmentTasks(IContextEstablisher* pEst, int e
 	AddLockResources(pEst, eCVS_Begin, gEnv->IsEditor() ? eCVS_PostSpawnEntities : eCVS_InGame, this);
 	AddSetValue(pEst, eCVS_Begin, &m_bStarted, false, "GameNotStarted");
 	AddWaitForPendingConnections(pEst, eCVS_Begin, m_pGame, m_pFramework);
-	if (gEnv->IsClient())
+	
+	if (gEnv->IsClient() && HasContextFlag(eGSF_InitClientActor))
 	{
 		AddDisableActionMap(pEst, eCVS_Begin);
 	}
+	
 	if (gEnv->IsEditor())
 	{
 		AddEstablishedContext(pEst, eCVS_EstablishContext, establishedToken);

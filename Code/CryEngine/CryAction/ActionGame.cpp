@@ -12,6 +12,7 @@
 #include "Network/ServerTimer.h"
 #include "Network/DeformingBreak.h" // for debug function
 #include "CryAction.h"
+#include "CryActionCVars.h"
 #include "IActorSystem.h"
 #include "MaterialEffects/MaterialEffectsCVars.h"
 #include <CryParticleSystem/ParticleParams.h>
@@ -540,13 +541,10 @@ bool CActionGame::Init(const SGameStartParams* pGameStartParams)
 
 	if (pGameStartParams->flags & eGSF_Client)
 	{
-		if (ICVar* pInitClient = gEnv->pConsole->GetCVar("cl_initClientActor"))
-		{
-			if (pInitClient->GetIVal() != 0)
-				flags |= eGSF_InitClientActor;
-			else
-				flags &= ~eGSF_InitClientActor;
-		}
+		if (CCryActionCVars::Get().cl_initClientActor != 0)
+			flags |= eGSF_InitClientActor;
+		else
+			flags &= ~eGSF_InitClientActor;
 	}
 
 	m_pGameContext->SetContextInfo(flags, pGameStartParams->port, connectionString.c_str());
