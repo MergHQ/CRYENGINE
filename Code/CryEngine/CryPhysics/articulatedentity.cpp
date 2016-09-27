@@ -3066,7 +3066,7 @@ float __maxdiff = 0;
 
 int CArticulatedEntity::Update(float time_interval, float damping)
 {
-	if (m_bFeatherstone) {
+	if (m_bFeatherstone && m_nJoints>0) {
 		int active = 1;
 		if (m_joints[0].fs) {
 			CollectPendingImpulses(0,active);

@@ -1789,7 +1789,7 @@ entity_contact *CRigidEntity::RegisterContactPoint(int idx, const Vec3 &pt, cons
 			Matrix33 K; K.SetZero();
 			pContact->pbody[0]->GetContactMatrix(pt-pContact->pbody[0]->pos, K);
 			pContact->pbody[1]->GetContactMatrix(pt-pContact->pbody[1]->pos, K);
-			ai.impulse.x = pContact->vrel*-(1+e)/(pContact->n*K*pContact->n);
+			ai.impulse.x = pContact->vrel*-(1+e)/max(pContact->n*K*pContact->n, (pContact->pbody[0]->Minv+pContact->pbody[1]->Minv)*0.1f);
 			if (sqr(ai.impulse.x*pContact->pbody[0]->Minv) < max(pContact->pbody[0]->v.len2(),pContact->pbody[1]->v.len2())*sqr(e+1.1f)) {
 				ArchiveContact(pContact, ai.impulse.x);
 				ai.impulse = pContact->n*ai.impulse.x;
@@ -2918,6 +2918,11 @@ int CRigidEntity::Step(float time_interval)
 		}
 
 		m_bCanopyContact <<= 1;
+		Vec3 extPull(ZERO);
+		for(i=0; m_constraintMask>=getmask(i); i++) if (m_constraintMask & getmask(i) && !(m_pConstraints[i].flags & contact_angular))
+			extPull += m_pConstraints[i].n*m_pConstraints[i].Pspare;
+		extPull *= isneg(sqr(m_body.M*m_lastTimeStep*3)*m_gravity.len2() - extPull.len2());
+
 		for(i=0;i<ncontacts;i++) if (pcontacts[i].t>=0) { // penetration contacts - register points and add additional penalty impulse in solver
 			if (!(m_parts[g_CurCollParts[i][0]].flags & geom_squashy)) {
 				Vec3 ntilt(ZERO), offs=pcontacts[i].dir*pcontacts[i].t;	float curdepth;	
@@ -2926,10 +2931,11 @@ int CRigidEntity::Step(float time_interval)
 				if (pcontacts[i].parea && pcontacts[i].parea->npt>=2) {
 					ntilt = (axis = pcontacts[i].parea->n1)^pcontacts[i].n;
 					pcontacts[i].n = -pcontacts[i].dir;
+					float esafe = max(0.0f,pcontacts[i].n*extPull);
 					for(j=0,r=ip.maxUnproj; j<pcontacts[i].parea->npt; j++)
 						r = min(r, axis*(pcontacts[i].parea->pt[j]-pcontacts[i].pt));
 					for(j=0; j<(pcontacts[i].parea->npt&-bPrimPrimContact); j++) 
-						if ((curdepth=(float)pcontacts[i].t-axis*(pcontacts[i].parea->pt[j]-pcontacts[i].pt)+r) > -e)
+						if ((curdepth=(float)pcontacts[i].t-axis*(pcontacts[i].parea->pt[j]-pcontacts[i].pt)+r) > -e-esafe)
 							RegisterContactPoint(i, pcontacts[i].parea->pt[j]-offs, pcontacts, pcontacts[i].parea->piPrim[0][j],
 								pcontacts[i].parea->piFeature[0][j], pcontacts[i].parea->piPrim[1][j],pcontacts[i].parea->piFeature[1][j], 
 								contact_area|contact_new|contact_inexact|flagsLast, max(0.001f,curdepth),iCaller, ntilt), flagsLast=0;
