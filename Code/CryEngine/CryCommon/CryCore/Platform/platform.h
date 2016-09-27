@@ -515,17 +515,17 @@ struct ZeroInit
 
 //! Declare a const and variable version of a function simultaneously.
 #define CONST_VAR_FUNCTION(head, body) \
-  inline head body                     \
-  inline const head const body
+  ILINE head body                      \
+  ILINE const head const body          \
 
 template<class T>
-inline T& non_const(const T& t)
+ILINE T& non_const(const T& t)
 {
 	return const_cast<T&>(t);
 }
 
 template<class T>
-inline T* non_const(const T* t)
+ILINE T* non_const(const T* t)
 {
 	return const_cast<T*>(t);
 }
@@ -572,45 +572,8 @@ void SetFlags(T& dest, U flags, bool b)
 // Platform wrappers must be included before CryString.h
 #include <CryString/CryString.h>
 
-#include <functional>
-
-//! The 'string_less' class below provides less functor implementation for 'string'.
-//! Supports direct comparison against plain C strings and stack strings.
-//! This is most effective in combination with STLPORT, where various 'find' and related methods are templated on the parameter type.
-struct string_less : public std::binary_function<string, string, bool>
-{
-	bool operator()(const string& s1, const char* s2) const
-	{
-		return s1.compare(s2) < 0;
-	}
-	bool operator()(const char* s1, const string& s2) const
-	{
-		return s2.compare(s1) > 0;
-	}
-	bool operator()(const string& s1, const string& s2) const
-	{
-		return s1 < s2;
-	}
-
-#if !defined(NOT_USE_CRY_STRING)
-	template<size_t S>
-	bool operator()(const string& s1, const CryStackStringT<char, S>& s2) const
-	{
-		return s1.compare(s2.c_str()) < 0;
-	}
-	template<size_t S>
-	bool operator()(const CryStackStringT<char, S>& s1, const string& s2) const
-	{
-		return s1.compare(s2.c_str()) < 0;
-	}
-#endif // !defined(NOT_USE_CRY_STRING)
-};
-
 // Include support for meta-type data.
 #include <CryCore/TypeInfo_decl.h>
-
-// Include array.
-#include <CryCore/Containers/CryArray.h>
 
 bool     CrySetFileAttributes(const char* lpFileName, uint32 dwFileAttributes);
 threadID CryGetCurrentThreadId();
@@ -711,6 +674,9 @@ extern "C" {
   typedef std::shared_ptr<const name> name ## ConstPtr; \
   typedef std::weak_ptr<name> name ##         WeakPtr;  \
   typedef std::weak_ptr<const name> name ##   ConstWeakPtr;
+
+// Include array.
+#include <CryCore/Containers/CryArray.h>
 
 #ifdef _WINDOWS_
 	#error windows.h should not be included through any headers within platform.h

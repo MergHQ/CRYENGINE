@@ -165,7 +165,7 @@ struct SBufferedWriter
 
 		// Set final count of elems written to dest buffer.
 		assert(m_nWrittenDestBytes % sizeof(T) == 0);
-		m_pDestMem->resize_raw(m_nWrittenDestBytes / sizeof(T));
+		m_pDestMem->resize(m_nWrittenDestBytes / sizeof(T), eNoInit);
 	}
 
 	ILINE FixedDynArray<T>& Array()
@@ -247,13 +247,13 @@ struct CRY_ALIGN(128) SLocalRenderVertices
 		return aVertices.CheckAvailable(nVertices) && aIndices.CheckAvailable(nIndices);
 	}
 
-	ILINE static void DuplicateVertices(Array<SVF_Particle> aDest, const SVF_Particle& Src)
+	ILINE static void DuplicateVertices(SVF_Particle* pDest, int nCount, const SVF_Particle& Src)
 	{
 		static const uint nStride = sizeof(SVF_Particle) / sizeof(uint);
-		CryPrefetch(aDest.end());
+		CryPrefetch(pDest + nCount);
 		const uint* ps = reinterpret_cast<const uint*>(&Src);
-		uint* pd = reinterpret_cast<uint*>(aDest.begin());
-		for (uint n = aDest.size(); n > 0; n--)
+		uint* pd = reinterpret_cast<uint*>(pDest);
+		while (nCount-- > 0)
 		{
 			for (uint i = 0; i < nStride; i++)
 				*pd++ = ps[i];
@@ -282,7 +282,7 @@ struct CRY_ALIGN(128) SLocalRenderVertices
 	ILINE void ExpandQuadVertices()
 	{
 		SVF_Particle& vert = aVertices.Array().back();
-		DuplicateVertices(aVertices.Array().append_raw(3), vert);
+		DuplicateVertices(aVertices.Array().append(3, eNoInit), 3, vert);
 		SetQuadVertices(&vert);
 	}
 
@@ -305,13 +305,13 @@ struct CRY_ALIGN(128) SLocalRenderVertices
 	ILINE void ExpandOctVertices()
 	{
 		SVF_Particle& vert = aVertices.Array().back();
-		DuplicateVertices(aVertices.Array().append_raw(7), vert);
+		DuplicateVertices(aVertices.Array().append(7, eNoInit), 7, vert);
 		SetOctVertices(&vert);
 	}
 
 	ILINE void AddQuadIndices(int nVertAdvance = 4, int bStrip = 0)
 	{
-		uint16* pIndices = aIndices.Array().grow(bStrip ? 4 : 6);
+		uint16* pIndices = aIndices.Array().append(bStrip ? 4 : 6, eNoInit);
 
 		pIndices[0] = 0 + nBaseVertexIndex;
 		pIndices[1] = 1 + nBaseVertexIndex;
@@ -329,7 +329,7 @@ struct CRY_ALIGN(128) SLocalRenderVertices
 
 	ILINE void AddOctIndices()
 	{
-		uint16* pIndices = aIndices.Array().grow(18);
+		uint16* pIndices = aIndices.Array().append(18, eNoInit);
 
 		pIndices[0] = 0 + nBaseVertexIndex;
 		pIndices[1] = 1 + nBaseVertexIndex;

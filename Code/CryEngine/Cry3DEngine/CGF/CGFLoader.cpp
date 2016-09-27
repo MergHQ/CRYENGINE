@@ -4018,7 +4018,7 @@ CMaterialCGF* CLoaderCGF::LoadMaterialNameChunk(IChunkFile::ChunkDesc* pChunkDes
 
 		if (size_t(chunk.nSubMaterials) <= MTL_NAME_CHUNK_DESC_0800_MAX_SUB_MATERIALS)
 		{
-			pMtlCGF->subMaterials.resize(chunk.nSubMaterials, NULL);
+			pMtlCGF->subMaterials.resize(chunk.nSubMaterials);
 			for (int i = 0; i < chunk.nSubMaterials; i++)
 			{
 				if (chunk.nSubMatChunkId[i] > 0)

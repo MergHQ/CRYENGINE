@@ -1022,7 +1022,7 @@ void CGParamManager::Shutdown()
 
 SCGParamPool* CGParamManager::NewPool(int nEntries)
 {
-	return new(s_Pools.grow_raw())SCGParamPool(nEntries);
+  return s_Pools.emplace_back(nEntries);
 }
 
 //===========================================================================================================

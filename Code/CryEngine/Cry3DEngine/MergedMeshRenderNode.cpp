@@ -3939,10 +3939,9 @@ bool CMergedMeshesManager::CompileSectors(std::vector<struct IStatInstGroup*>* p
 				for (NodeListT::iterator it = list.begin(); it != list.end(); ++it)
 				{
 					nSize = 0;
-					m_InstanceSectors.push_back(SInstanceSector());
-					SInstanceSector* pSector = &m_InstanceSectors.back();
+					SInstanceSector* pSector = m_InstanceSectors.push_back();
 					(*it)->Compile(NULL, nSize, NULL, NULL);
-					pSector->data.grow(nSize);
+					pSector->data.resize(nSize);
 
 					if ((*it)->Compile(&pSector->data[0], nSize, &pSector->id, pVegGroupTable) == false)
 						return false;

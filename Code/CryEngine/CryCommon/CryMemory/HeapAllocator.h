@@ -363,9 +363,10 @@ public:
 
 		NAlloc::AllocArray alloc(NAlloc::AllocArray a, size_t new_size, size_t align = 1, bool allow_slack = false)
 		{
-			align = _pHeap->StackAlignment();
+			align = std::max(align, _pHeap->StackAlignment());
 			if (new_size)
 			{
+				new_size = Align(new_size, _pHeap->StackAlignment());
 				if (a.size)
 				{
 					if (new_size != a.size)
@@ -402,7 +403,7 @@ public:
 		{
 			this->SetHeap(heap);
 			if (size)
-				this->grow(size);
+				this->resize(size);
 		}
 	};
 

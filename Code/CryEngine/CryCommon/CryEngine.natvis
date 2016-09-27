@@ -150,11 +150,21 @@
     </Expand>
   </Type>
 
-  <!-- NArray::ArrayStorage> -->
-  <Type Name="NArray::ArrayStorage::Store&lt;*,*&gt;&gt;">
+  <!-- NArray::Storage> -->
+  <Type Name="NArray::Storage::Store&lt;*,*&gt;&gt;">
     <DisplayString>~ Array: size={m_nCount}</DisplayString>
     <Expand>
-      <Item Name="[size]">m_nCount</Item>
+      <ArrayItems>
+        <Size>m_nCount</Size>
+        <ValuePointer>m_aElems</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- Array<Storage> -->
+  <Type Name="Array&lt;*,*,NArray::Storage&lt;*&gt;&gt;">
+    <DisplayString>~ Array: size={m_nCount}</DisplayString>
+    <Expand>
       <ArrayItems>
         <Size>m_nCount</Size>
         <ValuePointer>m_aElems</ValuePointer>
@@ -166,10 +176,21 @@
   <Type Name="DynArray&lt;*,*,NArray::FastDynStorage&lt;*&gt;&gt;">
     <DisplayString>~ FastDynArray: size={m_nCount}</DisplayString>
     <Expand>
-      <Item Name="[size]">m_nCount</Item>
-      <Item Name="[capacity]">m_nCapacity</Item>
+      <Item Name="capacity">m_nCapacity</Item>
       <ArrayItems>
         <Size>m_nCount</Size>
+        <ValuePointer>m_aElems</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- DynArray<SmallDynStorage> -->
+  <Type Name="DynArray&lt;*,*,NArray::SmallDynStorage&lt;*&gt;&gt;">
+    <DisplayString>~ DynArray: size={(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nCount}</DisplayString>
+    <Expand>
+      <Item Name="capacity">(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nCapacity</Item>
+      <ArrayItems>
+        <Size>(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nCount</Size>
         <ValuePointer>m_aElems</ValuePointer>
       </ArrayItems>
     </Expand>
@@ -207,20 +228,6 @@
           <Exec>pValue = ++pValue</Exec>
         </Loop>
       </CustomListItems>
-    </Expand>
-  </Type>
-
-  <!-- DynArray<SmallDynStorage> (modified copy from Tools/CryTypes.natvis) -->
-  <Type Name="DynArray&lt;*,*,NArray::SmallDynStorage&lt;*&gt;&gt;">
-    <DisplayString>~ DynArray: size={(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1)),d}</DisplayString>
-    <Expand>
-      <Item Name="Size" Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) != 0">(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))</Item>
-      <Item Name="Capacity" Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) != 0">*($T2*)(m_aElems + ((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))))</Item>
-      <Item Name="Capacity" Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) == 0">(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))</Item>
-      <ArrayItems Condition="((*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))) != 0">
-        <Size>(*(((NArray::SmallDynStorage&lt;$T3&gt;::Store&lt;$T1,$T2&gt;::Header*)m_aElems)-1)).m_nSizeCap &amp; ~($T2(1) &lt;&lt; (sizeof($T2) * 8 - 1))</Size>
-        <ValuePointer>m_aElems</ValuePointer>
-      </ArrayItems>
     </Expand>
   </Type>
 

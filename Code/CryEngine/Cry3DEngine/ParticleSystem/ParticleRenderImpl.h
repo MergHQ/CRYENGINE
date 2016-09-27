@@ -38,7 +38,7 @@ ILINE CWriteCombinedBuffer<T, bufferSize, chunckSize>::~CWriteCombinedBuffer()
 
 	// Set final count of elems written to dest buffer.
 	//	CRY_PFX2_ASSERT(m_writtenDestBytes % sizeof(T) == 0);
-	m_pDestMem->resize_raw(m_writtenDestBytes / sizeof(T));
+	m_pDestMem->resize(m_writtenDestBytes / sizeof(T), eNoInit);
 }
 
 template<class T, uint bufferSize, uint chunckSize>
