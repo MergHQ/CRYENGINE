@@ -176,7 +176,8 @@ bool CResponseManager::CancelSignalProcessing(const SSignal& signalToCancel)
 	for (CResponseInstance* runningResponse : m_runningResponses)
 	{
 		if ((runningResponse->GetOriginalSender() == signalToCancel.m_pSender || signalToCancel.m_pSender == nullptr)
-			&& (runningResponse->GetSignalName() == signalToCancel.m_signalName || !signalToCancel.m_signalName.IsValid()))
+		    && (runningResponse->GetSignalName() == signalToCancel.m_signalName || !signalToCancel.m_signalName.IsValid())
+		    && (runningResponse->GetSignalInstanceId() != signalToCancel.m_id))
 		{
 			runningResponse->Cancel();
 			bSomethingCanceled = true;
@@ -186,7 +187,8 @@ bool CResponseManager::CancelSignalProcessing(const SSignal& signalToCancel)
 	for (SignalList::iterator itQueued = m_currentlyQueuedSignals.begin(); itQueued != m_currentlyQueuedSignals.end(); )
 	{
 		SSignal& currentSignal = *itQueued;
-		if ((currentSignal.m_pSender == signalToCancel.m_pSender || signalToCancel.m_pSender == nullptr) && currentSignal.m_signalName == signalToCancel.m_signalName)
+		if ((currentSignal.m_pSender == signalToCancel.m_pSender || signalToCancel.m_pSender == nullptr)
+		    && currentSignal.m_signalName == signalToCancel.m_signalName)
 		{
 			InformListenerAboutSignalProcessingFinished(currentSignal.m_signalName, currentSignal.m_pSender, currentSignal.m_pSignalContext, currentSignal.m_id, nullptr, DRS::IResponseManager::IListener::ProcessingResult_Canceled);
 			itQueued = m_currentlyQueuedSignals.erase(itQueued);
@@ -221,7 +223,8 @@ void CResponseManager::Update()
 
 	if (!m_currentlyQueuedSignals.empty())
 	{
-		SignalList signalsToBeProcessed = std::move(m_currentlyQueuedSignals); // we dont work directly on m_currentlyQueuedSignals, because starting the responses can already queue new signals
+		static SignalList signalsToBeProcessed;
+		signalsToBeProcessed.swap(m_currentlyQueuedSignals); // we don't work directly on m_currentlyQueuedSignals, because starting the responses can already queue new signals
 		for (SSignal& currentSignal : signalsToBeProcessed)
 		{
 			//find the mapped Response for the Signal
@@ -244,6 +247,7 @@ void CResponseManager::Update()
 				InformListenerAboutSignalProcessingFinished(currentSignal.m_signalName, currentSignal.m_pSender, currentSignal.m_pSignalContext, currentSignal.m_id, nullptr, DRS::IResponseManager::IListener::ProcessingResult_NoResponseDefined);
 			}
 		}
+		signalsToBeProcessed.clear();
 	}
 }
 
@@ -669,7 +673,7 @@ void CResponseManager::SetAllResponseData(DRS::ValuesListIterator start, DRS::Va
 	DRS::ValuesString collectionAndVariable;
 	DRS::ValuesString collectionName;
 	CHashedString responseName;
-	
+
 	for (DRS::ValuesListIterator it = start; it != end; ++it)
 	{
 		collectionAndVariable = it->first;
@@ -702,18 +706,18 @@ bool CResponseManager::IsSignalProcessed(const SSignal& signal)
 	for (const SSignal& queuedSignal : m_currentlyQueuedSignals)
 	{
 		if ((queuedSignal.m_signalName == signal.m_signalName || !signal.m_signalName.IsValid())
-			&& (queuedSignal.m_pSender == signal.m_pSender || signal.m_pSender == nullptr)
-			&& queuedSignal.m_id != signal.m_id)
+		    && (queuedSignal.m_pSender == signal.m_pSender || signal.m_pSender == nullptr)
+		    && queuedSignal.m_id != signal.m_id)
 		{
 			return true;
 		}
 	}
 
-	for (const CResponseInstance* pRunningInstance : m_runningResponses )
+	for (const CResponseInstance* pRunningInstance : m_runningResponses)
 	{
 		if ((pRunningInstance->GetSignalName() == signal.m_signalName || !signal.m_signalName.IsValid())
-			&& (pRunningInstance->GetOriginalSender() == signal.m_pSender || signal.m_pSender == nullptr)
-			&& pRunningInstance->GetSignalInstanceId() != signal.m_id)
+		    && (pRunningInstance->GetOriginalSender() == signal.m_pSender || signal.m_pSender == nullptr)
+		    && pRunningInstance->GetSignalInstanceId() != signal.m_id)
 		{
 			return true;
 		}
@@ -730,7 +734,7 @@ bool CResponseManager::HasMappingForSignal(const CHashedString& signalName)
 }
 
 //--------------------------------------------------------------------------------------------------
-static int s_currentSignalId = 0;
+DRS::SignalInstanceId g_currentSignalId = 0;
 
 SSignal::SSignal(
   const CHashedString& signalName,
@@ -739,6 +743,6 @@ SSignal::SSignal(
 	: m_signalName(signalName)
 	, m_pSender(pSender)
 	, m_pSignalContext(pSignalContext)
+	, m_id(++g_currentSignalId)
 {
-	m_id = static_cast<DRS::SignalInstanceId>(++s_currentSignalId);
 }

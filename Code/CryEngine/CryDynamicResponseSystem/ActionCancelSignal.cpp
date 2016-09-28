@@ -8,21 +8,35 @@
 
 using namespace CryDRS;
 
+namespace
+{
+const CHashedString g_allKeyWord = "All";
+const CHashedString g_allButNotCurrentKeyWord = "AllNotCurrent";
+}
+
 //--------------------------------------------------------------------------------------------------
 DRS::IResponseActionInstanceUniquePtr CActionCancelSignal::Execute(DRS::IResponseInstance* pResponseInstance)
 {
-	static const CHashedString s_allKeyWord = "All";
-	CResponseInstance* pInstance = static_cast<CResponseInstance*>(pResponseInstance);
-	const CHashedString& usedSignal = (m_signalName.IsValid()) ? m_signalName : pInstance->GetSignalName();
-
-	if (m_signalName == s_allKeyWord && m_bOnAllActors)  //special case: stop all signals on all actors -> reset
+	if (m_signalName == g_allKeyWord && m_bOnAllActors)  //special case: stop all signals on all actors -> reset
 	{
 		CResponseSystem::GetInstance()->Reset(DRS::IDynamicResponseSystem::eResetHint_StopRunningResponses);
 		return nullptr;
 	}
 	else
 	{
-		const bool bSomethingCanceled = CResponseSystem::GetInstance()->CancelSignalProcessing(usedSignal, (m_bOnAllActors) ? nullptr : pInstance->GetCurrentActor(), pInstance->GetSignalInstanceId());
+		CResponseInstance* pInstance = static_cast<CResponseInstance*>(pResponseInstance);
+		CHashedString usedSignal;
+		DRS::SignalInstanceId instanceIdToNotCancel = DRS::s_InvalidSignalId;
+
+		if (m_signalName == g_allButNotCurrentKeyWord)
+		{
+			instanceIdToNotCancel = pInstance->GetSignalInstanceId();
+		}
+		else if (m_signalName != g_allKeyWord)
+		{
+			usedSignal = (m_signalName.IsValid()) ? m_signalName : pInstance->GetSignalName();
+		}
+		const bool bSomethingCanceled = CResponseSystem::GetInstance()->CancelSignalProcessing(usedSignal, (m_bOnAllActors) ? nullptr : pInstance->GetCurrentActor(), instanceIdToNotCancel);
 		if (!bSomethingCanceled || pInstance->GetCurrentSegment() == nullptr)
 		{
 			return nullptr;  //seems like we canceled our own response-instance, in this case we don`t start a new instance here.
@@ -44,7 +58,8 @@ void CActionCancelSignal::Serialize(Serialization::IArchive& ar)
 		{
 			ar.warning(m_signalName.m_textCopy, "No signal to cancel specified");
 		}
-		else if (CResponseSystem::GetInstance()->GetResponseManager()->GetResponse(m_signalName) == nullptr)
+		else if (m_signalName != g_allButNotCurrentKeyWord && m_signalName != g_allKeyWord
+		         && CResponseSystem::GetInstance()->GetResponseManager()->GetResponse(m_signalName) == nullptr)
 		{
 			ar.warning(m_signalName.m_textCopy, "No response exists for the specified signal");
 		}
