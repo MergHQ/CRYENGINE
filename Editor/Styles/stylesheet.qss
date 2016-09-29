@@ -174,27 +174,27 @@ QMainFrameMenuBar > CTrayArea > QSearchBox {
 	margin-top: 0px;
 }
 
-QResizableMenu
+QPopupWidget
 {
 	background-color: rgb(97,172,236);
 }
 
-QResizableMenu > QWidget#InsetBorder {
+QPopupWidget > QWidget#InsetBorder {
 	background-color: rgb(35,35,35);
 	margin: 1 1 1 1;
 }
 
-QResizableMenu > QWidget#InsetBorder > QWidget{
+QPopupWidget > QWidget#InsetBorder > QWidget{
 	margin: 1 5 7 7;
 }
 
-QResizableMenu > QWidget#InsetBorder QTreeView QScrollBar:vertical {
+QPopupWidget > QWidget#InsetBorder QTreeView QScrollBar:vertical {
 	background-color: rgb(35,35,35);
 	margin-left:0px;
 	margin-right:0px;
 }
 
-QResizableMenu > QWidget#InsetBorder QTreeView::item
+QPopupWidget > QWidget#InsetBorder QTreeView::item
 {
 	height: 23px;
 }
@@ -227,7 +227,7 @@ CNotificationWidget QLabel#title
 	color: rgb(97,172,236);
 }
 
-QResizableMenu#NotificationCenterResizableMenu > QWidget#InsetBorder > QWidget
+QPopupWidget#NotificationCenterResizableMenu > QWidget#InsetBorder > QWidget
 {
 	margin: 4 5 5 5;
 }

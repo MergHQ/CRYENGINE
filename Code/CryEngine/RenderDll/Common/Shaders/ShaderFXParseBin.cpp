@@ -78,11 +78,11 @@ uint32 SShaderBin::ComputeCRC()
 		DWORD* pT = new DWORD[m_Tokens.size()];
 		memcpy(pT, &m_Tokens[0], m_Tokens.size() * sizeof(uint32));
 		SwapEndian(pT, (size_t)m_Tokens.size(), eBigEndian);
-		CRC32 = CCrc32::Compute((char*)pT, m_Tokens.size() * sizeof(uint32));
+		CRC32 = CCrc32::Compute((void*)pT, m_Tokens.size() * sizeof(uint32));
 		delete[] pT;
 	}
 	else
-		CRC32 = CCrc32::Compute((char*)&m_Tokens[0], m_Tokens.size() * sizeof(uint32));
+		CRC32 = CCrc32::Compute((void*)&m_Tokens[0], m_Tokens.size() * sizeof(uint32));
 	int nCur = 0;
 	Lock();
 	while (nCur >= 0)

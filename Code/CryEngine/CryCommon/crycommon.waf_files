@@ -3,7 +3,9 @@
     "Root":[
       "CryEngine.natvis"
     ],
-    "CryString":[
+    "CryString":
+    [
+      "CryString/CompileTimeString.h",
       "CryString/CryFixedString.h",
       "CryString/CryString.h",
       "CryString/CryStringUtils.h",
