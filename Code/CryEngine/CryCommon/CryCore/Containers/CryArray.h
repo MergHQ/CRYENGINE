@@ -3,6 +3,10 @@
 // Created by: J Scott Peter
 //---------------------------------------------------------------------------
 
+// Include guard needed to selectively disable this file for conflicting 3rd-party includes
+#ifndef _CRY_ARRAY_H_
+#define _CRY_ARRAY_H_
+
 #pragma once
 
 #include <utility>
@@ -1421,3 +1425,4 @@ using DynArrayRef = DynArray<T>;
 
 #include <Cry3DEngine/CryPodArray.h>
 
+#endif // _CRY_ARRAY_H_
