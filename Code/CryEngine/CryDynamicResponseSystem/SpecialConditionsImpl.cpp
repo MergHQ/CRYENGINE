@@ -84,16 +84,27 @@ void CGameTokenCondition::Serialize(Serialization::IArchive& ar)
 
 	m_pCachedToken = (gEnv->pGame) ? gEnv->pGame->GetIGameFramework()->GetIGameTokenSystem()->FindToken(m_tokenName.c_str()) : nullptr;
 
-	if (ar.isEdit() && m_pCachedToken && (m_pCachedToken->GetType() == eFDT_Bool)) //for booleans only EQUAL tests do make sense, therefore we only need one comparison value. (actually also strings, but gametokes keep changing their type to string all the time, so we dont handle that here...)
+	if (ar.isEdit() &&
+	    ((m_pCachedToken && m_pCachedToken->GetType() == eFDT_Bool) || (ar.isOutput() && (m_minValue.GetType() == eDRVT_Boolean || m_minValue.GetType() == eDRVT_String)))) //for booleans/strings range-tests would not make much sense
 	{
 		ar(m_minValue, "MinVal", " EQUALS ");
 		m_maxValue = m_minValue;
-		ar(m_maxValue, "MaxVal", "");
 	}
 	else
 	{
 		ar(m_minValue, "MinVal", "GREATER than or equal to");
-		ar(m_maxValue, "MaxVal", "and LESS than or equal to");
+		if (m_minValue.GetType() == eDRVT_Boolean || m_minValue.GetType() == eDRVT_String || (m_pCachedToken && m_pCachedToken->GetType() == eFDT_Bool))
+		{
+			m_maxValue = m_minValue;
+			if (ar.isOutput())
+			{
+				ar(m_maxValue, "MaxVal", "and LESS than or equal to");
+			}
+		}
+		else
+		{
+			ar(m_maxValue, "MaxVal", "and LESS than or equal to");
+		}
 	}
 
 #if !defined(_RELEASE)
@@ -109,13 +120,55 @@ void CGameTokenCondition::Serialize(Serialization::IArchive& ar)
 		{
 			ar.warning(m_tokenName, "GameToken name starts or ends with a space. Check if this is really wanted.");
 		}
-		if (m_maxValue == CVariableValue::POS_INFINITE && m_minValue == CVariableValue::NEG_INFINITE)
-		{
-			ar.warning(m_tokenName, "This Condition will always be true!");
-		}
 		else if (!m_minValue.DoTypesMatch(m_maxValue))
 		{
 			ar.warning(m_tokenName, "The type of min and max value do not match!");
+		}
+		else if (m_maxValue == CVariableValue::POS_INFINITE && m_minValue == CVariableValue::NEG_INFINITE)
+		{
+			ar.warning(m_tokenName, "This Condition will always be true!");
+		}
+		if (m_pCachedToken) //check if the type of the compare-to-values and the game-token type match
+		{
+			switch (m_pCachedToken->GetType())
+			{
+			case eFDT_Int:
+				{
+					if (m_minValue.GetType() != eDRVT_Int && m_minValue.GetType() != eDRVT_NegInfinite)
+					{
+						ar.warning(m_tokenName, "Gametoken has type Int and the compare-to-value has a different type.");
+					}
+					break;
+				}
+			case eFDT_Float:
+				{
+					if (m_minValue.GetType() != eDRVT_Float && m_minValue.GetType() != eDRVT_NegInfinite)
+					{
+						ar.warning(m_tokenName, "Gametoken has type Float and the compare-to-value has a different type.");
+					}
+					break;
+				}
+			case eFDT_String:
+				{
+					if (m_minValue.GetType() != eDRVT_String)
+					{
+						ar.warning(m_tokenName, "Gametoken has type String and the compare-to-value has a different type.");
+					}
+					break;
+				}
+			case eFDT_Bool:
+				{
+					if (m_minValue.GetType() != eDRVT_Boolean)
+					{
+						ar.warning(m_tokenName, "Gametoken has type Bool and the compare-to-value has a different type.");
+					}
+					break;
+				}
+			default:
+				{
+					ar.warning(m_tokenName, "Only Int/Float/String and Bool GameTokens can be used in DRS-Conditions");
+				}
+			}
 		}
 	}
 #endif
@@ -189,13 +242,19 @@ bool CGameTokenCondition::IsMet(DRS::IResponseInstance* pResponseInstance)
 //////////////////////////////////////////////////////////////////////////
 string CGameTokenCondition::GetVerboseInfo() const
 {
+	string tokenInfo;
+	if (m_pCachedToken)
+		tokenInfo.Format("found, value: '%s'", m_pCachedToken->GetValueAsString());
+	else
+		tokenInfo = "not found in current level";
+
 	if (m_minValue == m_maxValue)
 	{
-		return string("Token: '") + m_tokenName + "' EQUALS '" + m_minValue.GetValueAsString() + "'";
+		return string().Format("Token '%s' EQUALS '%s' (token %s)", m_tokenName.c_str(), m_minValue.GetValueAsString().c_str(), tokenInfo.c_str());
 	}
 	else
 	{
-		return string("Token: '") + m_tokenName + "' is BETWEEN '" + m_minValue.GetValueAsString() + "' AND '" + m_maxValue.GetValueAsString() + "'";
+		return string().Format("Token '%s' is BETWEEN '%s' AND '%s' (token %s)", m_tokenName.c_str(), m_minValue.GetValueAsString().c_str(), m_maxValue.GetValueAsString().c_str(), tokenInfo.c_str());
 	}
 }
 
