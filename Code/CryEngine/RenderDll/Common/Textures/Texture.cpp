@@ -3337,6 +3337,7 @@ void CFlashTextureSourceBase::AutoUpdate(const CTimeValue& curTime, const float 
 {
 	if (m_autoUpdate)
 	{
+		m_pFlashPlayer->UpdatePlayer(this);
 #if CRY_PLATFORM_WINDOWS
 		m_perFrameRendering &= !isEditing;
 #endif
@@ -3352,6 +3353,7 @@ void CFlashTextureSourceBase::AutoUpdateRT(const int frameID)
 {
 	if (m_autoUpdate)
 	{
+		m_pFlashPlayer->UpdatePlayer(this);
 		if (m_perFrameRendering && (frameID != m_lastVisibleFrameID))
 		{
 			Update();

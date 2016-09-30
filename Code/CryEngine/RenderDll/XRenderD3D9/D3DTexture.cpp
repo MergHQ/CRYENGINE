@@ -4114,7 +4114,6 @@ void CFlashTextureSourceBase::Advance(const float delta, bool isPaused)
 	if (!pFlashPlayer)
 		return;
 
-	m_pFlashPlayer->UpdatePlayer(this);
 	if (pFlashPlayer)
 	{
 		if (isPaused != pFlashPlayer->IsPaused())
