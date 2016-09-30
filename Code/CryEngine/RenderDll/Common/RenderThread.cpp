@@ -1924,27 +1924,6 @@ void SRenderThread::RC_DrawLines(Vec3 v[], int nump, ColorF& col, int flags, flo
 	}
 }
 
-void SRenderThread::RC_DrawStringU(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
-{
-	if (IsRenderThread())
-	{
-		gRenDev->RT_DrawStringU(pFont, x, y, z, pStr, asciiMultiLine, ctx);
-		return;
-	}
-
-	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_DrawStringU, Align4(16 + sizeof(void*) + sizeof(STextDrawContext) + TextCommandSize(pStr)));
-	AddPointer(p, pFont);
-	AddFloat(p, x);
-	AddFloat(p, y);
-	AddFloat(p, z);
-	AddDWORD(p, asciiMultiLine ? 1 : 0);
-	new(p) STextDrawContext(ctx);
-	p += sizeof(STextDrawContext);
-	AddText(p, pStr);
-	EndCommand(p);
-}
-
 void SRenderThread::RC_ClearTargetsImmediately(int8 nType, uint32 nFlags, const ColorF& vColor, float depth)
 {
 	if (IsRenderThread())
@@ -2603,21 +2582,6 @@ void SRenderThread::ProcessCommands()
 				n += nump * sizeof(Vec3);
 
 				gRenDev->RT_DrawLines(pv, nump, col, flags, fGround);
-			}
-			break;
-		case eRC_DrawStringU:
-			{
-				IFFont_RenderProxy* pFont = ReadCommand<IFFont_RenderProxy*>(n);
-				float x = ReadCommand<float>(n);
-				float y = ReadCommand<float>(n);
-				float z = ReadCommand<float>(n);
-				bool asciiMultiLine = ReadCommand<int>(n) != 0;
-				const STextDrawContext* pCtx = (const STextDrawContext*) &m_Commands[threadId][n];
-				n += sizeof(STextDrawContext);
-				const char* pStr = ReadTextCommand<const char*>(n);
-
-				if (m_eVideoThreadMode == eVTM_Disabled)
-					gRenDev->RT_DrawStringU(pFont, x, y, z, pStr, asciiMultiLine, *pCtx);
 			}
 			break;
 		case eRC_SetState:

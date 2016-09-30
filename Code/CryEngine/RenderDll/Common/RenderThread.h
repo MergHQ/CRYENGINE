@@ -59,7 +59,6 @@ enum ERenderCommand
 	eRC_SwitchToNativeResolutionBackbuffer,
 
 	eRC_DrawLines,
-	eRC_DrawStringU,
 	eRC_UpdateTexture,
 	eRC_UpdateMesh2,
 	eRC_ReleaseShaderResource,
@@ -574,7 +573,6 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_PushProfileMarker(char* label);
 	void RC_PopProfileMarker(char* label);
 	void RC_DrawLines(Vec3 v[], int nump, ColorF & col, int flags, float fGround);
-	void RC_DrawStringU(IFFont_RenderProxy * pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext &ctx);
 	void RC_ReleaseDeviceTexture(CTexture * pTex);
 	void RC_PrecacheResource(ITexture * pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter = 1);
 	void RC_ClearTargetsImmediately(int8 nType, uint32 nFlags, const ColorF &vColor, float depth);

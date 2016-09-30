@@ -248,31 +248,6 @@ void CD3D9Renderer::RT_Draw2dImageInternal(S2DImage* images, uint32 numImages, b
 	m_RP.m_TI[m_RP.m_nProcessThreadID].m_matProj->Pop();
 }
 
-void CD3D9Renderer::RT_DrawStringU(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) const
-{
-	SetProfileMarker("DRAWSTRINGU", CRenderer::ESPM_PUSH);
-
-	if (GetS3DRend().IsStereoEnabled() && !GetS3DRend().DisplayStereoDone())
-	{
-		GetS3DRend().BeginRenderingTo(LEFT_EYE);
-		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
-		GetS3DRend().EndRenderingTo(LEFT_EYE);
-
-		if (GetS3DRend().RequiresSequentialSubmission())
-		{
-			GetS3DRend().BeginRenderingTo(RIGHT_EYE);
-			pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
-			GetS3DRend().EndRenderingTo(RIGHT_EYE);
-		}
-	}
-	else
-	{
-		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
-	}
-
-	SetProfileMarker("DRAWSTRINGU", CRenderer::ESPM_POP);
-}
-
 void CD3D9Renderer::RT_DrawLines(Vec3 v[], int nump, ColorF& col, int flags, float fGround)
 {
 	if (m_bDeviceLost)

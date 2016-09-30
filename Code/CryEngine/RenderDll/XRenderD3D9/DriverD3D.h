@@ -548,7 +548,6 @@ public:
 
 	// =======================================================================================
 	// = Functions which draw directly into the swap-chain's backbuffer ======================
-  virtual void RT_DrawStringU(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) const override;
 	virtual void RT_DrawLines(Vec3 v[], int nump, ColorF& col, int flags, float fGround) override;
   virtual void RT_Draw2dImage(float xpos,float ypos,float w,float h,CTexture *pTexture,float s0,float t0,float s1,float t1,float angle,DWORD col,float z) override;
   virtual void RT_Draw2dImageStretchMode(bool bStretch) override;

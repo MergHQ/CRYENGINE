@@ -164,6 +164,8 @@ struct IRenderAuxGeom
 	//! ##@{
 	virtual void RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) = 0;
 
+	virtual void DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) {}
+
 	void RenderText(Vec3 pos, const SDrawTextInfo& ti, const char* format, va_list args)
 	{
 		if( format )
@@ -409,6 +411,11 @@ public:
 		va_end(args);
 
 		TextToScreenColor((int)(8 * x), (int)(6 * y), 1, 1, 1, 1, buffer);
+	}
+
+	static void DrawString(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
+	{
+		GetAux()->DrawStringImmediate(pFont, x, y, z, pStr, asciiMultiLine, ctx);
 	}
 };
 

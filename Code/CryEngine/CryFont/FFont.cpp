@@ -146,29 +146,16 @@ void CFFont::Free()
 
 void CFFont::DrawString(float x, float y, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
 {
-	IF (!pStr, 0)
-		return;
-
-	DrawStringUInternal(x, y, 1.0f, pStr, asciiMultiLine, ctx);
+	CFFont::DrawString(x, y, 1.0f, pStr, asciiMultiLine, ctx);
 }
+
+#include <CryRenderer/IRenderAuxGeom.h>
 
 void CFFont::DrawString(float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
 {
-	IF (!pStr, 0)
-		return;
+	IF(!pStr, 0) return;
 
-	DrawStringUInternal(x, y, z, pStr, asciiMultiLine, ctx);
-}
-
-void CFFont::DrawStringUInternal(float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
-{
-	IF (!pStr || !m_pFontTexture || ctx.m_fxIdx >= m_effects.size() || m_effects[ctx.m_fxIdx].m_passes.empty(), 0)
-		return;
-
-	IRenderer* pRenderer = gEnv->pRenderer;
-	assert(pRenderer);
-
-	pRenderer->DrawStringU(this, x, y, z, pStr, asciiMultiLine, ctx);
+	IRenderAuxText::DrawString(this, x, y, 1.0f, pStr, asciiMultiLine, ctx);
 }
 
 ILINE DWORD COLCONV(DWORD clr)

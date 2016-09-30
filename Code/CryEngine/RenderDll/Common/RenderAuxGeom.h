@@ -66,6 +66,7 @@ public:
 	virtual void                DrawBone(const Vec3& rParent, const Vec3& rBone, ColorB col);
 
 	virtual void                RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text);
+	virtual void                DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx);
 
 	virtual int                 PushMatrix(const Matrix34&  mat);
 	virtual Matrix34*           GetMatrix();

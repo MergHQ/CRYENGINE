@@ -1936,7 +1936,7 @@ void CAuxGeomCB::DrawBone(const Vec3& p, const Vec3& c, ColorB col)
 	DrawLine(VBuffer[5], CBuffer[5], VBuffer[4], CBuffer[4]);
 }
 
-	#include "CommonRender.h"
+#include "CommonRender.h"
 
 void CAuxGeomCB::RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text)
 {
@@ -1945,6 +1945,31 @@ void CAuxGeomCB::RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char*
 		ColorB col(ColorF(ti.color[0], ti.color[1], ti.color[2], ti.color[3]));
 
 		m_cbCurrent->m_TextMessages.PushEntry_Text(pos, col, ti.scale, ti.flags, text);
+	}
+}
+
+#include "D3DStereo.h"
+
+void CAuxGeomCB::DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
+{
+	CD3DStereoRenderer* const __restrict rendS3D = &gcpRendD3D->GetS3DRend();
+
+	if( rendS3D->IsStereoEnabled() && !rendS3D->DisplayStereoDone() )
+	{
+		rendS3D->BeginRenderingTo(LEFT_EYE);
+		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
+		rendS3D->EndRenderingTo(LEFT_EYE);
+
+		if( rendS3D->RequiresSequentialSubmission() )
+		{
+			rendS3D->BeginRenderingTo(RIGHT_EYE);
+			pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
+			rendS3D->EndRenderingTo(RIGHT_EYE);
+		}
+	}
+	else
+	{
+		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
 	}
 }
 

@@ -1652,11 +1652,6 @@ void CRenderer::RT_DisableTemporalEffects()
 	m_nDisableTemporalEffects = GetActiveGPUCount();
 }
 
-void CRenderer::DrawStringU(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) const
-{
-	m_pRT->RC_DrawStringU(pFont, x, y, z, pStr, asciiMultiLine, ctx);
-}
-
 void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
 {
 	FUNCTION_PROFILER_RENDERER

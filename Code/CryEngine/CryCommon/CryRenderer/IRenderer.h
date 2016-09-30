@@ -1842,7 +1842,6 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void FontRestoreRenderingState() = 0;
 
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) = 0;
-	virtual void DrawStringU(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) const = 0;
 
 	virtual int  RT_CurThreadList() = 0;
 	virtual void RT_FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo) = 0;
