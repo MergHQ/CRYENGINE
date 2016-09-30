@@ -223,11 +223,6 @@ void CSystem::RenderEnd(bool bRenderStats)
 		if (m_env.pGame)
 			m_env.pGame->RenderGameWarnings();
 
-#if !defined(_RELEASE) && !CRY_PLATFORM_DURANGO
-		if (bRenderStats)
-			RenderPhysicsHelpers();
-#endif
-
 #if !defined (_RELEASE)
 		// Flush render data and swap buffers.
 		m_env.pRenderer->RenderDebug(bRenderStats);
@@ -272,6 +267,9 @@ void CSystem::RenderEnd(bool bRenderStats)
 void CSystem::RenderPhysicsHelpers()
 {
 #if !defined (_RELEASE)
+	if (m_bIgnoreUpdates)
+		return;
+
 	if (gEnv->pPhysicalWorld)
 	{
 		char str[128];
@@ -610,7 +608,7 @@ void CSystem::DisplayErrorMessage(const char* acMessage,
 //! Host application (Editor) doesn't employ the Render cycle in ISystem,
 //! it may call this method to render the essential statistics
 //////////////////////////////////////////////////////////////////////////
-void CSystem::RenderStatistics ()
+void CSystem::RenderStatistics()
 {
 	RenderStats();
 #if defined(USE_FRAME_PROFILER)

@@ -285,7 +285,7 @@ public:
 	//! Host application (Editor) doesn't employ the Render cycle in ISystem,
 	//! it may call this method to render the essencial statistics
 	void         RenderStatistics() override;
-	void         RenderPhysicsHelpers();
+	void         RenderPhysicsHelpers() override;
 	void         RenderPhysicsStatistics(IPhysicalWorld* pWorld) override;
 
 	uint32       GetUsedMemory() override;

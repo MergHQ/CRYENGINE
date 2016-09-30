@@ -1143,6 +1143,8 @@ struct ISystem
 	//! it may call this method to render the essential statistics.
 	virtual void RenderStatistics() = 0;
 	virtual void RenderPhysicsStatistics(IPhysicalWorld* pWorld) = 0;
+	//! Renders physics helper, e.g. physics proxies
+	virtual void RenderPhysicsHelpers() = 0;
 
 	//! Returns the current used memory.
 	virtual uint32 GetUsedMemory() = 0;

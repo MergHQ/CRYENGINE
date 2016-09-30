@@ -2799,6 +2799,9 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 	CSignalTimer::ref().SetDebug(m_pDebugSignalTimers->GetIVal() == 1);
 	CSignalTimer::ref().Update(delta);
 
+#if !defined(_RELEASE) && !CRY_PLATFORM_DURANGO
+	m_pSystem->RenderPhysicsHelpers();
+#endif
 	m_pSystem->RenderEnd();
 
 	if (m_pGame)
