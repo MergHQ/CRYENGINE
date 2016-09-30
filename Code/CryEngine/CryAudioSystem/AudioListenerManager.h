@@ -13,29 +13,28 @@ struct SAudioObject3DAttributes;
 }
 }
 
-class CATLListenerObject;
+class CATLListener;
 
 class CAudioListenerManager final
 {
 public:
 
-	CAudioListenerManager();
+	CAudioListenerManager() = default;
 	~CAudioListenerManager();
 
 	CAudioListenerManager(CAudioListenerManager const&) = delete;
 	CAudioListenerManager(CAudioListenerManager&&) = delete;
-	CAudioListenerManager& operator=(CAudioListenerManager const&) = delete;
-	CAudioListenerManager& operator=(CAudioListenerManager&&) = delete;
+	CAudioListenerManager&                          operator=(CAudioListenerManager const&) = delete;
+	CAudioListenerManager&                          operator=(CAudioListenerManager&&) = delete;
 
 	void                                            Init(CryAudio::Impl::IAudioImpl* const pImpl);
 	void                                            Release();
 	void                                            Update(float const deltaTime);
-	bool                                            ReserveId(AudioObjectId& audioObjectId);
-	bool                                            ReleaseId(AudioObjectId const audioObjectId);
-	CATLListenerObject*                             LookupId(AudioObjectId const audioObjectId) const;
+	CATLListener*                                   CreateListener();
+	void                                            Release(CATLListener* const pListener);
 	size_t                                          GetNumActive() const;
 	CryAudio::Impl::SAudioObject3DAttributes const& GetDefaultListenerAttributes() const;
-	AudioObjectId                                   GetDefaultListenerId() const { return m_defaultListenerId; }
+	CATLListener*                                   GetDefaultListener() const;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	float GetDefaultListenerVelocity() const;
@@ -43,14 +42,8 @@ public:
 
 private:
 
-	typedef std::vector<CATLListenerObject*, STLSoundAllocator<CATLListenerObject*>> TListenerPtrContainer;
-	typedef std::map<AudioObjectId, CATLListenerObject*, std::less<AudioObjectId>, STLSoundAllocator<std::pair<AudioObjectId, CATLListenerObject*>>>
-	  TActiveListenerMap;
+	std::vector<CATLListener*, STLSoundAllocator<CATLListener*>> m_activeListeners;
+	CATLListener*               m_pDefaultListenerObject = nullptr;
 
-	TActiveListenerMap          m_activeListeners;
-	TListenerPtrContainer       m_listenerPool;
-	CATLListenerObject*         m_pDefaultListenerObject;
-	AudioObjectId const         m_defaultListenerId;
-	AudioObjectId               m_numListeners;
-	CryAudio::Impl::IAudioImpl* m_pImpl;
+	CryAudio::Impl::IAudioImpl* m_pImpl = nullptr;
 };

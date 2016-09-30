@@ -1445,14 +1445,14 @@ char const* const CAudioImpl::GetAudioFileLocation(SAudioFileEntryInfo* const pF
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioObject* CAudioImpl::NewGlobalAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewGlobalAudioObject()
 {
 	POOL_NEW_CREATE(SAudioObject, pWwiseAudioObject)(AK_INVALID_GAME_OBJECT, false);
 	return pWwiseAudioObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IAudioObject* CAudioImpl::NewAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewAudioObject()
 {
 	static AkGameObjectID objectIDCounter = 1;
 	CRY_ASSERT(objectIDCounter != AK_INVALID_GAME_OBJECT);
@@ -1467,18 +1467,18 @@ void CAudioImpl::DeleteAudioObject(IAudioObject const* const pOldObjectData)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CryAudio::Impl::IAudioListener* CAudioImpl::NewDefaultAudioListener(AudioObjectId const audioObjectId)
+CryAudio::Impl::IAudioListener* CAudioImpl::NewDefaultAudioListener()
 {
-	POOL_NEW_CREATE(SAudioListener, pNewObject)(0);
-	return pNewObject;
+	POOL_NEW_CREATE(SAudioListener, pListener)(0);
+	return pListener;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CryAudio::Impl::IAudioListener* CAudioImpl::NewAudioListener(AudioObjectId const audioObjectId)
+CryAudio::Impl::IAudioListener* CAudioImpl::NewAudioListener()
 {
 	static AkUniqueID id = 0;
-	POOL_NEW_CREATE(SAudioListener, pNewObject)(++id);
-	return pNewObject;
+	POOL_NEW_CREATE(SAudioListener, pListener)(++id);
+	return pListener;
 }
 
 ///////////////////////////////////////////////////////////////////////////

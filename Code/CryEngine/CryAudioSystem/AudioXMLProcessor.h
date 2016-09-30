@@ -57,14 +57,4 @@ private:
 	AudioTriggerImplId          m_triggerImplIdCounter;
 	CFileCacheManager&          m_fileCacheMgr;
 	CryAudio::Impl::IAudioImpl* m_pImpl;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-public:
-
-	void SetDebugNameStore(CATLDebugNameStore* const pDebugNameStore);
-
-private:
-
-	CATLDebugNameStore* m_pDebugNameStore;
-#endif //INCLUDE_AUDIO_PRODUCTION_CODE
 };

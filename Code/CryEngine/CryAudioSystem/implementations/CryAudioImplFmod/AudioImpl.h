@@ -61,11 +61,11 @@ public:
 	virtual void                     DeleteAudioSwitchState(IAudioSwitchState const* const pOldAudioSwitchState) override;
 	virtual IAudioEnvironment const* NewAudioEnvironment(XmlNodeRef const pAudioEnvironmentNode) override;
 	virtual void                     DeleteAudioEnvironment(IAudioEnvironment const* const pOldAudioEnvironment) override;
-	virtual IAudioObject*            NewGlobalAudioObject(AudioObjectId const audioObjectID) override;
-	virtual IAudioObject*            NewAudioObject(AudioObjectId const audioObjectID) override;
+	virtual IAudioObject*            NewGlobalAudioObject() override;
+	virtual IAudioObject*            NewAudioObject() override;
 	virtual void                     DeleteAudioObject(IAudioObject const* const pOldAudioObject) override;
-	virtual IAudioListener*          NewDefaultAudioListener(AudioObjectId const audioObjectId) override;
-	virtual IAudioListener*          NewAudioListener(AudioObjectId const audioObjectId) override;
+	virtual IAudioListener*          NewDefaultAudioListener() override;
+	virtual IAudioListener*          NewAudioListener() override;
 	virtual void                     DeleteAudioListener(IAudioListener* const pOldListenerData) override;
 	virtual IAudioEvent*             NewAudioEvent(AudioEventId const audioEventID) override;
 	virtual void                     DeleteAudioEvent(IAudioEvent const* const pOldAudioEvent) override;

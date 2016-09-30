@@ -341,13 +341,6 @@ void CAudioSystem::InternalUpdate()
 			m_internalRequestsCS[eAudioRequestQueueIndex_Two].Unlock();
 		}
 
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		{
-			CryAutoLock<CryCriticalSection> lock(m_debugNameStoreCS);
-			m_debugNameStore.SyncChanges(m_atl.GetDebugStore());
-		}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
 		// The execution time of this block defines the maximum amount of time the producer will be locked.
 		{
 			CryAutoLock<CryCriticalSection> lock(m_mainCS);
@@ -493,17 +486,17 @@ bool CAudioSystem::GetAudioEnvironmentId(char const* const szAudioEnvironmentNam
 }
 
 ///////////////////////////////////////////////////////////////////////////
-bool CAudioSystem::ReserveAudioListenerId(AudioObjectId& audioObjectId)
+CATLListener* CAudioSystem::CreateAudioListener()
 {
 	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
-	return m_atl.ReserveAudioListenerId(audioObjectId);
+	return m_atl.CreateAudioListener();
 }
 
 ///////////////////////////////////////////////////////////////////////////
-bool CAudioSystem::ReleaseAudioListenerId(AudioObjectId const audioObjectId)
+void CAudioSystem::ReleaseAudioListener(CATLListener* pListener)
 {
 	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
-	return m_atl.ReleaseAudioListenerId(audioObjectId);
+	m_atl.Release(pListener);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -552,91 +545,6 @@ void CAudioSystem::FreeAudioProxy(IAudioProxy* const pIAudioProxy)
 	{
 		m_audioProxiesToBeFreed.push_back(pAudioProxy);
 	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-char const* CAudioSystem::GetAudioControlName(EAudioControlType const audioControlType, AudioIdType const audioControlId)
-{
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CryAutoLock<CryCriticalSection> lock(m_debugNameStoreCS);
-	char const* szResult = nullptr;
-
-	switch (audioControlType)
-	{
-	case eAudioControlType_AudioObject:
-		szResult = m_debugNameStore.LookupAudioObjectName(audioControlId);
-		break;
-	case eAudioControlType_Trigger:
-		szResult = m_debugNameStore.LookupAudioTriggerName(audioControlId);
-		break;
-	case eAudioControlType_Rtpc:
-		szResult = m_debugNameStore.LookupAudioRtpcName(audioControlId);
-		break;
-	case eAudioControlType_Switch:
-		szResult = m_debugNameStore.LookupAudioSwitchName(audioControlId);
-		break;
-	case eAudioControlType_Preload:
-		szResult = m_debugNameStore.LookupAudioPreloadRequestName(audioControlId);
-		break;
-	case eAudioControlType_Environment:
-		szResult = m_debugNameStore.LookupAudioEnvironmentName(audioControlId);
-		break;
-	case eAudioControlType_SwitchState:
-		g_audioLogger.Log(eAudioLogType_Warning, "GetAudioConstrolName() for eACT_SWITCH_STATE was called with one AudioEntityID, needs two: SwitchID and StateID");
-		break;
-	case eAudioControlType_None: // fall-through
-	default:
-		break;
-	}
-
-	return szResult;
-
-#else  // INCLUDE_AUDIO_PRODUCTION_CODE
-	return nullptr;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-///////////////////////////////////////////////////////////////////////////
-char const* CAudioSystem::GetAudioControlName(EAudioControlType const audioControlType, AudioIdType const audioControlId1, AudioIdType const audioControlId2)
-{
-	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CryAutoLock<CryCriticalSection> lock(m_debugNameStoreCS);
-	char const* szResult = nullptr;
-
-	switch (audioControlType)
-	{
-	case eAudioControlType_AudioObject:
-	case eAudioControlType_Trigger:
-	case eAudioControlType_Rtpc:
-	case eAudioControlType_Switch:
-	case eAudioControlType_Preload:
-	case eAudioControlType_Environment:
-		g_audioLogger.Log(eAudioLogType_Warning, "GetAudioConstrolName() was called with two AudioEntityIDs for a control that requires only one");
-		break;
-	case eAudioControlType_SwitchState:
-		szResult = m_debugNameStore.LookupAudioSwitchStateName(audioControlId1, audioControlId2);
-		break;
-	case eAudioControlType_None: // fall-through
-	default:
-		break;
-	}
-
-	return szResult;
-
-#else  // INCLUDE_AUDIO_PRODUCTION_CODE
-	return nullptr;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioSystem::GetAudioDebugData(SAudioDebugData& audioDebugData) const
-{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CryAutoLock<CryCriticalSection> lock(m_debugNameStoreCS);
-	m_atl.GetDebugStore().GetAudioDebugData(audioDebugData);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

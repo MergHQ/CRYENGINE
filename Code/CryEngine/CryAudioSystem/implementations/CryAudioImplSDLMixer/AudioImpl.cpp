@@ -550,17 +550,17 @@ void CAudioImpl::DeleteAudioEnvironment(IAudioEnvironment const* const pOldAudio
 	POOL_FREE_CONST(pOldAudioEnvironment);
 }
 
-IAudioObject* CAudioImpl::NewGlobalAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewGlobalAudioObject()
 {
-	POOL_NEW_CREATE(SAudioObject, pNewObject)(0, true);
-	return pNewObject;
+	POOL_NEW_CREATE(SAudioObject, pObject)(0, true);
+	return pObject;
 }
 
-IAudioObject* CAudioImpl::NewAudioObject(AudioObjectId const audioObjectID)
+IAudioObject* CAudioImpl::NewAudioObject()
 {
 	static uint32 objectIDCounter = 1;
-	POOL_NEW_CREATE(SAudioObject, pNewObject)(objectIDCounter++, false);
-	return pNewObject;
+	POOL_NEW_CREATE(SAudioObject, pObject)(objectIDCounter++, false);
+	return pObject;
 }
 
 void CAudioImpl::DeleteAudioObject(IAudioObject const* const pOldObjectData)
@@ -568,17 +568,17 @@ void CAudioImpl::DeleteAudioObject(IAudioObject const* const pOldObjectData)
 	POOL_FREE_CONST(pOldObjectData);
 }
 
-CryAudio::Impl::IAudioListener* CAudioImpl::NewDefaultAudioListener(AudioObjectId const audioObjectId)
+CryAudio::Impl::IAudioListener* CAudioImpl::NewDefaultAudioListener()
 {
-	POOL_NEW_CREATE(SAudioListener, pNewObject)(0);
-	return pNewObject;
+	POOL_NEW_CREATE(SAudioListener, pListener)(0);
+	return pListener;
 }
 
-CryAudio::Impl::IAudioListener* CAudioImpl::NewAudioListener(AudioObjectId const audioObjectId)
+CryAudio::Impl::IAudioListener* CAudioImpl::NewAudioListener()
 {
 	static ListenerId listenerIDCounter = 1;
-	POOL_NEW_CREATE(SAudioListener, pNewObject)(listenerIDCounter++);
-	return pNewObject;
+	POOL_NEW_CREATE(SAudioListener, pListener)(listenerIDCounter++);
+	return pListener;
 }
 
 void CAudioImpl::DeleteAudioListener(CryAudio::Impl::IAudioListener* const pOldAudioListener)

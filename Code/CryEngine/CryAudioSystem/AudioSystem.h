@@ -52,35 +52,31 @@ public:
 	CAudioSystem& operator=(CAudioSystem&&) = delete;
 
 	// IAudioSystem
-	virtual bool         Initialize() override;
-	virtual void         Release() override;
-	virtual void         PushRequest(SAudioRequest const& audioRequest) override;
-	virtual void         AddRequestListener(void (* func)(SAudioRequestInfo const* const), void* const pObjectToListenTo, EAudioRequestType const requestType = eAudioRequestType_AudioAllRequests, AudioEnumFlagsType const specificRequestMask = ALL_AUDIO_REQUEST_SPECIFIC_TYPE_FLAGS) override;
-	virtual void         RemoveRequestListener(void (* func)(SAudioRequestInfo const* const), void* const pObjectToListenTo) override;
+	virtual bool          Initialize() override;
+	virtual void          Release() override;
+	virtual void          PushRequest(SAudioRequest const& audioRequest) override;
+	virtual void          AddRequestListener(void (* func)(SAudioRequestInfo const* const), void* const pObjectToListenTo, EAudioRequestType const requestType = eAudioRequestType_AudioAllRequests, AudioEnumFlagsType const specificRequestMask = ALL_AUDIO_REQUEST_SPECIFIC_TYPE_FLAGS) override;
+	virtual void          RemoveRequestListener(void (* func)(SAudioRequestInfo const* const), void* const pObjectToListenTo) override;
 
-	virtual void         ExternalUpdate() override;
+	virtual void          ExternalUpdate() override;
 
-	virtual bool         GetAudioTriggerId(char const* const szAudioTriggerName, AudioControlId& audioTriggerId) const override;
-	virtual bool         GetAudioRtpcId(char const* const szAudioRtpcName, AudioControlId& audioRtpcId) const override;
-	virtual bool         GetAudioSwitchId(char const* const szAudioSwitchName, AudioControlId& audioSwitchId) const override;
-	virtual bool         GetAudioSwitchStateId(AudioControlId const audioSwitchId, char const* const szSwitchStateName, AudioSwitchStateId& audioSwitchStateId) const override;
-	virtual bool         GetAudioPreloadRequestId(char const* const szAudioPreloadRequestName, AudioPreloadRequestId& audioPreloadRequestId) const override;
-	virtual bool         GetAudioEnvironmentId(char const* const szAudioEnvironmentName, AudioEnvironmentId& audioEnvironmentId) const override;
+	virtual bool          GetAudioTriggerId(char const* const szAudioTriggerName, AudioControlId& audioTriggerId) const override;
+	virtual bool          GetAudioRtpcId(char const* const szAudioRtpcName, AudioControlId& audioRtpcId) const override;
+	virtual bool          GetAudioSwitchId(char const* const szAudioSwitchName, AudioControlId& audioSwitchId) const override;
+	virtual bool          GetAudioSwitchStateId(AudioControlId const audioSwitchId, char const* const szSwitchStateName, AudioSwitchStateId& audioSwitchStateId) const override;
+	virtual bool          GetAudioPreloadRequestId(char const* const szAudioPreloadRequestName, AudioPreloadRequestId& audioPreloadRequestId) const override;
+	virtual bool          GetAudioEnvironmentId(char const* const szAudioEnvironmentName, AudioEnvironmentId& audioEnvironmentId) const override;
 
-	virtual bool         ReserveAudioListenerId(AudioObjectId& audioObjectId) override;
-	virtual bool         ReleaseAudioListenerId(AudioObjectId const audioObjectId) override;
+	virtual CATLListener* CreateAudioListener() override;
+	virtual void          ReleaseAudioListener(CATLListener* pListener) override;
 
-	virtual void         OnCVarChanged(ICVar* const pCvar)  override {}
-	virtual char const*  GetConfigPath() const override;
+	virtual void          OnCVarChanged(ICVar* const pCvar)  override {}
+	virtual char const*   GetConfigPath() const override;
 
-	virtual IAudioProxy* GetFreeAudioProxy() override;
-	// If INCLUDE_AUDIO_PRODUCTION_CODE is not defined, these two methods always return nullptr
-	virtual char const*  GetAudioControlName(EAudioControlType const audioControlType, AudioIdType const audioControlId) override;
-	virtual char const*  GetAudioControlName(EAudioControlType const audioControlType, AudioIdType const audioControlId1, AudioIdType const audioControlId2) override;
-	virtual void         GetAudioDebugData(SAudioDebugData& audioDebugData) const override;
-	virtual void         GetAudioFileData(char const* const szFilename, SAudioFileData& audioFileData) override;
-	virtual void         GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioTriggerData) override;
-	virtual void         SetAllowedThreadId(threadID id) override { m_allowedThreadId = id; }
+	virtual IAudioProxy*  GetFreeAudioProxy() override;
+	virtual void          GetAudioFileData(char const* const szFilename, SAudioFileData& audioFileData) override;
+	virtual void          GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioTriggerData) override;
+	virtual void          SetAllowedThreadId(threadID id) override { m_allowedThreadId = id; }
 	// ~IAudioSystem
 
 	// ISystemEventListener
@@ -154,9 +150,6 @@ private:
 	CryFixedStringT<MAX_AUDIO_FILE_PATH_LENGTH> m_configPath;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CryCriticalSection m_debugNameStoreCS;
-	CATLDebugNameStore m_debugNameStore;
-
 	void DrawAudioDebugData();
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };

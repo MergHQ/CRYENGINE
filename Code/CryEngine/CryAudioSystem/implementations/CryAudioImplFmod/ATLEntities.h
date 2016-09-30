@@ -3,7 +3,6 @@
 #pragma once
 
 #include "AudioEvent.h"
-#include <ATLEntityData.h>
 #include <atomic>
 
 namespace CryAudio

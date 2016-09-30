@@ -125,18 +125,6 @@ enum EAudioOcclusionType : AudioEnumFlagsType
 };
 AUTO_TYPE_INFO(EAudioOcclusionType);
 
-enum EAudioControlType : AudioEnumFlagsType
-{
-	eAudioControlType_None,
-	eAudioControlType_AudioObject,
-	eAudioControlType_Trigger,
-	eAudioControlType_Rtpc,
-	eAudioControlType_Switch,
-	eAudioControlType_SwitchState,
-	eAudioControlType_Preload,
-	eAudioControlType_Environment,
-};
-
 //////////////////////////////////////////////////////////////////////////
 struct SAudioManagerRequestDataBase : public SAudioRequestDataBase
 {
@@ -179,16 +167,16 @@ struct SAudioManagerRequestData<eAudioManagerRequestType_SetAudioImpl> : public 
 template<>
 struct SAudioManagerRequestData<eAudioManagerRequestType_ReserveAudioObjectId> : public SAudioManagerRequestDataBase
 {
-	explicit SAudioManagerRequestData(AudioObjectId* const _pAudioObjectId, char const* const _szAudioObjectName)
+	explicit SAudioManagerRequestData(CATLAudioObject** const _ppAudioObject, char const* const _szAudioObjectName)
 		: SAudioManagerRequestDataBase(eAudioManagerRequestType_ReserveAudioObjectId)
-		, pAudioObjectId(_pAudioObjectId)
+		, ppAudioObject(_ppAudioObject)
 		, szAudioObjectName(_szAudioObjectName)
 	{}
 
 	virtual ~SAudioManagerRequestData() override = default;
 
-	AudioObjectId* const pAudioObjectId;
-	char const* const    szAudioObjectName;
+	CATLAudioObject** const ppAudioObject;
+	char const* const       szAudioObjectName;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -779,14 +767,16 @@ struct SAudioListenerRequestData : public SAudioListenerRequestDataBase
 template<>
 struct SAudioListenerRequestData<eAudioListenerRequestType_SetTransformation> : public SAudioListenerRequestDataBase
 {
-	explicit SAudioListenerRequestData(CAudioObjectTransformation const& _transformation)
+	explicit SAudioListenerRequestData(CAudioObjectTransformation const& _transformation, CATLListener* const _pListener = nullptr)
 		: SAudioListenerRequestDataBase(eAudioListenerRequestType_SetTransformation)
 		, transformation(_transformation)
+		, pListener(_pListener)
 	{}
 
 	virtual ~SAudioListenerRequestData() override = default;
 
 	CAudioObjectTransformation const& transformation;
+	CATLListener* const               pListener;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -795,21 +785,21 @@ struct IAudioProxy
 	// <interfuscator:shuffle>
 	virtual ~IAudioProxy() = default;
 
-	virtual void          Initialize(char const* const szAudioObjectName, bool const bInitAsync = true) = 0;
-	virtual void          Release() = 0;
-	virtual void          Reset() = 0;
-	virtual void          PlayFile(SAudioPlayFileInfo const& _playbackInfo, SAudioCallBackInfo const& _callBackInfo = SAudioCallBackInfo::GetEmptyObject()) = 0;
-	virtual void          StopFile(char const* const szFile) = 0;
-	virtual void          ExecuteTrigger(AudioControlId const audioTriggerId, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject()) = 0;
-	virtual void          StopTrigger(AudioControlId const audioTriggerId) = 0;
-	virtual void          SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId) = 0;
-	virtual void          SetRtpcValue(AudioControlId const audioRtpcId, float const value) = 0;
-	virtual void          SetOcclusionType(EAudioOcclusionType const occlusionType) = 0;
-	virtual void          SetTransformation(Matrix34 const& transformation) = 0;
-	virtual void          SetPosition(Vec3 const& position) = 0;
-	virtual void          SetEnvironmentAmount(AudioEnvironmentId const audioEnvironmentId, float const amount) = 0;
-	virtual void          SetCurrentEnvironments(EntityId const entityToIgnore = 0) = 0;
-	virtual AudioObjectId GetAudioObjectId() const = 0;
+	virtual void             Initialize(char const* const szAudioObjectName, bool const bInitAsync = true) = 0;
+	virtual void             Release() = 0;
+	virtual void             Reset() = 0;
+	virtual void             PlayFile(SAudioPlayFileInfo const& _playbackInfo, SAudioCallBackInfo const& _callBackInfo = SAudioCallBackInfo::GetEmptyObject()) = 0;
+	virtual void             StopFile(char const* const szFile) = 0;
+	virtual void             ExecuteTrigger(AudioControlId const audioTriggerId, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject()) = 0;
+	virtual void             StopTrigger(AudioControlId const audioTriggerId) = 0;
+	virtual void             SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId) = 0;
+	virtual void             SetRtpcValue(AudioControlId const audioRtpcId, float const value) = 0;
+	virtual void             SetOcclusionType(EAudioOcclusionType const occlusionType) = 0;
+	virtual void             SetTransformation(Matrix34 const& transformation) = 0;
+	virtual void             SetPosition(Vec3 const& position) = 0;
+	virtual void             SetEnvironmentAmount(AudioEnvironmentId const audioEnvironmentId, float const amount) = 0;
+	virtual void             SetCurrentEnvironments(EntityId const entityToIgnore = 0) = 0;
+	virtual CATLAudioObject* GetAudioObject() const = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -819,28 +809,25 @@ struct IAudioSystem
 	// <interfuscator:shuffle>
 	virtual ~IAudioSystem() = default;
 
-	virtual bool         Initialize() = 0;
-	virtual void         Release() = 0;
-	virtual void         PushRequest(SAudioRequest const& audioRequest) = 0;
-	virtual void         AddRequestListener(void (* func)(SAudioRequestInfo const* const), void* const pObjectToListenTo, EAudioRequestType const requestType = eAudioRequestType_AudioAllRequests, AudioEnumFlagsType const specificRequestMask = ALL_AUDIO_REQUEST_SPECIFIC_TYPE_FLAGS) = 0;
-	virtual void         RemoveRequestListener(void (* func)(SAudioRequestInfo const* const), void* const pObjectToListenTo) = 0;
-	virtual void         ExternalUpdate() = 0;
-	virtual bool         GetAudioTriggerId(char const* const szAudioTriggerName, AudioControlId& audioTriggerId) const = 0;
-	virtual bool         GetAudioRtpcId(char const* const szAudioRtpcName, AudioControlId& audioRtpcId) const = 0;
-	virtual bool         GetAudioSwitchId(char const* const szAudioSwitchName, AudioControlId& audioSwitchId) const = 0;
-	virtual bool         GetAudioSwitchStateId(AudioControlId const audioSwitchId, char const* const szSwitchStateName, AudioSwitchStateId& audioSwitchStateId) const = 0;
-	virtual bool         GetAudioPreloadRequestId(char const* const szAudioPreloadRequestName, AudioPreloadRequestId& audioPreloadRequestId) const = 0;
-	virtual bool         GetAudioEnvironmentId(char const* const szAudioEnvironmentName, AudioEnvironmentId& audioEnvironmentId) const = 0;
-	virtual bool         ReserveAudioListenerId(AudioObjectId& audioObjectId) = 0;
-	virtual bool         ReleaseAudioListenerId(AudioObjectId const audioObjectId) = 0;
-	virtual void         OnCVarChanged(ICVar* const pCvar) = 0;
-	virtual char const*  GetConfigPath() const = 0;
-	virtual IAudioProxy* GetFreeAudioProxy() = 0;
-	virtual char const*  GetAudioControlName(EAudioControlType const audioControlType, AudioIdType const audioControlId) = 0;
-	virtual char const*  GetAudioControlName(EAudioControlType const audioControlType, AudioIdType const audioControlId1, AudioIdType const audioControlId2) = 0;
-	virtual void         GetAudioDebugData(SAudioDebugData& audioDebugData) const = 0;
-	virtual void         GetAudioFileData(char const* const szFilename, SAudioFileData& audioFileData) = 0;
-	virtual void         GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioFileData) = 0;
-	virtual void         SetAllowedThreadId(threadID id) = 0;
+	virtual bool          Initialize() = 0;
+	virtual void          Release() = 0;
+	virtual void          PushRequest(SAudioRequest const& audioRequest) = 0;
+	virtual void          AddRequestListener(void (* func)(SAudioRequestInfo const* const), void* const pObjectToListenTo, EAudioRequestType const requestType = eAudioRequestType_AudioAllRequests, AudioEnumFlagsType const specificRequestMask = ALL_AUDIO_REQUEST_SPECIFIC_TYPE_FLAGS) = 0;
+	virtual void          RemoveRequestListener(void (* func)(SAudioRequestInfo const* const), void* const pObjectToListenTo) = 0;
+	virtual void          ExternalUpdate() = 0;
+	virtual bool          GetAudioTriggerId(char const* const szAudioTriggerName, AudioControlId& audioTriggerId) const = 0;
+	virtual bool          GetAudioRtpcId(char const* const szAudioRtpcName, AudioControlId& audioRtpcId) const = 0;
+	virtual bool          GetAudioSwitchId(char const* const szAudioSwitchName, AudioControlId& audioSwitchId) const = 0;
+	virtual bool          GetAudioSwitchStateId(AudioControlId const audioSwitchId, char const* const szSwitchStateName, AudioSwitchStateId& audioSwitchStateId) const = 0;
+	virtual bool          GetAudioPreloadRequestId(char const* const szAudioPreloadRequestName, AudioPreloadRequestId& audioPreloadRequestId) const = 0;
+	virtual bool          GetAudioEnvironmentId(char const* const szAudioEnvironmentName, AudioEnvironmentId& audioEnvironmentId) const = 0;
+	virtual CATLListener* CreateAudioListener() = 0;
+	virtual void          ReleaseAudioListener(CATLListener* pListener) = 0;
+	virtual void          OnCVarChanged(ICVar* const pCvar) = 0;
+	virtual char const*   GetConfigPath() const = 0;
+	virtual IAudioProxy*  GetFreeAudioProxy() = 0;
+	virtual void          GetAudioFileData(char const* const szFilename, SAudioFileData& audioFileData) = 0;
+	virtual void          GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioFileData) = 0;
+	virtual void          SetAllowedThreadId(threadID id) = 0;
 	// </interfuscator:shuffle>
 };

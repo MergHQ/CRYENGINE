@@ -364,28 +364,12 @@ void CAudioCVars::UnregisterVariables()
 void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 {
 	AudioControlId audioTriggerId = INVALID_AUDIO_CONTROL_ID;
-	AudioObjectId audioObjectId = INVALID_AUDIO_OBJECT_ID;
 
 	int const numArgs = pCmdArgs->GetArgCount();
 
 	if ((numArgs == 2) || (numArgs == 3))
 	{
 		gEnv->pAudioSystem->GetAudioTriggerId(pCmdArgs->GetArg(1), audioTriggerId);
-
-		if (numArgs == 3)
-		{
-			int const tempId = atoi(pCmdArgs->GetArg(2));
-
-			if (tempId > 0)
-			{
-				audioObjectId = static_cast<AudioObjectId>(tempId);
-			}
-			else
-			{
-				g_audioLogger.Log(eAudioLogType_Error, "Invalid Object Id: %s", pCmdArgs->GetArg(2));
-				return;
-			}
-		}
 
 		if (audioTriggerId == INVALID_AUDIO_CONTROL_ID)
 		{
@@ -395,8 +379,6 @@ void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 		{
 			SAudioRequest request;
 			SAudioObjectRequestData<eAudioObjectRequestType_ExecuteTrigger> requestData(audioTriggerId, 0.0f);
-
-			request.audioObjectId = audioObjectId;
 			request.flags = eAudioRequestFlags_PriorityNormal;
 			request.pData = &requestData;
 
@@ -405,7 +387,7 @@ void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_ExecuteTrigger [TriggerName] [[Optional Object ID]]");
+		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_ExecuteTrigger [TriggerName]");
 	}
 }
 
@@ -413,28 +395,12 @@ void CAudioCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 {
 	AudioControlId audioTriggerId = INVALID_AUDIO_CONTROL_ID;
-	AudioObjectId audioObjectId = INVALID_AUDIO_OBJECT_ID;
 
 	int const numArgs = pCmdArgs->GetArgCount();
 
 	if ((numArgs == 2) || (numArgs == 3))
 	{
 		gEnv->pAudioSystem->GetAudioTriggerId(pCmdArgs->GetArg(1), audioTriggerId);
-
-		if (numArgs == 3)
-		{
-			int const tempId = atoi(pCmdArgs->GetArg(2));
-
-			if (tempId > 0)
-			{
-				audioObjectId = static_cast<AudioObjectId>(tempId);
-			}
-			else
-			{
-				g_audioLogger.Log(eAudioLogType_Error, "Invalid Object Id: %s", pCmdArgs->GetArg(2));
-				return;
-			}
-		}
 
 		if (audioTriggerId == INVALID_AUDIO_CONTROL_ID)
 		{
@@ -444,8 +410,6 @@ void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 		{
 			SAudioRequest request;
 			SAudioObjectRequestData<eAudioObjectRequestType_StopTrigger> requestData(audioTriggerId);
-
-			request.audioObjectId = audioObjectId;
 			request.flags = eAudioRequestFlags_PriorityNormal;
 			request.pData = &requestData;
 
@@ -454,7 +418,7 @@ void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_StopTrigger [TriggerName] [[Optional Object ID]]");
+		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_StopTrigger [TriggerName]");
 	}
 }
 
@@ -462,7 +426,6 @@ void CAudioCVars::CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 {
 	AudioControlId audioRtpcId = INVALID_AUDIO_CONTROL_ID;
-	AudioObjectId audioObjectId = INVALID_AUDIO_OBJECT_ID;
 
 	int const numArgs = pCmdArgs->GetArgCount();
 
@@ -472,21 +435,6 @@ void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 
 		double const value = atof(pCmdArgs->GetArg(2));
 
-		if (numArgs == 4)
-		{
-			int const tempId = atoi(pCmdArgs->GetArg(3));
-
-			if (tempId > 0)
-			{
-				audioObjectId = static_cast<AudioObjectId>(tempId);
-			}
-			else
-			{
-				g_audioLogger.Log(eAudioLogType_Error, "Invalid Object Id: %s", pCmdArgs->GetArg(3));
-				return;
-			}
-		}
-
 		if (audioRtpcId == INVALID_AUDIO_CONTROL_ID)
 		{
 			g_audioLogger.Log(eAudioLogType_Error, "Unknown Rtpc name: %s", pCmdArgs->GetArg(1));
@@ -495,8 +443,6 @@ void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 		{
 			SAudioRequest request;
 			SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> requestData(audioRtpcId, static_cast<float>(value));
-
-			request.audioObjectId = audioObjectId;
 			request.flags = eAudioRequestFlags_PriorityNormal;
 			request.pData = &requestData;
 
@@ -505,7 +451,7 @@ void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_SetRtpc [RtpcName] [RtpcValue] [[Optional Object ID]]");
+		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_SetRtpc [RtpcName] [RtpcValue]");
 	}
 }
 
@@ -513,7 +459,6 @@ void CAudioCVars::CmdSetRtpc(IConsoleCmdArgs* pCmdArgs)
 void CAudioCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 {
 	AudioControlId audioSwitchId = INVALID_AUDIO_CONTROL_ID;
-	AudioObjectId audioObjectId = INVALID_AUDIO_OBJECT_ID;
 	AudioSwitchStateId audioSwitchStateId = INVALID_AUDIO_SWITCH_STATE_ID;
 
 	int const numArgs = pCmdArgs->GetArgCount();
@@ -526,27 +471,10 @@ void CAudioCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 		{
 			gEnv->pAudioSystem->GetAudioSwitchStateId(audioSwitchId, pCmdArgs->GetArg(2), audioSwitchStateId);
 
-			if (numArgs == 4)
-			{
-				int const tempId = atoi(pCmdArgs->GetArg(3));
-
-				if (tempId > 0)
-				{
-					audioObjectId = static_cast<AudioObjectId>(tempId);
-				}
-				else
-				{
-					g_audioLogger.Log(eAudioLogType_Error, "Invalid Object Id: %s", pCmdArgs->GetArg(3));
-					return;
-				}
-			}
-
 			if (audioSwitchStateId != INVALID_AUDIO_SWITCH_STATE_ID)
 			{
 				SAudioRequest request;
 				SAudioObjectRequestData<eAudioObjectRequestType_SetSwitchState> requestData(audioSwitchId, audioSwitchStateId);
-
-				request.audioObjectId = audioObjectId;
 				request.flags = eAudioRequestFlags_PriorityNormal;
 				request.pData = &requestData;
 
@@ -564,6 +492,6 @@ void CAudioCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 	}
 	else
 	{
-		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_SetSwitchState [SwitchName] [SwitchStateName] [[Optional Object Id]]");
+		g_audioLogger.Log(eAudioLogType_Error, "Usage: s_SetSwitchState [SwitchName] [SwitchStateName]");
 	}
 }

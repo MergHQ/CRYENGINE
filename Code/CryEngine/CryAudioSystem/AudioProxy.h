@@ -18,21 +18,21 @@ public:
 	CAudioProxy& operator=(CAudioProxy&&) = delete;
 
 	// IAudioProxy
-	virtual void          Initialize(char const* const szAudioObjectName, bool const bInitAsync = true) override;
-	virtual void          Release() override;
-	virtual void          Reset() override;
-	virtual void          PlayFile(SAudioPlayFileInfo const& playFileInfo, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject()) override;
-	virtual void          StopFile(char const* const szFile) override;
-	virtual void          ExecuteTrigger(AudioControlId const audioTriggerId, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject()) override;
-	virtual void          StopTrigger(AudioControlId const audioTriggerId) override;
-	virtual void          SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId) override;
-	virtual void          SetRtpcValue(AudioControlId const audioRtpcId, float const value) override;
-	virtual void          SetOcclusionType(EAudioOcclusionType const occlusionType) override;
-	virtual void          SetTransformation(Matrix34 const& transformation) override;
-	virtual void          SetPosition(Vec3 const& position) override;
-	virtual void          SetEnvironmentAmount(AudioEnvironmentId const audioEnvironmentId, float const amount) override;
-	virtual void          SetCurrentEnvironments(EntityId const entityToIgnore = 0) override;
-	virtual AudioObjectId GetAudioObjectId() const override { return m_audioObjectId; }
+	virtual void             Initialize(char const* const szAudioObjectName, bool const bInitAsync = true) override;
+	virtual void             Release() override;
+	virtual void             Reset() override;
+	virtual void             PlayFile(SAudioPlayFileInfo const& playFileInfo, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject()) override;
+	virtual void             StopFile(char const* const szFile) override;
+	virtual void             ExecuteTrigger(AudioControlId const audioTriggerId, SAudioCallBackInfo const& callBackInfo = SAudioCallBackInfo::GetEmptyObject()) override;
+	virtual void             StopTrigger(AudioControlId const audioTriggerId) override;
+	virtual void             SetSwitchState(AudioControlId const audioSwitchId, AudioSwitchStateId const audioSwitchStateId) override;
+	virtual void             SetRtpcValue(AudioControlId const audioRtpcId, float const value) override;
+	virtual void             SetOcclusionType(EAudioOcclusionType const occlusionType) override;
+	virtual void             SetTransformation(Matrix34 const& transformation) override;
+	virtual void             SetPosition(Vec3 const& position) override;
+	virtual void             SetEnvironmentAmount(AudioEnvironmentId const audioEnvironmentId, float const amount) override;
+	virtual void             SetCurrentEnvironments(EntityId const entityToIgnore = 0) override;
+	virtual CATLAudioObject* GetAudioObject() const override { return m_pAudioObject; }
 	// ~IAudioProxy
 
 	void ClearEnvironments();
@@ -55,7 +55,7 @@ private:
 	void QueueCommand(SQueuedAudioCommandBase const* const pNewCommandBase);
 	void SetTransformationInternal(Matrix34 const& transformation);
 
-	AudioObjectId              m_audioObjectId = INVALID_AUDIO_OBJECT_ID;
+	CATLAudioObject*           m_pAudioObject = nullptr;
 	AudioEnumFlagsType         m_flags = eAudioProxyFlags_None;
 	CAudioObjectTransformation m_transformation;
 };

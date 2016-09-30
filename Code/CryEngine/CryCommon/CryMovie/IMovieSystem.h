@@ -21,8 +21,6 @@ struct ISplineInterpolator;
 typedef IMovieSystem* (* PFNCREATEMOVIESYSTEM)(struct ISystem*);
 
 #define MAX_ANIM_NAME_LENGTH 64
-//! Very high priority for cut scene sounds.
-#define MOVIE_SOUND_PRIORITY 230
 
 #if CRY_PLATFORM_DESKTOP
 	#define MOVIESYSTEM_SUPPORT_EDITING
@@ -383,16 +381,20 @@ struct SSequenceAudioTrigger
 	AudioControlId m_onStopTrigger;
 	AudioControlId m_onPauseTrigger;
 	AudioControlId m_onResumeTrigger;
+
+	string         m_onStopTriggerName;
+	string         m_onPauseTriggerName;
+	string         m_onResumeTriggerName;
 };
 
 typedef CryVariant<
-	SMovieSystemVoid,
-	float,
-	Vec3,
-	Vec4,
-	Quat,
-	bool
-	> TMovieSystemValue;
+    SMovieSystemVoid,
+    float,
+    Vec3,
+    Vec4,
+    Quat,
+    bool
+    > TMovieSystemValue;
 
 enum EMovieTrackDataTypes
 {
@@ -1226,15 +1228,18 @@ inline void SSequenceAudioTrigger::Serialize(XmlNodeRef xmlNode, bool bLoading)
 	{
 		if (xmlNode->getAttr("onStopAudioTrigger"))
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(xmlNode->getAttr("onStopAudioTrigger"), m_onStopTrigger);
+			m_onStopTriggerName = xmlNode->getAttr("onStopAudioTrigger");
+			gEnv->pAudioSystem->GetAudioTriggerId(m_onStopTriggerName.c_str(), m_onStopTrigger);
 		}
 		if (xmlNode->getAttr("onPauseAudioTrigger"))
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(xmlNode->getAttr("onPauseAudioTrigger"), m_onPauseTrigger);
+			m_onPauseTriggerName = xmlNode->getAttr("onPauseAudioTrigger");
+			gEnv->pAudioSystem->GetAudioTriggerId(m_onPauseTriggerName.c_str(), m_onPauseTrigger);
 		}
 		if (xmlNode->getAttr("onResumeAudioTrigger"))
 		{
-			gEnv->pAudioSystem->GetAudioTriggerId(xmlNode->getAttr("onResumeAudioTrigger"), m_onResumeTrigger);
+			m_onResumeTriggerName = xmlNode->getAttr("onResumeAudioTrigger");
+			gEnv->pAudioSystem->GetAudioTriggerId(m_onResumeTriggerName.c_str(), m_onResumeTrigger);
 		}
 
 	}
@@ -1242,15 +1247,15 @@ inline void SSequenceAudioTrigger::Serialize(XmlNodeRef xmlNode, bool bLoading)
 	{
 		if (m_onStopTrigger != INVALID_AUDIO_CONTROL_ID)
 		{
-			xmlNode->setAttr("onStopAudioTrigger", gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onStopTrigger));
+			xmlNode->setAttr("onStopAudioTrigger", m_onStopTriggerName.c_str());
 		}
 		if (m_onPauseTrigger != INVALID_AUDIO_CONTROL_ID)
 		{
-			xmlNode->setAttr("onPauseAudioTrigger", gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onPauseTrigger));
+			xmlNode->setAttr("onPauseAudioTrigger", m_onPauseTriggerName.c_str());
 		}
 		if (m_onResumeTrigger != INVALID_AUDIO_CONTROL_ID)
 		{
-			xmlNode->setAttr("onResumeAudioTrigger", gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onResumeTrigger));
+			xmlNode->setAttr("onResumeAudioTrigger", m_onResumeTriggerName.c_str());
 		}
 	}
 }
@@ -1282,14 +1287,9 @@ inline void SSequenceAudioTrigger::Serialize(Serialization::IArchive& ar)
 	}
 	else
 	{
-		string stopTriggerName = gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onStopTrigger);
-		ar(Serialization::AudioTrigger<string>(stopTriggerName), "onStopAudioTrigger", "onStop");
-
-		string pauseTriggerName = gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onPauseTrigger);
-		ar(Serialization::AudioTrigger<string>(pauseTriggerName), "onPauseAudioTrigger", "onPause");
-
-		string resumeTriggerName = gEnv->pAudioSystem->GetAudioControlName(eAudioControlType_Trigger, m_onResumeTrigger);
-		ar(Serialization::AudioTrigger<string>(resumeTriggerName), "onResumeAudioTrigger", "onResume");
+		ar(Serialization::AudioTrigger<string>(m_onStopTriggerName), "onStopAudioTrigger", "onStop");
+		ar(Serialization::AudioTrigger<string>(m_onPauseTriggerName), "onPauseAudioTrigger", "onPause");
+		ar(Serialization::AudioTrigger<string>(m_onResumeTriggerName), "onResumeAudioTrigger", "onResume");
 	}
 }
 

@@ -110,7 +110,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ReserveAudioObj
 {
 	explicit SAudioManagerRequestDataInternal(SAudioManagerRequestData<eAudioManagerRequestType_ReserveAudioObjectId> const* const pAMRData)
 		: SAudioManagerRequestDataInternalBase(eAudioManagerRequestType_ReserveAudioObjectId)
-		, pAudioObjectId(pAMRData->pAudioObjectId)
+		, ppAudioObject(pAMRData->ppAudioObject)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		, audioObjectName(pAMRData->szAudioObjectName)
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -118,7 +118,7 @@ struct SAudioManagerRequestDataInternal<eAudioManagerRequestType_ReserveAudioObj
 
 	virtual ~SAudioManagerRequestDataInternal() override = default;
 
-	AudioObjectId* const pAudioObjectId;
+	CATLAudioObject** const ppAudioObject;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CryFixedStringT<MAX_AUDIO_OBJECT_NAME_LENGTH> audioObjectName;
@@ -745,11 +745,13 @@ struct SAudioListenerRequestDataInternal<eAudioListenerRequestType_SetTransforma
 	explicit SAudioListenerRequestDataInternal(SAudioListenerRequestData<eAudioListenerRequestType_SetTransformation> const* const pALRData)
 		: SAudioListenerRequestDataInternalBase(eAudioListenerRequestType_SetTransformation)
 		, transformation(pALRData->transformation)
+		, pListener(pALRData->pListener)
 	{}
 
 	virtual ~SAudioListenerRequestDataInternal() override = default;
 
 	CAudioObjectTransformation const transformation;
+	CATLListener* const              pListener;
 };
 
 SAudioRequestDataInternal* ConvertToInternal(SAudioRequestDataBase const* const pExternalData);
@@ -763,7 +765,7 @@ public:
 
 	explicit CAudioRequestInternal(SAudioRequest const& externalRequest)
 		: flags(externalRequest.flags)
-		, audioObjectId(externalRequest.audioObjectId)
+		, pAudioObject(externalRequest.pAudioObject)
 		, pOwner(externalRequest.pOwner)
 		, pUserData(externalRequest.pUserData)
 		, pUserDataOwner(externalRequest.pUserDataOwner)
@@ -774,7 +776,7 @@ public:
 
 	explicit CAudioRequestInternal(SAudioRequestDataInternal const* const pRequestDataInternal)
 		: flags(eAudioRequestFlags_None)
-		, audioObjectId(INVALID_AUDIO_OBJECT_ID)
+		, pAudioObject(nullptr)
 		, pOwner(nullptr)
 		, pUserData(nullptr)
 		, pUserDataOwner(nullptr)
@@ -784,7 +786,7 @@ public:
 	{}
 
 	AudioEnumFlagsType                    flags = eAudioRequestFlags_None;
-	AudioObjectId                         audioObjectId = INVALID_AUDIO_OBJECT_ID;
+	CATLAudioObject*                      pAudioObject = nullptr;
 	void*                                 pOwner = nullptr;
 	void*                                 pUserData = nullptr;
 	void*                                 pUserDataOwner = nullptr;

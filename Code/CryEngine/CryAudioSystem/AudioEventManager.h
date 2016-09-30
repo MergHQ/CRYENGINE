@@ -47,11 +47,7 @@ private:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
-	void SetDebugNameStore(CATLDebugNameStore const* const pDebugNameStore);
 	void DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const;
 
-private:
-
-	CATLDebugNameStore const* m_pDebugNameStore;
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
 };

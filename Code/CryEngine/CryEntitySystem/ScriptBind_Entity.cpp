@@ -4266,7 +4266,7 @@ void CScriptBind_Entity::OnAudioTriggerFinishedEvent(SAudioRequestInfo const* co
 	{
 		SEntityEvent event;
 		event.event = ENTITY_EVENT_SOUND_DONE;
-		event.nParam[0] = pAudioRequestInfo->audioObjectId;
+		event.nParam[0] = reinterpret_cast<INT_PTR>(pAudioRequestInfo->pAudioObject);
 		event.nParam[1] = pAudioRequestInfo->audioControlId;
 		pEntity->SendEvent(event);
 	}

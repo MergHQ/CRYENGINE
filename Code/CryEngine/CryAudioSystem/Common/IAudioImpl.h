@@ -521,23 +521,21 @@ struct IAudioImpl
 
 	/**
 	 * Create an object implementing IAudioObject that stores all of the data needed by the AudioImplementation
-	 * to identify and use the GlobalAudioObject with the provided AudioObjectID
-	 * @param audioObjectID - the AudioObjectID to be used for the new GlobalAudioObject
+	 * to identify and use the GlobalAudioObject.
 	 * @return IAudioObject* pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding GlobalAudioObject; NULL if the new IAudioObject instance was not created
 	 * @see DeleteAudioObject
 	 */
-	virtual IAudioObject* NewGlobalAudioObject(AudioObjectId const audioObjectID) = 0;
+	virtual IAudioObject* NewGlobalAudioObject() = 0;
 
 	/**
 	 * Create an object implementing IAudioObject that stores all of the data needed by the AudioImplementation
-	 * to identify and use the AudioObject with the provided AudioObjectID. Return a pointer to that object.
-	 * @param audioObjectID - the AudioObjectID to be used for the new AudioObject
+	 * to identify and use the AudioObject. Return a pointer to that object.
 	 * @return IAudioObject* pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding GlobalAudioObject; NULL if the new IAudioObject instance was not created
 	 * @see DeleteAudioObject
 	 */
-	virtual IAudioObject* NewAudioObject(AudioObjectId const audioObjectID) = 0;
+	virtual IAudioObject* NewAudioObject() = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied IAudioObject instance
@@ -550,22 +548,20 @@ struct IAudioImpl
 	/**
 	 * Create an object implementing IAudioListener that stores all of the data needed by the AudioImplementation
 	 * to identify and use the DefaultAudioListener. Return a pointer to that object.
-	 * @param audioObjectId - id of the created AudioListener object
 	 * @return IAudioListener* pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the DefaultAudioListener; NULL if the new IAudioListener instance was not created
 	 * @see DeleteAudioListener
 	 */
-	virtual IAudioListener* NewDefaultAudioListener(AudioObjectId const audioObjectId) = 0;
+	virtual IAudioListener* NewDefaultAudioListener() = 0;
 
 	/**
 	 * Create an object implementing IAudioListener that stores all of the data needed by the AudioImplementation
 	 * to identify and use an AudioListener. Return a pointer to that object.
-	 * @param audioObjectId - id of the created AudioListener object
 	 * @return IAudioListener* pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding AudioListener; NULL if the new IAudioListener instance was not created
 	 * @see DeleteAudioListener
 	 */
-	virtual IAudioListener* NewAudioListener(AudioObjectId const audioObjectId) = 0;
+	virtual IAudioListener* NewAudioListener() = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied IAudioListener instance

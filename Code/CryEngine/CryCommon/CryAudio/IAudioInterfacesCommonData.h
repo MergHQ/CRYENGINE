@@ -8,11 +8,11 @@
 
 #define AUDIO_SYSTEM_DATA_ROOT "audio"
 
-typedef uint32      AudioIdType;
+typedef uint32 AudioIdType;
 
-typedef AudioIdType AudioObjectId;
-#define INVALID_AUDIO_OBJECT_ID               ((AudioObjectId)(0))
-#define GLOBAL_AUDIO_OBJECT_ID                ((AudioObjectId)(1))
+class CATLListener;
+class CATLAudioObject;
+
 typedef AudioIdType AudioControlId;
 #define INVALID_AUDIO_CONTROL_ID              ((AudioControlId)(0))
 typedef AudioIdType AudioSwitchStateId;
@@ -187,7 +187,7 @@ struct SAudioRequest
 	SAudioRequest& operator=(SAudioRequest&&) = delete;
 
 	AudioEnumFlagsType     flags = eAudioRequestFlags_None;
-	AudioObjectId          audioObjectId = INVALID_AUDIO_OBJECT_ID;
+	CATLAudioObject*       pAudioObject = nullptr;
 	void*                  pOwner = nullptr;
 	void*                  pUserData = nullptr;
 	void*                  pUserDataOwner = nullptr;
@@ -205,7 +205,7 @@ struct SAudioRequestInfo
 	  EAudioRequestType const _audioRequestType,
 	  AudioEnumFlagsType const _specificAudioRequest,
 	  AudioControlId const _audioControlId,
-	  AudioObjectId const _audioObjectId,
+	  CATLAudioObject* const _pAudioObject,
 	  AudioStandaloneFileId const _audioStandaloneFileId,
 	  AudioEventId const _audioEventId)
 		: requestResult(_requestResult)
@@ -216,7 +216,7 @@ struct SAudioRequestInfo
 		, audioRequestType(_audioRequestType)
 		, specificAudioRequest(_specificAudioRequest)
 		, audioControlId(_audioControlId)
-		, audioObjectId(_audioObjectId)
+		, pAudioObject(_pAudioObject)
 		, audioStandaloneFileId(_audioStandaloneFileId)
 		, audioEventId(_audioEventId)
 	{}
@@ -234,20 +234,9 @@ struct SAudioRequestInfo
 	EAudioRequestType const     audioRequestType;
 	AudioEnumFlagsType const    specificAudioRequest;
 	AudioControlId const        audioControlId;
-	AudioObjectId const         audioObjectId;
+	CATLAudioObject* const      pAudioObject;
 	AudioStandaloneFileId const audioStandaloneFileId;
 	AudioEventId const          audioEventId;
-};
-
-struct SAudioDebugData
-{
-	SAudioDebugData() = delete;
-	SAudioDebugData(SAudioDebugData const&) = delete;
-	SAudioDebugData(SAudioDebugData&&) = delete;
-	SAudioDebugData& operator=(SAudioDebugData const&) = delete;
-	SAudioDebugData& operator=(SAudioDebugData&&) = delete;
-
-	DynArray<string> audioObjectNames;
 };
 
 struct SAudioFileData
