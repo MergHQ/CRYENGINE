@@ -250,20 +250,20 @@ template<class... TArgs>
 template<class T, class... Types>
 struct CryVariant<TArgs...>::variant_helper<T, Types...>
 {
-	static bool compare_less(const CryVariant<TArgs...>& lhs, const CryVariant<TArgs...>& rhs)
-	{
-		if (stl::holds_alternative<T>(lhs))
-			return lhs.index() == rhs.index() && stl::get<T>(lhs) < stl::get<T>(rhs);
-		else
-			return variant_helper<Types...>::compare_less(lhs, rhs);
-	}
-
 	static bool compare_equals(const CryVariant<TArgs...>& lhs, const CryVariant<TArgs...>& rhs)
 	{
 		if (stl::holds_alternative<T>(lhs))
 			return lhs.index() == rhs.index() && stl::get<T>(lhs) == stl::get<T>(rhs);
 		else
 			return variant_helper<Types...>::compare_equals(lhs, rhs);
+	}
+
+	static bool compare_less(const CryVariant<TArgs...>& lhs, const CryVariant<TArgs...>& rhs)
+	{
+		if (stl::holds_alternative<T>(lhs))
+			return lhs.index() == rhs.index() ? stl::get<T>(lhs) < stl::get<T>(rhs) : lhs.index() < rhs.index();
+		else
+			return variant_helper<Types...>::compare_less(lhs, rhs);
 	}
 
 	static void copy_value(const CryVariant<TArgs...>& from, CryVariant<TArgs...>& to)
@@ -330,9 +330,9 @@ template<class... TArgs>
 template<class...>
 struct CryVariant<TArgs...>::variant_helper
 {
-	static bool compare_equals(const CryVariant<TArgs...>&, const CryVariant<TArgs...>&) { return false; }
-	static bool compare_less(const CryVariant<TArgs...>&, const CryVariant<TArgs...>&)   { return false; }
-	static void copy_value(const CryVariant<TArgs...>& from, CryVariant<TArgs...>& to)   { destroy_value(to); }
-	static void destroy_value(CryVariant<TArgs...>&)                                     {}
-	static void move_value(CryVariant<TArgs...>&&, CryVariant<TArgs...>&)                {}
+	static bool compare_equals(const CryVariant<TArgs...>&, const CryVariant<TArgs...>&)       { return false; }
+	static bool compare_less(const CryVariant<TArgs...>& lhs, const CryVariant<TArgs...>& rhs) { return lhs.index() < rhs.index(); }
+	static void copy_value(const CryVariant<TArgs...>& from, CryVariant<TArgs...>& to)         { destroy_value(to); }
+	static void destroy_value(CryVariant<TArgs...>&)                                           {}
+	static void move_value(CryVariant<TArgs...>&&, CryVariant<TArgs...>&)                      {}
 };
