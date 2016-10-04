@@ -16,6 +16,8 @@ public:
 	virtual void Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset = false);
 	virtual void RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset = false);
 
+	virtual void DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx);
+
 	virtual void FlushTextMessages(CTextMessages& tMessages, bool reset);
 
 	void         Process();

@@ -62,7 +62,7 @@ CRenderAuxGeomD3D::CRenderAuxGeomD3D(CD3D9Renderer& renderer)
 CRenderAuxGeomD3D::~CRenderAuxGeomD3D()
 {
 	ReleaseDeviceObjects();
-	
+
 	//SAFE_RELEASE(m_pAuxGeomShader);
 	// m_pAuxGeomShader released by CShaderMan ???
 	//delete m_pAuxGeomShader;
@@ -583,7 +583,7 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(CAuxGeomCB::AuxSortedPushBuffer::const
 				}
 
 				CDeviceManager::UploadContents<false>(m_pAuxGeomVB, 0, m_auxGeomSBM.m_curVBIndex * sizeof(SAuxVertex), toCopy * sizeof(SAuxVertex), mapFlags, &auxVertexBuffer[curPBEntry->m_vertexOffs + verticesCopied]);
-				
+
 				// update accumulators and buffer indices
 				verticesCopied += toCopy;
 				verticesToCopy -= toCopy;
@@ -1491,7 +1491,7 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 				while (true)
 				{
 					++it;
-					if ((it == itEnd) || ((*it)->m_renderFlags != curRenderFlags) || ((*it)->m_transMatrixIdx != m_curTransMatrixIdx) || 
+					if ((it == itEnd) || ((*it)->m_renderFlags != curRenderFlags) || ((*it)->m_transMatrixIdx != m_curTransMatrixIdx) ||
 						((*it)->m_worldMatrixIdx != m_curWorldMatrixIdx))
 					{
 						break;
@@ -1614,6 +1614,30 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, 
 void CRenderAuxGeomD3D::Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset)
 {
 	m_renderer.m_pRT->RC_AuxFlush(this, data, begin, end, reset);
+}
+
+
+void CRenderAuxGeomD3D::DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
+{
+	CD3DStereoRenderer* const __restrict rendS3D = &gcpRendD3D->GetS3DRend();
+
+	if( rendS3D->IsStereoEnabled() && !rendS3D->DisplayStereoDone() )
+	{
+		rendS3D->BeginRenderingTo(LEFT_EYE);
+		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
+		rendS3D->EndRenderingTo(LEFT_EYE);
+
+		if( rendS3D->RequiresSequentialSubmission() )
+		{
+			rendS3D->BeginRenderingTo(RIGHT_EYE);
+			pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
+			rendS3D->EndRenderingTo(RIGHT_EYE);
+		}
+	}
+	else
+	{
+		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
+	}
 }
 
 void CRenderAuxGeomD3D::FlushTextMessages(CTextMessages& tMessages, bool reset)

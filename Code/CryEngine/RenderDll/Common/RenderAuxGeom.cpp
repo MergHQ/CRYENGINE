@@ -1952,25 +1952,7 @@ void CAuxGeomCB::RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char*
 
 void CAuxGeomCB::DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
 {
-	CD3DStereoRenderer* const __restrict rendS3D = &gcpRendD3D->GetS3DRend();
-
-	if( rendS3D->IsStereoEnabled() && !rendS3D->DisplayStereoDone() )
-	{
-		rendS3D->BeginRenderingTo(LEFT_EYE);
-		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
-		rendS3D->EndRenderingTo(LEFT_EYE);
-
-		if( rendS3D->RequiresSequentialSubmission() )
-		{
-			rendS3D->BeginRenderingTo(RIGHT_EYE);
-			pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
-			rendS3D->EndRenderingTo(RIGHT_EYE);
-		}
-	}
-	else
-	{
-		pFont->RenderCallback(x, y, z, pStr, asciiMultiLine, ctx);
-	}
+	m_pRenderAuxGeom->DrawStringImmediate(pFont, x, y, z, pStr, asciiMultiLine, ctx);
 }
 
 int32 CAuxGeomCB::PushMatrix(const Matrix34& mat)

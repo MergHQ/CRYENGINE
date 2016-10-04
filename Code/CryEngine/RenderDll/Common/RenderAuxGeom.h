@@ -24,6 +24,8 @@ public:
 	virtual void Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset = false) = 0;
 	virtual void RT_Flush(SAuxGeomCBRawDataPackaged& data, size_t begin, size_t end, bool reset = false) = 0;
 
+	virtual void DrawStringImmediate(IFFont_RenderProxy* pFont, float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx) = 0;
+
 	virtual void FlushTextMessages(CTextMessages& tMessages, bool reset) = 0;
 };
 
@@ -186,12 +188,12 @@ public:
 	struct SAuxGeomCBRawData
 	{
 	public:
-		SAuxGeomCBRawData() 
+		SAuxGeomCBRawData()
 			: m_isUsed(false)
 			, m_curRenderFlags(e_Def3DPublicRenderflags)
 			, m_curTransMatIdx(-1)
 			, m_curWorldMatIdx(-1)
-			, m_uCount(0) 
+			, m_uCount(0)
 		{}
 
 		void GetSortedPushBuffer(size_t begin, size_t end, AuxSortedPushBuffer& auxSortedPushBuffer) const;
