@@ -188,6 +188,7 @@ struct IRenderNode : public IShadowCaster
 		m_nSID = 0;
 		m_cShadowLodBias = 0;
 		m_cStaticShadowLod = 0;
+		m_nEditorSelectionID = 0;
 	}
 
 	virtual bool CanExecuteRenderAsJob() { return false; }
@@ -278,8 +279,6 @@ struct IRenderNode : public IShadowCaster
 	//! Used by the editor during export.
 	virtual void       SetCollisionClassIndex(int tableIndex)          {}
 
-	virtual int        GetEditorObjectId()                             { return 0; }
-	virtual void       SetEditorObjectId(int nEditorObjectId)          {}
 	virtual void       SetStatObjGroupIndex(int nVegetationGroupIndex) {}
 	virtual int        GetStatObjGroupId() const                       { return -1; }
 	virtual void       SetLayerId(uint16 nLayerId)                     {}
@@ -429,6 +428,20 @@ struct IRenderNode : public IShadowCaster
 	//! Inform 3d engine that permanent render object that captures drawing state of this node is not valid and must be recreated.
 	ILINE void InvalidatePermanentRenderObject() { m_nInternalFlags |= PERMANENT_RO_INVALID; };
 
+	virtual void SetEditorObjectId(uint32 nEditorObjectId)
+	{
+		// lower 8 bits of the ID is for highlight/selection and other flags
+		m_nEditorSelectionID = nEditorObjectId << 8;
+		InvalidatePermanentRenderObject();
+	}
+	virtual void SetEditorObjectInfo(bool bSelected, bool bHighlighted)
+	{
+		uint32 flags = (bSelected * (1)) | (bHighlighted * (1 << 1));
+		m_nEditorSelectionID &= ~(0x3);
+		m_nEditorSelectionID |= flags;
+		InvalidatePermanentRenderObject();
+	}
+
 	//////////////////////////////////////////////////////////////////////////
 	// Variables
 	//////////////////////////////////////////////////////////////////////////
@@ -469,6 +482,13 @@ public:
 	//! Set to SHADOW_LODBIAS_DISABLE to disable any shadow lod overrides for this rendernode.
 	static const int8 SHADOW_LODBIAS_DISABLE = -128;
 	int8              m_cShadowLodBias;
+
+	//! Selection ID used to map the rendernode to a baseobject in the editor, or differentiate between objects
+	//! in highlight framebuffer
+	//! This ID is split in two parts. The low 8 bits store flags such as selection and highlight state
+	//! The high 24 bits store the actual ID of the object. This need not be the same as CryGUID, 
+	//! though the CryGUID could be used to generate it
+	uint32 m_nEditorSelectionID;
 };
 
 inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)

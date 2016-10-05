@@ -860,6 +860,17 @@ public:
 	virtual void GetCameraZeroMatrix(float* mat) override = 0;
 	virtual void SetMatrices(float* pProjMat, float* pViewMat, float* pZeroMat) = 0;
 
+	virtual void SetHighlightColor(ColorF color) override { m_highlightColor = color; }
+	virtual void SetSelectionColor(ColorF color) override { m_SelectionColor = color; }
+	virtual void SetHighlightParams(float outlineThickness, float fGhostAlpha) override
+	{ 
+		m_highlightParams = Vec4(outlineThickness, fGhostAlpha, 0.0f, 0.0f); 
+	}
+
+	ColorF& GetHighlightColor()         { return m_highlightColor; }
+	ColorF& GetSelectionColor()         { return m_SelectionColor; }
+	Vec4&   GetHighlightParams()        { return m_highlightParams; }
+
 	// NOTE: deprecated
 	virtual void ClearTargetsImmediately(uint32 nFlags) override = 0;
 	virtual void ClearTargetsImmediately(uint32 nFlags, const ColorF& Colors, float fDepth) override = 0;
@@ -1588,6 +1599,10 @@ protected:
 
 	CryMutex             m_mtxStopAtRenderFrameEnd;
 	CryConditionVariable m_condStopAtRenderFrameEnd;
+
+	ColorF m_highlightColor;
+	ColorF m_SelectionColor;
+	Vec4  m_highlightParams;
 };
 
 //////////////////////////////////////////////////////////////////////////

@@ -1969,4 +1969,169 @@ technique Post3DRendererSilhouttes
   }
 }
 
+//////////////////////////// Selection Silhouettes and highlights /////////////
+
+struct vtxOutSilhouette
+{
+    float4 HPosition : POSITION;
+    float4 baseTC0 : TEXCOORD0;
+    float4 baseTC1 : TEXCOORD1;
+    float4 baseTC2 : TEXCOORD2;
+};
+
+float outlineWidth;
+
+vtxOutSilhouette SelectionSilhouetteVS(vtxIn IN)
+{
+    const half uvOffsetScale = outlineWidth;
+
+    vtxOutSilhouette OUT = (vtxOutSilhouette) 0;
+    OUT.HPosition = Get2dHPos(IN.Position);
+
+    OUT.baseTC0.xy = IN.baseTC.xy;
+ 
+    OUT.baseTC1.xy = IN.baseTC.xy + uvOffsetScale * float2(0, -1) * ScrSize.zw;
+    OUT.baseTC1.zw = IN.baseTC.xy + uvOffsetScale * float2(0,  1) * ScrSize.zw;
+    OUT.baseTC2.xy = IN.baseTC.xy + uvOffsetScale * float2(-1, 0) * ScrSize.zw;
+    OUT.baseTC2.zw = IN.baseTC.xy + uvOffsetScale * float2( 1, 0) * ScrSize.zw;
+
+    return OUT;
+}
+
+float4 highlightColor;
+float4 selectionColor;
+float ghostAlpha;
+
+pixout SelectionSilhouettePS(vtxOutSilhouette IN)
+{
+// ID flags. Make sure those are synced between CommonDebugPass.cfi and IRenderNode
+#define SELECTED_FLAG    (1)
+#define HIGHLIGHTED_FLAG (1 << 1)
+#define HIDDEN_FLAG      (1 << 2)
+
+    // alpha for hidden highlights.
+    const float fHiddenAlpha = ghostAlpha;
+
+    pixout OUT = (pixout) 0;
+
+    uint pixelInfo = asuint(tex2D(_tex0, IN.baseTC0).x);
+    // IDs are stored in higher 24 bits
+    uint pixelID = pixelInfo >> 8;
+
+    bool bIsHighlighted = (pixelInfo & HIGHLIGHTED_FLAG) != 0;
+    bool bIsSelected    = (pixelInfo & SELECTED_FLAG) != 0;
+    bool bIsHidden      = (pixelInfo & HIDDEN_FLAG) != 0;
+
+    uint4 edgesInfo = uint4(asuint(tex2D(_tex0, IN.baseTC1.xy).x),
+                            asuint(tex2D(_tex0, IN.baseTC1.zw).x),
+                            asuint(tex2D(_tex0, IN.baseTC2.xy).x),
+                            asuint(tex2D(_tex0, IN.baseTC2.zw).x));
+
+    uint4 edgeIDs =    (edgesInfo >> 8);
+    bool4 vbDiffMask = (edgeIDs != pixelID);
+    bool  bIsEdge =    any(vbDiffMask);
+
+    // edges are high priority, do them first
+    if (bIsEdge)
+    {
+        bool4 vbIsHigherID        = (edgeIDs > pixelID);
+        bool4 vbIsHighlightedEdge = ((edgesInfo & HIGHLIGHTED_FLAG) != 0);
+        bool4 vbIsSelectedEdge    = ((edgesInfo & SELECTED_FLAG) != 0);
+        bool4 vbIsHiddenEdge      = ((edgesInfo & HIDDEN_FLAG) != 0);
+
+        // highligh outlines get priority over all other drawing
+        if (any(vbIsHighlightedEdge && vbDiffMask))
+        {
+            if (bIsHighlighted)
+            {
+                bool4 vbMask = vbIsHigherID && vbIsHighlightedEdge;
+
+                // only draw on the side with the lower ID to avoid double outlines
+                if (any(vbMask))
+                {
+                    OUT.Color = highlightColor;
+                    // if any of the two sides is visible, we need to draw an opaque outline
+                    OUT.Color.a = (any(vbMask && !vbIsHiddenEdge) || !bIsHidden) ? 1.0 : fHiddenAlpha;
+                }
+                else
+                {
+                    OUT.Color = highlightColor;
+                }
+            }
+            else
+            {
+                OUT.Color = highlightColor;
+                OUT.Color.a = (any(vbIsHiddenEdge && vbIsHighlightedEdge)) ? fHiddenAlpha : 1.0;
+            }
+        }
+        // selected outlines get similar treatment to highlight outlines
+        else if (any(vbIsSelectedEdge && vbDiffMask) && !bIsHighlighted)
+        {
+            if (bIsSelected)
+            {
+                bool4 vbMask = vbIsHigherID && vbIsSelectedEdge;
+
+                // only draw on the side with the lower ID to avoid double outlines
+                if (any(vbMask))
+                {
+                    OUT.Color = selectionColor;
+                    // if any of the two sides is visible, we need to draw an opaque outline
+                    OUT.Color.a = (any(vbMask && !vbIsHiddenEdge) || !bIsHidden) ? 1.0 : fHiddenAlpha;
+                }
+                else
+                {
+                    OUT.Color = selectionColor;
+                }
+            }
+            else
+            {
+                OUT.Color = selectionColor;
+                OUT.Color.a = (any(vbIsHiddenEdge && vbIsSelectedEdge)) ? fHiddenAlpha : 1.0;
+            }
+        }
+        else if (bIsSelected)
+        {
+            if (!bIsHidden)
+            {
+                OUT.Color = selectionColor;
+            }
+        }
+        // Finally account for highlighted objects
+        else if (bIsHighlighted)
+        {
+            if (!bIsHidden)
+            {
+                OUT.Color = highlightColor;
+            }
+        }
+    }
+    // Selection coloring will get priority even for highlighted objects, so that we know they are also selected
+    else if (bIsSelected)
+    {
+        if (!bIsHidden)
+        {
+            OUT.Color = selectionColor;
+        }
+    }
+    // Finally account for highlighted objects
+    else if (bIsHighlighted)
+    {
+        if (!bIsHidden)
+        {
+            OUT.Color = highlightColor;
+        }
+    }
+
+    return OUT;
+}
+
+technique SelectionSilhouetteHighlight
+{
+    pass p0
+    {
+        VertexShader = SelectionSilhouetteVS();
+        PixelShader = SelectionSilhouettePS();
+    }
+}
+
 /////////////////////// eof ///

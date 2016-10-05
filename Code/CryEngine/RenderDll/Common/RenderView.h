@@ -105,6 +105,32 @@ public:
 	// Find render item index in the sorted list, after when object flag changes.
 	int        FindRenderListSplit(ERenderListID list, uint32 objFlag);
 
+	// Find render item index in the sorted list according to arbitrary criteria.
+	template <typename T>
+	int        FindRenderListSplit(T predicate, ERenderListID list, int first, int last)
+	{
+		FUNCTION_PROFILER_RENDERER
+
+		// Binary search, assumes that the sub-region of the list is sorted by the predicate already
+		RenderItems& renderItems = GetRenderItems(list);
+
+		assert(first >= 0 && (first < renderItems.size()));
+		assert(last >= 0 && (last <= renderItems.size()));
+
+		--last;
+		while (first <= last)
+		{
+			int middle = (first + last) / 2;
+
+			if (predicate(renderItems[middle]))
+				first = middle + 1;
+			else
+				last = middle - 1;
+		}
+
+		return last + 1;
+	}
+
 	void       PrepareForRendering();
 
 	void       PrepareForWriting();

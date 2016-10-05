@@ -231,6 +231,8 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 			pOut[3].f[3] = pData[15];
 		}
 
+		cb->PerInstanceCustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
+
 		UpdatePerInstanceCB(cb, cbSize);
 	}
 	else if ((pRenderObject->m_ObjFlags & FOB_SKINNED) || bHasWrinkleBending) // (%_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR || %WRINKLE_BLENDING)
@@ -269,6 +271,8 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 			cb->SkinningInfo[3] = ((CREMeshImpl*)m_pRenderElement)->m_pRenderMesh->m_extraBonesBuffer.m_numElements > 0 ? 1.0f : 0.0f;
 		}
 
+		cb->PerInstanceCustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
+
 		m_bDynamicInstancingPossible = false;
 		UpdatePerInstanceCB(cb, cbSize);
 	}
@@ -287,6 +291,8 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		    tessellationPatchIDOffset,
 		    dissolve
 		    );
+
+		cb->PerInstanceCustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
 
 		UpdatePerInstanceCB(cb, cbSize);
 	}

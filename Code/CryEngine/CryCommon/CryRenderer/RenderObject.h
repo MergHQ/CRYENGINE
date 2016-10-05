@@ -277,6 +277,8 @@ public:
 
 	SVegetationBendingData m_vegetationBendingData;        //!< Vegetation Bending parameters
 
+	uint32 m_editorSelectionID;                            //!< SelectionID for the editor
+
 public:
 	//////////////////////////////////////////////////////////////////////////
 	// Methods
@@ -339,6 +341,8 @@ public:
 
 		m_II.m_Matrix.SetIdentity();
 		m_vegetationBendingData = SVegetationBendingData();
+
+		m_editorSelectionID = 0;
 	}
 
 	void                    AssignId(uint32 id) { m_Id = id; }

@@ -2229,6 +2229,10 @@ public:
 	static CTexture* s_ptexSceneDiffuse;
 	static CTexture* s_ptexSceneSpecular;
 	static CTexture* s_ptexWindGrid;
+
+	static CTexture* s_ptexSceneSelectionIDs;         // Selection ID buffer used for selection and highlight passes
+	static CTexture* s_ptexSceneHalfDepthStencil;     // half resolution depth-stencil, used for selection and highlight passes.
+
 #if defined(DURANGO_USE_ESRAM)
 	static CTexture* s_ptexSceneSpecularESRAM;        // Temporary scene specular in ESRAM, aliased with other ESRAM RTs
 #endif

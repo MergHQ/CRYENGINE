@@ -112,6 +112,9 @@ CTexture* CTexture::s_ptexAOColorBleed;
 CTexture* CTexture::s_ptexSceneDiffuse;
 CTexture* CTexture::s_ptexSceneSpecular;
 
+CTexture* CTexture::s_ptexSceneSelectionIDs;
+CTexture* CTexture::s_ptexSceneHalfDepthStencil;
+
 CTexture* CTexture::s_ptexWindGrid;
 
 #if defined(DURANGO_USE_ESRAM)
@@ -3025,6 +3028,9 @@ void CTexture::LoadDefaultSystemTextures()
 			s_ptexZTargetScaled2 = CTexture::CreateTextureObject("$ZTargetScaled2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_QUARTER_ZTARGET_FOR_AO);
 			s_ptexZTargetScaled3 = CTexture::CreateTextureObject("$ZTargetScaled3", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 		}
+
+		s_ptexSceneSelectionIDs = CTexture::CreateTextureObject("$SceneSelectionIDs", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R32F);
+		s_ptexSceneHalfDepthStencil = CTexture::CreateTextureObject("$SceneHalfDepthStencil", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL, eTF_D32F);
 
 		s_ptexHDRTarget = CTexture::CreateTextureObject("$HDRTarget", 0, 0, 1, eTT_2D, nRTFlags, eTF_Unknown);
 

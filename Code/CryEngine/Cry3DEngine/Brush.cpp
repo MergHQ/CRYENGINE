@@ -96,6 +96,7 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 	rParms.pMatrix = &m_Matrix;
 	rParms.nClipVolumeStencilRef = 0;
 	rParms.pMaterial = m_pMaterial;
+	rParms.nEditorSelectionID = m_nEditorSelectionID;
 
 	if (!m_Matrix.m01 && !m_Matrix.m02 && !m_Matrix.m10 && !m_Matrix.m12 && !m_Matrix.m20 && !m_Matrix.m21)
 		rParms.dwFObjFlags &= ~FOB_TRANS_ROTATE;
@@ -813,6 +814,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	else
 		pObj->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
 	//////////////////////////////////////////////////////////////////////////
+	pObj->m_editorSelectionID = m_nEditorSelectionID;
 
 	if (pTerrainTexInfo)
 	{

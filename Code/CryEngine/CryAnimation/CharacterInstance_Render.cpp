@@ -217,6 +217,7 @@ void CCharInstance::RenderCHR(const SRendParams& RendParams, const Matrix34& rRe
 	pObj->m_pRenderNode = RendParams.pRenderNode;
 	pObj->m_fSort = RendParams.fCustomSortOffset;
 	pObj->m_ObjFlags |= FOB_TRANS_MASK;
+	pObj->m_editorSelectionID = RendParams.nEditorSelectionID;
 
 	//check if it should be drawn close to the player
 	// For nearest geometry (weapons/arms) - make sure its rendered really at beginning (before water passes)

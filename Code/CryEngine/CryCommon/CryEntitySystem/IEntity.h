@@ -587,6 +587,7 @@ struct IEntity
 #endif //SEG_WORLD
 
 	// <interfuscator:shuffle>
+	IEntity() : m_objectID(0) {}
 	virtual ~IEntity(){}
 
 	//! Retrieves the runtime unique identifier of this entity assigned to it by the Entity System.
@@ -1063,6 +1064,13 @@ struct IEntity
 	virtual void         SetSwObjDebugFlag(unsigned int uiVal) = 0;
 #endif //SEG_WORLD
 
+	//! ObjectID that corresponds to editor base objects. This is used for selection and highlighting
+	//! so it should be set by editor and have a 1-1 correspondence with a baseobject. This is intended as a
+	//! runtime ID and does not need to be serialized
+	uint32 GetObjectID() { return m_objectID; }
+	void   SetObjectID(uint32 ID) { m_objectID = ID; }
+
+	uint32 m_objectID;
 	// </interfuscator:shuffle>
 };
 

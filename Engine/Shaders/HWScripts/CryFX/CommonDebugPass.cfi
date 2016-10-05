@@ -24,31 +24,58 @@ vert2fragDebug Common_DebugPassVS(app2vertDebug IN)
   vtxStreamUnifyCommon(IN.vertCommon, vertPassPos);
 
   OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
-	
-#if %_RT_SAMPLE0  // Wireframe debug pass
-
+#if %_RT_SAMPLE1
+    // We are passing the actual texture coordinate here for use in alpha testing
+    OUT.Color = float4(IN.vertCommon.baseTC.x, IN.vertCommon.baseTC.y, 0, 0);
+#elif %_RT_SAMPLE0  // Wireframe debug pass
 	OUT.Color = lerp(float4(0, 0.7, 0.9, 1), float4(0.35, 0.35, 0.35, 1), saturate(OUT.HPosition.w / 100.0));
-	
+#elif (%_RT_INSTANCING_ATTR || %_RT_INSTANCING_CONST)
+	#fetchinst (OUT.Color = IN.InstAmbientOp, vertPassPos.nInstance);
 #else
-	
-	#if (%_RT_INSTANCING_ATTR || %_RT_INSTANCING_CONST)
-		#fetchinst (OUT.Color = IN.InstAmbientOp, vertPassPos.nInstance);
-  #else
-		OUT.Color = AmbientOp;
-  #endif
-	
+    OUT.Color = AmbientOp;
 #endif
 	
   return OUT;            
 }
 
+Texture2D<float4> SceneDepthTex : register(t25);
+
 pixout Common_DebugPassPS(vert2fragDebug IN)
 {
   pixout OUT = (pixout)0;  
 
+#if %_RT_SAMPLE1
+// ID flags. Make sure those are synced between PostEffects.cfx and IRenderNode
+#define SELECTED_FLAG    (1)
+#define HIGHLIGHTED_FLAG (1 << 1)
+#define HIDDEN_FLAG      (1 << 2)
+
+#if %_RT_ALPHATEST
+  // only access texture for alpha tested meshes
+  float alpha = GetAlphaTex(diffuseTex, IN.Color.xy);
+  float alphaTest =	Get_MaterialAlphaTest();
+  clip(alpha - alphaTest); //need to perform texkill just like in regular passes
+#endif 
+
+  // write the selection ID to our color with some possible modifications
+  uint selectionID = asuint(PerInstanceCustomData2.x);
+
+  // now we need to compare the scene's depth to the fragment's depth. We do that here instead of after rendering, so precision is maintained better
+  float fragmentDepth = IN.HPosition.z;
+  int3 vPixCoord = int3(IN.HPosition.xy, 0);
+  float sceneDepth = SceneDepthTex.Load(vPixCoord);
+
+  if (fragmentDepth < 0.99 * sceneDepth)
+  {
+    // set the fragment as occluded in regular scene
+    selectionID |= HIDDEN_FLAG;
+  }
+
+  OUT.Color.x = asfloat(selectionID);
+#else
   OUT.Color.xyz = IN.Color.xyz;
   OUT.Color.w = 0.25;
-    
+#endif
   return OUT;
 }
 
@@ -61,7 +88,11 @@ technique DebugPass
 
     ZEnable = true;
     ZWriteEnable = false;
+#if %GRASS || %LEAVES
+    CullMode = None;
+#else
     CullMode = Back;
+#endif
     IgnoreMaterialState = true;
 
     AlphaBlendEnable = true;

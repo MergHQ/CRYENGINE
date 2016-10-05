@@ -3369,6 +3369,7 @@ static char* sDescList[] =
 	"FogVolume",
 	"Nearest",
 	"ForwardOpaque",
+	"Custom",
 };
 
 static char* sBatchList[] =

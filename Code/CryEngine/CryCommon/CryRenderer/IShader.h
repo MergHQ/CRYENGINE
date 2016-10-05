@@ -1967,6 +1967,7 @@ enum ERenderListID
 	EFSLIST_FOG_VOLUME,              //!< Fog density injection passes.
 	EFSLIST_NEAREST_OBJECTS,         //!< Nearest objects.
 	EFSLIST_FORWARD_OPAQUE,          //!< Forward opaque pass objects.
+	EFSLIST_CUSTOM,               //!< Candidate for selection objects
 
 	EFSLIST_NUM
 };

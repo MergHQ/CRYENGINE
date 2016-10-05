@@ -213,7 +213,7 @@ Property
   Precache = VegetationHS
   Precache = VegetationDS
   Precache = VegetationPS
-	Precache = GeneralPS
+  Precache = GeneralPS
   Precache = GlassPS
   Precache = GlassVS
   Precache = GlowVS
@@ -221,6 +221,7 @@ Property
   Precache = MotionBlurVS
   Precache = FurVS      
   Precache = MeshBakerPS
+  Precache = DebugPassPS
 }
 
 Property
@@ -313,6 +314,9 @@ Property
 	Precache = ResolvePS
 	Precache = VolumetricCloudsPS
 	Precache = ReprojectCloudsPS
+
+	Precache = DebugPassVS
+	Precache = DebugPassPS
 }
 
 Property
@@ -591,6 +595,7 @@ Property
   Precache = CausticsVS
   Precache = CustomRenderVS
   Precache = DebugPassVS
+  Precache = DebugPassPS
   Precache = GeneralHS
   Precache = GeneralDS
 }

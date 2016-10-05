@@ -16,7 +16,7 @@ cbuffer CBStaticPerInst : register(b12)
 	{
 		float3x4	PerInstanceWorldMatrix;
 		float4		PerInstanceCustomData;   // [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
-	} SInstancingData[800];
+    } SInstancingData[800];
 };
 
 // TODO: replace by CB definition shared between c++ and hlsl. 
@@ -26,7 +26,9 @@ cbuffer CBPerInstanceNewBackend : register(b12)
 	float3x4  PerInstanceWorldMatrix;
 	float3x4  PerInstancePrevWorldMatrix;
 	float4    PerInstanceCustomData;       // [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
-	
+    // TODO: Should be moved after all the data below
+    float4    PerInstanceCustomData2;      // [x=selectionIDs in debug pass,
+
 #if %TEMP_TERRAIN || %TEMP_VEGETATION
 	float4    PerInstanceBlendTerrainColInfo;
 	float4x4  PerInstanceTerrainLayerInfo;

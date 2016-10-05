@@ -735,6 +735,7 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 		const bool bForwardOpaqueFlags = (nBatchFlags & (FB_DEBUG | FB_TILED_FORWARD)) != 0;
 		const bool bIsMaterialEmissive = (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive());
 		const bool bIsTransparent = (nRenderList == EFSLIST_TRANSP);
+		const bool bIsSelectable = ri.pObj->m_editorSelectionID > 0;
 
 		if (nRenderList != EFSLIST_GENERAL && nRenderList != EFSLIST_TERRAINLAYER && (nBatchFlags & FB_Z))
 		{
@@ -763,6 +764,12 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 				m_renderItems[EFSLIST_PREPROCESS].push_back(ri);
 				UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_PREPROCESS], nBatchFlags);
 			}
+		}
+
+		if (bIsSelectable)
+		{
+			m_renderItems[EFSLIST_CUSTOM].push_back(ri);
+			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_CUSTOM], nBatchFlags);
 		}
 	}
 }
@@ -1254,6 +1261,15 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 
 	case EFSLIST_NEAREST_OBJECTS:
 		// No need to sort.
+		break;
+
+	case EFSLIST_CUSTOM:
+		// only sort the selection list if we are in editor and not in game mode
+		if (gcpRendD3D->IsEditorMode() && !gEnv->IsEditorGameMode())
+		{
+			PROFILE_FRAME(State_SortingSelection);
+			std::sort(&renderItems[nStart], &renderItems[nStart + n], SCompareRendItemSelectionPass());
+		}
 		break;
 
 	default:

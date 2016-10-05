@@ -2333,6 +2333,13 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void           ForceUpdateShaderItem(SShaderItem* pShaderItem, IMaterial* pMaterial) = 0;
 	virtual void           RefreshShaderResourceConstants(SShaderItem* pShaderItem, IMaterial* pMaterial) = 0;
 
+	//! Used for editor highlights, sets the highlight color
+	virtual void           SetHighlightColor(ColorF color) = 0;
+	//! Used for editor highlights, sets the selection color
+	virtual void           SetSelectionColor(ColorF color) = 0;
+	//! Used for editor highlights, sets outline thickness and ghost alpha parameters for the effect
+	virtual void           SetHighlightParams(float outlineThickness, float fGhostAlpha) = 0;
+
 	//! Determine if a switch to stereo mode will occur at the start of the next frame.
 	virtual bool IsStereoModeChangePending() = 0;
 
@@ -2596,6 +2603,8 @@ struct SRendParams
 	uint8                     nAfterWater; //!< Custom offset for sorting by distance.
 
 	uint8                     nMaterialLayers; //!< Material layers bitmask -> which material layers are active.
+
+	uint32                    nEditorSelectionID; //!< Selection ID and information for editor
 };
 
 struct SRendererCloakParams

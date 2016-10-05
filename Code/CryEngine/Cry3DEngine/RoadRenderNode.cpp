@@ -507,6 +507,7 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 	pObj->m_ObjFlags |= RendParams.dwFObjFlags;
 	pObj->m_II.m_AmbColor = RendParams.AmbientColor;
 	Vec3 vWSBoxCenter = m_serializedData.worldSpaceBBox.GetCenter();
+	pObj->m_editorSelectionID = m_nEditorSelectionID;
 	vWSBoxCenter.z += 0.01f;
 	pObj->m_II.m_Matrix.SetTranslation(vWSBoxCenter);
 

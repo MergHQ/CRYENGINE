@@ -119,6 +119,7 @@ void CRenderProxy::Initialize( const SComponentInitializer& init )
 	m_entityId = m_pEntity->GetId(); // Store so we can use it during Render() (when we shouldn't touch the entity itself).
 
 	m_pMaterial = m_pEntity->m_pMaterial;
+	SetEditorObjectId(m_pEntity->GetObjectID());
 
 	SetCloakBlendTimeScale(1.0f);
 

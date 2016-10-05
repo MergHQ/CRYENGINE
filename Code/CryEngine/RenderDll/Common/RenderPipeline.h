@@ -967,6 +967,21 @@ struct SCompareRendItemZPass
 	}
 };
 
+////////////////////////////////////////
+struct SCompareRendItemSelectionPass
+{
+	bool operator()(const SRendItem& a, const SRendItem& b) const
+	{
+		// Selection and highlight are the first two bits of the selectionID
+		uint8 bAHighlightSelect = (a.pObj->m_editorSelectionID & 0x3);
+		uint8 bBHighlightSelect = (b.pObj->m_editorSelectionID & 0x3);
+
+		// Highlight is the higher bit, so highlighted objects win in the comparison. 
+		// Also, selected objects win over non-selected objects, which is exactly what we want
+		return bAHighlightSelect < bBHighlightSelect;
+	}
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 struct SCompareItem_Decal
 {

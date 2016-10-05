@@ -3702,9 +3702,22 @@ void CTexture::GenerateSceneMap(ETEX_Format eTF)
 		}
 	}
 
-	// Editor fix: it is possible at this point that resolution has changed outside of ChangeResolution and stereoR, stereoL have not been resized
 	if (gEnv->IsEditor())
+	{
+		int highlightWidth = (nWidth + 1) / 2;
+		int highlightHeight = (nHeight + 1) / 2;
+		highlightWidth = nWidth;
+		highlightHeight = nHeight;
+
+		SD3DPostEffectsUtils::CreateRenderTarget("$SceneSelectionIDs", CTexture::s_ptexSceneSelectionIDs, highlightWidth, highlightHeight, Clr_Transparent, false, false, eTF_R32F, -1, nFlags);
+
+		nFlags |= FT_USAGE_DEPTHSTENCIL;
+		SD3DPostEffectsUtils::CreateRenderTarget("$SceneHalfDepthStencil", CTexture::s_ptexSceneHalfDepthStencil, highlightWidth, highlightHeight, Clr_FarPlane, false, false, eTF_D32F, -1, nFlags);
+		nFlags &= ~FT_USAGE_DEPTHSTENCIL;
+
+		// Editor fix: it is possible at this point that resolution has changed outside of ChangeResolution and stereoR, stereoL have not been resized
 		gcpRendD3D->GetS3DRend().OnResolutionChanged();
+	}
 }
 
 void CTexture::GenerateCachedShadowMaps()
@@ -4239,6 +4252,8 @@ void CTexture::ReleaseSystemTargets()
 	SAFE_RELEASE_FORCE(s_ptexAOColorBleed);
 	SAFE_RELEASE_FORCE(s_ptexSceneDiffuse);
 	SAFE_RELEASE_FORCE(s_ptexSceneSpecular);
+	SAFE_RELEASE_FORCE(s_ptexSceneSelectionIDs);
+	SAFE_RELEASE_FORCE(s_ptexSceneHalfDepthStencil);
 #if defined(DURANGO_USE_ESRAM)
 	SAFE_RELEASE_FORCE(s_ptexSceneSpecularESRAM);
 #endif
