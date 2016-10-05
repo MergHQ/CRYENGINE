@@ -10,6 +10,7 @@ import copy
 import re	
 import itertools
 from collections import Iterable
+from collections import Counter
 from waflib import Context
 import collections
 
@@ -1025,6 +1026,8 @@ def CryLauncher(ctx, *k, **kw):
 	else: # Only use projects for current spec
 		active_projects = ctx.spec_game_projects()
 		
+	exectuable_name_clash = Counter( [ ctx.get_executable_name(project) for project in active_projects ] )
+		
 	orig_target = kw['target']
 	counter = 1
 	num_active_projects = len(active_projects)
@@ -1053,7 +1056,15 @@ def CryLauncher(ctx, *k, **kw):
 		kw_per_launcher['is_launcher'] 			= True
 		kw_per_launcher['resource_path'] 		= ctx.launch_node().make_node(ctx.game_code_folder(project) + '/Resources')
 		kw_per_launcher['project_name'] 		= project
-		kw_per_launcher['output_file_name'] 	= ctx.get_executable_name(project)		
+		executable_name = ctx.get_executable_name(project)
+		
+		# Avoid two project with the same executable name to link to the same output_file_name simultaneously. 
+		# Two link.exe writing to the same file in parallel does not work.
+		if exectuable_name_clash[executable_name] > 1:
+			Logs.warn('Warning: (%s) : Multiple project resolving to the same executable name:"%s. Using "project name" as "executable name" to avoid multiple linker writing to the same file simultaneously.' % (project, executable_name) )
+			executable_name = project
+			
+		kw_per_launcher['output_file_name'] 	= executable_name
 		
 		if _is_monolithic_build(ctx, kw_per_launcher['target']):	
 			kw_per_launcher['defines'] += [ '_LIB', 'CRY_IS_MONOLITHIC_BUILD' ]

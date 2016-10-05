@@ -97,11 +97,11 @@ def game_code_folder(self, project):
 	
 @conf		
 def get_executable_name(self, project):
-	return 'Game'
+	return _project_setting_entry(self, project, 'executable_name')
 	
 @conf		
 def get_dedicated_server_executable_name(self, project):
-	return 'Game_Server'
+	return _project_setting_entry(self, project, 'executable_name') + '_Server'
 	
 @conf		
 def project_output_folder(self, project):
