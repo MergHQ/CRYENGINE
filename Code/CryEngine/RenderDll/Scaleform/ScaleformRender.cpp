@@ -1,9 +1,10 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 #include "DriverD3D.h"
+#include "ScaleformPlayback.h"
+
+#if RENDERER_SUPPORT_SCALEFORM
 #include "ScaleformRender.h"
 #include "DeviceManager/TempDynBuffer.h"
 
@@ -1300,4 +1301,11 @@ bool CD3D9Renderer::SF_ClearTexture(int texId, int mipLevel, int numRects, const
 	return true;
 }
 
-#endif //INCLUDE_SCALEFORM_SDK
+#else // RENDERER_SUPPORT_SCALEFORM
+
+IScaleformPlayback* CRenderer::SF_CreatePlayback() const
+{
+	return new CScaleformSink();
+}
+
+#endif // RENDERER_SUPPORT_SCALEFORM

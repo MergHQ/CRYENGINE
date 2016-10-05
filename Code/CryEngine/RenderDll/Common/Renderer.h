@@ -1065,7 +1065,7 @@ public:
 	virtual void                 SetLevelLoadingThreadId(threadID threadId) override;
 	virtual void                 GetThreadIDs(threadID& mainThreadID, threadID& renderThreadID) const override;
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 	void SF_ConfigMask(int st, uint32 ref);
 	virtual int SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eTF, int flags) override;
 	virtual void SF_GetMeshMaxSize(int& numVertices, int& numIndices) const override;
@@ -1073,7 +1073,14 @@ public:
 	virtual IScaleformPlayback* SF_CreatePlayback() const override;
 	virtual void SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const override;
 	virtual void SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const override;
-#endif // #if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#else // #if RENDERER_SUPPORT_SCALEFORM
+	// These dummy functions are required when the feature is disabled, do not remove without testing the RENDERER_SUPPORT_SCALEFORM=0 case!
+	virtual int SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eTF, int flags) override { return 0; }
+	virtual void SF_GetMeshMaxSize(int& numVertices, int& numIndices) const override { numVertices = 0; numIndices = 0; }
+	virtual IScaleformPlayback* SF_CreatePlayback() const override;
+	virtual void SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const override {}
+	virtual void SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const override {}
+#endif // #if RENDERER_SUPPORT_SCALEFORM
 
 	virtual ITexture* CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) override;
 

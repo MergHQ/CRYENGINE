@@ -8,8 +8,7 @@
 	"force_individual_build_directory"      : "True",
 
 	"game_projects"                         : "GameZero",
-	
-	"module_extensions"                     : ["scaleform"],
+
 	"win_module_extensions"                 : ["brofiler", "mono"],
 	
 	"modules" :

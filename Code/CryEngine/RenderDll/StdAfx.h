@@ -221,6 +221,9 @@ enum EVerifyType
 #if CRY_PLATFORM_WINDOWS && !defined(EXCLUDE_AMD_API) && !defined(OPENGL) && !defined(CRY_USE_DX12)
 	#define USE_AMD_EXT 1
 #endif
+
+// SF implementation enabled
+#define RENDERER_SUPPORT_SCALEFORM 1
  
 // windows desktop API available for usage
 #if CRY_PLATFORM_WINDOWS
@@ -1172,6 +1175,3 @@ void fpUsePath(const char* name, const char* path, char (&dst)[bytes]) { fpUsePa
 
 #include "XRenderD3D9/DeviceManager/DeviceManagerInline.h"
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed
-#ifdef INCLUDE_SCALEFORM_SDK
-	#include <CrySystem/Scaleform/ConfigScaleform.h>
-#endif

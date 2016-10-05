@@ -58,7 +58,7 @@ struct SGraphicsPipelinePassContext;
 #include <memory>
 #include "Common/RenderView.h"
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 #include "../Scaleform/ScaleformPlayback.h"
 #include "../Scaleform/ScaleformRender.h"
 #endif
@@ -294,10 +294,8 @@ class CD3D9Renderer final:public CRenderer, public IWindowMessageHandler
   friend class CTexture;
 	friend class CShadowMapStage;
 	friend class CSceneRenderPass;
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 	friend struct IScaleformPlayback;
 	friend class CScaleformPlayback;
-#endif
 
 public:
 	enum EDefShadows_Passes
@@ -854,7 +852,7 @@ public:
   void DrawObjSprites (PodArray<SVegetationSpriteInfo> *pList, SSpriteInfo *pSPInfo, const int nSPI, bool bZ, bool bShadows);
   void ObjSpritesFlush (SVF_P3F_C4B_T2F *pVerts, uint16 *pInds, int numSprites, void *&pCurVB, SShaderTechnique *pTech, bool bZ);
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 	void SF_CreateResources();
 	void SF_PrecacheShaders();
 	void SF_DestroyResources();
@@ -874,7 +872,11 @@ public:
 	void SF_Flush();
 	virtual bool SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) override;
 	virtual bool SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData) override;
-#endif // defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#else // #if RENDERER_SUPPORT_SCALEFORM
+	// These dummy functions are required when the feature is disabled, do not remove without testing the RENDERER_SUPPORT_SCALEFORM=0 case!
+	virtual bool SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) override { return false; }
+	virtual bool SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData) override { return false; }
+#endif // #if RENDERER_SUPPORT_SCALEFORM
 
 	virtual void SetProfileMarker(const char* label, ESPM mode) const override;
 
@@ -1583,7 +1585,7 @@ private:
 	DeviceInfo m_devInfo;
 #endif
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 	struct SSF_ResourcesD3D* m_pSFResD3D;
 #endif
 

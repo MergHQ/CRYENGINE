@@ -158,7 +158,7 @@ void CRenderer::InitRenderer()
 	m_numSSAASamples   = 1;
 
 	CRendererCVars::InitCVars();
-#ifdef INCLUDE_SCALEFORM_SDK
+#if RENDERER_SUPPORT_SCALEFORM
 	CScaleformPlayback::InitCVars();
 #endif
 

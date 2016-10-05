@@ -991,7 +991,7 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 	SAFE_RELEASE(m_pZTextureMSAA);
 	SAFE_RELEASE(m_pNativeZTexture);
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 	SF_DestroyResources();
 #endif
 

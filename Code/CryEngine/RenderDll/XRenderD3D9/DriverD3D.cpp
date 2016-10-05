@@ -501,7 +501,7 @@ void CD3D9Renderer::InitRenderer()
 	}
 #endif
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 	SF_CreateResources();
 	assert(m_pSFResD3D);
 #endif
@@ -3374,7 +3374,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 
 		for (int iPass = 0; iPass < 3; ++iPass)      // left, center, right
 		{
-			Float scale = fPixelPerfectScale * 0.5f;
+			float scale = fPixelPerfectScale * 0.5f;
 			float x = 0;
 
 			y = 3 * line;

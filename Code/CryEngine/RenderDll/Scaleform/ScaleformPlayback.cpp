@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 #include <CrySystem/ISystem.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IStereoRenderer.h>
@@ -1922,4 +1922,4 @@ void CScaleformPlayback::InitCVars()
 	#endif
 }
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #if RENDERER_SUPPORT_SCALEFORM

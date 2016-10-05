@@ -667,7 +667,7 @@ void CD3D9Renderer::RT_PrecacheDefaultShaders()
 	SShaderCombination cmb;
 	m_cEF.s_ShaderStereo->mfPrecache(cmb, true, NULL);
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 	SF_PrecacheShaders();
 #endif
 }

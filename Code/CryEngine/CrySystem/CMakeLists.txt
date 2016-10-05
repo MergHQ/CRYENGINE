@@ -510,6 +510,7 @@ end_sources()
 CryEngineModule(CrySystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 
 target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 yasli tomcrypt jsmn )
+use_scaleform()
 if (WIN32 OR WIN64)
 	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcpmt.lib")
 	target_link_libraries( ${THIS_PROJECT} PRIVATE wininet Shell32 Ole32 Gdi32)

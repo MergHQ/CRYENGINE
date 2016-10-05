@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+#if RENDERER_SUPPORT_SCALEFORM
 #include "../Common/CryNameR.h"
 #include "ScaleformPlayback.h"
 

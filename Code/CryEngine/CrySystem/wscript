@@ -7,8 +7,10 @@ def build(bld):
 
 	# If Scaleform SDK is available, compile the integration code into CrySystem
 	scaleform_file_list = []
+	scaleform_module_extension_list = []
 	if os.path.isdir(Path('Code/SDKs/Scaleform')):
 		scaleform_file_list = ['Scaleform/scaleform.waf_files']
+		scaleform_module_extension_list = ['scaleform']
 		bld.recurse(['Scaleform'])
 
 	bld.CryEngineModule(
@@ -26,6 +28,7 @@ def build(bld):
 
 		android_includes = [ Path('Code/SDKs/SDL2/include/linux'), Path('Code/SDKs/SDL2/include/SDL')],
 
+		module_extensions       = scaleform_module_extension_list,
 		linux_module_extensions = [ 'ncurses' ],
 
 		use_module = [
