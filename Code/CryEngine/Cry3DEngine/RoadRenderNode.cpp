@@ -428,7 +428,7 @@ void CRoadRenderNode::Compile() PREFAST_SUPPRESS_WARNING(6262) //function uses >
 			}
 		}
 
-		m_pRenderMesh->SetChunk((m_pMaterial != NULL) ? (IMaterial*)m_pMaterial : GetMatMan()->GetDefaultMaterial(),
+		m_pRenderMesh->SetChunk((m_pMaterial != NULL) ? (IMaterial*)m_pMaterial : gEnv->p3DEngine->GetMaterialManager()->GetDefaultMaterial(),
 		                        0, m_dynamicData.vertices.Count(), 0, m_dynamicData.indices.Count(), texelAreaDensity);
 		m_serializedData.worldSpaceBBox.Move(segmentOffset);
 		Vec3 vWSBoxCenter = m_serializedData.worldSpaceBBox.GetCenter(); //vWSBoxCenter.z=0;

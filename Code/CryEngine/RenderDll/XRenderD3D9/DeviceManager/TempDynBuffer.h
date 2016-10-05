@@ -7,6 +7,8 @@
 
 #include "../Common/DevBuffer.h"
 
+extern CD3D9Renderer gcpRendD3D;
+
 namespace TempDynBuffer
 {
 enum State

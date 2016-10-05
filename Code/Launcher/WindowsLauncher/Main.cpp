@@ -25,8 +25,6 @@
 #include <jsmn.h>
 #include <jsmnutil.h>
 
-#define DLL_INITFUNC_SYSTEM "CreateSystemInterface"
-
 // Advise notebook graphics drivers to prefer discrete GPU when no explicit application profile exists
 extern "C"
 {
