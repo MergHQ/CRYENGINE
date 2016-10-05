@@ -846,7 +846,7 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 		if (!m_bUtilityPassesInitialized) s_passStableDownsample = CreateStaticUtilityPass<CStableDownsamplePass>();
 		if (!m_bUtilityPassesInitialized) s_passSimpleDownsample = CreateStaticUtilityPass<CStretchRectPass>();
 
-		if (CRenderer::CV_r_HDRBloomQuality > 0)
+		if (CRenderer::CV_r_HDRBloomQuality > 1)
 			s_passStableDownsample->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetScaled[0], true);
 		else
 			s_passSimpleDownsample->Execute(CTexture::s_ptexHDRTarget, CTexture::s_ptexHDRTargetScaled[0]);

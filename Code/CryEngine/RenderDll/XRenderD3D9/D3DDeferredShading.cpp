@@ -3455,7 +3455,7 @@ void CDeferredShading::CreateDeferredMaps()
 		SD3DPostEffectsUtils::CreateRenderTarget("$SceneNormalsBent", CTexture::s_ptexSceneNormalsBent, width, height, Clr_Median, true, false, eTF_R8G8B8A8);
 		SD3DPostEffectsUtils::CreateRenderTarget("$AOColorBleed", CTexture::s_ptexAOColorBleed, width_r8, height_r8, Clr_Unknown, true, false, eTF_R8G8B8A8);
 
-		ETEX_Format fmtZScaled = eTF_R16G16F;
+		ETEX_Format fmtZScaled = eTF_R16G16B16A16F;
 		ETEX_Format nTexFormat = eTF_R16G16B16A16F;
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 		if (CRenderer::CV_r_DeferredShadingLBuffersFmt == 1)

@@ -555,6 +555,9 @@ pixout DownsampleDepthPS(vtxOut IN)
 
 	OUT.Color.x = max(max(vMaxDepths.x, vMaxDepths.y), max(vMaxDepths.z, vMaxDepths.w));
 	OUT.Color.y = min(min(vMinDepths.x, vMinDepths.y), min(vMinDepths.z, vMinDepths.w));
+	OUT.Color.z = (vMinDepths.x + vMinDepths.y + vMinDepths.z + vMinDepths.w) * 0.25;
+	uint2 WPos = (uint2)IN.WPos.xy;
+	OUT.Color.w = DownsampleDepth_DepthTex.Load(int3(2 * WPos.x + ((WPos.y & 1) ^ 1), 2 * WPos.y + ((WPos.x & 1) ^ 1), 0));
 
 	return OUT;
 }

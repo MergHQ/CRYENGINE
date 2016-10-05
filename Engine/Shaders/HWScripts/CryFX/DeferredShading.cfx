@@ -1183,12 +1183,12 @@ vtxOut DirOccPassVS(uint VertexID : SV_VertexID)
   return OUT;
 }
 
-half4 SSDOFetchDepths( sampler2D smp, half4 tc[2] )
+half4 SSDOFetchDepths( sampler2D smp, half4 tc[2], uint component )
 {
-	return half4( tex2Dlod( smp, half4( tc[0].xy, 0, 0 ) ).x,
-								tex2Dlod( smp, half4( tc[0].zw, 0, 0 ) ).x,
-								tex2Dlod( smp, half4( tc[1].xy, 0, 0 ) ).x,
-								tex2Dlod( smp, half4( tc[1].zw, 0, 0 ) ).x );
+	return half4( tex2Dlod( smp, half4( tc[0].xy, 0, 0 ) )[component],
+								tex2Dlod( smp, half4( tc[0].zw, 0, 0 ) )[component],
+								tex2Dlod( smp, half4( tc[1].xy, 0, 0 ) )[component],
+								tex2Dlod( smp, half4( tc[1].zw, 0, 0 ) )[component] );
 }
 
 Texture2D<float4> HeightmapAODepth : register(t11);
@@ -1261,9 +1261,9 @@ pixout DirOccPassPS(vtxOut IN)
 		vSampleTC[1].zw = screenTC.xy + rotatedKernel[i+3].xy * radius;
 		
 	#if %_RT_SAMPLE0
-		half4 fLinearDepthTap = SSDOFetchDepths( _tex5, vSampleTC );
+		half4 fLinearDepthTap = SSDOFetchDepths( _tex5, vSampleTC, 3 ) + 0.0000001;
 	#else
-		half4 fLinearDepthTap = SSDOFetchDepths( _tex1, vSampleTC );
+		half4 fLinearDepthTap = SSDOFetchDepths( _tex1, vSampleTC, 0 );
 	#endif
 	
 		fLinearDepthTap *= cbSSDO.nearFarClipDist.y;
@@ -1303,7 +1303,7 @@ pixout DirOccPassPS(vtxOut IN)
 		sh2.xyz += fObscurance.x * vSample[0] + fObscurance.y * vSample[1] + fObscurance.z * vSample[2] + fObscurance.w * vSample[3];
 	}
 	
-	sh2.xyz = mul( CV_InvViewMatr, half4(sh2.xyz, 0) ).xyz * float3(1, -1, -1);
+	sh2.xyz = mul( CV_InvViewMatr, half4(sh2.xyz * float3(1, -1, -1), 0) ).xyz;
 
 	const half fNormFac = 0.15;
 	sh2.xyzw *= fNormFac;
@@ -1329,7 +1329,7 @@ pixout DirOccPassPS(vtxOut IN)
 	
 	// Encode
 	OUT.Color.rgb = sh2.xyz * 0.5 + 0.5;
-	OUT.Color.a = sh2.w ;
+	OUT.Color.a = sh2.w;
 
 	return OUT;
 }
