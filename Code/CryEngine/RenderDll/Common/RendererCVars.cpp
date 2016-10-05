@@ -1130,7 +1130,7 @@ void CRendererCVars::InitCVars()
 	               "  1: Use new graphics pipeline with objects compiled on the fly\n"
 	               "  2: Use new graphics pipeline with permanent render objects");
 
-	REGISTER_CVAR3("r_DeferredShadingTiled", CV_r_DeferredShadingTiled, 0, VF_DUMPTODISK,
+	REGISTER_CVAR3("r_DeferredShadingTiled", CV_r_DeferredShadingTiled, 3, VF_DUMPTODISK,
 	               "Toggles tile based shading.\n"
 								 "0 - Off"
 	               "1 - Tiled forward shading for transparent objects\n"

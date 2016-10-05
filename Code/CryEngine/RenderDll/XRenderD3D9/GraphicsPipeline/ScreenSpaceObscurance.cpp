@@ -13,6 +13,7 @@ struct ObscuranceConstants
 	Vec4 nearFarClipDist;
 	Vec4 viewSpaceParams;
 	Vec4 ssdoParams;
+	Vec4 hmaoParams;
 };
 
 void CScreenSpaceObscuranceStage::Init()
@@ -91,6 +92,18 @@ void CScreenSpaceObscuranceStage::Execute(ShadowMapFrustum* pHeightMapFrustum, C
 
 			constants->viewSpaceParams = Vec4( 2.0f / pRenderer->m_ProjMatrix.m00,  2.0f / pRenderer->m_ProjMatrix.m11,
 																				-1.0f / pRenderer->m_ProjMatrix.m00, -1.0f / pRenderer->m_ProjMatrix.m11);
+
+			if (pHeightMapFrustum)
+			{
+				assert(pHeightMapAOTex && pHeightMapAOScreenDepthTex);
+				assert(pHeightMapAOTex->GetWidth() == pHeightMapAOScreenDepthTex->GetWidth() && pHeightMapAOTex->GetHeight() == pHeightMapAOScreenDepthTex->GetHeight());
+				const float resolutionFactor = floor_tpl(gcpRendD3D->GetWidth() / pHeightMapAOTex->GetWidth() + 0.5f);
+				constants->hmaoParams = Vec4(1.0f / (float)pHeightMapAOTex->GetWidth(), 1.0f / (float)pHeightMapAOTex->GetHeight(), 1.0f / resolutionFactor, 0);
+			}
+			else
+			{
+				constants->hmaoParams = Vec4(0, 0, 0, 0);
+			}
 		
 			m_passObscurance.EndTypedConstantUpdate(constants);
 		}

@@ -382,6 +382,7 @@ public:
 	f32                        m_SlopeScaledDepthBias;
 	ERenderPrimitiveType       m_PrimitiveType;
 	CDeviceResourceLayout*     m_pResourceLayout;
+	bool                       m_bDepthClip;
 };
 
 class CDeviceComputePSODesc

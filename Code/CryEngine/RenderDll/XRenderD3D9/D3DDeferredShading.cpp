@@ -3524,9 +3524,15 @@ void CDeferredShading::CreateDeferredMaps()
 	// height map AO mask
 	if (CRenderer::CV_r_HeightMapAO > 0)
 	{
-		const int nShift = clamp_tpl(3 - CRenderer::CV_r_HeightMapAO, 0, 2);
-		const int hmaoWidth = gcpRendD3D->GetWidth() >> nShift;
-		const int hmaoHeight = gcpRendD3D->GetHeight() >> nShift;
+		const int shift = clamp_tpl(3 - CRenderer::CV_r_HeightMapAO, 0, 2);
+		
+		int hmaoWidth = gcpRendD3D->GetWidth();
+		int hmaoHeight = gcpRendD3D->GetHeight();
+		for (int i = 0; i < shift; i++)
+		{
+			hmaoWidth = (hmaoWidth + 1) / 2;
+			hmaoHeight = (hmaoHeight + 1) / 2;
+		}
 
 		for (int i = 0; i < 2; ++i)
 		{

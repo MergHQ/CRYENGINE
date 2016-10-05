@@ -70,6 +70,7 @@ CRenderPrimitive::CRenderPrimitive(CRenderPrimitive&& other)
 	, m_primitiveGeometry(std::move(other.m_primitiveGeometry))
 	, m_constantManager(std::move(other.m_constantManager))
 	, m_currentPsoUpdateCount(std::move(other.m_currentPsoUpdateCount))
+	, m_bDepthClip(std::move(other.m_bDepthClip))
 {
 }
 
@@ -85,6 +86,7 @@ CRenderPrimitive::CRenderPrimitive(EPrimitiveFlags flags)
 	, m_rtMask(0)
 	, m_primitiveType(ePrim_Triangle)
 	, m_currentPsoUpdateCount(0)
+	, m_bDepthClip(true)
 {
 	m_pResources = CCryDeviceWrapper::GetObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 	m_instances.resize(1);
@@ -108,6 +110,7 @@ void CRenderPrimitive::Reset(EPrimitiveFlags flags)
 	m_rtMask = 0;
 	m_primitiveType = ePrim_Triangle;
 	m_currentPsoUpdateCount = 0;
+	m_bDepthClip = true;
 
 	m_pResources = std::move(pResources);
 	m_instances.resize(1);
@@ -221,6 +224,7 @@ CRenderPrimitive::EDirtyFlags CRenderPrimitive::Compile(uint32 renderTargetCount
 		psoDesc.m_StencilReadMask = m_stencilReadMask;
 		psoDesc.m_StencilWriteMask = m_stencilWriteMask;
 		psoDesc.m_CullMode = m_cullMode;
+		psoDesc.m_bDepthClip = m_bDepthClip;
 		m_pPipelineState = CCryDeviceWrapper::GetObjectFactory().CreateGraphicsPSO(psoDesc);
 
 		if (!m_pPipelineState || !m_pPipelineState->IsValid())

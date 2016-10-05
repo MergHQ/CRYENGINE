@@ -132,13 +132,8 @@ void CDepthDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bLi
 
 	m_pass.BeginConstantUpdate();
 
-	// Handle uneven source size by dropping last row/column
-	Vec4 params(0, 0, 0, 0);
-	int scaledWidth = (pSrcRT->GetWidth() + 1) / 2;
-	int scaledHeight = (pSrcRT->GetHeight() + 1) / 2;
-	params.x = (float)pDestRT->GetWidth() / (float)scaledWidth;
-	params.y = (float)pDestRT->GetHeight() / (float)scaledHeight;
-	m_pass.SetConstant( paramName, params, eHWSC_Pixel);
+	Vec4 params(1.0f / (float)pSrcRT->GetWidth(), 1.0f / (float)pSrcRT->GetHeight(), 0, 0);
+	m_pass.SetConstant(paramName, params, eHWSC_Pixel);
 	m_pass.Execute();
 }
 

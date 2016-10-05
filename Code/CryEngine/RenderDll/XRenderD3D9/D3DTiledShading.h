@@ -20,6 +20,17 @@ const uint32 LightTileSizeY = 8;
 const float TiledShading_SunDistance = 10000.0f;
 const float TiledShading_SunSourceDiameter = 94.0f;  // atan(AngDiameterSun) * 2 * SunDistance, where AngDiameterSun=0.54deg
 
+struct STiledLightInfo
+{
+	uint32 lightType;
+	uint32 volumeType;
+	Vec2   depthBoundsVS;
+	Vec4   posRad;
+	Vec4   volumeParams0;
+	Vec4   volumeParams1;
+	Vec4   volumeParams2;
+};
+
 struct STiledLightCullInfo
 {
 	uint32 volumeType;
@@ -93,6 +104,7 @@ public:
 	template<class RenderPassType>
 	void                  BindForwardShadingResources(RenderPassType& pass);
 
+	STiledLightInfo*      GetTiledLightInfo()                                                  { return m_tileLights; }
 	STiledLightCullInfo*  GetTiledLightCullInfo();
 	STiledLightShadeInfo* GetTiledLightShadeInfo();
 	uint32                GetValidLightCount()                                                 { return m_numValidLights; }
@@ -110,6 +122,8 @@ protected:
 	void PrepareClipVolumeList(Vec4* clipVolumeParams);
 
 protected:
+	STiledLightInfo m_tileLights[MaxNumTileLights];
+	
 	uint32         m_dispatchSizeX, m_dispatchSizeY;
 
 	CGpuBuffer     m_lightCullInfoBuf;

@@ -188,7 +188,7 @@ void TiledForwardShading( inout fragPass pPass, const bool shadowHighQualityFilt
 			{
 				STiledLightShadeInfo light = TiledLightsShadeInfo[lightIndex];
 				float3 position = pPass.IN.vView.xyz;
-				float3 lightVec = light.posRad.xyz - position;
+				float3 lightVec = (light.posRad.xyz - GetWorldViewPos()) - position;
 				
 				// Compute attenuation for box
 				float3 tmpLightVec;
@@ -210,7 +210,7 @@ void TiledForwardShading( inout fragPass pPass, const bool shadowHighQualityFilt
 					// Specular
 					float tmpGloss = 0;
 					float3 tmpReflVec = normalize( pPass.vReflVec );
-					CubemapBoxParallaxCorrection( tmpReflVec, position, light.posRad.xyz, light.shadowMatrix[0].xyz, light.shadowMatrix[1].xyz, tmpGloss );
+					CubemapBoxParallaxCorrection( tmpReflVec, position, (light.posRad.xyz - GetWorldViewPos()), light.shadowMatrix[0].xyz, light.shadowMatrix[1].xyz, tmpGloss );
 					float4 specularProbe = SpecCubeArray.SampleLevel( TrilinearClampSamplerState, float4( tmpReflVec, light.resIndex ), specCubeLod );
 					specularProbe.rgb = DecodeHDRCubemap( specularProbe ) * envFresnel;
 					pPass.cSpecularAcc += specularProbe.rgb * light.color.rgb * light.color.a * probeWeight;
@@ -235,7 +235,7 @@ void TiledForwardShading( inout fragPass pPass, const bool shadowHighQualityFilt
 
 		const float3 position = pPass.IN.vView.xyz;
 		const float4 posRad = TiledLightsShadeInfo[lightIndex].posRad;
-		const float3 lightVec = posRad.xyz - position;
+		const float3 lightVec = (posRad.xyz - GetWorldViewPos()) - position;
 		
 		if (applyNonProbes && TiledLightsShadeInfo[lightIndex].lightType > TILEDLIGHT_TYPE_AMBIENT_AREA && length( lightVec ) < posRad.w)
 		{
@@ -262,7 +262,7 @@ void TiledForwardShading( inout fragPass pPass, const bool shadowHighQualityFilt
 			{
 				if (attenuation > 0)
 				{
-					float4 projTC = mul( light.projectorMatrix, float4( position, 1.0f ) );  
+					float4 projTC = mul( light.projectorMatrix, float4( position + GetWorldViewPos(), 1.0f ) );  
 					projTC.xy /= projTC.w;		
 						
 					if (projTC.w < 0 || min( projTC.x, projTC.y ) < 0 || max( projTC.x, projTC.y ) > 1)  // Avoid back-projection
@@ -290,7 +290,7 @@ void TiledForwardShading( inout fragPass pPass, const bool shadowHighQualityFilt
 			{
 				if (shadowMap)
 				{
-					float4 P0 = mul( light.shadowMatrix, float4( position, 1 ) );
+					float4 P0 = mul( light.shadowMatrix, float4( position + GetWorldViewPos(), 1 ) );
 					P0.xy /= P0.w;
 					P0.z -= light.shadowParams.y;
 					
@@ -355,10 +355,6 @@ void TiledForwardShading( inout fragPass pPass, const bool shadowHighQualityFilt
 
 float4 ProjParams;
 float4 ScreenSize;
-float4 FrustumTL;
-float4 FrustumTR;
-float4 FrustumBL;
-float4 WorldViewPos;
 float4 SunDir;
 float4 SunColor;
 float4 SSDOParams;
@@ -654,7 +650,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 
 	// Barycentric interpolation for reconstructing position
 	float2 pixelUV = float2( pixelCoord.x * ScreenSize.z, pixelCoord.y * ScreenSize.w );
-	float3 position = ((1 - pixelUV.x - pixelUV.y) * FrustumTL.xyz + pixelUV.x * FrustumTR.xyz + pixelUV.y * FrustumBL.xyz) * linearZ;
+	float3 position = ReconstructWorldPos(pixelCoord, linearZ, true);
 	
 	float3 viewVec = normalize( -position );
 	
@@ -683,7 +679,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 			[branch] if (probeWeightSum < 1.0 && clipVolumeBlendWeight > 0)
 			{
 				STiledLightShadeInfo light = TiledLightsShadeInfo[lightIndex];
-				float3 lightVec = light.posRad.xyz - position.xyz;
+				float3 lightVec = (light.posRad.xyz - GetWorldViewPos()) - position.xyz;
 				
 				// Compute attenuation for box
 				float3 tmpLightVec;
@@ -710,7 +706,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 					// Specular
 					float tmpGloss = 0;
 					float3 tmpReflVec = reflVec;
-					CubemapBoxParallaxCorrection( tmpReflVec, position, light.posRad.xyz, light.shadowMatrix[0].xyz, light.shadowMatrix[1].xyz, tmpGloss );
+					CubemapBoxParallaxCorrection( tmpReflVec, position, light.posRad.xyz - GetWorldViewPos(), light.shadowMatrix[0].xyz, light.shadowMatrix[1].xyz, tmpGloss );
 					float4 specularProbe = SpecCubeArray.SampleLevel( SampStateTrilinearClamp, float4( tmpReflVec, light.resIndex ), specCubeLod );
 					specularProbe.rgb = DecodeHDRCubemap( specularProbe );
 					specularAcc += specularProbe.rgb * light.color.rgb * light.color.a * probeWeight;
@@ -767,7 +763,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 		
 		if (!skipShading)
 		{
-			float3 lightVec = light.posRad.xyz - position.xyz;
+			float3 lightVec = (light.posRad.xyz - GetWorldViewPos()) - position.xyz;
 			
 			float filter = 1;
 			float attenuation;
@@ -803,7 +799,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 					filter = 0;
 					[branch] if (attenuation > 0)
 					{
-						float4 vProjTC = mul( light.projectorMatrix, float4( position, 1 ) );
+						float4 vProjTC = mul( light.projectorMatrix, float4( position + GetWorldViewPos(), 1 ) );
 						vProjTC.xy /= vProjTC.w;
 						
 						if (vProjTC.w > 0 && max( abs(vProjTC.x * 2 - 1), abs(vProjTC.y * 2 - 1) ) < 1)  // Avoid back-projection
@@ -869,7 +865,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 		else if (lightType == TILEDLIGHT_TYPE_REGULAR_AREA)
 		{
 			const float clipVolumeBlendWeight = CalcClipVolumeBlendWeight( clipVolumeStencilID, clipVolumeData, clipVolumeBlendFactor, TiledLightsShadeInfo[lightIndex].stencilID );
-			lightVec = light.posRad.xyz - position.xyz;
+			lightVec = (light.posRad.xyz - GetWorldViewPos()) - position.xyz;
 			lightVecAreaSpec = lightVec;
 			lightVec = ComputeNearestLightOnRectangle(position.xyz, lightVec, light.projectorMatrix);
 			attenuation = GetPhysicalLightAttenuation( length( lightVec ), 1.0 / light.posRad.w, light.attenuationParams.x ) * clipVolumeBlendWeight;
@@ -881,7 +877,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 		else
 		{
 			const float clipVolumeBlendWeight = CalcClipVolumeBlendWeight(clipVolumeStencilID, clipVolumeData, clipVolumeBlendFactor, TiledLightsShadeInfo[lightIndex].stencilID);
-			lightVec = light.posRad.xyz - position.xyz;
+			lightVec = (light.posRad.xyz - GetWorldViewPos()) - position.xyz;
 			lightVecAreaSpec = lightVec;
 			attenuation = GetPhysicalLightAttenuation( length( lightVec ), 1.0 / light.posRad.w, light.attenuationParams.x ) * clipVolumeBlendWeight;
 
@@ -900,7 +896,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 			{
 				if (lightType == TILEDLIGHT_TYPE_REGULAR_PROJECTOR)
 				{
-					float4 vProjTC = mul( light.projectorMatrix, float4( position, 1 ) );
+					float4 vProjTC = mul(light.projectorMatrix, float4(position + GetWorldViewPos(), 1));
 					vProjTC.xy /= vProjTC.w;
 					
 					[branch] if (vProjTC.w < 0 || max( abs(vProjTC.x * 2 - 1), abs(vProjTC.y * 2 - 1) ) > 1)  // Avoid back-projection
@@ -999,7 +995,20 @@ RWBuffer<uint> VolumeOpaqueLightMaskUAV : register(u0);
 RWBuffer<uint> VolumeTranspLightMaskUAV : register(u1);
 Buffer<float3> VolumeVertexData : register(t0);
 StructuredBuffer<STiledLightVolumeInfo> TiledLightsVolumeInfo : register(t1);
-float4 VolumeParams;
+
+cbuffer CBVolumeLightListGen : register(b0)
+{
+	struct
+	{
+		float4x4 matViewProj;
+		float4   params;
+		float4   screenScale;
+		float4   viewerPos;
+		float4   worldBasisX;
+		float4   worldBasisY;
+		float4   worldBasisZ;
+	} cbVolumeLightListGen;
+};
 
 struct vtxOutVolumeLightListGen
 {
@@ -1011,13 +1020,13 @@ vtxOutVolumeLightListGen VolumeLightListGenVS(vtxInLightPrePass IN, uint VertexI
 {
 	vtxOutVolumeLightListGen OUT = (vtxOutVolumeLightListGen)0; 
 	
-	uint numVertices = (uint)VolumeParams.w;
-	uint lightIndex = VolumeParams.z + VertexID / numVertices;
+	uint numVertices = (uint)cbVolumeLightListGen.params.w;
+	uint lightIndex = cbVolumeLightListGen.params.z + VertexID / numVertices;
 	
 	float4 pos = float4(VolumeVertexData[VertexID % numVertices], 1);
 	pos = mul(pos, TiledLightsVolumeInfo[lightIndex].worldMat);
 	
-	OUT.WPos = mul(pos, g_mViewProj);
+	OUT.WPos = mul(pos, cbVolumeLightListGen.matViewProj);
 	OUT.lightIndex = lightIndex;
 
 	return OUT;
@@ -1029,17 +1038,17 @@ void VolumeLightListGenPS(vtxOutVolumeLightListGen IN, bool bIsFrontFace : SV_Is
 	const uint lightIndex = IN.lightIndex;
 	const uint2 pixelPos = IN.WPos.xy;
 	
-	float linearDepth = VolumeParams.y / (IN.WPos.z - VolumeParams.x);
+	float linearDepth = cbVolumeLightListGen.params.y / (IN.WPos.z - cbVolumeLightListGen.params.x);
 	float2 depthMaxMin = DepthTex.Load(int3(pixelPos.xy, 0)).xy;
 	
-	float3 positionMax = CalcHomogeneousPos(depthMaxMin.x, pixelPos.xy);
-	float3 positionMin = CalcHomogeneousPos(depthMaxMin.y, pixelPos.xy);
+	float3 positionMax = CalcHomogeneousPos(depthMaxMin.x, pixelPos.xy, cbVolumeLightListGen.worldBasisX, cbVolumeLightListGen.worldBasisY, cbVolumeLightListGen.worldBasisZ);
+	float3 positionMin = CalcHomogeneousPos(depthMaxMin.y, pixelPos.xy, cbVolumeLightListGen.worldBasisX, cbVolumeLightListGen.worldBasisY, cbVolumeLightListGen.worldBasisZ);
 		
 	STiledLightVolumeInfo volume = TiledLightsVolumeInfo[lightIndex];
 	uint volumeType = volume.volumeTypeInfo.x;
 	uint lightId = volume.volumeTypeInfo.w;
 	
-	uint2 numTiles = (uint2)g_ScreenScale.xy;
+	uint2 numTiles = (uint2)cbVolumeLightListGen.screenScale.xy;
 	uint tileIdx = pixelPos.y * numTiles.x + pixelPos.x;
 	uint bufferBaseIdx = tileIdx * 8;
 	
@@ -1047,42 +1056,81 @@ void VolumeLightListGenPS(vtxOutVolumeLightListGen IN, bool bIsFrontFace : SV_Is
 	
 	if (volumeType == TILEDLIGHT_VOLUME_OBB)
 	{
-		float3 volumePos = float3(volume.volumeParams0.w, volume.volumeParams1.w, volume.volumeParams2.w);
+		// Transform into OBB space
+		float3 volumePos = float3(volume.volumeParams0.w, volume.volumeParams1.w, volume.volumeParams2.w) - cbVolumeLightListGen.viewerPos;
+		float3 posMinLS = mul(float3x3(volume.volumeParams0.xyz, volume.volumeParams1.xyz, volume.volumeParams2.xyz), volumePos - positionMin.xyz);
+		float3 posMaxLS = mul(float3x3(volume.volumeParams0.xyz, volume.volumeParams1.xyz, volume.volumeParams2.xyz), volumePos - positionMax.xyz);
 		
-		float3 tmpLightVec;
-		float3 lightVec = volumePos - positionMin.xyz;
-		tmpLightVec.x = dot(volume.volumeParams0.xyz, lightVec);
-		tmpLightVec.y = dot(volume.volumeParams1.xyz, lightVec);
-		tmpLightVec.z = dot(volume.volumeParams2.xyz, lightVec);
-		if (max(max(abs(tmpLightVec.x), abs(tmpLightVec.y)), abs(tmpLightVec.z)) < 1)
-			bInVolume = true;
+		float3 rayOrig = posMinLS;
+		float3 rayDir = normalize(posMaxLS - posMinLS);
+		
+		// Origin inside AABB
+		bInVolume = max(max(abs(rayOrig.x), abs(rayOrig.y)), abs(rayOrig.z)) <= 1;
 			
-		lightVec = volumePos - positionMax.xyz;
-		tmpLightVec.x = dot(volume.volumeParams0.xyz, lightVec);
-		tmpLightVec.y = dot(volume.volumeParams1.xyz, lightVec);
-		tmpLightVec.z = dot(volume.volumeParams2.xyz, lightVec);
-		if (max(max(abs(tmpLightVec.x), abs(tmpLightVec.y)), abs(tmpLightVec.z)) < 1)
-			bInVolume = true;
+		// Intersect ray with AABB
+		float3 rcpDir = rcp(rayDir);
+		float3 tneg = (-float3(1, 1, 1) - rayOrig) * rcpDir;
+		float3 tpos = ( float3(1, 1, 1) - rayOrig) * rcpDir;
+		float3 tmin = min(tneg, tpos);
+		float3 tmax = max(tneg, tpos);
+		float t0 = max(max(tmin.x, tmin.y), tmin.z);
+		float t1 = min(min(tmax.x, tmax.y), tmax.z);
+		if (t0 <= t1 && t0 > 0)
+		{
+			float3 isec = rayOrig + rayDir * t0;
+			if (length(isec - rayOrig) <= length(posMaxLS - rayOrig))
+				bInVolume = true;
+		}
 	}
 	else if (volumeType == TILEDLIGHT_VOLUME_CONE)
 	{
-		float3 lightVec = volume.volumeParams0.xyz - positionMin.xyz;
-		if (length(lightVec) < volume.volumeParams0.w && (dot(normalize(lightVec), volume.volumeParams1.xyz)) > volume.volumeParams1.w)
-			bInVolume = true;
-			
-		lightVec = volume.volumeParams0.xyz - positionMax.xyz;
-		if (length(lightVec) < volume.volumeParams0.w && (dot(normalize(lightVec), volume.volumeParams1.xyz)) > volume.volumeParams1.w)
-			bInVolume = true;
+		float3 forwardVec = volume.volumeParams1.xyz;
+		float3 upVector = abs(forwardVec.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+		float3 tangentX = normalize(cross(upVector, forwardVec));
+		float3 tangentY = cross(forwardVec, tangentX);
+		
+		// Compute projector frustum's left, right, top and bottom planes
+		float cosFOV = volume.volumeTypeInfo.z;
+		float sinFOV = volume.volumeTypeInfo.y;
+		float3 N0 =  tangentX * cosFOV - forwardVec * sinFOV;
+		float3 N1 = -tangentX * cosFOV - forwardVec * sinFOV;
+		float3 N2 =  tangentY * cosFOV - forwardVec * sinFOV;
+		float3 N3 = -tangentY * cosFOV - forwardVec * sinFOV;
+		
+		// Check near plane
+		const float3 P0 = volume.volumeParams0.xyz - cbVolumeLightListGen.viewerPos;
+		bInVolume = dot(-volume.volumeParams1.xyz, positionMin - P0) >= 0 || dot(-volume.volumeParams1.xyz, positionMax - P0) >= 0;
+		
+		// Check if min and max position are both on same side of planes
+		if (dot(N0, positionMin - P0) < 0 && dot(N0, positionMax - P0) < 0) bInVolume = false;
+		if (dot(N1, positionMin - P0) < 0 && dot(N1, positionMax - P0) < 0) bInVolume = false;
+		if (dot(N2, positionMin - P0) < 0 && dot(N2, positionMax - P0) < 0) bInVolume = false;
+		if (dot(N3, positionMin - P0) < 0 && dot(N3, positionMax - P0) < 0) bInVolume = false;
+		
+		// Far plane
+		float3 P1 = P0 - volume.volumeParams1.xyz * volume.volumeParams0.w;
+		if (dot(volume.volumeParams1.xyz, positionMin - P1) < 0 && dot(volume.volumeParams1.xyz, positionMax - P1) < 0) bInVolume = false;
 	}
 	else  // volumeType == TILEDLIGHT_VOLUME_SPHERE
 	{
-		float3 lightVec = volume.volumeParams0.xyz - positionMin.xyz;
-		if (length(lightVec) < volume.volumeParams0.w)
-			bInVolume = true;
-			
-		lightVec = volume.volumeParams0.xyz - positionMax.xyz;
-		if (length(lightVec) < volume.volumeParams0.w)
-			bInVolume = true;
+		float3 rayOrig = positionMin;
+		float3 rayDir = normalize(positionMax - positionMin);
+		
+		// Origin inside sphere
+		float3 volumePos = volume.volumeParams0.xyz - cbVolumeLightListGen.viewerPos;
+		bInVolume = length(rayOrig - volumePos) <= volume.volumeParams0.w;
+		
+		// Intersect ray with sphere
+		float3 v = volumePos - rayOrig;
+		float b = dot(v, rayDir);
+		float d = b * b + volume.volumeParams0.w * volume.volumeParams0.w - dot(v, v);
+		if (d > 0 && b > 0)
+		{
+			float t = b - sqrt(d);
+			float3 isec = rayOrig + rayDir * t;	
+			if (length(isec - rayOrig) <= length(positionMax - rayOrig))
+				bInVolume = true;
+		}
 	}
 	
 	[branch] if (bInVolume)

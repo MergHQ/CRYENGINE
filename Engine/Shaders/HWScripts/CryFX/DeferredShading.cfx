@@ -180,12 +180,16 @@ float3 GetWorldPos( float fDepth, float3 vCamVec )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+float4 CalcHomogeneousPos(float SceneDepth, float2 WPos, float4 worldBasisX, float4 worldBasisY, float4 worldBasisZ)
+{
+  float4 HPos = worldBasisZ.xyzw + (worldBasisX.xyzw * WPos.x) + (worldBasisY.xyzw * WPos.y);
+  HPos.xyzw *= SceneDepth.xxxx;
+  return HPos;
+}
 
 float4 CalcHomogeneousPos(float SceneDepth, float2 WPos)
 {
-  float4 HPos = vWBasisZ.xyzw + (vWBasisX.xyzw*WPos.x)+(vWBasisY.xyzw*WPos.y);
-  HPos.xyzw *= SceneDepth.xxxx;
-  return HPos;
+  return CalcHomogeneousPos(SceneDepth, WPos, vWBasisX, vWBasisY, vWBasisZ);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1165,6 +1169,7 @@ cbuffer CBSSDO : register(b0)
 		float4 nearFarClipDist;
 		float4 viewSpaceParams;
 		float4 ssdoParams;
+		float4 hmaoParams;
 	} cbSSDO;
 };
 
@@ -1305,11 +1310,13 @@ pixout DirOccPassPS(vtxOut IN)
 		
 	// Heightmap AO
 #if %_RT_SAMPLE1
-	float4 depths0 = HeightmapAODepth.GatherRed(HeightmapAOSampler, IN.baseTC);
-	float4 depths1 = HeightmapAODepth.GatherGreen(HeightmapAOSampler, IN.baseTC);
+	float2 scaledTC = (IN.WPos.xy * cbSSDO.hmaoParams.z) * cbSSDO.hmaoParams.xy;
 	
-	float4 occl0 = HeightmapAO.GatherRed(HeightmapAOSampler, IN.baseTC);
-	float4 occl1 = HeightmapAO.GatherGreen(HeightmapAOSampler, IN.baseTC);
+	float4 depths0 = HeightmapAODepth.GatherRed(HeightmapAOSampler, scaledTC);
+	float4 depths1 = HeightmapAODepth.GatherGreen(HeightmapAOSampler, scaledTC);
+	
+	float4 occl0 = HeightmapAO.GatherRed(HeightmapAOSampler, scaledTC);
+	float4 occl1 = HeightmapAO.GatherGreen(HeightmapAOSampler, scaledTC);
 
 	float4 w0 =  1.0 / (abs(depths0 - fCenterDepth) + 1e-5);
 	float4 w1 =  1.0 / (abs(depths1 - fCenterDepth) + 1e-5);

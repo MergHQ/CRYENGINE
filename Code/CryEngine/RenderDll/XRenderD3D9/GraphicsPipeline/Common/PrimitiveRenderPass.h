@@ -85,6 +85,7 @@ public:
 	void          SetRenderState(int state);
 	void          SetStencilState(int state, uint8 stencilRef, uint8 stencilReadMask = 0xFF, uint8 stencilWriteMask = 0xFF);
 	void          SetCullMode(ECull cullMode);
+	void          SetEnableDepthClip(bool bEnable);
 	void          SetTechnique(CShader* pShader, const CCryNameTSCRC& techName, uint64 rtMask);
 	void          SetTexture(uint32 shaderSlot, CTexture* pTexture, SResourceView::KeyType resourceViewID = SResourceView::DefaultView, EShaderStage shaderStages = EShaderStage_Pixel);
 	void          SetSampler(uint32 shaderSlot, int32 sampler, EShaderStage shaderStages = EShaderStage_Pixel);
@@ -135,6 +136,7 @@ private:
 	uint8                     m_stencilReadMask;
 	uint8                     m_stencilWriteMask;
 	ECull                     m_cullMode;
+	bool                      m_bDepthClip;
 	CShader*                  m_pShader;
 	CCryNameTSCRC             m_techniqueName;
 	uint64                    m_rtMask;
@@ -221,6 +223,11 @@ inline void CRenderPrimitive::SetStencilState(int state, uint8 stencilRef, uint8
 inline void CRenderPrimitive::SetCullMode(ECull cullMode)
 {
 	ASSIGN_VALUE(m_cullMode, cullMode, eDirty_RenderState);
+}
+
+inline void CRenderPrimitive::SetEnableDepthClip(bool bEnable)
+{
+	ASSIGN_VALUE(m_bDepthClip, bEnable, eDirty_RenderState);
 }
 
 inline void CRenderPrimitive::SetTechnique(CShader* pShader, const CCryNameTSCRC& techName, uint64 rtMask)

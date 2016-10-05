@@ -537,11 +537,11 @@ float4 DownsampleDepth_Params;
 pixout DownsampleDepthPS(vtxOut IN)
 {
 	pixout OUT = (pixout) 0;
+
+	float2 scaledTC = (IN.WPos.xy * 2.0) * DownsampleDepth_Params.xy;
 	
-	IN.baseTC.xy *= DownsampleDepth_Params.xy;
-	
-	float4 vMaxDepths = DownsampleDepth_DepthTex.GatherRed(SampStatePoint, float3(IN.baseTC.xy, 0));
-	float4 vMinDepths = DownsampleDepth_DepthTex.GatherGreen(SampStatePoint, float3(IN.baseTC.xy, 0));
+	float4 vMaxDepths = DownsampleDepth_DepthTex.GatherRed(SampStatePoint, float3(scaledTC, 0));
+	float4 vMinDepths = DownsampleDepth_DepthTex.GatherGreen(SampStatePoint, float3(scaledTC, 0));
 	
 	// Linearize depth
 #if %_RT_SAMPLE0

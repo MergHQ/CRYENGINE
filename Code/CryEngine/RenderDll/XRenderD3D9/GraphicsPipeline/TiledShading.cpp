@@ -17,6 +17,17 @@ struct STiledLightVolumeInfo
 	Vec4     volumeParams2;
 };
 
+struct VolumeLightListGenConstants
+{
+	Matrix44 matViewProj;
+	Vec4     params;
+	Vec4     screenScale;
+	Vec4     viewerPos;
+	Vec4     worldBasisX;
+	Vec4     worldBasisY;
+	Vec4     worldBasisZ;
+};
+
 CTiledShadingStage::CTiledShadingStage()
 	: m_passCullingShading(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader)
 {
@@ -101,6 +112,11 @@ void CTiledShadingStage::Init()
 			volumeMesh.vertexDataBuf.Create(volumeMesh.numVertices, sizeof(Vec3), DXGI_FORMAT_R32G32B32_FLOAT, DX11BUF_BIND_SRV, vertexData);
 		}
 	}
+
+	for (uint32 i = 0; i < CRY_ARRAY_COUNT(m_volumePasses); i++)
+	{
+		m_volumePasses[i].AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(VolumeLightListGenConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+	}
 }
 
 
@@ -114,12 +130,9 @@ void CTiledShadingStage::PrepareLightVolumeInfo()
 
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CTiledShading* pTiledShading = &pRenderer->GetTiledShading();
-	STiledLightCullInfo* pLightCullInfo = pTiledShading->GetTiledLightCullInfo();
+	STiledLightInfo* pLightInfo = pTiledShading->GetTiledLightInfo();
 
 	Vec3 camPos = pRenderer->GetRCamera().vOrigin;
-	Matrix44A matView = pRenderer->m_ViewMatrix;
-	matView.m02 *= -1; matView.m12 *= -1; matView.m22 *= -1; matView.m32 *= -1;
-	Matrix44A matViewInv = matView.GetInverted();
 	
 	float tileCoverageX = (float)LightTileSizeX / (float)pRenderer->GetWidth();
 	float tileCoverageY = (float)LightTileSizeY / (float)pRenderer->GetHeight();
@@ -130,19 +143,19 @@ void CTiledShadingStage::PrepareLightVolumeInfo()
 	uint32 numLights = pTiledShading->GetValidLightCount();
 	for (uint32 lightIdx = 0; lightIdx < numLights; ++lightIdx)
 	{
-		STiledLightCullInfo& lightCullInfo = pLightCullInfo[lightIdx];
+		STiledLightInfo& lightInfo = pLightInfo[lightIdx];
 
 		bool bInsideVolume = false;
-		Vec3 lightPos = Vec3(Vec4(Vec3(lightCullInfo.posRad), 1) * matViewInv);
-		if (lightPos.GetDistance(camPos) < lightCullInfo.posRad.w * 1.5f)
+		Vec3 lightPos = Vec3(lightInfo.posRad);
+		if (lightPos.GetDistance(camPos) < lightInfo.posRad.w * 1.25f)
 		{
 			bInsideVolume = true;
 		}
 
 		uint32 pass = eVolumeType_Sphere;
-		if (lightCullInfo.volumeType == CTiledShading::tlVolumeOBB)
+		if (lightInfo.volumeType == CTiledShading::tlVolumeOBB)
 			pass = eVolumeType_Box;
-		else if (lightCullInfo.volumeType == CTiledShading::tlVolumeCone)
+		else if (lightInfo.volumeType == CTiledShading::tlVolumeCone)
 			pass = eVolumeType_Cone;
 
 		pass += bInsideVolume ? 0 : eVolumeType_Count;
@@ -158,68 +171,74 @@ void CTiledShadingStage::PrepareLightVolumeInfo()
 		
 		for (uint32 j = 0; j < m_numVolumesPerPass[i]; j++)
 		{	
-			STiledLightCullInfo& lightCullInfo = pLightCullInfo[volumeLightIndices[i][j]];
+			STiledLightInfo& lightInfo = pLightInfo[volumeLightIndices[i][j]];
 
 			// To ensure conservative rasterization, we need to enlarge the projected volume by at least half a tile
 			// Compute the size of a tile in view space at the position of the volume
 			//     ScreenCoverage = FovScale * ObjectSize / Distance  =>  ObjectSize = ScreenCoverage * Distance / FovScale
-			float distance = (bInsideVolume ? lightCullInfo.depthBounds.y : lightCullInfo.depthBounds.x) * pRenderer->GetRCamera().fFar;
-			float tileSizeVS = std::max(tileCoverageX * distance / camFovScaleX, tileCoverageY * distance / camFovScaleY);
-			tileSizeVS = sqrtf(sqr(tileCoverageX * distance / camFovScaleX) + sqr(tileCoverageY * distance / camFovScaleY));
+			float distance = lightInfo.depthBoundsVS.y * pRenderer->GetRCamera().fFar;
+			float tileSizeVS = sqrtf(sqr(tileCoverageX * distance / camFovScaleX) + sqr(tileCoverageY * distance / camFovScaleY));
 			
-			Vec3 lightPos = Vec3(Vec4(Vec3(lightCullInfo.posRad), 1) * matViewInv);
+			Vec3 lightPos = Vec3(lightInfo.posRad);
 			
 			Matrix44 worldMat;
 			Vec4 volumeParams0(0, 0, 0, 0);
 			Vec4 volumeParams1(0, 0, 0, 0);
 			Vec4 volumeParams2(0, 0, 0, 0);
 
-			if (lightCullInfo.volumeType == CTiledShading::tlVolumeOBB)
+			volumeInfo[curIndex].volumeTypeInfo = Vec4((float)lightInfo.volumeType, 0, 0, (float)volumeLightIndices[i][j]);
+
+			if (lightInfo.volumeType == CTiledShading::tlVolumeOBB)
 			{
-				float minBoxSize = std::min(std::min(lightCullInfo.volumeParams0.w, lightCullInfo.volumeParams1.w), lightCullInfo.volumeParams2.w);
+				float minBoxSize = std::min(std::min(lightInfo.volumeParams0.w, lightInfo.volumeParams1.w), lightInfo.volumeParams2.w);
 				float volumeScale = (minBoxSize + tileSizeVS) / minBoxSize;
 
-				volumeParams0 = Vec4(Vec3(lightCullInfo.volumeParams0), 0) * matViewInv; volumeParams0.w = lightCullInfo.volumeParams0.w * volumeScale;
-				volumeParams1 = Vec4(Vec3(lightCullInfo.volumeParams1), 0) * matViewInv; volumeParams1.w = lightCullInfo.volumeParams1.w * volumeScale;
-				volumeParams2 = Vec4(Vec3(lightCullInfo.volumeParams2), 0) * matViewInv; volumeParams2.w = lightCullInfo.volumeParams2.w * volumeScale;
+				volumeParams0 = Vec4(Vec3(lightInfo.volumeParams0), lightInfo.volumeParams0.w * volumeScale);
+				volumeParams1 = Vec4(Vec3(lightInfo.volumeParams1), lightInfo.volumeParams1.w * volumeScale);
+				volumeParams2 = Vec4(Vec3(lightInfo.volumeParams2), lightInfo.volumeParams2.w * volumeScale);
 				
 				Matrix33 rotScaleMat(Vec3(volumeParams0) * volumeParams0.w, Vec3(volumeParams1) * volumeParams1.w, Vec3(volumeParams2) * volumeParams2.w);
 				Matrix34 unitVolumeToWorldMat = Matrix34::CreateTranslationMat(lightPos) * rotScaleMat;
 				worldMat = unitVolumeToWorldMat.GetTransposed();
 
-				volumeParams0 = Vec4(Vec3(volumeParams0) / volumeParams0.w, lightPos.x - camPos.x);
-				volumeParams1 = Vec4(Vec3(volumeParams1) / volumeParams1.w, lightPos.y - camPos.y);
-				volumeParams2 = Vec4(Vec3(volumeParams2) / volumeParams2.w, lightPos.z - camPos.z);
+				volumeParams0 = Vec4(Vec3(volumeParams0) / volumeParams0.w, lightPos.x);
+				volumeParams1 = Vec4(Vec3(volumeParams1) / volumeParams1.w, lightPos.y);
+				volumeParams2 = Vec4(Vec3(volumeParams2) / volumeParams2.w, lightPos.z);
 			}
-			else if (lightCullInfo.volumeType == CTiledShading::tlVolumeSun)
+			else if (lightInfo.volumeType == CTiledShading::tlVolumeSun)
 			{
-				volumeParams0 = Vec4(camPos - camPos, pRenderer->GetRCamera().fFar - 1.0f);
+				volumeParams0 = Vec4(camPos, pRenderer->GetRCamera().fFar - 1.0f);
 				
 				Matrix34 unitVolumeToWorldMat = Matrix34::CreateScale(Vec3(volumeParams0.w), camPos);
 				worldMat = unitVolumeToWorldMat.GetTransposed();
 			}
-			else if (lightCullInfo.volumeType == CTiledShading::tlVolumeCone)
+			else if (lightInfo.volumeType == CTiledShading::tlVolumeCone)
 			{
-				float volumeScale = (lightCullInfo.posRad.w + tileSizeVS) / lightCullInfo.posRad.w;
-				volumeParams0 = Vec4(lightPos - camPos, lightCullInfo.posRad.w * volumeScale);
-				volumeParams1 = Vec4(Vec3(Vec4(Vec3(lightCullInfo.volumeParams0), 0) * matViewInv), cosf(lightCullInfo.volumeParams1.w + 0.20f));
+				float coneAngle = std::min(lightInfo.volumeParams1.w + 0.02f, PI / 2.0f);
+				volumeInfo[curIndex].volumeTypeInfo.y = sinf(coneAngle);
+				volumeInfo[curIndex].volumeTypeInfo.z = cosf(coneAngle);
+
+				volumeParams1 = Vec4(Vec3(lightInfo.volumeParams0), cosf(coneAngle));
+
+				Vec3 coneTip = lightPos + Vec3(volumeParams1) * tileSizeVS;
+				float volumeScale = (lightInfo.posRad.w + tileSizeVS * 2.0f) / lightInfo.posRad.w;
+				volumeParams0 = Vec4(coneTip, lightInfo.posRad.w * volumeScale);
 				
-				float volumeScaleLowRes = (lightCullInfo.posRad.w + (2.0f + tileSizeVS)) / lightCullInfo.posRad.w;
-				Matrix34 unitVolumeToWorldMat = Matrix34::CreateScale(Vec3(lightCullInfo.posRad.w * volumeScaleLowRes), lightPos);
+				float volumeScaleLowRes = (lightInfo.posRad.w * 1.2f + (tileSizeVS * 2.0f)) / lightInfo.posRad.w;
+				Matrix34 unitVolumeToWorldMat = Matrix34::CreateScale(Vec3(lightInfo.posRad.w * volumeScaleLowRes), coneTip);
 				worldMat = unitVolumeToWorldMat.GetTransposed();
 			}
-			else
+			else  // CTiledShading::tlVolumeSphere
 			{
-				float volumeScale = (lightCullInfo.posRad.w + tileSizeVS) / lightCullInfo.posRad.w;
-				volumeParams0 = Vec4(lightPos - camPos, lightCullInfo.posRad.w * volumeScale);
+				float volumeScale = (lightInfo.posRad.w + tileSizeVS) / lightInfo.posRad.w;
+				volumeParams0 = Vec4(lightPos, lightInfo.posRad.w * volumeScale);
 				
-				float volumeScaleLowRes = (lightCullInfo.posRad.w + (2.0f + tileSizeVS)) / lightCullInfo.posRad.w;
-				Matrix34 unitVolumeToWorldMat = Matrix34::CreateScale(Vec3(lightCullInfo.posRad.w * volumeScaleLowRes), lightPos);
+				float volumeScaleLowRes = (lightInfo.posRad.w * 1.2f + tileSizeVS) / lightInfo.posRad.w;
+				Matrix34 unitVolumeToWorldMat = Matrix34::CreateScale(Vec3(lightInfo.posRad.w * volumeScaleLowRes), lightPos);
 				worldMat = unitVolumeToWorldMat.GetTransposed();
 			}
 
 			volumeInfo[curIndex].worldMat = worldMat;
-			volumeInfo[curIndex].volumeTypeInfo = Vec4((float)lightCullInfo.volumeType, 0, 0, (float)volumeLightIndices[i][j]);
 			volumeInfo[curIndex].volumeParams0 = volumeParams0;
 			volumeInfo[curIndex].volumeParams1 = volumeParams1;
 			volumeInfo[curIndex].volumeParams2 = volumeParams2;
@@ -280,10 +299,25 @@ bool CTiledShadingStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispa
 
 	PrepareLightVolumeInfo();
 	
-	Vec4r wBasisX, wBasisY, wBasisZ, camPos;
-	CShadowUtils::ProjectScreenToWorldExpansionBasis(
-		pRenderer->m_IdentityMatrix, pRenderer->GetCamera(), pRenderer->m_vProjMatrixSubPixoffset,
-		(float)pDepthRT->GetWidth(), (float)pDepthRT->GetHeight(), wBasisX, wBasisY, wBasisZ, camPos, true, NULL);
+	CStandardGraphicsPipeline::SViewInfo viewInfo[2];
+	int viewInfoCount = pRenderer->GetGraphicsPipeline().GetViewInfo(viewInfo);
+	
+	Matrix44 matViewProj[2];
+	Vec4 worldBasisX[2], worldBasisY[2], worldBasisZ[2], viewerPos[2];
+	for (int i = 0; i < viewInfoCount; ++i)
+	{
+		matViewProj[i] = viewInfo[i].viewMatrix * viewInfo[i].projMatrix;
+
+		Vec4r wBasisX, wBasisY, wBasisZ, camPos;
+		CShadowUtils::ProjectScreenToWorldExpansionBasis(
+			Matrix44(IDENTITY), *viewInfo[i].pCamera, pRenderer->m_vProjMatrixSubPixoffset,
+			(float)pDepthRT->GetWidth(), (float)pDepthRT->GetHeight(), wBasisX, wBasisY, wBasisZ, camPos, true, NULL);
+
+		worldBasisX[i] = wBasisX;
+		worldBasisY[i] = wBasisY;
+		worldBasisZ[i] = wBasisZ;
+		viewerPos[i]   = camPos;
+	}
 	
 	{
 		D3DViewPort viewport;
@@ -313,51 +347,51 @@ bool CTiledShadingStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispa
 				primitive.SetFlags(CRenderPrimitive::eFlags_ReflectConstantBuffersFromShader);
 				primitive.SetTechnique(CShaderMan::s_shDeferredShading, techLightVolume, 0);
 				primitive.SetRenderState(bInsideVolume ? GS_NODEPTHTEST : GS_DEPTHFUNC_GEQUAL);
+				primitive.SetEnableDepthClip(!bInsideVolume);
 				primitive.SetCullMode(bInsideVolume ? eCULL_Front : eCULL_Back);
 				primitive.SetTexture(3, CTexture::s_ptexZTargetScaled3, SResourceView::DefaultView, EShaderStage_Vertex | EShaderStage_Pixel);
 				primitive.SetBuffer(1, m_lightVolumeInfoBuf, false, EShaderStage_Vertex | EShaderStage_Pixel);
 
-				uint32 numIndices = m_volumeMeshes[volumeType].numIndices;
-				uint32 numVertices = m_volumeMeshes[volumeType].numVertices;
+				SVolumeGeometry& volumeMesh = m_volumeMeshes[volumeType];
+				uint32 numIndices = volumeMesh.numIndices;
+				uint32 numVertices = volumeMesh.numVertices;
 				uint32 numInstances = m_numVolumesPerPass[pass];
 			
-				primitive.SetCustomVertexStream(m_volumeMeshes[volumeType].vertexBuffer, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F));
-				primitive.SetCustomIndexStream(m_volumeMeshes[volumeType].indexBuffer, Index16);
+				primitive.SetCustomVertexStream(volumeMesh.vertexBuffer, eVF_P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F));
+				primitive.SetCustomIndexStream(volumeMesh.indexBuffer, Index16);
 				primitive.SetDrawInfo(eptTriangleList, 0, 0, numIndices * numInstances);
-				primitive.SetBuffer(0, m_volumeMeshes[volumeType].vertexDataBuf, false, EShaderStage_Vertex | EShaderStage_Pixel);
-				
-				auto& constantManager = primitive.GetConstantManager();
-				if (constantManager.IsShaderReflectionValid())
-				{
-					static CCryNameR viewProjName("g_mViewProj");
-					static CCryNameR volumeToWorldName("g_mUnitLightVolumeToWorld");
-					static CCryNameR screenScaleName("g_ScreenScale");
-					static CCryNameR volumeParamsName("VolumeParams");
-					static CCryNameR wBasisXName("vWBasisX");
-					static CCryNameR wBasisYName("vWBasisY");
-					static CCryNameR wBasisZName("vWBasisZ");
-			
-					Matrix44 viewProjMat = pRenderer->m_ViewMatrix * pRenderer->m_ProjMatrix;
-					Vec4 screenScale((float)pDepthRT->GetWidth(), (float)pDepthRT->GetHeight(), 0, 0);
+				primitive.SetBuffer(0, volumeMesh.vertexDataBuf, false, EShaderStage_Vertex | EShaderStage_Pixel);
 
-					CStandardGraphicsPipeline::SViewInfo viewInfo[2];
-					int viewInfoCount = gcpRendD3D->GetGraphicsPipeline().GetViewInfo(viewInfo);
+				{
+					auto constants = primitive.GetConstantManager().BeginTypedConstantUpdate<VolumeLightListGenConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+
+					constants->screenScale = Vec4((float)pDepthRT->GetWidth(), (float)pDepthRT->GetHeight(), 0, 0);
+
 					const bool bReverseDepth = (viewInfo[0].flags & CStandardGraphicsPipeline::SViewInfo::eFlags_ReverseDepth) != 0;
 					Vec4 volumeParams(0, 0, (float)curIndex, (float)numVertices);
 					float zn = viewInfo[0].pRenderCamera->fNear;
 					float zf = viewInfo[0].pRenderCamera->fFar;
 					volumeParams.x = bReverseDepth ? zn / (zn - zf) : zf / (zf - zn);
 					volumeParams.y = bReverseDepth ? zn / (zf - zn) : zn / (zn - zf);
-			
-					constantManager.BeginNamedConstantUpdate();
-					constantManager.SetNamedConstantArray(viewProjName, (Vec4*)viewProjMat.GetData(), 4, eHWSC_Vertex);
-					constantManager.SetNamedConstant(volumeParamsName, volumeParams, eHWSC_Vertex);
-					constantManager.SetNamedConstant(screenScaleName, screenScale, eHWSC_Pixel);
-					constantManager.SetNamedConstant(volumeParamsName, volumeParams, eHWSC_Pixel);
-					constantManager.SetNamedConstant(wBasisXName, (Vec4)wBasisX, eHWSC_Pixel);
-					constantManager.SetNamedConstant(wBasisYName, (Vec4)wBasisY, eHWSC_Pixel);
-					constantManager.SetNamedConstant(wBasisZName, (Vec4)wBasisZ, eHWSC_Pixel);
-					constantManager.EndNamedConstantUpdate();
+					constants->params = volumeParams;
+
+					constants->matViewProj = matViewProj[0];
+					constants->viewerPos   = viewerPos[0];
+					constants->worldBasisX = worldBasisX[0];
+					constants->worldBasisY = worldBasisY[0];
+					constants->worldBasisZ = worldBasisZ[0];
+
+					if (viewInfoCount > 1)
+					{
+						constants.BeginStereoOverride(true);
+						constants->matViewProj = matViewProj[1];
+						constants->viewerPos   = viewerPos[1];
+						constants->worldBasisX = worldBasisX[1];
+						constants->worldBasisY = worldBasisY[1];
+						constants->worldBasisZ = worldBasisZ[1];
+					}
+
+					primitive.GetConstantManager().EndTypedConstantUpdate(constants);
 				}
 				
 				m_passLightVolumes.AddPrimitive(&primitive);
@@ -485,6 +519,10 @@ void CTiledShadingStage::Execute()
 
 		s_prevTexAOColorBleed = pTexAOColorBleed->GetID();
 	}
+
+	RECT viewport = { 0, 0, screenWidth, screenHeight };
+	rd->GetGraphicsPipeline().UpdatePerViewConstantBuffer(&viewport);
+	m_passCullingShading.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, rd->GetGraphicsPipeline().GetPerViewConstantBuffer());
 
 	m_passCullingShading.BeginConstantUpdate();
 	{

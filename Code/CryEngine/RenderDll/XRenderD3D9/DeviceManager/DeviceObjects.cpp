@@ -432,6 +432,7 @@ void CDeviceGraphicsPSODesc::InitWithDefaults()
 	m_PrimitiveType = eptTriangleList;
 	m_DepthStencilFormat = eTF_Unknown;
 	m_RenderTargetFormats.fill(eTF_Unknown);
+	m_bDepthClip = true;
 }
 
 CDeviceGraphicsPSODesc& CDeviceGraphicsPSODesc::operator=(const CDeviceGraphicsPSODesc& other)
@@ -482,7 +483,7 @@ void CDeviceGraphicsPSODesc::FillDescs(D3D11_RASTERIZER_DESC& rasterizerDesc, D3
 	ZeroMemory(&depthStencilDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
 
 	// Fill mode
-	rasterizerDesc.DepthClipEnable = 1;
+	rasterizerDesc.DepthClipEnable = m_bDepthClip ? 1 : 0;
 	rasterizerDesc.FrontCounterClockwise = 1;
 	rasterizerDesc.FillMode = (renderState & GS_WIREFRAME) ? D3D11_FILL_WIREFRAME : D3D11_FILL_SOLID;
 	rasterizerDesc.CullMode =
