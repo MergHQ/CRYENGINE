@@ -21,6 +21,7 @@ public:
 	virtual ~CRigidBody() {}
 
 	// ISimpleExtension	
+	virtual bool Init(IGameObject* pGameObject) override;
 	virtual void ProcessEvent(SEntityEvent &event) override;
 	// ~ISimpleExtension
 

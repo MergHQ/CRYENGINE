@@ -53,3 +53,16 @@ void CRigidBody::Reset()
 		GetEntity()->Physicalize(physicalizationParams);
 	}
 }
+
+bool CRigidBody::Init(IGameObject* pGameObject)
+{
+	if (!CNativeEntityBase::Init(pGameObject))
+	{
+		return false;
+	}
+
+	// Physicalize during initialization
+	Reset();
+	
+	return true;
+}
