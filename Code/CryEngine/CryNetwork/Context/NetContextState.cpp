@@ -1877,7 +1877,7 @@ bool CNetContextState::AllocateObject(EntityId userID, SNetObjectID netID, Netwo
 	NET_ASSERT(obj.salt == netID.salt);
 
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(userID);
-	if (CVARS.LogLevel)
+	if (CVARS.LogLevel > 1)
 	{
 		NetLog("AllocateObject: userID:%.8x (%s) netID:%s aspectBits:%.2x [%s %s] controller:%p",
 		       userID,
@@ -3228,9 +3228,9 @@ void CNetContextState::DrawDebugScreens()
 
 			IRenderAuxText::Draw2dLabel(nameWidth, y, 1, white, false, "%" PRISIZE_T, muClassObjectsTotal.required);
 			IRenderAuxText::Draw2dLabel(nameWidth + (colWidth * 0.5f), y, 1, white, false, "%" PRISIZE_T " / %" PRISIZE_T " / %" PRISIZE_T,
-			                   muClassObjectsBase.required,
-			                   muClassObjectsAspectData.required,
-			                   muClassObjectsTotal.used);
+			                            muClassObjectsBase.required,
+			                            muClassObjectsAspectData.required,
+			                            muClassObjectsTotal.used);
 			y += rowHeight;
 
 			muAll += muClassObjectsTotal;
