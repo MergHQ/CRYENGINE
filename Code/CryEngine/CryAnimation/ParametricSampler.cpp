@@ -2230,13 +2230,16 @@ void SParametricSamplerInternal::VisualizeBlendSpace(const IAnimationSet* _pAnim
 			const ColorB faceColor = (selectedFace == f) ? selFaceColor : unselFaceColor;
 
 			const BSBlendable& face = rLMG.m_arrBSAnnotations[f];
-			const Vec4& vP0 = rLMG.m_arrParameter[face.idx0].m_Para;
-			Vec3 v0 = Vec3(vP0.x, vP0.y, vP0.z) * scl + off;
 			const uint8* pIdxs = &face.idx0;
+
+			if (face.num < 3)
+			{
+				continue;
+			}
 
 			for (uint32 i = 0; i < face.num; i++)
 			{
-				Vec3 pt(rLMG.m_arrParameter[pIdxs[i]].m_Para.x, rLMG.m_arrParameter[pIdxs[i]].m_Para.y, rLMG.m_arrParameter[pIdxs[i]].m_Para.z);
+				const Vec3 pt(rLMG.m_arrParameter[pIdxs[i]].m_Para.x, rLMG.m_arrParameter[pIdxs[i]].m_Para.y, rLMG.m_arrParameter[pIdxs[i]].m_Para.z);
 				facePts[i] = pt * scl + off;
 			}
 

@@ -8,59 +8,47 @@ from win32com.shell import shell, shellcon
 ENGINE_FILENAME= 'cryengine.json'
 ENGINE_EXTENSION= '.cryengine'
 
-def path (filename):
-	#https://blogs.msdn.microsoft.com/patricka/2010/03/18/where-should-i-store-my-data-and-configuration-files-if-i-target-multiple-os-versions/	
-	return os.path.join (shell.SHGetFolderPath (0, shellcon.CSIDL_COMMON_APPDATA, None, 0), 'Crytek', 'CRYENGINE', filename)
+def paths_enginedb():
+	#https://blogs.msdn.microsoft.com/patricka/2010/03/18/where-should-i-store-my-data-and-configuration-files-if-i-target-multiple-os-versions/
+	return (
+		os.path.join (shell.SHGetFolderPath (0, shellcon.CSIDL_COMMON_APPDATA, None, 0), 'Crytek', 'CRYENGINE', ENGINE_FILENAME),
+		os.path.join (shell.SHGetFolderPath (0, shellcon.CSIDL_LOCAL_APPDATA, None, 0), 'Crytek', 'CRYENGINE', ENGINE_FILENAME)
+	)
+
+def delete():
+	for registry_path in paths_enginedb():
+		try:
+			if os.path.isfile (registry_path):
+				os.remove (registry_path)
+		except:
+			pass
 
 def load_engines():
-	registry_path= path(ENGINE_FILENAME)
+	db= {}
 	
-	try:
-		file= open (registry_path, 'r')
-		db= json.loads (file.read())
-		file.close()
-	except:
-		db= {}
+	for registry_path in paths_enginedb():
+		try:
+			with open (registry_path, 'r') as file:
+				db.update (json.loads (file.read()))
+		except:
+			pass
 	
 	return db
 
 def save_engines (db):
-	registry_path= path (ENGINE_FILENAME)
-	registry_dir= os.path.dirname (registry_path)
-	if not os.path.isdir (registry_dir):
-		os.makedirs (registry_dir)
-	
-	file= open (registry_path, 'w')
-	file.write (json.dumps (db, indent=4, sort_keys=True))
-	file.close()
+	for registry_path in paths_enginedb():
+		try:	
+			registry_dir= os.path.dirname (registry_path)
+			if not os.path.isdir (registry_dir):
+				os.makedirs (registry_dir)
+			
+			with open (registry_path, 'w') as file:
+				file.write (json.dumps (db, indent=4, sort_keys=True))
+		except:
+			pass
 
 #---
-
-#def project_file (db, k):
-	#project= db.get(k)
-	#return project['uri']
-
-#def filter_plugin (db, k_list):
-	#return filter (lambda k: db[k]['info']['type'] == 'plugin', k_list)		
-
-#def filter_engine (db, k_list):
-	#return filter (lambda k: db[k]['info']['type'] == 'engine', k_list)
 	
 def engine_path (db, engine_version):
 	path= db.get (engine_version, {'uri': None})['uri']
 	return path and os.path.dirname (path) or None
-
-	# require= {}
-	# reqdict_create (db, proj['require'], require)
-	# require= reqdict_listsorted (require)
-	# 
-	# missing= []
-	# engine= []
-	# for k in require:
-	# 	item= db.get (k, {'info':{}})
-	# 	info= item['info']
-	# 	if info.get ('type') == 'engine':
-	# 		engine.append ((info['version'], item['uri']))
-	# 		
-	# engine.sort()
-	# return os.path.dirname (engine[0][1])

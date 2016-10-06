@@ -596,10 +596,11 @@ void NavigationSystem::SetVolume(NavigationVolumeID volumeID, Vec3* vertices, si
 			}
 		}
 
+		newVolume.Swap(volume);
+
+		// recompute the world bounding box after we have set the volume
 		if (recomputeAABB)
 			ComputeWorldAABB();
-
-		newVolume.Swap(volume);
 	}
 }
 

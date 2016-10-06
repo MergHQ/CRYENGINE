@@ -1,0 +1,31 @@
+{
+	"description"                           : "Configuration to build CryScaleformHelper",
+	"valid_platforms"                       : [ "win", "durango"],
+	"valid_configuration"                   : [ "debug", "profile", "performance", "release" ],
+	"visual_studio_name"                    : "ScaleformHelper",
+
+	"module_extensions"                     : ["scaleform"],
+
+	"modules" :
+	[
+		"CryScaleformHelper"
+	],
+	"win_force_shared_monolithic_build_modules" : 
+	[
+		"CryScaleformHelper"
+	],
+	
+	"durango_force_shared_monolithic_build_modules" : 
+	[
+		"CryScaleformHelper"
+	],
+
+	"win_performance_defines"               : "PURE_CLIENT",
+	"win_performance_monolithic_build"      : "True",
+	"win_release_defines"                   : "PURE_CLIENT",
+	"win_release_monolithic_build"          : "True",
+
+	"durango_performance_monolithic_build"  : "True",
+	"durango_release_monolithic_build"      : "True"
+
+}

@@ -529,7 +529,7 @@ public:
 	virtual void          UnregisterWindowMessageHandler(IWindowMessageHandler* pHandler) override;
 	virtual int           PumpWindowMessage(bool bAll, WIN_HWND hWnd) override;
 	virtual bool          IsImeSupported() const override;
-	inline CImeManager*   GetImeManager() const { return m_pImeManager; }
+	virtual CImeManager*  GetImeManager() const { return m_pImeManager; }
 
 	// IWindowMessageHandler
 #if CRY_PLATFORM_WINDOWS

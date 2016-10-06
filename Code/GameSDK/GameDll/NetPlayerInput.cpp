@@ -531,14 +531,16 @@ void CNetPlayerInput::UpdateMoveRequest()
 
 	float fRotZDirDot	= vNewProjected.dot(vCurrentRight);
 	float fRotZDot		= vNewProjected.dot(vCurrentProjected);
-	float fRotZ				= acos_tpl(fRotZDot);
+	float fRotZ			= crymath::acos(crymath::clamp(fRotZDot, -1.0f, 1.0f));
 
 	fRotZ = AngleWrap_PI(fRotZ);
 
 	float fRotZFinal	= -fsgnf(fRotZDirDot) * fRotZ * fNetAimLerpFactor;
 
-	float fCurrentAngle = acos_tpl(Vec3Constants<float>::fVec3_OneZ.dot(m_lookDir));
-	float fNewAngle			= acos_tpl(Vec3Constants<float>::fVec3_OneZ.dot(m_curInput.lookDirection));
+	float fCurrentAngle = crymath::acos(crymath::clamp(
+		Vec3Constants<float>::fVec3_OneZ.dot(m_lookDir), -1.0f, 1.0f));
+	float fNewAngle		= crymath::acos(crymath::clamp(
+		Vec3Constants<float>::fVec3_OneZ.dot(m_curInput.lookDirection), -1.0f, 1.0f));
 
 	float fRotXFinal = (fNewAngle - fCurrentAngle) * -fNetAimLerpFactor;
 
