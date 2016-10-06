@@ -18,6 +18,14 @@
 //////////////////////////////////////////////////////////////////////////
 // Console variables local to EntitySystem.
 //////////////////////////////////////////////////////////////////////////
+struct SEntityWithCharacterInstanceAutoComplete : public IConsoleArgumentAutoComplete
+{
+	SEntityWithCharacterInstanceAutoComplete();
+
+	virtual int         GetCount() const override;
+	virtual const char* GetValue(int index) const override;
+};
+
 struct CVar
 {
 	static ICVar* pDebug;
@@ -104,6 +112,7 @@ struct CVar
 	static void CompileAreaGrid(IConsoleCmdArgs*);
 
 	static void EnableDebugAnimText(IConsoleCmdArgs* args);
+	static void SetDebugAnimText(IEntity* entity, const bool enable);
 
 	static void SetAudioListenerOffsets(IConsoleCmdArgs* pArgs);
 };

@@ -106,6 +106,66 @@ static void OnUpdateTypeChange(ICVar* pVar)
 	pEntityEventDist->SetFlags(pVar->GetIVal());
 }
 
+//////////////////////////////////////////////////////////////////////////
+SEntityWithCharacterInstanceAutoComplete::SEntityWithCharacterInstanceAutoComplete()
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+int SEntityWithCharacterInstanceAutoComplete::GetCount() const
+{
+	uint32 count = 0;
+	auto itEntity = GetIEntitySystem()->GetEntityIterator();
+	while (!itEntity->IsEnd())
+	{
+		if (IEntity* pEnt = itEntity->Next())
+		{
+			const uint32 numSlots = pEnt->GetSlotCount();
+			for (uint32 i = 0; i < numSlots; i++)
+			{
+				ICharacterInstance* pCharInst = pEnt->GetCharacter(i);
+				if (pCharInst)
+				{
+					count++;
+				}
+			}
+		}
+	}
+
+	return count;
+}
+
+//////////////////////////////////////////////////////////////////////////
+const char* SEntityWithCharacterInstanceAutoComplete::GetValue(int index) const
+{
+	auto itEntity = GetIEntitySystem()->GetEntityIterator();
+	uint32 count = 0;
+	while (!itEntity->IsEnd())
+	{
+		if (IEntity* pEnt = itEntity->Next())
+		{
+			const uint32 numSlots = pEnt->GetSlotCount();
+			for (uint32 i = 0; i < numSlots; i++)
+			{
+				ICharacterInstance* pCharInst = pEnt->GetCharacter(i);
+				if (pCharInst)
+				{
+					if (count == index)
+					{
+						return pEnt->GetName();
+					}
+					count++;
+				}
+			}
+		}
+	}
+
+	return "";
+}
+
+static SEntityWithCharacterInstanceAutoComplete s_entityWithCharacterInstanceAutoComplete;
+
+//////////////////////////////////////////////////////////////////////////
 void CVar::Init(struct IConsole* pConsole)
 {
 	assert(gEnv->pConsole);
@@ -114,7 +174,7 @@ void CVar::Init(struct IConsole* pConsole)
 	REGISTER_COMMAND("es_dump_entities", (ConsoleCommandFunc)DumpEntities, 0, "Dumps current entities and their states!");
 	REGISTER_COMMAND("es_dump_entity_classes_in_use", (ConsoleCommandFunc)DumpEntityClassesInUse, 0, "Dumps all used entity classes");
 	REGISTER_COMMAND("es_compile_area_grid", (ConsoleCommandFunc)CompileAreaGrid, 0, "Trigger a recompile of the area grid");
-		REGISTER_COMMAND("es_AudioListenerOffset", (ConsoleCommandFunc)SetAudioListenerOffsets, 0,
+	REGISTER_COMMAND("es_AudioListenerOffset", (ConsoleCommandFunc)SetAudioListenerOffsets, 0,
 	                 "Sets by how much the audio listener offsets its position and rotation in regards to its entity.\n"
 	                 "Usage: es_AudioListenerOffset PosX PosY PosZ RotX RotY RotZ\n");
 
@@ -266,6 +326,7 @@ void CVar::Init(struct IConsole* pConsole)
 	              "Debug entities creation and deletion time");
 
 	REGISTER_COMMAND("es_debugAnim", (ConsoleCommandFunc)EnableDebugAnimText, 0, "Debug entity animation (toggle on off)");
+	gEnv->pConsole->RegisterAutoComplete("es_debugAnim", &s_entityWithCharacterInstanceAutoComplete);
 
 	REGISTER_CVAR(es_EntityUpdatePosDelta, 0.1f, 0,
 	              "Indicates the position delta by which an entity must move before the AreaManager updates position relevant data.\n"
@@ -308,48 +369,63 @@ void CVar::CompileAreaGrid(IConsoleCmdArgs*)
 		pAreaManager->SetAreasDirty();
 }
 
-void CVar::EnableDebugAnimText(IConsoleCmdArgs* args)
+void CVar::SetDebugAnimText(IEntity* pEntity, const bool bEnable)
 {
-	if (args && args->GetArgCount() > 1)
+	CEntitySystem* pEntitySystem = GetIEntitySystem();
+
+	if (pEntity)
 	{
-		const char* szFilterName = args->GetArg(1);
-		bool enable = true;
-		if (args->GetArgCount() > 2)
+		uint32 numSlots = pEntity->GetSlotCount();
+		for (uint32 i = 0; i < numSlots; i++)
 		{
-			enable = (strcmp(args->GetArg(2), "0") != 0);
-		}
-
-		CEntitySystem* pEntitySystem = GetIEntitySystem();
-		IEntity* entity = pEntitySystem->FindEntityByName(szFilterName);
-
-		if (entity)
-		{
-			uint32 numSlots = entity->GetSlotCount();
-			for (uint32 i = 0; i < numSlots; i++)
+			ICharacterInstance* pCharInst = pEntity->GetCharacter(i);
+			if (pCharInst)
 			{
-				ICharacterInstance* charInst = entity->GetCharacter(i);
-				if (charInst)
+				pCharInst->GetISkeletonAnim()->SetDebugging(bEnable);
+				IAttachmentManager* pAttachmentManager = pCharInst->GetIAttachmentManager();
+				for (int32 attachmentIndex = 0; attachmentIndex < pAttachmentManager->GetAttachmentCount(); ++attachmentIndex)
 				{
-					charInst->GetISkeletonAnim()->SetDebugging(enable);
-					IAttachmentManager* pAttachmentManager = charInst->GetIAttachmentManager();
-					for (int32 attachmentIndex = 0; attachmentIndex < pAttachmentManager->GetAttachmentCount(); ++attachmentIndex)
-					{
-						IAttachment* pAttachment = pAttachmentManager->GetInterfaceByIndex(attachmentIndex);
-						assert(pAttachment);
+					IAttachment* pAttachment = pAttachmentManager->GetInterfaceByIndex(attachmentIndex);
+					assert(pAttachment);
 
-						IAttachmentObject* pObject = pAttachment->GetIAttachmentObject();
-						if (pObject)
+					IAttachmentObject* pObject = pAttachment->GetIAttachmentObject();
+					if (pObject)
+					{
+						ICharacterInstance* pObjectCharInst = pObject->GetICharacterInstance();
+						if (pObjectCharInst)
 						{
-							ICharacterInstance* pObjectCharInst = pObject->GetICharacterInstance();
-							if (pObjectCharInst)
+							pObjectCharInst->GetISkeletonAnim()->SetDebugging(bEnable);
+						}
+						if (pObject->GetAttachmentType() == IAttachmentObject::eAttachment_Entity)
+						{
+							IEntity* pAttachmentEntity = pEntitySystem->GetEntity(static_cast<CEntityAttachment*>(pObject)->GetEntityId());
+							if (pAttachmentEntity)
 							{
-								pObjectCharInst->GetISkeletonAnim()->SetDebugging(enable);
+								SetDebugAnimText(pAttachmentEntity, bEnable);
 							}
 						}
 					}
 				}
 			}
 		}
+	}
+}
+
+void CVar::EnableDebugAnimText(IConsoleCmdArgs* args)
+{
+	if (args && args->GetArgCount() > 1)
+	{
+		const char* szFilterName = args->GetArg(1);
+		bool bEnable = true;
+		if (args->GetArgCount() > 2)
+		{
+			bEnable = (strcmp(args->GetArg(2), "0") != 0);
+		}
+
+		CEntitySystem* pEntitySystem = GetIEntitySystem();
+		IEntity* pEntity = pEntitySystem->FindEntityByName(szFilterName);
+
+		SetDebugAnimText(pEntity, bEnable);
 	}
 }
 
