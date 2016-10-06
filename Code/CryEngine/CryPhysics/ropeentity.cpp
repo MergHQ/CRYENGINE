@@ -635,7 +635,7 @@ void CRopeEntity::EnforceConstraints(float seglen, const quaternionf& qtv,const 
 				if (fabs_tpl(angleSrc-angleDst)>limit && a>1e-20f && (!m_segs[i+(iDir>>31)].pContactEnt || bPlane))
 					m_segs[i+(iDir>>31)].dir = m_segs[i+(iDir>>31)].dir.GetRotated(axis1src/a, angleDst-angleSrc-limit*sgnnz(angleDst-angleSrc));
 				if (bPlane)
-					(m_segs[i+(iDir>>31)].dir -= n*(n*m_segs[i+(iDir>>31)].dir)).NormalizeFast();
+					(m_segs[i+(iDir>>31)].dir -= n*(n*m_segs[i+(iDir>>31)].dir)).normalize();
 				m_segs[i+iDir].pt = m_segs[i].pt+m_segs[i+(iDir>>31)].dir*(len*scaletv);
 			}
 		}
@@ -1836,7 +1836,7 @@ void CRopeEntity::CheckCollisions(int iDir, SRopeCheckPart *checkParts,int nChec
 				if (hinge) {
 					Vec3 dirSeg=aray.m_ray.dir, org0=aray.m_ray.origin;
 					aray.m_ray.origin += aray.m_ray.dir; 
-					(aray.m_dirn = ip.axisOfRotation^dirSeg).NormalizeFast();
+					(aray.m_dirn = ip.axisOfRotation^dirSeg).normalize();
 					aray.m_dirn *= sgnnz(aray.m_dirn*(aray.m_ray.origin-checkParts[j].bbox.center));
 					aray.m_ray.dir = aray.m_dirn*(m_length*0.5f);
 					aray.m_ray.origin -= aray.m_dirn*(m_collDist*1.3f);
