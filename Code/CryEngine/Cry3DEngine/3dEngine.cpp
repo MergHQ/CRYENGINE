@@ -3281,17 +3281,18 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 	for (x = 0; x < ((nSize + 3) / 4); ++x)
 	{
 		// Test and update or skip
-		__m128i cFrame = pFrames[x];
+		__m128i cFrame = _mm_loadu_si128(pFrames + x);
 		__m128i bMask = _mm_cmpgt_epi32(nFrames, cFrame);
 		if (_mm_movemask_ps(_mm_castsi128_ps(bMask)) == 0x0)
 			continue;
 
-		pFrames[x] = _mm_or_si128(_mm_and_si128(bMask, nFrames), _mm_andnot_si128(bMask, cFrame));
+		cFrame = _mm_or_si128(_mm_and_si128(bMask, nFrames), _mm_andnot_si128(bMask, cFrame));
+		_mm_storeu_si128(pFrames + x, cFrame);
 
 		// Interpolate
 		{
-			__m128 loField = pField[x * 2 + 0];
-			__m128 hiField = pField[x * 2 + 1];
+			__m128 loField = _mm_loadu_ps((float*)(pField + x * 2 + 0));
+			__m128 hiField = _mm_loadu_ps((float*)(pField + x * 2 + 1));
 			__m128 ipField = _mm_and_ps(fInterps, _mm_castsi128_ps(bMask));
 
 			__m128 loFieldInterps = _mm_unpacklo_ps(ipField, ipField);
@@ -3300,8 +3301,8 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 			loField = _mm_add_ps(loField, _mm_mul_ps(_mm_sub_ps(vWindCurs, loField), loFieldInterps));
 			hiField = _mm_add_ps(hiField, _mm_mul_ps(_mm_sub_ps(vWindCurs, hiField), hiFieldInterps));
 
-			pField[x * 2 + 0] = loField;
-			pField[x * 2 + 1] = hiField;
+			_mm_storeu_ps((float*)(pField + x * 2 + 0), loField);
+			_mm_storeu_ps((float*)(pField + x * 2 + 1), hiField);
 
 			loField = _mm_mul_ps(loField, fBendRps);
 			hiField = _mm_mul_ps(hiField, fBendRps);
@@ -3326,7 +3327,7 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 			__m128i loData = _mm_cvtps_ph(loField, 0);
 			__m128i hiData = _mm_cvtps_ph(hiField, 0);
 
-			pData[x] = _mm_unpacklo_epi64(loData, hiData);
+			_mm_storeu_si128(pData + x, _mm_unpacklo_epi64(loData, hiData));
 #else
 			__m128i loSign, loData = approx_float_to_half_SSE2(loField, loSign);
 			__m128i hiSign, hiData = approx_float_to_half_SSE2(hiField, hiSign);
@@ -3334,7 +3335,7 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 			loSign = _mm_packs_epi32(loSign, hiSign);
 			loData = _mm_packs_epi32(loData, hiData);
 
-			pData[x] = _mm_or_si128(loSign, loData);
+			_mm_storeu_si128(pData + x, _mm_or_si128(loSign, loData));
 #endif
 		}
 	}
@@ -3443,36 +3444,29 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 		__m128   fBendRps = _mm_set1_ps(fBEND_RESPONSE);
 		__m128   fBendMax = _mm_set1_ps(fMAX_BENDING);
 
-		// manage start alignment
-		if (nXGrid & 3)
-		{
-			int nXFrac = nXGrid & 3;
-			nXGrid -= nXFrac;
-
-			x = -1;
-			xs = _mm_set_epi32(nXFrac <= 3 ? 0 : nSize, nXFrac <= 2 ? 0 : nSize, nXFrac <= 1 ? 0 : nSize, nXFrac <= 0 ? 0 : nSize);
-		}
-		else
+		// Alignment doesn't matter currently, no memory loads requiring alignment are used below
 		{
 			x = 0;
-			xs = _mm_set1_epi32(x);
+			xs = _mm_set1_epi32(x * 4);
 		}
 
-		for (; x < ((nSize + 3) / 4); ++x, xs = _mm_set1_epi32(x))
+		for (; x < ((nSize + 3) / 4); ++x, xs = _mm_set1_epi32(x * 4))
 		{
 			// manage end alignment
+			__m128i cFrame = _mm_loadu_si128(pFrames + x);
 			__m128i bMask = _mm_cmpgt_epi32(nSizes, xs);
 
 			// Loop range ensures we either have a somewhat filled head, fully filled nodes, or somewhat filled tail, but never a empty iteration 
 			if (false && _mm_movemask_ps(_mm_castsi128_ps(bMask)) == 0x0)
 				continue;
 
-			pFrames[x] = _mm_or_si128(_mm_and_si128(bMask, nFrames), _mm_andnot_si128(bMask, pFrames[x]));
+			cFrame = _mm_or_si128(_mm_and_si128(bMask, nFrames), _mm_andnot_si128(bMask, cFrame));
+			_mm_storeu_si128(pFrames + x, cFrame);
 
 			// Interpolate
 			{
-				__m128 loField = pField[x * 2 + 0];
-				__m128 hiField = pField[x * 2 + 1];
+				__m128 loField = _mm_loadu_ps((float*)(pField + x * 2 + 0));
+				__m128 hiField = _mm_loadu_ps((float*)(pField + x * 2 + 1));
 				__m128 ipField = _mm_and_ps(fInterps, _mm_castsi128_ps(bMask));
 
 				__m128 loFieldInterps = _mm_unpacklo_ps(ipField, ipField);
@@ -3481,8 +3475,8 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 				loField = _mm_add_ps(loField, _mm_mul_ps(_mm_sub_ps(vWindCurs, loField), loFieldInterps));
 				hiField = _mm_add_ps(hiField, _mm_mul_ps(_mm_sub_ps(vWindCurs, hiField), hiFieldInterps));
 
-				pField[x * 2 + 0] = loField;
-				pField[x * 2 + 1] = hiField;
+				_mm_storeu_ps((float*)(pField + x * 2 + 0), loField);
+				_mm_storeu_ps((float*)(pField + x * 2 + 1), hiField);
 
 				loField = _mm_mul_ps(loField, fBendRps);
 				hiField = _mm_mul_ps(hiField, fBendRps);
@@ -3507,7 +3501,7 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 				__m128i loData = _mm_cvtps_ph(loField, 0);
 				__m128i hiData = _mm_cvtps_ph(hiField, 0);
 
-				pData[x] = _mm_unpacklo_epi64(loData, hiData);
+				_mm_storeu_si128(pData + x, _mm_unpacklo_epi64(loData, hiData));
 #else
 				__m128i loSign, loData = approx_float_to_half_SSE2(loField, loSign);
 				__m128i hiSign, hiData = approx_float_to_half_SSE2(hiField, hiSign);
@@ -3515,7 +3509,7 @@ void C3DEngine::UpdateWindGridArea(SWindGrid& rWindGrid, const SOptimizedOutdoor
 				loSign = _mm_packs_epi32(loSign, hiSign);
 				loData = _mm_packs_epi32(loData, hiData);
 
-				pData[x] = _mm_or_si128(loSign, loData);
+				_mm_storeu_si128(pData + x, _mm_or_si128(loSign, loData));
 #endif
 			}
 
