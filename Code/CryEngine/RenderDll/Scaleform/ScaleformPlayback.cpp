@@ -135,6 +135,9 @@ IScaleformPlayback::DeviceData* CScaleformPlayback::CreateDeviceData(const void*
 	assert(pData->DeviceDataHandle != ~0U);
 	gRenDev->m_DevBufMan.UpdateBuffer(pData->DeviceDataHandle, pVertices, pData->StrideSize * pData->NumElements);
 
+	if (!bTemp && (CRenderer::CV_r_GraphicsPipeline > 0))
+		CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
+
 	return pData;
 }
 
@@ -152,6 +155,9 @@ IScaleformPlayback::DeviceData* CScaleformPlayback::CreateDeviceData(const void*
 
 	assert(pData->DeviceDataHandle != ~0U);
 	gRenDev->m_DevBufMan.UpdateBuffer(pData->DeviceDataHandle, pIndices, pData->StrideSize * pData->NumElements);
+
+	if (!bTemp && (CRenderer::CV_r_GraphicsPipeline > 0))
+		CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 
 	return pData;
 }
@@ -231,6 +237,9 @@ IScaleformPlayback::DeviceData* CScaleformPlayback::CreateDeviceData(const Bitma
 
 	assert(pData->DeviceDataHandle != ~0U);
 	gRenDev->m_DevBufMan.UpdateBuffer(pData->DeviceDataHandle, pGlyphs, pData->StrideSize * pData->NumElements);
+
+	if (!bTemp && (CRenderer::CV_r_GraphicsPipeline > 0))
+		CCryDeviceWrapper::GetObjectFactory().GetCoreCommandList()->Reset();
 
 	return pData;
 }
