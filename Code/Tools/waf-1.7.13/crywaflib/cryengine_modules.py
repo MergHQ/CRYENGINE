@@ -328,6 +328,7 @@ def LoadFileLists(ctx, kw):
 	qt_source_files					= []
 	resource_files					= []
 	swig_files							= []
+	protobuf_files					= []
 	other_files							= []
 	uber_file_relative_list	= []
 	
@@ -409,6 +410,9 @@ def LoadFileLists(ctx, kw):
 				elif file.endswith('.i') or file.endswith('.swig'):
 					swig_files										+= [ file ]
 					
+				elif file.endswith('.proto'):
+					protobuf_files								+= [ file ]
+					
 				else:
 					other_files										+= [ file ]
 					
@@ -426,7 +430,7 @@ def LoadFileLists(ctx, kw):
 		# Compute final source list based on platform	
 		if platform == 'project_generator' or ctx.options.file_filter != "":			
 			# Collect all files plus uber files for project generators and when doing a single file compilation
-			kw['source'] = uber_file_relative_list + source_files + qt_source_files + darwin_source_files + java_source_files + header_files + resource_files + swig_files + other_files
+			kw['source'] = uber_file_relative_list + source_files + qt_source_files + darwin_source_files + java_source_files + header_files + resource_files + swig_files + protobuf_files + other_files
 			if platform == 'project_generator' and pch_file != '':
 				kw['source'] += [ pch_file ] # Also collect PCH for project generators
 
@@ -438,10 +442,10 @@ def LoadFileLists(ctx, kw):
 			# Regular compilation path
 			if ctx.is_option_true('use_uber_files'):
 				# Only take uber files when uber files are enabled and files not using uber files
-				kw['source'] = uber_file_relative_list + no_uber_file_files + qt_source_files + swig_files
+				kw['source'] = uber_file_relative_list + no_uber_file_files + qt_source_files + swig_files + protobuf_files
 			else:
 				# Fall back to pure list of source files
-				kw['source'] = source_files + qt_source_files + swig_files
+				kw['source'] = source_files + qt_source_files + swig_files + protobuf_files
 				
 			kw['header_source'] = header_files
 				

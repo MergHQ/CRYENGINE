@@ -269,6 +269,8 @@ def configure(conf):
 	conf.load('c')
 	conf.load('cxx')
 		
+	conf.load('protoc',tooldir=CRY_WAF_TOOL_DIR)
+	
 	###########################################
 	# Load Platform specific helpers based on host
 	host = Utils.unversioned_sys_platform()	
