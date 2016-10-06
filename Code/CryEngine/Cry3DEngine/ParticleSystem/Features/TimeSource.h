@@ -18,6 +18,7 @@ SERIALIZATION_ENUM_DECLARE(ETimeSource, ,
                            Field,
                            Attribute,
                            LevelTime,
+                           ViewAngle,
                            Random,
 
                            // old version

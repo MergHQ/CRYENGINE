@@ -33,7 +33,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->AddToUpdateList(EUL_Render, this);
+		pComponent->AddToUpdateList(EUL_RenderDeferred, this);
 		pComponent->AddParticleData(EPVF_Position);
 	}
 

@@ -121,31 +121,36 @@ struct CVars : public Cry3DEngineBase
 	#endif
 #endif
 
-	int   e_PermanentRenderObjects;
-	int   e_TerrainTextureStreamingPoolItemsNum;
-	int   e_ParticlesPoolSize;
-	int   e_ParticlesVertexPoolSize;
-	int   e_ParticlesIndexPoolSize;
-	int   e_ParticlesProfile;
-	int   e_ParticlesForceSeed;
-	float e_VegetationSpritesDistanceRatio;
-	int   e_Decals;
-	int   e_DecalsAllowGameDecals;
+	int    e_PermanentRenderObjects;
+	int    e_TerrainTextureStreamingPoolItemsNum;
+	int    e_ParticlesPoolSize;
+	int    e_ParticlesVertexPoolSize;
+	int    e_ParticlesIndexPoolSize;
+	int    e_ParticlesProfile;
+	int    e_ParticlesProfiler;
+	ICVar* e_ParticlesProfilerOutputFolder;
+	ICVar* e_ParticlesProfilerOutputName;
+	int    e_ParticlesProfilerCountBudget;
+	int    e_ParticlesProfilerTimingBudget;
+	int    e_ParticlesForceSeed;
+	float  e_VegetationSpritesDistanceRatio;
+	int    e_Decals;
+	int    e_DecalsAllowGameDecals;
 	DeclareConstFloatCVar(e_FoliageBrokenBranchesDamping);
-	float e_ShadowsCastViewDistRatio;
-	int   e_WaterTessellationAmountY;
-	float e_OnDemandMaxSize;
-	float e_MaxViewDistSpecLerp;
-	float e_StreamAutoMipFactorSpeedThreshold;
+	float  e_ShadowsCastViewDistRatio;
+	int    e_WaterTessellationAmountY;
+	float  e_OnDemandMaxSize;
+	float  e_MaxViewDistSpecLerp;
+	float  e_StreamAutoMipFactorSpeedThreshold;
 	DeclareConstFloatCVar(e_DecalsDeferredDynamicMinSize);
 	DeclareConstIntCVar(e_Objects, 1);
-	float e_ViewDistRatioCustom;
-	float e_StreamPredictionUpdateTimeSlice;
+	float  e_ViewDistRatioCustom;
+	float  e_StreamPredictionUpdateTimeSlice;
 	DeclareConstIntCVar(e_DisplayMemoryUsageIcon, e_DisplayMemoryUsageIconDefault);
-	int   e_ScreenShotWidth;
-	int   e_ScreenShotDebug;
+	int    e_ScreenShotWidth;
+	int    e_ScreenShotDebug;
 #if CRY_PLATFORM_WINDOWS
-	int   e_ShadowsLodBiasFixed;
+	int    e_ShadowsLodBiasFixed;
 #else
 	DeclareConstIntCVar(e_ShadowsLodBiasFixed, 0);
 #endif

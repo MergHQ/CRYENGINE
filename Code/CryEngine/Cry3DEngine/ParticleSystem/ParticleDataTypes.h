@@ -166,11 +166,19 @@ extern EParticleDataType
   EPDT_InvLifeTime,
   EPDT_SpawnFraction,
   EPDT_Random,
+  EPDT_Size,
+  EPDT_Angle2D,
+  EPDT_Spin2D;
+
+// pose data types
+extern EParticleDataType
   EPVF_Position,
   EPVF_Velocity,
   EPQF_Orientation,
   EPVF_AngularVelocity,
-  EPDT_Size;
+  EPVF_LocalPosition,
+  EPVF_LocalVelocity,
+  EPQF_LocalOrientation;
 
 }
 

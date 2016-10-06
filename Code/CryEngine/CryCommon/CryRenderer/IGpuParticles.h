@@ -32,6 +32,7 @@ typedef uint32 TComponentId;
   X(LocationBox)              \
   X(LocationSphere)           \
   X(LocationCircle)           \
+  X(LocationNoise)            \
   X(MotionFluidDynamics)
 
 enum EGpuFeatureType
@@ -91,7 +92,7 @@ enum EGravityType
 
 enum EVortexDirection
 {
-	eVortexDirection_Clockwise        = 0,
+	eVortexDirection_Clockwise = 0,
 	eVortexDirection_CounterClockwise = 1
 };
 
@@ -100,8 +101,10 @@ enum EVortexDirection
     float amount;               \
     float delay;                \
     float duration;             \
+    float restart;              \
     bool useDelay;              \
-    bool useDuration; )         \
+    bool useDuration;           \
+    bool useRestart; )          \
   X(SpawnMode,                  \
     ESpawnRateMode mode; )      \
   X(Scale,                      \
@@ -173,6 +176,11 @@ enum EVortexDirection
     Vec2 scale;                 \
     float radius;               \
     float velocity; )           \
+  X(LocationNoise,              \
+    float amplitude;            \
+    float size;                 \
+    float rate;                 \
+    int octaves; )              \
   X(MotionFluidDynamics,        \
     Vec3 initialVelocity;       \
     float stiffness;            \

@@ -3638,7 +3638,6 @@ static void BlendWeights(DualQuat& dq, Array<const DualQuat> aBoneLocs, const Jo
 struct PosNormData
 {
 	strided_pointer<Vec3> aPos;
-	strided_pointer<Vec3> aNorm;
 	strided_pointer<SVF_P3S_N4B_C4B_T2S> aVert;
 	strided_pointer<SPipQTangents> aQTan;
 	strided_pointer<SPipTangents> aTan2;
@@ -3649,14 +3648,12 @@ struct PosNormData
 		ran.vPos = aPos[nV];
 
 		// Normal
-		if (aNorm.data)
-			ran.vNorm = aNorm[nV];
-		else if (aVert.data)
-			ran.vNorm = aVert[nV].normal.GetN();
+		if (aQTan.data)
+			ran.vNorm = aQTan[nV].GetN();
 		else if (aTan2.data)
 			ran.vNorm = aTan2[nV].GetN();
-		else if (aQTan.data)
-			ran.vNorm = aQTan[nV].GetN();
+		else if (aVert.data)
+			ran.vNorm = aVert[nV].normal.GetN();
 	}
 };
 
@@ -3768,12 +3765,9 @@ void CRenderMesh::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm, SSk
 	if (vdata.aPos.data = (Vec3*)GetPosPtr(vdata.aPos.iStride, FSL_READ))
 	{
 		// Check possible sources for normals.
-#if ENABLE_NORMALSTREAM_SUPPORT
-		if (!GetStridedArray(vdata.aNorm, VSF_NORMALS))
-#endif
-			if (_GetVertexFormat() != eVF_P3S_N4B_C4B_T2S || !GetStridedArray(vdata.aVert, VSF_GENERAL))
-				if (!GetStridedArray(vdata.aTan2, VSF_TANGENTS))
-					GetStridedArray(vdata.aQTan, VSF_QTANGENTS);
+		if (_GetVertexFormat() != eVF_P3S_N4B_C4B_T2S || !GetStridedArray(vdata.aVert, VSF_GENERAL))
+			if (!GetStridedArray(vdata.aQTan, VSF_QTANGENTS))
+				GetStridedArray(vdata.aTan2, VSF_TANGENTS);
 
 		vtx_idx* pInds = GetIndexPtr(FSL_READ);
 

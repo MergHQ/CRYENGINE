@@ -50,4 +50,16 @@ void CFeatureLocationCircle::InitParticles(const SUpdateContext& context)
 	pRuntime->SetInitializationFlags(eFeatureInitializationFlags_LocationCircle);
 }
 
+void CFeatureLocationNoise::InitParticles(const SUpdateContext& context)
+{
+	CParticleComponentRuntime* pRuntime = static_cast<CParticleComponentRuntime*>(context.pRuntime);
+	auto& initParams = pRuntime->GetParticleInitializationParameters();
+	auto& params = GetParameters();
+	initParams.amplitude = params.amplitude;
+	initParams.noiseSize = params.size;
+	initParams.rate = params.rate;
+	initParams.octaves = params.octaves;
+	pRuntime->SetInitializationFlags(eFeatureInitializationFlags_LocationNoise);
+}
+
 }

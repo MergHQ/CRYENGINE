@@ -234,8 +234,21 @@ void CVars::Init()
 	              "Memory Size of Index Pool between Particle and Render Thread");
 
 	REGISTER_CVAR(e_ParticlesProfile, 0, VF_NULL,
+                  "PFx1 only:\n"
 	              "1 - always show statistics about particle pools usage\n"
 	              "2 - disable the warning message when running out of pool memory");
+	REGISTER_CVAR(e_ParticlesProfiler, 0, VF_BITFIELD,
+		          "Wavicle only:\n"
+                  "1 - Display profiler on screen\n"
+		          "f - Output statistics to a csv file");
+	e_ParticlesProfilerOutputFolder = REGISTER_STRING("e_ParticlesProfilerOutputFolder", "%USER%/ParticlesProfiler/", VF_NULL,
+		"Folder to output particle profiler");
+	e_ParticlesProfilerOutputName = REGISTER_STRING("e_ParticlesProfilerOutputName", "frame", VF_NULL,
+		"Name of the particle statistics file name");
+	REGISTER_CVAR(e_ParticlesProfilerCountBudget, 80000, VF_NULL,
+		"Particle counts budget to be shown during profiling");
+	REGISTER_CVAR(e_ParticlesProfilerTimingBudget, 10000, VF_NULL,
+		"Particle processing time budget (in nanoseconds) to be shown during profiling");
 
 	DefineConstFloatCVar(e_ParticlesLightMinRadiusThreshold, VF_NULL,
 	                     "Threshold for minimum particle light radius");

@@ -98,10 +98,10 @@ public:
 		if ((int)target.bPriority >= (int)m_Target.bPriority)
 			m_Target = target;
 	}
-	virtual void               SetEmitGeom(const GeomRef& geom);
-	virtual void               SetSpawnParams(const SpawnParams& spawnParams);
-	virtual const SpawnParams& GetSpawnParams() const
-	{ return m_SpawnParams; }
+	virtual void                 SetEmitGeom(const GeomRef& geom);
+	virtual void                 SetSpawnParams(const SpawnParams& spawnParams);
+	virtual void                 GetSpawnParams(SpawnParams& sp) const { sp = m_SpawnParams; }
+	const SpawnParams&           GetSpawnParams() const                { return m_SpawnParams; }
 
 	virtual bool                 IsAlive() const;
 	virtual bool                 IsInstant() const;

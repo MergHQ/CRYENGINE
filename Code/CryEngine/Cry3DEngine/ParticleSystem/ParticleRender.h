@@ -48,11 +48,11 @@ class CParticleRenderBase : public CParticleFeature, public Cry3DEngineBase
 public:
 	CParticleRenderBase(gpu_pfx2::EGpuFeatureType type = gpu_pfx2::eGpuFeatureType_None);
 
-	virtual EFeatureType GetFeatureType();
-	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams);
-	virtual void         PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent);
-	virtual void         RemoveRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent);
-	virtual void         Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext);
+	virtual EFeatureType GetFeatureType() override;
+	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
+	virtual void         PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent) override;
+	virtual void         ResetRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent) override;
+	virtual void         Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override;
 
 protected:
 	virtual bool     SupportsWaterCulling() const { return false; }

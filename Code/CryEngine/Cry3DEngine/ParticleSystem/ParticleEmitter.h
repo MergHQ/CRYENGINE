@@ -13,6 +13,7 @@
 #pragma once
 
 #include "ParticleEffect.h"
+#include "ParticleEnviron.h"
 #include <CryRenderer/IGpuParticles.h>
 
 namespace pfx2
@@ -32,7 +33,7 @@ private:
 	typedef std::vector<SRuntimeRef> TComponentRuntimes;
 
 public:
-	CParticleEmitter();
+	CParticleEmitter(uint emitterId);
 	~CParticleEmitter();
 
 	// IRenderNode
@@ -72,47 +73,52 @@ public:
 	virtual void                 SetEntity(IEntity* pEntity, int nSlot) override;
 	virtual void                 SetTarget(const ParticleTarget& target) override;
 	virtual bool                 UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod) override;
-	virtual void                 SetSpawnParams(const SpawnParams& spawnParams) override;
 	// ~pfx2 IParticleEmitter
 
 	// pfx1 IParticleEmitter
-	virtual int                GetVersion() const override                             { return 2; }
-	virtual bool               IsAlive() const override                                { return m_registered; }
-	virtual bool               IsInstant() const override                              { return false; }
-	virtual void               Restart() override                                      {}
-	virtual void               SetEffect(const IParticleEffect* pEffect) override      {}
-	virtual void               SetEmitGeom(const GeomRef& geom) override               { m_emitterGeometry = geom; }
-	virtual const SpawnParams& GetSpawnParams() const override                         { static SpawnParams sp; return sp; }
-	virtual void               Update() override;
-	virtual unsigned int       GetAttachedEntityId() override                          { return 0; }
-	virtual int                GetAttachedEntitySlot() override                        { return 0; }
+	virtual int          GetVersion() const override                        { return 2; }
+	virtual bool         IsAlive() const override                           { return m_registered; }
+	virtual bool         IsInstant() const override                         { return false; }
+	virtual void         Restart() override                                 {}
+	virtual void         SetEffect(const IParticleEffect* pEffect) override {}
+	virtual void         SetEmitGeom(const GeomRef& geom) override          { m_emitterGeometry = geom; }
+	virtual void         SetSpawnParams(const SpawnParams& spawnParams) override;
+	virtual void         GetSpawnParams(SpawnParams& sp) const override;
+	using IParticleEmitter::GetSpawnParams;
+	virtual void         Update() override;
+	virtual unsigned int GetAttachedEntityId() override   { return 0; }
+	virtual int          GetAttachedEntitySlot() override { return 0; }
 	// ~pfx1 CPArticleEmitter
 
 	void                      PostUpdate();
-	CParticleContainer&       GetParentContainer() { return m_parentContainer; }
+	CParticleContainer&       GetParentContainer()       { return m_parentContainer; }
 	const CParticleContainer& GetParentContainer() const { return m_parentContainer; }
 	virtual void              GetParentData(const int parentComponentId, const uint* parentParticleIds, const int numParentParticleIds, SInitialData* data) const override;
-	const TComponentRuntimes& GetRuntimes() const                   { return m_componentRuntimes; }
+	const TComponentRuntimes& GetRuntimes() const        { return m_componentRuntimes; }
 	void                      SetCEffect(CParticleEffect* pEffect);
-	const CParticleEffect*    GetCEffect() const                    { return m_pEffect; }
-	CParticleEffect*          GetCEffect()                          { return m_pEffect; }
+	const CParticleEffect*    GetCEffect() const         { return m_pEffect; }
+	CParticleEffect*          GetCEffect()               { return m_pEffect; }
 	void                      Register();
 	void                      Unregister();
 	bool                      IsIndependent() const { return Unique(); }
 	bool                      HasParticles() const;
 	void                      UpdateEmitGeomFromEntity();
-	const SVisEnviron&        GetVisEnv() const                     { return m_visEnviron; }
-	const SPhysEnviron&       GetPhysicsEnv() const                 { return m_physEnviron; }
-	const GeomRef&            GetEmitterGeometry() const            { return m_emitterGeometry; }
+	const SVisEnviron&        GetVisEnv() const            { return m_visEnviron; }
+	const SPhysEnviron&       GetPhysicsEnv() const        { return m_physEnviron; }
+	const GeomRef&            GetEmitterGeometry() const   { return m_emitterGeometry; }
 	QuatTS                    GetEmitterGeometryLocation() const;
-	const CAttributeInstance& GetAttributeInstance() const          { return m_attributeInstance; }
-	const ParticleTarget&     GetTarget() const                     { return m_target; }
-	float                     GetViewDistRatio() const              { return m_viewDistRatio; }
+	const CAttributeInstance& GetAttributeInstance() const { return m_attributeInstance; }
+	const ParticleTarget&     GetTarget() const            { return m_target; }
+	float                     GetViewDistRatio() const     { return m_viewDistRatio; }
+	float                     GetTimeScale() const         { return Cry3DEngineBase::GetCVars()->e_ParticlesDebug & AlphaBit('z') ? 0.0f : m_timeScale; }
 	CRenderObject*            GetRenderObject(uint threadId, uint renderObjectIdx);
 	void                      SetRenderObject(CRenderObject* pRenderObject, uint threadId, uint renderObjectIdx);
-	float                     GetTime() const { return m_time; }
+	float                     GetTime() const        { return m_time; }
 	uint32                    GetInitialSeed() const { return m_initialSeed; }
 	uint32                    GetCurrentSeed() const { return m_currentSeed; }
+	EntityId                  GetEntityId() const { return m_entityId; }
+  uint                      GetEmitterId() const { return m_emitterId; }
+  ColorF                    GetProfilerColor() const { return m_profilerColor; }
 
 	void                      AccumCounts(SParticleCounts& counts);
 	void                      AddDrawCallCounts(int numRendererdParticles, int numClippedParticles);
@@ -127,28 +133,31 @@ private:
 	void     ResetRenderObjects();
 
 	std::vector<CRenderObject*> m_pRenderObjects[RT_COMMAND_BUF_COUNT];
-	SVisEnviron        m_visEnviron;
-	SPhysEnviron       m_physEnviron;
-	CAttributeInstance m_attributeInstance;
-	AABB               m_bounds;
-	CParticleContainer m_parentContainer;
-	TComponentRuntimes m_componentRuntimes;
-	CParticleEffect*   m_pEffect;
-	SContainerCounts   m_emitterCounts;
-	CryMutex           m_countsMutex;
-	QuatTS             m_location;
-	ParticleTarget     m_target;
-	EntityId           m_entityId;
-	int                m_entitySlot;
-	GeomRef            m_emitterGeometry;
-	int                m_emitterGeometrySlot;
-	float              m_viewDistRatio;
-	float              m_time;
-	int                m_editVersion;
-	uint               m_initialSeed;
-	uint               m_currentSeed;
-	bool               m_registered;
-	bool               m_active;
+	SVisEnviron                 m_visEnviron;
+	SPhysEnviron                m_physEnviron;
+	CAttributeInstance          m_attributeInstance;
+	AABB                        m_bounds;
+	CParticleContainer          m_parentContainer;
+	TComponentRuntimes          m_componentRuntimes;
+	CParticleEffect*            m_pEffect;
+	SContainerCounts            m_emitterCounts;
+	CryMutex                    m_countsMutex;
+	QuatTS                      m_location;
+	ParticleTarget              m_target;
+	EntityId                    m_entityId;
+	GeomRef                     m_emitterGeometry;
+  ColorF                      m_profilerColor;
+  int                         m_entitySlot;
+	int                         m_emitterGeometrySlot;
+	float                       m_viewDistRatio;
+	float                       m_time;
+	float                       m_timeScale;
+	int                         m_editVersion;
+	uint                        m_initialSeed;
+	uint                        m_currentSeed;
+  uint                        m_emitterId;
+	bool                        m_registered;
+	bool                        m_active;
 };
 
 }

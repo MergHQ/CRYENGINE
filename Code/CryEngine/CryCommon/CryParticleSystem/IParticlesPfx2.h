@@ -58,9 +58,10 @@ enum EUpdateList
 	EUL_InitUpdate,       // this feature needs to initialize newborn particle data
 	EUL_PostInitUpdate,   // this feature needs to initialize newborn particle data after main InitUpdate
 	EUL_KillUpdate,       // this feature needs to run logic for particles that are being killed
+	EUL_PreUpdate,        // this feature changes particles over time before the main update
 	EUL_Update,           // this feature changes particle data over time
-	EUL_PostUpdate,       // this feature changes particles over time after the main update
-	EUL_Render,           // this feature has a Render Element
+	EUL_Render,           // this feature has geometry to render
+	EUL_RenderDeferred,   // this feature has geometry to render but can only render after all updates are done
 	EUL_GetExtents,       // this feature has a spatial extent
 
 	EUL_Count,

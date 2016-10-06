@@ -18,6 +18,7 @@
 #include "ThreadProfiler.h"
 #include <CryThreading/IThreadManager.h>
 #include <CrySystem/Scaleform/IScaleformHelper.h>
+#include <CryParticleSystem/IParticlesPfx2.h>
 
 #include "StatoscopeStreamingIntervalGroup.h"
 #include "StatoscopeTextureStreamingIntervalGroup.h"
@@ -935,6 +936,23 @@ struct SParticlesDG : public IStatoscopeDataGroup
 	{
 		SParticleCounts particleCounts;
 		gEnv->pParticleManager->GetCounts(particleCounts);
+
+		SParticleCounts particleCountsPfx2;
+		pfx2::GetIParticleSystem()->GetCounts(particleCountsPfx2);
+
+		particleCounts.ParticlesRendered    += particleCountsPfx2.ParticlesRendered;
+		particleCounts.ParticlesActive      += particleCountsPfx2.ParticlesActive;
+		particleCounts.ParticlesAlloc       += particleCountsPfx2.ParticlesAlloc;
+		particleCounts.PixelsRendered       += particleCountsPfx2.PixelsRendered;
+		particleCounts.PixelsProcessed      += particleCountsPfx2.PixelsProcessed;
+		particleCounts.EmittersRendered     += particleCountsPfx2.EmittersRendered;
+		particleCounts.EmittersActive       += particleCountsPfx2.EmittersActive;
+		particleCounts.EmittersAlloc        += particleCountsPfx2.EmittersAlloc;
+		particleCounts.ParticlesReiterate   += particleCountsPfx2.ParticlesReiterate;
+		particleCounts.ParticlesReject      += particleCountsPfx2.ParticlesReject;
+		particleCounts.ParticlesCollideTest += particleCountsPfx2.ParticlesCollideTest;
+		particleCounts.ParticlesCollideHit  += particleCountsPfx2.ParticlesCollideHit;
+		particleCounts.ParticlesClip        += particleCountsPfx2.ParticlesClip;
 
 		float fScreenPix = (float)(gEnv->pRenderer->GetWidth() * gEnv->pRenderer->GetHeight());
 		fr.AddValue(particleCounts.ParticlesRendered);

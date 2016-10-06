@@ -9,8 +9,9 @@
 
 #include "StdAfx.h"
 #include "ParticleSystem.h"
-#include "ParticleComponentRuntime.h"
 #include "ParticleUpdate.h"
+#include "ParticleComponentRuntime.h"
+#include "ParticleEmitter.h"
 #include "ParticleEmitter.h"
 
 CRY_PFX2_DBG
@@ -43,21 +44,8 @@ namespace pfx2
 {
 
 SUpdateContext::SUpdateContext(CParticleComponentRuntime* pRuntime)
-	: m_pSystem(GetPSystem())
-	, m_runtime(*pRuntime)
-	, m_container(pRuntime->GetContainer())
-	, m_parentContainer(pRuntime->GetParentContainer())
-	, m_params(pRuntime->GetComponentParams())
-	, m_updateRange(m_container.GetFullRange())
-	, m_deltaTime(gEnv->pTimer->GetFrameTime())
-	, m_time(pRuntime->GetEmitter()->GetTime())
-	, m_spawnRng(MakeSpawnSeed(pRuntime))
-	, m_spawnRngv(MakeSpawnSeed(pRuntime))
-	, m_updateRng(MakeUpdateSeed(pRuntime, 0))
-	, m_updateRngv(MakeUpdateSeed(pRuntime, 0))
+	: SUpdateContext(pRuntime, pRuntime->GetContainer().GetFullRange())
 {
-	const uint32 threadId = JobManager::GetWorkerThreadId();
-	m_pMemHeap = &m_pSystem->GetMemHeap(threadId);
 }
 
 SUpdateContext::SUpdateContext(CParticleComponentRuntime* pRuntime, const SUpdateRange& updateRange)
@@ -67,7 +55,7 @@ SUpdateContext::SUpdateContext(CParticleComponentRuntime* pRuntime, const SUpdat
 	, m_parentContainer(pRuntime->GetParentContainer())
 	, m_params(pRuntime->GetComponentParams())
 	, m_updateRange(updateRange)
-	, m_deltaTime(gEnv->pTimer->GetFrameTime())
+	, m_deltaTime(gEnv->pTimer->GetFrameTime() * pRuntime->GetEmitter()->GetTimeScale())
 	, m_time(pRuntime->GetEmitter()->GetTime())
 	, m_spawnRng(MakeSpawnSeed(pRuntime))
 	, m_spawnRngv(MakeSpawnSeed(pRuntime))

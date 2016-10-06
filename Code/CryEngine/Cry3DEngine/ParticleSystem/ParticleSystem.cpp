@@ -55,7 +55,8 @@ void CParticleSystem::RenameEffect(PParticleEffect pEffect, cstr name)
 	CRY_PFX2_ASSERT(pEffect.get());
 	CParticleEffect* pCEffect = CastEffect(pEffect);
 
-	m_effects[pCEffect->GetName()] = nullptr;
+	if (pCEffect->GetName())
+		m_effects[pCEffect->GetName()] = nullptr;
 	pCEffect->SetName(name);
 	m_effects[pCEffect->GetName()] = pCEffect;
 }
@@ -77,9 +78,8 @@ PParticleEmitter CParticleSystem::CreateEmitter(PParticleEffect pEffect)
 	CParticleEffect* pCEffect = CastEffect(pEffect);
 	pCEffect->Compile();
 
-	_smart_ptr<CParticleEmitter> pEmitter = new CParticleEmitter();
+	_smart_ptr<CParticleEmitter> pEmitter = new CParticleEmitter(m_nextEmitterId++);
 	pEmitter->SetCEffect(pCEffect);
-	pEmitter->Activate(true);
 	m_emitters.push_back(pEmitter);
 	return pEmitter;
 }
@@ -121,6 +121,12 @@ void CParticleSystem::Update()
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
 
+	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
+	const QuatT currentCameraPose = QuatT(camera.GetMatrix());
+	m_cameraMotion.t = currentCameraPose.t - m_lastCameraPose.t;
+	m_cameraMotion.q = currentCameraPose.q * m_lastCameraPose.q.GetInverted();
+	m_lastCameraPose = currentCameraPose;
+
 	if (GetCVars()->e_Particles)
 	{
 		auto gpuMan = gEnv->pRenderer->GetGpuParticleManager();
@@ -156,6 +162,11 @@ void CParticleSystem::SyncronizeUpdateKernels()
 	m_jobManager.SynchronizeUpdate();
 	for (auto& pEmitter : m_emitters)
 		pEmitter->PostUpdate();
+}
+
+void CParticleSystem::DeferredRender()
+{
+	m_jobManager.DeferredRender();
 	DebugParticleSystem(m_emitters);
 }
 

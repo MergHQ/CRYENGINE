@@ -41,4 +41,11 @@ struct CFeatureLocationCircle : public CFeatureWithParameterStruct<SFeatureParam
 	virtual void InitParticles(const SUpdateContext& context) override;
 };
 
+struct CFeatureLocationNoise : public CFeatureWithParameterStruct<SFeatureParametersLocationNoise>
+{
+	static const EGpuFeatureType type = eGpuFeatureType_LocationNoise;
+
+	virtual void InitParticles(const SUpdateContext& context) override;
+};
+
 }

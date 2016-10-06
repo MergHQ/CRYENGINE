@@ -20,6 +20,7 @@ CFeatureRenderGpuSprites::CFeatureRenderGpuSprites()
 	, m_sortMode(EGpuSpritesSortMode::None)
 	, m_facingMode(EGpuSpritesFacingMode::Screen)
 	, m_axisScale(1.0f)
+	, m_sortBias(0.0f)
 {
 }
 
@@ -27,6 +28,7 @@ void CFeatureRenderGpuSprites::AddToComponent(CParticleComponent* pComponent, SC
 {
 	CParticleRenderBase::AddToComponent(pComponent, pParams);
 	pParams->m_renderObjectFlags |= FOB_POINT_SPRITE;
+	pParams->m_renderObjectSortBias = m_sortBias;
 }
 
 void CFeatureRenderGpuSprites::Serialize(Serialization::IArchive& ar)
@@ -39,6 +41,8 @@ void CFeatureRenderGpuSprites::Serialize(Serialization::IArchive& ar)
 
 	if (m_facingMode == EGpuSpritesFacingMode::Velocity)
 		ar(m_axisScale, "AxisScale", "Axis Scale");
+
+	ar(m_sortBias, "SortBias", "Sort Bias");
 }
 
 void CFeatureRenderGpuSprites::ResolveDependency(CParticleComponent* pComponent)
@@ -58,6 +62,7 @@ void CFeatureRenderGpuSprites::ResolveDependency(CParticleComponent* pComponent)
 	pComponent->SetRuntimeInitializationParameters(params);
 }
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderGpuSprites, "Render", "GPU Sprites", colorRender);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderGpuSprites, "GPU Particles", "Sprites", colorGPU);
+CRY_PFX2_LEGACY_FEATURE(CParticleFeature, CFeatureRenderGpuSprites, "RenderGPU Sprites");
 
 }

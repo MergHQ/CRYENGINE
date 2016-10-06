@@ -1822,14 +1822,13 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (m_pTerrain)
 		m_pTerrain->DrawVisibleSectors(passInfo);
 
-	if (m_pParticleSystem)
-	{
-		pfx2::CParticleSystem* pCSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
-		pCSystem->SyncronizeUpdateKernels();
-	}
+	pfx2::CParticleSystem* pParticleSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
+	if (pParticleSystem)
+		pParticleSystem->SyncronizeUpdateKernels();
 	if (m_pPartManager)
 		m_pPartManager->FinishParticleRenderTasks(passInfo);
-
+	if (pParticleSystem)
+		pParticleSystem->DeferredRender();
 
 	if (passInfo.IsGeneralPass())
 		m_LightVolumesMgr.Update(passInfo);

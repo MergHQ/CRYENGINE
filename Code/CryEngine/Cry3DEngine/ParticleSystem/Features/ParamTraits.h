@@ -144,8 +144,8 @@ typedef TValue<uint, THardLimits<1, 256>> UBytePos;
 
 struct ConvertDegrees
 {
-	static float From(float val) { return RemoveNegZero(RAD2DEG(-val)); } // this is negative because in math anlges are CCW but we prefer CW
-	static float To(float val)   { return RemoveNegZero(DEG2RAD(-val)); }
+	static float From(float val) { return RemoveNegZero(RAD2DEG(val)); }
+	static float To(float val)   { return RemoveNegZero(DEG2RAD(val)); }
 };
 typedef TValue<float, SSoftLimit<360>, ConvertDegrees>        SAngle;
 typedef TValue<float, USoftLimit<360>, ConvertDegrees>        UAngle;

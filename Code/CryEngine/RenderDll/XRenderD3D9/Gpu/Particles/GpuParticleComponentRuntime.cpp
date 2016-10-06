@@ -666,10 +666,13 @@ void CParticleComponentRuntime::PrepareRelease()
 
 void CParticleComponentRuntime::AccumCounts(SParticleCounts& counts)
 {
+	// PFx2_TODO : create a dedicated GPU particles profiler
+	/*
 	counts.EmittersAlloc += 1.0f;
 	counts.ParticlesAlloc += m_parameters->numParticles;
 	counts.EmittersActive += 1.0f;
 	counts.SubEmittersActive += 1.0f;
 	counts.ParticlesActive += m_parameters->numParticles;
+	*/
 }
 }
