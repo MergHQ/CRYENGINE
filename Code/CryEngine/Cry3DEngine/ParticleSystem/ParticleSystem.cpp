@@ -205,6 +205,7 @@ PParticleEffect CParticleSystem::LoadEffect(cstr effectName)
 		}
 	}
 
+	m_effects[effectName] = _smart_ptr<CParticleEffect>();
 	return PParticleEffect();
 }
 
