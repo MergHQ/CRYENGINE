@@ -529,11 +529,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioReq
 				}
 				else
 				{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-					g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of lose focus trigger \"%s\"", pTrigger->m_name.c_str());
-#else
 					g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of lose focus trigger");
-#endif
 				}
 
 				result = m_pImpl->OnLoseFocus();
@@ -559,11 +555,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioReq
 				}
 				else
 				{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-					g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of get focus trigger \"%s\"", pTrigger->m_name.c_str());
-#else
 					g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of get focus trigger");
-#endif
 				}
 			}
 
@@ -579,11 +571,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioReq
 			}
 			else
 			{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of mute all trigger \"%s\"", pTrigger->m_name.c_str());
-#else
 				g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of mute all trigger");
-#endif
 			}
 
 			result = m_pImpl->MuteAll();
@@ -620,11 +608,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioReq
 			}
 			else
 			{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of unmute trigger \"%s\"", pTrigger->m_name.c_str());
-#else
 				g_audioLogger.Log(eAudioLogType_Warning, "Could not find definition of unmute trigger");
-#endif
 			}
 
 			break;
